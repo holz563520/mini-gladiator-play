@@ -63,8 +63,17 @@ const gearLooks=[
  {metal:'#dec591',edge:'#fff0bc',trim:'#855a39',cloth:'#446c78'},
  {metal:'#e9d693',edge:'#fff4d3',trim:'#c06d45',cloth:'#703d68'}];
 function itemTitle(i){if(!i)return 'Keine';const q=clamp(i.q||0,0,6),d=definition(i);if(i.kind==='weapon')return weaponTitles[i.def]?.[q]||d?.name||'?';const set=['Flicken','Rekruten','Legionärs','Veteranen','Prätorianer','Triumph','Unsterblichen'][q];return (i.kind==='armor'?(i.material==='leather'?'Leder · ':i.material==='medium'?'Verstärkt · ':'Metall · '):'')+set+'-'+(d?.name||'?');}
-const leatherLooks=gearLooks.map(look=>({...look,metal:'#805936',edge:'#b18c59',trim:'#4e3727'}));
-function itemLook(i){return (i?.kind==='armor'&&i.material==='leather'?leatherLooks:gearLooks)[clamp(i?.q||0,0,6)];}
+// Leder wird mit jeder Qualitätsstufe dunkler, edler und stärker beschlagen; verstärkte Rüstung zeigt Metallplatten auf Leder.
+const leatherLooks=[
+ {metal:'#927653',edge:'#b39770',trim:'#5a4630',dark:'#5a4630',stud:'#77664c',cloth:'#695c46'},
+ {metal:'#805936',edge:'#b18c59',trim:'#4e3727',dark:'#4e3727',stud:'#9a8a68',cloth:'#685646'},
+ {metal:'#77492c',edge:'#b98550',trim:'#3d2a1e',dark:'#3d2a1e',stud:'#b89a62',cloth:'#456c65'},
+ {metal:'#6a3d27',edge:'#b0784a',trim:'#c9a55a',dark:'#2f211a',stud:'#c9a55a',cloth:'#395e76'},
+ {metal:'#5a2c22',edge:'#a35c40',trim:'#d8b45e',dark:'#261a17',stud:'#dbdccb',cloth:'#704754'},
+ {metal:'#33292c',edge:'#6d5a58',trim:'#d9b65c',dark:'#17151a',stud:'#ecd184',cloth:'#446c78'},
+ {metal:'#5a1c27',edge:'#a8444a',trim:'#f0cf74',dark:'#26101a',stud:'#fff0bc',gem:'#5fd0c0',cloth:'#703d68'}];
+const mediumLooks=gearLooks.map((look,q)=>({...look,leather:['#6f5a43','#6b4a30','#5f3d27','#553423','#4a2a20','#352626','#42202a'][q],dark:leatherLooks[q].dark}));
+function itemLook(i){return (i?.kind==='armor'&&i.material==='leather'?leatherLooks:i?.kind==='armor'&&i.material==='medium'?mediumLooks:gearLooks)[clamp(i?.q||0,0,6)];}
 function itemName(i){return i?itemTitle(i)+' · '+gearQuality[i.q]:'Keine';}
 
 function itemPrice(kind,id,q){const d=(kind==='weapon'?weaponDefs:kind==='armor'?armorDefs:shieldDefs).find(x=>x.id===id);return Math.round(gearPrices[q]*(kind==='weapon'?(d.damage/16)*.8+.2:kind==='armor'?d.weight/9+.3:d.weight/10+.55))}
