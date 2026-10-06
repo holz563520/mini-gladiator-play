@@ -27,7 +27,7 @@ function poseScene(list,t){const [a,b]=list;if(!a||!b)return;for(const p of list
  if(t>=7&&t<10)a.x=731;
  if(t>=7&&t<7.7){a.technique='overhead';a.windMax=.7;a.wind=7.7-t;}
  if(t>=7.7&&t<8.2){a.swingKind='slash';a.swingMax=.5;a.swing=8.2-t;}
- if(t>=8&&!scene.struck){scene.struck=true;b.g.body.head.missing=true;b.g.dead=true;b.down=true;b.fallSide=1;scene.limbs.push({x:b.x+4,y:b.y,z:55,angle:0,part:'head',skin:b.g.appearance.skin,hair:b.g.appearance.hair});for(let n=0;n<16;n++)scene.fx.push({x:b.x,y:b.y,z:42,vx:20+Math.random()*25,vy:Math.random()*12-6,vz:20+Math.random()*20,life:.6+Math.random()*.5,size:2,color:n%3?'#aa3c36':'#87352e'});M.sound?.('sever');}
+ if(t>=8&&!scene.struck){scene.struck=true;b.g.body.head.missing=true;b.g.dead=true;b.down=true;b.fallSide=1;scene.limbs.push({x:b.x+4,y:b.y,z:55,angle:0,part:'head',skin:b.g.appearance.skin,hair:b.g.appearance.hair,g:b.g});for(let n=0;n<16;n++)scene.fx.push({x:b.x,y:b.y,z:42,vx:20+Math.random()*25,vy:Math.random()*12-6,vz:20+Math.random()*20,life:.6+Math.random()*.5,size:2,color:n%3?'#aa3c36':'#87352e'});M.sound?.('sever');}
  if(t>=10&&t<12){a.x=731-(t-10)*39;a.a=Math.PI;a.moveSpeed=40;a.state='move';}
  if(t>=12){a.a=0;a.g.enemyGear.secondary=a.hammer;const k=t%1.2;a.technique='overhead';a.windMax=.7;a.wind=k<.7?.7-k:0;a.swingKind='overhead';a.swingMax=.5;a.swing=k>=.7?1.2-k:0;}
 }
