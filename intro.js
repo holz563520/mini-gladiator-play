@@ -119,7 +119,7 @@ async function ludusStory(){const L=run.lud,a=L.actor;run.mode='ludus';run.cheer
  const follow=()=>camera(a.x,a.y-30,380,3);walk(a,610,600,44);await until(()=>{follow();return !a.move;});await wait(.6);
  M.sound?.('rise');let open=0;await until(()=>{open+=run.dt/1.5;L.closed=1-clamp(open,0,1);return open>=1;});await wait(.5);
  text('Die Arena gab dir deine Freiheit.');await wait(3);text('');await wait(1.2);text('Jetzt baust du deine eigene.');await wait(3);text('');
- camera(450,360,900,1.1);await walk(a,470,586,48);await wait(.5);}
+ camera(450,360,900,1.1);await walk(a,574,608,48);await wait(.5);}
 
 // ---------- Rahmen, Zeichnen, Abschluss ----------
 function build(){const v=document.createElement('div');v.id='introView';v.innerHTML='<canvas id="introCanvas" aria-label="Die Vorgeschichte deines Lanista"></canvas><div id="introShade"></div><p id="introText" role="status" aria-live="polite"></p><p id="introTitle" aria-hidden="true"></p><button id="introSkip" class="btn" type="button">ÜBERSPRINGEN →</button>';document.body.appendChild(v);const skip=$('introSkip');if(skip)skip.onclick=()=>M.intro.skip();return v;}
@@ -138,7 +138,7 @@ function tick(real){if(!run||run.done)return;const base=Math.min(.05,Math.max(0,
 function loop(t){if(!run||run.done)return;const dt=(t-(run.last??t))/1000;run.last=t;if(!document.hidden)tick(dt);requestAnimationFrame(loop);}
 function finish(){if(!run||run.done)return;const r=run;r.done=true;M.cheer=0;S.lanista=JSON.parse(JSON.stringify(r.owner));M.persist();M.ui.close();M.ui.click('nav:home');const v=r.view;run=null;if(v?.style)v.style.opacity='0';const drop=()=>v?.remove?.();if(typeof setTimeout==='function')setTimeout(drop,650);else drop();}
 function start(owner){if(run)return;M.audioStart?.();const players=cast(owner),keeper={...owner,lostArm:'r',veteran:true};
- const sc={arena:4,level:6,gate:0,shake:0,stains:[],fx:[],limbs:[],ground:[],swings:[],cam:null,hero:actor(players.hero,520,400,0),foes:[[300,385],[790,410],[330,250],[720,560],[590,222]].map(([x,y],i)=>actor(players.foes[i],x,y,1)),last:actor(players.last,520,120,1)};sc.actors=[sc.hero,...sc.foes];
+ const sc={arena:4,level:6,gate:0,shake:0,stains:[],fx:[],limbs:[],ground:[],swings:[],cam:null,hero:actor(players.hero,520,400,0),foes:[[300,385],[790,410],[330,250],[720,560],[590,222]].map(([x,y],i)=>actor(players.foes[i],x,y,1)),last:actor(players.last,520,104,1)};sc.actors=[sc.hero,...sc.foes];
  const walker=M.ludus.ownerFigure(keeper),lud={bg:M.ludus.background(),closed:1,actor:{...actor(walker,610,330,0),lanista:true,energy:100}};
  run={owner:keeper,sc,lud,view:build(),canvas:null,mode:'black',shade:1,caption:'',title:'',cheer:0,cheerBase:0,speed:1,dt:0,waiters:[],aborted:false,done:false,cam:{x:520,y:385,vw:470},camTo:{x:520,y:385,vw:470,rate:2.2}};run.canvas=$('introCanvas');sync();
  (async()=>{await arenaStory();await ludusStory();})().catch(e=>{if(e!==ABORT)console.error('Intro abgebrochen:',e);}).then(finish);
