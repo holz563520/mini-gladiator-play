@@ -107,7 +107,7 @@ async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5]=sc.foes,F
  await strike(H,F,{variant:2,wind:.06,swing:.18,part:'ls',land:()=>{wound(F,'ls',.6,H);slide(F,14,0,.25);}});F.stagger=1.6;F.watch=null;cheer(1.5);await wait(.3);
  // Enthauptung mit der vorhandenen Darstellung für abgetrennte Köpfe.
  await strike(H,F,{wind:.75,swing:.34,heavy:true,part:'neck',land:()=>{const top=M.contactAnchor(F,'head');for(const k of M.branches.neck){const p=F.g.body[k];p.missing=true;p.hp=0;}
-  sc.limbs.push({x:top.x,y:F.y+5,z:F.y-top.y,vz:55,vx:78,vy:10,part:'head',team:1,t:0,angle:rand(0,TAU),armored:true,skin:F.g.appearance.skin,hair:F.g.appearance.hair});
+  sc.limbs.push({x:top.x,y:F.y+5,z:F.y-top.y,vz:55,vx:78,vy:10,part:'head',team:1,t:0,angle:rand(0,TAU),armored:true,skin:F.g.appearance.skin,hair:F.g.appearance.hair,g:F.g});
   for(let n=0;n<34;n++)sc.fx.push({x:top.x+rand(-3,3),y:F.y,z:F.y-top.y-8,vx:rand(-32,32),vy:rand(-15,15),vz:rand(65,125),life:2.7,color:n%3?'#a14337':'#87352e',size:n%5?2:3,ground:true});
   blade.blood=1;F.g.dead=true;F.stagger=0;F.fallSide=-1;F.fallDuration=F.fallTimer=3;F.riseDuration=1.25;F.state='fallen';F.pool={x:F.x,y:F.y,r:0};sc.shake=8;run.cheer=run.cheerBase=0;M.sound?.('sever');run.speed=.2;camera(F.x,F.y-24,290,5);}});
  await wait(.3);F.down=true;F.fallTimer=0;F.state='dead';M.sound?.('die');await wait(.2);run.speed=1;await wait(1.6);
