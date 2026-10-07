@@ -1,7 +1,7 @@
 'use strict';
 (()=>{const M=window.MG,S=M.s,$=id=>document.getElementById(id),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const places=[
- {name:'Unterkunft',sub:'Gladiatoren',route:'gladiators',x:45,y:72,w:235,h:133},
+ {name:'Kaserne',sub:'Gladiatoren',route:'gladiators',x:45,y:72,w:235,h:133},
  {name:'Trainingshof',sub:'Kampflernen',route:'training',x:310,y:247,w:275,h:343},
  {name:'Schmiede',sub:'Waffen & Handwerk',route:'forge',x:638,y:86,w:215,h:150},
  {name:'Medicus',sub:'Krankenhaus',route:'medic',x:45,y:446,w:240,h:147},
