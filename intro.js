@@ -35,7 +35,7 @@ function sparks(x,y){for(let n=0;n<9;n++)run.sc.fx.push({x,y:y+2,z:rand(34,46),v
 function wound(v,part,power,by){v.hit=.23;v.facePain=1;const p=M.contactAnchor(v,part),limb=v.g.body[part];blood(p.x,v.y,v.y-p.y,power);v.bloodMarks[part]=Math.min(1,(v.bloodMarks[part]||0)+power);limb.hp=Math.max(30,limb.hp-power*55);if(!limb.wounds?.length)limb.wounds=[{day:1,type:'Intro',attacker:'',weapon:'',hits:1,damage:0}];const blade=by?.g.enemyGear.weapon;if(blade)blade.blood=Math.min(1,(blade.blood||0)+power*.45);M.sound?.('hit');M.voice?.('pain',v.g.appearance.voice||1,power>.55);}
 function sever(v,branch,by,vx,vy){const sc=run.sc,at=branch==='rua'?'rs':branch,p=M.contactAnchor(v,at);for(const k of M.branches[branch]){const l=v.g.body[k];l.missing=true;l.hp=0;}v.g.stump='blood';sc.limbs.push({x:p.x,y:v.y+3,z:v.y-p.y,vz:65,vx,vy,part:branch,team:v.team,t:0,angle:rand(0,TAU),armored:false,skin:v.g.appearance.skin,hair:v.g.appearance.hair});blood(p.x,v.y,v.y-p.y,1.1);v.bloodMarks[at]=1;v.hit=.23;v.facePain=3;const blade=by.g.enemyGear.weapon;if(blade)blade.blood=Math.min(1,(blade.blood||0)+.5);sc.shake=5;M.sound?.('sever');M.voice?.('pain',v.g.appearance.voice||1,true);}
 // Am Boden: jeder liegt anders, hält seine Wunde, windet sich und verblutet nach einigen Sekunden.
-function agonize(v,part,pose,lie,seconds){v.agony={part,pose,lie,rate:rand(2.2,3.6),live:1};v.facePain=99;v.pool={x:v.x+(v.fallSide||-1)*-8,y:v.y-2,r:0};v.bleed={left:seconds,total:seconds,wait:0};}
+function agonize(v,part,pose,lie,seconds,alt){v.agony={part,alt,pose,lie,rate:rand(2.2,3.6),live:1};v.facePain=99;v.pool={x:v.x+(v.fallSide||-1)*-8,y:v.y-2,r:0};v.bleed={left:seconds,total:seconds,wait:0};}
 function parry(v,by){v.block=true;v.blockTime=.34;v.blockFlash=.2;sparks((v.x+by.x)/2,(v.y+by.y)/2);M.sound?.('block');}
 async function strike(a,v,o={}){face(a,v);a.attackA=a.a;a.technique=o.tech||'slash';a.attackVariant=o.variant||0;a.windMax=o.wind??.28;a.wind=a.windMax;a.state='attack';await wait(a.windMax);a.wind=0;a.swingMax=o.swing??.3;a.swing=a.swingMax;a.swingKind=a.technique;if(o.part)a.contactPoint=M.contactAnchor(v,o.part);run.sc.swings.push({x:a.x,y:a.y-10,a:a.a,r:o.reach||50,life:.16,color:a.team?'#d58669':'#e9d4a4'});M.sound?.(o.heavy?'heavy':'slash');await wait(a.swingMax*.5);o.land?.();await wait(a.swingMax*.5);a.swing=0;a.contactPoint=null;a.state='idle';}
 async function knockOut(v){v.watch=null;v.move=null;v.wind=v.swing=v.stagger=0;v.block=false;v.fallSide=Math.cos(v.a)>=0?-1:1;v.fallDuration=v.fallTimer=3;v.riseDuration=1.25;v.state='fallen';dust(v.x,v.y);M.sound?.('fall');cheer(1.8);await wait(.42);v.down=true;v.fallTimer=0;v.state='down';}
@@ -52,7 +52,7 @@ function stepActor(a,dt,sc){const ox=a.x,oy=a.y;for(const k of ['wind','swing','
  if(a.gateClip&&a.y>172)a.gateClip=false;
  M.updateLocomotion(a,ox,oy,a.phase||0,dt);
  if(a.g.bisected&&a.splitProgress<1)a.splitProgress=Math.min(1,a.splitProgress+dt*2.4);
- if(a.bleed){const b=a.bleed;b.left-=dt;a.agony.live=clamp(b.left/(b.total*.6),.15,1);a.pool.r=Math.min(24,a.pool.r+dt*24/b.total);b.wait-=dt;if(sc&&b.wait<=0){b.wait=.35;sc.fx.push({x:a.pool.x+rand(-10,10),y:a.pool.y+rand(-4,4),z:rand(3,8),vx:rand(-10,10),vy:rand(-4,4),vz:rand(5,20),life:1.2,color:'#96352e',size:2,ground:true});}if(b.left<=0){a.bleed=null;a.g.dead=true;a.state='dead';a.facePain=0;}}
+ if(a.bleed){const b=a.bleed;b.left-=dt;a.agony.live=clamp(b.left/(b.total*.6),.3,1);b.spurt=(b.spurt??.2)-dt;if(sc&&b.spurt<=0){b.spurt=rand(.6,1.1);const A=a.agony,part=A.alt&&(b.n=(b.n||0)+1)%2?A.alt:A.part,[lx,ly]={belly:[2,-37],chest:[3,-48],leg:[6,-25],arm:[9,-52]}[part]||[2,-37],k=a.g.height/180*1.14,f=Math.cos(a.a||0)>=0?1:-1,rot=(a.fallSide||-1)*A.lie,X=a.x+(12+Math.cos(rot)*lx-Math.sin(rot)*ly)*k*f,Y=a.y+(5+Math.sin(rot)*lx+Math.cos(rot)*ly)*k,dir=Math.random()<.5?-1:1;for(let n=0;n<4+Math.round(6*A.live);n++)sc.fx.push({x:X+rand(-1,1),y:a.y+6,z:Math.max(3,a.y+6-Y),vx:dir*rand(12,55)*A.live,vy:rand(-10,10),vz:rand(35,85)*A.live+12,life:1.4,color:n%3?'#aa3c36':'#87352e',size:n%4?2:3,ground:true});}a.pool.r=Math.min(24,a.pool.r+dt*24/b.total);b.wait-=dt;if(sc&&b.wait<=0){b.wait=.35;sc.fx.push({x:a.pool.x+rand(-10,10),y:a.pool.y+rand(-4,4),z:rand(3,8),vx:rand(-10,10),vy:rand(-4,4),vz:rand(5,20),life:1.2,color:'#96352e',size:2,ground:true});}if(b.left<=0){a.bleed=null;a.g.dead=true;a.state='dead';a.facePain=0;}}
  if(a.hop&&a.move&&!(a.jumpTimer>0)){a.jumpTimer=.26;if(sc)dust(a.x,a.y);}
  if(a.g.dead&&a.pool)a.pool.r=Math.min(32,a.pool.r+dt*3.2);
  if(sc&&a.drip>0){a.drip-=dt;a.dripWait=(a.dripWait||0)-dt;if(a.dripWait<=0){a.dripWait=.16;const p=M.contactAnchor(a,'rs');sc.fx.push({x:p.x+rand(-2,2),y:a.y+rand(-2,3),z:Math.max(4,a.y-p.y-8),vx:rand(-8,8),vy:rand(-4,4),vz:0,life:1.6,color:'#96352e',size:2,ground:true});}}}
@@ -73,9 +73,9 @@ async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5,E6]=sc.foe
  s=strike(E1,H,{tech:'overhead',wind:.34,heavy:true});await wait(.3);dodge(H,30,-8);await s;
  // Dem ersten nimmt er den Waffenarm, dann das Bein.
  await strike(H,E1,{variant:1,wind:.1,swing:.22,part:'rs',land:()=>{const axe=E1.g.enemyGear.weapon;sever(E1,'rua',H,-58,16);E1.g.enemyGear.weapon=null;sc.ground.push({sprite:0,item:axe,x:E1.x-10,y:E1.y-4,z:0,angle:.4,blood:0,fly:{x0:E1.x-10,y0:E1.y-4,x1:E1.x-52,y1:E1.y+30,t:0,time:.7,height:26}});E1.stagger=.7;}});
- await strike(H,E1,{variant:2,wind:.14,swing:.24,part:'rt',land:()=>sever(E1,'rt',H,-40,24)});await knockOut(E1);agonize(E1,'leg',2,1.5,7);
+ await strike(H,E1,{variant:2,wind:.14,swing:.24,part:'rt',land:()=>sever(E1,'rt',H,-40,24)});await knockOut(E1);agonize(E1,'leg',2,1.5,13,'arm');
  face(H,E2);s=strike(E2,H,{tech:'thrust',wind:.3});await wait(.36);parry(H,E2);await s;
- await strike(H,E2,{tech:'spin',wind:.18,swing:.34,part:'belly',land:()=>wound(E2,'belly',.7,H)});await knockOut(E2);agonize(E2,'belly',0,1.2,12);cheer(2.4);
+ await strike(H,E2,{tech:'spin',wind:.18,swing:.34,part:'belly',land:()=>wound(E2,'belly',.7,H)});await knockOut(E2);agonize(E2,'belly',0,1.2,20);cheer(2.4);
  // Ein weiterer greift an, verliert ein Bein, will weghüpfen – Griff von hinten, Kopf ab.
  camera(480,470,420);s=walk(H,502,472,95);walk(E6,446,476,170,{state:'charge'});await s;await until(()=>!E6.move);face(H,E6);
  s=strike(E6,H,{wind:.28});await wait(.34);parry(H,E6);await s;
@@ -114,11 +114,11 @@ async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5,E6]=sc.foe
  await walk(E4,632,512,120);face(H,E4);s=strike(H,E4,{wind:.14,swing:.26});await wait(.27);parry(E4,H);await s;
  await strike(E4,H,{wind:.24,swing:.28,part:'chest',land:()=>{wound(H,'chest',.5,E4);H.stagger=.5;slide(H,-14,2,.2);}});await wait(.3);
  s=strike(E4,H,{tech:'overhead',wind:.36,heavy:true});await wait(.48);parry(H,E4);await s;
- await strike(H,E4,{tech:'thrust',wind:.2,swing:.24,part:'chest',land:()=>wound(E4,'chest',.8,H)});await knockOut(E4);agonize(E4,'chest',1,1.45,10);
+ await strike(H,E4,{tech:'thrust',wind:.2,swing:.24,part:'chest',land:()=>wound(E4,'chest',.8,H)});await knockOut(E4);agonize(E4,'chest',1,1.45,17);
  // Erschöpft: knapp ausgewichen, letzter Treffer.
  H.g.fatigue=88;H.energy=12;H.g.blood=42;face(H,E5);H.stagger=1.6;await walk(H,548,452,42,{keep:true});await wait(.5);
  face(H,E5);await walk(E5,H.x-56,H.y+4,200,{state:'charge'});s=strike(E5,H,{tech:'thrust',wind:.24,heavy:true});await wait(.3);dodge(H,8,-22);await s;
- await strike(H,E5,{variant:2,wind:.14,swing:.26,part:'lt',land:()=>wound(E5,'lt',.8,H)});await knockOut(E5);agonize(E5,'leg',0,1.25,14);cheer(2.6);H.stagger=.9;await wait(1.6);
+ await strike(H,E5,{variant:2,wind:.14,swing:.26,part:'lt',land:()=>wound(E5,'lt',.8,H)});await knockOut(E5);agonize(E5,'leg',0,1.25,24);cheer(2.6);H.stagger=.9;await wait(1.6);
  // Das Arenator öffnet sich.
  run.cheerBase=.4;M.sound?.('gong');walk(H,452,300,58);camera(520,205,440,1.6);await wait(1.2);M.sound?.('rise');let open=0;await until(()=>{open+=run.dt/1.8;sc.gate=clamp(open,0,1);return open>=1;});
  sc.actors.push(F);F.gateClip=true;F.watch=null;await walk(F,520,215,30);await until(()=>!H.move);F.watch=H;H.watch=F;camera(508,290,400,1.2);await walk(F,566,300,34);await wait(1.5);
