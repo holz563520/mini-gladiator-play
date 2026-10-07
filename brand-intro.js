@@ -3,7 +3,7 @@
 // Ein Tipp springt zur nächsten Sequenz; „Überspringen“ beendet das Intro sofort.
 'use strict';
 (()=>{
-const GRID=["11111111111111111111111111", "11111111111111111111111111", "11111113323323331111111111", "11111332222200231311111111", "11113322000000002131111111", "11133200000000000223111111", "11232000000002200023221111", "11322000002222110002101111", "11322211122211332000312111", "11102331111133333200232111", "11201331111133333122220211", "12003331111131333332010211", "11223311111133333332022211", "12213311111333133332000231", "00133333111112213332000031", "22313312221122222333000031", "12023322002320021333000021", "30003320002322221333000031", "30003322221131221333000031", "32001332221131221333200331", "10000332223131122133333111", "10000332223131122233311111", "11200112222222210233111111", "11113312222222202213111111", "11111131202111211331111111", "11111111222222131331111111", "11111113221222113311111111", "11111111331222213311111111", "11111111133111111111111111", "11111111111122111111111111", "11111111111111111111111111", "11111111111111111111111111", "11111111111111111111111111", "11111111111111111111111111"];
+const GRID=["11111111111111111111111111111111", "11111111111111111111111111111111", "11111111111111111111111111111111", "11111111113131111111111111111111", "11111111300001002111111111111111", "11111130000000000011111111111111", "11111000000000000000111111111111", "11110000000000000000011111111111", "11130000000000001200003111111111", "11130000000001333110000111111111", "11100001333333333331000011111111", "11100033333333333333100011111111", "11000133333333333333110001111111", "11000333333333333333311001111111", "13000333333333333333331203111111", "13000331131133331111333101111111", "11002111111111333333313120111111", "11001111111133333333333120111111", "11001111113333333311133122211111", "11001111133311111222211112011111", "11202111312221112222221331211111", "11102111122222111000022132211111", "11222111120002111222211331211111", "11212111200022111222211331211111", "11121111212221111111113331211111", "11122111111111111111113331211111", "11121111131111113111111131211111", "11112111131111113311122112111111", "11112111111211111111122112111111", "11112221112211222221122112111111", "11111112112211122221222112111111", "11111112112222222222221112111111", "11111111211220111122211121111111", "11111111211111222222111121111111", "11111111211111122222111211111111", "11111111102211112221111211111111", "11111111102221111111112111111111", "11111111110021133311201111111111", "11111111111100211120011111111111", "11111111111110000001111111111111", "11111111111111111111111111111111", "11111111111111111111111111111111"];
 const GW=GRID[0].length, GH=GRID.length, C=8;
 const T_IMP=2.6, FREEZE=.1, T_CHAOS=3.4, T_FORM=5.2, T_TITLE=5.6;
 const B0=3.6, A0=B0+T_TITLE, P0=A0+2.4, M0=P0+1.4, END=M0+2.8;
@@ -46,7 +46,7 @@ const scene=q('.bi-scene'),hudC=q('.bi-hud'),g=scene.getContext('2d'),hg=hudC.ge
 const elBoot=q('.bi-boot'),elArch=q('.bi-arch'),elPres=q('.bi-pres'),elGate=q('.bi-gate'),elStatus=q('.bi-status'),elHint=q('.bi-hint');
 const elName=elArch.querySelector('em'),elTitle=elPres.querySelector('b'),elTag=elPres.querySelector('i'),elComp=elBoot.querySelector('p');
 const [elLab,elPct]=elStatus.querySelectorAll('span'),elBar=elStatus.querySelector('i');
-const micro=document.createElement('canvas'),mg2=micro.getContext('2d'),tmpA=document.createElement('canvas'),tile=document.createElement('canvas');tile.width=tile.height=64;
+const tmpA=document.createElement('canvas'),tile=document.createElement('canvas');tile.width=tile.height=64;
 let W=640,H=360,F=1,CAM={z0:1,z1:2,zc:2.3,zf:.5,fy:52},field=null;
 
 /* ---------- Einheiten ---------- */
@@ -98,13 +98,11 @@ function buildTile(){const c=tile.getContext('2d');c.fillStyle=P.floor;c.fillRec
  for(let i=0;i<240;i++){c.fillStyle=h(i,20)<.5?P.sd:P.sl;c.fillRect(Math.floor(h(i,21)*64),Math.floor(h(i,22)*64),h(i,23)<.2?2:1,1)}
  field=g.createPattern(tile,'repeat')}
 const DROPS=[];for(let i=0;i<130;i++){const a=h(i,30)*6.28,v=30+h(i,31)*150;DROPS.push({x:(h(i,32)-.5)*18,y:(h(i,33)-.5)*170,vx:Math.cos(a)*v,vy:Math.sin(a)*v*.6,sz:h(i,34)<.3?2:1})}
-function sprite(rows,col,sx,sy,z,flip){
-  const px=Math.max(1,Math.ceil(z)), w=rows[0].length;
-  for(let r=0;r<rows.length;r++){const row=rows[r];
-    for(let c=0;c<w;c++){const ch=row[c];if(ch===".")continue;
-      g.fillStyle=col[ch];
-      g.fillRect(Math.round(sx+(flip?w-1-c:c)*z),Math.round(sy+r*z),px,px)}}
-}
+const sprCache=new Map();
+function sprite(name,side,sx,sy,z,flip){const key=name+side+(flip?'f':'');let c=sprCache.get(key);
+  if(!c){const rows=SPR[name],col=COL[side],w=rows[0].length;c=document.createElement('canvas');c.width=w;c.height=rows.length;const x=c.getContext('2d');
+    for(let r=0;r<rows.length;r++)for(let k=0;k<w;k++){const ch=rows[r][k];if(ch==='.')continue;x.fillStyle=col[ch];x.fillRect(flip?w-1-k:k,r,1,1);}sprCache.set(key,c);}
+  g.drawImage(c,Math.round(sx),Math.round(sy),Math.max(1,Math.round(c.width*z)),Math.max(1,Math.round(c.height*z)));}
 function blank(){g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation='source-over';g.fillStyle=P.bg;g.fillRect(0,0,W,H);
   g.fillStyle=P.grid;for(let x=Math.round(W/2)%40;x<W;x+=40)g.fillRect(x,0,1,H);for(let y=Math.round(H/2)%40;y<H;y+=40)g.fillRect(0,y,W,1);
   hg.setTransform(1,0,0,1,0,0);hg.clearRect(0,0,hudC.width,hudC.height)}
@@ -134,15 +132,15 @@ function drawScene(t,cam){
     const col=COL[s.side];
     if(s.st===3){
       if(blocky){const x0=Math.round(X(s.x-C/2)),y0=Math.round(Y(s.y-C));g.fillStyle=col.a;g.fillRect(x0,y0,Math.round(X(s.x+C/2))-x0,Math.round(Y(s.y))-y0)}
-      else sprite(SPR.down,col,X(s.x-4),Y(s.y-8),z,s.dir<0);
+      else sprite('down',s.side,X(s.x-4),Y(s.y-8),z,s.dir<0);
       continue}
     g.fillStyle='rgba(0,0,0,.42)';g.fillRect(Math.round(X(s.x-3)),Math.round(Y(s.y-1)),Math.max(1,Math.round(6*z)),Math.max(1,Math.round(z)));
     let rows;
-    if(s.st===0)rows=((t*11+s.anim*2)%2)<1?SPR.run1:SPR.run2;
-    else if(s.st===1)rows=((t*14+s.anim*3)%3)<1?SPR.hit:SPR.run2;
-    else rows=((t*8+s.anim*2)%2)<1?SPR.run1:SPR.run2;
+    if(s.st===0)rows=((t*11+s.anim*2)%2)<1?'run1':'run2';
+    else if(s.st===1)rows=((t*14+s.anim*3)%3)<1?'hit':'run2';
+    else rows=((t*8+s.anim*2)%2)<1?'run1':'run2';
     const face=s.st===2?(s.tx<s.x?-1:1):s.dir;
-    sprite(rows,col,X(s.x-3),Y(s.y-8),z,face<0);
+    sprite(rows,s.side,X(s.x-3),Y(s.y-8),z,face<0);
   }
   if(t>=T_IMP&&t<T_IMP+FREEZE){
     const a=tmpA.getContext('2d'),k=(t-T_IMP)/FREEZE,off=k<.6?8:3;
@@ -158,16 +156,11 @@ function drawScene(t,cam){
 /* ---------- Parameter-Overlay ---------- */
 function val(k,tick){const r=h(k,tick),m=k%5;
   return m===0?r.toFixed(4):m===1?(r*100).toFixed(1)+"%":m===2?(r*9e4|0).toString(16).toUpperCase().padStart(5,"0"):m===3?(r*40-20).toFixed(2):(r*999|0)+"."+(r*97|0)}
-let microKey='';
-function drawMicro(tt,n,band){
-  const k=micro.width/W;mg2.setTransform(k,0,0,k,0,0);mg2.clearRect(0,0,W,H);mg2.textBaseline='middle';mg2.textAlign='left';
-  mg2.font='400 '+(5*F).toFixed(1)+'px '+FONT;
-  for(let i=0;i<n;i++){const slot=Math.floor(tt/.5+h(i,60)),tick=Math.floor(tt/.06+h(i,61)*3);
-    const x=h(i,slot)*(W+20)-20, y=30+h(i+5000,slot)*(H-30-H*.12);
-    const inside=Math.abs(y-H/2)<band;
-    mg2.globalAlpha=(.2+h(i,tick)*.55)*(inside?.42:1);mg2.fillStyle=i%11===0?P.hi:P.hud;
-    mg2.fillText(i%5===0?PARAMS[i%PARAMS.length]+' '+val(i,tick):val(i,tick),x,y)}
-}
+const MICRO_FRAMES=6;let microFrames=[],microSize='';
+function buildMicro(){const size=W+'x'+H+'x'+F;if(microSize!==size){microFrames=[];microSize=size;}if(microFrames.length>=MICRO_FRAMES)return false;
+  const f=microFrames.length,set=Math.floor(f/3),c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.textBaseline='middle';x.textAlign='left';x.font='400 '+(5*F).toFixed(1)+'px '+FONT;
+  for(let i=0;i<NPAR;i++){x.globalAlpha=.2+h(i,f*13+3)*.55;x.fillStyle=i%11===0?P.hi:P.hud;x.fillText(i%5===0?PARAMS[i%PARAMS.length]+' '+val(i,f*17+5):val(i,f*17+5),h(i,set*7+1)*(W+20)-20,30+h(i+5000,set*7+2)*(H-30-H*.12));}
+  microFrames.push(c);return true;}
 function drawHud(t,cam,map){
   const k=hudC.width/W;hg.setTransform(k,0,0,k,0,0);hg.clearRect(0,0,W,H);
   if(t>=T_FORM)return;
@@ -176,9 +169,9 @@ function drawHud(t,cam,map){
   hg.fillStyle=P.scrim;hg.fillRect(0,0,W,H);
   hg.translate(cam.ox,cam.oy);hg.textBaseline='middle';
   const ph=P.hud,hot=P.hi;
-  const n=Math.round(NPAR*I), key=Math.floor(tt/.06)+'|'+n+'|'+micro.width;
-  if(key!==microKey){microKey=key;drawMicro(tt,n,110*map.z+6)}
-  hg.drawImage(micro,0,0,W,H);
+  const n=Math.round(NPAR*I);if(!microFrames.length||microSize!==W+'x'+H+'x'+F)buildMicro();
+  {const set=Math.floor(tt/.5)%2,f=microFrames[(set*3+Math.floor(tt/.06)%3)%microFrames.length],band=110*map.z+6,top=Math.max(0,Math.round(H/2-band)),bot=Math.min(H,Math.round(H/2+band));
+   hg.globalAlpha=I;if(top>0)hg.drawImage(f,0,0,W,top,0,0,W,top);if(bot<H)hg.drawImage(f,0,bot,W,H-bot,0,bot,W,H-bot);hg.globalAlpha=I*.42;if(bot>top)hg.drawImage(f,0,top,W,bot-top,0,top,W,bot-top);hg.globalAlpha=1;}
   hg.font='700 '+(7*F).toFixed(1)+'px '+FONT;hg.fillStyle=ph;hg.globalAlpha=.9;hg.textAlign='left';
   const top=Math.max(40,H*.075);
   hg.fillText('ARENA THEORY // COMBAT SIM  T+'+tt.toFixed(3),14,top);
@@ -260,18 +253,19 @@ function cue(i){
 const rowsEl=q('.bi-rows'),rowEls=BOOT.map((n,i)=>{const a=document.createElement('span'),b=document.createElement('div'),f=document.createElement('i'),c=document.createElement('span');
   a.textContent=n;b.className='bi-seg';b.appendChild(f);rowsEl.append(a,b,c);
   return{a,f,c,d:i?h(i,101)*.5:0,len:i?1.4+h(i,102)*1.3:.9}});
-let t=0,playing=false,started=false,done=false,last=0,curSeq=-1,raf=0;
+let t=0,playing=false,started=false,done=false,last=0,curSeq=-1,raf=0,lateFrames=0;
 function fit(){
   const cw=Math.max(200,root.clientWidth),ch=Math.max(200,root.clientHeight);
   const sc=Math.max(1,Math.floor(Math.min(cw/400,ch/360)));
   W=Math.ceil(cw/sc);H=Math.ceil(ch/sc);root.classList.toggle('tall',ch>cw*1.05);
   F=clamp(Math.min(W/400,H/360),1,1.5);
-  let zf=.5;for(const z of [.75,1,1.25,1.5,2])if(272*z<=H*.34&&208*z<=W*.6)zf=z;
+  let zf=.375;for(const z of [.5,.75,1,1.25,1.5,2])if(GH*C*z<=H*.36&&GW*C*z<=W*.66)zf=z;
   const z1=Math.min(2*W/640,H/180);
   CAM={z0:z1/2,z1,zc:z1*1.15,zf,fy:Math.round(H*.14)};
   scene.width=tmpA.width=W;scene.height=tmpA.height=H;buildTile();
-  const d=Math.min(window.devicePixelRatio||1,2),hw=Math.min(1600,Math.round(W*sc*d));
-  hudC.width=micro.width=hw;hudC.height=micro.height=Math.round(hw*H/W);microKey='';
+  // Die Parameter-Ebene läuft in halber Geräteauflösung (höchstens 1,5-fach, höchstens 900 Pixel breit): Auf dem Handy ist das die teuerste Fläche je Bild.
+  const d=Math.min(window.devicePixelRatio||1,1.5),hw=Math.min(900,Math.round(W*sc*d));
+  hudC.width=hw;hudC.height=Math.round(hw*H/W);
   for(const c of [scene,hudC]){c.style.width=W*sc+'px';c.style.height=H*sc+'px'}
 }
 const pct=v=>String(Math.round(clamp(v)*100)).padStart(3,'0')+'%';
@@ -283,7 +277,7 @@ function render(){
   if(si===0){
     rowEls.forEach(r=>{const k=clamp((t-r.d)/r.len),v=Math.floor((1-Math.pow(1-k,1.35))*32)/32;r.f.style.width=(v*100)+'%';r.c.textContent=pct(v);r.a.className=r.c.className=v>=1?'done':''});
     elComp.textContent=t>3.3?'[ Reality compiled ]':'[ Compiling impossible amounts of reality ]';
-    blank();lab='Booting reality / Overdrive';p=t/3.3;
+    blank();lab='Booting reality / Overdrive';p=t/3.3;if(microFrames.length<MICRO_FRAMES&&t>.35*(microFrames.length+1))buildMicro();
   }else if(si===1||si===2){
     const tb=t-B0;for(const s of S)place(s,tb);
     const cam=camera(tb),map=drawScene(tb,cam);drawHud(tb,cam,map);
@@ -297,7 +291,7 @@ function frame(now){
   raf=0;if(!playing||done)return;
   const dt=Math.min(.05,(now-last)/1000);last=now;t+=dt;
   if(t>=END){finish();return}
-  const si=render();if(si!==curSeq){curSeq=si;cue(si)}
+  const si=render();if(si!==curSeq){curSeq=si;cue(si)}if(si===1&&microFrames.length<MICRO_FRAMES&&(++lateFrames)%12===0)buildMicro();
   raf=requestAnimationFrame(frame);
 }
 function go(from){t=from;playing=true;curSeq=-1;last=performance.now();if(ac&&ac.state==='suspended')ac.resume();if(!raf)raf=requestAnimationFrame(frame)}
@@ -317,5 +311,5 @@ window.addEventListener('keydown',onKey,true);window.addEventListener('resize',o
 document.addEventListener('visibilitychange',()=>{if(done||!started)return;if(document.hidden){playing=false;if(ac)ac.suspend()}else{playing=true;last=performance.now();if(ac)ac.resume();if(!raf)raf=requestAnimationFrame(frame)}});
 api.active=()=>!done;api.finish=finish;
 fit();blank();
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{microKey=''});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(!started)microFrames=[];});
 })();
