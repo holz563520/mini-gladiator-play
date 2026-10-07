@@ -1,0 +1,25 @@
+/* Sklavenhändler: Kandidatenkarte und Gesprächsleiste. Farben wie die übrigen Menüs. */
+.trader-bar b{color:#f2d38c}
+.tr-card{display:grid;gap:10px}
+.tr-quote{margin:0;padding:8px 10px;border-left:3px solid #e0b565;background:#1a2a2c;font-style:italic;line-height:1.45}
+.tr-quote b{font-style:normal;color:#f2d38c}
+.tr-tabs{display:flex;gap:6px;align-items:center}
+.tr-tabs .btn{min-width:44px}
+.tr-gone{min-width:44px;text-align:center;padding:6px 0;opacity:.4;text-decoration:line-through;border:1px dashed currentColor}
+.tr-head{display:flex;gap:12px;align-items:flex-start}
+.tr-head canvas{width:80px;height:100px;image-rendering:pixelated;border:2px solid #596452;flex:none}
+.tr-head h3{margin:0 0 4px;font-size:20px}
+.tr-head p{margin:0 0 4px;line-height:1.4}
+.tr-kw b{font-size:20px;color:#f2d38c}
+.tr-classes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tr-class{display:grid;gap:2px;padding:7px 8px;border:1px solid #596452;background:#1a2a2c;font-size:13px}
+.tr-class.best{border-color:#e0b565}
+.tr-class b{color:#f2d38c;font-size:16px}
+.tr-class small{opacity:.8}
+.tr-traits{display:flex;flex-wrap:wrap;gap:5px;margin:0}
+.tr-traits span{padding:3px 7px;border:1px solid #596452;font-size:12.5px}
+.tr-traits .tr-plus{border-color:#6f9a63;color:#b7dba9}
+.tr-traits .tr-minus{border-color:#a2604f;color:#e5b0a2}
+.tr-buy{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #596452}
+.tr-buy .btn{font-size:16px;padding:10px 16px}
+@media(max-width:480px){.tr-classes{grid-template-columns:1fr}.tr-class{grid-template-columns:1fr auto auto;align-items:center;gap:8px}}
