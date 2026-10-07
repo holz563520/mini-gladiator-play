@@ -20,15 +20,40 @@ function page(){const master=F.master,a=F.apprentice,locked=W.saving||!!a?.phase
 M.workshopPage=page;
 const oldPage=M.schoolPage;M.schoolPage=p=>p==='forge'?page():oldPage(p);
 const oldClick=M.schoolClick;M.schoolClick=action=>{if(['slotcraft','slotcraftconfirm','craftdialog','craft','goforge'].includes(action.split(':')[0])||action==='army:craft'){M.ui.close();M.ui.click('nav:forge');return true;}if(!action.startsWith('smith:'))return oldClick(action);if(S.battle)return true;const [,a,b]=action.split(':');let message='';if(a==='hire')message=W.hireMaster();if(a==='apprentice')message=W.hireApprentice();if(a==='send')message=W.sendGladiator(b||$('smithGladiator')?.value||'');if(a==='recall')message=W.recallGladiator(b);if(a==='buy'||a==='reject'){message=a==='buy'?W.buy(b):W.reject(b);M.ui.close();}if(a==='shop'){shopTab=b==='armor'?'armor':'weapon';shopOpen='';}if(a==='cat')shopOpen=shopOpen===b?'':b;if(a==='info'){offerInfo(b);return true;}if(a==='refine')message=W.refine(b);if(a==='offers')offerPage+=+b;if(a==='items')itemPage+=+b;if(a==='recipes')recipeTab=b;if(a==='ceremony')startScene();if(message)M.ui.notify(message);M.ui.render();return true;};
-function idle(a,t){if(t>=a.nextWork){a.work=Math.floor(Math.random()*6);a.nextWork=t+3+Math.random()*4;}a.phase=t*4;a.wind=0;a.swing=0;a.wipeTimer=0;a.forgePose='';a.state='idle';a.moveSpeed=0;a.a=0;a.y=a.apprentice?270:250;const goal=a.apprentice?790:(a.work===2||a.work===3?770:653),dx=goal-a.x;if(Math.abs(dx)>2){a.x+=Math.sign(dx)*Math.min(Math.abs(dx),1.7);a.a=dx>0?0:Math.PI;a.moveSpeed=40;a.state='move';}a.g.enemyGear.secondary=a.apprentice?null:a.hammer;if(!a.moveSpeed){const k=t%1.2;if(a.work<2&&!a.apprentice){a.technique='overhead';a.swingKind='overhead';a.windMax=.7;a.wind=k<.7?.7-k:0;a.swingMax=.5;a.swing=k>=.7?1.2-k:0;}else if(a.work===2||a.apprentice){a.forgePose='bellows';a.a=Math.PI;}else if(a.work===3){a.forgePose='inspect';}else if(a.work===4){a.wipeTimer=1;}else a.g.enemyGear.secondary=null;}}
+// Reine Darstellung: feste Arbeitsfolgen, zeitbasierte Wege, keine Karriere-Zufallszahlen.
+const stations={heat:{x:762,y:241,a:0},hammer:{x:651,y:246,a:0},quench:{x:752,y:291,a:0},grind:{x:691,y:291,a:0},rack:{x:675,y:251,a:Math.PI},bellows:{x:850,y:261,a:Math.PI},rest:{x:738,y:257,a:0},bench:{x:819,y:293,a:0}};
+const masterJobs=[['heat',4],['hammer',7],['quench',3],['grind',5],['rack',2],['rest',3]],helperJobs=[['bellows',8],['rest',3],['bench',4],['bellows',7],['rest',2]];
+function idle(a,t){
+ const dt=Math.max(0,Math.min(.1,t-(a.workTime??t)));a.workTime=t;
+ a.phase=t*5;a.wind=0;a.swing=0;a.wipeTimer=0;a.forgePose='';a.forgeTask='';a.forgeHold='';a.state='idle';a.moveSpeed=0;a.g.enemyGear.secondary=null;
+ const jobs=a.apprentice?helperJobs:masterJobs;a.jobIndex??=0;a.jobElapsed??=0;
+ let [job,duration]=jobs[a.jobIndex],target=stations[job];
+ // Each station is approached through the clear aisle; no diagonal walk through equipment.
+ if(a.jobTarget!==job){a.jobTarget=job;a.workRoute=[{x:a.x,y:263},{x:target.x,y:263},{x:target.x,y:target.y}];}
+ const point=a.workRoute[0];
+ if(point){const dx=point.x-a.x,dy=point.y-a.y,d=Math.hypot(dx,dy),step=Math.min(d,dt*34);if(d<.4){a.x=point.x;a.y=point.y;a.workRoute.shift();}else{a.x+=dx/d*step;a.y+=dy/d*step;a.a=Math.abs(dx)>.2?(dx>0?0:Math.PI):target.a;a.moveSpeed=34;a.state='move';}return;}
+ a.a=target.a;a.forgeTask=job;a.jobElapsed+=dt;a.workBeat=a.jobElapsed;
+ if(job==='rest'&&a.jobElapsed<1.3)a.wipeTimer=1;
+ if(a.jobElapsed>=duration){a.jobIndex=(a.jobIndex+1)%jobs.length;a.jobElapsed=0;a.jobTarget=null;}
+}
+function stationMotion(ctx,list){
+ const r=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h);},operator=list.find(a=>a.forgeTask==='bellows'),pump=operator?(1+Math.sin(operator.workBeat*4))/2:.3;
+ // The same phase drives hands, lever and leather folds.
+ const top=228-pump*5;r(826,top,26,3,'#a58052');r(828,top+3,23,239-top-3,'#704b36');for(let y=top+4;y<239;y+=3)r(829,y,21,1,'#3f3429');r(825,239,28,2,'#ad895a');r(843,top-1,12,2,'#b5976e');
+ for(let n=0;n<4;n++){const f=(clock*2+n*.31)%1;r(786+n*7,211-f*(5+pump*5),4,5+f*3,n%2?'#f5c56b':'#d77b37');}
+ const grinder=list.find(a=>a.forgeTask==='grind');if(grinder){for(let n=0;n<4;n++){const angle=grinder.workBeat*6+n*Math.PI/2;r(720+Math.cos(angle)*7,269+Math.sin(angle)*7,2,2,'#ccd0b8');}r(728,269+Math.sin(grinder.workBeat*6)*5,6,2,'#80603e');}
+ for(const a of list){if(a.forgeTask==='hammer'){const hit=a.workBeat%1.2;if(hit>.66&&hit<.94){const u=(hit-.66)/.28;for(let n=0;n<5;n++)r(677+(n-2)*u*11,219-Math.sin(u*Math.PI)*(3+n),1,1,n%2?'#ffd899':'#e99a46');}}
+ if(a.forgeTask==='grind'){const u=(a.workBeat*4)%1;for(let n=0;n<3;n++)r(712-u*(5+n*3),260+u*(3+n*2),1,1,'#edbd73');}
+ if(a.forgeTask==='quench'){for(let n=0;n<4;n++){const u=(a.workBeat*.65+n/4)%1;ctx.globalAlpha=(1-u)*.5;r(778+n*4+Math.sin(u*5)*2,264-u*19,2+u*3,3+u*3,'#d3d3bd');}ctx.globalAlpha=1;}}
+}
 function workers(){return F.master?[actor(F.master),...(F.apprentice?[actor(F.apprentice,true)]:[])]:[];}
-function drawWorkers(ctx){const list=workers();if(scene)poseScene(list,scene.elapsed);else for(const a of list)idle(a,clock);M.renderForgeActors(ctx,list);if(scene)M.renderForgeEffects(ctx,scene.limbs,scene.fx);}
+function drawWorkers(ctx){const list=workers();if(scene)poseScene(list,scene.elapsed);else for(const a of list)idle(a,clock);stationMotion(ctx,list);M.renderForgeActors(ctx,list.sort((a,b)=>a.y-b.y));if(scene)M.renderForgeEffects(ctx,scene.limbs,scene.fx);}
 // Keep the shared renderer unchanged for ordinary Ludus figures; only add forge residents.
 const renderActors=M.renderLudusActors;M.renderForgeActors=renderActors;M.renderLudusActors=(ctx,list)=>{renderActors(ctx,list);if(ctx.canvas?.id==='ludusCanvas')drawWorkers(ctx);};
 function paint(canvas){if(!canvas)return;backdrop??=M.ludus.background();const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.save();ctx.scale(canvas.width/240,canvas.height/153);ctx.translate(-625,-145);ctx.drawImage(backdrop,0,0);drawWorkers(ctx);ctx.fillStyle=clock%1>.5?'#c88945':'#e2ab5c';ctx.fillRect(790,205,7,10);ctx.fillRect(805,210,5,7);ctx.restore();}
 const paintLudus=M.paintLudus;M.paintLudus=()=>{paintLudus?.();if(M.ui.getPage()==='forge'){paint($('smithScene'));const c=$('smithApprentice');if(c&&F.apprentice){const ctx=c.getContext('2d');ctx.clearRect(0,0,120,120);const a=actor(F.apprentice,true);ctx.save();ctx.translate(60,108);ctx.scale(1.8,1.8);renderActors(ctx,[{...a,x:0,y:0,a:0}]);ctx.restore();}}};
 async function startScene(){if(scene||sceneStarting||!F.apprentice?.phase||S.battle)return;sceneStarting=true;const ready=await W.prepareScene();sceneStarting=false;if(!ready){if(W.error)M.ui.notify(W.error);return;}const id=F.apprentice.id;scene={id,elapsed:0,limbs:[],fx:[],struck:false,finishing:false};const overlay=document.createElement('div');overlay.id='smithCeremony';overlay.className='smith-ceremony';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Abschluss der Lehrlingszeit');overlay.innerHTML='<div><h2>Die Abschlussprüfung</h2><canvas id="smithCeremonyCanvas" width="660" height="420" aria-label="Schmied und Lehrling"></canvas><p id="smithSpeech" aria-live="polite"></p><p id="smithSceneStatus"></p><button class="btn" data-action="smith:retry" hidden>Speichern erneut versuchen</button></div>';document.body.appendChild(overlay);}
-function poseScene(list,t){const [a,b]=list;if(!a||!b)return;for(const p of list){p.state='idle';p.moveSpeed=0;p.wind=0;p.swing=0;p.wipeTimer=0;p.forgePose='';p.phase=t*4;}a.x=653;a.y=250;a.a=0;b.x=778;b.y=270;b.a=Math.PI;b.g.enemyGear.secondary=null;a.g.enemyGear.secondary=t<4?a.hammer:t<4.5?null:t<11?a.sword:a.hammer;
+function poseScene(list,t){const [a,b]=list;if(!a||!b)return;for(const p of list){p.state='idle';p.moveSpeed=0;p.wind=0;p.swing=0;p.wipeTimer=0;p.forgePose='';p.forgeTask='';p.phase=t*4;}a.x=653;a.y=250;a.a=0;b.x=778;b.y=270;b.a=Math.PI;b.g.enemyGear.secondary=null;a.g.enemyGear.secondary=t<4?a.hammer:t<4.5?null:t<11?a.sword:a.hammer;
  if(t<2)a.forgePose='inspect';else if(t<4)a.forgePose='shake';
  if(t>=3&&t<8){b.stagger=.2;b.facePain=.6;}else b.stagger=0;
  if(t>=6&&t<7){a.x=653+(t-6)*78;a.state='move';a.moveSpeed=40;}
@@ -45,3 +70,4 @@ const tick=M.ludusTick;M.ludusTick=dt=>{if(document.hidden)return;clock+=Math.mi
 M.forgeVisuals={actor,paint,workers,startScene,get scene(){return scene;}};
 M.ui.render();
 })();
+
