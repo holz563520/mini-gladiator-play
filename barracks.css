@@ -20,8 +20,8 @@
 .bk-stars{color:var(--bk-tone,var(--gold));letter-spacing:1px}
 .bk-quote{margin:0;font-size:12px;font-style:italic;color:var(--cream)}
 .bk-classes{display:grid;gap:3px}
-.bk-class{display:grid;grid-template-columns:9.6em 4.6em minmax(0,1fr) 3.4em;gap:6px;align-items:center;text-align:left;font:inherit;font-size:12px;padding:6px 7px;min-height:34px;background:#19272b;border:1px solid #33443f;color:#c8d4ce;width:100%}
-.bk-class span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-class{display:grid;grid-template-columns:9.6em 5.2em minmax(0,1fr) 3.4em;gap:6px;align-items:center;text-align:left;font:inherit;font-size:12px;padding:6px 7px;min-height:34px;background:#19272b;border:1px solid #33443f;color:#c8d4ce;width:100%}
+.bk-class span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bk-class .bk-val{overflow:visible}
 .bk-class b{color:var(--cream)}
 .bk-class.best .bk-val b{color:var(--gold)}
 .bk-class.on{background:#2c3a33;border-color:var(--gold);color:var(--cream)}
@@ -44,6 +44,7 @@
 .bk-traits{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:14px}
 .bk-traits ul{list-style:none;margin:6px 0;padding:0;display:grid;gap:5px;font-size:14px}
 .bk-traits b{display:inline-block;min-width:2.2em}
+.bk-traits small{color:var(--muted)}.bk-traits li.bk-group{margin-top:8px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:2px}.bk-class .bk-weapon{white-space:normal;line-height:1.25}
 .bk-plus b{color:var(--green)}.bk-minus b{color:var(--red)}
 .bk-facts{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 14px;margin:10px 0;font-size:13px}
 .bk-facts dt{color:var(--muted)}
@@ -54,4 +55,4 @@
 .bk-wclass p{margin:0 0 6px;font-size:13px}
 .bk-wlist{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;font-size:12px;color:var(--muted)}
 .bk-wlist b{color:var(--cream)}
-@media(max-width:420px){.bk-card{grid-template-columns:46px minmax(0,1fr);gap:8px;padding:8px}.bk-card canvas{width:46px;height:58px}.bk-class{grid-template-columns:9.4em 4em minmax(0,1fr) 3.1em;gap:4px;font-size:11px;padding:6px 5px}.bk-role{font-size:10.5px}}
+@media(max-width:420px){.bk-card{grid-template-columns:46px minmax(0,1fr);gap:8px;padding:8px}.bk-card canvas{width:46px;height:58px}.bk-class{grid-template-columns:8.6em 5.2em minmax(0,1fr) 3.1em;gap:4px;font-size:11px;padding:6px 5px}.bk-role{font-size:10.5px}}
