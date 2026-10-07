@@ -35,3 +35,5 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+
+# redeploy trigger 2026-10-07T08:35+02:00
