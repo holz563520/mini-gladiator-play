@@ -262,7 +262,7 @@ function renderStory(canvas,sc){const old=ctx;ctx=canvas.getContext('2d');ctx.im
  if(sc.gate>0)gate(sc.gate);
  for(const s of sc.stains){rect(s.x,s.y,s.r*2,s.r,'#803e335e');rect(s.x+2,s.y-1,s.r,2,'#91423499');}
  for(const a of sc.actors){const p=a.pool;if(p&&p.r>.1){ellipse(p.x+5,p.y,p.r,p.r*.38,'#69372e');ellipse(p.x+2,p.y-1,p.r*.7,p.r*.25,'#81392f');}}
- for(const p of sc.ground){ellipse(p.x+5,p.y+2,9,2,'#413c3044');ctx.save();ctx.translate(0,-(p.z||0));weaponDraw(p.sprite,p.x,p.y,p.angle,.67,undefined,p.blood||0,p.item);ctx.restore();}
+ for(const p of sc.ground){const k=1.14*(p.item?.def==='greatsword'?1.45:p.item?.def==='spear'?1.1:1);ellipse(p.x+5,p.y+2,14,3,'#413c3044');ctx.save();ctx.translate(0,-(p.z||0));weaponDraw(p.sprite,p.x,p.y,p.angle,k,undefined,p.blood||0,p.item);ctx.restore();}
  for(const limb of sc.limbs)drawDetached(limb);
  for(const a of [...sc.actors].sort((a,b)=>a.y-b.y)){ctx.save();if(a.gateClip){ctx.beginPath();ctx.rect(450,42,140,678);ctx.clip();}drawGladiator(a);ctx.restore();}
  for(const sw of sc.swings){ctx.globalAlpha=Math.max(0,sw.life/.16);ctx.strokeStyle=sw.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(sw.x,sw.y,sw.r,sw.a-.9,sw.a+.8);ctx.stroke();}ctx.globalAlpha=1;
