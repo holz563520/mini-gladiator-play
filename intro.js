@@ -32,6 +32,7 @@ function blood(x,y,z,power){const sc=run.sc;for(let n=0;n<8+power*20;n++)sc.fx.p
 function dust(x,y){for(let n=0;n<13;n++)run.sc.fx.push({x,y,z:rand(1,8),vx:rand(-70,70),vy:rand(-30,30),vz:rand(20,70),life:rand(.25,.7),color:'#bda579',size:2});}
 function sparks(x,y){for(let n=0;n<9;n++)run.sc.fx.push({x,y:y+2,z:rand(34,46),vx:rand(-80,80),vy:rand(-25,25),vz:rand(10,70),life:rand(.12,.32),color:n%2?'#fff0bc':'#e8c67c',size:2});}
 function wound(v,part,power,by){v.hit=.23;v.facePain=1;const p=M.contactAnchor(v,part),limb=v.g.body[part];blood(p.x,v.y,v.y-p.y,power);v.bloodMarks[part]=Math.min(1,(v.bloodMarks[part]||0)+power);limb.hp=Math.max(30,limb.hp-power*55);if(!limb.wounds?.length)limb.wounds=[{day:1,type:'Intro',attacker:'',weapon:'',hits:1,damage:0}];const blade=by?.g.enemyGear.weapon;if(blade)blade.blood=Math.min(1,(blade.blood||0)+power*.45);M.sound?.('hit');M.voice?.('pain',v.g.appearance.voice||1,power>.55);}
+function sever(v,branch,by,vx,vy){const sc=run.sc,at=branch==='rua'?'rs':branch,p=M.contactAnchor(v,at);for(const k of M.branches[branch]){const l=v.g.body[k];l.missing=true;l.hp=0;}v.g.stump='blood';sc.limbs.push({x:p.x,y:v.y+3,z:v.y-p.y,vz:65,vx,vy,part:branch,team:v.team,t:0,angle:rand(0,TAU),armored:false,skin:v.g.appearance.skin,hair:v.g.appearance.hair});blood(p.x,v.y,v.y-p.y,1.1);v.bloodMarks[at]=1;v.hit=.23;v.facePain=3;const blade=by.g.enemyGear.weapon;if(blade)blade.blood=Math.min(1,(blade.blood||0)+.5);sc.shake=5;M.sound?.('sever');M.voice?.('pain',v.g.appearance.voice||1,true);}
 function parry(v,by){v.block=true;v.blockTime=.34;v.blockFlash=.2;sparks((v.x+by.x)/2,(v.y+by.y)/2);M.sound?.('block');}
 async function strike(a,v,o={}){face(a,v);a.attackA=a.a;a.technique=o.tech||'slash';a.attackVariant=o.variant||0;a.windMax=o.wind??.28;a.wind=a.windMax;a.state='attack';await wait(a.windMax);a.wind=0;a.swingMax=o.swing??.3;a.swing=a.swingMax;a.swingKind=a.technique;if(o.part)a.contactPoint=M.contactAnchor(v,o.part);run.sc.swings.push({x:a.x,y:a.y-10,a:a.a,r:o.reach||50,life:.16,color:a.team?'#d58669':'#e9d4a4'});M.sound?.(o.heavy?'heavy':'slash');await wait(a.swingMax*.5);o.land?.();await wait(a.swingMax*.5);a.swing=0;a.contactPoint=null;a.state='idle';}
 async function knockOut(v){v.watch=null;v.move=null;v.wind=v.swing=v.stagger=0;v.block=false;v.fallSide=Math.cos(v.a)>=0?-1:1;v.fallDuration=v.fallTimer=3;v.riseDuration=1.25;v.state='fallen';dust(v.x,v.y);M.sound?.('fall');cheer(1.8);await wait(.42);v.down=true;v.fallTimer=0;v.state='down';}
@@ -47,6 +48,7 @@ function stepActor(a,dt,sc){const ox=a.x,oy=a.y;for(const k of ['wind','swing','
  else if(a.watch&&!a.down&&!a.g.dead&&!(a.wind>0)&&!(a.swing>0)&&!(a.fallTimer>0))face(a,a.watch);
  if(a.gateClip&&a.y>172)a.gateClip=false;
  M.updateLocomotion(a,ox,oy,a.phase||0,dt);
+ if(a.g.bisected&&a.splitProgress<1)a.splitProgress=Math.min(1,a.splitProgress+dt*2.4);
  if(a.g.dead&&a.pool)a.pool.r=Math.min(32,a.pool.r+dt*3.2);
  if(sc&&a.drip>0){a.drip-=dt;a.dripWait=(a.dripWait||0)-dt;if(a.dripWait<=0){a.dripWait=.16;const p=M.contactAnchor(a,'rs');sc.fx.push({x:p.x+rand(-2,2),y:a.y+rand(-2,3),z:Math.max(4,a.y-p.y-8),vx:rand(-8,8),vy:rand(-4,4),vz:0,life:1.6,color:'#96352e',size:2,ground:true});}}}
 function stepScene(sc,dt){for(const a of sc.actors)stepActor(a,dt,sc);
@@ -64,10 +66,11 @@ async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5]=sc.foes,F
  // Zwei Gegner fallen dem unversehrten Veteranen.
  face(H,E1);let s=walk(E1,466,398,175,{state:'charge'});walk(E2,604,388,120);await s;
  s=strike(E1,H,{tech:'overhead',wind:.34,heavy:true});await wait(.3);dodge(H,30,-8);await s;
- await strike(H,E1,{tech:'thrust',wind:.1,swing:.2,part:'chest',land:()=>{wound(E1,'chest',.6,H);E1.stagger=.5;}});
- await strike(H,E1,{variant:1,wind:.12,swing:.24,part:'head',land:()=>wound(E1,'head',.55,H)});await knockOut(E1);
+ // Dem ersten nimmt er den Waffenarm, dann das Bein.
+ await strike(H,E1,{variant:1,wind:.1,swing:.22,part:'rs',land:()=>{const axe=E1.g.enemyGear.weapon;sever(E1,'rua',H,-58,16);E1.g.enemyGear.weapon=null;sc.ground.push({sprite:0,item:axe,x:E1.x-10,y:E1.y-4,z:0,angle:.4,blood:0,fly:{x0:E1.x-10,y0:E1.y-4,x1:E1.x-52,y1:E1.y+30,t:0,time:.7,height:26}});E1.stagger=.7;}});
+ await strike(H,E1,{variant:2,wind:.14,swing:.24,part:'rt',land:()=>sever(E1,'rt',H,-40,24)});await knockOut(E1);
  face(H,E2);s=strike(E2,H,{tech:'thrust',wind:.3});await wait(.36);parry(H,E2);await s;
- await strike(H,E2,{tech:'spin',wind:.18,swing:.34,part:'chest',land:()=>wound(E2,'chest',.7,H)});await knockOut(E2);cheer(2.4);
+ await strike(H,E2,{tech:'spin',wind:.18,swing:.34,part:'belly',land:()=>wound(E2,'belly',.7,H)});await knockOut(E2);cheer(2.4);
  // Der dritte kommt von hinten.
  camera(520,420,440);s=walk(H,520,446,95);walk(E4,588,450,105);walk(E3,405,330,120);await s;face(H,E4);await until(()=>!E4.move);
  s=strike(H,E4,{wind:.16,swing:.26});await wait(.3);parry(E4,H);await s;
@@ -80,16 +83,20 @@ async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5]=sc.foes,F
   blood(shoulder.x,H.y,H.y-shoulder.y,1.4);H.bloodMarks.chest=.6;H.bloodMarks.rs=1;H.wind=H.swing=0;H.hit=.23;H.facePain=3;sc.shake=9;run.cheer=run.cheerBase=0;M.sound?.('sever');M.voice?.('pain',H.g.appearance.voice||1,true);run.speed=.22;camera(H.x+10,H.y-10,300,5);}});
  await wait(.3);run.speed=1;face(H,E3);H.stagger=1.5;E3.watch=E4.watch=E5.watch=H;walk(E3,436,420,40,{keep:true});walk(E5,392,452,90);
  await walk(H,544,522,52,{keep:true});kneel(H,2.5);camera(544,505,300);await wait(1.7);
- sc.ground.length=0;H.g.enemyGear.weapon=blade;M.sound?.('rise');await until(()=>H.kneeTimer<=0);
+ sc.ground=sc.ground.filter(p=>p.item!==blade);H.g.enemyGear.weapon=blade;M.sound?.('rise');await until(()=>H.kneeTimer<=0);
  H.shoutTimer=.6;M.voice?.('battlecry',H.g.appearance.voice||1);run.cheerBase=1;cheer(2.4);camera(540,490,440);await wait(.7);
  // Einarmig: ausweichen, Gegenstoß.
  face(H,E3);await walk(E3,494,518,150,{state:'charge'});s=strike(E3,H,{tech:'overhead',wind:.46,heavy:true});await wait(.42);dodge(H,24,-12);await s;
- await strike(H,E3,{tech:'thrust',wind:.07,swing:.18,part:'neck',land:()=>wound(E3,'neck',.75,H)});await knockOut(E3);
+ // Rache: der Mann mit dem Zweihänder wird durchtrennt (vorhandene Darstellung der Durchtrennung).
+ await strike(H,E3,{variant:1,wind:.32,swing:.3,heavy:true,part:'belly',land:()=>{const p=M.contactAnchor(E3,'belly');E3.g.bisected=true;E3.splitProgress=0;E3.g.body.belly.hp=0;E3.g.dead=true;E3.watch=null;E3.move=null;E3.wind=E3.swing=E3.stagger=0;E3.block=false;E3.bloodMarks.belly=1;E3.facePain=3;
+  for(let n=0;n<30;n++)sc.fx.push({x:p.x+rand(-4,4),y:E3.y,z:E3.y-p.y,vx:rand(-60,60),vy:rand(-20,20),vz:rand(40,110),life:2.2,color:n%3?'#a14337':'#87352e',size:n%5?2:3,ground:true});
+  blade.blood=1;E3.fallSide=-1;E3.fallDuration=E3.fallTimer=3;E3.riseDuration=1.25;E3.state='fallen';E3.pool={x:E3.x,y:E3.y,r:0};sc.shake=8;M.sound?.('sever');M.voice?.('pain',E3.g.appearance.voice||1,true);run.speed=.22;camera(E3.x+6,E3.y-18,300,5);}});
+ await wait(.3);E3.down=true;E3.fallTimer=0;E3.state='dead';dust(E3.x,E3.y);M.sound?.('die');await wait(.2);run.speed=1;cheer(2.6);camera(540,490,440);await wait(.9);
  // Schlagabtausch, Treffer eingesteckt, Gegenangriff.
  await walk(E4,632,512,120);face(H,E4);s=strike(H,E4,{wind:.14,swing:.26});await wait(.27);parry(E4,H);await s;
  await strike(E4,H,{wind:.24,swing:.28,part:'chest',land:()=>{wound(H,'chest',.5,E4);H.stagger=.5;slide(H,-14,2,.2);}});await wait(.3);
  s=strike(E4,H,{tech:'overhead',wind:.36,heavy:true});await wait(.48);parry(H,E4);await s;
- await strike(H,E4,{tech:'overhead',wind:.2,swing:.3,part:'head',land:()=>wound(E4,'head',.8,H)});await knockOut(E4);
+ await strike(H,E4,{tech:'thrust',wind:.2,swing:.24,part:'belly',land:()=>wound(E4,'belly',.8,H)});await knockOut(E4);
  // Erschöpft: knapp ausgewichen, letzter Treffer.
  H.g.fatigue=88;H.energy=12;H.g.blood=42;face(H,E5);H.stagger=1.6;await walk(H,548,452,42,{keep:true});await wait(.5);
  face(H,E5);await walk(E5,H.x-56,H.y+4,200,{state:'charge'});s=strike(E5,H,{tech:'thrust',wind:.24,heavy:true});await wait(.3);dodge(H,8,-22);await s;
