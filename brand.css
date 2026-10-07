@@ -15,11 +15,17 @@ body{font-family:'Courier Prime',ui-monospace,'Cascadia Mono','Courier New',mono
 #brandIntro .bi-rows{display:grid;grid-template-columns:auto 1fr auto;gap:calc(var(--u)*.62) calc(var(--u)*2.4);width:100%;max-width:calc(var(--u)*62);align-items:center;font-size:calc(var(--u)*1.2);letter-spacing:.12em;color:var(--ph-dim)}
 #brandIntro .bi-rows span.done{color:var(--ph)}
 #brandIntro .bi-seg{position:relative;height:calc(var(--u)*1.15);background:rgba(61,127,166,.24)}
-#brandIntro .bi-seg i{position:absolute;top:0;bottom:0;left:0;background:repeating-linear-gradient(90deg,var(--ph) 0 calc(var(--u)*.55),transparent calc(var(--u)*.55) calc(var(--u)*.8));box-shadow:0 0 calc(var(--u)*.8) var(--glow)}
+#brandIntro .bi-seg{overflow:hidden}
+#brandIntro .bi-seg i{position:absolute;top:0;bottom:0;left:0;width:100%;clip-path:inset(0 100% 0 0);background:repeating-linear-gradient(90deg,var(--ph) 0 calc(var(--u)*.55),transparent calc(var(--u)*.55) calc(var(--u)*.8))}
 #brandIntro .bi-boot p{margin:0;font-size:calc(var(--u)*1.15);letter-spacing:.18em;color:var(--ph-dim)}
 #brandIntro .bi-arch{text-align:center;top:62%}
 #brandIntro .bi-arch b{display:block;font-size:calc(var(--u)*5);letter-spacing:.2em;margin-right:-.2em;line-height:1.1;color:var(--hot);text-shadow:0 0 calc(var(--u)*1.4) var(--glow)}
 #brandIntro .bi-arch em{display:block;font-style:normal;font-weight:700;font-size:calc(var(--u)*2);letter-spacing:.42em;margin-right:-.42em;margin-top:calc(var(--u)*1.1);color:var(--ph)}
+#brandIntro .bi-dir{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*2.2);padding:0 calc(var(--u)*4) calc(var(--u)*8);text-align:center}
+#brandIntro .bi-dir b{font-size:calc(var(--u)*8);letter-spacing:.22em;margin-right:-.22em;line-height:1;color:var(--hot);text-shadow:0 0 calc(var(--u)*1.6) var(--glow)}
+#brandIntro .bi-dir strong{font-size:calc(var(--u)*2.3);letter-spacing:.3em;margin-right:-.3em;color:var(--hot)}
+#brandIntro .bi-dir p{margin:calc(var(--u)*1.2) 0 0;font-size:calc(var(--u)*1.4);letter-spacing:.28em;line-height:2.1;color:var(--ph)}
+#brandIntro .bi-dir small{margin-top:calc(var(--u)*1.2);font-size:calc(var(--u)*1.25);letter-spacing:.36em;line-height:2.1;text-transform:none;color:var(--ph-dim)}
 #brandIntro .bi-pres,#brandIntro .bi-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*2.6);padding-bottom:calc(var(--u)*8);text-align:center}
 #brandIntro .bi-pres small{font-size:calc(var(--u)*1.6);letter-spacing:.9em;margin-right:-.9em;color:var(--ph-dim)}
 #brandIntro .bi-pres b,#brandIntro .bi-gate b{font-size:calc(var(--u)*5.6);letter-spacing:.12em;margin-right:-.12em;line-height:1.12;color:var(--hot);text-shadow:0 0 calc(var(--u)*1.6) var(--glow)}
