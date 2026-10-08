@@ -29,12 +29,13 @@ function ask(){const c=crew();if(!c||tk||sc)return;P().asked=S.day;M.persist();
  tk.view=document.createElement('div');tk.view.id='plotTalk';tk.view.className='smith-ceremony smith-intro plot-talk-scene no-smith-song';tk.view.setAttribute?.('role','dialog');tk.view.setAttribute?.('aria-modal','true');tk.view.setAttribute?.('aria-label','Verschwörung auf dem Trainingshof');
  tk.view.innerHTML='<div><canvas id="plotTalkCanvas" width="660" height="420" data-action="plot:next" aria-label="Tippen für den nächsten Satz"></canvas><p id="plotTalkText" aria-live="polite"></p><div id="plotTalkChoices" class="plot-choices" hidden><button class="btn primary" data-action="plot:yes">„Klar, ich mach mit.“<small>Vielleicht gibt es danach einen besseren Schmied – mit noch besseren Waffen.</small></button><button class="btn" data-action="plot:no">„Ich glaube, das ist keine gute Idee.“</button></div><p class="plot-hint" id="plotTalkHint">Tippen ▸ nächster Satz</p></div>';
  document.body.appendChild(tk.view);M.ui.close();}
-const dur=text=>Math.min(8,2.4+text.length*.062);
+// Lesezeit je Sprechblase: lieber zu lang als zu kurz. Tippen springt weiter.
+const need=text=>Math.max(2.6,1.2+text.length*.072);
 function next(){if(!tk)return;if(tk.phase==='choose')return;tk.t=0;tk.i++;if(tk.i>=tk.lines.length){if(tk.phase==='talk'){tk.phase='choose';tk.i=tk.lines.length-1;const ch=$('plotTalkChoices'),h=$('plotTalkHint');if(ch)ch.hidden=false;if(h)h.hidden=true;}else finishTalk();}}
 function choose(yes){if(!tk||tk.phase!=='choose')return;const p=P();if(!yes){p.state='declined';M.persist();}tk.phase=yes?'yes':'no';tk.lines=yes?YES:NO;tk.i=0;tk.t=0;const ch=$('plotTalkChoices'),h=$('plotTalkHint');if(ch)ch.hidden=true;if(h)h.hidden=false;}
 function finishTalk(){const yes=tk.phase==='yes',shooter=tk.c.a;tk.view?.remove?.();tk=null;M.ui.render();if(yes)start(shooter);}
 function stepTalk(dt){const t=tk;t.t+=dt;const [k,text]=t.lines[Math.min(t.i,t.lines.length-1)];
- if(!tk)return;
+ if(t.phase!=='choose'&&t.t>=need(text)+.6){next();if(!tk)return;}
  for(const key of ['a','b','c']){const f=t.who[key];f.state='idle';f.traderPose=null;f.gest=t.t;f.phase+=dt*3;f.facePain=0;f.retreat=0;}
  const sp=t.who[k];if(sp&&t.phase!=='choose'){sp.traderPose=/[!?]/.test(text)&&text.length<70?'rant':'point';if(text.startsWith('…'))sp.traderPose=null;}
  // Blickrichtung: alle schauen zum Sprecher, der Sprecher zu den anderen
@@ -159,7 +160,13 @@ function pose(t){const s=sc.s,a=sc.a;
  if(t>=HIT)once('silence',()=>sc.view?.classList?.add('scene-silence'));if(t>=9.4)once('sound-back',()=>sc.view?.classList?.remove('scene-silence'));
  if(t>=CUT+1.4)once('sheath',()=>{s.g.enemyGear.secondary=null;M.sound?.('block');});
  if(t>=CUT+2.4)once('snap',()=>{sc.stuck=3;const dir=Math.cos(s.a)>=0?-1:1;sc.fx.push({x:s.x+dir*8,y:s.y,z:58,vx:dir*20,vy:2,vz:10,life:1.4,size:2,color:'#a88c60'},{x:s.x+dir*11,y:s.y,z:58,vx:dir*22,vy:2,vz:12,life:1.4,size:2,color:'#a88c60'});M.sound?.('stick');});}
-function step(dt){const t0=sc.t;let next=t0+dt*rate(t0);const cur=lines().find(([a1,b1,who])=>who!=='cap'&&t0>=a1&&t0<b1);sc.waiting=false;if(cur&&next>=cur[1]&&!sc.ack[cur[1]]){next=cur[1]-1e-4;sc.waiting=true;}sc.t=next;const hint=$('archerPlotHint');if(hint&&hint.hidden===sc.waiting)hint.hidden=!sc.waiting;const t=sc.t,s=sc.s,a=sc.a;pose(t);
+// Schrittbild wie im Kampf: Beinphase folgt der zurückgelegten Strecke, Schrittweite dem Tempo (Ludus-Maßstab 0,6).
+function gait(list,ds){sc.odo??={};for(const p of list){const o=sc.odo[p.id]??={x:p.x,y:p.y,d:0};const d=Math.hypot(p.x-o.x,p.y-o.y);o.x=p.x;o.y=p.y;if(p.state==='move'&&d>.05&&d<40){o.d+=d;p.phase=o.d*.267;p.moveSpeed=Math.max(8,d/Math.max(ds,1e-3)/.6);}}}
+function step(dt){const t0=sc.t,L=lines().find(([a1,b1,who])=>who!=='cap'&&t0>=a1&&t0<b1);
+ if(L&&sc.cur?.key!==L[0]+L[3])sc.cur={key:L[0]+L[3],b:L[1],who:L[2],text:L[3],shown:0};if(sc.cur)sc.cur.shown+=dt;
+ // Ruhige Dialogstellen warten, bis die Blase gelesen ist (oder getippt wurde); Schreie in der Bewegung halten nichts auf, bleiben aber lesbar stehen.
+ let next=t0+dt*rate(t0);sc.waiting=false;if(L&&sc.cur&&!/AAA/.test(L[3])&&next>=L[1]&&sc.cur.shown<need(L[3])&&!sc.cur.ack){next=L[1]-1e-4;sc.waiting=true;}
+ if(sc.cur&&!L&&(sc.cur.shown>=need(sc.cur.text)||sc.cur.ack))sc.cur=null;sc.t=next;const hint=$('archerPlotHint');if(hint&&hint.hidden===sc.waiting)hint.hidden=!sc.waiting;const t=sc.t,s=sc.s,a=sc.a;pose(t);gait([s,a],next-t0);
  for(const l of sc.limbs){if(l.z<=0&&Math.abs(l.vz)<4){l.z=0;continue;}l.x+=l.vx*dt;l.y+=l.vy*dt;l.vz-=200*dt;l.z=Math.max(0,l.z+l.vz*dt);l.angle+=l.spin*dt;if(!l.z&&l.vz<0){l.vz=-l.vz*.35;l.vx*=.5;l.vy*=.5;l.spin*=.5;}}
  for(const f of sc.fx){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vz-=(f.color==='#7a7468'||f.smoke?-20:150)*dt;f.z=Math.max(0,f.z+f.vz*dt);f.life-=dt;}
  // Rauch vom verbrannten Kopf, sparsam
@@ -169,8 +176,8 @@ function step(dt){const t0=sc.t;let next=t0+dt*rate(t0);const cur=lines().find((
  const head={x:s.x,y:s.y-40},mid={x:(s.x+a.x)/2,y:(s.y+a.y)/2-20};let goal;
  if(t<3.4)goal={x:780,y:265,vw:300};else if(t<6)goal={x:mid.x,y:mid.y,vw:230};else if(t<9.2)goal={x:head.x,y:head.y,vw:85};else if(t<15.6)goal={x:mid.x,y:mid.y-10,vw:235};else if(t<22.8)goal={x:mid.x+10,y:mid.y-10,vw:235};else if(t<GRAB)goal={x:mid.x,y:mid.y,vw:190};else if(t<29.6)goal={x:(s.x+a.x)/2,y:s.y-34,vw:110};else if(t<OVEN[1]+.6)goal={x:806,y:222,vw:170};else if(t<RUN.t0)goal={x:802,y:244,vw:200};else if(t<BACK)goal={x:(s.x+a.x)/2,y:(s.y+a.y)/2-14,vw:t<STRIKE1+1?250:t<CATCH?230:180};else goal={x:s.x,y:s.y-20,vw:250};
  const k=Math.min(1,dt*(t>=HIT&&t<7.6?3.5:2.2));sc.cam.x+=(goal.x-sc.cam.x)*k;sc.cam.y+=(goal.y-sc.cam.y)*k;sc.cam.vw+=(goal.vw-sc.cam.vw)*k;
- sc.say=null;for(const [a1,b1,who,text] of lines())if(between(t,a1,b1))sc.say={who,text};
- paint();if(t>=END)end();}
+ sc.say=sc.cur?{who:sc.cur.who,text:sc.cur.text}:null;if(!sc.say)for(const [a1,b1,who,text] of lines())if(who==='cap'&&between(t,a1,b1))sc.say={who,text};
+ paint();if(t>=END&&!sc.cur)end();}
 function headPoint(p){const k=.6*p.g.height/180*1.14;return {x:p.x+(Math.cos(p.a)>=0?1:-1)*2*k,y:p.y-66*k};}
 function paint(){const c=$('archerPlotCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),VW=sc.cam.vw,VH=VW*420/660,k=c.width/VW,cx=Math.max(VW/2,Math.min(900-VW/2,sc.cam.x)),cy=Math.max(VH/2,Math.min(670-VH/2,sc.cam.y)),t=sc.t,s=sc.s,a=sc.a,r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);};
  sc.bg??=M.ludus.background();g.imageSmoothingEnabled=false;g.setTransform?.(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.save();g.scale(k,k);g.translate(-(cx-VW/2),-(cy-VH/2));g.drawImage(sc.bg,0,0);
@@ -205,7 +212,7 @@ const click=M.schoolClick;M.schoolClick=action=>{
  if(action==='plot:no'){if(!P().state)choose(false);return true;}
  if(action==='plot:yes'){if(!P().state)choose(true);return true;}
  if(action==='plot:skip'){end();return true;}
- if(action==='plot:tap'){if(sc){const cur=lines().find(([a1,b1,who])=>who!=='cap'&&sc.t>=a1&&sc.t<b1);if(cur)sc.ack[cur[1]]=true;}return true;}
+ if(action==='plot:tap'){if(sc?.cur)sc.cur.ack=true;return true;}
  return click(action);};
 M.archerPlot={state:P,archer,ready:()=>{const p=P(),a=archer();return !!(a&&p.seen&&S.day>=p.seen+DELAY&&!p.state);},ask,start,end,step:d=>sc&&step(d),stepTalk:d=>tk&&stepTalk(d),next,crew,get talk(){return tk;},get scene(){return sc;},delay:DELAY};
 })();
