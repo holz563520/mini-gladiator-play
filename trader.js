@@ -124,7 +124,7 @@ function showBar(html){if(typeof document==='undefined')return;if(!bar){bar=docu
 function hideBar(){bar?.remove?.();bar=null;}
 function startTutorial(){T.intro='active';stock();M.persist();tut={step:'march',line:0,t:0,index:0};M.ui.close();if(page()!=='home')M.ui.click('nav:home');else M.ui.render();$('ludusCanvas')?.scrollIntoView?.({block:'center'});M.ludus?.focus?.(330,470);}
 function endTutorial(all){T.intro='done';M.persist();tut={step:'bye',t:0,all};}
-function tutorial(dt){if(!tut)return;if(!onHome()){hideBar();return;}if(cardOpen>=0&&$('modal')?.hidden===false)return;const skip='<button class="btn" data-action="trader:skip">Überspringen</button>';
+function tutorial(dt){if(!tut)return;if(!onHome()){hideBar();return;}if(cardOpen>=0&&$('modal')?.hidden===false)return;const skip='';
  if(tut.step==='march'){showBar(`<p class="hint">Kettenrasseln am Tor. Eine Peitsche knallt.</p><div class="buttons">${skip}</div>`);if(!sc||sc.mode==='stand'){tut.step='talk';tut.line=0;tut.t=0;say(L.talk[0],6.5);}}
  else if(tut.step==='talk'){tut.t+=dt;showBar(`<p><b>${esc(who())}</b></p><p>„${esc(L.talk[tut.line].replaceAll('{N}',who()))}“</p><div class="buttons"><button class="btn primary" data-action="trader:next">WEITER →</button>${skip}</div>`);if(tut.t>7)nextLine();}
  else if(tut.step==='buy'){if(tut.pause>0){tut.pause-=dt;return;}const n=LOT-left()+1;showBar(`<p>Jeden Tag fünf neue. <b>${PRICE} Gold</b> pro Kopf.</p><p class="hint">Klicke auf den markierten Kandidaten · ${n}/${LOT}</p><div class="buttons">${skip}</div>`);}
