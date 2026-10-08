@@ -122,7 +122,7 @@ function purchase(i){if(S.gold<PRICE){M.ui.notify('Nicht genug Gold.');say(draw(
 // ---------- Erste Begegnung: kurze gescriptete Szene nach der Schmied-Einführung ----------
 function showBar(html){if(typeof document==='undefined')return;if(!bar){bar=document.createElement('div');bar.id='traderBar';bar.className='smith-intro-bar trader-bar';bar.setAttribute?.('role','status');document.body.appendChild(bar);}if(bar._html!==html){bar.innerHTML=html;bar._html=html;}}
 function hideBar(){bar?.remove?.();bar=null;}
-function startTutorial(){T.intro='active';stock();M.persist();tut={step:'march',line:0,t:0,index:0};M.ui.close();if(page()!=='home')M.ui.click('nav:home');else M.ui.render();const box=$('ludusCanvas')?.closest?.('.ludus-scroll');if(box)box.scrollLeft=0;$('ludusCanvas')?.scrollIntoView?.({block:'center'});}
+function startTutorial(){T.intro='active';stock();M.persist();tut={step:'march',line:0,t:0,index:0};M.ui.close();if(page()!=='home')M.ui.click('nav:home');else M.ui.render();$('ludusCanvas')?.scrollIntoView?.({block:'center'});M.ludus?.focus?.(330,470);}
 function endTutorial(all){T.intro='done';M.persist();tut={step:'bye',t:0,all};}
 function tutorial(dt){if(!tut)return;if(!onHome()){hideBar();return;}if(cardOpen>=0&&$('modal')?.hidden===false)return;const skip='<button class="btn" data-action="trader:skip">Überspringen</button>';
  if(tut.step==='march'){showBar(`<p class="hint">Kettenrasseln am Tor. Eine Peitsche knallt.</p><div class="buttons">${skip}</div>`);if(!sc||sc.mode==='stand'){tut.step='talk';tut.line=0;tut.t=0;say(L.talk[0],6.5);}}
