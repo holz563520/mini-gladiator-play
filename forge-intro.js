@@ -121,7 +121,7 @@ const click=M.schoolClick;M.schoolClick=action=>{if(action.startsWith('smithintr
  return click(action);};
 const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(document.hidden)return;const step=Math.min(dt,.1),playing=!!M.intro?.active?.();if(wasIntro&&!playing&&S.lanista?.veteran&&!F.master&&!F.intro)W.setIntro('pending');wasIntro=playing;if(playing||S.battle){hideBar();return;}
  const now=stage();
- if(now==='pending'){if(F.master){W.setIntro('scene');return;}wait+=step;showBar(`<p>Heute lernen wir unseren Schmied kennen.</p>${wait>=2.4?'<p class="hint">Klicke auf die Schmiede.</p>':''}<div class="buttons"><button class="btn" data-action="smithintro:skip">Überspringen</button></div>`);if(wait>=2.4&&!bar._scrolled){bar._scrolled=true;const box=$('ludusCanvas')?.closest?.('.ludus-scroll');if(box)box.scrollLeft=box.scrollWidth;}}
+ if(now==='pending'){if(F.master){W.setIntro('scene');return;}wait+=step;showBar(`<p>Heute lernen wir unseren Schmied kennen.</p>${wait>=2.4?'<p class="hint">Klicke auf die Schmiede.</p>':''}<div class="buttons"><button class="btn" data-action="smithintro:skip">Überspringen</button></div>`);if(wait>=2.4&&!bar._scrolled){bar._scrolled=true;M.ludus?.focus?.(745,170);}}
  else if(now==='scene'){if(!F.master){W.setIntro('done');return;}if(!scene)startScene();paintClock+=dt;if(paintClock>=1/30){const s=Math.min(paintClock,.1);paintClock=0;stepScene(s);}}
  else if(now==='tutorial'){if(!F.master){W.setIntro('done');hideBar();return;}tutorialBar();}
  else if(bar)hideBar();};
