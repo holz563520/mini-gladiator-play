@@ -4,8 +4,10 @@ const M=window.MG;
 // One audio clock, two buses and a fixed voice budget, independent of simulation RNG/speed.
 let ctx,musicBus,fxBus,master,timer,scene='',noiseBuffer,waves={},active=0,musicVoices=0,lastVoice=-10;
 // Aufgenommene Lieder: gestreamt (kein Dekodieren in den Arbeitsspeicher), erst beim ersten Bedarf geladen. Ludus/Menüs und Kampfszenen (Arenakampf, Intro) haben je ein Lied. Die frühere erzeugte Musik ist entfernt; Geräusche laufen weiter über die Web-Audio-Stimmen unten.
-const songs={home:{file:'ludus-at-sunset',el:null,broken:false,level:0,playing:false},battle:{file:'sanguis-et-gloria',el:null,broken:false,level:0,playing:false}};
-function songWanted(){if(window.ArenaTheoryIntro?.active?.()||!M.s.options.music||document.hidden||M.s.battle?.paused)return '';return M.s.battle||M.intro?.active?.()?'battle':'home';}
+const songs={home:{file:'ludus-at-sunset',el:null,broken:false,level:0,playing:false},battle:{file:'sanguis-et-gloria',el:null,broken:false,level:0,playing:false},smith:{file:'smith-the-motherfucker',el:null,broken:false,level:0,playing:false}};
+function songWanted(){if(window.ArenaTheoryIntro?.active?.()||!M.s.options.music||document.hidden||M.s.battle?.paused)return '';if(M.s.battle||M.intro?.active?.())return 'battle';return smithOnStage()?'smith':'home';}
+// Der Schmied steht im Vordergrund: Schmiede geöffnet, Schmied-Intro oder eine Lehrlings-Szene läuft.
+function smithOnStage(){return M.ui?.getPage?.()==='forge'||!!M.forgeIntro?.scene||!!document.querySelector?.('.smith-ceremony');}
 function songReady(t){if(t.broken||typeof Audio==='undefined')return false;if(t.el)return true;try{const el=new Audio();el.loop=true;el.preload='none';el.volume=0;const pick=el.canPlayType('audio/webm; codecs="opus"')?'webm':el.canPlayType('audio/mp4; codecs="mp4a.40.2"')?'m4a':'';if(!pick){t.broken=true;return false;}el.src='music/'+t.file+'.'+pick;el.addEventListener('error',()=>{t.broken=true;t.playing=false;});t.el=el;return true;}catch{t.broken=true;return false;}}
 function songStop(t){if(t.el&&t.playing){t.playing=false;t.level=0;t.el.pause();}}
 function songTick(){const wanted=songWanted();for(const key in songs){const t=songs[key],want=wanted===key&&songReady(t);if(!t.el||t.broken)continue;t.level+=((want?.42:0)-t.level)*.12;if(want&&!t.playing){t.playing=true;const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}else if(t.playing&&t.level<.02)songStop(t);try{t.el.volume=Math.max(0,Math.min(1,t.level));}catch{}}}
@@ -46,5 +48,5 @@ function sound(type){if(!enabled(false))return;const t=ctx.currentTime,wait=type
  if(type==='gold'){note(1175,.12,'sine',.07,t);note(1568,.19,'sine',.05,t+.07);}
 }
 document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden){for(const key in songs)songStop(songs[key]);musicBus.gain.cancelScheduledValues(ctx.currentTime);fxBus.gain.cancelScheduledValues(ctx.currentTime);musicBus.gain.value=fxBus.gain.value=0;ctx.suspend().catch(()=>{});}else{ctx.resume().catch(()=>{});}});
-M.audioEngine={start,sound,voice,diagnostics:()=>({active,musicVoices,scene,song:songs.home.playing?'home':songs.battle.playing?'battle':'',state:ctx?.state||'not-started'})};
+M.audioEngine={start,sound,voice,diagnostics:()=>({active,musicVoices,scene,song:songs.home.playing?'home':songs.battle.playing?'battle':songs.smith.playing?'smith':'',state:ctx?.state||'not-started'})};
 })();
