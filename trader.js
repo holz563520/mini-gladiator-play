@@ -65,7 +65,7 @@ function build(){const march=T.arrived!==T.day,t=actor(figure(),268,WALK_Y,{trad
  if(march){place();sound('block');}else t.a=Math.PI;}
 function place(){const t=sc.trader,p=along(T_IN,sc.lead);t.x=p.x;t.y=p.y;const moving=!p.end;t.a=moving?(Math.cos(p.a)<-.3?Math.PI:Math.cos(p.a)>.3?0:t.a):Math.PI;t.state=moving?'move':'idle';t.moveSpeed=moving?10:0;t.phase=sc.clock*7;let done=p.end;
  const total=plen(IN);sc.row.forEach((c,j)=>{if(!c)return;const goal=total-(slotX(j)-slotX(0)),d=Math.min(sc.lead-34*(j+1),goal),q=along(IN,d),still=d>=goal;c.x=q.x;c.y=q.y;c.a=still?0:Math.cos(q.a)<-.3?Math.PI:Math.cos(q.a)>.3?0:c.a;c.state=still||d<=0?'idle':'move';c.moveSpeed=still?0:10;c.phase=sc.clock*7+j*1.3;if(!still)done=false;});return done;}
-function say(text,dur){if(!sc||!text)return;sc.say={text:text.replaceAll('{N}',who()),t:dur||Math.min(6.5,2.4+text.length*.055)};sc.quote=sc.say.t+rand(4,8);}
+function say(text,dur){if(!sc||!text)return;sc.say={text:text.replaceAll('{N}',who()),t:dur||Math.min(10,3.6+text.length*.08)};sc.quote=sc.say.t+rand(4,8);}
 function near(c,side=1){return {x:c.x+22*side,y:WALK_Y};}
 function begin(kind,target){const t=sc.trader,c=target!=null?sc.row[target]:null;sc.act={kind,target,t:0,dur:{pace:9,point:1.9,rant:2,coins:2.6,inspect:2.4,pat:1.5,pull:1.6,shout:2.2,whip:.95}[kind],goal:kind==='pace'?{x:rand(70,266),y:WALK_Y}:c?near(c):null,started:!c&&kind!=='pace'};
  if(kind==='shout'){t.a=0;say(draw('pitch',L.pitch));}else if(kind==='rant'){t.a=Math.PI;say(draw('scold',L.scold));}else if(kind==='whip'){t.a=Math.PI;}else if(kind==='coins')t.a=0;}
@@ -86,7 +86,7 @@ function update(dt){if(soundGap>0)soundGap-=dt;if(!sc)return;sc.clock+=dt;const 
  for(const w of sc.walkers){w.d+=70*dt;const p=along(w.path,w.d);w.a.x=p.x;w.a.y=p.y;w.a.a=Math.cos(p.a)<-.3?Math.PI:Math.cos(p.a)>.3?0:w.a.a;w.a.state='move';w.a.moveSpeed=10;w.a.phase=sc.clock*7+w.d*.01;if(p.end)w.done=true;}
  if(sc.walkers.some(w=>w.done)){for(const w of sc.walkers)if(w.done)sc.hidden.delete(w.a.g.id);sc.walkers=sc.walkers.filter(w=>!w.done);M.ludus?.refresh?.();}}
 function release(i,g){if(!sc)return;const c=sc.row[i];sc.row[i]=null;if(!c)return;if(sc.act?.target===i)finish();sc.hidden.add(g.id);sc.walkers.push({a:actor(g,c.x,c.y,{index:50+i}),d:0,path:[[c.x,ROW_Y],...DOOR]});
- if(!left()){say(tut?L.empty[0]:draw('empty',L.empty),4.2);sc.mode='leave';sc.act=null;sc.wait=3.2;sc.lead=0;sc.out=[[sc.trader.x,WALK_Y],[301,WALK_Y],[301,607],[610,607],[610,700]];}else say(draw('sold',L.sold));}
+ if(!left()){say(tut?L.empty[0]:draw('empty',L.empty),6);sc.mode='leave';sc.act=null;sc.wait=5;sc.lead=0;sc.out=[[sc.trader.x,WALK_Y],[301,WALK_Y],[301,607],[610,607],[610,700]];}else say(draw('sold',L.sold));}
 function ensureScene(){const want=here()||(sc&&(sc.mode==='leave'||sc.walkers.length));if(!want){sc=null;return;}if(!sc||(sc.day!==T.day&&here()))build();}
 // ---------- Zeichnen: Figuren über die vorhandene Ludus-Darstellung, dazu Kette, Markierung und Sprechblase ----------
 function chain(ctx,a,b,sag){const n=Math.max(2,Math.round(Math.hypot(b[0]-a[0],b[1]-a[1])/4));for(let k=0;k<=n;k++){const u=k/n,x=a[0]+(b[0]-a[0])*u,y=a[1]+(b[1]-a[1])*u+Math.sin(u*Math.PI)*sag;ctx.fillStyle=k%2?'#2c3031':'#7d8687';ctx.fillRect(Math.round(x)-1,Math.round(y),2,2);}}
@@ -118,21 +118,18 @@ function open(i){if(!here()){M.ui.notify(started()?short()+' ist für heute fort
  M.ui.modal(`HEUTIGE WARE – ${left()}/${LOT} NOCH VERFÜGBAR`,cardHtml(i));const c=$('traderPortrait');if(c)M.renderPortrait(c,T.lot[i],{unarmored:true});hideBar();return true;}
 function purchase(i){if(S.gold<PRICE){M.ui.notify('Nicht genug Gold.');say(draw('broke',L.broke));return;}const g=buy(i);if(!g){M.ui.notify('Dieser Kandidat ist nicht mehr zu haben.');return;}
  boughtSinceOpen=true;cardOpen=-1;M.sound?.('gold');M.ui.close();if(sc)sc.hidden.add(g.id);M.ui.render();release(i,g);M.ui.notify(g.name+' gehört jetzt zu deinem Ludus · −'+PRICE+' Gold');
- if(tut){if(left()&&S.gold>=PRICE){tut.index=T.lot.findIndex(Boolean);tut.pause=1.6;}else endTutorial(!left());}}
+ if(tut){if(left()&&S.gold>=PRICE){tut.index=T.lot.findIndex(Boolean);tut.pause=2.2;}else endTutorial(!left());}}
 // ---------- Erste Begegnung: kurze gescriptete Szene nach der Schmied-Einführung ----------
 function showBar(html){if(typeof document==='undefined')return;if(!bar){bar=document.createElement('div');bar.id='traderBar';bar.className='smith-intro-bar trader-bar';bar.setAttribute?.('role','status');document.body.appendChild(bar);}if(bar._html!==html){bar.innerHTML=html;bar._html=html;}}
 function hideBar(){bar?.remove?.();bar=null;}
-// Die Einführung verlangt fünf Käufe. Nach der Schmied-Einführung bleiben 400 Gold, bisher reichte das für drei Rekruten und erste Waffen.
-// Einmalige Starthilfe für genau die zwei zusätzlichen Pflichtkäufe; danach steht der Spieler mit demselben Restgold da wie zuvor.
-const AID=200;
-function startTutorial(){T.intro='active';if(!T.aid){T.aid=AID;S.gold+=AID;S.army.audit.unshift({day:S.day,message:'Starthilfe für die ersten fünf Gladiatoren · +'+AID+' Gold.'});}stock();M.persist();tut={step:'march',line:0,t:0,index:0};M.ui.close();if(page()!=='home')M.ui.click('nav:home');else M.ui.render();const box=$('ludusCanvas')?.closest?.('.ludus-scroll');if(box)box.scrollLeft=0;$('ludusCanvas')?.scrollIntoView?.({block:'center'});}
+function startTutorial(){T.intro='active';stock();M.persist();tut={step:'march',line:0,t:0,index:0};M.ui.close();if(page()!=='home')M.ui.click('nav:home');else M.ui.render();const box=$('ludusCanvas')?.closest?.('.ludus-scroll');if(box)box.scrollLeft=0;$('ludusCanvas')?.scrollIntoView?.({block:'center'});}
 function endTutorial(all){T.intro='done';M.persist();tut={step:'bye',t:0,all};}
 function tutorial(dt){if(!tut)return;if(!onHome()){hideBar();return;}if(cardOpen>=0&&$('modal')?.hidden===false)return;const skip='<button class="btn" data-action="trader:skip">Überspringen</button>';
- if(tut.step==='march'){showBar(`<p class="hint">Kettenrasseln am Tor. Eine Peitsche knallt.</p><p>Aus deiner alten Kriegskasse kommen ${AID} Gold dazu. Genug für fünf.</p><div class="buttons">${skip}</div>`);if(!sc||sc.mode==='stand'){tut.step='talk';tut.line=0;tut.t=0;say(L.talk[0],3.6);}}
- else if(tut.step==='talk'){tut.t+=dt;showBar(`<p><b>${esc(who())}</b></p><p>„${esc(L.talk[tut.line].replaceAll('{N}',who()))}“</p><div class="buttons"><button class="btn primary" data-action="trader:next">WEITER →</button>${skip}</div>`);if(tut.t>4.2)nextLine();}
+ if(tut.step==='march'){showBar(`<p class="hint">Kettenrasseln am Tor. Eine Peitsche knallt.</p><div class="buttons">${skip}</div>`);if(!sc||sc.mode==='stand'){tut.step='talk';tut.line=0;tut.t=0;say(L.talk[0],6.5);}}
+ else if(tut.step==='talk'){tut.t+=dt;showBar(`<p><b>${esc(who())}</b></p><p>„${esc(L.talk[tut.line].replaceAll('{N}',who()))}“</p><div class="buttons"><button class="btn primary" data-action="trader:next">WEITER →</button>${skip}</div>`);if(tut.t>7)nextLine();}
  else if(tut.step==='buy'){if(tut.pause>0){tut.pause-=dt;return;}const n=LOT-left()+1;showBar(`<p>Jeden Tag fünf neue. <b>${PRICE} Gold</b> pro Kopf.</p><p class="hint">Klicke auf den markierten Kandidaten · ${n}/${LOT}</p><div class="buttons">${skip}</div>`);}
- else if(tut.step==='bye'){tut.t+=dt;showBar(`<p>${tut.all?'Ab morgen kaufst du nur, wen du willst.':'Für heute reicht das Gold nicht weiter.'}</p><p class="hint">${esc(short())} kommt jeden Tag mit fünf neuen. Wer bleibt, ist am Abend fort.</p><div class="buttons"><button class="btn primary" data-action="trader:ok">VERSTANDEN</button></div>`);if(tut.t>14){tut=null;hideBar();}}}
-function nextLine(){if(!tut||tut.step!=='talk')return;tut.line++;tut.t=0;if(tut.line>=L.talk.length){tut.step='buy';tut.index=T.lot.findIndex(Boolean);tut.pause=0;if(sc?.act)finish();return;}say(L.talk[tut.line],3.6);}
+ else if(tut.step==='bye'){tut.t+=dt;showBar(`<p>${tut.all?'Ab morgen kaufst du nur, wen du willst.':'Für heute reicht das Gold nicht weiter.'}</p><p class="hint">${esc(short())} kommt jeden Tag mit fünf neuen. Wer bleibt, ist am Abend fort.</p><div class="buttons"><button class="btn primary" data-action="trader:ok">VERSTANDEN</button></div>`);if(tut.t>22){tut=null;hideBar();}}}
+function nextLine(){if(!tut||tut.step!=='talk')return;tut.line++;tut.t=0;if(tut.line>=L.talk.length){tut.step='buy';tut.index=T.lot.findIndex(Boolean);tut.pause=0;if(sc?.act)finish();return;}say(L.talk[tut.line],6.5);}
 function resume(){if(T.intro==='active'&&!tut){if(!here()){T.intro='done';M.persist();return;}tut={step:T.arrived===T.day?'buy':'march',line:0,t:0,index:Math.max(0,T.lot.findIndex(Boolean)),pause:0};}}
 // ---------- Einhängen: Takt, Klicks, Tageswechsel ----------
 const tick=M.ludusTick;M.ludusTick=dt=>{const step=Math.min(dt,.1);
@@ -148,5 +145,5 @@ const click=M.schoolClick;M.schoolClick=action=>{
  if(action.startsWith('nav:'))cardOpen=-1;return click(action);};
 const nextDay=A.nextDay;A.nextDay=(...a)=>{const day=S.day,out=nextDay(...a);if(S.day!==day&&started()){sc=null;cardOpen=-1;stock();}return out;};M.advanceDay=A.nextDay;
 if(started()&&T.day!==S.day)stock();
-M.trader={state:T,price:PRICE,size:LOT,aid:AID,lines:L,left,here,stock,buy,open,claims,pitchFor,figure,get scene(){return sc;},get tutorial(){return tut;},skipMarch(){if(sc?.mode==='march'){sc.lead=9999;}},startTutorial};
+M.trader={state:T,price:PRICE,size:LOT,lines:L,left,here,stock,buy,open,claims,pitchFor,figure,get scene(){return sc;},get tutorial(){return tut;},skipMarch(){if(sc?.mode==='march'){sc.lead=9999;}},startTutorial};
 })();
