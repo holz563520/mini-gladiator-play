@@ -47,7 +47,7 @@ function stationMotion(ctx,list){
  if(a.forgeTask==='quench'){for(let n=0;n<4;n++){const u=(a.workBeat*.65+n/4)%1;ctx.globalAlpha=(1-u)*.5;r(778+n*4+Math.sin(u*5)*2,264-u*19,2+u*3,3+u*3,'#d3d3bd');}ctx.globalAlpha=1;}}
 }
 function workers(){return F.master?[actor(F.master),...(F.apprentice?[actor(F.apprentice,true)]:[])]:[];}
-function drawWorkers(ctx){const list=workers();if(scene)poseScene(list,scene.elapsed);else for(const a of list)idle(a,clock);stationMotion(ctx,list);M.renderForgeActors(ctx,list.sort((a,b)=>a.y-b.y));if(scene)M.renderForgeEffects(ctx,scene.limbs,scene.fx);}
+function drawWorkers(ctx){const list=workers().filter(a=>!M.villageLife?.smithAway(a));if(scene)poseScene(list,scene.elapsed);else for(const a of list)idle(a,clock);stationMotion(ctx,list);M.renderForgeActors(ctx,list.sort((a,b)=>a.y-b.y));if(scene)M.renderForgeEffects(ctx,scene.limbs,scene.fx);}
 // Keep the shared renderer unchanged for ordinary Ludus figures; only add forge residents.
 const renderActors=M.renderLudusActors;M.renderForgeActors=renderActors;M.renderLudusActors=(ctx,list)=>{renderActors(ctx,list);if(ctx.canvas?.id==='ludusCanvas')drawWorkers(ctx);};
 function paint(canvas){if(!canvas)return;backdrop??=M.ludus.background();const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.save();ctx.scale(canvas.width/240,canvas.height/153);ctx.translate(-625,-145);ctx.drawImage(backdrop,0,0);drawWorkers(ctx);ctx.fillStyle=clock%1>.5?'#c88945':'#e2ab5c';ctx.fillRect(790,205,7,10);ctx.fillRect(805,210,5,7);ctx.restore();}
@@ -70,4 +70,5 @@ const tick=M.ludusTick;M.ludusTick=dt=>{if(document.hidden)return;clock+=Math.mi
 M.forgeVisuals={actor,paint,workers,startScene,get scene(){return scene;}};
 M.ui.render();
 })();
+
 
