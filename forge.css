@@ -9,3 +9,5 @@
 #modal .smith-offer{border:0;padding:0}
 
 .wanderer-answers [data-action="wanderer:say:schmied"]{border-color:#e0b565;color:#f2d38c}
+.plot-choices{display:grid;gap:10px;margin:6px 0 4px}.plot-choices[hidden]{display:none}.plot-choices .btn{display:grid;gap:4px;padding:12px 14px;font-size:16px;line-height:1.35;white-space:normal}.plot-choices small{font-size:13px;font-weight:400;opacity:.85}.plot-hint{font-size:13px!important;opacity:.7;min-height:0!important;margin:4px 0!important}.plot-talk-scene canvas{cursor:pointer}
+.plot-talk-scene{background:#101816}

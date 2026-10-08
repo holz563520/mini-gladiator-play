@@ -9,11 +9,51 @@ const DELAY=5,P=()=>S.archerPlot??={seen:0,state:'',asked:0},W=()=>M.workshop?.s
 const ranged=g=>!g.dead&&!g.smithDuty&&g.role==='Fernkämpfer'&&['bow','crossbow'].includes(M.gear(g,'weapon')?.def);
 const archer=()=>S.roster.find(ranged),others=a=>S.roster.filter(g=>g!==a&&!g.dead&&!g.smithDuty).sort((x,y)=>(y.role==='Soldat')-(x.role==='Soldat'));
 // ---------- Gespräch ----------
-function talk(a){const [s1,s2,s3]=others(a),n=g=>esc(g?.name.split(' ')[0]||'Einer'),fallen=S.fallen.find(f=>f.name)?.name.split(' ')[0]||'Titus',weapon=M.gear(a,'weapon')?.def==='crossbow'?'seiner Armbrust':'seinem Bogen',A=esc(a.name.split(' ')[0]),N=esc(smithName());
- const L=[[s1,'Leute. Kurze Lagebesprechung. Und zwar leise.'],[s2,'Geht’s schon wieder um den Schmied?'],[s1,'Natürlich geht’s um den Schmied. Diese verdammte Schreckensherrschaft muss endlich aufhören. Der hat schon zig von unseren Freunden umgebracht.'],[s3||s2,`Neulich hat er ${esc(fallen)} nur angeschaut. Nur angeschaut. Danach hat ${esc(fallen)} nie wieder ein Wort gesagt.`],[s2,'Und was willst du machen? Ihn höflich bitten, damit aufzuhören?'],[s1,`Nein. Wir haben doch jetzt ${A}. Mit ${weapon}.`],[s3||s2,'Ein Schuss. Von hinten. In den Kopf. Fertig.'],[s2,`Der merkt gar nichts. ${N} hämmert doch den ganzen Tag.`],[s1,'Lanista, du sagst doch selbst immer, ein Ludus braucht Ordnung. Was meinst du?']];
- return `<div class="plot-talk">${L.map(([g,t])=>`<p class="wanderer-line"><b>${n(g)}:</b> „${t}“</p>`).join('')}</div>`;}
-function ask(){const a=archer();if(!a)return;P().asked=S.day;M.persist();M.ui.modal('Verschwörung in der Kaserne',talk(a),`<button class="btn" data-action="plot:no">„Oh, ich glaube, das ist keine gute Idee. Ich bin doch nicht bescheuert.“</button><button class="btn primary" data-action="plot:yes">„Ja. Wir brauchen endlich einen vernünftigen Schmied. Ich erledige das.“</button>`);}
-function decline(){const a=archer(),[s1,s2]=others(a),p=P();p.state='declined';M.persist();M.ui.modal('Verschwörung in der Kaserne',`<p class="wanderer-line own"><b>Du:</b> „Oh, ich glaube, das ist keine gute Idee. Ich bin doch nicht bescheuert.“</p><p class="wanderer-line"><b>${esc(s1?.name.split(' ')[0]||'Einer')}:</b> „Feigling.“</p><p class="wanderer-line"><b>${esc(s2?.name.split(' ')[0]||'Ein anderer')}:</b> „Nein. Klug. Ich will auch noch ein paar Jahre leben.“</p>`);}
+// ---------- Gespräch auf dem Trainingshof: drei Gladiatoren, Sprechblasen, kein Wegklicken ----------
+const fit=g=>!g.dead&&!g.smithDuty&&(M.army?.ready?.(g,true)??true);
+function crew(){const a=S.roster.find(g=>ranged(g)&&fit(g));if(!a)return null;const o=S.roster.filter(g=>g!==a&&fit(g)).sort((x,y)=>(y.role==='Soldat')-(x.role==='Soldat'));return o.length>=2?{a,b:o[0],c:o[1]}:null;}
+function script(c){const N=smithName(),cross=M.gear(c.a,'weapon')?.def==='crossbow',W=cross?'eine Armbrust':'einen Bogen',F=S.fallen.find(f=>f.name)?.name.split(' ')[0];
+ return [['b','Psst. Hierher. Und guckt nicht so auffällig, verdammt.'],['c','Ich gucke nicht auffällig. Ich stehe nur hier.'],['b','Genau so stehen Leute, die gleich etwas sehr Dummes vorhaben.'],['a','Also? Worum geht’s?'],['b','Um '+N+'. Um wen denn sonst.'],
+  ['c',F?'Gestern hat er '+F+' nur angeschaut. Nur angeschaut. Heute liegt '+F+' in der Grube.':'Gestern hat er den Neuen nur angeschaut. Der Neue redet seitdem nicht mehr. Mit niemandem.'],
+  ['b','Zig Freunde hat er uns schon genommen. Wer zu langsam schmiedet, wird kürzer gemacht. Wer zu schnell schmiedet, auch.'],['c','Und der Hund kotzt jedes Mal, wenn er ihn sieht. Der Hund! Der frisst sonst alles!'],
+  ['a','Und was soll ich da machen?'],['b','Du hast '+W+'. Er hat einen Hinterkopf. Und den dreht er uns den ganzen Tag zu, wenn er hämmert.'],['c','Ein Schuss. Zack. Und keiner muss mehr zittern, wenn er die Esse anheizt.'],
+  ['b','Dann holt der Lanista einen neuen Schmied. Einen netten. Einen, der nicht beißt.'],['c','Vielleicht sogar einen besseren. Stell dir vor: Klingen, die nicht nach Kollegen riechen.'],
+  ['a','… und wenn ich danebenschieße?'],['b','Dann … äh … hattest du ein sehr kurzes, sehr interessantes Leben.'],['c','Du schießt nicht daneben. Die Strohpuppe triffst du doch auch. Meistens.'],['b','Also. Bist du dabei?']];}
+const YES=[['a','Klar. Ich mach mit.'],['b','Ich wusste es! Morgen ist er Geschichte.'],['c','Ich hol schon mal den guten Wein. Für danach.']];
+const NO=[['a','Ich glaube, das ist keine gute Idee.'],['b','Feigling.'],['c','Nein. Klug. Ich hab ihn mal einen Pfeil fangen sehen. Mit den Zähnen.'],['b','… Das hast du dir ausgedacht.'],['c','Willst du es ausprobieren?']];
+let tk=null;
+const SPOTS={b:[420,388],a:[453,381],c:[487,389]};
+function ask(){const c=crew();if(!c||tk||sc)return;P().asked=S.day;M.persist();
+ const mk=(g,k)=>({id:'talk-'+k,g:JSON.parse(JSON.stringify(g)),team:0,x:SPOTS[k][0],y:SPOTS[k][1],a:k==='b'?0:Math.PI,phase:0,state:'idle',energy:100,ammo:1,moveSpeed:0,bloodMarks:{},key:k});
+ tk={c,who:{a:mk(c.a,'a'),b:mk(c.b,'b'),c:mk(c.c,'c')},lines:script(c),i:0,t:0,phase:'talk',clock:0};
+ tk.view=document.createElement('div');tk.view.id='plotTalk';tk.view.className='smith-ceremony smith-intro plot-talk-scene no-smith-song';tk.view.setAttribute?.('role','dialog');tk.view.setAttribute?.('aria-modal','true');tk.view.setAttribute?.('aria-label','Verschwörung auf dem Trainingshof');
+ tk.view.innerHTML='<div><canvas id="plotTalkCanvas" width="660" height="420" data-action="plot:next" aria-label="Tippen für den nächsten Satz"></canvas><p id="plotTalkText" aria-live="polite"></p><div id="plotTalkChoices" class="plot-choices" hidden><button class="btn primary" data-action="plot:yes">„Klar, ich mach mit.“<small>Vielleicht gibt es danach einen besseren Schmied – mit noch besseren Waffen.</small></button><button class="btn" data-action="plot:no">„Ich glaube, das ist keine gute Idee.“</button></div><p class="plot-hint" id="plotTalkHint">Tippen: nächster Satz</p></div>';
+ document.body.appendChild(tk.view);M.ui.close();}
+const dur=text=>Math.min(8,2.4+text.length*.062);
+function next(){if(!tk)return;if(tk.phase==='choose')return;tk.t=0;tk.i++;if(tk.i>=tk.lines.length){if(tk.phase==='talk'){tk.phase='choose';tk.i=tk.lines.length-1;const ch=$('plotTalkChoices'),h=$('plotTalkHint');if(ch)ch.hidden=false;if(h)h.hidden=true;}else finishTalk();}}
+function choose(yes){if(!tk||tk.phase!=='choose')return;const p=P();if(!yes){p.state='declined';M.persist();}tk.phase=yes?'yes':'no';tk.lines=yes?YES:NO;tk.i=0;tk.t=0;const ch=$('plotTalkChoices'),h=$('plotTalkHint');if(ch)ch.hidden=true;if(h)h.hidden=false;}
+function finishTalk(){const yes=tk.phase==='yes',shooter=tk.c.a;tk.view?.remove?.();tk=null;M.ui.render();if(yes)start(shooter);}
+function stepTalk(dt){const t=tk;t.t+=dt;const [k,text]=t.lines[Math.min(t.i,t.lines.length-1)];
+ if(t.phase!=='choose'&&t.t>=dur(text))next();if(!tk)return;
+ for(const key of ['a','b','c']){const f=t.who[key];f.state='idle';f.traderPose=null;f.gest=t.t;f.phase+=dt*3;f.facePain=0;f.retreat=0;}
+ const sp=t.who[k];if(sp&&t.phase!=='choose'){sp.traderPose=/[!?]/.test(text)&&text.length<70?'rant':'point';if(text.startsWith('…'))sp.traderPose=null;}
+ // Blickrichtung: alle schauen zum Sprecher, der Sprecher zu den anderen
+ for(const key of ['a','b','c']){const f=t.who[key];if(key===k)f.a=key==='b'?0:key==='c'?Math.PI:(t.who.b.x<f.x&&t.i%2?Math.PI:0);else f.a=sp.x>=f.x?0:Math.PI;}
+ if(t.phase==='no'&&k==='b'&&t.i===1)t.who.b.state='charge';
+ if(t.phase==='yes'&&t.i>=1)t.who.b.state=t.who.c.state='celebrate';
+ if(k==='a'&&/danebenschieße/.test(text))t.who.a.facePain=.6;
+ paintTalk();}
+function paintTalk(){const c=$('plotTalkCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),VW=170,VH=VW*420/660,k=c.width/VW,cx=453,cy=346,ox=cx-VW/2,oy=cy-VH/2;
+ tk.bg??=M.ludus.background();g.imageSmoothingEnabled=false;g.setTransform?.(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.save();g.scale(k,k);g.translate(-ox,-oy);g.drawImage(tk.bg,0,0);
+ M.renderForgeActors(g,Object.values(tk.who).sort((p,q)=>p.y-q.y));g.restore();
+ const [key,text]=tk.lines[Math.min(tk.i,tk.lines.length-1)],sp=tk.who[key],h=headPoint(sp),hx=(h.x-ox)*k,hy=(h.y-oy)*k,name=sp.g.name.split(' ')[0];
+ talkBubble(g,name,text,hx,hy,key==='a');
+ const el=$('plotTalkText'),line=name+': „'+text+'“';if(el&&el.textContent!==line)el.textContent=line;}
+// Lesbar: große Schrift, Blase mittig über dem Sprecher, immer ganz im Bild, Zeiger auf den Kopf.
+function talkBubble(g,name,text,x,y,archerSpeaks){g.font="bold 25px 'Courier Prime',monospace";g.textBaseline='middle';const maxW=480,words=text.split(' '),rows=[''];for(const w of words){const tryRow=(rows[rows.length-1]+' '+w).trim();if(g.measureText(tryRow).width>maxW&&rows[rows.length-1])rows.push(w);else rows[rows.length-1]=tryRow;}
+ const lh=31,w=Math.min(640,Math.max(...rows.map(r=>g.measureText(r).width),g.measureText(name).width)+32),h=rows.length*lh+50,bx=Math.round(Math.max(10,Math.min(650-w,x-w/2))),by=Math.round(Math.max(8,Math.min(y-36-h,420-h-8)));
+ g.fillStyle='#17201c';g.fillRect(bx-3,by-3,w+6,h+6);g.fillStyle=archerSpeaks?'#f4e3b0':'#efe0b3';g.fillRect(bx,by,w,h);const tx=Math.max(bx+14,Math.min(bx+w-24,x-6));g.fillStyle='#17201c';g.fillRect(tx-2,by+h,16,4);g.fillStyle=archerSpeaks?'#f4e3b0':'#efe0b3';g.fillRect(tx,by+h-1,12,4);g.fillRect(tx+3,by+h+3,6,4);g.fillStyle='#17201c';g.fillRect(tx+1,by+h+7,4,3);
+ g.textAlign='left';g.font="bold 16px 'Courier Prime',monospace";g.fillStyle=archerSpeaks?'#8a3a1f':'#5a4a2a';g.fillText(name.toUpperCase(),bx+16,by+16);g.font="bold 25px 'Courier Prime',monospace";g.fillStyle='#17201c';rows.forEach((r,i)=>g.fillText(r,bx+16,by+40+i*lh));}
 // ---------- Szene ----------
 let sc=null,clock=0;
 const lerp=(a,b,k)=>a+(b-a)*Math.max(0,Math.min(1,k)),between=(t,a,b)=>t>=a&&t<b;
@@ -36,7 +76,7 @@ function lines(){return [
  [36.2,38.3,'s','Ich finde gut, dass wir miteinander gesprochen haben.'],
  [38.4,39.8,'a','AAAH! AAAAAH!'],[STRIKE1+.9,STRIKE1+2.6,'a','MEINE BEINE! AAAAH!'],[STRIKE1+2.9,CUT-.2,'a','Hilfe … HILFE …'],
  [CUT+1.9,CUT+3.4,'cap',smithName()+' steckt das Schwert ein und bricht den Pfeil ab.']];}
-function start(){const a=archer();if(!a||sc||S.battle)return false;const clone=JSON.parse(JSON.stringify(a)),name=a.name.split(' ')[0],cross=M.gear(a,'weapon')?.def==='crossbow';
+function start(chosen){const a=chosen&&S.roster.includes(chosen)?chosen:archer();if(!a||sc||S.battle)return false;const clone=JSON.parse(JSON.stringify(a)),name=a.name.split(' ')[0],cross=M.gear(a,'weapon')?.def==='crossbow';
  // Ergebnis zuerst: der Schütze stirbt dauerhaft.
  P().state='done';M.kill(a,'Wollte '+smithName()+' von hinten erschießen. Kopf in die Esse, Beine ab, Kehle durch.',smithName());M.persist();
  clone.dead=false;sc={t:0,name,cross,a:{id:'plot-archer',g:clone,team:0,x:880,y:300,a:Math.PI,phase:0,state:'idle',energy:100,ammo:1,moveSpeed:0,bloodMarks:{}},s:smithActor(),limbs:[],fx:[],done:{},arrow:null,stuck:0,flip:0,trail:[],bow:null,cam:{x:780,y:270,vw:300},charred:false,soiled:false};
@@ -149,14 +189,16 @@ function bubble(g,text,x,y,loud){g.font=`bold ${loud?24:19}px 'Courier Prime',mo
 let settle=0;
 const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(typeof document!=='undefined'&&document.hidden)return;
  if(sc){clock+=dt;if(clock>=1/30){const d=Math.min(clock,.1);clock=0;step(d);}return;}
+ if(tk){tk.clock+=dt;if(tk.clock>=1/30){const d=Math.min(tk.clock,.1);tk.clock=0;stepTalk(d);}return;}
  const p=P();if(p.state)return;const a=archer();if(a&&!p.seen){p.seen=S.day;M.persist();}
  const busy=S.battle||M.intro?.active?.()||window.ArenaTheoryIntro?.active?.()||M.forgeIntro?.scene||M.smithWrath?.scene||M.trader?.tutorial||M.ui?.getPage?.()!=='home'||(typeof document!=='undefined'&&document.getElementById('modal')?.hidden===false)||(typeof document!=='undefined'&&!!document.querySelector?.('.smith-ceremony'));
- const ready=a&&p.seen&&S.day>=p.seen+DELAY&&p.asked!==S.day&&others(a).length>=2&&W()?.master&&W().intro==='done';
+ const ready=a&&p.seen&&S.day>=p.seen+DELAY&&p.asked!==S.day&&!!crew()&&W()?.master&&W().intro==='done';
  if(ready&&!busy){settle+=dt;if(settle>1.2){settle=0;ask();}}else settle=0;};
 const click=M.schoolClick;M.schoolClick=action=>{
- if(action==='plot:no'){if(!P().state)decline();return true;}
- if(action==='plot:yes'){if(!P().state)start();return true;}
+ if(action==='plot:next'){next();return true;}
+ if(action==='plot:no'){if(!P().state)choose(false);return true;}
+ if(action==='plot:yes'){if(!P().state)choose(true);return true;}
  if(action==='plot:skip'){end();return true;}
  return click(action);};
-M.archerPlot={state:P,archer,ready:()=>{const p=P(),a=archer();return !!(a&&p.seen&&S.day>=p.seen+DELAY&&!p.state);},ask,start,end,step:d=>sc&&step(d),get scene(){return sc;},delay:DELAY};
+M.archerPlot={state:P,archer,ready:()=>{const p=P(),a=archer();return !!(a&&p.seen&&S.day>=p.seen+DELAY&&!p.state);},ask,start,end,step:d=>sc&&step(d),stepTalk:d=>tk&&stepTalk(d),next,crew,get talk(){return tk;},get scene(){return sc;},delay:DELAY};
 })();
