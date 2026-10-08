@@ -60,9 +60,9 @@ const lerp=(a,b,k)=>a+(b-a)*Math.max(0,Math.min(1,k)),between=(t,a,b)=>t>=a&&t<b
 function smithActor(){const p=W().master,rng=S.rng,g=M.makeGladiator(0);Object.assign(g,{id:'plot-smith',name:p.name,height:p.height,weight:p.weight,muscle:58,fame:0,scars:[]});g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};const items={hammer:M.makeItem('weapon','hammer',1),dagger:M.makeItem('weapon','dagger',1),sword:M.makeItem('weapon','gladius',1)};g.enemyGear={weapon:null,secondary:items.hammer,shield:null,armor:{}};S.rng=rng;return {id:g.id,g,items,team:0,x:712,y:262,a:Math.PI,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,forgeWorker:true,bloodMarks:{}};}
 // Szenenzeit; Zeitlupe über die Abspielrate.
 const SLOW=[[6,6.3,.25],[6.3,7.6,.3],[7.6,9.2,.5],[28.6,29.6,.3]],rate=t=>SLOW.find(([a,b])=>t>=a&&t<b)?.[2]??1;
-const GRAB=28.6,HIT=6.3,DROP=9,OVEN=[31.2,35.6],RUN={c:[760,300],r:32,w:2,t0:38.3},STRIKE1=40.3,CUT=STRIKE1+4.6;
+const GRAB=28.6,HIT=6.3,DROP=9,OVEN=[31.2,35.6],RUN={c:[760,300],r:32,w:2,t0:38.3},STRIKE1=41.9,CRAWL0=STRIKE1+.9,CATCH=STRIKE1+8.6,CUT=CATCH+1.7,CRAWL_V=10.5;
 function runAt(t){const th=Math.PI*.15+RUN.w*(t-RUN.t0);return {x:RUN.c[0]+Math.cos(th)*RUN.r,y:RUN.c[1]+Math.sin(th)*RUN.r*.55,dx:-Math.sin(th)};}
-const P1=runAt(STRIKE1),SPOT={x:P1.x-15*Math.sign(P1.dx||1),y:P1.y},CRAWL=Math.sign(P1.dx||1),BACK=CUT+3.5,DOOR_T=BACK+Math.hypot(748-(P1.x+CRAWL*30),240-P1.y)/45,END=DOOR_T+.9;
+const P1=runAt(STRIKE1),SPOT={x:P1.x-15*Math.sign(P1.dx||1),y:P1.y},CRAWL=Math.sign(P1.dx||1),BACK=CUT+3.5,DOOR_T=BACK+Math.hypot(748-(P1.x+CRAWL*((CATCH-CRAWL0)*CRAWL_V-18)),240-P1.y)/45,END=DOOR_T+.9;
 function lines(){return [
  [0.3,3.3,'cap',smithName()+' hämmert. '+sc.name+' schleicht sich an.'],
  [9.4,11.8,'s','Oh. Du wolltest mir in den Hinterkopf schießen. Du wolltest mich wohl umbringen.'],
@@ -74,11 +74,11 @@ function lines(){return [
  [27.1,28.6,'s','Dann kommen wir besser miteinander aus.'],
  [31.4,33.4,'a','AAAAAAAAAAH!'],[33.6,35.4,'a','HEISS! HEISS! AAAAH!'],
  [36.2,38.3,'s','Ich finde gut, dass wir miteinander gesprochen haben.'],
- [38.4,39.8,'a','AAAH! AAAAAH!'],[STRIKE1+.9,STRIKE1+2.6,'a','MEINE BEINE! AAAAH!'],[STRIKE1+2.9,CUT-.2,'a','Hilfe … HILFE …'],
+ [38.4,39.8,'a','AAAH! AAAAAH!'],[STRIKE1+.9,STRIKE1+2.4,'a','MEINE BEINE! AAAAH!'],[STRIKE1+2.5,STRIKE1+5.1,'s','Nicht so schnell, mein Freund. Ich bin nicht so schnell.'],[STRIKE1+5.3,STRIKE1+7.6,'s','Der Boden hinter dir ist ja ganz rutschig.'],[STRIKE1+7.7,CATCH+.2,'a','Hilfe … HILFE …'],[CATCH+.3,CUT-.2,'a','NEIN! NEIN! BITTE NICHT!'],
  [CUT+1.9,CUT+3.4,'cap',smithName()+' steckt das Schwert ein und bricht den Pfeil ab.']];}
 function start(chosen){const a=chosen&&S.roster.includes(chosen)?chosen:archer();if(!a||sc||S.battle)return false;const clone=JSON.parse(JSON.stringify(a)),name=a.name.split(' ')[0],cross=M.gear(a,'weapon')?.def==='crossbow';
  // Ergebnis zuerst: der Schütze stirbt dauerhaft.
- P().state='done';M.kill(a,'Wollte '+smithName()+' von hinten erschießen. Kopf in die Esse, Beine ab, Kehle durch.',smithName());M.persist();
+ P().state='done';M.kill(a,'Wollte '+smithName()+' von hinten erschießen. Kopf in die Esse, Beine ab, zweigeteilt.',smithName());M.persist();
  clone.dead=false;sc={t:0,name,cross,a:{id:'plot-archer',g:clone,team:0,x:880,y:300,a:Math.PI,phase:0,state:'idle',energy:100,ammo:1,moveSpeed:0,bloodMarks:{}},s:smithActor(),limbs:[],fx:[],done:{},arrow:null,stuck:0,flip:0,trail:[],bow:null,cam:{x:780,y:270,vw:300},charred:false,soiled:false};
  sc.view=document.createElement('div');sc.view.id='archerPlot';sc.view.className='smith-ceremony smith-intro smith-wrath no-smith-song';sc.view.setAttribute?.('role','dialog');sc.view.setAttribute?.('aria-modal','true');sc.view.setAttribute?.('aria-label','Pfeil im Hinterkopf');
  sc.view.innerHTML='<div><canvas id="archerPlotCanvas" width="660" height="420"></canvas><p id="archerPlotText" aria-live="polite"></p><button class="btn" data-action="plot:skip">ÜBERSPRINGEN →</button></div>';document.body.appendChild(sc.view);M.ui.close();M.ui.render();return true;}
@@ -91,9 +91,10 @@ function pose(t){const s=sc.s,a=sc.a;
  // ---- Schmied ----
  s.hidden=t>=DOOR_T+.3;
  if(t<HIT){s.x=712;s.y=262;s.a=Math.PI;const k=t%0.9;s.technique='overhead';s.windMax=.35;s.wind=k<.35?.35-k:0;s.swingKind='slash';s.swingMax=.2;s.swing=k>=.35&&k<.55?.55-k:0;if(k>=.5&&k<.55&&t<HIT-.1)once('clank'+Math.floor(t/.9),()=>M.sound?.('block'));}
- if(between(t,HIT,7.6)){s.stagger=.6;s.facePain=.4;}
- if(between(t,7.6,8.6))s.forgePose='shake';
- if(t>=8.6)s.a=0;
+ // Nach dem Treffer: völlige Starre, keine Regung, kein Laut; nur Blut aus der Wunde.
+ if(between(t,HIT,8.6)){s.x=712;s.y=262;s.a=Math.PI;s.technique='overhead';s.windMax=.35;s.wind=.35;}
+ if(between(t,8.6,9.4)){s.a=t<9?Math.PI:0;s.x=712;s.y=262;}
+ if(t>=9)s.a=0;
  if(t>=9.4)s.g.enemyGear.secondary=null;
  if(between(t,18.4,20.2)){const k=(t-18.4)/1.8;s.x=lerp(712,790,k);s.state='move';s.moveSpeed=10;s.phase=t*6;s.a=0;}else if(between(t,20.2,30.4)){s.x=790;s.y=262;s.a=0;}
  if(between(t,28,GRAB+1.4))s.traderPose='point';
@@ -110,18 +111,18 @@ function pose(t){const s=sc.s,a=sc.a;
  if(between(t,STRIKE1-.3,STRIKE1)){s.technique='overhead';s.windMax=.3;s.wind=STRIKE1-t;}
  if(between(t,STRIKE1,STRIKE1+.25)){s.swingKind='slash';s.swingMax=.25;s.swing=STRIKE1+.25-t;}
  if(between(t,STRIKE1+.4,STRIKE1+1.2))s.state='celebrate';
- const crawlX=t2=>P1.x+CRAWL*Math.max(0,Math.min(t2,CUT-.2)-(STRIKE1+.9))*9;
- if(between(t,STRIKE1+1.6,CUT)){const goal=crawlX(t)-CRAWL*17,k=Math.min(1,(t-STRIKE1-1.6)/1.4);s.x=lerp(SPOT.x,goal,k);s.y=lerp(SPOT.y,P1.y,k);s.a=CRAWL>0?0:Math.PI;if(k<1||between(t,STRIKE1+3,CUT-.6)){s.state='move';s.moveSpeed=8;s.phase=t*4;}}
+ const crawlX=t2=>P1.x+CRAWL*Math.max(0,Math.min(t2,CATCH)-CRAWL0)*CRAWL_V;
+ if(between(t,STRIKE1+1.6,CUT)){const gap=lerp(46,18,(t-STRIKE1-1.6)/(CATCH-STRIKE1-1.6)),goal=crawlX(t)-CRAWL*gap,k=Math.min(1,(t-STRIKE1-1.6)/1.2);s.x=lerp(SPOT.x,goal,k);s.y=lerp(SPOT.y,P1.y,k);s.a=CRAWL>0?0:Math.PI;if(t<CATCH){s.state='move';s.moveSpeed=6;s.phase=t*3;}}
  if(between(t,CUT-.35,CUT)){s.technique='overhead';s.windMax=.35;s.wind=CUT-t;}
  if(between(t,CUT,CUT+.25)){s.swingKind='slash';s.swingMax=.25;s.swing=CUT+.25-t;}
- const stand={x:crawlX(CUT)-CRAWL*17,y:P1.y};
+ const stand={x:crawlX(CUT)-CRAWL*18,y:P1.y};
  if(between(t,CUT+.25,BACK)){s.x=stand.x;s.y=stand.y;s.a=CRAWL>0?0:Math.PI;}
  if(between(t,CUT+.6,CUT+1.3))s.forgePose='inspect';
  if(between(t,CUT+1.9,CUT+2.8))s.forgePose='sip';
  if(between(t,CUT+2.9,CUT+3.4))s.state='celebrate';
  if(between(t,BACK,DOOR_T+.3)){const k=(t-BACK)/(DOOR_T-BACK);s.x=lerp(stand.x,748,k);s.y=lerp(stand.y,240,k);s.state='move';s.moveSpeed=10;s.phase=t*6;s.a=748>=stand.x?0:Math.PI;}
  // ---- Schütze ----
- a.charred=sc.charred;a.throatCut=t>=CUT+.1;
+ a.charred=sc.charred;a.splitProgress=Math.min(1,Math.max(0,(t-CUT-.12)/.5));
  if(t<3.4){const k=(t-.3)/3.1;a.x=lerp(880,838,k);a.y=lerp(300,294,k);if(t>.3){a.state='move';a.moveSpeed=6;a.phase=t*4;}a.a=Math.PI;}
  else if(t<22.6){a.x=838;a.y=294;a.a=Math.PI;}
  if(between(t,3.4,HIT)){a.swingKind='shoot';a.windMax=1.1;if(!sc.cross)a.wind=Math.max(.01,1.1-(t-3.4)*.42);if(t>=6)a.wind=0;a.x+=Math.sin(t*20)*.3;}
@@ -136,11 +137,14 @@ function pose(t){const s=sc.s,a=sc.a;
  if(between(t,OVEN[1],OVEN[1]+.6)){const k=(t-OVEN[1])/.6;a.x=lerp(800,812,k);a.y=lerp(247,262,k);a.stagger=.6;a.facePain=1;}
  if(between(t,OVEN[1]+.6,RUN.t0)){a.x=812;a.y=262;a.a=Math.PI;a.facePain=1;a.x+=Math.sin(t*30)*.6;}
  if(between(t,RUN.t0,STRIKE1+.1)){const p=runAt(t),q=runAt(t+.05);a.x=p.x;a.y=p.y;a.a=q.x>=p.x?0:Math.PI;a.state='move';a.moveSpeed=16;a.phase=t*11;a.retreat=1;a.facePain=1;}
- if(t>=STRIKE1+.1){a.x=crawlX(t);a.y=P1.y;a.down=true;a.fallSide=CRAWL;a.a=CRAWL>0?0:Math.PI;a.facePain=1;if(t<STRIKE1+.9){a.fallTimer=2.1-(t-STRIKE1-.1);a.fallDuration=2.1;a.down=false;}else a.fallTimer=0;
-  if(between(t,STRIKE1+.9,CUT-.2)&&!a.g.dead){a.x+=Math.sin(t*9)*.8;}}
+ if(t>=STRIKE1+.1){a.x=crawlX(t);a.y=P1.y;a.down=true;a.fallSide=CRAWL;a.a=CRAWL>0?0:Math.PI;a.facePain=1;if(t<CRAWL0){a.fallTimer=2.1-(t-STRIKE1-.1);a.fallDuration=2.1;a.down=false;}else a.fallTimer=0;
+  // Zieht sich mit den Armen vorwärts: Ruck nach vorn, Arm greift nach vorn
+  if(between(t,CRAWL0,CATCH)&&!a.g.dead){const u=(t*1.6)%1;a.x+=CRAWL*(u<.35?-1.5:0);a.traderPose=u<.5?'point':null;}
+  // Umdrehen, Hände abwehrend dem Schmied entgegen
+  if(t>=CATCH&&!a.g.dead){a.a=CRAWL>0?Math.PI:0;a.fallSide=-CRAWL;a.traderPose='rant';}}
  // ---- Ereignisse ----
  if(t>=6)once('shot',()=>{sc.arrow={t0:6,x0:a.x-12,y0:a.y-36};M.sound?.('stick');});
- if(t>=HIT)once('hit',()=>{sc.arrow=null;sc.stuck=14;M.sound?.('hit');});
+ if(t>=HIT)once('hit',()=>{sc.arrow=null;sc.stuck=14;});
  if(t>=DROP)once('drop',()=>{sc.bow={x:a.x-9,y:a.y+1,def:M.gear(a.g,'weapon')?.def||'bow'};a.g.equipment.weapon=null;M.sound?.('land');});
  if(t>=15.8)once('soil',()=>{sc.soiled=true;});
  if(t>=GRAB)once('grab',()=>{sc.view?.classList?.remove('no-smith-song');M.sound?.('heavy');});
@@ -150,7 +154,9 @@ function pose(t){const s=sc.s,a=sc.a;
  if(t>=OVEN[1])once('char',()=>{sc.charred=true;});
  if(t>=STRIKE1+.1)once('legs',()=>{sever(a,'lt',CRAWL,{vx:40,vz:30});sever(a,'rt',-CRAWL,{vx:30,vz:36});M.sound?.('die');});
  if(between(t,STRIKE1+.9,CUT)&&Math.floor(t*3)!==sc.lastDrop){sc.lastDrop=Math.floor(t*3);sc.trail.push({x:a.x-CRAWL*6,y:a.y+1});}
- if(t>=CUT+.1)once('cut',()=>{a.g.dead=true;a.down=true;burst(a.x+CRAWL*10,a.y-4,16,['#aa3c36','#87352e'],40,18);M.sound?.('sever');});
+ if(t>=CUT+.1)once('cut',()=>{a.g.dead=true;a.down=true;a.g.bisected=true;a.traderPose=null;burst(a.x,a.y-6,26,['#aa3c36','#87352e','#c24a3c'],70,30);M.sound?.('sever');M.sound?.('heavy');});
+ if(between(t,HIT,12)&&Math.floor(t*5)!==sc.lastSpurt){sc.lastSpurt=Math.floor(t*5);const h=headPoint(s),dir=Math.cos(s.a)>=0?-1:1;for(let n=0;n<3;n++)sc.fx.push({x:h.x+dir*3,y:s.y,z:s.y-h.y+Math.random()*2,vx:dir*(14+Math.random()*16),vy:Math.random()*4-2,vz:12+Math.random()*16,life:.7,size:2,color:n%2?'#aa3c36':'#87352e'});}
+ if(t>=HIT)once('silence',()=>sc.view?.classList?.add('scene-silence'));if(t>=9.4)once('sound-back',()=>sc.view?.classList?.remove('scene-silence'));
  if(t>=CUT+1.4)once('sheath',()=>{s.g.enemyGear.secondary=null;M.sound?.('block');});
  if(t>=CUT+2.4)once('snap',()=>{sc.stuck=3;const dir=Math.cos(s.a)>=0?-1:1;sc.fx.push({x:s.x+dir*8,y:s.y,z:58,vx:dir*20,vy:2,vz:10,life:1.4,size:2,color:'#a88c60'},{x:s.x+dir*11,y:s.y,z:58,vx:dir*22,vy:2,vz:12,life:1.4,size:2,color:'#a88c60'});M.sound?.('stick');});}
 function step(dt){const t0=sc.t;sc.t+=dt*rate(t0);const t=sc.t,s=sc.s,a=sc.a;pose(t);
@@ -161,7 +167,7 @@ function step(dt){const t0=sc.t;sc.t+=dt*rate(t0);const t=sc.t,s=sc.s,a=sc.a;pos
  sc.fx=sc.fx.filter(f=>f.life>0);
  // Kamera: weit, dann Zoom auf den Hinterkopf, dann zurück auf beide
  const head={x:s.x,y:s.y-40},mid={x:(s.x+a.x)/2,y:(s.y+a.y)/2-20};let goal;
- if(t<3.4)goal={x:780,y:265,vw:300};else if(t<6)goal={x:mid.x,y:mid.y,vw:230};else if(t<9.2)goal={x:head.x,y:head.y,vw:85};else if(t<15.6)goal={x:mid.x,y:mid.y-10,vw:235};else if(t<22.8)goal={x:mid.x+10,y:mid.y-10,vw:235};else if(t<GRAB)goal={x:mid.x,y:mid.y,vw:190};else if(t<29.6)goal={x:(s.x+a.x)/2,y:s.y-34,vw:110};else if(t<OVEN[1]+.6)goal={x:806,y:222,vw:170};else if(t<RUN.t0)goal={x:802,y:244,vw:200};else if(t<BACK)goal={x:(s.x+a.x)/2,y:(s.y+a.y)/2-14,vw:t<STRIKE1+1?250:200};else goal={x:s.x,y:s.y-20,vw:250};
+ if(t<3.4)goal={x:780,y:265,vw:300};else if(t<6)goal={x:mid.x,y:mid.y,vw:230};else if(t<9.2)goal={x:head.x,y:head.y,vw:85};else if(t<15.6)goal={x:mid.x,y:mid.y-10,vw:235};else if(t<22.8)goal={x:mid.x+10,y:mid.y-10,vw:235};else if(t<GRAB)goal={x:mid.x,y:mid.y,vw:190};else if(t<29.6)goal={x:(s.x+a.x)/2,y:s.y-34,vw:110};else if(t<OVEN[1]+.6)goal={x:806,y:222,vw:170};else if(t<RUN.t0)goal={x:802,y:244,vw:200};else if(t<BACK)goal={x:(s.x+a.x)/2,y:(s.y+a.y)/2-14,vw:t<STRIKE1+1?250:t<CATCH?230:180};else goal={x:s.x,y:s.y-20,vw:250};
  const k=Math.min(1,dt*(t>=HIT&&t<7.6?3.5:2.2));sc.cam.x+=(goal.x-sc.cam.x)*k;sc.cam.y+=(goal.y-sc.cam.y)*k;sc.cam.vw+=(goal.vw-sc.cam.vw)*k;
  sc.say=null;for(const [a1,b1,who,text] of lines())if(between(t,a1,b1))sc.say={who,text};
  paint();if(t>=END)end();}
