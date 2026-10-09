@@ -27,6 +27,12 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Versionskennung einsetzen (Browser laden nach Updates keine alten Dateien)
+        run: |
+          v="${GITHUB_SHA::8}"
+          sed -i "s/__BUILD__/$v/g" boot.js *.html
+          grep -c "$v" boot.js index.html
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
