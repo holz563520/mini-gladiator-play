@@ -24,6 +24,14 @@ const L={
  guide:['Kommt, ich zeige euch meinen Freund, den Schmied. Das ist ein richtig feiner Kerl.','Den kenne ich noch aus alten Tagen. Ein Herz aus Gold, sag ich euch.','Hier entlang, meine Herren. Vorsicht, die Stufe. Wir wollen ja nicht, dass sich jemand wehtut.','{N} freut sich immer über Besuch. Wirklich. Immer.','Ihr werdet sehen, der verschenkt seine Sachen ganz von allein.','Wir haben zusammen in der Arena gestanden. Damals hat er schon allen etwas mitgegeben.','Sagt ihm ruhig direkt, was ihr wollt. Er mag ehrliche Leute.','Ein ganz sanfter Mensch. Hört gern zu, redet wenig.','Der hat noch nie jemanden mit leeren Händen gehen lassen. Mit leerem Kopf schon eher.','Ach, wie schön, endlich mal Gäste! Der Hof war so ruhig in letzter Zeit.','Seine Klingen sind die schärfsten im ganzen Umland. Das werdet ihr gleich merken.','Er arbeitet gerade. Klopft ruhig kräftig, er hört manchmal schlecht.','Wenn er brummt, heißt das: Willkommen.','Ich sag immer: {N} ist der Mann, der jedes Problem löst. Endgültig.','Benehmt euch einfach ganz natürlich. So wie am Tor eben.','Nehmt euch Zeit beim Aussuchen. Er hat Zeit. Ihr vermutlich weniger.','Bei {N} gibt es nur zufriedene Kunden. Die anderen beschweren sich nicht mehr.','Fragt ruhig nach dem Besten, was er hat. Er zeigt es euch persönlich.','Seid nicht schüchtern. Schüchtern war der Letzte auch. Der ist jetzt sehr still.','Hier ist es. Die Schmiede. Ich bleib dann mal ein bisschen hier hinten stehen.'],
  jeer:['HAHAHA! Gratiswaffen! Die haben das wirklich geglaubt!','Ich hab doch gesagt, er ist ein feiner Kerl!','Seht ihr? Er gibt euch was umsonst! Eine Lektion!','Das ist die beste Vorstellung des ganzen Monats!','Und dafür zahlen andere Leute Eintritt!','Merkt euch das, Jungs: Nie den Schmied nach Rabatt fragen!','HAHA! Der rennt ja wie ein Huhn ohne … ach, egal!','Wie dumm kann man eigentlich sein?!','Ich kann nicht mehr! Mein Bauch!','Kundenservice! HAHAHA!'],
  ha:['HAHAHA!','HAHA!','SEHT EUCH DAS AN!','DER RENNT!','HAHAHAHA!','GRATIS! HAHA!','ICH KANN NICHT MEHR!','OH NEIN! HAHA!'],
+ arms:['Meine Arme! Wo sind meine Arme?!'],
+ trip:['Nein! Warte! Ich … uff!'],
+ halves:['Wo … wo sind meine Beine?!'],
+ cold:['Mir ist so kalt …'],
+ follow:['Wo willst du denn hin? Ohne Beine?'],
+ kick:['TOOOR!','UND WEG DAMIT!','SCHÖN WEIT!'],
+ pig:['DAS SCHWEIN HAT SICH EINGESCHISSEN!'],
+ cheer:['JAAAA!','HAHAAA!','DER NÄCHSTE!','HA! SAUBER!'],
  beg:['Warte! Wir können doch über alles reden!'],
  arm:['Mein Arm! Wo ist mein Arm?!'],
  plead:['Bitte! Ich will gar keine Waffen mehr!'],
@@ -52,58 +60,84 @@ function smithActor(){const p=W().master,rng=S.rng,g=M.makeGladiator(0);Object.a
 function victim(m,i){const g=JSON.parse(JSON.stringify(m));g.dead=false;return {id:'wrath-'+i,g,team:1,x:0,y:0,a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},index:i};}
 // Wege: [Zeit, x, y]. Zwischen den Punkten wird gleichmäßig gegangen; Tempo bleibt menschlich (Schmied höchstens ~65 px/s, Flüchtende ~50).
 function at(path,t){if(t<=path[0][0])return {x:path[0][1],y:path[0][2],v:0,dx:0};for(let i=1;i<path.length;i++){const [t1,x1,y1]=path[i],[t0,x0,y0]=path[i-1];if(t<=t1){const k=(t-t0)/(t1-t0||1);return {x:x0+(x1-x0)*k,y:y0+(y1-y0)*k,v:Math.hypot(x1-x0,y1-y0)/(t1-t0||1),dx:x1-x0};}}const q=path[path.length-1];return {x:q[1],y:q[2],v:0,dx:0};}
-function plan(n){
+// Tötungsarten: jedes Opfer anders. Immer einer weicht zurück und stolpert rückwärts; ab drei wird einer durchtrennt und kriecht,
+// bis er nach etwa fünf Metern verblutet; manchmal kickt der Schmied einen Kopf weg. Ausgewürfelt bei jedem Besuch (Math.random, kein Spielzufall).
+const METHODS=['arm','twoarms','leg','throat'];
+function methodsFor(n){const out=Array(n).fill(null),rest=[...METHODS].sort(()=>Math.random()-.5),free=()=>out.map((m,i)=>m?-1:i).filter(i=>i>=0),put=(m,cands)=>{const c=cands.filter(i=>i<n&&!out[i]);if(c.length)out[c[Math.floor(Math.random()*c.length)]]=m;};
+ // Mittendurch nur, wo der Oberkörper waagrecht Platz zum Wegkriechen hat (Tür, Südwesten, Bettler)
+ if(n>=3)put('bisect',[0,1,4]);put('stumble',[0,1,3,4]);let k=0;for(const i of free())out[i]=rest[k++%rest.length];return out;}
+function plan(n,forced){
  // Ankunft und Anklopfen. Danach die Jagd: Die Herumtreiber laufen weg oder weichen zurück, niemand legt sich ohne Grund hin.
- // Höchstens ein Stolpern im ganzen Video; ab drei Herumtreibern macht sich einer in die Hose. Nach jedem Kopf jubelt der Schmied.
- const p={n,end:0,kills:[],says:[],sips:[],laughs:[],vic:[],falls:[],kneels:[],shoves:[],backs:[],soil:null,pops:[]};
+ // Ab drei Herumtreibern macht sich einer in die Hose. Nach jedem Kopf jubelt der Schmied.
+ const p={n,end:0,kills:[],says:[],sips:[],laughs:[],cheers:[],vic:[],falls:[],kneels:[],shoves:[],backs:[],soil:null,pops:[],kicks:[],deaths:[],crawls:[],methods:forced||methodsFor(n)};
+ const head0=p.methods.map((m,i)=>['arm','twoarms','leg','stumble'].includes(m)?i:-1).filter(i=>i>=0);p.kickWho=Math.random()<.75&&head0.length?head0[Math.floor(Math.random()*head0.length)]:-1;
  const S0=[[712,268],[688,274],[664,280],[668,302],[692,302]];
  for(let i=0;i<n;i++)p.vic[i]=[[0,618,312+i*22],[1.7+i*.1,S0[i][0],S0[i][1]]];
  p.vic[0].push([1.9,712,268],[2.3,722,266]);
  p.says.push([2.1,3.7,'v0',L.knock[0]]);
  p.door=4.1;p.says.push([4.7,6.3,'s',L.roar[0]]);p.sips.push([4.25,4.7]);
  const sm=p.smith=[[0,748,240],[p.door+.2,748,246],[6.3,748,246],[6.75,738,264]];let free=6.75;
- const go=(t,x,y,v=46)=>{const [t0,x0,y0]=sm[sm.length-1],s=Math.max(t,t0,free);if(s>t0)sm.push([s,x0,y0]);const w=walk([[x0,y0],[x,y]],s,v);sm.push(...w.slice(1));free=w[w.length-1][0];return free;};
+ const go=(t,x,y,v=46)=>{[x,y]=clear(x,y);const [t0,x0,y0]=sm[sm.length-1],s=Math.max(t,t0,free);if(s>t0)sm.push([s,x0,y0]);const w=walk([[x0,y0],[x,y]],s,v);sm.push(...w.slice(1));free=w[w.length-1][0];return free;};
  const at0=()=>sm[sm.length-1];
- const hit=(who,t,part)=>{const w=Math.max(t,free+.25);p.kills.push({who,swing:w,part});free=w+.35;if(part==='head'){p.laughs.push([w+.45,w+1.85]);free=w+1.9;}return w;};
+ const cheer=t=>{p.laughs.push([t,t+1.5]);p.cheers.push(t);free=Math.max(free,t+1.55);};
+ const hit=(who,t,part,o={})=>{const w=Math.max(t,free+.25);p.kills.push({who,swing:w,part,...o});free=w+.35;if(part==='head'&&!o.kick)cheer(w+.45);return w;};
  const say=(a,who,text)=>{p.says.push([a,a+1.6,who,text]);};
  const path=(i,...pts)=>p.vic[i].push(...pts),back=(i,a,b)=>p.backs.push([i,a,b]);
- // 0: Arm ab, weicht taumelnd zurück, Kopf
- hit(0,6.75,'lua');path(0,[7.0,722,266],[8.7,694,296]);back(0,7,8.7);
- go(7.8,708,298,24);let w=hit(0,9.1,'head');
- if(n===1){say(w+.5,'s',choose(L.taunt,sc0id,'t0'));return finale(p,free,708,298);}
+ const pick=list=>list[Math.floor(Math.random()*list.length)];
+ // Fallrichtung so wählen, dass der Körper frei liegt (nicht über Schleifstein, Bank, Brunnen … und nicht auf der Schmiede)
+ const clearDir=(x,y,pref)=>{const ok=M.sceneNav?.lyingClear;if(!ok)return pref;return ok(x,y,pref)||!ok(x,y,-pref)?pref:-pref;};
+ // Kopf ab (stehend oder liegend), manchmal danach Kopf wegkicken
+ const head=(i,t,vx,vy,dir,lying)=>{const kick=p.kickWho===i,w=hit(i,t,'head',{kick,lying,tx:lying?vx+dir*48:vx,hd:lying?undefined:clearDir(vx,vy,dir)});
+  if(!kick)return [at0()[1],at0()[2]];const hx=lying?vx+dir*56:vx+dir*16,hy=vy+(lying?2:4);go(w+.55,hx-dir*9,hy+3,26);const k=free+.2;const kd=(x=>x>360&&x<850&&!M.sceneNav?.inside?.(x,hy))(hx+dir*90)?dir:-dir;p.kicks.push({who:i,t:k,dir:kd});say(k+.3,'s',pick(L.kick));cheer(k+.5);return [hx-dir*9,hy+3];};
+ // Ein Opfer erledigen: Schmied steht bei A neben ihm (dir = Richtung Schmied → Opfer). Gibt den Standort des Schmieds danach zurück.
+ function exec(i,A,vx,vy,dir){const m=p.methods[i],V='v'+i;
+  if(m==='arm'){const w=hit(i,A,dir>0?'rua':'lua');say(w+.3,V,L.arm[0]);const bx=vx+dir*16,by=vy+3;path(i,[w+.3,vx,vy],[w+1.6,bx,by]);back(i,w+.3,w+1.6);go(w+.8,bx-dir*15,by,24);return head(i,w+1.9,bx,by,dir,false);}
+  if(m==='twoarms'){let w=hit(i,A,'lua');w=hit(i,w+.7,'rua');say(w+.3,V,L.arms[0]);p.sips.push([w+.6,w+1.7]);free=Math.max(free,w+1.8);return head(i,w+2,vx,vy,dir,false);}
+  if(m==='leg'){const hd=clearDir(vx+dir*18,vy+3,dir),w=hit(i,A,dir>0?'rt':'lt',{hd});say(w+.4,V,L.leg[0]);const cx=vx+hd*18,cy=vy+3;path(i,[w+1,vx,vy],[w+3.2,cx,cy]);p.crawls.push({who:i,t0:w+1,t1:w+3.2});go(w+2.2,cx+hd*40,cy+9,22);return head(i,w+3.6,cx,cy,hd,true);}
+  if(m==='stumble'){// weicht rückwärts zurück und fällt auf den Rücken
+   const bx=vx+dir*18,by=vy+2;path(i,[A,vx,vy],[A+1.5,bx,by]);back(i,A,A+1.5);p.falls[i]={t:A+1.5,hd:dir};say(A+1.4,V,L.trip[0]);go(A+1.9,bx+dir*44,by+9,24);return head(i,A+3.6,bx,by,dir,true);}
+  if(m==='throat'){// Schmied geht vorn herum, steht hinter ihm, Kehle durch; taumelt nach vorn und fällt
+   const fd=clearDir(vx-dir*10,vy,-dir),sd=-fd;if(sd===dir){go(A+.2,vx,vy+12,30);}const B=sd===dir?go(0,vx+dir*14,vy,30):A;path(i,[A,vx,vy],[B+.3,vx,vy]);const w=hit(i,B+.25,'throat',{tx:vx});path(i,[w+.2,vx,vy],[w+1.4,vx+fd*10,vy]);p.falls[i]={t:w+1.4,hd:fd};p.deaths.push([i,w+2.3]);cheer(w+1.6);return [sd===dir?vx+dir*14:vx-dir*14,vy];}
+  if(m==='bisect'){// mittendurch: Beine bleiben liegen, der Oberkörper kriecht Arm für Arm weiter und verblutet nach etwa fünf Metern
+   const w=hit(i,A,'bisect',{hd:dir});p.falls[i]={t:w+.12,hd:dir};say(w+.6,V,L.halves[0]);const tx=Math.max(345,Math.min(860,vx+dir*120)),ty=[vy+6,vy-8,vy+14,vy-14].find(y=>M.sceneNav?.lyingClear?.(tx,y,dir))??vy+6,way=M.sceneNav?.route?M.sceneNav.route([[vx,vy],[tx,ty]]):[[vx,vy],[tx,ty]];
+   const crawl=walk(way,w+1.2,12.5),endT=crawl[crawl.length-1][0];path(i,[w+1.2,vx,vy],...crawl.slice(1));p.crawls.push({who:i,t0:w+1.2,t1:endT,bisect:true});p.deaths.push([i,endT+.9]);cheer(w+.5);
+   // Der Schmied schlendert mit Bier hinterher und schaut zu, bis der Kriechende verblutet ist
+   const fx=tx-dir*44,fy=ty+6;say(w+2.6,'s',L.follow[0]);go(w+2.3,fx,fy,Math.max(8,Math.hypot(fx-at0()[1],fy-at0()[2])/Math.max(1,endT-w-2.8)));p.sips.push([free+.1,endT-.4]);say(endT-2.6,V,L.cold[0]);free=Math.max(free,endT+.9);cheer(endT+1.1);return [fx,fy];}
+  return head(i,A,vx,vy,dir,false);}
+ // 0: weicht von der Tür zurück in die freie Gasse unterhalb des Werkhofs, dort holt ihn der Schmied ein
+ path(0,[4.8,722,266],[6.8,700,297]);back(0,4.8,6.8);let A0=go(6.75,716,297,40);let pos=exec(0,A0,700,297,-1);
+ if(n===1){say(free+.2,'s',choose(L.taunt,sc0id,'t0'));return finale(p,free,...pos);}
  say(7.3,'v1',L.panic[0]);
- // Ab drei: einer macht sich vor Angst in die Hose, als der Arm fliegt
- if(n>=3){p.soil={who:2,t:7.0};p.pops.push([7.6,'DER HAT SICH EINGESCHISSEN!']);}
- // 1: flieht nach Südwesten, stolpert (das einzige Mal), weicht vor dem Schmied zurück, Bein ab, kriecht, Kopf
- path(1,[7.6,688,274],[8.8,660,296]);p.kneels.push([1,8.8,9.6]);path(1,[9.6,660,296],[11.0,640,322],[12.2,622,352],[12.8,616,370]);
- say(10.9,'s',choose(L.taunt,sc0id,'t0'));
- let A=go(0,618,378,46);path(1,[A-1.3,616,370],[A,603,384]);back(1,A-1.3,A);
- w=hit(1,A,'rt');say(w+.4,'v1',L.beg[0]);path(1,[w+1,603,384],[w+3,588,392]);go(w+2.2,602,390,20);w=hit(1,w+3.3,'head');
- if(n===2)return finale(p,free,602,390);
- // 2 (eingeschissen): rennt um den Brunnen, wartet zitternd, weicht zurück, Arm ab, will weg, Kopf
- path(2,...walk([[664,280],[680,306],[684,336],[700,380],[770,390],[788,352]],7.7,34));
- say(free+.1,'s',choose(L.taunt,sc0id,'t1'));A=go(0,792,346,50);path(2,[A-1.5,788,352],[A,806,340]);back(2,A-1.5,A);
- w=hit(2,A,'rua');say(w+.4,'v2',L.arm[0]);path(2,[w+.5,806,340],[w+2.3,800,372]);go(w+.9,786,376,30);w=hit(2,w+2.4,'head');
- let x=786,y=376;
+ // Ab drei: einer macht sich vor Angst in die Hose, als der Schmied loslegt
+ if(n>=3){p.soil={who:2,t:7.0};p.pops.push([7.6,'HAHAHA! GUCKT EUCH DEN AN!']);}
+ // 1: flieht nach Südwesten, weicht vor dem Schmied zurück
+ path(1,[7.6,688,274],[9.2,660,296],[10.6,640,322],[11.8,622,352],[12.4,616,370]);
+ say(free+.1,'s',choose(L.taunt,sc0id,'t0'));
+ let A=go(0,618,378,46);path(1,[A-1.3,616,370],[A,603,384]);back(1,A-1.3,A);pos=exec(1,A,603,384,-1);
+ if(n===2)return finale(p,free,...pos);
+ // 2 (eingeschissen): rennt um den Brunnen, wartet zitternd, weicht zurück
+ path(2,...walk([[664,280],[680,306],[684,336],[700,380],[770,392],[786,370],[770,394]],7.7,34));
+ say(free+.1,'s',L.pig[0]);A=go(0,774,398,50);path(2,[A-1.5,770,394],[A,790,398]);back(2,A-1.5,A);pos=exec(2,A,790,398,1);
  // 3 und 4 warten am Rand: 3 rennt zu den lachenden Gladiatoren und wird zurückgeschubst, 4 weicht zurück
  if(n>=4){path(3,[7.8,668,302],[9.6,650,328],[11.0,640,404]);p.shoves.push([11.0,11.9]);path(3,[11.9,640,404],[12.7,654,382]);}
  if(n>=5){path(4,[7.6,692,302],[9.6,684,330]);back(4,7.6,9.6);
-  // 4: bettelt, weicht zurück, rennt dann doch los; Arm ab, taumelt rückwärts, Kopf
+  // 4: bettelt, weicht zurück, rennt dann doch los und wird eingeholt
   const ask=free+.1;say(ask,'v4',L.plead[0]);A=go(free+.2,688,330,40);path(4,[A-1.5,684,330],[A,670,334]);back(4,A-1.5,A);
   const late=Math.max(A+.2,ask+4.1);say(late,'s',L.late[0]);p.sips.push([A+.1,late-.2]);free=Math.max(free,late+.4);
-  const run=late+2.4;path(4,[run,670,334],[run+2.4,626,372]);go(run+.3,644,358,30);
-  w=hit(4,run+2.2,'lua');path(4,[w+.3,Math.max(626,0),372],[w+1.6,614,382]);back(4,w+.3,w+1.6);go(w+.7,628,376,22);w=hit(4,w+1.9,'head');x=628;y=376;}
- // 3: rennt los, sobald der Schmied kommt, weg vom Schmied; Bein ab, kriecht weiter, Kopf
- if(n>=4){const [,sx]=at0(),dir=sx>654?-1:1,Xe=654+dir*86,T=[Xe-dir*16,407],D=Math.hypot(T[0]-x,T[1]-y),e=Math.max(free,free+D/36-3);
+  const run=late+2.4;A=go(run+.3,644,358,30);path(4,[run,670,334],[A,630,366]);pos=exec(4,A+.05,630,366,-1);}
+ // 3: rennt los, sobald der Schmied kommt, weg vom Schmied, und wird eingeholt
+ if(n>=4){const [,sx,sy]=at0(),dir=sx>654?-1:1,Xe=654+dir*86,T=[Xe-dir*16,407],D=Math.hypot(T[0]-sx,T[1]-sy),e=Math.max(free,free+D/36-3);
   say(e-.2,'v3',L.run[0]);path(3,[e,654,382],[e+1.6,654+dir*36,398],[e+2.4,654+dir*64,404],[e+3.2,Xe,408]);
-  go(e,T[0],T[1],36);w=hit(3,e+3.3,'lt');say(w+.4,'v3',L.leg[0]);path(3,[w+1,Xe,408],[w+3.2,Xe+dir*16,412]);go(w+2.2,Xe+dir*2,410,22);w=hit(3,w+3.3,'head');x=Xe+dir*2;y=410;}
- return finale(p,free,x,y);}
+  A=go(e,T[0],T[1],36);pos=exec(3,Math.max(A+.1,e+3.3),Xe,408,dir);}
+ return finale(p,free,...pos);}
 let sc0id='';
 const LEFT=[[630,446],[656,454],[684,444]],RIGHT=[[846,298],[866,320],[832,326]],LANISTA=[822,304];
 // Vorspiel: Der Lanista führt die Gruppe vom Tor her zur Schmiede, die übrigen Gladiatoren stellen sich mit Abstand dazu.
 function prelude(n){const speed=34,routes=[];for(let i=0;i<n;i++){const pts=[[612,566+i*22],[614,420],[618,312+i*22]],len=pts.slice(1).reduce((v,q,k)=>v+Math.hypot(q[0]-pts[k][0],q[1]-pts[k][1]),0);routes.push(walk(pts,-len/speed,speed));}const off=Math.ceil(Math.max(...routes.map(r=>-r[0][0]))+.6);const lan=[...walk([[634,548],[636,410],[640,300]],-off+.6,speed),[0,640,300],[1.4,700,300],[3.2,LANISTA[0],LANISTA[1]]];return {off,routes,lan};}
 function walk(points,t0,speed){points=M.sceneNav?.route?M.sceneNav.route(points):points;let t=t0;return points.map((q,i)=>{if(i)t+=Math.hypot(q[0]-points[i-1][0],q[1]-points[i-1][1])/speed;return [t,q[0],q[1]];});}
-function finale(p,t,x,y){p.vic=p.vic.map(v=>{for(let i=1;i<v.length;i++)if(v[i][0]<v[i-1][0])v[i][0]=v[i-1][0];return M.sceneNav?.route?M.sceneNav.route(v):v;});p.inspect=[t,t+.7];p.sips.push([t+.7,t+1.2]);p.laughs.push([t+1.2,t+2.6]);p.says.push([t+2.6,t+4.9,'s',choose(L.last,sc0id,'last')]);const back=t+2.8,home=walk([[x,y],[748,246]],back,50),arrive=home[home.length-1][0];p.smith.push(...home,[arrive+.4,748,238]);p.gone=arrive+.4;p.end=Math.min(p.gone+.5,t+5.3);return p;}
+// Zielpunkte nie in einem Hindernis (Kohlen, Bank …): an den Rand schieben
+function clear(x,y){if(!M.sceneNav?.inside?.(x,y))return [x,y];const d={id:'pt',x,y,a:0,g:{}};M.sceneNav.resolve([d]);return [d.x,d.y];}
+function finale(p,t,x,y){p.vic=p.vic.map(v=>{for(const q of v){[q[1],q[2]]=clear(q[1],q[2]);}for(let i=1;i<v.length;i++)if(v[i][0]<v[i-1][0])v[i][0]=v[i-1][0];return M.sceneNav?.route?M.sceneNav.route(v):v;});p.inspect=[t,t+.7];p.sips.push([t+.7,t+1.2]);p.laughs.push([t+1.2,t+2.6]);p.says.push([t+2.6,t+4.9,'s',choose(L.last,sc0id,'last')]);const back=t+2.8,home=walk([[x,y],[760,302],[748,246]],back,50),arrive=home[home.length-1][0];p.smith.push(...home,[arrive+.4,748,238]);p.gone=arrive+.4;p.end=Math.max(Math.min(p.gone+.5,t+5.3),...p.deaths.map(d=>d[1]+1.4));return p;}
 function fleePlan(n){const p={flee:true,n,says:[[.3,2.4,'v0','']],vic:[],end:3.8};const xs=[610,586,634,562,658];for(let i=0;i<n;i++){const x=xs[i],y=596-(i?6:0),go=1+i*.2;p.vic[i]=[[0,x,y],[go,x,y],[go+.6,x+(i%2?-6:i?6:0),y+30],[go+1.8,610+(i-1)*8,700]];}return p;}
 function crowdOf(){return S.roster.filter(g=>!g.dead&&!g.smithDuty).slice(0,6).map((m,i)=>{const g=JSON.parse(JSON.stringify(m)),spot=(i%2?LEFT:RIGHT)[Math.floor(i/2)],from=i%2?[594-Math.floor(i/2)*16,spot[1]+22]:[900,spot[1]];return {id:'crowd-'+i,g,team:0,x:from[0],y:from[1],a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},spot,from,index:i};});}
 function start(){const st=WD.state(),g=st.group;if(!g||g.talk?.tone!=='schmied'||S.battle||sc)return false;const outcome=g.talk.outcome,members=g.members.slice(0,5),leader=g.leader.name;sc0id=g.id;
@@ -111,7 +145,7 @@ function start(){const st=WD.state(),g=st.group;if(!g||g.talk?.tone!=='schmied'|
  WD.decline();const entry=st.known.find(k=>k.name===leader);
  // Wie nach jedem Kampf sieht der Schmied die Ausrüstung der Erschlagenen: gleiche Rezeptlogik wie in der Arena.
  const F=W(),known=[...(F.recipes||[])],refs=[...(F.refinements||[])];if(outcome==='WRATH')M.workshop.encounter?.({id:'wrath-'+g.id,actors:members.map(m=>({team:1,g:m}))});const found=[...(F.recipes||[]).filter(r=>!known.includes(r)).map(()=>'Schmiederezept'),...(F.refinements||[]).filter(r=>!refs.includes(r)).map(()=>'Verfeinerungsrezept')];if(entry)entry.outcome=outcome==='WRATH'?'vom Schmied erschlagen':'vor dem Schmied geflohen';M.persist();
- const n=members.length;sc={found,t:0,outcome,p:outcome==='WRATH'?plan(n):fleePlan(n),vic:members.map(victim),smith:outcome==='WRATH'?smithActor():null,limbs:[],fx:[],done:{},say:null,cam:{x:680,y:280}};
+ const n=members.length;sc={found,t:0,outcome,p:outcome==='WRATH'?plan(n,M.smithWrath?.force?.slice(0,n)):fleePlan(n),vic:members.map(victim),smith:outcome==='WRATH'?smithActor():null,limbs:[],fx:[],done:{},say:null,cam:{x:680,y:280}};
  if(outcome==='WRATH'){const pre=prelude(n);sc.off=pre.off;sc.pre=pre;sc.crowd=crowdOf();sc.lan=S.lanista?{id:'wrath-lanista',g:M.ludus.ownerFigure(S.lanista),lanista:true,team:0,x:634,y:548,a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{}}:null;const bag=[...L.guide].sort(()=>Math.random()-.5);sc.guide=[[-pre.off+.6,-.4,bag[0]],[.1,1.95,bag[1]]];sc.jeer=[...L.jeer].sort(()=>Math.random()-.5);sc.ha=[];sc.lastJeer=0;sc.lanSay=null;sc.t=-pre.off;}
  if(outcome==='FLEE')sc.p.says[0][3]=shoutName(choose(L.flee,g.id,'flee'));
  sc.view=document.createElement('div');sc.view.id='smithWrath';sc.view.className='smith-ceremony smith-intro smith-wrath no-smith-song';sc.view.setAttribute?.('role','dialog');sc.view.setAttribute?.('aria-modal','true');sc.view.setAttribute?.('aria-label',outcome==='WRATH'?'Der Zorn des Schmieds':'Panische Flucht');
@@ -121,34 +155,51 @@ function end(){if(!sc)return;const found=sc.found||[];sc.view?.remove?.();sc=nul
 function once(k,fn){if(sc.done[k])return;sc.done[k]=true;fn();}
 function blood(x,y,n,dir=1){for(let i=0;i<n;i++)sc.fx.push({x,y,z:38+Math.random()*8,vx:dir*(10+Math.random()*30),vy:Math.random()*14-7,vz:18+Math.random()*26,life:.6+Math.random()*.5,size:2,color:i%3?'#aa3c36':'#87352e'});}
 function dust(x,y,n){for(let i=0;i<n;i++)sc.fx.push({x:x+Math.random()*10-5,y,z:2+Math.random()*6,vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*8,vz:12+Math.random()*24,life:.5+Math.random()*.4,size:2,color:'#c9b586'});}
-function sever(v,part,dir){const g=v.g;for(const k of M.branches[part]||[part])if(g.body[k])g.body[k].missing=true;sc.limbs.push({x:v.x+dir*4,y:v.y,z:part==='head'?52:38,angle:0,part,skin:g.appearance.skin,hair:g.appearance.hair,g,vx:dir*(part==='head'?26:34),vy:6,vz:part==='head'?40:30,spin:dir*(part==='head'?6:9)});blood(v.x,v.y,part==='head'?18:12,dir);M.sound?.('sever');}
+// Kriechen wie im Attentat: Arm vor, Pause, ruckartiger Zug (gleiche mittlere Geschwindigkeit)
+const PULL=.6;function pull(t,t0){const tau=t-t0,n=Math.floor(tau/PULL),u=(tau%PULL)/PULL,k=u<.45?0:Math.min(1,(u-.45)/.35);return t0+(n+k*k*(3-2*k))*PULL;}
+// Flugbahn eines Körperteils so wählen, dass es frei landet (nicht auf Schrein, Amphore, Puppe …): Richtung oder Weite anpassen
+function aim(l){const ok=M.sceneNav?.spotClear;if(!ok)return;const air=Math.max(.2,(l.vz+Math.sqrt(l.vz*l.vz+400*l.z))/200)*1.25;for(const k of [1,.6,.3,-1,-.6,-.3,0]){if(ok(l.x+l.vx*k*air,l.y+l.vy*k*air)){l.vx*=k;l.vy*=k;if(k<0)l.spin=-l.spin;return;}}}
+const lieDir=v=>(v.fallSide||1)*(Math.cos(v.a||0)>=0?1:-1)>=0?1:-1;
+function sever(v,part,dir){const g=v.g;for(const k of M.branches[part]||[part])if(g.body[k])g.body[k].missing=true;const lying=v.down||v.fallTimer>0,ls=lieDir(v),off={head:52,lua:34,rua:34,lt:14,rt:14}[part]??30;
+ sc.limbs.push(lying?{x:v.x+ls*off,y:v.y+1,z:6,angle:0,part,skin:g.appearance.skin,hair:g.appearance.hair,g,vx:dir*10,vy:3,vz:20,spin:dir*4}:{x:v.x+dir*4,y:v.y,z:part==='head'?52:38,angle:0,part,skin:g.appearance.skin,hair:g.appearance.hair,g,vx:dir*(part==='head'?26:34),vy:6,vz:part==='head'?40:30,spin:dir*(part==='head'?6:9)});
+ aim(sc.limbs[sc.limbs.length-1]);
+ if(lying){for(let i=0;i<(part==='head'?16:10);i++)sc.fx.push({x:v.x+ls*off,y:v.y,z:4+Math.random()*6,vx:dir*(8+Math.random()*24),vy:Math.random()*10-5,vz:14+Math.random()*20,life:.6+Math.random()*.5,size:2,color:i%3?'#aa3c36':'#87352e'});}else blood(v.x,v.y,part==='head'?18:12,dir);M.sound?.('sever');}
 function pose(t){const p=sc.p,s=sc.smith;
  // Herumtreiber
- sc.vic.forEach((v,i)=>{v.traderPose=null;if(v.g.dead&&v.down){v.state='idle';v.moveSpeed=0;v.kneeTimer=0;return;}const path=p.vic[i];if(!path)return;const q=at(path,t);v.x=q.x;v.y=q.y;v.moveSpeed=q.v>3?10:0;v.state=q.v>3?'move':'idle';v.phase=t*(q.v>40?11:7)+i;if(q.dx)v.a=q.dx>0?0:Math.PI;
+ sc.vic.forEach((v,i)=>{v.traderPose=null;for(const [w,d] of p.deaths||[])if(w===i&&t>=d&&!v.g.dead){v.g.dead=true;v.down=true;v.fallTimer=0;M.sound?.('die');}
+  if(v.g.dead&&v.down){v.state='idle';v.moveSpeed=0;v.kneeTimer=0;v.facePain=0;if(v.lieA!=null)v.a=v.lieA;return;}const path=p.vic[i];if(!path)return;const cr=(p.crawls||[]).find(c=>c.who===i&&between(t,c.t0,c.t1)),q=at(path,cr?pull(t,cr.t0):t);v.x=q.x;v.y=q.y;v.moveSpeed=q.v>3?10:0;v.state=q.v>3?'move':'idle';v.phase=t*(q.v>40?11:7)+i;if(q.dx)v.a=q.dx>0?0:Math.PI;
   const scared=p.flee?t>.8:t>=p.door;v.retreat=scared?1:0;v.facePain=scared&&!q.v?.3:0;
   if(!p.flee&&t<p.door&&i===0&&between(t,2.1,3.7)){v.state='charge';v.a=0;}
   if(!p.flee&&t<p.door&&q.v<3)v.a=0;
   if(p.flee&&t<1)v.a=0;
   // Zurückweichen: Blick zum Schmied, Füße gehen rückwärts
   for(const [w,a,b] of p.backs||[])if(w===i&&between(t,a,b)&&sc.smith){v.a=sc.smith.x>=v.x?0:Math.PI;v.retreat=1;}
+  if(v.throatCut){v.facePain=1;v.retreat=1;}
   if(p.soil?.who===i&&t>=p.soil.t)once('soil',()=>{sc.soilSpot={x:v.x,y:v.y};});
-  // Stolpern / Knien / Kauern: auf die Knie, danach wieder hoch
-  v.kneeTimer=0;for(const [w,a,b] of p.kneels||[])if(w===i&&between(t,a,b)&&!v.down){v.kneeDuration=b-a;v.kneeTimer=b-t;v.kneeRise=Math.min(.45,(b-a)/2);v.state='idle';v.moveSpeed=0;if(sc.smith&&!sc.smith.hidden&&b-a>2)v.a=sc.smith.x>=v.x?0:Math.PI;v.facePain=.6;}
-  // Hinfallen (Ausrutschen oder Bein ab), danach am Boden weiterkriechen
-  const f=p.falls?.[i];if(f&&t>=f.t){const k=t-f.t;v.fallSide=f.side;v.state='idle';v.moveSpeed=0;if(k<.9){v.fallTimer=2.1-k;v.fallDuration=2.1;}else{v.fallTimer=0;v.down=true;if(q.v>1){v.traderPose=Math.floor(t/.6)%2?'pat':'point';v.gest=t*3;}}}});
+  v.kneeTimer=0;for(const [w,a,b] of p.kneels||[])if(w===i&&between(t,a,b)&&!v.down){v.kneeDuration=b-a;v.kneeTimer=b-t;v.kneeRise=Math.min(.45,(b-a)/2);v.state='idle';v.moveSpeed=0;v.facePain=.6;}
+  // Hinfallen (rückwärts gestolpert, Bein ab, Kehle durch): Kopf zeigt in Richtung hd; danach am Boden Arm für Arm weiterkriechen
+  const f=p.falls?.[i];if(f&&t>=f.t){if(v.lieA==null){v.lieA=v.a;v.fallSide=f.hd*(Math.cos(v.lieA)>=0?1:-1);}v.a=v.lieA;const k=t-f.t;v.state='idle';v.moveSpeed=0;v.kneeTimer=0;if(k<.9&&!v.splitPiece){v.fallTimer=2.1-k;v.fallDuration=2.1;}else{v.fallTimer=0;v.down=true;v.facePain=1;if(q.v>1){v.traderPose=Math.floor(t/.6)%2?'pat':'point';v.gest=t*3;}}}});
+ for(const l of sc.legs||[]){l.state='idle';l.moveSpeed=0;}
  if(!s)return;
  // Schmied
  s.state='idle';s.moveSpeed=0;s.wind=0;s.swing=0;s.technique=null;s.forgePose='';s.kickTimer=0;s.shoutTimer=0;s.phase=t*4;
  s.hidden=t<p.door||(p.gone&&t>=p.gone);const q=at(p.smith,t);s.x=q.x;s.y=q.y;if(q.v>3){s.state='move';s.moveSpeed=q.v>45?16:10;s.phase=t*(q.v>45?9:6);s.a=q.dx>=0?0:Math.PI;}
  for(const [a,b] of p.sips)if(between(t,a,b))s.forgePose='sip';
- for(const [a,b] of p.laughs)if(between(t,a,b)&&q.v<3)s.state='celebrate';
+ s.jumpTimer=0;for(const [a,b] of p.laughs)if(between(t,a,b)&&q.v<3){s.state='celebrate';s.forgePose='';const u=(t-a)%.6;if(u<.26)s.jumpTimer=.26-u;}
+ for(const c of p.cheers||[])if(t>=c)once('cheer'+c,()=>{sc.ha=(sc.ha||[]).filter(h=>h.who!==s);sc.ha.push({who:s,text:L.cheer[Math.floor(Math.random()*L.cheer.length)],until:t+1.4,loud:true});});
+ for(const k of p.kicks||[]){if(between(t,k.t-.26,k.t+.22)){s.kickTimer=k.t+.22-t;s.a=k.dir>0?0:Math.PI;s.state='idle';}if(t>=k.t)once('kick'+k.who,()=>{const v=sc.vic[k.who],h=sc.limbs.find(l=>l.part==='head'&&l.g===v?.g);if(!h)return;h.x=s.x+k.dir*9;h.y=s.y-1;h.z=3;h.vx=k.dir*(150+Math.random()*30);h.vy=(Math.random()-.5)*24;h.vz=78;h.spin=k.dir*16;aim(h);blood(h.x,h.y,8,k.dir);M.sound?.('hit');});}
  if(p.inspect&&between(t,...p.inspect)){s.forgePose='inspect';s.a=Math.PI;}
  if(between(t,4.7,6.3)){s.state='charge';s.shoutTimer=.3;}
- for(const k of p.kills){const v=sc.vic[k.who],w=k.swing;if(!v)continue;if(between(t,w-1.1,w+.8)&&q.v<3)s.a=v.x>=s.x?0:Math.PI;
+ for(const k of p.kills){const v=sc.vic[k.who],w=k.swing;if(!v)continue;const tx=k.tx??v.x;if(between(t,w-1.1,w+.8)&&q.v<3&&!s.kickTimer)s.a=tx>=s.x?0:Math.PI;
   if(between(t,w-.3,w)){s.technique='overhead';s.windMax=.3;s.wind=w-t;}
   if(between(t,w,w+.25)){s.swingKind='slash';s.swingMax=.25;s.swing=w+.25-t;}
-  const dir=v.x>=s.x?1:-1;
-  if(t>=w+.12)once('hit'+k.who+k.part,()=>{sever(v,k.part,dir);if(k.part==='head'){v.g.dead=true;v.down=true;v.kneeTimer=0;v.fallSide=v.fallSide||dir;}else if(/^(lt|rt|lsh|rsh)$/.test(k.part)){if(!p.falls[k.who])p.falls[k.who]={t:w+.12,side:dir};}else v.stagger=.5;});}
+  const dir=tx>=s.x?1:-1;
+  if(t>=w+.12)once('hit'+k.who+k.part,()=>{
+   if(k.part==='throat'){v.throatCut=true;M.sound?.('sever');for(let n=0;n<14;n++)sc.fx.push({x:v.x+(Math.cos(v.a)>=0?3:-3),y:v.y,z:44,vx:(Math.cos(v.a)>=0?1:-1)*(16+Math.random()*30),vy:Math.random()*8-4,vz:10+Math.random()*24,life:.7,size:2,color:n%2?'#aa3c36':'#87352e'});return;}
+   if(k.part==='bisect'){const hd=k.hd||dir;v.lieA=hd>0?0:Math.PI;v.a=v.lieA;v.fallSide=1;v.down=true;v.splitPiece='upper';v.bleeding=true;v.stagger=0;
+    const legs={...v,id:v.id+'-beine',g:v.g,splitPiece:'lower',bloodMarks:{},traderPose:null};(sc.legs??=[]).push(legs);sc.splitAt={x:v.x,y:v.y,hd};
+    for(let n=0;n<26;n++)sc.fx.push({x:v.x+hd*25,y:v.y,z:6+Math.random()*10,vx:(Math.random()-.5)*70,vy:Math.random()*14-7,vz:20+Math.random()*34,life:.7+Math.random()*.5,size:2,color:n%3?'#aa3c36':'#87352e'});M.sound?.('sever');return;}
+   sever(v,k.part,dir);if(k.part==='head'){v.g.dead=true;v.down=true;v.kneeTimer=0;v.fallTimer=0;if(v.lieA==null){v.lieA=v.a;v.fallSide=(k.hd||dir)*(Math.cos(v.a)>=0?1:-1);}}else if(/^(lt|rt|lsh|rsh)$/.test(k.part)){if(!p.falls[k.who])p.falls[k.who]={t:w+.12,hd:k.hd||dir};}else v.stagger=.5;});}
  if(sc.pre&&t<0)sc.vic.forEach((v,i)=>{const q=at(sc.pre.routes[i],t);v.x=q.x;v.y=q.y;v.state=q.v>3?'move':'idle';v.moveSpeed=q.v>3?10:0;v.phase=t*7+i;v.a=0;v.retreat=0;v.facePain=0;});
  crowd(t);
  if(t>=p.door)once('door',()=>{M.sound?.('heavy');dust(748,238,20);sc.view?.classList?.remove('no-smith-song');});}
@@ -175,20 +226,26 @@ const HOLD=t=>t===L.knock[0]||t===L.roar[0]||(sc.guide&&sc.guide[1]&&shoutName(s
 function step(dt){const t0=sc.t,Ln=lineNow(t0);if(Ln&&sc.cur?.key!==Ln.key)sc.cur={...Ln,shown:0};if(sc.cur)sc.cur.shown+=dt;
  let nx=t0+dt;sc.waiting=false;if(Ln&&sc.cur&&HOLD(Ln.text)&&nx>=Ln.b&&sc.cur.shown<need(Ln.text)&&!sc.cur.ack){nx=Ln.b-1e-4;sc.waiting=true;}
  if(sc.cur&&!Ln&&(sc.cur.shown>=need(sc.cur.text)||sc.cur.ack))sc.cur=null;sc.t=nx;const t=sc.t,p=sc.p;pose(t);gait([...sc.vic,sc.smith,sc.lan,...(sc.crowd||[])],dt);
+ // Blutspur hinter Kriechenden: einzelne Tropfen an der Hüfte bzw. Schnittkante
+ for(const v of sc.vic)if(v.down&&!v.g.dead&&p.vic[sc.vic.indexOf(v)]){const tr=v.trail??=[],hx=v.x+lieDir(v)*(v.splitPiece?24:26),last=tr[tr.length-1];if(!last||Math.hypot(hx-last.x,v.y-last.y)>2.2)tr.push({x:hx+(Math.random()*2-1),y:v.y+(Math.random()*2-1),w:2+Math.floor(Math.random()*(v.splitPiece?4:3))});}
  for(const l of sc.limbs){if(l.z<=0&&Math.abs(l.vz)<4){l.z=0;continue;}l.x+=l.vx*dt;l.y+=l.vy*dt;l.vz-=200*dt;l.z=Math.max(0,l.z+l.vz*dt);l.angle+=l.spin*dt;if(!l.z&&l.vz<0){l.vz=-l.vz*.35;l.vx*=.5;l.vy*=.5;l.spin*=.5;}}
  for(const f of sc.fx){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vz-=180*dt;f.z=Math.max(0,f.z+f.vz*dt);f.life-=dt;}sc.fx=sc.fx.filter(f=>f.life>0);
  // Kamera folgt dem Geschehen, ohne zu springen
- const s=sc.smith,nk=p.kills?.find(k=>k.part==='head'&&!sc.vic[k.who]?.g.dead),live=nk?[sc.vic[nk.who]]:sc.vic.filter(v=>!v.g.dead),focus=p.flee?{x:610,y:600}:sc.pre&&t<0?{x:640,y:Math.max(300,(sc.lan?.y??sc.vic[0].y)-30)}:t<p.door?{x:720,y:290}:{x:(s.x+(live[0]?.x??s.x))/2,y:(s.y+(live[0]?.y??s.y))/2};sc.cam.x+=(focus.x-sc.cam.x)*Math.min(1,dt*2.2);sc.cam.y+=(focus.y-sc.cam.y)*Math.min(1,dt*2.2);
+ const s=sc.smith,cw=(p.crawls||[]).find(c=>c.bisect&&t>=c.t0-1&&t<c.t1+1.6),nk=p.kills?.find(k=>k.part==='head'&&!sc.vic[k.who]?.g.dead),live=cw?[sc.vic[cw.who]]:nk?[sc.vic[nk.who]]:sc.vic.filter(v=>!v.g.dead),focus=p.flee?{x:610,y:600}:sc.pre&&t<0?{x:640,y:Math.max(300,(sc.lan?.y??sc.vic[0].y)-30)}:t<p.door?{x:720,y:290}:{x:(s.x+(live[0]?.x??s.x))/2,y:(s.y+(live[0]?.y??s.y))/2};sc.cam.x+=(focus.x-sc.cam.x)*Math.min(1,dt*2.2);sc.cam.y+=(focus.y-sc.cam.y)*Math.min(1,dt*2.2);
  sc.say=sc.cur?{who:sc.cur.who,text:sc.cur.text}:null;
  paint();if(t>=p.end&&!sc.cur)end();}
 const VW=300,VH=VW*420/660;
 function paint(){const c=$('smithWrathCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),k=c.width/VW,cx=Math.max(VW/2,Math.min(900-VW/2,sc.cam.x)),cy=Math.max(VH/2,Math.min(670-VH/2,sc.cam.y)),t=sc.t,r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);};
- sc.bg??=M.ludus.background();g.imageSmoothingEnabled=false;g.setTransform?.(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.save();const shake=sc.p.door&&between(t,sc.p.door,sc.p.door+.4)?(Math.random()-.5)*6:0;g.translate(shake,0);g.scale(k,k);g.translate(-(cx-VW/2),-(cy-VH/2));g.drawImage(sc.bg,0,0);
+ sc.bg??=M.ludus.background();g.imageSmoothingEnabled=false;g.setTransform?.(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.save();const shake=sc.p.door&&between(t,sc.p.door,sc.p.door+.4)?(Math.random()-.5)*6:0;g.translate(shake,0);g.scale(k,k);g.translate(-(cx-VW/2),-(cy-VH/2));g.drawImage(sc.bg,0,0);trails(g,r,t);
  if(!sc.p.flee&&t>=sc.p.door&&!(sc.p.gone&&t>=sc.p.gone+.3)){r(733,187,29,49,'#161a17');r(733,187,29,3,'#0d100e');}
- const list=[...sc.vic,...(sc.crowd||[]),...(sc.lan?[sc.lan]:[]),...(sc.smith&&!sc.smith.hidden?[sc.smith]:[])].filter(a=>a.x>-20&&a.x<940).sort((a,b)=>a.y-b.y);M.renderForgeActors(g,list);M.renderForgeEffects(g,sc.limbs,sc.fx);soilPaint(g,t,r);g.restore();
+ const list=[...sc.vic,...(sc.legs||[]),...(sc.crowd||[]),...(sc.lan?[sc.lan]:[]),...(sc.smith&&!sc.smith.hidden?[sc.smith]:[])].filter(a=>a.x>-20&&a.x<940).sort((a,b)=>a.y-b.y);M.renderForgeActors(g,list);M.renderForgeEffects(g,sc.limbs,sc.fx);soilPaint(g,t,r);g.restore();
  for(const h of sc.ha||[]){let x=(h.who.x-(cx-VW/2))*k,y=(h.who.y-58-(cy-VH/2))*k;if(x<-40||x>700||y<0||y>420)continue;g.font="bold 21px 'Courier Prime',monospace";const hw=(g.measureText?.(h.text)?.width||h.text.length*12)/2+8;x=Math.max(hw,Math.min(660-hw,x));g.textAlign='center';g.lineWidth=4;g.strokeStyle='#17201c';g.strokeText(h.text,x,y);g.fillStyle='#f4d37a';g.fillText(h.text,x,y);}
  if(sc.say){const who=sc.say.who==='s'?sc.smith:sc.say.who==='l'?sc.lan:sc.vic[+sc.say.who.slice(1)];if(who){const name=sc.say.who==='s'?smithName():sc.say.who==='l'?(S.lanista?.name||'Lanista'):who.g.name.split(' ')[0];sceneBubble('smithWrathBubble',name,sc.say.text,(who.x-(cx-VW/2))*k/c.width,sc.say.who==='s',sc.waiting);}else sceneBubble('smithWrathBubble');}else sceneBubble('smithWrathBubble');
  const el=$('smithWrathText');const line=sc.say?(sc.say.who==='s'?smithName():sc.say.who==='l'?(S.lanista?.name||'Lanista'):sc.vic[+sc.say.who.slice(1)]?.g.name||'')+': „'+sc.say.text+'“':'';if(el&&el.textContent!==line)el.textContent=line;}
+// Blutspur: Tropfen und kurze Schlieren zwischen nahen Tropfen (kein durchgehender Faden), dazu Gedärme hinter dem Oberkörper
+function trails(g,r,t){if(sc.splitAt){const q=sc.splitAt;r(q.x+q.hd*18,q.y,14,3,'#7c2e28');r(q.x+q.hd*21,q.y+2,8,2,'#9b3530');}
+ for(const v of sc.vic){const tr=v.trail;if(!tr?.length)continue;for(let i=0;i<tr.length;i++){const d=tr[i],e=tr[i-1];if(e&&Math.hypot(d.x-e.x,d.y-e.y)<9){const x0=Math.min(d.x,e.x);r(x0,Math.round((d.y+e.y)/2),Math.abs(d.x-e.x)+1,1,'#7c2e28');}r(d.x-1,d.y,d.w,2,i%4?'#9b3530':'#87352e');}
+  if(v.splitPiece&&v.down){const s=lieDir(v),x0=v.x+s*23,y0=v.y+1,len=Math.min(46,10+Math.abs(v.x-(sc.splitAt?.x??v.x))*.6);for(let i=0;i<len;i++){const w=Math.sin(i*.38+t*1.3)*2.2+Math.sin(i*.9)*.8;r(x0-s*i,y0+w+1,3,2,'#5e1f22');r(x0-s*i,y0+w-1,3,3,i%6<3?'#e3a1a3':'#c06a74');}for(let j=0;j<3;j++){const i=Math.floor(len*(.3+j*.25));r(x0-s*i-1,y0+Math.sin(i*.38+t*1.3)*2.2-2,4,4,'#d98a90');}r(x0-2,y0-2,5,4,'#7c2e28');}}}
 // Eingeschissen: Fleck hinten an der Hose, Tropfen, Pfütze am Schreckensort, grüne Dunstfäden
 function soilPaint(g,t,r){const p=sc.p;if(!p.soil||t<p.soil.t)return;const v=sc.vic[p.soil.who];if(!v)return;const k=Math.min(1,(t-p.soil.t)/1.2);
  for(const d of sc.drips||[])r(d.x-1,d.y,3,1,'#5a3d1e');
