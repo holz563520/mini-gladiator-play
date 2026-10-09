@@ -136,7 +136,8 @@ async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5,E6]=sc.foe
   for(let n=0;n<34;n++)sc.fx.push({x:top.x+rand(-3,3),y:F.y,z:F.y-top.y-8,vx:rand(-32,32),vy:rand(-15,15),vz:rand(65,125),life:2.7,color:n%3?'#a14337':'#87352e',size:n%5?2:3,ground:true});
   blade.blood=1;F.g.dead=true;F.stagger=0;F.fallSide=-1;F.fallDuration=F.fallTimer=3;F.riseDuration=1.25;F.state='fallen';F.pool={x:F.x,y:F.y,r:0};sc.shake=8;run.cheer=run.cheerBase=0;M.sound?.('sever');run.speed=.2;camera(F.x,F.y-24,290,5);}});
  await wait(.3);F.down=true;F.fallTimer=0;F.state='dead';M.sound?.('die');await wait(.2);run.speed=1;await wait(1.6);
- // Freiheit.
+ if(run.take===2){await take2();return;}
+ // Freiheit (früheres Ende, Take 1).
  run.cheerBase=3;cheer(3);M.sound?.('win');camera(H.x+30,H.y-6,430,1.4);H.state='celebrate';H.shoutTimer=.6;await wait(1.6);
  text('Viele kämpften für Gold.');await wait(2.6);text('');await wait(.6);cheer(3);text('Andere für Ruhm.');await wait(2.6);text('');await wait(1.4);cheer(3);
  text('Du kämpftest für deine Freiheit.');await wait(3.2);text('');await wait(.5);run.title='FREI';cheer(3);M.sound?.('win');await wait(3);run.shade=1;await wait(1.1);run.title='';}
@@ -146,27 +147,183 @@ async function ludusStory(){const L=run.lud,a=L.actor;run.mode='ludus';run.cheer
  text('Die Arena gab dir deine Freiheit.');await wait(3);text('');await wait(1.2);text('Jetzt baust du deine eigene.');await wait(3);text('');
  camera(450,360,900,1.1);await walk(a,574,608,48);await wait(.5);}
 
+// ---------- Ende des Intros: FREEDOM → PROFIT (Take 2; das frühere Ende bleibt mit start(owner,{take:1}) abrufbar) ----------
+// Nach dem letzten Sieg: Innenhof des alten Besitzers, Freilassungsurkunde, FREEDOM wird durchgestrichen, PROFIT, das Grinsen.
+const CW=480,CH=300;
+const TOP=130,BOT=130;
+function courtBg(){if(run.courtBg)return run.courtBg;const c=document.createElement('canvas');c.width=CW;c.height=CH+TOP+BOT;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+ {const r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+  // Kassettendecke aus dunklem Holz mit Gold, hängende Öllampen, Bannerstangen
+  r(0,0,CW,TOP+12,'#2a1d14');for(let y=8;y<TOP;y+=30)for(let x=4;x<CW;x+=40){r(x,y,34,24,'#3a2a1c');r(x+3,y+3,28,18,'#2f2217');r(x+13,y+9,8,6,'#8a6a3a');}for(let x=0;x<CW;x+=40)r(x,0,4,TOP,'#1e150e');r(0,TOP-6,CW,6,'#5a4128');r(0,TOP-2,CW,2,'#d6b45a');
+  for(const x of [96,240,384]){r(x,0,1,TOP-44,'#6a5030');r(x-8,TOP-46,16,5,'#8a6a3a');r(x-6,TOP-41,12,3,'#b08848');}
+  // Boden geht weiter: Marmor, Läufer
+  for(let y=CH+TOP;y<CH+TOP+BOT;y+=12)for(let x=((y/12)%2)*20-20;x<CW;x+=40){r(x,y,40,12,(x/40+y/12)%2?'#c3baa3':'#ada38a');r(x,y,40,1,'#d8d0bb');}r(214,CH+TOP,52,BOT,'#7a2420');r(218,CH+TOP,44,BOT,'#93302a');r(214,CH+TOP,4,BOT,'#d6b45a');r(262,CH+TOP,4,BOT,'#d6b45a');
+  const vg=g.createLinearGradient(0,CH+TOP,0,CH+TOP+BOT);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.7)');g.fillStyle=vg;g.fillRect(0,CH+TOP,CW,BOT);}
+ g.translate(0,TOP);
+ const r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+ // Rückwand aus warmem Sandstein mit Fugen
+ r(0,0,CW,CH,'#1b1512');r(0,0,CW,178,'#7d6a4c');for(let y=4;y<178;y+=10)for(let x=(y/10%2)*16-16;x<CW;x+=32){r(x,y,31,9,(x*3+y)%5?'#86724f':'#776546');r(x,y,31,1,'#9a8560');}
+ r(0,0,CW,10,'#4d3f2c');r(0,9,CW,3,'#b39a6c');for(let x=6;x<CW;x+=14)r(x,12,8,4,'#5d4c34');
+ // Erhöhte Treppe in der Mitte mit Tor und Vorhängen
+ r(176,40,128,82,'#3a2c20');r(184,48,112,74,'#120d0b');r(180,40,120,6,'#c9b37a');
+ for(const [x,dir] of [[184,1],[262,-1]]){for(let i=0;i<34;i+=2)r(x+i,48,2,74-Math.abs(dir>0?i:34-i)*.6,i%4?'#8a2a24':'#a3352c');}
+ r(226,52,28,20,'#d6b45a');r(230,56,20,12,'#8a2a24');r(238,58,4,8,'#d6b45a');
+ for(let i=0;i<7;i++){const y=122+i*8,w=150+i*22;r(240-w/2,y,w,8,i%2?'#cfc7b4':'#ddd6c4');r(240-w/2,y,w,1,'#f1ece0');r(240-w/2,y+7,w,1,'#a59d8a');}
+ // Marmorboden mit rotem Läufer
+ for(let y=178;y<CH;y+=12)for(let x=((y/12)%2)*20-20;x<CW;x+=40){r(x,y,40,Math.min(12,CH-y),(x/40+y/12)%2?'#c8bfa9':'#b3a990');r(x,y,40,1,'#ddd5c1');}
+ r(214,178,52,CH-178,'#7a2420');r(218,178,44,CH-178,'#93302a');for(let y=182;y<CH;y+=10){r(218,y,44,1,'#a63a31');}r(214,178,4,CH-178,'#d6b45a');r(262,178,4,CH-178,'#d6b45a');
+ // Säulen (Marmor) mit Bannern dazwischen
+ const column=x=>{r(x-11,30,22,154,'#ddd8cb');r(x-11,30,5,154,'#f2efe6');r(x+5,30,6,154,'#b4ad9b');for(let i=-6;i<=6;i+=4)r(x+i,36,1,144,'#c3bcaa');r(x-16,22,32,10,'#e8e3d7');r(x-16,22,32,2,'#fffaf0');r(x-14,32,28,3,'#bdb6a4');r(x-15,182,30,8,'#e2ddd0');r(x-17,188,34,5,'#bdb6a4');};
+ const banner=(x,w)=>{r(x,16,w,4,'#5a4128');r(x+2,20,w-4,96,'#8a2a24');r(x+2,20,3,96,'#a3352c');r(x+w-5,20,3,96,'#6e201b');for(let i=0;i<w-4;i+=4)r(x+2+i,116,4,6-(i%8?3:0),'#8a2a24');r(x+2,24,w-4,2,'#d6b45a');r(x+2,106,w-4,2,'#d6b45a');const cx=x+w/2;r(cx-7,48,14,14,'#d6b45a');r(cx-5,50,10,10,'#8a2a24');r(cx-2,44,4,26,'#d6b45a');r(cx-9,53,18,4,'#d6b45a');};
+ banner(70,30);banner(380,30);banner(140,22);banner(318,22);
+ for(const x of [44,126,354,436])column(x);
+ // Fackelhalter an den Säulen
+ for(const x of [44,126,354,436]){r(x-2,84,4,12,'#3b3226');r(x-4,80,8,5,'#6a5030');}
+ // Bronzebecken mit Feuer, Pflanzen in Kübeln, goldene Schalen
+ for(const x of [160,320]){r(x-12,206,24,6,'#8a6a3a');r(x-10,204,20,3,'#b08848');r(x-2,212,4,18,'#6a5030');r(x-8,228,16,4,'#6a5030');}
+ for(const x of [18,462]){r(x-9,214,18,16,'#9e6b49');r(x-7,212,14,3,'#b48356');for(let i=0;i<9;i++)r(x-10+(i*7)%20,186+(i*5)%26,4,4,i%2?'#55694a':'#6f8459');}
+ r(300,160,10,4,'#d6b45a');r(170,160,10,4,'#d6b45a');
+ const vg=g.createLinearGradient(0,0,0,CH);vg.addColorStop(0,'rgba(0,0,0,.35)');vg.addColorStop(.45,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=vg;g.fillRect(0,0,CW,CH);
+ run.courtBg=c;return c;}
+function courtFx(g,t){/* Öllampen an der Decke */for(const [i,x] of [96,240,384].entries()){const f=Math.floor(t*7+i*2)%3;g.globalAlpha=.2;g.fillStyle='#f0a050';g.beginPath();g.ellipse(x,-40,20,14,0,0,Math.PI*2);g.fill();g.globalAlpha=1;g.fillStyle='#e2ab5c';g.fillRect(x-2,-44+f,4,4);g.fillStyle='#fff0c0';g.fillRect(x-1,-46+(f===2?1:0),2,2);}
+const r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);};
+ for(const [i,x] of [44,126,354,436].entries()){const f=Math.floor(t*8+i*3)%3;g.globalAlpha=.2;g.fillStyle='#f0a050';g.beginPath();g.ellipse(x,72,24,20,0,0,Math.PI*2);g.fill();g.globalAlpha=1;r(x-3,72+(f===1?1:0),6,8-f,'#c8642e');r(x-2,70+f,4,5,'#e2ab5c');r(x-1,67+(f===2?2:0),2,4,'#fff0c0');}
+ for(const [i,x] of [160,320].entries()){const f=Math.floor(t*9+i*5)%3;g.globalAlpha=.22;g.fillStyle='#f0a050';g.beginPath();g.ellipse(x,198,20,14,0,0,Math.PI*2);g.fill();g.globalAlpha=1;r(x-8,198+(f?1:0),16,6,'#c8642e');r(x-6,194+f,12,5,'#e2ab5c');r(x-2,190+f,4,4,'#fff0c0');}}
+// Rolle: in der Hand (zu) oder geöffnet; k = 0 zu … 1 offen
+function scrollSprite(g,x,y,open=0){const r=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),w,h);};if(open<=0){r(x-6,y-2,12,4,'#efe2bd');r(x-6,y-2,12,1,'#fff6dc');r(x-7,y-2,2,4,'#c9b37a');r(x+5,y-2,2,4,'#c9b37a');r(x-1,y-2,2,4,'#a3352c');return;}
+ const w=Math.round(6+open*10);r(x-1,y-w,4,w*2,'#efe2bd');r(x-2,y-w-1,6,2,'#c9b37a');r(x-2,y+w-1,6,2,'#c9b37a');r(x,y-w+2,2,w*2-4,'#d9c48e');}
+function hand(a){const f=Math.cos(a.a||0)>=0?1:-1,k=(a.g.height||180)/180;return {x:a.x+f*16*k,y:a.y-36*k};}
+function courtPaint(g,w,h,t){const C=run.court,cam=run.cam,scale=Math.max(w/cam.vw,h/(CH+TOP+BOT)),hw=w/scale/2,hh=h/scale/2,cx=clamp(cam.x,hw,Math.max(hw,CW-hw)),cy=clamp(cam.y,hh-TOP,Math.max(hh-TOP,CH+BOT-hh));
+ g.imageSmoothingEnabled=false;g.fillStyle='#120e0c';g.fillRect(0,0,w,h);g.save();g.translate(Math.round(w/2-cx*scale),Math.round(h/2-cy*scale));g.scale(scale,scale);g.drawImage(courtBg(),0,-TOP);courtFx(g,t);
+ const list=[...C.actors].sort((a,b)=>a.y-b.y);(M.renderForgeActors||M.renderLudusActors)?.(g,list);
+ if(C.scroll){const s=C.scroll;let p;if(s.at==='owner')p=hand(C.owner);else if(s.at==='hero')p=hand(C.hero);else p={x:s.x,y:s.y};scrollSprite(g,p.x,p.y,s.open||0);}
+ g.restore();}
+// Nahaufnahme der Urkunde
+function scrollPaint(g,w,h,t){const S2=run.scrollShot,k=Math.min(1,S2.unroll);g.fillStyle='#120e0c';g.fillRect(0,0,w,h);
+ const glow=g.createRadialGradient(w/2,h*.45,10,w/2,h*.45,Math.max(w,h)*.7);glow.addColorStop(0,'rgba(240,160,80,.25)');glow.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=glow;g.fillRect(0,0,w,h);
+ const pw=Math.min(w*.86,h*1.25),ph=pw*.62*k,x0=(w-pw)/2,y0=h*.46-ph/2;if(ph<2)return;const u=pw/100;
+ g.fillStyle='#e9dbb2';g.fillRect(x0,y0,pw,ph);g.fillStyle='#d8c690';for(let i=0;i<14;i++)g.fillRect(x0+((i*37)%97)*u,y0+((i*53)%60)/60*ph,u*(2+i%3),u*.6);
+ g.fillStyle='#c4ad74';g.fillRect(x0,y0,pw,u*1.4);g.fillRect(x0,y0+ph-u*1.4,pw,u*1.4);
+ for(const yy of [y0-u*2.4,y0+ph-u*.6]){g.fillStyle='#b8a067';g.fillRect(x0-u*2,yy,pw+u*4,u*3);g.fillStyle='#8a6a3a';g.fillRect(x0-u*3.5,yy-u*.4,u*2,u*3.8);g.fillRect(x0+pw+u*1.5,yy-u*.4,u*2,u*3.8);}
+ // Daumen der verbliebenen Hand am linken Rand
+ g.fillStyle=run.hero?.g.appearance.skin||'#b8875f';g.fillRect(x0-u*3,y0+ph*.42,u*7,u*9);g.fillStyle=run.hero?.g.appearance.shade||'#8d6446';g.fillRect(x0-u*3,y0+ph*.42+u*7,u*7,u*2);
+ if(k<1)return;
+ g.textAlign='center';g.textBaseline='middle';const fs=Math.round(u*15);g.font=`bold ${fs}px 'Courier Prime',monospace`;
+ // FREEDOM in Gold, mit Schimmer
+ const fy=y0+ph*.36,sh=S2.free;g.globalAlpha=Math.min(1,sh);g.fillStyle='#6a4a1c';g.fillText('FREEDOM',w/2+u*.6,fy+u*.8);g.fillStyle='#d6a83a';g.fillText('FREEDOM',w/2,fy);g.globalAlpha=Math.min(1,sh)*(.35+.25*Math.sin(t*5));g.fillStyle='#fff3c0';g.fillText('FREEDOM',w/2,fy-u*.3);g.globalAlpha=1;
+ // dicker roter Strich, von links nach rechts
+ if(S2.strike>0){const tw=g.measureText('FREEDOM').width*1.08,sx=w/2-tw/2,len=tw*Math.min(1,S2.strike);g.save();g.translate(sx,fy+u*.6);g.rotate(-.045);g.fillStyle='#8f1d18';g.fillRect(0,-u*1.6,len,u*3.2);g.fillStyle='#b8261f';g.fillRect(0,-u*1.6,len,u*1.2);for(let i=0;i<len;i+=u*5)g.fillRect(i,u*1.4,u*1.2,u*(1+((i/u)%3)));g.restore();}
+ // PROFIT darunter, wie gestempelt
+ if(S2.profit>0){const p=Math.min(1,S2.profit),sc=1.35-.35*p;g.save();g.translate(w/2,y0+ph*.72);g.scale(sc,sc);g.globalAlpha=p;g.font=`bold ${Math.round(u*17)}px 'Courier Prime',monospace`;g.fillStyle='#3a1210';g.fillText('PROFIT',u*.7,u*.9);g.fillStyle='#a3231d';g.fillText('PROFIT',0,0);g.restore();g.globalAlpha=1;}}
+// Große Nahaufnahme: Gesicht des Gladiators, vom ernsten Blick zum gierigen Grinsen (Pixelbild 120 × 120, ganzzahlig vergrößert)
+function facePaint(g,w,h,t){const F=run.faceShot,FW=120,FH=120,b=run.faceBuf||(run.faceBuf=document.createElement('canvas'));if(b.width!==FW||b.height!==FH){b.width=FW;b.height=FH;}const q=b.getContext('2d');q.clearRect(0,0,FW,FH);q.imageSmoothingEnabled=false;
+ const r=(x,y,ww,hh,col)=>{q.fillStyle=col;q.fillRect(Math.round(x),Math.round(y),Math.round(ww),Math.round(hh));},A=run.hero.g.appearance,skin=A.skin||'#b8875f',shade=A.shade||'#8d6446',hair=A.hair||'#3b2a1e';
+ const mix=(a,c,k)=>{const p=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16));const x=p(a),y=p(c);return '#'+x.map((v,i)=>Math.round(v+(y[i]-v)*k).toString(16).padStart(2,'0')).join('');};
+ const light=mix(skin,'#ffe6c8',.22),dark=mix(shade,'#2a160e',.3),lip=mix(shade,'#8a2a24',.45);
+ const ease=v=>v*v*(3-2*v),k=ease(Math.max(0,Math.min(1,F.grin))),narrow=ease(Math.max(0,Math.min(1,(F.grin-.2)/.8))),look=Math.max(0,1-F.lift),bob=Math.round(Math.sin(t*1.7)*.5);
+ // Hintergrund: Marmorsäule, rotes Banner, Fackelschein
+ r(0,0,FW,FH,'#2a2016');const bg=q.createRadialGradient(100,24,2,100,24,60);bg.addColorStop(0,'rgba(240,160,80,.6)');bg.addColorStop(1,'rgba(0,0,0,0)');q.fillStyle=bg;q.fillRect(0,0,FW,FH);
+ r(4,0,14,FH,'#b4ad9b');r(4,0,4,FH,'#ddd8cb');r(15,0,3,FH,'#8f8878');r(102,0,14,FH,'#6e201b');r(104,0,10,FH,'#8a2a24');r(104,30,10,2,'#d6b45a');
+ const oy=12+bob+Math.round(look*4),cx=60;
+ // Rüstung: linke Schulterplatte, rechts der verbundene Stumpf; Blut auf dem Metall
+ r(22,100,76,20,'#3f433e');r(68,94,40,26,'#7d7f77');r(68,94,40,3,'#a7a99b');r(70,98,36,2,'#5d5f57');for(let i=0;i<4;i++)r(72+i*9,104,2,2,'#c9c6ac');r(84,100,10,6,'#7c2e28');r(76,110,6,3,'#7c2e28');
+ r(14,98,32,22,'#e3d4ad');for(let i=0;i<5;i++)r(14,100+i*4,32,1,'#c4ad74');r(20,104,20,5,'#a3352c');r(26,109,12,8,'#7c2e28');r(18,114,6,4,'#8f2a24');
+ r(44,96,26,24,'#5d5f57');r(44,96,26,2,'#8d8f84');r(50,106,8,3,'#7c2e28');
+ // Hals
+ r(50,64+oy,20,34,shade);r(52,64+oy,15,32,skin);r(52,92+oy,15,2,dark);
+ // Kopf als ovale Form, rechts im Schatten, links Licht auf Wange und Stirn
+ const hy=8+oy,W=y=>{const u=(y-28)/38;let hw=23*Math.sqrt(Math.max(0,1-u*u));if(y>46)hw-=(y-46)*.25;return Math.round(Math.max(0,hw));};
+ for(let y=0;y<62;y++){const hw=W(y);if(hw<=0)continue;r(cx-hw,hy+y,hw*2,1,skin);r(cx+Math.round(hw*.45),hy+y,Math.ceil(hw*.55),1,shade);r(cx-hw,hy+y,2,1,dark);}
+ for(let y=8;y<26;y++)r(cx-16,hy+y,3,1,light);for(let y=36;y<44;y++)r(cx-15,hy+y,4,1,light);
+ // Ohren
+ r(cx-26,hy+24,4,13,skin);r(cx-25,hy+27,2,6,dark);r(cx+22,hy+24,4,13,shade);r(cx+23,hy+27,2,6,dark);
+ // Haare
+ const style=(A.style??0)%4;for(let y=-4;y<8;y++){const hw=W(Math.max(0,y))+(y<0?-2+y:1);r(cx-hw,hy+y,hw*2,1,hair);}r(cx-12,hy-3,10,1,mix(hair,'#ffffff',.25));
+ if(style!==2){r(cx-24,hy+4,5,16,hair);r(cx+19,hy+4,5,16,hair);}if(style===1){r(cx-25,hy+4,5,26,hair);r(cx+20,hy+4,5,26,hair);}if(style===3)r(cx-5,hy-9,10,6,hair);
+ // Narbe über der linken Braue, getrocknetes Blut an Stirn und Wange
+ r(cx-12,hy+11,1,14,'#e7b0ae');r(cx-11,hy+13,1,5,'#e7b0ae');r(cx+8,hy+6,7,3,'#7c2e28');r(cx+11,hy+9,2,7,'#7c2e28');r(cx-19,hy+40,5,2,'#7c2e28');
+ // Brauen: ernst gerade; beim Grinsen innen tief, außen hoch
+ const by=hy+18;for(const [x0,dir] of [[cx-17,1],[cx+4,-1]])for(let i=0;i<13;i++){const inner=dir>0?i/12:1-i/12,y=by+Math.round(inner*narrow*2.5-(1-inner)*narrow*1.5);r(x0+i,y,1,2,hair);}
+ // Augen: zuerst nach unten auf die Urkunde, dann verengt und berechnend
+ const ey=hy+23,open=Math.max(1,Math.round(5-narrow*3.4));for(const ex of [cx-16,cx+4]){r(ex,ey-1,12,1,dark);r(ex,ey,12,5,dark);r(ex+1,ey+(5-open),10,open,'#efe6d6');const ix=ex+4+Math.round(narrow*2),iy=ey+(5-open)+Math.round(look*2);r(ix,Math.min(ey+4,iy),4,Math.min(open,4),'#3a2416');r(ix,Math.min(ey+4,iy),2,Math.min(open,2),'#140b07');if(open>2)r(ix+2,Math.min(ey+4,iy),1,1,'#ffffff');r(ex,ey+(5-open)-1,12,1,shade);r(ex+1,ey+5,10,1,shade);if(narrow>.3)r(ex+2,ey+6,8,1,dark);}
+ // Nase
+ r(cx-2,hy+26,4,14,shade);r(cx-3,hy+38,8,3,shade);r(cx-4,hy+40,3,1,dark);r(cx+2,hy+40,3,1,dark);r(cx-2,hy+27,1,10,light);
+ // Wangen heben sich, Lachfalten
+ if(k>.15){r(cx-17,hy+37-Math.round(k*2),8,2,light);r(cx+9,hy+37-Math.round(k*2),8,2,shade);for(let i=0;i<7;i++){r(cx-11-Math.round(i*.3),hy+41+i-Math.round(k*2),1,1,dark);r(cx+10+Math.round(i*.3),hy+41+i-Math.round(k*2),1,1,dark);}}
+ // Bart
+ const beard=(A.beard??0)%4;if(beard===1)for(let i=0;i<40;i++)r(cx-15+(i*7)%30,hy+46+(i*5)%14,1,1,mix(hair,skin,.3));if(beard===2){for(let y=44;y<62;y++){const hw=W(y)-1;if(hw>0)r(cx-hw,hy+y,hw*2,1,hair);}r(cx-12,hy+43,24,3,hair);}if(beard===3){r(cx-6,hy+52,12,8,hair);r(cx-10,hy+43,20,2,hair);}
+ // Mund: Linie → Mundwinkel hoch → breites, gieriges Grinsen mit Zähnen
+ const my=hy+48,half=Math.round(8+k*6),lift=Math.round(k*5);
+ const mouthY=i=>{const e=Math.abs(i)/half;return my-Math.round(e*e*lift);};
+ if(k<.4){for(let i=-half;i<=half;i++)r(cx+i,mouthY(i),1,2,lip);r(cx-half+2,my+2,half*2-4,1,mix(lip,skin,.5));}
+ else{const op=Math.round(1+(k-.4)/.6*4);for(let i=-half;i<=half;i++){const y=mouthY(i),depth=Math.max(1,Math.round(op*(1-Math.pow(Math.abs(i)/half,2))));r(cx+i,y-1,1,1,lip);r(cx+i,y,1,depth+1,'#2a0f0e');if(Math.abs(i)<half-1){r(cx+i,y,1,Math.min(depth,2),'#f2ead8');if((i+half)%3===0)r(cx+i,y,1,Math.min(depth,2),'#cfc6b2');}r(cx+i,y+depth+1,1,1,lip);}}
+ if(beard===2)r(cx-11,my+5,22,2,hair);
+ // Vordergrund: Rand der Urkunde mit PROFIT
+ const pf=F.profit;g.imageSmoothingEnabled=false;g.fillStyle='#2a2016';g.fillRect(0,0,w,h);
+ const s=Math.max(1,Math.floor(Math.min(Math.max(w/FW,h/FH),w/(FW*.78))*F.zoom*4)/4),dw=FW*s,dh=FH*s,dx=Math.round(w/2-dw/2),dy=Math.round(Math.min(h-dh,h/2-dh/2-h*.06));g.drawImage(b,dx,dy,dw,dh);
+ if(dy+dh<h){g.fillStyle='#3f433e';g.fillRect(0,dy+dh,w,h-dy-dh);}
+ if(pf>0){const bh=Math.round(s*16),y0=h-bh;g.fillStyle='#e9dbb2';g.fillRect(0,y0,w,bh);g.fillStyle='#c4ad74';g.fillRect(0,y0,w,Math.max(2,s));g.globalAlpha=Math.min(1,pf);g.font=`bold ${Math.round(s*11)}px 'Courier Prime',monospace`;g.textAlign='center';g.textBaseline='middle';g.fillStyle='#3a1210';g.fillText('PROFIT',w/2+s*.6,y0+bh/2+s*.8);g.fillStyle='#a3231d';g.fillText('PROFIT',w/2,y0+bh/2);g.globalAlpha=1;}}
+function titlePaint(g,w,h,t){g.fillStyle='#070b0d';g.fillRect(0,0,w,h);const k=Math.min(1,run.titleK||0);g.globalAlpha=k;g.textAlign='center';g.textBaseline='middle';
+ let fs=Math.min(w*.13,h*.16);g.font=`bold ${Math.round(fs)}px 'Courier Prime',monospace`;while(g.measureText('ARENA THEORY').width>w*.9&&fs>12){fs-=2;g.font=`bold ${Math.round(fs)}px 'Courier Prime',monospace`;}
+ g.fillStyle='#5a3d1c';g.fillText('ARENA THEORY',w/2,h*.45+fs*.07);g.fillStyle='#f4d37a';g.fillText('ARENA THEORY',w/2,h*.45);
+ g.font=`bold ${Math.round(fs*.32)}px 'Courier Prime',monospace`;g.fillStyle='#c9c6b4';g.fillText('DEATH IS PERMANENT',w/2,h*.45+fs*.85);g.globalAlpha=1;}
+const read=s=>Math.max(2.2,1.2+s.length*.055);
+async function say(s){text(s);await wait(read(s));text('');await wait(.35);}
+function prepareEnd(){const sc=run.sc,H=sc.hero,blade=H.g.enemyGear.weapon;for(const k of M.branches.rua){const p=H.g.body[k];p.missing=true;p.hp=0;}H.g.stump='blood';H.bloodMarks={chest:.7,rs:1,belly:.4,ls:.3};blade.blood=1;H.g.blood=42;H.g.fatigue=88;for(const [part,p] of [['chest',.5],['belly',.3]])H.g.body[part].hp=Math.max(30,H.g.body[part].hp-p*55);}
+async function take2(){const sc=run.sc,H=sc.hero;run.hero=H;
+ // kurzer Siegesmoment in der Arena, dann Schwarzblende
+ if(run.mode==='arena'){run.cheerBase=3;cheer(3);M.sound?.('win');camera(H.x+30,H.y-6,430,1.4);H.state='celebrate';H.shoutTimer=.6;await wait(2.2);H.state='idle';run.shade=1;await wait(1.1);}
+ // ---- Szene 1: Die Freilassung
+ const ownerSpec={...M.ludus.randomOwner(),name:'Gnaeus Varro'};Object.assign(ownerSpec,{height:171,weight:108});ownerSpec.appearance={...ownerSpec.appearance,hair:'#b9b4a6',beard:0,cloth:'#5c2a58'};
+ const O={...actor(M.ludus.ownerFigure(ownerSpec),300,206,0),lanista:true,energy:100};O.a=Math.PI;
+ H.g.enemyGear.weapon=null;Object.assign(H,{x:150,y:232,a:0,state:'idle',move:null,watch:null,facePain:0,stagger:0,hit:0,wind:0,swing:0,drip:0,kneeTimer:0,dodgeTimer:0,jumpTimer:0,shoutTimer:0,traderPose:null});
+ run.court={actors:[H,O],hero:H,owner:O,scroll:{at:'owner'}};run.mode='court';run.cheerBase=run.cheer=0;Object.assign(run.cam,{x:240,y:170,vw:440});camera(240,170,440,1);await wait(.3);run.shade=0;await wait(.8);
+ await walk(H,262,214,32);H.a=0;O.a=Math.PI;await wait(.6);
+ O.traderPose='point';O.gest=0;M.sound?.('rise');await wait(1.4);
+ // Übergabe: die Rolle wandert in die verbliebene (linke) Hand
+ const from=hand(O),to=hand(H);run.court.scroll={at:'air',x:from.x,y:from.y};H.traderPose='pull';H.poseK=0;let f=0;await until(()=>{f=Math.min(1,f+run.dt/.9);run.court.scroll.x=from.x+(to.x-from.x)*f;run.court.scroll.y=from.y+(to.y-from.y)*f-Math.sin(f*Math.PI)*4;return f>=1;});
+ run.court.scroll={at:'hero'};O.traderPose=null;await wait(.6);
+ // Die Kamera fährt langsam heran
+ camera(262,190,160,.35);
+ await say('Du hast geblutet.');await say('Du hast Freunde sterben sehen.');await say('Du hast einen Arm verloren.');
+ await say('Doch endlich hältst du in deinen Händen, wofür du all die Jahre gekämpft hast …');
+ // ---- Szene 2: FREEDOM
+ run.scrollShot={unroll:0,free:0,strike:0,profit:0};run.mode='scroll';M.sound?.('rise');await until(()=>{run.scrollShot.unroll+=run.dt/.8;return run.scrollShot.unroll>=1;});
+ M.sound?.('win');await until(()=>{run.scrollShot.free+=run.dt/.5;return run.scrollShot.free>=1;});await wait(2.2);
+ M.sound?.('slash');await until(()=>{run.scrollShot.strike+=run.dt/.45;return run.scrollShot.strike>=1;});M.sound?.('heavy');await wait(.9);
+ // ---- Szene 3: Das Grinsen (PROFIT erscheint im Vordergrund, die Mundwinkel ziehen sich hoch)
+ run.faceShot={grin:0,profit:0,lift:0,zoom:1,dy:0};run.mode='face';await wait(1.1);
+ await until(()=>{const F=run.faceShot;F.profit=Math.min(1,F.profit+run.dt/.7);F.grin=Math.min(1,F.grin+run.dt/3.2);F.lift=Math.min(1,F.lift+run.dt/2.4);F.zoom=1+F.grin*.06;return F.grin>=1;});
+ M.sound?.('coins');await wait(1.8);
+ // ---- Szene 4: Die bittere Wahrheit (vor den Säulen; der alte Besitzer geht die Treppe hinauf)
+ run.mode='court';run.court.scroll={at:'hero',open:1};Object.assign(run.cam,{x:252,y:180,vw:230});camera(252,180,230,.6);H.traderPose='pull';walk(O,240,150,22).then(()=>walk(O,240,118,18)).then(()=>{O.hidden=true;run.court.actors=run.court.actors.filter(a=>a!==O);});
+ for(const s of ['Du hast deine Freiheit nicht erkämpft, um ein besserer Mensch zu werden.','Du hast sie erkämpft, um endlich auf der richtigen Seite der Peitsche zu stehen.','Dein Ziel ist einfach: Werde steinreich.','Kaufe Gladiatoren. Schicke sie in die Arena. Kassiere das Gold.','Und wenn dafür hundert, tausend oder zehntausend arme Schweine elendig verrecken müssen …','Nun ja.','Du weißt schließlich selbst, wie sich das anfühlt.','Aber diesmal bist du derjenige, der Eintritt verlangt.'])await say(s);
+ // ---- Szene 5: Finale – die Urkunde wird zusammengerollt, selbstzufrieden
+ camera(262,198,170,.8);await wait(.8);M.sound?.('rise');await until(()=>{run.court.scroll.open=Math.max(0,run.court.scroll.open-run.dt/1.1);return run.court.scroll.open<=0;});await wait(.5);H.traderPose=null;await wait(1.4);run.shade=1;await wait(1.2);
+ run.mode='title';run.titleK=0;run.shade=0;M.sound?.('gong');await until(()=>{run.titleK+=run.dt/1.2;return run.titleK>=1;});await wait(3.6);run.shade=1;await wait(1);}
+
 // ---------- Rahmen, Zeichnen, Abschluss ----------
 function build(){const v=document.createElement('div');v.id='introView';v.innerHTML='<canvas id="introCanvas" aria-label="Die Vorgeschichte deines Lanista"></canvas><div id="introShade"></div><p id="introText" role="status" aria-live="polite"></p><p id="introTitle" aria-hidden="true"></p>';document.body.appendChild(v);/* Kein Überspringen-Knopf: ein Klick auf das Bild springt zur nächsten Einstellung */v.addEventListener?.('click',()=>{if(run&&!run.done)run.tap=true;});return v;}
 function paint(){const c=run.canvas;if(!c?.getContext)return;const cw=c.clientWidth||1040,ch=c.clientHeight||720,k=Math.min(1,1040/Math.max(cw,ch)),w=Math.max(1,Math.round(cw*k)),h=Math.max(1,Math.round(ch*k));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}
  const cam=run.cam,g=c.getContext('2d');if(run.mode==='arena'){run.sc.cam={x:cam.x,y:cam.y,vw:cam.vw,vh:cam.vw*.75};M.renderStory(c,run.sc);}
  else if(run.mode==='ludus'){const L=run.lud,scale=Math.max(Math.min(w/cam.vw,h/(cam.vw*.75)),Math.min(w/900,h/670)),hw=w/scale/2,hh=h/scale/2,cx=hw*2>=900?450:clamp(cam.x,hw,900-hw),cy=hh*2>=670?335:clamp(cam.y,hh,670-hh);g.imageSmoothingEnabled=false;g.fillStyle='#101b20';g.fillRect(0,0,w,h);g.save();g.translate(Math.round(w/2-cx*scale),Math.round(h/2-cy*scale));g.scale(scale,scale);g.drawImage(L.bg,0,0);if(L.closed>0)M.ludus.drawGate(g,L.closed);M.renderLudusActors(g,[L.actor]);g.restore();}
+ else if(run.mode==='court')courtPaint(g,w,h,performance.now()/1000);else if(run.mode==='scroll')scrollPaint(g,w,h,performance.now()/1000);else if(run.mode==='face')facePaint(g,w,h,performance.now()/1000);else if(run.mode==='title')titlePaint(g,w,h,performance.now()/1000);
  else{g.fillStyle='#070b0d';g.fillRect(0,0,w,h);}}
 function sync(){const set=(id,key,value)=>{const el=$(id);if(el&&el[key]!==value)el[key]=value;},style=(id,key,value)=>{const el=$(id);if(el?.style&&el.style[key]!==value)el.style[key]=value;};
  if(run.caption)set('introText','textContent',run.caption);style('introText','opacity',run.caption?'1':'0');if(run.title)set('introTitle','textContent',run.title);style('introTitle','opacity',run.title?'1':'0');style('introTitle','transform',run.title?'scale(1)':'scale(.8)');style('introShade','opacity',String(run.shade));const high=run.mode==='ludus';style('introText','top',high?'20%':'');style('introText','bottom',high?'auto':'');}
 function tick(real){if(!run||run.done)return;const base=Math.min(.05,Math.max(0,real));run.dt=base*run.speed;
- if(run.mode==='arena')stepScene(run.sc,run.dt);else if(run.mode==='ludus')stepActor(run.lud.actor,run.dt,null);
+ if(run.mode==='arena')stepScene(run.sc,run.dt);else if(run.mode==='ludus')stepActor(run.lud.actor,run.dt,null);else if(run.mode==='court')for(const a of run.court.actors)stepActor(a,run.dt,null);
  run.cheer=Math.max(run.cheerBase,run.cheer-base*.7);M.cheer=run.mode==='arena'?run.cheer:0;
  const to=run.camTo,mix=1-Math.exp(-base*to.rate);for(const k of ['x','y','vw'])run.cam[k]+=(to[k]-run.cam[k])*mix;
  const waiting=run.waiters;run.waiters=[];for(const w of waiting){let ok=false;try{ok=w.cond();}catch(e){w.rej(e);continue;}if(ok)w.res();else run.waiters.push(w);}run.tap=false;
  paint();sync();}
 function loop(t){if(!run||run.done)return;const dt=(t-(run.last??t))/1000;run.last=t;if(!document.hidden)tick(dt);requestAnimationFrame(loop);}
 function finish(){if(!run||run.done)return;const r=run;r.done=true;M.cheer=0;S.lanista=JSON.parse(JSON.stringify(r.owner));M.persist();M.ui.close();M.ui.click('nav:home');const v=r.view;run=null;if(v?.style)v.style.opacity='0';const drop=()=>v?.remove?.();if(typeof setTimeout==='function')setTimeout(drop,650);else drop();}
-function start(owner){if(run)return;M.audioStart?.();const players=cast(owner),keeper={...owner,lostArm:'r',veteran:true};
+function start(owner,opt={}){if(run)return;M.audioStart?.();const players=cast(owner),keeper={...owner,lostArm:'r',veteran:true};
  const sc={arena:4,level:6,gate:0,shake:0,stains:[],fx:[],limbs:[],ground:[],swings:[],cam:null,hero:actor(players.hero,520,400,0),foes:[[300,385],[790,410],[330,250],[720,560],[590,222],[236,566]].map(([x,y],i)=>actor(players.foes[i],x,y,1)),last:actor(players.last,520,104,1)};sc.actors=[sc.hero,...sc.foes];
  const walker=M.ludus.ownerFigure(keeper),lud={bg:M.ludus.background(),closed:1,actor:{...actor(walker,610,330,0),lanista:true,energy:100}};
- run={owner:keeper,sc,lud,view:build(),canvas:null,mode:'black',shade:1,caption:'',title:'',cheer:0,cheerBase:0,speed:1,dt:0,waiters:[],aborted:false,done:false,cam:{x:520,y:385,vw:470},camTo:{x:520,y:385,vw:470,rate:2.2}};run.canvas=$('introCanvas');sync();
- (async()=>{await arenaStory();await ludusStory();})().catch(e=>{if(e!==ABORT)console.error('Intro abgebrochen:',e);}).then(finish);
+ run={owner:keeper,sc,lud,view:build(),canvas:null,mode:'black',shade:1,caption:'',title:'',cheer:0,cheerBase:0,speed:1,dt:0,waiters:[],aborted:false,done:false,cam:{x:520,y:385,vw:470},camTo:{x:520,y:385,vw:470,rate:2.2}};run.take=opt.take||2;run.endOnly=!!opt.endOnly;run.canvas=$('introCanvas');sync();
+ (async()=>{if(run.endOnly){prepareEnd();await take2();}else await arenaStory();if(run.take!==2)await ludusStory();})().catch(e=>{if(e!==ABORT)console.error('Intro abgebrochen:',e);}).then(finish);
  requestAnimationFrame(loop);}
 function skip(){if(!run||run.done)return;run.aborted=true;const waiting=run.waiters;run.waiters=[];for(const w of waiting)w.rej(ABORT);}
 M.intro={start,skip,tick,active:()=>!!run&&!run.done};
