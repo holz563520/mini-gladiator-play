@@ -53,7 +53,7 @@ function claims(g){const d=B.info(g),out=[];
 const pitchFor=g=>claims(g)[0];
 // ---------- Szene im Ludus ----------
 const ROW_Y=432,WALK_Y=441,slotX=i=>78+i*36,POST=[250,419],
- IN=[[610,694],[610,607],[301,607],[301,ROW_Y],[slotX(0),ROW_Y]],T_IN=[[610,694],[610,607],[301,607],[301,WALK_Y],[268,WALK_Y]],DOOR=[[301,ROW_Y],[301,214],[172,214]];
+ IN=[[610,694],[610,607],[301,607],[301,420],[226,420],[222,ROW_Y],[slotX(0),ROW_Y]],T_IN=[[610,694],[610,607],[301,607],[301,WALK_Y],[268,WALK_Y]],DOOR=[[301,420],[301,214],[172,214]];
 const plen=p=>{let n=0;for(let i=1;i<p.length;i++)n+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return n;};
 function along(p,d){if(d<=0)return {x:p[0][0],y:p[0][1],a:Math.atan2(p[1][1]-p[0][1],p[1][0]-p[0][0]),end:false};for(let i=1;i<p.length;i++){const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],l=Math.hypot(dx,dy);if(d<=l)return {x:p[i-1][0]+dx*d/l,y:p[i-1][1]+dy*d/l,a:Math.atan2(dy,dx),end:false};d-=l;}const q=p[p.length-1];return {x:q[0],y:q[1],a:0,end:true};}
 const actor=(g,x,y,extra)=>({g,team:0,x,y,a:0,state:'idle',phase:0,moveSpeed:0,energy:100,ammo:0,...extra});
@@ -85,7 +85,7 @@ function update(dt){if(soundGap>0)soundGap-=dt;if(!sc)return;sc.clock+=dt;const 
  else if(sc.mode==='leave'){sc.wait-=dt;if(sc.wait>0){t.state='celebrate';t.traderPose=null;}else{sc.lead+=78*dt;const p=along(sc.out,sc.lead);t.x=p.x;t.y=p.y;t.state='move';t.moveSpeed=10;t.phase=sc.clock*7;t.a=Math.cos(p.a)<-.3?Math.PI:0;if(p.end){sc=null;return;}}}
  for(const w of sc.walkers){w.d+=70*dt;const p=along(w.path,w.d);w.a.x=p.x;w.a.y=p.y;w.a.a=Math.cos(p.a)<-.3?Math.PI:Math.cos(p.a)>.3?0:w.a.a;w.a.state='move';w.a.moveSpeed=10;w.a.phase=sc.clock*7+w.d*.01;if(p.end)w.done=true;}
  if(sc.walkers.some(w=>w.done)){for(const w of sc.walkers)if(w.done)sc.hidden.delete(w.a.g.id);sc.walkers=sc.walkers.filter(w=>!w.done);M.ludus?.refresh?.();}}
-function release(i,g){if(!sc)return;const c=sc.row[i];sc.row[i]=null;if(!c)return;if(sc.act?.target===i)finish();sc.hidden.add(g.id);sc.walkers.push({a:actor(g,c.x,c.y,{index:50+i}),d:0,path:[[c.x,ROW_Y],...DOOR]});
+function release(i,g){if(!sc)return;const c=sc.row[i];sc.row[i]=null;if(!c)return;if(sc.act?.target===i)finish();sc.hidden.add(g.id);sc.walkers.push({a:actor(g,c.x,c.y,{index:50+i}),d:0,path:[[c.x,ROW_Y],[c.x+6,420],...DOOR]});
  if(!left()){say(tut?L.empty[0]:draw('empty',L.empty),6);sc.mode='leave';sc.act=null;sc.wait=5;sc.lead=0;sc.out=[[sc.trader.x,WALK_Y],[301,WALK_Y],[301,607],[610,607],[610,700]];}else say(draw('sold',L.sold));}
 function ensureScene(){const want=here()||(sc&&(sc.mode==='leave'||sc.walkers.length));if(!want){sc=null;return;}if(!sc||(sc.day!==T.day&&here()))build();}
 // ---------- Zeichnen: Figuren über die vorhandene Ludus-Darstellung, dazu Kette, Markierung und Sprechblase ----------

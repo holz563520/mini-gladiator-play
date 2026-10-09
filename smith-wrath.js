@@ -62,15 +62,15 @@ function plan(n){
  p.says.push([2.1,3.7,'v0',L.knock[0]]);
  p.door=4.1;p.says.push([4.7,6.3,'s',L.roar[0]]);p.sips.push([4.25,4.7]);
  const sm=p.smith=[[0,748,240],[p.door+.2,748,246],[6.3,748,246],[6.75,738,264]];let free=6.75;
- const go=(t,x,y,v=46)=>{const [t0,x0,y0]=sm[sm.length-1],s=Math.max(t,t0,free),d=Math.hypot(x-x0,y-y0);if(s>t0)sm.push([s,x0,y0]);sm.push([s+d/v,x,y]);free=s+d/v;return free;};
+ const go=(t,x,y,v=46)=>{const [t0,x0,y0]=sm[sm.length-1],s=Math.max(t,t0,free);if(s>t0)sm.push([s,x0,y0]);const w=walk([[x0,y0],[x,y]],s,v);sm.push(...w.slice(1));free=w[w.length-1][0];return free;};
  const at0=()=>sm[sm.length-1];
  const hit=(who,t,part)=>{const w=Math.max(t,free+.25);p.kills.push({who,swing:w,part});free=w+.35;if(part==='head'){p.laughs.push([w+.45,w+1.85]);free=w+1.9;}return w;};
  const say=(a,who,text)=>{p.says.push([a,a+1.6,who,text]);};
  const path=(i,...pts)=>p.vic[i].push(...pts),back=(i,a,b)=>p.backs.push([i,a,b]);
  // 0: Arm ab, weicht taumelnd zurück, Kopf
- hit(0,6.75,'lua');path(0,[7.0,722,266],[8.7,702,290]);back(0,7,8.7);
- go(7.8,716,284,24);let w=hit(0,9.1,'head');
- if(n===1){say(w+.5,'s',choose(L.taunt,sc0id,'t0'));return finale(p,free,716,284);}
+ hit(0,6.75,'lua');path(0,[7.0,722,266],[8.7,694,296]);back(0,7,8.7);
+ go(7.8,708,298,24);let w=hit(0,9.1,'head');
+ if(n===1){say(w+.5,'s',choose(L.taunt,sc0id,'t0'));return finale(p,free,708,298);}
  say(7.3,'v1',L.panic[0]);
  // Ab drei: einer macht sich vor Angst in die Hose, als der Arm fliegt
  if(n>=3){p.soil={who:2,t:7.0};p.pops.push([7.6,'DER HAT SICH EINGESCHISSEN!']);}
@@ -81,10 +81,10 @@ function plan(n){
  w=hit(1,A,'rt');say(w+.4,'v1',L.beg[0]);path(1,[w+1,603,384],[w+3,588,392]);go(w+2.2,602,390,20);w=hit(1,w+3.3,'head');
  if(n===2)return finale(p,free,602,390);
  // 2 (eingeschissen): rennt um den Brunnen, wartet zitternd, weicht zurück, Arm ab, will weg, Kopf
- path(2,...walk([[664,280],[700,318],[712,382],[770,388],[788,352]],7.7,34));
+ path(2,...walk([[664,280],[680,306],[684,336],[700,380],[770,390],[788,352]],7.7,34));
  say(free+.1,'s',choose(L.taunt,sc0id,'t1'));A=go(0,792,346,50);path(2,[A-1.5,788,352],[A,806,340]);back(2,A-1.5,A);
- w=hit(2,A,'rua');say(w+.4,'v2',L.arm[0]);path(2,[w+.5,806,340],[w+2.3,826,368]);go(w+.9,814,366,30);w=hit(2,w+2.4,'head');
- let x=814,y=366;
+ w=hit(2,A,'rua');say(w+.4,'v2',L.arm[0]);path(2,[w+.5,806,340],[w+2.3,800,372]);go(w+.9,786,376,30);w=hit(2,w+2.4,'head');
+ let x=786,y=376;
  // 3 und 4 warten am Rand: 3 rennt zu den lachenden Gladiatoren und wird zurückgeschubst, 4 weicht zurück
  if(n>=4){path(3,[7.8,668,302],[9.6,650,328],[11.0,640,404]);p.shoves.push([11.0,11.9]);path(3,[11.9,640,404],[12.7,654,382]);}
  if(n>=5){path(4,[7.6,692,302],[9.6,684,330]);back(4,7.6,9.6);
@@ -99,13 +99,13 @@ function plan(n){
   go(e,T[0],T[1],36);w=hit(3,e+3.3,'lt');say(w+.4,'v3',L.leg[0]);path(3,[w+1,Xe,408],[w+3.2,Xe+dir*16,412]);go(w+2.2,Xe+dir*2,410,22);w=hit(3,w+3.3,'head');x=Xe+dir*2;y=410;}
  return finale(p,free,x,y);}
 let sc0id='';
-const LEFT=[[612,420],[640,432],[668,426]],RIGHT=[[846,298],[866,320],[832,326]],LANISTA=[820,290];
+const LEFT=[[630,446],[656,454],[684,444]],RIGHT=[[846,298],[866,320],[832,326]],LANISTA=[822,304];
 // Vorspiel: Der Lanista führt die Gruppe vom Tor her zur Schmiede, die übrigen Gladiatoren stellen sich mit Abstand dazu.
-function prelude(n){const speed=34,routes=[];for(let i=0;i<n;i++){const pts=[[612,566+i*22],[614,420],[618,312+i*22]],len=pts.slice(1).reduce((v,q,k)=>v+Math.hypot(q[0]-pts[k][0],q[1]-pts[k][1]),0);routes.push(walk(pts,-len/speed,speed));}const off=Math.ceil(Math.max(...routes.map(r=>-r[0][0]))+.6);const lan=[...walk([[634,548],[636,410],[640,300]],-off+.6,speed),[0,640,300],[1.4,700,290],[3.2,LANISTA[0],LANISTA[1]]];return {off,routes,lan};}
-function walk(points,t0,speed){let t=t0;return points.map((q,i)=>{if(i)t+=Math.hypot(q[0]-points[i-1][0],q[1]-points[i-1][1])/speed;return [t,q[0],q[1]];});}
-function finale(p,t,x,y){for(const v of p.vic){for(let i=1;i<v.length;i++)if(v[i][0]<v[i-1][0])v[i][0]=v[i-1][0];}p.inspect=[t,t+.7];p.sips.push([t+.7,t+1.2]);p.laughs.push([t+1.2,t+2.6]);p.says.push([t+2.6,t+4.9,'s',choose(L.last,sc0id,'last')]);const back=t+2.8,dist=Math.hypot(x-748,y-246);p.smith.push([back,x,y],[back+dist/50,748,246],[back+dist/50+.4,748,238]);p.gone=back+dist/50+.4;p.end=Math.min(p.gone+.5,t+5.3);return p;}
+function prelude(n){const speed=34,routes=[];for(let i=0;i<n;i++){const pts=[[612,566+i*22],[614,420],[618,312+i*22]],len=pts.slice(1).reduce((v,q,k)=>v+Math.hypot(q[0]-pts[k][0],q[1]-pts[k][1]),0);routes.push(walk(pts,-len/speed,speed));}const off=Math.ceil(Math.max(...routes.map(r=>-r[0][0]))+.6);const lan=[...walk([[634,548],[636,410],[640,300]],-off+.6,speed),[0,640,300],[1.4,700,300],[3.2,LANISTA[0],LANISTA[1]]];return {off,routes,lan};}
+function walk(points,t0,speed){points=M.sceneNav?.route?M.sceneNav.route(points):points;let t=t0;return points.map((q,i)=>{if(i)t+=Math.hypot(q[0]-points[i-1][0],q[1]-points[i-1][1])/speed;return [t,q[0],q[1]];});}
+function finale(p,t,x,y){p.vic=p.vic.map(v=>{for(let i=1;i<v.length;i++)if(v[i][0]<v[i-1][0])v[i][0]=v[i-1][0];return M.sceneNav?.route?M.sceneNav.route(v):v;});p.inspect=[t,t+.7];p.sips.push([t+.7,t+1.2]);p.laughs.push([t+1.2,t+2.6]);p.says.push([t+2.6,t+4.9,'s',choose(L.last,sc0id,'last')]);const back=t+2.8,home=walk([[x,y],[748,246]],back,50),arrive=home[home.length-1][0];p.smith.push(...home,[arrive+.4,748,238]);p.gone=arrive+.4;p.end=Math.min(p.gone+.5,t+5.3);return p;}
 function fleePlan(n){const p={flee:true,n,says:[[.3,2.4,'v0','']],vic:[],end:3.8};const xs=[610,586,634,562,658];for(let i=0;i<n;i++){const x=xs[i],y=596-(i?6:0),go=1+i*.2;p.vic[i]=[[0,x,y],[go,x,y],[go+.6,x+(i%2?-6:i?6:0),y+30],[go+1.8,610+(i-1)*8,700]];}return p;}
-function crowdOf(){return S.roster.filter(g=>!g.dead&&!g.smithDuty).slice(0,6).map((m,i)=>{const g=JSON.parse(JSON.stringify(m)),spot=(i%2?LEFT:RIGHT)[Math.floor(i/2)],from=i%2?[612,250+i*8]:[900,spot[1]];return {id:'crowd-'+i,g,team:0,x:from[0],y:from[1],a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},spot,from,index:i};});}
+function crowdOf(){return S.roster.filter(g=>!g.dead&&!g.smithDuty).slice(0,6).map((m,i)=>{const g=JSON.parse(JSON.stringify(m)),spot=(i%2?LEFT:RIGHT)[Math.floor(i/2)],from=i%2?[594-Math.floor(i/2)*16,spot[1]+22]:[900,spot[1]];return {id:'crowd-'+i,g,team:0,x:from[0],y:from[1],a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},spot,from,index:i};});}
 function start(){const st=WD.state(),g=st.group;if(!g||g.talk?.tone!=='schmied'||S.battle||sc)return false;const outcome=g.talk.outcome,members=g.members.slice(0,5),leader=g.leader.name;sc0id=g.id;
  // Ergebnis sofort verbuchen: Gruppe weg, Erinnerung vermerkt. Erst danach wird nur noch gezeigt.
  WD.decline();const entry=st.known.find(k=>k.name===leader);

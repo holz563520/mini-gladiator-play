@@ -18,6 +18,8 @@ function openCreator(){draft??=W.sketch();M.ui.modal('Dein Hauptschmied',creator
 function confirm(){const name=String($('smithIntroName')?.value??draft?.name??'').trim().slice(0,32);if(!name){M.ui.notify('Bitte einen Namen eingeben.');$('smithIntroName')?.focus?.();return;}draft??=W.sketch();draft.name=name;const message=W.hireMaster(draft);if(!F.master){M.ui.notify(message);return;}W.setIntro('scene');draft=preview=null;M.ui.close();M.ui.click('nav:home');}
 // ---------- 3 bis 12 · Szene vor der Schmiede ----------
 function startScene(){if(scene||!F.master)return;const helper=W.sketch();helper.id='smith-intro-apprentice';helper.weight=Math.min(helper.weight,88);hideBar();scene={t:0,smith:figure(F.master),boy:figure(helper,true),limbs:[],fx:[],struck:false,played:{},bottle:null,shards:null,hammer:null,bark:barks[Math.floor(Math.random()*barks.length)]};const v=document.createElement('div');v.id='smithIntro';v.className='smith-ceremony smith-intro';v.setAttribute?.('role','dialog');v.setAttribute?.('aria-modal','true');v.setAttribute?.('aria-label','Vorstellung des Hauptschmieds');v.innerHTML='<div><canvas id="smithIntroCanvas" width="660" height="420" aria-label="Die Schmiede"></canvas><p id="smithIntroText" aria-live="polite"></p></div>';document.body.appendChild(v);scene.view=v;}
+// Weg am Abschrecktrog vorbei statt hindurch
+function leg(pts,k){const L=[0];for(let i=1;i<pts.length;i++)L.push(L[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const d=Math.max(0,Math.min(1,k))*L[L.length-1];for(let i=1;i<pts.length;i++)if(d<=L[i]||i===pts.length-1){const u=(d-L[i-1])/((L[i]-L[i-1])||1);return {x:pts[i-1][0]+(pts[i][0]-pts[i-1][0])*u,y:pts[i-1][1]+(pts[i][1]-pts[i-1][1])*u};}return {x:pts[0][0],y:pts[0][1]};}
 function once(key,fn){if(scene.played[key])return;scene.played[key]=true;fn();}
 function dust(x,y,n,color,spread=30){for(let i=0;i<n;i++)scene.fx.push({x:x+Math.random()*8-4,y:y+Math.random()*4-2,z:2+Math.random()*10,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*8,vz:15+Math.random()*30,life:.5+Math.random()*.5,size:2,color});}
 function pose(t){const a=scene.smith,b=scene.boy;for(const p of [a,b]){p.state='idle';p.moveSpeed=0;p.wind=0;p.swing=0;p.wipeTimer=0;p.mercyTimer=0;p.jumpTimer=0;p.kickTimer=0;p.stagger=0;p.forgePose='';p.forgeHold='';p.technique=null;p.phase=t*4;p.g.enemyGear.secondary=null;}
@@ -41,11 +43,11 @@ function pose(t){const a=scene.smith,b=scene.boy;for(const p of [a,b]){p.state='
  if(t>=27.9&&t<33.4)a.g.enemyGear.secondary=a.sword;
  if(between(t,29.2,30.6)){const k=(t-29.2)/1.4;a.x=lerp(716,REACH,k);a.y=lerp(258,262,k);a.state='move';a.moveSpeed=45;}
  if(t>=30.6&&t<32.4){a.x=REACH;a.y=262;}
- if(between(t,32.4,33.2)){const k=(t-32.4)/.8;a.x=lerp(REACH,KICK[0],k);a.y=lerp(262,KICK[1],k);a.a=0;a.state='move';a.moveSpeed=35;}
+ if(between(t,32.4,33.2)){const k=(t-32.4)/.8;{const q=leg([[REACH,262],[804,265],KICK],k);a.x=q.x;a.y=q.y;}a.a=0;a.state='move';a.moveSpeed=35;}
  if(between(t,33.2,33.9)){a.x=KICK[0];a.y=KICK[1];a.a=0;}if(between(t,33.2,33.68))a.kickTimer=33.68-t;
  if(between(t,30.6,31.3)){a.technique='overhead';a.windMax=.7;a.wind=31.3-t;}
  if(between(t,31.3,31.8)){a.swingKind='slash';a.swingMax=.5;a.swing=31.8-t;}
- if(between(t,33.9,35.3)){const k=(t-33.9)/1.4;a.x=lerp(KICK[0],718,k);a.y=lerp(KICK[1],258,k);a.a=Math.PI;a.state='move';a.moveSpeed=40;}
+ if(between(t,33.9,35.3)){const k=(t-33.9)/1.4;{const q=leg([KICK,[804,265],[718,258]],k);a.x=q.x;a.y=q.y;}a.a=Math.PI;a.state='move';a.moveSpeed=40;}
  if(t>=35.3){a.g.enemyGear.secondary=a.hammer;a.x=718;a.y=258;a.a=0;}
  if(between(t,35.6,38)){const k=(t-35.6)/2.4;a.x=lerp(718,748,k);a.y=lerp(258,233,k);a.state='move';a.moveSpeed=40;}
  // Ereignisse
@@ -69,9 +71,9 @@ function dogAt(t){const head=scene.limbs.find(p=>p.part==='head');
  if(t<RETCH-.3)return {x:814+Math.sin(t*9)*1,y:266,f:-1,pose:'sniff',show:true};
  if(t<RETCH)return {x:lerp(814,821,(t-RETCH+.3)/.3),y:266,f:-1,pose:'recoil',show:true};
  if(t<ASIDE)return {x:821,y:267,f:-1,pose:'retch',show:true};
- if(t<ASIDE+1.6){const k=(t-ASIDE)/1.6;return {x:lerp(821,744,k),y:lerp(267,290,k),f:-1,pose:'walk',show:true};}
+ if(t<ASIDE+1.6){/* hinter dem Lehrling vorbei, am Trog entlang, nicht hindurch */const q=leg([[821,267],[812,255],[766,256],[744,290]],(t-ASIDE)/1.6);return {x:q.x,y:q.y,f:-1,pose:'walk',show:true};}
  if(t<CHASE)return {x:744,y:290,f:1,pose:'sit',show:true};
- const k=t-CHASE,x=744+k*120;return {x,y:lerp(290,head?head.y+3:284,Math.min(1,k*1.5)),f:1,pose:'run',show:x<900};}
+ const k=t-CHASE,x=744+k*120;return {x,y:lerp(290,297,Math.min(1,k*3)),f:1,pose:'run',show:x<900};}
 function dog(g,t,r){const d=dogAt(t);if(!d.show)return;const f=d.f,R=(lx,ly,w,h,c)=>r(f>0?d.x+lx:d.x-lx-w,d.y+ly,w,h,c),fur='#d9cfb6',dark='#6b5a45',belly='#f0e8d2',run=d.pose==='walk'||d.pose==='run',ph=t*(d.pose==='run'?22:13);
  if(d.pose==='sit'){R(-8,-4,4,4,dark);R(4,-5,3,5,fur);R(-9,-10,13,7,fur);R(-6,-5,9,2,belly);R(-11,-12,3,3,dark);R(-12,-14+Math.round(Math.sin(t*10)),2,3,dark);R(2,-16,8,7,fur);R(9,-13,4,3,fur);R(12,-13,1,1,'#1f1a16');R(6,-14,1,1,'#1f1a16');R(3,-17,3,4,dark);return;}
  for(const [lx,o] of [[-8,0],[-5,Math.PI],[4,Math.PI],[7,0]]){const lift=run?Math.max(0,Math.sin(ph+o))*2:0;R(lx,-5-lift,2,5,lx<0?dark:fur);}
@@ -98,7 +100,7 @@ function paint(){const c=$('smithIntroCanvas');if(!c?.getContext)return;backdrop
  if(t>=BAM){r(733,187,29,49,'#161a17');r(733,187,29,3,'#0d100e');r(762,184,5,52,'#514636');r(763,186,1,48,'#71583b');r(766,184,1,52,'#373b30');}
  if(scene.shards)for(const [dx,dy]of [[-5,0],[-1,2],[3,-1],[6,1],[1,-2],[-3,3]]){r(scene.shards.x+dx,scene.shards.y+dy,2,1,'#6f9a72');r(scene.shards.x+dx+1,scene.shards.y+dy,1,1,'#c5e2c0');}
  if(scene.hammer){r(scene.hammer.x-7,scene.hammer.y,11,2,'#6b5236');r(scene.hammer.x+3,scene.hammer.y-2,5,6,'#8d9892');r(scene.hammer.x+3,scene.hammer.y-2,5,1,'#c2c5b0');}
- mess(g,t,b,r,'ground');const list=[b,...(a.hidden?[]:[a])].sort((p,q)=>p.y-q.y);M.renderForgeActors(g,list);mess(g,t,b,r,'body');dog(g,t,r);M.renderForgeEffects(g,scene.limbs,scene.fx);
+ mess(g,t,b,r,'ground');const list=[b,...(a.hidden?[]:[a])].sort((p,q)=>p.y-q.y),dy=dogAt(t).y;/* Hund nach Tiefe einsortiert: hinter Figuren, die weiter vorn stehen */M.renderForgeActors(g,list.filter(p=>p.y<=dy));dog(g,t,r);M.renderForgeActors(g,list.filter(p=>p.y>dy));mess(g,t,b,r,'body');M.renderForgeEffects(g,scene.limbs,scene.fx);
  const flask=(x,y)=>{r(x-1,y-4,3,7,'#4f7a52');r(x,y-6,1,3,'#3b5c40');r(x-1,y-4,1,5,'#8fb58c');};
  if(scene.bottle){const p=(t-scene.bottle.t0)/.5;flask(lerp(a.x-6,694,p),lerp(a.y-46,266,p)-Math.sin(Math.min(1,p)*Math.PI)*10);}
  g.restore();

@@ -63,9 +63,14 @@ const lerp=(a,b,k)=>a+(b-a)*Math.max(0,Math.min(1,k)),between=(t,a,b)=>t>=a&&t<b
 function smithActor(){const p=W().master,rng=S.rng,g=M.makeGladiator(0);Object.assign(g,{id:'plot-smith',name:p.name,height:p.height,weight:p.weight,muscle:58,fame:0,scars:[]});g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};const items={hammer:M.makeItem('weapon','hammer',1),dagger:M.makeItem('weapon','dagger',1),sword:M.makeItem('weapon','gladius',1)};g.enemyGear={weapon:null,secondary:items.hammer,shield:null,armor:{}};S.rng=rng;return {id:g.id,g,items,team:0,x:712,y:262,a:Math.PI,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,forgeWorker:true,bloodMarks:{}};}
 // Szenenzeit; Zeitlupe über die Abspielrate.
 const SLOW=[[6,6.3,.25],[6.3,7.6,.3],[7.6,9.2,.5],[28.6,29.6,.3]],rate=t=>SLOW.find(([a,b])=>t>=a&&t<b)?.[2]??1;
-const GRAB=28.6,HIT=6.3,DROP=9,OVEN=[31.2,35.6],RUN={c:[760,300],r:32,w:2,t0:38.3},STRIKE1=41.9,CRAWL0=STRIKE1+.9,FR=STRIKE1+8.6,CATCH=STRIKE1+17,CUT=CATCH+1.8,CRAWL_V=8,PULL=.6;
-function runAt(t){const th=Math.PI*.15+RUN.w*(t-RUN.t0);return {x:RUN.c[0]+Math.cos(th)*RUN.r,y:RUN.c[1]+Math.sin(th)*RUN.r*.55,dx:-Math.sin(th)};}
-const P1=runAt(STRIKE1),SPOT={x:P1.x-15*Math.sign(P1.dx||1),y:P1.y},CRAWL=Math.sign(P1.dx||1),BACK=CUT+3.5,DOOR_T=BACK+Math.hypot(748-(P1.x+CRAWL*((CATCH-CRAWL0)*CRAWL_V-14)),240-P1.y)/45,END=DOOR_T+.9;
+const GRAB=28.6,HIT=6.3,DROP=9,OVEN=[31.2,35.6],RUN={c:[758,300],r:27,k:.33,w:2,t0:38.3},STRIKE1=41.9,CRAWL0=STRIKE1+.9,FR=STRIKE1+8.6,CATCH=STRIKE1+17,CUT=CATCH+1.8,CRAWL_V=8,PULL=.6;
+// Wege um Werkbank, Trog und Schleifstein herum (nicht hindurch)
+const nav=pts=>M.sceneNav?.route?M.sceneNav.route(pts):pts;
+function along(pts,k){const L=[0];for(let i=1;i<pts.length;i++)L.push(L[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const d=Math.max(0,Math.min(1,k))*L[L.length-1];for(let i=1;i<pts.length;i++)if(d<=L[i]||i===pts.length-1){const u=(d-L[i-1])/((L[i]-L[i-1])||1);return {x:pts[i-1][0]+(pts[i][0]-pts[i-1][0])*u,y:pts[i-1][1]+(pts[i][1]-pts[i-1][1])*u};}return {x:pts[0][0],y:pts[0][1]};}
+// Kriechspur zwischen Schleifstein und Bank: ein Stück nach oben, damit der Körper nicht über der Bank liegt
+const LANE=297;function crawlY(t){return t<=CRAWL0?P1.y:P1.y+(LANE-P1.y)*Math.min(1,(t-CRAWL0)/3);}
+function runAt(t){const th=Math.PI*.15+RUN.w*(t-RUN.t0);return {x:RUN.c[0]+Math.cos(th)*RUN.r,y:RUN.c[1]+Math.sin(th)*RUN.r*RUN.k,dx:-Math.sin(th)};}
+const P1=runAt(STRIKE1),SPOT={x:P1.x-15*Math.sign(P1.dx||1),y:P1.y},ARCHER_WAY=[[840,298],[857,291],[854,268],[822,262]],SMITH_WAY=[[792,262],[764,265],[766,298],[P1.x-15*Math.sign(P1.dx||1),P1.y]],CRAWL=Math.sign(P1.dx||1),BACK=CUT+3.5,DOOR_T=BACK+Math.hypot(748-(P1.x+CRAWL*((CATCH-CRAWL0)*CRAWL_V-14)),240-P1.y)/45,END=DOOR_T+.9;
 function lines(){return [
  [0.3,3.3,'cap',smithName()+' hämmert. '+sc.name+' schleicht sich an.'],
  [9.4,11.8,'s','Oh. Du wolltest mir in den Hinterkopf schießen. Du wolltest mich wohl umbringen.'],
@@ -106,45 +111,47 @@ function pose(t){const s=sc.s,a=sc.a;
  if(between(t,OVEN[1],OVEN[1]+.6)){const k=(t-OVEN[1])/.6;s.x=lerp(817,792,k);s.y=lerp(254,262,k);s.state='move';s.moveSpeed=10;s.a=0;}
  if(between(t,OVEN[1]+.6,38.4)){s.x=792;s.y=262;s.a=0;}
  if(t>=38.2&&t<CUT+1.4)s.g.enemyGear.secondary=s.items.sword;
- if(between(t,38.4,39.7)){const k=(t-38.4)/1.3;s.x=lerp(792,SPOT.x,k);s.y=lerp(262,SPOT.y,k);s.state='move';s.moveSpeed=10;s.phase=t*6;s.a=SPOT.x>=792?0:Math.PI;}
+ if(between(t,38.4,39.7)){const k=(t-38.4)/1.3;{const q=along(SMITH_WAY,k);s.x=q.x;s.y=q.y;}s.state='move';s.moveSpeed=10;s.phase=t*6;s.a=SPOT.x>=792?0:Math.PI;}
  if(between(t,39.7,STRIKE1+1.6)){s.x=SPOT.x;s.y=SPOT.y;const p=runAt(Math.min(t,STRIKE1));s.a=p.x>=s.x?0:Math.PI;}
  if(between(t,STRIKE1-.3,STRIKE1)){s.technique='overhead';s.windMax=.3;s.wind=STRIKE1-t;}
  if(between(t,STRIKE1,STRIKE1+.25)){s.swingKind='slash';s.swingMax=.25;s.swing=STRIKE1+.25-t;}
  if(between(t,STRIKE1+.4,STRIKE1+1.2))s.state='celebrate';
  const crawlX=t2=>{const tau=Math.max(0,Math.min(t2,CATCH)-CRAWL0),n=Math.floor(tau/PULL),u=(tau%PULL)/PULL,k=u<.45?0:Math.min(1,(u-.45)/.35),e=k*k*(3-2*k);return P1.x+CRAWL*(n+e)*PULL*CRAWL_V;};
- if(between(t,STRIKE1+1.6,CUT)){const gap=lerp(40,34,(t-STRIKE1-1.6)/(CATCH-STRIKE1-2.4))+(t>CATCH-.8?lerp(0,-20,(t-CATCH+.8)/.8):0),goal=crawlX(t)-CRAWL*gap,k=Math.min(1,(t-STRIKE1-1.6)/1.2);s.x=lerp(SPOT.x,goal,k);s.y=lerp(SPOT.y,P1.y,k);s.a=CRAWL>0?0:Math.PI;if(t<CATCH){s.state='move';s.moveSpeed=6;s.phase=t*3;}}
+ if(between(t,STRIKE1+1.6,CUT)){const gap=lerp(40,34,(t-STRIKE1-1.6)/(CATCH-STRIKE1-2.4))+(t>CATCH-.8?lerp(0,-20,(t-CATCH+.8)/.8):0),goal=crawlX(t)-CRAWL*gap,k=Math.min(1,(t-STRIKE1-1.6)/1.2);s.x=lerp(SPOT.x,goal,k);s.y=lerp(SPOT.y,crawlY(t),k);s.a=CRAWL>0?0:Math.PI;if(t<CATCH){s.state='move';s.moveSpeed=6;s.phase=t*3;}}
  if(between(t,CUT-.35,CUT)){s.technique='overhead';s.windMax=.35;s.wind=CUT-t;}
  if(between(t,CUT,CUT+.25)){s.swingKind='slash';s.swingMax=.25;s.swing=CUT+.25-t;}
- const stand={x:crawlX(CUT)-CRAWL*14,y:P1.y};
+ const stand={x:crawlX(CUT)-CRAWL*14,y:LANE};
  if(between(t,CUT+.25,BACK)){s.x=stand.x;s.y=stand.y;s.a=CRAWL>0?0:Math.PI;}
  if(between(t,CUT+.6,CUT+1.3))s.forgePose='inspect';
  if(between(t,CUT+1.9,CUT+2.8))s.forgePose='sip';
  if(between(t,CUT+2.9,CUT+3.4))s.state='celebrate';
- if(between(t,BACK,DOOR_T+.3)){const k=(t-BACK)/(DOOR_T-BACK);s.x=lerp(stand.x,748,k);s.y=lerp(stand.y,240,k);s.state='move';s.moveSpeed=10;s.phase=t*6;s.a=748>=stand.x?0:Math.PI;}
+ if(between(t,BACK,DOOR_T+.3)){const k=(t-BACK)/(DOOR_T-BACK);{const q=along(sc.home??=nav([[stand.x,stand.y],[748,246],[748,240]]),k);s.x=q.x;s.y=q.y;}s.state='move';s.moveSpeed=10;s.phase=t*6;s.a=748>=stand.x?0:Math.PI;}
  // ---- Schütze ----
  a.charred=sc.charred;
- if(t<3.4){const k=(t-.3)/3.1;a.x=lerp(880,838,k);a.y=lerp(300,294,k);if(t>.3){a.state='move';a.moveSpeed=6;a.phase=t*4;}a.a=Math.PI;}
- else if(t<22.6){a.x=838;a.y=294;a.a=Math.PI;}
+ // Handschlag, Griff und Esse: gewollter Körperkontakt, das Ausweichen bleibt hier aus
+ a.noNav=s.noNav=between(t,GRAB-.5,RUN.t0+.1);
+ if(t<3.4){const k=(t-.3)/3.1;a.x=lerp(880,840,k);a.y=lerp(300,298,k);if(t>.3){a.state='move';a.moveSpeed=6;a.phase=t*4;}a.a=Math.PI;}
+ else if(t<22.6){a.x=840;a.y=298;a.a=Math.PI;}
  if(between(t,3.4,HIT)){a.swingKind='shoot';a.windMax=1.1;if(!sc.cross)a.wind=Math.max(.01,1.1-(t-3.4)*.42);if(t>=6)a.wind=0;a.x+=Math.sin(t*20)*.3;}
  if(between(t,6,6.3)){a.swingKind='shoot';a.swingMax=.3;a.swing=6.3-t;}
  if(t>=DROP)a.retreat=1;
  if(between(t,DROP,DROP+.5)){a.traderPose='rant';a.facePain=1;}
  if(between(t,15.4,GRAB)){a.x+=Math.sin(t*38)*1.1;a.facePain=.5;a.retreat=1;}
- if(between(t,22.6,24.8)){const k=(t-22.6)/2.2;a.x=lerp(838,822,k)+Math.sin(t*38);a.y=lerp(294,262,k);a.state='move';a.moveSpeed=5;a.phase=t*3;a.a=Math.PI;}else if(between(t,24.8,30.4)){a.x=822+(t<GRAB?Math.sin(t*38)*.9:0);a.y=262;a.a=Math.PI;}
+ if(between(t,22.6,24.8)){const k=(t-22.6)/2.2;{const q=along(ARCHER_WAY,k);a.x=q.x+Math.sin(t*38);a.y=q.y;}a.state='move';a.moveSpeed=5;a.phase=t*3;a.a=Math.PI;}else if(between(t,24.8,30.4)){a.x=822+(t<GRAB?Math.sin(t*38)*.9:0);a.y=262;a.a=Math.PI;}
  if(between(t,27.4,GRAB+1.4))a.traderPose='point';
  if(between(t,29.6,30.4)){a.x=lerp(822,812,(t-29.6)/.3);a.stagger=.5;a.facePain=1;}
  if(between(t,30.4,OVEN[1])){const k=Math.min(1,(t-30.4)/.8);a.x=lerp(812,800,k);a.y=lerp(262,247,k);a.a=Math.PI;a.facePain=1;if(k<1){a.state='move';a.moveSpeed=8;a.phase=t*8;}else{a.traderPose='rant';a.stagger=.4;a.x+=Math.sin(t*31)*1.2;a.phase=t*14;}}
  if(between(t,OVEN[1],OVEN[1]+.6)){const k=(t-OVEN[1])/.6;a.x=lerp(800,812,k);a.y=lerp(247,262,k);a.stagger=.6;a.facePain=1;}
  if(between(t,OVEN[1]+.6,RUN.t0)){a.x=812;a.y=262;a.a=Math.PI;a.facePain=1;a.x+=Math.sin(t*30)*.6;}
  if(between(t,RUN.t0,STRIKE1+.1)){const p=runAt(t),q=runAt(t+.05);a.x=p.x;a.y=p.y;a.a=q.x>=p.x?0:Math.PI;a.state='move';a.moveSpeed=16;a.phase=t*11;a.retreat=1;a.facePain=1;}
- if(t>=STRIKE1+.1){a.x=crawlX(t);a.y=P1.y;a.down=true;a.fallSide=1;a.a=CRAWL>0?0:Math.PI;a.facePain=1;if(t<CRAWL0){a.fallTimer=2.1-(t-STRIKE1-.1);a.fallDuration=2.1;a.down=false;}else a.fallTimer=0;
+ if(t>=STRIKE1+.1){a.x=crawlX(t);a.y=crawlY(t);a.down=true;a.fallSide=1;a.a=CRAWL>0?0:Math.PI;a.facePain=1;if(t<CRAWL0){a.fallTimer=2.1-(t-STRIKE1-.1);a.fallDuration=2.1;a.down=false;}else a.fallTimer=0;
   // Zieht sich mit den Armen vorwärts: Ruck nach vorn, Arm greift nach vorn
   if(between(t,CRAWL0,CATCH)&&!a.g.dead){const n=Math.floor((t-CRAWL0)/PULL);a.traderPose=n%2?'pat':'point';a.gest=t*3;}
   // Umdrehen, Hände abwehrend dem Schmied entgegen
   if(t>=CATCH&&!a.g.dead){a.a=CRAWL>0?Math.PI:0;a.fallSide=-1;a.traderPose='rant';}}
  // ---- Die beiden Mitverschwörer ----
  const endX=P1.x+CRAWL*(CATCH-CRAWL0)*CRAWL_V,spots=[endX+CRAWL*108,endX+CRAWL*128];
- for(const [i,f] of [sc.fr.b,sc.fr.c].entries()){if(!f)continue;f.state='idle';f.moveSpeed=0;f.traderPose=null;f.facePain=0;f.retreat=0;const sx=spots[i],from=sx+CRAWL*90,fy=P1.y+(i?6:-4);
+ for(const [i,f] of [sc.fr.b,sc.fr.c].entries()){if(!f)continue;f.state='idle';f.moveSpeed=0;f.traderPose=null;f.facePain=0;f.retreat=0;const sx=spots[i],from=sx+CRAWL*90,fy=LANE+(i?6:-4);
   if(t<STRIKE1+2.6){f.x=-99;f.y=-99;continue;}
   if(t<STRIKE1+5.4){const k=(t-STRIKE1-2.6)/2.8;f.x=lerp(from,sx,k);f.y=fy;f.state='move';f.a=CRAWL>0?Math.PI:0;}
   else if(t<FR+2.4){f.x=sx;f.y=fy;f.a=CRAWL>0?Math.PI:0;}
@@ -188,7 +195,7 @@ function headPoint(p){const k=.6*p.g.height/180*1.14;return {x:p.x+(Math.cos(p.a
 function paint(){const c=$('archerPlotCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),VW=sc.cam.vw,VH=VW*420/660,k=c.width/VW,cx=Math.max(VW/2,Math.min(900-VW/2,sc.cam.x)),cy=Math.max(VH/2,Math.min(670-VH/2,sc.cam.y)),t=sc.t,s=sc.s,a=sc.a,r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);};
  sc.bg??=M.ludus.background();g.imageSmoothingEnabled=false;g.setTransform?.(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.save();g.scale(k,k);g.translate(-(cx-VW/2),-(cy-VH/2));g.drawImage(sc.bg,0,0);
  r(788,205,7,10,t%1>.5?'#c88945':'#e2ab5c');r(803,210,5,7,t%1>.5?'#c88945':'#e2ab5c');
- if(sc.soiled){r(838-4,295,9,2,'#5a3d1e');if(!a.down&&t<OVEN[0]){const rear=Math.cos(a.a)>=0?-1:1;r(a.x+rear*2-3,a.y-20,6,6,'#4e3318');r(a.x+rear*3,a.y-14,1,10,'#5a3d1e');}}
+ if(sc.soiled){r(840-4,299,9,2,'#5a3d1e');if(!a.down&&t<OVEN[0]){const rear=Math.cos(a.a)>=0?-1:1;r(a.x+rear*2-3,a.y-20,6,6,'#4e3318');r(a.x+rear*3,a.y-14,1,10,'#5a3d1e');}}
  if(sc.trail.length){const xs=sc.trail.map(d=>d.x),y=sc.trail[sc.trail.length-1].y;r(Math.min(...xs),y,Math.max(...xs)-Math.min(...xs)+2,2,'#7c2e28');}for(const d of sc.trail)r(d.x,d.y,d.w||3,2,'#9b3530');
  if(a.down&&!a.g.body.head.missing||sc.gutsOut){sc.gutsOut=true;const back=-CRAWL,len=Math.min(48,10+(t-STRIKE1)*4),x0=a.x+hipOff(a,t)+back,y0=a.y;for(let i=0;i<len;i+=1){const w=Math.sin(i*.38+t*1.3)*2.2+Math.sin(i*.9)*.8;r(x0+back*i,y0+w+1,3,2,'#5e1f22');r(x0+back*i,y0+w-1,3,3,i%6<3?'#e3a1a3':'#c06a74');}for(let j=0;j<3;j++){const i=Math.floor(len*(.3+j*.25));r(x0+back*i-1,y0+Math.sin(i*.38+t*1.3)*2.2-2,4,4,'#d98a90');}r(x0-2,y0-2,5,4,'#7c2e28');}
  if(sc.bow){const b=sc.bow;if(b.def==='crossbow'){r(b.x-6,b.y-1,13,2,'#6b4a2e');r(b.x+4,b.y-5,2,9,'#4a3324');r(b.x+5,b.y-5,1,9,'#c9c6ac');}else{for(let n=-7;n<=7;n++)r(b.x+n,b.y-Math.round(3-Math.abs(n)*.4),1,2,'#7a5232');r(b.x-7,b.y+1,15,1,'#d9d2bb');}}
