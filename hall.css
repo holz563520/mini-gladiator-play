@@ -1,0 +1,48 @@
+/* HALL OF THE FALLEN */
+.hall-page .pagehead h1{letter-spacing:.06em}
+.hall-stage{position:relative;max-width:820px;margin-inline:auto;border:2px solid #3b403d;background:#0d1011;border-radius:6px;overflow:hidden;margin-bottom:14px}
+.hall-stage canvas{display:block;width:100%;height:auto;image-rendering:pixelated;cursor:grab;touch-action:pan-y;user-select:none}
+.hall-empty{position:absolute;left:0;right:0;bottom:10px;text-align:center;color:#a99e84;font-size:14px;margin:0}
+.hall-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hall-bar label{display:flex;gap:8px;align-items:center;font-size:14px}
+.hall-pager{display:flex;gap:8px;align-items:center;font-size:14px}
+.hall-pager .btn{min-width:44px}
+.hall-list{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:60dvh;overflow-y:auto}
+.hall-row{width:100%;display:grid;grid-template-columns:34px minmax(0,1fr) 62px 46px 58px;gap:8px;align-items:center;text-align:left;background:#182124;border:1px solid #33433f;border-left:4px solid #5e605a;color:#dfe5dc;padding:9px 10px;border-radius:5px;font:inherit;cursor:pointer}
+.hall-row.on-page{background:#1e2a2c}
+.hall-row.t2{border-left-color:#82847a}.hall-row.t3{border-left-color:#a7a99b}.hall-row.t4{border-left-color:#b08848}.hall-row.t5{border-left-color:#f0d27a}
+.hall-row b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hall-row small{display:block;font-size:12px;color:#a9b5ad;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hall-rank{color:#c9a85a;font-weight:bold;text-align:center}
+.hall-name{min-width:0}
+.hall-cv,.hall-k{text-align:center;font-variant-numeric:tabular-nums}
+.hall-cv b{color:#ecd29a}
+.hall-d{font-size:12px;color:#a9b5ad;text-align:right}
+@media(max-width:520px){.hall-row{grid-template-columns:26px minmax(0,1fr) 52px 40px}.hall-d{display:none}}
+.hall-detail{display:grid;gap:12px}
+.hall-id{display:grid;grid-template-columns:110px minmax(0,1fr);gap:14px;align-items:center}
+.hall-id canvas{width:110px;height:auto;image-rendering:pixelated;background:#1a1f20;border:1px solid #3b403d;border-radius:4px}
+.hall-id h3{margin:4px 0;font-size:20px}
+.hall-title{margin:0;color:#e2c27d;font-style:italic}
+.hall-sec{border:1px solid #3b4a46;border-radius:6px;padding:10px 12px;background:#172124}
+.hall-sec h4{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#a9b5ad}
+.hall-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.hall-grid span,.hall-list2 span{display:grid;gap:2px;font-size:12px;color:#a9b5ad}
+.hall-grid b,.hall-list2 b{font-size:16px;color:#ecd29a;font-variant-numeric:tabular-nums}
+.hall-list2{display:grid;gap:8px}
+.hall-list2 span{padding:4px 6px;border-radius:4px}
+.hall-epi p{margin:0;font-style:italic;font-size:16px;color:#efe0b3}
+.hall-detail.t5 .hall-epi{border-color:#d6b45a}
+.hall-hl{outline:3px solid #f4d37a;outline-offset:2px;animation:hallPulse 1s ease-in-out infinite;border-radius:6px}
+@keyframes hallPulse{50%{outline-color:#f4d37a55}}
+.hall-guide{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:200;width:min(560px,calc(100vw - 24px));background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45);padding:9px 14px 10px;font-family:'Courier Prime',monospace;cursor:pointer;box-sizing:border-box}
+.hall-guide b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.hall-guide span{display:block;font-size:17px;font-weight:700;margin:2px 0}
+.hall-guide small{display:block;text-align:right;font-size:11px;opacity:.6}
+.hall-hint{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:40;background:#17201c;color:#f4d37a;border:2px solid #f4d37a;padding:10px 16px;border-radius:6px;font-weight:bold;font-size:15px;max-width:calc(100vw - 32px);text-align:center;pointer-events:none;box-shadow:0 4px 14px #0008}
+.hall-hint[hidden]{display:none}
+.hall-unlock{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;background:#000a;cursor:pointer;animation:hallFade .6s ease-out}
+.hall-unlock div{display:grid;gap:10px;text-align:center;padding:24px 18px;border-top:2px solid #c9a85a;border-bottom:2px solid #c9a85a;background:#0f1314;width:min(640px,calc(100vw - 32px))}
+.hall-unlock b{font-size:clamp(20px,5vw,30px);letter-spacing:.08em;color:#f4d37a}
+.hall-unlock span{font-size:clamp(12px,3vw,15px);letter-spacing:.14em;color:#c9c6b4}
+@keyframes hallFade{from{opacity:0}}

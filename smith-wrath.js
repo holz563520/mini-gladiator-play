@@ -155,7 +155,7 @@ function start(){const st=WD.state(),g=st.group;if(!g||g.talk?.tone!=='schmied'|
  sc.view=document.createElement('div');sc.view.id='smithWrath';sc.view.className='smith-ceremony smith-intro smith-wrath no-smith-song';sc.view.setAttribute?.('role','dialog');sc.view.setAttribute?.('aria-modal','true');sc.view.setAttribute?.('aria-label',outcome==='WRATH'?'Der Zorn des Schmieds':'Panische Flucht');
  sc.view.innerHTML='<div><div class="scene-bubble-slot"><div class="scene-bubble" id="smithWrathBubble" hidden></div></div><canvas id="smithWrathCanvas" width="660" height="420" data-action="wrath:tap"></canvas><p id="smithWrathText" aria-live="polite"></p></div>';document.body.appendChild(sc.view);
  sc.cam=outcome==='WRATH'?{x:690,y:282}:{x:610,y:560};M.ui.render();return true;}
-function end(){if(!sc)return;const found=sc.found||[];sc.view?.remove?.();sc=null;M.ui.render();if(found.length)M.ui.notify(smithName()+' hat sich die Ausrüstung der Toten angesehen: '+found.length+' '+(found.length===1?found[0]:'neue Rezepte')+' entdeckt.');}
+function end(){if(!sc)return;const found=sc.found||[],done=sc.onEnd,full=sc.t>=sc.p.end-.05;sc.view?.remove?.();sc=null;if(done){/* Tutorial: Tod erst nach vollständig abgespielter Szene verbuchen */if(full)done();else M.ui.render();return;}M.ui.render();if(found.length)M.ui.notify(smithName()+' hat sich die Ausrüstung der Toten angesehen: '+found.length+' '+(found.length===1?found[0]:'neue Rezepte')+' entdeckt.');}
 function once(k,fn){if(sc.done[k])return;sc.done[k]=true;fn();}
 function blood(x,y,n,dir=1){for(let i=0;i<n;i++)sc.fx.push({x,y,z:38+Math.random()*8,vx:dir*(10+Math.random()*30),vy:Math.random()*14-7,vz:18+Math.random()*26,life:.6+Math.random()*.5,size:2,color:i%3?'#aa3c36':'#87352e'});}
 function dust(x,y,n){for(let i=0;i<n;i++)sc.fx.push({x:x+Math.random()*10-5,y,z:2+Math.random()*6,vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*8,vz:12+Math.random()*24,life:.5+Math.random()*.4,size:2,color:'#c9b586'});}
@@ -173,9 +173,11 @@ function pose(t){const p=sc.p,s=sc.smith;
  // Herumtreiber
  sc.vic.forEach((v,i)=>{v.traderPose=null;for(const [w,d] of p.deaths||[])if(w===i&&t>=d&&!v.g.dead){v.g.dead=true;v.down=true;v.fallTimer=0;M.sound?.('die');}
   if(v.g.dead&&v.down){v.state='idle';v.moveSpeed=0;v.kneeTimer=0;v.facePain=0;if(v.lieA!=null)v.a=v.lieA;return;}const path=p.vic[i];if(!path)return;const cr=(p.crawls||[]).find(c=>c.who===i&&between(t,c.t0,c.t1)),q=at(path,cr?pull(t,cr.t0):t);v.x=q.x;v.y=q.y;v.moveSpeed=q.v>3?10:0;v.state=q.v>3?'move':'idle';v.phase=t*(q.v>40?11:7)+i;if(q.dx)v.a=q.dx>0?0:Math.PI;
-  const scared=p.flee?t>.8:t>=p.door;v.retreat=scared?1:0;v.facePain=scared&&!q.v?.3:0;
+  const scared=p.flee?t>.8:p.tut?t>=p.scare:t>=p.door;v.retreat=scared?1:0;v.facePain=scared&&!q.v?.3:0;
   if(!p.flee&&t<p.door&&i===0&&between(t,2.1,3.7)){v.state='charge';v.a=0;}
   if(!p.flee&&t<p.door&&q.v<3)v.a=0;
+  if(p.tut&&!v.down&&!v.fallTimer)for(const [a,b] of p.looks)if(between(t,a,b))v.a=Math.floor((t-a)/1.1)%2?Math.PI:0;else if(t>=b&&t<(p.kills[0]?.swing??0))v.a=sc.smith&&sc.smith.x>=v.x?0:Math.PI;
+  if(p.tut&&t>=p.scare&&!v.down){v.facePain=.8;v.x+=Math.sin(t*47)*.6;}
   if(p.flee&&t<1)v.a=0;
   // Zurückweichen: Blick zum Schmied, Füße gehen rückwärts
   for(const [w,a,b] of p.backs||[])if(w===i&&between(t,a,b)&&sc.smith){v.a=sc.smith.x>=v.x?0:Math.PI;v.retreat=1;}
@@ -189,14 +191,15 @@ function pose(t){const p=sc.p,s=sc.smith;
  // Schmied
  s.state='idle';s.moveSpeed=0;s.wind=0;s.swing=0;s.technique=null;s.forgePose='';s.kickTimer=0;s.shoutTimer=0;s.phase=t*4;
  // Schwert in der Hand (kommt damit aus der Tür), Hammer hängt am Gürtel
- M.beltPlan?.(s,t,[[-99,'sword']]);
+ M.beltPlan?.(s,t,p.belt||[[-99,'sword']]);
  s.hidden=t<p.door||(p.gone&&t>=p.gone);const q=at(p.smith,t);s.x=q.x;s.y=q.y;if(q.v>3){s.state='move';s.moveSpeed=q.v>45?16:10;s.phase=t*(q.v>45?9:6);s.a=q.dx>=0?0:Math.PI;}
  for(const [a,b] of p.sips)if(between(t,a,b))s.forgePose='sip';
  s.jumpTimer=0;for(const [a,b] of p.laughs)if(between(t,a,b)&&q.v<3){s.state='celebrate';s.forgePose='';const u=(t-a)%.6;if(u<.26)s.jumpTimer=.26-u;}
  for(const c of p.cheers||[])if(t>=c)once('cheer'+c,()=>{sc.ha=(sc.ha||[]).filter(h=>h.who!==s);sc.ha.push({who:s,text:L.cheer[Math.floor(Math.random()*L.cheer.length)],until:t+1.4,loud:true});});
  for(const k of p.kicks||[]){if(between(t,k.t-.26,k.t+.22)){s.kickTimer=k.t+.22-t;s.a=k.dir>0?0:Math.PI;s.state='idle';}if(t>=k.t)once('kick'+k.who,()=>{const v=sc.vic[k.who],h=sc.limbs.find(l=>l.part==='head'&&l.g===v?.g);if(!h)return;h.x=s.x+k.dir*9;h.y=s.y-1;h.z=3;h.vx=k.dir*(150+Math.random()*30);h.vy=(Math.random()-.5)*24;h.vz=78;h.spin=k.dir*16;aim(h);blood(h.x,h.y,8,k.dir);M.sound?.('hit');});}
  if(p.inspect&&between(t,...p.inspect)){s.forgePose='inspect';s.a=Math.PI;}
- if(between(t,4.7,6.3)){s.state='charge';s.shoutTimer=.3;}
+ if(!p.tut&&between(t,4.7,6.3)){s.state='charge';s.shoutTimer=.3;}
+ if(p.tut)tutPose(t);
  for(const k of p.kills){const v=sc.vic[k.who],w=k.swing;if(!v)continue;const tx=k.tx??v.x;if(between(t,w-1.1,w+.8)&&q.v<3&&!s.kickTimer)s.a=tx>=s.x?0:Math.PI;
   if(between(t,w-.3,w)){s.technique='overhead';s.windMax=.3;s.wind=w-t;}
   if(between(t,w,w+.25)){s.swingKind='slash';s.swingMax=.25;s.swing=w+.25-t;}
@@ -209,7 +212,10 @@ function pose(t){const p=sc.p,s=sc.smith;
    sever(v,k.part,dir);if(k.part==='head'){v.g.dead=true;v.down=true;v.kneeTimer=0;v.fallTimer=0;if(v.lieA==null){v.lieA=v.a;v.fallSide=(k.hd||dir)*(Math.cos(v.a)>=0?1:-1);}}else if(/^(lt|rt|lsh|rsh)$/.test(k.part)){if(!p.falls[k.who])p.falls[k.who]={t:w+.12,hd:k.hd||dir,fs:1};}else v.stagger=.5;});}
  if(sc.pre&&t<0)sc.vic.forEach((v,i)=>{const q=at(sc.pre.routes[i],t);v.x=q.x;v.y=q.y;v.state=q.v>3?'move':'idle';v.moveSpeed=q.v>3?10:0;v.phase=t*7+i;v.a=0;v.retreat=0;v.facePain=0;});
  crowd(t);
- if(t>=p.door)once('door',()=>{M.sound?.('heavy');dust(748,238,20);sc.view?.classList?.remove('no-smith-song');});}
+ if(t>=p.door&&!p.tut)once('door',()=>{M.sound?.('heavy');dust(748,238,20);sc.view?.classList?.remove('no-smith-song');});}
+function tutPose(t){const p=sc.p,s=sc.smith;s.traderPose=null;for(const [a,b] of p.pats)if(between(t,a,b)){s.traderPose='pat';s.gest=t*3;s.a=Math.PI;}
+ if(t>=p.turn)s.a=0;for(const [a,b] of p.points)if(between(t,a,b)){s.traderPose='point';s.gest=t;s.a=Math.PI;}
+ const l=sc.lan;if(l){l.state='idle';l.moveSpeed=0;l.traderPose=null;l.a=Math.PI;}}
 function crowd(t){if(!sc.crowd)return;const p=sc.p,first=p.kills?.[0]?.swing??1e9,live=sc.vic.find(v=>!v.g.dead)||sc.smith,cx=(sc.smith&&!sc.smith.hidden?sc.smith.x:748),laughing=t>=first-.1&&t<p.end-.4;
  const look=x=>cx>=x?0:Math.PI;
  for(const c of sc.crowd){c.state='idle';c.moveSpeed=0;c.traderPose=null;c.facePain=0;const k=Math.min(1,Math.max(0,(t+sc.off-.4-c.index*.35)/4.2));c.x=lerp(c.from[0],c.spot[0],k);c.y=lerp(c.from[1],c.spot[1],k);if(k>0&&k<1){c.state='move';c.moveSpeed=10;c.phase=t*7+c.index;c.a=c.spot[0]>=c.from[0]?0:Math.PI;}else c.a=look(c.x);
@@ -229,7 +235,7 @@ function gait(list,ds){sc.odo??={};for(const p of list){if(!p)continue;const o=s
 const need=text=>Math.max(2.6,1.2+text.length*.072);
 function lineNow(t){const p=sc.p;for(const [a,b,who,text] of p.says)if(between(t,a,b))return {a,b,who,text,key:a+who};if(sc.guide)for(const [a,b,text] of sc.guide)if(between(t,a,b))return {a,b,who:'l',text:shoutName(text),key:'g'+a};if(sc.lanSay&&between(t,sc.lanSay.from,sc.lanSay.from+.1))return {a:sc.lanSay.from,b:sc.lanSay.from+.1,who:'l',text:sc.lanSay.text,key:'j'+sc.lanSay.from};return null;}
 // Ruhige Stellen (Lanista vor der Tür, Anklopfen, Gebrüll) warten, bis die Blase gelesen ist; Rufe in der Bewegung bleiben lesbar stehen, ohne anzuhalten. Tippen springt weiter.
-const HOLD=t=>t===L.knock[0]||t===L.roar[0]||(sc.guide&&sc.guide[1]&&shoutName(sc.guide[1][2])===t);
+const HOLD=t=>!!sc?.p?.holdAll||t===L.knock[0]||t===L.roar[0]||(sc.guide&&sc.guide[1]&&shoutName(sc.guide[1][2])===t);
 function step(dt){const t0=sc.t,Ln=lineNow(t0);if(Ln&&sc.cur?.key!==Ln.key)sc.cur={...Ln,shown:0};if(sc.cur)sc.cur.shown+=dt;
  let nx=t0+dt;sc.waiting=false;if(Ln&&sc.cur&&HOLD(Ln.text)&&nx>=Ln.b&&sc.cur.shown<need(Ln.text)&&!sc.cur.ack){nx=Ln.b-1e-4;sc.waiting=true;}
  if(sc.cur&&!Ln&&(sc.cur.shown>=need(sc.cur.text)||sc.cur.ack))sc.cur=null;sc.t=nx;const t=sc.t,p=sc.p;pose(t);gait([...sc.vic,sc.smith,sc.lan,...(sc.crowd||[])],dt);
@@ -244,7 +250,7 @@ function step(dt){const t0=sc.t,Ln=lineNow(t0);if(Ln&&sc.cur?.key!==Ln.key)sc.cu
 const VW=300,VH=VW*420/660;
 function paint(){const c=$('smithWrathCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),k=c.width/VW,cx=Math.max(VW/2,Math.min(900-VW/2,sc.cam.x)),cy=Math.max(VH/2,Math.min(670-VH/2,sc.cam.y)),t=sc.t,r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);};
  sc.bg??=M.ludus.background();g.imageSmoothingEnabled=false;g.setTransform?.(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.save();const shake=sc.p.door&&between(t,sc.p.door,sc.p.door+.4)?(Math.random()-.5)*6:0;g.translate(shake,0);g.scale(k,k);g.translate(-(cx-VW/2),-(cy-VH/2));g.drawImage(sc.bg,0,0);trails(g,r,t);
- if(!sc.p.flee&&t>=sc.p.door&&!(sc.p.gone&&t>=sc.p.gone+.3)){r(733,187,29,49,'#161a17');r(733,187,29,3,'#0d100e');}
+ if(!sc.p.flee&&!sc.p.tut&&t>=sc.p.door&&!(sc.p.gone&&t>=sc.p.gone+.3)){r(733,187,29,49,'#161a17');r(733,187,29,3,'#0d100e');}
  const list=[...sc.vic,...(sc.legs||[]),...(sc.crowd||[]),...(sc.lan?[sc.lan]:[]),...(sc.smith&&!sc.smith.hidden?[sc.smith]:[])].filter(a=>a.x>-20&&a.x<940).sort((a,b)=>a.y-b.y);soilPaint(g,t,r,'ground');
  // Nach Tiefe sortiert: Figuren und am Boden liegende Köpfe/Arme. Wer davor steht, verdeckt sie; der Fleck des Eingeschissenen gehört zu ihm.
  M.sceneNav?.resolve?.(list);const rest=l=>l.z<=.5&&Math.abs(l.vz)<4,items=[...list.map(a=>({y:a.y,a})),...sc.limbs.filter(rest).map(l=>({y:l.y,l}))].sort((u,w)=>u.y-w.y);
@@ -272,11 +278,42 @@ function nameBubble(g,name,text,x,y,loud,blink){g.font="bold 23px 'Courier Prime
 function bubble(g,text,x,y,loud){g.font=`bold ${loud?22:19}px 'Courier Prime',monospace`;g.textAlign='center';g.textBaseline='middle';const words=text.split(' '),lines=[''];for(const w of words){if((lines[lines.length-1]+' '+w).trim().length>22)lines.push(w);else lines[lines.length-1]=(lines[lines.length-1]+' '+w).trim();}
  const lh=loud?26:23,width=Math.max(...lines.map(l=>g.measureText?g.measureText(l).width:l.length*12))+24,height=lines.length*lh+14,bx=Math.min(660-width-6,Math.max(6,x-width/2)),by=Math.max(6,y-height);
  g.fillStyle='#17201c';g.fillRect(bx-3,by-3,width+6,height+6);g.fillStyle=loud?'#f4d37a':'#efe0b3';g.fillRect(bx,by,width,height);g.fillRect(Math.max(bx+6,Math.min(bx+width-16,x-5)),by+height,10,8);g.fillStyle='#17201c';lines.forEach((l,i)=>g.fillText(l,bx+width/2,by+7+lh/2+i*lh));}
+// ---------- Halle der Gefallenen: Vorführung am Tutorial-Rekruten ----------
+// Gleiche Durchteilung, gleiches Kriechen mit Gedärmen und gleiches Verbluten wie bei den Herumtreibern; nur das Drehbuch ist anders:
+// Der Schmied entschuldigt sich höflich, schlägt einmal zu, steckt das Schwert weg und wartet einfach, bis es vorbei ist.
+const TL={ask:'Du da! Wie heißt du?',sir:'{R}, Herr.',good:'Ah, {F}. Gut, gut.',sorry:'Hör zu, mein Junge. Es tut mir wirklich leid.',what:'Was denn, Herr?',personal:'Ist nichts Persönliches. Aber ich muss unserem Chef etwas Wichtiges erklären.',tremble:'W... was denn?',admin:'Wie unsere Totenverwaltung funktioniert.',wait:'Einen Moment bitte. Wir müssen noch kurz warten.',cold:'Mir... wird... ganz... kalt...',alright:'Alright! Jetzt können wir weitermachen.',come:'Komm, Chef. Unser erster Held wartet schon.'};
+function tutPlan(name){const first=String(name||'Rekrut').split(' ')[0];
+ const p={n:1,tut:true,holdAll:true,end:0,kills:[],says:[],sips:[],laughs:[],cheers:[],vic:[],falls:[],kneels:[],shoves:[],backs:[],soil:null,pops:[],kicks:[],deaths:[],crawls:[],methods:['bisect'],door:-99,looks:[],pats:[],points:[],scare:1e9,turn:1e9,belt:[[-99,null]]};
+ const R=[540,210];p.vic[0]=[[0,R[0],R[1]]];
+ // Der Schmied kommt aus der Schmiede herüber, der Rekrut schaut sich unsicher um
+ p.smith=walk([[748,246],[690,236],[566,211]],0,40);let t=p.smith[p.smith.length-1][0]+.3;p.looks.push([0,t-.4]);
+ const say=(who,text,pause=.3)=>{const d=need(text)+.3;p.says.push([t,t+d,who,text]);t+=d+pause;return t;};
+ say('s',TL.ask);say('v0',TL.sir.replace('{R}',name));say('s',TL.good.replace('{F}',first));
+ p.pats.push([t,t+1.6]);say('s',TL.sorry);say('v0',TL.what);say('s',TL.personal);
+ p.scare=t;say('v0',TL.tremble,.2);
+ // Schwert ziehen (vom Gürtel), dann der eine Satz, dann der eine Schlag
+ p.belt.push([t+.6,'sword']);t+=.8;say('s',TL.admin,.1);
+ const A=t+.15;p.kills.push({who:0,swing:A,part:'bisect',hd:-1});p.falls[0]={t:A+.12,hd:-1,fs:1};
+ // Oberkörper kriecht nach links weg; zum Schluss wird er immer langsamer und bleibt fast stehen
+ const end=[420,R[1]+2],way=M.sceneNav?.route?M.sceneNav.route([[R[0],R[1]],[438,R[1]+1]]):[[R[0],R[1]],[438,R[1]+1]];
+ const crawl=walk(way,A+1.2,12.5),slow=crawl[crawl.length-1][0],endT=slow+4.2;crawl.push([endT,end[0],end[1]]);p.vic[0].push([A+1.2,R[0],R[1]],...crawl.slice(1));
+ p.crawls.push({who:0,t0:A+1.2,t1:endT,bisect:true});p.deaths.push([0,endT+.9]);
+ // Schwert wieder weg, dann nur noch warten und zuschauen
+ p.belt.push([A+1.7,null]);t=A+2.4;say('s',TL.wait);
+ p.says.push([endT-2.9,endT-2.9+need(TL.cold)+.3,'v0',TL.cold]);
+ // Zwei Sekunden Stille nach dem Tod, dann dreht er sich zum Chef um
+ t=Math.max(t,endT+.9+2);p.turn=t;t+=.5;say('s',TL.alright);p.points.push([t,t+need(TL.come)+.3]);say('s',TL.come);
+ p.end=t+.3;return p;}
+function startTutorial(recruit,onEnd){if(sc||S.battle||!W()?.master||!recruit)return false;const v=victim(recruit,0);v.id='hall-recruit';
+ const lan=S.lanista?{id:'hall-lanista',g:M.ludus.ownerFigure(S.lanista),lanista:true,team:0,x:612,y:200,a:Math.PI,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{}}:null;
+ sc={found:[],t:0,outcome:'WRATH',p:tutPlan(recruit.name),vic:[v],smith:smithActor(),lan,limbs:[],fx:[],done:{},say:null,cam:{x:600,y:215},onEnd};
+ sc.view=document.createElement('div');sc.view.id='smithWrath';sc.view.className='smith-ceremony smith-intro smith-wrath no-smith-song';sc.view.setAttribute?.('role','dialog');sc.view.setAttribute?.('aria-modal','true');sc.view.setAttribute?.('aria-label','Die Totenverwaltung');
+ sc.view.innerHTML='<div><div class="scene-bubble-slot"><div class="scene-bubble" id="smithWrathBubble" hidden></div></div><canvas id="smithWrathCanvas" width="660" height="420" data-action="wrath:tap"></canvas><p id="smithWrathText" aria-live="polite"></p></div>';document.body.appendChild(sc.view);M.ui.render();return true;}
 // ---------- Takt, Klicks ----------
 const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(!sc||(typeof document!=='undefined'&&document.hidden))return;clock+=dt;if(clock<1/30)return;const d=Math.min(clock,.1);clock=0;step(d);};
 const click=M.schoolClick;M.schoolClick=action=>{
  if(action==='wanderer:say:schmied'){const g=WD.state().group;if(g&&!g.talk&&!g.fightId&&!S.battle&&eligible(g)){g.talk={tone:'schmied',outcome:outcomeOf(g)};M.persist();}M.ui.render();return true;}
- if(action==='wrath:tap'){if(sc?.cur)sc.cur.ack=true;return true;}if(action==='wrath:go'){start();return true;}if(action==='wrath:skip'){end();return true;}
+ if(action==='wrath:tap'){if(sc?.cur){sc.cur.ack=true;if(sc.p.tut){const b=sc.cur.b;if(b-sc.t<8&&!sc.p.kills.some(k=>k.swing>sc.t&&k.swing<b)&&!sc.p.deaths.some(d=>d[1]>sc.t&&d[1]<b))sc.t=Math.max(sc.t,b-.05);}}return true;}if(action==='wrath:go'){start();return true;}if(action==='wrath:skip'){end();return true;}
  return click(action);};
-M.smithWrath={chance:CHANCE,accept:ACCEPT,eligible,outcomeOf,lines:L,start,end,step:d=>sc&&step(d),get scene(){return sc;},plan,fleePlan};
+M.smithWrath={startTutorial,tutPlan,tutLines:TL,chance:CHANCE,accept:ACCEPT,eligible,outcomeOf,lines:L,start,end,step:d=>sc&&step(d),get scene(){return sc;},plan,fleePlan};
 })();
