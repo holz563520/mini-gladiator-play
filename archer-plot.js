@@ -73,7 +73,8 @@ function runAt(t){const th=Math.PI*.15+RUN.w*(t-RUN.t0);return {x:RUN.c[0]+Math.
 const P1=runAt(STRIKE1),SPOT={x:P1.x-15*Math.sign(P1.dx||1),y:P1.y},ARCHER_WAY=[[840,298],[857,291],[854,268],[822,262]],SMITH_WAY=[[792,262],[764,265],[766,298],[P1.x-15*Math.sign(P1.dx||1),P1.y]],CRAWL=Math.sign(P1.dx||1),BACK=CUT+3.5,DOOR_T=BACK+Math.hypot(748-(P1.x+CRAWL*((CATCH-CRAWL0)*CRAWL_V-14)),240-P1.y)/45,END=DOOR_T+.9;
 function lines(){return [
  [0.3,3.3,'cap',smithName()+' hämmert. '+sc.name+' schleicht sich an.'],
- [9.4,11.8,'s','Oh. Du wolltest mir in den Hinterkopf schießen. Du wolltest mich wohl umbringen.'],
+ [9.4,11.8,'s','Soso … Ihr wolltet Euren hübschen kleinen Bogen also einmal an mir ausprobieren?'],
+ [11.85,12.35,'s','Wie überaus reizend. Das war echt ein guter Schuss.'],
  [12.4,15.2,'s','Wir hätten doch einfach drüber sprechen können, wenn wir Differenzen haben.'],
  [15.5,18,'a','Es tut mir so leid … es tut mir so leid … bitte verschone mich!'],
  [18.2,20.4,'s','Mach dir keinen Kopf. Ich wollte doch nur mit dir darüber sprechen.'],
@@ -100,7 +101,8 @@ function pose(t){const s=sc.s,a=sc.a;
  s.hidden=t>=DOOR_T+.3;
  if(t<HIT){s.x=712;s.y=262;s.a=Math.PI;const k=t%0.9;s.technique='overhead';s.windMax=.35;s.wind=k<.35?.35-k:0;s.swingKind='slash';s.swingMax=.2;s.swing=k>=.35&&k<.55?.55-k:0;if(k>=.5&&k<.55&&t<HIT-.1)once('clank'+Math.floor(t/.9),()=>M.sound?.('block'));}
  // Nach dem Treffer: völlige Starre, keine Regung, kein Laut; nur Blut aus der Wunde.
- if(between(t,HIT,8.6)){s.x=712;s.y=262;s.a=Math.PI;s.technique='overhead';s.windMax=.35;s.wind=.35;}
+ // Hammer sinkt nicht ans Ohr: er bleibt einfach stehen und schließt die Augen
+ if(between(t,HIT,8.6)){s.x=712;s.y=262;s.a=Math.PI;s.technique=null;s.wind=0;s.swing=0;s.eyesClosed=true;}else s.eyesClosed=false;
  if(between(t,8.6,9.4)){s.a=t<9?Math.PI:0;s.x=712;s.y=262;}
  if(t>=9)s.a=0;
  if(t>=9.4)s.g.enemyGear.secondary=null;
