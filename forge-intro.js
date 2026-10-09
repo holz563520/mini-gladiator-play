@@ -38,9 +38,10 @@ function pose(t){const a=scene.smith,b=scene.boy;for(const p of [a,b]){p.state='
  if(between(t,19,20.2)){a.x+=Math.sin(t*3)*2;a.forgePose='drink';}
  if(t>=20.2)a.a=0;
  if(between(t,20.2,21))a.x+=Math.sin(t*3)*1.5;if(between(t,20.65,21))a.forgePose='throw';
- if(t>=21.6&&t<27.2)a.g.enemyGear.secondary=a.hammer;
+ // Hammer und Schwert hängen am Gürtel; der Hammer fliegt bei 27.2 zu Boden und wird bei 35.3 wieder aufgehoben
+ M.beltPlan?.(a,t,[[0,null],[21.6,'hammer'],[27.2,null,{drop:true}],[27.9,'sword'],[33.4,null],[35.3,'hammer',{pick:true}]]);
  if(between(t,22.6,26.2)){a.state=Math.sin(t*5)>-.2?'charge':'idle';a.forgePose='shake';a.shoutTimer=.3;}
- if(t>=27.9&&t<33.4)a.g.enemyGear.secondary=a.sword;
+
  if(between(t,29.2,30.6)){const k=(t-29.2)/1.4;a.x=lerp(716,REACH,k);a.y=lerp(258,262,k);a.state='move';a.moveSpeed=45;}
  if(t>=30.6&&t<32.4){a.x=REACH;a.y=262;}
  if(between(t,32.4,33.2)){const k=(t-32.4)/.8;{const q=leg([[REACH,262],[804,265],KICK],k);a.x=q.x;a.y=q.y;}a.a=0;a.state='move';a.moveSpeed=35;}
@@ -48,7 +49,7 @@ function pose(t){const a=scene.smith,b=scene.boy;for(const p of [a,b]){p.state='
  if(between(t,30.6,31.3)){a.technique='overhead';a.windMax=.7;a.wind=31.3-t;}
  if(between(t,31.3,31.8)){a.swingKind='slash';a.swingMax=.5;a.swing=31.8-t;}
  if(between(t,33.9,35.3)){const k=(t-33.9)/1.4;{const q=leg([KICK,[804,265],[718,258]],k);a.x=q.x;a.y=q.y;}a.a=Math.PI;a.state='move';a.moveSpeed=40;}
- if(t>=35.3){a.g.enemyGear.secondary=a.hammer;a.x=718;a.y=258;a.a=0;}
+ if(t>=35.3){a.x=718;a.y=258;a.a=0;}
  if(between(t,35.6,38)){const k=(t-35.6)/2.4;a.x=lerp(718,748,k);a.y=lerp(258,233,k);a.state='move';a.moveSpeed=40;}
  // Ereignisse
  if(t>=BAM)once('bam',()=>{M.sound?.('heavy');dust(748,236,22,'#c9b586',70);});

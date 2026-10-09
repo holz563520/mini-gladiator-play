@@ -56,7 +56,7 @@ const page=M.schoolPage;M.schoolPage=p=>{const html=page(p);return p==='home'||p
 // ---------- Szene ----------
 let sc=null,clock=0;
 const lerp=(a,b,k)=>a+(b-a)*Math.max(0,Math.min(1,k)),between=(t,a,b)=>t>=a&&t<b;
-function smithActor(){const p=W().master,rng=S.rng,g=M.makeGladiator(0);Object.assign(g,{id:'wrath-smith',name:p.name,height:p.height,weight:p.weight,muscle:58,fame:0,scars:[]});g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:M.makeItem('weapon','gladius',1),shield:null,armor:{}};S.rng=rng;return {id:g.id,g,team:0,x:748,y:240,a:Math.PI,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,forgeWorker:true,forgeHold:'beer',bloodMarks:{}};}
+function smithActor(){const p=W().master,rng=S.rng,g=M.makeGladiator(0);Object.assign(g,{id:'wrath-smith',name:p.name,height:p.height,weight:p.weight,muscle:58,fame:0,scars:[]});g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};const items={sword:M.makeItem('weapon','gladius',1),hammer:M.makeItem('weapon','hammer',1)};g.enemyGear={weapon:null,secondary:items.sword,shield:null,armor:{}};S.rng=rng;return {id:g.id,g,items,team:0,x:748,y:240,a:Math.PI,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,forgeWorker:true,forgeHold:'beer',bloodMarks:{}};}
 function victim(m,i){const g=JSON.parse(JSON.stringify(m));g.dead=false;return {id:'wrath-'+i,g,team:1,x:0,y:0,a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},index:i};}
 // Wege: [Zeit, x, y]. Zwischen den Punkten wird gleichmäßig gegangen; Tempo bleibt menschlich (Schmied höchstens ~65 px/s, Flüchtende ~50).
 function at(path,t){if(t<=path[0][0])return {x:path[0][1],y:path[0][2],v:0,dx:0};for(let i=1;i<path.length;i++){const [t1,x1,y1]=path[i],[t0,x0,y0]=path[i-1];if(t<=t1){const k=(t-t0)/(t1-t0||1);return {x:x0+(x1-x0)*k,y:y0+(y1-y0)*k,v:Math.hypot(x1-x0,y1-y0)/(t1-t0||1),dx:x1-x0};}}const q=path[path.length-1];return {x:q[1],y:q[2],v:0,dx:0};}
@@ -153,7 +153,7 @@ function start(){const st=WD.state(),g=st.group;if(!g||g.talk?.tone!=='schmied'|
  if(outcome==='WRATH'){const pre=prelude(n);sc.off=pre.off;sc.pre=pre;sc.crowd=crowdOf();sc.lan=S.lanista?{id:'wrath-lanista',g:M.ludus.ownerFigure(S.lanista),lanista:true,team:0,x:634,y:548,a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{}}:null;const bag=[...L.guide].sort(()=>Math.random()-.5);sc.guide=[[-pre.off+.6,-.4,bag[0]],[.1,1.95,bag[1]]];sc.jeer=[...L.jeer].sort(()=>Math.random()-.5);sc.ha=[];sc.lastJeer=0;sc.lanSay=null;sc.t=-pre.off;}
  if(outcome==='FLEE')sc.p.says[0][3]=shoutName(choose(L.flee,g.id,'flee'));
  sc.view=document.createElement('div');sc.view.id='smithWrath';sc.view.className='smith-ceremony smith-intro smith-wrath no-smith-song';sc.view.setAttribute?.('role','dialog');sc.view.setAttribute?.('aria-modal','true');sc.view.setAttribute?.('aria-label',outcome==='WRATH'?'Der Zorn des Schmieds':'Panische Flucht');
- sc.view.innerHTML='<div><div class="scene-bubble-slot"><div class="scene-bubble" id="smithWrathBubble" hidden></div></div><canvas id="smithWrathCanvas" width="660" height="420" data-action="wrath:tap"></canvas><p id="smithWrathText" aria-live="polite"></p><button class="btn" data-action="wrath:skip">ÜBERSPRINGEN →</button></div>';document.body.appendChild(sc.view);
+ sc.view.innerHTML='<div><div class="scene-bubble-slot"><div class="scene-bubble" id="smithWrathBubble" hidden></div></div><canvas id="smithWrathCanvas" width="660" height="420" data-action="wrath:tap"></canvas><p id="smithWrathText" aria-live="polite"></p></div>';document.body.appendChild(sc.view);
  sc.cam=outcome==='WRATH'?{x:690,y:282}:{x:610,y:560};M.ui.render();return true;}
 function end(){if(!sc)return;const found=sc.found||[];sc.view?.remove?.();sc=null;M.ui.render();if(found.length)M.ui.notify(smithName()+' hat sich die Ausrüstung der Toten angesehen: '+found.length+' '+(found.length===1?found[0]:'neue Rezepte')+' entdeckt.');}
 function once(k,fn){if(sc.done[k])return;sc.done[k]=true;fn();}
@@ -188,6 +188,8 @@ function pose(t){const p=sc.p,s=sc.smith;
  if(!s)return;
  // Schmied
  s.state='idle';s.moveSpeed=0;s.wind=0;s.swing=0;s.technique=null;s.forgePose='';s.kickTimer=0;s.shoutTimer=0;s.phase=t*4;
+ // Schwert in der Hand (kommt damit aus der Tür), Hammer hängt am Gürtel
+ M.beltPlan?.(s,t,[[-99,'sword']]);
  s.hidden=t<p.door||(p.gone&&t>=p.gone);const q=at(p.smith,t);s.x=q.x;s.y=q.y;if(q.v>3){s.state='move';s.moveSpeed=q.v>45?16:10;s.phase=t*(q.v>45?9:6);s.a=q.dx>=0?0:Math.PI;}
  for(const [a,b] of p.sips)if(between(t,a,b))s.forgePose='sip';
  s.jumpTimer=0;for(const [a,b] of p.laughs)if(between(t,a,b)&&q.v<3){s.state='celebrate';s.forgePose='';const u=(t-a)%.6;if(u<.26)s.jumpTimer=.26-u;}

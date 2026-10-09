@@ -90,7 +90,7 @@ function start(chosen,mates){const a=chosen&&S.roster.includes(chosen)?chosen:ar
  P().state='done';M.kill(a,'Wollte '+smithName()+' von hinten erschießen. Kopf in die Esse, Beine ab, geköpft.',smithName());M.persist();
  clone.dead=false;sc={t:0,name,cross,a:{id:'plot-archer',g:clone,team:0,x:880,y:300,a:Math.PI,phase:0,state:'idle',energy:100,ammo:1,moveSpeed:0,bloodMarks:{}},s:smithActor(),limbs:[],fx:[],done:{},arrow:null,stuck:0,flip:0,trail:[],bow:null,ack:{},waiting:false,cam:{x:780,y:270,vw:300},charred:false,soiled:false,fr:{b:pals[0],c:pals[1]}};
  sc.view=document.createElement('div');sc.view.id='archerPlot';sc.view.className='smith-ceremony smith-intro smith-wrath no-smith-song';sc.view.setAttribute?.('role','dialog');sc.view.setAttribute?.('aria-modal','true');sc.view.setAttribute?.('aria-label','Pfeil im Hinterkopf');
- sc.view.innerHTML='<div><div class="scene-bubble-slot"><div class="scene-bubble" id="archerPlotBubble" hidden></div></div><canvas id="archerPlotCanvas" width="660" height="420" data-action="plot:tap" aria-label="Tippen für den nächsten Satz"></canvas><p id="archerPlotText" aria-live="polite"></p><p class="plot-hint" id="archerPlotHint" hidden>Tippen ▸ weiter</p><button class="btn" data-action="plot:skip">ÜBERSPRINGEN →</button></div>';document.body.appendChild(sc.view);M.ui.close();M.ui.render();return true;}
+ sc.view.innerHTML='<div><div class="scene-bubble-slot"><div class="scene-bubble" id="archerPlotBubble" hidden></div></div><canvas id="archerPlotCanvas" width="660" height="420" data-action="plot:tap" aria-label="Tippen für den nächsten Satz"></canvas><p id="archerPlotText" aria-live="polite"></p><p class="plot-hint" id="archerPlotHint" hidden>Tippen ▸ weiter</p></div>';document.body.appendChild(sc.view);M.ui.close();M.ui.render();return true;}
 function end(){if(!sc)return;sc.view?.remove?.();sc=null;M.ui.render();M.ui.notify('Der Ludus hat einen Fernkämpfer weniger. '+smithName()+' hämmert weiter.');}
 function once(k,fn){if(sc.done[k])return;sc.done[k]=true;fn();}
 function burst(x,y,n,colors,spread=40,up=30){for(let i=0;i<n;i++)sc.fx.push({x:x+Math.random()*6-3,y,z:Math.random()*6,vx:(Math.random()-.5)*spread,vy:(Math.random()-.5)*6,vz:up*(.5+Math.random()),life:.5+Math.random()*.6,size:2,color:colors[i%colors.length]});}
@@ -105,14 +105,15 @@ function pose(t){const s=sc.s,a=sc.a;
  if(between(t,HIT,8.6)){s.x=712;s.y=262;s.a=Math.PI;s.technique=null;s.wind=0;s.swing=0;s.eyesClosed=true;}else s.eyesClosed=false;
  if(between(t,8.6,9.4)){s.a=t<9?Math.PI:0;s.x=712;s.y=262;}
  if(t>=9)s.a=0;
- if(t>=9.4)s.g.enemyGear.secondary=null;
  if(between(t,18.4,20.2)){const k=(t-18.4)/1.8;s.x=lerp(712,790,k);s.state='move';s.moveSpeed=10;s.phase=t*6;s.a=0;}else if(between(t,20.2,30.4)){s.x=790;s.y=262;s.a=0;}
+ // Hammer und Schwert trägt er am Gürtel: Hammer weg nach dem Treffer, Schwert ziehen vor der Jagd, am Ende wieder einstecken
+ M.beltPlan?.(s,t,[[0,'hammer'],[9.4,null],[38.2,'sword'],[CUT+1.4,null]]);
  if(between(t,28,GRAB+1.4))s.traderPose='point';
  // Esse: hinter ihm, Hand im Nacken, Kopf hineingedrückt
- if(between(t,30.4,OVEN[1])){const k=Math.min(1,(t-30.4)/.8);s.x=lerp(790,817,k);s.y=lerp(262,254,k);s.a=Math.PI;s.state=k<1?'move':'idle';s.moveSpeed=k<1?10:0;s.phase=t*6;s.traderPose='point';s.g.enemyGear.secondary=null;if(k>=1)s.x+=Math.sin(t*9)*.6;}
+ if(between(t,30.4,OVEN[1])){const k=Math.min(1,(t-30.4)/.8);s.x=lerp(790,817,k);s.y=lerp(262,254,k);s.a=Math.PI;s.state=k<1?'move':'idle';s.moveSpeed=k<1?10:0;s.phase=t*6;s.traderPose='point';if(k>=1)s.x+=Math.sin(t*9)*.6;}
  if(between(t,OVEN[1],OVEN[1]+.6)){const k=(t-OVEN[1])/.6;s.x=lerp(817,792,k);s.y=lerp(254,262,k);s.state='move';s.moveSpeed=10;s.a=0;}
  if(between(t,OVEN[1]+.6,38.4)){s.x=792;s.y=262;s.a=0;}
- if(t>=38.2&&t<CUT+1.4)s.g.enemyGear.secondary=s.items.sword;
+
  if(between(t,38.4,39.7)){const k=(t-38.4)/1.3;{const q=along(SMITH_WAY,k);s.x=q.x;s.y=q.y;}s.state='move';s.moveSpeed=10;s.phase=t*6;s.a=SPOT.x>=792?0:Math.PI;}
  if(between(t,39.7,STRIKE1+1.6)){s.x=SPOT.x;s.y=SPOT.y;const p=runAt(Math.min(t,STRIKE1));s.a=p.x>=s.x?0:Math.PI;}
  if(between(t,STRIKE1-.3,STRIKE1)){s.technique='overhead';s.windMax=.3;s.wind=STRIKE1-t;}
@@ -180,7 +181,7 @@ function pose(t){const s=sc.s,a=sc.a;
  if(t>=CUT+.1)once('cut',()=>{const g=a.g;for(const k of M.branches.head)g.body[k].missing=true;const burnt={...g,appearance:{...g.appearance,skin:'#3b2c24',shade:'#2e231d',hair:'#17110e'}};const h=CRAWL;sc.limbs.push({x:a.x+h*44,y:a.y,z:8,angle:0,part:'head',skin:'#3b2c24',hair:'#17110e',g:burnt,vx:h*26,vy:3,vz:42,spin:h*7});burst(a.x+h*31,a.y-4,22,['#aa3c36','#87352e','#c24a3c'],60,24);g.dead=true;a.down=true;a.traderPose=null;M.sound?.('sever');});
  if(between(t,HIT,12)&&Math.floor(t*5)!==sc.lastSpurt){sc.lastSpurt=Math.floor(t*5);const h=headPoint(s),dir=Math.cos(s.a)>=0?-1:1;for(let n=0;n<3;n++)sc.fx.push({x:h.x+dir*3,y:s.y,z:s.y-h.y+Math.random()*2,vx:dir*(14+Math.random()*16),vy:Math.random()*4-2,vz:12+Math.random()*16,life:.7,size:2,color:n%2?'#aa3c36':'#87352e'});}
  if(t>=HIT)once('silence',()=>sc.view?.classList?.add('scene-silence'));if(t>=9.4)once('sound-back',()=>sc.view?.classList?.remove('scene-silence'));
- if(t>=CUT+1.4)once('sheath',()=>{s.g.enemyGear.secondary=null;M.sound?.('block');});
+ if(t>=CUT+1.4)once('sheath',()=>{M.sound?.('block');});
  if(t>=CUT+2.4)once('snap',()=>{sc.stuck=3;const dir=Math.cos(s.a)>=0?-1:1;sc.fx.push({x:s.x+dir*8,y:s.y,z:58,vx:dir*20,vy:2,vz:10,life:1.4,size:2,color:'#a88c60'},{x:s.x+dir*11,y:s.y,z:58,vx:dir*22,vy:2,vz:12,life:1.4,size:2,color:'#a88c60'});M.sound?.('stick');});}
 // Schrittbild wie im Kampf: Beinphase folgt der zurückgelegten Strecke, Schrittweite dem Tempo (Ludus-Maßstab 0,6).
 function gait(list,ds){sc.odo??={};for(const p of list){const o=sc.odo[p.id]??={x:p.x,y:p.y,d:0};const dx=p.x-o.x,d=Math.hypot(dx,p.y-o.y);o.x=p.x;o.y=p.y;if(p.state==='move'&&d>.05&&d<40){o.d+=d;p.phase=o.d*.267;p.moveSpeed=Math.max(8,d/Math.max(ds,1e-3)/.6);const side=Math.abs(dx)/d;o.side=(o.side??side)*.8+side*.2;p.gaitSpeed=p.moveSpeed*(.28+.72*o.side);}else p.gaitSpeed=undefined;}}

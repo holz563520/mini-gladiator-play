@@ -22,7 +22,7 @@ function cast(owner){const keep=S.rng,all='helm chestplate leftarm rightarm left
 
 // ---------- kleine Regie-Werkzeuge ----------
 function until(cond){return new Promise((res,rej)=>{if(!run||run.aborted)return rej(ABORT);run.waiters.push({cond,res,rej});});}
-function wait(seconds){let left=seconds;return until(()=>(left-=run.dt)<=0);}
+function wait(seconds){let left=seconds;return until(()=>(left-=run.dt)<=0||run.tap);}
 const face=(a,b)=>{a.a=Math.atan2(b.y-a.y,b.x-a.x);};
 function walk(a,x,y,speed,opt={}){const m={x,y,speed,state:opt.state||'move',keep:!!opt.keep};a.move=m;return until(()=>a.move!==m);}
 function slide(a,dx,dy,time=.2){a.slide={dx,dy,left:time,time};}
@@ -147,7 +147,7 @@ async function ludusStory(){const L=run.lud,a=L.actor;run.mode='ludus';run.cheer
  camera(450,360,900,1.1);await walk(a,574,608,48);await wait(.5);}
 
 // ---------- Rahmen, Zeichnen, Abschluss ----------
-function build(){const v=document.createElement('div');v.id='introView';v.innerHTML='<canvas id="introCanvas" aria-label="Die Vorgeschichte deines Lanista"></canvas><div id="introShade"></div><p id="introText" role="status" aria-live="polite"></p><p id="introTitle" aria-hidden="true"></p><button id="introSkip" class="btn" type="button">ÜBERSPRINGEN →</button>';document.body.appendChild(v);const skip=$('introSkip');if(skip)skip.onclick=()=>M.intro.skip();return v;}
+function build(){const v=document.createElement('div');v.id='introView';v.innerHTML='<canvas id="introCanvas" aria-label="Die Vorgeschichte deines Lanista"></canvas><div id="introShade"></div><p id="introText" role="status" aria-live="polite"></p><p id="introTitle" aria-hidden="true"></p>';document.body.appendChild(v);/* Kein Überspringen-Knopf: ein Klick auf das Bild springt zur nächsten Einstellung */v.addEventListener?.('click',()=>{if(run&&!run.done)run.tap=true;});return v;}
 function paint(){const c=run.canvas;if(!c?.getContext)return;const cw=c.clientWidth||1040,ch=c.clientHeight||720,k=Math.min(1,1040/Math.max(cw,ch)),w=Math.max(1,Math.round(cw*k)),h=Math.max(1,Math.round(ch*k));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}
  const cam=run.cam,g=c.getContext('2d');if(run.mode==='arena'){run.sc.cam={x:cam.x,y:cam.y,vw:cam.vw,vh:cam.vw*.75};M.renderStory(c,run.sc);}
  else if(run.mode==='ludus'){const L=run.lud,scale=Math.max(Math.min(w/cam.vw,h/(cam.vw*.75)),Math.min(w/900,h/670)),hw=w/scale/2,hh=h/scale/2,cx=hw*2>=900?450:clamp(cam.x,hw,900-hw),cy=hh*2>=670?335:clamp(cam.y,hh,670-hh);g.imageSmoothingEnabled=false;g.fillStyle='#101b20';g.fillRect(0,0,w,h);g.save();g.translate(Math.round(w/2-cx*scale),Math.round(h/2-cy*scale));g.scale(scale,scale);g.drawImage(L.bg,0,0);if(L.closed>0)M.ludus.drawGate(g,L.closed);M.renderLudusActors(g,[L.actor]);g.restore();}
@@ -158,7 +158,7 @@ function tick(real){if(!run||run.done)return;const base=Math.min(.05,Math.max(0,
  if(run.mode==='arena')stepScene(run.sc,run.dt);else if(run.mode==='ludus')stepActor(run.lud.actor,run.dt,null);
  run.cheer=Math.max(run.cheerBase,run.cheer-base*.7);M.cheer=run.mode==='arena'?run.cheer:0;
  const to=run.camTo,mix=1-Math.exp(-base*to.rate);for(const k of ['x','y','vw'])run.cam[k]+=(to[k]-run.cam[k])*mix;
- const waiting=run.waiters;run.waiters=[];for(const w of waiting){let ok=false;try{ok=w.cond();}catch(e){w.rej(e);continue;}if(ok)w.res();else run.waiters.push(w);}
+ const waiting=run.waiters;run.waiters=[];for(const w of waiting){let ok=false;try{ok=w.cond();}catch(e){w.rej(e);continue;}if(ok)w.res();else run.waiters.push(w);}run.tap=false;
  paint();sync();}
 function loop(t){if(!run||run.done)return;const dt=(t-(run.last??t))/1000;run.last=t;if(!document.hidden)tick(dt);requestAnimationFrame(loop);}
 function finish(){if(!run||run.done)return;const r=run;r.done=true;M.cheer=0;S.lanista=JSON.parse(JSON.stringify(r.owner));M.persist();M.ui.close();M.ui.click('nav:home');const v=r.view;run=null;if(v?.style)v.style.opacity='0';const drop=()=>v?.remove?.();if(typeof setTimeout==='function')setTimeout(drop,650);else drop();}
