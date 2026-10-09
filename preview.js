@@ -8,7 +8,7 @@ async function setup(){await wait(()=>window.MG?.smithWrath&&window.MG?.archerPl
  window.ArenaTheoryIntro?.finish?.();await wait(()=>!window.ArenaTheoryIntro?.active?.());
  if(!S.lanista){await wait(()=>document.getElementById('lanistaName')&&document.querySelector('[data-action="ludus:start"]'));document.getElementById('lanistaName').value='Marcus';document.querySelector('[data-action="ludus:start"]').click();}
  await new Promise(r=>setTimeout(r,500));if(M.intro?.active?.())M.intro.skip();await wait(()=>S.lanista&&!M.intro?.active?.());
- const W=M.workshop;S.gold=1e6;if(!W.state.master){W.hireMaster({...W.sketch(),name:'Aurifex'});}W.setIntro('done');if(M.trader)M.trader.state.intro='done';
+ const W=M.workshop;S.gold=1e6;if(!W.state.master){W.hireMaster({...W.sketch(),name:'Aurifex'});}W.setIntro('done');if(M.trader)M.trader.state.intro='done';S.lion={...(S.lion||{}),stage:'skip'};
  M.forgeIntro?.skipScene?.();
  fill();M.ui.close();M.ui.click('nav:home');build();}
 function fill(){S.gold=1e6;const need=7-S.roster.filter(g=>!g.dead).length;if(need>0)M.army.recruitMany(need);for(const g of S.roster){g.fatigue=0;g.blood=100;}const soldiers=S.roster.filter(g=>g.role!=='Fernkämpfer');soldiers.slice(0,2).forEach(g=>g.role='Soldat');}

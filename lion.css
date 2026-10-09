@@ -1,0 +1,17 @@
+.lion-film canvas{cursor:pointer}
+.lion-card{border:2px solid #c9a85a;background:linear-gradient(180deg,#2a2014,#17201c);box-shadow:0 0 0 3px #c9a85a33;animation:lionGlow 1.6s ease-in-out infinite}
+.lion-card h2{color:#f4d37a;letter-spacing:.06em}
+@keyframes lionGlow{50%{box-shadow:0 0 0 6px #c9a85a55}}
+.lion-spycard{display:grid;gap:4px;margin:12px 0;padding:12px;border:2px solid #a3231d;background:#1a0f0e;text-align:center}
+.lion-spycard small{letter-spacing:.14em;color:#c9a0a0;font-size:11px}
+.lion-spycard strong{font-size:26px;color:#e05a4a;letter-spacing:.06em}
+.lion-spycard span{font-size:12px;color:#c9c6b4}
+.lion-guide .lion-progress{display:block;font-style:normal;font-weight:bold;color:#8a2a24;margin-top:4px}
+.lion-guide .btn{margin-top:8px;min-height:40px}
+.lion-defeat{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;background:#000c;cursor:pointer;animation:hallFade .8s ease-out}
+.lion-defeat div{display:grid;gap:10px;text-align:center;padding:24px 18px;border-top:2px solid #a3231d;border-bottom:2px solid #a3231d;background:#120c0b;width:min(560px,calc(100vw - 32px))}
+.lion-defeat b{font-size:clamp(28px,8vw,44px);letter-spacing:.12em;color:#e05a4a}
+.lion-defeat span{font-size:clamp(14px,3.6vw,18px);letter-spacing:.12em;color:#e8dcc0}
+.lion-defeat small{opacity:.6;font-size:12px}
+.lion-task ol{padding-left:22px;line-height:1.7}
+.lion-dip{font-weight:bold;letter-spacing:.14em;color:#f4d37a;text-align:center;margin-top:14px}
