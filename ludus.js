@@ -1,14 +1,14 @@
 'use strict';
 (()=>{const M=window.MG,S=M.s,$=id=>document.getElementById(id),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const places=[
- {name:'Kaserne',sub:'Gladiatoren',route:'gladiators',x:45,y:72,w:235,h:133},
+ {name:'Kaserne',sub:'Gladiatoren',route:'gladiators',x:45,y:50,w:235,h:133},
  {name:'Trainingshof',sub:'Kampflernen',route:'training',x:310,y:247,w:275,h:343},
  {name:'Schmiede',sub:'Waffen & Handwerk',route:'forge',x:638,y:86,w:215,h:150},
  {name:'Medicus',sub:'Krankenhaus',route:'medic',x:45,y:446,w:240,h:147},
  {name:'Truppenplatz',sub:'Gruppen & Aufstellung',route:'team',x:638,y:433,w:215,h:157},
  {name:'Sklavenmarkt',sub:'Tägliche Ware',route:'market',x:45,y:280,w:230,h:118},
  {name:'Arena-Tor',sub:'Schulen herausfordern',route:'arena',x:351,y:51,w:226,h:120},
- {name:'Hall of the Fallen',sub:'Halle der Gefallenen',route:'fallen',x:34,y:214,w:94,h:68}
+ {name:'Hall of the Fallen',sub:'Halle der Gefallenen',route:'fallen',x:50,y:206,w:112,h:70}
 ];
 const range=[{x:549,y:546},{x:531,y:578}];let arrows=[],stuck=[[],[]];
 let canvas=null,bg=null,bgName=null,actors=[],elapsed=0,paintTime=0,observer=null,onScreen=true,draft=null,ownerAvatar=null;
@@ -67,8 +67,8 @@ const shield=(x,y,color)=>{oval(x,y,8,10,'#3a3024');oval(x,y,7,9,color);oval(x,y
 house(places[0],'#8c5944',{flowers:true});house(places[2],'#5c6256',{lantern:false});house(places[3],'#777b65',{door:.78,windows:[places[3].x+23,places[3].x+112],flowers:true});house(places[4],'#8c5944');
 // Kaserne: Schilde an der Wand, Bank, Wäscheleine, Kochstelle
 {const k=places[0];for(const [i,col]of [['#8a4a40'],['#3e5a61'],['#77744b']].entries())shield(k.x+62+i*20,k.y+104,col[0]);for(const [i,col]of [['#3e5a61'],['#8a4a40']].entries())shield(k.x+198+i*20,k.y+104,col[0]);
- rect(58,208,62,4,'#7a6141');rect(60,212,4,7,'#5b4934');rect(114,212,4,7,'#5b4934');rect(70,203,9,5,'#9e6b49');rect(96,202,7,6,'#b9b092');
- rect(138,236,3,34,'#5b4934');rect(196,236,3,34,'#5b4934');line(139,239,198,241,'#d8cdaa',1);for(const [i,col]of [['#b9684f'],['#d8cdaa'],['#6f8b8a']].entries()){rect(145+i*17,240,12,13,col[0]);rect(145+i*17,240,12,2,tint(col[0],.75));rect(148+i*17,253,2,3,col[0]);rect(153+i*17,253,2,3,col[0]);}
+ rect(214,186,52,4,'#7a6141');rect(216,190,4,7,'#5b4934');rect(260,190,4,7,'#5b4934');rect(224,181,9,5,'#9e6b49');rect(246,180,7,6,'#b9b092');
+ 
  oval(226,258,15,7,'#6f6a55');oval(226,257,11,5,'#3a352b');rect(219,255,5,3,'#4b3524');rect(226,256,7,2,'#5b4934');rect(214,236,2,22,'#4a4032');rect(238,236,2,22,'#4a4032');rect(214,236,26,2,'#4a4032');rect(221,243,11,9,'#3b3a2c');rect(220,242,13,2,'#5a5848');rect(226,238,1,5,'#4a4032');
  for(const [sx,sy]of [[201,262],[252,263]]){rect(sx,sy,10,4,'#7a6141');rect(sx+1,sy+4,2,5,'#5b4934');rect(sx+7,sy+4,2,5,'#5b4934');}rect(262,246,10,12,'#9e6b49');rect(264,241,6,5,'#b48356');rect(260,249,2,6,'#c19966');}
 // Schmiede: zusammenhängender Werkhof, freie Tür und Arbeitsgänge.

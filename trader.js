@@ -55,7 +55,7 @@ function claims(g){const d=B.info(g),out=[];
 const pitchFor=g=>claims(g)[0];
 // ---------- Szene im Ludus ----------
 const ROW_Y=432,WALK_Y=441,slotX=i=>78+i*36,POST=[250,419],
- IN=[[610,694],[610,607],[301,607],[301,420],[226,420],[222,ROW_Y],[slotX(0),ROW_Y]],T_IN=[[610,694],[610,607],[301,607],[301,WALK_Y],[268,WALK_Y]],DOOR=[[301,420],[301,214],[172,214]];
+ IN=[[610,694],[610,607],[301,607],[301,420],[226,420],[222,ROW_Y],[slotX(0),ROW_Y]],T_IN=[[610,694],[610,607],[301,607],[301,WALK_Y],[268,WALK_Y]],DOOR=[[301,420],[301,196],[172,196]];
 const plen=p=>{let n=0;for(let i=1;i<p.length;i++)n+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return n;};
 function along(p,d){if(d<=0)return {x:p[0][0],y:p[0][1],a:Math.atan2(p[1][1]-p[0][1],p[1][0]-p[0][0]),end:false};for(let i=1;i<p.length;i++){const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],l=Math.hypot(dx,dy);if(d<=l)return {x:p[i-1][0]+dx*d/l,y:p[i-1][1]+dy*d/l,a:Math.atan2(dy,dx),end:false};d-=l;}const q=p[p.length-1];return {x:q[0],y:q[1],a:0,end:true};}
 const actor=(g,x,y,extra)=>({g,team:0,x,y,a:0,state:'idle',phase:0,moveSpeed:0,energy:100,ammo:0,...extra});

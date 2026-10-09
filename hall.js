@@ -140,30 +140,35 @@ function portrait(e){const c=$('hallPortrait');if(!c)return;const g=c.getContext
 const page=M.schoolPage;M.schoolPage=p=>p==='fallen'?hallPage():page(p);
 
 // ---------- Das Tor im Ludus ----------
-const GATE={x:34,y:214,w:94,h:68};
-M.hallGate={rect:GATE,paint(g,rect,label){const r=rect,x=GATE.x,y=GATE.y;
- g.globalAlpha=.3;r(x+6,y+60,96,12,'#1d1a15');g.globalAlpha=1;
- r(x,y+8,94,60,'#2e3230');for(let yy=y+12;yy<y+66;yy+=7)for(let xx=x+(yy%14?0:6);xx<x+92;xx+=12)r(xx,yy,11,6,(xx+yy)%3?'#383d3a':'#323634');
- // Säulen links und rechts
- for(const cx of [x+3,x+79]){r(cx,y+16,12,52,'#53584f');r(cx+2,y+16,3,52,'#6c7268');r(cx+9,y+16,2,52,'#3e423b');r(cx-2,y+13,16,5,'#646a60');r(cx-2,y+64,16,5,'#646a60');for(let yy=y+22;yy<y+62;yy+=8)r(cx+5,yy,1,5,'#454a42');}
- // Giebel mit Totenkopf und Inschrift
- r(x-3,y+2,100,12,'#3c413c');r(x-3,y+2,100,2,'#5d635b');r(x+30,y-6,34,10,'#3c413c');r(x+34,y-9,26,4,'#3c413c');
- r(x+41,y-7,12,9,'#bdb9a4');r(x+43,y-5,3,3,'#1b1f1e');r(x+48,y-5,3,3,'#1b1f1e');r(x+46,y-1,2,1,'#1b1f1e');r(x+43,y+1,8,2,'#8f8c7a');
- r(x+6,y+5,82,8,'#151918');label('HALL OF THE FALLEN',x+47,y+11,7);
- // Torbogen und geschlossene Flügel (Bronze)
- r(x+17,y+20,60,48,'#0e1112');r(x+19,y+22,56,46,'#5a4428');for(const lx of [x+19,x+47]){r(lx,y+22,28,46,'#6a5030');r(lx,y+22,28,2,'#8a6a3a');for(let yy=y+30;yy<y+66;yy+=9)r(lx+2,yy,24,1,'#4a3820');r(lx+12,y+40,4,4,'#c9a85a');}r(x+46,y+22,2,46,'#2a2018');
+// Freistehendes Grabtor im linken Hof (Kaserne ist dafür ein Stück nach oben gerückt, Wäscheleine entfällt)
+const GATE={x:50,y:206,w:112,h:70},GC=GATE.x+GATE.w/2,DOOR={x:GATE.x+36,y:GATE.y+30,w:GATE.w-72,h:GATE.h-34},TORCH=[GATE.x+29,GATE.x+GATE.w-29];
+M.hallGate={rect:GATE,paint(g,rect,label){const r=rect,x=GATE.x,y=GATE.y,w=GATE.w,h=GATE.h;
+ // Schatten und Vorplatz mit Stufen
+ g.globalAlpha=.3;r(x+8,y+h-8,w,14,'#1d1a15');g.globalAlpha=1;r(x+6,y+h-6,w-12,4,'#9b9b7e');r(x+10,y+h-2,w-20,3,'#7c8068');r(x+2,y+h-10,w-4,5,'#8d9275');
+ // Mauerkörper aus dunklem Stein
+ r(x+2,y+14,w-4,h-24,'#2e3230');for(let yy=y+18;yy<y+h-10;yy+=7)for(let xx=x+4+(yy%14?0:6);xx<x+w-6;xx+=12)r(xx,yy,11,6,(xx+yy)%3?'#383d3a':'#323634');
+ // Vier Säulen
+ for(const cx of [x+4,x+17,x+w-29,x+w-16]){r(cx,y+20,11,h-30,'#53584f');r(cx+2,y+20,3,h-30,'#6c7268');r(cx+8,y+20,2,h-30,'#3e423b');r(cx-1,y+17,13,4,'#646a60');r(cx-1,y+h-13,13,4,'#646a60');for(let yy=y+26;yy<y+h-16;yy+=8)r(cx+5,yy,1,5,'#454a42');}
+ // Gebälk mit Inschrift, Giebel mit Totenkopf
+ r(x-3,y+6,w+6,13,'#3c413c');r(x-3,y+6,w+6,2,'#5d635b');r(x-3,y+18,w+6,2,'#2a2e2b');
+ for(let i=0;i<5;i++)r(GC-36+i*7,y-1-i*2,72-i*14,3,'#3c413c');r(GC-36,y-1,72,1,'#5d635b');
+ r(GC-7,y-10,14,10,'#bdb9a4');r(GC-5,y-8,4,3,'#1b1f1e');r(GC+1,y-8,4,3,'#1b1f1e');r(GC-1,y-4,2,2,'#1b1f1e');r(GC-5,y-1,10,2,'#8f8c7a');for(let i=0;i<4;i++)r(GC-4+i*3,y-1,1,2,'#5c5a4c');
+ r(x+6,y+9,w-12,9,'#151918');label('HALL OF THE FALLEN',GC,y+16,8);
+ // Torbogen und geschlossene Bronzeflügel
+ r(DOOR.x-3,DOOR.y-4,DOOR.w+6,DOOR.h+4,'#0e1112');r(DOOR.x-2,DOOR.y-6,DOOR.w+4,3,'#5d635b');const half=DOOR.w/2;
+ for(const lx of [DOOR.x,DOOR.x+half]){r(lx,DOOR.y,half,DOOR.h,'#6a5030');r(lx,DOOR.y,half,2,'#8a6a3a');for(let yy=DOOR.y+8;yy<DOOR.y+DOOR.h-2;yy+=9)r(lx+2,yy,half-4,1,'#4a3820');r(lx+half/2-2,DOOR.y+DOOR.h/2-4,4,4,'#c9a85a');}r(DOOR.x+half-1,DOOR.y,2,DOOR.h,'#2a2018');
  // Fackelhalter (Flammen kommen als Bewegung dazu)
- for(const fx of [x+9,x+85]){r(fx-1,y+28,3,8,'#3b3226');r(fx-3,y+25,7,4,'#5a4a34');}}};
+ for(const fx of TORCH){r(fx-1,y+34,3,9,'#3b3226');r(fx-3,y+31,7,4,'#5a4a34');}}};
 let gateAnim=null;
-function gateHit(x,y){return x>=GATE.x&&x<=GATE.x+GATE.w&&y>=GATE.y-10&&y<=GATE.y+GATE.h;}
+function gateHit(x,y){return x>=GATE.x-4&&x<=GATE.x+GATE.w+4&&y>=GATE.y-12&&y<=GATE.y+GATE.h;}
 const overlay=M.ludusOverlay;M.ludusOverlay=(g,t)=>{overlay?.(g,t);const r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);},x=GATE.x,y=GATE.y;
  // Fackeln
- for(const [i,fx] of [x+9,x+85].entries()){const f=Math.floor(t*8+i*2)%3;g.globalAlpha=.18;g.fillStyle='#e8a050';g.beginPath();g.ellipse(fx,y+22,10,9,0,0,Math.PI*2);g.fill();g.globalAlpha=1;r(fx-2,y+20+(f===1?1:0),5,5-f,'#c8642e');r(fx-1,y+18+f,3,4,'#e2ab5c');r(fx,y+16+(f===2?2:0),1,3,'#fff0c0');}
+ for(const [i,fx] of TORCH.entries()){const f=Math.floor(t*8+i*2)%3;g.globalAlpha=.18;g.fillStyle='#e8a050';g.beginPath();g.ellipse(fx,y+28,11,10,0,0,Math.PI*2);g.fill();g.globalAlpha=1;r(fx-2,y+26+(f===1?1:0),5,5-f,'#c8642e');r(fx-1,y+24+f,3,4,'#e2ab5c');r(fx,y+22+(f===2?2:0),1,3,'#fff0c0');}
  // Tor öffnet sich
- if(gateAnim){const k=Math.min(1,(performance.now()-gateAnim.t0)/900),w=Math.round(28*k);r(x+47-w,y+22,w*2,46,'#0b0d0e');g.globalAlpha=.35*k;r(x+47-w,y+60,w*2,8,'#e2ab5c');g.globalAlpha=1;if(k>=1&&!gateAnim.fired){gateAnim.fired=true;const fn=gateAnim.then;setTimeout(()=>{gateAnim=null;fn?.();},120);}}
+ if(gateAnim){const k=Math.min(1,(performance.now()-gateAnim.t0)/900),w=Math.round(DOOR.w/2*k);r(GC-w,DOOR.y,w*2,DOOR.h,'#0b0d0e');g.globalAlpha=.35*k;r(GC-w,DOOR.y+DOOR.h-8,w*2,8,'#e2ab5c');g.globalAlpha=1;if(k>=1&&!gateAnim.fired){gateAnim.fired=true;const fn=gateAnim.then;setTimeout(()=>{gateAnim=null;fn?.();},120);}}
  // Hervorhebung im Tutorial
- const st=H().tut;if((st==='open1'||st==='open2')&&!gateAnim){const p=(Math.sin(t*4)+1)/2;g.globalAlpha=.5+.5*p;g.strokeStyle='#f4d37a';g.lineWidth=2;g.strokeRect(x-4,y-12,GATE.w+8,GATE.h+14);g.globalAlpha=1;const ay=y-24-Math.round(p*5);r(x+44,ay,6,8,'#f4d37a');r(x+41,ay+8,12,3,'#f4d37a');r(x+44,ay+11,6,3,'#f4d37a');r(x+46,ay+14,2,2,'#f4d37a');}};
-function openGate(then){M.ludus?.focus?.(GATE.x+47,GATE.y+40,2);gateAnim={t0:performance.now(),then};M.sound?.('heavy');}
+ const st=H().tut;if((st==='open1'||st==='open2')&&!gateAnim){const p=(Math.sin(t*4)+1)/2;g.globalAlpha=.5+.5*p;g.strokeStyle='#f4d37a';g.lineWidth=2;g.strokeRect(x-5,y-14,GATE.w+10,GATE.h+16);g.globalAlpha=1;const ay=y-28-Math.round(p*5);r(GC-3,ay,6,8,'#f4d37a');r(GC-6,ay+8,12,3,'#f4d37a');r(GC-3,ay+11,6,3,'#f4d37a');r(GC-1,ay+14,2,2,'#f4d37a');}};
+function openGate(then){M.ludus?.focus?.(GC,GATE.y+GATE.h/2,2);gateAnim={t0:performance.now(),then};M.sound?.('heavy');}
 const hit=M.ludusHit;M.ludusHit=(x,y)=>{if(gateHit(x,y)&&!gateAnim){const st=H().tut;if(['gate1','empty','exec','visit'].includes(st))return true;
   if(st==='open1')openGate(()=>{setStage('empty');playEmpty();});else if(st==='open2')openGate(()=>{setStage('visit');playVisit();});else openGate(()=>M.ui.click('nav:fallen'));return true;}
  return hit?hit(x,y):false;};
@@ -199,7 +204,7 @@ function paintFilm(){const f=film;if(!f)return;const c=$('hallFilmCanvas');if(!c
 const setStage=st=>{H().tut=st;M.persist?.();};
 const done=()=>H().tut==='done';
 function busy(){return !!S.battle||!!film||!!M.smithWrath?.scene||!!M.archerPlot?.scene||!!M.intro?.active?.()||!!window.ArenaTheoryIntro?.active?.()||!!document.querySelector('.smith-ceremony,#introView,#brandIntro')||!!M.forgeIntro?.scene||($('modal')&&!$('modal').hidden);}
-const GX=GATE.x+47,GY=GATE.y+44;
+const GX=GC,GY=GATE.y+GATE.h/2;
 // 3. Der Schmied zeigt das Tor
 function playGate(){play('map',[
  {do:f=>{f.smith.a=0;},pose:'sip',dur:1.6},
@@ -208,7 +213,7 @@ function playGate(){play('map',[
  {say:'Die Halle der Gefallenen! Hier landen unsere größten Helden. Und die größten Vollidioten. Manchmal sogar beides.',face:Math.PI,gesture:'point'},
  {face:Math.PI,dur:1.2},
  {say:'Na los. Mach das Tor auf.',face:0}
-],{label:'Das Tor der Gefallenen',smith:{x:262,y:250},lan:{x:300,y:236},cam:{x:186,y:240},done:()=>{setStage('open1');waitForGate();}});}
+],{label:'Das Tor der Gefallenen',smith:{x:194,y:254},lan:{x:278,y:238},cam:{x:168,y:236},done:()=>{setStage('open1');waitForGate();}});}
 // 4. Die leere Heldenhalle
 function playEmpty(){play('hall',[
  {to:[240,214],speed:34},
