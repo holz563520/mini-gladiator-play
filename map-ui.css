@@ -28,3 +28,15 @@ body.mapui-hidden #mapuiBar,body.mapui-hidden #mapuiMenu{display:none!important}
 #mapuiMenu nav{display:grid;gap:6px}
 #mapuiMenu nav .btn{justify-content:flex-start;text-align:left;width:100%}
 #mapuiMenu nav h4{margin:10px 0 2px;font-size:11px;letter-spacing:.12em;opacity:.7}
+
+/* 8: nur ein Zurück-Knopf – „Zum Spielfeld“ entfällt */
+#mapuiBar .mapui-home{display:none!important}
+body.mapui .content{padding-top:74px!important}
+body.mapui .backbar{position:fixed;top:calc(10px + env(safe-area-inset-top));left:110px;z-index:31;margin:0}
+body.mapui-on-home .backbar{display:none}
+body.mapui .backbar .btn{background:#1c2a25ee;min-height:44px}
+/* 10: Chronik-Reiter auch auf dem Handy als Reiter zeigen */
+body.mapui .section-tabs.mapui-chronik{display:flex!important;flex-wrap:nowrap;overflow-x:auto;gap:6px;margin:0 0 18px;padding-bottom:12px}
+/* Startbildschirm / Spielstände: nur Spieler anlegen, laden oder löschen – kein Menü, kein Tageswechsel, kein Zurück */
+body.mapui-start #mapuiBar,body.mapui-start #mapuiMenu,body.mapui-start .backbar{display:none!important}
+body.mapui-start .content{padding-top:16px!important}
