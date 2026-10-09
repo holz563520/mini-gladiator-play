@@ -1,6 +1,6 @@
 'use strict';
 // Versionskennung: wird beim Veröffentlichen durch die Commit-Kennung ersetzt, damit Browser nach einem Update keine alten Dateien aus dem Zwischenspeicher nehmen.
-var BUILD='3e78294d';
+var BUILD='db60fe33';
 (async()=>{
  const cache=new Map(),pending=new Set();let db=null,error='';const marker='mini-gladiator-large-save-v1';
  try{if(!window.indexedDB)throw Error('IndexedDB unavailable');db=await new Promise((resolve,reject)=>{const req=indexedDB.open('mini-gladiator-saves',1);req.onupgradeneeded=()=>req.result.createObjectStore('profiles');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);req.onblocked=()=>reject(Error('Bitte andere Spiel-Tabs schließen und neu laden.'));});await new Promise((resolve,reject)=>{const tx=db.transaction('profiles','readonly'),req=tx.objectStore('profiles').openCursor();req.onsuccess=()=>{const cursor=req.result;if(cursor){cache.set(cursor.key,cursor.value);cursor.continue();}};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}
