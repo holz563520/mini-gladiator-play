@@ -79,7 +79,8 @@ function plan(n,forced){
  const sm=p.smith=[[0,748,240],[p.door+.2,748,246],[6.3,748,246],[6.75,738,264]];let free=6.75;
  const go=(t,x,y,v=46)=>{[x,y]=clear(x,y);const [t0,x0,y0]=sm[sm.length-1],s=Math.max(t,t0,free);if(s>t0)sm.push([s,x0,y0]);const w=walk([[x0,y0],[x,y]],s,v);sm.push(...w.slice(1));free=w[w.length-1][0];return free;};
  const at0=()=>sm[sm.length-1];
- const cheer=t=>{p.laughs.push([t,t+1.5]);p.cheers.push(t);free=Math.max(free,t+1.55);};
+ // Kein Jubel nach dem Töten: nur ein kurzer Moment Ruhe, bevor es weitergeht
+ const cheer=t=>{free=Math.max(free,t+.5);};
  const hit=(who,t,part,o={})=>{const w=Math.max(t,free+.25);p.kills.push({who,swing:w,part,...o});free=w+.35;if(part==='head'&&!o.kick)cheer(w+.45);return w;};
  const say=(a,who,text)=>{p.says.push([a,a+1.6,who,text]);};
  const path=(i,...pts)=>p.vic[i].push(...pts),back=(i,a,b)=>p.backs.push([i,a,b]);
@@ -137,7 +138,7 @@ function prelude(n){const speed=34,routes=[];for(let i=0;i<n;i++){const pts=[[61
 function walk(points,t0,speed){points=M.sceneNav?.route?M.sceneNav.route(points):points;let t=t0;return points.map((q,i)=>{if(i)t+=Math.hypot(q[0]-points[i-1][0],q[1]-points[i-1][1])/speed;return [t,q[0],q[1]];});}
 // Zielpunkte nie in einem Hindernis (Kohlen, Bank …): an den Rand schieben
 function clear(x,y){if(!M.sceneNav?.inside?.(x,y))return [x,y];const d={id:'pt',x,y,a:0,g:{}};M.sceneNav.resolve([d]);return [d.x,d.y];}
-function finale(p,t,x,y){p.vic=p.vic.map(v=>{for(const q of v){[q[1],q[2]]=clear(q[1],q[2]);}for(let i=1;i<v.length;i++)if(v[i][0]<v[i-1][0])v[i][0]=v[i-1][0];return M.sceneNav?.route?M.sceneNav.route(v):v;});p.inspect=[t,t+.7];p.sips.push([t+.7,t+1.2]);p.laughs.push([t+1.2,t+2.6]);p.says.push([t+2.6,t+4.9,'s',choose(L.last,sc0id,'last')]);const back=t+2.8,home=walk([[x,y],[760,302],[748,246]],back,50),arrive=home[home.length-1][0];p.smith.push(...home,[arrive+.4,748,238]);p.gone=arrive+.4;p.end=Math.max(Math.min(p.gone+.5,t+5.3),...p.deaths.map(d=>d[1]+1.4));return p;}
+function finale(p,t,x,y){p.vic=p.vic.map(v=>{for(const q of v){[q[1],q[2]]=clear(q[1],q[2]);}for(let i=1;i<v.length;i++)if(v[i][0]<v[i-1][0])v[i][0]=v[i-1][0];return M.sceneNav?.route?M.sceneNav.route(v):v;});p.inspect=[t,t+.7];p.sips.push([t+.7,t+1.6]);p.says.push([t+2.6,t+4.9,'s',choose(L.last,sc0id,'last')]);const back=t+2.8,home=walk([[x,y],[760,302],[748,246]],back,50),arrive=home[home.length-1][0];p.smith.push(...home,[arrive+.4,748,238]);p.gone=arrive+.4;p.end=Math.max(Math.min(p.gone+.5,t+5.3),...p.deaths.map(d=>d[1]+1.4));return p;}
 function fleePlan(n){const p={flee:true,n,says:[[.3,2.4,'v0','']],vic:[],end:3.8};const xs=[610,586,634,562,658];for(let i=0;i<n;i++){const x=xs[i],y=596-(i?6:0),go=1+i*.2;p.vic[i]=[[0,x,y],[go,x,y],[go+.6,x+(i%2?-6:i?6:0),y+30],[go+1.8,610+(i-1)*8,700]];}return p;}
 function crowdOf(){return S.roster.filter(g=>!g.dead&&!g.smithDuty).slice(0,6).map((m,i)=>{const g=JSON.parse(JSON.stringify(m)),spot=(i%2?LEFT:RIGHT)[Math.floor(i/2)],from=i%2?[594-Math.floor(i/2)*16,spot[1]+22]:[900,spot[1]];return {id:'crowd-'+i,g,team:0,x:from[0],y:from[1],a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},spot,from,index:i};});}
 function start(){const st=WD.state(),g=st.group;if(!g||g.talk?.tone!=='schmied'||S.battle||sc)return false;const outcome=g.talk.outcome,members=g.members.slice(0,5),leader=g.leader.name;sc0id=g.id;
@@ -158,7 +159,8 @@ function dust(x,y,n){for(let i=0;i<n;i++)sc.fx.push({x:x+Math.random()*10-5,y,z:
 // Kriechen wie im Attentat: Arm vor, Pause, ruckartiger Zug (gleiche mittlere Geschwindigkeit)
 const PULL=.6;function pull(t,t0){const tau=t-t0,n=Math.floor(tau/PULL),u=(tau%PULL)/PULL,k=u<.45?0:Math.min(1,(u-.45)/.35);return t0+(n+k*k*(3-2*k))*PULL;}
 // Flugbahn eines Körperteils so wählen, dass es frei landet (nicht auf Schrein, Amphore, Puppe …): Richtung oder Weite anpassen
-function aim(l){const ok=M.sceneNav?.spotClear;if(!ok)return;const air=Math.max(.2,(l.vz+Math.sqrt(l.vz*l.vz+400*l.z))/200)*1.25;for(const k of [1,.6,.3,-1,-.6,-.3,0]){if(ok(l.x+l.vx*k*air,l.y+l.vy*k*air)){l.vx*=k;l.vy*=k;if(k<0)l.spin=-l.spin;return;}}}
+function rest(l,k){let x=l.x,y=l.y,z=l.z,vx=l.vx*k,vy=l.vy*k,vz=l.vz;const dt=1/30;for(let i=0;i<240;i++){if(z<=0&&Math.abs(vz)<4)break;x+=vx*dt;y+=vy*dt;vz-=200*dt;z=Math.max(0,z+vz*dt);if(!z&&vz<0){vz=-vz*.35;vx*=.5;vy*=.5;}}return [x,y];}
+function aim(l){const ok=M.sceneNav?.spotClear;if(!ok)return;for(const k of [1,.7,.45,.25,-1,-.6,-.3,0]){const [x,y]=rest(l,k);if(ok(x,y)&&ok(x,y-3)&&ok(x,y+3)){l.vx*=k;l.vy*=k;if(k<0)l.spin=-l.spin;return;}}}
 const lieDir=v=>(v.fallSide||1)*(Math.cos(v.a||0)>=0?1:-1)>=0?1:-1;
 function sever(v,part,dir){const g=v.g;for(const k of M.branches[part]||[part])if(g.body[k])g.body[k].missing=true;const lying=v.down||v.fallTimer>0,ls=lieDir(v),off={head:52,lua:34,rua:34,lt:14,rt:14}[part]??30;
  sc.limbs.push(lying?{x:v.x+ls*off,y:v.y+1,z:6,angle:0,part,skin:g.appearance.skin,hair:g.appearance.hair,g,vx:dir*10,vy:3,vz:20,spin:dir*4}:{x:v.x+dir*4,y:v.y,z:part==='head'?52:38,angle:0,part,skin:g.appearance.skin,hair:g.appearance.hair,g,vx:dir*(part==='head'?26:34),vy:6,vz:part==='head'?40:30,spin:dir*(part==='head'?6:9)});
