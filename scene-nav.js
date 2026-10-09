@@ -33,14 +33,14 @@ function resolve(list){if(!Array.isArray(list))return list;const up=list.filter(
   for(const o of OBST)if(inside(o,a.x,a.y)){const p=out(o,a.x,a.y);push(a,p.x,p.y,'Hindernis',o.name);}}
  return list;}
 // Weg (Liste von [x,y] oder [t,x,y]) um Hindernisse herumführen: Teilstücke, die ein Hindernis schneiden, bekommen einen Umweg-Punkt.
-function hits(o,x0,y0,x1,y1){for(let i=1;i<20;i++){const k=i/20;if(inside(o,x0+(x1-x0)*k,y0+(y1-y0)*k))return true;}return false;}
+function hits(o,x0,y0,x1,y1){const n=Math.max(20,Math.ceil(Math.hypot(x1-x0,y1-y0)/1.5));for(let i=1;i<n;i++){const k=i/n;if(inside(o,x0+(x1-x0)*k,y0+(y1-y0)*k))return true;}return false;}
 function detour(o,x0,y0,x1,y1){const mx=(x0+x1)/2,my=(y0+y1)/2;let cx,cy,rx,ry;if(o.k==='e'){cx=o.x;cy=o.y;rx=o.rx;ry=o.ry;}else{cx=(o.x0+o.x1)/2;cy=(o.y0+o.y1)/2;rx=(o.x1-o.x0)/2*1.42;ry=(o.y1-o.y0)/2*1.42;}
  // senkrecht zur Laufrichtung ausweichen; bevorzugt die Seite, auf der die Strecke schon liegt, und nie in ein anderes Hindernis hinein
  let nx=-(y1-y0),ny=x1-x0;if((mx-cx)*nx+(my-cy)*ny<0){nx=-nx;ny=-ny;}const n=Math.hypot(nx/rx,ny/ry)||1,cand=[];
  for(const side of [1,-1])for(const k of [1.3,1.6,2])cand.push([cx+side*nx/n*k,cy+side*ny/n*k]);
  const free=cand.filter(([x,y])=>!OBST.some(q=>inside(q,x,y)));const best=(free.length?free:cand).sort((a,b)=>(Math.hypot(a[0]-x0,a[1]-y0)+Math.hypot(x1-a[0],y1-a[1]))-(Math.hypot(b[0]-x0,b[1]-y0)+Math.hypot(x1-b[0],y1-b[1])))[0];return best;}
 function route(points,depth=0){const timed=points[0]?.length===3,P=points.map(p=>timed?p:[0,p[0],p[1]]),res=[P[0]];
- for(let i=1;i<P.length;i++){const [t0,x0,y0]=res[res.length-1],[t1,x1,y1]=P[i];const o=depth<4&&OBST.find(o=>!inside(o,x0,y0)&&!inside(o,x1,y1)&&hits(o,x0,y0,x1,y1));
+ for(let i=1;i<P.length;i++){const [t0,x0,y0]=res[res.length-1],[t1,x1,y1]=P[i];const o=depth<6&&OBST.find(o=>!inside(o,x0,y0)&&!inside(o,x1,y1)&&hits(o,x0,y0,x1,y1));
   if(o){const [dx,dy]=detour(o,x0,y0,x1,y1),l1=Math.hypot(dx-x0,dy-y0),l2=Math.hypot(x1-dx,y1-dy),tm=t0+(t1-t0)*l1/((l1+l2)||1);const sub=route([[t0,x0,y0],[tm,dx,dy],[t1,x1,y1]],depth+1);res.push(...sub.slice(1));}
   else res.push(P[i]);}
  return timed?res:res.map(p=>[p[1],p[2]]);}
@@ -56,7 +56,7 @@ const PROPS=[P(705,267,735,292,293,'Schleifstein'),P(771,264,801,289,290,'Trog')
  P(657,347,695,402,402,'Olivenbaum'),P(797,294,835,349,349,'Olivenbaum'),P(820,354,848,414,414,'Mars-Schrein'),P(838,324,867,396,396,'Zypresse'),
  P(636,150,860,238,239,'Schmiede'),P(354,301,396,371,371,'Puppe'),P(498,303,540,373,373,'Puppe'),P(427,411,469,481,481,'Puppe')];
 // Liegt ein Körper (Füße bei x,y, Kopf in Richtung s) frei, ohne über einem Gegenstand vor ihm oder auf einer Wand zu liegen?
-function lyingClear(x,y,s){const a=Math.min(x+s*2,x+s*62),b=Math.max(x+s*2,x+s*62),top=y-18,bot=y+14;if(a<330||b>870)return false;
+function lyingClear(x,y,s,fs=1){const L=fs===1?78:60,a=Math.min(x+s*2,x+s*L),b=Math.max(x+s*2,x+s*L),top=y-18,bot=y+14;if(a<330||b>870)return false;
  return !PROPS.some(o=>a<o.x1&&b>o.x0&&top<o.y1&&bot>o.y0&&(o.base>y+1||o.name==='Schmiede'));}
 // Freier Fleck für einen abgetrennten Kopf oder Arm: nicht in einem Hindernis, nicht hinter/auf einem Gegenstand, nicht am Rand
 function spotClear(x,y){if(x<335||x>865||OBST.some(o=>inside(o,x,y)))return false;return !PROPS.some(o=>x+4>o.x0&&x-4<o.x1&&y>o.y0&&y-6<o.y1&&(o.base>y+1||o.name==='Schmiede'));}

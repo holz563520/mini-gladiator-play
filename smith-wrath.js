@@ -88,19 +88,22 @@ function plan(n,forced){
  // Fallrichtung so wählen, dass der Körper frei liegt (nicht über Schleifstein, Bank, Brunnen … und nicht auf der Schmiede)
  const clearDir=(x,y,pref)=>{const ok=M.sceneNav?.lyingClear;if(!ok)return pref;return ok(x,y,pref)||!ok(x,y,-pref)?pref:-pref;};
  // Kopf ab (stehend oder liegend), manchmal danach Kopf wegkicken
- const head=(i,t,vx,vy,dir,lying)=>{const kick=p.kickWho===i,w=hit(i,t,'head',{kick,lying,tx:lying?vx+dir*48:vx,hd:lying?undefined:clearDir(vx,vy,dir)});
-  if(!kick)return [at0()[1],at0()[2]];const hx=lying?vx+dir*56:vx+dir*16,hy=vy+(lying?2:4);go(w+.55,hx-dir*9,hy+3,26);const k=free+.2;const kd=(x=>x>360&&x<850&&!M.sceneNav?.inside?.(x,hy))(hx+dir*90)?dir:-dir;p.kicks.push({who:i,t:k,dir:kd});say(k+.3,'s',pick(L.kick));cheer(k+.5);return [hx-dir*9,hy+3];};
+ // Kopf ab (stehend oder liegend). Liegend: Schmied steht hinter dem Körper, das Klingenende trifft den Hals
+ // (Hals liegt 50 vor den Füßen bei Bauchlage, 31 bei Rückenlage; das Klingenende landet etwa 20 vor dem Schmied).
+ const head=(i,t,vx,vy,dir,lying,fs=1)=>{const kick=p.kickWho===i,nk=lying?vx+dir*(fs===1?50:31):vx;if(lying)go(t-1.7,nk-dir*20,vy-5,24);
+  const w=hit(i,t,'head',{kick,lying,tx:lying?nk+dir*6:vx,hd:lying?undefined:clearDir(vx,vy,dir)});
+  if(!kick)return [at0()[1],at0()[2]];const hx=lying?nk+dir*13:vx+dir*16,hy=vy+(lying?2:4),kd=(x=>x>360&&x<850&&!M.sceneNav?.inside?.(x,hy))(hx+dir*90)?dir:-dir;go(w+.55,hx-kd*9,hy+3,26);const k=free+.2;p.kicks.push({who:i,t:k,dir:kd});say(k+.3,'s',pick(L.kick));cheer(k+.5);return [hx-kd*9,hy+3];};
  // Ein Opfer erledigen: Schmied steht bei A neben ihm (dir = Richtung Schmied → Opfer). Gibt den Standort des Schmieds danach zurück.
  function exec(i,A,vx,vy,dir){const m=p.methods[i],V='v'+i;
   if(m==='arm'){const w=hit(i,A,dir>0?'rua':'lua');say(w+.3,V,L.arm[0]);const bx=vx+dir*16,by=vy+3;path(i,[w+.3,vx,vy],[w+1.6,bx,by]);back(i,w+.3,w+1.6);go(w+.8,bx-dir*15,by,24);return head(i,w+1.9,bx,by,dir,false);}
   if(m==='twoarms'){let w=hit(i,A,'lua');w=hit(i,w+.7,'rua');say(w+.3,V,L.arms[0]);p.sips.push([w+.6,w+1.7]);free=Math.max(free,w+1.8);return head(i,w+2,vx,vy,dir,false);}
-  if(m==='leg'){const hd=clearDir(vx+dir*18,vy+3,dir),w=hit(i,A,dir>0?'rt':'lt',{hd});say(w+.4,V,L.leg[0]);const cx=vx+hd*18,cy=vy+3;path(i,[w+1,vx,vy],[w+3.2,cx,cy]);p.crawls.push({who:i,t0:w+1,t1:w+3.2});go(w+2.2,cx+hd*40,cy+9,22);return head(i,w+3.6,cx,cy,hd,true);}
+  if(m==='leg'){const hd=clearDir(vx+dir*18,vy+3,dir),w=hit(i,A,dir>0?'rt':'lt',{hd});say(w+.4,V,L.leg[0]);const cx=vx+hd*18,cy=vy+3;path(i,[w+1,vx,vy],[w+3.2,cx,cy]);p.crawls.push({who:i,t0:w+1,t1:w+3.2});return head(i,w+3.6,cx,cy,hd,true,1);}
   if(m==='stumble'){// weicht rückwärts zurück und fällt auf den Rücken
-   const bx=vx+dir*18,by=vy+2;path(i,[A,vx,vy],[A+1.5,bx,by]);back(i,A,A+1.5);p.falls[i]={t:A+1.5,hd:dir};say(A+1.4,V,L.trip[0]);go(A+1.9,bx+dir*44,by+9,24);return head(i,A+3.6,bx,by,dir,true);}
+   const bx=vx+dir*18,by=vy+2;path(i,[A,vx,vy],[A+1.5,bx,by]);back(i,A,A+1.5);p.falls[i]={t:A+1.5,hd:dir,fs:-1};say(A+1.4,V,L.trip[0]);return head(i,A+3.6,bx,by,dir,true,-1);}
   if(m==='throat'){// Schmied geht vorn herum, steht hinter ihm, Kehle durch; taumelt nach vorn und fällt
-   const fd=clearDir(vx-dir*10,vy,-dir),sd=-fd;if(sd===dir){go(A+.2,vx,vy+12,30);}const B=sd===dir?go(0,vx+dir*14,vy,30):A;path(i,[A,vx,vy],[B+.3,vx,vy]);const w=hit(i,B+.25,'throat',{tx:vx});path(i,[w+.2,vx,vy],[w+1.4,vx+fd*10,vy]);p.falls[i]={t:w+1.4,hd:fd};p.deaths.push([i,w+2.3]);cheer(w+1.6);return [sd===dir?vx+dir*14:vx-dir*14,vy];}
+   const fd=clearDir(vx-dir*10,vy,-dir),sd=-fd;if(sd===dir){go(A+.2,vx,vy+12,30);}const B=sd===dir?go(0,vx+dir*14,vy,30):A;path(i,[A,vx,vy],[B+.3,vx,vy]);const w=hit(i,B+.25,'throat',{tx:vx});path(i,[w+.2,vx,vy],[w+1.4,vx+fd*10,vy]);p.falls[i]={t:w+1.4,hd:fd,fs:1};p.deaths.push([i,w+2.3]);cheer(w+1.6);return [sd===dir?vx+dir*14:vx-dir*14,vy];}
   if(m==='bisect'){// mittendurch: Beine bleiben liegen, der Oberkörper kriecht Arm für Arm weiter und verblutet nach etwa fünf Metern
-   const w=hit(i,A,'bisect',{hd:dir});p.falls[i]={t:w+.12,hd:dir};say(w+.6,V,L.halves[0]);const tx=Math.max(345,Math.min(860,vx+dir*120)),ty=[vy+6,vy-8,vy+14,vy-14].find(y=>M.sceneNav?.lyingClear?.(tx,y,dir))??vy+6,way=M.sceneNav?.route?M.sceneNav.route([[vx,vy],[tx,ty]]):[[vx,vy],[tx,ty]];
+   const w=hit(i,A,'bisect',{hd:dir});p.falls[i]={t:w+.12,hd:dir,fs:1};say(w+.6,V,L.halves[0]);const tx=Math.max(345,Math.min(860,vx+dir*120)),ty=[vy+6,vy-8,vy+14,vy-14].find(y=>M.sceneNav?.lyingClear?.(tx,y,dir))??vy+6,way=M.sceneNav?.route?M.sceneNav.route([[vx,vy],[tx,ty]]):[[vx,vy],[tx,ty]];
    const crawl=walk(way,w+1.2,12.5),endT=crawl[crawl.length-1][0];path(i,[w+1.2,vx,vy],...crawl.slice(1));p.crawls.push({who:i,t0:w+1.2,t1:endT,bisect:true});p.deaths.push([i,endT+.9]);cheer(w+.5);
    // Der Schmied schlendert mit Bier hinterher und schaut zu, bis der Kriechende verblutet ist
    const fx=tx-dir*44,fy=ty+6;say(w+2.6,'s',L.follow[0]);go(w+2.3,fx,fy,Math.max(8,Math.hypot(fx-at0()[1],fy-at0()[2])/Math.max(1,endT-w-2.8)));p.sips.push([free+.1,endT-.4]);say(endT-2.6,V,L.cold[0]);free=Math.max(free,endT+.9);cheer(endT+1.1);return [fx,fy];}
@@ -125,7 +128,7 @@ function plan(n,forced){
   // 4: bettelt, weicht zurück, rennt dann doch los und wird eingeholt
   const ask=free+.1;say(ask,'v4',L.plead[0]);A=go(free+.2,688,330,40);path(4,[A-1.5,684,330],[A,670,334]);back(4,A-1.5,A);
   const late=Math.max(A+.2,ask+4.1);say(late,'s',L.late[0]);p.sips.push([A+.1,late-.2]);free=Math.max(free,late+.4);
-  const run=late+2.4;A=go(run+.3,644,358,30);path(4,[run,670,334],[A,630,366]);pos=exec(4,A+.05,630,366,-1);}
+  const run=late+2.4;A=go(run+.3,656,360,30);path(4,[run,670,334],[A,641,366]);pos=exec(4,A+.05,641,366,-1);}
  // 3: rennt los, sobald der Schmied kommt, weg vom Schmied, und wird eingeholt
  if(n>=4){const [,sx,sy]=at0(),dir=sx>654?-1:1,Xe=654+dir*86,T=[Xe-dir*16,407],D=Math.hypot(T[0]-sx,T[1]-sy),e=Math.max(free,free+D/36-3);
   say(e-.2,'v3',L.run[0]);path(3,[e,654,382],[e+1.6,654+dir*36,398],[e+2.4,654+dir*64,404],[e+3.2,Xe,408]);
@@ -138,7 +141,7 @@ function prelude(n){const speed=34,routes=[];for(let i=0;i<n;i++){const pts=[[61
 function walk(points,t0,speed){points=M.sceneNav?.route?M.sceneNav.route(points):points;let t=t0;return points.map((q,i)=>{if(i)t+=Math.hypot(q[0]-points[i-1][0],q[1]-points[i-1][1])/speed;return [t,q[0],q[1]];});}
 // Zielpunkte nie in einem Hindernis (Kohlen, Bank …): an den Rand schieben
 function clear(x,y){if(!M.sceneNav?.inside?.(x,y))return [x,y];const d={id:'pt',x,y,a:0,g:{}};M.sceneNav.resolve([d]);return [d.x,d.y];}
-function finale(p,t,x,y){p.vic=p.vic.map(v=>{for(const q of v){[q[1],q[2]]=clear(q[1],q[2]);}for(let i=1;i<v.length;i++)if(v[i][0]<v[i-1][0])v[i][0]=v[i-1][0];return M.sceneNav?.route?M.sceneNav.route(v):v;});p.inspect=[t,t+.7];p.sips.push([t+.7,t+1.6]);p.says.push([t+2.6,t+4.9,'s',choose(L.last,sc0id,'last')]);const back=t+2.8,home=walk([[x,y],[760,302],[748,246]],back,50),arrive=home[home.length-1][0];p.smith.push(...home,[arrive+.4,748,238]);p.gone=arrive+.4;p.end=Math.max(Math.min(p.gone+.5,t+5.3),...p.deaths.map(d=>d[1]+1.4));return p;}
+function finale(p,t,x,y){{const last=p.smith?.[p.smith.length-1];if(last){x=last[1];y=last[2];}}p.vic=p.vic.map(v=>{for(const q of v){[q[1],q[2]]=clear(q[1],q[2]);}for(let i=1;i<v.length;i++)if(v[i][0]<v[i-1][0])v[i][0]=v[i-1][0];return M.sceneNav?.route?M.sceneNav.route(v):v;});p.inspect=[t,t+.7];p.sips.push([t+.7,t+1.6]);p.says.push([t+2.6,t+4.9,'s',choose(L.last,sc0id,'last')]);const back=t+2.8,home=walk([[x,y],[760,302],[748,246]],back,50),arrive=home[home.length-1][0];p.smith.push(...home,[arrive+.4,748,238]);p.gone=arrive+.4;p.end=Math.max(Math.min(p.gone+.5,t+5.3),...p.deaths.map(d=>d[1]+1.4));return p;}
 function fleePlan(n){const p={flee:true,n,says:[[.3,2.4,'v0','']],vic:[],end:3.8};const xs=[610,586,634,562,658];for(let i=0;i<n;i++){const x=xs[i],y=596-(i?6:0),go=1+i*.2;p.vic[i]=[[0,x,y],[go,x,y],[go+.6,x+(i%2?-6:i?6:0),y+30],[go+1.8,610+(i-1)*8,700]];}return p;}
 function crowdOf(){return S.roster.filter(g=>!g.dead&&!g.smithDuty).slice(0,6).map((m,i)=>{const g=JSON.parse(JSON.stringify(m)),spot=(i%2?LEFT:RIGHT)[Math.floor(i/2)],from=i%2?[594-Math.floor(i/2)*16,spot[1]+22]:[900,spot[1]];return {id:'crowd-'+i,g,team:0,x:from[0],y:from[1],a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},spot,from,index:i};});}
 function start(){const st=WD.state(),g=st.group;if(!g||g.talk?.tone!=='schmied'||S.battle||sc)return false;const outcome=g.talk.outcome,members=g.members.slice(0,5),leader=g.leader.name;sc0id=g.id;
@@ -160,9 +163,9 @@ function dust(x,y,n){for(let i=0;i<n;i++)sc.fx.push({x:x+Math.random()*10-5,y,z:
 const PULL=.6;function pull(t,t0){const tau=t-t0,n=Math.floor(tau/PULL),u=(tau%PULL)/PULL,k=u<.45?0:Math.min(1,(u-.45)/.35);return t0+(n+k*k*(3-2*k))*PULL;}
 // Flugbahn eines Körperteils so wählen, dass es frei landet (nicht auf Schrein, Amphore, Puppe …): Richtung oder Weite anpassen
 function rest(l,k){let x=l.x,y=l.y,z=l.z,vx=l.vx*k,vy=l.vy*k,vz=l.vz;const dt=1/30;for(let i=0;i<240;i++){if(z<=0&&Math.abs(vz)<4)break;x+=vx*dt;y+=vy*dt;vz-=200*dt;z=Math.max(0,z+vz*dt);if(!z&&vz<0){vz=-vz*.35;vx*=.5;vy*=.5;}}return [x,y];}
-function aim(l){const ok=M.sceneNav?.spotClear;if(!ok)return;for(const k of [1,.7,.45,.25,-1,-.6,-.3,0]){const [x,y]=rest(l,k);if(ok(x,y)&&ok(x,y-3)&&ok(x,y+3)){l.vx*=k;l.vy*=k;if(k<0)l.spin=-l.spin;return;}}}
+function aim(l){const ok=M.sceneNav?.spotClear;if(!ok)return;for(const k of [1,.7,.45,.25,-1,-.6,-.3,0,-2,-3,2,3]){const [x,y]=rest(l,k);if(ok(x,y)&&ok(x,y-3)&&ok(x,y+3)){l.vx*=k;l.vy*=k;if(k<0)l.spin=-l.spin;return;}}}
 const lieDir=v=>(v.fallSide||1)*(Math.cos(v.a||0)>=0?1:-1)>=0?1:-1;
-function sever(v,part,dir){const g=v.g;for(const k of M.branches[part]||[part])if(g.body[k])g.body[k].missing=true;const lying=v.down||v.fallTimer>0,ls=lieDir(v),off={head:52,lua:34,rua:34,lt:14,rt:14}[part]??30;
+function sever(v,part,dir){const g=v.g;for(const k of M.branches[part]||[part])if(g.body[k])g.body[k].missing=true;const lying=v.down||v.fallTimer>0,ls=lieDir(v),off={head:v.fallSide===1?63:44,lua:34,rua:34,lt:14,rt:14}[part]??30;
  sc.limbs.push(lying?{x:v.x+ls*off,y:v.y+1,z:6,angle:0,part,skin:g.appearance.skin,hair:g.appearance.hair,g,vx:dir*10,vy:3,vz:20,spin:dir*4}:{x:v.x+dir*4,y:v.y,z:part==='head'?52:38,angle:0,part,skin:g.appearance.skin,hair:g.appearance.hair,g,vx:dir*(part==='head'?26:34),vy:6,vz:part==='head'?40:30,spin:dir*(part==='head'?6:9)});
  aim(sc.limbs[sc.limbs.length-1]);
  if(lying){for(let i=0;i<(part==='head'?16:10);i++)sc.fx.push({x:v.x+ls*off,y:v.y,z:4+Math.random()*6,vx:dir*(8+Math.random()*24),vy:Math.random()*10-5,vz:14+Math.random()*20,life:.6+Math.random()*.5,size:2,color:i%3?'#aa3c36':'#87352e'});}else blood(v.x,v.y,part==='head'?18:12,dir);M.sound?.('sever');}
@@ -180,7 +183,7 @@ function pose(t){const p=sc.p,s=sc.smith;
   if(p.soil?.who===i&&t>=p.soil.t)once('soil',()=>{sc.soilSpot={x:v.x,y:v.y};});
   v.kneeTimer=0;for(const [w,a,b] of p.kneels||[])if(w===i&&between(t,a,b)&&!v.down){v.kneeDuration=b-a;v.kneeTimer=b-t;v.kneeRise=Math.min(.45,(b-a)/2);v.state='idle';v.moveSpeed=0;v.facePain=.6;}
   // Hinfallen (rückwärts gestolpert, Bein ab, Kehle durch): Kopf zeigt in Richtung hd; danach am Boden Arm für Arm weiterkriechen
-  const f=p.falls?.[i];if(f&&t>=f.t){if(v.lieA==null){v.lieA=v.a;v.fallSide=f.hd*(Math.cos(v.lieA)>=0?1:-1);}v.a=v.lieA;const k=t-f.t;v.state='idle';v.moveSpeed=0;v.kneeTimer=0;if(k<.9&&!v.splitPiece){v.fallTimer=2.1-k;v.fallDuration=2.1;}else{v.fallTimer=0;v.down=true;v.facePain=1;if(q.v>1){v.traderPose=Math.floor(t/.6)%2?'pat':'point';v.gest=t*3;}}}});
+  const f=p.falls?.[i];if(f&&t>=f.t){if(v.lieA==null){if(f.fs){v.fallSide=f.fs;v.lieA=(f.fs===1)===(f.hd>0)?0:Math.PI;}else{v.lieA=v.a;v.fallSide=f.hd*(Math.cos(v.lieA)>=0?1:-1);}}v.a=v.lieA;const k=t-f.t;v.state='idle';v.moveSpeed=0;v.kneeTimer=0;if(k<.9&&!v.splitPiece){v.fallTimer=2.1-k;v.fallDuration=2.1;}else{v.fallTimer=0;v.down=true;v.facePain=1;if(q.v>1){v.traderPose=Math.floor(t/.6)%2?'pat':'point';v.gest=t*3;}}}});
  for(const l of sc.legs||[]){l.state='idle';l.moveSpeed=0;}
  if(!s)return;
  // Schmied
@@ -201,7 +204,7 @@ function pose(t){const p=sc.p,s=sc.smith;
    if(k.part==='bisect'){const hd=k.hd||dir;v.lieA=hd>0?0:Math.PI;v.a=v.lieA;v.fallSide=1;v.down=true;v.splitPiece='upper';v.bleeding=true;v.stagger=0;
     const legs={...v,id:v.id+'-beine',g:v.g,splitPiece:'lower',bloodMarks:{},traderPose:null};(sc.legs??=[]).push(legs);sc.splitAt={x:v.x,y:v.y,hd};
     for(let n=0;n<26;n++)sc.fx.push({x:v.x+hd*25,y:v.y,z:6+Math.random()*10,vx:(Math.random()-.5)*70,vy:Math.random()*14-7,vz:20+Math.random()*34,life:.7+Math.random()*.5,size:2,color:n%3?'#aa3c36':'#87352e'});M.sound?.('sever');return;}
-   sever(v,k.part,dir);if(k.part==='head'){v.g.dead=true;v.down=true;v.kneeTimer=0;v.fallTimer=0;if(v.lieA==null){v.lieA=v.a;v.fallSide=(k.hd||dir)*(Math.cos(v.a)>=0?1:-1);}}else if(/^(lt|rt|lsh|rsh)$/.test(k.part)){if(!p.falls[k.who])p.falls[k.who]={t:w+.12,hd:k.hd||dir};}else v.stagger=.5;});}
+   sever(v,k.part,dir);if(k.part==='head'){v.g.dead=true;v.down=true;v.kneeTimer=0;v.fallTimer=0;if(v.lieA==null){v.lieA=v.a;v.fallSide=(k.hd||dir)*(Math.cos(v.a)>=0?1:-1);}}else if(/^(lt|rt|lsh|rsh)$/.test(k.part)){if(!p.falls[k.who])p.falls[k.who]={t:w+.12,hd:k.hd||dir,fs:1};}else v.stagger=.5;});}
  if(sc.pre&&t<0)sc.vic.forEach((v,i)=>{const q=at(sc.pre.routes[i],t);v.x=q.x;v.y=q.y;v.state=q.v>3?'move':'idle';v.moveSpeed=q.v>3?10:0;v.phase=t*7+i;v.a=0;v.retreat=0;v.facePain=0;});
  crowd(t);
  if(t>=p.door)once('door',()=>{M.sound?.('heavy');dust(748,238,20);sc.view?.classList?.remove('no-smith-song');});}

@@ -73,13 +73,13 @@ function runAt(t){const th=Math.PI*.15+RUN.w*(t-RUN.t0);return {x:RUN.c[0]+Math.
 const P1=runAt(STRIKE1),SPOT={x:P1.x-15*Math.sign(P1.dx||1),y:P1.y},ARCHER_WAY=[[840,298],[857,291],[854,268],[822,262]],SMITH_WAY=[[792,262],[764,265],[766,298],[P1.x-15*Math.sign(P1.dx||1),P1.y]],CRAWL=Math.sign(P1.dx||1),BACK=CUT+3.5,DOOR_T=BACK+Math.hypot(748-(P1.x+CRAWL*((CATCH-CRAWL0)*CRAWL_V-14)),240-P1.y)/45,END=DOOR_T+.9;
 function lines(){return [
  [0.3,3.3,'cap',smithName()+' hämmert. '+sc.name+' schleicht sich an.'],
- [9.4,11.8,'s','Soso … Ihr wolltet Euren hübschen kleinen Bogen also einmal an mir ausprobieren?'],
+ [9.4,11.8,'s','Soso … Du wolltest deinen hübschen kleinen Bogen also einmal an mir ausprobieren?'],
  [11.85,12.35,'s','Wie überaus reizend. Das war echt ein guter Schuss.'],
- [12.4,15.2,'s','Wir hätten doch einfach drüber sprechen können, wenn wir Differenzen haben.'],
+ [12.4,15.2,'s','Wir hätten doch einfach drüber reden können, wenn dich etwas stört.'],
  [15.5,18,'a','Es tut mir so leid … es tut mir so leid … bitte verschone mich!'],
  [18.2,20.4,'s','Mach dir keinen Kopf. Ich wollte doch nur mit dir darüber sprechen.'],
- [20.4,22.6,'s','Damit wir unsere Differenzen aus dem Weg bekommen. Komm doch einfach mal her.'],
- [24.9,27.1,'s','Komm, gib mir mal deine Hand. Wir schaffen diese Differenzen aus dem Weg.'],
+ [20.4,22.6,'s','Unter Freunden räumt man so etwas aus dem Weg. Komm doch einfach mal her.'],
+ [24.9,27.1,'s','Komm, gib mir mal deine Hand. Wir bringen das jetzt in Ordnung.'],
  [27.1,28.6,'s','Dann kommen wir besser miteinander aus.'],
  [31.4,33.4,'a','AAAAAAAAAAH!'],[33.6,35.4,'a','AAAAAAAAAAAAAH!'],
  [36.2,38.3,'s','Ich finde gut, dass wir miteinander gesprochen haben.'],
@@ -119,10 +119,10 @@ function pose(t){const s=sc.s,a=sc.a;
  if(between(t,STRIKE1,STRIKE1+.25)){s.swingKind='slash';s.swingMax=.25;s.swing=STRIKE1+.25-t;}
  if(between(t,STRIKE1+.4,STRIKE1+1.2))s.state='celebrate';
  const crawlX=t2=>{const tau=Math.max(0,Math.min(t2,CATCH)-CRAWL0),n=Math.floor(tau/PULL),u=(tau%PULL)/PULL,k=u<.45?0:Math.min(1,(u-.45)/.35),e=k*k*(3-2*k);return P1.x+CRAWL*(n+e)*PULL*CRAWL_V;};
- if(between(t,STRIKE1+1.6,CUT)){const gap=lerp(40,34,(t-STRIKE1-1.6)/(CATCH-STRIKE1-2.4))+(t>CATCH-.8?lerp(0,-20,(t-CATCH+.8)/.8):0),goal=crawlX(t)-CRAWL*gap,k=Math.min(1,(t-STRIKE1-1.6)/1.2);s.x=lerp(SPOT.x,goal,k);s.y=lerp(SPOT.y,crawlY(t),k);s.a=CRAWL>0?0:Math.PI;if(t<CATCH){s.state='move';s.moveSpeed=6;s.phase=t*3;}}
+ if(between(t,STRIKE1+1.6,CUT)){const gap=lerp(40,34,(t-STRIKE1-1.6)/(CATCH-STRIKE1-2.4))+(t>CATCH-.8?lerp(0,-45,(t-CATCH+.8)/.8):0),goal=crawlX(t)-CRAWL*gap,k=Math.min(1,(t-STRIKE1-1.6)/1.2);s.x=lerp(SPOT.x,goal,k);s.y=lerp(SPOT.y,crawlY(t),k)-(t>CATCH-.8?5*Math.min(1,(t-CATCH+.8)/.8):0);s.a=CRAWL>0?0:Math.PI;if(t<CATCH){s.state='move';s.moveSpeed=6;s.phase=t*3;}}
  if(between(t,CUT-.35,CUT)){s.technique='overhead';s.windMax=.35;s.wind=CUT-t;}
  if(between(t,CUT,CUT+.25)){s.swingKind='slash';s.swingMax=.25;s.swing=CUT+.25-t;}
- const stand={x:crawlX(CUT)-CRAWL*14,y:LANE};
+ /* Am Boden köpfen: hinter dem Liegenden stehen, Klinge trifft den Hals (Hals ≈ 31 vor den Füßen, Klingenende ≈ 20 vor dem Schmied) */const stand={x:crawlX(CUT)+CRAWL*11,y:LANE-5};
  if(between(t,CUT+.25,BACK)){s.x=stand.x;s.y=stand.y;s.a=CRAWL>0?0:Math.PI;}
  if(between(t,CUT+.6,CUT+1.3))s.forgePose='inspect';
  if(between(t,CUT+1.9,CUT+2.8))s.forgePose='sip';
@@ -159,6 +159,13 @@ function pose(t){const s=sc.s,a=sc.a;
   else if(t<FR+2.4){f.x=sx;f.y=fy;f.a=CRAWL>0?Math.PI:0;}
   else if(t<FR+6.9){f.x=sx;f.y=fy;f.a=i?(CRAWL>0?Math.PI:0):(CRAWL>0?0:Math.PI);if(t<FR+3.4){f.a=i?(CRAWL>0?0:Math.PI):(CRAWL>0?Math.PI:0);f.facePain=.3;}if(between(t,FR+2.4,FR+3.4))f.traderPose='inspect';}
   else{const k=(t-FR-6.9)/2.2;f.x=lerp(sx,sx+CRAWL*160,k);f.y=fy;f.state='move';f.a=CRAWL>0?0:Math.PI;f.retreat=1;}}
+ // Die beiden Freunde warten: einer scheißt sich ein, der andere kotzt auf den Boden
+ {const b=sc.fr.b,c=sc.fr.c,SOIL=STRIKE1+6,PUKE=[STRIKE1+6.7,STRIKE1+8.5];
+  if(b&&t>=SOIL&&b.x>0)once('frsoil',()=>{sc.frSoil={x:b.x,y:b.y,t};});
+  if(b&&sc.frSoil&&b.state==='move'&&Math.floor(t*5)!==sc.frDrip){sc.frDrip=Math.floor(t*5);(sc.frDrips??=[]).push({x:b.x+(Math.cos(b.a)>=0?-3:3),y:b.y});}
+  if(c&&c.x>0&&between(t,PUKE[0],PUKE[1])){/* dreht sich weg vom Freund, sinkt auf die Knie und kotzt auf den Boden */c.a=CRAWL>0?0:Math.PI;c.facePain=1;c.state='idle';c.kneeDuration=PUKE[1]-PUKE[0];c.kneeTimer=PUKE[1]-t;c.kneeRise=.4;const face=Math.cos(c.a)>=0?1:-1,h=headPoint(c),u=(t-PUKE[0])/(PUKE[1]-PUKE[0]);h.y+=Math.min(1,(t-PUKE[0])/.4)*11;
+   if(u<.85&&Math.floor(t*30)%2===0)for(let n=0;n<2;n++)sc.fx.push({x:h.x+face*5,y:c.y+.5,z:Math.max(6,c.y-h.y-6),vx:face*(10+Math.random()*14),vy:Math.random()*4-2,vz:-4+Math.random()*8,life:.8,size:2,color:['#b9b25a','#8f9a3e','#d6cf7a'][(n+Math.floor(t*7))%3]});
+   once('puke',()=>{sc.puke={x:c.x+face*13,y:c.y+1,t};});}else if(c)c.kneeTimer=0;}
  // ---- Ereignisse ----
  if(t>=6)once('shot',()=>{sc.arrow={t0:6,x0:a.x-12,y0:a.y-36};M.sound?.('stick');});
  if(t>=HIT)once('hit',()=>{sc.arrow=null;sc.stuck=14;});
@@ -170,7 +177,7 @@ function pose(t){const s=sc.s,a=sc.a;
  if(t>=OVEN[1])once('char',()=>{sc.charred=true;});
  if(t>=STRIKE1+.1)once('legs',()=>{sever(a,'lt',CRAWL,{vx:40,vz:30});sever(a,'rt',-CRAWL,{vx:30,vz:36});M.sound?.('die');});
  if(between(t,STRIKE1+.4,CUT)&&Math.floor(t*6)!==sc.lastDrop){sc.lastDrop=Math.floor(t*6);sc.trail.push({x:a.x+hipOff(a,t)+(Math.random()*4-2),y:a.y+(Math.random()*3-1),w:2+Math.floor(Math.random()*3)});}
- if(t>=CUT+.1)once('cut',()=>{const g=a.g;for(const k of M.branches.head)g.body[k].missing=true;const burnt={...g,appearance:{...g.appearance,skin:'#3b2c24',shade:'#2e231d',hair:'#17110e'}};const h=CRAWL;sc.limbs.push({x:a.x+h*30,y:a.y,z:8,angle:0,part:'head',skin:'#3b2c24',hair:'#17110e',g:burnt,vx:h*26,vy:3,vz:42,spin:h*7});burst(a.x+h*24,a.y-4,22,['#aa3c36','#87352e','#c24a3c'],60,24);g.dead=true;a.down=true;a.traderPose=null;M.sound?.('sever');});
+ if(t>=CUT+.1)once('cut',()=>{const g=a.g;for(const k of M.branches.head)g.body[k].missing=true;const burnt={...g,appearance:{...g.appearance,skin:'#3b2c24',shade:'#2e231d',hair:'#17110e'}};const h=CRAWL;sc.limbs.push({x:a.x+h*44,y:a.y,z:8,angle:0,part:'head',skin:'#3b2c24',hair:'#17110e',g:burnt,vx:h*26,vy:3,vz:42,spin:h*7});burst(a.x+h*31,a.y-4,22,['#aa3c36','#87352e','#c24a3c'],60,24);g.dead=true;a.down=true;a.traderPose=null;M.sound?.('sever');});
  if(between(t,HIT,12)&&Math.floor(t*5)!==sc.lastSpurt){sc.lastSpurt=Math.floor(t*5);const h=headPoint(s),dir=Math.cos(s.a)>=0?-1:1;for(let n=0;n<3;n++)sc.fx.push({x:h.x+dir*3,y:s.y,z:s.y-h.y+Math.random()*2,vx:dir*(14+Math.random()*16),vy:Math.random()*4-2,vz:12+Math.random()*16,life:.7,size:2,color:n%2?'#aa3c36':'#87352e'});}
  if(t>=HIT)once('silence',()=>sc.view?.classList?.add('scene-silence'));if(t>=9.4)once('sound-back',()=>sc.view?.classList?.remove('scene-silence'));
  if(t>=CUT+1.4)once('sheath',()=>{s.g.enemyGear.secondary=null;M.sound?.('block');});
@@ -201,7 +208,12 @@ function paint(){const c=$('archerPlotCanvas');if(!c?.getContext)return;const g=
  /* Blutspur aus einzelnen Tropfen; nur nahe Tropfen werden zu einer kurzen Schliere verbunden (kein langer Faden) */for(let i=0;i<sc.trail.length;i++){const d=sc.trail[i],e=sc.trail[i-1];if(e&&Math.hypot(d.x-e.x,d.y-e.y)<9)r(Math.min(d.x,e.x),Math.round((d.y+e.y)/2),Math.abs(d.x-e.x)+1,1,'#7c2e28');r(d.x-1,d.y,d.w||3,2,i%4?'#9b3530':'#87352e');}
  if(a.down&&!a.g.body.head.missing||sc.gutsOut){sc.gutsOut=true;const back=-CRAWL,len=Math.min(48,10+(t-STRIKE1)*4),x0=a.x+hipOff(a,t)+back,y0=a.y;for(let i=0;i<len;i+=1){const w=Math.sin(i*.38+t*1.3)*2.2+Math.sin(i*.9)*.8;r(x0+back*i,y0+w+1,3,2,'#5e1f22');r(x0+back*i,y0+w-1,3,3,i%6<3?'#e3a1a3':'#c06a74');}for(let j=0;j<3;j++){const i=Math.floor(len*(.3+j*.25));r(x0+back*i-1,y0+Math.sin(i*.38+t*1.3)*2.2-2,4,4,'#d98a90');}r(x0-2,y0-2,5,4,'#7c2e28');}
  if(sc.bow){const b=sc.bow;if(b.def==='crossbow'){r(b.x-6,b.y-1,13,2,'#6b4a2e');r(b.x+4,b.y-5,2,9,'#4a3324');r(b.x+5,b.y-5,1,9,'#c9c6ac');}else{for(let n=-7;n<=7;n++)r(b.x+n,b.y-Math.round(3-Math.abs(n)*.4),1,2,'#7a5232');r(b.x-7,b.y+1,15,1,'#d9d2bb');}}
+ if(sc.puke){const q=sc.puke,k=Math.min(1,(t-q.t)/1.6);r(q.x-4-k*3,q.y,Math.round(6+k*8),2,'#9a9440');r(q.x-2,q.y-1,Math.round(3+k*5),1,'#c9c06a');r(q.x+2,q.y+1,2,1,'#7d7a33');}
+ if(sc.frSoil){const q=sc.frSoil,k=Math.min(1,(t-q.t)/1.2);r(q.x-4,q.y+1,Math.round(5+k*5),2,'#5a3d1e');r(q.x-2,q.y,Math.round(2+k*3),1,'#6e4a24');for(const d of sc.frDrips||[])r(d.x-1,d.y,3,1,'#5a3d1e');}
  const list=[s,a,sc.fr.b,sc.fr.c].filter(p=>p&&!p.hidden&&p.x>-60).sort((p,q)=>p.y-q.y);M.renderForgeActors(g,list);
+ // Fleck hinten an der Hose und Gestank beim Eingeschissenen
+ if(sc.frSoil&&sc.fr.b&&sc.fr.b.x>0){const v=sc.fr.b,k=Math.min(1,(t-sc.frSoil.t)/1.2),rear=Math.cos(v.a)>=0?-1:1;r(v.x+rear*2-4,v.y-21,8,Math.round(4+k*3),'#3f2914');r(v.x+rear*2-3,v.y-20,6,Math.round(3+k*3),'#6b4520');if(k>.3){r(v.x+rear*3,v.y-14,2,Math.round(4+k*8),'#5a3d1e');r(v.x+rear*3-3,v.y-14,1,Math.round(3+k*6),'#5a3d1e');}
+  if(t-sc.frSoil.t<10)for(let i=0;i<3;i++){const u=(t*.8+i/3)%1,x=v.x+rear*3+i*3-3+Math.sin(u*9+i)*2,y=v.y-24-u*22;g.globalAlpha=.7*(1-u);r(x,y,1,3,'#8fa35a');r(x+1,y-3,1,3,'#8fa35a');g.globalAlpha=1;}}
  // Kopf in der Esse: Flammen vor dem Kopf
  if(between(t,OVEN[0],OVEN[1])){const h=headPoint(a);for(let n=0;n<7;n++){const u=Math.sin(t*23+n*1.7);r(h.x-8+n*2.4,h.y-4-Math.abs(u)*7-(n%3)*2,3,6+Math.abs(u)*4,n%3===0?'#fff0c0':n%2?'#f4d37a':'#e2ab5c');}r(h.x-7,h.y+3,14,3,'#c8642e');g.globalAlpha=.5;r(h.x-9,h.y-14,18,6,'#7a7468');g.globalAlpha=1;}
  // Pfeil im Flug und im Hinterkopf
