@@ -260,14 +260,16 @@ function playFinale(){const e=firstEntry();play('hall',[
  {dur:1},
  {say:'So. Genug geheult. Wir haben Arbeit.',face:0}
 ],{label:'Abschluss',smith:{x:240,y:330},cam:{x:200,y:140},list:e?[e]:[],done:finishTutorial});}
-function finishTutorial(){setStage('done');hideHint();M.ui.click('nav:home');const b=document.createElement('div');b.className='hall-unlock';b.setAttribute('role','status');b.innerHTML='<div><b>HALL OF THE FALLEN FREIGESCHALTET</b><span>DEATH IS PERMANENT. LEGENDS ARE NOT FORGOTTEN.</span></div>';document.body.appendChild(b);const off=()=>b.remove();b.addEventListener('click',off);setTimeout(off,5200);}
+// Nach dem Abschluss kommt nach etwa zehn Sekunden auf dem Spielfeld der Sklavenhändler (seine Einführung zentriert die Kamera wie gehabt)
+let traderWait=0;
+function finishTutorial(){setStage('done');traderWait=10;hideHint();M.ui.click('nav:home');const b=document.createElement('div');b.className='hall-unlock';b.setAttribute('role','status');b.innerHTML='<div><b>HALL OF THE FALLEN FREIGESCHALTET</b><span>DEATH IS PERMANENT. LEGENDS ARE NOT FORGOTTEN.</span></div>';document.body.appendChild(b);const off=()=>b.remove();b.addEventListener('click',off);setTimeout(off,5200);}
 // Warten auf den Klick ans Tor
 function waitForGate(){if(M.ui.getPage()!=='home')M.ui.click('nav:home');setTimeout(()=>M.ludus?.focus?.(GX,GY,1.6),200);}
 let hint=null;function showHint(text){if(!hint){hint=document.createElement('div');hint.id='hallHint';hint.className='hall-hint';hint.setAttribute('role','status');document.body.appendChild(hint);}if(hint.textContent!==text)hint.textContent=text;hint.hidden=false;}
 function hideHint(){if(hint)hint.hidden=true;}
 // Takt: startet, setzt fort, zeigt Hinweise
 let settle=0,clock=0;
-const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(film){hideHint();if(document.hidden)return;clock+=dt;if(clock>=1/30){stepFilm(Math.min(clock,.1));clock=0;}return;}
+const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(traderWait>0&&!film&&M.ui.getPage()==='home'&&!document.hidden)traderWait=Math.max(0,traderWait-dt);if(film){hideHint();if(document.hidden)return;clock+=dt;if(clock>=1/30){stepFilm(Math.min(clock,.1));clock=0;}return;}
  const h=H(),st=h.tut,home=M.ui.getPage()==='home';
  if((st==='open1'||st==='open2')&&home&&!busy())showHint(st==='open1'?'Klicke auf das Tor der HALL OF THE FALLEN.':'Besuche die HALL OF THE FALLEN.');else hideHint();
  if(st==='done'||M.benchmarkActive||!S.lanista)return;
@@ -281,5 +283,5 @@ const click=M.schoolClick;M.schoolClick=action=>{if(action==='hall:tap'){if(film
  return click(action);};
 // Musik: in der Halle immer „Aula Lorum“; im Tutorial die Schmied-Musik ab dem Durchteilen, bis man wieder in die Halle geht; sonst Stadtmusik
 function music(){if(film)return film.kind==='hall'?'hall':'home';if(M.ui.getPage?.()==='fallen')return 'hall';const st=H().tut,sc=M.smithWrath?.scene;if(sc?.p?.tut)return sc.t>=(sc.p.kills[0]?.swing??1e9)?'smith':'home';if(st==='open2')return 'smith';if(gateAnim&&st==='open1')return 'home';return '';}
-M.hall={music,play:{gate:playGate,empty:playEmpty,exec:playExec,visit:playVisit,finale:playFinale,finish:finishTutorial},guide,tierFor,entries,openDetail,paintHall,hallBg,sprite,state:H,get film(){return film;},stepFilm,done,setStage,recruit,TOMBS,slots:SLOTS,start:()=>{if(!H().tut){setStage('gate1');playGate();}}};
+M.hall={traderReady:()=>done()&&traderWait<=0,get traderWait(){return traderWait;},music,play:{gate:playGate,empty:playEmpty,exec:playExec,visit:playVisit,finale:playFinale,finish:finishTutorial},guide,tierFor,entries,openDetail,paintHall,hallBg,sprite,state:H,get film(){return film;},stepFilm,done,setStage,recruit,TOMBS,slots:SLOTS,start:()=>{if(!H().tut){setStage('gate1');playGate();}}};
 })();

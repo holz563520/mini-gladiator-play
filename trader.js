@@ -146,7 +146,7 @@ function resume(){if(T.intro==='active'&&!tut){if(!here()){T.intro='done';M.pers
 // ---------- Einhängen: Takt, Klicks, Tageswechsel ----------
 const tick=M.ludusTick;M.ludusTick=dt=>{const step=Math.min(dt,.1);
  if(typeof document==='undefined'||!document.hidden){const busy=S.battle||M.intro?.active?.()||window.ArenaTheoryIntro?.active?.(),F=M.workshop?.state;
-  if(T.intro===''&&S.lanista&&!busy&&page()!=='profiles'&&(!F||F.intro==='done'||!F.intro)&&!M.forgeIntro?.scene&&(!M.hall||M.hall.done())){settle+=step;if(settle>.9)startTutorial();}else settle=0;
+  if(T.intro===''&&S.lanista&&!busy&&page()!=='profiles'&&(!F||F.intro==='done'||!F.intro)&&!M.forgeIntro?.scene&&(!M.hall||(M.hall.traderReady?.()??M.hall.done()))){settle+=step;if(settle>.9)startTutorial();}else settle=0;
   if(!busy){resume();if(onHome()){ensureScene();update(step);}else if(sc){if(sc.mode==='march'){T.arrived=T.day;}sc=null;}tutorial(step);}else hideBar();}
  tick?.(dt);};
 const click=M.schoolClick;M.schoolClick=action=>{
