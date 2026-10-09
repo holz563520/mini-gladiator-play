@@ -11,3 +11,15 @@
 .wanderer-answers [data-action="wanderer:say:schmied"]{border-color:#e0b565;color:#f2d38c}
 .plot-choices{display:grid;gap:10px;margin:6px 0 4px}.plot-choices[hidden]{display:none}.plot-choices .btn{display:grid;gap:4px;padding:12px 14px;font-size:16px;line-height:1.35;white-space:normal}.plot-choices small{font-size:13px;font-weight:400;opacity:.85}.plot-hint{font-size:13px!important;opacity:.7;min-height:0!important;margin:4px 0!important}.plot-talk-scene canvas{cursor:pointer}
 .plot-talk-scene{background:#101816}
+/* Sprechblasen über der Szene (verdecken nichts) */
+.scene-bubble-slot{min-height:122px;display:flex;align-items:flex-end;justify-content:center;padding:6px 4px 14px;box-sizing:border-box}
+.scene-bubble{position:relative;max-width:100%;background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45);padding:7px 14px 9px;font-family:'Courier Prime',monospace;text-align:left;line-height:1.25}
+.scene-bubble[hidden]{display:none}
+.scene-bubble b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.75;margin-bottom:2px}
+.scene-bubble span{display:block;font-size:18px;font-weight:700}
+.scene-bubble i{position:absolute;right:6px;bottom:2px;font-style:normal;font-size:11px;opacity:0}
+.scene-bubble.waiting i{animation:bubbleBlink .9s steps(2) infinite}
+.scene-bubble.loud{background:#f4d37a}
+.scene-bubble::after{content:'';position:absolute;top:100%;left:var(--tail,50%);transform:translateX(-50%);border:9px solid transparent;border-top-color:#17201c}
+@keyframes bubbleBlink{0%{opacity:0}100%{opacity:.9}}
+@media (max-width:480px){.scene-bubble-slot{min-height:104px}.scene-bubble span{font-size:15px}}
