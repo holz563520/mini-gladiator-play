@@ -185,7 +185,7 @@ function pose(t){const s=sc.s,a=sc.a;
  if(t>=CUT+2.4)once('snap',()=>{sc.stuck=3;const dir=Math.cos(s.a)>=0?-1:1;sc.fx.push({x:s.x+dir*8,y:s.y,z:58,vx:dir*20,vy:2,vz:10,life:1.4,size:2,color:'#a88c60'},{x:s.x+dir*11,y:s.y,z:58,vx:dir*22,vy:2,vz:12,life:1.4,size:2,color:'#a88c60'});M.sound?.('stick');});}
 // Schrittbild wie im Kampf: Beinphase folgt der zurückgelegten Strecke, Schrittweite dem Tempo (Ludus-Maßstab 0,6).
 function gait(list,ds){sc.odo??={};for(const p of list){const o=sc.odo[p.id]??={x:p.x,y:p.y,d:0};const dx=p.x-o.x,d=Math.hypot(dx,p.y-o.y);o.x=p.x;o.y=p.y;if(p.state==='move'&&d>.05&&d<40){o.d+=d;p.phase=o.d*.267;p.moveSpeed=Math.max(8,d/Math.max(ds,1e-3)/.6);const side=Math.abs(dx)/d;o.side=(o.side??side)*.8+side*.2;p.gaitSpeed=p.moveSpeed*(.28+.72*o.side);}else p.gaitSpeed=undefined;}}
-function step(dt){const t0=sc.t,L=lines().find(([a1,b1,who])=>who!=='cap'&&t0>=a1&&t0<b1);
+function step(dt){if(!sc.turnDone&&!sc.turn&&sc.t>=TURN.start)sc.turn={t:0};if(sc.turn){turnStep(dt);return;}const t0=sc.t,L=lines().find(([a1,b1,who])=>who!=='cap'&&t0>=a1&&t0<b1);
  if(L&&sc.cur?.key!==L[0]+L[3])sc.cur={key:L[0]+L[3],b:L[1],who:L[2],text:L[3],shown:0};if(sc.cur)sc.cur.shown+=dt;
  // Ruhige Dialogstellen warten, bis die Blase gelesen ist (oder getippt wurde); Schreie in der Bewegung halten nichts auf, bleiben aber lesbar stehen.
  let next=t0+dt*rate(t0);sc.waiting=false;if(L&&sc.cur&&!/AAA/.test(L[3])&&next>=L[1]&&sc.cur.shown<need(L[3])&&!sc.cur.ack){next=L[1]-1e-4;sc.waiting=true;}
@@ -201,8 +201,123 @@ function step(dt){const t0=sc.t,L=lines().find(([a1,b1,who])=>who!=='cap'&&t0>=a
  const k=Math.min(1,dt*(t>=HIT&&t<7.6?3.5:2.2));sc.cam.x+=(goal.x-sc.cam.x)*k;sc.cam.y+=(goal.y-sc.cam.y)*k;sc.cam.vw+=(goal.vw-sc.cam.vw)*k;
  sc.say=sc.cur?{who:sc.cur.who,text:sc.cur.text}:null;if(!sc.say)for(const [a1,b1,who,text] of lines())if(who==='cap'&&between(t,a1,b1))sc.say={who,text};
  paint();if(t>=END&&!sc.cur)end();}
+// ---------- Nahaufnahme nach dem Treffer: Hinterkopf mit Pfeil → Kamera fährt um den Kopf → Augen zu, Stille → Augen auf, Zorn ----------
+// Das Bild wird in 120 × 120 Pixeln gezeichnet; der Kopf ist eine Kugel, Gesicht, Ohren, Haare und Pfeil sitzen an festen Längengraden.
+const TURN={start:HIT+.55,back:1.8,orbit:3.4,still:3.6,wake:.45,hold:1.7};
+TURN.len=TURN.back+TURN.orbit+TURN.still+TURN.wake+TURN.hold;
+function turnPaint(){const c=$('archerPlotCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),w=c.width,h=c.height,T=sc.turn.t,A=W().master.appearance||{},skin=A.skin||'#b8875f',shade=A.shade||'#8d6446',hair=A.hair||'#3b2a1e';
+ const FW=120,FH=120,b=sc.turnBuf||(sc.turnBuf=document.createElement('canvas'));if(b.width!==FW){b.width=FW;b.height=FH;}const q=b.getContext('2d');q.imageSmoothingEnabled=false;q.clearRect(0,0,FW,FH);
+ const r=(x,y,ww,hh,col)=>{q.fillStyle=col;q.fillRect(Math.round(x),Math.round(y),Math.round(ww),Math.round(hh));};
+ const mix=(a,c2,k)=>{const p=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16));const x=p(a),y=p(c2);return '#'+x.map((v,i)=>Math.round(v+(y[i]-v)*k).toString(16).padStart(2,'0')).join('');};
+ const ease=v=>v<0?0:v>1?1:v*v*(3-2*v),wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
+ // Zeitachse
+ const o1=TURN.back,o2=o1+TURN.orbit,o3=o2+TURN.still,o4=o3+TURN.wake;
+ const view=Math.PI*(1-ease((T-o1)/TURN.orbit)),wake=ease((T-o3)/TURN.wake),zoom=1+.08*ease((T-o1)/TURN.orbit)+(T>=o3?.05*Math.max(0,1-(T-o3)/.3):0),shake=T>=o3&&T<o3+.35?(Math.random()-.5)*3:0;
+ // Hintergrund: Glut der Esse, Werkstatt im Dunkeln
+ r(0,0,FW,FH,'#1c1410');const bg=q.createRadialGradient(20+60*(1-view/Math.PI),30,2,60,40,90);bg.addColorStop(0,'rgba(232,140,60,.55)');bg.addColorStop(1,'rgba(0,0,0,0)');q.fillStyle=bg;q.fillRect(0,0,FW,FH);
+ for(let i=0;i<6;i++){const k=(T*.4+i/6)%1;r(10+i*19+Math.sin(T+i)*3,FH-10-k*90,1,1,'#f4a14a');}
+ // Schultern: nackte Haut mit Lederschürze und Trägern (Schmied)
+ const cx=60,top=24,R=26,lightK=.5+.5*Math.cos(view);
+ r(18,98,84,22,skin);r(18,98,84,3,mix(skin,'#ffffff',.12));r(70,98,32,22,shade);r(40,100,40,20,'#5a3a24');r(44,98,6,22,'#3e2818');r(70,98,6,22,'#3e2818');r(42,108,36,2,'#6e4a2e');
+ r(50,82,20,20,shade);r(52,82,15,18,skin);
+ // Kopf zeilenweise: Längengrad je Pixel bestimmt Haut, Haar, Schatten
+ const style=(A.style??0)%6,bald=style===2,hairTop=bald?3:style===4?6:9,beard=(A.beard??0)%4;
+ const half=y=>{const u=(y-28)/34;let hw=R*Math.sqrt(Math.max(0,1-u*u));if(y>48)hw-=(y-48)*.28;return Math.max(0,hw);};
+ const d=wrap(Math.PI-view),depth=Math.cos(d),sx=Math.sin(d),hwA=half(18),ex=cx+sx*hwA,ey=top+18,L=34,wob=Math.sin(T*22)*Math.max(0,1-T/1.2)*1.2;
+ const lat=.45,tipX=ex+(sx*Math.cos(lat)+Math.cos(d)*Math.sin(lat)*0)*L+Math.cos(view)*-1*L*.32,tipY=ey-L*.5+wob;
+ const arrow=()=>{const n=40;for(let i=0;i<=n;i++){const k=i/n;r(ex+(tipX-ex)*k,ey+(tipY-ey)*k,2,2,'#8a6a3a');r(ex+(tipX-ex)*k,ey+(tipY-ey)*k,1,1,'#b08848');}
+  // Federn am Ende: von vorn gesehen ein Kreuz, von der Seite ein Fächer
+  if(Math.abs(depth)>.75){const f=depth>0?5:3;r(tipX-f,tipY,f*2+1,2,'#e8e2d0');r(tipX,tipY-f,2,f*2+1,'#e8e2d0');r(tipX-f+1,tipY-f+1,2,2,'#cfc6b0');r(tipX+f-1,tipY+f-1,2,2,'#cfc6b0');r(tipX-1,tipY-1,3,3,'#a33a2c');}
+  else{for(let i=0;i<6;i++){r(tipX-sx*i-1,tipY-2-i*.2,2,1,'#e8e2d0');r(tipX-sx*i-1,tipY+2+i*.2,2,1,'#e8e2d0');}r(tipX-1,tipY-1,2,2,'#a33a2c');}};
+ if(depth<=0)arrow();
+ for(let y=-6;y<64;y++){const hw=half(y);if(hw<1)continue;for(let x=Math.floor(-hw);x<Math.ceil(hw);x++){const s=Math.max(-1,Math.min(1,(x+.5)/hw)),phi=wrap(view+Math.asin(s)),back=Math.abs(phi)>1.95,cap=y<hairTop+Math.abs(s)*4;
+   let col=skin;const lit=x<-hw*.35,dark=x>hw*.45;if(!bald&&(cap||(back&&y<46-(style===1||style===5?-8:0))))col=hair;else if(style===3&&y<0)col=hair;
+   if(beard===2&&Math.abs(phi)<1.25&&y>42)col=hair;if(beard===3&&Math.abs(phi)<.35&&y>50)col=hair;
+   if(col===skin){if(dark)col=shade;else if(lit&&lightK>.2)col=mix(skin,'#ffe6c8',.18);}else if(dark)col=mix(hair,'#000000',.3);
+   r(cx+x,top+y,1,1,col);}}
+ if(style===3)r(cx-4+Math.round(Math.sin(view)*0),top-10,8,6,hair);
+ // Merkmale an Längengraden: sichtbar, wenn zum Betrachter gedreht
+ const at=(phi,y,fn)=>{const d=wrap(phi-view);if(Math.cos(d)<=.08)return;const hw=half(y),x=cx+Math.sin(d)*hw;fn(x,Math.cos(d));};
+ // Ohren
+ for(const side of [-1,1])at(side*Math.PI/2,28,(x,k)=>{r(x-2,top+22,Math.max(2,4*k+1),12,shade);r(x-1,top+25,Math.max(1,2*k),6,mix(shade,'#2a160e',.3));});
+ // Gesicht (nur wenn nach vorn gedreht)
+ const dark2=mix(shade,'#2a160e',.3),lip=mix(shade,'#8a2a24',.45);
+ // Augen: geschlossen (Lidstrich) → weit auf, zornig, rote Ränder
+ for(const side of [-1,1])at(side*.42,24,(x,k)=>{const ew=Math.max(2,Math.round(11*k)),ex=Math.round(x-ew/2),ey=top+23;
+  if(wake<=0){r(ex,ey+2,ew,1,dark2);r(ex,ey+1,ew,1,shade);}
+  else{const open=Math.round(1+wake*4);r(ex,ey-1,ew,open+2,dark2);r(ex,ey,ew,open,'#f0e6d0');r(ex,ey+open-1,ew,1,'#c86a5e');const ix=Math.round(x-1-side*.5);r(ix,ey+Math.max(0,open-3),2,Math.min(2,open),'#140b07');r(ex,ey,1,open,'#c86a5e');r(ex+ew-1,ey,1,open,'#c86a5e');}
+  // Brauen: ruhig gerade → tief und schräg nach innen
+  const by=top+19;for(let i=0;i<ew+2;i++){const inner=side<0?i/(ew+1):1-i/(ew+1);r(ex-1+i,by+Math.round(inner*wake*4-(1-inner)*wake*1),1,2+Math.round(wake),hair);}});
+ // Zornesfalten zwischen den Brauen und auf der Stirn
+ if(wake>0)at(0,20,(x,k)=>{if(k<.6)return;r(x-1,top+17,1,5,dark2);r(x+1,top+17,1,5,dark2);for(let i=0;i<3;i++)r(x-8,top+8+i*3,16,1,mix(shade,skin,.4));});
+ // Nase
+ at(0,34,(x,k)=>{r(x-1,top+27,3,12,shade);r(x-3,top+38,7,3,shade);if(wake>0){r(x-4,top+39,2,2,dark2);r(x+3,top+39,2,2,dark2);}});
+ // Mund: still geschlossen → zusammengebissene Zähne
+ at(0,47,(x,k)=>{const mw=Math.round(14*k+2),mx=Math.round(x-mw/2),my=top+48;if(wake<=0){r(mx,my,mw,1,lip);}else{const op=Math.round(wake*3);r(mx,my-1,mw,op+2,'#2a0f0e');if(op>0)for(let i=0;i<mw;i++)r(mx+i,my,1,op,(i%3)?'#ece3cf':'#c9bfa9');r(mx,my-1,mw,1,lip);r(mx,my+op+1,mw,1,lip);r(mx-1,my+1,1,2,dark2);r(mx+mw,my+1,1,2,dark2);}});
+ // Blut läuft am Hinterkopf herunter (sichtbar, solange die Rückseite zum Betrachter zeigt)
+ at(Math.PI,26,(x,k)=>{r(x-1,top+18,3,3,'#7c2e28');const run=Math.min(18,(T)*5);r(x,top+21,1,run,'#8f2a24');r(x-1,top+21+run,2,2,'#7c2e28');});
+ // Pfeil: steckt im Hinterkopf (Längengrad π, leicht schräg nach oben); vorn/hinten je nach Drehung
+ if(depth>0)arrow();
+ // Abschluss: Vignette, Ausgabe ganzzahlig skaliert
+ g.setTransform?.(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#120c09';g.fillRect(0,0,w,h);const s=Math.max(1,Math.min(w/FW,h/FH)*1.5*zoom),dw=FW*s,dh=FH*s;g.drawImage(b,Math.round(w/2-dw/2+shake*s),Math.round(h/2-dh/2+h*.08),Math.round(dw),Math.round(dh));
+ const vg=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.25,w/2,h/2,Math.max(w,h)*.7);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.65)');g.fillStyle=vg;g.fillRect(0,0,w,h);
+ htmlBubble('archerPlotBubble');const el=$('archerPlotText');if(el&&el.textContent)el.textContent='';}
+function turnStep(dt){const tr=sc.turn;tr.t+=dt;if(!tr.woke&&tr.t>=TURN.back+TURN.orbit+TURN.still){tr.woke=true;M.sound?.('heavy');}
+ if(!tr.whoosh&&tr.t>=TURN.back){tr.whoosh=true;M.sound?.('rush');}
+ if(tr.t>=TURN.len){sc.turn=null;sc.turnDone=true;sc.t=Math.max(sc.t,8.62);return;}turnPaint();}
+
+// ---------- Nahaufnahme bei „Ich finde gut, dass wir miteinander gesprochen haben.“ ----------
+// Links groß der Schmied, dessen Mundwinkel langsam nach oben gehen; rechts der Schütze mit verkohltem Gesicht: schwarz, nur die Augäpfel weiß, Glut, Rauch, er schreit.
+const DUO=[36.2,38.3];
+function duoFace(q,r,mix,o){const {cx,top,R,skin,shade,hair,style,beard}=o,dark=mix(shade,'#2a160e',.3),lip=mix(shade,'#8a2a24',.45);
+ const half=y=>{const u=(y-28)/34;let hw=R*Math.sqrt(Math.max(0,1-u*u));if(y>48)hw-=(y-48)*.28;return Math.max(0,hw);};const sc2=R/26;
+ const Y=v=>top+Math.round(v*sc2);
+ // Kopf
+ for(let y=-6;y<64;y++){const hw=half(y);if(hw<1)continue;for(let x=Math.floor(-hw);x<Math.ceil(hw);x++){const s=(x+.5)/hw;let col=skin;
+   if(o.charred){col=(x*7+y*13)%11===0?'#3a2a22':(x*3+y*5)%17===0?'#2a1c16':'#16100d';}
+   else{if(!o.bald&&y<8+Math.abs(s)*4)col=hair;else if(s>.45)col=shade;else if(s<-.35)col=mix(skin,'#ffe6c8',.18);if(beard===2&&y>44)col=hair;if(beard===3&&Math.abs(s)<.3&&y>50)col=hair;}
+   r(cx+x,top+Math.round(y*sc2),1,Math.ceil(sc2),col);}}
+ // Ohren
+ for(const sd of [-1,1])r(cx+sd*(half(28)+1)-(sd<0?3:0),Y(22),3,Math.round(12*sc2),o.charred?'#1f1612':sd<0?skin:shade);
+ const ex=Math.round(R*.42),ew=Math.round(R*(o.charred?.5:.42)),ey=Y(23);
+ if(o.charred){
+  // Verkohlt: Glutrisse, verbrannte Haarstoppeln, weit aufgerissene weiße Augäpfel mit winzigen Pupillen, Schrei
+  const t=o.t;for(let i=0;i<14;i++){const gx=cx+Math.round(Math.sin(i*2.3)*R*.8),gy=Y(4+(i*9)%54);r(gx,gy,2,1,(Math.floor(t*6+i)%3)?'#c8642e':'#f4a14a');}
+  for(let i=0;i<10;i++)r(cx-R+4+i*Math.round(R*.2),Y(-3+(i%2)),1,2,'#2a1c16');
+  for(const sd of [-1,1]){const x0=cx+sd*ex-Math.round(ew/2);r(x0-1,ey-2,ew+2,Math.round(7*sc2),'#0b0807');r(x0,ey-1,ew,Math.round(6*sc2),'#f2ece0');const px=x0+Math.round(ew/2)-1+Math.round(Math.sin(t*9+sd)*1);r(px,ey+Math.round(1.5*sc2),2,2,'#0b0807');r(x0,ey-1,ew,1,'#d8cfc0');}
+  // Mund: weit offen, schreiend, zitternd
+  const mw=Math.round(R*.8),mh=Math.round((11+Math.sin(t*18)*1.5)*sc2),mx=cx-Math.round(mw/2),my=Y(43);r(mx,my,mw,mh,'#2a0806');r(mx+2,my+2,mw-4,mh-3,'#5a1410');r(mx+2,my,mw-4,2,'#d9cfbd');r(mx+3,my+mh-2,mw-6,1,'#a33a2c');
+  r(cx-1,Y(28),3,Math.round(11*sc2),'#0e0a08');r(cx-3,Y(38),7,2,'#0e0a08');}
+ else{
+  const k=o.grin,n=o.narrow;
+  for(const sd of [-1,1]){const x0=cx+sd*ex-Math.round(ew/2),open=Math.max(1,Math.round((4-n*2.4)*sc2));r(x0,ey-1,ew,Math.round(5*sc2)+1,dark);r(x0+1,ey+Math.round(5*sc2)-open,ew-2,open,'#efe6d6');const ix=x0+Math.round(ew/2)-1;r(ix,ey+Math.round(5*sc2)-open,3,Math.min(open,3),'#2a1810');
+   const by=Y(18);for(let i=0;i<ew+2;i++){const inner=sd<0?i/(ew+1):1-i/(ew+1);r(x0-1+i,by+Math.round(inner*n*2-(1-inner)*n*2),1,2,hair);}}
+  r(cx-1,Y(27),3,Math.round(12*sc2),shade);r(cx-3,Y(38),7,3,shade);
+  // Mundwinkel ziehen nach oben, zuletzt ein schmales, zufriedenes Lächeln
+  const half2=Math.round(R*.32+k*R*.12),lift=Math.round(k*7*sc2),my=Y(47);for(let i=-half2;i<=half2;i++){const e=Math.abs(i)/half2;r(cx+i,my-Math.round(e*e*lift),1,2,lip);}
+  if(k>.3){r(cx-half2-2,my-lift-2,1,3,dark);r(cx+half2+2,my-lift-2,1,3,dark);}
+  if(beard===2)r(cx-Math.round(R*.4),my+4,Math.round(R*.8),2,hair);}}
+function duoPaint(){const c=$('archerPlotCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),w=c.width,h=c.height,t=performance.now()/1000,since=sc.t-DUO[0],FW=160,FH=100;
+ const b=sc.duoBuf||(sc.duoBuf=document.createElement('canvas'));if(b.width!==FW){b.width=FW;b.height=FH;}const q=b.getContext('2d');q.imageSmoothingEnabled=false;q.clearRect(0,0,FW,FH);
+ const r=(x,y,ww,hh,col)=>{q.fillStyle=col;q.fillRect(Math.round(x),Math.round(y),Math.round(ww),Math.round(hh));};
+ const mix=(a,c2,k)=>{const p=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16));const x=p(a),y=p(c2);return '#'+x.map((v,i)=>Math.round(v+(y[i]-v)*k).toString(16).padStart(2,'0')).join('');};
+ // Hintergrund: Esse mit Glut zwischen beiden
+ r(0,0,FW,FH,'#1c1410');const bg=q.createRadialGradient(118,40,4,118,40,80);bg.addColorStop(0,'rgba(232,120,40,.6)');bg.addColorStop(1,'rgba(0,0,0,0)');q.fillStyle=bg;q.fillRect(0,0,FW,FH);r(80,0,1,FH,'#0b0807');
+ const A=W().master.appearance||{},ease=v=>v<0?0:v>1?1:v*v*(3-2*v),k=ease(since/1.8),shakeX=Math.round(Math.sin(t*40)*1);
+ // Schmied links, groß
+ r(10,86,66,14,'#5a3a24');r(16,86,8,14,'#3e2818');r(56,86,8,14,'#3e2818');
+ duoFace(q,r,mix,{cx:40,top:20,R:28,skin:A.skin||'#b8875f',shade:A.shade||'#8d6446',hair:A.hair||'#3b2a1e',style:(A.style??0)%6,bald:(A.style??0)%6===2,beard:(A.beard??0)%4,grin:k,narrow:ease(since/1.2)});
+ // Schütze rechts, verkohlt, schreiend, Rauch steigt auf
+ r(92,86,60,14,'#3a3f4a');
+ duoFace(q,r,mix,{cx:122+shakeX,top:24,R:24,skin:'#16100d',shade:'#16100d',hair:'#16100d',charred:true,t});
+ for(let i=0;i<9;i++){const u=(t*.55+i/9)%1,x=112+((i*13)%22)+Math.sin(u*7+i)*4,y=22-u*26;q.globalAlpha=.55*(1-u);r(x,y,2+u*3,2+u*2,'#8f8a80');q.globalAlpha=1;}
+ g.setTransform?.(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#120c09';g.fillRect(0,0,w,h);const s=Math.max(w/FW,h/FH),dw=FW*s,dh=FH*s;g.drawImage(b,Math.round(w/2-dw/2),Math.round(h/2-dh/2),Math.round(dw),Math.round(dh));
+ if(!sc.duoVoice){sc.duoVoice=true;M.voice?.('pain',sc.a?.g?.appearance?.voice||1,true);}
+ if(sc.say&&sc.say.who==='s')htmlBubble('archerPlotBubble',smithName(),sc.say.text,.25,false,sc.waiting);else htmlBubble('archerPlotBubble');
+ const el=$('archerPlotText'),line=sc.say?(sc.say.who==='s'?smithName()+': „'+sc.say.text+'“':''):'';if(el&&el.textContent!==line)el.textContent=line;}
+
 function headPoint(p){const k=.6*p.g.height/180*1.14;return {x:p.x+(Math.cos(p.a)>=0?1:-1)*2*k,y:p.y-66*k};}
-function paint(){const c=$('archerPlotCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),VW=sc.cam.vw,VH=VW*420/660,k=c.width/VW,cx=Math.max(VW/2,Math.min(900-VW/2,sc.cam.x)),cy=Math.max(VH/2,Math.min(670-VH/2,sc.cam.y)),t=sc.t,s=sc.s,a=sc.a,r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);};
+function paint(){if(sc.t>=DUO[0]&&sc.t<DUO[1]){duoPaint();return;}const c=$('archerPlotCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),VW=sc.cam.vw,VH=VW*420/660,k=c.width/VW,cx=Math.max(VW/2,Math.min(900-VW/2,sc.cam.x)),cy=Math.max(VH/2,Math.min(670-VH/2,sc.cam.y)),t=sc.t,s=sc.s,a=sc.a,r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);};
  sc.bg??=M.ludus.background();g.imageSmoothingEnabled=false;g.setTransform?.(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);g.save();g.scale(k,k);g.translate(-(cx-VW/2),-(cy-VH/2));g.drawImage(sc.bg,0,0);
  r(788,205,7,10,t%1>.5?'#c88945':'#e2ab5c');r(803,210,5,7,t%1>.5?'#c88945':'#e2ab5c');
  if(sc.soiled){r(840-4,299,9,2,'#5a3d1e');if(!a.down&&t<OVEN[0]){const rear=Math.cos(a.a)>=0?-1:1;r(a.x+rear*2-3,a.y-20,6,6,'#4e3318');r(a.x+rear*3,a.y-14,1,10,'#5a3d1e');}}
@@ -241,7 +356,7 @@ const click=M.schoolClick;M.schoolClick=action=>{
  if(action==='plot:no'){if(!P().state)choose(false);return true;}
  if(action==='plot:yes'){if(!P().state)choose(true);return true;}
  if(action==='plot:skip'){end();return true;}
- if(action==='plot:tap'){if(sc?.cur)sc.cur.ack=true;return true;}
+ if(action==='plot:tap'){if(sc?.turn){const tr=sc.turn,o3=TURN.back+TURN.orbit+TURN.still;tr.t=tr.t<o3-.1?o3-.1:TURN.len;return true;}if(sc?.cur)sc.cur.ack=true;return true;}
  return click(action);};
 M.archerPlot={state:P,archer,ready:()=>{const p=P(),a=archer();return !!(a&&p.seen&&S.day>=p.seen+DELAY&&!p.state);},ask,start,end,step:d=>sc&&step(d),stepTalk:d=>tk&&stepTalk(d),next,crew,get talk(){return tk;},get scene(){return sc;},delay:DELAY};
 })();
