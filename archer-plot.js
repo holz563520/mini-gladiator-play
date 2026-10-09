@@ -167,7 +167,7 @@ function pose(t){const s=sc.s,a=sc.a;
  if(t>=CUT+1.4)once('sheath',()=>{s.g.enemyGear.secondary=null;M.sound?.('block');});
  if(t>=CUT+2.4)once('snap',()=>{sc.stuck=3;const dir=Math.cos(s.a)>=0?-1:1;sc.fx.push({x:s.x+dir*8,y:s.y,z:58,vx:dir*20,vy:2,vz:10,life:1.4,size:2,color:'#a88c60'},{x:s.x+dir*11,y:s.y,z:58,vx:dir*22,vy:2,vz:12,life:1.4,size:2,color:'#a88c60'});M.sound?.('stick');});}
 // Schrittbild wie im Kampf: Beinphase folgt der zurückgelegten Strecke, Schrittweite dem Tempo (Ludus-Maßstab 0,6).
-function gait(list,ds){sc.odo??={};for(const p of list){const o=sc.odo[p.id]??={x:p.x,y:p.y,d:0};const d=Math.hypot(p.x-o.x,p.y-o.y);o.x=p.x;o.y=p.y;if(p.state==='move'&&d>.05&&d<40){o.d+=d;p.phase=o.d*.267;p.moveSpeed=Math.max(8,d/Math.max(ds,1e-3)/.6);}}}
+function gait(list,ds){sc.odo??={};for(const p of list){const o=sc.odo[p.id]??={x:p.x,y:p.y,d:0};const dx=p.x-o.x,d=Math.hypot(dx,p.y-o.y);o.x=p.x;o.y=p.y;if(p.state==='move'&&d>.05&&d<40){o.d+=d;p.phase=o.d*.267;p.moveSpeed=Math.max(8,d/Math.max(ds,1e-3)/.6);const side=Math.abs(dx)/d;o.side=(o.side??side)*.8+side*.2;p.gaitSpeed=p.moveSpeed*(.28+.72*o.side);}else p.gaitSpeed=undefined;}}
 function step(dt){const t0=sc.t,L=lines().find(([a1,b1,who])=>who!=='cap'&&t0>=a1&&t0<b1);
  if(L&&sc.cur?.key!==L[0]+L[3])sc.cur={key:L[0]+L[3],b:L[1],who:L[2],text:L[3],shown:0};if(sc.cur)sc.cur.shown+=dt;
  // Ruhige Dialogstellen warten, bis die Blase gelesen ist (oder getippt wurde); Schreie in der Bewegung halten nichts auf, bleiben aber lesbar stehen.
