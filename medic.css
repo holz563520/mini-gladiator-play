@@ -1,0 +1,89 @@
+/* Medikus-Tutorial · nur Testversion */
+.medic-film{place-items:start center;padding-top:calc(6px + env(safe-area-inset-top))}
+.medic-film>div{display:flex;flex-direction:column;max-height:100dvh}
+.medic-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 2px 0;font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#c9c6b4}
+.medic-top .btn{min-height:30px;padding:3px 8px;font-size:10px}
+.medic-film .scene-bubble-slot{min-height:104px;height:104px;padding-bottom:12px}
+.medic-film #medicText{min-height:0;margin:6px 0 4px;font-size:13px;opacity:.75}
+.medic-film canvas#medicCanvas{max-height:44dvh}
+#medicInfo{text-align:left;cursor:pointer}
+.medic-card{background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:3px 3px 0 rgba(0,0,0,.45);padding:8px 11px 9px;font-family:'Courier Prime',monospace;font-size:13px;line-height:1.35}
+.medic-card h4{margin:0 0 4px;font-size:12px;letter-spacing:.08em}
+.medic-card p{margin:3px 0;min-height:0!important;font-size:13px!important;color:#17201c!important;line-height:1.35!important}
+.medic-card p.tiny{font-size:11px!important;opacity:.75}
+.medic-card dl{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:4px 0}
+.medic-card dt{opacity:.7}.medic-card dd{margin:0;font-weight:700}
+.medic-card ul{margin:2px 0;padding-left:16px}.medic-card li{margin:2px 0}
+.medic-inj{font-size:15px!important;font-weight:700}
+.medic-inj span,.medic-file li span{font-size:11px;padding:1px 5px;border:1px solid #17201c;margin-left:4px;white-space:nowrap;color:#17201c}
+.medic-file li span.medic-g4,.medic-file li span.medic-g5,.medic-inj span.medic-g4,.medic-inj span.medic-g5{color:#fff}
+.medic-g0{background:#cfd8b0}.medic-g1{background:#e6d58a}.medic-g2{background:#e8b46a}.medic-g3{background:#e08a5a}.medic-g4{background:#c9553f;color:#fff}.medic-g5{background:#5e1f1c;color:#fff}
+.medic-red{color:#8a2a24}
+.medic-tap{display:block;text-align:right;font-family:'Courier Prime',monospace;font-size:11px;color:#f4d37a;margin-top:3px;animation:bubbleBlink .9s steps(2) infinite}
+.medic-rec,.medic-body{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}
+.medic-rec canvas{width:64px;height:80px;image-rendering:pixelated;border:2px solid #17201c;background:#202d2f}
+.medic-body canvas{width:96px;height:auto;image-rendering:pixelated;border:2px solid #17201c;background:#202d2f}
+.medic-plus{color:#2f5a3a!important}.medic-minus{color:#8a2a24!important}
+.medic-weapons{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:6px;margin:4px 0}
+.medic-weapons figure{margin:0;display:grid;grid-template-columns:54px 1fr;gap:6px;align-items:center;font-size:10.5px;line-height:1.25}
+.medic-weapons canvas{width:54px;height:34px;image-rendering:pixelated;border:1px solid #17201c;max-height:none!important}
+.medic-grades{width:100%;border-collapse:collapse;font-size:12px}.medic-grades th,.medic-grades td{border:1px solid #17201c;padding:2px 5px;text-align:left}
+.medic-bar{position:relative;height:18px;border:2px solid #17201c;background:#3a1a18;margin:4px 0}
+.medic-bar i{position:absolute;inset:0 auto 0 0;background:#b8433a}
+.medic-bar b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:12px;text-shadow:1px 1px 0 #000}
+/* Aufgabe auf dem Spielfeld: unter den Kopfknöpfen */
+.lion-guide.lion-taskbar.medic-low{top:calc(66px + env(safe-area-inset-top))}
+/* Tagesübergang */
+.medic-night{position:fixed;inset:0;z-index:10040;display:grid;place-items:center;background:#05080c;animation:medicFade 1.6s ease-in both;font-family:'Courier Prime',monospace;color:#e8dcc0;text-align:center}
+.medic-night div{display:grid;gap:10px;justify-items:center}
+.medic-night b{font-size:clamp(26px,8vw,42px);letter-spacing:.14em}
+.medic-night small{font-size:14px;opacity:.8;max-width:80vw}
+.medic-sun{width:54px;height:54px;border-radius:50%;background:#f4d37a;box-shadow:0 0 0 8px #f4d37a33;transform:translateY(60px);opacity:0;transition:transform 1.4s ease-out,opacity 1.4s}
+.medic-night.morning{background:linear-gradient(180deg,#1c2a3a,#7a5a3a)}.medic-night.morning .medic-sun{transform:translateY(0);opacity:1}
+.medic-night.out{opacity:0;transition:opacity .8s}
+@keyframes medicFade{from{opacity:0}to{opacity:1}}
+/* Start, Szenenwahl, Abschluss */
+.medic-start,.medic-end,.medic-menu{position:fixed;inset:0;z-index:10060;display:grid;place-items:center;background:#0b1012f2;padding:14px;overflow:auto;font-family:'Courier Prime',monospace;color:#e8dcc0}
+.medic-start>div,.medic-end>div,.medic-menu>div{width:min(600px,100%);background:#152019;border:3px solid #596452;box-shadow:0 6px 0 #0009;padding:18px}
+.medic-start h1{margin:4px 0 10px;font-size:clamp(30px,9vw,46px);letter-spacing:.1em;color:#f4d37a}
+.medic-start .buttons,.medic-end .buttons{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 8px}
+.medic-end{z-index:10055;background:#000}
+.medic-start,.medic-end,.medic-menu{align-items:start}.medic-start>div,.medic-end>div,.medic-menu>div{margin:auto 0}
+.medic-end ul{padding-left:20px;line-height:1.55;margin:6px 0 12px}
+.medic-end h2{margin:16px 0 6px;font-size:clamp(17px,5vw,24px);letter-spacing:.1em;color:#f4d37a;text-align:center}
+.medic-warn,.medic-sim{border:2px solid #a3231d;background:#1a0f0e;padding:10px 12px;margin:10px 0}
+.medic-warn b{color:#e05a4a;letter-spacing:.08em}.medic-sim{border-color:#c9a85a;background:#1d1a10}.medic-sim b{color:#f4d37a;letter-spacing:.06em}
+.medic-warn p,.medic-sim p{margin:6px 0 0;line-height:1.5}
+.medic-quote{line-height:1.6;border-left:3px solid #596452;padding-left:10px}
+.medic-menu{z-index:10070}.medic-menu header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.medic-menu ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}.medic-menu .btn{width:100%;justify-content:flex-start;text-align:left}
+.medic-fab{position:fixed;left:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:10065;opacity:.85;min-height:34px}
+/* Akten im Krankenhausmenü */
+.medic-files{margin:0 0 22px}
+.medic-file header{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.medic-file header canvas{width:64px;height:80px;image-rendering:pixelated;border:1px solid #52625b}
+.medic-file h3{margin:0 0 2px}.medic-file p{margin:3px 0}.medic-file ul{margin:8px 0;padding-left:18px;line-height:1.6}
+.medic-plan{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0;table-layout:fixed}
+.medic-plan th:nth-child(1){width:34%}.medic-plan th:nth-child(2){width:20%}.medic-plan th:nth-child(3){width:21%}.medic-plan td,.medic-plan th{overflow-wrap:anywhere}.medic-plan small{font-size:10.5px;opacity:.9}
+.medic-plan th,.medic-plan td{border:1px solid #394943;padding:4px 6px;text-align:left;vertical-align:top}
+.medic-plan tr.chosen td{background:#2f4a3a;color:#f4d37a}
+.medic-file .medic-red{color:#e0705a}
+@media (max-width:480px){.medic-film .scene-bubble-slot{min-height:88px}.medic-card{font-size:12px}.medic-plan{font-size:11.5px}}
+
+/* Film: deckender Hintergrund (kein Durchscheinen der Seite darunter, spart Rechenzeit) */
+.medic-film{background:#0e1614}
+.medic-inj-table{width:100%;border-collapse:collapse;font-size:11.5px;line-height:1.3;table-layout:fixed}
+.medic-inj-table th,.medic-inj-table td{border:1px solid #17201c55;padding:3px 5px;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.medic-inj-table th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;opacity:.7}
+.medic-inj-table th:nth-child(1){width:38%}.medic-inj-table th:nth-child(2){width:30%}
+
+/* Nahaufnahmen (injury-shots.js) und Galerie */
+.injury-shot{position:fixed;inset:0;z-index:10090;display:grid;place-items:center;background:#070504ee;cursor:pointer}
+.injury-shot canvas{width:min(100vw,calc(100vh*660/420));height:auto;image-rendering:pixelated;display:block;border-top:3px solid #596452;border-bottom:3px solid #596452}
+.medic-gallery{position:fixed;inset:0;z-index:10080;background:#0b1012f7;padding:12px;overflow:auto;font-family:'Courier Prime',monospace;color:#e8dcc0}
+.medic-gallery>div{width:min(640px,100%);margin:0 auto;background:#152019;border:3px solid #596452;padding:14px}
+.medic-gallery header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;position:sticky;top:-12px;background:#152019;padding:6px 0;z-index:1}
+.medic-gallery section{margin-top:12px}.medic-gallery h4{margin:0 0 6px;color:#f4d37a;letter-spacing:.08em;border-bottom:1px solid #596452}
+.medic-gallery section>div{display:flex;flex-wrap:wrap;gap:6px}.medic-gallery section .btn{min-height:40px}
+.medic-galmen{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0}.medic-galmen .btn{display:grid;gap:3px;padding:4px;justify-items:center;min-width:0}.medic-galmen canvas{width:100%;max-width:64px;height:auto;image-rendering:pixelated}.medic-galmen span{font-size:11px;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.medic-shotmenu{display:grid;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #596452}
