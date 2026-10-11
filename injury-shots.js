@@ -72,7 +72,8 @@ function headShape(q,T,C,cx,top,R,o={}){const sc=R/26,half=y=>{const u=(y-28)/34
  if(mood==='pain'||mood==='shock'){const mh=mood==='shock'?8:6;T.r(mx,my,mw,mh,'#2a0806');T.r(mx+1,my,mw-2,2,'#e6dcc6');T.r(mx+1,my+mh-2,mw-2,2,'#d6ccb6');T.r(mx+2,my+2,mw-4,mh-4,'#5a1410');}
  else if(mood==='out'){T.r(mx+2,my+2,mw-4,2,lip);T.r(mx+mw-5,my+4,2,3,'#d9e6f0');}
  else if(mood==='dizzy'){for(let i=0;i<mw;i++)T.r(mx+i,my+2+Math.round(Math.sin(i*.9+t*6)*1.4),1,2,lip);}
- else T.r(mx+1,my+2,mw-2,2,lip);}
+ else T.r(mx+1,my+2,mw-2,2,lip);
+ if(o.blood>0){const n=Math.round(o.blood*9*sc);T.r(mx+mw-4,my+3,2,n,BLOOD);T.r(mx+mw-4,my+3+n,2,1,DARK);}}
 function torso(q,T,C,ox,oy,o={}){/* Rumpf von vorn: Hals, Schultern, Brust, Bauch, Lendentuch, hängende Oberarme */
  const X=x=>80+ox+x,Y=y=>oy+y,row=(y,hw)=>{for(let x=-Math.ceil(hw);x<Math.ceil(hw);x++){const s=x/hw;T.r(X(x),Y(y),1,1,Math.abs(s)>.96?C.line:s>.5?C.shade:s<-.55?C.light:C.skin);}};
  T.tube(X(-70),Y(30),X(-79),Y(104),24,21,C);T.tube(X(70),Y(30),X(79),Y(104),24,21,{...C,skin:C.shade,light:C.skin});
@@ -137,13 +138,14 @@ const EFFECT={
  pulp:(T,V,k,C)=>{patch(T,V,k,30,['#6a3a60','#3a1c3e','#22102a'],.9);crack(T,V,k);shards(T,V,10,15,C);flow(T,V,k,3,12);},
  sever:(T,V,k)=>{/* Stumpf: Schnittfläche, pulsierende Blutung */const nx=-V.dir.y,ny=V.dir.x,h=V.w/2-1;for(let j=-h;j<=h;j++){T.r(V.A.x+nx*j-1,V.A.y+ny*j-1,4,2,Math.abs(j)>h-2?DARK:BLOOD);}T.r(V.A.x-1,V.A.y-1,3,3,'#efe6d0');const up=V.dir.y<-.9,pulse=.6+.4*Math.sin(k*8);for(let i=0;i<(up?30:16);i++){const u=((k*1.4+i/16)%1),a=Math.atan2(V.dir.y,V.dir.x)+(((i*29)%16)/16-.5)*(up?.7:.9),d=u*(up?54:30)*pulse;T.r(V.A.x+Math.cos(a)*d,V.A.y+Math.sin(a)*d+u*u*26,i%3?1:2,i%3?1:2,i%2?BLOOD:WET);}flow(T,V,k,5,26);},
  scar:(T,V,k)=>{const p=out(k/.5),nx=-V.dir.y,ny=V.dir.x;for(let i=-9;i<=9;i++){if(Math.abs(i)>9*p)continue;const x=V.A.x+V.dir.x*i*.3+nx*i,y=V.A.y+V.dir.y*i*.3+ny*i;T.r(x,y,2,1.5,'#e3b6a8');if(i%4===0){T.r(x-3*V.dir.x,y-3*V.dir.y,1,1,'#b08a80');T.r(x+3*V.dir.x,y+3*V.dir.y,1,1,'#b08a80');}}},
- collapse:()=>{}};
+ collapse:()=>{},death:()=>{}};
 // Einstellungen der Ansicht je Verletzung: Knick, Zerknittern, Abtrennen, schlaffe Finger, Gesichtsausdruck
 function viewOptions(kind,part,k,o){const v={face:{mood:k<0?'calm':'pain',t:k}},hit=out(k/.12),wob=k>0?Math.sin(k*30)*Math.exp(-k*6)*.12:0;
  if(kind==='fracture')v.bend=-(.3*hit+wob);if(kind==='badfracture')v.bend=-(.52*hit+wob);if(kind==='shatter'||kind==='pulp'){v.crumple=(kind==='pulp'?1.25:1)*hit+wob;}
  if(kind==='sever'&&k>=0)v.cut=true;if(kind==='sinew'&&k>0)v.limp=out(k/.5);
  if(kind==='sinew'||kind==='joint'){if(['lh','rh','lf','rf'].includes(part))v.wrist=true;}
  if(kind==='concussion')v.face={mood:k<0?'calm':k<.25?'shock':'dizzy',t:k};
+ if(kind==='death'){/* drei Arten zu fallen; bei wichtigen Kämpfern langsamer */const slow=o.dramatic?1.7:1,p=ease((k-.5*slow)/(1.5*slow)),way=o.variant||0;v.face={mood:k<.3*slow?'shock':k<.6*slow?'pain':'out',pale:cl(k/(1.6*slow)),t:k,blood:way===2?cl((k-.3)/1.2):0};v.sink=p*(way===2?40:34);v.tilt=p*(way===1?-.7:way===2?-.26:.6);}
  if(kind==='collapse'){const p=ease((k-.2)/1.5);v.face={mood:k<.5?'shock':'out',pale:cl(k/1.2),t:k};v.sink=p*46;v.tilt=p*.5;}
  if(['head','neck'].includes(part)&&kind==='sever'&&k>=0){v.off={dx:k*34,dy:-k*74+k*k*118,ang:k*2.4};v.face={mood:k<.5?'shock':'out',pale:cl(k/1.5),t:k};}
  if(kind==='joint'&&['ls','rs'].includes(part))v.u=.02;return v;}
@@ -165,31 +167,40 @@ function weaponFx(q,T,V,cls,wid,t,kind){const k=t-HIT,A=V.A;if(cls==='none')retu
  q.globalAlpha=1;}
 // ---------- Ein Bild der Nahaufnahme ----------
 const buffers=new WeakMap();
-function paint(g,w,h,o,t){let b=buffers.get(g.canvas);if(!b){b=document.createElement('canvas');b.width=FW;b.height=FH;buffers.set(g.canvas,b);}const q=b.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,FW,FH);
+function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
+ if((kind0==='death'||(kind0==='collapse'&&o.fall))&&M.faceShot){/* Wer fällt: Großaufnahme des Kämpfers mit Rüstung (face-shots.js), Augen schließen sich, der Kopf sinkt */const k=t-HIT,dead=kind0==='death',slow=o.dramatic?1.7:1,p=ease((k-.5*slow)/(1.5*slow)),way=o.variant||0;
+  M.faceShot.paint(g,w,h,{g:o.g,team:o.team,mood:k<0?'determined':k<.3*slow?'shock':k<.65*slow&&dead?'pain':'out',pale:dead?cl(k/(1.6*slow)):0,blood:dead&&way===2?cl((k-.3)/1.2):0,sink:p*(dead?30:18),tilt:p*(way===1?-.5:way===2?-.2:.45)*(dead?1:.6),dark:dead?cl((k-(o.dramatic?2.4:1.5))/(o.dramatic?2.4:1.4))*(o.dramatic?.6:.42):0,yaw:(o.team===1?-1:1)*(.55-.5*cl(t/(o.dramatic?5:3))),zoom:1+.12*cl(k/2)},t);
+  if(k>=0&&k<.09){g.globalAlpha=.7*(1-k/.09);g.fillStyle='#fff6dc';g.fillRect(0,0,w,h);g.globalAlpha=1;}
+  if(o.dramatic){const bar=Math.round(h*.07);g.fillStyle='#050302';g.fillRect(0,0,w,bar);const rv=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.7);rv.addColorStop(0,'rgba(120,0,0,0)');rv.addColorStop(1,'rgba(140,10,6,'+(.25+.12*Math.sin(t*5)).toFixed(3)+')');g.fillStyle=rv;g.fillRect(0,0,w,h);}
+  caption(g,w,h,{...o,noFace:true},t,kind0);return;}
+ let b=buffers.get(g.canvas);if(!b){b=document.createElement('canvas');b.width=FW;b.height=FH;buffers.set(g.canvas,b);}const q=b.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,FW,FH);
  const T=tools(q),C=palette(o.g),kind=o.kind||kindOf(o.injury),k=t-HIT,cls=o.cls||weaponClass(o.wid),right=o.part[0]==='r'&&o.part!=='r';
  backdrop(q,T,t);const view=kind==='sever'&&o.part==='head'?'neck':viewOf(o.part),V=VIEW[view](q,T,C,viewOptions(kind,o.part,k,o));V.A=V.mid?{x:V.mid.x,y:V.mid.y}:V.A;V.seed=[...(o.part+kind+(o.g?.id||o.g?.name||''))].reduce((n,c)=>(n*31+c.charCodeAt(0))%9973,7);
  if(kind==='sever'&&k>=0&&V.rest&&o.part!=='head'&&o.part!=='neck'){const fall=k*k*70;V.rest(V.dir.x*(4+k*22),V.dir.y*4+fall,k*1.4);}
- if(k>=0){EFFECT[kind]?.(T,V,k,C);if(kind==='collapse'){for(let i=0;i<5;i++){const u=(t*.9+i/5)%1;T.r(60+i*9,70+u*26,1,2,BLOOD);}T.oval(80,97,cl(k/2)*46,cl(k/2)*4,DARK);T.oval(82,97,cl(k/2)*30,cl(k/2)*2.4,BLOOD);}}
- if(kind!=='collapse'&&kind!=='scar')weaponFx(q,T,V,kind==='arrow'?'arrow':cls,o.wid,t,kind);
+ if(k>=0){EFFECT[kind]?.(T,V,k,C);if(kind==='collapse'||kind==='death'){for(let i=0;i<5;i++){const u=(t*.9+i/5)%1;T.r(60+i*9,70+u*26,1,2,BLOOD);}T.oval(80,97,cl(k/2)*46,cl(k/2)*4,DARK);T.oval(82,97,cl(k/2)*30,cl(k/2)*2.4,BLOOD);}}
+ if(kind==='death'&&k>0){q.globalAlpha=cl((k-(o.dramatic?2.2:1.3))/(o.dramatic?2.4:1.4))*(o.dramatic?.55:.38);T.r(0,0,FW,FH,'#050302');q.globalAlpha=1;}
+ if(kind!=='collapse'&&kind!=='scar'&&kind!=='death')weaponFx(q,T,V,kind==='arrow'?'arrow':cls,o.wid,t,kind);
  if(k>=0&&k<.09){q.globalAlpha=.75*(1-k/.09);T.r(0,0,FW,FH,'#fff6dc');q.globalAlpha=1;}
  // Ausgabe: ganzzahlig vergrößert, rechte Körperseite gespiegelt, kurzes Zittern beim Treffer, langsamer Zug ins Bild
- const near=kind==='collapse'?0:kind==='sever'&&['head','neck'].includes(o.part)?.16:kind==='sever'||['head','neck'].includes(o.part)?.2:({thigh:.14,upperarm:.28,chest:.36,belly:.36,shoulder:.36})[view]??.48,pin=k<0?0:out(k/.22),zoom=1+.04*ease(t/LEN)+near*pin+(k>0?.06*k/LEN:0),s=Math.max(w/FW,h/FH)*zoom,shake=k>=0&&k<.3?(1-k/.3)*5:0,dw=Math.round(FW*s),dh=Math.round(FH*s),pf=near?pin:0;let dx=Math.round(w/2-(FW/2+(V.A.x-FW/2)*pf)*s),dy=Math.round((h/2-FH/2*s)*(1-pf)+(h*.36-V.A.y*s)*pf);dx=Math.max(w-dw,Math.min(0,dx))+Math.round((Math.random()-.5)*shake*s*.4);dy=Math.max(h-dh,Math.min(0,dy))+Math.round((Math.random()-.5)*shake*s*.3);
+ const near=kind==='collapse'||kind==='death'?0:kind==='sever'&&['head','neck'].includes(o.part)?.16:kind==='sever'||['head','neck'].includes(o.part)?.2:({thigh:.14,upperarm:.28,chest:.36,belly:.36,shoulder:.36})[view]??.48,pin=k<0?0:out(k/.22),zoom=1+.04*ease(t/LEN)+near*pin+(k>0?.06*k/LEN:0),s=Math.max(w/FW,h/FH)*zoom,shake=k>=0&&k<.3?(1-k/.3)*5:0,dw=Math.round(FW*s),dh=Math.round(FH*s),pf=near?pin:0;let dx=Math.round(w/2-(FW/2+(V.A.x-FW/2)*pf)*s),dy=Math.round((h/2-FH/2*s)*(1-pf)+(h*.36-V.A.y*s)*pf);dx=Math.max(w-dw,Math.min(0,dx))+Math.round((Math.random()-.5)*shake*s*.4);dy=Math.max(h-dh,Math.min(0,dy))+Math.round((Math.random()-.5)*shake*s*.3);
  g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#120c09';g.fillRect(0,0,w,h);g.save();if(right){g.translate(w,0);g.scale(-1,1);}g.drawImage(b,dx,dy,dw,dh);g.restore();
  const vg=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.6)');g.fillStyle=vg;g.fillRect(0,0,w,h);
+ if(o.dramatic){/* Kinobalken und roter Rand */const bar=Math.round(h*.07);g.fillStyle='#050302';g.fillRect(0,0,w,bar);const rv=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.7);rv.addColorStop(0,'rgba(120,0,0,0)');rv.addColorStop(1,'rgba(140,10,6,'+(.25+.12*Math.sin(t*5)).toFixed(3)+')');g.fillStyle=rv;g.fillRect(0,0,w,h);}
  caption(g,w,h,o,t,kind);}
 // Beschriftung wie eine Einblendung im Kampf: Porträt und Name des Getroffenen, wer womit, die Verletzung groß
 const faces=new WeakMap();
-function caption(g,w,h,o,t,kind){const k=t-HIT,u=w/660;let f=faces.get(o.g);if(!f&&o.g){f=document.createElement('canvas');try{M.renderPortrait(f,o.g,{unarmored:true});}catch{}faces.set(o.g,f);}
- const pw=Math.round(72*u),ph=Math.round(90*u),px=Math.round(10*u),py=Math.round(10*u);g.fillStyle='#17201c';g.fillRect(px-3,py-3,pw+6,ph+6);g.fillStyle='#e0b565';g.fillRect(px-2,py-2,pw+4,ph+4);if(f?.width)g.drawImage(f,px,py,pw,ph);
+function caption(g,w,h,o,t,kind){const k=t-HIT,u=Math.min(w/660,h/420)*(o.textScale||1);let f=faces.get(o.g);if(!f&&o.g&&!o.noFace){f=document.createElement('canvas');try{M.renderPortrait(f,o.g,{unarmored:true});}catch{}faces.set(o.g,f);}
+ const pw=o.noFace?-Math.round(12*u):Math.round(72*u),ph=Math.round(90*u),px=Math.round(10*u),py=Math.round(10*u);if(!o.noFace){g.fillStyle='#17201c';g.fillRect(px-3,py-3,pw+6,ph+6);g.fillStyle='#e0b565';g.fillRect(px-2,py-2,pw+4,ph+4);if(f?.width)g.drawImage(f,px,py,pw,ph);}
  g.textAlign='left';g.textBaseline='top';g.font=`bold ${Math.round(25*u)}px 'Courier Prime',monospace`;const name=String(o.g?.name||'').toUpperCase();g.fillStyle='#17201c';g.fillText(name,px+pw+12*u+2,py+2);g.fillStyle='#efe0b3';g.fillText(name,px+pw+12*u,py);
  g.font=`bold ${Math.round(19*u)}px 'Courier Prime',monospace`;g.fillStyle='#17201c';g.fillText(M.partName(o.part),px+pw+12*u+2,py+31*u+2);g.fillStyle='#e0b565';g.fillText(M.partName(o.part),px+pw+12*u,py+31*u);
  if(k<0)return;const a=cl(k/.18),bh=Math.round(124*u),by=h-bh;g.globalAlpha=a*.86;g.fillStyle='#0d0a08';g.fillRect(0,by,w,bh);g.globalAlpha=a;g.fillStyle='#a3231d';g.fillRect(0,by,w,Math.max(2,Math.round(3*u)));
- g.textAlign='center';const fit=(txt,px,bold)=>{let z=Math.round(px*u);do{g.font=`${bold?'bold ':''}${z}px 'Courier Prime',monospace`;}while(g.measureText(txt).width>w-16*u&&--z>8);return z;};const l1=o.line1||((o.attacker||'')+(o.weaponName?' · '+o.weaponName:''));fit(l1,21);g.fillStyle='#d9cfb0';g.fillText(l1,w/2,by+11*u);
+ g.textAlign='center';const fit=(txt,px,bold)=>{let z=Math.round(px*u);do{g.font=`${bold?'bold ':''}${z}px 'Courier Prime',monospace`;}while(g.measureText(txt).width>w-40*u&&--z>8);return z;};const l1=o.line1||((o.attacker||'')+(o.weaponName?' · '+o.weaponName:''));fit(l1,21);g.fillStyle='#d9cfb0';g.fillText(l1,w/2,by+11*u);
  const big=(o.title||o.injury||'').toUpperCase(),size=fit(big,44,true),pop=1+.25*(1-cl(k/.22));g.font=`bold ${Math.round(size*pop)}px 'Courier Prime',monospace`;g.fillStyle='#17201c';g.fillText(big,w/2+2,by+38*u+2);g.fillStyle=o.color||'#f4d37a';g.fillText(big,w/2,by+38*u);
- fit(o.line3||'',20);g.fillStyle='#efe0b3';g.fillText(o.line3||'',w/2,by+90*u);g.globalAlpha=1;}
+ fit(o.line3||'',20);g.fillStyle='#efe0b3';g.fillText(o.line3||'',w/2,by+90*u);g.globalAlpha=1;
+ if(o.waiting&&Math.sin(t*0+performance.now()/260)>-.2){/* wartet auf Antippen */g.textAlign='right';g.font=`bold ${Math.round(17*u)}px 'Courier Prime',monospace`;g.fillStyle='#17201c';g.fillText('TIPPEN ▸',w-12*u+2,by-26*u+2);g.fillStyle='#f4d37a';g.fillText('TIPPEN ▸',w-12*u,by-26*u);}}
 // ---------- Abspielen: in eine vorhandene Leinwand (Film) oder als eigene Einblendung (Galerie, später Arena) ----------
 function sound(kind,cls){const s=M.sound;if(!s)return;if(kind==='sever')s('sever');else if(['fracture','badfracture','shatter','pulp'].includes(kind)){s('heavy');s('fall');}else if(cls==='blunt'||['bruise','contusion','crush','joint','concussion'].includes(kind))s('hit');else if(kind==='collapse')s('fall');else if(['stab','deepstab','arrow','pierce'].includes(kind))s('stick');else if(kind!=='scar')s('slash');}
-function start(o){const end=o.len||LEN,shot={o:{...o,kind:o.kind||kindOf(o.injury)},t:o.from||0,hit:false,done:false,step(dt){this.t+=dt;if(!this.hit&&this.t>=HIT){this.hit=true;if(!this.o.mute)sound(this.o.kind,this.o.cls||weaponClass(this.o.wid));if(!this.o.mute&&this.o.g?.appearance&&!['scar'].includes(this.o.kind))M.voice?.('pain',this.o.g.appearance.voice,true);}if(this.t>=end)this.done=true;return !this.done;},paint(g,w,h){paint(g,w,h,this.o,this.t);},skip(){if(this.t<HIT)this.t=HIT;else this.done=true;}};return shot;}
+function start(o){const end=o.len||LEN,shot={o:{...o,kind:o.kind||kindOf(o.injury)},t:o.from||0,hit:false,done:false,step(dt){this.t+=dt;if(!this.hit&&this.t>=HIT){this.hit=true;if(!this.o.mute)sound(this.o.kind,this.o.cls||weaponClass(this.o.wid));if(!this.o.mute&&this.o.g?.appearance&&!['scar'].includes(this.o.kind))M.voice?.('pain',this.o.g.appearance.voice,true);}if(this.t>=end){if(this.o.hold&&!this.released){this.t=end-.001;this.o.waiting=true;return true;}this.done=true;}return !this.done;},paint(g,w,h){paint(g,w,h,this.o,this.t);},skip(){if(this.t<HIT)this.t=HIT;else{this.released=true;this.done=true;}}};return shot;}
 let live=null;
 function play(o,onDone){stop();const v=document.createElement('div');v.className='injury-shot';v.innerHTML='<canvas width="660" height="420"></canvas>';document.body.appendChild(v);const c=v.firstChild,g=c.getContext('2d'),shot=start(o);let last=performance.now();live={v,shot};v.addEventListener('click',()=>shot.skip());
  const frame=now=>{if(!live||live.shot!==shot)return;const dt=Math.min(.05,(now-last)/1000);last=now;if(!shot.step(dt)){stop();onDone?.();return;}shot.paint(g,c.width,c.height);requestAnimationFrame(frame);};requestAnimationFrame(frame);return shot;}
@@ -206,9 +217,13 @@ const S=M.s,MODES=[['all','Alle Kämpfer'],['own','Nur eigene Gladiatoren'],['ke
 const mode=()=>MODES.some(m=>m[0]===S.options?.closeups)?S.options.closeups:'all';
 const RANK={sever:9,pulp:8,shatter:8,badfracture:7,fracture:6,gut:6,pierce:5,sinew:5},NOTED=['Abgetrennt','Trümmerbruch','Zertrümmert','Durchstochen','Tiefe Bauchwunde','Kritische Bauchverletzung'];
 const GAP=5,SHOT_FROM=.3,SHOT_LEN=2;
+// Erweiterungen für das Kampf-HUD (Testfassung): eigene Zeichenfläche, Stufe „alle Verletzungen“, Testschlachten
+const cfg={host:null,onShot:null,busy:null,benchmark:false,textScale:1,fallShots:false,important:null,fallText:null,confirm:false};let falls=[];const level=()=>S.options?.closeupLevel==='all'?'all':'severe';
+// Antippen zum Fortsetzen und eigene Bilder für Niedergänge gibt es nur zusammen mit der Info-Tafel (dort ist Platz dafür)
+const tap=()=>cfg.confirm&&!!cfg.host?.(),fallsOn=()=>cfg.fallShots&&!!cfg.host?.();
 let pend=[],seen=new Set(),seenBattle=null,arena=null,gap=0,keyIds=null;
-const watching=()=>{const b=S.battle;return typeof document!=='undefined'&&!!b&&!b.benchmark&&!M.benchmarkActive&&!b.result&&!b.finale&&!b.cinematic&&!b.paused&&document.getElementById('battleView')?.hidden===false;};
-function note(g,part,injury,attacker,weapon,extra){const b=S.battle;if(!b||b.benchmark||M.benchmarkActive||!g?.body?.[part])return;let e=pend.find(x=>x.g===g&&x.part===part&&!x.collapse);if(!e){e={g,part,injury:null,attacker:null,weapon:null,time:b.time};pend.push(e);if(pend.length>16)pend.shift();}
+const watching=()=>{const b=S.battle;return typeof document!=='undefined'&&!!b&&(cfg.benchmark||(!b.benchmark&&!M.benchmarkActive))&&!b.result&&!b.finale&&!b.cinematic&&!b.paused&&document.getElementById('battleView')?.hidden===false;};
+function note(g,part,injury,attacker,weapon,extra){const b=S.battle;if(!b||(!cfg.benchmark&&(b.benchmark||M.benchmarkActive))||!g?.body?.[part]||g.id==='rex')return;let e=pend.find(x=>x.g===g&&x.part===part&&!x.collapse);if(!e){e={g,part,injury:null,attacker:null,weapon:null,time:b.time};pend.push(e);if(pend.length>24)pend.shift();}
  if(injury&&(!e.injury||(RANK[kindOf(injury)]||0)>=(RANK[kindOf(e.injury)]||0)))e.injury=injury;if(attacker)e.attacker=attacker;if(weapon)e.weapon=weapon;if(extra)Object.assign(e,extra);}
 const wrap=(name,fn)=>{const base=M[name];if(typeof base!=='function')return;M[name]=function(){const r=base.apply(this,arguments);try{fn(...arguments);}catch{}return r;};};
 wrap('recordWound',(g,id,injury,attacker,weapon)=>note(g,id,injury,attacker,weapon));
@@ -216,29 +231,40 @@ wrap('noteInjury',(g,id,injury,attacker,weapon)=>{if(NOTED.includes(injury))note
 wrap('addScar',(g,id,text)=>{if(text==='Dauerhafte Einschränkung')note(g,id,null,null,null,{lasting:true});});
 function wanted(g){const b=S.battle,m=mode(),act=b.actors.find(a=>a.g===g);if(!act)return false;if(m==='all')return true;if(m==='own')return act.team===0;
  if(!keyIds){keyIds=new Set(Object.values(b.leaders||{}));for(const a of b.actors.filter(a=>a.team===0).sort((x,y)=>M.power(y.g)-M.power(x.g)).slice(0,3))keyIds.add(a.id);}return keyIds.has(act.id);}
-function pick(dt){const b=S.battle;if(seenBattle!==b.id){seenBattle=b.id;seen=new Set();pend=[];keyIds=null;gap=1.5;}gap-=dt;
- for(const a of b.actors)if(a.down&&!a.g.dead&&a.reason==='Blutverlust'&&!seen.has(a.g.id+'|collapse')){seen.add(a.g.id+'|collapse');pend.push({g:a.g,part:'chest',collapse:true,time:b.time});}
- if(!pend.length)return null;if(gap>0){pend=pend.filter(e=>b.time-e.time<2.5);return null;}
+const scoreOf=e=>{const p=e.g.body[e.part],k=e.collapse?'collapse':kindOf(e.injury||p.injury||'Schnittwunde');return e.collapse?5.5:(p.missing?9:RANK[k]||0)+(e.lasting?4:0)+(M.injuryGrade(p)>=3?3:0);};
+function pick(dt,busy){const b=S.battle;if(seenBattle!==b.id){seenBattle=b.id;seen=new Set();pend=[];falls=[];keyIds=null;gap=1.5;}gap-=dt;
+ if(fallsOn()){/* jeder, der fällt oder zu Boden geht; der Tod geht allem anderen vor */for(const a of b.actors){if(a.rex)continue;const id=a.g.id;if(a.g.dead&&!seen.has(id+'|death')){seen.add(id+'|death');seen.add(id+'|collapse');falls=falls.filter(f=>f.g!==a.g);falls.push({g:a.g,a,death:true});}else if(a.down&&!a.g.dead&&!seen.has(id+'|collapse')){seen.add(id+'|collapse');falls.push({g:a.g,a,collapse:true,reason:a.reason});}}
+  const f=falls.find(e=>e.death)||falls[0];if(f){const imp=!!cfg.important?.(f.g,f.a),live=!tap()&&!f.death&&!imp&&!!cfg.host?.();if(!(live&&busy)){falls=falls.filter(x=>x!==f);if(f.death||wanted(f.g)){pend=pend.filter(e=>e.g!==f.g);return {e:{...f,part:'head'},k:f.death?'death':'collapse',inj:'',key:'',live,dramatic:!!f.death&&imp,fall:true};}}}}
+ else for(const a of b.actors)if(a.down&&!a.g.dead&&a.reason==='Blutverlust'&&!seen.has(a.g.id+'|collapse')){seen.add(a.g.id+'|collapse');pend.push({g:a.g,part:'chest',collapse:true,time:b.time});}
+ if(!pend.length)return null;
+ if(level()==='all'){/* schwere halten den Kampf an; leichte laufen nebenher in der Tafel, solange sie frei ist */pend=pend.filter(e=>!e.g.dead&&wanted(e.g));const make=(e,live)=>{const p=e.g.body[e.part],inj=e.injury||p.injury||'Schnittwunde';return {e,k:e.collapse?'collapse':kindOf(inj),inj,key:'',live};};
+  const keyOf=e=>{const p=e.g.body[e.part];return e.g.id+'|'+e.part+'|'+(e.collapse?'collapse':kindOf(e.injury||p.injury||''))+(e.lasting?'|L':'');};
+  /* anhalten höchstens alle GAP Sekunden und je Kämpfer, Stelle und Art einmal; alles andere läuft nebenher */const hard=gap>0?null:pend.find(e=>scoreOf(e)>=3&&!seen.has(keyOf(e)));if(hard){seen.add(keyOf(hard));pend=pend.filter(e=>e!==hard);return make(hard,false);}if(tap()){/* jede gezeigte Verletzung hält an und wartet auf Antippen; leichte der Reihe nach */const one=gap>0?null:pend.shift();return one?make(one,false):null;}const soft=busy||!cfg.host?.()||cfg.busy?.()?null:pend[pend.length-1];pend=[];return soft?make(soft,true):null;}
+ if(gap>0){pend=pend.filter(e=>b.time-e.time<2.5);return null;}
  let best=null,top=-1;for(const e of pend){if(e.g.dead)continue;const p=e.g.body[e.part],inj=e.injury||p.injury||'Schnittwunde',k=e.collapse?'collapse':kindOf(inj),score=e.collapse?5.5:(p.missing?9:RANK[k]||0)+(e.lasting?4:0)+(M.injuryGrade(p)>=3?3:0),key=e.g.id+'|'+e.part+'|'+k+(e.lasting?'|L':'');if(score<3||seen.has(key)||!wanted(e.g))continue;if(score>top){top=score;best={e,k,inj,key};}}
  pend=[];if(!best)return null;seen.add(best.key);return best;}
 // Waffe aus dem Namen im Kampfbericht (Titel je Qualitätsstufe). Unbekannt (Pranken, Tritt, Schildstoß): keine Waffe im Bild.
 let titles=null;
 function weaponId(name){if(!name)return null;if(!titles){titles={};for(const d of M.weaponDefs||[]){titles[d.name]=d.id;for(let q=0;q<=6;q++)titles[M.itemTitle({kind:'weapon',def:d.id,q})]=d.id;}}return titles[name]||null;}
-function arenaShot(x){const {e,k,inj}=x,g=e.g,p=g.body[e.part],gr=M.injuryGrade(p);let o;
- if(k==='collapse')o={g,part:'chest',kind:'collapse',line1:g.name+' verliert zu viel Blut',title:'Geht blutend zu Boden',line3:'Blut '+Math.round(g.blood)+' % · kampfunfähig',color:'#f29b83'};
+function arenaShot(x){const {e,k,inj}=x,g=e.g,p=g.body[e.part],gr=M.injuryGrade(p),by=e.a?(S.battle.actors.find(q=>q.id===e.a.lastAttackerId)?.g.name||e.a.lastAttacker||''):'';let o;
+ if(k==='death'){const killer=g.killer&&g.killer!=='Unbekannt'?g.killer:'';o={g,team:e.a?.team,part:'head',kind:'death',cls:'none',variant:Math.floor(Math.random()*3),dramatic:!!x.dramatic,line1:killer?killer+' tötet '+g.name:g.name+' stirbt',title:'† '+g.name+' fällt',line3:g.cause||'',color:'#f29b83',...(cfg.fallText?.(x)||{})};}
+ else if(k==='collapse'&&x.fall&&e.reason!=='Blutverlust')o={g,team:e.a?.team,fall:true,variant:Math.floor(Math.random()*3),part:'chest',kind:'collapse',line1:(by&&by!==g.name?by+' streckt '+g.name+' nieder':g.name+' geht zu Boden'),title:'Kampfunfähig',line3:e.reason||'',color:'#f29b83',...(cfg.fallText?.(x)||{})};
+ else if(k==='collapse')o={g,part:'chest',kind:'collapse',line1:g.name+' verliert zu viel Blut',title:'Geht blutend zu Boden',line3:'Blut '+Math.round(g.blood)+' % · kampfunfähig'+(by?' · zuletzt getroffen von '+by:''),color:'#f29b83',team:e.a?.team,fall:!!x.fall,variant:1};
  else{const wid=weaponId(e.weapon),kind=['bow','crossbow'].includes(wid)&&['stab','deepstab'].includes(k)?'arrow':k,
    cons=p.missing?'für immer verloren':p.fracture?.crushed?'Dauerschaden: heilt nie ganz':p.fracture?'Bruch: mindestens '+Math.ceil(p.fracture.days)+' Tage':e.lasting||p.chronic>0?'Dauerschaden':p.bleed>0?'blutet weiter':'';
   o={g,part:e.part,kind,wid,cls:wid?undefined:'none',line1:(e.attacker||'Ein Gegner')+(e.weapon?' ('+e.weapon+')':'')+' fügt '+g.name+' zu:',title:inj,line3:[p.missing?'':'Grad '+gr+' ('+GRADE[gr]+')',kind==='arrow'?'der Pfeil bleibt stecken':'',cons].filter(Boolean).join(' · '),color:gr>=3||p.missing?'#f29b83':'#f4d37a'};}
- const v=document.createElement('div');v.className='injury-shot injury-shot-arena';v.innerHTML='<canvas width="660" height="420"></canvas>';document.body.appendChild(v);const shot=start({...o,from:SHOT_FROM,len:SHOT_LEN,mute:true});v.addEventListener('click',()=>{shot.done=true;});arena={v,shot,g:v.firstChild.getContext('2d'),battle:S.battle.id};gap=GAP;}
-function endArena(){arena?.v.remove();arena=null;}
+ const shot=start({...o,textScale:cfg.host?.()?cfg.textScale:1,from:SHOT_FROM,len:k==='death'?(x.dramatic?5:3):x.live?1.5:SHOT_LEN,hold:tap()&&!x.live,mute:true}),host=cfg.host?.();
+ if(host){cfg.onShot?.(true,o,!!x.live);arena={v:null,shot,c:host,g:host.getContext('2d'),battle:S.battle.id,live:!!x.live};}
+ else{const v=document.createElement('div');v.className='injury-shot injury-shot-arena';v.innerHTML='<canvas width="660" height="420"></canvas>';document.body.appendChild(v);v.addEventListener('click',()=>{shot.done=true;});arena={v,shot,c:v.firstChild,g:v.firstChild.getContext('2d'),battle:S.battle.id};}if(!x.live)gap=tap()?1.2:GAP;}
+function endArena(){arena?.v?.remove();const hosted=arena&&!arena.v;arena=null;if(hosted)cfg.onShot?.(false);}
 if(typeof M.fixedStep==='function'&&typeof M.presentationStep==='function'){
  const fixed=M.fixedStep,present=M.presentationStep,effects=M.effectsStep;
- M.fixedStep=function(dt){if(arena)return;return fixed.apply(this,arguments);};
- if(typeof effects==='function')M.effectsStep=function(dt){if(arena)return;return effects.apply(this,arguments);};
- M.presentationStep=function(dt){if(arena){if(!S.battle||S.battle.id!==arena.battle||arena.shot.done||!arena.shot.step(dt))endArena();else arena.shot.paint(arena.g,660,420);return;}
-  const r=present.apply(this,arguments);try{if(mode()!=='off'&&watching()){const x=pick(dt);if(x)arenaShot(x);}else if(pend.length)pend=[];}catch{pend=[];}return r;};}
+ M.fixedStep=function(dt){if(arena&&!arena.live){/* mit Bestätigung: erst kurz Zeitlupe, dann Stillstand */if(arena.shot.o.hold&&arena.shot.t-SHOT_FROM<.45&&!arena.shot.o.waiting){arena.slow=(arena.slow||0)+1;if(arena.slow%6)return;}else return;}return fixed.apply(this,arguments);};
+ if(typeof effects==='function')M.effectsStep=function(dt){if(arena&&!arena.live)return;return effects.apply(this,arguments);};
+ M.presentationStep=function(dt){if(arena){if(!S.battle||S.battle.id!==arena.battle||arena.shot.done||!arena.shot.step(dt))endArena();else arena.shot.paint(arena.g,arena.c.width,arena.c.height);if(arena&&!arena.live)return;}
+  const r=present.apply(this,arguments);try{if(mode()!=='off'&&watching()){const x=pick(dt,!!arena);if(x){if(arena)endArena();arenaShot(x);}}else if(pend.length)pend=[];}catch{pend=[];}return r;};}
 // Zeile für die Einstellungsseite und ihre Auswahl
 M.injuryOptions=()=>`<div class="list-row"><span>Nahaufnahmen bei Verletzungen<br><small>Der Kampf hält dafür kurz an. Antippen überspringt.</small></span><select class="select" id="closeups">${MODES.map(([k,n])=>`<option value="${k}"${k===mode()?' selected':''}>${n}</option>`).join('')}</select></div>`;
 {const change=M.schoolChange;M.schoolChange=ev=>{if(ev?.target?.id==='closeups'){S.options.closeups=ev.target.value;M.persist?.();return true;}return change?.(ev);};}
-M.injuryShots={start,play,stop,paint,kinds:KINDS,kindOf,injuriesFor,viewOf,weaponClass,relevant,HIT,LEN,modes:MODES,mode,get arena(){return arena;},get pending(){return pend;}};
+M.injuryShots={start,play,stop,paint,kinds:KINDS,kindOf,injuriesFor,viewOf,weaponClass,relevant,HIT,LEN,modes:MODES,mode,level,config:cfg,skip:()=>{if(arena)arena.shot.done=true;},get arena(){return arena;},get pending(){return pend;}};
 })();
