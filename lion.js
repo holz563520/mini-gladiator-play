@@ -103,11 +103,20 @@ function startFight(){const team=recruits();if(!team.length){afterFight();return
  const l=lionActor(520,230);l.a=Math.PI/2;actors.push(l);
  S.battle={id:'rex-tut-'+Date.now(),rexTut:true,trainingLocked:true,actors,opponent:'Rex Vetus',time:0,type:'rex-tut',league:0,log:[],paused:false,result:null,obstacles:[],width:1040,height:720,moralePressure:[0,0],moraleBonus:[0,0],lastSave:0,groundWeapons:[],dropped:[]};
  M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;for(const p of [...(M.fx||[]),...(M.shots||[])])p.active=false;setStage('fight');M.ui.render();}
-function fightStep(dt){const b=S.battle;if(!b?.rexTut||b.result)return;b.time+=dt;const l=b.actors.find(a=>a.rex),hum=b.actors.filter(a=>!a.rex);
+function unstick(){const b=S.battle;if(!b?.rexTut||b.result)return;if(b.finale){delete b.finale;b.verdictCamera=null;b.cinematic=false;b.paused=false;b.forceAll=true;const el=$('finaleBanner');if(el)el.hidden=true;}
+ // Sind alle gefallen, läuft der Schluss von selbst weiter (ein neu geladener Kampf steht sonst auf Pause)
+ if(b.paused&&!b.actors.some(a=>!a.rex&&!a.g.dead))b.paused=false;}
+// Läuft in jedem Bild, auch wenn der Kampf pausiert ist (ein pausiertes Finale käme sonst nie in fightStep an)
+const present=M.presentationStep;M.presentationStep=dt=>{unstick();return present?.(dt);};
+function fightStep(dt){const b=S.battle;if(!b?.rexTut||b.result)return;
+ // Kein reguläres Kampfende im Tutorial: Ein (auch aus einem alten Stand übernommenes) Finale durch Aufgeben wird aufgehoben, der Löwe bringt es zu Ende.
+ unstick();
+ b.time+=dt;const l=b.actors.find(a=>a.rex),hum=b.actors.filter(a=>!a.rex);
  for(const a of hum){const x=a.x,y=a.y,p=a.phase;if(a.draggedBy===l.id&&!a.g.dead){a.state='fallen';a.moveSpeed=0;}else{M.resolveStrike(a,dt*1.12);M.updateActor(a,dt*1.12);}M.updateLocomotion(a,x,y,p,dt*1.12);}
  lionStep(l,dt);if(l.mode!=='leap')M.collisionPairs(b);M.stepProjectiles(dt);
  // Sicherheitsnetz: zieht es sich zu lange, erledigt der Löwe die Übrigen (geskriptete Niederlage)
- if(b.time>120){b.force=(b.force||0)-dt;if(b.force<=0){b.force=2.2;const t=hum.find(a=>alive(a));if(t)M.death(t,'Von Rex Vetus zerfleischt',l);}}
+ // Dasselbe, wenn nur noch Männer übrig sind, die sich ergeben haben (die greift der Löwe von sich aus nicht mehr an)
+ const rest=hum.filter(a=>!a.g.dead);if(rest.length&&(b.time>120||b.forceAll||!rest.some(alive))){b.force=(b.force??1.2)-dt;if(b.force<=0){b.force=b.time>120&&!b.forceAll?2.2:1.2;const t=rest.find(alive)||rest[0];M.death(t,'Von Rex Vetus zerfleischt',l);}}
  if(!hum.some(a=>!a.g.dead)){if(!b.endAt){b.endAt=b.time;release(l);}if(b.time-b.endAt>1.6&&!b.roared){b.roared=true;state(l,'roar',2.6);beast('roar');M.shake=10;}if(b.time-b.endAt>4.6){b.result={winner:'Rex Vetus'};defeat();}}}
 const fixed=M.fixedStep;M.fixedStep=dt=>S.battle?.rexTut?fightStep(dt):fixed(dt);
 function defeat(){const n=L().recruits.length,v=document.createElement('div');v.className='lion-defeat';v.innerHTML=`<div><b>NIEDERLAGE</b><span>${n} GLADIATOREN GEFALLEN</span><span>ÜBERLEBENDE: 0</span><small>Tippen</small></div>`;document.body.appendChild(v);setStage('aftermath');
@@ -399,7 +408,7 @@ const page=M.schoolPage;M.schoolPage=p=>{const html=page(p);const st=L().stage;i
  const spy=st==='spy';const card=`<section class="box lion-card${spy?' lion-spy':''}"><p class="eyebrow">HERAUSFORDERUNG</p><h2>DER AUSGEMUSTERTE KÖNIG</h2><p>Ein ehemaliger königlicher Arenalöwe wurde nach schweren Verletzungen ausgemustert. Das Tier ist abgemagert, humpelt und wurde seit längerer Zeit nicht ausreichend gefüttert. Der Veranstalter sucht mutige Gladiatoren für einen letzten Kampf gegen die ehemalige Bestie.</p>`+
   (spy?`<div class="lion-spycard"><small>SPIONAGE · TUTORIAL-ERGEBNIS</small><strong>SIEGCHANCE: 0 %</strong><span>Simuliert gegen ${recruits().length} Rekruten · Gegner: Rex Vetus</span></div><div class="buttons"><button class="btn primary" type="button" data-action="lion:fight">KAMPF ANNEHMEN</button></div>`:'')+`</section>`;
  return card+html;};
-const click=M.schoolClick;M.schoolClick=a=>{if(a==='lion:fight'){hideGuide();scene11();return true;}if(blocked(a)){M.ui.notify(a==='smith:send'?'Die fünf brauchen wir noch. Vorerst.':LOCKMSG);return true;}return click(a);};
+const click=M.schoolClick;M.schoolClick=a=>{if(a==='lion:fight'){hideGuide();scene11();return true;}if(S.battle?.rexTut&&a.startsWith('surrender')){M.ui.notify('Aufgeben? Vor einer halb verhungerten Katze?');return true;}if(blocked(a)){M.ui.notify(a==='smith:send'?'Die fünf brauchen wir noch. Vorerst.':LOCKMSG);return true;}return click(a);};
 // ---------- Start, Fortsetzen ----------
 function begin(){const h=L();if(h.stage)return;const rs=S.roster.filter(g=>!g.dead).slice(0,5);h.recruits=rs.map(g=>g.id);setStage('smith1');scene1();}
 function resume(){const st=L().stage;if(!st||st==='done'||film||guide)return;({smith1:scene1,buy:()=>{M.ui.click('nav:forge');stepBuy();},barracks:()=>{M.ui.click('nav:gladiators');stepBarracks();},arenawalk:scene3,arenainfo:()=>{M.ui.click('nav:arena');stepArena();},challenge:()=>{M.ui.click('nav:arena');stepArena();},speech:scene5,demo:scene6,helmet:scene7,heroes:scene8,team:()=>{M.ui.click('nav:team');stepTeam();},spy:()=>{M.ui.click('nav:arena');stepSpy();},entrance:scene11,fight:()=>{if(!S.battle)scene11();},aftermath:playAftermath})[st]?.();}
