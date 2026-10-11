@@ -6,8 +6,20 @@
 .lion-spycard small{letter-spacing:.14em;color:#c9a0a0;font-size:11px}
 .lion-spycard strong{font-size:26px;color:#e05a4a;letter-spacing:.06em}
 .lion-spycard span{font-size:12px;color:#c9c6b4}
-.lion-guide .lion-progress{display:block;font-style:normal;font-weight:bold;color:#8a2a24;margin-top:4px}
-.lion-guide .btn{margin-top:8px;min-height:40px}
+.lion-guide .lion-progress{font-style:normal;font-weight:bold;color:#8a2a24}
+/* Aufgabe: schmale Leiste im Seitenkopf statt Sprechblase über dem Inhalt. Menü und Tageswechsel sind in dieser Zeit ausgeblendet, der Platz ist frei. */
+.lion-guide.lion-taskbar{top:calc(8px + env(safe-area-inset-top));bottom:auto;width:min(560px,calc(100vw - 16px));padding:6px 10px 7px;cursor:default;box-shadow:3px 3px 0 rgba(0,0,0,.45)}
+.lion-guide.lion-taskbar b{font-size:10px}
+.lion-guide.lion-taskbar span{font-size:14px;line-height:1.25;margin:1px 0 3px}
+.lion-taskrow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.lion-taskrow .lion-progress{font-size:13px}
+.lion-taskrow .btn{min-height:34px;padding:4px 10px;font-size:12px;margin:0;width:auto;flex:0 0 auto;color:#efe0b3}
+.lion-guide.lion-away{display:none}
+body.lion-lock #mapuiBar,body.lion-lock #mapuiMenu,body.lion-lock .mobile-section,body.lion-lock .section-tabs:not(.mapui-chronik){display:none!important}
+body.lion-lock:not(.lion-lock-back) .backbar{display:none!important}
+body.lion-lock .backbar{position:static!important;margin:0 0 12px!important}
+body.mapui.lion-lock .content,body.lion-lock .content{padding-top:16px!important;padding-bottom:calc(150px + env(safe-area-inset-bottom))!important}
+body.mapui.lion-task .content,body.lion-task .content{padding-top:calc(var(--lion-guide-h,96px) + 22px)!important;padding-bottom:24px!important}
 .lion-defeat{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;background:#000c;cursor:pointer;animation:hallFade .8s ease-out}
 .lion-defeat div{display:grid;gap:10px;text-align:center;padding:24px 18px;border-top:2px solid #a3231d;border-bottom:2px solid #a3231d;background:#120c0b;width:min(560px,calc(100vw - 32px))}
 .lion-defeat b{font-size:clamp(28px,8vw,44px);letter-spacing:.12em;color:#e05a4a}

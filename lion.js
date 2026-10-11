@@ -189,13 +189,24 @@ function roarPaint(g,w,h,f){const {b,q,r}=buffer(f,160,100),t=f.t,k=Math.max(0,M
  for(const d of f.dust||[])r(d.x,d.y,d.s,d.s,'#bda579');
  blit(g,w,h,b,f.shake||0,1+k*.08);}
 // ---------- Führungsleiste: Schmied erklärt an der echten Oberfläche ----------
+// Solange der Schmied etwas an der Oberfläche erklärt, bleibt man auf den dafür nötigen Seiten: kein Hauptmenü, kein Tageswechsel, kein Weglaufen.
+const LOCK={buy:['forge'],barracks:['gladiators','equipment','detail','attributes','mantles'],team:['team'],arenainfo:['arena'],challenge:['arena'],spy:['arena']},LOCKMSG='Erst die Aufgabe des Schmieds erledigen.';
+const lockPages=()=>guide&&!film&&!S.battle?LOCK[L().stage]||null:null;
+const blocked=a=>{const ok=lockPages();if(!ok)return false;const [p,b]=a.split(':');return ['rest','rest3','familyrest','familyrestconfirm','profilemenu'].includes(p)||a==='ludus:owner'||a==='smith:send'||(p==='nav'&&!ok.includes(b));};
 let guide=null;
-function showGuide(o){hideGuide();const box=document.createElement('div');box.className='hall-guide lion-guide';box.setAttribute('role','status');document.body.appendChild(box);guide={...o,box,i:0,t:0};renderGuide();
+const bodyClass=(name,on)=>document.body?.classList?.toggle?.(name,!!on);
+function showGuide(o){hideGuide();const box=document.createElement('div');box.className='hall-guide lion-guide';box.setAttribute('role','status');document.body.appendChild(box);guide={...o,box,i:0,t:0};bodyClass('lion-lock',!!LOCK[L().stage]);renderGuide();
  box.addEventListener('click',e=>{const act=e.target.closest?.('[data-lion]');if(act){e.stopPropagation();o.actions?.[act.dataset.lion]?.();return;}if(!guide)return;if(guide.i>=(guide.lines||[]).length&&guide.task&&!guide.taskDone)return;if(guide.t<.35)return;guide.i++;guide.t=0;renderGuide();});}
-function hideGuide(){guide?.box?.remove();guide=null;}
-function renderGuide(){const G=guide;if(!G)return;const lines=G.lines||[];if(G.i>=lines.length){if(G.task&&!G.taskDone){G.box.innerHTML=`<b>${esc(smithName())}</b><span>${esc(G.task.text)}</span><em class="lion-progress">${esc(G.task.progress?.()||'')}</em>${G.task.help?`<button class="btn" type="button" data-lion="help">${esc(G.task.help)}</button>`:''}`;return;}const done=G.done;hideGuide();done?.();return;}
- G.box.innerHTML=`<b>${esc(smithName())}</b><span>${esc(lines[G.i])}</span><small>Tippen für weiter</small>`;}
-function guideTick(dt){if(!guide)return;guide.t+=dt;if(guide.i>=(guide.lines||[]).length&&guide.task&&!guide.taskDone){const p=guide.task.progress?.()||'',em=guide.box.querySelector('.lion-progress');if(em&&em.textContent!==p)em.textContent=p;if(guide.task.check()){guide.taskDone=true;const after=guide.task.after||[];guide.lines=[...(guide.lines||[]),...after];renderGuide();}}}
+function hideGuide(){guide?.box?.remove();guide=null;for(const c of ['lion-lock','lion-lock-back','lion-task'])bodyClass(c,false);}
+function renderGuide(){const G=guide;if(!G)return;const lines=G.lines||[];if(G.i>=lines.length){if(G.task&&!G.taskDone){G.box.classList?.add?.('lion-taskbar');bodyClass('lion-task',true);G.box.innerHTML=`<b>Aufgabe · ${esc(smithName())}</b><span>${esc(G.task.text)}</span><div class="lion-taskrow"><em class="lion-progress">${esc(G.task.progress?.()||'')}</em>${G.task.help?`<button class="btn small" type="button" data-lion="help">${esc(G.task.help)}</button>`:''}</div>`;fitGuide();return;}const done=G.done;hideGuide();done?.();return;}
+ G.box.classList?.remove?.('lion-taskbar');bodyClass('lion-task',false);G.box.innerHTML=`<b>${esc(smithName())}</b><span>${esc(lines[G.i])}</span><small>Tippen für weiter</small>`;}
+// Platz für die Aufgabenleiste im Seitenkopf freihalten; offene Auswahlfenster (Ausrüsten, Details) verdeckt die Führung nie
+function fitGuide(){const h=guide?.box?.offsetHeight;if(h)document.documentElement?.style?.setProperty?.('--lion-guide-h',h+'px');}
+function guideTick(dt){if(!guide)return;guide.t+=dt;const m=$('modal'),away=!!m&&m.hidden===false;if(guide.away!==away){guide.away=away;guide.box.classList?.toggle?.('lion-away',away);}
+ const ok=lockPages();if(ok&&!ok.includes(M.ui.getPage())){M.ui.click('nav:'+ok[0]);M.ui.notify(LOCKMSG);}
+ // „Zurück“ nur dort, wo es innerhalb der Aufgabe etwas zurückzugehen gibt (Ausrüstung/Profil → Kaserne)
+ bodyClass('lion-lock-back',!!ok&&M.ui.getPage()!==ok[0]);
+ if(guide.box.classList?.contains?.('lion-taskbar'))fitGuide();if(guide.i>=(guide.lines||[]).length&&guide.task&&!guide.taskDone){const p=guide.task.progress?.()||'',em=guide.box.querySelector('.lion-progress');if(em&&em.textContent!==p)em.textContent=p;if(guide.task.check()){guide.taskDone=true;const after=guide.task.after||[];guide.lines=[...(guide.lines||[]),...after];renderGuide();}}}
 // ---------- Ablauf ----------
 // Gibt der Schmied heute weniger als fünf Waffenarten her, zählen so viele verschiedene, wie er anbietet
 const newWeapons=()=>S.inventory.filter(i=>i.kind==='weapon'&&!L().base.includes(i.id)).length,offerKinds=()=>{const own=new Set([...weaponDefs()]);for(const o of W()?.offers||[])if(o.item.kind==='weapon')own.add(o.item.def);return Math.max(1,own.size);};
@@ -216,7 +227,7 @@ function scene1(){setStage('smith1');villageFilm([
  {say:'Aber bevor wir diese hoffnungsvollen Vollidioten in die Arena schicken, sollten wir ihnen wenigstens etwas in die Hand drücken.'},
  {say:'Mit bloßen Händen kämpfen ist nämlich ausgesprochen unpraktisch. Besonders, wenn man hinterher keine mehr hat.',do:f=>{f.smith.forgePose='sip';}}
 ],{label:'Der Schmied und die fünf Idioten',done:()=>{setStage('buy');L().base=S.inventory.map(i=>i.id);M.ui.click('nav:forge');stepBuy();}});}
-function stepBuy(){showGuide({lines:['Hier kaufen wir Waffen. Scharfe, stumpfe, lange, kurze. Hauptsache, irgendetwas davon zeigt in Richtung des Gegners.'],
+function stepBuy(){if(M.workshop?.stockUp?.()){M.persist?.();M.ui.render();}showGuide({lines:['Hier kaufen wir Waffen. Scharfe, stumpfe, lange, kurze. Hauptsache, irgendetwas davon zeigt in Richtung des Gegners.'],
  task:{text:'Kaufe fünf Waffen, möglichst verschiedene (Reiter „Waffen“, dann KAUFEN).',progress:()=>{const n=newWeapons(),d=weaponDefs().size;return n+' / 5 Waffen · '+d+' verschiedene';},check:()=>newWeapons()>=5&&weaponDefs().size>=Math.min(5,offerKinds()),after:['Ausgezeichnet! Fünf Waffen für fünf Männer.','Jetzt müssen wir nur noch verhindern, dass sie sich damit gegenseitig umbringen, bevor der Kampf überhaupt angefangen hat.']},
  done:()=>{setStage('barracks');M.ui.click('nav:gladiators');stepBarracks();}});}
 function stepBarracks(){showGuide({lines:['Willkommen in der Kaserne. Hier machen wir aus gewöhnlichen Versagern professionelle Versager mit Ausrüstung.','Mit etwas Glück wird irgendwann sogar ein richtiger Gladiator daraus.',
@@ -372,7 +383,7 @@ const page=M.schoolPage;M.schoolPage=p=>{const html=page(p);const st=L().stage;i
  const spy=st==='spy';const card=`<section class="box lion-card${spy?' lion-spy':''}"><p class="eyebrow">HERAUSFORDERUNG</p><h2>DER AUSGEMUSTERTE KÖNIG</h2><p>Ein ehemaliger königlicher Arenalöwe wurde nach schweren Verletzungen ausgemustert. Das Tier ist abgemagert, humpelt und wurde seit längerer Zeit nicht ausreichend gefüttert. Der Veranstalter sucht mutige Gladiatoren für einen letzten Kampf gegen die ehemalige Bestie.</p>`+
   (spy?`<div class="lion-spycard"><small>SPIONAGE · TUTORIAL-ERGEBNIS</small><strong>SIEGCHANCE: 0 %</strong><span>Simuliert gegen ${recruits().length} Rekruten · Gegner: Rex Vetus</span></div><div class="buttons"><button class="btn primary" type="button" data-action="lion:fight">KAMPF ANNEHMEN</button></div>`:'')+`</section>`;
  return card+html;};
-const click=M.schoolClick;M.schoolClick=a=>{if(a==='lion:fight'){hideGuide();scene11();return true;}return click(a);};
+const click=M.schoolClick;M.schoolClick=a=>{if(a==='lion:fight'){hideGuide();scene11();return true;}if(blocked(a)){M.ui.notify(a==='smith:send'?'Die fünf brauchen wir noch. Vorerst.':LOCKMSG);return true;}return click(a);};
 // ---------- Start, Fortsetzen ----------
 function begin(){const h=L();if(h.stage)return;const rs=S.roster.filter(g=>!g.dead).slice(0,5);h.recruits=rs.map(g=>g.id);setStage('smith1');scene1();}
 function resume(){const st=L().stage;if(!st||st==='done'||film||guide)return;({smith1:scene1,buy:()=>{M.ui.click('nav:forge');stepBuy();},barracks:()=>{M.ui.click('nav:gladiators');stepBarracks();},arenawalk:scene3,arenainfo:()=>{M.ui.click('nav:arena');stepArena();},challenge:()=>{M.ui.click('nav:arena');stepArena();},speech:scene5,demo:scene6,helmet:scene7,heroes:scene8,team:()=>{M.ui.click('nav:team');stepTeam();},spy:()=>{M.ui.click('nav:arena');stepSpy();},entrance:scene11,fight:()=>{if(!S.battle)scene11();},aftermath:playAftermath})[st]?.();}
@@ -383,6 +394,6 @@ const busy=()=>!!S.battle||!!film||!!M.smithWrath?.scene||!!M.archerPlot?.scene|
 const auto=M.ludusTick;M.ludusTick=dt=>{auto?.(dt);if(document.hidden||M.benchmarkActive)return;const st=L().stage,T=M.trader?.state,home=M.ui.getPage()==='home';
  if(st===''&&T){if(lastIntro!=='done'&&T.intro==='done')L().armed=true;lastIntro=T.intro;if(!L().armed)return;if(!home||busy()){wait=0;return;}wait+=dt;if(wait>3){wait=0;if(S.roster.filter(g=>!g.dead).length>=5)begin();else setStage('skip');}return;}
  if(!st||st==='done'||st==='skip'||guide||film)return;if(st==='fight'&&S.battle?.rexTut)return;if(!home&&!['buy','barracks','arenainfo','challenge','team','spy'].includes(st))return;if(busy()){wait=0;return;}wait+=dt;if(wait>1.2){wait=0;resume();}};
-M.lionChapter={begin,resume,stop:()=>{stopFilm();hideGuide();},state:L,scenes:{scene1,stepBuy,stepBarracks,scene3,stepArena,scene5,scene6,scene7,scene8,stepTeam,stepSpy,scene11,startFight,playAftermath,finishChapter},get film(){return film;},stepFilm,get guide(){return guide;}};
+M.lionChapter={lockPages,blocked,begin,resume,stop:()=>{stopFilm();hideGuide();},state:L,scenes:{scene1,stepBuy,stepBarracks,scene3,stepArena,scene5,scene6,scene7,scene8,stepTeam,stepSpy,scene11,startFight,playAftermath,finishChapter},get film(){return film;},stepFilm,get guide(){return guide;}};
 
 })();
