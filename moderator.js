@@ -173,13 +173,15 @@ document.addEventListener('click',e=>{const b=e.target.closest?.('[data-mod]');i
 // ---------- Kommentar während des Kampfes ----------
 let cur={prio:0,t:0},track=null;
 function say(text,prio=1,force=false){const el=$('bhModText');if(!el||!text)return;const now=performance.now();if(!force&&cur.prio>prio&&now-cur.t<2600)return;if(!force&&cur.prio===prio&&now-cur.t<1400)return;cur={prio,t:now};el.textContent=text;const box=$('bhMod');box.classList.remove('pop');void box.offsetWidth;box.classList.add('pop');}
+function credit(b,victim,dead){const by=b.actors.find(x=>x.id===victim.lastAttackerId)||(dead?b.actors.find(x=>x.g.name===victim.g.killer):null);if(!by||by.team===victim.team)return null;const e=track.tally[by.id]??={a:by,downs:new Set(),kills:[]};e.downs.add(victim.id);if(dead&&!e.kills.includes(victim))e.kills.push(victim);return by;}
+// Der letzte Niederschlag beendet den Kampf im selben Schritt – der laufende Kommentar sieht ihn nie. Darum wird beim Kampfende nachgezählt.
+function sweep(b){if(!track||track.id!==b.id)track={id:b.id,a:{},blood:false,lead:0,last:{},streak:{},tally:{}};if(track.swept)return;track.swept=true;const judged=new Set((b.finale?.judgments||[]).filter(j=>j.done).map(j=>j.id));for(const a of b.actors)if((a.down||a.g.dead)&&!judged.has(a.id))credit(b,a,a.g.dead);}
 function watch(){const b=S.battle;if(!b||!document.body.classList.contains('bhud')||intro||b.paused)return;
- if(b.finale){verdictWatch(b);return;}
+ if(b.finale){sweep(b);verdictWatch(b);return;}
  if(!track||track.id!==b.id)track={id:b.id,a:{},blood:false,lead:0,last:{},streak:{},tally:{}};
- const credit=(victim,dead)=>{const by=b.actors.find(x=>x.id===victim.lastAttackerId)||(dead?b.actors.find(x=>x.g.name===victim.g.killer):null);if(!by||by.team===victim.team)return null;const e=track.tally[by.id]??={a:by,downs:new Set(),kills:[]};e.downs.add(victim.id);if(dead&&!e.kills.includes(victim))e.kills.push(victim);return by;};
  for(const a of b.actors){const g=a.g,s=track.a[a.id]??={dead:g.dead,down:a.down,miss:Object.values(g.body).filter(p=>p.missing).length,kills:a.kills||0},team=teamName(b,a.team);
-  if(g.dead&&!s.dead){s.dead=true;s.down=true;credit(a,true);const k=g.killer&&g.killer!=='Unbekannt'?g.killer:'',hero=heroes.has(g.id);say(line(hero?'deathHero':k?'death':'deathPlain',{v:g.name,k:k||'Der Sand',team,...facts(g)}),hero?5:4);M.sound?.('crowd');if(hero)setTimeout(()=>M.sound?.('crowd'),500);continue;}
-  if(a.down&&!s.down&&!g.dead){s.down=true;const by=credit(a,false);say(by?line('koBy',{v:g.name,k:by.g.name}):line('ko',{v:g.name}),3);M.sound?.('crowd');}
+  if(g.dead&&!s.dead){s.dead=true;s.down=true;credit(b,a,true);const k=g.killer&&g.killer!=='Unbekannt'?g.killer:'',hero=heroes.has(g.id);say(line(hero?'deathHero':k?'death':'deathPlain',{v:g.name,k:k||'Der Sand',team,...facts(g)}),hero?5:4);M.sound?.('crowd');if(hero)setTimeout(()=>M.sound?.('crowd'),500);continue;}
+  if(a.down&&!s.down&&!g.dead){s.down=true;const by=credit(b,a,false);say(by?line('koBy',{v:g.name,k:by.g.name}):line('ko',{v:g.name}),3);M.sound?.('crowd');}
   if(!a.down)s.down=false;
   const miss=Object.entries(g.body).filter(([,p])=>p.missing);if(miss.length>s.miss&&!g.dead){const root=miss.map(([id])=>id).find(id=>M.branches?.[id]?.length>1)||miss[0][0];s.miss=miss.length;say(line('sever',{v:g.name,part:M.partName(root)}),3);M.sound?.('crowd');}
   if((a.kills||0)>s.kills){s.kills=a.kills;if(a.kills>=2)setTimeout(()=>say(line('streak',{k:g.name,n:a.kills}),2),2800);}
@@ -247,7 +249,7 @@ function dramaClose(){clearTimeout(dTimer);cancelAnimationFrame(dRaf);drama=null
 {const base=M.fixedStep;if(typeof base==='function')M.fixedStep=function(){const d=drama;if(d&&(!S.battle||S.battle.id!==d.b||!S.battle.finale)){dramaClose();return base.apply(this,arguments);}if(d?.hold)return;const r=base.apply(this,arguments);if(drama?.wait&&S.battle?.finale?.stage===drama.wait){const w=drama.wait;drama.wait=null;drama.hold=true;dramaReached(w);}else if(drama?.wait==='act'&&S.battle?.finale&&S.battle.finale.judgments[S.battle.finale.index]?.id!==drama.j.id)dramaClose();return r;};}
 // ---------- Der Held des Kampfes: wer die meisten niedergestreckt hat, jubelt; den Kopf des Stärksten, den er getötet hat, hält er hoch ----------
 let champ=null,champDone=new Set(),cRaf=0,cTimer=null;
-function champion(b){const all=Object.values(track?.id===b.id?track.tally:{}).filter(e=>!e.a.g.dead),win=b.finale?.winner,pool=all.filter(e=>e.a.team===win).length?all.filter(e=>e.a.team===win):all;
+function champion(b){sweep(b);const all=Object.values(track?.id===b.id?track.tally:{}).filter(e=>!e.a.g.dead),win=b.finale?.winner,pool=all.filter(e=>e.a.team===win).length?all.filter(e=>e.a.team===win):all;
  const best=pool.sort((x,y)=>(y.downs.size+y.kills.length*1.5)-(x.downs.size+x.kills.length*1.5))[0];if(!best||!best.downs.size)return null;
  const head=best.kills.slice().sort((x,y)=>weight(y.g)-weight(x.g))[0]||null,n=best.downs.size,k=best.kills.length,name=best.a.g.name;
  const sayL=[k?line('champKill',{name,n,k:cnt(k,'einen','',null)}):line('champNoKill',{name,n})];if(head)sayL.push(line('champHead',{v:head.g.name,name}));sayL.push(line('champEnd'));
