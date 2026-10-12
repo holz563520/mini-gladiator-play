@@ -122,3 +122,8 @@ body.lesson-goarena [data-action="nav:arena"]{animation:lessonPulse 1s ease-in-o
 .hs-village .log li{color:#c9c2a8;padding:1px 0}.hs-village .log li:first-child{color:#eae4cd}.hs-village .log li.hit{color:#f0a090}.hs-village .log li.crit{color:#ffd040}
 .hs-village .ctrl{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
 .hs-village .shotwrap{position:absolute;inset:0;background:#0d0a08;z-index:5;cursor:pointer}.hs-village .shotwrap canvas{width:100%;height:100%;display:block;image-rendering:pixelated}.hs-village .shotwrap span{position:absolute;right:6px;bottom:4px;font-size:12px;color:#bfae8c;opacity:.75}
+
+/* Freies Training: Ziel als kleines Schild unten links, Antippen klappt es auf */
+.lesson-guide.hs-mini{left:10px;right:auto;transform:none;width:auto;max-width:min(78vw,420px);padding:6px 10px;cursor:pointer}
+.lesson-guide.hs-mini span{display:none}.lesson-guide.hs-mini b::after{content:' ▸ Ziel anzeigen';text-transform:none;letter-spacing:0}
+.lesson-guide.hs-mini.open span{display:block;font-size:13px}.lesson-guide.hs-mini.open b::after{content:' ▾'}

@@ -58,6 +58,8 @@ function mount(){const bar=$('mapuiBar');let el=document.querySelector('.mg-gold
  el=document.createElement('div');el.className='mg-gold';el.setAttribute('role','status');el.setAttribute('aria-label','Gold');el.innerHTML='<canvas width="16" height="16" class="mg-coin"></canvas><b>0</b><span class="mg-gold-fx"></span>';
  // Im Knopf „Nächster Tag“ neben der Tageszahl (überdeckt so nichts); Antippen geht wie bisher an den Knopf
  const day=bar?.querySelector('.mapui-day');if(day){day.appendChild(el);el.classList.add('in-day');}else{el.classList.add('floating');document.body.appendChild(el);}
+ el.setAttribute('role','button');el.setAttribute('tabindex','0');el.title='Kasse: Einnahmen, Ausgaben, morgen fällig';
+ const open=e=>{e.preventDefault();e.stopPropagation();ledger();};el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')open(e);});
  G.el=el;G.num=el.querySelector('b');G.coin=el.querySelector('canvas');G.fx=el.querySelector('.mg-gold-fx');if(G.shown!=null)G.num.textContent=fmt(G.shown);return true;}
 const fmt=n=>Math.round(n).toLocaleString('de-DE');
 // Runde Pixelmünze (16×16), dreht sich um die senkrechte Achse; Vorderseite mit geprägtem Kopf, dazu ein wandernder Glanz
@@ -73,10 +75,20 @@ function burst(delta){const fx=G.fx;if(!fx)return;const up=delta>0,s=document.cr
 function flash(cls){const el=G.el;el.classList.remove('gain','loss');void el.offsetWidth;el.classList.add(cls);clearTimeout(G.flashT);G.flashT=setTimeout(()=>el.classList.remove(cls),cls==='gain'?900:700);}
 function tick(now){requestAnimationFrame(tick);const dt=Math.min(.1,(now-G.last)/1000);G.last=now;if(!S||typeof S.gold!=='number')return;if(!G.el||!G.el.isConnected){mount();}
  if(G.shown==null){G.shown=G.target=S.gold;G.num.textContent=fmt(G.shown);}
- if(S.gold!==G.target){const delta=S.gold-G.target;G.target=S.gold;burst(delta);G.anim=delta>0?1.2:.6;}
+ const L=book();if(S.gold!==G.target){const delta=S.gold-G.target;G.target=S.gold;if(delta>0)L.inc+=delta;else L.exp-=delta;burst(delta);G.anim=delta>0?1.2:.6;}
  if(G.shown!==G.target){const diff=G.target-G.shown,step=Math.sign(diff)*Math.max(1,Math.abs(diff)*Math.min(1,dt*5));G.shown=Math.abs(step)>=Math.abs(diff)?G.target:G.shown+step;G.num.textContent=fmt(G.shown);}
  G.anim=Math.max(0,G.anim-dt);G.spin+=dt*(G.anim>0?(G.target>=G.shown?22:8):1.6);if(G.coin)coin(G.coin,G.spin,now/1000);}
 requestAnimationFrame(tick);
-M.dayGold={playDawn};
+// ---------- Kasse: Tagesbilanz (gespeichert in S.goldDay, wird bei jedem neuen Tag neu begonnen) ----------
+function book(){let L=S.goldDay;if(!L||L.day!==S.day){L=S.goldDay={day:S.day,start:G.target??S.gold,inc:0,exp:0};}return L;}
+function ledger(){const L=book(),sold=M.dailySold?.()||0,fit=S.roster.filter(g=>!g.dead&&!g.retired&&!g.smithDuty).length,net=L.inc-L.exp,f=n=>Math.round(n).toLocaleString('de-DE'),st=S.stats||{};
+ M.ui.modal('Kasse · Tag '+S.day,`<div class="mg-ledger"><div class="mg-ledger-top"><canvas width="16" height="16" class="mg-coin big"></canvas><b>${f(S.gold)}</b><span>Gold</span></div>
+ <h3>Heute</h3><dl><dt>Einnahmen</dt><dd class="plus">+${f(L.inc)}</dd><dt>Ausgaben</dt><dd class="minus">−${f(L.exp)}</dd><dt>Saldo heute</dt><dd class="${net>=0?'plus':'minus'}">${net>=0?'+':'−'}${f(Math.abs(net))}</dd><dt>Kasse zu Tagesbeginn</dt><dd>${f(L.start)}</dd></dl>
+ <h3>Nächster Tag</h3><dl><dt>Sold für ${fit} ${fit===1?'Gladiator':'Gladiatoren'}</dt><dd class="minus">−${f(sold)}</dd><dt>Kasse danach (ohne neue Einnahmen)</dt><dd class="${S.gold-sold>=0?'':'minus'}">${f(S.gold-sold)}</dd></dl>
+ ${S.gold-sold<0?'<p class="mg-warn">Achtung: Der Sold ist höher als die Kasse. Offener Sold wird später abgezogen.</p>':''}
+ <h3>Seit Spielbeginn</h3><dl><dt>Verdient</dt><dd class="plus">+${f(st.earned||0)}</dd><dt>Ausgegeben</dt><dd class="minus">−${f(st.spent||0)}</dd></dl>
+ <p class="tiny">Einnahmen und Ausgaben heute: alle Goldbewegungen seit Tagesbeginn, auch der Sold beim Tageswechsel.</p></div>`);
+ const c=document.querySelector('.mg-ledger .mg-coin');if(c){let sp=0;(function spin(){if(!c.isConnected)return;sp+=.12;coin(c,sp,performance.now()/1000);requestAnimationFrame(spin);})();}}
+M.dayGold={playDawn,ledger};
 window.DAY_GOLD_READY=true;
 })();

@@ -63,11 +63,12 @@ A.facade=function(){const name=String(S.schoolName||'Ludus').toUpperCase();if(fa
 // Karte des Ludus: Schild am Schultor, Beastrium, Händlerin mit Karren
 const overlay=M.ludusOverlay;
 M.ludusOverlay=(g,t)=>{overlay?.(g,t);const s=st();if(s.sign)A.gateSign(g,t);if(s.beastrium)A.beastrium(g,t,{rise:HS.rise??1});if(sellerOnMap())drawMapSeller(g,t);};
-const MAP_SELLER={x:468,y:612};
+// Platz auf dem Hof vor dem Arena-Tor (rechts): abseits der Wege des Sklavenhändlers und der Herumtreiber
+const MAP_SELLER={x:516,y:238};
 function sellerOnMap(){const s=st();return ['free','won','end','fight1','b-open','b-pick'].includes(s.stage)&&!film();}
 function drawMapSeller(g,t){const o=offer();A.cart(g,{x:MAP_SELLER.x+52,y:MAP_SELLER.y,t,roosters:o.list,sold:o.sold,face:-1,handle:[MAP_SELLER.x+11,MAP_SELLER.y-24]});A.seller(g,{x:MAP_SELLER.x,y:MAP_SELLER.y,dir:-1,pose:Math.sin(t*.6)>.3?'sell':'hips',t,mouth:Math.sin(t*.6)>.3?'shout':'grin'});}
-const PLACE_SELLER={name:'Hühnerhändlerin',sub:'3 Hähne am Tag',route:'hmarket',x:MAP_SELLER.x-16,y:MAP_SELLER.y-58,w:110,h:60};
-function syncPlaces(){const P=M.ludus.places,s=st();const want=[[A.BEASTRIUM,s.beastrium],[PLACE_SELLER,sellerOnMap()]];for(const [p,on] of want){const i=P.indexOf(p);if(on&&i<0)P.unshift(p);if(!on&&i>=0)P.splice(i,1);}}
+const PLACE_SELLER={name:'Hühnerhändlerin',sub:'3 Hähne am Tag',route:'hmarket',x:MAP_SELLER.x-16,y:MAP_SELLER.y-56,w:110,h:60};
+function syncPlaces(){const P=M.ludus.places,s=st();const want=[[A.BEASTRIUM,s.beastrium],[PLACE_SELLER,sellerOnMap()]];for(const [p,on] of want){const i=P.indexOf(p);if(on&&i<0)P.push(p);if(!on&&i>=0)P.splice(i,1);}/* hinten anfügen: ludus.js zeichnet die Gebäude über feste Indizes (places[0..7]) */}
 
 // =====================================================================================================
 // HÜHNERHÄNDLERIN: drei Hähne pro Spieltag, Käfig antippen = kaufen, danach Nahansicht mit Qualitätsanimation
@@ -447,7 +448,9 @@ function scene8(){setStage('s8');stopDemo();if(!st().idiot)makeIdiot();const I=s
 
 // 9 · Freies Training
 function freeMode(){setStage('free');stopDemo();syncPlaces();try{M.ui.click('nav:home');}catch{}taskbar();}
-function taskbar(){const s=st();K.showGuide([],s.stage==='won'?'Der Dorftrottel ist besiegt. Fortsetzung folgt. Du kannst weiter Hähne trainieren.':`Ziel: DREI HÄHNE GEGEN EINEN IDIOTEN (Arena → BEAST → HAHN). Trainiere vorher in leichten Hahnenkämpfen, prüfe die Werte im Beastrium. Neue Hähne bringt die Händlerin jeden Tag.`);}
+function taskbar(){const s=st();K.showGuide([],s.stage==='won'?'Der Dorftrottel ist besiegt. Fortsetzung folgt. Du kannst weiter Hähne trainieren.':`Ziel: DREI HÄHNE GEGEN EINEN IDIOTEN (Arena → BEAST → HAHN). Trainiere vorher in leichten Hahnenkämpfen, prüfe die Werte im Beastrium. Neue Hähne bringt die Händlerin jeden Tag.`);mini();}
+// Im freien Training nur ein kleines Ziel-Schild (verdeckt weder Händler noch Herumtreiber); Antippen klappt es auf
+function mini(){const box=K.guide?.box;if(!box)return;box.classList.add('hs-mini');if(!box.dataset.mini){box.dataset.mini='1';box.addEventListener('click',()=>{box.classList.toggle('open');});}}
 function victoryEnd(){const v=document.createElement('div');v.className='medic-end lesson-end hs-end';const I=st().idiot;
  v.innerHTML=`<div><p class="eyebrow">TUTORIALZIEL ERREICHT</p><h2>DREI HÄHNE GEGEN EINEN IDIOTEN</h2><p>${esc(I?.name||'Der Dorftrottel')} liegt im Sand. Nach ${I?.tries||1} ${I?.tries===1?'Versuch':'Versuchen'}, mit echtem Kampf und echtem Training.</p><ul><li>Hähne lernen im Kampf – am schnellsten, solange IST weit unter SOLL liegt.</li><li>Die Klasse zeigt der Auftritt, die Werte das Beastrium.</li><li>Nachschub kommt jeden Tag mit der Hühnerhändlerin.</li></ul><p><b>Deine Gladiatoren, die Kaserne, der Markt und die ganze Arena stehen dir wieder offen.</b> Das Beastrium und die Hühnerhändlerin bleiben.</p><p class="tiny">Fortsetzung folgt.</p><div class="buttons"><button class="btn primary" type="button" data-hs="endfree">ZURÜCK ZUM LUDUS</button>${TEST?'<button class="btn" type="button" data-les="menu">SZENE WÄHLEN</button>':''}</div></div>`;document.body.appendChild(v);}
 // Vorstellung des Dorftrottels durch den Moderator (Arenabühne des Kapitels 1, echte Figur)
