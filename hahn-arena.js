@@ -13,7 +13,7 @@
 const M=window.MG,S=M.s,CF=window.CF,cl=M.clamp||((v,a,b)=>v<a?a:v>b?b:v);
 if(!M||!CF){console.error('Hahnen-Arena: Spiel oder Hahnen-Modell fehlt.');return;}
 const CM_PER_UNIT=180/81, MODEL_UNITS=CF.WORLD.roosterModelUnits, HUMAN_KG=80;
-const H={inSim:false,onEnd:null,last:null,headless:false};window.HahnArena=H;
+const H={inSim:false,onEnd:null,last:null,headless:false,VS_BIG:+(globalThis.HAHN_VS_BIG??.1),BLEED_BIG:+(globalThis.HAHN_BLEED_BIG??.25)};window.HahnArena=H;
 // Hahnen-Kämpfe: eigene Testkämpfe (b.hahn) und Kämpfe anderer Testversionen, die Hähne mitbringen (b.neu, z. B. prototypes/arena-neu)
 const isH=b=>!!(b&&(b.hahn||b.neu));
 
@@ -162,14 +162,15 @@ function strike(a,t,move,variant){
  let dmg=(power*.55+skill*.35+s.kraft*.22+(move==='claw'?s.groesse*.1+R.appearance.spurLen*1.5:0))*.85*rnd(.75,1.25)*cl(R.blood/100,.45,1);
  const crit=Math.random()<cl(.06+(skill-20)*.004,.02,.2);if(crit)dmg*=1.6;
  // Gegen Menschen/Löwe: ein Hahn reicht nur an Füße und Schienbeine, Treffer bleiben oberflächlich (Faktor 0,35)
- const loss=Math.max(.5,dmg*1.3*mass*(t.hahn?(1-t.hahn.stats.zaehigkeit*.006):.35));
+ // Gegen Menschen/Löwe: ein Hahn reicht nur an Füße und Schienbeine – Treffer bleiben Kratzer (H.VS_BIG), Blutung gering
+ const loss=Math.max(.5,dmg*1.3*mass*(t.hahn?(1-t.hahn.stats.zaehigkeit*.006):H.VS_BIG));
  const type=move==='peck'?'peck':'cut',word=move==='peck'?(loss>14?'Tiefe Pickwunde':'Pickwunde'):(loss>14?'Tiefe Spornwunde':'Kratzwunde');
  a.hs.hits++;a.hs.dmg+=loss;M.recordDamage(a,move==='peck'?'Schnabelstoß':'Klauenhieb',loss);a.damage+=loss;
  let px=t.x,py=t.y-6;
  if(t.rex){t.tissue[zone]=Math.max(0,(t.tissue[zone]||0)-loss);t.blood=Math.max(0,(t.blood||100)-loss*.05);t.bleeding=(t.bleeding||0)+loss*.02;t.hitCount=(t.hitCount||0)+1;py=t.y-(zone==='front'?10:24);}
  else{
   const gid=t.hahn?pick(MAP[zone]):zone,p=t.g.body[gid];if(p.missing)return true;
-  p.hp=Math.max(0,p.hp-loss);p.pain=Math.min(100,(p.pain||0)+loss*.6);p.bleed=(p.bleed||0)+(type==='cut'?1.1:.6)*cl(loss/10,.3,2.5);p.grade=M.injuryGrade(p);
+  p.hp=Math.max(0,p.hp-loss);p.pain=Math.min(100,(p.pain||0)+loss*.6);p.bleed=(p.bleed||0)+(type==='cut'?1.1:.6)*cl(loss/10,.3,2.5)*(t.hahn?1:H.BLEED_BIG);p.grade=M.injuryGrade(p);
   t.g.blood=Math.max(0,t.g.blood-loss*.08);t.taken=(t.taken||0)+loss;t.lastAttacker=a.id;t.lastAttackerId=a.id;t.hit=.18;if(!t.hahn&&loss>=8)t.stagger=Math.max(t.stagger||0,.22);
   M.recordWound(t.g,gid,word,R.name,'',loss);if(p.grade>=2)M.noteInjury(t.g,gid,word);
   if(p.grade>=3&&M.addScar)M.addScar(t.g,gid,word);

@@ -6605,7 +6605,7 @@ CF.RoosterShot = { create, describeHit, HIT, LEN, FW, FH };
 const M=window.MG,S=M.s,CF=window.CF,cl=M.clamp||((v,a,b)=>v<a?a:v>b?b:v);
 if(!M||!CF){console.error('Hahnen-Arena: Spiel oder Hahnen-Modell fehlt.');return;}
 const CM_PER_UNIT=180/81, MODEL_UNITS=CF.WORLD.roosterModelUnits, HUMAN_KG=80;
-const H={inSim:false,onEnd:null,last:null,headless:false};window.HahnArena=H;
+const H={inSim:false,onEnd:null,last:null,headless:false,VS_BIG:+(globalThis.HAHN_VS_BIG??.1),BLEED_BIG:+(globalThis.HAHN_BLEED_BIG??.25)};window.HahnArena=H;
 // Hahnen-Kämpfe: eigene Testkämpfe (b.hahn) und Kämpfe anderer Testversionen, die Hähne mitbringen (b.neu, z. B. prototypes/arena-neu)
 const isH=b=>!!(b&&(b.hahn||b.neu));
 
@@ -6754,14 +6754,15 @@ function strike(a,t,move,variant){
  let dmg=(power*.55+skill*.35+s.kraft*.22+(move==='claw'?s.groesse*.1+R.appearance.spurLen*1.5:0))*.85*rnd(.75,1.25)*cl(R.blood/100,.45,1);
  const crit=Math.random()<cl(.06+(skill-20)*.004,.02,.2);if(crit)dmg*=1.6;
  // Gegen Menschen/Löwe: ein Hahn reicht nur an Füße und Schienbeine, Treffer bleiben oberflächlich (Faktor 0,35)
- const loss=Math.max(.5,dmg*1.3*mass*(t.hahn?(1-t.hahn.stats.zaehigkeit*.006):.35));
+ // Gegen Menschen/Löwe: ein Hahn reicht nur an Füße und Schienbeine – Treffer bleiben Kratzer (H.VS_BIG), Blutung gering
+ const loss=Math.max(.5,dmg*1.3*mass*(t.hahn?(1-t.hahn.stats.zaehigkeit*.006):H.VS_BIG));
  const type=move==='peck'?'peck':'cut',word=move==='peck'?(loss>14?'Tiefe Pickwunde':'Pickwunde'):(loss>14?'Tiefe Spornwunde':'Kratzwunde');
  a.hs.hits++;a.hs.dmg+=loss;M.recordDamage(a,move==='peck'?'Schnabelstoß':'Klauenhieb',loss);a.damage+=loss;
  let px=t.x,py=t.y-6;
  if(t.rex){t.tissue[zone]=Math.max(0,(t.tissue[zone]||0)-loss);t.blood=Math.max(0,(t.blood||100)-loss*.05);t.bleeding=(t.bleeding||0)+loss*.02;t.hitCount=(t.hitCount||0)+1;py=t.y-(zone==='front'?10:24);}
  else{
   const gid=t.hahn?pick(MAP[zone]):zone,p=t.g.body[gid];if(p.missing)return true;
-  p.hp=Math.max(0,p.hp-loss);p.pain=Math.min(100,(p.pain||0)+loss*.6);p.bleed=(p.bleed||0)+(type==='cut'?1.1:.6)*cl(loss/10,.3,2.5);p.grade=M.injuryGrade(p);
+  p.hp=Math.max(0,p.hp-loss);p.pain=Math.min(100,(p.pain||0)+loss*.6);p.bleed=(p.bleed||0)+(type==='cut'?1.1:.6)*cl(loss/10,.3,2.5)*(t.hahn?1:H.BLEED_BIG);p.grade=M.injuryGrade(p);
   t.g.blood=Math.max(0,t.g.blood-loss*.08);t.taken=(t.taken||0)+loss;t.lastAttacker=a.id;t.lastAttackerId=a.id;t.hit=.18;if(!t.hahn&&loss>=8)t.stagger=Math.max(t.stagger||0,.22);
   M.recordWound(t.g,gid,word,R.name,'',loss);if(p.grade>=2)M.noteInjury(t.g,gid,word);
   if(p.grade>=3&&M.addScar)M.addScar(t.g,gid,word);
@@ -8692,8 +8693,8 @@ if(typeof window!=='undefined')start();
 </script>
 <script>'use strict';
 // Ergebnis von tests/calibrate.cjs: 640 gemischte Probekämpfe (Menschen, Hähne, Löwen, gemischt) für γ, k und die Hähne,
-// dazu 1 056 Löwenkämpfe gegen 1–6 Menschen für den Löwen (Stand 2026-10-12). Alle mit dem Kampfsystem der Arena.
-window.ARENA_CALIBRATION={"gamma":0.999,"k":6.2,"cr":0.467,"gr":0.857,"cl":7.5,"gl":1.2};
+// dazu 1 056 Löwenkämpfe gegen 1–6 Menschen für den Löwen und 400 Hahnenkämpfe nach der Abschwächung gegen Menschen (Stand 2026-10-12). Alle mit dem Kampfsystem der Arena.
+window.ARENA_CALIBRATION={"gamma":0.999,"k":6.2,"cr":0.27,"gr":1.0,"cl":7.5,"gl":1.2};
 
 </script>
 <script>'use strict';
@@ -8711,7 +8712,7 @@ const M=window.MG,S=M.s,CF=window.CF,AN=window.AN,cl=M.clamp;
 const P=Object.assign({gamma:1.6,k:2.2,cr:.12,gr:1.5,cl:2.6,gl:1.6},window.ARENA_CALIBRATION||{});
 const CH={P};window.Challenges=CH;
 const rnd=(r,a,b)=>a+r()*(b-a),pick=(r,a)=>a[Math.floor(r()*a.length)];
-function rngOf(seed){let s=(seed>>>0)||1;return ()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296;};}
+function rngOf(seed){let s=Math.imul((seed>>>0)^0x9e3779b9,0x85ebca6b)>>>0||1;const n=()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296;};for(let i=0;i<8;i++)n();return n;}
 CH.rngOf=rngOf;
 
 // ---------- Kampfwert ----------
@@ -8798,10 +8799,12 @@ const LEVELS=[
  {key:'extrem',label:'Extrem',ratio:1.55,color:'#d0473e',skulls:4}];
 CH.LEVELS=LEVELS;
 // Welche Gegner zu welcher eigenen Gruppe passen (Tierkämpfe sollen nicht überwiegen)
-function weights(mode,ownKind){
- if(mode==='human')return {gladiatoren:5,champion:1.4,schuetzen:2,loewe:1.2,rudel:.5,haehne:1,baendiger:.9};
- if(ownKind==='rooster')return {haehne:4,gladiatoren:2.2,champion:1,loewe:.8,baendiger:1.2,schuetzen:.6,rudel:.2};
- return {gladiatoren:3.5,schuetzen:1.4,champion:1,loewe:1.6,rudel:.9,haehne:1,baendiger:.9};}
+// Gegner meist von derselben Art wie die eigene Gruppe; Mensch gegen Tier (und umgekehrt) nur als Ausnahme (CH.CROSS = 5 % je Herausforderung)
+CH.CROSS=.05;
+function weights(ownKind,cross){
+ if(ownKind==='human')return cross?{loewe:1.4,rudel:.4,haehne:1,baendiger:.9}:{gladiatoren:5,champion:1.4,schuetzen:2};
+ if(ownKind==='rooster')return cross?{gladiatoren:1,champion:1.2,baendiger:.8,loewe:.6}:{haehne:1};
+ return cross?{gladiatoren:2,schuetzen:1,champion:1,haehne:.6,baendiger:.6}:{loewe:2,rudel:1};}
 function weighted(r,w){let s=0;for(const v of Object.values(w))s+=v;let x=r()*s;for(const [k,v] of Object.entries(w)){x-=v;if(x<=0)return k;}return Object.keys(w)[0];}
 
 // ---------- Gold ----------
@@ -8839,16 +8842,18 @@ const BEAST_DESC={loewe:'Ein Löwe kennt keine Regeln, nur Hunger.',rudel:'Zwei 
 // ---------- Herausforderungen erzeugen ----------
 let serial=0;
 function make(own,mode,seed){
- const r=rngOf(seed||Date.now()),Eo=Math.max(.05,teamE(own)),N=own.length,ownKind=own.some(u=>u.kind==='lion')?'lion':own.some(u=>u.kind==='rooster')?'rooster':'human',w=weights(mode,ownKind),used={},out=[];
+ const r=rngOf(seed||Date.now()),Eo=Math.max(.05,teamE(own)),N=own.length,ownKind=own.some(u=>u.kind==='lion')?'lion':own.some(u=>u.kind==='rooster')?'rooster':'human',used={},out=[];
  let animals=0;
  for(const L of LEVELS){
-  let best=null;
-  for(let attempt=0;attempt<26&&!best;attempt++){
-   const ww={...w};for(const k in used)ww[k]*=.25;if(mode==='human'&&animals>=2)for(const k in ww)if(TEMPLATES[k].beast)ww[k]=0;
+  let best=null;const cross=r()<CH.CROSS;
+  for(let attempt=0;attempt<40&&!best;attempt++){
+   const ww=weights(ownKind,cross&&attempt<30);for(const k in used)if(Object.keys(ww).length>1)ww[k]*=.3;
    const tpl=weighted(r,ww),target=Eo*L.ratio*rnd(r,.94,1.06);let enemy=null;try{enemy=TEMPLATES[tpl].build(r,target,N);}catch(e){console.warn(e);}
    if(!enemy||!enemy.length)continue;
    const Ee=teamE(enemy);if(Math.abs(Math.log(Ee/target))>.16)continue;
    best={tpl,enemy};}
+  if(!best&&ownKind==='rooster'){for(const n of [1,2,3,4,5,6,7,8,9,10]){const g=roosterGroup(r,Eo*L.ratio,n);if(g){best={tpl:'haehne',enemy:g};break;}}}
+  if(!best&&ownKind==='lion'){const g=lionGroup(r,Eo*L.ratio,1)||lionGroup(r,Eo*L.ratio,2);if(g)best={tpl:g.length>1?'rudel':'loewe',enemy:g};}
   if(!best){let enemy=null;for(let n=Math.max(1,N);n<=8&&!enemy;n++)enemy=humanGroup(r,Eo*L.ratio,n);best={tpl:'gladiatoren',enemy:enemy||lionGroup(r,Eo*L.ratio,1)||[unit('human',gladiator(r,{q:0,kwTarget:20}),0)]};}
   used[best.tpl]=(used[best.tpl]||0)+1;if(TEMPLATES[best.tpl].beast)animals++;
   const p=pWin(own,best.enemy),g=gold(own,best.enemy,p),enemyE={};for(const u of best.enemy)enemyE[u.key]=strength(u);

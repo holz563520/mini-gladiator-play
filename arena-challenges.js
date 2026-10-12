@@ -13,7 +13,7 @@ const M=window.MG,S=M.s,CF=window.CF,AN=window.AN,cl=M.clamp;
 const P=Object.assign({gamma:1.6,k:2.2,cr:.12,gr:1.5,cl:2.6,gl:1.6},window.ARENA_CALIBRATION||{});
 const CH={P};window.Challenges=CH;
 const rnd=(r,a,b)=>a+r()*(b-a),pick=(r,a)=>a[Math.floor(r()*a.length)];
-function rngOf(seed){let s=(seed>>>0)||1;return ()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296;};}
+function rngOf(seed){let s=Math.imul((seed>>>0)^0x9e3779b9,0x85ebca6b)>>>0||1;const n=()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296;};for(let i=0;i<8;i++)n();return n;}
 CH.rngOf=rngOf;
 
 // ---------- Kampfwert ----------
@@ -100,10 +100,12 @@ const LEVELS=[
  {key:'extrem',label:'Extrem',ratio:1.55,color:'#d0473e',skulls:4}];
 CH.LEVELS=LEVELS;
 // Welche Gegner zu welcher eigenen Gruppe passen (Tierkämpfe sollen nicht überwiegen)
-function weights(mode,ownKind){
- if(mode==='human')return {gladiatoren:5,champion:1.4,schuetzen:2,loewe:1.2,rudel:.5,haehne:1,baendiger:.9};
- if(ownKind==='rooster')return {haehne:4,gladiatoren:2.2,champion:1,loewe:.8,baendiger:1.2,schuetzen:.6,rudel:.2};
- return {gladiatoren:3.5,schuetzen:1.4,champion:1,loewe:1.6,rudel:.9,haehne:1,baendiger:.9};}
+// Gegner meist von derselben Art wie die eigene Gruppe; Mensch gegen Tier (und umgekehrt) nur als Ausnahme (CH.CROSS = 5 % je Herausforderung)
+CH.CROSS=.05;
+function weights(ownKind,cross){
+ if(ownKind==='human')return cross?{loewe:1.4,rudel:.4,haehne:1,baendiger:.9}:{gladiatoren:5,champion:1.4,schuetzen:2};
+ if(ownKind==='rooster')return cross?{gladiatoren:1,champion:1.2,baendiger:.8,loewe:.6}:{haehne:1};
+ return cross?{gladiatoren:2,schuetzen:1,champion:1,haehne:.6,baendiger:.6}:{loewe:2,rudel:1};}
 function weighted(r,w){let s=0;for(const v of Object.values(w))s+=v;let x=r()*s;for(const [k,v] of Object.entries(w)){x-=v;if(x<=0)return k;}return Object.keys(w)[0];}
 
 // ---------- Gold ----------
@@ -141,16 +143,18 @@ const BEAST_DESC={loewe:'Ein Löwe kennt keine Regeln, nur Hunger.',rudel:'Zwei 
 // ---------- Herausforderungen erzeugen ----------
 let serial=0;
 function make(own,mode,seed){
- const r=rngOf(seed||Date.now()),Eo=Math.max(.05,teamE(own)),N=own.length,ownKind=own.some(u=>u.kind==='lion')?'lion':own.some(u=>u.kind==='rooster')?'rooster':'human',w=weights(mode,ownKind),used={},out=[];
+ const r=rngOf(seed||Date.now()),Eo=Math.max(.05,teamE(own)),N=own.length,ownKind=own.some(u=>u.kind==='lion')?'lion':own.some(u=>u.kind==='rooster')?'rooster':'human',used={},out=[];
  let animals=0;
  for(const L of LEVELS){
-  let best=null;
-  for(let attempt=0;attempt<26&&!best;attempt++){
-   const ww={...w};for(const k in used)ww[k]*=.25;if(mode==='human'&&animals>=2)for(const k in ww)if(TEMPLATES[k].beast)ww[k]=0;
+  let best=null;const cross=r()<CH.CROSS;
+  for(let attempt=0;attempt<40&&!best;attempt++){
+   const ww=weights(ownKind,cross&&attempt<30);for(const k in used)if(Object.keys(ww).length>1)ww[k]*=.3;
    const tpl=weighted(r,ww),target=Eo*L.ratio*rnd(r,.94,1.06);let enemy=null;try{enemy=TEMPLATES[tpl].build(r,target,N);}catch(e){console.warn(e);}
    if(!enemy||!enemy.length)continue;
    const Ee=teamE(enemy);if(Math.abs(Math.log(Ee/target))>.16)continue;
    best={tpl,enemy};}
+  if(!best&&ownKind==='rooster'){for(const n of [1,2,3,4,5,6,7,8,9,10]){const g=roosterGroup(r,Eo*L.ratio,n);if(g){best={tpl:'haehne',enemy:g};break;}}}
+  if(!best&&ownKind==='lion'){const g=lionGroup(r,Eo*L.ratio,1)||lionGroup(r,Eo*L.ratio,2);if(g)best={tpl:g.length>1?'rudel':'loewe',enemy:g};}
   if(!best){let enemy=null;for(let n=Math.max(1,N);n<=8&&!enemy;n++)enemy=humanGroup(r,Eo*L.ratio,n);best={tpl:'gladiatoren',enemy:enemy||lionGroup(r,Eo*L.ratio,1)||[unit('human',gladiator(r,{q:0,kwTarget:20}),0)]};}
   used[best.tpl]=(used[best.tpl]||0)+1;if(TEMPLATES[best.tpl].beast)animals++;
   const p=pWin(own,best.enemy),g=gold(own,best.enemy,p),enemyE={};for(const u of best.enemy)enemyE[u.key]=strength(u);
