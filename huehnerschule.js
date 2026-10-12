@@ -67,6 +67,8 @@ M.ludusOverlay=(g,t)=>{overlay?.(g,t);const s=st();if(s.sign)A.gateSign(g,t);if(
 const MAP_SELLER={x:516,y:238};
 function sellerOnMap(){const s=st();return ['free','won','end','fight1','b-open','b-pick'].includes(s.stage)&&!film();}
 function drawMapSeller(g,t){const o=offer();A.cart(g,{x:MAP_SELLER.x+52,y:MAP_SELLER.y,t,roosters:o.list,sold:o.sold,face:-1,handle:[MAP_SELLER.x+11,MAP_SELLER.y-24]});A.seller(g,{x:MAP_SELLER.x,y:MAP_SELLER.y,dir:-1,pose:Math.sin(t*.6)>.3?'sell':'hips',t,mouth:Math.sin(t*.6)>.3?'shout':'grin'});}
+// Antippen der Händlerin (ganze Figur samt Karren) geht vor: ihr Kopf ragt in das Feld des Arena-Tors
+const prevHit=M.ludusHit;M.ludusHit=(x,y)=>{if(sellerOnMap()&&x>=MAP_SELLER.x-26&&x<=MAP_SELLER.x+112&&y>=MAP_SELLER.y-92&&y<=MAP_SELLER.y+10){M.ui.click('nav:hmarket');return true;}return prevHit?prevHit(x,y):false;};
 const PLACE_SELLER={name:'Hühnerhändlerin',sub:'3 Hähne am Tag',route:'hmarket',x:MAP_SELLER.x-16,y:MAP_SELLER.y-56,w:110,h:60};
 function syncPlaces(){const P=M.ludus.places,s=st();const want=[[A.BEASTRIUM,s.beastrium],[PLACE_SELLER,sellerOnMap()]];for(const [p,on] of want){const i=P.indexOf(p);if(on&&i<0)P.push(p);if(!on&&i>=0)P.splice(i,1);}/* hinten anfügen: ludus.js zeichnet die Gebäude über feste Indizes (places[0..7]) */}
 

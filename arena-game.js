@@ -33,7 +33,7 @@ M.onFinish=function(report){
 }
  return baseFinish?.apply(this,arguments);};
 // Öffnen beim Betreten der Arena (nicht während der Tutorials, Turniere oder eines Kampfes)
-function allowed(){const lion=S.lion?.stage;return !S.battle&&!S.tournament&&(!lion||lion==='done'||lion==='skip')&&!['medic','s12'].includes(S.medic?.stage||'')&&!document.querySelector('.lion-guide,.medic-start');}
+function allowed(){const lion=S.lion?.stage;return !S.battle&&!S.tournament&&(!lion||lion==='done'||lion==='skip')&&!['medic','s12'].includes(S.medic?.stage||'')&&!document.querySelector('.lion-guide:not(.lesson-guide),.medic-start');}
 const page=M.schoolPage;
 M.schoolPage=function(p){const html=page?.apply(this,arguments);
  if(['arena','league','openarenas'].includes(p)){if(!classic&&allowed())setTimeout(()=>{if(M.ui.getPage()===p&&!S.battle&&!window.ArenaUI?.isOpen())window.ArenaUI?.open();},0);}
