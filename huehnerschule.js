@@ -230,8 +230,9 @@ const baseClick=M.schoolClick;
 M.schoolClick=function(a){const s=st();
  if(a.startsWith('hs:')){const [,k,v]=a.split(':');if(k==='species'){bView.species=v;M.ui.render();setTimeout(mountBeastrium,0);return true;}
   if(k==='animal'){const R=s.roosters.find(x=>x.id===v);if(!R)return true;if(s.stage==='b-pick'){openDetail(R,{anim:true});K.hideGuide();setTimeout(()=>{closeDetail();scene5(R);},2600);return true;}openDetail(R);return true;}return true;}
+ // Händlerin immer über ihren eigenen Markt (auch nach dem Kapitel), nie über die alte Arena-Startseite
+ if(a==='nav:hmarket'){if(sellerOnMap())openMarket(false);else M.ui.notify?.('Die Hühnerhändlerin ist heute nicht da.');return true;}
  if(active()){
-  if(a==='nav:hmarket'){if(sellerOnMap())openMarket(false);return true;}
   if(a==='nav:beastrium'){if(!s.beastrium)return true;if(s.stage==='b-open'){setStage('b-pick');K.showGuide(['Hier wohnen deine gefiederten Investitionen. Jeder in seinem eigenen Käfig.'],'Tippe auf einen deiner Hähne, um seine Werte zu öffnen.');}setTimeout(mountBeastrium,0);return false;}
   if(a==='nav:arena'){if(arenaAllowed()){setTimeout(openArena,0);return true;}M.ui.notify?.(smithName()+': „Noch nicht. Erst kümmerst du dich um das, was hier gerade passiert.“');return true;}
   if(a==='nav:home'||a==='rest'&&['free','won'].includes(s.stage))return baseClick?.apply(this,arguments);
