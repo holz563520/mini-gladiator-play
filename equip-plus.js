@@ -27,6 +27,8 @@ function enhance(){const doll=document.querySelector('.paperdoll');if(!doll||dol
  // Kopfzeile mit Name, KW und Blättern
  if(g&&!document.querySelector('.armory-head')){const pool=S.roster.filter(x=>!x.dead&&!x.retired),i=pool.indexOf(g),prev=pool[(i-1+pool.length)%pool.length],next=pool[(i+1)%pool.length];let kw='';try{kw=M.power(g);}catch{}
   const h=document.createElement('div');h.className='armory-head';h.innerHTML=`<button class="btn small" data-action="loadout:${prev?.id||g.id}" aria-label="Voriger Gladiator">◀</button><div><b>${esc(g.name)}</b><small>${esc(g.role||'')} · KW ${kw}</small></div><button class="btn small" data-action="loadout:${next?.id||g.id}" aria-label="Nächster Gladiator">▶</button>`;doll.before(h);}
+ // Schnellknöpfe: aus der Waffenkammer / vom Schmied ausrüsten
+ if(g&&M.equipQuick&&!document.querySelector('.eq-bar')){const w=document.createElement('div');w.innerHTML=M.equipQuick.bar(g);doll.before(w.firstElementChild);}
  // Auswahlkasten unter die Puppe
  const sw=document.querySelector('.fighter-switch');if(sw&&doll.nextElementSibling!==sw){const tb=sw.nextElementSibling?.classList?.contains('toolbar')?sw.nextElementSibling:null;doll.after(sw);if(tb)doll.after(tb);}
  // Lebendige Figur

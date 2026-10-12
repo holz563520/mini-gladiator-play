@@ -60,3 +60,6 @@
 .eq-buyfoot .btn{width:auto;margin:0}
 @media (max-width:520px){.eq-slot{grid-template-columns:6.8em minmax(0,1fr) 1.2em}.eq-slot small{display:none}.eq-buylist li{grid-template-columns:6em minmax(0,1fr) auto}}
 .bk-fold .bk-fold-foot{display:flex}.bk-fold .bk-fold-foot .btn{width:auto;flex:0 0 auto;min-height:30px;font-size:10px;padding:5px 9px;margin:0}
+.eq-bar{display:grid;gap:8px;margin:0 0 10px}
+.eq-bar .eq-actions .btn{flex:1 1 auto}
+.eq-step{width:auto!important;margin:0!important;min-height:30px;font-size:10px;padding:4px 7px;white-space:nowrap}

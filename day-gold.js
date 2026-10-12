@@ -69,6 +69,8 @@ function mount(){const bar=$('mapuiBar');let el=document.querySelector('.mg-gold
  const day=bar?.querySelector('.mapui-day');if(day){day.appendChild(el);el.classList.add('in-day');}else{el.classList.add('floating');document.body.appendChild(el);}
  el.setAttribute('role','button');el.setAttribute('tabindex','0');el.title='Kasse: Einnahmen, Ausgaben, morgen fällig';
  const open=e=>{e.preventDefault();e.stopPropagation();ledger();};el.addEventListener('click',open);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')open(e);});
+ // NUR ZUM TESTEN: +100 Gold neben der Münze (zum Entfernen diesen Block löschen)
+ if(!document.querySelector('.mg-test-gold')){const t=document.createElement('button');t.type='button';t.className='mg-test-gold';t.textContent='+100';t.title='Testknopf: 100 Gold';t.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();S.gold+=100;try{M.persist();}catch{}},true);el.after(t);}
  G.el=el;G.num=el.querySelector('b');G.coin=el.querySelector('canvas');G.fx=el.querySelector('.mg-gold-fx');if(G.shown!=null)G.num.textContent=fmt(G.shown);return true;}
 const fmt=n=>Math.round(n).toLocaleString('de-DE');
 // Runde Pixelmünze (16×16), dreht sich um die senkrechte Achse; Vorderseite mit geprägtem Kopf, dazu ein wandernder Glanz

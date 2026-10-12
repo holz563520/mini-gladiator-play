@@ -58,7 +58,7 @@ function trimmed(P){let left=S.gold;return P.pick(0).filter(x=>{if(x.o.price<=le
 function currentSet(P){if(P.max<0)return trimmed(P);const L=Math.max(0,Math.min(P.max,level??P.max));return P.pick(L);}
 function smithHtml(g){const P=smithPlan(g);if(P.none)return `<p class="tiny">${P.none}</p>`;if(!P.groups.length)return '<p class="tiny">Der Schmied hat heute nichts, was besser zu ihm passt als das, was er trägt.</p>';
  const set=currentSet(P),total=set.reduce((n,x)=>n+x.o.price,0),L=P.max<0?0:Math.max(0,Math.min(P.max,level??P.max));
- return `<div class="eq-smith" data-g="${g.id}"><div class="eq-range-row"><span>BILLIGSTE</span><input type="range" class="eq-range" min="0" max="${Math.max(0,P.max)}" step="1" value="${L}" ${P.max<=0?'disabled':''} aria-label="Zwischen billigster und bester Ausrüstung wählen"><span>BESTE</span></div>
+ return `<div class="eq-smith" data-g="${g.id}"><div class="eq-range-row"><button type="button" class="btn small eq-step" data-d="-1" aria-label="Billiger">▼ BILLIGER</button><input type="range" class="eq-range" min="0" max="${Math.max(0,P.max)}" step="1" value="${L}" ${P.max<=0?'disabled':''} aria-label="Zwischen billigster und bester Ausrüstung wählen"><button type="button" class="btn small eq-step" data-d="1" aria-label="Besser">▲ BESSER</button></div>
  <p class="tiny">${P.max<0?'Für den ganzen billigsten Satz reicht das Gold nicht. Vorschlag: die wichtigsten Teile, die bezahlbar sind.':P.max<P.steps?`Weiter nach oben reicht dein Gold nicht (${P.max+1} von ${P.steps+1} Stufen).`:'Alle Stufen bezahlbar.'} Waffe: Klasse mit dem höchsten SOLL-Wert.</p>
  <ul class="eq-buylist">${set.map(x=>`<li><span>${esc(x.label)}</span><b>${esc(M.itemName(x.o.item))}</b>${x.o.item.kind==='weapon'?tal(g,x.o.item.def):''}<em>${fmt(x.o.price)} G</em></li>`).join('')||'<li class="tiny">Nichts bezahlbar.</li>'}</ul>
  <div class="eq-buyfoot"><span>Summe <b>${fmt(total)}</b> · Kasse ${fmt(S.gold)}</span>${btn('KAUFEN & ANLEGEN','eq:buy:'+g.id,'primary small',!set.length||total>S.gold)}</div></div>`;}
@@ -72,6 +72,10 @@ function panel(g){reset(g.id);let kw='';try{const v=M.combatValues(g);kw=`KW mit
  <div class="eq-actions">${btn('⚙ AUTOMATISCH AUSRÜSTEN','eq:auto:'+g.id,'small primary')}${btn('⚒ BEIM SCHMIED KAUFEN '+(smithOpen?'▴':'▾'),'eq:smith:'+g.id,'small'+(smithOpen?' active':''))}${btn('WAFFENKAMMER','eq:doll:'+g.id,'small')}</div>
  ${smithOpen?smithHtml(g):''}
  <ul class="eq-slots">${rows}</ul></div>`;}
+// ---------- Leiste in der Waffenkammer: nur die zwei Schnellknöpfe ----------
+function freeFits(g){let n=0;for(const {slot} of slots(g))n+=S.inventory.filter(x=>!M.equippedBy(x.id)&&fits(g,x,slot)).length;return n;}
+function bar(g){reset(g.id);const free=freeFits(g),hasSmith=!!M.workshop?.state?.master;
+ return `<div class="eq-bar"><div class="eq-actions">${btn(free?'⚙ AUS DER WAFFENKAMMER AUSRÜSTEN · '+free+' frei':'WAFFENKAMMER LEER','eq:auto:'+g.id,'small primary',!free)}${btn('⚒ VOM SCHMIED AUSRÜSTEN '+(smithOpen?'▴':'▾'),'eq:smith:'+g.id,'small'+(smithOpen?' active':''),!hasSmith)}</div>${smithOpen?smithHtml(g):''}</div>`;}
 // ---------- Aktionen ----------
 function buy(g){const P=smithPlan(g);if(P.none||!P.groups.length)return P.none||'Nichts zu kaufen.';const set=currentSet(P);let n=0,spent=0;const msgs=[];
  M.batchSaving=true;try{for(const x of set){const before=S.gold,r=M.workshop.buy(x.o.item.id);if(S.gold<before){spent+=before-S.gold;const m=M.equip(g.id,x.o.item.id,x.slot==='secondary');n++;if(m&&/nicht|erforderlich|tragen keinen/i.test(m))msgs.push(m);}else msgs.push(r);}}finally{M.batchSaving=false;}
@@ -92,6 +96,7 @@ M.schoolClick=function(a){if(typeof a!=='string'||!a.startsWith('eq:'))return ba
 // Regler: nur die Liste neu zeichnen (ohne die Seite neu aufzubauen)
 document.addEventListener('input',e=>{const r=e.target;if(!r.classList?.contains('eq-range'))return;const box=r.closest('.eq-smith'),g=S.roster.find(x=>x.id===box?.dataset.g);if(!g)return;level=+r.value;
  const tmp=document.createElement('div');tmp.innerHTML=smithHtml(g);const n=tmp.firstElementChild;box.querySelector('.eq-buylist').replaceWith(n.querySelector('.eq-buylist'));box.querySelector('.eq-buyfoot').replaceWith(n.querySelector('.eq-buyfoot'));box.querySelector('p.tiny').replaceWith(n.querySelector('p.tiny'));});
+document.addEventListener('click',e=>{const b=e.target.closest?.('.eq-step');if(!b)return;e.preventDefault();e.stopPropagation();const r=b.closest('.eq-smith')?.querySelector('.eq-range');if(!r||r.disabled)return;const v=Math.max(+r.min,Math.min(+r.max,+r.value+(+b.dataset.d)));if(v===+r.value)return;r.value=v;r.dispatchEvent(new Event('input',{bubbles:true}));},true);
 // Waffenwahl in der großen Waffenkammer: Talente je Waffenklasse über der Liste
 const baseClick2=M.schoolClick;
 M.schoolClick=function(a){const r=baseClick2.apply(this,arguments);if(typeof a==='string'&&/^pickslot:(weapon|secondary)$/.test(a)){const slot=a.split(':')[1];setTimeout(()=>{const md=document.getElementById('modal'),grid=md?.querySelector('.pick-grid');if(!grid||md.querySelector('.eq-talents'))return;
@@ -100,6 +105,6 @@ M.schoolClick=function(a){const r=baseClick2.apply(this,arguments);if(typeof a==
  grid.querySelectorAll('[data-action^="quickequip:"]').forEach(b=>{const it=M.inventoryItem(b.dataset.action.split(':')[1]);if(it?.kind==='weapon'){const h=b.closest('.box')?.querySelector('h3');if(h&&!h.querySelector('.eq-tal'))h.insertAdjacentHTML('beforeend',' '+tal(g,it.def));}});},0);}return r;};
 // Ursprungswerte früh erfassen (neue Rekruten am Aufnahmetag)
 setInterval(()=>{try{for(const g of S.roster)if(!g.startVals)M.barracks?.startOf?.(g);}catch{}},2000);
-M.equipQuick={panel,smithPlan,talents};
+M.equipQuick={panel,bar,smithPlan,talents};
 window.EQUIP_QUICK_READY=true;
 })();

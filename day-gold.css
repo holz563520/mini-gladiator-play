@@ -34,3 +34,5 @@
 .mg-ledger h3{margin:12px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#b8a67a}
 .mg-ledger dl{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:0}.mg-ledger dt{color:#d9cfb2}.mg-ledger dd{margin:0;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 .mg-ledger dd.plus{color:#9ed08a}.mg-ledger dd.minus{color:#f29b83}.mg-warn{color:#f29b83;font-size:13px}
+/* nur zum Testen */
+.mg-test-gold{font:inherit;font-size:10px;font-weight:bold;margin-left:4px;padding:2px 5px;background:#2a5a2a;color:#d8ffcc;border:1px solid #7fc46a;cursor:pointer;vertical-align:middle}
