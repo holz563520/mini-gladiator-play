@@ -39,7 +39,9 @@ function team(){const all=pool().map(withKey),ok=all.filter(fit);let pick;
  if(U.auto)pick=[...ok].sort((a,b)=>CH.kw(b)-CH.kw(a)).slice(0,U.size);
  else{U.picked=U.picked.filter(k=>ok.some(u=>u.key===k)).slice(0,U.size);pick=U.picked.map(k=>ok.find(u=>u.key===k));}
  const rows=U.rowsAuto?autoRows(pick):Object.fromEntries(pick.map(u=>[u.key,U.rows[u.key]||'front']));for(const u of pick)u.row=rows[u.key];return pick;}
-const sizes=()=>[1,2,3,5].filter(n=>n<=Math.max(1,pool().filter(fit).length));
+// Gastgeber-Haken (ArenaCareer): Gruppengrößen, gesperrte Bereiche, Sonderherausforderungen, eigene Vorstellung, Ergebnis
+const SIZES=()=>C.sizes?.(U)||[1,2,3,5];const lockMsg=k=>C.locked?.(k)||'';
+const sizes=()=>SIZES().filter(n=>n<=Math.max(1,pool().filter(fit).length));
 
 // ---------- Kleine Bilder ----------
 const thumbs=new Map();
@@ -61,7 +63,7 @@ function render(){({home,beast,hub,result}[U.screen]||home)();}
 // ---------- 1 · Arena: HUMAN oder BEAST ----------
 function home(){setTitle('DIE ARENA',!!C.close);
  view.innerHTML=`<section class="an-hero"><p class="eyebrow">Wähle die Art des Kampfes</p></section>
- <div class="an-modes"><button class="an-mode human" data-a="mode:human"><canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>HUMAN</b><small>Gladiatorenkämpfe</small></span></button>
+ <div class="an-modes"><button class="an-mode human${lockMsg('human')?' locked':''}" data-a="${lockMsg('human')?'lockedmsg:human':'mode:human'}"><canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>HUMAN</b><small>${lockMsg('human')?'🔒 gesperrt':'Gladiatorenkämpfe'}</small></span></button>
  <button class="an-mode beast" data-a="mode:beast"><canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>BEAST</b><small>Tierkämpfe</small></span></button></div>
  <div class="an-stats"><span>Kämpfe <b>${C.fights}</b></span><span>Siege <b>${C.wins}</b></span><span>Gefallene <b>${C.fallen.length}</b></span><span>Tag <b>${S.day}</b></span></div>
  ${C.classic?'<div class="an-classic"><button data-a="classic">Klassische Arena · Ligen, Turniere, offene Arenen ▸</button></div>':''}
@@ -76,7 +78,7 @@ function home(){setTitle('DIE ARENA',!!C.close);
 // ---------- 2 · BEAST: Tierklassen ----------
 const SPECIES=[{key:'hahn',label:'Hahn',ok:true,txt:'Federn, Sporen, schlechte Laune'},{key:'hund',label:'Hund',ok:false,txt:'Molosser aus Epirus'},{key:'baer',label:'Bär',ok:false,txt:'Braunbär aus Dakien'},{key:'loewe',label:'Löwe',ok:true,txt:'Der König des Sandes'},{key:'tiger',label:'Tiger',ok:false,txt:'Gestreifter Tod aus Hyrkanien'}];
 function beast(){setTitle('BEAST · TIERKÄMPFE');
- view.innerHTML=`<section class="an-hero"><p class="eyebrow">Mit welchen Tieren trittst du an?</p></section><div class="an-species">${SPECIES.map(s=>`<button class="an-sp${s.ok?'':' locked'}" data-a="${s.ok?'species:'+s.key:'locked:'+s.key}"><canvas width="150" height="104" class="px"></canvas><b>${s.label}</b><small>${s.ok?s.txt:'BALD · noch nicht spielbar'}</small>${s.ok?'':'<i class="an-lock">🔒</i>'}</button>`).join('')}</div>
+ view.innerHTML=`<section class="an-hero"><p class="eyebrow">Mit welchen Tieren trittst du an?</p></section><div class="an-species">${SPECIES.map(s=>{const lk=s.ok&&lockMsg(s.key);return `<button class="an-sp${s.ok&&!lk?'':' locked'}" data-a="${lk?'lockedmsg:'+s.key:s.ok?'species:'+s.key:'locked:'+s.key}"><canvas width="150" height="104" class="px"></canvas><b>${s.label}</b><small>${lk?'gesperrt':s.ok?s.txt:'BALD · noch nicht spielbar'}</small>${s.ok&&!lk?'':'<i class="an-lock">🔒</i>'}</button>`;}).join('')}</div>
  <p class="an-note">Gegner können aus jeder Art stammen: Deine Tiere treffen auch auf Gladiatoren, Löwen oder Hähne.</p>`;
  const cvs=view.querySelectorAll('.an-sp canvas'),L=C.lions.find(l=>!l.dead)||CH.lion(Math.random,{}),R=C.roosters.find(r=>!r.dead)||CH.rooster(Math.random,{});
  SPECIES.forEach((s,i)=>anim(cvs[i],(ctx,t)=>{ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,150,104);const g=ctx.createRadialGradient(75,70,6,75,70,80);g.addColorStop(0,s.ok?'#5a3d26':'#2a2522');g.addColorStop(1,'#1a120d');ctx.fillStyle=g;ctx.fillRect(0,0,150,104);ctx.fillStyle=s.ok?'#b08a5a':'#3a332c';ctx.fillRect(0,92,150,12);
@@ -84,34 +86,37 @@ function beast(){setTitle('BEAST · TIERKÄMPFE');
   else if(s.key==='loewe')ART.lion(ctx,L,{t,mood:'proud',x:82,y:98,scale:.66,face:-1});
   else if(s.key==='tiger'){ART.tiger(ctx,t,80,98,.62);}
   else if(s.key==='baer')ART.bear(ctx,t,66,96,1);else ART.dog(ctx,t,70,96,1.1);
-  if(!s.ok)ART.locked(ctx);}));}
+  if(!s.ok||lockMsg(s.key))ART.locked(ctx);}));}
 
 // ---------- 3 · Gruppe und Herausforderungen ----------
 function signature(units){return U.mode+'|'+U.species+'|'+units.map(u=>u.key+':'+health(u)).join(',');}
-function ensureChallenges(units,force){const sig=signature(units);if(!force&&U.chall&&U.sig===sig)return;U.sig=sig;U.chall=units.length?CH.make(units,U.mode,Math.floor(Math.random()*1e9)):[];stopSpy();}
-function hub(){const units=team(),all=pool().map(withKey);ensureChallenges(units);
+function ensureChallenges(units,force){const sig=signature(units);if(!force&&U.chall&&U.sig===sig)return;U.sig=sig;const cross=CH.CROSS;if(C.cross!=null)CH.CROSS=C.cross;try{U.chall=units.length?CH.make(units,U.mode,Math.floor(Math.random()*1e9)):[];}finally{CH.CROSS=cross;}stopSpy();}
+const allChall=()=>[...(U.extra||[]),...(U.chall||[])];
+function hub(){const units=team(),all=pool().map(withKey);ensureChallenges(units);U.extra=units.length?C.extraChallenges?.(units)||[]:[];
  setTitle(U.mode==='human'?'HUMAN · GLADIATOREN':U.species==='loewe'?'BEAST · LÖWEN':'BEAST · HÄHNE');
  const okN=all.filter(fit).length,kw=CH.teamKW(units);
  view.innerHTML=`<section class="an-panel an-group"><header><p class="eyebrow">Deine Gruppe</p><div class="an-toggle" role="group" aria-label="Gruppenauswahl"><button class="${U.auto?'on':''}" data-a="auto:1">AUTO</button><button class="${U.auto?'':'on'}" data-a="auto:0">MANUELL</button></div></header>
-  <div class="an-sizes">${[1,2,3,5].map(n=>`<button class="${U.size===n?'on':''}" data-a="size:${n}" ${n>Math.max(1,okN)?'disabled':''}>${n}</button>`).join('')}<span class="an-kw">KW <b>${kw}</b></span></div>
+  <div class="an-sizes">${SIZES().map(n=>`<button class="${U.size===n?'on':''}" data-a="size:${n}" ${n>Math.max(1,okN)?'disabled':''}>${n}</button>`).join('')}<span class="an-kw">KW <b>${kw}</b></span></div>
   <div class="an-team">${units.map(u=>`<div class="an-chip" data-key="${u.key}"><span class="th"></span><b>${esc(name(u))}</b><small>${esc(roleOf(u))} · KW ${CH.kw(u)}</small><i class="an-hpbar"><i style="width:${health(u)}%"></i></i><em class="row ${u.row}">${u.row==='front'?'1. Reihe':'2. Reihe'}</em></div>`).join('')||'<p class="an-empty">Niemand einsatzbereit. Lass einen Tag vergehen.</p>'}</div>
   ${U.auto?`<p class="an-hint">Das Spiel stellt die stärksten einsatzbereiten ${U.mode==='human'?'Gladiatoren':'Tiere'} auf. Für eigene Wahl: MANUELL.</p>`:`<div class="an-roster">${all.map(u=>{const on=units.some(x=>x.key===u.key),f=fit(u);return `<button class="an-card${on?' on':''}${f?'':' unfit'}" data-a="${f?'pick:'+u.key:'unfit'}" data-key="${u.key}"><span class="th"></span><b>${esc(name(u))}</b><small>${esc(roleOf(u))}</small><span class="kw">KW ${CH.kw(u)}</span><i class="an-hpbar"><i style="width:${health(u)}%"></i></i>${f?'':'<em>verletzt</em>'}</button>`;}).join('')}</div><p class="an-hint">${units.length}/${U.size} gewählt · Antippen wählt aus oder ab.</p>`}
  </section>
  <section class="an-chall"><header><p class="eyebrow">Herausforderungen</p><button class="an-link" data-a="reroll">↻ andere Gegner</button></header>
   <div class="an-cards">${(U.chall||[]).map((c,i)=>card(c,i)).join('')}</div>
-  <div class="an-switch"><button data-a="more" class="${U.more?'on':''}">${U.more?'◂ Leicht · Ausgeglichen · Schwer':'Sehr leicht & Extrem ▸'}</button></div></section>`;
+  <div class="an-switch"><button data-a="more" class="${U.more?'on':''}">${U.more?'◂ Leicht · Ausgeglichen · Schwer':'Sehr leicht & Extrem ▸'}</button></div></section>
+ ${U.extra.length?`<section class="an-chall an-special"><header><p class="eyebrow">Besondere Herausforderung</p></header><div class="an-cards">${U.extra.map(c=>card(c,-1)).join('')}</div></section>`:''}`;
  view.querySelectorAll('.an-chip,.an-card').forEach(el=>{const u=all.find(x=>x.key===el.dataset.key);if(u)el.querySelector('.th').appendChild(unitThumb(u,40,46));});
- view.querySelectorAll('.an-ccard').forEach(el=>{const c=U.chall.find(x=>x.id===el.dataset.id);el.querySelector('.art').appendChild(groupArt(c.enemy,300,120));});}
-function card(c,i){const show=U.more?[0,4].includes(i):[1,2,3].includes(i);if(!show)return '';const L=c.level;
+ view.querySelectorAll('.an-ccard').forEach(el=>{const c=allChall().find(x=>x.id===el.dataset.id);el.querySelector('.art').appendChild(groupArt(c.enemy,300,120));});}
+function card(c,i){const show=i<0||(U.more?[0,4].includes(i):[1,2,3].includes(i));if(!show)return '';const L=c.level,rec=C.recommend?.(c)||'',special=i<0;
  const comp=summary(c.enemy);
- return `<button class="an-ccard lv${CH.LEVELS.indexOf(L)}" data-a="chall:${c.id}" data-id="${c.id}" style="--lv:${L.color}"><div class="art"></div><div class="body"><p class="tag"><span class="lvl">${L.label.toUpperCase()}</span><span class="sk">${'☠'.repeat(L.skulls)||'·'}</span></p>
+ // Sonderherausforderungen: Karte selbst nicht antippbar (kein versehentlicher Start beim Scrollen), nur der Knopf nimmt sie an
+ return `<${special?'div':'button'} class="an-ccard lv${CH.LEVELS.indexOf(L)}${special?' an-spec':''}" ${special?'':`data-a="chall:${c.id}"`} data-id="${c.id}" style="--lv:${L.color}"><div class="art"></div><div class="body"><p class="tag"><span class="lvl">${L.label.toUpperCase()}</span>${rec?`<span class="an-rec">${esc(rec)}</span>`:''}<span class="sk">${'☠'.repeat(L.skulls)||'·'}</span></p>
   <h3>${esc(c.name)}</h3><p class="comp">${esc(comp)}</p><p class="desc">${esc(c.desc)}</p>
   <div class="meter" title="Kampfwert"><span>Ihr ${c.ownKW}</span><i><i style="width:${cl(50*c.enemyKW/Math.max(1,c.ownKW),4,100)}%"></i></i><span>Gegner ${c.enemyKW}</span></div>
-  <div class="gold"><span class="win"><small>SIEG</small><b>${c.gold.win}</b></span><span class="loss"><small>NIEDERLAGE bis</small><b>${c.gold.lossMax}</b></span></div></div></button>`;}
+  <div class="gold"><span class="win"><small>SIEG</small><b>${c.gold.win}</b></span><span class="loss"><small>NIEDERLAGE bis</small><b>${c.gold.lossMax}</b></span></div>${special?`<button class="an-accept" data-a="chall:${c.id}">⚔ HERAUSFORDERUNG ANNEHMEN</button>`:''}</div></${special?'div':'button'}>`;}
 function summary(enemy){const n={human:0,rooster:0,lion:0};for(const u of enemy)n[u.kind]++;const p=[];if(n.human)p.push(n.human+(n.human===1?' Gladiator':' Gladiatoren'));if(n.lion)p.push(n.lion+(n.lion===1?' Löwe':' Löwen'));if(n.rooster)p.push(n.rooster+(n.rooster===1?' Hahn':' Hähne'));return p.join(' · ');}
 
 // ---------- 4 · Gegnerpräsentation ----------
-function present(c){U.sel=c;startSpy(c);const ownE=CH.teamE(team());const list=c.enemy.slice(0,8);let i=-1,timer=0;
+function present(c){U.sel=c;startSpy(c);if(C.present?.(c,()=>{root.hidden=false;prep(c);})){layer.innerHTML='';root.hidden=true;return;}const ownE=CH.teamE(team());const list=c.enemy.slice(0,8);let i=-1,timer=0;
  layer.innerHTML=`<div class="an-pres" role="dialog" aria-label="Gegnerpräsentation"><div class="an-pstage"><canvas width="320" height="200" class="px"></canvas><div class="an-pcap"></div></div><div class="an-pdots">${list.map(()=>'<i></i>').join('')}</div><div class="an-pbtns"><button data-a="pskip">Überspringen</button><button class="gold" data-a="pnext">Weiter ▸</button></div></div>`;
  const cv=layer.querySelector('canvas'),cap=layer.querySelector('.an-pcap'),dots=layer.querySelectorAll('.an-pdots i');let t0=0,cur=null,fig=null;
  const next=()=>{i++;clearTimeout(timer);if(i>=list.length){U.pres=null;layer.innerHTML='';prep(c);return;}cur=list[i];t0=performance.now()/1000;fig=cur.kind==='human'?ART.figure(cur.g,true):null;dots.forEach((d,k)=>d.className=k<i?'done':k===i?'on':'');
@@ -202,30 +207,39 @@ let reTimer=0;function rowsChanged(){spyBuild();clearTimeout(reTimer);reTimer=se
 
 // ---------- 7 · Echter Kampf in der Kampfansicht des Spiels ----------
 function fight(){const c=U.sel;if(!c)return;const units=team();if(!units.length){M.ui.notify?.('Niemand einsatzbereit.');return;}stopSpy();
+ const before={};for(const u of units)if(u.kind==='rooster')before[u.key]={stats:{...u.R.stats},moves:{...u.R.moves}};
  const spec={title:c.name,blue:units.map(u=>({...u})),red:c.enemy};layer.innerHTML='';root.hidden=true;document.body.classList.add('an-fighting');
+ // Gastgeber kann den Kampf selbst austragen (z. B. Hahn gegen Hahn auf dem Dorfplatz); Ergebnis im Format von AN.outcome
+ if(C.runFight?.(spec,c,out=>{const pay=CH.payout(c,out);try{C.settle?.(pay,out,c,true);}catch(e){console.error(e);}setTimeout(()=>finishFight(c,out,units,pay,before),300);}))return;
  S.battle=null;try{M.ui.click('nav:home');}catch(e){console.warn(e);}
  H.resetScene();M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;for(const p of [...(M.fx||[]),...(M.shots||[])])p.active=false;
  spec.league=S.fightLeague??S.league??0;const b=AN.build(spec);b.challenge=c.id;b.league=Math.max(0,Math.min(6,spec.league|0));S.battle=b;
- AN.listeners.push((out)=>{const pay=CH.payout(c,out);try{C.settle?.(pay,out,c);}catch(e){console.error(e);}setTimeout(()=>finishFight(c,out,units,pay),900);});
+ AN.listeners.push((out)=>{const pay=CH.payout(c,out);try{C.settle?.(pay,out,c);}catch(e){console.error(e);}setTimeout(()=>finishFight(c,out,units,pay,before),900);});
  M.ui.render();}
-function finishFight(c,out,units,gold){const won=out.winner===0;C.record?.(won);
+// Fortschritt der Hähne: welche Werte der Kampf tatsächlich verbessert hat (Lernen nach dem Abstand IST → SOLL)
+const GAIN_LABEL={groesse:'Größe',kraft:'Kraft',schnabelkraft:'Schnabelkraft',klauenstaerke:'Klauenstärke',geschwindigkeit:'Geschwindigkeit',zaehigkeit:'Zähigkeit',peck:'Picken',claw:'Krallen'};
+function gainsOf(units,before){const out=[];for(const u of units){const b=before?.[u.key];if(!b||u.R.dead)continue;const list=[];for(const grp of ['stats','moves'])for(const k in b[grp]){const from=b[grp][k],to=u.R[grp][k];if(to-from>=.05)list.push({grp,key:k,label:(C.gainLabels||GAIN_LABEL)[k]||k,from,to,cap:u.R.caps[grp][k]});}list.sort((a,b)=>(b.to-b.from)-(a.to-a.from));out.push({key:u.key,R:u.R,name:u.R.name,list});}return out;}
+const f1=v=>(Math.round(v*10)/10).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+function finishFight(c,out,units,gold,before){const won=out.winner===0;C.record?.(won);
  const mine=out.units.filter(u=>u.team===0),foes=out.units.filter(u=>u.team===1);for(const u of mine)if(u.dead)C.addFallen?.({name:u.name,kind:u.kind,cause:u.cause,killer:u.killer,day:S.day,fight:c.name});
- U.result={c,out,won,gold,mine,foes,units};U.chall=null;ART.clearFigures();
+ U.result={c,out,won,gold,mine,foes,units,gains:gainsOf(units,before)};U.chall=null;ART.clearFigures();
  setTimeout(()=>{S.battle=null;try{M.ui.render();}catch{}document.body.classList.remove('an-fighting');root.hidden=false;go('result');},300);}
 // Hauptmenü-Knopf im Kampf: als Aufgeben werten (kein Verlassen mitten im Kampf)
 document.addEventListener('click',e=>{const el=e.target.closest?.('[data-action]');if(!el||!S.battle?.neu)return;if(el.dataset.action==='profilemenu'){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();if(!S.battle.finale)M.surrender();}},true);
 
 // ---------- 8 · Ergebnis ----------
-function result(){const R=U.result;if(!R){go('home');return;}setTitle(R.won?'SIEG':'NIEDERLAGE',false);
+function result(){const R=U.result;if(!R){go('home');return;}setTitle(R.won?'SIEG':'NIEDERLAGE',true);
  const row=u=>`<li class="${u.dead?'dead':u.severe?'sev':''}"><span class="th" data-k="${u.key}"></span><div><b>${esc(u.name)}</b><small>${u.dead?'✝ '+esc(u.cause||'gefallen')+(u.killer?' · durch '+esc(u.killer):''):u.down?'am Boden · Gesundheit '+u.health+' %':'Gesundheit '+u.health+' %'}${u.injuries?.length?' · '+esc(u.injuries.join(', ')):''}</small></div></li>`;
  const alive=R.mine.filter(u=>!u.dead),dead=R.mine.filter(u=>u.dead);
  view.innerHTML=`<section class="an-res ${R.won?'won':'lost'}"><p class="eyebrow">${esc(R.c.name)} · ${R.c.level.label}${R.out.timeout?' · nach Zeit gewertet':''}</p><h1>${R.won?'SIEG':'NIEDERLAGE'}</h1>
   <div class="an-pay"><small>${R.won?'Siegprämie':'Antrittsgeld'}</small><b data-count="${R.gold}">0</b><span>Gold</span></div>
   <div class="an-cols"><div><h3>Überlebende (${alive.length})</h3><ul>${alive.map(row).join('')||'<li class="none">Niemand.</li>'}</ul></div><div><h3>Gefallen (${dead.length})</h3><ul>${dead.map(row).join('')||'<li class="none">Alle leben. Die Totengräber sind enttäuscht.</li>'}</ul></div></div>
+  ${R.gains.length?`<div class="an-gains"><h3>Fortschritt durch den Kampf</h3>${R.gains.map(g=>`<div class="an-gain"><b>${esc(g.name)}</b>${g.list.length?`<ul>${g.list.slice(0,5).map(x=>`<li><span>${esc(x.label)}</span><b>${f1(x.from)} → ${f1(x.to)}</b><small>SOLL ${Math.round(x.cap)}</small></li>`).join('')}</ul>`:'<p>Keine messbare Verbesserung in diesem Kampf.</p>'}</div>`).join('')}</div>`:''}
   <p class="an-foes">Gegner: ${R.foes.filter(u=>u.dead).length} tot · ${R.foes.filter(u=>!u.dead&&u.down).length} am Boden · ${R.foes.filter(u=>!u.dead&&!u.down).length} stehend · Dauer ${Math.round(R.out.time)} s</p>
-  <div class="an-actions"><button data-a="nextday">Nächster Tag (Heilung)</button><button class="primary" data-a="again">NEUE HERAUSFORDERUNGEN ▸</button></div></section>`;
+  <div class="an-actions"><button data-a="nextday">Nächster Tag (Heilung)</button><button class="primary" data-a="again">NEUE HERAUSFORDERUNGEN ▸</button></div>${C.close?'<div class="an-actions"><button data-a="leave">◂ Arena verlassen</button></div>':''}</section>`;
  const units=pool().map(withKey);view.querySelectorAll('.th[data-k]').forEach(el=>{const u=R.units.find(x=>x.key===el.dataset.k)||units.find(x=>x.key===el.dataset.k);if(u)el.appendChild(unitThumb(u,40,46));});
- const n=view.querySelector('[data-count]'),goal=+n.dataset.count,st=performance.now();(function tick(){const k=Math.min(1,(performance.now()-st)/900);n.textContent=Math.round(goal*k*(2-k));if(k<1)requestAnimationFrame(tick);})();}
+ const n=view.querySelector('[data-count]'),goal=+n.dataset.count,st=performance.now();(function tick(){const k=Math.min(1,(performance.now()-st)/900);n.textContent=Math.round(goal*k*(2-k));if(k<1)requestAnimationFrame(tick);})();
+ try{C.onResult?.(R);}catch(e){console.error(e);}}
 
 // ---------- Eingaben ----------
 root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const [a,v]=el.dataset.a.split(/:(.*)/s);
@@ -235,13 +249,14 @@ root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)r
   case 'classic':C.classic?.();break;
   case 'species':if(!(v==='loewe'?C.lions:C.roosters).some(x=>!x.dead)){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(v==='loewe'?'Du besitzt noch keinen Löwen. Der Tierhändler kommt später.':'Du besitzt noch keine Hähne. Der Tierhändler kommt später.');break;}U.mode='beast';U.species=v;U.size=v==='loewe'?1:3;U.picked=[];U.chall=null;go('hub');break;
   case 'locked':el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');break;
+  case 'lockedmsg':el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(lockMsg(v));break;
   case 'auto':{const cur=team().map(u=>u.key);U.auto=v==='1';if(!U.auto&&!U.picked.length)U.picked=cur;render();break;}
   case 'size':U.size=+v;render();break;
   case 'pick':{const i=U.picked.indexOf(v);if(i>=0)U.picked.splice(i,1);else{U.picked.push(v);if(U.picked.length>U.size)U.picked.shift();}render();break;}
   case 'unfit':M.ui?.notify?.('Zu schwer verletzt. Ein paar Tage Ruhe helfen.');break;
   case 'reroll':ensureChallenges(team(),true);render();break;
   case 'more':U.more=!U.more;render();break;
-  case 'chall':{const c=U.chall.find(x=>x.id===v);if(c)present(c);break;}
+  case 'chall':{const c=allChall().find(x=>x.id===v);if(c)present(c);break;}
   case 'pnext':U.pres?.next();break;
   case 'pskip':U.pres?.skip();break;
   case 'close':layer.innerHTML='';break;
@@ -254,6 +269,7 @@ root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)r
    layer.querySelectorAll('.an-toggle button').forEach(b=>b.classList.toggle('on',b.dataset.a==='rows:hand'));rowsChanged();break;}
   case 'fight':fight();break;
   case 'again':U.result=null;go('hub');break;
+  case 'leave':U.result=null;U.screen='home';C.close?.();break;
   case 'nextday':C.nextDay(1);U.result=null;go('hub');break;
   case 'day':C.nextDay(1);render();break;
   case 'day7':C.nextDay(7);render();break;
@@ -264,6 +280,7 @@ root.addEventListener('click',e=>{if(e.target.closest('#anLayer [data-a]')){/* �
 // „Held des Kampfes“ des Moderators kennt nur Menschen (Gesicht, Trophäe) – in Kämpfen mit Tieren auslassen
 {const base=M.fixedStep;M.fixedStep=function(){const b=S.battle,f=b?.finale;if(!b?.neu||!f||!b.actors.some(a=>a.lion||a.hahn))return base.apply(this,arguments);const had=document.body.classList.contains('bhud');document.body.classList.remove('bhud');try{return base.apply(this,arguments);}finally{if(had)document.body.classList.add('bhud');}};}
 if(C.startHidden)root.hidden=true;
+U.prep=c=>{root.hidden=false;prep(c);};U.render=()=>render();U.go=go;
 U.open=()=>{root.hidden=false;if(U.screen==='result'&&!U.result)U.screen='home';render();setTimeout(pool0,1500);};U.close=()=>{root.hidden=true;stopSpy();layer.innerHTML='';};U.isOpen=()=>!root.hidden;
 if(!C.startHidden)setTimeout(pool0,1500); // Spione schon vorab bereitmachen
 render();

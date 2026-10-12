@@ -23,7 +23,7 @@ function makeLion(L,team,x,y){
  const rng=S.rng,g=M.makeGladiator(0,team===1);S.rng=rng;
  g.name=L.name;g.id='lion-'+L.id+'-'+Math.floor(Math.random()*1e6).toString(36);g.role='Soldat';g.traits=[];g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};
  for(const k in g.stats)g.stats[k]=48;g.stats.will=100;g.stats.morale=100;g.stats.agility=cl(L.stats.tempo,20,95);g.stats.reflex=cl(L.stats.tempo,20,95);g.weight=Math.round(150+L.stats.kraft*.9);g.height=110;
- const P=params(L),c=L.condition,tf=c.health/100;
+ const P=params(L),c=L.condition,tf=c.health/100;P.canLeap=!L.crippled; // L.crippled: Hinterlauf zerschlagen – kein Ansprung mehr (nur wo ausdrücklich gesetzt, z. B. Rex in der Lanister-Lektion)
  const l=M.createCombatActor(g,team,0);
  Object.assign(l,{rex:true,lion:L,P,x,y,r:30*P.size,cute:P.size,
   tissue:{head:160*tf,chest:290*tf,belly:140*tf,front:120*tf,rear:100*(c.rear/100)},wounds:(L.wounds||[]).map(w=>({...w})),blood:c.blood,bleeding:0,trauma:(1-tf)*120,
@@ -81,13 +81,14 @@ function step(l,dt){const b=S.battle;l.hit=Math.max(0,(l.hit||0)-dt);l.clock+=dt
   return;}
  if(l.mode==='evade'||l.mode==='recoil'){escape(l,targets,dt,265*condition);if(l.clock>=l.duration){state(l,nearest>110&&l.energy>35?'threaten':'recover',.7+hurtLeg*.4);l.pounceCD=Math.max(l.pounceCD,1);}return;}
  if(l.mode==='recover'||l.mode==='roar'&&l.clock<l.duration){if(nearest<125)escape(l,targets,dt,90*condition);else{l.velocity*=Math.exp(-dt*8);l.a=M.angle(l,t);}if(l.clock>=l.duration)state(l,'stalk',0);return;}
- if(['snarl','roar','threaten'].includes(l.mode)){l.velocity*=Math.exp(-dt*8);l.a=M.angle(l,t);if(nearest<62){state(l,'evade',.4);return;}if(l.clock>=l.duration)state(l,'crouch',.18);return;}
+ if(['snarl','roar','threaten'].includes(l.mode)){l.velocity*=Math.exp(-dt*8);l.a=M.angle(l,t);if(nearest<62){state(l,'evade',.4);return;}if(l.clock>=l.duration){if(l.P.canLeap)state(l,'crouch',.18);else{state(l,'stalk',0);l.pounceCD=2.5;}}return;}
  if(l.mode==='swipe'){if(!l.swiped&&l.clock>.16){hurt(l,t,'swipe');l.swiped=true;}if(l.clock>.34){state(l,'evade',.65);l.cool=.8;}return;}
  if(!t.lion&&(t.fallTimer>0||t.down)&&d<70*l.P.size&&l.cool<=0){beginGrip(l,t);return;}
  if(l.energy<22){state(l,'recover',1.1);return;}
  if(nearest<80*l.P.size&&l.cool<=0){state(l,'swipe',.34);l.swiped=false;l.paw*=-1;l.energy-=8;return;}
  if(nearest<145&&l.pounceCD>0){escape(l,targets,dt,200*condition);return;}
  if(l.pounceCD<=0&&d<400&&l.cool<=0){l.displayCycle++;state(l,['snarl','threaten','roar'][l.displayCycle%3],(l.displayCycle%3===2?.55:.38)*l.P.display);l.side=M.rng()<.5?-1:1;return;}
+ if(!l.P.canLeap&&l.cool<=0&&l.energy>30){walk(l,t.x,t.y,120*condition,dt,t);return;} // lahmer Löwe: humpelt heran und schlägt mit der Pranke
  const an=M.angle(t,l)+(l.side||1)*.95,radius=210;walk(l,t.x+Math.cos(an)*radius,t.y+Math.sin(an)*radius,145*condition,dt,t);
  checkDeath(l,null);}
 

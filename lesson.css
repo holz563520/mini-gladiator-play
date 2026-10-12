@@ -1,0 +1,124 @@
+/* Lanister-Lektion: ergänzt die Filmbühne des Medikus-Kapitels */
+.lesson-film{background:#0d0a08}
+.lesson-ledger dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:4px 0 0}.lesson-ledger dd{margin:0;font-weight:700}
+.lesson-scroll{text-align:center;background:#efe0b3;color:#2a1c10;border:3px solid #6b4a30}.lesson-scroll h4{color:#6b4a30}.lesson-scroll b{display:block;font-size:30px;letter-spacing:2px;margin:4px 0}.lesson-scroll small{opacity:.7}
+.lesson-card{border-color:#b78d3c}.lesson-card h2{color:#f0c27a}.lesson-terms{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:10px 0}.lesson-terms dt{opacity:.7}.lesson-terms dd{margin:0;font-weight:700}
+body.lesson-goarena [data-action="nav:arena"]{animation:lessonPulse 1s ease-in-out infinite;outline:3px solid #f0c27a;outline-offset:2px}
+@keyframes lessonPulse{50%{box-shadow:0 0 0 6px rgba(240,194,122,.35)}}
+.lesson-end h2{color:#f0c27a}
+/* Aufgabe unten halten: oben rechts liegt auf der Karte die Arena */
+.lesson-guide.lion-taskbar{top:auto;bottom:calc(10px + env(safe-area-inset-bottom))}
+
+/* KAPITEL 2 · Hühnerschule: Händlerin, Nahansicht, Beastrium, Karten im Film (nur Testversion) */
+.hs-market,.hs-present,.hs-detail{position:fixed;inset:0;z-index:150;background:#0b0806f0;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:calc(8px + env(safe-area-inset-top)) 8px calc(90px + env(safe-area-inset-bottom));font-family:'Courier Prime',ui-monospace,monospace;color:#eae4cd;animation:hsFade .25s}
+.hs-present{z-index:210}
+@keyframes hsFade{from{opacity:0}}
+.hs-mbox,.hs-pbox,.hs-dbox{width:min(680px,100%);background:#1d282b;border:3px solid #17201c;box-shadow:4px 4px 0 #000a;padding:10px}
+.hs-mbox header,.hs-dbox header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;position:relative}
+.hs-mbox h2,.hs-dbox h2,.hs-ptext h2{margin:0;font-size:clamp(18px,5vw,26px);letter-spacing:.06em;color:#efe0b3}
+.hs-gold{background:#120c09;border:2px solid #dfb66d;padding:4px 10px;white-space:nowrap}.hs-gold b{color:#dfb66d;font-size:18px}
+.hs-stage,.hs-pstage{position:relative;margin:8px 0;border:2px solid #120c09;background:#000;line-height:0}
+.hs-stage canvas,.hs-pstage canvas{width:100%;height:auto;image-rendering:pixelated;display:block}
+.hs-cage{position:absolute;background:transparent;border:2px dashed #dfb66d00;cursor:pointer;padding:0}
+.hs-cage:hover,.hs-cage:focus-visible{border-color:#dfb66daa;outline:0}
+.hs-say{position:absolute;left:8px;right:8px;top:8px;background:#efe0b3;color:#17201c;border:3px solid #17201c;padding:6px 10px;font-weight:700;font-size:clamp(13px,3.6vw,17px);line-height:1.25;box-shadow:3px 3px 0 #0008;opacity:0}
+.hs-say.in{animation:hsSay .35s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes hsSay{from{opacity:0;transform:scale(.8) rotate(-2deg)}to{opacity:1;transform:none}}
+.hs-offers{display:grid;gap:6px}
+.hs-offer{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;background:#243136;border:2px solid #394b4d;color:#eae4cd;padding:8px 10px;font:inherit;cursor:pointer}
+.hs-offer b{grid-column:1}.hs-offer small{grid-column:1;color:#97aaa8;font-size:12px}.hs-offer span{grid-row:1/3;grid-column:2;align-self:center;color:#dfb66d;font-weight:700;font-size:16px}
+.hs-offer:hover{border-color:#dfb66d}.hs-offer.sold{opacity:.5;cursor:default}.hs-offer.sold span{color:#d57668}
+.hs-note{font-size:12px;color:#97aaa8;margin:8px 0 0}.hs-mact{margin-top:10px;display:flex;justify-content:flex-end}
+.hs-corner{margin:0;font-size:12px;letter-spacing:.2em;color:#dfb66d}
+.hs-bubble{position:absolute;left:50%;top:10%;transform:translateX(-50%) scale(.6);background:#efe0b3;color:#17201c;border:3px solid #17201c;padding:4px 10px;font-weight:700;font-size:clamp(14px,4vw,20px);opacity:0;transition:.2s;line-height:1.2;white-space:nowrap}
+.hs-bubble.show{opacity:1;transform:translateX(-50%) scale(1)}
+.hs-bubble.q7,.hs-bubble.q8,.hs-bubble.q9{background:#2a0606;color:#ffcf9a;border-color:#ff4a2a}
+.hs-ptext{opacity:0;transform:translateY(8px);transition:.4s}.hs-ptext.show{opacity:1;transform:none}
+.hs-qual{margin:2px 0;font-weight:700;font-size:13px}.hs-qual span{letter-spacing:.05em}
+.hs-qcls{margin:2px 0 6px;font-size:12px;color:#dfb66d}.hs-sum{margin:0 0 8px;font-size:13px;color:#c9c2a8}
+.hs-chips{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 0}.hs-chips span{background:#120c09;border:1px solid #394b4d;padding:2px 6px;font-size:11px;color:#c9c2a8}
+.hs-pact{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:10px}
+/* Werte-Tabelle IST/SOLL */
+.hs-stats{width:100%;border-collapse:collapse;font-size:13px}
+.hs-stats th{text-align:left;font-weight:700;padding:3px 4px;white-space:nowrap}.hs-stats thead th{font-size:10px;letter-spacing:.12em;color:#97aaa8}
+.hs-stats td{padding:3px 4px}.hs-stats td.v{text-align:right;color:#88baa6;font-weight:700;white-space:nowrap}.hs-stats td.c{text-align:right;color:#dfb66d;font-weight:700}
+.hs-stats td.v i{display:block;font-style:normal;font-size:10px;color:#a9e08a}
+.hs-stats .bar{width:44%;position:relative}.hs-stats thead .bar{text-align:center;font-size:9px;white-space:nowrap}
+.hs-stats td.bar{background:linear-gradient(90deg,#120c09,#120c09) no-repeat;background-size:100% 8px;background-position:center}
+.hs-stats td.bar i{display:block;height:8px;background:#88baa6;box-shadow:inset 0 -2px 0 #0004}
+.hs-stats td.bar em{position:absolute;top:2px;bottom:2px;width:3px;margin-left:-1px;background:#dfb66d;box-shadow:0 0 0 1px #120c09}
+.hs-stats tbody tr{border-top:1px solid #39494d55}.hs-stats tr.hs-up{background:#88baa61a}
+.hs-stats.hl-ist td.v,.hs-stats.hl-ist td.bar i{animation:hsGlow 1s ease-in-out infinite}.hs-stats.hl-soll td.c,.hs-stats.hl-soll td.bar em{animation:hsGlow 1s ease-in-out infinite}
+@keyframes hsGlow{50%{filter:brightness(1.6);text-shadow:0 0 8px currentColor}}
+.hs-moves{margin-top:4px;opacity:.85}
+.hs-legend{font-size:11px;color:#97aaa8;margin:4px 0}.hs-legend i{display:inline-block;width:12px;height:8px;vertical-align:middle}.hs-legend .ist{background:#88baa6}.hs-legend .soll{width:3px;background:#dfb66d}
+/* Detailfenster */
+.hs-x{position:absolute;right:0;top:0;background:#120c09;color:#eae4cd;border:2px solid #394b4d;width:36px;height:36px;font-size:18px;cursor:pointer}
+.hs-replay{position:absolute;right:6px;bottom:6px;background:#120c09cc;color:#dfb66d;border:1px solid #dfb66d;font:inherit;font-size:12px;padding:3px 8px;line-height:1.2;cursor:pointer}
+.hs-dgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;margin:6px 0;font-size:12px}.hs-dgrid span{background:#120c09;padding:4px 6px;border:1px solid #39494d}.hs-dgrid b{color:#dfb66d}
+.hs-wounds{font-size:12px;color:#d57668}.hs-hist{font-size:12px;color:#97aaa8}
+/* Beastrium-Seite */
+.hs-beastrium h1{margin:0}.hs-beastrium .hs-bhead p{margin:4px 0}
+.hs-tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:10px 0;position:sticky;top:0;z-index:2;background:inherit}
+.hs-tabs button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 2px;background:#243136;border:2px solid #394b4d;color:#eae4cd;font:inherit;cursor:pointer;min-width:0}
+.hs-tabs button canvas{width:100%;max-width:64px;height:auto;image-rendering:pixelated}
+.hs-tabs button b{font-size:12px}.hs-tabs button small{font-size:11px;color:#97aaa8}
+.hs-tabs button.on{border-color:#dfb66d;background:#3a2f22}.hs-tabs button.locked{opacity:.6}
+.hs-cages{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.hs-cagecard{position:relative;display:flex;flex-direction:column;align-items:stretch;text-align:left;gap:2px;padding:6px;background:#2a2018;border:3px solid #6e5030;color:#eae4cd;font:inherit;cursor:pointer;box-shadow:3px 3px 0 #0007}
+.hs-cagecard:hover{border-color:#dfb66d}.hs-cagecard canvas{width:100%;height:auto;image-rendering:pixelated;border:2px solid #120c09}
+.hs-cagecard b{font-size:14px}.hs-cagecard small{font-size:11px}.hs-cagecard em{font-style:normal;font-size:11px;color:#97aaa8}
+.hs-cagecard .hs-kw{position:absolute;right:10px;top:10px;background:#120c09d0;padding:1px 6px;font-size:11px}.hs-cagecard .hs-kw b{color:#dfb66d;font-size:13px}
+.hs-cagecard .hs-rank{position:absolute;left:10px;top:10px;background:#dfb66d;color:#120c09;font-weight:700;padding:0 6px;font-size:12px}
+.hs-cagecard.hurt canvas{filter:saturate(.6) brightness(.85)}
+.hs-hp{display:block;height:5px;background:#120c09}.hs-hp i{display:block;height:5px;background:#88baa6}
+.hs-lockbox{text-align:center;padding:10px;background:#1a140e;border:2px dashed #394b4d}.hs-lockbox canvas{width:min(100%,420px);height:auto;image-rendering:pixelated}
+.hs-empty{padding:20px;text-align:center;color:#97aaa8;border:2px dashed #394b4d}
+.hs-fallen{margin-top:10px;font-size:13px}
+/* Karten im Film */
+.hs-card{max-width:560px}.hs-card h4{letter-spacing:.1em}.hs-card small{display:block;font-size:11px;opacity:.8;margin-top:6px}
+.hs-card .hs-stats{font-size:12px}.medic-card.hs-card .hs-stats td.bar{background-size:100% 6px}
+.hs-odds{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px}
+.hs-odds li{display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:center;font-size:13px;padding:2px 4px}
+.hs-odds li i{grid-column:1/3;display:block;height:6px;background:#8a6a40}.hs-odds li span{font-weight:700}
+.hs-odds li.on{background:#dfb66d33}.hs-odds li.on i{background:#dfb66d}
+.hs-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hs-two p{margin:0 0 4px;font-size:12px;font-weight:700}
+.hs-histo{display:flex;align-items:flex-end;gap:1px;height:70px;border-bottom:2px solid currentColor}.hs-histo i{flex:1;background:var(--c);min-width:1px}
+.hs-hax{display:flex;justify-content:space-between;font-size:10px;opacity:.7}
+.hs-perfect b{display:block;font-size:30px;margin:6px 0}.hs-perfect sup{font-size:16px}
+.hs-mine{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:3px}.hs-mine li{display:grid;grid-template-columns:1fr auto;gap:0 8px;font-size:13px}.hs-mine li small{grid-column:2}
+.hs-big{font-size:18px;font-weight:700;margin:4px 0}
+.hs-gap{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}.hs-gap li{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:13px}.hs-gap li i{grid-column:1/3;display:block;height:10px;background:#88baa6}
+.hs-vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center;margin:6px 0}.hs-vs span{display:flex;flex-direction:column;font-size:13px}.hs-vs b{font-size:18px}.hs-vs i{font-style:normal;font-weight:700;font-size:20px;color:#8a2a24}
+.hs-toast{display:flex;flex-direction:column;gap:6px}.hs-toast .btn{align-self:flex-end}
+@media (max-width:420px){.hs-stats th{font-size:12px}.hs-stats .bar{width:36%}.hs-cages{grid-template-columns:repeat(2,1fr)}.hs-tabs button b{font-size:11px}}
+
+.hs-dbox header{display:block;padding-right:44px}
+.medic-card .hs-stats th,.medic-card .hs-stats td{color:#17201c}.medic-card .hs-stats thead th{color:#5a5040}
+.medic-card .hs-stats td.v{color:#2e6a52}.medic-card .hs-stats td.c{color:#8a5a10}.medic-card .hs-stats td.bar{background-image:linear-gradient(90deg,#c9bb94,#c9bb94)}
+.medic-card .hs-stats td.bar i{background:#4f8a72}.medic-card .hs-stats td.bar em{background:#b07a20;box-shadow:0 0 0 1px #efe0b3}
+.medic-card .hs-stats tbody tr{border-top-color:#17201c22}
+
+/* Dorfplatz (Hahn gegen Hahn), Gestaltung wie im Hahnenkampf-Prototyp */
+.hs-village{position:fixed;inset:0;z-index:150;background:#0b0806;overflow-y:auto;display:flex;justify-content:center;padding:calc(8px + env(safe-area-inset-top)) 8px 20px;font-family:'Courier Prime',ui-monospace,monospace;color:#eae4cd}
+.hs-vbox{width:min(720px,100%)}.hs-vbox>.eyebrow{margin:0 0 6px;color:#dfb66d;letter-spacing:.15em;font-size:12px}
+.hs-village .hud{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:6px}
+.hs-village .fbar .nm{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hs-village .fbar.R{text-align:right}
+.hs-village .hpbar{height:12px;background:#120c09;border:2px solid #000;position:relative;margin-top:3px}
+.hs-village .hpbar i{position:absolute;top:0;bottom:0;left:0;background:#8a1a12;transition:width .5s}.hs-village .hpbar b{position:absolute;top:0;bottom:0;left:0;background:linear-gradient(#e04a2a,#a8200f);transition:width .15s}
+.hs-village .fbar.R .hpbar i,.hs-village .fbar.R .hpbar b{left:auto;right:0}
+.hs-village .fbar .st{font-size:12px;color:#97aaa8;min-height:16px}.hs-village .fbar .st .bl{color:#ff5040}
+.hs-village .vs{color:#dfb66d;font-weight:700}
+/* Ohne Lebensbalken und Gesundheitszahlen: spannender (Thomas) */
+.hs-village .hpbar,.hs-village .fbar .st{display:none}
+.hs-village .stage{position:relative;border:3px solid #000;box-shadow:0 0 0 2px #394b4d;overflow:hidden}
+.hs-village .stage canvas{width:100%;display:block;image-rendering:pixelated;aspect-ratio:320/200}
+.hs-village .floaters{position:absolute;inset:0;pointer-events:none}
+.hs-village .result{display:flex;justify-content:center;margin-top:8px}.hs-village .result[hidden]{display:none}
+.hs-village .rbox{background:#1d282b;border:3px solid #dfb66d;padding:12px 16px;text-align:center;width:100%}.hs-village .rbox h2{margin:0 0 4px;color:#dfb66d}
+.hs-village .parts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}.hs-village .plist{display:flex;flex-wrap:wrap;gap:4px}.hs-village .parts .R .plist{justify-content:flex-end}
+.hs-village .pc{font-size:12px;padding:1px 5px;border:1px solid #3d3023;background:#1c1510;color:#97aaa8}.hs-village .pc.s1{border-color:#a8862a;color:#f0d080}.hs-village .pc.s2{border-color:#c8501a;color:#ffa060}.hs-village .pc.s3{border-color:#e0262e;color:#fff;background:#5a0a0e}
+.hs-village .log{list-style:none;margin:8px 0 0;padding:6px 8px;background:#151d20;border:2px solid #2d241b;font-size:13px;height:110px;overflow:hidden;display:flex;flex-direction:column-reverse}
+.hs-village .log li{color:#c9c2a8;padding:1px 0}.hs-village .log li:first-child{color:#eae4cd}.hs-village .log li.hit{color:#f0a090}.hs-village .log li.crit{color:#ffd040}
+.hs-village .ctrl{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.hs-village .shotwrap{position:absolute;inset:0;background:#0d0a08;z-index:5;cursor:pointer}.hs-village .shotwrap canvas{width:100%;height:100%;display:block;image-rendering:pixelated}.hs-village .shotwrap span{position:absolute;right:6px;bottom:4px;font-size:12px;color:#bfae8c;opacity:.75}

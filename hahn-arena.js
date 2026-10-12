@@ -56,7 +56,7 @@ function syncBack(a,final){
 function amplify(a){
  const R=a.hahn,g=a.g,amp=cl(Math.pow(HUMAN_KG/Math.max(.3,R.weight),.5),1,6);
  for(const [id,p] of Object.entries(g.body)){const before=a._snap?.[id];if(before==null||p.missing)continue;const loss=before-p.hp;if(loss>.5){
-  const extra=loss*(amp-1);p.hp=Math.max(0,p.hp-extra);p.bleed=(p.bleed||0)*1;p.grade=M.injuryGrade(p);
+  const extra=loss*(amp-1);p.hp=Math.max(0,p.hp-extra);learn(a,'stats','zaehigkeit',.025);p.bleed=(p.bleed||0)*1;p.grade=M.injuryGrade(p);
   const w=(p.wounds||[])[0],txt=String(w?.type||''),type=/Schnitt|Hieb|Klaff|Riss|Kratz|Prank|Kral/.test(txt)?'cut':'peck';
   const total=loss+extra,sev=cl(Math.round(total/14),1,3),hp=INV[id],rr=Math.sqrt(Math.random())*.7,ra=rnd(0,6.28);
   R.body[hp].marks.push({id:'g'+Math.floor(Math.random()*1e9).toString(36),part:hp,type,severity:sev,u:Math.cos(ra)*rr,v:Math.sin(ra)*rr,ang:rnd(-1.1,-.35),rake:type==='cut'?2:1,heal:0,time:performance.now(),day:CF.CLOCK.day});
@@ -140,7 +140,8 @@ function lionActor(x,y){
 
 // ---------- Hahn-KI ----------
 const alive=t=>t&&!t.g.dead&&!t.down&&!t.surrendered;
-function learn(a,group,key,amount){const g=CF.learnValue(a.hahn,group,key,amount);if(g>0){const p=group+':'+key;a.hs.learning[p]=(a.hs.learning[p]||0)+g;}}
+const LEARN=globalThis.HAHN_LEARN||2; // Kampf-Lernen der Hähne (Faktor): ≈ 0,2–0,4 Punkte je Wert und Kampf wie bei Gladiatoren
+function learn(a,group,key,amount){const g=CF.learnValue(a.hahn,group,key,amount*LEARN);if(g>0){const p=group+':'+key;a.hs.learning[p]=(a.hs.learning[p]||0)+g;}}
 function partsFor(t,jump,big){
  if(t.rex)return jump?[['front',3],['belly',2],['head',big?1:0]]:[['front',5],['rear',1]];
  if(t.hahn){return [['head',30],['neck',19],['breast',18],['body',10],['wing',11],['legs',9]];}
@@ -151,11 +152,12 @@ function partsFor(t,jump,big){
 function weighted(list){let s=0;for(const [,w] of list)s+=w;let x=Math.random()*s;for(const [k,w] of list){x-=w;if(x<=0)return k;}return list[0][0];}
 function strike(a,t,move,variant){
  const R=a.hahn,s=R.stats,b=S.battle,skill=R.moves[move],power=move==='peck'?s.schnabelkraft:s.klauenstaerke;
- learn(a,'moves',move,.03);learn(a,'stats',move==='peck'?'schnabelkraft':'klauenstaerke',.008);if(variant==='sprung')learn(a,'stats','kraft',.006);
+ // Lernmengen je Aktion so bemessen, dass ein Hahn pro Kampf ähnlich viel lernt wie ein Gladiator (der lernt bei viel mehr Aktionen)
+ learn(a,'moves',move,.06);learn(a,'stats',move==='peck'?'schnabelkraft':'klauenstaerke',.035);if(variant==='sprung')learn(a,'stats','kraft',.03);
  const tSpeed=t.hahn?t.hahn.stats.geschwindigkeit:t.rex?45:(t.g.stats.agility+t.g.stats.reflex)/2;
  let hitP=cl(.64+(skill-20)*.013+(s.geschwindigkeit-tSpeed)*.008-(move==='claw'?.04:0)-(t.block&&!t.rex&&!t.hahn?.15:0)-(t.dodgeTimer>0?.25:0)+(t.down?.25:0),.15,.95);
- if(Math.random()>hitP){if(t.hahn)learn(t,'stats','geschwindigkeit',.02);a.mode='recoil';return false;}
- learn(a,'moves',move,.015);
+ if(Math.random()>hitP){if(t.hahn)learn(t,'stats','geschwindigkeit',.05);a.mode='recoil';return false;}
+ learn(a,'moves',move,.03);learn(a,'stats','kraft',.015);
  const jump=move==='claw'&&variant!=='flatter',tw=t.hahn?t.hahn.weight:t.rex?190:(t.g.weight||80);
  const zone=weighted(partsFor(t,jump,R.height>65));
  const mass=cl(Math.pow(R.weight/tw,.35),.2,2.2);
@@ -177,7 +179,7 @@ function strike(a,t,move,variant){
   try{const pt=M.contactAnchor(t,gid);px=pt.x;py=pt.y;}catch{}
   if(t.hahn){const R2=t.hahn,hp=zone,rr=Math.sqrt(Math.random())*.7,ra=rnd(0,6.28),sev=cl(Math.round(loss/14),1,3);
    R2.body[hp].marks.push({id:'r'+Math.floor(Math.random()*1e9).toString(36),part:hp,type,severity:sev,u:Math.cos(ra)*rr,v:Math.sin(ra)*rr,ang:rnd(-1.1,-.35),rake:type==='cut'?(sev>=2?3:2):1,heal:0,time:performance.now(),day:CF.CLOCK.day});
-   learn(t,'stats','zaehigkeit',.006);snapshot(t);react(t,a,loss);feathers(t,3+sev*3+(move==='claw'?4:0));
+   learn(t,'stats','zaehigkeit',.025);snapshot(t);react(t,a,loss);feathers(t,3+sev*3+(move==='claw'?4:0));
    if(loss>=10||crit||p.grade>=3){syncBack(t,false);queueShot(Object.assign({R:R2,part:hp,mark:R2.body[hp].marks[R2.body[hp].marks.length-1],kind:move==='peck'?'peck':'claw',attacker:R,line1:R.name+' ('+(move==='peck'?'Schnabelstoß':'Klauenhieb')+') fügt '+R2.name+' zu:',title:word},CF.RoosterShot?CF.RoosterShot.describeHit(R2,hp):{}),loss+(crit?8:0));}}
   if(!t.g.dead){if(['head','neck','chest'].includes(gid)&&p.hp<=0)M.death(t,(move==='peck'?'Vom Schnabel':'Vom Sporn')+' getötet ('+R.name+')',a);else if(t.g.blood<=0)M.death(t,'Verblutet',a);}
  }
@@ -213,7 +215,7 @@ function roosterUpdate(a,dt){
  a.a=Math.atan2(dy,dx);
  const legs=.55+.45*R.body.legs.hp/100,spd=(38+R.stats.geschwindigkeit*1.4)*legs*(a.blindTimer>0?.6:1);
  const reach=a.r+(t.r||10)+(t.rex?14:6);
- const move=(vx,vy,v)=>{a.x+=vx*v*dt;a.y+=vy*v*dt;const W=b.width||1040,Hh=b.height||720;a.x=cl(a.x,60,W-60);a.y=cl(a.y,120,Hh-60);a.moveSpeed=v;};
+ const move=(vx,vy,v)=>{a.x+=vx*v*dt;a.y+=vy*v*dt;if(v>spd*1.1)learn(a,'stats','geschwindigkeit',.004*dt*60*.05);const W=b.width||1040,Hh=b.height||720;a.x=cl(a.x,60,W-60);a.y=cl(a.y,120,Hh-60);a.moveSpeed=v;};
  hs.t+=dt;hs.cd=Math.max(0,hs.cd-dt);hs.dodgeCD=Math.max(0,hs.dodgeCD-dt);
  // Ausweichen: holt ein Mensch zum Schlag aus, springt der Hahn zur Seite (Geschwindigkeit)
  const threat=b.actors.find(x=>x.team!==a.team&&!x.hahn&&!x.rex&&x.target===a.id&&(x.wind>0||x.pendingStrike)&&Math.hypot(x.x-a.x,x.y-a.y)<120);

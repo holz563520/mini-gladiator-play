@@ -205,3 +205,18 @@ body.an-fighting #an{display:none}
 #an .an-foes{font-size:12px;color:var(--muted);margin:14px 0 0}
 #an .an-classic{text-align:center;margin:6px 0 10px}#an .an-classic button{padding:10px 14px;border:2px solid var(--line);background:var(--surface);color:var(--muted);font-size:13px;box-shadow:3px 3px 0 #000a}
 body #notice{z-index:130}
+/* Gastgeber-Haken: gesperrte Modi, Empfehlung, Sonderherausforderung, Fortschritt nach dem Kampf */
+#an .an-mode.locked{filter:grayscale(.85) brightness(.7)}
+#an .an-ccard .tag .an-rec{background:#dfb66d;color:#120c09;padding:0 6px;letter-spacing:1px;font-weight:700;animation:anPulse 1.6s ease-in-out infinite}
+@keyframes anPulse{50%{box-shadow:0 0 0 4px #dfb66d44}}
+#an .an-special .an-ccard{border-color:#d0473e;box-shadow:0 0 0 2px #d0473e55,0 8px 24px #000a}
+#an .an-gains{margin:14px 0 0;text-align:left;background:#1d282bcc;border:1px solid var(--line);padding:10px 12px}
+#an .an-gains h3{margin:0 0 6px;font-size:13px;letter-spacing:2px;color:var(--gold)}
+#an .an-gain{padding:6px 0;border-top:1px solid #39494d66}#an .an-gain:first-of-type{border-top:0}
+#an .an-gain>b{font-size:14px}#an .an-gain p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+#an .an-gain ul{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:2px}
+#an .an-gain li{display:grid;grid-template-columns:1fr auto auto;gap:8px;font-size:13px;align-items:baseline}
+#an .an-gain li b{color:var(--green)}#an .an-gain li small{color:var(--muted);font-size:11px}
+#an .an-ccard.an-spec{cursor:default}
+#an .an-accept{display:block;width:100%;margin-top:8px;padding:10px;background:#8a2a24;color:#fff;border:2px solid #d0473e;font:inherit;font-weight:700;letter-spacing:.08em;cursor:pointer}
+#an .an-accept:hover{background:#a8322a}

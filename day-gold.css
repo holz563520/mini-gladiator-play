@@ -1,0 +1,28 @@
+/* Tageswechsel (Sonnenaufgang) und Goldanzeige */
+.mg-dawn{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;background:#05080c;animation:mgDawnIn .5s ease-out both;font-family:'Courier Prime',monospace;color:#f4ecd0;cursor:pointer}
+.mg-dawn canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;object-fit:cover}
+.mg-dawn-text{position:relative;display:grid;gap:10px;justify-items:center;text-align:center;padding:0 16px;margin-top:-34vh}
+.mg-dawn-text b{font-size:clamp(34px,11vw,64px);letter-spacing:.16em;text-shadow:4px 4px 0 #000a;animation:mgDayPop .6s cubic-bezier(.2,1.6,.4,1) both .2s}
+.mg-dawn.morning .mg-dawn-text b{animation:mgDayFlip .5s ease-out both}
+.mg-dawn-say{background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:3px 3px 0 #0008;padding:6px 12px;font-weight:700;font-size:clamp(14px,4vw,18px);max-width:min(520px,90vw);opacity:0;animation:mgSay .4s ease-out both 1s}
+.mg-dawn-say i{display:block;font-style:normal;font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
+.mg-dawn-text small{font-size:11px;opacity:.55}
+.mg-dawn.out{opacity:0;transition:opacity .45s}
+@keyframes mgDawnIn{from{opacity:0}}@keyframes mgDayPop{from{opacity:0;transform:scale(.6)}}@keyframes mgDayFlip{0%{transform:rotateX(90deg)}100%{transform:none}}@keyframes mgSay{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.mg-gold{position:relative;display:flex;align-items:center;gap:6px;min-height:44px;padding:0 12px 0 8px;background:#1c2a25ee;border:2px solid #17201c;box-shadow:0 3px 0 #0008;color:#f4d37a;font-family:'Courier Prime',monospace;pointer-events:auto;align-self:flex-start}
+.mg-gold.in-bar{margin-left:auto;margin-right:0}
+.mg-gold.floating{position:fixed;top:calc(10px + env(safe-area-inset-top));right:10px;z-index:30}
+.mg-gold .mg-coin{width:24px;height:24px;image-rendering:pixelated}
+.mg-gold b{font-size:18px;min-width:2ch;text-align:right;font-variant-numeric:tabular-nums;text-shadow:2px 2px 0 #000}
+.mg-gold.gain{animation:mgGain .7s ease-out}.mg-gold.gain b{color:#fff1b0}
+.mg-gold.loss{animation:mgLoss .45s ease-in-out}.mg-gold.loss b{color:#f29b83}
+@keyframes mgGain{30%{transform:scale(1.15);box-shadow:0 0 0 4px #f4d37a66,0 3px 0 #0008}100%{transform:none}}
+@keyframes mgLoss{20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+.mg-gold-fx{position:absolute;inset:0;pointer-events:none}
+.mg-gold-delta{position:absolute;left:50%;top:-4px;font-style:normal;font-weight:700;font-size:16px;text-shadow:2px 2px 0 #000;white-space:nowrap;transform:translateX(-50%)}
+.mg-gold-delta.up{color:#f4d37a;animation:mgUp 1.4s ease-out forwards}.mg-gold-delta.down{color:#f29b83;top:100%;animation:mgDown 1.4s ease-in forwards}
+@keyframes mgUp{0%{opacity:0;transform:translate(-50%,6px) scale(.7)}15%{opacity:1;transform:translate(-50%,-4px) scale(1.2)}100%{opacity:0;transform:translate(-50%,-34px)}}
+@keyframes mgDown{0%{opacity:1;transform:translate(-50%,-6px)}100%{opacity:0;transform:translate(-50%,24px)}}
+.mg-gold-chip{position:absolute;left:18px;top:50%;width:8px;height:8px;border-radius:50%;background:#f2c94a;box-shadow:inset -2px -2px 0 #b8862a,0 0 0 1px #7a5a14;animation:mgChip .9s cubic-bezier(.2,.8,.4,1) both}
+@keyframes mgChip{0%{opacity:1;transform:translate(0,0) scale(.5)}60%{opacity:1;transform:translate(var(--dx),var(--dy)) scale(1)}100%{opacity:0;transform:translate(calc(var(--dx)*1.2),calc(var(--dy) + 30px)) scale(.8)}}
+#mapuiBar .mapui-day{margin-left:0}
