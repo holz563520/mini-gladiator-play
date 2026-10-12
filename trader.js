@@ -106,7 +106,7 @@ const drawActors=M.renderLudusActors;
 M.renderLudusActors=(ctx,list)=>{if(!sc||ctx.canvas?.id!=='ludusCanvas')return drawActors(ctx,list);const mine=[sc.trader,...sc.row.filter(Boolean),...sc.walkers.map(w=>w.a)].filter(a=>a.y<690);drawActors(ctx,[...list,...mine].sort((a,b)=>a.y-b.y));overlay(ctx);};
 M.ludusHidden=g=>!!sc?.hidden.has(g.id);
 // Bild auf den Händler zentrieren (beim Einzug und bei jedem Klick auf ihn oder seine Ware)
-function focusTrader(){if(sc?.trader)M.ludus?.focus?.(sc.trader.x+40,sc.trader.y-30);}
+function focusTrader(){if(!tut&&T.intro==='done')return;/* Kamera nur im Intro, sonst bleibt der Ausschnitt */if(sc?.trader)M.ludus?.focus?.(sc.trader.x+40,sc.trader.y-30);}
 M.ludusHit=(x,y)=>{if(!sc||sc.mode==='leave')return false;const hit=a=>a&&x>a.x-17&&x<a.x+17&&y>a.y-64&&y<a.y+10,c=[...sc.row].reverse().find(hit);if(c){focusTrader();open(c.slot);return true;}if(hit(sc.trader)){focusTrader();open();return true;}return false;};
 // ---------- Kandidatenkarte ----------
 const ICON={Soldat:'🛡',Assassine:'🗡',Fernkämpfer:'🏹'},stars=n=>'★'.repeat(Math.round(n/2))+'☆'.repeat(5-Math.round(n/2)),weapon=id=>M.weaponDefs.find(w=>w.id===id)?.name||id;
