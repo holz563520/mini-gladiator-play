@@ -56,16 +56,21 @@ M.schoolClick=function(a){if((a==='rest'||a==='rest3')&&!bypass&&!dawn&&!S.battl
 const G={shown:null,target:null,el:null,num:null,coin:null,anim:0,spin:0,last:performance.now()};
 function mount(){const bar=$('mapuiBar');let el=document.querySelector('.mg-gold');if(el&&el.isConnected){G.el=el;return true;}
  el=document.createElement('div');el.className='mg-gold';el.setAttribute('role','status');el.setAttribute('aria-label','Gold');el.innerHTML='<canvas width="16" height="16" class="mg-coin"></canvas><b>0</b><span class="mg-gold-fx"></span>';
- if(bar){const day=bar.querySelector('.mapui-day');if(day)bar.insertBefore(el,day);else bar.appendChild(el);el.classList.add('in-bar');}else{el.classList.add('floating');document.body.appendChild(el);}
+ // Im Knopf „Nächster Tag“ neben der Tageszahl (überdeckt so nichts); Antippen geht wie bisher an den Knopf
+ const day=bar?.querySelector('.mapui-day');if(day){day.appendChild(el);el.classList.add('in-day');}else{el.classList.add('floating');document.body.appendChild(el);}
  G.el=el;G.num=el.querySelector('b');G.coin=el.querySelector('canvas');G.fx=el.querySelector('.mg-gold-fx');if(G.shown!=null)G.num.textContent=fmt(G.shown);return true;}
 const fmt=n=>Math.round(n).toLocaleString('de-DE');
-function coin(c,spin,t){const g=c.getContext('2d');g.clearRect(0,0,16,16);g.imageSmoothingEnabled=false;const w=Math.max(1,Math.abs(Math.cos(spin))*7),face=Math.cos(spin)>=0;
- g.fillStyle='#7a5a14';g.fillRect(8-w-1,1,w*2+2,14);g.fillStyle=face?'#f2c94a':'#d9a832';g.fillRect(8-w,2,w*2,12);g.fillRect(8-w-1,4,w*2+2,8);
- if(w>3){g.fillStyle='#b8862a';g.fillRect(8-w+2,4,w*2-4,1);g.fillRect(8-w+2,11,w*2-4,1);g.fillStyle='#fff1b0';g.fillRect(8-w+1,3,2,3);if(face){g.fillStyle='#9a6a1a';g.fillRect(7,6,2,4);}}
- const sh=(t%4.5);if(sh<.5&&w>4){g.fillStyle='rgba(255,255,255,.8)';g.fillRect(8-w+Math.round(sh*4*w),3,1,10);}}
+// Runde Pixelmünze (16×16), dreht sich um die senkrechte Achse; Vorderseite mit geprägtem Kopf, dazu ein wandernder Glanz
+const COIN=['.....######.....','...##yyyyyy##...','..#yyYYYYYYyy#..','.#yYYYYYYYYYYy#.','.#yYYYddddYYYy#.','#yYYYdYYYYdYYYy#','#yYYdYYddYYdYYy#','#yYYdYdYYdYdYYy#','#yYYdYYYYYYdYYy#','#yYYYdYYYYdYYYy#','.#yYYYddddYYYy#.','.#yYYYYYYYYYYy#.','..#yyYYYYYYyy#..','...##yyyyyy##...','.....######.....','................'];
+function coin(c,spin,t){const g=c.getContext('2d');g.clearRect(0,0,16,16);g.imageSmoothingEnabled=false;const sx=Math.cos(spin),w=Math.abs(sx),face=sx>=0;
+ const col={'#':'#6a4a10','y':'#c9922a','Y':face?'#f2c94a':'#e0b23c','d':face?'#b8862a':'#e0b23c'};
+ for(let y=0;y<16;y++)for(let x=0;x<16;x++){const ch=COIN[y][x];if(ch==='.')continue;const nx=8+(x+.5-8)*w;g.fillStyle=col[ch];g.fillRect(Math.floor(nx),y,Math.max(1,Math.ceil(w)),1);}
+ if(w<.35){g.fillStyle='#8a6418';g.fillRect(7,1,2,14);}
+ const sh=t%4.5;if(sh<.6&&w>.6){g.fillStyle='rgba(255,255,255,.85)';const x=Math.round(8-5*w+sh/.6*10*w);g.fillRect(x,3,1,10);g.fillRect(x+1,4,1,8);}}
 function burst(delta){const fx=G.fx;if(!fx)return;const up=delta>0,s=document.createElement('i');s.className='mg-gold-delta '+(up?'up':'down');s.textContent=(up?'+':'−')+fmt(Math.abs(delta));fx.appendChild(s);setTimeout(()=>s.remove(),1500);
- if(up){M.sound?.('coin');for(let i=0;i<Math.min(8,3+Math.round(Math.log10(Math.abs(delta)+1)*2));i++){const p=document.createElement('i');p.className='mg-gold-chip';p.style.setProperty('--dx',(Math.random()*60-30)+'px');p.style.setProperty('--dy',(-20-Math.random()*30)+'px');p.style.animationDelay=(i*40)+'ms';fx.appendChild(p);setTimeout(()=>p.remove(),1200);}G.el.classList.remove('gain');void G.el.offsetWidth;G.el.classList.add('gain');}
- else{G.el.classList.remove('loss');void G.el.offsetWidth;G.el.classList.add('loss');}}
+ if(up){M.sound?.('coin');for(let i=0;i<Math.min(8,3+Math.round(Math.log10(Math.abs(delta)+1)*2));i++){const p=document.createElement('i');p.className='mg-gold-chip';p.style.setProperty('--dx',(Math.random()*60-30)+'px');p.style.setProperty('--dy',(-20-Math.random()*30)+'px');p.style.animationDelay=(i*40)+'ms';fx.appendChild(p);setTimeout(()=>p.remove(),1200);}flash('gain');}
+ else flash('loss');}
+function flash(cls){const el=G.el;el.classList.remove('gain','loss');void el.offsetWidth;el.classList.add(cls);clearTimeout(G.flashT);G.flashT=setTimeout(()=>el.classList.remove(cls),cls==='gain'?900:700);}
 function tick(now){requestAnimationFrame(tick);const dt=Math.min(.1,(now-G.last)/1000);G.last=now;if(!S||typeof S.gold!=='number')return;if(!G.el||!G.el.isConnected){mount();}
  if(G.shown==null){G.shown=G.target=S.gold;G.num.textContent=fmt(G.shown);}
  if(S.gold!==G.target){const delta=S.gold-G.target;G.target=S.gold;burst(delta);G.anim=delta>0?1.2:.6;}

@@ -1,0 +1,21 @@
+/* Waffenkammer: Ausrüstungspuppe schöner, lebendige Figur, Platz für besondere Gegenstände */
+.armory-head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;max-width:850px;margin:14px auto 0;padding:10px 12px;background:linear-gradient(#2a2218,#1a1510);border:2px solid #6b5a3e;border-bottom:0;box-shadow:inset 0 2px 0 #8a7650}
+.armory-head div{text-align:center;display:flex;flex-direction:column}.armory-head b{font-size:clamp(16px,4.6vw,22px);letter-spacing:.08em;color:#f0dfa8;text-transform:uppercase}.armory-head small{color:#b8a67a;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.paperdoll.armory{position:relative;background:#16120d;background-image:linear-gradient(rgba(10,8,6,.55),rgba(10,8,6,.75)),repeating-linear-gradient(0deg,#2a241b 0 22px,#1f1a13 22px 24px),repeating-linear-gradient(90deg,transparent 0 46px,#1a1610 46px 48px);border:2px solid #6b5a3e;box-shadow:inset 0 0 0 4px #1e1912,inset 0 0 60px #000c,0 10px 30px #0008}
+.paperdoll.armory::before,.paperdoll.armory::after{content:'';position:absolute;top:10px;width:8px;height:22px;background:#4a321e;box-shadow:0 -10px 0 2px #f0a13c,0 -16px 12px 6px #f0a13c44;animation:armTorch 1.4s ease-in-out infinite alternate;pointer-events:none}
+.paperdoll.armory::before{left:12px}.paperdoll.armory::after{right:12px;animation-delay:.5s}
+@keyframes armTorch{from{box-shadow:0 -10px 0 2px #f0a13c,0 -16px 12px 6px #f0a13c33}to{box-shadow:0 -11px 0 3px #ffc860,0 -18px 18px 9px #f0a13c55}}
+.paperdoll.armory .doll-slot{background:linear-gradient(#231d15,#17130e);border:2px dashed #5a4c36;color:#e8dcc0;transition:transform .15s,border-color .15s,box-shadow .15s;position:relative}
+.paperdoll.armory .doll-slot:hover,.paperdoll.armory .doll-slot:focus-visible{transform:translateY(-2px);border-color:#dfb66d;box-shadow:0 4px 0 #0008,0 0 14px #dfb66d33;outline:0}
+.paperdoll.armory .doll-slot.filled{border-style:solid;border-color:#8a7650;background:radial-gradient(circle at 50% 30%,#3a3020,#1b1610 70%);box-shadow:inset 0 0 0 1px #000,inset 0 0 18px #dfb66d22}
+.paperdoll.armory .doll-slot .eyebrow{color:#b8a67a}.paperdoll.armory .doll-slot strong{color:#f0dfa8}.paperdoll.armory .doll-slot small{color:#a8987a}
+.paperdoll.armory .doll-slot .slot-symbol{color:#6b5a3e;font-size:22px}
+.paperdoll.armory .doll-figure{position:relative}
+.paperdoll.armory .doll-figure canvas{border:2px solid #4a3e2c;box-shadow:0 0 0 2px #120e0a,0 8px 22px #000a;background:#141c1f}
+.paperdoll.armory .doll-figure p{color:#d9c795}
+.doll-special{border:2px dashed #b07acf!important;background:radial-gradient(circle at 50% 35%,#2c2036,#16111c 70%)!important;cursor:not-allowed;opacity:.92}
+.doll-special .eyebrow{color:#c9a4e0!important}.doll-special strong{color:#e6d4f2!important}.doll-special small{color:#a68ab8!important}
+.doll-special .special-icon{width:34px;height:30px;display:block;opacity:.55;background:
+ radial-gradient(circle at 50% 70%,transparent 9px,#c9a4e0 9px 11px,transparent 11px),
+ linear-gradient(#c9a4e0,#c9a4e0) 50% 0/4px 10px no-repeat;animation:armGlow 2.4s ease-in-out infinite}
+@keyframes armGlow{50%{opacity:1;filter:drop-shadow(0 0 6px #c9a4e0)}}
