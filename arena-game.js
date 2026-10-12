@@ -13,7 +13,7 @@
 (()=>{
 const M=window.MG,S=M.s;if(!M||window.ARENA_NEU_TEST)return;
 const st=()=>(S.arenaNeu??={fights:0,wins:0});
-let pending=null,classic=false;
+let pending=null,classic=false;const CLASSIC_ARENA=false;
 const C={startHidden:true,roosters:[],lions:[],
  get gold(){return S.gold;},get fights(){return st().fights;},get wins(){return st().wins;},get fallen(){return S.fallen||[];},
  fit:g=>{try{return M.army?.eligibility?M.army.eligibility(g).ok:!g.dead;}catch{return !g.dead;}},
@@ -21,7 +21,8 @@ const C={startHidden:true,roosters:[],lions:[],
  record(won){const s=st();s.fights++;if(won)s.wins++;try{M.persist();}catch{}},
  nextDay(){try{M.ui.click('rest');}catch(e){console.warn(e);}},
  close(){window.ArenaUI?.close();try{M.ui.click('nav:home');}catch{}},
- classic(){classic=true;window.ArenaUI?.close();try{M.ui.render();}catch{}}};
+ // Klassische Arena (Straßenarena, Ligen, Turniere) vorerst ausgeblendet; zum Wiedereinschalten CLASSIC_ARENA auf true setzen
+ classic:CLASSIC_ARENA?function(){classic=true;window.ArenaUI?.close();try{M.ui.render();}catch{}}:null};
 window.ArenaCareer=C;
 // Spionage: eigener Worker, der dieselben Spieldateien lädt (gleiche Version wie das Spiel)
 window.ARENA_WORKER_URL='arena-spy-worker.js?v='+encodeURIComponent(typeof BUILD!=='undefined'?BUILD:'');
