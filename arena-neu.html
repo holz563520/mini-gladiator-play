@@ -782,6 +782,8 @@ body.an-fighting #an{display:none}
 #an .an-cols li .th{width:40px;height:46px;background:#202d2f}
 #an .an-cols small{display:block;font-size:11px;color:var(--muted)}
 #an .an-foes{font-size:12px;color:var(--muted);margin:14px 0 0}
+#an .an-classic{text-align:center;margin:6px 0 10px}#an .an-classic button{padding:10px 14px;border:2px solid var(--line);background:var(--surface);color:var(--muted);font-size:13px;box-shadow:3px 3px 0 #000a}
+body #notice{z-index:130}
 
 </style>
 </head><body><div id="app"></div><div id="battleView" hidden><canvas id="arenaCanvas" aria-label="Automatischer Arenakampf"></canvas><div id="finaleBanner" role="status" hidden></div><button id="verdictSkip" class="btn" data-action="verdictskip" hidden>WARTEZEIT ÜBERSPRINGEN →<small>Direkt zur Animation</small></button><div id="battleTop"></div><div id="battleBottom"></div><div id="battleEvent" aria-live="polite"></div></div><div id="modal" hidden></div><div id="notice" role="status"></div>
@@ -9000,7 +9002,7 @@ try{M.trader.state.intro='done';}catch(e){}
 if(S.hall)S.hall.tut='done';else S.hall={tut:'done',recruit:null,tag:{}};
 S.lion={stage:'done',recruits:[],base:[]};S.medic=Object.assign(S.medic||{},{stage:'skip'});S.archerPlot={seen:0,asked:true,state:'declined'};S.wanderers={version:1,next:S.day+9999,group:null,known:[]};
 const r=CH.rngOf(Date.now());
-const C={gold:600,fights:0,wins:0,roosters:[],lions:[],fallen:[],log:[]};window.ArenaCareer=C;
+const C={test:true,gold:600,fights:0,wins:0,roosters:[],lions:[],fallen:[],log:[],settle(pay){C.gold+=pay;},record(won){C.fights++;if(won)C.wins++;},addFallen(f){C.fallen.push(f);}};window.ArenaCareer=C;
 function gladiators(){const plan=[[24,'Soldat'],[27,'Assassine'],[30,'Soldat'],[33,'Fernkämpfer'],[36,'Soldat'],[40,'Soldat'],[44,'Assassine'],[49,'Fernkämpfer'],[56,'Soldat'],[66,'Soldat'],[78,'Soldat']];
  for(const [k,role] of plan){const g=CH.gladiator(r,{q:Math.max(0,(k-30)/14),role,kwTarget:k,enemy:false});g.enemy=false;g.fatigue=0;S.roster.push(g);}}
 C.refill=function(){const alive=S.roster.filter(g=>!g.dead);if(alive.length<8)for(let i=alive.length;i<10;i++){const k=22+r()*30,g=CH.gladiator(r,{q:Math.max(0,(k-30)/14),role:r()<.65?'Soldat':r()<.5?'Assassine':'Fernkämpfer',kwTarget:k,enemy:false});g.enemy=false;S.roster.push(g);}
@@ -9041,11 +9043,11 @@ anim(root.querySelector('.an-bg canvas'),(ctx,t)=>ART.arena(ctx,320,180,t,{cheer
 
 // ---------- Eigene Kämpfer ----------
 const keyOf=u=>u.kind==='human'?'g:'+u.g.id:u.kind==='rooster'?'r:'+u.R.id:'l:'+u.L.id;
-function pool(){if(U.mode==='human')return S.roster.filter(g=>!g.dead).map(g=>({kind:'human',g}));if(U.species==='loewe')return C.lions.filter(L=>!L.dead).map(L=>({kind:'lion',L}));return C.roosters.filter(R=>!R.dead).map(R=>({kind:'rooster',R}));}
+function pool(){if(U.mode==='human')return S.roster.filter(g=>!g.dead&&!g.retired&&!(g.age<18)).map(g=>({kind:'human',g}));if(U.species==='loewe')return C.lions.filter(L=>!L.dead).map(L=>({kind:'lion',L}));return C.roosters.filter(R=>!R.dead).map(R=>({kind:'rooster',R}));}
 const withKey=u=>(u.key=keyOf(u),u);
 function hp(u){return u.kind==='human'?M.health(u.g)*Math.min(1,u.g.blood/80):u.kind==='rooster'?CF.health(u.R):BZ.health(BZ.makeLionProbe?.(u.L)||{tissue:{head:1},max:{head:1},blood:100})||u.L.condition.health;}
 function health(u){if(u.kind==='lion'){const c=u.L.condition;return Math.round(Math.min(c.health,c.blood)*(.7+.3*c.rear/100));}return Math.round(hp(u));}
-function fit(u){if(u.kind==='human'){const g=u.g;return !g.dead&&M.health(g)>=55&&g.blood>=55&&!['head','neck','chest','belly'].some(p=>g.body[p].missing)&&!['lt','rt'].every(p=>g.body[p].missing);}if(u.kind==='rooster')return !u.R.dead&&CF.fitForFight(u.R);return !u.L.dead&&u.L.condition.health>=40&&u.L.condition.blood>=45;}
+function fit(u){if(u.kind==='human'&&C.fit)return C.fit(u.g);if(u.kind==='human'){const g=u.g;return !g.dead&&M.health(g)>=55&&g.blood>=55&&!['head','neck','chest','belly'].some(p=>g.body[p].missing)&&!['lt','rt'].every(p=>g.body[p].missing);}if(u.kind==='rooster')return !u.R.dead&&CF.fitForFight(u.R);return !u.L.dead&&u.L.condition.health>=40&&u.L.condition.blood>=45;}
 const name=u=>u.kind==='human'?u.g.name:u.kind==='rooster'?u.R.name:u.L.name;
 const roleOf=u=>u.kind==='human'?u.g.role:u.kind==='rooster'?u.R.quality.title:u.L.epithet;
 function autoRows(units){const rows={};if(units.length<=2){for(const u of units)rows[u.key]='front';return rows;}
@@ -9076,12 +9078,13 @@ function go(screen,dir=1){U.screen=screen;view.classList.remove('in-l','in-r');v
 function render(){({home,beast,hub,result}[U.screen]||home)();}
 
 // ---------- 1 · Arena: HUMAN oder BEAST ----------
-function home(){setTitle('DIE ARENA',false);
+function home(){setTitle('DIE ARENA',!!C.close);
  view.innerHTML=`<section class="an-hero"><p class="eyebrow">Wähle die Art des Kampfes</p></section>
  <div class="an-modes"><button class="an-mode human" data-a="mode:human"><canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>HUMAN</b><small>Gladiatorenkämpfe</small></span></button>
  <button class="an-mode beast" data-a="mode:beast"><canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>BEAST</b><small>Tierkämpfe</small></span></button></div>
  <div class="an-stats"><span>Kämpfe <b>${C.fights}</b></span><span>Siege <b>${C.wins}</b></span><span>Gefallene <b>${C.fallen.length}</b></span><span>Tag <b>${S.day}</b></span></div>
- <details class="an-tools"><summary>Testwerkzeuge</summary><div><button data-a="day">Nächster Tag (Heilung)</button><button data-a="day7">7 Tage</button><button data-a="gold">+500 Gold</button><button data-a="refill">Kader auffüllen</button></div><p>Isolierte Testversion · Spielstände bleiben unberührt · Gegnerische Schulen sind hier abgeschaltet.</p></details>`;
+ ${C.classic?'<div class="an-classic"><button data-a="classic">Klassische Arena · Ligen, Turniere, offene Arenen ▸</button></div>':''}
+ ${C.test?`<details class="an-tools"><summary>Testwerkzeuge</summary><div><button data-a="day">Nächster Tag (Heilung)</button><button data-a="day7">7 Tage</button><button data-a="gold">+500 Gold</button><button data-a="refill">Kader auffüllen</button></div><p>Isolierte Testversion · Spielstände bleiben unberührt · Gegnerische Schulen sind hier abgeschaltet.</p></details>`:''}`;
  const [h,b]=view.querySelectorAll('.an-mode canvas'),glads=S.roster.filter(g=>!g.dead).sort((a,b)=>M.power(b)-M.power(a)).slice(0,3),figs=glads.map((g,i)=>ART.figure(g,i===0));
  anim(h,(ctx,t)=>{ART.arena(ctx,300,170,t,{cheer:1});ctx.imageSmoothingEnabled=false;const pos=[[150,166,.62],[86,160,.5],[214,160,.5]];
   [1,2,0].forEach(i=>{const f=figs[i];if(!f)return;const [x,y,k]=pos[i],bob=Math.round(Math.sin(t*2.2+i)*1.5);ctx.drawImage(f,Math.round(x-120*k),Math.round(y-300*k+bob),Math.round(240*k),Math.round(300*k));});
@@ -9167,13 +9170,15 @@ function prep(c){U.sel=c;const units=team();
 // ---------- 6 · Spionage: 100 Probekämpfe in Workern, mit dem Kampfsystem der Arena ----------
 const SPY={workers:[],ready:0,job:0,res:null,want:100,failed:''};
 function workerSource(){const env=document.getElementById('w-env')?.textContent||'',main=document.getElementById('w-main')?.textContent||'';const parts=[...document.querySelectorAll('script[data-w]')].map(s=>s.textContent);return env+'\n;\n'+parts.join('\n;\n')+'\n;\n'+main;}
-function pool0(){if(SPY.workers.length||SPY.failed)return;try{const url=URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'}));const hc=navigator.hardwareConcurrency||4,mobile=(navigator.maxTouchPoints||0)>1,n=cl(hc-1,2,mobile?2:3);
+function pool0(){if(SPY.workers.length||SPY.failed)return;try{const url=window.ARENA_WORKER_URL||URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'}));const hc=navigator.hardwareConcurrency||4,mobile=(navigator.maxTouchPoints||0)>1,n=cl(hc-1,2,mobile?2:3);
  setTimeout(()=>{if(!SPY.failed&&SPY.workers.length&&!SPY.ready){SPY.failed='Die Spione melden sich nicht (Web Worker blockiert?). Bitte die Seite über einen Webserver öffnen.';spyLine();}},45000);for(let i=0;i<n;i++){const w=new Worker(url);w.onmessage=e=>onWorker(w,e.data);w.onerror=e=>{console.error('Spionage-Worker',e.message);SPY.failed='Spionage konnte nicht starten ('+(e.message||'Worker')+').';spyLine();};SPY.workers.push(w);}}catch(e){SPY.failed='Spionage braucht Web Worker: '+e.message;}}
 function onWorker(w,d){if(d.ready){w.ready=true;SPY.ready++;const r=SPY.res;if(r&&!r.done&&r.job)send(w,r.job);spyLine();return;}
  const r=SPY.res;if(!r||d.id!==r.id)return;if(d.error){console.error(d.error);SPY.failed='Fehler in einem Probekampf.';return;}
  if(d.out){if(r.n>=SPY.want)return;r.n++;const o=d.out;if(o.w===0)r.win++;if(o.w===-1)r.draw++;r.time+=o.t;for(const u of o.u){const a=r.u[u.k]??={n:0,d:0,s:0,i:0,h:0};a.n++;a.d+=u.d;a.s+=u.s;a.i+=u.i;a.h+=u.h;}if(r.n>=SPY.want){for(const w of SPY.workers)w.postMessage({cmd:'stop'});r.done=true;}throttle();}}
 let thr=0;function throttle(){if(thr)return;thr=setTimeout(()=>{thr=0;spyLine();if(layer.querySelector('.an-spy'))spyPaint();},250);}
-function specFor(c,copy){const j=x=>copy?JSON.parse(JSON.stringify(x)):x;const m=u=>({kind:u.kind,key:u.key,row:u.row||'front',...(u.kind==='human'?{g:j(u.g)}:u.kind==='rooster'?{R:j(u.R)}:{L:j(u.L)})});return {title:c.name,blue:team().map(m),red:c.enemy.map(m)};}
+// Für die Spione: Ausrüstung aus dem Lager direkt an die Kopie hängen (der Worker kennt das Lager nicht)
+function gearCopy(g){const j=x=>x==null?null:JSON.parse(JSON.stringify(x));const c=j(g);if(!g.enemyGear){let a=[];try{a=M.armorItems(g);}catch{}c.enemyGear={weapon:j(M.gear(g,'weapon')),secondary:j(M.gear(g,'secondary')),shield:j(M.gear(g,'shield')),armor:Object.fromEntries(a.map(i=>[i.def,j(i)]))};}return c;}
+function specFor(c,copy){const j=x=>copy?JSON.parse(JSON.stringify(x)):x;const m=u=>({kind:u.kind,key:u.key,row:u.row||'front',...(u.kind==='human'?{g:copy?gearCopy(u.g):u.g}:u.kind==='rooster'?{R:j(u.R)}:{L:j(u.L)})});return {title:c.name,blue:team().map(m),red:c.enemy.map(m)};}
 function startSpy(c){pool0();const spec=specFor(c,true),key=c.id+'|'+spec.blue.map(u=>u.key+u.row).join(',');if(SPY.res?.key===key)return;stopSpy();
  SPY.res={id:++SPY.job,key,c,n:0,win:0,draw:0,time:0,u:{},rows:Object.fromEntries(spec.blue.map(u=>[u.key,u.row])),started:performance.now()};
  const job={id:SPY.res.id,spec};SPY.res.job=job;if(SPY.failed)return;for(const w of SPY.workers)if(w.ready)send(w,job);}
@@ -9219,11 +9224,11 @@ function fight(){const c=U.sel;if(!c)return;const units=team();if(!units.length)
  const spec={title:c.name,blue:units.map(u=>({...u})),red:c.enemy};layer.innerHTML='';root.hidden=true;document.body.classList.add('an-fighting');
  S.battle=null;try{M.ui.click('nav:home');}catch(e){console.warn(e);}
  H.resetScene();M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;for(const p of [...(M.fx||[]),...(M.shots||[])])p.active=false;
- const b=AN.build(spec);b.challenge=c.id;S.battle=b;
- AN.listeners.push((out)=>setTimeout(()=>finishFight(c,out,units),900));
+ spec.league=S.fightLeague??S.league??0;const b=AN.build(spec);b.challenge=c.id;b.league=Math.max(0,Math.min(6,spec.league|0));S.battle=b;
+ AN.listeners.push((out)=>{const pay=CH.payout(c,out);try{C.settle?.(pay,out,c);}catch(e){console.error(e);}setTimeout(()=>finishFight(c,out,units,pay),900);});
  M.ui.render();}
-function finishFight(c,out,units){const won=out.winner===0,gold=CH.payout(c,out);C.gold+=gold;C.fights++;if(won)C.wins++;
- const mine=out.units.filter(u=>u.team===0),foes=out.units.filter(u=>u.team===1);for(const u of mine)if(u.dead)C.fallen.push({name:u.name,kind:u.kind,cause:u.cause,killer:u.killer,day:S.day,fight:c.name});
+function finishFight(c,out,units,gold){const won=out.winner===0;C.record?.(won);
+ const mine=out.units.filter(u=>u.team===0),foes=out.units.filter(u=>u.team===1);for(const u of mine)if(u.dead)C.addFallen?.({name:u.name,kind:u.kind,cause:u.cause,killer:u.killer,day:S.day,fight:c.name});
  U.result={c,out,won,gold,mine,foes,units};U.chall=null;ART.clearFigures();
  setTimeout(()=>{S.battle=null;try{M.ui.render();}catch{}document.body.classList.remove('an-fighting');root.hidden=false;go('result');},300);}
 // Hauptmenü-Knopf im Kampf: als Aufgeben werten (kein Verlassen mitten im Kampf)
@@ -9244,9 +9249,10 @@ function result(){const R=U.result;if(!R){go('home');return;}setTitle(R.won?'SIE
 // ---------- Eingaben ----------
 root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const [a,v]=el.dataset.a.split(/:(.*)/s);
  switch(a){
-  case 'back':if(layer.innerHTML){layer.innerHTML='';U.pres=null;return;}if(U.screen==='hub')go(U.mode==='beast'?'beast':'home',-1);else go('home',-1);break;
+  case 'back':if(layer.innerHTML){layer.innerHTML='';U.pres=null;return;}if(U.screen==='home'){C.close?.();break;}if(U.screen==='hub')go(U.mode==='beast'?'beast':'home',-1);else go('home',-1);break;
   case 'mode':U.mode=v;if(v==='human'){U.species=null;U.size=3;U.picked=[];U.chall=null;go('hub');}else go('beast');break;
-  case 'species':U.mode='beast';U.species=v;U.size=v==='loewe'?1:3;U.picked=[];U.chall=null;go('hub');break;
+  case 'classic':C.classic?.();break;
+  case 'species':if(!(v==='loewe'?C.lions:C.roosters).some(x=>!x.dead)){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(v==='loewe'?'Du besitzt noch keinen Löwen. Der Tierhändler kommt später.':'Du besitzt noch keine Hähne. Der Tierhändler kommt später.');break;}U.mode='beast';U.species=v;U.size=v==='loewe'?1:3;U.picked=[];U.chall=null;go('hub');break;
   case 'locked':el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');break;
   case 'auto':{const cur=team().map(u=>u.key);U.auto=v==='1';if(!U.auto&&!U.picked.length)U.picked=cur;render();break;}
   case 'size':U.size=+v;render();break;
@@ -9270,13 +9276,15 @@ root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)r
   case 'nextday':C.nextDay(1);U.result=null;go('hub');break;
   case 'day':C.nextDay(1);render();break;
   case 'day7':C.nextDay(7);render();break;
-  case 'gold':C.gold+=500;render();break;
+  case 'gold':C.settle?.(500);render();break;
   case 'refill':C.refill();ART.clearFigures();render();break;}});
 layer.addEventListener('click',e=>{if(e.target.closest('.an-pstage')&&U.pres)U.pres.next();});
 root.addEventListener('click',e=>{if(e.target.closest('#anLayer [data-a]')){/* über root behandelt */}});
 // „Held des Kampfes“ des Moderators kennt nur Menschen (Gesicht, Trophäe) – in Kämpfen mit Tieren auslassen
 {const base=M.fixedStep;M.fixedStep=function(){const b=S.battle,f=b?.finale;if(!b?.neu||!f||!b.actors.some(a=>a.lion||a.hahn))return base.apply(this,arguments);const had=document.body.classList.contains('bhud');document.body.classList.remove('bhud');try{return base.apply(this,arguments);}finally{if(had)document.body.classList.add('bhud');}};}
-setTimeout(pool0,1500); // Spione schon vorab bereitmachen
+if(C.startHidden)root.hidden=true;
+U.open=()=>{root.hidden=false;if(U.screen==='result'&&!U.result)U.screen='home';render();setTimeout(pool0,1500);};U.close=()=>{root.hidden=true;stopSpy();layer.innerHTML='';};U.isOpen=()=>!root.hidden;
+if(!C.startHidden)setTimeout(pool0,1500); // Spione schon vorab bereitmachen
 render();
 window.ARENA_UI_READY=true;
 })();
