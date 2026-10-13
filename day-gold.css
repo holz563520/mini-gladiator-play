@@ -34,5 +34,11 @@
 .mg-ledger h3{margin:12px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#b8a67a}
 .mg-ledger dl{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:0}.mg-ledger dt{color:#d9cfb2}.mg-ledger dd{margin:0;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 .mg-ledger dd.plus{color:#9ed08a}.mg-ledger dd.minus{color:#f29b83}.mg-warn{color:#f29b83;font-size:13px}
-/* nur zum Testen */
-.mg-test-gold{font:inherit;font-size:10px;font-weight:bold;margin-left:4px;padding:2px 5px;background:#2a5a2a;color:#d8ffcc;border:1px solid #7fc46a;cursor:pointer;vertical-align:middle}
+#mapuiBar{flex-wrap:wrap}
+#mapuiBar .mg-gold-break{flex-basis:100%;height:0;display:block}
+.mg-gold.sep{order:0;margin-left:auto;margin-top:-2px;min-height:36px;padding:0 10px 0 6px;cursor:pointer;background:#17201c;border:2px solid #e2c15f;box-shadow:0 3px 0 #0008}
+.mg-gold.sep .mg-coin{width:20px;height:20px}
+.mg-gold.sep b{font-size:16px}
+.mg-gold.sep:hover,.mg-gold.sep:focus-visible{outline:2px solid #f4d37a;outline-offset:1px}
+/* Platz für die eigene Goldzeile unter der Leiste (nicht auf der Karte) */
+body.mapui:not(.mapui-on-home):not(.mapui-start) .content{padding-top:112px!important}
