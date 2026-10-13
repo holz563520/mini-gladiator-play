@@ -44,8 +44,8 @@ function show(){const V=view;if(!V)return;const T=M.wandererTalk,g=V.g,bub=V.v.q
  if(V.phase==='choose'){V.speaker=0;bub.hidden=false;bub.querySelector('b').textContent=g.leader?.name||'';pop(bub).textContent='„'+T.opener(g)+'“';bub.style.setProperty('--x',xOf(0)+'%');
   bot.innerHTML=`<p class="eyebrow">DEINE ANTWORT</p><div class="ws-answers">${T.options(g).map(o=>`<button class="btn" data-action="wanderer:say:${o.tone}">„${esc(o.text)}“</button>`).join('')}</div>`;return;}
  // Antwort gegeben: Erwiderung des Anführers und Entscheidung
- const fight=g.talk?.outcome==='FIGHT',mine=T.options(g).find(o=>o.tone===g.talk?.tone)?.text||'';V.speaker=0;bub.hidden=false;bub.querySelector('b').textContent=g.leader?.name||'';pop(bub).textContent='„'+T.answer(g,g.talk.tone,g.talk.outcome)+'“';bub.style.setProperty('--x',xOf(0)+'%');
- bot.innerHTML=`<p class="ws-own"><b>Du:</b> „${esc(mine)}“</p>${fight?`<p class="ws-verdict fight">Es kommt zum Kampf · ${g.size} gegen ${g.size} im Hinterhof.</p><button class="btn primary" data-action="wanderer:fight">⚔ ZUR AUFSTELLUNG</button>`:`<p class="ws-verdict calm">Kein Kampf · die Gruppe zieht ab.</p><button class="btn primary" data-action="wanderer:leave">WEITER</button>`}`;}
+ const short=(M.wanderers?.fit?.()||[]).length<g.size,fight=g.talk?.outcome==='FIGHT'&&!short,mine=T.options(g).find(o=>o.tone===g.talk?.tone)?.text||'';V.speaker=0;bub.hidden=false;bub.querySelector('b').textContent=g.leader?.name||'';pop(bub).textContent='„'+T.answer(g,g.talk.tone,g.talk.outcome)+'“';bub.style.setProperty('--x',xOf(0)+'%');
+ bot.innerHTML=`<p class="ws-own"><b>Du:</b> „${esc(mine)}“</p>${fight?`<p class="ws-verdict fight">Es kommt zum Kampf · ${g.size} gegen ${g.size} im Hinterhof.</p><button class="btn primary" data-action="wanderer:fight">⚔ ZUR AUFSTELLUNG</button>`:`<p class="ws-verdict calm">${g.talk?.outcome==='FIGHT'?'Sie wollen kämpfen, aber du hast nicht genug kampffähige Männer. Sie lachen dich aus und ziehen ab.':'Kein Kampf · die Gruppe zieht ab.'}</p><button class="btn primary" data-action="wanderer:leave">WEITER</button>`}`;}
 function pop(bub){const sp=bub.querySelector('span');sp.style.animation='none';void sp.offsetWidth;sp.style.animation='';return sp;}
 function advance(){const V=view;if(!V||V.phase!=='intro')return;V.i++;show();}
 function xOf(i){const n=view.g.members.length,step=Math.min(100/(n+.4),26);return 50-step*(n-1)/2+i*step;}
@@ -54,7 +54,7 @@ function close(){view?.v.remove();view=null;document.body.classList.remove('ws-o
 const base=M.schoolClick;M.schoolClick=function(a){const r=base?.apply(this,arguments);if(typeof a==='string'&&a.startsWith('wanderer:')&&view){const g=group();if(!g||a==='wanderer:fight'||a==='wanderer:leave'&&!M.wanderers.forced?.())close();else{view.g=g;view.phase='answer';show();}}return r;};
 // Bild: Tor bei Abendlicht, Herumtreiber nebeneinander in Halbnahe, der Sprecher tritt vor, die anderen im Schatten
 function paint(now){requestAnimationFrame(paint);
- if(!view){if(++tries%30===0&&group()&&M.ui.getPage?.()==='home'&&!busy()&&!M.wanderers?.state?.()?.group?.fightId)open();return;}
+ if(!view){if(++tries%30===0&&group()){if(M.wanderers?.tutorialActive?.()){try{M.wanderers.decline();}catch{}return;}if(M.ui.getPage?.()==='home'&&!busy()&&!M.wanderers?.state?.()?.group?.fightId)open();}return;}
  if(!group()){close();return;}
  const V=view,c=V.v.querySelector('canvas'),g=c.getContext('2d'),W=660,H=380,t=(now-V.t0)/1000;g.imageSmoothingEnabled=false;
  const bg=window.HS?.art?.facade?.();if(bg){g.drawImage(bg,330,330,240,138,0,0,W,H);}else{g.fillStyle='#3a332a';g.fillRect(0,0,W,H);}
