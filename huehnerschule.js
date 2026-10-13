@@ -201,6 +201,16 @@ function toast(text,btn,fn){toastEl?.remove();const v=document.createElement('di
 // FightEngine aus prototypes/hahnenkampf, beim Bauen übernommen). Alles andere läuft in der Arena des Spiels.
 // Ergebnis im Format von AN.outcome, damit Ergebnisbildschirm, Gold, Lernliste und Gefallene wie gewohnt funktionieren.
 let village=null;
+// Der Moderator stellt beide Hähne vor (Antippen = weiter), dann beginnt der Kampf
+function modIntro(v,R0,R1,go){const Md=M.moderator;if(!Md?.roosterSay){go();return;}const cards=[[R0,true],[R1,false]].map(([R,own])=>({R,own,say:Md.roosterSay(R,own)}));cards.push({start:true,say:[Md.beastStart()]});
+ const o=document.createElement('div');o.className='hs-modintro';o.innerHTML='<div class="hs-mi-box"><p class="eyebrow">DER MODERATOR</p><canvas width="320" height="170" class="px"></canvas><h3></h3><p class="hs-mi-sub"></p><p class="hs-mi-say"></p><small>Antippen ▸ · <u data-mi="skip">überspringen</u></small></div>';v.appendChild(o);
+ const cv=o.querySelector('canvas'),g=cv.getContext('2d');let i=0,s=0,raf=0,t0=performance.now();
+ const show=()=>{const c=cards[i];o.querySelector('h3').textContent=c.start?(R0.name+' gegen '+R1.name):c.R.name;o.querySelector('.hs-mi-sub').textContent=c.start?'DER KAMPF BEGINNT':(c.own?'DEIN KAMPFHAHN':'DER GEGNER')+' · '+(c.R.fights||0)+' Kämpfe · '+(c.R.wins||0)+' Siege · '+(c.R.kills||0)+' getötet';o.querySelector('.hs-mi-say').textContent='„'+c.say[s]+'“';};
+ const draw=now=>{raf=requestAnimationFrame(draw);const t=(now-t0)/1000,c=cards[i];g.imageSmoothingEnabled=false;try{ART.arena(g,320,170,t,{cheer:1});}catch{g.fillStyle='#8a6d45';g.fillRect(0,0,320,170);}g.fillStyle='rgba(10,6,4,.35)';g.fillRect(0,0,320,170);
+  try{if(c.start){ART.rooster(g,R0,{t,mood:'focus',w:320,h:170,size:110,x:95,y:164,face:1});ART.rooster(g,R1,{t,mood:'focus',w:320,h:170,size:110,x:225,y:164,face:-1});}else ART.rooster(g,c.R,{t,mood:(t%3)<1.2?'proud':'focus',w:320,h:170,size:150,x:160,y:166,view:(t%5)<2.2?'front':'side',face:c.own?1:-1});}catch{}};
+ const end=()=>{cancelAnimationFrame(raf);o.remove();go();};
+ o.addEventListener('click',e=>{e.stopPropagation();if(e.target.closest('[data-mi=skip]')){end();return;}const c=cards[i];if(s<c.say.length-1){s++;show();return;}i++;s=0;if(i>=cards.length){end();return;}show();});
+ show();raf=requestAnimationFrame(draw);try{SX.play('crowd',1);}catch{}}
 HS.runFight=(spec,c,done)=>{const a=spec.blue[0],b=spec.red[0];if(spec.blue.length!==1||spec.red.length!==1||a.kind!=='rooster'||b.kind!=='rooster'||!CU.FightScene)return false;
  const v=document.createElement('div');v.className='hs-village';
  v.innerHTML=`<div class="hs-vbox" id="arena"><p class="eyebrow">DORFPLATZ · ${esc(c.name)}</p><div class="hud"><div class="fbar L"><div class="nm" id="nmL"></div><div class="hpbar"><i id="hpLi"></i><b id="hpL"></b></div><div class="st" id="stL"></div></div><div class="vs">VS</div><div class="fbar R"><div class="nm" id="nmR"></div><div class="hpbar"><i id="hpRi"></i><b id="hpR"></b></div><div class="st" id="stR"></div></div></div>
@@ -222,7 +232,7 @@ HS.runFight=(spec,c,done)=>{const a=spec.blue[0],b=spec.red[0];if(spec.blue.leng
   const unit=(u,i)=>{const R=u.R,parts=Object.entries(R.body).filter(([,p])=>p.grade>=2);return {team:i,key:u.key,name:R.name,kind:'rooster',dead:!!R.dead,cause:R.cause,killer:R.killer,down:!R.dead&&eng.loser===i&&bt.reason==='ko',health:Math.round(CF.health(R)),injuries:parts.map(([k])=>CF.partName(k)),severe:parts.some(([,p])=>p.grade>=3),injured:parts.length>0,loss:R.dead?1:Math.max(0,Math.min(1,1-CF.health(R)/100)),hits:0};};
   done({winner:bt.winner===0?0:1,units:[unit(a,0),unit(b,1)],time:eng.exchange*2.2,timeout:false,village:true});};
  v.addEventListener('click',e=>{const k=e.target.closest('[data-v]')?.dataset.v;if(k==='shot'){fs.closeups=!fs.closeups;if(!fs.closeups){fs.shotQueue=[];fs.endShot();}e.target.textContent='Nahaufnahmen: '+(fs.closeups?'an':'aus');}else if(k==='speed'){fs.speed=fs.speed===1?2:fs.speed===2?4:1;e.target.textContent='Tempo '+fs.speed+'×';}});
- fs.start(a.R,b.R);SX.play('ambient',true);setTimeout(()=>SX.play('crowd',1),300);return true;};
+ SX.play('ambient',true);setTimeout(()=>SX.play('crowd',1),300);modIntro(v,a.R,b.R,()=>fs.start(a.R,b.R));return true;};
 // =====================================================================================================
 // NAVIGATION IM TUTORIAL: nur Ludus, Beastrium, Händlerin, Arena und nächster Tag
 // =====================================================================================================

@@ -127,3 +127,12 @@ body.lesson-goarena [data-action="nav:arena"]{animation:lessonPulse 1s ease-in-o
 .lesson-guide.hs-mini{left:10px;right:auto;transform:none;width:auto;max-width:min(78vw,420px);padding:6px 10px;cursor:pointer}
 .lesson-guide.hs-mini span{display:none}.lesson-guide.hs-mini b::after{content:' ▸ Ziel anzeigen';text-transform:none;letter-spacing:0}
 .lesson-guide.hs-mini.open span{display:block;font-size:13px}.lesson-guide.hs-mini.open b::after{content:' ▾'}
+
+/* Moderator stellt die Hähne auf dem Dorfplatz vor */
+.hs-modintro{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);cursor:pointer}
+.hs-mi-box{width:min(420px,94%);background:#1b1611;border:3px solid #6b5332;color:#f1e3c4;padding:10px 12px;text-align:center}
+.hs-mi-box canvas{display:block;width:100%;height:auto;image-rendering:pixelated;border:2px solid #0c0906}
+.hs-mi-box h3{margin:8px 0 0;color:#f5c66a;letter-spacing:.06em}
+.hs-mi-sub{margin:2px 0 6px;font-size:.72rem;letter-spacing:.1em;color:#c9a46a}
+.hs-mi-say{margin:0 0 6px;font-size:.95rem;line-height:1.35;min-height:2.8em}
+.hs-mi-box small{font-size:.7rem;opacity:.7}

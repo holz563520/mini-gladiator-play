@@ -12,6 +12,9 @@
 const M=window.MG,S=M.s,CF=window.CF;
 const HS=window.HS={};
 HS.st=()=>(S.huehner??={stage:'',sign:false,beastrium:false,roosters:[],fallen:[],offer:null,fights:0,wins:0,idiot:null,first:null,lastGains:null});
+// Bilanz der eigenen Hähne (Kämpfe, Siege, Niederlagen, Getötete) nach jedem Kampf: neue Arena und Dorfplatz
+function tally(R){if(!R||R.tallied)return;R.tallied=true;const mine=(R.mine||[]).filter(u=>u.kind==='rooster');for(const u of mine){const id=String(u.key||'').replace(/^r:/,''),Ro=HS.st().roosters.find(x=>String(x.id)===id)||(R.units||[]).find(x=>x.key===u.key)?.R;if(!Ro)continue;
+ Ro.fights=(Ro.fights||0)+1;if(R.won)Ro.wins=(Ro.wins||0)+1;else Ro.losses=(Ro.losses||0)+1;Ro.kills=(Ro.kills||0)+(u.kills!=null?u.kills:(mine.length===1?(R.foes||[]).filter(f=>f.dead).length:0));}try{M.persist?.();}catch{}}
 HS.alive=()=>HS.st().roosters.filter(R=>!R.dead);
 const base=window.ArenaCareer;let pending=null;
 const C=base||{startHidden:true,lions:[],fallen:[],
@@ -33,7 +36,7 @@ Object.assign(C,{
  extraChallenges:units=>HS.extraChallenges?.(units)||[],
  recommend:c=>HS.recommend?.(c)||'',
  present:(c,done)=>HS.present?.(c,done)||false,
- onResult:R=>HS.onResult?.(R),
+ onResult:R=>{tally(R);return HS.onResult?.(R);},
  runFight:(spec,c,done)=>HS.runFight?.(spec,c,done)||false});
 Object.defineProperty(C,'cross',{configurable:true,get:()=>HS.st().stage==='fight1'?0:null});
 window.ArenaCareer=C;HS.career=C;

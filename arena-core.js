@@ -108,7 +108,7 @@ M.fixedStep=function(dt){const b=S.battle;if(!b?.neu)return inner.apply(this,arg
 AN.step=step;
 
 // ---------- Abschluss: Ergebnis je Einheit ----------
-function unitOut(a){const u=a.unit,o={key:a.unitKey,kind:u.kind,name:unitName(u),team:a.team,row:a.row};
+function unitOut(a){const u=a.unit,o={key:a.unitKey,kind:u.kind,name:unitName(u),team:a.team,row:a.row,kills:a.kills||0};
  if(u.kind==='lion'){const h=BZ.health(a);Object.assign(o,{dead:!!a.g.dead,down:!!a.g.dead,health:Math.round(h),injured:h<92,severe:a.g.dead||h<55,kills:a.kills||0});}
  else if(u.kind==='rooster'){const R=a.hahn,h=CF.health(R),gr=Math.max(...Object.values(R.body).map(p=>p.grade||0));Object.assign(o,{dead:!!(R.dead||a.g.dead),down:!!a.down,health:Math.round(h),injured:gr>=1||h<90,severe:gr>=3||!!a.down,kills:a.kills||0});}
  else{const g=a.g,parts=Object.values(g.body),gr=Math.max(...parts.map(p=>p.missing?4:p.grade||0));Object.assign(o,{dead:!!g.dead,down:!!a.down,health:Math.round(M.health(g)),injured:gr>=1||parts.some(p=>p.hp<85),severe:gr>=3||!!a.down||parts.some(p=>p.missing),kills:a.kills||0,
