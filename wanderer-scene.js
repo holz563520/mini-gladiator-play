@@ -66,6 +66,11 @@ function paint(now){requestAnimationFrame(paint);
   g.save();if(!sp)g.filter='brightness(.5) saturate(.7)';g.drawImage(f,0,0,240,300,Math.round(cx-fw/2),Math.round(feet-293*k+bob+(sp?-6:0)),Math.round(fw),Math.round(fh));g.restore();}
  const vg=g.createRadialGradient(W/2,H*.55,H*.3,W/2,H*.55,H*.9);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=vg;g.fillRect(0,0,W,H);}
 requestAnimationFrame(paint);
+// Herumtreiber dürfen nicht hängen bleiben: Ist ihr Kampf vorbei (oder abgebrochen), ohne dass das Spiel ihn abgerechnet hat,
+// wird er nachträglich abgerechnet, sonst käme nie wieder eine Gruppe. Ebenso ein unsinnig weit entfernter nächster Besuch.
+setInterval(()=>{try{const st=S.wanderers;if(!st)return;const g=st.group;
+ if(g?.fightId&&(!S.battle||S.battle.id!==g.fightId)){const rep=(S.records||[]).find(r=>r.id===g.fightId);M.wanderers?.settle?.(rep||{id:g.fightId,draw:true});if(S.wanderers.group===g)S.wanderers.group=null;S.wanderers.next=Math.min(S.wanderers.next||1e9,S.day+1);M.persist?.();}
+ if(!st.group&&(typeof st.next!=='number'||!isFinite(st.next)||st.next>S.day+12))st.next=S.day+2;}catch{}},3000);
 M.wandererScene={open,close,get view(){return view;}};
 window.WANDERER_SCENE_READY=true;
 })();
