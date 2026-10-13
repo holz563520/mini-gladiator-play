@@ -41,6 +41,10 @@ M.schoolPage=function(p){const html=page?.apply(this,arguments);
  return html;};
 // Schmiederezepte: Auch in der neuen Arena sieht der Schmied die Ausrüstung der Gegner (wie bei den klassischen Kämpfen über
 // M.worldStart). Nur echte Kämpfe: Probeläufe setzen S.battle sofort wieder zurück.
-const AN0=window.AN;if(AN0?.build){const build=AN0.build;AN0.build=function(){const b=build.apply(this,arguments);setTimeout(()=>{if(S.battle===b)try{M.workshop?.encounter?.(b);}catch(e){console.warn(e);}},0);return b;};}
+// Waffenhistorie: Kämpfe und Siege zählen auch in der neuen Arena (Kills zählt das Spiel ohnehin beim Tod des Gegners)
+let story=null;
+function storyStart(b){const W=M.world;if(!W?.weaponHistory)return;const ids=[];for(const a of b.actors.filter(a=>a.team===0&&a.g&&!a.hahn&&!a.lion))for(const k of ['weapon','secondary']){const i=M.gear(a.g,k);const h=i&&W.weaponHistory(i);if(h&&!ids.includes(i.id)){W.ownership?.(i,a.g);h.fights++;ids.push(i.id);}}story={id:b.id,ids};}
+const fin0=M.onFinish;M.onFinish=function(report){try{if(story&&report?.id===story.id&&report.won){for(const id of story.ids){const h=M.world.weaponHistory(M.world.resolveWeapon(id));if(h)h.wins++;}}if(story&&report?.id===story.id)story=null;}catch(e){console.warn(e);}return fin0?.apply(this,arguments);};
+const AN0=window.AN;if(AN0?.build){const build=AN0.build;AN0.build=function(){const b=build.apply(this,arguments);setTimeout(()=>{if(S.battle===b){try{M.workshop?.encounter?.(b);}catch(e){console.warn(e);}try{storyStart(b);}catch(e){console.warn(e);}}},0);return b;};}
 window.ARENA_GAME_READY=true;
 })();
