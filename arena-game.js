@@ -39,5 +39,8 @@ M.schoolPage=function(p){const html=page?.apply(this,arguments);
  if(['arena','league','openarenas'].includes(p)){if(!classic&&allowed())setTimeout(()=>{if(M.ui.getPage()===p&&!S.battle&&!window.ArenaUI?.isOpen())window.ArenaUI?.open();},0);}
  else classic=false;
  return html;};
+// Schmiederezepte: Auch in der neuen Arena sieht der Schmied die Ausrüstung der Gegner (wie bei den klassischen Kämpfen über
+// M.worldStart). Nur echte Kämpfe: Probeläufe setzen S.battle sofort wieder zurück.
+const AN0=window.AN;if(AN0?.build){const build=AN0.build;AN0.build=function(){const b=build.apply(this,arguments);setTimeout(()=>{if(S.battle===b)try{M.workshop?.encounter?.(b);}catch(e){console.warn(e);}},0);return b;};}
 window.ARENA_GAME_READY=true;
 })();

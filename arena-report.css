@@ -9,3 +9,4 @@
 .arp-inj{font-size:11px;color:#d9a07a}
 .arp-foot{display:flex;justify-content:flex-end;margin-top:8px}
 .arp-full{font:inherit;font-size:11px;letter-spacing:1px;background:#2a3a3e;color:var(--cream);border:1px solid var(--line);padding:7px 10px;cursor:pointer}
+.arp-recipe{margin:8px 0 0;font-size:12px;color:#e2c47a}.arp-recipe b{color:var(--gold)}
