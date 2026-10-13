@@ -26,11 +26,13 @@ function migrate(){const F=S.fallen;if(!Array.isArray(F)||!F.some(e=>animalId(e?
 // in S.foreignFallen (bleibt gespeichert, wird nicht gezeigt). Alte Einträge: bekannte Szenen-Kennungen oder in
 // gespeicherten Kampfberichten nur auf der Gegnerseite.
 const SCENE_ID=/^(les-|hs-|rex-|medic-|mr-|hall-|spr-|plot-|talk-|crowd-|lion-smith)/;
-function foreign(e){if(!e)return false;if(e.owned===false)return true;if(e.owned===true)return false;const id=String(e.id||'');if(SCENE_ID.test(id))return true;
+// Der Rekrut aus dem Hallen-Tutorial gehört nie zum Kader, ist aber der eigene erste Tote: immer in der Halle
+const hallOwn=e=>{const H=S.hall||{};return String(e?.id)===String(H.firstId)||!!H.tag?.[e?.id]?.tutorial;};
+function foreign(e){if(!e)return false;if(hallOwn(e))return false;if(e.owned===false)return true;if(e.owned===true)return false;const id=String(e.id||'');if(SCENE_ID.test(id))return true;
  let enemy=false,own=false;for(const r of S.records||[]){for(const a of r.attackSummary||[])if(a.id===id){if(a.team===0)own=true;else enemy=true;}for(const a of r.actors||[])if(a.id===id)own=true;}return enemy&&!own;}
 function sweep(){const F=S.fallen;if(!Array.isArray(F)||!F.some(foreign))return false;const out=S.foreignFallen??=[];for(const e of F.filter(foreign))if(!out.some(x=>x.id===e.id))out.push(e);S.fallen=F.filter(e=>!foreign(e));try{M.persist();}catch{}return true;}
 const baseFallen=M.onFallen;
-M.onFallen=function(g,e){if(e&&g&&!animalId(g.id))e.owned=S.roster.some(x=>x.id===g.id);if(e?.owned===false)setTimeout(()=>{sweep();if(M.ui.getPage?.()==='fallen')M.ui.render();},0);const r=baseFallen?.apply(this,arguments);if(animalId(g?.id)){const kind=kindOf(g.id),rid=ridOf(g.id),R=kind==='rooster'?findR(rid,g.name):null;e.kw=kwOf(kind,R,null);setTimeout(()=>{migrate();if(M.ui.getPage?.()==='fallen')M.ui.render();},0);}return r;};
+M.onFallen=function(g,e){if(e&&g&&!animalId(g.id))e.owned=S.roster.some(x=>x.id===g.id)||!!g.hallRecruit||g===S.hall?.recruit;if(e?.owned===false)setTimeout(()=>{sweep();if(M.ui.getPage?.()==='fallen')M.ui.render();},0);const r=baseFallen?.apply(this,arguments);if(animalId(g?.id)){const kind=kindOf(g.id),rid=ridOf(g.id),R=kind==='rooster'?findR(rid,g.name):null;e.kw=kwOf(kind,R,null);setTimeout(()=>{migrate();if(M.ui.getPage?.()==='fallen')M.ui.render();},0);}return r;};
 // Alle toten Tiere: Gruft + tote Hähne der Hühnerschule (+ deren Kampfliste), ohne Doppelte
 function list(){const out=[],seen=new Set(),fl=S.huehner?.fallen||[];
  const add=x=>{const key=(x.kind||'rooster')+':'+(x.rid??x.name);if(seen.has(key))return;seen.add(key);out.push(x);};
@@ -76,7 +78,8 @@ M.schoolPage=function(p){if(p==='crypt'){migrate();return cryptPage();}
  if(p==='fallen'&&typeof html==='string'){const n=list().length,stairs=`<div class="bc-stairs"><button class="btn" data-action="nav:crypt"><span class="bc-steps" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span><b>▼ TREPPE HINAB</b><small>Gruft der Tiere · ${n} ${n===1?'Tier':'Tiere'}</small></span></button></div>`;
   html=html.includes('<div class="hall-stage">')?html.replace('<div class="hall-stage">',stairs+'<div class="hall-stage">'):html+stairs;}
  return html;};
-setTimeout(()=>{const a=migrate(),b=sweep();if((a||b)&&M.ui.getPage?.()==='fallen')M.ui.render();},0);
+function restore(){const out=S.foreignFallen;if(!Array.isArray(out))return false;const back=out.filter(hallOwn);if(!back.length)return false;S.foreignFallen=out.filter(e=>!hallOwn(e));for(const e of back){e.owned=true;if(!S.fallen.some(x=>x.id===e.id))S.fallen.unshift(e);}try{M.persist();}catch{}return true;}
+setTimeout(()=>{restore();const a=migrate(),b=sweep();if((a||b)&&M.ui.getPage?.()==='fallen')M.ui.render();},0);
 M.beastCrypt={list,migrate};
 window.BEAST_CRYPT_READY=true;
 })();

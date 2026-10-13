@@ -412,8 +412,10 @@ let last=performance.now();(function loop(now){requestAnimationFrame(loop);const
 function prepare(){if(S.medic&&!Array.isArray(S.medic.order))S.medic.order=[];S.lanista={...(S.lanista||{}),lostArm:'r'};try{M.ludus.rebuild?.();}catch{}
  if(M.medic&&!recs().length){M.medic.prepare(13);}S.medic.stage='done';S.gold=Math.max(0,Math.min(S.gold,40));}
 function startCard(){const v=document.createElement('div');v.className='medic-start lesson-start';v.innerHTML=`<div><p class="eyebrow">ARENA THEORY · TESTVERSION</p><h1>DIE TEUERSTE LEKTION · DIE HÜHNERSCHULE</h1><p>Kapitel 1: Krankenhaus, leere Kasse, ein geliehenes Schwert – und Rex. Kapitel 2: ein Hahnenschild, eine verrückte Hühnerhändlerin, das Beastrium und drei Hähne gegen einen Idioten.</p><div class="buttons"><button class="btn primary" type="button" data-les="start">KAPITEL 1 · DIE TEUERSTE LEKTION</button><button class="btn primary" type="button" data-les="ch2">KAPITEL 2 · DIE HÜHNERSCHULE DES GRAUENS</button><button class="btn" type="button" data-les="menu">SZENE WÄHLEN</button></div><p class="tiny">Eigenständige Vorschau mit flüchtigem Spielstand. Das Hauptspiel und deine Spielstände bleiben unberührt. Derber schwarzer Humor.</p></div>`;document.body.appendChild(v);}
-M.lesson={scenes:SCENES,jump,menu,prepare,state:st,get film(){return film;},stepFilm,startFight,PAY,REX,clearAll,
- kit:{play,stopFilm,skipScene,setCard,smithActor,lanActor,extraActor,arm,pose,walker,drawActor,float,dust,toss,rage,showGuide,hideGuide,yard,speaker,need,ARENA_K,get guide(){return guide;}}};
+/* M.lesson ist im Spiel bereits die Lehrstunden-Funktion der Trainer (school.js: M.lesson(g,waffe)). Nicht überschreiben,
+   sonst bricht der Tageswechsel ab (Händler, Herumtreiber, Schmied). Die Kapitel-Schnittstelle hängt an dieser Funktion. */
+{const api={scenes:SCENES,jump,menu,prepare,state:st,get film(){return film;},stepFilm,startFight,PAY,REX,clearAll,
+ kit:{play,stopFilm,skipScene,setCard,smithActor,lanActor,extraActor,arm,pose,walker,drawActor,float,dust,toss,rage,showGuide,hideGuide,yard,speaker,need,ARENA_K,get guide(){return guide;}}},base=M.lesson;M.lesson=typeof base==='function'?Object.defineProperties(function(){return base.apply(this,arguments);},Object.getOwnPropertyDescriptors(api)):api;};
 if(TEST){prepare();startCard();}
 // ---------- Im Spiel: Start nach dem Medikus-Kapitel, Fortsetzen nach dem Neuladen ----------
 // Neu abgeschlossenes Medikus-Kapitel → die Lektion beginnt von selbst (wie erzählt: Gold bis auf einen Rest weg).

@@ -42,14 +42,14 @@ function playDawn(run,from){const v=document.createElement('div');v.className='m
  const cw=200,ch=Math.max(112,Math.min(440,Math.round(cw*innerHeight/Math.max(1,innerWidth))));v.innerHTML=`<canvas width="${cw}" height="${ch}"></canvas><div class="mg-dawn-text"><b>TAG ${before}</b><span class="mg-dawn-say"><i>${esc(smithName())}</i>„${esc(line)}“</span><small>Antippen überspringt</small></div>`;
  document.body.appendChild(v);const c=v.querySelector('canvas'),start=performance.now();let advanced=false,blocked='',done=false;M.sound?.('heavy');
  const finish=()=>{if(done)return;done=true;v.classList.add('out');setTimeout(()=>{v.remove();dawn=null;if(blocked)M.ui.notify?.(blocked);},450);};
- const advance=()=>{if(advanced)return;advanced=true;const d0=run?S.day:from;if(run){bypass=true;try{run();}finally{bypass=false;}}const n=$('notice');
+ const advance=()=>{if(advanced)return;advanced=true;const d0=run?S.day:from;if(run){bypass=true;try{run();}catch(e){console.error(e);}finally{bypass=false;}}/* Fehler im Tageswechsel dürfen die Animation nie anhalten */const n=$('notice');
   // Tagesbericht (Fenster „Tag n“) des Spiels schließen: die Animation ersetzt ihn
   const md=$('modal');if(md&&!md.hidden&&/^\s*Tag \d+/.test(md.querySelector('h2,h1,header')?.textContent||md.textContent.slice(0,12)))try{M.ui.close();}catch{}
   if(S.day===d0){blocked=n?.textContent||'Der Tag kann gerade nicht enden.';finish();return;}
   // Tagesbericht des Spiels nicht anzeigen: die Animation ersetzt ihn
   if(n){n.textContent='';n.style.opacity=0;n.classList?.remove('show');}v.querySelector('b').textContent='TAG '+S.day;v.classList.add('morning');M.sound?.('rise');seen=S.day;};
  v.addEventListener('click',()=>{advance();finish();});
- (function frame(now){if(done)return;const t=(now-start)/1000,k=Math.max(0,Math.min(1,(t-.9)/1.9));if(t>.6)advance();paintDawn(c,k,t);if(t>4)finish();else requestAnimationFrame(frame);})(start);
+ (function frame(now){if(done)return;try{const t=(now-start)/1000,k=Math.max(0,Math.min(1,(t-.9)/1.9));if(t>.6)advance();paintDawn(c,k,t);if(t>4)finish();else requestAnimationFrame(frame);}catch(e){console.error(e);finish();}})(start);
  dawn=v;}
 const baseClick=M.schoolClick;
 // Vor allen anderen: erst die Nacht, dann (mitten in der Animation) der echte Tageswechsel über die übrigen Haken
