@@ -33,10 +33,14 @@ M.onFinish=function(report){
 }
  return baseFinish?.apply(this,arguments);};
 // Öffnen beim Betreten der Arena (nicht während der Tutorials, Turniere oder eines Kampfes)
-function allowed(){const lion=S.lion?.stage;return !S.battle&&!S.tournament&&(!lion||lion==='done'||lion==='skip')&&!['medic','s12'].includes(S.medic?.stage||'')&&!document.querySelector('.lion-guide:not(.lesson-guide),.medic-start');}
+// Solange die klassische Arena ausgeblendet ist, blockieren nur noch die Tutorials von Löwe und Medicus und ein wirklich
+// laufender Kampf. Alte Turnierstände oder ein liegengebliebener Kampfstand führen nicht mehr auf die alte Seite.
+function running(){const b=S.battle;if(!b)return false;if(b.neu)return document.body.classList.contains('an-fighting');const v=document.getElementById('battleView');return !!v&&!v.hidden;}
+function allowed(){const lion=S.lion?.stage;const tut=(lion&&lion!=='done'&&lion!=='skip')||['medic','s12'].includes(S.medic?.stage||'')||!!document.querySelector('.medic-start');
+ if(CLASSIC_ARENA)return !S.battle&&!S.tournament&&!tut&&!document.querySelector('.lion-guide:not(.lesson-guide)');return !tut&&!running();}
 const page=M.schoolPage;
 M.schoolPage=function(p){const html=page?.apply(this,arguments);
- if(['arena','league','openarenas'].includes(p)){if(!classic&&allowed())setTimeout(()=>{if(M.ui.getPage()===p&&!S.battle&&!window.ArenaUI?.isOpen())window.ArenaUI?.open();},0);}
+ if(['arena','league','openarenas'].includes(p)){if(!classic&&allowed())setTimeout(()=>{if(M.ui.getPage()===p&&allowed()&&!window.ArenaUI?.isOpen())window.ArenaUI?.open();},0);}
  else classic=false;
  return html;};
 // Schmiederezepte: Auch in der neuen Arena sieht der Schmied die Ausrüstung der Gegner (wie bei den klassischen Kämpfen über
