@@ -169,18 +169,60 @@ function head(q,T,C,o,yaw,t,mood){
 
  if(o.blood>0)R(8,53,1,Math.round(o.blood*8),'#943a33');
 
- feature=false;const helm=o.armor?.helm,fx=yaw*7,near=s=>1-cl(s*yaw*.45,0,.4),half=y=>31*Math.sqrt(Math.max(0,1-Math.pow((y-30)/(y<30?36:44),2)));
- // Helm über allem, was er verdeckt
- if(helm){const p=M.itemLook(helm),soft=helm.material==='leather',mid=helm.material==='medium',dome=mid?p.leather:p.metal,q2=helm.q||0,hi=mix(dome,'#ffffff',.28),lo=mix(dome,'#000000',.32);
-  for(let y=-7;y<19;y++){const hw=half(Math.max(2,y))+3;for(let x=Math.floor(-hw);x<Math.ceil(hw);x++){const s=x/hw;T.r(cx+x,Y(y),1,1,s<-.5?hi:s>.45?lo:dome);}}
-  T.r(cx-31-3,Y(17),31*2+6,4,soft&&q2<5?p.dark:p.trim);T.r(cx-31-3,Y(17),31*2+6,1,p.edge);
-  if(q2>=1)for(const sd of [-1,1]){const w=Math.round(9*near(sd));T.r(cx+sd*(31-2)-(sd<0?0:w),Y(20),w,30,mid?p.metal:dome);T.r(cx+sd*(31-2)-(sd<0?0:w),Y(20),1,30,sd<0?hi:lo);T.r(cx+sd*(31-2)-(sd<0?0:w),Y(48),w,2,p.trim);}
-  if(q2>=2)T.r(cx+fx*1.5-1,Y(20),3,14,p.trim);
-  if(mid){T.r(cx-10,Y(-9),20,4,p.metal);T.r(cx-10,Y(-9),20,1,p.edge);}
-  if(soft&&q2>=2)for(let x=-22;x<=22;x+=6)T.r(cx+x,Y(8),2,2,p.edge);
-  if(q2>=3){for(let y=0;y<16;y++){const w=10-Math.abs(y-6)*.5;T.r(cx-w/2,Y(-22+y),w,1,y%4===0?mix(p.cloth,'#000000',.25):p.cloth);}T.r(cx-9,Y(-8),18,3,p.trim);}
-  if(q2>=5)for(const sd of [-1,1]){T.r(cx+sd*(31-4)-3,Y(-10),6,9,p.trim);T.r(cx+sd*(31-4)-2,Y(-13),4,4,p.edge);}
-  if(q2===6){T.r(cx-1,Y(-30),3,9,p.edge);T.r(cx-2,Y(12),5,5,p.gem||'#c06d45');}}
+
+ feature=false;
+ const helm=o.armor?.helm;
+ if(helm){
+  const p=M.itemLook(helm),quality=cl(Math.round(helm.q||0),0,6),soft=helm.material==='leather',hybrid=helm.material==='medium';
+  const base=hybrid?p.leather:p.metal,edge=p.edge,trim=quality>=4?p.trim:mix(base,'#d8c5a0',.32);
+  const ink=mix(base,'#10161b',.78),deep=mix(base,'#151d24',.56),shadow=mix(base,'#202933',.32),light=mix(base,soft?'#d8af77':'#d8e5e5',.32),shine=mix(base,'#fff3d4',.58);
+  const plate=hybrid?p.metal:base,plight=mix(plate,'#e1e6d5',.4),pdark=mix(plate,'#18232a',.55);
+  // Solid, fitted silhouette covers hairstyles; polygons follow the portrait's proportions.
+  poly([[-34,22],[-34,3],[-29,-10],[-19,-18],[-7,-21],[10,-20],[23,-14],[31,-4],[34,10],[33,23]],ink);
+  poly([[-32,17],[-32,3],[-27,-8],[-17,-16],[-5,-18],[10,-17],[21,-11],[29,-2],[31,16]],base);
+  poly([[-31,13],[-29,0],[-23,-9],[-13,-15],[-4,-16],[-8,-9],[-14,-1],[-17,14]],light);
+  poly([[-28,3],[-23,-7],[-14,-13],[-8,-14],[-14,-7],[-19,2]],shine);
+  poly([[8,-17],[20,-11],[28,-1],[31,15],[20,15],[18,1],[13,-8]],shadow);
+  poly([[23,-6],[29,2],[31,16],[27,16],[25,3]],deep);
+  // Center reinforcing rib, with a light edge and shadow beneath it.
+  if(!soft||quality>=2){poly([[-4,-19],[1,-19],[6,16],[-1,17]],ink);poly([[-3,-18],[0,-18],[4,15],[0,15]],hybrid?p.metal:trim);R(-2,-15,1,9,shine);R(0,-4,1,16,light);}
+  if(soft){
+   for(const side of [-1,1])for(let i=0;i<8;i++){const x=side*(12+i*.9),y=-10+i*3;R(x,y,2,1,deep);R(x,y-1,1,1,light);}
+   for(let i=0;i<24;i++){const x=(i*17%55)-27,y=(i*11%25)-9;if(Math.abs(x)<22||y>1)R(x,y,1,1,i%3?shadow:light);}
+   if(quality===0){poly([[-22,-4],[-10,-8],[-7,4],[-19,8]],deep);poly([[-21,-3],[-11,-6],[-9,3],[-18,6]],mix(base,'#c59a68',.18));for(let i=0;i<4;i++)R(-20+i*3,-2-i,1,2,shine);}
+  }else{
+   // Fixed surface marks never shimmer from frame to frame.
+   for(const [x,y,l]of [[-23,5,4],[-16,-7,3],[12,4,5],[18,10,3]]){R(x,y,l,1,shadow);R(x,y+1,l-1,1,light);}
+  }
+  // Brow follows the skull instead of forming a rectangular band.
+  poly([[-35,14],[-21,12],[-8,14],[0,16],[9,14],[23,12],[35,15],[34,22],[20,19],[9,20],[0,22],[-11,20],[-24,19],[-34,22]],ink);
+  poly([[-33,15],[-22,14],[-9,16],[0,18],[10,16],[23,14],[33,16],[32,19],[21,17],[10,18],[0,20],[-10,18],[-23,17],[-32,19]],soft?deep:trim);
+  for(const [x,y]of [[-30,15],[-23,14],[-16,15],[13,15],[22,14],[29,15]])R(x,y,3,1,soft?light:shine);
+  function rivet(x,y){R(x-1,y-1,3,3,ink);R(x-1,y-1,2,2,trim);R(x-1,y-1,1,1,shine);}
+  for(const x of [-28,-16,16,28])rivet(x,17);
+  if(quality>=1){for(const side of [-1,1]){
+   const f=1-cl(side*yaw*.32,0,.25),pts=a=>a.map(([x,y])=>[side*(24+(x-24)*f),y]);
+   poly(pts([[25,20],[34,20],[34,39],[29,54],[23,57],[19,51],[21,38]]),ink);
+   poly(pts([[26,22],[32,22],[32,38],[28,51],[24,54],[21,50],[23,38]]),soft?base:plate);
+   poly(pts([[26,23],[28,24],[27,38],[23,49],[24,52],[21,49],[23,36]]),side<0?(soft?light:plight):(soft?shadow:pdark));
+   poly(pts([[31,24],[32,26],[31,39],[27,51],[25,52],[28,40]]),deep);
+   rivet(side*28,24);R(side*27-1,43,3,1,ink);R(side*26-1,46,3,1,ink);
+   if(quality>=4){poly(pts([[23,40],[25,41],[23,48],[25,51],[28,46],[28,49],[24,54],[21,50]]),trim);}
+  }}
+  if(quality>=2&&!soft){const nx=yaw*5;poly([[nx-3,19],[nx+3,19],[nx+3,33],[nx,38],[nx-3,33]],ink);poly([[nx-2,20],[nx+1,20],[nx+1,34],[nx,36],[nx-2,32]],trim);R(nx-2,21,1,11,shine);}
+  if(hybrid){for(const side of [-1,1]){poly([[side*17,-14],[side*22,-10],[side*29,3],[side*30,12],[side*25,12],[side*24,1]],plate);R(side*25,3,1,7,plight);rivet(side*25,10);}}
+  // Quality is expressed through construction and ornament, not only color.
+  if(quality>=3){
+   const crest=soft?mix(p.cloth,base,.35):p.cloth,cd=mix(crest,'#170f19',.57),ch=mix(crest,'#ffcf98',.32);
+   poly([[-9,-17],[-10,-27],[-7,-32],[0,-35],[7,-32],[11,-26],[10,-17]],ink);
+   poly([[-7,-18],[-8,-26],[-5,-30],[0,-32],[6,-29],[8,-24],[8,-18]],cd);
+   for(let i=-6;i<=6;i+=2){const y=-31+Math.abs(i)*.7;R(i,y,1,12-Math.abs(i)*.5,i<1?ch:crest);}
+   R(-9,-18,19,3,deep);R(-8,-18,17,1,trim);rivet(-5,-16);rivet(5,-16);
+  }
+  if(quality>=5){for(const side of [-1,1])for(let i=0;i<4;i++){const x=side*(12+i*4),y=9-i*3;poly([[x,y],[x-side*3,y-4],[x-side*4,y-3],[x-side*2,y+1]],trim);R(x-side*2,y-2,1,1,shine);}}
+  if(quality===6){poly([[-5,12],[0,8],[5,12],[4,18],[0,21],[-4,18]],ink);poly([[-4,12],[0,9],[4,12],[3,17],[0,19],[-3,17]],trim);poly([[-2,12],[1,11],[3,14],[0,17],[-2,15]],p.gem||'#b44039');R(-1,12,1,2,'#ffe4ba');}
+ }
+
 }
 const bufs=new WeakMap();
 // o: {g, team, mood, yaw?, sink?, tilt?, dark?, pale?, blood?, zoom?}; t: Sekunden seit Beginn der Einstellung
@@ -193,7 +235,7 @@ function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createEl
  if(o.ground)sand(bq,BT,opt,t);else backdrop(bq,BT,opt,yaw,t);
  // Figur auf eigener Fläche, damit sie am Boden als Ganzes liegen kann
  const q=B.c.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,FW,FH+40);const T=tools(q);torso(q,T,C,opt,yaw);
- const hq=B.b.getContext('2d');hq.imageSmoothingEnabled=false;hq.setTransform(1,0,0,1,0,0);hq.clearRect(0,0,FW,FH+40);hq.translate(0,20);head(hq,tools(hq),C,opt,yaw,t,mood);hq.setTransform(1,0,0,1,0,0);
+ const hq=B.b.getContext('2d');hq.imageSmoothingEnabled=false;hq.setTransform(1,0,0,1,0,0);hq.clearRect(0,0,FW,FH+40);if(armor.helm){hq.translate(80,43);hq.scale(.78,.78);hq.translate(-80,0);}else hq.translate(0,20);head(hq,tools(hq),C,opt,yaw,t,mood);hq.setTransform(1,0,0,1,0,0);
  const bob=Math.round(Math.sin(t*1.6)*.6)+(m.tremble?Math.round(Math.sin(t*38)*.8):0);q.save();q.translate(80,70+(o.sink||0)+bob);q.rotate(o.tilt||0);q.drawImage(B.b,-80,-90);q.restore();
  if(o.fist||o.trophy){const pump=Math.round(Math.sin(t*7)*3),arm=(x0,x1,y1)=>{for(let y=y1;y<FH;y++){const u=(y-y1)/(FH-y1),x=x1+(x0-x1)*u;T.r(x-7,y,14,1,C.skin);T.r(x-7,y,3,1,C.light);T.r(x+4,y,3,1,C.shade);}};
   arm(24,20,24+pump);T.r(11,10+pump,19,16,C.skin);T.r(11,10+pump,19,3,C.light);T.r(26,10+pump,4,16,C.shade);for(let i=0;i<4;i++)T.r(12+i*4.5,13+pump,1,10,C.shade);
@@ -216,5 +258,5 @@ function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createEl
  const sh=o.shake||0,ox=sh?Math.round((Math.random()-.5)*sh*s):0,oy=sh?Math.round((Math.random()-.5)*sh*s*.7):0;g.drawImage(B.a,0,0,FW,FH,Math.round(w/2-dw/2)+ox,Math.round(Math.min(0,(h-dh)*.42))+oy,dw,dh);
  if(o.lines>0){/* Schrei: Linien vom Rand zur Mitte */g.save();g.globalAlpha=cl(o.lines)*.75;g.strokeStyle='#fff6dc';g.lineWidth=Math.max(2,w/160);for(let i=0;i<18;i++){const a=i/18*Math.PI*2+Math.floor(t*14)*.37,r0=Math.max(w,h)*.74,r1=Math.max(w,h)*(.4+((i*7)%5)*.035);g.beginPath();g.moveTo(w/2+Math.cos(a)*r0,h*.45+Math.sin(a)*r0);g.lineTo(w/2+Math.cos(a)*r1,h*.45+Math.sin(a)*r1);g.stroke();}g.restore();}
  const vg=g.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.62)');g.fillStyle=vg;g.fillRect(0,0,w,h);}
-M.faceShot={paint,moods:Object.keys(MOODS),FW,FH,version:'head-lab-v3'};
+M.faceShot={paint,moods:Object.keys(MOODS),FW,FH,version:'helmet-lab-v4'};
 })();
