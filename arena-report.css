@@ -1,0 +1,11 @@
+/* Kampfbericht im Ergebnisbild der neuen Arena */
+.arp .arp-man{display:grid;gap:4px}
+.arp .arp-man.dead>b{color:#d98a7a}
+.arp .arp-state{font-size:11px;color:var(--muted)}
+.arp-stats{display:flex;flex-wrap:wrap;gap:4px}
+.arp-stats span{display:inline-flex;gap:4px;align-items:baseline;font-size:11px;color:var(--muted);background:#152024;border:1px solid #33443f;padding:2px 6px}
+.arp-stats span b{color:var(--cream);font-size:12px}
+.arp details{margin-top:2px}.arp details summary{font-size:11px;color:var(--muted);cursor:pointer}
+.arp-inj{font-size:11px;color:#d9a07a}
+.arp-foot{display:flex;justify-content:flex-end;margin-top:8px}
+.arp-full{font:inherit;font-size:11px;letter-spacing:1px;background:#2a3a3e;color:var(--cream);border:1px solid var(--line);padding:7px 10px;cursor:pointer}
