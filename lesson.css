@@ -136,3 +136,8 @@ body.lesson-goarena [data-action="nav:arena"]{animation:lessonPulse 1s ease-in-o
 .hs-mi-sub{margin:2px 0 6px;font-size:.72rem;letter-spacing:.1em;color:#c9a46a}
 .hs-mi-say{margin:0 0 6px;font-size:.95rem;line-height:1.35;min-height:2.8em}
 .hs-mi-box small{font-size:.7rem;opacity:.7}
+
+.hs-kill{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:10px 0 4px;padding:8px;border:1px dashed #6b3a2a;background:#20120c}
+.hs-kill small{font-size:11px;color:#c9a07a}
+.hs-kill b{width:100%;color:#f29b83}
+.hs-kill .btn{width:auto;margin:0}

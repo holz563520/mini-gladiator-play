@@ -105,6 +105,8 @@ M.schoolClick=function(a){const r=baseClick2.apply(this,arguments);if(typeof a==
  grid.querySelectorAll('[data-action^="quickequip:"]').forEach(b=>{const it=M.inventoryItem(b.dataset.action.split(':')[1]);if(it?.kind==='weapon'){const h=b.closest('.box')?.querySelector('h3');if(h&&!h.querySelector('.eq-tal'))h.insertAdjacentHTML('beforeend',' '+tal(g,it.def));}});},0);}return r;};
 // Ursprungswerte früh erfassen (neue Rekruten am Aufnahmetag)
 setInterval(()=>{try{for(const g of S.roster)if(!g.startVals)M.barracks?.startOf?.(g);}catch{}},2000);
-M.equipQuick={panel,bar,smithPlan,talents};
+// Klappleiste in der Kaserne: nur die zwei Schnellknöpfe (+ Weg in die große Waffenkammer), die Karte bleibt offen
+function fold(g){let worn=0;for(const {slot} of slots(g))if(cur(g,slot))worn++;return `<div class="eq-fold"><p class="eq-head"><span>${worn} von ${slots(g).length} Plätzen belegt</span><span class="eq-gold">${fmt(S.gold)} Gold</span></p>${bar(g)}<div class="eq-actions">${btn('VOLLE WAFFENKAMMER ▸','eq:doll:'+g.id,'small')}${btn('ZUKLAPPEN ▴','barracks:fold:'+g.id+':equip','small')}</div></div>`;}
+M.equipQuick={panel,bar,fold,smithPlan,talents};
 window.EQUIP_QUICK_READY=true;
 })();

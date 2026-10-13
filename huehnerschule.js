@@ -159,12 +159,13 @@ let detail=null;
 function openDetail(R,o={}){closeDetail();const v=document.createElement('div');v.className='hs-detail';const q=R.quality,cls=classOf(R),body=Object.entries(R.body).filter(([,p])=>p.grade>0);
  v.innerHTML=`<div class="hs-dbox" role="dialog" aria-label="${esc(R.name)}"><header><button class="hs-x" data-hs="dclose" aria-label="Schließen">✕</button><p class="eyebrow">BEASTRIUM · HAHN</p><h2>${esc(R.name)}</h2><p class="hs-qual" style="color:${q.color}">${stars(q.tier)} ${esc(q.title)} · ${esc(q.label)} · Klasse „${esc(cls.name)}“</p></header>
  <div class="hs-pstage"><canvas width="320" height="200" class="px"></canvas><div class="hs-bubble"></div><button class="hs-replay" data-hs="replay">▶ Vorstellung</button></div>
- <div class="hs-dgrid"><span>KW <b>${kw(R)}</b></span><span>Gesundheit <b>${Math.round(CF.health(R))} %</b></span><span>Zustand <b>${esc(CF.status(R))}</b></span><span>Kämpfe <b>${R.fights}</b> · Siege <b>${R.wins}</b></span></div>
+ <div class="hs-dgrid"><span>KW <b>${kw(R)}</b></span><span>Gesundheit <b>${Math.round(CF.health(R))} %</b></span><span>Zustand <b>${esc(CF.status(R))}</b></span><span>Kämpfe <b>${R.fights||0}</b> · Siege <b>${R.wins||0}</b> · Getötet <b>${R.kills||0}</b></span></div>
  ${statTable(R,true,o.mark)}
  <table class="hs-stats hs-moves"><tbody>${MOVES.map(([k,l])=>`<tr><th>${l}</th><td class="v">${f1(R.moves[k])}</td><td class="bar"><i style="width:${Math.min(100,R.moves[k])}%"></i><em style="left:${Math.min(100,R.caps.moves[k])}%"></em></td><td class="c">${Math.round(R.caps.moves[k])}</td></tr>`).join('')}</tbody></table>
  <p class="hs-legend"><i class="ist"></i> IST · was er jetzt kann &nbsp; <i class="soll"></i> SOLL · was aus ihm werden kann</p>
  <p class="hs-chips"><span>${esc(R.appearance.plumageName)}</span><span>${R.height} cm · ${f1(R.weight)} kg</span><span>${R.ageMonths} Monate</span><span>Talent: ${esc(R.profile.potentialNote)}</span><span>Bevorzugt: ${esc(R.profile.favoriteMoveLabel)}</span></p>
  ${body.length?`<p class="hs-wounds">Verletzt: ${body.map(([k,p])=>esc(CF.partName(k))+' ('+esc(CF.GRADE_LABEL?.[p.grade]||'Grad '+p.grade)+')').join(' · ')}</p>`:''}
+ ${!R.dead&&!active()?`<div class="hs-kill" data-kill><button class="btn small danger" data-hs="kill1">🔪 SCHLACHTEN</button><small>Hähne, die du nicht willst, landen im Topf. Endgültig.</small></div>`:''}
  ${R.history?.length?`<details class="hs-hist"><summary>Verlauf</summary><ul>${R.history.slice(0,8).map(h=>`<li>Tag ${h.day}: ${esc(h.text)}</li>`).join('')}</ul></details>`:''}</div>`;
  document.body.appendChild(v);const cv=v.querySelector('canvas'),bub=v.querySelector('.hs-bubble'),scene=new CU.CloseupScene(cv);CU.setBubble((text,tier)=>{if(!text){bub.classList.remove('show');return;}bub.textContent=text;bub.className='hs-bubble show q'+tier;});
  scene.play(R,()=>{});if(!o.anim)scene.skip();detail={v,R,scene};}
@@ -499,6 +500,9 @@ function jump(n){stopAll();prepare();ensureUpTo(n);if(n===5)st().beastrium=false
 function stopAll(){K.stopFilm();K.hideGuide();closeMarket();closeDetail();stopDemo();toastEl?.remove();pres?.done?.();window.ArenaUI?.close?.();document.querySelectorAll('.hs-end,.lesson-end').forEach(e=>e.remove());}
 document.addEventListener('click',e=>{const el=e.target.closest?.('[data-hs]');if(!el)return;const [a,v]=el.dataset.hs.split(':');
  if(a==='buy')buy(+v);else if(a==='mclose')closeMarket();else if(a==='pskip')pres?.scene.skip();else if(a==='pdone')pres?.done();
+ else if(a==='kill1'&&detail){const box=el.closest('[data-kill]');box.innerHTML=`<b>${esc(detail.R.name)} wirklich schlachten?</b><button class="btn small danger" data-hs="kill2">JA, IN DEN TOPF</button><button class="btn small" data-hs="killno">NEIN</button>`;}
+ else if(a==='killno'&&detail){openDetail(detail.R);}
+ else if(a==='kill2'&&detail){const R=detail.R,s=st();if(active()||S.battle)return;const i=s.roosters.indexOf(R);closeDetail();if(i>=0)s.roosters.splice(i,1);try{M.persist();}catch{}M.ui.notify?.(R.name+' ist jetzt Suppe. Der Schmied nimmt einen Teller.');M.ui.render();setTimeout(mountBeastrium,0);}
  else if(a==='dclose')closeDetail();else if(a==='replay'&&detail){detail.scene.stop();detail.scene.play(detail.R,()=>{});}
  else if(a==='endfree'){el.closest('.hs-end')?.remove();setStage('end');K.hideGuide();syncPlaces();try{M.ui.click('nav:home');}catch{}}});
 // =====================================================================================================
