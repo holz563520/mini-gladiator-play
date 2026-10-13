@@ -13,7 +13,7 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,b=Math.
  const line=(x0,y0,x1,y1,color,hit=false)=>{const n=Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0)));for(let i=0;i<=n;i++)pix(x0+(x1-x0)*i/(n||1),y0+(y1-y0)*i/(n||1),color,hit)};
  function grip(x0,x1){rect(x0,-2,x1-x0,5,'#302c29');rect(x0,-1,x1-x0,3,wood);for(let x=x0;x<x1;x+=3){line(x,-1,x+2,1,q===0?'#b29363':'#ad8052')}rect(x0-2,-2,3,5,gold);pix(x0-1,-1,edge)}
  function shaft(n){rect(-12,-2,n+14,4,'#302c29');rect(-12,-1,n+14,2,wood);line(-10,-1,n,-1,'#b08a55');for(let x=-9;x<n-10;x+=9)pix(x,0,'#493628');grip(-9,8)}
- if(lengths[id]){const n=lengths[id],t=(id==='dagger'?2:id==='gladius'?3:id==='greatsword'?4:3)+Math.floor(q/3),end=12+n;
+ if(lengths[id]){const n=lengths[id],t=id==='greatsword'?2+Math.floor(q/3):(id==='dagger'?2:id==='gladius'?3:3)+Math.floor(q/3),end=12+n;
  grip(id==='greatsword'?-14:-7,7);rect(6,-(id==='greatsword'?9:5),3,id==='greatsword'?19:11,dark);rect(7,-(id==='greatsword'?9:5),1,id==='greatsword'?19:11,gold);
  poly([[9,-t],[end-6,-t],[end,0],[end-6,t+1],[9,t+1]],dark,true);poly([[10,-t+1],[end-6,-t+1],[end-1,0],[end-6,t],[10,t]],metal,true);
  line(10,-t+1,end-7,-t+1,edge,true);line(12,0,end-4,0,mid,true);line(end-7,-t+1,end-1,0,edge,true);line(10,t,end-7,t,'#4e5b60',true);
