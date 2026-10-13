@@ -36,7 +36,7 @@ M.onFinish=function(report){
 // Solange die klassische Arena ausgeblendet ist, blockieren nur noch die Tutorials von Löwe und Medicus und ein wirklich
 // laufender Kampf. Alte Turnierstände oder ein liegengebliebener Kampfstand führen nicht mehr auf die alte Seite.
 function running(){const b=S.battle;if(!b)return false;if(b.neu)return document.body.classList.contains('an-fighting');const v=document.getElementById('battleView');return !!v&&!v.hidden;}
-function allowed(){const lion=S.lion?.stage;const tut=(lion&&lion!=='done'&&lion!=='skip')||['medic','s12'].includes(S.medic?.stage||'')||!!document.querySelector('.medic-start');
+function allowed(){const lion=S.lion?.stage;const tut=(lion&&lion!=='done'&&lion!=='skip')||['medic','s12'].includes(S.medic?.stage||'')||!!document.querySelector('.medic-start')||['go','s5','fight'].includes(S.lesson?.stage);/* Kapitel 1: Rex-Herausforderung auf der eigenen Seite */
  if(CLASSIC_ARENA)return !S.battle&&!S.tournament&&!tut&&!document.querySelector('.lion-guide:not(.lesson-guide)');return !tut&&!running();}
 const page=M.schoolPage;
 M.schoolPage=function(p){const html=page?.apply(this,arguments);
