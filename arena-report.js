@@ -12,7 +12,8 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const f1=v=>(Math.round(v*10)/10).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
 let last=null,lastAt=0;
 const baseFinish=M.onFinish;
-M.onFinish=function(report){if(report&&String(report.id||'').startsWith('arena-neu')){last=report;lastAt=Date.now();}return baseFinish?.apply(this,arguments);};
+M.onFinish=function(report){if(report&&String(report.id||'').startsWith('arena-neu')){last=report;lastAt=Date.now();}const r=baseFinish?.apply(this,arguments);
+ /* Nach dem Kampf: Klingen abgewischt, auf dem Spielfeld/Ludus kein Blut an den Waffen */setTimeout(()=>{try{for(const g of S.roster)for(const k of ['weapon','secondary']){const i=M.gear(g,k);if(i&&i.blood)i.blood=0;}}catch{}},0);return r;};
 // Wert und SOLL zu einem Lernpfad (stats:strength · moves:dodge · weapons:gladius · body:lua.strength)
 function valueOf(g,path){const [grp,key]=path.split(':');try{
  if(grp==='stats')return [g.stats[key],g.caps.stats[key]];if(grp==='moves')return [g.moves[key],g.caps.moves[key]];if(grp==='weapons')return [g.mastery[key],g.caps.weapons[key]];

@@ -9,7 +9,7 @@
 // =====================================================================================================
 (()=>{
 const M=window.MG,S=M.s,H=window.HahnArena,BZ=window.Beasts,CF=window.CF,cl=M.clamp;
-const AN={TMAX:240,HOLD:7,listeners:[]};window.AN=AN;
+const AN={TMAX:240,HOLD:2.5,listeners:[]};window.AN=AN;
 
 // ---------- Einheiten ----------
 // Eine Einheit: {kind:'human'|'rooster'|'lion', key, row:'front'|'back', g | R | L}
