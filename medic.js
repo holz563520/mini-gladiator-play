@@ -592,7 +592,7 @@ function scene12(){setStage('s12');hideGuide();M.ui.click('nav:home');const say=
  ],{label:'13 · Die Rechnung',done:()=>finale()});}
 // Akten der fünf im echten Krankenhausmenü: Zusatz der Testversion, rechnet mit den Heilregeln des Spiels
 const TIER=['Natürlich','Medicus','Premium','Spezialbehandlung'];
-function dossier(g,rank){const d=B.info(g),parts=Object.entries(g.body).filter(([,p])=>p.hp<100-p.chronic||p.missing||p.fracture||p.internal||p.bleed),done=st().treated[g.id],now=M.power(g),fc=[0,1,2,3].map(t=>forecast(g,t)),lost=parts.filter(([,p])=>p.missing).length;
+function dossier(g,rank){const d=B.info(g),parts=Object.entries(g.body).filter(([,p])=>p.hp<100-p.chronic||p.missing||p.fracture||p.internal||p.bleed),done=(st().treated||{})[g.id],now=M.power(g),fc=[0,1,2,3].map(t=>forecast(g,t)),lost=parts.filter(([,p])=>p.missing).length;
  return `<section class="box medic-file bk-t${d.tier.level}"><header><canvas data-face="${g.id}" width="80" height="100"></canvas><div><h3>#${rank} · ${esc(g.name)}</h3><p><span class="bk-stars">${stars(d.tier.level)}</span> ${esc(d.tier.name)} · Talent ${d.talent}</p><div class="medic-bar"><i style="width:${Math.round(g.blood)}%"></i><b>Blut ${fmt(g.blood)} %</b></div><p>Gesundheit ${fmt(M.health(g))} % · Kampfwert jetzt <b>${now}</b> (gesund: ${fc[0].kw}${fc[0].chronic||lost?', mit Dauerfolgen':''})</p></div></header>
 <ul>${parts.map(([id,p])=>`<li><b>${esc(M.partName(id))}</b>: ${esc(partLine(g,id))} · <span class="medic-g${M.injuryGrade(p)}">Grad ${M.injuryGrade(p)}</span>${p.fracture?' · Bruch, noch '+Math.ceil(p.fracture.days)+' Tage':''}${p.chronic?' · <b class="medic-red">Dauerschaden −'+fmt(p.chronic)+' %</b>':''}${p.missing?' · <b class="medic-red">bleibt verloren</b>':''}</li>`).join('')||'<li>Keine offene Verletzung.</li>'}</ul>
 <table class="medic-plan"><tr><th>Behandlung</th><th>Kosten</th><th>Bereit in</th><th>Danach</th></tr>${fc.map((x,t)=>`<tr class="${done===t?'chosen':''}"><td>${TIER[t]}</td><td>${x.cost?fmt(x.cost)+' G':'kostenlos'}</td><td><b>${x.days} ${x.days===1?'Tag':'Tagen'}</b><br><small>Tag ${S.day+x.days}</small></td><td>KW ${x.kw}${x.chronic?'<br><small class="medic-red">Dauer −'+fmt(x.chronic,1)+' %</small>':''}${x.lost?'<br><small class="medic-red">Arm fehlt</small>':''}</td></tr>`).join('')}</table>
@@ -647,7 +647,20 @@ const click=M.schoolClick;M.schoolClick=a=>{const stage=st().stage,[p,b,c]=a.spl
  if(guide?.lock&&(['rest','rest3','familyrest'].includes(p)||a==='ludus:owner'||a==='army:treatall'||(p==='nav'&&!guide.lock.includes(b)&&b!=='market'))){M.ui.notify('Erst die Aufgabe des Schmieds erledigen.');return true;}
  if(stage==='medic'&&p==='treat'){const g=byId(b);if(g&&st().ids.includes(b)&&S.gold>=M.medicalCost(g,+c))st().treated[b]=+c;setTimeout(()=>M.ui.render(),0);return click(a);}
  return click(a);};
-const page=M.schoolPage;M.schoolPage=p=>{const html=page(p);if(p!=='medic'||!['medic','s12','end','free'].includes(st().stage)||!recs().length)return html;setTimeout(()=>{for(const c of document.querySelectorAll('.medic-files canvas[data-face]')){const g=byId(c.dataset.face);if(g)M.renderPortrait(c,g,{unarmored:true});}},0);
+// Nach dem Tutorial: das ganze Krankenhaus als Akten wie im Tutorial (Porträt, Blut, Verletzungen mit Grad, Behandlungstabelle
+// mit Kosten, verbleibenden Tagen bis einsatzbereit und Kampfwert danach) – mit den echten Behandlungsknöpfen des Spiels.
+// Die Tage werden jeden Tag aus dem aktuellen Zustand neu berechnet und zählen so herunter.
+const ward=()=>['','done','skip'].includes(st().stage||'');
+function patients(){return S.roster.filter(g=>!g.dead&&(Object.values(g.body).some(p=>p.hp<100-p.chronic||p.missing||p.fracture||p.internal||p.bleed)||g.blood<100)).map(g=>({g,d:forecast(g,0).days})).sort((a,b)=>b.d-a.d).map(x=>x.g);}
+function wardFile(g,rank){let html=dossier(g,rank);
+ const heal=g.healing?`<p class="medic-now">Behandlung läuft · noch ${g.healing.days} ${g.healing.days===1?'Tag':'Tage'} verstärkte Heilung</p>`:'';
+ const btns=`<div class="medic-acts">${[1,2,3].map(t=>{const c=M.medicalCost(g,t),no=S.gold<c;return `<button class="btn small${no?'':' primary'}" data-action="treat:${g.id}:${t}"${no?' disabled':''}>${TIER[t].toUpperCase()} · ${fmt(c)} G</button>`;}).join('')}</div>`;
+ return html.replace('<table class="medic-plan">',heal+'<table class="medic-plan">').replace('</table>','</table>'+btns);}
+function wardPage(){const list=patients();setTimeout(()=>{for(const c of document.querySelectorAll('.medic-files canvas[data-face]')){const g=byId(c.dataset.face);if(g)M.renderPortrait(c,g,{unarmored:true});}},0);
+ return `<div class="page-head"><h1>Krankenhaus</h1><p class="sub">${list.length?list.length+' Patienten · Tage = verbleibend bis einsatzbereit, jeden Tag neu gerechnet':'Niemand liegt hier. Noch.'}</p></div>
+ <section class="box"><div class="toolbar"><button class="btn" data-action="army:treatall">ALLE BEHANDELN · MEDICUS</button><button class="btn" data-action="army:replace">TEAM VERLETZTE ERSETZEN</button><button class="btn" data-action="nav:automation">EINSATZREGELN</button></div><p class="tiny">Kasse ${fmt(S.gold)} Gold · Natürlich heilt am Ruhetag, Behandlungen wirken sofort und vier Tage lang. Verlorenes wächst nicht nach.</p></section>
+ <div class="medic-files medic-ward">${list.map((g,i)=>wardFile(g,i+1)).join('')}</div>`;}
+const page=M.schoolPage;M.schoolPage=p=>{if(p==='medic'&&ward()&&!TEST)return wardPage();const html=page(p);if(p!=='medic'||!['medic','s12','end','free'].includes(st().stage)||!recs().length)return html;setTimeout(()=>{for(const c of document.querySelectorAll('.medic-files canvas[data-face]')){const g=byId(c.dataset.face);if(g)M.renderPortrait(c,g,{unarmored:true});}},0);
  return `<div class="medic-files"><p class="eyebrow">AKTEN DER FÜNF · WAS EINE BEHANDLUNG BRINGEN WÜRDE</p>${recs().map((g,i)=>dossier(g,i+1)).join('')}<p class="tiny">Darunter folgt das unveränderte Krankenhausmenü des Spiels. Die Behandlungsknöpfe dort sind die echten.</p></div>`+html;};
 
 // ---------- Testumgebung: eigener, flüchtiger Spielstand direkt nach dem Löwenkampf ----------
