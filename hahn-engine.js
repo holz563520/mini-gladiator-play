@@ -438,18 +438,19 @@ function treat(R, tier) {
   R.blood = Math.min(100, R.blood + tier * 15);
   return tier ? 'Behandlung begonnen. Zusätzliche Heilung an den nächsten vier Tagen.' : 'Natürliche Heilung gewählt.';
 }
+const HEAL_SPEED = 3; // Heilung dreimal so schnell wie früher (wie bei den Menschen)
 function dayFor(R, hospital) {
   hospital = hospital || 0;
   if (R.dead) return;
   R.fatigue = Math.max(0, R.fatigue - 14 - hospital);
-  R.blood = Math.min(100, R.blood + 12);
+  R.blood = Math.min(100, R.blood + 12 * HEAL_SPEED);
   const tr = R.healing;
   for (const p of Object.values(R.body)) {
     if (p.missing) continue;
     const before = p.hp;
-    const heal = 3 + hospital + (tr ? [0, 7, 16, 26][tr.tier] : 0);
+    const heal = (3 + hospital + (tr ? [0, 7, 16, 26][tr.tier] : 0)) * HEAL_SPEED;
     p.hp = Math.min(100 - p.chronic, p.hp + heal);
-    p.pain = Math.max(0, p.pain - heal * 0.7); p.bleed = Math.max(0, p.bleed - 4); p.grade = injuryGrade(p);
+    p.pain = Math.max(0, p.pain - heal * 0.7); p.bleed = Math.max(0, p.bleed - 4 * HEAL_SPEED); p.grade = injuryGrade(p);
     if (p.hp >= 90 - p.chronic) p.injury = p.chronic ? 'Dauerhafte Einschränkung' : '';
     // sichtbare Wunden verheilen mit dem Körperteil
     const gained = p.hp - before;
