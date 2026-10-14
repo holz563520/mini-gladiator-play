@@ -98,7 +98,7 @@ function head(q,T,C,o,yaw,t,mood){
  poly([[6,24],[10,22],[20,22],[23,25],[19,26],[8,26]],P.shadow);
  const blink=(t%4.4)<.12&&m.open>.2,open=blink?0:m.open,look=m.dart?Math.round(Math.sin(t*5.5)*2):Math.round(yaw*1.6),eyeY=27;
  function eye(x,far){
-  const w=far?10:12,up=m.uneven&&far?-2:0,yy=eyeY+up,eh=open<.2?0:Math.max(1,Math.round(open*3)),dx=m.cross?(far?-2:2):look;
+  const w=far?10:12,up=m.uneven&&far?-2:0,yy=eyeY+up,eh=open<.2?0:Math.max(1,Math.round(open*3)),dx=(m.cross||o.crossEyes)?(far?-2:2):look;
   if(eh===0){R(x+1,yy+1,w-2,1,P.deep);R(x+2,yy+2,w-4,1,P.half);}
   else{
    R(x+1,yy-1,w-2,eh+3,P.shadow);R(x,yy,w,1,P.deep);R(x+1,yy+1,w-2,eh,'#c6b89c');R(x+2,yy+1,w-4,Math.max(1,eh-1),'#e0d4b7');
@@ -259,4 +259,27 @@ function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createEl
  if(o.lines>0){/* Schrei: Linien vom Rand zur Mitte */g.save();g.globalAlpha=cl(o.lines)*.75;g.strokeStyle='#fff6dc';g.lineWidth=Math.max(2,w/160);for(let i=0;i<18;i++){const a=i/18*Math.PI*2+Math.floor(t*14)*.37,r0=Math.max(w,h)*.74,r1=Math.max(w,h)*(.4+((i*7)%5)*.035);g.beginPath();g.moveTo(w/2+Math.cos(a)*r0,h*.45+Math.sin(a)*r0);g.lineTo(w/2+Math.cos(a)*r1,h*.45+Math.sin(a)*r1);g.stroke();}g.restore();}
  const vg=g.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.62)');g.fillStyle=vg;g.fillRect(0,0,w,h);}
 M.faceShot={paint,moods:Object.keys(MOODS),FW,FH,version:'helmet-lab-v4'};
+M.faceShot.paintHead=(q,actor,o={},t=0)=>{const A=actor?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';const C={identity:actor?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};head(q,tools(q),C,{...o,g:actor,armor:o.armor||{}},o.yaw||0,t,o.mood||'calm');};
 })();
+
+// Hühnerhändlerin: besondere Großaufnahme im Stil des gemeinsamen Kopf-Renderers.
+(()=>{'use strict';const M=window.MG,buffers=new WeakMap(),mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+function setup(g){let b=buffers.get(g.canvas);if(!b){b={canvas:mk(240,156)};buffers.set(g.canvas,b)}const q=b.canvas.getContext('2d');q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,240,156);q.imageSmoothingEnabled=false;const R=(x,y,w,h,c)=>{q.fillStyle=c;q.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)))};const line=(x,y,xx,yy,c,width=1)=>{const n=Math.ceil(Math.max(Math.abs(xx-x),Math.abs(yy-y)));for(let i=0;i<=n;i++)R(x+(xx-x)*i/(n||1),y+(yy-y)*i/(n||1),width,width,c)};return {...b,q,R,line};}
+function finish(g,w,h,b,t,shake=0){g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#171512';g.fillRect(0,0,w,h);const s=Math.min(w/240,h/156),dx=(w-240*s)/2,dy=(h-156*s)/2;g.drawImage(b.canvas,Math.round(dx+Math.sin(t*47)*shake*s),Math.round(dy+Math.cos(t*39)*shake*.5*s),240*s,156*s);}
+function room(b,kind,t){const {q,R}=b;R(0,0,240,156,'#504535');for(let y=0;y<156;y+=16)for(let x=(y%32?-15:0);x<240;x+=32){R(x+1,y+1,30,14,'#635a45');R(x+1,y+1,30,1,'#746c54');}const v=q.createRadialGradient(120,72,30,120,72,150);v.addColorStop(0,'#00000000');v.addColorStop(1,'#00000088');q.fillStyle=v;q.fillRect(0,0,240,156);}
+function body(b,actor,kind){const {R}=b;for(let y=109;y<156;y++){const hw=Math.min(93,26+(y-109)*2.5);R(120-hw,y,hw*2,1,'#587446');R(120+hw*.45,y,hw*.55,1,'#354b31');}}
+function raw(b,actor,o,t,x=40,y=22,scale=1){b.q.save();b.q.translate(x,y);b.q.scale(scale,scale);M.faceShot.paintHead(b.q,actor,o,t);b.q.restore();}
+function seller(g,w,h,actor,t,o={}){const b=setup(g),{q,R,line}=b;room(b,'seller',t);body(b,actor,'seller');const hair='#c9562a',dark='#74301e',hi='#ed9550';
+ // Sculpted, individually shaded copper curls; same fixed silhouette from frame to frame.
+ for(let i=0;i<38;i++){const a=i/38*Math.PI*2,x=120+Math.cos(a)*(39+(i%3)*2),y=78+Math.sin(a)*(43+(i%4));const n=6+i%4;R(x-n,y-n,n*2,n*2,dark);R(x-n+1,y-n+1,n*2-3,n*2-3,hair);R(x-n+2,y-n+1,n,2,hi);R(x-2,y-2,n,2,dark);R(x-2,y-2,2,n,dark);}
+ raw(b,actor,{mood:o.mood||'grin',armor:{},crossEyes:true,yaw:0},t,40,43);
+ // Frame the face with separate locks, earrings and fine feather shafts.
+ for(const side of [-1,1]){for(let i=0;i<5;i++){const x=120+side*(28+i*.9),y=68+i*9;R(x-2,y,5,11,dark);R(x-2,y,2,8,hi);}const x=120+side*32;R(x-4,105,8,12,'#623e23');R(x-3,105,6,2,'#edc465');R(x-3,115,6,2,'#bc8b39');R(x-4,107,2,8,'#dba84b');R(x+2,107,2,8,'#aa7831');}
+ for(const side of [-1,1])for(let i=0;i<3;i++){const x=120+side*(25+i*4),y=49-i*5;line(x,y,x+side*13,y-20,'#c9b585');for(let j=0;j<9;j++){line(x+side*j,y-j*1.5,x+side*(j+5),y-j*1.5-4,i%2?'#e5d6ba':'#c78641');}}
+ // Small brooding hen: shaded breast, layered wing, comb and amber beak.
+ const hy=25+Math.round(Math.sin(t*2)*.5);for(let y=0;y<16;y++){const hw=14*Math.sqrt(Math.max(0,1-Math.pow((y-8)/9,2)));R(120-hw,hy+y,hw*2,1,y<5?'#f5e9cd':y>12?'#a59678':'#d8c9a6');}R(108,hy+5,13,2,'#f5ecd8');for(let i=0;i<5;i++)line(113+i*2,hy+7,117+i*2,hy+13,'#b7aa8d');R(128,hy-5,9,11,'#e8dbbb');R(128,hy-5,3,7,'#faf0d5');R(136,hy-1,6,3,'#db9a38');R(133,hy-2,2,2,'#28221c');R(133,hy-2,1,1,'#fff4d5');R(130,hy-8,6,3,'#ac3d32');R(131,hy-10,2,3,'#d1503f');R(135,hy+3,2,4,'#a53c31');for(let i=0;i<4;i++)line(108,hy+7,101-i,hy-2+i*3,i%2?'#c4b593':'#ede1c4');
+ for(let i=0;i<28;i++){const x=56+i*4.8,y=139+Math.sin(i*.6)*5+Math.sin(t*3+i)*.5,c=['#e4d5b6','#bb663a','#8f4633','#dfad55'][i%4];line(x,y+8,x+2,y-7,'#4e392a',2);for(let j=0;j<7;j++){line(x,y+j-5,x-3,y+j-8,c);line(x+1,y+j-5,x+5,y+j-8,c);}}
+ finish(g,w,h,b,t,o.shake?Math.sin(t*5)*.4:0);}
+M.sceneHeads={...(M.sceneHeads||{}),seller,version:'seller-head-v1'};
+})();
+

@@ -202,7 +202,7 @@ function crossEyes(c,t){const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.
   // Pupillen beide zur Nase: linkes Auge nach rechts unten, rechtes Auge nach links oben
   const px=i?x0:x0+(W-3)*P,py=i?y0+(wob>0?P:0):y0+(H-3)*P;R(px,py,3*P,3*P,'#160d0a');R(px+P,py,P,P,'#ffffff');});
  R(A.EYES[0][0]-7*P,A.EYES[0][1]-7*P,7*P,P,'#7e2f17');R(A.EYES[1][0]-3*P,A.EYES[1][1]-4*P-wob*P,7*P,P,'#7e2f17');}
-A.sellerFace=function(g,w,h,t,o={}){const {R}=painter(g);faceCv??=mk(660,420);const fc=faceCv.getContext('2d');fc.clearRect(0,0,660,420);
+A.sellerFace=function(g,w,h,t,o={}){if(M.sceneHeads?.seller){M.sceneHeads.seller(g,w,h,A.sellerG(),t,o);return;}const {R}=painter(g);faceCv??=mk(660,420);const fc=faceCv.getContext('2d');fc.clearRect(0,0,660,420);
  try{M.faceShot.paint(fc,660,420,{g:A.sellerG(),mood:o.mood||'grin',team:0,lines:o.lines||0,zoom:1,shake:o.shake||0,yaw:0},t);}catch(e){}
  crossEyes(fc,t);
  // Hintergrund
@@ -234,3 +234,4 @@ const SILLY_LAST=['Hosenlos','Kartoffelnase','Plattfuß','Wackelzahn','Dreiviert
 A.sillyName=r=>SILLY_FIRST[Math.floor(r()*SILLY_FIRST.length)]+' '+SILLY_LAST[Math.floor(r()*SILLY_LAST.length)];
 A.idiotLook=(g,r)=>{Object.assign(g.appearance,{cloth:['#8a7a5a','#7a6a4a','#9a8058','#6e6448'][Math.floor(r()*4)],style:3,beard:r()<.5?0:1,hair:'#6a4a2a'});g.scars=[];g.height=Math.round(168+r()*12);g.weight=Math.round(58+r()*10);return g;};
 })();
+
