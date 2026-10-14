@@ -117,7 +117,7 @@ async function buy(i){const m=market;if(!m||m.busy)return;const o=offer();if(o.s
 let pres=null;
 function present(R,opts={}){return new Promise(res=>{const v=document.createElement('div');v.className='hs-present';const cls=classOf(R),q=R.quality,pf=R.profile;
  v.innerHTML=`<div class="hs-pbox"><p class="hs-corner">${esc(opts.corner||'NEUER HAHN')}</p><div class="hs-pstage"><canvas width="320" height="200" class="px"></canvas><div class="hs-bubble"></div></div>
- <div class="hs-ptext q${q.tier}"><h2>${esc(R.name)}</h2><p class="hs-qual" style="color:${q.color}"><span>${stars(q.tier)}</span> ${esc(q.title)} · Qualität: ${esc(q.label)}</p><p class="hs-qcls">Klasse „${esc(cls.name)}“ · so ein Hahn kommt bei ${pctTxt(classP(cls))} aller Hähne vor</p>
+ <div class="hs-ptext q${q.tier}"><h2>${esc(R.name)}</h2><p class="hs-qual" style="color:${q.color}"><span>${stars(q.tier)}</span> ${esc(q.title)} · Qualität: ${esc(q.label)}</p><p class="hs-qcls">Klasse „${esc(cls.name)}“ · so ein Hahn kommt bei ${pctTxt(classP(cls))} aller Hähne vor</p>${M.buyOdds?.html('rooster',R)||''}
  <p class="hs-sum">${esc(pf.summary)}</p>${statTable(R,false)}<p class="hs-chips"><span>${esc(R.appearance.plumageName)}</span><span>${R.height} cm · ${f1(R.weight)} kg</span><span>${R.ageMonths} Monate</span><span>KW ${kw(R)}</span><span>Bevorzugt: ${esc(pf.favoriteMoveLabel)}</span></p></div>
  <div class="hs-pact"><button class="btn" data-hs="pskip">ANIMATION ÜBERSPRINGEN</button><button class="btn primary" data-hs="pdone">${esc(opts.done||'IN DEN BESTAND ▸')}</button></div></div>`;
  document.body.appendChild(v);const cv=v.querySelector('canvas'),bub=v.querySelector('.hs-bubble'),txt=v.querySelector('.hs-ptext');
