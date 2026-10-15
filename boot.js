@@ -1,8 +1,8 @@
 'use strict';
 // Versionskennung: wird beim Veröffentlichen durch die Commit-Kennung ersetzt, damit Browser nach einem Update keine alten Dateien aus dem Zwischenspeicher nehmen.
-var BUILD='pixel2-direct-20261015';
+var BUILD='original-restored-20261015';
 (async()=>{
- const figureMode=new URLSearchParams(location.search).get('figures')||'pixel2';const figureTest=figureMode==='v4',pixel2=figureMode!=='original'&&!figureTest;
+ const figureMode=typeof URLSearchParams==='function'&&typeof location!=='undefined'?new URLSearchParams(location.search).get('figures')||'original':'original';const figureTest=figureMode==='v4',pixel2=figureMode==='pixel2'||figureMode==='pixel2-reference';
  const direct=pixel2&&figureMode!=='pixel2-reference';
  const cache=new Map(),pending=new Set();let db=null,error='';const marker='mini-gladiator-large-save-v1';
  try{if(!window.indexedDB)throw Error('IndexedDB unavailable');db=await new Promise((resolve,reject)=>{const req=indexedDB.open('mini-gladiator-saves',1);req.onupgradeneeded=()=>req.result.createObjectStore('profiles');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);req.onblocked=()=>reject(Error('Bitte andere Spiel-Tabs schließen und neu laden.'));});await new Promise((resolve,reject)=>{const tx=db.transaction('profiles','readonly'),req=tx.objectStore('profiles').openCursor();req.onsuccess=()=>{const cursor=req.result;if(cursor){cache.set(cursor.key,cursor.value);cursor.continue();}};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}
