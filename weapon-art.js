@@ -2,6 +2,8 @@
 (()=>{'use strict';const M=window.MG,cache=new Map(),MAX_CACHE=384,supported=new Set(M.weaponDefs.map(w=>w.id));let hits=0,misses=0,cachePixels=0;const TAU=Math.PI*2;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const lengths={dagger:16,short:26,gladius:30,long:38,greatsword:43};
+// Quality changes materials and ornament, never the blade's thickness.
+const bladeWidths={dagger:1,short:2,gladius:2,long:2,greatsword:2};
 const pole=['spear','trident','halberd','javelin'],axes=['axe','doubleaxe','throwaxe'],blunts=['club','mace','hammer'];
 const seed=s=>[...s].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,17);
 const noise=(x,y,k)=>{let v=Math.imul(x+139,k+73)^Math.imul(y+631,2246822519);v=Math.imul(v^(v>>>13),1274126177);return ((v^(v>>>16))>>>0)/4294967295};
@@ -13,11 +15,11 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,b=Math.
  const line=(x0,y0,x1,y1,color,hit=false)=>{const n=Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0)));for(let i=0;i<=n;i++)pix(x0+(x1-x0)*i/(n||1),y0+(y1-y0)*i/(n||1),color,hit)};
  function grip(x0,x1){rect(x0,-2,x1-x0,5,'#302c29');rect(x0,-1,x1-x0,3,wood);for(let x=x0;x<x1;x+=3){line(x,-1,x+2,1,q===0?'#b29363':'#ad8052')}rect(x0-2,-2,3,5,gold);pix(x0-1,-1,edge)}
  function shaft(n){rect(-12,-2,n+14,4,'#302c29');rect(-12,-1,n+14,2,wood);line(-10,-1,n,-1,'#b08a55');for(let x=-9;x<n-10;x+=9)pix(x,0,'#493628');grip(-9,8)}
- if(lengths[id]){const n=lengths[id],t=id==='greatsword'?2+Math.floor(q/3):(id==='dagger'?2:id==='gladius'?3:3)+Math.floor(q/3),end=12+n;
+ if(lengths[id]){const n=lengths[id],t=bladeWidths[id],end=12+n;
  grip(id==='greatsword'?-14:-7,7);rect(6,-(id==='greatsword'?9:5),3,id==='greatsword'?19:11,dark);rect(7,-(id==='greatsword'?9:5),1,id==='greatsword'?19:11,gold);
  poly([[9,-t],[end-6,-t],[end,0],[end-6,t+1],[9,t+1]],dark,true);poly([[10,-t+1],[end-6,-t+1],[end-1,0],[end-6,t],[10,t]],metal,true);
  line(10,-t+1,end-7,-t+1,edge,true);line(12,0,end-4,0,mid,true);line(end-7,-t+1,end-1,0,edge,true);line(10,t,end-7,t,'#4e5b60',true);
- if(id==='gladius'){poly([[14,-t],[20,-t-1],[26,-t],[26,0],[14,0]],metal,true);line(15,-t,21,-t,edge,true)}
+ if(id==='gladius'){poly([[14,-t+1],[20,-t],[26,-t+1],[26,0],[14,0]],metal,true);line(19,-t,21,-t,edge,true)}
  if(q>=3)for(let x=15;x<end-8;x+=6){pix(x,-1,gold,true);pix(x+1,0,gold,true)}
  if(q>=5){rect(5,-2,4,5,gold);rect(6,-1,2,2,look.gem||'#c66e4c');pix(6,-1,'#ffe0a0')}
  }else if(pole.includes(id)){const n=id==='javelin'?30:id==='halberd'?47:40;shaft(n-4);rect(n-9,-3,5,6,dark);rect(n-8,-2,3,4,gold);
@@ -36,7 +38,8 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,b=Math.
  if(stage>0){rect(0,-3,3,7,'#d6b767');pix(1,-2,stage===2?'#9edbcc':'#bc6f55')}
  const wetPoints=[];if(b>0&&mask.size){const points=[...mask].map(p=>p.split(',').map(Number)),xs=points.map(p=>p[0]),min=Math.min(...xs),max=Math.max(...xs),level=b/12;
  for(const [x,y]of points){const u=(x-min)/Math.max(1,max-min),n=noise(Math.floor(x/3),Math.floor(y/2),k),fine=noise(x,y,k+37),edgeBias=(Math.sin(x*.37+k)*.5+.5)*.16;
- const covered=u>.90-level*.70+edgeBias||n<level*.32&&u>.14;
+ // Swords keep a readable metal edge and a patchy stain near the tip.
+ const covered=lengths[id]?(u>.98-level*.38+edgeBias||n<level*.10&&u>.50):(u>.90-level*.70+edgeBias||n<level*.32&&u>.14);
  if(!covered||fine<.10-level*.05)continue;
  wetPoints.push([x,y]);const colors=dry?['#3f2021','#592326','#742b2d']:['#4b1d23','#851f2b','#b12b35'];const ix=fine>.78?2:fine>.25?1:0;pix(x,y,colors[ix]);if(!dry&&fine>.94&&level>.3)pix(x,y,'#e16b62');
  }

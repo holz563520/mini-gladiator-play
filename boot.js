@@ -1,6 +1,6 @@
 'use strict';
 // Versionskennung: wird beim Veröffentlichen durch die Commit-Kennung ersetzt, damit Browser nach einem Update keine alten Dateien aus dem Zwischenspeicher nehmen.
-var BUILD='original-restored-20261015';
+var BUILD='sword-tuning-20261015';
 (async()=>{
  const figureMode=typeof URLSearchParams==='function'&&typeof location!=='undefined'?new URLSearchParams(location.search).get('figures')||'original':'original';const figureTest=figureMode==='v4',pixel2=figureMode==='pixel2'||figureMode==='pixel2-reference';
  const direct=pixel2&&figureMode!=='pixel2-reference';
