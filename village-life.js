@@ -76,7 +76,8 @@ function update(list,dt){dt=Math.max(0,Math.min(.1,dt));if(people!==list||roster
  pedestrians(dt);talk(dt);dogUpdate(dt);
  if(speech&&clock>=speech.until)speech=null;caption(speech?`${speech.a.g.name}: „${speech.text}“`:'');
 }
-function drawDog(ctx){const facing=Math.cos(dog.a)>=0?1:-1,walk=dog.state==='walk'||dog.state==='approach',sniff=dog.state==='sniff',sick=dog.state==='vomit',pee=dog.state==='pee',step=walk?Math.sin(dog.phase)*3:0;
+function drawDog(ctx){if(window.PixelLive)return PixelLive.paint(ctx,dog.x,dog.y,()=>drawDogVector(PixelLive.context));return drawDogVector(ctx);}
+function drawDogVector(ctx){const facing=Math.cos(dog.a)>=0?1:-1,walk=dog.state==='walk'||dog.state==='approach',sniff=dog.state==='sniff',sick=dog.state==='vomit',pee=dog.state==='pee',step=walk?Math.sin(dog.phase)*3:0;
  ctx.save();for(const s of dog.stains){ctx.globalAlpha=Math.min(.45,s.life/12);ctx.fillStyle=s.color;ctx.fillRect(s.x-5,s.y,10,2);}ctx.globalAlpha=1;ctx.translate(Math.round(dog.x),Math.round(dog.y));ctx.scale(facing,1);
  const r=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h);};r(-14,0,30,3,'#26332d55');
  for(const [x,phase]of [[-9,1],[8,-1]]){r(x+step*phase,-8,3,9,'#594432');if(!(pee&&x<0))r(x-2-step*phase,-7,3,8,'#8d6745');}if(pee){r(-12,-10,7,3,'#a17d51');for(let n=0;n<4;n++)r(-15-n*2,-7+n*2+Math.sin(dog.phase*3+n),2,1,'#dcc365');}
