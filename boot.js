@@ -1,7 +1,11 @@
 'use strict';
 // Versionskennung: wird beim Veröffentlichen durch die Commit-Kennung ersetzt, damit Browser nach einem Update keine alten Dateien aus dem Zwischenspeicher nehmen.
-var BUILD='figure-surfaces-20261015';
+var BUILD='direct-start-20261015';
 (async()=>{
+ // Dismiss an intro left by an older HTML entry point before loading the game.
+ try{window.ArenaTheoryIntro?.finish?.();}catch{}
+ document.getElementById('brandIntro')?.remove?.();
+ window.ArenaTheoryIntro={active:()=>false,finish(){}};
  const figureMode=typeof URLSearchParams==='function'&&typeof location!=='undefined'?new URLSearchParams(location.search).get('figures')||'original':'original';const figureTest=figureMode==='v4',pixel2=figureMode==='pixel2'||figureMode==='pixel2-reference';
  const direct=pixel2&&figureMode!=='pixel2-reference';
  const cache=new Map(),pending=new Set();let db=null,error='';const marker='mini-gladiator-large-save-v1';
