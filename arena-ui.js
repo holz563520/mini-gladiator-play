@@ -89,16 +89,16 @@ function beast(){setTitle('BEAST · TIERKÄMPFE');
   if(!s.ok||lockMsg(s.key))ART.locked(ctx);}));}
 
 // ---------- 3 · Gruppe und Herausforderungen ----------
-function signature(units){return U.mode+'|'+U.species+'|'+units.map(u=>u.key+':'+health(u)).join(',');}
-function ensureChallenges(units,force){const sig=signature(units);if(!force&&U.chall&&U.sig===sig)return;U.sig=sig;U.chall=[];ART.clearFigures();stopSpy();}
+function signature(units){return U.mode+'|'+U.species+'|'+CH.signature(units);}
+function ensureChallenges(units,force){const sig=signature(units);if(!force&&U.chall&&U.sig===sig)return;challengeJob++;U.sig=sig;U.chall=[];ART.clearFigures();stopSpy();}
 let challengeJob=0;
-const shownLevels=()=>U.more?[CH.LEVELS[0],CH.LEVELS[4]]:CH.LEVELS.slice(1,4);
-function fillChallenges(units){const job=++challengeJob;if(!units.length)return;const levels=shownLevels(),missing=[];
- for(const level of levels)for(let i=(U.chall||[]).filter(c=>c.level.key===level.key).length;i<4;i++)missing.push(level);
+const shownLevels=()=>U.more?CH.LEVELS.slice(3):CH.LEVELS.slice(0,3);
+function fillChallenges(units){const job=++challengeJob;if(!units.length)return;const levels=CH.LEVELS,missing=[];
+ for(const level of levels)for(let i=(U.chall||[]).filter(c=>c.level.key===level.key).length;i<4;i++)missing.push({level,variant:i});
  const hint=view.querySelector('.an-generating');if(hint){hint.textContent=missing.length?'Gegner werden vorbereitet …':'';hint.hidden=!missing.length;}
- function step(){if(job!==challengeJob||root.hidden||U.screen!=='hub'||U.sig!==signature(units))return;const level=missing.shift();if(!level)return;
-  const cross=CH.CROSS;if(C.cross!=null)CH.CROSS=C.cross;let c;try{c=CH.make(units,U.mode,Math.floor(Math.random()*1e9),[level])[0];}finally{CH.CROSS=cross;}
-  if(c){U.chall.push(c);const cards=view.querySelector('.an-cards');if(cards){cards.insertAdjacentHTML('beforeend',card(c,U.chall.length-1));const el=cards.lastElementChild;if(el?.dataset.id===c.id)el.querySelector('.art').appendChild(groupArt(c.enemy,300,120));}}
+ function step(){if(job!==challengeJob||root.hidden||U.screen!=='hub'||U.sig!==signature(units))return;const slot=missing.shift();if(!slot)return;const {level,variant}=slot;
+  const cross=CH.CROSS;if(C.cross!=null)CH.CROSS=C.cross;let c;try{c=CH.make(units,U.mode,Math.floor(Math.random()*1e9),[level],{variant,previous:U.chall.filter(c=>CH.LEVELS.indexOf(c.level)*4+(c.variant??0)<CH.LEVELS.indexOf(level)*4+variant).sort((a,b)=>b.ratio-a.ratio)[0]})[0];}finally{CH.CROSS=cross;}
+  if(c){U.chall.push(c);U.chall.sort((a,b)=>a.ratio-b.ratio);const cards=view.querySelector('.an-cards');if(cards){cards.insertAdjacentHTML('beforeend',card(c,U.chall.length-1));const el=cards.lastElementChild;if(el?.dataset.id===c.id)el.querySelector('.art').appendChild(groupArt(c.enemy,300,120));}}
   const status=view.querySelector('.an-generating');if(status){status.textContent=missing.length?'Gegner werden vorbereitet …':'';status.hidden=!missing.length;}if(missing.length)requestAnimationFrame(step);}
  if(missing.length)requestAnimationFrame(step);}
 const allChall=()=>[...(U.extra||[]),...(U.chall||[])];
@@ -110,9 +110,9 @@ function hub(){const units=team(),all=pool().map(withKey);ensureChallenges(units
   <div class="an-team">${units.map(u=>`<div class="an-chip" data-key="${u.key}"><span class="th"></span><b>${esc(name(u))}</b><small>${esc(roleOf(u))} · KW ${CH.kw(u)}</small><i class="an-hpbar"><i style="width:${health(u)}%"></i></i><em class="row ${u.row}">${u.row==='front'?'1. Reihe':'2. Reihe'}</em></div>`).join('')||'<p class="an-empty">Niemand einsatzbereit. Lass einen Tag vergehen.</p>'}</div>
   ${U.auto?`<p class="an-hint">Das Spiel stellt die stärksten einsatzbereiten ${U.mode==='human'?'Gladiatoren':'Tiere'} auf. Für eigene Wahl: MANUELL.</p>`:`<div class="an-roster">${all.map(u=>{const on=units.some(x=>x.key===u.key),f=fit(u);return `<button class="an-card${on?' on':''}${f?'':' unfit'}" data-a="${f?'pick:'+u.key:'unfit'}" data-key="${u.key}"><span class="th"></span><b>${esc(name(u))}</b><small>${esc(roleOf(u))}</small><span class="kw">KW ${CH.kw(u)}</span><i class="an-hpbar"><i style="width:${health(u)}%"></i></i>${f?'':'<em>verletzt</em>'}</button>`;}).join('')}</div><p class="an-hint">${units.length}/${U.size} gewählt · Antippen wählt aus oder ab.</p>`}
  </section>
- <section class="an-chall"><header><p class="eyebrow">Herausforderungen</p><button class="an-link" data-a="reroll">↻ andere Gegner</button></header>
+ <section class="an-chall"><header><p class="eyebrow">Herausforderungen · von einfach nach schwer</p><button class="an-link" data-a="reroll">↻ andere Gegner</button></header>
    <div class="an-cards">${(U.chall||[]).map((c,i)=>card(c,i)).join('')}</div><p class="an-hint an-generating" role="status"></p>
-  <div class="an-switch"><button data-a="more" class="${U.more?'on':''}">${U.more?'◂ Leicht · Ausgeglichen · Schwer':'Sehr leicht & Extrem ▸'}</button></div></section>
+  <div class="an-switch"><button data-a="more" class="${U.more?'on':''}">${U.more?'◂ Extrem einfach · Leicht · Ausgeglichen':'Schwer · Extrem schwer ▸'}</button></div></section>
  ${U.extra.length?`<section class="an-chall an-special"><header><p class="eyebrow">Besondere Herausforderung</p></header><div class="an-cards">${U.extra.map(c=>card(c,-1)).join('')}</div></section>`:''}`;
  view.querySelectorAll('.an-chip,.an-card').forEach(el=>{const u=all.find(x=>x.key===el.dataset.key);if(u)el.querySelector('.th').appendChild(unitThumb(u,40,46));});
  view.querySelectorAll('.an-ccard').forEach(el=>{const c=allChall().find(x=>x.id===el.dataset.id);el.querySelector('.art').appendChild(groupArt(c.enemy,300,120));});fillChallenges(units);}
@@ -295,3 +295,4 @@ U.open=()=>{root.hidden=false;if(U.screen==='result'&&!U.result)U.screen='home';
 render();
 window.ARENA_UI_READY=true;
 })();
+

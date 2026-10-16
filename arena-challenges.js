@@ -21,11 +21,11 @@ const roosterScore=R=>Math.max(.05,CF.power(R)/20*Math.pow(Math.max(.4,R.weight)
 // Löwen: in 1056 Probekämpfen gegen 1–6 Menschen zählen vor allem Tempo und Zähigkeit, dann Zustand (Hinterlauf, Gesundheit, Hunger)
 const lionScore=L=>{const s=L.stats,c=L.condition;return Math.max(.05,Math.pow((2.62*s.tempo+2.42*s.zaeh)/5.04/50,.369)*Math.pow(cl(c.health/100,.05,1),.109)*Math.pow(.5+.5*cl(c.rear/100,0,1),.276)*Math.pow(1-cl(c.hunger,0,100)/400,.128));};
 function strength(u){
- if(u.kind==='human')return Math.pow(Math.max(5,M.power(u.g))/30,P.gamma);
- if(u.kind==='rooster')return P.cr*Math.pow(roosterScore(u.R),P.gr);
- return P.cl*Math.pow(lionScore(u.L),P.gl);}
+ if(u.kind==='human')return Math.pow(Math.max(.1,M.power(u.g))/30,P.gamma)*cl(u.g.blood/100,.005,1)*cl(1-u.g.fatigue/125,.2,1);
+ if(u.kind==='rooster')return P.cr*Math.pow(roosterScore(u.R),P.gr)*cl(u.R.blood/100,.005,1)*cl(1-u.R.fatigue/125,.2,1);
+ return P.cl*Math.pow(lionScore(u.L),P.gl)*cl(u.L.condition.blood/100,.05,1);}
 const kwOf=e=>Math.round(30*Math.pow(Math.max(1e-4,e),1/P.gamma));
-function kw(u){return u.kind==='human'?M.power(u.g):kwOf(strength(u));}
+function kw(u){return kwOf(strength(u));}
 const teamE=units=>units.reduce((n,u)=>n+strength(u),0);
 const teamKW=units=>units.reduce((n,u)=>n+kw(u),0);
 const pWin=(own,enemy)=>1/(1+Math.pow(teamE(enemy)/Math.max(1e-6,teamE(own)),P.k));
@@ -93,12 +93,17 @@ CH.TEMPLATES=TEMPLATES;
 
 // ---------- Fünf Schwierigkeitsstufen ----------
 const LEVELS=[
- {key:'sehrleicht',label:'Sehr leicht',ratio:.6,color:'#7fb49b',skulls:0},
- {key:'leicht',label:'Leicht',ratio:.82,color:'#a9c27a',skulls:1},
- {key:'ausgeglichen',label:'Ausgeglichen',ratio:1,color:'#dfb66d',skulls:2},
- {key:'schwer',label:'Schwer',ratio:1.22,color:'#d98a52',skulls:3},
- {key:'extrem',label:'Extrem',ratio:1.55,color:'#d0473e',skulls:4}];
+ {key:'sehrleicht',label:'Extrem einfach',ratio:.22,color:'#7fb49b',skulls:0},
+ {key:'leicht',label:'Leicht',ratio:.63,color:'#a9c27a',skulls:1},
+ {key:'ausgeglichen',label:'Ausgeglichen',ratio:1.05,color:'#dfb66d',skulls:2},
+ {key:'schwer',label:'Schwer',ratio:1.7,color:'#d98a52',skulls:3},
+ {key:'extrem',label:'Extrem schwer',ratio:2.85,color:'#d0473e',skulls:4}];
 CH.LEVELS=LEVELS;
+// Four distinct offers per level, twenty offers in the existing two views.
+const RATIOS=[[.12,.18,.25,.33],[.45,.57,.70,.84],[.94,1.02,1.10,1.18],[1.35,1.55,1.78,2.02],[2.30,2.60,3.00,3.50]];
+CH.levelRatio=(level,variant)=>RATIOS[LEVELS.indexOf(level)]?.[variant]??level.ratio;
+CH.signature=units=>JSON.stringify(units.map(u=>[u.key,u.row,u.kind==='human'?[u.g.stats,u.g.moves,u.g.mastery,u.g.body,u.g.blood,u.g.fatigue,u.g.height,u.g.weight,['weapon','secondary','shield'].map(k=>M.gear(u.g,k)),M.armorItems(u.g)]:u.kind==='rooster'?u.R:u.L]));
+
 // Welche Gegner zu welcher eigenen Gruppe passen (Tierkämpfe sollen nicht überwiegen)
 // Gegner meist von derselben Art wie die eigene Gruppe; Mensch gegen Tier (und umgekehrt) nur als Ausnahme (CH.CROSS = 5 % je Herausforderung)
 CH.CROSS=.05;
@@ -138,29 +143,67 @@ const DESC={
  2:['Auf Messers Schneide. Die Buchmacher streiten noch.','Gleich gegen gleich. Der Sand entscheidet.','Ein fairer Kampf – also einer, bei dem beide Seiten bluten.'],
  3:['Die Gegner sind besser. Die Prämie auch.','Wer hier gewinnt, wird besungen. Wer verliert, beerdigt.','Mutig. Oder dumm. Die Grenze ist im Sand nicht markiert.'],
  4:['Selbstmord mit Eintrittskarten.','Die Totengräber haben heute Überstunden angemeldet.','Hier gewinnt man Ruhm – oder einen Platz in der Hall of the Fallen.']};
-const BEAST_DESC={loewe:'Ein Löwe kennt keine Regeln, nur Hunger.',rudel:'Zwei Löwen. Einer allein wäre schon genug Ärger.',haehne:'Klein, gemein und erstaunlich gut bewaffnet.',baendiger:'Ein Mensch mit einem Tier an der Kette. Fragt sich, wer wen führt.'};
+const BEAST_DESC={loewe:'Ein Löwe kennt keine Regeln, nur Hunger.',rudel:'Mehrere Löwen. Ein einzelner wäre schon genug Ärger.',haehne:'Klein, gemein und erstaunlich gut bewaffnet.',baendiger:'Ein Mensch mit einem Tier an der Kette. Fragt sich, wer wen führt.'};
 
-// ---------- Herausforderungen erzeugen ----------
+// ---------- Target-matched fallback, using actual opponent stats and condition ----------
+function matchedGroup(r,target,N,kind){
+ let count=Math.max(1,N),best=null,error=Infinity;
+ for(let pass=0;pass<5;pass++){
+  const per=target/count,k=kwForE(per);
+  const enemy=Array.from({length:count},(_,i)=>{
+   const data=kind==='human'?gladiator(r,{q:qForKW(k),role:i%4===3?'Assassine':'Soldat'}):kind==='rooster'?rooster(r,{}):lion(r,{});
+   if(kind==='human'&&k<20)data.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};
+   return {...unit(kind,data,i),row:count>6&&i>=Math.ceil(count/2)?'back':'front'};
+  });
+  function set(t){const healthy=Math.min(1,t/.2),stat=1+Math.max(0,(t-.2)/.8)*99;
+   for(const u of enemy){
+    if(u.kind==='human'){const g=u.g;for(const group of [g.stats,g.moves,g.mastery])for(const key in group)group[key]=stat;
+     for(const p of Object.values(g.body)){p.strength=stat;p.agility=stat;}
+     g.blood=1+99*healthy;g.fatigue=100*(1-healthy);
+     if(g.caps){for(const group of ['stats','moves'])for(const key in g[group])g.caps[group][key]=Math.max(g.caps[group][key]||0,g[group][key]);for(const key in g.mastery)g.caps.weapons[key]=Math.max(g.caps.weapons[key]||0,g.mastery[key]);}
+    }else if(u.kind==='rooster'){const R=u.R;for(const group of ['stats','moves'])for(const key in R[group]){R[group][key]=stat;R.caps[group][key]=Math.max(R.caps[group][key],stat);}R.blood=1+99*healthy;R.fatigue=100*(1-healthy);
+    }else{const L=u.L;for(const key in L.stats)L.stats[key]=Math.min(99,stat);Object.assign(L.condition,{blood:5+95*healthy,health:10+90*healthy,rear:20+80*healthy,hunger:90*(1-healthy)});}
+   }
+   return teamE(enemy);
+  }
+  const low=set(0),high=set(1);
+  if(target>high*1.01&&count<60){count=Math.min(60,Math.max(count+1,Math.ceil(count*target/high)));continue;}
+  if(target<low*.99&&count>1){count=Math.max(1,Math.min(count-1,Math.floor(count*target/low)));continue;}
+  let lo=0,hi=1,chosen=0,above=null,aboveE=Infinity;
+  for(let i=0;i<26;i++){const mid=(lo+hi)/2,E=set(mid),d=Math.abs(Math.log(E/target));if(d<error){error=d;chosen=mid;}if(E>=target&&E<aboveE){above=mid;aboveE=E;}if(E<target)lo=mid;else hi=mid;}
+  const current=set(above??chosen),factor=Math.min(1,target/current);
+  for(const u of enemy){if(u.kind==='lion')u.L.condition.blood*=factor;else{const g=u.kind==='human'?u.g:u.R;g.fatigue=cl(125*(1-(1-g.fatigue/125)*factor),0,100);}}
+  best=enemy;break;
+ }
+ if(!best)throw Error('Keine passende Gegnergruppe erzeugt');
+ return best;
+}
+CH.matchedGroup=matchedGroup;
 let serial=0;
-function make(own,mode,seed,levels=LEVELS){
- const r=rngOf(seed||Date.now()),Eo=Math.max(.05,teamE(own)),N=own.length,ownKind=own.some(u=>u.kind==='lion')?'lion':own.some(u=>u.kind==='rooster')?'rooster':'human',used={},out=[];
- let animals=0;
-  for(const L of levels){
-   let best=null;const cross=N===10?false:r()<CH.CROSS;
-   for(let attempt=0;attempt<(N===10?4:40)&&!best;attempt++){
-    const ww=N===10?{gladiatoren:5,schuetzen:2}:weights(ownKind,cross&&attempt<30);for(const k in used)if(Object.keys(ww).length>1)ww[k]*=.3;
-   const tpl=weighted(r,ww),target=Eo*L.ratio*rnd(r,.94,1.06);let enemy=null;try{enemy=TEMPLATES[tpl].build(r,target,N);}catch(e){console.warn(e);}
-   if(!enemy||!enemy.length)continue;
-   const Ee=teamE(enemy);if(Math.abs(Math.log(Ee/target))>.16)continue;
-   best={tpl,enemy};}
-  if(!best&&ownKind==='rooster'){for(const n of [1,2,3,4,5,6,7,8,9,10]){const g=roosterGroup(r,Eo*L.ratio,n);if(g){best={tpl:'haehne',enemy:g};break;}}}
-  if(!best&&ownKind==='lion'){const g=lionGroup(r,Eo*L.ratio,1)||lionGroup(r,Eo*L.ratio,2);if(g)best={tpl:g.length>1?'rudel':'loewe',enemy:g};}
-   if(!best){let enemy=null;for(let n=Math.max(1,N);n<=Math.max(8,N)&&!enemy;n++)enemy=humanGroup(r,Eo*L.ratio,n);best={tpl:'gladiatoren',enemy:enemy||lionGroup(r,Eo*L.ratio,1)||[unit('human',gladiator(r,{q:0,kwTarget:20}),0)]};}
-  used[best.tpl]=(used[best.tpl]||0)+1;if(TEMPLATES[best.tpl].beast)animals++;
+function make(own,mode,seed,levels=LEVELS,options={}){
+ if(!own.length)return [];
+ const savedRng=S.rng;
+ try{
+ const r=rngOf(seed||Date.now()),Eo=Math.max(1e-6,teamE(own)),N=own.length,ownKind=own.some(u=>u.kind==='lion')?'lion':own.some(u=>u.kind==='rooster')?'rooster':'human',used={},out=[];
+ let previous=options.previous;
+ for(const L of levels){
+  const requested=options.variant==null?L.ratio:CH.levelRatio(L,options.variant),target=Eo*Math.max(requested,previous?previous.ratio*1.05:0);
+  let best=null;const cross=N===10?false:r()<CH.CROSS;
+  for(let attempt=0;attempt<(N===10?2:6)&&!best;attempt++){
+   const ww=N===10?{gladiatoren:5,schuetzen:2}:weights(ownKind,cross);for(const key in used)if(Object.keys(ww).length>1)ww[key]*=.3;
+   const tpl=weighted(r,ww);let enemy=null;try{enemy=TEMPLATES[tpl].build(r,target,N);}catch(e){console.warn(e);}
+   if(enemy?.length&&Math.abs(Math.log(teamE(enemy)/target))<.035)best={tpl,enemy};
+  }
+  if(!best){const enemy=matchedGroup(r,target,N,ownKind);best={tpl:ownKind==='human'?'gladiatoren':ownKind==='rooster'?'haehne':enemy.length>1?'rudel':'loewe',enemy};}
+  used[best.tpl]=(used[best.tpl]||0)+1;
   const p=pWin(own,best.enemy),g=gold(own,best.enemy,p),enemyE={};for(const u of best.enemy)enemyE[u.key]=strength(u);
-  out.push({id:'c'+(++serial)+'-'+Math.floor(r()*1e6).toString(36),level:L,tpl:best.tpl,label:TEMPLATES[best.tpl].label,name:pick(r,NAMES[best.tpl]),desc:(BEAST_DESC[best.tpl]?BEAST_DESC[best.tpl]+' ':'')+pick(r,DESC[LEVELS.indexOf(L)]),
-   enemy:best.enemy,enemyE,ownKW:teamKW(own),enemyKW:teamKW(best.enemy),ratio:teamE(best.enemy)/Eo,p,gold:g});}
- return out;}
+  if(previous){g.win=Math.max(g.win,previous.gold.win+5);g.lossMax=Math.max(g.lossMax,previous.gold.lossMax);}
+  const c={id:'c'+(++serial)+'-'+Math.floor(r()*1e6).toString(36),level:L,variant:options.variant??null,targetRatio:requested,tpl:best.tpl,label:TEMPLATES[best.tpl].label,name:pick(r,NAMES[best.tpl]),desc:(BEAST_DESC[best.tpl]?BEAST_DESC[best.tpl]+' ':'')+pick(r,DESC[LEVELS.indexOf(L)]),enemy:best.enemy,enemyE,ownKW:teamKW(own),enemyKW:teamKW(best.enemy),ratio:teamE(best.enemy)/Eo,p,gold:g};
+  out.push(c);previous=c;
+ }
+ return out;
+ }finally{S.rng=savedRng;}
+}
 CH.make=make;
 
 // ---------- Vorstellungstexte (schwarzer Humor erlaubt) ----------
@@ -174,3 +217,4 @@ CH.threat=(u,ownE)=>{const s=strength(u),rel=s/Math.max(.05,ownE);
  const L=u.L;return L.kind==='verletzt'?'Humpelt. Blutet. Ist trotzdem ein Löwe.':L.kind==='alt'?'Alt, müde und schlecht gelaunt – eine gefährliche Mischung.':L.kind==='hunger'?'Seit Tagen nichts gefressen. Sie sind sein Menü.':L.kind==='menschen'?'Hat Geschmack an Menschen gefunden. Er bevorzugt sie lebend.':L.kind==='koenig'?'Ein König der Wüste. Er verneigt sich vor niemandem – auch nicht vor dem Kaiser.':'Jung, schnell und völlig ohne Respekt.';};
 window.CHALLENGES_LOADED=true;
 })();
+

@@ -23,7 +23,7 @@ function place(units,team){
  const front=units.filter(u=>u.row!=='back'),back=units.filter(u=>u.row==='back'),out=[];
  const dir=team?-1:1,cx=team?780:260;
  [[front,55],[back,-75]].forEach(([list,off])=>{
-  const sp=list.map(u=>u.kind==='lion'?120:u.kind==='rooster'?58:80),tot=sp.reduce((a,b)=>a+b,0);let y=390-tot/2;
+  const sp=list.map(u=>u.kind==='lion'?120:u.kind==='rooster'?58:80),raw=sp.reduce((a,b)=>a+b,0),spacing=Math.min(1,440/raw),tot=raw*spacing;for(let i=0;i<sp.length;i++)sp[i]*=spacing;let y=390-tot/2;
   list.forEach((u,i)=>{y+=sp[i]/2;let a;
    if(u.kind==='human'){a=M.createCombatActor(u.g,team,out.length,80);a.x=cx+dir*(off+(u.g.role==='Fernkämpfer'?-35:u.g.role==='Soldat'?10:0));}
    else if(u.kind==='rooster'){a=H.roosterActor(u.R,team,out.length);a.x=cx+dir*(off+40);}
@@ -133,3 +133,4 @@ AN.headlessRun=function(spec,maxSeconds=AN.TMAX+60){
  S.battle=null;S.records=[];S.inventory=[];return out;};
 window.ARENA_CORE_LOADED=true;
 })();
+

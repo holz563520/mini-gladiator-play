@@ -438,7 +438,7 @@ function treat(R, tier) {
   R.blood = Math.min(100, R.blood + tier * 15);
   return tier ? 'Behandlung begonnen. Zusätzliche Heilung an den nächsten vier Tagen.' : 'Natürliche Heilung gewählt.';
 }
-const HEAL_SPEED = 3; // Heilung dreimal so schnell wie früher (wie bei den Menschen)
+const HEAL_SPEED = 6; // Hühner heilen doppelt so schnell wie im bisherigen Stand (3 → 6).
 function dayFor(R, hospital) {
   hospital = hospital || 0;
   if (R.dead) return;
@@ -476,8 +476,8 @@ const Healing = {
   daysToFull(R) {
     let worst = 0;
     for (const p of Object.values(R.body)) worst = Math.max(worst, (100 - p.chronic) - p.hp);
-    const perDay = 3 + (R.healing ? [0, 7, 16, 26][R.healing.tier] : 0);
-    return Math.max(Math.ceil(worst / perDay), Math.ceil((100 - R.blood) / 12));
+    const perDay = (3 + (R.healing ? [0, 7, 16, 26][R.healing.tier] : 0)) * HEAL_SPEED;
+    return Math.max(Math.ceil(worst / perDay), Math.ceil((100 - R.blood) / (12 * HEAL_SPEED)));
   }
 };
 // Kompatibilitäts-Alias
