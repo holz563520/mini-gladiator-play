@@ -36,7 +36,7 @@ function snapshot(source,spectator=false){
 function restore(){for(const [source,v]of views){for(const k of Object.keys(source))if(!(k in v.saved))delete source[k];Object.assign(source,v.saved);}views.clear();}
 function cancel(){restore();bout=null;speech=null;particles=[];next=clock+3;if(captionOwned){const el=document.getElementById('villageChatter');if(el)el.textContent='Im Hof: Schritte, Stahl und zweifelhafte Lebensweisheiten.';captionOwned=false;}}
 function score(a){const s=a.g.stats;return (s.strength+s.reflex+s.agility+s.block+s.experience)/5;}
-function move(a,p,dt,speed=42){const dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy),step=Math.min(d,speed*dt);a.moveSpeed=d>.5?speed:0;a.state=a.moveSpeed?'move':'idle';if(d>.1){a.x+=dx/d*step;a.y+=dy/d*step;a.a=Math.atan2(dy,dx);a.phase+=step*.16;}return d<step+.6;}
+function move(a,p,dt,speed=42){const x=a.x,y=a.y,phase=a.phase||0;const dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy),step=Math.min(d,speed*dt);a.moveSpeed=d>.5?speed:0;a.state=a.moveSpeed?'move':'idle';if(d>.1){a.x+=dx/d*step;a.y+=dy/d*step;a.a=Math.atan2(dy,dx);M.updateLocomotion(a,x,y,phase,dt,a.lanista?.7:.6);}return d<step+.6;}
 function route(v,dt){const p=v.route[0];if(!p){v.a.moveSpeed=0;return true;}if(move(v.a,p,dt))v.route.shift();return !v.route.length;}
 function start(){
  const free=list.filter(a=>available(a)&&!a.lanista&&held(a).id!=='fist'&&!M.villageLife?.state.chat?.pair.includes(a)&&M.villageLife?.state.dog.target!==a);
@@ -113,7 +113,7 @@ function contact(){
 }
 function tickPose(a,dt){
  for(const k of ['hit','facePain','guardTime','dodgeTimer','shoutTimer','practiceCheer','kickTimer','shieldBashTimer'])a[k]=Math.max(0,(a[k]||0)-dt);
- a.block=a.guardTime>0;a.energy=Math.min(100,a.energy+dt*6);M.combatResponses.tick(a,dt);a.phase+=dt*(a.practiceCheer>0?8:2);
+ a.block=a.guardTime>0;a.energy=Math.min(100,a.energy+dt*6);M.combatResponses.tick(a,dt);if(a.moveSpeed<=1)a.phase+=dt*(a.practiceCheer>0?8:2);
  if(a.swing>0)a.swing=Math.max(0,a.swing-dt);
  if(!a.fallTimer){a.x+=a.kx*dt;a.y+=a.ky*dt;a.kx*=Math.exp(-10*dt);a.ky*=Math.exp(-10*dt);if(a.dodgeTimer>0){a.x+=Math.cos(a.dodgeAngle)*16*dt;a.y+=Math.sin(a.dodgeAngle)*16*dt;}}
 }

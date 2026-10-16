@@ -43,7 +43,7 @@ const rnd=(lo,hi)=>lo+Math.random()*(hi-lo),pick=a=>a[Math.floor(Math.random()*a
 const busy=()=>S.battle||M.intro?.active?.()||window.ArenaTheoryIntro?.active?.()||M.forgeIntro?.scene||M.forgeVisuals?.scene||M.trader?.tutorial||['pending','scene','tutorial'].includes(M.forgeIntro?.stage?.())||!!M.workshop?.state.apprentice?.phase;
 const nearest=p=>road.reduce((best,n,i)=>distance(p,n)<distance(p,road[best])?i:best,0);
 function path(from,to){const out=[],n=road.length,forward=(to-from+n)%n,dir=forward<=n-forward?1:-1;let i=from;while(i!==to){i=(i+dir+n)%n;out.push({...road[i],node:i});}return out;}
-function move(a,p,dt,speed){const dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy),step=Math.min(d,speed*dt);a.moveSpeed=d>.5?speed:0;a.state=a.moveSpeed?'move':'idle';if(d>.5){a.x+=dx/d*step;a.y+=dy/d*step;if(Math.abs(dx)>.2)a.a=dx>0?0:Math.PI;a.phase=(a.phase||0)+step*.16;}return d<=speed*dt+.5;}
+function move(a,p,dt,speed){const x=a.x,y=a.y,phase=a.phase||0;const dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy),step=Math.min(d,speed*dt);a.moveSpeed=d>.5?speed:0;a.state=a.moveSpeed?'move':'idle';if(d>.5){a.x+=dx/d*step;a.y+=dy/d*step;if(Math.abs(dx)>.2)a.a=dx>0?0:Math.PI;if(M.updateLocomotion)M.updateLocomotion(a,x,y,phase,dt,a.lanista?.7:.6);else a.phase=phase+step*.16;}return d<=speed*dt+.5;}
 function stand(a){a.villageTalk=false;a.moveSpeed=0;a.state='idle';a.wind=0;a.swing=0;}
 function say(a,text,seconds=4){speech={a,text,until:clock+seconds};}
 function cancel(){chat=null;speech=null;dog.target=null;dog.state='idle';dog.left=2;for(const a of people)if(motions.has(a))stand(a);active=false;caption('');}

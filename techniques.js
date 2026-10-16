@@ -31,7 +31,7 @@ else if(p.key==='shieldBash'||p.key==='kick'){
  if(t>=windStart&&t<strikeStart){a.windMax=timing.wind;a.wind=strikeStart-t;}
  if(active){if(shield)a.shieldBashTimer=timing.swing*(1-swing);else a.kickTimer=timing.swing*(1-swing);a.state=shield?'shieldbash':'kick';contact=swing>.5?(swing-.5)*2:0;}endTime=strikeEnd+.4;
 }
-else if(p.key==='charge'){a.x=160+M.clamp((t-.3)/.85,0,1)*90;if(t>.3&&t<1.15){a.state='charge';a.moveSpeed=90;}if(t>=1.15&&t<1.65){a.swingKind='overhead';a.swingMax=.5;a.swing=1.65-t;contact=t>1.42?(t-1.42)*4:0;}}
+else if(p.key==='charge'){a.x=160+M.clamp((t-.3)/.85,0,1)*90;if(t>.3&&t<1.15){a.state='charge';a.moveSpeed=90/.85;a.gaitStride=M.walkStride(a.g,a.moveSpeed);a.phase=(a.x-160)*Math.PI*2/a.gaitStride;a.gaitForward=1;a.gaitDepth=0;}if(t>=1.15&&t<1.65){a.swingKind='overhead';a.swingMax=.5;a.swing=1.65-t;contact=t>1.42?(t-1.42)*4:0;}}
 else if(p.key==='sand'){const swing=M.clamp((t-.12)/.62,0,1),active=t>=.12&&t<.74;if(active){a.sandKick=.62*(1-swing);a.state='sandkick';a.previewSand=swing;contact=swing>.5?(swing-.5)*2:0;}if(t>.44&&t<1.65){dummy.wipeTimer=1.65-t;dummy.blindTimer=1.65-t;dummy.state='wipe';}}
 else if(p.key==='backstep'){const swing=M.clamp((t-.12)/.26,0,1),active=t>=.12&&t<.38;if(active){a.jumpTimer=.26*(1-swing);a.x-=swing*48;a.state='backstep';}}
 else if(p.key==='dodge'){const swing=M.clamp((t-.12)/.22,0,1),active=t>=.12&&t<.34;if(active){a.dodgeTimer=.22*(1-swing);a.y+=Math.sin(swing*Math.PI)*23;a.x-=Math.sin(swing*Math.PI)*14;}}
