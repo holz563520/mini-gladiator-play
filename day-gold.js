@@ -14,7 +14,7 @@ const M=window.MG;if(!M)return;const S=M.s,$=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const smithName=()=>M.workshop?.state?.master?.name||'Der Schmied';
 // ---------- Tageswechsel ----------
-let dawn=null,bypass=false,seen=null,seenS=null;
+let dawn=null,bypass=false,seen=null,seenS=null,dawnWaiters=[];
 const LINES=['Der nächste Tag.','Der nächste Tag. Alle leben noch. Fast alle.','Der nächste Tag. Das Bier ist warm, die Klingen kalt.','Der nächste Tag. Die Sonne geht auf. Leider auch über dir.','Der nächste Tag. Neue Narben, neue Chancen.'];
 function paintDawn(c,k,t){const g=c.getContext('2d'),W=c.width,H=c.height,R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};g.imageSmoothingEnabled=false;
  const mix=(a,b,u)=>'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*u)).join(',')+')',night=[[8,12,26],[18,24,46]],dawnC=[[64,52,98],[214,128,70]],day=[[120,170,196],[226,196,138]];
@@ -41,7 +41,7 @@ function paintDawn(c,k,t){const g=c.getContext('2d'),W=c.width,H=c.height,R=(x,y
 function playDawn(run,from){const v=document.createElement('div');v.className='mg-dawn';const before=run?S.day:from,line=LINES[Math.floor(Math.random()*LINES.length)];
  const cw=200,ch=Math.max(112,Math.min(440,Math.round(cw*innerHeight/Math.max(1,innerWidth))));v.innerHTML=`<canvas width="${cw}" height="${ch}"></canvas><div class="mg-dawn-text"><b>TAG ${before}</b><span class="mg-dawn-say"><i>${esc(smithName())}</i>„${esc(line)}“</span><small>Antippen überspringt</small></div>`;
  document.body.appendChild(v);const c=v.querySelector('canvas'),start=performance.now();let advanced=false,blocked='',done=false;M.sound?.('heavy');
- const finish=()=>{if(done)return;done=true;v.classList.add('out');setTimeout(()=>{v.remove();dawn=null;if(blocked)M.ui.notify?.(blocked);},450);};
+  const finish=()=>{if(done)return;done=true;v.classList.add('out');setTimeout(()=>{v.remove();dawn=null;for(const resume of dawnWaiters.splice(0))resume();if(blocked)M.ui.notify?.(blocked);},450);};
  const advance=()=>{if(advanced)return;advanced=true;const d0=run?S.day:from;if(run){bypass=true;try{run();}catch(e){console.error(e);}finally{bypass=false;}}/* Fehler im Tageswechsel dürfen die Animation nie anhalten */const n=$('notice');
   // Tagesbericht (Fenster „Tag n“) des Spiels schließen: die Animation ersetzt ihn
   const md=$('modal');if(md&&!md.hidden&&/^\s*Tag \d+/.test(md.querySelector('h2,h1,header')?.textContent||md.textContent.slice(0,12)))try{M.ui.close();}catch{}
@@ -98,6 +98,6 @@ function ledger(){const L=book(),sold=M.dailySold?.()||0,fit=S.roster.filter(g=>
  <h3>Seit Spielbeginn</h3><dl><dt>Verdient</dt><dd class="plus">+${f(st.earned||0)}</dd><dt>Ausgegeben</dt><dd class="minus">−${f(st.spent||0)}</dd></dl>
  <p class="tiny">Einnahmen und Ausgaben heute: alle Goldbewegungen seit Tagesbeginn, auch der Sold beim Tageswechsel.</p></div>`);
  const c=document.querySelector('.mg-ledger .mg-coin');if(c){let sp=0;(function spin(){if(!c.isConnected)return;sp+=.12;coin(c,sp,performance.now()/1000);requestAnimationFrame(spin);})();}}
-M.dayGold={playDawn,ledger};
+M.dayGold={playDawn,ledger,afterDawn:()=>dawn?new Promise(resolve=>dawnWaiters.push(resolve)):Promise.resolve()};
 window.DAY_GOLD_READY=true;
 })();
