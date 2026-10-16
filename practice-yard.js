@@ -74,19 +74,19 @@ function beginStrike(){
  a.technique=f.final?'overhead':chooseTechnique(a,w);a.lastTechnique=a.technique;a.attackVariant=((a.attackVariant??-1)+1)%3;
  events.techniques[a.technique]=(events.techniques[a.technique]||0)+1;
  const special=['kick','shieldBash'].includes(a.technique),chain=a.practiceChain>0;
- a.windMax=a.lanista?.22:cl((special?.2:(.20+w.weight*.035)*(1-a.g.stats.reflex*.003)+(a.technique==='overhead'?.14:0))*(chain?.6:1),.14,.65);
- a.wind=a.windMax;a.state='attack';f.contact=false;f.followup=null;
+ a.windMax=a.lanista?.12:cl((special?.2:(.20+w.weight*.035)*(1-a.g.stats.reflex*.003)+(a.technique==='overhead'?.14:0))*(chain?.6:1)*.68,.09,.38);
+ a.wind=0;a.state='guard';f.contact=false;f.followup=null;
  // Close the distance for a kick or shield, and allow long weapons more room.
  const gap=special?27:cl((w.range+18)*.62,36,76);
  f.orbit=cl((f.orbit||0)+rnd(-.24,.24),-.4,.4);
  f.slots=[-1,1].map(side=>({x:445+Math.cos(f.orbit)*gap/2*side,y:470+Math.sin(f.orbit)*gap/2*side}));
- f.stage='position';f.left=.8;events.steps++;
- b.block=true;b.guardTime=a.windMax+.8;
+ f.stage='position';f.left=.32;events.steps++;
+ b.block=true;b.guardTime=a.windMax+.35;
 }
 function releaseStrike(){
  const f=bout,a=f.pair[f.turn],w=held(a),kind=a.technique;
  a.moveSpeed=0;a.wind=0;a.energy=Math.max(0,a.energy-(kind==='kick'?12:kind==='shieldBash'?16:kind==='spin'?15:5+w.weight*.7));
- f.duration=kind==='kick'?.48:kind==='shieldBash'?.44:kind==='overhead'?.5:kind==='spin'?.52:w.weight>=5?.44:.3;
+ f.duration=kind==='kick'?.48:kind==='shieldBash'?.44:kind==='overhead'?.36:kind==='spin'?.38:w.weight>=5?.32:.24;
  f.left=f.duration;f.stage='swing';a.swingKind=kind;
  if(kind==='kick'){a.kickTimer=.48;a.state='kick';}
  else if(kind==='shieldBash'){a.shieldBashTimer=.44;a.state='shieldbash';}
@@ -131,13 +131,13 @@ function update(actors,dt){
  }else if(f.stage==='greet'){
   f.left-=dt;if(f.left<=0){if(!f.owner&&!f.reply){f.reply=true;say(pick(f.crowd.length?f.crowd:[f.pair[1]]),'reply',3.3,true);f.left=1.8;}else beginStrike();}
  }else if(f.stage==='position'){
-  f.left-=dt;let ready=true;for(let i=0;i<2;i++)if(!move(f.pair[i],f.slots[i],dt,38))ready=false;face();
-  if(ready||f.left<=0){for(const a of f.pair){a.moveSpeed=0;a.state='guard';}f.pair[f.turn].state='attack';f.stage='wind';}
+  f.left-=dt;let ready=true;for(let i=0;i<2;i++)if(!move(f.pair[i],f.slots[i],dt,65))ready=false;face();
+  if(ready||f.left<=0){for(const a of f.pair){a.moveSpeed=0;a.state='guard';}f.pair[f.turn].state='attack';f.pair[f.turn].wind=f.pair[f.turn].windMax;f.stage='wind';}
  }else if(f.stage==='wind'){
   const a=f.pair[f.turn];a.wind=Math.max(0,a.wind-dt);if(!a.wind)releaseStrike();
  }else if(f.stage==='swing'){
   f.left=Math.max(0,f.left-dt);if(!f.contact&&f.left<=f.duration*.52)contact();
-  if(f.stage==='swing'&&f.left===0){f.stage='recover';f.left=f.followup==='counter'?.16:f.followup==='combo'?.12:rnd(.28,.55);}
+  if(f.stage==='swing'&&f.left===0){f.stage='recover';f.left=f.followup==='counter'?.08:f.followup==='combo'?.06:rnd(.12,.22);}
  }else if(f.stage==='recover'){
   f.left-=dt;for(let i=0;i<2;i++)move(f.pair[i],f.slots[i],dt,13);face();
   if(clock>=f.nextCheer&&f.crowd.length&&!speech){say(pick(f.crowd),'cheer');f.nextCheer=clock+rnd(4.5,7);}
