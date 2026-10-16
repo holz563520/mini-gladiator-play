@@ -4,7 +4,7 @@
 // · Kampfwert (KW) aller Kämpfer auf einer Skala: Menschen = M.power (Kampfwert des Spiels),
 //   Hähne und Löwen als „gleich starker Mensch“ (in Probekämpfen mit dem echten Kampfsystem geeicht, tests/calibrate.cjs)
 // · Gruppenstärke E = Σ (KW/30)^γ, Siegchance-Schätzung p = 1 / (1 + (E_Gegner/E_eigen)^k)
-// · Fünf Herausforderungen je Gruppe: Gegner werden so gebaut, dass E_Gegner ≈ Faktor × E_eigen
+// · Herausforderungen je Schwierigkeitsstufe: Gegner werden so gebaut, dass E_Gegner ≈ Faktor × E_eigen
 // · Gold: Siegprämie aus Gegnerstärke, Siegchance und Tödlichkeit; Antrittsgeld nur anteilig nach geleistetem Kampf
 // =====================================================================================================
 (()=>{
@@ -75,16 +75,16 @@ Object.assign(CH,{gladiator,tune,lion,scaleLion,rooster,LION_KINDS});
 const unit=(kind,data,i)=>({kind,key:'e'+i+'-'+Math.floor(Math.random()*1e6).toString(36),row:'front',[kind==='human'?'g':kind==='rooster'?'R':'L']:data});
 const kwForE=e=>30*Math.pow(e,1/P.gamma);
 const qForKW=k=>cl((k-33)/14,0,6);
-function humanGroup(r,E,n,roles){const out=[];for(let i=0;i<n;i++){const k=kwForE(E/n);if(k<16||k>160)return null;const role=roles?roles[i%roles.length]:(i>0&&r()<.25?pick(r,['Assassine','Fernkämpfer']):'Soldat');out.push(unit('human',gladiator(r,{q:qForKW(k),role,kwTarget:k}),i));}
- for(const u of out)if(u.g.role==='Fernkämpfer')u.row='back';return out;}
+function humanGroup(r,E,n,roles){const out=[];for(let i=0;i<n;i++){const k=kwForE(E/n);if(n!==10&&(k<16||k>160))return null;const role=roles?roles[i%roles.length]:(i>0&&r()<.25?pick(r,['Assassine','Fernkämpfer']):'Soldat');out.push(unit('human',gladiator(r,{q:qForKW(k),role,kwTarget:k}),i));}
+ out.forEach((u,i)=>{if(u.g.role==='Fernkämpfer'||n===10&&i>=5)u.row='back';});return out;}
 function roosterGroup(r,E,n){const per=E/n,score=Math.pow(per/P.cr,1/P.gr);// gesuchte Hahnenstärke
  const out=[];for(let i=0;i<n;i++){let best=null,bd=1e9;for(let t=0;t<14;t++){const R=rooster(r,{tierMin:score<.7?1:score<1?2:3,tierMax:score<.7?5:score<1.1?7:9}),d=Math.abs(roosterScore(R)-score);if(d<bd){bd=d;best=R;}}
   if(bd>score*.45)return null;out.push(unit('rooster',best,i));}return out;}
 function lionGroup(r,E,n,kind){const score=Math.pow(E/n/P.cl,1/P.gl);if(score<.08||score>2.4)return null;return Array.from({length:n},(_,i)=>unit('lion',lion(r,{kind:kind||(score<.6?pick(r,['verletzt','alt','hunger']):score>1.25?pick(r,['koenig','menschen']):null),score}),i));}
 const TEMPLATES={
- gladiatoren:{label:'Gladiatoren',beast:false,build:(r,E,N)=>{const ns=[N-1,N,N,N+1,N+2].filter(n=>n>=1&&n<=6);return humanGroup(r,E,pick(r,ns));}},
+  gladiatoren:{label:'Gladiatoren',beast:false,build:(r,E,N)=>{const ns=N===10?[10]:[N-1,N,N,N+1,N+2].filter(n=>n>=1&&n<=6);return humanGroup(r,E,pick(r,ns));}},
  champion:{label:'Ein Einzelner',beast:false,build:(r,E,N)=>N>=2?humanGroup(r,E,1,['Soldat']):null},
- schuetzen:{label:'Schützen & Schilde',beast:false,build:(r,E,N)=>{const n=Math.max(2,Math.min(6,N+(r()<.5?0:1)));return humanGroup(r,E,n,['Soldat','Fernkämpfer','Soldat','Fernkämpfer','Assassine']);}},
+  schuetzen:{label:'Schützen & Schilde',beast:false,build:(r,E,N)=>{const n=N===10?10:Math.max(2,Math.min(6,N+(r()<.5?0:1)));return humanGroup(r,E,n,['Soldat','Fernkämpfer','Soldat','Fernkämpfer','Assassine']);}},
  loewe:{label:'Ein Löwe',beast:true,build:(r,E)=>lionGroup(r,E,1)},
  rudel:{label:'Löwenrudel',beast:true,build:(r,E,N)=>N>=2?lionGroup(r,E,2):null},
  haehne:{label:'Kampfhähne',beast:true,build:(r,E)=>{for(const n of [3,4,5,2,6,7,8]){const g=roosterGroup(r,E,n);if(g)return g;}return null;}},
@@ -142,20 +142,20 @@ const BEAST_DESC={loewe:'Ein Löwe kennt keine Regeln, nur Hunger.',rudel:'Zwei 
 
 // ---------- Herausforderungen erzeugen ----------
 let serial=0;
-function make(own,mode,seed){
+function make(own,mode,seed,levels=LEVELS){
  const r=rngOf(seed||Date.now()),Eo=Math.max(.05,teamE(own)),N=own.length,ownKind=own.some(u=>u.kind==='lion')?'lion':own.some(u=>u.kind==='rooster')?'rooster':'human',used={},out=[];
  let animals=0;
- for(const L of LEVELS){
-  let best=null;const cross=r()<CH.CROSS;
-  for(let attempt=0;attempt<40&&!best;attempt++){
-   const ww=weights(ownKind,cross&&attempt<30);for(const k in used)if(Object.keys(ww).length>1)ww[k]*=.3;
+  for(const L of levels){
+   let best=null;const cross=N===10?false:r()<CH.CROSS;
+   for(let attempt=0;attempt<(N===10?4:40)&&!best;attempt++){
+    const ww=N===10?{gladiatoren:5,schuetzen:2}:weights(ownKind,cross&&attempt<30);for(const k in used)if(Object.keys(ww).length>1)ww[k]*=.3;
    const tpl=weighted(r,ww),target=Eo*L.ratio*rnd(r,.94,1.06);let enemy=null;try{enemy=TEMPLATES[tpl].build(r,target,N);}catch(e){console.warn(e);}
    if(!enemy||!enemy.length)continue;
    const Ee=teamE(enemy);if(Math.abs(Math.log(Ee/target))>.16)continue;
    best={tpl,enemy};}
   if(!best&&ownKind==='rooster'){for(const n of [1,2,3,4,5,6,7,8,9,10]){const g=roosterGroup(r,Eo*L.ratio,n);if(g){best={tpl:'haehne',enemy:g};break;}}}
   if(!best&&ownKind==='lion'){const g=lionGroup(r,Eo*L.ratio,1)||lionGroup(r,Eo*L.ratio,2);if(g)best={tpl:g.length>1?'rudel':'loewe',enemy:g};}
-  if(!best){let enemy=null;for(let n=Math.max(1,N);n<=8&&!enemy;n++)enemy=humanGroup(r,Eo*L.ratio,n);best={tpl:'gladiatoren',enemy:enemy||lionGroup(r,Eo*L.ratio,1)||[unit('human',gladiator(r,{q:0,kwTarget:20}),0)]};}
+   if(!best){let enemy=null;for(let n=Math.max(1,N);n<=Math.max(8,N)&&!enemy;n++)enemy=humanGroup(r,Eo*L.ratio,n);best={tpl:'gladiatoren',enemy:enemy||lionGroup(r,Eo*L.ratio,1)||[unit('human',gladiator(r,{q:0,kwTarget:20}),0)]};}
   used[best.tpl]=(used[best.tpl]||0)+1;if(TEMPLATES[best.tpl].beast)animals++;
   const p=pWin(own,best.enemy),g=gold(own,best.enemy,p),enemyE={};for(const u of best.enemy)enemyE[u.key]=strength(u);
   out.push({id:'c'+(++serial)+'-'+Math.floor(r()*1e6).toString(36),level:L,tpl:best.tpl,label:TEMPLATES[best.tpl].label,name:pick(r,NAMES[best.tpl]),desc:(BEAST_DESC[best.tpl]?BEAST_DESC[best.tpl]+' ':'')+pick(r,DESC[LEVELS.indexOf(L)]),

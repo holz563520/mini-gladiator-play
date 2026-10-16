@@ -1,7 +1,7 @@
 'use strict';
 // =====================================================================================================
 // ARENA-NEU · OBERFLÄCHE (nur Testversion)
-// Arena → HUMAN/BEAST → Gruppe (Auto/Manuell) + fünf Herausforderungen → Gegnerpräsentation → Spionage/Aufstellung → Kampf → Ergebnis
+// Arena → HUMAN/BEAST → Gruppe (Auto/Manuell) + vier Herausforderungen je Stufe → Gegnerpräsentation → Spionage/Aufstellung → Kampf → Ergebnis
 // Wenige Klicks im Automatikmodus; alles lässt sich auf Wunsch von Hand festlegen.
 // =====================================================================================================
 (()=>{
@@ -17,8 +17,8 @@ const view=root.querySelector('#anView'),layer=root.querySelector('#anLayer');
 // ---------- Animation: alle sichtbaren Bildflächen ----------
 const live=new Map();let t0=performance.now(),lastPaint=0;
 function anim(cv,fn){live.set(cv,fn);return cv;}
-function frame(now){requestAnimationFrame(frame);if(root.hidden||now-lastPaint<33)return;lastPaint=now;const t=(now-t0)/1000;
- for(const [cv,fn] of live){if(!cv.isConnected){live.delete(cv);continue;}const r=cv.getBoundingClientRect();if(r.bottom<-40||r.top>innerHeight+40)continue;const ctx=cv.getContext('2d');try{fn(ctx,t,cv);}catch(e){console.error(e);live.delete(cv);}}}
+function frame(now){requestAnimationFrame(frame);for(const cv of live.keys())if(!cv.isConnected)live.delete(cv);if(root.hidden||now-lastPaint<33)return;lastPaint=now;const t=(now-t0)/1000;
+ for(const [cv,fn] of live){const r=cv.getBoundingClientRect();if(r.bottom<-40||r.top>innerHeight+40)continue;const ctx=cv.getContext('2d');try{fn(ctx,t,cv);}catch(e){console.error(e);live.delete(cv);}}}
 requestAnimationFrame(frame);
 anim(root.querySelector('.an-bg canvas'),(ctx,t)=>ART.arena(ctx,320,180,t,{cheer:U.screen==='result'&&U.result?.won,blood:U.screen==='result'}));
 
@@ -40,7 +40,7 @@ function team(){const all=pool().map(withKey),ok=all.filter(fit);let pick;
  else{U.picked=U.picked.filter(k=>ok.some(u=>u.key===k)).slice(0,U.size);pick=U.picked.map(k=>ok.find(u=>u.key===k));}
  const rows=U.rowsAuto?autoRows(pick):Object.fromEntries(pick.map(u=>[u.key,U.rows[u.key]||'front']));for(const u of pick)u.row=rows[u.key];return pick;}
 // Gastgeber-Haken (ArenaCareer): Gruppengrößen, gesperrte Bereiche, Sonderherausforderungen, eigene Vorstellung, Ergebnis
-const SIZES=()=>C.sizes?.(U)||[1,2,3,5];const lockMsg=k=>C.locked?.(k)||'';
+const SIZES=()=>C.sizes?.(U)||(U.mode==='human'?[1,2,3,5,10]:[1,2,3,5]);const lockMsg=k=>C.locked?.(k)||'';
 const sizes=()=>SIZES().filter(n=>n<=Math.max(1,pool().filter(fit).length));
 
 // ---------- Kleine Bilder ----------
@@ -48,9 +48,9 @@ const thumbs=new Map();
 function unitThumb(u,w=64,h=72,mood){const cv=ART.mk(w,h);cv.className='px';
  if(u.kind==='human'){const p=ART.portrait(u.g);cv.getContext('2d').drawImage(p,0,0,80,100,0,0,w,h*100/90);if(mood)cv.classList.add('m-'+mood);return cv;}
  anim(cv,(ctx,t)=>{ctx.clearRect(0,0,w,h);ctx.fillStyle='#202d2f';ctx.fillRect(0,0,w,h);if(u.kind==='rooster')ART.rooster(ctx,u.R,{t,mood:mood||'idle',w,h,size:h*.62,x:w/2,y:h*.93,seed:u.R.seed%7});else ART.lion(ctx,u.L,{t,mood:mood||'idle',x:w*.52,y:h*.94,scale:Math.min(w/150,h/95),seed:3});});return cv;}
-function groupArt(units,w,h){const cv=ART.mk(w,h);cv.className='px';const humans=units.filter(u=>u.kind==='human'),figs=humans.map(u=>ART.figure(u.g,false));
- anim(cv,(ctx,t)=>{ctx.imageSmoothingEnabled=false;ART.arena(ctx,w,h,t,{});const n=units.length,step=Math.min(w/(n+.4),90),x0=w/2-step*(n-1)/2;
-  units.forEach((u,i)=>{const x=x0+i*step,y=h-4-(i%2)*6;
+function groupArt(units,w,h){const cv=ART.mk(w,h);cv.className='px';const shown=units.length>5?units.slice(0,3):units,humans=shown.filter(u=>u.kind==='human'),figs=humans.map(u=>ART.figure(u.g,false));let last=-Infinity;
+ anim(cv,(ctx,t)=>{if(t-last<.1)return;last=t;ctx.imageSmoothingEnabled=false;ART.arena(ctx,w,h,t,{});const n=shown.length,step=Math.min(w/(n+.4),90),x0=w/2-step*(n-1)/2;
+  shown.forEach((u,i)=>{const x=x0+i*step,y=h-4-(i%2)*6;
    if(u.kind==='human'){const f=figs[humans.indexOf(u)],k=Math.min(.5,h/360);ctx.drawImage(f,0,0,240,300,Math.round(x-60*k*2),Math.round(y-300*k),Math.round(240*k),Math.round(300*k));}
    else if(u.kind==='rooster')ART.rooster(ctx,u.R,{t,mood:'focus',w,h,size:h*.22,x,y,seed:i,face:-1});
    else ART.lion(ctx,u.L,{t,mood:'focus',x,y,scale:h/190,face:-1,seed:i});});});return cv;}
@@ -90,7 +90,17 @@ function beast(){setTitle('BEAST · TIERKÄMPFE');
 
 // ---------- 3 · Gruppe und Herausforderungen ----------
 function signature(units){return U.mode+'|'+U.species+'|'+units.map(u=>u.key+':'+health(u)).join(',');}
-function ensureChallenges(units,force){const sig=signature(units);if(!force&&U.chall&&U.sig===sig)return;U.sig=sig;const cross=CH.CROSS;if(C.cross!=null)CH.CROSS=C.cross;try{U.chall=units.length?CH.make(units,U.mode,Math.floor(Math.random()*1e9)):[];}finally{CH.CROSS=cross;}stopSpy();}
+function ensureChallenges(units,force){const sig=signature(units);if(!force&&U.chall&&U.sig===sig)return;U.sig=sig;U.chall=[];ART.clearFigures();stopSpy();}
+let challengeJob=0;
+const shownLevels=()=>U.more?[CH.LEVELS[0],CH.LEVELS[4]]:CH.LEVELS.slice(1,4);
+function fillChallenges(units){const job=++challengeJob;if(!units.length)return;const levels=shownLevels(),missing=[];
+ for(const level of levels)for(let i=(U.chall||[]).filter(c=>c.level.key===level.key).length;i<4;i++)missing.push(level);
+ const hint=view.querySelector('.an-generating');if(hint){hint.textContent=missing.length?'Gegner werden vorbereitet …':'';hint.hidden=!missing.length;}
+ function step(){if(job!==challengeJob||root.hidden||U.screen!=='hub'||U.sig!==signature(units))return;const level=missing.shift();if(!level)return;
+  const cross=CH.CROSS;if(C.cross!=null)CH.CROSS=C.cross;let c;try{c=CH.make(units,U.mode,Math.floor(Math.random()*1e9),[level])[0];}finally{CH.CROSS=cross;}
+  if(c){U.chall.push(c);const cards=view.querySelector('.an-cards');if(cards){cards.insertAdjacentHTML('beforeend',card(c,U.chall.length-1));const el=cards.lastElementChild;if(el?.dataset.id===c.id)el.querySelector('.art').appendChild(groupArt(c.enemy,300,120));}}
+  const status=view.querySelector('.an-generating');if(status){status.textContent=missing.length?'Gegner werden vorbereitet …':'';status.hidden=!missing.length;}if(missing.length)requestAnimationFrame(step);}
+ if(missing.length)requestAnimationFrame(step);}
 const allChall=()=>[...(U.extra||[]),...(U.chall||[])];
 function hub(){const units=team(),all=pool().map(withKey);ensureChallenges(units);U.extra=units.length?C.extraChallenges?.(units)||[]:[];
  setTitle(U.mode==='human'?'HUMAN · GLADIATOREN':U.species==='loewe'?'BEAST · LÖWEN':'BEAST · HÄHNE');
@@ -101,12 +111,12 @@ function hub(){const units=team(),all=pool().map(withKey);ensureChallenges(units
   ${U.auto?`<p class="an-hint">Das Spiel stellt die stärksten einsatzbereiten ${U.mode==='human'?'Gladiatoren':'Tiere'} auf. Für eigene Wahl: MANUELL.</p>`:`<div class="an-roster">${all.map(u=>{const on=units.some(x=>x.key===u.key),f=fit(u);return `<button class="an-card${on?' on':''}${f?'':' unfit'}" data-a="${f?'pick:'+u.key:'unfit'}" data-key="${u.key}"><span class="th"></span><b>${esc(name(u))}</b><small>${esc(roleOf(u))}</small><span class="kw">KW ${CH.kw(u)}</span><i class="an-hpbar"><i style="width:${health(u)}%"></i></i>${f?'':'<em>verletzt</em>'}</button>`;}).join('')}</div><p class="an-hint">${units.length}/${U.size} gewählt · Antippen wählt aus oder ab.</p>`}
  </section>
  <section class="an-chall"><header><p class="eyebrow">Herausforderungen</p><button class="an-link" data-a="reroll">↻ andere Gegner</button></header>
-  <div class="an-cards">${(U.chall||[]).map((c,i)=>card(c,i)).join('')}</div>
+   <div class="an-cards">${(U.chall||[]).map((c,i)=>card(c,i)).join('')}</div><p class="an-hint an-generating" role="status"></p>
   <div class="an-switch"><button data-a="more" class="${U.more?'on':''}">${U.more?'◂ Leicht · Ausgeglichen · Schwer':'Sehr leicht & Extrem ▸'}</button></div></section>
  ${U.extra.length?`<section class="an-chall an-special"><header><p class="eyebrow">Besondere Herausforderung</p></header><div class="an-cards">${U.extra.map(c=>card(c,-1)).join('')}</div></section>`:''}`;
  view.querySelectorAll('.an-chip,.an-card').forEach(el=>{const u=all.find(x=>x.key===el.dataset.key);if(u)el.querySelector('.th').appendChild(unitThumb(u,40,46));});
- view.querySelectorAll('.an-ccard').forEach(el=>{const c=allChall().find(x=>x.id===el.dataset.id);el.querySelector('.art').appendChild(groupArt(c.enemy,300,120));});}
-function card(c,i){const show=i<0||(U.more?[0,4].includes(i):[1,2,3].includes(i));if(!show)return '';const L=c.level,rec=C.recommend?.(c)||'',special=i<0;
+ view.querySelectorAll('.an-ccard').forEach(el=>{const c=allChall().find(x=>x.id===el.dataset.id);el.querySelector('.art').appendChild(groupArt(c.enemy,300,120));});fillChallenges(units);}
+function card(c,i){const show=i<0||shownLevels().includes(c.level);if(!show)return '';const L=c.level,rec=C.recommend?.(c)||'',special=i<0;
  const comp=summary(c.enemy);
  // Sonderherausforderungen: Karte selbst nicht antippbar (kein versehentlicher Start beim Scrollen), nur der Knopf nimmt sie an
  return `<${special?'div':'button'} class="an-ccard lv${CH.LEVELS.indexOf(L)}${special?' an-spec':''}" ${special?'':`data-a="chall:${c.id}"`} data-id="${c.id}" style="--lv:${L.color}"><div class="art"></div><div class="body"><p class="tag"><span class="lvl">${L.label.toUpperCase()}</span>${rec?`<span class="an-rec">${esc(rec)}</span>`:''}<span class="sk">${'☠'.repeat(L.skulls)||'·'}</span></p>
@@ -116,7 +126,7 @@ function card(c,i){const show=i<0||(U.more?[0,4].includes(i):[1,2,3].includes(i)
 function summary(enemy){const n={human:0,rooster:0,lion:0};for(const u of enemy)n[u.kind]++;const p=[];if(n.human)p.push(n.human+(n.human===1?' Gladiator':' Gladiatoren'));if(n.lion)p.push(n.lion+(n.lion===1?' Löwe':' Löwen'));if(n.rooster)p.push(n.rooster+(n.rooster===1?' Hahn':' Hähne'));return p.join(' · ');}
 
 // ---------- 4 · Gegnerpräsentation ----------
-function present(c){U.sel=c;startSpy(c);if(C.present?.(c,()=>{root.hidden=false;prep(c);})){layer.innerHTML='';root.hidden=true;return;}const ownE=CH.teamE(team());const list=c.enemy.slice(0,8);let i=-1,timer=0;
+function present(c){U.sel=c;stopSpy();if(C.present?.(c,()=>{root.hidden=false;prep(c);})){layer.innerHTML='';root.hidden=true;return;}const ownE=CH.teamE(team());const list=c.enemy.slice(0,8);let i=-1,timer=0;
  layer.innerHTML=`<div class="an-pres" role="dialog" aria-label="Gegnerpräsentation"><div class="an-pstage"><canvas width="320" height="200" class="px"></canvas><div class="an-pcap"></div></div><div class="an-pdots">${list.map(()=>'<i></i>').join('')}</div><div class="an-pbtns"><button data-a="pskip">Überspringen</button><button class="gold" data-a="pnext">Weiter ▸</button></div></div>`;
  const cv=layer.querySelector('canvas'),cap=layer.querySelector('.an-pcap'),dots=layer.querySelectorAll('.an-pdots i');let t0=0,cur=null,fig=null;
  const next=()=>{i++;clearTimeout(timer);if(i>=list.length){U.pres=null;layer.innerHTML='';prep(c);return;}cur=list[i];t0=performance.now()/1000;fig=cur.kind==='human'?ART.figure(cur.g,true):null;dots.forEach((d,k)=>d.className=k<i?'done':k===i?'on':'');
@@ -147,7 +157,7 @@ function prep(c){U.sel=c;const units=team();
  layer.innerHTML=`<div class="an-sheet" role="dialog" aria-label="Kampfvorbereitung"><div class="an-sheetbox"><header><button class="an-x" data-a="close" aria-label="Schließen">✕</button><p class="eyebrow" style="color:${c.level.color}">${c.level.label.toUpperCase()} ${'☠'.repeat(c.level.skulls)}</p><h2>${esc(c.name)}</h2><p class="desc">${esc(c.desc)}</p></header>
   <div class="an-vs"><div class="side"><p>IHR · KW ${c.ownKW}</p><div class="row">${units.map(u=>`<span data-k="${u.key}"></span>`).join('')}</div></div><b>VS</b><div class="side red"><p>GEGNER · KW ${c.enemyKW}</p><div class="row">${c.enemy.map(u=>`<span data-e="${u.key}"></span>`).join('')}</div></div></div>
   <div class="an-gold2"><span><small>Siegprämie</small><b>${c.gold.win} Gold</b></span><span><small>Antrittsgeld bei Niederlage</small><b>bis ${c.gold.lossMax} Gold</b></span></div>
-  <button class="an-spybtn" data-a="spy"><span class="eye">👁</span><span><b>SPIONAGE</b><small id="anSpyLine">Die Spione beobachten Probekämpfe …</small></span><i class="bar"><i id="anSpyBar"></i></i></button>
+   <button class="an-spybtn" data-a="spy"><span class="eye">👁</span><span><b>SPIONAGE</b><small id="anSpyLine">Antippen startet die Probekämpfe</small></span><i class="bar"><i id="anSpyBar"></i></i></button>
   <div class="an-actions"><button data-a="present">Vorstellung ansehen</button><button class="primary" data-a="fight">⚔ KAMPF BEGINNEN</button></div></div></div>`;
  layer.querySelectorAll('[data-k]').forEach(el=>{const u=units.find(x=>x.key===el.dataset.k);el.appendChild(unitThumb(u,48,56));});
  layer.querySelectorAll('[data-e]').forEach(el=>{const u=c.enemy.find(x=>x.key===el.dataset.e);el.appendChild(unitThumb(u,48,56));});
@@ -156,7 +166,7 @@ function prep(c){U.sel=c;const units=team();
 // ---------- 6 · Spionage: 100 Probekämpfe in Workern, mit dem Kampfsystem der Arena ----------
 const SPY={workers:[],ready:0,job:0,res:null,want:100,failed:''};
 function workerSource(){const env=document.getElementById('w-env')?.textContent||'',main=document.getElementById('w-main')?.textContent||'';const parts=[...document.querySelectorAll('script[data-w]')].map(s=>s.textContent);return env+'\n;\n'+parts.join('\n;\n')+'\n;\n'+main;}
-function pool0(){if(SPY.workers.length||SPY.failed)return;try{const url=window.ARENA_WORKER_URL||URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'}));const hc=navigator.hardwareConcurrency||4,mobile=(navigator.maxTouchPoints||0)>1,n=cl(hc-1,2,mobile?2:3);
+function pool0(){if(SPY.workers.length||SPY.failed)return;try{const url=window.ARENA_WORKER_URL||URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'}));const n=1;
  setTimeout(()=>{if(!SPY.failed&&SPY.workers.length&&!SPY.ready){SPY.failed='Die Spione melden sich nicht (Web Worker blockiert?). Bitte die Seite über einen Webserver öffnen.';spyLine();}},45000);for(let i=0;i<n;i++){const w=new Worker(url);w.onmessage=e=>onWorker(w,e.data);w.onerror=e=>{console.error('Spionage-Worker',e.message);SPY.failed='Spionage konnte nicht starten ('+(e.message||'Worker')+').';spyLine();};SPY.workers.push(w);}}catch(e){SPY.failed='Spionage braucht Web Worker: '+e.message;}}
 function onWorker(w,d){if(d.ready){w.ready=true;SPY.ready++;const r=SPY.res;if(r&&!r.done&&r.job)send(w,r.job);spyLine();return;}
  const r=SPY.res;if(!r||d.id!==r.id)return;if(d.error){console.error(d.error);SPY.failed='Fehler in einem Probekampf.';return;}
@@ -165,14 +175,14 @@ let thr=0;function throttle(){if(thr)return;thr=setTimeout(()=>{thr=0;spyLine();
 // Für die Spione: Ausrüstung aus dem Lager direkt an die Kopie hängen (der Worker kennt das Lager nicht)
 function gearCopy(g){const j=x=>x==null?null:JSON.parse(JSON.stringify(x));const c=j(g);if(!g.enemyGear){let a=[];try{a=M.armorItems(g);}catch{}c.enemyGear={weapon:j(M.gear(g,'weapon')),secondary:j(M.gear(g,'secondary')),shield:j(M.gear(g,'shield')),armor:Object.fromEntries(a.map(i=>[i.def,j(i)]))};}return c;}
 function specFor(c,copy){const j=x=>copy?JSON.parse(JSON.stringify(x)):x;const m=u=>({kind:u.kind,key:u.key,row:u.row||'front',...(u.kind==='human'?{g:copy?gearCopy(u.g):u.g}:u.kind==='rooster'?{R:j(u.R)}:{L:j(u.L)})});return {title:c.name,blue:team().map(m),red:c.enemy.map(m)};}
-function startSpy(c){pool0();const spec=specFor(c,true),key=c.id+'|'+spec.blue.map(u=>u.key+u.row).join(',');if(SPY.res?.key===key)return;stopSpy();
+function startSpy(c){SPY.want=team().length>=10?10:100;pool0();const spec=specFor(c,true),key=c.id+'|'+spec.blue.map(u=>u.key+u.row).join(',');if(SPY.res?.key===key)return;stopSpy();
  SPY.res={id:++SPY.job,key,c,n:0,win:0,draw:0,time:0,u:{},rows:Object.fromEntries(spec.blue.map(u=>[u.key,u.row])),started:performance.now()};
  const job={id:SPY.res.id,spec};SPY.res.job=job;if(SPY.failed)return;for(const w of SPY.workers)if(w.ready)send(w,job);}
 // Jeder bereite Spion rechnet mit; wer später fertig geladen ist, steigt in den laufenden Auftrag ein
 function send(w,job){w.postMessage({cmd:'run',id:job.id,spec:job.spec,n:SPY.want});}
 function stopSpy(){for(const w of SPY.workers)w.postMessage({cmd:'stop'});SPY.res=null;}
 function spyLine(){const el=document.getElementById('anSpyLine'),bar=document.getElementById('anSpyBar');if(!el)return;const r=SPY.res;
- if(SPY.failed){el.textContent=SPY.failed;return;}if(!r){el.textContent='Bereit';return;}if(!SPY.ready){el.textContent='Die Spione werden vorbereitet …';return;}bar.style.width=(r.n/SPY.want*100)+'%';
+ if(SPY.failed){el.textContent=SPY.failed;return;}if(!r){el.textContent='Antippen startet die Probekämpfe';return;}if(!SPY.ready){el.textContent='Die Spione werden vorbereitet …';return;}bar.style.width=(r.n/SPY.want*100)+'%';
  el.textContent=r.n<8?'Die Spione beobachten Probekämpfe … '+r.n+'/'+SPY.want:(r.done?'':'Vorläufig · ')+'Siegchance '+pct(r.win/r.n)+' · '+r.n+'/'+SPY.want+' Kämpfe';}
 function moodOf(surv){return surv<.5?'fear':surv<.82?'focus':'proud';}
 function faceMood(surv){return surv<.3?'terror':surv<.5?'scared':surv<.65?'nervous':surv<.82?'determined':surv<.93?'confident':'roar';}
@@ -244,7 +254,7 @@ function result(){const R=U.result;if(!R){go('home');return;}setTitle(R.won?'SIE
 // ---------- Eingaben ----------
 root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const [a,v]=el.dataset.a.split(/:(.*)/s);
  switch(a){
-  case 'back':if(layer.innerHTML){layer.innerHTML='';U.pres=null;return;}if(U.screen==='home'){C.close?.();break;}if(U.screen==='hub')go(U.mode==='beast'?'beast':'home',-1);else go('home',-1);break;
+  case 'back':if(layer.innerHTML){stopSpy();layer.innerHTML='';U.pres=null;return;}if(U.screen==='home'){C.close?.();break;}if(U.screen==='hub')go(U.mode==='beast'?'beast':'home',-1);else go('home',-1);break;
   case 'mode':U.mode=v;if(v==='human'){U.species=null;U.size=3;U.picked=[];U.chall=null;go('hub');}else go('beast');break;
   case 'classic':C.classic?.();break;
   case 'species':if(!(v==='loewe'?C.lions:C.roosters).some(x=>!x.dead)){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(v==='loewe'?'Du besitzt noch keinen Löwen. Der Tierhändler kommt später.':'Du besitzt noch keine Hähne. Der Tierhändler kommt später.');break;}U.mode='beast';U.species=v;U.size=v==='loewe'?1:3;U.picked=[];U.chall=null;go('hub');break;
@@ -259,10 +269,10 @@ root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)r
   case 'chall':{const c=allChall().find(x=>x.id===v);if(c)present(c);break;}
   case 'pnext':U.pres?.next();break;
   case 'pskip':U.pres?.skip();break;
-  case 'close':layer.innerHTML='';break;
+  case 'close':stopSpy();layer.innerHTML='';break;
   case 'present':present(U.sel);break;
   case 'spy':spy();break;
-  case 'spyclose':layer.querySelector('.an-spy')?.remove();prep(U.sel);break;
+   case 'spyclose':stopSpy();layer.querySelector('.an-spy')?.remove();prep(U.sel);break;
   case 'rows':U.rowsAuto=v==='auto';if(!U.rowsAuto){for(const u of team())U.rows[u.key]=u.row;}rowsChanged();break;
   case 'row':{const units=team(),u=units.find(x=>x.key===v);if(!u)break;if(U.rowsAuto){U.rowsAuto=false;for(const x of units)U.rows[x.key]=x.row;}U.rows[v]=u.row==='front'?'back':'front';
    if(!units.some(x=>U.rows[x.key]==='front')){U.rows[v]='front';M.ui?.notify?.('Einer muss vorne stehen.');}
@@ -281,8 +291,7 @@ root.addEventListener('click',e=>{if(e.target.closest('#anLayer [data-a]')){/* �
 {const base=M.fixedStep;M.fixedStep=function(){const b=S.battle,f=b?.finale;if(!b?.neu||!f||!b.actors.some(a=>a.lion||a.hahn))return base.apply(this,arguments);const had=document.body.classList.contains('bhud');document.body.classList.remove('bhud');try{return base.apply(this,arguments);}finally{if(had)document.body.classList.add('bhud');}};}
 if(C.startHidden)root.hidden=true;
 U.prep=c=>{root.hidden=false;prep(c);};U.render=()=>render();U.go=go;
-U.open=()=>{root.hidden=false;if(U.screen==='result'&&!U.result)U.screen='home';render();setTimeout(pool0,1500);};U.close=()=>{root.hidden=true;stopSpy();layer.innerHTML='';};U.isOpen=()=>!root.hidden;
-if(!C.startHidden)setTimeout(pool0,1500); // Spione schon vorab bereitmachen
+U.open=()=>{root.hidden=false;if(U.screen==='result'&&!U.result)U.screen='home';render();};U.close=()=>{root.hidden=true;stopSpy();for(const w of SPY.workers)w.terminate();SPY.workers=[];SPY.ready=0;ART.clearFigures();layer.innerHTML='';};U.isOpen=()=>!root.hidden;
 render();
 window.ARENA_UI_READY=true;
 })();
