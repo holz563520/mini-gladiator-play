@@ -1,10 +1,11 @@
 'use strict';
 (()=>{
 const M=window.MG,S=M.s;
-let career=null,metrics=null;
+let career=null,metrics=null,selfConfig=null;
 M.benchmarkConfig={count:3,role0:'Soldat',role1:'Soldat',seed:1701,league:0,weapon0:'gladius',weapon1:'gladius',armor0:'leather',armor1:'leather',quality0:2,quality1:2,shield0:'smallshield',shield1:'smallshield'};
 M.benchmarkResults=[];
 function averageFighter(team,index,c){
+ if(c.selfFight&&c.fighters?.[team])return M.copy(c.fighters[team]);
  const custom=c.entries?.[team]?.[index];if(custom){c={...c};for(const k of ['role','weapon','armor','shield','quality'])if(custom[k]!==undefined)c[k+team]=custom[k];}
  const g=M.makeGladiator(0,true);g.id='benchmark-'+team+'-'+index;g.name=(team?'Rot ':'Blau ')+(index+1);g.enemy=team===1;g.traits=[];g.role=c['role'+team]==='mixed'?M.roles[index%3]:(M.roles.includes(c['role'+team])?c['role'+team]:'Soldat');g.height=180;g.weight=80;g.arm=77;g.leg=88;g.fat=16;g.muscle=40;g.age=25;g.potential=50;g.fatigue=0;g.blood=100;g.fame=0;g.scars=[];g.healing=null;
  for(const key in g.stats){g.stats[key]=50;g.caps.stats[key]=50;}
@@ -32,14 +33,33 @@ function startBenchmark(config=M.benchmarkConfig){
  if(c.teamTactics)S.battle.teamTactics=M.copy(c.teamTactics);S.battle.leaders=[0,1].map(t=>actors.find(a=>a.team===t&&a.id==='benchmark-'+t+'-'+c.leaderIndices?.[t])?.id);S.battle.moraleBonus=S.battle.leaders.map(id=>id?2.5:0);
  metrics={wall:0,frames:0,simMs:0,renderMs:0,steps:0,dropped:0,samples:new Float32Array(600),sampleCount:0,sampleIndex:0};
  M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;M.cheer=0;for(const p of [...M.fx,...M.shots])p.active=false;
+ if(c.selfFight){S.battle.selfFight=M.copy(c.selfFight);S.battle.opponent=c.selfFight.name+' · ROT';S.schoolName=c.selfFight.name+' · BLAU';}
  M.focus?.(null);M.arrangeBattle(S.battle);M.resetBenchmarkRender?.();M.sound?.('gong');M.onBattleStart?.();return '';
 }
 function benchmarkSample(wallMs,simMs,renderMs,painted,steps,dropped=0){if(!metrics||!S.battle?.benchmark||S.battle.paused)return;metrics.wall+=wallMs/1000;metrics.simMs+=simMs;metrics.steps+=steps;metrics.dropped+=dropped;if(painted){metrics.frames++;metrics.renderMs+=renderMs;metrics.samples[metrics.sampleIndex++%600]=simMs+renderMs;metrics.sampleCount=Math.min(600,metrics.sampleCount+1);}}
 function benchmarkMetrics(){if(!metrics)return null;const m=metrics,values=Array.from(m.samples.subarray(0,m.sampleCount)).sort((a,b)=>a-b);return {fps:m.wall?m.frames/m.wall:0,frameMs:m.frames?(m.simMs+m.renderMs)/m.frames:0,stepMs:m.steps?m.simMs/m.steps:0,p95:values[Math.floor(values.length*.95)]||0,simRate:m.wall?(S.battle?.time||0)/m.wall:0,wall:m.wall,dropped:m.dropped,renderQuality:M.renderMetrics?.().quality??1};}
 function endBenchmark(winner=-1,reason='Manuell beendet'){
  if(!career||!S.battle?.benchmark)return;const b=S.battle,result={...benchmarkMetrics(),config:M.copy(M.benchmarkConfig),time:b.time,winner,reason,teams:[0,1].map(team=>{const a=b.actors.filter(a=>a.team===team);const attackRows={};for(const fighter of a){for(const [key,count]of Object.entries(fighter.attacks||{})){(attackRows[key]??={key,count:0,hits:0,damage:0}).count+=count;}for(const [key,v]of Object.entries(fighter.attackDamage||{})){const row=attackRows[key]??={key,count:0,hits:0,damage:0};row.hits+=v.hits;row.damage+=v.damage;}}return {alive:a.filter(a=>!a.down&&!a.g.dead&&!a.surrendered).length,damage:a.reduce((n,x)=>n+x.damage,0),attacks:a.reduce((n,x)=>n+Object.values(x.attacks||{}).reduce((v,k)=>v+k,0),0),combos:[2,3,4].map(n=>({length:n,count:a.reduce((v,f)=>v+(f.comboChains?.[n]||0),0)})),attackRows:Object.values(attackRows).sort((x,y)=>y.damage-x.damage),classes:M.roles.map(role=>{const group=a.filter(x=>x.g.role===role);return {role,count:group.length,damage:group.reduce((n,x)=>n+x.damage,0),taken:group.reduce((n,x)=>n+x.taken,0),kills:group.reduce((n,x)=>n+x.kills,0)};})};})};
- for(const key of Object.keys(S))delete S[key];Object.assign(S,career);career=null;metrics=null;M.benchmarkActive=false;M.benchmarkResults.unshift(result);M.benchmarkResults=M.benchmarkResults.slice(0,10);
+ if(b.selfFight){result.selfFight=M.copy(b.selfFight);delete result.config.fighters;}
+ for(const key of Object.keys(S))delete S[key];Object.assign(S,career);career=null;metrics=null;M.benchmarkActive=false;if(b.selfFight){M.benchmarkConfig=selfConfig;selfConfig=null;M.selfFightResult=result;}else{M.benchmarkResults.unshift(result);M.benchmarkResults=M.benchmarkResults.slice(0,10);}
  M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;M.cheer=0;for(const p of [...M.fx,...M.shots])p.active=false;M.focus?.(null);M.onBenchmarkEnd?.(result);return result;
 }
-Object.assign(M,{startBenchmark,endBenchmark,benchmarkSample,benchmarkMetrics});
+// Snapshot gear before the detached state replaces the career inventory.
+function selfFightFighter(source,team){
+ const g=M.copy(source);g.id='self-'+team+'-'+source.id;g.name=source.name+(team?' · Rot':' · Blau');g.enemy=!!team;
+ g.dead=false;g.bisected=false;g.fatigue=0;g.blood=100;g.healing=null;
+ for(const part of Object.values(g.body))Object.assign(part,{hp:part.missing?0:100-(part.chronic||0),pain:0,bleed:0,grade:part.missing?5:0,fracture:null,internal:null,injury:'',wounds:[]});
+ const item=i=>{if(!i)return null;const copy=M.copy(i);copy.id='self-'+team+'-'+copy.id;copy.blood=0;return copy;};
+ g.enemyGear={weapon:item(M.gear(source,'weapon')),secondary:item(M.gear(source,'secondary')),shield:item(M.gear(source,'shield')),armor:Object.fromEntries(M.armorItems(source).map(i=>[i.def,item(i)]))};
+ g.equipment={weapon:null,secondary:null,shield:null,armor:{}};return g;
+}
+function startSelfFight(id){
+ if(S.battle||career)return 'Beende zuerst den laufenden Kampf.';
+ const g=S.roster.find(g=>g.id===id&&!g.dead);if(!g)return 'Gladiator nicht gefunden.';
+ const fighters=[0,1].map(t=>selfFightFighter(g,t));selfConfig=M.benchmarkConfig;
+ const error=startBenchmark({count:1,count0:1,count1:1,seed:Math.floor(Math.random()*4294967295)||1,league:S.league,
+  selfFight:{id:g.id,name:g.name},fighters,teamTactics:[M.copy(S.tactics),M.copy(S.tactics)],leaderIndices:[-1,-1]});
+ if(error)selfConfig=null;return error;
+}
+Object.assign(M,{startSelfFight,startBenchmark,endBenchmark,benchmarkSample,benchmarkMetrics});
 })();
