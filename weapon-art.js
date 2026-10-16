@@ -7,9 +7,11 @@ const bladeWidths={dagger:1,short:2,gladius:2,long:2,greatsword:2};
 const pole=['spear','trident','halberd','javelin'],axes=['axe','doubleaxe','throwaxe'],blunts=['club','mace','hammer'];
 const seed=s=>[...s].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,17);
 const noise=(x,y,k)=>{let v=Math.imul(x+139,k+73)^Math.imul(y+631,2246822519);v=Math.imul(v^(v>>>13),1274126177);return ((v^(v>>>16))>>>0)/4294967295};
-function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,b=Math.round(clamp(blood,0,1)*12),dry=age>.65,stage=item.story?.stage||0,key=[id,q,b,dry,stage].join(':');if(cache.has(key)){const v=cache.get(key);cache.delete(key);cache.set(key,v);hits++;return v;}misses++;
+function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practice=!!item.trainingWood,b=practice?0:Math.round(clamp(blood,0,1)*12),dry=practice?false:age>.65,stage=practice?0:item.story?.stage||0,key=[id,q,b,dry,stage,practice?'wood':'metal'].join(':');if(cache.has(key)){const v=cache.get(key);cache.delete(key);cache.set(key,v);hits++;return v;}misses++;
  const c=document.createElement('canvas');c.width=112;c.height=88;const g=c.getContext('2d');g.imageSmoothingEnabled=false;let minX=112,minY=88,maxX=-1,maxY=-1;const ox=29,oy=43,look=M.itemLook(item),mask=new Set(),metal=look.metal,edge=look.edge,dark='#34434a',mid='#617078',gold=q>=4?look.trim:'#a28b62',wood=q===0?'#776044':'#694a36';
- const pix=(x,y,color,hit=false)=>{x=Math.round(x);y=Math.round(y);g.fillStyle=color;g.fillRect(x+ox,y+oy,1,1);minX=Math.min(minX,x+ox);minY=Math.min(minY,y+oy);maxX=Math.max(maxX,x+ox);maxY=Math.max(maxY,y+oy);if(hit)mask.add(x+','+y)};
+ const woodColors=new Map();
+ const woodTone=color=>{if(woodColors.has(color))return woodColors.get(color);const n=parseInt(color.slice(1,7),16),l=((n>>16)*.3+((n>>8)&255)*.59+(n&255)*.11),v=['#39291d','#604127','#895d32','#b5864e','#dbb477'][Math.min(4,Math.floor(l/52))];woodColors.set(color,v);return v;};
+ const pix=(x,y,color,hit=false)=>{if(practice)color=woodTone(color);x=Math.round(x);y=Math.round(y);g.fillStyle=color;g.fillRect(x+ox,y+oy,1,1);minX=Math.min(minX,x+ox);minY=Math.min(minY,y+oy);maxX=Math.max(maxX,x+ox);maxY=Math.max(maxY,y+oy);if(hit)mask.add(x+','+y)};
  const rect=(x,y,w,h,color,hit=false)=>{for(let yy=Math.ceil(y);yy<y+h;yy++)for(let xx=Math.ceil(x);xx<x+w;xx++)pix(xx,yy,color,hit)};
  const poly=(pts,color,hit=false)=>{const ys=pts.map(p=>p[1]),xs=pts.map(p=>p[0]);for(let y=Math.floor(Math.min(...ys));y<=Math.max(...ys);y++)for(let x=Math.floor(Math.min(...xs));x<=Math.max(...xs);x++){let inside=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],z=pts[j];if((a[1]>y+.5)!==(z[1]>y+.5)&&x+.5<(z[0]-a[0])*(y+.5-a[1])/(z[1]-a[1])+a[0])inside=!inside}if(inside)pix(x,y,color,hit)}};
  const line=(x0,y0,x1,y1,color,hit=false)=>{const n=Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0)));for(let i=0;i<=n;i++)pix(x0+(x1-x0)*i/(n||1),y0+(y1-y0)*i/(n||1),color,hit)};
@@ -51,7 +53,7 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,b=Math.
  cache.set(key,result);cachePixels+=image.width*image.height;
  while(cache.size>MAX_CACHE||cachePixels*4>MAX_BYTES){const first=cache.keys().next().value,old=cache.get(first);cachePixels-=old.canvas.width*old.canvas.height;cache.delete(first);}return result;
 }
-function draw(ctx,item,opt={}){const blood=clamp(opt.blood??item.blood??0,0,1),angle=opt.angle||0,scale=opt.scale??1,x=opt.x||0,y=opt.y||0,t=opt.time||0,s=sprite(item,blood,opt.age||0);
+function draw(ctx,item,opt={}){const blood=item.trainingWood?0:clamp(opt.blood??item.blood??0,0,1),angle=opt.angle||0,scale=opt.scale??1,x=opt.x||0,y=opt.y||0,t=opt.time||0,s=sprite(item,blood,opt.age||0);
 ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(scale,scale);ctx.imageSmoothingEnabled=false;ctx.drawImage(s.canvas,-s.ox,-s.oy);
 if(item.def==='bow'||item.def==='crossbow'){const bow=item.def==='bow',pose=opt.pose||{},nock=bow?-4-18*(pose.tension||0):12-17*(pose.tension??1),ax=bow?-4:11;ctx.strokeStyle='#dccdab';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,-22);ctx.lineTo(nock,0);ctx.lineTo(ax,22);ctx.stroke();if(pose.loaded){ctx.fillStyle='#ac9069';ctx.fillRect(nock,-1,34,2);ctx.fillStyle='#d7e1cc';ctx.fillRect(nock+31,-2,5,4)}}ctx.restore();
 if(opt.drips===false||blood<.34||(opt.age||0)>.65||!s.dripPoints.length||['javelin','throwaxe'].includes(item.def))return;
