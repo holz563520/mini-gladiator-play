@@ -141,7 +141,7 @@ function lionActor(x,y){
 // ---------- Hahn-KI ----------
 const alive=t=>t&&!t.g.dead&&!t.down&&!t.surrendered;
 const LEARN=globalThis.HAHN_LEARN||2; // Kampf-Lernen der Hähne (Faktor): ≈ 0,2–0,4 Punkte je Wert und Kampf wie bei Gladiatoren
-function learn(a,group,key,amount){const g=CF.learnValue(a.hahn,group,key,amount*LEARN);if(g>0){const p=group+':'+key;a.hs.learning[p]=(a.hs.learning[p]||0)+g;}}
+function learn(a,group,key,amount){const g=CF.learnValue(a.hahn,group,key,amount*LEARN*3);if(g>0){const p=group+':'+key;a.hs.learning[p]=(a.hs.learning[p]||0)+g;}}
 function partsFor(t,jump,big){
  if(t.rex)return jump?[['front',3],['belly',2],['head',big?1:0]]:[['front',5],['rear',1]];
  if(t.hahn){return [['head',30],['neck',19],['breast',18],['body',10],['wing',11],['legs',9]];}
@@ -368,3 +368,4 @@ function showResult(out){
 Object.assign(H,{roosterActor,syncBack,snapshot,drawRooster,feathers,isH,resetScene(){FEATHERS.length=0;FLYING.length=0;endShot();SH.queue=[];SH.gap=1.5;},setSim(v){H.inSim=!!v;}});
 window.HAHN_ARENA_LOADED=true;
 })();
+

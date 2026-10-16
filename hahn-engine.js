@@ -1101,7 +1101,7 @@ class FightEngine {
       power: clamp(f.R.blood / 100, 0.45, 1) * (0.65 + 0.35 * health(f.R) / 100)
     };
   }
-  learn(f, group, key, amount) { const g = learnValue(f.R, group, key, amount); if (g > 0) { const p = group + ':' + key; f.learning[p] = (f.learning[p] || 0) + g; } return g; }
+  learn(f, group, key, amount) { const g = learnValue(f.R, group, key, amount * 3); if (g > 0) { const p = group + ':' + key; f.learning[p] = (f.learning[p] || 0) + g; } return g; }
   partInfo(f) { return PARTS.map(p => { const b = f.R.body[p.key]; return { key: p.key, label: p.label, hp: b.hp, grade: b.grade, statusLabel: GRADE_LABEL[b.grade] }; }); }
   chooseAttacker() {
     const [a, b] = this.F;
@@ -1250,3 +1250,4 @@ Object.assign(CF, {
   FightEngine
 });
 })(typeof window !== 'undefined' ? window : globalThis);
+
