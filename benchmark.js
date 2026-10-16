@@ -48,7 +48,7 @@ function endBenchmark(winner=-1,reason='Manuell beendet'){
 function selfFightFighter(source,team){
  const g=M.copy(source);g.id='self-'+team+'-'+source.id;g.name=source.name+(team?' · Rot':' · Blau');g.enemy=!!team;
  g.dead=false;g.bisected=false;g.fatigue=0;g.blood=100;g.healing=null;
- for(const part of Object.values(g.body))Object.assign(part,{hp:part.missing?0:100-(part.chronic||0),pain:0,bleed:0,grade:part.missing?5:0,fracture:null,internal:null,injury:'',wounds:[]});
+ for(const part of Object.values(g.body))Object.assign(part,{hp:part.missing?0:100-(part.chronic||0),pain:0,bleed:0,grade:part.missing?5:0,fracture:null,internal:null,deepStabs:0,injury:'',wounds:[]});
  const item=i=>{if(!i)return null;const copy=M.copy(i);copy.id='self-'+team+'-'+copy.id;copy.blood=0;return copy;};
  g.enemyGear={weapon:item(M.gear(source,'weapon')),secondary:item(M.gear(source,'secondary')),shield:item(M.gear(source,'shield')),armor:Object.fromEntries(M.armorItems(source).map(i=>[i.def,item(i)]))};
  g.equipment={weapon:null,secondary:null,shield:null,armor:{}};return g;
@@ -63,3 +63,4 @@ function startSelfFight(id){
 }
 Object.assign(M,{startSelfFight,startBenchmark,endBenchmark,benchmarkSample,benchmarkMetrics});
 })();
+

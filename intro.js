@@ -318,7 +318,7 @@ function tick(real){if(!run||run.done)return;const base=Math.min(.05,Math.max(0,
  const waiting=run.waiters;run.waiters=[];for(const w of waiting){let ok=false;try{ok=w.cond();}catch(e){w.rej(e);continue;}if(ok)w.res();else run.waiters.push(w);}run.tap=false;
  paint();sync();}
 function loop(t){if(!run||run.done)return;const dt=(t-(run.last??t))/1000;run.last=t;if(!document.hidden)tick(dt);requestAnimationFrame(loop);}
-function finish(){if(!run||run.done)return;const r=run;r.done=true;M.cheer=0;S.lanista=JSON.parse(JSON.stringify(r.owner));M.persist();M.ui.close();M.ui.click('nav:home');const v=r.view;run=null;if(v?.style)v.style.opacity='0';const drop=()=>v?.remove?.();if(typeof setTimeout==='function')setTimeout(drop,650);else drop();}
+function finish(){if(!run||run.done)return;const r=run;r.done=true;M.cheer=0;S.lanista=JSON.parse(JSON.stringify(r.owner));const forge=M.workshop;if(forge&&!forge.state.master&&!forge.state.intro)forge.setIntro('pending');M.persist();M.ui.close();M.ui.click('nav:home');const v=r.view;run=null;if(v?.style)v.style.opacity='0';const drop=()=>v?.remove?.();if(typeof setTimeout==='function')setTimeout(drop,650);else drop();}
 function start(owner,opt={}){if(run)return;M.audioStart?.();const players=cast(owner),keeper={...owner,lostArm:'r',veteran:true};
  const sc={arena:4,level:6,gate:0,shake:0,stains:[],fx:[],limbs:[],ground:[],swings:[],cam:null,hero:actor(players.hero,520,400,0),foes:[[300,385],[790,410],[330,250],[720,560],[590,222],[236,566]].map(([x,y],i)=>actor(players.foes[i],x,y,1)),last:actor(players.last,520,104,1)};sc.actors=[sc.hero,...sc.foes];
  const walker=M.ludus.ownerFigure(keeper),lud={bg:M.ludus.background(),closed:1,actor:{...actor(walker,610,330,0),lanista:true,energy:100}};
@@ -328,3 +328,4 @@ function start(owner,opt={}){if(run)return;M.audioStart?.();const players=cast(o
 function skip(){if(!run||run.done)return;run.aborted=true;const waiting=run.waiters;run.waiters=[];for(const w of waiting)w.rej(ABORT);}
 M.intro={start,skip,tick,active:()=>!!run&&!run.done};
 })();
+
