@@ -1,5 +1,5 @@
 /* ARENA THEORY weapon renderer. Cached pixel art; no gameplay RNG or save writes. */
-(()=>{'use strict';const M=window.MG,cache=new Map(),MAX_CACHE=384,supported=new Set(M.weaponDefs.map(w=>w.id));let hits=0,misses=0,cachePixels=0;const TAU=Math.PI*2;
+(()=>{'use strict';const M=window.MG,cache=new Map(),MAX_CACHE=384,MAX_BYTES=4*1024*1024,supported=new Set(M.weaponDefs.map(w=>w.id));let hits=0,misses=0,cachePixels=0;const TAU=Math.PI*2;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const lengths={dagger:16,short:26,gladius:30,long:38,greatsword:43};
 // Quality changes materials and ornament, never the blade's thickness.
@@ -49,7 +49,7 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,b=Math.
  image.getContext('2d').drawImage(c,minX,minY,image.width,image.height,0,0,image.width,image.height);
  const result={canvas:image,ox:ox-minX,oy:oy-minY,dripPoints:wetPoints.filter(p=>p[0]>maxContactX-12),def:id};
  cache.set(key,result);cachePixels+=image.width*image.height;
- if(cache.size>MAX_CACHE){const first=cache.keys().next().value,old=cache.get(first);cachePixels-=old.canvas.width*old.canvas.height;cache.delete(first);}return result;
+ while(cache.size>MAX_CACHE||cachePixels*4>MAX_BYTES){const first=cache.keys().next().value,old=cache.get(first);cachePixels-=old.canvas.width*old.canvas.height;cache.delete(first);}return result;
 }
 function draw(ctx,item,opt={}){const blood=clamp(opt.blood??item.blood??0,0,1),angle=opt.angle||0,scale=opt.scale??1,x=opt.x||0,y=opt.y||0,t=opt.time||0,s=sprite(item,blood,opt.age||0);
 ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(scale,scale);ctx.imageSmoothingEnabled=false;ctx.drawImage(s.canvas,-s.ox,-s.oy);
@@ -62,4 +62,5 @@ if(phase<.65){const sz=(.45+phase)*scale;ctx.fillStyle='#8c2430';ctx.fillRect(Ma
 for(let i=0;i<2;i++){const age=phase-.65-i*.13;if(age<0||age>.7)continue;const dy=(6*age+72*age*age)*scale;ctx.fillStyle=i?'#691e28':'#ae3039';ctx.fillRect(Math.round(tx+i*.7*scale),Math.round(ty+dy),Math.max(1,scale*.7),Math.max(1,scale*(1+age*2.2)));}
 }
 function dripPoint(item,blood,angle){const points=sprite(item,blood,0).dripPoints;if(!points.length)return null;const cs=Math.cos(angle),sn=Math.sin(angle);let tip=points[0];for(const p of points)if(p[0]*sn+p[1]*cs>tip[0]*sn+tip[1]*cs)tip=p;return tip;}
-M.weaponArt={draw,sprite,dripPoint,supports:id=>supported.has(id),cacheStats:()=>({entries:cache.size,max:MAX_CACHE,pixels:cachePixels,bytes:cachePixels*4,hits,misses})};})();
+M.weaponArt={clear(){cache.clear();cachePixels=0;},draw,sprite,dripPoint,supports:id=>supported.has(id),cacheStats:()=>({entries:cache.size,max:MAX_CACHE,pixels:cachePixels,bytes:cachePixels*4,hits,misses})};})();
+
