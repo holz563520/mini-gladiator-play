@@ -168,7 +168,7 @@ function paintYard(g,w,h,f){const VW=f.cam.vw,VH=VW*h/w,k=w/VW,cx=Math.max(VW/2,
  for(const c of chains)chainGround(g,c);
  draws.sort((a,b)=>a.y-b.y);for(const d of draws)d.fn();
  for(const c of chains)chainDrops(g,c);
- for(const a of f.rec||[])for(const e of vis(a.g).embedded||[]){if(a.hidden||a.g.body[e.part]?.missing)continue;const q=anchor(a,e.part),L=e.kind==='crossbow'?11:16,dx=-L,dy=-L*.45,px=(x,y,c,w=1,h=1)=>{g.fillStyle=c;g.fillRect(Math.round(q.x+x),Math.round(q.y+y),w,h);};for(let i=0;i<=L;i++){px(dx*i/L,dy*i/L+1,'#4a3620');px(dx*i/L,dy*i/L,i%2?'#d8ae68':'#a07c48');}px(dx-2,dy-3,'#f6f0de',3,2);px(dx-3,dy-1,'#f6f0de',3,1);px(dx-2,dy+1,'#cfc6b0',3,2);px(dx+2,dy-1,'#b8423a',1,2);px(0,0,'#8f2f28',1,2);}
+ for(const a of f.rec||[])for(const e of vis(a.g).embedded||[]){if(a.hidden||a.g.body[e.part]?.missing)continue;const q=anchor(a,e.part),L=e.kind==='crossbow'?11:16,dx=-L,dy=-L*.08,px=(x,y,c,w=1,h=1)=>{g.fillStyle=c;g.fillRect(Math.round(q.x+x),Math.round(q.y+y),w,h);};for(let i=0;i<=L;i++){px(dx*i/L,dy*i/L+1,'#4a3620');px(dx*i/L,dy*i/L,i%2?'#d8ae68':'#a07c48');}px(dx-2,dy-3,'#f6f0de',3,2);px(dx-3,dy-1,'#f6f0de',3,1);px(dx-2,dy+1,'#cfc6b0',3,2);px(dx+2,dy-1,'#b8423a',1,2);px(0,0,'#8f2f28',1,2);}
  M.renderForgeEffects(g,f.limbs,f.fx);f.over?.(g,f);g.restore();
  // Trefferzahlen und Wundnamen in Bildschirmkoordinaten
  for(const q of f.floats){const u=q.t/1.5,x=w/2+(q.a.x-cx)*k,y=h/2+(q.a.y-(q.a.down?20:58)-cy)*k-u*26+q.dy;g.globalAlpha=u<.75?1:1-(u-.75)/.25;g.font="bold 25px 'Courier Prime',monospace";g.textAlign='center';g.textBaseline='middle';g.fillStyle='#17201c';g.fillText(q.text,Math.max(110,Math.min(w-110,x))+2,y+2);g.fillStyle=q.color;g.fillText(q.text,Math.max(110,Math.min(w-110,x)),y);g.globalAlpha=1;}
