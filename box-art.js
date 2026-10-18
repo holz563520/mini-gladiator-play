@@ -311,9 +311,9 @@ class Scene{
  // ---------- Ein Bild ----------
 
  // ---------- Perspektivenwechsel: Nahaufnahme des echten Gesichts bei harten Kopftreffern ----------
- maybeCut(e,a,d){if((!e.head&&!e.ko)||!window.MG?.faceShot||this.cutOff||this.f.over)return;const f=this.f;if(this.cut||f.t-(this.lastCut??-9)<(e.ko||e.force?0:2.2))return;
-  const big=e.ko||e.crit||e.power>=6.8||(e.kind==='uppercut'&&e.power>=4.5)||(e.kind==='schwinger'&&e.power>=5.4);if(!big&&!e.force)return;
-  this.lastCut=f.t;this.cut={t:0,dur:e.ko?2.3:(this.pendingTooth!=null?1.7:1.5),victim:d.side,attacker:a.side,kind:e.kind,crit:!!e.crit,power:e.power,dir:a.dir,tooth:this.pendingTooth??null,down:!!e.ko,parts:[],impact:false};this.pendingTooth=null;f.slow=1.6;}
+ maybeCut(e,a,d){if((!e.head&&!e.ko)||!window.MG?.faceShot||this.cutOff||this.f.over)return;const f=this.f;if(e.skull&&this.cut)this.cut=null;if(this.cut||f.t-(this.lastCut??-9)<(e.ko||e.force||e.skull?0:2.2))return;
+  const big=e.ko||e.crit||e.power>=6.8||(e.kind==='uppercut'&&e.power>=4.5)||(e.kind==='schwinger'&&e.power>=5.4);if(!big&&!e.force&&!e.skull)return;
+  this.lastCut=f.t;this.cut={t:0,dur:e.skull?3.5:e.ko?2.3:(this.pendingTooth!=null?1.7:1.5),skull:!!e.skull,victim:d.side,attacker:a.side,kind:e.kind,crit:!!e.crit,power:e.power,dir:a.dir,tooth:this.pendingTooth??null,down:!!e.ko,parts:[],impact:false};this.pendingTooth=null;f.slow=1.6;}
  cutFace(d,k,hit){const f=d.face,v=x=>Math.min(1.5,x||0);return {eyeL:v(f.eyeL),eyeR:v(f.eyeR),cheek:v(f.cheek),nose:v(f.nose),lip:v(f.lip),cut:v(f.cut),blood:v(f.blood)};}
  drawCut(c,dt,s,ox,oy){const C=this.cut;if(!C)return;const f=this.f,M=window.MG;const ts=(C.tooth!=null&&C.t>=.25)?.38:1,dtc=dt*ts;C.t+=dtc;if(C.t>=C.dur){this.cut=null;return;}
   const d=f.b[C.victim],a=f.b[C.attacker],w=Math.round(W*s),h=Math.round(H*s),t=C.t,IMP=.28;
@@ -328,9 +328,11 @@ class Scene{
   const fixed={...d.g,teeth:{missing:[...(d.g.teeth?.missing||[]),...d.teethLost],gold:d.g.teeth?.gold||[]}};
   const mood=t<IMP?'shock':snap>.15?'pain':d.state==='down'||C.down?'out':'pain';
   try{M.faceShot.paint(g,w,h,{g:fixed,mood,team:d.side,yaw:t<IMP?-sign*.35*(t/IMP):yaw,tilt,sink,zoom:1.05+.08*snap+(t<IMP?.1*(t/IMP):0),shake:snap*(C.crit?9:5),lines:t<IMP?.5*(t/IMP):Math.max(0,.6-since*2),box:this.cutFace(d,C),blood:Math.min(1,d.face.blood),hurt:0},this.t);}catch(e){g.fillStyle='#120c09';g.fillRect(0,0,w,h);}
+  // Schädelbruch: nach dem Aufprall übernimmt die Verletzungs-Nahaufnahme des Spiels (Knochen, Splitter, Blut), langsamer abgespielt
+  if(C.skull&&t>=IMP&&M.injuryShots){const IS=M.injuryShots;try{IS.paint(g,w,h,{kind:'skullfracture',part:'head',g:fixed,cls:'none',helm:false,injury:'Schädelbruch'},IS.HIT-.03+(t-IMP)*.8);}catch(e2){}}
   // Faust: kommt von der Seite des Angreifers (beim Uppercut von unten), drückt ins Gesicht und zieht sich zurück
   const T=TEAM[C.attacker];const fx=(p)=>{const R=h*.46,start=C.kind==='uppercut'?{x:w*.5+sign*w*.05,y:h*1.25}:{x:sign>0?-w*.2:w*1.2,y:h*(C.kind==='schwinger'?.2:.5)},end=C.kind==='uppercut'?{x:w*.5,y:h*.66}:{x:w*(.5-sign*.07),y:h*(C.kind==='schwinger'?.5:.48)};return {x:lerp(start.x,end.x,p),y:lerp(start.y,end.y,p),R};};
-  if(t<IMP+.16){const p=t<IMP?ease(t/IMP):1-ease((t-IMP)/.16),q2=fx(p);g.save();g.translate(q2.x,q2.y);g.rotate(C.kind==='uppercut'?-.3*sign:sign*.25);
+  if(t<IMP+.16&&!(C.skull&&t>=IMP)){const p=t<IMP?ease(t/IMP):1-ease((t-IMP)/.16),q2=fx(p);g.save();g.translate(q2.x,q2.y);g.rotate(C.kind==='uppercut'?-.3*sign:sign*.25);
    // Spur
    if(t<IMP){g.globalAlpha=.35;g.fillStyle='#fff4d8';const len=w*.5*(1-p)+20;g.fillRect(sign>0?-len:0,-q2.R*.25,len,q2.R*.5);g.globalAlpha=1;}
    const sk=a.g.appearance?.skin||'#c08a62',R=q2.R;g.fillStyle='rgba(30,14,8,.85)';g.beginPath();g.ellipse(0,0,R*1.04,R*.9,0,0,7);g.fill();
@@ -349,13 +351,13 @@ class Scene{
   // Funkenstern am Mund im Moment des Zahnverlusts
   if(C.tooth!=null&&since>0&&since<.35){const k=since/.35,R2=h*(.05+.2*k);g.save();g.translate(w*.5,h*.6);g.globalAlpha=1-k;g.strokeStyle='#fff6d0';g.lineWidth=Math.max(2,s*1.2);for(let i=0;i<8;i++){const an=i*Math.PI/4+.2;g.beginPath();g.moveTo(Math.cos(an)*R2*.45,Math.sin(an)*R2*.45);g.lineTo(Math.cos(an)*R2,Math.sin(an)*R2);g.stroke();}g.restore();}
   // Aufprall-Blitz
-  if(t>=IMP&&since<.09){g.fillStyle='rgba(255,255,255,'+(.8-since*8).toFixed(2)+')';g.fillRect(0,0,w,h);}
+  if(t>=IMP&&since<(C.skull?.2:.09)){g.fillStyle='rgba(255,255,255,'+(C.skull?(.95-since*4.5):(.8-since*8)).toFixed(2)+')';g.fillRect(0,0,w,h);}
   // Übernahme auf die Bühne: diagonaler Wisch hinein und heraus
   const cv=c,k1=Math.min(1,t/.1),k2=t>C.dur-.14?1-(C.dur-t)/.14:0,reveal=k1*(1-k2);
-  c.save();c.beginPath();const wx=reveal*(w+h*.4);c.moveTo(ox,oy);c.lineTo(ox+wx,oy);c.lineTo(ox+wx-h*.4,oy+h);c.lineTo(ox,oy+h);c.closePath();c.clip();c.imageSmoothingEnabled=false;c.drawImage(this.cc,ox,oy);
+  c.save();c.beginPath();const wx=reveal*(w+h*.4);c.moveTo(ox,oy);c.lineTo(ox+wx,oy);c.lineTo(ox+wx-h*.4,oy+h);c.lineTo(ox,oy+h);c.closePath();c.clip();c.imageSmoothingEnabled=false;const shk=C.skull&&t>=IMP&&t<IMP+.7?(1-(t-IMP)/.7)*s*3:0;c.drawImage(this.cc,ox+(Math.random()-.5)*shk,oy+(Math.random()-.5)*shk);
   // Beschriftung der Nahaufnahme
   const fs=Math.max(14,Math.round(s*9));c.textAlign='center';c.textBaseline='middle';const name={gerade:'TREFFER!',schwinger:'HAKEN!',uppercut:'UPPERCUT!'}[C.kind]+(C.crit?' VOLLTREFFER':'');
-  if(t>IMP&&t<IMP+.9){const k=ease((t-IMP)/.12);c.font=`900 ${Math.round(fs*(1.9-.4*k))}px Georgia,serif`;c.fillStyle='rgba(0,0,0,.6)';c.fillText(name,ox+w/2+3,oy+h*.14+3);c.fillStyle=C.crit?'#ffd25a':'#fff';c.fillText(name,ox+w/2,oy+h*.14);}
+  if(!C.skull&&t>IMP&&t<IMP+.9){const k=ease((t-IMP)/.12);c.font=`900 ${Math.round(fs*(1.9-.4*k))}px Georgia,serif`;c.fillStyle='rgba(0,0,0,.6)';c.fillText(name,ox+w/2+3,oy+h*.14+3);c.fillStyle=C.crit?'#ffd25a':'#fff';c.fillText(name,ox+w/2,oy+h*.14);}
   if(C.tooth!=null&&t>IMP+.1&&t<IMP+1.45){c.font=`900 ${Math.round(fs*1.2)}px Georgia,serif`;c.fillStyle='#fff';c.fillText('ZAHN WEG!',ox+w/2,oy+h*.9);}
   c.font=`700 ${Math.round(fs*.8)}px Georgia,serif`;c.fillStyle='rgba(243,226,176,.85)';c.textAlign='left';c.fillText(this.names[C.victim],ox+s*5,oy+h-s*6);
   c.restore();}

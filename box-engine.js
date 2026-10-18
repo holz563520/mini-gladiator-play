@@ -135,12 +135,14 @@ function impact(f,a){
   // Zahn ausgeschlagen: harte Treffer auf den Mund (Schwinger, Uppercut)
   if(P>(kind==='gerade'?6.5:4.8)&&r()<(kind==='gerade'?.06:.15)*Math.pow(P/7,2)){const left=[...Array(TEETH).keys()].filter(i=>!d.teethLost.includes(i)&&!(d.g.teeth?.missing||[]).includes(i)&&!(d.g.teeth?.gold||[]).includes(i));if(left.length){const front=left.filter(i=>i>=2&&i<=5),pool=front.length&&r()<.75?front:left,i=pool[Math.floor(r()*pool.length)];d.teethLost.push(i);fz.lip=Math.min(1.6,fz.lip+.5);fz.blood+=.6;addInjury(f,d,'Zahn ausgeschlagen','Mund',1,{tooth:i});ev(f,'tooth',{who:d.side,tooth:i});}}
   // Schädelbruch: nur wenn der Schläger viel stärker ist als der Getroffene zäh ist, und nur bei schweren Treffern
-  const gap=a.str-d.tough-.25;if(kind!=='gerade'&&gap>0&&P>9&&r()<gap*gap*.03*(P/12)){addInjury(f,d,'Schädelbruch','Kopf',3);d.cons=Math.min(d.cons,0);d.skull=true;
-   if(r()<.1+gap*.3)d.dead=true;}
+  // Kraftverhältnis Schläger : Widerstand des Getroffenen (Härte und Kraft). Etwa gleich stark: so gut wie nie; deutlich stärker: sehr wahrscheinlich.
+  const resist=.5*d.tough+.5*d.str,q=(a.str+.04)/(resist+.04),prS=q>1.35?Math.min(.9,Math.pow((q-1.35)/1.0,1.3)*.5):.0003*q;
+  if(kind!=='gerade'&&P>7&&r()<prS*(P/10)){addInjury(f,d,'Schädelbruch','Kopf',3);d.cons=Math.min(d.cons,0);d.skull=true;
+   if(r()<.01+.015*Math.max(0,q-2))d.dead=true;}
   if(P>5)addInjury(f,d,'Prellung',kind==='uppercut'?'Kinn':kind==='schwinger'?'Wange':'Gesicht',P/6);
  }else{a.st.bodyHits++;d.energy=Math.max(0,d.energy-P*1.7);d.cons-=P*.28;d.bodySnap=.25;d.face.ribs=Math.min(1.6,d.face.ribs+P*.04);
   if(P>6&&r()<.04*(P/8))addInjury(f,d,'Rippenprellung','Rippen',P/6);else if(P>4)addInjury(f,d,'Prellung','Rumpf',P/8);}
- d.hitFlash=.18;d.lastHit={kind,head,crit,P};const ko=d.cons<=0||(head&&d.cons<d.consMax*.28&&P>6&&r()<.30+P*.025);ev(f,'hit',{who:a.side,kind,head,crit,power:P,ko});
+ d.hitFlash=.18;d.lastHit={kind,head,crit,P};const ko=d.cons<=0||(head&&d.cons<d.consMax*.28&&P>6&&r()<.30+P*.025);ev(f,'hit',{who:a.side,kind,head,crit,power:P,ko,skull:!!d.skull&&!d.skullEv});if(d.skull)d.skullEv=true;
  f.cheer=Math.min(1,f.cheer+(P>7?.35:.14));
  if(d.state==='wind'&&r()<.5+P*.04){d.state='stagger';d.stagger=.18;ev(f,'interrupt',{who:d.side});}
  // Taumeln und Niederschlag
