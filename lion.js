@@ -123,8 +123,8 @@ function defeat(){const n=L().recruits.length,v=document.createElement('div');v.
  v.addEventListener('click',()=>{v.remove();S.battle=null;M.stains=[];M.limbs=[];M.ui.click('nav:home');M.ui.render();setTimeout(()=>playAftermath(),400);});}
 // ---------- Filmbühne ----------
 let film=null,clock=0;
-function play(o){stopFilm();const v=document.createElement('div');v.className='smith-ceremony smith-intro lion-film no-smith-song'+(o.silent?' scene-silence':'');v.innerHTML='<div><div class="scene-bubble-slot"><div class="scene-bubble" id="lionBubble" hidden></div></div><canvas id="lionCanvas" width="660" height="420"></canvas><p id="lionText" aria-live="polite"></p></div>';document.body.appendChild(v);
- v.addEventListener('click',()=>{if(!film)return;if(film.line)film.ack=true;else if(film.beats[film.i]?.tapSkip)film.skip=true;});
+function play(o){stopFilm();const v=document.createElement('div');v.className='smith-ceremony smith-intro lion-film no-smith-song'+(o.silent?' scene-silence':'');v.innerHTML='<div><div class="medic-top"><span>'+(o.label||'')+'</span><button class="btn small" type="button" data-lionskip="1">SZENE ÜBERSPRINGEN ›</button></div><div class="scene-bubble-slot"><div class="scene-bubble" id="lionBubble" hidden></div></div><canvas id="lionCanvas" width="660" height="420"></canvas><p id="lionText" aria-live="polite"></p></div>';document.body.appendChild(v);
+ v.addEventListener('click',e=>{if(!film)return;if(e.target.closest?.('[data-lionskip]')){e.stopPropagation();const d=film.done;stopFilm();d?.();return;}if(film.line)film.ack=true;else if(film.beats[film.i]?.tapSkip)film.skip=true;});
  film={...o,view:v,i:-1,t:0,bt:0,line:null,shown:0,cam:{...(o.cam||{x:450,y:335,vw:300})},camTo:null};next();}
 function stopFilm(){film?.view?.remove();film=null;}
 const need=t=>Math.max(2.3,1.1+t.length*.062);

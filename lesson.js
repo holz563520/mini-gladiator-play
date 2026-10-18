@@ -422,6 +422,7 @@ if(TEST){prepare();startCard();}
 // Spielstände, die das Medikus-Kapitel schon früher abgeschlossen hatten, bekommen eine Einladung und behalten ihr Gold.
 else{const RESUME={s1:scene1,s2:scene2,s3:scene3,go:stepArena,s5:scene5,fight:scene5,s7:scene7,s8:scene8,s9:scene9};let medicSeen=S.medic?.stage,resume=true,offered=false;
  setInterval(()=>{const med=S.medic?.stage;if(medicSeen!=='done'&&med==='done'&&!S.lesson?.stage){S.lesson={stage:'ready'};try{M.persist();}catch{}}medicSeen=med;
+  if(S.doktor?.armed&&!S.doktor?.stage)return; /* erst kommt das Doktor-Kapitel (doktor.js) */
   if(film||S.battle||window.ArenaUI?.isOpen?.()||M.ui.getPage?.()!=='home'||document.querySelector('.lesson-end,.lesson-start,.medic-end,.medic-film,.medic-start,.lion-film,.smith-ceremony,.mg-dawn,.hs-market,.hs-present'))return;
   const ls=S.lesson?.stage;if(ls==='ready'){scene1();return;}
   if(resume){resume=false;if(RESUME[ls]){RESUME[ls]();return;}}
