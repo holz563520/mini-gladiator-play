@@ -58,7 +58,7 @@ const arrowHit=(w,projectile)=>!!projectile&&['bow','crossbow'].includes(w.id);
 function woundType(a,id,w,damage,p,projectile=false){
  if(p.fracture?.crushed)return 'Trümmerbruch';
  if(p.internal)return p.hp<20?'Schwere innere Verletzung':'Tiefe Bauchwunde';
- if(p.fracture)return p.fracture.severe?'Schwerer Knochenbruch':'Knochenbruch';
+ if(p.fracture?.skull||id==='head'&&p.skullFracture)return 'Schädelbruch';if(p.fracture)return p.fracture.severe?'Schwerer Knochenbruch':'Knochenbruch';
  if(w.bladed||arrowHit(w,projectile)){const stab=projectile||piercingAttack(a,w)||w.attackKey==='thrust';if(stab)return damage>24||p.grade>=3?'Tiefe Stichverletzung':'Stichverletzung';if(p.grade>=3&&['lh','rh','lf','rf','lfa','rfa','lsh','rsh'].includes(id))return 'Sehnenverletzung';return damage>22?'Tiefe Schnittwunde':damage>9?'Schnittwunde':'Schürfwunde';}
  if(id==='head'&&(damage>18||p.grade>=2))return 'Gehirnerschütterung';
  if(['lh','rh','lf','rf','ls','rs'].includes(id)&&damage>16)return 'Gelenkverletzung';
