@@ -130,7 +130,7 @@ function impact(f,a){
   const side=a.side?'eyeL':'eyeR';const fz=d.face;
   if(kind==='gerade'){fz.nose+=P*.05;fz[side]+=P*.03;}else if(kind==='schwinger'){fz.cheek+=P*.05;fz[side]+=P*.05;}else{fz.lip+=P*.05;fz.cheek+=P*.02;}
   for(const k of Object.keys(fz))fz[k]=Math.min(1.6,fz[k]);
-  if(P>6&&r()<.10*(P/8)){fz.cut=Math.min(1.5,fz.cut+.6);fz.blood+=.5;addInjury(f,d,'Platzwunde','Augenbraue',P/6);}
+  if(P>5&&r()<.2*(P/8)){fz.cut=Math.min(1.5,fz.cut+.6);fz.blood+=.5;addInjury(f,d,'Platzwunde','Augenbraue',P/6);}
   if(kind==='gerade'&&P>7&&r()<.025*(P/8)){addInjury(f,d,'Nasenbruch','Nase',P/6);fz.nose=1.6;fz.blood+=1;}
   // Zahn ausgeschlagen: harte Treffer auf den Mund (Schwinger, Uppercut)
   if(kind!=='gerade'&&P>5.5&&r()<.032*Math.pow(P/7,2)){const left=[...Array(TEETH).keys()].filter(i=>!d.teethLost.includes(i)&&!(d.g.teeth?.missing||[]).includes(i)&&!(d.g.teeth?.gold||[]).includes(i));if(left.length){const front=left.filter(i=>i>=2&&i<=5),pool=front.length&&r()<.75?front:left,i=pool[Math.floor(r()*pool.length)];d.teethLost.push(i);fz.lip=Math.min(1.6,fz.lip+.5);fz.blood+=.6;addInjury(f,d,'Zahn ausgeschlagen','Mund',1,{tooth:i});ev(f,'tooth',{who:d.side,tooth:i});}}
@@ -140,17 +140,16 @@ function impact(f,a){
   if(P>5)addInjury(f,d,'Prellung',kind==='uppercut'?'Kinn':kind==='schwinger'?'Wange':'Gesicht',P/6);
  }else{a.st.bodyHits++;d.energy=Math.max(0,d.energy-P*1.7);d.cons-=P*.28;d.bodySnap=.25;d.face.ribs=Math.min(1.6,d.face.ribs+P*.04);
   if(P>6&&r()<.04*(P/8))addInjury(f,d,'Rippenprellung','Rippen',P/6);else if(P>4)addInjury(f,d,'Prellung','Rumpf',P/8);}
- d.hitFlash=.18;d.lastHit={kind,head,crit,P};ev(f,'hit',{who:a.side,kind,head,crit,power:P});
+ d.hitFlash=.18;d.lastHit={kind,head,crit,P};const ko=d.cons<=0||(head&&d.cons<d.consMax*.28&&P>6&&r()<.30+P*.025);ev(f,'hit',{who:a.side,kind,head,crit,power:P,ko});
  f.cheer=Math.min(1,f.cheer+(P>7?.35:.14));
  if(d.state==='wind'&&r()<.5+P*.04){d.state='stagger';d.stagger=.18;ev(f,'interrupt',{who:d.side});}
  // Taumeln und Niederschlag
  if(P>7.5&&head&&r()<.35+P*.03){d.stagger=.45+P*.03;d.state='stagger';d.stT=0;}
- if(d.cons<=0||(head&&d.cons<d.consMax*.28&&P>6&&r()<.30+P*.025)){knockDown(f,d);}
+ if(ko){knockDown(f,d);}
 }
 function knockDown(f,d){d.state='down';d.down=1;d.stT=0;d.downs++;d.opp.st.knockdowns++;d.opp.st.points+=12;d.count=0;d.stagger=0;f.cheer=1;f.slow=.6;ev(f,'down',{who:d.side});
- // Steht er wieder auf? Wille, Härte, Restbewusstsein; ab dem dritten Niederschlag Abbruch
- const up=d.dead||d.skull?0:clamp(.15+.45*d.will+.25*d.tough+.4*Math.max(0,d.cons)/d.consMax-.18*(d.downs-1),0,.92);
- d.willRise=d.downs<3&&d.cons>-25&&f.r()<up;d.downDur=d.willRise?2.2+f.r()*1.2:3.2;}
+ // Wer am Boden liegt, hat verloren: kein Aufstehen, der Kampf ist aus.
+ d.willRise=false;d.downDur=2.6;}
 function end(f,winner,how){if(f.over)return;f.over=true;const [A,B]=f.b;f.result={winner,how,time:Math.round(f.t*10)/10,
  points:[Math.round(A.st.points),Math.round(B.st.points)],stats:f.b.map(b=>b.st),injuries:f.b.map(b=>b.injuries),teeth:f.b.map(b=>[...b.teethLost]),skull:f.b.map(b=>!!b.skull),dead:f.b.map(b=>!!b.dead)};
  ev(f,'end',{winner,how});f.cheer=1;}
@@ -161,7 +160,7 @@ BX.step=function(f,dt){
   const T=a.act&&TECH[a.act.kind];a.stT+=dt;tickVisual(a,dt);
   a.energy=Math.min(a.energyMax,a.energy+dt*(4.5+7*a.sta)*(a.state==='block'||a.state==='step'?.8:1));
   if(a.cons<a.consMax&&!a.down)a.cons=Math.min(a.consMax,a.cons+dt*(.2+.6*a.tough));
-  if(a.state==='down'){if(a.stT>=a.downDur){if(a.willRise){a.state='idle';a.down=0;a.cons=Math.max(a.cons,a.consMax*.32);a.energy=Math.max(a.energy,40);ev(f,'rise',{who:a.side});a.think=.5;}else{end(f,a.opp.side,a.dead?'Tod':a.skull?'Schädelbruch':a.downs>=3?'Technischer K.O.':'K.O.');return;}}continue;}
+  if(a.state==='down'){if(a.stT>=a.downDur){if(a.willRise){a.state='idle';a.down=0;a.cons=Math.max(a.cons,a.consMax*.32);a.energy=Math.max(a.energy,40);ev(f,'rise',{who:a.side});a.think=.5;}else{end(f,a.opp.side,a.dead?'Tod':a.skull?'Schädelbruch':'K.O.');return;}}continue;}
   if(a.stagger>0){a.stagger-=dt;a.vx=-a.dir*35;if(a.stagger<=0){a.state='idle';a.think=.08;}}
   if(a.state==='wind'&&a.stT>=a.act.wind){a.state='strike';a.stT=0;}
   else if(a.state==='strike'){if(!a.act.hit&&a.stT>=a.act.strike*.5)impact(f,a);if(f.over)return;if(a.state==='strike'&&a.stT>=a.act.strike){a.state='recover';a.stT=0;}}
