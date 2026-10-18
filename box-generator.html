@@ -46,7 +46,7 @@ progress{width:100%}
 <div class="wrap">
 <span class="tag">ARENA THEORY · NEUE KAMPFART · VORSCHAU</span>
 <h1>Faustkampf-Generator</h1>
-<p>Nahkampf Mann gegen Mann mit eigener Arena-Grafik, Publikum mit Wetten und eigenen Geräuschen. Techniken: Gerade, Schwinger, Uppercut (selten), Blocken, Ausweichen, jede mit eigenem Fertigkeitswert. Ein Kampf dauert höchstens 30 Sekunden, dann wird nach Punkten entschieden. Verletzungen sind fast immer Prellungen und Platzwunden. Zähne können ausgeschlagen werden und werden nach dem Kampf durch Goldzähne ersetzt. Ein Schädelbruch kommt nur bei großem Kraftunterschied und sehr selten vor. <b>Nur eine Testseite:</b> Am Spiel und an den Spielständen ändert sich nichts.</p>
+<p>Nahkampf Mann gegen Mann mit eigener Arena-Grafik, Publikum mit Wetten und eigenen Geräuschen. Techniken: Gerade, Schwinger, Uppercut (selten) mit eigenem Boxwert; Blocken, Ausweichen/Wegducken und Rückwärtssprung kommen aus den vorhandenen Spielwerten. Alles wird im Kampf trainiert, wie im Spiel bis zur persönlichen Obergrenze. Ein Kampf dauert höchstens 30 Sekunden, dann wird nach Punkten entschieden. Verletzungen sind fast immer Prellungen und Platzwunden. Zähne können ausgeschlagen werden und werden nach dem Kampf durch Goldzähne ersetzt. Ein Schädelbruch kommt nur bei großem Kraftunterschied und sehr selten vor. <b>Nur eine Testseite:</b> Am Spiel und an den Spielständen ändert sich nichts.</p>
 
 <div class="card">
  <div class="row"><b>Schwierigkeitsgrad</b> <span class="pill" id="lvname"></span></div>
@@ -59,6 +59,8 @@ progress{width:100%}
   <label class="hint">Eigener Kämpfer (Bernoulli um) <input type="range" id="mean" min="5" max="80" value="20"> <b id="meanv">20</b></label>
   <select id="spd"><option value=".5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
   <button id="snd">🔇 Ton einschalten</button>
+  <label class="hint"><input type="checkbox" id="train" checked> Training anwenden (Werte steigen bis zur persönlichen Grenze)</label>
+  <label class="hint"><input type="checkbox" id="series"> Dauertraining: nach jedem Kampf automatisch neuer Kampf</label>
  </div>
 </div>
 <canvas id="stage" width="1280" height="720"></canvas>
@@ -97,16 +99,16 @@ const M=window.MG,BX=window.BX,$=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nf=(v,d=1)=>Number.isFinite(v)?v.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}):'–';
 let level=8,own=null,opp=null,fight=null,seed=1,speed=1,acc=0,last=performance.now();
-const scene=new BXA.Scene($('stage'));
+const scene=new BXA.Scene($("stage"));window.__scene=scene;
 const STATS=[['dexterity','Geschick'],['strength','Kraft'],['stamina','Ausdauer'],['reflex','Reflex'],['agility','Beweglichkeit'],['toughness','Härte'],['will','Wille']];
-function recruit(mean){const g=M.makeGladiator(0,true);if(mean!==20){for(const [k] of STATS)g.stats[k]=M.bernoulliValue(mean);}g.boxing=null;BX.ensureBoxing(g,mean);return g;}
+function recruit(mean){const g=M.makeGladiator(0,true);if(mean!==20){for(const [k] of STATS){g.stats[k]=M.bernoulliValue(mean);g.caps.stats[k]=Math.max(g.caps.stats[k],g.stats[k]);}for(const k of ['dodge','backstep']){g.moves[k]=M.bernoulliValue(mean);g.caps.moves[k]=Math.max(g.caps.moves[k],g.moves[k]);}}g.boxing=null;BX.ensureBoxing(g,mean);return g;}
 function newOwn(){own=recruit(+$('mean').value);newOpp();}
 function newOpp(){opp=BX.makeOpponent(own,level,Math.floor(Math.random()*1e9),()=>M.makeGladiator(0,true));opp.enemy=true;cards();figures();}
 function lvButtons(){$('lv').innerHTML='';for(const L of BX.LEVELS){const b=document.createElement('button');b.textContent=L.n;b.style.background=L.color;b.style.borderColor=L.color;b.title=L.label+' · Gegner '+Math.round(L.ratio*100)+' %';if(L.n===level)b.className='on';b.onclick=()=>{level=L.n;lvButtons();newOpp();};$('lv').append(b);}const L=BX.LEVELS[level-1];$('lvname').textContent='Grad '+L.n+' · '+L.label+' · Gegner ≈ '+Math.round(L.ratio*100)+' % deiner Stärke';}
 function teethHtml(g,lost=[]){let h='<span class="teeth" title="Zähne (von links nach rechts)">';for(let i=0;i<8;i++){const c=lost.includes(i)||g.teeth?.missing?.includes(i)?'gap':g.teeth?.gold?.includes(i)?'gold':'';h+=`<span class="${c}"></span>`;}return h+'</span>';}
 function card(g,side){const r=BX.rating(g);let h=`<h3>${side?'🔴':'🔵'} ${esc(g.name)} <span class="pill">Kampfwert ${nf(r,1)}</span> <span class="pill">${g.height} cm · ${g.weight} kg</span></h3><div class="bars">`;
- for(const [k,n] of STATS){const v=g.stats[k];h+=`<span>${n}</span><span class="b"><i style="width:${v}%"></i></span><span class="mono">${v}</span>`;}
- for(const [k,n] of BX.SKILLS){const v=g.boxing[k];h+=`<span>${n}</span><span class="b sk"><i style="width:${v}%"></i></span><span class="mono">${v}</span>`;}
+ for(const [k,n] of STATS){const v=g.stats[k],cap=g.caps?.stats?.[k];h+=`<span>${n}</span><span class="b"><i style="width:${v}%"></i></span><span class="mono">${nf(v,1)}${cap?' / '+Math.round(cap):''}</span>`;}
+ for(const [k,n,grp,key] of BX.SKILLS){const v=Math.round(BX.skillValue(g,k)*10)/10,cap=g.caps?.[grp]?.[key];h+=`<span>${n}${grp==='boxing'?'':' <small class="hint">(Spielwert)</small>'}</span><span class="b sk"><i style="width:${v}%"></i></span><span class="mono">${nf(v,1)}${cap?' / '+Math.round(cap):''}</span>`;}
  h+=`</div><p class="hint" style="margin:8px 0 0">Zähne ${teethHtml(g,fight?.b[side]?.teethLost||[])}</p>`;return h;}
 function cards(){$('c0').innerHTML=card(own,0);$('c1').innerHTML=card(opp,1);}
 function figures(){for(const [i,g] of [[0,own],[1,opp]]){const box=$('f'+i);box.innerHTML=`<h3>${i?'🔴':'🔵'} ${esc(g.name)} ${teethHtml(g)}</h3><div class="figs"><figure><canvas id="tf${i}"></canvas><figcaption>Arenafigur (jubelnd)</figcaption></figure><figure><canvas id="pf${i}"></canvas><figcaption>Porträt</figcaption></figure><figure><canvas id="ff${i}" width="320" height="208"></canvas><figcaption>Großaufnahme</figcaption></figure></div>`;
@@ -116,18 +118,18 @@ function figures(){for(const [i,g] of [[0,own],[1,opp]]){const box=$('f'+i);box.
 function odds(){const ra=BX.rating(own),rb=BX.rating(opp),p=1/(1+Math.exp(-(ra-rb)/3.2)),q=(x)=>nf(Math.max(1.05,.92/x),2);return 'Blau '+q(p)+' · Rot '+q(1-p);}
 function start(same){if(!same)seed=Math.floor(Math.random()*1e9);fight=BX.createFight(own,opp,seed);scene.setFight(fight,[own.name,opp.name]);scene.odds=odds();acc=0;BXS.bell(1);cards();$('res').innerHTML='<h2>Ergebnis</h2><p class="hint">Kampf läuft …</p>';shown=false;}
 let shown=false;
-function showResult(){const f=fight,R=f.result,names=[own.name,opp.name];const after=BX.applyAftermath(f,{apply:true});
+function showResult(){const f=fight,R=f.result,names=[own.name,opp.name];const train=$('train').checked,after=BX.applyAftermath(f,{apply:true,learn:train?M.addLearning:(g,grp,key,a)=>0});
  let h=`<h2>Ergebnis: ${R.winner<0?'Unentschieden':esc(names[R.winner])+' gewinnt'} · ${esc(R.how)} nach ${nf(R.time,1)} s</h2><p class="hint">Punkte ${Math.round(R.points[0])} : ${Math.round(R.points[1])}</p><div class="grid2">`;
  f.b.forEach((b,i)=>{const s=b.st,T=k=>`${s.landed[k]}/${s.thrown[k]}`;const inj={};for(const j of b.injuries)inj[j.type]=(inj[j.type]||0)+1;const gain=after[i].gain;
   h+=`<div class="card ${i?'red':'blue'}"><h3>${esc(names[i])}</h3><table><tr><th>Technik</th><th class="n">Treffer/Versuche</th><th class="n">Schaden</th></tr>`+['gerade','schwinger','uppercut'].map(k=>`<tr><td>${BX.TECH[k].label}</td><td class="n">${T(k)}</td><td class="n">${nf(s.dmg[k],0)}</td></tr>`).join('')+
-  `<tr><td>Geblockt / ausgewichen</td><td class="n">${s.blocks} / ${s.dodges}</td><td></td></tr><tr><td>Kopf- / Körpertreffer</td><td class="n">${s.headHits} / ${s.bodyHits}</td><td></td></tr><tr><td>Niederschläge erzielt</td><td class="n">${s.knockdowns}</td><td></td></tr></table>`+
+  `<tr><td>Geblockt / ausgewichen / Rückschritt</td><td class="n">${s.blocks} / ${s.dodges} / ${s.evaded}</td><td></td></tr><tr><td>Kopf- / Körpertreffer</td><td class="n">${s.headHits} / ${s.bodyHits}</td><td></td></tr><tr><td>Niederschläge erzielt</td><td class="n">${s.knockdowns}</td><td></td></tr></table>`+
   `<p><b>Verletzungen:</b> ${Object.keys(inj).length?Object.entries(inj).map(([k,v])=>esc(k)+(v>1?' ×'+v:'')).join(', '):'keine'}${b.dead?' · <b style="color:#ff8a6a">TOT</b>':''}</p>`+
   (after[i].gold?`<p><b>Zähne:</b> ${after[i].gold} ausgeschlagen → durch Goldzähne ersetzt ${teethHtml(b.g)}</p>`:'')+
-  `<p class="hint">Trainingswirkung (Vorschlag, nicht angewendet): `+Object.entries(gain).filter(([,v])=>v>0).map(([k,v])=>(STATS.find(x=>x[0]===k)?.[1]||BX.SKILLS.find(x=>x[0]===k)?.[1]||k)+' +'+nf(v,1)).join(', ')+`</p></div>`;});
+  (train?`<p><b>Training:</b> `+(Object.entries(gain).filter(([,v])=>v>0).map(([path,v])=>{const [grp,key]=path.split(':');return (BX.TRAIN_KEYS.find(x=>x[0]===grp&&x[1]===key)?.[2]||key)+' +'+nf(v,2);}).join(', ')||'nichts')+`</p>`:`<p class="hint">Training ausgeschaltet.</p>`)+`</div>`;});
  $('res').innerHTML=h+'</div>';cards();figures();}
 function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;
  if(fight){acc+=dt*speed*(fight.slow>0?.45:1);let n=0;while(acc>=1/60&&n<8){BX.step(fight,1/60);acc-=1/60;n++;}scene.consume(BXS);BXS.crowd(fight.cheer,!fight.over);
-  if(fight.over&&!shown&&fight.t-fight.result.time>.8){shown=true;showResult();}}
+  if(fight.over&&!shown&&fight.t-fight.result.time>.8){shown=true;showResult();if($('series').checked)setTimeout(()=>{if($('series').checked&&fight.over){newOpp();start(false);}},2500);}}
  scene.render(dt);requestAnimationFrame(loop);}
 $('start').onclick=()=>start(false);$('again').onclick=()=>{if(fight){for(const g of [own,opp]){}start(true);}else start(false);};
 $('newOwn').onclick=()=>{newOwn();};$('newOpp').onclick=()=>newOpp();

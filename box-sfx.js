@@ -43,7 +43,7 @@ const S={
  event(e,f){if(!this.ready)return;switch(e.type){
   case 'throw':this.whoosh(e.kind==='gerade'?.7:1);break;
   case 'hit':this.hit(e.kind,e.head,e.power,e.crit);break;
-  case 'block':this.block();break;case 'dodge':this.dodge();break;case 'miss':break;
+  case 'block':this.block();break;case 'dodge':case 'evade':this.dodge();break;case 'backstep':burst(now(),{dur:.07,type:'highpass',f0:1800,peak:.12});burst(now()+.09,{dur:.06,type:'highpass',f0:2200,peak:.1});break;case 'miss':break;
   case 'down':this.down();break;case 'tooth':this.tooth();break;case 'end':this.end(e.how);break;case 'rise':roar(now(),.25,1.2);break;}}
 };
 window.BXS=S;
