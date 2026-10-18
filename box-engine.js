@@ -162,7 +162,7 @@ BX.step=function(f,dt){
   const T=a.act&&TECH[a.act.kind];a.stT+=dt;tickVisual(a,dt);
   a.energy=Math.min(a.energyMax,a.energy+dt*(4.5+7*a.sta)*(a.state==='block'||a.state==='step'?.8:1));
   if(a.cons<a.consMax&&!a.down)a.cons=Math.min(a.consMax,a.cons+dt*(.2+.6*a.tough));
-  if(a.state==='down'){if(a.stT>=a.downDur){if(a.willRise){a.state='idle';a.down=0;a.cons=Math.max(a.cons,a.consMax*.32);a.energy=Math.max(a.energy,40);ev(f,'rise',{who:a.side});a.think=.5;}else{end(f,a.opp.side,a.dead?'Tod':a.skull?'Schädelbruch':'K.O.');return;}}continue;}
+  if(a.state==='down'){if(a.stT>=(a.skull?5.4:a.downDur)){if(a.willRise){a.state='idle';a.down=0;a.cons=Math.max(a.cons,a.consMax*.32);a.energy=Math.max(a.energy,40);ev(f,'rise',{who:a.side});a.think=.5;}else{end(f,a.opp.side,a.dead?'Tod':a.skull?'Schädelbruch':'K.O.');return;}}continue;}
   if(a.stagger>0){a.stagger-=dt;a.vx=-a.dir*35;if(a.stagger<=0){a.state='idle';a.think=.08;}}
   if(a.state==='wind'&&a.stT>=a.act.wind){a.state='strike';a.stT=0;}
   else if(a.state==='strike'){if(!a.act.hit&&a.stT>=a.act.strike*.5)impact(f,a);if(f.over)return;if(a.state==='strike'&&a.stT>=a.act.strike){a.state='recover';a.stT=0;}}
