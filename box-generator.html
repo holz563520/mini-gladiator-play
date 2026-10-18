@@ -79,7 +79,7 @@ progress{width:100%}
 <div class="card">
  <h2>Spielfigur und Boxer im Vergleich</h2>
  <p class="hint">Links die Figur wie im Spiel, daneben derselbe Kämpfer im Boxring (gleiche Haut, Haare, Bart, Größe, Muskeln und Zähne), dann Porträt und Großaufnahme. Mit den Knöpfen lassen sich Lücke und Goldzahn auch ohne Kampf ausprobieren.</p>
- <div class="row"><button id="knock">Zahn ausschlagen (Vorschau)</button><button id="goldify">Lücken durch Goldzähne ersetzen</button><button id="clearT">Zähne zurücksetzen</button></div>
+ <div class="row"><button id="knock">Zahn ausschlagen (Vorschau)</button><button id="days">10 Tage vergehen (Goldzähne der Veteranen)</button><button id="goldify">Lücken durch Goldzähne ersetzen</button><button id="clearT">Zähne zurücksetzen</button></div>
  <div class="grid2"><div id="f0"></div><div id="f1"></div></div>
 </div>
 
@@ -129,7 +129,7 @@ function showResult(){const f=fight,R=f.result,names=[own.name,opp.name];const t
   h+=`<div class="card ${i?'red':'blue'}"><h3>${esc(names[i])}</h3><table><tr><th>Technik</th><th class="n">Treffer/Versuche</th><th class="n">Schaden</th></tr>`+['gerade','schwinger','uppercut'].map(k=>`<tr><td>${BX.TECH[k].label}</td><td class="n">${T(k)}</td><td class="n">${nf(s.dmg[k],0)}</td></tr>`).join('')+
   `<tr><td>Geblockt / ausgewichen / Rückschritt</td><td class="n">${s.blocks} / ${s.dodges} / ${s.evaded}</td><td></td></tr><tr><td>Kopf- / Körpertreffer</td><td class="n">${s.headHits} / ${s.bodyHits}</td><td></td></tr><tr><td>Niederschläge erzielt</td><td class="n">${s.knockdowns}</td><td></td></tr></table>`+
   `<p><b>Verletzungen:</b> ${Object.keys(inj).length?Object.entries(inj).map(([k,v])=>esc(k)+(v>1?' ×'+v:'')).join(', '):'keine'}${b.dead?' · <b style="color:#ff8a6a">TOT</b>':''}</p>`+
-  (after[i].gold?`<p><b>Zähne:</b> ${after[i].gold} ausgeschlagen → ${after[i].vet?'Veteran: durch Goldzähne ersetzt':'bleiben als Lücken (kein Veteran)'} ${teethHtml(b.g)}</p>`:'')+
+  (after[i].gold?`<p><b>Zähne:</b> ${after[i].gold} ausgeschlagen → ${after[i].vet?'Veteran: Lücke bleibt zunächst, Goldzahn nach '+BX.GOLD_DAYS+' Tagen':'bleiben als Lücken (kein Veteran)'} ${teethHtml(b.g)}</p>`:'')+
   (train?`<p><b>Training:</b> `+(Object.entries(gain).filter(([,v])=>v>0).map(([path,v])=>{const [grp,key]=path.split(':');return (BX.TRAIN_KEYS.find(x=>x[0]===grp&&x[1]===key)?.[2]||key)+' +'+nf(v,2);}).join(', ')||'nichts')+`</p>`:`<p class="hint">Training ausgeschaltet.</p>`)+`</div>`;});
  $('res').innerHTML=h+'</div>';cards();figures();}
 function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;
@@ -142,7 +142,7 @@ $('mean').oninput=()=>{$('meanv').textContent=$('mean').value;};$('mean').onchan
 $('spd').onchange=()=>{speed=+$('spd').value;};$('bars').onchange=()=>{scene.showBars=$('bars').checked;};$('cuts').onchange=()=>{scene.cutOff=!$('cuts').checked;if(scene.cutOff)scene.cut=null;};
 let sound=false;$('snd').onclick=()=>{if(!sound){if(BXS.unlock()){sound=true;BXS.enable(true);$('snd').textContent='🔊 Ton aus';}}else{sound=false;BXS.enable(false);$('snd').textContent='🔇 Ton einschalten';}};
 $('knock').onclick=()=>{for(const g of [own,opp]){g.teeth??={missing:[],gold:[]};const free=[2,3,4,5,1,6,0,7].filter(i=>!g.teeth.missing.includes(i)&&!g.teeth.gold.includes(i));if(free.length)g.teeth.missing.push(free[0]);}cards();figures();};
-$('goldify').onclick=()=>{for(const g of [own,opp]){g.teeth??={missing:[],gold:[]};g.teeth.gold=[...new Set([...g.teeth.gold,...g.teeth.missing])];g.teeth.missing=[];}cards();figures();};
+$('days').onclick=()=>{for(const g of [own,opp])BX.advanceDays(g,10);cards();figures();};$('goldify').onclick=()=>{for(const g of [own,opp]){g.teeth??={missing:[],gold:[]};g.teeth.gold=[...new Set([...g.teeth.gold,...g.teeth.missing])];g.teeth.missing=[];}cards();figures();};
 $('clearT').onclick=()=>{for(const g of [own,opp])g.teeth={missing:[],gold:[]};cards();figures();};
 $('batch').onclick=()=>{const N=+$('bn').value,mean=+$('mean').value,rows=[];let L=1;$('batch').disabled=true;$('bp').hidden=false;$('bp').value=0;const mix={gerade:0,schwinger:0,uppercut:0},act={b:0,d:0};
  (function next(){const A={w:0,d:0,t:0,ko:0,teeth:0,cut:0,skull:0,dead:0,nose:0};for(let i=0;i<N;i++){const a=recruit(mean),b=BX.makeOpponent(a,L,L*100000+i,()=>M.makeGladiator(0,true));const f=BX.simulate(a,b,L*7777+i),R=f.result;

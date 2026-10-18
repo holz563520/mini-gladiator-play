@@ -322,7 +322,7 @@ class Scene{
   // Phasen: 0–IMP Faust fliegt heran · IMP Treffer, Kopf schnellt weg · danach Nachwirkung · Ende: Wisch zurück
   const snap=t<IMP?0:Math.pow(Math.max(0,1-(t-IMP)/.9),2.2),since=t-IMP;
   if(!C.impact&&t>=IMP){C.impact=true;this.shake=0;for(let i=0;i<22;i++){const ang=(C.kind==='uppercut'?-1.2:(C.dir>0?0:Math.PI))+(Math.random()-.5)*1.6,sp=60+Math.random()*180;C.parts.push({x:.5,y:.46,vx:Math.cos(ang)*sp/400,vy:Math.sin(ang)*sp/260-.15,life:.9,kind:i<8?'sweat':i<14&&d.face.blood>.3?'blood':'spit'});}
-   if(C.tooth!=null)C.parts.push({x:.5,y:.58,vx:-C.dir*.3,vy:-.8,life:2.6,kind:'tooth',spin:0});this.sfx?.hit?.(C.kind,true,C.power,C.crit);}
+   if(C.tooth!=null)C.parts.push({x:.5,y:.6,vx:C.kind==='uppercut'?C.dir*.08:C.dir*.42,vy:C.kind==='uppercut'?-1.05:-.62,life:2.8,kind:'tooth',spin:0});this.sfx?.hit?.(C.kind,true,C.power,C.crit);}
   const sign=C.dir>0?1:-1;
   const yaw=(C.kind==='uppercut'?0:sign*1.0)*snap*(C.crit?1.15:.9),tilt=(C.kind==='uppercut'?-.32:sign*.3)*snap,sink=(C.kind==='uppercut'?-14:5)*snap;
   const fixed={...d.g,teeth:{missing:[...(d.g.teeth?.missing||[]),...d.teethLost],gold:d.g.teeth?.gold||[]}};
@@ -344,8 +344,10 @@ class Scene{
   if(C.tooth!=null&&t>.28&&t<1.0&&Math.random()<dtc*34)C.parts.push({x:.5+(Math.random()-.5)*.06,y:.58,vx:(Math.random()-.5)*.4,vy:-.3-Math.random()*.35,life:1,kind:'blood'});
   // Partikel
   for(let i=C.parts.length-1;i>=0;i--){const p=C.parts[i];p.life-=dtc;if(p.life<=0){C.parts.splice(i,1);continue;}p.vy+=dtc*.9;p.x+=p.vx*dtc;p.y+=p.vy*dtc;const X=p.x*w,Y=p.y*h;
-   if(p.kind==='tooth'){p.spin+=dtc*16;g.save();g.translate(X,Y);g.rotate(p.spin);g.fillStyle='#ece4cc';g.fillRect(-s*4.2,-s*5.4,s*8.4,s*10.8);g.fillStyle='#b8ad90';g.fillRect(-s*4.2,s*2.8,s*8.4,s*2.6);g.fillStyle='#8a2a2a';g.fillRect(-s*2.2,s*5,s*4.4,s*1.9);g.fillStyle='#fff8e0';g.fillRect(-s*3.2,-s*4.6,s*2,s*5);g.restore();}
+   if(p.kind==='tooth'){if(Math.random()<dtc*70)C.parts.push({x:p.x,y:p.y,vx:0,vy:.05,life:.45,kind:'blood'});p.spin+=dtc*16;g.save();g.translate(X,Y);g.rotate(p.spin);g.fillStyle='#ece4cc';g.fillRect(-s*4.2,-s*5.4,s*8.4,s*10.8);g.fillStyle='#b8ad90';g.fillRect(-s*4.2,s*2.8,s*8.4,s*2.6);g.fillStyle='#8a2a2a';g.fillRect(-s*2.2,s*5,s*4.4,s*1.9);g.fillStyle='#fff8e0';g.fillRect(-s*3.2,-s*4.6,s*2,s*5);g.restore();}
    else{g.globalAlpha=Math.min(1,p.life*2);g.fillStyle=p.kind==='blood'?'#a01818':p.kind==='sweat'?'#cfe8ff':'#f2ecdc';g.fillRect(X,Y,s*(p.kind==='spit'?1.4:2),s*(p.kind==='spit'?1.4:2));g.globalAlpha=1;}}
+  // Funkenstern am Mund im Moment des Zahnverlusts
+  if(C.tooth!=null&&since>0&&since<.35){const k=since/.35,R2=h*(.05+.2*k);g.save();g.translate(w*.5,h*.6);g.globalAlpha=1-k;g.strokeStyle='#fff6d0';g.lineWidth=Math.max(2,s*1.2);for(let i=0;i<8;i++){const an=i*Math.PI/4+.2;g.beginPath();g.moveTo(Math.cos(an)*R2*.45,Math.sin(an)*R2*.45);g.lineTo(Math.cos(an)*R2,Math.sin(an)*R2);g.stroke();}g.restore();}
   // Aufprall-Blitz
   if(t>=IMP&&since<.09){g.fillStyle='rgba(255,255,255,'+(.8-since*8).toFixed(2)+')';g.fillRect(0,0,w,h);}
   // Übernahme auf die Bühne: diagonaler Wisch hinein und heraus

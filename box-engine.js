@@ -186,9 +186,12 @@ BX.simulate=function(gA,gB,seed,opts){const f=BX.createFight(gA,gB,seed,opts);le
 // Lernrate wie im Spiel (data.js learn): 2 × (0,7 + Potenzial/150), abnehmend je näher an der Obergrenze.
 BX.TRAIN_KEYS=[['stats','dexterity','Geschick'],['stats','strength','Kraft'],['stats','stamina','Ausdauer'],['stats','reflex','Reflex'],['boxing','gerade','Gerade'],['boxing','schwinger','Schwinger'],['boxing','uppercut','Uppercut'],['stats','block','Blocken'],['moves','dodge','Ausweichen'],['moves','backstep','Rückwärtssprung']];
 // Veteran: erfahrener Kämpfer (Maßstab wie die Ruhmeshalle: ab 10 Siegen, 6 Tötungen oder 15 Kämpfen). Veteranen bekommen für ausgeschlagene Zähne Goldzähne, alle anderen behalten Lücken.
+const GOLD_DAYS=10;BX.GOLD_DAYS=GOLD_DAYS;
+// Zeit vergeht: bei Veteranen werden nach 10 Tagen die Lücken durch Goldzähne ersetzt (vorher bleibt die Lücke sichtbar).
+BX.advanceDays=function(g,days){const T=g.teeth;if(!T?.pending?.length)return 0;let n=0;const keep=[];for(const p of T.pending){p.days-=days;if(p.days<=0){T.missing=(T.missing||[]).filter(i=>i!==p.i);T.gold=[...new Set([...(T.gold||[]),p.i])];n++;}else keep.push(p);}T.pending=keep;return n;};
 BX.isVeteran=g=>(g.wins||0)>=10||(g.kills||0)>=6||(g.fights||0)>=15;
 BX.applyAftermath=function(f,{apply=true,learn=null,potentialRate=true}={}){
- const out=[];for(const b of f.b){const g=b.g;g.teeth??={missing:[],gold:[]};const vet=BX.isVeteran(g);let miss=[...new Set([...(g.teeth.missing||[]),...b.teethLost])],gold=[...(g.teeth.gold||[])];if(vet){gold=[...new Set([...gold,...miss])];miss=[];}
+ const out=[];for(const b of f.b){const g=b.g;g.teeth??={missing:[],gold:[]};const vet=BX.isVeteran(g);let miss=[...new Set([...(g.teeth.missing||[]),...b.teethLost])],gold=[...(g.teeth.gold||[])],pend=[...(g.teeth.pending||[])];if(vet)for(const i of miss)if(!pend.some(p=>p.i===i))pend.push({i,days:GOLD_DAYS});
   const used=b.st.thrown,tot=used.gerade+used.schwinger+used.uppercut,secs=Math.min(30,f.t)/30;
   const amount={'stats:dexterity':.10*secs+.006*tot,'stats:strength':.06*secs+.02*(b.st.landed.schwinger+b.st.landed.uppercut),'stats:stamina':.16*secs+.004*tot,'stats:reflex':.02*(b.st.blocks+b.st.dodges+b.st.evaded),
    'boxing:gerade':.035*used.gerade,'boxing:schwinger':.05*used.schwinger,'boxing:uppercut':.07*used.uppercut,'stats:block':.05*b.st.blocks+.01*b.st.blocked,'moves:dodge':.06*b.st.dodges+.02*Math.max(0,b.st.dodgeTries||0),'moves:backstep':.05*b.st.backsteps+.04*b.st.evaded};
@@ -197,7 +200,7 @@ BX.applyAftermath=function(f,{apply=true,learn=null,potentialRate=true}={}){
    const rate=2*(.7+(g.potential??50)/150)*(.08+.92*Math.pow(Math.max(0,(cap-v)/Math.max(1,cap)),.65));let real=a*rate;
    if(apply){if(learn)real=learn(g,grp,key,real);else{const nv=Math.min(cap,v+real);real=Math.max(0,nv-v);if(g[grp])g[grp][key]=nv;}}
    gain[path]=Math.round(real*100)/100;}
-  if(apply){g.teeth={missing:miss,gold};}out.push({gold:b.teethLost.length,vet,gain});}
+  if(apply){g.teeth={missing:miss,gold,pending:pend};}out.push({gold:b.teethLost.length,vet,gain});}
  return out;};
 window.BX=BX;
 })();
