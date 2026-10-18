@@ -133,7 +133,7 @@ function impact(f,a){
   if(P>5&&r()<.2*(P/8)){fz.cut=Math.min(1.5,fz.cut+.6);fz.blood+=.5;addInjury(f,d,'Platzwunde','Augenbraue',P/6);}
   if(kind==='gerade'&&P>7&&r()<.025*(P/8)){addInjury(f,d,'Nasenbruch','Nase',P/6);fz.nose=1.6;fz.blood+=1;}
   // Zahn ausgeschlagen: harte Treffer auf den Mund (Schwinger, Uppercut)
-  if(kind!=='gerade'&&P>5.5&&r()<.032*Math.pow(P/7,2)){const left=[...Array(TEETH).keys()].filter(i=>!d.teethLost.includes(i)&&!(d.g.teeth?.missing||[]).includes(i)&&!(d.g.teeth?.gold||[]).includes(i));if(left.length){const front=left.filter(i=>i>=2&&i<=5),pool=front.length&&r()<.75?front:left,i=pool[Math.floor(r()*pool.length)];d.teethLost.push(i);fz.lip=Math.min(1.6,fz.lip+.5);fz.blood+=.6;addInjury(f,d,'Zahn ausgeschlagen','Mund',1,{tooth:i});ev(f,'tooth',{who:d.side,tooth:i});}}
+  if(P>(kind==='gerade'?6.5:4.8)&&r()<(kind==='gerade'?.04:.1)*Math.pow(P/7,2)){const left=[...Array(TEETH).keys()].filter(i=>!d.teethLost.includes(i)&&!(d.g.teeth?.missing||[]).includes(i)&&!(d.g.teeth?.gold||[]).includes(i));if(left.length){const front=left.filter(i=>i>=2&&i<=5),pool=front.length&&r()<.75?front:left,i=pool[Math.floor(r()*pool.length)];d.teethLost.push(i);fz.lip=Math.min(1.6,fz.lip+.5);fz.blood+=.6;addInjury(f,d,'Zahn ausgeschlagen','Mund',1,{tooth:i});ev(f,'tooth',{who:d.side,tooth:i});}}
   // Schädelbruch: nur wenn der Schläger viel stärker ist als der Getroffene zäh ist, und nur bei schweren Treffern
   const gap=a.str-d.tough-.25;if(kind!=='gerade'&&gap>0&&P>9&&r()<gap*gap*.03*(P/12)){addInjury(f,d,'Schädelbruch','Kopf',3);d.cons=Math.min(d.cons,0);d.skull=true;
    if(r()<.1+gap*.3)d.dead=true;}
