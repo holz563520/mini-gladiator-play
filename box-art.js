@@ -154,14 +154,21 @@ class Scene{
    q.fillStyle=skin;for(let i=0;i<4;i++){q.beginPath();q.arc(12.6+i*.9,-2.9+i*.9,1.55-i*.12,0,7);q.fill();}q.fillStyle=OUT;for(let i=0;i<3;i++)q.fillRect(13.2+i*.9,-2.8+i*.9,.5,1.2);
    // Ledersandale: Sohle und Riemen
    q.fillStyle='#4a3020';q.fillRect(-7.5,-.2,24,2.2);q.fillStyle='#6a4a2c';q.fillRect(-7.5,-.2,24,.8);q.strokeStyle='#5a3a22';q.lineWidth=1.3;q.beginPath();q.moveTo(-5,-1);q.lineTo(-3,-8.5);q.moveTo(0,-1);q.lineTo(5,-7);q.moveTo(-6,-4);q.lineTo(5,-8);q.stroke();q.restore();};
-  const drawHand=(f,el,k)=>{const ang=Math.atan2(f.y-el.y,f.x-el.x);q.save();q.translate(f.x,f.y);q.rotate(ang);const c=k<1?shade(skin,.82):skin;
-   q.fillStyle=OUT;q.beginPath();q.roundRect(-5,-6.2,15,12.4,4);q.fill();q.fillStyle=c;q.beginPath();q.roundRect(-4.2,-5.5,13.4,11,3.2);q.fill();
-   // vier Finger zu einer Faust gekrümmt, Knöchel vorne
-   for(let i=0;i<4;i++){const y=-4.7+i*3.1;q.fillStyle=mixc(c,'#ffffff',.14);q.beginPath();q.arc(8.1,y,1.9,0,7);q.fill();q.fillStyle=shade(c,.6);q.fillRect(2.5,y+1.5,5.6,.7);}
-   q.fillStyle=shade(c,.86);q.beginPath();q.ellipse(2.2,3.8,4.6,2.1,-.15,0,7);q.fill();q.strokeStyle=OUT;q.lineWidth=.8;q.stroke();// Daumen quer über die Finger
-   q.fillStyle='rgba(255,240,215,.28)';q.fillRect(-2,-5,7,1.4);
-   {const fb=this.fistBlood?.[b.side]||0;if(fb>.04){q.fillStyle='rgba(150,16,16,'+(.25+.5*fb).toFixed(2)+')';q.fillRect(-3,-5,8,10);if(fb>.3){q.fillStyle='rgba(110,8,8,.85)';q.fillRect(-4,-1+fb,6,3);}
-     q.fillStyle='#a41414';for(let i=0;i<Math.min(4,1+Math.round(fb*4));i++)q.fillRect(6.6+(i%2)*.8,-5.4+i*3.1,2.6,1.9);q.fillStyle='#d03030';q.fillRect(8,-5,1,1);
+  const drawHand=(f,el,k)=>{const ang=Math.atan2(f.y-el.y,f.x-el.x);q.save();q.translate(f.x,f.y);q.rotate(ang);q.scale(1.22,1.22);const c=k<1?shade(skin,.82):skin,hi=mixc(c,'#ffffff',.22),dk=shade(c,.66),dd=shade(c,.48);
+   // Silhouette: Handgelenk, Handrücken, Fingerblock
+   q.fillStyle=OUT;q.beginPath();q.moveTo(-6.4,-3.9);q.lineTo(-2.6,-5.8);q.quadraticCurveTo(4,-6.9,8.6,-6.3);q.quadraticCurveTo(11.4,-5.6,11.4,-2.2);q.lineTo(11.4,3.4);q.quadraticCurveTo(11.2,6.8,7.4,6.9);q.lineTo(-1.8,6.4);q.lineTo(-6.4,4.2);q.closePath();q.fill();
+   // Handrücken mit leichtem Verlauf (oben hell, unten dunkel)
+   const gr=q.createLinearGradient(0,-5.5,0,6);gr.addColorStop(0,mixc(c,'#ffffff',.12));gr.addColorStop(.55,c);gr.addColorStop(1,dk);q.fillStyle=gr;q.beginPath();q.moveTo(-6,-3.5);q.lineTo(-2.4,-5.2);q.quadraticCurveTo(4,-6.2,8.4,-5.6);q.lineTo(8.6,5.9);q.lineTo(-1.8,5.6);q.lineTo(-6,3.7);q.closePath();q.fill();
+   // Sehnen auf dem Handrücken, Handgelenkschatten
+   q.strokeStyle='rgba(60,28,14,.35)';q.lineWidth=.6;for(let t=0;t<3;t++){q.beginPath();q.moveTo(-5,-2.2+t*2.4);q.lineTo(2.4,-3+t*2.6);q.stroke();}
+   q.fillStyle='rgba(50,22,10,.28)';q.fillRect(-6,-3.6,1.7,7.4);
+   // vier eingerollte Finger, vorne die Knöchel
+   for(let n=0;n<4;n++){const y0=-5.9+n*3;q.fillStyle=n%2?shade(c,.93):c;q.beginPath();q.roundRect(2,y0,8.8,3.1,1.4);q.fill();q.strokeStyle='rgba(44,20,10,.62)';q.lineWidth=.7;q.beginPath();q.roundRect(2,y0,8.8,3.1,1.4);q.stroke();
+     q.fillStyle=hi;q.beginPath();q.ellipse(9.2,y0+1.1,1.5,1.05,0,0,7);q.fill();q.fillStyle=dd;q.fillRect(3.4,y0+1.1,3.6,.55);}
+   // Daumen quer über Zeige- und Mittelfinger, mit Nagel
+   q.fillStyle=shade(c,.9);q.beginPath();q.roundRect(-.6,2.1,9,3.4,1.6);q.fill();q.strokeStyle=OUT;q.lineWidth=.8;q.stroke();q.fillStyle=mixc(c,'#ffe8d0',.5);q.fillRect(6.6,2.7,1.8,1.9);q.fillStyle=hi;q.fillRect(0,2.5,5,.7);
+   {const fb=this.fistBlood?.[b.side]||0;if(fb>.04){q.fillStyle='rgba(150,16,16,'+(.25+.5*fb).toFixed(2)+')';q.fillRect(2,-5.5,9,11);if(fb>.3){q.fillStyle='rgba(110,8,8,.85)';q.fillRect(-4,-1+fb,6,3);}
+     q.fillStyle='#a41414';for(let i=0;i<Math.min(4,1+Math.round(fb*4));i++)q.fillRect(8.2+(i%2)*.8,-5.6+i*3,2.8,2);q.fillStyle='#d03030';q.fillRect(8,-5,1,1);
      if(fb>.5){q.fillStyle='rgba(120,10,10,.8)';q.fillRect(-5.5,-5,2.5,10);}}}
    q.restore();};
   // ---- hinterer Arm
@@ -352,12 +359,20 @@ class Scene{
   if(t<IMP+.16&&!(C.skull&&t>=IMP)){const p=t<IMP?ease(t/IMP):1-ease((t-IMP)/.16),q2=fx(p);g.save();g.translate(q2.x,q2.y);g.rotate(C.kind==='uppercut'?-.3*sign:sign*.25);
    // Spur
    if(t<IMP){g.globalAlpha=.35;g.fillStyle='#fff4d8';const len=w*.5*(1-p)+20;g.fillRect(sign>0?-len:0,-q2.R*.25,len,q2.R*.5);g.globalAlpha=1;}
-   const sk=a.g.appearance?.skin||'#c08a62',R=q2.R;g.fillStyle='rgba(30,14,8,.85)';g.beginPath();g.ellipse(0,0,R*1.04,R*.9,0,0,7);g.fill();
-   const gr=g.createRadialGradient(-R*.3,-R*.3,R*.1,0,0,R);gr.addColorStop(0,mixc(sk,'#ffffff',.22));gr.addColorStop(1,shade(sk,.6));g.fillStyle=gr;g.beginPath();g.ellipse(0,0,R,R*.86,0,0,7);g.fill();
-   // vier Fingerknöchel, Falten, Daumen, Handgelenk mit Bandage
-   for(let i=0;i<4;i++){const yy=(-.5+i/3)*R*1.1;g.fillStyle=shade(sk,.5);g.fillRect(R*.05,yy-s*.5,R*.6,s*.9);g.fillStyle=mixc(sk,'#ffffff',.18);g.beginPath();g.ellipse(R*.62,yy,R*.17,R*.13,0,0,7);g.fill();if(d.face.blood>.2||C.crit){g.fillStyle='#a01616';g.beginPath();g.ellipse(R*.66,yy,R*.09,R*.07,0,0,7);g.fill();}}
-   g.fillStyle=shade(sk,.82);g.beginPath();g.ellipse(-R*.1,R*.55,R*.5,R*.2,.4,0,7);g.fill();
-   g.fillStyle=T.wrap;g.fillRect(-R*1.05,-R*.5,R*.42,R*1.0);g.fillStyle=T.stripe;g.fillRect(-R*.85,-R*.5,R*.08,R*1.0);
+   const sk=a.g.appearance?.skin||'#c08a62',R=q2.R,hi=mixc(sk,'#ffffff',.25),dk=shade(sk,.62),dd=shade(sk,.45),OL='rgba(30,14,8,.88)';
+   // Unterarm und Handgelenk (nackt), verjüngt zur Faust
+   let fg=g.createLinearGradient(0,-R*.6,0,R*.6);fg.addColorStop(0,mixc(sk,'#ffffff',.1));fg.addColorStop(1,dk);g.fillStyle=OL;g.beginPath();g.moveTo(-R*2.1,-R*.78);g.lineTo(-R*.8,-R*.56);g.lineTo(-R*.8,R*.56);g.lineTo(-R*2.1,R*.84);g.closePath();g.fill();
+   g.fillStyle=fg;g.beginPath();g.moveTo(-R*2.1,-R*.7);g.lineTo(-R*.8,-R*.5);g.lineTo(-R*.8,R*.5);g.lineTo(-R*2.1,R*.76);g.closePath();g.fill();
+   // Handrücken
+   g.fillStyle=OL;g.beginPath();g.roundRect(-R*1.02,-R*.9,R*1.9,R*1.8,R*.34);g.fill();
+   fg=g.createLinearGradient(-R*.2,-R*.8,R*.2,R*.8);fg.addColorStop(0,hi);fg.addColorStop(.5,sk);fg.addColorStop(1,dk);g.fillStyle=fg;g.beginPath();g.roundRect(-R*.96,-R*.84,R*1.78,R*1.68,R*.3);g.fill();
+   g.strokeStyle='rgba(60,28,14,.4)';g.lineWidth=Math.max(1,s*.5);for(let k=0;k<3;k++){g.beginPath();g.moveTo(-R*.8,(-.4+k*.4)*R);g.lineTo(-R*.05,(-.5+k*.45)*R);g.stroke();}
+   // vier Finger mit Knöcheln, Gelenkfalten
+   for(let k=0;k<4;k++){const y0=-R*.84+k*R*.42;g.fillStyle=k%2?shade(sk,.93):sk;g.beginPath();g.roundRect(R*.02,y0,R*.84,R*.44,R*.18);g.fill();g.strokeStyle=OL;g.lineWidth=Math.max(1,s*.6);g.stroke();
+    g.fillStyle=hi;g.beginPath();g.ellipse(R*.74,y0+R*.16,R*.16,R*.12,0,0,7);g.fill();g.fillStyle=dd;g.fillRect(R*.12,y0+R*.2,R*.34,Math.max(1,s*.5));
+    if(d.face.blood>.2||C.crit){g.fillStyle='#8a1010';g.beginPath();g.ellipse(R*.8,y0+R*.2,R*.055,R*.045,0,0,7);g.fill();}}
+   // Daumen quer über die Finger
+   g.fillStyle=shade(sk,.88);g.beginPath();g.roundRect(-R*.12,R*.2,R*.9,R*.36,R*.18);g.fill();g.strokeStyle=OL;g.lineWidth=Math.max(1,s*.7);g.stroke();g.fillStyle=mixc(sk,'#ffe8d0',.5);g.fillRect(R*.58,R*.26,R*.17,R*.2);
    if(t>=IMP){g.fillStyle='rgba(150,16,16,.7)';for(let i=0;i<5;i++)g.fillRect(R*(.2+hash(i*2.3)*.5),(hash(i*5.1)-.5)*R,s*1.4,s*2.2);}
    g.restore();}
   if(C.tooth!=null&&t>.28&&t<1.0&&Math.random()<dtc*34)C.parts.push({x:.5+(Math.random()-.5)*.06,y:.58,vx:(Math.random()-.5)*.4,vy:-.3-Math.random()*.35,life:1,kind:'blood'});
