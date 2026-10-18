@@ -18,7 +18,7 @@ const KINDS=[
  ['Stichverletzung','stab',()=>true],['Tiefe Stichverletzung','deepstab',()=>true],['Pfeil steckt','arrow',()=>true],
  ['Sehnenverletzung','sinew',p=>SINEW.includes(p)],['Tiefe Bauchwunde','gut',p=>p==='belly'],['Durchstochen','pierce',()=>true],
  ['Bluterguss','bruise',()=>true],['Prellung','contusion',()=>true],['Muskelquetschung','crush',p=>p!=='head'],
- ['Gehirnerschütterung','concussion',p=>p==='head'],['Gelenkverletzung','joint',p=>JOINT.includes(p)],
+ ['Gehirnerschütterung','concussion',p=>p==='head'],['Schädelbruch','skullfracture',p=>p==='head'],['Gelenkverletzung','joint',p=>JOINT.includes(p)],
  ['Knochenbruch','fracture',p=>LIMBS.includes(p)],['Schwerer Knochenbruch','badfracture',p=>LIMBS.includes(p)],['Trümmerbruch','shatter',p=>LIMBS.includes(p)],['Zertrümmert','pulp',p=>LIMBS.includes(p)],
  ['Abgetrennt','sever',p=>LIMBS.includes(p)||p==='head'||p==='neck'],['Dauerhafte Einschränkung','scar',()=>true],['Blutverlust','collapse',()=>true]];
 const kindOf=name=>({'Tiefe Stichwunde':'deepstab','Kritische Bauchverletzung':'gut','Schwere innere Verletzung':'gut','Amputation':'sever','Tödliche Schnittwunde':'deepcut'})[name]||KINDS.find(k=>k[0]===name)?.[1]||'cut';
@@ -138,12 +138,45 @@ const EFFECT={
  pulp:(T,V,k,C)=>{patch(T,V,k,30,['#6a3a60','#3a1c3e','#22102a'],.9);crack(T,V,k);shards(T,V,10,15,C);flow(T,V,k,3,12);},
  sever:(T,V,k)=>{/* Stumpf: Schnittfläche, pulsierende Blutung */const nx=-V.dir.y,ny=V.dir.x,h=V.w/2-1;for(let j=-h;j<=h;j++){T.r(V.A.x+nx*j-1,V.A.y+ny*j-1,4,2,Math.abs(j)>h-2?DARK:BLOOD);}T.r(V.A.x-1,V.A.y-1,3,3,'#efe6d0');const up=V.dir.y<-.9,pulse=.6+.4*Math.sin(k*8);for(let i=0;i<(up?30:16);i++){const u=((k*1.4+i/16)%1),a=Math.atan2(V.dir.y,V.dir.x)+(((i*29)%16)/16-.5)*(up?.7:.9),d=u*(up?54:30)*pulse;T.r(V.A.x+Math.cos(a)*d,V.A.y+Math.sin(a)*d+u*u*26,i%3?1:2,i%3?1:2,i%2?BLOOD:WET);}flow(T,V,k,5,26);},
  scar:(T,V,k)=>{const p=out(k/.5),nx=-V.dir.y,ny=V.dir.x;for(let i=-9;i<=9;i++){if(Math.abs(i)>9*p)continue;const x=V.A.x+V.dir.x*i*.3+nx*i,y=V.A.y+V.dir.y*i*.3+ny*i;T.r(x,y,2,1.5,'#e3b6a8');if(i%4===0){T.r(x-3*V.dir.x,y-3*V.dir.y,1,1,'#b08a80');T.r(x+3*V.dir.x,y+3*V.dir.y,1,1,'#b08a80');}}},
+ skullfracture:(T,V,k,C)=>{
+  // Schädelbruch: Kopfhaut reißt auf, Schädeldecke bricht ein, Knochenplatten und Splitter stehen offen im Blut
+  const H=C.helm,sz=H?(H.mat==='leather'?.9:H.mat==='medium'?.76:.62)-H.q*.012:1,cx=80,cy=37,op=out(k/.16)*sz,lift=out((k-.04)/.38)*sz,sett=out((k-.3)/.7),pulse=.5+.5*Math.sin(k*9);
+  const poly=(pts,col)=>{let y0=1e9,y1=-1e9;for(const p of pts){y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);}for(let y=Math.floor(y0);y<=Math.ceil(y1);y++){const xs=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];if((a[1]<=y&&b[1]>y)||(b[1]<=y&&a[1]>y))xs.push(a[0]+(y-a[1])/(b[1]-a[1])*(b[0]-a[0]));}xs.sort((m,n)=>m-n);for(let i=0;i+1<xs.length;i+=2)T.r(xs[i],y,xs[i+1]-xs[i]+1,1,col);}};
+  const ring=(sx,sy,r)=>[[-1,.1],[-.82,-.62],[-.4,-.95],[.05,-.7],[.45,-1.0],[.9,-.55],[1.02,.15],[.78,.78],[.3,.95],[-.1,.7],[-.55,.98],[-.95,.62]].map(([a,b],i)=>[cx+a*sx*r*(1+((i*7)%3)*.05),cy+b*sy*r]);
+  // Aufprall: Risse laufen sternförmig vom Treffpunkt über die Kopfhaut
+  if(k<.45){const a=1-k/.45;for(let i=0;i<9;i++){const ang=i*.7+.2,len=(10+((i*5)%9))*out(k/.1);for(let d=4;d<len;d++)if(!(op>.7&&d<9))T.r(cx+Math.cos(ang)*d*1.45,cy+Math.sin(ang)*d*.8,1,1,a>.4?'#2a1214':'#5a2024');}}
+  if(op<=0)return;
+  // geronnenes Blut im Haar um die Wunde
+  T.oval(cx,cy+2,19*op,10*op,'#5a1d1a',.75);T.oval(cx-2,cy+3,14*op,7*op,'#7c2a25',.6);
+  // aufgeplatzte Kopfhaut: wulstiger Rand, nach außen gerollte Lappen
+  if(H){const lk=helmLook(H);poly(ring(1,1,16.5*op),mix(H.mat==='medium'?lk.leather:lk.metal,'#000000',.35));poly(ring(1,1,15*op),lk.edge);poly(ring(1,1,13.6*op),H.mat==='medium'?lk.leather:lk.metal);poly(ring(1,1,12.4*op),'#a8372f');}else{poly(ring(1,1,15*op),'#a8372f');poly(ring(1,1,13.2*op),'#d8806e');}poly(ring(1,1,11.8*op),'#6b2420');
+  // dunkle Höhle (eingedrückte Stelle)
+  poly(ring(1,.92,10.4*op).map(p=>[p[0]+.6,p[1]+.6]),'#2a0b0c');
+  // eingedrückte Knochenplatte, durch den Schlag nach unten gesunken
+  const dp=sett*2.5,plate=[[cx-8,cy-3+dp],[cx-3,cy-6+dp],[cx+4,cy-5+dp],[cx+9,cy-1+dp],[cx+7,cy+4+dp],[cx+1,cy+6+dp],[cx-6,cy+4+dp]];
+  poly(plate.map(p=>[cx+(p[0]-cx)*op,cy+(p[1]-cy)*op]),'#b9ab8c');poly(plate.map(p=>[cx+(p[0]-cx)*.82*op,cy-1+(p[1]-cy)*.78*op]),'#e6dcc0');poly(plate.map(p=>[cx-2+(p[0]-cx)*.45*op,cy-2+(p[1]-cy)*.4*op]),'#f6efd8');
+  // Bruchlinien in der Platte
+  for(const [a,b,c,d] of [[-5,-4,-1,0],[-1,0,-3,4],[-1,0,5,2],[5,2,7,-2],[0,-5,2,-1]])T.line(cx+a*op,cy+b*op+dp,cx+c*op,cy+d*op+dp,'#8d7f62',1);
+  // aufgestellte Knochensplitter am Rand: ragen aus der Wunde, an der Basis blutig
+  const sp=[[-12,-1,-17,-9,-8,-6],[-4,-6,-5,-17,3,-8],[7,-5,14,-14,12,-2],[11,3,19,0,13,7],[-10,4,-17,7,-9,9]];
+  sp.forEach(([x0,y0,x1,y1,x2,y2],i)=>{const l=lift*(i%2?.85:1),f=(a,b,c)=>[cx+(a+(b-a)*0)*op,cy+c*op],tip={x:cx+x1*l*1,y:cy+y1*l},b1={x:cx+x0*op,y:cy+y0*op},b2={x:cx+x2*op,y:cy+y2*op};
+   poly([[b1.x,b1.y],[tip.x,tip.y],[b2.x,b2.y]],'#9a8c6c');poly([[b1.x+1,b1.y],[tip.x+(b1.x-tip.x)*.12,tip.y+(b1.y-tip.y)*.12],[b2.x-.5,b2.y]],'#e6dcc0');T.r(tip.x,tip.y,1,1,'#fffbe8');
+   T.oval((b1.x+b2.x)/2,(b1.y+b2.y)/2,3,1.6,'#a8372f',.85);});
+  // Blut quillt aus den Fugen, pulsierend
+  T.oval(cx,cy+5,8*op,2.2+pulse*.8,'#a8372f',.95);T.oval(cx+1,cy+4.4,5*op,1.2,'#d6685a',.8);for(const sx of [-8,6])T.oval(cx+sx,cy+3,2.2,1.4+pulse*.6,'#c9584a',.9);
+  // fliegende Splitter und Spritzer beim Aufprall
+  if(k<.75)for(let i=0;i<12;i++){const u=k/.75,a=-2.9+i*.5,d=u*(14+(i*13)%22),x=cx+Math.cos(a)*d*1.3,y=cy-3+Math.sin(a)*d*.9+u*u*30;T.r(x,y,i%3?1:2,i%3?1:2,i%4===0?'#f1e8d2':i%2?'#c9584a':'#a8372f');}
+  // Blut läuft über Stirn und Schläfen
+  const run=cl((k-.1)/1.1);
+  if(run>0){for(const [x0,len,w,c] of [[-10,34,3,'#a8372f'],[-3,26,2,'#a8372f'],[5,40,3,'#a8372f'],[11,22,2,'#8a2e28'],[-14,18,2,'#8a2e28']]){const y0=cy+5,L=len*run;T.r(cx+x0,y0,w,L,c);T.r(cx+x0,y0,1,L,'#c9584a');T.r(cx+x0-.5,y0+L,w+1,2,'#6b2420');if(run>.6)T.r(cx+x0+(w>2?1:0),y0+L+3+Math.sin(k*8+x0)*1,1,2,'#a8372f');}}
+ },
  collapse:()=>{},death:()=>{}};
 // Einstellungen der Ansicht je Verletzung: Knick, Zerknittern, Abtrennen, schlaffe Finger, Gesichtsausdruck
 function viewOptions(kind,part,k,o){const v={face:{mood:k<0?'calm':'pain',t:k}},hit=out(k/.12),wob=k>0?Math.sin(k*30)*Math.exp(-k*6)*.12:0;
  if(kind==='fracture')v.bend=-(.3*hit+wob);if(kind==='badfracture')v.bend=-(.52*hit+wob);if(kind==='shatter'||kind==='pulp'){v.crumple=(kind==='pulp'?1.25:1)*hit+wob;}
  if(kind==='sever'&&k>=0)v.cut=true;if(kind==='sinew'&&k>0)v.limp=out(k/.5);
  if(kind==='sinew'||kind==='joint'){if(['lh','rh','lf','rf'].includes(part))v.wrist=true;}
+ if(kind==='skullfracture'){v.sink=18;v.face={mood:k<0?'calm':k<.25?'shock':'pain',t:k};}
  if(kind==='concussion')v.face={mood:k<0?'calm':k<.25?'shock':'dizzy',t:k};
  if(kind==='death'){/* drei Arten zu fallen; bei wichtigen Kämpfern langsamer */const slow=o.dramatic?1.7:1,p=ease((k-.5*slow)/(1.5*slow)),way=o.variant||0;v.face={mood:k<.3*slow?'shock':k<.6*slow?'pain':'out',pale:cl(k/(1.6*slow)),t:k,blood:way===2?cl((k-.3)/1.2):0};v.sink=p*(way===2?40:34);v.tilt=p*(way===1?-.7:way===2?-.26:.6);}
  if(kind==='collapse'){const p=ease((k-.2)/1.5);v.face={mood:k<.5?'shock':'out',pale:cl(k/1.2),t:k};v.sink=p*46;v.tilt=p*.5;}
@@ -167,6 +200,30 @@ function weaponFx(q,T,V,cls,wid,t,kind){const k=t-HIT,A=V.A;if(cls==='none')retu
  q.globalAlpha=1;}
 // ---------- Ein Bild der Nahaufnahme ----------
 const buffers=new WeakMap();
+// ---------- Helm in der Nahaufnahme (Aussehen wie im Spiel: Material Leder/Verstärkt/Metall, Qualität 0–6) ----------
+const LOOK={leather:[{metal:'#927653',edge:'#b39770',trim:'#5a4630',dark:'#5a4630',stud:'#77664c',cloth:'#695c46'},{metal:'#805936',edge:'#b18c59',trim:'#4e3727',dark:'#4e3727',stud:'#9a8a68',cloth:'#685646'},{metal:'#77492c',edge:'#b98550',trim:'#3d2a1e',dark:'#3d2a1e',stud:'#b89a62',cloth:'#456c65'},{metal:'#6a3d27',edge:'#b0784a',trim:'#c9a55a',dark:'#2f211a',stud:'#c9a55a',cloth:'#395e76'},{metal:'#5a2c22',edge:'#a35c40',trim:'#d8b45e',dark:'#261a17',stud:'#dbdccb',cloth:'#704754'},{metal:'#33292c',edge:'#6d5a58',trim:'#d9b65c',dark:'#17151a',stud:'#ecd184',cloth:'#446c78'},{metal:'#5a1c27',edge:'#a8444a',trim:'#f0cf74',dark:'#26101a',stud:'#fff0bc',gem:'#5fd0c0',cloth:'#703d68'}],
+ metal:[{metal:'#8c7861',edge:'#b29d79',trim:'#59432f',cloth:'#695c46'},{metal:'#8d9892',edge:'#c2c5b0',trim:'#5d4834',cloth:'#685646'},{metal:'#a3b2ac',edge:'#dae1ca',trim:'#a4844e',cloth:'#456c65'},{metal:'#6e9699',edge:'#b7d6cc',trim:'#cbb782',cloth:'#395e76'},{metal:'#b9c0cb',edge:'#edf0db',trim:'#d9aa54',cloth:'#704754'},{metal:'#dec591',edge:'#fff0bc',trim:'#855a39',cloth:'#446c78'},{metal:'#e9d693',edge:'#fff4d3',trim:'#c06d45',cloth:'#703d68'}]};
+const MEDL=['#6f5a43','#6b4a30','#5f3d27','#553423','#4a2a20','#352626','#42202a'],DARKL=['#5a4630','#4e3727','#3d2a1e','#2f211a','#261a17','#17151a','#26101a'];
+function helmLook(h){const q=cl(h.q|0,0,6);if(h.mat==='leather')return LOOK.leather[q];const p={...LOOK.metal[q]};if(h.mat==='medium'){p.leather=MEDL[q];p.dark=DARKL[q];}return p;}
+function helmClose(T,h,k,cx=80,top=28){const q=cl(h.q|0,0,6),p=helmLook(h),soft=h.mat==='leather',mixed=h.mat==='medium',dome=mixed?p.leather:p.metal,shadeC=mix(dome,'#000000',.32),hit=k>0?out(k/.15):0,R=28;
+ for(let yy=-10;yy<=15;yy++){const u=(yy-15)/25,hw=Math.round((R+1)*Math.sqrt(Math.max(0,1-u*u)));if(hw<1)continue;for(let x=-hw;x<=hw;x++){const s=x/hw;let c=dome;if(s<-.4)c=mix(dome,p.edge,.55);else if(s>.45)c=shadeC;if(yy<-6)c=mix(c,p.edge,.25);
+   // Eindellung: Schatten oben links, Licht unten rechts am Rand der Delle
+   const dd=Math.hypot((x)/(14),(yy+top-37)/(8));if(hit&&dd<1.05&&dd>.78)c=x<0?mix(c,'#000000',.4*hit):mix(c,p.edge,.45*hit);else if(hit&&dd<=.78)c=mix(c,'#000000',.22*hit);
+   T.r(cx+x,top+yy,1,1,c);}}
+ // Stirnband und Beschläge
+ T.r(cx-R,top+12,R*2+1,4,soft&&q<5?p.dark:p.trim);T.r(cx-R,top+12,R*2+1,1,p.edge);if(q>=1)for(let n=-R+3;n<R;n+=6)T.r(cx+n,top+13,2,2,soft?(p.stud||p.edge):p.edge);
+ if(q===0&&!mixed)for(let n=-16;n<17;n+=8)T.r(cx+n,top-1,1,9,p.cloth);
+ if(mixed){T.r(cx-14,top-9,29,3,p.metal);T.r(cx-14,top-9,29,1,p.edge);T.r(cx-1,top-9,3,22,p.metal);}
+ if(soft){if(q>=2)for(let n=-14;n<15;n+=4)T.r(cx+n,top+8,1,1,p.edge);if(q>=4)T.r(cx,top-9,3,22,p.dark);if(q===6)T.r(cx-1,top+13,3,3,p.gem);}
+ // Wangenklappen über den Ohren
+ if(q>=1)for(const sd of [-1,1]){const x0=cx+sd*(R-4)-(sd<0?1:2);T.r(x0,top+16,5,20,mixed?p.metal:dome);T.r(x0+(sd<0?0:4),top+16,1,20,sd<0?p.edge:shadeC);T.r(x0,top+35,5,2,p.trim);}
+ // Nasenschiene bei Metall
+ if(!soft&&!mixed&&q>=2){T.r(cx-1,top+16,3,17,dome);T.r(cx-1,top+16,1,17,p.edge);}
+ // Kamm und Zier
+ if(q>=3){T.r(cx-2,top-17,5,8,p.cloth);T.r(cx-6,top-16,13,3,p.trim);}
+ if(q>=5){T.r(cx-R+1,top-3,4,6,p.trim);T.r(cx+R-4,top-3,4,6,p.trim);}
+ if(q===6){T.r(cx,top-24,3,8,p.edge);T.r(cx,top+6,3,3,soft?p.gem:'#c06d45');}}
+function helmOf(g){try{const it=M.armorItems?.(g)?.find(i=>M.definition(i)?.parts?.includes('head'));return it?{mat:['leather','medium','metal'].includes(it.material)?it.material:'metal',q:it.q|0}:null;}catch{return null;}}
 function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
  if((kind0==='death'||(kind0==='collapse'&&o.fall))&&M.faceShot){/* Wer fällt: Großaufnahme des Kämpfers mit Rüstung (face-shots.js), Augen schließen sich, der Kopf sinkt */const k=t-HIT,dead=kind0==='death',slow=o.dramatic?1.7:1,p=ease((k-.5*slow)/(1.5*slow)),way=o.variant||0;
   M.faceShot.paint(g,w,h,{g:o.g,team:o.team,mood:k<0?'determined':k<.3*slow?'shock':k<.65*slow&&dead?'pain':'out',pale:dead?cl(k/(1.6*slow)):0,blood:dead&&way===2?cl((k-.3)/1.2):0,sink:p*(dead?30:18),tilt:p*(way===1?-.5:way===2?-.2:.45)*(dead?1:.6),dark:dead?cl((k-(o.dramatic?2.4:1.5))/(o.dramatic?2.4:1.4))*(o.dramatic?.6:.42):0,yaw:(o.team===1?-1:1)*(.55-.5*cl(t/(o.dramatic?5:3))),zoom:1+.12*cl(k/2)},t);
@@ -177,6 +234,7 @@ function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
  const T=tools(q),C=palette(o.g),kind=o.kind||kindOf(o.injury),k=t-HIT,cls=o.cls||weaponClass(o.wid),right=o.part[0]==='r'&&o.part!=='r';
  backdrop(q,T,t);const view=kind==='sever'&&o.part==='head'?'neck':viewOf(o.part),V=VIEW[view](q,T,C,viewOptions(kind,o.part,k,o));V.A=V.mid?{x:V.mid.x,y:V.mid.y}:V.A;V.seed=[...(o.part+kind+(o.g?.id||o.g?.name||''))].reduce((n,c)=>(n*31+c.charCodeAt(0))%9973,7);
  if(kind==='sever'&&k>=0&&V.rest&&o.part!=='head'&&o.part!=='neck'){const fall=k*k*70;V.rest(V.dir.x*(4+k*22),V.dir.y*4+fall,k*1.4);}
+ if(kind==='skullfracture'){V.A={x:80,y:38};C.helm=o.helm===undefined?helmOf(o.g):o.helm;if(C.helm)helmClose(T,C.helm,k);}
  if(k>=0){EFFECT[kind]?.(T,V,k,C);if(kind==='collapse'||kind==='death'){for(let i=0;i<5;i++){const u=(t*.9+i/5)%1;T.r(60+i*9,70+u*26,1,2,BLOOD);}T.oval(80,97,cl(k/2)*46,cl(k/2)*4,DARK);T.oval(82,97,cl(k/2)*30,cl(k/2)*2.4,BLOOD);}}
  if(kind==='death'&&k>0){q.globalAlpha=cl((k-(o.dramatic?2.2:1.3))/(o.dramatic?2.4:1.4))*(o.dramatic?.55:.38);T.r(0,0,FW,FH,'#050302');q.globalAlpha=1;}
  if(kind!=='collapse'&&kind!=='scar'&&kind!=='death')weaponFx(q,T,V,kind==='arrow'?'arrow':cls,o.wid,t,kind);
