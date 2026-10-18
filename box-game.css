@@ -1,0 +1,74 @@
+/* BOXKÄMPFE IM SPIEL · Oberfläche (baut auf arena-ui.css auf, Klassen mit bx-) */
+#an .an-mode.box .an-mlabel b{text-shadow:3px 3px 0 #000,0 0 18px #e0ad4c88}
+#an .an-mode.locked{filter:grayscale(.8)}
+#an .an-kinds{margin-top:6px}
+#an .bx-me .bx-mebox{display:grid;grid-template-columns:minmax(130px,200px) 1fr;gap:14px;align-items:center}
+#an .bx-me canvas.bx-meface{display:block;width:100%;aspect-ratio:200/130;border:2px solid #6b5230;background:#202d2f}
+#an .bx-me h2{margin:0 0 4px;font-size:22px;color:#fff3d6;letter-spacing:1px}
+#an .bx-me p{margin:3px 0;font-size:12px;color:var(--muted)}
+#an .bx-me .bx-kw b{color:var(--gold)}
+#an .bx-vet{color:#ffd25a}
+#an .bx-warn{color:var(--red)!important}
+#an .bx-tt{display:inline-flex;gap:2px;vertical-align:middle}
+#an .bx-tt i{display:inline-block;width:9px;height:12px;background:#eee6cf;border:1px solid #6a5d45;border-radius:1px 1px 3px 3px}
+#an .bx-tt i.gap{background:#1a0b0a;border-color:#4a1a14}
+#an .bx-tt i.gold{background:linear-gradient(135deg,#ffe38a,#c8921c);border-color:#7a5510}
+#an .bx-skills{display:grid;grid-template-columns:auto 1fr auto;gap:3px 8px;align-items:center;margin-top:12px;font-size:11px;color:var(--muted)}
+#an .bx-skills b{color:var(--cream);text-align:right;min-width:2.2em}
+#an .bx-bar{display:block;height:7px;background:#11191b;border:1px solid #34413f}
+#an .bx-bar i{display:block;height:100%;background:linear-gradient(90deg,#88baa6,#dfb66d)}
+#an .bx-pick{margin-top:12px}
+#an .bx-pick summary{cursor:pointer;color:var(--gold);font-size:13px}
+#an .bx-fighter{text-align:left}
+#an .bx-chall .an-hint{margin:0 0 12px}
+#an .bx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+#an .bx-card .art canvas{aspect-ratio:160/104}
+#an .bx-card .gold{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+#an .bx-card .gold span{padding:5px 8px;border:2px solid #6b5230;background:#2a1f14}
+#an .bx-card .gold small{display:block;font-size:9px;letter-spacing:1px;color:var(--muted)}
+#an .bx-card .gold b{color:#ffe1a0;font-size:16px}
+#an .bx-card .bx-risk{font-size:11px}
+#an .bx-vs{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin:14px 0}
+#an .bx-vs .vs{font-size:24px;color:var(--gold)}
+#an .bx-vs .side{display:flex;flex-direction:column;gap:4px;min-width:0}
+#an .bx-vs .side canvas{display:block;width:100%;aspect-ratio:200/130;border:2px solid #34413f;background:#202d2f}
+#an .bx-vs .side.red canvas{border-color:#6b2c28}
+#an .bx-vs .side b{font-size:15px;color:#fff3d6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#an .bx-vs .side small{color:var(--muted)}
+#an .bx-cmps{display:grid;gap:4px;margin-bottom:12px}
+#an .bx-cmp{display:grid;grid-template-columns:2.4em 1fr 7.2em 1fr 2.4em;gap:6px;align-items:center;font-size:11px;color:var(--muted);text-align:center}
+#an .bx-cmp b{color:var(--cream);font-size:12px}#an .bx-cmp b.win{color:var(--green)}
+#an .bx-cmp .bx-bar.l{transform:scaleX(-1)}
+#an .bx-opts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+#an .bx-opts button{padding:8px 12px;border:2px solid var(--line);background:var(--surface);font-size:12px;letter-spacing:1px;box-shadow:2px 2px 0 #000a}
+#an .bx-opts button.on{border-color:#6b5230;color:var(--gold)}
+#an .bx-res .bx-how{margin:2px 0 8px;font-size:13px;color:var(--muted)}
+#an .bx-reshead{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:14px;align-items:center;margin:10px 0}
+#an .bx-reshead canvas{display:block;width:100%;aspect-ratio:200/130;border:2px solid #6b5230;background:#202d2f}
+#an .bx-reshead h2{margin:0 0 6px;font-size:20px;color:#fff3d6}
+#an .bx-reshead p{margin:3px 0;font-size:12px;color:var(--muted)}
+#an .bx-reshead .bx-dead{color:var(--red);font-weight:700}
+#an .bx-gainlist{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+#an .bx-gainlist li{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:6px 10px;border:2px solid #34413f;background:#1b2528;font-size:12px}
+#an .bx-gainlist li b{color:var(--green)}#an .bx-gainlist li small{color:var(--gold)}
+#an .bx-gainlist li.none{display:block;color:var(--muted)}
+#an .bx-gains h3 small{font-weight:400;color:var(--muted);font-size:11px}
+
+/* Kampf im Vollbild */
+#boxFight{position:fixed;inset:0;z-index:220;background:#050302;display:flex;align-items:center;justify-content:center}
+#boxFight canvas{display:block;width:min(100vw,calc(100vh*16/9));height:auto;aspect-ratio:16/9;image-rendering:pixelated;image-rendering:crisp-edges;background:#0d0907}
+#boxFight .bxf-ui{position:absolute;top:calc(8px + env(safe-area-inset-top));right:8px;display:flex;gap:6px}
+#boxFight button{font:700 13px 'Courier Prime',ui-monospace,monospace;color:#f3e2b0;background:#1d282bcc;border:2px solid #6b5230;padding:8px 10px;cursor:pointer}
+#boxFight .bxf-next{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom));right:14px;padding:12px 18px;background:#8f2f2a;border-color:#e0ad4c;font-size:16px;letter-spacing:1px}
+
+/* Der Schmied erklärt die Boxkämpfe */
+#boxIntro{position:fixed;inset:0;z-index:230;background:#050302ee;display:flex;align-items:center;justify-content:center;padding:12px;font-family:'Courier Prime',ui-monospace,monospace;color:#eae4cd}
+#boxIntro .bxi-box{width:min(100%,760px);display:flex;flex-direction:column;gap:10px}
+#boxIntro .bxi-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;letter-spacing:3px;color:#dfb66d}
+#boxIntro button{font:700 13px inherit;font-family:inherit;color:#f3e2b0;background:#1d282b;border:2px solid #6b5230;padding:9px 12px;cursor:pointer;box-shadow:3px 3px 0 #000a}
+#boxIntro canvas{display:block;width:100%;aspect-ratio:660/420;border:3px solid #6b5230;image-rendering:pixelated;image-rendering:crisp-edges;background:#0d0907}
+#boxIntro .bxi-bubble{border:3px solid #6b5230;background:#f5ecd2;color:#2a1a10;padding:12px 14px;min-height:112px;display:flex;flex-direction:column;gap:6px;position:relative}
+#boxIntro .bxi-bubble b{font-size:13px;letter-spacing:2px;color:#8f2f2a}
+#boxIntro .bxi-bubble p{margin:0;font-size:16px;line-height:1.4;flex:1}
+#boxIntro .bxi-bubble button{align-self:flex-end;background:#8f2f2a;border-color:#e0ad4c;color:#fff3d6}
+@media(max-width:560px){#an .bx-me .bx-mebox,#an .bx-reshead{grid-template-columns:1fr}#an .bx-cmp{grid-template-columns:2em 1fr 6em 1fr 2em}}

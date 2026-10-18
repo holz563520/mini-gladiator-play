@@ -58,7 +58,10 @@ function groupArt(units,w,h){const cv=ART.mk(w,h);cv.className='px';const shown=
 // ---------- Rahmen ----------
 function setTitle(t,back=true){root.querySelector('#anTitle').textContent=t;root.querySelector('.an-back').style.visibility=back?'visible':'hidden';root.querySelector('#anGold').textContent=C.gold.toLocaleString('de-DE');}
 function go(screen,dir=1){U.screen=screen;view.classList.remove('in-l','in-r');void view.offsetWidth;view.classList.add(dir>0?'in-r':'in-l');render();window.scrollTo(0,0);view.scrollTop=0;}
-function render(){({home,beast,hub,result}[U.screen]||home)();}
+U.api={root,view,layer,setTitle,go,anim,esc,render,ART,thumb:(...a)=>unitThumb(...a)};
+function render(){({home,beast,hub,kinds,result,...(U.screens||{})}[U.screen]||home)();}
+// Gastgeber-Zugang für zusätzliche Bildschirme (z. B. Boxkämpfe in box-game.js): eigene Bildschirme über U.screens eintragen
+U.screens={};
 
 // ---------- 1 · Arena: HUMAN oder BEAST ----------
 function home(){setTitle('DIE ARENA',!!C.close);
@@ -74,6 +77,17 @@ function home(){setTitle('DIE ARENA',!!C.close);
   ctx.fillStyle='rgba(20,10,6,.35)';ctx.fillRect(0,0,300,170);});
  const L=C.lions.find(l=>!l.dead)||CH.lion(Math.random,{}),R=C.roosters.find(r=>!r.dead);
  anim(b,(ctx,t)=>{ART.arena(ctx,300,170,t,{night:1});ART.lion(ctx,L,{t,mood:'proud',x:150,y:163,scale:.92,face:1});if(R)ART.rooster(ctx,R,{t,mood:'proud',w:300,h:170,size:56,x:262,y:164,seed:2,face:-1});ctx.fillStyle='rgba(20,6,6,.3)';ctx.fillRect(0,0,300,170);});}
+
+// ---------- 1b · HUMAN: Art des Kampfes (nur wenn der Gastgeber weitere Kampfarten anbietet, z. B. Boxkämpfe) ----------
+function kinds(){setTitle('HUMAN · ART DES KAMPFES');const bx=C.boxMenu?.()||{ok:false};
+ view.innerHTML=`<section class="an-hero"><p class="eyebrow">Wie sollen deine Gladiatoren kämpfen?</p></section>
+ <div class="an-modes an-kinds"><button class="an-mode human" data-a="kind:arena"><canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>ARENAKÄMPFE</b><small>Gruppen · Schwert, Schild, Rüstung · Tod möglich</small></span></button>
+ <button class="an-mode box${bx.ok?'':' locked'}" data-a="${bx.ok?'kind:box':'kindlock'}"><canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>BOXKÄMPFE</b><small>${bx.ok?'1 gegen 1 · nackte Fäuste · Training mit 15 Gegnern':'🔒 '+esc(bx.msg||'noch gesperrt')}</small></span></button></div>
+ <p class="an-note">Boxkämpfe sind ideal zum Trainieren: Kraft, Ausdauer und Geschick wachsen, ohne dass gleich der Schädel unter dem Schwert fällt.</p>`;
+ const [a,b]=view.querySelectorAll('.an-mode canvas'),glads=S.roster.filter(g=>!g.dead).sort((x,y)=>M.power(y)-M.power(x)).slice(0,3),figs=glads.map((g,i)=>ART.figure(g,i===0));
+ anim(a,(ctx,t)=>{ART.arena(ctx,300,170,t,{cheer:1});ctx.imageSmoothingEnabled=false;const pos=[[150,166,.62],[86,160,.5],[214,160,.5]];
+  [1,2,0].forEach(i=>{const f=figs[i];if(!f)return;const [x,y,k]=pos[i],bob=Math.round(Math.sin(t*2.2+i)*1.5);ctx.drawImage(f,Math.round(x-120*k),Math.round(y-300*k+bob),Math.round(240*k),Math.round(300*k));});ctx.fillStyle='rgba(20,10,6,.35)';ctx.fillRect(0,0,300,170);});
+ anim(b,(ctx,t)=>{ctx.imageSmoothingEnabled=false;if(!C.boxCard?.(ctx,t,300,170)){ART.arena(ctx,300,170,t,{night:1});}if(!bx.ok){ctx.fillStyle='rgba(10,6,4,.55)';ctx.fillRect(0,0,300,170);}});}
 
 // ---------- 2 · BEAST: Tierklassen ----------
 const SPECIES=[{key:'hahn',label:'Hahn',ok:true,txt:'Federn, Sporen, schlechte Laune'},{key:'hund',label:'Hund',ok:false,txt:'Molosser aus Epirus'},{key:'baer',label:'Bär',ok:false,txt:'Braunbär aus Dakien'},{key:'loewe',label:'Löwe',ok:true,txt:'Der König des Sandes'},{key:'tiger',label:'Tiger',ok:false,txt:'Gestreifter Tod aus Hyrkanien'}];
@@ -254,8 +268,10 @@ function result(){const R=U.result;if(!R){go('home');return;}setTitle(R.won?'SIE
 // ---------- Eingaben ----------
 root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const [a,v]=el.dataset.a.split(/:(.*)/s);
  switch(a){
-  case 'back':if(layer.innerHTML){stopSpy();layer.innerHTML='';U.pres=null;return;}if(U.screen==='home'){C.close?.();break;}if(U.screen==='hub')go(U.mode==='beast'?'beast':'home',-1);else go('home',-1);break;
-  case 'mode':U.mode=v;if(v==='human'){U.species=null;U.size=3;U.picked=[];U.chall=null;go('hub');}else go('beast');break;
+  case 'back':if(layer.innerHTML){stopSpy();layer.innerHTML='';U.pres=null;return;}if(U.screen==='home'){C.close?.();break;}if(U.screen==='hub')go(U.mode==='beast'?'beast':C.boxMenu?'kinds':'home',-1);else if(U.screens[U.screen]?.back){U.screens[U.screen].back(go);}else go(U.screen==='kinds'||!U.screens[U.screen]?'home':'kinds',-1);break;
+  case 'mode':U.mode=v;if(v==='human'){U.species=null;U.size=3;U.picked=[];U.chall=null;if(C.boxMenu)go('kinds');else go('hub');}else go('beast');break;
+  case 'kind':if(v==='box'){U.mode='human';go('box');}else{U.mode='human';U.species=null;U.size=3;U.picked=[];U.chall=null;go('hub');}break;
+  case 'kindlock':M.ui?.notify?.(C.boxMenu?.()?.msg||'Boxkämpfe sind noch gesperrt.');break;
   case 'classic':C.classic?.();break;
   case 'species':if(!(v==='loewe'?C.lions:C.roosters).some(x=>!x.dead)){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(v==='loewe'?'Du besitzt noch keinen Löwen. Der Tierhändler kommt später.':'Du besitzt noch keine Hähne. Der Tierhändler kommt später.');break;}U.mode='beast';U.species=v;U.size=v==='loewe'?1:3;U.picked=[];U.chall=null;go('hub');break;
   case 'locked':el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');break;
