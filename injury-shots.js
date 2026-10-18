@@ -301,7 +301,7 @@ const mode=()=>MODES.some(m=>m[0]===S.options?.closeups)?S.options.closeups:'all
 const RANK={sever:9,pulp:8,shatter:8,badfracture:7,fracture:6,gut:6,pierce:5,sinew:5},NOTED=['Abgetrennt','Trümmerbruch','Zertrümmert','Durchstochen','Tiefe Bauchwunde','Kritische Bauchverletzung'];
 const GAP=5,SHOT_FROM=.3,SHOT_LEN=2;
 // Erweiterungen für das Kampf-HUD (Testfassung): eigene Zeichenfläche, Stufe „alle Verletzungen“, Testschlachten
-const cfg={host:null,onShot:null,busy:null,benchmark:false,textScale:1,fallShots:false,important:null,fallText:null,confirm:false};let falls=[];const level=()=>S.options?.closeupLevel==='all'?'all':'severe';
+const cfg={host:null,onShot:null,busy:null,benchmark:true,textScale:1,fallShots:false,important:null,fallText:null,confirm:false};let falls=[];const level=()=>S.options?.closeupLevel==='all'?'all':'severe';
 // Antippen zum Fortsetzen und eigene Bilder für Niedergänge gibt es nur zusammen mit der Info-Tafel (dort ist Platz dafür)
 const tap=()=>cfg.confirm&&!!cfg.host?.(),fallsOn=()=>cfg.fallShots&&!!cfg.host?.();
 let pend=[],seen=new Set(),seenBattle=null,arena=null,gap=0,keyIds=null;
