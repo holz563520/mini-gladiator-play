@@ -60,6 +60,7 @@ progress{width:100%}
   <select id="spd"><option value=".5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
   <button id="snd">🔇 Ton einschalten</button>
   <label class="hint"><input type="checkbox" id="train" checked> Training anwenden (Werte steigen bis zur persönlichen Grenze)</label>
+  <label class="hint"><input type="checkbox" id="cuts" checked> Perspektivenwechsel bei harten Treffern (Nahaufnahme des Gesichts)</label>
   <label class="hint"><input type="checkbox" id="series"> Dauertraining: nach jedem Kampf automatisch neuer Kampf</label>
  </div>
 </div>
@@ -73,8 +74,8 @@ progress{width:100%}
 <div class="card" id="res"><h2>Ergebnis</h2><p class="hint">Noch kein Kampf.</p></div>
 
 <div class="card">
- <h2>So sieht man die Kämpfer im übrigen Spiel</h2>
- <p class="hint">Kleine Arenafigur, Porträt und Großaufnahme aus dem Spiel, mit den Zähnen des Kämpfers. Mit den Knöpfen lassen sich Lücke und Goldzahn auch ohne Kampf ausprobieren.</p>
+ <h2>Spielfigur und Boxer im Vergleich</h2>
+ <p class="hint">Links die Figur wie im Spiel, daneben derselbe Kämpfer im Boxring (gleiche Haut, Haare, Bart, Größe, Muskeln und Zähne), dann Porträt und Großaufnahme. Mit den Knöpfen lassen sich Lücke und Goldzahn auch ohne Kampf ausprobieren.</p>
  <div class="row"><button id="knock">Zahn ausschlagen (Vorschau)</button><button id="goldify">Lücken durch Goldzähne ersetzen</button><button id="clearT">Zähne zurücksetzen</button></div>
  <div class="grid2"><div id="f0"></div><div id="f1"></div></div>
 </div>
@@ -111,8 +112,9 @@ function card(g,side){const r=BX.rating(g);let h=`<h3>${side?'🔴':'🔵'} ${es
  for(const [k,n,grp,key] of BX.SKILLS){const v=Math.round(BX.skillValue(g,k)*10)/10,cap=g.caps?.[grp]?.[key];h+=`<span>${n}${grp==='boxing'?'':' <small class="hint">(Spielwert)</small>'}</span><span class="b sk"><i style="width:${v}%"></i></span><span class="mono">${nf(v,1)}${cap?' / '+Math.round(cap):''}</span>`;}
  h+=`</div><p class="hint" style="margin:8px 0 0">Zähne ${teethHtml(g,fight?.b[side]?.teethLost||[])}</p>`;return h;}
 function cards(){$('c0').innerHTML=card(own,0);$('c1').innerHTML=card(opp,1);}
-function figures(){for(const [i,g] of [[0,own],[1,opp]]){const box=$('f'+i);box.innerHTML=`<h3>${i?'🔴':'🔵'} ${esc(g.name)} ${teethHtml(g)}</h3><div class="figs"><figure><canvas id="tf${i}"></canvas><figcaption>Arenafigur (jubelnd)</figcaption></figure><figure><canvas id="pf${i}"></canvas><figcaption>Porträt</figcaption></figure><figure><canvas id="ff${i}" width="320" height="208"></canvas><figcaption>Großaufnahme</figcaption></figure></div>`;
+function figures(){for(const [i,g] of [[0,own],[1,opp]]){const box=$('f'+i);box.innerHTML=`<h3>${i?'🔴':'🔵'} ${esc(g.name)} ${teethHtml(g)}</h3><div class="figs"><figure><canvas id="tf${i}"></canvas><figcaption>Spielfigur (Arena)</figcaption></figure><figure><canvas id="rf${i}" width="240" height="300"></canvas><figcaption>Im Boxring</figcaption></figure><figure><canvas id="pf${i}"></canvas><figcaption>Porträt</figcaption></figure><figure><canvas id="ff${i}" width="320" height="208"></canvas><figcaption>Großaufnahme</figcaption></figure></div>`;
   try{M.renderTeamFigure($('tf'+i),g,true);$('tf'+i).style.width='120px';}catch(e){console.warn(e);}
+  try{scene.portrait($('rf'+i),g,i);$('rf'+i).style.width='120px';}catch(e){console.warn(e);}
   try{M.renderPortrait($('pf'+i),g,{state:'celebrate'});$('pf'+i).style.width='120px';}catch(e){console.warn(e);}
   try{const c=$('ff'+i),q=c.getContext('2d');q.imageSmoothingEnabled=false;M.faceShot.paint(q,320,208,{g,mood:'relief',team:i,yaw:0},0);}catch(e){console.warn(e);}}}
 function odds(){const ra=BX.rating(own),rb=BX.rating(opp),p=1/(1+Math.exp(-(ra-rb)/3.2)),q=(x)=>nf(Math.max(1.05,.92/x),2);return 'Blau '+q(p)+' · Rot '+q(1-p);}
@@ -128,13 +130,13 @@ function showResult(){const f=fight,R=f.result,names=[own.name,opp.name];const t
   (train?`<p><b>Training:</b> `+(Object.entries(gain).filter(([,v])=>v>0).map(([path,v])=>{const [grp,key]=path.split(':');return (BX.TRAIN_KEYS.find(x=>x[0]===grp&&x[1]===key)?.[2]||key)+' +'+nf(v,2);}).join(', ')||'nichts')+`</p>`:`<p class="hint">Training ausgeschaltet.</p>`)+`</div>`;});
  $('res').innerHTML=h+'</div>';cards();figures();}
 function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;
- if(fight){acc+=dt*speed*(fight.slow>0?.45:1);let n=0;while(acc>=1/60&&n<8){BX.step(fight,1/60);acc-=1/60;n++;}scene.consume(BXS);BXS.crowd(fight.cheer,!fight.over);
+ if(fight){acc+=dt*speed*(scene.cut?.12:fight.slow>0?.45:1);let n=0;while(acc>=1/60&&n<8){BX.step(fight,1/60);acc-=1/60;n++;}scene.consume(BXS);BXS.crowd(fight.cheer,!fight.over);
   if(fight.over&&!shown&&fight.t-fight.result.time>.8){shown=true;showResult();if($('series').checked)setTimeout(()=>{if($('series').checked&&fight.over){newOpp();start(false);}},2500);}}
  scene.render(dt);requestAnimationFrame(loop);}
 $('start').onclick=()=>start(false);$('again').onclick=()=>{if(fight){for(const g of [own,opp]){}start(true);}else start(false);};
 $('newOwn').onclick=()=>{newOwn();};$('newOpp').onclick=()=>newOpp();
 $('mean').oninput=()=>{$('meanv').textContent=$('mean').value;};$('mean').onchange=()=>newOwn();
-$('spd').onchange=()=>{speed=+$('spd').value;};
+$('spd').onchange=()=>{speed=+$('spd').value;};$('cuts').onchange=()=>{scene.cutOff=!$('cuts').checked;if(scene.cutOff)scene.cut=null;};
 let sound=false;$('snd').onclick=()=>{if(!sound){if(BXS.unlock()){sound=true;BXS.enable(true);$('snd').textContent='🔊 Ton aus';}}else{sound=false;BXS.enable(false);$('snd').textContent='🔇 Ton einschalten';}};
 $('knock').onclick=()=>{for(const g of [own,opp]){g.teeth??={missing:[],gold:[]};const free=[2,3,4,5,1,6,0,7].filter(i=>!g.teeth.missing.includes(i)&&!g.teeth.gold.includes(i));if(free.length)g.teeth.missing.push(free[0]);}cards();figures();};
 $('goldify').onclick=()=>{for(const g of [own,opp]){g.teeth??={missing:[],gold:[]};g.teeth.gold=[...new Set([...g.teeth.gold,...g.teeth.missing])];g.teeth.missing=[];}cards();figures();};

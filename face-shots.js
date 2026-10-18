@@ -164,6 +164,13 @@ function head(q,T,C,o,yaw,t,mood){
  R(-24,30,2,1,P.shadow);R(22,30,2,1,P.deep);R(-19,38,3,1,P.light);
  feature=true;
  if(o.scar){for(let i=0;i<13;i++)R(-19+i*.55,32+i,1,1,mix(P.skin,'#edc4ad',.50));}
+ if(o.box){/* Boxschäden (Faustkampf): Veilchen, geschwollene Wange/Lippe/Nase, Platzwunde. o.box = {eyeL,eyeR,cheek,nose,lip,cut,blood} jeweils 0–1,5 */const B=o.box,k=v=>Math.min(1,v||0);
+  for(const [x0,v] of [[-22,B.eyeL],[9,B.eyeR]]){if(v>.12){const w=12,a=Math.min(.85,v*.7);q.globalAlpha=a*.7;R(x0-3,eyeY-3,w+6,12,'#5b2b5e');q.globalAlpha=a;R(x0-1,eyeY-2,w+2,9,v>.8?'#3a1d4a':'#6b3563');q.globalAlpha=a*.6;R(x0,eyeY+8,w,3,'#8a4a4a');q.globalAlpha=1;
+   if(v>.7){R(x0,eyeY-1,w,1+Math.round(k(v)*3),P.skin);R(x0+1,eyeY-1,w-2,1,P.shadow);}}}
+  if(B.cheek>.1){const a=Math.min(.7,B.cheek*.6);q.globalAlpha=a;R(-23,36,15,9,'#6e3a60');R(10,36,14,9,'#6e3a60');q.globalAlpha=a*.5;R(-26,40,6,6,'#8e4a52');q.globalAlpha=1;}
+  if(B.nose>.15){const a=Math.min(.8,B.nose*.55);q.globalAlpha=a;poly([[-4,30],[2,30],[5,41],[7,44],[-6,44],[-7,41]],'#9c4048');q.globalAlpha=1;if(B.nose>.9){R(-2,44,2,3+Math.round(k(B.blood)*10),'#8a2a2a');R(4,44,2,2+Math.round(k(B.blood)*8),'#8a2a2a');}}
+  if(B.lip>.2){const a=Math.min(.9,B.lip*.7);q.globalAlpha=a;R(-8,50,17,5,'#a64a4a');R(-7,55,15,2,'#8a3636');q.globalAlpha=1;R(-3,50,4,1,'#d98a82');if(B.lip>.7)R(5,55,1,3+Math.round(k(B.blood)*6),'#8a2020');}
+  if(B.cut>.1){R(8,17,10,2,'#6b1c1c');R(9,18,8,1,'#b02a2a');const len=3+Math.round(k(B.cut)*16);R(11,19,1,len,'#9a2020');R(15,19,1,Math.max(2,len-5),'#8a1c1c');if(B.cut>.6)R(10,19+len,3,2,'#b02a2a');}}
  if(o.hurt>0){const n=Math.round(o.hurt*24);R(-17,14,7,1,'#682c2c');R(-14,15,1,n,'#9d443b');if(o.hurt>.4){q.globalAlpha=.35;R(9,26,13,8,'#663d57');q.globalAlpha=1;}}
  for(let i=0;i<(m.sweat||0);i++){const y=16+((t*.65+i*.5)%1)*23;R(i?-24:23,y,1,3,'#c3d9d4');R(i?-24:23,y,1,1,'#edf2df');}
 
