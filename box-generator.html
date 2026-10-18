@@ -118,7 +118,7 @@ function figures(){for(const [i,g] of [[0,own],[1,opp]]){const box=$('f'+i);box.
   try{M.renderPortrait($('pf'+i),g,{state:'celebrate'});$('pf'+i).style.width='120px';}catch(e){console.warn(e);}
   try{const c=$('ff'+i),q=c.getContext('2d');q.imageSmoothingEnabled=false;M.faceShot.paint(q,320,208,{g,mood:'relief',team:i,yaw:0},0);}catch(e){console.warn(e);}}}
 function odds(){const ra=BX.rating(own),rb=BX.rating(opp),p=1/(1+Math.exp(-(ra-rb)/3.2)),q=(x)=>nf(Math.max(1.05,.92/x),2);return 'Blau '+q(p)+' · Rot '+q(1-p);}
-function start(same){if(!same)seed=Math.floor(Math.random()*1e9);fight=BX.createFight(own,opp,seed);scene.setFight(fight,[own.name,opp.name]);scene.odds=odds();acc=0;BXS.bell(1);cards();$('res').innerHTML='<h2>Ergebnis</h2><p class="hint">Kampf läuft …</p>';shown=false;}
+function start(same){if(!same)seed=Math.floor(Math.random()*1e9);fight=BX.createFight(own,opp,seed);scene.setFight(fight,[own.name,opp.name]);scene.arenaMini=[own,opp].map((g,i)=>{const c=document.createElement('canvas');try{M.renderTeamFigure(c,g,true);}catch(e){}return c;});scene.odds=odds();acc=0;BXS.bell(1);cards();$('res').innerHTML='<h2>Ergebnis</h2><p class="hint">Kampf läuft …</p>';shown=false;}
 let shown=false;
 function showResult(){const f=fight,R=f.result,names=[own.name,opp.name];const train=$('train').checked,after=BX.applyAftermath(f,{apply:true,learn:train?M.addLearning:(g,grp,key,a)=>0});
  let h=`<h2>Ergebnis: ${R.winner<0?'Unentschieden':esc(names[R.winner])+' gewinnt'} · ${esc(R.how)} nach ${nf(R.time,1)} s</h2><p class="hint">Punkte ${Math.round(R.points[0])} : ${Math.round(R.points[1])}</p><div class="grid2">`;
@@ -131,7 +131,7 @@ function showResult(){const f=fight,R=f.result,names=[own.name,opp.name];const t
  $('res').innerHTML=h+'</div>';cards();figures();}
 function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;
  if(fight){acc+=dt*speed*(scene.cut?.12:fight.slow>0?.45:1);let n=0;while(acc>=1/60&&n<8){BX.step(fight,1/60);acc-=1/60;n++;}scene.consume(BXS);BXS.crowd(fight.cheer,!fight.over);
-  if(fight.over&&!shown&&fight.t-fight.result.time>.8){shown=true;showResult();if($('series').checked)setTimeout(()=>{if($('series').checked&&fight.over){newOpp();start(false);}},2500);}}
+  if(fight.over&&!shown&&fight.t-fight.result.time>.8){shown=true;showResult();if($('series').checked)setTimeout(()=>{if($('series').checked&&fight.over){newOpp();start(false);}},6000);}}
  scene.render(dt);requestAnimationFrame(loop);}
 $('start').onclick=()=>start(false);$('again').onclick=()=>{if(fight){for(const g of [own,opp]){}start(true);}else start(false);};
 $('newOwn').onclick=()=>{newOwn();};$('newOpp').onclick=()=>newOpp();
