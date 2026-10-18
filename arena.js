@@ -201,16 +201,21 @@ if(shouting){rect(x-3,y+6,8,6,dark);rect(x-2,y+6,6,1,white);rect(x-1,y+10,4,1,'#
 function drawHelm(head,it,back){const q=it.q,p=M.itemLook(it),dome=armorBase(it),soft=it.material==='leather',mixed=it.material==='medium';rect(head.x-9,head.y-9,19,9,dome);rect(head.x-10,head.y-2,21,3,soft&&q<5?p.dark:p.trim);rect(head.x-8,head.y-8,3,7,p.edge);if(q>=1){rect(head.x-9,head.y,4,8,mixed?p.metal:dome);if(!back)rect(head.x+7,head.y,3,8,mixed?p.metal:dome);}if(mixed){rect(head.x-6,head.y-10,13,3,p.metal);rect(head.x-6,head.y-10,13,1,p.edge);}if(soft){if(q>=2)for(let n=-6;n<8;n+=3)rect(head.x+n,head.y-5,1,1,p.edge);if(q>=3){rect(head.x-6,head.y-1,2,2,p.stud);rect(head.x+5,head.y-1,2,2,p.stud);}if(q>=4)rect(head.x,head.y-9,2,7,p.dark);if(q===6)rect(head.x,head.y-1,2,2,p.gem);}if(q===0)rect(head.x-7,head.y-6,15,3,p.cloth);if(q>=2&&!back)rect(head.x+2,head.y-3,2,7,p.trim);if(q>=3){rect(head.x-2,head.y-16,5,7,p.cloth);rect(head.x-6,head.y-16,12,3,p.trim);}if(q>=4)rect(head.x-6,head.y-5,12,1,p.edge);if(q>=5){rect(head.x-9,head.y-13,3,4,p.trim);rect(head.x+7,head.y-13,3,4,p.trim);}if(q===6){rect(head.x,head.y-22,3,6,p.edge);rect(head.x,head.y-6,3,3,soft?p.gem:'#c06d45');}if(back){rect(head.x-8,head.y,17,8,dome);rect(head.x-7,head.y+7,15,2,mixed?p.metal:dome);rect(head.x-8,head.y+6,17,1,q>=2?p.trim:p.dark);rect(head.x-7,head.y+1,2,5,p.edge);rect(head.x+6,head.y+1,2,5,p.dark);}}
 // Schädelbruch am Kopf (Darstellung; Auslöser und Regeln kommen später): offene Kopfhaut, eingedrückte Knochenplatte, Splitter, Blut.
 // Mit Helm: Delle, Riss und aufgebogener Rand, darunter Knochen und Blut. Gezeichnet über Haar und Helm.
-function drawSkullWound(head,a,helm,back){const x=head.x,y=head.y,pulse=Math.sin(time*5.5)>0?1:0,bone='#e6dcc0',boneHi='#f6efd8',boneLo='#b9ab8c',red='#a8372f',dark='#2a0b0c',soft=!helm?0:helm.material==='leather'?1:helm.material==='medium'?.6:.25;
+function drawSkullWound(head,a,helm,back){const x=head.x,y=head.y,seed=(a.seed||0)%7,bone='#e6dcc0',boneHi='#f6efd8',boneLo='#b9ab8c',red='#a8372f',redHi='#c9584a',dark='#2a0b0c',soft=!helm?0:helm.material==='leather'?1:helm.material==='medium'?.6:.25;
+ const beat=(time*1.15+seed*.31)%1,pulse=beat<.3?1:0,heavy=!a.down,hx=helm?x+3:x,hy=y;
  if(!helm){rect(x-6,y-9,13,5,'#5a1d1a');rect(x-5,y-10,11,3,red);rect(x-4,y-9,9,3,dark);rect(x-3,y-9,7,2,boneLo);rect(x-3,y-9,6,1,bone);rect(x-2,y-9,3,1,boneHi);
-  rect(x-5,y-12,1,3,bone);rect(x-4,y-13,1,1,boneHi);rect(x-1,y-13,1,4,bone);rect(x,y-14,1,1,boneHi);rect(x+3,y-12,1,3,bone);rect(x+5,y-11,1,2,boneLo);rect(x-5,y-9,1,1,red);rect(x+3,y-9,1,1,red);rect(x-2,y-7,5,1,red+(pulse?'':'cc'));}
- else{const lk=M.itemLook(helm),dome=helm.material==='medium'?lk.leather:lk.metal,edge=lk.edge;
-  rect(x-6,y-8,13,2,'#00000044');rect(x-5,y-8,11,1,'#00000066');rect(x-1,y-9,1,1,'#00000077');rect(x+2,y-8,1,2,'#00000066');rect(x-3,y-7,1,1,'#00000066');rect(x+4,y-7,1,1,'#00000055');
-  if(soft>=.6){rect(x-3,y-10,7,3,red);rect(x-2,y-10,5,2,dark);rect(x-2,y-10,4,1,bone);rect(x-3,y-12,1,2,bone);rect(x+2,y-12,1,2,boneLo);}
-  else{rect(x-2,y-10,5,2,edge);rect(x-1,y-10,3,1,dark);rect(x,y-11,1,1,boneLo);rect(x-3,y-11,1,2,edge);rect(x+3,y-11,1,2,edge);if(soft>=.5)rect(x-2,y-12,1,1,bone);}
-  rect(x-1,y-8,3,1,red);}
- if(!back){const L=a.down?4:9;for(const [dx,len,c] of [[-5,L,red],[3,L+3,red],[5,L-2,'#8a2e28']]){rect(x+dx,y-4,1,len,c);if(pulse&&len>6)rect(x+dx,y-4+len,1,1,'#6b2420');}}
- else{rect(x-3,y-6,1,6,red);rect(x+2,y-6,1,8,red);}}
+  rect(x-5,y-12,1,3,bone);rect(x-4,y-13,1,1,boneHi);rect(x-1,y-13,1,4,bone);rect(x,y-14,1,1,boneHi);rect(x+3,y-12,1,3,bone);rect(x+5,y-11,1,2,boneLo);rect(x-5,y-9,1,1,red);rect(x+3,y-9,1,1,red);rect(x-2,y-7,5,1,pulse?red:'#8a2e28');}
+ else{const lk=M.itemLook(helm),dome=helm.material==='medium'?lk.leather:lk.metal,edge=lk.edge,w=Math.round(7+soft*2);
+  // Delle um die Stelle, Riss durch den Helm, Ränder nach außen gebogen: die Wunde bleibt sichtbar
+  rect(hx-7,hy-8,15,3,'#00000044');rect(hx-6,hy-9,13,1,'#00000055');rect(hx-8,hy-7,1,2,'#00000044');
+  rect(hx-w/2|0,hy-10,w,4,dark);rect(hx-(w/2|0)-2,hy-11,2,3,edge);rect(hx+(w/2|0),hy-11,2,3,edge);rect(hx-(w/2|0)-1,hy-8,1,2,dome);rect(hx+(w/2|0)+1,hy-8,1,2,dome);
+  rect(hx-(w/2|0)+1,hy-9,w-2,2,boneLo);rect(hx-(w/2|0)+1,hy-9,w-3,1,bone);rect(hx-1,hy-9,2,1,boneHi);rect(hx-(w/2|0),hy-12,1,3,bone);rect(hx+(w/2|0)-1,hy-12,1,2,boneLo);rect(hx,hy-13,1,2,bone);
+  rect(hx-(w/2|0)+1,hy-7,w-2,1,pulse?red:'#8a2e28');rect(hx-(w/2|0),hy-6,2,1,red);rect(hx+(w/2|0)-1,hy-6,2,1,red);}
+ // Blut: Herzschlag lässt es aus der Wunde spritzen, danach läuft es in Bahnen über Stirn und Schläfe, Tropfen fallen ab
+ if(heavy&&beat<.45){const u=beat/.45;for(let i=0;i<5;i++){const dir=(i-2)*(.9+(i%2)*.3),px=hx+dir*u*6,py=hy-10-Math.sin(u*Math.PI)*(7+i%3*2)+u*u*9;rect(px,py,1,1,i%2?red:redHi);}}
+ const L=a.down?5:10,runs=back?[[-3,6],[3,8]]:[[hx-x-6,L],[hx-x+1,L+3],[hx-x+4,L-2]];
+ for(const [dx,len] of runs){const x0=x+dx,top=y-5;rect(x0,top,1,len,red);const front=Math.floor(((time*5+dx*.7+seed)%len+len)%len);rect(x0,top+front,1,2,redHi);
+  const drop=((time*2.2+dx*.37+seed*.2)%1);rect(x0,top+len+Math.floor(drop*6),1,1+(drop<.5?1:0),'#8a2e28');}}
 function drawHair(h,ap,back=false){if(back){
  if(ap.style===0){rect(h.x-6,h.y-6,13,3,ap.shade);rect(h.x-6,h.y-4,2,5,ap.hair);rect(h.x+5,h.y-4,2,5,ap.hair);return;}
  if(ap.style===5){rect(h.x-2,h.y-15,5,24,ap.hair);rect(h.x-1,h.y-17,3,3,ap.hair);return;}

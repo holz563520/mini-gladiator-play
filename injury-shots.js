@@ -166,6 +166,8 @@ const EFFECT={
   T.oval(cx,cy+5,8*op,2.2+pulse*.8,'#a8372f',.95);T.oval(cx+1,cy+4.4,5*op,1.2,'#d6685a',.8);for(const sx of [-8,6])T.oval(cx+sx,cy+3,2.2,1.4+pulse*.6,'#c9584a',.9);
   // fliegende Splitter und Spritzer beim Aufprall
   if(k<.75)for(let i=0;i<12;i++){const u=k/.75,a=-2.9+i*.5,d=u*(14+(i*13)%22),x=cx+Math.cos(a)*d*1.3,y=cy-3+Math.sin(a)*d*.9+u*u*30;T.r(x,y,i%3?1:2,i%3?1:2,i%4===0?'#f1e8d2':i%2?'#c9584a':'#a8372f');}
+  // Herzschlag: kurze Spritzer aus der Wunde, solange die Blutung anhält
+  if(k>.7){const bt=(k*1.15)%1;if(bt<.4){const u=bt/.4;for(let i=0;i<7;i++){const dir=(i-3)*.8,px=cx+dir*u*11,py=cy-3-Math.sin(u*Math.PI)*(12+i%3*3)+u*u*16;T.r(px,py,i%2?2:1,i%2?2:1,i%3?'#a8372f':'#c9584a');}}}
   // Blut läuft über Stirn und Schläfen
   const run=cl((k-.1)/1.1);
   if(run>0){for(const [x0,len,w,c] of [[-10,34,3,'#a8372f'],[-3,26,2,'#a8372f'],[5,40,3,'#a8372f'],[11,22,2,'#8a2e28'],[-14,18,2,'#8a2e28']]){const y0=cy+5,L=len*run;T.r(cx+x0,y0,w,L,c);T.r(cx+x0,y0,1,L,'#c9584a');T.r(cx+x0-.5,y0+L,w+1,2,'#6b2420');if(run>.6)T.r(cx+x0+(w>2?1:0),y0+L+3+Math.sin(k*8+x0)*1,1,2,'#a8372f');}}
