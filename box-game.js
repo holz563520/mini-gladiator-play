@@ -35,7 +35,8 @@ function prep(g){
  if(g.caps.moves.backstep==null)g.caps.moves.backstep=cap(g.moves.backstep||20);
  if(g.caps.stats.block==null)g.caps.stats.block=cap(s.block||20);
  return g;}
-const fit=g=>{try{return M.army?.eligibility?M.army.eligibility(g):{ok:!g.dead,causes:[]};}catch{return {ok:!g.dead,causes:[]};}};
+const fit=g=>{let r;try{r=M.army?.eligibility?M.army.eligibility(g):{ok:!g.dead,causes:[]};}catch{r={ok:!g.dead,causes:[]};}
+ const br=g.boxRest;if(br&&br.until>S().day)r={...r,ok:false,causes:[...(r.causes||[]),'Erholung vom Boxkampf, noch '+(br.until-S().day)+(br.until-S().day===1?' Tag':' Tage')]};return r;};
 const roster=()=>S().roster.filter(g=>!g.dead&&!g.retired&&!(g.age<18));
 // Gegner erzeugen, ohne den Zufallsstand des Spiels zu verändern
 function mk(enemy=true){const s=S(),r=s.rng;try{s.rng=Math.floor(Math.random()*2147483646)+1;return M.makeGladiator(0,enemy);}finally{s.rng=r;}}
@@ -174,7 +175,12 @@ function finish(){if(!ov||!B.fight)return;const F=B.fight,own=F.own,o=F.o,f=figh
  const after=BX.applyAftermath(f,{apply:true,learn:(g,grp,key,amt)=>g===own?M.addLearning(g,grp,key,amt*mult):0});
  const gains=[];for(const [grp,k,l] of SK){const from=F.before[grp+':'+k],to=val(own,grp,k);if(to-from>=.005)gains.push({label:l,from,to});}
  // Verletzungen in den echten Körper
- const inj=writeInjuries(own,b0,foe);own.fatigue=Math.min(100,(own.fatigue||0)+14+Math.round(Math.min(30,f.t)/30*10));
+ const inj=writeInjuries(own,b0,foe);
+ {const op=f.b[1].st,hh=op.headHits||0,bh=op.bodyHits||0;
+  if(own.body.head&&!own.body.head.missing)hurt(own.body.head,Math.min(22,hh*1.6),Math.min(60,10+hh*4));
+  if(own.body.chest&&!own.body.chest.missing)hurt(own.body.chest,Math.min(26,bh*2.1),Math.min(60,10+bh*4));}
+ own.fatigue=Math.min(100,(own.fatigue||0)+34+Math.round(Math.min(30,f.t)/30*28)+Math.round(o.L.n*1.2));
+ const rest=2+Math.floor(o.L.n/4)+Math.min(3,new Set(inj).size)+(f.b[0].skull?5:0);own.boxRest={until:S().day+rest,days:rest};
  // Preisgeld
  const perf=R.points?cl(R.points[0]/Math.max(1,R.points[0]+R.points[1]),0,1):.5;
  const pay=won?o.gold.win:Math.round(o.gold.loss*(.35+.65*perf)/5)*5;
@@ -191,7 +197,7 @@ function resultScreen(){const r=B.result;if(!r){A.go('box');return;}const g=r.ow
  const gain=r.gains.length?r.gains.map(x=>`<li><span>${esc(x.label)}</span><b>${nf(x.from,1)} → ${nf(x.to,1)}</b><small>+${nf(x.to-x.from,2)}</small></li>`).join(''):'<li class="none">Diesmal kein spürbarer Fortschritt (Obergrenze erreicht oder zu kurzer Kampf).</li>';
  A.view.innerHTML=`<section class="an-res bx-res ${r.won?'won':'lost'}"><p class="eyebrow">Stufe ${L.n} · ${esc(L.label)} · ${esc(r.o.g.name)}</p><h1>${head}</h1><p class="bx-how">${esc(R.how)} nach ${nf(R.time,0)} Sekunden · Punkte ${Math.round(R.points?.[0]||0)} : ${Math.round(R.points?.[1]||0)}</p>
   <div class="an-pay"><small>${r.won?'Siegprämie':'Antrittsgeld'}</small><b data-count="${r.pay}">0</b><span>Gold</span></div>
-  <div class="bx-reshead"><canvas class="px" id="bxrA"></canvas><div><h2>${esc(g.name)}</h2>${r.dead?'<p class="bx-dead">✝ '+esc(r.death)+'</p>':''}<p>${r.inj.length?'Verletzungen: <b>'+esc([...new Set(r.inj)].join(', '))+'</b>':'Keine nennenswerten Verletzungen'}</p>
+  <div class="bx-reshead"><canvas class="px" id="bxrA"></canvas><div><h2>${esc(g.name)}</h2>${r.dead?'<p class="bx-dead">✝ '+esc(r.death)+'</p>':''}<p class="bx-warn">Erschöpfung ${Math.round(g.fatigue||0)} % · Gesundheit ${Math.round(M.health?.(g)??100)} %${g.boxRest&&g.boxRest.until>S().day?' · braucht '+(g.boxRest.until-S().day)+' Tage Ruhe':''}</p><p>${r.inj.length?'Verletzungen: <b>'+esc([...new Set(r.inj)].join(', '))+'</b>':'Keine nennenswerten Verletzungen'}</p>
    <p>${r.teeth?'<b>'+r.teeth+' Zahn'+(r.teeth>1?'zähne':'')+' ausgeschlagen</b>'+(r.vet?' · als Veteran bekommt er nach '+BX.GOLD_DAYS+' Tagen einen Goldzahn':' · die Lücke bleibt'):'Alle Zähne noch da'}</p>${teethHtml(g.teeth||{})}</div></div>
   <div class="an-gains bx-gains"><h3>Fortschritt durch den Kampf <small>(Lernfaktor ×${nf(r.mult,2)} je nach Gegner)</small></h3><ul class="bx-gainlist">${gain}</ul></div>
   <div class="an-actions"><button data-a="bxday">Nächster Tag (Heilung)</button><button class="primary" data-a="bxagain">NEUER BOXKAMPF ▸</button></div><div class="an-actions"><button data-a="bxleave">◂ Arena verlassen</button></div></section>`;
