@@ -118,7 +118,7 @@ function crack(T,V,k){if(k>.5)return;const a=1-k/.5;T.r(0,0,0,0,'#fff');let x=V.
 function shards(T,V,n,spread,C){for(let i=0;i<n;i++){const a=i*2.4,d=3+((i*31)%spread),x=V.A.x+Math.cos(a)*d,y=V.A.y+Math.sin(a)*d*.6;T.r(x-1,y-1,4,3,C.light);T.r(x,y-1,2,1,'#efe6d0');T.r(x+2,y+1,1,1,C.line);}}
 function stars(T,x,y,t,n=4,rad=22){for(let i=0;i<n;i++){const a=t*4+i*Math.PI*2/n,sx=x+Math.cos(a)*rad,sy=y+Math.sin(a)*rad*.3;if(Math.sin(a)>-.3){T.r(sx-2,sy,5,1,'#f4d37a');T.r(sx,sy-2,1,5,'#f4d37a');T.r(sx,sy,1,1,'#ffffff');}}}
 // Heilung des Schädelbruchs (Vorschlag; Regeln legt Thomas fest): Tage im Krankenhaus bis zur vollständigen Ausheilung
-const SKULL_DAYS=90,SKULL_STAGES=[['fresh','Frischer Bruch',0,0,'Notversorgung: Blutung stillen, Splitter entfernen'],['bandage','Kopfverband',1,14,'Bettruhe, Verband wird täglich gewechselt'],['patch','Wundauflage',15,35,'Wunde wird genäht und abgedeckt'],['scab','Wundschorf mit Fäden',36,60,'Verband ab, Knochen wächst langsam zusammen'],['scar','Vernarbung',61,89,'Haut schließt sich, Knochen festigt sich'],['plate','Ausgeheilt – Metallplatte',90,90,'Schädel mit Metallplatte versorgt, dauerhaft sichtbar']];
+const SKULL_DAYS=20,SKULL_STAGES=[['fresh','Frischer Bruch',0,0,'Notversorgung: Blutung stillen, Splitter entfernen'],['bandage','Kopfverband',1,3,'Bettruhe, Verband wird täglich gewechselt'],['patch','Wundauflage',4,7,'Wunde wird genäht und abgedeckt'],['scab','Wundschorf mit Fäden',8,13,'Verband ab, Knochen wächst langsam zusammen'],['scar','Vernarbung',14,19,'Haut schließt sich, Knochen festigt sich'],['plate','Ausgeheilt – Metallplatte',20,20,'Schädel mit Metallplatte versorgt, dauerhaft sichtbar']];
 const skullStage=d=>{const x=SKULL_STAGES.find(v=>d>=v[2]&&d<=v[3])||SKULL_STAGES[5];return {id:x[0],name:x[1],from:x[2],to:x[3],text:x[4]};};
 const EFFECT={
  scrape:(T,V,k)=>{for(let i=0;i<5;i++){const p=out((k-i*.02)/.1),x=V.A.x-8+i*4,y=V.A.y-5+i*1.2;for(let j=0;j<9*p;j++)T.r(x+j*.5,y+j,1,1,j%3?WET:'#d98a78');}},
@@ -177,15 +177,15 @@ const EFFECT={
  },
 
  skullheal:(T,V,k,C)=>{
-  // Heilungsverlauf des Schädelbruchs im Krankenhaus (Tag 0–90). Kopf ohne Helm; Tag 90: ausgeheilt, Metallplatte statt Narbe.
+  // Heilungsverlauf des Schädelbruchs im Krankenhaus (Tag 0–20). Kopf ohne Helm; Tag 20: ausgeheilt, Metallplatte statt Narbe.
   const d=cl(C.healDay??0,0,SKULL_DAYS),cx=82,cy=18,poly=(pts,col)=>{let y0=1e9,y1=-1e9;for(const p of pts){y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);}for(let y=Math.floor(y0);y<=Math.ceil(y1);y++){const xs=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];if((a[1]<=y&&b[1]>y)||(b[1]<=y&&a[1]>y))xs.push(a[0]+(y-a[1])/(b[1]-a[1])*(b[0]-a[0]));}xs.sort((m,n)=>m-n);for(let i=0;i+1<xs.length;i+=2)T.r(xs[i],y,xs[i+1]-xs[i]+1,1,col);}};
   const st=skullStage(d);
   if(st.id==='fresh'){const e=EFFECT.skullfracture;e(T,V,3,C);return;}
-  if(st.id==='bandage'){const soak=1-cl((d-1)/13);T.oval(80,16,26,10,'#8a8470');T.oval(80,15,25,9,'#d8d0b6');for(let i=-24;i<=24;i+=4)T.line(80+i,8,80+i+6,23,'#b9b098',1);T.oval(80,14,22,3,'#e8e2cc',.7);
-   T.oval(cx,cy-1,(5+7*soak),(3+4*soak),d<8?'#a8372f':'#7c2a25');T.oval(cx+1,cy-1,(2+4*soak),(1.5+2*soak),d<8?'#c9584a':'#8a3a30');if(d<8)T.r(cx+2,cy+4+Math.sin(k*4)*0,1,3+soak*5,'#a8372f');T.r(98,22,6,3,'#c9c1a8');T.r(99,23,4,5,'#b9b098');return;}
+  if(st.id==='bandage'){const soak=1-cl((d-1)/2);T.oval(80,16,26,10,'#8a8470');T.oval(80,15,25,9,'#d8d0b6');for(let i=-24;i<=24;i+=4)T.line(80+i,8,80+i+6,23,'#b9b098',1);T.oval(80,14,22,3,'#e8e2cc',.7);
+   T.oval(cx,cy-1,(5+7*soak),(3+4*soak),d<2?'#a8372f':'#7c2a25');T.oval(cx+1,cy-1,(2+4*soak),(1.5+2*soak),d<2?'#c9584a':'#8a3a30');if(d<2)T.r(cx+2,cy+4+Math.sin(k*4)*0,1,3+soak*5,'#a8372f');T.r(98,22,6,3,'#c9c1a8');T.r(99,23,4,5,'#b9b098');return;}
   if(st.id==='patch'){T.oval(cx,cy,14,8,'#8a8470');T.oval(cx,cy-.5,13,7,'#d8d0b6');for(let i=-12;i<=12;i+=4)T.line(cx+i,cy-6,cx+i+3,cy+6,'#b9b098',1);T.oval(cx+1,cy,4,2.5,'#6b2420',.85);T.oval(cx,cy-1,2,1.2,'#8a3a30');return;}
   if(st.id==='scab'){T.oval(cx,cy,13,7,'#c97a6c',.85);T.oval(cx,cy,10,5,'#6b2420');T.oval(cx-1,cy-1,7,3,'#4a1a18');for(let i=-7;i<=7;i+=3){T.r(cx+i,cy-4,1,8,'#1a1210');T.r(cx+i-1,cy-4,3,1,'#1a1210');T.r(cx+i-1,cy+3,3,1,'#1a1210');}return;}
-  if(st.id==='scar'){const fade=cl((d-61)/28);T.oval(cx,cy,11,6,mix('#c97a6c','#d9a590',fade));T.oval(cx,cy,8,4,mix('#e29a88','#d9a590',fade));for(let i=-6;i<=6;i++)T.r(cx+i,cy+Math.sin(i*.9)*1.2,1,2,mix('#b4584c','#c98a7a',fade));T.oval(cx-2,cy-2,4,1.5,'#f0c8b6',.5);return;}
+  if(st.id==='scar'){const fade=cl((d-14)/5);T.oval(cx,cy,11,6,mix('#c97a6c','#d9a590',fade));T.oval(cx,cy,8,4,mix('#e29a88','#d9a590',fade));for(let i=-6;i<=6;i++)T.r(cx+i,cy+Math.sin(i*.9)*1.2,1,2,mix('#b4584c','#c98a7a',fade));T.oval(cx-2,cy-2,4,1.5,'#f0c8b6',.5);return;}
   // ausgeheilt: Metallplatte auf kahler, vernarbter Stelle
   T.oval(cx,cy,14,8,'#d9a590');T.oval(cx,cy,12,6.5,'#e0b09c');
   poly([[cx-10,cy-2],[cx-5,cy-6],[cx+5,cy-6],[cx+10,cy-2],[cx+9,cy+4],[cx+3,cy+7],[cx-6,cy+6],[cx-10,cy+3]],'#4a5358');
@@ -334,7 +334,7 @@ function arenaShot(x){const {e,k,inj}=x,g=e.g,p=g.body[e.part],gr=M.injuryGrade(
  else if(k==='collapse'&&x.fall&&e.reason!=='Blutverlust')o={g,team:e.a?.team,fall:true,variant:Math.floor(Math.random()*3),part:'chest',kind:'collapse',line1:(by&&by!==g.name?by+' streckt '+g.name+' nieder':g.name+' geht zu Boden'),title:'Kampfunfähig',line3:e.reason||'',color:'#f29b83',...(cfg.fallText?.(x)||{})};
  else if(k==='collapse')o={g,part:'chest',kind:'collapse',line1:g.name+' verliert zu viel Blut',title:'Geht blutend zu Boden',line3:'Blut '+Math.round(g.blood)+' % · kampfunfähig'+(by?' · zuletzt getroffen von '+by:''),color:'#f29b83',team:e.a?.team,fall:!!x.fall,variant:1};
  else{const wid=weaponId(e.weapon),kind=['bow','crossbow'].includes(wid)&&['stab','deepstab'].includes(k)?'arrow':k,
-   cons=p.missing?'für immer verloren':p.fracture?.crushed?'Dauerschaden: heilt nie ganz':p.fracture?'Bruch: mindestens '+Math.ceil(p.fracture.days)+' Tage':e.lasting||p.chronic>0?'Dauerschaden':p.bleed>0?'blutet weiter':'';
+   cons=p.missing?'für immer verloren':p.fracture?.crushed?'Dauerschaden: heilt nie ganz':p.fracture?'Bruch: mindestens '+Math.ceil(p.fracture.days/(M.HEAL_SPEED||1))+' Tage':e.lasting||p.chronic>0?'Dauerschaden':p.bleed>0?'blutet weiter':'';
   o={g,part:e.part,kind,wid,cls:wid?undefined:'none',line1:(e.attacker||'Ein Gegner')+(e.weapon?' ('+e.weapon+')':'')+' fügt '+g.name+' zu:',title:inj,line3:[p.missing?'':'Grad '+gr+' ('+GRADE[gr]+')',kind==='arrow'?'der Pfeil bleibt stecken':'',cons].filter(Boolean).join(' · '),color:gr>=3||p.missing?'#f29b83':'#f4d37a'};}
  const shot=start({...o,textScale:cfg.host?.()?cfg.textScale:1,from:SHOT_FROM,len:k==='death'?(x.dramatic?5:3):x.live?1.5:SHOT_LEN,hold:tap()&&!x.live,mute:true}),host=cfg.host?.();
  if(host){cfg.onShot?.(true,o,!!x.live);arena={v:null,shot,c:host,g:host.getContext('2d'),battle:S.battle.id,live:!!x.live};}
@@ -349,5 +349,5 @@ if(typeof M.fixedStep==='function'&&typeof M.presentationStep==='function'){
 // Zeile für die Einstellungsseite und ihre Auswahl
 M.injuryOptions=()=>`<div class="list-row"><span>Nahaufnahmen bei Verletzungen<br><small>Der Kampf hält dafür kurz an. Antippen überspringt.</small></span><select class="select" id="closeups">${MODES.map(([k,n])=>`<option value="${k}"${k===mode()?' selected':''}>${n}</option>`).join('')}</select></div>`;
 {const change=M.schoolChange;M.schoolChange=ev=>{if(ev?.target?.id==='closeups'){S.options.closeups=ev.target.value;M.persist?.();return true;}return change?.(ev);};}
-M.injuryShots={skullStage,SKULL_STAGES,SKULL_DAYS,start,play,stop,paint,kinds:KINDS,kindOf,injuriesFor,viewOf,weaponClass,relevant,HIT,LEN,modes:MODES,mode,level,config:cfg,skip:()=>{if(arena)arena.shot.done=true;},get arena(){return arena;},get pending(){return pend;}};
+M.injuryShots={skullStage,SKULL_STAGES,SKULL_DAYS,start,play,stop,paint,kinds:KINDS,kindOf,injuriesFor,viewOf,weaponClass,relevant,HIT,LEN,modes:MODES,mode,level,config:cfg,skip:()=>{if(arena){arena.shot.done=true;/* Antippen: aktuelle Nahaufnahme weg, aufgestaute verwerfen, kurz Ruhe (Thomas 18.10.) */pend=[];falls=[];gap=Math.max(gap,2.5);}},get arena(){return arena;},get pending(){return pend;}};
 })();

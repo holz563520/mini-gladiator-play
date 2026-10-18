@@ -8,9 +8,9 @@
 <h2>Auf dem Spielfeld</h2><p>So sieht die Figur im Kampf aus, stark vergrößert. Bewegt sich live; Helm, Aussehen und Waffe kommen aus der Auswahl oben.</p>
 <canvas id="field" width="660" height="480" aria-label="Figur auf dem Spielfeld mit Schädelbruch"></canvas>
 <div class="controls"><label>Ansicht<select id="fview"><option value="0">Von vorn</option><option value="1">Von hinten</option><option value="2">Von der Seite</option></select></label><label>Vergrößerung<select id="fzoom"><option value="5">5×</option><option value="7" selected>7×</option><option value="10">10×</option><option value="14">14×</option></select></label><label class="check"><input id="fwound" type="checkbox" checked> Schädelbruch zeigen</label><label class="check"><input id="fdown" type="checkbox"> Liegend</label><label class="check"><input id="fall" type="checkbox"> Alle Helme nebeneinander</label></div>
-<h2>Heilung im Krankenhaus</h2><p>Vorschlag für den Heilungsverlauf: Ein Schädelbruch heilt lange, nach 90 Tagen ist er ausgeheilt. Statt einer Narbe trägt der Gladiator danach eine Metallplatte an der Stelle. Regler bewegen oder den Zeitraffer abspielen; die Figur auf dem Spielfeld oben folgt dem Regler.</p>
+<h2>Heilung im Krankenhaus</h2><p>Heilungsverlauf (im Spiel): Ein Schädelbruch nach 15–20 Tagen (je nach Schwere) ist er ausgeheilt. Statt einer Narbe trägt der Gladiator danach eine Metallplatte an der Stelle. Regler bewegen oder den Zeitraffer abspielen; die Figur auf dem Spielfeld oben folgt dem Regler.</p>
 <canvas id="heal" width="660" height="360" aria-label="Heilungsverlauf des Schädelbruchs"></canvas>
-<label for="hday">Tag im Krankenhaus</label><input id="hday" type="range" min="0" max="90" step="1" value="0"><div class="time"><span id="hstage" aria-live="polite">Frischer Bruch</span><output id="hdayout">Tag 0 von 90</output></div>
+<label for="hday">Tag im Krankenhaus</label><input id="hday" type="range" min="0" max="20" step="1" value="0"><div class="time"><span id="hstage" aria-live="polite">Frischer Bruch</span><output id="hdayout">Tag 0 von 90</output></div>
 <div class="controls"><button id="hplay" class="primary">▶ Zeitraffer</button><label class="check"><input id="hfollow" type="checkbox" checked> Figur auf dem Spielfeld folgt dem Regler</label></div>
 <table id="hstages" style="width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 18px"></table>
 <h2>Zeitleiste der Nahaufnahme</h2><label for="timeline">Einzelnen Moment ansehen</label><input id="timeline" type="range" min="0" max="3.1" step="0.01" value="0"><div class="time"><span id="phase" aria-live="polite">Ausholen</span><output id="time">0,00 s</output></div>
@@ -37,7 +37,7 @@ const fctx=$('field').getContext('2d');let figs=null;
 function mkActor(i,helm){const M=MG,gg=M.makeGladiator(2,true);gg.id='f'+i;gg.name='Testgladiator';const look=gl().appearance;gg.appearance=Object.assign({},gg.appearance,look);
  const wid=$('weapon').value,okw=['dagger','short','gladius','long','axe','doubleaxe','club','mace','hammer','spear','trident','halberd','greatsword'].includes(wid)?wid:'gladius';
  gg.height=180;gg.weight=80;gg.role='Soldat';gg.enemyGear={weapon:M.makeItem('weapon',okw,2),secondary:null,shield:null,armor:helm?{head:M.makeItem('armor','helm',helm.q,helm.mat)}:{}};
- {const on=$('fwound').checked,dd=$('hfollow').checked?D:0;gg.body.head.skullFracture=!on?undefined:dd>=90?undefined:dd>0?{day:dd}:true;gg.body.head.skullPlate=on&&dd>=90?true:undefined;}
+ {const on=$('fwound').checked,dd=$('hfollow').checked?D:0;gg.body.head.skullFracture=!on?undefined:dd>=20?undefined:dd>0?{day:dd}:true;gg.body.head.skullPlate=on&&dd>=20?true:undefined;}
  const a=M.createCombatActor(gg,0,0,92);Object.assign(a,{x:0,y:0,a:[Math.PI/2,-Math.PI/2,0][+$('fview').value],state:'idle',phase:0,down:$('fdown').checked});return a;}
 function fieldDraw(){try{const M=MG,z=+$('fzoom').value,all=$('fall').checked;
  const set=all?[null,{mat:'leather',q:1},{mat:'medium',q:3},{mat:'metal',q:2},{mat:'metal',q:5},{mat:'metal',q:6}]:[$('hmat').value==='none'?null:{mat:$('hmat').value,q:+$('hq').value}];
@@ -48,10 +48,10 @@ for(const id of ['fview','fzoom','fwound','fdown','fall','hmat','hq','skin','hai
 
 // ---------- Heilung ----------
 const hctx=$('heal').getContext('2d'),SK=()=>MG.injuryShots;let D=0;
-function healDraw(){try{const st=SK().skullStage(D);SK().paint(hctx,660,360,{g:gl(),part:'head',kind:'skullheal',day:D,noFace:true,line1:'Krankenhaus · Tag '+D+' von '+SK().SKULL_DAYS,title:st.name,line3:st.text,color:D>=90?'#b9d3dc':'#f4d37a'},SK().HIT+3);
+function healDraw(){try{const st=SK().skullStage(D);SK().paint(hctx,660,360,{g:gl(),part:'head',kind:'skullheal',day:D,noFace:true,line1:'Krankenhaus · Tag '+D+' von '+SK().SKULL_DAYS,title:st.name,line3:st.text,color:D>=20?'#b9d3dc':'#f4d37a'},SK().HIT+3);
  $('hstage').textContent=st.name;$('hdayout').value='Tag '+D+' von '+SK().SKULL_DAYS;$('hday').value=D;for(const tr of document.querySelectorAll('#hstages tr[data-from]'))tr.className=(D>=+tr.dataset.from&&D<=+tr.dataset.to)?'on':'';}catch(e){hctx.fillStyle='#fff';hctx.fillText('Fehler: '+e.message,10,20);}}
 $('hstages').innerHTML='<tr><th>Tage</th><th>Stufe</th><th>Krankenhaus</th></tr>'+SK().SKULL_STAGES.map(v=>`<tr data-from="${v[2]}" data-to="${v[3]}"><td>${v[2]===v[3]?v[2]:v[2]+'–'+v[3]}</td><td>${v[1]}</td><td>${v[4]}</td></tr>`).join('');
 $('hday').oninput=()=>{D=+$('hday').value;healDraw();};for(const id of ['skin','hair','style','beard'])$(id).addEventListener('change',healDraw);
-let htimer=null;$('hplay').onclick=()=>{if(htimer){clearInterval(htimer);htimer=null;$('hplay').textContent='▶ Zeitraffer';return;}if(D>=90)D=0;$('hplay').textContent='❚❚ Anhalten';htimer=setInterval(()=>{D=Math.min(90,D+1);healDraw();if(D>=90){clearInterval(htimer);htimer=null;$('hplay').textContent='▶ Zeitraffer';}},150);};
+let htimer=null;$('hplay').onclick=()=>{if(htimer){clearInterval(htimer);htimer=null;$('hplay').textContent='▶ Zeitraffer';return;}if(D>=20)D=0;$('hplay').textContent='❚❚ Anhalten';htimer=setInterval(()=>{D=Math.min(20,D+1);healDraw();if(D>=20){clearInterval(htimer);htimer=null;$('hplay').textContent='▶ Zeitraffer';}},150);};
 healDraw();
 </script></html>
