@@ -38,7 +38,7 @@ class Scene{
   else if(e.type==='block'){const head=this.headPos(d);this.labels.push({x:head.x,y:head.y-24,text:'BLOCK',col:'#9fd0ff',life:.7});this.parts.push({x:head.x+d.dir*8,y:head.y+4,ring:1,life:.14,r:1});if(Math.random()<.12)this.say('block');}
   else if(e.type==='evade'){const head=this.headPos(d);this.labels.push({x:head.x,y:head.y-24,text:'RÜCKSCHRITT',col:'#b9f0a8',life:.8});if(Math.random()<.15)this.say('dodge');}
   else if(e.type==='dodge'){const head=this.headPos(d);this.labels.push({x:head.x,y:head.y-24,text:e.how==='duck'?'WEGGEDUCKT':'AUSGEWICHEN',col:'#b9f0a8',life:.8});if(Math.random()<.18)this.say('dodge');}
-  else if(e.type==='tooth'){if(this.cut)this.cut.tooth=e.tooth;else{this.pendingTooth=e.tooth;const L=this.lastHitEv;if(L&&!this.cutOff)this.maybeCut({...L.e,head:true,force:true},L.a,L.d);}const head=this.headPos(d);this.parts.push({x:head.x+d.dir*6,y:head.y+6,vx:-d.dir*(30+Math.random()*30),vy:-70,life:2.2,tooth:1,spin:0,col:TOOTH,ground:GROUND-2});this.labels.push({x:head.x,y:head.y-34,text:'ZAHN!',col:'#ffffff',life:1.3});this.say('tooth',true);}
+  else if(e.type==='tooth'){if(this.cut){this.cut.tooth=e.tooth;this.cut.dur=Math.max(this.cut.dur,1.7);}else{this.pendingTooth=e.tooth;const L=this.lastHitEv;if(L&&!this.cutOff)this.maybeCut({...L.e,head:true,force:true},L.a,L.d);}const head=this.headPos(d);this.parts.push({x:head.x+d.dir*6,y:head.y+6,vx:-d.dir*(30+Math.random()*30),vy:-70,life:2.2,tooth:1,spin:0,col:TOOTH,ground:GROUND-2});this.labels.push({x:head.x,y:head.y-34,text:'ZAHN!',col:'#ffffff',life:1.3});this.say('tooth',true);}
   else if(e.type==='down'){if(this.cut)this.cut.down=true;this.shake=8;this.zoom=.1;this.big={text:'NIEDERSCHLAG!',sub:'',life:1.6};this.say('down',true);const p=this.sx(d.x);for(let i=0;i<14;i++)this.parts.push({x:p,y:GROUND-2,vx:(Math.random()-.5)*80,vy:-10-Math.random()*25,life:.7,col:'#b79a6c',sz:1});}
   else if(e.type==='rise'){this.big={text:'ER STEHT WIEDER!',sub:'',life:1.1};}
   else if(e.type==='end'){const w=e.winner;this.big={text:e.how==='Unentschieden'?'UNENTSCHIEDEN':e.how==='Punktsieg'?'PUNKTSIEG':e.how.toUpperCase()+'!',sub:w<0?'':this.names[w]+' gewinnt',life:99,col:w===0?TEAM[0].name:w===1?TEAM[1].name:'#ffe7a0'};}
@@ -313,16 +313,16 @@ class Scene{
  // ---------- Perspektivenwechsel: Nahaufnahme des echten Gesichts bei harten Kopftreffern ----------
  maybeCut(e,a,d){if((!e.head&&!e.ko)||!window.MG?.faceShot||this.cutOff||this.f.over)return;const f=this.f;if(this.cut||f.t-(this.lastCut??-9)<(e.ko||e.force?0:2.2))return;
   const big=e.ko||e.crit||e.power>=6.8||(e.kind==='uppercut'&&e.power>=4.5)||(e.kind==='schwinger'&&e.power>=5.4);if(!big&&!e.force)return;
-  this.lastCut=f.t;this.cut={t:0,dur:e.ko?2.3:1.5,victim:d.side,attacker:a.side,kind:e.kind,crit:!!e.crit,power:e.power,dir:a.dir,tooth:this.pendingTooth??null,down:!!e.ko,parts:[],impact:false};this.pendingTooth=null;f.slow=1.6;}
+  this.lastCut=f.t;this.cut={t:0,dur:e.ko?2.3:(this.pendingTooth!=null?1.7:1.5),victim:d.side,attacker:a.side,kind:e.kind,crit:!!e.crit,power:e.power,dir:a.dir,tooth:this.pendingTooth??null,down:!!e.ko,parts:[],impact:false};this.pendingTooth=null;f.slow=1.6;}
  cutFace(d,k,hit){const f=d.face,v=x=>Math.min(1.5,x||0);return {eyeL:v(f.eyeL),eyeR:v(f.eyeR),cheek:v(f.cheek),nose:v(f.nose),lip:v(f.lip),cut:v(f.cut),blood:v(f.blood)};}
- drawCut(c,dt,s,ox,oy){const C=this.cut;if(!C)return;const f=this.f,M=window.MG;C.t+=dt;if(C.t>=C.dur){this.cut=null;return;}
+ drawCut(c,dt,s,ox,oy){const C=this.cut;if(!C)return;const f=this.f,M=window.MG;const ts=(C.tooth!=null&&C.t>=.25)?.38:1,dtc=dt*ts;C.t+=dtc;if(C.t>=C.dur){this.cut=null;return;}
   const d=f.b[C.victim],a=f.b[C.attacker],w=Math.round(W*s),h=Math.round(H*s),t=C.t,IMP=.28;
   if(!this.cc){this.cc=document.createElement('canvas');}if(this.cc.width!==w||this.cc.height!==h){this.cc.width=w;this.cc.height=h;}
   const g=this.cc.getContext('2d');
   // Phasen: 0–IMP Faust fliegt heran · IMP Treffer, Kopf schnellt weg · danach Nachwirkung · Ende: Wisch zurück
   const snap=t<IMP?0:Math.pow(Math.max(0,1-(t-IMP)/.9),2.2),since=t-IMP;
   if(!C.impact&&t>=IMP){C.impact=true;this.shake=0;for(let i=0;i<22;i++){const ang=(C.kind==='uppercut'?-1.2:(C.dir>0?0:Math.PI))+(Math.random()-.5)*1.6,sp=60+Math.random()*180;C.parts.push({x:.5,y:.46,vx:Math.cos(ang)*sp/400,vy:Math.sin(ang)*sp/260-.15,life:.9,kind:i<8?'sweat':i<14&&d.face.blood>.3?'blood':'spit'});}
-   if(C.tooth!=null)C.parts.push({x:.5,y:.58,vx:-C.dir*.5,vy:-.9,life:1.5,kind:'tooth',spin:0});this.sfx?.hit?.(C.kind,true,C.power,C.crit);}
+   if(C.tooth!=null)C.parts.push({x:.5,y:.58,vx:-C.dir*.3,vy:-.8,life:2.6,kind:'tooth',spin:0});this.sfx?.hit?.(C.kind,true,C.power,C.crit);}
   const sign=C.dir>0?1:-1;
   const yaw=(C.kind==='uppercut'?0:sign*1.0)*snap*(C.crit?1.15:.9),tilt=(C.kind==='uppercut'?-.32:sign*.3)*snap,sink=(C.kind==='uppercut'?-14:5)*snap;
   const fixed={...d.g,teeth:{missing:[...(d.g.teeth?.missing||[]),...d.teethLost],gold:d.g.teeth?.gold||[]}};
@@ -341,9 +341,10 @@ class Scene{
    g.fillStyle=T.wrap;g.fillRect(-R*1.05,-R*.5,R*.42,R*1.0);g.fillStyle=T.stripe;g.fillRect(-R*.85,-R*.5,R*.08,R*1.0);
    if(t>=IMP){g.fillStyle='rgba(150,16,16,.7)';for(let i=0;i<5;i++)g.fillRect(R*(.2+hash(i*2.3)*.5),(hash(i*5.1)-.5)*R,s*1.4,s*2.2);}
    g.restore();}
+  if(C.tooth!=null&&t>.28&&t<1.0&&Math.random()<dtc*34)C.parts.push({x:.5+(Math.random()-.5)*.06,y:.58,vx:(Math.random()-.5)*.4,vy:-.3-Math.random()*.35,life:1,kind:'blood'});
   // Partikel
-  for(let i=C.parts.length-1;i>=0;i--){const p=C.parts[i];p.life-=dt;if(p.life<=0){C.parts.splice(i,1);continue;}p.vy+=dt*.9;p.x+=p.vx*dt;p.y+=p.vy*dt;const X=p.x*w,Y=p.y*h;
-   if(p.kind==='tooth'){p.spin+=dt*16;g.save();g.translate(X,Y);g.rotate(p.spin);g.fillStyle='#ece4cc';g.fillRect(-s*2.6,-s*3.4,s*5.2,s*6.8);g.fillStyle='#b8ad90';g.fillRect(-s*2.6,s*1.8,s*5.2,s*1.6);g.fillStyle='#8a2a2a';g.fillRect(-s*1.4,s*3.2,s*2.8,s*1.2);g.restore();}
+  for(let i=C.parts.length-1;i>=0;i--){const p=C.parts[i];p.life-=dtc;if(p.life<=0){C.parts.splice(i,1);continue;}p.vy+=dtc*.9;p.x+=p.vx*dtc;p.y+=p.vy*dtc;const X=p.x*w,Y=p.y*h;
+   if(p.kind==='tooth'){p.spin+=dtc*16;g.save();g.translate(X,Y);g.rotate(p.spin);g.fillStyle='#ece4cc';g.fillRect(-s*4.2,-s*5.4,s*8.4,s*10.8);g.fillStyle='#b8ad90';g.fillRect(-s*4.2,s*2.8,s*8.4,s*2.6);g.fillStyle='#8a2a2a';g.fillRect(-s*2.2,s*5,s*4.4,s*1.9);g.fillStyle='#fff8e0';g.fillRect(-s*3.2,-s*4.6,s*2,s*5);g.restore();}
    else{g.globalAlpha=Math.min(1,p.life*2);g.fillStyle=p.kind==='blood'?'#a01818':p.kind==='sweat'?'#cfe8ff':'#f2ecdc';g.fillRect(X,Y,s*(p.kind==='spit'?1.4:2),s*(p.kind==='spit'?1.4:2));g.globalAlpha=1;}}
   // Aufprall-Blitz
   if(t>=IMP&&since<.09){g.fillStyle='rgba(255,255,255,'+(.8-since*8).toFixed(2)+')';g.fillRect(0,0,w,h);}
@@ -353,7 +354,7 @@ class Scene{
   // Beschriftung der Nahaufnahme
   const fs=Math.max(14,Math.round(s*9));c.textAlign='center';c.textBaseline='middle';const name={gerade:'TREFFER!',schwinger:'HAKEN!',uppercut:'UPPERCUT!'}[C.kind]+(C.crit?' VOLLTREFFER':'');
   if(t>IMP&&t<IMP+.9){const k=ease((t-IMP)/.12);c.font=`900 ${Math.round(fs*(1.9-.4*k))}px Georgia,serif`;c.fillStyle='rgba(0,0,0,.6)';c.fillText(name,ox+w/2+3,oy+h*.14+3);c.fillStyle=C.crit?'#ffd25a':'#fff';c.fillText(name,ox+w/2,oy+h*.14);}
-  if(C.tooth!=null&&t>IMP+.15&&t<IMP+1.1){c.font=`900 ${Math.round(fs*1.2)}px Georgia,serif`;c.fillStyle='#fff';c.fillText('ZAHN WEG!',ox+w/2,oy+h*.9);}
+  if(C.tooth!=null&&t>IMP+.1&&t<IMP+1.45){c.font=`900 ${Math.round(fs*1.2)}px Georgia,serif`;c.fillStyle='#fff';c.fillText('ZAHN WEG!',ox+w/2,oy+h*.9);}
   c.font=`700 ${Math.round(fs*.8)}px Georgia,serif`;c.fillStyle='rgba(243,226,176,.85)';c.textAlign='left';c.fillText(this.names[C.victim],ox+s*5,oy+h-s*6);
   c.restore();}
  // ---------- Atmung, Schweiß, Blutspuren, Drohgebärden vor dem Kampf ----------
