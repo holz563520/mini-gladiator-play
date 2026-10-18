@@ -297,7 +297,7 @@ const SKULL_UNITS=270,SKULL_HP_CAP=24; // Schädelbruch setzt nicht sofort auße
 function groundTargetPart(b){const r=rng(),B=b.g.body;if(!B.head.missing&&r<.75)return 'head';if(!B.neck.missing&&r<.9)return 'neck';return 'chest';}
 function helmFactor(g){const it=M.armorItems(g).find(i=>M.definition(i)?.parts?.includes('head'));if(!it)return 1;const m=it.material==='leather'?.85:it.material==='medium'?.7:.5;return clamp(m-(it.q||0)*.03,.25,.9);}
 function skullBlow(a,b,w,dmg,o={}){if(b.rex||b.hahn||b.lion)return false;const part=b.g.body.head;if(!part||part.missing||part.fracture?.skull||b.g.dead)return false;
- const strong=o.lying||o.rear;let chance=strong?(o.rear&&!o.lying?.85:.9):(dmg>=18?.05+(w.bladed?0:.05):0);if(!chance)return false;
+ const strong=o.lying||o.rear;let chance=strong?(o.rear&&!o.lying?.85:.9):(dmg>=9?clamp(.08+(dmg-9)*.016+(w.bladed?0:.08),.08,.5):0);if(!chance)return false;
  chance*=(w.bladed?.88:1)*helmFactor(b.g)*clamp(.6+dmg/55,.6,1.15);if(o.crit)chance+=.08;if(rng()>clamp(chance,0,.97))return false;
  part.fracture={days:SKULL_UNITS,severe:true,skull:true};part.skullFracture=true;part.hp=Math.min(part.hp,SKULL_HP_CAP);part.pain=Math.max(part.pain,90);part.bleed=Math.max(part.bleed||0,3);part.injury='Schädelbruch';part.grade=M.injuryGrade(part);
  M.noteInjury(b.g,'head','Schädelbruch');M.recordWound(b.g,'head','Schädelbruch',a.g.name,w.name,dmg);
