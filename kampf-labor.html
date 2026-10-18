@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kampf-Labor · ARENA THEORY</title>
+<style>
+:root{--bg:#17120e;--panel:#221a13;--panel2:#2b2017;--line:#4a3a2b;--ink:#efe0b3;--dim:#b9ac94;--accent:#873a2e;--accent2:#bf7357;--warn:#f29b83;--ok:#9fcf9a;--changed:#4b3a14}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:14px 16px 6px;max-width:1180px;margin:auto}
+.tag{color:var(--warn);font-size:12px;letter-spacing:2px}
+h1{font:700 clamp(24px,5vw,34px) Georgia,serif;margin:4px 0}
+h2{font:700 19px Georgia,serif;margin:18px 0 6px;color:#f6dfa4}
+h3{font:600 15px system-ui,sans-serif;margin:14px 0 6px;color:#f1d9a0}
+p,.hint{color:var(--dim)}
+.hint{font-size:13px}
+main{max-width:1180px;margin:auto;padding:0 16px 120px}
+nav.tabs{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);max-width:none}
+nav.tabs button{min-height:40px}
+button,select,input{font:inherit;color:var(--ink);background:#30251b;border:1px solid #806247;border-radius:6px;padding:7px 10px;min-height:38px}
+input[type=number]{width:96px}
+input[type=text],input[type=search]{width:100%}
+input[type=range]{padding:0;min-height:28px;accent-color:#bf7357;flex:1;min-width:80px}
+input[type=checkbox]{min-height:0;width:20px;height:20px;accent-color:#bf7357}
+button{cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent2)}
+button.tab.on{background:#5b3b25;border-color:#e0b27b}
+button.small{min-height:30px;padding:3px 9px;font-size:13px}
+section.tab{display:none}
+section.tab.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr))}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:6px 0}
+label.f{display:grid;gap:3px;font-size:13px;color:var(--dim);min-width:0}
+label.f.inline{display:flex;align-items:center;gap:7px}
+.blue{border-left:4px solid #5a8bd6}.red{border-left:4px solid #d6665a}
+table{border-collapse:collapse;width:100%;margin:8px 0;font-size:14px}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+th{background:var(--panel2);font-weight:600;color:#f1d9a0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.hi td{background:#3a2a1f;color:#fff0c8}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+details{margin:6px 0}
+details>summary{cursor:pointer;padding:6px 2px;color:#f1d9a0;font-weight:600}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:6px 4px;border-bottom:1px solid #33271d}
+.prow.changed{background:var(--changed)}
+.prow .lab{min-width:0}
+.prow .lab b{font-weight:500}
+.prow .lab small{display:block;color:var(--dim);font-size:11px;word-break:break-all}
+.prow .ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.prow .ctl input[type=range]{width:150px;flex:none}
+.prow .def{font-size:11px;color:var(--dim);min-width:70px;text-align:right}
+.actionbar{position:fixed;left:0;right:0;bottom:0;z-index:8;background:#120d0a;border-top:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+.actionbar .info{font-size:12px;color:var(--dim)}
+progress{width:100%;height:12px}
+.bar{display:inline-block;height:10px;background:#bf7357;vertical-align:middle;border-radius:2px}
+.up{color:var(--ok)}.down{color:var(--warn)}
+canvas#arenaCanvas{width:100%;max-width:1040px;height:auto;aspect-ratio:850/520;background:#000;border:1px solid var(--line);border-radius:6px}
+#vlog{max-height:200px;overflow:auto;font-size:13px;color:var(--dim)}
+#vlog p{margin:2px 0}
+.badge{display:inline-block;background:var(--changed);border:1px solid #8a6a1c;border-radius:10px;padding:1px 8px;font-size:12px;color:#f6dfa4}
+.badge[hidden]{display:none}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;background:#33271d;font-size:12px;color:var(--dim)}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+@media (max-width:640px){.prow{grid-template-columns:1fr}.prow .ctl{justify-content:flex-start}.prow .ctl input[type=range]{width:100%;flex:1}}
+</style>
+</head>
+<body>
+<header>
+<span class="tag">ARENA THEORY · KAMPF-LABOR</span>
+<h1>Kampf-Labor</h1>
+<p>Hier lassen sich alle Kampfparameter ändern und sofort ausprobieren: Trefferchancen, Auslösewahrscheinlichkeiten jeder Technik, Schaden, Körperteil-Leben, Verletzungsschwellen, Waffen und die Verteilung der Kämpfer. <b>Alles ist so voreingestellt, wie es im Spiel tatsächlich ist.</b> „Simulieren“ rechnet viele Kämpfe ohne Bild und wertet sie aus, „Kampf ansehen“ zeigt einen einzelnen Kampf live. Spielstände werden nie verändert, und die Einstellungen hier wirken nur in dieser Seite.</p>
+</header>
+<nav class="tabs" id="tabs"></nav>
+<main>
+<section class="tab" id="tab-setup"></section>
+<section class="tab" id="tab-fighters"></section>
+<section class="tab" id="tab-body"></section>
+<section class="tab" id="tab-params"></section>
+<section class="tab" id="tab-sweep"></section>
+<section class="tab" id="tab-result"></section>
+<section class="tab" id="tab-live">
+ <div class="card">
+  <div class="row">
+   <label class="f">Geschwindigkeit<select id="spd"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+   <button id="pause">⏸ Pause</button><button id="next">▶▶ Nächster Kampf</button>
+   <label class="f inline"><input type="checkbox" id="auto"> automatisch weiter</label><button id="stop">■ Beenden</button>
+  </div>
+  <div id="vinfo" class="hint">Noch kein Kampf gestartet. „👁 Kampf ansehen“ unten startet einen Kampf mit den aktuellen Einstellungen.</div>
+ </div>
+ <canvas id="arenaCanvas" width="850" height="520"></canvas>
+ <div id="vlog" class="card"></div>
+</section>
+</main>
+<div class="actionbar">
+ <button class="primary" id="go">▶ Simulieren</button>
+ <button class="primary" id="watch">👁 Kampf ansehen</button>
+ <button id="cancel" hidden>■ Abbrechen</button>
+ <button id="resetAll">⟲ Alles auf Spielstandard</button>
+ <span class="info" id="status"></span>
+</div>
+<script>
+/* Spielstände schützen: Das Spiel darf hier nichts speichern oder laden. Nur der eigene Schlüssel des Labors geht durch. */
+try{const rawSet=Storage.prototype.setItem,rawGet=Storage.prototype.getItem,KEY='kampf-labor-v1';
+ window.__labStore={get:()=>{try{return rawGet.call(localStorage,KEY);}catch(e){return null;}},set:v=>{try{rawSet.call(localStorage,KEY,v);}catch(e){}}};
+ Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){window.__labStore={get:()=>null,set:()=>{}};}
+</script>
+<script src="data.js"></script><script src="household.js"></script><script src="management.js"></script><script src="scout.js"></script><script src="sim.js"></script><script src="tuning.js"></script><script src="benchmark.js"></script><script src="school.js"></script><script src="weapon-art.js"></script><script src="arena.js"></script><script src="injury-shots.js"></script>
+<script src="kampf-labor.js"></script>
+</body>
+</html>

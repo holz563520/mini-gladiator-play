@@ -4,6 +4,27 @@ const M=window.MG,S=M.s;
 let career=null,metrics=null,selfConfig=null;
 M.benchmarkConfig={count:3,role0:'Soldat',role1:'Soldat',seed:1701,league:0,weapon0:'gladius',weapon1:'gladius',armor0:'leather',armor1:'leather',quality0:2,quality1:2,shield0:'smallshield',shield1:'smallshield'};
 M.benchmarkResults=[];
+/* Verteilung der Werte eines Teams (Kampf-Labor, kampf-labor.html): spec = {dist:'bernoulli'|'gauss'|'fixed', mean, n, sd, over:{schlüssel:mittelwert}}.
+   Bernoulli entspricht der Spielverteilung (bernoulliValue): Mitte 20 = Rekrut, Streuung ≈ 5 bei n = 64; kleineres n streut stärker. */
+function drawValue(spec,key){
+ const mean=M.clamp(+(spec.over&&spec.over[key]!==undefined&&spec.over[key]!==''?spec.over[key]:spec.mean),1,100);
+ if(spec.dist==='fixed')return Math.round(mean);
+ if(spec.dist==='gauss')return Math.round(M.clamp(M.gaussian(mean,+spec.sd||12),1,100));
+ return M.bernoulliValue(mean,Math.max(1,Math.round(+spec.n||64)));
+}
+function applyGen(g,gen){
+ const keep=!gen.learning,cap=(group,key,v)=>{const caps=g.caps?.[group];if(caps&&key in caps)caps[key]=keep?v:Math.max(caps[key],v);};
+ for(const group of ['stats','moves','mastery','skills']){const spec=gen[group];if(!spec||!g[group])continue;for(const key in g[group]){const v=drawValue(spec,key);g[group][key]=v;cap(group==='mastery'?'weapons':group,key,v);}}
+ for(const [id,p] of Object.entries(g.body)){
+  if(gen.bodyStrength)p.strength=drawValue(gen.bodyStrength,id);if(gen.bodyAgility)p.agility=drawValue(gen.bodyAgility,id);
+  if(g.caps?.body?.[id]){g.caps.body[id].strength=keep?p.strength:Math.max(g.caps.body[id].strength||0,p.strength);g.caps.body[id].agility=keep?p.agility:Math.max(g.caps.body[id].agility||0,p.agility);}
+ }
+ const dim=(k,lo,hi)=>{const d=gen.dims?.[k];return d?Math.round(M.clamp(M.gaussian(+d.mean,+d.sd||0),lo,hi)):null;};
+ const h=dim('height',140,215),m=dim('muscle',10,80),f=dim('fat',3,45);
+ if(h!==null){g.height=h;g.arm=Math.round(h*.43);g.leg=Math.round(h*.49);}if(m!==null)g.muscle=m;if(f!==null)g.fat=f;
+ if(h!==null||m!==null||f!==null)g.weight=Math.round((g.height-100)*.62+g.muscle*.58+g.fat*.6);
+ if(gen.dims?.weight)g.weight=Math.round(M.clamp(M.gaussian(+gen.dims.weight.mean,+gen.dims.weight.sd||0),45,160));
+}
 function averageFighter(team,index,c){
  if(c.selfFight&&c.fighters?.[team])return M.copy(c.fighters[team]);
  const custom=c.entries?.[team]?.[index];if(custom){c={...c};for(const k of ['role','weapon','armor','shield','quality'])if(custom[k]!==undefined)c[k+team]=custom[k];}
@@ -15,6 +36,8 @@ function averageFighter(team,index,c){
  for(const key in g.smith){g.smith[key]={current:50,potential:50};}
  for(const [key,p]of Object.entries(g.body)){Object.assign(p,{hp:100,max:100,strength:50,agility:50,pain:0,bleed:0,grade:0,chronic:0,missing:false,injury:'',wounds:[]});g.caps.body[key]={strength:50,agility:50};}
  if(c.varied===true||c.varied==='1'||c.varied==='true'){const R=()=>M.clamp(M.gaussian(50,12),18,88);for(const key in g.stats){g.stats[key]=Math.round(R());g.caps.stats[key]=Math.max(50,g.stats[key]);}for(const key in g.moves){g.moves[key]=Math.round(R());g.caps.moves[key]=Math.max(50,g.moves[key]);}for(const key in g.mastery){g.mastery[key]=Math.round(R());g.caps.weapons[key]=Math.max(50,g.mastery[key]);}for(const p of Object.values(g.body)){p.strength=Math.round(R());p.agility=Math.round(R());}g.height=Math.round(M.clamp(M.gaussian(178,7),162,196));g.weight=Math.round(M.clamp(M.gaussian(80,9),60,105));g.muscle=Math.round(M.clamp(M.gaussian(40,10),15,70));}
+ if(c.gen?.[team])applyGen(g,c.gen[team]);
+ {const hpMap=c['bodyHp'+team]||c.bodyHp;if(hpMap)for(const [id,p] of Object.entries(g.body)){const v=+hpMap[id];if(v>0)p.hp=p.max=v;}}
  const classWeapon={Soldat:'gladius',Assassine:'dagger',Fernkämpfer:'bow'}[g.role],def=c['weapon'+team]==='class'?M.weaponDefs.find(w=>w.id===classWeapon):c['weapon'+team]==='mixed'?M.weaponDefs[index%M.weaponDefs.length]:M.weaponDefs.find(w=>w.id===c['weapon'+team])||M.weaponDefs.find(w=>w.id==='gladius'),q=c['quality'+team];
  const main=M.makeItem('weapon',def.id,q);main.id=g.id+'-main';main.blood=0;
  g.enemyGear={weapon:def.ammo?main:null,secondary:def.ammo?M.makeItem('weapon','dagger',q):main,shield:c['shield'+team]==='auto'?(g.role==='Fernkämpfer'?null:M.makeItem('shield',g.role==='Soldat'?'roundshield':'buckler',q)):c['shield'+team]==='none'?null:M.makeItem('shield',c['shield'+team],q),armor:{}};
