@@ -30,7 +30,7 @@ class Scene{
  // ---------- Ereignisse → Effekte ----------
  consume(sfx){this.sfx=sfx;const f=this.f;if(!f)return;while(this.seen<f.events.length){const e=f.events[this.seen++];this.react(e);sfx?.event(e,f);}}
  react(e){const f=this.f,a=f.b[e.who],d=a?.opp;const L={gerade:'GERADE',schwinger:'SCHWINGER',uppercut:'UPPERCUT'};
-  if(e.type==='hit'){if(this.fistBlood)this.fistBlood[a.side]=Math.min(1,this.fistBlood[a.side]+(e.head?.045+e.power*.012:.012)*(1+Math.min(1,d.face.blood)*.8));this.maybeCut(e,a,d);const head=this.headPos(d);const n=e.crit?14:7;for(let i=0;i<n;i++)this.parts.push({x:head.x+(e.head?0:a.dir*2),y:e.head?head.y:head.y+30,vx:a.dir*(20+Math.random()*50),vy:-30-Math.random()*40,life:.6,col:Math.random()<.7?'#cfe8ff':'#ffffff',sz:1});
+  if(e.type==='hit'){this.lastHitEv={e,a,d};if(this.fistBlood)this.fistBlood[a.side]=Math.min(1,this.fistBlood[a.side]+(e.head?.045+e.power*.012:.012)*(1+Math.min(1,d.face.blood)*.8));this.maybeCut(e,a,d);const head=this.headPos(d);const n=e.crit?14:7;for(let i=0;i<n;i++)this.parts.push({x:head.x+(e.head?0:a.dir*2),y:e.head?head.y:head.y+30,vx:a.dir*(20+Math.random()*50),vy:-30-Math.random()*40,life:.6,col:Math.random()<.7?'#cfe8ff':'#ffffff',sz:1});
    if(e.head&&(e.power>6||d.face.cut>0)&&Math.random()<.6)for(let i=0;i<4+e.power*.6;i++)this.parts.push({x:head.x,y:head.y+3,vx:a.dir*(15+Math.random()*40),vy:-20-Math.random()*30,life:1.2,col:'#a01818',sz:1,blood:1});
    this.parts.push({x:head.x,y:e.head?head.y:head.y+30,ring:1,life:.18,r:2});
    this.labels.push({x:head.x,y:head.y-24,text:L[e.kind]+(e.crit?'!':''),col:e.crit?'#ffd25a':'#fff',life:.9});
@@ -38,7 +38,7 @@ class Scene{
   else if(e.type==='block'){const head=this.headPos(d);this.labels.push({x:head.x,y:head.y-24,text:'BLOCK',col:'#9fd0ff',life:.7});this.parts.push({x:head.x+d.dir*8,y:head.y+4,ring:1,life:.14,r:1});if(Math.random()<.12)this.say('block');}
   else if(e.type==='evade'){const head=this.headPos(d);this.labels.push({x:head.x,y:head.y-24,text:'RÜCKSCHRITT',col:'#b9f0a8',life:.8});if(Math.random()<.15)this.say('dodge');}
   else if(e.type==='dodge'){const head=this.headPos(d);this.labels.push({x:head.x,y:head.y-24,text:e.how==='duck'?'WEGGEDUCKT':'AUSGEWICHEN',col:'#b9f0a8',life:.8});if(Math.random()<.18)this.say('dodge');}
-  else if(e.type==='tooth'){if(this.cut)this.cut.tooth=e.tooth;else this.pendingTooth=e.tooth;const head=this.headPos(d);this.parts.push({x:head.x+d.dir*6,y:head.y+6,vx:-d.dir*(30+Math.random()*30),vy:-70,life:2.2,tooth:1,spin:0,col:TOOTH,ground:GROUND-2});this.labels.push({x:head.x,y:head.y-34,text:'ZAHN!',col:'#ffffff',life:1.3});this.say('tooth',true);}
+  else if(e.type==='tooth'){if(this.cut)this.cut.tooth=e.tooth;else{this.pendingTooth=e.tooth;const L=this.lastHitEv;if(L&&!this.cutOff)this.maybeCut({...L.e,head:true,force:true},L.a,L.d);}const head=this.headPos(d);this.parts.push({x:head.x+d.dir*6,y:head.y+6,vx:-d.dir*(30+Math.random()*30),vy:-70,life:2.2,tooth:1,spin:0,col:TOOTH,ground:GROUND-2});this.labels.push({x:head.x,y:head.y-34,text:'ZAHN!',col:'#ffffff',life:1.3});this.say('tooth',true);}
   else if(e.type==='down'){if(this.cut)this.cut.down=true;this.shake=8;this.zoom=.1;this.big={text:'NIEDERSCHLAG!',sub:'',life:1.6};this.say('down',true);const p=this.sx(d.x);for(let i=0;i<14;i++)this.parts.push({x:p,y:GROUND-2,vx:(Math.random()-.5)*80,vy:-10-Math.random()*25,life:.7,col:'#b79a6c',sz:1});}
   else if(e.type==='rise'){this.big={text:'ER STEHT WIEDER!',sub:'',life:1.1};}
   else if(e.type==='end'){const w=e.winner;this.big={text:e.how==='Unentschieden'?'UNENTSCHIEDEN':e.how==='Punktsieg'?'PUNKTSIEG':e.how.toUpperCase()+'!',sub:w<0?'':this.names[w]+' gewinnt',life:99,col:w===0?TEAM[0].name:w===1?TEAM[1].name:'#ffe7a0'};}
@@ -207,20 +207,20 @@ class Scene{
   q.restore();}
  drawTrails(q,dt){for(const tr of this.trails||[]){for(const p of tr)p.age+=dt;while(tr.length&&tr[0].age>.18)tr.shift();if(tr.length<2)continue;q.lineCap='round';for(let i=1;i<tr.length;i++){const a=tr[i-1],c=tr[i],k=1-c.age/.18;q.strokeStyle='rgba(255,246,220,'+(k*.6).toFixed(3)+')';q.lineWidth=1+k*4;q.beginPath();q.moveTo(a.x,a.y);q.lineTo(c.x,c.y);q.stroke();}}}
  // Antiker Lendenschurz (subligaculum): Gürtel in Teamfarbe, Leinentuch, schwingender Vorder- und Hinterlappen
- loincloth(q,P,T,b){const ca=P.cloth||0,lin='#d8ccaa',lin2=shade(lin,.84),lin3=shade(lin,.7),O='rgba(44,20,10,.78)',dirt=Math.min(.45,(b.face?.blood||0)*.2),fl=Math.sin(this.t*7+b.side*2)*(.5+Math.abs(ca)*3);
+ loincloth(q,P,T,b){const ca=P.cloth||0,lin='#d8ccaa',lin2=shade(lin,.84),lin3=shade(lin,.7),O='rgba(44,20,10,.78)',dirt=Math.min(.45,(b.face?.blood||0)*.2),fl=Math.sin(this.t*5+b.side*2)*Math.min(1,Math.abs(ca)*5);
   q.save();q.translate(P.hip.x,P.hip.y);q.rotate(P.lean*.5);q.lineJoin='round';
   const flap=(pts,col,sh)=>{q.beginPath();pts.forEach(([x,y],i)=>i?q.lineTo(x,y):q.moveTo(x,y));q.closePath();q.fillStyle=O;q.strokeStyle=O;q.lineWidth=1.8;q.stroke();q.fill();q.fillStyle=col;q.fill();if(sh){q.fillStyle=sh;q.beginPath();pts.forEach(([x,y],i)=>{const k=i?q.lineTo.bind(q):q.moveTo.bind(q);k(x*.6+pts[0][0]*.4+(x>0?2:0),y*.9+2)});q.closePath();q.globalAlpha=.0;q.fill();q.globalAlpha=1;}};
   // Hinterlappen (schwingt gegenläufig)
-  q.save();q.translate(-12,2);q.rotate(-ca*.8+.05);flap([[-7,0],[7,0],[6,19+fl],[-1,23+fl],[-8,17]],lin2);q.fillStyle=T.stripe;q.fillRect(-6,16+fl*.6,12,2.2);q.restore();
+  q.save();q.translate(-12,2);q.rotate(-ca*.45+.04);flap([[-7,0],[7,0],[6,13+fl*.5],[-1,16+fl*.5],[-8,12]],lin2);q.fillStyle=T.stripe;q.fillRect(-6,11+fl*.3,12,2);q.restore();
   // Tuch um die Hüfte
   q.beginPath();q.roundRect(-19,-8,38,16,3);q.fillStyle=O;q.fill();q.beginPath();q.roundRect(-17.6,-6.8,35.2,13.6,2.4);q.fillStyle=lin;q.fill();q.fillStyle=lin2;q.fillRect(-17.6,2,35.2,4.8);
   q.strokeStyle=lin3;q.lineWidth=.9;q.beginPath();for(let i=-2;i<=3;i++){q.moveTo(i*6-3,-5);q.lineTo(i*6-5+ca*3,6);}q.stroke();
   // vorderer Lappen mit Saum in Teamfarbe
-  q.save();q.translate(2,4);q.rotate(ca);flap([[-7,0],[17,0],[13+fl*.8,31],[4+fl,36],[-3,28]],lin);
-  q.fillStyle=lin2;q.beginPath();q.moveTo(3,1);q.lineTo(14,1);q.lineTo(11+fl*.7,29);q.lineTo(5+fl*.8,31);q.closePath();q.fill();
-  q.strokeStyle=lin3;q.lineWidth=.9;q.beginPath();q.moveTo(2,3);q.lineTo(3+fl*.3,30);q.moveTo(8,3);q.lineTo(8+fl*.5,32);q.stroke();
-  q.fillStyle=T.trunk;q.beginPath();q.moveTo(-3.6,27.2);q.lineTo(13.4+fl*.8,28.6);q.lineTo(12.6+fl*.8,31.4);q.lineTo(4+fl,36);q.lineTo(-3,29);q.closePath();q.fill();q.fillStyle=T.stripe;q.fillRect(-3,28,15+fl*.7,1.3);
-  if(dirt>0){q.globalAlpha=dirt+.15;q.fillStyle='#8a1414';q.fillRect(4,8,3,9);q.fillRect(9,14,2,6);q.globalAlpha=1;}q.restore();
+  q.save();q.translate(2,4);q.rotate(ca);flap([[-7,0],[17,0],[13+fl*.5,21],[4+fl*.6,25],[-3,19]],lin);
+  q.fillStyle=lin2;q.beginPath();q.moveTo(3,1);q.lineTo(14,1);q.lineTo(11+fl*.4,19);q.lineTo(5+fl*.5,21);q.closePath();q.fill();
+  q.strokeStyle=lin3;q.lineWidth=.9;q.beginPath();q.moveTo(2,3);q.lineTo(3+fl*.2,20);q.moveTo(8,3);q.lineTo(8+fl*.3,22);q.stroke();
+  q.fillStyle=T.trunk;q.beginPath();q.moveTo(-3.6,17.5);q.lineTo(13+fl*.5,18.4);q.lineTo(12.4+fl*.5,21);q.lineTo(4+fl*.6,25);q.lineTo(-3,19.5);q.closePath();q.fill();q.fillStyle=T.stripe;q.fillRect(-3,18,15+fl*.4,1.2);
+  if(dirt>0){q.globalAlpha=dirt+.15;q.fillStyle='#8a1414';q.fillRect(4,6,3,7);q.fillRect(9,10,2,5);q.globalAlpha=1;}q.restore();
   // Gürtel, Schnalle, hängender Knoten
   q.fillStyle=O;q.fillRect(-20,-12,40,8);q.fillStyle=T.trunk;q.fillRect(-18.8,-10.8,37.6,5.6);q.fillStyle=T.stripe;q.fillRect(-18.8,-10.8,37.6,1.5);q.fillStyle=T.trunkD;q.fillRect(-18.8,-6.6,37.6,1.2);
   q.fillStyle='#e0bb4e';q.fillRect(0,-11,6,6.4);q.fillStyle='#8a6a1c';q.fillRect(1.4,-9.6,3.2,3.6);q.fillStyle='#fff1b0';q.fillRect(.4,-10.4,1.6,1.2);
@@ -231,7 +231,7 @@ class Scene{
   const cv=this.hcv[b.side],c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,160,130);c.imageSmoothingEnabled=false;
   const R=this.f.result,won=R&&R.winner===b.side&&!b.down,out=b.state==='down'||P.eyesShut>.9&&b.hitFlash>0||(R&&R.winner>=0&&R.winner!==b.side);
   const gm=b.gest?(b.gest.k==='chest'||b.gest.k==='flex'?'roar':b.gest.k==='shadow'?'determined':'confident'):null;const heavy=(this.stress?.[b.side]||0)>.5&&(P.br||0)>.55;
-  const mood=out?'out':gm?gm:won?'roar':heavy&&!(b.state==='strike')?'pain':b.state==='stagger'?'shock':(Math.abs(b.headSnap)>.15||b.hitFlash>0)?'pain':b.energy<22?'nervous':b.state==='strike'||b.state==='wind'?'roar':'determined';
+  const gaps=(g.teeth?.missing?.length||0)+(b.teethLost?.length||0)-(g.teeth?.gold?.length?0:0);const mood0=out?'out':gm?gm:won?'roar':heavy&&!(b.state==='strike')?'pain':b.state==='stagger'?'shock':(Math.abs(b.headSnap)>.15||b.hitFlash>0)?'pain':b.energy<22?'nervous':b.state==='strike'||b.state==='wind'?'roar':'determined';const mood=mood0==='determined'&&gaps>=4?'dumb':mood0;
   const fixed={...g,teeth:{missing:[...(g.teeth?.missing||[]),...(b.teethLost||[])],gold:g.teeth?.gold||[]}};
   const yaw=out?.5:b.state==='stagger'?.8:1.18;
   try{M.faceShot.paintHead(c,fixed,{yaw,mood},this.t);}catch(e){return this.headOld(q,P,b,skin,sk2,hair,A);}
@@ -311,8 +311,8 @@ class Scene{
  // ---------- Ein Bild ----------
 
  // ---------- Perspektivenwechsel: Nahaufnahme des echten Gesichts bei harten Kopftreffern ----------
- maybeCut(e,a,d){if((!e.head&&!e.ko)||!window.MG?.faceShot||this.cutOff||this.f.over)return;const f=this.f;if(this.cut||f.t-(this.lastCut??-9)<(e.ko?0:2.2))return;
-  const big=e.ko||e.crit||e.power>=6.8||(e.kind==='uppercut'&&e.power>=4.5)||(e.kind==='schwinger'&&e.power>=5.4);if(!big)return;
+ maybeCut(e,a,d){if((!e.head&&!e.ko)||!window.MG?.faceShot||this.cutOff||this.f.over)return;const f=this.f;if(this.cut||f.t-(this.lastCut??-9)<(e.ko||e.force?0:2.2))return;
+  const big=e.ko||e.crit||e.power>=6.8||(e.kind==='uppercut'&&e.power>=4.5)||(e.kind==='schwinger'&&e.power>=5.4);if(!big&&!e.force)return;
   this.lastCut=f.t;this.cut={t:0,dur:e.ko?2.3:1.5,victim:d.side,attacker:a.side,kind:e.kind,crit:!!e.crit,power:e.power,dir:a.dir,tooth:this.pendingTooth??null,down:!!e.ko,parts:[],impact:false};this.pendingTooth=null;f.slow=1.6;}
  cutFace(d,k,hit){const f=d.face,v=x=>Math.min(1.5,x||0);return {eyeL:v(f.eyeL),eyeR:v(f.eyeR),cheek:v(f.cheek),nose:v(f.nose),lip:v(f.lip),cut:v(f.cut),blood:v(f.blood)};}
  drawCut(c,dt,s,ox,oy){const C=this.cut;if(!C)return;const f=this.f,M=window.MG;C.t+=dt;if(C.t>=C.dur){this.cut=null;return;}
@@ -362,11 +362,11 @@ class Scene{
    f.b.forEach((b,i)=>{const h=Math.floor(hash(((b.g.name||'').length+i*3.7)*1.31)*5),k1=K2[h],k2=K2[(h+2+i)%5];if(I.t<I.dur-.5){const half=I.dur*.5;b.gest=I.t<half?{k:k1,t:I.t,dur:half}:{k:k2,t:I.t-half,dur:half};}else b.gest=null;});
    if(I.t>=I.dur){this.intro=null;for(const b of f.b)b.gest=null;this.big={text:'KAMPF!',sub:'',life:.9,col:'#ffe7a0'};this.onIntroEnd?.();}}
   f.b.forEach((b,i)=>{const cl=this.cloth[i],vx=(b.x-(cl.px||b.x))/Math.max(dt,.001)*b.dir;cl.px=b.x;
-   const tg=-clamp(vx*.0045,-.7,.7)+(b.state==='stagger'?-.35:0)+(b.state==='down'?-.5:0);cl.v+=((tg-cl.a)*95-cl.v*6.5)*dt;
-   if(b.hitFlash>.12&&!cl.hit){cl.v-=5;cl.hit=true;}else if(b.hitFlash<=0)cl.hit=false;
-   if(b.state==='strike'&&!cl.str){cl.v+=(b.act?.hand==='rear'?3.6:1.8);cl.str=true;}else if(b.state!=='strike')cl.str=false;
-   if(f.over&&f.result?.winner===i)cl.v+=Math.sin(this.t*8.4)*.9;
-   cl.a=clamp(cl.a+cl.v*dt,-1,1);});
+   const tg=-clamp(vx*.0028,-.3,.3)+(b.state==='stagger'?-.14:0)+(b.state==='down'?-.2:0);cl.v+=((tg-cl.a)*70-cl.v*13)*dt;
+   if(b.hitFlash>.12&&!cl.hit){cl.v-=1.4;cl.hit=true;}else if(b.hitFlash<=0)cl.hit=false;
+   if(b.state==='strike'&&!cl.str){cl.v+=(b.act?.hand==='rear'?1.2:.6);cl.str=true;}else if(b.state!=='strike')cl.str=false;
+   if(f.over&&f.result?.winner===i)cl.v+=Math.sin(this.t*8.4)*.25;
+   cl.a=clamp(cl.a+cl.v*dt,-.4,.4);});
   f.b.forEach((b,i)=>{const ex=clamp(1-b.energy/b.energyMax,0,1),stress=clamp(ex*1.15+clamp(f.t/22,0,1)*.4+(b.cons<b.consMax*.5?.15:0)+(f.over?0:0),0,1.1);this.stress[i]+=(stress-this.stress[i])*Math.min(1,dt*1.2);
    const st=this.stress[i],rate=.8+2.8*st;this.bph[i]+=dt*rate*6.283;this.breath[i]=(Math.sin(this.bph[i])*.5+.5)*(.45+st*1.05);
    this.sweat[i]+=((.04+st*.5)-this.sweat[i])*Math.min(1,dt*.35);

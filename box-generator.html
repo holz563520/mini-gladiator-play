@@ -60,6 +60,7 @@ progress{width:100%}
   <select id="spd"><option value=".5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
   <button id="snd">🔇 Ton einschalten</button>
   <label class="hint"><input type="checkbox" id="train" checked> Training anwenden (Werte steigen bis zur persönlichen Grenze)</label>
+  <label class="hint"><input type="checkbox" id="vet"> Eigener Kämpfer ist Veteran (ausgeschlagene Zähne werden Goldzähne, sonst bleiben Lücken)</label>
   <label class="hint"><input type="checkbox" id="intro" checked> Drohgebärden vor dem Kampf</label>
   <label class="hint"><input type="checkbox" id="bars"> Lebens- und Ausdauerbalken oben</label>
   <label class="hint"><input type="checkbox" id="cuts" checked> Perspektivenwechsel bei harten Treffern (Nahaufnahme des Gesichts)</label>
@@ -120,7 +121,7 @@ function figures(){for(const [i,g] of [[0,own],[1,opp]]){const box=$('f'+i);box.
   try{M.renderPortrait($('pf'+i),g,{state:'celebrate'});$('pf'+i).style.width='120px';}catch(e){console.warn(e);}
   try{const c=$('ff'+i),q=c.getContext('2d');q.imageSmoothingEnabled=false;M.faceShot.paint(q,320,208,{g,mood:'relief',team:i,yaw:0},0);}catch(e){console.warn(e);}}}
 function odds(){const ra=BX.rating(own),rb=BX.rating(opp),p=1/(1+Math.exp(-(ra-rb)/3.2)),q=(x)=>nf(Math.max(1.05,.92/x),2);return 'Blau '+q(p)+' · Rot '+q(1-p);}
-function start(same){if(!same)seed=Math.floor(Math.random()*1e9);fight=BX.createFight(own,opp,seed);scene.setFight(fight,[own.name,opp.name]);scene.onIntroEnd=()=>BXS.bell(1);scene.showBars=$('bars').checked;if(!$('intro').checked){scene.intro=null;}scene.arenaMini=[own,opp].map((g,i)=>{const c=document.createElement('canvas');try{M.renderTeamFigure(c,g,true);}catch(e){}return c;});scene.odds=odds();acc=0;if(!scene.intro)BXS.bell(1);cards();$('res').innerHTML='<h2>Ergebnis</h2><p class="hint">Kampf läuft …</p>';shown=false;}
+function start(same){own.wins=$('vet').checked?12:0;own.fights=$('vet').checked?15:0;if(!same)seed=Math.floor(Math.random()*1e9);fight=BX.createFight(own,opp,seed);scene.setFight(fight,[own.name,opp.name]);scene.onIntroEnd=()=>BXS.bell(1);scene.showBars=$('bars').checked;if(!$('intro').checked){scene.intro=null;}scene.arenaMini=[own,opp].map((g,i)=>{const c=document.createElement('canvas');try{M.renderTeamFigure(c,g,true);}catch(e){}return c;});scene.odds=odds();acc=0;if(!scene.intro)BXS.bell(1);cards();$('res').innerHTML='<h2>Ergebnis</h2><p class="hint">Kampf läuft …</p>';shown=false;}
 let shown=false;
 function showResult(){const f=fight,R=f.result,names=[own.name,opp.name];const train=$('train').checked,after=BX.applyAftermath(f,{apply:true,learn:train?M.addLearning:(g,grp,key,a)=>0});
  let h=`<h2>Ergebnis: ${R.winner<0?'Unentschieden':esc(names[R.winner])+' gewinnt'} · ${esc(R.how)} nach ${nf(R.time,1)} s</h2><p class="hint">Punkte ${Math.round(R.points[0])} : ${Math.round(R.points[1])}</p><div class="grid2">`;
@@ -128,7 +129,7 @@ function showResult(){const f=fight,R=f.result,names=[own.name,opp.name];const t
   h+=`<div class="card ${i?'red':'blue'}"><h3>${esc(names[i])}</h3><table><tr><th>Technik</th><th class="n">Treffer/Versuche</th><th class="n">Schaden</th></tr>`+['gerade','schwinger','uppercut'].map(k=>`<tr><td>${BX.TECH[k].label}</td><td class="n">${T(k)}</td><td class="n">${nf(s.dmg[k],0)}</td></tr>`).join('')+
   `<tr><td>Geblockt / ausgewichen / Rückschritt</td><td class="n">${s.blocks} / ${s.dodges} / ${s.evaded}</td><td></td></tr><tr><td>Kopf- / Körpertreffer</td><td class="n">${s.headHits} / ${s.bodyHits}</td><td></td></tr><tr><td>Niederschläge erzielt</td><td class="n">${s.knockdowns}</td><td></td></tr></table>`+
   `<p><b>Verletzungen:</b> ${Object.keys(inj).length?Object.entries(inj).map(([k,v])=>esc(k)+(v>1?' ×'+v:'')).join(', '):'keine'}${b.dead?' · <b style="color:#ff8a6a">TOT</b>':''}</p>`+
-  (after[i].gold?`<p><b>Zähne:</b> ${after[i].gold} ausgeschlagen → durch Goldzähne ersetzt ${teethHtml(b.g)}</p>`:'')+
+  (after[i].gold?`<p><b>Zähne:</b> ${after[i].gold} ausgeschlagen → ${after[i].vet?'Veteran: durch Goldzähne ersetzt':'bleiben als Lücken (kein Veteran)'} ${teethHtml(b.g)}</p>`:'')+
   (train?`<p><b>Training:</b> `+(Object.entries(gain).filter(([,v])=>v>0).map(([path,v])=>{const [grp,key]=path.split(':');return (BX.TRAIN_KEYS.find(x=>x[0]===grp&&x[1]===key)?.[2]||key)+' +'+nf(v,2);}).join(', ')||'nichts')+`</p>`:`<p class="hint">Training ausgeschaltet.</p>`)+`</div>`;});
  $('res').innerHTML=h+'</div>';cards();figures();}
 function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;
