@@ -359,7 +359,7 @@ function scene4(){setStage('s4');K.hideGuide();gateFilm([
  {dur:3.2,cam:{x:750,y:360,vw:260,rate:1.2},each:(f,dt,t)=>{HS.rise=Math.min(1,t/2.4);if(Math.floor(t*3)!==Math.floor((t-dt)*3)&&t<2.4){M.sound?.('block');f.shake=.8;K.float(f,null,['TOCK!','RUMMS!','*fluch*'][Math.floor(t*3)%3],'#f4d37a',0,700+Math.random()*100,330);}},...say('cap','Ein paar Hammerschläge und sehr viele Flüche später …')},
  {dur:2.2,cam:{x:750,y:362,vw:230},do:f=>{HS.rise=1;M.sound?.('roar');},...say('cap','DAS BEASTRIUM. Käfige und Gehege für Hahn, Hund, Bär, Löwe und Tiger.')},
  {dur:.4}
-],{label:'4 · Das Beastrium',done:()=>{HS.rise=1;setStage('b-open');syncPlaces();try{M.ui.click('nav:home');}catch{}K.showGuide(['Bring deine drei Hähne ins Beastrium. Und sieh sie dir genau an. Das hast du bei deinen Gladiatoren schließlich auch nie gemacht.'],'Öffne das BEASTRIUM (auf der Karte rechts, neben dem Truppenplatz).');}});}
+],{label:'4 · Das Beastrium',done:()=>{HS.rise=1;st().beastrium=true;setStage('b-open');syncPlaces();try{M.ui.click('nav:home');}catch{}K.showGuide(['Bring deine drei Hähne ins Beastrium. Und sieh sie dir genau an. Das hast du bei deinen Gladiatoren schließlich auch nie gemacht.'],'Öffne das BEASTRIUM (auf der Karte rechts, neben dem Truppenplatz).');}});}
 
 // 5 · Die Werte der Hähne (im Beastrium)
 let demo=null;
