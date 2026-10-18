@@ -298,7 +298,7 @@ const relevant=(p,down)=>!!(p?.missing||p?.chronic>0||p?.fracture||M.injuryGrade
 // =====================================================================================================
 const S=M.s,MODES=[['all','Alle Kämpfer'],['own','Nur eigene Gladiatoren'],['key','Nur wichtige (Anführer, deine drei Stärksten)'],['off','Aus']],GRADE=['Kratzer','Leicht','Mittel','Schwer','Kritisch','Verloren'];
 const mode=()=>MODES.some(m=>m[0]===S.options?.closeups)?S.options.closeups:'all';
-const RANK={sever:9,pulp:8,shatter:8,badfracture:7,fracture:6,gut:6,pierce:5,sinew:5},NOTED=['Abgetrennt','Trümmerbruch','Zertrümmert','Durchstochen','Tiefe Bauchwunde','Kritische Bauchverletzung'];
+const RANK={sever:9,skullfracture:9,pulp:8,shatter:8,badfracture:7,fracture:6,gut:6,pierce:5,sinew:5},NOTED=['Schädelbruch','Abgetrennt','Trümmerbruch','Zertrümmert','Durchstochen','Tiefe Bauchwunde','Kritische Bauchverletzung'];
 const GAP=5,SHOT_FROM=.3,SHOT_LEN=2;
 // Erweiterungen für das Kampf-HUD (Testfassung): eigene Zeichenfläche, Stufe „alle Verletzungen“, Testschlachten
 const cfg={host:null,onShot:null,busy:null,benchmark:true,textScale:1,fallShots:false,important:null,fallText:null,confirm:false};let falls=[];const level=()=>S.options?.closeupLevel==='all'?'all':'severe';
