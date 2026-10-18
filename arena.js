@@ -195,6 +195,9 @@ function drawFace(h,m,a,skin){const shouting=m==='shout';if(shouting)m='angry';c
 for(const ex of [-4,3]){if(closed){rect(x+ex,y+3,3,1,dark);if(['laugh','happy'].includes(m))rect(x+ex+1,y+2,1,1,dark);if(m==='pain'){rect(x+ex,y+2,1,1,dark);rect(x+ex+2,y+4,1,1,dark)}}else{rect(x+ex,y+2,3,m==='fear'?4:3,white);rect(x+ex+1,y+3,2,2,dark)}}
 if(m==='angry'||m==='focused'){rect(x-5,y,3,1,dark);rect(x-2,y+1,2,1,dark);rect(x+2,y+1,2,1,dark);rect(x+4,y,3,1,dark);if(m==='angry'){rect(x-2,y+7,7,3,dark);rect(x-1,y+7,5,1,white);rect(x-6,y+5,3,2,'#b96b50')}else rect(x-1,y+8,5,1,dark)}else if(m==='laugh'){rect(x-3,y+6,8,5,dark);rect(x-2,y+6,6,1,white);rect(x-1,y+9,4,1,'#c67566')}else if(m==='happy'){rect(x-3,y+7,1,2,dark);rect(x+4,y+7,1,2,dark);rect(x-2,y+9,6,1,dark);rect(x-2,y+8,6,1,white)}else if(m==='fear'){rect(x-5,y-1,3,1,dark);rect(x+3,y-1,3,1,dark);rect(x,y+7,4,4,dark);rect(x+1,y+8,2,2,'#965c4c')}else if(m==='pain'){rect(x-3,y+7,8,3,dark);rect(x-2,y+8,6,1,white)}else{rect(x-2,y+8,6,1,dark);if(m==='tired')rect(x-4,y+5,10,1,'#986c55')}
 if(shouting){rect(x-3,y+6,8,6,dark);rect(x-2,y+6,6,1,white);rect(x-1,y+10,4,1,'#c67566');}if(!a.severed&&['fear','pain','tired'].includes(m)){const drop=Math.floor((time*8+(a.seed||0))%9);rect(x-9,y+drop,2,3,'#9ad7d6');rect(x-9,y+drop,1,1,'#daf0d5')}
+const TT=a.g?.teeth;if(TT&&(TT.missing?.length||TT.gold?.length)){/* Zahnlücken und Goldzähne (Faustkampf): Zahnreihe je Mimik, sonst ein Goldschimmer am Mund */const row=shouting||m==='laugh'?[x-2,y+6,6]:m==='angry'?[x-1,y+7,5]:m==='happy'||m==='pain'?[x-2,y+8,6]:null;
+ const col=i=>TT.missing?.includes(i)?'#2a1212':TT.gold?.includes(i)?'#e6b42a':null;
+ if(row){for(let px=0;px<row[2];px++){const c=col(Math.min(7,Math.floor(px*8/row[2])));if(c)rect(row[0]+px,row[1],1,1,c);}}else if(TT.gold?.length&&!['dead','unconscious'].includes(m))rect(x+1,y+8,1,1,'#e6b42a');}
 }
 
 

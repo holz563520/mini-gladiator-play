@@ -132,12 +132,12 @@ function head(q,T,C,o,yaw,t,mood){
  const my=51,mouth=m.mouth;
  if(beard===2||beard===3)poly([[-8,47],[-3,46],[0,48],[3,46],[8,47],[11,50],[4,50],[0,49],[-5,50],[-11,51]],P.hair);
  function lips(){poly([[-9,my],[-4,my-1],[0,my],[4,my-1],[9,my],[6,my+2],[-6,my+2]],P.deep);R(-6,my+1,12,1,mix(P.red,'#5b3230',.43));R(-4,my+2,9,1,P.red);R(-2,my+2,5,1,mix(P.red,P.light,.27));}
- if(mouth==='line'||mouth==='firm'||mouth==='slack'){lips();if(mouth==='firm'){R(-9,my,18,1,P.deep);R(-10,my+1,2,1,P.shadow);}if(mouth==='slack')R(-4,my+1,8,2,P.deep);}
+ if(mouth==='line'||mouth==='firm'||mouth==='slack'){lips();if(o.g?.teeth?.gold?.length&&mouth!=='firm'){R(-2,my+1,2,1,'#e0b02a');R(-2,my+1,1,1,'#fff2a0');}if(mouth==='firm'){R(-9,my,18,1,P.deep);R(-10,my+1,2,1,P.shadow);}if(mouth==='slack')R(-4,my+1,8,2,P.deep);}
  else if(mouth==='smirk'){for(let x=-9;x<=9;x++){const y=my-Math.max(0,Math.round(x*.25));R(x,y,1,1,P.deep);if(x>-7&&x<7)R(x,y+1,1,1,P.red);}R(10,my-2,1,3,P.shadow);}
  else if(mouth==='wobble'){for(let x=-8;x<=8;x++){const y=my+Math.round(Math.sin(x*.5+t*7)*.65);R(x,y,1,1,P.deep);R(x,y+1,1,1,P.red);}}
  else{const roar=mouth==='roar',grin=mouth==='grin',teeth=mouth==='teeth',wide=roar?12:grin?12:teeth?10:6,top=roar?47:50,bot=roar?62:grin?57:teeth?56:60;
   poly([[-wide+3,top-1],[wide-3,top-1],[wide,top+2],[wide-2,bot-1],[wide-5,bot],[-wide+4,bot],[-wide+1,bot-2],[-wide,top+2]],'#32191a');
-  R(-wide+3,top,wide*2-6,2,'#ddd0ac');if(grin||teeth||roar){for(let x=-wide+6;x<wide-3;x+=4)R(x,top,1,2,'#9e8c72');}
+  R(-wide+3,top,wide*2-6,2,'#ddd0ac');if(grin||teeth||roar){for(let x=-wide+6;x<wide-3;x+=4)R(x,top,1,2,'#9e8c72');}{const TT=o.g?.teeth;if(TT&&(TT.missing?.length||TT.gold?.length)){const w=wide*2-6;for(let i=0;i<8;i++){const c=TT.missing?.includes(i)?'#1a0c0c':TT.gold?.includes(i)?'#e0b02a':null;if(!c)continue;const x0=-wide+3+Math.floor(i*w/8),x1=-wide+3+Math.floor((i+1)*w/8);R(x0,top,Math.max(1,x1-x0),2,c);if(c!=='#1a0c0c')R(x0,top,1,1,'#fff2a0');}}}
   if(teeth)R(-wide+2,bot-2,wide*2-4,1,'#d0bc99');else{R(-wide+4,bot-3,wide*2-8,2,'#854943');R(-wide+5,bot-3,wide*2-10,1,'#ac635a');}
   R(-wide+3,bot+1,wide*2-6,1,P.red);R(-wide-1,top+2,1,3,P.shadow);R(wide,top+2,1,3,P.deep);
  }

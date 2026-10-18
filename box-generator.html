@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Faustkampf-Generator · ARENA THEORY</title>
+<style>
+:root{--bg:#140f0b;--panel:#211913;--panel2:#2b2017;--line:#4a3a2b;--ink:#efe0b3;--dim:#b9ac94;--accent:#873a2e;--accent2:#bf7357;--blue:#5a8bd6;--red:#d6665a;--gold:#e6b42a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1180px;margin:auto;padding-inline:16px;padding-block:12px 60px}
+.tag{color:#f29b83;font-size:12px;letter-spacing:2px}
+h1{font:700 clamp(24px,5vw,34px) Georgia,serif;margin:4px 0}
+h2{font:700 19px Georgia,serif;margin:18px 0 6px;color:#f6dfa4;text-wrap:balance}
+h3{font:600 15px system-ui,sans-serif;margin:10px 0 6px;color:#f1d9a0}
+p,.hint{color:var(--dim)}.hint{font-size:13px}
+button,select,input{font:inherit;color:var(--ink);background:#30251b;border:1px solid #806247;border-radius:6px;padding:7px 10px;min-height:38px}
+button{cursor:pointer}button.primary{background:var(--accent);border-color:var(--accent2)}button:disabled{opacity:.5}
+input[type=range]{accent-color:#bf7357;padding:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.grid2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.lv{display:flex;flex-wrap:wrap;gap:4px}
+.lv button{min-width:40px;min-height:36px;padding:4px 6px;border-width:2px;font-weight:700;color:#1a120c}
+.lv button.on{outline:3px solid #fff3c8;outline-offset:1px}
+#stage{width:100%;aspect-ratio:16/9;max-width:100%;display:block;background:#0d0907;border:1px solid var(--line);border-radius:8px;image-rendering:pixelated}
+.blue{border-left:4px solid var(--blue)}.red{border-left:4px solid var(--red)}
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;align-items:center;font-size:13px}
+.bars .b{height:8px;background:#3a2c20;border-radius:4px;overflow:hidden}.bars .b i{display:block;height:100%;background:#bf7357}
+.bars .b.sk i{background:#d8b45a}
+.teeth{display:inline-flex;gap:2px;vertical-align:middle;background:#3a1414;padding:3px;border-radius:4px}
+.teeth span{width:12px;height:16px;border-radius:2px 2px 4px 4px;background:#ece4cc}
+.teeth span.gold{background:linear-gradient(#fff0a0,#e6b42a 40%,#b07a10)}.teeth span.gap{background:#140606}
+.figs{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.figs figure{margin:0;text-align:center;font-size:12px;color:var(--dim)}
+.figs canvas{background:#1b2426;border:1px solid var(--line);border-radius:6px;image-rendering:pixelated;max-width:100%}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:6px 0}
+th,td{border:1px solid var(--line);padding:4px 7px;text-align:left}th{background:var(--panel2);color:#f1d9a0;font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;background:#33271d;font-size:12px;color:var(--dim)}
+progress{width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<span class="tag">ARENA THEORY · NEUE KAMPFART · VORSCHAU</span>
+<h1>Faustkampf-Generator</h1>
+<p>Nahkampf Mann gegen Mann mit eigener Arena-Grafik, Publikum mit Wetten und eigenen Geräuschen. Techniken: Gerade, Schwinger, Uppercut (selten), Blocken, Ausweichen, jede mit eigenem Fertigkeitswert. Ein Kampf dauert höchstens 30 Sekunden, dann wird nach Punkten entschieden. Verletzungen sind fast immer Prellungen und Platzwunden. Zähne können ausgeschlagen werden und werden nach dem Kampf durch Goldzähne ersetzt. Ein Schädelbruch kommt nur bei großem Kraftunterschied und sehr selten vor. <b>Nur eine Testseite:</b> Am Spiel und an den Spielständen ändert sich nichts.</p>
+
+<div class="card">
+ <div class="row"><b>Schwierigkeitsgrad</b> <span class="pill" id="lvname"></span></div>
+ <div class="lv" id="lv"></div>
+ <div class="row">
+  <button class="primary" id="start">▶ Kampf starten</button>
+  <button id="again">↻ Gleiche Kämpfer nochmal</button>
+  <button id="newOwn">Neuer eigener Kämpfer</button>
+  <button id="newOpp">Neuer Gegner</button>
+  <label class="hint">Eigener Kämpfer (Bernoulli um) <input type="range" id="mean" min="5" max="80" value="20"> <b id="meanv">20</b></label>
+  <select id="spd"><option value=".5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+  <button id="snd">🔇 Ton einschalten</button>
+ </div>
+</div>
+<canvas id="stage" width="1280" height="720"></canvas>
+<div style="position:absolute;left:-9999px;width:850px;height:520px;overflow:hidden" aria-hidden="true"><canvas id="arenaCanvas" width="850" height="520"></canvas></div>
+
+<div class="grid2">
+ <div class="card blue" id="c0"></div>
+ <div class="card red" id="c1"></div>
+</div>
+<div class="card" id="res"><h2>Ergebnis</h2><p class="hint">Noch kein Kampf.</p></div>
+
+<div class="card">
+ <h2>So sieht man die Kämpfer im übrigen Spiel</h2>
+ <p class="hint">Kleine Arenafigur, Porträt und Großaufnahme aus dem Spiel, mit den Zähnen des Kämpfers. Mit den Knöpfen lassen sich Lücke und Goldzahn auch ohne Kampf ausprobieren.</p>
+ <div class="row"><button id="knock">Zahn ausschlagen (Vorschau)</button><button id="goldify">Lücken durch Goldzähne ersetzen</button><button id="clearT">Zähne zurücksetzen</button></div>
+ <div class="grid2"><div id="f0"></div><div id="f1"></div></div>
+</div>
+
+<div class="card">
+ <h2>Massentest über alle 15 Grade</h2>
+ <p class="hint">Je Grad wird mit frischen Rekruten (Bernoulli um den eingestellten Wert) gegen passend starke Gegner gekämpft, ohne Bild. Zeigt Siegquote, Dauer, K.-o.-Anteil und wie oft Zähne, Platzwunden, Schädelbrüche und Tote vorkommen.</p>
+ <div class="row"><label class="hint">Kämpfe je Grad <select id="bn"><option>50</option><option selected>200</option><option>1000</option></select></label><button class="primary" id="batch">▶ Massentest</button></div>
+ <progress id="bp" value="0" max="15" hidden></progress>
+ <div id="bout" class="scroll"></div>
+</div>
+</div>
+<script>
+/* Spielstände schützen: diese Seite darf nichts speichern oder laden. */
+try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}
+</script>
+<script src="data.js"></script><script src="household.js"></script><script src="management.js"></script><script src="scout.js"></script><script src="sim.js"></script><script src="school.js"></script><script src="weapon-art.js"></script><script src="arena.js"></script><script src="face-shots.js"></script>
+<script src="box-engine.js"></script><script src="box-art.js"></script><script src="box-sfx.js"></script>
+<script>
+(()=>{
+const M=window.MG,BX=window.BX,$=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nf=(v,d=1)=>Number.isFinite(v)?v.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}):'–';
+let level=8,own=null,opp=null,fight=null,seed=1,speed=1,acc=0,last=performance.now();
+const scene=new BXA.Scene($('stage'));
+const STATS=[['dexterity','Geschick'],['strength','Kraft'],['stamina','Ausdauer'],['reflex','Reflex'],['agility','Beweglichkeit'],['toughness','Härte'],['will','Wille']];
+function recruit(mean){const g=M.makeGladiator(0,true);if(mean!==20){for(const [k] of STATS)g.stats[k]=M.bernoulliValue(mean);}g.boxing=null;BX.ensureBoxing(g,mean);return g;}
+function newOwn(){own=recruit(+$('mean').value);newOpp();}
+function newOpp(){opp=BX.makeOpponent(own,level,Math.floor(Math.random()*1e9),()=>M.makeGladiator(0,true));opp.enemy=true;cards();figures();}
+function lvButtons(){$('lv').innerHTML='';for(const L of BX.LEVELS){const b=document.createElement('button');b.textContent=L.n;b.style.background=L.color;b.style.borderColor=L.color;b.title=L.label+' · Gegner '+Math.round(L.ratio*100)+' %';if(L.n===level)b.className='on';b.onclick=()=>{level=L.n;lvButtons();newOpp();};$('lv').append(b);}const L=BX.LEVELS[level-1];$('lvname').textContent='Grad '+L.n+' · '+L.label+' · Gegner ≈ '+Math.round(L.ratio*100)+' % deiner Stärke';}
+function teethHtml(g,lost=[]){let h='<span class="teeth" title="Zähne (von links nach rechts)">';for(let i=0;i<8;i++){const c=lost.includes(i)||g.teeth?.missing?.includes(i)?'gap':g.teeth?.gold?.includes(i)?'gold':'';h+=`<span class="${c}"></span>`;}return h+'</span>';}
+function card(g,side){const r=BX.rating(g);let h=`<h3>${side?'🔴':'🔵'} ${esc(g.name)} <span class="pill">Kampfwert ${nf(r,1)}</span> <span class="pill">${g.height} cm · ${g.weight} kg</span></h3><div class="bars">`;
+ for(const [k,n] of STATS){const v=g.stats[k];h+=`<span>${n}</span><span class="b"><i style="width:${v}%"></i></span><span class="mono">${v}</span>`;}
+ for(const [k,n] of BX.SKILLS){const v=g.boxing[k];h+=`<span>${n}</span><span class="b sk"><i style="width:${v}%"></i></span><span class="mono">${v}</span>`;}
+ h+=`</div><p class="hint" style="margin:8px 0 0">Zähne ${teethHtml(g,fight?.b[side]?.teethLost||[])}</p>`;return h;}
+function cards(){$('c0').innerHTML=card(own,0);$('c1').innerHTML=card(opp,1);}
+function figures(){for(const [i,g] of [[0,own],[1,opp]]){const box=$('f'+i);box.innerHTML=`<h3>${i?'🔴':'🔵'} ${esc(g.name)} ${teethHtml(g)}</h3><div class="figs"><figure><canvas id="tf${i}"></canvas><figcaption>Arenafigur (jubelnd)</figcaption></figure><figure><canvas id="pf${i}"></canvas><figcaption>Porträt</figcaption></figure><figure><canvas id="ff${i}" width="320" height="208"></canvas><figcaption>Großaufnahme</figcaption></figure></div>`;
+  try{M.renderTeamFigure($('tf'+i),g,true);$('tf'+i).style.width='120px';}catch(e){console.warn(e);}
+  try{M.renderPortrait($('pf'+i),g,{state:'celebrate'});$('pf'+i).style.width='120px';}catch(e){console.warn(e);}
+  try{const c=$('ff'+i),q=c.getContext('2d');q.imageSmoothingEnabled=false;M.faceShot.paint(q,320,208,{g,mood:'relief',team:i,yaw:0},0);}catch(e){console.warn(e);}}}
+function odds(){const ra=BX.rating(own),rb=BX.rating(opp),p=1/(1+Math.exp(-(ra-rb)/3.2)),q=(x)=>nf(Math.max(1.05,.92/x),2);return 'Blau '+q(p)+' · Rot '+q(1-p);}
+function start(same){if(!same)seed=Math.floor(Math.random()*1e9);fight=BX.createFight(own,opp,seed);scene.setFight(fight,[own.name,opp.name]);scene.odds=odds();acc=0;BXS.bell(1);cards();$('res').innerHTML='<h2>Ergebnis</h2><p class="hint">Kampf läuft …</p>';shown=false;}
+let shown=false;
+function showResult(){const f=fight,R=f.result,names=[own.name,opp.name];const after=BX.applyAftermath(f,{apply:true});
+ let h=`<h2>Ergebnis: ${R.winner<0?'Unentschieden':esc(names[R.winner])+' gewinnt'} · ${esc(R.how)} nach ${nf(R.time,1)} s</h2><p class="hint">Punkte ${Math.round(R.points[0])} : ${Math.round(R.points[1])}</p><div class="grid2">`;
+ f.b.forEach((b,i)=>{const s=b.st,T=k=>`${s.landed[k]}/${s.thrown[k]}`;const inj={};for(const j of b.injuries)inj[j.type]=(inj[j.type]||0)+1;const gain=after[i].gain;
+  h+=`<div class="card ${i?'red':'blue'}"><h3>${esc(names[i])}</h3><table><tr><th>Technik</th><th class="n">Treffer/Versuche</th><th class="n">Schaden</th></tr>`+['gerade','schwinger','uppercut'].map(k=>`<tr><td>${BX.TECH[k].label}</td><td class="n">${T(k)}</td><td class="n">${nf(s.dmg[k],0)}</td></tr>`).join('')+
+  `<tr><td>Geblockt / ausgewichen</td><td class="n">${s.blocks} / ${s.dodges}</td><td></td></tr><tr><td>Kopf- / Körpertreffer</td><td class="n">${s.headHits} / ${s.bodyHits}</td><td></td></tr><tr><td>Niederschläge erzielt</td><td class="n">${s.knockdowns}</td><td></td></tr></table>`+
+  `<p><b>Verletzungen:</b> ${Object.keys(inj).length?Object.entries(inj).map(([k,v])=>esc(k)+(v>1?' ×'+v:'')).join(', '):'keine'}${b.dead?' · <b style="color:#ff8a6a">TOT</b>':''}</p>`+
+  (after[i].gold?`<p><b>Zähne:</b> ${after[i].gold} ausgeschlagen → durch Goldzähne ersetzt ${teethHtml(b.g)}</p>`:'')+
+  `<p class="hint">Trainingswirkung (Vorschlag, nicht angewendet): `+Object.entries(gain).filter(([,v])=>v>0).map(([k,v])=>(STATS.find(x=>x[0]===k)?.[1]||BX.SKILLS.find(x=>x[0]===k)?.[1]||k)+' +'+nf(v,1)).join(', ')+`</p></div>`;});
+ $('res').innerHTML=h+'</div>';cards();figures();}
+function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;
+ if(fight){acc+=dt*speed*(fight.slow>0?.45:1);let n=0;while(acc>=1/60&&n<8){BX.step(fight,1/60);acc-=1/60;n++;}scene.consume(BXS);BXS.crowd(fight.cheer,!fight.over);
+  if(fight.over&&!shown&&fight.t-fight.result.time>.8){shown=true;showResult();}}
+ scene.render(dt);requestAnimationFrame(loop);}
+$('start').onclick=()=>start(false);$('again').onclick=()=>{if(fight){for(const g of [own,opp]){}start(true);}else start(false);};
+$('newOwn').onclick=()=>{newOwn();};$('newOpp').onclick=()=>newOpp();
+$('mean').oninput=()=>{$('meanv').textContent=$('mean').value;};$('mean').onchange=()=>newOwn();
+$('spd').onchange=()=>{speed=+$('spd').value;};
+let sound=false;$('snd').onclick=()=>{if(!sound){if(BXS.unlock()){sound=true;BXS.enable(true);$('snd').textContent='🔊 Ton aus';}}else{sound=false;BXS.enable(false);$('snd').textContent='🔇 Ton einschalten';}};
+$('knock').onclick=()=>{for(const g of [own,opp]){g.teeth??={missing:[],gold:[]};const free=[2,3,4,5,1,6,0,7].filter(i=>!g.teeth.missing.includes(i)&&!g.teeth.gold.includes(i));if(free.length)g.teeth.missing.push(free[0]);}cards();figures();};
+$('goldify').onclick=()=>{for(const g of [own,opp]){g.teeth??={missing:[],gold:[]};g.teeth.gold=[...new Set([...g.teeth.gold,...g.teeth.missing])];g.teeth.missing=[];}cards();figures();};
+$('clearT').onclick=()=>{for(const g of [own,opp])g.teeth={missing:[],gold:[]};cards();figures();};
+$('batch').onclick=()=>{const N=+$('bn').value,mean=+$('mean').value,rows=[];let L=1;$('batch').disabled=true;$('bp').hidden=false;$('bp').value=0;const mix={gerade:0,schwinger:0,uppercut:0},act={b:0,d:0};
+ (function next(){const A={w:0,d:0,t:0,ko:0,teeth:0,cut:0,skull:0,dead:0,nose:0};for(let i=0;i<N;i++){const a=recruit(mean),b=BX.makeOpponent(a,L,L*100000+i,()=>M.makeGladiator(0,true));const f=BX.simulate(a,b,L*7777+i),R=f.result;
+   if(R.winner===0)A.w++;if(R.winner<0)A.d++;A.t+=R.time;if(/K\.O|Schädel|Tod/.test(R.how))A.ko++;for(const x of f.b){A.teeth+=x.teethLost.length;if(x.skull)A.skull++;if(x.dead)A.dead++;for(const j of x.injuries){if(j.type==='Platzwunde')A.cut++;if(j.type==='Nasenbruch')A.nose++;}for(const k in mix)mix[k]+=x.st.thrown[k];act.b+=x.st.blocks;act.d+=x.st.dodges;}}
+  const Lv=BX.LEVELS[L-1];rows.push(`<tr><td>${L} · ${Lv.label}</td><td class="n">${Math.round(Lv.ratio*100)} %</td><td class="n">${nf(A.w/N*100,0)} %</td><td class="n">${nf(A.d/N*100,0)} %</td><td class="n">${nf(A.t/N,1)} s</td><td class="n">${nf(A.ko/N*100,0)} %</td><td class="n">${nf(A.teeth/N,2)}</td><td class="n">${nf(A.cut/N,2)}</td><td class="n">${nf(A.nose/N*100,1)}</td><td class="n">${nf(A.skull/N*1000,1)}</td><td class="n">${nf(A.dead/N*1000,1)}</td></tr>`);
+  $('bp').value=L;L++;if(L<=15){setTimeout(next,0);return;}
+  const T=mix.gerade+mix.schwinger+mix.uppercut;
+  $('bout').innerHTML=`<table><tr><th>Grad</th><th class="n">Gegner</th><th class="n">Sieg</th><th class="n">Unentsch.</th><th class="n">Ø Dauer</th><th class="n">K.-o.</th><th class="n">Zähne je Kampf</th><th class="n">Platzwunden je Kampf</th><th class="n">Nasenbruch %</th><th class="n">Schädelbruch je 1000</th><th class="n">Tote je 1000</th></tr>${rows.join('')}</table><p class="hint">Schlagmischung über alle Kämpfe: Gerade ${nf(mix.gerade/T*100,0)} %, Schwinger ${nf(mix.schwinger/T*100,0)} %, Uppercut ${nf(mix.uppercut/T*100,0)} % · geblockt ${act.b}, ausgewichen ${act.d}.</p>`;
+  $('batch').disabled=false;$('bp').hidden=true;})();};
+lvButtons();newOwn();start(false);requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
