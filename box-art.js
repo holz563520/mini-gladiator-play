@@ -117,7 +117,7 @@ class Scene{
   return {cloth:this.cloth?.[b.side]?.a||0,br:brv,hip,sh,shF,shB,head,fF,fB,elF,elB,lean,open,fall,footF,footB,eyesShut,trail,rearFront:rot>.35||tech&&A.hand==='rear'&&p>.3};}
  // ---------- Zeichnen ----------
  drawBoxer(q,b,ov){const P=this.pose(b),g=b.g,A=g.appearance||{},skin=A.skin||'#c08a62',sk2=A.shade||shade(skin,.72),hair=A.hair||'#3a2a1a',T=TEAM[b.side],dir=b.dir;
-  const hs=clamp((g.height||180)/180,.88,1.1),bw=clamp(1+((g.muscle??40)-40)*.005+((g.fat??16)-16)*.006,.85,1.22),mu=clamp(.8+((g.muscle??40)-30)/60,.75,1.4);
+  const hs=clamp((g.height||180)/180,.88,1.1),M2=clamp(.6*(((g.stats?.strength)??20)-8)/80+.4*((g.muscle??40)-25)/40,0,1),FA=clamp(((g.fat??16)-8)/20,0,1),bw=clamp(.86+.3*M2+.2*FA,.82,1.22),mu=.1+1.3*M2,abv=clamp(1.3*M2-.9*FA+.08,0,1);
   const ox=ov?ov.x:Math.round(this.sx(b.x)),gy=ov?ov.y:GROUND,sc=ov?ov.sc:1,fx=ov?ov.flip:1;
   const swt=this.sweat?.[b.side]??0,OUT='rgba(44,20,10,.74)',base=skin,lo=shade(skin,.76),deep=shade(skin,.6);
   q.save();q.translate(ox,gy);q.scale(K*dir*hs*sc*fx,K*hs*sc);
@@ -144,8 +144,8 @@ class Scene{
     if(swt>.2){q.fillStyle='rgba(255,255,255,'+(.18+.2*swt).toFixed(2)+')';for(let i=2;i<p.C.length-2;i+=3){q.fillRect(p.C[i].x-p.nx*p.H[i]*.2,p.C[i].y-p.ny*p.H[i]*.2,1.5,1.5);}}
    }};
   const mw=mu;
-  const armPolys=(sh,el,f,back)=>[limb(sh,el,15,11.5,7,.8,8+mw*2.5,6),limb(el,f,12,7.6,4.5,.35,6,3.9)];
-  const leg=(foot)=>{const ank={x:foot.x-1,y:foot.y-8},knee=solve(P.hip,ank,47,47,-1);return {knee,ank,polys:[limb(P.hip,knee,24,15,7,.7,11,8),limb(knee,ank,15,8.4,6,.4,7.6,4.2)]};};
+  const armPolys=(sh,el,f,back)=>[limb(sh,el,13.2+M2*2,10+M2*1.5,7,.8,6.8+mw*3,5.2+M2*.8),limb(el,f,10.4+M2*1.8,6.6+M2,4.5,.35,5.2+M2,3.4+M2*.5)];
+  const leg=(foot)=>{const ank={x:foot.x-1,y:foot.y-8},knee=solve(P.hip,ank,47,47,-1);return {knee,ank,polys:[limb(P.hip,knee,20+M2*4+FA*3,12.6+M2*2.4,7,.7,9.5+M2*1.5,7+M2),limb(knee,ank,12.4+M2*2.6,7.4+M2,6,.4,6.6+M2,3.8+M2*.5)]};};
   const legB=leg(P.footB),legF=leg(P.footF);
   const drawFoot=(f,sandal)=>{q.save();q.translate(f.x,f.y);q.rotate(-(f.heel||0)*.06);
    q.beginPath();q.moveTo(-6.5,0);q.lineTo(-7,-5);q.lineTo(-4,-10);q.lineTo(2,-10.5);q.lineTo(7,-6.5);q.lineTo(13,-3.2);q.lineTo(16,-1.6);q.lineTo(16,0);q.closePath();q.fillStyle=OUT;q.strokeStyle=OUT;q.lineWidth=1.8;q.stroke();q.fill();
@@ -168,7 +168,7 @@ class Scene{
   paint(legB.polys,shade(skin,.84));drawFoot({...P.footB,x:P.footB.x,y:P.footB.y});
   // ---- Rumpf: V-Form, Brust, Bauchmuskeln, Rückenschatten
   {const hx=P.hip.x,hy=P.hip.y,ux0=P.sh.x-hx,uy0=P.sh.y-hy,L=Math.hypot(ux0,uy0),ux=ux0/L,uy=uy0/L,nx=-uy,ny=ux;
-   const prof=[[0,14,12.5],[.16,12,11.5],[.4,15,13.5],[.66,20+mu*3+(P.br||0)*2.6,16+mu],[.86,21+mu*2.5+(P.br||0)*1.8,17],[1.0,15,14],[1.08,8,9]];
+   const prof=[[0,14+FA*3,12.5+FA*2],[.16,11.5+FA*5,11+FA*3],[.4,14+FA*6.5,13+FA*3],[.66,17+mu*4+FA*2+(P.br||0)*2.6,15+mu*.8+FA],[.86,18+mu*3.2+(P.br||0)*1.8,16+mu*.6],[1.0,14+M2*2,13.5],[1.08,7+M2*2,8+M2]];
    const pt=(t,o)=>({x:hx+ux*L*t+nx*o,y:hy+uy*L*t+ny*o});
    const fr=prof.map(([t,f2])=>pt(t,f2*bw)),bk=prof.map(([t,,b2])=>pt(t,-b2*bw));
    const tp=()=>{q.beginPath();fr.forEach((v,i)=>i?q.lineTo(v.x,v.y):q.moveTo(v.x,v.y));for(let i=bk.length-1;i>=0;i--)q.lineTo(bk[i].x,bk[i].y);q.closePath();};
@@ -176,14 +176,15 @@ class Scene{
    // Schatten Rückseite und Taille
    q.save();tp();q.clip();q.fillStyle=shade(base,.8);q.beginPath();bk.forEach((v,i)=>i?q.lineTo(v.x,v.y):q.moveTo(v.x,v.y));for(let i=bk.length-1;i>=0;i--){const c=pt(prof[i][0],-prof[i][2]*bw*.25);q.lineTo(c.x,c.y);}q.fill();
    // Bauchmuskeln (Sixpack) und Linea alba
-   const ab=.25+.5*mu;q.strokeStyle='rgba(50,20,8,'+(.35+.3*mu).toFixed(2)+')';q.lineWidth=1.1;q.beginPath();let a0=pt(.05,6*bw),a1=pt(.47,7*bw);q.moveTo(a0.x,a0.y);q.lineTo(a1.x,a1.y);for(let r=0;r<4;r++){const t=.1+r*.1,x0=pt(t,6*bw),x1=pt(t,(13-r*.4)*bw);q.moveTo(x0.x,x0.y);q.lineTo(x1.x,x1.y);}q.stroke();
-   q.fillStyle='rgba(255,238,214,'+(.1+.12*mu).toFixed(2)+')';for(let r=0;r<4;r++){const c=pt(.13+r*.1,9.5*bw);q.beginPath();q.ellipse(c.x,c.y,3.2,2.1,uy>0?0:Math.atan2(uy,ux)+1.57,0,7);q.fill();}
+   q.strokeStyle='rgba(50,20,8,'+(.1+.5*abv).toFixed(2)+')';q.lineWidth=1.1;q.beginPath();let a0=pt(.05,6*bw),a1=pt(.47,7*bw);q.moveTo(a0.x,a0.y);q.lineTo(a1.x,a1.y);if(abv>.25)for(let r=0;r<4;r++){const t=.1+r*.1,x0=pt(t,6*bw),x1=pt(t,(13-r*.4)*bw);q.moveTo(x0.x,x0.y);q.lineTo(x1.x,x1.y);}q.stroke();
+   q.fillStyle='rgba(255,238,214,'+(.03+.2*abv).toFixed(2)+')';if(abv>.25)for(let r=0;r<4;r++){const c=pt(.13+r*.1,9.5*bw);q.beginPath();q.ellipse(c.x,c.y,3.2,2.1,uy>0?0:Math.atan2(uy,ux)+1.57,0,7);q.fill();}
    // Brustmuskel mit Unterkante, Schlüsselbein, Achsel
-   const pc=pt(.72,10*bw);q.fillStyle='rgba(255,238,214,'+(.16+.14*mu).toFixed(2)+')';q.beginPath();q.ellipse(pc.x,pc.y,8.5,5.6,Math.atan2(ux,-uy)+1.2,0,7);q.fill();
-   q.strokeStyle='rgba(50,20,8,.6)';q.lineWidth=1.3;const p1=pt(.62,2*bw),p2=pt(.6,16*bw);q.beginPath();q.moveTo(p1.x,p1.y);q.quadraticCurveTo(pt(.55,9*bw).x,pt(.55,9*bw).y,p2.x,p2.y);q.stroke();
+   const pc=pt(.72,10*bw);q.fillStyle='rgba(255,238,214,'+(.04+.26*abv).toFixed(2)+')';q.beginPath();q.ellipse(pc.x,pc.y,5+M2*3.5,3.4+M2*2.2,Math.atan2(ux,-uy)+1.2,0,7);q.fill();
+   q.strokeStyle='rgba(50,20,8,'+(.12+.5*abv).toFixed(2)+')';q.lineWidth=1.3;const p1=pt(.62,2*bw),p2=pt(.6,16*bw);q.beginPath();q.moveTo(p1.x,p1.y);q.quadraticCurveTo(pt(.55,9*bw).x,pt(.55,9*bw).y,p2.x,p2.y);q.stroke();
    const nip=pt(.66,13*bw);q.fillStyle=shade(base,.62);q.fillRect(nip.x-1,nip.y-1,2.2,2);
+   if(FA>.45){q.strokeStyle='rgba(50,20,8,'+(.15+.3*FA).toFixed(2)+')';q.lineWidth=1.2;const f0=pt(.14,6*bw),f1=pt(.2,(12+FA*7)*bw);q.beginPath();q.moveTo(f0.x,f0.y);q.quadraticCurveTo(pt(.13,10*bw).x,pt(.13,10*bw).y,f1.x,f1.y);q.stroke();}
    // Latissimus am Rücken
-   q.fillStyle='rgba(50,20,8,.22)';const l0=pt(.45,-9*bw),l1=pt(.75,-12*bw),l2=pt(.8,-4*bw);q.beginPath();q.moveTo(l0.x,l0.y);q.lineTo(l1.x,l1.y);q.lineTo(l2.x,l2.y);q.closePath();q.fill();
+   q.fillStyle='rgba(50,20,8,'+(.04+.2*abv).toFixed(2)+')';const l0=pt(.45,-9*bw),l1=pt(.75,-12*bw),l2=pt(.8,-4*bw);q.beginPath();q.moveTo(l0.x,l0.y);q.lineTo(l1.x,l1.y);q.lineTo(l2.x,l2.y);q.closePath();q.fill();
    // Schweißglanz
    q.fillStyle='rgba(255,255,255,'+(.07+.14*swt+.04*Math.max(0,Math.sin(this.t*2+b.side))).toFixed(2)+')';const gl=pt(.55,13*bw);q.fillRect(gl.x,gl.y-4,1.8,10);const gl2=pt(.3,12*bw);q.fillRect(gl2.x,gl2.y-3,1.6,7);
    {const nd=Math.round(swt*7);q.fillStyle='rgba(235,245,255,.55)';for(let i=0;i<nd;i++){const c=pt(.08+hash(i*2.3+b.side)*.9,(hash(i*5.7)*26-9)*bw);const dy=((this.t*(.6+hash(i)*.9)+i*7)%9)*swt;q.fillRect(c.x,c.y+dy*.3,1.2,1.2+dy*.08);}}
@@ -200,7 +201,7 @@ class Scene{
   this.head(q,P,b,skin,sk2,hair,A);
   if(P.rearFront){const pl=armPolys(P.shB,elB,fB);paint(pl,skin);drawHand(fB,elB,1);}
   { // vorderer Arm mit Schulterbogen
-   const pl=armPolys(P.shF,elF,fF);pl[0].ra=10+mw*2.5;paint(pl,skin);drawHand(fF,elF,1);}
+   const pl=armPolys(P.shF,elF,fF);pl[0].ra=7.5+mw*3.2;paint(pl,skin);drawHand(fF,elF,1);}
   q.restore();}
  drawTrails(q,dt){for(const tr of this.trails||[]){for(const p of tr)p.age+=dt;while(tr.length&&tr[0].age>.18)tr.shift();if(tr.length<2)continue;q.lineCap='round';for(let i=1;i<tr.length;i++){const a=tr[i-1],c=tr[i],k=1-c.age/.18;q.strokeStyle='rgba(255,246,220,'+(k*.6).toFixed(3)+')';q.lineWidth=1+k*4;q.beginPath();q.moveTo(a.x,a.y);q.lineTo(c.x,c.y);q.stroke();}}}
  // Antiker Lendenschurz (subligaculum): Gürtel in Teamfarbe, Leinentuch, schwingender Vorder- und Hinterlappen
@@ -372,7 +373,7 @@ class Scene{
    if(hot&&Math.random()<dt*(2+this.brun[i]*5)){this.parts.push({x:hp.x+b.dir*4,y:hp.y+14,vx:(Math.random()-.5)*8,vy:6,life:.8,col:'#a01818',sz:1,blood:true});}});}
  // Kleine Darstellung eines Kämpfers im Ring (für den Vergleich mit der Spielfigur): ruhige Grundstellung vor dem Ringhintergrund
  portrait(canvas,g,side){const BXm=window.BX;if(!BXm)return;const f=BXm.createFight(g,g,1);const old={f:this.f,feet:this.feet,trails:this.trails,camX:this.camX};this.f=f;this.feet=null;this.trails=[[],[]];this.camX=0;
-  const b=f.b[0];b.side=side;b.dir=1;b.x=0;f.b[1].x=130;for(let i=0;i<8;i++)this.updateFeet(.05);
+  const b=f.b[0];b.side=side;b.dir=1;b.x=0;f.b[1].x=130;for(let i=0;i<8;i++)this.updateFeet(.05);this.feet[1]=this.feet[0];
   const q=this.q;q.setTransform(1,0,0,1,0,0);this.drawBack(q);this.drawBoxer(q,b);
   const c=canvas.getContext('2d');canvas.width=240;canvas.height=300;c.imageSmoothingEnabled=false;c.fillStyle='#1b2426';c.fillRect(0,0,240,300);c.drawImage(this.buf,W/2-72,28,144,H-28,0,0,240,300);
   this.f=old.f;this.feet=old.feet;this.trails=old.trails;this.camX=old.camX;}
