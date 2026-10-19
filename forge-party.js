@@ -18,15 +18,15 @@ const SONG_LEN=[132.4,388.8],TOTAL=SONG_LEN[0]+SONG_LEN[1],IDLE=15;
 const rnd=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),pick=l=>l[Math.floor(Math.random()*l.length)],hash=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);};
 const orig=M.renderForgeActors,VW={x:625,y:145,w:240,h:153},ESSE={x:762,y:243},KEG={x:795,y:272},ANVIL={x:651,y:246};
 const mkCv=()=>{const c=document.createElement('canvas');c.width=160;c.height=150;return c;};
-const FEET={x:80,y:130},SPLIT=104;
+const FEET={x:80,y:130},SPLIT=104,FREE=['nod','bang','jump','spin','drink'];
 // ---------- Zustand ----------
-let T=0,last=0,hidden=false,loopBase=0,lastIdx=0,lastBeat=-1,evDone=0,flash=0,shake=0,randNext=0,ball=0,garland=0,fountain=0,fire=0,smoke=0,strobe=0,congaUntil=0,congaFrom=0,congaSpeed=.5,ref={t:0,pn:0,idx:0},tool=null;
+let T=0,last=0,hidden=false,loopBase=0,lastIdx=0,lastBeat=-1,evDone=0,flash=0,shake=0,randNext=0,ball=0,garland=0,fountain=0,fire=0,smoke=0,strobe=0,congaUntil=0,congaFrom=0,congaSpeed=.5,ref={t:0,pn:0,idx:0},tool=null,syncFix=0,trip=0,tripTarget=0,snap=null;
 let DS={},P,news=null,title=null,EV=[];
-function reset(){T=0;loopBase=0;lastIdx=0;lastBeat=-1;evDone=0;flash=0;shake=0;randNext=0;ball=0;garland=0;fountain=0;fire=0;smoke=0;strobe=0;congaUntil=0;congaFrom=0;news=null;title=null;
+function reset(){T=0;loopBase=0;lastIdx=0;lastBeat=-1;evDone=0;flash=0;shake=0;randNext=0;ball=0;garland=0;fountain=0;fire=0;smoke=0;strobe=0;congaUntil=0;congaFrom=0;news=null;title=null;trip=0;tripTarget=0;
  P={conf:[],vom:[],pud:[],spark:[],foam:[],smoke:[],txt:[],zzz:[],bottles:[]};
  DS={};EV=script();M.audioEngine?.smithSeek?.(0);}
 // ---------- Figuren ----------
-function dancer(id,o){return Object.assign({id,kind:'std',x:612,y:272,dir:1,tx:null,ty:null,spd:38,vis:false,mode:'idle',amp:1,hold:'',mt:0,bubble:null,seed:Math.random()*100,walking:false,cv:mkCv(),name:'',col:'#f2d58a'},o);}
+function dancer(id,o){return Object.assign({id,kind:'std',x:612,y:272,dir:1,tx:null,ty:null,spd:38,vis:false,mode:'idle',amp:1,hold:'',mt:0,bubble:null,seed:Math.random()*100,walking:false,roam:false,roamSpd:70,stay:0,wait:0,hammerOn:false,mush:false,cv:mkCv(),name:'',col:'#f2d58a'},o);}
 function ensure(list){
  const base=list.find(a=>!a.apprentice)||list[0],helper=list.find(a=>a.apprentice);
  if(!DS.sm){DS.sm=dancer('sm',{kind:'std',base,x:base.x,y:base.y,vis:true,name:'Schmied',col:'#ffb35c'});
@@ -45,11 +45,12 @@ function beatClock(dt){
   const time=ref.t+(now-ref.pn)/1000,g=BEATS[c.idx];let lo=0,hi=g.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(g[m]<=time)lo=m;else hi=m-1;}
   const nxt=g[lo+1]??g[lo]+.39,b=lo+clamp((time-g[lo])/Math.max(.2,nxt-g[lo]),0,1);
   const e=(ENV[c.idx].charCodeAt(clamp(Math.floor(time*4),0,ENV[c.idx].length-1))-48)/9;
-  const musicT=loopBase*TOTAL+(c.idx?SONG_LEN[0]:0)+time;T+=clamp((musicT-T)*dt*2,-dt,dt*3);
+  const musicT=loopBase*TOTAL+(c.idx?SONG_LEN[0]:0)+time,diff=musicT-T;
+  if(Math.abs(diff)<=3)T+=clamp(diff*dt*2,-dt*.5,dt*3);else if(now-syncFix>3000){syncFix=now;M.audioEngine?.smithSeek?.(((T%TOTAL)+TOTAL)%TOTAL);}
   return {b:b+c.idx*1000,e:clamp(e,0,1),music:true};}
  return {b:T*156/60,e:.7+.3*Math.sin(T*.6),music:false};}
 // ---------- Zeitplan ----------
-const go=(d,x,y,s)=>{d.tx=x;d.ty=y;if(s)d.spd=s;d.vis=true;};
+const go=(d,x,y,s)=>{d.tx=x;d.ty=y;if(s)d.spd=s;d.vis=true;d.stay=T+8;};
 const say=(d,text,dur)=>{d.bubble={text,t0:T,until:T+(dur||clamp(2.6+text.length*.045,3,6.5))};};
 const mode=(d,m,amp=1,extra)=>{d.mode=m;d.amp=amp;d.mt=T;if(extra)Object.assign(d,extra);};
 const tell=(text,dur=7.5)=>{news={text,t0:T,until:T+dur};};
@@ -62,22 +63,25 @@ function script(){
  at(IDLE,()=>{act('FEIERABEND','Die Schmiede hat geschlossen. Innerlich schon lange.');const d=DS.sm;d.hold='bottle';go(d,C.x,C.y,32);mode(d,'nod',.4);say(d,'Feierabend.');});
  at(IDLE+7,()=>{const d=DS.sm;say(d,'Im Löschfass lag noch was. Schmeckt nach Eisen. Und Hoffnung.');mode(d,'drink',1);});
  at(IDLE+10,()=>tell('Die Flasche war eigentlich Löschwasser. Der Schmied merkt es nicht. Er merkt seit dem letzten Hammerunfall sowieso wenig.'));
- at(IDLE+14,()=>mode(DS.sm,'nod',.7));
+ at(IDLE+14,()=>{const d=DS.sm;mode(d,'nod',.9);d.roam=true;d.roamSpd=55;});
  at(IDLE+24,()=>{const d=DS.sm;mode(d,'bang',.7);say(d,'Der Takt passt zum Hammer. Ich schlag jetzt einfach mit dem Kopf.');});
  at(IDLE+32,()=>{const d=DS.dr;d.x=612;d.y=274;go(d,704,274,40);mode(d,'idle',0);tell('Dr. Hirnhammer betritt die Schmiede. Er riecht nach Desinfektionsmittel, Schnaps und schlechten Entscheidungen.');});
- at(IDLE+41,()=>{const d=DS.dr;say(d,'Ich hab Betäubungsmittel mitgebracht. Alles für mich.');mode(d,'nod',.7,{hold:'mug'});});
+ at(IDLE+41,()=>{const d=DS.dr;say(d,'Ich hab Betäubungsmittel mitgebracht. Alles für mich.');mode(d,'nod',.9,{hold:'mug'});d.roam=true;d.roamSpd=62;});
+ at(IDLE+44,()=>{const d=DS.dr;d.mush=true;say(d,'Und Pilze! Frisch aus dem Medicus-Keller. Sind hinter den Patienten gewachsen.');tell('Dr. Hirnhammer bringt Pilze mit. Er sagt nicht, ob sie gewachsen sind oder gefunden wurden. Er sagt nur: „Beides.“');});
+ at(IDLE+49,()=>{tripTarget=.4;const d=DS.sm;d.hammerOn=true;d.roam=true;d.roamSpd=78;for(const k in DS)if(DS[k].vis)popup(DS[k].x,DS[k].y-62,'NOM','#ffd1f0');say(d,'Der Hammer redet mit mir! Er sagt: LAUFEN!');tell('Die Pilze wirken. Die Wände atmen. Der Amboss lächelt. Der Schmied hört den Hammer sprechen und folgt ihm durch die ganze Schmiede.');});
  at(IDLE+51,()=>{tell('Der Doktor und der Schmied stoßen an. Der Schmied trifft die Flasche. Der Doktor trifft sein Auge.');say(DS.dr,'Auf die Patienten! Mögen sie ... äh ... liegen bleiben.');mode(DS.dr,'drink',1);after(3,()=>mode(DS.dr,'bang',.7));});
  at(IDLE+58,()=>{ball=1;tell('Von der Decke fährt eine Discokugel herab. Niemand weiß, woher. Der Doktor behauptet, er habe sie verschrieben.');});
  at(IDLE+66,()=>{const d=DS.nu;d.x=880;d.y=276;go(d,KEG.x-14,KEG.y+6,38);mode(d,'idle',0);say(d,'Dienstschluss! Die Patienten sind stabil. Also: liegen.');});
- at(IDLE+74,()=>{const d=DS.nu;mode(d,'jump',.8);tell('Schwester Valeria hat das Medicus von außen abgeschlossen. Die Patienten haben Verständnis. Sie können nicht anders.');});
+ at(IDLE+74,()=>{const d=DS.nu;mode(d,'jump',.9);d.roam=true;d.roamSpd=88;tell('Schwester Valeria hat das Medicus von außen abgeschlossen. Die Patienten haben Verständnis. Sie können nicht anders.');});
  at(IDLE+84,()=>{say(DS.nu,'Wer Schmerzen hat, soll tanzen! Medizinisch nicht belegt!');mode(DS.sm,'bang',1);mode(DS.dr,'bang',.9);go(DS.nu,L.x+30,L.y+8,36);});
  at(IDLE+94,()=>{tell('Der Schmied schüttelt den Kopf so heftig, dass zwei Rüstungen von der Wand fallen. Eine auf den Doktor. Er bemerkt es nicht.');shake=1;});
  at(IDLE+102,()=>{const d=DS.la;d.x=612;d.y=268;go(d,684,262,52);mode(d,'angry',1);});
  at(IDLE+106,()=>{say(DS.la,'WER ZAHLT DAS BIER?!',3.2);for(const k of ['sm','dr','nu'])DS[k].freeze=T+3.2;});
  at(IDLE+110,()=>{say(DS.nu,'Ich nicht. Ich bin Krankenschwester. Ich werde nie bezahlt.',3.6);});
  at(IDLE+114,()=>{const d=DS.la;say(d,'... Ich schreib es auf die Gladiatoren. Die sind eh bald tot.',4);d.hold='beer';});
- at(IDLE+118,()=>{mode(DS.la,'nod',1);burst(26);});
- at(132,()=>{act('AKT 2','Eskalation');burst(70);flash=1;for(const k of ['sm','dr','nu','la'])mode(DS[k],'bang',1);});
+ at(IDLE+93,()=>{const a=DS.sm,l=DS.la;a.roamSpd=108;tell('Der Schmied rennt mit dem Hammer durch die Schmiede. Keiner weiß, warum. Der Hammer vermutlich schon.');});
+ at(IDLE+118,()=>{mode(DS.la,'nod',1);DS.la.roam=true;DS.la.roamSpd=70;burst(26);say(DS.la,'Ich verfolge den Schmied! Er schuldet mir ... irgendwas! Seit Jahren!');DS.la.roamSpd=100;});
+ at(132,()=>{tripTarget=.7;act('AKT 2','Eskalation');burst(70);flash=1;for(const k of ['sm','dr','nu','la'])mode(DS[k],'bang',1);});
  at(140,()=>{const d=DS.dr;mode(d,'puke',1);after(3.4,()=>{say(d,'Das war der Meißel. Vom Frühstück.');mode(d,'bang',.8);});tell('Dr. Hirnhammer verabschiedet sich von seinem Mittagessen. Und von einem Zahn.');});
  at(153,()=>{const d=DS.nu;mode(d,'surf',1);go(d,684,266,0);after(.2,()=>go(d,790,266,10));mode(DS.la,'jump',1);mode(DS.sm,'jump',1);tell('Valeria testet, ob Gladiatoren als Hebebühne taugen. Ergebnis: ja. Bis sie jemand loslässt.');});
  at(163,()=>{const d=DS.nu;mode(d,'jump',1);go(d,780,276,30);say(d,'Autsch! Beckenbruch. Für mich ist das ein ganz normaler Dienstag.');shake=1;});
@@ -85,6 +89,7 @@ function script(){
  at(186,()=>{say(DS.la,'Ich nehme zwölf! Für die Neuen!');});
  at(192,()=>{act('KONGA','der Gefallenen');congaFrom=T;congaUntil=T+26;congaSpeed=.46;tell('Der Lanista startet die Konga der Gefallenen. Wer nicht tanzt, wird verkauft. Wer tanzt, auch.');for(const k of ['sm','dr','nu','la'])DS[k].mode='conga';});
  at(205,()=>{say(DS.la,'Wer hat gewonnen? Egal! Sind eh alle tot!');});
+ at(212,()=>{for(const k in DS){DS[k].roam=true;DS[k].roamSpd=105;}tell('Alle rennen. Niemand weiß, wohin. Die Esse weicht aus.');});
  at(218,()=>{fire=1;shake=1;tell('Der Schmied entfacht die Esse. Zur Sicherheit. Zur Unterhaltung. Zur Brandstiftung.');for(const k of ['sm','dr','nu','la']){mode(DS[k],'bang',1.1);}go(DS.sm,C.x-20,C.y,40);go(DS.la,C.x+34,C.y+6,40);go(DS.nu,L.x+10,L.y+8,40);go(DS.dr,R.x-30,R.y,40);});
  at(230,()=>{const d=DS.dr;go(d,KEG.x-20,KEG.y+4,40);mode(d,'hammer',1);say(d,'Ich operiere das Fass. Es hat Druck auf dem Hirn.');});
  at(240,()=>{fountain=1;burst(40);const d=DS.dr;mode(d,'jump',1);tell('Dr. Hirnhammer operiert das Bierfass am offenen Spund. Das Fass überlebt nicht. Der Doktor schon. Meistens.');for(const k of ['sm','la','nu'])go(DS[k],KEG.x-34+(k==='la'?10:k==='nu'?24:0),KEG.y+(k==='nu'?10:2),44);after(3,()=>{for(const k of ['sm','la','nu'])mode(DS[k],'drink',1);});});
@@ -92,7 +97,7 @@ function script(){
  at(264,()=>{garland=1;tell('Dr. Hirnhammer hängt eine Girlande auf. Sie ist nicht aus Papier. Er sagt: „Nur geliehen."');mode(DS.dr,'bang',1);mode(DS.sm,'bang',1);mode(DS.la,'jump',1);mode(DS.nu,'bang',1.1);go(DS.nu,C.x,C.y+12,40);});
  at(276,()=>{smoke=1;say(DS.sm,'Ich glaub ... das war meine Leber ...');mode(DS.sm,'puke',1);after(3,()=>mode(DS.sm,'bang',1));});
  at(288,()=>{const d=DS.la;go(d,ANVIL.x+30,ANVIL.y+14,50);mode(d,'jump',1.2);say(d,'Ich liebe euch alle! Ihr kostet mich nichts mehr!');tell('Der Lanista steht auf dem Amboss und hält eine Rede. Niemand hört zu. Alle klatschen trotzdem.');});
- at(300,()=>{act('AKT 3','Apokalypse');strobe=1;flash=1;burst(100);shake=1.5;for(const k of ['sm','dr','nu','la'])mode(DS[k],'bang',1.3);go(DS.sm,C.x,C.y,40);go(DS.dr,C.x-40,C.y+10,40);go(DS.nu,C.x+36,C.y+8,40);go(DS.la,C.x+4,C.y-12,40);});
+ at(300,()=>{tripTarget=1;act('AKT 3','Apokalypse');strobe=1;flash=1;burst(100);shake=1.5;for(const k of ['sm','dr','nu','la'])mode(DS[k],'bang',1.3);go(DS.sm,C.x,C.y,40);go(DS.dr,C.x-40,C.y+10,40);go(DS.nu,C.x+36,C.y+8,40);go(DS.la,C.x+4,C.y-12,40);});
  at(312,()=>{const d=DS.sm;mode(d,'lie',1);after(20,()=>{mode(d,'up',1);after(.8,()=>{mode(d,'bang',1.1);say(d,'Wer hat das Licht ausgemacht? ... Ach. Ich war es.');});});tell('Der Schmied legt sich kurz hin. Neben die Esse. Er wird nie wieder aufstehen. (Er steht nach zwanzig Sekunden auf.)');});
  at(322,()=>{const d=DS.dr;go(d,DS.sm.x+14,DS.sm.y+4,40);mode(d,'hammer',1);say(d,'Schädel-Karaoke! Ich nenne es: Percussion!');});
  at(336,()=>{mode(DS.dr,'bang',1.1);tell('Der Lanista und Valeria tanzen Tango. Er führt. Sie führt eigentlich. Beide führen ins Verderben.');mode(DS.la,'spin',1);mode(DS.nu,'spin',1);go(DS.nu,DS.la.x+14,DS.la.y,40);});
@@ -155,11 +160,11 @@ function pose(d,b,en){
  if(d.freeze&&T<d.freeze){o.top=f*.04*Math.sin(T*18);return o;}
  const up=d.kind==='nurse'?'wave':d.kind==='doc'?'flail':'';
  switch(d.mode){
-  case 'nod':o.top=f*.1*a*(c+1)/2;o.dy=-.6*a*ab;o.walk=true;o.ph=b*Math.PI*.5;break;
-  case 'bang':o.top=f*a*.52*((c+1)/2-.22);o.dy=-1.2*a*ab;o.walk=true;o.ph=b*Math.PI;if(up)o.pose=half?up:'stand';else o.fp=half?'throw':'';break;
-  case 'jump':o.dy=-10*a*ab;o.sy=1+.05*a*Math.sin(Math.PI*b*2);o.walk=true;o.ph=b*Math.PI;if(up)o.pose=up;else o.fp='throw';break;
-  case 'spin':o.dir=Math.sin(Math.PI*b*2)>0?1:-1;o.dy=-3*a*ab;o.walk=true;o.ph=b*Math.PI*1.5;if(up)o.pose=up;break;
-  case 'drink':o.fp='drink';o.top=-f*.22;o.walk=true;o.ph=b*Math.PI*.5;o.mouth=true;break;
+  case 'nod':o.top=f*.12*a*(c+1)/2;o.dy=-10*a*ab;break;
+  case 'bang':o.top=f*a*.52*((c+1)/2-.22);o.dy=-14*a*ab;if(up)o.pose=half?up:'stand';else o.fp=half?'throw':'';break;
+  case 'jump':o.dy=-24*a*ab;if(up)o.pose=up;else o.fp='throw';break;
+  case 'spin':o.dir=Math.sin(Math.PI*b*2)>0?1:-1;o.dy=-13*a*ab;if(up)o.pose=up;break;
+  case 'drink':o.fp='drink';o.top=-f*.22;o.dy=-7*a*ab;o.mouth=true;break;
   case 'puke':{const k=T-d.mt;o.top=f*(k<3.2?.95+.06*Math.sin(T*26):.2);o.dy=1;break;}
   case 'lie':{const k=clamp((T-d.mt)/.5,0,1);o.rot=f*1.5*k;o.dy=2*k;o.dx=f*-8*k;o.top=0;o.fp='';break;}
   case 'up':{const k=1-clamp((T-d.mt)/.7,0,1);o.rot=f*1.5*k;o.dy=2*k;o.dx=f*-8*k;break;}
@@ -169,8 +174,14 @@ function pose(d,b,en){
   case 'angry':o.top=f*.05*Math.sin(T*20);o.fp='shake';o.dy=-.6*ab;break;
   case 'conga':o.walk=true;o.ph=b*Math.PI*.8;o.dy=-1.6*ab;o.top=f*.12*c;if(up)o.pose=half?up:'stand';break;
   default:break;}
+ if(FREE.includes(d.mode)){
+  // Landung auf dem Schlag: stauchen, in der Luft strecken
+  const sq=clamp(1-ab*6,0,1);o.sy*=1-.14*sq+.07*(1-sq)*ab;o.sx*=1+.1*sq;
+  if(d.walking){o.dy-=9*ab;o.top+=f*.16;if(up)o.pose=up;else if(!o.fp)o.fp='throw';}
+  if(d.hammerOn&&d.kind==='std'){const k=((b/2)%1)*1.2;o.hammer={wind:k<.7?.7-k:0,swing:k>=.7?1.2-k:0,k};o.fp='';}}
  return o;}
 // ---------- Zeichnen ----------
+function mushroom(q,x,y){q.fillStyle='#f1e8d0';q.fillRect(x-1,y-3,3,6);q.fillStyle='#d63a3a';q.fillRect(x-3,y-6,7,4);q.fillRect(x-2,y-7,5,1);q.fillStyle='#fff';q.fillRect(x-2,y-6,1,1);q.fillRect(x+1,y-5,1,1);q.fillRect(x+3,y-4,1,1);}
 function mug(q,x,y,col){q.fillStyle='#3a2a1a';q.fillRect(x-3,y-3,6,7);q.fillStyle=col||'#d9a441';q.fillRect(x-2,y-2,4,5);q.fillStyle='#fff';q.fillRect(x-3,y-4,6,2);q.fillStyle='#3a2a1a';q.fillRect(x+3,y-1,2,3);}
 function render(d,o,T,ctx){
  const q=d.cv.getContext('2d');q.imageSmoothingEnabled=false;q.clearRect(0,0,160,150);
@@ -186,6 +197,7 @@ function render(d,o,T,ctx){
  }else{
   window.DOK?.drawDocSmall(q,{x:FEET.x,y:FEET.y,t:T,walk:o.walk||d.walking,phase:d.walking?T*8:o.ph,dir,pose:o.pose});
   if(d.hold){const raised=o.pose==='flail';mug(q,FEET.x+dir*(raised?15:10),FEET.y-(raised?62:30),'#d9a441');}
+  if(d.mush)mushroom(q,FEET.x-dir*(o.pose==='flail'?15:9),FEET.y-(o.pose==='flail'?62:30));
  }
  ctx.save();ctx.imageSmoothingEnabled=false;ctx.translate(Math.round(d.x+o.dx),Math.round(d.y+o.dy));ctx.rotate(o.rot);ctx.scale(o.sx,o.sy);
  ctx.drawImage(d.cv,0,SPLIT,160,150-SPLIT,-FEET.x,SPLIT-FEET.y,160,150-SPLIT);
@@ -244,6 +256,20 @@ function drawParticles(ctx){
  for(const p of P.smoke){ctx.globalAlpha=p.a;ctx.fillStyle='#8a8aa0';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();}ctx.globalAlpha=1;
  ctx.save();ctx.font='bold 6px Verdana,sans-serif';ctx.textAlign='center';for(const p of P.zzz){ctx.globalAlpha=1-(T-p.t0)/2.2;ctx.fillStyle='#cfe4ff';ctx.fillText('Z',p.x,p.y);}
  for(const p of P.txt){ctx.globalAlpha=1-(T-p.t0)/1.4;ctx.font='bold 7px Impact,sans-serif';ctx.lineWidth=2;ctx.strokeStyle='#201020';ctx.strokeText(p.text,p.x,p.y-(T-p.t0)*10);ctx.fillStyle=p.col;ctx.fillText(p.text,p.x,p.y-(T-p.t0)*10);}ctx.restore();}
+function tripFx(ctx,b,en){
+ const k=trip*(.78+.22*Math.sin(T*.35));if(k<.03)return;
+ const cv=ctx.canvas;if(!snap||snap.width!==cv.width||snap.height!==cv.height){snap=document.createElement('canvas');snap.width=cv.width;snap.height=cv.height;}
+ const sq=snap.getContext('2d');sq.setTransform(1,0,0,1,0,0);sq.clearRect(0,0,snap.width,snap.height);sq.drawImage(cv,0,0);
+ const w=cv.width,h=cv.height,fx=Math.sin(T*1.7)*k*w*.012,fy=Math.cos(T*1.3)*k*h*.012,pulse=1+Math.sin(T*.9)*.025*k+Math.pow(1-(b%1),3)*.015*k;
+ ctx.save();ctx.setTransform(1,0,0,1,0,0);
+ const filt='filter' in ctx;
+ for(const [ox,oy,al,hue] of [[fx,fy,.28,60],[-fx*1.2,-fy*.7,.22,-70],[fy*.8,-fx*.6,.14,150]]){
+  ctx.globalAlpha=al*Math.min(1,k*1.4);if(filt)ctx.filter='blur('+(k*2.4).toFixed(1)+'px) hue-rotate('+((T*50+hue)%360).toFixed(0)+'deg) saturate('+(1+k).toFixed(2)+')';
+  ctx.translate(w/2,h/2);ctx.scale(pulse,pulse);ctx.drawImage(snap,-w/2+ox,-h/2+oy);ctx.setTransform(1,0,0,1,0,0);}
+ if(filt)ctx.filter='none';
+ // Farbwäsche, die langsam durch den Regenbogen wandert
+ ctx.globalAlpha=.16*k;ctx.globalCompositeOperation='soft-light';ctx.fillStyle='hsl('+((T*35)%360)+',100%,55%)';ctx.fillRect(0,0,w,h);
+ ctx.restore();}
 // ---------- Leiste zum Ausprobieren ----------
 function toolbar(on){
  if(!on){tool?.remove();tool=null;return;}
@@ -258,7 +284,7 @@ function jump(t){
  try{ensure(M.forgeVisuals.workers());}catch{}
  // Zwischenereignisse in Reihenfolge ausführen, damit alle Gäste da sind und der Stand stimmt.
  while(EV.length&&EV[0].t<=t){const ev=EV.shift();T=ev.t;try{ev.fn();}catch{}if(EV.length>1&&EV.some((x,i)=>i&&x.t<EV[i-1].t))EV.sort((a,b)=>a.t-b.t);}
- T=t;loopBase=Math.floor(t/TOTAL);for(const d of Object.values(DS)){d.tx=null;d.walking=false;}M.audioEngine?.smithSeek?.(t%TOTAL);
+ trip=tripTarget;T=t;loopBase=Math.floor(t/TOTAL);for(const d of Object.values(DS)){d.tx=null;d.walking=false;}M.audioEngine?.smithSeek?.(t%TOTAL);
  for(const k in DS){const d=DS[k];if(!d.vis)continue;}
  // Gäste, die schon da sein müssten, an ihren Platz setzen
  const place={dr:[704,274,IDLE+32],nu:[KEG.x-14,KEG.y+6,IDLE+66],la:[684,262,IDLE+102]};for(const k in place){if(t>place[k][2]+6&&DS[k]){DS[k].x=place[k][0]+rnd(-30,30);DS[k].y=place[k][1]+rnd(-6,10);DS[k].vis=true;}}
@@ -281,12 +307,15 @@ M.renderForgeActors=(ctx,list)=>{
  // Gäste und Schmied bewegen sich; Konga überschreibt die Wege.
  const conga=T<congaUntil;
  const order=['la','nu','sm','dr','ap'].map(k=>DS[k]).filter(d=>d&&d.vis);
- order.forEach((d,i)=>{if(conga&&d.mode==='conga'){const u=(T-congaFrom)*congaSpeed-i*.075,p=congaPath(u),q2=congaPath(u+.01);d.dir=q2.x>=p.x?1:-1;d.x=p.x;d.y=p.y;d.tx=null;d.walking=true;}else{if(d.mode==='conga'&&!conga){d.mode='bang';d.amp=1.2;d.mt=T;}walkTo(d,dt);}});
+ order.forEach((d,i)=>{if(conga&&d.mode==='conga'){const u=(T-congaFrom)*congaSpeed-i*.075,p=congaPath(u),q2=congaPath(u+.01);d.dir=q2.x>=p.x?1:-1;d.x=p.x;d.y=p.y;d.tx=null;d.walking=true;}else{if(d.mode==='conga'&&!conga){d.mode='bang';d.amp=1.2;d.mt=T;}if(d.roam&&d.tx==null&&T>=d.stay&&T>=d.wait&&FREE.includes(d.mode)&&!(d.freeze&&T<d.freeze)){d.tx=rnd(650,845);d.ty=rnd(256,290);d.spd=d.roamSpd*rnd(.8,1.2);d.wait=T+Math.hypot(d.tx-d.x,d.ty-d.y)/d.spd+rnd(.3,1.6);}
+  walkTo(d,dt);}});
  if(DS.ap&&!DS.ap.vis&&T>IDLE+84){DS.ap.vis=true;DS.ap.mode='bang';}
  // Beat-Ereignisse
  const bi=Math.floor(b);if(bi!==lastBeat){lastBeat=bi;if(bc.music||true){flash=Math.max(flash,en>.65?.55:.25);if(fire&&en>.55)for(const x of [VW.x+10,VW.x+VW.w-10])for(let i=0;i<8;i++)flame(x+rnd(-3,3),VW.y+VW.h-6);
   if(fire&&en>.6)sparksAt(ESSE.x+rnd(-8,8),ESSE.y+14,10);
   if(T>132&&en>.6&&Math.random()<.5)for(let i=0;i<10;i++)confetti(rnd(VW.x,VW.x+VW.w),VW.y+rnd(0,8));}}
+ trip+=(tripTarget-trip)*Math.min(1,dt*.22);
+ if(trip>.06&&Math.random()<dt*trip*40)P.spark.push({x:rnd(VW.x,VW.x+VW.w),y:rnd(250,292),z:rnd(0,30),vx:rnd(-6,6),vy:0,vz:rnd(8,22),life:rnd(1.4,2.6),col:pick(['#ff7ad9','#7affd9','#d9ff7a','#9a7aff','#ffb347']),g:-3});
  const pc=T-IDLE;if(T>132)for(let i=0;i<Math.min(60,3+(T-132)*.12)*dt+Math.random();i++)if(Math.random()<.5)confetti(rnd(VW.x,VW.x+VW.w),VW.y+rnd(0,6));
  if(fountain&&Math.random()<.9)for(let i=0;i<3;i++)P.foam.push({x:KEG.x-2,y:KEG.y-4,z:16,vx:rnd(-16,16),vy:rnd(-6,6),vz:rnd(40,95),life:1.4,col:pick(['#f4e2a0','#e8c25a','#ffffff'])});
  if(smoke&&Math.random()<.35)P.smoke.push({x:rnd(VW.x,VW.x+VW.w),y:VW.y+VW.h-6,vx:rnd(-4,4),vy:rnd(3,8),r:rnd(5,10),a:.16});
@@ -307,6 +336,7 @@ M.renderForgeActors=(ctx,list)=>{
  const sorted=order.slice().sort((x,y)=>(x.mode==='surf'?999:x.y)-(y.mode==='surf'?999:y.y));
  for(const d of sorted)render(d,d._o,T,ctx);
  drawParticles(ctx);
+ ctx.translate(-sx,-sy);tripFx(ctx,b,en);ctx.translate(sx,sy);
  for(const d of sorted)bubble(ctx,d,d._o);
  ctx.translate(-sx,-sy);
  if(flash>0){ctx.fillStyle=`rgba(255,255,255,${flash*.1})`;ctx.fillRect(VW.x,VW.y,VW.w,VW.h);flash=Math.max(0,flash-dt*3);}
@@ -314,5 +344,5 @@ M.renderForgeActors=(ctx,list)=>{
  drawTitle(ctx,b);drawNews(ctx);ctx.restore();
  stepParticles(dt);
  M.forgePartyT=T;};
-M.forgeParty={jump:t=>{jump(t);},reset,get t(){return T;}};
+M.forgeParty={jump:t=>{jump(t);},reset,get t(){return T;},get trip(){return trip;},debug:()=>Object.fromEntries(Object.entries(DS).map(([k,d])=>[k,{x:Math.round(d.x),y:Math.round(d.y),mode:d.mode,walking:d.walking,dy:d._o?+d._o.dy.toFixed(1):0,roam:d.roam}]))};
 })();
