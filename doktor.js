@@ -629,12 +629,12 @@ let bypass=false;
 const ds=()=>S.doktor??={stage:'',armed:false};
 const CHOICE_LINES=['Willkommen! Wer kommt zuerst dran? Und wer zuletzt?','Betten oder Stuhl? Die Betten sind bequemer. Der Stuhl ist lustiger.','Schwester Valeria hat frisch bezogen. Die Flecken gehen nicht mehr raus, aber sie sind trocken.','Heute im Angebot: ein Schlag, zwei Möglichkeiten.'];
 function choice(){M.ui.modal('Medicus',`<div class="dok-choice"><canvas id="dokChoiceFace" width="320" height="200"></canvas><p class="medic-quip"><b>${esc(DOC_SHORT)}:</b> „${esc(pick(CHOICE_LINES))}“</p></div>`,
- `<button class="btn" data-action="dok:ward">🛏 KRANKENBETTEN · ÜBERSICHT</button><button class="btn primary" data-action="dok:chair">🔨 BEHANDLUNGSTISCH</button><button class="btn small" data-action="dok:story">🎬 DER DOKTOR · VORSTELLUNG NOCHMAL ANSEHEN</button>`);
+ `<button class="btn" data-action="dok:ward">🛏 KRANKENBETTEN · ÜBERSICHT</button><button class="btn primary" data-action="dok:chair">🔨 BEHANDLUNGSTISCH</button><button class="btn small" data-action="dok:story">🎬 DER DOKTOR · VORSTELLUNG NOCHMAL ANSEHEN</button>${S.medic?.stage==='done'&&!S.lesson?.stage&&!S.huehner?.stage&&M.lesson?.offer?'<button class="btn small" data-action="dok:lesson">📖 KAPITEL · DIE TEUERSTE LEKTION</button>':''}`);
  let t=0;const tick=()=>{const c=$('dokChoiceFace');if(!c)return;t+=1/30;closeup(c.getContext('2d'),c.width,c.height,t,doctorBuf(t,{mood:Math.sin(t*.7)>.5?'roar':'grin',yaw:Math.sin(t*.8)*.25}));setTimeout(()=>requestAnimationFrame(tick),33);};requestAnimationFrame(tick);}
 // Während des Medicus-Kapitels bleibt der normale Ablauf; die Auswahl gibt es davor nicht und danach immer.
 const chapterIdle=()=>['','done','skip','free'].includes(M.medic.state().stage||'');
 const baseClick=M.schoolClick;M.schoolClick=function(action){const a=String(action||''),[p,b]=a.split(':');
- if(p==='dok'){M.ui.close?.();if(b==='ward'){bypass=true;try{M.ui.click('nav:medic');}finally{bypass=false;}}else if(b==='chair')openChair();else if(b==='story'){if(!S.battle)story(true);}return true;}
+ if(p==='dok'){M.ui.close?.();if(b==='ward'){bypass=true;try{M.ui.click('nav:medic');}finally{bypass=false;}}else if(b==='chair')openChair();else if(b==='story'){if(!S.battle)story(true);}else if(b==='lesson'){if(!S.battle)M.lesson?.offer?.();}return true;}
  if(a==='nav:medic'&&!bypass&&!S.battle&&M.ui.getPage?.()==='home'&&chapterIdle()&&!film&&!chair){choice();return true;}
  return baseClick?.apply(this,arguments);};
 
@@ -644,11 +644,12 @@ const baseClick=M.schoolClick;M.schoolClick=function(action){const a=String(acti
 let raf=0,last=0,wait=0,lastMedic=M.medic.state().stage;
 function loop(){if(raf)return;last=0;const run=now=>{const dt=Math.min(.05,last?(now-last)/1000:0);last=now;if(film)stepFilm(dt);if(chair)stepChair(dt);if(film||chair)raf=requestAnimationFrame(run);else raf=0;};raf=requestAnimationFrame(run);}
 // Spielstände, die das Medicus-Kapitel schon früher erlebt haben, bekommen den Doktor beim nächsten Besuch des Ludus (einmal); wer es übersprungen hat, bekommt ihn nur über die Medicus-Auswahl.
-if(!ds().stage&&!ds().armed){const ms=M.medic.state().stage;if(ms==='done')ds().armed=true;else if(['skip','free'].includes(ms))ds().stage='skip';}
+// Bestehende Spielstände bekommen den Doktor nie von selbst (auch nicht nach einem Neuladen mitten im Kapitel). Nur wer das Medicus-Kapitel in DIESER Sitzung beendet, bekommt ihn einmal (siehe autoStart). Über die Medicus-Auswahl bleibt er jederzeit abrufbar.
+{const d=ds(),ms=M.medic.state().stage;if(!d.stage&&(d.armed||['done','skip','free'].includes(ms))){d.stage='skip';d.armed=false;}}
 const busy=()=>!!S.battle||!!film||!!chair||!!M.medic?.film||!!M.medic?.guide||!!M.lionChapter?.film||!!M.lionChapter?.guide||!!M.smithWrath?.scene||!!M.archerPlot?.scene||!!M.hall?.film||!!M.intro?.active?.()||!!window.ArenaTheoryIntro?.active?.()||!!M.trader?.tutorial||!!document.querySelector('.smith-ceremony,#introView,#brandIntro,.medic-night,.medic-end,.medic-start,.dok-card-end')||($('modal')&&!$('modal').hidden);
 function autoStart(dt){if(document.hidden||M.benchmarkActive)return;const d=ds(),ms=M.medic.state().stage;
- if(!d.stage&&!d.armed){if(lastMedic!=='done'&&ms==='done'){d.armed=true;M.persist?.();}lastMedic=ms;return;}
- lastMedic=ms;if(d.stage||!d.armed)return;if(M.ui.getPage()!=='home'||busy()){wait=0;return;}wait+=dt;if(wait>1.5){wait=0;story(false);}}
+ if(!d.stage&&!d.armed){if(!['done','skip','free'].includes(lastMedic)&&ms==='done'){d.armed=true;M.persist?.();}lastMedic=ms;return;}
+ lastMedic=ms;if(d.stage||!d.armed)return;if(M.ui.getPage()!=='home'||busy()){wait=0;return;}wait+=dt;if(wait>1.5){wait=0;d.armed=false;d.stage='seen';M.persist?.();story(false);}}
 const lt=M.ludusTick;M.ludusTick=dt=>{if(film||chair)return;lt?.(dt);autoStart(dt);};
 function closeAll(){stopFilm();if(chair){document.querySelector('.dok-chair')?.remove();chair=null;}for(const el of document.querySelectorAll('.dok-card-end'))el.remove();M.ui.close?.();}
 document.addEventListener('click',e=>{const b=e.target.closest?.('[data-dok],[data-dokm]');if(!b)return;

@@ -406,6 +406,8 @@ document.addEventListener('click',e=>{const el=e.target.closest?.('[data-les]');
  else if(a==='offerno'){el.closest('.lesson-start')?.remove();}
  else if(a==='ch2'){clearAll();M.huehner?.start();}
  else if(a==='jump2'){document.querySelector('.lesson-menu')?.remove();clearAll();M.huehner?.jump(+v);}});
+// Einladungskarte: erscheint nie von selbst, nur auf Wunsch (Medicus anklicken, Menü „Kapitel: Die teuerste Lektion“).
+function offerCard(){if(document.querySelector('.lesson-start,.lesson-end,.medic-film,.lion-film'))return;const v=document.createElement('div');v.className='medic-start lesson-start';v.innerHTML=`<div><p class="eyebrow">KAPITEL</p><h1>DIE TEUERSTE LEKTION DES LANISTERS</h1><p>Die Geschichte geht weiter: Krankenhaus, leere Kasse, ein geliehenes Schwert und Rex. Danach: Die Hühnerschule des Grauens.</p><div class="buttons"><button class="btn primary" type="button" data-les="offeryes">JETZT SPIELEN</button><button class="btn" type="button" data-les="offerno">SPÄTER</button></div><p class="tiny">Dein Gold bleibt erhalten. „Später“ schließt die Karte; das Kapitel bleibt im Medicus-Menü, kommt aber nie von selbst.</p></div>`;document.body.appendChild(v);}
 // eigener Takt für Film und Führung (läuft auf jeder Seite)
 let last=performance.now();(function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;if(film)stepFilm(dt);})(last);
 // Vorbereitung: Spielstand direkt nach dem Medikus-Kapitel (fünf Verletzte, Schmied, Lanister mit einem Arm)
@@ -414,18 +416,19 @@ function prepare(){if(S.medic&&!Array.isArray(S.medic.order))S.medic.order=[];S.
 function startCard(){const v=document.createElement('div');v.className='medic-start lesson-start';v.innerHTML=`<div><p class="eyebrow">ARENA THEORY · TESTVERSION</p><h1>DIE TEUERSTE LEKTION · DIE HÜHNERSCHULE</h1><p>Kapitel 1: Krankenhaus, leere Kasse, ein geliehenes Schwert – und Rex. Kapitel 2: ein Hahnenschild, eine verrückte Hühnerhändlerin, das Beastrium und drei Hähne gegen einen Idioten.</p><div class="buttons"><button class="btn primary" type="button" data-les="start">KAPITEL 1 · DIE TEUERSTE LEKTION</button><button class="btn primary" type="button" data-les="ch2">KAPITEL 2 · DIE HÜHNERSCHULE DES GRAUENS</button><button class="btn" type="button" data-les="menu">SZENE WÄHLEN</button></div><p class="tiny">Eigenständige Vorschau mit flüchtigem Spielstand. Das Hauptspiel und deine Spielstände bleiben unberührt. Derber schwarzer Humor.</p></div>`;document.body.appendChild(v);}
 /* M.lesson ist im Spiel bereits die Lehrstunden-Funktion der Trainer (school.js: M.lesson(g,waffe)). Nicht überschreiben,
    sonst bricht der Tageswechsel ab (Händler, Herumtreiber, Schmied). Die Kapitel-Schnittstelle hängt an dieser Funktion. */
-{const api={scenes:SCENES,jump,menu,prepare,state:st,get film(){return film;},stepFilm,startFight,PAY,REX,clearAll,
+{const api={scenes:SCENES,jump,menu,prepare,state:st,offer:offerCard,get film(){return film;},stepFilm,startFight,PAY,REX,clearAll,
  kit:{play,stopFilm,skipScene,setCard,smithActor,lanActor,extraActor,arm,pose,walker,drawActor,float,dust,toss,rage,showGuide,hideGuide,yard,speaker,need,ARENA_K,get guide(){return guide;}}},base=M.lesson;M.lesson=typeof base==='function'?Object.defineProperties(function(){return base.apply(this,arguments);},Object.getOwnPropertyDescriptors(api)):api;};
 if(TEST){prepare();startCard();}
 // ---------- Im Spiel: Start nach dem Medikus-Kapitel, Fortsetzen nach dem Neuladen ----------
 // Neu abgeschlossenes Medikus-Kapitel → die Lektion beginnt von selbst (wie erzählt: Gold bis auf einen Rest weg).
-// Spielstände, die das Medikus-Kapitel schon früher abgeschlossen hatten, bekommen eine Einladung und behalten ihr Gold.
-else{const RESUME={s1:scene1,s2:scene2,s3:scene3,go:stepArena,s5:scene5,fight:scene5,s7:scene7,s8:scene8,s9:scene9};let medicSeen=S.medic?.stage,resume=true,offered=false;
+// Spielstände, die das Medikus-Kapitel schon früher abgeschlossen hatten, bekommen nichts von selbst: Das Kapitel ist über das Medicus-Menü erreichbar und behält dann ihr Gold.
+else{let medicSeen=S.medic?.stage;
+ // Bestehende Spielstände: Das Kapitel setzt sich nach einem Neuladen nie von selbst fort und bietet sich nie von selbst an. Offene Reste aus früheren Sitzungen (auch „ready“) gelten als gesehen; die Stufe wird NICHT auf einen neuen Wert gesetzt, weil wanderers.js und arena-game.js jede Stufe außer „end“ als laufendes Tutorial lesen.
+ {const l=S.lesson;if(l?.stage&&l.stage!=='end')S.lesson={stage:'',declined:true};}
  setInterval(()=>{const med=S.medic?.stage;if(medicSeen!=='done'&&med==='done'&&!S.lesson?.stage){S.lesson={stage:'ready'};try{M.persist();}catch{}}medicSeen=med;
   if(S.doktor?.armed&&!S.doktor?.stage)return; /* erst kommt das Doktor-Kapitel (doktor.js) */
   if(film||S.battle||window.ArenaUI?.isOpen?.()||M.ui.getPage?.()!=='home'||document.querySelector('.lesson-end,.lesson-start,.medic-end,.medic-film,.medic-start,.lion-film,.smith-ceremony,.mg-dawn,.hs-market,.hs-present'))return;
   const ls=S.lesson?.stage;if(ls==='ready'){scene1();return;}
-  if(resume){resume=false;if(RESUME[ls]){RESUME[ls]();return;}}
-  if(!ls&&med==='done'&&!offered&&!S.huehner?.stage){offered=true;const v=document.createElement('div');v.className='medic-start lesson-start';v.innerHTML=`<div><p class="eyebrow">NEUES KAPITEL</p><h1>DIE TEUERSTE LEKTION DES LANISTERS</h1><p>Die Geschichte geht weiter: Krankenhaus, leere Kasse, ein geliehenes Schwert und Rex. Danach: Die Hühnerschule des Grauens.</p><div class="buttons"><button class="btn primary" type="button" data-les="offeryes">JETZT SPIELEN</button><button class="btn" type="button" data-les="offerno">SPÄTER</button></div><p class="tiny">Dein Gold bleibt erhalten. „Später“ fragt beim nächsten Laden wieder.</p></div>`;document.body.appendChild(v);}},1200);}
+},1200);}
 window.LESSON_READY=true;
 })();
