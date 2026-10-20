@@ -292,7 +292,7 @@ function rangedPose(a,id=weapon(a).id){
  const shooting=a.swing>0&&a.swingKind==='shoot',elapsed=shooting?(a.swingMax||.3)-a.swing:0;
  if(shooting)return {tension:.08*Math.sin(elapsed*85)*Math.exp(-elapsed*25),loaded:false};
  if(id==='crossbow'){const t=a.reloadTimer>0?clamp(1-a.reloadTimer/(a.reloadDuration||3.2),0,1):1;return {tension:clamp((t-.15)/.65,0,1),loaded:t>=.82&&a.ammo>0};}
- const tension=a.wind>0?clamp(1-a.wind/(a.windMax||.55),0,1):0;return {tension,loaded:a.wind>0&&a.ammo>0};
+ const tension=a.wind>0?clamp(1-a.wind/(a.windMax||.55),0,1):0;return {tension,loaded:a.wind>0&&a.ammo>0,draw:a.fullDraw?1.45:1};
 }
 function onGround(a){return !(a.kneeTimer>0)&&(a.down||a.fallTimer>(a.riseDuration||1.25)&&(a.fallDuration-a.fallTimer)>=.35);}
 function canGroundFinish(a,b){if(b?.rex)return false;const w=weapon(a);return !!(b&&onGround(b)&&!b.g.dead&&!b.surrendered&&!a.g.dead&&!a.down&&!(a.fallTimer>0)&&!(a.stun>0)&&!(a.stagger>0)&&!(a.kneeTimer>0)&&a.energy>=T.gfEnergy&&!(a.groundFinishCD>0)&&!w.ammo&&w.id!=='fist'&&dist(a,b)<T.gfRange);}
