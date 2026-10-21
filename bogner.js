@@ -1,12 +1,13 @@
 'use strict';
 try{document.fonts&&['400','700'].forEach(w=>document.fonts.load(w+" 16px 'Courier Prime'"));}catch(e){}
 // =====================================================================================================
-// ORONTES PFEILKOPF · der Bogenhändler (Testversion – noch nicht im Hauptspiel, wird nur von fernkampf-tutorial-test.html geladen)
+// ORONTES PFEILKOPF · der Bogenhändler (im Spiel über boot.js geladen; fernkampf-tutorial-test.html nutzt dieselbe Datei)
 // Nach dem Boxkampf-Tutorial (S.box.intro): Der Schmied zeigt nur kurz auf den Neuen und verschwindet. Orontes erklärt Bogen und
 // Armbrust, leiht dem Lanista Gold für einen Rekruten, kommentiert dessen Talent, gibt ihm den ersten Bogen, erklärt Stärken und
 // Schwächen der Fernkämpfer und öffnet in der Arena den Apfelschuss. Danach steht sein Karren im Trainingshof: Bögen und Armbrüste
 // gibt es nur bei ihm – der Schmied hatte sie nie im Sortiment.
-// Speicherwert: S.bowyer = {stage:''|'film'|'buy'|'role'|'arena'|'apple'|'done', recruit, loan, given, owner}
+// Speicherwert: S.bowyer = {stage:''|'film'|'buy'|'role'|'equip'|'arena'|'apple'|'done', recruit, loan, given, owner, appleDay}
+// Apfelschuss: apfelschuss.html im Rahmen (eigene Spielkopie im Arbeitsspeicher); Ergebnis wird in den echten Spielstand übernommen, 1× pro Tag.
 // Figuren, Gesichter, Waffen, Arena und Ludus kommen aus dem Spiel (M.renderLudusActors, M.faceShot, M.weaponArt, ArenaArt, Ludus-Bild).
 // =====================================================================================================
 (()=>{
@@ -257,7 +258,7 @@ function step(dt){const st=ST(),s=S();if(!s||!s.lanista)return;
 function startTutorial(){const st=ST();if(film)return;st.stage='film';snap=new Set(S().roster.map(g=>g.id));
  M.ui.close?.();playFilm('ludus',beats1(),()=>{giveLoan(null);st.stage='buy';snap=new Set(S().roster.map(g=>g.id));try{M.persist();}catch{}});}
 function startArenaFilm(){const st=ST();if(film)return;playFilm('arena',beats2(),()=>{st.stage='done';try{M.persist();}catch{}hideBar();
- tip('Fortan gilt: Bögen und Armbrüste gibt es bei mir am Karren im Trainingshof. Der Apfelschuss wartet in der Arena unter HUMAN. Und wenn dir ein Rekrut wegstirbt – ich kenne einen Bestatter. Er nimmt auch Pfeile.','grin',()=>{try{window.BOWYER_TEST?.onDone?.();}catch(e){}});});}
+ tip('Fortan gilt: Bögen und Armbrüste gibt es bei mir am Karren im Trainingshof. Der Apfelschuss wartet in der Arena unter HUMAN – einmal am Tag. Und wenn dir ein Rekrut wegstirbt – ich kenne einen Bestatter. Er nimmt auch Pfeile.','grin',()=>{try{openApple();}catch(e){console.error(e);}});});}
 
 // ---------- Ludus: Karren und Orontes im Trainingshof, Markierung des nächsten Ziels ----------
 const CART={x:372,y:522};
@@ -285,18 +286,19 @@ for(const list of [M.forgeCategories,M.workshop?.categories])if(Array.isArray(li
 if(Array.isArray(M.workshop?.recipes))for(let i=M.workshop.recipes.length-1;i>=0;i--)if(isRanged(M.workshop.recipes[i]?.def))M.workshop.recipes.splice(i,1);
 // Fernkämpfer gibt es erst, wenn Orontes da ist: vorher ist die Klasse in der Kaserne gesperrt
 const rangedOpen=()=>['role','equip','arena','apple','done'].includes(ST().stage);
-function lockRanged(){if(rangedOpen())return;for(const g of S().roster||[])if(g.role==='Fernkämpfer'&&!g.dead)g.role='Soldat';
+// Bestehende Fernkämpfer aus älteren Spielständen bleiben, wie sie sind – gesperrt ist nur das neue Umstellen
+function lockRanged(){if(rangedOpen())return;
  for(const b of document.querySelectorAll('[data-action^="barracks:class:"][data-action$=":Fernkämpfer"]')){if(b.classList.contains('bow-locked'))continue;b.classList.add('bow-locked');b.setAttribute('aria-disabled','true');b.title='Gesperrt: Fernkämpfer gibt es erst, wenn der Bogenhändler kommt.';const tag=document.createElement('span');tag.className='bow-lock';tag.textContent='🔒 erst mit Bogenhändler';b.appendChild(tag);}}
 function unlockMarks(){for(const b of document.querySelectorAll('.bow-locked')){b.classList.remove('bow-locked');b.removeAttribute('aria-disabled');b.title='';b.querySelector('.bow-lock')?.remove();}}
 
 // ---------- Arena: Karte „APFELSCHUSS“ neben Arena- und Boxkämpfen ----------
-function injectCard(){const box=document.querySelector('.an-kinds');if(!box||box.querySelector('.bow-apple'))return;const st=ST(),open=['arena','apple','done'].includes(st.stage);
- const b=document.createElement('button');b.className='an-mode bow-apple'+(open?'':' locked');b.dataset.a=open?'kind:apple':'kindlock';b.innerHTML=`<canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>APFELSCHUSS</b><small>${open?(st.stage==='arena'?'NEU · ':'')+'Fernkämpfer · Apfel · Rekrut · bis zu 10 Pfeile':'🔒 Erst Orontes kennenlernen'}</small></span>`;
+function injectCard(){const box=document.querySelector('.an-kinds');if(!box||box.querySelector('.bow-apple'))return;const st=ST(),open=['arena','apple','done'].includes(st.stage),used=st.stage==='done'&&st.appleDay===S().day;
+ const b=document.createElement('button');b.className='an-mode bow-apple'+(open?'':' locked');b.dataset.a=open?'kind:apple':'kindlock';b.innerHTML=`<canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>APFELSCHUSS</b><small>${!open?'🔒 Erst Orontes kennenlernen':used?'Heute schon geschossen · morgen wieder':(st.stage==='arena'?'NEU · ':'')+'Fernkämpfer · Apfel · Rekrut · 1× pro Tag'}</small></span>`;
  box.appendChild(b);const cv=b.querySelector('canvas'),c=cv.getContext('2d'),rec=S().roster.find(x=>x.id===st.recruit)||S().roster.find(x=>x.role==='Fernkämpfer');let t0=performance.now();
  const loop=now=>{if(!b.isConnected)return;const t=(now-t0)/1000;try{ART.arena(c,300,170,t,{cheer:1});}catch(e){}c.imageSmoothingEnabled=false;
   if(rec)drawActor(c,{...actor(rec),forgeWorker:false,a:-.06,wind:.02,windMax:1,ammo:1,fullDraw:true},80,164,1.35);drawActor(c,{...actor(TARGET()),forgeWorker:false,a:Math.PI,shackled:true},236,160,1.0);px(c,233,107,6,5,'#c8321f');px(c,235,105,1,2,'#3a5a1a');
-  if(!open){c.fillStyle='rgba(10,6,4,.55)';c.fillRect(0,0,300,170);}requestAnimationFrame(loop);};requestAnimationFrame(loop);
- b.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();if(!open){M.ui.notify?.('Noch gesperrt: erst Orontes kennenlernen.');return;}if(st.stage==='arena'){st.stage='apple';startArenaFilm();}else{window.BOWYER_TEST?.openApple?.();}},true);}
+  if(!open||used){c.fillStyle='rgba(10,6,4,.55)';c.fillRect(0,0,300,170);}requestAnimationFrame(loop);};requestAnimationFrame(loop);
+ b.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();if(!open){M.ui.notify?.('Noch gesperrt: erst Orontes kennenlernen.');return;}if(st.stage==='arena'){st.stage='apple';startArenaFilm();}else if(st.appleDay===S().day){M.ui.notify?.('Den Apfelschuss gibt es nur einmal am Tag. Morgen wieder.');}else openApple();},true);}
 new MutationObserver(()=>{try{injectCard();if(rangedOpen())unlockMarks();else lockRanged();}catch(e){}}).observe(document.body,{childList:true,subtree:true});
 
 // ---------- Takt ----------
@@ -306,8 +308,8 @@ const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(document.hidden)return;try
 M.bowyer={drawOro,start:startTutorial,arena:startArenaFilm,state:ST,shop,talentLines,oroG,cart,oroFace,headArrow,drawActor,actor,reset(){const s=S();s.bowyer={stage:'',recruit:'',loan:0,given:'',owner:0};hideBar();tips=[];tipBox?.remove();tipBox=null;}};
 function openApple(){if($('bowApple'))return;const v=document.createElement('div');v.id='bowApple';v.setAttribute('role','dialog');v.setAttribute('aria-label','Apfelschuss');
  v.innerHTML='<div class="bwa-top"><span>ARENA · APFELSCHUSS · mit deinen Kämpfern</span><button type="button">✕ ZURÜCK ZUR ARENA</button></div><iframe title="Apfelschuss"></iframe>';document.body.appendChild(v);
- const f=v.querySelector('iframe'),src=window.BOWYER_TEST?.appleSrc;if(window.BOWYER_TEST?.appleDoc)f.srcdoc=window.BOWYER_TEST.appleDoc;else f.src=src||'apfelschuss-test.html';
- v.querySelector('button').onclick=()=>v.remove();}
+ const f=v.querySelector('iframe'),src=window.BOWYER_TEST?.appleSrc;if(window.BOWYER_TEST?.appleDoc)f.srcdoc=window.BOWYER_TEST.appleDoc;else f.src=src||('apfelschuss.html?v='+encodeURIComponent(window.BUILD||''));
+ v.querySelector('button').onclick=()=>{v.remove();try{M.persist();}catch{}try{M.ui.render?.();}catch{}document.querySelector('.bow-apple')?.remove();try{injectCard();}catch{}};}
 M.bowyer.openApple=openApple;if(window.BOWYER_TEST){window.BOWYER_TEST.openApple=openApple;window.BOWYER_TEST.onDone=openApple;}
 window.BOWYER_TEST?.ready?.();
 }})();

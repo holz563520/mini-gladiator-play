@@ -1,0 +1,27 @@
+/* Orontes Pfeilkopf (Bogenhändler) und Apfelschuss: Film, Tipps, Hinweisleiste, Laden, Apfelschuss-Fenster, Sperre der Fernkämpfer-Klasse */
+#bowIntro{position:fixed;inset:0;z-index:400;background:#050302ee;display:flex;align-items:center;justify-content:center;padding:10px;font-family:'Courier Prime',ui-monospace,monospace;color:#eae4cd}
+#bowIntro .bwi-box{width:min(100%,900px,calc((100vh - 230px)*1.7778));display:flex;flex-direction:column;gap:8px}
+#bowIntro .bwi-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;letter-spacing:3px;color:#dfb66d}
+#bowIntro button{font:700 13px inherit;font-family:inherit;color:#f3e2b0;background:#1d282b;border:2px solid #6b5230;padding:9px 12px;cursor:pointer;box-shadow:3px 3px 0 #000a}
+#bowIntro canvas{display:block;width:100%;aspect-ratio:16/9;border:3px solid #6b5230;image-rendering:pixelated;image-rendering:crisp-edges;background:#0d0907;cursor:pointer}
+#bowIntro .bwi-bubble{border:3px solid #6b5230;background:#f5ecd2;color:#2a1a10;padding:10px 14px;min-height:118px;display:flex;flex-direction:column;gap:6px}
+#bowIntro .bwi-bubble b{font-size:13px;letter-spacing:2px;color:#8f2f2a}
+#bowIntro .bwi-bubble p{margin:0;font-size:16px;line-height:1.4;flex:1}
+#bowIntro .bwi-bubble button{align-self:flex-end;background:#8f2f2a;border-color:#e0ad4c;color:#fff3d6}
+#bowTip{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:390;width:min(96%,640px);font-family:'Courier Prime',ui-monospace,monospace}
+#bowTip .bwt-in{display:grid;grid-template-columns:160px 1fr;gap:12px;align-items:start;background:#f5ecd2;color:#2a1a10;border:3px solid #6b5230;padding:10px;box-shadow:0 8px 30px #000c}
+#bowTip canvas{width:160px;height:auto;border:2px solid #6b5230;image-rendering:pixelated;background:#0d0907}
+#bowTip b{font-size:13px;letter-spacing:2px;color:#8f2f2a}#bowTip p{margin:6px 0 8px;font-size:15px;line-height:1.4;min-height:4.2em}
+#bowTip button{float:right;font:700 13px 'Courier Prime',monospace;background:#8f2f2a;border:2px solid #e0ad4c;color:#fff3d6;padding:8px 12px;cursor:pointer}
+@media (max-width:520px){#bowTip .bwt-in{grid-template-columns:96px 1fr}#bowTip canvas{width:96px}#bowTip p{font-size:14px}}
+.bow-hl{outline:3px solid #f4d37a!important;outline-offset:2px;animation:bowhl 1s ease-in-out infinite}@keyframes bowhl{50%{outline-color:#f4d37a33}}
+body:has(.bow-bar){padding-bottom:150px}@media (max-width:600px){.bow-bar p{font-size:13px!important;line-height:1.3!important;margin:2px 0!important}.bow-bar{padding:8px 10px!important}}
+.bow-bar{pointer-events:none;top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom));z-index:395!important}
+.bow-shop .bow-row{display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid #394b4d}
+.bow-shop canvas{width:120px;height:60px;image-rendering:pixelated;border:1px solid #394b4d}.bow-shop small{display:block;color:#97aaa8}
+.an-kinds .bow-apple .an-mlabel b{color:#ffd25a}
+#bowApple{position:fixed;inset:0;z-index:420;background:#050302;display:flex;flex-direction:column}
+#bowApple .bwa-top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;font:700 12px 'Courier Prime',monospace;letter-spacing:2px;color:#dfb66d;background:#120c09;border-bottom:2px solid #6b5230}
+#bowApple button{font:700 12px 'Courier Prime',monospace;color:#f3e2b0;background:#8f2f2a;border:2px solid #e0ad4c;padding:7px 10px;cursor:pointer}
+#bowApple iframe{flex:1;border:0;width:100%;background:#140f0b}
+.bow-locked{opacity:.45;filter:grayscale(.8);cursor:not-allowed!important;position:relative}.bow-lock{display:block;font-size:10px;color:#e0b565;letter-spacing:1px;margin-top:2px}

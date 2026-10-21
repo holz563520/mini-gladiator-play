@@ -61,19 +61,20 @@ tr.sel td{background:#3b2b1a;color:#fff3d6}
 .prize b{font-size:21px;color:#fff3d6;font-variant-numeric:tabular-nums}.prize .gold b{color:var(--gold)}.prize .bad b{color:var(--red)}
 .shots{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.shots span{padding:3px 9px;border-radius:12px;background:#33271d;font-size:13px}.shots .a{background:#5a2a1a;color:#ffd9b0}.shots .h{background:#5c1712;color:#fff}.shots .x{opacity:.45}
 .board{margin:10px 0 4px}.board canvas{display:block;width:100%;max-width:720px;height:auto;image-rendering:pixelated;border:2px solid var(--line);border-radius:8px;background:#000}.tally{color:#f3e2b0;font-weight:700}
+body.ingame .testonly{display:none!important}.daydone{background:#2a1a10;border:1px solid #6b5230;border-radius:8px;padding:10px 12px;margin:8px 0;color:#f3e2b0}
 </style>
 </head>
 <body>
 <div class="wrap">
-<span class="tag">ARENA THEORY · NEUE ÜBUNG · VORSCHAU</span>
+<span class="tag testonly">ARENA THEORY · NEUE ÜBUNG · VORSCHAU</span>
 <h1>Apfelschuss</h1>
-<p>Ein Fernkämpfer schießt einem Rekruten einen Apfel vom Kopf. Je weiter weg, desto mehr Gold, und je wertvoller der Rekrut, desto höher der Einsatz. Wer trifft, wird gefeiert; wer den Kopf trifft, wird ausgebuht. Jeder Schuss trainiert den Schützen. <b>Nur eine Testseite:</b> Am Spiel und an den Spielständen ändert sich nichts. Hier wird nichts gespeichert; ein toter Rekrut ist nur in dieser Seite weg.</p>
+<p class="testonly">Ein Fernkämpfer schießt einem Rekruten einen Apfel vom Kopf. Je weiter weg, desto mehr Gold, und je wertvoller der Rekrut, desto höher der Einsatz. Wer trifft, wird gefeiert; wer den Kopf trifft, wird ausgebuht. Jeder Schuss trainiert den Schützen. <b>Nur eine Testseite:</b> Am Spiel und an den Spielständen ändert sich nichts. Hier wird nichts gespeichert; ein toter Rekrut ist nur in dieser Seite weg.</p>
 
 <div class="card">
  <h2>1 · Fernkämpfer wählen</h2>
  <p class="hint" style="margin:0 0 8px">Wichtig fürs Treffen: <b>Präzision</b> und <b>Bogenfertigkeit</b> zählen am meisten, dazu Geschick, Willenskraft (Nerven), Balance (ruhige Hand) und Stärke (Zugkraft, flacherer Flug). Der <b>Schusswert</b> fasst sie zusammen.</p>
  <div class="picks" id="archers"></div>
- <div class="row"><button id="newRoster">↻ Neue Kämpfer auswürfeln</button><span class="hint">(setzt auch Training und tote Rekruten zurück)</span></div>
+ <div class="row testonly"><button id="newRoster">↻ Neue Kämpfer auswürfeln</button><span class="hint">(setzt auch Training und tote Rekruten zurück)</span></div>
 </div>
 
 <div class="card">
@@ -89,7 +90,7 @@ tr.sel td{background:#3b2b1a;color:#fff3d6}
  <div class="row"><span class="hint">Schnellwahl</span><button data-d="10">10 m</button><button data-d="25">25 m</button><button data-d="50">50 m</button><button data-d="100">100 m</button><button data-d="200">200 m</button><button data-d="300">300 m</button><button data-d="400">400 m</button></div>
  <div class="board"><canvas id="board" width="720" height="580"></canvas></div>
  <div class="row" style="margin:6px 0 0"><button id="boardSnd">🔇 Ton an</button><span class="hint">Einschläge, Zischen, Splittern – gilt auch für die Szene.</span></div>
- <div class="row" style="margin:6px 0 0"><label class="hint" for="lanName">Name deines Lanista (im Spiel automatisch)</label><input id="lanName" maxlength="32" placeholder="Marcus" style="flex:1;min-width:120px;padding:6px 8px;border-radius:8px;border:1px solid #5a4a30;background:#1d1610;color:#f3e2b0"></div>
+ <div class="row testonly" style="margin:6px 0 0"><label class="hint" for="lanName">Name deines Lanista (im Spiel automatisch)</label><input id="lanName" maxlength="32" placeholder="Marcus" style="flex:1;min-width:120px;padding:6px 8px;border-radius:8px;border:1px solid #5a4a30;background:#1d1610;color:#f3e2b0"></div>
  <p class="hint" id="boardNote" style="margin:6px 0"></p>
  <h2 style="margin-top:14px">4 · Wie viele Pfeile?</h2>
  <div class="row arrows" id="arrows"></div>
@@ -111,6 +112,7 @@ tr.sel td{background:#3b2b1a;color:#fff3d6}
  <button class="next" id="bNext" hidden>ERGEBNIS ▸</button>
 </div>
 
+<script>/* Eigene Spielkopie nur im Arbeitsspeicher: diese Seite liest und schreibt NIE den echten Spielstand (der kommt per window.parent). */(()=>{const mem=new Map(),shim={getItem:k=>mem.has(k)?mem.get(k):null,setItem:(k,v)=>{mem.set(k,String(v));},removeItem:k=>{mem.delete(k);},clear:()=>mem.clear(),key:i=>[...mem.keys()][i]??null,get length(){return mem.size;}};try{Object.defineProperty(window,'localStorage',{value:shim,configurable:true});}catch(e){}try{Object.defineProperty(window,'indexedDB',{value:undefined,configurable:true});}catch(e){}})();</script>
 <script>try{document.fonts&&['400','700'].forEach(w=>document.fonts.load(w+" 16px 'Courier Prime'"));}catch(e){}
 
 /* Spielstände schützen: diese Seite darf nichts speichern oder laden. */
@@ -146,7 +148,8 @@ const CFG={
  deathHead:1,deathPart:{Brust:.12,Bauch:.06,Arm:.005,Bein:.012}  // Todesrisiko des Rekruten bei Kopf- bzw. je Körperzone
 };
 const ATTR=[['precision','Präzision'],['bow','Bogenfertigkeit'],['dexterity','Geschick'],['will','Willenskraft'],['balance','Balance'],['strength','Stärke']];
-const val=(g,k)=>k==='bow'?(g.mastery?.bow??0):(g.stats?.[k]??0);
+const wKey=g=>((g&&(g.enemyGear?.weapon||null))?.def)==='crossbow'?'crossbow':'bow';
+const val=(g,k)=>k==='bow'?(g.mastery?.[wKey(g)]??g.mastery?.bow??0):(g.stats?.[k]??0);
 const skill=g=>ATTR.reduce((a,[k])=>a+CFG.w[k]*val(g,k),0);
 function spread(S,d){const k=1-clamp(S,0,100)/100,th=CFG.th0+CFG.th1*Math.pow(k,CFG.the),sh=CFG.sh0+CFG.sh1*Math.pow(k,CFG.she);return{th,sh,sigma:Math.hypot(sh,th*d/1000)};}
 function classify(x,y){
@@ -173,7 +176,7 @@ function goldFor(d,p,r){const risk=.6+Math.pow(1-p,1.2);return Math.max(5,Math.r
 // Training: wie im Boxspiel – jeder Schuss trainiert, was gebraucht wurde; schwere Schüsse lehren mehr, Treffer zählen etwas mehr
 const TRAIN=[['stats','precision','Präzision',.11],['weapons','bow','Bogenfertigkeit',.13],['stats','dexterity','Geschick',.05],['stats','will','Willenskraft',.06],['stats','balance','Balance',.04],['stats','strength','Stärke',.025]];
 function applyTraining(g,res,d,p){const mult=clamp(.7+1.6*Math.pow(1-p.apple,.8),.7,2.3)*({apple:1.15,miss:.7,head:.4,body:.45}[res.out])*(.7+.5*Math.sqrt(d/CFG.dMax));const out=[];
- for(const [grp,key,label,base] of TRAIN){const from=M.learningValue(g,grp,key),cap=M.learningCap(g,grp,key);
+ for(const [grp,key0,label0,base] of TRAIN){const key=key0==='bow'?wKey(g):key0,label=key==='crossbow'?'Armbrustfertigkeit':label0;const from=M.learningValue(g,grp,key),cap=M.learningCap(g,grp,key);
   const rate=2*(.7+(g.potential??50)/150)*(.08+.92*Math.pow(Math.max(0,(cap-from)/Math.max(1,cap)),.65));
   const extra=key==='will'?1+2*p.head:1;M.addLearning(g,grp,key,base*mult*rate*extra);out.push({label,from,to:M.learningValue(g,grp,key),cap});}
  return{list:out,mult};}
@@ -189,7 +192,7 @@ function mkArcher(mean,idx){const g=gen(),xb=idx%2===1;g.role='Fernkämpfer';
  g.mastery.bow=bern(mean);
  const up=v=>clamp(Math.round(v*1.25+12+Math.random()*25),Math.ceil(v),100);
  for(const k of Object.keys(g.stats))g.caps.stats[k]=Math.max(g.caps.stats[k]||0,up(g.stats[k]));
- g.caps.weapons.bow=Math.max(g.caps.weapons.bow||0,up(g.mastery.bow));
+ g.caps.weapons.bow=Math.max(g.caps.weapons.bow||0,up(g.mastery.bow));g.caps.weapons.crossbow=Math.max(g.caps.weapons.crossbow||0,g.caps.weapons.bow);
  if(xb)g.mastery.crossbow=g.mastery.bow;g.enemyGear={weapon:M.makeItem('weapon',xb?'crossbow':'bow',clamp(Math.round(mean/20),0,4)),secondary:M.makeItem('weapon','dagger',1),shield:null,armor:{}};
  return g;}
 function mkRecruit(q,i){const g=gen(q);g.role='Soldat';for(const k of ['strength','stamina','toughness','will'])g.stats[k]=bern(20+q*8);g.enemyGear=null;
@@ -206,18 +209,23 @@ function fromParent(){const PM=parentGame();if(!PM)return null;const cp=v=>JSON.
  const alive=PM.s.roster.filter(g=>!g.dead&&!g.smithDuty),ok=g=>g.role==='Fernkämpfer'&&['bow','crossbow'].includes(PM.gear(g,'weapon')?.def)&&PM.gear(g,'secondary')?.def==='dagger',ar=alive.filter(ok).map(clone),why=alive.filter(g=>!ok(g)&&g.role==='Fernkämpfer').map(g=>{const m=[];if(!['bow','crossbow'].includes(PM.gear(g,'weapon')?.def))m.push('keine Fernwaffe (Bogen/Armbrust)');if(PM.gear(g,'secondary')?.def!=='dagger')m.push('kein Dolch');return g.name+': '+m.join(' und ');}),rc=alive.filter(g=>g.role!=='Fernkämpfer').slice(0,8).map(clone);
  if(!ar.length||!rc.length)return{none:true,why,noRecruit:!rc.length,noFk:!alive.some(g=>g.role==='Fernkämpfer')};return{ar,rc,lan:PM.s.lanista?.name||''};}
 // Im Spiel-Test: Ergebnis zurück in den echten Spielstand – Verletzungen und Tod des Rekruten, Preisgeld für den Lanista
+// Im Spiel: der Apfelschuss geht nur einmal am Tag (zählt ab dem ersten Pfeil)
+function dayUsed(){const PM=parentGame();return !!(PM&&PM.s.bowyer&&PM.s.bowyer.appleDay===PM.s.day);}
+function markDay(){const PM=parentGame();if(!PM)return;PM.s.bowyer=PM.s.bowyer||{};PM.s.bowyer.appleDay=PM.s.day;try{PM.persist?.();}catch(e){}}
+function dayNote(){let n=document.getElementById('dayNote');if(!n){n=document.createElement('div');n.id='dayNote';n.className='daydone';const go=$('go');go.parentElement.after(n);}n.innerHTML='<b>Für heute ist Schluss.</b> Den Apfelschuss gibt es nur einmal am Tag – das Publikum braucht Zeit, um neue Äpfel zu klauen. Morgen wieder.';$('go').disabled=true;}
 function syncParent(ser){const PM=parentGame();if(!PM||!ser.r.fromGame)return '';const r=ser.r,real=PM.s.roster.find(x=>x.id===r.id),out=[];if(!real)return '';
  for(const [id,b] of Object.entries(r.body||{})){const rb=real.body?.[id],h0=ser.hp0?.[id];if(!rb||h0==null||!(b.hp<h0))continue;rb.hp=Math.max(1,Math.min(rb.hp,b.hp));
   if(b.injury){try{PM.noteInjury(real,id,b.injury);}catch(e){rb.injury=b.injury;}}out.push(b.injury||'Wunde');}
  if(r.dead){const last=ser.results[ser.results.length-1]||{};try{PM.kill(real,'Apfelschuss: '+(isXB(ser.g)?'Bolzen':'Pfeil')+(last.out==='head'?' in den Kopf':' in '+(last.part==='Bauch'?'den Bauch':last.part==='Brust'?'die Brust':'den Körper')),ser.g.name);}catch(e){real.dead=true;}}
+ const ra=PM.s.roster.find(x=>x.id===ser.g.id);if(ra&&!ra.dead){const g=ser.g,wk=wKey(g);for(const [grp,key0] of TRAIN){const key=key0==='bow'?wk:key0;if(grp==='weapons'){if(ra.mastery&&g.mastery&&g.mastery[key]>(ra.mastery[key]??0))ra.mastery[key]=g.mastery[key];}else if(ra.stats&&g.stats&&g.stats[key]>(ra.stats[key]??0))ra.stats[key]=g.stats[key];}}
  if(ser.gold>0)PM.s.gold=(PM.s.gold||0)+ser.gold;
  try{PM.persist?.();}catch(e){}try{PM.ui?.render?.();}catch(e){}
- return 'Im Spielstand übernommen: '+(r.dead?r.name+' ist gestorben.':out.length?r.name+' ist verletzt ('+out.join(', ')+').':r.name+' bekam keine neue Wunde.')+(ser.gold>0?' +'+ser.gold+' Gold für den Lanista.':' Kein Preisgeld.');}
+ return 'Im Spielstand übernommen: Training von '+ser.g.name+'. '+(r.dead?r.name+' ist gestorben.':out.length?r.name+' ist verletzt ('+out.join(', ')+').':r.name+' bekam keine neue Wunde.')+(ser.gold>0?' +'+ser.gold+' Gold für den Lanista.':' Kein Preisgeld.');}
 function blocked(PG){document.body.classList.add('embBlock');const el=document.getElementById('res');el.hidden=false;el.innerHTML='<h2>Apfelschuss noch nicht möglich</h2><p>Zum Schießen braucht es einen <b>Fernkämpfer</b> mit <b>Bogen oder Armbrust</b> in der Fernwaffen-Hand <b>und einem Dolch</b> im Nahkampf'+(PG.noRecruit?', dazu mindestens einen weiteren Gladiator als Apfelhalter':'')+'.</p>'+(PG.noFk?'<p class="hint">Im Moment ist keiner deiner Gladiatoren als Fernkämpfer eingestellt (Kaserne → Klasse).</p>':'')+(PG.why.length?'<ul>'+PG.why.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul><p class="hint">Kaserne → AUSRÜSTEN: Bogen/Armbrust und Dolch anlegen.</p>':'');['archers','recruits'].forEach(i=>{$(i).innerHTML='';});const go=$('go');if(go)go.disabled=true;const wb=$('wpn');if(wb)wb.hidden=true;}
-function newRoster2(){const PG=fromParent();if(PG&&PG.none){blocked(PG);return;}if(PG){archers=PG.ar;recruits=PG.rc;const el=document.getElementById('lanName');if(el&&PG.lan){el.value=PG.lan;el.disabled=true;}if(typeof DBG!=='undefined'&&DBG)DUM0=paintDummy();}else{archers=[20,34,52,74].map(mkArcher);recruits=[0,0,1,2,3,5].map(mkRecruit);}selA=archers[0].id;selR=recruits[0].id;tally={n:0,apple:0,gold:0,dead:0};render();}
+function newRoster2(){const PG=fromParent();if(PG)document.body.classList.add('ingame');if(PG&&PG.none){blocked(PG);return;}if(PG){setTimeout(()=>{if(dayUsed())dayNote();},0);archers=PG.ar;recruits=PG.rc;const el=document.getElementById('lanName');if(el&&PG.lan){el.value=PG.lan;el.disabled=true;}if(typeof DBG!=='undefined'&&DBG)DUM0=paintDummy();}else{archers=[20,34,52,74].map(mkArcher);recruits=[0,0,1,2,3,5].map(mkRecruit);}selA=archers[0].id;selR=recruits[0].id;tally={n:0,apple:0,gold:0,dead:0};render();}
 const A=()=>archers.find(g=>g.id===selA),R=()=>recruits.find(g=>g.id===selR);
 
-function barsHtml(g){return ATTR.map(([k,l])=>{const v=val(g,k);return `<span>${l}</span><span class="b${k==='precision'||k==='bow'?' hi':''}"><i style="width:${clamp(v,0,100)}%"></i></span><span class="n">${nf(v,0)}</span>`;}).join('');}
+function barsHtml(g){return ATTR.map(([k,l0])=>{const l=k==='bow'&&wKey(g)==='crossbow'?'Armbrustfertigkeit':l0;const v=val(g,k);return `<span>${l}</span><span class="b${k==='precision'||k==='bow'?' hi':''}"><i style="width:${clamp(v,0,100)}%"></i></span><span class="n">${nf(v,0)}</span>`;}).join('');}
 function render(){
  $('archers').innerHTML=archers.map(g=>`<button class="pick${g.id===selA?' on':''}" data-a="${g.id}"><canvas id="ta${g.id}"></canvas><div><b>${esc(g.name)}</b><small>Schusswert <b style="display:inline;color:var(--gold)">${nf(skill(g),1)}</b> · ${g.height} cm · ${isXB(g)?'Armbrust':'Bogen'}</small><div class="bars">${barsHtml(g)}</div></div></button>`).join('');
  $('recruits').innerHTML=recruits.map(g=>`<button class="pick${g.id===selR?' on':''}${g.dead?' dead':''}" data-r="${g.id}"><canvas id="tr${g.id}"></canvas><div><b>${esc(g.name)}</b><small>${g.dead?'✝ tot':'Qualität: <b style="display:inline;color:var(--gold)">'+M.qualities[g.quality]+'</b>'}</small><small>Wert ${M.price(g)} Gold</small>${injuryList(g).length?'<small style="color:var(--red)">verletzt: '+esc(injuryList(g).join(', '))+'</small>':''}</div></button>`).join('');
@@ -1391,7 +1399,7 @@ function commitArrow(s){if(s.committed)return;s.committed=1;const ser=s.ser,res=
  if(res.out==='head'||res.out==='body'){ser.hurt=true;ser.hurtHit=true;ser.over=true;ser.lost=ser.gold;ser.gold=0;ser.hits=ser.hits;const id=res.out==='head'?'head':s.ipart,b=r.body&&r.body[id];
   if(b&&!res.dead){b.hp=Math.max(5,(b.hp??100)-(res.out==='head'?50:38));const txt=res.out==='head'?'Pfeilwunde'+(s.where?' ('+s.where+')':''):'Pfeilwunde';try{M.noteInjury(r,id,txt);}catch(e){b.injury=txt;}}}
  if(res.dead){r.dead=true;ser.over=true;}ser.i++;if(ser.i>=ser.n)ser.over=true;}
-function start(force){const g=A(),r=R();if(!g||!r||r.dead||sc)return;
+function start(force){const g=A(),r=R();if(!g||!r||r.dead||sc)return;if(dayUsed()){dayNote();return;}markDay();
  SER=newSeries(ARROWS);SER.hp0=Object.fromEntries(Object.entries(r.body||{}).map(([k,b])=>[k,b.hp]));SER.forces=Array.isArray(force)?force:force?[force]:[];
  sc=sceneFor(SER);finished=false;speed=1;$('bSpeed').textContent='⏩ 1×';$('bNext').hidden=true;$('shoot').hidden=false;document.body.style.overflow='hidden';
  audio($('bSnd').dataset.on==='1');last=performance.now();raf=requestAnimationFrame(loop);}
@@ -1418,11 +1426,12 @@ function finish(){if(!sc)return;const s=sc;commitArrow(s);const ser=SER,r=ser.r,
  <p><b>Gold:</b> +${ser.gold}${ser.hurtHit?' – Rekrut getroffen, kein Preisgeld'+(ser.lost?' ('+ser.lost+' Gold verfallen)':''):''} · <b>Rekrut:</b> ${r.dead?'✝ tot (Wert '+M.price(r)+' Gold verloren)':hurtNow.length?'verletzt – '+esc(hurtNow.join(', ')):'unversehrt'}</p>
  <h3>Fortschritt <small class="hint">(Lernfaktor ×${nf(mult,2)}, je schwerer der Schuss, desto mehr)</small></h3>${list.map(x=>`<div class="gain"><span>${x.label}</span><b>${nf(x.from,2)} → ${nf(x.to,2)}</b><small>+${nf(x.to-x.from,3)}</small></div>`).join('')}
  <p class="hint">Schusswert jetzt ${nf(skill(g),2)}. Bilanz dieser Sitzung: ${tally.n} Pfeile · ${tally.apple} Äpfel · ${tally.gold} Gold · ${tally.dead} tote Rekruten.</p>
- <div class="row"><button class="primary" id="again">🏹 NOCHMAL SCHIESSEN</button><button id="reroll">↻ Neue Kämpfer auswürfeln</button></div>`;
+ <div class="row"><button class="primary" id="again">🏹 NOCHMAL SCHIESSEN</button><button id="reroll" class="testonly">↻ Neue Kämpfer auswürfeln</button></div>`;
+ if(parentGame()){const ag=el.querySelector('#again');ag.textContent='✓ FÜR HEUTE FERTIG – MORGEN WIEDER';ag.disabled=true;dayNote();}
  el.querySelector('#again').onclick=()=>{if(R().dead){const nx=recruits.find(x=>!x.dead);if(nx)selR=nx.id;}render();start();};el.querySelector('#reroll').onclick=()=>{newRoster();el.hidden=true;};
  render();el.scrollIntoView({behavior:'smooth',block:'start'});}
-function wpnLabel(){const g=A(),b=$('wpn');if(b&&parentGame()){b.hidden=true;return;}if(b)b.textContent=isXB(g)?'🎯 ARMBRUST – tippen für Bogen':'🏹 BOGEN – tippen für Armbrust';}
-$('wpn').onclick=()=>{const g=A();if(!g)return;const xb=!isXB(g),it=M.makeItem('weapon',xb?'crossbow':'bow',(g.enemyGear.weapon&&g.enemyGear.weapon.q)||1);g.enemyGear.weapon=it;if(xb)g.mastery.crossbow=Math.max(g.mastery.crossbow||0,g.mastery.bow||0);render();wpnLabel();};
+function wpnLabel(){if(dayUsed()){const go=$('go');if(go)go.disabled=true;}const g=A(),b=$('wpn');if(b&&parentGame()){b.hidden=true;return;}if(b)b.textContent=isXB(g)?'🎯 ARMBRUST – tippen für Bogen':'🏹 BOGEN – tippen für Armbrust';}
+$('wpn').onclick=()=>{const g=A();if(!g)return;const xb=!isXB(g),it=M.makeItem('weapon',xb?'crossbow':'bow',(g.enemyGear.weapon&&g.enemyGear.weapon.q)||1);g.enemyGear.weapon=it;if(xb){g.mastery.crossbow=Math.max(g.mastery.crossbow||0,g.mastery.bow||0);g.caps.weapons.crossbow=Math.max(g.caps.weapons.crossbow||0,g.caps.weapons.bow||0);}render();wpnLabel();};
 $('go').onclick=()=>{$('res').hidden=true;start();};
 $('bSpeed').onclick=()=>{speed=speed===1?2:1;$('bSpeed').textContent='⏩ '+speed+'×';};
 $('bSnd').dataset.on='0';const sndSet=on=>{$('bSnd').dataset.on=on?'1':'0';$('bSnd').textContent=on?'🔊':'🔇';$('boardSnd').textContent=on?'🔊 Ton aus':'🔇 Ton an';audio(on);};$('bSnd').onclick=e=>sndSet(e.currentTarget.dataset.on!=='1');$('boardSnd').onclick=()=>sndSet($('bSnd').dataset.on!=='1');
