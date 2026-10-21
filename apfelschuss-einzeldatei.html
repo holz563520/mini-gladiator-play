@@ -5886,7 +5886,7 @@ const CFG={
  // Streuung am Ziel: Winkelfehler (Milliradiant) und Zittern der Hand (m); beides sinkt mit dem Schusswert
  th0:.27,th1:6.2,the:2.5,sh0:.004,sh1:.03,she:1.5,
  gold0:30,goldExp:.8,             // Grundgold bei 10 m und Wachstum mit der Entfernung
- deathHead:.4,deathPart:{Brust:.12,Bauch:.06,Arm:.005,Bein:.012}  // Todesrisiko des Rekruten bei Kopf- bzw. je Körperzone
+ deathHead:1,deathPart:{Brust:.12,Bauch:.06,Arm:.005,Bein:.012}  // Todesrisiko des Rekruten bei Kopf- bzw. je Körperzone
 };
 const ATTR=[['precision','Präzision'],['bow','Bogenfertigkeit'],['dexterity','Geschick'],['will','Willenskraft'],['balance','Balance'],['strength','Stärke']];
 const val=(g,k)=>k==='bow'?(g.mastery?.bow??0):(g.stats?.[k]??0);
@@ -5948,6 +5948,14 @@ function fromParent(){const PM=parentGame();if(!PM)return null;const cp=v=>JSON.
  const clone=g=>{const c=cp(g),w=PM.gear(g,'weapon');c.enemyGear={weapon:w?cp(w):null,secondary:null,shield:null,armor:{}};c.equipment={weapon:null,secondary:null,shield:null,armor:{}};c.fromGame=true;return c;};
  const alive=PM.s.roster.filter(g=>!g.dead&&!g.smithDuty),ar=alive.filter(g=>g.role==='Fernkämpfer'&&['bow','crossbow'].includes(PM.gear(g,'weapon')?.def)).map(clone),rc=alive.filter(g=>g.role!=='Fernkämpfer').slice(0,8).map(clone);
  if(!ar.length||!rc.length)return null;return{ar,rc,lan:PM.s.lanista?.name||''};}
+// Im Spiel-Test: Ergebnis zurück in den echten Spielstand – Verletzungen und Tod des Rekruten, Preisgeld für den Lanista
+function syncParent(ser){const PM=parentGame();if(!PM||!ser.r.fromGame)return '';const r=ser.r,real=PM.s.roster.find(x=>x.id===r.id),out=[];if(!real)return '';
+ for(const [id,b] of Object.entries(r.body||{})){const rb=real.body?.[id],h0=ser.hp0?.[id];if(!rb||h0==null||!(b.hp<h0))continue;rb.hp=Math.max(1,Math.min(rb.hp,b.hp));
+  if(b.injury){try{PM.noteInjury(real,id,b.injury);}catch(e){rb.injury=b.injury;}}out.push(b.injury||'Wunde');}
+ if(r.dead){const last=ser.results[ser.results.length-1]||{};try{PM.kill(real,'Apfelschuss: '+(isXB(ser.g)?'Bolzen':'Pfeil')+(last.out==='head'?' in den Kopf':' in '+(last.part==='Bauch'?'den Bauch':last.part==='Brust'?'die Brust':'den Körper')),ser.g.name);}catch(e){real.dead=true;}}
+ if(ser.gold>0)PM.s.gold=(PM.s.gold||0)+ser.gold;
+ try{PM.persist?.();}catch(e){}try{PM.ui?.render?.();}catch(e){}
+ return 'Im Spielstand übernommen: '+(r.dead?r.name+' ist gestorben.':out.length?r.name+' ist verletzt ('+out.join(', ')+').':r.name+' bekam keine neue Wunde.')+(ser.gold>0?' +'+ser.gold+' Gold für den Lanista.':' Kein Preisgeld.');}
 function newRoster2(){const PG=fromParent();if(PG){archers=PG.ar;recruits=PG.rc;const el=document.getElementById('lanName');if(el&&PG.lan){el.value=PG.lan;el.disabled=true;}if(typeof DBG!=='undefined'&&DBG)DUM0=paintDummy();}else{archers=[20,34,52,74].map(mkArcher);recruits=[0,0,1,2,3,5].map(mkRecruit);}selA=archers[0].id;selR=recruits[0].id;tally={n:0,apple:0,gold:0,dead:0};render();}
 const A=()=>archers.find(g=>g.id===selA),R=()=>recruits.find(g=>g.id===selR);
 
@@ -6480,7 +6488,7 @@ function buildScene(g,r,d,res,opt={}){
  const hT=Math.max(.05,1.95+res.y),slope=Math.max(.05,4*fl.h/d+.02),landDist=lowMiss?0:clamp(hT/slope,2,160);
  const s={xb:isXB(g),g,r,d,res,S,fl,out,dead,Tm,mApp,flightDur,tApp,tVS,tPA,tPR,sAim,aA,aB,aC,aD,tAim,sRel,tRel,sFly,sApp,sReact:I,hf,ha,ay,hy,ar,Tp,S0,dirIn,lowMiss,
   through:out==='apple'||(out==='miss'&&!lowMiss),faceRel,faceBox,where,ipart,landDist,landAng:clamp(Math.atan(4*clamp(60+110*Math.log2(1+d/30),100,420)/(W*1.25))*.95,.25,.85),fired:{},sp:Tm/flightDur,labels:[],bubbles:[],parts:[],tom:[],faces:null,
-  k172,Q,ser,last:!ser||ser.i>=ser.n-1||dead,modLines:[],wasHurt:!!(ser&&ser.hurt),shakes:[],arcPx:clamp(fl.h*5,6,260),arcS:clamp(60+110*Math.log2(1+d/30),100,420),elev:clamp(Math.atan(4*clamp(60+110*Math.log2(1+d/30),100,420)/(W*1.25)),.1,.8),fallAt:I,tLand:0,tInj:0};
+  k172,Q,ser,last:!ser||ser.i>=ser.n-1||dead||out==='head'||out==='body',modLines:[],wasHurt:!!(ser&&ser.hurt),shakes:[],arcPx:clamp(fl.h*5,6,260),arcS:clamp(60+110*Math.log2(1+d/30),100,420),elev:clamp(Math.atan(4*clamp(60+110*Math.log2(1+d/30),100,420)/(W*1.25)),.1,.8),fallAt:I,tLand:0,tInj:0};
  s.wstep=[1,2,5,10,20,25,50,100].find(x=>d/x<=8)||100;s.anchorRel=faceMap({zoom:1.05},50).from(645+.45*165,300+.5*205);
  s.missWhy=lowMiss?'Zu kurz: der Pfeil bohrt sich vor seinen Füßen in den Sand':res.y>.06?'Zu hoch: der Pfeil zischt über den Apfel':res.x<0?'Links vorbei':'Rechts vorbei';
  if(out==='body')s.injA=injAnchor(ipart,r);
@@ -6560,8 +6568,8 @@ function buildScene(g,r,d,res,opt={}){
   if(pre)ml.push({t0:.1,t1:sRel+.3,text:modLine(ser,'preHurt',sl)});
   const key=dead?null:apple?'apple':out==='miss'?'miss':out==='head'?'headHurt':'hurt';
   if(key&&(ser.n>1||key==='hurt'||key==='headHurt'))ml.push({t0:I+.25,t1:s.last?Math.max(I+2.4,s.tFinal-.1):end-.05,text:modLine(ser,key,sl+1,{gold})});
-  if(s.last){const fk=dead?'died':ser.n>1?(ser.hits+(apple?1:0)?'end':'end0'):key==='hurt'||key==='headHurt'?null:key;
-   if(fk)ml.push({t0:s.tFinal+.35,t1:end,text:modLine(ser,fk,sl+2,{gold:ser.gold+gold,hits:ser.hits+(apple?1:0)})});}}
+  if(s.last){const fk=dead?'died':(out==='head'||out==='body')?'abort':ser.n>1?(ser.hits+(apple?1:0)?'end':'end0'):key==='hurt'||key==='headHurt'?null:key;
+   if(fk)ml.push({t0:s.tFinal+.35,t1:end,text:modLine(ser,fk,sl+2,{gold:ser.gold+gold,hits:ser.hits+(apple?1:0),lost:ser.gold})+(dead?' '+modLine(ser,ser.gold>0?'lostGold':'lost0',sl+5,{lost:ser.gold}):'')});}}
  return s;}
 function shotAt(s,t){const L=s.shots;let sh=L[0];for(const x of L){if(t>=x.t0)sh=x;else break;}return sh;}
 function wobble(s,u){const fr=3.3+3.2*Math.min(1,s.d/400),A0=(.55-.35*s.S/100);return{amp:A0*Math.exp(-u*1.15),ph:6.283*fr*u};}
@@ -6979,6 +6987,7 @@ const ML={
   '{per} Gold zahlt das Publikum für einen Apfeltreffer. Der Rekrut setzt nur sein Leben. {L} findet das fair.'],
  stakesN:['{N} Pfeile, {per} Gold für jeden Apfel, und jeder Treffer in Folge ein Viertel mehr – bis zu {max} Gold für {L}. Für den Rekruten: bis zu {N} neue Äpfel.',
   'Bis zu {max} Gold stehen im Raum! {per} pro Apfel, jeder Treffer in Folge ein Viertel mehr. Der Rekrut kriegt Prozente – auf seine Überlebenschance.'],
+ rule:['Aber Achtung: Trifft er den Rekruten, ist sofort Schluss – und das Preisgeld ist futsch.','Die Regel: Ein Pfeil im Rekruten beendet alles. Kein Gold, nicht mal fürs Schon-Getroffene.'],
  go:['Schütze! Spann den Bogen!','Ruhe jetzt. Und Schütze – ziel bitte auf das Obst.','Und los! Wer jetzt blinzelt, verpasst vielleicht eine Beerdigung.'],
  // Zwischenrufe während der Serie
  preHurt:['{R} blutet, aber {L} winkt: Weiter! Er hat ja noch einen zweiten Arm.','Ein Loch mehr im Rekruten, ein Apfel mehr auf dem Kopf. {L} kennt keine Pause.',
@@ -6990,11 +6999,15 @@ const ML={
  miss:['Daneben! Der Pfeil kostet zwei Sesterzen – {L} zieht sie dem Rekruten vom Lohn ab.','Vorbei! {R} hat gerade sein Leben an sich vorbeifliegen sehen.',
   'Daneben! Und {L} brüllt: Nochmal! Er hat ja nicht das Ding auf dem Kopf.'],
  hurt:['Treffer – leider im Rekruten! {L} ruft: Der Pfeil bleibt drin, der kostet extra!','Er blutet! Und {L}? Fragt, ob der Apfel noch oben ist.',
-  'Medicus? Nein, sagt {L}. Erst die Serie fertig. Bezahlt ist bezahlt.'],
+  'Medicus? Erst mal nicht, sagt {L}. Erst wird geklärt, wer den Pfeil bezahlt.'],
  headHurt:['Am Kopf! Er lebt noch! {L} nennt das Glück. Der Rekrut nennt es anders – leise.'],
  died:['{R} ist tot. {L} fragt schon, ob man den Apfel noch verkaufen kann.','Ruhe in Frieden, {R}. {L} lässt ausrichten: Die Ausrüstung bleibt im Haus.',
   'Ein Menschenleben – und für {L} nur eine Zeile im Kassenbuch. Durchgestrichen.'],
  end:['{hits} von {N} Äpfeln! {gold} Gold wandern in die Tasche von {L}. Der Rekrut darf den Apfelsaft behalten.','Schluss! {L} zählt {gold} Gold. {R} zählt seine Finger.'],
+ abort:['Treffer im Rekruten – Schluss! Kein Apfel, kein Gold. {L} wollte Obst, er hat Fleisch bekommen.','Abbruch! Das Publikum will sein Geld zurück. {L} will den Pfeil zurück. {R} will nur nach Hause.',
+  'Aus! Wer den Apfelhalter trifft, kriegt keinen Sesterz. {L} rechnet nach, wer ihm jetzt den Rekruten ersetzt.'],
+ lostGold:['Und die {lost} Gold von vorhin? Weg. Tote Apfelhalter zahlen nicht aus.','Das schon gewonnene Gold – {lost} Stück – verfällt. {L} weint. Um das Gold.'],
+ lost0:['Preisgeld gibt es keins. Für einen toten Apfelhalter zahlt hier niemand.'],
  end0:['Kein einziger Apfel. {L} schaut, als hätte man ihm das Herz rausgeschossen. Das hätte man allerdings erst finden müssen.']};
 // Die Zeilen der Eröffnung: [wer im Bild, Text, Gesicht, Namensschild, Lacher?]
 function modBeats(ser,g,r,d){const v=modVars(ser,g,r,d),sd=ser.seed,S=skill(g),inj=injuryList(r),price=M.price(r),B=[];
@@ -7005,7 +7018,7 @@ function modBeats(ser,g,r,d){const v=modVars(ser,g,r,d),sd=ser.seed,S=skill(g),i
  if(inj.length)push('recruit','injured','pain',null,true);
  push('lan','lan','grin',{name:lanName(),sub:'Lanista · Besitzer dieser Schule'},true);
  if(!inj.length){const extra=ser.n>=5?'many':d>=200?'far':price<=200?'cheap':price>=600?'dear':tally.dead>0?'dead':'lan';push('mod',extra,'grin',null,true);}
- push('mod',ser.n>1?'stakesN':'stakes1','determined');B[B.length-1].text+=' '+fmt(pickLine(ML.go,sd+99,'go'),v);B[B.length-1].mood='roar';
+ push('mod',ser.n>1?'stakesN':'stakes1','determined');B[B.length-1].text+=' '+fmt(pickLine(ML.rule,sd+77,'rule'),v)+' '+fmt(pickLine(ML.go,sd+99,'go'),v);B[B.length-1].mood='roar';
  if(isXB(g))for(const b of B)b.text=xbT(b.text,1);
  let t=0;for(const b of B){const n=b.text.length;b.t0=t;b.t1=t=t+clamp(1.2+n*.05,3,10);}return{list:B,total:t};}
 function modVars(ser,g,r,d){const inj=injuryList(r);return{L:lanName(),A:g.name,R:r.name,S:nf(skill(g),0),P:M.price(r),d,N:ser.n,per:ser.per,max:seriesMax(ser.per,ser.n),
@@ -7043,9 +7056,9 @@ function modOverlay(c,s,t,topPos){for(const m of (s.modLines||[])){if(t<m.t0||t>
  c.textAlign='left';c.textBaseline='middle';c.font='800 12px "Courier Prime",monospace';c.fillStyle='#e6b42a';c.fillText('DER AUSRUFER',130,y0+14);
  c.font='700 22px "Courier Prime",monospace';c.fillStyle='#efe4c6';const n=Math.floor(u*45);let left=n;lines.forEach((ln,i)=>{c.fillText(ln.slice(0,Math.max(0,left)),130,y0+40+i*28);left-=ln.length+1;});c.restore();}}
 // Serienanzeige oben in der Mitte
-function seriesHud(c,s,t){const S=s.ser;if(!S||S.n<2)return;const done=S.results.length+(t>=s.sReact?1:0),hits=S.hits+(t>=s.sReact&&s.out==='apple'?1:0),gold=S.gold+(t>=s.sReact&&s.out==='apple'?s.res.gold:0);
+function seriesHud(c,s,t){const S=s.ser;if(!S||S.n<2)return;const done=S.results.length+(t>=s.sReact?1:0),hits=S.hits+(t>=s.sReact&&s.out==='apple'?1:0),gold=S.gold+(t>=s.sReact&&s.out==='apple'?s.res.gold:0);const lostNow=t>=s.sReact&&(s.out==='head'||s.out==='body');
  c.save();c.setTransform(1,0,0,1,0,0);const w=440,x=W/2-w/2,y=88;c.fillStyle='rgba(12,8,5,.74)';c.fillRect(x,y,w,52);c.strokeStyle='#6b5230';c.lineWidth=2;c.strokeRect(x,y,w,52);
- c.textAlign='center';c.textBaseline='middle';c.font='800 15px "Courier Prime",monospace';c.fillStyle='#f3e2b0';c.fillText((XB?'BOLZEN ':'PFEIL ')+(S.i+1)+' / '+S.n+'   ·   ÄPFEL '+hits+'   ·   '+gold+' GOLD',W/2,y+17);
+ c.textAlign='center';c.textBaseline='middle';c.font='800 15px "Courier Prime",monospace';c.fillStyle='#f3e2b0';c.fillText((XB?'BOLZEN ':'PFEIL ')+(S.i+1)+' / '+S.n+'   ·   ÄPFEL '+hits+'   ·   '+(lostNow?'0 GOLD (VERFALLEN)':gold+' GOLD'),W/2,y+17);
  for(let k=0;k<S.n;k++){const rr=k<S.results.length?S.results[k].out:(k===S.i&&t>=s.sReact?s.out:null),cx=W/2-(S.n-1)*14+k*28,cy=y+38;
   c.fillStyle=rr==='apple'?'#c8321f':rr==='miss'?'#7a6a50':rr?'#f0f0f0':'rgba(243,226,176,.25)';c.fillRect(cx-7,cy-6,14,12);if(rr==='head'||rr==='body'){c.fillStyle='#a01818';c.fillRect(cx-3,cy-3,6,6);}if(k===S.i){c.strokeStyle='#ffd25a';c.strokeRect(cx-9,cy-8,18,16);}}
  c.restore();}
@@ -7090,7 +7103,7 @@ function plates(c,s,t){plate(c,s,t,0);plate(c,s,t,1);const I=s.sReact,o=s.out;
 function bubbles(c,s,t){if(s.xb&&!s._xbt){s._xbt=1;for(const b of s.bubbles)b.text=xbT(b.text,1);for(const l of s.labels||[])if(l.text)l.text=xbT(l.text,1);}c.font='600 17px "Courier Prime",monospace';c.textBaseline='middle';c.textAlign='center';for(const b of s.bubbles){const u=t-b.t;if(u<0||u>1.8)continue;const tw=c.measureText(b.text).width+16,bx=clamp(toScr(b.x,b.y)[0],tw/2+8,W-tw/2-8),by=clamp(toScr(b.x,b.y)[1],150,600)-u*10,fs=21;
   c.globalAlpha=clamp((1.8-u)*3,0,1);c.fillStyle='rgba(250,240,215,.94)';c.fillRect(bx-tw/2,by-fs*.75,tw,fs*1.5);c.fillStyle=b.team?'#9e3029':'#2c5c96';c.fillRect(bx-tw/2,by-fs*.75,4,fs*1.5);c.fillStyle='#2a1a10';c.fillText(b.text,bx+2,by);c.globalAlpha=1;}}
 function bigText(c,s,t){const o=s.out,res=s.res,u=t-s.tFinal,SR=s.ser,hits=SR?SR.hits+(o==='apple'?1:0):0,goldS=SR?SR.gold+(o==='apple'?res.gold:0):0;
- const g=SR&&SR.n>1?(res.dead?{text:'SERIE ABGEBROCHEN',sub:s.r.name+' ist tot · '+hits+' Äpfel · '+goldS+' Gold',col:'#ff9b8a'}:{text:hits+' VON '+SR.n+' ÄPFELN',sub:'+'+goldS+' Gold · aus '+s.d+' m',col:hits?'#ffe7a0':'#b9f0a8'}):o==='apple'?{text:'APFEL GETROFFEN!',sub:'+'+res.gold+' Gold · aus '+s.d+' m',col:'#ffe7a0'}:o==='miss'?{text:'DANEBEN!',sub:s.missWhy,col:'#b9f0a8'}:{text:o==='head'?'KOPFTREFFER!':'KÖRPERTREFFER!',sub:s.r.name+(res.dead?' ist tot':' ist schwer verletzt')+(s.where?' · '+s.where:''),col:'#ff9b8a'};
+ const hitR=o==='head'||o==='body';const g=hitR?{text:SR&&SR.n>1?'SERIE ABGEBROCHEN':o==='head'?'KOPFTREFFER!':'KÖRPERTREFFER!',sub:s.r.name+(res.dead?' ist tot':' ist schwer verletzt')+(s.where&&!(SR&&SR.n>1)?' · '+s.where:'')+' · kein Preisgeld'+(SR&&SR.gold>0?' ('+SR.gold+' Gold verfallen)':''),col:'#ff9b8a'}:SR&&SR.n>1?(res.dead?{text:'SERIE ABGEBROCHEN',sub:s.r.name+' ist tot · '+hits+' Äpfel · '+goldS+' Gold',col:'#ff9b8a'}:{text:hits+' VON '+SR.n+' ÄPFELN',sub:'+'+goldS+' Gold · aus '+s.d+' m',col:hits?'#ffe7a0':'#b9f0a8'}):o==='apple'?{text:'APFEL GETROFFEN!',sub:'+'+res.gold+' Gold · aus '+s.d+' m',col:'#ffe7a0'}:o==='miss'?{text:'DANEBEN!',sub:s.missWhy,col:'#b9f0a8'}:{text:o==='head'?'KOPFTREFFER!':'KÖRPERTREFFER!',sub:s.r.name+(res.dead?' ist tot':' ist schwer verletzt')+(s.where?' · '+s.where:''),col:'#ff9b8a'};
  c.save();c.globalAlpha=ease(u/.35);c.fillStyle='rgba(8,5,3,.62)';c.fillRect(0,160,W,128);c.textAlign='center';c.textBaseline='middle';const pop=1+.3*(1-ease(u/.25));
  c.font='900 '+Math.round(63*pop)+'px "Courier Prime",monospace';c.fillStyle='rgba(0,0,0,.6)';c.fillText(g.text,643,213);c.fillStyle=g.col;c.fillText(g.text,640,210);
  c.font='700 27px "Courier Prime",monospace';c.fillStyle='#000';c.fillText(g.sub,642,266);c.fillStyle='#f3e2b0';c.fillText(g.sub,640,264);c.restore();}
@@ -7117,11 +7130,11 @@ function sceneFor(ser){const g=ser.g,r=ser.r,d=ser.d,res=shot(g,d,Math.floor(Mat
 // Ein Pfeil ist durch: Ergebnis buchen, Verletzung am Rekruten eintragen
 function commitArrow(s){if(s.committed)return;s.committed=1;const ser=s.ser,res=s.res,r=ser.r;ser.results.push({...res,where:s.where,ipart:s.ipart});
  if(res.out==='apple'){ser.hits++;ser.streak++;ser.gold+=res.gold;}else ser.streak=0;
- if(res.out==='head'||res.out==='body'){ser.hurt=true;const id=res.out==='head'?'head':s.ipart,b=r.body&&r.body[id];
+ if(res.out==='head'||res.out==='body'){ser.hurt=true;ser.hurtHit=true;ser.over=true;ser.lost=ser.gold;ser.gold=0;ser.hits=ser.hits;const id=res.out==='head'?'head':s.ipart,b=r.body&&r.body[id];
   if(b&&!res.dead){b.hp=Math.max(5,(b.hp??100)-(res.out==='head'?50:38));const txt=res.out==='head'?'Pfeilwunde'+(s.where?' ('+s.where+')':''):'Pfeilwunde';try{M.noteInjury(r,id,txt);}catch(e){b.injury=txt;}}}
  if(res.dead){r.dead=true;ser.over=true;}ser.i++;if(ser.i>=ser.n)ser.over=true;}
 function start(force){const g=A(),r=R();if(!g||!r||r.dead||sc)return;
- SER=newSeries(ARROWS);SER.forces=Array.isArray(force)?force:force?[force]:[];
+ SER=newSeries(ARROWS);SER.hp0=Object.fromEntries(Object.entries(r.body||{}).map(([k,b])=>[k,b.hp]));SER.forces=Array.isArray(force)?force:force?[force]:[];
  sc=sceneFor(SER);finished=false;speed=1;$('bSpeed').textContent='⏩ 1×';$('bNext').hidden=true;$('shoot').hidden=false;document.body.style.overflow='hidden';
  audio($('bSnd').dataset.on==='1');last=performance.now();raf=requestAnimationFrame(loop);}
 function loop(now){if(!sc)return;const dt=Math.min(.05,(now-last)/1000);last=now;sc.t+=dt*speed;
@@ -7134,16 +7147,17 @@ function finish(){if(!sc)return;const s=sc;commitArrow(s);const ser=SER,r=ser.r,
  // Training: jeder geschossene Pfeil zählt
  const merged={};let mult=0;for(const res of ser.results){const tr=applyTraining(g,res,ser.d,res.p);mult+=tr.mult;for(const x of tr.list){if(!merged[x.label])merged[x.label]={label:x.label,from:x.from,to:x.to};else merged[x.label].to=x.to;}}
  mult/=Math.max(1,ser.results.length);const list=Object.values(merged);
+ try{ser.sync=syncParent(ser);}catch(e){console.warn(e);ser.sync='';}
  tally.n+=ser.results.length;tally.apple+=ser.hits;tally.gold+=ser.gold;if(r.dead)tally.dead++;
  const n=ser.results.length,last=ser.results[n-1],hurtNow=injuryList(r);
  const head=ser.n===1?{apple:['Apfel getroffen','win'],miss:['Daneben','meh'],head:[last.dead?'Kopftreffer: Rekrut tot':'Kopftreffer: Rekrut verletzt','lose'],body:[last.dead?'Körpertreffer ('+last.part+'): Rekrut tot':'Körpertreffer ('+last.part+'): Rekrut verletzt','lose']}[last.out]
-  :[r.dead?'Serie abgebrochen: '+esc(r.name)+' ist tot':ser.hits+' von '+ser.n+' Äpfeln getroffen',r.dead?'lose':ser.hits?'win':'meh'];
- const chip=(res,i)=>{const t=res.out==='apple'?'🍎 +'+res.gold:res.out==='miss'?'daneben':res.dead?'✝ '+(res.out==='head'?'Kopf':res.part):'🩸 '+(res.out==='head'?'Kopf':res.part);return `<span class="${res.out==='apple'?'a':res.out==='miss'?'':'h'}">${i+1}: ${t}</span>`;};
+  :[r.dead?'Serie abgebrochen: '+esc(r.name)+' ist tot':ser.hurtHit?'Serie abgebrochen: '+esc(r.name)+' getroffen':ser.hits+' von '+ser.n+' Äpfeln getroffen',r.dead||ser.hurtHit?'lose':ser.hits?'win':'meh'];
+ const chip=(res,i)=>{const t=res.out==='apple'?(ser.hurtHit?'🍎 '+res.gold+' verfallen':'🍎 +'+res.gold):res.out==='miss'?'daneben':res.dead?'✝ '+(res.out==='head'?'Kopf':res.part):'🩸 '+(res.out==='head'?'Kopf':res.part);return `<span class="${res.out==='apple'?'a':res.out==='miss'?'':'h'}">${i+1}: ${t}</span>`;};
  const rest=[];for(let i=n;i<ser.n;i++)rest.push(`<span class="x">${i+1}: nicht geschossen</span>`);
  const el=$('res');el.hidden=false;
- el.innerHTML=`<h2>Ergebnis</h2><h1 class="${head[1]}">${head[0]}</h1><p>${esc(g.name)} schoss ${n===1?'einen Pfeil':n+' Pfeile'} aus <b>${ser.d} m</b> auf den Apfel von ${esc(r.name)}. Preisgeld pro Apfel ${ser.per} Gold, jeder Treffer in Folge +25 %.</p>
+ el.innerHTML=`<h2>Ergebnis</h2><h1 class="${head[1]}">${head[0]}</h1><p>${esc(g.name)} schoss ${n===1?'einen Pfeil':n+' Pfeile'} aus <b>${ser.d} m</b> auf den Apfel von ${esc(r.name)}. Preisgeld pro Apfel ${ser.per} Gold, jeder Treffer in Folge +25 %. Ein Treffer im Rekruten beendet die Serie, dann verfällt das ganze Preisgeld.</p>${ser.sync?'<p class="hint">'+ser.sync+'</p>':''}
  <div class="shots">${ser.results.map(chip).join('')}${rest.join('')}</div>
- <p><b>Gold:</b> +${ser.gold} · <b>Rekrut:</b> ${r.dead?'✝ tot (Wert '+M.price(r)+' Gold verloren)':hurtNow.length?'verletzt – '+esc(hurtNow.join(', ')):'unversehrt'}</p>
+ <p><b>Gold:</b> +${ser.gold}${ser.hurtHit?' – Rekrut getroffen, kein Preisgeld'+(ser.lost?' ('+ser.lost+' Gold verfallen)':''):''} · <b>Rekrut:</b> ${r.dead?'✝ tot (Wert '+M.price(r)+' Gold verloren)':hurtNow.length?'verletzt – '+esc(hurtNow.join(', ')):'unversehrt'}</p>
  <h3>Fortschritt <small class="hint">(Lernfaktor ×${nf(mult,2)}, je schwerer der Schuss, desto mehr)</small></h3>${list.map(x=>`<div class="gain"><span>${x.label}</span><b>${nf(x.from,2)} → ${nf(x.to,2)}</b><small>+${nf(x.to-x.from,3)}</small></div>`).join('')}
  <p class="hint">Schusswert jetzt ${nf(skill(g),2)}. Bilanz dieser Sitzung: ${tally.n} Pfeile · ${tally.apple} Äpfel · ${tally.gold} Gold · ${tally.dead} tote Rekruten.</p>
  <div class="row"><button class="primary" id="again">🏹 NOCHMAL SCHIESSEN</button><button id="reroll">↻ Neue Kämpfer auswürfeln</button></div>`;
