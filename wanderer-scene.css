@@ -29,3 +29,11 @@ body.ws-open{overflow:hidden}
 .ws-verdict.fight{color:#ff8a5c}.ws-verdict.calm{color:#9bd27a}
 .ws-bottom .btn.primary{min-width:220px}
 @media (max-width:520px){.ws-bubble{font-size:.86rem}.ws-box{padding:10px}}
+
+/* Besondere Antwort „Schmied“: Gold, Glühen, Hammer-Marke (auch im Ludus-Kasten, deshalb ohne .ws-answers-Bindung) */
+.btn.ws-smith{position:relative;border:2px solid #f5c66a;background:linear-gradient(180deg,#4a3516,#2c1f0d);color:#ffe9b0;box-shadow:0 0 12px rgba(245,198,106,.55),inset 0 0 8px rgba(245,198,106,.18);animation:wsSmithGlow 2.2s ease-in-out infinite}
+.btn.ws-smith.primary{background:linear-gradient(180deg,#7a5a1c,#4a3516)}
+.ws-smith-tag{display:block;font-size:.66rem;letter-spacing:.12em;color:#f5c66a;margin-bottom:2px;font-weight:bold}
+.ws-verdict.wrath{color:#f5c66a}
+@keyframes wsSmithGlow{0%,100%{box-shadow:0 0 8px rgba(245,198,106,.35),inset 0 0 6px rgba(245,198,106,.12)}50%{box-shadow:0 0 16px rgba(245,198,106,.8),inset 0 0 10px rgba(245,198,106,.28)}}
+@media (prefers-reduced-motion:reduce){.btn.ws-smith{animation:none}}

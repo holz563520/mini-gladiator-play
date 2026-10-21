@@ -172,7 +172,7 @@ function prep(c){U.sel=c;const units=team();
   <div class="an-vs"><div class="side"><p>IHR · KW ${c.ownKW}</p><div class="row">${units.map(u=>`<span data-k="${u.key}"></span>`).join('')}</div></div><b>VS</b><div class="side red"><p>GEGNER · KW ${c.enemyKW}</p><div class="row">${c.enemy.map(u=>`<span data-e="${u.key}"></span>`).join('')}</div></div></div>
   <div class="an-gold2"><span><small>Siegprämie</small><b>${c.gold.win} Gold</b></span><span><small>Antrittsgeld bei Niederlage</small><b>bis ${c.gold.lossMax} Gold</b></span></div>
    <button class="an-spybtn" data-a="spy"><span class="eye">👁</span><span><b>SPIONAGE</b><small id="anSpyLine">Antippen startet die Probekämpfe</small></span><i class="bar"><i id="anSpyBar"></i></i></button>
-  <div class="an-actions"><button data-a="present">Vorstellung ansehen</button><button class="primary" data-a="fight">⚔ KAMPF BEGINNEN</button></div></div></div>`;
+  <div class="an-actions"><button data-a="equipbest">⚙ AUTOMATISCH AUSRÜSTEN</button><button data-a="present">Vorstellung ansehen</button><button class="primary" data-a="fight">⚔ KAMPF BEGINNEN</button></div></div></div>`;
  layer.querySelectorAll('[data-k]').forEach(el=>{const u=units.find(x=>x.key===el.dataset.k);el.appendChild(unitThumb(u,48,56));});
  layer.querySelectorAll('[data-e]').forEach(el=>{const u=c.enemy.find(x=>x.key===el.dataset.e);el.appendChild(unitThumb(u,48,56));});
  spyLine();}
@@ -208,7 +208,7 @@ function spy(){const c=U.sel;if(!c)return;startSpy(c);
    <p class="an-hint">Antippen wechselt die Reihe. Danach rechnen die Spione sofort 100 neue Kämpfe.</p></section>
   <div class="an-fighters"></div>
   <details class="an-enemyodds"><summary>Gegner im Probekampf</summary><div class="list"></div></details>
-  <div class="an-actions"><button data-a="spyclose">Zurück</button><button class="primary" data-a="fight">⚔ KAMPF BEGINNEN</button></div></div></div>`);
+  <div class="an-actions"><button data-a="spyclose">Zurück</button><button data-a="equipbest">⚙ AUTOMATISCH AUSRÜSTEN</button><button class="primary" data-a="fight">⚔ KAMPF BEGINNEN</button></div></div></div>`);
  spyBuild();}
 function spyBuild(){const box=layer.querySelector('.an-spy');if(!box)return;const units=team(),r=SPY.res;
  for(const row of ['front','back']){const el=box.querySelector(`.slots[data-row="${row}"]`);el.innerHTML='';for(const u of units.filter(u=>u.row===row)){const b=document.createElement('button');b.className='tok';b.dataset.a='row:'+u.key;b.title=name(u);b.appendChild(unitThumb(u,40,46));const s=document.createElement('span');s.textContent=name(u).split(' ')[0];b.appendChild(s);el.appendChild(b);}}
@@ -287,6 +287,7 @@ root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)r
   case 'pskip':U.pres?.skip();break;
   case 'close':stopSpy();layer.innerHTML='';break;
   case 'present':present(U.sel);break;
+  case 'equipbest':{const gs=team().filter(u=>u.kind==='human').map(u=>u.g);if(!gs.length){M.ui?.notify?.('Keine Gladiatoren in der Gruppe, die Ausrüstung brauchen.');break;}M.ui?.notify?.(M.army.autoEquip(gs,'soll'));if(layer.querySelector('.an-spy')){spyBuild?.();}else prep(U.sel);break;}
   case 'spy':spy();break;
    case 'spyclose':stopSpy();layer.querySelector('.an-spy')?.remove();prep(U.sel);break;
   case 'rows':U.rowsAuto=v==='auto';if(!U.rowsAuto){for(const u of team())U.rows[u.key]=u.row;}rowsChanged();break;

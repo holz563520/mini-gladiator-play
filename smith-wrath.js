@@ -1,12 +1,12 @@
 'use strict';
 // DER ZORN DES SCHMIEDS: seltenes Herumtreiber-Ereignis (Gruppen bis fünf, längere Jagd mit Stolpern, Kriechen, Betteln). Bei etwa jeder fünften neuen Gruppe verlangen sie Gratiswaffen;
-// eine besondere Antwort schickt sie zum Schmied. 75 %: Sie gehen hin, der Schmied (Bier in der Hand) erledigt alle.
-// 25 %: Einer erkennt den Namen, die Gruppe flieht. Reine Inszenierung mit vorhandenen Figuren, Treffern, Blut und Körperteilen.
+// eine besondere Antwort schickt sie zum Schmied. Immer: Sie gehen hin, der Schmied (Bier in der Hand) erledigt alle (früher 75 %, mit 25 % Flucht; Flucht-Drehbuch bleibt im Code).
+// Reine Inszenierung mit vorhandenen Figuren, Treffern, Blut und Körperteilen.
 // Keine Werte, keine Beute, keine Erfahrung. Das Ergebnis wird beim Start sofort verbucht, Laden spielt nichts erneut ab.
 (()=>{
 const M=window.MG,S=M.s,T=M.wandererTalk,WD=M.wanderers,$=id=>typeof document==='undefined'?null:document.getElementById(id);
 if(!T||!WD)return;
-const CHANCE=.2,ACCEPT=.75,W=()=>M.workshop?.state;
+const CHANCE=.2,ACCEPT=1,W=()=>M.workshop?.state;
 function roll(id,salt){let h=2166136261;for(const c of id+'|'+salt)h=Math.imul(h^c.charCodeAt(0),16777619);h^=h>>>16;h=Math.imul(h,0x7feb352d);h^=h>>>15;h=Math.imul(h,0x846ca68b);h^=h>>>16;return (h>>>0)/4294967296;}
 const choose=(list,id,salt)=>list[Math.floor(roll(id,salt)*list.length)];
 const smithName=()=>W()?.master?.name||'Der Schmied';
