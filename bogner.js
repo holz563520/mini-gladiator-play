@@ -222,6 +222,7 @@ function giveBow(g){const st=ST();if(st.given===g.id)return;const cur=M.gear(g,'
 const hiPlace={buy:'market',role:'gladiators',arena:'arena'};
 function step(dt){const st=ST(),s=S();if(!s||!s.lanista)return;
  if(document.querySelector('.bow-shop')){hideBar();return;}
+ const mo=document.getElementById('modal');if(mo&&mo.hidden===false){hideBar();if(tipBox)tipBox.style.display='none';return;}else if(tipBox&&tipBox.style.display==='none')tipBox.style.display='';
  if(['buy','role','arena','apple'].includes(st.stage)&&!film&&!tipping()&&!s.battle){
   if(st.stage==='buy'){const fresh=s.roster.find(g=>!g.dead&&!snap?.has(g.id)&&!g.smithDuty);if(fresh){st.recruit=fresh.id;st.stage='role';hideBar();const {L}=talentLines(fresh);L.forEach((x,i)=>tip(x,i===0?'grin':'confident'));try{M.persist();}catch{}return;}
    showBar(`<p><b>${esc(SHORT)}</b> hat dir ${LOAN} Gold geliehen.</p><p class="hint">Kauf einen Rekruten auf dem Sklavenmarkt.</p>`);}

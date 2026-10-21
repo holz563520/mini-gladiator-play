@@ -1310,7 +1310,7 @@ body.ws-open{overflow:hidden}
 #bowTip b{font-size:13px;letter-spacing:2px;color:#8f2f2a}#bowTip p{margin:6px 0 8px;font-size:15px;line-height:1.4;min-height:4.2em}
 #bowTip button{float:right;font:700 13px 'Courier Prime',monospace;background:#8f2f2a;border:2px solid #e0ad4c;color:#fff3d6;padding:8px 12px;cursor:pointer}
 @media (max-width:520px){#bowTip .bwt-in{grid-template-columns:96px 1fr}#bowTip canvas{width:96px}#bowTip p{font-size:14px}}
-.bow-bar{top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom));z-index:395!important}
+.bow-bar{pointer-events:none;top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom));z-index:395!important}
 .bow-shop .bow-row{display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid #394b4d}
 .bow-shop canvas{width:120px;height:60px;image-rendering:pixelated;border:1px solid #394b4d}.bow-shop small{display:block;color:#97aaa8}
 .an-kinds .bow-apple .an-mlabel b{color:#ffd25a}
@@ -16895,6 +16895,7 @@ function giveBow(g){const st=ST();if(st.given===g.id)return;const cur=M.gear(g,'
 const hiPlace={buy:'market',role:'gladiators',arena:'arena'};
 function step(dt){const st=ST(),s=S();if(!s||!s.lanista)return;
  if(document.querySelector('.bow-shop')){hideBar();return;}
+ const mo=document.getElementById('modal');if(mo&&mo.hidden===false){hideBar();if(tipBox)tipBox.style.display='none';return;}else if(tipBox&&tipBox.style.display==='none')tipBox.style.display='';
  if(['buy','role','arena','apple'].includes(st.stage)&&!film&&!tipping()&&!s.battle){
   if(st.stage==='buy'){const fresh=s.roster.find(g=>!g.dead&&!snap?.has(g.id)&&!g.smithDuty);if(fresh){st.recruit=fresh.id;st.stage='role';hideBar();const {L}=talentLines(fresh);L.forEach((x,i)=>tip(x,i===0?'grin':'confident'));try{M.persist();}catch{}return;}
    showBar(`<p><b>${esc(SHORT)}</b> hat dir ${LOAN} Gold geliehen.</p><p class="hint">Kauf einen Rekruten auf dem Sklavenmarkt.</p>`);}
