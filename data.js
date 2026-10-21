@@ -63,7 +63,7 @@ const gearLooks=[
  {metal:'#b9c0cb',edge:'#edf0db',trim:'#d9aa54',cloth:'#704754'},
  {metal:'#dec591',edge:'#fff0bc',trim:'#855a39',cloth:'#446c78'},
  {metal:'#e9d693',edge:'#fff4d3',trim:'#c06d45',cloth:'#703d68'}];
-function itemTitle(i){if(!i)return 'Keine';const q=clamp(i.q||0,0,6),d=definition(i);if(i.kind==='weapon')return weaponTitles[i.def]?.[q]||d?.name||'?';const set=['Flicken','Rekruten','Legionärs','Veteranen','Prätorianer','Triumph','Unsterblichen'][q];return (i.kind==='armor'?(i.material==='leather'?'Leder · ':i.material==='medium'?'Verstärkt · ':'Metall · '):'')+set+'-'+(d?.name||'?');}
+function itemTitle(i){if(!i)return 'Keine';if(i.nickname)return i.nickname+' – '+itemTitle({...i,nickname:''});/* Beinamen erbeuteter Einzelstücke (Außenwelt) */const q=clamp(i.q||0,0,6),d=definition(i);if(i.kind==='weapon')return weaponTitles[i.def]?.[q]||d?.name||'?';const set=['Flicken','Rekruten','Legionärs','Veteranen','Prätorianer','Triumph','Unsterblichen'][q];return (i.kind==='armor'?(i.material==='leather'?'Leder · ':i.material==='medium'?'Verstärkt · ':'Metall · '):'')+set+'-'+(d?.name||'?');}
 // Leder wird mit jeder Qualitätsstufe dunkler, edler und stärker beschlagen; verstärkte Rüstung zeigt Metallplatten auf Leder.
 const leatherLooks=[
  {metal:'#927653',edge:'#b39770',trim:'#5a4630',dark:'#5a4630',stud:'#77664c',cloth:'#695c46'},
