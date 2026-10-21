@@ -633,7 +633,7 @@ function story(replay){closeAll();const {R,real}=cast(replay);
  for(const g of R){const v=M.medic.state().vis[g.id]??={};v.down=false;v.kneel=false;v.net=false;}
  const S1=R[0],S5=R[4],k1=lowKey(S1),k5=lowKey(S5),say=(who,text,o)=>({who,say:text,...o}),cap=text=>({who:'cap',say:text});
  const sm=smithActor(300,620),pos=[[132,621],[154,623],[176,621],[126,614],[198,622]],rec=R.map((g,i)=>recActor(g,i,...pos[i]));rec[3].lying=true;
- let lan=null;try{if(S.lanista)lan=M.lesson?.kit?.lanActor?.(372,630)||null;}catch{lan=null;}if(lan){lan.hidden=true;lan.a=Math.PI;}const G=()=>!!lan,Y=f=>!!lan&&f.branch==='yes',N=f=>!!lan&&f.branch!=='yes';
+ let lan=null;try{if(S.lanista)lan=M.lesson?.kit?.lanActor?.(372,630)||null;}catch{lan=null;}if(lan){lan.hidden=true;lan.a=Math.PI;}const G=()=>!!lan,Y=f=>!!lan&&f.branch==='yes',N=f=>!!lan&&f.branch!=='yes',NY=f=>f.branch!=='yes';
  const res={};
  const over=()=>{endStory(real,R);endCard(res,S1,S5,real);};
  const finish=()=>{if(!res.r1)res.r1=treat(S1,k1,'ok',true);if(!res.r5)res.r5=treat(S5,k5,'fail',false,'skull');stopFilm();over();};
@@ -667,21 +667,21 @@ function story(replay){closeAll();const {R,real}=cast(replay);
   {only:G,face:faceDoor(b=>({gap:1,hand:ease(b/1.1)})),dur:4.8,...cap('Ein Finger. Der Nagel rot lackiert. Daran kreist etwas sehr Kleines aus Spitze.')},
   {only:G,...cap('Die Zeit bleibt stehen.'),do:f=>{f.face=frozen();f.branch=null;showAsk(f);},until:f=>!!f.branch},
   {only:N,face:faceDoor(b=>({gap:1-ease(b/1.4),hand:1-ease(b/.6)})),dur:2.6,...cap('Verstanden. Die Tür schließt sich schamhaft. Die Spitze bleibt ein Geheimnis.')},
-  {only:Y,face:faceDoc({mood:'grin',hearts:1,look:1,yaw:.4}),dur:3.8,...cap('Zu dem Finger gehört ein Arm. Zu dem Arm gehört … Doktor Hippolytus Hirnhammer.'),do:()=>M.sound?.('rise')},
-  {only:Y,face:null,dur:2.2,cam:{x:250,y:590,vw:190,rate:5},...cap('Ein Schwung aus dem Handgelenk.'),do:f=>{const d=f.props.doc;Object.assign(d,{hidden:false,x:242,y:604,dir:1,pose:'flail',to:null});f.doorTo=.5;f.doorRate=6;f.pfly={x:244,y:570};M.sound?.('block');},
-   each:(f,dt,t)=>{if(!f.pfly)return;const k=cl(t/1),x0=244,y0=570,x1=f.lan.x,y1=f.lan.y-59;f.pfly.x=lerp(x0,x1,k);f.pfly.y=lerp(y0,y1,k)-Math.sin(k*Math.PI)*34;if(k>=1){f.pfly=null;f.lan.panty=true;f.lan.a=Math.PI;float(f,f.lan.x,f.lan.y-72,'*FLATSCH*','#f27aa8');M.sound?.('heavy');}}},
+  {only:Y,face:null,dur:2.4,cam:{x:250,y:590,vw:190,rate:5},...cap('Aus dem Türspalt fliegt etwas Rotes. Ein Schwung aus dem Handgelenk.'),do:f=>{f.doorTo=.35;f.doorRate=6;f.pfly={x:244,y:570};M.sound?.('block');},
+   each:(f,dt,t)=>{if(!f.pfly)return;const k=cl(t/1.1),x0=244,y0=570,x1=f.lan.x,y1=f.lan.y-60;f.pfly.x=lerp(x0,x1,k);f.pfly.y=lerp(y0,y1,k)-Math.sin(k*Math.PI)*34;if(k>=1){f.pfly=null;f.lan.panty=true;f.lan.a=Math.PI;float(f,f.lan.x,f.lan.y-72,'*FLATSCH*','#f27aa8');M.sound?.('heavy');}}},
   {only:Y,face:faceLan({sniff:1,hearts:2,mood:'calm'}),dur:3.8,...say('l','*schnüff* … Lavendel. Karbol. Und … Sehnsucht.')},
-  {only:Y,face:faceDoor(b=>({gap:1,leg:ease(b/1.2)})),dur:4.6,...say('d','Ich wusste, dass dir gefällt, was du siehst.')},
-  {only:Y,face:faceDoor(()=>({gap:1,leg:1})),hold:true,card:cookieCard,...cap('Die Beine gehören dem Doktor.')},
-  {only:Y,face:null,card:null,cam:{x:220,y:584,vw:250,rate:4},...say('s','Na bitte. Wir haben es immer gewusst: Der Lanista ist ein Perverser.',{do:f=>{poseA(f.smith,{a:Math.PI,traderPose:'point',gest:0});f.props.doc.hidden=true;f.doorTo=0;}})},
+  {only:Y,face:null,dur:2.6,cam:{x:236,y:584,vw:220,rate:4},...cap('Die Tür geht auf. Rote Absätze. Ein blutiger Kittel. Ein Schnauzer.'),do:f=>{const d=f.props.doc;Object.assign(d,{hidden:false,x:242,y:603,dir:1,pose:'stand',walk:true,to:[240,618,22]});f.doorTo=1;f.doorRate=3;M.sound?.('rise');},until:f=>!f.props.doc.to},
+  {only:Y,face:faceDoc({mood:'grin',hearts:1,look:1,yaw:.4}),...say('d','Es freut mich, dass dir meine Vorstellung gefällt.',{do:f=>{Object.assign(f.props.doc,{walk:false,dir:1});f.doorTo=0;f.doorRate=3;}})},
+  {only:Y,face:null,hold:true,card:cookieCard,...cap('Die Beine gehören dem Doktor.')},
+  {only:Y,face:null,card:null,cam:{x:220,y:584,vw:250,rate:4},...say('s','Na bitte. Wir haben es immer gewusst: Der Lanista ist ein Perverser.',{do:f=>{poseA(f.smith,{a:Math.PI,traderPose:'point',gest:0});}})},
   {only:Y,...say('r3','Deshalb hat er beim Kauf so lange meine Waden angeguckt!',{do:f=>flip(f,true)})},
   {only:Y,...say('r4','Mir hat er die Zähne geprüft. Mit der Zunge.',{do:f=>flip(f,true)})},
   {only:Y,...say('r5','Und ich dachte, er hätte seinen Arm im Krieg verloren.')},
   {only:Y,face:faceLan({press:1,roll:1,hearts:3,steam:1,sweat:1,mood:'grin',shake:.8,word:'MMMH!',wc:'#f27aa8'}),dur:4.2,...cap('Der Lanista. In Ekstase.'),do:()=>M.sound?.('crowd')},
   {only:Y,face:null,...say('s','Dass der Alte auf alte Opis steht, hätte man ahnen können. Er kauft ja auch nur Veteranen.',{do:f=>{f.smith.forgePose='sip';}})},
-  {only:Y,...say('s','Gut. Weiter im Text.',{do:f=>{poseA(f.smith,{a:Math.PI});Object.assign(f.props.doc,{x:242,y:603,dir:-1,hidden:true,pose:'stand'});}})},
-  {dur:2.0,...cap('Aus dem Krankenhaus dringt ein Schrei. Dann ein Klirren. Dann fröhliches Pfeifen.'),do:f=>{f.shake=2;M.sound?.('heavy');float(f,244,540,'*KLIRR*');float(f,214,530,'AAAH!','#f29b83');setTimeout(()=>film&&float(film,268,534,'♪ ♫','#f4d37a'),900);}},
-  {dur:1.6,...cap('Die Tür fliegt auf.'),do:f=>{const d=f.props.doc;f.doorTo=1;f.doorRate=16;f.shake=1.2;d.hidden=false;d.pose='flail';d.to=[240,618,40];M.sound?.('block');},until:f=>!f.props.doc.to},
+  {only:Y,face:faceDoc({mood:'confident',look:-.5}),...say('d','Na gut. Jetzt wird es aber auch Zeit, dass ich mich mal vorstelle.',{do:f=>{poseA(f.smith,{a:Math.PI});Object.assign(f.props.doc,{dir:-1,pose:'stand'});}})},
+  {only:NY,dur:2.0,...cap('Aus dem Krankenhaus dringt ein Schrei. Dann ein Klirren. Dann fröhliches Pfeifen.'),do:f=>{f.shake=2;M.sound?.('heavy');float(f,244,540,'*KLIRR*');float(f,214,530,'AAAH!','#f29b83');setTimeout(()=>film&&float(film,268,534,'♪ ♫','#f4d37a'),900);}},
+  {only:NY,dur:1.6,...cap('Die Tür fliegt auf.'),do:f=>{const d=f.props.doc;f.doorTo=1;f.doorRate=16;f.shake=1.2;d.hidden=false;d.pose='flail';d.to=[240,618,40];M.sound?.('block');},until:f=>!f.props.doc.to},
   {face:faceDoc({mood:'roar',lines:1,shake:1.5}),...say('d','PATIENTEN! FÜNF STÜCK! UND ALLE NOCH WARM!',{do:f=>{f.props.doc.pose='stand';f.doorTo=0;f.doorRate=5;}})},
   {face:null,...say('s','Und das ist der Grund, warum wir überhaupt Patienten haben: Doktor Hippolytus Hirnhammer. Studiert in Alexandria. Rausgeworfen in Alexandria.',{do:f=>poseA(f.smith,{a:Math.PI,traderPose:'point',gest:0})})},
   say('s','Und in Athen. Und in Karthago.',{do:f=>{poseA(f.smith,{a:Math.PI});f.smith.forgePose='sip';}}),
