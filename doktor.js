@@ -247,7 +247,7 @@ function drawDocSmall(q,o){const d=o.dir||1,t=o.t||0,walk=!!o.walk,ph=o.phase||0
   // Beine: Gehzyklus mit Vor- und Rückschwung und angehobenem Fuß (Schrittlänge passt zur Wegstrecke, kein Rutschen)
   const legs=[0,1].map(k=>{const f=walk?ph*.98+k*Math.PI:0,fx=walk?Math.round(Math.sin(f)*6):(k?4:-4),lift=walk?Math.round(Math.max(0,Math.cos(f))*4):0;return {k,fx,lift,hx:0};}).sort((p,q)=>p.fx-q.fx);
   for(const L of legs){const back=walk&&L===legs[0],top=-14,bot=-4-L.lift;for(let i=0;i<=bot-top;i++){const u=i/Math.max(1,bot-top),px=Math.round(L.hx+(L.fx-L.hx)*u+(L.lift?Math.sin(u*Math.PI)*-2:0));P(px-2,top+i,4,1,back?DC.shade:DC.skin);P(px+1,top+i,1,1,DC.shade);}
-   P(L.fx-3,bot,7,4,back?'#33241a':'#4a3424');P(L.fx-3,bot,7,1,'#6a5036');P(L.fx+3,bot+2,1,2,'#2a1c12');}
+   /* rote Pumps mit Bleistiftabsatz */const rd=back?'#8a1620':'#c0202c',dk=back?'#3a060c':'#6a0c16';P(L.fx-2,bot,4,2,rd);P(L.fx,bot,2,1,back?DC.shade:DC.skin);P(L.fx+1,bot+1,4,2,rd);P(L.fx-2,bot,1,1,back?rd:'#ff5a64');P(L.fx-3,bot+1,1,3,dk);P(L.fx+1,bot+3,4,1,dk);P(L.fx+4,bot+1,1,1,back?rd:'#ff5a64');}
   // Kittel, vorn aufgerissen, mit Gürtelriemen und Blutspritzern
   for(let r=0;r<31;r++){const yy=-45+r+by,half=7+Math.round(r*.11),sw=walk?Math.round(s*(r>20?1.6:0)):0;
    if(r>=27&&hash(r*31+3)>.55)continue;
@@ -519,8 +519,8 @@ function doorShot(t,o={}){const q=doorCv.getContext('2d');q.setTransform(1,0,0,1
    const hb={x:A.x+5,y:A.y+7};q.fillStyle=S0;for(let i=0;i<24;i++){const w=i<3?3:i<20?2:1;q.fillRect(Math.round(hb.x+i*.12),Math.round(hb.y+i),w,1);}q.fillStyle=S2;q.fillRect(Math.round(hb.x),Math.round(hb.y),1,8);}
   q.restore();}
  // Hand: schlank, langer Zeigefinger nach oben, die anderen Finger weich angewinkelt, kleiner Finger elegant abgespreizt; rote Nägel
- if(o.hand>0){const k=ease(o.hand),HS=2,W={x:gx+20-78*k,y:150},P=(dx,dy)=>({x:W.x+dx*HS,y:W.y+dy*HS}),elb={x:gx+44,y:156},kn=P(-9,-6),tip=P(-15,-28);
-  const fing=[{a:P(-9,-8),m:P(-12,-18),b:tip,w:2.3},{a:P(-7,-6),m:P(-13,-11),b:P(-15,-6),w:2.2},{a:P(-5,-5),m:P(-10,-8),b:P(-12,-3),w:2.1},{a:P(-3,-4),m:P(-6,-10),b:P(-6,-15),w:1.8}];
+ if(o.hand>0){const k=ease(o.hand),HS=2,W={x:gx+20-78*k,y:150},P=(dx,dy)=>({x:W.x+dx*HS,y:W.y+dy*HS}),elb={x:gx+44,y:156},kn=P(-9,-6),tip=P(-13,-21);
+  const fing=[{a:P(-9,-8),m:P(-11,-14),b:tip,w:2.4},{a:P(-7,-6),m:P(-13,-11),b:P(-15,-6),w:2.2},{a:P(-5,-5),m:P(-10,-8),b:P(-12,-3),w:2.1},{a:P(-3,-4),m:P(-5,-9),b:P(-5,-12),w:1.8}];
   const segs=[{a:elb,b:W,w0:16,w1:11},{a:W,b:kn,w0:11,w1:12}];for(const f of fing){segs.push({a:f.a,b:f.m,w0:f.w*HS,w1:f.w*HS*.92},{a:f.m,b:f.b,w0:f.w*HS*.92,w1:f.w*HS*.72});}
   segs.push({a:P(-3,1),b:P(-9,-1),w0:2.8*HS,w1:2.2*HS},{a:P(-9,-1),b:P(-13,-3),w0:2.2*HS,w1:1.8*HS});
   limbs(q,segs,SKIN);
@@ -559,7 +559,7 @@ function frozen(){const c=$('dokFilm'),s=mk(c?.width||660,c?.height||420);if(c)s
  return (g,w,h,f,t)=>{g.setTransform(1,0,0,1,0,0);try{g.filter='grayscale(.75) sepia(.3)';}catch{}g.drawImage(s,0,0,w,h);try{g.filter='none';}catch{}g.fillStyle='rgba(18,12,4,.28)';g.fillRect(0,0,w,h);
   const p=.5+.5*Math.sin(t*3);g.fillStyle='rgba(244,211,122,'+(.55+.4*p).toFixed(2)+')';const u=Math.max(4,Math.round(w/90));g.fillRect(u*2,u*2,u*1.4,u*5);g.fillRect(u*4.2,u*2,u*1.4,u*5);};}
 function showAsk(f){const slot=f.view?.querySelector('.scene-bubble-slot');if(!slot)return;slot.querySelector('.dok-ask')?.remove();const d=document.createElement('div');d.className='dok-ask';
- d.innerHTML='<button type="button" class="dok-ask-yes" data-dokask="yes">GEFÄLLT DIR, WAS DU SIEHST?</button><button type="button" class="dok-ask-no" data-dokask="no">Nein, ich möchte explizite Inhalte vermeiden.</button>';slot.appendChild(d);}
+ d.innerHTML='<button type="button" class="dok-ask-yes" data-dokask="yes">MIR GEFÄLLT, WAS ICH SEHE</button><button type="button" class="dok-ask-no" data-dokask="no">Nein, ich möchte keine expliziten Inhalte.</button>';slot.appendChild(d);}
 const cookieCard=()=>card('PROTOKOLL DES MEDICUS','<p>Die sexuellen Vorlieben des Spielers wurden in den weiteren Spielverlauf integriert.</p>');
 // =====================================================================================================
 // 5 · DIE STORY-SZENE IM HOF (Filmbühne nach dem Muster von medic.js)
