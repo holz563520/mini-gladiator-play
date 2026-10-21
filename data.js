@@ -89,8 +89,8 @@ function drawDamage(i){const D=i&&DRAW[i.def];return D?D.dmg[0]+(D.dmg[1]-D.dmg[
 function drawComfort(g){const st=clamp(g?.stats?.strength??30,0,100);return Math.round(30+70*Math.pow(Math.min(1,st/60),.85))}
 // Genauigkeit: Streuung ×1 bis etwa ×2,2, wenn der Bogen zu schwer ist (Armbrust: immer ×1)
 function drawAim(g,i){if(!i||i.def!=='bow')return 1;const over=Math.max(0,drawWeight(i)-drawComfort(g));return 1+1.2*over/70}
-// Spann-/Nachladezeit: ×1 bis ×1,5 – mehr Pfund dauert länger, Stärke hilft
-function drawReload(g,i){const D=i&&DRAW[i.def];if(!D)return 1;const st=clamp(g?.stats?.strength??30,0,100);return 1+.5*drawK(i)*(1-.7*Math.min(1,st/70))}
+// Spann-/Nachladezeit: ×1 bis ×1,5 – mehr Pfund dauert länger, Stärke hilft; ab Stärke 70 (gängiger Höchstwert) gar kein Nachteil mehr
+function drawReload(g,i){const D=i&&DRAW[i.def];if(!D)return 1;const st=clamp(g?.stats?.strength??30,0,100);return 1+.5*drawK(i)*(1-Math.min(1,st/70))}
 // Meisterschaft beim Bogen: ein geübter, kräftiger Bogenschütze schießt am Ende schneller als jede Armbrust nachladen kann
 function bowMaster(g,i){if(!i||i.def!=='bow')return 1;const m=clamp((g?.mastery?.bow||0)/100,0,1),fit=Math.min(1,drawComfort(g)/Math.max(1,drawWeight(i)));return 1+.35*Math.pow(m,1.5)*fit}
 
