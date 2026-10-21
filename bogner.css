@@ -25,3 +25,4 @@ body:has(.bow-bar){padding-bottom:150px}@media (max-width:600px){.bow-bar p{font
 #bowApple button{font:700 12px 'Courier Prime',monospace;color:#f3e2b0;background:#8f2f2a;border:2px solid #e0ad4c;padding:7px 10px;cursor:pointer}
 #bowApple iframe{flex:1;border:0;width:100%;background:#140f0b}
 .bow-locked{opacity:.45;filter:grayscale(.8);cursor:not-allowed!important;position:relative}.bow-lock{display:block;font-size:10px;color:#e0b565;letter-spacing:1px;margin-top:2px}
+.bow-shop .bow-lb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:#c9b48a}.bow-shop .bow-lb select{font:700 12px 'Courier Prime',monospace;background:#1d282b;color:#f3e2b0;border:1px solid #6b5230;padding:3px 4px}.bow-shop-tip{border-left:3px solid #e0b565;padding-left:8px}

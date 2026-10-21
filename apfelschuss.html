@@ -150,7 +150,9 @@ const CFG={
 const ATTR=[['precision','Präzision'],['bow','Bogenfertigkeit'],['dexterity','Geschick'],['will','Willenskraft'],['balance','Balance'],['strength','Stärke']];
 const wKey=g=>((g&&(g.enemyGear?.weapon||null))?.def)==='crossbow'?'crossbow':'bow';
 const val=(g,k)=>k==='bow'?(g.mastery?.[wKey(g)]??g.mastery?.bow??0):(g.stats?.[k]??0);
-const skill=g=>ATTR.reduce((a,[k])=>a+CFG.w[k]*val(g,k),0);
+// Schusswert: Werte gewichtet; ein zu schwerer Bogen (Zugstärke über der Kraft des Schützen) drückt ihn – die Armbrust nicht
+const aimF=g=>{try{return M.drawAim?M.drawAim(g,g?.enemyGear?.weapon):1;}catch(e){return 1;}};
+const skill=g=>ATTR.reduce((a,[k])=>a+CFG.w[k]*val(g,k),0)/aimF(g);
 function spread(S,d){const k=1-clamp(S,0,100)/100,th=CFG.th0+CFG.th1*Math.pow(k,CFG.the),sh=CFG.sh0+CFG.sh1*Math.pow(k,CFG.she);return{th,sh,sigma:Math.hypot(sh,th*d/1000)};}
 function classify(x,y){
  if(Math.hypot(x,y)<=CFG.apple)return 'apple';
@@ -168,7 +170,7 @@ function probs(S,d){const s=spread(S,d).sigma;let a=0,h=0,b=0,dd=0;for(const [z1
 function shot(g,d,seed){const S=skill(g),sp=spread(S,d),r=rng(seed),x=gauss(r)*sp.sigma,y=gauss(r)*sp.sigma,out=classify(x,y);
  const part=out==='body'?partOf(x,y):null,dead=out==='head'?r()<CFG.deathHead:out==='body'?r()<CFG.deathPart[part]:false;return{x,y,out,part,dead,S,sigma:sp.sigma,dist:Math.hypot(x,y)};}
 // Pfeilflug: Startgeschwindigkeit aus Stärke und Schusswert, Luftwiderstand verlangsamt
-function flight(g,d){const S=skill(g),v0=52+.26*(g.stats.strength||0)+.10*S,L=900,T=(L/v0)*(Math.exp(d/L)-1),h=9.81*T*T/8;
+function flight(g,d){const S=skill(g),wi=g?.enemyGear?.weapon,lb=M.drawWeight?M.drawWeight(wi):0,v0=52+.26*(g.stats.strength||0)+.10*S+(wi?.def==='crossbow'?(lb-100)*.03:wi?.def==='bow'?(lb-30)*.12:0),L=900,T=(L/v0)*(Math.exp(d/L)-1),h=9.81*T*T/8;
  return{v0,L,T,h,xAt:t=>L*Math.log(1+v0*t/L),vAt:x=>v0*Math.exp(-x/L)};}
 // Gold: wächst mit der Entfernung und der Qualität des Rekruten; wer ein riskantes Ziel wählt, bekommt einen Aufschlag
 const qualityFactor=r=>1+.5*Math.log10(Math.max(100,M.price(r))/100);
@@ -227,7 +229,7 @@ const A=()=>archers.find(g=>g.id===selA),R=()=>recruits.find(g=>g.id===selR);
 
 function barsHtml(g){return ATTR.map(([k,l0])=>{const l=k==='bow'&&wKey(g)==='crossbow'?'Armbrustfertigkeit':l0;const v=val(g,k);return `<span>${l}</span><span class="b${k==='precision'||k==='bow'?' hi':''}"><i style="width:${clamp(v,0,100)}%"></i></span><span class="n">${nf(v,0)}</span>`;}).join('');}
 function render(){
- $('archers').innerHTML=archers.map(g=>`<button class="pick${g.id===selA?' on':''}" data-a="${g.id}"><canvas id="ta${g.id}"></canvas><div><b>${esc(g.name)}</b><small>Schusswert <b style="display:inline;color:var(--gold)">${nf(skill(g),1)}</b> · ${g.height} cm · ${isXB(g)?'Armbrust':'Bogen'}</small><div class="bars">${barsHtml(g)}</div></div></button>`).join('');
+ $('archers').innerHTML=archers.map(g=>`<button class="pick${g.id===selA?' on':''}" data-a="${g.id}"><canvas id="ta${g.id}"></canvas><div><b>${esc(g.name)}</b><small>Schusswert <b style="display:inline;color:var(--gold)">${nf(skill(g),1)}</b> · ${g.height} cm · ${isXB(g)?'Armbrust':'Bogen'}${M.drawWeight?' '+M.drawWeight(g.enemyGear?.weapon)+' Pfd.':''}${aimF(g)>1.01?' <span style="color:var(--red)">· zu schwer für seine Kraft (Zielen −'+Math.round((1-1/aimF(g))*100)+' %)</span>':''}</small><div class="bars">${barsHtml(g)}</div></div></button>`).join('');
  $('recruits').innerHTML=recruits.map(g=>`<button class="pick${g.id===selR?' on':''}${g.dead?' dead':''}" data-r="${g.id}"><canvas id="tr${g.id}"></canvas><div><b>${esc(g.name)}</b><small>${g.dead?'✝ tot':'Qualität: <b style="display:inline;color:var(--gold)">'+M.qualities[g.quality]+'</b>'}</small><small>Wert ${M.price(g)} Gold</small>${injuryList(g).length?'<small style="color:var(--red)">verletzt: '+esc(injuryList(g).join(', '))+'</small>':''}</div></button>`).join('');
  for(const g of [...archers,...recruits]){const isA=archers.includes(g),c=$((isA?'ta':'tr')+g.id);if(c)try{c.width=160;c.height=104;M.faceShot.paint(c.getContext('2d'),160,104,{g,team:isA?0:1,mood:g.dead?'out':isA?'confident':'nervous',yaw:isA?.4:-.4,zoom:1.12,pale:g.dead?.6:0,dark:g.dead?.35:0},2);}catch(e){console.warn(e);}}
  refresh();wpnLabel();}

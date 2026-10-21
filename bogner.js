@@ -150,10 +150,10 @@ function itemShot(g,b,t,bt,talking){const d=b.def,wd=M.weaponDefs.find(x=>x.id==
  // kleines Gesicht von Orontes oben rechts
  const pc=document.createElement('canvas');pc.width=240;pc.height=150;oroFace(pc.getContext('2d'),240,150,t,{mood:talking&&Math.floor(t*7)%2?'roar':'grin',zoom:1.0});g.fillStyle='#2a1a10';g.fillRect(FW-268,22,248,158);g.drawImage(pc,FW-264,26);
  // Werte
- const rows=[['SCHADEN',wd.damage],['SCHUSSFOLGE','alle '+String(wd.delay).replace('.',',')+' s'],['MUNITION',wd.ammo+(d==='bow'?' Pfeile':' Bolzen')],['DURCHSCHLAG',Math.round(wd.pen*100)+' %'],['REICHWEITE',wd.range]];
- const x0=FW-430,y0=212;g.fillStyle='rgba(10,6,4,.82)';g.fillRect(x0,y0,410,48+rows.length*44);g.strokeStyle='#e6b42a';g.lineWidth=2;g.strokeRect(x0,y0,410,48+rows.length*44);
+ const rows=[['SCHADEN',wd.damage],['SCHUSSFOLGE','alle '+String(wd.delay).replace('.',',')+' s'],['MUNITION',wd.ammo+(d==='bow'?' Pfeile':' Bolzen')],['DURCHSCHLAG',Math.round(wd.pen*100)+' %'],['REICHWEITE',wd.range],['ZUGSTÄRKE',(d==='bow'?'30–100':'100–400')+' Pfd.']];
+ const x0=FW-430,y0=212;g.fillStyle='rgba(10,6,4,.82)';g.fillRect(x0,y0,410,48+rows.length*40);g.strokeStyle='#e6b42a';g.lineWidth=2;g.strokeRect(x0,y0,410,48+rows.length*40);
  g.textBaseline='middle';g.textAlign='left';g.font='900 26px "Courier Prime",monospace';g.fillStyle='#ffd25a';g.fillText(wd.name.toUpperCase(),x0+18,y0+26);
- rows.forEach((r,i)=>{const a=cl((bt-.3-i*.25)/.25,0,1);g.globalAlpha=a;const y=y0+70+i*44;g.font='800 14px "Courier Prime",monospace';g.fillStyle='#c9b48a';g.fillText(r[0],x0+18,y);g.textAlign='right';g.font='700 22px "Courier Prime",monospace';g.fillStyle='#f3e2b0';g.fillText(String(r[1]),x0+392,y);g.textAlign='left';g.globalAlpha=1;});
+ rows.forEach((r,i)=>{const a=cl((bt-.3-i*.25)/.25,0,1);g.globalAlpha=a;const y=y0+70+i*40;g.font='800 14px "Courier Prime",monospace';g.fillStyle='#c9b48a';g.fillText(r[0],x0+18,y);g.textAlign='right';g.font='700 22px "Courier Prime",monospace';g.fillStyle='#f3e2b0';g.fillText(String(r[1]),x0+392,y);g.textAlign='left';g.globalAlpha=1;});
  grain(g,t);vignette(g);}
 // Arena: Orontes, dein neuer Fernkämpfer und ein Rekrut mit Apfel – oder die Regeltafel
 let ARENAC=null;
@@ -180,8 +180,10 @@ function beats1(){return [
  {who:'oro',shot:'face',say:'Ja, ihr starrt auf den Pfeil. Alle starren auf den Pfeil. Belagerung von Dura, vor vierzehn Jahren. Der Medicus sagte: Ziehst du ihn raus, stirbst du.',mood:'calm'},
  {who:'oro',shot:'face',say:'Der Medicus ist inzwischen tot. Der Pfeil ist noch da. Seitdem treffe ich besser. Und ich höre Farben.',mood:'dumb'},
  {who:'oro',shot:'wide',zoom:1.55,cx:640,cy:330,say:'Bögen und Armbrüste gibt es nur bei mir. Der Schmied rührt kein Holz an – zu fein für seine Wurstfinger. Mein Karren steht ab jetzt hier im Trainingshof.',gesture:'point'},
- {who:'oro',shot:'item',def:'bow',say:'Der Bogen. Leicht, schnell, achtzehn Pfeile im Köcher, ein Schuss alle zwei Sekunden. Braucht Präzision, Geschick und Arme, die nicht nach Haferbrei aussehen.'},
- {who:'oro',shot:'item',def:'crossbow',say:'Die Armbrust. Doppelter Schaden, geht durch fast jede Rüstung. Aber das Spannen dauert ewig, und es sind nur zwölf Bolzen. Für Leute, die gern einmal treffen und dann lange darüber nachdenken.'},
+ {who:'oro',shot:'item',def:'bow',say:'Der Bogen. Leicht, schnell, achtzehn Pfeile im Köcher, ein Schuss alle zwei Sekunden. Zugstärke 30 bis 100 Pfund. Braucht Präzision, Geschick und Arme, die nicht nach Haferbrei aussehen.'},
+ {who:'oro',shot:'item',def:'crossbow',say:'Die Armbrust. Doppelter Schaden, geht durch fast jede Rüstung. 100 bis 400 Pfund – gespannt mit der Winde, nicht mit dem Arm. Darum zielt auch ein Schwächling damit gerade. Aber das Spannen dauert ewig, und es sind nur zwölf Bolzen.'},
+ {who:'oro',shot:'face',mood:'determined',say:'Das Pfund ist die Zugstärke. Mehr Pfund, mehr Schaden – ein bisschen. Eine bessere Waffe bleibt trotzdem besser, auch bei gleichem Pfund. Dafür dauert Spannen und Nachladen länger. Starke Männer laden schneller, aber nie mehr als anderthalbmal so lang wie leichte Waffen.'},
+ {who:'oro',shot:'face',mood:'grin',say:'Beim Bogen gilt: Wer einen zu schweren Bogen zieht, zittert und trifft daneben. Ab etwa sechzig Stärke hält man selbst hundert Pfund ruhig. Die Armbrust ist die Waffe für schwache Anfänger. Der Bogen ist die Waffe für Meister – geübt und kräftig schießt er am Ende schneller und gefährlicher als jede Armbrust.'},
  {who:'oro',shot:'face',say:'Fernkämpfer brauchst du trotzdem erst mal. Und die wachsen nicht auf Bäumen. Die stehen beim Sklavenhändler und riechen nach Angst.',mood:'confident'},
  {who:'oro',shot:'wide',say:`Darum leihe ich dir ${LOAN} Gold. Weil ich ein Herz habe. Ich habe es in einem Glas, zu Hause. Zinsen? Nur ein kleiner Finger. Von ihm, nicht von dir.`,gesture:'shout',enter:(w,skip)=>{giveLoan(w);}},
  {who:'oro',shot:'face',say:'Kauf dir einen Rekruten auf dem Sklavenmarkt. Dann sag ich dir, ob er zum Schießen taugt – oder nur zum Danebenstehen.',mood:'grin'}];}
@@ -225,12 +227,13 @@ function giveKit(g){const st=ST();if(st.given===g.id)return;const inv=S().invent
  const d=M.gear(g,'secondary');if(!(d&&d.def==='dagger')&&!free('dagger'))inv.push(M.makeItem('weapon','dagger',1));
  st.given=g.id;try{M.persist();}catch{}}
 const ownsRanged=g=>['bow','crossbow'].includes(M.gear(g,'weapon')?.def)||S().inventory.some(i=>['bow','crossbow'].includes(i.def)&&!M.equippedBy?.(i.id)&&(i.durability??1)>0);
-const cheapRanged=()=>Math.round(M.itemPrice('weapon','bow',0)*1.15);
+const cheapRanged=()=>lbPrice('bow',0,30);
 const kitOk=g=>({ranged:['bow','crossbow'].includes(M.gear(g,'weapon')?.def),melee:M.gear(g,'secondary')?.def==='dagger'});
 function shopLines(g){const nm=g.name.split(' ')[0];return [
  `Da! Ein Fernkämpfer! Den Dolch schenke ich ${nm} – liegt schon in deinem Lager. Der Vorbesitzer braucht ihn nicht mehr. Lange Geschichte. Kurzes Ende.`,
  'Den Bogen schenke ich dir nicht. Ich bin Händler, kein Priester. Bögen und Armbrüste gibt es an meinem Karren im Trainingshof. Bogen: schnell und billig. Armbrust: langsam, teuer und gemein.',
- 'Klick auf meinen Karren und such dir was aus. Für den Anfang reicht ein einfacher Bogen. Wenn du reich bist, nimm die Armbrust – dann bist du nicht mehr lange reich.'];}
+ 'Klick auf meinen Karren und such dir was aus. Für den Anfang reicht ein einfacher Bogen. Wenn du reich bist, nimm die Armbrust – dann bist du nicht mehr lange reich.',
+ `Und achte auf die Pfund! ${nm} hat Stärke ${Math.round(g.stats.strength)} – einen Bogen bis ${M.drawComfort?M.drawComfort(g):60} Pfund hält er ruhig. Alles darüber macht mehr Schaden, aber er zittert und trifft schlechter. Bei der Armbrust ist das egal, da dauert nur das Nachladen länger.`];}
 function kitLines(g){const nm=g.name.split(' ')[0],w=M.gear(g,'weapon')?.def==='crossbow'||S().inventory.some(i=>i.def==='crossbow'&&!M.equippedBy?.(i.id))?'die Armbrust':'den Bogen';return [
  `Gekauft ist gekauft. Keine Rückgabe, auch nicht als Leiche. Jetzt anlegen: Ein Fernkämpfer trägt immer BEIDES – ${w} als Fernwaffe und den Dolch für den Nahkampf. Ohne Fernwaffe ist er ein Mann mit Dolch. Ohne Dolch ist er ein Mann, der gleich einen Speer im Bauch hat.`,
  `Ohne beides lässt ihn die Arena gar nicht erst rein. Kaserne → bei ${nm} auf AUSRÜSTEN → „Aus der Waffenkammer ausrüsten“. Oder unter „Volle Waffenkammer“ selbst: ${w} als Fernwaffe, Dolch für den Nahkampf. Einen Schild gibt es nicht – Bogen und Armbrust brauchen beide Hände. Meine Geduld auch.`];}
@@ -238,7 +241,9 @@ function statLines(g){return [
  'Und jetzt Schule. Was zählt beim Schießen? Erstens: PRÄZISION. Das Wichtigste überhaupt. Wer keine hat, schießt Löcher in den Himmel – und manchmal in den Lanista.',
  'Zweitens: GESCHICK – ruhige Finger, sauberes Loslassen. Drittens: die WAFFENFERTIGKEIT. Bogen und Armbrust lernt man getrennt, beide wachsen mit jedem Schuss. Und mit jedem Toten. Meistens mit dem Schuss.',
  'Dann TAKTIK, damit er weiß, auf wen er zielt. BEWEGLICHKEIT und REFLEXE, damit er weg ist, bevor der Feind da ist. Kraft? Überschätzt. Ein Fernkämpfer muss nicht stark sein. Nur weit weg.',
- 'Bogen oder Armbrust? Der Bogen schießt schnell, alle zwei Sekunden, achtzehn Pfeile im Köcher – aber jeder beißt nur ein bisschen. Die Armbrust spannt ewig und hat nur zwölf Bolzen. Dafür bleibt liegen, was sie trifft. Rüstung? Lacht sie aus. Beides gibt es an meinem Karren.'];}
+ 'Bogen oder Armbrust? Der Bogen schießt schnell, alle zwei Sekunden, achtzehn Pfeile im Köcher – aber jeder beißt nur ein bisschen. Die Armbrust spannt ewig und hat nur zwölf Bolzen. Dafür bleibt liegen, was sie trifft. Rüstung? Lacht sie aus.',
+ 'Und die STÄRKE? Die zählt bei uns über die Pfund. Mehr Pfund, mehr Schaden – aber Spannen und Nachladen dauern länger, höchstens anderthalbmal so lang. Ein starker Schütze lädt schneller. Und beim Bogen: Ist er schwerer, als die Arme können, wackelt der Schuss.',
+ 'Darum die Armbrust für Anfänger: Sie zielt immer gleich gut, egal wie dünn die Arme sind. Der Bogen ist die Waffe für Meister. Gut trainiert und stark genug, schießt er am Ende schneller und tödlicher als jede Armbrust. Aber bis dahin trifft dein Bogenschütze vor allem Tauben.'];}
 // Den nächsten Knopf in der Kaserne sanft pulsieren lassen
 function markBtn(act){document.querySelectorAll('.bow-hl').forEach(e=>{if(e.dataset.action!==act)e.classList.remove('bow-hl');});const b=document.querySelector(`[data-action="${act}"]`);if(b&&!b.classList.contains('bow-hl'))b.classList.add('bow-hl');}
 function step(dt){const st=ST(),s=S();if(!s||!s.lanista)return;
@@ -280,12 +285,20 @@ const BARKS=['Bögen! Armbrüste! Keine Rückgabe!','Frische Pfeile! Fast nicht 
 // Karren anklicken: Laden (eigener Klick auf das Ludus-Bild; die Gebäudeliste des Ludus bleibt unverändert)
 document.addEventListener('click',e=>{const c=e.target;if(!c||c.id!=='ludusCanvas'||!['buy','role','shopbow','equip','arena','apple','done'].includes(ST().stage))return;const r=c.getBoundingClientRect(),x=(e.clientX-r.left)*900/r.width,y=(e.clientY-r.top)*670/r.height;
  if(x>=CART.x-26&&x<=CART.x+44&&y>=CART.y-46&&y<=CART.y+4){e.stopImmediatePropagation();e.preventDefault();shop();}},true);
-function shop(){const s=S(),rows=[];for(const d of ['bow','crossbow'])for(let q=0;q<=4;q++){const p=Math.round(M.itemPrice('weapon',d,q)*1.15);rows.push({d,q,p});}
+// Laden: Bogen und Armbrust in fünf Klassen, Zugstärke (Pfund) frei wählbar – mehr Pfund kostet etwas mehr
+const lbOpts=d=>{const D=M.DRAW?.[d]||{min:d==='bow'?30:100,max:d==='bow'?100:400};const st=d==='bow'?10:50,o=[];for(let v=D.min;v<=D.max;v+=st)o.push(v);return o;};
+const lbPrice=(d,q,lb)=>{const D=M.DRAW?.[d];const k=D?(lb-D.min)/(D.max-D.min):.5;return Math.round(M.itemPrice('weapon',d,q)*1.15*(.9+.3*k));};
+function shopFor(){const st=ST(),s=S();return s.roster.find(x=>x.id===st.recruit&&!x.dead&&x.role==='Fernkämpfer')||s.roster.find(x=>!x.dead&&x.role==='Fernkämpfer')||null;}
+let shopSel={};
+function shop(){const s=S(),g=shopFor(),comf=g&&M.drawComfort?M.drawComfort(g):60,rows=[];
+ for(const d of ['bow','crossbow'])for(let q=0;q<=4;q++){const key=d+q,opts=lbOpts(d);let lb=shopSel[key];if(!opts.includes(lb))lb=d==='bow'?opts.filter(v=>v<=comf).pop()||opts[0]:150;rows.push({d,q,lb,opts,p:lbPrice(d,q,lb)});}
  const qn=i=>(M.gearQuality?.[i]?.name)||M.gearQuality?.[i]||['Einfach','Solide','Gut','Meisterlich','Legendär'][i];
- M.ui.modal('Orontes Pfeilkopf · Bögen & Armbrüste',`<div class="bow-shop"><p class="hint">„Alles getestet. Meistens an Menschen.“ · Dein Gold: <b>${s.gold}</b></p>${rows.map(r=>`<div class="bow-row"><canvas data-bowicon="${r.d}:${r.q}" width="120" height="60"></canvas><div><b>${r.d==='bow'?'Bogen':'Armbrust'}</b><small>${esc(typeof qn(r.q)==='string'?qn(r.q):'Stufe '+r.q)}</small></div><button class="btn${s.gold>=r.p?' primary':''}" data-action="bowyer:buy:${r.d}:${r.q}" ${s.gold>=r.p?'':'disabled'}>${r.p} Gold</button></div>`).join('')}</div>`);
- setTimeout(()=>{for(const c of document.querySelectorAll('[data-bowicon]')){const [d,q]=c.dataset.bowicon.split(':'),x=c.getContext('2d');x.imageSmoothingEnabled=false;x.fillStyle='#1d282b';x.fillRect(0,0,120,60);try{M.weaponArt.draw(x,item(d,+q),{x:60,y:30,angle:d==='bow'?-Math.PI/2:0,scale:d==='bow'?2.2:1.9,blood:0,drips:false});}catch(e){}}},30);}
+ const tip=g?`<p class="hint bow-shop-tip">Für <b>${esc(g.name)}</b> (Stärke ${Math.round(g.stats.strength)}): Bogen bis <b>${comf} Pfd.</b> ohne Zitterhand. Schwerer = mehr Schaden, aber er zielt schlechter. Armbrust: Pfund egal fürs Zielen, nur das Nachladen dauert länger.</p>`:`<p class="hint bow-shop-tip">Mehr Pfund = mehr Schaden, längeres Spannen. Beim Bogen braucht es Kraft (ab etwa 60 Stärke sitzen 100 Pfd.), sonst leidet das Zielen. Die Armbrust zielt unabhängig von der Kraft.</p>`;
+ M.ui.modal('Orontes Pfeilkopf · Bögen & Armbrüste',`<div class="bow-shop"><p class="hint">„Alles getestet. Meistens an Menschen.“ · Dein Gold: <b>${s.gold}</b></p>${tip}${rows.map(r=>`<div class="bow-row"><canvas data-bowicon="${r.d}:${r.q}" width="120" height="60"></canvas><div><b>${r.d==='bow'?'Bogen':'Armbrust'}</b><small>${esc(typeof qn(r.q)==='string'?qn(r.q):'Stufe '+r.q)}</small><label class="bow-lb">Zugstärke <select data-bowlb="${r.d}:${r.q}">${r.opts.map(v=>`<option value="${v}"${v===r.lb?' selected':''}>${v} Pfd.${r.d==='bow'&&g&&v>comf?' ⚠':''}</option>`).join('')}</select></label></div><button class="btn${s.gold>=r.p?' primary':''}" data-action="bowyer:buy:${r.d}:${r.q}:${r.lb}" ${s.gold>=r.p?'':'disabled'}>${r.p} Gold</button></div>`).join('')}</div>`);
+ setTimeout(()=>{for(const c of document.querySelectorAll('[data-bowicon]')){const [d,q]=c.dataset.bowicon.split(':'),x=c.getContext('2d');x.imageSmoothingEnabled=false;x.fillStyle='#1d282b';x.fillRect(0,0,120,60);try{M.weaponArt.draw(x,item(d,+q),{x:60,y:30,angle:d==='bow'?-Math.PI/2:0,scale:d==='bow'?2.2:1.9,blood:0,drips:false});}catch(e){}}
+  for(const sel of document.querySelectorAll('[data-bowlb]'))sel.addEventListener('change',()=>{const [d,q]=sel.dataset.bowlb.split(':');shopSel[d+q]=+sel.value;const sc=document.querySelector('.bow-shop')?.closest('#modal')?.scrollTop;shop();const m=document.getElementById('modal');if(m&&sc!=null)m.scrollTop=sc;});},30);}
 const click=M.schoolClick;M.schoolClick=action=>{if(/^barracks:class:.*:Fernkämpfer$/.test(action)&&!rangedOpen()){M.ui.notify?.('Gesperrt: Fernkämpfer gibt es erst, wenn der Bogenhändler in deinen Ludus kommt.');return true;}
- if(action.startsWith('bowyer:buy:')){const [, , d,q]=action.split(':'),p=Math.round(M.itemPrice('weapon',d,+q)*1.15);if(S().gold>=p){S().gold-=p;S().inventory.push(M.makeItem('weapon',d,+q));try{M.persist();}catch{}M.ui.notify?.('Gekauft: '+(d==='bow'?'Bogen':'Armbrust')+' · „Keine Rückgabe. Auch nicht als Leiche.“');}shop();return true;}
+ if(action.startsWith('bowyer:buy:')){const [, , d,q,lb0]=action.split(':'),lb=+lb0||(d==='bow'?50:150),p=lbPrice(d,+q,lb);if(S().gold>=p){S().gold-=p;S().inventory.push(M.makeItem('weapon',d,+q,'metal',lb));try{M.persist();}catch{}M.ui.notify?.('Gekauft: '+(d==='bow'?'Bogen':'Armbrust')+' mit '+lb+' Pfd. · „Keine Rückgabe. Auch nicht als Leiche.“');}shop();return true;}
  return click(action);};
 // Der Schmied verkauft keine Bögen und Armbrüste mehr
 const RANGED=['bow','crossbow'],isRanged=d=>RANGED.includes(d);
