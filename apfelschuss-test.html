@@ -411,9 +411,28 @@ function stuckVisible(s){let thick;
  else if(s.part==='Bein')thick=.35;
  else{const e=Math.abs(s.x)/.21;thick=clamp(1-Math.pow(e,2.2)*.8,.2,1);}
  return .42+.46*thick;}
+// Lage eines steckenden Pfeils: Einschlagpunkt (folgt der Puppe), Richtung zum Schaftende, ganze Länge im Bild
+function stuckGeom(s,mo,hcx,hcy){const head=s.kind==='head',x=head?hcx+s.x*BD.P:dX(s.x),y=head?hcy+(-.115-s.y)*BD.P:dY(s.y),asd=s.part==='Arm'?armSide(s):0,p=dumTf(mo,x,y,head,hcx,asd);
+ const ang=arcOff(0).tail+(hr(s.i*3.7)-.5)*.7+mo.rot+(head?mo.head:0)+(asd?mo.arm[asd]:0),full=(78+hr(s.i*1.3)*22)*(.9+hr(s.i*5.3)*.2);return{p,ang,full};}
+// Wie dick ist die Puppe an der Einschlagstelle (Anteil der Pfeillänge)? Arme und Ränder sind dünn – dort kommt die Spitze hinten wieder heraus
+function stuckThick(s){if(s.kind==='head'){const r=Math.hypot(s.x,s.y+.115)/.095;return .34*Math.sqrt(Math.max(0,1-r*r))+.04;}
+ if(s.part==='Arm')return .1;if(s.part==='Bein')return .2;const e=Math.min(1,Math.abs(s.x)/.21);return .44*Math.sqrt(Math.max(0,1-e*e))+.05;}
+// Durchschuss: Spitze und Schaftstück hinter der Puppe – wird VOR der Puppe gezeichnet, also nur sichtbar, wo es über den Rand hinausragt
+function drawThrough(c,stuck,t,mo,hcx,hcy){const K=BD.K;
+ for(const s of stuck){const g=stuckGeom(s,mo,hcx,hcy),vis=stuckVisible(s),th=stuckThick(s),ex=1-vis-th;if(ex<.04)continue;
+  const fa=g.ang+Math.PI+(hr(s.i*9.2)-.5)*.12,ca=Math.cos(fa),sa=Math.sin(fa),fs=.72,x0=g.p.x+ca*th*g.full*fs,y0=g.p.y+sa*th*g.full*fs,L=ex*g.full*fs,q=2,n=Math.round(L/q);
+  const P=(px,py,col,sz=q)=>{c.fillStyle=col;c.fillRect(Math.round(px/q)*q,Math.round(py/q)*q,sz,sz);};
+  for(let k=0;k<=n;k++){const px=x0+ca*k*q,py=y0+sa*k*q;P(px-q,py,'#22150c',q*3);P(px,py-q,'#22150c',q*2);}
+  for(let k=0;k<=n;k++){const px=x0+ca*k*q,py=y0+sa*k*q;P(px,py,'#b8a47a');P(px,py+q,'#8a7650');}
+  // Strohfasern, die der Pfeil mitgerissen hat
+  for(let k=0;k<5;k++){const u=4+k*3+hr(s.i+k)*4,px=x0+ca*u,py=y0+sa*u,a=fa+1.57*(k%2?1:-1)+(hr(s.i*3+k)-.5);for(let j=0;j<3+k%3;j++)P(px+Math.cos(a)*j*q,py+Math.sin(a)*j*q,k%2?PAL.straw[4]:PAL.straw[3]);}
+  // eiserne Spitze
+  const ex2=x0+ca*L,ey2=y0+sa*L,nx=-sa,ny=ca;
+  for(let k=0;k<7;k++){const w=(7-k)*.55;const px=ex2+ca*(k-3)*q,py=ey2+sa*(k-3)*q;for(let j=-Math.ceil(w);j<=Math.ceil(w);j++){P(px+nx*j*q*.6,py+ny*j*q*.6,Math.abs(j)>=Math.ceil(w)?'#1c1c20':k<3?'#5b5f66':'#8d939b');}}
+  P(ex2+ca*4*q,ey2+sa*4*q,'#1c1c20');P(ex2+ca*2*q-nx*q,ey2+sa*2*q-ny*q,'#c9ced4');}}
 function drawStuck(c,stuck,t,mo,hcx,hcy){const w=windAt(t);
- for(const s of stuck){const age=t-(s.t+BD.FLY),head=s.kind==='head',x=head?hcx+s.x*BD.P:dX(s.x),y=head?hcy+(-.115-s.y)*BD.P:dY(s.y),asd=s.part==='Arm'?armSide(s):0,p=dumTf(mo,x,y,head,hcx,asd);
-  const ang=arcOff(0).tail+(hr(s.i*3.7)-.5)*.7+mo.rot+(head?mo.head:0)+(asd?mo.arm[asd]:0),L=(78+hr(s.i*1.3)*22)*stuckVisible(s)*(.9+hr(s.i*5.3)*.2),bend=(hr(s.i*8.1)-.5)*9+Math.sin(age*(30+hr(s.i*2.6)*14))*Math.exp(-age*(2+hr(s.i*4.4)*1.4))*(11+hr(s.i*6.2)*9)+Math.sin(t*2.6+s.i)*w*3.2+w*2.5;
+ for(const s of stuck){const age=t-(s.t+BD.FLY),G=stuckGeom(s,mo,hcx,hcy),p=G.p;
+  const ang=G.ang,L=G.full*stuckVisible(s),bend=(hr(s.i*8.1)-.5)*9+Math.sin(age*(30+hr(s.i*2.6)*14))*Math.exp(-age*(2+hr(s.i*4.4)*1.4))*(11+hr(s.i*6.2)*9)+Math.sin(t*2.6+s.i)*w*3.2+w*2.5;
   fineArrow(c,p.x,p.y,ang,L,bend,s.i);}}
 // Pfeile, die vorbeigehen oder den Apfel durchschlagen: fliegen weiter nach hinten – also hinter die Puppe
 // Flugbahn im Bild: eine Parabel – der Pfeil steigt vom Betrachter auf und fällt von oben auf die Puppe herab (k=1 Start, 0 Einschlag, <0 dahinter)
@@ -495,7 +514,7 @@ function boardFrame(){BOARD_RAF=0;const cv=$('board');if(!cv)return;if(sc||!BOAR
  // Fehlschüsse: Staubwölkchen weit hinten im Sand
  for(const s of landed.slice(-3)){if(s.kind!=='miss')continue;const u=t-(s.t+BD.FLY)-.25;if(u<0||u>1)continue;const x=clamp(BD.AX+s.x*30,10,BD.BW-10),y=100+hr(s.i)*10;fq.globalAlpha=1-u;for(let i=0;i<6;i++)disc(fq,x+(i-3)*2,y-u*6,1+u*4,'#e8d6aa',1);fq.globalAlpha=1;}
  // hochskaliert ausgeben
- c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.drawImage(DBG,0,0,BD.W,BD.BH*K);const bubs=[];const items=[];try{yardLife(c,t,landed,bubs,items);}catch(e){}missItems(c,t,items);items.sort((a,b)=>a.y-b.y);for(const it of items){try{it.draw();}catch(e){}}sandDrift(c,t);c.imageSmoothingEnabled=false;c.drawImage(FRAMEB,0,0,BD.W,BD.BH*K);
+ c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.drawImage(DBG,0,0,BD.W,BD.BH*K);const bubs=[];const items=[];try{yardLife(c,t,landed,bubs,items);}catch(e){}missItems(c,t,items);items.sort((a,b)=>a.y-b.y);for(const it of items){try{it.draw();}catch(e){}}sandDrift(c,t);drawThrough(c,stuck,t,mo,hcx,hcy);c.imageSmoothingEnabled=false;c.drawImage(FRAMEB,0,0,BD.W,BD.BH*K);
  // anfliegender Pfeil (vom Betrachter her) und durchfliegende Fehlschüsse
  for(const s of BSTATE.shots){const u=(t-s.t)/BD.FLY;if(u<0)continue;let X=dX(s.x)*K,Y=dY(s.y)*K;const D={x:-.75,y:.66};
   if(u<1&&(s.kind==='body'||s.kind==='head')){const ti=s.t+BD.FLY,mi=poseAt(BSTATE.shots.filter(o=>o.i<s.i&&o.t+BD.FLY<=ti).slice(-6),ti),hd=s.kind==='head',lx=hd?hcx+s.x*BD.P:dX(s.x),ly=hd?hcy+(-.115-s.y)*BD.P:dY(s.y),q=dumTf(mi,lx,ly,hd,hcx,s.part==='Arm'?armSide(s):0);X=q.x;Y=q.y;}
