@@ -55,6 +55,11 @@ tr.sel td{background:#3b2b1a;color:#fff3d6}
 #shoot .ui{position:absolute;top:calc(8px + env(safe-area-inset-top));right:8px;display:flex;gap:6px}
 #shoot button{font:700 13px 'Courier Prime',ui-monospace,monospace;color:#f3e2b0;background:#1d282bcc;border:2px solid #6b5230;padding:8px 10px;min-height:0;border-radius:0}
 #shoot .next{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom));right:14px;padding:12px 18px;background:#8f2f2a;border-color:#e0ad4c;font-size:16px;letter-spacing:1px}
+.arrows button.on{background:var(--accent);border-color:var(--gold);font-weight:700}
+.prize{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:8px 0}
+.prize div{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}.prize small{display:block;color:var(--dim);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.prize b{font-size:21px;color:#fff3d6;font-variant-numeric:tabular-nums}.prize .gold b{color:var(--gold)}.prize .bad b{color:var(--red)}
+.shots{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.shots span{padding:3px 9px;border-radius:12px;background:#33271d;font-size:13px}.shots .a{background:#5a2a1a;color:#ffd9b0}.shots .h{background:#5c1712;color:#fff}.shots .x{opacity:.45}
 .board{margin:10px 0 4px}.board canvas{display:block;width:100%;max-width:720px;height:auto;image-rendering:pixelated;border:2px solid var(--line);border-radius:8px;background:#000}.tally{color:#f3e2b0;font-weight:700}
 </style>
 </head>
@@ -84,8 +89,11 @@ tr.sel td{background:#3b2b1a;color:#fff3d6}
  <div class="row"><span class="hint">Schnellwahl</span><button data-d="10">10 m</button><button data-d="25">25 m</button><button data-d="50">50 m</button><button data-d="100">100 m</button><button data-d="200">200 m</button><button data-d="300">300 m</button><button data-d="400">400 m</button></div>
  <div class="board"><canvas id="board" width="720" height="580"></canvas></div>
  <div class="row" style="margin:6px 0 0"><button id="boardSnd">🔇 Ton an</button><span class="hint">Einschläge, Zischen, Splittern – gilt auch für die Szene.</span></div>
- <div class="row" style="margin:6px 0 0"><label class="hint" for="lanName">Name deines Lanista (im Spiel automatisch)</label><input id="lanName" maxlength="32" placeholder="Lanista" style="flex:1;min-width:120px;padding:6px 8px;border-radius:8px;border:1px solid #5a4a30;background:#1d1610;color:#f3e2b0"></div>
+ <div class="row" style="margin:6px 0 0"><label class="hint" for="lanName">Name deines Lanista (im Spiel automatisch)</label><input id="lanName" maxlength="32" placeholder="Marcus" style="flex:1;min-width:120px;padding:6px 8px;border-radius:8px;border:1px solid #5a4a30;background:#1d1610;color:#f3e2b0"></div>
  <p class="hint" id="boardNote" style="margin:6px 0"></p>
+ <h2 style="margin-top:14px">4 · Wie viele Pfeile?</h2>
+ <div class="row arrows" id="arrows"></div>
+ <div class="prize" id="prize"></div>
  <div class="row"><button class="primary" id="go">🏹 SCHIESSEN</button><span class="hint" id="goNote"></span></div>
 </div>
 
@@ -182,7 +190,11 @@ function mkArcher(mean){const g=gen();g.role='Fernkämpfer';
  g.caps.weapons.bow=Math.max(g.caps.weapons.bow||0,up(g.mastery.bow));
  g.enemyGear={weapon:M.makeItem('weapon','bow',clamp(Math.round(mean/20),0,4)),secondary:M.makeItem('weapon','dagger',1),shield:null,armor:{}};
  return g;}
-function mkRecruit(q){const g=gen(q);g.role='Soldat';for(const k of ['strength','stamina','toughness','will'])g.stats[k]=bern(20+q*8);g.enemyGear=null;return g;}
+function mkRecruit(q,i){const g=gen(q);g.role='Soldat';for(const k of ['strength','stamina','toughness','will'])g.stats[k]=bern(20+q*8);g.enemyGear=null;
+ const hurt=(id,hp,txt)=>{const b=g.body&&g.body[id];if(b){b.hp=hp;b.injury=txt;try{b.grade=M.injuryGrade(b);}catch(e){}}};
+ if(i===1){hurt('chest',38,'Rippenbruch');}
+ if(i===4){hurt('lfa',52,'Schnittwunde');hurt('head',72,'Platzwunde');}
+ return g;}
 let archers=[],recruits=[],selA=null,selR=null,dist=100,tally={n:0,apple:0,gold:0,dead:0};
 function newRoster(){try{newRoster2();}catch(e){const el=document.getElementById('res');if(el){el.hidden=false;el.innerHTML='<h2>Fehler beim Würfeln</h2><p class="hint">'+esc(e.message||e)+'</p>';}console.error(e);}}
 function newRoster2(){archers=[20,34,52,74].map(mkArcher);recruits=[0,0,1,2,3,5].map(mkRecruit);selA=archers[0].id;selR=recruits[0].id;tally={n:0,apple:0,gold:0,dead:0};render();}
@@ -191,18 +203,23 @@ const A=()=>archers.find(g=>g.id===selA),R=()=>recruits.find(g=>g.id===selR);
 function barsHtml(g){return ATTR.map(([k,l])=>{const v=val(g,k);return `<span>${l}</span><span class="b${k==='precision'||k==='bow'?' hi':''}"><i style="width:${clamp(v,0,100)}%"></i></span><span class="n">${nf(v,0)}</span>`;}).join('');}
 function render(){
  $('archers').innerHTML=archers.map(g=>`<button class="pick${g.id===selA?' on':''}" data-a="${g.id}"><canvas id="ta${g.id}"></canvas><div><b>${esc(g.name)}</b><small>Schusswert <b style="display:inline;color:var(--gold)">${nf(skill(g),1)}</b> · ${g.height} cm</small><div class="bars">${barsHtml(g)}</div></div></button>`).join('');
- $('recruits').innerHTML=recruits.map(g=>`<button class="pick${g.id===selR?' on':''}${g.dead?' dead':''}" data-r="${g.id}"><canvas id="tr${g.id}"></canvas><div><b>${esc(g.name)}</b><small>${g.dead?'✝ tot':'Qualität: <b style="display:inline;color:var(--gold)">'+M.qualities[g.quality]+'</b>'}</small><small>Wert ${M.price(g)} Gold · Gold ×${nf(qualityFactor(g),2)}</small></div></button>`).join('');
+ $('recruits').innerHTML=recruits.map(g=>`<button class="pick${g.id===selR?' on':''}${g.dead?' dead':''}" data-r="${g.id}"><canvas id="tr${g.id}"></canvas><div><b>${esc(g.name)}</b><small>${g.dead?'✝ tot':'Qualität: <b style="display:inline;color:var(--gold)">'+M.qualities[g.quality]+'</b>'}</small><small>Wert ${M.price(g)} Gold</small>${injuryList(g).length?'<small style="color:var(--red)">verletzt: '+esc(injuryList(g).join(', '))+'</small>':''}</div></button>`).join('');
  for(const g of [...archers,...recruits]){const isA=archers.includes(g),c=$((isA?'ta':'tr')+g.id);if(c)try{c.width=160;c.height=104;M.faceShot.paint(c.getContext('2d'),160,104,{g,team:isA?0:1,mood:g.dead?'out':isA?'confident':'nervous',yaw:isA?.4:-.4,zoom:1.12,pale:g.dead?.6:0,dark:g.dead?.35:0},2);}catch(e){console.warn(e);}}
  refresh();}
 function label(p){return p>=.9?'Kinderspiel':p>=.7?'Machbar':p>=.45?'Riskant':p>=.2?'Sehr riskant':p>=.05?'Wahnsinn':'Quasi unmöglich';}
-function refresh(){const g=A(),r=R();if(!g||!r)return;const d=dist,p=probs(skill(g),d),gold=goldFor(d,p.apple,r);
- $('dv').textContent=d+' m';$('dgold').textContent='Gold bei Treffer: '+gold;$('dist').value=d;
+let ARROWS=1;
+function refresh(){const g=A(),r=R();if(!g||!r)return;const d=dist,p=probs(skill(g),d),gold=prizeFor(d,p,r);
+ $('dv').textContent=d+' m';$('dgold').textContent='Pro Apfel: '+gold+' Gold';$('dist').value=d;
+ $('arrows').innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-n="${n}"${n===ARROWS?' class="on"':''}>${n}</button>`).join('');
+ $('prize').innerHTML=`<div class="gold"><small>Preisgeld pro Apfel</small><b>${gold} Gold</b></div>`+(ARROWS>1?`<div class="gold"><small>${ARROWS} Treffer in Folge</small><b>${seriesMax(gold,ARROWS)} Gold</b></div>`:'')+
+  `<div class="bad"><small>Einsatz: der Rekrut</small><b>${M.price(r)} Gold</b></div><div><small>Pfeile</small><b>${ARROWS}</b></div>`;
  $('go').disabled=!!r.dead;$('goNote').textContent=r.dead?'Dieser Rekrut ist tot. Wähle einen anderen.':'';boardNote();}
 $('archers').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b){selA=b.dataset.a;render();}});
 $('recruits').addEventListener('click',e=>{const b=e.target.closest('[data-r]');if(b){selR=b.dataset.r;render();}});
 $('dist').addEventListener('input',e=>{dist=+e.target.value;refresh();});
 document.querySelector('.card .row [data-d]').parentElement.addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(b){dist=+b.dataset.d;refresh();}});
 $('newRoster').onclick=newRoster;
+$('arrows').addEventListener('click',e=>{const b=e.target.closest('[data-n]');if(b){ARROWS=+b.dataset.n;refresh();}});
 
 // =====================================================================================================
 // PROBESCHIESSEN · Nahaufnahme der Strohpuppe auf dem Übungsplatz. Der gewählte Schütze schießt alle 3 Sekunden aus der gewählten
@@ -256,7 +273,7 @@ function paintDummy(){const cv=mkc(BD.BW,BD.BH),g=cv.getContext('2d'),R=(x,y,w,h
  for(let y=top;y<wy-3;y++){const hw=hwAt(y)+1,last=y>wy-9;R(X-hw-1,y,2*hw+2,1,C.line);for(let x=-Math.floor(hw);x<Math.ceil(hw);x++){if(last&&hr(x*3.1+y)>.5)continue;const u=(x+.5)/hw;R(X+x,y,1,1,shade(PAL.rag,u,(y-top)/40,x,y));}}
  for(const [x,y,r] of [[-9,top+10,3],[6,top+18,4],[-3,top+26,2],[12,top+6,2]])for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r&&hr(i*7+j*3+x)>.25)R(X+x+i,y+j,1,1,PAL.rag[0]);
   // eingeritzt von einem Rekruten: der Name des Lanista
- {const nm=String((M.s&&M.s.lanista&&M.s.lanista.name)||lanTest()||'Lanista').split(' ')[0].toUpperCase().replace(/[^A-ZÄÖÜ]/g,'').slice(0,10)||'LANISTA';carve(g,nm,X,dY(-.74),true);carve(g,'STINKT',X+1,dY(-.74)+8,false);}
+ {const nm=String((M.s&&M.s.lanista&&M.s.lanista.name)||lanTest()||'Marcus').split(' ')[0].toUpperCase().replace(/[^A-ZÄÖÜ]/g,'').slice(0,10)||'LANISTA';carve(g,nm,X,dY(-.74),true);carve(g,'STINKT',X+1,dY(-.74)+8,false);}
  // Seilgürtel mit Knoten
  for(let x=-20;x<20;x++){const u=(x+.5)/20;R(X+x,wy,1,1,shade(PAL.wood,u,-.5));R(X+x,wy+1,1,1,shade(PAL.wood,u,0));R(X+x,wy+2,1,1,PAL.wood[1]);}
  R(X+4,wy-1,4,5,PAL.wood[2]);R(X+5,wy-1,2,1,PAL.wood[4]);R(X+5,wy+4,1,6,PAL.wood[3]);R(X+7,wy+4,1,5,PAL.wood[2]);
@@ -532,7 +549,8 @@ const SFX={
  cheer:()=>{noise(2.6,.2,'bandpass',1000,1500,.7,.5);tone(330,2,'sawtooth',.02,440);},
  gasp:()=>noise(.35,.12,'highpass',2000,null,1,.1),
  boo:()=>{tone(190,1.8,'sawtooth',.07,110);tone(150,1.8,'sawtooth',.06,95);noise(1.8,.1,'lowpass',500,300,1,.3);},
- groan:()=>{tone(170,1.1,'sawtooth',.05,120);noise(1,.07,'lowpass',600,400,1,.2);}};
+ groan:()=>{tone(170,1.1,'sawtooth',.05,120);noise(1,.07,'lowpass',600,400,1,.2);},
+ laugh:()=>{for(let i=0;i<7;i++)setTimeout(()=>{noise(.11,.13,'bandpass',500+Math.random()*700,null,4,.01);tone(180+Math.random()*120,.1,'sawtooth',.03);},i*120+Math.random()*70);}};
 
 // =====================================================================================================
 // SZENE · dieselbe Kellerarena wie beim Boxkampf (BXA.Scene: Mauer, Fackeln, wettendes Publikum, Seile) und dieselben
@@ -666,12 +684,12 @@ function injAnchor(part,g){const IS=M.injuryShots,cv=mkc(W,H),q=cv.getContext('2
  if(!n)return{x:90,y:50};let X=sx/n,Y=sy/n;if(part[0]==='r')X=W-X;
  let A={x:80,y:50};for(let i=0;i<6;i++){const p=injMap(A,tl,part.replace(/^r/,'l')),s=p.s;A={x:A.x+(X-p.x)/s,y:A.y+(Y-p.y)/s};}return A;}
 
-function buildScene(g,r,d,res){
- const S=res.S,fl=flight(g,d),out=res.out,dead=!!res.dead;
- const remApp=Math.min(12,d*.2),mApp=d-remApp,Tm=(fl.L/fl.v0)*(Math.exp(mApp/fl.L)-1),flightDur=clamp(.9+.62*Tm,1.4,6.8);
+function buildScene(g,r,d,res,opt={}){
+ const S=res.S,fl=flight(g,d),out=res.out,dead=!!res.dead,Q=!!opt.quick,ser=opt.ser||null,beats=opt.beats||null,pre=Q&&ser&&ser.hurt?1:0;
+ const remApp=Math.min(12,d*.2),mApp=d-remApp,Tm=(fl.L/fl.v0)*(Math.exp(mApp/fl.L)-1),flightDur=Q?clamp(.7+.22*Tm,.9,2.1):clamp(.9+.62*Tm,1.4,6.8);
  const hf=clamp((r.height||190)/190,.85,1.12),ha=clamp((g.height||190)/190,.85,1.12);
  const ay=FY-57*FS*hf,hy=FY-44*FS*hf,ar=CFG.apple*PMv;
- const tVS=4.7,tPA=1.7,tPR=1.6,sAim=tVS+tPA+tPR,aA=1.5,aB=1.7,aC=1.1,aD=1.2+(1-S/100)*.8,tAim=aA+aB+aC+aD,sRel=sAim+tAim,tRel=.75,sFly=sRel+tRel,sApp=sFly+flightDur,tApp=1.1,I=sApp+tApp;
+ const tVS=beats?beats.total:Q?0:4.7,tPA=Q?0:1.7,tPR=Q?0:1.6,sAim=tVS+tPA+tPR,aA=Q?0:1.5,aB=Q?0:1.7,aC=Q?(pre?2.2:.85):1.1,aD=Q?.55:1.2+(1-S/100)*.8,tAim=aA+aB+aC+aD,sRel=sAim+tAim,tRel=Q?.4:.75,sFly=sRel+tRel,sApp=sFly+flightDur,tApp=Q?.85:1.1,I=sApp+tApp;
  // Einschlagpunkt aus dem echten Schuss (x seitlich, y Höhe, Meter relativ zur Apfelmitte)
  let Tp,lowMiss=false;
  const k172=(r.height||172)/172;
@@ -689,19 +707,21 @@ function buildScene(g,r,d,res){
  const hT=Math.max(.05,1.95+res.y),slope=Math.max(.05,4*fl.h/d+.02),landDist=lowMiss?0:clamp(hT/slope,2,160);
  const s={g,r,d,res,S,fl,out,dead,Tm,mApp,flightDur,tApp,tVS,tPA,tPR,sAim,aA,aB,aC,aD,tAim,sRel,tRel,sFly,sApp,sReact:I,hf,ha,ay,hy,ar,Tp,S0,dirIn,lowMiss,
   through:out==='apple'||(out==='miss'&&!lowMiss),faceRel,faceBox,where,ipart,landDist,landAng:clamp(Math.atan(4*clamp(60+110*Math.log2(1+d/30),100,420)/(W*1.25))*.95,.25,.85),fired:{},sp:Tm/flightDur,labels:[],bubbles:[],parts:[],tom:[],faces:null,
-  k172,shakes:[],arcPx:clamp(fl.h*5,6,260),arcS:clamp(60+110*Math.log2(1+d/30),100,420),elev:clamp(Math.atan(4*clamp(60+110*Math.log2(1+d/30),100,420)/(W*1.25)),.1,.8),fallAt:I,tLand:0,tInj:0};
+  k172,Q,ser,last:!ser||ser.i>=ser.n-1||dead,modLines:[],wasHurt:!!(ser&&ser.hurt),shakes:[],arcPx:clamp(fl.h*5,6,260),arcS:clamp(60+110*Math.log2(1+d/30),100,420),elev:clamp(Math.atan(4*clamp(60+110*Math.log2(1+d/30),100,420)/(W*1.25)),.1,.8),fallAt:I,tLand:0,tInj:0};
  s.wstep=[1,2,5,10,20,25,50,100].find(x=>d/x<=8)||100;s.anchorRel=faceMap({zoom:1.05},50).from(645+.45*165,300+.5*205);
  s.missWhy=lowMiss?'Zu kurz: der Pfeil bohrt sich vor seinen Füßen in den Sand':res.y>.06?'Zu hoch: der Pfeil zischt über den Apfel':res.x<0?'Links vorbei':'Rechts vorbei';
  if(out==='body')s.injA=injAnchor(ipart,r);
  // ---- Schnittliste ----
  const SH=[],add=(type,t0,t1,p={})=>{SH.push({type,t0,t1,...p});return t1;};
- add('vs',0,tVS);
+ if(beats){for(const b of beats.list)add('mod',b.t0,b.t1,b);}else if(!Q)add('vs',0,tVS);
+ if(!Q){
  add('stage',tVS,tVS+tPA,{c0:{cx:AXs+95,cy:FY-195,z:1.3},c1:{cx:AXs+115,cy:FY-215,z:1.6}});
  add('stage',tVS+tPA,sAim,{c0:{cx:RXs-15,cy:FY-195,z:1.3},c1:{cx:RXs-15,cy:FY-220,z:1.6}});
  add('stage',sAim,sAim+aA,{c0:{cx:AXs+165,cy:FY-205,z:1.35},c1:{cx:AXs+150,cy:FY-222,z:1.65}});
  add('anchor',sAim+aA,sAim+aA+aB,{z0:1.15,z1:1.32});
  add('face',sAim+aA+aB,sRel-aD,{who:1,mood:d>=150||S<40?'terror':'scared',z0:1.08,z1:1.32,yaw:-.35,cap:'NUR NICHT BEWEGEN …'});
  add('anchor',sRel-aD,sRel,{z0:1.34,z1:1.55,release:1});
+ }else add('stage',0,sRel,{c0:{cx:AXs+150,cy:FY-206,z:1.45},c1:{cx:AXs+140,cy:FY-222,z:1.62}});
  add('stage',sRel,sFly,{c0:{cx:AXs+210,cy:FY-215,z:1.75},c1:{cx:AXs+335,cy:FY-215,z:1.5},release:1,lin:1});
  add('flight',sFly,sApp);
  const cT={cx:RXs-20,cy:FY-245,z:1.55},cB={cx:Tp.x-40,cy:Tp.y-30,z:1.6},hiM=Tp.y<FY-420,
@@ -710,14 +730,16 @@ function buildScene(g,r,d,res){
  add('stage',sApp,I,{c0:{...cApp,z:cApp.z*.9},c1:cApp,approach:1});
  let t=I;
  if(out==='apple'){
+  if(Q)t=add('stage',t,t+2.4,{c0:cT,c1:{cx:RXs+40,cy:FY-252,z:1.42},boom:1});else{
   t=add('stage',t,t+1.7,{c0:cT,c1:{cx:RXs+40,cy:FY-252,z:1.42},boom:1});
   t=add('face',t,t+1.3,{who:1,mood:'relief',z0:1.08,z1:1.2,cheer:1,cap:'GERETTET!'});
-  t=add('face',t,t+1.4,{who:0,mood:'roar',fist:1,cheer:1,z0:1.04,z1:1.14,yaw:.3,cap:'MEISTERSCHUSS AUS '+d+' m!'});
+  t=add('face',t,t+1.4,{who:0,mood:'roar',fist:1,cheer:1,z0:1.04,z1:1.14,yaw:.3,cap:'MEISTERSCHUSS AUS '+d+' m!'});}
  }else if(out==='miss'){
+  if(Q)t=add('stage',t,t+2.2,{c0:cM,c1:{...cM,z:cM.z*.94}});else{
   t=add('stage',t,t+1.15,{c0:cM,c1:{...cM,z:cM.z*.94}});
   if(!lowMiss){s.tLand=t+.4;t=add('land',t,t+1.7);}
   t=add('face',t,t+1.2,{who:1,mood:'relief',z0:1.08,z1:1.16,cap:'GLÜCK GEHABT'});
-  t=add('face',t,t+1.2,{who:0,mood:'nervous',z0:1.04,z1:1.12,yaw:.3,cap:'DANEBEN …'});
+  t=add('face',t,t+1.2,{who:0,mood:'nervous',z0:1.04,z1:1.12,yaw:.3,cap:'DANEBEN …'});}
  }else if(out==='head'){
   t=add('facehit',t,t+2.5);
   if(dead)t=add('death',t,t+2.4,{head:1});
@@ -729,24 +751,24 @@ function buildScene(g,r,d,res){
   if(dead){s.fallAt=t+.75;t=add('stage',t,t+2.4,{c0:{cx:RXs+10,cy:FY-215,z:1.42},c1:{cx:RXs+95,cy:FY-150,z:1.45}});t=add('death',t,t+2.4,{});}
   else{s.kneelAt=t+.15;t=add('stage',t,t+1.8,{c0:{cx:Tp.x-20,cy:Tp.y+dropB*.5-45,z:1.5},c1:{cx:Tp.x-30,cy:Tp.y+dropB*.5-40,z:1.42}});t=add('face',t,t+1.3,{who:1,mood:'pain',z0:1.08,z1:1.18,cap:'AUA!'});}
  }
- s.tFinal=t;t=add('stage',t,t+3.9,{c0:{cx:RXs-170,cy:FY-235,z:1.28},c1:{cx:RXs-150,cy:FY-240,z:1.34},final:1});
+ s.tFinal=t;if(s.last)t=add('stage',t,t+3.9,{c0:{cx:RXs-170,cy:FY-235,z:1.28},c1:{cx:RXs-150,cy:FY-240,z:1.34},final:1});else t+=.05;
  s.end=t;s.cutDur=s.tFinal-I;s.shots=SH;
  s.shakes.push({t:sRel,a:12,d:.35},{t:I,a:out==='apple'?9:out==='miss'?4:16,d:.45});if(out==='body'&&dead)s.shakes.push({t:s.fallAt+.55,a:9,d:.3});
  // ---- schwebende Wörter (nur in der Totalen) ----
  const L=s.labels,hxA=AXs+10,hyA=FY-330*ha,hxR=RXs,hyR=FY-312*hf;
- L.push({t:tVS+.3,x:hxA,y:hyA,text:'TA-DA!',col:'#ffe7a0'});
+ if(!Q){L.push({t:tVS+.3,x:hxA,y:hyA,text:'TA-DA!',col:'#ffe7a0'});
  L.push({t:tVS+tPA+.35,x:hxR,y:hyR,text:'SCHLUCK!',col:'#9fd0ff'});
- L.push({t:sAim+.3,x:hxA,y:hyA,text:'FINGER IN DEN WIND',col:'#b9f0a8'});
+ L.push({t:sAim+.3,x:hxA,y:hyA,text:'FINGER IN DEN WIND',col:'#b9f0a8'});}
  L.push({t:sRel+.03,x:AXs+33*FS+40,y:FY-310*ha,text:'TWANG!',col:'#fff'});
  if(out==='body')L.push({t:s.tInj+2.55,x:RXs+70,y:hyR+60,text:dead?'†':'AUA!',col:'#fff'});
- if(out==='head')L.push({t:t-3.9-1.95,x:RXs+170,y:FY-210,text:dead?'†':'UFF …',col:'#fff'});
+ if(out==='head')L.push({t:s.tFinal-1.95,x:RXs+170,y:FY-210,text:dead?'†':'UFF …',col:'#fff'});
  // ---- Rufe aus dem Publikum ----
  const idx=n=>FC[Math.floor(hr(n*3.3+res.x*100)*FC.length)];
  const say=(tt,txt,n)=>{const c=idx(n);s.bubbles.push({t:tt,x:c.x,y:c.y-14,text:txt,team:c.bet});};
- say(tVS+.3,'Zwei Sesterzen auf den Apfel!',1);say(tVS+.95,'Fünf auf den Rekruten!',2);say(tVS+tPA+.4,'Der arme Kerl …',3);say(sAim+.6,'Wind kommt auf!',4);say(sRel-aD+.15,'Ich kann nicht hinsehen!',6);
+ if(!Q){say(tVS+.3,'Zwei Sesterzen auf den Apfel!',1);say(tVS+.95,'Fünf auf den Rekruten!',2);say(tVS+tPA+.4,'Der arme Kerl …',3);say(sAim+.6,'Wind kommt auf!',4);say(sRel-aD+.15,'Ich kann nicht hinsehen!',6);}
  const F=s.tFinal;
  if(out==='apple')['BRAVO!','Was für ein Schuss!','Der Apfel ist hin!','Meister!','Das ist ein Schütze!'].forEach((x,i)=>say(I+.15+i*.35,x,10+i));
- if(out==='apple')['Hoch lebe der Schütze!','Noch einmal!','Aus '+d+' Metern!'].forEach((x,i)=>say(F+.2+i*.6,x,40+i));
+ if(!s.last){}else if(out==='apple')['Hoch lebe der Schütze!','Noch einmal!','Aus '+d+' Metern!'].forEach((x,i)=>say(F+.2+i*.6,x,40+i));
  else if(out==='miss')['Daneben!','Buh, Stümper!','Mein Geld!','Puh, Glück gehabt!'].forEach((x,i)=>say((i<2?I+.25:F+.1)+i*.45,x,20+i));
  else['MÖRDER!','Das war ein Mensch!','Buuuh!','Abgeschlachtet für Sesterzen!','Schande!'].forEach((x,i)=>say(F+.1+i*.5,x,30+i));
  if(out==='head'||out==='body')['Oh nein!','Blut!','Holt den Medicus!'].forEach((x,i)=>say(F-1.9+i*.4,x,50+i));
@@ -756,10 +778,17 @@ function buildScene(g,r,d,res){
  if(out==='apple'){for(let i=0;i<80;i++){const a=hr(i*2.1)*6.28,v=140+hr(i*5.3)*520,ch=i%5===0;P(I,Tp.x+6,Tp.y,Math.cos(a)*v+160,Math.sin(a)*v-200,1500,1.4+hr(i)*1.2,ch?'#c23a2a':['#f8f0c8','#efe2b0','#e0594a','#fff6d8'][i%4],ch?12:4+(i%3)*3,1);}}
  if(lowMiss){for(let i=0;i<26;i++)P(I+.02,Tp.x,FY,(hr(i)-.5)*320,-80-hr(i*3)*300,1200,.6+hr(i*7)*.5,i%2?'#cdb07a':'#e2c99a',6+(i%2)*3);}
  // ---- Wurfgeschosse ----
- const nT=out==='apple'?22:(out==='miss'?8:24);
+ const nT=!s.last?0:out==='apple'?22:(out==='miss'?8:24);
  for(let i=0;i<nT;i++){const c=FC[(i*7+3)%FC.length],t0=F+.3+hr(i*4.4)*2.4;
   if(out==='apple')s.tom.push({t0,x0:c.x,y0:c.y,x1:RXs+(hr(i*2)-.5)*420,y1:FY+6+hr(i*5)*30,dur:.9,kind:'coin',h:260+hr(i)*120});
   else s.tom.push({t0,x0:c.x,y0:c.y,x1:AXs+(hr(i*2)-.5)*160,y1:FY-250+hr(i*5)*160,dur:.8+hr(i*3)*.3,kind:'tom',h:120+hr(i)*80});}
+ // ---- Zwischenrufe des Ausrufers ----
+ if(ser){const ml=s.modLines,sl=ser.i*7+3,apple=out==='apple',gold=apple?res.gold:0,end=s.end;
+  if(pre)ml.push({t0:.1,t1:sRel+.3,text:modLine(ser,'preHurt',sl)});
+  const key=dead?null:apple?'apple':out==='miss'?'miss':out==='head'?'headHurt':'hurt';
+  if(key&&(ser.n>1||key==='hurt'||key==='headHurt'))ml.push({t0:I+.25,t1:s.last?Math.max(I+2.4,s.tFinal-.1):end-.05,text:modLine(ser,key,sl+1,{gold})});
+  if(s.last){const fk=dead?'died':ser.n>1?(ser.hits+(apple?1:0)?'end':'end0'):key==='hurt'||key==='headHurt'?null:key;
+   if(fk)ml.push({t0:s.tFinal+.35,t1:end,text:modLine(ser,fk,sl+2,{gold:ser.gold+gold,hits:ser.hits+(apple?1:0)})});}}
  return s;}
 function shotAt(s,t){const L=s.shots;let sh=L[0];for(const x of L){if(t>=x.t0)sh=x;else break;}return sh;}
 function wobble(s,u){const fr=3.3+3.2*Math.min(1,s.d/400),A0=(.55-.35*s.S/100);return{amp:A0*Math.exp(-u*1.15),ph:6.283*fr*u};}
@@ -1074,11 +1103,157 @@ function anchorView(c,s,t,sh){const u=(t-sh.t0)/(sh.t1-sh.t0),tt=t-sh.t0,dur=sh.
  if(rel>0&&rel<.25){c.fillStyle='rgba(255,250,235,'+((.25-rel)*2).toFixed(2)+')';c.fillRect(0,0,W,H);}
  if(tt<.07){c.fillStyle='rgba(255,248,230,'+((1-tt/.07)*.45).toFixed(2)+')';c.fillRect(0,0,W,H);}}
 
+// =====================================================================================================
+// PREISGELD · Was zahlt das Publikum für einen Apfel? Spektakel (Entfernung), Schwierigkeit (wie selten trifft dieser Schütze aus
+// dieser Entfernung), Nervenkitzel (wie oft trifft er stattdessen den Menschen), Wert des Rekruten (Star-Bonus) und ein
+// Aufschlag, wenn der Rekrut schon verletzt dasteht. Gezahlt wird nur für Apfeltreffer; Treffer in Folge bringen je +25 %.
+// =====================================================================================================
+const PRIZE={base:10,show:.75,odds:.45,oddsFloor:.02,danger:1.5,hurt:.15,streak:.25};
+function injuryList(g){const out=[];for(const id in (g&&g.body)||{}){const p=g.body[id];if(!p)continue;
+ if(p.missing)out.push(pName(id)+' fehlt');else if(p.injury&&(p.hp??100)<90)out.push(p.injury+' ('+pName(id)+')');}return out;}
+function prizeFor(d,p,r){const show=Math.pow(d/10,PRIZE.show),odds=Math.pow(1/Math.max(p.apple,PRIZE.oddsFloor),PRIZE.odds),danger=1+PRIZE.danger*(p.head+p.body),
+  star=qualityFactor(r),hurt=1+PRIZE.hurt*Math.min(3,injuryList(r).length);
+ return Math.max(5,Math.round(PRIZE.base*show*odds*danger*star*hurt/5)*5);}
+const streakMult=k=>1+PRIZE.streak*k;               // k = Zahl der Apfeltreffer direkt davor
+function seriesMax(per,n){let s=0;for(let k=0;k<n;k++)s+=Math.round(per*streakMult(k)/5)*5;return s;}
+
+// =====================================================================================================
+// MODERATION · Der Ausrufer stellt Schütze und Apfelträger vor und macht den Lanista nieder. Jede Zeile ist ein Bild:
+// Gesicht des Sprechers oder des Vorgestellten, Namensschild, Untertitel in Schreibmaschine. Tippen = nächste Zeile.
+// =====================================================================================================
+function lanName(){return String((M.s&&M.s.lanista&&M.s.lanista.name)||lanTest()||'Marcus').trim();}
+let MODC=null;
+function modCast(){if(MODC)return MODC;const R0=M.s.rng;M.s.rng=rng(90210);let g;try{g=M.makeGladiator(1);}finally{M.s.rng=R0;}g.age=52;g.name='Der Ausrufer';MODC=g;return g;}
+const MODUSED=new Set();
+function pickLine(arr,seed,key){const n=arr.length;let best=null;for(let k=0;k<n;k++){const i=Math.floor(hash(seed+k*977)*n)%n,id=key+i;if(!MODUSED.has(id)){best=[i,id];break;}}
+ if(!best){for(let i=0;i<n;i++)MODUSED.delete(key+i);best=[Math.floor(hash(seed)*n)%n,key+Math.floor(hash(seed)*n)%n];}MODUSED.add(best[1]);return arr[best[0]];}
+const fmt=(s,v)=>s.replace(/\{(\w+)\}/g,(m,k)=>v[k]!=null?v[k]:m);
+const ML={
+ open:['Bürger! Säufer! Wettbetrüger! Willkommen zum Apfelschuss – dem einzigen Obststand, an dem man sterben kann!',
+  'Legt die Brote weg und die Wetten hin: Es ist wieder Apfelschuss im Ludus von {L}!',
+  'Ruhe auf den Rängen! Wer jetzt niest, ist schuld, wenn gleich jemand stirbt.',
+  'Willkommen, Freunde des gepflegten Obstes! Heute wird geerntet – mit dem Bogen, von einem Kopf.',
+  'Meine Damen und Herren, der Medicus hat heute frei. Das ist kein gutes Zeichen. Willkommen zum Apfelschuss!'],
+ archerHi:['Zu meiner Linken: {A}! Schusswert {S}. Trifft eine Fliege im Flug – und entschuldigt sich danach bei ihr.',
+  '{A}! Der ruhigste Bogen dieser Schule. Sein Puls ist niedriger als der Lohn, den {L} zahlt.',
+  'Begrüßt {A}! Hat noch nie einen Apfelträger verloren. Sagt er. Die Friedhofsliste sagt nichts – die hat {L} verkauft.'],
+ archerMid:['Zu meiner Linken: {A}. Trifft meistens. Was „meistens“ heißt, sehen wir gleich.',
+  '{A}! Sagt, er sei in Form. Sagt auch, der Bogen sei nur geliehen – von {L}, gegen Zinsen.',
+  'Hier ist {A}, Schusswert {S}. Nicht der Beste, aber der Billigste. Ihr wisst, wer ihn ausgesucht hat.'],
+ archerLo:['{A}! Hat letzte Woche eine Taube getroffen. Gezielt hatte er auf die Scheibe.',
+  'Begrüßt {A}! Die Strohpuppe im Hof trägt seinen Namen nicht, sie trägt seine Pfeile. Überall. Nur nicht am Apfel.',
+  '{A}, Schusswert {S}. {L} hat ihn ausgewählt, weil gute Schützen teuer sind. Rekruten sind billiger.'],
+ recruit:['Und hier, mit einem Apfel auf dem Kopf und sehr wenig Mitspracherecht: {R}! Marktwert {P} Gold.',
+  'Rechts von mir steht {R}. Er hat sich freiwillig gemeldet. Also – {L} hat für ihn „ja“ gesagt.',
+  'Das ist {R}, laut {L} {P} Gold wert. Laut seiner Mutter unbezahlbar. Wer hat wohl recht?',
+  '{R}! Festgebunden an einen Pfahl, damit er nicht wegläuft. {L} nennt das „Motivation“.'],
+ injured:['{R} trägt heute: {inj}. Er wollte eigentlich zum Medicus. {L} meinte, ein Apfel auf dem Kopf sei auch eine Art Behandlung.',
+  'Ja, ihr seht richtig: {inj}. Der Medicus hätte zwei Tage gebraucht. {L} hatte zwei Minuten und einen Apfel.',
+  'Verletzt? Natürlich ist er verletzt! {inj}. Aber Liegen bringt kein Gold, sagt {L}. Stehen mit Apfel schon.',
+  'Applaus für {R}! Mit {inj} steht er hier. {L} nennt das „Belastungsprobe“. Wir nennen es Zirkus – und zahlen trotzdem.',
+  '{inj} – und trotzdem hier. Der Medicus hat geklopft, {L} hat abgeschlossen. Bettruhe kostet nämlich, Apfelschuss bringt.'],
+ lan:['Und da oben sitzt der Mann, dem wir diesen Nachmittag verdanken: {L}! Ein Herz aus Gold. Leider nur aus Gold.',
+  '{L} hat ausgerechnet, was ein toter Rekrut kostet und was ein voller Rang bringt. Ratet, wer gewonnen hat.',
+  'Für {L} gibt es zwei Arten von Menschen: die, die zahlen, und die, die einen Apfel tragen.',
+  '{L} sagt, Menschen seien sein wichtigstes Kapital. Darum stellt er sie auch in die Schusslinie – Kapital muss arbeiten.',
+  'Ein Applaus für {L}! Er kennt jeden Rekruten beim Namen. Na gut – beim Preis.',
+  '{L} hat einmal geweint. Damals ist ein Pfeil zerbrochen. Zwei Sesterzen, einfach weg.',
+  'Menschenwürde? Hat {L} mal gehört. Er dachte, das sei ein Gewürz, und hat es zu teuer gefunden.',
+  'Ihr zahlt Eintritt, damit hier einer stillsteht und betet. {L} zahlt dem Rekruten dafür: nichts. Das nennt man Geschäftssinn.',
+  '{L} hat den Rekruten gefragt, ob er Angst hat. Dann hat er die Antwort an die Wettbude verkauft.',
+  'Der Medicus kostet Geld. Ein Sarg kostet Geld. Ein Apfel kostet zwei Sesterzen. {L} hat sich für den Apfel entschieden.',
+  'Verneigt euch vor {L}: dem einzigen Mann, der auf einer Beerdigung nach dem Wiederverkaufswert der Sandalen fragt.',
+  '{L} würde die eigene Großmutter mit Apfel aufstellen. Hat er schon. Sie war schlecht für die Quote.',
+  'Wenn {L} lächelt, ist irgendwo gerade ein Rekrut billiger geworden.',
+  'Ein Mensch, ein Apfel, ein Pfeil – und {L}, der als Einziger garantiert nichts riskiert. Applaus für diesen Mut!'],
+ cheap:['Der Rekrut ist {P} Gold wert, der Apfel zwei Sesterzen. {L} hat lange überlegt, was er im Ernstfall ersetzen muss.',
+  '{P} Gold für einen ganzen Menschen. Bei {L} ist sogar der Tod im Sonderangebot.'],
+ dear:['{P} Gold steht da hinten! {L} hat ihm vorhin noch die Stirn geputzt – damit man den Treffer besser sieht.',
+  'Ein teurer Rekrut, {P} Gold. {L} schwitzt mehr als der Rekrut. Natürlich nur ums Geld.'],
+ many:['{N} Pfeile! Einer hätte gereicht, um zu zeigen, dass das eine dumme Idee ist. {L} wollte {N}.',
+  '{N} Pfeile hintereinander. {L} sagt, das sei Training. Für wen, hat er nicht gesagt.',
+  '{N} Pfeile, ein Kopf. {L} findet die Rechnung gut. Der Kopf eher nicht.'],
+ far:['{d} Meter! Von da hinten sieht der Apfel aus wie ein Pickel. Für {L} sieht der Rekrut aus wie ein Gewinn.',
+  '{d} Meter Abstand. So viel Abstand hält {L} sonst nur zu seinen Schulden.'],
+ dead:['Heute schon {X} Rekruten verbraucht. {L} nennt das „Verschleiß“ und schreibt es von der Steuer ab.'],
+ stakes1:['Der Einsatz: {per} Gold für den Apfel – für {L}, versteht sich. Der Rekrut bekommt den Apfel. Wenn er Glück hat, in einem Stück.',
+  '{per} Gold zahlt das Publikum für einen Apfeltreffer. Der Rekrut setzt nur sein Leben. {L} findet das fair.'],
+ stakesN:['{N} Pfeile, {per} Gold für jeden Apfel, und jeder Treffer in Folge ein Viertel mehr – bis zu {max} Gold für {L}. Für den Rekruten: bis zu {N} neue Äpfel.',
+  'Bis zu {max} Gold stehen im Raum! {per} pro Apfel, jeder Treffer in Folge ein Viertel mehr. Der Rekrut kriegt Prozente – auf seine Überlebenschance.'],
+ go:['Schütze! Spann den Bogen!','Ruhe jetzt. Und Schütze – ziel bitte auf das Obst.','Und los! Wer jetzt blinzelt, verpasst vielleicht eine Beerdigung.'],
+ // Zwischenrufe während der Serie
+ preHurt:['{R} blutet, aber {L} winkt: Weiter! Er hat ja noch einen zweiten Arm.','Ein Loch mehr im Rekruten, ein Apfel mehr auf dem Kopf. {L} kennt keine Pause.',
+  'Der Medicus steht schon am Rand. {L} hat ihm gesagt: Erst wenn alle Pfeile weg sind.'],
+ pre:['Pfeil {i} von {N}. Der Rekrut zählt mit. Laut.','Neuer Apfel, neues Glück. Die Äpfel hat {L} übrigens vom Markt geklaut.',
+  'Pfeil {i}. {L} lehnt sich zurück – er hat ja keinen Apfel auf dem Kopf.','Weiter geht’s! Pfeil {i}. Irgendwer hat schon auf „Kopf“ gewettet. War das {L}?'],
+ apple:['Getroffen! {L} reibt sich die Hände. Der Rekrut seine Knie.','Apfel ab, Kopf noch dran! {L} ist fast enttäuscht – die Wette auf Blut stand besser.',
+  'Volltreffer! {gold} Gold für {L}. Für {R}: ein neuer Apfel.','Apfelmus! Der Rekrut lebt. {L} zahlt ihm dafür … natürlich nichts.'],
+ miss:['Daneben! Der Pfeil kostet zwei Sesterzen – {L} zieht sie dem Rekruten vom Lohn ab.','Vorbei! {R} hat gerade sein Leben an sich vorbeifliegen sehen.',
+  'Daneben! Und {L} brüllt: Nochmal! Er hat ja nicht das Ding auf dem Kopf.'],
+ hurt:['Treffer – leider im Rekruten! {L} ruft: Der Pfeil bleibt drin, der kostet extra!','Er blutet! Und {L}? Fragt, ob der Apfel noch oben ist.',
+  'Medicus? Nein, sagt {L}. Erst die Serie fertig. Bezahlt ist bezahlt.'],
+ headHurt:['Am Kopf! Er lebt noch! {L} nennt das Glück. Der Rekrut nennt es anders – leise.'],
+ died:['{R} ist tot. {L} fragt schon, ob man den Apfel noch verkaufen kann.','Ruhe in Frieden, {R}. {L} lässt ausrichten: Die Ausrüstung bleibt im Haus.',
+  'Ein Menschenleben – und für {L} nur eine Zeile im Kassenbuch. Durchgestrichen.'],
+ end:['{hits} von {N} Äpfeln! {gold} Gold wandern in die Tasche von {L}. Der Rekrut darf den Apfelsaft behalten.','Schluss! {L} zählt {gold} Gold. {R} zählt seine Finger.'],
+ end0:['Kein einziger Apfel. {L} schaut, als hätte man ihm das Herz rausgeschossen. Das hätte man allerdings erst finden müssen.']};
+// Die Zeilen der Eröffnung: [wer im Bild, Text, Gesicht, Namensschild, Lacher?]
+function modBeats(ser,g,r,d){const v=modVars(ser,g,r,d),sd=ser.seed,S=skill(g),inj=injuryList(r),price=M.price(r),B=[];
+ const push=(who,key,mood,plate,laugh)=>{const arr=Array.isArray(key)?key:ML[key];B.push({who,text:fmt(pickLine(arr,sd+B.length*31,Array.isArray(key)?'x':key),v),mood,plate,laugh});};
+ push('mod','open','grin');
+ push('archer',S>=65?'archerHi':S>=40?'archerMid':'archerLo',S>=65?'confident':S>=40?'determined':'nervous',{name:g.name,sub:'Der Schütze · Schusswert '+nf(S,0)});
+ push('recruit','recruit',inj.length?'pain':'scared',{name:r.name,sub:'Der Apfelhalter · Wert '+price+' Gold'+(inj.length?' · verletzt':'')});
+ if(inj.length)push('recruit','injured','pain',null,true);
+ push('lan','lan','grin',{name:lanName(),sub:'Lanista · Besitzer dieser Schule'},true);
+ if(!inj.length){const extra=ser.n>=5?'many':d>=200?'far':price<=200?'cheap':price>=600?'dear':tally.dead>0?'dead':'lan';push('mod',extra,'grin',null,true);}
+ push('mod',ser.n>1?'stakesN':'stakes1','determined');B[B.length-1].text+=' '+fmt(pickLine(ML.go,sd+99,'go'),v);B[B.length-1].mood='roar';
+ let t=0;for(const b of B){const n=b.text.length;b.t0=t;b.t1=t=t+clamp(1.2+n*.05,3,10);}return{list:B,total:t};}
+function modVars(ser,g,r,d){const inj=injuryList(r);return{L:lanName(),A:g.name,R:r.name,S:nf(skill(g),0),P:M.price(r),d,N:ser.n,per:ser.per,max:seriesMax(ser.per,ser.n),
+ inj:inj.length>1?inj.slice(0,-1).join(', ')+' und '+inj[inj.length-1]:inj[0]||'',X:tally.dead,i:ser.i+1,gold:ser.gold,hits:ser.hits};}
+function modLine(ser,key,salt,over){const v=Object.assign(modVars(ser,ser.g,ser.r,ser.d),over||{});return fmt(pickLine(ML[key],ser.seed+salt*131,key),v);}
+
+let MODV=null;
+function wrapText(c,txt,maxW){const out=[];let line='';for(const w of txt.split(' ')){const tryL=line?line+' '+w:w;if(c.measureText(tryL).width>maxW&&line){out.push(line);line=w;}else line=tryL;}if(line)out.push(line);return out;}
+function modView(c,s,t,sh){const u=t-sh.t0,dur=sh.t1-sh.t0,who=sh.who;if(!MODV)MODV=mkc(W,H);
+ const g=who==='mod'?modCast():who==='archer'?s.g:who==='recruit'?s.r:yardCast().lan;
+ const typed=Math.max(0,Math.min(sh.text.length,Math.floor((u-.3)*40))),talking=who==='mod'&&typed<sh.text.length;
+ const mood=talking&&Math.floor(t*7)%2?'roar':sh.mood,yaw=who==='archer'?.45:who==='recruit'?-.45:who==='lan'?.32:-.18;
+ try{M.faceShot.paint(MODV.getContext('2d'),W,H,{g,team:who==='recruit'?1:0,mood,yaw,zoom:1.04+.07*u/dur,tilt:who==='lan'?-.06:0,hurt:who==='recruit'&&injuryList(s.r).length?1:0,shake:who==='recruit'?(sh.mood==='pain'?.8:.5):0,lines:0},t);}catch(e){}
+ c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.drawImage(MODV,0,0);
+ for(let i=0;i<110;i++){const x=hr(i*3.1+Math.floor(t*24)*.37)*W,y=hr(i*7.7+Math.floor(t*24)*.91)*H;c.fillStyle=i%2?'rgba(255,240,210,.06)':'rgba(0,0,0,.12)';c.fillRect(Math.round(x),Math.round(y),3,3);}
+ const vg=c.createRadialGradient(W/2,H*.45,H*.3,W/2,H/2,W*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');c.fillStyle=vg;c.fillRect(0,0,W,H);
+ const top=54,bot=132;c.fillStyle='#050302';c.fillRect(0,0,W,top);c.fillRect(0,H-bot,W,bot);
+ c.textBaseline='middle';c.font='700 13px system-ui,sans-serif';c.fillStyle='rgba(243,226,176,.55)';c.textAlign='left';c.fillText('LUDUS-FILMVERLEIH PRÄSENTIERT · APFELSCHUSS',24,top/2);
+ c.fillText(s.d+' m · '+(s.ser?s.ser.n:1)+(s.ser&&s.ser.n>1?' PFEILE':' PFEIL')+' · FREIGEGEBEN AB 18 · ENTHÄLT OBST',420,top/2);
+ // Namensschild
+ if(sh.plate){const a=easeOut((u-.15)/.4),x=36-(1-a)*420,y=H-bot-120,col=who==='recruit'?'#ffb4a0':who==='lan'?'#e6b42a':TC[0].name;c.globalAlpha=clamp(a,0,1);
+  c.font='900 44px Georgia,serif';const nw=Math.max(c.measureText(sh.plate.name).width,(c.font='700 18px system-ui,sans-serif',c.measureText(sh.plate.sub).width))+40;
+  c.fillStyle='rgba(10,6,4,.82)';c.fillRect(x,y,nw,96);c.fillStyle=col;c.fillRect(x,y,6,96);
+  c.textAlign='left';c.font='900 44px Georgia,serif';outline(c,sh.plate.name,x+22,y+36,col,3);c.font='700 18px system-ui,sans-serif';c.fillStyle='#f3e2b0';c.fillText(sh.plate.sub,x+22,y+76);c.globalAlpha=1;}
+ // Untertitel
+ c.textAlign='left';c.font='800 14px system-ui,sans-serif';c.fillStyle='#e6b42a';c.fillText(who==='mod'?'DER AUSRUFER':'DER AUSRUFER (aus dem Off)',60,H-bot+22);
+ c.font='italic 600 25px Georgia,serif';const lines=wrapText(c,sh.text,W-120);let left=typed;
+ lines.slice(0,3).forEach((ln,i)=>{const show=ln.slice(0,Math.max(0,left));left-=ln.length+1;c.fillStyle='#efe4c6';c.fillText(show+(left<0&&left>-ln.length-1&&Math.floor(t*6)%2?'▌':''),60,H-bot+56+i*31);});
+ c.textAlign='right';c.font='600 12px system-ui,sans-serif';c.fillStyle='rgba(243,226,176,.45)';c.fillText('Tippen = weiter',W-20,H-14);
+ if(u<.08){c.fillStyle='rgba(255,248,230,'+((1-u/.08)*.35).toFixed(2)+')';c.fillRect(0,0,W,H);}}
+// Zwischenruf des Ausrufers in der Totalen (Untertitelzeile über der Streckenleiste)
+function modOverlay(c,s,t,topPos){for(const m of (s.modLines||[])){if(t<m.t0||t>m.t1)continue;const u=t-m.t0,a=clamp(Math.min(u/.25,(m.t1-t)/.3),0,1);
+ c.save();c.globalAlpha=a;c.font='italic 600 22px Georgia,serif';const lines=wrapText(c,m.text,W-260),h=30+lines.length*28,y0=topPos?62:H-80-h;
+ c.fillStyle='rgba(8,5,3,.8)';c.fillRect(110,y0,W-220,h);c.fillStyle='#e6b42a';c.fillRect(110,y0,5,h);
+ c.textAlign='left';c.textBaseline='middle';c.font='800 12px system-ui,sans-serif';c.fillStyle='#e6b42a';c.fillText('DER AUSRUFER',130,y0+14);
+ c.font='italic 600 22px Georgia,serif';c.fillStyle='#efe4c6';const n=Math.floor(u*45);let left=n;lines.forEach((ln,i)=>{c.fillText(ln.slice(0,Math.max(0,left)),130,y0+40+i*28);left-=ln.length+1;});c.restore();}}
+// Serienanzeige oben in der Mitte
+function seriesHud(c,s,t){const S=s.ser;if(!S||S.n<2)return;const done=S.results.length+(t>=s.sReact?1:0),hits=S.hits+(t>=s.sReact&&s.out==='apple'?1:0),gold=S.gold+(t>=s.sReact&&s.out==='apple'?s.res.gold:0);
+ c.save();c.setTransform(1,0,0,1,0,0);const w=440,x=W/2-w/2,y=88;c.fillStyle='rgba(12,8,5,.74)';c.fillRect(x,y,w,52);c.strokeStyle='#6b5230';c.lineWidth=2;c.strokeRect(x,y,w,52);
+ c.textAlign='center';c.textBaseline='middle';c.font='800 15px system-ui,sans-serif';c.fillStyle='#f3e2b0';c.fillText('PFEIL '+(S.i+1)+' / '+S.n+'   ·   ÄPFEL '+hits+'   ·   '+gold+' GOLD',W/2,y+17);
+ for(let k=0;k<S.n;k++){const rr=k<S.results.length?S.results[k].out:(k===S.i&&t>=s.sReact?s.out:null),cx=W/2-(S.n-1)*14+k*28,cy=y+38;
+  c.fillStyle=rr==='apple'?'#c8321f':rr==='miss'?'#7a6a50':rr?'#f0f0f0':'rgba(243,226,176,.25)';c.fillRect(cx-7,cy-6,14,12);if(rr==='head'||rr==='body'){c.fillStyle='#a01818';c.fillRect(cx-3,cy-3,6,6);}if(k===S.i){c.strokeStyle='#ffd25a';c.strokeRect(cx-9,cy-8,18,16);}}
+ c.restore();}
 // ---------- Ein Bild ----------
 function frame(c,s,t){
  prepFaces(s);const sh=shotAt(s,t),ty=sh.type;
  c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.fillStyle='#0d0907';c.fillRect(0,0,W,H);c.globalAlpha=1;
- if(ty==='vs')vsView(c,s,t,sh);else if(ty==='face')faceView(c,s,t,sh);else if(ty==='facehit')faceHitView(c,s,t,sh);else if(ty==='injury')injuryView(c,s,t,sh);
+ if(ty==='mod')modView(c,s,t,sh);else if(ty==='vs')vsView(c,s,t,sh);else if(ty==='face')faceView(c,s,t,sh);else if(ty==='facehit')faceHitView(c,s,t,sh);else if(ty==='injury')injuryView(c,s,t,sh);
  else if(ty==='death')deathView(c,s,t,sh);else if(ty==='anchor')anchorView(c,s,t,sh);else if(ty==='flight')flightView(c,s,t);else if(ty==='land')landView(c,s,t,sh);else stageView(c,s,t,sh);
  c.setTransform(1,0,0,1,0,0);c.globalAlpha=1;
  if(ty==='stage'){for(const l of s.labels){const u=t-l.t;if(u<0||u>1.15||l.t<sh.t0-.2)continue;let [X,Y]=toScr(l.x,l.y-u*60);Y=clamp(Y,200,640);X=clamp(X,160,W-160);c.globalAlpha=clamp((1.15-u)*2,0,1);c.font='900 '+Math.round(24*Math.max(1,CAM.z*.85))+'px Georgia,serif';c.textAlign='center';c.textBaseline='middle';outline(c,l.text,X,Y,l.col,3);}c.globalAlpha=1;
@@ -1087,6 +1262,7 @@ function frame(c,s,t){
  if(ty==='stage'||ty==='flight'){plates(c,s,t);if(ty==='stage')bubbles(c,s,t);stripHud(c,s,t);}
  if(ty==='stage'&&sh.final)bigText(c,s,t);
  if(ty==='stage'||ty==='flight'||ty==='land'){const u=t-sh.t0;if(u>=0&&u<.09&&sh.t0>0){c.fillStyle='rgba(255,248,230,'+((1-u/.09)*.4).toFixed(2)+')';c.fillRect(0,0,W,H);}}
+ if(ty!=='mod'){modOverlay(c,s,t,!(ty==='stage'||ty==='flight'));if(ty==='stage'||ty==='flight')seriesHud(c,s,t);}
  fireSounds(s,t);}
 
 // Streckenleiste: zeigt, wie weit die beiden auseinanderstehen und wo der Pfeil ist
@@ -1113,52 +1289,75 @@ function plates(c,s,t){plate(c,s,t,0);plate(c,s,t,1);const I=s.sReact,o=s.out;
  paintFaces(s,t<I?'determined':o==='apple'?'grin':o==='miss'?'nervous':'shock',t<s.sAim?'nervous':t<I?'scared':o==='apple'||o==='miss'?'relief':s.dead?'out':'pain',t);}
 function bubbles(c,s,t){c.font='600 17px system-ui,sans-serif';c.textBaseline='middle';c.textAlign='center';for(const b of s.bubbles){const u=t-b.t;if(u<0||u>1.8)continue;const tw=c.measureText(b.text).width+16,bx=clamp(toScr(b.x,b.y)[0],tw/2+8,W-tw/2-8),by=clamp(toScr(b.x,b.y)[1],150,600)-u*10,fs=21;
   c.globalAlpha=clamp((1.8-u)*3,0,1);c.fillStyle='rgba(250,240,215,.94)';c.fillRect(bx-tw/2,by-fs*.75,tw,fs*1.5);c.fillStyle=b.team?'#9e3029':'#2c5c96';c.fillRect(bx-tw/2,by-fs*.75,4,fs*1.5);c.fillStyle='#2a1a10';c.fillText(b.text,bx+2,by);c.globalAlpha=1;}}
-function bigText(c,s,t){const o=s.out,res=s.res,u=t-s.tFinal;
- const g=o==='apple'?{text:'APFEL GETROFFEN!',sub:'+'+res.gold+' Gold · aus '+s.d+' m',col:'#ffe7a0'}:o==='miss'?{text:'DANEBEN!',sub:s.missWhy,col:'#b9f0a8'}:{text:o==='head'?'KOPFTREFFER!':'KÖRPERTREFFER!',sub:s.r.name+(res.dead?' ist tot':' ist schwer verletzt')+(s.where?' · '+s.where:''),col:'#ff9b8a'};
+function bigText(c,s,t){const o=s.out,res=s.res,u=t-s.tFinal,SR=s.ser,hits=SR?SR.hits+(o==='apple'?1:0):0,goldS=SR?SR.gold+(o==='apple'?res.gold:0):0;
+ const g=SR&&SR.n>1?(res.dead?{text:'SERIE ABGEBROCHEN',sub:s.r.name+' ist tot · '+hits+' Äpfel · '+goldS+' Gold',col:'#ff9b8a'}:{text:hits+' VON '+SR.n+' ÄPFELN',sub:'+'+goldS+' Gold · aus '+s.d+' m',col:hits?'#ffe7a0':'#b9f0a8'}):o==='apple'?{text:'APFEL GETROFFEN!',sub:'+'+res.gold+' Gold · aus '+s.d+' m',col:'#ffe7a0'}:o==='miss'?{text:'DANEBEN!',sub:s.missWhy,col:'#b9f0a8'}:{text:o==='head'?'KOPFTREFFER!':'KÖRPERTREFFER!',sub:s.r.name+(res.dead?' ist tot':' ist schwer verletzt')+(s.where?' · '+s.where:''),col:'#ff9b8a'};
  c.save();c.globalAlpha=ease(u/.35);c.fillStyle='rgba(8,5,3,.62)';c.fillRect(0,160,W,128);c.textAlign='center';c.textBaseline='middle';const pop=1+.3*(1-ease(u/.25));
  c.font='900 '+Math.round(63*pop)+'px Georgia,serif';c.fillStyle='rgba(0,0,0,.6)';c.fillText(g.text,643,213);c.fillStyle=g.col;c.fillText(g.text,640,210);
  c.font='700 27px Georgia,serif';c.fillStyle='#000';c.fillText(g.sub,642,266);c.fillStyle='#f3e2b0';c.fillText(g.sub,640,264);c.restore();}
 function fireSounds(s,t){const f=s.fired,out=s.out,I=s.sReact;
  const once=(k,tt,fn)=>{if(!f[k]&&t>=tt&&t<tt+1.5){f[k]=1;fn();}};
+ for(const b of s.shots)if(b.type==='mod'&&b.laugh)once('laugh'+b.t0,b.t1-1.3,SFX.laugh);
  once('creak',s.sAim+.3,SFX.creak);
  once('twang',s.sRel,()=>{SFX.twang();setTimeout(()=>SFX.whoosh(Math.min(s.flightDur,3.5)),300);});
  once('impact',I,()=>{if(out==='apple'){SFX.splat();setTimeout(SFX.cheer,150);}else if(out==='miss'){SFX.whoosh(.4);if(s.lowMiss)SFX.thud();}else{SFX.thud();SFX.splat();setTimeout(SFX.gasp,60);}});
  if(s.tLand)once('land',s.tLand,()=>{SFX.thud();setTimeout(SFX.groan,200);});
  if(s.tInj)once('inj',s.tInj+.3,()=>{SFX.splat();SFX.thud();});
  if(s.dead)once('dead',s.fallAt+.6,SFX.groan);
- once('final',s.tFinal,()=>{if(out==='apple')SFX.cheer();else if(out!=='miss')SFX.boo();});}
+ if(s.last)once('final',s.tFinal,()=>{if(out==='apple')SFX.cheer();else if(out!=='miss')SFX.boo();});}
 
 // ---------- Ablauf ----------
 let sc=null,raf=0,last=0,speed=1,finished=false;
 const cv=$('cv'),cx=cv.getContext('2d');
+let SER=null;
+function newSeries(n){const g=A(),r=R(),p=probs(skill(g),dist);return{g,r,d:dist,n,i:0,p,per:prizeFor(dist,p,r),seed:Math.floor(Math.random()*1e9),results:[],hits:0,streak:0,gold:0,hurt:false,over:false,forces:[]};}
+function sceneFor(ser){const g=ser.g,r=ser.r,d=ser.d,res=shot(g,d,Math.floor(Math.random()*1e9)),force=ser.forces[ser.i];if(force)Object.assign(res,force);
+ if(res.out==='body'&&!res.part)res.part=partOf(res.x,res.y)||'Brust';res.p=ser.p;res.gold=res.out==='apple'?Math.round(ser.per*streakMult(ser.streak)/5)*5:0;
+ const opt={ser,quick:ser.i>0,idx:ser.i,n:ser.n};if(ser.i===0)opt.beats=modBeats(ser,g,r,d);
+ const sc2=buildScene(g,r,d,res,opt);sc2.t=0;return sc2;}
+// Ein Pfeil ist durch: Ergebnis buchen, Verletzung am Rekruten eintragen
+function commitArrow(s){if(s.committed)return;s.committed=1;const ser=s.ser,res=s.res,r=ser.r;ser.results.push({...res,where:s.where,ipart:s.ipart});
+ if(res.out==='apple'){ser.hits++;ser.streak++;ser.gold+=res.gold;}else ser.streak=0;
+ if(res.out==='head'||res.out==='body'){ser.hurt=true;const id=res.out==='head'?'head':s.ipart,b=r.body&&r.body[id];
+  if(b&&!res.dead){b.hp=Math.max(5,(b.hp??100)-(res.out==='head'?50:38));const txt=res.out==='head'?'Pfeilwunde'+(s.where?' ('+s.where+')':''):'Pfeilwunde';try{M.noteInjury(r,id,txt);}catch(e){b.injury=txt;}}}
+ if(res.dead){r.dead=true;ser.over=true;}ser.i++;if(ser.i>=ser.n)ser.over=true;}
 function start(force){const g=A(),r=R();if(!g||!r||r.dead||sc)return;
- const res=shot(g,dist,Math.floor(Math.random()*1e9));if(force)Object.assign(res,force);if(res.out==='body'&&!res.part)res.part=partOf(res.x,res.y)||'Brust';
- const p=probs(res.S,dist);res.p=p;res.gold=res.out==='apple'?goldFor(dist,p.apple,r):0;
- sc=buildScene(g,r,dist,res);sc.t=0;finished=false;speed=1;$('bSpeed').textContent='⏩ 1×';$('bNext').hidden=true;$('shoot').hidden=false;document.body.style.overflow='hidden';
+ SER=newSeries(ARROWS);SER.forces=Array.isArray(force)?force:force?[force]:[];
+ sc=sceneFor(SER);finished=false;speed=1;$('bSpeed').textContent='⏩ 1×';$('bNext').hidden=true;$('shoot').hidden=false;document.body.style.overflow='hidden';
  audio($('bSnd').dataset.on==='1');last=performance.now();raf=requestAnimationFrame(loop);}
-function loop(now){if(!sc)return;const dt=Math.min(.05,(now-last)/1000);last=now;sc.t+=dt*speed;frame(cx,sc,sc.t);
- if(sc.t>=sc.sReact+(sc.cutDur||0)+1.6&&!finished){$('bNext').hidden=false;}
- if(sc.t>=sc.end&&!finished){finished=true;setTimeout(()=>{if(sc)finish();},1500);}
+function loop(now){if(!sc)return;const dt=Math.min(.05,(now-last)/1000);last=now;sc.t+=dt*speed;
+ if(sc.t>=sc.end&&!sc.last&&!finished){commitArrow(sc);sc=sceneFor(SER);}
+ frame(cx,sc,sc.t);
+ if(sc.last&&sc.t>=sc.sReact+(sc.cutDur||0)+1.6&&!finished){$('bNext').hidden=false;}
+ if(sc.last&&sc.t>=sc.end&&!finished){finished=true;setTimeout(()=>{if(sc)finish();},1500);}
  raf=requestAnimationFrame(loop);}
-function finish(){if(!sc)return;const s=sc,res=s.res,r=s.r,g=s.g;cancelAnimationFrame(raf);sc=null;$('shoot').hidden=true;document.body.style.overflow='';
- const tr=applyTraining(g,res,s.d,res.p);tally.n++;if(res.out==='apple'){tally.apple++;tally.gold+=res.gold;}if(res.dead){r.dead=true;tally.dead++;}
- const head={apple:['Apfel getroffen','win'],miss:['Daneben','meh'],head:[res.dead?'Kopftreffer: Rekrut tot':'Kopftreffer: Rekrut schwer verletzt','lose'],body:[res.dead?'Körpertreffer ('+res.part+'): Rekrut tot':'Körpertreffer ('+res.part+'): Rekrut verletzt','lose']}[res.out];
+function finish(){if(!sc)return;const s=sc;commitArrow(s);const ser=SER,r=ser.r,g=ser.g;cancelAnimationFrame(raf);sc=null;$('shoot').hidden=true;document.body.style.overflow='';
+ // Training: jeder geschossene Pfeil zählt
+ const merged={};let mult=0;for(const res of ser.results){const tr=applyTraining(g,res,ser.d,res.p);mult+=tr.mult;for(const x of tr.list){if(!merged[x.label])merged[x.label]={label:x.label,from:x.from,to:x.to};else merged[x.label].to=x.to;}}
+ mult/=Math.max(1,ser.results.length);const list=Object.values(merged);
+ tally.n+=ser.results.length;tally.apple+=ser.hits;tally.gold+=ser.gold;if(r.dead)tally.dead++;
+ const n=ser.results.length,last=ser.results[n-1],hurtNow=injuryList(r);
+ const head=ser.n===1?{apple:['Apfel getroffen','win'],miss:['Daneben','meh'],head:[last.dead?'Kopftreffer: Rekrut tot':'Kopftreffer: Rekrut verletzt','lose'],body:[last.dead?'Körpertreffer ('+last.part+'): Rekrut tot':'Körpertreffer ('+last.part+'): Rekrut verletzt','lose']}[last.out]
+  :[r.dead?'Serie abgebrochen: '+esc(r.name)+' ist tot':ser.hits+' von '+ser.n+' Äpfeln getroffen',r.dead?'lose':ser.hits?'win':'meh'];
+ const chip=(res,i)=>{const t=res.out==='apple'?'🍎 +'+res.gold:res.out==='miss'?'daneben':res.dead?'✝ '+(res.out==='head'?'Kopf':res.part):'🩸 '+(res.out==='head'?'Kopf':res.part);return `<span class="${res.out==='apple'?'a':res.out==='miss'?'':'h'}">${i+1}: ${t}</span>`;};
+ const rest=[];for(let i=n;i<ser.n;i++)rest.push(`<span class="x">${i+1}: nicht geschossen</span>`);
  const el=$('res');el.hidden=false;
- el.innerHTML=`<h2>Ergebnis</h2><h1 class="${head[1]}">${head[0]}</h1><p>${esc(g.name)} schoss aus <b>${s.d} m</b> auf den Apfel von ${esc(r.name)} · Abweichung vom Apfelmittelpunkt <b>${nf(res.dist*100,1)} cm</b> · </p>
- <p><b>Gold:</b> ${res.out==='apple'?'+'+res.gold:'0'}${res.out==='apple'?'':' (nur ein Apfeltreffer zahlt)'} · <b>Rekrut:</b> ${r.dead?'✝ tot':res.out==='head'||res.out==='body'?'verletzt':'unversehrt'}</p>
- <h3>Fortschritt durch den Schuss <small class="hint">(Lernfaktor ×${nf(tr.mult,2)}, je schwerer der Schuss, desto mehr)</small></h3>${tr.list.map(x=>`<div class="gain"><span>${x.label}</span><b>${nf(x.from-(x.to-x.from)*0,2)} → ${nf(x.to,2)}</b><small>+${nf(x.to-x.from,3)}</small></div>`).join('')}
- <p class="hint">Schusswert jetzt ${nf(skill(g),2)}. Bilanz dieser Sitzung: ${tally.n} Schüsse · ${tally.apple} Äpfel · ${tally.gold} Gold · ${tally.dead} tote Rekruten.</p>
+ el.innerHTML=`<h2>Ergebnis</h2><h1 class="${head[1]}">${head[0]}</h1><p>${esc(g.name)} schoss ${n===1?'einen Pfeil':n+' Pfeile'} aus <b>${ser.d} m</b> auf den Apfel von ${esc(r.name)}. Preisgeld pro Apfel ${ser.per} Gold, jeder Treffer in Folge +25 %.</p>
+ <div class="shots">${ser.results.map(chip).join('')}${rest.join('')}</div>
+ <p><b>Gold:</b> +${ser.gold} · <b>Rekrut:</b> ${r.dead?'✝ tot (Wert '+M.price(r)+' Gold verloren)':hurtNow.length?'verletzt – '+esc(hurtNow.join(', ')):'unversehrt'}</p>
+ <h3>Fortschritt <small class="hint">(Lernfaktor ×${nf(mult,2)}, je schwerer der Schuss, desto mehr)</small></h3>${list.map(x=>`<div class="gain"><span>${x.label}</span><b>${nf(x.from,2)} → ${nf(x.to,2)}</b><small>+${nf(x.to-x.from,3)}</small></div>`).join('')}
+ <p class="hint">Schusswert jetzt ${nf(skill(g),2)}. Bilanz dieser Sitzung: ${tally.n} Pfeile · ${tally.apple} Äpfel · ${tally.gold} Gold · ${tally.dead} tote Rekruten.</p>
  <div class="row"><button class="primary" id="again">🏹 NOCHMAL SCHIESSEN</button><button id="reroll">↻ Neue Kämpfer auswürfeln</button></div>`;
- el.querySelector('#again').onclick=()=>{if(R().dead){const n=recruits.find(x=>!x.dead);if(n)selR=n.id;}render();start();};el.querySelector('#reroll').onclick=()=>{newRoster();el.hidden=true;};
+ el.querySelector('#again').onclick=()=>{if(R().dead){const nx=recruits.find(x=>!x.dead);if(nx)selR=nx.id;}render();start();};el.querySelector('#reroll').onclick=()=>{newRoster();el.hidden=true;};
  render();el.scrollIntoView({behavior:'smooth',block:'start'});}
 $('go').onclick=()=>{$('res').hidden=true;start();};
 $('bSpeed').onclick=()=>{speed=speed===1?2:1;$('bSpeed').textContent='⏩ '+speed+'×';};
 $('bSnd').dataset.on='0';const sndSet=on=>{$('bSnd').dataset.on=on?'1':'0';$('bSnd').textContent=on?'🔊':'🔇';$('boardSnd').textContent=on?'🔊 Ton aus':'🔇 Ton an';audio(on);};$('bSnd').onclick=e=>sndSet(e.currentTarget.dataset.on!=='1');$('boardSnd').onclick=()=>sndSet($('bSnd').dataset.on!=='1');
-$('bSkip').onclick=()=>{if(sc&&sc.t<sc.sReact)sc.t=sc.sReact-.01;};
+function skip(){if(!sc)return;const sh=shotAt(sc,sc.t);if(sh.type==='mod'){sc.t=sh.t1+.001;return;}if(sc.t<sc.sReact-.05){sc.t=sc.sReact-.01;return;}if(!sc.last)sc.t=sc.end;}
+$('bSkip').onclick=skip;cv.addEventListener('click',()=>{if(sc&&shotAt(sc,sc.t).type==='mod')skip();});
 $('bNext').onclick=()=>finish();
 
 // Testzugriff (Browser-Konsole)
-window.APFEL={CFG,skill,spread,probs,shot,flight,goldFor,qualityFactor,applyTraining,start,finish,newRoster,get sc(){return sc;},frame,buildScene,
+window.APFEL={CFG,PRIZE,prizeFor,seriesMax,injuryList,modBeats,get ser(){return SER;},setArrows:n=>{ARROWS=n;refresh();},skip,skill,spread,probs,shot,flight,goldFor,qualityFactor,applyTraining,start,finish,newRoster,get sc(){return sc;},frame,buildScene,
  state:()=>({archers,recruits,selA,selR,dist}),setDist:d=>{dist=d;refresh();},select:(a,r)=>{if(a!=null)selA=archers[a].id;if(r!=null)selR=recruits[r].id;render();},
  board:()=>BSTATE,seek:t=>{if(sc)sc.t=t;},pause:()=>{if(sc)speed=0;}};
 {const el=document.getElementById('lanName');try{el.value=localStorage.getItem('apfelLanista')||'';}catch(e){}
