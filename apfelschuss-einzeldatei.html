@@ -3200,12 +3200,12 @@ function head(q,T,C,o,yaw,t,mood){
 const bufs=new WeakMap();
 // o: {g, team, mood, yaw?, sink?, tilt?, dark?, pale?, blood?, zoom?}; t: Sekunden seit Beginn der Einstellung
 function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createElement('canvas'),b:document.createElement('canvas'),c:document.createElement('canvas'),d:document.createElement('canvas')};B.a.width=B.b.width=B.c.width=B.d.width=FW;B.a.height=B.b.height=B.c.height=B.d.height=FH+40;bufs.set(g.canvas,B);}
- const colors=x=>{const A=x?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';return {identity:x?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};},gearOf=x=>{const r={};try{for(const it of M.armorItems(x)||[])r[it.def]=it;}catch{}return r;},C=colors(o.g),armor=gearOf(o.g);if(o.noHelm)delete armor.helm;/* Behandlungstisch beim Medicus: Patienten immer ohne Helm, sonst passen Kopfform und Animationen nicht */
+ const colors=x=>{const A=x?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';return {identity:x?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};},gearOf=x=>{const r={};try{for(const it of M.armorItems(x)||[])r[it.def]=it;}catch{}return r;},C=colors(o.g),armor=gearOf(o.g);
  const opt={...o,armor,scar:o.scar??((o.g?.scars||[]).length>0||(o.g?.kills||0)>=5)},mood=o.mood||'calm',m=MOODS[mood]||MOODS.calm;
  // Kamerafahrt um den Kopf: langsamer Schwenk von einer Seite zur anderen
  const yaw=o.yaw??Math.sin(t*.55+(o.team===1?Math.PI:0))*.75;
  const bq=B.a.getContext('2d');bq.imageSmoothingEnabled=false;bq.setTransform(1,0,0,1,0,0);bq.clearRect(0,0,FW,FH+40);const BT=tools(bq);
- if(o.ground)sand(bq,BT,opt,t);else backdrop(bq,BT,opt,yaw,t);
+ if(o.ground)sand(bq,BT,opt,t);else if(!o.clear)backdrop(bq,BT,opt,yaw,t);
  // Figur auf eigener Fläche, damit sie am Boden als Ganzes liegen kann
  const q=B.c.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,FW,FH+40);const T=tools(q);torso(q,T,C,opt,yaw);
  const hq=B.b.getContext('2d');hq.imageSmoothingEnabled=false;hq.setTransform(1,0,0,1,0,0);hq.clearRect(0,0,FW,FH+40);if(armor.helm){hq.translate(80,43);hq.scale(.78,.78);hq.translate(-80,0);}else hq.translate(0,20);head(hq,tools(hq),C,opt,yaw,t,mood);hq.setTransform(1,0,0,1,0,0);
@@ -3226,11 +3226,11 @@ function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createEl
  bq.save();if(o.ground){/* Schatten, dann die liegende Figur von schräg oben */bq.globalAlpha=.3;bq.fillStyle='#2a1a0c';bq.beginPath();bq.ellipse(84,62,58,40,-.5,0,Math.PI*2);bq.fill();bq.globalAlpha=1;bq.translate(80,56);bq.rotate(o.lie??-.62);bq.scale(.86,.86);bq.translate(-80,-50);}bq.drawImage(B.c,0,0);bq.restore();
  if(o.dark>0){bq.globalAlpha=cl(o.dark);bq.fillStyle='#050302';bq.fillRect(0,0,FW,FH+40);bq.globalAlpha=1;}
  // Ausgabe: füllt die Fläche, langsamer Zug ins Bild
- const z=(o.zoom||1)*1.12*(1+.07*ease(t/5)),s=Math.max(w/FW,h/FH)*z,dw=Math.round(FW*s),dh=Math.round(FH*s);g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#120c09';g.fillRect(0,0,w,h);
+ const z=(o.zoom||1)*1.12*(1+.07*ease(t/5)),s=Math.max(w/FW,h/FH)*z,dw=Math.round(FW*s),dh=Math.round(FH*s);g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;/* clear: ohne Hintergrund, z. B. zum Freistellen */if(o.clear)g.clearRect(0,0,w,h);else{g.fillStyle='#120c09';g.fillRect(0,0,w,h);}
  if(o.cheer){/* Blütenblätter und Tücher aus den Rängen */for(let i=0;i<34;i++){const n=Math.sin(i*91.7)*43758.5,v=n-Math.floor(n),k=((t*(.18+v*.22)+v*7)%1),x=(v*1.9*FW+Math.sin(t*1.3+i)*9)%FW,y=k*(FH+10)-6;BT.r(x,y,2+(i%3===0?1:0),2,['#d6453a','#f0c94a','#f4ead0','#c8372f'][i%4]);}}
  const sh=o.shake||0,ox=sh?Math.round((Math.random()-.5)*sh*s):0,oy=sh?Math.round((Math.random()-.5)*sh*s*.7):0;g.drawImage(B.a,0,0,FW,FH,Math.round(w/2-dw/2)+ox,Math.round(Math.min(0,(h-dh)*.42))+oy,dw,dh);
  if(o.lines>0){/* Schrei: Linien vom Rand zur Mitte */g.save();g.globalAlpha=cl(o.lines)*.75;g.strokeStyle='#fff6dc';g.lineWidth=Math.max(2,w/160);for(let i=0;i<18;i++){const a=i/18*Math.PI*2+Math.floor(t*14)*.37,r0=Math.max(w,h)*.74,r1=Math.max(w,h)*(.4+((i*7)%5)*.035);g.beginPath();g.moveTo(w/2+Math.cos(a)*r0,h*.45+Math.sin(a)*r0);g.lineTo(w/2+Math.cos(a)*r1,h*.45+Math.sin(a)*r1);g.stroke();}g.restore();}
- const vg=g.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.62)');g.fillStyle=vg;g.fillRect(0,0,w,h);}
+ if(o.clear)return;const vg=g.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.62)');g.fillStyle=vg;g.fillRect(0,0,w,h);}
 M.faceShot={paint,moods:Object.keys(MOODS),FW,FH,version:'helmet-lab-v4'};
 M.faceShot.paintHead=(q,actor,o={},t=0)=>{const A=actor?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';const C={identity:actor?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};head(q,tools(q),C,{...o,g:actor,armor:o.armor||{}},o.yaw||0,t,o.mood||'calm');};
 })();
@@ -4594,7 +4594,7 @@ const shapes={
  head:(x,y)=>inHead(x,y)||(x>=65&&x<=95&&y>=58&&y<=86),
  bust:(x,y)=>inHead(x,y)||(x>=64&&x<=96&&y>=56&&y<=86)||(y>=78&&x>=lerp(34,6,(y-78)/26)&&x<=lerp(126,154,(y-78)/26))};
 function cutFace(key,o,t,shape){const B=faceBuf(key),z=1/(1.12*(1+.07*ease(t/5)));B.qa.setTransform(1,0,0,1,0,0);
- try{M.faceShot.paint(B.qa,FW,FH,{team:2,lines:0,yaw:0,...o,zoom:z,shake:0},t);}catch(e){B.qa.fillStyle='#000';B.qa.fillRect(0,0,FW,FH);}
+ try{M.faceShot.paint(B.qa,FW,FH,{team:2,lines:0,yaw:0,...o,clear:true,zoom:z,shake:0},t);}catch(e){B.qa.fillStyle='#000';B.qa.fillRect(0,0,FW,FH);}
  const d=B.qa.getImageData(0,0,FW,FH),p=d.data,fn=shapes[shape||'bust'];for(let y=0;y<FH;y++)for(let x=0;x<FW;x++)if(!fn(x,y))p[(y*FW+x)*4+3]=0;
  B.qz.clearRect(0,0,FW,FH);B.qz.putImageData(d,0,0);return B.z;}
 
@@ -4635,8 +4635,9 @@ function doctorBuf(t,o={}){const yaw=o.yaw??Math.sin(t*.8)*.25,base=cutFace('doc
 const NH=300;
 function nurseBody(q,t,o={}){const {R,E,L}=tl(q),sw=Math.sin(t*1.7),full=!!o.full;
  // Beine, Schuhe (nur ganze Figur)
- if(full){for(const [t0,t1,a0,a1] of [[63,79,67,73],[81,97,87,93]]){for(let y=158;y<282;y++){const k=(y-158)/124,calf=Math.sin(Math.min(1,Math.max(0,(k-.45)/.4))*Math.PI)*1.5,x0=Math.round(lerp(t0,a0,k)-calf*(t0<80?1:0)),x1=Math.round(lerp(t1,a1,k)+calf*(t0<80?0:1));R(x0,y,x1-x0,1,NC.skin);R(x1-2,y,2,1,NC.skinS);R(x0+1,y,1,1,'#f8dcc4');}}
-  for(const [x,flip] of [[66,0],[86,1]]){R(x,281,9,4,'#b8323a');R(x+(flip?6:0),285,3,9,'#8a222a');R(x+(flip?0:4),285,5,3,'#b8323a');R(x+1,281,6,1,'#e2626c');}}
+ if(full){const st=o.step,sd=o.stride||0,off=(i,k)=>st==null?0:Math.sin(st+i*Math.PI)*sd*Math.pow(k,1.3),lift=i=>st==null?0:Math.round(Math.max(0,Math.cos(st+i*Math.PI))*3);
+  [[63,79,67,73],[81,97,87,93]].forEach(([t0,t1,a0,a1],i)=>{const end=282-lift(i);for(let y=158;y<end;y++){const k=(y-158)/124,calf=Math.sin(Math.min(1,Math.max(0,(k-.45)/.4))*Math.PI)*1.5,dx=off(i,k),x0=Math.round(lerp(t0,a0,k)-calf*(t0<80?1:0)+dx),x1=Math.round(lerp(t1,a1,k)+calf*(t0<80?0:1)+dx);R(x0,y,x1-x0,1,NC.skin);R(x1-2,y,2,1,NC.skinS);R(x0+1,y,1,1,'#f8dcc4');}});
+  [[66,0],[86,1]].forEach(([x0,flip],i)=>{const x=Math.round(x0+off(i,1)),y=-lift(i);R(x,281+y,9,4,'#b8323a');R(x+(flip?6:0),285+y,3,9,'#8a222a');R(x+(flip?0:4),285+y,5,3,'#b8323a');R(x+1,281+y,6,1,'#e2626c');});}
  // Kleid: Schultern, Ausschnitt, Brust, Taille mit rotem Gürtel, Hüfte, kurzer Saum
  const rows=full?168:FH;for(let y=74;y<rows;y++){let hw;if(y<84)hw=lerp(26,32,(y-74)/10);else if(y<106)hw=32+(y>86&&y<104?2:0)-Math.max(0,(y-96))*.4;else if(y<124)hw=lerp(28,19,(y-106)/18);else if(y<146)hw=lerp(19,31,(y-124)/22);else hw=31+(y-146)*.25;
   hw=Math.round(hw);R(80-hw,y,hw*2,1,NC.dress);R(80-hw,y,3,1,NC.dressS);R(80+hw-3,y,3,1,NC.dressS);}
@@ -4728,7 +4729,9 @@ function chiselWound(q,cx,cy,T){const pix=(x,y,c)=>{q.fillStyle=c;q.fillRect(Mat
  if(k>.2){pix(cx-5,cy-1,'#3c1520');pix(cx-6,cy-2,'#3c1520');pix(cx+5,cy,'#3c1520');pix(cx+6,cy+1,'#3c1520');pix(cx+1,cy-5,'#3c1520');pix(cx,cy+5,'#3c1520');}
  for(let i=0;i<3;i++){const sxs=[-1,1,3][i],len=Math.min(20,Math.max(0,T-.05)*(11+i*4)+(T>=9?4:0));if(len>0){for(let y=0;y<len;y++)pix(cx+sxs,cy+4+y,y%4===3?'#c9453a':'#a8372f');pix(cx+sxs,cy+4+len,'#7b2f2a');}}
  pix(cx-2,cy-3+pul,'#c9453a');pix(cx+3,cy+3-pul,'#c9453a');}
-function patientBuf(g,t,o0={}){const o={...o0,g};const cross=o.cross??!!g.dokCross,tilt=o.tilt??(cross&&o.crossX!==false?Math.sin(t*1.9)*.1:0),base=cutFace('pat:'+g.id,{g,mood:o.mood||(cross?'dumb':'nervous'),crossEyes:cross,hurt:o.hurt||0,blood:o.blood||0,tilt,yaw:o.yaw??Math.sin(t*.7)*.15},t,'bust');
+// Auf dem Behandlungstisch immer ohne Helm und ohne Rüstung (Kopf in voller Größe, Meißel trifft die richtige Stelle)
+const bare=g=>({...g,enemyGear:{weapon:null,secondary:null,shield:null,armor:{}}});
+function patientBuf(g,t,o0={}){const o={...o0,g};const cross=o.cross??!!g.dokCross,tilt=o.tilt??(cross&&o.crossX!==false?Math.sin(t*1.9)*.1:0),base=cutFace('pat:'+g.id,{g:bare(g),mood:o.mood||(cross?'dumb':'nervous'),crossEyes:cross,hurt:o.hurt||0,blood:o.blood||0,tilt,yaw:o.yaw??Math.sin(t*.7)*.15},t,'bust');
  const c=faceBuf('patOut'),q=c.qz;q.clearRect(0,0,FW,FH);q.drawImage(base,0,0);if(o.crossX??cross)blankEyes(q);const {R,E,L}=tl(q);const sx=Math.round((o.yaw??Math.sin(t*.7)*.15)*6);{const dx=sx,dy=-63,cs=Math.cos(tilt||0),sn=Math.sin(tilt||0);patientBuf.anchor={x:80+dx*cs-dy*sn,y:70+dx*sn+dy*cs};}q.save();if(tilt){q.translate(80,70);q.rotate(tilt);q.translate(-80,-70);}
  const X=o.crossX??cross;if(X){const sp=o.spin||0;for(const [cx,cy,ew,eh,i] of [[66,35,12,9,0],[93,33,14,11,1]]){R(cx-ew/2-1,cy-eh/2-1,ew+2,eh+2,'#3a2418');R(cx-ew/2,cy-eh/2,ew,eh,'#f6f1df');R(cx-ew/2,cy+eh/2-1,ew,1,'#d8ccb0');for(let k=0;k<3;k++)R(cx-ew/2+1+k*3,cy-eh/2+1+(k%2),1,2,'#d88a8a');
   let px,py;if(sp){const a=t*17*(i?-1:1);px=cx-1.5+Math.cos(a)*(ew/2-2.5);py=cy-1.5+Math.sin(a)*(eh/2-2.5);}else{const w=Math.round(Math.sin(t*2.3));px=i?cx-ew/2+.5:cx+ew/2-3.5;py=i?cy-eh/2+.5+(w>0?1:0):cy+eh/2-3.5;}R(px,py,3,3,'#160d0a');R(px+1,py,1,1,'#ffffff');}
@@ -4860,7 +4863,8 @@ const SAY={
 const fill=(s,k)=>s.replace(/\{s\}/g,statName(k)).replace(/\{w\}/g,WHERE[k]||'irgendwo');
 // Ablauf eines Schlags. o: {g,key,outcome:'ok'|'fail',variant,from,better,onImpact,onDone}
 function newProc(o){const variant=o.variant||(o.outcome==='fail'?'skull':pick(VARS[o.outcome].map(v=>v[0])));return {g:o.g,key:o.key,outcome:o.outcome,variant,better:!!o.better,from:o.from||o.key,t:0,impact:IMPACT[variant],hit:false,done:false,res:null,fx:[],onImpact:o.onImpact,onDone:o.onDone,said:{}};}
-function stepProc(P,dt){if(P.done)return;P.t+=dt;const t=P.t,I=P.impact;
+const DIST={at:1.0,len:3.8};
+function stepProc(P,dt){if(P.done)return;if(P.outcome==='fail'&&P.t>=DIST.at&&!P.distDone){P.dist=(P.dist||0)+dt;if(P.dist>=DIST.len)P.distDone=true;return;}P.t+=dt;const t=P.t,I=P.impact;
  if(P.variant==='triple')for(const tt of [1.42,1.82,2.22])if(t>=tt&&!P.said['tap'+tt]){P.said['tap'+tt]=1;M.sound?.('block');P.fx.push({text:'tock',x:spotAt(P.key).x+10,y:spotAt(P.key).y-20,t:0,c:'#eee2c1',s:14});}
  if(P.variant==='sneeze'&&t>=2.0&&!P.said.sn){P.said.sn=1;P.fx.push({text:'HATSCHI!',x:170,y:16,t:0,c:'#eee2c1',s:22});}
  if(P.variant==='flyhead'&&t>=2.32&&!P.said.fly){P.said.fly=1;M.sound?.('block');P.fx.push({text:'KLACK',x:spotAt(P.key).x+18,y:spotAt(P.key).y-24,t:0,c:'#eee2c1',s:14});}
@@ -4884,24 +4888,34 @@ function pose(P,base){const t=P?P.t:0,I=P?P.impact:9,v=P?.variant,to=spotAt(P?P.
   if(v==='slip'&&t>=I){const k=ease((t-I)/.2);tip={x:lerp(to.x,80+PX,k),y:lerp(to.y,30+PY,k)};}
   if(v==='flyhead'&&t>=2.32){const u=t-2.32;head={x:to.x+6+u*8,y:to.y-28-(u*70-u*u*48)};if(t>=I)head={x:to.x+2,y:to.y-6+Math.min(6,(t-I)*30)};}
   if(t>=I&&P.outcome==='fail'&&v!=='flyhead'&&v!=='skull')chiselDrop=ease((t-I)/.5);}
- const look=P&&v==='nurse'&&t>.9&&t<I+.3?-1:0;
+ const look=P&&(v==='nurse'||P.outcome==='fail')&&t>.85&&t<I+.3?-1:0;
  let htip=null;if(v==='skull'){const H=spotAt('strength');htip={x:H.x-7,y:H.y+21};tip={x:DXo+14+Math.round(Math.sin(t*3)),y:DYo+52};chiselDrop=0;}
  return {tip,htip,lift,strike,head,chiselDrop,look};}
 // Krankenschwester im Türrahmen (Flur): läuft vorbei, wenn sie gebraucht wird
 function nurseInDoor(q,t,x,dir){q.save();q.beginPath();q.rect(4,20,32,92);q.clip();q.translate(x,110);q.scale(1.5,1.5);drawNurseSmall(q,{x:0,y:0,t,walk:true,phase:t*5.6,dir});q.restore();}
 const chairCv=mk(CW,CH);
+const NWW=471,NWH=300,nwCv=mk(NWW,NWH);
+function paintNurseWalk(ctx,w,h,t,u){const q=nwCv.getContext('2d');q.setTransform(1,0,0,1,0,0);q.imageSmoothingEnabled=false;q.drawImage(room(FW,FH,'close'),0,0,NWW,NWH);q.fillStyle='rgba(20,10,6,.25)';q.fillRect(0,0,NWW,NWH);
+ const A=1.2,B=2.7,shim=u>=A&&u<B,walking=!shim,ph=t*7.5,x=u<A?lerp(NWW+90,NWW*.5,ease(u/A)):shim?NWW*.5:lerp(NWW*.5,-90,ease((u-B)/(DIST.len-B))),s=shim?u-A:0;
+ const jig=shim?Math.sin(s*17)*3.6*Math.min(1,s*3)*Math.max(.35,1-s*.25):Math.sin(ph*2)*1.5,sway=shim?Math.sin(s*8.5)*.05:Math.sin(ph)*.03,bob=walking?Math.abs(Math.sin(ph))*-2:0;
+ const fig=nurseFull(t,{mood:shim&&s>.9?'wink':'smile',jig,shine:shim?.7+.3*Math.sin(t*8):.25,step:walking?ph:null,stride:walking?6:0,hearts:shim?1:0,sparkle:shim&&s>.9});
+ q.fillStyle='rgba(0,0,0,.3)';q.beginPath();q.ellipse(x,292,34,5,0,0,7);q.fill();
+ q.save();q.translate(Math.round(x),Math.round(bob));q.translate(0,170);q.rotate(sway);q.translate(0,-170);q.drawImage(fig,-80,0);q.restore();
+ const sc=Math.max(w/NWW,h/NWH),dw=NWW*sc,dh=NWH*sc;ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0d0907';ctx.fillRect(0,0,w,h);ctx.drawImage(nwCv,Math.round((w-dw)/2),Math.round((h-dh)/2),Math.round(dw),Math.round(dh));
+ if(shim&&s>.4){ctx.save();ctx.font="bold "+Math.round(h/16)+"px 'Courier Prime',monospace";ctx.textAlign='center';ctx.fillStyle='#17201c';ctx.fillText('*wackel wackel*',w*.5+2,h*.16+2);ctx.fillStyle='#f27aa8';ctx.fillText('*wackel wackel*',w*.5,h*.16);ctx.restore();}
+ const vg=ctx.createRadialGradient(w/2,h*.45,Math.min(w,h)*.4,w/2,h*.5,Math.max(w,h)*.78);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.5)');ctx.fillStyle=vg;ctx.fillRect(0,0,w,h);}
 // Zeichnet das ganze Bild auf ctx (Zielgröße w × h). base: {g,key} im Ruhezustand, P: laufender Schlag oder null
-function paintChair(ctx,w,h,t,base,P,o={}){const q=chairCv.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);const {R,E,L}=tl(q),g=P?P.g:base.g,key=P?P.key:base.key,ps=pose(P,base),I=P?P.impact:9,pt=P?P.t:0,hit=P&&P.hit,fail=P&&P.outcome==='fail',SK=P&&P.variant==='skull';
+function paintChair(ctx,w,h,t,base,P,o={}){if(P&&P.dist>0&&!P.distDone){paintNurseWalk(ctx,w,h,t,P.dist);return;}const q=chairCv.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);const {R,E,L}=tl(q),g=P?P.g:base.g,key=P?P.key:base.key,ps=pose(P,base),I=P?P.impact:9,pt=P?P.t:0,hit=P&&P.hit,fail=P&&P.outcome==='fail',SK=P&&P.variant==='skull';
  q.drawImage(room(CW,CH,'chair'),0,0);candle(q,CW,CH,t,146,40);
  // Schwester im Flur: bei „nurse“ während des Schlags, sonst gelegentlich
- if(P&&P.variant==='nurse'&&pt>.6&&pt<I+.6)nurseInDoor(q,t,lerp(46,-8,cl((pt-.6)/(I-.2))),-1);
+ if(P&&P.outcome==='fail'&&pt>.6&&pt<I+.6)nurseInDoor(q,t,P.distDone?lerp(30,-10,cl((pt-1)/(I-.6))):lerp(46,30,cl((pt-.6)/.4)),-1);
  else if(o.nurse!=null)nurseInDoor(q,t,o.nurse,o.nurseDir||-1);
  // Stuhl: Pfosten, Lehne, Lederpolster mit Blut
  R(36,38,6,102,'#3e2c1d');R(118,38,6,102,'#3e2c1d');R(37,38,2,102,'#6b4c2e');R(119,38,2,102,'#6b4c2e');R(42,46,76,94,'#4a3524');for(let x=48;x<114;x+=11)R(x,46,3,94,'#3a2a1c');
  R(46,30,68,14,'#2e1c14');R(47,31,66,12,'#6a2f2a');R(47,31,66,2,'#8a3f36');E(60,40,6,2,'#4a1612');E(98,36,4,2,'#4a1612');R(36,36,8,4,'#7d8687');R(116,36,8,4,'#7d8687');
  for(const [x,y] of [[40,70],[121,96],[38,118],[120,60]]){R(x,y,2,6,'#6e1d18');R(x,y+6,1,4,'#6e1d18');}
  // Doktor: Kopf und Kittel (hinter dem Patienten)
- const dmood=!P?(Math.sin(t*.4)>.6?'grin':'confident'):pt<1.2?'confident':!hit?(P.variant==='nurse'&&pt>1?'grin':'roar'):fail?(pt<I+1.2?'shock':'grin'):'grin';
+ const dmood=!P?(Math.sin(t*.4)>.6?'grin':'confident'):pt<1.2?'confident':!hit?((P.variant==='nurse'||fail)&&pt>.9?'grin':'roar'):fail?(pt<I+1.2?'shock':'grin'):'grin';
  const dyaw=ps.look<0?-.75:(!P?Math.sin(t*.5)*.3-.35:-.35);
  q.drawImage(doctorBuf(t,{mood:dmood,yaw:dyaw,look:ps.look<0?-1:-.6,hearts:ps.look<0,blood:fail&&hit}),DXo,DYo);
  for(let y=DYo+FH-2;y<CH;y++){const k=(y-(DYo+FH))/40,x0=DXo+lerp(20,14,k),x1=DXo+lerp(140,146,k);R(x0,y,x1-x0,1,DC.coat);R(x0,y,3,1,DC.coatS);R(x1-3,y,3,1,DC.coatS);}
@@ -5037,16 +5051,16 @@ function doorShot(t,o={}){const q=doorCv.getContext('2d');q.setTransform(1,0,0,1
    const hb={x:A.x+5,y:A.y+7};q.fillStyle=S0;for(let i=0;i<24;i++){const w=i<3?3:i<20?2:1;q.fillRect(Math.round(hb.x+i*.12),Math.round(hb.y+i),w,1);}q.fillStyle=S2;q.fillRect(Math.round(hb.x),Math.round(hb.y),1,8);}
   q.restore();}
  // Hand: schlank, langer Zeigefinger nach oben, die anderen Finger weich angewinkelt, kleiner Finger elegant abgespreizt; rote Nägel
- if(o.hand>0){const k=ease(o.hand),HS=2,W={x:gx+20-78*k,y:150},P=(dx,dy)=>({x:W.x+dx*HS,y:W.y+dy*HS}),elb={x:gx+44,y:156},kn=P(-9,-6),tip=P(-13,-21);
+ if(o.hand>0){const k=ease(o.hand),HS=1.45,W={x:gx+14-62*k,y:108},P=(dx,dy)=>({x:W.x+dx*HS,y:W.y+dy*HS}),elb={x:gx+36,y:112},kn=P(-9,-6),tip=P(-13,-21);
   const fing=[{a:P(-9,-8),m:P(-11,-14),b:tip,w:2.4},{a:P(-7,-6),m:P(-13,-11),b:P(-15,-6),w:2.2},{a:P(-5,-5),m:P(-10,-8),b:P(-12,-3),w:2.1},{a:P(-3,-4),m:P(-5,-9),b:P(-5,-12),w:1.8}];
-  const segs=[{a:elb,b:W,w0:16,w1:11},{a:W,b:kn,w0:11,w1:12}];for(const f of fing){segs.push({a:f.a,b:f.m,w0:f.w*HS,w1:f.w*HS*.92},{a:f.m,b:f.b,w0:f.w*HS*.92,w1:f.w*HS*.72});}
+  const segs=[{a:elb,b:W,w0:11.5,w1:8},{a:W,b:kn,w0:8,w1:8.8}];for(const f of fing){segs.push({a:f.a,b:f.m,w0:f.w*HS,w1:f.w*HS*.92},{a:f.m,b:f.b,w0:f.w*HS*.92,w1:f.w*HS*.72});}
   segs.push({a:P(-3,1),b:P(-9,-1),w0:2.8*HS,w1:2.2*HS},{a:P(-9,-1),b:P(-13,-3),w0:2.2*HS,w1:1.8*HS});
   limbs(q,segs,SKIN);
-  const nail=(p,d)=>{disc(q,p.x+d.x,p.y+d.y,2.2,'#b8102a');R(p.x+d.x-1,p.y+d.y-1,1,1,'#ff8a9a');};nail(tip,{x:0,y:1.6});nail(fing[1].b,{x:-1.5,y:0});nail(fing[2].b,{x:-1.5,y:.5});nail(fing[3].b,{x:0,y:1.5});nail(P(-13,-3),{x:-1.5,y:0});
+  const nail=(p,d)=>{disc(q,p.x+d.x,p.y+d.y,1.6,'#b8102a');R(p.x+d.x-1,p.y+d.y-1,1,1,'#ff8a9a');};nail(tip,{x:0,y:1.6});nail(fing[1].b,{x:-1.5,y:0});nail(fing[2].b,{x:-1.5,y:.5});nail(fing[3].b,{x:0,y:1.5});nail(P(-13,-3),{x:-1.5,y:0});
   R(W.x+2,W.y+5,6,1,'#e0b394');for(let i=0;i<5;i++)R(W.x+1+i*2,W.y-6+Math.abs(i-2),1,1,'#e8c24a');
-  if(o.panty!==false){const a=t*5.2,R0=30,top={x:tip.x,y:tip.y+3},px=top.x+Math.cos(a)*R0,py=top.y+18+Math.sin(a)*7,front=Math.sin(a)>0,sx=Math.cos(a),hw=13*(.5+.5*Math.abs(sx));
-   q.globalAlpha=.25;for(let i=1;i<9;i++){const b=a-i*.16;disc(q,top.x+Math.cos(b)*R0,top.y+20+Math.sin(b)*7,3-i*.25,'#e2506a');}q.globalAlpha=1;
-   const drawP=()=>{q.strokeStyle='#7a1428';q.lineWidth=1.5;q.beginPath();q.moveTo(top.x,top.y);q.lineTo(px-hw,py);q.moveTo(top.x,top.y);q.lineTo(px+hw,py);q.stroke();panty(q,px,py,1.1,Math.cos(a)*.3,(sx<0?-1:1)*(.5+.5*Math.abs(sx)));};
+  if(o.panty!==false){const a=t*5.2,R0=21,top={x:tip.x,y:tip.y+2},px=top.x+Math.cos(a)*R0,py=top.y+13+Math.sin(a)*5,front=Math.sin(a)>0,sx=Math.cos(a),hw=10*(.5+.5*Math.abs(sx));
+   q.globalAlpha=.25;for(let i=1;i<9;i++){const b=a-i*.16;disc(q,top.x+Math.cos(b)*R0,top.y+15+Math.sin(b)*5,2.4-i*.2,'#e2506a');}q.globalAlpha=1;
+   const drawP=()=>{q.strokeStyle='#7a1428';q.lineWidth=1.5;q.beginPath();q.moveTo(top.x,top.y);q.lineTo(px-hw,py);q.moveTo(top.x,top.y);q.lineTo(px+hw,py);q.stroke();panty(q,px,py,.8,Math.cos(a)*.3,(sx<0?-1:1)*(.5+.5*Math.abs(sx)));};
    if(!front)drawP();disc(q,tip.x,tip.y+3,2.4*HS*.5+1,SKIN.base);nail(tip,{x:0,y:1.6});if(front)drawP();}}
  q.restore();return doorCv;}
 // Großaufnahme der Tür auf die Filmbühne; st(b,t) liefert die Werte für den Zeitpunkt in der Einstellung
@@ -5153,7 +5167,7 @@ function story(replay){closeAll();const {R,real}=cast(replay);
  const sm=smithActor(300,620),pos=[[132,621],[154,623],[176,621],[126,614],[198,622]],rec=R.map((g,i)=>recActor(g,i,...pos[i]));rec[3].lying=true;
  let lan=null;try{if(S.lanista)lan=M.lesson?.kit?.lanActor?.(372,630)||null;}catch{lan=null;}if(lan){lan.hidden=true;lan.a=Math.PI;}const G=()=>!!lan,Y=f=>!!lan&&f.branch==='yes',N=f=>!!lan&&f.branch!=='yes',NY=f=>f.branch!=='yes';
  const res={};
- const over=()=>{endStory(real,R);endCard(res,S1,S5,real);};
+ const over=()=>{endStory(real,R,replay);endCard(res,S1,S5,real,replay);};
  const finish=()=>{if(!res.r1)res.r1=treat(S1,k1,'ok',true);if(!res.r5)res.r5=treat(S5,k5,'fail',false,'skull');stopFilm();over();};
  play({label:'Der Doktor · Vorstellung und Behandlungsstuhl',smith:sm,lan,rec,cam:{x:190,y:568,vw:280},onSkip:finish,done:over,props:{doc:{x:242,y:603,dir:-1,hidden:true,pose:'stand'},nurse:{x:243,y:602,dir:-1,hidden:true}},beats:[
   {dur:.6},
@@ -5244,10 +5258,11 @@ function story(replay){closeAll();const {R,real}=cast(replay);
   {face:null,dur:2.2,cam:{x:190,y:568,vw:280},do:f=>{f.rec[1].to=[-30,626,70];f.rec[2].to=[-30,632,60];float(f,154,590,'WEG HIER!','#f29b83');M.sound?.('crowd');},...say('r2','LAUFT!')},
   say('s','Der Unterricht ist beendet.',{do:f=>{f.smith.forgePose='sip';}}),
   {dur:.6}]});}
-function endStory(real,R){if(real){const d=ds();d.stage='done';d.armed=false;}else{const vis=M.medic.state().vis;for(const g of R)delete vis[g.id];}M.persist?.();}
-function endCard(res,a,b,real){document.querySelector('.dok-card-end')?.remove();const v=document.createElement('div');v.className='medic-start dok-card-end';
+// Das automatische Kapitel gilt als erledigt, auch wenn es mit Kopien lief (alte Spielstände ohne die fünf Rekruten); sonst startet es immer wieder.
+function endStory(real,R,replay){if(!replay){const d=ds();d.stage='done';d.armed=false;}if(!real){const vis=M.medic.state().vis;for(const g of R)delete vis[g.id];}M.persist?.();}
+function endCard(res,a,b,real,replay){document.querySelector('.dok-card-end')?.remove();const v=document.createElement('div');v.className='medic-start dok-card-end';
  v.innerHTML=`<div><p class="eyebrow">KAPITEL ZU ENDE</p><h1>DER DOKTOR</h1>${res.r1?`<p><b>${esc(a.name)}</b>: ${esc(statName(res.r1.key))}, Anlage ${res.r1.old} → ${res.r1.nv}. Zehn Tage Krankenbett.</p>`:''}${res.r5?`<p><b>${esc(b.name)}</b>: Hirnschaden, schielt. Zehn Tage Krankenbett.</p>`:''}
- <p class="tiny">${real?'Der Behandlungstisch steht ab jetzt im Medicus: Gebäude anklicken und „Behandlungstisch“ wählen. Ein Schlag, zwei Möglichkeiten, zehn Tage Krankenbett.':'Wiederholung mit Kopien: dein Kader bleibt unverändert.'}</p>
+ <p class="tiny">${replay?'Wiederholung mit Kopien: dein Kader bleibt unverändert.':'Der Behandlungstisch steht ab jetzt im Medicus: Gebäude anklicken und „Behandlungstisch“ wählen. Ein Schlag, zwei Möglichkeiten, zehn Tage Krankenbett.'+(real?'':' (Gespielt mit Kopien, dein Kader bleibt unverändert.)')}</p>
  <div class="buttons"><button class="btn primary" type="button" data-dokm="chair">BEHANDLUNGSTISCH ÖFFNEN</button><button class="btn" type="button" data-dokm="close">WEITER</button></div></div>`;document.body.appendChild(v);}
 
 // =====================================================================================================

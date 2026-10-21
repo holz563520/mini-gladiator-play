@@ -14,7 +14,7 @@ async function setup(){await wait(()=>window.MG?.ui&&window.MG.trader&&window.MG
  // Spielstand wie nach dem Boxkampf-Tutorial: Schmied da, Sklavenhändler eingeführt, Hühnerschule und Boxen erledigt
  const W=M.workshop;if(!W.state.master)W.hireMaster({...W.sketch(),name:'Aurifex'});W.setIntro('done');M.forgeIntro?.skipScene?.();
  if(M.trader)M.trader.state.intro='done';S.lion={...(S.lion||{}),stage:'skip'};S.huehner={...(S.huehner||{}),stage:'end'};S.hall={...(S.hall||{}),tut:'done'};
- S.box={...(S.box||{}),intro:true,fights:3,wins:2};
+ S.box={...(S.box||{}),intro:true,fights:3,wins:2,tutDone:true};
  const need=5-S.roster.filter(g=>!g.dead).length;if(need>0)M.army.recruitMany(need);for(const g of S.roster){g.fatigue=0;g.blood=100;if(g.role==='Fernkämpfer')g.role='Soldat';}
  for(const g of S.roster){const w=M.gear(g,'weapon');if(w&&['bow','crossbow'].includes(w.def))g.equipment.weapon=null;}S.inventory=S.inventory.filter(i=>!['bow','crossbow'].includes(i.def));
  S.gold=35;try{M.trader.stock();}catch(e){}

@@ -326,7 +326,7 @@ new MutationObserver(()=>{try{injectCard();if(rangedOpen())unlockMarks();else lo
 // ---------- Takt ----------
 let wait=0;
 const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(document.hidden)return;try{noSmithBows();if(!rangedOpen())lockRanged();step(dt);}catch(e){console.error(e);}
- const st=ST();if(st.stage===''&&S().box?.intro&&!film&&!S().battle&&M.ui.getPage()==='home'&&!M.boxGame?.introActive&&!M.sceneLoader?.active&&!document.querySelector('.smith-loading,#modal:not([hidden])')&&window.BOWYER_TEST?.auto!==false){wait+=dt;if(wait>2.5){wait=0;startTutorial();}}else wait=0;};
+ const st=ST();if(st.stage===''&&S().box?.intro&&(M.boxGame?.tutorialDone?M.boxGame.tutorialDone():true)&&!document.querySelector('.bx-end')&&!film&&!S().battle&&M.ui.getPage()==='home'&&!M.boxGame?.introActive&&!M.sceneLoader?.active&&!document.querySelector('.smith-loading,#modal:not([hidden])')&&window.BOWYER_TEST?.auto!==false){wait+=dt;if(wait>2.5){wait=0;startTutorial();}}else wait=0;};
 M.bowyer={drawOro,start:startTutorial,arena:startArenaFilm,state:ST,shop,talentLines,oroG,cart,oroFace,headArrow,drawActor,actor,reset(){const s=S();s.bowyer={stage:'',recruit:'',loan:0,given:'',owner:0};hideBar();tips=[];tipBox?.remove();tipBox=null;}};
 function openApple(){if($('bowApple'))return;const v=document.createElement('div');v.id='bowApple';v.setAttribute('role','dialog');v.setAttribute('aria-label','Apfelschuss');
  v.innerHTML='<div class="bwa-top"><span>ARENA · APFELSCHUSS · mit deinen Kämpfern</span><button type="button">✕ ZURÜCK ZUR ARENA</button></div><iframe title="Apfelschuss"></iframe>';document.body.appendChild(v);

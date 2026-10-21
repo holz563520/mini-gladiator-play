@@ -344,12 +344,14 @@ function bubble(g,text,x,y,loud){g.font=`bold ${loud?24:19}px 'Courier Prime',mo
  g.fillStyle='#17201c';g.fillRect(bx-3,by-3,width+6,height+6);g.fillStyle=loud?'#f4d37a':'#efe0b3';g.fillRect(bx,by,width,height);g.fillStyle='#17201c';lines.forEach((l,i)=>g.fillText(l,bx+width/2,by+7+lh/2+i*lh));}
 // ---------- Takt, Klicks ----------
 let settle=0;
+// Kapitelkette: Die Verschwörung kommt erst nach dem Box-Tutorial (samt Endsequenz). Alte Spielstände, die die Kapitel nie begonnen haben (Löwen-Kapitel übersprungen, keine Lektion), bleiben wie bisher.
+const chainOk=()=>!!S.box?.tutDone||(S.lion?.stage==='skip'&&!S.lesson?.stage);
 const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(typeof document!=='undefined'&&document.hidden)return;
  if(sc){clock+=dt;if(clock>=1/30){const d=Math.min(clock,.1);clock=0;step(d);}return;}
  if(tk){tk.clock+=dt;if(tk.clock>=1/30){const d=Math.min(tk.clock,.1);tk.clock=0;stepTalk(d);}return;}
  const p=P();if(p.state)return;const a=archer();if(a&&!p.seen){p.seen=S.day;M.persist();}
  const busy=S.battle||M.intro?.active?.()||window.ArenaTheoryIntro?.active?.()||M.forgeIntro?.scene||M.smithWrath?.scene||M.trader?.tutorial||M.ui?.getPage?.()!=='home'||(typeof document!=='undefined'&&document.getElementById('modal')?.hidden===false)||(typeof document!=='undefined'&&!!document.querySelector?.('.smith-ceremony'));
- const ready=a&&p.seen&&S.day>=p.seen+DELAY&&p.asked!==S.day&&!!crew()&&W()?.master&&W().intro==='done';
+ const ready=a&&p.seen&&S.day>=p.seen+DELAY&&p.asked!==S.day&&!!crew()&&W()?.master&&W().intro==='done'&&chainOk();
  if(ready&&!busy){settle+=dt;if(settle>1.2){settle=0;ask();}}else settle=0;};
 const click=M.schoolClick;M.schoolClick=action=>{
  if(action==='plot:next'){next();return true;}if(action==='plot:talkskip'){for(let n=0;tk&&tk.phase!=='choose'&&n<60;n++)next();return true;}
