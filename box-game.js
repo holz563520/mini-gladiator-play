@@ -21,7 +21,8 @@ const BG=()=>S().box??={intro:false,fights:0,wins:0,lastDay:S().day,opts:{sound:
 const opts=()=>BG().opts??={sound:true,intro:true,cuts:true};
 
 // ---------- Freischaltung ----------
-const chapterDone=()=>['end','free','won'].includes(S().huehner?.stage);
+// Erst nach dem Sieg über den Dorftrottel UND der Endsequenz der Hühnerschule (Stufe 'end'); 'free'/'won' sind noch mitten im Kapitel.
+const chapterDone=()=>S().huehner?.stage==='end';
 C.boxMenu=()=>BG().intro||chapterDone()?{ok:true}:{ok:false,msg:'Erst die Hühnerschule abschließen'};
 
 // ---------- Gladiator für den Faustkampf vorbereiten (alte Spielstände: fehlende Werte ergänzen, nichts überschreiben) ----------
@@ -248,9 +249,15 @@ function intro(done){if(film)return;const bg=BG();const v=document.createElement
 
 // ---------- Takt: Tageszähler für Goldzähne, Szene nach dem Hühnerkampf ----------
 const busy=()=>!!S().battle||!!film||document.body.classList.contains('an-fighting')||!!M.medic?.film||!!M.medic?.guide||!!M.lionChapter?.film||!!M.lionChapter?.guide||!!M.smithWrath?.scene||!!M.archerPlot?.scene||!!M.hall?.film||!!M.doktor?.film||!!M.intro?.active?.()||!!window.ArenaTheoryIntro?.active?.()||!!M.trader?.tutorial||!!document.querySelector('.smith-ceremony,#introView,#brandIntro,.medic-night,.medic-end,.medic-start,.lesson-start,.lesson-end,.hs-end,.hs-film,.dok-card-end,.an-pres,#an:not([hidden])')||($('modal')&&!$('modal').hidden);
-let wait=0;
+// Abschluss des Box-Tutorials: nach dem ersten echten Boxkampf (egal ob Sieg oder Niederlage) eine Endsequenz; erst danach geht die Kapitelkette weiter (Bogenschützen).
+function endCard(){if(document.querySelector('.bx-end'))return;const v=document.createElement('div');v.className='medic-end lesson-end bx-end';v.setAttribute('role','dialog');v.setAttribute('aria-modal','true');
+ v.innerHTML=`<div><p class="eyebrow">TUTORIAL ABGESCHLOSSEN</p><h2>BOXKÄMPFE</h2><ul><li>Boxkämpfe findest du in der Arena unter HUMAN → BOXKÄMPFE.</li><li>Sie trainieren vor allem Zähigkeit und Schnelligkeit. Wer gegen Stärkere antritt, lernt mehr.</li><li>Nach jedem Kampf ist der Mann erschöpft und braucht ein paar Tage Ruhe. Verletzungen gehen in den echten Körper.</li><li>Zähne bleiben im Ring. Ein Schädelbruch kann tödlich sein.</li><li>Sieg bringt die Prämie, eine Niederlage nur Antrittsgeld.</li></ul><div class="buttons"><button class="btn primary" type="button" data-bxend="ok">WEITER</button></div></div>`;
+ document.body.appendChild(v);v.querySelector('[data-bxend]').addEventListener('click',e=>{e.stopPropagation();v.remove();BG().tutDone=true;try{M.persist();}catch{}M.ui?.render?.();});}
+const tutorialDone=()=>!!BG().tutDone;
+let wait=0,endWait=0;
 const lt=M.ludusTick;M.ludusTick=dt=>{lt?.(dt);if(document.hidden||M.benchmarkActive)return;try{syncDays();}catch{}
- if(!BG().intro&&chapterDone()&&!busy()&&M.ui.getPage()==='home'){wait+=dt;if(wait>2.5){wait=0;intro(()=>{});}}else wait=0;};
-M.boxGame={intro:(d)=>intro(d),introActive:false,prep,purse,learnMult,refRating,state:BG,get result(){return B.result;}};
+ if(!BG().intro&&chapterDone()&&!busy()&&M.ui.getPage()==='home'){wait+=dt;if(wait>2.5){wait=0;intro(()=>{});}}else wait=0;
+ if(BG().intro&&BG().fights>=1&&!BG().tutDone&&!busy()&&!document.querySelector('.bx-end')&&M.ui.getPage()==='home'){endWait+=dt;if(endWait>1.2){endWait=0;endCard();}}else endWait=0;};
+M.boxGame={intro:(d)=>intro(d),introActive:false,tutorialDone,endCard,prep,purse,learnMult,refRating,state:BG,get result(){return B.result;}};
 window.BOX_GAME_READY=true;
 })();
