@@ -46,3 +46,11 @@
 @media (prefers-reduced-motion:reduce){.dok-hit{transition:none}}
 .dok-loss{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 10px;font-size:11.5px;margin:4px 0}
 .dok-loss b{color:#8a2a24}.dok-loss i{opacity:.7;font-style:normal}
+/* Die Frage an den Spieler, während die Zeit stillsteht */
+.dok-ask{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:100%;text-align:center}
+.dok-ask p{margin:0;font:11px 'Courier Prime',monospace;letter-spacing:.24em;text-transform:uppercase;color:#c9c6b4}
+.dok-ask-yes{background:none;border:0;cursor:pointer;padding:2px 8px;font-family:'Courier Prime',monospace;font-weight:bold;font-style:italic;font-size:clamp(20px,5.6vw,32px);letter-spacing:.04em;color:#f4d37a;background-image:linear-gradient(180deg,#fff3c4 0%,#f4d37a 45%,#c8952f 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 0 #5a3d1c) drop-shadow(0 0 10px rgba(244,190,90,.55));animation:dokAsk 1.6s ease-in-out infinite}
+.dok-ask-no{background:none;border:0;cursor:pointer;padding:2px;font:10px 'Courier Prime',monospace;color:#8f8a7a;text-decoration:underline}
+.dok-ask-yes:focus-visible,.dok-ask-no:focus-visible{outline:2px solid #f4d37a;outline-offset:2px}
+@keyframes dokAsk{50%{transform:scale(1.05);filter:drop-shadow(0 2px 0 #5a3d1c) drop-shadow(0 0 20px rgba(255,215,120,.9))}}
+@media (prefers-reduced-motion:reduce){.dok-ask-yes{animation:none}}

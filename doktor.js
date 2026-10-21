@@ -76,7 +76,7 @@ const shapes={
  head:(x,y)=>inHead(x,y)||(x>=65&&x<=95&&y>=58&&y<=86),
  bust:(x,y)=>inHead(x,y)||(x>=64&&x<=96&&y>=56&&y<=86)||(y>=78&&x>=lerp(34,6,(y-78)/26)&&x<=lerp(126,154,(y-78)/26))};
 function cutFace(key,o,t,shape){const B=faceBuf(key),z=1/(1.12*(1+.07*ease(t/5)));B.qa.setTransform(1,0,0,1,0,0);
- try{M.faceShot.paint(B.qa,FW,FH,{team:2,lines:0,yaw:0,...o,noHelm:true,zoom:z,shake:0},t);}catch(e){B.qa.fillStyle='#000';B.qa.fillRect(0,0,FW,FH);}
+ try{M.faceShot.paint(B.qa,FW,FH,{team:2,lines:0,yaw:0,...o,zoom:z,shake:0},t);}catch(e){B.qa.fillStyle='#000';B.qa.fillRect(0,0,FW,FH);}
  const d=B.qa.getImageData(0,0,FW,FH),p=d.data,fn=shapes[shape||'bust'];for(let y=0;y<FH;y++)for(let x=0;x<FW;x++)if(!fn(x,y))p[(y*FW+x)*4+3]=0;
  B.qz.clearRect(0,0,FW,FH);B.qz.putImageData(d,0,0);return B.z;}
 
@@ -127,7 +127,8 @@ function nurseBody(q,t,o={}){const {R,E,L}=tl(q),sw=Math.sin(t*1.7),full=!!o.ful
  for(const [cx,sd] of [[69-jx,-1],[91+jx,1]]){E(cx,99+jy,13,11,NC.dress);E(cx,104+jy,10,5,'#ebe2c9');
   for(let a=.12;a<Math.PI-.12;a+=.07)R(cx+Math.cos(a)*13,99+jy+Math.sin(a)*11,2,1,'#c4b79a');
   for(let a=-.5;a<.5;a+=.1)R(cx-sd*Math.cos(a)*12.5+sd*0,98+jy+Math.sin(a)*10,1,1,'#d9cfb4');
-  E(cx-6,93+jy,4,3,'#ffffff');E(cx-6,93+jy,2,1,'#ffffff');}
+  E(cx-6,93+jy,4,3,'#ffffff');E(cx-6,93+jy,2,1,'#ffffff');
+  {const nx=Math.round(cx+sd*3),ny=103+jy;E(nx,ny,2,2,'#e6cdb8');R(nx-1,ny-1,2,2,'#d4ab98');R(nx,ny,1,1,'#c4907e');R(nx-2,ny+2,4,1,'#d9cfb4');}}
  R(80,93,1,13,NC.dressS);R(79,98,3,1,'#c4b79a');
  if(o.shine>0){const sp=(x,y,r)=>{R(x,y-r,1,r*2+1,'#ffffff');R(x-r,y,r*2+1,1,'#ffffff');R(x-1,y-1,3,3,'#fff6c8');};const a=o.shine,r=Math.round(2+a*2+Math.sin(t*14)*1);sp(62-jx,92+jy,r);sp(84+jx,92+jy,Math.max(2,r-1));if(Math.sin(t*9)>0)R(92+jx,102+jy,2,2,'#ffffff');}
  // Ausschnitt (Herzform), Kette mit kleinem Kreuz
@@ -174,15 +175,15 @@ function nurseBuf(t,o={}){const c=faceBuf('nurseOut'),q=c.qz;q.clearRect(0,0,FW,
 const nurseFullCv=mk(FW,NH);
 function nurseFull(t,o={}){const q=nurseFullCv.getContext('2d');q.clearRect(0,0,FW,NH);nurseBody(q,t,{...o,full:true});nurseHeadShake(q,t,o);return nurseFullCv;}
 // Kamerafahrt in jeder Schwester-Szene: erst das Gesicht, dann hinunter zur Büste (sie wackelt und glänzt), wieder hinauf, dann Zwinkern oder verlegenes Kopfschütteln.
-function nurseShow(o={}){const T=o.quick?{a:.4,b:.45,c:1.3,d:.45,e:1.9}:{a:.9,b:.7,c:2.8,d:.7,e:3.6};return (g,w,h,f,t)=>{const b=f.bt??0,pan=o.pan!==false,dn=ease(cl((b-T.a)/T.b)),upk=ease(cl((b-T.c)/T.d)),k=pan?dn-upk:0,tau=b-(T.a+T.b);
-  const jig=pan?(tau>0&&tau<3?3.4*Math.exp(-1.5*tau)*Math.sin(tau*26):0)+Math.sin(t*6)*.9*k:0;
+function nurseShow(o={}){const T=o.quick?{a:.4,b:.45,c:1.3,d:.45,e:1.9}:{a:.9,b:.7,c:2.8,d:.7,e:3.6};return (g,w,h,f,t)=>{const b=f.bt??0,pan=o.pan!==false,zoom=pan&&!o.still,dn=ease(cl((b-T.a)/T.b)),upk=ease(cl((b-T.c)/T.d)),k=zoom?dn-upk:0,tau=b-(T.a+T.b);
+  const jig=zoom?(tau>0&&tau<3?3.4*Math.exp(-1.5*tau)*Math.sin(tau*26):0)+Math.sin(t*6)*.9*k:0;
   const e=pan&&b>T.e?(o.end||'wink'):null,te=b-T.e;let mood=pan?'smile':(o.mood||'smile');if(!pan&&o.mood)mood=o.mood;if(e==='wink'&&te<1.2)mood='wink';if(e==='shy'&&te>0)mood='shy';if(e==='roll'&&te>0)mood='roll';
   const shake=(e==='shy'||e==='roll')&&te>0&&te<2.4?Math.sin(te*(e==='roll'?13:15))*.07*Math.exp(-te*(e==='roll'?.9:1.1)):0;
-  return closeup(g,w,h,t,nurseFull(t,{...o,mood,jig:pan?jig:0,shine:pan?k*(.6+.4*Math.sin(t*8)):0,shake,hearts:o.hearts||(e==='shy'&&te>0&&te<2.4?1:0),sparkle:o.sparkle||(e==='wink'&&te<1.2)}),{srcY:Math.round(lerp(0,46,k)),dy:o.dy});};}
+  return closeup(g,w,h,t,nurseFull(t,{...o,mood,jig:zoom?jig:0,shine:zoom?k*(.6+.4*Math.sin(t*8)):0,shake,hearts:o.hearts||(e==='shy'&&te>0&&te<2.4?1:0),sparkle:o.sparkle||(e==='wink'&&te<1.2)}),{srcY:Math.round(lerp(0,46,k)),dy:o.dy});};}
 
 // ---------- Großaufnahme zusammensetzen: Raum, Figur, Vignette, Schrei-Linien; auf beliebige Zielgröße ----------
 const closeCv=mk(FW,FH);
-function closeup(ctx,w,h,t,layer,o={}){const q=closeCv.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(room(FW,FH,'close'),0,0);candle(q,FW,FH,t,148,62);if(layer){if(layer.height>FH)q.drawImage(layer,0,Math.round(o.srcY||0),FW,FH,0,0,FW,FH);else q.drawImage(layer,0,o.dy??9);}
+function closeup(ctx,w,h,t,layer,o={}){const q=closeCv.getContext('2d');q.imageSmoothingEnabled=false;q.drawImage(o.bg||room(FW,FH,'close'),0,0);if(!o.bg)candle(q,FW,FH,t,148,62);if(layer){if(layer.height>FH)q.drawImage(layer,0,Math.round(o.srcY||0),FW,FH,0,0,FW,FH);else q.drawImage(layer,0,o.dy??9);}
  const s=Math.max(w/FW,h/FH)*(1+.05*ease(t/4)),dw=FW*s,dh=FH*s,sh=o.shake||0,ox=sh?(Math.random()-.5)*sh*s:0,oy=sh?(Math.random()-.5)*sh*s*.6:0;ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0d0907';ctx.fillRect(0,0,w,h);ctx.drawImage(closeCv,Math.round((w-dw)/2+ox),Math.round(Math.min(0,(h-dh)*.4)+oy),Math.round(dw),Math.round(dh));
  if(o.lines){ctx.save();ctx.globalAlpha=.7;ctx.strokeStyle='#fff6dc';ctx.lineWidth=Math.max(2,w/160);for(let i=0;i<18;i++){const a=i/18*Math.PI*2+Math.floor(t*14)*.37,r0=Math.max(w,h)*.74,r1=Math.max(w,h)*(.42+((i*7)%5)*.035);ctx.beginPath();ctx.moveTo(w/2+Math.cos(a)*r0,h*.42+Math.sin(a)*r0);ctx.lineTo(w/2+Math.cos(a)*r1,h*.42+Math.sin(a)*r1);ctx.stroke();}ctx.restore();}
  const vg=ctx.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.6)');ctx.fillStyle=vg;ctx.fillRect(0,0,w,h);}
@@ -246,7 +247,7 @@ function drawDocSmall(q,o){const d=o.dir||1,t=o.t||0,walk=!!o.walk,ph=o.phase||0
   // Beine: Gehzyklus mit Vor- und Rückschwung und angehobenem Fuß (Schrittlänge passt zur Wegstrecke, kein Rutschen)
   const legs=[0,1].map(k=>{const f=walk?ph*.98+k*Math.PI:0,fx=walk?Math.round(Math.sin(f)*6):(k?4:-4),lift=walk?Math.round(Math.max(0,Math.cos(f))*4):0;return {k,fx,lift,hx:0};}).sort((p,q)=>p.fx-q.fx);
   for(const L of legs){const back=walk&&L===legs[0],top=-14,bot=-4-L.lift;for(let i=0;i<=bot-top;i++){const u=i/Math.max(1,bot-top),px=Math.round(L.hx+(L.fx-L.hx)*u+(L.lift?Math.sin(u*Math.PI)*-2:0));P(px-2,top+i,4,1,back?DC.shade:DC.skin);P(px+1,top+i,1,1,DC.shade);}
-   P(L.fx-3,bot,7,4,back?'#33241a':'#4a3424');P(L.fx-3,bot,7,1,'#6a5036');P(L.fx+3,bot+2,1,2,'#2a1c12');}
+   /* rote Pumps mit Bleistiftabsatz */const rd=back?'#8a1620':'#c0202c',dk=back?'#3a060c':'#6a0c16';P(L.fx-2,bot,4,2,rd);P(L.fx,bot,2,1,back?DC.shade:DC.skin);P(L.fx+1,bot+1,4,2,rd);P(L.fx-2,bot,1,1,back?rd:'#ff5a64');P(L.fx-3,bot+1,1,3,dk);P(L.fx+1,bot+3,4,1,dk);P(L.fx+4,bot+1,1,1,back?rd:'#ff5a64');}
   // Kittel, vorn aufgerissen, mit Gürtelriemen und Blutspritzern
   for(let r=0;r<31;r++){const yy=-45+r+by,half=7+Math.round(r*.11),sw=walk?Math.round(s*(r>20?1.6:0)):0;
    if(r>=27&&hash(r*31+3)>.55)continue;
@@ -474,6 +475,92 @@ function stepChair(dt){const C=chair;if(!C)return;C.t+=dt;if(C.aim<1)C.aim=Math.
  paintChair(c.getContext('2d'),c.width,c.height,C.t,{g:C.g,key:C.key,from:C.from,aim:C.aim},P&&!P.done?P:(P&&P.done&&P.t<P.impact+6?P:null),{nurse:C.nurse});}
 function closeChair(){document.querySelector('.dok-chair')?.remove();chair=null;M.ui.render?.();}
 
+// ---------- Vor dem Auftritt des Doktors: Tür-Nahaufnahme mit Bein, Hand und Höschen ----------
+// Doppelte Auflösung (320 × 208): Mauer und Tür grob wie die übrigen Bilder, Bein, Hand und Höschen fein schattiert.
+// o: {gap 0…1 Türspalt, leg 0…1 Bein draußen, hand 0…1 Hand draußen, panty Höschen am Finger}
+const DW2=FW*2,DH2=FH*2,doorCv=mk(DW2,DH2);
+// Gefüllte Pixelscheibe
+function disc(q,cx,cy,r,c){q.fillStyle=c;const n=Math.ceil(r);for(let dy=-n;dy<=n;dy++){const hw=Math.sqrt(Math.max(0,r*r-dy*dy));if(hw<.35)continue;q.fillRect(Math.round(cx-hw),Math.round(cy)+dy,Math.max(1,Math.round(cx+hw)-Math.round(cx-hw)),1);}}
+// Weich schattierte Gliedmaßen: Segmente {a,b,w0,w1,bulge,at}; Licht von oben links. Drei Durchgänge: Kontur, Haut, Glanz.
+function limbs(q,segs,C){const LX=-.55,LY=-.83,pts=[];for(const s of segs){const len=Math.hypot(s.b.x-s.a.x,s.b.y-s.a.y),n=Math.max(2,Math.ceil(len*1.5));for(let i=0;i<=n;i++){const u=i/n,w=lerp(s.w0,s.w1,u)+(s.bulge||0)*Math.sin(cl((u-(s.at??.3)+.3)/.6)*Math.PI);pts.push({x:lerp(s.a.x,s.b.x,u),y:lerp(s.a.y,s.b.y,u),r:w/2});}}
+ for(const p of pts)disc(q,p.x,p.y,p.r+1,C.line);for(const p of pts)disc(q,p.x,p.y,p.r,C.shade);for(const p of pts)disc(q,p.x+LX*p.r*.34,p.y+LY*p.r*.34,p.r*.72,C.base);for(const p of pts)if(p.r>1.6)disc(q,p.x+LX*p.r*.52,p.y+LY*p.r*.52,Math.max(.6,p.r*.16),C.hi);}
+const SKIN={line:'#9a644e',shade:'#d9a585',base:'#f2cfb2',hi:'#fde6d2'};
+// Spitzenhöschen (Vorderansicht, Bund oben bei y 0): Bund, hoch geschnittene Beinausschnitte, Spitzenmuster, Schleife
+function panty(q,x,y,s=1,rot=0,sx=1){q.save();q.translate(x,y);q.rotate(rot);q.scale(s*Math.max(.18,Math.abs(sx)),s);const {R}=tl(q),back=sx<0;
+ const hwOf=yy=>yy<3?15:4+11*Math.pow(1-cl((yy-3)/19),2.1);
+ for(let yy=0;yy<23;yy++){const hw=hwOf(yy);R(-hw,yy,hw*2,1,'#c8243e');R(-hw,yy,2,1,'#8e1a30');R(hw-2,yy,2,1,'#9a1830');if(yy>2&&yy<20)R(-hw*.55,yy,Math.max(1,hw*.32),1,'#e2506a');}
+ for(let yy=6;yy<20;yy+=3)for(let xx=-14+(yy%2)*1.5;xx<14;xx+=3){if(Math.abs(xx)<hwOf(yy)-2.5)R(xx,yy,1,1,'#9a1830');}
+ R(-15,0,30,2,'#7a1428');for(let xx=-15;xx<15;xx+=3)R(xx,2,2,1,'#ffd6e0');for(let yy=3;yy<22;yy++){const hw=hwOf(yy);R(-hw,yy,1,1,'#ffd6e0');R(hw-1,yy,1,1,'#ffd6e0');}R(-4,22,8,1,'#7a1428');
+ if(!back){R(-3,1,2,3,'#ffd6e0');R(1,1,2,3,'#ffd6e0');R(-1,2,2,2,'#ff9ab0');R(-1,4,1,2,'#ffd6e0');R(0,4,1,2,'#ffd6e0');}
+ q.restore();}
+function doorShot(t,o={}){const q=doorCv.getContext('2d');q.setTransform(1,0,0,1,0,0);q.imageSmoothingEnabled=false;q.clearRect(0,0,DW2,DH2);
+ q.save();q.scale(2,2);{const {R}=tl(q);
+  R(0,0,FW,FH,'#a8916a');for(let y=0,row=0;y<92;y+=9,row++){R(0,y,FW,1,'#8a7452');for(let x=(row%2)*11;x<FW;x+=22){R(x,y,1,9,'#8a7452');if(hash(x*.3+y)>.6)R(x+2,y+2,8,3,'#b8a27a');}}
+  R(44,0,12,92,'#4a2f1c');R(104,0,12,92,'#4a2f1c');R(44,0,2,92,'#6b4a2c');R(114,0,2,92,'#2e1c10');R(44,0,72,6,'#3e2716');R(44,5,72,1,'#2a1a0e');
+  const gap=Math.round(cl(o.gap??0)*22),gx=56+gap,fl=Math.sin(t*9)+Math.sin(t*13.7);
+  R(56,6,gap,86,'#140d09');if(gap>2){R(57,30,Math.max(1,gap-3),40,'#2a180e');R(58+Math.round(gap*.4),44+Math.round(fl),2,3,'#f4c45a');R(57,48,Math.max(1,gap-2),1,'#3c2412');}
+  R(gx,6,104-gx,86,'#7a4e2c');for(let x=gx+7;x<104;x+=8)R(x,6,1,86,'#5e3a20');for(const by of [22,70]){R(gx,by,104-gx,3,'#3a3a3a');for(let x=gx+3;x<104;x+=8)R(x,by+1,1,1,'#9aa0a0');}
+  R(gx,6,1,86,'#9a6a3c');if(gap<1){R(76,34,8,2,NC.red);R(79,31,2,8,NC.red);}
+  R(36,92,88,12,'#8d8a80');R(36,92,88,1,'#b4b0a4');if(gap>2){q.globalAlpha=.35;R(56,93,gap+6,6,'#f4b45a');q.globalAlpha=1;}}
+ q.restore();
+ const gx=(56+Math.round(cl(o.gap??0)*22))*2,{R}=tl(q);
+ // Alles, was durch den Spalt kommt, verschwindet hinter dem Türblatt
+ q.save();q.beginPath();q.rect(0,0,gx,DH2);q.clip();
+ if(o.leg>0){const k=ease(o.leg),bob=Math.sin(t*3.2)*.2,hip={x:gx+30,y:92},K={x:gx+30-112*k,y:80-8*k},ang=.18+bob,A={x:K.x-Math.sin(ang)*94,y:K.y+Math.cos(ang)*94},fa=ang+.42,ball={x:A.x-Math.sin(fa)*20,y:A.y+Math.cos(fa)*20},toe={x:ball.x-Math.sin(fa+.35)*9,y:ball.y+Math.cos(fa+.35)*9};
+  // Schatten des Beins auf der Stufe
+  q.globalAlpha=.18;q.fillStyle='#000';q.fillRect(Math.round(toe.x-10),186,Math.round(gx-toe.x),3);q.globalAlpha=1;
+  limbs(q,[{a:hip,b:{x:lerp(hip.x,K.x,.55),y:lerp(hip.y,K.y,.55)},w0:34,w1:27},{a:{x:lerp(hip.x,K.x,.55),y:lerp(hip.y,K.y,.55)},b:K,w0:27,w1:17},{a:K,b:A,w0:16,w1:7,bulge:5.5,at:.28},{a:A,b:ball,w0:8,w1:7}],SKIN);
+  // Knie, Wade, Knöchel: feine Linien
+  R(K.x-4,K.y+4,5,1,'#e6bc9e');R(K.x-2,K.y+6,3,1,'#e6bc9e');{const c={x:lerp(K.x,A.x,.3),y:lerp(K.y,A.y,.3)};for(let i=0;i<14;i++)R(c.x+5+Math.sin(i*.2)*1.5,c.y-6+i,1,1,'#e0b394');}R(A.x+2,A.y-1,2,2,'#e6bc9e');
+  // Roter Pumps mit Bleistiftabsatz
+  const S1='#b81d2c',S2='#e0404c',S0='#6a0c16';
+  q.save();{const cx=lerp(ball.x,toe.x,.3),cy=lerp(ball.y,toe.y,.3);for(let u=0;u<=1;u+=.08){const x=lerp(A.x+2,toe.x,u),y=lerp(A.y+5,toe.y,u),r=lerp(5.4,2.6,u);disc(q,x,y,r+1,S0);}for(let u=0;u<=1;u+=.08){const x=lerp(A.x+2,toe.x,u),y=lerp(A.y+5,toe.y,u),r=lerp(5.4,2.6,u);disc(q,x-.6,y-.8,r,S1);}for(let u=.15;u<=.85;u+=.1)disc(q,lerp(A.x,toe.x,u)-1,lerp(A.y+3,toe.y,u)-2,1,S2);
+   const ins={x:lerp(A.x,ball.x,.45),y:lerp(A.y,ball.y,.45)};disc(q,ins.x,ins.y-1,3.2,SKIN.base);R(ins.x-2,ins.y-3,3,1,SKIN.hi);
+   const hb={x:A.x+5,y:A.y+7};q.fillStyle=S0;for(let i=0;i<24;i++){const w=i<3?3:i<20?2:1;q.fillRect(Math.round(hb.x+i*.12),Math.round(hb.y+i),w,1);}q.fillStyle=S2;q.fillRect(Math.round(hb.x),Math.round(hb.y),1,8);}
+  q.restore();}
+ // Hand: schlank, langer Zeigefinger nach oben, die anderen Finger weich angewinkelt, kleiner Finger elegant abgespreizt; rote Nägel
+ if(o.hand>0){const k=ease(o.hand),HS=2,W={x:gx+20-78*k,y:150},P=(dx,dy)=>({x:W.x+dx*HS,y:W.y+dy*HS}),elb={x:gx+44,y:156},kn=P(-9,-6),tip=P(-13,-21);
+  const fing=[{a:P(-9,-8),m:P(-11,-14),b:tip,w:2.4},{a:P(-7,-6),m:P(-13,-11),b:P(-15,-6),w:2.2},{a:P(-5,-5),m:P(-10,-8),b:P(-12,-3),w:2.1},{a:P(-3,-4),m:P(-5,-9),b:P(-5,-12),w:1.8}];
+  const segs=[{a:elb,b:W,w0:16,w1:11},{a:W,b:kn,w0:11,w1:12}];for(const f of fing){segs.push({a:f.a,b:f.m,w0:f.w*HS,w1:f.w*HS*.92},{a:f.m,b:f.b,w0:f.w*HS*.92,w1:f.w*HS*.72});}
+  segs.push({a:P(-3,1),b:P(-9,-1),w0:2.8*HS,w1:2.2*HS},{a:P(-9,-1),b:P(-13,-3),w0:2.2*HS,w1:1.8*HS});
+  limbs(q,segs,SKIN);
+  const nail=(p,d)=>{disc(q,p.x+d.x,p.y+d.y,2.2,'#b8102a');R(p.x+d.x-1,p.y+d.y-1,1,1,'#ff8a9a');};nail(tip,{x:0,y:1.6});nail(fing[1].b,{x:-1.5,y:0});nail(fing[2].b,{x:-1.5,y:.5});nail(fing[3].b,{x:0,y:1.5});nail(P(-13,-3),{x:-1.5,y:0});
+  R(W.x+2,W.y+5,6,1,'#e0b394');for(let i=0;i<5;i++)R(W.x+1+i*2,W.y-6+Math.abs(i-2),1,1,'#e8c24a');
+  if(o.panty!==false){const a=t*5.2,R0=30,top={x:tip.x,y:tip.y+3},px=top.x+Math.cos(a)*R0,py=top.y+18+Math.sin(a)*7,front=Math.sin(a)>0,sx=Math.cos(a),hw=13*(.5+.5*Math.abs(sx));
+   q.globalAlpha=.25;for(let i=1;i<9;i++){const b=a-i*.16;disc(q,top.x+Math.cos(b)*R0,top.y+20+Math.sin(b)*7,3-i*.25,'#e2506a');}q.globalAlpha=1;
+   const drawP=()=>{q.strokeStyle='#7a1428';q.lineWidth=1.5;q.beginPath();q.moveTo(top.x,top.y);q.lineTo(px-hw,py);q.moveTo(top.x,top.y);q.lineTo(px+hw,py);q.stroke();panty(q,px,py,1.1,Math.cos(a)*.3,(sx<0?-1:1)*(.5+.5*Math.abs(sx)));};
+   if(!front)drawP();disc(q,tip.x,tip.y+3,2.4*HS*.5+1,SKIN.base);nail(tip,{x:0,y:1.6});if(front)drawP();}}
+ q.restore();return doorCv;}
+// Großaufnahme der Tür auf die Filmbühne; st(b,t) liefert die Werte für den Zeitpunkt in der Einstellung
+const faceDoor=st=>(g,w,h,f,t)=>{const c=doorShot(t,st(f.bt??0,t)),s=Math.max(w/DW2,h/DH2)*(1+.05*ease(t/4)),dw=DW2*s,dh=DH2*s;g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#0d0907';g.fillRect(0,0,w,h);g.drawImage(c,Math.round((w-dw)/2),Math.round(Math.min(0,(h-dh)*.4)),Math.round(dw),Math.round(dh));
+ const vg=g.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=vg;g.fillRect(0,0,w,h);};
+// ---------- Lanista: Großaufnahme, hält das Höschen an die Nase (verträumt), später in Ekstase ----------
+let lanGc=null;const lanG=()=>{if(!lanGc&&S.lanista){try{lanGc=M.ludus.ownerFigure(S.lanista);}catch{}}return lanGc;};
+function lanBuf(t,o={}){const g=lanG();if(!g)return null;const yaw=o.yaw??Math.sin(t*.9)*.12,base=cutFace('lan',{g,mood:o.mood||'calm',yaw},t,'bust');
+ const c=faceBuf('lanOut'),q=c.qz;q.clearRect(0,0,FW,FH);const {R,E}=tl(q),A=g.appearance||{},sk=A.skin||'#c19169',sh=A.shade||'#875e43';q.drawImage(base,0,0);
+ const EY=[[65,38],[96,35]];
+ if(o.roll){for(const [cx,cy] of EY){E(cx,cy,6,4,'#fbf6ee');R(cx-1+Math.round(Math.sin(t*7)),cy-4,3,2,'#3a2414');R(cx-6,cy-5,13,2,sh);R(cx-6,cy+4,13,1,sh);}}
+ else for(const [cx,cy] of EY){/* verträumt: schwere Oberlider über den eigenen Augen */E(cx,cy-3,9,4,sk);R(cx-8,cy-1,17,1,sh);R(cx-7,cy,15,1,'#2a1a10');R(cx-8,cy-6,4,1,sh);}
+ q.globalAlpha=.4;E(60,50,7,3,'#e2525c');E(100,47,7,3,'#e2525c');q.globalAlpha=1;
+ // Höschen vor Nase und Mund, mit seiner Hand gehalten
+ const k=o.press?1:0,px=80+Math.sin(t*1.3)*1,py=43-k*2;
+ {const hx=104,hy=FH;for(let i=0;i<10;i++){const u=i/9;E(lerp(hx,px+10,u),lerp(hy,py+20,u),5,4,sh);}for(let i=0;i<10;i++){const u=i/9;E(lerp(hx,px+10,u)-1,lerp(hy,py+20,u)-1,4,3,sk);}}
+ panty(q,px,py,1.05+k*.1,Math.sin(t*1.3)*.04+(o.press?.06:0),1);
+ for(const [x,y] of [[px+4,py+18],[px+8,py+16],[px+12,py+17],[px+15,py+19]]){R(x,y,3,3,sh);R(x,y,2,2,sk);}
+ if(o.sniff){const u=(t*1.4)%1;q.globalAlpha=.6*(1-u);for(const s of [-1,1]){R(80+s*(20-u*8),py+4-u*3,3,1,'#ffffff');R(80+s*(22-u*8),py+1-u*4,2,1,'#ffffff');}q.globalAlpha=1;}
+ if(o.steam)for(let i=0;i<4;i++){const u=((t*.8+i/4)%1),s=i%2?1:-1;q.globalAlpha=.7*(1-u);E(80+s*(36+u*6),34-u*30,3+u*4,2+u*3,'#f4f0e8');q.globalAlpha=1;}
+ if(o.sweat)for(const [x,y] of [[50,22],[110,18]]){const d=Math.round((t*6+x)%6);R(x,y+d,2,3,'#cfe6ee');R(x,y+d,1,1,'#ffffff');}
+ const nh=o.hearts||0;for(let i=0;i<nh;i++){const u=((t*.4+i/nh)%1),x=118+i*12+Math.sin(t*2+i)*3,y=40-u*36;q.globalAlpha=1-u;R(x,y,2,2,'#e2626c');R(x+3,y,2,2,'#e2626c');R(x,y+1,5,2,'#e2626c');R(x+1,y+3,3,1,'#e2626c');R(x+2,y+4,1,1,'#e2626c');q.globalAlpha=1;}
+ return c.z;}
+function shotWord(ctx,w,h,t,word,x,y,color='#f4d37a'){if(!word)return;const s=Math.max(18,w/18)*(1+.06*Math.sin(t*8));ctx.save();ctx.font="bold "+Math.round(s)+"px 'Courier Prime',monospace";ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#17201c';ctx.fillText(word,w*x+3,h*y+3);ctx.fillStyle=color;ctx.fillText(word,w*x,h*y);ctx.restore();}
+const faceLan=o=>(g,w,h,f,t)=>{closeup(g,w,h,t,lanBuf(t,o),o);shotWord(g,w,h,t,o.word,o.wx??.78,o.wy??.2,o.wc);};
+// Standbild: die Zeit bleibt stehen (eingefrorenes letztes Bild, entsättigt)
+function frozen(){const c=$('dokFilm'),s=mk(c?.width||660,c?.height||420);if(c)s.getContext('2d').drawImage(c,0,0);
+ return (g,w,h,f,t)=>{g.setTransform(1,0,0,1,0,0);try{g.filter='grayscale(.75) sepia(.3)';}catch{}g.drawImage(s,0,0,w,h);try{g.filter='none';}catch{}g.fillStyle='rgba(18,12,4,.28)';g.fillRect(0,0,w,h);
+  const p=.5+.5*Math.sin(t*3);g.fillStyle='rgba(244,211,122,'+(.55+.4*p).toFixed(2)+')';const u=Math.max(4,Math.round(w/90));g.fillRect(u*2,u*2,u*1.4,u*5);g.fillRect(u*4.2,u*2,u*1.4,u*5);};}
+function showAsk(f){const slot=f.view?.querySelector('.scene-bubble-slot');if(!slot)return;slot.querySelector('.dok-ask')?.remove();const d=document.createElement('div');d.className='dok-ask';
+ d.innerHTML='<button type="button" class="dok-ask-yes" data-dokask="yes">MIR GEFÄLLT, WAS ICH SEHE</button><button type="button" class="dok-ask-no" data-dokask="no">Nein, ich möchte keine expliziten Inhalte.</button>';slot.appendChild(d);}
+const cookieCard=()=>card('PROTOKOLL DES MEDICUS','<p>Die sexuellen Vorlieben des Spielers wurden in den weiteren Spielverlauf integriert.</p>');
 // =====================================================================================================
 // 5 · DIE STORY-SZENE IM HOF (Filmbühne nach dem Muster von medic.js)
 // =====================================================================================================
@@ -493,21 +580,21 @@ const need=t=>Math.max(2.3,1.1+t.length*.062);
 function play(o){stopFilm();const v=document.createElement('div');v.className='smith-ceremony smith-intro lion-film medic-film no-smith-song dok-film';
  v.innerHTML='<div><div class="medic-top"><span>'+esc(o.label||'')+'</span><button class="btn small" type="button" data-dokf="skip">SZENE ÜBERSPRINGEN ›</button></div><div class="scene-bubble-slot"><div class="scene-bubble" id="dokBubble" hidden></div></div><canvas id="dokFilm" width="660" height="420"></canvas><p id="dokText" aria-live="polite"></p><div id="dokInfo" hidden></div></div>';
  document.body.appendChild(v);
- v.addEventListener('click',e=>{if(!film)return;if(e.target.closest?.('[data-dokf="skip"]')){e.stopPropagation();const s=film.onSkip;s?.();return;}if(film.line||film.hold){if(film.bt>.25)film.ack=true;}});
+ v.addEventListener('click',e=>{if(!film)return;if(e.target.closest?.('[data-dokf="skip"]')){e.stopPropagation();const s=film.onSkip;s?.();return;}const ask=e.target.closest?.('[data-dokask]');if(ask){e.stopPropagation();film.branch=ask.dataset.dokask;ask.closest('.dok-ask')?.remove();return;}if(film.line||film.hold){if(film.bt>.25)film.ack=true;}});
  film={floats:[],props:{},...o,view:v,i:-1,t:0,bt:0,line:null,shown:0,cam:{...(o.cam||{x:190,y:560,vw:280})},camTo:null,door:0,doorTo:0,doorRate:3,face:null,chair:null,proc:null};next();loop();}
 function stopFilm(){film?.view?.remove();film=null;}
-function next(){const f=film;f.i++;f.bt=0;f.shown=0;f.ack=false;const b=f.beats[f.i];if(!b){const done=f.done;stopFilm();done?.();return;}
+function next(){const f=film;f.i++;while(f.beats[f.i]?.only&&!f.beats[f.i].only(f))f.i++;f.bt=0;f.shown=0;f.ack=false;const b=f.beats[f.i];if(!b){const done=f.done;stopFilm();done?.();return;}
  if('face' in b)f.face=b.face;if('chair' in b){if(b.chair){const o=b.chair(f);f.chair={g:o.g,key:o.key};f.proc=newProc({...o,onImpact:P=>{o.onImpact?.(P,f);}});}else{f.chair=null;f.proc=null;}}
  b.do?.(f);if(!film||film!==f)return;f.line=b.say?{who:b.who||'s',text:typeof b.say==='function'?b.say(f):b.say}:null;f.hold=!!b.hold;if(b.cam)f.camTo={...b.cam};if('card' in b)setCard(typeof b.card==='function'?b.card(f):b.card,f.hold);}
 function setCard(html,hold){const el=$('dokInfo');if(!el)return;if(!html){el.hidden=true;el.innerHTML='';return;}el.hidden=false;el.innerHTML=html+(hold?'<small class="medic-tap">TIPPEN ▸</small>':'');}
 function stepFilm(dt){const f=film;f.t+=dt;f.bt+=dt;const b=f.beats[f.i];if(!b)return;b.each?.(f,dt,f.bt);if(film!==f)return;
- for(const a of [f.smith,...f.rec])if(a)walker(a,dt);for(const a of f.rec)applyVis(a,dt);for(const p of Object.values(f.props))walker(p,dt);if(f.proc)stepProc(f.proc,dt);
+ for(const a of [f.smith,f.lan,...f.rec])if(a)walker(a,dt);for(const a of f.rec)applyVis(a,dt);for(const p of Object.values(f.props))walker(p,dt);if(f.proc)stepProc(f.proc,dt);
  if(f.camTo){const k=Math.min(1,dt*(f.camTo.rate||2));for(const key of ['x','y','vw'])if(f.camTo[key]!=null)f.cam[key]+=(f.camTo[key]-f.cam[key])*k;}
  f.door+=(f.doorTo-f.door)*Math.min(1,dt*f.doorRate);if(Math.abs(f.doorTo-f.door)<.01)f.door=f.doorTo;
  for(const q of f.floats)q.t+=dt;f.floats=f.floats.filter(q=>q.t<1.6);f.shake=Math.max(0,(f.shake||0)-dt*6);
  if(f.line)f.shown+=dt;const busy=b.until?!b.until(f):false,read=f.hold?f.ack:(!f.line||f.ack||f.shown>=need(f.line.text));
  if(read&&!busy&&(f.hold||f.bt>=(b.dur||0)))next();else paintFilm();}
-function speaker(who){const f=film;if(who==='s')return {name:smithName(),a:f.smith};if(who==='d')return {name:DOC_SHORT,a:f.props.doc};if(who==='n')return {name:NURSE,a:f.props.nurse};if(who&&who[0]==='r'){const a=f.rec?.[+who.slice(1)-1];return {name:first(a?.g),a};}return {name:''};}
+function speaker(who){const f=film;if(who==='s')return {name:smithName(),a:f.smith};if(who==='d')return {name:DOC_SHORT,a:f.props.doc};if(who==='n')return {name:NURSE,a:f.props.nurse};if(who==='l')return {name:S.lanista?.name||'Der Lanista',a:f.lan};if(who&&who[0]==='r'){const a=f.rec?.[+who.slice(1)-1];return {name:first(a?.g),a};}return {name:''};}
 function paintFilm(){const f=film;if(!f)return;const c=$('dokFilm');if(!c?.getContext)return;const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;
  if(f.face)f.face(g,c.width,c.height,f,f.t);else if(f.chair)paintChair(g,c.width,c.height,f.t,f.chair,f.proc);else paintYard(g,c.width,c.height,f);
  const el=$('dokBubble');if(el){if(!f.line||f.line.who==='cap'){if(!el.hidden)el.hidden=true;}else{const s=speaker(f.line.who),key=s.name+'|'+f.line.text;if(el._key!==key){el._key=key;el.innerHTML='<b>'+esc(s.name)+'</b><span>'+esc(f.line.text)+'</span><i aria-hidden="true">▼</i>';el.classList.toggle('loud',/!$/.test(f.line.text)&&f.line.text===f.line.text.toUpperCase());}if(el.hidden)el.hidden=false;
@@ -518,7 +605,8 @@ let bgCache=null;const backdrop=()=>bgCache=(M.prepareLudusGraphics?.()||bgCache
 const drawDoor=(g,open,t)=>M.medicusArt?.drawDoor(g,open,t);
 function paintYard(g,w,h,f){const VW=f.cam.vw,VH=VW*h/w,k=w/VW,cx=cl(f.cam.x,VW/2,900-VW/2),cy=cl(f.cam.y,VH/2,670-VH/2),sh=f.shake||0;
  g.fillStyle='#101b20';g.fillRect(0,0,w,h);g.save();g.translate((Math.random()-.5)*sh*k,(Math.random()-.5)*sh*k*.6);g.scale(k,k);g.translate(-(cx-VW/2),-(cy-VH/2));g.drawImage(backdrop(),0,0);M.medicusArt?.frame(g,f.t);M.ludusOverlay?.(g,f.t);drawDoor(g,f.door,f.t);
- const draws=[f.smith,...f.rec].filter(a=>a&&!a.hidden).map(a=>({y:a.y,fn:()=>M.renderForgeActors(g,[a])}));
+ const draws=[f.smith,f.lan,...f.rec].filter(a=>a&&!a.hidden).map(a=>({y:a.y,fn:()=>{M.renderForgeActors(g,[a]);if(a.panty)panty(g,a.x+(a.a===0?1:-1),a.y-60,.32,Math.sin(f.t*2)*.08);}}));
+ if(f.pfly)draws.push({y:999,fn:()=>panty(g,f.pfly.x,f.pfly.y,.32,f.t*9,Math.cos(f.t*11))});
  for(const b of Object.values(f.props))if(b.bed&&!b.hidden)draws.push({y:b.y,fn:()=>drawBedPatient(g,{...b,t:f.t})});const d=f.props.doc,n=f.props.nurse;if(d&&!d.hidden)draws.push({y:d.y,fn:()=>drawDocSmall(g,{...d,t:f.t})});if(n&&!n.hidden)draws.push({y:n.y,fn:()=>drawNurseSmall(g,{...n,t:f.t})});
  draws.sort((a,b)=>a.y-b.y);for(const x of draws)x.fn();g.restore();
  for(const q of f.floats){const u=q.t/1.6,x=w/2+(q.x-cx)*k,y=h/2+(q.y-cy)*k-u*30;g.globalAlpha=u<.75?1:1-(u-.75)/.25;g.font="bold 24px 'Courier Prime',monospace";g.textAlign='center';g.textBaseline='middle';g.fillStyle='#17201c';g.fillText(q.text,x+2,y+2);g.fillStyle=q.color;g.fillText(q.text,x,y);g.globalAlpha=1;}}
@@ -545,10 +633,11 @@ function story(replay){closeAll();const {R,real}=cast(replay);
  for(const g of R){const v=M.medic.state().vis[g.id]??={};v.down=false;v.kneel=false;v.net=false;}
  const S1=R[0],S5=R[4],k1=lowKey(S1),k5=lowKey(S5),say=(who,text,o)=>({who,say:text,...o}),cap=text=>({who:'cap',say:text});
  const sm=smithActor(300,620),pos=[[132,621],[154,623],[176,621],[126,614],[198,622]],rec=R.map((g,i)=>recActor(g,i,...pos[i]));rec[3].lying=true;
+ let lan=null;try{if(S.lanista)lan=M.lesson?.kit?.lanActor?.(372,630)||null;}catch{lan=null;}if(lan){lan.hidden=true;lan.a=Math.PI;}const G=()=>!!lan,Y=f=>!!lan&&f.branch==='yes',N=f=>!!lan&&f.branch!=='yes',NY=f=>f.branch!=='yes';
  const res={};
  const over=()=>{endStory(real,R);endCard(res,S1,S5,real);};
  const finish=()=>{if(!res.r1)res.r1=treat(S1,k1,'ok',true);if(!res.r5)res.r5=treat(S5,k5,'fail',false,'skull');stopFilm();over();};
- play({label:'Der Doktor · Vorstellung und Behandlungsstuhl',smith:sm,rec,cam:{x:190,y:568,vw:280},onSkip:finish,done:over,props:{doc:{x:242,y:603,dir:-1,hidden:true,pose:'stand'},nurse:{x:243,y:602,dir:-1,hidden:true}},beats:[
+ play({label:'Der Doktor · Vorstellung und Behandlungsstuhl',smith:sm,lan,rec,cam:{x:190,y:568,vw:280},onSkip:finish,done:over,props:{doc:{x:242,y:603,dir:-1,hidden:true,pose:'stand'},nurse:{x:243,y:602,dir:-1,hidden:true}},beats:[
   {dur:.6},
   say('s','Eins noch, bevor ihr hier alles vollblutet: Wir haben auch einen Medikus. Mit Personal.'),
   say('r2','Personal? Was für Personal?',{do:f=>{f.rec[1].a=0;}}),
@@ -559,26 +648,47 @@ function story(replay){closeAll();const {R,real}=cast(replay);
   say('r3','ICH! ICH BLUTE SOGAR!',{do:f=>flip(f)}),
   say('r4','ICH HAB EIN ZERTRÜMMERTES BEIN! DAS ZÄHLT DOPPELT!',{do:f=>flip(f)}),
   say('r5','Ich hab nur noch einen Arm! Aber der winkt für zwei!',{do:f=>flip(f)}),
-  {face:faceNurse({end:'shy'}),dur:4.8,...say('n','Schwester Valeria. Ich mache die Verbände, die Suppe und die Briefe an die Hinterbliebenen.')},
+  {face:faceNurse({end:'shy',still:true}),dur:4.8,...say('n','Schwester Valeria. Ich mache die Verbände, die Suppe und die Briefe an die Hinterbliebenen.')},
   {face:null,...say('r2','Kann mich bitte jemand hauen? Ganz fest? Am liebsten zweimal?',{do:f=>flip(f)})},
   say('s','Freut euch nicht zu früh. Bei Schwester Valeria bleibt man verdächtig lange krank.',{do:f=>{poseA(f.smith,{a:Math.PI});f.smith.forgePose='sip';}}),
   say('r1','Warum?'),
   {dur:2.6,...cap('Schwester Valeria stöckelt quer über den Hof. Zum Schmied.'),do:f=>{f.props.nurse.to=[286,622,22];},until:f=>!f.props.nurse.to},
-  {face:faceNurse({end:'shy'}),dur:4.8,...say('n','Ich bin häufig in der Schmiede. Da wird ein guter, kräftiger Blasebalg benötigt.')},
+  {face:faceNurse({end:'shy',still:true}),dur:4.8,...say('n','Ich bin häufig in der Schmiede. Da wird ein guter, kräftiger Blasebalg benötigt.')},
   {face:null,...say('s','Hm. Ja. Weiter im Text.',{do:f=>{f.smith.forgePose='sip';float(f,298,578,'♥','#e2626c');float(f,316,586,'*hust*');}})},
   say('r3','DER SCHMIED?!',{do:f=>flip(f,true)}),
   say('r4','DER HAT EINEN BIERBAUCH!',{do:f=>flip(f,true)}),
   say('s','Das ist Muskelmasse. Gut verteilt.',{do:f=>{f.smith.forgePose='sip';}}),
   say('r5','Deshalb liegt bei euch also jeder drei Wochen mit einem Kratzer im Bett …'),
-  {dur:2.0,...cap('Aus dem Krankenhaus dringt ein Schrei. Dann ein Klirren. Dann fröhliches Pfeifen.'),do:f=>{f.shake=2;M.sound?.('heavy');float(f,244,540,'*KLIRR*');float(f,214,530,'AAAH!','#f29b83');setTimeout(()=>film&&float(film,268,534,'♪ ♫','#f4d37a'),900);}},
-  {dur:1.6,...cap('Die Tür fliegt auf.'),do:f=>{const d=f.props.doc;f.doorTo=1;f.doorRate=16;f.shake=1.2;d.hidden=false;d.pose='flail';d.to=[240,618,40];M.sound?.('block');},until:f=>!f.props.doc.to},
+  // ---------- Bevor der Doktor herauskommt: Beine in der Tür, Finger mit Höschen, die Frage an den Spieler ----------
+  {only:G,face:null,dur:2.4,...cap('Der Lanista schlendert herbei. Er hat gehört, dass es hier neuerdings Personal gibt.'),do:f=>{f.lan.hidden=false;f.lan.to=[268,630,30];f.lan.state='move';f.lan.moveSpeed=10;},until:f=>!f.lan.to,cam:{x:220,y:580,vw:240,rate:3}},
+  {only:G,face:faceDoor(b=>({gap:ease(b/1.2)})),dur:1.8,...cap('Die Tür des Krankenhauses öffnet sich einen Spalt.'),do:()=>M.sound?.('block')},
+  {only:G,face:faceDoor(b=>({gap:1,leg:ease(b/1.4)})),dur:4.6,...cap('Ein Bein. Ein sehr, sehr langes Bein. Rote Absätze. Es wippt.'),do:()=>M.sound?.('rise')},
+  {only:G,face:faceDoor(b=>({gap:1,leg:1-ease(b/1.1)})),dur:1.6,...cap('… und zieht sich wieder zurück.')},
+  {only:G,face:faceDoor(b=>({gap:1,hand:ease(b/1.1)})),dur:4.8,...cap('Ein Finger. Der Nagel rot lackiert. Daran kreist etwas sehr Kleines aus Spitze.')},
+  {only:G,...cap('Die Zeit bleibt stehen.'),do:f=>{f.face=frozen();f.branch=null;showAsk(f);},until:f=>!!f.branch},
+  {only:N,face:faceDoor(b=>({gap:1-ease(b/1.4),hand:1-ease(b/.6)})),dur:2.6,...cap('Verstanden. Die Tür schließt sich schamhaft. Die Spitze bleibt ein Geheimnis.')},
+  {only:Y,face:null,dur:2.4,cam:{x:250,y:590,vw:190,rate:5},...cap('Aus dem Türspalt fliegt etwas Rotes. Ein Schwung aus dem Handgelenk.'),do:f=>{f.doorTo=.35;f.doorRate=6;f.pfly={x:244,y:570};M.sound?.('block');},
+   each:(f,dt,t)=>{if(!f.pfly)return;const k=cl(t/1.1),x0=244,y0=570,x1=f.lan.x,y1=f.lan.y-60;f.pfly.x=lerp(x0,x1,k);f.pfly.y=lerp(y0,y1,k)-Math.sin(k*Math.PI)*34;if(k>=1){f.pfly=null;f.lan.panty=true;f.lan.a=Math.PI;float(f,f.lan.x,f.lan.y-72,'*FLATSCH*','#f27aa8');M.sound?.('heavy');}}},
+  {only:Y,face:faceLan({sniff:1,hearts:2,mood:'calm'}),dur:3.8,...say('l','*schnüff* … Lavendel. Karbol. Und … Sehnsucht.')},
+  {only:Y,face:null,dur:2.6,cam:{x:236,y:584,vw:220,rate:4},...cap('Die Tür geht auf. Rote Absätze. Ein blutiger Kittel. Ein Schnauzer.'),do:f=>{const d=f.props.doc;Object.assign(d,{hidden:false,x:242,y:603,dir:1,pose:'stand',walk:true,to:[240,618,22]});f.doorTo=1;f.doorRate=3;M.sound?.('rise');},until:f=>!f.props.doc.to},
+  {only:Y,face:faceDoc({mood:'grin',hearts:1,look:1,yaw:.4}),...say('d','Es freut mich, dass dir meine Vorstellung gefällt.',{do:f=>{Object.assign(f.props.doc,{walk:false,dir:1});f.doorTo=0;f.doorRate=3;}})},
+  {only:Y,face:null,hold:true,card:cookieCard,...cap('Die Beine gehören dem Doktor.')},
+  {only:Y,face:null,card:null,cam:{x:220,y:584,vw:250,rate:4},...say('s','Na bitte. Wir haben es immer gewusst: Der Lanista ist ein Perverser.',{do:f=>{poseA(f.smith,{a:Math.PI,traderPose:'point',gest:0});}})},
+  {only:Y,...say('r3','Deshalb hat er beim Kauf so lange meine Waden angeguckt!',{do:f=>flip(f,true)})},
+  {only:Y,...say('r4','Mir hat er die Zähne geprüft. Mit der Zunge.',{do:f=>flip(f,true)})},
+  {only:Y,...say('r5','Und ich dachte, er hätte seinen Arm im Krieg verloren.')},
+  {only:Y,face:faceLan({press:1,roll:1,hearts:3,steam:1,sweat:1,mood:'grin',shake:.8,word:'MMMH!',wc:'#f27aa8'}),dur:4.2,...cap('Der Lanista. In Ekstase.'),do:()=>M.sound?.('crowd')},
+  {only:Y,face:null,...say('s','Dass der Alte auf alte Opis steht, hätte man ahnen können. Er kauft ja auch nur Veteranen.',{do:f=>{f.smith.forgePose='sip';}})},
+  {only:Y,face:faceDoc({mood:'confident',look:-.5}),...say('d','Na gut. Jetzt wird es aber auch Zeit, dass ich mich mal vorstelle.',{do:f=>{poseA(f.smith,{a:Math.PI});Object.assign(f.props.doc,{dir:-1,pose:'stand'});}})},
+  {only:NY,dur:2.0,...cap('Aus dem Krankenhaus dringt ein Schrei. Dann ein Klirren. Dann fröhliches Pfeifen.'),do:f=>{f.shake=2;M.sound?.('heavy');float(f,244,540,'*KLIRR*');float(f,214,530,'AAAH!','#f29b83');setTimeout(()=>film&&float(film,268,534,'♪ ♫','#f4d37a'),900);}},
+  {only:NY,dur:1.6,...cap('Die Tür fliegt auf.'),do:f=>{const d=f.props.doc;f.doorTo=1;f.doorRate=16;f.shake=1.2;d.hidden=false;d.pose='flail';d.to=[240,618,40];M.sound?.('block');},until:f=>!f.props.doc.to},
   {face:faceDoc({mood:'roar',lines:1,shake:1.5}),...say('d','PATIENTEN! FÜNF STÜCK! UND ALLE NOCH WARM!',{do:f=>{f.props.doc.pose='stand';f.doorTo=0;f.doorRate=5;}})},
   {face:null,...say('s','Und das ist der Grund, warum wir überhaupt Patienten haben: Doktor Hippolytus Hirnhammer. Studiert in Alexandria. Rausgeworfen in Alexandria.',{do:f=>poseA(f.smith,{a:Math.PI,traderPose:'point',gest:0})})},
   say('s','Und in Athen. Und in Karthago.',{do:f=>{poseA(f.smith,{a:Math.PI});f.smith.forgePose='sip';}}),
   {face:faceDoc({mood:'confident',look:.5}),...say('d','Karthago war ein Missverständnis! Der Mann WOLLTE ohne Nase leben. Er wusste es nur noch nicht.')},
   {face:null,...say('r3','Hat er gerade „Nase“ gesagt?',{do:f=>{f.rec[2].stagger=.6;}})},
   {face:faceDoc({mood:'grin',hearts:1,look:1,yaw:.55}),...say('d','Schwester Valeria! Mein Engel! Ich habe dir letzte Woche eine Niere geschenkt!')},
-  {face:faceNurse({end:'roll',quick:true}),dur:3.4,...say('n','Es war nicht deine.')},
+  {face:faceNurse({end:'roll',quick:true,still:true}),dur:3.4,...say('n','Es war nicht deine.')},
   {face:null,...say('s','Der Doktor hat einen Stuhl, einen Meißel und eine Theorie.',{do:f=>poseA(f.smith,{a:Math.PI})})},
   {face:faceDoc({mood:'confident',lines:.6}),...say('d','Jede Begabung wohnt an einer bestimmten Stelle im Schädel! Stärke oben, Taktik vorne, Gleichgewicht gleich neben dem Ohr. Man muss nur wissen, wo man klopft.')},
   {face:(g,w,h,f,t)=>closeup(g,w,h,t,doctorBuf(t,{mood:'nervous',look:1,yaw:Math.sin(t*2.4)*.55})),...say('d','Stärke ist hier oben. Oder hier. Oder … Moment. Letzte Woche war die noch weiter links.')},
@@ -607,11 +717,11 @@ function story(replay){closeAll();const {R,real}=cast(replay);
   {face:faceRec(4,{mood:'dumb',cross:true,crossX:true,spin:true,tongue:true,birds:true,drool:1,blood:1,hurt:.6}),...say('r5','Wer hat das Licht so laut gemacht? Und warum schmeckt der Boden nach Montag?')},
   {face:null,...say('s','Alle Werte ein Zehntel weniger. Und er schielt so stark, dass er sich selbst in die Ohren gucken kann.',{do:f=>{f.smith.forgePose='sip';}})},
   {face:null,...say('s','Das war dann wohl das zehnte Mal.'),hold:true,card:()=>res.r5?resultCard(S5,res.r5,'skull'):''},
-  {card:null,face:faceNurse({end:'roll',quick:true}),dur:3.4,...say('n','Ich hole den großen Eimer.')},
+  {card:null,face:faceNurse({end:'roll',quick:true,still:true}),dur:3.4,...say('n','Ich hole den großen Eimer.')},
   {face:faceDoc({mood:'grin',look:1,hearts:1,yaw:.55}),...say('d','Ich helfe tragen!')},
   {face:null,...say('s','Sieh es positiv, Junge: Von allem, was wir noch mit dir vorhaben, bekommst du jetzt nur noch die Hälfte mit.',{do:f=>poseA(f.smith,{a:Math.PI,traderPose:'point',gest:0})})},
   {dur:2.6,...cap('Zehn Tage Krankenbett. Für beide.'),cam:{x:124,y:584,vw:176,rate:6},do:f=>{f.rec[0].hidden=true;f.rec[4].hidden=true;Object.assign(f.rec[1],{x:236,y:624});Object.assign(f.rec[2],{x:254,y:622});f.props.bed1={x:52,y:608,g:S1,bed:true};f.props.bed3={x:166,y:608,g:S5,bed:true,cross:true};Object.assign(f.props.doc,{x:206,y:618,dir:-1,pose:'stand'});Object.assign(f.props.nurse,{x:128,y:614,dir:1});float(f,72,596,'z z z','#cfe6ee');float(f,176,596,'?!','#f4d37a');}},
-  {face:faceNurse({end:'wink'}),dur:4.8,...say('n','Visite! Ich bringe Wärme. Und Suppe. Und Zeit.')},
+  {face:faceNurse({end:'wink',still:true}),dur:4.8,...say('n','Visite! Ich bringe Wärme. Und Suppe. Und Zeit.')},
   {face:faceDoc({mood:'roar',lines:1,shake:1}),...say('d','NÄCHSTER!')},
   {face:null,dur:2.2,cam:{x:190,y:568,vw:280},do:f=>{f.rec[1].to=[-30,626,70];f.rec[2].to=[-30,632,60];float(f,154,590,'WEG HIER!','#f29b83');M.sound?.('crowd');},...say('r2','LAUFT!')},
   say('s','Der Unterricht ist beendet.',{do:f=>{f.smith.forgePose='sip';}}),
@@ -629,12 +739,12 @@ let bypass=false;
 const ds=()=>S.doktor??={stage:'',armed:false};
 const CHOICE_LINES=['Willkommen! Wer kommt zuerst dran? Und wer zuletzt?','Betten oder Stuhl? Die Betten sind bequemer. Der Stuhl ist lustiger.','Schwester Valeria hat frisch bezogen. Die Flecken gehen nicht mehr raus, aber sie sind trocken.','Heute im Angebot: ein Schlag, zwei Möglichkeiten.'];
 function choice(){M.ui.modal('Medicus',`<div class="dok-choice"><canvas id="dokChoiceFace" width="320" height="200"></canvas><p class="medic-quip"><b>${esc(DOC_SHORT)}:</b> „${esc(pick(CHOICE_LINES))}“</p></div>`,
- `<button class="btn" data-action="dok:ward">🛏 KRANKENBETTEN · ÜBERSICHT</button><button class="btn primary" data-action="dok:chair">🔨 BEHANDLUNGSTISCH</button><button class="btn small" data-action="dok:story">🎬 DER DOKTOR · VORSTELLUNG NOCHMAL ANSEHEN</button>${S.medic?.stage==='done'&&!S.lesson?.stage&&!S.huehner?.stage&&M.lesson?.offer?'<button class="btn small" data-action="dok:lesson">📖 KAPITEL · DIE TEUERSTE LEKTION</button>':''}`);
+ `<button class="btn" data-action="dok:ward">🛏 KRANKENBETTEN · ÜBERSICHT</button><button class="btn primary" data-action="dok:chair">🔨 BEHANDLUNGSTISCH</button><button class="btn small" data-action="dok:story">🎬 DER DOKTOR · VORSTELLUNG NOCHMAL ANSEHEN</button>`);
  let t=0;const tick=()=>{const c=$('dokChoiceFace');if(!c)return;t+=1/30;closeup(c.getContext('2d'),c.width,c.height,t,doctorBuf(t,{mood:Math.sin(t*.7)>.5?'roar':'grin',yaw:Math.sin(t*.8)*.25}));setTimeout(()=>requestAnimationFrame(tick),33);};requestAnimationFrame(tick);}
 // Während des Medicus-Kapitels bleibt der normale Ablauf; die Auswahl gibt es davor nicht und danach immer.
 const chapterIdle=()=>['','done','skip','free'].includes(M.medic.state().stage||'');
 const baseClick=M.schoolClick;M.schoolClick=function(action){const a=String(action||''),[p,b]=a.split(':');
- if(p==='dok'){M.ui.close?.();if(b==='ward'){bypass=true;try{M.ui.click('nav:medic');}finally{bypass=false;}}else if(b==='chair')openChair();else if(b==='story'){if(!S.battle)story(true);}else if(b==='lesson'){if(!S.battle)M.lesson?.offer?.();}return true;}
+ if(p==='dok'){M.ui.close?.();if(b==='ward'){bypass=true;try{M.ui.click('nav:medic');}finally{bypass=false;}}else if(b==='chair')openChair();else if(b==='story'){if(!S.battle)story(true);}return true;}
  if(a==='nav:medic'&&!bypass&&!S.battle&&M.ui.getPage?.()==='home'&&chapterIdle()&&!film&&!chair){choice();return true;}
  return baseClick?.apply(this,arguments);};
 
@@ -644,12 +754,11 @@ const baseClick=M.schoolClick;M.schoolClick=function(action){const a=String(acti
 let raf=0,last=0,wait=0,lastMedic=M.medic.state().stage;
 function loop(){if(raf)return;last=0;const run=now=>{const dt=Math.min(.05,last?(now-last)/1000:0);last=now;if(film)stepFilm(dt);if(chair)stepChair(dt);if(film||chair)raf=requestAnimationFrame(run);else raf=0;};raf=requestAnimationFrame(run);}
 // Spielstände, die das Medicus-Kapitel schon früher erlebt haben, bekommen den Doktor beim nächsten Besuch des Ludus (einmal); wer es übersprungen hat, bekommt ihn nur über die Medicus-Auswahl.
-// Bestehende Spielstände bekommen den Doktor nie von selbst (auch nicht nach einem Neuladen mitten im Kapitel). Nur wer das Medicus-Kapitel in DIESER Sitzung beendet, bekommt ihn einmal (siehe autoStart). Über die Medicus-Auswahl bleibt er jederzeit abrufbar.
-{const d=ds(),ms=M.medic.state().stage;if(!d.stage&&(d.armed||['done','skip','free'].includes(ms))){d.stage='skip';d.armed=false;}}
+if(!ds().stage&&!ds().armed){const ms=M.medic.state().stage;if(ms==='done')ds().armed=true;else if(['skip','free'].includes(ms))ds().stage='skip';}
 const busy=()=>!!S.battle||!!film||!!chair||!!M.medic?.film||!!M.medic?.guide||!!M.lionChapter?.film||!!M.lionChapter?.guide||!!M.smithWrath?.scene||!!M.archerPlot?.scene||!!M.hall?.film||!!M.intro?.active?.()||!!window.ArenaTheoryIntro?.active?.()||!!M.trader?.tutorial||!!document.querySelector('.smith-ceremony,#introView,#brandIntro,.medic-night,.medic-end,.medic-start,.dok-card-end')||($('modal')&&!$('modal').hidden);
 function autoStart(dt){if(document.hidden||M.benchmarkActive)return;const d=ds(),ms=M.medic.state().stage;
- if(!d.stage&&!d.armed){if(!['done','skip','free'].includes(lastMedic)&&ms==='done'){d.armed=true;M.persist?.();}lastMedic=ms;return;}
- lastMedic=ms;if(d.stage||!d.armed)return;if(M.ui.getPage()!=='home'||busy()){wait=0;return;}wait+=dt;if(wait>1.5){wait=0;d.armed=false;d.stage='seen';M.persist?.();story(false);}}
+ if(!d.stage&&!d.armed){if(lastMedic!=='done'&&ms==='done'){d.armed=true;M.persist?.();}lastMedic=ms;return;}
+ lastMedic=ms;if(d.stage||!d.armed)return;if(M.ui.getPage()!=='home'||busy()){wait=0;return;}wait+=dt;if(wait>1.5){wait=0;story(false);}}
 const lt=M.ludusTick;M.ludusTick=dt=>{if(film||chair)return;lt?.(dt);autoStart(dt);};
 function closeAll(){stopFilm();if(chair){document.querySelector('.dok-chair')?.remove();chair=null;}for(const el of document.querySelectorAll('.dok-card-end'))el.remove();M.ui.close?.();}
 document.addEventListener('click',e=>{const b=e.target.closest?.('[data-dok],[data-dokm]');if(!b)return;
@@ -658,5 +767,5 @@ document.addEventListener('click',e=>{const b=e.target.closest?.('[data-dok],[da
 // Option: Bewegung an den Gebäuden (Krähe, Ratten, Rauch, Laterne) abschalten; spart Rechenzeit auf schwachen Geräten.
 {const io=M.injuryOptions;M.injuryOptions=()=>(io?.()||'')+`<div class="list-row"><span>Bewegung an den Gebäuden<br><small>Krähe, Ratten, Rauch und Laterne am Medicus. Aus: ein ruhiges Standbild.</small></span><select class="select" id="buildingMotion"><option value="on"${S.options?.buildingMotion!=='off'?' selected':''}>An</option><option value="off"${S.options?.buildingMotion==='off'?' selected':''}>Aus</option></select></div>`;
  const change=M.schoolChange;M.schoolChange=ev=>{if(ev?.target?.id==='buildingMotion'){(S.options??={}).buildingMotion=ev.target.value;M.persist?.();return true;}return change?.(ev);};}
-window.DOK={nurseShow,nurseFull,drawNurseSmall,drawDocSmall,doctorBuf,nurseBuf,patientBuf,closeup,paintChair,newProc,stepProc,treat,bedDays,story,openChair,choice,get film(){return film;},get chair(){return chair;},SPOTS,KEYS,state:ds};
+window.DOK={doorShot,lanBuf,faceDoor,faceLan,nurseShow,nurseFull,drawNurseSmall,drawDocSmall,doctorBuf,nurseBuf,patientBuf,closeup,paintChair,newProc,stepProc,treat,bedDays,story,openChair,choice,get film(){return film;},get chair(){return chair;},SPOTS,KEYS,state:ds};
 })();
