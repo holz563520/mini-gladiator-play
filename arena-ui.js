@@ -145,7 +145,7 @@ function present(c){U.sel=c;stopSpy();if(C.present?.(c,()=>{root.hidden=false;pr
  const cv=layer.querySelector('canvas'),cap=layer.querySelector('.an-pcap'),dots=layer.querySelectorAll('.an-pdots i');let t0=0,cur=null,fig=null;
  const next=()=>{i++;clearTimeout(timer);if(i>=list.length){U.pres=null;layer.innerHTML='';prep(c);return;}cur=list[i];t0=performance.now()/1000;fig=cur.kind==='human'?ART.figure(cur.g,true):null;dots.forEach((d,k)=>d.className=k<i?'done':k===i?'on':'');
   const u=cur,info=u.kind==='human'?humanInfo(u.g):u.kind==='rooster'?roosterInfo(u.R):lionInfo(u.L);
-  cap.innerHTML=`<p class="eyebrow">${i===0?'IN DER ROTEN ECKE':'UND AN SEINER SEITE'}</p><h2>${esc(name(u))}</h2><p class="cls">${esc(info.cls)} · KW ${CH.kw(u)}</p><ul>${info.rows.map(r=>`<li><span>${esc(r[0])}</span><b>${esc(r[1])}</b></li>`).join('')}</ul><p class="threat">„${esc(CH.threat(u,ownE))}“</p>`;cap.classList.remove('in');void cap.offsetWidth;cap.classList.add('in');
+  cap.innerHTML=`<p class="eyebrow">${i===0?'IN DER ROTEN ECKE':'UND AN SEINER SEITE'}</p><h2>${esc(name(u))}</h2><p class="cls">${esc(info.cls)} · KW ${CH.kw(u)}</p>${u.kind==='lion'?'':(window.MG?.buyOdds?.mini(u.kind,u.kind==='human'?u.g:u.R)||'')}<ul>${info.rows.map(r=>`<li><span>${esc(r[0])}</span><b>${esc(r[1])}</b></li>`).join('')}</ul><p class="threat">„${esc(CH.threat(u,ownE))}“</p>`;cap.classList.remove('in');void cap.offsetWidth;cap.classList.add('in');
   timer=setTimeout(()=>{if(U.pres)next();},5200);};
  U.pres={next,skip:()=>{clearTimeout(timer);U.pres=null;layer.innerHTML='';prep(c);}};
  anim(cv,(ctx,t)=>{if(!cur)return;const k=t-(t0-(performance.now()/1000-t))||0,lt=performance.now()/1000-t0;ctx.imageSmoothingEnabled=false;
