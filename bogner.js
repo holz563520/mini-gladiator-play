@@ -247,10 +247,20 @@ function shop(){const s=S(),rows=[];for(const d of ['bow','crossbow'])for(let q=
  const qn=i=>(M.gearQuality?.[i]?.name)||M.gearQuality?.[i]||['Einfach','Solide','Gut','Meisterlich','Legendär'][i];
  M.ui.modal('Orontes Pfeilkopf · Bögen & Armbrüste',`<div class="bow-shop"><p class="hint">„Alles getestet. Meistens an Menschen.“ · Dein Gold: <b>${s.gold}</b></p>${rows.map(r=>`<div class="bow-row"><canvas data-bowicon="${r.d}:${r.q}" width="120" height="60"></canvas><div><b>${r.d==='bow'?'Bogen':'Armbrust'}</b><small>${esc(typeof qn(r.q)==='string'?qn(r.q):'Stufe '+r.q)}</small></div><button class="btn${s.gold>=r.p?' primary':''}" data-action="bowyer:buy:${r.d}:${r.q}" ${s.gold>=r.p?'':'disabled'}>${r.p} Gold</button></div>`).join('')}</div>`);
  setTimeout(()=>{for(const c of document.querySelectorAll('[data-bowicon]')){const [d,q]=c.dataset.bowicon.split(':'),x=c.getContext('2d');x.imageSmoothingEnabled=false;x.fillStyle='#1d282b';x.fillRect(0,0,120,60);try{M.weaponArt.draw(x,item(d,+q),{x:60,y:30,angle:d==='bow'?-Math.PI/2:0,scale:d==='bow'?2.2:1.9,blood:0,drips:false});}catch(e){}}},30);}
-const click=M.schoolClick;M.schoolClick=action=>{if(action.startsWith('bowyer:buy:')){const [, , d,q]=action.split(':'),p=Math.round(M.itemPrice('weapon',d,+q)*1.15);if(S().gold>=p){S().gold-=p;S().inventory.push(M.makeItem('weapon',d,+q));try{M.persist();}catch{}M.ui.notify?.('Gekauft: '+(d==='bow'?'Bogen':'Armbrust')+' · „Keine Rückgabe. Auch nicht als Leiche.“');}shop();return true;}
+const click=M.schoolClick;M.schoolClick=action=>{if(/^barracks:class:.*:Fernkämpfer$/.test(action)&&!rangedOpen()){M.ui.notify?.('Gesperrt: Fernkämpfer gibt es erst, wenn der Bogenhändler in deinen Ludus kommt.');return true;}
+ if(action.startsWith('bowyer:buy:')){const [, , d,q]=action.split(':'),p=Math.round(M.itemPrice('weapon',d,+q)*1.15);if(S().gold>=p){S().gold-=p;S().inventory.push(M.makeItem('weapon',d,+q));try{M.persist();}catch{}M.ui.notify?.('Gekauft: '+(d==='bow'?'Bogen':'Armbrust')+' · „Keine Rückgabe. Auch nicht als Leiche.“');}shop();return true;}
  return click(action);};
 // Der Schmied verkauft keine Bögen und Armbrüste mehr
-function noSmithBows(){const F=M.workshop?.state;if(!F)return;if(Array.isArray(F.offers))F.offers=F.offers.filter(i=>!['bow','crossbow'].includes(i?.def));if(Array.isArray(F.queue))F.queue=F.queue.filter(i=>!['bow','crossbow'].includes(i?.def||i?.item?.def));}
+const RANGED=['bow','crossbow'],isRanged=d=>RANGED.includes(d);
+function noSmithBows(){const F=M.workshop?.state;if(!F)return;if(Array.isArray(F.offers))F.offers=F.offers.filter(i=>!isRanged(i?.def));if(Array.isArray(F.queue))F.queue=F.queue.filter(i=>!isRanged(i?.def||i?.item?.def));if(Array.isArray(F.recipes))F.recipes=F.recipes.filter(id=>!/^weapon\/(bow|crossbow)\//.test(String(id)));}
+// Die Schmiede hat Bögen und Armbrüste nie im Sortiment: aus den Kategorien der Schmiede entfernen (Rezepte, Bestellungen, Anzeige)
+for(const list of [M.forgeCategories,M.workshop?.categories])if(Array.isArray(list))for(let i=list.length-1;i>=0;i--)if(list[i]?.kind==='weapon'&&isRanged(list[i].def))list.splice(i,1);
+if(Array.isArray(M.workshop?.recipes))for(let i=M.workshop.recipes.length-1;i>=0;i--)if(isRanged(M.workshop.recipes[i]?.def))M.workshop.recipes.splice(i,1);
+// Fernkämpfer gibt es erst, wenn Orontes da ist: vorher ist die Klasse in der Kaserne gesperrt
+const rangedOpen=()=>['role','arena','apple','done'].includes(ST().stage);
+function lockRanged(){if(rangedOpen())return;for(const g of S().roster||[])if(g.role==='Fernkämpfer'&&!g.dead)g.role='Soldat';
+ for(const b of document.querySelectorAll('[data-action^="barracks:class:"][data-action$=":Fernkämpfer"]')){if(b.classList.contains('bow-locked'))continue;b.classList.add('bow-locked');b.setAttribute('aria-disabled','true');b.title='Gesperrt: Fernkämpfer gibt es erst, wenn der Bogenhändler kommt.';const tag=document.createElement('span');tag.className='bow-lock';tag.textContent='🔒 erst mit Bogenhändler';b.appendChild(tag);}}
+function unlockMarks(){for(const b of document.querySelectorAll('.bow-locked')){b.classList.remove('bow-locked');b.removeAttribute('aria-disabled');b.title='';b.querySelector('.bow-lock')?.remove();}}
 
 // ---------- Arena: Karte „APFELSCHUSS“ neben Arena- und Boxkämpfen ----------
 function injectCard(){const box=document.querySelector('.an-kinds');if(!box||box.querySelector('.bow-apple'))return;const st=ST(),open=['arena','apple','done'].includes(st.stage);
@@ -260,12 +270,17 @@ function injectCard(){const box=document.querySelector('.an-kinds');if(!box||box
   if(rec)drawActor(c,{...actor(rec),forgeWorker:false,a:-.06,wind:.02,windMax:1,ammo:1,fullDraw:true},80,164,1.35);drawActor(c,{...actor(TARGET()),forgeWorker:false,a:Math.PI,shackled:true},236,160,1.0);px(c,233,107,6,5,'#c8321f');px(c,235,105,1,2,'#3a5a1a');
   if(!open){c.fillStyle='rgba(10,6,4,.55)';c.fillRect(0,0,300,170);}requestAnimationFrame(loop);};requestAnimationFrame(loop);
  b.addEventListener('click',e=>{e.stopPropagation();e.preventDefault();if(!open){M.ui.notify?.('Noch gesperrt: erst Orontes kennenlernen.');return;}if(st.stage==='arena'){st.stage='apple';startArenaFilm();}else{window.BOWYER_TEST?.openApple?.();}},true);}
-new MutationObserver(()=>{try{injectCard();}catch(e){}}).observe(document.body,{childList:true,subtree:true});
+new MutationObserver(()=>{try{injectCard();if(rangedOpen())unlockMarks();else lockRanged();}catch(e){}}).observe(document.body,{childList:true,subtree:true});
 
 // ---------- Takt ----------
 let wait=0;
-const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(document.hidden)return;try{noSmithBows();step(dt);}catch(e){console.error(e);}
+const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(document.hidden)return;try{noSmithBows();if(!rangedOpen())lockRanged();step(dt);}catch(e){console.error(e);}
  const st=ST();if(st.stage===''&&S().box?.intro&&!film&&!S().battle&&M.ui.getPage()==='home'&&!M.boxGame?.introActive&&!M.sceneLoader?.active&&!document.querySelector('.smith-loading,#modal:not([hidden])')&&window.BOWYER_TEST?.auto!==false){wait+=dt;if(wait>2.5){wait=0;startTutorial();}}else wait=0;};
 M.bowyer={drawOro,start:startTutorial,arena:startArenaFilm,state:ST,shop,talentLines,oroG,cart,oroFace,headArrow,drawActor,actor,reset(){const s=S();s.bowyer={stage:'',recruit:'',loan:0,given:'',owner:0};hideBar();tips=[];tipBox?.remove();tipBox=null;}};
+function openApple(){if($('bowApple'))return;const v=document.createElement('div');v.id='bowApple';v.setAttribute('role','dialog');v.setAttribute('aria-label','Apfelschuss');
+ v.innerHTML='<div class="bwa-top"><span>ARENA · APFELSCHUSS · mit deinen Kämpfern</span><button type="button">✕ ZURÜCK ZUR ARENA</button></div><iframe title="Apfelschuss"></iframe>';document.body.appendChild(v);
+ const f=v.querySelector('iframe'),src=window.BOWYER_TEST?.appleSrc;if(window.BOWYER_TEST?.appleDoc)f.srcdoc=window.BOWYER_TEST.appleDoc;else f.src=src||'apfelschuss-test.html';
+ v.querySelector('button').onclick=()=>v.remove();}
+M.bowyer.openApple=openApple;if(window.BOWYER_TEST){window.BOWYER_TEST.openApple=openApple;window.BOWYER_TEST.onDone=openApple;}
 window.BOWYER_TEST?.ready?.();
 }})();

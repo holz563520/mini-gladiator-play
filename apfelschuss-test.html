@@ -114,7 +114,7 @@ tr.sel td{background:#3b2b1a;color:#fff3d6}
 /* Spielstände schützen: diese Seite darf nichts speichern oder laden. */
 try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}
 </script>
-<script src="data.js"></script><script src="household.js"></script><script src="management.js"></script><script src="scout.js"></script><script src="sim.js"></script><script src="school.js"></script><script src="weapon-art.js"></script><script src="arena.js"></script><script src="face-shots.js"></script><script src="injury-shots.js"></script><script src="medicus-art.js"></script><script src="medic.js"></script><script src="doktor.js"></script><script src="box-engine.js"></script><script src="box-art.js"></script>
+<script src="data.js"></script><script src="household.js"></script><script src="management.js"></script><script src="scout.js"></script><script src="sim.js"></script><script src="school.js"></script><script src="weapon-art.js"></script><script src="arena.js"></script><script src="hahn-engine.js"></script><script src="arena-art.js"></script><script src="face-shots.js"></script><script src="injury-shots.js"></script><script src="medicus-art.js"></script><script src="medic.js"></script><script src="doktor.js"></script><script src="box-engine.js"></script><script src="box-art.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -197,7 +197,13 @@ function mkRecruit(q,i){const g=gen(q);g.role='Soldat';for(const k of ['strength
  return g;}
 let archers=[],recruits=[],selA=null,selR=null,dist=100,tally={n:0,apple:0,gold:0,dead:0};
 function newRoster(){try{newRoster2();}catch(e){const el=document.getElementById('res');if(el){el.hidden=false;el.innerHTML='<h2>Fehler beim Würfeln</h2><p class="hint">'+esc(e.message||e)+'</p>';}console.error(e);}}
-function newRoster2(){archers=[20,34,52,74].map(mkArcher);recruits=[0,0,1,2,3,5].map(mkRecruit);selA=archers[0].id;selR=recruits[0].id;tally={n:0,apple:0,gold:0,dead:0};render();}
+// Eingebettet im Spiel-Test (Fernkampf-Tutorial): Schützen und Rekruten kommen als Kopie aus dem Kader des Spiels
+function parentGame(){try{const P=window.parent;if(P&&P!==window&&P.MG&&P.MG.s&&Array.isArray(P.MG.s.roster))return P.MG;}catch(e){}return null;}
+function fromParent(){const PM=parentGame();if(!PM)return null;const cp=v=>JSON.parse(JSON.stringify(v));
+ const clone=g=>{const c=cp(g),w=PM.gear(g,'weapon');c.enemyGear={weapon:w?cp(w):null,secondary:null,shield:null,armor:{}};c.equipment={weapon:null,secondary:null,shield:null,armor:{}};c.fromGame=true;return c;};
+ const alive=PM.s.roster.filter(g=>!g.dead&&!g.smithDuty),ar=alive.filter(g=>g.role==='Fernkämpfer'&&['bow','crossbow'].includes(PM.gear(g,'weapon')?.def)).map(clone),rc=alive.filter(g=>g.role!=='Fernkämpfer').slice(0,8).map(clone);
+ if(!ar.length||!rc.length)return null;return{ar,rc,lan:PM.s.lanista?.name||''};}
+function newRoster2(){const PG=fromParent();if(PG){archers=PG.ar;recruits=PG.rc;const el=document.getElementById('lanName');if(el&&PG.lan){el.value=PG.lan;el.disabled=true;}if(typeof DBG!=='undefined'&&DBG)DUM0=paintDummy();}else{archers=[20,34,52,74].map(mkArcher);recruits=[0,0,1,2,3,5].map(mkRecruit);}selA=archers[0].id;selR=recruits[0].id;tally={n:0,apple:0,gold:0,dead:0};render();}
 const A=()=>archers.find(g=>g.id===selA),R=()=>recruits.find(g=>g.id===selR);
 
 function barsHtml(g){return ATTR.map(([k,l])=>{const v=val(g,k);return `<span>${l}</span><span class="b${k==='precision'||k==='bow'?' hi':''}"><i style="width:${clamp(v,0,100)}%"></i></span><span class="n">${nf(v,0)}</span>`;}).join('');}
@@ -628,17 +634,12 @@ function crowdMode(s,t){if(t<s.sReact)return 'idle';return s.out==='apple'?'chee
 function drawField(c,t,s,ox=0){
  if(ox){const o=((ox%W)+W)%W;c.save();c.translate(-o,0);fieldPass(c,t,s);c.translate(W,0);fieldPass(c,t,s);c.restore();return;}
  fieldPass(c,t,s);}
-function fieldPass(c,t,s){
- if(!FIELD)FIELD=paintField();
- {const m=c.getTransform(),z=m.a||1,sx=Math.max(0,Math.floor(-m.e/z)),sy=Math.max(0,Math.floor(-m.f/m.d)),sw=Math.min(W,Math.ceil(sx+W/z+2))-sx,sh=Math.min(H,Math.ceil(sy+H/m.d+2))-sy;if(sw>0&&sh>0)c.drawImage(FIELD,sx,sy,sw,sh,sx,sy,sw,sh);}
- for(let i=0;i<5;i++){const w=90+i*26,x=((i*340+t*(5+i*1.7))%(W+500))-250,y=40+i*46+(i%2)*14;c.fillStyle='rgba(255,255,255,.62)';c.fillRect(Math.round(x/4)*4,y,w,12);c.fillRect(Math.round((x+w*.18)/4)*4,y-12,w*.55,12);c.fillRect(Math.round((x+w*.3)/4)*4,y+12,w*.5,8);}
- const mode=crowdMode(s,t);
- for(const row of [1,0])for(const p of FC)if(p.row===row)person(c,p.x,p.feet,p.sd,mode,t);
- // Absperrung mit Fahnen
- c.fillStyle='rgba(60,40,20,.35)';c.fillRect(0,HZ+60,W,6);
- for(let x=8;x<W;x+=96){c.fillStyle='#4a2f18';c.fillRect(x,HZ+24,8,42);c.fillStyle='#7a5a30';c.fillRect(x,HZ+24,4,42);
-  if(((x-8)/96)%3===1){c.fillStyle='#4a2f18';c.fillRect(x+2,HZ-34,4,60);const col=TC[(((x-8)/96/3)|0)%2].name;for(let i=0;i<6;i++){c.fillStyle=col;c.fillRect(x+6+i*5,HZ-34+Math.round(Math.sin(t*4+i*.9+x)*3),5,16);}}}
- c.fillStyle='#8a6a3a';c.fillRect(0,HZ+36,W,6);c.fillStyle='#a8844a';c.fillRect(0,HZ+36,W,2);c.fillStyle='#6b4a2a';c.fillRect(0,HZ+52,W,5);}
+// Hintergrund: dieselbe Arena wie in der Arena-Übersicht des Spiels (ArenaArt.arena, 320×180, vierfach vergrößert):
+// Ränge voller Zuschauer, Banner, Mauer mit Toren und Fackeln, Sand. Die Zuschauer jubeln nach einem Apfeltreffer und toben nach Blut.
+let ARQ=null,ARQt=-1;
+function fieldPass(c,t,s){if(!ARQ)ARQ=mkc(320,180);const mode=crowdMode(s,t);
+ if(ARQt!==t){ARQt=t;const q=ARQ.getContext('2d');try{window.ArenaArt.arena(q,320,180,t,{cheer:mode==='cheer'||mode==='rage'?1:0});}catch(e){q.fillStyle='#b08a5a';q.fillRect(0,0,320,180);}}
+ const sm=c.imageSmoothingEnabled;c.imageSmoothingEnabled=false;c.drawImage(ARQ,0,0,320,180,0,0,W,H);c.imageSmoothingEnabled=sm;}
 
 function lit(c,s,t,x,y,rot,act,lying,sc=FS){
  const z=CAM.z,k=sc/FS;
@@ -910,7 +911,7 @@ function mAt(s,t){if(t<s.sFly)return 0;if(t>=s.sApp)return s.d;return Math.min(s
 function flightView(c,s,t){
  const d=s.d,u=t-s.sFly,m=mAt(s,t),xr=m/d,v=s.fl.vAt(m),stp=s.wstep,PPMf=clamp(420/stp,8,80),sf=FS*1.5,span=W*1.25,arc=s.arcS,Y0=520;
  const hgt=arc*4*xr*(1-xr),cam=hgt*.35,AY=Y0-hgt+cam;/* der Pfeil steigt sichtbar im Bild, die Kamera geht nur zum Teil mit */
- setCam(c,{cx:640,cy:360,z:1});c.imageSmoothingEnabled=false;c.fillStyle='#4f86c6';c.fillRect(0,0,W,H);
+ setCam(c,{cx:640,cy:360,z:1});c.imageSmoothingEnabled=false;c.fillStyle='#2c2433';c.fillRect(0,0,W,H);
  c.save();c.translate(0,cam*.6);drawField(c,t,s,m*PPMf);
  c.textAlign='center';c.textBaseline='middle';c.font='800 22px Georgia,serif';
  for(let w=0;w<=d+.001;w+=stp){const X=640+(w-m)*PPMf;if(X<-100||X>W+100)continue;const goal=Math.abs(w-d)<.01,start=w<.01,Y=HZ+66;

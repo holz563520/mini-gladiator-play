@@ -18,6 +18,11 @@
 .bow-shop .bow-row{display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid #394b4d}
 .bow-shop canvas{width:120px;height:60px;image-rendering:pixelated;border:1px solid #394b4d}.bow-shop small{display:block;color:#97aaa8}
 .an-kinds .bow-apple .an-mlabel b{color:#ffd25a}
+#bowApple{position:fixed;inset:0;z-index:420;background:#050302;display:flex;flex-direction:column}
+#bowApple .bwa-top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;font:700 12px 'Courier Prime',monospace;letter-spacing:2px;color:#dfb66d;background:#120c09;border-bottom:2px solid #6b5230}
+#bowApple button{font:700 12px 'Courier Prime',monospace;color:#f3e2b0;background:#8f2f2a;border:2px solid #e0ad4c;padding:7px 10px;cursor:pointer}
+#bowApple iframe{flex:1;border:0;width:100%;background:#140f0b}
+.bow-locked{opacity:.45;filter:grayscale(.8);cursor:not-allowed!important;position:relative}.bow-lock{display:block;font-size:10px;color:#e0b565;letter-spacing:1px;margin-top:2px}
 #bowTest{position:fixed;right:8px;top:calc(56px + env(safe-area-inset-top));z-index:380;background:#142429f2;border:2px solid #e0b565;color:#efe0b3;font:13px 'Courier Prime',monospace;padding:8px 10px;max-width:250px;box-shadow:0 6px 24px #000a}
 #bowTest b{display:block;color:#e0b565;letter-spacing:2px;margin-bottom:6px}#bowTest button{display:block;width:100%;margin:4px 0;font:700 12px 'Courier Prime',monospace;color:#f3e2b0;background:#1d282b;border:2px solid #6b5230;padding:7px 8px;cursor:pointer;text-align:left}
 #bowTest small{display:block;color:#97aaa8;line-height:1.35;margin-top:4px}#bowTest.min>*:not(b){display:none}
@@ -35,16 +40,16 @@ async function setup(){await wait(()=>window.MG?.ui&&window.MG.trader&&window.MG
  if(M.trader)M.trader.state.intro='done';S.lion={...(S.lion||{}),stage:'skip'};S.huehner={...(S.huehner||{}),stage:'end'};S.hall={...(S.hall||{}),tut:'done'};
  S.box={...(S.box||{}),intro:true,fights:3,wins:2};
  const need=5-S.roster.filter(g=>!g.dead).length;if(need>0)M.army.recruitMany(need);for(const g of S.roster){g.fatigue=0;g.blood=100;if(g.role==='Fernkämpfer')g.role='Soldat';}
+ for(const g of S.roster){const w=M.gear(g,'weapon');if(w&&['bow','crossbow'].includes(w.def))g.equipment.weapon=null;}S.inventory=S.inventory.filter(i=>!['bow','crossbow'].includes(i.def));
  S.gold=35;try{M.trader.stock();}catch(e){}
  M.ui.close?.();M.ui.click('nav:home');await wait(()=>{const d=document.querySelector('.smith-loading');if(!d)return true;d.querySelector('button.btn')?.click();return false;},300);panel();window.BOWYER_TEST.auto=true;}
-function panel(){const p=document.createElement('section');p.id='bowTest';p.innerHTML=`<b>TEST · FERNKAMPF-TUTORIAL ▾</b><button data-t="start">▶ Tutorial jetzt starten</button><button data-t="arena">▶ Nur Arena-Teil (Apfelschuss)</button><button data-t="gold">+500 Gold</button><button data-t="reset">↺ Zurücksetzen</button><button data-t="apple">🍎 Apfelschuss-Testseite öffnen</button><small>Wegwerf-Spielstand nur im Arbeitsspeicher. Neu laden = frischer Stand. Startet nach dem Laden von selbst, wie im Spiel nach dem Boxkampf-Tutorial.</small>`;document.body.appendChild(p);
+function panel(){const p=document.createElement('section');p.id='bowTest';p.innerHTML=`<b>TEST · FERNKAMPF-TUTORIAL ▾</b><button data-t="start">▶ Tutorial jetzt starten</button><button data-t="arena">▶ Nur Arena-Teil (Apfelschuss)</button><button data-t="gold">+500 Gold</button><button data-t="reset">↺ Zurücksetzen</button><button data-t="apple">🍎 Apfelschuss direkt öffnen</button><small>Wegwerf-Spielstand nur im Arbeitsspeicher. Neu laden = frischer Stand. Startet nach dem Laden von selbst, wie im Spiel nach dem Boxkampf-Tutorial.</small>`;document.body.appendChild(p);
  p.querySelector('b').onclick=()=>p.classList.toggle('min');
  p.addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(!b)return;const M=window.MG,k=b.dataset.t;
   if(k==='start'){M.bowyer.reset();M.ui.close?.();M.ui.click('nav:home');M.bowyer.start();}
   else if(k==='arena'){const S=M.s;let g=S.roster.find(x=>x.role==='Fernkämpfer');if(!g){g=S.roster.find(x=>!x.dead);g.role='Fernkämpfer';const it=M.makeItem('weapon','bow',1);S.inventory.push(it);g.equipment.weapon=it.id;}Object.assign(M.bowyer.state(),{stage:'apple',recruit:g.id,loan:150});M.bowyer.arena();}
   else if(k==='gold'){M.s.gold+=500;M.ui.render?.();}
   else if(k==='reset')location.reload();
-  else if(k==='apple')window.BOWYER_TEST.openApple();});}
-window.BOWYER_TEST.openApple=()=>window.open('apfelschuss-test.html','_blank');
+  else if(k==='apple'){const S=M.s;if(!S.roster.some(x=>x.role==='Fernkämpfer')){const g=S.roster.find(x=>!x.dead);Object.assign(M.bowyer.state(),{stage:'done',recruit:g.id});g.role='Fernkämpfer';const it=M.makeItem('weapon','bow',1);S.inventory.push(it);g.equipment.weapon=it.id;}M.bowyer.openApple();}});}
 setup();})();
 </script></body></html>
