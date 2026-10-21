@@ -94,6 +94,7 @@ tr.sel td{background:#3b2b1a;color:#fff3d6}
  <h2 style="margin-top:14px">4 · Wie viele Pfeile?</h2>
  <div class="row arrows" id="arrows"></div>
  <div class="prize" id="prize"></div>
+ <div class="row"><button id="wpn" title="Waffe des gewählten Schützen wechseln (nur Ansicht/Test)">🏹 BOGEN</button></div>
  <div class="row"><button class="primary" id="go">🏹 SCHIESSEN</button><span class="hint" id="goNote"></span></div>
 </div>
 
@@ -220,7 +221,7 @@ function render(){
  $('archers').innerHTML=archers.map(g=>`<button class="pick${g.id===selA?' on':''}" data-a="${g.id}"><canvas id="ta${g.id}"></canvas><div><b>${esc(g.name)}</b><small>Schusswert <b style="display:inline;color:var(--gold)">${nf(skill(g),1)}</b> · ${g.height} cm · ${isXB(g)?'Armbrust':'Bogen'}</small><div class="bars">${barsHtml(g)}</div></div></button>`).join('');
  $('recruits').innerHTML=recruits.map(g=>`<button class="pick${g.id===selR?' on':''}${g.dead?' dead':''}" data-r="${g.id}"><canvas id="tr${g.id}"></canvas><div><b>${esc(g.name)}</b><small>${g.dead?'✝ tot':'Qualität: <b style="display:inline;color:var(--gold)">'+M.qualities[g.quality]+'</b>'}</small><small>Wert ${M.price(g)} Gold</small>${injuryList(g).length?'<small style="color:var(--red)">verletzt: '+esc(injuryList(g).join(', '))+'</small>':''}</div></button>`).join('');
  for(const g of [...archers,...recruits]){const isA=archers.includes(g),c=$((isA?'ta':'tr')+g.id);if(c)try{c.width=160;c.height=104;M.faceShot.paint(c.getContext('2d'),160,104,{g,team:isA?0:1,mood:g.dead?'out':isA?'confident':'nervous',yaw:isA?.4:-.4,zoom:1.12,pale:g.dead?.6:0,dark:g.dead?.35:0},2);}catch(e){console.warn(e);}}
- refresh();}
+ refresh();wpnLabel();}
 function label(p){return p>=.9?'Kinderspiel':p>=.7?'Machbar':p>=.45?'Riskant':p>=.2?'Sehr riskant':p>=.05?'Wahnsinn':'Quasi unmöglich';}
 let ARROWS=1;
 function refresh(){const g=A(),r=R();if(!g||!r)return;const d=dist,p=probs(skill(g),d),gold=prizeFor(d,p,r);
@@ -1419,6 +1420,8 @@ function finish(){if(!sc)return;const s=sc;commitArrow(s);const ser=SER,r=ser.r,
  <div class="row"><button class="primary" id="again">🏹 NOCHMAL SCHIESSEN</button><button id="reroll">↻ Neue Kämpfer auswürfeln</button></div>`;
  el.querySelector('#again').onclick=()=>{if(R().dead){const nx=recruits.find(x=>!x.dead);if(nx)selR=nx.id;}render();start();};el.querySelector('#reroll').onclick=()=>{newRoster();el.hidden=true;};
  render();el.scrollIntoView({behavior:'smooth',block:'start'});}
+function wpnLabel(){const g=A(),b=$('wpn');if(b)b.textContent=isXB(g)?'🎯 ARMBRUST – tippen für Bogen':'🏹 BOGEN – tippen für Armbrust';}
+$('wpn').onclick=()=>{const g=A();if(!g)return;const xb=!isXB(g),it=M.makeItem('weapon',xb?'crossbow':'bow',(g.enemyGear.weapon&&g.enemyGear.weapon.q)||1);g.enemyGear.weapon=it;if(xb)g.mastery.crossbow=Math.max(g.mastery.crossbow||0,g.mastery.bow||0);render();wpnLabel();};
 $('go').onclick=()=>{$('res').hidden=true;start();};
 $('bSpeed').onclick=()=>{speed=speed===1?2:1;$('bSpeed').textContent='⏩ '+speed+'×';};
 $('bSnd').dataset.on='0';const sndSet=on=>{$('bSnd').dataset.on=on?'1':'0';$('bSnd').textContent=on?'🔊':'🔇';$('boardSnd').textContent=on?'🔊 Ton aus':'🔇 Ton an';audio(on);};$('bSnd').onclick=e=>sndSet(e.currentTarget.dataset.on!=='1');$('boardSnd').onclick=()=>sndSet($('bSnd').dataset.on!=='1');
