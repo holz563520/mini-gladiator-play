@@ -3,7 +3,7 @@ try{document.fonts&&['400','700'].forEach(w=>document.fonts.load(w+" 16px 'Couri
 // =====================================================================================================
 // ORONTES PFEILKOPF · der Bogenhändler (im Spiel über boot.js geladen; fernkampf-tutorial-test.html nutzt dieselbe Datei)
 // Nach dem Boxkampf-Tutorial (S.box.intro): Der Schmied zeigt nur kurz auf den Neuen und verschwindet. Orontes erklärt Bogen und
-// Armbrust, leiht dem Lanista Gold für einen Rekruten, kommentiert dessen Talent, gibt ihm den ersten Bogen, erklärt Stärken und
+// Armbrust, leiht dem Lanista Gold für einen Rekruten, kommentiert dessen Talent, schenkt den Dolch, lässt Bogen/Armbrust kaufen, erklärt Stärken und
 // Schwächen der Fernkämpfer und öffnet in der Arena den Apfelschuss. Danach steht sein Karren im Trainingshof: Bögen und Armbrüste
 // gibt es nur bei ihm – der Schmied hatte sie nie im Sortiment.
 // Speicherwert: S.bowyer = {stage:''|'film'|'buy'|'role'|'equip'|'arena'|'apple'|'done', recruit, loan, given, owner, appleDay}
@@ -219,17 +219,21 @@ function strengths(g){return [
  'Sieht doch gut aus. Die Stärken: Fernkämpfer stehen hinten. Hinten ist schön. Hinten stirbt man später. Sie schießen, bevor der Feind überhaupt da ist.',
  'Die Schwächen: Im Nahkampf nur ein Dolch, kein Schild. Steht der Feind erst mal vor ihm, ist es schnell vorbei. Aus der Nähe zittern sie und treffen schlechter. Und irgendwann ist der Köcher leer.'];}
 const INVITE='Genug Schule. Ich habe dir in der Arena etwas vorbereitet. Mit Obst. Komm zum Arena-Tor.';
-// Geschenk: ein Bogen und ein Dolch ins Lager – anlegen muss der Spieler selbst (Fernwaffe + Nahkampf)
+// Geschenk: nur der Dolch – Bogen oder Armbrust muss der Spieler an Orontes' Karren kaufen; anlegen muss er beides selbst
 const hiPlace={buy:'market',role:'gladiators',equip:'gladiators',arena:'arena'};
 function giveKit(g){const st=ST();if(st.given===g.id)return;const inv=S().inventory,free=d=>inv.find(i=>i.def===d&&!M.equippedBy?.(i.id));
- const w=M.gear(g,'weapon');if(!(w&&['bow','crossbow'].includes(w.def))&&!free('bow')&&!free('crossbow'))inv.push(M.makeItem('weapon','bow',1));
  const d=M.gear(g,'secondary');if(!(d&&d.def==='dagger')&&!free('dagger'))inv.push(M.makeItem('weapon','dagger',1));
  st.given=g.id;try{M.persist();}catch{}}
+const ownsRanged=g=>['bow','crossbow'].includes(M.gear(g,'weapon')?.def)||S().inventory.some(i=>['bow','crossbow'].includes(i.def)&&!M.equippedBy?.(i.id)&&(i.durability??1)>0);
+const cheapRanged=()=>Math.round(M.itemPrice('weapon','bow',0)*1.15);
 const kitOk=g=>({ranged:['bow','crossbow'].includes(M.gear(g,'weapon')?.def),melee:M.gear(g,'secondary')?.def==='dagger'});
-function kitLines(g){const nm=g.name.split(' ')[0];return [
- `Da! Ein Fernkämpfer! Und weil ich ein Herz habe – im Glas – schenke ich ${nm} einen Bogen UND einen Dolch. Liegen schon in deinem Lager. Der Vorbesitzer braucht beides nicht mehr. Lange Geschichte. Kurzes Ende.`,
- `Jetzt anlegen. Ein Fernkämpfer trägt immer BEIDES: den Bogen – oder eine Armbrust – als Fernwaffe und den Dolch für den Nahkampf. Ohne Bogen ist er ein Mann mit Dolch. Ohne Dolch ist er ein Mann mit Bogen, der gleich einen Speer im Bauch hat.`,
- `Ohne beides lässt ihn die Arena gar nicht erst rein. Kaserne → bei ${nm} auf AUSRÜSTEN → „Aus der Waffenkammer ausrüsten“. Oder unter „Volle Waffenkammer“ selbst: Bogen als Fernwaffe, Dolch für den Nahkampf. Einen Schild gibt es nicht – der Bogen braucht beide Hände. Meine Geduld auch.`];}
+function shopLines(g){const nm=g.name.split(' ')[0];return [
+ `Da! Ein Fernkämpfer! Den Dolch schenke ich ${nm} – liegt schon in deinem Lager. Der Vorbesitzer braucht ihn nicht mehr. Lange Geschichte. Kurzes Ende.`,
+ 'Den Bogen schenke ich dir nicht. Ich bin Händler, kein Priester. Bögen und Armbrüste gibt es an meinem Karren im Trainingshof. Bogen: schnell und billig. Armbrust: langsam, teuer und gemein.',
+ 'Klick auf meinen Karren und such dir was aus. Für den Anfang reicht ein einfacher Bogen. Wenn du reich bist, nimm die Armbrust – dann bist du nicht mehr lange reich.'];}
+function kitLines(g){const nm=g.name.split(' ')[0],w=M.gear(g,'weapon')?.def==='crossbow'||S().inventory.some(i=>i.def==='crossbow'&&!M.equippedBy?.(i.id))?'die Armbrust':'den Bogen';return [
+ `Gekauft ist gekauft. Keine Rückgabe, auch nicht als Leiche. Jetzt anlegen: Ein Fernkämpfer trägt immer BEIDES – ${w} als Fernwaffe und den Dolch für den Nahkampf. Ohne Fernwaffe ist er ein Mann mit Dolch. Ohne Dolch ist er ein Mann, der gleich einen Speer im Bauch hat.`,
+ `Ohne beides lässt ihn die Arena gar nicht erst rein. Kaserne → bei ${nm} auf AUSRÜSTEN → „Aus der Waffenkammer ausrüsten“. Oder unter „Volle Waffenkammer“ selbst: ${w} als Fernwaffe, Dolch für den Nahkampf. Einen Schild gibt es nicht – Bogen und Armbrust brauchen beide Hände. Meine Geduld auch.`];}
 function statLines(g){return [
  'Und jetzt Schule. Was zählt beim Schießen? Erstens: PRÄZISION. Das Wichtigste überhaupt. Wer keine hat, schießt Löcher in den Himmel – und manchmal in den Lanista.',
  'Zweitens: GESCHICK – ruhige Finger, sauberes Loslassen. Drittens: die WAFFENFERTIGKEIT. Bogen und Armbrust lernt man getrennt, beide wachsen mit jedem Schuss. Und mit jedem Toten. Meistens mit dem Schuss.',
@@ -242,11 +246,15 @@ function step(dt){const st=ST(),s=S();if(!s||!s.lanista)return;
  // Offene Fenster (Kauf, Kaserne) haben Vorrang: keine Leiste, Tipps warten – der Ablauf läuft aber weiter
  const mo=document.getElementById('modal'),open=!!(mo&&mo.hidden===false);if(open){hideBar();if(tipBox)tipBox.style.display='none';}else if(tipBox&&tipBox.style.display==='none')tipBox.style.display='';
  const bar=h=>{if(!open)showBar(h);};
- if(['buy','role','equip','arena','apple'].includes(st.stage)&&!film&&!tipping()&&!s.battle){
+ if(['buy','role','shopbow','equip','arena','apple'].includes(st.stage)&&!film&&!tipping()&&!s.battle){
   if(st.stage==='buy'){const fresh=s.roster.find(g=>!g.dead&&!snap?.has(g.id)&&!g.smithDuty);if(fresh){st.recruit=fresh.id;st.stage='role';hideBar();const {L}=talentLines(fresh);L.forEach((x,i)=>tip(x,i===0?'grin':'confident'));try{M.persist();}catch{}return;}
    bar(`<p><b>${esc(SHORT)}</b> hat dir ${LOAN} Gold geliehen.</p><p class="hint">Kauf einen Rekruten auf dem Sklavenmarkt.</p>`);}
+  else if(st.stage==='shopbow'){const g=s.roster.find(x=>x.id===st.recruit&&!x.dead);if(!g){st.stage='buy';snap=new Set(s.roster.map(x=>x.id));return;}
+   if(ownsRanged(g)){st.stage='equip';hideBar();kitLines(g).forEach((x,i)=>tip(x,['grin','confident'][i]));try{M.persist();}catch{}return;}
+   markBtn('-');bar(`<p>Kauf an <b>${esc(SHORT)}' Karren</b> einen Bogen oder eine Armbrust.</p><p class="hint">${M.ui.getPage()==='home'?'Der Karren steht im Trainingshof – anklicken.':'Zurück in den Ludus → Karren im Trainingshof anklicken.'} · Dein Gold: ${s.gold}</p>`);}
   else if(st.stage==='role'||st.stage==='equip'){const g=s.roster.find(x=>x.id===st.recruit&&!x.dead);if(!g){st.stage='buy';snap=new Set(s.roster.map(x=>x.id));return;}
-   if(st.stage==='role'){if(g.role==='Fernkämpfer'){giveKit(g);st.stage='equip';hideBar();const k=kitOk(g);if(!(k.ranged&&k.melee))kitLines(g).forEach((x,i)=>tip(x,['grin','determined','confident'][i]));try{M.persist();}catch{}return;}
+   if(st.stage==='role'){if(g.role==='Fernkämpfer'){giveKit(g);hideBar();if(ownsRanged(g)){st.stage='equip';const k=kitOk(g);if(!(k.ranged&&k.melee))kitLines(g).forEach((x,i)=>tip(x,['grin','confident'][i]));}else{st.stage='shopbow';shopLines(g).forEach((x,i)=>tip(x,['grin','roar','confident'][i]));
+     const need=cheapRanged();if(s.gold<need){const add=need-s.gold+5;s.gold+=add;st.loan=(st.loan||0)+add;tip(`Kein Geld für einen Bogen? Ich leihe dir noch ${add} Gold dazu. Auf die gleichen Zinsen. Du hast ja noch neun Finger.`,'grin');}}try{M.persist();}catch{}return;}
     bar(`<p>Stell <b>${esc(g.name)}</b> auf <b>Fernkämpfer 🏹</b>.</p><p class="hint">Kaserne → ${esc(g.name.split(' ')[0])} anklicken → Klasse „Fernkämpfer“.</p>`);}
    else{if(g.role!=='Fernkämpfer'){st.stage='role';return;}const k=kitOk(g);
     if(k.ranged&&k.melee){st.stage='arena';hideBar();[...strengths(g),...statLines(g),INVITE].forEach((x,i)=>tip(x,['grin','calm','confident','grin','calm','determined','roar'][i%7]));try{M.persist();}catch{}return;}
@@ -254,7 +262,7 @@ function step(dt){const st=ST(),s=S();if(!s||!s.lanista)return;
    {const au=document.querySelector(`[data-action="eq:auto:${g.id}"]:not([disabled])`);markBtn(st.stage==='role'?`barracks:class:${g.id}:Fernkämpfer`:au?`eq:auto:${g.id}`:`barracks:fold:${g.id}:equip`);if(au&&st.stage==='equip'&&au._bowSeen!==1){au._bowSeen=1;try{au.scrollIntoView({block:'center',behavior:'smooth'});}catch{}}}}
   else if(st.stage==='arena'){markBtn('-');bar(`<p>${esc(SHORT)} wartet in der Arena.</p><p class="hint">Arena-Tor → HUMAN → <b>APFELSCHUSS</b></p>`);}
   else hideBar();}
- else if(!['buy','role','equip','arena'].includes(st.stage))hideBar();}
+ else if(!['buy','role','shopbow','equip','arena'].includes(st.stage))hideBar();}
 function startTutorial(){const st=ST();if(film)return;st.stage='film';snap=new Set(S().roster.map(g=>g.id));
  M.ui.close?.();playFilm('ludus',beats1(),()=>{giveLoan(null);st.stage='buy';snap=new Set(S().roster.map(g=>g.id));try{M.persist();}catch{}});}
 function startArenaFilm(){const st=ST();if(film)return;playFilm('arena',beats2(),()=>{st.stage='done';try{M.persist();}catch{}hideBar();
@@ -263,13 +271,14 @@ function startArenaFilm(){const st=ST();if(film)return;playFilm('arena',beats2()
 // ---------- Ludus: Karren und Orontes im Trainingshof, Markierung des nächsten Ziels ----------
 const CART={x:372,y:522};
 const overlay=M.ludusOverlay;M.ludusOverlay=(g,t)=>{overlay?.(g,t);const st=ST();
- if(['buy','role','equip','arena','apple','done'].includes(st.stage)){cart(g,CART.x,CART.y,.55,t);drawOro(g,CART.x+34,CART.y+2,1,{a:Math.PI,traderPose:Math.floor(t/6)%3===0?'point':null,gest:t*3,phase:t*3});
+ if(['buy','role','shopbow','equip','arena','apple','done'].includes(st.stage)){cart(g,CART.x,CART.y,.55,t);drawOro(g,CART.x+34,CART.y+2,1,{a:Math.PI,traderPose:Math.floor(t/6)%3===0?'point':null,gest:t*3,phase:t*3});
   // Sprechblase ab und zu
   const k=Math.floor(t/9)%BARKS.length,u=t%9;if(u<3.4){g.save();g.font="700 9px 'Courier Prime',monospace";const txt=BARKS[k],tw=g.measureText(txt).width+10,bx=Math.round(CART.x+34-tw/2),by=CART.y-70;g.fillStyle='rgba(20,30,28,.92)';g.fillRect(bx,by,tw,15);g.strokeStyle='#bca77b';g.strokeRect(bx+.5,by+.5,tw-1,14);g.fillStyle='#f0e3c4';g.textBaseline='middle';g.fillText(txt,bx+5,by+8);g.restore();}}
+ if(st.stage==='shopbow'&&!film&&!tipping()){const pulse=(Math.sin(t*5)+1)/2;g.save();g.strokeStyle='#f4d37a';g.globalAlpha=.55+pulse*.45;g.lineWidth=3+pulse*2;g.strokeRect(CART.x-34-pulse*3,CART.y-56-pulse*3,96+pulse*6,66+pulse*6);g.fillStyle='#f4d37a';for(let n=0;n<3;n++)g.fillRect(CART.x+6+n*2,CART.y-82-pulse*6+n*4,14-n*4,4);g.restore();}
  const pr=hiPlace[st.stage];if(pr&&!film&&!tipping()){const p=M.ludus.places.find(p=>p.route===pr);if(p){const pulse=(Math.sin(t*5)+1)/2;g.save();g.strokeStyle='#f4d37a';g.globalAlpha=.55+pulse*.45;g.lineWidth=3+pulse*2;g.strokeRect(p.x-6-pulse*3,p.y-8-pulse*3,p.w+12+pulse*6,p.h+16+pulse*6);g.fillStyle='#f4d37a';for(let n=0;n<3;n++)g.fillRect(p.x+p.w/2-7+n*2,p.y-30-pulse*6+n*4,14-n*4,4);g.restore();}}};
 const BARKS=['Bögen! Armbrüste! Keine Rückgabe!','Frische Pfeile! Fast nicht benutzt!','Der Pfeil im Kopf? Deko.','Armbrust kaufen, Arzt sparen!','Wer zittert, zahlt doppelt.'];
 // Karren anklicken: Laden (eigener Klick auf das Ludus-Bild; die Gebäudeliste des Ludus bleibt unverändert)
-document.addEventListener('click',e=>{const c=e.target;if(!c||c.id!=='ludusCanvas'||!['buy','role','equip','arena','apple','done'].includes(ST().stage))return;const r=c.getBoundingClientRect(),x=(e.clientX-r.left)*900/r.width,y=(e.clientY-r.top)*670/r.height;
+document.addEventListener('click',e=>{const c=e.target;if(!c||c.id!=='ludusCanvas'||!['buy','role','shopbow','equip','arena','apple','done'].includes(ST().stage))return;const r=c.getBoundingClientRect(),x=(e.clientX-r.left)*900/r.width,y=(e.clientY-r.top)*670/r.height;
  if(x>=CART.x-26&&x<=CART.x+44&&y>=CART.y-46&&y<=CART.y+4){e.stopImmediatePropagation();e.preventDefault();shop();}},true);
 function shop(){const s=S(),rows=[];for(const d of ['bow','crossbow'])for(let q=0;q<=4;q++){const p=Math.round(M.itemPrice('weapon',d,q)*1.15);rows.push({d,q,p});}
  const qn=i=>(M.gearQuality?.[i]?.name)||M.gearQuality?.[i]||['Einfach','Solide','Gut','Meisterlich','Legendär'][i];
@@ -285,7 +294,7 @@ function noSmithBows(){const F=M.workshop?.state;if(!F)return;if(Array.isArray(F
 for(const list of [M.forgeCategories,M.workshop?.categories])if(Array.isArray(list))for(let i=list.length-1;i>=0;i--)if(list[i]?.kind==='weapon'&&isRanged(list[i].def))list.splice(i,1);
 if(Array.isArray(M.workshop?.recipes))for(let i=M.workshop.recipes.length-1;i>=0;i--)if(isRanged(M.workshop.recipes[i]?.def))M.workshop.recipes.splice(i,1);
 // Fernkämpfer gibt es erst, wenn Orontes da ist: vorher ist die Klasse in der Kaserne gesperrt
-const rangedOpen=()=>['role','equip','arena','apple','done'].includes(ST().stage);
+const rangedOpen=()=>['role','shopbow','equip','arena','apple','done'].includes(ST().stage);
 // Bestehende Fernkämpfer aus älteren Spielständen bleiben, wie sie sind – gesperrt ist nur das neue Umstellen
 function lockRanged(){if(rangedOpen())return;
  for(const b of document.querySelectorAll('[data-action^="barracks:class:"][data-action$=":Fernkämpfer"]')){if(b.classList.contains('bow-locked'))continue;b.classList.add('bow-locked');b.setAttribute('aria-disabled','true');b.title='Gesperrt: Fernkämpfer gibt es erst, wenn der Bogenhändler kommt.';const tag=document.createElement('span');tag.className='bow-lock';tag.textContent='🔒 erst mit Bogenhändler';b.appendChild(tag);}}
