@@ -4,7 +4,7 @@
 // Nach dem Boxkampf-Tutorial (S.box.intro): Der Schmied zeigt nur kurz auf den Neuen und verschwindet. Orontes erklärt Bogen und
 // Armbrust, leiht dem Lanista Gold für einen Rekruten, kommentiert dessen Talent, gibt ihm den ersten Bogen, erklärt Stärken und
 // Schwächen der Fernkämpfer und öffnet in der Arena den Apfelschuss. Danach steht sein Karren im Trainingshof: Bögen und Armbrüste
-// gibt es nur noch bei ihm, nicht mehr beim Schmied.
+// gibt es nur bei ihm – der Schmied hatte sie nie im Sortiment.
 // Speicherwert: S.bowyer = {stage:''|'film'|'buy'|'role'|'arena'|'apple'|'done', recruit, loan, given, owner}
 // Figuren, Gesichter, Waffen, Arena und Ludus kommen aus dem Spiel (M.renderLudusActors, M.faceShot, M.weaponArt, ArenaArt, Ludus-Bild).
 // =====================================================================================================
@@ -40,7 +40,11 @@ function px(ctx,x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round
 function pixArrow(ctx,x0,y0,x1,y1,q,o={}){const L=Math.hypot(x1-x0,y1-y0),n=Math.max(2,Math.round(L/q)),ux=(x1-x0)/L,uy=(y1-y0)/L,nx=-uy,ny=ux;
  for(let i=0;i<=n;i++){const x=x0+ux*i*q,y=y0+uy*i*q;px(ctx,x-q,y-q,q*3,q*3,'#22150c');}
  for(let i=0;i<=n;i++){const x=x0+ux*i*q,y=y0+uy*i*q;px(ctx,x,y,q,q,o.shaft||'#cfae72');px(ctx,x,y+q*.5,q,q*.5,'#9a7a48');}
- if(o.fletch){for(let i=0;i<5;i++){const x=x0+ux*i*q,y=y0+uy*i*q,w=Math.min(3,1+i*.6);for(const s of [-1,1]){px(ctx,x+nx*w*q*s,y+ny*w*q*s,q,q,i%2?'#e8e0c8':'#b8382e');}}}
+ if(o.fletch){const F=6.5,hOf=k=>Math.max(0,Math.min(3.1,(F-k)*.7+.35)),vane=(side,pass)=>{for(let k=.5;k<=F;k+=.5){const h=hOf(k);for(let j=.5;j<=h+(pass?0:.7);j+=.5){const back=j*.6,x=x0+ux*(k+1.2-back)*q+nx*j*q*side,y=y0+uy*(k+1.2-back)*q+ny*j*q*side;
+   if(!pass)px(ctx,x-q*.3,y-q*.3,q*1.6,q*1.6,'#22150c');else px(ctx,x,y,q,q,side>0?(j>h-.8?'#e0604c':k<1.5?'#8a2a22':'#b8382e'):(j>h-.8?'#fffaf0':k<1.5?'#bdb39a':'#e8e0c8'));}}};
+  vane(1,0);vane(-1,0);vane(1,1);vane(-1,1);
+  for(let k=0;k<=F+1.2;k+=.5)px(ctx,x0+ux*k*q,y0+uy*k*q,q,q,k<1.2?'#3a2414':'#cfae72');
+  px(ctx,x0-ux*q*.6-nx*q*.6,y0-uy*q*.6-ny*q*.6,q,q,'#22150c');px(ctx,x0-ux*q*.6+nx*q*.6,y0-uy*q*.6+ny*q*.6,q,q,'#22150c');}
  if(o.tip){for(let k=0;k<4;k++){const w=(4-k)*.6,x=x1+ux*k*q,y=y1+uy*k*q;for(let j=-Math.ceil(w);j<=Math.ceil(w);j++)px(ctx,x+nx*j*q*.7,y+ny*j*q*.7,q,q,Math.abs(j)>=Math.ceil(w)?'#1c1c20':k<2?'#6b7078':'#a2a8b0');}}
  if(o.crust){for(const [cx,cy] of o.crust){px(ctx,cx-q,cy-q,q*2,q*2,'#5a1410');px(ctx,cx,cy+q,q,q*2,'#7a1a14');}}}
 // Kopf: Pfeil quer durch den Schädel, links Federn, rechts Spitze (gespiegelt bei Blick nach links)
@@ -166,14 +170,14 @@ let TGT=null;const TARGET=()=>TGT??=makeG(5150,g=>{Object.assign(g,{id:'apple-ta
 
 // ---------- Drehbuch 1: Der Schmied zeigt auf den Neuen, Orontes erklärt Bogen und Armbrust und leiht Gold ----------
 function beats1(){return [
- {who:'smith',say:`${lanName()}. Kurze Durchsage. Ab heute schmiede ich keine Bögen mehr. Und keine Armbrüste. Frag nicht.`,gesture:'point',enter:w=>{w.smithTX=250;}},
- {who:'smith',say:'Nicht, weil ich es nicht kann. Sondern weil DER da mir sonst einen Pfeil ins Knie jagt. Hat er gesagt. Zweimal. Einmal davon mit Pfeil.',gesture:'rant',enter:w=>{w.cartTX=640;w.oroTX=810;}},
+ {who:'smith',say:`${lanName()}. Du willst Fernkämpfer? Dann vergiss mich. Ich bin Schmied, kein Holzschnitzer. Bögen und Armbrüste fasse ich nicht an. Nie gemacht, mach ich nicht.`,gesture:'point',enter:w=>{w.smithTX=250;}},
+ {who:'smith',say:'Für den Kram gibt es einen Spezialisten. Da kommt er schon. Ich hab ihn nicht eingeladen. Er kommt trotzdem jedes Mal. Wie Durchfall.',gesture:'rant',enter:w=>{w.cartTX=640;w.oroTX=810;}},
  {who:'smith',say:'Das ist Orontes. Er verkauft Bögen. Er ist verrückt. Ich bin raus. Prost.',pose:'sip',enter:(w,skip)=>{w.cartX=w.cartTX=640;w.oroX=w.oroTX=810;}},
  {who:'oro',shot:'wide',say:'Ist er weg? Gut. Der Mann schmiedet Schwerter wie ein Ochse, der Liebesbriefe schreibt.',gesture:'rant',enter:w=>{w.smithTX=-260;w.smithA=Math.PI;w.oroTX=470;}},
  {who:'oro',shot:'face',plate:1,say:'Orontes Pfeilkopf! Bögen, Armbrüste, Pfeile, Bolzen – und Ratschläge, die keiner hören will!',mood:'grin',enter:w=>{w.smithX=w.smithTX=-260;w.oroX=w.oroTX=470;}},
  {who:'oro',shot:'face',say:'Ja, ihr starrt auf den Pfeil. Alle starren auf den Pfeil. Belagerung von Dura, vor vierzehn Jahren. Der Medicus sagte: Ziehst du ihn raus, stirbst du.',mood:'calm'},
  {who:'oro',shot:'face',say:'Der Medicus ist inzwischen tot. Der Pfeil ist noch da. Seitdem treffe ich besser. Und ich höre Farben.',mood:'dumb'},
- {who:'oro',shot:'wide',zoom:1.55,cx:640,cy:330,say:'Ab heute gibt es Bögen und Armbrüste nur noch bei mir. Mein Karren steht ab jetzt hier im Trainingshof. Der Schmied hat zugestimmt. Freiwillig. Fast.',gesture:'point'},
+ {who:'oro',shot:'wide',zoom:1.55,cx:640,cy:330,say:'Bögen und Armbrüste gibt es nur bei mir. Der Schmied rührt kein Holz an – zu fein für seine Wurstfinger. Mein Karren steht ab jetzt hier im Trainingshof.',gesture:'point'},
  {who:'oro',shot:'item',def:'bow',say:'Der Bogen. Leicht, schnell, achtzehn Pfeile im Köcher, ein Schuss alle zwei Sekunden. Braucht Präzision, Geschick und Arme, die nicht nach Haferbrei aussehen.'},
  {who:'oro',shot:'item',def:'crossbow',say:'Die Armbrust. Doppelter Schaden, geht durch fast jede Rüstung. Aber das Spannen dauert ewig, und es sind nur zwölf Bolzen. Für Leute, die gern einmal treffen und dann lange darüber nachdenken.'},
  {who:'oro',shot:'face',say:'Fernkämpfer brauchst du trotzdem erst mal. Und die wachsen nicht auf Bäumen. Die stehen beim Sklavenhändler und riechen nach Angst.',mood:'confident'},
