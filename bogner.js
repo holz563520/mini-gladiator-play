@@ -1,4 +1,5 @@
 'use strict';
+try{document.fonts&&['400','700'].forEach(w=>document.fonts.load(w+" 16px 'Courier Prime'"));}catch(e){}
 // =====================================================================================================
 // ORONTES PFEILKOPF · der Bogenhändler (Testversion – noch nicht im Hauptspiel, wird nur von fernkampf-tutorial-test.html geladen)
 // Nach dem Boxkampf-Tutorial (S.box.intro): Der Schmied zeigt nur kurz auf den Neuen und verschwindet. Orontes erklärt Bogen und
@@ -134,13 +135,13 @@ function render(g,f,dt){const b=f.beat||{},w=f.w,t=f.t,bt=f.bt,talking=f.typed<(
   // Münzen
   for(const c of w.coins){const u=t-c.t0;if(u<0||u>2.2)continue;const x=c.x+c.vx*u,y=Math.min(GY-4,c.y+c.vy*u+600*u*u);px(g,x-4,y-4,10,10,'#7a5510');px(g,x-2,y-2,7,7,'#e6b42a');px(g,x-2,y-2,2,2,'#fff0a0');}
   g.restore();grain(g,t);vignette(g);
-  if(w.gold>0){const k=ease((t-w.goldT)/.4);g.save();g.globalAlpha=cl((t-w.goldT)*3,0,1);g.textAlign='center';g.textBaseline='middle';g.font='900 '+Math.round(54+20*(1-k))+'px Georgia,serif';g.fillStyle='#000';g.fillText('+'+w.gold+' GOLD',FW/2+3,96+3);g.fillStyle='#ffd25a';g.fillText('+'+w.gold+' GOLD',FW/2,96);
-   g.font='700 18px system-ui,sans-serif';g.fillStyle='#f3e2b0';g.fillText('Geliehen von Orontes · Zinsen: „ein kleiner Finger“',FW/2,140);g.restore();}}
+  if(w.gold>0){const k=ease((t-w.goldT)/.4);g.save();g.globalAlpha=cl((t-w.goldT)*3,0,1);g.textAlign='center';g.textBaseline='middle';g.font='900 '+Math.round(54+20*(1-k))+'px "Courier Prime",monospace';g.fillStyle='#000';g.fillText('+'+w.gold+' GOLD',FW/2+3,96+3);g.fillStyle='#ffd25a';g.fillText('+'+w.gold+' GOLD',FW/2,96);
+   g.font='700 18px "Courier Prime",monospace';g.fillStyle='#f3e2b0';g.fillText('Geliehen von Orontes · Zinsen: „ein kleiner Finger“',FW/2,140);g.restore();}}
  if(bt<.08){g.fillStyle='rgba(255,248,230,'+((1-bt/.08)*.3).toFixed(2)+')';g.fillRect(0,0,FW,FH);}}
 function grain(g,t){for(let i=0;i<90;i++){const x=hr(i*3.1+Math.floor(t*24)*.37)*FW,y=hr(i*7.7+Math.floor(t*24)*.91)*FH;g.fillStyle=i%2?'rgba(255,240,210,.05)':'rgba(0,0,0,.1)';g.fillRect(Math.round(x),Math.round(y),3,3);}}
 function vignette(g){const v=g.createRadialGradient(FW/2,FH*.45,FH*.32,FW/2,FH/2,FW*.68);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.5)');g.fillStyle=v;g.fillRect(0,0,FW,FH);}
-function plate(g,bt,name,sub,col){const a=1-Math.pow(1-cl((bt-.2)/.4,0,1),3),x=28-(1-a)*420,y=FH-118;g.save();g.globalAlpha=cl(a,0,1);g.font='900 40px Georgia,serif';const nw=Math.max(g.measureText(name).width,(g.font='700 16px system-ui,sans-serif',g.measureText(sub).width))+40;
- g.fillStyle='rgba(10,6,4,.84)';g.fillRect(x,y,nw,86);g.fillStyle=col;g.fillRect(x,y,6,86);g.textAlign='left';g.textBaseline='middle';g.font='900 40px Georgia,serif';g.fillStyle='#000';g.fillText(name,x+23,y+33);g.fillStyle=col;g.fillText(name,x+20,y+31);g.font='700 16px system-ui,sans-serif';g.fillStyle='#f3e2b0';g.fillText(sub,x+20,y+66);g.restore();}
+function plate(g,bt,name,sub,col){const a=1-Math.pow(1-cl((bt-.2)/.4,0,1),3),x=28-(1-a)*420,y=FH-118;g.save();g.globalAlpha=cl(a,0,1);g.font='900 40px "Courier Prime",monospace';const nw=Math.max(g.measureText(name).width,(g.font='700 16px "Courier Prime",monospace',g.measureText(sub).width))+40;
+ g.fillStyle='rgba(10,6,4,.84)';g.fillRect(x,y,nw,86);g.fillStyle=col;g.fillRect(x,y,6,86);g.textAlign='left';g.textBaseline='middle';g.font='900 40px "Courier Prime",monospace';g.fillStyle='#000';g.fillText(name,x+23,y+33);g.fillStyle=col;g.fillText(name,x+20,y+31);g.font='700 16px "Courier Prime",monospace';g.fillStyle='#f3e2b0';g.fillText(sub,x+20,y+66);g.restore();}
 // Ware in Großaufnahme: die Waffe des Spiels, groß auf dunklem Tuch, daneben die echten Werte
 function itemShot(g,b,t,bt,talking){const d=b.def,wd=M.weaponDefs.find(x=>x.id===d);
  const bg=g.createLinearGradient(0,0,0,FH);bg.addColorStop(0,'#3a0f14');bg.addColorStop(1,'#1a0608');g.fillStyle=bg;g.fillRect(0,0,FW,FH);for(let y=0;y<FH;y+=6)for(let x=(y/6)%2*6;x<FW;x+=12){g.fillStyle='rgba(0,0,0,.08)';g.fillRect(x,y,6,6);}
@@ -150,8 +151,8 @@ function itemShot(g,b,t,bt,talking){const d=b.def,wd=M.weaponDefs.find(x=>x.id==
  // Werte
  const rows=[['SCHADEN',wd.damage],['SCHUSSFOLGE','alle '+String(wd.delay).replace('.',',')+' s'],['MUNITION',wd.ammo+(d==='bow'?' Pfeile':' Bolzen')],['DURCHSCHLAG',Math.round(wd.pen*100)+' %'],['REICHWEITE',wd.range]];
  const x0=FW-430,y0=212;g.fillStyle='rgba(10,6,4,.82)';g.fillRect(x0,y0,410,48+rows.length*44);g.strokeStyle='#e6b42a';g.lineWidth=2;g.strokeRect(x0,y0,410,48+rows.length*44);
- g.textBaseline='middle';g.textAlign='left';g.font='900 26px Georgia,serif';g.fillStyle='#ffd25a';g.fillText(wd.name.toUpperCase(),x0+18,y0+26);
- rows.forEach((r,i)=>{const a=cl((bt-.3-i*.25)/.25,0,1);g.globalAlpha=a;const y=y0+70+i*44;g.font='800 14px system-ui,sans-serif';g.fillStyle='#c9b48a';g.fillText(r[0],x0+18,y);g.textAlign='right';g.font='700 22px Georgia,serif';g.fillStyle='#f3e2b0';g.fillText(String(r[1]),x0+392,y);g.textAlign='left';g.globalAlpha=1;});
+ g.textBaseline='middle';g.textAlign='left';g.font='900 26px "Courier Prime",monospace';g.fillStyle='#ffd25a';g.fillText(wd.name.toUpperCase(),x0+18,y0+26);
+ rows.forEach((r,i)=>{const a=cl((bt-.3-i*.25)/.25,0,1);g.globalAlpha=a;const y=y0+70+i*44;g.font='800 14px "Courier Prime",monospace';g.fillStyle='#c9b48a';g.fillText(r[0],x0+18,y);g.textAlign='right';g.font='700 22px "Courier Prime",monospace';g.fillStyle='#f3e2b0';g.fillText(String(r[1]),x0+392,y);g.textAlign='left';g.globalAlpha=1;});
  grain(g,t);vignette(g);}
 // Arena: Orontes, dein neuer Fernkämpfer und ein Rekrut mit Apfel – oder die Regeltafel
 let ARENAC=null;
@@ -163,8 +164,8 @@ function arenaShot(g,b,t,bt,talking){if(!ARENAC){ARENAC=document.createElement('
  drawActor(g,{...actor(TARGET()),forgeWorker:false,a:Math.PI,shackled:true},tx,ty,2.2);{const ax=tx-1,ay=ty-122;for(const [dx,dy,w,h,c] of [[-8,-6,16,14,'#2a0c08'],[-7,-5,14,12,'#c8321f'],[-5,-6,10,14,'#c8321f'],[-5,-3,4,3,'#ff8a6a'],[-1,-11,2,6,'#3a2414'],[1,-11,5,3,'#4a7a2a']])px(g,ax+dx,ay+dy,w,h,c);}
  drawOro(g,190,GY,4.2,{a:0,traderPose:b.who==='oro'?(b.gesture||(talking?'rant':null)):null,gest:t*3,phase:t*3});
  if(b.shot==='rules'){const R=b.rules||[];g.fillStyle='rgba(8,5,3,.86)';g.fillRect(250,40,FW-290,60+R.length*50);g.strokeStyle='#e6b42a';g.lineWidth=2;g.strokeRect(250,40,FW-290,60+R.length*50);
-  g.textAlign='left';g.textBaseline='middle';g.font='900 28px Georgia,serif';g.fillStyle='#ffd25a';g.fillText(b.title||'APFELSCHUSS',272,72);
-  R.forEach((r,i)=>{const a=cl((bt-.2-i*.35)/.3,0,1);g.globalAlpha=a;const y=118+i*50;g.font='22px system-ui,sans-serif';g.fillText(r[0],272,y);g.font='800 15px system-ui,sans-serif';g.fillStyle='#e6b42a';g.fillText(r[1],316,y-10);g.font='600 17px Georgia,serif';g.fillStyle='#f3e2b0';g.fillText(r[2],316,y+12);g.globalAlpha=1;});}
+  g.textAlign='left';g.textBaseline='middle';g.font='900 28px "Courier Prime",monospace';g.fillStyle='#ffd25a';g.fillText(b.title||'APFELSCHUSS',272,72);
+  R.forEach((r,i)=>{const a=cl((bt-.2-i*.35)/.3,0,1);g.globalAlpha=a;const y=118+i*50;g.font='22px "Courier Prime",monospace';g.fillText(r[0],272,y);g.font='800 15px "Courier Prime",monospace';g.fillStyle='#e6b42a';g.fillText(r[1],316,y-10);g.font='600 17px "Courier Prime",monospace';g.fillStyle='#f3e2b0';g.fillText(r[2],316,y+12);g.globalAlpha=1;});}
  grain(g,t);vignette(g);}
 let TGT=null;const TARGET=()=>TGT??=makeG(5150,g=>{Object.assign(g,{id:'apple-target',name:'Apfelträger',height:174});});
 
@@ -199,7 +200,7 @@ function beats2(){const rec=S().roster.find(x=>x.id===ST().recruit),n=rec?rec.na
 let bar=null,tipBox=null,tips=[],snap=null;
 function showBar(html){if(!bar){bar=document.createElement('div');bar.className='smith-intro-bar bow-bar';bar.setAttribute('role','status');document.body.appendChild(bar);}if(bar._h!==html){bar.innerHTML=html;bar._h=html;}}
 function hideBar(){bar?.remove();bar=null;}
-function tip(text,mood='grin',after){tips.push({text,mood,after});if(!tipBox)nextTip();}
+function tip(text,mood='grin',after){tips.push({text,mood,after});if(!tipBox)nextTip();else{const b=tipBox.querySelector('button');if(b)b.textContent='WEITER ▸';}}
 function nextTip(){const tp=tips.shift();if(!tp){tipBox?.remove();tipBox=null;return;}if(!tipBox){tipBox=document.createElement('div');tipBox.id='bowTip';tipBox.setAttribute('role','dialog');tipBox.innerHTML='<div class="bwt-in"><canvas width="240" height="150"></canvas><div><b>'+esc(NAME)+'</b><p></p><button type="button">WEITER ▸</button></div></div>';document.body.appendChild(tipBox);
   tipBox.querySelector('button').onclick=()=>{const f=tipBox._cur?.after;nextTip();f?.();};const cv=tipBox.querySelector('canvas');let t0=performance.now();const loop=now=>{if(!tipBox)return;const t=(now-t0)/1000,typing=tipBox._typed<(tipBox._cur?.text.length||0);oroFace(cv.getContext('2d'),240,150,t,{mood:typing&&Math.floor(t*7)%2?'roar':tipBox._cur?.mood||'grin',zoom:1});
    if(typing){tipBox._typed=Math.min(tipBox._cur.text.length,Math.floor((now-tipBox._t0)/1000*46));tipBox.querySelector('p').textContent=tipBox._cur.text.slice(0,tipBox._typed);}requestAnimationFrame(loop);};requestAnimationFrame(loop);}
@@ -213,25 +214,46 @@ function talentLines(g){const sc=r=>{try{return M.scoutScore(g,r,true).score;}ca
  else L.push(`${nm}? Der trifft nicht mal den Boden, wenn er hinfällt. Eigentlich wäre er ein besserer ${best[0]}. Aber Talent wird überschätzt. Pfeile nicht.`);
  L.push(`Ob einer zum Fernkämpfer taugt, siehst du in der Kaserne: Klick ihn an, dann zeigen die Klassen, wie weit er es als Fernkämpfer bringen kann. ${tier==='bad'?'Bei ihm: nicht sehr weit. Aber weit genug für einen Apfel.':'Bei ihm sieht das gar nicht schlecht aus.'}`);
  L.push(`Jetzt in die Kaserne mit ihm und auf Fernkämpfer stellen. Das kleine 🏹. Ich warte. Ich habe Zeit. Der Pfeil in meinem Kopf auch.`);return {L,tier};}
-function strengths(g){const nm=g.name.split(' ')[0];return [
- `Da! Ein Fernkämpfer! Und weil ich ein Herz habe – im Glas – bekommt ${nm} seinen ersten Bogen geschenkt. Der Vorbesitzer braucht ihn nicht mehr. Lange Geschichte. Kurzes Ende.`,
- 'Die Stärken: Fernkämpfer stehen hinten. Hinten ist schön. Hinten stirbt man später. Sie schießen, bevor der Feind überhaupt da ist, und die Armbrust lacht über Rüstungen.',
- 'Die Schwächen: Im Nahkampf nur ein Dolch, kein Schild. Wenn der Feind erst mal vor ihm steht, ist es schnell vorbei. Aus der Nähe zittern sie und treffen schlechter. Und nach achtzehn Pfeilen ist der Köcher leer.',
- 'Präzision und Bogenfertigkeit wachsen mit jedem Schuss. Und das Beste: Ich habe dir in der Arena etwas vorbereitet. Mit Obst. Komm zum Arena-Tor.'];}
-function giveBow(g){const st=ST();if(st.given===g.id)return;const cur=M.gear(g,'weapon');if(!cur||!['bow','crossbow'].includes(cur.def)){const it=M.makeItem('weapon','bow',1);S().inventory.push(it);g.equipment.weapon=it.id;}st.given=g.id;try{M.persist();}catch{}}
-const hiPlace={buy:'market',role:'gladiators',arena:'arena'};
+function strengths(g){return [
+ 'Sieht doch gut aus. Die Stärken: Fernkämpfer stehen hinten. Hinten ist schön. Hinten stirbt man später. Sie schießen, bevor der Feind überhaupt da ist.',
+ 'Die Schwächen: Im Nahkampf nur ein Dolch, kein Schild. Steht der Feind erst mal vor ihm, ist es schnell vorbei. Aus der Nähe zittern sie und treffen schlechter. Und irgendwann ist der Köcher leer.'];}
+const INVITE='Genug Schule. Ich habe dir in der Arena etwas vorbereitet. Mit Obst. Komm zum Arena-Tor.';
+// Geschenk: ein Bogen und ein Dolch ins Lager – anlegen muss der Spieler selbst (Fernwaffe + Nahkampf)
+const hiPlace={buy:'market',role:'gladiators',equip:'gladiators',arena:'arena'};
+function giveKit(g){const st=ST();if(st.given===g.id)return;const inv=S().inventory,free=d=>inv.find(i=>i.def===d&&!M.equippedBy?.(i.id));
+ const w=M.gear(g,'weapon');if(!(w&&['bow','crossbow'].includes(w.def))&&!free('bow')&&!free('crossbow'))inv.push(M.makeItem('weapon','bow',1));
+ const d=M.gear(g,'secondary');if(!(d&&d.def==='dagger')&&!free('dagger'))inv.push(M.makeItem('weapon','dagger',1));
+ st.given=g.id;try{M.persist();}catch{}}
+const kitOk=g=>({ranged:['bow','crossbow'].includes(M.gear(g,'weapon')?.def),melee:M.gear(g,'secondary')?.def==='dagger'});
+function kitLines(g){const nm=g.name.split(' ')[0];return [
+ `Da! Ein Fernkämpfer! Und weil ich ein Herz habe – im Glas – schenke ich ${nm} einen Bogen UND einen Dolch. Liegen schon in deinem Lager. Der Vorbesitzer braucht beides nicht mehr. Lange Geschichte. Kurzes Ende.`,
+ `Jetzt anlegen. Ein Fernkämpfer trägt immer BEIDES: den Bogen – oder eine Armbrust – als Fernwaffe und den Dolch für den Nahkampf. Ohne Bogen ist er ein Mann mit Dolch. Ohne Dolch ist er ein Mann mit Bogen, der gleich einen Speer im Bauch hat.`,
+ `Ohne beides lässt ihn die Arena gar nicht erst rein. Kaserne → bei ${nm} auf AUSRÜSTEN → „Aus der Waffenkammer ausrüsten“. Oder unter „Volle Waffenkammer“ selbst: Bogen als Fernwaffe, Dolch für den Nahkampf. Einen Schild gibt es nicht – der Bogen braucht beide Hände. Meine Geduld auch.`];}
+function statLines(g){return [
+ 'Und jetzt Schule. Was zählt beim Schießen? Erstens: PRÄZISION. Das Wichtigste überhaupt. Wer keine hat, schießt Löcher in den Himmel – und manchmal in den Lanista.',
+ 'Zweitens: GESCHICK – ruhige Finger, sauberes Loslassen. Drittens: die WAFFENFERTIGKEIT. Bogen und Armbrust lernt man getrennt, beide wachsen mit jedem Schuss. Und mit jedem Toten. Meistens mit dem Schuss.',
+ 'Dann TAKTIK, damit er weiß, auf wen er zielt. BEWEGLICHKEIT und REFLEXE, damit er weg ist, bevor der Feind da ist. Kraft? Überschätzt. Ein Fernkämpfer muss nicht stark sein. Nur weit weg.',
+ 'Bogen oder Armbrust? Der Bogen schießt schnell, alle zwei Sekunden, achtzehn Pfeile im Köcher – aber jeder beißt nur ein bisschen. Die Armbrust spannt ewig und hat nur zwölf Bolzen. Dafür bleibt liegen, was sie trifft. Rüstung? Lacht sie aus. Beides gibt es an meinem Karren.'];}
+// Den nächsten Knopf in der Kaserne sanft pulsieren lassen
+function markBtn(act){document.querySelectorAll('.bow-hl').forEach(e=>{if(e.dataset.action!==act)e.classList.remove('bow-hl');});const b=document.querySelector(`[data-action="${act}"]`);if(b&&!b.classList.contains('bow-hl'))b.classList.add('bow-hl');}
 function step(dt){const st=ST(),s=S();if(!s||!s.lanista)return;
  if(document.querySelector('.bow-shop')){hideBar();return;}
- const mo=document.getElementById('modal');if(mo&&mo.hidden===false){hideBar();if(tipBox)tipBox.style.display='none';return;}else if(tipBox&&tipBox.style.display==='none')tipBox.style.display='';
- if(['buy','role','arena','apple'].includes(st.stage)&&!film&&!tipping()&&!s.battle){
+ // Offene Fenster (Kauf, Kaserne) haben Vorrang: keine Leiste, Tipps warten – der Ablauf läuft aber weiter
+ const mo=document.getElementById('modal'),open=!!(mo&&mo.hidden===false);if(open){hideBar();if(tipBox)tipBox.style.display='none';}else if(tipBox&&tipBox.style.display==='none')tipBox.style.display='';
+ const bar=h=>{if(!open)showBar(h);};
+ if(['buy','role','equip','arena','apple'].includes(st.stage)&&!film&&!tipping()&&!s.battle){
   if(st.stage==='buy'){const fresh=s.roster.find(g=>!g.dead&&!snap?.has(g.id)&&!g.smithDuty);if(fresh){st.recruit=fresh.id;st.stage='role';hideBar();const {L}=talentLines(fresh);L.forEach((x,i)=>tip(x,i===0?'grin':'confident'));try{M.persist();}catch{}return;}
-   showBar(`<p><b>${esc(SHORT)}</b> hat dir ${LOAN} Gold geliehen.</p><p class="hint">Kauf einen Rekruten auf dem Sklavenmarkt.</p>`);}
-  else if(st.stage==='role'){const g=s.roster.find(x=>x.id===st.recruit&&!x.dead);if(!g){st.stage='buy';snap=new Set(s.roster.map(x=>x.id));return;}
-   if(g.role==='Fernkämpfer'){giveBow(g);st.stage='arena';hideBar();strengths(g).forEach((x,i)=>tip(x,['grin','confident','calm','roar'][i]));try{M.persist();}catch{}return;}
-   showBar(`<p>Stell <b>${esc(g.name)}</b> auf <b>Fernkämpfer 🏹</b>.</p><p class="hint">Kaserne → ${esc(g.name.split(' ')[0])} anklicken → Klasse „Fernkämpfer“.</p>`);}
-  else if(st.stage==='arena')showBar(`<p>${esc(SHORT)} wartet in der Arena.</p><p class="hint">Arena-Tor → HUMAN → <b>APFELSCHUSS</b></p>`);
+   bar(`<p><b>${esc(SHORT)}</b> hat dir ${LOAN} Gold geliehen.</p><p class="hint">Kauf einen Rekruten auf dem Sklavenmarkt.</p>`);}
+  else if(st.stage==='role'||st.stage==='equip'){const g=s.roster.find(x=>x.id===st.recruit&&!x.dead);if(!g){st.stage='buy';snap=new Set(s.roster.map(x=>x.id));return;}
+   if(st.stage==='role'){if(g.role==='Fernkämpfer'){giveKit(g);st.stage='equip';hideBar();const k=kitOk(g);if(!(k.ranged&&k.melee))kitLines(g).forEach((x,i)=>tip(x,['grin','determined','confident'][i]));try{M.persist();}catch{}return;}
+    bar(`<p>Stell <b>${esc(g.name)}</b> auf <b>Fernkämpfer 🏹</b>.</p><p class="hint">Kaserne → ${esc(g.name.split(' ')[0])} anklicken → Klasse „Fernkämpfer“.</p>`);}
+   else{if(g.role!=='Fernkämpfer'){st.stage='role';return;}const k=kitOk(g);
+    if(k.ranged&&k.melee){st.stage='arena';hideBar();[...strengths(g),...statLines(g),INVITE].forEach((x,i)=>tip(x,['grin','calm','confident','grin','calm','determined','roar'][i%7]));try{M.persist();}catch{}return;}
+    bar(`<p>Leg <b>${esc(g.name)}</b> Bogen <i>und</i> Dolch an.</p><p class="hint">${k.ranged?'✅':'⬜'} Fernwaffe: Bogen/Armbrust · ${k.melee?'✅':'⬜'} Nahkampf: Dolch — Kaserne → ${esc(g.name.split(' ')[0])} → AUSRÜSTEN</p>`);}
+   {const au=document.querySelector(`[data-action="eq:auto:${g.id}"]:not([disabled])`);markBtn(st.stage==='role'?`barracks:class:${g.id}:Fernkämpfer`:au?`eq:auto:${g.id}`:`barracks:fold:${g.id}:equip`);if(au&&st.stage==='equip'&&au._bowSeen!==1){au._bowSeen=1;try{au.scrollIntoView({block:'center',behavior:'smooth'});}catch{}}}}
+  else if(st.stage==='arena'){markBtn('-');bar(`<p>${esc(SHORT)} wartet in der Arena.</p><p class="hint">Arena-Tor → HUMAN → <b>APFELSCHUSS</b></p>`);}
   else hideBar();}
- else if(!['buy','role','arena'].includes(st.stage))hideBar();}
+ else if(!['buy','role','equip','arena'].includes(st.stage))hideBar();}
 function startTutorial(){const st=ST();if(film)return;st.stage='film';snap=new Set(S().roster.map(g=>g.id));
  M.ui.close?.();playFilm('ludus',beats1(),()=>{giveLoan(null);st.stage='buy';snap=new Set(S().roster.map(g=>g.id));try{M.persist();}catch{}});}
 function startArenaFilm(){const st=ST();if(film)return;playFilm('arena',beats2(),()=>{st.stage='done';try{M.persist();}catch{}hideBar();
@@ -240,13 +262,13 @@ function startArenaFilm(){const st=ST();if(film)return;playFilm('arena',beats2()
 // ---------- Ludus: Karren und Orontes im Trainingshof, Markierung des nächsten Ziels ----------
 const CART={x:372,y:522};
 const overlay=M.ludusOverlay;M.ludusOverlay=(g,t)=>{overlay?.(g,t);const st=ST();
- if(['buy','role','arena','apple','done'].includes(st.stage)){cart(g,CART.x,CART.y,.55,t);drawOro(g,CART.x+34,CART.y+2,1,{a:Math.PI,traderPose:Math.floor(t/6)%3===0?'point':null,gest:t*3,phase:t*3});
+ if(['buy','role','equip','arena','apple','done'].includes(st.stage)){cart(g,CART.x,CART.y,.55,t);drawOro(g,CART.x+34,CART.y+2,1,{a:Math.PI,traderPose:Math.floor(t/6)%3===0?'point':null,gest:t*3,phase:t*3});
   // Sprechblase ab und zu
   const k=Math.floor(t/9)%BARKS.length,u=t%9;if(u<3.4){g.save();g.font="700 9px 'Courier Prime',monospace";const txt=BARKS[k],tw=g.measureText(txt).width+10,bx=Math.round(CART.x+34-tw/2),by=CART.y-70;g.fillStyle='rgba(20,30,28,.92)';g.fillRect(bx,by,tw,15);g.strokeStyle='#bca77b';g.strokeRect(bx+.5,by+.5,tw-1,14);g.fillStyle='#f0e3c4';g.textBaseline='middle';g.fillText(txt,bx+5,by+8);g.restore();}}
  const pr=hiPlace[st.stage];if(pr&&!film&&!tipping()){const p=M.ludus.places.find(p=>p.route===pr);if(p){const pulse=(Math.sin(t*5)+1)/2;g.save();g.strokeStyle='#f4d37a';g.globalAlpha=.55+pulse*.45;g.lineWidth=3+pulse*2;g.strokeRect(p.x-6-pulse*3,p.y-8-pulse*3,p.w+12+pulse*6,p.h+16+pulse*6);g.fillStyle='#f4d37a';for(let n=0;n<3;n++)g.fillRect(p.x+p.w/2-7+n*2,p.y-30-pulse*6+n*4,14-n*4,4);g.restore();}}};
 const BARKS=['Bögen! Armbrüste! Keine Rückgabe!','Frische Pfeile! Fast nicht benutzt!','Der Pfeil im Kopf? Deko.','Armbrust kaufen, Arzt sparen!','Wer zittert, zahlt doppelt.'];
 // Karren anklicken: Laden (eigener Klick auf das Ludus-Bild; die Gebäudeliste des Ludus bleibt unverändert)
-document.addEventListener('click',e=>{const c=e.target;if(!c||c.id!=='ludusCanvas'||!['buy','role','arena','apple','done'].includes(ST().stage))return;const r=c.getBoundingClientRect(),x=(e.clientX-r.left)*900/r.width,y=(e.clientY-r.top)*670/r.height;
+document.addEventListener('click',e=>{const c=e.target;if(!c||c.id!=='ludusCanvas'||!['buy','role','equip','arena','apple','done'].includes(ST().stage))return;const r=c.getBoundingClientRect(),x=(e.clientX-r.left)*900/r.width,y=(e.clientY-r.top)*670/r.height;
  if(x>=CART.x-26&&x<=CART.x+44&&y>=CART.y-46&&y<=CART.y+4){e.stopImmediatePropagation();e.preventDefault();shop();}},true);
 function shop(){const s=S(),rows=[];for(const d of ['bow','crossbow'])for(let q=0;q<=4;q++){const p=Math.round(M.itemPrice('weapon',d,q)*1.15);rows.push({d,q,p});}
  const qn=i=>(M.gearQuality?.[i]?.name)||M.gearQuality?.[i]||['Einfach','Solide','Gut','Meisterlich','Legendär'][i];
@@ -262,7 +284,7 @@ function noSmithBows(){const F=M.workshop?.state;if(!F)return;if(Array.isArray(F
 for(const list of [M.forgeCategories,M.workshop?.categories])if(Array.isArray(list))for(let i=list.length-1;i>=0;i--)if(list[i]?.kind==='weapon'&&isRanged(list[i].def))list.splice(i,1);
 if(Array.isArray(M.workshop?.recipes))for(let i=M.workshop.recipes.length-1;i>=0;i--)if(isRanged(M.workshop.recipes[i]?.def))M.workshop.recipes.splice(i,1);
 // Fernkämpfer gibt es erst, wenn Orontes da ist: vorher ist die Klasse in der Kaserne gesperrt
-const rangedOpen=()=>['role','arena','apple','done'].includes(ST().stage);
+const rangedOpen=()=>['role','equip','arena','apple','done'].includes(ST().stage);
 function lockRanged(){if(rangedOpen())return;for(const g of S().roster||[])if(g.role==='Fernkämpfer'&&!g.dead)g.role='Soldat';
  for(const b of document.querySelectorAll('[data-action^="barracks:class:"][data-action$=":Fernkämpfer"]')){if(b.classList.contains('bow-locked'))continue;b.classList.add('bow-locked');b.setAttribute('aria-disabled','true');b.title='Gesperrt: Fernkämpfer gibt es erst, wenn der Bogenhändler kommt.';const tag=document.createElement('span');tag.className='bow-lock';tag.textContent='🔒 erst mit Bogenhändler';b.appendChild(tag);}}
 function unlockMarks(){for(const b of document.querySelectorAll('.bow-locked')){b.classList.remove('bow-locked');b.removeAttribute('aria-disabled');b.title='';b.querySelector('.bow-lock')?.remove();}}
