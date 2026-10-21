@@ -5947,8 +5947,8 @@ function newRoster(){try{newRoster2();}catch(e){const el=document.getElementById
 function parentGame(){try{const P=window.parent;if(P&&P!==window&&P.MG&&P.MG.s&&Array.isArray(P.MG.s.roster))return P.MG;}catch(e){}return null;}
 function fromParent(){const PM=parentGame();if(!PM)return null;const cp=v=>JSON.parse(JSON.stringify(v));
  const clone=g=>{const c=cp(g),w=PM.gear(g,'weapon');c.enemyGear={weapon:w?cp(w):null,secondary:null,shield:null,armor:{}};c.equipment={weapon:null,secondary:null,shield:null,armor:{}};c.fromGame=true;return c;};
- const alive=PM.s.roster.filter(g=>!g.dead&&!g.smithDuty),ar=alive.filter(g=>g.role==='Fernkämpfer'&&['bow','crossbow'].includes(PM.gear(g,'weapon')?.def)).map(clone),rc=alive.filter(g=>g.role!=='Fernkämpfer').slice(0,8).map(clone);
- if(!ar.length||!rc.length)return null;return{ar,rc,lan:PM.s.lanista?.name||''};}
+ const alive=PM.s.roster.filter(g=>!g.dead&&!g.smithDuty),ok=g=>g.role==='Fernkämpfer'&&['bow','crossbow'].includes(PM.gear(g,'weapon')?.def)&&PM.gear(g,'secondary')?.def==='dagger',ar=alive.filter(ok).map(clone),why=alive.filter(g=>!ok(g)&&g.role==='Fernkämpfer').map(g=>{const m=[];if(!['bow','crossbow'].includes(PM.gear(g,'weapon')?.def))m.push('keine Fernwaffe (Bogen/Armbrust)');if(PM.gear(g,'secondary')?.def!=='dagger')m.push('kein Dolch');return g.name+': '+m.join(' und ');}),rc=alive.filter(g=>g.role!=='Fernkämpfer').slice(0,8).map(clone);
+ if(!ar.length||!rc.length)return{none:true,why,noRecruit:!rc.length,noFk:!alive.some(g=>g.role==='Fernkämpfer')};return{ar,rc,lan:PM.s.lanista?.name||''};}
 // Im Spiel-Test: Ergebnis zurück in den echten Spielstand – Verletzungen und Tod des Rekruten, Preisgeld für den Lanista
 function syncParent(ser){const PM=parentGame();if(!PM||!ser.r.fromGame)return '';const r=ser.r,real=PM.s.roster.find(x=>x.id===r.id),out=[];if(!real)return '';
  for(const [id,b] of Object.entries(r.body||{})){const rb=real.body?.[id],h0=ser.hp0?.[id];if(!rb||h0==null||!(b.hp<h0))continue;rb.hp=Math.max(1,Math.min(rb.hp,b.hp));
@@ -5957,7 +5957,8 @@ function syncParent(ser){const PM=parentGame();if(!PM||!ser.r.fromGame)return ''
  if(ser.gold>0)PM.s.gold=(PM.s.gold||0)+ser.gold;
  try{PM.persist?.();}catch(e){}try{PM.ui?.render?.();}catch(e){}
  return 'Im Spielstand übernommen: '+(r.dead?r.name+' ist gestorben.':out.length?r.name+' ist verletzt ('+out.join(', ')+').':r.name+' bekam keine neue Wunde.')+(ser.gold>0?' +'+ser.gold+' Gold für den Lanista.':' Kein Preisgeld.');}
-function newRoster2(){const PG=fromParent();if(PG){archers=PG.ar;recruits=PG.rc;const el=document.getElementById('lanName');if(el&&PG.lan){el.value=PG.lan;el.disabled=true;}if(typeof DBG!=='undefined'&&DBG)DUM0=paintDummy();}else{archers=[20,34,52,74].map(mkArcher);recruits=[0,0,1,2,3,5].map(mkRecruit);}selA=archers[0].id;selR=recruits[0].id;tally={n:0,apple:0,gold:0,dead:0};render();}
+function blocked(PG){document.body.classList.add('embBlock');const el=document.getElementById('res');el.hidden=false;el.innerHTML='<h2>Apfelschuss noch nicht möglich</h2><p>Zum Schießen braucht es einen <b>Fernkämpfer</b> mit <b>Bogen oder Armbrust</b> in der Fernwaffen-Hand <b>und einem Dolch</b> im Nahkampf'+(PG.noRecruit?', dazu mindestens einen weiteren Gladiator als Apfelhalter':'')+'.</p>'+(PG.noFk?'<p class="hint">Im Moment ist keiner deiner Gladiatoren als Fernkämpfer eingestellt (Kaserne → Klasse).</p>':'')+(PG.why.length?'<ul>'+PG.why.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul><p class="hint">Kaserne → AUSRÜSTEN: Bogen/Armbrust und Dolch anlegen.</p>':'');['archers','recruits'].forEach(i=>{$(i).innerHTML='';});const go=$('go');if(go)go.disabled=true;const wb=$('wpn');if(wb)wb.hidden=true;}
+function newRoster2(){const PG=fromParent();if(PG&&PG.none){blocked(PG);return;}if(PG){archers=PG.ar;recruits=PG.rc;const el=document.getElementById('lanName');if(el&&PG.lan){el.value=PG.lan;el.disabled=true;}if(typeof DBG!=='undefined'&&DBG)DUM0=paintDummy();}else{archers=[20,34,52,74].map(mkArcher);recruits=[0,0,1,2,3,5].map(mkRecruit);}selA=archers[0].id;selR=recruits[0].id;tally={n:0,apple:0,gold:0,dead:0};render();}
 const A=()=>archers.find(g=>g.id===selA),R=()=>recruits.find(g=>g.id===selR);
 
 function barsHtml(g){return ATTR.map(([k,l])=>{const v=val(g,k);return `<span>${l}</span><span class="b${k==='precision'||k==='bow'?' hi':''}"><i style="width:${clamp(v,0,100)}%"></i></span><span class="n">${nf(v,0)}</span>`;}).join('');}
@@ -7164,7 +7165,7 @@ function finish(){if(!sc)return;const s=sc;commitArrow(s);const ser=SER,r=ser.r,
  <div class="row"><button class="primary" id="again">🏹 NOCHMAL SCHIESSEN</button><button id="reroll">↻ Neue Kämpfer auswürfeln</button></div>`;
  el.querySelector('#again').onclick=()=>{if(R().dead){const nx=recruits.find(x=>!x.dead);if(nx)selR=nx.id;}render();start();};el.querySelector('#reroll').onclick=()=>{newRoster();el.hidden=true;};
  render();el.scrollIntoView({behavior:'smooth',block:'start'});}
-function wpnLabel(){const g=A(),b=$('wpn');if(b)b.textContent=isXB(g)?'🎯 ARMBRUST – tippen für Bogen':'🏹 BOGEN – tippen für Armbrust';}
+function wpnLabel(){const g=A(),b=$('wpn');if(b&&parentGame()){b.hidden=true;return;}if(b)b.textContent=isXB(g)?'🎯 ARMBRUST – tippen für Bogen':'🏹 BOGEN – tippen für Armbrust';}
 $('wpn').onclick=()=>{const g=A();if(!g)return;const xb=!isXB(g),it=M.makeItem('weapon',xb?'crossbow':'bow',(g.enemyGear.weapon&&g.enemyGear.weapon.q)||1);g.enemyGear.weapon=it;if(xb)g.mastery.crossbow=Math.max(g.mastery.crossbow||0,g.mastery.bow||0);render();wpnLabel();};
 $('go').onclick=()=>{$('res').hidden=true;start();};
 $('bSpeed').onclick=()=>{speed=speed===1?2:1;$('bSpeed').textContent='⏩ '+speed+'×';};
