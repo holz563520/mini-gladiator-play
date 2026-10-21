@@ -76,7 +76,7 @@ const shapes={
  head:(x,y)=>inHead(x,y)||(x>=65&&x<=95&&y>=58&&y<=86),
  bust:(x,y)=>inHead(x,y)||(x>=64&&x<=96&&y>=56&&y<=86)||(y>=78&&x>=lerp(34,6,(y-78)/26)&&x<=lerp(126,154,(y-78)/26))};
 function cutFace(key,o,t,shape){const B=faceBuf(key),z=1/(1.12*(1+.07*ease(t/5)));B.qa.setTransform(1,0,0,1,0,0);
- try{M.faceShot.paint(B.qa,FW,FH,{team:2,lines:0,yaw:0,...o,zoom:z,shake:0},t);}catch(e){B.qa.fillStyle='#000';B.qa.fillRect(0,0,FW,FH);}
+ try{M.faceShot.paint(B.qa,FW,FH,{team:2,lines:0,yaw:0,...o,clear:true,zoom:z,shake:0},t);}catch(e){B.qa.fillStyle='#000';B.qa.fillRect(0,0,FW,FH);}
  const d=B.qa.getImageData(0,0,FW,FH),p=d.data,fn=shapes[shape||'bust'];for(let y=0;y<FH;y++)for(let x=0;x<FW;x++)if(!fn(x,y))p[(y*FW+x)*4+3]=0;
  B.qz.clearRect(0,0,FW,FH);B.qz.putImageData(d,0,0);return B.z;}
 
@@ -210,7 +210,9 @@ function chiselWound(q,cx,cy,T){const pix=(x,y,c)=>{q.fillStyle=c;q.fillRect(Mat
  if(k>.2){pix(cx-5,cy-1,'#3c1520');pix(cx-6,cy-2,'#3c1520');pix(cx+5,cy,'#3c1520');pix(cx+6,cy+1,'#3c1520');pix(cx+1,cy-5,'#3c1520');pix(cx,cy+5,'#3c1520');}
  for(let i=0;i<3;i++){const sxs=[-1,1,3][i],len=Math.min(20,Math.max(0,T-.05)*(11+i*4)+(T>=9?4:0));if(len>0){for(let y=0;y<len;y++)pix(cx+sxs,cy+4+y,y%4===3?'#c9453a':'#a8372f');pix(cx+sxs,cy+4+len,'#7b2f2a');}}
  pix(cx-2,cy-3+pul,'#c9453a');pix(cx+3,cy+3-pul,'#c9453a');}
-function patientBuf(g,t,o0={}){const o={...o0,g};const cross=o.cross??!!g.dokCross,tilt=o.tilt??(cross&&o.crossX!==false?Math.sin(t*1.9)*.1:0),base=cutFace('pat:'+g.id,{g,mood:o.mood||(cross?'dumb':'nervous'),crossEyes:cross,hurt:o.hurt||0,blood:o.blood||0,tilt,yaw:o.yaw??Math.sin(t*.7)*.15},t,'bust');
+// Auf dem Behandlungstisch immer ohne Helm und ohne Rüstung (Kopf in voller Größe, Meißel trifft die richtige Stelle)
+const bare=g=>({...g,enemyGear:{weapon:null,secondary:null,shield:null,armor:{}}});
+function patientBuf(g,t,o0={}){const o={...o0,g};const cross=o.cross??!!g.dokCross,tilt=o.tilt??(cross&&o.crossX!==false?Math.sin(t*1.9)*.1:0),base=cutFace('pat:'+g.id,{g:bare(g),mood:o.mood||(cross?'dumb':'nervous'),crossEyes:cross,hurt:o.hurt||0,blood:o.blood||0,tilt,yaw:o.yaw??Math.sin(t*.7)*.15},t,'bust');
  const c=faceBuf('patOut'),q=c.qz;q.clearRect(0,0,FW,FH);q.drawImage(base,0,0);if(o.crossX??cross)blankEyes(q);const {R,E,L}=tl(q);const sx=Math.round((o.yaw??Math.sin(t*.7)*.15)*6);{const dx=sx,dy=-63,cs=Math.cos(tilt||0),sn=Math.sin(tilt||0);patientBuf.anchor={x:80+dx*cs-dy*sn,y:70+dx*sn+dy*cs};}q.save();if(tilt){q.translate(80,70);q.rotate(tilt);q.translate(-80,-70);}
  const X=o.crossX??cross;if(X){const sp=o.spin||0;for(const [cx,cy,ew,eh,i] of [[66,35,12,9,0],[93,33,14,11,1]]){R(cx-ew/2-1,cy-eh/2-1,ew+2,eh+2,'#3a2418');R(cx-ew/2,cy-eh/2,ew,eh,'#f6f1df');R(cx-ew/2,cy+eh/2-1,ew,1,'#d8ccb0');for(let k=0;k<3;k++)R(cx-ew/2+1+k*3,cy-eh/2+1+(k%2),1,2,'#d88a8a');
   let px,py;if(sp){const a=t*17*(i?-1:1);px=cx-1.5+Math.cos(a)*(ew/2-2.5);py=cy-1.5+Math.sin(a)*(eh/2-2.5);}else{const w=Math.round(Math.sin(t*2.3));px=i?cx-ew/2+.5:cx+ew/2-3.5;py=i?cy-eh/2+.5+(w>0?1:0):cy+eh/2-3.5;}R(px,py,3,3,'#160d0a');R(px+1,py,1,1,'#ffffff');}

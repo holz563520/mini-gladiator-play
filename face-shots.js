@@ -234,12 +234,12 @@ function head(q,T,C,o,yaw,t,mood){
 const bufs=new WeakMap();
 // o: {g, team, mood, yaw?, sink?, tilt?, dark?, pale?, blood?, zoom?}; t: Sekunden seit Beginn der Einstellung
 function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createElement('canvas'),b:document.createElement('canvas'),c:document.createElement('canvas'),d:document.createElement('canvas')};B.a.width=B.b.width=B.c.width=B.d.width=FW;B.a.height=B.b.height=B.c.height=B.d.height=FH+40;bufs.set(g.canvas,B);}
- const colors=x=>{const A=x?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';return {identity:x?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};},gearOf=x=>{const r={};try{for(const it of M.armorItems(x)||[])r[it.def]=it;}catch{}return r;},C=colors(o.g),armor=gearOf(o.g);if(o.noHelm)delete armor.helm;/* Behandlungstisch beim Medicus: Patienten immer ohne Helm, sonst passen Kopfform und Animationen nicht */
+ const colors=x=>{const A=x?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';return {identity:x?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};},gearOf=x=>{const r={};try{for(const it of M.armorItems(x)||[])r[it.def]=it;}catch{}return r;},C=colors(o.g),armor=gearOf(o.g);
  const opt={...o,armor,scar:o.scar??((o.g?.scars||[]).length>0||(o.g?.kills||0)>=5)},mood=o.mood||'calm',m=MOODS[mood]||MOODS.calm;
  // Kamerafahrt um den Kopf: langsamer Schwenk von einer Seite zur anderen
  const yaw=o.yaw??Math.sin(t*.55+(o.team===1?Math.PI:0))*.75;
  const bq=B.a.getContext('2d');bq.imageSmoothingEnabled=false;bq.setTransform(1,0,0,1,0,0);bq.clearRect(0,0,FW,FH+40);const BT=tools(bq);
- if(o.ground)sand(bq,BT,opt,t);else backdrop(bq,BT,opt,yaw,t);
+ if(o.ground)sand(bq,BT,opt,t);else if(!o.clear)backdrop(bq,BT,opt,yaw,t);
  // Figur auf eigener Fläche, damit sie am Boden als Ganzes liegen kann
  const q=B.c.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,FW,FH+40);const T=tools(q);torso(q,T,C,opt,yaw);
  const hq=B.b.getContext('2d');hq.imageSmoothingEnabled=false;hq.setTransform(1,0,0,1,0,0);hq.clearRect(0,0,FW,FH+40);if(armor.helm){hq.translate(80,43);hq.scale(.78,.78);hq.translate(-80,0);}else hq.translate(0,20);head(hq,tools(hq),C,opt,yaw,t,mood);hq.setTransform(1,0,0,1,0,0);
@@ -260,11 +260,11 @@ function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createEl
  bq.save();if(o.ground){/* Schatten, dann die liegende Figur von schräg oben */bq.globalAlpha=.3;bq.fillStyle='#2a1a0c';bq.beginPath();bq.ellipse(84,62,58,40,-.5,0,Math.PI*2);bq.fill();bq.globalAlpha=1;bq.translate(80,56);bq.rotate(o.lie??-.62);bq.scale(.86,.86);bq.translate(-80,-50);}bq.drawImage(B.c,0,0);bq.restore();
  if(o.dark>0){bq.globalAlpha=cl(o.dark);bq.fillStyle='#050302';bq.fillRect(0,0,FW,FH+40);bq.globalAlpha=1;}
  // Ausgabe: füllt die Fläche, langsamer Zug ins Bild
- const z=(o.zoom||1)*1.12*(1+.07*ease(t/5)),s=Math.max(w/FW,h/FH)*z,dw=Math.round(FW*s),dh=Math.round(FH*s);g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#120c09';g.fillRect(0,0,w,h);
+ const z=(o.zoom||1)*1.12*(1+.07*ease(t/5)),s=Math.max(w/FW,h/FH)*z,dw=Math.round(FW*s),dh=Math.round(FH*s);g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;/* clear: ohne Hintergrund, z. B. zum Freistellen */if(o.clear)g.clearRect(0,0,w,h);else{g.fillStyle='#120c09';g.fillRect(0,0,w,h);}
  if(o.cheer){/* Blütenblätter und Tücher aus den Rängen */for(let i=0;i<34;i++){const n=Math.sin(i*91.7)*43758.5,v=n-Math.floor(n),k=((t*(.18+v*.22)+v*7)%1),x=(v*1.9*FW+Math.sin(t*1.3+i)*9)%FW,y=k*(FH+10)-6;BT.r(x,y,2+(i%3===0?1:0),2,['#d6453a','#f0c94a','#f4ead0','#c8372f'][i%4]);}}
  const sh=o.shake||0,ox=sh?Math.round((Math.random()-.5)*sh*s):0,oy=sh?Math.round((Math.random()-.5)*sh*s*.7):0;g.drawImage(B.a,0,0,FW,FH,Math.round(w/2-dw/2)+ox,Math.round(Math.min(0,(h-dh)*.42))+oy,dw,dh);
  if(o.lines>0){/* Schrei: Linien vom Rand zur Mitte */g.save();g.globalAlpha=cl(o.lines)*.75;g.strokeStyle='#fff6dc';g.lineWidth=Math.max(2,w/160);for(let i=0;i<18;i++){const a=i/18*Math.PI*2+Math.floor(t*14)*.37,r0=Math.max(w,h)*.74,r1=Math.max(w,h)*(.4+((i*7)%5)*.035);g.beginPath();g.moveTo(w/2+Math.cos(a)*r0,h*.45+Math.sin(a)*r0);g.lineTo(w/2+Math.cos(a)*r1,h*.45+Math.sin(a)*r1);g.stroke();}g.restore();}
- const vg=g.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.62)');g.fillStyle=vg;g.fillRect(0,0,w,h);}
+ if(o.clear)return;const vg=g.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.62)');g.fillStyle=vg;g.fillRect(0,0,w,h);}
 M.faceShot={paint,moods:Object.keys(MOODS),FW,FH,version:'helmet-lab-v4'};
 M.faceShot.paintHead=(q,actor,o={},t=0)=>{const A=actor?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';const C={identity:actor?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};head(q,tools(q),C,{...o,g:actor,armor:o.armor||{}},o.yaw||0,t,o.mood||'calm');};
 })();
