@@ -57,6 +57,14 @@ ul.skills{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55}ul.sk
 .spy-cap{position:absolute;left:calc(min(34%,250px) + 26px);right:10px;bottom:10px;background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45);padding:6px 12px 8px;font-family:'Courier Prime',monospace;min-height:58px}
 .spy-cap b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5a3a0c}.spy-cap span{display:block;font-size:clamp(12px,1.9vw,17px);font-weight:700;line-height:1.25}
 #spySkip{position:absolute;right:10px;top:10px}
+/* Nach dem Kampf: Nahaufnahme (Gesichter wie beim Urteil in der Arena, ohne Gnadenskala) */
+#after{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(94%,520px);z-index:6;background:#101a1d;border:4px solid #17201c;box-shadow:6px 6px 0 rgba(0,0,0,.55);pointer-events:auto}
+#after canvas{display:block;width:100%;height:auto;aspect-ratio:480/250;image-rendering:pixelated}
+#after .af-top{display:flex;justify-content:space-between;align-items:center;padding:4px 10px;background:#2a1410;color:#f4d37a;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+#after .af-top i{color:#c8c6a7;font-style:normal}
+#after blockquote{margin:0;padding:8px 12px 10px;background:#efe0b3;color:#17201c;font-family:'Courier Prime',monospace;font-weight:700;font-size:clamp(13px,2vw,17px);line-height:1.25;border-top:3px solid #17201c}
+#after blockquote b{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8a2a22}
+#afterSkip{position:absolute;right:6px;top:30px;min-height:30px;padding:2px 8px;font-size:11px}
 /* Nahaufnahme: Griff von hinten, Ellbogen */
 #cine{position:absolute;inset:0;z-index:4;pointer-events:none}
 #cine:before,#cine:after{content:'';position:absolute;left:0;right:0;height:11%;background:#000;transition:transform .25s}
@@ -117,6 +125,7 @@ ul.skills{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55}ul.sk
   <div class="m-log" id="mlogBox" hidden><div id="mlog"></div></div>
   <div class="m-auto" id="mauto" hidden><b id="mautoText"></b><div><button class="btn primary" id="btnNext">Weiter ▶</button><button class="btn" id="btnHome">Abziehen</button></div></div>
   <div class="m-ctrl"><span id="mstate"></span><button class="btn" id="btnFlee">Fliehen</button><button class="btn" id="btnSpd">1×</button><button class="btn" id="btnLog">Bericht</button></div>
+  <div id="after" hidden><div class="af-top"><span id="afLabel"></span><i id="afCount"></i></div><canvas id="afCv" width="480" height="250"></canvas><button class="btn" id="afterSkip">Weiter ▶</button><blockquote><b id="afWho"></b><span id="afSay"></span></blockquote></div>
   <div id="cine" hidden><canvas id="closeCv" width="320" height="200"></canvas><div class="close-cap"><b id="closeTitle"></b><span id="closeText"></span></div></div>
   <div id="spy" hidden><canvas id="spyMask"></canvas><canvas id="spyFace" width="160" height="104"></canvas><div class="spy-cap"><b id="spyName"></b><span id="spyText"></span></div><button class="btn" id="spySkip">Überspringen ▶▶</button></div>
  </div>
@@ -178,6 +187,7 @@ const leaderA=b=>b?.lead?b.actors.find(a=>a.id===b.lead.leaderId):null;
 function lname(a){return '★ '+first(a.g)+' · Anführer';}
 function leadSay(b,text,o={}){const a=leaderA(b);if(!a)return;bubble(a,text,{lead:true,name:lname(a),...o});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(text)}“`);}
 M.battleCamera=(b,width,height,W,H)=>{if(!b?.mission)return null;if(performance.now()-(R.szT||0)>500){R.szT=performance.now();sizeField();}const fit=Math.min(width/W,height/H),k=height/VH,view=width/k;
+ if(CLOSE.on&&CLOSE.group){const l=CLOSE.group.filter(a=>!a.g.dead),lead=l[0]||CLOSE.group[0],tg=b.actors.find(x=>x.id===lead.target),cx=lead.x+(tg?Math.max(-80,Math.min(80,(tg.x-lead.x)*.35)):40),cy=lead.y-40+(tg?(tg.y-lead.y)*.25:0),Z=1.7,vw=width/(k*Z),vh=VH/Z;return {zoom:k/fit*Z,x:clamp(cx,vw/2,W-vw/2),y:clamp(cy,vh/2,H-vh/2)};}
  if(CLOSE.on&&CLOSE.v){const v=CLOSE.v,a=CLOSE.a,cx=(v.x+(a?a.x:v.x))/2,cy=(v.y+(a?a.y:v.y))/2-44,Z=2.3,vw=width/(k*Z),vh=VH/Z;return {zoom:k/fit*Z,x:clamp(cx,vw/2,W-vw/2),y:clamp(cy,vh/2,H-vh/2)};}
  if(SPY.on){const z=k/fit*SPY.zoom,vw=width/(k*SPY.zoom),vh=VH/SPY.zoom;return {zoom:z,x:clamp(SPY.fx,vw/2,W-vw/2),y:clamp(SPY.fy+vh*.06,vh/2,H-vh/2)};}
  const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
@@ -208,13 +218,18 @@ function hookDraw(){if(M.drawSprite?.__lead)return;M.drawSprite=(ctx,o)=>{if(o.l
 // Bei der Warnung des Anführers: Zeitlupe, Kamera ganz nah an beide, Kinobalken. Rechts ein Comic-Bild in Nahaufnahme:
 // erst der Angreifer mit der Klinge am Hals, dann der Ellbogen ins Gesicht („KRACK!“), Zähne und Blut fliegen.
 const CLOSE={on:false,v:null,a:null,t0:0,hit:0,speed:1,timer:0,fa:null,fv:null};
-function closeStart(v,a){if(CLOSE.on)return;Object.assign(CLOSE,{on:true,v,a,t0:performance.now(),hit:0,speed:S.options.speed||1});S.options.speed=.28;$('cine').hidden=false;
+function closeStart(v,a){if(CLOSE.on)return;Object.assign(CLOSE,{on:true,group:null,v,a,t0:performance.now(),hit:0,speed:S.options.speed||1});S.options.speed=.28;$('cine').hidden=false;
  $('closeTitle').textContent='GRIFF VON HINTEN!';$('closeText').textContent=`${first(a.g)} packt ${first(v.g)} von hinten …`;
  CLOSE.fa=document.createElement('canvas');CLOSE.fa.width=160;CLOSE.fa.height=104;CLOSE.fv=document.createElement('canvas');CLOSE.fv.width=160;CLOSE.fv.height=104;
  clearTimeout(CLOSE.timer);CLOSE.timer=setTimeout(closeEnd,4200);requestAnimationFrame(closeFrame);}
 function closeHit(v,a){if(!CLOSE.on||CLOSE.v!==v)closeStart(v,a);CLOSE.hit=performance.now();$('closeTitle').textContent='ELLBOGEN! KRACK!';$('closeText').textContent=`${first(v.g)} schlägt ${first(a.g)} den Ellbogen ins Gesicht.`;
  clearTimeout(CLOSE.timer);CLOSE.timer=setTimeout(closeEnd,1900);}
-function closeEnd(){if(!CLOSE.on)return;CLOSE.on=false;S.options.speed=CLOSE.speed;$('cine').hidden=true;R.cam.snap=false;}
+// Ansturm der Assassinen aus der Deckung: Zeitlupe, Kamera folgt ihnen, Kinobalken, Kriegsschrei
+function chargeCine(list){if(CLOSE.on||!list?.length)return;Object.assign(CLOSE,{on:true,v:null,a:null,group:list,hit:0,speed:S.options.speed||1});S.options.speed=.35;$('cine').hidden=false;$('closeCv').hidden=true;
+ $('closeTitle').textContent='AUS DEM HINTERHALT!';$('closeText').textContent=list.map(a=>first(a.g)).join(' und ')+' brechen aus der Deckung.';
+ for(const a of list)bubble(a,pick(['FÜR DEN LUDUS!','ÜBERRASCHUNG, IHR SÄUE!','HALLO, HINTERN!','JETZT SEID IHR DRAN!','AAAAAH!']),{name:first(a.g),loud:true,ms:2200});
+ clearTimeout(CLOSE.timer);CLOSE.timer=setTimeout(closeEnd,1900);}
+function closeEnd(){if(!CLOSE.on)return;CLOSE.on=false;CLOSE.group=null;$('closeCv').hidden=false;S.options.speed=CLOSE.speed;$('cine').hidden=true;R.cam.snap=false;}
 function face(cv,g,mood,yaw,t){const c=cv.getContext('2d');c.imageSmoothingEnabled=false;try{M.faceShot.paint(c,cv.width,cv.height,{g,team:g.enemy?1:0,mood,yaw,zoom:1.1,lines:0,clear:true},t);}catch(e){}return cv;}
 function closeFrame(now){if(!CLOSE.on)return;const cv=$('closeCv'),g=cv.getContext('2d'),W=cv.width,H=cv.height,v=CLOSE.v,a=CLOSE.a,hit=CLOSE.hit?Math.min(1,(now-CLOSE.hit)/700):0,pre=!CLOSE.hit;g.imageSmoothingEnabled=false;
  const shake=CLOSE.hit&&now-CLOSE.hit<260?(Math.random()-.5)*10:0;g.save();g.translate(shake,shake*.6);
@@ -242,6 +257,37 @@ function closeFrame(now){if(!CLOSE.on)return;const cv=$('closeCv'),g=cv.getConte
   g.fillStyle='#8a1f14';g.font='bold 22px "Courier Prime",monospace';g.textAlign='center';g.fillText('KRACK!',ex+10,ey);
   for(let i=0;i<6;i++){const t=(now-CLOSE.hit)/600,px=ex+20+i*9+t*60*(1+i*.2),py=ey-10+i*5+t*t*120-t*40;g.fillStyle=i%3?'#a12a22':'#f2efe0';g.fillRect(px,py,i%3?4:5,i%3?4:5);}}
  g.restore();requestAnimationFrame(closeFrame);}
+// ---------- Nach dem Kampf: Überlebende flehen um Gnade (es gibt keine), Gefallene werden geplündert ----------
+// Gesichter wie bei der Urteilsszene der Arena (M.faceShot: flehen, Grinsen, Gnadenstoß mit Blut), aber ohne Gnadenskala.
+const PLEAS=[['Gnade! Ich hab drei Kinder!','Dann haben drei Kinder ab heute frei.'],['Bitte! Ich putz euch auch die Latrinen!','Im Hades gibt es auch Latrinen. Viel Spaß.'],['Ich war nur der Koch! Ehrlich!','Dann weißt du ja, wie man Fleisch zerlegt. Halt still.'],
+ ['Meine Mutter wartet auf mich!','Lange wartet sie nicht mehr. Ich schick ihr deine Ohren.'],['Nimm mein Gold! Meine Frau! Meinen Esel!','Den Esel nehm ich. Der Rest geht mit dir.'],['Ich hab mir in die Hose gemacht! Reicht das nicht?','Riecht nach Reue. Hilft trotzdem nicht.'],
+ ['Ich schwöre, ich werde ein besserer Mensch!','Wirst du. Ein stiller.'],['Bitte … nicht ins Gesicht …','Keine Sorge. Ich nehm den Hals.'],['Ich ergebe mich! Ich ergebe mich!','Angenommen. Und abgelehnt.'],['Wir können doch reden!','Reden ist Silber. Stechen ist Gold.'],
+ ['Ich bin noch so jung!','Und du bleibst es. Für immer.'],['Lass mich leben, ich verrat dir, wo das Gold ist!','Steht schon auf deinem Gürtel. Danke.']];
+const LOOT=['Drei Kupferstücke und ein Zahn. Der Zahn war seiner.','Ein Liebesbrief: „Komm heil zurück.“ Tja. Zurück kommt er. In Teilen.','Die Stiefel stinken nach Tod. Passen aber.','Ein Glücksbringer. Offensichtlich eine Fälschung.','Ein halbes Brot. Die andere Hälfte hat er noch im Hals.',
+ 'Gezinkte Würfel. Das Glück hat er trotzdem verloren.','Nichts. Nicht mal Würde. Die hat er beim Betteln liegen lassen.','Ein Ring. Der Finger kommt mit, der Ring geht nicht ab.','Eine Locke. Von seiner Frau oder seinem Hund. Egal, die kriegt jetzt der Ofen.','Ein Schuldschein. Er schuldet jetzt niemandem mehr was. Wir auch nicht.'];
+const AF={on:false,o:null,t0:0,skip:false};
+function afShow(label,count,who,text){$('after').hidden=false;$('afLabel').textContent=label;$('afCount').textContent=count||'';$('afWho').textContent=who;$('afSay').textContent=text;}
+function afFrame(now){if(!AF.on)return;const cv=$('afCv'),g=cv.getContext('2d'),t=(now-AF.t0)/1000;g.imageSmoothingEnabled=false;const o=typeof AF.o==='function'?AF.o(t):AF.o;try{M.faceShot.paint(g,cv.width,cv.height,o,t+3);}catch(e){}
+ if(AF.flash&&t>=AF.flash&&t<AF.flash+.12){g.globalAlpha=.8*(1-(t-AF.flash)/.12);g.fillStyle='#fff6dc';g.fillRect(0,0,cv.width,cv.height);g.globalAlpha=1;}requestAnimationFrame(afFrame);}
+function afPaint(o,flash=0){AF.o=o;AF.t0=performance.now();AF.flash=flash;if(!AF.on){AF.on=true;requestAnimationFrame(afFrame);}}
+function afHide(){AF.on=false;$('after').hidden=true;}
+const afWait=ms=>new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());AF.skip=false;const chk=()=>{if(AF.skip||performance.now()-t0>=lim)return res();setTimeout(chk,50);};chk();});
+function nearestParty(b,e){return partyActors(b).reduce((m,a)=>!m||Math.hypot(a.x-e.x,a.y-e.y)<Math.hypot(m.x-e.x,m.y-e.y)?a:m,null);}
+function walkTo(b,a,x,y,sp=95){routeTo(b,a,x,y,sp);return walkSome(b,[a],7000);}
+async function aftermath(b){const alive=b.encEnemies.filter(e=>!e.g.dead&&(e.down||e.surrendered)),cl=v=>Math.max(0,Math.min(1,v));let n=0;
+ for(const e of alive){if(!live(b))break;const k=nearestParty(b,e);if(!k)break;n++;const side=k.x<e.x?-1:1,[plea,reply]=pick(PLEAS),hurt=cl(1.15-M.health(e.g)/100);
+  setState('Nach dem Kampf …');bubble(e,plea,{name:first(e.g)});await walkTo(b,k,e.x+side*28,e.y+4);if(!live(b))break;k.a=side<0?0:Math.PI;
+  afShow('Fleht um Gnade',`${n} / ${alive.length}`,e.g.name,'„'+plea+'“');afPaint({g:e.g,team:1,hurt,zoom:.92,ground:true,mood:'plead',yaw:-.35});mlog(`<b class="foe">${esc(e.g.name)}</b> fleht: „${esc(plea)}“`);await afWait(2600);if(!live(b))break;
+  afShow('Keine Gnade',`${n} / ${alive.length}`,k.g.name,'„'+reply+'“');afPaint({g:k.g,team:0,zoom:.95,mood:'grin',yaw:.35});bubble(k,reply,{name:first(k.g),ms:2400});mlog(`<b>${esc(k.g.name)}:</b> „${esc(reply)}“`);await afWait(2400);if(!live(b))break;
+  afShow('Gnadenstoß',`${n} / ${alive.length}`,e.g.name,first(k.g)+' stößt zu.');
+  afPaint(t=>{const q=t-1;return {g:e.g,team:1,hurt,zoom:.92,ground:true,mood:q<0?'terror':q<.5?'shock':q<.9?'pain':'out',pale:cl(q/1.5),blood:cl((q-.3)/1.2),tilt:q>.9?Math.min(.3,(q-.9)*.3):0,sink:q>.9?Math.min(16,(q-.9)*14):0,fx:{stab:t-.8},pool:cl(q/2),dark:cl((q-1.4)/1.2)*.6,yaw:-.35+.4*cl(t/3)};},1);
+  setTimeout(()=>{if(!e.g.dead){try{M.death(e,'Gnadenstoß',k);}catch(err){e.g.dead=true;e.down=true;e.state='dead';}M.sound?.('stick');}},Math.max(600,1000/spd()));
+  await afWait(2700);mlog(`<b>${esc(k.g.name)}</b> gibt <b class="foe">${esc(e.g.name)}</b> den Gnadenstoß.`);}
+ const bodies=b.encEnemies.filter(e=>e.g.dead).slice(0,3);let i=0;
+ for(const e of bodies){if(!live(b))break;const k=nearestParty(b,e);if(!k)break;i++;await walkTo(b,k,e.x+(k.x<e.x?-24:24),e.y+6);if(!live(b))break;k.a=k.x<e.x?0:Math.PI;
+  const w=e.g.enemyGear?.weapon,line=pick(LOOT);afShow('Wird geplündert',`${i} / ${bodies.length}`,k.g.name+' durchsucht '+first(e.g),'„'+line+'“'+(w?' · Dazu: '+M.itemName(w)+'.':''));
+  afPaint({g:k.g,team:0,zoom:.95,mood:pick(['grin','confident','dumb']),yaw:.3});bubble(k,line,{name:first(k.g),ms:2600});mlog(`<b>${esc(k.g.name)}</b> durchsucht ${esc(e.g.name)}: „${esc(line)}“`);await afWait(2600);}
+ afHide();}
 const SPY={on:false,focus:null,fx:0,fy:0};
 // Fernrohr: Die Kamera zoomt wirklich auf den Gegner (M.battleCamera), darüber eine schwarze Maske mit einem runden Ausschnitt.
 // Unten links die Nahansicht des Anführers, der das Fernrohr ans Auge hält.
@@ -266,14 +312,22 @@ async function spyShow(b,lines){const me=leaderA(b);if(!me)return;SPY.on=true;SP
 function waitSkip(ms){return new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());const chk=()=>{if(SPY.skip||performance.now()-t0>=lim)return res();setTimeout(chk,50);};chk();});}
 
 // ---------- Ablauf ----------
-function walker(a,dt){if(!a.to)return;const [tx,ty,sp]=a.to,dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy),s=(sp||60)*dt;
- if(d<=s){a.x=tx;a.y=ty;if(a.path?.length){a.to=a.path.shift();return;}a.to=null;a.state='idle';a.moveSpeed=0;if(a.face!==undefined)a.a=a.face;return;}
- a.x+=dx/d*s;a.y+=dy/d*s;a.state='move';a.moveSpeed=10;a.odo=(a.odo||0)+s;a.phase=a.odo*.267;if(Math.abs(dx)>.5)a.a=dx>0?0:Math.PI;}
+// Gehen/Laufen wie in der Engine: Schrittlänge, Takt und Armschwung folgen dem echten Tempo (M.updateLocomotion),
+// jeder hat sein eigenes Tempo und wiegt sich ein wenig; am Ziel bremst man ab statt abrupt stehen zu bleiben.
+function walker(a,dt){if(!a.to){if(a.state==='move'){a.state='idle';a.moveSpeed=0;a.gaitSpeed=0;}return;}const [tx,ty,sp]=a.to,dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
+ a.walkK??=.9+Math.random()*.2;a.walkPh??=Math.random()*6.3;const last=!a.path?.length,brake=last?clamp(d/45,.35,1):1,s=(sp||60)*a.walkK*brake*(1+.05*Math.sin(performance.now()/900+a.walkPh))*dt;
+ const ox=a.x,oy=a.y;if(d<=s){a.x=tx;a.y=ty;}else{a.x+=dx/d*s;a.y+=dy/d*s;}if(Math.abs(dx)>.5)a.a=dx>0?0:Math.PI;
+ a.state='move';M.updateLocomotion?M.updateLocomotion(a,ox,oy,a.phase||0,dt):(a.moveSpeed=s/dt);
+ if(d<=s){if(a.path?.length){a.to=a.path.shift();return;}a.to=null;a.state='idle';a.moveSpeed=0;a.gaitSpeed=0;if(a.face!==undefined)a.a=a.face;}}
+// Waffen einstecken (Marsch) und ziehen (Gegner gesehen)
+function stow(b,on){for(const a of b.actors)if(a.team===0)a.stowed=on;}
+function drawWeapons(b,who){stow(b,false);const a=who||leaderA(b)||partyActors(b)[0];if(a)bubble(a,pick(['Waffen raus! Leise!','Klingen raus. Bögen runter vom Rücken.','Zieht blank. Und keiner hustet.']),{lead:!!b.lead,name:b.lead?lname(a):first(a.g),ms:1800});for(const x of partyActors(b)){x.drawFlash=.5;}}
 function routeTo(b,a,tx,ty,sp){const path=D.findPath(b,a.x,a.y,tx,ty);const pts=(path&&path.length?path:[{x:tx,y:ty}]).map(p=>[p.x,p.y,sp]);a.to=pts.shift();a.path=pts;}
 function freeSpot(b,x,y){for(let k=0;k<18;k++){const yy=y+(k%2?1:-1)*Math.ceil(k/2)*16;if(D.navFreeAt(b,x,yy))return yy;}return y;}
 const live=b=>!R.ended&&!R.fleeing&&S.battle===b;
+function walkSome(b,list,limit=9000){const t0=performance.now();return new Promise(res=>{const chk=()=>{if(!live(b))return res(false);if(list.every(a=>!a.to||a.down||a.g.dead)||performance.now()-t0>limit/Math.min(2,spd())){for(const a of list){a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}return res(true);}setTimeout(chk,80);};chk();});}
 function walkAll(b,limit=9000){const t0=performance.now();return new Promise(res=>{const chk=()=>{if(!live(b))return res(false);if(partyActors(b).every(a=>!a.to)||performance.now()-t0>limit/Math.min(2,spd())){for(const a of partyActors(b)){a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}return res(true);}setTimeout(chk,80);};chk();});}
-function marchTo(b,x,sp=60){partyActors(b).forEach((a,k)=>{const col=k%3,line=Math.floor(k/3),tx=x-line*58-(col===1?0:26)+(Math.random()-.5)*30,y=freeSpot(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*56,b.L.mT+30,b.L.mB-30));routeTo(b,a,tx,y,sp);a.face=0;});return walkAll(b,60000);}
+function marchTo(b,x,sp=60){if(!b.started)stow(b,true);partyActors(b).forEach((a,k)=>{const col=k%3,line=Math.floor(k/3),tx=x-line*58-(col===1?0:26)+(Math.random()-.5)*30,y=freeSpot(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*56,b.L.mT+30,b.L.mB-30));routeTo(b,a,tx,y,sp);a.face=0;});return walkAll(b,60000);}
 function setState(t){$('mstate').textContent=t;}
 function missionLoop(t){const b=S.battle;
  if(T.view==='mission'&&R.m&&b?.mission){const dt=Math.max(0,b.time-R.lastTime);R.lastTime=b.time;D.tick(b,dt);
@@ -292,6 +346,7 @@ function onEvent(b,e){
   if(e.kind==='foeAlert'){bubble(a,e.text,{name:first(a.g)});mlog(`<b class="foe">${esc(a.g.name)}:</b> „${esc(e.text)}“`);return;}
   bubble(a,e.text,{lead:true,name:lname(a),ms:clamp(1400+e.text.length*45,1900,3400),loud:e.urgent});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(e.text)}“`);return;}
  if(e.type==='gripWarn'){closeStart(e.actor,e.foe);return;}
+ if(e.type==='assassinCharge'){chargeCine(e.actors);return;}
  if(e.type==='elbow'){closeHit(e.actor,e.foe);mlog(`<b>${esc(e.actor.g.name)}</b> schlägt <b class="foe">${esc(e.foe.g.name)}</b> den Ellbogen ins Gesicht. Griff abgewehrt.`);return;}
  if(e.type==='spawn'){const g=e.actor.g;if(g.debtBoss)return;bubble(e.actor,g.debtShout,{name:first(g)});mlog(`Nachschub: <b class="foe">${esc(g.name)}</b> kommt aus ${esc(e.door||'dem Nichts')}. Waffe: ${esc(M.itemName(g.enemyGear.weapon))}.`);}
  if(e.type==='gaveup'){bubble(e.actor,pick(['Ich hab genug! Ich geh heim!','Mama! MAMA!','Ich ergebe mich ganz doll!']),{name:first(e.actor.g)});}
@@ -314,30 +369,36 @@ async function encounter(b,sti){const m=R.m,st=m.place.stations[sti];m.idx=sti;
  const G=L.layoutGroup(b,m,sti);
  if(!b.lead){// ohne Anführer: gleiche Gegnergruppe, keiner plant
   setState('Die Truppe marschiert …');if(!await marchTo(b,G.hx+120))return;L.beginGroup(b,m,sti,{unaware:false});
-  for(const e of b.encEnemies.slice(0,2))bubble(e,e.g.debtShout||'Da sind sie!',{name:first(e.g)});mlog(`Vor euch: ${b.encEnemies.map(e=>'<b class="foe">'+esc(e.g.name)+'</b>').join(', ')}. Sie sehen euch im selben Moment.`,'narr');
+  for(const e of b.encEnemies.slice(0,2))bubble(e,e.g.debtShout||'Da sind sie!',{name:first(e.g)});stow(b,false);mlog(`Vor euch: ${b.encEnemies.map(e=>'<b class="foe">'+esc(e.g.name)+'</b>').join(', ')}. Sie sehen euch im selben Moment.`,'narr');
   await pause(1200);if(!live(b))return;b.started=true;b.paused=false;setState('Kampf läuft');return;}
  const spotted=L.spotRoll(b,st);
  if(spotted){setState('Die Truppe marschiert …');if(!await marchTo(b,G.hx))return;
   L.beginGroup(b,m,sti);b.paused=true;b.started=false;b.lead.stats.spotted++;b.lead.phase='brief';setState('Einsatzbesprechung …');
   mlog(`<b class="ldr">★ ${esc(leaderA(b).g.name)}</b> entdeckt ${b.encEnemies.length} Gegner, bevor sie euch sehen.`,'narr');
-  const lines=L.briefLines(b);leadSay(b,lines[0].text,{ms:1800});await pause(900);if(!live(b))return;
+  const lines=L.briefLines(b);leadSay(b,lines[0].text,{ms:1800});await pause(1100);if(!live(b))return;drawWeapons(b);await pause(900);if(!live(b))return;
   await spyShow(b,lines.slice(1));if(!live(b))return;
-  const {pts,lines:ord}=L.plan(b);
-  for(const [a,p] of pts){routeTo(b,a,p.x,freeSpot(b,p.x,p.y),p.job==='hide'?70:p.job==='skirmish'?62:55);a.face=p.face;}
-  for(const o of ord){if(!live(b))return;leadSay(b,o.text);await pause(Math.max(1900,900+o.text.length*40));}
-  await walkAll(b,8000);if(!live(b))return;for(const [a,p] of pts){a.x=p.x;a.y=freeSpot(b,p.x,p.y);if(p.job==='hide')a.leadHide.y=a.y;a.a=0;}
+  // Aufstellung gestaffelt: Soldaten bilden die Linie, dann verschwinden die Assassinen in der Deckung, erst danach gehen die Schützen los
+  const {pts,lines:ord}=L.plan(b),by=job=>[...pts].filter(([,p])=>p.job===job),go=(list,sp)=>{for(const [a,p] of list){routeTo(b,a,p.x,freeSpot(b,p.x,p.y),sp);a.face=p.face;}};
+  const say1=async job=>{const o=ord.find(x=>x.job===job);if(o){leadSay(b,o.text);await pause(Math.max(1700,800+o.text.length*36));}};
+  go(by('line'),58);await say1('line');if(!live(b))return;
+  const hid=by('hide');if(hid.length){go(hid,84);await say1('hide');await walkSome(b,hid.map(([a])=>a),9000);if(!live(b))return;for(const [a,p] of hid){a.leadHide.x=a.x;a.leadHide.y=a.y;L.hideOne(b,a);}
+   mlog(`${hid.map(([a])=>'<b>'+esc(first(a.g))+'</b>').join(' und ')} ${hid.length>1?'knien':'kniet'} in Deckung, Zweige vor dem Gesicht.`,'narr');await pause(700);}
+  const ar=by('skirmish');if(ar.length){await say1('skirmish');go(ar,64);}
+  const fin=ord.find(x=>!x.job);if(fin){leadSay(b,fin.text);}
+  await walkAll(b,12000);if(!live(b))return;for(const [a,p] of pts){if(p.job==='hide')continue;a.a=0;}
   L.engage(b);b.started=true;b.paused=false;setState('Kampf läuft · Befehle des Anführers');return;}
  // nicht entdeckt: Gegner sind schon da und sehen euch zuerst
  setState('Die Truppe marschiert …');if(!await marchTo(b,G.hx+60))return;L.beginGroup(b,m,sti,{unaware:false});
  const px=partyActors(b).reduce((s,a)=>s+a.x,0)/Math.max(1,partyActors(b).length);for(const e of b.encEnemies)e.x=Math.max(px+170,e.x-220);
  mlog(`${esc(leaderA(b).g.name)} sieht sie zu spät: ${b.encEnemies.map(e=>'<b class="foe">'+esc(e.g.name)+'</b>').join(', ')} stürmen heran.`,'narr');
- const e0=b.encEnemies[0];if(e0)bubble(e0,pick(['Überraschung!','Jetzt haben wir euch!','DRAUF!']),{name:first(e0.g),loud:true});
+ const e0=b.encEnemies[0];if(e0)bubble(e0,pick(['Überraschung!','Jetzt haben wir euch!','DRAUF!']),{name:first(e0.g),loud:true});stow(b,false);
  b.started=true;b.paused=false;L.surprise(b);setState('Überfall! Kampf läuft');}
 function waitNext(){return new Promise(res=>{R.nextRes=res;});}
 async function encounterEnd(b){const m=R.m;if(R.ended)return;const out=D.endEncounter(m,b);b.done=null;b.paused=true;info();const st=out.station;
  for(const g of out.died)mlog(`<b class="dead">† ${esc(g.name)}</b> ist tot.`,'dead');for(const g of out.downed)mlog(`${esc(g.name)} kann nicht mehr und wird getragen.`);
  if(out.winner!==0){finish(m.state==='fled'?'fled':'lost');return;}
  const ld=b.lead?.stats;
+ await aftermath(b);if(R.ended)return;
  if(st.boss){const me=leaderA(b)||partyActors(b)[0];if(me)bubble(me,pick(['Das war’s. Holt die Truhe.','Anführer erledigt. Der nächste bin hoffentlich nicht ich.','Gut gemacht. Fast niemand ist gestorben.']),{lead:!!b.lead,name:b.lead?lname(me):first(me.g)});mlog(`In der Truhe des Anführers: <b class="gold">${m.goldPrize||0} Gold</b>.`,'narr');auto('won');return;}
  const me=leaderA(b);if(me&&!me.down&&!me.g.dead)leadSay(b,pick(['Sauber. Weiter.','Wunden zählen, Leute. Und Finger.','Wer noch steht, kriegt heute Abend Wein. Wer nicht, kriegt ein Lied.','Gut. Das nächste Mal bitte mit weniger Geschrei.']));
  if(m.state==='lost'){finish('lost');return;}
@@ -362,7 +423,7 @@ function init(){S.options.speed=1;S.options.shake=true;newParty();
  $('heal').onclick=heal;$('go').onclick=startMission;$('spd').onchange=()=>{S.options.speed=+$('spd').value;$('btnSpd').textContent=S.options.speed+'×';};
  $('btnSpd').onclick=()=>{S.options.speed=(S.options.speed||1)%3+1;$('btnSpd').textContent=S.options.speed+'×';$('spd').value=S.options.speed;};
  $('btnNext').onclick=next;$('btnHome').onclick=()=>{clearInterval(R.autoT);$('mauto').hidden=true;finish('fled');};$('btnFlee').onclick=flee;
- $('btnLog').onclick=()=>{const bx=$('mlogBox');bx.hidden=!bx.hidden;if(!bx.hidden)$('mlog').scrollTop=1e9;};$('spySkip').onclick=()=>{SPY.skip=true;};
+ $('btnLog').onclick=()=>{const bx=$('mlogBox');bx.hidden=!bx.hidden;if(!bx.hidden)$('mlog').scrollTop=1e9;};$('spySkip').onclick=()=>{SPY.skip=true;};$('afterSkip').onclick=()=>{AF.skip=true;};
  $('resBack').onclick=()=>{show('setup');renderSetup();};$('resAgain').onclick=()=>{show('setup');renderSetup();startMission();};
  show('setup');renderSetup();$('loading').remove();requestAnimationFrame(missionLoop);window.__leadReady=true;
  if(new URLSearchParams(location.search).has('go'))startMission();}
@@ -375,7 +436,7 @@ try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function
 (async()=>{
  const LIST=['data','household','management','scout','sim','school','world','forge','weapon-art','arena','medicus-art','ludus','face-shots','injury-shots','battle-hud','outside-core','outside-art','outside-leader'];
  const run=(code,name)=>{const s=document.createElement('script');s.textContent=code+'\n//# sourceURL='+name+'.js';document.body.appendChild(s);};
- const v=new URLSearchParams(location.search).get('v')||'b50d8ab3';
+ const v=new URLSearchParams(location.search).get('v')||'82967064';
  for(const n of LIST){if(n==='ludus')window.MG.ui=window.MG.ui||{render(){},getPage(){return 'profiles';},notify(){},close(){},click(){}};
   const r=await fetch(n+'.js?v='+v);if(!r.ok)throw Error(n+'.js nicht gefunden');run(await r.text(),n);}
  run(document.getElementById('lead-ui').textContent,'anfuehrer-test-ui');window.LeadUI.init();
