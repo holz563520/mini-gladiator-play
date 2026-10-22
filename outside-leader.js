@@ -42,7 +42,9 @@ L.CFG={
  hideMax:22,        // Assassinen warten höchstens so lange nach dem Alarm
  sayGap:1.5,        // Mindestabstand zwischen zwei Rufen (Spielsekunden), Warnungen ausgenommen
  orderTime:6,       // so lange gilt ein Zielbefehl
- skirmishRun:1.4    // Fernkämpfer laufen beim Plänkeln so viel schneller als ihr normales Kampftempo
+ skirmishRun:1.4,   // Fernkämpfer laufen beim Plänkeln so viel schneller als ihr normales Kampftempo
+ gripSave:.9,       // so oft warnt der Anführer rechtzeitig vor dem Griff von hinten (der Gewarnte schlägt ihn mit dem Ellbogen weg)
+ gripElbow:.42      // Sekunden nach dem Ansetzen des Griffs kommt der Ellbogen
 };
 
 // ---------- Fähigkeiten ----------
@@ -197,7 +199,28 @@ M.fixedStep=function(dt){const b=S.battle;if(!b?.lead?.on||b.paused||!b.started|
   if(a.team===1)a.a=an;else{const f=nearest(a,foes(b));if(f)a.a=ang(a,f);}}
  for(const a of hid){a.detour=null;a.stuck={x:a.x,y:a.y,t:b.time};a.state='idle';a.moveSpeed=0;a.wind=0;}
  for(const [a,x,y] of ctl)steer(b,a,x,y,dt);
+ gripGuard(b);
  if(!b.done&&!b.paused)think(b,dt);return r;};
+// ---------- Griff von hinten: Warnung und Ellbogen ----------
+// Setzt ein Gegner bei einem von uns den Griff von hinten an, brüllt der Anführer in 90 % der Fälle „Name, pass auf deinen Rücken!“.
+// Der Gewarnte schlägt den Griff mit dem Ellbogen weg: Der Angreifer taumelt mit schmerzendem Gesicht zurück, der Gewarnte dreht sich zu ihm.
+// In den übrigen 10 % (oder ohne kampffähigen Anführer) läuft der Griff wie in der Engine.
+function gripGuard(b){const ld=b.lead;
+ for(const v of party(b)){if(!v.grabbedBy||v.g.dead)continue;const a=b.actors.find(x=>x.id===v.grabbedBy);if(!a?.rearFinish||a.rearFinish.target!==v.id)continue;
+  const f=a.rearFinish;if(f.leadSeen)continue;f.leadSeen=true;const me=leaderActor(b);if(!fit(me))continue;
+  ld.stats.grips=(ld.stats.grips||0)+1;if(Math.random()>L.CFG.gripSave)continue;ld.stats.gripsSaved=(ld.stats.gripsSaved||0)+1;
+  f.left=Math.max(f.left,L.CFG.gripElbow+.25);// der Schnitt kommt sicher erst nach dem Ellbogen
+  const self=me===v;say(b,me,self?pick(['Nicht mit mir, Freundchen!','Hinter mir?! Falsche Idee!']):fill(pick(['{V}, PASS AUF DEINEN RÜCKEN!','{V}! RÜCKEN! Ellbogen!','{V}, hinter dir! Der will an deinen Hals!']),{V:first(v.g)}),'gripWarn',{urgent:true,subject:v.id,foe:a.id});
+  b.events.push({type:'gripWarn',actor:v,foe:a});
+  later(b,L.CFG.gripElbow,()=>elbow(b,v,a));}}
+function elbow(b,v,a){if(v.grabbedBy!==a.id||!a.rearFinish||v.g.dead||a.g.dead)return;
+ delete v.grabbedBy;a.rearFinish=null;const an=ang(v,a);
+ v.state='idle';v.a=an;v.guardTime=.7;v.wind=0;v.cool=Math.max(0,Math.min(v.cool||0,.25));
+ a.state='stagger';a.stagger=.85;a.staggerMax=.85;a.staggerDir=an;a.staggerSeed=Math.random()*6;a.stun=Math.max(a.stun||0,.55);a.wind=0;a.swing=0;a.pendingStrike=null;
+ a.kx=(a.kx||0)+Math.cos(an)*70;a.ky=(a.ky||0)+Math.sin(an)*70;a.cool=Math.max(a.cool||0,1.4);a.rearFinishCD=Math.max(a.rearFinishCD||0,6);
+ const h=a.g.body.head;if(h&&!h.missing){h.hp=Math.max(1,h.hp-4);h.pain=Math.min(100,(h.pain||0)+25);}a.facePain=1.4;a.hit=.23;a.daze=Math.min(1,(a.daze||0)+.25);
+ M.emit?.(a.x,a.y-62,5,'#a14337',55);M.sound?.('hit');M.learn?.(v,'stats','reflex',.02);
+ order(b,v,a,{time:4});b.events.push({type:'elbow',actor:v,foe:a});}
 // ---------- Plänkeln: Fernkämpfer werden geführt ----------
 // fwd: kurz vor der Linie stehen und schießen · back: zurück hinter die Schilde laufen · wait: dort stehen und schießen
 // flank: seitlich an den Nahkampf heranlaufen · shoot: dort stehen und schießen · free: Engine (Gegner zu nah, Nahkampf)
