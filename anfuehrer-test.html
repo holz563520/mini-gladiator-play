@@ -1,0 +1,320 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Anführer · Testmission</title>
+<link rel="stylesheet" href="brand.css">
+<link rel="stylesheet" href="manager.css">
+<link rel="stylesheet" href="battle-hud.css">
+<style>
+/* Testseite „Anführer“ im Stil des Spiels (Farben/Knöpfe aus manager.css, Schrift aus brand.css) */
+[hidden]{display:none!important}
+body{min-height:100vh}
+.wrap{max-width:1180px;margin:auto;padding:14px 16px 48px}
+.tl{font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+h1.title{font-size:clamp(24px,5vw,36px);color:var(--gold);letter-spacing:3px;margin:4px 0;text-transform:uppercase}
+h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:16px;margin:0 0 8px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px;line-height:1.5}
+#loading{padding:60px 0;text-align:center;color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.box{margin-bottom:14px}
+.select{min-height:40px;background:var(--raised);color:var(--cream);border:1px solid var(--line);padding:6px 10px;font-family:inherit}
+.trow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}.trow .btn{flex:0 0 auto}.trow label{display:flex;gap:8px;align-items:center;font-size:13px}
+.picks{display:grid;gap:6px;margin:8px 0}
+.pick{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:var(--raised);border:1px solid var(--line);padding:6px 10px}
+.pick.lead{border-color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+.pick small{display:block;color:var(--muted);font-size:11px}
+.pick .star{min-width:40px;min-height:36px;font-size:18px;background:transparent;border:1px solid var(--line);color:var(--muted);cursor:pointer}
+.pick.lead .star{color:#29271f;background:var(--gold);border-color:var(--gold)}
+.ico{font-size:18px;width:26px;text-align:center}
+.bar{display:inline-block;height:6px;background:var(--gold);vertical-align:middle;margin-left:4px}
+dl.q{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;margin:8px 0}dl.q dt{color:var(--muted)}dl.q dd{margin:0}
+ul.skills{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55}ul.skills li{margin:2px 0}ul.skills b{color:var(--cream)}
+.note{color:var(--muted);font-size:11px;line-height:1.5}
+/* Kampfbild */
+#battleView{position:relative}
+#fieldOver{position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:2}
+#wx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#bubbles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#battleView.fade #arenaCanvas{opacity:.15;transition:opacity .5s}
+.m-top{position:absolute;left:8px;top:8px;right:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;justify-content:space-between}
+.m-title{background:#101a1dd9;border:1px solid var(--line);padding:4px 9px}.m-title b{display:block;color:var(--gold);font-size:14px;letter-spacing:1px;text-transform:uppercase}.m-title small{color:var(--muted);font-size:10px}
+.m-chips{display:flex;gap:4px;flex-wrap:wrap}.m-chips .tag{background:#101a1dd9}.tag.leadtag{color:var(--gold);border-color:var(--gold)}
+.m-log{position:absolute;left:8px;right:8px;bottom:58px;top:46px;max-width:560px;background:#101a1df2;border:1px solid var(--line);overflow:auto;padding:10px 12px;pointer-events:auto;font-size:12px;line-height:1.5}
+.m-log p{margin:3px 0}.narr{color:#c8c6a7;font-style:italic}.foe{color:#f08a80}.boss{color:var(--gold)}.dead{color:var(--red)}.ldr{color:#f4d37a}.gold{color:#f4d37a}
+.m-ctrl{position:absolute;right:8px;bottom:8px;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;pointer-events:auto;align-items:center}
+.m-ctrl .btn{min-height:38px;padding:4px 10px}#mstate{font-size:11px;color:var(--cream);background:#101a1dcc;padding:4px 8px;border:1px solid var(--line)}
+.m-auto{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);background:#101a1df2;border:1px solid var(--gold);padding:8px 12px;pointer-events:auto;text-align:center;font-size:13px}.m-auto .btn{margin:6px 4px 0}
+#battleBottom .fight-log p{margin:0}
+/* Sprechblasen (Spielstil). Anführer: gold, Bestätigungen klein und kurz */
+.bubble{position:absolute;transform:translate(-50%,-100%);max-width:min(250px,44%);background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45);padding:4px 9px 6px;font-family:'Courier Prime',monospace;line-height:1.2;transition:opacity .35s}
+.bubble:after{content:'';position:absolute;left:50%;bottom:-11px;border:8px solid transparent;border-top-color:#17201c;border-bottom:0;transform:translateX(-50%)}
+.bubble b{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}.bubble span{display:block;font-size:clamp(11px,1.5vw,14px);font-weight:700}
+.bubble.foe b{color:#8a2a22;opacity:1}.bubble.loud{background:#f4d37a}.bubble.out{opacity:0}
+.bubble.lead{background:#f4d37a;border-color:#3b2508}.bubble.lead b{opacity:1;color:#5a3a0c}
+.bubble.small{padding:2px 7px 3px;max-width:160px}.bubble.small span{font-size:11px}.bubble.small b{display:none}
+@media(max-width:600px){.bubble{max-width:58%}.bubble span{font-size:11px}.m-title small{display:none}#mstate{display:none}}
+/* Fernglas */
+#spy{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(#0000 30%,#000c 75%);pointer-events:auto}
+#spyCv{width:min(92%,640px);height:auto;aspect-ratio:2/1;image-rendering:pixelated;filter:drop-shadow(0 6px 0 #000a)}
+.spy-cap{width:min(92%,640px);background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45);padding:6px 12px 8px;font-family:'Courier Prime',monospace;min-height:64px}
+.spy-cap b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5a3a0c}.spy-cap span{display:block;font-size:clamp(13px,2vw,17px);font-weight:700;line-height:1.25}
+#spySkip{position:absolute;right:10px;top:10px}
+/* Ergebnis */
+.res-won{color:#f4d37a}.res-lost{color:var(--red)}.res-fled{color:#c8c6a7}
+#resultView h2{font-size:clamp(26px,6vw,42px);margin:6px 0;letter-spacing:2px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.cols{grid-template-columns:1fr}}
+.cols ul{list-style:none;padding:0;margin:0}.cols li{padding:6px 0;border-bottom:1px solid var(--line)}.cols li small{color:var(--muted)}.cols li.dead{color:var(--red)}
+#notice{position:fixed;left:50%;bottom:18px;transform:translate(-50%,20px);background:var(--surface);border:1px solid var(--gold);color:var(--gold);padding:10px 16px;opacity:0;transition:.3s;pointer-events:none;z-index:99;max-width:90vw;font-size:12px}#notice.on{opacity:1;transform:translate(-50%,0)}
+</style></head>
+<body><div class="wrap" id="pageWrap">
+<div class="tl">Arena Theory · Testversion · nichts wird gespeichert</div>
+<h1 class="title">Der Anführer</h1>
+<p class="sub">Testversion für Außenkämpfe: Ab 5 Kämpfern wird ein Anführer gewählt. Er entdeckt Gegner meist zuerst, schaut sie sich mit dem Fernglas an, hält eine kurze Einsatzbesprechung und gibt im Kampf Anweisungen. Kampf mit der echten Spiel-Engine. Die Arena ist noch unverändert.</p>
+<div id="loading">Lade Spielmodule …</div>
+
+<section id="setupView" hidden>
+ <div class="grid">
+  <div>
+   <div class="box"><h2>Truppe</h2>
+    <div class="trow"><label>Größe <select class="select" id="size"><option>4</option><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option></select></label><button class="btn" id="reroll">Neue Truppe würfeln</button><label><input type="checkbox" id="leadOn" checked> Anführer an</label></div>
+    <p class="note">Frische Rekruten, improvisiert ausgerüstet (Soldaten mit Schild, Fernkämpfer, Assassinen). ★ = Anführer (automatisch der Beste, per Klick auf ★ selbst wählen).</p>
+    <div class="picks" id="party"></div></div>
+  </div>
+  <div>
+   <div class="box"><h2>Anführer</h2><div id="leadBox"></div></div>
+   <div class="box"><h2>Aufbruch</h2>
+    <div class="trow"><label>Gegend <select class="select" id="biome"><option value="wald">Wald (Räuberbande)</option><option value="dorf">Dorf (Dorfbande)</option><option value="stadt">Stadt (Straßenbande)</option></select></label><label>Tempo <select class="select" id="spd"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option></select></label></div>
+    <div class="trow"><button class="btn primary" id="go">Aufbrechen ▶</button><button class="btn" id="heal">✚ Truppe heilen</button></div><p class="note" id="goNote"></p></div>
+   <div class="box"><h2>Welche Fähigkeiten wirken</h2>
+    <ul class="skills">
+     <li><b>Anführer – Führungswert:</b> Taktik 45 %, Erfahrung 30 %, Willenskraft 15 %, Moral 10 %. Plus Eigenschaften (Taktiker +12, Diszipliniert/Gelassen +5, Mutig +3; Feige −10, Berserker −8, Egoistisch −6, Blutrünstig −4) und etwas Ruhm/Siege.</li>
+     <li><b>Was der Führungswert bewirkt:</b> wie oft er die Lage prüft, ob er eine Gefahr bemerkt, wie schnell er ruft und wie genau seine Einschätzung in der Besprechung ist.</li>
+     <li><b>Gegner zuerst entdecken:</b> Taktik, Erfahrung und Reflexe des Anführers (Hinterhalte sind schwerer zu sehen).</li>
+     <li><b>Befehle umsetzen (jeder Kämpfer):</b> Teamgeist (Hauptwert), Taktik; bei Warnungen vor Angriffen von hinten zählen die Reflexe stark. Diszipliniert, Teamspieler, Loyal: schneller und gehorsamer. Egoistisch, Berserker: langsamer, hören manchmal nicht. Blutrünstige lassen ungern von Verletzten ab.</li>
+    </ul></div>
+  </div>
+ </div>
+</section>
+
+<section id="resultView" hidden>
+ <div class="tl">Außenmission beendet</div><h2 id="resTitle"></h2><p id="resText" style="font-size:15px;line-height:1.6;max-width:760px"></p><p class="sub" id="resStats"></p>
+ <div class="cols"><div class="box"><b>Anführer</b><ul id="resLead"></ul></div><div class="box"><b>Truppe</b><ul id="resParty"></ul></div></div>
+ <div class="trow"><button class="btn primary" id="resBack">‹ Zurück zur Truppe</button><button class="btn" id="resAgain">Gleich noch mal (Verletzungen bleiben)</button></div>
+</section>
+</div>
+
+<div id="battleView" hidden>
+ <canvas id="arenaCanvas" width="1040" height="720"></canvas>
+ <div id="fieldOver"><canvas id="wx"></canvas><div id="bubbles"></div>
+  <div class="m-top"><div class="m-title"><b id="mtitle"></b><small id="msub"></small></div><div class="m-chips"><span class="tag leadtag" id="mlead"></span><span class="tag" id="mcount"></span></div></div>
+  <div class="m-log" id="mlogBox" hidden><div id="mlog"></div></div>
+  <div class="m-auto" id="mauto" hidden><b id="mautoText"></b><div><button class="btn primary" id="btnNext">Weiter ▶</button><button class="btn" id="btnHome">Abziehen</button></div></div>
+  <div class="m-ctrl"><span id="mstate"></span><button class="btn" id="btnFlee">Fliehen</button><button class="btn" id="btnSpd">1×</button><button class="btn" id="btnLog">Bericht</button></div>
+  <div id="spy" hidden><button class="btn" id="spySkip">Überspringen ▶▶</button><canvas id="spyCv" width="640" height="320"></canvas><div class="spy-cap"><b id="spyName"></b><span id="spyText"></span></div></div>
+ </div>
+ <div id="battleBottom"><div class="fight-log" id="mlogShort"></div></div>
+</div>
+<div id="notice"></div>
+
+<script type="text/plain" id="lead-ui">
+(()=>{
+const M=window.MG,S=M.s,D=window.Debt,A=window.DebtArt,L=window.DebtLeader,$=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp=(v,a,b)=>v<a?a:v>b?b:v,sleep=ms=>new Promise(r=>setTimeout(r,ms)),pick=l=>l[Math.floor(Math.random()*l.length)];
+const ICON={Soldat:'🛡',Assassine:'🗡',Fernkämpfer:'🏹'},first=g=>String(g?.name||'').split(' ')[0];
+const SCHOOL='Ludus Holz';
+const T={party:[],seed:0,leaderId:null,leadOn:true,view:'setup'};
+const spd=()=>Math.max(1,S.options.speed||1);
+const pause=ms=>sleep(Math.max(ms*.6,ms/spd()));
+function notice(t){const n=$('notice');n.textContent=t;n.classList.add('on');clearTimeout(notice.t);notice.t=setTimeout(()=>n.classList.remove('on'),3500);}
+
+// ---------- Truppe und Anführer ----------
+function newParty(){T.seed=(Math.random()*1e9)>>>0;T.party=L.makeParty(T.seed,+$('size').value);T.leaderId=null;}
+function autoLeader(){const g=L.pickLeader(T.party);return g?.id||null;}
+function curLeader(){const live=T.party.filter(D.fit);if(live.length<L.CFG.minParty)return null;return live.find(g=>g.id===T.leaderId)||live.find(g=>g.id===autoLeader());}
+function renderSetup(){const ld=curLeader(),box=$('party');
+ box.innerHTML=T.party.map(g=>{const q=L.quality(g),fit=D.fit(g),w=g.enemyGear.weapon,isL=ld&&g.id===ld.id;
+  return `<div class="pick ${isL?'lead':''}" style="${fit?'':'opacity:.5'}"><span class="ico">${ICON[g.role]||''}</span><span><b>${esc(g.name)}</b> <small>${esc(g.role)} · ${esc(M.itemName(w))}${(g.traits||[]).length?' · '+esc(g.traits.join(', ')):''}</small><small>Führung ${q.lead}<span class="bar" style="width:${q.lead*.6}px"></span> · Teamgeist ${g.stats.teamwork} · Reflexe ${g.stats.reflex} · ${g.dead?'† tot':fit?'Gesundheit '+Math.round(M.health(g))+' %':'kampfunfähig'}</small></span><button class="star" data-id="${esc(g.id)}" title="Zum Anführer machen" ${fit?'':'disabled'}>★</button></div>`;}).join('');
+ for(const b of box.querySelectorAll('.star'))b.onclick=()=>{T.leaderId=b.dataset.id;renderSetup();};
+ const lb=$('leadBox'),n=T.party.filter(D.fit).length;
+ if(!ld){lb.innerHTML=`<p class="sub">Erst ab ${L.CFG.minParty} kampffähigen Kämpfern gibt es einen Anführer (jetzt ${n}). Ohne Anführer kämpft jeder für sich, wie bisher.</p>`;}
+ else{const q=L.quality(ld),st=ld.stats,auto=ld.id===autoLeader();
+  lb.innerHTML=`<p style="margin:0"><b style="color:var(--gold)">★ ${esc(ld.name)}</b> <small class="note">${esc(ld.role)}${auto?' · automatisch gewählt (bester Führungswert)':' · von dir gewählt'}</small></p>
+  <dl class="q"><dt>Führungswert</dt><dd><b>${q.lead}</b> <small class="note">= Taktik ${st.tactics}×0,45 + Erfahrung ${st.experience}×0,3 + Willenskraft ${st.will}×0,15 + Moral ${st.morale}×0,1${(ld.traits||[]).length?' · '+esc(ld.traits.join(', ')):''}</small></dd>
+  <dt>Gegner zuerst sehen</dt><dd>${Math.round(q.spot*100)} % (Hinterhalt: ${Math.round(q.spot*45)} %)</dd>
+  <dt>Lage prüfen</dt><dd>alle ${q.scan.toFixed(1)} s · Gefahr bemerken ${Math.round(q.notice*100)} %</dd>
+  <dt>Einschätzung</dt><dd>${q.sharp>=55?'genau (Waffe, Rüstung, Stärke)':q.sharp>=35?'ordentlich (Waffe, Rüstung)':'grob (manchmal nur „irgendwas Spitzes“)'}</dd></dl>`;}
+ $('goNote').textContent=n<1?'Keiner kann kämpfen. Erst heilen.':`${n} kampffähig${!T.leadOn?' · Anführer ausgeschaltet (Vergleich)':''}.`;$('go').disabled=n<1;}
+function heal(){for(const g of T.party){g.dead=false;g.fatigue=0;g.blood=100;for(const p of Object.values(g.body)){Object.assign(p,{hp:p.max||100,pain:0,bleed:0,grade:0,fracture:null,internal:null,deepStabs:0,injury:'',wounds:[]});p.missing=false;}}renderSetup();notice('Truppe geheilt (nur Testseite).');}
+function show(v){T.view=v;$('setupView').hidden=v!=='setup';$('resultView').hidden=v!=='result';$('battleView').hidden=v!=='mission';$('pageWrap').hidden=v==='mission';if(v==='mission')requestAnimationFrame(sizeField);window.scrollTo?.(0,0);}
+
+// ---------- Kampfbild: Überlagerung, Kamera, Blasen ----------
+const R={m:null,b:null,lastTime:0,ended:false,fleeing:false,cam:{x:520,y:600,snap:true},rows:[]};const VH=760;
+function sizeField(){const c=$('arenaCanvas'),o=$('fieldOver');if(!c||!o)return;R.cw=c.clientWidth;R.ch=c.clientHeight;const Lx=c.offsetLeft+'px',Ty=c.offsetTop+'px',W0=c.clientWidth+'px',H0=c.clientHeight+'px';if(o.style.left!==Lx||o.style.top!==Ty||o.style.width!==W0||o.style.height!==H0){Object.assign(o.style,{left:Lx,top:Ty,width:W0,height:H0});const w=$('wx');w.width=c.clientWidth;w.height=c.clientHeight;}}
+addEventListener('resize',sizeField);
+function toScreen(x,y){const f=$('arenaCanvas'),cw=R.cw||f.clientWidth,ch=R.ch||f.clientHeight,k=ch/VH;return {x:cw/2+(x-R.cam.x)*k,y:ch/2+(y-R.cam.y)*k,k,cw,ch};}
+function mlog(html,cls=''){const el=$('mlog'),p=document.createElement('p');p.className=cls;p.innerHTML=html;el.appendChild(p);el.scrollTop=el.scrollHeight;while(el.children.length>120)el.firstChild.remove();
+ const sh=$('mlogShort');if(sh){const q=document.createElement('p');q.className=cls;q.innerHTML=html;sh.prepend(q);while(sh.children.length>2)sh.lastChild.remove();}}
+const readMs=t=>Math.max(2600,1800+String(t).length*55);
+function bubble(a,text,o={}){const lay=$('bubbles');if(!lay||!a)return;
+ const live=[...lay.children].filter(e=>!e.classList.contains('out'));if(o.small&&live.length>=3)return;
+ for(const old of live)if(old._a===a){old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
+ const el=document.createElement('div');el._a=a;el.className='bubble'+(a.team?' foe':'')+(o.lead?' lead':'')+(o.small?' small':'')+(o.loud?' loud':'');
+ el.innerHTML=(o.name?'<b>'+esc(o.name)+'</b>':'')+'<span>'+esc(text)+'</span>';lay.appendChild(el);el._w=el.offsetWidth;el._h=el.offsetHeight;
+ el._upd=()=>{if(!el.isConnected)return;const p=toScreen(a.x,a.y-(a.down?40:96)),bw=el._w/2;el.style.left=clamp(p.x,bw+4,p.cw-bw-4)+'px';el.style.top=clamp(p.y,el._h+4,p.ch-40)+'px';};el._upd();
+ const ms=o.ms||(o.small?1500:readMs(text));setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),400);},Math.max(ms*.6,ms/spd()));}
+function updBubbles(){const l=$('bubbles'),placed=[];for(const el of l.children){if(el.classList.contains('out'))continue;el._upd?.();let x=parseFloat(el.style.left)||0,y=parseFloat(el.style.top)||0;const w=el._w||0,h=el._h||0;
+ for(let k=0;k<6;k++){const hit=placed.find(r=>Math.abs(r.x-x)<(r.w+w)/2+4&&y>r.y-r.h-4&&y-h<r.y+4);if(!hit)break;y=hit.y-hit.h-6;}if(y-h<2)y=h+2;el.style.top=y+'px';placed.push({x,y,w,h});}}
+const partyActors=b=>b.actors.filter(a=>a.team===0&&!a.down&&!a.g.dead);
+const leaderA=b=>b?.lead?b.actors.find(a=>a.id===b.lead.leaderId):null;
+function lname(a){return '★ '+first(a.g)+' · Anführer';}
+function leadSay(b,text,o={}){const a=leaderA(b);if(!a)return;bubble(a,text,{lead:true,name:lname(a),...o});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(text)}“`);}
+M.battleCamera=(b,width,height,W,H)=>{if(!b?.mission)return null;if(performance.now()-(R.szT||0)>500){R.szT=performance.now();sizeField();}const fit=Math.min(width/W,height/H),k=height/VH,view=width/k;
+ const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
+ let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=view*.18;
+ tx=clamp(tx,view/2,W-view/2);ty=clamp(ty,VH/2,H-VH/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
+ R.cam.x=clamp(R.cam.x,view/2,W-view/2);R.cam.y=clamp(R.cam.y,VH/2,H-VH/2);return {zoom:k/fit,x:R.cam.x,y:R.cam.y};};
+const missionCam=M.battleCamera;
+function hookHud(){if(M.battleCamera!==missionCam&&!M.battleCamera?.__m){const hc=M.battleCamera;M.battleCamera=(b,...r)=>b?.mission?missionCam(b,...r):hc?.(b,...r);M.battleCamera.__m=1;}
+ if(M.battleHud&&!M.battleHud.__m){M.battleHud.__m=1;const prev=M.battleHud.onBuild;M.battleHud.onBuild=(panel,b)=>{prev?.(panel,b);if(!b?.mission)return;const n=panel.querySelectorAll('.bh-name b');if(n[0])n[0].textContent='BLAU · '+SCHOOL.toUpperCase();if(n[1])n[1].textContent=(b.mission.texts?.band||'BANDE').toUpperCase()+' · ROT';};}}
+// Gebüsch vor versteckten Assassinen (Tiefen-Sprite ohne Kollision) und Markierung unter dem Anführer
+const BUSH={wald:['#1f3a1e','#2f5527','#467a33','#5f9a3d'],dorf:['#2b3f1d','#41612a','#5b8236','#79a243'],stadt:['#3a2f22','#5a4630','#7b6040','#9a7a52']};
+function drawCover(ctx,o){const b=S.battle,c=BUSH[b?.L?.biome]||BUSH.wald,x=Math.round(o.x),y=Math.round(o.y),t=performance.now()/1000;ctx.save();
+ ctx.fillStyle='#00000033';ctx.beginPath();ctx.ellipse(x,y+2,40,9,0,0,Math.PI*2);ctx.fill();
+ if(b?.L?.biome==='stadt'){ctx.fillStyle=c[0];ctx.fillRect(x-34,y-40,68,42);ctx.fillStyle=c[2];ctx.fillRect(x-31,y-37,30,36);ctx.fillRect(x+2,y-37,29,36);ctx.fillStyle=c[3];ctx.fillRect(x-31,y-37,30,4);ctx.fillRect(x+2,y-37,29,4);ctx.fillStyle=c[1];ctx.fillRect(x-17,y-33,3,32);ctx.fillRect(x+15,y-33,3,32);}
+ else{const blobs=[[-26,-16,17],[-10,-26,19],[10,-24,19],[26,-14,16],[0,-12,24],[-18,-6,14],[18,-6,14]];
+  for(const [i,col] of [[0,c[0]],[1,c[1]],[2,c[2]]])for(const [dx,dy,r] of blobs){ctx.fillStyle=col;ctx.beginPath();ctx.arc(x+dx+(i-1)*1.5,y+dy+Math.sin(t*1.3+dx)*.6-i*2,r-i*3,0,Math.PI*2);ctx.fill();}
+  ctx.fillStyle=c[3];for(const [dx,dy] of [[-14,-30],[6,-34],[20,-22],[-26,-20],[-2,-20]])ctx.fillRect(x+dx,y+dy,4,3);}
+ ctx.restore();}
+function hookDraw(){if(M.drawSprite?.__lead)return;M.drawSprite=(ctx,o)=>{if(o.leadCover){drawCover(ctx,o);return;}A.drawSprite(ctx,o);};M.drawSprite.__lead=1;
+ const prevU=M.battleUnderlay;M.battleUnderlay=(ctx,b)=>{prevU?.(ctx,b);const a=leaderA(b);if(!a||a.down||a.g.dead)return;ctx.save();ctx.strokeStyle='#f4d37a';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.ellipse(a.x,a.y+5,24,10,0,0,Math.PI*2);ctx.stroke();ctx.restore();};}
+
+// ---------- Fernglas ----------
+const SPY={on:false,focus:null,fx:0,fy:0};
+function spyFrame(){if(!SPY.on)return;const cv=$('spyCv'),g=cv.getContext('2d'),src=$('arenaCanvas'),W=cv.width,H=cv.height,b=R.b;
+ const tgt=SPY.focus&&!SPY.focus.g.dead?{x:SPY.focus.x,y:SPY.focus.y-42}:b?.group?{x:b.group.ex+30,y:b.group.ey-40}:{x:R.cam.x,y:R.cam.y};
+ SPY.fx+=(tgt.x-SPY.fx)*.08;SPY.fy+=(tgt.y-SPY.fy)*.08;const p=toScreen(SPY.fx,SPY.fy),sc=src.width/Math.max(1,src.clientWidth),zoomW=Math.min(p.cw,(SPY.focus?300:460)*p.k),zoomH=Math.min(p.ch,zoomW/2);p.x=clamp(p.x,zoomW/2,p.cw-zoomW/2);p.y=clamp(p.y,zoomH/2,p.ch-zoomH/2);
+ g.clearRect(0,0,W,H);g.save();g.beginPath();g.arc(W*.3,H*.5,H*.48,0,Math.PI*2);g.arc(W*.7,H*.5,H*.48,0,Math.PI*2);g.clip();g.fillStyle='#0d1416';g.fillRect(0,0,W,H);g.imageSmoothingEnabled=false;
+ try{g.drawImage(src,(p.x-zoomW/2)*sc,(p.y-zoomH/2)*sc,zoomW*sc,zoomH*sc,0,0,W,H);}catch(e){}
+ const vg=g.createRadialGradient(W*.5,H*.5,H*.2,W*.5,H*.5,W*.55);vg.addColorStop(0,'#0000');vg.addColorStop(1,'#000a');g.fillStyle=vg;g.fillRect(0,0,W,H);
+ g.strokeStyle='#0008';g.lineWidth=1;g.beginPath();g.moveTo(W*.3,H*.5-14);g.lineTo(W*.3,H*.5+14);g.moveTo(W*.3-14,H*.5);g.lineTo(W*.3+14,H*.5);g.moveTo(W*.7,H*.5-14);g.lineTo(W*.7,H*.5+14);g.moveTo(W*.7-14,H*.5);g.lineTo(W*.7+14,H*.5);g.stroke();g.restore();
+ g.lineWidth=7;g.strokeStyle='#17201c';g.beginPath();g.arc(W*.3,H*.5,H*.48,0,Math.PI*2);g.stroke();g.beginPath();g.arc(W*.7,H*.5,H*.48,0,Math.PI*2);g.stroke();
+ requestAnimationFrame(spyFrame);}
+async function spyShow(b,lines){const me=leaderA(b);if(!me)return;SPY.on=true;SPY.skip=false;SPY.focus=null;SPY.fx=b.group.ex;SPY.fy=b.group.ey-40;$('spy').hidden=false;$('spyName').textContent=lname(me)+' · durchs Fernglas';requestAnimationFrame(spyFrame);
+ for(const l of lines){if(SPY.skip||!live(b))break;SPY.focus=l.focus;const el=$('spyText');el.textContent='';mlog(`<b class="ldr">★ ${esc(me.g.name)}</b> (Fernglas): „${esc(l.text)}“`);
+  for(let i=0;i<=l.text.length&&!SPY.skip;i+=2){el.textContent=l.text.slice(0,i);await sleep(16);}el.textContent=l.text;await waitSkip(Math.max(1700,900+l.text.length*42));}
+ SPY.on=false;$('spy').hidden=true;}
+function waitSkip(ms){return new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());const chk=()=>{if(SPY.skip||performance.now()-t0>=lim)return res();setTimeout(chk,50);};chk();});}
+
+// ---------- Ablauf ----------
+function walker(a,dt){if(!a.to)return;const [tx,ty,sp]=a.to,dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy),s=(sp||60)*dt;
+ if(d<=s){a.x=tx;a.y=ty;if(a.path?.length){a.to=a.path.shift();return;}a.to=null;a.state='idle';a.moveSpeed=0;if(a.face!==undefined)a.a=a.face;return;}
+ a.x+=dx/d*s;a.y+=dy/d*s;a.state='move';a.moveSpeed=10;a.odo=(a.odo||0)+s;a.phase=a.odo*.267;if(Math.abs(dx)>.5)a.a=dx>0?0:Math.PI;}
+function routeTo(b,a,tx,ty,sp){const path=D.findPath(b,a.x,a.y,tx,ty);const pts=(path&&path.length?path:[{x:tx,y:ty}]).map(p=>[p.x,p.y,sp]);a.to=pts.shift();a.path=pts;}
+function freeSpot(b,x,y){for(let k=0;k<18;k++){const yy=y+(k%2?1:-1)*Math.ceil(k/2)*16;if(D.navFreeAt(b,x,yy))return yy;}return y;}
+const live=b=>!R.ended&&!R.fleeing&&S.battle===b;
+function walkAll(b,limit=9000){const t0=performance.now();return new Promise(res=>{const chk=()=>{if(!live(b))return res(false);if(partyActors(b).every(a=>!a.to)||performance.now()-t0>limit/Math.min(2,spd())){for(const a of partyActors(b)){a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}return res(true);}setTimeout(chk,80);};chk();});}
+function marchTo(b,x,sp=60){partyActors(b).forEach((a,k)=>{const col=k%3,line=Math.floor(k/3),tx=x-line*58-(col===1?0:26)+(Math.random()-.5)*30,y=freeSpot(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*56,b.L.mT+30,b.L.mB-30));routeTo(b,a,tx,y,sp);a.face=0;});return walkAll(b,60000);}
+function setState(t){$('mstate').textContent=t;}
+function missionLoop(t){const b=S.battle;
+ if(T.view==='mission'&&R.m&&b?.mission){const dt=Math.max(0,b.time-R.lastTime);R.lastTime=b.time;D.tick(b,dt);
+  if((b.paused&&!b.done)||R.fleeing){const d=1/60*spd();for(const a of b.actors)if(a.to)walker(a,d);}
+  if(t-(missionLoop.c||0)>200){missionLoop.c=t;D.cullObstacles?.(b,R.cam.x);}
+  while(b.events.length)onEvent(b,b.events.shift());
+  if(b.started&&b.done&&!b.handled){b.handled=true;encounterEnd(b);}
+  updBubbles();if(t-(missionLoop.n||0)>300){missionLoop.n=t;info();}
+  A.weatherStep?.($('wx'),R.m.place.mood,t/1000,R.cam.x);}
+ requestAnimationFrame(missionLoop);}
+function info(){const m=R.m,b=S.battle;if(!m)return;const lv=b&&b.started&&!b.done?b.encEnemies.filter(a=>a.down||a.g.dead).length:0;$('mcount').textContent=`Gegner ${m.killed+lv} / ${m.total}`;
+ const a=leaderA(b);$('mlead').textContent=a?(a.down||a.g.dead?'Anführer liegt!':'★ '+first(a.g)):T.leadOn?'kein Anführer (unter 5)':'Anführer aus';}
+function onEvent(b,e){
+ if(e.type==='lead'){const a=e.actor;if(!a)return;
+  if(e.kind==='ack'||e.kind==='ignore'){bubble(a,e.text,{small:true});if(e.kind==='ignore')mlog(`<b>${esc(a.g.name)}</b> hört nicht sofort: „${esc(e.text)}“`);return;}
+  if(e.kind==='foeAlert'){bubble(a,e.text,{name:first(a.g)});mlog(`<b class="foe">${esc(a.g.name)}:</b> „${esc(e.text)}“`);return;}
+  bubble(a,e.text,{lead:true,name:lname(a),ms:clamp(1400+e.text.length*45,1900,3400),loud:e.urgent});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(e.text)}“`);return;}
+ if(e.type==='spawn'){const g=e.actor.g;if(g.debtBoss)return;bubble(e.actor,g.debtShout,{name:first(g)});mlog(`Nachschub: <b class="foe">${esc(g.name)}</b> kommt aus ${esc(e.door||'dem Nichts')}. Waffe: ${esc(M.itemName(g.enemyGear.weapon))}.`);}
+ if(e.type==='gaveup'){bubble(e.actor,pick(['Ich hab genug! Ich geh heim!','Mama! MAMA!','Ich ergebe mich ganz doll!']),{name:first(e.actor.g)});}
+ if(e.type==='bossHurt'){bubble(e.actor,pick(['Das wirst du bereuen!','Ihr räudigen Hunde!','Haltet sie auf, ihr Feiglinge!']),{name:first(e.actor.g),loud:true});}}
+async function startMission(){const team=T.party.filter(D.fit);if(!team.length)return;
+ const m=R.m=D.newMission((Math.random()*1e9)>>>0,team,$('biome').value,{kind:'adventure',learn:false});m.leaderId=T.leadOn?(curLeader()?.id||null):null;
+ R.ended=false;R.fleeing=false;R.rows=[];show('mission');$('mlog').innerHTML='';$('mlogShort').innerHTML='';$('mlogBox').hidden=true;
+ $('mtitle').textContent=m.place.name;$('msub').textContent=`${m.place.label} · ${D.moodText(m.place.mood)}`;M.endBenchmark=(w,r)=>{D.onEngineEnd(w,r);};
+ mlog(`<b>${esc(SCHOOL)}</b> zieht los: ${esc(m.place.label)} ${esc(m.place.name)}. ${team.length} Kämpfer.`+(T.leadOn&&m.leaderId?` Anführer: <b class="ldr">★ ${esc(team.find(g=>g.id===m.leaderId).name)}</b>.`:''),'narr');
+ await runSection(0);}
+async function runSection(si){const m=R.m,sec=m.place.sections[si];const b=R.b=D.startSection(m,si);R.lastTime=0;b.handled=false;
+ const img=A.scene(b.L,m.place);D.addObstacles(b,b.L.extraObstacles);M.missionBackdrop=ctx=>A.drawBackdrop(ctx,img,b);
+ R.cam.x=0;R.cam.y=D.pathY(b.L,0);R.cam.snap=true;$('battleView').classList.remove('fade');hookHud();hookDraw();$('bubbles').innerHTML='';
+ mlog(esc(D.THEMES[sec.theme].text),'narr');
+ for(const sti of sec.stations){if(!live(b))return;await encounter(b,sti);if(!live(b))return;const last=sti===sec.stations[sec.stations.length-1];if(!(last&&sec.boss)){await waitNext();if(!live(b))return;}}
+ if(sec.boss)return;setState('Die Truppe marschiert …');await marchTo(b,b.width-D.marginX(b.width)-40,72);if(!live(b))return;
+ $('battleView').classList.add('fade');await sleep(600);if(!R.ended)await runSection(si+1);}
+async function encounter(b,sti){const m=R.m,st=m.place.stations[sti];m.idx=sti;
+ if(T.leadOn)L.attach(b,m,{leaderId:m.leaderId});else b.lead=null;info();
+ const G=L.layoutGroup(b,m,sti);
+ if(!b.lead){// ohne Anführer: gleiche Gegnergruppe, keiner plant
+  setState('Die Truppe marschiert …');if(!await marchTo(b,G.hx+120))return;L.beginGroup(b,m,sti,{unaware:false});
+  for(const e of b.encEnemies.slice(0,2))bubble(e,e.g.debtShout||'Da sind sie!',{name:first(e.g)});mlog(`Vor euch: ${b.encEnemies.map(e=>'<b class="foe">'+esc(e.g.name)+'</b>').join(', ')}. Sie sehen euch im selben Moment.`,'narr');
+  await pause(1200);if(!live(b))return;b.started=true;b.paused=false;setState('Kampf läuft');return;}
+ const spotted=L.spotRoll(b,st);
+ if(spotted){setState('Die Truppe marschiert …');if(!await marchTo(b,G.hx))return;
+  L.beginGroup(b,m,sti);b.paused=true;b.started=false;b.lead.stats.spotted++;b.lead.phase='brief';setState('Einsatzbesprechung …');
+  mlog(`<b class="ldr">★ ${esc(leaderA(b).g.name)}</b> entdeckt ${b.encEnemies.length} Gegner, bevor sie euch sehen.`,'narr');
+  const lines=L.briefLines(b);leadSay(b,lines[0].text,{ms:1800});await pause(900);if(!live(b))return;
+  await spyShow(b,lines.slice(1));if(!live(b))return;
+  const {pts,lines:ord}=L.plan(b);
+  for(const [a,p] of pts){routeTo(b,a,p.x,freeSpot(b,p.x,p.y),p.job==='hide'?70:p.job==='skirmish'?62:55);a.face=p.face;}
+  for(const o of ord){if(!live(b))return;leadSay(b,o.text);await pause(Math.max(1900,900+o.text.length*40));}
+  await walkAll(b,8000);if(!live(b))return;for(const [a,p] of pts){a.x=p.x;a.y=freeSpot(b,p.x,p.y);if(p.job==='hide')a.leadHide.y=a.y;a.a=0;}
+  L.engage(b);b.started=true;b.paused=false;setState('Kampf läuft · Befehle des Anführers');return;}
+ // nicht entdeckt: Gegner sind schon da und sehen euch zuerst
+ setState('Die Truppe marschiert …');if(!await marchTo(b,G.hx+60))return;L.beginGroup(b,m,sti,{unaware:false});
+ const px=partyActors(b).reduce((s,a)=>s+a.x,0)/Math.max(1,partyActors(b).length);for(const e of b.encEnemies)e.x=Math.max(px+170,e.x-220);
+ mlog(`${esc(leaderA(b).g.name)} sieht sie zu spät: ${b.encEnemies.map(e=>'<b class="foe">'+esc(e.g.name)+'</b>').join(', ')} stürmen heran.`,'narr');
+ const e0=b.encEnemies[0];if(e0)bubble(e0,pick(['Überraschung!','Jetzt haben wir euch!','DRAUF!']),{name:first(e0.g),loud:true});
+ b.started=true;b.paused=false;L.surprise(b);setState('Überfall! Kampf läuft');}
+function waitNext(){return new Promise(res=>{R.nextRes=res;});}
+async function encounterEnd(b){const m=R.m;if(R.ended)return;const out=D.endEncounter(m,b);b.done=null;b.paused=true;info();const st=out.station;
+ for(const g of out.died)mlog(`<b class="dead">† ${esc(g.name)}</b> ist tot.`,'dead');for(const g of out.downed)mlog(`${esc(g.name)} kann nicht mehr und wird getragen.`);
+ if(out.winner!==0){finish(m.state==='fled'?'fled':'lost');return;}
+ const ld=b.lead?.stats;
+ if(st.boss){const me=leaderA(b)||partyActors(b)[0];if(me)bubble(me,pick(['Das war’s. Holt die Truhe.','Anführer erledigt. Der nächste bin hoffentlich nicht ich.','Gut gemacht. Fast niemand ist gestorben.']),{lead:!!b.lead,name:b.lead?lname(me):first(me.g)});mlog(`In der Truhe des Anführers: <b class="gold">${m.goldPrize||0} Gold</b>.`,'narr');auto('won');return;}
+ const me=leaderA(b);if(me&&!me.down&&!me.g.dead)leadSay(b,pick(['Sauber. Weiter.','Wunden zählen, Leute. Und Finger.','Wer noch steht, kriegt heute Abend Wein. Wer nicht, kriegt ein Lied.','Gut. Das nächste Mal bitte mit weniger Geschrei.']));
+ if(m.state==='lost'){finish('lost');return;}
+ mlog(`${m.party.filter(D.fit).length} von ${m.party.length} können noch kämpfen.`+(ld?` Anführer bisher: ${ld.calls} Rufe, ${ld.warnings} Warnungen, ${ld.helps} Hilferufe, ${ld.switches} Zielwechsel.`:''),'narr');auto('next');}
+function auto(state){R.awaiting=state;const box=$('mauto');box.hidden=false;let left=state==='won'?4:4;$('btnHome').hidden=state==='won';$('btnNext').textContent=state==='won'?'Zum Ergebnis ▶':'Weiter ▶';setState(state==='won'?'Gewonnen!':'Kurze Rast …');
+ clearInterval(R.autoT);const tick=()=>{$('mautoText').textContent=(state==='won'?'Zum Ergebnis in ':'Weiter in ')+left+' …';if(left--<=0){clearInterval(R.autoT);next();}};tick();R.autoT=setInterval(tick,1000/Math.min(2,spd()));}
+function next(){clearInterval(R.autoT);$('mauto').hidden=true;if(R.awaiting==='won'){R.awaiting=null;finish('won');return;}if(R.awaiting!=='next')return;R.awaiting=null;const r=R.nextRes;R.nextRes=null;r?.();}
+async function flee(){clearInterval(R.autoT);$('mauto').hidden=true;const m=R.m,b=S.battle;if(!m||R.ended)return;if(R.awaiting==='next'){finish('fled');return;}
+ R.fleeing=true;const inFight=b&&b.started&&!b.done;if(b){b.paused=true;if(inFight){b.done={winner:-2,reason:'Flucht'};b.handled=true;}for(const a of b.actors)if(a.team===0&&!a.down&&!a.g.dead){a.to=[a.x-500,a.y,120];a.path=[];}
+  const a=leaderA(b)||partyActors(b)[0];if(a)bubble(a,'Rückzug! RENNT!',{lead:!!b.lead,name:b.lead?lname(a):first(a.g),loud:true});}
+ await sleep(1400);if(b&&inFight)D.endEncounter(m,b,{fled:true});finish('fled');}
+function finish(kind){if(R.ended)return;R.ended=true;R.nextRes=null;const b=S.battle;if(b)b.paused=true;setTimeout(()=>{S.battle=null;M.missionBackdrop=null;showResult(kind);},700);}
+function showResult(kind){const m=R.m;show('result');const head={won:['GEWONNEN','Die Bande ist erledigt. Die Truhe ist leichter, als sie aussah. Wie immer.'],fled:['ABGEZOGEN','Ihr geht. Lebendig ist auch eine Art Sieg.'],lost:['NIEDERLAGE','Ihr wacht im Graben auf. Ohne Beute, ohne Würde.']}[kind];
+ $('resTitle').textContent=head[0];$('resTitle').className='res-'+kind;$('resText').textContent=head[1];
+ $('resStats').textContent=`Gegner besiegt: ${m.killed} von ${m.total} · Begegnungen: ${m.cleared+1} von ${m.place.stations.length} · Tote: ${m.deaths.length}`;
+ const s=m.leadStats,lg=m.party.find(g=>g.id===m.leaderId);
+ $('resLead').innerHTML=s?`<li><b>★ ${esc(lg?.name||'?')}</b></li><li>Gegner zuerst entdeckt: ${s.spotted} · überrascht worden: ${s.surprised}</li><li>Rufe insgesamt: ${s.calls}</li><li>Warnungen „hinter dir“: ${s.warnings}</li><li>Hilferufe: ${s.helps}</li><li>Zielwechsel (von Erledigten weg): ${s.switches}</li><li>Nicht sofort befolgt: ${s.ignored}</li><li>Kommando übernommen: ${s.successions}×</li>`:'<li>Ohne Anführer gekämpft.</li>';
+ $('resParty').innerHTML=m.party.map(g=>`<li class="${g.dead?'dead':''}"><b>${g.dead?'† ':''}${esc(g.name)}</b> <small>${esc(g.role)} · ${g.dead?'tot':'Gesundheit '+Math.round(M.health(g))+' %'}</small></li>`).join('');}
+
+function init(){S.options.speed=1;S.options.shake=true;newParty();
+ $('size').onchange=()=>{newParty();renderSetup();};$('reroll').onclick=()=>{newParty();renderSetup();};$('leadOn').onchange=()=>{T.leadOn=$('leadOn').checked;renderSetup();};
+ $('heal').onclick=heal;$('go').onclick=startMission;$('spd').onchange=()=>{S.options.speed=+$('spd').value;$('btnSpd').textContent=S.options.speed+'×';};
+ $('btnSpd').onclick=()=>{S.options.speed=(S.options.speed||1)%3+1;$('btnSpd').textContent=S.options.speed+'×';$('spd').value=S.options.speed;};
+ $('btnNext').onclick=next;$('btnHome').onclick=()=>{clearInterval(R.autoT);$('mauto').hidden=true;finish('fled');};$('btnFlee').onclick=flee;
+ $('btnLog').onclick=()=>{const bx=$('mlogBox');bx.hidden=!bx.hidden;if(!bx.hidden)$('mlog').scrollTop=1e9;};$('spySkip').onclick=()=>{SPY.skip=true;};
+ $('resBack').onclick=()=>{show('setup');renderSetup();};$('resAgain').onclick=()=>{show('setup');renderSetup();startMission();};
+ show('setup');renderSetup();$('loading').remove();requestAnimationFrame(missionLoop);window.__leadReady=true;
+ if(new URLSearchParams(location.search).has('go'))startMission();}
+window.LeadUI={init,T,R,SPY,startMission,next,flee};
+})();
+</script>
+<script>
+// Schutz: Diese Testseite schreibt nie in Browser-Spielstände.
+try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}
+(async()=>{
+ const LIST=['data','household','management','scout','sim','school','world','forge','weapon-art','arena','medicus-art','ludus','face-shots','injury-shots','battle-hud','outside-core','outside-art','outside-leader'];
+ const run=(code,name)=>{const s=document.createElement('script');s.textContent=code+'\n//# sourceURL='+name+'.js';document.body.appendChild(s);};
+ const v=new URLSearchParams(location.search).get('v')||'664140fd';
+ for(const n of LIST){if(n==='ludus')window.MG.ui=window.MG.ui||{render(){},getPage(){return 'profiles';},notify(){},close(){},click(){}};
+  const r=await fetch(n+'.js?v='+v);if(!r.ok)throw Error(n+'.js nicht gefunden');run(await r.text(),n);}
+ run(document.getElementById('lead-ui').textContent,'anfuehrer-test-ui');window.LeadUI.init();
+})().catch(e=>{console.error(e);document.getElementById('loading').textContent='Fehler beim Laden: '+e.message;});
+</script>
+</body></html>
