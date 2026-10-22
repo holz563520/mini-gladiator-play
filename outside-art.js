@@ -297,6 +297,11 @@ A.scene=function(L,place){const ART=AR(),Wa=Math.ceil(L.W/ART),Ha=Math.ceil(L.H/
  if(P.snow)noise(g,r,0,mT,Wa,Ha-mT,Wa*(Ha-mT)/60,['#ffffff','#e8eef1'],1);
  // Sprites vorrendern
  for(const s of L.sprites)renderSprite(s,L,P,r);
+ // Leistung: Häuser, Bäume und Requisiten werden in Tiefenreihenfolge fest in den Boden eingemalt. Pro Bild wird dann nur der
+ // sichtbare Bodenausschnitt kopiert. Steht jemand hinter einem dieser Dinge, malt drawSprite genau dieses eine Bild noch einmal
+ // (halbdurchsichtig) über die Figur – so bleibt vorn/hinten richtig, ohne Dutzende große Bilder je Bild.
+ for(const s of [...L.sprites].filter(s=>s.cv&&['tree','house','prop'].includes(s.kind)).sort((a,b)=>a.y-b.y)){g.drawImage(s.cv,Math.round(s.dx/ART),Math.round(s.dy/ART));s.baked=true;}
+ L.extraObstacles=[];
  return c;};
 function renderSprite(s,L,P,r){const ART=AR();
  if(s.kind==='house'){const h=s.h,ox=40,top=h.hA+190,cv=document.createElement('canvas');cv.width=h.wA+130;cv.height=top+12;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
@@ -318,7 +323,7 @@ A.drawSprite=function(ctx,o){const b=window.MG.s.battle,L=b?.L;if(!L)return;cons
  if(!s.cv)return;
  // verdeckt die Figur jemanden? Dann halb durchsichtig, damit man den Kampf noch sieht
  let hide=false;for(const a of b.actors){if(a.y<s.y-4&&a.x>s.dx+8&&a.x<s.dx+s.w-8&&a.y>s.dy+20){hide=true;break;}}
- ctx.save();if(hide)ctx.globalAlpha=.5;ctx.imageSmoothingEnabled=false;ctx.drawImage(s.cv,Math.round(s.dx),Math.round(s.dy),s.w,s.h);ctx.restore();
+ if(!s.baked||hide){ctx.save();if(hide)ctx.globalAlpha=.5;ctx.imageSmoothingEnabled=false;ctx.drawImage(s.cv,Math.round(s.dx),Math.round(s.dy),s.w,s.h);ctx.restore();}
  const f=s.fx||{};
  if(f.smoke)for(let k=0;k<7;k++){const ph=((t*.3+k/7+s.h%1)%1),x=f.smoke.x+Math.sin(ph*5+k)*8+ph*30,y=f.smoke.y-ph*130,rr=5+ph*16;ctx.globalAlpha=.45*(1-ph);pell(ctx,x,y,rr,rr*.8,P.time==='abend'?'#6a6a7a':'#d4d4d4',2);}
  ctx.globalAlpha=1;
@@ -403,16 +408,32 @@ function animal(g,a,b,t,P){if(b.actors.length||b.started)A.animalStep(a,b,perfor
 
 // Vorschau eines Abschnitts als ein Bild (Kunstpixel): Boden + Sprites nach Tiefe
 A.preview=function(L,place){const g0=A.scene(L,place),c=document.createElement('canvas');c.width=g0.width;c.height=g0.height;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(g0,0,0);const ART=AR();
- for(const s of [...L.sprites].sort((a,b)=>a.y-b.y)){if(s.cv)g.drawImage(s.cv,s.dx/ART,s.dy/ART);else if(s.kind==='life'){g.save();g.scale(1/ART,1/ART);animal(g,s.a,{actors:[],L},0,L.P);g.restore();}}
+ for(const s of [...L.sprites].sort((a,b)=>a.y-b.y)){if(s.baked)continue;if(s.cv)g.drawImage(s.cv,s.dx/ART,s.dy/ART);else if(s.kind==='life'){g.save();g.scale(1/ART,1/ART);animal(g,s.a,{actors:[],L},0,L.P);g.restore();}}
  return c;};
 
 // ---------- Wetter und Licht über dem Bild (Bildschirmkoordinaten) ----------
+// Leistung: Vom Boden des Abschnitts (Tausende Pixel breit) nur den sichtbaren Ausschnitt zeichnen
+A.drawBackdrop=function(ctx,img,b){ctx.save();ctx.scale(1040/b.width*AR(),720/b.height*AR());const m=ctx.getTransform(),cw=ctx.canvas.width,ch=ctx.canvas.height;
+ if(m.b||m.c||!m.a||!m.d){ctx.drawImage(img,0,0);ctx.restore();return;}
+ const x0=Math.max(0,Math.floor(-m.e/m.a)-2),y0=Math.max(0,Math.floor(-m.f/m.d)-2),x1=Math.min(img.width,Math.ceil((cw-m.e)/m.a)+2),y1=Math.min(img.height,Math.ceil((ch-m.f)/m.d)+2);
+ if(x1>x0&&y1>y0)ctx.drawImage(img,x0,y0,x1-x0,y1-y0,x0,y0,x1-x0,y1-y0);ctx.restore();};
+let wxCache=null;
+// Leistung: Jedes neu bemalte Canvas muss pro Bild an den Bildschirm übergeben werden. Ohne bewegtes Wetter wird die Wetterschicht
+// nur einmal gemalt; Regen, Schnee, Nebel und Glühwürmchen höchstens 30-mal pro Sekunde.
+A.weatherAnimated=mood=>['nebel','regen','schnee'].includes(mood.weather)||(mood.time==='abend'&&mood.season==='sommer');
+A.weatherStep=function(cv,mood,t,camX){if(!cv)return;const key=cv.width+'x'+cv.height+JSON.stringify(mood),st=cv._wx||(cv._wx={});
+ if(st.key===key&&(!A.weatherAnimated(mood)||t-st.t<1/30))return;st.key=key;st.t=t;A.weather(cv.getContext('2d'),cv.width,cv.height,mood,t,camX);};
 A.weather=function(g,w,h,mood,t,camX){g.clearRect(0,0,w,h);
- const tint={morgen:'rgba(255,190,150,.10)',mittag:null,nachmittag:'rgba(255,180,90,.10)',abend:'rgba(40,30,80,.32)'}[mood.time];if(tint){g.fillStyle=tint;g.fillRect(0,0,w,h);}
- if(mood.time==='abend'){const gr=g.createRadialGradient(w/2,h/2,h*.3,w/2,h/2,w*.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(10,8,20,.45)');g.fillStyle=gr;g.fillRect(0,0,w,h);}
- if(mood.weather==='bewoelkt'){g.fillStyle='rgba(70,80,90,.14)';g.fillRect(0,0,w,h);}
- if(mood.weather==='nebel'){for(let k=0;k<5;k++){const y=h*(.15+k*.18)+Math.sin(t*.3+k)*8,x=((t*12*(k%2?1:-1)+k*200-camX*.3)%(w*2)+w*2)%(w*2)-w*.5;g.fillStyle='rgba(225,230,235,.13)';g.beginPath();g.ellipse(x,y,w*.55,h*.07,0,0,7);g.fill();}g.fillStyle='rgba(210,215,220,.12)';g.fillRect(0,0,w,h);}
- if(mood.weather==='regen'){g.fillStyle='rgba(40,50,70,.12)';g.fillRect(0,0,w,h);g.strokeStyle='rgba(190,205,225,.45)';g.lineWidth=1;g.beginPath();for(let k=0;k<110;k++){const x=((k*97.3+t*60-camX*.5)%(w+40)+w+40)%(w+40)-20,y=((k*53.7+t*620)%(h+30));g.moveTo(x,y);g.lineTo(x-4,y+12);}g.stroke();}
+ // Leistung: Tönung, Vignette und Wolkengrau ändern sich nie – einmal malen, danach nur noch kopieren
+ const key=w+'x'+h+mood.time+mood.weather;if(!wxCache||wxCache.key!==key){const c=document.createElement('canvas');c.width=w;c.height=h;const q=c.getContext('2d');
+  const tint={morgen:'rgba(255,190,150,.10)',mittag:null,nachmittag:'rgba(255,180,90,.10)',abend:'rgba(40,30,80,.32)'}[mood.time];if(tint){q.fillStyle=tint;q.fillRect(0,0,w,h);}
+  if(mood.time==='abend'){const gr=q.createRadialGradient(w/2,h/2,h*.3,w/2,h/2,w*.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(10,8,20,.45)');q.fillStyle=gr;q.fillRect(0,0,w,h);}
+  if(mood.weather==='bewoelkt'){q.fillStyle='rgba(70,80,90,.14)';q.fillRect(0,0,w,h);}
+  if(mood.weather==='nebel'){q.fillStyle='rgba(210,215,220,.12)';q.fillRect(0,0,w,h);}if(mood.weather==='regen'){q.fillStyle='rgba(40,50,70,.12)';q.fillRect(0,0,w,h);}
+  wxCache={key,c};}
+ g.drawImage(wxCache.c,0,0);
+ if(mood.weather==='nebel'){for(let k=0;k<5;k++){const y=h*(.15+k*.18)+Math.sin(t*.3+k)*8,x=((t*12*(k%2?1:-1)+k*200-camX*.3)%(w*2)+w*2)%(w*2)-w*.5;g.fillStyle='rgba(225,230,235,.13)';g.beginPath();g.ellipse(x,y,w*.55,h*.07,0,0,7);g.fill();}}
+ if(mood.weather==='regen'){g.strokeStyle='rgba(190,205,225,.45)';g.lineWidth=1;g.beginPath();for(let k=0;k<110;k++){const x=((k*97.3+t*60-camX*.5)%(w+40)+w+40)%(w+40)-20,y=((k*53.7+t*620)%(h+30));g.moveTo(x,y);g.lineTo(x-4,y+12);}g.stroke();}
  if(mood.weather==='schnee'){g.fillStyle='rgba(255,255,255,.85)';for(let k=0;k<90;k++){const y=((k*61.3+t*40)%(h+10)),x=((k*131.7+Math.sin(t+k)*14-camX*.5)%(w+20)+w+20)%(w+20)-10;g.fillRect(Math.round(x),Math.round(y),2,2);}}
  if(mood.time==='abend'&&mood.season==='sommer'){for(let k=0;k<14;k++){const x=((k*173+Math.sin(t*.7+k)*40-camX*.4)%w+w)%w,y=h*.3+((k*91)%(h*.6))+Math.sin(t*1.3+k)*10;g.fillStyle=`rgba(230,240,120,${.4+.4*Math.sin(t*3+k)})`;g.fillRect(x,y,2,2);}}
 };

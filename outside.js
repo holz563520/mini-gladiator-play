@@ -256,12 +256,12 @@ function bottomDom(){const bb=$('battleBottom');if(!bb)return;if(bb.dataset.ow==
  const sp=$('owSpd');sp.value=String(clamp(Math.round(S.options?.speed||1),1,3));sp.onchange=()=>{S.options.speed=+sp.value;};
  setButtons(R.awaiting||'march');
  for(const h of R.rows.slice(0,2).reverse())logShort(h);}
-function missionHud(b){overlayDom();bottomDom();const top=$('battleTop');if(top&&top.innerHTML)top.innerHTML='';for(const id of ['finaleBanner','verdictSkip'])if($(id))$(id).hidden=true;if($('battleEvent'))$('battleEvent').style.display='none';sizeField();}
+function missionHud(b){overlayDom();bottomDom();const top=$('battleTop');if(top&&top.innerHTML)top.innerHTML='';for(const id of ['finaleBanner','verdictSkip'])if($(id))$(id).hidden=true;if($('battleEvent')&&$('battleEvent').style.display!=='none')$('battleEvent').style.display='none';sizeFieldSoon();}
 const prevArmyHud=M.armyBattleHUD;M.armyBattleHUD=function(b){if(b?.mission&&R.m){missionHud(b);return true;}return prevArmyHud?prevArmyHud.apply(this,arguments):false;};
 const prevEnd=M.endBenchmark;M.endBenchmark=function(w,r){if(S.battle?.mission)return D.onEngineEnd(w,r);return prevEnd?.apply(this,arguments);};
 // Kamera: füllt die Höhe, folgt der Truppe (bei Kampf allen Beteiligten)
 const hudCam=M.battleCamera;
-function missionCam(b,width,height,W,H){const fit=Math.min(width/W,height/H),k=height/VH,view=width/k;sizeField();
+function missionCam(b,width,height,W,H){const fit=Math.min(width/W,height/H),k=height/VH,view=width/k;sizeFieldSoon();
  const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
  let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=view*.18;
  tx=clamp(tx,view/2,W-view/2);ty=clamp(ty,VH/2,H-VH/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
@@ -271,6 +271,8 @@ M.battleCamera=function(b,...r){return b?.mission?missionCam(b,...r):hudCam?hudC
 if(M.battleHud){const prevBuild=M.battleHud.onBuild;M.battleHud.onBuild=(panel,b)=>{prevBuild?.(panel,b);if(!b?.mission)return;const n=panel.querySelectorAll('.bh-name b'),m=b.mission;if(n[0])n[0].textContent='BLAU · '+school().toUpperCase();if(n[1])n[1].textContent=(m.kind==='quest'?(b.section===m.place.sections.length-1?'KRASSUS & BANDE':'KRASSUS’ SCHULDNER'):(m.texts?.band||'BANDE').toUpperCase())+' · ROT';};}
 M.drawSprite=(ctx,o)=>A.drawSprite(ctx,o);
 
+// Layout nur selten abfragen (jede Abfrage erzwingt eine Neuberechnung der Seite)
+function sizeFieldSoon(){const n=performance.now();if(n-(R.szT||0)>500){R.szT=n;sizeField();}}
 function sizeField(){const c=$('arenaCanvas'),o=$('owOver');if(!c||!o)return;const L=c.offsetLeft+'px',T0=c.offsetTop+'px',W0=c.clientWidth+'px',H0=c.clientHeight+'px';
  if(o.style.left!==L||o.style.top!==T0||o.style.width!==W0||o.style.height!==H0){Object.assign(o.style,{left:L,top:T0,width:W0,height:H0});const w=$('owWx');if(w){w.width=c.clientWidth;w.height=c.clientHeight;}}}
 addEventListener('resize',()=>{if(R.m)sizeField();});
@@ -305,10 +307,10 @@ function stroll(a,dt,grp){const s=strollInit(a);const [tx,ty,sp]=a.to;
  if(a.startDelay>0){a.startDelay-=dt;a.state='idle';a.moveSpeed=0;return;}
  s.t+=dt;s.pause-=dt;if(s.pause<=0){s.slow=.6+Math.random()*1.1;s.look=Math.random()<.5?s.slow:0;s.pause=5+Math.random()*10;}if(s.slow>0)s.slow-=dt;if(s.look>0)s.look-=dt;
  const dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
- let k=s.k*(1+.12*Math.sin(s.t*.7+s.ph))*(s.slow>0?.4:1);if(grp&&grp.n>1)k*=clamp(1+(grp.x-a.x)/240,.7,1.4);if(d<60)k*=.6+.4*d/60;
+ let k=s.k*(1+.12*Math.sin(s.t*.7+s.ph))*(s.slow>0?.4:1);if(grp&&grp.n>1)k*=clamp(1+(grp.x-a.x)/240,.7,1.4);if(d<60&&!a.path?.length)k*=.6+.4*d/60;
  const step=Math.max(4,sp*k)*dt;
- if(d<=step+.5){a.x=tx;a.y=ty;a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;if(a.face!==undefined)a.a=a.face;return;}
- const ux=dx/d,uy=dy/d,lat=Math.cos(s.t*s.fr+s.ph)*s.amp*s.fr*dt*Math.min(1,d/90);
+ if(d<=step+.5){a.x=tx;a.y=ty;if(a.path?.length){a.to=a.path.shift();return;}a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;if(a.face!==undefined)a.a=a.face;return;}
+ const ux=dx/d,uy=dy/d,lat=a.path?.length?0:Math.cos(s.t*s.fr+s.ph)*s.amp*s.fr*dt*Math.min(1,d/90);// auf Umwegen nicht seitlich schlendern
  a.x+=ux*step-uy*lat;a.y+=uy*step+ux*lat;a.state='move';a.moveSpeed=6+5*k;a.odo=(a.odo||0)+step;a.phase=a.odo*s.stride;
  a.a=s.look>0?(dx>0?Math.PI:0):Math.abs(dx)>.5?(dx>0?0:Math.PI):a.a;}
 function missionLoop(t){const b=S.battle;
@@ -319,14 +321,16 @@ function missionLoop(t){const b=S.battle;
     if((b.paused&&!b.done)||R.fleeing){const dt=1/60*speed(),grp=groupCenter(b);for(const a of b.actors)if(a.to){if(R.fleeing||a.team!==0)walker(a,dt);else stroll(a,dt,grp);pushOut(a,b);}}
     while(b.events.length)onEvent(b,b.events.shift());
     if(b.started&&b.done&&!b.handled){b.handled=true;encounterEnd(b);}
+    if(t-(loopT.cull||0)>200){loopT.cull=t;const c=$('arenaCanvas');D.cullObstacles(b,R.cam.x,c?c.clientWidth/(c.clientHeight/VH):1400);}
     updProgress();updBubbles();
     if(t-loopT.map>120){loopT.map=t;paintMap(t/1000);}
     if(t-loopT.info>250){loopT.info=t;renderInfo();}
-    const w=$('owWx');if(w)A.weather(w.getContext('2d'),w.width,w.height,R.m.place.mood,t/1000,R.cam.x);}}}
+    A.weatherStep($('owWx'),R.m.place.mood,t/1000,R.cam.x);}}}
  requestAnimationFrame(missionLoop);}
 requestAnimationFrame(missionLoop);
 function onEvent(b,e){const m=R.m,adv=m.kind==='adventure';
  if(e.type==='spawn'){const g=e.actor.g;if(g.debtBoss)return;bubble(e.actor,g.debtShout,{name:g.name});mlog(`<b class="foe">${esc(g.name)}</b> kommt aus ${esc(e.door||'dem Nichts')}. Er ${esc(g.debtOwes)}. Waffe: ${esc(M.itemName(M.gear(g,'weapon')))}.`);}
+ if(e.type==='detour'&&e.actor.team===0&&Math.random()<.6){bubble(e.actor,pickL(['Kein freies Schussfeld!','Das Haus ist im Weg!','Moment, ich such mir eine Lücke.','Ich geh rum!']),{name:first(e.actor.g),ms:1800});}
  if(e.type==='gaveup'){const l=adv?pickL(['Ich hab genug! Ich geh heim!','Das ist mir zu blöd!','Mama! MAMA!','Ich ergebe mich! Ich ergebe mich ganz doll!']):pickL(D.TEXT.gaveup);bubble(e.actor,l,{name:first(e.actor.g)});mlog(`<b class="foe">${esc(e.actor.g.name)}</b> verliert die Nerven: „${esc(l)}“`);}
  if(e.type==='bossHurt'){const l=adv?pickL(['Das wirst du bereuen!','Ihr Hunde! Ihr räudigen Hunde!','Haltet sie auf, ihr Feiglinge!','Ich hab schon Bessere als euch begraben!']):pickL(D.TEXT.bossHurt);const nm=adv?first(e.actor.g):'Krassus';bubble(e.actor,l,{name:nm,boss:true});mlog(`<b class="boss">${esc(nm)}:</b> „${esc(l)}“`);}}
 
@@ -345,17 +349,23 @@ async function startMission(){if(S.battle||R.m)return;bypassLoader();const st=ST
   :`<b>${esc(school())}</b> zieht los: ${esc(m.place.label)} ${esc(m.place.name)}. ${esc((m.texts?.intro||'').replace('{P}',m.place.name))} ${esc(D.moodText(m.place.mood))}`;
  await runSection(0,intro);}
 function clearPoint(b,x,y){for(let k=0;k<12;k++){const yy=y+(k%2?1:-1)*Math.ceil(k/2)*14;if(!b.obstacles.some(o=>o.hp>0&&Math.hypot(o.x-x,o.y-yy)<o.r+18))return yy;}return D.pathY(b.L,x);}
-function marchTo(b,x,sp=58){const pa=partyActors(b);pa.forEach((a,k)=>{a.startDelay=Math.random()*.9;const col=k%3,line=Math.floor(k/3),tx=x-line*60-(col===1?0:26)+(Math.random()-.5)*44,y=clearPoint(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*58+(Math.random()-.5)*20,b.L.mT+30,b.L.mB-30));a.to=[tx,y,sp];a.path=[];a.face=0;});
+// Marsch mit Wegsuche: jeder bekommt einen Weg um Bäume, Häuser und Fässer herum (D.findPath). Wer trotzdem hängt (2,6 s ohne
+// Fortschritt), plant neu. Alle brechen gemeinsam auf (nur kleine Verzögerung) und der Marsch endet erst, wenn alle da sind.
+function freeSpot(b,x,y){for(let k=0;k<18;k++){const yy=y+(k%2?1:-1)*Math.ceil(k/2)*16;if(D.navFreeAt(b,x,yy))return yy;}return y;}
+function routeTo(b,a,tx,ty,sp){const path=D.findPath(b,a.x,a.y,tx,ty);const pts=(path&&path.length?path:[{x:tx,y:ty}]).map(p=>[p.x,p.y,sp]);a.to=pts.shift();a.path=pts;a.goal=[tx,ty,sp];}
+function marchTo(b,x,sp=58){const pa=partyActors(b);pa.forEach((a,k)=>{a.startDelay=Math.random()*.45;const col=k%3,line=Math.floor(k/3),tx=x-line*60-(col===1?0:26)+(Math.random()-.5)*44,y=freeSpot(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*58+(Math.random()-.5)*20,b.L.mT+30,b.L.mB-30));routeTo(b,a,tx,y,sp);a.face=0;a.replan=0;});
  R.marching=true;setButtons('march');const start=performance.now(),prog=new Map();
  return new Promise(res=>{const chk=()=>{if(!live(b)){R.marching=false;return res(false);}const now=performance.now();
    if(M.ui.getPage()==='profiles'){setTimeout(chk,200);return;}
-   for(const a of partyActors(b)){if(!a.to)continue;const d=Math.hypot(a.to[0]-a.x,a.to[1]-a.y),p=prog.get(a);if(!p||d<p.d-3)prog.set(a,{d,t:now});else if(now-p.t>2600/speed()){a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}}
-   if(now-start>90000)for(const a of partyActors(b)){a.to=null;a.state='idle';a.moveSpeed=0;}
+   for(const a of partyActors(b)){if(!a.to||!a.goal)continue;const d=Math.hypot(a.goal[0]-a.x,a.goal[1]-a.y),p=prog.get(a);
+    if(!p||d<p.d-3)prog.set(a,{d,t:now});
+    else if(now-p.t>2600/speed()){if(a.replan<5){a.replan++;routeTo(b,a,a.goal[0],a.goal[1],a.goal[2]);prog.set(a,{d,t:now});}else{a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}}}
+   if(now-start>120000)for(const a of partyActors(b)){a.to=null;a.state='idle';a.moveSpeed=0;}
    if(partyActors(b).every(a=>!a.to)){R.marching=false;res(true);}else setTimeout(chk,80);};chk();});}
 const live=b=>!R.ended&&!R.fleeing&&S.battle===b;
 async function runSection(si,introLine){const m=R.m,sec=m.place.sections[si];
  const b=R.b=D.startSection(m,si);R.lastTime=0;b.handled=false;
- const img=A.scene(b.L,m.place);M.missionBackdrop=(ctx)=>{ctx.save();ctx.scale(1040/b.width*D.ART,720/b.height*D.ART);ctx.drawImage(img,0,0);ctx.restore();};
+ const img=A.scene(b.L,m.place);D.addObstacles(b,b.L.extraObstacles);M.missionBackdrop=(ctx)=>A.drawBackdrop(ctx,img,b);
  R.cam.x=0;R.cam.y=D.pathY(b.L,0);R.cam.snap=true;
  M.ui.render();missionHud(b);$('battleView')?.classList.remove('ow-fade');const bl=$('owBubbles');if(bl)bl.innerHTML='';
  const tt=$('owTitle');if(tt)tt.textContent=m.place.name;const sb=$('owSub');if(sb)sb.textContent=`${m.place.label} · ${D.moodText(m.place.mood)}`;

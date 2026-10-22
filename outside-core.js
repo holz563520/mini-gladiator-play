@@ -249,7 +249,7 @@ D.marginX=W=>78*W/1040;
 D.startSection=function(m,si,o={}){
  const sec=m.place.sections[si],L=D.layout(sec,m.place),W=sec.W;m.sec=si;
  const fighters=m.party.filter(D.fit),x0=D.marginX(W)+46;
- const py0=D.pathY(L,x0+60);const actors=fighters.map((g,k)=>{const a=M.createCombatActor(g,0,k);a.x=o.headless?x0+60:x0-150-k*36;a.y=py0+((k%3)-1)*56+(k>2?28:0);a.r=12;a.a=0;a.cool=.6+(k%3)*.12;return a;});
+ const py0=D.pathY(L,x0+60);const actors=fighters.map((g,k)=>{const a=M.createCombatActor(g,0,k);const col=k%3,line=Math.floor(k/3);a.x=o.headless?x0+60:x0-150-line*52-(col===1?0:20);a.y=py0+(col-1)*52+(line%2?14:0);a.r=12;a.a=0;a.cool=.6+(k%3)*.12;return a;});
  const b={id:'outside-'+m.seed+'-s'+si,benchmark:true,mission:m,section:si,L,actors,opponent:m.kind==='adventure'?(m.texts?.band||'Bande'):'Dorftrottel',champion:false,time:0,type:'mission',league:0,log:[],paused:true,result:null,lastSave:0,obstacles:L.obstacles.map(x=>({...x})),fee:0,
   teamTactics:M.copy(TACTICS),leaders:[null,null],moraleBonus:[0,0],width:W,height:L.H,groundWeapons:[],dropped:[],
   queue:[],spawns:[],spawnT:1,spawnIndex:0,gearSnap:new Map(fighters.map(g=>[g,g.enemyGear?{...g.enemyGear,armor:{...g.enemyGear.armor}}:{equipment:{...g.equipment,armor:{...(g.equipment.armor||{})}}}])),enemiesAll:[],encEnemies:[],events:[],started:false,done:null,bossHurt:false,encounter:-1,triggered:new Set()};
@@ -278,26 +278,69 @@ D.spawn=function(b,o={}){if(!b.queue.length)return null;const g=b.queue.shift(),
 D.tick=function(b,dt){if(!b||b.done||!b.started||b.paused)return;
  if(b.queue.length&&D.activeEnemies(b)<D.CFG.maxActive){b.spawnT-=dt;if(b.spawnT<=0){D.spawn(b);const r=Math.random();b.spawnT=D.CFG.spawnDelay[0]+r*(D.CFG.spawnDelay[1]-D.CFG.spawnDelay[0]);}}
  const boss=b.encEnemies.find(a=>a.g.debtBoss);if(boss&&!b.bossHurt&&!boss.down&&M.health(boss.g)<55){b.bossHurt=true;b.events.push({type:'bossHurt',actor:boss});}
- D.unstick(b);
+ D.unstick(b,dt);
  // Patt nach langer Zeit: Dorftrottel verlieren die Nerven (Krassus nie)
  if(b.time-b.encStart>150&&!b.queue.length){for(const a of b.encEnemies)if(!a.down&&!a.g.dead&&!a.surrendered&&!a.g.debtBoss){a.surrendered=true;a.state='idle';b.events.push({type:'gaveup',actor:a});}}
  if(b.time>b.timeLimitAt&&!b.done){b.paused=true;b.done={winner:-1,reason:'Zeitlimit'};}
 };
-// Steckenbleiben lösen: Die Kampf-KI läuft geradeaus. Wer 3 s an Hindernissen klebt und keinen Gegner erreicht,
-// wird um das Hindernis herum zum freien Weg geschoben (Bäume und Häuser blockieren weiter).
-D.unstick=function(b){if(!b.L||b.time-(b.unstickT||0)<.5)return;b.unstickT=b.time;
- for(const a of b.actors){if(a.down||a.g.dead||a.surrendered){a.stuck=null;continue;}
-  const foes=b.actors.filter(o=>o.team!==a.team&&!o.down&&!o.g.dead&&!o.surrendered);if(!foes.length)continue;
-  const near=foes.reduce((m,o)=>Math.min(m,Math.hypot(o.x-a.x,o.y-a.y)),1e9);
-  const s=a.stuck||(a.stuck={x:a.x,y:a.y,t:b.time});
-  if(Math.hypot(a.x-s.x,a.y-s.y)>14){a.stuck={x:a.x,y:a.y,t:b.time};continue;}
-  if(b.time-s.t<3||near<70)continue;
-  const blocked=b.obstacles.some(o=>o.hp>0&&o.type==='none'&&Math.hypot(o.x-a.x,o.y-a.y)<o.r+a.r+10);if(!blocked){s.t=b.time;continue;}
-  // Schritt zum Weg und zum nächsten Gegner hin, nur an freie Stellen
-  const f=foes.reduce((m,o)=>Math.hypot(o.x-a.x,o.y-a.y)<Math.hypot(m.x-a.x,m.y-a.y)?o:m,foes[0]),py=D.pathY(b.L,a.x);
-  for(const step of [[0,Math.sign(py-a.y)*44],[Math.sign(f.x-a.x)*44,Math.sign(py-a.y)*30],[Math.sign(f.x-a.x)*-40,Math.sign(py-a.y)*40],[0,Math.sign(py-a.y)*80]]){const nx=a.x+step[0],ny=a.y+step[1];
-   if(!b.obstacles.some(o=>o.hp>0&&Math.hypot(o.x-nx,o.y-ny)<o.r+a.r+2)){a.x=nx;a.y=ny;break;}}
-  a.stuck={x:a.x,y:a.y,t:b.time};}};
+// Steckenbleiben im Gefecht lösen: Die Kampf-KI läuft geradeaus auf ihr Ziel zu. Wer 2,5 s an einem Baum oder Haus klebt, ohne einen
+// Gegner zu erreichen, bekommt einen Umweg (A*) und wird ihn entlang geführt. Fernkämpfer ohne freie Schusslinie (Gebäude, Bäume im Weg)
+// suchen sich nach 3 s ohne Schuss eine Stelle mit freier Linie in Schussweite und gehen dorthin.
+const RANGED=['bow','crossbow','javelin','throwaxe'];
+function firingSpot(b,a,f,range){let best=null,bd=1e9;for(const k of [.5,.68,.85])for(let n=0;n<20;n++){const an=n/20*Math.PI*2,x=f.x+Math.cos(an)*range*k,y=f.y+Math.sin(an)*range*k;
+ if(!D.navFreeAt(b,x,y)||!D.clearShot(b,{x,y},f))continue;const d=Math.hypot(x-a.x,y-a.y);if(d<bd){bd=d;best={x,y};}}return best;}
+D.unstick=function(b,dt=0){if(!b.L)return;const now=b.time;
+ if(now-(b.unstickT||0)>=.5){b.unstickT=now;
+  for(const a of b.actors){if(a.down||a.g.dead||a.surrendered||a.grabbedBy||a.rearFinish){a.stuck=null;a.detour=null;continue;}
+   const foes=b.actors.filter(o=>o.team!==a.team&&!o.down&&!o.g.dead&&!o.surrendered);if(!foes.length){a.detour=null;continue;}
+   const f=foes.reduce((m,o)=>Math.hypot(o.x-a.x,o.y-a.y)<Math.hypot(m.x-a.x,m.y-a.y)?o:m,foes[0]),d=Math.hypot(f.x-a.x,f.y-a.y);
+   const w=M.gear(a.g,'weapon'),ranged=a.ammo>0&&w&&RANGED.includes(w.def),range=ranged?(M.effective?.(a)?.range||300):0;
+   if(a.lastAmmo!==a.ammo){a.lastAmmo=a.ammo;a.shotT=now;}
+   const s=a.stuck||(a.stuck={x:a.x,y:a.y,t:now});if(Math.hypot(a.x-s.x,a.y-s.y)>14){a.stuck={x:a.x,y:a.y,t:now};}
+   if(a.detour){const done=d<80||now-a.detour.t>9||(ranged&&d<range*.95&&D.clearShot(b,a,f));if(done)a.detour=null;continue;}
+   const touching=b.obstacles.some(o=>o.hp>0&&o.type!=='barrel'&&Math.hypot(o.x-a.x,o.y-a.y)<o.r+(a.r||12)+12),still=now-a.stuck.t>=3;
+   if(ranged){if(still&&d>90&&d<range*1.6&&now-Math.max(a.shotT??-1e9,b.encStart??0)>3&&!D.clearShot(b,a,f)){const spot=firingSpot(b,a,f,range);const path=spot&&D.findPath(b,a.x,a.y,spot.x,spot.y);if(path){a.detour={pts:path,t:now,why:'shot'};b.events.push({type:'detour',actor:a,why:'shot'});}}continue;}
+   if(now-a.stuck.t>=2.5&&touching&&d>70){const path=D.findPath(b,a.x,a.y,f.x,f.y);if(path){a.detour={pts:path,t:now,why:'stuck'};a.stuck={x:a.x,y:a.y,t:now};}}}}
+ // entlang des Umwegs führen (die KI drückt weiter Richtung Ziel; der Umweg führt sie um das Hindernis herum)
+ if(dt>0)for(const a of b.actors){const dd=a.detour;if(!dd)continue;if(a.down||a.g.dead||a.grabbedBy||a.rearFinish){a.detour=null;continue;}
+  let step=78*dt;while(step>0&&dd.pts.length){const p=dd.pts[0],dx=p.x-a.x,dy=p.y-a.y,l=Math.hypot(dx,dy);if(l<=step){a.x=p.x;a.y=p.y;dd.pts.shift();step-=l;}else{a.x+=dx/l*step;a.y+=dy/l*step;a.a=Math.atan2(dy,dx);step=0;}}
+  if(!dd.pts.length)a.detour=null;}};
+
+// ---------- Wegsuche um Bäume, Häuser und Fässer (Raster, A*) ----------
+// Raster mit 20 px Zellen über den ganzen Abschnitt; gesperrt ist, was näher als Hindernis-Radius + 14 an einem festen Hindernis liegt.
+const NAV=20;
+D.nav=function(b){if(b.nav)return b.nav;const W=b.width,H=b.height,cw=Math.ceil(W/NAV),ch=Math.ceil(H/NAV),g=new Uint8Array(cw*ch);
+ const x0=78*W/1040+14,x1=W-78*W/1040-14,y0=132*H/720+14,y1=H-80*H/720-14;
+ for(let j=0;j<ch;j++)for(let i=0;i<cw;i++){const x=i*NAV+NAV/2,y=j*NAV+NAV/2;if(x<x0||x>x1||y<y0||y>y1)g[j*cw+i]=1;}
+ for(const o of (b.allObstacles||b.obstacles)){if(!(o.hp>0))continue;const R=o.r+14,i0=Math.max(0,Math.floor((o.x-R)/NAV)),i1=Math.min(cw-1,Math.floor((o.x+R)/NAV)),j0=Math.max(0,Math.floor((o.y-R)/NAV)),j1=Math.min(ch-1,Math.floor((o.y+R)/NAV));
+  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const x=i*NAV+NAV/2,y=j*NAV+NAV/2;if(Math.hypot(x-o.x,y-o.y)<R)g[j*cw+i]=1;}}
+ return b.nav={g,cw,ch,W,H};};
+D.navInvalidate=b=>{b.nav=null;};
+const navFree=(N,i,j)=>i>=0&&j>=0&&i<N.cw&&j<N.ch&&!N.g[j*N.cw+i];
+function navNearest(N,x,y){let i=Math.floor(x/NAV),j=Math.floor(y/NAV);if(navFree(N,i,j))return [i,j];for(let r=1;r<14;r++)for(let dj=-r;dj<=r;dj++)for(let di=-r;di<=r;di++){if(Math.max(Math.abs(di),Math.abs(dj))!==r)continue;if(navFree(N,i+di,j+dj))return [i+di,j+dj];}return null;}
+function navLine(N,ax,ay,bx,by){const d=Math.hypot(bx-ax,by-ay),n=Math.ceil(d/(NAV/2));for(let k=1;k<n;k++){const x=ax+(bx-ax)*k/n,y=ay+(by-ay)*k/n;if(!navFree(N,Math.floor(x/NAV),Math.floor(y/NAV)))return false;}return true;}
+// Weg von (ax,ay) nach (bx,by): Liste von Wegpunkten (ohne Start), geglättet; null, wenn es keinen gibt
+D.findPath=function(b,ax,ay,bx,by,maxNodes=12000){const N=D.nav(b),s=navNearest(N,ax,ay),t=navNearest(N,bx,by);if(!s||!t)return null;
+ const cw=N.cw,key=(i,j)=>j*cw+i,goal=key(t[0],t[1]),start=key(s[0],s[1]);if(start===goal)return [{x:bx,y:by}];
+ if(navLine(N,ax,ay,bx,by))return [{x:bx,y:by}];
+ const gS=new Map([[start,0]]),from=new Map(),open=[],closed=new Set();let found=false,n=0;
+ const push=(f,k)=>{open.push([f,k]);let i=open.length-1;while(i>0){const p=(i-1)>>1;if(open[p][0]<=open[i][0])break;[open[p],open[i]]=[open[i],open[p]];i=p;}};
+ const pop=()=>{const top=open[0],last=open.pop();if(open.length){open[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<open.length&&open[l][0]<open[m][0])m=l;if(r<open.length&&open[r][0]<open[m][0])m=r;if(m===i)break;[open[m],open[i]]=[open[i],open[m]];i=m;}}return top;};
+ push(Math.hypot(t[0]-s[0],t[1]-s[1]),start);
+ while(open.length&&n++<maxNodes){const [,cur]=pop();
+  if(cur===goal){found=true;break;}if(closed.has(cur))continue;closed.add(cur);const ci=cur%cw,cj=(cur-ci)/cw;
+  for(const [di,dj,c] of [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.41],[1,-1,1.41],[-1,1,1.41],[-1,-1,1.41]]){const ni=ci+di,nj=cj+dj;if(!navFree(N,ni,nj))continue;if(di&&dj&&(!navFree(N,ci+di,cj)||!navFree(N,ci,cj+dj)))continue;
+   const nk=key(ni,nj),ng=gS.get(cur)+c;if(ng<(gS.get(nk)??1e9)){gS.set(nk,ng);from.set(nk,cur);push(ng+Math.hypot(t[0]-ni,t[1]-nj),nk);}}}
+ if(!found)return null;
+ const cells=[];for(let k=goal;k!==start;k=from.get(k))cells.push(k);cells.reverse();
+ const pts=cells.map(k=>({x:(k%cw)*NAV+NAV/2,y:Math.floor(k/cw)*NAV+NAV/2}));pts[pts.length-1]={x:bx,y:by};
+ // glätten: Punkte überspringen, solange die gerade Linie frei ist
+ const out=[];let cx=ax,cy=ay,i=0;while(i<pts.length){let j=pts.length-1;while(j>i&&!navLine(N,cx,cy,pts[j].x,pts[j].y))j--;out.push(pts[j]);cx=pts[j].x;cy=pts[j].y;i=j+1;}
+ return out;};
+D.navFreeAt=(b,x,y)=>{const N=D.nav(b);return navFree(N,Math.floor(x/NAV),Math.floor(y/NAV));};
+// Freie Schusslinie (wie die Engine: Hindernisse mit hp>0 blockieren, Abstand Radius+4)
+D.clearShot=function(b,a,t){const dx=t.x-a.x,dy=t.y-a.y,l2=Math.max(1,dx*dx+dy*dy);for(const o of b.obstacles){if(!(o.hp>0))continue;const u=((o.x-a.x)*dx+(o.y-a.y)*dy)/l2;if(u>0&&u<1&&Math.hypot(o.x-a.x-u*dx,o.y-a.y-u*dy)<o.r+6)return false;}return true;};
+
 // Kampfende kommt über M.endBenchmark aus der Engine (b.benchmark=true: kein Arena-Finale, keine Hinrichtungen)
 D.onEngineEnd=function(winner,reason){const b=S.battle;if(!b?.mission||b.done)return false;
  if(!b.started){return true;}
@@ -329,6 +372,12 @@ D.endEncounter=function(m,b,o={}){const st=m.place.stations[b.encounter],w=o.fle
  b.started=false;b.queue=[];return out;
 };
 const learn0=M.learn;if(learn0&&!learn0.__outside){M.learn=function(a,group,key,amount){const b=S.battle;if(b?.mission?.learn&&b.benchmark&&a?.team===0&&!b.paused){b.benchmark=false;try{return learn0.call(this,a,group,key,amount);}finally{b.benchmark=true;}}return learn0.call(this,a,group,key,amount);};M.learn.__outside=true;}
+// Leistung: Die Kampf-Engine prüft jedes Hindernis für jeden Kämpfer und jeden Pfeil. Ein Abschnitt hat 400–500 davon
+// (Baumstämme, Hauswände, Tiefen-Sprites). Die Oberfläche ruft das hier mehrmals pro Sekunde auf: In b.obstacles bleiben nur
+// Hindernisse in der Nähe der Kämpfer und des Bildausschnitts; die vollständige Liste liegt in b.allObstacles.
+D.cullObstacles=function(b,camX=null,view=1400){if(!b?.L)return;const all=b.allObstacles??=b.obstacles;const xs=b.actors.filter(a=>!a.g.dead).map(a=>a.x);if(camX!=null)xs.push(camX-view/2,camX+view/2);if(!xs.length)return;
+ const lo=Math.min(...xs)-420,hi=Math.max(...xs)+420;b.obstacles=all.filter(o=>o.type==='sprite'?o.x>lo-700&&o.x<hi+700:o.x+o.r>lo&&o.x-o.r<hi);};
+D.addObstacles=function(b,list){if(!list?.length)return;(b.allObstacles??=b.obstacles);if(b.allObstacles!==b.obstacles)b.allObstacles.push(...list);b.obstacles.push(...list);};
 D.nextStation=(m,b)=>m.place.sections[b.section].stations.find(i=>!b.triggered.has(i));
 
 // ---------- Schauplätze (Daten) im echten Maßstab ----------

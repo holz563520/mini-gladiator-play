@@ -315,7 +315,7 @@ function updProgress(){const m=R.m,b=S.battle;if(!m||!b?.L)return;const sec=m.pl
  const first=sec.stations[0],last=sec.stations[sec.stations.length-1];const p0=first*3+.4,p1=(last+1)*3+(sec.boss?0:1.4);R.progress=Math.max(R.progress,p0+(p1-p0)*clamp(x/sec.W,0,1));}
 
 // Kamera, Unterebene und Hintergrund als Anschlüsse an den Arena-Renderer
-M.battleCamera=(b,width,height,W,H)=>{if(!b?.mission)return null;sizeField();const fit=Math.min(width/W,height/H),k=height/VH,view=width/k;
+M.battleCamera=(b,width,height,W,H)=>{if(!b?.mission)return null;if(performance.now()-(R.szT||0)>500){R.szT=performance.now();sizeField();}const fit=Math.min(width/W,height/H),k=height/VH,view=width/k;
  const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
  let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=view*.18;
  tx=clamp(tx,view/2,W-view/2);ty=clamp(ty,VH/2,H-VH/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
@@ -331,13 +331,13 @@ function missionLoop(t){const b=S.battle;
  if(T.view==='mission'&&R.m){
   if(b&&b.mission){const dt=Math.max(0,b.time-R.lastTime);R.lastTime=b.time;D.tick(b,dt);
    if(b.paused&&!b.done||R.fleeing){for(const a of b.actors)if(a.to){walker(a,1/60*T.speed);pushOut(a,b);}}
-   while(b.events.length)onEvent(b,b.events.shift());
+   if(t-(missionLoop.c||0)>200){missionLoop.c=t;D.cullObstacles?.(b,R.cam.x);}while(b.events.length)onEvent(b,b.events.shift());
    if(b.started&&b.done&&!b.handled){b.handled=true;encounterEnd(b);}
    updProgress();}
   updBubbles();if(!missionLoop.m||t-missionLoop.m>120){missionLoop.m=t;paintMap(t/1000);}
   if(!missionLoop.n||t-missionLoop.n>250){missionLoop.n=t;renderParty();}
   {const lg=$('bhLog');if(lg&&lg.dataset.k!=String(R.rowKey)){lg.dataset.k=R.rowKey;lg.innerHTML='<h5>UNTERWEGS</h5>'+(R.rows||[]).map(h=>'<p>'+h+'</p>').join('');}}
-  const w=$('wx');if(w&&R.m)A.weather(w.getContext('2d'),w.width,w.height,R.m.place.mood,t/1000,R.cam.x);}
+  if(R.m)(A.weatherStep?A.weatherStep($('wx'),R.m.place.mood,t/1000,R.cam.x):0);}
  requestAnimationFrame(missionLoop);}
 function onEvent(b,e){if(e.type==='spawn'){const g=e.actor.g;if(g.debtBoss)return;
   bubble(e.actor,g.debtShout,{name:g.name});mlog(`<b class="foe">${esc(g.name)}</b> kommt aus ${esc(e.door||'dem Nichts')}. Er ${esc(g.debtOwes)}. Waffe: ${esc(M.itemName(g.enemyGear.weapon))}.`);}
@@ -361,7 +361,7 @@ function marchTo(b,x,speed=58){const pa=partyActors(b);pa.forEach((a,k)=>{const 
 const live=b=>!R.ended&&!R.fleeing&&S.battle===b;
 async function runSection(si){const m=R.m,sec=m.place.sections[si];
  const b=R.b=D.startSection(m,si);R.lastTime=0;b.handled=false;
- const img=A.scene(b.L,m.place);M.missionBackdrop=(ctx)=>{ctx.save();ctx.scale(1040/b.width*D.ART,720/b.height*D.ART);ctx.drawImage(img,0,0);ctx.restore();};
+ const img=A.scene(b.L,m.place);D.addObstacles?.(b,b.L.extraObstacles);M.missionBackdrop=(ctx)=>A.drawBackdrop(ctx,img,b);
  R.cam.x=0;R.cam.y=D.pathY(b.L,0);R.cam.snap=true;$('battleView').classList.remove('fade');hookHud();$('bubbles').innerHTML='';
  $('mstation').textContent=`${si+1}. ${D.THEMES[sec.theme].name}${sec.boss?' · Ziel':''}`;
  mlog(esc(D.THEMES[sec.theme].text),'narr');
