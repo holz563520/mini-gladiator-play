@@ -34,9 +34,9 @@ const fill=(t,o)=>t.replace(/\{(\w+)\}/g,(_,k)=>o[k]??'');
 L.CFG={
  minParty:5,        // ab so vielen kampffähigen Kämpfern gibt es einen Anführer
  groupMax:6,        // so viele Gegner einer Begegnung stehen zusammen (Rest kommt als Nachschub)
- haltDist:520,      // so weit vor der Gruppe bleibt die Truppe stehen, wenn sie die Gegner entdeckt
+ haltDist:780,      // so weit vor der Gruppe bleibt die Truppe stehen, wenn sie die Gegner entdeckt (größer = mehr Zeit für Taktik)
  noticeDist:240,    // ahnungslose Gegner merken etwas, wenn einer von uns so nah kommt
- alertAfter:9,      // spätestens nach so vielen Sekunden hören sie die Truppe
+ alertAfter:12,      // spätestens nach so vielen Sekunden hören sie die Truppe
  holdRelease:160,   // haltende Soldaten lösen sich, wenn ein Gegner so nah ist
  holdMax:11,        // oder spätestens so viele Sekunden nach dem Alarm
  hideMax:22,        // Assassinen warten höchstens so lange nach dem Alarm
@@ -99,7 +99,7 @@ L.spotRoll=function(b,st){const g=leaderActor(b)?.g;if(!g)return false;let p=b.l
 // ---------- Gegnergruppe aufstellen (alle Gegner einer Begegnung stehen zusammen vor der Truppe) ----------
 L.groupSize=(b,m,sti)=>Math.min(m.queues[sti].length,clamp(2+Math.floor(m.party.filter(D.fit).length*.5),2,L.CFG.groupMax));
 L.layoutGroup=function(b,m,sti){const st=m.place.stations[sti],W=b.width,mx=D.marginX(W);
- const ex=clamp(st.fx+140,mx+L.CFG.haltDist+120,W-mx-70),ey=D.pathY(b.L,ex);return {ex,ey,hx:ex-L.CFG.haltDist};};
+ const ex=clamp(st.fx+140,mx+L.CFG.haltDist+120,W-mx-70),ey=D.pathY(b.L,ex);return {ex,ey,hx:Math.max(mx+90,ex-L.CFG.haltDist)};};
 // Begegnung mit entdeckter Gruppe beginnen: Gegner stehen ahnungslos beisammen. unaware=false: Sie merken es sofort (ohne Anführer).
 L.beginGroup=function(b,m,sti,o={}){const G=L.layoutGroup(b,m,sti),n=L.groupSize(b,m,sti);
  const firstA=D.beginEncounter(b,m,sti);b.events.length=0;
@@ -159,7 +159,7 @@ L.plan=function(b){const ld=b.lead,G=b.group,P=party(b).filter(fit),W=b.width,mT
  line.forEach((a,i)=>{const y=clamp(G.ey+(i-(line.length-1)/2)*54,mT+30,mB-24);pts.set(a,{x:lx+(i%2?-10:0),y,face:0,job:'line'});ld.holds.set(a.id,{x:lx,y});});
  const half=Math.max(60,(line.length-1)/2*54);
  // Fernkämpfer: nur ein Stück vor die Linie (gerade in Schussweite), beim Anrücken zurück hinter die Schilde, dann außen herum
- arch.forEach((a,i)=>{const rg=M.effective?.(a)?.range||330,x=clamp(G.ex-rg*.92,lx+100,lx+190),y=clamp(G.ey+(i-(arch.length-1)/2)*70,mT+30,mB-24);
+ arch.forEach((a,i)=>{const rg=M.effective?.(a)?.range||330,x=Math.max(lx+100,G.ex-rg*.9),y=clamp(G.ey+(i-(arch.length-1)/2)*70,mT+30,mB-24);
   pts.set(a,{x,y,face:0,job:'skirmish'});a.leadSkirmish={mode:'fwd',side:y>=G.ey?1:-1};});
  // Assassinen: seitlich verstecken (abwechselnd oben/unten), zwischen Linie und Gegnern
  assa.forEach((a,i)=>{const side=i%2?1:-1,x=(lx+G.ex)/2-30+(Math.floor(i/2))*40;let y=clamp(G.ey+side*(half+150),mT+40,mB-30);
@@ -171,7 +171,8 @@ L.plan=function(b){const ld=b.lead,G=b.group,P=party(b).filter(fit),W=b.width,mT
  ld.planned={sold:line.map(a=>a.id),assa:assa.map(a=>a.id),arch:arch.map(a=>a.id)};return {pts,lines};};
 // Kampf beginnt nach der Besprechung: Assassinen verschwinden, Soldaten halten, Gegner ahnungslos
 L.engage=function(b){const ld=b.lead;if(!ld)return;ld.phase='fight';ld.fightAt=b.time;ld.hidden=party(b).filter(a=>a.leadHide&&fit(a)).map(a=>a.id);
- for(const a of party(b))if(a.leadHide){const c={type:'sprite',hp:0,r:0,x:a.leadHide.x+(a.leadHide.side>0?6:-4),y:a.leadHide.y+10,leadCover:true,sid:-1};D.addObstacles(b,[c]);a.leadCover=c;}
+ // in Deckung: knien (die Engine bewegt Versteckte nicht, der Knie-Zähler läuft also nicht ab) und Zweige vor sich halten
+ for(const a of party(b))if(a.leadHide){const c={type:'sprite',hp:0,r:0,x:a.x+9,y:a.y+5,leadCover:true,sid:-1,seed:Math.random()*6};D.addObstacles(b,[c]);a.leadCover=c;a.kneeDuration=999;a.kneeTimer=500;a.kneeRise=1;a.a=0;}
  for(const e of foes(b))e.leadHits=e.hitsTaken||0;};
 // Überraschung (nicht entdeckt): kein Plan, nur schnelle Rufe
 L.surprise=function(b){const ld=b.lead;if(!ld)return;ld.phase='fight';ld.fightAt=b.time;ld.alert=true;ld.alertAt=b.time;ld.stats.surprised++;const me=leaderActor(b);
@@ -226,7 +227,7 @@ function alert(b,why){const ld=b.lead;if(ld.alert)return;ld.alert=true;ld.alertA
 function release(b,why){const ld=b.lead;if(!ld.hidden.length)return;const hid=b.actors.filter(a=>ld.hidden.includes(a.id));ld.hidden=[];
  const me=leaderActor(b),E=foes(b);
  if(me&&fit(me)&&why!=='seen')say(b,me,fill(pick(['JETZT! {N}, in den Rücken!','{N}! Jetzt! Von hinten rein!','Assassinen! JETZT!']),{N:names(hid)}),'release',{urgent:true});
- for(const a of hid){if(!b.actors.includes(a))b.actors.push(a);const f=L.follow(a.g),eng=E.filter(e=>{const t=b.actors.find(x=>x.id===e.target);return t&&t.team===0&&dist(e,t)<90;}),tg=nearest(a,eng.length?eng:E);
+ for(const a of hid){if(!b.actors.includes(a))b.actors.push(a);a.kneeTimer=0;a.kneeDuration=0;if(a.leadCover){a.leadCover.dropped=b.time;a.leadCover.x=a.x+14;}const f=L.follow(a.g),eng=E.filter(e=>{const t=b.actors.find(x=>x.id===e.target);return t&&t.team===0&&dist(e,t)<90;}),tg=nearest(a,eng.length?eng:E);
   if(why==='seen'){if(tg)order(b,a,tg);continue;}later(b,f.react*.7,()=>{if(tg&&fit(tg))order(b,a,tg,{time:8});a.leadRelease=b.time;});}}
 
 // ---------- Anweisungen im Kampf ----------

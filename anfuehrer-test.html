@@ -51,11 +51,13 @@ ul.skills{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55}ul.sk
 .bubble.small{padding:2px 7px 3px;max-width:160px}.bubble.small span{font-size:11px}.bubble.small b{display:none}
 @media(max-width:600px){.bubble{max-width:58%}.bubble span{font-size:11px}.m-title small{display:none}#mstate{display:none}}
 /* Fernglas */
-#spy{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(#0000 30%,#000c 75%);pointer-events:auto}
-#spyCv{width:min(92%,640px);height:auto;aspect-ratio:2/1;image-rendering:pixelated;filter:drop-shadow(0 6px 0 #000a)}
-.spy-cap{width:min(92%,640px);background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45);padding:6px 12px 8px;font-family:'Courier Prime',monospace;min-height:64px}
-.spy-cap b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5a3a0c}.spy-cap span{display:block;font-size:clamp(13px,2vw,17px);font-weight:700;line-height:1.25}
+#spy{position:absolute;inset:0;z-index:5;pointer-events:auto}
+#spyMask{position:absolute;inset:0;width:100%;height:100%}
+#spyFace{position:absolute;left:10px;bottom:10px;width:min(34%,250px);height:auto;aspect-ratio:160/104;image-rendering:pixelated;background:#101a1d;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45)}
+.spy-cap{position:absolute;left:calc(min(34%,250px) + 26px);right:10px;bottom:10px;background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45);padding:6px 12px 8px;font-family:'Courier Prime',monospace;min-height:58px}
+.spy-cap b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5a3a0c}.spy-cap span{display:block;font-size:clamp(12px,1.9vw,17px);font-weight:700;line-height:1.25}
 #spySkip{position:absolute;right:10px;top:10px}
+@media(max-width:600px){#spyFace{width:30%}.spy-cap{left:calc(30% + 22px);padding:4px 8px}.spy-cap span{font-size:11px}}
 /* Ergebnis */
 .res-won{color:#f4d37a}.res-lost{color:var(--red)}.res-fled{color:#c8c6a7}
 #resultView h2{font-size:clamp(26px,6vw,42px);margin:6px 0;letter-spacing:2px}
@@ -107,7 +109,7 @@ ul.skills{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55}ul.sk
   <div class="m-log" id="mlogBox" hidden><div id="mlog"></div></div>
   <div class="m-auto" id="mauto" hidden><b id="mautoText"></b><div><button class="btn primary" id="btnNext">Weiter ▶</button><button class="btn" id="btnHome">Abziehen</button></div></div>
   <div class="m-ctrl"><span id="mstate"></span><button class="btn" id="btnFlee">Fliehen</button><button class="btn" id="btnSpd">1×</button><button class="btn" id="btnLog">Bericht</button></div>
-  <div id="spy" hidden><button class="btn" id="spySkip">Überspringen ▶▶</button><canvas id="spyCv" width="640" height="320"></canvas><div class="spy-cap"><b id="spyName"></b><span id="spyText"></span></div></div>
+  <div id="spy" hidden><canvas id="spyMask"></canvas><canvas id="spyFace" width="160" height="104"></canvas><div class="spy-cap"><b id="spyName"></b><span id="spyText"></span></div><button class="btn" id="spySkip">Überspringen ▶▶</button></div>
  </div>
  <div id="battleBottom"><div class="fight-log" id="mlogShort"></div></div>
 </div>
@@ -167,6 +169,7 @@ const leaderA=b=>b?.lead?b.actors.find(a=>a.id===b.lead.leaderId):null;
 function lname(a){return '★ '+first(a.g)+' · Anführer';}
 function leadSay(b,text,o={}){const a=leaderA(b);if(!a)return;bubble(a,text,{lead:true,name:lname(a),...o});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(text)}“`);}
 M.battleCamera=(b,width,height,W,H)=>{if(!b?.mission)return null;if(performance.now()-(R.szT||0)>500){R.szT=performance.now();sizeField();}const fit=Math.min(width/W,height/H),k=height/VH,view=width/k;
+ if(SPY.on){const z=k/fit*SPY.zoom,vw=width/(k*SPY.zoom),vh=VH/SPY.zoom;return {zoom:z,x:clamp(SPY.fx,vw/2,W-vw/2),y:clamp(SPY.fy+vh*.06,vh/2,H-vh/2)};}
  const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
  let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=view*.18;
  tx=clamp(tx,view/2,W-view/2);ty=clamp(ty,VH/2,H-VH/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
@@ -176,29 +179,40 @@ function hookHud(){if(M.battleCamera!==missionCam&&!M.battleCamera?.__m){const h
  if(M.battleHud&&!M.battleHud.__m){M.battleHud.__m=1;const prev=M.battleHud.onBuild;M.battleHud.onBuild=(panel,b)=>{prev?.(panel,b);if(!b?.mission)return;const n=panel.querySelectorAll('.bh-name b');if(n[0])n[0].textContent='BLAU · '+SCHOOL.toUpperCase();if(n[1])n[1].textContent=(b.mission.texts?.band||'BANDE').toUpperCase()+' · ROT';};}}
 // Gebüsch vor versteckten Assassinen (Tiefen-Sprite ohne Kollision) und Markierung unter dem Anführer
 const BUSH={wald:['#1f3a1e','#2f5527','#467a33','#5f9a3d'],dorf:['#2b3f1d','#41612a','#5b8236','#79a243'],stadt:['#3a2f22','#5a4630','#7b6040','#9a7a52']};
-function drawCover(ctx,o){const b=S.battle,c=BUSH[b?.L?.biome]||BUSH.wald,x=Math.round(o.x),y=Math.round(o.y),t=performance.now()/1000;ctx.save();
- ctx.fillStyle='#00000033';ctx.beginPath();ctx.ellipse(x,y+2,40,9,0,0,Math.PI*2);ctx.fill();
- if(b?.L?.biome==='stadt'){ctx.fillStyle=c[0];ctx.fillRect(x-34,y-40,68,42);ctx.fillStyle=c[2];ctx.fillRect(x-31,y-37,30,36);ctx.fillRect(x+2,y-37,29,36);ctx.fillStyle=c[3];ctx.fillRect(x-31,y-37,30,4);ctx.fillRect(x+2,y-37,29,4);ctx.fillStyle=c[1];ctx.fillRect(x-17,y-33,3,32);ctx.fillRect(x+15,y-33,3,32);}
- else{const blobs=[[-26,-16,17],[-10,-26,19],[10,-24,19],[26,-14,16],[0,-12,24],[-18,-6,14],[18,-6,14]];
-  for(const [i,col] of [[0,c[0]],[1,c[1]],[2,c[2]]])for(const [dx,dy,r] of blobs){ctx.fillStyle=col;ctx.beginPath();ctx.arc(x+dx+(i-1)*1.5,y+dy+Math.sin(t*1.3+dx)*.6-i*2,r-i*3,0,Math.PI*2);ctx.fill();}
-  ctx.fillStyle=c[3];for(const [dx,dy] of [[-14,-30],[6,-34],[20,-22],[-26,-20],[-2,-20]])ctx.fillRect(x+dx,y+dy,4,3);}
+// Deckung der Assassinen: Zweige vor dem knienden Körper (Stadt: Kisten). Nach dem Losstürmen liegen die Zweige am Boden.
+function drawCover(ctx,o){const b=S.battle,c=BUSH[b?.L?.biome]||BUSH.wald,x=Math.round(o.x),y=Math.round(o.y),t=performance.now()/1000,city=b?.L?.biome==='stadt';ctx.save();
+ if(city){ctx.fillStyle='#00000033';ctx.fillRect(x-24,y-2,48,6);ctx.fillStyle=c[0];ctx.fillRect(x-22,y-40,44,40);ctx.fillStyle=c[2];ctx.fillRect(x-20,y-38,19,36);ctx.fillRect(x+1,y-38,19,36);ctx.fillStyle=c[3];ctx.fillRect(x-20,y-38,19,3);ctx.fillRect(x+1,y-38,19,3);ctx.fillStyle=c[1];ctx.fillRect(x-12,y-34,2,30);ctx.fillRect(x+9,y-34,2,30);ctx.restore();return;}
+ if(o.dropped!==undefined){// Zweige liegen
+  for(let k=0;k<3;k++){const ox=x+(k-1)*12,oy=y+2+k*3;ctx.fillStyle='#4a3520';ctx.fillRect(ox-14,oy,30,2);for(let n=0;n<5;n++){ctx.fillStyle=c[1+(n+k)%3];ctx.fillRect(ox-12+n*6,oy-2-(n%2)*2,5,3);}}ctx.restore();return;}
+ const sprays=[[-9,58,-.18],[1,70,.05],[10,54,.22]];
+ for(const [dx,h,lean] of sprays){const sw=Math.sin(t*1.6+o.seed+dx)*1.4,bx=x+dx,by=y-4,tx=bx+lean*h+sw,ty=by-h;
+  ctx.strokeStyle='#4a3520';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(tx,ty);ctx.stroke();
+  for(let n=0;n<9;n++){const k=n/8,lx=bx+(tx-bx)*k,ly=by+(ty-by)*k,side=n%2?1:-1,len=7-k*2;ctx.fillStyle=c[(n+2)%4]||c[1];
+   ctx.beginPath();ctx.ellipse(lx+side*len*.8,ly+1,len,3.2,side*.6+lean,0,Math.PI*2);ctx.fill();}}
  ctx.restore();}
 function hookDraw(){if(M.drawSprite?.__lead)return;M.drawSprite=(ctx,o)=>{if(o.leadCover){drawCover(ctx,o);return;}A.drawSprite(ctx,o);};M.drawSprite.__lead=1;
  const prevU=M.battleUnderlay;M.battleUnderlay=(ctx,b)=>{prevU?.(ctx,b);const a=leaderA(b);if(!a||a.down||a.g.dead)return;ctx.save();ctx.strokeStyle='#f4d37a';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.ellipse(a.x,a.y+5,24,10,0,0,Math.PI*2);ctx.stroke();ctx.restore();};}
 
 // ---------- Fernglas ----------
 const SPY={on:false,focus:null,fx:0,fy:0};
-function spyFrame(){if(!SPY.on)return;const cv=$('spyCv'),g=cv.getContext('2d'),src=$('arenaCanvas'),W=cv.width,H=cv.height,b=R.b;
- const tgt=SPY.focus&&!SPY.focus.g.dead?{x:SPY.focus.x,y:SPY.focus.y-42}:b?.group?{x:b.group.ex+30,y:b.group.ey-40}:{x:R.cam.x,y:R.cam.y};
- SPY.fx+=(tgt.x-SPY.fx)*.08;SPY.fy+=(tgt.y-SPY.fy)*.08;const p=toScreen(SPY.fx,SPY.fy),sc=src.width/Math.max(1,src.clientWidth),zoomW=Math.min(p.cw,(SPY.focus?300:460)*p.k),zoomH=Math.min(p.ch,zoomW/2);p.x=clamp(p.x,zoomW/2,p.cw-zoomW/2);p.y=clamp(p.y,zoomH/2,p.ch-zoomH/2);
- g.clearRect(0,0,W,H);g.save();g.beginPath();g.arc(W*.3,H*.5,H*.48,0,Math.PI*2);g.arc(W*.7,H*.5,H*.48,0,Math.PI*2);g.clip();g.fillStyle='#0d1416';g.fillRect(0,0,W,H);g.imageSmoothingEnabled=false;
- try{g.drawImage(src,(p.x-zoomW/2)*sc,(p.y-zoomH/2)*sc,zoomW*sc,zoomH*sc,0,0,W,H);}catch(e){}
- const vg=g.createRadialGradient(W*.5,H*.5,H*.2,W*.5,H*.5,W*.55);vg.addColorStop(0,'#0000');vg.addColorStop(1,'#000a');g.fillStyle=vg;g.fillRect(0,0,W,H);
- g.strokeStyle='#0008';g.lineWidth=1;g.beginPath();g.moveTo(W*.3,H*.5-14);g.lineTo(W*.3,H*.5+14);g.moveTo(W*.3-14,H*.5);g.lineTo(W*.3+14,H*.5);g.moveTo(W*.7,H*.5-14);g.lineTo(W*.7,H*.5+14);g.moveTo(W*.7-14,H*.5);g.lineTo(W*.7+14,H*.5);g.stroke();g.restore();
- g.lineWidth=7;g.strokeStyle='#17201c';g.beginPath();g.arc(W*.3,H*.5,H*.48,0,Math.PI*2);g.stroke();g.beginPath();g.arc(W*.7,H*.5,H*.48,0,Math.PI*2);g.stroke();
- requestAnimationFrame(spyFrame);}
-async function spyShow(b,lines){const me=leaderA(b);if(!me)return;SPY.on=true;SPY.skip=false;SPY.focus=null;SPY.fx=b.group.ex;SPY.fy=b.group.ey-40;$('spy').hidden=false;$('spyName').textContent=lname(me)+' · durchs Fernglas';requestAnimationFrame(spyFrame);
- for(const l of lines){if(SPY.skip||!live(b))break;SPY.focus=l.focus;const el=$('spyText');el.textContent='';mlog(`<b class="ldr">★ ${esc(me.g.name)}</b> (Fernglas): „${esc(l.text)}“`);
+// Fernrohr: Die Kamera zoomt wirklich auf den Gegner (M.battleCamera), darüber eine schwarze Maske mit einem runden Ausschnitt.
+// Unten links die Nahansicht des Anführers, der das Fernrohr ans Auge hält.
+function spyTarget(b){return SPY.focus&&!SPY.focus.g.dead?{x:SPY.focus.x,y:SPY.focus.y-40}:b?.group?{x:b.group.ex+20,y:b.group.ey-38}:{x:R.cam.x,y:R.cam.y};}
+function spyFrame(t){if(!SPY.on)return;const b=R.b,tg=spyTarget(b);SPY.fx+=(tg.x-SPY.fx)*.07;SPY.fy+=(tg.y-SPY.fy)*.07;SPY.zoom+=((SPY.focus?3.1:2)-SPY.zoom)*.05;
+ const cv=$('spyMask'),w=cv.clientWidth,h=cv.clientHeight;if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}const g=cv.getContext('2d'),cx=w/2,cy=h*.44,r=Math.min(w,h)*.4,sway=Math.sin(t/700)*3;
+ g.clearRect(0,0,w,h);g.save();g.fillStyle='#050807';g.beginPath();g.rect(0,0,w,h);g.arc(cx+sway,cy,r,0,Math.PI*2,true);g.fill('evenodd');
+ const vg=g.createRadialGradient(cx+sway,cy,r*.55,cx+sway,cy,r);vg.addColorStop(0,'#0000');vg.addColorStop(1,'#000d');g.fillStyle=vg;g.beginPath();g.arc(cx+sway,cy,r,0,Math.PI*2);g.fill();
+ g.lineWidth=Math.max(6,r*.05);g.strokeStyle='#7a5a24';g.beginPath();g.arc(cx+sway,cy,r+g.lineWidth/2,0,Math.PI*2);g.stroke();g.lineWidth=2;g.strokeStyle='#d6b061';g.beginPath();g.arc(cx+sway,cy,r+1,0,Math.PI*2);g.stroke();
+ g.fillStyle='#ffffff10';g.beginPath();g.ellipse(cx+sway-r*.35,cy-r*.42,r*.28,r*.1,-.6,0,Math.PI*2);g.fill();g.restore();
+ paintSpyFace(t);requestAnimationFrame(spyFrame);}
+function paintSpyFace(t){const me=leaderA(R.b);if(!me||!M.faceShot)return;const cv=$('spyFace'),g=cv.getContext('2d'),W=cv.width,H=cv.height;g.imageSmoothingEnabled=false;
+ try{M.faceShot.paint(g,W,H,{g:me.g,team:0,mood:'determined',yaw:.35,zoom:1.15,lines:0,clear:true},60+t/80);}catch(e){}
+ // Fernrohr am rechten Auge, nach rechts gerichtet (Messing, drei Auszüge), Hand darunter
+ const ex=W*.6,ey=H*.5+Math.sin(t/700)*.8;const seg=[[ex-2,ey-6,22,12,'#6b4a1c','#b88a3c'],[ex+18,ey-7,26,14,'#7a5622','#d1a24c'],[ex+42,ey-8,W-ex-40,16,'#5f421a','#a97e36']];
+ for(const [x,y,w,h,dk,lt] of seg){g.fillStyle=dk;g.fillRect(x,y,w,h);g.fillStyle=lt;g.fillRect(x,y+2,w,3);g.fillStyle='#2b1d0b';g.fillRect(x+w-2,y,2,h);}
+ g.fillStyle='#1a1208';g.fillRect(ex-4,ey-5,3,10);const sk=me.g.appearance?.skin||'#c99a74';g.fillStyle=sk;g.fillRect(ex+22,ey+6,16,9);g.fillStyle='#00000040';g.fillRect(ex+22,ey+12,16,3);}
+async function spyShow(b,lines){const me=leaderA(b);if(!me)return;SPY.on=true;SPY.skip=false;SPY.focus=null;SPY.zoom=1;SPY.fx=R.cam.x;SPY.fy=R.cam.y;$('spy').hidden=false;$('spyName').textContent=lname(me)+' · durchs Fernrohr';requestAnimationFrame(spyFrame);
+ for(const l of lines){if(SPY.skip||!live(b))break;SPY.focus=l.focus;const el=$('spyText');el.textContent='';mlog(`<b class="ldr">★ ${esc(me.g.name)}</b> (Fernrohr): „${esc(l.text)}“`);
   for(let i=0;i<=l.text.length&&!SPY.skip;i+=2){el.textContent=l.text.slice(0,i);await sleep(16);}el.textContent=l.text;await waitSkip(Math.max(1700,900+l.text.length*42));}
  SPY.on=false;$('spy').hidden=true;}
 function waitSkip(ms){return new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());const chk=()=>{if(SPY.skip||performance.now()-t0>=lim)return res();setTimeout(chk,50);};chk();});}
@@ -311,7 +325,7 @@ try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function
 (async()=>{
  const LIST=['data','household','management','scout','sim','school','world','forge','weapon-art','arena','medicus-art','ludus','face-shots','injury-shots','battle-hud','outside-core','outside-art','outside-leader'];
  const run=(code,name)=>{const s=document.createElement('script');s.textContent=code+'\n//# sourceURL='+name+'.js';document.body.appendChild(s);};
- const v=new URLSearchParams(location.search).get('v')||'a5919c1c';
+ const v=new URLSearchParams(location.search).get('v')||'8f9d663e';
  for(const n of LIST){if(n==='ludus')window.MG.ui=window.MG.ui||{render(){},getPage(){return 'profiles';},notify(){},close(){},click(){}};
   const r=await fetch(n+'.js?v='+v);if(!r.ok)throw Error(n+'.js nicht gefunden');run(await r.text(),n);}
  run(document.getElementById('lead-ui').textContent,'anfuehrer-test-ui');window.LeadUI.init();

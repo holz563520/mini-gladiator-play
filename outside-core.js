@@ -378,6 +378,9 @@ D.endEncounter=function(m,b,o={}){D.collect(m,b);const st=m.place.stations[b.enc
  for(const a of b.actors)if(a.team===0&&!a.g.dead){a.down=false;a.fallTimer=0;a.kneeTimer=0;a.stun=0;a.target=null;const fresh=M.createCombatActor(a.g,0,0);a.energy=Math.max(a.energy,fresh.energy);}
  b.started=false;b.queue=[];return out;
 };
+// Todesanimationen (Halsschnitt, Tritt nach dem Griff von hinten) laufen in M.presentationStep, das bei b.paused anhält. Missionen
+// pausieren sofort nach dem letzten Treffer: Ohne das hier bliebe der zuletzt Getötete stehen. Darum in Missionen auch pausiert weiterlaufen.
+const pres0=M.presentationStep;if(pres0&&!pres0.__outside){M.presentationStep=function(dt){const b=S.battle;if(b?.mission&&b.paused){b.paused=false;try{return pres0.apply(this,arguments);}finally{b.paused=true;}}return pres0.apply(this,arguments);};M.presentationStep.__outside=true;}
 const learn0=M.learn;if(learn0&&!learn0.__outside){M.learn=function(a,group,key,amount){const b=S.battle;if(b?.mission?.learn&&b.benchmark&&a?.team===0&&!b.paused){b.benchmark=false;try{return learn0.call(this,a,group,key,amount);}finally{b.benchmark=true;}}return learn0.call(this,a,group,key,amount);};M.learn.__outside=true;}
 // Leistung: Die Kampf-Engine prüft jedes Hindernis für jeden Kämpfer und jeden Pfeil. Ein Abschnitt hat 400–500 davon
 // (Baumstämme, Hauswände, Tiefen-Sprites). Die Oberfläche ruft das hier mehrmals pro Sekunde auf: In b.obstacles bleiben nur
