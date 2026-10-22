@@ -157,9 +157,9 @@ L.plan=function(b){const ld=b.lead,G=b.group,P=party(b).filter(fit),W=b.width,mT
  const line=[...sold,...other],lx=G.hx+40,pts=new Map(),lines=[];
  line.forEach((a,i)=>{const y=clamp(G.ey+(i-(line.length-1)/2)*54,mT+30,mB-24);pts.set(a,{x:lx+(i%2?-10:0),y,face:0,job:'line'});ld.holds.set(a.id,{x:lx,y});});
  const half=Math.max(60,(line.length-1)/2*54);
- // Fernkämpfer: nach vorn in Schussweite; Sammelpunkt hinter den Schilden, später außen herum
- arch.forEach((a,i)=>{const rg=Math.min((M.effective?.(a)?.range||330)*.78,380),x=Math.max(lx+80,G.ex-rg),y=clamp(G.ey+(i-(arch.length-1)/2)*70,mT+30,mB-24);
-  pts.set(a,{x,y,face:0,job:'skirmish'});a.leadSkirmish={rally:{x:lx-80,y:clamp(G.ey+(i%2?1:-1)*(half+50),mT+30,mB-24)},flank:{x:G.ex-40,y:clamp(G.ey+(i%2?1:-1)*(half+170),mT+30,mB-24)},mode:'fwd'};});
+ // Fernkämpfer: nur ein Stück vor die Linie (gerade in Schussweite), beim Anrücken zurück hinter die Schilde, dann außen herum
+ arch.forEach((a,i)=>{const rg=M.effective?.(a)?.range||330,x=clamp(G.ex-rg*.92,lx+100,lx+190),y=clamp(G.ey+(i-(arch.length-1)/2)*70,mT+30,mB-24);
+  pts.set(a,{x,y,face:0,job:'skirmish'});a.leadSkirmish={mode:'fwd',side:y>=G.ey?1:-1};});
  // Assassinen: seitlich verstecken (abwechselnd oben/unten), zwischen Linie und Gegnern
  assa.forEach((a,i)=>{const side=i%2?1:-1,x=(lx+G.ex)/2-30+(Math.floor(i/2))*40;let y=clamp(G.ey+side*(half+150),mT+40,mB-30);
   for(let t=0;t<12&&!D.navFreeAt(b,x,y);t++)y-=side*14;pts.set(a,{x,y,face:0,job:'hide'});a.leadHide={x,y,side};});
@@ -175,7 +175,7 @@ L.engage=function(b){const ld=b.lead;if(!ld)return;ld.phase='fight';ld.fightAt=b
 // Überraschung (nicht entdeckt): kein Plan, nur schnelle Rufe
 L.surprise=function(b){const ld=b.lead;if(!ld)return;ld.phase='fight';ld.fightAt=b.time;ld.alert=true;ld.alertAt=b.time;ld.stats.surprised++;const me=leaderActor(b);
  if(me)say(b,me,pick(['Hinterhalt! Zusammenrücken!','Verdammt, die waren schneller! Rücken an Rücken!','Überfall! Schilde raus, Augen auf!']),'surprise',{urgent:true});
- for(const a of party(b))if(isRanged(a)){const sold=party(b).filter(x=>fit(x)&&role(x)==='Soldat');const c=sold.length?{x:sold.reduce((s,x)=>s+x.x,0)/sold.length,y:sold.reduce((s,x)=>s+x.y,0)/sold.length}:{x:a.x-80,y:a.y};a.leadSkirmish={rally:{x:c.x-80,y:c.y+(Math.random()<.5?-90:90)},flank:{x:c.x+60,y:c.y+(Math.random()<.5?-220:220)},mode:'back'};}};
+ let k=0;for(const a of party(b))if(isRanged(a)){a.leadSkirmish={mode:'fwd',side:k++%2?1:-1};toRally(b,a);}};
 
 // ---------- Engine-Haken ----------
 const prevPrio=M.worldPriority;
@@ -187,13 +187,34 @@ M.fixedStep=function(dt){const b=S.battle;if(!b?.lead?.on||b.paused||!b.started|
  const ld=b.lead,keep=[];
  // ahnungslose Gegner und haltende Soldaten bleiben stehen; versteckte Assassinen sind nicht auf dem Feld
  for(const a of b.actors){if(ld.unaware.has(a.id)||(a.team===0&&holding(b,a)))keep.push([a,a.x,a.y,a.a]);}
+ const ctl=party(b).filter(a=>steered(a)).map(a=>[a,a.x,a.y]);
  const hid=ld.hidden.length?b.actors.filter(a=>ld.hidden.includes(a.id)):[];
  if(hid.length){if(party(b).filter(a=>fit(a)&&!ld.hidden.includes(a.id)).length===0)release(b,'alone');else b.actors=b.actors.filter(a=>!ld.hidden.includes(a.id));}
  let r;try{r=prevStep.apply(this,arguments);}finally{for(const a of hid)if(!b.actors.includes(a))b.actors.push(a);}
  for(const [a,x,y,an] of keep){if(!fit(a))continue;if(a.state==='dodge'&&a.team===0)continue;a.x=x;a.y=y;a.kx=0;a.ky=0;a.detour=null;a.stuck={x,y,t:b.time};a.moveSpeed=0;if(a.state==='move'||a.state==='charge')a.state='idle';a.chargeTimer=0;
   if(a.team===1)a.a=an;else{const f=nearest(a,foes(b));if(f)a.a=ang(a,f);}}
  for(const a of hid){a.detour=null;a.stuck={x:a.x,y:a.y,t:b.time};a.state='idle';a.moveSpeed=0;a.wind=0;}
+ for(const [a,x,y] of ctl)steer(b,a,x,y,dt);
  if(!b.done&&!b.paused)think(b,dt);return r;};
+// ---------- Plänkeln: Fernkämpfer werden geführt ----------
+// fwd: kurz vor der Linie stehen und schießen · back: zurück hinter die Schilde laufen · wait: dort stehen und schießen
+// flank: seitlich an den Nahkampf heranlaufen · shoot: dort stehen und schießen · free: Engine (Gegner zu nah, Nahkampf)
+const RUN={back:1,flank:1},STAND={fwd:1,wait:1,shoot:1};
+function steered(a){const s=a.leadSkirmish;return !!s&&s.mode!=='free'&&fit(a)&&isRanged(a)&&!a.grabbedBy&&!a.rearFinish&&!(a.fallTimer>0)&&!(a.kneeTimer>0)&&!(a.stun>0)&&!(a.stagger>0)&&a.state!=='dodge';}
+function runSpeed(a){const ef=M.effective?.(a);return clamp((ef?.speed||80)*1.05,55,135);}
+function steer(b,a,x,y,dt){const s=a.leadSkirmish;if(!s||!fit(a))return;
+ if(STAND[s.mode]){if(a.state==='dodge')return;a.x=x;a.y=y;a.kx=0;a.ky=0;a.detour=null;a.stuck={x,y,t:b.time};a.moveSpeed=0;if(a.state==='move'||a.state==='charge')a.state='idle';const f=nearest(a,foes(b));if(f)a.a=ang(a,f);return;}
+ if(!RUN[s.mode]||!s.goal)return;const gx=s.goal.x,gy=s.goal.y,d=hyp(gx-x,gy-y),step=Math.min(d,runSpeed(a)*dt*(M.combatStepRate||1));
+ if(d<14){a.x=gx;a.y=gy;s.mode=s.mode==='back'?'wait':'shoot';s.at=b.time;a.moveSpeed=0;a.state='idle';return;}
+ a.x=x+(gx-x)/d*step;a.y=y+(gy-y)/d*step;a.kx=0;a.ky=0;a.detour=null;a.stuck={x:a.x,y:a.y,t:b.time};a.a=Math.atan2(gy-y,gx-x);a.state='move';a.moveSpeed=runSpeed(a);a.odo=(a.odo||0)+step;a.phase=a.odo*.267;
+ a.wind=0;a.cool=Math.max(a.cool||0,.2);}
+function spotNear(b,x,y,side){const mT=b.L.mT+30,mB=b.L.mB-24;for(let k=0;k<14;k++){const yy=clamp(y-side*k*16,mT,mB);if(D.navFreeAt(b,x,yy))return {x,y:yy};}return {x,y:clamp(y,mT,mB)};}
+// Sammelpunkt hinter den Schilden (seitlich versetzt), Flankenpunkt seitlich vom Nahkampf
+function toRally(b,a){const s=a.leadSkirmish,sold=party(b).filter(x=>fit(x)&&role(x)==='Soldat'&&!b.lead.hidden.includes(x.id));
+ const c=sold.length?{x:sold.reduce((t,x)=>t+x.x,0)/sold.length,y:sold.reduce((t,x)=>t+x.y,0)/sold.length}:{x:a.x-160,y:a.y};
+ const spread=sold.length?Math.max(...sold.map(x=>Math.abs(x.y-c.y))):0;s.goal=spotNear(b,Math.min(c.x-90,a.x-40),c.y+s.side*Math.min(spread+20,120),-s.side);s.mode='back';}
+function toFlank(b,a,eng){const s=a.leadSkirmish,c={x:eng.reduce((t,x)=>t+x.x,0)/eng.length,y:eng.reduce((t,x)=>t+x.y,0)/eng.length};
+ let side=s.side,y=c.y+side*215;if(y<b.L.mT+40||y>b.L.mB-30){side=-side;y=c.y+side*215;}s.side=side;s.goal=spotNear(b,c.x-30,y,side);s.mode='flank';}
 function nearest(a,l){let m=null,d=1e9;for(const o of l){const k=dist(a,o);if(k<d){d=k;m=o;}}return m;}
 function holding(b,a){const ld=b.lead,h=ld.holds.get(a.id);if(!h||!fit(a))return false;
  if(ld.alert){const f=nearest(a,foes(b).filter(e=>!ld.unaware.has(e.id)));if((f&&dist(a,f)<L.CFG.holdRelease)||b.time-ld.alertAt>L.CFG.holdMax||a.hit>0){ld.holds.delete(a.id);return false;}}
@@ -272,18 +293,15 @@ function switchCall(b,me){const ld=b.lead,P=party(b).filter(a=>fit(a)&&!ld.hidde
   for(const a of go){const fl=L.follow(a.g,'leave');if(Math.random()>fl.obey){ignored(b,a);continue;}later(b,ld.q.react*.5+fl.react*rnd(.8,1.2),()=>{if(fit(a)&&fit(d)){order(b,a,d,{avoid:e,time:7});ack(b,a,.3);}});}
   return true;}return false;}
 function skirmish(b,dt,me){const ld=b.lead;if(!ld.alert)return;const E=foes(b);if(!E.length)return;
- const sold=party(b).filter(a=>fit(a)&&role(a)==='Soldat'&&!ld.hidden.includes(a.id));
- const engaged=E.filter(e=>{const t=b.actors.find(x=>x.id===e.target);return t&&t.team===0&&!isRanged(t)&&dist(e,t)<90;});
- const loose=E.filter(e=>!engaged.includes(e));
- for(const a of party(b)){const s=a.leadSkirmish;if(!s||!fit(a)||!isRanged(a))continue;
-  if(s.mode!=='flank'&&engaged.length&&engaged.length>=Math.ceil(E.length/2)){s.mode='flank';if(cool(b,'flank',6)&&fit(me)){const arch=party(b).filter(x=>x.leadSkirmish&&fit(x)&&isRanged(x));say(b,me,fill(pick(['{N}, jetzt außen rum! In die Flanke schießen!','Schützen, raus an die Seite! Von außen!']),{N:names(arch)}),'flank');}}
-  if(s.mode==='fwd'){const f=nearest(a,loose);if(f&&dist(a,f)<260){s.mode='back';if(cool(b,'back',6)&&fit(me)){const arch=party(b).filter(x=>x.leadSkirmish&&fit(x)&&isRanged(x));say(b,me,fill(pick(['{N}, zurück hinter die Schilde!','Schützen, Rückzug! Lockt sie zu uns!']),{N:names(arch)}),'back');}}}
-  const goal=s.mode==='back'?s.rally:s.mode==='flank'?s.flank:null;if(!goal)continue;
-  if(s.mode==='back'){const f=nearest(a,loose);if(!f||dist(a,f)>330)continue;}
-  if(a.wind>0||a.pendingStrike||a.state==='dodge'||a.grabbedBy||a.fallTimer>0||a.kneeTimer>0)continue;
-  const d=hyp(goal.x-a.x,goal.y-a.y);if(d<18)continue;const fl=L.follow(a.g),sp=(s.mode==='back'?82:58)*(1.15-fl.react*.25)*dt*(M.combatStepRate||1);
-  a.x+=(goal.x-a.x)/d*Math.min(d,sp);a.y+=(goal.y-a.y)/d*Math.min(d,sp);a.moveSpeed=Math.max(a.moveSpeed||0,9);if(a.state==='idle')a.state='move';}
- void sold;}
+ const engaged=E.filter(e=>{const t=b.actors.find(x=>x.id===e.target);return t&&t.team===0&&!isRanged(t)&&!ld.hidden.includes(t.id)&&dist(e,t)<95;});
+ const loose=E.filter(e=>!engaged.includes(e)),arch=party(b).filter(x=>x.leadSkirmish&&fit(x)&&isRanged(x)),half=engaged.length>=Math.max(1,Math.ceil(E.length/2));
+ const call=(key,lines)=>{if(fit(me)&&cool(b,key,5))say(b,me,fill(pick(lines),{N:names(arch)}),key);};
+ for(const a of arch){const s=a.leadSkirmish,f=nearest(a,loose),fd=f?dist(a,f):1e9;
+  if(s.mode==='fwd'){if(fd<250){toRally(b,a);call('back',['{N}, zurück hinter die Schilde!','Schützen, Rückzug! Lockt sie zu uns!','{N}! Weg da, die kommen! Hinter die Mauer!']);}}
+  else if(s.mode==='wait'){if(fd<85&&f.target===a.id)s.mode='free';else if(half){toFlank(b,a,engaged);call('flank',['{N}, jetzt außen rum! In die Flanke schießen!','Schützen, raus an die Seite! Von außen!','{N}, die kleben an der Mauer! Flanke!']);}}
+  else if(s.mode==='flank'||s.mode==='shoot'){if(fd<170&&f.target===a.id){toRally(b,a);if(fit(me)&&cool(b,'kite'+a.id,5))say(b,me,fill(pick(['{N}, der will dich! Zurück zu uns!','{N}, lauf! Hinter die Schilde!']),{N:first(a.g)}),'back');}
+   else if(s.mode==='shoot'&&engaged.length){const c=engaged.reduce((t,x)=>t+x.y,0)/engaged.length;if(Math.abs(a.y-c)<120||hyp(a.x-engaged[0].x,a.y-engaged[0].y)>(M.effective?.(a)?.range||330)*.9)toFlank(b,a,engaged);}}
+  else if(s.mode==='free'){if(fd>150){if(half&&engaged.length)toFlank(b,a,engaged);else toRally(b,a);}}}}
 function ack(b,a,p){if(Math.random()>p)return;const ld=b.lead;if(b.time-(ld.lastAck||-9)<2.4)return;ld.lastAck=b.time;b.events.push({type:'lead',actor:a,text:pick(['Verstanden!','Bin dran!','Ja, ja!','Schon unterwegs!','Mach ich!','Hab ihn!']),kind:'ack'});}
 function ignored(b,a){const ld=b.lead;ld.stats.ignored++;if(b.time-(ld.lastAck||-9)<2)return;ld.lastAck=b.time;b.events.push({type:'lead',actor:a,text:pick(['Gleich! Der zappelt noch!','Erst den hier!','Moment, ich bin beschäftigt!','Ja, gleich!']),kind:'ignore'});}
 
