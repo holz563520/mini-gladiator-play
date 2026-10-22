@@ -180,7 +180,7 @@ function tick(dt){const st=ST();
 function newQuestPlace(){const seed=(Math.random()*1e9)>>>0,P=D.generate(seed,'dorf');return {seed,name:P.name};}
 function newAdventure(biome){const b=biome||pickL(['dorf','dorf','wald','stadt']);return {seed:(Math.random()*1e9)>>>0,biome:b};}
 const adventureReady=()=>{const st=ST();return st.stage==='done'&&st.lastAdventure!==S.day;};
-let sel=null,view='board',result=null;
+let sel=null,view='board',result=null,reportForResult=null;
 function openBoard(){const st=ST();if(st.stage==='open')st.seenBoard=true;if(st.stage==='done')st.seenAdvDay=S.day===st.lastAdventure?st.seenAdvDay:true;view='board';M.ui.click('nav:outside');}
 function fighters(){return S.roster.filter(g=>!g.dead&&!g.smithDuty);}
 function selected(){const ids=sel||new Set();return fighters().filter(g=>ids.has(g.id)&&D.fit(g));}
@@ -226,7 +226,16 @@ function resultPage(){const r=result,cls={won:'ok',fled:'',withdrawn:'',lost:'re
  return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">AUSSENWELT · ZURÜCK IM LUDUS</p><h1 class="${cls}">${esc(r.title)}</h1></div><div class="buttons"><button class="btn primary" data-action="outside:board">Weiter</button><button class="btn" data-action="nav:home">‹ Ludus</button></div></div>
  <div class="box"><p class="ow-res-text">${esc(r.text)}</p><p class="tiny">${esc(r.stats)}</p></div>
  <div class="ow-cols"><div class="box"><h2>Beute</h2><ul class="ow-hist">${r.loot.length?r.loot.map(l=>`<li><b>${esc(l.name)}</b> <small>von ${esc(l.from)}</small></li>`).join(''):'<li>Keine Beute.</li>'}${r.gold?`<li><b class="gold">${r.gold} Gold</b> <small>${esc(r.goldFrom)}</small></li>`:''}${r.extra?`<li><b>${esc(r.extra)}</b></li>`:''}</ul>${r.loot.length?'<p class="tiny">Alles liegt im Lager (Waffenkammer).</p>':''}</div>
- <div class="box"><h2>Truppe</h2><ul class="ow-hist">${r.party.map(p=>`<li class="${p.dead?'red':''}"><b>${p.dead?'† ':''}${esc(p.name)}</b> <small>${esc(p.role)}</small><br><small>${esc(p.line)}</small></li>`).join('')}</ul></div></div></section>`;}
+ <div class="box"><h2>Truppe</h2><ul class="ow-hist">${r.party.map(p=>`<li class="${p.dead?'red':''}"><b>${p.dead?'† ':''}${esc(p.name)}</b> <small>${esc(p.role)}</small><br><small>${esc(p.line)}</small></li>`).join('')}</ul></div></div>${reportBlock()}</section>`;}
+// Gelernte Werte vorher → nachher (wie der Kampfbericht der Arena)
+function valueOf(g,path){const [grp,key]=path.split(':');try{if(grp==='stats')return [g.stats[key],g.caps.stats[key]];if(grp==='moves')return [g.moves[key],g.caps.moves[key]];if(grp==='weapons')return [g.mastery[key],g.caps.weapons[key]];const [id,k]=key.split('.');return [g.body[id][k],g.caps.body[id][k]];}catch{return [null,null];}}
+const f1=v=>(Math.round(v*10)/10).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+function reportBlock(){const rp=reportForResult;if(!rp)return '';
+ const card=a=>{const g=S.roster.find(x=>x.id===a.id),learn=Object.entries(a.learning||{}).filter(([,v])=>v>.0001).sort((x,y)=>y[1]-x[1]);
+  const rows=learn.map(([k,v])=>{const [now,cap]=g?valueOf(g,k):[null,null];return `<li><span>${esc(M.learningLabel?.(k)||k)}</span><b>${now!=null?f1(now-v)+' → '+f1(now):'+'+v.toFixed(2)}</b><small>${cap!=null?'SOLL '+Math.round(cap):''}</small></li>`;});
+  const stat=(n,v)=>`<span><b>${v}</b>${n}</span>`;
+  return `<div class="an-gain arp-man${a.dead?' dead':''}"><b>${a.dead?'✝ ':''}${esc(a.name)}</b><small class="arp-state">${a.dead?'gefallen':a.down?'kampfunfähig · überlebt':'überlebt'}</small><div class="arp-stats">${stat('Schaden',a.damage)}${stat('Erlitten',a.taken)}${stat('Kills',a.kills)}${stat('Krit.',a.crits)}${stat('Blocks',a.blocks)}${stat('Ausgew.',a.dodges)}</div>${rows.length?`<ul>${rows.slice(0,6).join('')}</ul>${rows.length>6?`<details><summary>${rows.length-6} weitere gelernte Werte</summary><ul>${rows.slice(6).join('')}</ul></details>`:''}`:'<p>Keine messbare Verbesserung.</p>'}</div>`;};
+ return `<div class="box ow-report"><div class="an-gains arp"><h3>Kampfbericht · was deine Gladiatoren gelernt haben</h3>${rp.actors.map(card).join('')}<div class="arp-foot"><button type="button" class="btn" data-action="nav:report">VOLLER KAMPFBERICHT ▸</button></div></div></div>`;}
 const prevPage=M.schoolPage;
 M.schoolPage=p=>p==='outside'?boardPage():prevPage?prevPage(p):undefined;
 const prevClick=M.schoolClick;
@@ -248,13 +257,17 @@ M.schoolClick=action=>{if(!action.startsWith('outside:'))return prevClick?prevCl
 const R={m:null,b:null,lastTime:0,awaiting:null,ended:false,fleeing:false,cam:{x:520,y:600,snap:true},progress:0,marching:false,nextRes:null,rows:[],rowKey:0,runId:null};const VH=760;
 const speed=()=>Math.max(1,S.options?.speed||1);
 function overlayDom(){const view=$('battleView');if(!view)return null;let o=$('owOver');if(o&&o.parentNode===view)return o;
- o=document.createElement('div');o.id='owOver';o.innerHTML=`<canvas id="owWx"></canvas><div id="owBubbles"></div><div class="ow-top"><div class="ow-title"><b id="owTitle"></b><small id="owSub"></small></div><div class="ow-chips"><span class="tag" id="owStation"></span><span class="tag" id="owCount"></span><span class="tag" id="owLoot"></span></div></div><div class="ow-mapbox" id="owMapBox"><canvas id="owMap" width="480" height="270"></canvas></div><div class="ow-logbox" id="owLogBox" hidden><div id="owLog"></div></div>`;
- view.insertBefore(o,$('battleBottom'));if(innerWidth<600)$('owMapBox').hidden=true;return o;}
+ o=document.createElement('div');o.id='owOver';o.innerHTML=`<canvas id="owWx"></canvas><div id="owBubbles"></div><div class="ow-top"><div class="ow-title"><b id="owTitle"></b><small id="owSub"></small></div><div class="ow-chips"><span class="tag" id="owStation"></span><span class="tag" id="owCount"></span><span class="tag" id="owLoot"></span></div></div><div class="ow-mapbox" id="owMapBox"><canvas id="owMap" width="480" height="270"></canvas></div><div class="ow-logbox" id="owLogBox" hidden><div id="owLog"></div></div>
+ <div class="ow-auto" id="owAuto" hidden><b id="owAutoText"></b><div><button type="button" class="btn primary" id="owNext">Weiter ▶</button><button type="button" class="btn" id="owHome">Mit Beute heim</button></div></div>
+ <div class="ow-ctrl"><span id="owState"></span><button type="button" class="btn" id="owFlee">Fliehen</button><button type="button" class="btn" id="owSpdBtn">1×</button><button type="button" class="btn" id="owLogBtn">Bericht</button><button type="button" class="btn" id="owMapBtn">Karte</button></div>`;
+ view.insertBefore(o,$('battleBottom'));if(innerWidth<600)$('owMapBox').hidden=true;
+ // Bedienung liegt im Kampfbild (nicht ganz unten), damit man auf dem Handy nie scrollen muss
+ $('owNext').onclick=next;$('owHome').onclick=flee;$('owFlee').onclick=flee;
+ $('owLogBtn').onclick=()=>{const bx=$('owLogBox');bx.hidden=!bx.hidden;$('owLogBtn').classList.toggle('primary',!bx.hidden);if(!bx.hidden)$('owLog').scrollTop=1e9;};$('owMapBtn').onclick=()=>{const bx=$('owMapBox');bx.hidden=!bx.hidden;};
+ const sb=$('owSpdBtn'),showSp=()=>{sb.textContent=clamp(Math.round(S.options?.speed||1),1,3)+'×';};showSp();sb.onclick=()=>{S.options.speed=clamp(Math.round(S.options.speed||1),1,3)%3+1;showSp();};
+ setButtons(R.awaiting||'march');return o;}
 function bottomDom(){const bb=$('battleBottom');if(!bb)return;if(bb.dataset.ow===R.runId)return;bb.dataset.ow=R.runId;
- bb.innerHTML=`<div class="fight-log" id="owLogShort"></div><div class="fight-controls ow-controls"><button type="button" class="btn primary" id="owNext" disabled>Weiter ▶</button><button type="button" class="btn" id="owFlee">Fliehen</button><button type="button" class="btn" id="owLogBtn">Bericht</button><button type="button" class="btn" id="owMapBtn">Karte</button><select class="select" id="owSpd"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option></select><span id="owState"></span></div>`;
- $('owNext').onclick=next;$('owFlee').onclick=flee;$('owLogBtn').onclick=()=>{const bx=$('owLogBox');bx.hidden=!bx.hidden;$('owLogBtn').classList.toggle('primary',!bx.hidden);if(!bx.hidden)$('owLog').scrollTop=1e9;};$('owMapBtn').onclick=()=>{const bx=$('owMapBox');bx.hidden=!bx.hidden;};
- const sp=$('owSpd');sp.value=String(clamp(Math.round(S.options?.speed||1),1,3));sp.onchange=()=>{S.options.speed=+sp.value;};
- setButtons(R.awaiting||'march');
+ bb.innerHTML=`<div class="fight-log" id="owLogShort"></div>`;
  for(const h of R.rows.slice(0,2).reverse())logShort(h);}
 function missionHud(b){overlayDom();bottomDom();const top=$('battleTop');if(top&&top.innerHTML)top.innerHTML='';for(const id of ['finaleBanner','verdictSkip'])if($(id))$(id).hidden=true;if($('battleEvent')&&$('battleEvent').style.display!=='none')$('battleEvent').style.display='none';sizeFieldSoon();}
 const prevArmyHud=M.armyBattleHUD;M.armyBattleHUD=function(b){if(b?.mission&&R.m){missionHud(b);return true;}return prevArmyHud?prevArmyHud.apply(this,arguments):false;};
@@ -273,25 +286,37 @@ M.drawSprite=(ctx,o)=>A.drawSprite(ctx,o);
 
 // Layout nur selten abfragen (jede Abfrage erzwingt eine Neuberechnung der Seite)
 function sizeFieldSoon(){const n=performance.now();if(n-(R.szT||0)>500){R.szT=n;sizeField();}}
-function sizeField(){const c=$('arenaCanvas'),o=$('owOver');if(!c||!o)return;const L=c.offsetLeft+'px',T0=c.offsetTop+'px',W0=c.clientWidth+'px',H0=c.clientHeight+'px';
+function sizeField(){const c=$('arenaCanvas'),o=$('owOver');if(!c||!o)return;R.cw=c.clientWidth;R.ch=c.clientHeight;const L=c.offsetLeft+'px',T0=c.offsetTop+'px',W0=c.clientWidth+'px',H0=c.clientHeight+'px';
  if(o.style.left!==L||o.style.top!==T0||o.style.width!==W0||o.style.height!==H0){Object.assign(o.style,{left:L,top:T0,width:W0,height:H0});const w=$('owWx');if(w){w.width=c.clientWidth;w.height=c.clientHeight;}}}
 addEventListener('resize',()=>{if(R.m)sizeField();});
 function mlog(html,cls=''){R.rows=[html,...R.rows].slice(0,7);R.rowKey++;const el=$('owLog');if(el){const p=document.createElement('p');p.className=cls;p.innerHTML=html;el.appendChild(p);el.scrollTop=el.scrollHeight;while(el.children.length>80)el.firstChild.remove();}
  (R.full??=[]).push([html,cls]);logShort(html,cls);}
 function logShort(html,cls=''){const sh=$('owLogShort');if(!sh)return;const q=document.createElement('p');q.className=cls;q.innerHTML=html;sh.prepend(q);while(sh.children.length>2)sh.lastChild.remove();}
-function toScreen(x,y){const f=$('arenaCanvas'),cw=f.clientWidth,ch=f.clientHeight,k=ch/VH;return {x:cw/2+(x-R.cam.x)*k,y:ch/2+(y-R.cam.y)*k,k,cw,ch};}
-function bubble(a,text,o={}){const lay=$('owBubbles');if(!lay||!a)return;const el=document.createElement('div');el.className='ow-bubble'+(a.team?' foe':'')+(o.boss?' boss':'')+(o.loud||/!$/.test(text)&&text===text.toUpperCase()?' loud':'');el.innerHTML=(o.name?'<b>'+esc(o.name)+'</b>':'')+'<span>'+esc(text)+'</span>';lay.appendChild(el);
- const upd=()=>{if(!el.isConnected)return;const p=toScreen(a.x,a.y-96),bw=el.offsetWidth/2;el.style.left=clamp(p.x,bw+4,p.cw-bw-4)+'px';el.style.top=Math.max(el.offsetHeight+4,p.y)+'px';el.style.opacity=p.x<-40||p.x>p.cw+40?0:'';};upd();el._upd=upd;
- setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),400);},(o.ms||Math.max(2600,text.length*55))/Math.max(1,speed()*.7));}
-function updBubbles(){const l=$('owBubbles');if(l)for(const el of l.children)el._upd?.();}
+function toScreen(x,y){const f=$('arenaCanvas'),cw=R.cw||f.clientWidth,ch=R.ch||f.clientHeight,k=ch/VH;return {x:cw/2+(x-R.cam.x)*k,y:ch/2+(y-R.cam.y)*k,k,cw,ch};}
+// Lesedauer: 2,2 s plus 65 ms je Zeichen (mind. 3,5 s), unabhängig vom Spieltempo
+const readMs=text=>Math.max(3500,2200+String(text).length*65);
+// Dialogpausen: höchstens auf zwei Drittel verkürzt, auch bei 3×
+const talkPause=ms=>sleep(Math.max(ms*.66,ms/speed()));
+function bubble(a,text,o={}){const lay=$('owBubbles');if(!lay||!a)return;for(const old of lay.children)if(old._a===a){old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
+ const el=document.createElement('div');el._a=a;el.className='ow-bubble'+(a.team?' foe':'')+(o.boss?' boss':'')+(o.loud||/!$/.test(text)&&text===text.toUpperCase()?' loud':'');el.innerHTML=(o.name?'<b>'+esc(o.name)+'</b>':'')+'<span>'+esc(text)+'</span>';lay.appendChild(el);
+ el._w=el.offsetWidth;el._h=el.offsetHeight;// Größe einmal messen (Text ändert sich nicht)
+ const upd=()=>{if(!el.isConnected)return;const p=toScreen(a.x,a.y-(a.down?40:96)),bw=el._w/2,bh=el._h;el.style.left=clamp(p.x,bw+4,p.cw-bw-4)+'px';el.style.top=clamp(p.y,bh+4,p.ch-40)+'px';el.classList.toggle('edge',p.x<0||p.x>p.cw);};upd();el._upd=upd;
+ setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),400);},Math.max(o.ms||0,readMs(text)));}
+// Blasen folgen ihren Sprechern; überlappen sich zwei, rutscht die jüngere nach oben
+function updBubbles(){const l=$('owBubbles');if(!l)return;const placed=[];for(const el of l.children){if(el.classList.contains('out'))continue;el._upd?.();
+ let x=parseFloat(el.style.left)||0,y=parseFloat(el.style.top)||0;const w=el._w||0,h=el._h||0;
+ for(let k=0;k<6;k++){const hit=placed.find(r=>Math.abs(r.x-x)<(r.w+w)/2+4&&y>r.y-r.h-4&&y-h<r.y+4);if(!hit)break;y=hit.y-hit.h-6;}
+ if(y-h<2)y=h+2;el.style.top=y+'px';placed.push({x,y,w,h});}}
 function partyActors(b){return b.actors.filter(a=>a.team===0&&!a.down&&!a.g.dead);}
 function anyParty(b){const l=partyActors(b);return l[Math.floor(Math.random()*l.length)]||b.actors.find(a=>a.team===0);}
 const first=g=>String(g?.name||'').split(' ')[0];
-function setButtons(state){R.awaiting=state;const nx=$('owNext'),fl=$('owFlee');if(!nx||!fl)return;
- nx.disabled=!['next','won'].includes(state);fl.disabled=['flee','won','end'].includes(state);
- nx.textContent=state==='won'?'Zum Ergebnis ▶':'Weiter ▶';fl.textContent=state==='next'?'Mit Beute heim':'Fliehen';
+// Nach jeder Begegnung geht es von selbst weiter (Countdown). „Weiter ▶“ springt sofort, „Mit Beute heim“ beendet die Mission.
+function setButtons(state){R.awaiting=state;clearInterval(R.autoT);const fl=$('owFlee'),au=$('owAuto');
+ if(fl){fl.disabled=['flee','won','end','next'].includes(state);fl.textContent='Fliehen';}
  const boss=R.m?.kind==='quest'?'Krassus liegt am Boden.':'Der Anführer liegt am Boden.';
- const s=$('owState');if(s)s.textContent={march:'Die Truppe marschiert …',talk:'Jemand hat etwas zu sagen …',fight:'Kampf läuft. Eingreifen unmöglich, Fliehen jederzeit.',next:'Begegnung überstanden. Weiter oder heim?',won:boss,flee:'Rückzug …',end:''}[state]||'';}
+ const s=$('owState');if(s)s.textContent={march:'Die Truppe marschiert …',talk:'Jemand redet …',fight:'Kampf läuft',after:'Nach dem Kampf …',next:'',won:boss,flee:'Rückzug …',end:''}[state]||'';
+ if(au){au.hidden=!['next','won'].includes(state);if(!au.hidden){let left=state==='won'?4:5;const tick=()=>{const t=$('owAutoText');if(t)t.textContent=(state==='won'?'Zum Ergebnis in ':'Weiter in ')+left+' …';if(left--<=0){clearInterval(R.autoT);next();}};
+  $('owHome').hidden=state==='won';$('owNext').textContent=state==='won'?'Zum Ergebnis ▶':'Weiter ▶';tick();R.autoT=setInterval(tick,1000/Math.min(2,speed()));}}}
 function renderInfo(){const m=R.m;if(!m)return;const b=S.battle;const live=b&&b.started&&!b.done?b.encEnemies.filter(a=>a.down||a.g.dead).length:0;
  const c=$('owCount');if(c)c.textContent=`Gegner ${m.killed+live} / ${m.total}`;const l=$('owLoot');if(l)l.textContent=m.loot.length?`Beute: ${m.loot.length}`:'Beute: –';}
 function paintMap(t=0){const m=R.m,c=$('owMap');if(!m||!c||$('owMapBox')?.hidden)return;A.map(c,m.place,{reveal:m.idx,cleared:m.cleared,progress:R.progress,party:A.mapPoint(m.place,R.progress),t});}
@@ -323,6 +348,7 @@ function missionLoop(t){const b=S.battle;
     if(b.started&&b.done&&!b.handled){b.handled=true;encounterEnd(b);}
     if(t-(loopT.cull||0)>200){loopT.cull=t;const c=$('arenaCanvas');D.cullObstacles(b,R.cam.x,c?c.clientWidth/(c.clientHeight/VH):1400);}
     updProgress();updBubbles();
+    R.missionTime=(R.missionTime||0)+(b.started&&!b.paused?Math.max(0,b.time-(R.lastSeen??b.time)):0);R.lastSeen=b.time;
     if(t-loopT.map>120){loopT.map=t;paintMap(t/1000);}
     if(t-loopT.info>250){loopT.info=t;renderInfo();}
     A.weatherStep($('owWx'),R.m.place.mood,t/1000,R.cam.x);}}}
@@ -341,7 +367,7 @@ async function startMission(){if(S.battle||R.m)return;bypassLoader();const st=ST
  const quest=st.stage!=='done';if(!quest&&!adventureReady()){notify('Heute wart ihr schon draußen.');return;}
  let m;if(quest){st.quest??=newQuestPlace();m=D.newMission(st.quest.seed,team,'dorf',{kind:'quest'});m.place.name=st.quest.name;}
  else{m=D.newMission(st.adv.seed,team,st.adv.biome,{kind:'adventure'});}
- R.m=m;R.ended=false;R.ending=false;R.fleeing=false;R.progress=0;R.rows=[];R.rowKey=0;R.full=[];R.lastTime=0;R.awaiting='march';R.runId='run'+Date.now();loopT={map:0,info:0};
+ R.missionTime=0;R.lastSeen=null;R.m=m;R.ended=false;R.ending=false;R.fleeing=false;R.progress=0;R.rows=[];R.rowKey=0;R.full=[];R.lastTime=0;R.awaiting='march';R.runId='run'+Date.now();loopT={map:0,info:0};
  if(quest)st.tries++;else{st.lastAdventure=S.day;st.adventures++;}
  st.run={id:R.runId,kind:m.kind,place:m.place.name,day:S.day,party:team.map(g=>g.id)};persist();
  document.body.classList.add('ow-mission');
@@ -383,12 +409,12 @@ async function encounter(b,sti){const m=R.m,st=m.place.stations[sti],adv=m.kind=
  if(st.boss){const boss=m.queues[sti][0],bn=adv?first(boss):'Krassus';
   mlog(adv?`Vor euch wartet <b class="boss">${esc(boss.name)}</b>, ${esc(M.itemName(boss.enemyGear.weapon))} in der Hand.`:`Vor dem Kontor wartet <b class="boss">Krassus Knochenzins</b>, den Zweihänder „Zinseszins“ locker auf der Schulter.`);
   const firstA=D.beginEncounter(b,m,sti);b.paused=true;b.started=false;const k=firstA[0];
-  for(const [w,l] of (adv?m.texts.leaderIntro:D.TEXT.bossIntro)){const me=w==='K'||w==='L',a=me?k:anyParty(b);bubble(a,l,{name:me?bn:first(a.g),boss:me,ms:2800});mlog(`<b class="${me?'boss':''}">${esc(me?bn:a.g.name)}:</b> „${esc(l)}“`);await sleep(2500/speed());if(!live(b))return;}
+  for(const [w,l] of (adv?m.texts.leaderIntro:D.TEXT.bossIntro)){const me=w==='K'||w==='L',a=me?k:anyParty(b);bubble(a,l,{name:me?bn:first(a.g),boss:me,ms:2800});mlog(`<b class="${me?'boss':''}">${esc(me?bn:a.g.name)}:</b> „${esc(l)}“`);await talkPause(2500);if(!live(b))return;}
   b.started=true;b.paused=false;setButtons('fight');return;}
  const [l1,l2]=D.pickBanter(st,st.banter,m);const a1=anyParty(b);let a2=anyParty(b);if(a2===a1)a2=partyActors(b).find(x=>x!==a1)||a1;
- if(a1!==a2||partyActors(b).length>1){bubble(a1,l1,{name:first(a1.g)});mlog(`<b>${esc(a1.g.name)}:</b> „${esc(l1)}“`);await sleep(2000/speed());if(!live(b))return;
-  bubble(a2,l2,{name:first(a2.g)});mlog(`<b>${esc(a2.g.name)}:</b> „${esc(l2)}“`);await sleep(1600/speed());if(!live(b))return;}
- else{const solo=pickL(['Allein. Natürlich allein. Wer braucht schon Freunde.','Ich red mit mir selbst. Wenigstens widerspricht keiner.','Wenn ich sterbe, erzählt es keiner. Gut so.']);bubble(a1,solo,{name:first(a1.g)});mlog(`<b>${esc(a1.g.name)}:</b> „${esc(solo)}“`);await sleep(2000/speed());if(!live(b))return;}
+ if(a1!==a2||partyActors(b).length>1){bubble(a1,l1,{name:first(a1.g)});mlog(`<b>${esc(a1.g.name)}:</b> „${esc(l1)}“`);await talkPause(2000);if(!live(b))return;
+  bubble(a2,l2,{name:first(a2.g)});mlog(`<b>${esc(a2.g.name)}:</b> „${esc(l2)}“`);await talkPause(1600);if(!live(b))return;}
+ else{const solo=pickL(['Allein. Natürlich allein. Wer braucht schon Freunde.','Ich red mit mir selbst. Wenigstens widerspricht keiner.','Wenn ich sterbe, erzählt es keiner. Gut so.']);bubble(a1,solo,{name:first(a1.g)});mlog(`<b>${esc(a1.g.name)}:</b> „${esc(solo)}“`);await talkPause(2000);if(!live(b))return;}
  const q=m.queues[sti];
  if(st.kind==='idle'){const t=st.idle.text.replace('{A}',q[0]?.name||'Einer').replace('{B}',q[1]?.name||'ein anderer');mlog(esc(t),'narr');}
  else if(st.kind==='ambush')mlog('Hinter euch knackt ein Zweig. Vor euch auch.','narr');
@@ -404,8 +430,10 @@ async function encounterEnd(b){const m=R.m;if(R.ended)return;const out=D.endEnco
  for(const g of out.downed)mlog(`${esc(g.name)} kann nicht mehr und wird ab jetzt getragen.`);
  if(out.winner===0){
   if(out.loot.length)mlog('Beute: '+out.loot.map(l=>`<span class="ow-lootname">${esc(M.itemName(l.item))}</span>`).join(', '));
+  if(!st.boss){await aftermath(b);if(!live(b))return;}
   if(st.boss){setButtons('talk');const boss=b.encEnemies[0],bn=adv?first(boss.g):'Krassus';
-   for(const [w,l] of (adv?m.texts.leaderDown:D.TEXT.bossDown)){const me=w==='K'||w==='L',a=me?boss:anyParty(b);bubble(a,l,{name:me?bn:first(a.g),boss:me,ms:3000});mlog(`<b class="${me?'boss':''}">${esc(me?bn:a.g.name)}:</b> „${esc(l)}“`);await sleep(2600/speed());}
+   for(const [w,l] of (adv?m.texts.leaderDown:D.TEXT.bossDown)){const me=w==='K'||w==='L',a=me?boss:anyParty(b);bubble(a,l,{name:me?bn:first(a.g),boss:me,ms:3000});mlog(`<b class="${me?'boss':''}">${esc(me?bn:a.g.name)}:</b> „${esc(l)}“`);await talkPause(2600);}
+   await aftermath(b);if(!live(b))return;
    mlog(adv?`In der Truhe des Anführers: <b class="gold">${m.gold} Gold</b>.`:`In der Geldkassette: <b class="gold">${m.gold} Gold</b>. Der Schuldschein über ${D.CFG.debt.toLocaleString('de-DE')} Gold brennt sehr schön.`,'narr');setButtons('won');return;}
   const a=anyParty(b),l=pickL(adv?D.ADV.cleared:D.TEXT.cleared);if(a){bubble(a,l,{name:first(a.g)});mlog(`<b>${esc(a.g.name)}:</b> „${esc(l)}“`);}
   if(out.rest>0)mlog(`Kurze Rast: Notverbände, ein Schluck Wasser. Blut +${D.CFG.restBlood}. Verletzungen bleiben.`,'narr');
@@ -414,14 +442,32 @@ async function encounterEnd(b){const m=R.m;if(R.ended)return;const out=D.endEnco
   setButtons('next');return;}
  if(m.state==='fled'){finishMission('fled');return;}
  finishMission('lost');}
-async function next(){if(R.awaiting==='won'){finishMission('won');return;}if(R.awaiting!=='next')return;setButtons('march');const r=R.nextRes;R.nextRes=null;r?.();}
-async function flee(){const m=R.m,b=S.battle;if(!m||R.ended||['flee','won','end'].includes(R.awaiting))return;
+// ---------- Nach dem Kampf: Überlebende Gegner erledigen (schwarzer Humor), Gefallene durchsuchen ----------
+const PLEA=['Gnade! Ich hab Kinder!','Warte! Ich zahl! Ich zahl alles!','Ich wollte nur zum Brunnen!','Nicht ins Gesicht!','Ich kenn deine Mutter!','Ich bin doch schon fast tot!'];
+const EXEC=['Nichts Persönliches. Doch, eigentlich schon.','Grüß den Fährmann. Sag ihm, die Münze kommt später.','Schlaf gut. Lange.','Tief durchatmen. Ach, lass es.','Keine Sorge, das tut nur kurz weh. Mir gar nicht.','Du hast da was am Hals. Gleich nicht mehr viel.','Der Lanista mag keine Zeugen. Ich mag keine Arbeit. Machen wir’s schnell.','Betrachte es als Schuldenerlass.','Halt still, dann wird’s ordentlich.','Ich zähl bis drei. Eins.'];
+const EXEC_Q=['Zinsen sind fällig.','Krassus lässt grüßen. Ach nein, der ist ja als Nächstes dran.','Restschuld: beglichen.'];
+const SEARCH=['Drei Kupferstücke und ein Zahn. Der Zahn ist seiner.','Ein Brief an seine Mutter. Den heben wir auf. Für den Ofen.','Die Schuhe passen nicht. Schade.','Nichts. Der war ärmer als wir.','Ein Glücksbringer. Hat offenbar nicht funktioniert.','Brot. Halb gegessen. Ich nehm die andere Hälfte.','Würfel. Gezinkt. Natürlich.','Ein Schuldschein. Er schuldet jetzt niemandem mehr was.','Eine Locke von seiner Liebsten. Oder von seinem Hund.'];
+function nearestParty(b,e){const l=partyActors(b);return l.reduce((m,a)=>!m||Math.hypot(a.x-e.x,a.y-e.y)<Math.hypot(m.x-e.x,m.y-e.y)?a:m,null);}
+function walkTo(b,a,x,y,sp=95){routeTo(b,a,x,y,sp);a.startDelay=0;const t0=performance.now();return new Promise(res=>{const chk=()=>{if(!live(b)||!a.to||performance.now()-t0>7000/Math.min(2,speed())){a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;return res();}setTimeout(chk,60);};chk();});}
+async function aftermath(b){const m=R.m;setButtons('after');
+ const alive=b.encEnemies.filter(e=>!e.g.dead&&(e.down||e.surrendered));
+ for(const e of alive){if(!live(b))return;const k=nearestParty(b,e);if(!k)break;const side=k.x<e.x?-1:1;
+  bubble(e,pickL(PLEA),{name:first(e.g)});await walkTo(b,k,e.x+side*30,e.y+4);if(!live(b))return;k.a=side<0?0:Math.PI;
+  const line=pickL(m.kind==='quest'&&Math.random()<.35?EXEC_Q:EXEC);bubble(k,line,{name:first(k.g)});await talkPause(1500);if(!live(b))return;
+  try{M.death(e,'Gnadenstoß',k);}catch(err){e.g.dead=true;e.down=true;e.state='dead';}
+  mlog(`<b>${esc(k.g.name)}</b> gibt <b class="foe">${esc(e.g.name)}</b> den Gnadenstoß: „${esc(line)}“`);await talkPause(600);}
+ const bodies=b.encEnemies.filter(e=>e.g.dead);for(const e of bodies.slice(0,Math.min(3,bodies.length))){if(!live(b))return;const k=nearestParty(b,e);if(!k)break;
+  await walkTo(b,k,e.x+(k.x<e.x?-26:26),e.y+6);if(!live(b))return;const line=pickL(SEARCH);bubble(k,line,{name:first(k.g)});mlog(`<b>${esc(k.g.name)}</b> durchsucht ${esc(e.g.name)}: „${esc(line)}“`);await talkPause(1300);}
+ if(bodies.length>3)mlog(`Die übrigen Taschen werden schneller geleert. Alles Brauchbare kommt mit.`,'narr');
+ D.collect(m,b);}
+async function next(){clearInterval(R.autoT);if(R.awaiting==='won'){setButtons('end');finishMission('won');return;}if(R.awaiting!=='next')return;setButtons('march');const r=R.nextRes;R.nextRes=null;r?.();}
+async function flee(){clearInterval(R.autoT);const m=R.m,b=S.battle;if(!m||R.ended||['flee','won','end'].includes(R.awaiting))return;
  if(R.awaiting==='next'){finishMission('withdrawn');return;}
  setButtons('flee');R.fleeing=true;const inFight=b&&b.started&&!b.done;
  if(b){b.paused=true;if(inFight){b.done={winner:-2,reason:'Flucht'};b.handled=true;}
   for(const a of b.actors)if(a.team===0&&!a.down&&!a.g.dead){a.to=[a.x-500,a.y,120];a.path=[];}
   const a=anyParty(b);if(a)bubble(a,pickL(['RENNT!','Taktischer Rückzug! Also: RENNT!','Ich hol schon mal die Pferde! Wir haben keine Pferde!','Wer zuletzt am Tor ist, zahlt die Zinsen!']),{name:first(a.g)});}
- await sleep(1600/speed());if(b&&inFight)D.endEncounter(m,b,{fled:true});m.state='fled';finishMission('fled');}
+ await talkPause(1600);if(b&&inFight)D.endEncounter(m,b,{fled:true});m.state='fled';finishMission('fled');}
 function cleanupBattle(){const m=R.m;if(m&&m.prevLimit!==undefined){if(m.prevLimit===null)delete M.benchmarkTimeLimit;else M.benchmarkTimeLimit=m.prevLimit;}
  M.missionBackdrop=null;document.body.classList.remove('ow-mission');$('owOver')?.remove();const bb=$('battleBottom');if(bb){bb.innerHTML='';delete bb.dataset.ow;}$('battleView')?.classList.remove('ow-fade');}
 function abortMission(){R.ending=true;R.ended=true;cleanupBattle();R.m=null;R.b=null;R.nextRes=null;}
@@ -445,6 +491,12 @@ function applyResult(m,kind){const st=ST(),adv=m.kind==='adventure',keep=kind!==
    lost:['NIEDERLAGE',`Ihr wacht im Straßengraben vor ${m.place.name} auf. Ohne Beute, ohne Würde, aber mit einer frischen Mahnung im Gürtel.`]}[kind];
  for(const g of m.party){if(g.dead)continue;g.history?.unshift({day:S.day,text:(adv?'Abenteuer':'Außenmission')+' '+m.place.name+': '+head[0].toLowerCase()+'.'});}
  try{M.log?.((adv?'Abenteuer':'Der Schuldeneintreiber')+' · '+m.place.name+': '+head[0]+(loot.length?' · '+loot.length+' Beutestücke':'')+(gold?' · '+gold+' Gold':''));}catch(e){}
+ // Kampfbericht wie nach einem Arenakampf (Seite „Kampfbericht“, Verlauf S.records): Werte und Gelerntes über die ganze Mission
+ try{const b=S.battle;if(b?.mission===m)D.collect(m,b);const rep=m.rep||{};
+  const report={id:'outside-'+m.seed+'-'+S.day,arenaName:(adv?'Abenteuer':'Außenmission')+' · '+m.place.label+' '+m.place.name,attackSummary:[],verdicts:[],loot:loot.map(l=>({name:l.name,condition:100})),day:S.day,won:kind==='won',draw:kind!=='won'&&kind!=='lost',reason:head[0],opponent:adv?(m.texts?.band||'Bande'):'Krassus Knochenzins',time:R.missionTime||0,gold,fame:0,league:S.league||0,tournament:'',
+   actors:m.party.map(g=>{const r=rep[g.id]||{learning:{}};return {id:g.id,name:g.name,damage:Math.round(r.damage||0),taken:Math.round(r.taken||0),kills:r.kills||0,crits:r.crits||0,blocks:r.blocks||0,dodges:r.dodges||0,falls:r.falls||0,rearHits:r.rearHits||0,charges:r.charges||0,backsteps:r.backsteps||0,xpMultiplier:r.xpMultiplier||1,learning:r.learning||{},dead:!!g.dead,down:!g.dead&&!D.fit(g),injuries:Object.entries(g.body||{}).filter(([id,p])=>p.hp<85||p.missing).map(([id,p])=>M.partName(id)+': '+(p.missing?'abgetrennt':p.injury||'Verletzt')),blood:Math.round(g.blood)};}),
+   log:(R.full||[]).slice(-60).reverse().map(([h])=>({time:0,text:String(h).replace(/<[^>]+>/g,'')}))};
+  S.lastReport=report;S.records=[report,...(S.records||[])].slice(0,35);reportForResult=report;}catch(e){console.error(e);reportForResult=null;}
  st.history.unshift({day:S.day,kind:m.kind,place:m.place.name,result:head[0].toLowerCase(),loot:loot.length,gold,deaths:m.deaths.length});st.history=st.history.slice(0,12);st.run=null;
  result={kind,title:head[0],text:head[1],loot,gold,goldFrom:adv?'aus der Truhe des Anführers':'aus der Geldkassette',extra:!adv&&kind==='won'?'Schulden: −'+D.CFG.debt.toLocaleString('de-DE')+' Gold (Schuldschein verbrannt)':'',
   stats:`Gegner besiegt: ${m.killed} von ${m.total} · Begegnungen: ${m.cleared+1} von ${m.place.stations.length} · Tote: ${m.deaths.length}`,

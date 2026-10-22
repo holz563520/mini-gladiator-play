@@ -347,7 +347,14 @@ D.onEngineEnd=function(winner,reason){const b=S.battle;if(!b?.mission||b.done)re
  if(winner===0&&b.queue.length){D.spawn(b,{instant:true});return true;}
  b.paused=true;b.done={winner,reason:reason||''};return true;};
 // Begegnung auswerten: Notverbände, Erschöpfung, kurze Rast, Ausrüstung zurück, Beute; Kampfunfähige werden getragen
-D.endEncounter=function(m,b,o={}){const st=m.place.stations[b.encounter],w=o.fled?-2:(b.done?.winner??-1),out={station:st,winner:w,loot:[],downed:[],died:[],time:b.time-b.encStart,kills:0,rest:0};
+// Kampfbericht: Werte und Gelerntes jedes Gladiators über die ganze Mission sammeln (Kämpfer werden je Abschnitt neu erzeugt,
+// Getragene verlassen das Feld – deshalb nach jeder Begegnung den Zuwachs seit dem letzten Mal übernehmen).
+const REP_KEYS=['damage','taken','kills','crits','blocks','dodges','falls','rearHits','charges','backsteps'];
+D.collect=function(m,b){m.rep??={};for(const a of b.actors){if(a.team!==0)continue;const r=m.rep[a.g.id]??={id:a.g.id,name:a.g.name,learning:{},xpMultiplier:1};const last=a._rep||(a._rep={learning:{}});
+ for(const k of REP_KEYS){const v=a[k]||0;r[k]=(r[k]||0)+(v-(last[k]||0));last[k]=v;}
+ for(const [k,v] of Object.entries(a.learning||{})){r.learning[k]=(r.learning[k]||0)+(v-(last.learning[k]||0));last.learning[k]=v;}
+ r.xpMultiplier=Math.max(r.xpMultiplier,a.xpMultiplier||1);}};
+D.endEncounter=function(m,b,o={}){D.collect(m,b);const st=m.place.stations[b.encounter],w=o.fled?-2:(b.done?.winner??-1),out={station:st,winner:w,loot:[],downed:[],died:[],time:b.time-b.encStart,kills:0,rest:0};
  for(const a of b.actors.filter(a=>a.team===0)){const g=a.g,snap=b.gearSnap.get(g);
   // Fallen gelassene Waffen und Schilde werden nach dem Gefecht wieder aufgehoben
   if(snap?.equipment){if(!g.dead){for(const k of ['weapon','secondary','shield'])if(snap.equipment[k]&&!g.equipment[k]&&(S.inventory||[]).some(i=>i.id===snap.equipment[k]))g.equipment[k]=snap.equipment[k];}a.disarmed=false;a.droppedShield=false;}
