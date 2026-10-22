@@ -41,7 +41,8 @@ L.CFG={
  holdMax:11,        // oder spätestens so viele Sekunden nach dem Alarm
  hideMax:22,        // Assassinen warten höchstens so lange nach dem Alarm
  sayGap:1.5,        // Mindestabstand zwischen zwei Rufen (Spielsekunden), Warnungen ausgenommen
- orderTime:6        // so lange gilt ein Zielbefehl
+ orderTime:6,       // so lange gilt ein Zielbefehl
+ skirmishRun:1.4    // Fernkämpfer laufen beim Plänkeln so viel schneller als ihr normales Kampftempo
 };
 
 // ---------- Fähigkeiten ----------
@@ -201,7 +202,7 @@ M.fixedStep=function(dt){const b=S.battle;if(!b?.lead?.on||b.paused||!b.started|
 // flank: seitlich an den Nahkampf heranlaufen · shoot: dort stehen und schießen · free: Engine (Gegner zu nah, Nahkampf)
 const RUN={back:1,flank:1},STAND={fwd:1,wait:1,shoot:1};
 function steered(a){const s=a.leadSkirmish;return !!s&&s.mode!=='free'&&fit(a)&&isRanged(a)&&!a.grabbedBy&&!a.rearFinish&&!(a.fallTimer>0)&&!(a.kneeTimer>0)&&!(a.stun>0)&&!(a.stagger>0)&&a.state!=='dodge';}
-function runSpeed(a){const ef=M.effective?.(a);return clamp((ef?.speed||80)*1.05,55,135);}
+function runSpeed(a){const ef=M.effective?.(a);return clamp((ef?.speed||80)*L.CFG.skirmishRun,60,180);}
 function steer(b,a,x,y,dt){const s=a.leadSkirmish;if(!s||!fit(a))return;
  if(STAND[s.mode]){if(a.state==='dodge')return;a.x=x;a.y=y;a.kx=0;a.ky=0;a.detour=null;a.stuck={x,y,t:b.time};a.moveSpeed=0;if(a.state==='move'||a.state==='charge')a.state='idle';const f=nearest(a,foes(b));if(f)a.a=ang(a,f);return;}
  if(!RUN[s.mode]||!s.goal)return;const gx=s.goal.x,gy=s.goal.y,d=hyp(gx-x,gy-y),step=Math.min(d,runSpeed(a)*dt*(M.combatStepRate||1));
