@@ -297,12 +297,26 @@ function updProgress(){const m=R.m,b=S.battle;if(!m||!b?.L)return;const sec=m.pl
  const f=sec.stations[0],l=sec.stations[sec.stations.length-1];const p0=f*3+.4,p1=(l+1)*3+(sec.boss?0:1.4);R.progress=Math.max(R.progress,p0+(p1-p0)*clamp(x/sec.W,0,1));}
 function pushOut(a,b){for(const o of b.obstacles){if(o.hp<=0)continue;const dx=a.x-o.x,dy=a.y-o.y,d=Math.hypot(dx,dy),min=(a.r||12)+o.r;if(d<min&&d>.01){a.x=o.x+dx/d*min;a.y=o.y+dy/d*min;}}}
 let loopT={map:0,info:0};
+// Marsch als lockere Gruppe: jeder hat sein eigenes Tempo, schlendert etwas seitlich, bleibt mal kurz stehen oder schaut sich um;
+// Nachzügler holen auf, wer vorneweg läuft, bummelt. Schrittlänge je Person verschieden.
+function groupCenter(b){const l=b.actors.filter(a=>a.team===0&&a.to&&!a.down&&!a.g.dead);return l.length?{x:l.reduce((s,a)=>s+a.x,0)/l.length,n:l.length}:null;}
+function strollInit(a){return a.stroll??={k:.86+Math.random()*.28,ph:Math.random()*6.28,amp:5+Math.random()*10,fr:.5+Math.random()*.7,stride:.23+Math.random()*.07,pause:3+Math.random()*9,slow:0,look:0,t:0};}
+function stroll(a,dt,grp){const s=strollInit(a);const [tx,ty,sp]=a.to;
+ if(a.startDelay>0){a.startDelay-=dt;a.state='idle';a.moveSpeed=0;return;}
+ s.t+=dt;s.pause-=dt;if(s.pause<=0){s.slow=.6+Math.random()*1.1;s.look=Math.random()<.5?s.slow:0;s.pause=5+Math.random()*10;}if(s.slow>0)s.slow-=dt;if(s.look>0)s.look-=dt;
+ const dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
+ let k=s.k*(1+.12*Math.sin(s.t*.7+s.ph))*(s.slow>0?.4:1);if(grp&&grp.n>1)k*=clamp(1+(grp.x-a.x)/240,.7,1.4);if(d<60)k*=.6+.4*d/60;
+ const step=Math.max(4,sp*k)*dt;
+ if(d<=step+.5){a.x=tx;a.y=ty;a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;if(a.face!==undefined)a.a=a.face;return;}
+ const ux=dx/d,uy=dy/d,lat=Math.cos(s.t*s.fr+s.ph)*s.amp*s.fr*dt*Math.min(1,d/90);
+ a.x+=ux*step-uy*lat;a.y+=uy*step+ux*lat;a.state='move';a.moveSpeed=6+5*k;a.odo=(a.odo||0)+step;a.phase=a.odo*s.stride;
+ a.a=s.look>0?(dx>0?Math.PI:0):Math.abs(dx)>.5?(dx>0?0:Math.PI):a.a;}
 function missionLoop(t){const b=S.battle;
  if(R.m&&!R.ended){
   if(!b||b.mission!==R.m){// Spielstand gewechselt oder Kampf verschwunden: Mission still beenden, nichts anwenden
    if(!R.ending){abortMission();}}
   else{if(M.ui.getPage()!=='profiles'){const dt=Math.max(0,b.time-R.lastTime);R.lastTime=b.time;D.tick(b,dt);
-    if((b.paused&&!b.done)||R.fleeing){for(const a of b.actors)if(a.to){walker(a,1/60*speed());pushOut(a,b);}}
+    if((b.paused&&!b.done)||R.fleeing){const dt=1/60*speed(),grp=groupCenter(b);for(const a of b.actors)if(a.to){if(R.fleeing||a.team!==0)walker(a,dt);else stroll(a,dt,grp);pushOut(a,b);}}
     while(b.events.length)onEvent(b,b.events.shift());
     if(b.started&&b.done&&!b.handled){b.handled=true;encounterEnd(b);}
     updProgress();updBubbles();
@@ -331,11 +345,11 @@ async function startMission(){if(S.battle||R.m)return;bypassLoader();const st=ST
   :`<b>${esc(school())}</b> zieht los: ${esc(m.place.label)} ${esc(m.place.name)}. ${esc((m.texts?.intro||'').replace('{P}',m.place.name))} ${esc(D.moodText(m.place.mood))}`;
  await runSection(0,intro);}
 function clearPoint(b,x,y){for(let k=0;k<12;k++){const yy=y+(k%2?1:-1)*Math.ceil(k/2)*14;if(!b.obstacles.some(o=>o.hp>0&&Math.hypot(o.x-x,o.y-yy)<o.r+18))return yy;}return D.pathY(b.L,x);}
-function marchTo(b,x,sp=58){const pa=partyActors(b);pa.forEach((a,k)=>{const col=k%3,line=Math.floor(k/3),tx=x-line*44-(col===1?0:18),y=clearPoint(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*44,b.L.mT+30,b.L.mB-30));a.to=[tx,y,sp];a.path=[];a.face=0;});
+function marchTo(b,x,sp=58){const pa=partyActors(b);pa.forEach((a,k)=>{a.startDelay=Math.random()*.9;const col=k%3,line=Math.floor(k/3),tx=x-line*60-(col===1?0:26)+(Math.random()-.5)*44,y=clearPoint(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*58+(Math.random()-.5)*20,b.L.mT+30,b.L.mB-30));a.to=[tx,y,sp];a.path=[];a.face=0;});
  R.marching=true;setButtons('march');const start=performance.now(),prog=new Map();
  return new Promise(res=>{const chk=()=>{if(!live(b)){R.marching=false;return res(false);}const now=performance.now();
    if(M.ui.getPage()==='profiles'){setTimeout(chk,200);return;}
-   for(const a of partyActors(b)){if(!a.to)continue;const d=Math.hypot(a.to[0]-a.x,a.to[1]-a.y),p=prog.get(a);if(!p||d<p.d-3)prog.set(a,{d,t:now});else if(now-p.t>1500/speed()){a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}}
+   for(const a of partyActors(b)){if(!a.to)continue;const d=Math.hypot(a.to[0]-a.x,a.to[1]-a.y),p=prog.get(a);if(!p||d<p.d-3)prog.set(a,{d,t:now});else if(now-p.t>2600/speed()){a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}}
    if(now-start>90000)for(const a of partyActors(b)){a.to=null;a.state='idle';a.moveSpeed=0;}
    if(partyActors(b).every(a=>!a.to)){R.marching=false;res(true);}else setTimeout(chk,80);};chk();});}
 const live=b=>!R.ended&&!R.fleeing&&S.battle===b;

@@ -41,7 +41,7 @@ A.palette=function(mood,biome){const s=mood.season,snow=s==='winter';
 // ---------- Bäume ----------
 function tree(g,x,y,s,r,P,kind){if(!kind)kind=r()<(P.snow?.6:.3)?'conifer':'leaf';
  px(g,x-8*s,y-2*s,16*s,4*s,'#00000030');
- if(kind==='conifer'){px(g,x-1.5*s,y-8*s,3*s,8*s,'#3b2a1a');const c=P.conifer;for(let k=0;k<6;k++){const w=(11-k*1.7)*s,yy=y-8*s-k*6*s;px(g,x-w,yy-6*s,w*2,7*s,c[k%2]);px(g,x-w+2*s,yy-6*s,w*.8,2*s,c[2]);if(P.snow)px(g,x-w+s,yy-6*s,w*2-2*s,2*s,'#eef3f6');}return;}
+ if(kind==='conifer'){px(g,x-1.5*s,y-8*s,3*s,8*s,'#3b2a1a');const c=P.conifer;for(let k=0;k<6;k++){const w=(11-k*1.7)*s,yy=y-8*s-k*6*s;px(g,x-w,yy-6*s,w*2,7*s,c[k%2]);px(g,x-w+2*s,yy-6*s,w*.8,2*s,c[2]);if(P.snow)px(g,x-w*.8,yy-6*s,w*1.2,2*s,'#eef3f6');}return;}
  // Laubbaum: Stamm, Krone aus Blöcken (Winter: kahle Äste)
  px(g,x-2*s,y-14*s,4*s,14*s,'#4a3322');px(g,x-1*s,y-14*s,1*s,14*s,'#5e4430');
  if(P.snow){for(let k=0;k<7;k++){const a=-Math.PI/2+(k-3)*.35,L=(10+r()*8)*s;for(let i=0;i<L;i+=s)px(g,x+Math.cos(a)*i,y-14*s+Math.sin(a)*i,s,s,'#4a3322');}px(g,x-8*s,y-28*s,16*s,2*s,'#eef3f6');return;}
@@ -241,12 +241,17 @@ const ZONE={
 A.ZONE=ZONE;
 // ---------- Große Bäume (Kunstpixel; werden doppelt groß gezeigt) ----------
 function bigTree(g,x,y,hA,r,P,kind){const snow=P.snow;
- if(kind==='conifer'){const tw=Math.max(4,hA*.05),th=hA*.12;px(g,x-tw/2,y-th,tw,th,'#3b2a1a');px(g,x-tw/2,y-th,tw*.35,th,'#5a4028');
-  const c=P.conifer,layers=Math.round(hA/14);for(let k=0;k<layers;k++){const t=k/layers,yy=y-th-k*(hA-th)/layers,w=(1-t*.85)*hA*.26;
-   for(let i=0;i<10;i+=2){const ww=w*(1-i/14);px(g,x-ww,yy-i,ww*2,2,i<4?c[0]:c[1]);}
-   for(let j=0;j<4;j++){const sx=x-w+r()*w*2;px(g,sx,yy-2,2,4,c[2]);}px(g,x-w*.9,yy-1,w*.5,2,c[2]);
-   if(snow){px(g,x-w*.8,yy-10,w*1.6,2,'#eef3f6');px(g,x-w*.4,yy-11,w*.6,1,'#ffffff');}}
-  px(g,x-1,y-hA-4,2,6,c[0]);return;}
+ if(kind==='conifer'){// Tanne: geschlossene Silhouette aus überlappenden Stufen (keine Lücken), Licht von links, Schnee nur auf den Stufenoberseiten
+  const tw=Math.max(4,hA*.05),th=hA*.12;px(g,x-tw/2,y-th,tw,th,'#3b2a1a');px(g,x-tw/2,y-th,tw*.35,th,'#5a4028');
+  const c=P.conifer,tiers=Math.max(4,Math.round(hA/16)),top=y-hA,bot=y-th+2,H=bot-top,lean=(r()-.5)*.06,jag=[];
+  for(let k=0;k<tiers;k++)jag.push(.85+r()*.3);
+  for(let yy=Math.floor(top);yy<bot;yy+=2){const t=(bot-yy)/H,tf=(1-t)*tiers,ti=Math.min(tiers-1,Math.floor(tf)),f=tf-ti;// f: 0 Stufenoberkante … 1 Unterkante
+   const env=Math.pow(1-t,.92)*hA*.27*jag[ti],w=Math.max(1.5,env*(.5+.5*f)),cx=x+lean*(bot-yy);
+   px(g,cx-w,yy,w*2,2,c[1]);px(g,cx-w,yy,w*(f<.55?1.05:.7),2,c[0]);
+   if(f>.78){px(g,cx-w,yy,w*.25,2,c[2]);px(g,cx+w*.55,yy,w*.45,2,c[2]);}
+   if(r()<.5)px(g,cx-w+r()*w*2,yy,2,2,c[2]);
+   if(snow&&f<.22){const sw=w*(.4+r()*.35),ox=(r()-.6)*w*.4;px(g,cx-sw+ox,yy,sw*1.4,2,'#dfe8ec');if(f<.12)px(g,cx-sw*.7+ox,yy,sw*.8,1,'#f4f8fa');}}
+  px(g,x+lean*H-1,top-4,2,6,c[0]);if(snow)px(g,x+lean*H-1,top-4,2,2,'#ffffff');return;}
  // Laub- und Obstbaum: Stamm mit Wurzeln, Äste, Krone aus vielen Blättergruppen
  const fruit=kind==='fruit',tw=Math.max(5,hA*(fruit?.07:.08)),th=hA*(fruit?.42:.45);
  for(let i=0;i<th;i+=2){const w=tw*(1+.5*(1-i/th)**3);px(g,x-w/2,y-i-2,w,2,'#4a3322');px(g,x-w/2,y-i-2,w*.3,2,'#5e4430');}
@@ -327,23 +332,31 @@ const AK={// Fluchtdistanz, Geh- und Lauftempo (Welt-px/s), Gruppe
  schwein:{flee:120,walk:14,run:110},hund:{flee:170,walk:40,run:190},katze:{flee:160,walk:24,run:200},kraehe:{flee:150,walk:16,run:260},taube:{flee:130,walk:16,run:240},ratte:{flee:120,walk:30,run:200},reh:{flee:260,walk:24,run:260},hase:{flee:200,walk:20,run:240}};
 const near=(a,list,r)=>{let best=null,bd=r;for(const x of list){const d=Math.hypot(x.x-a.x,x.y-a.y);if(d<bd){bd=d;best=x;}}return best;};
 function avoid(a,b){for(const o of b.obstacles){if(o.hp<=0||Math.abs(o.x-a.x)>60||Math.abs(o.y-a.y)>60)continue;const dx=a.x-o.x,dy=a.y-o.y,d=Math.hypot(dx,dy),min=o.r+8;if(d<min&&d>.01){a.x=o.x+dx/d*min;a.y=o.y+dy/d*min;}}}
-A.animalStep=function(a,b,now){const L=b.L,K=AK[a.kind]||AK.huhn,dt=Math.min(.1,(now-(a.lt||now))/1000)*Math.max(1,window.DebtUI?.T?.speed||1);a.lt=now;if(!dt)return;
+A.animalStep=function(a,b,now){const L=b.L,K=AK[a.kind]||AK.huhn,dt=Math.min(.1,(now-(a.lt||now))/1000)*Math.max(1,window.DebtUI?.T?.speed||window.MG?.s?.options?.speed||1);a.lt=now;if(!dt)return;
  a.home??={x:a.x,y:a.y};a.mode??='graze';a.tt=(a.tt??Math.random()*3)-dt;a.ph=(a.ph||0);
  const people=b.actors.filter(x=>!x.g.dead&&!x.down),fighting=b.started&&!b.done;
  const threat=near(a,people,K.flee*(fighting?1.4:1));
  if(a.hidden){a.hideT-=dt;if(a.hideT<=0&&!threat){a.hidden=false;a.mode='graze';}return;}
- // Hund: läuft beim Marschieren der Truppe hinterher, haut ab, sobald gekämpft wird
- if(a.kind==='hund'&&!fighting&&people.length&&!a.scared){const c=people.reduce((s,x)=>({x:s.x+x.x/people.length,y:s.y+x.y/people.length}),{x:0,y:0}),d=Math.hypot(c.x-a.x,c.y-a.y);
-  if(d<420&&d>90){a.mode='follow';a.tx=c.x-60*Math.sign(c.x-a.x);a.ty=c.y+40;}else if(a.mode==='follow')a.mode='graze';}
- if(a.kind==='hund'&&fighting&&threat)a.scared=true;
- if(threat&&a.mode!=='follow'){const dx=a.x-threat.x,dy=a.y-threat.y,d=Math.hypot(dx,dy)||1;
+ // Hund: trabt einmal zu einem der Fremden, schnuppert kurz und rennt dann davon (kein Hinterherlaufen)
+ const dogBusy=a.kind==='hund'&&!a.sniffed&&!fighting&&(a.mode==='approach'||a.mode==='sniff');
+ if(a.kind==='hund'&&!a.sniffed&&!fighting&&people.length&&a.mode!=='flee'){
+  if(a.mode==='sniff'){a.sniffT-=dt;if(a.sniffAt)a.dir=a.sniffAt.x>=a.x?1:-1;
+   if(a.sniffT<=0){a.sniffed=true;const c=people.reduce((s,x)=>({x:s.x+x.x/people.length,y:s.y+x.y/people.length}),{x:0,y:0}),dx=a.x-c.x||1,dy=a.y-c.y,d=Math.hypot(dx,dy)||1;
+    const py=window.Debt?.pathY?window.Debt.pathY(L,a.x):a.y,up=a.y<py;// weg vom Weg, zur Seite und etwas zurück
+    a.mode='flee';a.tx=clamp(a.x+Math.sign(dx)*(60+Math.random()*90),60,(b.width||4000)-60);a.ty=up?L.mT+30+Math.random()*60:L.mB-20-Math.random()*60;a.tt=6;}}
+  else{const p=near(a,people,a.mode==='approach'?420:300);
+   if(p){const d=Math.hypot(p.x-a.x,p.y-a.y),sd=p.x>=a.x?-1:1;if(d<36){a.mode='sniff';a.sniffT=1.1+Math.random()*1.3;a.sniffAt={x:p.x,y:p.y};}else{a.mode='approach';a.tx=p.x+sd*22;a.ty=p.y+6;a.tt=4;}}
+   else if(a.mode==='approach')a.mode='graze';}}
+ if(threat&&!dogBusy){const dx=a.x-threat.x,dy=a.y-threat.y,d=Math.hypot(dx,dy)||1;
   if((a.kind==='kraehe'||a.kind==='taube')&&a.mode!=='fly'){a.mode='fly';a.fly=0;a.tx=a.x+dx/d*500+(Math.random()-.5)*200;a.ty=clamp(a.y+(Math.random()-.5)*300,L.mT+30,L.mB-20);a.tt=2.5;}
   else if(a.kind==='katze'&&a.mode!=='flee'){const door=L.houses.filter(h=>h.door).sort((p,q)=>Math.hypot(p.door.x-a.x,p.door.y-a.y)-Math.hypot(q.door.x-a.x,q.door.y-a.y))[0];a.mode='flee';a.tx=door?door.x:a.x+dx/d*300;a.ty=door?door.y-24:a.y+dy/d*300;a.tt=4;a.toDoor=!!door;}
-  else if(a.mode!=='fly'){a.mode='flee';a.tx=a.x+dx/d*220;a.ty=a.y+dy/d*220+(Math.random()-.5)*60;a.tt=1.2+Math.random();}}
+  else if(a.mode!=='fly'&&a.mode!=='flee'){a.mode='flee';a.tx=a.x+dx/d*220;a.ty=a.y+dy/d*220+(Math.random()-.5)*60;a.tt=1.2+Math.random();}}
  if(a.mode==='graze'&&a.tt<=0){if(Math.random()<.45){const R=a.pen?0:140,px=a.pen?a.pen.x+20+Math.random()*(a.pen.w-40):a.home.x+(Math.random()-.5)*R*2,py=a.pen?a.pen.y+20+Math.random()*(a.pen.h-30):a.home.y+(Math.random()-.5)*R;a.mode='walk';a.tx=px;a.ty=py;a.tt=6;}else a.tt=2+Math.random()*4;}
- let sp=0;if(a.mode==='walk')sp=K.walk;else if(a.mode==='flee')sp=K.run;else if(a.mode==='follow')sp=K.walk*1.6;else if(a.mode==='fly')sp=K.run;
+ let sp=0;if(a.mode==='walk')sp=K.walk;else if(a.mode==='flee')sp=K.run;else if(a.mode==='approach')sp=K.walk*2.2;else if(a.mode==='fly')sp=K.run;
+ // weich beschleunigen und abbremsen statt ruckartig loszulaufen
+ a.cur=(a.cur||0)+(sp-(a.cur||0))*Math.min(1,dt*(sp>(a.cur||0)?4:6));
  if(sp&&a.tx!=null){const dx=a.tx-a.x,dy=a.ty-a.y,d=Math.hypot(dx,dy);if(d<4||a.tt<=0){if(a.mode==='fly'){a.fly=0;}if(a.mode==='flee'&&a.toDoor&&d<20){a.hidden=true;a.hideT=8+Math.random()*8;a.toDoor=false;}a.mode='graze';a.tt=1+Math.random()*3;a.moving=0;}
-  else{const s=Math.min(d,sp*dt);a.x+=dx/d*s;a.y+=dy/d*s;a.dir=dx>=0?1:-1;a.moving=sp;a.step=(a.step||0)+s*.18;}}else a.moving=0;
+  else{const s=Math.min(d,Math.max(2,a.cur)*dt);a.x+=dx/d*s;a.y+=dy/d*s;if(Math.abs(dx)>2)a.dir=dx>=0?1:-1;a.moving=a.cur;a.step=(a.step||0)+s*.18;}}else a.moving=0;
  if(a.mode==='fly')a.fly=Math.min(1,(a.fly||0)+dt*2);else if(a.fly)a.fly=Math.max(0,a.fly-dt*2);
  a.y=clamp(a.y,L.mT+16,L.mB-6);if(a.pen){a.x=clamp(a.x,a.pen.x+16,a.pen.x+a.pen.w-16);a.y=clamp(a.y,a.pen.y+16,a.pen.y+a.pen.h-6);}
  if(a.kind==='ente'&&a.home){const p=L.props.find(q=>q.kind==='tuempel'&&Math.hypot(q.x-a.home.x,q.y-a.home.y)<200);if(p){const rx=(p.rx||120)-16,ry=(p.ry||46)-8,ex=(a.x-p.x)/rx,ey=(a.y-p.y)/ry,e=Math.hypot(ex,ey);if(e>1){a.x=p.x+ex/e*rx;a.y=p.y+ey/e*ry;}}}
@@ -374,8 +387,8 @@ A.drawAnimal=function(g,a,t,P){if(a.hidden)return;const dir=a.dir||1,mv=a.moving
   const hx=graze?11:10,hy=graze?-8:-19;px(g,hx-3,hy+2,3,6,c[0]);pe(g,hx,hy,2.8,3,c[0],1);px(g,hx+1,hy+3,1.5,3.5,c[1]);px(g,hx-2,hy-5,1,3,'#8a8070');px(g,hx-3,hy-6,1,2,'#8a8070');px(g,hx-.5,hy-1,1,1,'#141210');px(g,hx-3.5,hy-1,2,1.2,c[1]);break;}
  case 'schwein':{legs(g,[-8,-5,5,8],0,4,'#c88a80',ph,mv,2);pe(g,0,-8,12,6.5,'#e8a89c',1);pe(g,0,-6,10,3,'#d8968a',1);pe(g,12,-8,3.5,3.5,'#e8a89c',1);pe(g,15,-7.5,1.6,2,'#d8867a',1);px(g,15,-8,1,1,'#7a3a33');px(g,11,-12,3,2.5,'#d8867a');px(g,11.5,-9.5,1,1,'#141210');
   const tw=Math.sin(t*4+v*9);px(g,-13,-11+tw,1.5,1.5,'#d8867a');px(g,-14,-12,1.5,1.5,'#d8867a');if(P.season!=='winter'&&v<.5){px(g,-9,-2,4,2,'#6a5038');px(g,4,-2,4,2,'#6a5038');}break;}
- case 'hund':{const c=v<.33?['#8a6a4a','#5a4430']:v<.66?['#2a2622','#4a4440']:['#c8b090','#8a7458'],wag=Math.sin(t*(a.mode==='follow'?14:5))*2.5;legs(g,[-6,-3,4,7],0,6,c[1],ph*1.4,mv,1.5);
-  pe(g,0,-9,8,4,c[0],1);px(g,-9,-12+wag*.4,2,1.5,c[0]);px(g,-11,-14+wag,2,2.5,c[0]);const hx=9,hy=graze&&!mv?-9:-13;pe(g,hx,hy,3.5,3,c[0],1);px(g,hx+2.5,hy,3,2,c[0]);px(g,hx+5,hy,1,1,'#141210');px(g,hx-1.5,hy-3.5,2,3,c[1]);px(g,hx+.5,hy-1.5,1,1,'#141210');if(a.mode==='follow'&&Math.sin(t*3)>.8)px(g,hx+3,hy+1.5,2,1.5,'#c43a5a');break;}
+ case 'hund':{const c=v<.33?['#8a6a4a','#5a4430']:v<.66?['#2a2622','#4a4440']:['#c8b090','#8a7458'],wag=Math.sin(t*(a.mode==='sniff'||a.mode==='approach'?14:5))*2.5;legs(g,[-6,-3,4,7],0,6,c[1],ph*1.4,mv,1.5);
+  pe(g,0,-9,8,4,c[0],1);px(g,-9,-12+wag*.4,2,1.5,c[0]);px(g,-11,-14+wag,2,2.5,c[0]);const hx=a.mode==='sniff'?10:9,hy=(graze&&!mv)||a.mode==='sniff'?-8+Math.sin(t*9)*.6:-13;pe(g,hx,hy,3.5,3,c[0],1);px(g,hx+2.5,hy,3,2,c[0]);px(g,hx+5,hy,1,1,'#141210');px(g,hx-1.5,hy-3.5,2,3,c[1]);px(g,hx+.5,hy-1.5,1,1,'#141210');if(a.mode==='approach'&&Math.sin(t*3)>.8)px(g,hx+3,hy+1.5,2,1.5,'#c43a5a');break;}
  case 'katze':{const c=v<.33?['#2a2622','#141210']:v<.66?['#c08040','#8a5a2a']:['#9a9a96','#6a6a66'],sw=Math.sin(t*2+v*7);legs(g,[-3,-1,2,4],0,3,c[1],ph*1.5,mv,1);pe(g,0,-4.5,5,2.5,c[0],1);
   for(let k=0;k<6;k++)px(g,-5-k*.5,-5-k*1.1+Math.sin(k*.6+sw)*1,1.2,1.2,c[0]);pe(g,5,-6.5,2.2,2,c[0],1);px(g,4,-9.5,1,2,c[0]);px(g,6,-9.5,1,2,c[0]);px(g,5.8,-7,1,1,'#c8d040');break;}
  case 'kraehe': case 'taube':{const c=a.kind==='kraehe'?['#1c1a20','#2a2a3a']:['#8a90a0','#6a7080'],fl=Math.sin(t*22);if(fly>.1){pe(g,0,-3,3.5,1.8,c[0],1);px(g,-7,-4+fl*3,6,1.5,c[0]);px(g,1,-4-fl*3,6,1.5,c[0]);px(g,3,-4,2,2,c[0]);break;}
