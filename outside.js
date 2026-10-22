@@ -162,7 +162,8 @@ function endFilm(){F.running=false;F.skip=false;F.speaker=null;clearInterval(tal
 
 // ---------- Ludus: Tor zeichnen, anklicken, Szene starten ----------
 let hot=false,hoverCanvas=null,wait=0;
-M.ludusOverlay=(g,t)=>{const st=ST();if(!st.stage)return;
+const prevOverlay=M.ludusOverlay;// vorherige Ebenen (Halle der Gefallenen, Hühnerschule, Bogner) immer mitzeichnen
+M.ludusOverlay=(g,t)=>{try{prevOverlay?.(g,t);}catch(e){console.warn(e);}const st=ST();if(!st.stage)return;
  const c=g.canvas;if(c&&c!==hoverCanvas&&c.id==='ludusCanvas'){hoverCanvas=c;c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)*900/r.width,y=(e.clientY-r.top)*670/r.height,G=A.GATE,h=x>=G.x&&x<=G.x+G.w&&y>=G.y&&y<=G.y+G.h;if(h!==hot){hot=h;c.style.cursor=h?'pointer':'';}});}
  A.ludusGate(g,t,{fresh:(st.stage==='open'&&!st.seenBoard)||(st.stage==='done'&&adventureReady()&&!st.seenAdvDay),hot});};
 const prevHit=M.ludusHit;
