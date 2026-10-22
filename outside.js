@@ -216,7 +216,10 @@ function boardPage(){const st=ST();
    <p class="tiny"><b>${esc(D.DIFF.names[dv-1])}</b> · Aussicht auf Erfolg ${DIFF_CHANCE[dv-1]} · Beute ×${String(D.DIFF.gold[dv-1]).replace('.',',')}${dv>=3?' · Grobiane und Veteranen möglich':''}${dv>=4?' · Anführer mit Spitzenwaffe':''}</p></div>
   <dl><dt>Gegner</dt><dd>${m?`${D.ADV[st.adv.biome].band}: etwa ${m.total-1} ${esc(D.ADV[st.adv.biome].who)} und ihr Anführer. Stärke richtet sich nach eurer Gruppe (${n||1} Kämpfer) und den Totenköpfen.`:'unbekannt'}</dd><dt>Belohnung</dt><dd>Die Truhe des Anführers (Gold) · alle Waffen und Schilde, die fallen</dd><dt>Regel</dt><dd>${ready?'Eine Plünderung pro Tag.':'<b class="red">Heute wart ihr schon plündern. Morgen wieder.</b>'}</dd></dl>
   <canvas class="ow-map" data-owmap="adventure" width="480" height="270"></canvas><p class="tiny">Plünderungen bisher: ${st.adventures} · gewonnen: ${st.advWins}</p></div>`;}
- const rows=fighters().map(g=>{const fit=D.fit(g),on=sel.has(g.id)&&fit;return `<button type="button" class="ow-pick ${on?'on':''} ${fit?'':'off'}" data-action="outside:pick:${esc(g.id)}" ${fit?'':'disabled'}><i>${on?'✓':''}</i><span><b>${ROLE_ICON[g.role]||''} ${esc(g.name)}</b><small>${esc(g.role)} · ${esc(weaponName(g))}</small><small>${esc(statusLine(g))}</small></span></button>`;}).join('');
+ // Anführer ab 5 Kämpfern: gewählter (★) oder der mit dem besten Führungswert
+ const ldr=L&&team.length>=L.CFG.minParty?(team.find(g=>g.id===st.leaderId)||L.pickLeader(team)):null,lq=ldr?L.quality(ldr):null;
+ const rows=fighters().map(g=>{const fit=D.fit(g),on=sel.has(g.id)&&fit,isL=ldr&&ldr.id===g.id;return `<button type="button" class="ow-pick ${on?'on':''} ${fit?'':'off'}" data-action="outside:pick:${esc(g.id)}" ${fit?'':'disabled'}><i>${on?'✓':''}</i><span><b>${isL?'★ ':''}${ROLE_ICON[g.role]||''} ${esc(g.name)}</b><small>${esc(g.role)} · ${esc(weaponName(g))}${L?' · Führung '+L.quality(g).lead+' · Teamgeist '+Math.round(g.stats?.teamwork||0):''}</small><small>${esc(statusLine(g))}</small></span>${ldr&&on?`<span class="ow-star ${isL?'on':''}" role="button" title="Zum Anführer machen" data-action="outside:lead:${esc(g.id)}">★</span>`:''}</button>`;}).join('');
+ const leadBox=!L?'':ldr?`<p class="ow-lead"><b>★ Anführer: ${esc(ldr.name)}</b> · Führungswert ${lq.lead} (Taktik, Erfahrung, Willenskraft, Moral) · sieht Gegner zu ${Math.round(lq.spot*100)} % zuerst · prüft die Lage alle ${lq.scan.toFixed(1).replace('.',',')} s. Mit ★ wählst du selbst.</p>`:`<p class="ow-lead tiny">Ab ${L.CFG.minParty} Kämpfern führt ein Anführer: Er entdeckt Gegner meist zuerst, hält eine Einsatzbesprechung und gibt im Kampf Befehle.</p>`;
  const can=n>=D.CFG.minParty&&n<=D.CFG.maxParty&&(quest||adventureReady());
  const hist=st.history.slice(0,6).map(h=>`<li><b>Tag ${h.day}</b> · ${h.diff?skulls(h.diff,1)+' ':''}${esc(h.place||'')} · ${esc(h.result)}${h.loot?` · ${h.loot} Beutestücke`:''}${h.gold?` · ${h.gold} Gold`:''}${h.deaths?` · <span class="red">${h.deaths} tot</span>`:''}</li>`).join('');
  requestAnimationFrame(paintBoard);
@@ -224,7 +227,7 @@ function boardPage(){const st=ST();
  <div class="ow-cols"><div>${card}</div>
  <div class="box"><h2>Wer geht mit?</h2><p class="tiny">1 bis ${D.CFG.maxParty} Kämpfer. Kein Steuern unterwegs: nur Weiter oder Fliehen. Fliehen geht immer. Verletzungen bleiben, Tote bleiben tot. Nach jedem gesäuberten Ort eine kurze Rast.</p>
   <div class="buttons"><button class="btn" data-action="outside:auto:5">Beste 5</button><button class="btn" data-action="outside:auto:10">Beste 10</button><button class="btn" data-action="outside:none">Keiner</button></div>
-  <div class="ow-picks">${rows||'<p>Keine Kämpfer im Kader.</p>'}</div>
+  ${leadBox}<div class="ow-picks">${rows||'<p>Keine Kämpfer im Kader.</p>'}</div>
   <p class="ow-need ${can?'ok':''}">${n>D.CFG.maxParty?'Höchstens '+D.CFG.maxParty+' Kämpfer.':n<1?'Mindestens ein kampffähiger Kämpfer.':n+' von höchstens '+D.CFG.maxParty+' gewählt.'}</p>
   <div class="buttons"><button class="btn primary" data-action="outside:go" ${can?'':'disabled'}>Aufbrechen ▶</button></div>
   ${hist?`<h3>Unterwegs gewesen</h3><ul class="ow-hist">${hist}</ul>`:''}</div></div></section>`;}
@@ -249,6 +252,7 @@ const prevClick=M.schoolClick;
 M.schoolClick=action=>{if(!action.startsWith('outside:'))return prevClick?prevClick(action):false;const [,k,v]=action.split(':');const st=ST();
  if(k==='pick'){sel??=new Set();if(sel.has(v))sel.delete(v);else if(sel.size<D.CFG.maxParty)sel.add(v);else notify('Höchstens '+D.CFG.maxParty+' Kämpfer.');M.ui.render();return true;}
  if(k==='auto'){autoPick(+v||5);M.ui.render();return true;}
+ if(k==='lead'){st.leaderId=v;persist();M.ui.render();return true;}
  if(k==='none'){sel=new Set();M.ui.render();return true;}
  if(k==='biome'){st.adv=newAdventure(v,st.adv?.diff);persist();M.ui.render();return true;}
  if(k==='diff'){st.adv??=newAdventure();st.adv.diff=Math.max(1,Math.min(5,+v||2));persist();M.ui.render();return true;}
@@ -262,13 +266,14 @@ M.schoolClick=action=>{if(!action.startsWith('outside:'))return prevClick?prevCl
 // =====================================================================================================
 // MISSION: Marsch durch breite Abschnitte, Begegnungen, Kampf mit der echten Engine
 // =====================================================================================================
+const L=window.DebtLeader,LU=window.DebtLeaderUI;
 const R={m:null,b:null,lastTime:0,awaiting:null,ended:false,fleeing:false,cam:{x:520,y:600,snap:true},progress:0,marching:false,nextRes:null,rows:[],rowKey:0,runId:null};const VH=760;
 const speed=()=>Math.max(1,S.options?.speed||1);
 function overlayDom(){const view=$('battleView');if(!view)return null;let o=$('owOver');if(o&&o.parentNode===view)return o;
  o=document.createElement('div');o.id='owOver';o.innerHTML=`<canvas id="owWx"></canvas><div id="owBubbles"></div><div class="ow-top"><div class="ow-title"><b id="owTitle"></b><small id="owSub"></small></div><div class="ow-chips"><span class="tag" id="owStation"></span><span class="tag" id="owCount"></span><span class="tag" id="owLoot"></span></div></div><div class="ow-mapbox" id="owMapBox"><canvas id="owMap" width="480" height="270"></canvas></div><div class="ow-logbox" id="owLogBox" hidden><div id="owLog"></div></div>
  <div class="ow-auto" id="owAuto" hidden><b id="owAutoText"></b><div><button type="button" class="btn primary" id="owNext">Weiter ▶</button><button type="button" class="btn" id="owHome">Mit Beute heim</button></div></div>
  <div class="ow-ctrl"><span id="owState"></span><button type="button" class="btn" id="owFlee">Fliehen</button><button type="button" class="btn" id="owSpdBtn">1×</button><button type="button" class="btn" id="owLogBtn">Bericht</button><button type="button" class="btn" id="owMapBtn">Karte</button></div>`;
- view.insertBefore(o,$('battleBottom'));if(innerWidth<600)$('owMapBox').hidden=true;
+ view.insertBefore(o,$('battleBottom'));if(innerWidth<600)$('owMapBox').hidden=true;LU?.mount(o);
  // Bedienung liegt im Kampfbild (nicht ganz unten), damit man auf dem Handy nie scrollen muss
  $('owNext').onclick=next;$('owHome').onclick=flee;$('owFlee').onclick=flee;
  $('owLogBtn').onclick=()=>{const bx=$('owLogBox');bx.hidden=!bx.hidden;$('owLogBtn').classList.toggle('primary',!bx.hidden);if(!bx.hidden)$('owLog').scrollTop=1e9;};$('owMapBtn').onclick=()=>{const bx=$('owMapBox');bx.hidden=!bx.hidden;};
@@ -282,7 +287,7 @@ const prevArmyHud=M.armyBattleHUD;M.armyBattleHUD=function(b){if(b?.mission&&R.m
 const prevEnd=M.endBenchmark;M.endBenchmark=function(w,r){if(S.battle?.mission)return D.onEngineEnd(w,r);return prevEnd?.apply(this,arguments);};
 // Kamera: füllt die Höhe, folgt der Truppe (bei Kampf allen Beteiligten)
 const hudCam=M.battleCamera;
-function missionCam(b,width,height,W,H){const Z=R.zoom||1,fit=Math.min(width/W,height/H),k=height/VH*Z,view=width/k,vh=VH/Z;sizeFieldSoon();
+function missionCam(b,width,height,W,H){const ov=LU?.camera(b,width,height,W,H);if(ov){sizeFieldSoon();return ov;}const Z=R.zoom||1,fit=Math.min(width/W,height/H),k=height/VH*Z,view=width/k,vh=VH/Z;sizeFieldSoon();
  const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
  let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=view*.18;
  tx=clamp(tx,view/2,W-view/2);ty=clamp(ty,vh/2,H-vh/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
@@ -307,13 +312,13 @@ addEventListener('resize',()=>{if(R.m)sizeField();});
 function mlog(html,cls=''){R.rows=[html,...R.rows].slice(0,7);R.rowKey++;const el=$('owLog');if(el){const p=document.createElement('p');p.className=cls;p.innerHTML=html;el.appendChild(p);el.scrollTop=el.scrollHeight;while(el.children.length>80)el.firstChild.remove();}
  (R.full??=[]).push([html,cls]);logShort(html,cls);}
 function logShort(html,cls=''){const sh=$('owLogShort');if(!sh)return;const q=document.createElement('p');q.className=cls;q.innerHTML=html;sh.prepend(q);while(sh.children.length>2)sh.lastChild.remove();}
-function toScreen(x,y){const f=$('arenaCanvas'),cw=R.cw||f.clientWidth,ch=R.ch||f.clientHeight,k=ch/VH*(R.zoom||1);return {x:cw/2+(x-R.cam.x)*k,y:ch/2+(y-R.cam.y)*k,k,cw,ch};}
+function toScreen(x,y){const f=$('arenaCanvas'),cw=R.cw||f.clientWidth,ch=R.ch||f.clientHeight,k=ch/VH*(LU&&(LU.SPY.on||LU.CLOSE.on)?1:(R.zoom||1));return {x:cw/2+(x-R.cam.x)*k,y:ch/2+(y-R.cam.y)*k,k,cw,ch};}
 // Lesedauer: 2,2 s plus 65 ms je Zeichen (mind. 3,5 s), unabhängig vom Spieltempo
 const readMs=text=>Math.max(3500,2200+String(text).length*65);
 // Dialogpausen: höchstens auf zwei Drittel verkürzt, auch bei 3×
 const talkPause=ms=>sleep(Math.max(ms*.66,ms/speed()));
-function bubble(a,text,o={}){const lay=$('owBubbles');if(!lay||!a)return;for(const old of lay.children)if(old._a===a){old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
- const el=document.createElement('div');el._a=a;el.className='ow-bubble'+(a.team?' foe':'')+(o.boss?' boss':'')+(o.loud||/!$/.test(text)&&text===text.toUpperCase()?' loud':'');el.innerHTML=(o.name?'<b>'+esc(o.name)+'</b>':'')+'<span>'+esc(text)+'</span>';lay.appendChild(el);
+function bubble(a,text,o={}){const lay=$('owBubbles');if(!lay||!a)return;if(o.small&&[...lay.children].filter(e=>!e.classList.contains('out')).length>=3)return;for(const old of lay.children)if(old._a===a){old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
+ const el=document.createElement('div');el._a=a;el.className='ow-bubble'+(a.team?' foe':'')+(o.boss?' boss':'')+(o.lead?' lead':'')+(o.small?' small':'')+(o.loud||/!$/.test(text)&&text===text.toUpperCase()?' loud':'');el.innerHTML=(o.name?'<b>'+esc(o.name)+'</b>':'')+'<span>'+esc(text)+'</span>';lay.appendChild(el);
  el._w=el.offsetWidth;el._h=el.offsetHeight;// Größe einmal messen (Text ändert sich nicht)
  const upd=()=>{if(!el.isConnected)return;const p=toScreen(a.x,a.y-(a.down?40:96)),bw=el._w/2,bh=el._h;el.style.left=clamp(p.x,bw+4,p.cw-bw-4)+'px';el.style.top=clamp(p.y,bh+4,p.ch-40)+'px';el.classList.toggle('edge',p.x<0||p.x>p.cw);};upd();el._upd=upd;
  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),400);},Math.max(o.ms||0,readMs(text)));}
@@ -349,9 +354,11 @@ function stroll(a,dt,grp){const s=strollInit(a);const [tx,ty,sp]=a.to;
  const dx=tx-a.x,dy=ty-a.y,d=Math.hypot(dx,dy);
  let k=s.k*(1+.12*Math.sin(s.t*.7+s.ph))*(s.slow>0?.4:1);if(grp&&grp.n>1)k*=clamp(1+(grp.x-a.x)/240,.7,1.4);if(d<60&&!a.path?.length)k*=.6+.4*d/60;
  const step=Math.max(4,sp*k)*dt;
- if(d<=step+.5){a.x=tx;a.y=ty;if(a.path?.length){a.to=a.path.shift();return;}a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;if(a.face!==undefined)a.a=a.face;return;}
+ if(d<=step+.5){a.x=tx;a.y=ty;if(a.path?.length){a.to=a.path.shift();return;}a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;a.gaitSpeed=0;if(a.face!==undefined)a.a=a.face;return;}
  const ux=dx/d,uy=dy/d,lat=a.path?.length?0:Math.cos(s.t*s.fr+s.ph)*s.amp*s.fr*dt*Math.min(1,d/90);// auf Umwegen nicht seitlich schlendern
- a.x+=ux*step-uy*lat;a.y+=uy*step+ux*lat;a.state='move';a.moveSpeed=6+5*k;a.odo=(a.odo||0)+step;a.phase=a.odo*s.stride;
+ const ox=a.x,oy=a.y;a.x+=ux*step-uy*lat;a.y+=uy*step+ux*lat;a.state='move';
+ // Schritte und Armschwung aus dem echten Tempo (wie in der Engine)
+ if(M.updateLocomotion)M.updateLocomotion(a,ox,oy,a.phase||0,dt);else{a.moveSpeed=6+5*k;a.odo=(a.odo||0)+step;a.phase=a.odo*s.stride;}
  a.a=s.look>0?(dx>0?Math.PI:0):Math.abs(dx)>.5?(dx>0?0:Math.PI):a.a;}
 function missionLoop(t){const b=S.battle;
  if(R.m&&!R.ended){
@@ -370,6 +377,14 @@ function missionLoop(t){const b=S.battle;
  requestAnimationFrame(missionLoop);}
 requestAnimationFrame(missionLoop);
 function onEvent(b,e){const m=R.m,adv=m.kind==='adventure';
+ // Anführer: Rufe, Warnung vor dem Griff von hinten (Nahaufnahme), Ellbogen, Ansturm der Assassinen
+ if(e.type==='lead'){const a=e.actor;if(!a)return;
+  if(e.kind==='ack'||e.kind==='ignore'){bubble(a,e.text,{small:true,ms:1500});if(e.kind==='ignore')mlog(`<b>${esc(a.g.name)}</b> hört nicht sofort: „${esc(e.text)}“`);return;}
+  if(e.kind==='foeAlert'){bubble(a,e.text,{name:first(a.g)});mlog(`<b class="foe">${esc(a.g.name)}:</b> „${esc(e.text)}“`);return;}
+  bubble(a,e.text,{lead:true,name:LU.lname(a),ms:clamp(1400+e.text.length*45,1900,3400),loud:e.urgent});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(e.text)}“`);return;}
+ if(e.type==='gripWarn'){LU.closeStart(e.actor,e.foe);return;}
+ if(e.type==='elbow'){LU.closeHit(e.actor,e.foe);mlog(`<b>${esc(e.actor.g.name)}</b> schlägt <b class="foe">${esc(e.foe.g.name)}</b> den Ellbogen ins Gesicht. Griff abgewehrt.`);return;}
+ if(e.type==='assassinCharge'){LU.chargeCine(e.actors);return;}
  if(e.type==='spawn'){const g=e.actor.g;if(g.debtBoss)return;bubble(e.actor,g.debtShout,{name:g.name});mlog(`<b class="foe">${esc(g.name)}</b> kommt aus ${esc(e.door||'dem Nichts')}. Er ${esc(g.debtOwes)}. Waffe: ${esc(M.itemName(M.gear(g,'weapon')))}.`);}
  if(e.type==='detour'&&e.actor.team===0&&Math.random()<.6){bubble(e.actor,pickL(['Kein freies Schussfeld!','Das Haus ist im Weg!','Moment, ich such mir eine Lücke.','Ich geh rum!']),{name:first(e.actor.g),ms:1800});}
  if(e.type==='gaveup'){const l=adv?pickL(['Ich hab genug! Ich geh heim!','Das ist mir zu blöd!','Mama! MAMA!','Ich ergebe mich! Ich ergebe mich ganz doll!']):pickL(D.TEXT.gaveup);bubble(e.actor,l,{name:first(e.actor.g)});mlog(`<b class="foe">${esc(e.actor.g.name)}</b> verliert die Nerven: „${esc(l)}“`);}
@@ -378,7 +393,7 @@ function onEvent(b,e){const m=R.m,adv=m.kind==='adventure';
 // Der Lade-Bildschirm der Arena (scene-loader.js) bereitet Arena-Grafik vor und wartet auf „Weiter“. Missionen zeichnen
 // ihren eigenen Schauplatz und wechseln mehrmals den Abschnitt: dort nicht anhalten.
 function bypassLoader(){const SL=M.sceneLoader;if(SL&&!SL.__ow){const g0=SL.gate;SL.gate=function(){if(S.battle?.mission)return false;return g0.apply(this,arguments);};SL.__ow=true;}}
-async function startMission(){if(S.battle||R.m)return;bypassLoader();const st=ST(),team=selected();if(team.length<D.CFG.minParty||team.length>D.CFG.maxParty)return;
+async function startMission(){if(S.battle||R.m)return;bypassLoader();LU?.install({bubble,mlog,toScreen,live,cam:()=>R.cam,VH,state:t=>{const e=$('owState');if(e)e.textContent=t;}});const st=ST(),team=selected();if(team.length<D.CFG.minParty||team.length>D.CFG.maxParty)return;
  const quest=st.stage!=='done';if(!quest&&!adventureReady()){notify('Heute wart ihr schon draußen.');return;}
  let m;if(quest){st.quest??=newQuestPlace();m=D.newMission(st.quest.seed,team,'dorf',{kind:'quest'});m.place.name=st.quest.name;}
  else{m=D.newMission(st.adv.seed,team,st.adv.biome,{kind:'adventure',diff:st.adv.diff||2});}
@@ -394,7 +409,7 @@ function clearPoint(b,x,y){for(let k=0;k<12;k++){const yy=y+(k%2?1:-1)*Math.ceil
 // Fortschritt), plant neu. Alle brechen gemeinsam auf (nur kleine Verzögerung) und der Marsch endet erst, wenn alle da sind.
 function freeSpot(b,x,y){for(let k=0;k<18;k++){const yy=y+(k%2?1:-1)*Math.ceil(k/2)*16;if(D.navFreeAt(b,x,yy))return yy;}return y;}
 function routeTo(b,a,tx,ty,sp){const path=D.findPath(b,a.x,a.y,tx,ty);const pts=(path&&path.length?path:[{x:tx,y:ty}]).map(p=>[p.x,p.y,sp]);a.to=pts.shift();a.path=pts;a.goal=[tx,ty,sp];}
-function marchTo(b,x,sp=58){const pa=partyActors(b);pa.forEach((a,k)=>{a.startDelay=Math.random()*.45;const col=k%3,line=Math.floor(k/3),tx=x-line*60-(col===1?0:26)+(Math.random()-.5)*44,y=freeSpot(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*58+(Math.random()-.5)*20,b.L.mT+30,b.L.mB-30));routeTo(b,a,tx,y,sp);a.face=0;a.replan=0;});
+function marchTo(b,x,sp=58){if(!b.started)LU?.stow(b,true);const pa=partyActors(b);pa.forEach((a,k)=>{a.startDelay=Math.random()*.45;const col=k%3,line=Math.floor(k/3),tx=x-line*60-(col===1?0:26)+(Math.random()-.5)*44,y=freeSpot(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*58+(Math.random()-.5)*20,b.L.mT+30,b.L.mB-30));routeTo(b,a,tx,y,sp);a.face=0;a.replan=0;});
  R.marching=true;setButtons('march');const start=performance.now(),prog=new Map();
  return new Promise(res=>{const chk=()=>{if(!live(b)){R.marching=false;return res(false);}const now=performance.now();
    if(M.ui.getPage()==='profiles'){setTimeout(chk,200);return;}
@@ -419,12 +434,15 @@ async function runSection(si,introLine){const m=R.m,sec=m.place.sections[si];
  $('battleView')?.classList.add('ow-fade');await sleep(600);if(!R.m||R.ended)return;await runSection(si+1);}
 function waitNext(){return new Promise(res=>{R.nextRes=res;});}
 async function encounter(b,sti){const m=R.m,st=m.place.stations[sti],adv=m.kind==='adventure';m.idx=sti;
+ // Ab 5 kampffähigen Kämpfern führt ein Anführer (DebtLeader): Entdecken, Fernrohr, Befehle, Rufe im Kampf
+ const lead=L&&LU?L.attach(b,m,{leaderId:ST().leaderId}):null;if(lead&&!st.boss){await leadEncounter(b,sti);return;}
  const ok=await marchTo(b,st.fx-120,58);if(!ok)return;
  setButtons('talk');
  if(st.boss){const boss=m.queues[sti][0],bn=adv?first(boss):'Krassus';
   mlog(adv?`Vor euch wartet <b class="boss">${esc(boss.name)}</b>, ${esc(M.itemName(boss.enemyGear.weapon))} in der Hand.`:`Vor dem Kontor wartet <b class="boss">Krassus Knochenzins</b>, den Zweihänder „Zinseszins“ locker auf der Schulter.`);
   const firstA=D.beginEncounter(b,m,sti);b.paused=true;b.started=false;const k=firstA[0];
   for(const [w,l] of (adv?m.texts.leaderIntro:D.TEXT.bossIntro)){const me=w==='K'||w==='L',a=me?k:anyParty(b);bubble(a,l,{name:me?bn:first(a.g),boss:me,ms:2800});mlog(`<b class="${me?'boss':''}">${esc(me?bn:a.g.name)}:</b> „${esc(l)}“`);await talkPause(2500);if(!live(b))return;}
+  LU?.stow(b,false);if(b.lead){b.lead.phase='fight';b.lead.alert=true;b.lead.alertAt=b.time;b.lead.fightAt=b.time;LU.leadSay(b,pickL(['Das ist er. Alle zusammen, keiner allein!','Der Große gehört uns. Umzingeln!','Schilde vorn, Klingen von der Seite. Los!']));}
   b.started=true;b.paused=false;setButtons('fight');return;}
  const [l1,l2]=D.pickBanter(st,st.banter,m);const a1=anyParty(b);let a2=anyParty(b);if(a2===a1)a2=partyActors(b).find(x=>x!==a1)||a1;
  if(a1!==a2||partyActors(b).length>1){bubble(a1,l1,{name:first(a1.g)});mlog(`<b>${esc(a1.g.name)}:</b> „${esc(l1)}“`);await talkPause(2000);if(!live(b))return;
@@ -437,18 +455,42 @@ async function encounter(b,sti){const m=R.m,st=m.place.stations[sti],adv=m.kind=
  else mlog('Eine Tür quietscht.','narr');
  const firstA=D.beginEncounter(b,m,sti);b.paused=true;b.started=false;const evs=[...b.events];b.events.length=0;
  for(const a of firstA){const g=a.g;bubble(a,g.debtShout,{name:g.name});mlog(`<b class="foe">${esc(g.name)}</b>${st.kind==='idle'?'':' kommt aus '+esc(evs.find(e=>e.actor===a)?.door||'dem Nichts')}. Er ${esc(g.debtOwes)}. Waffe: ${esc(M.itemName(g.enemyGear.weapon))}.`);await sleep(500/speed());}
- b.events.length=0;await sleep(900/speed());if(!live(b))return;
+ b.events.length=0;LU?.stow(b,false);await sleep(900/speed());if(!live(b))return;
  for(const a of b.actors){a.to=null;a.path=null;}
  b.started=true;b.paused=false;setButtons('fight');}
+// Begegnung mit Anführer: Er sieht die Gegner meist zuerst (Fernrohr, Lage, gestaffelte Aufstellung), sonst Überfall mit schnellen Rufen
+async function leadEncounter(b,sti){const m=R.m,st=m.place.stations[sti],G=L.layoutGroup(b,m,sti),me=()=>LU.leaderA(b);
+ if(L.spotRoll(b,st)){if(!await marchTo(b,G.hx))return;setButtons('talk');
+  L.beginGroup(b,m,sti);b.events.length=0;b.paused=true;b.started=false;b.lead.stats.spotted++;b.lead.phase='brief';
+  mlog(`<b class="ldr">★ ${esc(me().g.name)}</b> entdeckt ${b.encEnemies.length} Gegner, bevor sie euch sehen.`,'narr');
+  const lines=L.briefLines(b);LU.leadSay(b,lines[0].text,{ms:1800});await talkPause(1100);if(!live(b))return;LU.drawWeapons(b);await talkPause(900);if(!live(b))return;
+  await LU.spyShow(b,lines.slice(1));if(!live(b))return;
+  // gestaffelt: Soldatenlinie, dann gehen die Assassinen in Deckung, erst danach laufen die Fernkämpfer los
+  const {pts,lines:ord}=L.plan(b),by=job=>[...pts].filter(([,p])=>p.job===job),go=(list,sp)=>{for(const [a,p] of list){routeTo(b,a,p.x,freeSpot(b,p.x,p.y),sp);a.startDelay=0;a.face=p.face;}};
+  const say1=async job=>{const o=ord.find(x=>x.job===job);if(o){LU.leadSay(b,o.text);await talkPause(Math.max(1700,800+o.text.length*36));}};
+  go(by('line'),58);await say1('line');if(!live(b))return;
+  const hid=by('hide');if(hid.length){go(hid,84);await say1('hide');await LU.walkSome(b,hid.map(([a])=>a),9000);if(!live(b))return;for(const [a] of hid){a.leadHide.x=a.x;a.leadHide.y=a.y;L.hideOne(b,a);}
+   mlog(`${hid.map(([a])=>'<b>'+esc(first(a.g))+'</b>').join(' und ')} ${hid.length>1?'knien':'kniet'} in Deckung, Zweige vor dem Gesicht.`,'narr');await talkPause(700);}
+  const ar=by('skirmish');if(ar.length){await say1('skirmish');go(ar,64);}
+  const fin=ord.find(x=>!x.job);if(fin)LU.leadSay(b,fin.text);
+  await LU.walkSome(b,partyActors(b),12000);if(!live(b))return;for(const [a,p] of pts){if(p.job!=='hide')a.a=0;}
+  L.engage(b);b.started=true;b.paused=false;setButtons('fight');return;}
+ // nicht entdeckt: Die Gegner sind schon da und sehen euch zuerst
+ if(!await marchTo(b,G.hx+60))return;L.beginGroup(b,m,sti,{unaware:false});b.events.length=0;
+ const pa=partyActors(b),px=pa.reduce((t,a)=>t+a.x,0)/Math.max(1,pa.length);for(const e of b.encEnemies)e.x=Math.max(px+170,e.x-220);
+ mlog(`${esc(me().g.name)} sieht sie zu spät: ${b.encEnemies.map(e=>'<b class="foe">'+esc(e.g.name)+'</b>').join(', ')} stürmen heran.`,'narr');
+ const e0=b.encEnemies[0];if(e0)bubble(e0,pickL(['Überraschung!','Jetzt haben wir euch!','DRAUF!']),{name:first(e0.g),loud:true});LU.stow(b,false);
+ for(const a of b.actors){a.to=null;a.path=null;}
+ b.started=true;b.paused=false;L.surprise(b);setButtons('fight');}
 async function encounterEnd(b){const m=R.m;if(R.ended)return;const out=D.endEncounter(m,b);b.done=null;b.paused=true;renderInfo();const st=out.station,adv=m.kind==='adventure';
  for(const g of out.died)mlog(`<b class="red">† ${esc(g.name)}</b> ist tot. Death is permanent.${adv?'':' Krassus wird das als Ausfall verbuchen.'}`,'dead');
  for(const g of out.downed)mlog(`${esc(g.name)} kann nicht mehr und wird ab jetzt getragen.`);
  if(out.winner===0){
   if(out.loot.length)mlog('Beute: '+out.loot.map(l=>`<span class="ow-lootname">${esc(M.itemName(l.item))}</span>`).join(', '));
-  if(!st.boss){await aftermath(b);if(!live(b))return;}
+  if(!st.boss){await (LU?LU.aftermath(b):aftermath(b));if(!live(b))return;}
   if(st.boss){setButtons('talk');const boss=b.encEnemies[0],bn=adv?first(boss.g):'Krassus';
    for(const [w,l] of (adv?m.texts.leaderDown:D.TEXT.bossDown)){const me=w==='K'||w==='L',a=me?boss:anyParty(b);bubble(a,l,{name:me?bn:first(a.g),boss:me,ms:3000});mlog(`<b class="${me?'boss':''}">${esc(me?bn:a.g.name)}:</b> „${esc(l)}“`);await talkPause(2600);}
-   await aftermath(b);if(!live(b))return;
+   await (LU?LU.aftermath(b):aftermath(b));if(!live(b))return;
    mlog(adv?`In der Truhe des Anführers: <b class="gold">${m.gold} Gold</b>.`:`In der Geldkassette: <b class="gold">${m.gold} Gold</b>. Der Schuldschein über ${D.CFG.debt.toLocaleString('de-DE')} Gold brennt sehr schön.`,'narr');setButtons('won');return;}
   const a=anyParty(b),l=pickL(adv?D.ADV.cleared:D.TEXT.cleared);if(a){bubble(a,l,{name:first(a.g)});mlog(`<b>${esc(a.g.name)}:</b> „${esc(l)}“`);}
   if(out.rest>0)mlog(`Kurze Rast: Notverbände, ein Schluck Wasser. Blut +${D.CFG.restBlood}. Verletzungen bleiben.`,'narr');
@@ -483,7 +525,7 @@ async function flee(){clearInterval(R.autoT);const m=R.m,b=S.battle;if(!m||R.end
   for(const a of b.actors)if(a.team===0&&!a.down&&!a.g.dead){a.to=[a.x-500,a.y,120];a.path=[];}
   const a=anyParty(b);if(a)bubble(a,pickL(['RENNT!','Taktischer Rückzug! Also: RENNT!','Ich hol schon mal die Pferde! Wir haben keine Pferde!','Wer zuletzt am Tor ist, zahlt die Zinsen!']),{name:first(a.g)});}
  await talkPause(1600);if(b&&inFight)D.endEncounter(m,b,{fled:true});m.state='fled';finishMission('fled');}
-function cleanupBattle(){const m=R.m;if(m&&m.prevLimit!==undefined){if(m.prevLimit===null)delete M.benchmarkTimeLimit;else M.benchmarkTimeLimit=m.prevLimit;}
+function cleanupBattle(){LU?.reset();const m=R.m;if(m&&m.prevLimit!==undefined){if(m.prevLimit===null)delete M.benchmarkTimeLimit;else M.benchmarkTimeLimit=m.prevLimit;}
  M.missionBackdrop=null;document.body.classList.remove('ow-mission');$('owOver')?.remove();const bb=$('battleBottom');if(bb){bb.innerHTML='';delete bb.dataset.ow;}$('battleView')?.classList.remove('ow-fade');}
 function abortMission(){R.ending=true;R.ended=true;cleanupBattle();R.m=null;R.b=null;R.nextRes=null;}
 function finishMission(kind){const m=R.m;if(R.ended)return;R.ended=true;R.ending=true;R.fleeing=false;R.marching=false;setButtons('end');R.nextRes=null;

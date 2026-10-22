@@ -99,7 +99,8 @@ L.active=b=>!!b?.lead?.on;
 L.spotRoll=function(b,st){const g=leaderActor(b)?.g;if(!g)return false;let p=b.lead.q.spot;if(st.kind==='ambush')p*=.45;else if(st.kind==='door')p*=.85;return Math.random()<p;};
 
 // ---------- Gegnergruppe aufstellen (alle Gegner einer Begegnung stehen zusammen vor der Truppe) ----------
-L.groupSize=(b,m,sti)=>Math.min(m.queues[sti].length,clamp(2+Math.floor(m.party.filter(D.fit).length*.5),2,L.CFG.groupMax));
+// so viele stehen zusammen: im Spiel so viele, wie die Schwierigkeit gleichzeitig angreifen lässt (m.maxActive), sonst nach Gruppengröße
+L.groupSize=(b,m,sti)=>Math.min(m.queues[sti].length,m.maxActive?Math.max(2,m.maxActive):clamp(2+Math.floor(m.party.filter(D.fit).length*.5),2,L.CFG.groupMax));
 L.layoutGroup=function(b,m,sti){const st=m.place.stations[sti],W=b.width,mx=D.marginX(W);
  const ex=clamp(st.fx+140,mx+L.CFG.haltDist+120,W-mx-70),ey=D.pathY(b.L,ex);return {ex,ey,hx:Math.max(mx+90,ex-L.CFG.haltDist)};};
 // Begegnung mit entdeckter Gruppe beginnen: Gegner stehen ahnungslos beisammen. unaware=false: Sie merken es sofort (ohne Anführer).
@@ -352,7 +353,7 @@ L.makeParty=function(seed,n=7){const p=D.makeParty(seed,n),used=new Set();p.forE
  g.enemyGear={weapon:M.makeItem('weapon',w,0),secondary:ranged?M.makeItem('weapon','dagger',0):null,shield:r==='Soldat'?M.makeItem('shield','roundshield',0):r==='Assassine'?M.makeItem('shield','buckler',0):null,armor:{}};
  for(const d of M.armorDefs)g.enemyGear.armor[d.id]=M.makeItem('armor',d.id,0,r==='Soldat'?'metal':'leather');for(const it of D.gearList(g))it.durability=it.maxDurability;});return p;};
 // Eine ganze Mission ohne Bild. mode 'lead' oder 'none' (gleiche Gegnergruppen, kein Anführer). partyFactory(seed) → Gladiatoren.
-L.simulate=function(seed,partyFactory,o={}){const mode=o.mode||'lead',party=partyFactory(seed),m=D.newMission(seed,party,o.biome||'wald',{kind:o.kind||'adventure',learn:false});
+L.simulate=function(seed,partyFactory,o={}){const mode=o.mode||'lead',party=partyFactory(seed),m=D.newMission(seed,party,o.biome||'wald',{kind:o.kind||'adventure',learn:false,diff:o.diff,s:o.s});
  const prevEnd=M.endBenchmark;M.endBenchmark=(w,r)=>D.onEngineEnd(w,r);let spotted=0,enc=0;
  try{outer:for(let si=0;si<m.place.sections.length;si++){if(!party.some(D.fit)){m.state='lost';break;}
    const b=D.startSection(m,si,{headless:true});

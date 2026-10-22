@@ -68,3 +68,39 @@ body.ow-mission #battleTop{display:none}
 .ow-dbtn.on{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);background:#2a2216}
 .ow-skulls{display:inline-flex;gap:2px;vertical-align:middle}.ow-skull{fill:#3a3a32;image-rendering:pixelated}.ow-skull.on{fill:#efe0b3;filter:drop-shadow(1px 1px 0 #17201c)}
 .ow-dbtn.on .ow-skull.on{fill:#f4d37a}.ow-hist .ow-skull{width:9px;height:9px}
+
+/* Plünderungen mit Anführer: Fernrohr, Nahaufnahmen (Griff von hinten, Ansturm), Plündern und Gnadenstoß (aus der Testseite „Anführer“) */
+#owOver #spy,#owOver #cine,#owOver #after{font-family:'Courier Prime',monospace}
+#spy{position:absolute;inset:0;z-index:5;pointer-events:auto}
+#spyMask{position:absolute;inset:0;width:100%;height:100%}
+#spyFace{position:absolute;left:10px;bottom:10px;width:min(34%,250px);height:auto;aspect-ratio:160/104;image-rendering:pixelated;background:#101a1d;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45)}
+.spy-cap{position:absolute;left:calc(min(34%,250px) + 26px);right:10px;bottom:10px;background:#efe0b3;color:#17201c;border:3px solid #17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45);padding:6px 12px 8px;font-family:'Courier Prime',monospace;min-height:58px}
+.spy-cap b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#5a3a0c}.spy-cap span{display:block;font-size:clamp(12px,1.9vw,17px);font-weight:700;line-height:1.25}
+#spySkip{position:absolute;right:10px;top:10px}
+/* Nach dem Kampf: Nahaufnahme (Gesichter wie beim Urteil in der Arena, ohne Gnadenskala) */
+#after{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(94%,520px);z-index:6;background:#101a1d;border:4px solid #17201c;box-shadow:6px 6px 0 rgba(0,0,0,.55);pointer-events:auto}
+#after canvas{display:block;width:100%;height:auto;aspect-ratio:480/250;image-rendering:pixelated}
+#after .af-top{display:flex;justify-content:space-between;align-items:center;padding:4px 10px;background:#2a1410;color:#f4d37a;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+#after .af-top i{color:#c8c6a7;font-style:normal}
+#after blockquote{margin:0;padding:8px 12px 10px;background:#efe0b3;color:#17201c;font-family:'Courier Prime',monospace;font-weight:700;font-size:clamp(13px,2vw,17px);line-height:1.25;border-top:3px solid #17201c}
+#after blockquote b{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8a2a22}
+#afterSkip{position:absolute;right:6px;top:30px;min-height:30px;padding:2px 8px;font-size:11px}
+/* Nahaufnahme: Griff von hinten, Ellbogen */
+#cine{position:absolute;inset:0;z-index:4;pointer-events:none}
+#cine:before,#cine:after{content:'';position:absolute;left:0;right:0;height:11%;background:#000;transition:transform .25s}
+#cine:before{top:0}#cine:after{bottom:0}
+#closeCv{position:absolute;right:12px;top:13%;width:min(46%,380px);height:auto;aspect-ratio:16/10;image-rendering:pixelated;border:4px solid #17201c;box-shadow:6px 6px 0 rgba(0,0,0,.5);background:#2a1a12}
+.close-cap{position:absolute;right:12px;top:calc(13% + min(46%,380px)*.625 + 14px);width:min(46%,380px);box-sizing:border-box;background:#efe0b3;border:3px solid #17201c;padding:4px 10px 6px;font-family:'Courier Prime',monospace;color:#17201c;box-shadow:4px 4px 0 rgba(0,0,0,.45)}
+.close-cap b{display:block;font-size:clamp(16px,2.6vw,24px);letter-spacing:.06em;color:#8a2a22}.close-cap span{display:block;font-size:12px;font-weight:700}
+@media(max-width:600px){#closeCv{width:62%;top:12%}.close-cap{width:62%;top:calc(12% + 62vw*.625*.85)}}
+@media(max-width:600px){#spyFace{width:30%}.spy-cap{left:calc(30% + 22px);padding:4px 8px}.spy-cap span{font-size:11px}}
+
+.ow-bubble.lead{background:#f4d37a;border-color:#3b2508}.ow-bubble.lead b{opacity:1;color:#5a3a0c}
+.ow-bubble.small{padding:2px 7px 3px;max-width:160px}.ow-bubble.small span{font-size:11px}.ow-bubble.small b{display:none}
+.ldr{color:#f4d37a}
+.ow-pick .ow-star{margin-left:auto;min-width:34px;min-height:32px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:16px;cursor:pointer}
+.ow-pick .ow-star.on{background:var(--gold);color:#29271f;border-color:var(--gold)}
+.ow-lead{margin:6px 0 10px;font-size:13px;line-height:1.45}.ow-lead b{color:var(--gold)}
+.ow-pick:has(.ow-star){grid-template-columns:26px 1fr auto}
+@media(max-width:600px){#owOver #after{width:96%;bottom:4px}#owOver #after canvas{width:auto;max-width:100%;height:110px;margin:0 auto}#owOver #after blockquote{padding:4px 8px 6px;font-size:12px}#owOver #after .af-top{padding:2px 8px;font-size:10px}#owOver #afterSkip{top:22px}
+ #owOver #spyFace{width:26%}#owOver .spy-cap{left:calc(26% + 18px);bottom:6px}}
