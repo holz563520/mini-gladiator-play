@@ -523,8 +523,8 @@ function gateImage(){if(gateCache)return gateCache;const c=document.createElemen
  // Pfosten mit Schild (Schrift wie die Gebäudeschilder; Größe passt sich der Breite an)
  R(866,298,3,4,'#4e3420');
  const pw=82,ph=17,plX=792,plY=283;R(plX-1,plY-1,pw+2,ph+2,'#1f2b25');R(plX,plY,pw,ph,'#37473d');R(plX,plY,pw,1,'#55695a');for(const nx of [plX+2,plX+pw-4]){R(nx,plY+2,2,2,'#c9b071');R(nx,plY+ph-4,2,2,'#c9b071');}
- let fs=12;const fam="'Courier Prime',monospace";g.font=`bold ${fs}px ${fam}`;while(fs>8&&g.measureText('AUSSENWELT').width>pw-12){fs-=.5;g.font=`bold ${fs}px ${fam}`;}
- g.textAlign='center';g.textBaseline='middle';g.fillStyle='#efe0b3';g.fillText('AUSSENWELT',plX+pw/2+ox,plY+ph/2+1+oy);
+ let fs=12;const fam="'Courier Prime',monospace";g.font=`bold ${fs}px ${fam}`;while(fs>8&&g.measureText('PLÜNDERN').width>pw-12){fs-=.5;g.font=`bold ${fs}px ${fam}`;}
+ g.textAlign='center';g.textBaseline='middle';g.fillStyle='#efe0b3';g.fillText('PLÜNDERN',plX+pw/2+ox,plY+ph/2+1+oy);
  // Schatten im Durchgang, damit die Öffnung lesbar ist
  R(864,305,22,3,'#00000033');R(884,305,2,36,'#00000044');
  // Kiste mit Reisegepäck neben dem Tor

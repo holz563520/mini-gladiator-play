@@ -212,11 +212,27 @@ D.boss=function(seed){return makeG(777001,g=>{const r=rng32(seed);
  for(const it of D.gearList(g))it.durability=it.maxDurability;
  g.debtBoss=true;void r;});};
 
+// ---------- Schwierigkeit der Plünderungen (1–5 Totenköpfe) ----------
+// Alles relativ zur Stärke der Gruppe (D.partyStrength) und ihrer Größe. Ein Wert s steuert: Stärke der Leute (k ∝ s^.75), ihre Anzahl,
+// wie viele gleichzeitig angreifen, wie oft ein Grobian (groß, schwer, stark) oder ein Veteran (deutlich stärker, bessere Waffe) dabei ist.
+// Der Anführer trägt in der Regel eine Waffe eine Stufe besser als sonst, ab 4 Totenköpfen zwei. Ziel: 1 Totenkopf ≈ 95 % Siege, 5 ≈ 5 %.
+// Gemessen mit frischen Rekruten: Kleine Gruppen litten vor allem unter dem Zahlenverhältnis (3 Kämpfer gegen ~7, 8 gegen ~12, höchstens
+// 2 bzw. 3 gleichzeitig). Darum wachsen Bandengröße und gleichzeitige Angreifer jetzt proportional zur Gruppe; s × (Größe/5)^0,4 gleicht den Rest aus; unter 5 Kämpfern s × (Größe/5)^2,5 und ein schwächerer Anführer.
+D.DIFF={s:[.47,1,1.28,1.75,2.25],names:['Spaziergang','Rauferei','Ernst','Gemetzel','Selbstmord'],gold:[.7,1,1.45,2.1,3.2],sizeExp:.4,smallExp:2.5};
+// kleine Gruppen (unter 5) nutzen sich über mehrere Begegnungen stark ab: dort deutlich schwächere Banden
+D.diffScale=(d,size)=>{const i=clamp(Math.round(d||3),1,5)-1,r=Math.max(1,size)/5;return D.DIFF.s[i]*Math.pow(r,r<1?D.DIFF.smallExp:D.DIFF.sizeExp);};
+function brute(g,r,q){g.brute=true;g.height=Math.round(196+r()*16);g.weight=Math.round(112+r()*24);g.muscle=Math.min(80,(g.muscle||40)+18);g.arm=Math.round(g.height*.43);g.leg=Math.round(g.height*.49);
+ for(const k of ['strength','toughness','pain','will'])g.stats[k]=clamp(Math.round(g.stats[k]*1.35),3,100);for(const p of Object.values(g.body))p.strength=clamp(Math.round(p.strength*1.3),3,100);
+ const w=pick(r,['hammer','club','axe','mace','doubleaxe']);g.enemyGear.weapon=M.makeItem('weapon',w,Math.min(4,q));g.enemyGear.shield=null;}
+function veteran(g,r,q){g.veteran=true;for(const grp of ['stats','moves','mastery'])for(const k in g[grp]){if(k==='morale')continue;g[grp][k]=clamp(Math.round(g[grp][k]*1.4),3,100);}
+ const w=g.enemyGear.weapon?.def||'gladius';g.enemyGear.weapon=M.makeItem('weapon',w,Math.min(5,q+1));g.mastery[w]=clamp(Math.max(g.mastery[w]||0,30),3,100);
+ g.enemyGear.armor.helm??=M.makeItem('armor','helm',Math.max(0,q-1),'leather');g.enemyGear.armor.chestplate??=M.makeItem('armor','chestplate',Math.max(0,q-1),r()<.4?'medium':'leather');for(const it of D.gearList(g))it.durability=it.maxDurability;}
+D.brute=brute;D.veteran=veteran;
 // Anführer einer Bande (Abenteuer): stärker als seine Leute, eine gute Waffe, etwas Rüstung
-D.leader=function(seed,biome,k){const r=rng32(seed),AD=D.ADV[biome]||D.ADV.dorf;
+D.leader=function(seed,biome,k,bonus=1){const r=rng32(seed),AD=D.ADV[biome]||D.ADV.dorf;
  return makeG(seed^0x1ead,g=>{const nm=pick(r,AD.names||T.names).split(' ')[0];Object.assign(g,{id:'adv-lead-'+seed,name:nm+' '+pick(r,AD.leaderTitle),enemy:true,role:'Soldat',traits:['Aggressiv']});
   scaleStats(g,Math.min(2.2,k*2.2),['morale']);g.stats.morale=80;
-  const pool=[['greatsword',2],['long',2],['axe',2],['mace',2],['gladius',2],['doubleaxe',1],['hammer',2],['spear',2]],[w,q0]=pick(r,pool),q=Math.min(3,q0+(k>.9&&r()<.4?1:0));
+  const pool=[['greatsword',2],['long',2],['axe',2],['mace',2],['gladius',2],['doubleaxe',1],['hammer',2],['spear',2]],[w]=pick(r,pool),qBand=clamp(Math.round((k-.4)*2.2),0,3),q=clamp(qBand+bonus+(r()<.25?1:0),0,5);// eine Stufe über der Bande (ab 4 Totenköpfen zwei)
   g.mastery[w]=clamp(Math.max(g.mastery[w]||0,Math.round(30*k*2.2)),3,100);
   const two=['hammer','doubleaxe','halberd','greatsword'].includes(w);
   g.enemyGear={weapon:M.makeItem('weapon',w,q),secondary:null,shield:!two?M.makeItem('shield',r()<.5?'roundshield':'smallshield',Math.max(0,q-1)):null,armor:{chestplate:M.makeItem('armor','chestplate',Math.max(0,q-1),r()<.5?'medium':'leather'),helm:M.makeItem('armor','helm',Math.max(0,q-1),'leather')}};
@@ -235,12 +251,15 @@ D.newMission=function(seed,party,biome='dorf',o={}){
   const queues=place.stations.map(s=>s.boss?[D.boss(seed)]:Array.from({length:s.count},()=>D.henchman((s.seed+(n++)*104729)>>>0,n,used)));
   return {kind,seed,place,party,queues,idx:0,sec:0,cleared:-1,loot:[],gold:0,killed:0,total:queues.flat().length,state:'ready',deaths:[],learn:o.learn!==false};}
  const AD=D.ADV[biome]||D.ADV.dorf,r=rng32(seed^0xad7),str=o.strength??D.partyStrength(party),size=party.filter(D.fit).length||1;
+ // Schwierigkeit (1–5 Totenköpfe, ohne Angabe 3): s skaliert Stärke, Anzahl, gleichzeitige Angreifer, Grobiane und Veteranen
+ const diff=clamp(Math.round(o.diff||3),1,5),sc=o.s??D.diffScale(diff,size);
  // Größere Gruppen treffen auf größere Banden; stärkere Gruppen auf härtere Leute
- const henchmen=clamp(Math.round(2+size*1.1+r()*3),3,16),k=clamp(D.CFG.advStat*Math.pow(str,.85),.3,1.6);
+ const henchmen=clamp(Math.round((size*1.45+r()*2.2)*(.75+.25*sc)),3,20),k=clamp(D.CFG.advStat*Math.pow(str,.85)*Math.pow(sc,.75),.12,2.2);
+ const maxActive=clamp(Math.round(size*.45*Math.sqrt(sc)),2,6),pBrute=clamp((sc-1.05)*.3,0,.3),pVet=clamp((sc-.75)*.16,0,.25),qBase=clamp(Math.round((k-.4)*2.2),0,3);
  const place=D.generate(seed,biome,{henchmen,finalTheme:pick(r,AD.finals)}),used=new Set();let n=0;
- const queues=place.stations.map(s=>s.boss?[D.leader(seed,biome,k)]:Array.from({length:s.count},()=>D.henchman((s.seed+(n++)*104729)>>>0,n,used,{k,texts:AD})));
- const gold=Math.round((D.CFG.advGold[0]+r()*(D.CFG.advGold[1]-D.CFG.advGold[0]))*(.6+k)*(1+henchmen/12));
- return {kind,seed,place,party,queues,idx:0,sec:0,cleared:-1,loot:[],gold:0,goldPrize:gold,killed:0,total:queues.flat().length,state:'ready',deaths:[],learn:o.learn!==false,strength:str,enemyK:k,texts:AD};
+ const queues=place.stations.map(s=>s.boss?[D.leader(seed,biome,k*Math.min(1,Math.pow(size/5,.6)),diff>=4?2:1)]:Array.from({length:s.count},()=>{const g=D.henchman((s.seed+(n++)*104729)>>>0,n,used,{k,texts:AD});const x=r();if(x<pBrute)brute(g,r,qBase+1);else if(x<pBrute+pVet)veteran(g,r,qBase+1);return g;}));
+ const gold=Math.round((D.CFG.advGold[0]+r()*(D.CFG.advGold[1]-D.CFG.advGold[0]))*(.6+k)*(1+henchmen/12)*D.DIFF.gold[diff-1]);
+ return {kind,seed,place,party,queues,idx:0,sec:0,cleared:-1,loot:[],gold:0,goldPrize:gold,killed:0,total:queues.flat().length,state:'ready',deaths:[],learn:o.learn!==false,strength:str,enemyK:k,texts:AD,diff,scale:sc,maxActive,brutes:queues.flat().filter(g=>g.brute).length,veterans:queues.flat().filter(g=>g.veteran).length};
 };
 D.pickBanter=(st,seed,m)=>{const B=m?.kind==='adventure'?D.ADV.banter:T.banter;return B[(seed>>>0)%B.length];};
 const TACTICS=[{aggression:'Ausgeglichen',formation:'Normal',priority:'Nächster Gegner',ranged:'Abstand halten',help:'Normal'},{aggression:'Aggressiv',formation:'Normal',priority:'Nächster Gegner',ranged:'Abstand halten',help:'Normal'}];
@@ -264,7 +283,7 @@ D.startSection=function(m,si,o={}){
 D.beginEncounter=function(b,m,stIdx){const st=m.place.stations[stIdx],E=b.L.enc[stIdx];m.idx=stIdx;
  b.encounter=stIdx;b.queue=[...m.queues[stIdx]];b.encStart=b.time;b.encEnemies=[];b.spawns=E.spawns;b.spawnIndex=0;b.spawnT=1.4;b.done=null;b.handled=false;b.triggered.add(stIdx);
  const first=[];
- if(st.kind==='idle'||st.kind==='boss'){E.idle.slice(0,Math.min(D.CFG.maxActive,b.queue.length)).forEach(p=>first.push(D.spawn(b,{pos:p,instant:true,quiet:true})));}
+ if(st.kind==='idle'||st.kind==='boss'){E.idle.slice(0,Math.min(m.maxActive||D.CFG.maxActive,b.queue.length)).forEach(p=>first.push(D.spawn(b,{pos:p,instant:true,quiet:true})));}
  else if(st.kind==='ambush'){first.push(D.spawn(b,{pos:E.behind}));if(b.queue.length)first.push(D.spawn(b,{pos:E.ahead}));}
  else if(st.kind==='ahead'){first.push(D.spawn(b,{pos:E.ahead}));if(b.queue.length)first.push(D.spawn(b,{pos:{x:E.ahead.x+40,y:clamp(E.ahead.y+90,b.L.mT+40,b.L.mB-30),label:E.ahead.label}}));}
  else{first.push(D.spawn(b));}
@@ -276,7 +295,7 @@ D.spawn=function(b,o={}){if(!b.queue.length)return null;const g=b.queue.shift(),
  a.x=sp.x;a.y=sp.y;a.r=g.debtBoss?14:12;a.cool=o.instant?.5:.9;a.a=sp.face??Math.PI;
  b.actors.push(a);b.enemiesAll.push(a);b.encEnemies.push(a);if(!o.quiet)b.events.push({type:'spawn',actor:a,door:sp.label||''});return a;};
 D.tick=function(b,dt){if(!b||b.done||!b.started||b.paused)return;
- if(b.queue.length&&D.activeEnemies(b)<D.CFG.maxActive){b.spawnT-=dt;if(b.spawnT<=0){D.spawn(b);const r=Math.random();b.spawnT=D.CFG.spawnDelay[0]+r*(D.CFG.spawnDelay[1]-D.CFG.spawnDelay[0]);}}
+ if(b.queue.length&&D.activeEnemies(b)<(b.mission?.maxActive||D.CFG.maxActive)){b.spawnT-=dt;if(b.spawnT<=0){D.spawn(b);const r=Math.random();b.spawnT=D.CFG.spawnDelay[0]+r*(D.CFG.spawnDelay[1]-D.CFG.spawnDelay[0]);}}
  const boss=b.encEnemies.find(a=>a.g.debtBoss);if(boss&&!b.bossHurt&&!boss.down&&M.health(boss.g)<55){b.bossHurt=true;b.events.push({type:'bossHurt',actor:boss});}
  D.unstick(b,dt);
  // Patt nach langer Zeit: Dorftrottel verlieren die Nerven (Krassus nie)
@@ -493,7 +512,7 @@ D.layout=function(sec,place){const r=rng32(sec.seed),biome=place.biome,theme=sec
 // ---------- Komplette Mission ohne Bild durchrechnen (Abstimmung der Schwierigkeit) ----------
 // o.kind 'quest' | 'adventure', o.biome; Lernen ist dabei aus (reine Messung).
 D.simulate=function(seed,partyFactory,o={}){
- const party=partyFactory(seed),m=D.newMission(seed,party,o.biome||'dorf',{kind:o.kind||'quest',learn:false}),log=[];
+ const party=partyFactory(seed),m=D.newMission(seed,party,o.biome||'dorf',{kind:o.kind||'quest',learn:false,diff:o.diff,s:o.s}),log=[];
  const prevEnd=M.endBenchmark;M.endBenchmark=(w,r)=>D.onEngineEnd(w,r);
  try{outer:for(let si=0;si<m.place.sections.length;si++){if(!party.some(D.fit)){m.state='lost';break;}
    const b=D.startSection(m,si,{headless:true});

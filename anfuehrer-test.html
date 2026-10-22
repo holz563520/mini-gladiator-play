@@ -98,7 +98,7 @@ ul.skills{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.55}ul.sk
   <div>
    <div class="box"><h2>Anführer</h2><div id="leadBox"></div></div>
    <div class="box"><h2>Aufbruch</h2>
-    <div class="trow"><label>Gegend <select class="select" id="biome"><option value="wald">Wald (Räuberbande)</option><option value="dorf">Dorf (Dorfbande)</option><option value="stadt">Stadt (Straßenbande)</option></select></label><label>Tempo <select class="select" id="spd"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option></select></label></div>
+    <div class="trow"><label>Gegend <select class="select" id="biome"><option value="wald">Wald (Räuberbande)</option><option value="dorf">Dorf (Dorfbande)</option><option value="stadt">Stadt (Straßenbande)</option></select></label><label>Schwierigkeit <select class="select" id="diff"><option value="1">☠ Spaziergang</option><option value="2" selected>☠☠ Rauferei</option><option value="3">☠☠☠ Ernst</option><option value="4">☠☠☠☠ Gemetzel</option><option value="5">☠☠☠☠☠ Selbstmord</option></select></label><label>Tempo <select class="select" id="spd"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option></select></label></div>
     <div class="trow"><button class="btn primary" id="go">Aufbrechen ▶</button><button class="btn" id="heal">✚ Truppe heilen</button></div><p class="note" id="goNote"></p></div>
    <div class="box"><h2>Welche Fähigkeiten wirken</h2>
     <ul class="skills">
@@ -169,7 +169,7 @@ function show(v){T.view=v;$('setupView').hidden=v!=='setup';$('resultView').hidd
 const R={m:null,b:null,lastTime:0,ended:false,fleeing:false,cam:{x:520,y:600,snap:true},rows:[]};const VH=760;
 function sizeField(){const c=$('arenaCanvas'),o=$('fieldOver');if(!c||!o)return;R.cw=c.clientWidth;R.ch=c.clientHeight;const Lx=c.offsetLeft+'px',Ty=c.offsetTop+'px',W0=c.clientWidth+'px',H0=c.clientHeight+'px';if(o.style.left!==Lx||o.style.top!==Ty||o.style.width!==W0||o.style.height!==H0){Object.assign(o.style,{left:Lx,top:Ty,width:W0,height:H0});const w=$('wx');w.width=c.clientWidth;w.height=c.clientHeight;}}
 addEventListener('resize',sizeField);
-function toScreen(x,y){const f=$('arenaCanvas'),cw=R.cw||f.clientWidth,ch=R.ch||f.clientHeight,k=ch/VH;return {x:cw/2+(x-R.cam.x)*k,y:ch/2+(y-R.cam.y)*k,k,cw,ch};}
+function toScreen(x,y){const f=$('arenaCanvas'),cw=R.cw||f.clientWidth,ch=R.ch||f.clientHeight,k=ch/VH*(SPY.on||CLOSE.on?1:(R.zoom||1));return {x:cw/2+(x-R.cam.x)*k,y:ch/2+(y-R.cam.y)*k,k,cw,ch};}
 function mlog(html,cls=''){const el=$('mlog'),p=document.createElement('p');p.className=cls;p.innerHTML=html;el.appendChild(p);el.scrollTop=el.scrollHeight;while(el.children.length>120)el.firstChild.remove();
  const sh=$('mlogShort');if(sh){const q=document.createElement('p');q.className=cls;q.innerHTML=html;sh.prepend(q);while(sh.children.length>2)sh.lastChild.remove();}}
 const readMs=t=>Math.max(2600,1800+String(t).length*55);
@@ -190,10 +190,18 @@ M.battleCamera=(b,width,height,W,H)=>{if(!b?.mission)return null;if(performance.
  if(CLOSE.on&&CLOSE.group){const l=CLOSE.group.filter(a=>!a.g.dead),lead=l[0]||CLOSE.group[0],tg=b.actors.find(x=>x.id===lead.target),cx=lead.x+(tg?Math.max(-80,Math.min(80,(tg.x-lead.x)*.35)):40),cy=lead.y-40+(tg?(tg.y-lead.y)*.25:0),Z=1.7,vw=width/(k*Z),vh=VH/Z;return {zoom:k/fit*Z,x:clamp(cx,vw/2,W-vw/2),y:clamp(cy,vh/2,H-vh/2)};}
  if(CLOSE.on&&CLOSE.v){const v=CLOSE.v,a=CLOSE.a,cx=(v.x+(a?a.x:v.x))/2,cy=(v.y+(a?a.y:v.y))/2-44,Z=2.3,vw=width/(k*Z),vh=VH/Z;return {zoom:k/fit*Z,x:clamp(cx,vw/2,W-vw/2),y:clamp(cy,vh/2,H-vh/2)};}
  if(SPY.on){const z=k/fit*SPY.zoom,vw=width/(k*SPY.zoom),vh=VH/SPY.zoom;return {zoom:z,x:clamp(SPY.fx,vw/2,W-vw/2),y:clamp(SPY.fy+vh*.06,vh/2,H-vh/2)};}
+ const UZ=R.zoom||1,ku=k*UZ,vu=width/ku,vhu=VH/UZ;
  const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
- let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=view*.18;
- tx=clamp(tx,view/2,W-view/2);ty=clamp(ty,VH/2,H-VH/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
- R.cam.x=clamp(R.cam.x,view/2,W-view/2);R.cam.y=clamp(R.cam.y,VH/2,H-VH/2);return {zoom:k/fit,x:R.cam.x,y:R.cam.y};};
+ let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=vu*.18;
+ tx=clamp(tx,vu/2,W-vu/2);ty=clamp(ty,vhu/2,H-vhu/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
+ R.cam.x=clamp(R.cam.x,vu/2,W-vu/2);R.cam.y=clamp(R.cam.y,vhu/2,H-vhu/2);return {zoom:ku/fit,x:R.cam.x,y:R.cam.y};};
+// Zoom: Mausrad am PC, zwei Finger auf dem Handy (1× bis 3×)
+function inField(e){return !!R.m&&T.view==='mission'&&e.target?.closest?.('#battleView')&&!e.target.closest('button,.m-log,#after,#spy');}
+addEventListener('wheel',e=>{if(!inField(e))return;e.preventDefault();R.zoom=clamp((R.zoom||1)*Math.exp(-e.deltaY*.0015),1,3);},{passive:false});
+let pinch=null;const tdist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+addEventListener('touchstart',e=>{if(e.touches.length===2&&inField(e))pinch={d:tdist(e.touches),z:R.zoom||1};},{passive:true});
+addEventListener('touchmove',e=>{if(pinch&&e.touches.length===2){e.preventDefault();R.zoom=clamp(pinch.z*tdist(e.touches)/Math.max(1,pinch.d),1,3);}},{passive:false});
+addEventListener('touchend',e=>{if(e.touches.length<2)pinch=null;},{passive:true});
 const missionCam=M.battleCamera;
 function hookHud(){if(M.battleCamera!==missionCam&&!M.battleCamera?.__m){const hc=M.battleCamera;M.battleCamera=(b,...r)=>b?.mission?missionCam(b,...r):hc?.(b,...r);M.battleCamera.__m=1;}
  if(M.battleHud&&!M.battleHud.__m){M.battleHud.__m=1;const prev=M.battleHud.onBuild;M.battleHud.onBuild=(panel,b)=>{prev?.(panel,b);if(!b?.mission)return;const n=panel.querySelectorAll('.bh-name b');if(n[0])n[0].textContent='BLAU · '+SCHOOL.toUpperCase();if(n[1])n[1].textContent=(b.mission.texts?.band||'BANDE').toUpperCase()+' · ROT';};}}
@@ -352,7 +360,7 @@ function onEvent(b,e){
  if(e.type==='gaveup'){bubble(e.actor,pick(['Ich hab genug! Ich geh heim!','Mama! MAMA!','Ich ergebe mich ganz doll!']),{name:first(e.actor.g)});}
  if(e.type==='bossHurt'){bubble(e.actor,pick(['Das wirst du bereuen!','Ihr räudigen Hunde!','Haltet sie auf, ihr Feiglinge!']),{name:first(e.actor.g),loud:true});}}
 async function startMission(){const team=T.party.filter(D.fit);if(!team.length)return;
- const m=R.m=D.newMission((Math.random()*1e9)>>>0,team,$('biome').value,{kind:'adventure',learn:false});m.leaderId=T.leadOn?(curLeader()?.id||null):null;
+ const m=R.m=D.newMission((Math.random()*1e9)>>>0,team,$('biome').value,{kind:'adventure',learn:false,diff:+$('diff').value});R.zoom=1;m.leaderId=T.leadOn?(curLeader()?.id||null):null;
  R.ended=false;R.fleeing=false;R.rows=[];show('mission');$('mlog').innerHTML='';$('mlogShort').innerHTML='';$('mlogBox').hidden=true;
  $('mtitle').textContent=m.place.name;$('msub').textContent=`${m.place.label} · ${D.moodText(m.place.mood)}`;M.endBenchmark=(w,r)=>{D.onEngineEnd(w,r);};
  mlog(`<b>${esc(SCHOOL)}</b> zieht los: ${esc(m.place.label)} ${esc(m.place.name)}. ${team.length} Kämpfer.`+(T.leadOn&&m.leaderId?` Anführer: <b class="ldr">★ ${esc(team.find(g=>g.id===m.leaderId).name)}</b>.`:''),'narr');
@@ -436,7 +444,7 @@ try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function
 (async()=>{
  const LIST=['data','household','management','scout','sim','school','world','forge','weapon-art','arena','medicus-art','ludus','face-shots','injury-shots','battle-hud','outside-core','outside-art','outside-leader'];
  const run=(code,name)=>{const s=document.createElement('script');s.textContent=code+'\n//# sourceURL='+name+'.js';document.body.appendChild(s);};
- const v=new URLSearchParams(location.search).get('v')||'82967064';
+ const v=new URLSearchParams(location.search).get('v')||'81996838';
  for(const n of LIST){if(n==='ludus')window.MG.ui=window.MG.ui||{render(){},getPage(){return 'profiles';},notify(){},close(){},click(){}};
   const r=await fetch(n+'.js?v='+v);if(!r.ok)throw Error(n+'.js nicht gefunden');run(await r.text(),n);}
  run(document.getElementById('lead-ui').textContent,'anfuehrer-test-ui');window.LeadUI.init();

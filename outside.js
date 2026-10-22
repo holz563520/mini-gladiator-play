@@ -178,7 +178,12 @@ function tick(dt){const st=ST();
 // TOR / AUSWAHL (Seite „outside“)
 // =====================================================================================================
 function newQuestPlace(){const seed=(Math.random()*1e9)>>>0,P=D.generate(seed,'dorf');return {seed,name:P.name};}
-function newAdventure(biome){const b=biome||pickL(['dorf','dorf','wald','stadt']);return {seed:(Math.random()*1e9)>>>0,biome:b};}
+function newAdventure(biome,diff){const b=biome||pickL(['dorf','dorf','wald','stadt']);return {seed:(Math.random()*1e9)>>>0,biome:b,diff:diff||2};}
+// Totenkopf im Pixelstil (9×9), für die Schwierigkeit der Plünderungen
+const SKULL=['..XXXXX..','.XXXXXXX.','XXXXXXXXX','X..XXX..X','X..XXX..X','XXXX.XXXX','.XXXXXXX.','..X.X.X..','..XXXXX..'];
+function skull(on,px=3){let r='';SKULL.forEach((row,y)=>[...row].forEach((c,x)=>{if(c==='X')r+=`<rect x="${x}" y="${y}" width="1.02" height="1.02"/>`;}));return `<svg class="ow-skull ${on?'on':''}" viewBox="0 0 9 9" width="${9*px}" height="${9*px}" shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;}
+function skulls(n,px=3){return `<span class="ow-skulls" title="${n} von 5 Totenköpfen">${[1,2,3,4,5].map(i=>skull(i<=n,px)).join('')}</span>`;}
+const DIFF_CHANCE=['ca. 95 %','ca. 75 %','ca. 50 %','ca. 25 %','ca. 5 %'];
 const adventureReady=()=>{const st=ST();return st.stage==='done'&&st.lastAdventure!==S.day;};
 let sel=null,view='board',result=null,reportForResult=null;
 function openBoard(){const st=ST();if(st.stage==='open')st.seenBoard=true;if(st.stage==='done')st.seenAdvDay=S.day===st.lastAdventure?st.seenAdvDay:true;view='board';M.ui.click('nav:outside');}
@@ -189,9 +194,9 @@ function score(g){return M.health(g)*.5+(g.blood||0)*.2-(g.fatigue||0)*.3+(g.sta
 function statusLine(g){const hp=Math.round(M.health(g)),fit=D.fit(g);return fit?`Gesundheit ${hp} % · Blut ${Math.round(g.blood)}${g.fatigue>1?' · Erschöpfung '+Math.round(g.fatigue):''}`:`kampfunfähig (${hp} %)`;}
 function weaponName(g){try{return M.itemName(M.gear(g,'weapon'))||'Fäuste';}catch(e){return '–';}}
 function placeFor(kind){const st=ST();if(kind==='quest'){const P=D.generate(st.quest.seed,'dorf');P.name=st.quest.name;return P;}return D.generate(st.adv.seed,st.adv.biome);}
-function advPreview(){const st=ST(),team=selected();try{const m=D.newMission(st.adv.seed,team.length?team:fighters().filter(D.fit).slice(0,1),st.adv.biome,{kind:'adventure'});return m;}catch(e){console.error(e);return null;}}
+function advPreview(){const st=ST(),team=selected();try{const m=D.newMission(st.adv.seed,team.length?team:fighters().filter(D.fit).slice(0,1),st.adv.biome,{kind:'adventure',diff:st.adv.diff||2});return m;}catch(e){console.error(e);return null;}}
 function boardPage(){const st=ST();
- if(!st.stage)return `<section class="box ow-board"><p class="eyebrow">AUSSENWELT</p><h1>Das Tor ist zu</h1><p>Erst die Lehrjahre im Ludus. Danach geht es hinaus.</p><div class="buttons"><button class="btn" data-action="nav:home">‹ Zurück in den Ludus</button></div></section>`;
+ if(!st.stage)return `<section class="box ow-board"><p class="eyebrow">PLÜNDERUNGEN</p><h1>Das Tor ist zu</h1><p>Erst die Lehrjahre im Ludus. Danach geht es hinaus.</p><div class="buttons"><button class="btn" data-action="nav:home">‹ Zurück in den Ludus</button></div></section>`;
  if(view==='result'&&result)return resultPage();
  if(st.stage==='open'||st.stage==='intro')st.quest??=newQuestPlace();
  if(st.stage==='done')st.adv??=newAdventure();
@@ -203,17 +208,19 @@ function boardPage(){const st=ST();
   <p>Krassus Knochenzins verlangt 10.000 Gold, die der alte Besitzer des Ludus schuldig geblieben ist. Orontes weiß, wo er haust: <b>${esc(P.name)}</b>. Wer zuerst Besuch bekommt, muss nicht zahlen.</p>
   <dl><dt>Ziel</dt><dd>${esc(P.label)} ${esc(P.name)} · ${P.stations.length-1} Begegnungen auf dem Weg zum Kontor</dd><dt>Gegner</dt><dd>10 Dorftrottel (manche lungern herum, manche kommen aus Türen oder fallen euch in den Rücken) · am Ende Krassus mit seinem soliden Zweihänder „Zinseszins“</dd><dt>Belohnung</dt><dd>Schulden getilgt · die Geldkassette · alle Waffen und Schilde, die fallen</dd></dl>
   <canvas class="ow-map" data-owmap="quest" width="480" height="270"></canvas>${st.tries?`<p class="tiny">Bisherige Versuche: ${st.tries}</p>`:''}</div>`;}
- else{const m=advPreview(),ready=adventureReady(),BI={dorf:'Dorf',wald:'Wald',stadt:'Stadt'};
-  card=`<div class="box ow-card"><span class="ow-tag">ABENTEUER</span><h2>${esc(P.label)} ${esc(P.name)}</h2>
+ else{const m=advPreview(),ready=adventureReady(),BI={dorf:'Dorf',wald:'Wald',stadt:'Stadt'},dv=st.adv.diff||2;
+  card=`<div class="box ow-card"><span class="ow-tag">PLÜNDERUNG</span><h2>${esc(P.label)} ${esc(P.name)}</h2>
   <p>${esc((D.ADV[st.adv.biome]?.intro||'').replace('{P}',P.name))}</p>
   <div class="buttons ow-biomes">${Object.entries(BI).map(([k,l])=>`<button class="btn ${st.adv.biome===k?'primary':''}" data-action="outside:biome:${k}">${l}</button>`).join('')}<button class="btn" data-action="outside:reroll">Anderes Ziel ↻</button></div>
-  <dl><dt>Gegner</dt><dd>${m?`${D.ADV[st.adv.biome].band}: etwa ${m.total-1} ${esc(D.ADV[st.adv.biome].who)} und ihr Anführer. Stärke passt sich eurer Gruppe an (${n||1} ${n===1?'Kämpfer':'Kämpfer'}).`:'unbekannt'}</dd><dt>Belohnung</dt><dd>Die Truhe des Anführers (Gold) · alle Waffen und Schilde, die fallen</dd><dt>Regel</dt><dd>${ready?'Ein Abenteuer pro Tag.':'<b class="red">Heute wart ihr schon draußen. Morgen wieder.</b>'}</dd></dl>
-  <canvas class="ow-map" data-owmap="adventure" width="480" height="270"></canvas><p class="tiny">Abenteuer bisher: ${st.adventures} · gewonnen: ${st.advWins}</p></div>`;}
+  <div class="ow-diff"><b>Schwierigkeit</b><div class="ow-diff-row">${[1,2,3,4,5].map(d=>`<button type="button" class="ow-dbtn ${d===dv?'on':''}" data-action="outside:diff:${d}" aria-label="${d} Totenköpfe">${skulls(d,2)}</button>`).join('')}</div>
+   <p class="tiny"><b>${esc(D.DIFF.names[dv-1])}</b> · Aussicht auf Erfolg ${DIFF_CHANCE[dv-1]} · Beute ×${String(D.DIFF.gold[dv-1]).replace('.',',')}${dv>=3?' · Grobiane und Veteranen möglich':''}${dv>=4?' · Anführer mit Spitzenwaffe':''}</p></div>
+  <dl><dt>Gegner</dt><dd>${m?`${D.ADV[st.adv.biome].band}: etwa ${m.total-1} ${esc(D.ADV[st.adv.biome].who)} und ihr Anführer. Stärke richtet sich nach eurer Gruppe (${n||1} Kämpfer) und den Totenköpfen.`:'unbekannt'}</dd><dt>Belohnung</dt><dd>Die Truhe des Anführers (Gold) · alle Waffen und Schilde, die fallen</dd><dt>Regel</dt><dd>${ready?'Eine Plünderung pro Tag.':'<b class="red">Heute wart ihr schon plündern. Morgen wieder.</b>'}</dd></dl>
+  <canvas class="ow-map" data-owmap="adventure" width="480" height="270"></canvas><p class="tiny">Plünderungen bisher: ${st.adventures} · gewonnen: ${st.advWins}</p></div>`;}
  const rows=fighters().map(g=>{const fit=D.fit(g),on=sel.has(g.id)&&fit;return `<button type="button" class="ow-pick ${on?'on':''} ${fit?'':'off'}" data-action="outside:pick:${esc(g.id)}" ${fit?'':'disabled'}><i>${on?'✓':''}</i><span><b>${ROLE_ICON[g.role]||''} ${esc(g.name)}</b><small>${esc(g.role)} · ${esc(weaponName(g))}</small><small>${esc(statusLine(g))}</small></span></button>`;}).join('');
  const can=n>=D.CFG.minParty&&n<=D.CFG.maxParty&&(quest||adventureReady());
- const hist=st.history.slice(0,6).map(h=>`<li><b>Tag ${h.day}</b> · ${esc(h.place||'')} · ${esc(h.result)}${h.loot?` · ${h.loot} Beutestücke`:''}${h.gold?` · ${h.gold} Gold`:''}${h.deaths?` · <span class="red">${h.deaths} tot</span>`:''}</li>`).join('');
+ const hist=st.history.slice(0,6).map(h=>`<li><b>Tag ${h.day}</b> · ${h.diff?skulls(h.diff,1)+' ':''}${esc(h.place||'')} · ${esc(h.result)}${h.loot?` · ${h.loot} Beutestücke`:''}${h.gold?` · ${h.gold} Gold`:''}${h.deaths?` · <span class="red">${h.deaths} tot</span>`:''}</li>`).join('');
  requestAnimationFrame(paintBoard);
- return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">AUSSENWELT · VOR DEM TOR</p><h1>${quest?'Krassus wartet':'Hinaus ins Land'}</h1></div><div class="buttons"><button class="btn" data-action="nav:home">‹ Ludus</button><button class="btn" data-action="outside:intro">▶ Szene „Der Schuldeneintreiber“</button></div></div>
+ return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">PLÜNDERUNGEN · VOR DEM TOR</p><h1>${quest?'Krassus wartet':'Auf zum Plündern'}</h1></div><div class="buttons"><button class="btn" data-action="nav:home">‹ Ludus</button><button class="btn" data-action="outside:intro">▶ Szene „Der Schuldeneintreiber“</button></div></div>
  <div class="ow-cols"><div>${card}</div>
  <div class="box"><h2>Wer geht mit?</h2><p class="tiny">1 bis ${D.CFG.maxParty} Kämpfer. Kein Steuern unterwegs: nur Weiter oder Fliehen. Fliehen geht immer. Verletzungen bleiben, Tote bleiben tot. Nach jedem gesäuberten Ort eine kurze Rast.</p>
   <div class="buttons"><button class="btn" data-action="outside:auto:5">Beste 5</button><button class="btn" data-action="outside:auto:10">Beste 10</button><button class="btn" data-action="outside:none">Keiner</button></div>
@@ -223,7 +230,7 @@ function boardPage(){const st=ST();
   ${hist?`<h3>Unterwegs gewesen</h3><ul class="ow-hist">${hist}</ul>`:''}</div></div></section>`;}
 function paintBoard(){const st=ST();for(const c of document.querySelectorAll('canvas[data-owmap]')){const kind=c.dataset.owmap;try{const P=kind==='quest'?placeFor('quest'):placeFor('adventure');A.map(c,P,{reveal:0,cleared:-1,progress:0,party:A.mapPoint(P,0)});}catch(e){console.error(e);}}void st;}
 function resultPage(){const r=result,cls={won:'ok',fled:'',withdrawn:'',lost:'red'}[r.kind]||'';requestAnimationFrame(()=>{});
- return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">AUSSENWELT · ZURÜCK IM LUDUS</p><h1 class="${cls}">${esc(r.title)}</h1></div><div class="buttons"><button class="btn primary" data-action="outside:board">Weiter</button><button class="btn" data-action="nav:home">‹ Ludus</button></div></div>
+ return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">PLÜNDERUNG · ZURÜCK IM LUDUS</p><h1 class="${cls}">${esc(r.title)}</h1></div><div class="buttons"><button class="btn primary" data-action="outside:board">Weiter</button><button class="btn" data-action="nav:home">‹ Ludus</button></div></div>
  <div class="box"><p class="ow-res-text">${esc(r.text)}</p><p class="tiny">${esc(r.stats)}</p></div>
  <div class="ow-cols"><div class="box"><h2>Beute</h2><ul class="ow-hist">${r.loot.length?r.loot.map(l=>`<li><b>${esc(l.name)}</b> <small>von ${esc(l.from)}</small></li>`).join(''):'<li>Keine Beute.</li>'}${r.gold?`<li><b class="gold">${r.gold} Gold</b> <small>${esc(r.goldFrom)}</small></li>`:''}${r.extra?`<li><b>${esc(r.extra)}</b></li>`:''}</ul>${r.loot.length?'<p class="tiny">Alles liegt im Lager (Waffenkammer).</p>':''}</div>
  <div class="box"><h2>Truppe</h2><ul class="ow-hist">${r.party.map(p=>`<li class="${p.dead?'red':''}"><b>${p.dead?'† ':''}${esc(p.name)}</b> <small>${esc(p.role)}</small><br><small>${esc(p.line)}</small></li>`).join('')}</ul></div></div>${reportBlock()}</section>`;}
@@ -243,8 +250,9 @@ M.schoolClick=action=>{if(!action.startsWith('outside:'))return prevClick?prevCl
  if(k==='pick'){sel??=new Set();if(sel.has(v))sel.delete(v);else if(sel.size<D.CFG.maxParty)sel.add(v);else notify('Höchstens '+D.CFG.maxParty+' Kämpfer.');M.ui.render();return true;}
  if(k==='auto'){autoPick(+v||5);M.ui.render();return true;}
  if(k==='none'){sel=new Set();M.ui.render();return true;}
- if(k==='biome'){st.adv=newAdventure(v);persist();M.ui.render();return true;}
- if(k==='reroll'){st.adv=newAdventure(st.adv?.biome);persist();M.ui.render();return true;}
+ if(k==='biome'){st.adv=newAdventure(v,st.adv?.diff);persist();M.ui.render();return true;}
+ if(k==='diff'){st.adv??=newAdventure();st.adv.diff=Math.max(1,Math.min(5,+v||2));persist();M.ui.render();return true;}
+ if(k==='reroll'){st.adv=newAdventure(st.adv?.biome,st.adv?.diff);persist();M.ui.render();return true;}
  if(k==='intro'){playIntro();return true;}
  if(k==='board'){view='board';result=null;M.ui.render();return true;}
  if(k==='open'){openBoard();return true;}
@@ -274,11 +282,18 @@ const prevArmyHud=M.armyBattleHUD;M.armyBattleHUD=function(b){if(b?.mission&&R.m
 const prevEnd=M.endBenchmark;M.endBenchmark=function(w,r){if(S.battle?.mission)return D.onEngineEnd(w,r);return prevEnd?.apply(this,arguments);};
 // Kamera: füllt die Höhe, folgt der Truppe (bei Kampf allen Beteiligten)
 const hudCam=M.battleCamera;
-function missionCam(b,width,height,W,H){const fit=Math.min(width/W,height/H),k=height/VH,view=width/k;sizeFieldSoon();
+function missionCam(b,width,height,W,H){const Z=R.zoom||1,fit=Math.min(width/W,height/H),k=height/VH*Z,view=width/k,vh=VH/Z;sizeFieldSoon();
  const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
  let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=view*.18;
- tx=clamp(tx,view/2,W-view/2);ty=clamp(ty,VH/2,H-VH/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
- R.cam.x=clamp(R.cam.x,view/2,W-view/2);R.cam.y=clamp(R.cam.y,VH/2,H-VH/2);return {zoom:k/fit,x:R.cam.x,y:R.cam.y};}
+ tx=clamp(tx,view/2,W-view/2);ty=clamp(ty,vh/2,H-vh/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
+ R.cam.x=clamp(R.cam.x,view/2,W-view/2);R.cam.y=clamp(R.cam.y,vh/2,H-vh/2);return {zoom:k/fit,x:R.cam.x,y:R.cam.y};}
+// Zoom im Missionskampf: Mausrad am PC, zwei Finger auf dem Handy (1× bis 3×)
+function inField(e){return !!R.m&&e.target?.closest?.('#battleView')&&!e.target.closest('button,.ow-logbox,.ow-mapbox');}
+addEventListener('wheel',e=>{if(!inField(e))return;e.preventDefault();R.zoom=clamp((R.zoom||1)*Math.exp(-e.deltaY*.0015),1,3);},{passive:false});
+let pinch=null;const tdist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+addEventListener('touchstart',e=>{if(e.touches.length===2&&inField(e)){pinch={d:tdist(e.touches),z:R.zoom||1};}},{passive:true});
+addEventListener('touchmove',e=>{if(pinch&&e.touches.length===2){e.preventDefault();R.zoom=clamp(pinch.z*tdist(e.touches)/Math.max(1,pinch.d),1,3);}},{passive:false});
+addEventListener('touchend',e=>{if(e.touches.length<2)pinch=null;},{passive:true});
 M.battleCamera=function(b,...r){return b?.mission?missionCam(b,...r):hudCam?hudCam.call(this,b,...r):null;};
 // Kampf-HUD: Kopfzeile mit Schule und Gegnern
 if(M.battleHud){const prevBuild=M.battleHud.onBuild;M.battleHud.onBuild=(panel,b)=>{prevBuild?.(panel,b);if(!b?.mission)return;const n=panel.querySelectorAll('.bh-name b'),m=b.mission;if(n[0])n[0].textContent='BLAU · '+school().toUpperCase();if(n[1])n[1].textContent=(m.kind==='quest'?(b.section===m.place.sections.length-1?'KRASSUS & BANDE':'KRASSUS’ SCHULDNER'):(m.texts?.band||'BANDE').toUpperCase())+' · ROT';};}
@@ -292,7 +307,7 @@ addEventListener('resize',()=>{if(R.m)sizeField();});
 function mlog(html,cls=''){R.rows=[html,...R.rows].slice(0,7);R.rowKey++;const el=$('owLog');if(el){const p=document.createElement('p');p.className=cls;p.innerHTML=html;el.appendChild(p);el.scrollTop=el.scrollHeight;while(el.children.length>80)el.firstChild.remove();}
  (R.full??=[]).push([html,cls]);logShort(html,cls);}
 function logShort(html,cls=''){const sh=$('owLogShort');if(!sh)return;const q=document.createElement('p');q.className=cls;q.innerHTML=html;sh.prepend(q);while(sh.children.length>2)sh.lastChild.remove();}
-function toScreen(x,y){const f=$('arenaCanvas'),cw=R.cw||f.clientWidth,ch=R.ch||f.clientHeight,k=ch/VH;return {x:cw/2+(x-R.cam.x)*k,y:ch/2+(y-R.cam.y)*k,k,cw,ch};}
+function toScreen(x,y){const f=$('arenaCanvas'),cw=R.cw||f.clientWidth,ch=R.ch||f.clientHeight,k=ch/VH*(R.zoom||1);return {x:cw/2+(x-R.cam.x)*k,y:ch/2+(y-R.cam.y)*k,k,cw,ch};}
 // Lesedauer: 2,2 s plus 65 ms je Zeichen (mind. 3,5 s), unabhängig vom Spieltempo
 const readMs=text=>Math.max(3500,2200+String(text).length*65);
 // Dialogpausen: höchstens auf zwei Drittel verkürzt, auch bei 3×
@@ -366,8 +381,8 @@ function bypassLoader(){const SL=M.sceneLoader;if(SL&&!SL.__ow){const g0=SL.gate
 async function startMission(){if(S.battle||R.m)return;bypassLoader();const st=ST(),team=selected();if(team.length<D.CFG.minParty||team.length>D.CFG.maxParty)return;
  const quest=st.stage!=='done';if(!quest&&!adventureReady()){notify('Heute wart ihr schon draußen.');return;}
  let m;if(quest){st.quest??=newQuestPlace();m=D.newMission(st.quest.seed,team,'dorf',{kind:'quest'});m.place.name=st.quest.name;}
- else{m=D.newMission(st.adv.seed,team,st.adv.biome,{kind:'adventure'});}
- R.missionTime=0;R.lastSeen=null;R.m=m;R.ended=false;R.ending=false;R.fleeing=false;R.progress=0;R.rows=[];R.rowKey=0;R.full=[];R.lastTime=0;R.awaiting='march';R.runId='run'+Date.now();loopT={map:0,info:0};
+ else{m=D.newMission(st.adv.seed,team,st.adv.biome,{kind:'adventure',diff:st.adv.diff||2});}
+ R.missionTime=0;R.lastSeen=null;R.m=m;R.zoom=1;R.ended=false;R.ending=false;R.fleeing=false;R.progress=0;R.rows=[];R.rowKey=0;R.full=[];R.lastTime=0;R.awaiting='march';R.runId='run'+Date.now();loopT={map:0,info:0};
  if(quest)st.tries++;else{st.lastAdventure=S.day;st.adventures++;}
  st.run={id:R.runId,kind:m.kind,place:m.place.name,day:S.day,party:team.map(g=>g.id)};persist();
  document.body.classList.add('ow-mission');
@@ -394,7 +409,7 @@ async function runSection(si,introLine){const m=R.m,sec=m.place.sections[si];
  const img=A.scene(b.L,m.place);D.addObstacles(b,b.L.extraObstacles);M.missionBackdrop=(ctx)=>A.drawBackdrop(ctx,img,b);
  R.cam.x=0;R.cam.y=D.pathY(b.L,0);R.cam.snap=true;
  M.ui.render();missionHud(b);$('battleView')?.classList.remove('ow-fade');const bl=$('owBubbles');if(bl)bl.innerHTML='';
- const tt=$('owTitle');if(tt)tt.textContent=m.place.name;const sb=$('owSub');if(sb)sb.textContent=`${m.place.label} · ${D.moodText(m.place.mood)}`;
+ const tt=$('owTitle');if(tt)tt.textContent=m.place.name;const sb=$('owSub');if(sb)sb.textContent=`${m.kind==='adventure'?'Plünderung '+'☠'.repeat(m.diff||2)+' · ':''}${m.place.label} · ${D.moodText(m.place.mood)}`;
  const stn=$('owStation');if(stn)stn.textContent=`${si+1}. ${D.THEMES[sec.theme].name}${sec.boss?' · Ziel':''}`;
  if(introLine)mlog(introLine,'narr');
  mlog(esc(D.THEMES[sec.theme].text),'narr');
@@ -485,19 +500,19 @@ function applyResult(m,kind){const st=ST(),adv=m.kind==='adventure',keep=kind!==
    fled:['GEFLOHEN','Ihr rennt. Würdevoll ist anders, aber lebendig ist auch was. Die Beute bis hierher habt ihr behalten.'],
    withdrawn:['HEIMGEKEHRT','Ihr nehmt, was ihr habt, und geht. Die Bande zählt ihre Toten. Ihr zählt eure Beute.'],
    lost:['NIEDERLAGE',`Ihr wacht im Straßengraben vor ${m.place.name} auf. Ohne Beute, ohne Würde. Die Bande hat sogar die Stiefel mitgenommen. Fast.`]}[kind]
-  :{won:['SCHULDEN GETILGT',`Krassus Knochenzins liegt im Dreck von ${m.place.name}. Der Schuldschein ist Asche, die Dörfler jubeln. Nicht für euch. Sie jubeln, weil sie jetzt niemandem mehr etwas schulden. Außer dem Totengräber. Ab jetzt steht euch das Land offen: Hinter dem Tor warten jeden Tag neue Abenteuer.`],
+  :{won:['SCHULDEN GETILGT',`Krassus Knochenzins liegt im Dreck von ${m.place.name}. Der Schuldschein ist Asche, die Dörfler jubeln. Nicht für euch. Sie jubeln, weil sie jetzt niemandem mehr etwas schulden. Außer dem Totengräber. Ab jetzt steht euch das Land offen: Ab jetzt schickt ihr eure Gladiatoren zum Plündern: Hinter dem Tor wartet jeden Tag ein neues Ziel.`],
    fled:['GEFLOHEN','Ihr rennt. Würdevoll ist anders, aber lebendig ist auch was. Die Beute bis hierher habt ihr behalten. Krassus wartet weiter.'],
    withdrawn:['ABGEZOGEN','Ihr nehmt, was ihr habt, und geht. Krassus wird es merken. Aber nicht heute.'],
    lost:['NIEDERLAGE',`Ihr wacht im Straßengraben vor ${m.place.name} auf. Ohne Beute, ohne Würde, aber mit einer frischen Mahnung im Gürtel.`]}[kind];
- for(const g of m.party){if(g.dead)continue;g.history?.unshift({day:S.day,text:(adv?'Abenteuer':'Außenmission')+' '+m.place.name+': '+head[0].toLowerCase()+'.'});}
- try{M.log?.((adv?'Abenteuer':'Der Schuldeneintreiber')+' · '+m.place.name+': '+head[0]+(loot.length?' · '+loot.length+' Beutestücke':'')+(gold?' · '+gold+' Gold':''));}catch(e){}
+ for(const g of m.party){if(g.dead)continue;g.history?.unshift({day:S.day,text:(adv?'Plünderung':'Außenmission')+' '+m.place.name+': '+head[0].toLowerCase()+'.'});}
+ try{M.log?.((adv?'Plünderung':'Der Schuldeneintreiber')+' · '+m.place.name+': '+head[0]+(loot.length?' · '+loot.length+' Beutestücke':'')+(gold?' · '+gold+' Gold':''));}catch(e){}
  // Kampfbericht wie nach einem Arenakampf (Seite „Kampfbericht“, Verlauf S.records): Werte und Gelerntes über die ganze Mission
  try{const b=S.battle;if(b?.mission===m)D.collect(m,b);const rep=m.rep||{};
-  const report={id:'outside-'+m.seed+'-'+S.day,arenaName:(adv?'Abenteuer':'Außenmission')+' · '+m.place.label+' '+m.place.name,attackSummary:[],verdicts:[],loot:loot.map(l=>({name:l.name,condition:100})),day:S.day,won:kind==='won',draw:kind!=='won'&&kind!=='lost',reason:head[0],opponent:adv?(m.texts?.band||'Bande'):'Krassus Knochenzins',time:R.missionTime||0,gold,fame:0,league:S.league||0,tournament:'',
+  const report={id:'outside-'+m.seed+'-'+S.day,arenaName:(adv?'Plünderung '+'☠'.repeat(m.diff||2):'Außenmission')+' · '+m.place.label+' '+m.place.name,attackSummary:[],verdicts:[],loot:loot.map(l=>({name:l.name,condition:100})),day:S.day,won:kind==='won',draw:kind!=='won'&&kind!=='lost',reason:head[0],opponent:adv?(m.texts?.band||'Bande'):'Krassus Knochenzins',time:R.missionTime||0,gold,fame:0,league:S.league||0,tournament:'',
    actors:m.party.map(g=>{const r=rep[g.id]||{learning:{}};return {id:g.id,name:g.name,damage:Math.round(r.damage||0),taken:Math.round(r.taken||0),kills:r.kills||0,crits:r.crits||0,blocks:r.blocks||0,dodges:r.dodges||0,falls:r.falls||0,rearHits:r.rearHits||0,charges:r.charges||0,backsteps:r.backsteps||0,xpMultiplier:r.xpMultiplier||1,learning:r.learning||{},dead:!!g.dead,down:!g.dead&&!D.fit(g),injuries:Object.entries(g.body||{}).filter(([id,p])=>p.hp<85||p.missing).map(([id,p])=>M.partName(id)+': '+(p.missing?'abgetrennt':p.injury||'Verletzt')),blood:Math.round(g.blood)};}),
    log:(R.full||[]).slice(-60).reverse().map(([h])=>({time:0,text:String(h).replace(/<[^>]+>/g,'')}))};
   S.lastReport=report;S.records=[report,...(S.records||[])].slice(0,35);reportForResult=report;}catch(e){console.error(e);reportForResult=null;}
- st.history.unshift({day:S.day,kind:m.kind,place:m.place.name,result:head[0].toLowerCase(),loot:loot.length,gold,deaths:m.deaths.length});st.history=st.history.slice(0,12);st.run=null;
+ st.history.unshift({day:S.day,kind:m.kind,diff:adv?m.diff:0,place:m.place.name,result:head[0].toLowerCase(),loot:loot.length,gold,deaths:m.deaths.length});st.history=st.history.slice(0,12);st.run=null;
  result={kind,title:head[0],text:head[1],loot,gold,goldFrom:adv?'aus der Truhe des Anführers':'aus der Geldkassette',extra:!adv&&kind==='won'?'Schulden: −'+D.CFG.debt.toLocaleString('de-DE')+' Gold (Schuldschein verbrannt)':'',
   stats:`Gegner besiegt: ${m.killed} von ${m.total} · Begegnungen: ${m.cleared+1} von ${m.place.stations.length} · Tote: ${m.deaths.length}`,
   party:m.party.map(g=>{const hp=g.dead?0:Math.round(M.health(g)),inj=Object.entries(g.body||{}).filter(([k,p])=>p.missing||p.hp<85).sort((x,y)=>x[1].hp-y[1].hp).map(([k,p])=>p.missing?M.partName(k)+' fehlt':M.partName(k)+' '+Math.round(p.hp)+(p.fracture?' (Bruch)':'')).slice(0,4).join(', ');

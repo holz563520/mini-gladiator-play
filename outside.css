@@ -60,3 +60,11 @@ body.ow-mission #battleTop{display:none}
 .ow-bubble b{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}.ow-bubble span{display:block;font-size:clamp(11px,1.5vw,14px);font-weight:700}
 .ow-bubble.foe{background:rgba(232,206,190,.84)}.ow-bubble.foe b{color:#8a2a22;opacity:1}.ow-bubble.loud,.ow-bubble.boss{background:rgba(244,211,122,.88)}.ow-bubble.out{opacity:0}
 @media(max-width:600px){.ow-title small{display:none}.ow-title{padding:2px 7px}.ow-title b{font-size:12px}.ow-chips .tag{font-size:10px;padding:2px 5px}.ow-top{left:4px;right:4px;top:4px}.ow-mapbox{top:auto;bottom:52px;width:38%;left:4px;right:auto}.ow-ctrl{right:4px;bottom:4px;gap:3px;flex-wrap:nowrap}.ow-ctrl .btn{min-height:30px;padding:3px 7px;font-size:10px}#owState{display:none}.ow-auto{padding:8px 10px;gap:6px}.ow-auto b{font-size:12px}.ow-auto>div{flex-wrap:nowrap}.ow-auto .btn{min-height:32px;padding:4px 10px;font-size:11px}.ow-bubble{max-width:58%}.ow-bubble span{font-size:11px}}
+
+/* Plünderungen: Schwierigkeit in Totenköpfen (Pixelstil) */
+.ow-diff{margin:10px 0 4px}.ow-diff>b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.ow-diff-row{display:flex;flex-wrap:wrap;gap:6px}
+.ow-dbtn{background:var(--raised);border:1px solid var(--line);padding:6px 8px;min-height:40px;cursor:pointer;display:flex;align-items:center}
+.ow-dbtn.on{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);background:#2a2216}
+.ow-skulls{display:inline-flex;gap:2px;vertical-align:middle}.ow-skull{fill:#3a3a32;image-rendering:pixelated}.ow-skull.on{fill:#efe0b3;filter:drop-shadow(1px 1px 0 #17201c)}
+.ow-dbtn.on .ow-skull.on{fill:#f4d37a}.ow-hist .ow-skull{width:9px;height:9px}
