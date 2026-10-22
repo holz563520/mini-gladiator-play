@@ -104,3 +104,14 @@ body.ow-mission #battleTop{display:none}
 .ow-pick:has(.ow-star){grid-template-columns:26px 1fr auto}
 @media(max-width:600px){#owOver #after{width:96%;bottom:4px}#owOver #after canvas{width:auto;max-width:100%;height:110px;margin:0 auto}#owOver #after blockquote{padding:4px 8px 6px;font-size:12px}#owOver #after .af-top{padding:2px 8px;font-size:10px}#owOver #afterSkip{top:22px}
  #owOver #spyFace{width:26%}#owOver .spy-cap{left:calc(26% + 18px);bottom:6px}}
+/* Anführer in der Arena */
+#alLayer{position:absolute;pointer-events:none;z-index:6;overflow:hidden}
+#alBubbles{position:absolute;inset:0;pointer-events:none}
+.al-chant{position:absolute;transform:translateX(-50%);font-family:'Courier Prime',monospace;font-weight:700;font-size:clamp(12px,2vw,18px);color:#f4d37a;text-shadow:2px 2px 0 #000,-1px -1px 0 #000;letter-spacing:.06em;animation:alUp 1.8s ease-out forwards;transition:opacity .5s}
+.al-chant.boo{color:#d9a59a}.al-chant.out{opacity:0}
+@keyframes alUp{from{transform:translate(-50%,8px) scale(.9);opacity:0}15%{opacity:1}to{transform:translate(-50%,-14px) scale(1.06)}}
+#alBanner{position:absolute;left:50%;top:14%;transform:translateX(-50%);min-width:min(420px,86%);max-width:92%;text-align:center;background:rgba(23,18,10,.82);border:2px solid #f4d37a;box-shadow:4px 4px 0 rgba(0,0,0,.4);padding:8px 14px 10px;color:#efe0b3;font-family:'Courier Prime',monospace;transition:opacity .45s}
+#alBanner.out{opacity:0}#alBanner small{display:block;font-size:11px;letter-spacing:.18em;color:#d6a64a}#alBanner b{display:block;font-size:clamp(16px,3vw,26px);color:#f4d37a;letter-spacing:.04em}#alBanner span{display:block;font-size:clamp(11px,1.6vw,14px);margin-top:3px}
+#alBar{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;pointer-events:auto;background:rgba(23,32,28,.85);border:2px solid #3b2508;padding:4px 8px;color:#efe0b3;font-family:'Courier Prime',monospace;font-size:12px;white-space:nowrap}
+#alBar .btn{min-height:30px;padding:3px 10px;font-size:12px}#alBar small{opacity:.7}
+@media(max-width:600px){#alBar{font-size:10px;gap:4px;padding:3px 5px}#alBar .btn{min-height:28px;padding:2px 7px;font-size:10px}}
