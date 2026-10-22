@@ -382,8 +382,8 @@ function onEvent(b,e){const m=R.m,adv=m.kind==='adventure';
   if(e.kind==='ack'||e.kind==='ignore'){bubble(a,e.text,{small:true,ms:1500});if(e.kind==='ignore')mlog(`<b>${esc(a.g.name)}</b> hört nicht sofort: „${esc(e.text)}“`);return;}
   if(e.kind==='foeAlert'){bubble(a,e.text,{name:first(a.g)});mlog(`<b class="foe">${esc(a.g.name)}:</b> „${esc(e.text)}“`);return;}
   bubble(a,e.text,{lead:true,name:LU.lname(a),ms:clamp(1400+e.text.length*45,1900,3400),loud:e.urgent});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(e.text)}“`);return;}
- if(e.type==='gripWarn'){LU.closeStart(e.actor,e.foe);return;}
- if(e.type==='elbow'){LU.closeHit(e.actor,e.foe);mlog(`<b>${esc(e.actor.g.name)}</b> schlägt <b class="foe">${esc(e.foe.g.name)}</b> den Ellbogen ins Gesicht. Griff abgewehrt.`);return;}
+ if(e.type==='gripWarn')return;// keine Nahaufnahme (22.10.: entfernt); der Ruf des Anführers kommt als Sprechblase
+ if(e.type==='elbow'){mlog(`<b>${esc(e.actor.g.name)}</b> schlägt <b class="foe">${esc(e.foe.g.name)}</b> den Ellbogen ins Gesicht. Griff abgewehrt.`);return;}
  if(e.type==='assassinCharge'){LU.chargeCine(e.actors);return;}
  if(e.type==='spawn'){const g=e.actor.g;if(g.debtBoss)return;bubble(e.actor,g.debtShout,{name:g.name});mlog(`<b class="foe">${esc(g.name)}</b> kommt aus ${esc(e.door||'dem Nichts')}. Er ${esc(g.debtOwes)}. Waffe: ${esc(M.itemName(M.gear(g,'weapon')))}.`);}
  if(e.type==='detour'&&e.actor.team===0&&Math.random()<.6){bubble(e.actor,pickL(['Kein freies Schussfeld!','Das Haus ist im Weg!','Moment, ich such mir eine Lücke.','Ich geh rum!']),{name:first(e.actor.g),ms:1800});}

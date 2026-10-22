@@ -44,8 +44,8 @@ function mlog(t){try{M.battleLog?.(t.replace(/<[^>]+>/g,''));}catch(e){}}
 function drain(b){const ev=b.events;if(!ev?.length)return;const keep=[];
  for(const e of ev.splice(0)){const a=e.actor;
   if(e.type==='lead'){if(!a||(!fit(a)&&!e.leader))continue;bubble(a,e.text,{lead:e.leader,small:e.kind==='ack'||e.kind==='ignore',loud:e.urgent});}
-  else if(e.type==='gripWarn'){if(!b.cinematic&&b.time-(A.lastGrip??-99)>12&&(A.lastGrip=b.time,1))b.cinematic={x:(a.x+e.foe.x)/2,y:a.y-30,left:1.3,duration:1.3,kind:'RÜCKEN!'};}
-  else if(e.type==='elbow'){if(b.time-(A.lastElbow??-99)>12&&(A.lastElbow=b.time,1))b.cinematic={x:(a.x+e.foe.x)/2,y:a.y-40,left:1.2,duration:1.2,kind:'ELLBOGEN'};M.sound?.('hit');setTimeout(()=>{if(fit(e.foe))bubble(e.foe,['Meine Nase!','Aaargh!','Mmpf!'][Math.random()*3|0],{small:true});},500);}
+  else if(e.type==='gripWarn'){}
+  else if(e.type==='elbow'){M.sound?.('hit');setTimeout(()=>{if(fit(e.foe))bubble(e.foe,['Meine Nase!','Aaargh!','Mmpf!'][Math.random()*3|0],{small:true});},400);}
   else if(e.type==='duel'){if(!b.cinematic)b.cinematic={x:(a.x+e.foe.x)/2,y:a.y-30,left:1.5,duration:1.5,kind:'DUELL DER ANFÜHRER'};banner('<small>DUELL DER ANFÜHRER</small><b>'+esc(a.g.name)+' gegen '+esc(e.foe.g.name)+'</b>',2400);M.cheer=1;M.sound?.('crowd');}
   else if(e.type==='hero')hero(b,e);
   else if(e.type==='crowd'){const n=first(a.g).toUpperCase();if(e.ok){M.cheer=1;M.sound?.('crowd');for(let i=0;i<3;i++)setTimeout(()=>chant(['ROM! ROM!',n+'! '+n+'!','BLUT! BLUT!'][i]),200+i*380);}
@@ -82,7 +82,7 @@ M.fixedStep=function(dt){const b=S.battle,ld=b?.lead;if(!ld?.arena||ld.phase==='
  if(ld.phase==='intro'){ld.phase='form';startForm(b);}
  if(ld.phase==='form'&&A.form)stepForm(b,dt);else if(ld.phase==='form')startBrief(b);
  if(ld.phase==='brief'&&A.brief)stepBrief(b);else if(ld.phase==='brief')gong(b);};
-function attachView(b){teardown();A.b=b;A.lastGrip=A.lastElbow=-99;layer();if(!A.raf)A.raf=requestAnimationFrame(loop);}
+function attachView(b){teardown();A.b=b;layer();if(!A.raf)A.raf=requestAnimationFrame(loop);}
 const prevStart=M.onBattleStart;
 M.onBattleStart=function(){const r=prevStart?.apply(this,arguments);try{const b=S.battle;if(b&&!b.lead&&M.leaderArena!==false&&L.arenaEligible(b)){L.attachArena(b,{leaderId:S.arenaLeaderId});if(b.lead)attachView(b);}}catch(e){console.warn(e);}return r;};
 // Nach Neuladen eines laufenden Kampfes: Logik reparieren und Blasen wieder anzeigen
