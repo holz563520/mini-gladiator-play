@@ -166,11 +166,23 @@ function enemyItem(i){if(!i||i.forgeInspected)return;i.forgeInspected=true;if(M.
 // Rezepte bauen aufeinander auf: Güte q lässt sich nur lernen, wenn die Güte q−1 desselben Stücks (bei Rüstung: gleiches Material) bekannt ist
 function prevKnown(i){if(!(i.q>0))return true;return F.recipes.includes(recipeId({...i,q:i.q-1}));}
 function encounter(b){if(!b||b.benchmark||M.benchmarkActive||b.forgeObserved)return;b.forgeObserved=true;for(const a of b.actors.filter(a=>a.team===1)){for(const i of [M.gear(a.g,'weapon'),M.gear(a.g,'secondary'),M.gear(a.g,'shield'),...M.armorItems(a.g)].filter(Boolean)){enemyItem(i);const r=recipeId(i);if(!F.recipes.includes(r)&&recipes.some(x=>x.id===r)&&prevKnown(i)&&sample(i.id,b.id+'recipe')<.25){F.recipes.push(r);M.log('Schmiederezept entdeckt: '+M.itemName(i));(F.lastFound&&F.lastFound.battle===b.id?F.lastFound:(F.lastFound={battle:b.id,day:S.day,names:[]})).names.push(M.itemName(i));}const k=key(i);if(i.refinement&&!F.refinements.includes(k)&&sample(i.id,b.id+'refinement')<.3){F.refinements.push(k);M.log('Verfeinerungsrezept entdeckt: '+M.definition(i).name);}}}}
+// Besiegte Gegner (tot oder kampfunfähig): Der Schmied lernt die Rezepte ihrer Waffen, Schilde und Rüstungen sofort, ohne Zufall.
+// Fehlende niedrigere Güten desselben Stücks (bei Rüstung: gleiches Material) kommen gleich mit, damit die Rezeptkette geschlossen bleibt.
+// Rückgabe: Namen der neu erlernten Rezepte; sie stehen auch in F.lastFound (Kampfbericht).
+const defeatSeen=new WeakSet();
+function recipeName(r){try{return M.itemTitle(r)+' · '+M.gearQuality[r.q];}catch{return r.id;}}
+function defeated(b,o={}){if(!b||(!o.force&&(b.benchmark||M.benchmarkActive)))return [];const found=[],id=o.id||b.id;
+ for(const a of (b.actors||[]).filter(a=>a.team===1&&a.g&&(a.g.dead||a.down)&&!defeatSeen.has(a))){defeatSeen.add(a);let items=[];try{items=[M.gear(a.g,'weapon'),M.gear(a.g,'secondary'),M.gear(a.g,'shield'),...M.armorItems(a.g)].filter(Boolean);}catch{continue;}
+  for(const i of items){if(!i.kind||!i.def||!(i.q>=0))continue;for(let q=0;q<=i.q;q++){const r=recipes.find(x=>x.id===recipeId({...i,q}));if(r&&!F.recipes.includes(r.id)){F.recipes.push(r.id);found.push(recipeName(r));}}}}
+ if(found.length){M.log('Schmiederezept erlernt: '+found.join(', '));const lf=F.lastFound&&F.lastFound.battle===id?F.lastFound:(F.lastFound={battle:id,day:S.day,names:[]});for(const n of found)if(!lf.names.includes(n))lf.names.push(n);}
+ return found;}
+// Rezepte, die in diesem Kampf neu dazukamen (beim Hinsehen zu Kampfbeginn und von besiegten Gegnern)
+function battleRecipes(id){const f=F.lastFound;return f&&f.battle===id?[...f.names]:[];}
 const oldDay=M.army.nextDay;M.army.nextDay=(...args)=>{const result=oldDay(...args);if(!S.battle){day();afterDay();M.persist();}return result;};M.advanceDay=M.army.nextDay;
 const oldStart=M.worldStart;M.worldStart=b=>{encounter(b);oldStart?.(b);};
 M.hireSmith=hireMaster;M.smithHireCost=()=>250;M.selectSmith=()=>F.master;M.forgeStaff=()=>F.master?[F.master]:[];M.forgeKnowledge=knowledge;M.progressForge=progress;M.craft=craft;M.trainSmith=()=> 'Nur tatsächliches Schmieden verbessert die Istwerte.';
 M.army.hireWorkshop=hireMaster;M.army.forgeInfo=knowledge;M.army.workshopImprove=refine;
-M.workshop={stockUp,sendGladiator,recallGladiator,queueList,pleas,dailyWork,daily:DAILY,shelfDays:SHELF,sketch,randomName,setIntro,state:F,categories,recipes,recipeId,key,knowledge,quality,progress,hireMaster,hireApprentice,craft,buy,reject,refine,refineCost,offerPrice,day,prepareScene,finishScene,encounter,enemyItem,sayings,rejection,get saving(){return saving;},get sceneReady(){return sceneReady;},get error(){return error;}};
+M.workshop={defeated,battleRecipes,stockUp,sendGladiator,recallGladiator,queueList,pleas,dailyWork,daily:DAILY,shelfDays:SHELF,sketch,randomName,setIntro,state:F,categories,recipes,recipeId,key,knowledge,quality,progress,hireMaster,hireApprentice,craft,buy,reject,refine,refineCost,offerPrice,day,prepareScene,finishScene,encounter,enemyItem,sayings,rejection,get saving(){return saving;},get sceneReady(){return sceneReady;},get error(){return error;}};
 day();M.persist();
 })();
 

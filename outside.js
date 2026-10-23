@@ -246,7 +246,7 @@ function reportBlock(){const rp=reportForResult;if(!rp)return '';
   const rows=learn.map(([k,v])=>{const [now,cap]=g?valueOf(g,k):[null,null];return `<li><span>${esc(M.learningLabel?.(k)||k)}</span><b>${now!=null?f1(now-v)+' → '+f1(now):'+'+v.toFixed(2)}</b><small>${cap!=null?'SOLL '+Math.round(cap):''}</small></li>`;});
   const stat=(n,v)=>`<span><b>${v}</b>${n}</span>`;
   return `<div class="an-gain arp-man${a.dead?' dead':''}"><b>${a.dead?'✝ ':''}${esc(a.name)}</b><small class="arp-state">${a.dead?'gefallen':a.down?'kampfunfähig · überlebt':'überlebt'}</small><div class="arp-stats">${stat('Schaden',a.damage)}${stat('Erlitten',a.taken)}${stat('Kills',a.kills)}${stat('Krit.',a.crits)}${stat('Blocks',a.blocks)}${stat('Ausgew.',a.dodges)}</div>${rows.length?`<ul>${rows.slice(0,6).join('')}</ul>${rows.length>6?`<details><summary>${rows.length-6} weitere gelernte Werte</summary><ul>${rows.slice(6).join('')}</ul></details>`:''}`:'<p>Keine messbare Verbesserung.</p>'}</div>`;};
- return `<div class="box ow-report"><div class="an-gains arp"><h3>Kampfbericht · was deine Gladiatoren gelernt haben</h3>${rp.actors.map(card).join('')}<div class="arp-foot"><button type="button" class="btn" data-action="nav:report">VOLLER KAMPFBERICHT ▸</button></div></div></div>`;}
+ return `<div class="box ow-report"><div class="an-gains arp"><h3>Kampfbericht · was deine Gladiatoren gelernt haben</h3>${rp.actors.map(card).join('')}${rp.recipes?.length?`<p class="arp-recipe">⚒ Schmiederezept erlernt: <b>${rp.recipes.map(esc).join(', ')}</b></p>`:''}<div class="arp-foot"><button type="button" class="btn" data-action="nav:report">VOLLER KAMPFBERICHT ▸</button></div></div></div>`;}
 const prevPage=M.schoolPage;
 M.schoolPage=p=>p==='outside'?boardPage():prevPage?prevPage(p):undefined;
 const prevClick=M.schoolClick;
@@ -483,7 +483,9 @@ async function leadEncounter(b,sti){const m=R.m,st=m.place.stations[sti],G=L.lay
  const e0=b.encEnemies[0];if(e0)bubble(e0,pickL(['Überraschung!','Jetzt haben wir euch!','DRAUF!']),{name:first(e0.g),loud:true});LU.stow(b,false);
  for(const a of b.actors){a.to=null;a.path=null;}
  b.started=true;b.paused=false;L.surprise(b);setButtons('fight');}
-async function encounterEnd(b){const m=R.m;if(R.ended)return;const out=D.endEncounter(m,b);b.done=null;b.paused=true;renderInfo();const st=out.station,adv=m.kind==='adventure';
+// Schmiederezepte: Jeder getötete oder kampfunfähige Gegner bringt die Rezepte seiner Ausrüstung (M.workshop.defeated).
+function learnRecipes(m,b){try{const n=M.workshop?.defeated?.(b,{force:true,id:'outside-'+m.seed})||[];if(n.length){(m.recipes??=[]).push(...n.filter(x=>!m.recipes.includes(x)));mlog('⚒ Schmiederezept erlernt: <b>'+n.map(esc).join(', ')+'</b>','narr');}}catch(e){console.warn(e);}}
+async function encounterEnd(b){const m=R.m;if(R.ended)return;learnRecipes(m,b);const out=D.endEncounter(m,b);b.done=null;b.paused=true;renderInfo();const st=out.station,adv=m.kind==='adventure';
  for(const g of out.died)mlog(`<b class="red">† ${esc(g.name)}</b> ist tot. Death is permanent.${adv?'':' Krassus wird das als Ausfall verbuchen.'}`,'dead');
  for(const g of out.downed)mlog(`${esc(g.name)} kann nicht mehr und wird ab jetzt getragen.`);
  if(out.winner===0){
@@ -525,7 +527,7 @@ async function flee(){clearInterval(R.autoT);const m=R.m,b=S.battle;if(!m||R.end
  if(b){b.paused=true;if(inFight){b.done={winner:-2,reason:'Flucht'};b.handled=true;}
   for(const a of b.actors)if(a.team===0&&!a.down&&!a.g.dead){a.to=[a.x-500,a.y,120];a.path=[];}
   const a=anyParty(b);if(a)bubble(a,pickL(['RENNT!','Taktischer Rückzug! Also: RENNT!','Ich hol schon mal die Pferde! Wir haben keine Pferde!','Wer zuletzt am Tor ist, zahlt die Zinsen!']),{name:first(a.g)});}
- await talkPause(1600);if(b&&inFight)D.endEncounter(m,b,{fled:true});m.state='fled';finishMission('fled');}
+ await talkPause(1600);if(b&&inFight){learnRecipes(m,b);D.endEncounter(m,b,{fled:true});}m.state='fled';finishMission('fled');}
 function cleanupBattle(){LU?.reset();const m=R.m;if(m&&m.prevLimit!==undefined){if(m.prevLimit===null)delete M.benchmarkTimeLimit;else M.benchmarkTimeLimit=m.prevLimit;}
  M.missionBackdrop=null;document.body.classList.remove('ow-mission');$('owOver')?.remove();const bb=$('battleBottom');if(bb){bb.innerHTML='';delete bb.dataset.ow;}$('battleView')?.classList.remove('ow-fade');}
 function abortMission(){R.ending=true;R.ended=true;cleanupBattle();R.m=null;R.b=null;R.nextRes=null;}
@@ -554,7 +556,7 @@ function applyResult(m,kind){const st=ST(),adv=m.kind==='adventure',keep=kind!==
   const report={id:'outside-'+m.seed+'-'+S.day,arenaName:(adv?'Plünderung '+'☠'.repeat(m.diff||2):'Außenmission')+' · '+m.place.label+' '+m.place.name,attackSummary:[],verdicts:[],loot:loot.map(l=>({name:l.name,condition:100})),day:S.day,won:kind==='won',draw:kind!=='won'&&kind!=='lost',reason:head[0],opponent:adv?(m.texts?.band||'Bande'):'Krassus Knochenzins',time:R.missionTime||0,gold,fame:0,league:S.league||0,tournament:'',
    actors:m.party.map(g=>{const r=rep[g.id]||{learning:{}};return {id:g.id,name:g.name,damage:Math.round(r.damage||0),taken:Math.round(r.taken||0),kills:r.kills||0,crits:r.crits||0,blocks:r.blocks||0,dodges:r.dodges||0,falls:r.falls||0,rearHits:r.rearHits||0,charges:r.charges||0,backsteps:r.backsteps||0,xpMultiplier:r.xpMultiplier||1,learning:r.learning||{},dead:!!g.dead,down:!g.dead&&!D.fit(g),injuries:Object.entries(g.body||{}).filter(([id,p])=>p.hp<85||p.missing).map(([id,p])=>M.partName(id)+': '+(p.missing?'abgetrennt':p.injury||'Verletzt')),blood:Math.round(g.blood)};}),
    log:(R.full||[]).slice(-60).reverse().map(([h])=>({time:0,text:String(h).replace(/<[^>]+>/g,'')}))};
-  S.lastReport=report;S.records=[report,...(S.records||[])].slice(0,35);reportForResult=report;}catch(e){console.error(e);reportForResult=null;}
+  report.recipes=[...(m.recipes||[])];S.lastReport=report;S.records=[report,...(S.records||[])].slice(0,35);reportForResult=report;}catch(e){console.error(e);reportForResult=null;}
  st.history.unshift({day:S.day,kind:m.kind,diff:adv?m.diff:0,place:m.place.name,result:head[0].toLowerCase(),loot:loot.length,gold,deaths:m.deaths.length});st.history=st.history.slice(0,12);st.run=null;
  result={kind,title:head[0],text:head[1],loot,gold,goldFrom:adv?'aus der Truhe des Anführers':'aus der Geldkassette',extra:!adv&&kind==='won'?'Schulden: −'+D.CFG.debt.toLocaleString('de-DE')+' Gold (Schuldschein verbrannt)':'',
   stats:`Gegner besiegt: ${m.killed} von ${m.total} · Begegnungen: ${m.cleared+1} von ${m.place.stations.length} · Tote: ${m.deaths.length}`,
