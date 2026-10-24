@@ -672,6 +672,23 @@ function wardPage(){const list=patients();setTimeout(()=>{for(const c of documen
 const page=M.schoolPage;M.schoolPage=p=>{if(p==='medic'&&ward()&&!TEST)return wardPage();const html=page(p);if(p!=='medic'||!['medic','s12','end','free'].includes(st().stage)||!recs().length)return html;setTimeout(()=>{for(const c of document.querySelectorAll('.medic-files canvas[data-face]')){const g=byId(c.dataset.face);if(g)M.renderPortrait(c,g,{unarmored:true});}},0);
  return `<div class="medic-files"><p class="eyebrow">AKTEN DER FÜNF · WAS EINE BEHANDLUNG BRINGEN WÜRDE</p>${recs().map((g,i)=>dossier(g,i+1)).join('')}<p class="tiny">Darunter folgt das unveränderte Krankenhausmenü des Spiels. Die Behandlungsknöpfe dort sind die echten.</p></div>`+html;};
 
+// Dauerhafter Schutz vor der Auswahl als Apfelträger, auch für gesunde Gladiatoren.
+const applePage=M.schoolPage;
+M.schoolPage=p=>{
+ const html=applePage(p);
+ if(p!=='medic')return html;
+ return '<section class="box"><details><summary class="btn">APFELSCHUSS-SCHUTZ</summary><p>Geschützte Gladiatoren erscheinen nicht als Apfelträger. Häkchen entfernen, um sie wieder freizugeben.</p>'+
+ S.roster.filter(g=>!g.dead&&!g.smithDuty).map(g=>`<label style="display:block;padding:10px"><input type="checkbox" data-apple-protect="${esc(g.id)}"${g.appleProtected?' checked':''}> ${esc(g.name)} · Vor Apfelschuss schützen</label>`).join('')+'</details></section>'+html;
+};
+document.addEventListener('change',e=>{
+ const el=e.target;
+ if(!el?.matches?.('input[data-apple-protect]'))return;
+ const g=byId(el.dataset.appleProtect);
+ if(!g||g.dead)return;
+ g.appleProtected=el.checked;
+ M.persist();
+});
+
 // ---------- Testumgebung: eigener, flüchtiger Spielstand direkt nach dem Löwenkampf ----------
 function setup(){const W=M.workshop;S.started=true;S.schoolName='Ludus Test';S.lanista={name:'Lanista',height:180,weight:85,veteran:true,appearance:{skin:'#d9ac82',shade:'#9c7353',hair:'#443025',style:1,beard:2,cloth:'#435e6a'}};S.gold=2000;
  if(!W.state.master)W.hireMaster(W.sketch());W.state.intro='done';Tr().intro='done';if(S.hall)S.hall.tut='done';else S.hall={tut:'done',recruit:null,tag:{}};S.lion={stage:'done',recruits:[],base:[]};S.archerPlot={seen:0,asked:true,state:'declined'};S.wanderers={version:1,next:S.day+9999,group:null,known:[]};
