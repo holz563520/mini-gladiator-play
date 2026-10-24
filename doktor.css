@@ -54,3 +54,6 @@
 .dok-ask-yes:focus-visible,.dok-ask-no:focus-visible{outline:2px solid #f4d37a;outline-offset:2px}
 @keyframes dokAsk{50%{transform:scale(1.05);filter:drop-shadow(0 2px 0 #5a3d1c) drop-shadow(0 0 20px rgba(255,215,120,.9))}}
 @media (prefers-reduced-motion:reduce){.dok-ask-yes{animation:none}}
+
+.dok-protect{display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer;color:var(--cream);line-height:1.5}.dok-protect input{width:22px;height:22px;flex-shrink:0;accent-color:var(--gold)}
+.dok-overview{padding:12px;min-width:0}.dok-overview table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}.dok-overview th,.dok-overview td{padding:7px 5px;border-bottom:1px solid #44544f;text-align:right}.dok-overview th:first-child{text-align:left;font-weight:normal;overflow-wrap:anywhere}.dok-overview td{white-space:nowrap}.dok-overview td:last-child{color:var(--gold)}.dok-overview dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.dok-overview dd{margin:0;overflow-wrap:anywhere}

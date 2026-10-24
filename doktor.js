@@ -446,7 +446,7 @@ function paintChair(ctx,w,h,t,base,P,o={}){if(P&&P.dist>0&&!P.distDone){paintNur
 // 4 · BEHANDLUNGSTISCH: Oberfläche (Gladiator wählen, Wert wählen, zuschlagen, Ergebnis)
 // =====================================================================================================
 let chair=null;
-const living=()=>S.roster.filter(g=>!g.dead&&!g.retired);
+const living=()=>S.roster.filter(g=>!g.dead&&!g.retired).sort((a,b)=>(b.potential??0)-(a.potential??0));
 const lowKey=g=>{const c=capsOf(g);return KEYS.slice().sort((a,b)=>(c[a]??99)-(c[b]??99))[0];};
 const first=g=>String(g?.name||'').split(' ')[0];
 function openChair(gid){closeAll();const men=living();if(!men.length){M.ui.notify?.('Niemand da, den man auf den Stuhl setzen könnte.');return;}
@@ -457,20 +457,38 @@ function openChair(gid){closeAll();const men=living();if(!men.length){M.ui.notif
 <div class="dok-men" id="dokMen"></div>
 <div class="dok-stage"><canvas id="dokChair" width="660" height="420"></canvas><p class="dok-line" id="dokLine"></p></div>
 <div class="dok-who" id="dokWho"></div>
+<label class="dok-protect"><input type="checkbox" id="dokAppleProtect"> Vor Apfelschuss schützen · nicht als Apfelträger anzeigen</label>
 <div class="dok-stats" id="dokStats"></div>
+<section class="dok-overview" id="dokOverview" aria-label="Weitere Gladiatorenwerte"></section>
 <div class="dok-go"><p class="dok-odds" id="dokOdds"></p><button class="btn primary dok-hit" type="button" data-dok="go">ZUSCHLAGEN!</button></div>
 <div class="dok-result" id="dokResult" hidden></div>
 </div>`;
- document.body.appendChild(v);v.addEventListener('change',e=>{if(e.target.id==='dokForce')chair.force=e.target.value;if(e.target.id==='dokVar')chair.variant=e.target.value;});
+ document.body.appendChild(v);v.addEventListener('change',e=>{if(e.target.id==='dokAppleProtect'&&chair){chair.g.appleProtected=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForce')chair.force=e.target.value;if(e.target.id==='dokVar')chair.variant=e.target.value;});
  renderChair();loop();}
 function renderChair(){const C=chair;if(!C)return;const g=C.g,caps=capsOf(g),busy=!!C.P&&!C.P.done,inBed=bedDays(g);
- const men=$('dokMen');if(men){men.innerHTML=living().map(x=>{const d=bedDays(x);return `<button class="dok-man${x===g?' sel':''}" type="button" data-dok="man:${x.id}"${busy?' disabled':''}><canvas data-dokface="${x.id}" width="40" height="50"></canvas><span>${esc(first(x))}</span><small>${d?'🛏 '+d+' T.':x.dokCross?'schielt':'bereit'}</small></button>`;}).join('');
+ const men=$('dokMen');if(men){men.innerHTML=living().map(x=>{const d=bedDays(x);return `<button class="dok-man${x===g?' sel':''}" type="button" data-dok="man:${x.id}"${busy?' disabled':''}><canvas data-dokface="${x.id}" width="40" height="50"></canvas><span>${esc(first(x))}</span><small>Talent ${Math.round(x.potential??0)}${x.appleProtected?' · 🍎 geschützt':''}</small><small>${d?'🛏 '+d+' T.':x.dokCross?'schielt':'bereit'}</small></button>`;}).join('');
   for(const c of men.querySelectorAll('canvas[data-dokface]')){const x=S.roster.find(y=>y.id===c.dataset.dokface);if(x)M.renderPortrait(c,x,{unarmored:true});}}
  const who=$('dokWho');if(who){const d=B_info(g);who.innerHTML=`<b>${esc(g.name)}</b> · ${d}${M.buyOdds?.mini('human',g)||''}${g.dok?` · ${g.dok}× behandelt`:''}${g.dokCross?' · <span class="bad">schielt</span>':''}${inBed?` · <span class="bad">liegt noch ${inBed} ${inBed===1?'Tag':'Tage'} im Krankenbett</span>`:''}`;}
  const st=$('dokStats');if(st){st.innerHTML=KEYS.map(k=>{const cap=caps[k]??0,val=g.stats[k]??0,cls=cap<45?'lo':cap>=72?'hi':'';return `<button class="dok-stat${k===C.key?' sel':''}" type="button" data-dok="key:${k}"${busy||inBed?' disabled':''}><b>${esc(statName(k))}</b><span>Wert ${val}</span><span class="cap ${cls}">Anlage ${cap}</span></button>`;}).join('');}
+ const protect=$('dokAppleProtect');if(protect)protect.checked=!!g.appleProtected;
+ const overview=$('dokOverview');if(overview)overview.innerHTML=overviewHTML(g);
  const odds=$('dokOdds'),fp=Math.round(failChance(g)*1000)/10;if(odds)odds.innerHTML=`<b class="ok">${(100-fp).toLocaleString('de-DE')} %</b> Anlage wird neu ausgewürfelt <span>· besser oder schlechter</span><br><b class="bad">${fp.toLocaleString('de-DE')} %</b> Hirnschaden <span>· alle Werte −10 %, schielt für immer${fp<10?' · Veteran: geringeres Risiko':' · frischer Rekrut: volles Risiko'}</span><br><b>Danach</b> zehn Tage Krankenbett mit Kopfverband`;
  const go=document.querySelector('.dok-hit');if(go){go.disabled=busy||!!inBed;go.textContent=inBed?'LIEGT IM KRANKENBETT':busy?'…':'ZUSCHLAGEN!';}
  setLine(C.line);}
+// Nur lesende Übersicht; fehlende Werte alter Spielstände bleiben als Strich sichtbar.
+function overviewHTML(g){
+ const num=v=>typeof v==='number'&&Number.isFinite(v)?v.toLocaleString('de-DE',{maximumFractionDigits:1}):'—';
+ const row=(name,val,cap)=>'<tr><th scope="row">'+esc(name)+'</th><td>'+num(val)+'</td><td>'+num(cap)+'</td></tr>';
+ const table=(title,rows)=>rows?'<h4>'+esc(title)+'</h4><table><thead><tr><th>Wert</th><th>IST</th><th>SOLL</th></tr></thead><tbody>'+rows+'</tbody></table>':'';
+ let html='<h3>Weitere Werte</h3><p class="tiny">IST = aktueller Wert · SOLL = Anlage</p>';
+ html+=table('Weitere Grundwerte',Object.entries(M.stats).filter(([k])=>!KEYS.includes(k)).map(([k,n])=>row(n,g.stats?.[k],g.caps?.stats?.[k])).join(''));
+ html+=table('Waffen',M.weaponDefs.map(w=>row(w.name,g.mastery?.[w.id],g.caps?.weapons?.[w.id])).join(''));
+ html+=table('Kampfmanöver',Object.entries(M.moveNames).map(([k,n])=>row(n,g.moves?.[k],g.caps?.moves?.[k])).join(''));
+ if(g.boxing)html+=table('Boxen',Object.entries(g.boxing).filter(([,v])=>typeof v==='number').map(([k,v])=>row(({gerade:'Gerade',schwinger:'Schwinger',uppercut:'Uppercut'})[k]||k,v,g.caps?.boxing?.[k])).join(''));
+ html+=table('Körperteile',M.parts.map(([id,n])=>{const p=g.body?.[id],c=g.caps?.body?.[id];return p?row(n+' · Kraft'+(p.missing?' (verloren)':''),p.strength,c?.strength)+row(n+' · Beweglichkeit',p.agility,c?.agility):'';}).join(''));
+ html+='<h4>Überblick</h4><dl>'+[['Klasse',g.role],['Alter',g.age],['Größe',g.height==null?'—':g.height+' cm'],['Gewicht',g.weight==null?'—':g.weight+' kg'],['Eigenschaften',(g.traits||[]).join(', ')||'—'],['Kämpfe',g.fights??0],['Siege',g.wins??0],['Kills',g.kills??0],['Blut',num(g.blood)+' %'],['Erschöpfung',num(g.fatigue)]].map(([n,v])=>'<dt>'+esc(n)+'</dt><dd>'+esc(v??'—')+'</dd>').join('')+'</dl>';
+ return html;
+}
 function B_info(g){try{const d=M.barracks?.info?.(g);if(d)return `${'★'.repeat(Math.round(d.tier.level/2))}${'☆'.repeat(5-Math.round(d.tier.level/2))} ${esc(d.tier.name)} · Talent ${d.talent}`;}catch{}return 'Talent '+Math.round(g.potential||0);}
 function setLine(t){const el=$('dokLine');if(el&&el._t!==t){el._t=t;el.innerHTML='<b>'+esc(DOC_SHORT)+':</b> „'+esc(t)+'“';}}
 function chairClick(cmd,arg){const C=chair;if(!C)return;
