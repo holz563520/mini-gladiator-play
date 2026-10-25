@@ -193,7 +193,7 @@ function sentence(){const c=intro.cards[intro.i],text=c.say[intro.s]||'',lastLin
 function next(){if(!intro)return;const c=intro.cards[intro.i];if(c&&intro.s<c.say.length-1){intro.s++;sentence();return;}intro.i++;if(intro.i>=intro.cards.length||!S.battle||S.battle.id!==intro.battle){end();return;}card();}
 function end(){clearTimeout(timer);intro=null;M.battleHud.spot=null;M.focus?.(null);const el=$('modCard');if(el){el.hidden=true;el.innerHTML='';}say(line('start'),1,true);}
 // Neue Arena (arena-core) startet ihre Uhr bei 3,2 s (Vorlauf): maßgeblich ist die Zeit seit dem Start. Tierkämpfe und Story-Kämpfe haben eigene Vorstellungen.
-function begin(b){if(done.has(b.id)||b.time>(b.startTime||0)+3||b.finale||b.result||b.lesson||(b.neu&&b.actors.some(a=>a.rex&&!a.hahn))||(b.benchmark&&!M.moderatorInBenchmark))return;done.add(b.id);const cards=lineup(b);if(cards.length<2)return;intro={cards,i:-1,s:0,battle:b.id};track=null;next();}
+function begin(b){if(done.has(b.id)||b.time>(b.startTime||0)+3||b.finale||b.result||b.lesson||b.hundefang||(b.neu&&b.actors.some(a=>a.rex&&!a.hahn))||(b.benchmark&&!M.moderatorInBenchmark))return;done.add(b.id);const cards=lineup(b);if(cards.length<2)return;intro={cards,i:-1,s:0,battle:b.id};track=null;next();}
 // Während der Vorstellung steht der Kampf
 for(const name of ['fixedStep','effectsStep']){const base=M[name];if(typeof base==='function')M[name]=function(){if(intro&&S.battle?.id===intro.battle)return;return base.apply(this,arguments);};}
 M.battleHud.onBuild=(panel,b)=>{const mod=document.createElement('div');mod.className='bh-mod';mod.id='bhMod';mod.innerHTML='<p id="bhModText"></p>';panel.insertBefore(mod,panel.querySelector('.bh-body'));panel.classList.add('has-mod');

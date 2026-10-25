@@ -4,7 +4,7 @@
 // · Beim Betreten der Arena öffnet sich die neue Arena (arena-ui.js) über dem Spiel. Die klassische Arena mit Ligen,
 //   Turnieren, Qualifikation und offenen Arenen bleibt über einen Knopf erreichbar und läuft unverändert.
 // · Kämpfer: die eigenen Gladiatoren (S.roster), einsatzbereit nach den Regeln der Kaserne (M.army.eligibility).
-//   Tiere besitzt man noch nicht (Tierhändler kommt später) – BEAST zeigt Hahn und Löwe, aber noch ohne eigene Tiere.
+//   Tiere: Hähne (Hühnerschule), Hunde aus dem Hundefang (C.dogs); Löwen besitzt man noch nicht.
 // · Gold: Siegprämie bzw. Antrittsgeld der Herausforderung statt der Ligaprämie. Alles andere (Ruhm, Siege, Lernen,
 //   Verletzungen, Tod, Bericht) bucht das Spiel wie bei jedem Arenakampf.
 // · Neuer Speicherwert: S.arenaNeu = {fights, wins} (nur Statistik).
@@ -15,6 +15,8 @@ const M=window.MG,S=M.s;if(!M||window.ARENA_NEU_TEST)return;
 const st=()=>(S.arenaNeu??={fights:0,wins:0});
 let pending=null,classic=false;const CLASSIC_ARENA=false;
 const C={startHidden:true,roosters:[],lions:[],
+ // Hunde aus dem Hundefang (hundefang.js, S.hundefang.dogs)
+ get dogs(){return S.hundefang?.dogs||[];},
  get gold(){return S.gold;},get fights(){return st().fights;},get wins(){return st().wins;},get fallen(){return S.fallen||[];},
  fit:g=>{try{return M.army?.eligibility?M.army.eligibility(g).ok:!g.dead;}catch{return !g.dead;}},
  settle(pay){pending={pay,gold:S.gold,earned:S.stats?.earned||0};},
@@ -47,7 +49,7 @@ M.schoolPage=function(p){const html=page?.apply(this,arguments);
 // M.worldStart). Nur echte Kämpfe: Probeläufe setzen S.battle sofort wieder zurück.
 // Waffenhistorie: Kämpfe und Siege zählen auch in der neuen Arena (Kills zählt das Spiel ohnehin beim Tod des Gegners)
 let story=null;
-function storyStart(b){const W=M.world;if(!W?.weaponHistory)return;const ids=[];for(const a of b.actors.filter(a=>a.team===0&&a.g&&!a.hahn&&!a.lion))for(const k of ['weapon','secondary']){const i=M.gear(a.g,k);const h=i&&W.weaponHistory(i);if(h&&!ids.includes(i.id)){W.ownership?.(i,a.g);h.fights++;ids.push(i.id);}}story={id:b.id,ids};}
+function storyStart(b){const W=M.world;if(!W?.weaponHistory)return;const ids=[];for(const a of b.actors.filter(a=>a.team===0&&a.g&&!a.hahn&&!a.lion&&!a.dog))for(const k of ['weapon','secondary']){const i=M.gear(a.g,k);const h=i&&W.weaponHistory(i);if(h&&!ids.includes(i.id)){W.ownership?.(i,a.g);h.fights++;ids.push(i.id);}}story={id:b.id,ids};}
 const fin0=M.onFinish;M.onFinish=function(report){try{if(story&&report?.id===story.id&&report.won){for(const id of story.ids){const h=M.world.weaponHistory(M.world.resolveWeapon(id));if(h)h.wins++;}}if(story&&report?.id===story.id)story=null;}catch(e){console.warn(e);}return fin0?.apply(this,arguments);};
 const AN0=window.AN;if(AN0?.build){const build=AN0.build;AN0.build=function(){const b=build.apply(this,arguments);setTimeout(()=>{if(S.battle===b){try{M.workshop?.encounter?.(b);}catch(e){console.warn(e);}try{storyStart(b);}catch(e){console.warn(e);}}},0);return b;};}
 window.ARENA_GAME_READY=true;

@@ -1,7 +1,7 @@
 'use strict';
 // Spionage der neuen Arena: lädt das Spiel ohne Bildschirm und rechnet Probekämpfe mit derselben Kampflogik (erzeugt von prototypes/arena-neu/to-dist.py)
 self.window=self;
-{const v=(self.location.search.match(/[?&]v=([^&]*)/)||[])[1]||'';importScripts(...["arena-headless", "data", "household", "management", "scout", "sim", "benchmark", "school", "world", "forge", "spy", "arena", "techniques", "manager", "school-ui", "world-ui", "mobile", "ludus", "intro", "forge-ui", "forge-intro", "scene-nav", "barracks", "trader", "wanderer-talk", "wanderers", "smith-wrath", "archer-plot", "hall", "lion", "hahn-engine", "hahn-arena", "arena-beasts", "arena-core"].map(n=>n+'.js?v='+v));}
+{const v=(self.location.search.match(/[?&]v=([^&]*)/)||[])[1]||'';importScripts(...["arena-headless", "data", "household", "management", "scout", "sim", "benchmark", "school", "world", "forge", "spy", "arena", "techniques", "manager", "school-ui", "world-ui", "mobile", "ludus", "intro", "forge-ui", "forge-intro", "scene-nav", "barracks", "trader", "wanderer-talk", "wanderers", "smith-wrath", "archer-plot", "hall", "lion", "hahn-engine", "hahn-arena", "arena-beasts", "hund", "arena-core"].map(n=>n+'.js?v='+v));}
 'use strict';
 // Spionage-Worker: rechnet Probekämpfe mit genau dem Kampfsystem der Arena (geladen: headless-env, Spiel, Hähne, Löwen, Kern).
 (()=>{

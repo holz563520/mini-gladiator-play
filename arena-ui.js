@@ -23,14 +23,15 @@ requestAnimationFrame(frame);
 anim(root.querySelector('.an-bg canvas'),(ctx,t)=>ART.arena(ctx,320,180,t,{cheer:U.screen==='result'&&U.result?.won,blood:U.screen==='result'}));
 
 // ---------- Eigene Kämpfer ----------
-const keyOf=u=>u.kind==='human'?'g:'+u.g.id:u.kind==='rooster'?'r:'+u.R.id:'l:'+u.L.id;
-function pool(){if(U.mode==='human')return S.roster.filter(g=>!g.dead&&!g.retired&&!(g.age<18)).map(g=>({kind:'human',g}));if(U.species==='loewe')return C.lions.filter(L=>!L.dead).map(L=>({kind:'lion',L}));return C.roosters.filter(R=>!R.dead).map(R=>({kind:'rooster',R}));}
+const keyOf=u=>u.kind==='human'?'g:'+u.g.id:u.kind==='rooster'?'r:'+u.R.id:u.kind==='dog'?'d:'+u.D.id:'l:'+u.L.id;
+const DG=()=>window.DOG;
+function pool(){if(U.mode==='human')return S.roster.filter(g=>!g.dead&&!g.retired&&!(g.age<18)).map(g=>({kind:'human',g}));if(U.species==='loewe')return C.lions.filter(L=>!L.dead).map(L=>({kind:'lion',L}));if(U.species==='hund')return (C.dogs||[]).filter(D=>!D.dead).map(D=>({kind:'dog',D}));return C.roosters.filter(R=>!R.dead).map(R=>({kind:'rooster',R}));}
 const withKey=u=>(u.key=keyOf(u),u);
-function hp(u){return u.kind==='human'?M.health(u.g)*Math.min(1,u.g.blood/80):u.kind==='rooster'?CF.health(u.R):BZ.health(BZ.makeLionProbe?.(u.L)||{tissue:{head:1},max:{head:1},blood:100})||u.L.condition.health;}
+function hp(u){if(u.kind==='dog')return DG().condHealth(u.D);return u.kind==='human'?M.health(u.g)*Math.min(1,u.g.blood/80):u.kind==='rooster'?CF.health(u.R):BZ.health(BZ.makeLionProbe?.(u.L)||{tissue:{head:1},max:{head:1},blood:100})||u.L.condition.health;}
 function health(u){if(u.kind==='lion'){const c=u.L.condition;return Math.round(Math.min(c.health,c.blood)*(.7+.3*c.rear/100));}return Math.round(hp(u));}
-function fit(u){if(u.kind==='human'&&C.fit)return C.fit(u.g);if(u.kind==='human'){const g=u.g;return !g.dead&&M.health(g)>=55&&g.blood>=55&&!['head','neck','chest','belly'].some(p=>g.body[p].missing)&&!['lt','rt'].every(p=>g.body[p].missing);}if(u.kind==='rooster')return !u.R.dead&&CF.fitForFight(u.R);return !u.L.dead&&u.L.condition.health>=40&&u.L.condition.blood>=45;}
-const name=u=>u.kind==='human'?u.g.name:u.kind==='rooster'?u.R.name:u.L.name;
-const roleOf=u=>u.kind==='human'?u.g.role:u.kind==='rooster'?u.R.quality.title:u.L.epithet;
+function fit(u){if(u.kind==='human'&&C.fit)return C.fit(u.g);if(u.kind==='human'){const g=u.g;return !g.dead&&M.health(g)>=55&&g.blood>=55&&!['head','neck','chest','belly'].some(p=>g.body[p].missing)&&!['lt','rt'].every(p=>g.body[p].missing);}if(u.kind==='rooster')return !u.R.dead&&CF.fitForFight(u.R);if(u.kind==='dog')return DG().fit(u.D);return !u.L.dead&&u.L.condition.health>=40&&u.L.condition.blood>=45;}
+const name=u=>u.kind==='human'?u.g.name:u.kind==='rooster'?u.R.name:u.kind==='dog'?u.D.name:u.L.name;
+const roleOf=u=>u.kind==='human'?u.g.role:u.kind==='rooster'?u.R.quality.title:u.kind==='dog'?u.D.breedName:u.L.epithet;
 function autoRows(units){const rows={};if(units.length<=2){for(const u of units)rows[u.key]='front';return rows;}
  const score=u=>u.kind==='human'?((u.g.role==='Soldat'?2:u.g.role==='Assassine'?1:-3)+CH.kw(u)/100+health(u)/200+(M.gear(u.g,'shield')?.5:0)):CH.kw(u)/100+health(u)/300;
  const sorted=[...units].sort((a,b)=>score(b)-score(a)),nf=Math.ceil(units.length/2);sorted.forEach((u,i)=>rows[u.key]=i<nf&&!(u.kind==='human'&&(u.g.role==='Fernkämpfer'||AN.isRanged(u.g)))?'front':'back');
@@ -47,12 +48,13 @@ const sizes=()=>SIZES().filter(n=>n<=Math.max(1,pool().filter(fit).length));
 const thumbs=new Map();
 function unitThumb(u,w=64,h=72,mood){const cv=ART.mk(w,h);cv.className='px';
  if(u.kind==='human'){const p=ART.portrait(u.g);cv.getContext('2d').drawImage(p,0,0,80,100,0,0,w,h*100/90);if(mood)cv.classList.add('m-'+mood);return cv;}
- anim(cv,(ctx,t)=>{ctx.clearRect(0,0,w,h);ctx.fillStyle='#202d2f';ctx.fillRect(0,0,w,h);if(u.kind==='rooster')ART.rooster(ctx,u.R,{t,mood:mood||'idle',w,h,size:h*.62,x:w/2,y:h*.93,seed:u.R.seed%7});else ART.lion(ctx,u.L,{t,mood:mood||'idle',x:w*.52,y:h*.94,scale:Math.min(w/150,h/95),seed:3});});return cv;}
+ anim(cv,(ctx,t)=>{ctx.clearRect(0,0,w,h);ctx.fillStyle='#202d2f';ctx.fillRect(0,0,w,h);if(u.kind==='rooster')ART.rooster(ctx,u.R,{t,mood:mood||'idle',w,h,size:h*.62,x:w/2,y:h*.93,seed:u.R.seed%7});else if(u.kind==='dog')DG().portrait(ctx,u.D,{t,mood,x:w/2,y:h*.92,w:w*.9});else ART.lion(ctx,u.L,{t,mood:mood||'idle',x:w*.52,y:h*.94,scale:Math.min(w/150,h/95),seed:3});});return cv;}
 function groupArt(units,w,h){const cv=ART.mk(w,h);cv.className='px';const shown=units.length>5?units.slice(0,3):units,humans=shown.filter(u=>u.kind==='human'),figs=humans.map(u=>ART.figure(u.g,false));let last=-Infinity;
  anim(cv,(ctx,t)=>{if(t-last<.1)return;last=t;ctx.imageSmoothingEnabled=false;ART.arena(ctx,w,h,t,{});const n=shown.length,step=Math.min(w/(n+.4),90),x0=w/2-step*(n-1)/2;
   shown.forEach((u,i)=>{const x=x0+i*step,y=h-4-(i%2)*6;
    if(u.kind==='human'){const f=figs[humans.indexOf(u)],k=Math.min(.5,h/360);ctx.drawImage(f,0,0,240,300,Math.round(x-60*k*2),Math.round(y-300*k),Math.round(240*k),Math.round(300*k));}
    else if(u.kind==='rooster')ART.rooster(ctx,u.R,{t,mood:'focus',w,h,size:h*.22,x,y,seed:i,face:-1});
+   else if(u.kind==='dog')DG().portrait(ctx,u.D,{t,mood:'focus',x,y,w:Math.min(step,90)*.95,face:-1});
    else ART.lion(ctx,u.L,{t,mood:'focus',x,y,scale:h/190,face:-1,seed:i});});});return cv;}
 
 // ---------- Rahmen ----------
@@ -90,7 +92,7 @@ function kinds(){setTitle('HUMAN · ART DES KAMPFES');const bx=C.boxMenu?.()||{o
  anim(b,(ctx,t)=>{ctx.imageSmoothingEnabled=false;if(!C.boxCard?.(ctx,t,300,170)){ART.arena(ctx,300,170,t,{night:1});}if(!bx.ok){ctx.fillStyle='rgba(10,6,4,.55)';ctx.fillRect(0,0,300,170);}});}
 
 // ---------- 2 · BEAST: Tierklassen ----------
-const SPECIES=[{key:'hahn',label:'Hahn',ok:true,txt:'Federn, Sporen, schlechte Laune'},{key:'hund',label:'Hund',ok:false,txt:'Molosser aus Epirus'},{key:'baer',label:'Bär',ok:false,txt:'Braunbär aus Dakien'},{key:'loewe',label:'Löwe',ok:true,txt:'Der König des Sandes'},{key:'tiger',label:'Tiger',ok:false,txt:'Gestreifter Tod aus Hyrkanien'}];
+const SPECIES=[{key:'hahn',label:'Hahn',ok:true,txt:'Federn, Sporen, schlechte Laune'},{key:'hund',label:'Hund',ok:true,txt:'Zähne, Fell, kein Gewissen'},{key:'baer',label:'Bär',ok:false,txt:'Braunbär aus Dakien'},{key:'loewe',label:'Löwe',ok:true,txt:'Der König des Sandes'},{key:'tiger',label:'Tiger',ok:false,txt:'Gestreifter Tod aus Hyrkanien'}];
 function beast(){setTitle('BEAST · TIERKÄMPFE');
  view.innerHTML=`<section class="an-hero"><p class="eyebrow">Mit welchen Tieren trittst du an?</p></section><div class="an-species">${SPECIES.map(s=>{const lk=s.ok&&lockMsg(s.key);return `<button class="an-sp${s.ok&&!lk?'':' locked'}" data-a="${lk?'lockedmsg:'+s.key:s.ok?'species:'+s.key:'locked:'+s.key}"><canvas width="150" height="104" class="px"></canvas><b>${s.label}</b><small>${lk?'gesperrt':s.ok?s.txt:'BALD · noch nicht spielbar'}</small>${s.ok&&!lk?'':'<i class="an-lock">🔒</i>'}</button>`;}).join('')}</div>
  <p class="an-note">Gegner können aus jeder Art stammen: Deine Tiere treffen auch auf Gladiatoren, Löwen oder Hähne.</p>`;
@@ -99,7 +101,7 @@ function beast(){setTitle('BEAST · TIERKÄMPFE');
   if(s.key==='hahn')ART.rooster(ctx,R,{t,mood:'proud',w:150,h:104,size:58,x:75,y:96});
   else if(s.key==='loewe')ART.lion(ctx,L,{t,mood:'proud',x:82,y:98,scale:.66,face:-1});
   else if(s.key==='tiger'){ART.tiger(ctx,t,80,98,.62);}
-  else if(s.key==='baer')ART.bear(ctx,t,66,96,1);else ART.dog(ctx,t,70,96,1.1);
+  else if(s.key==='baer')ART.bear(ctx,t,66,96,1);else{const D=(C.dogs||[]).find(d=>!d.dead);if(D&&DG()?.portrait)DG().portrait(ctx,D,{t,mood:'proud',x:75,y:96,w:120,face:-1});else ART.dog(ctx,t,70,96,1.1);}
   if(!s.ok||lockMsg(s.key))ART.locked(ctx);}));}
 
 // ---------- 3 · Gruppe und Herausforderungen ----------
@@ -117,7 +119,7 @@ function fillChallenges(units){const job=++challengeJob;if(!units.length)return;
  if(missing.length)requestAnimationFrame(step);}
 const allChall=()=>[...(U.extra||[]),...(U.chall||[])];
 function hub(){const units=team(),all=pool().map(withKey);ensureChallenges(units);U.extra=units.length?C.extraChallenges?.(units)||[]:[];
- setTitle(U.mode==='human'?'HUMAN · GLADIATOREN':U.species==='loewe'?'BEAST · LÖWEN':'BEAST · HÄHNE');
+ setTitle(U.mode==='human'?'HUMAN · GLADIATOREN':U.species==='loewe'?'BEAST · LÖWEN':U.species==='hund'?'BEAST · HUNDE':'BEAST · HÄHNE');
  const okN=all.filter(fit).length,kw=CH.teamKW(units);
  view.innerHTML=`<section class="an-panel an-group"><header><p class="eyebrow">Deine Gruppe</p><div class="an-toggle" role="group" aria-label="Gruppenauswahl"><button class="${U.auto?'on':''}" data-a="auto:1">AUTO</button><button class="${U.auto?'':'on'}" data-a="auto:0">MANUELL</button></div></header>
   <div class="an-sizes">${SIZES().map(n=>`<button class="${U.size===n?'on':''}" data-a="size:${n}" ${n>Math.max(1,okN)?'disabled':''}>${n}</button>`).join('')}<span class="an-kw">KW <b>${kw}</b></span></div>
@@ -137,15 +139,15 @@ function card(c,i){const show=i<0||shownLevels().includes(c.level);if(!show)retu
   <h3>${esc(c.name)}</h3><p class="comp">${esc(comp)}</p><p class="desc">${esc(c.desc)}</p>
   <div class="meter" title="Kampfwert"><span>Ihr ${c.ownKW}</span><i><i style="width:${cl(50*c.enemyKW/Math.max(1,c.ownKW),4,100)}%"></i></i><span>Gegner ${c.enemyKW}</span></div>
   <div class="gold"><span class="win"><small>SIEG</small><b>${c.gold.win}</b></span><span class="loss"><small>NIEDERLAGE bis</small><b>${c.gold.lossMax}</b></span></div>${special?`<button class="an-accept" data-a="chall:${c.id}">⚔ HERAUSFORDERUNG ANNEHMEN</button>`:''}</div></${special?'div':'button'}>`;}
-function summary(enemy){const n={human:0,rooster:0,lion:0};for(const u of enemy)n[u.kind]++;const p=[];if(n.human)p.push(n.human+(n.human===1?' Gladiator':' Gladiatoren'));if(n.lion)p.push(n.lion+(n.lion===1?' Löwe':' Löwen'));if(n.rooster)p.push(n.rooster+(n.rooster===1?' Hahn':' Hähne'));return p.join(' · ');}
+function summary(enemy){const n={human:0,rooster:0,lion:0,dog:0};for(const u of enemy)n[u.kind]++;const p=[];if(n.dog)p.push(n.dog+(n.dog===1?' Hund':' Hunde'));if(n.human)p.push(n.human+(n.human===1?' Gladiator':' Gladiatoren'));if(n.lion)p.push(n.lion+(n.lion===1?' Löwe':' Löwen'));if(n.rooster)p.push(n.rooster+(n.rooster===1?' Hahn':' Hähne'));return p.join(' · ');}
 
 // ---------- 4 · Gegnerpräsentation ----------
 function present(c){U.sel=c;stopSpy();if(C.present?.(c,()=>{root.hidden=false;prep(c);})){layer.innerHTML='';root.hidden=true;return;}const ownE=CH.teamE(team());const list=c.enemy.slice(0,8);let i=-1,timer=0;
  layer.innerHTML=`<div class="an-pres" role="dialog" aria-label="Gegnerpräsentation"><div class="an-pstage"><canvas width="320" height="200" class="px"></canvas><div class="an-pcap"></div></div><div class="an-pdots">${list.map(()=>'<i></i>').join('')}</div><div class="an-pbtns"><button data-a="pskip">Überspringen</button><button class="gold" data-a="pnext">Weiter ▸</button></div></div>`;
  const cv=layer.querySelector('canvas'),cap=layer.querySelector('.an-pcap'),dots=layer.querySelectorAll('.an-pdots i');let t0=0,cur=null,fig=null;
  const next=()=>{i++;clearTimeout(timer);if(i>=list.length){U.pres=null;layer.innerHTML='';prep(c);return;}cur=list[i];t0=performance.now()/1000;fig=cur.kind==='human'?ART.figure(cur.g,true):null;dots.forEach((d,k)=>d.className=k<i?'done':k===i?'on':'');
-  const u=cur,info=u.kind==='human'?humanInfo(u.g):u.kind==='rooster'?roosterInfo(u.R):lionInfo(u.L);
-  cap.innerHTML=`<p class="eyebrow">${i===0?'IN DER ROTEN ECKE':'UND AN SEINER SEITE'}</p><h2>${esc(name(u))}</h2><p class="cls">${esc(info.cls)} · KW ${CH.kw(u)}</p>${u.kind==='lion'?'':(window.MG?.buyOdds?.mini(u.kind,u.kind==='human'?u.g:u.R)||'')}<ul>${info.rows.map(r=>`<li><span>${esc(r[0])}</span><b>${esc(r[1])}</b></li>`).join('')}</ul><p class="threat">„${esc(CH.threat(u,ownE))}“</p>`;cap.classList.remove('in');void cap.offsetWidth;cap.classList.add('in');
+  const u=cur,info=u.kind==='human'?humanInfo(u.g):u.kind==='rooster'?roosterInfo(u.R):u.kind==='dog'?dogInfo(u.D):lionInfo(u.L);
+  cap.innerHTML=`<p class="eyebrow">${i===0?'IN DER ROTEN ECKE':'UND AN SEINER SEITE'}</p><h2>${esc(name(u))}</h2><p class="cls">${esc(info.cls)} · KW ${CH.kw(u)}</p>${u.kind==='lion'||u.kind==='dog'?'':(window.MG?.buyOdds?.mini(u.kind,u.kind==='human'?u.g:u.R)||'')}<ul>${info.rows.map(r=>`<li><span>${esc(r[0])}</span><b>${esc(r[1])}</b></li>`).join('')}</ul><p class="threat">„${esc(CH.threat(u,ownE))}“</p>`;cap.classList.remove('in');void cap.offsetWidth;cap.classList.add('in');
   timer=setTimeout(()=>{if(U.pres)next();},5200);};
  U.pres={next,skip:()=>{clearTimeout(timer);U.pres=null;layer.innerHTML='';prep(c);}};
  anim(cv,(ctx,t)=>{if(!cur)return;const k=t-(t0-(performance.now()/1000-t))||0,lt=performance.now()/1000-t0;ctx.imageSmoothingEnabled=false;
@@ -156,6 +158,7 @@ function present(c){U.sel=c;stopSpy();if(C.present?.(c,()=>{root.hidden=false;pr
    // Gitter hebt sich (wie beim Löwenkampf)
    const gate=Math.min(1,lt/1.1);
    if(cur.kind==='lion'){const zoom=1.25+Math.min(.5,lt*.12);ART.lion(ctx,cur.L,{t,mood:lt>1.2?'proud':'focus',x:170,y:196,scale:zoom,face:-1});}
+   else if(cur.kind==='dog')DG().portrait(ctx,cur.D,{t,mood:lt>1.2?'proud':'focus',x:170,y:194,w:200+Math.min(60,lt*20),face:-1});
    else ART.rooster(ctx,cur.R,{t,mood:lt>.9?'proud':'focus',w:320,h:200,size:150,x:160,y:196,view:lt<2.4?'front':'side',face:-1});
    ctx.fillStyle='#1d140e';for(let gx=0;gx<320;gx+=16){ctx.fillRect(gx,-200*gate,4,200);}ctx.fillRect(0,-200*gate+190,320,6);}
   ctx.fillStyle='rgba(0,0,0,.0)';});
@@ -164,6 +167,7 @@ function gearList(g){const out=[];for(const s of ['weapon','secondary','shield']
 function humanInfo(g){const top=Object.entries(g.stats).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k])=>({strength:'Stärke',stamina:'Ausdauer',condition:'Kondition',agility:'Beweglichkeit',dexterity:'Geschick',reflex:'Reflexe',precision:'Präzision',block:'Blocken',balance:'Gleichgewicht',toughness:'Härte',pain:'Schmerz',will:'Wille',aggression:'Aggression',tactics:'Taktik',teamwork:'Teamarbeit',experience:'Erfahrung',morale:'Moral'})[k]||k);
  return {cls:g.role+' · '+g.age+' Jahre · '+g.height+' cm',rows:[['Ausrüstung',gearList(g)],['Auffällig',[...(g.traits||[]),...top].slice(0,3).join(', ')||'–'],['Bilanz',(g.wins||0)+' Siege · '+(g.kills||0)+' Tote']]};}
 function roosterInfo(R){const best=Object.entries(R.stats).sort((a,b)=>b[1]-a[1])[0][0];return {cls:'Kampfhahn · '+R.quality.title,rows:[['Körper',R.height+' cm · '+R.weight.toFixed(1).replace('.',',')+' kg'],['Stärkste Seite',({groesse:'Größe',kraft:'Kraft',schnabelkraft:'Schnabelkraft',klauenstaerke:'Klauenstärke',geschwindigkeit:'Geschwindigkeit',zaehigkeit:'Zähigkeit'})[best]],['Angriffe','Picken '+R.moves.peck+' · Krallen '+R.moves.claw]]};}
+function dogInfo(D){const s=D.stats,c=DG().condHealth(D);return {cls:'Hund · '+D.breedName+' · '+D.sex,rows:[['Körper',D.height+' cm · '+D.weight+' kg · '+D.ageYears+' Jahre'],['Werte','Kraft '+Math.round(s.kraft)+' · Biss '+Math.round(s.biss)+' · Tempo '+Math.round(s.tempo)+' · Mut '+Math.round(s.mut)],['Zustand','Gesundheit '+Math.round(c)+' %'+((D.wins||D.kills)?' · '+(D.wins||0)+' Siege, '+(D.kills||0)+' Tote':'')]]};}
 function lionInfo(L){const c=L.condition,s=L.stats;return {cls:'Löwe · '+L.epithet,rows:[['Zustand',(c.health<70?'verletzt':c.hunger>60?'ausgehungert':'kräftig')+' · Gesundheit '+c.health+' %'+(c.rear<70?' · lahmt':'')],['Werte','Kraft '+s.kraft+' · Tempo '+s.tempo+' · Zähigkeit '+s.zaeh],['Ruf',(L.kills||0)+' Menschen getötet · '+L.ageYears+' Jahre']]};}
 
 // ---------- 5 · Kampfvorbereitung (eine Seite: Gegner, Gruppe, Spionage, Start) ----------
@@ -188,7 +192,7 @@ function onWorker(w,d){if(d.ready){w.ready=true;SPY.ready++;const r=SPY.res;if(r
 let thr=0;function throttle(){if(thr)return;thr=setTimeout(()=>{thr=0;spyLine();if(layer.querySelector('.an-spy'))spyPaint();},250);}
 // Für die Spione: Ausrüstung aus dem Lager direkt an die Kopie hängen (der Worker kennt das Lager nicht)
 function gearCopy(g){const j=x=>x==null?null:JSON.parse(JSON.stringify(x));const c=j(g);if(!g.enemyGear){let a=[];try{a=M.armorItems(g);}catch{}c.enemyGear={weapon:j(M.gear(g,'weapon')),secondary:j(M.gear(g,'secondary')),shield:j(M.gear(g,'shield')),armor:Object.fromEntries(a.map(i=>[i.def,j(i)]))};}return c;}
-function specFor(c,copy){const j=x=>copy?JSON.parse(JSON.stringify(x)):x;const m=u=>({kind:u.kind,key:u.key,row:u.row||'front',...(u.kind==='human'?{g:copy?gearCopy(u.g):u.g}:u.kind==='rooster'?{R:j(u.R)}:{L:j(u.L)})});return {title:c.name,blue:team().map(m),red:c.enemy.map(m)};}
+function specFor(c,copy){const j=x=>copy?JSON.parse(JSON.stringify(x)):x;const m=u=>({kind:u.kind,key:u.key,row:u.row||'front',...(u.kind==='human'?{g:copy?gearCopy(u.g):u.g}:u.kind==='rooster'?{R:j(u.R)}:u.kind==='dog'?{D:j(u.D)}:{L:j(u.L)})});return {title:c.name,blue:team().map(m),red:c.enemy.map(m)};}
 function startSpy(c){SPY.want=team().length>=10?10:100;pool0();const spec=specFor(c,true),key=c.id+'|'+spec.blue.map(u=>u.key+u.row).join(',');if(SPY.res?.key===key)return;stopSpy();
  SPY.res={id:++SPY.job,key,c,n:0,win:0,draw:0,time:0,u:{},rows:Object.fromEntries(spec.blue.map(u=>[u.key,u.row])),started:performance.now()};
  const job={id:SPY.res.id,spec};SPY.res.job=job;if(SPY.failed)return;for(const w of SPY.workers)if(w.ready)send(w,job);}
@@ -218,7 +222,7 @@ function spyBuild(){const box=layer.querySelector('.an-spy');if(!box)return;cons
   const cv=d.querySelector('canvas'),fig=u.kind==='human'?ART.figure(u.g,true):null;
   anim(cv,(ctx,t)=>{const a=SPY.res?.u[u.key],surv=a&&a.n>=5?1-a.d/a.n:null,m=surv==null?'focus':moodOf(surv);d.dataset.mood=surv==null?'':m;
    if(u.kind==='human'){ART.face(ctx,u.g,{t,mood:surv==null?'calm':faceMood(surv),team:0,yaw:Math.sin(t*.5)*.6+(m==='fear'?Math.sin(t*7)*.15:0)});}
-   else{ctx.imageSmoothingEnabled=false;ART.arena(ctx,150,100,t,{});ctx.fillStyle='rgba(10,6,4,.35)';ctx.fillRect(0,0,150,100);if(u.kind==='rooster')ART.rooster(ctx,u.R,{t,mood:m,w:150,h:100,size:62,x:75,y:96,seed:3});else ART.lion(ctx,u.L,{t,mood:m,x:80,y:98,scale:.66,face:-1});}});}
+   else{ctx.imageSmoothingEnabled=false;ART.arena(ctx,150,100,t,{});ctx.fillStyle='rgba(10,6,4,.35)';ctx.fillRect(0,0,150,100);if(u.kind==='rooster')ART.rooster(ctx,u.R,{t,mood:m,w:150,h:100,size:62,x:75,y:96,seed:3});else if(u.kind==='dog')DG().portrait(ctx,u.D,{t,mood:m,x:75,y:94,w:120,face:-1});else ART.lion(ctx,u.L,{t,mood:m,x:80,y:98,scale:.66,face:-1});}});}
  spyPaint();}
 function spyPaint(){const box=layer.querySelector('.an-spy');if(!box)return;const r=SPY.res,c=U.sel;
  const prog=box.querySelector('#anProg'),pt=box.querySelector('#anProgT');if(r){prog.style.width=(r.n/SPY.want*100)+'%';pt.textContent=r.done?r.n+' Probekämpfe ausgewertet · Ø '+Math.round(r.time/Math.max(1,r.n))+' s Kampfdauer':'Probekampf '+r.n+' von '+SPY.want+' …';}
@@ -273,7 +277,7 @@ root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)r
   case 'kind':if(v==='box'){U.mode='human';go('box');}else{U.mode='human';U.species=null;U.size=3;U.picked=[];U.chall=null;go('hub');}break;
   case 'kindlock':M.ui?.notify?.(C.boxMenu?.()?.msg||'Boxkämpfe sind noch gesperrt.');break;
   case 'classic':C.classic?.();break;
-  case 'species':if(!(v==='loewe'?C.lions:C.roosters).some(x=>!x.dead)){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(v==='loewe'?'Du besitzt noch keinen Löwen. Der Tierhändler kommt später.':'Du besitzt noch keine Hähne. Der Tierhändler kommt später.');break;}U.mode='beast';U.species=v;U.size=v==='loewe'?1:3;U.picked=[];U.chall=null;go('hub');break;
+  case 'species':if(!(v==='loewe'?C.lions:v==='hund'?(C.dogs||[]):C.roosters).some(x=>!x.dead)){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(v==='loewe'?'Du besitzt noch keinen Löwen. Der Tierhändler kommt später.':v==='hund'?'Du besitzt noch keinen Hund. Der Hundsgraf hat Aufträge (Beastrium).':'Du besitzt noch keine Hähne. Der Tierhändler kommt später.');break;}U.mode='beast';U.species=v;U.size=v==='loewe'||v==='hund'?1:3;U.picked=[];U.chall=null;go('hub');break;
   case 'locked':el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');break;
   case 'lockedmsg':el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(lockMsg(v));break;
   case 'auto':{const cur=team().map(u=>u.key);U.auto=v==='1';if(!U.auto&&!U.picked.length)U.picked=cur;render();break;}
@@ -305,7 +309,7 @@ root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)r
 layer.addEventListener('click',e=>{if(e.target.closest('.an-pstage')&&U.pres)U.pres.next();});
 root.addEventListener('click',e=>{if(e.target.closest('#anLayer [data-a]')){/* über root behandelt */}});
 // „Held des Kampfes“ des Moderators kennt nur Menschen (Gesicht, Trophäe) – in Kämpfen mit Tieren auslassen
-{const base=M.fixedStep;M.fixedStep=function(){const b=S.battle,f=b?.finale;if(!b?.neu||!f||!b.actors.some(a=>a.lion||a.hahn))return base.apply(this,arguments);const had=document.body.classList.contains('bhud');document.body.classList.remove('bhud');try{return base.apply(this,arguments);}finally{if(had)document.body.classList.add('bhud');}};}
+{const base=M.fixedStep;M.fixedStep=function(){const b=S.battle,f=b?.finale;if(!b?.neu||!f||!b.actors.some(a=>a.lion||a.hahn||a.dog))return base.apply(this,arguments);const had=document.body.classList.contains('bhud');document.body.classList.remove('bhud');try{return base.apply(this,arguments);}finally{if(had)document.body.classList.add('bhud');}};}
 if(C.startHidden)root.hidden=true;
 U.prep=c=>{root.hidden=false;prep(c);};U.render=()=>render();U.go=go;
 U.open=()=>{root.hidden=false;if(U.screen==='result'&&!U.result)U.screen='home';render();};U.close=()=>{root.hidden=true;stopSpy();for(const w of SPY.workers)w.terminate();SPY.workers=[];SPY.ready=0;ART.clearFigures();layer.innerHTML='';};U.isOpen=()=>!root.hidden;

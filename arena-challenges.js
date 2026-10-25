@@ -2,7 +2,7 @@
 // =====================================================================================================
 // ARENA-NEU · HERAUSFORDERUNGEN, KAMPFWERT UND GOLD (nur Testversion)
 // · Kampfwert (KW) aller Kämpfer auf einer Skala: Menschen = M.power (Kampfwert des Spiels),
-//   Hähne und Löwen als „gleich starker Mensch“ (in Probekämpfen mit dem echten Kampfsystem geeicht, tests/calibrate.cjs)
+//   Hähne, Löwen und Hunde als „gleich starker Mensch“ (in Probekämpfen mit dem echten Kampfsystem geeicht, tests/calibrate.cjs)
 // · Gruppenstärke E = Σ (KW/30)^γ, Siegchance-Schätzung p = 1 / (1 + (E_Gegner/E_eigen)^k)
 // · Herausforderungen je Schwierigkeitsstufe: Gegner werden so gebaut, dass E_Gegner ≈ Faktor × E_eigen
 // · Gold: Siegprämie aus Gegnerstärke, Siegchance und Tödlichkeit; Antrittsgeld nur anteilig nach geleistetem Kampf
@@ -23,6 +23,7 @@ const lionScore=L=>{const s=L.stats,c=L.condition;return Math.max(.05,Math.pow((
 function strength(u){
  if(u.kind==='human')return Math.pow(Math.max(.1,M.power(u.g))/30,P.gamma)*cl(u.g.blood/100,.005,1)*cl(1-u.g.fatigue/125,.2,1);
  if(u.kind==='rooster')return P.cr*Math.pow(roosterScore(u.R),P.gr)*cl(u.R.blood/100,.005,1)*cl(1-u.R.fatigue/125,.2,1);
+ if(u.kind==='dog')return Math.pow(window.DOG.kw(u.D)/30,P.gamma);// Hunde: Kampfwert aus hund.js (DOG.kw, geschätzt aus der Abstimmung des Hunde-Prototyps)
  return P.cl*Math.pow(lionScore(u.L),P.gl)*cl(u.L.condition.blood/100,.05,1);}
 const kwOf=e=>Math.round(30*Math.pow(Math.max(1e-4,e),1/P.gamma));
 function kw(u){return kwOf(strength(u));}
@@ -72,7 +73,12 @@ Object.assign(CH,{gladiator,tune,lion,scaleLion,rooster,LION_KINDS});
 
 // ---------- Vorlagen der Gegnergruppen ----------
 // Jede Vorlage baut aus der Zielstärke E eine Gruppe; null, wenn das mit dieser Tierart nicht sinnvoll geht.
-const unit=(kind,data,i)=>({kind,key:'e'+i+'-'+Math.floor(Math.random()*1e6).toString(36),row:'front',[kind==='human'?'g':kind==='rooster'?'R':'L']:data});
+const unit=(kind,data,i)=>({kind,key:'e'+i+'-'+Math.floor(Math.random()*1e6).toString(36),row:'front',[kind==='human'?'g':kind==='rooster'?'R':kind==='dog'?'D':'L']:data});
+// Hunde (Hundefang): Rasse nach Zielstärke wählen, frisch gewürfelt, dann Istwerte strecken, bis der Kampfwert passt
+function dog(r,kwTarget){const B=window.DOG.BREEDS,q=cl((kwTarget-33)/14,-1,6),pool=B.filter(b=>Math.abs(window.DOG.targetQ(b.soll)-q)<=1.2),b=pick(r,pool.length?pool:B),D=window.DOG.create(b.id,Math.floor(r()*4294967295));
+ for(let i=0;i<8;i++){const now=window.DOG.kw(D,false);if(Math.abs(now-kwTarget)<1.5)break;const f=cl(Math.pow(kwTarget/now,.9),.6,1.6);for(const k in D.stats)D.stats[k]=cl(Math.round(D.stats[k]*f),3,99);for(const k in D.caps)D.caps[k]=Math.max(D.caps[k],D.stats[k]);}
+ return D;}
+function dogGroup(r,E,n){if(!window.DOG)return null;const k=kwForE(E/n);if(k<10||k>170)return null;return Array.from({length:n},(_,i)=>unit('dog',dog(r,k),i));}
 const kwForE=e=>30*Math.pow(e,1/P.gamma);
 const qForKW=k=>cl((k-33)/14,0,6);
 function humanGroup(r,E,n,roles){const out=[];for(let i=0;i<n;i++){const k=kwForE(E/n);if(n!==10&&(k<16||k>160))return null;const role=roles?roles[i%roles.length]:(i>0&&r()<.25?pick(r,['Assassine','Fernkämpfer']):'Soldat');out.push(unit('human',gladiator(r,{q:qForKW(k),role,kwTarget:k}),i));}
@@ -88,8 +94,10 @@ const TEMPLATES={
  loewe:{label:'Ein Löwe',beast:true,build:(r,E)=>lionGroup(r,E,1)},
  rudel:{label:'Löwenrudel',beast:true,build:(r,E,N)=>N>=2?lionGroup(r,E,2):null},
  haehne:{label:'Kampfhähne',beast:true,build:(r,E)=>{for(const n of [3,4,5,2,6,7,8]){const g=roosterGroup(r,E,n);if(g)return g;}return null;}},
+ hund:{label:'Ein Hund',beast:true,build:(r,E)=>dogGroup(r,E,1)},
+ meute:{label:'Hundemeute',beast:true,build:(r,E,N)=>N>=2?dogGroup(r,E,Math.min(5,N+(r()<.5?0:1))):dogGroup(r,E,2)},
  baendiger:{label:'Tierbändiger',beast:true,build:(r,E)=>{const h=humanGroup(r,E*.55,1,['Soldat']);if(!h)return null;const t=r()<.5?lionGroup(r,E*.45,1,null):(()=>{for(const n of [2,3,4,5]){const g=roosterGroup(r,E*.45,n);if(g)return g;}return null;})();return t?[...h,...t.map((u,i)=>({...u,key:'t'+i+u.key}))]:null;}}};
-CH.TEMPLATES=TEMPLATES;
+CH.TEMPLATES=TEMPLATES;CH.dog=dog;
 
 // ---------- Fünf Schwierigkeitsstufen ----------
 const LEVELS=[
@@ -102,13 +110,15 @@ CH.LEVELS=LEVELS;
 // Four distinct offers per level, twenty offers in the existing two views.
 const RATIOS=[[.12,.18,.25,.33],[.45,.57,.70,.84],[.94,1.02,1.10,1.18],[1.35,1.55,1.78,2.02],[2.30,2.60,3.00,3.50]];
 CH.levelRatio=(level,variant)=>RATIOS[LEVELS.indexOf(level)]?.[variant]??level.ratio;
-CH.signature=units=>JSON.stringify(units.map(u=>[u.key,u.row,u.kind==='human'?[u.g.stats,u.g.moves,u.g.mastery,u.g.body,u.g.blood,u.g.fatigue,u.g.height,u.g.weight,['weapon','secondary','shield'].map(k=>M.gear(u.g,k)),M.armorItems(u.g)]:u.kind==='rooster'?u.R:u.L]));
+CH.signature=units=>JSON.stringify(units.map(u=>[u.key,u.row,u.kind==='human'?[u.g.stats,u.g.moves,u.g.mastery,u.g.body,u.g.blood,u.g.fatigue,u.g.height,u.g.weight,['weapon','secondary','shield'].map(k=>M.gear(u.g,k)),M.armorItems(u.g)]:u.kind==='rooster'?u.R:u.kind==='dog'?u.D:u.L]));
 
 // Welche Gegner zu welcher eigenen Gruppe passen (Tierkämpfe sollen nicht überwiegen)
 // Gegner meist von derselben Art wie die eigene Gruppe; Mensch gegen Tier (und umgekehrt) nur als Ausnahme (CH.CROSS = 5 % je Herausforderung)
 CH.CROSS=.05;
 function weights(ownKind,cross){
- if(ownKind==='human')return cross?{loewe:1.4,rudel:.4,haehne:1,baendiger:.9}:{gladiatoren:5,champion:1.4,schuetzen:2};
+ if(ownKind==='human')return cross?{loewe:1.4,rudel:.4,haehne:1,baendiger:.9,...(window.DOG?{hund:1,meute:.8}:{})}:{gladiatoren:5,champion:1.4,schuetzen:2};
+ // Hunde kämpfen gegen Hunde und Menschen (nicht gegen Hähne oder Löwen: deren Kampfsysteme kennen keine Hunde)
+ if(ownKind==='dog')return cross?{gladiatoren:1.2,champion:1.4}:{hund:2,meute:1.2,champion:1,gladiatoren:.6};
  if(ownKind==='rooster')return cross?{gladiatoren:1,champion:1.2,baendiger:.8,loewe:.6}:{haehne:1};
  return cross?{gladiatoren:2,schuetzen:1,champion:1,haehne:.6,baendiger:.6}:{loewe:2,rudel:1};}
 function weighted(r,w){let s=0;for(const v of Object.values(w))s+=v;let x=r()*s;for(const [k,v] of Object.entries(w)){x-=v;if(x<=0)return k;}return Object.keys(w)[0];}
@@ -136,14 +146,16 @@ const NAMES={
  loewe:['Das Tier','Mahlzeit für einen','Hunger aus Numidien','Brüllen im Sand'],
  rudel:['Das Rudel','Zwei Mäuler, ein Hunger','Familientreffen','Königliche Hoheiten'],
  haehne:['Federn und Wut','Der Hühnerhof','Krallen im Morgengrauen','Die Gefiederten','Sonntagsbraten mit Sporen'],
- baendiger:['Der Bändiger','Herr und Hund – ähm, Hahn','Mensch und Bestie','Der Wärter und sein Liebling']};
+ baendiger:['Der Bändiger','Herr und Hund – ähm, Hahn','Mensch und Bestie','Der Wärter und sein Liebling'],
+ hund:['Der Köter','Ein Maul voll Zähne','Der Hof hat Hunger','Bester Freund des Totengräbers'],
+ meute:['Die Meute','Rudel ohne Herrchen','Bellen im Sand','Futterneid']};
 const DESC={
  0:['Das Publikum gähnt schon bei der Ankündigung.','Ein Aufwärmen. Für die Gegner eher ein Abschied.','Der Veranstalter nennt es „Schaukampf“. Die Gegner nennen es Pech.'],
  1:['Machbar, wenn niemand stolpert.','Eine ehrliche Prüfung mit ehrlichem Lohn.','Gute Gelegenheit, Narben zu sammeln, die man vorzeigen kann.'],
  2:['Auf Messers Schneide. Die Buchmacher streiten noch.','Gleich gegen gleich. Der Sand entscheidet.','Ein fairer Kampf – also einer, bei dem beide Seiten bluten.'],
  3:['Die Gegner sind besser. Die Prämie auch.','Wer hier gewinnt, wird besungen. Wer verliert, beerdigt.','Mutig. Oder dumm. Die Grenze ist im Sand nicht markiert.'],
  4:['Selbstmord mit Eintrittskarten.','Die Totengräber haben heute Überstunden angemeldet.','Hier gewinnt man Ruhm – oder einen Platz in der Hall of the Fallen.']};
-const BEAST_DESC={loewe:'Ein Löwe kennt keine Regeln, nur Hunger.',rudel:'Mehrere Löwen. Ein einzelner wäre schon genug Ärger.',haehne:'Klein, gemein und erstaunlich gut bewaffnet.',baendiger:'Ein Mensch mit einem Tier an der Kette. Fragt sich, wer wen führt.'};
+const BEAST_DESC={hund:'Ein Hund. Wer ihn unterschätzt, zählt danach seine Finger.',meute:'Mehrere Hunde. Sie greifen von hinten an, wenn vorn jemand beschäftigt ist.',loewe:'Ein Löwe kennt keine Regeln, nur Hunger.',rudel:'Mehrere Löwen. Ein einzelner wäre schon genug Ärger.',haehne:'Klein, gemein und erstaunlich gut bewaffnet.',baendiger:'Ein Mensch mit einem Tier an der Kette. Fragt sich, wer wen führt.'};
 
 // ---------- Target-matched fallback, using actual opponent stats and condition ----------
 function matchedGroup(r,target,N,kind){
@@ -151,7 +163,7 @@ function matchedGroup(r,target,N,kind){
  for(let pass=0;pass<5;pass++){
   const per=target/count,k=kwForE(per);
   const enemy=Array.from({length:count},(_,i)=>{
-   const data=kind==='human'?gladiator(r,{q:qForKW(k),role:i%4===3?'Assassine':'Soldat'}):kind==='rooster'?rooster(r,{}):lion(r,{});
+   const data=kind==='human'?gladiator(r,{q:qForKW(k),role:i%4===3?'Assassine':'Soldat'}):kind==='rooster'?rooster(r,{}):kind==='dog'?dog(r,k):lion(r,{});
    if(kind==='human'&&k<20)data.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};
    return {...unit(kind,data,i),row:count>6&&i>=Math.ceil(count/2)?'back':'front'};
   });
@@ -162,6 +174,7 @@ function matchedGroup(r,target,N,kind){
      g.blood=1+99*healthy;g.fatigue=100*(1-healthy);
      if(g.caps){for(const group of ['stats','moves'])for(const key in g[group])g.caps[group][key]=Math.max(g.caps[group][key]||0,g[group][key]);for(const key in g.mastery)g.caps.weapons[key]=Math.max(g.caps.weapons[key]||0,g.mastery[key]);}
     }else if(u.kind==='rooster'){const R=u.R;for(const group of ['stats','moves'])for(const key in R[group]){R[group][key]=stat;R.caps[group][key]=Math.max(R.caps[group][key],stat);}R.blood=1+99*healthy;R.fatigue=100*(1-healthy);
+    }else if(u.kind==='dog'){const D=u.D,c=window.DOG.cond(D);for(const key in D.stats){D.stats[key]=Math.min(99,stat);D.caps[key]=Math.max(D.caps[key],D.stats[key]);}c.blood=5+95*healthy;
     }else{const L=u.L;for(const key in L.stats)L.stats[key]=Math.min(99,stat);Object.assign(L.condition,{blood:5+95*healthy,health:10+90*healthy,rear:20+80*healthy,hunger:90*(1-healthy)});}
    }
    return teamE(enemy);
@@ -172,7 +185,7 @@ function matchedGroup(r,target,N,kind){
   let lo=0,hi=1,chosen=0,above=null,aboveE=Infinity;
   for(let i=0;i<26;i++){const mid=(lo+hi)/2,E=set(mid),d=Math.abs(Math.log(E/target));if(d<error){error=d;chosen=mid;}if(E>=target&&E<aboveE){above=mid;aboveE=E;}if(E<target)lo=mid;else hi=mid;}
   const current=set(above??chosen),factor=Math.min(1,target/current);
-  for(const u of enemy){if(u.kind==='lion')u.L.condition.blood*=factor;else{const g=u.kind==='human'?u.g:u.R;g.fatigue=cl(125*(1-(1-g.fatigue/125)*factor),0,100);}}
+  for(const u of enemy){if(u.kind==='lion')u.L.condition.blood*=factor;else if(u.kind==='dog')window.DOG.cond(u.D).blood*=factor;else{const g=u.kind==='human'?u.g:u.R;g.fatigue=cl(125*(1-(1-g.fatigue/125)*factor),0,100);}}
   best=enemy;break;
  }
  if(!best)throw Error('Keine passende Gegnergruppe erzeugt');
@@ -184,7 +197,7 @@ function make(own,mode,seed,levels=LEVELS,options={}){
  if(!own.length)return [];
  const savedRng=S.rng;
  try{
- const r=rngOf(seed||Date.now()),Eo=Math.max(1e-6,teamE(own)),N=own.length,ownKind=own.some(u=>u.kind==='lion')?'lion':own.some(u=>u.kind==='rooster')?'rooster':'human',used={},out=[];
+ const r=rngOf(seed||Date.now()),Eo=Math.max(1e-6,teamE(own)),N=own.length,ownKind=own.some(u=>u.kind==='lion')?'lion':own.some(u=>u.kind==='rooster')?'rooster':own.some(u=>u.kind==='dog')?'dog':'human',used={},out=[];
  let previous=options.previous;
  for(const L of levels){
   const requested=options.variant==null?L.ratio:CH.levelRatio(L,options.variant),target=Eo*Math.max(requested,previous?previous.ratio*1.05:0);
@@ -194,7 +207,7 @@ function make(own,mode,seed,levels=LEVELS,options={}){
    const tpl=weighted(r,ww);let enemy=null;try{enemy=TEMPLATES[tpl].build(r,target,N);}catch(e){console.warn(e);}
    if(enemy?.length&&Math.abs(Math.log(teamE(enemy)/target))<.035)best={tpl,enemy};
   }
-  if(!best){const enemy=matchedGroup(r,target,N,ownKind);best={tpl:ownKind==='human'?'gladiatoren':ownKind==='rooster'?'haehne':enemy.length>1?'rudel':'loewe',enemy};}
+  if(!best){const enemy=matchedGroup(r,target,N,ownKind);best={tpl:ownKind==='human'?'gladiatoren':ownKind==='rooster'?'haehne':ownKind==='dog'?(enemy.length>1?'meute':'hund'):enemy.length>1?'rudel':'loewe',enemy};}
   used[best.tpl]=(used[best.tpl]||0)+1;
   const p=pWin(own,best.enemy),g=gold(own,best.enemy,p),enemyE={};for(const u of best.enemy)enemyE[u.key]=strength(u);
   if(previous){g.win=Math.max(g.win,previous.gold.win+5);g.lossMax=Math.max(g.lossMax,previous.gold.lossMax);}
@@ -214,6 +227,7 @@ CH.threat=(u,ownE)=>{const s=strength(u),rel=s/Math.max(.05,ownE);
   if(k<65)return pick(Math.random,['Erfahren. Wer ihn unterschätzt, wird es nur kurz bereuen.','Die Menge kennt seinen Namen. Seine Gegner meist nur noch seinen Schatten.','Hat mehr Gegner begraben als die meisten Priester.']);
   return pick(Math.random,['Eine lebende Legende. Die Betonung liegt auf „lebend“ – im Gegensatz zu seinen Gegnern.','Wenn er die Arena betritt, rechnen die Totengräber schon mal vor.','Unsere Spione weigerten sich, näher als hundert Schritte heranzugehen.']);}
  if(u.kind==='rooster'){const t=u.R.quality.tier;return t<=2?'Selbst die anderen Hühner haben Mitleid mit ihm.':t<=5?'Ein Hahn. Unterschätzen Sie nie, was Sporen an einem Knöchel anrichten.':'Kein Hahn, ein Gerücht mit Federn. Die Sporen sind gewetzt.';}
+ if(u.kind==='dog'){const D=u.D,T=window.HF_TEXT?.RASSEN?.[D.breed];return T?T.notiz:'Ein Hund. Mehr Zähne als Manieren.';}
  const L=u.L;return L.kind==='verletzt'?'Humpelt. Blutet. Ist trotzdem ein Löwe.':L.kind==='alt'?'Alt, müde und schlecht gelaunt – eine gefährliche Mischung.':L.kind==='hunger'?'Seit Tagen nichts gefressen. Sie sind sein Menü.':L.kind==='menschen'?'Hat Geschmack an Menschen gefunden. Er bevorzugt sie lebend.':L.kind==='koenig'?'Ein König der Wüste. Er verneigt sich vor niemandem – auch nicht vor dem Kaiser.':'Jung, schnell und völlig ohne Respekt.';};
 window.CHALLENGES_LOADED=true;
 })();
