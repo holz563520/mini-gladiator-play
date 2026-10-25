@@ -410,7 +410,7 @@ const fighters=()=>(S.roster||[]).filter(g=>!g.dead&&!g.smithDuty&&!g.retired&&!
 const fit=g=>{try{return M.army?.eligibility?M.army.eligibility(g).ok:!g.dead;}catch{return !g.dead;}};
 let selJob=0,selG=null;
 function cartPanel(){const s=st(),alive=s.dogs.filter(D=>!D.dead).length,left=usedToday()?0:s.jobs.filter(j=>!j.done).length;
- return `<section class="box hf-cart"><canvas id="hfCartFace" width="160" height="104"></canvas><div><p class="eyebrow">VOR DEM BEASTRIUM · DER KARREN DES HUNDSGRAFEN</p><h2>${esc(TX.NAME)}</h2><q>${esc(TX.BRETT[(S.day+3)%TX.BRETT.length])}</q>
+ return `<section class="box hf-cart"><canvas id="hfCartFace" width="160" height="104" data-action="nav:hundefang" title="Zu den Aufträgen" style="cursor:pointer"></canvas><div><p class="eyebrow">VOR DEM BEASTRIUM · DER KARREN DES HUNDSGRAFEN</p><h2>${esc(TX.NAME)}</h2><q>${esc(TX.BRETT[(S.day+3)%TX.BRETT.length])}</q>
  <div class="buttons"><button class="btn primary" data-action="nav:hundefang">🐕 Aufträge${left?' ('+left+')':' · morgen wieder'}</button><button class="btn" data-action="nav:zwinger">▼ Treppe hinab · Zwinger (${alive} ${alive===1?'Hund':'Hunde'})</button><button class="btn" data-action="hf:intro">Vorstellung ansehen</button></div></div></section>`;}
 function boardPage(){const s=st(),j=s.jobs[selJob]||s.jobs[0],gs=fighters(),used=usedToday();if(!selG||!gs.some(g=>g.id===selG&&fit(g)))selG=gs.filter(fit).sort((a,b)=>(M.power(b)||0)-(M.power(a)||0))[0]?.id||null;
  const quote=used?'Für heute hab ich genug Köter gesehen. Morgen frisst schon der Nächste jemanden.':TX.STUFE[(j?.skulls||1)-1];
@@ -460,7 +460,7 @@ let wait=0;
 const busy=()=>!!document.querySelector('#modal:not([hidden]),.medic-film,.lion-film,.smith-ceremony,.ow-film:not([hidden]),.lesson-start,.lesson-end,.medic-start,.lesson-guide,.lion-guide')||!!window.ArenaUI?.isOpen?.()||F.on;
 const prevTick=M.ludusTick;
 M.ludusTick=function(dt){prevTick?.apply(this,arguments);try{const s=st();if(s.stage==='open')daily();if(s.stage||S.bowyer?.stage!=='done'||S.battle||M.ui.getPage?.()!=='home'||busy()){wait=0;return;}wait+=dt;if(wait>3){wait=0;introFilm(true);}}catch(e){console.error(e);}};
-// Musik: „Beastrium“ während der Filme, am Karren und im Zwinger (audio.js fragt M.hundefang.music)
-M.hundefang={music:()=>F.on||['hundefang','zwinger'].includes(M.ui?.getPage?.()),state:st,intro:()=>introFilm(false),sighting,startFight,openBook,paintPlace,jobDog,daily,get fight(){return fight;},F};
+// Musik: Rabies' Lied, sobald er im Mittelpunkt steht (Filme, Karren/Aufträge), „Beastrium“ unten im Zwinger
+M.hundefang={music:()=>{const p=M.ui?.getPage?.();return F.on||p==='hundefang'?'rabies':p==='zwinger'?'beast':'';},state:st,intro:()=>introFilm(false),sighting,startFight,openBook,paintPlace,jobDog,daily,get fight(){return fight;},F};
 window.HUNDEFANG_READY=true;
 })();
