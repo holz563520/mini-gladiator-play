@@ -104,7 +104,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const nf=(v,d=1)=>Number.isFinite(v)?v.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}):'–';
 let level=8,own=null,opp=null,fight=null,seed=1,speed=1,acc=0,last=performance.now();
 const scene=new BXA.Scene($("stage"));window.__scene=scene;
-const STATS=[['dexterity','Geschick'],['strength','Kraft'],['stamina','Ausdauer'],['reflex','Reflex'],['agility','Beweglichkeit'],['toughness','Härte'],['will','Wille']];
+const STATS=[['dexterity','Geschick'],['strength','Stärke'],['stamina','Ausdauer'],['reflex','Reflex'],['agility','Beweglichkeit'],['toughness','Härte'],['will','Wille']];
 function recruit(mean){const g=M.makeGladiator(0,true);if(mean!==20){for(const [k] of STATS){g.stats[k]=M.bernoulliValue(mean);g.caps.stats[k]=Math.max(g.caps.stats[k],g.stats[k]);}for(const k of ['dodge','backstep']){g.moves[k]=M.bernoulliValue(mean);g.caps.moves[k]=Math.max(g.caps.moves[k],g.moves[k]);}}g.boxing=null;BX.ensureBoxing(g,mean);return g;}
 function newOwn(){own=recruit(+$('mean').value);newOpp();}
 function newOpp(){opp=BX.makeOpponent(own,level,Math.floor(Math.random()*1e9),()=>M.makeGladiator(0,true));opp.enemy=true;cards();figures();}

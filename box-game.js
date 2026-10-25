@@ -2,7 +2,7 @@
 // =====================================================================================================
 // BOXKÄMPFE IM SPIEL · Anschluss von Faustkampf-Modell (box-engine.js), Kampfbild (box-art.js) und Ton (box-sfx.js) an das Hauptspiel
 // · Menü: Arena → HUMAN → ARENAKÄMPFE | BOXKÄMPFE (Bildschirm „kinds“ in arena-ui.js, Boxbildschirme tragen sich über ArenaUI.screens ein).
-// · 1 gegen 1, 15 Gegner von „Prügelknabe“ bis „Mörderisch“, Preisgeld nach Stärke des Gegners, danach Lernwerte (Boxwerte, Kraft, Ausdauer …).
+// · 1 gegen 1, 15 Gegner von „Prügelknabe“ bis „Mörderisch“, Preisgeld nach Stärke des Gegners, danach Lernwerte (Boxwerte, Stärke, Ausdauer …).
 // · Freigeschaltet nach dem Hühnerkampf; der Schmied erklärt die Boxkämpfe einmal in einer kleinen Szene (S.box.intro).
 // · Neue Speicherwerte: S.box = {intro, fights, wins, lastDay, opts}; am Gladiator g.boxing, g.caps.boxing, g.teeth, g.boxRec.
 //   Verletzungen aus dem Boxkampf (Prellungen, Platzwunde, Nasenbruch, Schädelbruch) werden in den echten Körper des Gladiators geschrieben
@@ -82,7 +82,7 @@ const moodFor=L=>L.n<=3?'nervous':L.n<=6?'dumb':L.n<=9?'determined':L.n<=12?'gri
 let faceQ=[];function paintFaces(){const t=faceQ.splice(0,3);for(const f of t)f();if(faceQ.length)requestAnimationFrame(paintFaces);}
 
 // ---------- Bildschirm: Boxkämpfe ----------
-const SK=[['stats','dexterity','Geschick'],['stats','strength','Kraft'],['stats','stamina','Ausdauer'],['stats','reflex','Reflex'],['stats','agility','Schnelligkeit'],['stats','toughness','Zähigkeit'],['boxing','gerade','Gerade'],['boxing','schwinger','Schwinger'],['boxing','uppercut','Uppercut'],['stats','block','Blocken'],['moves','dodge','Ausweichen']];
+const SK=[['stats','dexterity','Geschick'],['stats','strength','Stärke'],['stats','stamina','Ausdauer'],['stats','reflex','Reflex'],['stats','agility','Schnelligkeit'],['stats','toughness','Zähigkeit'],['boxing','gerade','Gerade'],['boxing','schwinger','Schwinger'],['boxing','uppercut','Uppercut'],['stats','block','Blocken'],['moves','dodge','Ausweichen']];
 const val=(g,grp,k)=>g[grp]?.[k]??0;
 function chipHtml(g){const ok=fit(g);return `<button class="an-card bx-fighter${B.sel===g.id?' on':''}${ok.ok?'':' unfit'}" data-a="${ok.ok?'bxpick:'+g.id:'bxunfit:'+g.id}"><span class="th"></span><b>${esc(g.name)}</b><small>${esc(g.role)} · KW ${nf(BX.rating(prep(g)),0)}</small>${ok.ok?'':'<em>'+esc((ok.causes||[]).slice(0,2).join(', ')||'nicht einsatzbereit')+'</em>'}</button>`;}
 function boxScreen(){syncDays();A.setTitle('HUMAN · BOXKÄMPFE');const view=A.view,list=roster();
@@ -200,7 +200,7 @@ function resultScreen(){const r=B.result;if(!r){A.go('box');return;}const g=r.ow
   <div class="an-pay"><small>${r.won?'Siegprämie':'Antrittsgeld'}</small><b data-count="${r.pay}">0</b><span>Gold</span></div>
   <div class="bx-reshead"><canvas class="px" id="bxrA"></canvas><div><h2>${esc(g.name)}</h2>${r.dead?'<p class="bx-dead">✝ '+esc(r.death)+'</p>':''}<p class="bx-warn">Erschöpfung ${Math.round(g.fatigue||0)} % · Gesundheit ${Math.round(M.health?.(g)??100)} %${g.boxRest&&g.boxRest.until>S().day?' · braucht '+(g.boxRest.until-S().day)+' Tage Ruhe':''}</p><p>${r.inj.length?'Verletzungen: <b>'+esc([...new Set(r.inj)].join(', '))+'</b>':'Keine nennenswerten Verletzungen'}</p>
    <p>${r.teeth?'<b>'+r.teeth+' Zahn'+(r.teeth>1?'zähne':'')+' ausgeschlagen</b>'+(r.vet?' · als Veteran bekommt er nach '+BX.GOLD_DAYS+' Tagen einen Goldzahn':' · die Lücke bleibt'):'Alle Zähne noch da'}</p>${teethHtml(g.teeth||{})}</div></div>
-  <div class="an-gains bx-gains"><h3>Fortschritt durch den Kampf <small>(Lernfaktor ×${nf(r.mult,2)} je nach Gegner)</small></h3><p class="an-hint">Geschick, Schnelligkeit, Kraft, Ausdauer, Zähigkeit, Reflex, Blocken und Ausweichen gelten auch im Arenakampf. Gerade, Schwinger und Uppercut nur beim Boxen.</p><ul class="bx-gainlist">${gain}</ul></div>
+  <div class="an-gains bx-gains"><h3>Fortschritt durch den Kampf <small>(Lernfaktor ×${nf(r.mult,2)} je nach Gegner)</small></h3><p class="an-hint">Geschick, Schnelligkeit, Stärke, Ausdauer, Zähigkeit, Reflex, Blocken und Ausweichen gelten auch im Arenakampf. Gerade, Schwinger und Uppercut nur beim Boxen.</p><ul class="bx-gainlist">${gain}</ul></div>
   <div class="an-actions"><button data-a="bxday">Nächster Tag (Heilung)</button><button class="primary" data-a="bxagain">NEUER BOXKAMPF ▸</button></div><div class="an-actions"><button data-a="bxleave">◂ Arena verlassen</button></div></section>`;
  face(A.view.querySelector('#bxrA'),g,r.won?'relief':r.dead?'out':'pain',0,200,130);try{A.root.scrollTop=0;A.view.scrollTop=0;window.scrollTo(0,0);}catch{}
  const n=A.view.querySelector('[data-count]'),goal=+n.dataset.count,st=performance.now();(function tick(){const k=Math.min(1,(performance.now()-st)/900);n.textContent=Math.round(goal*k*(2-k));if(k<1)requestAnimationFrame(tick);})();}
@@ -222,7 +222,7 @@ function smithActor(){const p=S().forgeWorkshop?.master,s=S(),rng=s.rng;let g;tr
 const BEATS=[
  {say:'So, Chef. Die Hühner sind erledigt. Jetzt zeige ich dir was, das nach noch mehr Blut und noch weniger Gold riecht.',pose:'sip'},
  {say:'Neben dem Arenakampf gibt es jetzt Boxkämpfe. Mann gegen Mann. Keine Waffen, keine Rüstung, nur nackte Fäuste.',gesture:'point'},
- {say:'Der Vorteil: Du kannst Ausdauer, Kraft und Geschick deiner Krieger auf die Probe stellen, bevor ihnen gleich der Schädel mit dem Schwert vom Hals gehauen wird.',gesture:'rant'},
+ {say:'Der Vorteil: Du kannst Ausdauer, Stärke und Geschick deiner Krieger auf die Probe stellen, bevor ihnen gleich der Schädel mit dem Schwert vom Hals gehauen wird.',gesture:'rant'},
  {say:'Das ist deine Gelegenheit, den einen oder anderen Kämpfer erst mal fit zu bekommen. Wer boxt, lernt. Hier wachsen die Werte.',gesture:'point'},
  {say:'Ein Kampf dauert höchstens 30 Sekunden. Meist gibt es nur Beulen und blaue Augen. Hin und wieder fliegt ein Zahn. Veteranen bekommen dafür nach zehn Tagen einen Goldzahn, alle anderen eine Lücke, die sie richtig trottelig aussehen lässt.',gesture:'shout'},
  {say:'Einen Schädelbruch gibt es nur, wenn einer sehr viel stärker ist als der andere. Bei gleich Starken fast nie. Such dir also lieber Gegner, die zu deinem Mann passen.',gesture:'point'},

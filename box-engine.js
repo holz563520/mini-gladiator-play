@@ -186,7 +186,7 @@ BX.simulate=function(gA,gB,seed,opts){const f=BX.createFight(gA,gB,seed,opts);le
 // Nach dem Kampf: ausgeschlagene Zähne werden durch Goldzähne ersetzt; Training durch die tatsächlichen Aktionen.
 // learn(g,gruppe,schlüssel,menge) → tatsächlicher Zuwachs (im Generator M.addLearning: hält die persönliche Obergrenze g.caps ein).
 // Lernrate wie im Spiel (data.js learn): 2 × (0,7 + Potenzial/150), abnehmend je näher an der Obergrenze.
-BX.TRAIN_KEYS=[['stats','dexterity','Geschick'],['stats','agility','Schnelligkeit'],['stats','toughness','Zähigkeit'],['stats','strength','Kraft'],['stats','stamina','Ausdauer'],['stats','reflex','Reflex'],['boxing','gerade','Gerade'],['boxing','schwinger','Schwinger'],['boxing','uppercut','Uppercut'],['stats','block','Blocken'],['moves','dodge','Ausweichen'],['moves','backstep','Rückwärtssprung']];
+BX.TRAIN_KEYS=[['stats','dexterity','Geschick'],['stats','agility','Schnelligkeit'],['stats','toughness','Zähigkeit'],['stats','strength','Stärke'],['stats','stamina','Ausdauer'],['stats','reflex','Reflex'],['boxing','gerade','Gerade'],['boxing','schwinger','Schwinger'],['boxing','uppercut','Uppercut'],['stats','block','Blocken'],['moves','dodge','Ausweichen'],['moves','backstep','Rückwärtssprung']];
 // Veteran: erfahrener Kämpfer (Maßstab wie die Ruhmeshalle: ab 10 Siegen, 6 Tötungen oder 15 Kämpfen). Veteranen bekommen für ausgeschlagene Zähne Goldzähne, alle anderen behalten Lücken.
 const GOLD_DAYS=10;BX.GOLD_DAYS=GOLD_DAYS;
 // Zeit vergeht: bei Veteranen werden nach 10 Tagen die Lücken durch Goldzähne ersetzt (vorher bleibt die Lücke sichtbar).
