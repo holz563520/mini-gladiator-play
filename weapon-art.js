@@ -9,7 +9,7 @@ const seed=s=>[...s].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,17);
 const noise=(x,y,k)=>{let v=Math.imul(x+139,k+73)^Math.imul(y+631,2246822519);v=Math.imul(v^(v>>>13),1274126177);return ((v^(v>>>16))>>>0)/4294967295};
 function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practice=!!item.trainingWood,b=practice?0:Math.round(clamp(blood,0,1)*12),dry=practice?false:age>.65,stage=practice?0:item.story?.stage||0,key=[id,q,b,dry,stage,practice?'wood':'metal'].join(':');if(cache.has(key)){const v=cache.get(key);cache.delete(key);cache.set(key,v);hits++;return v;}misses++;
  const c=document.createElement('canvas');c.width=112;c.height=88;const g=c.getContext('2d');g.imageSmoothingEnabled=false;let minX=112,minY=88,maxX=-1,maxY=-1;const ox=29,oy=43,look=M.itemLook(item),mask=new Set(),metal=look.metal,edge=look.edge,dark='#34434a',mid='#617078',gold=q>=4?look.trim:'#a28b62',wood=q===0?'#776044':'#694a36';
- const woodColors=new Map();
+ const woodColors=new Map();let axeEdge=10;
  const woodTone=color=>{if(woodColors.has(color))return woodColors.get(color);const n=parseInt(color.slice(1,7),16),l=((n>>16)*.3+((n>>8)&255)*.59+(n&255)*.11),v=['#39291d','#604127','#895d32','#b5864e','#dbb477'][Math.min(4,Math.floor(l/52))];woodColors.set(color,v);return v;};
  const pix=(x,y,color,hit=false)=>{if(practice)color=woodTone(color);x=Math.round(x);y=Math.round(y);g.fillStyle=color;g.fillRect(x+ox,y+oy,1,1);minX=Math.min(minX,x+ox);minY=Math.min(minY,y+oy);maxX=Math.max(maxX,x+ox);maxY=Math.max(maxY,y+oy);if(hit)mask.add(x+','+y)};
  const rect=(x,y,w,h,color,hit=false)=>{for(let yy=Math.ceil(y);yy<y+h;yy++)for(let xx=Math.ceil(x);xx<x+w;xx++)pix(xx,yy,color,hit)};
@@ -28,8 +28,26 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practic
  poly([[n-5,-3],[n+2,-3],[n+11,0],[n+2,3],[n-5,3]],dark,true);poly([[n-4,-2],[n+2,-2],[n+10,0],[n+2,2],[n-4,2]],metal,true);line(n-3,-2,n+3,-1,edge,true);line(n-3,0,n+8,0,mid,true);
  if(id==='trident'){poly([[n-1,-9],[n+2,-9],[n+2,9],[n-1,9]],dark,true);rect(n,-8,2,16,metal,true);for(const y of [-9,7]){poly([[n,y],[n+9,y],[n+12,y+1],[n+9,y+3],[n,y+3]],dark,true);line(n+1,y+1,n+10,y+1,edge,true)}}
  if(id==='halberd'){poly([[n-9,-3],[n-12,-10],[n-18,-13],[n-18,-7],[n-15,0],[n-18,7],[n-18,12],[n-12,10],[n-9,4]],dark,true);poly([[n-10,-3],[n-13,-9],[n-17,-11],[n-16,-5],[n-13,0],[n-16,6],[n-17,10],[n-13,9],[n-10,3]],metal,true);line(n-17,-10,n-14,-1,edge,true);line(n-14,1,n-17,9,edge,true);poly([[n-9,-2],[n-2,-9],[n,-9],[n-5,-1]],metal,true)}
- }else if(axes.includes(id)){const n=id==='throwaxe'?17:26;shaft(n-1);const h=9+Math.floor(q/2);poly([[n-6,-4],[n-1,-h-2],[n+4,-h],[n+6,-h+4],[n+6,h-3],[n+4,h+1],[n-1,h+2],[n-6,4]],dark,true);poly([[n-5,-3],[n,-h],[n+3,-h+1],[n+4,-h+4],[n+4,h-3],[n+3,h],[n,h+1],[n-5,3]],metal,true);line(n+4,-h+4,n+4,h-3,edge,true);line(n+3,-h+1,n+4,-h+4,edge,true);line(n+4,h-3,n+3,h,edge,true);rect(n-5,-3,4,6,gold);pix(n-4,-1,edge);
- if(id==='doubleaxe'){poly([[n-6,-3],[n-11,-h],[n-16,-h-1],[n-18,-h+3],[n-18,h-3],[n-16,h+1],[n-11,h],[n-6,3]],dark,true);poly([[n-7,-2],[n-11,-h+2],[n-15,-h+1],[n-16,-h+3],[n-16,h-3],[n-15,h-1],[n-11,h-2],[n-7,2]],metal,true);line(n-16,-h+3,n-16,h-3,edge,true)}
+ }else if(axes.includes(id)){
+ // Axt: Klinge seitlich am Stiel (Schneide parallel zum Stiel, leicht gebogen), schmaler Hals am Auge, kleiner Nacken.
+ // Axt und Wurfaxt mit Bart (Schneide zieht zum Griff hin), Doppelaxt mit zwei gleichen Blättern oben und unten.
+ const dbl=id==='doubleaxe',thr=id==='throwaxe',n=thr?17:dbl?28:26,h=thr?7:(dbl?9:10)+Math.floor(q/3);axeEdge=h;shaft(n+(thr?1:3));
+ const mirror=(pts,sign)=>pts.map(([x,y])=>[x,y*sign]);
+ const blade=sign=>{const out=dbl?[[n-3,2],[n+3,2],[n+5,5],[n+8,h-1],[n+8,h+1],[n+5,h+3],[n,h+4],[n-5,h+3],[n-8,h+1],[n-8,h-1],[n-5,5]]
+   :[[n-3,2],[n+3,2],[n+4,4],[n+6,h-2],[n+6,h],[n+4,h+2],[n,h+3],[n-4,h+3],[n-8,h+1],[n-(thr?8:10),h-2],[n-(thr?7:9),h-4],[n-5,6]];
+  const inner=dbl?[[n-2,3],[n+2,3],[n+4,6],[n+7,h-1],[n+7,h+1],[n+4,h+2],[n,h+3],[n-4,h+2],[n-7,h+1],[n-7,h-1],[n-4,6]]
+   :[[n-2,3],[n+2,3],[n+3,5],[n+5,h-2],[n+5,h],[n+3,h+1],[n,h+2],[n-4,h+2],[n-7,h],[n-(thr?7:9),h-2],[n-(thr?6:8),h-4],[n-4,6]];
+  poly(mirror(out,sign),dark,true);poly(mirror(inner,sign),metal,true);
+  // Schneide: helle Kante außen, darunter ein dunklerer Schliff; Hals etwas dunkler
+  const e=dbl?[[n+7,h],[n+4,h+2],[n,h+3],[n-4,h+2],[n-7,h]]:[[n+5,h-1],[n+3,h+1],[n,h+2],[n-4,h+2],[n-7,h],[n-(thr?7:9),h-2]];
+  for(let i=1;i<e.length;i++)line(e[i-1][0],e[i-1][1]*sign,e[i][0],e[i][1]*sign,edge,true);
+  for(let i=1;i<e.length;i++)line(e[i-1][0]+(e[i-1][0]>n?-1:1),(e[i-1][1]-1)*sign,e[i][0]+(e[i][0]>n?-1:e[i][0]<n?1:0),(e[i][1]-1)*sign,mid,true);
+  line(n-2,4*sign,n+2,4*sign,'#4e5b60',true);};
+ blade(1);if(dbl)blade(-1);
+ // Auge um den Stiel, Keil und kleiner Nacken
+ rect(n-3,-3,7,6,dark);rect(n-2,-2,5,4,metal);pix(n,-1,gold);pix(n,0,gold);
+ if(!dbl){rect(n-2,-4,5,1,dark);pix(n,-4,mid);}
+ if(q>=4){line(n-2,-3,n+2,-3,gold);if(dbl)line(n-2,2,n+2,2,gold);}
  }else if(blunts.includes(id)){shaft(22);if(id==='club'){poly([[9,-3],[12,-6],[23,-8],[28,-4],[29,3],[24,7],[12,5]],'#352c26',true);poly([[10,-2],[13,-5],[23,-6],[26,-3],[27,2],[23,5],[12,4]],'#93653e',true);line(13,-4,23,-5,'#c09a63',true);for(const x of [13,21]){rect(x,-5,3,11,dark,true);rect(x,-4,1,9,metal,true);pix(x+1,-3,edge,true)}}else if(id==='mace'){poly([[15,-4],[17,-8],[26,-8],[31,-4],[31,4],[26,8],[17,8],[15,4]],dark,true);rect(18,-6,10,12,metal,true);for(const y of [-8,-1,6]){poly([[15,y],[29,y],[33,y+2],[29,y+3],[15,y+3]],mid,true);line(16,y,29,y,edge,true)}rect(29,-2,5,4,metal,true)}else{rect(17,-11,18,22,dark,true);rect(19,-10,14,20,metal,true);rect(19,-10,3,20,edge,true);rect(30,-10,3,20,mid,true);rect(23,-7,6,14,'#657079',true);rect(23,-1,7,3,gold,true);pix(25,0,edge,true);poly([[17,-4],[11,-2],[11,2],[17,4]],metal,true)}
  }else if(id==='bow'){for(const sign of [-1,1]){poly([[5,0],[8,sign*8],[7,sign*17],[2,sign*24],[-3,sign*25],[-5,sign*22],[0,sign*21],[3,sign*15],[4,sign*6]],dark);line(5,sign*3,5,sign*15,wood);line(5,sign*15,0,sign*23,'#c8a06a');line(0,sign*23,-4,sign*22,gold)}rect(3,-4,6,8,'#483326');for(let y=-3;y<=3;y+=2)line(3,y,8,y,'#b18a55');
  }else if(id==='crossbow'){poly([[-14,-4],[17,-4],[23,-2],[23,3],[-6,3],[-9,6],[-14,5]],dark);rect(-12,-3,32,5,wood);line(-11,-2,19,-2,'#b78d5b');rect(1,-3,18,2,metal);for(const sign of [-1,1]){poly([[17,0],[18,sign*12],[12,sign*23],[9,sign*22],[14,sign*11],[14,0]],dark);line(16,sign*2,16,sign*11,metal);line(16,sign*11,11,sign*22,edge)}rect(-4,-4,3,8,gold);rect(3,3,2,4,mid);
@@ -41,7 +59,9 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practic
  const wetPoints=[];if(b>0&&mask.size){const points=[...mask].map(p=>p.split(',').map(Number)),xs=points.map(p=>p[0]),min=Math.min(...xs),max=Math.max(...xs),level=b/12;
  for(const [x,y]of points){const u=(x-min)/Math.max(1,max-min),n=noise(Math.floor(x/3),Math.floor(y/2),k),fine=noise(x,y,k+37),edgeBias=(Math.sin(x*.37+k)*.5+.5)*.16;
  // Swords keep a readable metal edge and a patchy stain near the tip.
- const covered=lengths[id]?(u>.98-level*.38+edgeBias||n<level*.10&&u>.50):(u>.90-level*.70+edgeBias||n<level*.32&&u>.14);
+ const ax=axes.includes(id)?clamp((Math.abs(y)-3)/Math.max(1,axeEdge),0,1):0;
+ // Äxte: Blut zuerst an der Schneide, dann zum Auge hin
+ const covered=lengths[id]?(u>.98-level*.38+edgeBias||n<level*.10&&u>.50):axes.includes(id)?(ax>.92-level*.62+edgeBias*.6||n<level*.25&&ax>.3):(u>.90-level*.70+edgeBias||n<level*.32&&u>.14);
  if(!covered||fine<.10-level*.05)continue;
  wetPoints.push([x,y]);const colors=dry?['#3f2021','#592326','#742b2d']:['#4b1d23','#851f2b','#b12b35'];const ix=fine>.78?2:fine>.25?1:0;pix(x,y,colors[ix]);if(!dry&&fine>.94&&level>.3)pix(x,y,'#e16b62');
  }
@@ -49,7 +69,7 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practic
  const points=[...mask].map(p=>p.split(',').map(Number)),maxContactX=points.length?Math.max(...points.map(p=>p[0])):0;
  const image=document.createElement('canvas');image.width=Math.max(1,maxX-minX+1);image.height=Math.max(1,maxY-minY+1);
  image.getContext('2d').drawImage(c,minX,minY,image.width,image.height,0,0,image.width,image.height);
- const result={canvas:image,ox:ox-minX,oy:oy-minY,dripPoints:wetPoints.filter(p=>p[0]>maxContactX-12),def:id};
+ const result={canvas:image,ox:ox-minX,oy:oy-minY,dripPoints:axes.includes(id)?wetPoints.filter(p=>Math.abs(p[1])>=axeEdge):wetPoints.filter(p=>p[0]>maxContactX-12),def:id};
  cache.set(key,result);cachePixels+=image.width*image.height;
  while(cache.size>MAX_CACHE||cachePixels*4>MAX_BYTES){const first=cache.keys().next().value,old=cache.get(first);cachePixels-=old.canvas.width*old.canvas.height;cache.delete(first);}return result;
 }
