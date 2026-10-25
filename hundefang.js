@@ -106,13 +106,13 @@ function paintPlace(j){const R=TX.RASSEN[j.breed],ort=R.ort,biome=TX.ORTE[ort].b
   else{for(let i=0;i<120;i++)px(g,r()*520,r()*360,2,1,pick(['#7a5a2a','#8a6a30','#5a4020']));for(let i=0;i<5;i++)ell(g,60+r()*400,140+r()*160,22+r()*20,8+r()*6,P.dirt[2]+'99');}}
  const st2=mkc(520,170),s=st2.getContext('2d');s.imageSmoothingEnabled=false;const B=A.BASE,house=(kind,x,w,hh,extra={})=>{try{A.building(s,{kind,x,w,h:hh,v:r(),v2:r(),roof:Math.floor(r()*5),wall:Math.floor(r()*4),door:r()<.7?{x:x+w*(.3+r()*.4)}:null,chimney:r()<.5?{x:x+w*.7}:null,...extra},P,r);}catch(e){console.warn(kind,e);}};
  const row=(kinds,minW,maxW,hh)=>{let x=-10;while(x<520){const w=minW+r()*(maxW-minW);house(pick(kinds),x,w,hh[0]+r()*(hh[1]-hh[0]));x+=w+(r()<.3?6+r()*16:0);}};
- if(ort==='gasse')row(['stadthaus','stein','fachwerk','stadthaus'],80,130,[70,105]);
- else if(ort==='markt'){row(['kontor','stadthaus','stein'],100,150,[80,110]);for(let x=30;x<520;x+=120+r()*40)house('stand',x,70,60);}
- else if(ort==='dorf'){let x=-20;while(x<520){const k=pick(['fachwerk','kate','scheune','heu','waesche','baeume','fachwerk']),w=k==='baeume'?70:70+r()*60;house(k,x,w,55+r()*30);x+=w+10+r()*30;}}
- else if(ort==='hof'){house('bauernhof',20,150,80);house('scheune',190,120,70);house('heu',330,90,40);house('stall',430,110,55);}
+ if(ort==='gasse')row(['stadthaus','stein','fachwerk','stadthaus'],120,170,[100,125]);
+ else if(ort==='markt'){row(['kontor','stadthaus','stein'],130,180,[100,125]);for(let x=30;x<520;x+=130+r()*40)house('stand',x,84,64);}
+ else if(ort==='dorf'){let x=-30;while(x<540){const k=pick(['fachwerk','kate','fachwerk','scheune','fachwerk','kate','baeume']),w=k==='baeume'?60:130+r()*60;house(k,x,w,k==='baeume'?60:100+r()*25);x+=w+4+r()*14;}}
+ else if(ort==='hof'){house('bauernhof',-10,190,110);house('scheune',190,160,95);house('heu',356,70,44);house('stall',420,130,75);}
  else if(ort==='friedhof'){house('friedhofsmauer',-10,540,40);house('kapelle',200,110,70);}
  else{for(let x=-10;x<530;x+=14+r()*14)A.tree(s,x,B+2-r()*30,1.6+r()*.9,r,P,r()<.5?'conifer':'leaf');if(j.breed==='husky'||j.breed==='malamute')house('huette',300,70,50);}
- g.drawImage(st2,0,96-B);
+ g.drawImage(st2,0,(ort==='wald'||ort==='friedhof'?96:112)-B);
  if(ort==='wald'||ort==='friedhof'||ort==='hof'||ort==='dorf'){for(let y=110;y<350;y+=26+r()*20){A.bush(g,6+r()*14,y,1.3,r,P);A.bush(g,500+r()*14,y,1.3,r,P);}}
  if(ort==='wald'){for(let x=-10;x<530;x+=40+r()*40)A.tree(g,x,362+r()*6,2+r()*.8,r,P,r()<.5?'conifer':'leaf');}
  else if(ort==='gasse'){px(g,0,330,520,30,P.stone[0]);for(let x=0;x<520;x+=16){px(g,x,330,15,7,P.stone[1]);px(g,x+8,338,15,7,P.stone[1]);}for(let x=40;x<520;x+=110+r()*60){ell(g,x,330,9,12,'#6b4a2e');px(g,x-9,322,18,2,'#3e2a18');}}
@@ -139,7 +139,13 @@ function trough(c,x,y,wine){px(c,x-38,y-18,76,20,'#6f6a5f');px(c,x-38,y-18,76,3,
 function grave(c,x,y){px(c,x-34,y-10,68,22,'#2a1e14');px(c,x-34,y-10,68,3,'#4a3420');ell(c,x+44,y-2,22,9,'#6f5a38');ell(c,x+44,y-6,16,6,'#8a7148');px(c,x-8,y-46,20,34,'#8b8578');px(c,x-6,y-48,16,4,'#9a9486');px(c,x+1,y-40,2,14,'#5b574e');px(c,x-3,y-35,10,2,'#5b574e');
  bone(c,x-24,y-2,14,.3);skullProp(c,x-12,y-4);bone(c,x+6,y+2,16,-.2);}
 function bonePile(c,x,y){ell(c,x,y,40,9,'#00000030');for(let i=0;i<14;i++)bone(c,x-30+((i*17)%60),y-4-((i*7)%8),12+(i%3)*4,(i*1.3)%3);skullProp(c,x-18,y-8);skullProp(c,x+20,y-6);}
-function coop(c,x,y){px(c,x-30,y-34,60,34,'#6b4a2e');for(let k=0;k<60;k+=6)px(c,x-30+k,y-34,1,34,'#4e3420');px(c,x-36,y-40,72,6,'#5a3b2a');px(c,x-8,y-18,16,18,'#1a120c');px(c,x-2,y-12,8,3,'#f0ece0');}
+// Echte Hähne aus dem Hahnengenerator (hahn-engine.js), Qualität 1 = die schlechtesten Werte; gezeichnet mit ART.rooster
+const ROO=mkc(96,72);
+function weakRoosters(j){let c=cache.get(j.id);if(!c){c={};cache.set(j.id,c);}return c.roo??=(()=>{const r=rng32(j.seed^0x51);return Array.from({length:7},(_,i)=>{const R=window.CF?.createRooster?.({seed:Math.floor(r()*4294967295),minQuality:1,maxQuality:1});return R?{R,x:SPOT.x-150+((i*53)%300),y:SPOT.y-46+((i*29)%90),dir:i%2?1:-1,dead:i<2,t0:i*2.4,ph:r()*6}:null;}).filter(Boolean);})();}
+function drawRooster(c,R,x,y,o={}){if(!window.ArenaArt?.rooster)return;const g=ROO.getContext('2d');g.clearRect(0,0,96,72);g.imageSmoothingEnabled=false;
+ try{window.ArenaArt.rooster(g,R,{w:96,h:72,size:40,x:48,y:64,t:o.t||0,mood:o.mood||'idle',face:o.face||1,roll:o.roll||0,shadow:!o.roll,seed:o.seed||0});}catch(e){return;}
+ const k=o.k||.62;c.drawImage(ROO,Math.round(x-48*k),Math.round(y-64*k),Math.round(96*k),Math.round(72*k));}
+function coop(c,x,y){px(c,x-48,y-56,96,56,'#6b4a2e');for(let k=0;k<96;k+=7)px(c,x-48+k,y-56,1,56,'#4e3420');for(let i=0;i<12;i++)px(c,x-56+i*1,y-66+i,112-i*2,1,'#5a3b2a');px(c,x-58,y-66,116,4,'#4a2e1e');px(c,x-12,y-30,24,30,'#1a120c');px(c,x-48,y-4,96,4,'#3e2a18');for(let i=0;i<8;i++)px(c,x+52+i*7,y-24,2,24,'#7a5a3a');px(c,x+52,y-20,56,2,'#7a5a3a');px(c,x+52,y-10,56,2,'#7a5a3a');}
 function feathers(c,x,y,t,n=18){for(let i=0;i<n;i++){const k=((t*.4+i*.137)%1),xx=x+Math.sin(i*2.1+t*1.3)*40*k+(i%5-2)*8,yy=y-60+k*70+Math.sin(t*3+i)*4;px(c,xx,yy,3,1.5,'#f4f0e6');}}
 const UNF={leiche:{v:{dx:-38,dy:0,dir:1},d:{dx:30,dy:4,face:-1,mode:'gnaw'}},kehle:{v:{dx:-30,dy:0,dir:-1},d:{dx:36,dy:3,face:-1,mode:'grip',grip:{x:29,y:-7}}},
  bein:{d:{dx:18,dy:2,face:-1,mode:'gnaw'}},wurst:{d:{dx:26,dy:2,face:-1,mode:'gnaw'}},huehner:{d:{dx:0,dy:0,face:1,mode:'snap'}},schaf:{d:{dx:34,dy:3,face:-1,mode:'grip',grip:{x:29,y:-7}}},
@@ -148,7 +154,7 @@ function paintMischief(c,j){const u=TX.RASSEN[j.breed].unfug,X=SPOT.x,Y=SPOT.y,K
  if(u==='leiche'||u==='kehle'){const V=UNF[u].v;blood(c,X+V.dx+(V.dir>0?-6:6),Y+4,30,9);fig(c,victimOf(j),X+V.dx,Y,K,V.dir,lying());}
  else if(u==='bein'){blood(c,X-30,Y+2,16,5);leg(c,X-26,Y-2,.2);for(let i=0;i<8;i++)ell(c,X-60-i*26,Y+6+Math.sin(i)*6,3,1.5,'#6e120b');}
  else if(u==='wurst'){px(c,X-90,Y-48,70,40,'#6b4a2e');px(c,X-94,Y-52,78,6,'#b8382e');px(c,X-92,Y-12,4,14,'#4e3420');px(c,X-28,Y-12,4,14,'#4e3420');ham(c,X-14,Y-2);blood(c,X-60,Y+8,14,4);if(['metzgerhund','mastino'].includes(j.breed)){fig(c,victimOf(j),X-150,Y+14,K,1,lying());blood(c,X-156,Y+18,22,7);}}
- else if(u==='huehner'){coop(c,X-90,Y-10);for(let i=0;i<6;i++)chicken(c,X-60+i*23+(i%2)*6,Y+16+(i%3)*8,i%2?1:-1,true);for(let i=0;i<20;i++)px(c,X-80+((i*37)%170),Y-8+((i*23)%40),3,1.5,'#f4f0e6');}
+ else if(u==='huehner'){coop(c,X-150,Y-30);for(const h of weakRoosters(j).filter(h=>h.dead)){blood(c,h.x+4,h.y+2,9,3);drawRooster(c,h.R,h.x,h.y,{roll:1.5,mood:'fear'});}for(let i=0;i<26;i++)px(c,X-140+((i*37)%240),Y-30+((i*23)%70),3,1.5,'#f4f0e6');}
  else if(u==='schaf')sheep(c,X-6,Y+4,1,true);
  else if(u==='grab')grave(c,X,Y);
  else if(u==='schlaf')bonePile(c,X,Y);
@@ -157,12 +163,18 @@ function paintMischief(c,j){const u=TX.RASSEN[j.breed].unfug,X=SPOT.x,Y=SPOT.y,K
  else if(u==='wolfsleiche'){blood(c,X-30,Y+4,26,7);drawDog(c,dogAct(DOG.create('wolf',j.seed^99),'dead',{g:{dead:true},deathAt:-9,clock:9,pool:{r:14}}),X-34,Y,1,1,0);}}
 function liveMischief(c,j,t){const u=TX.RASSEN[j.breed].unfug,X=SPOT.x,Y=SPOT.y;
  if(u==='schaf')for(let i=0;i<4;i++){const run=(t*28+i*60)%260;sheep(c,X+90+run*(i%2?1:.6),Y-60+i*34,1,false,t+i);}
- if(u==='huehner'){for(let i=0;i<4;i++){const k=(t*.35+i*.25)%1;chicken(c,X-120+k*260+Math.sin(t*5+i)*10,Y-40+i*24+Math.sin(t*7+i)*4,i%2?1:-1,false,t+i);}feathers(c,X,Y,t,26);}
+ if(u==='huehner'){const L=weakRoosters(j).filter(h=>!h.dead),cyc=2.4;L.forEach((h,i)=>{const killAt=cyc*(i+1)-.35,gone=t>=killAt;
+   if(gone){if(!h.splat){h.splat=1;h.dx=h.x;h.dy=h.y;}blood(c,h.dx+4,h.dy+2,8,3);drawRooster(c,h.R,h.dx,h.dy,{roll:1.5,mood:'fear',t});return;}
+   const panic=t>killAt-1.2,sp=panic?60:16,xx=h.x+Math.sin(t*(panic?3:.8)+h.ph)*(panic?40:24),yy=h.y+Math.cos(t*(panic?2.6:.6)+h.ph)*(panic?14:6);h.cx=xx;h.cy=yy;
+   drawRooster(c,h.R,xx,yy-(panic?Math.abs(Math.sin(t*12+h.ph))*6:0),{mood:panic?'fear':'walk',t:t+h.ph,face:Math.cos(t*(panic?3:.8)+h.ph)>0?1:-1});});
+  feathers(c,X,Y,t,30);}
  if(u==='baum')fig(c,treeMan(j),X-34+Math.sin(t*1.7)*2,Y-62,1/.6*.8,1,{state:'idle',facePain:.6});}
 function dogFor(j){const u=TX.RASSEN[j.breed].unfug,U=UNF[u].d,d=dogAct(jobDog(j),U.mode,{gripTarget:U.grip||null,mouthBlood:['leiche','kehle','schaf','bein','wolfsleiche'].includes(u)?.9:.3});d.x=SPOT.x+U.dx;d.y=SPOT.y+U.dy;d.face=U.face;return d;}
 function animDog(d,j,t){const u=TX.RASSEN[j.breed].unfug;d.clock=1;
  if(u==='kehle'||u==='schaf'){const p=t%1.1;d.shaking=p<.4?.4-p:0;}
- if(u==='huehner'){const p=t%2.4;if(p<.5){d.mode='snap';d.clock=p;d.duration=.4;}else if(p<1.4){d.mode='stalk';walkDog(d,60,1/60);d.x=SPOT.x-30+Math.sin(t*.7)*60;d.face=Math.cos(t*.7)>0?1:-1;}else d.mode='threat';}
+ if(u==='huehner'){const L=weakRoosters(j).filter(h=>!h.dead),cyc=2.4,i=Math.floor(t/cyc),h=L[i],p=t%cyc;
+  if(!h){d.mode=(t%4)<2.5?'gnaw':'threat';return;}const tx=(h.cx??h.x)+(d.x>h.cx?26:-26),ty=h.cy??h.y;d.face=(h.cx??h.x)>=d.x?1:-1;
+  if(p<1.5){d.mode='charge';walkDog(d,220,1/60);d.x+=(tx-d.x)*.08;d.y+=(ty-d.y)*.08;}else if(p<2.05){d.mode='snap';d.clock=(p-1.5)*.8;d.duration=.4;d.mouthBlood=Math.min(1,d.mouthBlood+.01);}else{d.mode='grip';d.gripTarget={x:27,y:-13};d.shaking=.3;}}
  if(u==='grab')d.mode=(t%5)<3.2?'scent':'gnaw';}
 
 // =====================================================================================================
@@ -215,6 +227,10 @@ function drawCart(c,x,y,t,spin,dogs){const bx=x-150,by=y-80;
  px(c,bx,by,300,22,'#6b4a2e');px(c,bx,by,300,4,'#8a6038');for(let k=0;k<300;k+=30)px(c,bx+k,by+4,2,18,'#4e3420');px(c,bx-190,by+8,194,6,'#5b3d26');px(c,bx-190,by+14,194,2,'#3e2a18');
  for(const wx of [bx+60,bx+240]){const wy=y-38,R=38;ell(c,wx,wy,R+3,R+3,'#2a1a10');ell(c,wx,wy,R,R,'#5b3d26');ell(c,wx,wy,R-6,R-6,'#3a2a1a');for(let k=0;k<8;k++){c.save();c.translate(wx,wy);c.rotate(spin+k*Math.PI/4);px(c,-2,0,4,R-4,'#6b4a2e');c.restore();}ell(c,wx,wy,7,7,'#2a1a10');}
  px(c,bx+120,by-40,60,30,'#8a6038');ell(c,bx+150,by-23,6,5,'#3a2010');for(let i=0;i<4;i++)ell(c,bx+141+i*6,by-32+(i%3===0?2:0),2,2,'#3a2010');}
+// Pluto: leeres Halsband an der Leine, wird HINTER Rabies hergezogen (beim Gehen schleift es hüpfend über den Boden)
+function leash(c,x,y,K,dir,t,moving){const u=K*.6,q=K/2.7,hx=x-dir*9*u,hy=y-40*u,lx=x-dir*(moving?95:70)*q,ly=y+2-(moving?Math.abs(Math.sin(t*9))*5:0);
+ c.strokeStyle='#3a2414';c.lineWidth=Math.max(1,3*q);c.beginPath();c.moveTo(hx,hy);c.quadraticCurveTo((hx+lx)/2,Math.max(hy,ly)-(moving?2:-8)*q,lx,ly-4*q);c.stroke();
+ ell(c,lx,ly-4*q,10*q,5*q,'#7a2a20');ell(c,lx,ly-4*q,6*q,2.5*q,'#2a1a10');px(c,lx-2*q,ly-10*q,4*q,4*q,'#c9a84f');if(moving&&Math.sin(t*9)>.8){c.fillStyle='#8a745088';c.fillRect(Math.round(lx+dir*8),Math.round(ly-2),6,3);}}
 function introFilm(first){gateBG??=paintGate();const K=2.7,dk=K*.6,recruit=gen(0);recruit.name=recruit.name.split(' ')[0];recruit.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};recruit.equipment=recruit.enemyGear;
  const dA=dogAct(DOG.create('molosser'),'threat'),dB=dogAct(DOG.create('bullterrier'),'sit');
  const S2={cartX:1500,rabX:1180,rec:{x:320,state:'idle',walk:false,dir:1,fall:0},hand:false,blood:[],gnaw:false,title:0};const Y=630,RY=600;
@@ -245,7 +261,7 @@ function introFilm(first){gateBG??=paintGate();const K=2.7,dk=K*.6,recruit=gen(0
   if(!S2.gnaw&&t>8&&(t%5)<.05)DOG.playSound('bark',dA.dog);dB.mode=t<12?'sit':(t%6)<3?'scratch':'sit';
   drawCart(c,S2.cartX,Y,t,-(S2.cartX/38),[dA,dB]);
   drawRabies(c,S2.rabX,RY+28,K,moving?-1:1,t,{moveSpeed:moving?45:0,phase:t*7});
-  const hx=S2.rabX+(moving?-10:10)*K*.6,hy=RY+28-40*K*.6,lx=S2.rabX-90,ly=RY+30;c.strokeStyle='#3a2414';c.lineWidth=3;c.beginPath();c.moveTo(hx,hy);c.quadraticCurveTo((hx+lx)/2,ly-10+Math.sin(t*2)*4,lx,ly);c.stroke();ell(c,lx,ly-4,10,5,'#7a2a20');ell(c,lx,ly-4,6,2.5,'#2a1a10');px(c,lx-2,ly-10,4,4,'#c9a84f');
+  leash(c,S2.rabX,RY+28,K,moving?-1:1,t,moving);
   if(t>=20.6)fig(c,recruit,S2.rec.x,Y+20,K,S2.rec.dir,S2.rec.fall?{state:'fallen',down:true,fallTimer:0,fallDuration:1,energy:20,facePain:1}:{state:S2.rec.state,moveSpeed:S2.rec.walk?70:0,phase:t*8,facePain:S2.hand?1:0});
   for(const p of S2.blood){if(p.life<=0)continue;p.life-=dt;p.vy+=600*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.y>Y+20){p.y=Y+20;p.vx*=.2;p.vy=0;}px(c,p.x,p.y,4,4,'#8d1c13');}
   if(S2.hand&&!S2.rec.fall&&Math.random()<.5)S2.blood.push({x:S2.rec.x+30,y:Y-70,vx:rnd(-30,30),vy:rnd(-60,0),life:.8});
@@ -253,7 +269,7 @@ function introFilm(first){gateBG??=paintGate();const K=2.7,dk=K*.6,recruit=gen(0
    if(S2.title>.7){c.globalAlpha=cl(S2.title-.7,0,1);for(let i=0;i<5;i++){const sx=480+i*64,sy=470;SKULL.forEach((row,yy)=>[...row].forEach((ch,xx)=>{if(ch==='X')px(c,sx+xx*5,sy+yy*5,5,5,'#efe0b3');}));}c.globalAlpha=1;}}}
  function done(){closeFilm();if(first){st().stage='open';try{M.persist();}catch{}}try{M.ui.click('nav:beastrium');}catch(e){console.warn(e);}}
  F.skip=()=>{if(!$('hfTalk').classList.contains('hf-hide'))done();else talkStart();};
- function talkStart(){if(!$('hfTalk').classList.contains('hf-hide'))return;F.draw=(c,t)=>{c.drawImage(gateBG,0,0,1280,720);drawTorch(c,170,260,t);drawTorch(c,470,260,t);drawCart(c,905,630,t,-905/38,[dA,dB]);drawRabies(c,585,628,2.7,1,t);c.fillStyle='#05030288';c.fillRect(0,0,1280,720);};
+ function talkStart(){if(!$('hfTalk').classList.contains('hf-hide'))return;F.draw=(c,t)=>{c.drawImage(gateBG,0,0,1280,720);drawTorch(c,170,260,t);drawTorch(c,470,260,t);drawCart(c,905,630,t,-905/38,[dA,dB]);drawRabies(c,585,628,2.7,1,t);leash(c,585,628,2.7,1,t,false);c.fillStyle='#05030288';c.fillRect(0,0,1280,720);};
   caption('');const lines=['Lanista! Die Stadt hat ein Hundeproblem. Ich hab eine Lösung. Die Lösung hat Zähne.',TX.BRETT[1],'Und wenn nicht … ich kenne einen Metzger, der keine Fragen stellt.','Mein Karren steht ab jetzt vor deinem Beastrium. Unten im Keller ist Platz für Zwinger. Ich hab nachgesehen. Und ein bisschen umgebaut.'];let i=0;
   const say=()=>{$('hfTalkText').innerHTML=`<small>${esc(TX.NAME.toUpperCase())} · ${esc(TX.TITEL.toUpperCase())}</small>${esc(lines[i])}`;rabiesFace($('hfTalkFace'),i===1?'confident':'grin');};
   show('hfTalk',true);say();$('hfTalk').onclick=()=>{i++;if(i>=lines.length){done();return;}say();};}
@@ -422,7 +438,25 @@ function boardPage(){const s=st(),j=s.jobs[selJob]||s.jobs[0],gs=fighters(),used
  <div class="hf-gear"><label><input type="radio" name="hfGear" value="leihe" ${loanMode==='leihe'?'checked':''} data-hfgear="leihe"> Knüppel & Netz (leiht Rabies; Rüstung und Schild bleiben)</label><label><input type="radio" name="hfGear" value="eigen" ${loanMode==='eigen'?'checked':''} data-hfgear="eigen"> Eigene Waffe, ohne Netz</label></div>
  <p style="font-size:13px;opacity:.85">Die Einschätzung kennt nur die Gefahrenstufe, nicht die Rasse. Wunden, Tod und Lernen zählen wie im echten Kampf. Fangen: Unterwirft sich der Hund, hält ihn das Netz sicher (ohne Netz jedes zweite Mal); manchmal bleibt er auch nur bewusstlos liegen, nach Knüppel, Keule, Streitkolben oder Hammer öfter.</p>
  <div class="buttons"><button class="btn primary" data-action="hf:go" ${!selG||j?.done?'disabled':''}>🔭 Aufbrechen</button></div>`}
+ ${tradeSection()}
  <div class="buttons" style="margin-top:10px"><button class="btn" data-action="nav:beastrium">◂ Zurück zum Beastrium</button><button class="btn" data-action="nav:zwinger">▼ Zwinger</button></div></section>`;}
+// ---------- Tierhandel: Rabies kauft gefangene Hunde und Hähne der Hühnerschule (Marktwert) ----------
+// Hund: aus dem Kampfwert (KW^1,6 / 4), Zustand und Siegen. Hahn: nach Güteklasse (1–9), Zustand und Siegen; Rabies kauft Hähne als Hundefutter.
+const CF=()=>window.CF;
+function dogValue(D){const v=Math.pow(DOG.kw(D,false),1.6)/4*(.4+.6*DOG.condHealth(D)/100)+(D.wins||0)*8;return Math.max(5,Math.round(v/5)*5);}
+function roosterValue(R){const base=[2,3,5,8,12,18,26,38,55][(R.quality?.tier||1)-1]||2;let h=100;try{h=CF().health(R);}catch{}return Math.max(1,Math.round(base*(.5+.5*h/100)+(R.wins||0)*2));}
+const roosters=()=>(S.huehner?.roosters||[]).filter(R=>!R.dead);
+let sellArm='';
+function tradeSection(){const dogs=st().dogs.filter(D=>!D.dead),rs=roosters();
+ const row=(key,name,sub,price)=>`<div class="hf-trade"><span><b>${esc(name)}</b><small>${esc(sub)}</small></span><button class="btn${sellArm===key?' primary':''}" data-action="hf:sell:${key}">${sellArm===key?'Wirklich verkaufen? '+price+' Gold':'Verkaufen · '+price+' Gold'}</button></div>`;
+ return `<h2 style="margin-top:14px">Tierhandel</h2><p style="font-size:13px;opacity:.85">„${esc(dogs.length||rs.length?'Ich zahl fair. Fair für mich. Hähne nehm ich auch, als Futter. Lebendfutter hält länger frisch.':'Nichts zu verkaufen? Dann fang was. Oder züchte Hühner, die nimmt mein Rudel auch.')}“</p>
+ ${dogs.length?`<h3>Hunde</h3>${dogs.map(D=>row('d:'+D.id,D.name,D.breedName+' · Gesundheit '+Math.round(DOG.condHealth(D))+' % · KW '+DOG.kw(D),dogValue(D))).join('')}`:''}
+ ${rs.length?`<h3>Hähne</h3>${rs.map(R=>row('r:'+R.id,R.name,(R.quality?.title||'Hahn')+(R.wins?' · '+R.wins+' Siege':''),roosterValue(R))).join('')}`:''}`;}
+function sell(key){const [kind,id]=key.split(/:(.*)/s);let price=0,name='';
+ if(kind==='d'){const a=st().dogs,i=a.findIndex(D=>D.id===id&&!D.dead);if(i<0)return;price=dogValue(a[i]);name=a[i].name;a.splice(i,1);}
+ else{const a=S.huehner?.roosters||[],i=a.findIndex(R=>String(R.id)===id&&!R.dead);if(i<0)return;price=roosterValue(a[i]);name=a[i].name;a.splice(i,1);}
+ S.gold=(S.gold||0)+price;if(S.stats)S.stats.earned=(S.stats.earned||0)+price;try{M.sound?.('coin');}catch{}try{M.persist();}catch{}
+ M.ui.notify?.(`${name} gehört jetzt Rabies. +${price} Gold. „${pick(kind==='d'?['Der bekommt einen schönen Käfig. Fast so schön wie deiner.','Gutes Tier. Hätte dich bestimmt irgendwann gebissen.','Ich nenn ihn um. Vielleicht.']:['Wird morgen gefressen. Nicht von mir. Meistens.','Ein Hahn weniger, ein Hund glücklicher.','Gackert noch. Nicht mehr lange.'])}“`);}
 let zwPage=0;
 function zwingerPage(){const s=st(),alive=s.dogs.filter(D=>!D.dead),dead=s.dogs.filter(D=>D.dead),pages=Math.max(1,Math.ceil(alive.length/3));zwPage=cl(zwPage,0,pages-1);
  const bars=D=>DOG.STATS.map(([k,n])=>`<span>${n}</span><i><b style="width:${cl(D.stats[k],0,100)}%"></b><em style="left:${cl(D.caps[k],0,100)}%"></em></i><span>${Math.round(D.stats[k])}</span>`).join('');
@@ -452,6 +486,7 @@ M.schoolClick=function(action){if(action==='hs:species:hund'&&st().stage==='open
  else if(k==='pick'){const g=S.roster.find(x=>x.id===v);if(g&&fit(g)){selG=v;M.ui.render();}else M.ui.notify?.('Nicht einsatzbereit. Ein paar Tage Ruhe helfen.');}
  else if(k==='go'){const j=s.jobs[selJob],g=S.roster.find(x=>x.id===selG);if(!j||j.done||usedToday()||!g||!fit(g)||S.battle)return true;sighting(j,g);}
  else if(k==='zw'){zwPage+=+v;M.ui.render();}
+ else if(k==='sell'){const key=action.slice(8);if(sellArm===key){sellArm='';sell(key);}else sellArm=key;M.ui.render();}
  return true;};
 document.addEventListener('change',e=>{const v=e.target?.dataset?.hfgear;if(v)loanMode=v;});
 
@@ -470,6 +505,16 @@ const prevTick=M.ludusTick;
 M.ludusTick=function(dt){prevTick?.apply(this,arguments);try{if(st().stage==='open')daily();}catch(e){console.error(e);}};
 // Beastrium vor der Vorstellung: der Karren steht schon da (falls die Vorstellung aus irgendeinem Grund nicht von selbst kam)
 function teaser(){return `<section class="box hf-cart"><canvas id="hfCartFace" width="160" height="104"></canvas><div><p class="eyebrow">VOR DEM BEASTRIUM</p><h2>Ein stinkender Karren</h2><q>Es riecht nach nassem Hund, altem Blut und schlechten Entscheidungen. Im Käfig knurrt etwas.</q><div class="buttons"><button class="btn primary" data-action="hf:intro1">Nachsehen</button></div></div></section>`;}
+// LUDUS-KARTE: Rabies steht mit seinem Karren auf der Wiese zwischen Sklavenmarkt und Medicus (nach der Vorstellung).
+// Antippen öffnet die Aufträge. Im Käfig sitzen die eigenen Hunde (die ersten zwei), sonst seine eigenen.
+const MAP={x:225,y:446,k:.3,hit:{x:78,y:380,w:226,h:74}};let mapDogs=null,mapKey='';
+function mapCart(g,t){const s=st();if(s.stage!=='open')return;const own=s.dogs.filter(D=>!D.dead).slice(0,2),key=own.map(D=>D.id).join();if(!mapDogs||mapKey!==key){mapKey=key;const list=own.length?own:[DOG.create('molosser',4711),DOG.create('bullterrier',815)];mapDogs=list.map((D,i)=>dogAct(D,i?'sit':'threat'));}
+ g.save();g.translate(MAP.x,MAP.y);g.scale(MAP.k,MAP.k);const dk=2.7*.6*.95;mapDogs.forEach((d,i)=>{d.x=i?60:-90;d.y=-104;d.k=dk;d.face=i?1:-1;d.mode=i?((t%7)<4?'sit':'scratch'):((t%5)<1.2?'bars':'threat');});
+ drawCart(g,0,0,t,0,mapDogs);g.restore();
+ const rx=MAP.x-99,ry=MAP.y;drawRabies(g,rx,ry,1,1,t);leash(g,rx,ry,1,1,t,false);
+ if(Math.sin(t*.5)>.6){g.save();g.font='bold 9px "Courier Prime",monospace';g.textAlign='center';const txt='Hunde! Aufträge! Ich kaufe Hühner!',w=g.measureText(txt).width+10;g.fillStyle='#f3e6c4';g.fillRect(Math.round(rx-w/2+30),ry-80,w,14);g.fillStyle='#2a1a10';g.fillText(txt,rx+30,ry-70);g.restore();}}
+const prevOverlay2=M.ludusOverlay;M.ludusOverlay=(g,t)=>{prevOverlay2?.(g,t);try{mapCart(g,t);}catch(e){console.warn(e);}};
+const prevHit=M.ludusHit;M.ludusHit=(x,y)=>{const h=MAP.hit;if(st().stage==='open'&&x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){M.ui.click('nav:hundefang');return true;}return prevHit?prevHit(x,y):false;};
 // Musik: Rabies' Lied, sobald er im Mittelpunkt steht (Filme, Karren/Aufträge), „Beastrium“ unten im Zwinger
 M.hundefang={music:()=>{const p=M.ui?.getPage?.();return F.on||p==='hundefang'?'rabies':p==='zwinger'?'beast':'';},state:st,intro:()=>introFilm(false),sighting,startFight,openBook,paintPlace,jobDog,daily,get fight(){return fight;},F};
 window.HUNDEFANG_READY=true;
