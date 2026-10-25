@@ -227,7 +227,7 @@ function boardPage(){const st=ST();
  return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">PLÜNDERUNGEN · VOR DEM TOR</p><h1>${quest?'Krassus wartet':'Auf zum Plündern'}</h1></div><div class="buttons"><button class="btn" data-action="nav:home">‹ Ludus</button><button class="btn" data-action="outside:intro">▶ Szene „Der Schuldeneintreiber“</button></div></div>
  <div class="ow-cols"><div>${card}</div>
  <div class="box"><h2>Wer geht mit?</h2><p class="tiny">1 bis ${D.CFG.maxParty} Kämpfer. Kein Steuern unterwegs: nur Weiter oder Fliehen. Fliehen geht immer. Verletzungen bleiben, Tote bleiben tot. Nach jedem gesäuberten Ort eine kurze Rast.</p>
-  <div class="buttons"><button class="btn" data-action="outside:auto:5">Beste 5</button><button class="btn" data-action="outside:auto:10">Beste 10</button><button class="btn" data-action="outside:none">Keiner</button></div>
+  <div class="buttons"><button class="btn" data-action="outside:auto:5">Beste 5</button><button class="btn" data-action="outside:auto:10">Beste 10</button><button class="btn" data-action="outside:none">Keiner</button><button class="btn" data-action="outside:equip" title="Verteilt die beste freie Ausrüstung aus dem Lager an die gewählten Kämpfer (gesperrte Plätze bleiben)">⚔ Gruppe ausrüsten</button></div>
   ${leadBox}<div class="ow-picks">${rows||'<p>Keine Kämpfer im Kader.</p>'}</div>
   <p class="ow-need ${can?'ok':''}">${n>D.CFG.maxParty?'Höchstens '+D.CFG.maxParty+' Kämpfer.':n<1?'Mindestens ein kampffähiger Kämpfer.':n+' von höchstens '+D.CFG.maxParty+' gewählt.'}</p>
   <div class="buttons"><button class="btn primary" data-action="outside:go" ${can?'':'disabled'}>Aufbrechen ▶</button></div>
@@ -255,6 +255,7 @@ M.schoolClick=action=>{if(!action.startsWith('outside:'))return prevClick?prevCl
  if(k==='auto'){autoPick(+v||5);M.ui.render();return true;}
  if(k==='lead'){st.leaderId=v;persist();M.ui.render();return true;}
  if(k==='none'){sel=new Set();M.ui.render();return true;}
+ if(k==='equip'){const team=selected();notify(team.length?M.army.autoEquip(team,S.army?.equipPriority||'balanced'):'Erst Kämpfer auswählen.');persist();M.ui.render();return true;}
  if(k==='biome'){st.adv=newAdventure(v,st.adv?.diff);persist();M.ui.render();return true;}
  if(k==='diff'){st.adv??=newAdventure();st.adv.diff=Math.max(1,Math.min(5,+v||2));persist();M.ui.render();return true;}
  if(k==='reroll'){st.adv=newAdventure(st.adv?.biome,st.adv?.diff);persist();M.ui.render();return true;}
@@ -273,11 +274,13 @@ const speed=()=>Math.max(1,S.options?.speed||1);
 function overlayDom(){const view=$('battleView');if(!view)return null;let o=$('owOver');if(o&&o.parentNode===view)return o;
  o=document.createElement('div');o.id='owOver';o.innerHTML=`<canvas id="owWx"></canvas><div id="owBubbles"></div><div class="ow-top"><div class="ow-title"><b id="owTitle"></b><small id="owSub"></small></div><div class="ow-chips"><span class="tag" id="owStation"></span><span class="tag" id="owCount"></span><span class="tag" id="owLoot"></span></div></div><div class="ow-mapbox" id="owMapBox"><canvas id="owMap" width="480" height="270"></canvas></div><div class="ow-logbox" id="owLogBox" hidden><div id="owLog"></div></div>
  <div class="ow-auto" id="owAuto" hidden><b id="owAutoText"></b><div><button type="button" class="btn primary" id="owNext">Weiter ▶</button><button type="button" class="btn" id="owHome">Mit Beute heim</button></div></div>
- <div class="ow-ctrl"><span id="owState"></span><button type="button" class="btn" id="owFlee">Fliehen</button><button type="button" class="btn" id="owSpdBtn">1×</button><button type="button" class="btn" id="owLogBtn">Bericht</button><button type="button" class="btn" id="owMapBtn">Karte</button></div>`;
+ <div class="ow-ctrl"><span id="owState"></span><button type="button" class="btn" id="owFlee">Fliehen</button><button type="button" class="btn" id="owSpdBtn">1×</button><button type="button" class="btn" id="owLogBtn">Bericht</button><button type="button" class="btn" id="owMapBtn">Karte</button><span class="ow-zoom"><button type="button" class="btn" id="owZoomOut" aria-label="Herauszoomen">−</button><b id="owZoomTxt">1×</b><button type="button" class="btn" id="owZoomIn" aria-label="Hineinzoomen">+</button></span><button type="button" class="btn" id="owFogBtn" title="Kampfnebel an/aus">Nebel an</button></div>`;
  view.insertBefore(o,$('battleBottom'));if(innerWidth<600)$('owMapBox').hidden=true;LU?.mount(o);
  // Bedienung liegt im Kampfbild (nicht ganz unten), damit man auf dem Handy nie scrollen muss
  $('owNext').onclick=next;$('owHome').onclick=flee;$('owFlee').onclick=flee;
  $('owLogBtn').onclick=()=>{const bx=$('owLogBox');bx.hidden=!bx.hidden;$('owLogBtn').classList.toggle('primary',!bx.hidden);if(!bx.hidden)$('owLog').scrollTop=1e9;};$('owMapBtn').onclick=()=>{const bx=$('owMapBox');bx.hidden=!bx.hidden;};
+ $('owZoomOut').onclick=()=>setZoom((R.zoom||1)/1.25);$('owZoomIn').onclick=()=>setZoom((R.zoom||1)*1.25);setZoom(R.zoom||1);
+ const showFog=()=>{$('owFogBtn').textContent=FOG.on?'Nebel an':'Nebel aus';};$('owFogBtn').onclick=()=>{FOG.on=!FOG.on;showFog();};showFog();
  const sb=$('owSpdBtn'),showSp=()=>{sb.textContent=clamp(Math.round(S.options?.speed||1),1,3)+'×';};showSp();sb.onclick=()=>{S.options.speed=clamp(Math.round(S.options.speed||1),1,3)%3+1;showSp();};
  setButtons(R.awaiting||'march');return o;}
 function bottomDom(){const bb=$('battleBottom');if(!bb)return;if(bb.dataset.ow===R.runId)return;bb.dataset.ow=R.runId;
@@ -291,16 +294,32 @@ const hudCam=M.battleCamera;
 function missionCam(b,width,height,W,H){const ov=LU?.camera(b,width,height,W,H);if(ov){sizeFieldSoon();return ov;}const Z=R.zoom||1,fit=Math.min(width/W,height/H),k=height/VH*Z,view=width/k,vh=VH/Z;sizeFieldSoon();
  const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
  let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=view*.18;
- tx=clamp(tx,view/2,W-view/2);ty=clamp(ty,vh/2,H-vh/2);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
- R.cam.x=clamp(R.cam.x,view/2,W-view/2);R.cam.y=clamp(R.cam.y,vh/2,H-vh/2);return {zoom:k/fit,x:R.cam.x,y:R.cam.y};}
-// Zoom im Missionskampf: Mausrad am PC, zwei Finger auf dem Handy (1× bis 3×)
+ const fx=v=>view>=W?W/2:clamp(v,view/2,W-view/2),fy=v=>vh>=H?H/2:clamp(v,vh/2,H-vh/2);tx=fx(tx);ty=fy(ty);const q=R.cam.snap?1:.06;R.cam.x+=(tx-R.cam.x)*q;R.cam.y+=(ty-R.cam.y)*q;R.cam.snap=false;
+ R.cam.x=fx(R.cam.x);R.cam.y=fy(R.cam.y);return {zoom:k/fit,x:R.cam.x,y:R.cam.y};}
+// Zoom im Missionskampf: Mausrad am PC, zwei Finger auf dem Handy, Knöpfe − / + (0,5× bis 3×; unter 1× sieht man mehr vom Schauplatz)
+const ZMIN=.5,ZMAX=3,setZoom=z=>{R.zoom=R.zoomPref=clamp(z,ZMIN,ZMAX);const e=$('owZoomTxt');if(e)e.textContent=(Math.round(R.zoom*10)/10).toString().replace('.',',')+'×';};
 function inField(e){return !!R.m&&e.target?.closest?.('#battleView')&&!e.target.closest('button,.ow-logbox,.ow-mapbox');}
-addEventListener('wheel',e=>{if(!inField(e))return;e.preventDefault();R.zoom=clamp((R.zoom||1)*Math.exp(-e.deltaY*.0015),1,3);},{passive:false});
+addEventListener('wheel',e=>{if(!inField(e))return;e.preventDefault();setZoom((R.zoom||1)*Math.exp(-e.deltaY*.0015));},{passive:false});
 let pinch=null;const tdist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
 addEventListener('touchstart',e=>{if(e.touches.length===2&&inField(e)){pinch={d:tdist(e.touches),z:R.zoom||1};}},{passive:true});
-addEventListener('touchmove',e=>{if(pinch&&e.touches.length===2){e.preventDefault();R.zoom=clamp(pinch.z*tdist(e.touches)/Math.max(1,pinch.d),1,3);}},{passive:false});
+addEventListener('touchmove',e=>{if(pinch&&e.touches.length===2){e.preventDefault();setZoom(pinch.z*tdist(e.touches)/Math.max(1,pinch.d));}},{passive:false});
 addEventListener('touchend',e=>{if(e.touches.length<2)pinch=null;},{passive:true});
 M.battleCamera=function(b,...r){return b?.mission?missionCam(b,...r):hudCam?hudCam.call(this,b,...r):null;};
+// ---------- Kampfnebel ----------
+// Sparsam: ein kleines Raster (1 Zelle = 16 Feldpunkte) wird nur alle 0,15 s neu gezeichnet (dunkel füllen, um jeden eigenen
+// Kämpfer einen weichen Kreis freistechen) und dann vergrößert über das Feld gelegt. Gegner außerhalb jeder Sichtweite werden
+// nicht gezeichnet. Die Kampf-KI sieht weiter alles (reine Darstellung, Simulation unverändert). Abschaltbar: FOG.on=false.
+const FOG={on:true,cell:16,every:.15,alpha:.8,sight:{Soldat:300,Assassine:330,Fernkämpfer:400},sightOther:300,c:null,t:0,b:null,seen:new Set()};
+function fogSight(a){return FOG.sight[a.g?.role]??FOG.sightOther;}
+function fogUpdate(b){const W=b.width||1040,H=b.height||VH,cw=Math.ceil(W/FOG.cell),ch=Math.ceil(H/FOG.cell);if(!FOG.c)FOG.c=document.createElement('canvas');const c=FOG.c;if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch;}
+ const g=c.getContext('2d'),eyes=b.actors.filter(a=>a.team===0&&!a.g.dead);g.globalCompositeOperation='source-over';g.clearRect(0,0,cw,ch);g.fillStyle='#0b1216';g.fillRect(0,0,cw,ch);g.globalCompositeOperation='destination-out';
+ for(const a of eyes){const r=fogSight(a)/FOG.cell,x=a.x/FOG.cell,y=a.y/FOG.cell,gr=g.createRadialGradient(x,y,r*.55,x,y,r);gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();}
+ g.globalCompositeOperation='source-over';FOG.seen=new Set();for(const e of b.actors){if(e.team===0)continue;if(eyes.some(a=>Math.hypot(a.x-e.x,a.y-e.y)<fogSight(a)*.92))FOG.seen.add(e);}FOG.b=b;}
+function fogActive(b){return FOG.on&&!!b?.mission&&!!R.m&&S.battle===b&&!(LU&&(LU.SPY?.on||LU.CLOSE?.on));}
+const prevFogOverlay=M.battleOverlay;M.battleOverlay=function(ctx,b){prevFogOverlay?.(ctx,b);if(!fogActive(b))return;const now=performance.now()/1000;if(FOG.b!==b||now-FOG.t>FOG.every){FOG.t=now;fogUpdate(b);}
+ ctx.save();ctx.imageSmoothingEnabled=true;ctx.globalAlpha=FOG.alpha;ctx.drawImage(FOG.c,0,0,FOG.c.width*FOG.cell,FOG.c.height*FOG.cell);ctx.restore();};
+const prevFogHidden=M.battleHidden;M.battleHidden=function(a){if(prevFogHidden?.(a))return true;const b=S.battle;if(!fogActive(b)||a.team===0||FOG.b!==b)return false;return !FOG.seen.has(a)&&!a.g.dead;};
+M.outsideFog=FOG;
 // Kampf-HUD: Kopfzeile mit Schule und Gegnern
 if(M.battleHud){const prevBuild=M.battleHud.onBuild;M.battleHud.onBuild=(panel,b)=>{prevBuild?.(panel,b);if(!b?.mission)return;const n=panel.querySelectorAll('.bh-name b'),m=b.mission;if(n[0])n[0].textContent='BLAU · '+school().toUpperCase();if(n[1])n[1].textContent=(m.kind==='quest'?(b.section===m.place.sections.length-1?'KRASSUS & BANDE':'KRASSUS’ SCHULDNER'):(m.texts?.band||'BANDE').toUpperCase())+' · ROT';};}
 M.drawSprite=(ctx,o)=>A.drawSprite(ctx,o);
@@ -393,18 +412,29 @@ function onEvent(b,e){const m=R.m,adv=m.kind==='adventure';
 
 // Der Lade-Bildschirm der Arena (scene-loader.js) bereitet Arena-Grafik vor und wartet auf „Weiter“. Missionen zeichnen
 // ihren eigenen Schauplatz und wechseln mehrmals den Abschnitt: dort nicht anhalten.
-function bypassLoader(){const SL=M.sceneLoader;if(SL&&!SL.__ow){const g0=SL.gate;SL.gate=function(){if(S.battle?.mission)return false;return g0.apply(this,arguments);};SL.__ow=true;}}
+function bypassLoader(){const SL=M.sceneLoader;if(SL&&!SL.__ow){const g0=SL.gate;SL.gate=function(){if(S.battle?.mission)return !!SL.active;return g0.apply(this,arguments);};SL.__ow=true;}}
 async function startMission(){if(S.battle||R.m)return;bypassLoader();LU?.install({bubble,mlog,toScreen,live,cam:()=>R.cam,VH,state:t=>{const e=$('owState');if(e)e.textContent=t;}});const st=ST(),team=selected();if(team.length<D.CFG.minParty||team.length>D.CFG.maxParty)return;
  const quest=st.stage!=='done';if(!quest&&!adventureReady()){notify('Heute wart ihr schon draußen.');return;}
  let m;if(quest){st.quest??=newQuestPlace();m=D.newMission(st.quest.seed,team,'dorf',{kind:'quest'});m.place.name=st.quest.name;}
  else{m=D.newMission(st.adv.seed,team,st.adv.biome,{kind:'adventure',diff:st.adv.diff||2});}
- R.missionTime=0;R.lastSeen=null;R.m=m;R.zoom=1;R.ended=false;R.ending=false;R.fleeing=false;R.progress=0;R.rows=[];R.rowKey=0;R.full=[];R.lastTime=0;R.awaiting='march';R.runId='run'+Date.now();loopT={map:0,info:0};
+ R.missionTime=0;R.lastSeen=null;R.m=m;R.zoom=R.zoomPref||1;R.ended=false;R.ending=false;R.fleeing=false;R.progress=0;R.rows=[];R.rowKey=0;R.full=[];R.lastTime=0;R.awaiting='march';R.runId='run'+Date.now();loopT={map:0,info:0};
  if(quest)st.tries++;else{st.lastAdventure=S.day;st.adventures++;}
  st.run={id:R.runId,kind:m.kind,place:m.place.name,day:S.day,party:team.map(g=>g.id)};persist();
  document.body.classList.add('ow-mission');
  const intro=quest?`<b>${esc(school())}</b> bricht nach <b>${esc(m.place.name)}</b> auf. ${team.length} ${team.length===1?'Kämpfer, ein improvisiertes Testament':'Kämpfer, '+team.length+' improvisierte Testamente'}. Zwei Tagesmärsche später: ${esc(D.moodText(m.place.mood))}`
   :`<b>${esc(school())}</b> zieht los: ${esc(m.place.label)} ${esc(m.place.name)}. ${esc((m.texts?.intro||'').replace('{P}',m.place.name))} ${esc(D.moodText(m.place.mood))}`;
  await runSection(0,intro);}
+// Ladefenster (scene-loader.js): Schauplatz, Waffenbilder samt Blutstufen und alle Figuren dieses Abschnitts (eigene und
+// kommende Gegner) werden vorab gezeichnet, damit der Kampf danach ohne Ruckler läuft. Erster Abschnitt wartet auf „Weiter“,
+// spätere Abschnitte laufen nach dem Laden von selbst weiter. Ohne Ladefenster (?preload=off) wird nur der Schauplatz gebaut.
+async function prepareSection(m,b,si){const SL=M.sceneLoader;let img=null;M.missionBackdrop=(ctx)=>{if(img)A.drawBackdrop(ctx,img,b);};
+ const sec=m.place.sections[si],foes=sec.stations.flatMap(i=>m.queues?.[i]||[]),people=[...b.actors.map(a=>a.g),...foes];
+ const jobs=[{label:'Schauplatz, Wege und Hindernisse',run:()=>{img=A.scene(b.L,m.place);}}];
+ if(SL?.enabled){jobs.push(...SL.equipmentTasks(people.map(g=>({g})),true));const c=document.createElement('canvas');for(const g of people)jobs.push({label:'Kämpfer und Gegner zeichnen',run:()=>{try{M.renderTeamFigure?.(c,g);}catch(e){}}});
+  jobs.push({label:'Startbild',run:()=>{try{if(S.battle===b)M.renderBattle?.();}catch(e){}}});
+  try{await SL.run(si===0?'Abenteuer wird vorbereitet':'Nächster Abschnitt wird vorbereitet',jobs,{auto:si>0});}catch(e){console.warn(e);if(!img)img=A.scene(b.L,m.place);}}
+ else jobs[0].run();
+ return img;}
 function clearPoint(b,x,y){for(let k=0;k<12;k++){const yy=y+(k%2?1:-1)*Math.ceil(k/2)*14;if(!b.obstacles.some(o=>o.hp>0&&Math.hypot(o.x-x,o.y-yy)<o.r+18))return yy;}return D.pathY(b.L,x);}
 // Marsch mit Wegsuche: jeder bekommt einen Weg um Bäume, Häuser und Fässer herum (D.findPath). Wer trotzdem hängt (2,6 s ohne
 // Fortschritt), plant neu. Alle brechen gemeinsam auf (nur kleine Verzögerung) und der Marsch endet erst, wenn alle da sind.
@@ -422,7 +452,7 @@ function marchTo(b,x,sp=58){if(!b.started)LU?.stow(b,true);const pa=partyActors(
 const live=b=>!R.ended&&!R.fleeing&&S.battle===b;
 async function runSection(si,introLine){const m=R.m,sec=m.place.sections[si];
  const b=R.b=D.startSection(m,si);R.lastTime=0;b.handled=false;
- const img=A.scene(b.L,m.place);D.addObstacles(b,b.L.extraObstacles);M.missionBackdrop=(ctx)=>A.drawBackdrop(ctx,img,b);
+ const img=await prepareSection(m,b,si);D.addObstacles(b,b.L.extraObstacles);M.missionBackdrop=(ctx)=>A.drawBackdrop(ctx,img,b);
  R.cam.x=0;R.cam.y=D.pathY(b.L,0);R.cam.snap=true;
  M.ui.render();missionHud(b);$('battleView')?.classList.remove('ow-fade');const bl=$('owBubbles');if(bl)bl.innerHTML='';
  const tt=$('owTitle');if(tt)tt.textContent=m.place.name;const sb=$('owSub');if(sb)sb.textContent=`${m.kind==='adventure'?'Plünderung '+'☠'.repeat(m.diff||2)+' · ':''}${m.place.label} · ${D.moodText(m.place.mood)}`;

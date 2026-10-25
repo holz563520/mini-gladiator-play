@@ -115,3 +115,8 @@ body.ow-mission #battleTop{display:none}
 #alBar{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;pointer-events:auto;background:rgba(23,32,28,.85);border:2px solid #3b2508;padding:4px 8px;color:#efe0b3;font-family:'Courier Prime',monospace;font-size:12px;white-space:nowrap}
 #alBar .btn{min-height:30px;padding:3px 10px;font-size:12px}#alBar small{opacity:.7}
 @media(max-width:600px){#alBar{font-size:10px;gap:4px;padding:3px 5px}#alBar .btn{min-height:28px;padding:2px 7px;font-size:10px}}
+
+/* Zoom-Knöpfe und Kampfnebel-Schalter */
+.ow-zoom{display:inline-flex;align-items:center;gap:2px}.ow-zoom b{min-width:34px;text-align:center;font-size:11px;color:#e7d8b0}
+.ow-ctrl .ow-zoom .btn{padding:6px 10px;font-size:15px;line-height:1}
+@media (max-width:600px){.ow-zoom b{min-width:26px;font-size:10px}.ow-ctrl .ow-zoom .btn{padding:4px 8px}}
