@@ -120,3 +120,5 @@ body.ow-mission #battleTop{display:none}
 .ow-zoom{display:inline-flex;align-items:center;gap:2px}.ow-zoom b{min-width:34px;text-align:center;font-size:11px;color:#e7d8b0}
 .ow-ctrl .ow-zoom .btn{padding:6px 10px;font-size:15px;line-height:1}
 @media (max-width:600px){.ow-zoom b{min-width:26px;font-size:10px}.ow-ctrl .ow-zoom .btn{padding:4px 8px}}
+/* Spielfeld mit einem Finger ziehen (Kamera), zwei Finger zoomen */
+body.ow-mission #arenaCanvas{touch-action:none}
