@@ -18,6 +18,7 @@ const D=window.Debt={};M.outsideCore=D;
 D.CFG={
  henchmen:10,          // Dorftrottel insgesamt
  maxActive:2,          // höchstens so viele greifen gleichzeitig an
+ breather:3,           // Verschnaufpause: so viel schneller erholt sich die Ausdauer, wenn gerade kein Gegner steht
  minParty:1,           // so wenige Kämpfer darf man losschicken
  maxParty:10,          // so viele höchstens
  enemyStat:.4,         // Werte der Trottel relativ zu einem frischen Rekruten (Arena-Stufe 0 nutzt .79)
@@ -298,6 +299,8 @@ D.tick=function(b,dt){if(!b||b.done||!b.started||b.paused)return;
  if(b.queue.length&&D.activeEnemies(b)<(b.mission?.maxActive||D.CFG.maxActive)){b.spawnT-=dt;if(b.spawnT<=0){D.spawn(b);const r=Math.random();b.spawnT=D.CFG.spawnDelay[0]+r*(D.CFG.spawnDelay[1]-D.CFG.spawnDelay[0]);}}
  const boss=b.encEnemies.find(a=>a.g.debtBoss);if(boss&&!b.bossHurt&&!boss.down&&M.health(boss.g)<55){b.bossHurt=true;b.events.push({type:'bossHurt',actor:boss});}
  D.unstick(b,dt);
+ // Verschnaufpause zwischen zwei Gegnern: Luft holen statt erschöpft weiterzutorkeln
+ if(!D.activeEnemies(b)&&D.CFG.breather>0)for(const a of b.actors)if(a.team===0&&!a.down&&!a.g.dead&&!(a.fallTimer>0)){const ef=M.effective(a);a.energy=Math.min(ef.maxEnergy,a.energy+ef.regen*dt*D.CFG.breather);}
  // Patt nach langer Zeit: Dorftrottel verlieren die Nerven (Krassus nie)
  if(b.time-b.encStart>150&&!b.queue.length){for(const a of b.encEnemies)if(!a.down&&!a.g.dead&&!a.surrendered&&!a.g.debtBoss){a.surrendered=true;a.state='idle';b.events.push({type:'gaveup',actor:a});}}
  if(b.time>b.timeLimitAt&&!b.done){b.paused=true;b.done={winner:-1,reason:'Zeitlimit'};}
