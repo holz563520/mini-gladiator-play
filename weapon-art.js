@@ -59,11 +59,12 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practic
  const wetPoints=[];if(b>0&&mask.size){const points=[...mask].map(p=>p.split(',').map(Number)),xs=points.map(p=>p[0]),min=Math.min(...xs),max=Math.max(...xs),level=b/12;
  for(const [x,y]of points){const u=(x-min)/Math.max(1,max-min),n=noise(Math.floor(x/3),Math.floor(y/2),k),fine=noise(x,y,k+37),edgeBias=(Math.sin(x*.37+k)*.5+.5)*.16;
  // Swords keep a readable metal edge and a patchy stain near the tip.
- const ax=axes.includes(id)?clamp((Math.abs(y)-3)/Math.max(1,axeEdge),0,1):0;
- // Äxte: Blut zuerst an der Schneide, dann zum Auge hin
- const covered=lengths[id]?(u>.98-level*.38+edgeBias||n<level*.10&&u>.50):axes.includes(id)?(ax>.92-level*.62+edgeBias*.6||n<level*.25&&ax>.3):(u>.90-level*.70+edgeBias||n<level*.32&&u>.14);
- if(!covered||fine<.10-level*.05)continue;
- wetPoints.push([x,y]);const colors=dry?['#3f2021','#592326','#742b2d']:['#4b1d23','#851f2b','#b12b35'];const ix=fine>.78?2:fine>.25?1:0;pix(x,y,colors[ix]);if(!dry&&fine>.94&&level>.3)pix(x,y,'#e16b62');
+ const ax=axes.includes(id)?clamp((Math.abs(y)-3)/Math.max(1,axeEdge),0,1):0,pr=axes.includes(id)?ax:u;
+ // Dezent: Blut nur an Spitze bzw. Schneide, nie geschlossen. Stufe 1 = ein paar Spritzer, volle Stufe = etwa ein Drittel der
+ // Schneidenzone gesprenkelt, dazu einzelne Tropfenspuren. Schwerter weniger als Äxte und Hämmer.
+ const reach=lengths[id]?.3:.42,band=pr>1-level*reach+edgeBias*.5,dens=fine>.62-level*.22,streak=n<level*.06&&pr>.35&&fine>.55;
+ if(!(band&&dens||streak))continue;
+ wetPoints.push([x,y]);const colors=dry?['#3b2224','#4f2427','#62292b']:['#4a1b21','#6e1d26','#8e232e'];const ix=fine>.85?2:fine>.5?1:0;pix(x,y,colors[ix]);if(!dry&&fine>.985&&level>.6)pix(x,y,'#b8454a');
  }
  }
  const points=[...mask].map(p=>p.split(',').map(Number)),maxContactX=points.length?Math.max(...points.map(p=>p[0])):0;
@@ -76,7 +77,7 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practic
 function draw(ctx,item,opt={}){const blood=item.trainingWood?0:clamp(opt.blood??item.blood??0,0,1),angle=opt.angle||0,scale=opt.scale??1,x=opt.x||0,y=opt.y||0,t=opt.time||0,s=sprite(item,blood,opt.age||0);
 ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(scale,scale);ctx.imageSmoothingEnabled=false;ctx.drawImage(s.canvas,-s.ox,-s.oy);
 if(item.def==='bow'||item.def==='crossbow'){const bow=item.def==='bow',pose=opt.pose||{},nock=bow?-4-18*(pose.tension||0):12-17*(pose.tension??1),ax=bow?-4:11;ctx.strokeStyle='#dccdab';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ax,-22);ctx.lineTo(nock,0);ctx.lineTo(ax,22);ctx.stroke();if(pose.loaded){ctx.fillStyle='#ac9069';ctx.fillRect(nock,-1,34,2);ctx.fillStyle='#d7e1cc';ctx.fillRect(nock+31,-2,5,4)}}ctx.restore();
-if(opt.drips===false||blood<.34||(opt.age||0)>.65||!s.dripPoints.length||['javelin','throwaxe'].includes(item.def))return;
+if(opt.drips===false||blood<.5||(opt.age||0)>.65||!s.dripPoints.length||['javelin','throwaxe'].includes(item.def))return;
 // Pick the actual lowest blood-bearing point after rotation, so gravity stays vertical.
 const eligible=s.dripPoints,cs=Math.cos(angle),sn=Math.sin(angle);let tip=eligible[0];if(!tip)return;for(const p of eligible)if(p[0]*sn+p[1]*cs>tip[0]*sn+tip[1]*cs)tip=p;if(!tip)return;
 const tx=x+(tip[0]*cs-tip[1]*sn)*scale,ty=y+(tip[0]*sn+tip[1]*cs)*scale,period=3.8-blood*1.7,phase=(t+seed(item.def)%23*.13)%period;
