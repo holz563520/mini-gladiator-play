@@ -173,7 +173,7 @@ function writeInjuries(g,b,foe){const out=[];
 function finish(){if(!ov||!B.fight)return;const F=B.fight,own=F.own,o=F.o,f=fight,R=f.result,won=R.winner===0;const dead=f.b[0].dead;
  stopScene();
  const mult=learnMult(o.L.ratio,won),b0=f.b[0],foe=o.g.name;
- const after=BX.applyAftermath(f,{apply:true,learn:(g,grp,key,amt)=>g===own?M.addLearning(g,grp,key,amt*mult):0});
+ const after=BX.applyAftermath(f,{apply:true,learn:(g,grp,key,amt)=>g===own?M.addLearning(g,grp,key,amt*mult*(M.LEARN_SPEED||1)):0});
  const gains=[];for(const [grp,k,l] of SK){const from=F.before[grp+':'+k],to=val(own,grp,k);if(to-from>=.005)gains.push({label:l,from,to});}
  // Verletzungen in den echten Körper
  const inj=writeInjuries(own,b0,foe);
