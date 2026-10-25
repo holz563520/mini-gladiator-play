@@ -1,7 +1,7 @@
 'use strict';
 /* =====================================================================================================
    HUNDEFANG · Septimus Rabies, „der Hundsgraf“ (Wunsch Thomas, 25.10.2026)
-   · Vorstellung: nächstes Kapitel nach dem Bogner (S.bowyer.stage==='done'), einmal, im Ludus. Danach steht sein Karren
+   · Vorstellung: nächstes Kapitel nach dem Schuldeneintreiber (S.outside.stage==='done'), einmal, im Ludus. Danach steht sein Karren
      am Beastrium (Seite „beastrium“ bekommt oben den Karren).
    · Aufträge (Seite „hundefang“): täglich fünf Gerüchte mit 1–5 Totenköpfen, einer pro Tag. Kämpfer aus dem eigenen Kader,
      wahlweise mit Knüppel und Netz (leiht Rabies) oder eigener Ausrüstung (ohne Netz).
@@ -440,12 +440,14 @@ M.schoolPage=function(p){
  if(p==='hundefang'&&st().stage==='open'){daily();setTimeout(mount,0);return boardPage();}
  if(p==='zwinger'&&st().stage==='open'){daily();setTimeout(mount,0);return zwingerPage();}
  const html=prevPage?prevPage.apply(this,arguments):undefined;
+ if(p==='beastrium'&&!st().stage&&chainDone()&&typeof html==='string'){setTimeout(mount,0);return teaser()+html;}
  if(p==='beastrium'&&st().stage==='open'&&typeof html==='string'){daily();setTimeout(mount,0);// Reiter „Hund“ im Beastrium: offen, Zahl der Hunde, führt die Treppe hinab in den Zwinger
   const n=st().dogs.filter(D=>!D.dead).length;return cartPanel()+html.replace(/(<button role="tab" class="[^"]*?) locked(" data-action="hs:species:hund"[^>]*>[\s\S]*?)<small>🔒<\/small>/,'$1$2<small>'+n+' ▼</small>');}
  return html;};
 const prevClick=M.schoolClick;
 M.schoolClick=function(action){if(action==='hs:species:hund'&&st().stage==='open'){M.ui.click('nav:zwinger');return true;}if(!action.startsWith('hf:'))return prevClick?prevClick.apply(this,arguments):false;const [,k,v]=action.split(':');const s=st();
  if(k==='intro')introFilm(false);
+ else if(k==='intro1'){if(!st().stage)introFilm(true);}
  else if(k==='job'){selJob=+v;M.ui.render();}
  else if(k==='pick'){const g=S.roster.find(x=>x.id===v);if(g&&fit(g)){selG=v;M.ui.render();}else M.ui.notify?.('Nicht einsatzbereit. Ein paar Tage Ruhe helfen.');}
  else if(k==='go'){const j=s.jobs[selJob],g=S.roster.find(x=>x.id===selG);if(!j||j.done||usedToday()||!g||!fit(g)||S.battle)return true;sighting(j,g);}
@@ -454,12 +456,20 @@ M.schoolClick=function(action){if(action==='hs:species:hund'&&st().stage==='open
 document.addEventListener('change',e=>{const v=e.target?.dataset?.hfgear;if(v)loanMode=v;});
 
 // =====================================================================================================
-// KAPITEL · Vorstellung nach dem Bogner, im Ludus, wenn nichts anderes läuft
+// KAPITEL · Vorstellung am Ende der bisherigen Geschichte: nach dem Schuldeneintreiber (Außenwelt-Quest erledigt,
+// S.outside.stage==='done'); ohne Außenwelt-Modul nach dem Bogner. Ausgelöst im Ludus, sobald dort nichts anderes läuft
+// (nur sichtbare Szenen/Fenster zählen, liegengebliebene unsichtbare Reste blockieren nicht). Prüfung alle 1,5 s,
+// unabhängig vom Ludus-Takt. Zur Sicherheit zusätzlich: Karren-Hinweis im Beastrium startet die Vorstellung von Hand.
 // =====================================================================================================
-let wait=0;
-const busy=()=>!!document.querySelector('#modal:not([hidden]),.medic-film,.lion-film,.smith-ceremony,.ow-film:not([hidden]),.lesson-start,.lesson-end,.medic-start,.lesson-guide,.lion-guide')||!!window.ArenaUI?.isOpen?.()||F.on;
+const chainDone=()=>M.outside?S.outside?.stage==='done':S.bowyer?.stage==='done';
+const visible=el=>!!el&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden';
+const busy=()=>F.on||!!window.ArenaUI?.isOpen?.()||[...document.querySelectorAll('#modal,.medic-film,.lion-film,.smith-ceremony,.ow-film,.lesson-start,.lesson-end,.medic-start,.lesson-guide,.lion-guide,.smith-loading,.hf-result')].some(visible)||(!!S.battle&&visible($('battleView')));
+let calm=0;
+setInterval(()=>{try{const s=st();if(s.stage==='open'){daily();return;}if(s.stage||!chainDone()||M.ui?.getPage?.()!=='home'||busy()||document.hidden){calm=0;return;}if(++calm>=2){calm=0;introFilm(true);}}catch(e){console.error(e);}},1500);
 const prevTick=M.ludusTick;
-M.ludusTick=function(dt){prevTick?.apply(this,arguments);try{const s=st();if(s.stage==='open')daily();if(s.stage||S.bowyer?.stage!=='done'||S.battle||M.ui.getPage?.()!=='home'||busy()){wait=0;return;}wait+=dt;if(wait>3){wait=0;introFilm(true);}}catch(e){console.error(e);}};
+M.ludusTick=function(dt){prevTick?.apply(this,arguments);try{if(st().stage==='open')daily();}catch(e){console.error(e);}};
+// Beastrium vor der Vorstellung: der Karren steht schon da (falls die Vorstellung aus irgendeinem Grund nicht von selbst kam)
+function teaser(){return `<section class="box hf-cart"><canvas id="hfCartFace" width="160" height="104"></canvas><div><p class="eyebrow">VOR DEM BEASTRIUM</p><h2>Ein stinkender Karren</h2><q>Es riecht nach nassem Hund, altem Blut und schlechten Entscheidungen. Im Käfig knurrt etwas.</q><div class="buttons"><button class="btn primary" data-action="hf:intro1">Nachsehen</button></div></div></section>`;}
 // Musik: Rabies' Lied, sobald er im Mittelpunkt steht (Filme, Karren/Aufträge), „Beastrium“ unten im Zwinger
 M.hundefang={music:()=>{const p=M.ui?.getPage?.();return F.on||p==='hundefang'?'rabies':p==='zwinger'?'beast':'';},state:st,intro:()=>introFilm(false),sighting,startFight,openBook,paintPlace,jobDog,daily,get fight(){return fight;},F};
 window.HUNDEFANG_READY=true;
