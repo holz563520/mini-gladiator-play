@@ -273,7 +273,7 @@ const R={m:null,b:null,lastTime:0,awaiting:null,ended:false,fleeing:false,cam:{x
 const speed=()=>Math.max(1,S.options?.speed||1);
 function overlayDom(){const view=$('battleView');if(!view)return null;let o=$('owOver');if(o&&o.parentNode===view)return o;
  o=document.createElement('div');o.id='owOver';o.innerHTML=`<canvas id="owWx"></canvas><div id="owBubbles"></div><div class="ow-top"><div class="ow-title"><b id="owTitle"></b><small id="owSub"></small></div><div class="ow-chips"><span class="tag" id="owStation"></span><span class="tag" id="owCount"></span><span class="tag" id="owLoot"></span></div></div><div class="ow-mapbox" id="owMapBox"><canvas id="owMap" width="480" height="270"></canvas></div><div class="ow-logbox" id="owLogBox" hidden><div id="owLog"></div></div>
- <div class="ow-auto" id="owAuto" hidden><b id="owAutoText"></b><div><button type="button" class="btn primary" id="owNext">Weiter ▶</button><button type="button" class="btn" id="owHome">Mit Beute heim</button></div></div>
+ <div class="ow-auto" id="owAuto" hidden><b id="owAutoText"></b><div><button type="button" class="btn primary" id="owNext">Weiter ▶</button><button type="button" class="btn" id="owHome">Heimkehren (ohne Beute)</button></div></div>
  <div class="ow-ctrl"><span id="owState"></span><button type="button" class="btn" id="owFlee">Fliehen</button><button type="button" class="btn" id="owSpdBtn">1×</button><button type="button" class="btn" id="owLogBtn">Bericht</button><button type="button" class="btn" id="owMapBtn">Karte</button><span class="ow-zoom"><button type="button" class="btn" id="owZoomOut" aria-label="Herauszoomen">−</button><b id="owZoomTxt">1×</b><button type="button" class="btn" id="owZoomIn" aria-label="Hineinzoomen">+</button></span><button type="button" class="btn" id="owFogBtn" title="Kampfnebel an/aus">Nebel an</button></div>`;
  view.insertBefore(o,$('battleBottom'));if(innerWidth<600)$('owMapBox').hidden=true;LU?.mount(o);
  // Bedienung liegt im Kampfbild (nicht ganz unten), damit man auf dem Handy nie scrollen muss
@@ -350,7 +350,7 @@ function updBubbles(){const l=$('owBubbles');if(!l)return;const placed=[];for(co
 function partyActors(b){return b.actors.filter(a=>a.team===0&&!a.down&&!a.g.dead);}
 function anyParty(b){const l=partyActors(b);return l[Math.floor(Math.random()*l.length)]||b.actors.find(a=>a.team===0);}
 const first=g=>String(g?.name||'').split(' ')[0];
-// Nach jeder Begegnung geht es von selbst weiter (Countdown). „Weiter ▶“ springt sofort, „Mit Beute heim“ beendet die Mission.
+// Nach jeder Begegnung geht es von selbst weiter (Countdown). „Weiter ▶“ springt sofort, „Heimkehren (ohne Beute)“ beendet die Mission; Beute gibt es nur für die ganze Mission.
 function setButtons(state){R.awaiting=state;clearInterval(R.autoT);const fl=$('owFlee'),au=$('owAuto');
  if(fl){fl.disabled=['flee','won','end','next'].includes(state);fl.textContent='Fliehen';}
  const boss=R.m?.kind==='quest'?'Krassus liegt am Boden.':'Der Anführer liegt am Boden.';
@@ -358,7 +358,7 @@ function setButtons(state){R.awaiting=state;clearInterval(R.autoT);const fl=$('o
  if(au){au.hidden=!['next','won'].includes(state);if(!au.hidden){let left=state==='won'?4:5;const tick=()=>{const t=$('owAutoText');if(t)t.textContent=(state==='won'?'Zum Ergebnis in ':'Weiter in ')+left+' …';if(left--<=0){clearInterval(R.autoT);next();}};
   $('owHome').hidden=state==='won';$('owNext').textContent=state==='won'?'Zum Ergebnis ▶':'Weiter ▶';tick();R.autoT=setInterval(tick,1000/Math.min(2,speed()));}}}
 function renderInfo(){const m=R.m;if(!m)return;const b=S.battle;const live=b&&b.started&&!b.done?b.encEnemies.filter(a=>a.down||a.g.dead).length:0;
- const c=$('owCount');if(c)c.textContent=`Gegner ${m.killed+live} / ${m.total}`;const l=$('owLoot');if(l)l.textContent=m.loot.length?`Beute: ${m.loot.length}`:'Beute: –';}
+ const c=$('owCount');if(c)c.textContent=`Gegner ${m.killed+live} / ${m.total}`;const l=$('owLoot');if(l)l.textContent=m.loot.length?`Beute bei Sieg: ${m.loot.length}`:'Beute: –';}
 function paintMap(t=0){const m=R.m,c=$('owMap');if(!m||!c||$('owMapBox')?.hidden)return;A.map(c,m.place,{reveal:m.idx,cleared:m.cleared,progress:R.progress,party:A.mapPoint(m.place,R.progress),t});}
 function updProgress(){const m=R.m,b=S.battle;if(!m||!b?.L)return;const sec=m.place.sections[b.section],pa=partyActors(b);if(!pa.length)return;const x=pa.reduce((s,a)=>s+a.x,0)/pa.length;
  const f=sec.stations[0],l=sec.stations[sec.stations.length-1];const p0=f*3+.4,p1=(l+1)*3+(sec.boss?0:1.4);R.progress=Math.max(R.progress,p0+(p1-p0)*clamp(x/sec.W,0,1));}
@@ -564,7 +564,7 @@ function abortMission(){R.ending=true;R.ended=true;cleanupBattle();R.m=null;R.b=
 function finishMission(kind){const m=R.m;if(R.ended)return;R.ended=true;R.ending=true;R.fleeing=false;R.marching=false;setButtons('end');R.nextRes=null;
  const b=S.battle;if(b)b.paused=true;
  setTimeout(()=>{try{applyResult(m,kind);}catch(e){console.error(e);}if(S.battle?.mission===m)S.battle=null;cleanupBattle();R.m=null;R.b=null;persist();view='result';M.ui.click('nav:outside');},kind==='won'?600:900);}
-function applyResult(m,kind){const st=ST(),adv=m.kind==='adventure',keep=kind!=='lost';
+function applyResult(m,kind){const st=ST(),adv=m.kind==='adventure',keep=kind==='won';/* Beute nur, wenn die ganze Mission geschafft ist */
  if(st.run?.id!==R.runId)return;// anderer Spielstand: nichts anwenden
  const loot=[];if(keep)for(const l of m.loot){const item=M.copy(l.item);item.id=M.uid();item.durability=Math.max(1,Math.round(Math.min(item.durability??item.maxDurability,item.maxDurability??item.durability??1)));S.inventory.push(item);loot.push({name:M.itemName(item),from:l.from});}
  const gold=keep&&kind==='won'?m.gold:0;if(gold){S.gold+=gold;if(S.stats)S.stats.earned=(S.stats.earned||0)+gold;}
@@ -572,11 +572,11 @@ function applyResult(m,kind){const st=ST(),adv=m.kind==='adventure',keep=kind!==
  if(adv&&kind==='won')st.advWins++;
  if(!adv&&kind!=='won')st.quest={...newQuestPlace(),name:st.quest?.name||m.place.name};
  const head=adv?{won:['SIEG',`${m.place.name} atmet auf. Oder hält die Luft an. Die ${m.texts.band} ist zerschlagen, ihr Anführer liegt im Dreck, seine Truhe gehört euch.`],
-   fled:['GEFLOHEN','Ihr rennt. Würdevoll ist anders, aber lebendig ist auch was. Die Beute bis hierher habt ihr behalten.'],
+   fled:['GEFLOHEN','Ihr rennt. Würdevoll ist anders, aber lebendig ist auch was. Die Beute bleibt liegen – die gibt es nur für den ganzen Ort.'],
    withdrawn:['HEIMGEKEHRT','Ihr nehmt, was ihr habt, und geht. Die Bande zählt ihre Toten. Ihr zählt eure Beute.'],
    lost:['NIEDERLAGE',`Ihr wacht im Straßengraben vor ${m.place.name} auf. Ohne Beute, ohne Würde. Die Bande hat sogar die Stiefel mitgenommen. Fast.`]}[kind]
   :{won:['SCHULDEN GETILGT',`Krassus Knochenzins liegt im Dreck von ${m.place.name}. Der Schuldschein ist Asche, die Dörfler jubeln. Nicht für euch. Sie jubeln, weil sie jetzt niemandem mehr etwas schulden. Außer dem Totengräber. Ab jetzt steht euch das Land offen: Ab jetzt schickt ihr eure Gladiatoren zum Plündern: Hinter dem Tor wartet jeden Tag ein neues Ziel.`],
-   fled:['GEFLOHEN','Ihr rennt. Würdevoll ist anders, aber lebendig ist auch was. Die Beute bis hierher habt ihr behalten. Krassus wartet weiter.'],
+   fled:['GEFLOHEN','Ihr rennt. Würdevoll ist anders, aber lebendig ist auch was. Die Beute bleibt liegen. Krassus wartet weiter.'],
    withdrawn:['ABGEZOGEN','Ihr nehmt, was ihr habt, und geht. Krassus wird es merken. Aber nicht heute.'],
    lost:['NIEDERLAGE',`Ihr wacht im Straßengraben vor ${m.place.name} auf. Ohne Beute, ohne Würde, aber mit einer frischen Mahnung im Gürtel.`]}[kind];
  for(const g of m.party){if(g.dead)continue;g.history?.unshift({day:S.day,text:(adv?'Plünderung':'Außenmission')+' '+m.place.name+': '+head[0].toLowerCase()+'.'});}

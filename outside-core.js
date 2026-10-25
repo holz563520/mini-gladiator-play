@@ -388,7 +388,8 @@ D.endEncounter=function(m,b,o={}){D.collect(m,b);const st=m.place.stations[b.enc
   g.fatigue=clamp(g.fatigue+D.CFG.fatigueBase+out.time/25,0,100);
   if(g.dead){a.counted=true;if(!m.deaths.includes(g)){m.deaths.push(g);out.died.push(g);}}else if(!D.fit(g)){out.downed.push(g);}}
  for(const a of b.encEnemies){if(!(a.down||a.g.dead||a.surrendered))continue;out.kills++;
-  const e=a.g.enemyGear;for(const it of [e.weapon,e.shield].filter(Boolean)){if(it.def==='net')continue;out.loot.push({item:it,from:a.g.name});}}
+  // Beute: Waffe, Schild, alle Rüstungsteile und was im Kampf aus der Hand fiel (zählt erst, wenn die ganze Mission geschafft ist)
+  const e=a.g.enemyGear,seen=new Set();for(const it of [e.weapon,e.shield,...Object.values(e.armor||{}),...(a.lootDrops||[])].filter(Boolean)){if(it.def==='net'||seen.has(it))continue;seen.add(it);out.loot.push({item:it,from:a.g.name});}}
  m.killed+=out.kills;
  if(w===0&&!st.boss&&D.CFG.restBlood>0){for(const g of m.party)if(!g.dead){const before=g.blood;g.blood=Math.min(100,g.blood+D.CFG.restBlood);out.rest+=Math.round(g.blood-before);}}
  if(w===0){m.cleared=st.i;m.loot.push(...out.loot);if(st.boss){const r=rng32(m.seed^0x5eed);m.gold=m.kind==='adventure'?m.goldPrize:Math.round(D.CFG.gold[0]+r()*(D.CFG.gold[1]-D.CFG.gold[0]));m.state='won';}}
