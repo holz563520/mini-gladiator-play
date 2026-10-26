@@ -32,7 +32,7 @@ const clean=t=>String(t||'').replace(/<[^>]*>/g,' ').replace(/\{[^}]*\}/g,'').re
 // Eine Zeile sprechen. who: Kürzel/Name der Figur, g: ihr Gladiator-Objekt (für Mundbewegung in Großaufnahmen)
 // o.soft: Sprechblase auf dem Spielfeld – spricht nur, wenn gerade kein Gespräch läuft, und etwas leiser
 const norm=t=>clean(t).replace(/[„“"»«]/g,'').toLowerCase();let lastKey='',lastT=-1e9;
-function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöüß]/i.test(txt)||!window.Sprech)return null;
+function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöüß]/i.test(txt)||!window.Sprech)return null;if(o.soft&&fieldPaused())return null;
  const nk=norm(txt),now=performance.now();if(nk===lastKey&&now-lastT<9000){if(g&&cur&&!cur.g)cur.g=g;return cur;}
  const out=M.audioEngine?.voiceOut?.();if(!out)return null;if(o.soft&&cur&&!cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur))return null;stop();
  lastKey=nk;lastT=now;const key=o.voice||voiceKey(who,g,o.name);g=g||faceFor(key,o.name||(typeof who==='string'?who:''));const voice=voiceFor(key,g,o),me={id:++seq,key,who,g,name:o.name||g?.name||'',text:txt,soft:!!o.soft,t0:performance.now(),start:Infinity,dur:0,mouth:null,src:null};cur=me;
@@ -74,6 +74,12 @@ setInterval(poll,250);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
 // Ein Gebäude/Fenster öffnen unterbricht sofort alles, was gerade gesprochen wird (und Applaus/Gelächter)
 {const wrap=()=>{const U=M.ui;if(!U||U._sprechWrap)return!!U;U._sprechWrap=true;const click=U.click;if(typeof click==='function')U.click=function(a,...r){if(typeof a==='string'&&a.startsWith('nav:')){stop();M.crowdMood?.(null);}return click.call(this,a,...r);};const modal=U.modal;if(typeof modal==='function')U.modal=function(...r){stop();return modal.apply(this,r);};return true;};if(!wrap()){const iv=setInterval(()=>{if(wrap())clearInterval(iv);},300);}}
+// ---------- Spielfeld still, solange ein Gebäude/Fenster offen ist ----------
+// Ist über dem Ludus ein Fenster offen (Medicus, Gespräche …) oder eine andere Seite, steht das Spielfeld: keine Bewegung,
+// keine Sprechblasen, keine Geräusche von dort. Der Ludus-Takt (M.ludusTick, von allen Modulen erweitert) wird ganz außen angehalten.
+function fieldPaused(){const m=document.getElementById('modal');return !!(m&&!m.hidden&&m.innerHTML.trim())||(M.ui?.getPage&&M.ui.getPage()!=='home');}
+M.fieldPaused=fieldPaused;
+{const hook=()=>{if(!window.HUNDEFANG_READY||typeof M.ludusTick!=='function')return false;const inner=M.ludusTick;M.ludusTick=function(dt){const m=document.getElementById('modal');if(m&&!m.hidden&&m.innerHTML.trim())return;return inner.apply(this,arguments);};return true;};const iv=setInterval(()=>{if(hook())clearInterval(iv);},400);}
 // ---------- Gesichter: bekannte Figuren melden ihren Kopf an (M.registerFace), der Schmied wird aus seinen Daten gebaut ----------
 const FACES=[];let smithFaceC=null;
 function smithFace(){const p=M.workshop?.state?.master||M.s?.forgeWorkshop?.master;if(!p||!M.makeGladiator)return null;if(smithFaceC?.name===p.name)return smithFaceC;const rng=M.s.rng,g=M.makeGladiator(0);M.s.rng=rng;Object.assign(g,{id:'sprech-smith',name:p.name,height:p.height||186,weight:p.weight||100,muscle:58,fame:0,scars:[]});if(p.appearance)g.appearance={...g.appearance,...p.appearance};return smithFaceC=g;}
