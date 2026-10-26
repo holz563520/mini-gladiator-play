@@ -22,7 +22,9 @@ function songReady(t){if(t.broken||typeof Audio==='undefined')return false;if(t.
 function songNext(t){if(!t.el||!t.files)return;t.idx=(t.idx+1)%t.files.length;t.el.src='music/'+t.files[t.idx]+'.'+t.ext;if(t.playing){const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}}
 function songStop(t){if(t.el&&t.playing){t.playing=false;t.level=0;t.el.pause();}}
 // Hat der Browser ein gewünschtes Lied von sich aus angehalten (Handy: Audio-Unterbrechung, Ladepause, Speicher), läuft es an derselben Stelle weiter – kein Neustart.
-function songTick(){const wanted=songWanted();for(const key in songs){const t=songs[key],want=wanted===key&&songReady(t);if(!t.el||t.broken)continue;t.level+=((want?.42:0)-t.level)*.12;if(want&&!t.playing){t.playing=true;const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}else if(want&&t.el.paused&&Date.now()-(t.retry||0)>700){t.retry=Date.now();const p=t.el.play();if(p?.catch)p.catch(()=>{});}else if(t.playing&&t.level<.02)songStop(t);try{t.el.volume=Math.max(0,Math.min(1,t.level));}catch{}}}
+// Sprechstimmen: Musik wird leiser, solange jemand spricht (duck 0–1), damit die Stimme nicht untergeht
+let duckT=1,duckC=1;
+function songTick(){const wanted=songWanted();for(const key in songs){const t=songs[key],want=wanted===key&&songReady(t);if(!t.el||t.broken)continue;t.level+=((want?.42:0)-t.level)*.12;duckC+=(duckT-duckC)*.22;if(want&&!t.playing){t.playing=true;const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}else if(want&&t.el.paused&&Date.now()-(t.retry||0)>700){t.retry=Date.now();const p=t.el.play();if(p?.catch)p.catch(()=>{});}else if(t.playing&&t.level<.02)songStop(t);try{t.el.volume=Math.max(0,Math.min(1,t.level*duckC));}catch{}}}
 const recent=new Map(),hz=n=>440*Math.pow(2,(n-69)/12);
 function init(){if(ctx)return true;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;try{
  ctx=new AC();master=ctx.createGain();master.gain.value=.62;musicBus=ctx.createGain();fxBus=ctx.createGain();musicBus.gain.value=.34;fxBus.gain.value=.7;
@@ -80,6 +82,7 @@ document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hid
 M.audioEngine={start,sound,voice,
  // Sprechstimmen (sprech-game.js): Ausgang für Sprache, nur wenn Geräusche an sind
  voiceOut:()=>enabled(false)?{ctx,bus:fxBus}:null,
+ duck:v=>{duckT=Math.max(0,Math.min(1,v??1));if(musicBus&&ctx)musicBus.gain.setTargetAtTime(.34*duckT,ctx.currentTime,.12);},
  // Schmiede-Party: Uhr und Sprungmarken des Schmiede-Liedes (nur lesen bzw. umstellen, die Wiedergabe steuert weiter songTick).
  smithClock:()=>{const t=songs.smith;return{idx:t.idx,time:t.el?t.el.currentTime||0:0,playing:!!(t.playing&&t.el&&!t.el.paused)};},
  smithSeek:u=>{const t=songs.smith,first=132.4,idx=u<first?0:1;t.idx=idx;if(!t.el||!t.ext)return;const want='music/'+t.files[idx]+'.'+t.ext;if(!t.el.src.endsWith(want))t.el.src=want;try{t.el.currentTime=idx?u-first:u;}catch{}if(t.playing){const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}},

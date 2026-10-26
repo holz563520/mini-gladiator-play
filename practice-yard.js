@@ -22,7 +22,7 @@ const take=kind=>{let b=bags.get(kind);if(!b?.length){b=[...lines[kind]];for(let
 function busy(){return S.battle||M.ui.getPage()!=='home'||document.hidden||window.ArenaUI?.isOpen?.()||M.sceneLoader?.gate?.()||M.intro?.active?.()||window.ArenaTheoryIntro?.active?.()||M.forgeIntro?.scene||M.forgeVisuals?.scene||M.trader?.tutorial||['pending','scene','tutorial'].includes(M.forgeIntro?.stage?.())||document.getElementById('modal')?.hidden===false||document.querySelector?.('.mg-dawn,.medic-night,.medic-film,.lesson-film,.lion-film,.smith-ceremony,.lesson-start,.medic-start,.hs-market,.hs-present,.hs-village,.lesson-end,.medic-end,.ws-scene');}
 function available(a){return !a.hurt&&!a.g.dead&&!a.g.retired&&!a.g.smithDuty&&M.health(a.g)>=75&&a.g.blood>=65&&M.limbState(a.g).canBurst&&!M.ludusHidden?.(a.g);}
 function held(a){return M.weapon({...a,closeCombat:true,ammo:0});}
-function say(a,kind,seconds=4.2,force=false){if(speech&&!force)return;const text=take(kind);speech={a,text,left:seconds};a.shoutTimer=.5;if(a.practiceSpectator){a.practiceCheer=1.4;events.cheer++;}}
+function say(a,kind,seconds=4.2,force=false){if(speech&&!force)return;const text=take(kind);speech={a,text,left:seconds};M.speakLine?.(text,null,a?.g||null,{soft:true});a.shoutTimer=.5;if(a.practiceSpectator){a.practiceCheer=1.4;events.cheer++;}}
 function snapshot(source,spectator=false){
  const g=M.copy(source.g),wood=i=>i?{...M.copy(i),blood:0,trainingWood:true}:null;
  g.enemyGear={weapon:wood(M.gear(source.g,'weapon')),secondary:wood(M.gear(source.g,'secondary')),shield:M.copy(M.gear(source.g,'shield')||null),armor:Object.fromEntries(M.armorItems(source.g).map(i=>[i.def,M.copy(i)]))};

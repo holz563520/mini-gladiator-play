@@ -108,9 +108,12 @@ function word2ph(w){
 function text2ph(text){
  const res=[];const s=String(text||'').replace(/\{[^}]*\}/g,'').replace(/\d+/g,m=>' '+numWord(+m)+' ').replace(/[„“"»«]/g,'').replace(/[–—-]/g,' ');
  const re=/([A-Za-zÄÖÜäöüß]+)|([.!?…]+)|([,;:])/g;let m;
- while((m=re.exec(s))){if(m[1]){const ph=word2ph(m[1]);if(ph.length){res.push(...ph.map(o=>({...o})));res.push({p:'_',gap:18});}}
-  else if(m[2]){res.push({p:'_',gap:m[2].includes('?')?260:m[2].includes('!')?240:220,end:m[2].includes('?')?'?':m[2].includes('!')?'!':'.'});}
-  else if(m[3])res.push({p:'_',gap:140,end:','});}
+ // Wortinfo für die Betonung: emph = Hauptwort (groß geschrieben) oder langes Wort, final = letztes Wort vor Satzende/Komma
+ let wi=0,lastW=null;
+ while((m=re.exec(s))){if(m[1]){const ph=word2ph(m[1]),emph=/^[A-ZÄÖÜ]/.test(m[1])&&m.index>0&&!/[.!?]\s*$/.test(s.slice(0,m.index))||m[1].length>=7;if(ph.length){const w=wi++;lastW=ph.map(o=>({...o,w,emph}));res.push(...lastW);res.push({p:'_',gap:18,word:1});}}
+  else if(m[2]){if(lastW)for(const o of lastW)o.final=1;lastW=null;res.push({p:'_',gap:m[2].includes('?')?260:m[2].includes('!')?240:220,end:m[2].includes('?')?'?':m[2].includes('!')?'!':'.'});}
+  else if(m[3]){if(lastW)for(const o of lastW)o.final=.6;lastW=null;res.push({p:'_',gap:140,end:','});}}
+ if(lastW)for(const o of lastW)o.final=1;
  return res;}
 
 // ---------- Stimmen ----------
@@ -118,7 +121,7 @@ function text2ph(text){
 // size Körpergröße (größer = tiefere Formanten), rough Rauheit, breath Hauch, shake Zittern (alt), rate Abtastung (Hz),
 // bits Bittiefe, echo Echo-Anteil, vol Lautstärke
 const PRESETS={
- moderator:{name:'Arena-Moderator',pitch:128,speed:1.75,inton:.45,sing:0.06,size:1,rough:.12,breath:.1,shake:0,rate:14332,bits:12,echo:.28,vol:.9,look:{skin:'#c99266',hair:'#2d2118',beard:false,band:'#9b2b25'}},
+ moderator:{name:'Arena-Moderator',pitch:128,speed:1.35,inton:.7,sing:0.06,size:1,rough:.12,breath:.1,shake:0,rate:14332,bits:12,echo:.28,vol:1,accent:.55,pause:1.35,final:.25,look:{skin:'#c99266',hair:'#2d2118',beard:false,band:'#9b2b25'}},
  rabies:{name:'Rabies, der Hundsgraf',pitch:112,speed:1.65,inton:.6,sing:0.11,size:1.04,rough:.4,breath:.3,shake:0,rate:13000,bits:11,echo:.15,vol:.9,look:{skin:'#b98a6a',hair:'#d9d2c0',beard:true,beardCol:'#cfc6b2',skull:true}},
  schmied:{name:'Der Schmied',pitch:92,speed:1.55,inton:.35,sing:0.05,size:1.14,rough:.3,breath:.15,shake:0,rate:12350,bits:11,echo:.12,vol:.95,look:{skin:'#a8714c',hair:'#1c1410',beard:true,beardCol:'#1c1410'}},
  orontes:{name:'Orontes Pfeilkopf',pitch:150,speed:1.6,inton:.5,sing:0.09,size:.97,rough:.25,breath:.35,shake:.45,rate:13650,bits:11,echo:.15,vol:.85,look:{skin:'#c08a5c',hair:'#e6e1d5',beard:true,beardCol:'#e6e1d5'}},
@@ -126,7 +129,7 @@ const PRESETS={
  medicus:{name:'Der Medicus',pitch:122,speed:1.85,inton:.4,sing:0.05,size:.96,rough:.08,breath:.18,shake:0,rate:14332,bits:12,echo:.1,vol:.85,look:{skin:'#e0b48e',hair:'#6b6b6b',beard:false}},
  rekrut:{name:'Rekrut',pitch:152,speed:1.9,inton:.5,sing:0.075,size:.93,rough:.1,breath:.12,shake:0,rate:14332,bits:12,echo:.12,vol:.85,look:{skin:'#d6a27a',hair:'#5a3a22',beard:false}},
  frau:{name:'Frau',pitch:215,speed:1.85,inton:.55,sing:0.075,size:.84,rough:.05,breath:.2,shake:0,rate:14332,bits:12,echo:.15,vol:.85,look:{skin:'#e3b591',hair:'#7a3a1c',beard:false,long:true}},
- erzaehler:{name:'Erzähler (Intro)',pitch:104,speed:1.55,inton:.4,sing:0.03,size:1.08,rough:.15,breath:.12,shake:0,rate:13000,bits:12,echo:.38,vol:.9,look:{skin:'#b7835c',hair:'#3b2a1d',beard:true,beardCol:'#3b2a1d'}}
+ erzaehler:{name:'Erzähler (Intro)',pitch:98,speed:1.02,inton:.8,sing:.02,size:1.08,rough:.12,breath:.18,shake:0,rate:16000,bits:12,echo:.3,vol:1,accent:.75,pause:1.9,final:.4,look:{skin:'#b7835c',hair:'#3b2a1d',beard:true,beardCol:'#3b2a1d'}}
 };
 const ORDER=Object.keys(PRESETS);
 let saved={};try{saved=JSON.parse((typeof localStorage!=='undefined'?localStorage.getItem(KEY):null)||'{}')||{};}catch{saved={};}
@@ -140,17 +143,19 @@ function reset(k){if(k)delete saved[k];else saved={};try{localStorage.setItem(KE
 function plan(text,V,r){
  const ph=text2ph(text),sp=Math.max(.4,V.speed||1),K=[];let t=.03;
  // Silbenzahl für die Satzmelodie
- const total=ph.filter(o=>VOWEL.has(PH[o.p]?.t)).length||1;let vi=0;
+ // Silben je Satz (für die Satzmelodie), Betonung (accent), Pausen (pause), Dehnung am Satzende (final)
+ const sentTot=[];{let start=0,c=0;for(let j=0;j<=ph.length;j++){const o=ph[j];if(!o||o.end&&o.end!==','){for(let q=start;q<j;q++)sentTot[q]=c||1;start=j+1;c=0;continue;}if(VOWEL.has(PH[o.p]?.t))c++;}}
+ const ACC=V.accent??.25,PAUSE=V.pause??1,FIN=V.final??.15;let vi=0;
  const nextVowelF=k=>{for(let j=k+1;j<ph.length;j++){const q=PH[ph[j].p];if(q&&VOWEL.has(q.t))return q.F;if(ph[j].p==='_')break;}return [500,1500,2500];};
  const sentenceEnd=k=>{for(let j=k;j<ph.length;j++)if(ph[j].end&&ph[j].end!==',')return ph[j].end;return '.';};
  let lastF=[500,1500,2500],syl=0,sylJ=0;
- const f0At=(k,stress)=>{const u=vi/total,end=sentenceEnd(k);let f=V.pitch*(1+V.inton*.25*(1-u*1.4));if(stress)f*=1+V.inton*.22;
-  if(end==='?'&&u>.75)f*=1+V.inton*.9*(u-.75)*4;if(end==='!')f*=1.1;return f*(1+sylJ);};
+ const f0At=(k,stress)=>{const o=ph[k],u=vi/(sentTot[k]||1),end=sentenceEnd(k);let f=V.pitch*(1+V.inton*.25*(1-u*1.4));if(stress)f*=1+V.inton*.22+(o.emph?ACC*.32:0);
+  if(o.final&&end==='.'&&!stress)f*=1-V.inton*.12*o.final;if(end==='?'&&u>.75)f*=1+V.inton*.9*(u-.75)*4;if(end==='!')f*=1.1+ACC*.08;return f*(1+sylJ);};
  for(let k=0;k<ph.length;k++){const o=ph[k],P=PH[o.p];if(!P)continue;
-  if(o.p==='_'){const g=(o.gap||20)/1000/sp;K.push({t,F:lastF,av:0,an:0,o:0,f0:V.pitch,asp:0});t+=g;K.push({t,F:lastF,av:0,an:0,o:0,f0:V.pitch,asp:0});if(o.end&&o.end!==','){vi=0;}continue;}
+  if(o.p==='_'){const g=(o.gap||20)/1000/sp*(o.end?PAUSE:1+(PAUSE-1)*.35);K.push({t,F:lastF,av:0,an:0,o:0,f0:V.pitch,asp:0});t+=g;K.push({t,F:lastF,av:0,an:0,o:0,f0:V.pitch,asp:0});if(o.end&&o.end!==','){vi=0;}continue;}
   const vow=VOWEL.has(P.t);if(vow){syl++;sylJ=(r()*2-1)*(V.sing||0);}
   const stress=!!o.stress,f0=f0At(k,stress);if(vow)vi++;
-  let d=P.d/1000/sp*(stress&&vow?1.25:1)*(.9+r()*.2);
+  let d=P.d/1000/sp*(stress&&vow?1.25+(o.emph?ACC*.5:0):1)*(1+(o.final||0)*FIN)*(.9+r()*.2);
   const F=P.F||nextVowelF(k),open=P.o;
   switch(P.t){
    case 'v':K.push({t,F,av:1,an:0,o:open,f0,asp:0});K.push({t:t+d*.85,F,av:1,an:0,o:open,f0:f0*.97,asp:0});lastF=F;break;

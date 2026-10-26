@@ -45,7 +45,7 @@ const nearest=p=>road.reduce((best,n,i)=>distance(p,n)<distance(p,road[best])?i:
 function path(from,to){const out=[],n=road.length,forward=(to-from+n)%n,dir=forward<=n-forward?1:-1;let i=from;while(i!==to){i=(i+dir+n)%n;out.push({...road[i],node:i});}return out;}
 function move(a,p,dt,speed){const x=a.x,y=a.y,phase=a.phase||0;const dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy),step=Math.min(d,speed*dt);a.moveSpeed=d>.5?speed:0;a.state=a.moveSpeed?'move':'idle';if(d>.5){a.x+=dx/d*step;a.y+=dy/d*step;if(Math.abs(dx)>.2)a.a=dx>0?0:Math.PI;if(M.updateLocomotion)M.updateLocomotion(a,x,y,phase,dt,a.lanista?.7:.6);else a.phase=phase+step*.16;}return d<=speed*dt+.5;}
 function stand(a){a.villageTalk=false;a.moveSpeed=0;a.state='idle';a.wind=0;a.swing=0;}
-function say(a,text,seconds=4){speech={a,text,until:clock+seconds};}
+function say(a,text,seconds=4){speech={a,text,until:clock+seconds};M.speakLine?.(text,null,a?.g||null,{soft:true});}
 function cancel(){chat=null;speech=null;dog.target=null;dog.state='idle';dog.left=2;for(const a of people)if(motions.has(a))stand(a);active=false;caption('');}
 function reset(list){cancel();people=list;roster=S.roster;motions=new Map();let n=0;for(const a of list){if(!eligible(a))continue;const node=(n*3)%road.length;a.x=road[node].x;a.y=road[node].y;motions.set(a,{node,previous:-1,to:null,pause:rnd(.3,2.5),speed:26+(a.index%5)*3.5});n++;}nextChat=clock+5;dog.x=300;dog.y=218;dog.node=14;dog.route=[];dog.state='idle';dog.left=3;dog.stains=[];}
 function caption(text){const el=document.getElementById('villageChatter');const shown=text||'Im Hof: Schritte, Stahl und zweifelhafte Lebensweisheiten.';if(el&&el.textContent!==shown)el.textContent=shown;lastSpeech=text;}

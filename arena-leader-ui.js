@@ -13,7 +13,18 @@ function layer(){const c=$('arenaCanvas');if(!c)return null;const host=c.parentE
  const s=A.lay.style;s.left=c.offsetLeft+'px';s.top=c.offsetTop+'px';s.width=c.clientWidth+'px';s.height=c.clientHeight+'px';return A.lay;}
 function toScreen(x,y){const v=M.arenaView,c=$('arenaCanvas');if(!v||!c)return {x:-999,y:-999,cw:0,ch:0};const k=c.clientWidth/(v.width||c.width||1);
  return {x:(v.width/2+(x-v.cx)*v.scale)*k,y:(v.height/2+(y-v.cy)*v.scale)*k,cw:c.clientWidth,ch:c.clientHeight};}
-function bubble(a,text,o={}){const l=layer()?.querySelector('#alBubbles');if(!l||!a)return;if(o.small&&[...l.children].filter(e=>!e.classList.contains('out')).length>=3)return;
+const LAYER=()=>layer()?.querySelector('#alBubbles');
+// Immer nur eine Sprechblase zugleich, damit sie lesbar bleibt (vorher konnten mehrere übereinander liegen und abgeschnitten werden).
+// Wichtige (Anführer, Boss, laut) lösen die laufende ab; normale warten kurz (höchstens zwei in der Schlange); kleine Zurufe entfallen, solange eine Blase steht.
+// Jede gezeigte Blase wird leise vorgelesen (M.speakLine soft: nur wenn gerade kein Gespräch läuft).
+const BQ={until:0,prio:0,queue:[],timer:0};
+function bubble(a,text,o={}){if(!a||!text)return;const prio=o.lead||o.boss||o.loud?2:o.small?0:1,now=performance.now();
+ if(now<BQ.until){if(prio===0)return;if(prio===2&&BQ.prio<2){bubbleShow(a,text,o,prio);return;}BQ.queue.push([a,text,o,prio]);if(BQ.queue.length>2)BQ.queue.splice(0,BQ.queue.length-2);bubbleNext();return;}
+ bubbleShow(a,text,o,prio);}
+function bubbleShow(a,text,o,prio){const lay=LAYER();if(lay)for(const old of [...lay.children]){if(old.classList.contains('out'))continue;old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
+ const ms=Math.max(o.ms||0,readMs(text));BQ.until=performance.now()+ms;BQ.prio=prio;bubbleNow(a,text,{...o,ms,small:false});M.speakLine?.(text,null,a.g||null,{name:o.name,soft:true});bubbleNext();}
+function bubbleNext(){clearTimeout(BQ.timer);if(!BQ.queue.length)return;BQ.timer=setTimeout(()=>{const n=BQ.queue.shift();if(n&&!n[0].g?.dead&&!n[0].down)bubbleShow(...n);else bubbleNext();},Math.max(60,BQ.until-performance.now()+180));}
+function bubbleNow(a,text,o={}){const l=layer()?.querySelector('#alBubbles');if(!l||!a)return;if(o.small&&[...l.children].filter(e=>!e.classList.contains('out')).length>=3)return;
  for(const old of l.children)if(old._a===a){old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
  const el=document.createElement('div');el._a=a;el.className='ow-bubble'+(a.team?' foe':'')+(o.lead?' lead':'')+(o.small?' small':'')+(o.loud||/!$/.test(text)&&text===text.toUpperCase()?' loud':'');
  el.innerHTML=(o.small?'':'<b>'+esc(a.g?.name||'')+'</b>')+'<span>'+esc(text)+'</span>';l.appendChild(el);el._w=el.offsetWidth;el._h=el.offsetHeight;

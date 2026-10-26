@@ -268,7 +268,7 @@ function titlePaint(g,w,h,t){g.fillStyle='#070b0d';g.fillRect(0,0,w,h);const k=M
  g.fillStyle='#5a3d1c';g.fillText('ARENA THEORY',w/2,h*.45+fs*.07);g.fillStyle='#f4d37a';g.fillText('ARENA THEORY',w/2,h*.45);
  g.font=`bold ${Math.round(fs*.32)}px 'Courier Prime',monospace`;g.fillStyle='#c9c6b4';g.fillText('DEATH IS PERMANENT',w/2,h*.45+fs*.85);g.globalAlpha=1;}
 const read=s=>Math.max(2.2,1.2+s.length*.055);
-async function say(s){text(s);M.speakLine?.(s,'cap');await wait(read(s));text('');await wait(.35);}
+async function say(s){text(s);M.speakLine?.(s,'cap');await wait(read(s));/* Erzähler ausreden lassen */for(let i=0;i<40&&M.speaking?.();i++)await wait(.15);text('');await wait(.35);}
 function prepareEnd(){const sc=run.sc,H=sc.hero,blade=H.g.enemyGear.weapon;for(const k of M.branches.rua){const p=H.g.body[k];p.missing=true;p.hp=0;}H.g.stump='blood';H.bloodMarks={chest:.7,rs:1,belly:.4,ls:.3};blade.blood=1;H.g.blood=42;H.g.fatigue=88;for(const [part,p] of [['chest',.5],['belly',.3]])H.g.body[part].hp=Math.max(30,H.g.body[part].hp-p*55);}
 async function take2(){const sc=run.sc,H=sc.hero;run.hero=H;
  // kurzer Siegesmoment in der Arena, dann Schwarzblende

@@ -144,7 +144,7 @@ const MARKUP='<div id="after" hidden><div class="af-top"><span id="afLabel"></sp
 function mount(host){if(!host||host.querySelector('#spy'))return;host.insertAdjacentHTML('beforeend',MARKUP);$('spySkip').onclick=()=>{SPY.skip=true;};$('afterSkip').onclick=()=>{AF.skip=true;};}
 function stow(b,on){for(const a of b.actors)if(a.team===0)a.stowed=on;}
 function drawWeapons(b,who){stow(b,false);const a=who||leaderA(b)||partyActors(b)[0];if(a)bubble(a,pick(['Waffen raus! Leise!','Klingen raus. Bögen runter vom Rücken.','Zieht blank. Und keiner hustet.']),{lead:!!b.lead,name:b.lead?lname(a):first(a.g),ms:1800});}
-function leadSay(b,text,o={}){const a=leaderA(b);if(!a)return;M.speakLine?.(text,null,a.g,{vol:.8});bubble(a,text,{lead:true,name:lname(a),...o});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(text)}“`);}
+function leadSay(b,text,o={}){const a=leaderA(b);if(!a)return;bubble(a,text,{lead:true,name:lname(a),...o});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(text)}“`);}
 function reset(){SPY.on=false;if(CLOSE.on)closeEnd();AF.on=false;for(const id of ['spy','cine','after']){const e=$(id);if(e)e.hidden=true;}}
 window.DebtLeaderUI={install(ctx){C=ctx;hookDraw();},mount,camera,spyShow,closeStart,closeHit,closeEnd,chargeCine,aftermath,stow,drawWeapons,leadSay,lname,leaderA,walkSome,reset,SPY,CLOSE,AF};
 })();

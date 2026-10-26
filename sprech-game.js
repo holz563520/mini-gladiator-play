@@ -28,14 +28,15 @@ function voiceFor(key,g){const S=window.Sprech;let v={...S.get(key)};delete v.lo
  return v;}
 const clean=t=>String(t||'').replace(/<[^>]*>/g,' ').replace(/\{[^}]*\}/g,'').replace(/\s+/g,' ').trim().slice(0,320);
 // Eine Zeile sprechen. who: Kürzel/Name der Figur, g: ihr Gladiator-Objekt (für Mundbewegung in Großaufnahmen)
+// o.soft: Sprechblase auf dem Spielfeld – spricht nur, wenn gerade kein Gespräch läuft, und etwas leiser
 function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöüß]/i.test(txt)||!window.Sprech)return null;
- const out=M.audioEngine?.voiceOut?.();if(!out)return null;stop();
- const key=o.voice||voiceKey(who,g,o.name),voice=voiceFor(key,g),me={id:++seq,key,who,g,start:Infinity,dur:0,mouth:null,src:null};cur=me;
+ const out=M.audioEngine?.voiceOut?.();if(!out)return null;if(o.soft&&cur&&!cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur))return null;stop();
+ const key=o.voice||voiceKey(who,g,o.name),voice=voiceFor(key,g),me={id:++seq,key,who,g,soft:!!o.soft,start:Infinity,dur:0,mouth:null,src:null};cur=me;
  renderAsync(txt,voice).then(R=>{if(cur!==me||R.error||!R.data)return;const o2=M.audioEngine?.voiceOut?.();if(!o2)return;const {ctx,bus}=o2;
-  const b=ctx.createBuffer(1,R.data.length,window.Sprech.SR);b.getChannelData(0).set(R.data);const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;gn.gain.value=o.vol??.85;s.connect(gn);gn.connect(bus);
-  const at=ctx.currentTime+.02;s.start(at);s.onended=()=>{s.disconnect();gn.disconnect();if(cur===me)cur=null;};me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;me.ctx=ctx;});
+  const b=ctx.createBuffer(1,R.data.length,window.Sprech.SR);b.getChannelData(0).set(R.data);const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;gn.gain.value=o.vol??(o.soft?.75:1.05);s.connect(gn);gn.connect(bus);
+  const at=ctx.currentTime+.02;s.start(at);M.audioEngine?.duck?.(o.soft?.65:.32);s.onended=()=>{s.disconnect();gn.disconnect();if(cur===me){cur=null;M.audioEngine?.duck?.(1);}};me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;me.ctx=ctx;});
  return me;}
-function stop(){if(cur?.src){try{cur.src.stop();}catch{}}cur=null;}
+function stop(){if(cur?.src){try{cur.src.stop();}catch{}}cur=null;M.audioEngine?.duck?.(1);}
 // Mundöffnung (0–1) für eine Figur, wenn sie gerade spricht: g (Objekt oder id) oder Stimmen-/Figurenkürzel
 function talkMouth(x){if(!cur?.mouth||!x)return 0;const same=x===cur.g||(x.id&&cur.g&&x.id===cur.g.id)||(typeof x==='string'&&(x===cur.key||x===cur.who));if(!same)return 0;const t=cur.ctx.currentTime-cur.start;if(t<0||t>cur.dur)return 0;return window.Sprech.mouthAt(cur.mouth,t);}
 const speaking=x=>!!cur&&(!x||talkMouth(x)>0||x===cur.key||x===cur.who||x===cur.g)&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur);

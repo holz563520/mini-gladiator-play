@@ -84,13 +84,13 @@ const LINES=[
  ['frau','Noch ein Schritt, und du kannst deine Zähne einzeln zählen.'],
  ['erzaehler','Die Truppe ist zurück. Was unterwegs geschah, weiß nur noch der Wind.']];
 const FIELDS=[['Stimme',[['pitch','Tonhöhe (Hz)',60,320,1],['size','Körpergröße',.7,1.4,.01],['rough','Rauheit',0,1,.01],['breath','Hauch',0,1,.01],['shake','Zittern (alt)',0,1,.01]]],
- ['Sprechweise',[['speed','Tempo',.8,3,.05],['inton','Sprachmelodie',0,1.2,.01],['sing','Singsang je Silbe',0,.5,.01]]],
+ ['Sprechweise',[['speed','Tempo',.6,3,.05],['inton','Sprachmelodie',0,1.2,.01],['accent','Betonung',0,1,.01],['pause','Pausen',.5,3,.05],['final','Dehnung am Satzende',0,1,.01],['sing','Singsang je Silbe',0,.5,.01]]],
  ['16-Bit-Klang',[['rate','Abtastung (Hz)',4000,22050,50],['bits','Bittiefe',3,16,1],['echo','Echo',0,.8,.01],['vol','Lautstärke',0,1.5,.01]]]];
 let cur='moderator',work=null,ctx=null,out=null,playing=[],mouthFn=null,blink=0;
 function audio(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();out=ctx.createGain();out.gain.value=.9;out.connect(ctx.destination);}if(ctx.state==='suspended')ctx.resume();return ctx;}
 function stop(){for(const p of playing){try{p.source.stop();}catch{}}playing=[];mouthFn=null;}
 function list(){$('list').innerHTML=S.ORDER.map(k=>`<div class="item${k===cur?' on':''}" data-k="${k}"><b>${S.PRESETS[k].name}</b>${S.changed(k)?'<i>●</i>':''}</div>`).join('');}
-function fields(){const v=work;$('fields').innerHTML=FIELDS.map(([g,fs])=>`<div class="grp">${g}</div>`+fs.map(([k,l,a,b,st])=>`<label class="f"><span>${l}</span><input type="range" data-k="${k}" min="${a}" max="${b}" step="${st}" value="${v[k]}"><input type="number" data-n="${k}" min="${a}" max="${b}" step="${st}" value="${v[k]}"></label>`).join('')).join('');}
+function fields(){const v=work;$('fields').innerHTML=FIELDS.map(([g,fs])=>`<div class="grp">${g}</div>`+fs.map(([k,l,a,b,st])=>`<label class="f"><span>${l}</span><input type="range" data-k="${k}" min="${a}" max="${b}" step="${st}" value="${v[k]??({accent:.25,pause:1,final:.15}[k]??0)}"><input type="number" data-n="${k}" min="${a}" max="${b}" step="${st}" value="${v[k]??({accent:.25,pause:1,final:.15}[k]??0)}"></label>`).join('')).join('');}
 function lines(){$('lines').innerHTML='<option value="">Satz aus dem Spiel wählen …</option>'+LINES.map(([k,t],i)=>`<option value="${i}">${S.PRESETS[k].name}: ${t.length>60?t.slice(0,58)+'…':t}</option>`).join('');}
 function select(k){cur=k;work=JSON.parse(JSON.stringify(S.get(k)));list();fields();$('who').textContent=S.PRESETS[k].name;const l=LINES.find(x=>x[0]===k);if(l&&!$('text').dataset.own)$('text').value=l[1];phon();}
 function phon(){$('phon').textContent=S.text2ph($('text').value).map(o=>o.p==='_'?(o.end?o.end+' ':' '):o.p+(o.stress?'ˈ':'')).join('').replace(/\s+/g,' ').trim();}
