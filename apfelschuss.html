@@ -583,8 +583,8 @@ function boardStart(){if(!BOARD_RAF)BOARD_RAF=requestAnimationFrame(boardFrame);
 // =====================================================================================================
 let AC=null,SND=false;
 function audio(on){if(!on){SND=false;return;}try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();SND=true;}catch{SND=false;}}
-function tone(f,d,type='sine',v=.15,f2=null){if(!SND)return;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.03);}
-function noise(d,v=.2,type='bandpass',f0=800,f1=null,q=1,att=.02){if(!SND)return;const n=Math.max(1,Math.floor(AC.sampleRate*d)),b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=Math.random()*2-1;const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain(),t=AC.currentTime;s.buffer=b;f.type=type;f.Q.value=q;f.frequency.setValueAtTime(f0,t);if(f1)f.frequency.exponentialRampToValueAtTime(f1,t+d);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+att);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);}
+function tone(f,d,type='sine',v=.15,f2=null){if(!SND||AC?.state!=='running')return;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+.03);}
+function noise(d,v=.2,type='bandpass',f0=800,f1=null,q=1,att=.02){if(!SND||AC?.state!=='running')return;const n=Math.max(1,Math.floor(AC.sampleRate*d)),b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=Math.random()*2-1;const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain(),t=AC.currentTime;s.buffer=b;f.type=type;f.Q.value=q;f.frequency.setValueAtTime(f0,t);if(f1)f.frequency.exponentialRampToValueAtTime(f1,t+d);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+att);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);}
 const BSFX={
  loose:()=>{tone(210,.22,'triangle',.07,120);noise(.05,.06,'highpass',2500);},
  whiz:(d=.32)=>{noise(d,.22,'bandpass',3400,600,7,.02);},
@@ -593,7 +593,7 @@ const BSFX={
  crunch:()=>{noise(.2,.45,'bandpass',2600,800,1.4,.003);tone(320,.09,'square',.12,110);noise(.35,.15,'highpass',4000,null,1,.02);tone(70,.15,'sine',.3,40);},
  sand:()=>{tone(68,.2,'sine',.3,42);noise(.16,.2,'lowpass',600,250,1,.004);},
  wall:()=>{tone(1100,.04,'square',.12,600);noise(.05,.35,'highpass',3200,null,1,.002);tone(130,.14,'sine',.25,60);setTimeout(()=>{tone(700,.03,'square',.06,400);noise(.04,.12,'highpass',3000);},260);}};
-function boardSounds(t){if(!SND)return;for(const s of BSTATE.shots){const f=s.snd||(s.snd={});const ev=(k,tt,fn)=>{if(!f[k]&&t>=tt){f[k]=1;if(t-tt<.25)fn();}};
+function boardSounds(t){if(!SND||AC?.state!=='running')return;for(const s of BSTATE.shots){const f=s.snd||(s.snd={});const ev=(k,tt,fn)=>{if(!f[k]&&t>=tt){f[k]=1;if(t-tt<.25)fn();}};
   ev('loose',s.t,BSFX.loose);ev('whiz',s.t+.05,()=>BSFX.whiz(s.kind==='miss'||s.kind==='apple'?.5:.3));
   ev('hit',s.t+BD.FLY,s.kind==='apple'?BSFX.crunch:s.kind==='head'?BSFX.bonk:s.kind==='body'?BSFX.thwack:()=>{});
   if(s.kind==='miss'||s.kind==='apple'){const L=landOf(s);ev('land',s.t+BD.FLY+L.tau,L.wall?BSFX.wall:BSFX.sand);}}}
@@ -1441,7 +1441,7 @@ function wpnLabel(){if(dayUsed()){const go=$('go');if(go)go.disabled=true;}const
 $('wpn').onclick=()=>{const g=A();if(!g)return;const xb=!isXB(g),it=M.makeItem('weapon',xb?'crossbow':'bow',(g.enemyGear.weapon&&g.enemyGear.weapon.q)||1);g.enemyGear.weapon=it;if(xb){g.mastery.crossbow=Math.max(g.mastery.crossbow||0,g.mastery.bow||0);g.caps.weapons.crossbow=Math.max(g.caps.weapons.crossbow||0,g.caps.weapons.bow||0);}render();wpnLabel();};
 $('go').onclick=()=>{$('res').hidden=true;start();};
 $('bSpeed').onclick=()=>{speed=speed===1?2:1;$('bSpeed').textContent='⏩ '+speed+'×';};
-$('bSnd').dataset.on='0';const sndSet=on=>{$('bSnd').dataset.on=on?'1':'0';$('bSnd').textContent=on?'🔊':'🔇';$('boardSnd').textContent=on?'🔊 Ton aus':'🔇 Ton an';audio(on);};$('bSnd').onclick=e=>sndSet(e.currentTarget.dataset.on!=='1');$('boardSnd').onclick=()=>sndSet($('bSnd').dataset.on!=='1');
+$('bSnd').dataset.on='0';const sndSet=on=>{$('bSnd').dataset.on=on?'1':'0';$('bSnd').textContent=on?'🔊':'🔇';$('boardSnd').textContent=on?'🔊 Ton aus':'🔇 Ton an';audio(on);};$('bSnd').onclick=e=>sndSet(e.currentTarget.dataset.on!=='1');$('boardSnd').onclick=()=>sndSet($('bSnd').dataset.on!=='1');/* Ton ist von Anfang an an (Wunsch Thomas); falls der Browser ihn bis zur ersten Berührung anhält, beim ersten Tippen fortsetzen */sndSet(true);document.addEventListener('pointerdown',()=>{if(SND&&AC&&AC.state==='suspended')AC.resume().catch(()=>{});},true);
 function skip(){if(!sc)return;const sh=shotAt(sc,sc.t);if(sh.type==='mod'){sc.t=sh.t1+.001;return;}if(sc.t<sc.sReact-.05){sc.t=sc.sReact-.01;return;}if(!sc.last)sc.t=sc.end;}
 $('bSkip').onclick=skip;cv.addEventListener('click',()=>{if(sc&&shotAt(sc,sc.t).type==='mod')skip();});
 $('bNext').onclick=()=>finish();
