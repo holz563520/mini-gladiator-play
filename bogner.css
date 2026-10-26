@@ -28,3 +28,7 @@ body:has(.bow-bar){padding-bottom:150px}@media (max-width:600px){.bow-bar p{font
 .bow-shop .bow-lb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:#c9b48a}.bow-shop .bow-lb select{font:700 12px 'Courier Prime',monospace;background:#1d282b;color:#f3e2b0;border:1px solid #6b5230;padding:3px 4px}.bow-shop-tip{border-left:3px solid #e0b565;padding-left:8px}
 .bow-shop .bow-info{display:block;margin-top:4px;font-size:12px;color:#d9cfb0}.bow-shop .bow-info small{color:#97aaa8}.bow-shop .bow-info em{display:block;font-style:normal;color:#e8907a}
 .bow-shop .bow-bought{border:2px solid #e0b565;background:#2a2412;padding:8px 10px;margin:8px 0;color:#f3e2b0;line-height:1.4}.bow-shop .bow-bought small{display:block;color:#c9b48a;margin-top:2px}
+
+/* Orontes im Laden: große Großaufnahme mit Spruch */
+.bow-shop .bow-face{margin:0 0 10px}.bow-shop .bow-face canvas{width:100%;height:auto;max-width:560px;display:block;image-rendering:pixelated;border:2px solid #52625b;background:#120c09}
+.bow-shop .bow-quip{margin:8px 0 0;color:#eae4cd;font-size:14px}.bow-shop .bow-quip b{color:#dfb66d}

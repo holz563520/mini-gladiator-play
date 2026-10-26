@@ -57,7 +57,7 @@ const WATCH=[
  ['.scene-bubble,.hf-bubble,.ws-bubble,.ow-talk,.wanderer-line,.medic-quip,.dok-line,.tr-reveal .tr-quote,.hs-bubble',null,{}],
  ['#modSay,.hs-mi-say','moderator',{}],
  ['#hsSay','frau',{name:'Hühnerhändlerin'}],
- ['.smith-plea','schmied',{}],['.hf-board q,.hf-cart q:not(.hf-narr)','rabies',{name:'Rabies'}],['.hf-narr','cap',{speedUp:1.2}],['.hall-title','cap',{speedUp:1.2}],['.threat',null,{soft:true}]];
+ ['.smith-plea','schmied',{}],['.bow-quip','orontes',{name:'Orontes Pfeilkopf'}],['.hf-board q,.hf-cart q:not(.hf-narr)','rabies',{name:'Rabies'}],['.hf-narr','cap',{speedUp:1.2}],['.hall-title','cap',{speedUp:1.2}],['.threat',null,{soft:true}]];
 const seen=new WeakMap();
 const visible=el=>{if(!el.isConnected||el.closest('[hidden],.hf-hide,.out'))return false;const r=el.getClientRects();if(!r.length||!r[0].width)return false;const cs=getComputedStyle(el);return cs.visibility!=='hidden'&&cs.display!=='none'&&+cs.opacity>.15;};
 function parse(el,def){const raw=clean(el.textContent);if(!raw)return null;const b=el.querySelector('b,small,strong');let name='',text=raw;
@@ -85,7 +85,7 @@ const FACES=[];let smithFaceC=null;
 function smithFace(){const p=M.workshop?.state?.master||M.s?.forgeWorkshop?.master;if(!p||!M.makeGladiator)return null;if(smithFaceC?.name===p.name)return smithFaceC;const rng=M.s.rng,g=M.makeGladiator(0);M.s.rng=rng;Object.assign(g,{id:'sprech-smith',name:p.name,height:p.height||186,weight:p.weight||100,muscle:58,fame:0,scars:[]});if(p.appearance)g.appearance={...g.appearance,...p.appearance};return smithFaceC=g;}
 function faceFor(key,name){const n=String(name||'');for(const f of FACES)if((n&&f.re.test(n))||(key&&f.re.test(key)))try{const g=f.get();if(g)return g;}catch(e){console.warn('Sprecher-Gesicht',e);}
  if(key==='schmied')return smithFace();if(n){const r=(M.s?.roster||[]).find(x=>x.name===n||String(x.name).split(' ')[0]===n);if(r)return r;}return null;}
-M.registerFace=(re,get)=>FACES.push({re,get});M.faceFor=faceFor;
+M.registerFace=(re,get,painter)=>FACES.push({re,get,painter});const painterFor=g=>{for(const f of FACES){try{if(f.painter&&sameG(f.get(),g))return f.painter;}catch{}}return null;};M.faceFor=faceFor;
 // ---------- Sprecher-Großaufnahme ----------
 // Spricht eine Figur (nicht bei Sprechblasen auf dem Spielfeld): Steht ihre Großaufnahme schon still im Bild, wird sie mit
 // bewegtem Mund neu gemalt; malt die Szene sie selbst laufend, passiert nichts weiter; sonst erscheint unten links eine kleine
@@ -98,10 +98,10 @@ const shown=el=>{if(!el?.isConnected)return false;const r=el.getClientRects();if
 function faceLoop(){requestAnimationFrame(faceLoop);const g=cur&&!cur.soft?cur.g:null,talking=g&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur+.15);
  if(!talking||!M.faceShot?.records){if(box&&!box.hidden){box.classList.remove('on');box.hidden=true;}return;}
  const now=performance.now();let painted=false,live=false;
- for(const [cv,r] of M.faceShot.records()){if(cv===boxCv||!sameG(r.o.g,g))continue;/* malt die Szene den Kopf laufend (auch über einen Zwischenpuffer wie beim Medicus), zeigt sie ihn selbst */if(now-r.time<400){live=true;continue;}if(!shown(cv))continue;try{M.faceShot.paint(r.ctx,r.w,r.h,{...r.o,talk:talkMouth(g),_sprech:true},r.t);painted=true;}catch{}}
+ for(const [cv,r] of M.faceShot.records()){if(cv===boxCv||!sameG(r.o.g,g))continue;/* malt die Szene den Kopf laufend (auch über einen Zwischenpuffer wie beim Medicus), zeigt sie ihn selbst */if(now-r.time<400){live=true;continue;}if(!shown(cv))continue;try{if(r.repaint)r.repaint(talkMouth(g));else M.faceShot.paint(r.ctx,r.w,r.h,{...r.o,talk:talkMouth(g),_sprech:true},r.t);painted=true;}catch{}}
  const own=painted||live;if(own){if(box&&!box.hidden){box.classList.remove('on');box.hidden=true;}return;}
  boxEl();if(box.hidden||boxG!==g){box.hidden=false;boxG=g;box.querySelector('b').textContent=cur.name||g.name||'';requestAnimationFrame(()=>box.classList.add('on'));}
- try{const c=boxCv.getContext('2d');M.faceShot.paint(c,boxCv.width,boxCv.height,{g,team:g.enemy?1:0,mood:'calm',yaw:.22,zoom:1.12,talk:talkMouth(g),_sprech:true},now/1000);}catch{}}
+ try{const c=boxCv.getContext('2d'),P=painterFor(g);if(P)P(c,boxCv.width,boxCv.height,now/1000);else M.faceShot.paint(c,boxCv.width,boxCv.height,{g,team:g.enemy?1:0,mood:'calm',yaw:.22,zoom:1.12,talk:talkMouth(g),_sprech:true},now/1000);}catch{}}
 requestAnimationFrame(faceLoop);
 // Filme warten, bis die laufende Zeile zu Ende gesprochen ist (f.ack/f.skip = Antippen: nicht warten). Sicherheitsgrenze 20 s.
 function speechHold(f){if(!cur||cur.soft||(f&&(f.ack||f.skip)))return false;if(performance.now()-cur.t0>20000)return false;if(cur.start===Infinity)return performance.now()-cur.t0<4000;return cur.ctx.currentTime<cur.start+cur.dur;}

@@ -63,7 +63,23 @@ DOG.portrait=function(c,D,o={}){let d=portraits.get(D);if(!d){d=dogAct(D,'stand'
 function makeRabies(){const g=gen(1);g.id='hf-rabies';g.name=TX.NAME;g.height=183;g.weight=66;g.age=54;g.muscle=40;
  g.appearance={...g.appearance,skin:'#c49470',shade:'#94664a',hair:'#b1a592',style:3,beard:3};
  g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};g.equipment=g.enemyGear;return g;}
-let RABIES=null;const rabies=()=>RABIES??=makeRabies();M.registerFace?.(/rabies|hundsgraf/i,()=>rabies());
+let RABIES=null;const rabies=()=>RABIES??=makeRabies();
+// Rabies in jeder Großaufnahme erkennbar: Hundeschädel als Haube, Fellumhang an den Seiten und auf den Schultern, Fliegen
+(M.faceOverlays??={})['hf-rabies']=(c,fm,t)=>{const s=fm.s,P=(x,y,w,h,col)=>{const p=fm.to(x,y);c.fillStyle=col;c.fillRect(Math.round(p.x),Math.round(p.y),Math.ceil(w*s),Math.ceil(h*s));};
+ const fur=['#4a3424','#5e4430','#6e5038','#3a2a1c'];
+ // Fellumhang: an den Seiten herab und zottelig über den Schultern (Hals bleibt frei)
+ for(let i=0;i<9;i++){const sw=Math.sin(t*1.4+i)*.6;P(-36-i*1.2+sw,-42+i*2,2.4,54-i*2,fur[i%4]);P(34+i*1.2+sw,-42+i*2,2.4,54-i*2,fur[(i+1)%4]);}
+ for(let i=0;i<40;i++){const x=-80+i*4;if(Math.abs(x+2)<17)continue;const top=9+Math.abs(Math.sin(i*1.7))*5+Math.max(0,Math.abs(x)-40)*.15;P(x,top,4.4,40,fur[i%4]);P(x+1,top,1.4,3,'#7c5c40');}
+ // Hundeschädel als Haube: flaches Schädeldach, Rand auf der Stirn
+ for(let y=-58;y<=-36;y++){const k=(y+46)/12,hw=32*Math.sqrt(Math.max(0,1-k*k));if(hw<1)continue;P(-hw,y,hw*2,1,y<-54?'#f4ecd6':y>-41?'#cfc3a6':'#e6dcc2');}
+ P(-32,-38,64,4,'#b8ab8c');P(-30,-37,60,1,'#d8ccb0');
+ // Augenhöhlen
+ P(-22,-51,9,7,'#1a1210');P(13,-51,9,7,'#1a1210');P(-21,-50,3,2,'#3a2a1c');P(14,-50,3,2,'#3a2a1c');
+ // Schnauze nach vorn in der Mitte, Nasenlöcher, Zähne über der Stirn (Fangzähne länger)
+ P(-9,-52,18,16,'#d8ccb0');P(-8,-53,16,2,'#f4ecd6');P(-9,-40,18,3,'#b8ab8c');P(-5,-42,4,3,'#1a1210');P(1,-42,4,3,'#1a1210');
+ for(let x=-22;x<=20;x+=3)P(x,-34,1.6,Math.abs(x+1)>6&&Math.abs(x+1)<10?5:2.6,'#fff8e8');
+ // Fliegen
+ c.fillStyle='#120c08';for(let i=0;i<5;i++){const a=t*(3+i*.7)+i*2,p=fm.to(Math.cos(a)*(36+i*4),-52+Math.sin(a*1.3)*18);c.fillRect(Math.round(p.x),Math.round(p.y),Math.max(2,Math.round(s*.9)),Math.max(2,Math.round(s*.9)));}};M.registerFace?.(/rabies|hundsgraf/i,()=>rabies());
 function rabiesCloak(c,x,y,K,dir,t,front){const u=K*.6,hh=rabies().height/180,Y=v=>y-v*hh*u,X=v=>x+v*u,pal=['#4a3424','#5e4430','#6e5038','#3a2a1c'];
  if(!front){for(let i=0;i<22;i++){const xx=X(-22+i*2),top=Y(64-Math.abs(i-10.5)*.5),len=(46+Math.sin(i*1.9)*4)*hh*u,sw=Math.sin(t*1.6+i*.6)*.6*u;px(c,xx+sw,top,2.2*u,len,pal[i%4]);px(c,xx+sw,top+len-2*u,2.2*u,3*u,pal[3]);}
   for(const k of [-20,19]){px(c,X(k),Y(18),3*u,8*u,pal[2]);px(c,X(k)-u,Y(11),5*u,3*u,pal[3]);for(let i=0;i<3;i++)px(c,X(k)-u+i*1.6*u,Y(9),u,1.4*u,'#d8ccb0');}return;}

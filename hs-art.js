@@ -194,7 +194,7 @@ A.drawCage=function(g,x,y,R,t,o={}){const {R:r}=painter(g);// Gitter vor dem Tie
 let sellerG=null,faceCv=null;
 A.sellerG=()=>{if(sellerG)return sellerG;const rng=M.s.rng,g=M.makeGladiator(0);M.s.rng=rng;g.id='hs-seller';g.name='Hühnerhändlerin';g.sex='female';g.age=47;
  Object.assign(g.appearance,{skin:COL.skin,shade:COL.skinS,hair:COL.hair,style:3,beard:0,cloth:COL.vest,silhouette:1.15});g.scars=[];return sellerG=g;};
-M.registerFace?.(/hühnerhändlerin|händlerin/i,()=>A.sellerG());
+M.registerFace?.(/hühnerhändlerin|händlerin/i,()=>A.sellerG(),(c,w,h,t)=>{if(M.sceneHeads?.seller)M.sceneHeads.seller(c,w,h,A.sellerG(),t,{mood:'grin',_sprech:true});else M.faceShot.paint(c,w,h,{g:A.sellerG(),mood:'grin',_sprech:true},t);});
 // Extrem schielende Glupschaugen über die Augen des Gesichts gemalt (Koordinaten der Großaufnahme bei zoom 1, ohne Kopfdrehung)
 A.EYES=[[296,146],[420,146]];
 function crossEyes(c,t){const R=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));},P=6,wob=Math.round(Math.sin(t*2.3)*1);
