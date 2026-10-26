@@ -179,7 +179,9 @@ function tick(dt){const st=ST();
 // TOR / AUSWAHL (Seite „outside“)
 // =====================================================================================================
 function newQuestPlace(){const seed=(Math.random()*1e9)>>>0,P=D.generate(seed,'dorf');return {seed,name:P.name};}
-function newAdventure(biome,diff){const b=biome||pickL(['dorf','dorf','wald','stadt']);return {seed:(Math.random()*1e9)>>>0,biome:b,diff:diff||2};}
+// Art der Plünderung: zufällig Bandenjagd oder Wagenüberfall (seit 26.10.), bleibt beim Wechsel der Gegend erhalten
+const WAGON_SHARE=.35,advMode=()=>Math.random()<WAGON_SHARE?'wagon':'band';
+function newAdventure(biome,diff,mode){const b=biome||pickL(['dorf','dorf','wald','stadt']);return {seed:(Math.random()*1e9)>>>0,biome:b,diff:diff||2,mode:mode||advMode()};}
 // Totenkopf im Pixelstil (9×9), für die Schwierigkeit der Plünderungen
 const SKULL=['..XXXXX..','.XXXXXXX.','XXXXXXXXX','X..XXX..X','X..XXX..X','XXXX.XXXX','.XXXXXXX.','..X.X.X..','..XXXXX..'];
 function skull(on,px=3){let r='';SKULL.forEach((row,y)=>[...row].forEach((c,x)=>{if(c==='X')r+=`<rect x="${x}" y="${y}" width="1.02" height="1.02"/>`;}));return `<svg class="ow-skull ${on?'on':''}" viewBox="0 0 9 9" width="${9*px}" height="${9*px}" shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;}
@@ -194,8 +196,8 @@ function autoPick(n=5){const pool=fighters().filter(D.fit).sort((a,b)=>score(b)-
 function score(g){return M.health(g)*.5+(g.blood||0)*.2-(g.fatigue||0)*.3+(g.stats?.experience||0)+(g.kills||0)*.5;}
 function statusLine(g){const hp=Math.round(M.health(g)),fit=D.fit(g);return fit?`Gesundheit ${hp} % · Blut ${Math.round(g.blood)}${g.fatigue>1?' · Erschöpfung '+Math.round(g.fatigue):''}`:`kampfunfähig (${hp} %)`;}
 function weaponName(g){try{return M.itemName(M.gear(g,'weapon'))||'Fäuste';}catch(e){return '–';}}
-function placeFor(kind){const st=ST();if(kind==='quest'){const P=D.generate(st.quest.seed,'dorf');P.name=st.quest.name;return P;}return D.generate(st.adv.seed,st.adv.biome);}
-function advPreview(){const st=ST(),team=selected();try{const m=D.newMission(st.adv.seed,team.length?team:fighters().filter(D.fit).slice(0,1),st.adv.biome,{kind:'adventure',diff:st.adv.diff||2});return m;}catch(e){console.error(e);return null;}}
+function placeFor(kind){const st=ST();if(kind==='quest'){const P=D.generate(st.quest.seed,'dorf');P.name=st.quest.name;return P;}return advPreview()?.place||D.generate(st.adv.seed,st.adv.biome);}
+function advPreview(){const st=ST(),team=selected(),party=team.length?team:fighters().filter(D.fit).slice(0,1);try{return st.adv.mode==='wagon'&&D.newWagonMission?D.newWagonMission(st.adv.seed,party,st.adv.biome,{diff:st.adv.diff||2}):D.newMission(st.adv.seed,party,st.adv.biome,{kind:'adventure',diff:st.adv.diff||2});}catch(e){console.error(e);return null;}}
 function boardPage(){const st=ST();
  if(!st.stage)return `<section class="box ow-board"><p class="eyebrow">PLÜNDERUNGEN</p><h1>Das Tor ist zu</h1><p>Erst die Lehrjahre im Ludus. Danach geht es hinaus.</p><div class="buttons"><button class="btn" data-action="nav:home">‹ Zurück in den Ludus</button></div></section>`;
  if(view==='result'&&result)return resultPage();
@@ -210,12 +212,14 @@ function boardPage(){const st=ST();
   <dl><dt>Ziel</dt><dd>${esc(P.label)} ${esc(P.name)} · ${P.stations.length-1} Begegnungen auf dem Weg zum Kontor</dd><dt>Gegner</dt><dd>10 Dorftrottel (manche lungern herum, manche kommen aus Türen oder fallen euch in den Rücken) · am Ende Krassus mit seinem soliden Zweihänder „Zinseszins“</dd><dt>Belohnung</dt><dd>Schulden getilgt · die Geldkassette · alle Waffen und Schilde, die fallen</dd></dl>
   <canvas class="ow-map" data-owmap="quest" width="480" height="270"></canvas>${st.tries?`<p class="tiny">Bisherige Versuche: ${st.tries}</p>`:''}</div>`;}
  else{const m=advPreview(),ready=adventureReady(),BI={dorf:'Dorf',wald:'Wald',stadt:'Stadt'},dv=st.adv.diff||2;
-  card=`<div class="box ow-card"><span class="ow-tag">PLÜNDERUNG</span><h2>${esc(P.label)} ${esc(P.name)}</h2>
-  <p>${esc((D.ADV[st.adv.biome]?.intro||'').replace('{P}',P.name))}</p>
+  const wag=st.adv.mode==='wagon';
+  card=`<div class="box ow-card"><span class="ow-tag">${wag?'PLÜNDERUNG · WAGENÜBERFALL':'PLÜNDERUNG · BANDENJAGD'}</span><h2>${esc(P.label)} ${esc(P.name)}</h2>
+  <p>${wag?`Auf dem Weg bei ${esc(P.name)} fahren Händler. Ihr legt euch am Wegesrand auf die Lauer, späht jeden Wagen durchs Fernglas aus und entscheidet, ob ihr zuschlagt. Vom Bauernkarren bis zum Geldwagen ist alles unterwegs.`:esc((D.ADV[st.adv.biome]?.intro||'').replace('{P}',P.name))}</p>
   <div class="buttons ow-biomes">${Object.entries(BI).map(([k,l])=>`<button class="btn ${st.adv.biome===k?'primary':''}" data-action="outside:biome:${k}">${l}</button>`).join('')}<button class="btn" data-action="outside:reroll">Anderes Ziel ↻</button></div>
   <div class="ow-diff"><b>Schwierigkeit</b><div class="ow-diff-row">${[1,2,3,4,5].map(d=>`<button type="button" class="ow-dbtn ${d===dv?'on':''}" data-action="outside:diff:${d}" aria-label="${d} Totenköpfe">${skulls(d,2)}</button>`).join('')}</div>
    <p class="tiny"><b>${esc(D.DIFF.names[dv-1])}</b> · Aussicht auf Erfolg ${DIFF_CHANCE[dv-1]} · Beute ×${String(D.DIFF.gold[dv-1]).replace('.',',')}${dv>=3?' · Grobiane und Veteranen möglich':''}${dv>=4?' · Anführer mit Spitzenwaffe':''}</p></div>
-  <dl><dt>Gegner</dt><dd>${m?`${D.ADV[st.adv.biome].band}: etwa ${m.total-1} ${esc(D.ADV[st.adv.biome].who)} und ihr Anführer. Stärke richtet sich nach eurer Gruppe (${n||1} Kämpfer) und den Totenköpfen.`:'unbekannt'}</dd><dt>Belohnung</dt><dd>Die Truhe des Anführers (Gold) · alle Waffen und Schilde, die fallen</dd><dt>Regel</dt><dd>${ready?'Eine Plünderung pro Tag.':'<b class="red">Heute wart ihr schon plündern. Morgen wieder.</b>'}</dd></dl>
+  <dl>${wag?`<dt>Gegner</dt><dd>Bis zu ${D.WAGON?.wagons||3} Wagen mit Wachen. Jeder Wagen hat seine eigenen Totenköpfe (um die gewählte Stufe herum), das Fernglas zeigt sie. Wachen nach eurer Gruppe (${n||1} Kämpfer).</dd><dt>Belohnung</dt><dd>Gold aus dem Wagen · ein Stück aus der Ladung (Rüstung, Waffe oder Schild) · alles, was die Wachen fallen lassen</dd>`
+  :`<dt>Gegner</dt><dd>${m?`${D.ADV[st.adv.biome].band}: etwa ${m.total-1} ${esc(D.ADV[st.adv.biome].who)} in ${m.groups?.length||3} Gruppen, am Ende ihr berüchtigter Anführer mit Leibwache. Stärke richtet sich nach eurer Gruppe (${n||1} Kämpfer) und den Totenköpfen.`:'unbekannt'}</dd><dt>Belohnung</dt><dd>Die Truhe des Anführers (Gold) · alle Waffen und Schilde, die fallen</dd>`}<dt>Regel</dt><dd>${ready?'Eine Plünderung pro Tag.':'<b class="red">Heute wart ihr schon plündern. Morgen wieder.</b>'}</dd></dl>
   <canvas class="ow-map" data-owmap="adventure" width="480" height="270"></canvas><p class="tiny">Plünderungen bisher: ${st.adventures} · gewonnen: ${st.advWins}</p></div>`;}
  // Anführer ab 5 Kämpfern: gewählter (★) oder der mit dem besten Führungswert
  const ldr=L&&team.length>=L.CFG.minParty?(team.find(g=>g.id===st.leaderId)||L.pickLeader(team)):null,lq=ldr?L.quality(ldr):null;
@@ -233,7 +237,7 @@ function boardPage(){const st=ST();
   <div class="buttons"><button class="btn primary" data-action="outside:go" ${can?'':'disabled'}>Aufbrechen ▶</button></div>
   ${hist?`<h3>Unterwegs gewesen</h3><ul class="ow-hist">${hist}</ul>`:''}</div></div></section>`;}
 function paintBoard(){const st=ST();for(const c of document.querySelectorAll('canvas[data-owmap]')){const kind=c.dataset.owmap;try{const P=kind==='quest'?placeFor('quest'):placeFor('adventure');A.map(c,P,{reveal:0,cleared:-1,progress:0,party:A.mapPoint(P,0)});}catch(e){console.error(e);}}void st;}
-function resultPage(){const r=result,cls={won:'ok',fled:'',withdrawn:'',lost:'red'}[r.kind]||'';requestAnimationFrame(()=>{});
+function resultPage(){const r=result,cls={won:'ok',fled:'',withdrawn:'',spared:'',passed:'',lost:'red'}[r.kind]||'';requestAnimationFrame(()=>{});
  return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">PLÜNDERUNG · ZURÜCK IM LUDUS</p><h1 class="${cls}">${esc(r.title)}</h1></div><div class="buttons"><button class="btn primary" data-action="outside:board">Weiter</button><button class="btn" data-action="nav:home">‹ Ludus</button></div></div>
  <div class="box"><p class="ow-res-text">${esc(r.text)}</p><p class="tiny">${esc(r.stats)}</p></div>
  <div class="ow-cols"><div class="box"><h2>Beute</h2><ul class="ow-hist">${r.loot.length?r.loot.map(l=>`<li><b>${esc(l.name)}</b> <small>von ${esc(l.from)}</small></li>`).join(''):'<li>Keine Beute.</li>'}${r.gold?`<li><b class="gold">${r.gold} Gold</b> <small>${esc(r.goldFrom)}</small></li>`:''}${r.extra?`<li><b>${esc(r.extra)}</b></li>`:''}</ul>${r.loot.length?'<p class="tiny">Alles liegt im Lager (Waffenkammer).</p>':''}</div>
@@ -259,7 +263,7 @@ M.schoolClick=action=>{if(!action.startsWith('outside:'))return prevClick?prevCl
   // Fernkämpfer und Assassinen nur in Leder/Mittel: Metall nimmt ihnen den Laufvorteil
   let off=0;for(const g of team)if(g.role!=='Soldat')for(const [slot,id] of Object.entries(g.equipment?.armor||{})){const it=id&&M.inventoryItem?.(id);if(it?.material==='metal'){g.equipment.armor[slot]=null;off++;}}
   if(off)msg+=` · ${off} Metallteil${off>1?'e':''} bei Schützen/Assassinen abgelegt (schneller zu Fuß)`;notify(msg);persist();M.ui.render();return true;}
- if(k==='biome'){st.adv=newAdventure(v,st.adv?.diff);persist();M.ui.render();return true;}
+ if(k==='biome'){st.adv=newAdventure(v,st.adv?.diff,st.adv?.mode);persist();M.ui.render();return true;}
  if(k==='diff'){st.adv??=newAdventure();st.adv.diff=Math.max(1,Math.min(5,+v||2));persist();M.ui.render();return true;}
  if(k==='reroll'){st.adv=newAdventure(st.adv?.biome,st.adv?.diff);persist();M.ui.render();return true;}
  if(k==='intro'){playIntro();return true;}
@@ -271,14 +275,14 @@ M.schoolClick=action=>{if(!action.startsWith('outside:'))return prevClick?prevCl
 // =====================================================================================================
 // MISSION: Marsch durch breite Abschnitte, Begegnungen, Kampf mit der echten Engine
 // =====================================================================================================
-const L=window.DebtLeader,LU=window.DebtLeaderUI;
+const L=window.DebtLeader,LU=window.DebtLeaderUI,SH=window.DebtShow,NT=window.DebtNotorious;
 const R={m:null,b:null,lastTime:0,awaiting:null,ended:false,fleeing:false,cam:{x:520,y:600,snap:true},progress:0,marching:false,nextRes:null,rows:[],rowKey:0,runId:null};const VH=760;
 const speed=()=>Math.max(1,S.options?.speed||1);
 function overlayDom(){const view=$('battleView');if(!view)return null;let o=$('owOver');if(o&&o.parentNode===view)return o;
  o=document.createElement('div');o.id='owOver';o.innerHTML=`<canvas id="owWx"></canvas><div id="owBubbles"></div><div class="ow-top"><div class="ow-title"><b id="owTitle"></b><small id="owSub"></small></div><div class="ow-chips"><span class="tag" id="owStation"></span><span class="tag" id="owCount"></span><span class="tag" id="owLoot"></span></div></div><div class="ow-mapbox" id="owMapBox"><canvas id="owMap" width="480" height="270"></canvas></div><div class="ow-logbox" id="owLogBox" hidden><div id="owLog"></div></div>
  <div class="ow-auto" id="owAuto" hidden><b id="owAutoText"></b><div><button type="button" class="btn primary" id="owNext">Weiter ▶</button><button type="button" class="btn" id="owHome">Heimkehren (ohne Beute)</button></div></div>
  <div class="ow-ctrl"><span id="owState"></span><button type="button" class="btn" id="owFlee">Fliehen</button><button type="button" class="btn" id="owSpdBtn">1×</button><button type="button" class="btn" id="owLogBtn">Bericht</button><button type="button" class="btn" id="owMapBtn">Karte</button><span class="ow-zoom"><button type="button" class="btn" id="owZoomOut" aria-label="Herauszoomen">−</button><b id="owZoomTxt">1×</b><button type="button" class="btn" id="owZoomIn" aria-label="Hineinzoomen">+</button></span><button type="button" class="btn" id="owFollow" hidden title="Kamera wieder der Truppe folgen lassen">◎ Folgen</button><button type="button" class="btn" id="owFogBtn" title="Kampfnebel an/aus">Nebel an</button></div>`;
- view.insertBefore(o,$('battleBottom'));if(innerWidth<600)$('owMapBox').hidden=true;LU?.mount(o);
+ view.insertBefore(o,$('battleBottom'));if(innerWidth<600)$('owMapBox').hidden=true;LU?.mount(o);SH?.mount(o);
  // Bedienung liegt im Kampfbild (nicht ganz unten), damit man auf dem Handy nie scrollen muss
  $('owNext').onclick=next;$('owHome').onclick=flee;$('owFlee').onclick=flee;
  $('owLogBtn').onclick=()=>{const bx=$('owLogBox');bx.hidden=!bx.hidden;$('owLogBtn').classList.toggle('primary',!bx.hidden);if(!bx.hidden)$('owLog').scrollTop=1e9;};$('owMapBtn').onclick=()=>{const bx=$('owMapBox');bx.hidden=!bx.hidden;};
@@ -295,7 +299,7 @@ const prevArmyHud=M.armyBattleHUD;M.armyBattleHUD=function(b){if(b?.mission&&R.m
 const prevEnd=M.endBenchmark;M.endBenchmark=function(w,r){if(S.battle?.mission)return D.onEngineEnd(w,r);return prevEnd?.apply(this,arguments);};
 // Kamera: füllt die Höhe, folgt der Truppe (bei Kampf allen Beteiligten)
 const hudCam=M.battleCamera;
-function missionCam(b,width,height,W,H){const ov=LU?.camera(b,width,height,W,H);if(ov){sizeFieldSoon();return ov;}const Z=R.zoom||1,fit=Math.min(width/W,height/H),k=height/VH*Z,view=width/k,vh=VH/Z;sizeFieldSoon();
+function missionCam(b,width,height,W,H){const ov=SH?.camera(b,width,height,W,H)||LU?.camera(b,width,height,W,H);if(ov){sizeFieldSoon();return ov;}const Z=R.zoom||1,fit=Math.min(width/W,height/H),k=height/VH*Z,view=width/k,vh=VH/Z;sizeFieldSoon();
  const all=b.actors.filter(a=>!a.down&&!a.g.dead),foes=all.some(a=>a.team===1&&b.encEnemies.includes(a));const pa=foes?all:partyActors(b);
  let tx=pa.length?pa.reduce((s,a)=>s+a.x,0)/pa.length:R.cam.x,ty=pa.length?pa.reduce((s,a)=>s+a.y,0)/pa.length-30:R.cam.y;if(!foes)tx+=view*.18;
  if(R.manual){tx=R.cam.x;ty=R.cam.y;}
@@ -328,7 +332,7 @@ function fogUpdate(b){const W=b.width||1040,H=b.height||VH,cw=Math.ceil(W/FOG.ce
  const g=c.getContext('2d'),eyes=b.actors.filter(a=>a.team===0&&!a.g.dead);g.globalCompositeOperation='source-over';g.clearRect(0,0,cw,ch);g.fillStyle='#0b1216';g.fillRect(0,0,cw,ch);g.globalCompositeOperation='destination-out';
  for(const a of eyes){const r=fogSight(a)/FOG.cell,x=a.x/FOG.cell,y=a.y/FOG.cell,gr=g.createRadialGradient(x,y,r*.55,x,y,r);gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();}
  g.globalCompositeOperation='source-over';FOG.seen=new Set();for(const e of b.actors){if(e.team===0)continue;if(eyes.some(a=>Math.hypot(a.x-e.x,a.y-e.y)<fogSight(a)*.92))FOG.seen.add(e);}FOG.b=b;}
-function fogActive(b){return FOG.on&&!!b?.mission&&!!R.m&&S.battle===b&&!(LU&&(LU.SPY?.on||LU.CLOSE?.on));}
+function fogActive(b){return FOG.on&&!!b?.mission&&!!R.m&&S.battle===b&&!(LU&&(LU.SPY?.on||LU.CLOSE?.on))&&!(SH&&(SH.SH.on||SH.SH.cine||SH.SH.free));}
 const prevFogOverlay=M.battleOverlay;M.battleOverlay=function(ctx,b){prevFogOverlay?.(ctx,b);if(!fogActive(b))return;const now=performance.now()/1000;if(FOG.b!==b||now-FOG.t>FOG.every){FOG.t=now;fogUpdate(b);}
  ctx.save();ctx.imageSmoothingEnabled=true;ctx.globalAlpha=FOG.alpha;ctx.drawImage(FOG.c,0,0,FOG.c.width*FOG.cell,FOG.c.height*FOG.cell);ctx.restore();};
 const prevFogHidden=M.battleHidden;M.battleHidden=function(a){if(prevFogHidden?.(a))return true;const b=S.battle;if(!fogActive(b)||a.team===0||FOG.b!==b)return false;return !FOG.seen.has(a)&&!a.g.dead;};
@@ -378,7 +382,7 @@ const first=g=>String(g?.name||'').split(' ')[0];
 // Nach jeder Begegnung geht es von selbst weiter (Countdown). „Weiter ▶“ springt sofort, „Heimkehren (ohne Beute)“ beendet die Mission; Beute gibt es nur für die ganze Mission.
 function setButtons(state){R.awaiting=state;clearInterval(R.autoT);const fl=$('owFlee'),au=$('owAuto');
  if(fl){fl.disabled=['flee','won','end','next'].includes(state);fl.textContent='Fliehen';}
- const boss=R.m?.kind==='quest'?'Krassus liegt am Boden.':'Der Anführer liegt am Boden.';
+ const boss=R.m?.kind==='quest'?'Krassus liegt am Boden.':R.m?.mode==='wagon'?'Der Wagen gehört euch.':'Der Anführer liegt am Boden.';
  const s=$('owState');if(s)s.textContent={march:'Die Truppe marschiert …',talk:'Jemand redet …',fight:'Kampf läuft',after:'Nach dem Kampf …',next:'',won:boss,flee:'Rückzug …',end:''}[state]||'';
  if(au){au.hidden=!['next','won'].includes(state);if(!au.hidden){let left=state==='won'?4:5;const tick=()=>{const t=$('owAutoText');if(t)t.textContent=(state==='won'?'Zum Ergebnis in ':'Weiter in ')+left+' …';if(left--<=0){clearInterval(R.autoT);next();}};
   $('owHome').hidden=state==='won';$('owNext').textContent=state==='won'?'Zum Ergebnis ▶':'Weiter ▶';tick();R.autoT=setInterval(tick,1000/Math.min(2,speed()));}}}
@@ -411,6 +415,7 @@ function missionLoop(t){const b=S.battle;
    if(!R.ending){abortMission();}}
   else{if(M.ui.getPage()!=='profiles'){const dt=Math.max(0,b.time-R.lastTime);R.lastTime=b.time;D.tick(b,dt);
     if((b.paused&&!b.done)||R.fleeing){const dt=1/60*speed(),grp=groupCenter(b);for(const a of b.actors)if(a.to){if(R.fleeing||a.team!==0)walker(a,dt);else stroll(a,dt,grp);pushOut(a,b);}}
+    if(WAG){const now=performance.now(),dt=Math.min(.1,(now-(R.wT||now))/1000)*speed();R.wT=now;wagonTick(dt);}
     while(b.events.length)onEvent(b,b.events.shift());
     if(b.started&&b.done&&!b.handled){b.handled=true;encounterEnd(b);}
     if(t-(loopT.cull||0)>200){loopT.cull=t;const c=$('arenaCanvas');D.cullObstacles(b,R.cam.x,c?c.clientWidth/(c.clientHeight/VH):1400);}
@@ -438,16 +443,18 @@ function onEvent(b,e){const m=R.m,adv=m.kind==='adventure';
 // Der Lade-Bildschirm der Arena (scene-loader.js) bereitet Arena-Grafik vor und wartet auf „Weiter“. Missionen zeichnen
 // ihren eigenen Schauplatz und wechseln mehrmals den Abschnitt: dort nicht anhalten.
 function bypassLoader(){const SL=M.sceneLoader;if(SL&&!SL.__ow){const g0=SL.gate;SL.gate=function(){if(S.battle?.mission)return !!SL.active;return g0.apply(this,arguments);};SL.__ow=true;}}
-async function startMission(){if(S.battle||R.m)return;bypassLoader();LU?.install({bubble,mlog,toScreen,live,cam:()=>R.cam,VH,state:t=>{const e=$('owState');if(e)e.textContent=t;}});const st=ST(),team=selected();if(team.length<D.CFG.minParty||team.length>D.CFG.maxParty)return;
+async function startMission(){if(S.battle||R.m)return;bypassLoader();const stateTxt=t=>{const e=$('owState');if(e)e.textContent=t;};LU?.install({bubble,mlog,toScreen,live,cam:()=>R.cam,VH,state:stateTxt});SH?.install({bubble,mlog,live,cam:()=>R.cam,VH,state:stateTxt,talkPause,speaker:b=>LU?.leaderA?.(b)||anyParty(b)});const st=ST(),team=selected();if(team.length<D.CFG.minParty||team.length>D.CFG.maxParty)return;
  const quest=st.stage!=='done';if(!quest&&!adventureReady()){notify('Heute wart ihr schon draußen.');return;}
  let m;if(quest){st.quest??=newQuestPlace();m=D.newMission(st.quest.seed,team,'dorf',{kind:'quest'});m.place.name=st.quest.name;}
- else{m=D.newMission(st.adv.seed,team,st.adv.biome,{kind:'adventure',diff:st.adv.diff||2});}
+ else if(st.adv.mode==='wagon'&&D.newWagonMission){m=D.newWagonMission(st.adv.seed,team,st.adv.biome,{diff:st.adv.diff||2});}
+ else{m=D.newMission(st.adv.seed,team,st.adv.biome,{kind:'adventure',diff:st.adv.diff||2,avoid:st.recentLeaders||[]});if(m.boss?.notorious)st.recentLeaders=[m.boss.notorious,...(st.recentLeaders||[]).filter(x=>x!==m.boss.notorious)].slice(0,8);}
  R.missionTime=0;R.lastSeen=null;R.m=m;R.zoom=R.zoomPref||1;R.ended=false;R.ending=false;R.fleeing=false;R.progress=0;R.rows=[];R.rowKey=0;R.full=[];R.lastTime=0;R.awaiting='march';R.runId='run'+Date.now();loopT={map:0,info:0};
  if(quest)st.tries++;else{st.lastAdventure=S.day;st.adventures++;}
  st.run={id:R.runId,kind:m.kind,place:m.place.name,day:S.day,party:team.map(g=>g.id)};persist();
  document.body.classList.add('ow-mission');
  const intro=quest?`<b>${esc(school())}</b> bricht nach <b>${esc(m.place.name)}</b> auf. ${team.length} ${team.length===1?'Kämpfer, ein improvisiertes Testament':'Kämpfer, '+team.length+' improvisierte Testamente'}. Zwei Tagesmärsche später: ${esc(D.moodText(m.place.mood))}`
   :`<b>${esc(school())}</b> zieht los: ${esc(m.place.label)} ${esc(m.place.name)}. ${esc((m.texts?.intro||'').replace('{P}',m.place.name))} ${esc(D.moodText(m.place.mood))}`;
+ if(m.mode==='wagon'){await runWagon(`<b>${esc(school())}</b> zieht los: ${esc(m.place.label)} ${esc(m.place.name)}. Am Weg wird gehandelt. Und gleich auch geraubt. ${esc(D.moodText(m.place.mood))}`);return;}
  await runSection(0,intro);}
 // Ladefenster (scene-loader.js): Schauplatz, Waffenbilder samt Blutstufen und alle Figuren dieses Abschnitts (eigene und
 // kommende Gegner) werden vorab gezeichnet, damit der Kampf danach ohne Ruckler läuft. Erster Abschnitt wartet auf „Weiter“,
@@ -486,13 +493,15 @@ async function runSection(si,introLine){const m=R.m,sec=m.place.sections[si];
  mlog(esc(D.THEMES[sec.theme].text),'narr');
  for(const sti of sec.stations){if(!live(b))return;await encounter(b,sti);if(!live(b))return;
   if(sti!==sec.stations[sec.stations.length-1]||!sec.boss){await waitNext();if(!live(b))return;}}
- if(sec.boss)return;await marchTo(b,b.width-D.marginX(b.width)-40,70);if(!live(b))return;
+ if(sec.boss)return;if(sec.single)await marchShort(b);else await marchTo(b,b.width-D.marginX(b.width)-40,70);if(!live(b))return;
  $('battleView')?.classList.add('ow-fade');await sleep(600);if(!R.m||R.ended)return;await runSection(si+1);}
 function waitNext(){return new Promise(res=>{R.nextRes=res;});}
+// Plünderung: nach dem Kampf nur ein paar Schritte weiter (höchstens gut 3 s), dann der nächste Kartenabschnitt
+async function marchShort(b){const pa=partyActors(b);if(!pa.length)return;const x=Math.min(b.width-D.marginX(b.width)-40,pa.reduce((s,a)=>s+a.x,0)/pa.length+360);await Promise.race([marchTo(b,x,76),sleep(3200/Math.min(2,speed()))]);}
 async function encounter(b,sti){const m=R.m,st=m.place.stations[sti],adv=m.kind==='adventure';m.idx=sti;
  // Ab 5 kampffähigen Kämpfern führt ein Anführer (DebtLeader): Entdecken, Fernrohr, Befehle, Rufe im Kampf
- const lead=L&&LU?L.attach(b,m,{leaderId:ST().leaderId}):null;if(lead&&!st.boss){await leadEncounter(b,sti);return;}
- const ok=await marchTo(b,st.fx-120,58);if(!ok)return;
+ const lead=L&&LU?L.attach(b,m,{leaderId:ST().leaderId}):null;if(st.boss&&m.place.oneFight){await bossEncounter(b,sti);return;}if(lead&&!st.boss){await leadEncounter(b,sti);return;}
+ const grp=b.L.enc?.[sti]?.group,ok=await marchTo(b,grp&&st.kind==='idle'?grp.ex-430:st.fx-120,58);if(!ok)return;
  setButtons('talk');
  if(st.boss){const boss=m.queues[sti][0],bn=adv?first(boss):'Krassus';
   mlog(adv?`Vor euch wartet <b class="boss">${esc(boss.name)}</b>, ${esc(M.itemName(boss.enemyGear.weapon))} in der Hand.`:`Vor dem Kontor wartet <b class="boss">Krassus Knochenzins</b>, den Zweihänder „Zinseszins“ locker auf der Schulter.`);
@@ -516,7 +525,7 @@ async function encounter(b,sti){const m=R.m,st=m.place.stations[sti],adv=m.kind=
  b.started=true;b.paused=false;setButtons('fight');}
 // Begegnung mit Anführer: Er sieht die Gegner meist zuerst (Fernrohr, Lage, gestaffelte Aufstellung), sonst Überfall mit schnellen Rufen
 async function leadEncounter(b,sti){const m=R.m,st=m.place.stations[sti],G=L.layoutGroup(b,m,sti),me=()=>LU.leaderA(b);
- if(L.spotRoll(b,st)){if(!await marchTo(b,G.hx))return;setButtons('talk');
+ if((m.place.oneFight&&st.kind==='idle')||L.spotRoll(b,st)){if(!await marchTo(b,G.hx))return;setButtons('talk');
   L.beginGroup(b,m,sti);b.events.length=0;b.paused=true;b.started=false;b.lead.stats.spotted++;b.lead.phase='brief';
   mlog(`<b class="ldr">★ ${esc(me().g.name)}</b> entdeckt ${b.encEnemies.length} Gegner, bevor sie euch sehen.`,'narr');
   const lines=L.briefLines(b);LU.leadSay(b,lines[0].text,{ms:1800});await talkPause(1100);if(!live(b))return;LU.drawWeapons(b);await talkPause(900);if(!live(b))return;
@@ -538,6 +547,99 @@ async function leadEncounter(b,sti){const m=R.m,st=m.place.stations[sti],G=L.lay
  const e0=b.encEnemies[0];if(e0)bubble(e0,pickL(['Überraschung!','Jetzt haben wir euch!','DRAUF!']),{name:first(e0.g),loud:true});LU.stow(b,false);
  for(const a of b.actors){a.to=null;a.path=null;}
  b.started=true;b.paused=false;L.surprise(b);setButtons('fight');}
+// Plünderung: Am Ziel wartet der Berüchtigte mit seiner Bande. Vorstellung (Steckbrief, Bande, Wortwechsel), dann die Frage:
+// kämpfen oder abziehen. Abziehen beendet die Plünderung ohne Beute (wie Heimkehren). Kämpfen: Kampfsequenz, dann der Kampf.
+async function bossEncounter(b,sti){const m=R.m,st=m.place.stations[sti],G=b.L.enc[sti].group;
+ if(!await marchTo(b,G.ex-620,58))return;setButtons('talk');
+ const firstA=D.beginEncounter(b,m,sti);b.paused=true;b.started=false;b.events.length=0;const boss=firstA.find(a=>a.g===m.boss)||firstA[0];
+ for(const a of firstA)a.a=Math.PI;for(const a of partyActors(b)){a.a=0;a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}
+ mlog(`Vor euch wartet <b class="boss">${esc(boss.g.name)}</b> mit seiner Bande, ${esc(M.itemName(boss.g.enemyGear.weapon))} in der Hand.`,'narr');
+ let choice='fight';if(SH){choice=await SH.present(b,m,boss,firstA.filter(a=>a!==boss));if(!live(b))return;}
+ if(choice!=='fight'){const ty=NT?.typeOf(boss.g);bubble(boss,pickL(['Lauft nur! Lauft! Erzählt allen von mir!','Feiglinge! Ich wusste es!','Kommt wieder, wenn ihr erwachsen seid!',...(ty?.cry||[]).slice(0,0)]),{name:first(boss.g),boss:true});
+  mlog(`Ihr zieht ab. <b class="boss">${esc(boss.g.name)}</b> lacht euch hinterher.`,'narr');await talkPause(1800);m.state='fled';finishMission('spared');return;}
+ LU?.stow(b,false);if(SH)await SH.fightCine(b,boss);if(!live(b))return;
+ if(b.lead){b.lead.phase='fight';b.lead.alert=true;b.lead.alertAt=b.time;b.lead.fightAt=b.time;LU.leadSay(b,pickL(['Das ist er. Alle zusammen, keiner allein!','Der Große gehört uns. Umzingeln!','Schilde vorn, Klingen von der Seite. Los!']));}
+ b.started=true;b.paused=false;setButtons('fight');}
+// =====================================================================================================
+// WAGENÜBERFALL: am Wegesrand auf der Lauer liegen, bis zu drei Wagen ausspähen, überfallen oder vorbeiziehen lassen
+// =====================================================================================================
+const WG=window.DebtWagon;let WAG=null;if(WG)WG.cur=()=>WAG;
+function spotter(b){return LU?.leaderA?.(b)||partyActors(b).sort((x,y)=>(y.g.stats?.tactics||0)-(x.g.stats?.tactics||0))[0]||null;}
+function hookWagonDraw(){if(M.drawSprite?.__wagon)return;const d0=M.drawSprite;const f=(ctx,o)=>{if(o.wagonSprite){if(WAG&&!WAG.gone&&o.ref===WAG)WG.draw(ctx,WAG,performance.now()/1000);return;}
+  if(o.driverRun){const r=o.driverRun;if(r.gone)return;try{ctx.save();ctx.translate(Math.round(r.x),Math.round(r.y));ctx.scale(1/.6,1/.6);M.renderLudusActors(ctx,[{id:'wagon-driver',g:r.g,team:1,x:0,y:0,a:r.vx>0?0:Math.PI,phase:r.ph,state:'move',moveSpeed:150,energy:100,ammo:0,bloodMarks:{}}]);}catch(e){}finally{ctx.restore();}return;}
+  return d0?.(ctx,o);};f.__wagon=1;f.__lead=1;M.drawSprite=f;}
+// Bewegung des Wagens und seiner Wachen (die Engine steht, bis der Überfall beginnt)
+function wagonTick(dt){const w=WAG,b=S.battle;if(!w||w.gone||!b?.L||b!==w.b)return;const v=w.speed*(w.speedMul??1);
+ if(w.state==='come'||w.state==='pass'){w.x+=w.dir*v*dt;w.y=D.pathY(b.L,w.x)+6;w.ang+=v*dt/20;w.ph+=v*dt*.11;w.mv=1;
+  for(const s of w.guards){const a=s.a;if(a.down||a.g.dead)continue;const ox=a.x,oy=a.y;a.x=w.x+w.dir*s.dx;a.y=D.pathY(b.L,a.x)+s.dy;a.a=w.dir>0?0:Math.PI;a.state='move';if(M.updateLocomotion)M.updateLocomotion(a,ox,oy,a.phase||0,dt);else{a.moveSpeed=v;a.phase=(a.phase||0)+v*dt*.25;}}
+  if(w.dir<0&&w.x<-W_OFF(w)||w.dir>0&&w.x>b.width+W_OFF(w))w.gone=true;}
+ else{w.mv=0;w.rear=Math.max(0,(w.rear||0)-dt*.7);}
+ if(w.o){w.o.x=w.x;w.o.y=w.y;}const r=w.run;if(r&&!r.gone){r.x+=r.vx*dt;r.y+=r.vy*dt;r.ph+=dt*13;r.o.x=r.x;r.o.y=r.y;if(r.x<-60||r.x>b.width+60||r.y<b.L.mT-40)r.gone=true;}}
+const W_OFF=w=>WG.length(w.type)+120;
+// Sätze durchs Fernglas: Wagen, Ladung, Wachen, Einschätzung in Totenköpfen
+function wagonLines(b,w,focus){const T=WG.TYPES[w.type],gs=WAG.guards.map(s=>s.a),cap=gs.find(a=>a.g.wagonCaptain),best=gs.slice().sort((x,y)=>D.gearList(y.g).length-D.gearList(x.g).length)[0];
+ const out=[{focus,text:T.look+' Gezogen von '+T.animals+'.'},{focus,text:'Ladung: '+T.cargo}];
+ out.push({focus:gs[0]||focus,text:`${gs.length} ${gs.length===1?T.guard:T.guard+(T.guard.endsWith('e')?'n':'e')} als Begleitung.${best?' Der da hat '+M.itemName(best.g.enemyGear?.weapon)+'.':''}${gs.some(a=>a.g.brute)?' Und einer ist so groß wie ein Schrank. Mit Schrankinhalt.':''}`});
+ if(cap)out.push({focus:cap,text:`${cap.g.name} führt die Wache. Helm, Brustpanzer und der Blick von einem, der schon mal gewonnen hat.`});
+ out.push({focus,text:(WG.TEXT.rating.find(x=>x[0]===w.tier)||[0,''])[1]});return out;}
+async function runWagon(introLine){const m=R.m,sec=m.place.sections[0];hookWagonDraw();
+ const b=R.b=D.startSection(m,0);R.lastTime=0;b.handled=false;
+ const img=await prepareSection(m,b,0);D.addObstacles(b,b.L.extraObstacles);M.missionBackdrop=(ctx)=>A.drawBackdrop(ctx,img,b);
+ R.cam.x=0;R.cam.y=D.pathY(b.L,0);R.cam.snap=true;setFollow(true);
+ M.ui.render();missionHud(b);$('battleView')?.classList.remove('ow-fade');const bl=$('owBubbles');if(bl)bl.innerHTML='';
+ const tt=$('owTitle');if(tt)tt.textContent=m.place.name;const sb=$('owSub');if(sb)sb.textContent=`Wagenüberfall ${'☠'.repeat(m.diff||2)} · ${m.place.label} · ${D.moodText(m.place.mood)}`;
+ const stn=$('owStation');if(stn)stn.textContent=`${D.THEMES[sec.theme].name} · auf der Lauer`;
+ if(introLine)mlog(introLine,'narr');mlog(esc(D.THEMES[sec.theme].text),'narr');
+ if(L&&LU)L.attach(b,m,{leaderId:ST().leaderId});
+ // zum Hinterhalt und in Deckung (beidseits des Wegs, Zweige vor dem Gesicht)
+ const hx=b.L.enc[0].hide.x;if(!await marchTo(b,hx-60,58))return;setButtons('talk');
+ const sp=spotter(b);if(sp){bubble(sp,pickL(['Hier. Runter ins Gebüsch. Und keiner furzt.','Hier legen wir uns hin. Wer schnarcht, kriegt einen Stein in den Mund.','Gute Stelle. Der Weg ist eng, das Gebüsch dicht, die Moral fragwürdig.']),{name:first(sp.g),lead:!!b.lead,ms:2600});await talkPause(2200);if(!live(b))return;}
+ const pa=partyActors(b);pa.forEach((a,k)=>{const side=k%2?1:-1,x=hx-70+Math.floor(k/2)*58+(k%2)*20,y=freeSpot(b,x,clamp(D.pathY(b.L,x)+side*(170+Math.floor(k/2)%2*36),b.L.mT+40,b.L.mB-30));routeTo(b,a,x,y,70);a.startDelay=0;a.face=0;});
+ await LU.walkSome(b,pa,9000);if(!live(b))return;for(const a of pa){a.a=0;if(L)L.hideOne(b,a);}LU?.stow(b,false);
+ mlog(`Die Truppe liegt beidseits des Wegs im Gebüsch, Zweige vor dem Gesicht. ${pa.length>1?'Keiner sagt etwas. Einer kratzt sich.':'Allein im Gebüsch. Sehr würdevoll.'}`,'narr');
+ SH&&(SH.SH.free=true);R.manual=false;
+ for(let i=0;i<m.wagons.length;i++){if(!live(b))return;const r=await wagonPass(b,m.wagons[i],i,hx);if(r==='fight'||!live(b))return;
+  if(i<m.wagons.length-1){mlog(pickL(WG.TEXT.passGone),'narr');await talkPause(2600);}}
+ if(!live(b))return;mlog(esc(WG.TEXT.noMore),'narr');await talkPause(2200);m.state='fled';finishMission('passed');}
+async function wagonPass(b,w,i,hx){const m=R.m,dir=-1,x0=b.width+W_OFF(w)*.4;
+ WAG={b,w,type:w.type,x:x0,y:D.pathY(b.L,Math.min(x0,b.width-1))+6,dir,ang:0,ph:0,mv:1,rear:0,driverGone:false,driverG:w.driver,coat:w.coat,horse:w.horse,speed:D.WAGON.speed[w.tier-1],speedMul:1.6,state:'come',guards:[],gone:false};
+ WAG.o={type:'sprite',hp:0,r:0,x:WAG.x,y:WAG.y,sid:-1,wagonSprite:true,ref:WAG};D.addObstacles(b,[WAG.o]);
+ // Wachen: vorn neben den Tieren, an den Seiten, hinten
+ const half=WG.length(w.type)/2,slots=[[half*.9,-44],[half*.9,44],[0,-56],[0,56],[-half*.8,-34],[-half*.8,34],[-half-40,-10],[-half-40,30],[half*.4,-62],[half*.4,62]];
+ w.guards.forEach((g,k)=>{const a=M.createCombatActor(g,1,k),[dx,dy]=slots[k%slots.length];a.r=12;a.cool=.8;a.x=WAG.x+dir*dx;a.y=D.pathY(b.L,Math.min(a.x,b.width-1))+dy;b.actors.push(a);WAG.guards.push({a,dx,dy});});
+ setButtons('talk');const sp=spotter(b);mlog(`${pickL(WG.TEXT.approach)} <b>${esc(w.name)}</b> ${i?'(der '+(i+1)+'. heute)':''}`,'narr');if(sp)bubble(sp,pickL(WG.TEXT.approach),{name:first(sp.g),ms:2200});
+ // Kamera auf den Wagen, bis er nah genug zum Ausspähen ist
+ R.manual=true;const camTo=()=>{R.cam.x+=(WAG.x-160-R.cam.x)*.04;R.cam.y+=(WAG.y-60-R.cam.y)*.04;};
+ const until=async(f,lim=60000)=>{const t0=performance.now();while(live(b)&&!f()&&performance.now()-t0<lim){camTo();await sleep(40);}return live(b);};
+ if(!await until(()=>WAG.x<hx+820))return 'gone';
+ // Fernglas (Zeitlupe für den Wagen)
+ WAG.speedMul=.15;const focus={get x(){return WAG.x+40;},get y(){return WAG.y-20;},g:{dead:false},zoom:2.2};
+ if(LU&&sp)await LU.spyShow(b,wagonLines(b,w,focus),{me:sp,zoom:2.6});if(!live(b))return 'gone';
+ const loot=`Gold (etwa ${Math.round(w.gold*.8/10)*10}–${Math.round(w.gold*1.2/10)*10}) und ein Stück aus der Ladung`;
+ const yes=SH?await SH.decide({q:`${esc(w.name)} überfallen?`,info:`<p>${SH.skullRow(w.tier)} <b>${esc((D.DIFF?.names||[])[w.tier-1]||'')}</b></p><p>Wachen: <b>${w.guards.length}</b>${w.guards.some(g=>g.wagonCaptain)?' mit Hauptmann':''} · Eure Truppe: <b>${partyActors(b).length}</b> kampffähig</p><p>Beute: ${loot}, dazu alles, was die Wachen fallen lassen.</p><p class="tiny">Vorbeiziehen lassen: Der Wagen fährt weiter${i<m.wagons.length-1?', ihr wartet auf den nächsten':', danach geht es heim'}.</p>`,yes:'⚔ Überfallen',no:'Vorbeiziehen lassen'}):true;
+ if(!live(b))return 'gone';R.manual=false;
+ if(!yes){if(sp)bubble(sp,pickL(WG.TEXT.pass),{name:first(sp.g),ms:2400});mlog(`Ihr lasst den <b>${esc(w.name)}</b> ziehen.`,'narr');WAG.speedMul=4;WAG.state='pass';
+  await until(()=>WAG.gone,40000);for(const s of WAG.guards){const k=b.actors.indexOf(s.a);if(k>=0)b.actors.splice(k,1);}WAG.gone=true;WAG.o.hp=-1;R.manual=false;return 'pass';}
+ // Überfall: warten, bis der Wagen auf Höhe des Hinterhalts ist, dann raus aus dem Gebüsch
+ WAG.speedMul=1.8;mlog('Wartet … wartet …','narr');if(sp)bubble(sp,pickL(['Wartet … wartet …','Noch nicht … noch nicht …','Auf mein Zeichen.']),{name:first(sp.g),ms:1800,small:true});
+ if(!await until(()=>WAG.x<hx+190,30000))return 'gone';
+ R.manual=false;D.wagonTarget(m,w);WAG.state='stop';WAG.rear=1;WAG.driverGone=true;
+ // Kutscher flieht
+ const run={g:w.driver,x:WAG.x+dir*WG.length(w.type)*.3,y:WAG.y-20,vx:-dir*170,vy:-90,ph:0,gone:false};run.o={type:'sprite',hp:0,r:0,x:run.x,y:run.y,sid:-1,driverRun:run};D.addObstacles(b,[run.o]);WAG.run=run;
+ D.addObstacles(b,WG.colliders(WAG));D.navInvalidate(b);
+ for(const a of partyActors(b)){if(a.leadCover){a.leadCover.dropped=0;a.leadCover=null;}a.kneeTimer=0;a.kneeDuration=2.4;a.kneeRise=1;}
+ const gs=WAG.guards.map(s=>s.a);for(const a of gs){a.state='idle';a.moveSpeed=0;}
+ b.encounter=0;b.queue=[];b.encStart=b.time;b.encEnemies=gs;b.enemiesAll.push(...gs);b.spawns=[];b.spawnIndex=0;b.done=null;b.handled=false;b.triggered.add(0);b.timeLimitAt=b.time+D.CFG.timeLimit;b.events.length=0;
+ mlog(`<b class="red">ÜBERFALL!</b> ${esc(pickL(WG.TEXT.driverFlee))}`,'narr');
+ const cap=gs.find(a=>a.g.wagonCaptain)||gs[0];if(cap)setTimeout(()=>{if(live(b))bubble(cap,pickL(WG.TEXT.guardShout),{name:first(cap.g),loud:true});},900);
+ if(SH)await SH.fightCine(b,cap,{title:'ÜBERFALL!',cry:WG.TEXT.guardShout,ours:WG.TEXT.ambush});if(!live(b))return 'fight';
+ if(b.lead){b.lead.phase='fight';b.lead.alert=true;b.lead.alertAt=b.time;b.lead.fightAt=b.time;}
+ b.started=true;b.paused=false;setButtons('fight');return 'fight';}
+// Nach dem Sieg: Wagen durchsuchen (Truhe öffnen), Gold und Fundstück zur Beute
+async function wagonLoot(b){const m=R.m,w=m.wagon;if(!w)return;const k=nearestParty(b,WAG||{x:b.width/2,y:b.height/2});
+ if(k&&WAG){await walkTo(b,k,WAG.x+(k.x<WAG.x?-40:40),WAG.y+30);if(!live(b))return;k.a=k.x<WAG.x?0:Math.PI;bubble(k,pickL(WG.TEXT.openLoot),{name:first(k.g),ms:2200});}
+ m.loot.push({item:w.item,from:'der Ladung ('+w.name+')'});mlog(`Im ${esc(w.name)}: <b class="gold">${m.gold} Gold</b> und <span class="ow-lootname">${esc(M.itemName(w.item))}</span>.`,'narr');
+ if(SH)await SH.loot({title:`Der ${esc(w.name)} gehört euch`,gold:m.gold,item:M.itemName(w.item),line:pickL(WG.TEXT.openLoot)});}
 // Schmiederezepte: Jeder getötete oder kampfunfähige Gegner bringt die Rezepte seiner Ausrüstung (M.workshop.defeated).
 function learnRecipes(m,b){try{const n=M.workshop?.defeated?.(b,{force:true,id:'outside-'+m.seed})||[];if(n.length){(m.recipes??=[]).push(...n.filter(x=>!m.recipes.includes(x)));mlog('⚒ Schmiederezept erlernt: <b>'+n.map(esc).join(', ')+'</b>','narr');}}catch(e){console.warn(e);}}
 async function encounterEnd(b){const m=R.m;if(R.ended)return;learnRecipes(m,b);const out=D.endEncounter(m,b);b.done=null;b.paused=true;renderInfo();const st=out.station,adv=m.kind==='adventure';
@@ -546,6 +648,7 @@ async function encounterEnd(b){const m=R.m;if(R.ended)return;learnRecipes(m,b);c
  if(out.winner===0){
   if(out.loot.length)mlog('Beute: '+out.loot.map(l=>`<span class="ow-lootname">${esc(M.itemName(l.item))}</span>`).join(', '));
   if(!st.boss){await (LU?LU.aftermath(b):aftermath(b));if(!live(b))return;}
+  if(st.boss&&m.mode==='wagon'){setButtons('after');await (LU?LU.aftermath(b):aftermath(b));if(!live(b))return;await wagonLoot(b);if(!live(b))return;setButtons('won');return;}
   if(st.boss){setButtons('talk');const boss=b.encEnemies[0],bn=adv?first(boss.g):'Krassus';
    for(const [w,l] of (adv?m.texts.leaderDown:D.TEXT.bossDown)){const me=w==='K'||w==='L',a=me?boss:anyParty(b);bubble(a,l,{name:me?bn:first(a.g),boss:me,ms:3000});mlog(`<b class="${me?'boss':''}">${esc(me?bn:a.g.name)}:</b> „${esc(l)}“`);await talkPause(2600);}
    await (LU?LU.aftermath(b):aftermath(b));if(!live(b))return;
@@ -583,7 +686,7 @@ async function flee(){clearInterval(R.autoT);const m=R.m,b=S.battle;if(!m||R.end
   for(const a of b.actors)if(a.team===0&&!a.down&&!a.g.dead){a.to=[a.x-500,a.y,120];a.path=[];}
   const a=anyParty(b);if(a)bubble(a,pickL(['RENNT!','Taktischer Rückzug! Also: RENNT!','Ich hol schon mal die Pferde! Wir haben keine Pferde!','Wer zuletzt am Tor ist, zahlt die Zinsen!']),{name:first(a.g)});}
  await talkPause(1600);if(b&&inFight){learnRecipes(m,b);D.endEncounter(m,b,{fled:true});}m.state='fled';finishMission('fled');}
-function cleanupBattle(){LU?.reset();const m=R.m;if(m&&m.prevLimit!==undefined){if(m.prevLimit===null)delete M.benchmarkTimeLimit;else M.benchmarkTimeLimit=m.prevLimit;}
+function cleanupBattle(){LU?.reset();SH?.reset();WAG=null;if(R.m?.boss)NT?.unregister(R.m.boss);const m=R.m;if(m&&m.prevLimit!==undefined){if(m.prevLimit===null)delete M.benchmarkTimeLimit;else M.benchmarkTimeLimit=m.prevLimit;}
  M.missionBackdrop=null;document.body.classList.remove('ow-mission');$('owOver')?.remove();const bb=$('battleBottom');if(bb){bb.innerHTML='';delete bb.dataset.ow;}$('battleView')?.classList.remove('ow-fade');}
 function abortMission(){R.ending=true;R.ended=true;cleanupBattle();R.m=null;R.b=null;R.nextRes=null;}
 function finishMission(kind){const m=R.m;if(R.ended)return;R.ended=true;R.ending=true;R.fleeing=false;R.marching=false;setButtons('end');R.nextRes=null;
@@ -596,9 +699,16 @@ function applyResult(m,kind){const st=ST(),adv=m.kind==='adventure',keep=kind===
  if(!adv&&kind==='won'){st.stage='done';st.wins++;st.questDay=S.day;st.adv=newAdventure();st.lastAdventure=S.day;}
  if(adv&&kind==='won')st.advWins++;
  if(!adv&&kind!=='won')st.quest={...newQuestPlace(),name:st.quest?.name||m.place.name};
- const head=adv?{won:['SIEG',`${m.place.name} atmet auf. Oder hält die Luft an. Die ${m.texts.band} ist zerschlagen, ihr Anführer liegt im Dreck, seine Truhe gehört euch.`],
+ const wag=m.mode==='wagon',wn=m.wagon?.name||'Wagen';
+ const head=wag?{won:['ÜBERFALL GELUNGEN',`Der ${wn} gehört euch. Die Wachen liegen im Graben, der Kutscher ist irgendwo hinter dem dritten Hügel, und in der Kiste klimpert es. Ehrliche Arbeit ist das nicht. Aber Arbeit.`],
+   passed:['NICHTS GEHOLT','Ihr habt alle Wagen ziehen lassen. Die Händler kommen heil an, die Truppe kommt heil heim, nur der Stolz hat Kratzer. Und die Knie. Vom Knien im Gebüsch.'],
+   fled:['GEFLOHEN','Ihr rennt vom Wagen weg statt mit ihm. Die Wachen lachen. Die Beute bleibt liegen.'],
+   withdrawn:['HEIMGEKEHRT','Ihr geht heim, bevor der nächste Wagen kommt.'],
+   lost:['NIEDERLAGE',`Ihr wacht am Wegesrand auf. Der ${wn} ist weg, eure Würde auch. Die Wachen haben euch sogar die Zweige abgenommen.`]}[kind]
+  :adv?{won:['SIEG',`${m.place.name} atmet auf. Oder hält die Luft an. Die ${m.texts.band} ist zerschlagen, ihr Anführer liegt im Dreck, seine Truhe gehört euch.`],
    fled:['GEFLOHEN','Ihr rennt. Würdevoll ist anders, aber lebendig ist auch was. Die Beute bleibt liegen – die gibt es nur für den ganzen Ort.'],
    withdrawn:['HEIMGEKEHRT','Ihr nehmt, was ihr habt, und geht. Die Bande zählt ihre Toten. Ihr zählt eure Beute.'],
+   spared:['ABGEZOGEN',`${m.boss?.name||'Der Anführer'} lacht euch hinterher. Ihr geht ohne Beute, aber auf euren eigenen Beinen. In ${m.place.name} erzählt man sich ab heute, wie ihr gerannt seid. Mit jeder Runde Bier etwas schneller.`],
    lost:['NIEDERLAGE',`Ihr wacht im Straßengraben vor ${m.place.name} auf. Ohne Beute, ohne Würde. Die Bande hat sogar die Stiefel mitgenommen. Fast.`]}[kind]
   :{won:['SCHULDEN GETILGT',`Krassus Knochenzins liegt im Dreck von ${m.place.name}. Der Schuldschein ist Asche, die Dörfler jubeln. Nicht für euch. Sie jubeln, weil sie jetzt niemandem mehr etwas schulden. Außer dem Totengräber. Ab jetzt steht euch das Land offen: Ab jetzt schickt ihr eure Gladiatoren zum Plündern: Hinter dem Tor wartet jeden Tag ein neues Ziel.`],
    fled:['GEFLOHEN','Ihr rennt. Würdevoll ist anders, aber lebendig ist auch was. Die Beute bleibt liegen. Krassus wartet weiter.'],
@@ -613,7 +723,8 @@ function applyResult(m,kind){const st=ST(),adv=m.kind==='adventure',keep=kind===
    log:(R.full||[]).slice(-60).reverse().map(([h])=>({time:0,text:String(h).replace(/<[^>]+>/g,'')}))};
   report.recipes=[...(m.recipes||[])];S.lastReport=report;S.records=[report,...(S.records||[])].slice(0,35);reportForResult=report;}catch(e){console.error(e);reportForResult=null;}
  st.history.unshift({day:S.day,kind:m.kind,diff:adv?m.diff:0,place:m.place.name,result:head[0].toLowerCase(),loot:loot.length,gold,deaths:m.deaths.length});st.history=st.history.slice(0,12);st.run=null;
- result={kind,title:head[0],text:head[1],loot,gold,goldFrom:adv?'aus der Truhe des Anführers':'aus der Geldkassette',extra:!adv&&kind==='won'?'Schulden: −'+D.CFG.debt.toLocaleString('de-DE')+' Gold (Schuldschein verbrannt)':'',
+ if(adv&&st.stage==='done'&&st.adv)st.adv=newAdventure(st.adv.biome,st.adv.diff);
+ result={kind,title:head[0],text:head[1],loot,gold,goldFrom:wag?'aus dem '+wn:adv?'aus der Truhe des Anführers':'aus der Geldkassette',extra:!adv&&kind==='won'?'Schulden: −'+D.CFG.debt.toLocaleString('de-DE')+' Gold (Schuldschein verbrannt)':'',
   stats:`Gegner besiegt: ${m.killed} von ${m.total} · Begegnungen: ${m.cleared+1} von ${m.place.stations.length} · Tote: ${m.deaths.length}`,
   party:m.party.map(g=>{const hp=g.dead?0:Math.round(M.health(g)),inj=Object.entries(g.body||{}).filter(([k,p])=>p.missing||p.hp<85).sort((x,y)=>x[1].hp-y[1].hp).map(([k,p])=>p.missing?M.partName(k)+' fehlt':M.partName(k)+' '+Math.round(p.hp)+(p.fracture?' (Bruch)':'')).slice(0,4).join(', ');
    return {name:g.name,role:g.role,dead:g.dead,line:g.dead?'tot':'Gesundheit '+hp+' % · Blut '+Math.round(g.blood)+' · Erschöpfung '+Math.round(g.fatigue)+(inj?' · '+inj:'')};})};}

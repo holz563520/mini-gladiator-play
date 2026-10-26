@@ -318,7 +318,11 @@ function offscreen(ctx,s){const m=ctx.getTransform(),cw=ctx.canvas.width,x0=s.cv
 function fig(g,a){try{g.save();g.translate(a.x,a.y);g.scale(1/.6,1/.6);M.renderLudusActors(g,[{...a,x:0,y:0}]);g.restore();}catch(e){g.restore();}}
 A.drawSprite=function(ctx,o){const b=window.MG.s.battle,L=b?.L;if(!L)return;const s=L.sprites[o.sid];if(!s)return;if(offscreen(ctx,s))return;const t=performance.now()/1000,ART=AR(),P=L.P;
  if(s.kind==='life'){animal(ctx,s.a,b,t,P);o.x=s.a.x;o.y=s.a.y;return;}
- if(s.kind==='idle'){const m=b.mission;if(!m||b.triggered.has(s.si))return;const st=m.place.stations[s.si],q=m.queues[s.si],g0=q[s.k];if(!g0||!(st.kind==='idle'||st.kind==='boss'))return;if(s.k>=Math.min(window.Debt.CFG.maxActive,q.length))return;
+ // Wartende zweite Reihe einer Bande (Plünderung): steht hinter der Gruppe, bis vorn Platz ist (dann kommt genau sie aus ihrem Platz)
+ if(s.kind==='wait'){const m=b.mission;if(!m)return;const st=m.place.stations[s.si];if(!(st.kind==='idle'||st.kind==='boss'))return;const q=m.queues[s.si],nf=Math.min(q.length,Math.max(2,m.maxActive||2));let g0=null;
+  if(!b.triggered.has(s.si))g0=q[nf+s.k];else if(b.encounter===s.si&&b.started&&!b.done&&s.k>=(b.spawnIndex||0))g0=b.queue[s.k-(b.spawnIndex||0)];
+  if(!g0)return;const sway=Math.sin(t*1.1+s.k*1.7);fig(ctx,{id:'wait-'+s.si+'-'+s.k,g:g0,team:1,x:s.p.x,y:s.p.y,a:Math.PI,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},forgePose:sway>.9?'sip':null});o.x=s.p.x;o.y=s.p.y;return;}
+ if(s.kind==='idle'){const m=b.mission;if(!m||b.triggered.has(s.si))return;const st=m.place.stations[s.si],q=m.queues[s.si],g0=q[s.k];if(!g0||!(st.kind==='idle'||st.kind==='boss'))return;if(s.k>=Math.min(m.place.oneFight?Math.max(2,m.maxActive||2):window.Debt.CFG.maxActive,q.length))return;
   const act=L.enc[s.si].act,sway=Math.sin(t*1.3+s.k*2);fig(ctx,{id:'idle-'+s.si+'-'+s.k,g:g0,team:1,x:s.p.x,y:s.p.y,a:s.p.face??0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},forgeHold:act==='fire'||act==='barrel'||(act==='sleep'&&s.k===0)?'beer':act==='argue'?'bottle':null,forgePose:sway>.85?'sip':null});return;}
  if(!s.cv)return;
  // verdeckt die Figur jemanden? Dann halb durchsichtig, damit man den Kampf noch sieht

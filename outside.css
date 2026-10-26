@@ -122,3 +122,48 @@ body.ow-mission #battleTop{display:none}
 @media (max-width:600px){.ow-zoom b{min-width:26px;font-size:10px}.ow-ctrl .ow-zoom .btn{padding:4px 8px}}
 /* Spielfeld mit einem Finger ziehen (Kamera), zwei Finger zoomen */
 body.ow-mission #arenaCanvas{touch-action:none}
+
+/* ---------- Plünderungen: Steckbrief des Anführers, Entscheidung, Kampfsequenz (outside-show.js) ---------- */
+#owOver #shWrap,#owOver #shDecide,#owOver #shCine{font-family:'Courier Prime',monospace}
+#shWrap{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;z-index:6;pointer-events:none}
+#shWrap[hidden],#shDecide[hidden],#shCine[hidden]{display:none}
+.sh-card{pointer-events:auto;width:min(96%,720px);display:grid;grid-template-columns:minmax(0,250px) minmax(0,1fr);gap:10px;padding:10px;background:#e9dcb4;color:#1e1812;border:4px solid #3a2a18;box-shadow:6px 6px 0 rgba(0,0,0,.55),inset 0 0 0 2px #c9b07a;position:relative}
+.sh-card:before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(90,60,20,.05) 0 2px,transparent 2px 5px);pointer-events:none}
+.sh-left{display:grid;gap:6px;align-content:start}
+#shFace{width:100%;height:auto;aspect-ratio:240/156;image-rendering:pixelated;background:#171512;border:3px solid #3a2a18}
+.sh-plate{display:grid;gap:2px;text-align:center}
+.sh-plate small{font-size:10px;letter-spacing:.14em;color:#8a2a1a;font-weight:700}
+.sh-plate b{font-size:clamp(14px,2.2vw,19px);line-height:1.1;text-transform:uppercase}
+.sh-plate .ow-skull{fill:#c9b07a}.sh-plate .ow-skull.on{fill:#3a1a10}
+.sh-right{display:grid;gap:6px;align-content:start;min-width:0}
+#shFacts{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:0;font-size:12px}
+#shFacts dt{font-weight:700;color:#6a4a20;text-transform:uppercase;font-size:10px;letter-spacing:.06em;padding-top:2px}
+#shFacts dd{margin:0}
+#shFacts .red{color:#8a1a10}
+#shLine{margin:0;min-height:3.6em;font-size:clamp(12px,1.6vw,15px);font-weight:700;line-height:1.3;border-top:2px dashed #b89a62;padding-top:6px}
+.sh-crew{display:flex;gap:6px;flex-wrap:wrap}
+.sh-crew[hidden]{display:none}
+.sh-mate{display:grid;gap:2px;width:96px;font-size:9px;text-align:center}
+.sh-mate canvas{width:96px;height:auto;aspect-ratio:120/78;image-rendering:pixelated;border:2px solid #3a2a18;background:#171512}
+.sh-btns{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end}
+.sh-btns .btn{min-height:30px;padding:3px 10px;font-size:11px}
+#shDecide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:7;width:min(94%,460px);background:#101a1df5;border:3px solid var(--gold,#dfb66d);box-shadow:6px 6px 0 rgba(0,0,0,.55);padding:12px 14px;display:grid;gap:8px;text-align:center;pointer-events:auto;color:var(--cream,#eae4cd)}
+#shDecide #shQ{font-size:clamp(15px,2.2vw,20px);color:var(--gold,#dfb66d)}
+#shDecide p{margin:0;font-size:13px}
+#shDecide .tiny{font-size:11px;opacity:.85}
+#shDecide .ow-skull{fill:#3a4246}#shDecide .ow-skull.on{fill:#e8e0c8}
+.sh-dbtn{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.sh-dbtn .btn{min-height:40px;font-size:13px}
+#shCine{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.sh-bar{position:absolute;left:0;right:0;height:0;background:#050403;transition:height .35s ease-out}
+.sh-bar.top{top:0}.sh-bar.bot{bottom:0}
+#shCine.go .sh-bar{height:11%}
+#shCineT{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.6);opacity:0;font-size:clamp(26px,6vw,64px);color:#f4d37a;text-shadow:4px 4px 0 #3a1408,-2px -2px 0 #3a1408;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;transition:transform .45s cubic-bezier(.2,1.6,.4,1),opacity .3s}
+#shCine.go #shCineT{transform:translate(-50%,-50%) scale(1);opacity:1}
+@media(max-width:600px){
+ .sh-card{grid-template-columns:1fr;gap:6px;padding:8px;max-height:72vh;overflow:auto}
+ .sh-left{grid-template-columns:130px 1fr;align-items:center}
+ #shFacts{font-size:11px}
+ #shLine{font-size:12px;min-height:3em}
+ .sh-mate{width:70px}.sh-mate canvas{width:70px}
+}

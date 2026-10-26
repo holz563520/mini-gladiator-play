@@ -101,7 +101,7 @@ L.spotRoll=function(b,st){const g=leaderActor(b)?.g;if(!g)return false;let p=b.l
 // ---------- Gegnergruppe aufstellen (alle Gegner einer Begegnung stehen zusammen vor der Truppe) ----------
 // so viele stehen zusammen: im Spiel so viele, wie die Schwierigkeit gleichzeitig angreifen lässt (m.maxActive), sonst nach Gruppengröße
 L.groupSize=(b,m,sti)=>Math.min(m.queues[sti].length,m.maxActive?Math.max(2,m.maxActive):clamp(2+Math.floor(m.party.filter(D.fit).length*.5),2,L.CFG.groupMax));
-L.layoutGroup=function(b,m,sti){const st=m.place.stations[sti],W=b.width,mx=D.marginX(W);
+L.layoutGroup=function(b,m,sti){const st=m.place.stations[sti],W=b.width,mx=D.marginX(W),E=b.L?.enc?.[sti];if(E?.group)return {ex:E.group.ex,ey:E.group.ey,hx:Math.max(mx+90,E.group.ex-L.CFG.haltDist)};
  const ex=clamp(st.fx+140,mx+L.CFG.haltDist+120,W-mx-70),ey=D.pathY(b.L,ex);return {ex,ey,hx:Math.max(mx+90,ex-L.CFG.haltDist)};};
 // Begegnung mit entdeckter Gruppe beginnen: Gegner stehen ahnungslos beisammen. unaware=false: Sie merken es sofort (ohne Anführer).
 L.beginGroup=function(b,m,sti,o={}){const G=L.layoutGroup(b,m,sti),n=L.groupSize(b,m,sti);

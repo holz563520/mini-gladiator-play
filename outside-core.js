@@ -31,7 +31,8 @@ D.CFG={
  gold:[260,420],       // Geldkassette von Krassus
  debt:10000,
  advGold:[50,140],     // Beute-Gold eines zufälligen Abenteuers (× Gegnerstärke)
- advStat:.45           // Bandenstärke bei einer Truppe aus frischen Rekruten (wächst mit der Gruppe)
+ advStat:.45,          // Bandenstärke bei einer Truppe aus frischen Rekruten (wächst mit der Gruppe)
+ advSections:3         // Plünderung: so viele Abschnitte mit je einer Gruppe, danach der Anführer mit seiner Leibwache
 };
 
 // ---------- Zufall ----------
@@ -140,12 +141,25 @@ D.generate=function(seed,biome='dorf',o={}){
  const name=pick(r,B.pre)+pick(r,B.suf),name2=name.charAt(0).toUpperCase()+name.slice(1);
  const season=pick(r,SEASONS),time=pick(r,TIMES),weather=season==='winter'?pick(r,['klar','bewoelkt','schnee','schnee','nebel']):pick(r,['klar','klar','bewoelkt','nebel','regen']);
  const mood={season,time,weather};
+ const themes0=o.groups?shuffle(r,B.themes):null,sections=[],stations=[];
+ if(o.wagon){// Wagenüberfall: ein Abschnitt am Weg, die Truppe liegt auf der Lauer
+  const theme=pick(r,{dorf:['feldrand','hof','muehle'],wald:['waldweg','bachlauf','lichtung'],stadt:['stadttor','hafen']}[biome]||['waldweg']),W=Math.round(2700+r()*300),sec={i:0,theme,W,seed:(r()*4294967296)>>>0,stations:[0],boss:true,single:true};
+  stations.push({i:0,sec:0,theme,name:THEMES[theme].name,boss:true,count:0,seed:(r()*4294967296)>>>0,fx:Math.round(W*.45),kind:'wagon',banter:0});sections.push(sec);}
+ else if(o.groups){// Plünderung (seit 26.10.): jeder Abschnitt hat genau eine Begegnung, kleinere Karten (kurzer Marsch), am Ende der Anführer mit seiner Bande
+  o.groups.forEach((cnt,si)=>{const theme=si===0&&biome==='dorf'?(r()<.5?'feldrand':themes0[0]):themes0[si%themes0.length];
+   const W=Math.round(2250+r()*350),sec={i:si,theme,W,seed:(r()*4294967296)>>>0,stations:[],single:true};
+   const st={i:stations.length,sec:si,theme,name:THEMES[theme].name,boss:false,count:cnt,seed:(r()*4294967296)>>>0,fx:Math.round(W*(.58+r()*.06)),kind:o.kinds?.[si]||'idle',idle:pick(r,IDLE),banter:Math.floor(r()*1e6)};
+   sec.stations.push(st.i);stations.push(st);sections.push(sec);});
+  const bossTheme=o.finalTheme||B.boss,bW=Math.round(2350+r()*300),bs={i:sections.length,theme:bossTheme,W:bW,seed:(r()*4294967296)>>>0,stations:[stations.length],boss:true,single:true};
+  stations.push({i:stations.length,sec:bs.i,theme:bossTheme,name:THEMES[bossTheme].name,boss:true,count:o.escort||0,seed:(r()*4294967296)>>>0,fx:Math.round(bW*.6),kind:'boss',idle:pick(r,IDLE),banter:0});
+  sections.push(bs);}
+ else{
  // Begegnungen: 4 oder 5, je 2–3 Trottel
  const n=henchmen>=10&&henchmen<=12?(r()<.5?4:5):Math.max(1,Math.min(7,Math.ceil(henchmen/2.5)));
  let counts=Array(n).fill(Math.floor(henchmen/n));for(let k=0,rest=henchmen-counts.reduce((a,b)=>a+b,0);k<rest;k++)counts[k%n]++;counts=shuffle(r,counts);
  // auf 3 Abschnitte verteilen (1–2 je Abschnitt), dann Zielabschnitt
  const per=n<=2?Array(n).fill(1):n===3?shuffle(r,[1,1,1]):n===4?shuffle(r,[1,1,2]):n===5?shuffle(r,[2,2,1]):shuffle(r,Array.from({length:3},(_,k)=>Math.floor(n/3)+(k<n%3?1:0)));
- const themes=shuffle(r,B.themes);const sections=[],stations=[];let ci=0;
+ const themes=shuffle(r,B.themes);let ci=0;
  per.forEach((k,si)=>{const theme=si===0&&biome==='dorf'?(r()<.5?'feldrand':themes[0]):themes[si%themes.length];
   const W=Math.round(3600+Math.max(0,k-1)*900+k*300+r()*500);const sec={i:si,theme,W,seed:(r()*4294967296)>>>0,stations:[]};
   for(let j=0;j<k;j++){const fx=Math.round(W*(k===1?.6+r()*.12:k===2?(j===0?.38:.74)+(r()-.5)*.06:.3+.5*j/(k-1)+(r()-.5)*.04));
@@ -155,7 +169,7 @@ D.generate=function(seed,biome='dorf',o={}){
   sections.push(sec);});
  const bossTheme=o.finalTheme||B.boss,bW=Math.round(3200+r()*400),bs={i:sections.length,theme:bossTheme,W:bW,seed:(r()*4294967296)>>>0,stations:[stations.length],boss:true};
  stations.push({i:stations.length,sec:bs.i,theme:bossTheme,name:THEMES[bossTheme].name,boss:true,count:0,seed:(r()*4294967296)>>>0,fx:Math.round(bW*.66),kind:'boss',banter:0});
- sections.push(bs);
+ sections.push(bs);}
  // Übersichtskarte (480×270): gewundener Weg vom Eingang (links) zum Ziel (rechts), Stationen auf dem Weg
  const MW=480,MH=270,pts=[];let y=40+r()*190;const total=stations.length+1;
  for(let k=0;k<=total*3;k++){const t=k/(total*3);y=clamp(y+(r()-.5)*44,26,MH-26);pts.push({x:Math.round(16+t*(MW-36)),y:Math.round(y)});}
@@ -167,7 +181,7 @@ D.generate=function(seed,biome='dorf',o={}){
   feats.push({kind,x,y,w:kind==='field'?14+Math.round(r()*24):kind==='house'?5+Math.round(r()*4):3,h:kind==='field'?8+Math.round(r()*12):kind==='house'?4+Math.round(r()*3):3,v:r()});}
  const river=biome!=='stadt'&&r()<.75?{x:Math.round(90+r()*300),bend:(r()-.5)*80}:null;
  const pond=biome==='dorf'&&r()<.6?{x:Math.round(60+r()*360),y:Math.round(40+r()*190),r:8+Math.round(r()*8)}:null;
- return {seed,biome,label:B.label,name:name2,mood,sections,stations,map:{W:MW,H:MH,pts,feats,river,pond}};
+ return {seed,biome,label:B.label,name:name2,mood,sections,stations,map:{W:MW,H:MH,pts,feats,river,pond},oneFight:!!(o.groups||o.wagon),wagon:!!o.wagon};
 };
 
 // ---------- Figuren ----------
@@ -230,15 +244,27 @@ function veteran(g,r,q){g.veteran=true;for(const grp of ['stats','moves','master
  const w=g.enemyGear.weapon?.def||'gladius';g.enemyGear.weapon=M.makeItem('weapon',w,Math.min(5,q+1));g.mastery[w]=clamp(Math.max(g.mastery[w]||0,30),3,100);
  g.enemyGear.armor.helm??=M.makeItem('armor','helm',Math.max(0,q-1),'leather');g.enemyGear.armor.chestplate??=M.makeItem('armor','chestplate',Math.max(0,q-1),r()<.4?'medium':'leather');for(const it of D.gearList(g))it.durability=it.maxDurability;}
 D.brute=brute;D.veteran=veteran;
-// Anführer einer Bande (Abenteuer): stärker als seine Leute, eine gute Waffe, etwas Rüstung
-D.leader=function(seed,biome,k,bonus=1){const r=rng32(seed),AD=D.ADV[biome]||D.ADV.dorf;
- return makeG(seed^0x1ead,g=>{const nm=pick(r,AD.names||T.names).split(' ')[0];Object.assign(g,{id:'adv-lead-'+seed,name:nm+' '+pick(r,AD.leaderTitle),enemy:true,role:'Soldat',traits:['Aggressiv']});
-  scaleStats(g,Math.min(2.2,k*2.2),['morale']);g.stats.morale=80;
-  const pool=[['greatsword',2],['long',2],['axe',2],['mace',2],['gladius',2],['doubleaxe',1],['hammer',2],['spear',2]],[w]=pick(r,pool),qBand=clamp(Math.round((k-.4)*2.2),0,3),q=clamp(qBand+bonus+(r()<.25?1:0),0,5);// eine Stufe über der Bande (ab 4 Totenköpfen zwei)
+// Anführer einer Bande (Plünderung): einer der 20 Berüchtigten (outside-notorious.js: Aussehen, Texte), deutlich stärker als seine Leute,
+// eine Waffe eine Stufe über der Bande (ab 4 Totenköpfen zwei). Rüstung (seit 26.10.): Die Bande trägt Leder; der Anführer eine
+// Rüstungsklasse darüber (verstärkt), ab 4 Totenköpfen zwei darüber (Metall), dazu mehr Teile (Arme ab 3, Beine ab 4 Totenköpfen) und eine Güte über der Bande.
+const FEMALE=['Hilde','Livia','Agrippina','Fulvia','Gerlinde','Messalina','Brunhild','Octavia','Kunigunde','Valeria'];
+D.LEADER={stat:1.12,maxStat:2.4};
+D.leader=function(seed,biome,k,bonus=1,o={}){const r=rng32(seed),AD=D.ADV[biome]||D.ADV.dorf,NT=window.DebtNotorious,diff=clamp(Math.round(o.diff||3),1,5);
+ return makeG(seed^0x1ead,g=>{const types=NT?NT.TYPES.filter(t=>!(o.avoid||[]).includes(t.id)):[],ty=types.length?types[Math.floor(r()*types.length)]:null;
+  const nm=ty?.id==='witwe'?pick(r,FEMALE):pick(r,AD.names||T.names).split(' ')[0];
+  Object.assign(g,{id:'adv-lead-'+seed,name:ty?nm+' '+ty.title.charAt(0).toUpperCase()+ty.title.slice(1):nm+' '+pick(r,AD.leaderTitle),enemy:true,role:'Soldat',traits:['Aggressiv']});
+  if(ty&&/^(der|die|das) /.test(ty.title))g.name=nm+' '+ty.title;
+  scaleStats(g,Math.min(D.LEADER.maxStat,k*2.2*D.LEADER.stat),['morale']);g.stats.morale=85;
+  const pool=['greatsword','long','axe','mace','gladius','doubleaxe','hammer','spear'],w=ty?pick(r,ty.wpn):pick(r,pool),qBand=clamp(Math.round((k-.4)*2.2),0,3),q=clamp(qBand+bonus+(r()<.25?1:0),0,5);
   g.mastery[w]=clamp(Math.max(g.mastery[w]||0,Math.round(30*k*2.2)),3,100);
-  const two=['hammer','doubleaxe','halberd','greatsword'].includes(w);
-  g.enemyGear={weapon:M.makeItem('weapon',w,q),secondary:null,shield:!two?M.makeItem('shield',r()<.5?'roundshield':'smallshield',Math.max(0,q-1)):null,armor:{chestplate:M.makeItem('armor','chestplate',Math.max(0,q-1),r()<.5?'medium':'leather'),helm:M.makeItem('armor','helm',Math.max(0,q-1),'leather')}};
-  for(const it of D.gearList(g))it.durability=it.maxDurability;g.advLeader=true;g.debtBoss=true;});};
+  const two=['hammer','doubleaxe','halberd','greatsword'].includes(w),mat=diff>=4?'metal':'medium',aq=clamp(qBand+1,0,4),A=(id,m=mat)=>M.makeItem('armor',id,aq,m);
+  const armor={chestplate:A('chestplate'),leftshoulder:A('leftshoulder'),rightshoulder:A('rightshoulder')};
+  if(!ty?.noHelm)armor.helm=A('helm');if(diff>=3){armor.leftarm=A('leftarm');armor.rightarm=A('rightarm');}if(diff>=4){armor.leftleg=A('leftleg');armor.rightleg=A('rightleg');}
+  const weapon=M.makeItem('weapon',w,q);if(ty)weapon.nickname=pick(r,ty.nick);
+  g.enemyGear={weapon,secondary:null,shield:!two&&!ty?.oneHand?M.makeItem('shield',r()<.5?'roundshield':'smallshield',Math.max(0,q-1)):null,armor};
+  for(const it of D.gearList(g))it.durability=it.maxDurability;
+  if(ty)NT.dress(g,ty.id,r,diff);
+  g.advLeader=true;g.debtBoss=true;});};
 // Stärke einer Truppe relativ zu frischen Rekruten (für die Bandenstärke der Abenteuer)
 let REF=null;function refPower(){if(REF)return REF;let sum=0;for(let i=0;i<8;i++){const g=makeG(9001+i*7);sum+=power(g);}return REF=sum/8;}
 function power(g){const st=g.stats||{},keys=['strength','agility','speed','stamina','toughness','reflex','block','experience'].filter(k=>k in st);const v=keys.reduce((a,k)=>a+st[k],0)/Math.max(1,keys.length);const hp=g.dead?0:M.health(g)/100;return v*(.4+.6*hp);}
@@ -258,10 +284,18 @@ D.newMission=function(seed,party,biome='dorf',o={}){
  // Größere Gruppen treffen auf größere Banden; stärkere Gruppen auf härtere Leute
  const henchmen=clamp(Math.round((size*1.45+r()*2.2)*(.75+.25*sc)),3,20),k=clamp(D.CFG.advStat*Math.pow(str,.85)*Math.pow(sc,.75),.12,2.2);
  const maxActive=clamp(Math.round(size*.45*Math.sqrt(sc)),2,6),pBrute=clamp((sc-1.05)*.3,0,.3),pVet=clamp((sc-.75)*.16,0,.25),qBase=clamp(Math.round((k-.4)*2.2),0,3);
- const place=D.generate(seed,biome,{henchmen,finalTheme:pick(r,AD.finals)}),used=new Set();let n=0;
- const queues=place.stations.map(s=>s.boss?[D.leader(seed,biome,k*Math.min(1,Math.pow(size/5,.6)),diff>=4?2:1)]:Array.from({length:s.count},()=>{const g=D.henchman((s.seed+(n++)*104729)>>>0,n,used,{k,texts:AD});const x=r();if(x<pBrute)brute(g,r,qBase+1);else if(x<pBrute+pVet)veteran(g,r,qBase+1);return g;}));
+ // Eine Begegnung je Abschnitt (seit 26.10.): drei ungleich große Gruppen (manchmal eine besonders große), am Ende der Anführer mit seiner Leibwache.
+ // Die Gesamtzahl bleibt wie bisher; die Leibwache ist etwas zäher (öfter Grobiane und Veteranen).
+ // Kleine Banden (kleine Gruppen) haben weniger Abschnitte, damit die Gesamtzahl bleibt.
+ const escort=henchmen<=4?1:clamp(Math.round(henchmen*.24),2,6),rest=Math.max(1,henchmen-escort),nSec=clamp(Math.round(rest/3),1,D.CFG.advSections);
+ const wts=Array.from({length:nSec},()=>.7+r()*.8);if(nSec>1&&r()<.45)wts[Math.floor(r()*nSec)]*=1.45;const sw=wts.reduce((a,b)=>a+b,0);
+ const front=Math.max(2,maxActive),gmin=rest>=2*nSec?2:1,groups=wts.map(w=>clamp(Math.round(rest*w/sw),gmin,front+10)),kinds=groups.map((_,i)=>r()<(i===0?.3:.42)?'ambush':'idle');
+ const place=D.generate(seed,biome,{henchmen,finalTheme:pick(r,AD.finals),groups,kinds,escort}),used=new Set();let n=0;
+ const mk=(s0,bonus=0)=>{const g=D.henchman((s0+(n++)*104729)>>>0,n,used,{k,texts:AD}),bB=pBrute>0?bonus:0,bV=pVet>0?bonus:0,x=r();if(x<pBrute+bB)brute(g,r,qBase+1);else if(x<pBrute+bB+pVet+bV)veteran(g,r,qBase+1);return g;};
+ const queues=place.stations.map(s=>s.boss?[D.leader(seed,biome,k*Math.min(1,Math.pow(size/5,.6)),diff>=4?2:1,{diff,avoid:o.avoid}),...Array.from({length:s.count},()=>mk(s.seed,.08))]:Array.from({length:s.count},()=>mk(s.seed)));
  const gold=Math.round((D.CFG.advGold[0]+r()*(D.CFG.advGold[1]-D.CFG.advGold[0]))*(.6+k)*(1+henchmen/12)*D.DIFF.gold[diff-1]);
- return {kind,seed,place,party,queues,idx:0,sec:0,cleared:-1,loot:[],gold:0,goldPrize:gold,killed:0,total:queues.flat().length,state:'ready',deaths:[],learn:o.learn!==false,strength:str,enemyK:k,texts:AD,diff,scale:sc,maxActive,brutes:queues.flat().filter(g=>g.brute).length,veterans:queues.flat().filter(g=>g.veteran).length};
+ return {kind,seed,place,party,queues,idx:0,sec:0,cleared:-1,loot:[],gold:0,goldPrize:gold,killed:0,total:queues.flat().length,state:'ready',deaths:[],learn:o.learn!==false,strength:str,enemyK:k,texts:AD,diff,scale:sc,maxActive,brutes:queues.flat().filter(g=>g.brute).length,veterans:queues.flat().filter(g=>g.veteran).length,
+  boss:queues[queues.length-1][0],escort,groups};
 };
 D.pickBanter=(st,seed,m)=>{const B=m?.kind==='adventure'?D.ADV.banter:T.banter;return B[(seed>>>0)%B.length];};
 const TACTICS=[{aggression:'Ausgeglichen',formation:'Normal',priority:'Nächster Gegner',ranged:'Abstand halten',help:'Normal'},{aggression:'Aggressiv',formation:'Normal',priority:'Nächster Gegner',ranged:'Abstand halten',help:'Normal'}];
@@ -503,7 +537,21 @@ D.layout=function(sec,place){const r=rng32(sec.seed),biome=place.biome,theme=sec
  for(let k=0;k<W/300;k++){const s=openSpot(mX+100,W-mX-100,mT+80,mB-20,20);if(s)L.life.push({kind:pick(r,lifeKinds),x:s.x,y:s.y,v:r(),ph:r()*6});}
  for(const a of L.life)sprite({kind:'life',a,x:a.x,y:a.y});
  // Begegnungen: Plätze zum Herumstehen (frei), Türen mit Front zum Weg, vorn, hinten, Verstecke
- for(const si of sec.stations){const st=place.stations[si],fx=st.fx;const E={idle:[],spawns:[]};
+ // Plünderung (eine Begegnung je Abschnitt): Die Bande steht als Gruppe zusammen (vorn bis zu 6, dahinter die zweite Reihe, die
+ // nachrückt, sobald vorn Platz ist). Beim Überfall kommen sie von hinten und aus den Büschen. E.group = Mitte der Gruppe.
+ const single=si=>{const st=place.stations[si],fx=st.fx,E={idle:[],spawns:[],wait:[]},boss=st.kind==='boss';
+  if(st.kind==='wagon'){E.wagon=true;E.hide={x:fx,y:pY(fx)};L.enc[si]=E;return;}
+  const ex=clamp(fx+140,mX+1120,W-mX-70),ey=clamp(pY(ex),mT+90,mB-90);E.group={ex,ey};const act=boss?null:st.idle?.act||'fire';E.act=act;
+  for(let k=0;k<6;k++){const col=k%2,row=Math.floor(k/2),lead=boss&&k===0;E.idle.push({x:lead?ex-60:ex+col*55+(r()-.5)*18,y:lead?ey:clamp(ey+(row-1)*62+(col?24:0)+(r()-.5)*12,mT+40,mB-30),face:Math.PI});}
+  for(let k=0;k<10;k++){const col=k%3,row=Math.floor(k/3);E.wait.push({x:clamp(ex+170+row*58+(r()-.5)*14,mX+60,W-mX-60),y:clamp(ey+(col-1)*72+(row%2?22:0),mT+40,mB-30),face:Math.PI,label:'der zweiten Reihe'});}
+  if(act==='fire')tall('feuer',ex+28,ey+30,0,{small:true});if(act==='barrel')L.obstacles.push({x:ex+44,y:ey-52,r:17,type:'barrel',hp:60,keep:true});if(act==='whet')tall('grab',ex+30,ey-58,0);if(act==='pigs')tall('trog',ex+30,ey-64,14);
+  E.idle.forEach((p,k)=>sprite({kind:'idle',si,k,p,x:p.x,y:p.y}));E.wait.forEach((p,k)=>sprite({kind:'wait',si,k,p,x:p.x,y:p.y}));
+  E.ahead={x:clamp(fx+900,mX+60,W-mX-60),y:clamp(pY(fx+900)+(r()-.5)*120,mT+40,mB-30),label:'weiter vorn vom Weg'};
+  E.behind={x:clamp(fx-760,mX+60,W-mX-60),y:clamp(pY(fx-760)+(r()-.5)*120,mT+40,mB-30),face:0,label:'hinter euch'};
+  if(st.kind==='ambush'){const side=[-1,1].map(sd=>({x:clamp(fx-200+r()*300,mX+60,W-mX-60),y:sd<0?mT+50:mB-40,label:sd<0?'dem Gebüsch oben':'dem Gebüsch unten'}));E.spawns=[E.behind,side[0],side[1],E.ahead,E.behind,side[0],side[1]];}
+  else E.spawns=E.wait;
+  L.enc[si]=E;};
+ for(const si of sec.stations){if(sec.single){single(si);continue;}const st=place.stations[si],fx=st.fx;const E={idle:[],spawns:[]};
   const ax=clamp(fx+300+r()*120,mX+80,W-mX-80),ay=clamp(pY(ax)+(r()<.5?-1:1)*(70+r()*60),mT+60,mB-40);
   if(st.kind==='boss'){const k=L.houses.filter(h=>h.kind==='kontor'&&h.door).sort((a,b)=>Math.abs(a.door.x-fx)-Math.abs(b.door.x-fx))[0];const dx=k&&Math.abs(k.door.x-fx)<900?k.door.x:fx+300;E.idle.push({x:clamp(dx,mX+60,W-mX-60),y:(k?k.base:backBase)+40,face:Math.PI,label:'dem Kontor'});}
   else{const act=st.idle.act;E.act=act;
