@@ -179,8 +179,8 @@ L.engage=function(b){const ld=b.lead;if(!ld)return;ld.phase='fight';ld.fightAt=b
  for(const e of foes(b))e.leadHits=e.hitsTaken||0;};
 L.hideOne=function(b,a){if(a.leadCover||!fit(a))return;const c={type:'sprite',hp:0,r:0,x:a.x+9,y:a.y+5,leadCover:true,sid:-1,seed:Math.random()*6};D.addObstacles(b,[c]);a.leadCover=c;a.kneeDuration=999;a.kneeTimer=500;a.kneeRise=1;a.a=0;a.state='idle';a.moveSpeed=0;a.gaitSpeed=0;};
 // Überraschung (nicht entdeckt): kein Plan, nur schnelle Rufe
-L.surprise=function(b){const ld=b.lead;if(!ld)return;ld.phase='fight';ld.fightAt=b.time;ld.alert=true;ld.alertAt=b.time;ld.stats.surprised++;const me=leaderActor(b);
- if(me)say(b,me,pick(['Hinterhalt! Zusammenrücken!','Verdammt, die waren schneller! Rücken an Rücken!','Überfall! Schilde raus, Augen auf!']),'surprise',{urgent:true});
+L.surprise=function(b,o={}){const ld=b.lead;if(!ld)return;ld.phase='fight';ld.fightAt=b.time;ld.alert=true;ld.alertAt=b.time;ld.stats.surprised++;const me=leaderActor(b);
+ if(me&&!o.quiet)say(b,me,pick(['Hinterhalt! Zusammenrücken!','Verdammt, die waren schneller! Rücken an Rücken!','Überfall! Schilde raus, Augen auf!']),'surprise',{urgent:true});
  let k=0;for(const a of party(b))if(isRanged(a)){a.leadSkirmish={mode:'fwd',side:k++%2?1:-1};toRally(b,a);}};
 
 // ---------- Engine-Haken ----------

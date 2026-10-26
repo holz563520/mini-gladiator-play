@@ -97,17 +97,22 @@ function nearestParty(b,e){return partyActors(b).reduce((m,a)=>!m||Math.hypot(a.
 function walkTo(b,a,x,y,sp=95){routeTo(b,a,x,y,sp);return walkSome(b,[a],7000);}
 async function aftermath(b){const alive=b.encEnemies.filter(e=>!e.g.dead&&(e.down||e.surrendered)),cl=v=>Math.max(0,Math.min(1,v));let n=0;
  for(const e of alive){if(!live(b))break;const k=nearestParty(b,e);if(!k)break;n++;const side=k.x<e.x?-1:1,[plea,reply]=pick(PLEAS),hurt=cl(1.15-M.health(e.g)/100);
-  setState('Nach dem Kampf …');bubble(e,plea,{name:first(e.g)});await walkTo(b,k,e.x+side*28,e.y+4);if(!live(b))break;k.a=side<0?0:Math.PI;
-  afShow('Fleht um Gnade',`${n} / ${alive.length}`,e.g.name,'„'+plea+'“');afPaint({g:e.g,team:1,hurt,zoom:.92,ground:true,mood:'plead',yaw:-.35});mlog(`<b class="foe">${esc(e.g.name)}</b> fleht: „${esc(plea)}“`);await afWait(2600);if(!live(b))break;
-  afShow('Keine Gnade',`${n} / ${alive.length}`,k.g.name,'„'+reply+'“');afPaint({g:k.g,team:0,zoom:.95,mood:'grin',yaw:.35});bubble(k,reply,{name:first(k.g),ms:2400});mlog(`<b>${esc(k.g.name)}:</b> „${esc(reply)}“`);await afWait(2400);if(!live(b))break;
+  setState('Nach dem Kampf …');await walkTo(b,k,e.x+side*28,e.y+4);if(!live(b))break;k.a=side<0?0:Math.PI;
+  afShow('Fleht um Gnade',`${n} / ${alive.length}`,e.g.name,'„'+plea+'“');afPaint({g:e.g,team:1,hurt,zoom:.92,ground:true,mood:'plead',yaw:-.35});mlog(`<b class="foe">${esc(e.g.name)}</b> fleht: „${esc(plea)}“`);
+  if(C.sayFull)await C.sayFull(e,plea,{name:first(e.g),log:false});else await afWait(2600);if(!live(b))break;
+  afShow('Keine Gnade',`${n} / ${alive.length}`,k.g.name,'„'+reply+'“');afPaint({g:k.g,team:0,zoom:.95,mood:'grin',yaw:.35});mlog(`<b>${esc(k.g.name)}:</b> „${esc(reply)}“`);
+  if(C.sayFull)await C.sayFull(k,reply,{name:first(k.g),log:false});else{bubble(k,reply,{name:first(k.g),ms:2400});await afWait(2400);}if(!live(b))break;
   afShow('Gnadenstoß',`${n} / ${alive.length}`,e.g.name,first(k.g)+' stößt zu.');
   afPaint(t=>{const q=t-1;return {g:e.g,team:1,hurt,zoom:.92,ground:true,mood:q<0?'terror':q<.5?'shock':q<.9?'pain':'out',pale:cl(q/1.5),blood:cl((q-.3)/1.2),tilt:q>.9?Math.min(.3,(q-.9)*.3):0,sink:q>.9?Math.min(16,(q-.9)*14):0,fx:{stab:t-.8},pool:cl(q/2),dark:cl((q-1.4)/1.2)*.6,yaw:-.35+.4*cl(t/3)};},1);
   setTimeout(()=>{if(!e.g.dead){try{M.death(e,'Gnadenstoß',k);}catch(err){e.g.dead=true;e.down=true;e.state='dead';}M.sound?.('stick');}},Math.max(600,1000/spd()));
-  await afWait(2700);mlog(`<b>${esc(k.g.name)}</b> gibt <b class="foe">${esc(e.g.name)}</b> den Gnadenstoß.`);}
+  await afWait(2700);mlog(`<b>${esc(k.g.name)}</b> gibt <b class="foe">${esc(e.g.name)}</b> den Gnadenstoß.`);
+  // danach lacht die Truppe (Gesicht des Henkers lacht mit)
+  if(C.laugh&&live(b)){afShow('Gelächter',`${n} / ${alive.length}`,k.g.name,'');afPaint({g:k.g,team:0,zoom:.95,mood:'grin',yaw:.2,shake:1});await C.laugh(b,k);}}
  const bodies=b.encEnemies.filter(e=>e.g.dead).slice(0,3);let i=0;
  for(const e of bodies){if(!live(b))break;const k=nearestParty(b,e);if(!k)break;i++;await walkTo(b,k,e.x+(k.x<e.x?-24:24),e.y+6);if(!live(b))break;k.a=k.x<e.x?0:Math.PI;
   const w=e.g.enemyGear?.weapon,line=pick(LOOT);afShow('Wird geplündert',`${i} / ${bodies.length}`,k.g.name+' durchsucht '+first(e.g),'„'+line+'“'+(w?' · Dazu: '+M.itemName(w)+'.':''));
-  afPaint({g:k.g,team:0,zoom:.95,mood:pick(['grin','confident','dumb']),yaw:.3});bubble(k,line,{name:first(k.g),ms:2600});mlog(`<b>${esc(k.g.name)}</b> durchsucht ${esc(e.g.name)}: „${esc(line)}“`);await afWait(2600);}
+  afPaint({g:k.g,team:0,zoom:.95,mood:pick(['grin','confident','dumb']),yaw:.3});mlog(`<b>${esc(k.g.name)}</b> durchsucht ${esc(e.g.name)}: „${esc(line)}“`);
+  if(C.sayFull)await C.sayFull(k,line,{name:first(k.g),log:false});else{bubble(k,line,{name:first(k.g),ms:2600});await afWait(2600);}}
  afHide();}
 const SPY={on:false,focus:null,fx:0,fy:0};
 // Fernrohr: Die Kamera zoomt wirklich auf den Gegner (M.battleCamera), darüber eine schwarze Maske mit einem runden Ausschnitt.

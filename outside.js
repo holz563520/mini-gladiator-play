@@ -376,6 +376,30 @@ function updBubbles(){const l=$('owBubbles');if(!l)return;const placed=[];for(co
  let x=parseFloat(el.style.left)||0,y=parseFloat(el.style.top)||0;const w=el._w||0,h=el._h||0;
  for(let k=0;k<6;k++){const hit=placed.find(r=>Math.abs(r.x-x)<(r.w+w)/2+4&&y>r.y-r.h-4&&y-h<r.y+4);if(!hit)break;y=hit.y-hit.h-6;}
  if(y-h<2)y=h+2;el.style.top=y+'px';placed.push({x,y,w,h});}}
+// ---------- Vollständig vorlesen, Jubel, Gelächter (Plünderungen, 26.10.) ----------
+// sayFull: wartet, bis niemand mehr spricht, zeigt die Blase und liest sie mit der Stimme der Figur ganz vor (Klick aufs Feld überspringt).
+async function sayFull(a,text,o={}){if(!a||!text)return;const b=S.battle;
+ for(let n=0;n<240&&M.speechHold?.();n++)await sleep(100);if(R.ended||S.battle!==b)return;
+ const ms=Math.max(2400,1600+String(text).length*80);bubbleNow(a,text,{name:o.name,boss:o.boss,lead:o.lead,loud:o.loud,ms});BQ.until=performance.now()+ms;M.fieldTalk?.mark?.(ms);
+ M.speakLine?.(text,null,a.g||null,{name:o.name||a.g?.name,keep:true});if(o.log!==false)mlog(`<b class="${a.team?'foe':o.lead?'ldr':''}">${esc(o.name||a.g?.name||'')}:</b> „${esc(text)}“`);
+ const t0=performance.now(),min=Math.max(1100,Math.min(ms,900+String(text).length*45))/Math.min(2,speed());await sleep(200);
+ while(!R.ended&&S.battle===b&&(performance.now()-t0<min||M.speechHold?.())&&performance.now()-t0<22000)await sleep(90);}
+// Truppe feiert (Waffen hoch, Hüpfen, Jubel) oder lacht (Klatschen, Lachgesicht). Läuft auch, während der Kampf steht.
+const ANIM={until:0,kind:null};
+function partyAnim(kind,sec){ANIM.kind=kind;ANIM.until=performance.now()+sec*1000;}
+function animStep(b,dt){if(!ANIM.kind)return;const on=performance.now()<ANIM.until;for(const a of partyActors(b)){if(a.to)continue;
+  if(on){a.state='celebrate';a.phase=(a.phase||0)+dt*(ANIM.kind==='laugh'?9:6);if(ANIM.kind==='laugh'){a.practiceCheer=1;a.warCry=0;}else{a.warCry=1.4;a.practiceCheer=0;}}
+  else{a.state='idle';a.practiceCheer=0;a.warCry=0;}}
+ if(!on)ANIM.kind=null;}
+const CHEER=['SIEG!','HA! Wer ist der Nächste?','Das war’s? Ich hab mich gerade erst aufgewärmt!','FÜR DEN LUDUS!','Tot, tot, und der da auch!','Hat jemand gezählt? Ich hab bei drei aufgehört!'];
+const LAUGH=['HAHAHA!','Hahaha! Hast du sein Gesicht gesehen?','Hehehe. Der guckt immer noch überrascht.','HA! Der Nächste, bitte!','Hahaha! Gnade! Hat er gesagt! Gnade!'];
+// erst Nahaufnahmen und Erzähler (z. B. der letzte Tod) ausreden lassen
+async function waitShots(b,lim=16000){const t0=performance.now(),IS=M.injuryShots;while(live(b)&&performance.now()-t0<lim&&(IS?.arena||IS?.pending?.length||M.speechHold?.()))await sleep(120);}
+async function celebrate(b){if(!live(b))return;await waitShots(b);if(!live(b))return;setButtons('after');partyAnim('cheer',3.2);try{M.audioEngine?.sound?.('partyCheer');M.voice?.('battlecry',1);}catch(e){}
+ const pa=partyActors(b),c=[...CHEER].sort(()=>Math.random()-.5);if(pa[0])await sayFull(pa[0],c[0],{name:first(pa[0].g),loud:true});if(pa[1]&&live(b))await sayFull(pa[1],c[1],{name:first(pa[1].g)});
+ while(live(b)&&performance.now()<ANIM.until)await sleep(80);}
+async function laugh(b,who){if(!live(b))return;await waitShots(b,9000);if(!live(b))return;partyAnim('laugh',2.6);try{M.audioEngine?.sound?.('laugh');}catch(e){}const k=who||anyParty(b);if(k)await sayFull(k,pickL(LAUGH),{name:first(k.g),log:false});
+ while(live(b)&&performance.now()<ANIM.until)await sleep(80);}
 function partyActors(b){return b.actors.filter(a=>a.team===0&&!a.down&&!a.g.dead);}
 function anyParty(b){const l=partyActors(b);return l[Math.floor(Math.random()*l.length)]||b.actors.find(a=>a.team===0);}
 const first=g=>String(g?.name||'').split(' ')[0];
@@ -415,7 +439,7 @@ function missionLoop(t){const b=S.battle;
    if(!R.ending){abortMission();}}
   else{if(M.ui.getPage()!=='profiles'){const dt=Math.max(0,b.time-R.lastTime);R.lastTime=b.time;D.tick(b,dt);
     if((b.paused&&!b.done)||R.fleeing){const dt=1/60*speed(),grp=groupCenter(b);for(const a of b.actors)if(a.to){if(R.fleeing||a.team!==0)walker(a,dt);else stroll(a,dt,grp);pushOut(a,b);}}
-    if(WAG){const now=performance.now(),dt=Math.min(.1,(now-(R.wT||now))/1000)*speed();R.wT=now;wagonTick(dt);}
+    {const now=performance.now(),dt=Math.min(.1,(now-(R.wT||now))/1000)*speed();R.wT=now;if(WAG)wagonTick(dt);animStep(b,dt);}
     while(b.events.length)onEvent(b,b.events.shift());
     if(b.started&&b.done&&!b.handled){b.handled=true;encounterEnd(b);}
     if(t-(loopT.cull||0)>200){loopT.cull=t;const c=$('arenaCanvas');D.cullObstacles(b,R.cam.x,c?c.clientWidth/(c.clientHeight/VH):1400);}
@@ -443,7 +467,7 @@ function onEvent(b,e){const m=R.m,adv=m.kind==='adventure';
 // Der Lade-Bildschirm der Arena (scene-loader.js) bereitet Arena-Grafik vor und wartet auf „Weiter“. Missionen zeichnen
 // ihren eigenen Schauplatz und wechseln mehrmals den Abschnitt: dort nicht anhalten.
 function bypassLoader(){const SL=M.sceneLoader;if(SL&&!SL.__ow){const g0=SL.gate;SL.gate=function(){if(S.battle?.mission)return !!SL.active;return g0.apply(this,arguments);};SL.__ow=true;}}
-async function startMission(){if(S.battle||R.m)return;bypassLoader();const stateTxt=t=>{const e=$('owState');if(e)e.textContent=t;};LU?.install({bubble,mlog,toScreen,live,cam:()=>R.cam,VH,state:stateTxt});SH?.install({bubble,mlog,live,cam:()=>R.cam,VH,state:stateTxt,talkPause,speaker:b=>LU?.leaderA?.(b)||anyParty(b)});const st=ST(),team=selected();if(team.length<D.CFG.minParty||team.length>D.CFG.maxParty)return;
+async function startMission(){if(S.battle||R.m)return;bypassLoader();const stateTxt=t=>{const e=$('owState');if(e)e.textContent=t;};LU?.install({bubble,mlog,toScreen,live,cam:()=>R.cam,VH,state:stateTxt,sayFull,laugh});SH?.install({bubble,mlog,live,cam:()=>R.cam,VH,state:stateTxt,talkPause,speaker:b=>LU?.leaderA?.(b)||anyParty(b)});const st=ST(),team=selected();if(team.length<D.CFG.minParty||team.length>D.CFG.maxParty)return;
  const quest=st.stage!=='done';if(!quest&&!adventureReady()){notify('Heute wart ihr schon draußen.');return;}
  let m;if(quest){st.quest??=newQuestPlace();m=D.newMission(st.quest.seed,team,'dorf',{kind:'quest'});m.place.name=st.quest.name;}
  else if(st.adv.mode==='wagon'&&D.newWagonMission){m=D.newWagonMission(st.adv.seed,team,st.adv.biome,{diff:st.adv.diff||2});}
@@ -519,7 +543,9 @@ async function encounter(b,sti){const m=R.m,st=m.place.stations[sti],adv=m.kind=
  else if(st.kind==='ahead')mlog('Weiter vorn kommen zwei Gestalten den Weg herunter. Sie gehen schneller, als sie euch sehen.','narr');
  else mlog('Eine Tür quietscht.','narr');
  const firstA=D.beginEncounter(b,m,sti);b.paused=true;b.started=false;const evs=[...b.events];b.events.length=0;
- for(const a of firstA){const g=a.g;bubble(a,g.debtShout,{name:g.name});mlog(`<b class="foe">${esc(g.name)}</b>${st.kind==='idle'?'':' kommt aus '+esc(evs.find(e=>e.actor===a)?.door||'dem Nichts')}. Er ${esc(g.debtOwes)}. Waffe: ${esc(M.itemName(g.enemyGear.weapon))}.`);await sleep(500/speed());}
+ for(const a of firstA){const g=a.g;mlog(`<b class="foe">${esc(g.name)}</b>${st.kind==='idle'?'':' kommt aus '+esc(evs.find(e=>e.actor===a)?.door||'dem Nichts')}. Er ${esc(g.debtOwes)}. Waffe: ${esc(M.itemName(g.enemyGear.weapon))}.`);
+  if(adv){a.a=Math.atan2((anyParty(b)?.y||a.y)-a.y,(anyParty(b)?.x||a.x)-a.x);await sayFull(a,g.debtShout,{name:first(g),loud:st.kind==='ambush',log:false});if(!live(b))return;}else{bubble(a,g.debtShout,{name:g.name});await sleep(500/speed());}}
+ if(adv&&st.kind==='ambush'){const r=anyParty(b);if(r)await sayFull(r,pickL(['Hinterhalt! Rücken an Rücken!','Die kommen von überall! Schilde hoch!','Überfall! Na wartet!','Von hinten? Feiglinge! Na gut, wir auch nicht besser.']),{name:first(r.g),loud:true});if(!live(b))return;}
  b.events.length=0;LU?.stow(b,false);await sleep(900/speed());if(!live(b))return;
  for(const a of b.actors){a.to=null;a.path=null;}
  b.started=true;b.paused=false;setButtons('fight');}
@@ -544,9 +570,12 @@ async function leadEncounter(b,sti){const m=R.m,st=m.place.stations[sti],G=L.lay
  if(!await marchTo(b,G.hx+60))return;L.beginGroup(b,m,sti,{unaware:false});b.events.length=0;
  const pa=partyActors(b),px=pa.reduce((t,a)=>t+a.x,0)/Math.max(1,pa.length);for(const e of b.encEnemies)e.x=Math.max(px+170,e.x-220);
  mlog(`${esc(me().g.name)} sieht sie zu spät: ${b.encEnemies.map(e=>'<b class="foe">'+esc(e.g.name)+'</b>').join(', ')} stürmen heran.`,'narr');
- const e0=b.encEnemies[0];if(e0)bubble(e0,pickL(['Überraschung!','Jetzt haben wir euch!','DRAUF!']),{name:first(e0.g),loud:true});LU.stow(b,false);
- for(const a of b.actors){a.to=null;a.path=null;}
- b.started=true;b.paused=false;L.surprise(b);setButtons('fight');}
+ setButtons('talk');LU.stow(b,false);for(const a of b.actors){a.to=null;a.path=null;}
+ const px2=pa.reduce((t,a)=>t+a.y,0)/Math.max(1,pa.length);for(const e of b.encEnemies)e.a=Math.atan2(px2-e.y,px-e.x);
+ const shouters=b.encEnemies.slice(0,3),ov=['Überraschung!','Jetzt haben wir euch!','DRAUF!','Von hinten ist es am schönsten!',...(m.texts?.shout||[])];
+ for(const [i,e] of shouters.entries()){await sayFull(e,i?(e.g.debtShout||pickL(ov)):pickL(ov.slice(0,4)),{name:first(e.g),loud:true});if(!live(b))return;}
+ const ld=me();if(ld){await sayFull(ld,pickL(['Hinterhalt! Zusammenrücken!','Verdammt, die waren schneller! Rücken an Rücken!','Überfall! Schilde raus, Augen auf!']),{name:LU.lname(ld),lead:true,loud:true});if(!live(b))return;}
+ b.started=true;b.paused=false;L.surprise(b,{quiet:true});setButtons('fight');}
 // Plünderung: Am Ziel wartet der Berüchtigte mit seiner Bande. Vorstellung (Steckbrief, Bande, Wortwechsel), dann die Frage:
 // kämpfen oder abziehen. Abziehen beendet die Plünderung ohne Beute (wie Heimkehren). Kämpfen: Kampfsequenz, dann der Kampf.
 async function bossEncounter(b,sti){const m=R.m,st=m.place.stations[sti],G=b.L.enc[sti].group;
@@ -647,13 +676,14 @@ async function encounterEnd(b){const m=R.m;if(R.ended)return;learnRecipes(m,b);c
  for(const g of out.downed)mlog(`${esc(g.name)} kann nicht mehr und wird ab jetzt getragen.`);
  if(out.winner===0){
   if(out.loot.length)mlog('Beute: '+out.loot.map(l=>`<span class="ow-lootname">${esc(M.itemName(l.item))}</span>`).join(', '));
+  if(adv){await celebrate(b);if(!live(b))return;}
   if(!st.boss){await (LU?LU.aftermath(b):aftermath(b));if(!live(b))return;}
   if(st.boss&&m.mode==='wagon'){setButtons('after');await (LU?LU.aftermath(b):aftermath(b));if(!live(b))return;await wagonLoot(b);if(!live(b))return;setButtons('won');return;}
   if(st.boss){setButtons('talk');const boss=b.encEnemies[0],bn=adv?first(boss.g):'Krassus';
-   for(const [w,l] of (adv?m.texts.leaderDown:D.TEXT.bossDown)){const me=w==='K'||w==='L',a=me?boss:anyParty(b);bubble(a,l,{name:me?bn:first(a.g),boss:me,ms:3000});mlog(`<b class="${me?'boss':''}">${esc(me?bn:a.g.name)}:</b> „${esc(l)}“`);await talkPause(2600);}
+   const ty=NT?.typeOf(boss.g);for(const [w,l] of (adv?(ty?.down||m.texts.leaderDown):D.TEXT.bossDown)){const me=w==='K'||w==='L',a=me?boss:anyParty(b);if(adv)await sayFull(a,l,{name:me?bn:first(a.g),boss:me});else{bubble(a,l,{name:me?bn:first(a.g),boss:me,ms:3000});mlog(`<b class="${me?'boss':''}">${esc(me?bn:a.g.name)}:</b> „${esc(l)}“`);await talkPause(2600);}if(!live(b))return;}
    await (LU?LU.aftermath(b):aftermath(b));if(!live(b))return;
    mlog(adv?`In der Truhe des Anführers: <b class="gold">${m.gold} Gold</b>.`:`In der Geldkassette: <b class="gold">${m.gold} Gold</b>. Der Schuldschein über ${D.CFG.debt.toLocaleString('de-DE')} Gold brennt sehr schön.`,'narr');setButtons('won');return;}
-  const a=anyParty(b),l=pickL(adv?D.ADV.cleared:D.TEXT.cleared);if(a){bubble(a,l,{name:first(a.g)});mlog(`<b>${esc(a.g.name)}:</b> „${esc(l)}“`);}
+  const a=anyParty(b),l=pickL(adv?D.ADV.cleared:D.TEXT.cleared);if(a){if(adv)await sayFull(a,l,{name:first(a.g)});else{bubble(a,l,{name:first(a.g)});mlog(`<b>${esc(a.g.name)}:</b> „${esc(l)}“`);}}if(!live(b))return;
   if(out.rest>0)mlog(`Kurze Rast: Notverbände, ein Schluck Wasser. Blut +${D.CFG.restBlood}. Verletzungen bleiben.`,'narr');
   if(m.state==='lost'){finishMission('lost');return;}
   const nx=m.place.stations[st.i+1];mlog(`${m.party.filter(D.fit).length} von ${m.party.length} können noch kämpfen. Weiter Richtung ${nx?.boss?'<b>'+esc(D.THEMES[nx.theme].name)+'</b>':esc(nx?D.THEMES[nx.theme].name:'Ziel')}?`,'narr');
@@ -670,12 +700,12 @@ function walkTo(b,a,x,y,sp=95){routeTo(b,a,x,y,sp);a.startDelay=0;const t0=perfo
 async function aftermath(b){const m=R.m;setButtons('after');
  const alive=b.encEnemies.filter(e=>!e.g.dead&&(e.down||e.surrendered));
  for(const e of alive){if(!live(b))return;const k=nearestParty(b,e);if(!k)break;const side=k.x<e.x?-1:1;
-  bubble(e,pickL(PLEA),{name:first(e.g)});await walkTo(b,k,e.x+side*30,e.y+4);if(!live(b))return;k.a=side<0?0:Math.PI;
-  const line=pickL(m.kind==='quest'&&Math.random()<.35?EXEC_Q:EXEC);bubble(k,line,{name:first(k.g)});await talkPause(1500);if(!live(b))return;
+  await walkTo(b,k,e.x+side*30,e.y+4);if(!live(b))return;k.a=side<0?0:Math.PI;await sayFull(e,pickL(PLEA),{name:first(e.g)});if(!live(b))return;
+  const line=pickL(m.kind==='quest'&&Math.random()<.35?EXEC_Q:EXEC);await sayFull(k,line,{name:first(k.g)});if(!live(b))return;
   try{M.death(e,'Gnadenstoß',k);}catch(err){e.g.dead=true;e.down=true;e.state='dead';}
-  mlog(`<b>${esc(k.g.name)}</b> gibt <b class="foe">${esc(e.g.name)}</b> den Gnadenstoß: „${esc(line)}“`);await talkPause(600);}
+  mlog(`<b>${esc(k.g.name)}</b> gibt <b class="foe">${esc(e.g.name)}</b> den Gnadenstoß.`);await talkPause(600);await laugh(b);}
  const bodies=b.encEnemies.filter(e=>e.g.dead);for(const e of bodies.slice(0,Math.min(3,bodies.length))){if(!live(b))return;const k=nearestParty(b,e);if(!k)break;
-  await walkTo(b,k,e.x+(k.x<e.x?-26:26),e.y+6);if(!live(b))return;const line=pickL(SEARCH);bubble(k,line,{name:first(k.g)});mlog(`<b>${esc(k.g.name)}</b> durchsucht ${esc(e.g.name)}: „${esc(line)}“`);await talkPause(1300);}
+  await walkTo(b,k,e.x+(k.x<e.x?-26:26),e.y+6);if(!live(b))return;const line=pickL(SEARCH);mlog(`<b>${esc(k.g.name)}</b> durchsucht ${esc(e.g.name)}.`);await sayFull(k,line,{name:first(k.g)});}
  if(bodies.length>3)mlog(`Die übrigen Taschen werden schneller geleert. Alles Brauchbare kommt mit.`,'narr');
  D.collect(m,b);}
 async function next(){clearInterval(R.autoT);if(R.awaiting==='won'){setButtons('end');finishMission('won');return;}if(R.awaiting!=='next')return;setButtons('march');const r=R.nextRes;R.nextRes=null;r?.();}
