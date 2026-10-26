@@ -35,7 +35,7 @@ function next(){if(!tk)return;if(tk.phase==='choose')return;tk.t=0;tk.i++;if(tk.
 function choose(yes){if(!tk||tk.phase!=='choose')return;const p=P();if(!yes){p.state='declined';M.persist();}tk.phase=yes?'yes':'no';tk.lines=yes?YES:NO;tk.i=0;tk.t=0;const ch=$('plotTalkChoices'),h=$('plotTalkHint');if(ch)ch.hidden=true;if(h)h.hidden=false;}
 function finishTalk(){const yes=tk.phase==='yes',shooter=tk.c.a,mates=[tk.c.b,tk.c.c];tk.view?.remove?.();tk=null;M.ui.render();if(yes)start(shooter,mates);}
 function stepTalk(dt){const t=tk;t.t+=dt;const [k,text]=t.lines[Math.min(t.i,t.lines.length-1)];
- if(t.phase!=='choose'&&t.t>=need(text)+.6){next();if(!tk)return;}
+ if(t.phase!=='choose'&&t.t>=need(text)+.6&&!M.speechHold?.(t)){next();if(!tk)return;}
  for(const key of ['a','b','c']){const f=t.who[key];f.state='idle';f.traderPose=null;f.gest=t.t;f.phase+=dt*3;f.facePain=0;f.retreat=0;}
  const sp=t.who[k];if(sp&&t.phase!=='choose'){sp.traderPose=/[!?]/.test(text)&&text.length<70?'rant':'point';if(text.startsWith('…'))sp.traderPose=null;}
  // Blickrichtung: alle schauen zum Sprecher, der Sprecher zu den anderen

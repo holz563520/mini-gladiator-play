@@ -191,7 +191,7 @@ function stepFilm(dt){const f=film;if(!f)return;f.t+=dt;f.bt+=dt;const b=f.beats
  s.state=moving?'move':b.state||'idle';s.moveSpeed=moving?10:0;if(moving){const o=f.odo;o.d=(o.d||0)+(f.move?.v||38)*dt;s.phase=o.d*.267;}else s.phase=f.t*4;
  if(b.pose)s.forgePose=b.pose;if(b.gesture){s.traderPose=b.gesture;s.gest=f.t*3;}M.beltPlan?.(s,f.t,[[-99,null]]);
  if(b.look)s.a=Math.floor(f.bt/(b.look))%2?0:Math.PI;
- if(f.line)f.shown+=dt;const read=!f.line||f.ack||f.shown>=need(f.line.text);if(!moving&&read&&f.bt>=(b.dur||0))next();paintFilm();}
+ if(f.line)f.shown+=dt;const read=!f.line||f.ack||f.shown>=need(f.line.text);if(!moving&&read&&!M.speechHold?.(f)&&f.bt>=(b.dur||0))next();paintFilm();}
 function paintFilm(){const f=film;if(!f)return;const c=$('hallFilmCanvas');if(!c?.getContext)return;const g=c.getContext('2d'),VW=f.kind==='map'?360:330,VH=VW*420/660,WW=f.kind==='map'?900:HW,WH=f.kind==='map'?670:HH,k=c.width/VW,cx=Math.max(VW/2,Math.min(WW-VW/2,f.cam.x)),cy=Math.max(VH/2,Math.min(WH-VH/2,f.cam.y));
  g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#0d1011';g.fillRect(0,0,c.width,c.height);g.save();g.scale(k,k);g.translate(-(cx-VW/2),-(cy-VH/2));
  if(f.kind==='map'){f.bg??=M.ludus.background();g.drawImage(f.bg,0,0);M.ludusOverlay?.(g,f.t);M.renderForgeActors(g,[...f.actors].sort((a,b)=>a.y-b.y));}

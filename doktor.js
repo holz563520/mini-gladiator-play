@@ -631,7 +631,7 @@ function stepFilm(dt){const f=film;f.t+=dt;f.bt+=dt;const b=f.beats[f.i];if(!b)r
  f.door+=(f.doorTo-f.door)*Math.min(1,dt*f.doorRate);if(Math.abs(f.doorTo-f.door)<.01)f.door=f.doorTo;
  for(const q of f.floats)q.t+=dt;f.floats=f.floats.filter(q=>q.t<1.6);f.shake=Math.max(0,(f.shake||0)-dt*6);
  if(f.line)f.shown+=dt;const busy=b.until?!b.until(f):false,read=f.hold?f.ack:(!f.line||f.ack||f.shown>=need(f.line.text));
- if(read&&!busy&&(f.hold||f.bt>=(b.dur||0)))next();else paintFilm();}
+ if(read&&!busy&&!M.speechHold?.(f)&&(f.hold||f.bt>=(b.dur||0)))next();else paintFilm();}
 function speaker(who){const f=film;if(who==='s')return {name:smithName(),a:f.smith};if(who==='d')return {name:DOC_SHORT,a:f.props.doc};if(who==='n')return {name:NURSE,a:f.props.nurse};if(who==='l')return {name:S.lanista?.name||'Der Lanista',a:f.lan};if(who&&who[0]==='r'){const a=f.rec?.[+who.slice(1)-1];return {name:first(a?.g),a};}return {name:''};}
 function paintFilm(){const f=film;if(!f)return;const c=$('dokFilm');if(!c?.getContext)return;const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;
  if(f.face)f.face(g,c.width,c.height,f,f.t);else if(f.chair)paintChair(g,c.width,c.height,f.t,f.chair,f.proc);else paintYard(g,c.width,c.height,f);

@@ -329,6 +329,20 @@ function pick(dt,busy){const b=S.battle;if(seenBattle!==b.id){seenBattle=b.id;se
 // Waffe aus dem Namen im Kampfbericht (Titel je Qualitätsstufe). Unbekannt (Pranken, Tritt, Schildstoß): keine Waffe im Bild.
 let titles=null;
 function weaponId(name){if(!name)return null;if(!titles){titles={};for(const d of M.weaponDefs||[]){titles[d.name]=d.id;for(let q=0;q<=6;q++)titles[M.itemTitle({kind:'weapon',def:d.id,q})]=d.id;}}return titles[name]||null;}
+// ---------- Arena-Moderator: kommentiert nur schwere Verletzungen und Tode, mit schwarzem Humor ----------
+// Der Kampf steht still, bis er ausgeredet hat (siehe presentationStep). Leichte Treffer bleiben stumm.
+const pickL=a=>a[Math.floor(Math.random()*a.length)],firstN=n=>String(n||'').split(' ')[0];
+function partWords(id){const n=M.partName?.(id)||'Körperteil',masc=/^(Linker|Rechter)\b/.test(n)||['Kopf','Hals','Bauch'].includes(n),adj=/^(Linke|Linker|Rechte|Rechter)\b/.test(n);
+ if(!adj)return {nom:(masc?'der ':'die ')+n,acc:(masc?'den ':'die ')+n};const [a,...rest]=n.split(' '),base=a.toLowerCase().replace(/r$/,''),noun=rest.join(' ');
+ return masc?{nom:'der '+base+' '+noun,acc:'den '+base+'n '+noun}:{nom:'die '+base+' '+noun,acc:'die '+base+' '+noun};}
+const MOD_LINES={
+ missing:['{V} verliert {acc}. Fundsachen bitte beim Medicus abholen!','{A} nimmt {V} {acc} ab. Ganz ohne Quittung.','Und weg ist {nom}! {V} wird ab heute anders winken.','{Nom} von {V} fliegt in die dritte Reihe. Wer fängt, darf behalten!'],
+ death:['{V} ist tot. Der Totengräber reibt sich schon die Hände.','Und das war es für {V}. {A} spart dem Ludus die Verpflegung.','Ruhe in Frieden, {V}. Oder in Stücken, je nachdem.','{V} verlässt die Arena. Waagerecht.'],
+ bone:['Man hört den Knochen bis in die letzte Reihe. Herrlich!','Knack! {Nom} von {V} hat jetzt ein Gelenk mehr.'],
+ arrow:['{V} sammelt Pfeile. Leider mit dem Körper.','Volltreffer! {V} ist jetzt offiziell eine Zielscheibe.'],
+ severe:['{Nom} von {V} sieht jetzt aus wie Hackfleisch vom Markt.','Das gibt eine schöne Narbe, {V}. Falls du lange genug lebst.','{A} verteilt Geschenke. {V} bekommt eine Wunde, die bleibt.']};
+function modLine(k,e,g,p,gr,by,kind){if(k==='collapse')return null;const sev=k==='death'?'death':p?.missing?'missing':p?.fracture?'bone':kind==='arrow'&&gr>=3?'arrow':gr>=3?'severe':null;if(!sev)return null;
+ const w=partWords(e.part),cap=t=>t.charAt(0).toUpperCase()+t.slice(1);return pickL(MOD_LINES[sev]).replace(/\{V\}/g,firstN(g.name)).replace(/\{A\}/g,firstN(by)||'Der Gegner').replace(/\{nom\}/g,w.nom).replace(/\{Nom\}/g,cap(w.nom)).replace(/\{acc\}/g,w.acc);}
 function arenaShot(x){const {e,k,inj}=x,g=e.g,p=g.body[e.part],gr=M.injuryGrade(p),by=e.a?(S.battle.actors.find(q=>q.id===e.a.lastAttackerId)?.g.name||e.a.lastAttacker||''):'';let o;
  if(k==='death'){const killer=g.killer&&g.killer!=='Unbekannt'?g.killer:'';o={g,team:e.a?.team,part:'head',kind:'death',cls:'none',variant:Math.floor(Math.random()*3),dramatic:!!x.dramatic,line1:killer?killer+' tötet '+g.name:g.name+' stirbt',title:'† '+g.name+' fällt',line3:g.cause||'',color:'#f29b83',...(cfg.fallText?.(x)||{})};}
  else if(k==='collapse'&&x.fall&&e.reason!=='Blutverlust')o={g,team:e.a?.team,fall:true,variant:Math.floor(Math.random()*3),part:'chest',kind:'collapse',line1:(by&&by!==g.name?by+' streckt '+g.name+' nieder':g.name+' geht zu Boden'),title:'Kampfunfähig',line3:e.reason||'',color:'#f29b83',...(cfg.fallText?.(x)||{})};
@@ -336,6 +350,7 @@ function arenaShot(x){const {e,k,inj}=x,g=e.g,p=g.body[e.part],gr=M.injuryGrade(
  else{const wid=weaponId(e.weapon),kind=['bow','crossbow'].includes(wid)&&['stab','deepstab'].includes(k)?'arrow':k,
    cons=p.missing?'für immer verloren':p.fracture?.crushed?'Dauerschaden: heilt nie ganz':p.fracture?'Bruch: mindestens '+Math.ceil(p.fracture.days/(M.HEAL_SPEED||1))+' Tage':e.lasting||p.chronic>0?'Dauerschaden':p.bleed>0?'blutet weiter':'';
   o={g,part:e.part,kind,wid,cls:wid?undefined:'none',line1:(e.attacker||'Ein Gegner')+(e.weapon?' ('+e.weapon+')':'')+' fügt '+g.name+' zu:',title:inj,line3:[p.missing?'':'Grad '+gr+' ('+GRADE[gr]+')',kind==='arrow'?'der Pfeil bleibt stecken':'',cons].filter(Boolean).join(' · '),color:gr>=3||p.missing?'#f29b83':'#f4d37a'};}
+ if(!x.live&&M.speakLine){const L=modLine(k,e,g,p,gr,by,o.kind);if(L){M.speakLine(L,'moderator',null,{vol:1.05});M.modSayNow?.(L);}}
  const shot=start({...o,textScale:cfg.host?.()?cfg.textScale:1,from:SHOT_FROM,len:k==='death'?(x.dramatic?5:3):x.live?1.5:SHOT_LEN,hold:tap()&&!x.live,mute:true}),host=cfg.host?.();
  if(host){cfg.onShot?.(true,o,!!x.live);arena={v:null,shot,c:host,g:host.getContext('2d'),battle:S.battle.id,live:!!x.live};}
  else{const v=document.createElement('div');v.className='injury-shot injury-shot-arena';v.innerHTML='<canvas width="660" height="420"></canvas>';document.body.appendChild(v);v.addEventListener('click',()=>{shot.done=true;});arena={v,shot,c:v.firstChild,g:v.firstChild.getContext('2d'),battle:S.battle.id};}if(!x.live)gap=tap()?1.2:GAP;}
@@ -344,7 +359,7 @@ if(typeof M.fixedStep==='function'&&typeof M.presentationStep==='function'){
  const fixed=M.fixedStep,present=M.presentationStep,effects=M.effectsStep;
  M.fixedStep=function(dt){if(arena&&!arena.live){/* mit Bestätigung: erst kurz Zeitlupe, dann Stillstand */if(arena.shot.o.hold&&arena.shot.t-SHOT_FROM<.45&&!arena.shot.o.waiting){arena.slow=(arena.slow||0)+1;if(arena.slow%6)return;}else return;}return fixed.apply(this,arguments);};
  if(typeof effects==='function')M.effectsStep=function(dt){if(arena&&!arena.live)return;return effects.apply(this,arguments);};
- M.presentationStep=function(dt){if(arena){if(!S.battle||S.battle.id!==arena.battle||arena.shot.done||!arena.shot.step(dt))endArena();else arena.shot.paint(arena.g,arena.c.width,arena.c.height);if(arena&&!arena.live)return;}
+ M.presentationStep=function(dt){if(arena){if(!S.battle||S.battle.id!==arena.battle||arena.shot.done||(!arena.shot.step(dt)&&(arena.live||!M.speechHold?.())))endArena();else arena.shot.paint(arena.g,arena.c.width,arena.c.height);if(arena&&!arena.live)return;}
   const r=present.apply(this,arguments);try{if(mode()!=='off'&&watching()){const x=pick(dt,!!arena);if(x){if(arena)endArena();arenaShot(x);}}else if(pend.length)pend=[];}catch{pend=[];}return r;};}
 // Zeile für die Einstellungsseite und ihre Auswahl
 M.injuryOptions=()=>`<div class="list-row"><span>Nahaufnahmen bei Verletzungen<br><small>Der Kampf hält dafür kurz an. Antippen überspringt.</small></span><select class="select" id="closeups">${MODES.map(([k,n])=>`<option value="${k}"${k===mode()?' selected':''}>${n}</option>`).join('')}</select></div>`;

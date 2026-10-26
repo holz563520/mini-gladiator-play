@@ -79,7 +79,7 @@ function stepFilm(dt){const f=film;if(!f)return;f.t+=dt;f.bt+=dt;const b=f.beats
  if(f.camTo){const k=Math.min(1,dt*(f.camTo.rate||2));for(const key of ['x','y','vw'])if(f.camTo[key]!=null)f.cam[key]+=(f.camTo[key]-f.cam[key])*k;}
  f.dark+=((b.dark??0)-f.dark)*Math.min(1,dt*(b.darkRate||3));
  stepFx(f,dt);if(f.line)f.shown+=dt;const busy=b.until?!b.until(f):false,read=f.hold?f.ack:(!f.line||f.ack||f.shown>=need(f.line.text));
- if(read&&!busy&&(f.hold||f.bt>=(b.dur||0)||f.skip))next();else paint();}
+ if(read&&!busy&&!M.speechHold?.(f)&&(f.hold||f.bt>=(b.dur||0)||f.skip))next();else paint();}
 function setCard(html,hold){const el=$('medicInfo');if(!el)return;if(!html){el.hidden=true;el.innerHTML='';return;}el.hidden=false;el.innerHTML=html+(hold?'<small class="medic-tap">TIPPEN ▸</small>':'');}
 // Sprecher: Name und Figur (für die Spitze der Sprechblase)
 function speaker(who){const f=film;if(f.cast?.[who])return typeof f.cast[who]==='function'?f.cast[who](f):f.cast[who];if(who==='s')return {name:smithName(),a:f.smith};if(who==='l')return {name:lanName(),a:f.lan};if(who==='m')return {name:'Arenamoderator',a:f.mod};

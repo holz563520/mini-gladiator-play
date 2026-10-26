@@ -50,6 +50,13 @@ function start(){if(!init())return;ctx.resume().catch(()=>{});ksWarmup();if(!tim
 // ---- Neue Kampfgeräusche (kampfsound.js, im Editor kampfsound-editor.html einstellbar): alte Namen → neue Vorlagen.
 // Änderungen aus dem Editor (localStorage „mg-kampfsound-v1“) gelten auch hier. Namen ohne Eintrag klingen wie bisher.
 const KMAP={step:['step',.45],slash:['hitBlade'],heavy:['hitBlunt'],hit:['hitBlade'],backstab:['backstab'],sever:['sever'],stick:['hitStab'],lodge:['arrowShield'],block:['blockShield'],armorhit:['armorHit'],parry:['parry'],fall:['fall'],rise:['rise',.8],sand:['sand'],land:['land'],rush:['rush'],crowd:['crowd',.75],roar:['roar'],gong:['gong'],win:['win'],mercy:['mercy'],verdictDeath:['verdictDeath'],die:['die'],gold:['coin'],coin:['coin'],coins:['coin'],throw:['throw'],net:['net'],bow:['bow'],crossbow:['crossbow'],reload:['reload',.8],arrowBody:['arrowBody'],arrowSand:['arrowSand'],swing:['swing',.6],swingHeavy:['swingHeavy',.7]};
+// Publikum bei der Vorstellung: 'applause' = dezentes Klatschen in Schleife (Veteranen), 'laugh' = Gelächter (Trottel), null = Ruhe.
+let moodLoop=null,moodTimer=0;
+function crowdMood(kind){clearInterval(moodTimer);moodTimer=0;if(moodLoop){const L=moodLoop;moodLoop=null;try{L.g.gain.setTargetAtTime(0,ctx.currentTime,.25);setTimeout(()=>{try{L.s.stop();L.s.disconnect();L.g.disconnect();}catch{}},900);}catch{}}
+ if(!kind||!ctx||!enabled(false)||!window.KampfSound)return;
+ if(kind==='applause'){try{const b=window.KampfSound.buffer(ctx,'applause');if(!b)return;const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;s.loop=true;s.loopEnd=Math.min(b.duration,6.4);g.gain.value=0;g.gain.setTargetAtTime(.75,ctx.currentTime,.35);s.connect(g);g.connect(fxBus);s.start();moodLoop={s,g};}catch{}}
+ else if(kind==='laugh'){ks('laugh',.85);let n=0;moodTimer=setInterval(()=>{if(++n>3||!enabled(false)){clearInterval(moodTimer);return;}ks('laugh',.6+Math.random()*.2);},3400);}}
+M.crowdMood=crowdMood;
 // Stimmlage in fünf Stufen nach Erfahrung (Kämpfe, dazu Erfahrungswert über dem Rekrutenschnitt): Rekruten hell, Veteranen tief.
 // Wird beim Kämpfer als g.stimmlage (1 = hell … 5 = tief) vermerkt und im Profil angezeigt. Nur Ton, keine Spielregel.
 const TIERS=[[1.26,'hell (Rekrut)'],[1.13,'eher hell'],[1,'mittel'],[.89,'eher tief'],[.79,'tief (Veteran)']];
@@ -61,7 +68,7 @@ const VMAP={battlecry:'cry',death:'deathScream',effort:'effort',dying:'dying'};
 let ksVoices=0,ksWarm=false;
 function ks(k,vol=1,at=0,pitch=1){const K=window.KampfSound;if(!K?.DEF?.[k])return false;if(ksVoices>30)return true;try{const s=K.play(ctx,fxBus,k,{vol,at:ctx.currentTime+at,pitch});if(s){ksVoices++;s.addEventListener('ended',()=>{ksVoices--;});}}catch(e){return false;}return true;}
 // Vorrechnen in kleinen Schritten, damit der erste Treffer im Kampf nicht ruckelt
-function ksWarmup(){if(ksWarm||!window.KampfSound||!ctx)return;ksWarm=true;const keys=[...new Set([...Object.values(KMAP).map(v=>v[0]),...Object.values(VMAP),'painLight','painScream','arrow'])];const jobs=[];for(let n=0;n<3;n++)for(const k of keys)jobs.push([k,1]);for(const k of Object.values(VMAP).concat(['painLight','painScream']))for(const [p] of TIERS)for(let n=0;n<3;n++)jobs.push([k,p]);for(let n=1;n<=20;n++)for(const [p] of TIERS)jobs.push(['bruell'+String(n).padStart(2,'0'),p]);let i=0;const idle=f=>window.requestIdleCallback?requestIdleCallback(f,{timeout:400}):setTimeout(f,35);const next=()=>{if(i>=jobs.length)return;try{window.KampfSound.buffer(ctx,jobs[i][0],{pitch:jobs[i][1]});}catch{}i++;idle(next);};setTimeout(()=>idle(next),400);}
+function ksWarmup(){if(ksWarm||!window.KampfSound||!ctx)return;ksWarm=true;const keys=[...new Set([...Object.values(KMAP).map(v=>v[0]),...Object.values(VMAP),'painLight','painScream','arrow','applause','laugh'])];const jobs=[];for(let n=0;n<3;n++)for(const k of keys)jobs.push([k,1]);for(const k of Object.values(VMAP).concat(['painLight','painScream']))for(const [p] of TIERS)for(let n=0;n<3;n++)jobs.push([k,p]);for(let n=1;n<=20;n++)for(const [p] of TIERS)jobs.push(['bruell'+String(n).padStart(2,'0'),p]);let i=0;const idle=f=>window.requestIdleCallback?requestIdleCallback(f,{timeout:400}):setTimeout(f,35);const next=()=>{if(i>=jobs.length)return;try{window.KampfSound.buffer(ctx,jobs[i][0],{pitch:jobs[i][1]});}catch{}i++;idle(next);};setTimeout(()=>idle(next),400);}
 function voice(kind='pain',pitch=1,strong=false){if(!enabled(false)||ctx.currentTime-lastVoice<.22||active>44)return;lastVoice=ctx.currentTime;
  if(window.KampfSound){const k=kind==='battlecry'&&window.KampfSound.DEF.bruell01?roarKey():VMAP[kind]||(kind==='crowd'?'roar':strong?'painScream':'painLight'),p=Math.round(Math.max(.7,Math.min(1.4,pitch||1))*100)/100;if(ks(k,kind==='effort'?.7:kind==='battlecry'?.7:.95,0,p))return;}const t=ctx.currentTime,p=Math.max(.6,Math.min(1.5,pitch||1)),d=strong?.32:.19;if(kind==='battlecry'){note(150*p,.46,'sawtooth',.065,t,false,105*p);note(290*p,.38,'triangle',.045,t+.03,false,210*p);noise(.34,.07,900,'bandpass',t,false);return;}note(125*p,d,'triangle',strong?.13:.075,t,false,82*p);noise(d*.7,strong?.095:.05,kind==='crowd'?800:570,'bandpass',t,false);note(255*p,d*.6,'sine',.032,t+.02,false,170*p);}
 function sound(type){if(!enabled(false))return;const t=ctx.currentTime,wait=type==='step'?.11:type==='crowd'?1.5:['block','armorhit'].includes(type)?.07:.04;if(t-(recent.get(type)??-10)<wait)return;recent.set(type,t);const v=.93+Math.random()*.14;
@@ -82,6 +89,7 @@ document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hid
 M.audioEngine={start,sound,voice,
  // Sprechstimmen (sprech-game.js): Ausgang für Sprache, nur wenn Geräusche an sind
  voiceOut:()=>enabled(false)?{ctx,bus:fxBus}:null,
+ crowdMood,
  duck:v=>{duckT=Math.max(0,Math.min(1,v??1));if(musicBus&&ctx)musicBus.gain.setTargetAtTime(.34*duckT,ctx.currentTime,.12);},
  // Schmiede-Party: Uhr und Sprungmarken des Schmiede-Liedes (nur lesen bzw. umstellen, die Wiedergabe steuert weiter songTick).
  smithClock:()=>{const t=songs.smith;return{idx:t.idx,time:t.el?t.el.currentTime||0:0,playing:!!(t.playing&&t.el&&!t.el.paused)};},
