@@ -34,8 +34,9 @@ const clean=t=>String(t||'').replace(/<[^>]*>/g,' ').replace(/\{[^}]*\}/g,'').re
 const norm=t=>clean(t).replace(/[„“"»«]/g,'').toLowerCase();let lastKey='',lastT=-1e9;
 function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöüß]/i.test(txt)||!window.Sprech)return null;if(o.soft&&fieldPaused())return null;
  const nk=norm(txt),now=performance.now();if(nk===lastKey&&now-lastT<9000){if(g&&cur&&!cur.g)cur.g=g;return cur;}
+ if(!o.keep&&cur&&cur.keep&&(cur.start===Infinity?now-cur.t0<9000:cur.ctx.currentTime<cur.start+cur.dur))return null;
  const out=M.audioEngine?.voiceOut?.();if(!out)return null;if(o.soft&&cur&&!cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur))return null;stop();
- lastKey=nk;lastT=now;const key=o.voice||voiceKey(who,g,o.name);g=g||faceFor(key,o.name||(typeof who==='string'?who:''));const voice=voiceFor(key,g,o),me={id:++seq,key,who,g,name:o.name||g?.name||'',text:txt,soft:!!o.soft,t0:performance.now(),start:Infinity,dur:0,mouth:null,src:null};cur=me;
+ lastKey=nk;lastT=now;const key=o.voice||voiceKey(who,g,o.name);g=g||faceFor(key,o.name||(typeof who==='string'?who:''));const voice=voiceFor(key,g,o),me={id:++seq,key,who,g,name:o.name||g?.name||'',text:txt,soft:!!o.soft,keep:!!o.keep,t0:performance.now(),start:Infinity,dur:0,mouth:null,src:null};cur=me;
  renderAsync(txt,voice).then(R=>{if(cur!==me)return;if(R.error||!R.data){cur=null;return;}const o2=M.audioEngine?.voiceOut?.();if(!o2){cur=null;return;}const {ctx,bus}=o2;
   const b=ctx.createBuffer(1,R.data.length,window.Sprech.SR);b.getChannelData(0).set(R.data);const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;gn.gain.value=o.vol??(o.soft?.75:1.05);s.connect(gn);gn.connect(bus);
   const at=ctx.currentTime+.02;s.start(at);M.audioEngine?.duck?.(o.soft?.65:.32);s.onended=()=>{s.disconnect();gn.disconnect();if(me.soft)fieldNext=Math.max(fieldNext,performance.now()+10000);if(cur===me){cur=null;M.audioEngine?.duck?.(1);}};me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;me.ctx=ctx;});
@@ -105,10 +106,15 @@ function faceLoop(){requestAnimationFrame(faceLoop);const g=cur&&!cur.soft?cur.g
  try{const c=boxCv.getContext('2d'),P=painterFor(g);if(P)P(c,boxCv.width,boxCv.height,now/1000);else M.faceShot.paint(c,boxCv.width,boxCv.height,{g,team:g.enemy?1:0,mood:'calm',yaw:.22,zoom:1.12,talk:talkMouth(g),_sprech:true},now/1000);}catch{}}
 requestAnimationFrame(faceLoop);
 // Filme warten, bis die laufende Zeile zu Ende gesprochen ist (f.ack/f.skip = Antippen: nicht warten). Sicherheitsgrenze 20 s.
-function speechHold(f){if(!cur||cur.soft||(f&&(f.ack||f.skip)))return false;if(performance.now()-cur.t0>20000)return false;if(cur.start===Infinity)return performance.now()-cur.t0<4000;return cur.ctx.currentTime<cur.start+cur.dur;}
+function speechHold(f){if(!cur||cur.soft||(f&&(f.ack||f.skip)))return false;if(performance.now()-cur.t0>20000)return false;if(cur.start===Infinity)return performance.now()-cur.t0<(cur.keep?9000:5000);return cur.ctx.currentTime<cur.start+cur.dur;}
 // Spielfeld: immer nur eine Sprechblase, danach 5–10 s Ruhe
 // Spielfeld-Regel: immer nur eine Sprechblase; die nächste frühestens 10 s nach dem Ende der Blase UND der gesprochenen Zeile
 let fieldNext=0;const fieldSpeaking=()=>!!cur&&cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur);
 const fieldTalk={ok:()=>performance.now()>=fieldNext&&!fieldSpeaking(),mark:ms=>{fieldNext=performance.now()+(ms||3000)+10000;},speaking:fieldSpeaking};
-Object.assign(M,{speechHold,fieldTalk,speechNow:()=>cur&&{key:cur.key,who:cur.who,soft:cur.soft,text:cur.text},speakLine,speakStop:stop,speakOnChange,talkMouth,speaking,speechVoiceKey:voiceKey});
+// Abenteuer und Kämpfe mit Anführer: Solange jemand (nicht leise) spricht, steht der Kampf still, damit man die Blase lesen kann.
+// Klick aufs Spielfeld überspringt den Satz (Thomas 26.10.).
+function speechFreeze(){const b=M.s?.battle;return !!b&&!b.result&&!!(b.mission||b.lead)&&speechHold();}
+if(typeof document!=='undefined')document.addEventListener('pointerdown',ev=>{const bv=document.getElementById('battleView');if(!bv||bv.hidden||!bv.contains(ev.target)||ev.target.closest?.('button,select,input,a,.modal'))return;
+ const sh=M.injuryShots?.arena;if(sh&&!sh.live){M.injuryShots.skip();ev.stopPropagation();ev.preventDefault();return;}if(speechFreeze()){stop();ev.stopPropagation();ev.preventDefault();}},true);
+Object.assign(M,{speechHold,speechFreeze,fieldTalk,speechNow:()=>cur&&{key:cur.key,who:cur.who,soft:cur.soft,text:cur.text},speakLine,speakStop:stop,speakOnChange,talkMouth,speaking,speechVoiceKey:voiceKey});
 })();

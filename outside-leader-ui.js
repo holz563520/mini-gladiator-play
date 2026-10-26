@@ -92,7 +92,7 @@ function afFrame(now){if(!AF.on)return;const cv=$('afCv'),g=cv.getContext('2d'),
  if(AF.flash&&t>=AF.flash&&t<AF.flash+.12){g.globalAlpha=.8*(1-(t-AF.flash)/.12);g.fillStyle='#fff6dc';g.fillRect(0,0,cv.width,cv.height);g.globalAlpha=1;}requestAnimationFrame(afFrame);}
 function afPaint(o,flash=0){AF.o=o;AF.t0=performance.now();AF.flash=flash;if(!AF.on){AF.on=true;requestAnimationFrame(afFrame);}}
 function afHide(){AF.on=false;$('after').hidden=true;}
-const afWait=ms=>new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());AF.skip=false;const chk=()=>{if(AF.skip||performance.now()-t0>=lim)return res();setTimeout(chk,50);};chk();});
+const afWait=ms=>new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());AF.skip=false;const chk=()=>{if(AF.skip||(performance.now()-t0>=lim&&!M.speechHold?.()))return res();setTimeout(chk,50);};chk();});
 function nearestParty(b,e){return partyActors(b).reduce((m,a)=>!m||Math.hypot(a.x-e.x,a.y-e.y)<Math.hypot(m.x-e.x,m.y-e.y)?a:m,null);}
 function walkTo(b,a,x,y,sp=95){routeTo(b,a,x,y,sp);return walkSome(b,[a],7000);}
 async function aftermath(b){const alive=b.encEnemies.filter(e=>!e.g.dead&&(e.down||e.surrendered)),cl=v=>Math.max(0,Math.min(1,v));let n=0;

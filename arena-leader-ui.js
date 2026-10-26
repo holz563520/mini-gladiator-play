@@ -23,7 +23,7 @@ function bubble(a,text,o={}){if(!a||!text)return;const prio=o.lead||o.boss||o.lo
  if(now<BQ.until){if(prio===0)return;if(prio===2&&BQ.prio<2){bubbleShow(a,text,o,prio);return;}BQ.queue.push([a,text,o,prio]);if(BQ.queue.length>2)BQ.queue.splice(0,BQ.queue.length-2);bubbleNext();return;}
  bubbleShow(a,text,o,prio);}
 function bubbleShow(a,text,o,prio){/* erst ausreden lassen, wer gerade spricht */if(M.speechHold?.()||M.fieldTalk?.speaking?.()){BQ.queue.unshift([a,text,o,prio]);if(BQ.queue.length>3)BQ.queue.length=3;BQ.until=Math.max(BQ.until,performance.now()+200);bubbleNext();return;}const lay=LAYER();if(lay)for(const old of [...lay.children]){if(old.classList.contains('out'))continue;old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
- const ms=Math.max(o.ms||0,readMs(text));BQ.until=performance.now()+ms;M.fieldTalk?.mark(ms);BQ.prio=prio;bubbleNow(a,text,{...o,ms,small:false});M.speakLine?.(text,null,a.g||null,{name:o.name,soft:prio<2});bubbleNext();}
+ const ms=Math.max(o.ms||0,readMs(text));BQ.until=performance.now()+ms;M.fieldTalk?.mark(ms);BQ.prio=prio;bubbleNow(a,text,{...o,ms,small:false});M.speakLine?.(text,null,a.g||null,{name:o.name,soft:prio<1});bubbleNext();}
 function bubbleNext(){clearTimeout(BQ.timer);if(!BQ.queue.length)return;BQ.timer=setTimeout(()=>{const n=BQ.queue.shift();if(n&&!n[0].g?.dead&&!n[0].down)bubbleShow(...n);else bubbleNext();},Math.max(60,BQ.until-performance.now()+180));}
 function bubbleNow(a,text,o={}){const l=layer()?.querySelector('#alBubbles');if(!l||!a)return;if(o.small&&[...l.children].filter(e=>!e.classList.contains('out')).length>=3)return;
  for(const old of l.children)if(old._a===a){old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
