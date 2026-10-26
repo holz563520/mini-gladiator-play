@@ -32,7 +32,10 @@ const clean=t=>String(t||'').replace(/<[^>]*>/g,' ').replace(/\{[^}]*\}/g,'').re
 // Eine Zeile sprechen. who: Kürzel/Name der Figur, g: ihr Gladiator-Objekt (für Mundbewegung in Großaufnahmen)
 // o.soft: Sprechblase auf dem Spielfeld – spricht nur, wenn gerade kein Gespräch läuft, und etwas leiser
 const norm=t=>clean(t).replace(/[„“"»«]/g,'').toLowerCase();let lastKey='',lastT=-1e9;
-function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöüß]/i.test(txt)||!window.Sprech)return null;if(o.soft&&fieldPaused())return null;
+// Ladebildschirm (Schmied): nichts sprechen; wichtige Zeilen (nicht „soft“) werden aufgehoben und nach dem Laden der Reihe nach gesprochen
+const deferred=[];let deferT=0;
+function deferLine(args){deferred.push(args);if(deferred.length>4)deferred.shift();if(deferT)return;deferT=setInterval(()=>{if(M.sceneLoader?.active)return;if(speechHold())return;const a=deferred.shift();if(a)speakLine(...a);if(!deferred.length){clearInterval(deferT);deferT=0;}},250);}
+function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöüß]/i.test(txt)||!window.Sprech)return null;if(M.sceneLoader?.active){if(!o.soft)deferLine([text,who,g,o]);return null;}if(o.soft&&fieldPaused())return null;
  const nk=norm(txt),now=performance.now();if(nk===lastKey&&now-lastT<9000){if(g&&cur&&!cur.g)cur.g=g;return cur;}
  if(!o.keep&&cur&&cur.keep&&(cur.start===Infinity?now-cur.t0<9000:cur.ctx.currentTime<cur.start+cur.dur))return null;
  const out=M.audioEngine?.voiceOut?.();if(!out)return null;if(o.soft&&cur&&!cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur))return null;stop();

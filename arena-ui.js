@@ -77,7 +77,7 @@ function home(){setTitle('DIE ARENA',!!C.close);
  anim(h,(ctx,t)=>{ART.arena(ctx,300,170,t,{cheer:1});ctx.imageSmoothingEnabled=false;const pos=[[150,166,.62],[86,160,.5],[214,160,.5]];
   [1,2,0].forEach(i=>{const f=figs[i];if(!f)return;const [x,y,k]=pos[i],bob=Math.round(Math.sin(t*2.2+i)*1.5);ctx.drawImage(f,Math.round(x-120*k),Math.round(y-300*k+bob),Math.round(240*k),Math.round(300*k));});
   ctx.fillStyle='rgba(20,10,6,.35)';ctx.fillRect(0,0,300,170);});
- const L=C.lions.find(l=>!l.dead)||CH.lion(Math.random,{}),R=C.roosters.find(r=>!r.dead);
+ const L=(C.lions||[]).find(l=>!l.dead)||CH.lion(Math.random,{}),R=(C.roosters||[]).find(r=>!r.dead);
  anim(b,(ctx,t)=>{ART.arena(ctx,300,170,t,{night:1});ART.lion(ctx,L,{t,mood:'proud',x:150,y:163,scale:.92,face:1});if(R)ART.rooster(ctx,R,{t,mood:'proud',w:300,h:170,size:56,x:262,y:164,seed:2,face:-1});ctx.fillStyle='rgba(20,6,6,.3)';ctx.fillRect(0,0,300,170);});}
 
 // ---------- 1b · HUMAN: Art des Kampfes (nur wenn der Gastgeber weitere Kampfarten anbietet, z. B. Boxkämpfe) ----------

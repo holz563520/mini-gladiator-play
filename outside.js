@@ -442,7 +442,7 @@ function missionLoop(t){const b=S.battle;
  if(R.m&&!R.ended){
   if(!b||b.mission!==R.m){// Spielstand gewechselt oder Kampf verschwunden: Mission still beenden, nichts anwenden
    if(!R.ending){abortMission();}}
-  else{if(M.ui.getPage()!=='profiles'){const dt=Math.max(0,b.time-R.lastTime);R.lastTime=b.time;D.tick(b,dt);
+  else{if(M.ui.getPage()!=='profiles'&&!M.sceneLoader?.active){/* während des Ladebildschirms steht alles */const dt=Math.max(0,b.time-R.lastTime);R.lastTime=b.time;D.tick(b,dt);
     if((b.paused&&!b.done)||R.fleeing){const dt=1/60*speed(),grp=groupCenter(b);for(const a of b.actors)if(a.to){if(R.fleeing||a.team!==0)walker(a,dt);else stroll(a,dt,grp);pushOut(a,b);}}
     {const now=performance.now(),dt=Math.min(.1,(now-(R.wT||now))/1000)*speed();R.wT=now;if(WAG)wagonTick(dt);animStep(b,dt);}
     while(b.events.length)onEvent(b,b.events.shift());

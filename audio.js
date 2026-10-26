@@ -35,7 +35,8 @@ function init(){if(ctx)return true;const AC=window.AudioContext||window.webkitAu
  return true;
  }catch{if(ctx)ctx.close().catch(()=>{});ctx=null;return false;}}
 // Angehaltener Kampf ist stumm – außer in Plünderungen: dort steht der Kampf gerade für Gespräche, Gnadenstoß und Jubel still, und die sollen zu hören sein
-function enabled(music){const b=M.s.battle;return ctx&&ctx.state==='running'&&!document.hidden&&!(b?.paused&&!b.mission)&&!!M.s.options[music?'music':'sound'];}
+// Während der Ladebildschirm (Schmied) zu sehen ist, bleiben Geräusche und Stimmen still (Wunsch Thomas 26.10.); Musik läuft weiter
+function enabled(music){const b=M.s.battle;return ctx&&ctx.state==='running'&&!document.hidden&&(music||!M.sceneLoader?.active)&&!(b?.paused&&!b.mission)&&!!M.s.options[music?'music':'sound'];}
 function note(f,d=.2,instrument='triangle',vol=.1,at=ctx?.currentTime||0,music=false,end=null,pan=0){if(!enabled(music)||active>=52||(music&&musicVoices>=28))return;active++;if(music)musicVoices++;
  const o=ctx.createOscillator(),g=ctx.createGain(),filter=ctx.createBiquadFilter(),p=ctx.createStereoPanner();at=Math.max(ctx.currentTime,at);if(waves[instrument])o.setPeriodicWave(waves[instrument]);else o.type=instrument;o.frequency.setValueAtTime(Math.max(20,f),at);if(end)o.frequency.exponentialRampToValueAtTime(Math.max(20,end),at+d);
  filter.type='lowpass';filter.frequency.setValueAtTime(instrument==='horn'?2300:instrument==='strings'?1400:6500,at);p.pan.value=pan;

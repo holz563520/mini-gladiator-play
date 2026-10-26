@@ -29,18 +29,21 @@ const MOODS={
 function tools(q){const r=(x,y,w,h,c)=>{q.fillStyle=c;q.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};return {r};}
 // ---------- Hintergrund: Arenamauer, Ränge, Banner in Mannschaftsfarbe, Fackelschein; verschiebt sich gegen die Kamera ----------
 function backdrop(q,T,o,yaw,t){const sx=Math.round(-yaw*14),team=o.team===1?['#6e201b','#a3352c','#d6b45a']:o.team===0?['#1d4a6e','#2f7fb8','#d6b45a']:['#4a3f22','#7a6a3a','#d6b45a'];
- T.r(0,0,FW,FH,'#1c150e');for(let y=0;y<34;y+=2)for(let x=-20;x<FW+20;x+=3){const n=Math.sin(x*12.9+y*78.2)*43758.5,v=n-Math.floor(n);T.r(x+sx*.5+(y%4?1:0),y,2,2,v>.66?'#5a4632':v>.33?'#3f3122':'#2c2218');}
+ T.r(0,0,FW,FH,'#1c150e');{const wall=(q2,T2)=>{for(let y=0;y<34;y+=2)for(let x=-20;x<FW+20;x+=3){const n=Math.sin(x*12.9+y*78.2)*43758.5,v=n-Math.floor(n);T2.r(x+sx*.5+(y%4?1:0),y,2,2,v>.66?'#5a4632':v>.33?'#3f3122':'#2c2218');}},c=stillArt('wall'+sx,FW,36,wall);if(c&&typeof q.drawImage==='function')q.drawImage(c,0,0);else wall(q,T);}
  T.r(0,34,FW,3,'#8a7550');T.r(0,37,FW,FH,'#3a2c1c');for(let x=-30;x<FW+30;x+=22){T.r(x+sx,40,20,30,'#4a3824');T.r(x+sx,40,20,1,'#6a5236');}
  for(const bx of [18,134]){T.r(bx+sx,0,12,46,team[0]);T.r(bx+2+sx,0,8,44,team[1]);T.r(bx+2+sx,22,8,2,team[2]);T.r(bx+4+sx,30,4,4,team[2]);}
  const gx=128+sx,gl=q.createRadialGradient(gx,18,2,gx,18,70);gl.addColorStop(0,'rgba(245,170,90,'+(.5+.06*Math.sin(t*9)).toFixed(3)+')');gl.addColorStop(1,'rgba(0,0,0,0)');q.fillStyle=gl;q.fillRect(0,0,FW,FH);
  for(let i=0;i<6;i++){const k=(t*.22+i/6)%1;T.r(10+i*27+sx*.3+Math.sin(t+i)*3,FH-4-k*70,1,1,'#e8c890');}}
 // Am Boden: Sand der Arena von oben, mit Wellen, Steinchen und Blut
-function sand(q,T,o,t){T.r(0,0,FW,FH+40,'#b38c54');for(let y=0;y<FH+40;y+=2)for(let x=0;x<FW;x+=2){const n=Math.sin(x*12.9898+y*78.233)*43758.5453,v=n-Math.floor(n);if(v>.8)T.r(x,y,2,1,'#c9a268');else if(v<.12)T.r(x,y,2,1,'#96733f');}
+/* Leistung (26.10.): Sand und Mauerrauschen ändern sich nie (nur mit dem Kameraschwenk) – einmal vorberechnet und als Bild eingesetzt, pixelgleich */
+const still=new Map();function stillArt(key,w,h,draw){let c=still.get(key);if(c===undefined){c=null;try{c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');if(!x||typeof x.fillRect!=='function')c=null;else{x.imageSmoothingEnabled=false;draw(x,tools(x));}}catch{c=null;}if(still.size>80)still.clear();still.set(key,c);}return c;}
+function sandBase(q,T){T.r(0,0,FW,FH+40,'#b38c54');for(let y=0;y<FH+40;y+=2)for(let x=0;x<FW;x+=2){const n=Math.sin(x*12.9898+y*78.233)*43758.5453,v=n-Math.floor(n);if(v>.8)T.r(x,y,2,1,'#c9a268');else if(v<.12)T.r(x,y,2,1,'#96733f');}
  for(let i=0;i<7;i++)for(let x=0;x<FW;x+=3)T.r(x,12+i*17+Math.round(Math.sin(x*.07+i*1.7)*3),3,1,'#a17c47');
- for(const [x,y,r] of [[30,70,9],[120,30,6],[136,84,11],[52,22,4]]){for(let j=-r;j<=r;j++){const hw=Math.sqrt(r*r-j*j)*1.5;T.r(x-hw,y+j*.5,hw*2,1,'#7b2f2a');}}
+ for(const [x,y,r] of [[30,70,9],[120,30,6],[136,84,11],[52,22,4]]){for(let j=-r;j<=r;j++){const hw=Math.sqrt(r*r-j*j)*1.5;T.r(x-hw,y+j*.5,hw*2,1,'#7b2f2a');}}}
+function sand(q,T,o,t){const c=stillArt('sand',FW,FH+40,sandBase);if(c&&typeof q.drawImage==='function')q.drawImage(c,0,0);else sandBase(q,T);
  if(o.pool>0){const r=10+o.pool*24;for(let j=-r;j<=r;j++){const hw=Math.sqrt(r*r-j*j)*1.6;T.r(80-hw,88+j*.45,hw*2,1,j>r*.3?'#5e1f1c':'#8f2f28');}}}
 // ---------- Schultern und Rüstung ----------
-function torso(q,T,C,o,yaw){const H=o.ground?FH+38:FH,sx=Math.round(yaw*3),A=o.armor||{},chest=A.chestplate,sk=C.skin,sh=C.shade,row=(y,hw,c0,c1,c2)=>{for(let x=-Math.ceil(hw);x<Math.ceil(hw);x++){const s=x/hw;T.r(80+sx+x,y,1,1,s>.5?c2:s<-.55?c0:c1);}};
+function torso(q,T,C,o,yaw){const H=o.ground?FH+38:FH,sx=Math.round(yaw*3),A=o.armor||{},chest=A.chestplate,sk=C.skin,sh=C.shade,row=(y,hw,c0,c1,c2)=>{/* gleiche Pixel wie früher, aber gleichfarbige Nachbarn als ein Streifen statt einzeln (Leistung) */const e=Math.ceil(hw);let x0=-e,cp=null;for(let x=-e;x<=e;x++){const c=x<e?(x/hw>.5?c2:x/hw<-.55?c0:c1):null;if(c!==cp){if(cp!==null)T.r(80+sx+x0,y,x-x0,1,cp);x0=x;cp=c;}}};
  for(let y=80;y<H;y++){const hw=30+(y-80)*4.4;row(y,Math.min(80,hw),C.light,sk,sh);}
  // Trapezmuskel und Schlüsselbein
  T.r(80+sx-30,88,22,1,C.light);T.r(80+sx+10,88,22,1,sh);
@@ -238,7 +241,12 @@ const bufs=new WeakMap();
 // o: {g, team, mood, yaw?, sink?, tilt?, dark?, pale?, blood?, zoom?}; t: Sekunden seit Beginn der Einstellung
 // Wer wo gemalt wurde (für Sprechstimmen: stehende Großaufnahmen beim Sprechen neu malen)
 const recs=new Map();
-function paint(g,w,h,o,t){if(g?.canvas&&o?.g&&!o._sprech){recs.set(g.canvas,{ctx:g,w,h,o,t,time:(typeof performance!=='undefined'?performance.now():Date.now()),repaint:talk=>paint(g,w,h,{...o,talk,_sprech:true},t)});if(recs.size>40)recs.delete(recs.keys().next().value);}let B=bufs.get(g.canvas);if(!B){B={a:document.createElement('canvas'),b:document.createElement('canvas'),c:document.createElement('canvas'),d:document.createElement('canvas')};B.a.width=B.b.width=B.c.width=B.d.width=FW;B.a.height=B.b.height=B.c.height=B.d.height=FH+40;bufs.set(g.canvas,B);}
+const paintClock=new WeakMap();
+function paint(g,w,h,o,t){if(g?.canvas&&o?.g&&!o._sprech){recs.set(g.canvas,{ctx:g,w,h,o,t,time:(typeof performance!=='undefined'?performance.now():Date.now()),repaint:talk=>paint(g,w,h,{...o,talk,_sprech:true},t)});if(recs.size>40)recs.delete(recs.keys().next().value);}
+ /* Leistung (26.10.): Großaufnahmen wurden in jedem Bild (60/s) komplett neu gemalt und kosteten im langen Kampf rund ein Drittel der Rechenzeit.
+    Mit o.throttle (ms) wird dieselbe Figur auf derselben Leinwand höchstens so oft neu gemalt; die Leinwand behält das letzte Bild. Nur für Aufrufer,
+    die die Leinwand nicht selbst vorher leeren. Wechselt die Figur oder die Größe, wird sofort gemalt; Mundbewegung beim Sprechen (_sprech) immer. */
+ if(o?.throttle&&g?.canvas&&!o._sprech&&typeof performance!=='undefined'){const now=performance.now(),id=o?.g?.id??o?.g?.name??'',L=paintClock.get(g.canvas);if(L&&L.id===id&&L.w===w&&L.h===h&&now-L.t<o.throttle)return;paintClock.set(g.canvas,{t:now,id,w,h});}let B=bufs.get(g.canvas);if(!B){B={a:document.createElement('canvas'),b:document.createElement('canvas'),c:document.createElement('canvas'),d:document.createElement('canvas')};B.a.width=B.b.width=B.c.width=B.d.width=FW;B.a.height=B.b.height=B.c.height=B.d.height=FH+40;bufs.set(g.canvas,B);}
  const colors=x=>{const A=x?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';return {identity:x?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};},gearOf=x=>{const r={};try{for(const it of M.armorItems(x)||[])r[it.def]=it;}catch{}return r;},C=colors(o.g),armor=gearOf(o.g);
  const opt={talk:o.talk??(M.talkMouth?.(o.g)||0),...o,armor,scar:o.scar??((o.g?.scars||[]).length>0||(o.g?.kills||0)>=5)},mood=o.mood||'calm',m=MOODS[mood]||MOODS.calm;
  // Kamerafahrt um den Kopf: langsamer Schwenk von einer Seite zur anderen

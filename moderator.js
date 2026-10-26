@@ -197,7 +197,7 @@ function card(){const c=intro.cards[intro.i],el=$('modCard');if(!el)return;const
    else if(c.a.hahn||c.a.lion){/* Kampfhahn bzw. Tier groß in der Arena */const ART=window.ArenaArt;g2.imageSmoothingEnabled=false;g2.setTransform(1,0,0,1,0,0);try{ART.arena(g2,f.width,f.height,t,{cheer:1});}catch{g2.fillStyle='#b38c54';g2.fillRect(0,0,f.width,f.height);}g2.fillStyle='rgba(10,6,4,.35)';g2.fillRect(0,0,f.width,f.height);
     try{if(c.a.hahn)ART.rooster(g2,c.a.hahn,{t,mood:(t%3)<1.2?'proud':'focus',w:f.width,h:f.height,size:150,x:f.width/2,y:f.height-6,view:(t%5)<2.2?'front':'side',face:c.team?-1:1});else ART.lion(g2,c.a.lion,{t,mood:'proud',x:f.width/2,y:f.height-6,scale:1.5,face:c.team?-1:1});}catch{}
     const gl=g2.createRadialGradient(f.width/2,f.height/2,40,f.width/2,f.height/2,f.width*.62);gl.addColorStop(0,'rgba(0,0,0,0)');gl.addColorStop(1,'rgba(0,0,0,.6)');g2.fillStyle=gl;g2.fillRect(0,0,f.width,f.height);}
-   else if(M.faceShot)M.faceShot.paint(g2,f.width,f.height,act(c,t),t);
+   else if(M.faceShot)M.faceShot.paint(g2,f.width,f.height,{...act(c,t),throttle:33},t);/* Nahaufnahme mit 30 statt 60 Bildern/s: halbiert die teuerste Malarbeit im Kampf */
    raf=requestAnimationFrame(frame);};raf=requestAnimationFrame(frame);}
  if(c.a){M.battleHud.spot={x:c.a.x,y:c.a.y-22};M.focus?.(c.a.id);}else{M.battleHud.spot=null;M.focus?.(null);}
  M.sound?.(c.type==='hero'||c.type==='beast'?'crowd':c.type==='start'?'gong':c.type==='weapon'?'block':'rise');if(c.type==='hero'||c.type==='start')setTimeout(()=>M.sound?.('crowd'),350);
@@ -285,6 +285,7 @@ function dramaPaint(g2,c,now){const d=drama,t=(now-d.t0)/1000,g=d.victim.g,team=
   else if(m==='Gnadenstoß')o={...base,mood:k<0?'terror':k<.5?'shock':k<.9?'pain':'out',pale:cl01(k/1.5),blood:cl01((k-.3)/1.2),tilt:k>.9?Math.min(.3,(k-.9)*.3):0,sink:k>.9?Math.min(16,(k-.9)*14):0,fx:{stab:t-1.4},dark:cl01((k-1.7)/1.4)*.6};
   else o={...base,mood:k<0?(t>1.05?'out':'terror'):'out',pale:cl01(k),sink:k>0?-k*120+k*k*70:0,tilt:k>0?k*2.4*(team?-1:1):0,fx:{blade:(t-1.42)/.3,bladeY:82,stump:k>0?k:0},dark:cl01((k-1.7)/1.4)*.6};
   o.yaw=(team?-1:1)*(.4-.5*cl01(t/3.6));}
+ /* 30 Bilder/s, außer bei der Hinrichtung (Klinge und Blitz brauchen jedes Bild) */if(d.phase!=='exec')o.throttle=33;
  M.faceShot?.paint(g2,c.width,c.height,o,t+(d.phase==='plead'?0:3));
  if(d.phase==='exec'&&t>=1.6&&t<1.7){g2.globalAlpha=.8*(1-(t-1.6)/.1);g2.fillStyle='#fff6dc';g2.fillRect(0,0,c.width,c.height);g2.globalAlpha=1;}}
 function dramaPhase(phase,text){const d=drama;d.phase=phase;d.t0=performance.now();if(text)d.text=text;dramaRender();}
