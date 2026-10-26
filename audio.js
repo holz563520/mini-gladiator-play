@@ -45,7 +45,9 @@ function note(f,d=.2,instrument='triangle',vol=.1,at=ctx?.currentTime||0,music=f
 }
 function noise(d,vol,freq,type='lowpass',at=ctx?.currentTime||0,music=false,pan=0){if(!enabled(music)||active>=52||(music&&musicVoices>=28))return;active++;if(music)musicVoices++;const src=ctx.createBufferSource(),g=ctx.createGain(),filter=ctx.createBiquadFilter(),p=ctx.createStereoPanner();at=Math.max(ctx.currentTime,at);src.buffer=noiseBuffer;filter.type=type;filter.frequency.value=freq;filter.Q.value=.75;p.pan.value=pan;g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(vol,at+.005);g.gain.exponentialRampToValueAtTime(.0001,at+d);src.connect(filter);filter.connect(g);g.connect(p);p.connect(music?musicBus:fxBus);src.onended=()=>{active--;if(music)musicVoices--;for(const node of [src,filter,g,p])node.disconnect();};src.start(at,Math.random()*.65);src.stop(at+d+.015);}
 function drum(at,strong=true,music=true,vol=1){note(strong?112:165,strong?.26:.16,'sine',.22*vol,at,music,strong?43:68);noise(.06,.08*vol,strong?850:1350,'lowpass',at,music);}
-function tick(){if(!ctx)return;const live=!document.hidden&&!M.s.battle?.paused;
+/* Missionen (Plünderungen) stehen für Gespräche still (paused): Stimmen und Geräusche müssen dann trotzdem hörbar bleiben.
+   Vorher drehte das die Lautstärke für Geräusche UND Stimmen auf null – die Stimme lief, war aber stumm (Thomas 26.10.). */
+function tick(){if(!ctx)return;const b=M.s.battle,live=!document.hidden&&(!b?.paused||!!b.mission);
  musicBus.gain.setTargetAtTime(0,ctx.currentTime,.06);fxBus.gain.setTargetAtTime(live&&M.s.options.sound?.7:0,ctx.currentTime,.025);
  songTick();scene=M.s.battle&&!M.s.battle.finale?'battle':'home';}
 function start(){if(!init())return;ctx.resume().catch(()=>{});ksWarmup();if(!timer)timer=setInterval(tick,40);tick();}
