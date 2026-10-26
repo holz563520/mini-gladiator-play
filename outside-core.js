@@ -399,9 +399,16 @@ D.endEncounter=function(m,b,o={}){D.collect(m,b);const st=m.place.stations[b.enc
  if(w===0&&!st.boss&&!m.party.some(D.fit))m.state='lost';
  // Wer nicht mehr kann, wird getragen (verschwindet vom Feld); Tote bleiben liegen. Die anderen verschnaufen.
  b.actors=b.actors.filter(a=>!(a.team===0&&!a.g.dead&&!D.fit(a.g)));
- for(const a of b.actors)if(a.team===0&&!a.g.dead){a.down=false;a.fallTimer=0;a.kneeTimer=0;a.stun=0;a.target=null;const fresh=M.createCombatActor(a.g,0,0);a.energy=Math.max(a.energy,fresh.energy);}
+ for(const a of b.actors)if(a.team===0&&!a.g.dead){a.down=false;a.fallTimer=0;a.kneeTimer=0;a.stun=0;a.target=null;const fresh=M.createCombatActor(a.g,0,0);a.energy=Math.max(a.energy,fresh.energy);D.calmPose(a);}
  b.started=false;b.queue=[];return out;
 };
+// Nach dem Gefecht steht die Engine (b.paused): Ohne Rücksetzen blieben Schlag-, Dreh-, Block- und Ausweichhaltung vom letzten
+// Kampfaugenblick eingefroren und die Truppe marschierte darin weiter. Nur Haltungs-/Zeitwerte, keine Werte, Munition oder Nachladen.
+// Laufende Todesanimationen (finishPush, neckFinishTimer, finishReaction) laufen über M.presentationStep selbst zu Ende.
+const POSE0={state:'idle',swing:0,wind:0,windMax:0,swingKind:null,pendingStrike:null,contactPoint:null,pierceContact:null,block:false,blockFlash:0,guardTime:0,hit:0,
+ stagger:0,staggerMax:0,jumpTimer:0,dodgeTimer:0,kickTimer:0,postKickPose:0,shieldBashTimer:0,sandKick:0,wipeTimer:0,mercyTimer:0,chargeTimer:0,chargeBoost:0,
+ sprinting:false,retreat:0,roll:0,riseHold:0,rearFinish:null,grabbedBy:null,comboExecuting:false,comboReady:false,comboTarget:null,velocityX:0,velocityY:0,moveSpeed:0,gaitSpeed:0,kx:0,ky:0};
+D.calmPose=function(a){for(const [k,v] of Object.entries(POSE0))if(k in a)a[k]=v;a.state='idle';a.swingMax=.32;};
 // Todesanimationen (Halsschnitt, Tritt nach dem Griff von hinten) laufen in M.presentationStep, das bei b.paused anhält. Missionen
 // pausieren sofort nach dem letzten Treffer: Ohne das hier bliebe der zuletzt Getötete stehen. Darum in Missionen auch pausiert weiterlaufen.
 const pres0=M.presentationStep;if(pres0&&!pres0.__outside){M.presentationStep=function(dt){const b=S.battle;if(b?.mission&&b.paused){b.paused=false;try{return pres0.apply(this,arguments);}finally{b.paused=true;}}return pres0.apply(this,arguments);};M.presentationStep.__outside=true;}
