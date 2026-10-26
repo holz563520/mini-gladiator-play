@@ -118,7 +118,7 @@ body.ingame .testonly{display:none!important}.daydone{background:#2a1a10;border:
 /* Spielstände schützen: diese Seite darf nichts speichern oder laden. */
 try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}
 </script>
-<script src="data.js"></script><script src="household.js"></script><script src="management.js"></script><script src="scout.js"></script><script src="sim.js"></script><script src="school.js"></script><script src="weapon-art.js"></script><script src="arena.js"></script><script src="hahn-engine.js"></script><script src="arena-art.js"></script><script src="face-shots.js"></script><script src="injury-shots.js"></script><script src="medicus-art.js"></script><script src="medic.js"></script><script src="doktor.js"></script><script src="box-engine.js"></script><script src="box-art.js"></script>
+<script src="data.js"></script><script src="household.js"></script><script src="management.js"></script><script src="scout.js"></script><script src="sim.js"></script><script src="school.js"></script><script src="weapon-art.js"></script><script src="arena.js"></script><script src="hahn-engine.js"></script><script src="arena-art.js"></script><script src="face-shots.js"></script><script src="injury-shots.js"></script><script src="medicus-art.js"></script><script src="medic.js"></script><script src="doktor.js"></script><script src="box-engine.js"></script><script src="box-art.js"></script><script src="sprechsound.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -567,7 +567,7 @@ function boardFrame(){BOARD_RAF=0;XB=isXB(A());const cv=$('board');if(!cv)return
  // Ausrufer unten, Schreibmaschine
  const last=landed[landed.length-1];c.fillStyle='#0d0907';c.fillRect(0,BD.H-70,BD.W,70);c.fillStyle='#a3231d';c.fillRect(0,BD.H-70,BD.W,3);
  c.textAlign='left';c.textBaseline='middle';c.font="700 13px 'Courier Prime',monospace";c.fillStyle='#e0b565';c.fillText('DER AUSRUFER',14,BD.H-48);
- if(last){const txt=quip(last.kind,last.i,g.name.split(' ')[0],rr?rr.name.split(' ')[0]:'der Rekrut',d,last.part),n=Math.min(txt.length,Math.floor((t-(last.t+BD.FLY))*45));c.font="700 18px 'Courier Prime',monospace";c.fillStyle='#efe0b3';
+ if(last){const txt=quip(last.kind,last.i,g.name.split(' ')[0],rr?rr.name.split(' ')[0]:'der Rekrut',d,last.part),n=Math.min(txt.length,Math.floor((t-(last.t+BD.FLY))*45));if(!last._sp&&t>=last.t+BD.FLY){last._sp=1;speak(txt,'mod',null);}c.font="700 18px 'Courier Prime',monospace";c.fillStyle='#efe0b3';
   const shown=txt.slice(0,n),words=shown.split(' ');let line='',y=BD.H-26,lines=[];for(const w of words){const nx=line?line+' '+w:w;if(c.measureText(nx).width>BD.W-28){lines.push(line);line=w;}else line=nx;}lines.push(line);
   if(lines.length>1){y=BD.H-34;}lines.slice(0,2).forEach((l,i)=>c.fillText(l,14,y+i*20));}
  else{c.font="700 17px 'Courier Prime',monospace";c.fillStyle='#efe0b3';c.fillText('Die Puppe steht bereit. Sie hat keine Wahl. Wie '+(rr?rr.name.split(' ')[0]:'der Rekrut')+'.',14,BD.H-26);}
@@ -597,6 +597,22 @@ function boardSounds(t){if(!SND||AC?.state!=='running')return;for(const s of BST
   ev('loose',s.t,BSFX.loose);ev('whiz',s.t+.05,()=>BSFX.whiz(s.kind==='miss'||s.kind==='apple'?.5:.3));
   ev('hit',s.t+BD.FLY,s.kind==='apple'?BSFX.crunch:s.kind==='head'?BSFX.bonk:s.kind==='body'?BSFX.thwack:()=>{});
   if(s.kind==='miss'||s.kind==='apple'){const L=landOf(s);ev('land',s.t+BD.FLY+L.tau,L.wall?BSFX.wall:BSFX.sand);}}}
+// =====================================================================================================
+// SPRECHSTIMMEN (sprechsound.js, gerechnet in sprech-worker.js): Der Ausrufer und alle in der Vorstellung lesen ihren Text vor;
+// in der Großaufnahme bewegt sich der Mund (M.talkMouth). Die Vorstellung wartet, bis der Satz zu Ende ist. Folgt dem Tonknopf.
+// =====================================================================================================
+const SP={cur:null,worker:null,seq:0,wait:new Map()};
+function spWorker(){if(SP.worker!==null)return SP.worker;try{SP.worker=new Worker('sprech-worker.js');SP.worker.onmessage=e=>{const f=SP.wait.get(e.data.id);if(f){SP.wait.delete(e.data.id);f(e.data);}};SP.worker.onerror=()=>{SP.worker=false;for(const [,f] of SP.wait)f({error:1});SP.wait.clear();};}catch{SP.worker=false;}return SP.worker;}
+function spVoice(who,g){const S=window.Sprech;if(!S)return null;const key=who==='mod'?'moderator':who==='lan'?'erzaehler':'rekrut';const v={...S.get(key)};delete v.look;
+ if(key==='rekrut'&&g){const n=(g.fights||0)+Math.max(0,((g.stats&&g.stats.experience)||20)-20)/4;v.pitch=Math.round(118*(n<2?1.26:n<6?1.13:n<15?1:n<30?.89:.79));v.size=Math.max(.88,Math.min(1.16,(g.height||180)/180));if(who==='recruit')v.shake=.35;}return v;}
+function spStop(){const c=SP.cur;SP.cur=null;if(c&&c.src)try{c.src.stop();}catch{}}
+function speak(text,who,g){spStop();if(!SND||!AC||AC.state!=='running'||!window.Sprech||!text)return;const v=spVoice(who,g);if(!v)return;
+ const me={g,start:Infinity,dur:0,mouth:null,t0:performance.now()};SP.cur=me;const txt=String(text).replace(/\s+/g,' ').trim().slice(0,300);
+ const done=R=>{if(SP.cur!==me)return;if(!R||R.error||!R.data){SP.cur=null;return;}const b=AC.createBuffer(1,R.data.length,window.Sprech.SR);b.getChannelData(0).set(R.data);const s=AC.createBufferSource(),gn=AC.createGain();s.buffer=b;gn.gain.value=1;s.connect(gn);gn.connect(AC.destination);const at=AC.currentTime+.02;s.start(at);me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;s.onended=()=>{if(SP.cur===me)SP.cur=null;};};
+ const W=spWorker();if(W){const id=++SP.seq;SP.wait.set(id,done);W.postMessage({id,text:txt,voice:v});setTimeout(()=>{if(SP.wait.has(id)){SP.wait.delete(id);if(SP.cur===me)SP.cur=null;}},4000);}else{try{const R=window.Sprech.render(txt,v);done({data:R.data,dur:R.dur,mouth:R.mouth});}catch{SP.cur=null;}}}
+function spBusy(){const c=SP.cur;if(!c)return false;if(performance.now()-c.t0>20000)return false;if(c.start===Infinity)return performance.now()-c.t0<4000;return AC.currentTime<c.start+c.dur;}
+M.talkMouth=g=>{const c=SP.cur;if(!c||!c.mouth||!g||(c.g!==g&&!(c.g&&g.id&&c.g.id===g.id)))return 0;const t=AC.currentTime-c.start;return t<0||t>c.dur?0:window.Sprech.mouthAt(c.mouth,t);};
+M.speaking=()=>spBusy();
 const SFX={
  creak:()=>{tone(90,.7,'sawtooth',.05,140);},
  twang:()=>{tone(260,.55,'triangle',.22,120);tone(780,.3,'sine',.08,300);noise(.12,.12,'highpass',2500);},
@@ -1301,9 +1317,9 @@ function modLine(ser,key,salt,over){const v=Object.assign(modVars(ser,ser.g,ser.
 let MODV=null;
 function wrapText(c,txt,maxW){const out=[];let line='';for(const w of txt.split(' ')){const tryL=line?line+' '+w:w;if(c.measureText(tryL).width>maxW&&line){out.push(line);line=w;}else line=tryL;}if(line)out.push(line);return out;}
 function modView(c,s,t,sh){const u=t-sh.t0,dur=sh.t1-sh.t0,who=sh.who;if(!MODV)MODV=mkc(W,H);
- const g=who==='mod'?modCast():who==='archer'?s.g:who==='recruit'?s.r:yardCast().lan;
+ const g=who==='mod'?modCast():who==='archer'?s.g:who==='recruit'?s.r:yardCast().lan;if(!sh._sp){sh._sp=1;/* es spricht immer der Ausrufer – im Bild oder aus dem Off */speak(sh.text,'mod',who==='mod'?g:null);}
  const typed=Math.max(0,Math.min(sh.text.length,Math.floor((u-.3)*40))),talking=who==='mod'&&typed<sh.text.length;
- const mood=talking&&Math.floor(t*7)%2?'roar':sh.mood,yaw=who==='archer'?.45:who==='recruit'?-.45:who==='lan'?.32:-.18;
+ const mood=talking&&!spBusy()&&Math.floor(t*7)%2?'roar':sh.mood,yaw=who==='archer'?.45:who==='recruit'?-.45:who==='lan'?.32:-.18;
  try{M.faceShot.paint(MODV.getContext('2d'),W,H,{g,team:who==='recruit'?1:0,mood,yaw,zoom:1.04+.07*u/dur,tilt:who==='lan'?-.06:0,hurt:who==='recruit'&&injuryList(s.r).length?1:0,shake:who==='recruit'?(sh.mood==='pain'?.8:.5):0,lines:0},t);}catch(e){}
  c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.drawImage(MODV,0,0);
  for(let i=0;i<110;i++){const x=hr(i*3.1+Math.floor(t*24)*.37)*W,y=hr(i*7.7+Math.floor(t*24)*.91)*H;c.fillStyle=i%2?'rgba(255,240,210,.06)':'rgba(0,0,0,.12)';c.fillRect(Math.round(x),Math.round(y),3,3);}
@@ -1323,7 +1339,7 @@ function modView(c,s,t,sh){const u=t-sh.t0,dur=sh.t1-sh.t0,who=sh.who;if(!MODV)M
  c.textAlign='right';c.font='600 12px "Courier Prime",monospace';c.fillStyle='rgba(243,226,176,.45)';c.fillText('Tippen = weiter',W-20,H-14);
  if(u<.08){c.fillStyle='rgba(255,248,230,'+((1-u/.08)*.35).toFixed(2)+')';c.fillRect(0,0,W,H);}}
 // Zwischenruf des Ausrufers in der Totalen (Untertitelzeile über der Streckenleiste)
-function modOverlay(c,s,t,topPos){for(const m of (s.modLines||[])){if(t<m.t0||t>m.t1)continue;const u=t-m.t0,a=clamp(Math.min(u/.25,(m.t1-t)/.3),0,1);
+function modOverlay(c,s,t,topPos){for(const m of (s.modLines||[])){if(t<m.t0||t>m.t1)continue;if(!m._sp){m._sp=1;speak(m.text,'mod',modCast());}const u=t-m.t0,a=clamp(Math.min(u/.25,(m.t1-t)/.3),0,1);
  c.save();c.globalAlpha=a;c.font='700 22px "Courier Prime",monospace';const lines=wrapText(c,m.text,W-260),h=30+lines.length*28,y0=topPos?62:H-80-h;
  c.fillStyle='rgba(8,5,3,.8)';c.fillRect(110,y0,W-220,h);c.fillStyle='#e6b42a';c.fillRect(110,y0,5,h);
  c.textAlign='left';c.textBaseline='middle';c.font='800 12px "Courier Prime",monospace';c.fillStyle='#e6b42a';c.fillText('DER AUSRUFER',130,y0+14);
@@ -1410,7 +1426,7 @@ function start(force){const g=A(),r=R();if(!g||!r||r.dead||sc)return;if(dayUsed(
  SER=newSeries(ARROWS);SER.hp0=Object.fromEntries(Object.entries(r.body||{}).map(([k,b])=>[k,b.hp]));SER.forces=Array.isArray(force)?force:force?[force]:[];
  sc=sceneFor(SER);finished=false;speed=1;$('bSpeed').textContent='⏩ 1×';$('bNext').hidden=true;$('shoot').hidden=false;document.body.style.overflow='hidden';
  audio($('bSnd').dataset.on==='1');last=performance.now();raf=requestAnimationFrame(loop);}
-function loop(now){if(!sc)return;const dt=Math.min(.05,(now-last)/1000);last=now;sc.t+=dt*speed;
+function loop(now){if(!sc)return;const dt=Math.min(.05,(now-last)/1000);last=now;{/* Vorstellung: erst weiter, wenn der Satz gesprochen ist */let adv=dt*speed;const shN=shotAt(sc,sc.t);if(shN&&shN.type==='mod'&&spBusy()&&sc.t+adv>=shN.t1-.05)adv=0;sc.t+=adv;}
  if(sc.t>=sc.end&&!sc.last&&!finished){commitArrow(sc);sc=sceneFor(SER);}
  frame(cx,sc,sc.t);
  if(sc.last&&sc.t>=sc.sReact+(sc.cutDur||0)+1.6&&!finished){$('bNext').hidden=false;}
@@ -1441,7 +1457,7 @@ function wpnLabel(){if(dayUsed()){const go=$('go');if(go)go.disabled=true;}const
 $('wpn').onclick=()=>{const g=A();if(!g)return;const xb=!isXB(g),it=M.makeItem('weapon',xb?'crossbow':'bow',(g.enemyGear.weapon&&g.enemyGear.weapon.q)||1);g.enemyGear.weapon=it;if(xb){g.mastery.crossbow=Math.max(g.mastery.crossbow||0,g.mastery.bow||0);g.caps.weapons.crossbow=Math.max(g.caps.weapons.crossbow||0,g.caps.weapons.bow||0);}render();wpnLabel();};
 $('go').onclick=()=>{$('res').hidden=true;start();};
 $('bSpeed').onclick=()=>{speed=speed===1?2:1;$('bSpeed').textContent='⏩ '+speed+'×';};
-$('bSnd').dataset.on='0';const sndSet=on=>{$('bSnd').dataset.on=on?'1':'0';$('bSnd').textContent=on?'🔊':'🔇';$('boardSnd').textContent=on?'🔊 Ton aus':'🔇 Ton an';audio(on);};$('bSnd').onclick=e=>sndSet(e.currentTarget.dataset.on!=='1');$('boardSnd').onclick=()=>sndSet($('bSnd').dataset.on!=='1');/* Ton ist von Anfang an an (Wunsch Thomas); falls der Browser ihn bis zur ersten Berührung anhält, beim ersten Tippen fortsetzen */sndSet(true);document.addEventListener('pointerdown',()=>{if(SND&&AC&&AC.state==='suspended')AC.resume().catch(()=>{});},true);
+$('bSnd').dataset.on='0';const sndSet=on=>{$('bSnd').dataset.on=on?'1':'0';$('bSnd').textContent=on?'🔊':'🔇';$('boardSnd').textContent=on?'🔊 Ton aus':'🔇 Ton an';audio(on);if(!on)spStop();};$('bSnd').onclick=e=>sndSet(e.currentTarget.dataset.on!=='1');$('boardSnd').onclick=()=>sndSet($('bSnd').dataset.on!=='1');/* Ton ist von Anfang an an (Wunsch Thomas); falls der Browser ihn bis zur ersten Berührung anhält, beim ersten Tippen fortsetzen */sndSet(true);document.addEventListener('pointerdown',()=>{if(SND&&AC&&AC.state==='suspended')AC.resume().catch(()=>{});},true);
 function skip(){if(!sc)return;const sh=shotAt(sc,sc.t);if(sh.type==='mod'){sc.t=sh.t1+.001;return;}if(sc.t<sc.sReact-.05){sc.t=sc.sReact-.01;return;}if(!sc.last)sc.t=sc.end;}
 $('bSkip').onclick=skip;cv.addEventListener('click',()=>{if(sc&&shotAt(sc,sc.t).type==='mod')skip();});
 $('bNext').onclick=()=>finish();

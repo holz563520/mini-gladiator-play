@@ -122,7 +122,7 @@ function text2ph(text){
 // bits Bittiefe, echo Echo-Anteil, vol Lautstärke
 const PRESETS={
  moderator:{name:'Arena-Moderator',pitch:128,speed:1.35,inton:.7,sing:0.06,size:1,rough:.12,breath:.1,shake:0,rate:14332,bits:12,echo:.28,vol:1,accent:.55,pause:1.35,final:.25,look:{skin:'#c99266',hair:'#2d2118',beard:false,band:'#9b2b25'}},
- rabies:{name:'Rabies, der Hundsgraf',pitch:112,speed:1.65,inton:.6,sing:0.11,size:1.04,rough:.4,breath:.3,shake:0,rate:13000,bits:11,echo:.15,vol:.9,look:{skin:'#b98a6a',hair:'#d9d2c0',beard:true,beardCol:'#cfc6b2',skull:true}},
+ rabies:{name:'Rabies, der Hundsgraf',pitch:112,speed:1.65,inton:.6,sing:0.11,size:1.04,rough:.4,breath:.3,shake:0,rate:13000,bits:11,echo:0,vol:.9,look:{skin:'#b98a6a',hair:'#d9d2c0',beard:true,beardCol:'#cfc6b2',skull:true}},
  schmied:{name:'Der Schmied',pitch:92,speed:1.55,inton:.35,sing:0.05,size:1.14,rough:.3,breath:.15,shake:0,rate:12350,bits:11,echo:.12,vol:.95,look:{skin:'#a8714c',hair:'#1c1410',beard:true,beardCol:'#1c1410'}},
  orontes:{name:'Orontes Pfeilkopf',pitch:150,speed:1.6,inton:.5,sing:0.09,size:.97,rough:.25,breath:.35,shake:.45,rate:13650,bits:11,echo:.15,vol:.85,look:{skin:'#c08a5c',hair:'#e6e1d5',beard:true,beardCol:'#e6e1d5'}},
  krassus:{name:'Krassus Knochenzins',pitch:80,speed:1.4,inton:.3,sing:0.04,size:1.2,rough:.35,breath:.12,shake:0,rate:11700,bits:11,echo:.32,vol:1,look:{skin:'#c79a78',hair:'#111',beard:false,gold:true}},
