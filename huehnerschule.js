@@ -99,7 +99,7 @@ function cageBox(i){const VW=MCAM.vw,VH=VW*420/660,x0=MCAM.x-VW/2,y0=MCAM.y-VH/2
 function renderOffers(){if(!market)return;const o=offer(),box=market.v.querySelector('.hs-offers');
  box.innerHTML=o.list.map((R,i)=>{const vis=CF.Market.visible(R),sold=o.sold[i],p=priceOf(i);return `<button class="hs-offer${sold?' sold':''}" data-hs="buy:${i}" ${sold?'disabled':''}><b>Käfig ${i+1} · ${esc(R.name)}</b><small>${esc(vis.plumage)} · ${vis.height} cm · ${f1(vis.weight)} kg · ${vis.ageMonths} Monate</small><span>${sold?'VERKAUFT':p+' Gold'}</span></button>`;}).join('');
  const g=$('hsGold');if(g)g.textContent=S.gold;}
-function talk(text){if(!market)return;market.talk=text;market.talkT=0;M.speakLine?.(text,'haendler');const el=$('hsSay');if(el){el.textContent=text;el.classList.remove('in');void el.offsetWidth;el.classList.add('in');}}
+function talk(text){if(!market)return;market.talk=text;market.talkT=0;M.speakLine?.(text,null,null,{voice:'frau',name:'Hühnerhändlerin'});const el=$('hsSay');if(el){el.textContent=text;el.classList.remove('in');void el.offsetWidth;el.classList.add('in');}}
 function closeMarket(){market?.v?.remove();market=null;}
 function paintMarket(dt){const m=market;if(!m)return;m.t+=dt;m.talkT+=dt;const c=m.v.querySelector('canvas');if(!c)return;const g=c.getContext('2d'),o=offer();g.imageSmoothingEnabled=false;
  const VW=MCAM.vw,VH=VW*420/660,k=660/VW;g.setTransform(1,0,0,1,0,0);g.save();g.scale(k,k);g.translate(-(MCAM.x-VW/2),-(MCAM.y-VH/2));g.drawImage(A.facade(),0,0);
