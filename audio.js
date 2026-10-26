@@ -50,7 +50,7 @@ function tick(){if(!ctx)return;const live=!document.hidden&&!M.s.battle?.paused;
 function start(){if(!init())return;ctx.resume().catch(()=>{});ksWarmup();if(!timer)timer=setInterval(tick,40);tick();}
 // ---- Neue Kampfgeräusche (kampfsound.js, im Editor kampfsound-editor.html einstellbar): alte Namen → neue Vorlagen.
 // Änderungen aus dem Editor (localStorage „mg-kampfsound-v1“) gelten auch hier. Namen ohne Eintrag klingen wie bisher.
-const KMAP={jubel:['jubel1'],boo:['boo1'],step:['step',.45],slash:['hitBlade'],heavy:['hitBlunt'],hit:['hitBlade'],backstab:['backstab'],sever:['sever'],stick:['hitStab'],lodge:['arrowShield'],block:['blockShield'],armorhit:['armorHit'],parry:['parry'],fall:['fall'],rise:['rise',.8],sand:['sand'],land:['land'],rush:['rush'],crowd:['crowd',.75],roar:['roar'],gong:['gong'],win:['win'],mercy:['mercy'],verdictDeath:['verdictDeath'],die:['die'],gold:['coin'],coin:['coin'],coins:['coin'],throw:['throw'],net:['net'],bow:['bow'],crossbow:['crossbow'],reload:['reload',.8],arrowBody:['arrowBody'],arrowSand:['arrowSand'],swing:['swing',.6],swingHeavy:['swingHeavy',.7]};
+const KMAP={boneCrack:['boneCrack'],skullCrack:['skullCrack'],jubel:['jubel1'],boo:['boo1'],step:['step',.45],slash:['hitBlade'],heavy:['hitBlunt'],hit:['hitBlade'],backstab:['backstab'],sever:['sever'],stick:['hitStab'],lodge:['arrowShield'],block:['blockShield'],armorhit:['armorHit'],parry:['parry'],fall:['fall'],rise:['rise',.8],sand:['sand'],land:['land'],rush:['rush'],crowd:['crowd',.75],roar:['roar'],gong:['gong'],win:['win'],mercy:['mercy'],verdictDeath:['verdictDeath'],die:['die'],gold:['coin'],coin:['coin'],coins:['coin'],throw:['throw'],net:['net'],bow:['bow'],crossbow:['crossbow'],reload:['reload',.8],arrowBody:['arrowBody'],arrowSand:['arrowSand'],swing:['swing',.6],swingHeavy:['swingHeavy',.7]};
 // Publikum bei der Vorstellung: 'applause' = dezentes Klatschen in Schleife (Veteranen), 'laugh' = Gelächter (Trottel), null = Ruhe.
 let moodLoop=null,moodTimer=0;
 // 'boo' = kurz buhen (schwacher Kämpfer), 'booLong' = buhen bis zur Entscheidung, 'clap' = Klatschen für ein paar Sekunden
@@ -105,6 +105,13 @@ function sound(type){if(!enabled(false))return;const t=ctx.currentTime,wait=type
  if(type==='gold'){note(1175,.12,'sine',.07,t);note(1568,.19,'sine',.05,t+.07);}
 }
 document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden){for(const key in songs)songStop(songs[key]);musicBus.gain.cancelScheduledValues(ctx.currentTime);fxBus.gain.cancelScheduledValues(ctx.currentTime);musicBus.gain.value=fxBus.gain.value=0;ctx.suspend().catch(()=>{});}else{ctx.resume().catch(()=>{});}});
+// Knochenbrüche hörbar machen (Wunsch Thomas 26.10.): nach jedem Kampfschritt neu gebrochene Knochen des sichtbaren Kampfs erkennen
+// (Bruch, Zertrümmerung, Schädelbruch) und ein Knacken spielen. Nur Anzeige: liest die Körperteile, ändert nichts am Kampf.
+// Brüche, die schon vor dem Kampf bestanden, knacken nicht.
+{const seen=new WeakSet();let lastB=null;const scan=(b,quiet)=>{let crack=0,skull=0;for(const a of b.actors||[]){const body=a.g?.body;if(!body)continue;for(const k in body){const p=body[k];if(!p)continue;
+  const f=p.fracture;if(f&&typeof f==='object'&&!seen.has(f)){seen.add(f);if(!quiet){if(p.skullFracture||f.skull)skull++;else crack++;}}}}
+ if(skull)sound('skullCrack');else if(crack)sound('boneCrack');};
+ const step0=M.fixedStep;if(typeof step0==='function'){M.fixedStep=function(){const r=step0.apply(this,arguments);try{const b=M.s.battle;if(b&&(b.actors?.length||0)<=80){if(b!==lastB){lastB=b;scan(b,true);}else scan(b,false);}}catch(e){}return r;};}}
 M.audioEngine={start,sound,voice,
  // Sprechstimmen (sprech-game.js): Ausgang für Sprache, nur wenn Geräusche an sind
  voiceOut:()=>enabled(false)?{ctx,bus:fxBus}:null,
