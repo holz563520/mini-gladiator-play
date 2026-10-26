@@ -39,11 +39,9 @@ function deferLine(args){deferred.push(args);if(deferred.length>4)deferred.shift
 // Kommt eine Zeile, während jemand spricht, wartet sie in der Reihe (pend) und wird danach ganz gesprochen – egal ob
 // Sprechblase, Fernrohr, Erzähler, Flehen oder Antwort. speechHold() meldet „spricht“, solange noch etwas wartet.
 const pend=[];let qProg=0;
-// Sprech-Protokoll zur Fehlersuche (?sprechtest in der Adresse): zeigt oben links, was mit jeder Zeile passiert ist
-const DIAG=typeof location!=='undefined'&&/sprechtest/.test(location.search),dl=[];
-function dlog(k,t){if(!DIAG)return;dl.push((performance.now()/1000).toFixed(1)+' '+k+' '+String(t||'').slice(0,40));if(dl.length>14)dl.shift();}
-if(DIAG)setInterval(()=>{let el=document.getElementById('sprechDiag');if(!el){el=document.createElement('pre');el.id='sprechDiag';el.style.cssText='position:fixed;left:4px;top:4px;z-index:10000;max-width:96vw;margin:0;padding:6px;background:#000c;color:#9f9;font:10px/1.25 monospace;white-space:pre-wrap;pointer-events:none';document.body.appendChild(el);}
- const A=M.audioEngine,c=A?.voiceOut?.()?.ctx||cur?.ctx;el.textContent='TON '+(c?c.state+' '+c.sampleRate+'Hz':'kein ctx')+' · Geräusche '+(M.s?.options?.sound?'an':'AUS')+' · voiceOut '+(A?.voiceOut?.()?'ok':'NULL')+' · Lader '+(M.sceneLoader?.active?'AKTIV':'aus')+' · Mission '+(missionOn()?'ja':'nein')+' · Worker '+(workerOk?'ok':'FEHLER')+' · wartet '+pend.length+'\n'+dl.join('\n');},500);
+// Sprech-Protokoll (nur intern, für die Konsole: MG.speechLog()). Die frühere Anzeige über ?sprechtest verdeckte Menü/Zurück und ist entfernt.
+const dl=[];
+function dlog(k,t){dl.push((performance.now()/1000).toFixed(1)+' '+k+' '+String(t||'').slice(0,40));if(dl.length>30)dl.shift();}
 const missionOn=()=>!!M.s?.battle?.mission;
 const playing=()=>!!cur&&(cur.start===Infinity?performance.now()-cur.t0<9000:cur.ctx.currentTime<cur.start+cur.dur);
 function pump(){setTimeout(()=>{if(!pend.length||(cur&&playing()))return;if(!missionOn()||!M.audioEngine?.voiceOut?.()){pend.length=0;return;}const n=pend.shift();if(!speakLine(n.text,n.who,n.g,{...n.o,_q:true}))pump();},90);}
@@ -138,5 +136,5 @@ const fieldTalk={ok:()=>performance.now()>=fieldNext&&!fieldSpeaking(),mark:ms=>
 function speechFreeze(){const b=M.s?.battle;return !!b&&!b.result&&!!(b.mission||b.lead)&&speechHold();}
 if(typeof document!=='undefined')document.addEventListener('pointerdown',ev=>{const bv=document.getElementById('battleView');if(!bv||bv.hidden||!bv.contains(ev.target)||ev.target.closest?.('button,select,input,a,.modal'))return;
  const sh=M.injuryShots?.arena;if(sh&&!sh.live){M.injuryShots.skip();ev.stopPropagation();ev.preventDefault();return;}if(speechFreeze()){stop();ev.stopPropagation();ev.preventDefault();}},true);
-Object.assign(M,{speechHold,speechFreeze,fieldTalk,speechNow:()=>cur&&{key:cur.key,who:cur.who,soft:cur.soft,text:cur.text},speakLine,speakStop:stop,speakStopAll:stopAll,speechQueued:()=>pend.length,speakOnChange,talkMouth,speaking,speechVoiceKey:voiceKey});
+Object.assign(M,{speechHold,speechFreeze,fieldTalk,speechNow:()=>cur&&{key:cur.key,who:cur.who,soft:cur.soft,text:cur.text},speakLine,speechLog:()=>dl.slice(),speakStop:stop,speakStopAll:stopAll,speechQueued:()=>pend.length,speakOnChange,talkMouth,speaking,speechVoiceKey:voiceKey});
 })();
