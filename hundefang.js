@@ -194,7 +194,7 @@ const show=(id,on)=>$(id).classList.toggle('hf-hide',!on);
 const FC=$('hfCv'),fc=FC.getContext('2d');fc.imageSmoothingEnabled=false;
 const F={on:false,t:0,last:0,draw:null,skip:null,tap:null,shake:0,flash:0,flashCol:'#fff',raf:0};
 function caption(html){$('hfCap').innerHTML=html||'';}
-function bubble(x,y,who,text,dur=3){const b=document.createElement('div');b.className='hf-bubble';b.style.left=(x/1280*100)+'%';b.style.top=(y/720*100)+'%';b.innerHTML=(who?`<small>${esc(who)}</small>`:'')+esc(text);$('hfBubbles').appendChild(b);setTimeout(()=>b.remove(),dur*1000);}
+function bubble(x,y,who,text,dur=3){M.speakLine?.(text,/rabies/i.test(who||'')?'rabies':who,/rabies/i.test(who||'')?rabies():null,{name:who});const b=document.createElement('div');b.className='hf-bubble';b.style.left=(x/1280*100)+'%';b.style.top=(y/720*100)+'%';b.innerHTML=(who?`<small>${esc(who)}</small>`:'')+esc(text);$('hfBubbles').appendChild(b);setTimeout(()=>b.remove(),dur*1000);}
 function openFilm(draw){film.classList.remove('hf-hide','bookmode');F.on=true;F.t=0;F.last=performance.now();F.draw=draw;F.tap=null;F.shake=0;F.flash=0;$('hfBubbles').innerHTML='';caption('');for(const id of ['hfBook','hfTalk','hfSay','hfDecide'])show(id,false);cancelAnimationFrame(F.raf);F.raf=requestAnimationFrame(filmLoop);}
 function closeFilm(){F.on=false;cancelAnimationFrame(F.raf);film.classList.add('hf-hide');film.classList.remove('bookmode');$('hfBubbles').innerHTML='';bookTimers.forEach(clearTimeout);}
 function filmLoop(now){if(!F.on)return;const dt=Math.min(.05,(now-F.last)/1000);F.last=now;F.t+=dt;F.shake=Math.max(0,F.shake-dt);F.flash=Math.max(0,F.flash-dt*1.6);
@@ -271,7 +271,7 @@ function introFilm(first){gateBG??=paintGate();const K=2.7,dk=K*.6,recruit=gen(0
  F.skip=()=>{if(!$('hfTalk').classList.contains('hf-hide'))done();else talkStart();};
  function talkStart(){if(!$('hfTalk').classList.contains('hf-hide'))return;F.draw=(c,t)=>{c.drawImage(gateBG,0,0,1280,720);drawTorch(c,170,260,t);drawTorch(c,470,260,t);drawCart(c,905,630,t,-905/38,[dA,dB]);drawRabies(c,585,628,2.7,1,t);leash(c,585,628,2.7,1,t,false);c.fillStyle='#05030288';c.fillRect(0,0,1280,720);};
   caption('');const lines=['Lanista! Die Stadt hat ein Hundeproblem. Ich hab eine Lösung. Die Lösung hat Zähne.',TX.BRETT[1],'Und wenn nicht … ich kenne einen Metzger, der keine Fragen stellt.','Mein Karren steht ab jetzt vor deinem Beastrium. Unten im Keller ist Platz für Zwinger. Ich hab nachgesehen. Und ein bisschen umgebaut.'];let i=0;
-  const say=()=>{$('hfTalkText').innerHTML=`<small>${esc(TX.NAME.toUpperCase())} · ${esc(TX.TITEL.toUpperCase())}</small>${esc(lines[i])}`;rabiesFace($('hfTalkFace'),i===1?'confident':'grin');};
+  const say=()=>{$('hfTalkText').innerHTML=`<small>${esc(TX.NAME.toUpperCase())} · ${esc(TX.TITEL.toUpperCase())}</small>${esc(lines[i])}`;M.speakLine?.(lines[i],'rabies',rabies());const mood=i===1?'confident':'grin';const loop=()=>{if($('hfTalk').classList.contains('hf-hide'))return;rabiesFace($('hfTalkFace'),mood);if(M.speaking?.())requestAnimationFrame(loop);else rabiesFace($('hfTalkFace'),mood);};loop();};
   show('hfTalk',true);say();$('hfTalk').onclick=()=>{i++;if(i>=lines.length){done();return;}say();};}
  openFilm(draw);}
 

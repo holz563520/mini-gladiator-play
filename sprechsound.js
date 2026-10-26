@@ -118,18 +118,18 @@ function text2ph(text){
 // size Körpergröße (größer = tiefere Formanten), rough Rauheit, breath Hauch, shake Zittern (alt), rate Abtastung (Hz),
 // bits Bittiefe, echo Echo-Anteil, vol Lautstärke
 const PRESETS={
- moderator:{name:'Arena-Moderator',pitch:128,speed:1.75,inton:.45,sing:.12,size:1,rough:.12,breath:.1,shake:0,rate:11025,bits:9,echo:.28,vol:.9,look:{skin:'#c99266',hair:'#2d2118',beard:false,band:'#9b2b25'}},
- rabies:{name:'Rabies, der Hundsgraf',pitch:112,speed:1.65,inton:.6,sing:.22,size:1.04,rough:.4,breath:.3,shake:0,rate:10000,bits:8,echo:.15,vol:.9,look:{skin:'#b98a6a',hair:'#d9d2c0',beard:true,beardCol:'#cfc6b2',skull:true}},
- schmied:{name:'Der Schmied',pitch:92,speed:1.55,inton:.35,sing:.1,size:1.14,rough:.3,breath:.15,shake:0,rate:9500,bits:8,echo:.12,vol:.95,look:{skin:'#a8714c',hair:'#1c1410',beard:true,beardCol:'#1c1410'}},
- orontes:{name:'Orontes Pfeilkopf',pitch:150,speed:1.6,inton:.5,sing:.18,size:.97,rough:.25,breath:.35,shake:.45,rate:10500,bits:8,echo:.15,vol:.85,look:{skin:'#c08a5c',hair:'#e6e1d5',beard:true,beardCol:'#e6e1d5'}},
- krassus:{name:'Krassus Knochenzins',pitch:80,speed:1.4,inton:.3,sing:.08,size:1.2,rough:.35,breath:.12,shake:0,rate:9000,bits:8,echo:.32,vol:1,look:{skin:'#c79a78',hair:'#111',beard:false,gold:true}},
- medicus:{name:'Der Medicus',pitch:122,speed:1.85,inton:.4,sing:.1,size:.96,rough:.08,breath:.18,shake:0,rate:11025,bits:9,echo:.1,vol:.85,look:{skin:'#e0b48e',hair:'#6b6b6b',beard:false}},
- rekrut:{name:'Rekrut',pitch:152,speed:1.9,inton:.5,sing:.15,size:.93,rough:.1,breath:.12,shake:0,rate:11025,bits:9,echo:.12,vol:.85,look:{skin:'#d6a27a',hair:'#5a3a22',beard:false}},
- frau:{name:'Frau',pitch:215,speed:1.85,inton:.55,sing:.15,size:.84,rough:.05,breath:.2,shake:0,rate:11025,bits:9,echo:.15,vol:.85,look:{skin:'#e3b591',hair:'#7a3a1c',beard:false,long:true}},
- erzaehler:{name:'Erzähler (Intro)',pitch:104,speed:1.55,inton:.4,sing:.06,size:1.08,rough:.15,breath:.12,shake:0,rate:10000,bits:9,echo:.38,vol:.9,look:{skin:'#b7835c',hair:'#3b2a1d',beard:true,beardCol:'#3b2a1d'}}
+ moderator:{name:'Arena-Moderator',pitch:128,speed:1.75,inton:.45,sing:0.06,size:1,rough:.12,breath:.1,shake:0,rate:14332,bits:12,echo:.28,vol:.9,look:{skin:'#c99266',hair:'#2d2118',beard:false,band:'#9b2b25'}},
+ rabies:{name:'Rabies, der Hundsgraf',pitch:112,speed:1.65,inton:.6,sing:0.11,size:1.04,rough:.4,breath:.3,shake:0,rate:13000,bits:11,echo:.15,vol:.9,look:{skin:'#b98a6a',hair:'#d9d2c0',beard:true,beardCol:'#cfc6b2',skull:true}},
+ schmied:{name:'Der Schmied',pitch:92,speed:1.55,inton:.35,sing:0.05,size:1.14,rough:.3,breath:.15,shake:0,rate:12350,bits:11,echo:.12,vol:.95,look:{skin:'#a8714c',hair:'#1c1410',beard:true,beardCol:'#1c1410'}},
+ orontes:{name:'Orontes Pfeilkopf',pitch:150,speed:1.6,inton:.5,sing:0.09,size:.97,rough:.25,breath:.35,shake:.45,rate:13650,bits:11,echo:.15,vol:.85,look:{skin:'#c08a5c',hair:'#e6e1d5',beard:true,beardCol:'#e6e1d5'}},
+ krassus:{name:'Krassus Knochenzins',pitch:80,speed:1.4,inton:.3,sing:0.04,size:1.2,rough:.35,breath:.12,shake:0,rate:11700,bits:11,echo:.32,vol:1,look:{skin:'#c79a78',hair:'#111',beard:false,gold:true}},
+ medicus:{name:'Der Medicus',pitch:122,speed:1.85,inton:.4,sing:0.05,size:.96,rough:.08,breath:.18,shake:0,rate:14332,bits:12,echo:.1,vol:.85,look:{skin:'#e0b48e',hair:'#6b6b6b',beard:false}},
+ rekrut:{name:'Rekrut',pitch:152,speed:1.9,inton:.5,sing:0.075,size:.93,rough:.1,breath:.12,shake:0,rate:14332,bits:12,echo:.12,vol:.85,look:{skin:'#d6a27a',hair:'#5a3a22',beard:false}},
+ frau:{name:'Frau',pitch:215,speed:1.85,inton:.55,sing:0.075,size:.84,rough:.05,breath:.2,shake:0,rate:14332,bits:12,echo:.15,vol:.85,look:{skin:'#e3b591',hair:'#7a3a1c',beard:false,long:true}},
+ erzaehler:{name:'Erzähler (Intro)',pitch:104,speed:1.55,inton:.4,sing:0.03,size:1.08,rough:.15,breath:.12,shake:0,rate:13000,bits:12,echo:.38,vol:.9,look:{skin:'#b7835c',hair:'#3b2a1d',beard:true,beardCol:'#3b2a1d'}}
 };
 const ORDER=Object.keys(PRESETS);
-let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch{saved={};}
+let saved={};try{saved=JSON.parse((typeof localStorage!=='undefined'?localStorage.getItem(KEY):null)||'{}')||{};}catch{saved={};}
 const copy=o=>JSON.parse(JSON.stringify(o));
 function get(k){const base=PRESETS[k]||PRESETS.moderator;return saved[k]?{...base,...saved[k],look:base.look}:base;}
 function set(k,v){const {look,...rest}=v;saved[k]=copy(rest);try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}}
@@ -179,25 +179,34 @@ function render(text,voice,opt={}){
  const coef=(F,BW)=>{const C=-Math.exp(-TAU*BW/SR),B=2*Math.exp(-Math.PI*BW/SR)*Math.cos(TAU*Math.min(F,SR*.45)/SR),A=1-B-C;return [A,B,C];};
  let cf=[[1,0,0],[1,0,0],[1,0,0],[1,0,0]],nb=[1,0,0,0,0];
  const total=Math.floor(dur*SR);
+ // Weiche Übergänge (Koartikulation): Formanten, Tonhöhe und Lautstärken folgen ihren Zielen geglättet statt sprunghaft
+ const al=tau=>1-Math.exp(-1/(tau*SR)),aF=al(.016),aP=al(.04),aA=al(.007),aN=al(.0025),aD=al(.15),tiltK=clamp(.62-(V.breath||0)*.3,.2,.8);
+ let sF=null,sf0=0,sav=0,san=0,sasp=0,drift=0,driftT=0,tilt=0;
  for(let i=0;i<total;i++){const t=i/SR;while(k<K.length-2&&K[k+1].t<=t)k++;const a=K[k],b=K[k+1]||a,u=b.t>a.t?clamp((t-a.t)/(b.t-a.t),0,1):0,L=(x,y)=>x+(y-x)*u;
-  if((i&31)===0){const F=[0,1,2].map(j=>L(a.F[j],b.F[j])*fs),bw=[90,110,160];const nas=L(a.nasal||0,b.nasal||0);
-   cf=[coef(F[0],bw[0]+nas*120),coef(F[1],bw[1]),coef(F[2],bw[2]),coef(3500*fs,250)];
-   const nf=L(a.nf||b.nf||3000,b.nf||a.nf||3000),nq=L(a.nq||1,b.nq||1),w=TAU*clamp(nf,200,SR*.45)/SR,al=Math.sin(w)/(2*nq),a0=1+al;nb=[al/a0,0,-al/a0,-2*Math.cos(w)/a0,(1-al)/a0];
-   if((i&1023)===0)mouth.push({t,o:L(a.o,b.o)*(L(a.av,b.av)>.05||L(a.an,b.an)>.05||L(a.asp,b.asp)>.05?1:.4)});}
-  // Stimmlippen: Rosenberg-Puls, Zittern, Rauheit
-  let f0=L(a.f0,b.f0)*(1+(V.shake||0)*.06*Math.sin(TAU*6.5*t))*jit;ph0+=f0/SR;
-  if(ph0>=1){ph0-=1;odd=!odd;jit=1+(V.rough||0)*.04*(r()*2-1);shim=1-(V.rough||0)*.5*(odd?r():0);}
+  const tF0=L(a.F[0],b.F[0])*fs,tF1=L(a.F[1],b.F[1])*fs,tF2=L(a.F[2],b.F[2])*fs;if(!sF)sF=[tF0,tF1,tF2];sF[0]+=(tF0-sF[0])*aF;sF[1]+=(tF1-sF[1])*aF;sF[2]+=(tF2-sF[2])*aF;
+  sav+=(L(a.av,b.av)-sav)*aA;san+=(L(a.an,b.an)-san)*aN;sasp+=(L(a.asp,b.asp)-sasp)*aA;
+  if((i&31)===0){const nas=L(a.nasal||0,b.nasal||0);
+   cf=[coef(sF[0],95+nas*120),coef(sF[1],115),coef(sF[2],170),coef(3500*fs,260)];
+   const nf=L(a.nf||b.nf||3000,b.nf||a.nf||3000),nq=L(a.nq||1,b.nq||1),w=TAU*clamp(nf,200,SR*.45)/SR,alp=Math.sin(w)/(2*nq),a0=1+alp;nb=[alp/a0,0,-alp/a0,-2*Math.cos(w)/a0,(1-alp)/a0];
+   if((i&1023)===0)mouth.push({t,o:L(a.o,b.o)*(sav>.05||san>.05||sasp>.05?1:.4)});}
+  // Tonhöhe: geglättete Satzmelodie, langsames natürliches Schwanken, Zittern (alt), kleine Unruhe je Schwingung
+  if((i&1023)===0)driftT=(r()*2-1)*.03;drift+=(driftT-drift)*aD;
+  const tf0=L(a.f0,b.f0);if(!sf0)sf0=tf0;sf0+=(tf0-sf0)*aP;
+  let f0=sf0*(1+drift)*(1+(V.shake||0)*.06*Math.sin(TAU*6.5*t))*jit;ph0+=f0/SR;
+  if(ph0>=1){ph0-=1;odd=!odd;jit=1+(.006+(V.rough||0)*.025)*(r()*2-1);shim=1-(V.rough||0)*.4*(odd?r():0);}
   const p=ph0,flow=p<.42?.5*(1-Math.cos(Math.PI*p/.42)):p<.6?Math.cos(Math.PI*(p-.42)/.36):0;let src=(flow-flowPrev)*SR/Math.max(60,f0)*.12*shim;flowPrev=flow;
-  const noise=r()*2-1,av=L(a.av,b.av),asp=L(a.asp,b.asp)+av*(V.breath||0)*.25;
-  let x=src*av+noise*asp*.35;
+  tilt+=(src-tilt)*tiltK;src=tilt*1.6;
+  const noise=r()*2-1,asp=sasp+sav*(V.breath||0)*.3*(p<.5?1:.4);
+  let x=src*sav+noise*asp*.35;
   for(let j=0;j<4;j++){const c=cf[j],y=c[0]*x+c[1]*R[j].y1+c[2]*R[j].y2;R[j].y2=R[j].y1;R[j].y1=y;x=y;}
   // Rauschen für Zisch- und Knacklaute
-  const an=L(a.an,b.an),ny=nb[0]*noise+nb[2]*nz.x2-nb[3]*nz.y1-nb[4]*nz.y2;nz.x2=nz.x1;nz.x1=noise;nz.y2=nz.y1;nz.y1=ny;
+  const an=san,ny=nb[0]*noise+nb[2]*nz.x2-nb[3]*nz.y1-nb[4]*nz.y2;nz.x2=nz.x1;nz.x1=noise;nz.y2=nz.y1;nz.y1=ny;
   out[i]=x*.9+ny*an*.55;}
  // 16-Bit: grobe Abtastung, wenige Bits, Tiefpass, Echo
  const hold=Math.max(1,SR/clamp(V.rate||11025,4000,SR)),q=Math.pow(2,clamp(V.bits||9,3,16)-1);let acc=0,held=0;
  let peak=0;for(let i=0;i<n;i++)peak=Math.max(peak,Math.abs(out[i]));const g=peak>0?.8/peak:1;
- for(let i=0;i<n;i++){acc+=1;if(acc>=hold||i===0){acc-=hold;held=Math.round(out[i]*g*q)/q;}lp+=(held-lp)*.55;out[i]=lp;}
+ const aa=1-Math.exp(-TAU*clamp(V.rate||11025,4000,SR)*.42/SR);let z1=0,z2=0;
+ for(let i=0;i<n;i++){z1+=(out[i]*g-z1)*aa;z2+=(z1-z2)*aa;acc+=1;if(acc>=hold||i===0){acc-=hold;held=Math.round(z2*q)/q;}lp+=(held-lp)*.6;out[i]=lp;}
  if(V.echo>0){const D=Math.floor(.085*SR),fb=.35;for(let i=D;i<n;i++)out[i]+=out[i-D]*V.echo*fb*2;}
  const vol=V.vol??1;for(let i=0;i<n;i++)out[i]=Math.tanh(out[i]*vol*1.1)*.85;
  mouth.push({t:dur,o:0});
@@ -205,5 +214,5 @@ function render(text,voice,opt={}){
 // Mundöffnung zum Zeitpunkt t (Sekunden) aus der Liste von render()
 function mouthAt(list,t){if(!list?.length)return 0;let lo=0,hi=list.length-1;if(t<=list[0].t)return list[0].o;if(t>=list[hi].t)return list[hi].o;while(hi-lo>1){const m=(lo+hi)>>1;if(list[m].t<=t)lo=m;else hi=m;}const a=list[lo],b=list[hi],u=(t-a.t)/Math.max(1e-6,b.t-a.t);return a.o+(b.o-a.o)*u;}
 function play(ctx,dest,text,voice,opt={}){const R=render(text,voice,opt),b=ctx.createBuffer(1,R.data.length,SR);b.getChannelData(0).set(R.data);const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;g.gain.value=opt.vol??1;s.connect(g);g.connect(dest);const at=Math.max(ctx.currentTime,opt.at||0)+.02;s.start(at);s.onended=()=>{s.disconnect();g.disconnect();};return {source:s,start:at,dur:R.dur,mouth:R.mouth,phon:R.phon,mouthAt:tt=>mouthAt(R.mouth,tt-at)};}
-window.Sprech={SR,KEY,PH,PRESETS,ORDER,get,set,reset,saved:()=>copy(saved),load(o){saved=copy(o||{});try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}},changed:k=>!!saved[k],text2ph,word2ph,render,play,mouthAt};
+(typeof window!=='undefined'?window:self).Sprech={SR,KEY,PH,PRESETS,ORDER,get,set,reset,saved:()=>copy(saved),load(o){saved=copy(o||{});try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}},changed:k=>!!saved[k],text2ph,word2ph,render,play,mouthAt};
 })();

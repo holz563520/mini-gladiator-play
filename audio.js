@@ -78,6 +78,8 @@ function sound(type){if(!enabled(false))return;const t=ctx.currentTime,wait=type
 }
 document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden){for(const key in songs)songStop(songs[key]);musicBus.gain.cancelScheduledValues(ctx.currentTime);fxBus.gain.cancelScheduledValues(ctx.currentTime);musicBus.gain.value=fxBus.gain.value=0;ctx.suspend().catch(()=>{});}else{ctx.resume().catch(()=>{});}});
 M.audioEngine={start,sound,voice,
+ // Sprechstimmen (sprech-game.js): Ausgang für Sprache, nur wenn Geräusche an sind
+ voiceOut:()=>enabled(false)?{ctx,bus:fxBus}:null,
  // Schmiede-Party: Uhr und Sprungmarken des Schmiede-Liedes (nur lesen bzw. umstellen, die Wiedergabe steuert weiter songTick).
  smithClock:()=>{const t=songs.smith;return{idx:t.idx,time:t.el?t.el.currentTime||0:0,playing:!!(t.playing&&t.el&&!t.el.paused)};},
  smithSeek:u=>{const t=songs.smith,first=132.4,idx=u<first?0:1;t.idx=idx;if(!t.el||!t.ext)return;const want='music/'+t.files[idx]+'.'+t.ext;if(!t.el.src.endsWith(want))t.el.src=want;try{t.el.currentTime=idx?u-first:u;}catch{}if(t.playing){const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}},

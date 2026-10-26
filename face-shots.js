@@ -132,7 +132,10 @@ function head(q,T,C,o,yaw,t,mood){
  const my=51,mouth=m.mouth;
  if(beard===2||beard===3)poly([[-8,47],[-3,46],[0,48],[3,46],[8,47],[11,50],[4,50],[0,49],[-5,50],[-11,51]],P.hair);
  function lips(){poly([[-9,my],[-4,my-1],[0,my],[4,my-1],[9,my],[6,my+2],[-6,my+2]],P.deep);R(-6,my+1,12,1,mix(P.red,'#5b3230',.43));R(-4,my+2,9,1,P.red);R(-2,my+2,5,1,mix(P.red,P.light,.27));}
- if(mouth==='line'||mouth==='firm'||mouth==='slack'){lips();if(o.g?.teeth?.gold?.length&&mouth!=='firm'){R(-2,my+1,2,1,'#e0b02a');R(-2,my+1,1,1,'#fff2a0');}if(mouth==='firm'){R(-9,my,18,1,P.deep);R(-10,my+1,2,1,P.shadow);}if(mouth==='slack')R(-4,my+1,8,2,P.deep);}
+ // Sprechen (o.talk 0–1, aus der Sprechstimme): Mund öffnet sich je nach Laut, Oberzähne, dunkle Mundhöhle, Zunge
+ const tk=cl(+o.talk||0);
+ if(tk>.06){const wide=Math.round(6+tk*3),top=my-1,bot=top+Math.max(2,Math.round(1+tk*8));poly([[-wide+2,top],[wide-2,top],[wide,top+1],[wide-2,bot],[-wide+2,bot],[-wide,top+1]],'#32191a');if(bot-top>3){R(-wide+3,top,wide*2-6,1,'#ddd0ac');R(-wide+4,bot-1,wide*2-8,1,'#854943');}R(-wide+2,bot+1,wide*2-4,1,P.red);R(-wide+1,top-1,wide*2-2,1,P.deep);}
+ else if(mouth==='line'||mouth==='firm'||mouth==='slack'){lips();if(o.g?.teeth?.gold?.length&&mouth!=='firm'){R(-2,my+1,2,1,'#e0b02a');R(-2,my+1,1,1,'#fff2a0');}if(mouth==='firm'){R(-9,my,18,1,P.deep);R(-10,my+1,2,1,P.shadow);}if(mouth==='slack')R(-4,my+1,8,2,P.deep);}
  else if(mouth==='smirk'){for(let x=-9;x<=9;x++){const y=my-Math.max(0,Math.round(x*.25));R(x,y,1,1,P.deep);if(x>-7&&x<7)R(x,y+1,1,1,P.red);}R(10,my-2,1,3,P.shadow);}
  else if(mouth==='wobble'){for(let x=-8;x<=8;x++){const y=my+Math.round(Math.sin(x*.5+t*7)*.65);R(x,y,1,1,P.deep);R(x,y+1,1,1,P.red);}}
  else{const roar=mouth==='roar',grin=mouth==='grin',teeth=mouth==='teeth',wide=roar?12:grin?12:teeth?10:6,top=roar?47:50,bot=roar?62:grin?57:teeth?56:60;
@@ -235,7 +238,7 @@ const bufs=new WeakMap();
 // o: {g, team, mood, yaw?, sink?, tilt?, dark?, pale?, blood?, zoom?}; t: Sekunden seit Beginn der Einstellung
 function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createElement('canvas'),b:document.createElement('canvas'),c:document.createElement('canvas'),d:document.createElement('canvas')};B.a.width=B.b.width=B.c.width=B.d.width=FW;B.a.height=B.b.height=B.c.height=B.d.height=FH+40;bufs.set(g.canvas,B);}
  const colors=x=>{const A=x?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';return {identity:x?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};},gearOf=x=>{const r={};try{for(const it of M.armorItems(x)||[])r[it.def]=it;}catch{}return r;},C=colors(o.g),armor=gearOf(o.g);
- const opt={...o,armor,scar:o.scar??((o.g?.scars||[]).length>0||(o.g?.kills||0)>=5)},mood=o.mood||'calm',m=MOODS[mood]||MOODS.calm;
+ const opt={talk:o.talk??(M.talkMouth?.(o.g)||0),...o,armor,scar:o.scar??((o.g?.scars||[]).length>0||(o.g?.kills||0)>=5)},mood=o.mood||'calm',m=MOODS[mood]||MOODS.calm;
  // Kamerafahrt um den Kopf: langsamer Schwenk von einer Seite zur anderen
  const yaw=o.yaw??Math.sin(t*.55+(o.team===1?Math.PI:0))*.75;
  const bq=B.a.getContext('2d');bq.imageSmoothingEnabled=false;bq.setTransform(1,0,0,1,0,0);bq.clearRect(0,0,FW,FH+40);const BT=tools(bq);

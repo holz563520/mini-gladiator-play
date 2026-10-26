@@ -105,7 +105,7 @@ function playFilm(kind,beats,done){if(film)return;const v=document.createElement
  film={v,kind,beats,i:-1,t:0,bt:0,typed:0,last:0,raf:0,done,w:{smithX:250,smithTX:250,cartX:1250,cartTX:1250,oroX:1420,oroTX:1420,smithA:0,oroA:Math.PI,gold:0,coins:[]},plate:false};
  const cv=v.querySelector('canvas'),g=cv.getContext('2d');
  const end=(skipped)=>{if(!film)return;cancelAnimationFrame(film.raf);for(let k=film.i+1;k<beats.length;k++)beats[k].enter?.(film.w,true);v.remove();const d=film.done;film=null;d?.(skipped);};
- const next=()=>{const f=film;f.i++;f.bt=0;f.typed=0;const b=beats[f.i];if(!b){end(false);return;}b.enter?.(f.w,false);f.beat=b;v.querySelector('.bwi-bubble b').textContent=b.who==='smith'?smithName():b.who==='oro'?NAME:b.who||'';v.querySelector('.bwi-bubble p').textContent='';v.querySelector('[data-bwi="next"]').textContent=f.i===beats.length-1?(kind==='arena'?'VERSTANDEN ▸':'LOS GEHT’S ▸'):'WEITER ▸';};
+ const next=()=>{const f=film;f.i++;f.bt=0;f.typed=0;const b=beats[f.i];if(!b){end(false);return;}b.enter?.(f.w,false);f.beat=b;M.speakLine?.(b.say,b.who,b.who==='smith'?smithG():b.who==='oro'?oroG():null,{name:b.who==='smith'?smithName():b.who==='oro'?NAME:b.who});v.querySelector('.bwi-bubble b').textContent=b.who==='smith'?smithName():b.who==='oro'?NAME:b.who||'';v.querySelector('.bwi-bubble p').textContent='';v.querySelector('[data-bwi="next"]').textContent=f.i===beats.length-1?(kind==='arena'?'VERSTANDEN ▸':'LOS GEHT’S ▸'):'WEITER ▸';};
  const tap=()=>{const f=film;if(!f)return;const txt=f.beat?.say||'';if(f.typed<txt.length){f.typed=txt.length;v.querySelector('.bwi-bubble p').textContent=txt;}else next();};
  v.addEventListener('click',e=>{const b=e.target.closest('[data-bwi]');if(!b){if(e.target.closest('canvas,.bwi-bubble')&&film)tap();return;}e.stopPropagation();if(b.dataset.bwi==='skip')end(true);else tap();},true);
  const frame=now=>{if(!film)return;const dt=Math.min(.05,film.last?(now-film.last)/1000:0);film.last=now;film.t+=dt;film.bt+=dt;const b=film.beat;
@@ -121,7 +121,7 @@ function render(g,f,dt){const b=f.beat||{},w=f.w,t=f.t,bt=f.bt,talking=f.typed<(
  const step=(k,tk,sp)=>{const d=w[tk]-w[k];if(Math.abs(d)<1){w[k]=w[tk];return 0;}const m=Math.sign(d)*Math.min(Math.abs(d),sp*dt);w[k]+=m;return Math.sign(d);};
  const sm=step('smithX','smithTX',150),cm=step('cartX','cartTX',170),om=step('oroX','oroTX',170);cart.spin=(cart.spin||0)+cm*dt*3.2;
  const shot=b.shot||'wide';
- if(shot==='face'){oroFace(g,FW,FH,t,{mood:talking&&Math.floor(t*7)%2?'roar':(b.mood||'grin'),yaw:b.yaw??-.28,zoom:1.04+.05*ease(bt/4)});grain(g,t);vignette(g);if(b.plate)plate(g,bt,NAME,'Bogenhändler aus Syrien · Pfeil im Kopf seit vierzehn Jahren','#e6b42a');}
+ if(shot==='face'){oroFace(g,FW,FH,t,{mood:talking&&!M.speaking?.()&&Math.floor(t*7)%2?'roar':(b.mood||'grin'),yaw:b.yaw??-.28,zoom:1.04+.05*ease(bt/4)});grain(g,t);vignette(g);if(b.plate)plate(g,bt,NAME,'Bogenhändler aus Syrien · Pfeil im Kopf seit vierzehn Jahren','#e6b42a');}
  else if(shot==='item'){itemShot(g,b,t,bt,talking);}
  else if(shot==='arena'||shot==='rules'){arenaShot(g,b,t,bt,talking);}
  else{// Totale im Trainingshof
@@ -148,7 +148,7 @@ function itemShot(g,b,t,bt,talking){const d=b.def,wd=M.weaponDefs.find(x=>x.id==
  const bg=g.createLinearGradient(0,0,0,FH);bg.addColorStop(0,'#3a0f14');bg.addColorStop(1,'#1a0608');g.fillStyle=bg;g.fillRect(0,0,FW,FH);for(let y=0;y<FH;y+=6)for(let x=(y/6)%2*6;x<FW;x+=12){g.fillStyle='rgba(0,0,0,.08)';g.fillRect(x,y,6,6);}
  const sw=Math.sin(t*1.3)*.04,k=ease(bt/.5);try{M.weaponArt.draw(g,item(d,2),{x:330,y:FH/2+10,angle:(d==='bow'?-Math.PI/2:-Math.PI/2)+sw,scale:lerp(5,d==='bow'?8.5:7,k),blood:0,drips:false});}catch(e){}
  // kleines Gesicht von Orontes oben rechts
- const pc=document.createElement('canvas');pc.width=240;pc.height=150;oroFace(pc.getContext('2d'),240,150,t,{mood:talking&&Math.floor(t*7)%2?'roar':'grin',zoom:1.0});g.fillStyle='#2a1a10';g.fillRect(FW-268,22,248,158);g.drawImage(pc,FW-264,26);
+ const pc=document.createElement('canvas');pc.width=240;pc.height=150;oroFace(pc.getContext('2d'),240,150,t,{mood:talking&&!M.speaking?.()&&Math.floor(t*7)%2?'roar':'grin',zoom:1.0});g.fillStyle='#2a1a10';g.fillRect(FW-268,22,248,158);g.drawImage(pc,FW-264,26);
  // Werte
  const rows=[['SCHADEN',wd.damage],['SCHUSSFOLGE','alle '+String(wd.delay).replace('.',',')+' s'],['MUNITION',wd.ammo+(d==='bow'?' Pfeile':' Bolzen')],['DURCHSCHLAG',Math.round(wd.pen*100)+' %'],['REICHWEITE',wd.range],['ZUGSTÄRKE',(d==='bow'?'30–100':'100–400')+' Pfd.']];
  const x0=FW-430,y0=212;g.fillStyle='rgba(10,6,4,.82)';g.fillRect(x0,y0,410,48+rows.length*40);g.strokeStyle='#e6b42a';g.lineWidth=2;g.strokeRect(x0,y0,410,48+rows.length*40);

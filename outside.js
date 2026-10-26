@@ -86,7 +86,7 @@ function filmLoop(t){if(!F.running){F.raf=0;return;}const dt=Math.min(.05,(t-(la
  if(talk.g&&talk.live&&(F.t-talk.last>.09)){talk.last=F.t;paintFace($('owFace'),talk.g,talk.mood,{t:60+F.t*12});}
  F.raf=requestAnimationFrame(filmLoop);}
 const talk={g:null,mood:'calm',live:false,last:0,resolve:null,full:'',shown:0,timer:0};
-function say(who,text,mood='calm',o={}){return new Promise(res=>{const box=$('owTalk');if(!box)return res();box.hidden=false;F.speaker=o.actor||({L:'lan',K:'kra',G1:'g1',G2:'g2',SM:'smith',O:'oro'})[who]||null;
+function say(who,text,mood='calm',o={}){return new Promise(res=>{const box=$('owTalk');if(!box)return res();box.hidden=false;F.speaker=o.actor||({L:'lan',K:'kra',G1:'g1',G2:'g2',SM:'smith',O:'oro'})[who]||null;M.speakLine?.(text,({K:'kra',SM:'smith',O:'oro'})[who]||who,F.actors[F.speaker]?.g||null);
  talk.g=WHO[who]?.()||null;talk.mood=mood;talk.live=!!talk.g;$('owFace').hidden=!talk.g;$('owName').textContent=o.name??NAME(who);
  const el=$('owText');$('owBox').className='scene-bubble'+(o.roar?' loud':'')+(who==='N'?' narr':'');talk.full=text;talk.shown=0;el.textContent='';
  if(o.roar)F.shake=Math.max(F.shake,7);if(talk.g)paintFace($('owFace'),talk.g,mood,{t:60});

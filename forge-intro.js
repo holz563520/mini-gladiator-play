@@ -105,7 +105,7 @@ function paint(){const c=$('smithIntroCanvas');if(!c?.getContext)return;backdrop
  const flask=(x,y)=>{r(x-1,y-4,3,7,'#4f7a52');r(x,y-6,1,3,'#3b5c40');r(x-1,y-4,1,5,'#8fb58c');};
  if(scene.bottle){const p=(t-scene.bottle.t0)/.5;flask(lerp(a.x-6,694,p),lerp(a.y-46,266,p)-Math.sin(Math.min(1,p)*Math.PI)*10);}
  g.restore();
- if(between(t,22.6,26.2))bubble(g,scene.bark,a.x,a.y-54);
+ if(between(t,22.6,26.2)){M.speakOnChange?.('forgeBark',scene.bark,'smith');bubble(g,scene.bark,a.x,a.y-54);}
  for(const [from,to,word,wx,wy] of [[SOIL,SOIL+.8,'PFRRRT!',b.x+12,b.y-30],[25.4,26.2,'*schnüff*',dogAt(t).x,dogAt(t).y-22],[26.7,27.4,'WÜRG!',dogAt(t).x-8,dogAt(t).y-22]])if(between(t,from,to)){g.font="bold 24px 'Courier Prime',monospace";g.textAlign='center';g.textBaseline='middle';const sx=Math.min(610,Math.max(50,(wx-625)*660/240)),sy=Math.max(24,(wy-145)*420/153);g.fillStyle='#17201c';g.fillText(word,sx+2,sy+2);g.fillStyle=word==='WÜRG!'?'#c8d27a':'#e8cf9a';g.fillText(word,sx,sy);}
  const shout=between(t,BAM,BAM+.9)?'BÄM!':between(t,21.5,22.2)?'KLIRR':'';if(shout){g.font='bold '+(shout==='BÄM!'?54:30)+"px 'Courier Prime',monospace";g.textAlign='center';g.textBaseline='middle';const x=shout==='BÄM!'?338:190,y=shout==='BÄM!'?120:300;g.fillStyle='#17201c';g.fillText(shout,x+3,y+3);g.fillStyle=shout==='BÄM!'?'#f4d37a':'#c5e2c0';g.fillText(shout,x,y);}}
 // Erzählphasen vor dem Auftritt und nach der Szene laufen langsamer, damit die Texte länger stehen; die Handlung dazwischen behält ihr Tempo.
