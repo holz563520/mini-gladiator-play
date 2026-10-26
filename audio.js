@@ -106,6 +106,8 @@ function sound(type){if(!enabled(false))return;const t=ctx.currentTime,wait=type
  if(type==='gold'){note(1175,.12,'sine',.07,t);note(1568,.19,'sine',.05,t+.07);}
 }
 document.addEventListener('visibilitychange',()=>{if(!ctx)return;if(document.hidden){for(const key in songs)songStop(songs[key]);musicBus.gain.cancelScheduledValues(ctx.currentTime);fxBus.gain.cancelScheduledValues(ctx.currentTime);musicBus.gain.value=fxBus.gain.value=0;ctx.suspend().catch(()=>{});}else{ctx.resume().catch(()=>{});}});
+// Handy: Nach dem Zurückholen lässt sich der Ton oft erst mit der nächsten Berührung wieder starten (iOS „interrupted“, Android ohne Geste)
+for(const ev of ['pointerdown','touchend','keydown'])document.addEventListener(ev,()=>{if(ctx&&ctx.state!=='running'&&!document.hidden)ctx.resume().catch(()=>{});},{capture:true,passive:true});
 // Knochenbrüche hörbar machen (Wunsch Thomas 26.10.): nach jedem Kampfschritt neu gebrochene Knochen des sichtbaren Kampfs erkennen
 // (Bruch, Zertrümmerung, Schädelbruch) und ein Knacken spielen. Nur Anzeige: liest die Körperteile, ändert nichts am Kampf.
 // Brüche, die schon vor dem Kampf bestanden, knacken nicht.

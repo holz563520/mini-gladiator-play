@@ -109,7 +109,7 @@ function faceLoop(){requestAnimationFrame(faceLoop);const g=cur&&!cur.soft?cur.g
  try{const c=boxCv.getContext('2d'),P=painterFor(g);if(P)P(c,boxCv.width,boxCv.height,now/1000);else M.faceShot.paint(c,boxCv.width,boxCv.height,{g,team:g.enemy?1:0,mood:'calm',yaw:.22,zoom:1.12,talk:talkMouth(g),_sprech:true},now/1000);}catch{}}
 requestAnimationFrame(faceLoop);
 // Filme warten, bis die laufende Zeile zu Ende gesprochen ist (f.ack/f.skip = Antippen: nicht warten). Sicherheitsgrenze 20 s.
-function speechHold(f){if(!cur||cur.soft||(f&&(f.ack||f.skip)))return false;if(performance.now()-cur.t0>20000)return false;if(cur.start===Infinity)return performance.now()-cur.t0<(cur.keep?9000:5000);return cur.ctx.currentTime<cur.start+cur.dur;}
+function speechHold(f){if(!cur||cur.soft||(f&&(f.ack||f.skip)))return false;/* Ton angehalten (Handy minimiert, Anruf): die Tonuhr steht, nicht darauf warten */if(cur.ctx&&cur.ctx.state!=='running'){if(cur.start!==Infinity||document.hidden){cur=null;return false;}}if(performance.now()-cur.t0>20000)return false;if(cur.start===Infinity)return performance.now()-cur.t0<(cur.keep?9000:5000);return cur.ctx.currentTime<cur.start+cur.dur;}
 // Spielfeld: immer nur eine Sprechblase, danach 5–10 s Ruhe
 // Spielfeld-Regel: immer nur eine Sprechblase; die nächste frühestens 10 s nach dem Ende der Blase UND der gesprochenen Zeile
 let fieldNext=0;const fieldSpeaking=()=>!!cur&&cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur);
