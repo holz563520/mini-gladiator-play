@@ -3,8 +3,9 @@
 const M=window.MG;
 // One audio clock, two buses and a fixed voice budget, independent of simulation RNG/speed.
 let ctx,musicBus,fxBus,master,timer,scene='',noiseBuffer,waves={},active=0,musicVoices=0,lastVoice=-10;
+// Spielfeld (Ludus/Menüs): „Ludus at Sunset“ und „Arena Theory 1“ laufen abwechselnd nacheinander (Liste wie bei der Schmiede).
 // Aufgenommene Lieder: gestreamt (kein Dekodieren in den Arbeitsspeicher), erst beim ersten Bedarf geladen. Ludus/Menüs und Kampfszenen (Arenakampf, Intro) haben je ein Lied. Die frühere erzeugte Musik ist entfernt; Geräusche laufen weiter über die Web-Audio-Stimmen unten.
-const songs={home:{file:'ludus-at-sunset',el:null,broken:false,level:0,playing:false},battle:{file:'sanguis-et-gloria',el:null,broken:false,level:0,playing:false},smith:{file:'smith-the-motherfucker',files:['smith-the-motherfucker','smyth'],idx:0,ext:'',el:null,broken:false,level:0,playing:false},hall:{file:'aula-lorum',el:null,broken:false,level:0,playing:false},raid:{file:'arena-theory',el:null,broken:false,level:0,playing:false},medic:{file:'medicus-bill',el:null,broken:false,level:0,playing:false},
+const songs={home:{file:'ludus-at-sunset',files:['ludus-at-sunset','arena-theory-1'],idx:0,ext:'',el:null,broken:false,level:0,playing:false},battle:{file:'sanguis-et-gloria',el:null,broken:false,level:0,playing:false},smith:{file:'smith-the-motherfucker',files:['smith-the-motherfucker','smyth'],idx:0,ext:'',el:null,broken:false,level:0,playing:false},hall:{file:'aula-lorum',el:null,broken:false,level:0,playing:false},raid:{file:'arena-theory',el:null,broken:false,level:0,playing:false},medic:{file:'medicus-bill',el:null,broken:false,level:0,playing:false},
  // Hundsgraf (hundefang.js): Vorstellung, Aufträge, Fernglas, Hundebuch, Zwinger – nur als MP3 vorhanden
  beast:{file:'beastrium',only:'mp3',el:null,broken:false,level:0,playing:false},
  // Rabies' eigenes Lied „Invisible Hound“: sein Vorstellungsfilm, Fernglas und Hundebuch, sein Karren (Aufträge) – wie beim Schmied
