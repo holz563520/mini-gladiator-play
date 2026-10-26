@@ -75,6 +75,8 @@ function rabiesCloak(c,x,y,K,dir,t,front){const u=K*.6,hh=rabies().height/180,Y=
 function rabiesFlies(c,x,y,K,t){const u=K*.6;c.fillStyle='#120c08';for(let i=0;i<5;i++){const a=t*(3+i*.7)+i*2,r=(12+i*3)*u;c.fillRect(Math.round(x+Math.cos(a)*r),Math.round(y-100*u+Math.sin(a*1.3)*r*.5),Math.max(1,u*.9),Math.max(1,u*.9));}}
 function drawRabies(c,x,y,K,dir,t,extra={}){rabiesCloak(c,x,y,K,dir,t,false);fig(c,rabies(),x,y,K,dir,extra);rabiesCloak(c,x,y,K,dir,t,true);rabiesFlies(c,x,y,K,t);}
 function rabiesFace(cv,mood='grin'){face(cv,rabies(),mood,{zoom:1.05});}
+// Große, lebendige Großaufnahme (wie beim Medicus): Kamera schwenkt, Mund bewegt sich, wenn er spricht
+function rabiesLive(id,mood='grin'){const c=$(id);if(!c||c._live)return;c._live=true;let t=0;const tick=()=>{if(!c.isConnected)return;t+=1/30;try{M.faceShot.paint(c.getContext('2d'),c.width,c.height,{g:rabies(),team:0,mood:(t%7)<1.4?'confident':mood,yaw:Math.sin(t*.55)*.32,zoom:1.12},t+2);}catch(e){}setTimeout(()=>requestAnimationFrame(tick),33);};tick();}
 
 // =====================================================================================================
 // AUFTRÄGE · Stufen nach Rassen-Soll, täglich neu; die Hunde sind aus Rasse und Samen reproduzierbar
@@ -430,7 +432,7 @@ function cartPanel(){const s=st(),alive=s.dogs.filter(D=>!D.dead).length,left=us
  <div class="buttons"><button class="btn primary" data-action="nav:hundefang">🐕 Aufträge${left?' ('+left+')':' · morgen wieder'}</button><button class="btn" data-action="nav:zwinger">▼ Treppe hinab · Zwinger (${alive} ${alive===1?'Hund':'Hunde'})</button><button class="btn" data-action="hf:intro">Vorstellung ansehen</button></div></div></section>`;}
 function boardPage(){const s=st(),j=s.jobs[selJob]||s.jobs[0],gs=fighters(),used=usedToday();if(!selG||!gs.some(g=>g.id===selG&&fit(g)))selG=gs.filter(fit).sort((a,b)=>(M.power(b)||0)-(M.power(a)||0))[0]?.id||null;
  const quote=used?'Für heute hab ich genug Köter gesehen. Morgen frisst schon der Nächste jemanden.':TX.STUFE[(j?.skulls||1)-1];
- return `<section class="box hf-board"><div class="hf-head"><canvas id="hfBoardFace" width="160" height="104"></canvas><div><p class="eyebrow">DER KARREN DES HUNDSGRAFEN · TAG ${S.day}</p><h1>Aufträge</h1><q>${esc(quote)}</q></div></div>
+ return `<section class="box hf-board"><div class="hf-head"><canvas id="hfBoardFace" width="320" height="208"></canvas><div><p class="eyebrow">DER KARREN DES HUNDSGRAFEN · TAG ${S.day}</p><h1>Aufträge</h1><q>${esc(quote)}</q></div></div>
  <p>Je mehr Totenköpfe, desto gefährlicher der Hund. Welche Rasse es ist, sieht man erst durchs Fernglas. Ein Auftrag am Tag.</p>
  <div class="hf-jobs">${s.jobs.map((x,i)=>{const R=TX.RASSEN[x.breed];return `<button type="button" class="hf-job t${x.skulls}${i===selJob?' on':''}${x.done?' done':''}" data-action="hf:job:${i}">${skulls(x.skulls)}<span class="wo">${esc(R.wo)}</span><span class="txt">${esc(R.geruecht)}</span>${x.done?`<span class="stamp">${esc(x.done)}</span>`:''}</button>`;}).join('')}</div>
  ${used?`<div class="hf-note"><b>Heute warst du schon unterwegs.</b> Morgen gibt es neue Gerüchte.</div>`:`<h2>Wen schickst du?</h2>
@@ -465,7 +467,7 @@ function zwingerPage(){const s=st(),alive=s.dogs.filter(D=>!D.dead),dead=s.dogs.
  ${alive.length?`<canvas class="hf-cage" width="960" height="420"></canvas>${pages>1?`<div class="buttons" style="justify-content:center;margin:6px 0"><button class="btn" data-action="hf:zw:-1">◂</button><span style="align-self:center">Käfige ${zwPage*3+1}–${Math.min(alive.length,zwPage*3+3)} von ${alive.length}</span><button class="btn" data-action="hf:zw:1">▸</button></div>`:''}`:'<div class="hf-note">Leere Käfige. Es riecht trotzdem nach Hund. Bring Rabies einen Kämpfer, dann kommt hier Leben rein.</div>'}
  <div class="hf-dogs">${alive.map(card).join('')}</div>${dead.length?`<h2 style="margin-top:14px">Gefallen</h2><div class="hf-dogs">${dead.map(card).join('')}</div>`:''}
  <div class="buttons" style="margin-top:12px"><button class="btn" data-action="nav:beastrium">▲ Treppe hinauf · Beastrium</button><button class="btn" data-action="nav:hundefang">🐕 Aufträge</button></div></section>`;}
-function mount(){rabiesFace($('hfCartFace'));rabiesFace($('hfBoardFace'),usedToday()?'confident':'grin');
+function mount(){rabiesFace($('hfCartFace'));rabiesLive('hfBoardFace',usedToday()?'confident':'grin');
  const s=st(),j=s.jobs[selJob];document.querySelectorAll('canvas[data-hfface]').forEach(cv=>{const g=S.roster.find(x=>x.id===cv.dataset.hfface);if(!g)return;const v=j?verdictOf(g,j).i:2;face(cv,g,['confident','determined','calm','nervous','scared','terror'][v+1]||'calm');});
  document.querySelectorAll('canvas[data-hfdog]').forEach(cv=>{const D=s.dogs.find(x=>x.id===cv.dataset.hfdog);if(!D)return;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#120d0a';c.fillRect(0,0,128,80);DOG.portrait(c,D,{x:64,y:72,w:100,mood:'focus',face:1,t:1});});
  if(document.querySelector('canvas.hf-cage')){const alive=s.dogs.filter(D=>!D.dead);ZW.setDogs(alive.slice(zwPage*3,zwPage*3+3));}}

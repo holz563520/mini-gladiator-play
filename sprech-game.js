@@ -98,7 +98,7 @@ const shown=el=>{if(!el?.isConnected)return false;const r=el.getClientRects();if
 function faceLoop(){requestAnimationFrame(faceLoop);const g=cur&&!cur.soft?cur.g:null,talking=g&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur+.15);
  if(!talking||!M.faceShot?.records){if(box&&!box.hidden){box.classList.remove('on');box.hidden=true;}return;}
  const now=performance.now();let painted=false,live=false;
- for(const [cv,r] of M.faceShot.records()){if(cv===boxCv||!sameG(r.o.g,g)||!shown(cv))continue;if(now-r.time<150){live=true;continue;}try{M.faceShot.paint(r.ctx,r.w,r.h,{...r.o,talk:talkMouth(g),_sprech:true},r.t);painted=true;}catch{}}
+ for(const [cv,r] of M.faceShot.records()){if(cv===boxCv||!sameG(r.o.g,g))continue;/* malt die Szene den Kopf laufend (auch über einen Zwischenpuffer wie beim Medicus), zeigt sie ihn selbst */if(now-r.time<400){live=true;continue;}if(!shown(cv))continue;try{M.faceShot.paint(r.ctx,r.w,r.h,{...r.o,talk:talkMouth(g),_sprech:true},r.t);painted=true;}catch{}}
  const own=painted||live;if(own){if(box&&!box.hidden){box.classList.remove('on');box.hidden=true;}return;}
  boxEl();if(box.hidden||boxG!==g){box.hidden=false;boxG=g;box.querySelector('b').textContent=cur.name||g.name||'';requestAnimationFrame(()=>box.classList.add('on'));}
  try{const c=boxCv.getContext('2d');M.faceShot.paint(c,boxCv.width,boxCv.height,{g,team:g.enemy?1:0,mood:'calm',yaw:.22,zoom:1.12,talk:talkMouth(g),_sprech:true},now/1000);}catch{}}

@@ -7,10 +7,10 @@
 .hf-cart .buttons{display:flex;flex-wrap:wrap;gap:8px}
 @media(max-width:560px){.hf-cart{grid-template-columns:84px 1fr}.hf-cart canvas{width:84px}}
 /* Auftragsbrett */
-.hf-board .hf-head{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin-bottom:10px}
-.hf-board .hf-head canvas{width:120px;height:auto;image-rendering:pixelated;border:2px solid #6b5230;border-radius:6px;background:#1b1410}
+.hf-board .hf-head{display:grid;grid-template-columns:minmax(0,420px) 1fr;gap:14px;align-items:center;margin-bottom:10px}
+.hf-board .hf-head canvas{width:100%;height:auto;image-rendering:pixelated;border:2px solid #6b5230;border-radius:6px;background:#1b1410}
 .hf-board .hf-head q{display:block;color:#fff0c8;quotes:"„" "“"}
-@media(max-width:560px){.hf-board .hf-head{grid-template-columns:84px 1fr}.hf-board .hf-head canvas{width:84px}}
+@media(max-width:560px){.hf-board .hf-head{grid-template-columns:1fr}.hf-board .hf-head canvas{width:100%}}
 .hf-jobs{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));margin:8px 0}
 .hf-job{text-align:left;display:block;padding:10px 12px;border:2px solid #4a3a2b;background:#2b2017;border-radius:8px;color:inherit;font:inherit;position:relative;cursor:pointer}
 .hf-job.on{border-color:#e6b42a;box-shadow:0 0 0 2px #e6b42a55}
