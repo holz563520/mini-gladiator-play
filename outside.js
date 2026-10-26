@@ -356,11 +356,11 @@ const LAYER=()=>$('owBubbles');
 // Jede gezeigte Blase wird leise vorgelesen (M.speakLine soft: nur wenn gerade kein Gespräch läuft).
 const BQ={until:0,prio:0,queue:[],timer:0};
 function bubble(a,text,o={}){if(!a||!text)return;const prio=o.lead||o.boss||o.loud?2:o.small?0:1,now=performance.now();
- if(prio<2&&M.fieldTalk&&!M.fieldTalk.ok()&&now>=BQ.until)return;
+ if(prio<2&&M.fieldTalk&&!M.fieldTalk.ok()&&now>=BQ.until)return;if(prio===2&&(M.speechHold?.()||M.fieldTalk?.speaking?.())){BQ.queue.push([a,text,o,prio]);if(BQ.queue.length>3)BQ.queue.splice(0,BQ.queue.length-3);bubbleNext();return;}
  if(now<BQ.until){if(prio===0)return;if(prio===2&&BQ.prio<2){bubbleShow(a,text,o,prio);return;}BQ.queue.push([a,text,o,prio]);if(BQ.queue.length>2)BQ.queue.splice(0,BQ.queue.length-2);bubbleNext();return;}
  bubbleShow(a,text,o,prio);}
-function bubbleShow(a,text,o,prio){const lay=LAYER();if(lay)for(const old of [...lay.children]){if(old.classList.contains('out'))continue;old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
- const ms=Math.max(o.ms||0,readMs(text));BQ.until=performance.now()+ms;M.fieldTalk?.mark(ms);BQ.prio=prio;bubbleNow(a,text,{...o,ms,small:false});M.speakLine?.(text,null,a.g||null,{name:o.name,soft:true});bubbleNext();}
+function bubbleShow(a,text,o,prio){/* erst ausreden lassen, wer gerade spricht */if(M.speechHold?.()||M.fieldTalk?.speaking?.()){BQ.queue.unshift([a,text,o,prio]);if(BQ.queue.length>3)BQ.queue.length=3;BQ.until=Math.max(BQ.until,performance.now()+200);bubbleNext();return;}const lay=LAYER();if(lay)for(const old of [...lay.children]){if(old.classList.contains('out'))continue;old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
+ const ms=Math.max(o.ms||0,readMs(text));BQ.until=performance.now()+ms;M.fieldTalk?.mark(ms);BQ.prio=prio;bubbleNow(a,text,{...o,ms,small:false});M.speakLine?.(text,null,a.g||null,{name:o.name,soft:prio<2});bubbleNext();}
 function bubbleNext(){clearTimeout(BQ.timer);if(!BQ.queue.length)return;BQ.timer=setTimeout(()=>{const n=BQ.queue.shift();if(n&&!n[0].g?.dead&&!n[0].down)bubbleShow(...n);else bubbleNext();},Math.max(60,BQ.until-performance.now()+180));}
 function bubbleNow(a,text,o={}){const lay=$('owBubbles');if(!lay||!a)return;if(o.small&&[...lay.children].filter(e=>!e.classList.contains('out')).length>=3)return;for(const old of lay.children)if(old._a===a){old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
  const el=document.createElement('div');el._a=a;el.className='ow-bubble'+(a.team?' foe':'')+(o.boss?' boss':'')+(o.lead?' lead':'')+(o.small?' small':'')+(o.loud||/!$/.test(text)&&text===text.toUpperCase()?' loud':'');el.innerHTML=(o.name?'<b>'+esc(o.name)+'</b>':'')+'<span>'+esc(text)+'</span>';lay.appendChild(el);

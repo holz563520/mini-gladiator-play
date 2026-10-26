@@ -127,8 +127,8 @@ function paintSpyFace(t){const me=leaderA(R.b);if(!me||!M.faceShot)return;const 
  for(const [x,y,w,h,dk,lt] of seg){g.fillStyle=dk;g.fillRect(x,y,w,h);g.fillStyle=lt;g.fillRect(x,y+2,w,3);g.fillStyle='#2b1d0b';g.fillRect(x+w-2,y,2,h);}
  g.fillStyle='#1a1208';g.fillRect(ex-4,ey-5,3,10);const sk=me.g.appearance?.skin||'#c99a74';g.fillStyle=sk;g.fillRect(ex+22,ey+6,16,9);g.fillStyle='#00000040';g.fillRect(ex+22,ey+12,16,3);}
 async function spyShow(b,lines){const me=leaderA(b);if(!me)return;SPY.on=true;SPY.skip=false;SPY.focus=null;SPY.zoom=1;SPY.fx=R.cam.x;SPY.fy=R.cam.y;$('spy').hidden=false;$('spyName').textContent=lname(me)+' · durchs Fernrohr';requestAnimationFrame(spyFrame);
- for(const l of lines){if(SPY.skip||!live(b))break;SPY.focus=l.focus;const el=$('spyText');el.textContent='';mlog(`<b class="ldr">★ ${esc(me.g.name)}</b> (Fernrohr): „${esc(l.text)}“`);
-  for(let i=0;i<=l.text.length&&!SPY.skip;i+=2){el.textContent=l.text.slice(0,i);await sleep(16);}el.textContent=l.text;await waitSkip(Math.max(1700,900+l.text.length*42));}
+ for(const l of lines){if(SPY.skip||!live(b))break;SPY.focus=l.focus;const el=$('spyText');el.textContent='';M.speakLine?.(l.text,null,me.g,{name:me.g.name});mlog(`<b class="ldr">★ ${esc(me.g.name)}</b> (Fernrohr): „${esc(l.text)}“`);
+  for(let i=0;i<=l.text.length&&!SPY.skip;i+=2){el.textContent=l.text.slice(0,i);await sleep(16);}el.textContent=l.text;await waitSkip(Math.max(1700,900+l.text.length*42));/* ausreden lassen */while(!SPY.skip&&M.speechHold?.())await sleep(150);}
  SPY.on=false;$('spy').hidden=true;}
 function waitSkip(ms){return new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());const chk=()=>{if(SPY.skip||performance.now()-t0>=lim)return res();setTimeout(chk,50);};chk();});}
 // Kamera während Fernrohr und Nahaufnahmen (sonst null)

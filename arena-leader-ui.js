@@ -19,11 +19,11 @@ const LAYER=()=>layer()?.querySelector('#alBubbles');
 // Jede gezeigte Blase wird leise vorgelesen (M.speakLine soft: nur wenn gerade kein Gespräch läuft).
 const BQ={until:0,prio:0,queue:[],timer:0};
 function bubble(a,text,o={}){if(!a||!text)return;const prio=o.lead||o.boss||o.loud?2:o.small?0:1,now=performance.now();
- if(prio<2&&M.fieldTalk&&!M.fieldTalk.ok()&&now>=BQ.until)return;
+ if(prio<2&&M.fieldTalk&&!M.fieldTalk.ok()&&now>=BQ.until)return;if(prio===2&&(M.speechHold?.()||M.fieldTalk?.speaking?.())){BQ.queue.push([a,text,o,prio]);if(BQ.queue.length>3)BQ.queue.splice(0,BQ.queue.length-3);bubbleNext();return;}
  if(now<BQ.until){if(prio===0)return;if(prio===2&&BQ.prio<2){bubbleShow(a,text,o,prio);return;}BQ.queue.push([a,text,o,prio]);if(BQ.queue.length>2)BQ.queue.splice(0,BQ.queue.length-2);bubbleNext();return;}
  bubbleShow(a,text,o,prio);}
-function bubbleShow(a,text,o,prio){const lay=LAYER();if(lay)for(const old of [...lay.children]){if(old.classList.contains('out'))continue;old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
- const ms=Math.max(o.ms||0,readMs(text));BQ.until=performance.now()+ms;M.fieldTalk?.mark(ms);BQ.prio=prio;bubbleNow(a,text,{...o,ms,small:false});M.speakLine?.(text,null,a.g||null,{name:o.name,soft:true});bubbleNext();}
+function bubbleShow(a,text,o,prio){/* erst ausreden lassen, wer gerade spricht */if(M.speechHold?.()||M.fieldTalk?.speaking?.()){BQ.queue.unshift([a,text,o,prio]);if(BQ.queue.length>3)BQ.queue.length=3;BQ.until=Math.max(BQ.until,performance.now()+200);bubbleNext();return;}const lay=LAYER();if(lay)for(const old of [...lay.children]){if(old.classList.contains('out'))continue;old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
+ const ms=Math.max(o.ms||0,readMs(text));BQ.until=performance.now()+ms;M.fieldTalk?.mark(ms);BQ.prio=prio;bubbleNow(a,text,{...o,ms,small:false});M.speakLine?.(text,null,a.g||null,{name:o.name,soft:prio<2});bubbleNext();}
 function bubbleNext(){clearTimeout(BQ.timer);if(!BQ.queue.length)return;BQ.timer=setTimeout(()=>{const n=BQ.queue.shift();if(n&&!n[0].g?.dead&&!n[0].down)bubbleShow(...n);else bubbleNext();},Math.max(60,BQ.until-performance.now()+180));}
 function bubbleNow(a,text,o={}){const l=layer()?.querySelector('#alBubbles');if(!l||!a)return;if(o.small&&[...l.children].filter(e=>!e.classList.contains('out')).length>=3)return;
  for(const old of l.children)if(old._a===a){old.classList.add('out');setTimeout(()=>old.remove(),300);old._a=null;}
@@ -71,7 +71,8 @@ function startForm(b){const f=L.arenaFormation(b),me=b.actors.find(a=>a.g.id===b
  const sold=f.line.filter(a=>a.g.role==='Soldat'),txt=[sold.length?(sold.length>1?'Schilde nach vorn! '+sold.slice(0,3).map(a=>first(a.g)).join(', ')+', ihr seid die Mauer!':first(sold[0].g)+', du bist vorn. Du bist die Mauer.'):'Linie bilden! Schulter an Schulter!',
   f.arch.length?f.arch.map(a=>first(a.g)).join(' und ')+': hinter die Linie, freies Schussfeld!':'',
   f.assa.length?f.assa.map(a=>first(a.g)).join(' und ')+': an die Flügel. Ihr wartet, bis sie an der Mauer kleben.':''].filter(Boolean);
- txt.forEach((t,i)=>setTimeout(()=>{if(A.b===b&&me)bubble(me,t,{lead:true,ms:2600});},i*1500));
+ {const n=(x,one,many)=>x.length===1?one:x.length+' '+many,parts=[sold.length?n(sold,'ein Schildträger','Schildträger')+' vorn':'',f.arch.length?n(f.arch,'ein Schütze','Schützen')+' dahinter':'',f.assa.length?n(f.assa,'ein Assassine','Assassinen')+' an den Flügeln':''].filter(Boolean);M.speakLine?.('Die Reihen formieren sich'+(parts.length?': '+parts.join(', '):'')+'. '+(me?first(me.g)+' führt.':''),'cap');}
+ txt.forEach((t,i)=>setTimeout(()=>{if(A.b===b&&me)bubble(me,t,{lead:true,ms:2600});},400+i*300));
  bar('<span>Anführer: <b>'+esc(me?.g.name||'?')+'</b></span><button class="btn" data-al="swap">Wechseln</button><button class="btn primary" data-al="skip">Weiter ▶</button>');}
 function stepForm(b,dt){let done=true;for(const [a,p] of A.form.pts){if(!fit(a))continue;const x=a.x,y=a.y,d=Math.hypot(p.x-x,p.y-y);if(d<4){a.state='idle';a.moveSpeed=0;continue;}done=false;
   const k=Math.min(d,95*dt);a.x+=(p.x-x)/d*k;a.y+=(p.y-y)/d*k;a.a=Math.atan2(p.y-y,p.x-x);a.state='move';M.updateLocomotion?.(a,x,y,a.phase||0,dt);}

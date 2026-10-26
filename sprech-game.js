@@ -57,11 +57,11 @@ const WATCH=[
  ['.scene-bubble,.hf-bubble,.ws-bubble,.ow-talk,.wanderer-line,.medic-quip,.dok-line,.tr-reveal .tr-quote,.hs-bubble',null,{}],
  ['#modSay,.hs-mi-say','moderator',{}],
  ['#hsSay','frau',{name:'Hühnerhändlerin'}],
- ['.smith-plea','schmied',{}],['.bow-quip','orontes',{name:'Orontes Pfeilkopf'}],['.hf-board q,.hf-cart q:not(.hf-narr)','rabies',{name:'Rabies'}],['.hf-narr','cap',{speedUp:1.2}],['.hall-title','cap',{speedUp:1.2}],['.threat',null,{soft:true}]];
+ ['.smith-plea','schmied',{}],['#closeText','cap',{speedUp:1.2}],['#afSay',null,{nameFrom:'#afWho'}],['#owAutoText','cap',{speedUp:1.2}],['.bow-quip','orontes',{name:'Orontes Pfeilkopf'}],['.hf-board q,.hf-cart q:not(.hf-narr)','rabies',{name:'Rabies'}],['.hf-narr','cap',{speedUp:1.2}],['.hall-title','cap',{speedUp:1.2}],['.threat',null,{soft:true}]];
 const seen=new WeakMap();
 const visible=el=>{if(!el.isConnected||el.closest('[hidden],.hf-hide,.out'))return false;const r=el.getClientRects();if(!r.length||!r[0].width)return false;const cs=getComputedStyle(el);return cs.visibility!=='hidden'&&cs.display!=='none'&&+cs.opacity>.15;};
 function parse(el,def){const raw=clean(el.textContent);if(!raw)return null;const b=el.querySelector('b,small,strong');let name='',text=raw;
- if(b&&raw.startsWith(clean(b.textContent))&&clean(b.textContent).length<60){name=clean(b.textContent).replace(/[:·].*$/,'').replace(/:$/,'').trim();text=raw.slice(clean(b.textContent).length).replace(/^[:\s]+/,'');}
+ if(b&&raw.startsWith(clean(b.textContent))&&clean(b.textContent).length<60&&(def!=='cap'||/[:·]\s*$/.test(clean(b.textContent))||/^[^:]{2,60}:/.test(raw.slice(clean(b.textContent).length-1)))){name=clean(b.textContent).replace(/[:·].*$/,'').replace(/:$/,'').trim();text=raw.slice(clean(b.textContent).length).replace(/^[:\s]+/,'');}
  const m=/^([^:„“]{2,40}):\s*„(.+)“\s*$/.exec(text);if(m){name=name||m[1].trim();text=m[2];}
  text=text.replace(/^„|“$/g,'').replace(/[▼▸›]/g,'').trim();
  if(def==='cap'&&name)return {text,who:null,name};return {text,who:def,name};}
@@ -69,7 +69,8 @@ function poll(){if(!window.Sprech||!M.audioEngine?.voiceOut?.())return;
  for(const [sel,def,opt] of WATCH)for(const el of document.querySelectorAll(sel)){const raw=el.textContent;let st=seen.get(el);if(!st){st={};seen.set(el,st);}
   if(raw!==st.txt){st.txt=raw;continue;}if(st.spoken===raw||!visible(el))continue;st.spoken=raw;const P=parse(el,def);if(!P||!/[a-zäöüß]{2}/i.test(P.text))continue;
   const g=P.name?(M.s?.roster||[]).find(x=>x.name===P.name||String(x.name).split(' ')[0]===P.name):null;
-  speakLine(P.text,P.who,g||null,{...opt,name:opt.name||P.name});}}
+  const nm=opt.nameFrom?clean(document.querySelector(opt.nameFrom)?.textContent||''):'';const g2=g||(nm?(M.s?.roster||[]).find(x=>x.name===nm||String(x.name).split(' ')[0]===nm):null);
+  speakLine(P.text,P.who,g2||null,{...opt,name:opt.name||nm||P.name});}}
 setInterval(poll,250);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
 // Ein Gebäude/Fenster öffnen unterbricht sofort alles, was gerade gesprochen wird (und Applaus/Gelächter)
