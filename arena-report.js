@@ -27,8 +27,8 @@ function block(a){const g=S.roster.find(x=>x.id===a.id)||null,learn=Object.entri
   ${a.injuries?.length?`<p class="arp-inj">${a.injuries.slice(0,3).map(esc).join(' · ')}${a.injuries.length>3?' …':''}</p>`:''}</div>`;}
 const baseResult=C.onResult;
 C.onResult=function(R){const r=baseResult?.apply(this,arguments);
- try{if(last&&Date.now()-lastAt<60000&&!(R?.mine||[]).every(u=>u.kind==='rooster'||u.kind==='lion')){const box=document.querySelector('#an .an-res');if(box&&!box.querySelector('.arp')){
-  const el=document.createElement('div');el.className='an-gains arp';el.innerHTML=`<h3>Kampfbericht · was deine Gladiatoren gelernt haben</h3>${last.actors.map(block).join('')}${(()=>{const f=M.workshop?.state?.lastFound,n=last.recipes?.length?last.recipes:f&&f.battle===last.id?f.names:[];return n.length?`<p class="arp-recipe">⚒ Schmiederezept erlernt: <b>${n.map(esc).join(', ')}</b></p>`:'';})()}<div class="arp-foot"><button type="button" class="arp-full">VOLLER KAMPFBERICHT ▸</button></div>`;
+ try{if(last&&Date.now()-lastAt<60000&&!(R?.mine||[]).every(u=>u.kind==='rooster'||u.kind==='lion'||u.kind==='dog')){const box=document.querySelector('#an .an-res');if(box&&!box.querySelector('.arp')){
+  const el=document.createElement('div');el.className='an-gains arp';el.innerHTML=`<h3>Kampfbericht · was deine Gladiatoren gelernt haben</h3>${last.actors.filter(a=>!String(a.id||'').startsWith('hund-')).map(block).join('')}${(()=>{const f=M.workshop?.state?.lastFound,n=last.recipes?.length?last.recipes:f&&f.battle===last.id?f.names:[];return n.length?`<p class="arp-recipe">⚒ Schmiederezept erlernt: <b>${n.map(esc).join(', ')}</b></p>`:'';})()}<div class="arp-foot"><button type="button" class="arp-full">VOLLER KAMPFBERICHT ▸</button></div>`;
   const anchor=box.querySelector('.an-foes')||box.querySelector('.an-actions');anchor?anchor.before(el):box.appendChild(el);
   el.querySelector('.arp-full').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();window.ArenaUI?.close?.();try{M.ui.click('nav:report');}catch{}});}}}catch(e){console.warn(e);}
  return r;};

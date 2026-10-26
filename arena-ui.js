@@ -235,7 +235,7 @@ let reTimer=0;function rowsChanged(){spyBuild();clearTimeout(reTimer);reTimer=se
 
 // ---------- 7 · Echter Kampf in der Kampfansicht des Spiels ----------
 function fight(){const c=U.sel;if(!c)return;const units=team();if(!units.length){M.ui.notify?.('Niemand einsatzbereit.');return;}stopSpy();
- const before={};for(const u of units)if(u.kind==='rooster')before[u.key]={stats:{...u.R.stats},moves:{...u.R.moves}};
+ const before={};for(const u of units)if(u.kind==='rooster')before[u.key]={stats:{...u.R.stats},moves:{...u.R.moves}};else if(u.kind==='dog'){let kw=0;try{kw=DG().kw(u.D,false);}catch{}before[u.key]={dog:true,stats:{...u.D.stats},kw,fights:u.D.fights||0,wins:u.D.wins||0,kills:u.D.kills||0};}
  const spec={title:c.name,blue:units.map(u=>({...u})),red:c.enemy};layer.innerHTML='';root.hidden=true;document.body.classList.add('an-fighting');
  // Gastgeber kann den Kampf selbst austragen (z. B. Hahn gegen Hahn auf dem Dorfplatz); Ergebnis im Format von AN.outcome
  if(C.runFight?.(spec,c,out=>{const pay=CH.payout(c,out);try{C.settle?.(pay,out,c,true);}catch(e){console.error(e);}setTimeout(()=>finishFight(c,out,units,pay,before),300);}))return;
@@ -246,7 +246,10 @@ function fight(){const c=U.sel;if(!c)return;const units=team();if(!units.length)
  M.ui.render();}
 // Fortschritt der Hähne: welche Werte der Kampf tatsächlich verbessert hat (Lernen nach dem Abstand IST → SOLL)
 const GAIN_LABEL={groesse:'Größe',kraft:'Kraft',schnabelkraft:'Schnabelkraft',klauenstaerke:'Klauenstärke',geschwindigkeit:'Geschwindigkeit',zaehigkeit:'Zähigkeit',peck:'Picken',claw:'Krallen'};
-function gainsOf(units,before){const out=[];for(const u of units){const b=before?.[u.key];if(!b||u.R.dead)continue;const list=[];for(const grp of ['stats','moves'])for(const k in b[grp]){const from=b[grp][k],to=u.R[grp][k];if(to-from>=.05)list.push({grp,key:k,label:(C.gainLabels||GAIN_LABEL)[k]||k,from,to,cap:u.R.caps[grp][k]});}list.sort((a,b)=>(b.to-b.from)-(a.to-a.from));out.push({key:u.key,R:u.R,name:u.R.name,list});}return out;}
+// Hunde: alle Werte früher → jetzt mit Soll, Kampfwert vorher/nachher, Erfahrung = Summe der Zuwächse (hund.js: 4 % der Lücke, Sieg 7 %)
+function dogGain(u,b){const D=u.D,list=DG().STATS.map(([k,label])=>({key:k,label,from:b.stats[k]||0,to:D.stats[k]||0,cap:D.caps?.[k]||0}));let kw=0;try{kw=DG().kw(D,false);}catch{}
+ return {dog:true,key:u.key,D,name:D.name,list,xp:list.reduce((n,x)=>n+Math.max(0,x.to-x.from),0),kwFrom:b.kw,kwTo:kw,fights:D.fights||0,wins:D.wins||0,kills:D.kills||0,newKills:(D.kills||0)-b.kills,dead:!!D.dead};}
+function gainsOf(units,before){const out=[];for(const u of units){const b=before?.[u.key];if(b?.dog){out.push(dogGain(u,b));continue;}if(!b||u.R.dead)continue;const list=[];for(const grp of ['stats','moves'])for(const k in b[grp]){const from=b[grp][k],to=u.R[grp][k];if(to-from>=.05)list.push({grp,key:k,label:(C.gainLabels||GAIN_LABEL)[k]||k,from,to,cap:u.R.caps[grp][k]});}list.sort((a,b)=>(b.to-b.from)-(a.to-a.from));out.push({key:u.key,R:u.R,name:u.R.name,list});}return out;}
 const f1=v=>(Math.round(v*10)/10).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
 function finishFight(c,out,units,gold,before){const won=out.winner===0;C.record?.(won);
  const mine=out.units.filter(u=>u.team===0),foes=out.units.filter(u=>u.team===1);for(const u of mine)if(u.dead)C.addFallen?.({name:u.name,kind:u.kind,cause:u.cause,killer:u.killer,day:S.day,fight:c.name});
@@ -256,18 +259,27 @@ function finishFight(c,out,units,gold,before){const won=out.winner===0;C.record?
 document.addEventListener('click',e=>{const el=e.target.closest?.('[data-action]');if(!el||!S.battle?.neu)return;if(el.dataset.action==='profilemenu'){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();if(!S.battle.finale)M.surrender();}},true);
 
 // ---------- 8 · Ergebnis ----------
+function dogGainHtml(g){const pct=x=>x.cap>0?Math.min(100,Math.round(x.to/x.cap*100)):100;
+ if(g.dead)return `<div class="an-gain an-dog"><b>${esc(g.name)} ✝</b><p>Lernt nichts mehr. Bilanz: ${g.fights} Kämpfe, ${g.wins} Siege, ${g.kills} Getötete.</p></div>`;
+ return `<div class="an-gain an-dog"><b>${esc(g.name)}</b><p class="an-dogxp"><span>Erfahrung <b>+${f1(g.xp)}</b></span><span>Kampfwert <b>${g.kwFrom} → ${g.kwTo}</b>${g.kwTo>g.kwFrom?' <em>▲ +'+(g.kwTo-g.kwFrom)+'</em>':''}</span><span>${g.fights} Kämpfe · ${g.wins} Siege · ${g.kills} Getötete${g.newKills>0?' <em>(+'+g.newKills+')</em>':''}</span></p>
+ <ul>${g.list.map(x=>{const up=x.to-x.from>=.05;return `<li class="${up?'up':''}"><span>${esc(x.label)}</span><b>${f1(x.from)} → ${f1(x.to)}${up?' <em>▲ +'+f1(x.to-x.from)+'</em>':''}</b><small>SOLL ${Math.round(x.cap)} · ${pct(x)} %</small><i class="an-dogbar"><i style="width:${Math.round(x.from/Math.max(1,x.cap)*100)}%"></i><i class="new" style="width:${Math.max(0,Math.round((x.to-x.from)/Math.max(1,x.cap)*100))}%"></i></i></li>`;}).join('')}</ul></div>`;}
+// Sprecher zum Kampfbericht der Hunde
+function dogReport(R){const gs=R.gains.filter(g=>g.dog);if(!gs.length||!M.speakLine)return;const parts=[];
+ for(const g of gs){if(g.dead){parts.push(`${g.name} ist tot. Er wird als Wurst weiterleben.`);continue;}const best=g.list.slice().sort((a,b)=>(b.to-b.from)-(a.to-a.from))[0];
+  parts.push(`${g.name} ${R.won?'gewinnt':'verliert, lernt aber trotzdem'}. ${g.xp>=.05?`Erfahrung plus ${f1(g.xp)}, vor allem ${best.label}, von ${f1(best.from)} auf ${f1(best.to)}.`:'Gelernt hat er nichts. Er ist eben ein Hund.'} ${g.kwTo>g.kwFrom?`Kampfwert steigt von ${g.kwFrom} auf ${g.kwTo}.`:`Kampfwert bleibt bei ${g.kwTo}.`}`);}
+ setTimeout(()=>M.speakLine(parts.join(' '),'moderator',null,{vol:1.05}),700);}
 function result(){const R=U.result;if(!R){go('home');return;}setTitle(R.won?'SIEG':'NIEDERLAGE',true);
  const row=u=>`<li class="${u.dead?'dead':u.severe?'sev':''}"><span class="th" data-k="${u.key}"></span><div><b>${esc(u.name)}</b><small>${u.dead?'✝ '+esc(u.cause||'gefallen')+(u.killer?' · durch '+esc(u.killer):''):u.down?'am Boden · Gesundheit '+u.health+' %':'Gesundheit '+u.health+' %'}${u.injuries?.length?' · '+esc(u.injuries.join(', ')):''}</small></div></li>`;
  const alive=R.mine.filter(u=>!u.dead),dead=R.mine.filter(u=>u.dead);
  view.innerHTML=`<section class="an-res ${R.won?'won':'lost'}"><p class="eyebrow">${esc(R.c.name)} · ${R.c.level.label}${R.out.timeout?' · nach Zeit gewertet':''}</p><h1>${R.won?'SIEG':'NIEDERLAGE'}</h1>
   <div class="an-pay"><small>${R.won?'Siegprämie':'Antrittsgeld'}</small><b data-count="${R.gold}">0</b><span>Gold</span></div>
   <div class="an-cols"><div><h3>Überlebende (${alive.length})</h3><ul>${alive.map(row).join('')||'<li class="none">Niemand.</li>'}</ul></div><div><h3>Gefallen (${dead.length})</h3><ul>${dead.map(row).join('')||'<li class="none">Alle leben. Die Totengräber sind enttäuscht.</li>'}</ul></div></div>
-  ${R.gains.length?`<div class="an-gains"><h3>Fortschritt durch den Kampf</h3>${R.gains.map(g=>`<div class="an-gain"><b>${esc(g.name)}</b>${g.list.length?`<ul>${g.list.slice(0,5).map(x=>`<li><span>${esc(x.label)}</span><b>${f1(x.from)} → ${f1(x.to)}</b><small>SOLL ${Math.round(x.cap)}</small></li>`).join('')}</ul>`:'<p>Keine messbare Verbesserung in diesem Kampf.</p>'}</div>`).join('')}</div>`:''}
+  ${R.gains.length?`<div class="an-gains"><h3>Fortschritt durch den Kampf</h3>${R.gains.map(g=>g.dog?dogGainHtml(g):`<div class="an-gain"><b>${esc(g.name)}</b>${g.list.length?`<ul>${g.list.slice(0,5).map(x=>`<li><span>${esc(x.label)}</span><b>${f1(x.from)} → ${f1(x.to)}</b><small>SOLL ${Math.round(x.cap)}</small></li>`).join('')}</ul>`:'<p>Keine messbare Verbesserung in diesem Kampf.</p>'}</div>`).join('')}</div>`:''}
   <p class="an-foes">Gegner: ${R.foes.filter(u=>u.dead).length} tot · ${R.foes.filter(u=>!u.dead&&u.down).length} am Boden · ${R.foes.filter(u=>!u.dead&&!u.down).length} stehend · Dauer ${Math.round(R.out.time)} s</p>
   <div class="an-actions"><button data-a="nextday">Nächster Tag (Heilung)</button><button class="primary" data-a="again">NEUE HERAUSFORDERUNGEN ▸</button></div>${C.close?'<div class="an-actions"><button data-a="leave">◂ Arena verlassen</button></div>':''}</section>`;
  const units=pool().map(withKey);view.querySelectorAll('.th[data-k]').forEach(el=>{const u=R.units.find(x=>x.key===el.dataset.k)||units.find(x=>x.key===el.dataset.k);if(u)el.appendChild(unitThumb(u,40,46));});
  const n=view.querySelector('[data-count]'),goal=+n.dataset.count,st=performance.now();(function tick(){const k=Math.min(1,(performance.now()-st)/900);n.textContent=Math.round(goal*k*(2-k));if(k<1)requestAnimationFrame(tick);})();
- try{C.onResult?.(R);}catch(e){console.error(e);}}
+ dogReport(R);try{C.onResult?.(R);}catch(e){console.error(e);}}
 
 // ---------- Eingaben ----------
 root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const [a,v]=el.dataset.a.split(/:(.*)/s);

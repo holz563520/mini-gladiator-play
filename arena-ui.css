@@ -220,3 +220,7 @@ body #notice{z-index:130}
 #an .an-ccard.an-spec{cursor:default}
 #an .an-accept{display:block;width:100%;margin-top:8px;padding:10px;background:#8a2a24;color:#fff;border:2px solid #d0473e;font:inherit;font-weight:700;letter-spacing:.08em;cursor:pointer}
 #an .an-accept:hover{background:#a8322a}
+/* Hunde: Kampfbericht mit früher → jetzt, Soll-Balken und markierten Fortschritten */
+#an .an-dog .an-dogxp{display:flex;flex-wrap:wrap;gap:4px 14px}#an .an-dog .an-dogxp b{color:var(--gold)}#an .an-dog em{font-style:normal;color:var(--green);font-weight:700}
+#an .an-dog li{grid-template-columns:1fr auto auto;row-gap:1px;opacity:.72}#an .an-dog li.up{opacity:1}#an .an-dog li.up>span{color:var(--green)}#an .an-dog li b{color:var(--text,#e8dcc4)}#an .an-dog li.up b{color:var(--green)}
+#an .an-dogbar{grid-column:1/-1;display:flex;height:4px;background:#ffffff14;border-radius:2px;overflow:hidden}#an .an-dogbar i{display:block;height:100%;background:#8a9a9a}#an .an-dogbar i.new{background:var(--green)}

@@ -86,6 +86,15 @@ T.roosterKw=['Kampfwert {kw}. Für einen Vogel ist das beängstigend. Für einen
 T.roosterHurt=['Er humpelt. Er blutet. Er will trotzdem. Bei {h} Prozent Gesundheit nennt man das Tapferkeit oder Dummheit.','{name} ist angeschlagen, nur {h} Prozent. Der Koch hat schon Wasser aufgesetzt.'];
 T.roosterFoe=['In der anderen Ecke: {name}! Er hat heute noch nicht gefrühstückt.','Und hier kommt {name}! Sein Besitzer schwört, er hat schon einen Fuchs erledigt.','{name}! Schnabel wie ein Dolch, Laune wie ein Steuereintreiber.','Gegen ihn: {name}. Böse Augen, scharfe Sporen, null Manieren.'];
 T.beastFoe=['{name}! Groß, hungrig, und niemand hat ihm erklärt, dass das hier Sport ist.','Vorsicht in den ersten Reihen: {name} ist im Sand!'];
+// Hunde (Arena, BEAST → Hund): Vorstellung, Start, Tod und Aufgeben (Thomas 26.10.)
+T.dogVet=['{name}, {breed}. {f} Kämpfe, {w} Siege, {k} Tote. Er hat noch nie einen Knochen liegen lassen.','Hier kommt {name}! {breed}, {f} Kämpfe hinter sich. Seine Zähne sind noch alle da. Bei seinen Gegnern sieht das anders aus.','{name}. {w} Siege. Sein Herrchen füttert ihn mit Gegnern. Spart das Futter.'];
+T.dogFresh=['{name}, ein {breed}, frisch aus dem Wald. Erster Kampf. Er weiß noch nicht, dass hier zurückgebissen wird.','{name}! Noch nie in der Arena. Heute lernt er, dass Sand nicht schmeckt.','Ein Neuling: {name}, {breed}. Der Schwanz wedelt noch. Das gibt sich.'];
+T.dogFoe=['Und auf der anderen Seite: {name}, ein {breed}. Hungrig und schlecht erzogen.','{name}! {breed}. Der Hundsgraf sagt, er beißt nur, wenn er Hunger hat. Er hat immer Hunger.','Gegenüber: {name}, {breed}. Wer ihn streichelt, zählt danach seine Finger.'];
+T.dogKw=['Kampfwert {kw}. Bellen kann jeder. Mal sehen, wer beißt.','Die Buchmacher sagen Kampfwert {kw}. Die Flöhe sagen nichts.','Kampfwert {kw}. Der Hundsgraf hätte ihn dafür nicht hergegeben. Zu spät.'];
+T.dogHurt=['Er humpelt noch vom letzten Mal. Gesundheit {h} Prozent.','Noch nicht ganz verheilt: {h} Prozent. Mutig oder dumm, das klären wir gleich.'];
+T.dogStart=['Lasst die Hunde los!','Zähne, Sand und Fell. Möge der Bissigere gewinnen!','Die Fütterung beginnt!'];
+T.dogDeath=['{v} ist tot. Gibt es heute Abend Wurst?','{v} bellt nicht mehr. Der Metzger wartet schon.','Aus, {v}! Für immer aus.','{v} hat ausgebellt. {k} wedelt.'];
+T.dogDown=['{v} kneift den Schwanz ein! Sitz, Platz, verloren.','{v} legt sich auf den Rücken. Bauch kraulen gibt es heute nicht.','{v} gibt auf. Braver Hund. Feiger Hund.'];
 T.beastStart=['Lasst die Federn fliegen!','Federn, Sand und Blut. Möge der Zähere krähen!','Die Wetten sind geschlossen. Die Hühner nicht.'];
 function line(key,o={}){const pool=typeof key==='string'?T[key]:key,k=typeof key==='string'?key:pool[0];last[k]??=[];let i,tries=0;do{i=Math.floor(Math.random()*pool.length);}while(last[k].includes(i)&&++tries<12);last[k].push(i);if(last[k].length>Math.min(4,pool.length-1))last[k].shift();
  return pool[i].replace(/\{(\w+)\}/g,(m,n)=>o[n]??'').replace(/(^|[.!?] )([a-zäöü])/g,(m,a,c)=>a+c.toUpperCase());}
@@ -128,12 +137,16 @@ function act(c,t){const g=c.a.g,s=c.od?c.od.survive:.6,base={g,team:c.team,zoom:
 // ---------- Vorstellung vor dem Kampf: jeder Kämpfer bekommt seine Karte ----------
 // Der Löwe: eigene Karte, eigene Zahlen (ein Arenaleben lang gesammelt)
 const REX={fights:214,kills:613};
-function lineup(b){const cards=[],lion=b.actors.find(a=>a.rex&&!a.hahn),beasty=b.actors.some(a=>a.hahn||a.lion),fc=beasty?null:lion?{win:[.01,.99],f:Object.fromEntries(b.actors.filter(a=>!a.rex).map(a=>{const die=.86+Math.random()*.1,down=(1-die)*.8;return [a.g.id,{die,down,fine:0,survive:1-die}];}))}:forecast(b);heroes=new Set();
+function lineup(b){const cards=[],lion=b.actors.find(a=>a.rex&&!a.hahn&&!a.dog),dogs=b.actors.some(a=>a.dog),beasty=dogs||b.actors.some(a=>a.hahn||a.lion),fc=beasty?null:lion?{win:[.01,.99],f:Object.fromEntries(b.actors.filter(a=>!a.rex).map(a=>{const die=.86+Math.random()*.1,down=(1-die)*.8;return [a.g.id,{die,down,fine:0,survive:1-die}];}))}:forecast(b);heroes=new Set();
  const ctx=a=>({name:a.g.name,team:teamName(b,a.team),side:a.team?'rechten':'linken',...facts(a.g)});
  const victimLine=g=>{const v=(g.killHistory||[]).slice().sort((x,y)=>(y.fame||0)-(x.fame||0))[0];if(!v)return '';const famous=(v.fame||0)>=1000||(v.kills||0)>=5;return line(famous?'victimFamous':'victim',{victim:v.name,weapon:v.weapon||'bloßen Händen',vk:cnt(v.kills||0,'einen Mann','Männer','niemanden')});};
  // Quoten aus der Vorschau: abwechselnd als Überlebenschance und als Wette auf Tod und Trage
  const quote=(g,od,mood)=>{if(!od)return '';const d=Math.round(od.die*100),w=Math.round(od.down*100),f=Math.round(od.fine*100);return Math.random()<.6?line('bets',{d,w,f}):oddsLine(g,od,mood);};
- const make=(a,hero)=>{if(a.hahn||a.lion){const R=a.hahn,L=a.lion,unit=R?{kind:'rooster',R}:{kind:'lion',L},nm=(R||L)?.name||a.g.name,team=teamName(b,a.team).toUpperCase();let kw='?';try{kw=window.Challenges.kw(unit);}catch{}
+ const make=(a,hero)=>{if(a.dog){const D=a.dog._src||a.dog,team=teamName(b,a.team).toUpperCase();let kw='?',h=100;try{kw=window.DOG.kw(D);h=Math.round(window.DOG.condHealth(D));}catch{}
+   const o={name:D.name,breed:D.breedName||'Hund',f:D.fights||0,w:D.wins||0,k:D.kills||0,kw,h},say=[];
+   say.push(line(a.team===0?(o.f>0?'dogVet':'dogFresh'):'dogFoe',o));say.push(line('dogKw',o));if(h<75)say.push(line('dogHurt',o));
+   return {type:'beast',a,od:null,mood:'roar',team:a.team,name:D.name,sub:[o.breed,'KW '+kw].join(' · '),stats:[[o.f,'Kämpfe'],[o.w,'Siege'],[o.k,'Getötet']],say,eyebrow:(a.team===0?'DEIN HUND · ':'DER GEGNER · ')+team};}
+  if(a.hahn||a.lion){const R=a.hahn,L=a.lion,unit=R?{kind:'rooster',R}:{kind:'lion',L},nm=(R||L)?.name||a.g.name,team=teamName(b,a.team).toUpperCase();let kw='?';try{kw=window.Challenges.kw(unit);}catch{}
    const o={name:nm,f:R?.fights||0,w:R?.wins||0,k:R?.kills||0,kw,h:R?Math.round(window.CF?.health?.(R)??100):100},say=[];
    if(a.team===0&&R){say.push(line(o.f>0?'roosterVet':'roosterFresh',o));say.push(line('roosterKw',o));if(o.h<70)say.push(line('roosterHurt',o));}
    else{say.push(line(R?'roosterFoe':'beastFoe',o));say.push(line('roosterKw',o));}
@@ -148,7 +161,7 @@ function lineup(b){const cards=[],lion=b.actors.find(a=>a.rex&&!a.hahn),beasty=b
   const v=victimLine(g);if(v&&(hero||Math.random()<.6))c.say.push(v);if(lvl>=7&&type!=='talent')c.say.push(line('gifted',{...ctx(a),tier:d?.tier?.name||''}));if(od&&od.die>=.35&&Math.random()<.85)c.say.push(line('doomed',{...ctx(a),d:Math.round(od.die*100)}));const q=quote(g,od,mood);if(q)c.say.push(q);return c;};
  const order=[];for(const t of [0,1]){const team=b.actors.filter(a=>a.team===t);if(!team.length)continue;const lead=team.find(a=>a.id===b.leaders?.[t])||team.slice().sort((x,y)=>weight(y.g)-weight(x.g))[0];heroes.add(lead.g.id);order[t]=[lead,...team.filter(a=>a!==lead).sort((x,y)=>weight(y.g)-weight(x.g))];}
  // größtes unerprobtes Talent je Seite ist der Hoffnungsträger
- const hope=[0,1].map(t=>(order[t]||[]).filter(a=>!heroes.has(a.g.id)&&untested(a.g)&&(talentOf(a.g)?.tier?.level??0)>=5).sort((x,y)=>(y.g.potential||0)-(x.g.potential||0))[0]);
+ const hope=[0,1].map(t=>(order[t]||[]).filter(a=>!a.rex&&!heroes.has(a.g.id)&&untested(a.g)&&(talentOf(a.g)?.tier?.level??0)>=5).sort((x,y)=>(y.g.potential||0)-(x.g.potential||0))[0]);
  const big=b.actors.length>12,n=Math.min(big?5:99,Math.max(order[0]?.length||0,order[1]?.length||0)),left=b.actors.length-[0,1].reduce((m,t)=>m+Math.min(n,order[t]?.length||0),0);
  // Nur die mächtigste Waffe mit der eindrucksvollsten Geschichte wird vorgestellt (Getötete, Träger, Kämpfe, Legende, Güte)
  const wScore=a=>{const st=story(a);if(!st)return -1;const h=st.h;return (h.kills||0)*3+(h.owners||[]).length*4+(h.fights||0)*.5+(st.it.story?.stage||0)*8+(st.it.q||0)*2;};
@@ -161,7 +174,7 @@ function lineup(b){const cards=[],lion=b.actors.find(a=>a.rex&&!a.hahn),beasty=b
  const ace=b.actors.filter(a=>a.g?.appleRecord?.dist>0&&!a.g.dead).sort((x,y)=>y.g.appleRecord.dist-x.g.appleRecord.dist)[0];
  if(ace){const r=ace.g.appleRecord,ln=line('apple',{name:ace.g.name,d:r.dist,target:r.target||'einem Rekruten',w:r.weapon||'Bogen'}),own=cards.find(c=>c.a===ace&&c.type!=='weapon');
   if(own){own.say.splice(1,0,ln);own.stats=[...own.stats.slice(0,2),[r.dist+' m','Apfel-Rekord']];}else cards.push({...make(ace,false),eyebrow:'MEISTERSCHÜTZE · '+teamName(b,ace.team).toUpperCase(),stats:[[r.dist+' m','Apfel-Rekord'],[ace.g.fights||0,'Kämpfe'],[ace.g.kills||0,'Getötet']],say:[ln]});}
- cards.push({type:'start',team:-1,eyebrow:'DER KAMPF BEGINNT',name:teamName(b,0)+' gegen '+teamName(b,1),sub:b.actors.filter(a=>a.team===0).length+' gegen '+b.actors.filter(a=>a.team===1).length,stats:[],say:[left>0?line('rest',{n:left}):'',fc&&!lion?(Math.abs(fc.win[0]-fc.win[1])<.12?line('winEven'):line('winLine',{team:teamName(b,fc.win[0]>fc.win[1]?0:1),p:Math.round(Math.max(...fc.win)*100)})):'',beasty?line('beastStart'):line('start')].filter(Boolean)});
+ cards.push({type:'start',team:-1,eyebrow:'DER KAMPF BEGINNT',name:teamName(b,0)+' gegen '+teamName(b,1),sub:b.actors.filter(a=>a.team===0).length+' gegen '+b.actors.filter(a=>a.team===1).length,stats:[],say:[left>0?line('rest',{n:left}):'',fc&&!lion?(Math.abs(fc.win[0]-fc.win[1])<.12?line('winEven'):line('winLine',{team:teamName(b,fc.win[0]>fc.win[1]?0:1),p:Math.round(Math.max(...fc.win)*100)})):'',beasty?line(dogs?'dogStart':'beastStart'):line('start')].filter(Boolean)});
  return cards;}
 let intro=null,done=new Set(),timer=null,raf=0;
 // Schrift so groß wie möglich, aber der Satz passt immer ganz in sein Feld
@@ -177,6 +190,9 @@ function card(){const c=intro.cards[intro.i],el=$('modCard');if(!el)return;const
  const f=$('modFace');cancelAnimationFrame(raf);if(f){const g2=f.getContext('2d'),t0=performance.now();let gear=null;if(c.type==='weapon'){gear=document.createElement('canvas');M.renderGear(gear,c.item);}
   const frame=now=>{if(!intro||intro.cards[intro.i]!==c||!f.isConnected)return;const t=(now-t0)/1000;
    if(gear){/* Waffe groß, langsam näher */g2.imageSmoothingEnabled=false;g2.fillStyle='#172327';g2.fillRect(0,0,f.width,f.height);const z=3.2+t*.12,dw=gear.width*z,dh=gear.height*z;g2.drawImage(gear,Math.round(f.width/2-dw/2+Math.sin(t*.6)*14),Math.round(f.height/2-dh/2),Math.round(dw),Math.round(dh));const gl=g2.createRadialGradient(f.width/2,f.height/2,30,f.width/2,f.height/2,f.width*.6);gl.addColorStop(0,'rgba(240,190,110,.12)');gl.addColorStop(1,'rgba(0,0,0,.7)');g2.fillStyle=gl;g2.fillRect(0,0,f.width,f.height);}
+   else if(c.a.dog){/* Hund groß in der Arena */const ART=window.ArenaArt;g2.imageSmoothingEnabled=false;g2.setTransform(1,0,0,1,0,0);try{ART.arena(g2,f.width,f.height,t,{cheer:1});}catch{g2.fillStyle='#b38c54';g2.fillRect(0,0,f.width,f.height);}g2.fillStyle='rgba(10,6,4,.35)';g2.fillRect(0,0,f.width,f.height);
+    try{window.DOG.portrait(g2,c.a.dog._src||c.a.dog,{t,mood:(t%3)<1.2?'proud':'focus',x:f.width/2,y:f.height-8,w:250,face:c.team?-1:1});}catch{}
+    const gl=g2.createRadialGradient(f.width/2,f.height/2,40,f.width/2,f.height/2,f.width*.62);gl.addColorStop(0,'rgba(0,0,0,0)');gl.addColorStop(1,'rgba(0,0,0,.6)');g2.fillStyle=gl;g2.fillRect(0,0,f.width,f.height);}
    else if(c.a.rex&&!c.a.hahn){/* der Löwe: Spielgrafik groß, brüllend */const u=t%4.5,roar=u>.6&&u<2.3;if(roar&&c.cry!==Math.floor(t/4.5)){c.cry=Math.floor(t/4.5);M.rexHiss?.('roar');}g2.imageSmoothingEnabled=false;g2.setTransform(1,0,0,1,0,0);g2.fillStyle='#b38c54';g2.fillRect(0,0,f.width,f.height);g2.fillStyle='#a17c47';for(let y=20;y<f.height;y+=34)g2.fillRect(0,y,f.width,3);const z=2.1*(roar?1.08:1),sh=roar?5:0;g2.save();g2.translate(Math.round(f.width*.5+(Math.random()-.5)*sh),Math.round(f.height*.66+(Math.random()-.5)*sh));g2.scale(z,z);try{M.drawRex(g2,{...c.a,x:0,y:0,z:0,mode:roar?'roar':'threaten',phase:t*3,a:Math.PI,split:null});}catch{}g2.restore();const gl=g2.createRadialGradient(f.width/2,f.height/2,40,f.width/2,f.height/2,f.width*.62);gl.addColorStop(0,'rgba(200,60,30,.08)');gl.addColorStop(1,'rgba(0,0,0,.78)');g2.fillStyle=gl;g2.fillRect(0,0,f.width,f.height);}
    else if(c.a.hahn||c.a.lion){/* Kampfhahn bzw. Tier groß in der Arena */const ART=window.ArenaArt;g2.imageSmoothingEnabled=false;g2.setTransform(1,0,0,1,0,0);try{ART.arena(g2,f.width,f.height,t,{cheer:1});}catch{g2.fillStyle='#b38c54';g2.fillRect(0,0,f.width,f.height);}g2.fillStyle='rgba(10,6,4,.35)';g2.fillRect(0,0,f.width,f.height);
     try{if(c.a.hahn)ART.rooster(g2,c.a.hahn,{t,mood:(t%3)<1.2?'proud':'focus',w:f.width,h:f.height,size:150,x:f.width/2,y:f.height-6,view:(t%5)<2.2?'front':'side',face:c.team?-1:1});else ART.lion(g2,c.a.lion,{t,mood:'proud',x:f.width/2,y:f.height-6,scale:1.5,face:c.team?-1:1});}catch{}
@@ -194,7 +210,7 @@ function sentence(){const c=intro.cards[intro.i],text=c.say[intro.s]||'',lastLin
 function next(){if(!intro)return;const c=intro.cards[intro.i];if(c&&intro.s<c.say.length-1){intro.s++;sentence();return;}intro.i++;if(intro.i>=intro.cards.length||!S.battle||S.battle.id!==intro.battle){end();return;}card();}
 function end(){clearTimeout(timer);intro=null;M.crowdMood?.(null);M.battleHud.spot=null;M.focus?.(null);const el=$('modCard');if(el){el.hidden=true;el.innerHTML='';}say(line('start'),1,true);}
 // Neue Arena (arena-core) startet ihre Uhr bei 3,2 s (Vorlauf): maßgeblich ist die Zeit seit dem Start. Tierkämpfe und Story-Kämpfe haben eigene Vorstellungen.
-function begin(b){if(done.has(b.id)||b.time>(b.startTime||0)+3||b.finale||b.result||b.lesson||b.hundefang||(b.neu&&b.actors.some(a=>a.rex&&!a.hahn))||(b.benchmark&&!M.moderatorInBenchmark))return;done.add(b.id);const cards=lineup(b);if(cards.length<2)return;intro={cards,i:-1,s:0,battle:b.id};track=null;next();}
+function begin(b){if(done.has(b.id)||b.time>(b.startTime||0)+3||b.finale||b.result||b.lesson||b.hundefang||(b.neu&&b.actors.some(a=>a.rex&&!a.hahn&&!a.dog))||(b.benchmark&&!M.moderatorInBenchmark))return;done.add(b.id);const cards=lineup(b);if(cards.length<2)return;intro={cards,i:-1,s:0,battle:b.id};track=null;next();}
 // Während der Vorstellung steht der Kampf
 for(const name of ['fixedStep','effectsStep']){const base=M[name];if(typeof base==='function')M[name]=function(){if(intro&&S.battle?.id===intro.battle)return;return base.apply(this,arguments);};}
 M.battleHud.onBuild=(panel,b)=>{const mod=document.createElement('div');mod.className='bh-mod';mod.id='bhMod';mod.innerHTML='<p id="bhModText"></p>';panel.insertBefore(mod,panel.querySelector('.bh-body'));panel.classList.add('has-mod');
@@ -212,6 +228,8 @@ function watch(){const b=S.battle;if(!b||!document.body.classList.contains('bhud
  if(b.finale){sweep(b);verdictWatch(b);return;}
  if(!track||track.id!==b.id)track={id:b.id,a:{},blood:false,lead:0,last:{},streak:{},tally:{}};
  for(const a of b.actors){const g=a.g,s=track.a[a.id]??={dead:g.dead,down:a.down,miss:Object.values(g.body).filter(p=>p.missing).length,kills:a.kills||0},team=teamName(b,a.team);
+  if(a.dog){const dn=!!(a.submit||a.fled);if(g.dead&&!s.dead){s.dead=true;s.down=true;const k=b.actors.find(x=>x.id===a.lastAttackerId)?.g.name||(g.killer&&g.killer!=='Unbekannt'?g.killer:'Der Gegner');const t=line('dogDeath',{v:g.name,k});say(t,5,true);M.speakLine?.(t,'moderator',null,{vol:1.05,keep:true});M.audioEngine?.sound?.('jubel');}
+   else if(dn&&!s.down&&!g.dead){s.down=true;const t=line('dogDown',{v:g.name});say(t,4,true);M.speakLine?.(t,'moderator',null,{vol:1.05,keep:true});M.audioEngine?.sound?.(Math.random()<.5?'laugh':'boo');}continue;}
   if(g.dead&&!s.dead){s.dead=true;s.down=true;credit(b,a,true);const k=g.killer&&g.killer!=='Unbekannt'?g.killer:'',hero=heroes.has(g.id);say(line(hero?'deathHero':k?'death':'deathPlain',{v:g.name,k:k||'Der Sand',team,...facts(g)}),hero?5:4);M.sound?.('crowd');if(hero)setTimeout(()=>M.sound?.('crowd'),500);continue;}
   if(a.down&&!s.down&&!g.dead){s.down=true;const by=credit(b,a,false);say(by?line('koBy',{v:g.name,k:by.g.name}):line('ko',{v:g.name}),3);M.sound?.('crowd');}
   if(!a.down)s.down=false;
