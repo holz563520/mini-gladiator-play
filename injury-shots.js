@@ -350,7 +350,7 @@ function arenaShot(x){const {e,k,inj}=x,g=e.g,p=g.body[e.part],gr=M.injuryGrade(
  else{const wid=weaponId(e.weapon),kind=['bow','crossbow'].includes(wid)&&['stab','deepstab'].includes(k)?'arrow':k,
    cons=p.missing?'für immer verloren':p.fracture?.crushed?'Dauerschaden: heilt nie ganz':p.fracture?'Bruch: mindestens '+Math.ceil(p.fracture.days/(M.HEAL_SPEED||1))+' Tage':e.lasting||p.chronic>0?'Dauerschaden':p.bleed>0?'blutet weiter':'';
   o={g,part:e.part,kind,wid,cls:wid?undefined:'none',line1:(e.attacker||'Ein Gegner')+(e.weapon?' ('+e.weapon+')':'')+' fügt '+g.name+' zu:',title:inj,line3:[p.missing?'':'Grad '+gr+' ('+GRADE[gr]+')',kind==='arrow'?'der Pfeil bleibt stecken':'',cons].filter(Boolean).join(' · '),color:gr>=3||p.missing?'#f29b83':'#f4d37a'};}
- if(!x.live&&M.speakLine){const L=modLine(k,e,g,p,gr,by,o.kind);if(L){M.speakLine(L,'moderator',null,{vol:1.05});M.modSayNow?.(L);}}
+ if(!x.live&&M.speakLine){const L=modLine(k,e,g,p,gr,by,o.kind);if(L){M.speakLine(L,'moderator',null,{vol:1.05});M.modSayNow?.(L);M.audioEngine?.sound?.('jubel');}}
  const shot=start({...o,textScale:cfg.host?.()?cfg.textScale:1,from:SHOT_FROM,len:k==='death'?(x.dramatic?5:3):x.live?1.5:SHOT_LEN,hold:tap()&&!x.live,mute:true}),host=cfg.host?.();
  if(host){cfg.onShot?.(true,o,!!x.live);arena={v:null,shot,c:host,g:host.getContext('2d'),battle:S.battle.id,live:!!x.live};}
  else{const v=document.createElement('div');v.className='injury-shot injury-shot-arena';v.innerHTML='<canvas width="660" height="420"></canvas>';document.body.appendChild(v);v.addEventListener('click',()=>{shot.done=true;});arena={v,shot,c:v.firstChild,g:v.firstChild.getContext('2d'),battle:S.battle.id};}if(!x.live)gap=tap()?1.2:GAP;}
