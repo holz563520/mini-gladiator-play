@@ -359,7 +359,12 @@ const LAYER=()=>$('owBubbles');
 // Wichtige (Anführer, Boss, laut) lösen die laufende ab; normale warten kurz (höchstens zwei in der Schlange); kleine Zurufe entfallen, solange eine Blase steht.
 // Jede gezeigte Blase wird leise vorgelesen (M.speakLine soft: nur wenn gerade kein Gespräch läuft).
 const BQ={until:0,prio:0,queue:[],timer:0};
-function bubble(a,text,o={}){if(!a||!text)return;const prio=o.lead||o.boss||o.loud?2:o.small?0:1,now=performance.now();
+// Plünderungen (Wunsch Thomas 26.10.): jede Sprechblase wird ganz vorgelesen, keine wird weggelassen. Sie kommen der Reihe nach
+// (holdSay → sayFull); während gesprochen wird, steht der Kampf (sprech-game.js speechFreeze). Kleine Bestätigungen bleiben stumm.
+const HQ=[];let hqBusy=false;
+function holdSay(a,text,o={}){HQ.push([a,text,o]);if(HQ.length>8)HQ.shift();hqPump();}
+async function hqPump(){if(hqBusy)return;hqBusy=true;try{while(HQ.length&&R.m&&!R.ended){const [a,t,o]=HQ.shift();if(!a||(a.g?.dead&&!o.dead))continue;await sayFull(a,t,{...o,log:false});}}finally{hqBusy=false;HQ.length=0;}}
+function bubble(a,text,o={}){if(!a||!text)return;if(R.m?.kind==='adventure'&&!o.small){holdSay(a,text,o);return;}const prio=o.lead||o.boss||o.loud?2:o.small?0:1,now=performance.now();
  if(prio<2&&M.fieldTalk&&!M.fieldTalk.ok()&&now>=BQ.until)return;if(prio===2&&(M.speechHold?.()||M.fieldTalk?.speaking?.())){BQ.queue.push([a,text,o,prio]);if(BQ.queue.length>3)BQ.queue.splice(0,BQ.queue.length-3);bubbleNext();return;}
  if(now<BQ.until){if(prio===0)return;if(prio===2&&BQ.prio<2){bubbleShow(a,text,o,prio);return;}BQ.queue.push([a,text,o,prio]);if(BQ.queue.length>2)BQ.queue.splice(0,BQ.queue.length-2);bubbleNext();return;}
  bubbleShow(a,text,o,prio);}
@@ -388,14 +393,14 @@ async function sayFull(a,text,o={}){if(!a||!text)return;const b=S.battle;
 const ANIM={until:0,kind:null};
 function partyAnim(kind,sec){ANIM.kind=kind;ANIM.until=performance.now()+sec*1000;}
 function animStep(b,dt){if(!ANIM.kind)return;const on=performance.now()<ANIM.until;for(const a of partyActors(b)){if(a.to)continue;
-  if(on){a.state='celebrate';a.phase=(a.phase||0)+dt*(ANIM.kind==='laugh'?9:6);if(ANIM.kind==='laugh'){a.practiceCheer=1;a.warCry=0;}else{a.warCry=1.4;a.practiceCheer=0;}}
+  if(on){a.state='celebrate';a.phase=(a.phase||0)+dt*(ANIM.kind==='laugh'?9:7);const clap=ANIM.kind==='laugh'||((a.g.id.charCodeAt(a.g.id.length-1)+Math.floor(performance.now()/1400))%2===0);if(clap){a.practiceCheer=1;a.warCry=0;}else{a.warCry=1.4;a.practiceCheer=0;}}
   else{a.state='idle';a.practiceCheer=0;a.warCry=0;}}
  if(!on)ANIM.kind=null;}
 const CHEER=['SIEG!','HA! Wer ist der Nächste?','Das war’s? Ich hab mich gerade erst aufgewärmt!','FÜR DEN LUDUS!','Tot, tot, und der da auch!','Hat jemand gezählt? Ich hab bei drei aufgehört!'];
 const LAUGH=['HAHAHA!','Hahaha! Hast du sein Gesicht gesehen?','Hehehe. Der guckt immer noch überrascht.','HA! Der Nächste, bitte!','Hahaha! Gnade! Hat er gesagt! Gnade!'];
 // erst Nahaufnahmen und Erzähler (z. B. der letzte Tod) ausreden lassen
 async function waitShots(b,lim=16000){const t0=performance.now(),IS=M.injuryShots;while(live(b)&&performance.now()-t0<lim&&(IS?.arena||IS?.pending?.length||M.speechHold?.()))await sleep(120);}
-async function celebrate(b){if(!live(b))return;await waitShots(b);if(!live(b))return;setButtons('after');partyAnim('cheer',3.2);try{M.audioEngine?.sound?.('partyCheer');M.voice?.('battlecry',1);}catch(e){}
+async function celebrate(b){if(!live(b))return;await sleep(1100);await waitShots(b);while(live(b)&&(HQ.length||hqBusy))await sleep(120);await waitShots(b,6000);if(!live(b))return;setButtons('after');partyAnim('cheer',4.2);try{M.audioEngine?.crowdMood?.('clap');M.audioEngine?.sound?.('partyCheer');M.voice?.('battlecry',1);}catch(e){}
  const pa=partyActors(b),c=[...CHEER].sort(()=>Math.random()-.5);if(pa[0])await sayFull(pa[0],c[0],{name:first(pa[0].g),loud:true});if(pa[1]&&live(b))await sayFull(pa[1],c[1],{name:first(pa[1].g)});
  while(live(b)&&performance.now()<ANIM.until)await sleep(80);}
 async function laugh(b,who){if(!live(b))return;await waitShots(b,9000);if(!live(b))return;partyAnim('laugh',2.6);try{M.audioEngine?.sound?.('laugh');}catch(e){}const k=who||anyParty(b);if(k)await sayFull(k,pickL(LAUGH),{name:first(k.g),log:false});
@@ -716,7 +721,7 @@ async function flee(){clearInterval(R.autoT);const m=R.m,b=S.battle;if(!m||R.end
   for(const a of b.actors)if(a.team===0&&!a.down&&!a.g.dead){a.to=[a.x-500,a.y,120];a.path=[];}
   const a=anyParty(b);if(a)bubble(a,pickL(['RENNT!','Taktischer Rückzug! Also: RENNT!','Ich hol schon mal die Pferde! Wir haben keine Pferde!','Wer zuletzt am Tor ist, zahlt die Zinsen!']),{name:first(a.g)});}
  await talkPause(1600);if(b&&inFight){learnRecipes(m,b);D.endEncounter(m,b,{fled:true});}m.state='fled';finishMission('fled');}
-function cleanupBattle(){LU?.reset();SH?.reset();WAG=null;if(R.m?.boss)NT?.unregister(R.m.boss);const m=R.m;if(m&&m.prevLimit!==undefined){if(m.prevLimit===null)delete M.benchmarkTimeLimit;else M.benchmarkTimeLimit=m.prevLimit;}
+function cleanupBattle(){HQ.length=0;LU?.reset();SH?.reset();WAG=null;if(R.m?.boss)NT?.unregister(R.m.boss);const m=R.m;if(m&&m.prevLimit!==undefined){if(m.prevLimit===null)delete M.benchmarkTimeLimit;else M.benchmarkTimeLimit=m.prevLimit;}
  M.missionBackdrop=null;document.body.classList.remove('ow-mission');$('owOver')?.remove();const bb=$('battleBottom');if(bb){bb.innerHTML='';delete bb.dataset.ow;}$('battleView')?.classList.remove('ow-fade');}
 function abortMission(){R.ending=true;R.ended=true;cleanupBattle();R.m=null;R.b=null;R.nextRes=null;}
 function finishMission(kind){const m=R.m;if(R.ended)return;R.ended=true;R.ending=true;R.fleeing=false;R.marching=false;setButtons('end');R.nextRes=null;
