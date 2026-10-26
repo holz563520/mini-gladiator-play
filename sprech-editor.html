@@ -1,0 +1,140 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Sprechstimmen · Editor</title>
+<link rel="stylesheet" href="brand.css">
+<link rel="stylesheet" href="manager.css">
+<style>
+/* Editor für die 16-Bit-Sprechstimmen (sprechsound.js). Farben/Knöpfe aus manager.css, Schrift aus brand.css. */
+[hidden]{display:none!important}
+body{min-height:100vh;margin:0}
+.wrap{max-width:1180px;margin:auto;padding:14px 16px 60px}
+.tl{font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+h1{font-size:clamp(22px,5vw,34px);color:var(--gold);letter-spacing:3px;margin:4px 0;text-transform:uppercase}
+h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;margin:0 0 6px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px;line-height:1.5;max-width:860px}
+.grid{display:grid;grid-template-columns:230px minmax(0,1fr);gap:14px;align-items:start}.grid>*{min-width:0}#lines{width:100%;margin-bottom:8px}
+.list{background:var(--surface);border:1px solid var(--line)}
+.item{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:13px;border-left:3px solid transparent;border-top:1px solid #2a383b}
+.item:first-child{border-top:0}.item:hover{background:#26343a}.item.on{background:#2c3c41;border-left-color:var(--gold)}
+.item b{font-weight:normal;flex:1}.item i{color:var(--gold);font-style:normal;font-size:11px}
+.main{background:var(--surface);border:1px solid var(--line);padding:16px;min-width:0}
+.stage{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:start}
+#face{width:192px;height:192px;image-rendering:pixelated;background:#101719;border:3px solid #52625b;display:block}
+.cap{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:.08em;text-transform:uppercase;text-align:center}
+textarea{width:100%;box-sizing:border-box;min-height:84px;background:#101719;color:var(--cream);border:1px solid var(--line);padding:8px;font:inherit;font-size:14px;line-height:1.4;resize:vertical}
+select{background:#101719;color:var(--cream);border:1px solid var(--line);padding:8px;font:inherit;font-size:12px;max-width:100%}
+.bbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.bbar .btn{min-height:38px}
+.phon{font-family:monospace;font-size:12px;color:var(--muted);background:#101719;border:1px solid var(--line);padding:6px 8px;min-height:18px;word-break:break-all}
+canvas#wave{width:100%;height:70px;background:#101719;border:1px solid var(--line);display:block;margin:10px 0}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px 16px;margin-top:8px}
+.f{display:grid;grid-template-columns:110px minmax(0,1fr) 64px;gap:6px;align-items:center;font-size:12px}
+.f span{color:var(--muted)}
+.f input[type=range]{width:100%;accent-color:var(--gold)}
+.f input[type=number]{width:100%;box-sizing:border-box;background:#101719;color:var(--cream);border:1px solid var(--line);padding:3px 4px;font:inherit;font-size:12px}
+.grp{font-size:10px;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin:14px 0 2px;grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.ovl{position:fixed;inset:0;background:rgba(5,8,9,.8);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px}
+.ovl .box{max-width:720px;width:100%}
+.ovl textarea{height:46vh;font:12px monospace}
+@media(max-width:820px){.grid{grid-template-columns:1fr}.list{display:flex;overflow-x:auto}.item{border-top:0;border-left:0;border-bottom:3px solid transparent;white-space:nowrap}.item.on{border-bottom-color:var(--gold)}.stage{grid-template-columns:1fr}#face{margin:auto}.f{grid-template-columns:96px minmax(0,1fr) 56px}}
+</style></head><body><div class="wrap">
+<p class="tl">Mini Gladiator · Testseite</p>
+<h1>Sprechstimmen</h1>
+<p class="sub">Wer spricht, liest seinen Text als 16-Bit-Stimme vor: schnell, grob und blechern wie auf alten Konsolen, aber man hört heraus, was gesagt wird. Der Mund in der Großaufnahme folgt den Lauten. Text eintippen oder einen Satz aus dem Spiel wählen, Stimme wählen, Regler verschieben, anhören. Änderungen bleiben auf diesem Gerät; mit „Export“ bekommst du sie als Text.</p>
+<div class="grid"><nav class="list" id="list"></nav>
+<section class="main">
+ <div class="stage">
+  <div><canvas id="face" width="64" height="64"></canvas><div class="cap" id="who"></div></div>
+  <div>
+   <select id="lines" aria-label="Satz aus dem Spiel"></select>
+   <textarea id="text" aria-label="Text"></textarea>
+   <div class="bbar"><button class="btn primary" id="say">▶ Sprechen</button><button class="btn" id="stop">■ Stopp</button><button class="btn" id="rnd">Zufallssatz</button><button class="btn" id="all">▶ Alle Stimmen</button></div>
+   <div class="phon" id="phon" title="Lautschrift: so liest die Stimme den Text"></div>
+  </div>
+ </div>
+ <canvas id="wave" width="1000" height="70"></canvas>
+ <div class="fields" id="fields"></div>
+ <div class="bbar"><button class="btn" id="reset">⟲ Stimme zurücksetzen</button><button class="btn" id="exp">Export</button><button class="btn" id="imp">Import</button></div>
+ <p class="note">Lautschrift: Großbuchstaben sind kurze Vokale, Kleinbuchstaben lange; @ ist das tonlose e („Hund<b>e</b>“), 6 das vokalische r („Bürg<b>er</b>“), S = sch, C = ich-Laut, x = ach-Laut, ˈ = betont.</p>
+</section></div>
+<div class="ovl" id="ovl" hidden><div class="box"><h2 id="ovlT">Export</h2><textarea id="ovlX"></textarea><div class="bbar"><button class="btn primary" id="ovlOk">Übernehmen</button><button class="btn" id="ovlNo">Schließen</button></div></div></div>
+</div>
+<script src="sprechsound.js"></script>
+<script>
+'use strict';
+(()=>{
+const S=window.Sprech,$=id=>document.getElementById(id);
+const LINES=[
+ ['moderator','Bürger von Rom! Heute kämpft ein Rekrut gegen die Bestie. Wer wird siegen?'],
+ ['moderator','Genug geredet. Lasst sie bluten!'],
+ ['moderator','Möge der Bessere gewinnen. Oder wenigstens der Unterhaltsamere.'],
+ ['moderator','Tore zu, Wetten zu, Augen auf!'],
+ ['moderator','Der Medicus hat sich schon die Hände gewaschen. Fangt an!'],
+ ['moderator','Noch ist alles offen. Vor allem einige Wunden.'],
+ ['rabies','Rabies. Das ist Latein für Tollwut.'],
+ ['rabies','Pluto ist seit drei Wintern tot. Er hört trotzdem besser als die meisten Rekruten.'],
+ ['rabies','Harmlos. Hat mir nur einmal den Daumen abgeleckt. Danach war er weg. Der Daumen.'],
+ ['schmied','Das ist Orontes. Er verkauft Bögen. Er ist verrückt. Ich bin raus. Prost.'],
+ ['schmied','Ist er weg? Gut. Der Mann schmiedet Schwerter wie ein Ochse, der Liebesbriefe schreibt.'],
+ ['orontes','Orontes Pfeilkopf! Bögen, Armbrüste, Pfeile, Bolzen, und Ratschläge, die keiner hören will!'],
+ ['orontes','Kauf dir einen Rekruten auf dem Sklavenmarkt. Dann sag ich dir, ob er zum Schießen taugt.'],
+ ['orontes','Der Medicus ist inzwischen tot. Der Pfeil ist noch da. Seitdem treffe ich besser. Und ich höre Farben.'],
+ ['krassus','Du schuldest mir Geld. Und Geld vergisst nie.'],
+ ['medicus','Halt still. Das tut nur weh, wenn du noch lebst.'],
+ ['rekrut','Ich bin bereit! Glaube ich. Wo ist vorne?'],
+ ['frau','Noch ein Schritt, und du kannst deine Zähne einzeln zählen.'],
+ ['erzaehler','Die Truppe ist zurück. Was unterwegs geschah, weiß nur noch der Wind.']];
+const FIELDS=[['Stimme',[['pitch','Tonhöhe (Hz)',60,320,1],['size','Körpergröße',.7,1.4,.01],['rough','Rauheit',0,1,.01],['breath','Hauch',0,1,.01],['shake','Zittern (alt)',0,1,.01]]],
+ ['Sprechweise',[['speed','Tempo',.8,3,.05],['inton','Sprachmelodie',0,1.2,.01],['sing','Singsang je Silbe',0,.5,.01]]],
+ ['16-Bit-Klang',[['rate','Abtastung (Hz)',4000,22050,50],['bits','Bittiefe',3,16,1],['echo','Echo',0,.8,.01],['vol','Lautstärke',0,1.5,.01]]]];
+let cur='moderator',work=null,ctx=null,out=null,playing=[],mouthFn=null,blink=0;
+function audio(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();out=ctx.createGain();out.gain.value=.9;out.connect(ctx.destination);}if(ctx.state==='suspended')ctx.resume();return ctx;}
+function stop(){for(const p of playing){try{p.source.stop();}catch{}}playing=[];mouthFn=null;}
+function list(){$('list').innerHTML=S.ORDER.map(k=>`<div class="item${k===cur?' on':''}" data-k="${k}"><b>${S.PRESETS[k].name}</b>${S.changed(k)?'<i>●</i>':''}</div>`).join('');}
+function fields(){const v=work;$('fields').innerHTML=FIELDS.map(([g,fs])=>`<div class="grp">${g}</div>`+fs.map(([k,l,a,b,st])=>`<label class="f"><span>${l}</span><input type="range" data-k="${k}" min="${a}" max="${b}" step="${st}" value="${v[k]}"><input type="number" data-n="${k}" min="${a}" max="${b}" step="${st}" value="${v[k]}"></label>`).join('')).join('');}
+function lines(){$('lines').innerHTML='<option value="">Satz aus dem Spiel wählen …</option>'+LINES.map(([k,t],i)=>`<option value="${i}">${S.PRESETS[k].name}: ${t.length>60?t.slice(0,58)+'…':t}</option>`).join('');}
+function select(k){cur=k;work=JSON.parse(JSON.stringify(S.get(k)));list();fields();$('who').textContent=S.PRESETS[k].name;const l=LINES.find(x=>x[0]===k);if(l&&!$('text').dataset.own)$('text').value=l[1];phon();}
+function phon(){$('phon').textContent=S.text2ph($('text').value).map(o=>o.p==='_'?(o.end?o.end+' ':' '):o.p+(o.stress?'ˈ':'')).join('').replace(/\s+/g,' ').trim();}
+function wave(data){const c=$('wave'),g=c.getContext('2d');g.fillStyle='#101719';g.fillRect(0,0,c.width,c.height);g.strokeStyle='#dfb66d';g.beginPath();const st=Math.max(1,Math.floor(data.length/c.width));for(let x=0;x<c.width;x++){let mn=0,mx=0;for(let i=x*st;i<Math.min(data.length,(x+1)*st);i++){mn=Math.min(mn,data[i]);mx=Math.max(mx,data[i]);}g.moveTo(x+.5,35-mx*33);g.lineTo(x+.5,35-mn*33);}g.stroke();}
+function say(k=cur,text=$('text').value,at=0){const c=audio(),v=k===cur?work:S.get(k);const R=S.play(c,out,text,v,{at:c.currentTime+at});playing.push(R);if(k===cur||at===0){}R.k=k;wave(S.render(text,v,{seed:1}).data);return R;}
+// ---------- Gesicht in Großaufnahme (64 × 64, 16-Bit-Stil) ----------
+function face(open,k){const c=$('face'),g=c.getContext('2d'),L=S.PRESETS[k].look,R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+ const shade=(hex,f)=>{const n=parseInt(hex.slice(1),16);let r=n>>16,gg=n>>8&255,b=n&255;r=Math.round(r*f);gg=Math.round(gg*f);b=Math.round(b*f);return `rgb(${Math.min(255,r)},${Math.min(255,gg)},${Math.min(255,b)})`;};
+ R(0,0,64,64,'#1d2a2e');for(let y=0;y<64;y+=4)R(0,y,64,1,'#223236');
+ if(L.long){R(12,10,40,46,L.hair);}
+ // Hals, Kopf
+ R(24,50,16,14,shade(L.skin,.85));R(16,12,32,40,L.skin);R(14,18,2,26,L.skin);R(48,18,2,26,L.skin);R(17,48,30,4,shade(L.skin,.9));
+ R(16,40,32,4,shade(L.skin,.93));R(12,26,4,8,shade(L.skin,.85));R(48,26,4,8,shade(L.skin,.85));
+ // Haare
+ if(L.skull){R(14,6,36,10,'#e8e1cf');R(18,9,6,4,'#1d1a16');R(40,9,6,4,'#1d1a16');R(28,13,8,2,'#1d1a16');R(14,14,36,3,'#bfb6a0');R(12,16,4,18,L.hair);R(48,16,4,18,L.hair);}
+ else{R(15,8,34,8,L.hair);R(14,12,4,12,L.hair);R(46,12,4,12,L.hair);}
+ if(L.band){R(15,14,34,3,L.band);}
+ // Augen (blinzeln)
+ const bl=blink>0;R(21,24,9,2,shade(L.hair==='#e6e1d5'||L.hair==='#d9d2c0'?'#8a8070':L.hair,1));R(34,24,9,2,shade(L.hair==='#e6e1d5'||L.hair==='#d9d2c0'?'#8a8070':L.hair,1));
+ if(bl){R(22,29,7,1,'#3a2418');R(35,29,7,1,'#3a2418');}else{R(22,27,7,4,'#f1ead8');R(35,27,7,4,'#f1ead8');R(25,27,3,4,'#2a1a10');R(38,27,3,4,'#2a1a10');}
+ // Nase
+ R(30,31,4,8,shade(L.skin,.82));R(29,38,6,2,shade(L.skin,.75));
+ // Bart
+ if(L.beard){R(16,40,32,14,L.beardCol);R(14,34,4,12,L.beardCol);R(46,34,4,12,L.beardCol);R(22,41,20,2,shade(L.beardCol,.8));}
+ // Mund: Höhe folgt der Öffnung
+ const o=Math.max(0,Math.min(1,open)),mh=Math.round(1+o*8),mw=Math.round(14-o*2),mx=32-Math.round(mw/2),my=43;
+ R(mx-1,my-1,mw+2,mh+2,shade(L.skin,.6));R(mx,my,mw,mh,'#3a1010');if(mh>3){R(mx+1,my,mw-2,2,'#efe6d0');R(mx+3,my+mh-2,mw-6,2,'#a3403a');}
+ if(L.gold){R(52,34,3,5,'#e7c35a');R(53,39,1,2,'#e7c35a');}}
+function loop(){requestAnimationFrame(loop);if(blink>0)blink--;else if(Math.random()<.008)blink=7;let o=0,k=cur;const now=ctx?.currentTime||0;playing=playing.filter(p=>now<p.start+p.dur+.3);const p=playing.find(p=>now>=p.start&&now<=p.start+p.dur);if(p){o=p.mouthAt(now);k=p.k;}face(o,k);if(p)$('who').textContent=S.PRESETS[p.k].name;}
+// ---------- Bedienung ----------
+$('list').addEventListener('click',e=>{const it=e.target.closest('.item');if(it){stop();select(it.dataset.k);}});
+$('fields').addEventListener('input',e=>{const el=e.target,k=el.dataset.k||el.dataset.n;if(!k)return;const v=+el.value;work[k]=v;$('fields').querySelectorAll(`[data-k="${k}"],[data-n="${k}"]`).forEach(x=>{if(x!==el)x.value=v;});S.set(cur,work);list();});
+$('fields').addEventListener('change',()=>{stop();say();});
+$('text').addEventListener('input',()=>{$('text').dataset.own='1';phon();});
+$('lines').addEventListener('change',e=>{const l=LINES[+e.target.value];if(!l)return;$('text').value=l[1];$('text').dataset.own='1';select(l[0]);stop();say();e.target.value='';});
+$('say').onclick=()=>{stop();say();};$('stop').onclick=stop;
+$('rnd').onclick=()=>{const own=LINES.filter(l=>l[0]===cur),l=(own.length?own:LINES)[Math.floor(Math.random()*(own.length||LINES.length))];$('text').value=l[1];phon();stop();say();};
+$('all').onclick=()=>{stop();let at=0;const t=$('text').value;for(const k of S.ORDER){const R=say(k,t,at);at+=R.dur+.35;}};
+$('reset').onclick=()=>{S.reset(cur);select(cur);};
+const ovl=(title,text,ok)=>{$('ovlT').textContent=title;$('ovlX').value=text;$('ovl').hidden=false;$('ovlOk').hidden=!ok;$('ovlOk').onclick=()=>{if(ok($('ovlX').value)!==false)$('ovl').hidden=true;};};
+$('ovlNo').onclick=()=>{$('ovl').hidden=true;};
+$('exp').onclick=()=>ovl('Export – diesen Text an Claude schicken',JSON.stringify(S.saved(),null,1));
+$('imp').onclick=()=>ovl('Import – Export-Text einfügen','',txt=>{try{S.load(JSON.parse(txt));select(cur);}catch{$('ovlT').textContent='Das ist kein gültiger Export. Bitte den ganzen Text einfügen.';return false;}});
+lines();select(cur);loop();
+window.SPE={get work(){return work;},say,select};
+})();
+</script></body></html>

@@ -1,6 +1,6 @@
 'use strict';
 // Versionskennung: wird beim Veröffentlichen durch die Commit-Kennung ersetzt, damit Browser nach einem Update keine alten Dateien aus dem Zwischenspeicher nehmen.
-var BUILD='54e7a6e7-20261026';
+var BUILD='6dc53a87-20261026';
 (async()=>{
  // Dismiss an intro left by an older HTML entry point before loading the game.
  try{window.ArenaTheoryIntro?.finish?.();}catch{}

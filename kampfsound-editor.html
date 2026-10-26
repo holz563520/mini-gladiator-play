@@ -10,8 +10,8 @@ body{min-height:100vh;margin:0}
 h1{font-size:clamp(22px,5vw,34px);color:var(--gold);letter-spacing:3px;margin:4px 0;text-transform:uppercase}
 h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;margin:0 0 6px}
 .sub{color:var(--muted);font-size:13px;margin:0 0 12px;line-height:1.5;max-width:880px}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
-.bar .btn{min-height:38px}
+.bbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.bbar .btn{min-height:38px}
 .grid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:start}
 .list{background:var(--surface);border:1px solid var(--line);max-height:calc(100vh - 40px);overflow:auto;position:sticky;top:10px}
 .list h3{margin:0;padding:9px 10px 5px;font-size:10px;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;border-top:1px solid var(--line);background:var(--raised)}
@@ -49,17 +49,17 @@ canvas#wave{width:100%;height:90px;background:#101719;border:1px solid var(--lin
 <p class="tl">Mini Gladiator · Testseite</p>
 <h1>Kampfgeräusche</h1>
 <p class="sub">Alle Kampfgeräusche neu: Schläge, Treffer, Paraden, Pfeile, Schreie, Publikum, Faustkampf. Jedes Geräusch besteht aus Ebenen (Ton, Rauschen, Stimme, Metall, Menge, Knackser). Regler verschieben, sofort anhören, jede Wiedergabe klingt leicht anders. Änderungen werden auf diesem Gerät gespeichert. Mit „Export“ bekommst du sie als Text zum Weitergeben.</p>
-<div class="bar"><span class="tl">Szenen</span>
+<div class="bbar"><span class="tl">Szenen</span>
  <button class="btn primary" data-scene="duell">▶ Arena-Duell</button><button class="btn" data-scene="schlacht">▶ Schlacht</button><button class="btn" data-scene="bogen">▶ Bogenschützen</button><button class="btn" data-scene="box">▶ Faustkampf</button><button class="btn" data-act="stop">■ Stopp</button></div>
-<div class="bar"><label class="f" style="grid-template-columns:auto 160px 54px"><span>Gesamtlautstärke</span><input type="range" id="mvol" min="0" max="1.5" step=".01" value=".9"><input type="number" id="mvolN" min="0" max="1.5" step=".01" value=".9"></label>
+<div class="bbar"><label class="f" style="grid-template-columns:auto 160px 54px"><span>Gesamtlautstärke</span><input type="range" id="mvol" min="0" max="1.5" step=".01" value=".9"><input type="number" id="mvolN" min="0" max="1.5" step=".01" value=".9"></label>
  <label class="f" style="grid-template-columns:auto 160px 54px"><span>Stimmlage</span><input type="range" id="vp" min=".6" max="1.6" step=".01" value="1"><input type="number" id="vpN" min=".6" max="1.6" step=".01" value="1"></label>
  <span class="note">Stimmlage wie im Spiel (nach Erfahrung des Kämpfers):</span>
  <span id="vtiers"><button class="btn" data-vp="1.26">1 · Rekrut</button><button class="btn" data-vp="1.13">2</button><button class="btn" data-vp="1">3</button><button class="btn" data-vp=".89">4</button><button class="btn" data-vp=".79">5 · Veteran</button></span></div>
 <script>document.getElementById('vtiers').addEventListener('click',e=>{const b=e.target.closest('[data-vp]');if(!b)return;for(const id of ['vp','vpN']){const el=document.getElementById(id);el.value=b.dataset.vp;el.dispatchEvent(new Event('input',{bubbles:true}));}document.querySelector('[data-act="play"]')?.click();});</script>
 <div class="grid"><nav class="list" id="list"></nav><section class="main" id="main"></section></div>
-<div class="bar" style="margin-top:16px"><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button><button class="btn" data-act="resetall">Alles zurücksetzen</button><span class="note" id="status"></span></div>
+<div class="bbar" style="margin-top:16px"><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button><button class="btn" data-act="resetall">Alles zurücksetzen</button><span class="note" id="status"></span></div>
 </div>
-<div class="ovl" id="ovl" hidden><div class="box"><h2 id="ovlT">Export</h2><p class="note" id="ovlN"></p><textarea id="ovlX" spellcheck="false"></textarea><div class="bar"><button class="btn primary" data-act="ovlok">OK</button><button class="btn" data-act="ovlno">Abbrechen</button></div></div></div>
+<div class="ovl" id="ovl" hidden><div class="box"><h2 id="ovlT">Export</h2><p class="note" id="ovlN"></p><textarea id="ovlX" spellcheck="false"></textarea><div class="bbar"><button class="btn primary" data-act="ovlok">OK</button><button class="btn" data-act="ovlno">Abbrechen</button></div></div></div>
 <script src="kampfsound.js"></script>
 <script>
 'use strict';
@@ -89,7 +89,7 @@ function field(path,label,spec,val){const [mn,mx,st,log]=spec;if(Array.isArray(m
 function list(){$('list').innerHTML=K.CATS.map(([c,n])=>`<h3>${esc(n)}</h3>`+K.ORDER.filter(k=>K.DEF[k].cat===c).map(k=>`<div class="item${k===cur?' on':''}" data-k="${k}"><button class="mini" data-play="${k}" aria-label="Abspielen">▶</button><b>${esc(K.DEF[k].name)}</b>${K.changed(k)?'<i title="geändert">●</i>':''}</div>`).join('')).join('');}
 function main(){work??=JSON.parse(JSON.stringify(K.get(cur)));const p=work,d=K.DEF[cur];
  $('main').innerHTML=`<h2>${esc(d.name)}</h2><p class="use">Im Spiel: ${esc(d.use)}</p>
- <div class="bar"><button class="btn primary" data-act="play">▶ Abspielen</button><button class="btn" data-act="vars">▶ 4 Varianten</button><button class="btn" data-act="reset"${K.changed(cur)?'':' disabled'}>⟲ Zurücksetzen</button></div>
+ <div class="bbar"><button class="btn primary" data-act="play">▶ Abspielen</button><button class="btn" data-act="vars">▶ 4 Varianten</button><button class="btn" data-act="reset"${K.changed(cur)?'':' disabled'}>⟲ Zurücksetzen</button></div>
  <canvas id="wave" width="1200" height="180"></canvas>
  <div class="globals fields">${field('g.vol','Lautstärke',[0,2,.01],p.vol??1)}${field('g.room','Hall (Arena)',[0,1,.01],p.room||0)}${field('g.pitchVar','Zufall Tonhöhe',[0,.4,.01],p.pitchVar||0)}</div>
  ${p.layers.map((L,i)=>{const S=SPEC[L.type];return `<div class="layer${L.mute?' mute':''}"><div class="lh"><strong>${i+1}. ${esc(S.name)}</strong><button class="btn" data-solo="${i}">▶ Nur diese</button><button class="btn" data-mute="${i}">${L.mute?'Einschalten':'Stumm'}</button><button class="btn" data-dup="${i}">Kopieren</button><button class="btn" data-del="${i}">Löschen</button></div>
