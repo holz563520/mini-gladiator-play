@@ -53,7 +53,9 @@ canvas#wave{width:100%;height:90px;background:#101719;border:1px solid var(--lin
  <button class="btn primary" data-scene="duell">▶ Arena-Duell</button><button class="btn" data-scene="schlacht">▶ Schlacht</button><button class="btn" data-scene="bogen">▶ Bogenschützen</button><button class="btn" data-scene="box">▶ Faustkampf</button><button class="btn" data-act="stop">■ Stopp</button></div>
 <div class="bar"><label class="f" style="grid-template-columns:auto 160px 54px"><span>Gesamtlautstärke</span><input type="range" id="mvol" min="0" max="1.5" step=".01" value=".9"><input type="number" id="mvolN" min="0" max="1.5" step=".01" value=".9"></label>
  <label class="f" style="grid-template-columns:auto 160px 54px"><span>Stimmlage</span><input type="range" id="vp" min=".6" max="1.6" step=".01" value="1"><input type="number" id="vpN" min=".6" max="1.6" step=".01" value="1"></label>
- <span class="note">Stimmlage: tief (0,6) bis hoch (1,6), im Spiel kommt sie vom Kämpfer.</span></div>
+ <span class="note">Stimmlage wie im Spiel (nach Erfahrung des Kämpfers):</span>
+ <span id="vtiers"><button class="btn" data-vp="1.26">1 · Rekrut</button><button class="btn" data-vp="1.13">2</button><button class="btn" data-vp="1">3</button><button class="btn" data-vp=".89">4</button><button class="btn" data-vp=".79">5 · Veteran</button></span></div>
+<script>document.getElementById('vtiers').addEventListener('click',e=>{const b=e.target.closest('[data-vp]');if(!b)return;for(const id of ['vp','vpN']){const el=document.getElementById(id);el.value=b.dataset.vp;el.dispatchEvent(new Event('input',{bubbles:true}));}document.querySelector('[data-act="play"]')?.click();});</script>
 <div class="grid"><nav class="list" id="list"></nav><section class="main" id="main"></section></div>
 <div class="bar" style="margin-top:16px"><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button><button class="btn" data-act="resetall">Alles zurücksetzen</button><span class="note" id="status"></span></div>
 </div>

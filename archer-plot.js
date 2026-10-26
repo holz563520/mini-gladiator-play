@@ -312,7 +312,7 @@ function duoPaint(){const c=$('archerPlotCanvas');if(!c?.getContext)return;const
  duoFace(q,r,mix,{cx:122+shakeX,top:24,R:24,skin:'#16100d',shade:'#16100d',hair:'#16100d',charred:true,t});
  for(let i=0;i<9;i++){const u=(t*.55+i/9)%1,x=112+((i*13)%22)+Math.sin(u*7+i)*4,y=22-u*26;q.globalAlpha=.55*(1-u);r(x,y,2+u*3,2+u*2,'#8f8a80');q.globalAlpha=1;}
  g.setTransform?.(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#120c09';g.fillRect(0,0,w,h);const s=Math.max(w/FW,h/FH),dw=FW*s,dh=FH*s;g.drawImage(b,Math.round(w/2-dw/2),Math.round(h/2-dh/2),Math.round(dw),Math.round(dh));
- if(!sc.duoVoice){sc.duoVoice=true;M.voice?.('pain',sc.a?.g?.appearance?.voice||1,true);}
+ if(!sc.duoVoice){sc.duoVoice=true;M.voice?.('pain',(M.voicePitch?.(sc.a?.g)??1),true);}
  if(sc.say&&sc.say.who==='s')htmlBubble('archerPlotBubble',smithName(),sc.say.text,.25,false,sc.waiting);else htmlBubble('archerPlotBubble');
  const el=$('archerPlotText'),line=sc.say?(sc.say.who==='s'?smithName()+': „'+sc.say.text+'“':''):'';if(el&&el.textContent!==line)el.textContent=line;}
 

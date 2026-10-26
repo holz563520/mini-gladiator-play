@@ -32,8 +32,8 @@ function text(value){run.caption=value||'';}
 function blood(x,y,z,power){const sc=run.sc;for(let n=0;n<8+power*20;n++)sc.fx.push({x:x+rand(-2,2),y:y+rand(-2,2),z:Math.max(4,z),vx:rand(-55,55),vy:rand(-22,22),vz:rand(25,95),life:rand(.5,1.3),color:n%3?'#aa3c36':'#87352e',size:Math.random()<.25?3:2,ground:true});}
 function dust(x,y){for(let n=0;n<13;n++)run.sc.fx.push({x,y,z:rand(1,8),vx:rand(-70,70),vy:rand(-30,30),vz:rand(20,70),life:rand(.25,.7),color:'#bda579',size:2});}
 function sparks(x,y){for(let n=0;n<9;n++)run.sc.fx.push({x,y:y+2,z:rand(34,46),vx:rand(-80,80),vy:rand(-25,25),vz:rand(10,70),life:rand(.12,.32),color:n%2?'#fff0bc':'#e8c67c',size:2});}
-function wound(v,part,power,by){v.hit=.23;v.facePain=1;const p=M.contactAnchor(v,part),limb=v.g.body[part];blood(p.x,v.y,v.y-p.y,power);v.bloodMarks[part]=Math.min(1,(v.bloodMarks[part]||0)+power);limb.hp=Math.max(30,limb.hp-power*55);if(!limb.wounds?.length)limb.wounds=[{day:1,type:'Intro',attacker:'',weapon:'',hits:1,damage:0}];const blade=by?.g.enemyGear.weapon;if(blade)blade.blood=Math.min(1,(blade.blood||0)+power*.45);M.sound?.('hit');M.voice?.('pain',v.g.appearance.voice||1,power>.55);}
-function sever(v,branch,by,vx,vy){const sc=run.sc,at=branch==='rua'?'rs':branch,p=M.contactAnchor(v,at);for(const k of M.branches[branch]){const l=v.g.body[k];l.missing=true;l.hp=0;}v.g.stump='blood';sc.limbs.push({x:p.x,y:v.y+3,z:v.y-p.y,vz:65,vx,vy,part:branch,team:v.team,t:0,angle:rand(0,TAU),armored:false,skin:v.g.appearance.skin,hair:v.g.appearance.hair});blood(p.x,v.y,v.y-p.y,1.1);v.bloodMarks[at]=1;v.hit=.23;v.facePain=3;const blade=by.g.enemyGear.weapon;if(blade)blade.blood=Math.min(1,(blade.blood||0)+.5);sc.shake=5;M.sound?.('sever');M.voice?.('pain',v.g.appearance.voice||1,true);}
+function wound(v,part,power,by){v.hit=.23;v.facePain=1;const p=M.contactAnchor(v,part),limb=v.g.body[part];blood(p.x,v.y,v.y-p.y,power);v.bloodMarks[part]=Math.min(1,(v.bloodMarks[part]||0)+power);limb.hp=Math.max(30,limb.hp-power*55);if(!limb.wounds?.length)limb.wounds=[{day:1,type:'Intro',attacker:'',weapon:'',hits:1,damage:0}];const blade=by?.g.enemyGear.weapon;if(blade)blade.blood=Math.min(1,(blade.blood||0)+power*.45);M.sound?.('hit');M.voice?.('pain',(M.voicePitch?.(v?.g)??1),power>.55);}
+function sever(v,branch,by,vx,vy){const sc=run.sc,at=branch==='rua'?'rs':branch,p=M.contactAnchor(v,at);for(const k of M.branches[branch]){const l=v.g.body[k];l.missing=true;l.hp=0;}v.g.stump='blood';sc.limbs.push({x:p.x,y:v.y+3,z:v.y-p.y,vz:65,vx,vy,part:branch,team:v.team,t:0,angle:rand(0,TAU),armored:false,skin:v.g.appearance.skin,hair:v.g.appearance.hair});blood(p.x,v.y,v.y-p.y,1.1);v.bloodMarks[at]=1;v.hit=.23;v.facePain=3;const blade=by.g.enemyGear.weapon;if(blade)blade.blood=Math.min(1,(blade.blood||0)+.5);sc.shake=5;M.sound?.('sever');M.voice?.('pain',(M.voicePitch?.(v?.g)??1),true);}
 // Am Boden: jeder liegt anders, hält seine Wunde, windet sich und verblutet nach einigen Sekunden.
 function agonize(v,part,pose,lie,seconds,alt){v.agony={part,alt,pose,lie,rate:rand(2.2,3.6),live:1};v.facePain=99;v.pool={x:v.x+(v.fallSide||-1)*-8,y:v.y-2,r:0};v.bleed={left:seconds,total:seconds,wait:0};}
 function parry(v,by){v.block=true;v.blockTime=.34;v.blockFlash=.2;sparks((v.x+by.x)/2,(v.y+by.y)/2);M.sound?.('block');}
@@ -80,7 +80,7 @@ async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5,E6]=sc.foe
  camera(480,470,420);s=walk(H,502,472,95);walk(E6,446,476,170,{state:'charge'});await s;await until(()=>!E6.move);face(H,E6);
  s=strike(E6,H,{wind:.28});await wait(.34);parry(H,E6);await s;
  await strike(H,E6,{variant:2,wind:.12,swing:.24,part:'lt',land:()=>{sever(E6,'lt',H,-30,26);E6.stagger=.45;}});await wait(.35);
- E6.watch=null;E6.hop=true;E6.facePain=9;const flee=walk(E6,366,560,42);M.voice?.('pain',E6.g.appearance.voice||1,true);await wait(1.5);
+ E6.watch=null;E6.hop=true;E6.facePain=9;const flee=walk(E6,366,560,42);M.voice?.('pain',(M.voicePitch?.(E6?.g)??1),true);await wait(1.5);
  await walk(H,E6.x+34,E6.y+8,120);E6.move=null;E6.hop=false;await flee;await walk(H,E6.x+28,E6.y-3,120);
  H.a=E6.a=Math.PI;H.previewVictim=E6;H.rearFinish={left:.85};H.state='reargrab';E6.state='grabbed';M.sound?.('rush');camera(E6.x+8,E6.y-24,300,5);
  await until(()=>{H.rearFinish.left=Math.max(.3,H.rearFinish.left-run.dt);return H.rearFinish.left<=.3;});
@@ -98,17 +98,17 @@ async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5,E6]=sc.foe
   const shoulder=M.contactAnchor(H,'rs');for(const k of M.branches.rua){const p=H.g.body[k];p.missing=true;p.hp=0;}H.g.stump='blood';H.drip=9;H.g.blood=58;H.g.enemyGear.weapon=null;
   sc.limbs.push({x:shoulder.x,y:H.y+3,z:H.y-shoulder.y,vz:70,vx:60,vy:26,part:'rua',team:0,t:0,angle:rand(0,TAU),armored:true,skin:H.g.appearance.skin,hair:H.g.appearance.hair});
   sc.ground.push({sprite:0,item:blade,x:H.x+18,y:H.y-4,z:0,angle:.4,blood:0,fly:{x0:H.x+18,y0:H.y-4,x1:562,y1:532,t:0,time:.9,height:34}});
-  blood(shoulder.x,H.y,H.y-shoulder.y,1.4);H.bloodMarks.chest=.6;H.bloodMarks.rs=1;H.wind=H.swing=0;H.hit=.23;H.facePain=3;sc.shake=9;run.cheer=run.cheerBase=0;M.sound?.('sever');M.voice?.('pain',H.g.appearance.voice||1,true);run.speed=.22;camera(H.x+10,H.y-10,300,5);}});
+  blood(shoulder.x,H.y,H.y-shoulder.y,1.4);H.bloodMarks.chest=.6;H.bloodMarks.rs=1;H.wind=H.swing=0;H.hit=.23;H.facePain=3;sc.shake=9;run.cheer=run.cheerBase=0;M.sound?.('sever');M.voice?.('pain',(M.voicePitch?.(H?.g)??1),true);run.speed=.22;camera(H.x+10,H.y-10,300,5);}});
  await wait(.3);run.speed=1;face(H,E3);H.stagger=1.5;E3.watch=E4.watch=E5.watch=H;walk(E3,436,420,40,{keep:true});walk(E5,392,452,90);
  await walk(H,544,522,52,{keep:true});kneel(H,2.5);camera(544,505,300);await wait(1.7);
  sc.ground=sc.ground.filter(p=>p.item!==blade);H.g.enemyGear.weapon=blade;M.sound?.('rise');await until(()=>H.kneeTimer<=0);
- H.shoutTimer=.6;M.voice?.('battlecry',H.g.appearance.voice||1);run.cheerBase=1;cheer(2.4);camera(540,490,440);await wait(.7);
+ H.shoutTimer=.6;M.voice?.('battlecry',(M.voicePitch?.(H?.g)??1));run.cheerBase=1;cheer(2.4);camera(540,490,440);await wait(.7);
  // Einarmig: ausweichen, Gegenstoß.
  face(H,E3);await walk(E3,494,518,150,{state:'charge'});s=strike(E3,H,{tech:'overhead',wind:.46,heavy:true});await wait(.42);dodge(H,24,-12);await s;
  // Rache: der Mann mit dem Zweihänder wird durchtrennt (vorhandene Darstellung der Durchtrennung).
  await strike(H,E3,{variant:1,wind:.32,swing:.3,heavy:true,part:'belly',land:()=>{const p=M.contactAnchor(E3,'belly');E3.g.bisected=true;E3.splitProgress=0;E3.g.body.belly.hp=0;E3.g.dead=true;E3.watch=null;E3.move=null;E3.wind=E3.swing=E3.stagger=0;E3.block=false;E3.bloodMarks.belly=1;E3.facePain=3;
   for(let n=0;n<30;n++)sc.fx.push({x:p.x+rand(-4,4),y:E3.y,z:E3.y-p.y,vx:rand(-60,60),vy:rand(-20,20),vz:rand(40,110),life:2.2,color:n%3?'#a14337':'#87352e',size:n%5?2:3,ground:true});
-  blade.blood=1;E3.fallSide=-1;E3.fallDuration=E3.fallTimer=3;E3.riseDuration=1.25;E3.state='fallen';E3.pool={x:E3.x,y:E3.y,r:0};sc.shake=8;M.sound?.('sever');M.voice?.('pain',E3.g.appearance.voice||1,true);run.speed=.22;camera(E3.x+6,E3.y-18,300,5);}});
+  blade.blood=1;E3.fallSide=-1;E3.fallDuration=E3.fallTimer=3;E3.riseDuration=1.25;E3.state='fallen';E3.pool={x:E3.x,y:E3.y,r:0};sc.shake=8;M.sound?.('sever');M.voice?.('pain',(M.voicePitch?.(E3?.g)??1),true);run.speed=.22;camera(E3.x+6,E3.y-18,300,5);}});
  await wait(.3);E3.down=true;E3.fallTimer=0;E3.state='dead';dust(E3.x,E3.y);M.sound?.('die');await wait(.2);run.speed=1;cheer(2.6);camera(540,490,440);await wait(.9);
  // Schlagabtausch, Treffer eingesteckt, Gegenangriff.
  await walk(E4,632,512,120);face(H,E4);s=strike(H,E4,{wind:.14,swing:.26});await wait(.27);parry(E4,H);await s;

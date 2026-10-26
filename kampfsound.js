@@ -82,6 +82,13 @@ const Mt=o=>({type:'metal',f:800,partials:'klinge',decay:.4,dur:.6,vol:.4,start:
 const C=o=>({type:'crowd',n:24,f0:110,f1:240,vowels:'ao',att:.3,hold:.4,dur:2,vol:.5,start:0,spread:.4,rise:.15,...o});
 const K=o=>({type:'clicks',n:4,gap:.06,jitter:.2,filter:'bp',color:'white',f:2000,q:2,dur:.02,vol:.4,start:0,...o});
 const hz=m=>440*Math.pow(2,(m-69)/12);
+// Römisches Kampfhorn (Cornu): je Ton zwei leicht verstimmte Sägezähne, die von unten in den Ton gleiten, gedämpft und angezerrt, dazu Blasgeräusch.
+// notes = [[MIDI, Länge s], …]; o.start Beginn, o.lp Dämpfung, o.gap Abstand als Anteil der Länge (1 = direkt hintereinander)
+const warhorn=(notes,vol,o={})=>{const out=[];let t=o.start||0;for(const [m,len] of notes){const f=hz(m);
+ out.push(T({wave:'saw',f0:f*.97,f1:f,curve:.25,att:.07,hold:.72,dur:len,vol,start:t,lp:o.lp||1300,drive:1.8,trem:5.3,tremDepth:.05}));
+ out.push(T({wave:'saw',f0:f*.975,f1:f*1.004,curve:.3,att:.09,hold:.72,dur:len,vol:vol*.55,start:t+.012,lp:(o.lp||1300)*.7,drive:1.3}));
+ out.push(N({filter:'bp',f0:f*3,f1:f*3.2,q:2,att:.05,hold:.5,dur:len*.9,vol:vol*.07,start:t}));
+ t+=len*(o.gap||1);}return out;};
 const horn=(notes,step,vol,last=.8)=>notes.map((m,i)=>T({wave:'saw',f0:hz(m),f1:hz(m)*.995,att:.025,hold:.55,dur:i===notes.length-1?last:step*1.4,vol,start:i*step,lp:1900,drive:1.4}));
 const CATS=[['waffen','Waffen (Nahkampf)'],['fern','Fernkampf'],['koerper','Körper'],['stimme','Stimmen'],['arena','Arena & Publikum'],['box','Faustkampf']];
 const DEF={
@@ -167,8 +174,15 @@ const DEF={
   C({n:26,f0:100,f1:200,vowels:'oou',att:.15,hold:.3,dur:1.6,vol:.7,spread:.25,rise:-.1})]},
  gong:{cat:'arena',name:'Gong',use:'Kampfbeginn, Tor öffnet sich.',vol:1,room:.25,pitchVar:.02,layers:[
   Mt({f:70,partials:'gong',decay:2.8,dur:4,vol:.7,bright:.8,click:.3}),T({f0:70,f1:66,dur:2,vol:.3})]},
- win:{cat:'arena',name:'Sieg (Fanfare)',use:'Kampf gewonnen.',vol:.8,room:.25,pitchVar:0,layers:horn([62,65,69,74,77,74],.17,.4)},
- mercy:{cat:'arena',name:'Gnade',use:'Unterlegener darf leben.',vol:.8,room:.25,pitchVar:0,layers:[...horn([65,69,74],.2,.35),C({n:18,f0:110,f1:220,vowels:'ao',att:.3,hold:.3,dur:1.6,vol:.45,rise:-.15,start:.1})]},
+ win:{cat:'arena',name:'Sieg (Kampfhorn)',use:'Kampf gewonnen: römisches Kampfhorn ruft zum Triumph, dann jubelt die Menge.',vol:.9,room:.45,pitchVar:0,layers:[
+  ...warhorn([[50,.2],[55,.2],[50,.2],[55,.26],[59,.34],[62,1.9]],.3),
+  ...warhorn([[59,1.9]],.16,{start:1.4}),
+  ...warhorn([[43,3.2]],.12,{lp:700}),
+  C({n:14,f0:120,f1:260,vowels:'aeo',att:.5,hold:.45,dur:2.2,vol:.55,rise:.2,start:1.5})]},
+ mercy:{cat:'arena',name:'Gnade (Kampfhorn)',use:'Unterlegener darf leben: zwei lange, ruhige Hornrufe, die Menge atmet auf.',vol:.85,room:.5,pitchVar:0,layers:[
+  ...warhorn([[55,1.25],[50,2]],.26,{lp:1000,gap:.9}),
+  ...warhorn([[43,3.1]],.1,{lp:600}),
+  C({n:10,f0:105,f1:200,vowels:'ao',att:.6,hold:.3,dur:2,vol:.45,rise:-.15,start:.9})]},
  verdictDeath:{cat:'arena',name:'Todesurteil',use:'Daumen runter: Hinrichtung.',vol:.9,room:.25,pitchVar:0,layers:[
   T({f0:58,f1:40,dur:.5,vol:.8,drive:2}),T({f0:58,f1:40,dur:.5,vol:.8,drive:2,start:.45}),T({f0:52,f1:32,dur:.9,vol:.9,drive:2,start:.9}),C({n:24,f0:100,f1:210,vowels:'ao',att:.6,hold:.4,dur:2,vol:.6,rise:.3,start:.3})]},
  coin:{cat:'arena',name:'Münzen',use:'Preisgeld, Gold.',vol:.8,room:.08,pitchVar:.06,layers:[

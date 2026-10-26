@@ -120,7 +120,7 @@ function woundsLine(g){const B2=g.body||{},order=['lua','rua','lfa','rfa','lh','
  return opts.length?opts[Math.floor(Math.random()*opts.length)]():'';}
 // Auftritt auf der Karte: wer gute Aussichten hat, brüllt; wer schlechte hat, zittert; die Ahnungslosen winken
 function act(c,t){const g=c.a.g,s=c.od?c.od.survive:.6,base={g,team:c.team,zoom:.9},loop=Math.floor(t/6.5),u=t%6.5,m=c.mood;
- if(m==='grin'||m==='confident'||(m==='determined'&&s>=.5)){if(u>.9&&u<2.5){if(c.cry!==loop){c.cry=loop;M.voice?.('battlecry',g.appearance?.voice||1,true);}return {...base,mood:'roar',shake:m==='determined'?1.6:3.2,lines:Math.min(1,(u-.9)*4)*(u>2.2?(2.5-u)/.3:1),zoom:.9*(1+.12*Math.min(1,(u-.9)*5))};}return {...base,mood:m};}
+ if(m==='grin'||m==='confident'||(m==='determined'&&s>=.5)){if(u>.9&&u<2.5){if(c.cry!==loop){c.cry=loop;M.voice?.('battlecry',M.voicePitch?.(g)??1,true);}return {...base,mood:'roar',shake:m==='determined'?1.6:3.2,lines:Math.min(1,(u-.9)*4)*(u>2.2?(2.5-u)/.3:1),zoom:.9*(1+.12*Math.min(1,(u-.9)*5))};}return {...base,mood:m};}
  if(m==='nervous')return {...base,mood:u>3&&u<4?'scared':'nervous',shake:.9};
  if(m==='scared')return {...base,mood:u>2.5&&u<3.6?'terror':'scared',shake:1.8};
  if(m==='dumb')return {...base,mood:u>3.2&&u<4.8?'grin':'dumb',wave:u<3};
@@ -289,7 +289,7 @@ function champShow(){const c=champ,el=$('modCard');if(!c||!el)return;const g=c.a
 <div class="mod-stats"><span><b>${c.n}</b><small>niedergestreckt</small></span><span><b>${c.k}</b><small>getötet</small></span><span><b>${Math.round(c.a.damage||0)}</b><small>Schaden</small></span><span><b>${Math.round(g.blood)} %</b><small>Blut</small></span></div>
 <blockquote><p id="modSay"></p><div class="mod-dots" id="modDots"></div></blockquote>
 <div class="mod-btns"><button type="button" class="btn small primary" data-mod="next" id="modNext"></button></div>`;
- cancelAnimationFrame(cRaf);const f=$('modFace'),g2=f.getContext('2d');let cried=-1;const frame=now=>{if(champ!==c||!f.isConnected)return;const t=(now-c.t0)/1000,u=t%4.2,loop=Math.floor(t/4.2),roar=u<1.7;if(roar&&cried!==loop){cried=loop;M.voice?.('battlecry',g.appearance?.voice||1,true);M.sound?.('crowd');}
+ cancelAnimationFrame(cRaf);const f=$('modFace'),g2=f.getContext('2d');let cried=-1;const frame=now=>{if(champ!==c||!f.isConnected)return;const t=(now-c.t0)/1000,u=t%4.2,loop=Math.floor(t/4.2),roar=u<1.7;if(roar&&cried!==loop){cried=loop;M.voice?.('battlecry',M.voicePitch?.(g)??1,true);M.sound?.('crowd');}
   M.faceShot?.paint(g2,f.width,f.height,{g,team:c.a.team,mood:roar?'roar':'grin',cheer:true,fist:true,trophy:c.head?.g||null,hurt:Math.max(0,.9-M.health(g)/100),shake:roar?2.4:0,lines:roar?Math.min(1,u*3)*(u>1.4?(1.7-u)/.3:1):0,zoom:.9,yaw:Math.sin(t*.5)*.45},t);cRaf=requestAnimationFrame(frame);};cRaf=requestAnimationFrame(frame);
  M.battleHud.spot={x:c.a.x,y:c.a.y-20};M.sound?.('win');champSay();}
 function champSay(){const c=champ;if(!c)return;const p=$('modSay');p.textContent=c.say[c.s];p.classList.remove('pop');void p.offsetWidth;p.classList.add('pop');setTimeout(()=>fitSay($('modSay')),0);$('modDots').innerHTML=c.say.map((_,i)=>`<i class="${i===c.s?'on':''}"></i>`).join('');$('modNext').textContent=c.s<c.say.length-1?'WEITER ›':'KAMPF BEENDEN ›';clearTimeout(cTimer);cTimer=setTimeout(champAdvance,9000);}
