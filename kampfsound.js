@@ -157,6 +157,97 @@ const DEF={
  // ----- Stimmen (Stimmlage kommt vom Kämpfer)
  cry:{cat:'stimme',name:'Kampfschrei',use:'Ansturm, Angriffsbefehl, Schlachtbeginn („Raaah!“).',vol:1,room:.15,pitchVar:.06,layers:[
   V({v0:'a',v1:'a',f0:120,fp:175,f1:150,peakAt:.35,att:.05,hold:.45,dur:.85,vol:.8,rough:.45,breath:.25,drive:3,vib:.4}),N({color:'pink',f0:1200,q:.8,att:.05,hold:.4,dur:.8,vol:.06})]},
+// Gebrüll bei der Vorstellung (und beim Ansturm): 20 Varianten, zufällig gewählt. Je Silbe eine raue, verzerrte Stimme,
+// dazu ein Knurren eine Oktave tiefer (Brustkorb) und rauer Atem.
+ bruell01:{cat:'stimme',name:'Gebrüll 1 – „Raaaah!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'a',v1:'a',f0:115,fp:185,f1:140,peakAt:0.3,att:.035,hold:.5,dur:1.5,vol:.85,start:0,rough:0.62,breath:.32,drive:4,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:57.5,fp:92.5,f1:70,peakAt:0.3,att:.06,hold:.5,dur:1.5,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.5,vol:.07})]},
+ bruell02:{cat:'stimme',name:'Gebrüll 2 – „Uraaa!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'u',v1:'u',f0:110,fp:130,f1:140,peakAt:0.5,att:.035,hold:.5,dur:0.28,vol:.85,start:0,rough:0.7,breath:.32,drive:3.6,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:150,fp:200,f1:150,peakAt:0.25,att:.035,hold:.5,dur:1.25,vol:.85,start:0.22,rough:0.7,breath:.32,drive:3.6,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:75,fp:100,f1:75,peakAt:0.25,att:.06,hold:.5,dur:1.25,vol:.3,start:0.24,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.47,vol:.07})]},
+ bruell03:{cat:'stimme',name:'Gebrüll 3 – „Hooo-aaah!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'o',v1:'o',f0:120,fp:150,f1:130,peakAt:0.5,att:.035,hold:.5,dur:0.45,vol:.85,start:0,rough:0.66,breath:.32,drive:3.8,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:135,fp:190,f1:145,peakAt:0.3,att:.035,hold:.5,dur:1.1,vol:.85,start:0.4,rough:0.66,breath:.32,drive:3.8,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:67.5,fp:95,f1:72.5,peakAt:0.3,att:.06,hold:.5,dur:1.1,vol:.3,start:0.42,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.5,vol:.07})]},
+ bruell04:{cat:'stimme',name:'Gebrüll 4 – „Aaargh!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'a',v1:'ə',f0:125,fp:170,f1:105,peakAt:0.25,att:.035,hold:.5,dur:1.4,vol:.85,start:0,rough:0.9,breath:.32,drive:5,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'ə',f0:62.5,fp:85,f1:52.5,peakAt:0.25,att:.06,hold:.5,dur:1.4,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.4,vol:.07})]},
+ bruell05:{cat:'stimme',name:'Gebrüll 5 – „Roooaar!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'o',v1:'a',f0:105,fp:165,f1:130,peakAt:0.45,att:.035,hold:.5,dur:1.6,vol:.85,start:0,rough:0.72,breath:.32,drive:4.2,vib:.45,jitter:.03,size:1}),
+  V({v0:'o',v1:'a',f0:52.5,fp:82.5,f1:65,peakAt:0.45,att:.06,hold:.5,dur:1.6,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.6,vol:.07})]},
+ bruell06:{cat:'stimme',name:'Gebrüll 6 – „Ha! Ha! Haaa!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'a',v1:'a',f0:150,fp:175,f1:150,peakAt:0.3,att:.035,hold:.5,dur:0.22,vol:.85,start:0,rough:0.6,breath:.32,drive:3.4,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:155,fp:180,f1:150,peakAt:0.3,att:.035,hold:.5,dur:0.22,vol:.85,start:0.3,rough:0.6,breath:.32,drive:3.4,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:160,fp:210,f1:155,peakAt:0.3,att:.035,hold:.5,dur:1,vol:.85,start:0.6,rough:0.6,breath:.32,drive:3.4,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:80,fp:105,f1:77.5,peakAt:0.3,att:.06,hold:.5,dur:1,vol:.3,start:0.62,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.6,vol:.07})]},
+ bruell07:{cat:'stimme',name:'Gebrüll 7 – „Jaaaah!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'i',v1:'a',f0:140,fp:200,f1:160,peakAt:0.3,att:.035,hold:.5,dur:1.3,vol:.85,start:0,rough:0.64,breath:.32,drive:3.8,vib:.45,jitter:.03,size:1}),
+  V({v0:'i',v1:'a',f0:70,fp:100,f1:80,peakAt:0.3,att:.06,hold:.5,dur:1.3,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.3,vol:.07})]},
+ bruell08:{cat:'stimme',name:'Gebrüll 8 – „Woooah!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'u',v1:'a',f0:110,fp:170,f1:150,peakAt:0.55,att:.035,hold:.5,dur:1.5,vol:.85,start:0,rough:0.7,breath:.32,drive:4,vib:.45,jitter:.03,size:1}),
+  V({v0:'u',v1:'a',f0:55,fp:85,f1:75,peakAt:0.55,att:.06,hold:.5,dur:1.5,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.5,vol:.07})]},
+ bruell09:{cat:'stimme',name:'Gebrüll 9 – „Graaah!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'ə',v1:'a',f0:95,fp:150,f1:115,peakAt:0.35,att:.035,hold:.5,dur:1.5,vol:.85,start:0,rough:0.8,breath:.32,drive:4.6,vib:.45,jitter:.03,size:1.15}),
+  V({v0:'ə',v1:'a',f0:47.5,fp:75,f1:57.5,peakAt:0.35,att:.06,hold:.5,dur:1.5,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.44}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.5,vol:.07})]},
+ bruell10:{cat:'stimme',name:'Gebrüll 10 – „Aaa-haaa!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'a',v1:'a',f0:140,fp:180,f1:150,peakAt:0.4,att:.035,hold:.5,dur:0.6,vol:.85,start:0,rough:0.66,breath:.32,drive:3.8,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:150,fp:215,f1:160,peakAt:0.3,att:.035,hold:.5,dur:1,vol:.85,start:0.55,rough:0.66,breath:.32,drive:3.8,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:75,fp:107.5,f1:80,peakAt:0.3,att:.06,hold:.5,dur:1,vol:.3,start:0.57,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.55,vol:.07})]},
+ bruell11:{cat:'stimme',name:'Gebrüll 11 – „Ooorrr!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'o',v1:'u',f0:90,fp:120,f1:95,peakAt:0.4,att:.035,hold:.5,dur:1.5,vol:.85,start:0,rough:0.95,breath:.32,drive:5,vib:.45,jitter:.03,size:1}),
+  V({v0:'o',v1:'u',f0:45,fp:60,f1:47.5,peakAt:0.4,att:.06,hold:.5,dur:1.5,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.5,vol:.07})]},
+ bruell12:{cat:'stimme',name:'Gebrüll 12 – „Heeyaaah!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'e',v1:'e',f0:150,fp:180,f1:170,peakAt:0.5,att:.035,hold:.5,dur:0.35,vol:.85,start:0,rough:0.6,breath:.32,drive:3.6,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:170,fp:220,f1:165,peakAt:0.3,att:.035,hold:.5,dur:1.1,vol:.85,start:0.3,rough:0.6,breath:.32,drive:3.6,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:85,fp:110,f1:82.5,peakAt:0.3,att:.06,hold:.5,dur:1.1,vol:.3,start:0.32,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.4,vol:.07})]},
+ bruell13:{cat:'stimme',name:'Gebrüll 13 – „Arrrrgh!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'a',v1:'a',f0:110,fp:130,f1:190,peakAt:0.85,att:.035,hold:.5,dur:1.4,vol:.85,start:0,rough:0.78,breath:.32,drive:4.8,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:55,fp:65,f1:95,peakAt:0.85,att:.06,hold:.5,dur:1.4,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.4,vol:.07})]},
+ bruell14:{cat:'stimme',name:'Gebrüll 14 – „Raah! Raah!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'a',v1:'a',f0:140,fp:185,f1:150,peakAt:0.3,att:.035,hold:.5,dur:0.6,vol:.85,start:0,rough:0.7,breath:.32,drive:4.2,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:140,fp:190,f1:145,peakAt:0.3,att:.035,hold:.5,dur:0.8,vol:.85,start:0.7,rough:0.7,breath:.32,drive:4.2,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:70,fp:95,f1:72.5,peakAt:0.3,att:.06,hold:.5,dur:0.8,vol:.3,start:0.72,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.5,vol:.07})]},
+ bruell15:{cat:'stimme',name:'Gebrüll 15 – „Uuuh-RAAH!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'u',v1:'u',f0:100,fp:110,f1:105,peakAt:0.5,att:.035,hold:.5,dur:0.5,vol:.85,start:0,rough:0.68,breath:.32,drive:4,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:150,fp:220,f1:160,peakAt:0.25,att:.035,hold:.5,dur:1,vol:.85,start:0.45,rough:0.68,breath:.32,drive:4,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:75,fp:110,f1:80,peakAt:0.25,att:.06,hold:.5,dur:1,vol:.3,start:0.47,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.45,vol:.07})]},
+ bruell16:{cat:'stimme',name:'Gebrüll 16 – „Äääärgh!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'ä',v1:'ə',f0:130,fp:190,f1:120,peakAt:0.3,att:.035,hold:.5,dur:1.4,vol:.85,start:0,rough:0.82,breath:.32,drive:4.6,vib:.45,jitter:.03,size:1}),
+  V({v0:'ä',v1:'ə',f0:65,fp:95,f1:60,peakAt:0.3,att:.06,hold:.5,dur:1.4,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.4,vol:.07})]},
+ bruell17:{cat:'stimme',name:'Gebrüll 17 – „Hoooo!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'o',v1:'o',f0:125,fp:180,f1:150,peakAt:0.4,att:.035,hold:.5,dur:1.5,vol:.85,start:0,rough:0.66,breath:.32,drive:3.8,vib:.45,jitter:.03,size:1}),
+  V({v0:'o',v1:'o',f0:62.5,fp:90,f1:75,peakAt:0.4,att:.06,hold:.5,dur:1.5,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.5,vol:.07})]},
+ bruell18:{cat:'stimme',name:'Gebrüll 18 – „Aaaaaah!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'a',v1:'a',f0:190,fp:200,f1:120,peakAt:0.15,att:.035,hold:.5,dur:1.6,vol:.85,start:0,rough:0.72,breath:.32,drive:4.4,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:95,fp:100,f1:60,peakAt:0.15,att:.06,hold:.5,dur:1.6,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.6,vol:.07})]},
+ bruell19:{cat:'stimme',name:'Gebrüll 19 – „Gaaah!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'a',v1:'a',f0:150,fp:240,f1:170,peakAt:0.25,att:.035,hold:.5,dur:1.2,vol:.85,start:0,rough:0.75,breath:.32,drive:6,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'a',f0:75,fp:120,f1:85,peakAt:0.25,att:.06,hold:.5,dur:1.2,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.2,vol:.07})]},
+ bruell20:{cat:'stimme',name:'Gebrüll 20 – „Wraaaooh!“',use:'Vorstellung vor dem Kampf und Ansturm (zufällig eine von 20 Varianten).',vol:1,room:.22,pitchVar:.05,layers:[
+  V({v0:'u',v1:'a',f0:105,fp:175,f1:140,peakAt:0.4,att:.035,hold:.5,dur:0.9,vol:.85,start:0,rough:0.7,breath:.32,drive:4,vib:.45,jitter:.03,size:1}),
+  V({v0:'a',v1:'o',f0:150,fp:170,f1:120,peakAt:0.3,att:.035,hold:.5,dur:0.8,vol:.85,start:0.8,rough:0.7,breath:.32,drive:4,vib:.45,jitter:.03,size:1}),
+  V({v0:'u',v1:'a',f0:52.5,fp:87.5,f1:70,peakAt:0.4,att:.06,hold:.5,dur:0.9,vol:.3,start:0.02,rough:.95,breath:.15,drive:5,vib:.2,jitter:.05,size:1.25}),
+  N({color:'pink',filter:'bp',f0:1500,f1:1100,q:.8,att:.05,hold:.5,dur:1.6,vol:.07})]},
  effort:{cat:'stimme',name:'Anstrengung (Schlag)',use:'Kurzes Ächzen beim harten Zuschlagen („Hh!“).',vol:.9,room:.08,pitchVar:.08,layers:[
   V({v0:'ə',v1:'u',f0:115,fp:125,f1:95,peakAt:.2,att:.012,hold:.1,dur:.22,vol:.65,rough:.5,breath:.55,drive:2})]},
  painLight:{cat:'stimme',name:'Schmerz (leicht)',use:'Kleiner Treffer („Ugh!“).',vol:.95,room:.1,pitchVar:.08,layers:[
