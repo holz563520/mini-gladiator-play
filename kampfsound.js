@@ -380,6 +380,15 @@ const DEF={
   K({n:34,gap:.125,jitter:.55,filter:'bp',f:1684,q:1.3,dur:.012,vol:0.23,start:0.066}),
   K({n:34,gap:.125,jitter:.55,filter:'bp',f:1428,q:1.3,dur:.012,vol:0.26,start:0.074}),
   N({color:'pink',filter:'bp',f0:1800,f1:1800,q:.6,att:.3,hold:.9,dur:4.3,vol:.06})]},
+ partyClap:{cat:'arena',name:'Truppe klatscht (laut)',use:'Nach einem Sieg in Plünderungen klatscht die eigene Truppe laut im Takt und feiert; nah und deutlich, kein Publikum.',vol:2.4,room:.18,pitchVar:.03,layers:[
+   K({n:15,gap:.23,jitter:.12,filter:'bp',f:1250,q:1.1,dur:.022,vol:0.62,start:0.000}),
+   K({n:15,gap:.23,jitter:.12,filter:'bp',f:1650,q:1.1,dur:.020,vol:0.55,start:0.018}),
+   K({n:15,gap:.23,jitter:.12,filter:'bp',f:980,q:1.0,dur:.024,vol:0.58,start:0.031}),
+   K({n:15,gap:.23,jitter:.14,filter:'bp',f:2100,q:1.2,dur:.018,vol:0.46,start:0.009}),
+   K({n:15,gap:.23,jitter:.14,filter:'bp',f:1420,q:1.1,dur:.021,vol:0.52,start:0.044}),
+   K({n:15,gap:.23,jitter:.16,filter:'bp',f:1820,q:1.2,dur:.019,vol:0.44,start:0.026}),
+   K({n:15,gap:.23,jitter:.12,filter:'bp',f:520,q:.8,dur:.03,vol:0.30,start:0.012}),
+   N({color:'pink',filter:'bp',f0:1500,f1:1500,q:.6,att:.1,hold:3.1,dur:3.6,vol:.05})]},
  laugh:{cat:'arena',name:'Gelächter',use:'Das Publikum lacht über einen Trottel bei der Vorstellung.',vol:.85,room:.35,pitchVar:.05,layers:[
   V({v0:'ä',v1:'ä',f0:189,fp:201,f1:165,peakAt:.2,att:.01,hold:.2,dur:0.109,vol:0.49,start:0.408,rough:.25,breath:.55,drive:1.6,vib:0,jitter:.03}),
   V({v0:'ä',v1:'ä',f0:181,fp:193,f1:158,peakAt:.2,att:.01,hold:.2,dur:0.100,vol:0.35,start:0.585,rough:.25,breath:.55,drive:1.6,vib:0,jitter:.03}),

@@ -102,7 +102,7 @@ async function aftermath(b){const alive=b.encEnemies.filter(e=>!e.g.dead&&(e.dow
   if(C.sayFull)await C.sayFull(e,plea,{name:first(e.g),log:false});else await afWait(2600);if(!live(b))break;
   afShow('Keine Gnade',`${n} / ${alive.length}`,k.g.name,'„'+reply+'“');afPaint({g:k.g,team:0,zoom:.95,mood:'grin',yaw:.35});mlog(`<b>${esc(k.g.name)}:</b> „${esc(reply)}“`);
   if(C.sayFull)await C.sayFull(k,reply,{name:first(k.g),log:false});else{bubble(k,reply,{name:first(k.g),ms:2400});await afWait(2400);}if(!live(b))break;
-  afShow('Gnadenstoß',`${n} / ${alive.length}`,e.g.name,first(k.g)+' stößt zu.');
+  afShow('Gnadenstoß',`${n} / ${alive.length}`,e.g.name,first(k.g)+' stößt zu.');M.speakLine?.(first(k.g)+' stößt zu.','erzaehler',null,{keep:true});
   afPaint(t=>{const q=t-1;return {g:e.g,team:1,hurt,zoom:.92,ground:true,mood:q<0?'terror':q<.5?'shock':q<.9?'pain':'out',pale:cl(q/1.5),blood:cl((q-.3)/1.2),tilt:q>.9?Math.min(.3,(q-.9)*.3):0,sink:q>.9?Math.min(16,(q-.9)*14):0,fx:{stab:t-.8},pool:cl(q/2),dark:cl((q-1.4)/1.2)*.6,yaw:-.35+.4*cl(t/3)};},1);
   setTimeout(()=>{if(!e.g.dead){try{M.death(e,'Gnadenstoß',k);}catch(err){e.g.dead=true;e.down=true;e.state='dead';}M.sound?.('stick');}},Math.max(600,1000/spd()));
   await afWait(2700);mlog(`<b>${esc(k.g.name)}</b> gibt <b class="foe">${esc(e.g.name)}</b> den Gnadenstoß.`);
@@ -112,7 +112,8 @@ async function aftermath(b){const alive=b.encEnemies.filter(e=>!e.g.dead&&(e.dow
  for(const e of bodies){if(!live(b))break;const k=nearestParty(b,e);if(!k)break;i++;await walkTo(b,k,e.x+(k.x<e.x?-24:24),e.y+6);if(!live(b))break;k.a=k.x<e.x?0:Math.PI;
   const w=e.g.enemyGear?.weapon,line=pick(LOOT);afShow('Wird geplündert',`${i} / ${bodies.length}`,k.g.name+' durchsucht '+first(e.g),'„'+line+'“'+(w?' · Dazu: '+M.itemName(w)+'.':''));
   afPaint({g:k.g,team:0,zoom:.95,mood:pick(['grin','confident','dumb']),yaw:.3});mlog(`<b>${esc(k.g.name)}</b> durchsucht ${esc(e.g.name)}: „${esc(line)}“`);
-  if(C.sayFull)await C.sayFull(k,line,{name:first(k.g),log:false});else{bubble(k,line,{name:first(k.g),ms:2600});await afWait(2600);}}
+  if(C.sayFull)await C.sayFull(k,line,{name:first(k.g),log:false});else{bubble(k,line,{name:first(k.g),ms:2600});await afWait(2600);}
+  if(w&&live(b)){M.speakLine?.('Dazu: '+M.itemName(w)+'.','erzaehler',null,{keep:true});await afWait(900);}}
  afHide();}
 const SPY={on:false,focus:null,fx:0,fy:0};
 // Fernrohr: Die Kamera zoomt wirklich auf den Gegner (M.battleCamera), darüber eine schwarze Maske mit einem runden Ausschnitt.
@@ -132,7 +133,8 @@ function paintSpyFace(t){const me=SPY.me||leaderA(R.b);if(!me||!M.faceShot)retur
  for(const [x,y,w,h,dk,lt] of seg){g.fillStyle=dk;g.fillRect(x,y,w,h);g.fillStyle=lt;g.fillRect(x,y+2,w,3);g.fillStyle='#2b1d0b';g.fillRect(x+w-2,y,2,h);}
  g.fillStyle='#1a1208';g.fillRect(ex-4,ey-5,3,10);const sk=me.g.appearance?.skin||'#c99a74';g.fillStyle=sk;g.fillRect(ex+22,ey+6,16,9);g.fillStyle='#00000040';g.fillRect(ex+22,ey+12,16,3);}
 async function spyShow(b,lines,o={}){const me=o.me||leaderA(b);if(!me)return;SPY.zoomTo=o.zoom||0;SPY.me=o.me||null;SPY.on=true;SPY.skip=false;SPY.focus=null;SPY.zoom=1;SPY.fx=R.cam.x;SPY.fy=R.cam.y;$('spy').hidden=false;$('spyName').textContent=(b.lead&&me.id===b.lead.leaderId?lname(me):first(me.g))+' · durchs Fernrohr';requestAnimationFrame(spyFrame);
- for(const l of lines){if(SPY.skip||!live(b))break;SPY.focus=l.focus;const el=$('spyText');el.textContent='';M.speakLine?.(l.text,null,me.g,{name:me.g.name});mlog(`<b class="ldr">${b.lead&&me.id===b.lead.leaderId?'★ ':''}${esc(me.g.name)}</b> (Fernrohr): „${esc(l.text)}“`);
+ /* jede Fernrohr-Zeile wird ganz gesprochen: erst warten, bis niemand mehr spricht (auch wartende Sprechblasen), dann lesen */
+ for(const l of lines){if(SPY.skip||!live(b))break;const el=$('spyText');el.textContent='';for(let n=0;n<300&&!SPY.skip&&live(b)&&M.speechHold?.();n++)await sleep(100);if(SPY.skip||!live(b))break;SPY.focus=l.focus;M.speakLine?.(l.text,null,me.g,{name:me.g.name,keep:true});mlog(`<b class="ldr">${b.lead&&me.id===b.lead.leaderId?'★ ':''}${esc(me.g.name)}</b> (Fernrohr): „${esc(l.text)}“`);
   for(let i=0;i<=l.text.length&&!SPY.skip;i+=2){el.textContent=l.text.slice(0,i);await sleep(16);}el.textContent=l.text;await waitSkip(Math.max(1700,900+l.text.length*42));/* ausreden lassen */while(!SPY.skip&&M.speechHold?.())await sleep(150);}
  SPY.on=false;SPY.me=null;$('spy').hidden=true;}
 function waitSkip(ms){return new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());const chk=()=>{if(SPY.skip||performance.now()-t0>=lim)return res();setTimeout(chk,50);};chk();});}

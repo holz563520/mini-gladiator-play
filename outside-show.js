@@ -45,7 +45,8 @@ function showFace(g,mood){SH.face={g,mood,t0:performance.now()};if(!SH.raf)SH.ra
 function crewFace(cv,g){const c=cv.getContext('2d');c.imageSmoothingEnabled=false;try{M.faceShot.paint(c,cv.width,cv.height,{g,team:1,mood:pick(['grin','confident','dumb','determined']),yaw:-.25,zoom:1.04},3);}catch(e){}}
 // Satz zeigen und vom Erzähler lesen lassen; weiter, wenn gelesen (oder Klick)
 async function narrate(text,o={}){const el=$('shLine');if(el){el.textContent='';el.classList.toggle('quote',!!o.quote);}
- if(!SH.all){M.speakLine?.(text,o.who||'erzaehler',o.g||null,{name:o.name||''});C.mlog(`<i>${esc(text)}</i>`,'narr');}
+ /* erst ausreden lassen, wer gerade spricht, dann diesen Satz ganz lesen */for(let n=0;n<250&&!SH.all&&M.speechHold?.();n++)await sleep(100);
+ if(!SH.all){M.speakLine?.(text,o.who||'erzaehler',o.g||null,{name:o.name||'',keep:true});C.mlog(`<i>${esc(text)}</i>`,'narr');}
  SH.skip=false;for(let i=0;i<=text.length&&!SH.skip&&!SH.all;i+=2){if(el)el.textContent=text.slice(0,i);await sleep(14);}if(el)el.textContent=text;if(SH.all)return;
  const t0=performance.now(),min=Math.max(1300,700+text.length*38)/Math.min(2,spd());while(!SH.skip&&!SH.all&&(performance.now()-t0<min||M.speechHold?.())&&performance.now()-t0<20000)await sleep(80);
  if(SH.skip&&!SH.all)M.speakStop?.();}
@@ -80,13 +81,14 @@ async function present(b,m,boss,crew){const g=boss.g,ty=N()?.typeOf(g),place=m.p
  if(!live(b))return end('leave');
  // Entscheidung
  const fit=b.actors.filter(a=>a.team===0&&!a.down&&!a.g.dead),hp=Math.round(fit.reduce((s,a)=>s+M.health(a.g),0)/Math.max(1,fit.length)),foes=1+Math.max(0,(m.queues[m.place.stations.length-1]||[]).length-1);
- const shape=hp>=80?'frisch':hp>=60?'angeschlagen':hp>=40?'schwer angeschlagen':'am Ende';SH.focus=boss;SH.zoomTo=1.15;
- const ch=await decide({q:`Gegen ${esc(g.name)} kämpfen?`,info:`<p>${skullRow(m.diff||2)} <b>${esc(D_NAME(m.diff))}</b></p><p>Eure Truppe: <b>${fit.length}</b> kampffähig von ${m.party.length} · Gesundheit ⌀ ${hp} % (${shape})</p><p>Gegner: <b>${esc(first(g))}</b> und ${foes-1} Mann · Rüstung ${mat==='metal'?'Metall':mat==='medium'?'verstärkt':'Leder'}</p><p class="tiny">Kampf: Wer ihn besiegt, bekommt seine Truhe und alle Beute. Abziehen: Alle kommen heim, die Beute bleibt liegen.</p><p class="tiny"><i>${esc(pick(TRAINER))}</i></p>`,yes:'⚔ Angreifen',no:'Abziehen (ohne Beute)'});
+ const quip=pick(TRAINER);const shape=hp>=80?'frisch':hp>=60?'angeschlagen':hp>=40?'schwer angeschlagen':'am Ende';SH.focus=boss;SH.zoomTo=1.15;
+ const ch=await decide({q:`Gegen ${esc(g.name)} kämpfen?`,info:`<p>${skullRow(m.diff||2)} <b>${esc(D_NAME(m.diff))}</b></p><p>Eure Truppe: <b>${fit.length}</b> kampffähig von ${m.party.length} · Gesundheit ⌀ ${hp} % (${shape})</p><p>Gegner: <b>${esc(first(g))}</b> und ${foes-1} Mann · Rüstung ${mat==='metal'?'Metall':mat==='medium'?'verstärkt':'Leder'}</p><p class="tiny">Kampf: Wer ihn besiegt, bekommt seine Truhe und alle Beute. Abziehen: Alle kommen heim, die Beute bleibt liegen.</p><p class="tiny"><i>${esc(quip)}</i></p>`,say:`Gegen ${g.name} kämpfen? ${quip}`,yes:'⚔ Angreifen',no:'Abziehen (ohne Beute)'});
  return end(ch?'fight':'leave');}
 const D_NAME=d=>(window.Debt?.DIFF?.names||[])[clamp(Math.round(d||2),1,5)-1]||'';
 function end(r){SH.on=false;SH.face=null;SH.focus=null;SH.zoomTo=1;const w=$('shWrap');if(w)w.hidden=true;return r;}
 // Entscheidung: Fenster mit zwei Knöpfen, liefert true (ja) oder false (nein)
 function decide(o){return new Promise(res=>{const box=$('shDecide');if(!box)return res(true);$('shQ').innerHTML=o.q;$('shInfo').innerHTML=o.info||'';$('shYes').textContent=o.yes||'Ja';$('shNo').textContent=o.no||'Nein';box.hidden=false;C.state(o.state||'Eure Entscheidung …');
+ /* Frage (und Spruch) vom Erzähler vorlesen */M.speakLine?.(o.say||String(o.q||'').replace(/<[^>]*>/g,''),'erzaehler',null,{keep:true});
  const done=v=>{box.hidden=true;$('shYes').onclick=$('shNo').onclick=null;res(v);};$('shYes').onclick=()=>done(true);$('shNo').onclick=()=>done(false);});}
 
 // ---------- Kampfsequenz ----------
