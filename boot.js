@@ -1,6 +1,6 @@
 'use strict';
 // Versionskennung: wird beim Veröffentlichen durch die Commit-Kennung ersetzt, damit Browser nach einem Update keine alten Dateien aus dem Zwischenspeicher nehmen.
-var BUILD='b0a0c5bb-20261026';
+var BUILD='94f55823-20261026';
 (async()=>{
  // Dismiss an intro left by an older HTML entry point before loading the game.
  try{window.ArenaTheoryIntro?.finish?.();}catch{}
@@ -26,5 +26,5 @@ var BUILD='b0a0c5bb-20261026';
 (()=>{if(typeof document==='undefined'||typeof fetch!=='function'||/BUILD__/.test(BUILD))return;const short=String(BUILD).split('-')[0].slice(0,7);
  const tag=(txt,click)=>{const d=document.createElement('div');d.textContent=txt;d.style.cssText='position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;font:bold 12px "Courier Prime",monospace;padding:6px 12px;border:2px solid #52625b;background:#101719;color:#dfb66d;box-shadow:3px 3px 0 #0008;'+(click?'cursor:pointer':'opacity:.8;pointer-events:none');if(click)d.onclick=click;document.body.appendChild(d);return d;};
  const hello=tag('Version '+short);setTimeout(()=>hello.remove(),7000);
- let shown=false,last=0;async function check(){if(shown||Date.now()-last<20000)return;last=Date.now();try{const r=await fetch('boot.js?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;const m=/var BUILD='b0a0c5bb-20261026']*)'/.exec(await r.text());if(m&&m[1]&&m[1]!==BUILD&&!/BUILD__/.test(m[1])){shown=true;tag('Neue Version ('+m[1].split('-')[0].slice(0,7)+') – antippen zum Laden',()=>{try{window.MG?.persist?.();}catch(e){}setTimeout(()=>location.reload(),300);});}}catch(e){}}
+ let shown=false,last=0;async function check(){if(shown||Date.now()-last<20000)return;last=Date.now();try{const r=await fetch('boot.js?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;const m=/var\s+BUILD\s*=\s*'([^']*)'/.exec(await r.text());if(m&&m[1]&&m[1]!==BUILD&&!/BUILD__/.test(m[1])){shown=true;tag('Neue Version ('+m[1].split('-')[0].slice(0,7)+') – antippen zum Laden',()=>{try{window.MG?.persist?.();}catch(e){}setTimeout(()=>location.reload(),300);});}}catch(e){}}
  setTimeout(check,15000);setInterval(check,120000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check();});})();
