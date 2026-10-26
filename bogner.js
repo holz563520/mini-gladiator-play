@@ -25,6 +25,7 @@ const lanName=()=>S().lanista?.name||'Chef';
 let ORO=null,SMITH=null;
 function makeG(seed,f){const s=S(),old=s.rng;s.rng=seed;let g;try{g=M.makeGladiator(0);}finally{s.rng=old;}g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};g.scars=[];g.fame=0;f(g);return g;}
 function oroG(){return ORO??=makeG(70707,g=>{Object.assign(g,{id:'bowyer',name:NAME,height:167,weight:60,age:63,muscle:22});g.appearance={...g.appearance,skin:'#c08a5c',shade:'#83553a',hair:'#d5d0ba',style:5,beard:2,cloth:'#6b2f73',voice:1};});}
+M.registerFace?.(/orontes|pfeilkopf/i,()=>oroG());
 function smithG(){if(SMITH)return SMITH;const p=M.workshop?.state?.master||S().forgeWorkshop?.master;return SMITH=makeG(1312,g=>{Object.assign(g,{id:'bow-smith',name:p?.name||'Schmied',height:p?.height||186,weight:p?.weight||104,muscle:58});if(p?.appearance)g.appearance={...p.appearance};});}
 const actor=(g,o={})=>({id:g.id,g,team:0,x:0,y:0,a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,forgeWorker:true,bloodMarks:{},noNav:true,...o});
 function drawOro(ctx,x,y,K,o={}){const dir=Math.cos(o.a??0)>=0?1:-1,u=K*.6,P=(fx,fy)=>({x:x+dir*fx*u,y:y+fy*u}),q=Math.max(1,Math.round(u));

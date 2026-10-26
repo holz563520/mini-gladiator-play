@@ -63,7 +63,7 @@ DOG.portrait=function(c,D,o={}){let d=portraits.get(D);if(!d){d=dogAct(D,'stand'
 function makeRabies(){const g=gen(1);g.id='hf-rabies';g.name=TX.NAME;g.height=183;g.weight=66;g.age=54;g.muscle=40;
  g.appearance={...g.appearance,skin:'#c49470',shade:'#94664a',hair:'#b1a592',style:3,beard:3};
  g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};g.equipment=g.enemyGear;return g;}
-let RABIES=null;const rabies=()=>RABIES??=makeRabies();
+let RABIES=null;const rabies=()=>RABIES??=makeRabies();M.registerFace?.(/rabies|hundsgraf/i,()=>rabies());
 function rabiesCloak(c,x,y,K,dir,t,front){const u=K*.6,hh=rabies().height/180,Y=v=>y-v*hh*u,X=v=>x+v*u,pal=['#4a3424','#5e4430','#6e5038','#3a2a1c'];
  if(!front){for(let i=0;i<22;i++){const xx=X(-22+i*2),top=Y(64-Math.abs(i-10.5)*.5),len=(46+Math.sin(i*1.9)*4)*hh*u,sw=Math.sin(t*1.6+i*.6)*.6*u;px(c,xx+sw,top,2.2*u,len,pal[i%4]);px(c,xx+sw,top+len-2*u,2.2*u,3*u,pal[3]);}
   for(const k of [-20,19]){px(c,X(k),Y(18),3*u,8*u,pal[2]);px(c,X(k)-u,Y(11),5*u,3*u,pal[3]);for(let i=0;i<3;i++)px(c,X(k)-u+i*1.6*u,Y(9),u,1.4*u,'#d8ccb0');}return;}
@@ -504,7 +504,7 @@ setInterval(()=>{try{const s=st();if(s.stage==='open'){daily();return;}if(s.stag
 const prevTick=M.ludusTick;
 M.ludusTick=function(dt){prevTick?.apply(this,arguments);try{if(st().stage==='open')daily();}catch(e){console.error(e);}};
 // Beastrium vor der Vorstellung: der Karren steht schon da (falls die Vorstellung aus irgendeinem Grund nicht von selbst kam)
-function teaser(){return `<section class="box hf-cart"><canvas id="hfCartFace" width="160" height="104"></canvas><div><p class="eyebrow">VOR DEM BEASTRIUM</p><h2>Ein stinkender Karren</h2><q>Es riecht nach nassem Hund, altem Blut und schlechten Entscheidungen. Im Käfig knurrt etwas.</q><div class="buttons"><button class="btn primary" data-action="hf:intro1">Nachsehen</button></div></div></section>`;}
+function teaser(){return `<section class="box hf-cart"><canvas id="hfCartFace" width="160" height="104"></canvas><div><p class="eyebrow">VOR DEM BEASTRIUM</p><h2>Ein stinkender Karren</h2><q class="hf-narr">Es riecht nach nassem Hund, altem Blut und schlechten Entscheidungen. Im Käfig knurrt etwas.</q><div class="buttons"><button class="btn primary" data-action="hf:intro1">Nachsehen</button></div></div></section>`;}
 // LUDUS-KARTE: Rabies steht mit seinem Karren draußen auf der Wiese vor dem Südtor, rechts vom Weg (nach der Vorstellung).
 // Antippen öffnet die Aufträge. Im Käfig sitzen die eigenen Hunde (die ersten zwei), sonst seine eigenen.
 const MAP={x:770,y:742,k:.26,rx:690,rk:.9};MAP.hit={x:MAP.rx-22,y:MAP.y-62,w:MAP.x+70-MAP.rx+22,h:66};let mapDogs=null,mapKey='';

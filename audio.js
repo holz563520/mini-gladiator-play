@@ -14,7 +14,7 @@ function songWanted(){if(document.querySelector?.('.scene-silence'))return '';if
 // Durchgängig: auch beim Umhergehen zwischen den Kämpfen (dort ist S.battle.paused gesetzt), ohne Abbrechen oder Neustart beim Kampfbeginn.
 function raidOn(){return !!M.s.battle?.mission||!!M.outside?.running||M.ui?.getPage?.()==='outside';}
 // Beim Medicus: Krankenhaus-Seite, Auswahlmenü am Medicus-Gebäude und Behandlungsstuhl des Doktors – dort läuft „The Medicus's Bill“.
-function medicOn(){return M.ui?.getPage?.()==='medic'||!!document.querySelector?.('.medic-menu,.dok-ask,.dok-chair,.dok-result');}
+function medicOn(){return M.ui?.getPage?.()==='medic'||!!document.querySelector?.('.medic-menu,.dok-ask,.dok-chair,.dok-result,.dok-choice');}
 // Der Schmied steht im Vordergrund: Schmiede geöffnet, Schmied-Intro oder eine Lehrlings-Szene läuft.
 function smithOnStage(){return M.ui?.getPage?.()==='forge'||!!M.forgeIntro?.scene||!!document.querySelector?.('.smith-ceremony:not(.no-smith-song)');}
 function songReady(t){if(t.broken||typeof Audio==='undefined')return false;if(t.el)return true;try{const el=new Audio();el.loop=!t.files;el.preload='none';el.volume=0;const pick=t.only?(el.canPlayType('audio/mpeg')?t.only:''):el.canPlayType('audio/webm; codecs="opus"')?'webm':el.canPlayType('audio/mp4; codecs="mp4a.40.2"')?'m4a':'';if(!pick){t.broken=true;return false;}t.ext=pick;el.src='music/'+(t.files?t.files[t.idx]:t.file)+'.'+pick;el.addEventListener('error',()=>{t.broken=true;t.playing=false;});if(t.files)el.addEventListener('ended',()=>songNext(t));t.el=el;return true;}catch{t.broken=true;return false;}}

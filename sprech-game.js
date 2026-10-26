@@ -35,14 +35,14 @@ const norm=t=>clean(t).replace(/[„“"»«]/g,'').toLowerCase();let lastKey=''
 function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöüß]/i.test(txt)||!window.Sprech)return null;
  const nk=norm(txt),now=performance.now();if(nk===lastKey&&now-lastT<9000){if(g&&cur&&!cur.g)cur.g=g;return cur;}
  const out=M.audioEngine?.voiceOut?.();if(!out)return null;if(o.soft&&cur&&!cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur))return null;stop();
- lastKey=nk;lastT=now;const key=o.voice||voiceKey(who,g,o.name),voice=voiceFor(key,g,o),me={id:++seq,key,who,g,text:txt,soft:!!o.soft,t0:performance.now(),start:Infinity,dur:0,mouth:null,src:null};cur=me;
+ lastKey=nk;lastT=now;const key=o.voice||voiceKey(who,g,o.name);g=g||faceFor(key,o.name||(typeof who==='string'?who:''));const voice=voiceFor(key,g,o),me={id:++seq,key,who,g,name:o.name||g?.name||'',text:txt,soft:!!o.soft,t0:performance.now(),start:Infinity,dur:0,mouth:null,src:null};cur=me;
  renderAsync(txt,voice).then(R=>{if(cur!==me)return;if(R.error||!R.data){cur=null;return;}const o2=M.audioEngine?.voiceOut?.();if(!o2){cur=null;return;}const {ctx,bus}=o2;
   const b=ctx.createBuffer(1,R.data.length,window.Sprech.SR);b.getChannelData(0).set(R.data);const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;gn.gain.value=o.vol??(o.soft?.75:1.05);s.connect(gn);gn.connect(bus);
   const at=ctx.currentTime+.02;s.start(at);M.audioEngine?.duck?.(o.soft?.65:.32);s.onended=()=>{s.disconnect();gn.disconnect();if(cur===me){cur=null;M.audioEngine?.duck?.(1);}};me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;me.ctx=ctx;});
  return me;}
 function stop(){if(cur?.src){try{cur.src.stop();}catch{}}cur=null;M.audioEngine?.duck?.(1);}
 // Mundöffnung (0–1) für eine Figur, wenn sie gerade spricht: g (Objekt oder id) oder Stimmen-/Figurenkürzel
-function talkMouth(x){if(!cur?.mouth||!x)return 0;const same=x===cur.g||(x.id&&cur.g&&x.id===cur.g.id)||(typeof x==='string'&&(x===cur.key||x===cur.who));if(!same)return 0;const t=cur.ctx.currentTime-cur.start;if(t<0||t>cur.dur)return 0;return window.Sprech.mouthAt(cur.mouth,t);}
+function talkMouth(x){if(!cur?.mouth||!x)return 0;const same=x===cur.g||(x.id&&cur.g&&x.id===cur.g.id)||(typeof x==='string'&&(x===cur.key||x===cur.who||(x.length>3&&String(cur.name).toLowerCase().includes(x.toLowerCase()))));if(!same)return 0;const t=cur.ctx.currentTime-cur.start;if(t<0||t>cur.dur)return 0;return window.Sprech.mouthAt(cur.mouth,t);}
 const speaking=x=>!!cur&&(!x||talkMouth(x)>0||x===cur.key||x===cur.who||x===cur.g)&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur);
 // Zeilenwechsel erkennen (für Szenen, die Text jedes Bild neu zeichnen): spricht nur, wenn sich die Zeile ändert
 const lastBy=new Map();
@@ -57,7 +57,7 @@ const WATCH=[
  ['.scene-bubble,.hf-bubble,.ws-bubble,.ow-talk,.wanderer-line,.medic-quip,.dok-line,.tr-reveal .tr-quote,.hs-bubble',null,{}],
  ['#modSay,.hs-mi-say','moderator',{}],
  ['#hsSay','frau',{name:'Hühnerhändlerin'}],
- ['.smith-plea','schmied',{}],['.hall-title','cap',{speedUp:1.2}],['.threat',null,{soft:true}]];
+ ['.smith-plea','schmied',{}],['.hf-board q,.hf-cart q:not(.hf-narr)','rabies',{name:'Rabies'}],['.hf-narr','cap',{speedUp:1.2}],['.hall-title','cap',{speedUp:1.2}],['.threat',null,{soft:true}]];
 const seen=new WeakMap();
 const visible=el=>{if(!el.isConnected||el.closest('[hidden],.hf-hide,.out'))return false;const r=el.getClientRects();if(!r.length||!r[0].width)return false;const cs=getComputedStyle(el);return cs.visibility!=='hidden'&&cs.display!=='none'&&+cs.opacity>.15;};
 function parse(el,def){const raw=clean(el.textContent);if(!raw)return null;const b=el.querySelector('b,small,strong');let name='',text=raw;
@@ -72,6 +72,31 @@ function poll(){if(!window.Sprech||!M.audioEngine?.voiceOut?.())return;
   speakLine(P.text,P.who,g||null,{...opt,name:opt.name||P.name});}}
 setInterval(poll,250);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+// Ein Gebäude/Fenster öffnen unterbricht sofort alles, was gerade gesprochen wird (und Applaus/Gelächter)
+{const wrap=()=>{const U=M.ui;if(!U||U._sprechWrap)return!!U;U._sprechWrap=true;const click=U.click;if(typeof click==='function')U.click=function(a,...r){if(typeof a==='string'&&a.startsWith('nav:')){stop();M.crowdMood?.(null);}return click.call(this,a,...r);};const modal=U.modal;if(typeof modal==='function')U.modal=function(...r){stop();return modal.apply(this,r);};return true;};if(!wrap()){const iv=setInterval(()=>{if(wrap())clearInterval(iv);},300);}}
+// ---------- Gesichter: bekannte Figuren melden ihren Kopf an (M.registerFace), der Schmied wird aus seinen Daten gebaut ----------
+const FACES=[];let smithFaceC=null;
+function smithFace(){const p=M.workshop?.state?.master||M.s?.forgeWorkshop?.master;if(!p||!M.makeGladiator)return null;if(smithFaceC?.name===p.name)return smithFaceC;const rng=M.s.rng,g=M.makeGladiator(0);M.s.rng=rng;Object.assign(g,{id:'sprech-smith',name:p.name,height:p.height||186,weight:p.weight||100,muscle:58,fame:0,scars:[]});if(p.appearance)g.appearance={...g.appearance,...p.appearance};return smithFaceC=g;}
+function faceFor(key,name){const n=String(name||'');for(const f of FACES)if((n&&f.re.test(n))||(key&&f.re.test(key)))try{const g=f.get();if(g)return g;}catch(e){console.warn('Sprecher-Gesicht',e);}
+ if(key==='schmied')return smithFace();if(n){const r=(M.s?.roster||[]).find(x=>x.name===n||String(x.name).split(' ')[0]===n);if(r)return r;}return null;}
+M.registerFace=(re,get)=>FACES.push({re,get});M.faceFor=faceFor;
+// ---------- Sprecher-Großaufnahme ----------
+// Spricht eine Figur (nicht bei Sprechblasen auf dem Spielfeld): Steht ihre Großaufnahme schon still im Bild, wird sie mit
+// bewegtem Mund neu gemalt; malt die Szene sie selbst laufend, passiert nichts weiter; sonst erscheint unten links eine kleine
+// Nahaufnahme mit ihrem Kopf (face-shots.js), deren Mund sich zur Stimme bewegt.
+let box=null,boxCv=null,boxG=null;
+{const st=document.createElement('style');st.textContent=`.sprech-face{position:fixed;left:12px;bottom:max(90px,env(safe-area-inset-bottom));z-index:3000;width:min(44vw,240px);background:#101719;border:3px solid #52625b;box-shadow:4px 4px 0 rgba(0,0,0,.45);opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none}.sprech-face[hidden]{display:none!important}.sprech-face.on{opacity:1;transform:none}.sprech-face canvas{display:block;width:100%;height:auto;image-rendering:pixelated}.sprech-face b{display:block;font:bold 11px 'Courier Prime',monospace;letter-spacing:.08em;text-transform:uppercase;color:#dfb66d;padding:3px 6px;background:#182126}`;document.head.appendChild(st);}
+function boxEl(){if(box)return box;box=document.createElement('div');box.id='sprechFace';box.className='sprech-face';box.setAttribute('aria-hidden','true');box.innerHTML='<canvas width="320" height="208"></canvas><b></b>';document.body.appendChild(box);boxCv=box.firstChild;return box;}
+const sameG=(a,b)=>!!a&&!!b&&(a===b||(a.id&&a.id===b.id));
+const shown=el=>{if(!el?.isConnected)return false;const r=el.getClientRects();if(!r.length||!r[0].width)return false;let n=el;while(n&&n!==document.body){const cs=getComputedStyle(n);if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity<.1||n.hidden)return false;n=n.parentElement;}return true;};
+function faceLoop(){requestAnimationFrame(faceLoop);const g=cur&&!cur.soft?cur.g:null,talking=g&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur+.15);
+ if(!talking||!M.faceShot?.records){if(box&&!box.hidden){box.classList.remove('on');box.hidden=true;}return;}
+ const now=performance.now();let painted=false,live=false;
+ for(const [cv,r] of M.faceShot.records()){if(cv===boxCv||!sameG(r.o.g,g)||!shown(cv))continue;if(now-r.time<150){live=true;continue;}try{M.faceShot.paint(r.ctx,r.w,r.h,{...r.o,talk:talkMouth(g),_sprech:true},r.t);painted=true;}catch{}}
+ const own=painted||live;if(own){if(box&&!box.hidden){box.classList.remove('on');box.hidden=true;}return;}
+ boxEl();if(box.hidden||boxG!==g){box.hidden=false;boxG=g;box.querySelector('b').textContent=cur.name||g.name||'';requestAnimationFrame(()=>box.classList.add('on'));}
+ try{const c=boxCv.getContext('2d');M.faceShot.paint(c,boxCv.width,boxCv.height,{g,team:g.enemy?1:0,mood:'calm',yaw:.22,zoom:1.12,talk:talkMouth(g),_sprech:true},now/1000);}catch{}}
+requestAnimationFrame(faceLoop);
 // Filme warten, bis die laufende Zeile zu Ende gesprochen ist (f.ack/f.skip = Antippen: nicht warten). Sicherheitsgrenze 20 s.
 function speechHold(f){if(!cur||cur.soft||(f&&(f.ack||f.skip)))return false;if(performance.now()-cur.t0>20000)return false;if(cur.start===Infinity)return performance.now()-cur.t0<4000;return cur.ctx.currentTime<cur.start+cur.dur;}
 // Spielfeld: immer nur eine Sprechblase, danach 5–10 s Ruhe

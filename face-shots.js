@@ -236,7 +236,9 @@ function head(q,T,C,o,yaw,t,mood){
 }
 const bufs=new WeakMap();
 // o: {g, team, mood, yaw?, sink?, tilt?, dark?, pale?, blood?, zoom?}; t: Sekunden seit Beginn der Einstellung
-function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createElement('canvas'),b:document.createElement('canvas'),c:document.createElement('canvas'),d:document.createElement('canvas')};B.a.width=B.b.width=B.c.width=B.d.width=FW;B.a.height=B.b.height=B.c.height=B.d.height=FH+40;bufs.set(g.canvas,B);}
+// Wer wo gemalt wurde (für Sprechstimmen: stehende Großaufnahmen beim Sprechen neu malen)
+const recs=new Map();
+function paint(g,w,h,o,t){if(g?.canvas&&o?.g&&!o._sprech){recs.set(g.canvas,{ctx:g,w,h,o,t,time:(typeof performance!=='undefined'?performance.now():Date.now())});if(recs.size>40)recs.delete(recs.keys().next().value);}let B=bufs.get(g.canvas);if(!B){B={a:document.createElement('canvas'),b:document.createElement('canvas'),c:document.createElement('canvas'),d:document.createElement('canvas')};B.a.width=B.b.width=B.c.width=B.d.width=FW;B.a.height=B.b.height=B.c.height=B.d.height=FH+40;bufs.set(g.canvas,B);}
  const colors=x=>{const A=x?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';return {identity:x?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};},gearOf=x=>{const r={};try{for(const it of M.armorItems(x)||[])r[it.def]=it;}catch{}return r;},C=colors(o.g),armor=gearOf(o.g);
  const opt={talk:o.talk??(M.talkMouth?.(o.g)||0),...o,armor,scar:o.scar??((o.g?.scars||[]).length>0||(o.g?.kills||0)>=5)},mood=o.mood||'calm',m=MOODS[mood]||MOODS.calm;
  // Kamerafahrt um den Kopf: langsamer Schwenk von einer Seite zur anderen
@@ -268,7 +270,7 @@ function paint(g,w,h,o,t){let B=bufs.get(g.canvas);if(!B){B={a:document.createEl
  const sh=o.shake||0,ox=sh?Math.round((Math.random()-.5)*sh*s):0,oy=sh?Math.round((Math.random()-.5)*sh*s*.7):0;g.drawImage(B.a,0,0,FW,FH,Math.round(w/2-dw/2)+ox,Math.round(Math.min(0,(h-dh)*.42))+oy,dw,dh);
  if(o.lines>0){/* Schrei: Linien vom Rand zur Mitte */g.save();g.globalAlpha=cl(o.lines)*.75;g.strokeStyle='#fff6dc';g.lineWidth=Math.max(2,w/160);for(let i=0;i<18;i++){const a=i/18*Math.PI*2+Math.floor(t*14)*.37,r0=Math.max(w,h)*.74,r1=Math.max(w,h)*(.4+((i*7)%5)*.035);g.beginPath();g.moveTo(w/2+Math.cos(a)*r0,h*.45+Math.sin(a)*r0);g.lineTo(w/2+Math.cos(a)*r1,h*.45+Math.sin(a)*r1);g.stroke();}g.restore();}
  if(o.clear)return;const vg=g.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.62)');g.fillStyle=vg;g.fillRect(0,0,w,h);}
-M.faceShot={paint,moods:Object.keys(MOODS),FW,FH,version:'helmet-lab-v4'};
+M.faceShot={records:()=>recs,paint,moods:Object.keys(MOODS),FW,FH,version:'helmet-lab-v4'};
 M.faceShot.paintHead=(q,actor,o={},t=0)=>{const A=actor?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';const C={identity:actor?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};head(q,tools(q),C,{...o,g:actor,armor:o.armor||{}},o.yaw||0,t,o.mood||'calm');};
 })();
 

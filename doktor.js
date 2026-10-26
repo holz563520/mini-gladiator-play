@@ -36,6 +36,7 @@ const DC={skin:'#e9c5a3',shade:'#b88d6c',hair:'#efece2',hairS:'#bdb8aa',coat:'#e
 const NC={skin:'#f5d6bc',skinS:'#e0b394',blush:'#f2a29a',hair:'#e2b24c',hairL:'#f8dc8c',hairD:'#a8742a',dress:'#f3f0e6',dressS:'#d6d0c0',red:'#b8323a',lip:'#c43a46',lipL:'#e2626c',eye:'#5aa0d8'};
 let docGc=null;
 function docG(){if(docGc)return docGc;const rng=S.rng,g=M.makeGladiator(0);S.rng=rng;g.id='dok-doctor';g.name=DOC;g.age=63;Object.assign(g.appearance,{skin:DC.skin,shade:DC.shade,hair:DC.hair,style:0,beard:0,cloth:DC.coat,silhouette:.95});g.scars=[{part:'head',reason:'Selbstversuch'}];g.kills=0;g.equipment={weapon:null,secondary:null,shield:null,armor:{}};return docGc=g;}
+M.registerFace?.(/hirnhammer|doktor|^medicus$/i,()=>docG());
 
 // ---------- Hintergrund: Behandlungsraum (für Großaufnahmen 160 × 104 und den Stuhl 220 × 140) ----------
 const roomCache=new Map();
@@ -161,7 +162,9 @@ function nurseHead(q,t,o={}){const {R,E,L}=tl(q),mood=o.mood||'smile',sw=Math.si
  const by=mood==='shock'?-2:mood==='roll'?1:0;L(62,30+by,67,28+by,1,'#7a4a20');L(67,28+by,75,29+by,1,'#7a4a20');L(85,29+by,93,28+by,1,'#7a4a20');L(93,28+by,98,30+by,1,'#7a4a20');
  // Stupsnase, volle rote Lippen, Schönheitsfleck
  R(80,42,1,6,'#e9bea2');R(78,48,5,1,'#dba88a');R(78,49,1,1,'#c08a72');R(82,49,1,1,'#c08a72');R(91,52,1,1,'#3a2014');
- if(mood==='shock'){E(80,56,3,3,'#5c1a1a');E(80,55,4,1,NC.lip);}
+ const tk=o.talk??(M.talkMouth?.('valeria')||0);
+ if(tk>.06){const h=Math.round(1+tk*5);R(74,53,13,1,NC.lip);E(80,55+h/2,5,h/2+1,'#5c1a1a');if(h>2)R(77,54,7,1,'#efe6d0');R(75,56+h,11,1,NC.lipL);}
+ else if(mood==='shock'){E(80,56,3,3,'#5c1a1a');E(80,55,4,1,NC.lip);}
  else if(mood==='kiss'){E(80,55,3,2,NC.lip);R(79,54,2,1,NC.lipL);}
  else{R(74,54,13,2,NC.lip);R(76,53,3,1,NC.lip);R(82,53,3,1,NC.lip);R(80,54,1,1,'#8a222a');E(80,57,5,2,NC.lipL);R(77,56,3,1,'#f6a0a4');if(mood!=='roll'){R(73,53,1,1,NC.lip);R(87,53,1,1,NC.lip);R(72,52,1,1,NC.skinS);R(88,52,1,1,NC.skinS);}}
  // Ohrringe, Locken vorn, Haube mit rotem Kreuz
