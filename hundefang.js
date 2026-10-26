@@ -505,9 +505,9 @@ const prevTick=M.ludusTick;
 M.ludusTick=function(dt){prevTick?.apply(this,arguments);try{if(st().stage==='open')daily();}catch(e){console.error(e);}};
 // Beastrium vor der Vorstellung: der Karren steht schon da (falls die Vorstellung aus irgendeinem Grund nicht von selbst kam)
 function teaser(){return `<section class="box hf-cart"><canvas id="hfCartFace" width="160" height="104"></canvas><div><p class="eyebrow">VOR DEM BEASTRIUM</p><h2>Ein stinkender Karren</h2><q>Es riecht nach nassem Hund, altem Blut und schlechten Entscheidungen. Im Käfig knurrt etwas.</q><div class="buttons"><button class="btn primary" data-action="hf:intro1">Nachsehen</button></div></div></section>`;}
-// LUDUS-KARTE: Rabies steht mit seinem Karren rechts unter dem Brunnen, vor dem Truppenplatz (nach der Vorstellung).
+// LUDUS-KARTE: Rabies steht mit seinem Karren draußen auf der Wiese vor dem Südtor, rechts vom Weg (nach der Vorstellung).
 // Antippen öffnet die Aufträge. Im Käfig sitzen die eigenen Hunde (die ersten zwei), sonst seine eigenen.
-const MAP={x:772,y:420,k:.24,rx:706,rk:.85};MAP.hit={x:MAP.rx-22,y:MAP.y-62,w:MAP.x+70-MAP.rx+22,h:66};let mapDogs=null,mapKey='';
+const MAP={x:770,y:742,k:.26,rx:690,rk:.9};MAP.hit={x:MAP.rx-22,y:MAP.y-62,w:MAP.x+70-MAP.rx+22,h:66};let mapDogs=null,mapKey='';
 function mapCart(g,t){const s=st();if(s.stage!=='open')return;const own=s.dogs.filter(D=>!D.dead).slice(0,2),key=own.map(D=>D.id).join();if(!mapDogs||mapKey!==key){mapKey=key;const list=own.length?own:[DOG.create('molosser',4711),DOG.create('bullterrier',815)];mapDogs=list.map((D,i)=>dogAct(D,i?'sit':'threat'));}
  g.save();g.translate(MAP.x,MAP.y);g.scale(MAP.k,MAP.k);const dk=2.7*.6*.95;mapDogs.forEach((d,i)=>{d.x=i?60:-90;d.y=-104;d.k=dk;d.face=i?1:-1;d.mode=i?((t%7)<4?'sit':'scratch'):((t%5)<1.2?'bars':'threat');});
  drawCart(g,0,0,t,0,mapDogs);g.restore();

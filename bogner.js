@@ -283,7 +283,7 @@ const overlay=M.ludusOverlay;M.ludusOverlay=(g,t)=>{overlay?.(g,t);const st=ST()
  const pr=hiPlace[st.stage];if(pr&&!film&&!tipping()){const p=M.ludus.places.find(p=>p.route===pr);if(p){const pulse=(Math.sin(t*5)+1)/2;g.save();g.strokeStyle='#f4d37a';g.globalAlpha=.55+pulse*.45;g.lineWidth=3+pulse*2;g.strokeRect(p.x-6-pulse*3,p.y-8-pulse*3,p.w+12+pulse*6,p.h+16+pulse*6);g.fillStyle='#f4d37a';for(let n=0;n<3;n++)g.fillRect(p.x+p.w/2-7+n*2,p.y-30-pulse*6+n*4,14-n*4,4);g.restore();}}};
 const BARKS=['Bögen! Armbrüste! Keine Rückgabe!','Frische Pfeile! Fast nicht benutzt!','Der Pfeil im Kopf? Deko.','Armbrust kaufen, Arzt sparen!','Wer zittert, zahlt doppelt.'];
 // Karren anklicken: Laden (eigener Klick auf das Ludus-Bild; die Gebäudeliste des Ludus bleibt unverändert)
-document.addEventListener('click',e=>{const c=e.target;if(!c||c.id!=='ludusCanvas'||!['buy','role','shopbow','equip','arena','apple','done'].includes(ST().stage))return;const r=c.getBoundingClientRect(),x=(e.clientX-r.left)*900/r.width,y=(e.clientY-r.top)*670/r.height;
+document.addEventListener('click',e=>{const c=e.target;if(!c||c.id!=='ludusCanvas'||!['buy','role','shopbow','equip','arena','apple','done'].includes(ST().stage))return;const r=c.getBoundingClientRect(),x=(e.clientX-r.left)*900/r.width,y=(e.clientY-r.top)*c.height/r.height;
  if(x>=CART.x-26&&x<=CART.x+44&&y>=CART.y-46&&y<=CART.y+4){e.stopImmediatePropagation();e.preventDefault();lastBuy=null;shop();}},true);
 // Laden: Bogen und Armbrust in fünf Klassen, Zugstärke (Pfund) frei wählbar – mehr Pfund kostet etwas mehr
 const lbOpts=d=>{const D=M.DRAW?.[d]||{min:d==='bow'?30:100,max:d==='bow'?100:400};const st=d==='bow'?10:50,o=[];for(let v=D.min;v<=D.max;v+=st)o.push(v);return o;};
