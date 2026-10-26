@@ -111,12 +111,18 @@ const DEF={
  sever:{cat:'waffen',name:'Abtrennen (Knochen)',use:'Gliedmaße oder Kopf ab: Knochen bricht, Blut spritzt.',vol:1,room:.12,pitchVar:.08,layers:[
   T({f0:95,f1:35,dur:.26,vol:.8,drive:3}),K({n:4,gap:.011,jitter:.4,filter:'hp',f:2200,q:.8,dur:.015,vol:.55}),N({f0:1100,f1:300,q:1.5,dur:.3,vol:.55}),
   N({color:'pink',filter:'hp',f0:2600,att:.05,hold:.3,dur:.7,vol:.14,start:.12,trem:13,tremDepth:.6}),N({color:'brown',filter:'lp',f0:400,dur:.3,vol:.4})]},
- boneCrack:{cat:'waffen',name:'Knochenbruch (Knacken)',use:'Ein Knochen bricht: trockenes Knacken wie ein dicker grüner Ast, splitternd, dumpfer Körper darunter, leises Nachknirschen (Wunsch Thomas 26.10.).',vol:1.1,room:.1,pitchVar:.1,layers:[
-  K({n:1,filter:'hp',f:2600,q:.7,dur:.022,vol:1}),N({filter:'hp',f0:4200,f1:1400,dur:.05,vol:.55,att:.0003}),K({n:7,gap:.008,jitter:.65,filter:'bp',f:1700,q:1.1,dur:.012,vol:.62,start:.005}),
-  T({f0:150,f1:55,dur:.11,vol:.55,drive:4,lp:900,att:.0008}),N({color:'brown',filter:'lp',f0:500,dur:.14,vol:.35}),K({n:6,gap:.028,jitter:.75,filter:'hp',f:2900,q:.9,dur:.008,vol:.26,start:.08})]},
- skullCrack:{cat:'waffen',name:'Schädelbruch (Knacken)',use:'Der Schädel bricht: dumpfes, hohles Knacken mit Splittern.',vol:1.15,room:.12,pitchVar:.08,layers:[
-  T({f0:110,f1:40,dur:.18,vol:.8,drive:4,lp:700,att:.0008}),K({n:1,filter:'hp',f:2000,q:.7,dur:.026,vol:.95}),K({n:9,gap:.007,jitter:.6,filter:'bp',f:1300,q:1,dur:.014,vol:.6,start:.006}),
-  N({filter:'bp',f0:900,f1:400,q:2,dur:.12,vol:.4}),K({n:5,gap:.035,jitter:.7,filter:'hp',f:2400,q:.9,dur:.009,vol:.22,start:.12})]},
+ boneCrack:{cat:'waffen',name:'Knochenbruch (Splittern)',use:'Ein Knochen bricht wie ein dicker grüner Ast (Wunsch Thomas 26.10.): erst Ächzen unter Last mit kleinen Rissen, dann der Bruch mit Splitterregen, ein zweites Nachbrechen und langes, leiser werdendes Splittern und Knirschen (gut 1,3 s).',vol:1.1,room:.1,pitchVar:.1,layers:[
+  N({filter:'bp',f0:240,f1:430,q:6,att:.18,hold:.5,dur:.32,vol:.22,trem:38,tremDepth:.7}),K({n:5,gap:.05,jitter:.6,filter:'bp',f:1800,q:1.5,dur:.006,vol:.18,start:.05}),
+  K({n:1,filter:'hp',f:2600,q:.7,dur:.026,vol:1,start:.3}),N({filter:'hp',f0:4200,f1:1400,dur:.07,vol:.55,att:.0003,start:.3}),T({f0:150,f1:55,dur:.13,vol:.55,drive:4,lp:900,att:.0008,start:.3}),N({color:'brown',filter:'lp',f0:500,dur:.16,vol:.35,start:.3}),
+  K({n:11,gap:.008,jitter:.7,filter:'bp',f:1700,q:1.1,dur:.012,vol:.65,start:.305}),
+  K({n:11,gap:.022,jitter:.7,filter:'bp',f:2200,q:1.2,dur:.01,vol:.45,start:.4}),N({color:'pink',filter:'hp',f0:2200,att:.05,hold:.3,dur:.65,vol:.12,start:.4,trem:24,tremDepth:.7}),
+  K({n:1,filter:'hp',f:2300,q:.8,dur:.02,vol:.62,start:.72}),K({n:6,gap:.01,jitter:.6,filter:'bp',f:1600,q:1.1,dur:.01,vol:.4,start:.725}),
+  K({n:9,gap:.035,jitter:.8,filter:'hp',f:2800,q:.9,dur:.008,vol:.28,start:.8}),K({n:9,gap:.05,jitter:.8,filter:'hp',f:3000,q:.9,dur:.007,vol:.14,start:1.08})]},
+ skullCrack:{cat:'waffen',name:'Schädelbruch (Splittern)',use:'Der Schädel bricht: dumpfer, hohler Schlag, Knacken, splitternde Risse, die nachlaufen (gut 1,1 s).',vol:1.15,room:.12,pitchVar:.08,layers:[
+  T({f0:110,f1:40,dur:.2,vol:.8,drive:4,lp:700,att:.0008}),K({n:1,filter:'hp',f:2000,q:.7,dur:.028,vol:.95}),N({filter:'bp',f0:900,f1:380,q:2,dur:.14,vol:.42}),
+  K({n:12,gap:.008,jitter:.6,filter:'bp',f:1300,q:1,dur:.014,vol:.6,start:.006}),K({n:10,gap:.024,jitter:.7,filter:'bp',f:1800,q:1.1,dur:.011,vol:.4,start:.11}),
+  N({color:'pink',filter:'bp',f0:1500,f1:900,q:1.5,att:.04,hold:.3,dur:.55,vol:.12,start:.12,trem:20,tremDepth:.7}),K({n:1,filter:'hp',f:1900,q:.8,dur:.02,vol:.5,start:.42}),
+  K({n:9,gap:.04,jitter:.8,filter:'hp',f:2400,q:.9,dur:.009,vol:.24,start:.48}),K({n:8,gap:.055,jitter:.8,filter:'hp',f:2600,q:.9,dur:.008,vol:.12,start:.8})]},
  blockShield:{cat:'waffen',name:'Schildblock (Holz)',use:'Schlag oder Geschoss prallt am Holzschild ab.',vol:1,room:.12,pitchVar:.1,layers:[
   T({f0:150,f1:105,dur:.16,vol:.7,drive:1.6}),N({f0:650,f1:640,q:6,dur:.12,vol:.55,att:.0008}),N({f0:1350,f1:1300,q:8,dur:.08,vol:.3}),N({filter:'hp',f0:4000,dur:.02,vol:.3}),
   Mt({f:420,partials:'schild',decay:.12,dur:.3,vol:.15,bright:.5,click:0})]},
