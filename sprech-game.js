@@ -39,22 +39,27 @@ function deferLine(args){deferred.push(args);if(deferred.length>4)deferred.shift
 // Kommt eine Zeile, während jemand spricht, wartet sie in der Reihe (pend) und wird danach ganz gesprochen – egal ob
 // Sprechblase, Fernrohr, Erzähler, Flehen oder Antwort. speechHold() meldet „spricht“, solange noch etwas wartet.
 const pend=[];let qProg=0;
+// Sprech-Protokoll zur Fehlersuche (?sprechtest in der Adresse): zeigt oben links, was mit jeder Zeile passiert ist
+const DIAG=typeof location!=='undefined'&&/sprechtest/.test(location.search),dl=[];
+function dlog(k,t){if(!DIAG)return;dl.push((performance.now()/1000).toFixed(1)+' '+k+' '+String(t||'').slice(0,40));if(dl.length>14)dl.shift();}
+if(DIAG)setInterval(()=>{let el=document.getElementById('sprechDiag');if(!el){el=document.createElement('pre');el.id='sprechDiag';el.style.cssText='position:fixed;left:4px;top:4px;z-index:10000;max-width:96vw;margin:0;padding:6px;background:#000c;color:#9f9;font:10px/1.25 monospace;white-space:pre-wrap;pointer-events:none';document.body.appendChild(el);}
+ const A=M.audioEngine,c=A?.voiceOut?.()?.ctx||cur?.ctx;el.textContent='TON '+(c?c.state+' '+c.sampleRate+'Hz':'kein ctx')+' · Geräusche '+(M.s?.options?.sound?'an':'AUS')+' · voiceOut '+(A?.voiceOut?.()?'ok':'NULL')+' · Lader '+(M.sceneLoader?.active?'AKTIV':'aus')+' · Mission '+(missionOn()?'ja':'nein')+' · Worker '+(workerOk?'ok':'FEHLER')+' · wartet '+pend.length+'\n'+dl.join('\n');},500);
 const missionOn=()=>!!M.s?.battle?.mission;
 const playing=()=>!!cur&&(cur.start===Infinity?performance.now()-cur.t0<9000:cur.ctx.currentTime<cur.start+cur.dur);
 function pump(){setTimeout(()=>{if(!pend.length||(cur&&playing()))return;if(!missionOn()||!M.audioEngine?.voiceOut?.()){pend.length=0;return;}const n=pend.shift();if(!speakLine(n.text,n.who,n.g,{...n.o,_q:true}))pump();},90);}
-function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöüß]/i.test(txt)||!window.Sprech)return null;if(M.sceneLoader?.active){if(!o.soft)deferLine([text,who,g,o]);return null;}if(o.soft&&fieldPaused())return null;
+function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöüß]/i.test(txt)||!window.Sprech)return null;if(M.sceneLoader?.active){dlog('LADER-WARTET',txt);if(!o.soft)deferLine([text,who,g,o]);return null;}if(o.soft&&fieldPaused())return null;
  const nk=norm(txt),now=performance.now();if(nk===lastKey&&now-lastT<9000){if(g&&cur&&!cur.g)cur.g=g;return cur;}
- const out=M.audioEngine?.voiceOut?.();if(!out)return null;
+ const out=M.audioEngine?.voiceOut?.();if(!out){dlog('KEIN-TON',txt);return null;}
  if(missionOn()&&!o.soft){o={...o,keep:true};
-  if(!o._q&&(pend.length||(cur&&!cur.soft&&playing()))){if(o.drop)return null;const same=pend.find(p=>p.nk===nk)||(cur&&norm(cur.text)===nk&&cur);if(same)return same;const p={nk,text:txt,who,g,o,t:now,pending:true};pend.push(p);if(pend.length>14)pend.shift();return p;}}
- if(!o.keep&&cur&&cur.keep&&(cur.start===Infinity?now-cur.t0<9000:cur.ctx.currentTime<cur.start+cur.dur))return null;
+  if(!o._q&&(pend.length||(cur&&!cur.soft&&playing()))){if(o.drop)return null;const same=pend.find(p=>p.nk===nk)||(cur&&norm(cur.text)===nk&&cur);if(same)return same;const p={nk,text:txt,who,g,o,t:now,pending:true};pend.push(p);if(pend.length>14)pend.shift();dlog('reihe',txt);return p;}}
+ if(!o.keep&&cur&&cur.keep&&(cur.start===Infinity?now-cur.t0<9000:cur.ctx.currentTime<cur.start+cur.dur)){dlog('verworfen',txt);return null;}
  if(o.soft&&cur&&!cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur))return null;stopCur();
  lastKey=nk;lastT=now;qProg=now;const key=o.voice||voiceKey(who,g,o.name);g=g||faceFor(key,o.name||(typeof who==='string'?who:''));const voice=voiceFor(key,g,o),me={id:++seq,key,who,g,name:o.name||g?.name||'',text:txt,soft:!!o.soft,keep:!!o.keep,t0:performance.now(),start:Infinity,dur:0,mouth:null,src:null};cur=me;
- renderAsync(txt,voice).then(R=>{if(cur!==me)return;if(R.error||!R.data){cur=null;pump();return;}const o2=M.audioEngine?.voiceOut?.();if(!o2){cur=null;pump();return;}const {ctx,bus}=o2;
+ dlog('rechne',txt);renderAsync(txt,voice).then(R=>{if(cur!==me){dlog('ersetzt',txt);return;}if(R.error||!R.data){dlog('FEHLER '+R.error,txt);cur=null;pump();return;}const o2=M.audioEngine?.voiceOut?.();if(!o2){dlog('KEIN-TON2',txt);cur=null;pump();return;}const {ctx,bus}=o2;
   const b=ctx.createBuffer(1,R.data.length,window.Sprech.SR);b.getChannelData(0).set(R.data);const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;gn.gain.value=o.vol??(o.soft?.75:1.05);s.connect(gn);gn.connect(bus);
-  const at=ctx.currentTime+.02;s.start(at);M.audioEngine?.duck?.(o.soft?.65:.32);s.onended=()=>{s.disconnect();gn.disconnect();if(me.soft)fieldNext=Math.max(fieldNext,performance.now()+10000);if(cur===me){cur=null;M.audioEngine?.duck?.(1);pump();}};me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;me.ctx=ctx;});
+  const at=ctx.currentTime+.02;s.start(at);dlog('SPIELT '+R.dur.toFixed(1)+'s '+ctx.state,txt);M.audioEngine?.duck?.(o.soft?.65:.32);s.onended=()=>{s.disconnect();gn.disconnect();if(me.soft)fieldNext=Math.max(fieldNext,performance.now()+10000);if(cur===me){cur=null;M.audioEngine?.duck?.(1);pump();}};me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;me.ctx=ctx;});
  return me;}
-function stopCur(){if(cur?.src){try{cur.src.stop();}catch{}}cur=null;M.audioEngine?.duck?.(1);}
+function stopCur(){if(cur)dlog('abgebrochen',cur.text);if(cur?.src){try{cur.src.stop();}catch{}}cur=null;M.audioEngine?.duck?.(1);}
 // Antippen/Überspringen: nur die laufende Zeile beenden, die wartenden kommen danach
 function stop(){stopCur();pump();}
 // Seite gewechselt, Fenster geöffnet, Mission vorbei: alles verwerfen
