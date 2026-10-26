@@ -64,7 +64,7 @@ function stepScene(sc,dt){for(const a of sc.actors)stepActor(a,dt,sc);
 
 // ---------- Drehbuch ----------
 async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5,E6]=sc.foes,F=sc.last,blade=H.g.enemyGear.weapon;
- run.mode='black';run.shade=1;await wait(.5);text('Bevor du einen Ludus führtest, gehörtest du selbst der Arena.');await wait(3.8);text('');await wait(.8);
+ run.mode='black';run.shade=1;await wait(.5);await narrate('Bevor du einen Ludus führtest, gehörtest du selbst der Arena.',3.8);text('');await wait(.8);
  run.mode='arena';run.shade=0;run.cheerBase=.9;cheer(2);camera(520,385,470);
  for(const e of sc.foes)e.watch=H;
  H.state='celebrate';await wait(1.7);H.state='idle';
@@ -139,12 +139,12 @@ async function arenaStory(){const sc=run.sc,H=sc.hero,[E1,E2,E3,E4,E5,E6]=sc.foe
  if(run.take===2){await take2();return;}
  // Freiheit (früheres Ende, Take 1).
  run.cheerBase=3;cheer(3);M.sound?.('win');camera(H.x+30,H.y-6,430,1.4);H.state='celebrate';H.shoutTimer=.6;await wait(1.6);
- text('Viele kämpften für Gold.');await wait(2.6);text('');await wait(.6);cheer(3);text('Andere für Ruhm.');await wait(2.6);text('');await wait(1.4);cheer(3);
- text('Du kämpftest für deine Freiheit.');await wait(3.2);text('');await wait(.5);run.title='FREI';cheer(3);M.sound?.('win');await wait(3);run.shade=1;await wait(1.1);run.title='';}
+ await narrate('Viele kämpften für Gold.',2.6);text('');await wait(.6);cheer(3);await narrate('Andere für Ruhm.',2.6);text('');await wait(1.4);cheer(3);
+ await narrate('Du kämpftest für deine Freiheit.',3.2);text('');await wait(.5);run.title='FREI';M.speakLine?.('Frei!','cap');cheer(3);M.sound?.('win');await wait(3);run.shade=1;await wait(1.1);run.title='';}
 async function ludusStory(){const L=run.lud,a=L.actor;run.mode='ludus';run.cheerBase=run.cheer=0;Object.assign(run.cam,{x:610,y:430,vw:380});camera(610,430,380);await wait(.3);run.shade=0;
  const follow=()=>camera(a.x,a.y-30,380,3);walk(a,610,600,44);await until(()=>{follow();return !a.move;});await wait(.6);
  M.sound?.('rise');let open=0;await until(()=>{open+=run.dt/1.5;L.closed=1-clamp(open,0,1);return open>=1;});await wait(.5);
- text('Die Arena gab dir deine Freiheit.');await wait(3);text('');await wait(1.2);text('Jetzt baust du deine eigene.');await wait(3);text('');
+ await narrate('Die Arena gab dir deine Freiheit.',3);text('');await wait(1.2);await narrate('Jetzt baust du deine eigene.',3);text('');
  camera(450,360,900,1.1);await walk(a,574,608,48);await wait(.5);}
 
 // ---------- Ende des Intros: FREEDOM → PROFIT (Take 2; das frühere Ende bleibt mit start(owner,{take:1}) abrufbar) ----------
@@ -268,7 +268,9 @@ function titlePaint(g,w,h,t){g.fillStyle='#070b0d';g.fillRect(0,0,w,h);const k=M
  g.fillStyle='#5a3d1c';g.fillText('ARENA THEORY',w/2,h*.45+fs*.07);g.fillStyle='#f4d37a';g.fillText('ARENA THEORY',w/2,h*.45);
  g.font=`bold ${Math.round(fs*.32)}px 'Courier Prime',monospace`;g.fillStyle='#c9c6b4';g.fillText('DEATH IS PERMANENT',w/2,h*.45+fs*.85);g.globalAlpha=1;}
 const read=s=>Math.max(2.2,1.2+s.length*.055);
-async function say(s){text(s);M.speakLine?.(s,'cap');await wait(read(s));/* Erzähler ausreden lassen */for(let i=0;i<40&&M.speaking?.();i++)await wait(.15);text('');await wait(.35);}
+// Einblendungen erzählen: Der Erzähler liest den Text mit Betonung vor; die Einblendung bleibt stehen, bis er fertig ist (Antippen überspringt).
+async function narrate(s,min){text(s);M.speakLine?.(s,'cap');await wait(min);for(let i=0;i<80&&M.speaking?.()&&!run.tap;i++)await wait(.15);}
+async function say(s){text(s);M.speakLine?.(s,'cap');await wait(read(s));/* Erzähler ausreden lassen */for(let i=0;i<60&&M.speaking?.()&&!run.tap;i++)await wait(.15);text('');await wait(.35);}
 function prepareEnd(){const sc=run.sc,H=sc.hero,blade=H.g.enemyGear.weapon;for(const k of M.branches.rua){const p=H.g.body[k];p.missing=true;p.hp=0;}H.g.stump='blood';H.bloodMarks={chest:.7,rs:1,belly:.4,ls:.3};blade.blood=1;H.g.blood=42;H.g.fatigue=88;for(const [part,p] of [['chest',.5],['belly',.3]])H.g.body[part].hp=Math.max(30,H.g.body[part].hp-p*55);}
 async function take2(){const sc=run.sc,H=sc.hero;run.hero=H;
  // kurzer Siegesmoment in der Arena, dann Schwarzblende
