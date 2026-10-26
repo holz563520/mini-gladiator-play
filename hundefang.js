@@ -509,12 +509,13 @@ M.ludusTick=function(dt){prevTick?.apply(this,arguments);try{if(st().stage==='op
 function teaser(){return `<section class="box hf-cart"><canvas id="hfCartFace" width="160" height="104"></canvas><div><p class="eyebrow">VOR DEM BEASTRIUM</p><h2>Ein stinkender Karren</h2><q class="hf-narr">Es riecht nach nassem Hund, altem Blut und schlechten Entscheidungen. Im Käfig knurrt etwas.</q><div class="buttons"><button class="btn primary" data-action="hf:intro1">Nachsehen</button></div></div></section>`;}
 // LUDUS-KARTE: Rabies steht mit seinem Karren draußen auf der Wiese vor dem Südtor, rechts vom Weg (nach der Vorstellung).
 // Antippen öffnet die Aufträge. Im Käfig sitzen die eigenen Hunde (die ersten zwei), sonst seine eigenen.
-const MAP={x:770,y:742,k:.26,rx:690,rk:.9};MAP.hit={x:MAP.rx-22,y:MAP.y-62,w:MAP.x+70-MAP.rx+22,h:66};let mapDogs=null,mapKey='';
+const rabCall={next:performance.now()+20000,until:0};const MAP={x:770,y:742,k:.26,rx:690,rk:.9};MAP.hit={x:MAP.rx-22,y:MAP.y-62,w:MAP.x+70-MAP.rx+22,h:66};let mapDogs=null,mapKey='';
 function mapCart(g,t){const s=st();if(s.stage!=='open')return;const own=s.dogs.filter(D=>!D.dead).slice(0,2),key=own.map(D=>D.id).join();if(!mapDogs||mapKey!==key){mapKey=key;const list=own.length?own:[DOG.create('molosser',4711),DOG.create('bullterrier',815)];mapDogs=list.map((D,i)=>dogAct(D,i?'sit':'threat'));}
  g.save();g.translate(MAP.x,MAP.y);g.scale(MAP.k,MAP.k);const dk=2.7*.6*.95;mapDogs.forEach((d,i)=>{d.x=i?60:-90;d.y=-104;d.k=dk;d.face=i?1:-1;d.mode=i?((t%7)<4?'sit':'scratch'):((t%5)<1.2?'bars':'threat');});
  drawCart(g,0,0,t,0,mapDogs);g.restore();
  const rx=MAP.rx,ry=MAP.y;drawRabies(g,rx,ry,MAP.rk,1,t);leash(g,rx,ry,MAP.rk,1,t,false);
- if(Math.sin(t*.5)>.6){g.save();g.font='bold 9px "Courier Prime",monospace';g.textAlign='center';const txt='Hunde! Aufträge! Ich kaufe Hühner!',w=g.measureText(txt).width+10;g.fillStyle='#f3e6c4';g.fillRect(Math.round(rx-w/2+30),ry-80,w,14);g.fillStyle='#2a1a10';g.fillText(txt,rx+30,ry-70);g.restore();}}
+ if(performance.now()>rabCall.next&&M.fieldTalk?.ok?.()&&!M.fieldPaused?.()){rabCall.until=performance.now()+4000;rabCall.next=performance.now()+45000+Math.random()*30000;M.fieldTalk.mark(4000);M.speakLine?.('Hunde! Aufträge! Ich kaufe Hühner!','rabies',null,{soft:true,name:'Rabies'});}
+ if(performance.now()<rabCall.until){g.save();g.font='bold 9px "Courier Prime",monospace';g.textAlign='center';const txt='Hunde! Aufträge! Ich kaufe Hühner!',w=g.measureText(txt).width+10;g.fillStyle='#f3e6c4';g.fillRect(Math.round(rx-w/2+30),ry-80,w,14);g.fillStyle='#2a1a10';g.fillText(txt,rx+30,ry-70);g.restore();}}
 const prevOverlay2=M.ludusOverlay;M.ludusOverlay=(g,t)=>{prevOverlay2?.(g,t);try{mapCart(g,t);}catch(e){console.warn(e);}};
 const prevHit=M.ludusHit;M.ludusHit=(x,y)=>{const h=MAP.hit;if(st().stage==='open'&&x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){M.ui.click('nav:hundefang');return true;}return prevHit?prevHit(x,y):false;};
 // Musik: Rabies' Lied, sobald er im Mittelpunkt steht (Filme, Karren/Aufträge), „Beastrium“ unten im Zwinger

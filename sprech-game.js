@@ -38,7 +38,7 @@ function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöü�
  lastKey=nk;lastT=now;const key=o.voice||voiceKey(who,g,o.name);g=g||faceFor(key,o.name||(typeof who==='string'?who:''));const voice=voiceFor(key,g,o),me={id:++seq,key,who,g,name:o.name||g?.name||'',text:txt,soft:!!o.soft,t0:performance.now(),start:Infinity,dur:0,mouth:null,src:null};cur=me;
  renderAsync(txt,voice).then(R=>{if(cur!==me)return;if(R.error||!R.data){cur=null;return;}const o2=M.audioEngine?.voiceOut?.();if(!o2){cur=null;return;}const {ctx,bus}=o2;
   const b=ctx.createBuffer(1,R.data.length,window.Sprech.SR);b.getChannelData(0).set(R.data);const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;gn.gain.value=o.vol??(o.soft?.75:1.05);s.connect(gn);gn.connect(bus);
-  const at=ctx.currentTime+.02;s.start(at);M.audioEngine?.duck?.(o.soft?.65:.32);s.onended=()=>{s.disconnect();gn.disconnect();if(cur===me){cur=null;M.audioEngine?.duck?.(1);}};me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;me.ctx=ctx;});
+  const at=ctx.currentTime+.02;s.start(at);M.audioEngine?.duck?.(o.soft?.65:.32);s.onended=()=>{s.disconnect();gn.disconnect();if(me.soft)fieldNext=Math.max(fieldNext,performance.now()+10000);if(cur===me){cur=null;M.audioEngine?.duck?.(1);}};me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;me.ctx=ctx;});
  return me;}
 function stop(){if(cur?.src){try{cur.src.stop();}catch{}}cur=null;M.audioEngine?.duck?.(1);}
 // Mundöffnung (0–1) für eine Figur, wenn sie gerade spricht: g (Objekt oder id) oder Stimmen-/Figurenkürzel
@@ -106,6 +106,8 @@ requestAnimationFrame(faceLoop);
 // Filme warten, bis die laufende Zeile zu Ende gesprochen ist (f.ack/f.skip = Antippen: nicht warten). Sicherheitsgrenze 20 s.
 function speechHold(f){if(!cur||cur.soft||(f&&(f.ack||f.skip)))return false;if(performance.now()-cur.t0>20000)return false;if(cur.start===Infinity)return performance.now()-cur.t0<4000;return cur.ctx.currentTime<cur.start+cur.dur;}
 // Spielfeld: immer nur eine Sprechblase, danach 5–10 s Ruhe
-let fieldNext=0;const fieldTalk={ok:()=>performance.now()>=fieldNext,mark:ms=>{fieldNext=performance.now()+(ms||3000)+5000+Math.random()*5000;}};
+// Spielfeld-Regel: immer nur eine Sprechblase; die nächste frühestens 10 s nach dem Ende der Blase UND der gesprochenen Zeile
+let fieldNext=0;const fieldSpeaking=()=>!!cur&&cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur);
+const fieldTalk={ok:()=>performance.now()>=fieldNext&&!fieldSpeaking(),mark:ms=>{fieldNext=performance.now()+(ms||3000)+10000;},speaking:fieldSpeaking};
 Object.assign(M,{speechHold,fieldTalk,speechNow:()=>cur&&{key:cur.key,who:cur.who,soft:cur.soft,text:cur.text},speakLine,speakStop:stop,speakOnChange,talkMouth,speaking,speechVoiceKey:voiceKey});
 })();
