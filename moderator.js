@@ -185,7 +185,7 @@ function card(){const c=intro.cards[intro.i],el=$('modCard');if(!el)return;const
    raf=requestAnimationFrame(frame);};raf=requestAnimationFrame(frame);}
  if(c.a){M.battleHud.spot={x:c.a.x,y:c.a.y-22};M.focus?.(c.a.id);}else{M.battleHud.spot=null;M.focus?.(null);}
  M.sound?.(c.type==='hero'||c.type==='beast'?'crowd':c.type==='start'?'gong':c.type==='weapon'?'block':'rise');if(c.type==='hero'||c.type==='start')setTimeout(()=>M.sound?.('crowd'),350);
- {const vet=c.a?.g&&((c.a.g.fights||0)>=5||(c.a.g.kills||0)>=2);M.crowdMood?.(c.a&&!c.a.hahn&&!c.a.rex?(c.mood==='dumb'?'laugh':vet?'applause':null):null);}
+ {const vet=c.a?.g&&((c.a.g.fights||0)>=5||(c.a.g.kills||0)>=2);const weak=c.od&&c.od.survive<.35||['scared','terror','nervous'].includes(c.mood);M.crowdMood?.(c.a&&!c.a.hahn&&!c.a.rex?(c.mood==='dumb'?'laugh':vet?'applause':weak?'boo':null):null);}
  sentence();}
 function sentence(){const c=intro.cards[intro.i],text=c.say[intro.s]||'',lastLine=intro.s>=c.say.length-1,lastCard=intro.i===intro.cards.length-1,dur=Math.max(4,2.4+text.length*.055);
  const p=$('modSay');if(p){p.textContent=text;p.classList.remove('pop');void p.offsetWidth;p.classList.add('pop');}const d=$('modDots');setTimeout(()=>fitSay($('modSay')),0);if(d)d.innerHTML=c.say.length>1?c.say.map((_,i)=>`<i class="${i===intro.s?'on':''}"></i>`).join(''):'';
@@ -243,7 +243,7 @@ const shown=cfg.onShot;cfg.onShot=function(on,o,live){const r=shown?.apply(this,
 let drama=null,dramaDone=new Set(),dRaf=0,dTimer=null;
 const cl01=v=>Math.max(0,Math.min(1,v));
 function verdictWatch(b){const f=b.finale,j=f?.judgments?.[f.index];if(drama&&drama.j!==j&&drama.phase==='exec')dramaClose();if(!j||drama||f.stage!=='verdict')return;const key=b.id+':'+j.id;if(dramaDone.has(key))return;const victim=b.actors.find(a=>a.id===j.id);if(!victim||victim.g.dead)return;dramaDone.add(key);
- drama={key,b:b.id,j,victim,phase:'plead',t0:performance.now(),hold:true,wait:null,text:line('plead',{v:victim.g.name})};M.sound?.('crowd');dramaRender();}
+ M.crowdMood?.('booLong');drama={key,b:b.id,j,victim,phase:'plead',t0:performance.now(),hold:true,wait:null,text:line('plead',{v:victim.g.name})};M.sound?.('crowd');dramaRender();}
 function dramaRender(){const d=drama,el=$('modCard');if(!d||!el)return;const g=d.victim.g,t=d.victim.team,label={plead:'DAS PUBLIKUM ENTSCHEIDET',vote:'DIE MENGE STIMMT AB',doom:'KEINE GNADE',saved:'BEGNADIGT',walk:'KEINE GNADE',exec:String(d.j.method||'').toUpperCase()}[d.phase];
  el.hidden=false;el.className='mod-card drama t'+t+' '+d.phase;
  if(el.dataset.drama!==d.key){el.dataset.drama=d.key;el.innerHTML=`<div class="mod-top"><span id="dramaLabel"></span><i>${S.battle.finale.index+1} / ${S.battle.finale.judgments.length}</i></div>
@@ -272,12 +272,12 @@ function dramaPaint(g2,c,now){const d=drama,t=(now-d.t0)/1000,g=d.victim.g,team=
 function dramaPhase(phase,text){const d=drama;d.phase=phase;d.t0=performance.now();if(text)d.text=text;dramaRender();}
 function dramaAdvance(){const d=drama;if(!d)return;clearTimeout(dTimer);const f=S.battle?.finale;if(!f||S.battle.id!==d.b){dramaClose();return;}const v=d.victim.g.name;
  if(d.phase==='plead'){M.sound?.('heavy');dramaPhase('vote',line('vote'));}
- else if(d.phase==='vote'){/* das Spiel verkündet (mit seinem Ton), dann steht es wieder */d.wait='sentence';d.hold=false;f.elapsed=99;dramaPhase(d.j.execute?'doom':'saved',line(d.j.execute?'noMercy':'mercy',{v}));M.sound?.('crowd');}
+ else if(d.phase==='vote'){/* das Spiel verkündet (mit seinem Ton), dann steht es wieder */d.wait='sentence';d.hold=false;f.elapsed=99;dramaPhase(d.j.execute?'doom':'saved',line(d.j.execute?'noMercy':'mercy',{v}));M.crowdMood?.('clap');}
  else if(d.phase==='saved'){dramaClose();f.elapsed=99;}
  else if(d.phase==='doom'){d.wait='act';d.hold=false;f.elapsed=99;d.phase='walk';dramaRender();clearTimeout(dTimer);}
  else if(d.phase==='exec'){dramaClose();}}
 function dramaReached(stage){const d=drama;if(!d)return;if(stage==='act'){d.hold=false;const ex=S.battle.actors.find(a=>a.id===S.battle.finale.executor);d.hit=false;dramaPhase('exec',line(T.exec[d.j.method]||T.exec.Enthauptung,{k:ex?.g.name||'Der Sieger',v:d.victim.g.name}));}}
-function dramaClose(){clearTimeout(dTimer);cancelAnimationFrame(dRaf);drama=null;M.battleHud.spot=null;const el=$('modCard');if(el){el.hidden=true;el.innerHTML='';delete el.dataset.drama;}}
+function dramaClose(){clearTimeout(dTimer);M.crowdMood?.('endBoo');cancelAnimationFrame(dRaf);drama=null;M.battleHud.spot=null;const el=$('modCard');if(el){el.hidden=true;el.innerHTML='';delete el.dataset.drama;}}
 {const base=M.fixedStep;if(typeof base==='function')M.fixedStep=function(){const d=drama;if(d&&(!S.battle||S.battle.id!==d.b||!S.battle.finale)){dramaClose();return base.apply(this,arguments);}if(d?.hold)return;const r=base.apply(this,arguments);if(drama?.wait&&S.battle?.finale?.stage===drama.wait){const w=drama.wait;drama.wait=null;drama.hold=true;dramaReached(w);}else if(drama?.wait==='act'&&S.battle?.finale&&S.battle.finale.judgments[S.battle.finale.index]?.id!==drama.j.id)dramaClose();return r;};}
 // ---------- Der Held des Kampfes: wer die meisten niedergestreckt hat, jubelt; den Kopf des Stärksten, den er getötet hat, hält er hoch ----------
 let champ=null,champDone=new Set(),cRaf=0,cTimer=null;
