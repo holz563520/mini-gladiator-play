@@ -444,7 +444,7 @@ try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function
 (async()=>{
  const LIST=['data','household','management','scout','sim','school','world','forge','weapon-art','arena','medicus-art','ludus','face-shots','injury-shots','battle-hud','outside-core','outside-art','outside-leader'];
  const run=(code,name)=>{const s=document.createElement('script');s.textContent=code+'\n//# sourceURL='+name+'.js';document.body.appendChild(s);};
- const v=new URLSearchParams(location.search).get('v')||'2519f4c7';
+ const v=new URLSearchParams(location.search).get('v')||'4b55d3d1';
  for(const n of LIST){if(n==='ludus')window.MG.ui=window.MG.ui||{render(){},getPage(){return 'profiles';},notify(){},close(){},click(){}};
   const r=await fetch(n+'.js?v='+v);if(!r.ok)throw Error(n+'.js nicht gefunden');run(await r.text(),n);}
  run(document.getElementById('lead-ui').textContent,'anfuehrer-test-ui');window.LeadUI.init();

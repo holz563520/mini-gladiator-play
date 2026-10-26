@@ -1,0 +1,144 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Kampfgeräusche · Editor</title>
+<link rel="stylesheet" href="brand.css">
+<link rel="stylesheet" href="manager.css">
+<style>
+/* Editor für die neuen Kampfgeräusche (kampfsound.js). Farben/Knöpfe aus manager.css, Schrift aus brand.css. */
+[hidden]{display:none!important}
+body{min-height:100vh;margin:0}
+.wrap{max-width:1240px;margin:auto;padding:14px 16px 60px}
+.tl{font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+h1{font-size:clamp(22px,5vw,34px);color:var(--gold);letter-spacing:3px;margin:4px 0;text-transform:uppercase}
+h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;margin:0 0 6px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px;line-height:1.5;max-width:880px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.bar .btn{min-height:38px}
+.grid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:start}
+.list{background:var(--surface);border:1px solid var(--line);max-height:calc(100vh - 40px);overflow:auto;position:sticky;top:10px}
+.list h3{margin:0;padding:9px 10px 5px;font-size:10px;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;border-top:1px solid var(--line);background:var(--raised)}
+.list h3:first-child{border-top:0}
+.item{display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;font-size:13px;border-left:3px solid transparent}
+.item:hover{background:#26343a}.item.on{background:#2c3c41;border-left-color:var(--gold)}
+.item b{font-weight:normal;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item i{color:var(--gold);font-style:normal;font-size:11px}
+.mini{border:1px solid #52625b;background:#293639;color:var(--cream);width:28px;height:26px;padding:0;cursor:pointer;font-size:11px;flex:none}
+.mini:hover{border-color:var(--gold)}
+.main{background:var(--surface);border:1px solid var(--line);padding:16px;min-width:0}
+.use{color:var(--muted);font-size:13px;margin:0 0 10px}
+canvas#wave{width:100%;height:90px;background:#101719;border:1px solid var(--line);display:block;margin:10px 0}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 14px}
+.f{display:grid;grid-template-columns:96px minmax(0,1fr) 64px;gap:6px;align-items:center;font-size:12px;color:var(--cream)}
+.f span{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.f input[type=range]{width:100%;accent-color:var(--gold)}
+.f input[type=number],.f select,.f input[type=text]{width:100%;box-sizing:border-box;background:#101719;color:var(--cream);border:1px solid var(--line);padding:3px 4px;font:inherit;font-size:12px}
+.f.sel{grid-template-columns:96px minmax(0,1fr)}
+.layer{border:1px solid var(--line);background:#192326;margin:10px 0;padding:10px}
+.layer.mute{opacity:.45}
+.lh{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.lh strong{color:var(--gold);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-right:auto}
+.lh .btn{min-height:30px;padding:5px 9px;font-size:11px}
+.add{display:flex;gap:8px;align-items:center;margin-top:10px}
+.add select{background:#101719;color:var(--cream);border:1px solid var(--line);padding:8px;font:inherit}
+.globals{margin:8px 0 4px;padding:10px;border:1px dashed var(--line)}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.ovl{position:fixed;inset:0;background:rgba(5,8,9,.8);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px}
+.ovl .box{max-width:720px;width:100%}
+.ovl textarea{width:100%;box-sizing:border-box;height:46vh;background:#101719;color:var(--cream);border:1px solid var(--line);font:12px monospace}
+.scene-on{outline:2px solid var(--gold)}
+@media(max-width:820px){.grid{grid-template-columns:1fr}.list{max-height:34vh;position:static}.f{grid-template-columns:88px minmax(0,1fr) 56px}}
+</style></head><body><div class="wrap">
+<p class="tl">Mini Gladiator · Testseite</p>
+<h1>Kampfgeräusche</h1>
+<p class="sub">Alle Kampfgeräusche neu: Schläge, Treffer, Paraden, Pfeile, Schreie, Publikum, Faustkampf. Jedes Geräusch besteht aus Ebenen (Ton, Rauschen, Stimme, Metall, Menge, Knackser). Regler verschieben, sofort anhören, jede Wiedergabe klingt leicht anders. Änderungen werden auf diesem Gerät gespeichert. Mit „Export“ bekommst du sie als Text zum Weitergeben.</p>
+<div class="bar"><span class="tl">Szenen</span>
+ <button class="btn primary" data-scene="duell">▶ Arena-Duell</button><button class="btn" data-scene="schlacht">▶ Schlacht</button><button class="btn" data-scene="bogen">▶ Bogenschützen</button><button class="btn" data-scene="box">▶ Faustkampf</button><button class="btn" data-act="stop">■ Stopp</button></div>
+<div class="bar"><label class="f" style="grid-template-columns:auto 160px 54px"><span>Gesamtlautstärke</span><input type="range" id="mvol" min="0" max="1.5" step=".01" value=".9"><input type="number" id="mvolN" min="0" max="1.5" step=".01" value=".9"></label>
+ <label class="f" style="grid-template-columns:auto 160px 54px"><span>Stimmlage</span><input type="range" id="vp" min=".6" max="1.6" step=".01" value="1"><input type="number" id="vpN" min=".6" max="1.6" step=".01" value="1"></label>
+ <span class="note">Stimmlage: tief (0,6) bis hoch (1,6), im Spiel kommt sie vom Kämpfer.</span></div>
+<div class="grid"><nav class="list" id="list"></nav><section class="main" id="main"></section></div>
+<div class="bar" style="margin-top:16px"><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button><button class="btn" data-act="resetall">Alles zurücksetzen</button><span class="note" id="status"></span></div>
+</div>
+<div class="ovl" id="ovl" hidden><div class="box"><h2 id="ovlT">Export</h2><p class="note" id="ovlN"></p><textarea id="ovlX" spellcheck="false"></textarea><div class="bar"><button class="btn primary" data-act="ovlok">OK</button><button class="btn" data-act="ovlno">Abbrechen</button></div></div></div>
+<script src="kampfsound.js"></script>
+<script>
+'use strict';
+(()=>{
+const K=window.KampfSound,$=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+let ctx=null,out=null,cur=K.ORDER[0],work=null,playing=[];
+function audio(){if(!ctx){const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC({sampleRate:K.SR});out=ctx.createGain();const comp=ctx.createDynamicsCompressor();comp.threshold.value=-10;comp.ratio.value=3;out.connect(comp);comp.connect(ctx.destination);}if(ctx.state==='suspended')ctx.resume();out.gain.value=+$('mvol').value;return ctx;}
+function playData(data,at=0){const c=audio(),b=c.createBuffer(1,data.length,K.SR);b.getChannelData(0).set(data);const s=c.createBufferSource();s.buffer=b;s.connect(out);s.start(c.currentTime+.03+at);playing.push(s);s.onended=()=>{playing=playing.filter(x=>x!==s);};return data.length/K.SR;}
+const vp=()=>+$('vp').value;
+function playKey(k,at=0,pitch=vp(),vol=1){const p=k===cur&&work?work:K.get(k);return playData(K.render(p,{pitch,vol}),at);}
+function stop(){for(const s of playing){try{s.stop();}catch{}}playing=[];document.querySelectorAll('.scene-on').forEach(b=>b.classList.remove('scene-on'));}
+// ---------- Felder je Ebene ----------
+const WAVE=[['sine','Sinus'],['tri','Dreieck'],['saw','Sägezahn'],['square','Rechteck']],COL=[['white','Weiß'],['pink','Rosa'],['brown','Braun']],FIL=[['lp','Tiefpass'],['hp','Hochpass'],['bp','Band']],VOWS=Object.keys(K.VOW).map(v=>[v,v]),PARTS=Object.keys(K.PART).map(v=>[v,v]);
+const COMMON=[['start','Beginn (s)',0,3,.005],['dur','Dauer (s)',.005,5,.005],['att','Anschwellen',0,1,.001],['hold','Halten',0,.98,.01],['vol','Lautstärke',0,1.5,.01]];
+const SPEC={
+ tone:{name:'Ton',f:[['wave','Welle',WAVE],['f0','Ton Anfang',20,8000,1,1],['f1','Ton Ende',20,8000,1,1],['curve','Verlauf',.1,4,.05],['drive','Verzerrung',1,8,.1],['lp','Tiefpass',100,16000,10,1],['trem','Zittern (Hz)',0,40,.5],['tremDepth','Zittern Stärke',0,1,.01]]},
+ noise:{name:'Rauschen',f:[['color','Farbe',COL],['filter','Filter',FIL],['f0','Filter Anfang',20,12000,1,1],['f1','Filter Ende',20,12000,1,1],['curve','Verlauf',.1,4,.05],['q','Schärfe (Q)',.2,20,.1],['drive','Verzerrung',1,8,.1],['trem','Zittern (Hz)',0,40,.5],['tremDepth','Zittern Stärke',0,1,.01]]},
+ voice:{name:'Stimme',f:[['v0','Vokal Anfang',VOWS],['v1','Vokal Ende',VOWS],['f0','Tonhöhe Anfang',50,700,1,1],['fp','Tonhöhe Spitze',50,700,1,1],['f1','Tonhöhe Ende',50,700,1,1],['peakAt','Spitze bei',0,1,.01],['rough','Rauheit',0,1,.01],['breath','Atem',0,1,.01],['drive','Verzerrung',1,8,.1],['vib','Vibrato',0,2,.05],['jitter','Wackeln',0,.2,.005],['size','Körpergröße',.6,1.6,.01]]},
+ metal:{name:'Metall',f:[['partials','Klang',PARTS],['f','Grundton (Hz)',30,6000,1,1],['decay','Nachklingen (s)',.01,5,.01],['bright','Helligkeit',0,1,.01],['click','Anschlag',0,1,.01]]},
+ crowd:{name:'Menge',f:[['n','Stimmen',1,60,1],['f0','Tonhöhe von',60,500,1,1],['f1','Tonhöhe bis',60,500,1,1],['vowels','Vokale',null],['spread','Zeitversatz (s)',0,2,.01],['rise','Tonhöhe steigt',-.5,.8,.01]]},
+ clicks:{name:'Knackser',f:[['n','Anzahl',1,60,1],['gap','Abstand (s)',.002,.5,.001],['jitter','Unregelmäßig',0,1,.01],['filter','Filter',FIL],['color','Farbe',COL],['f','Frequenz',100,10000,1,1],['q','Schärfe (Q)',.2,20,.1]]}};
+const toR=(v,mn,mx,log)=>log?Math.round(1000*Math.log(v/mn)/Math.log(mx/mn)):v,fromR=(r,mn,mx,log)=>log?mn*Math.pow(mx/mn,r/1000):r;
+function field(path,label,spec,val){const [mn,mx,st,log]=spec;if(Array.isArray(mn))return `<label class="f sel"><span>${esc(label)}</span><select data-p="${path}">${mn.map(([v,l])=>`<option value="${esc(v)}"${v===val?' selected':''}>${esc(l)}</option>`).join('')}</select></label>`;
+ if(mn===null)return `<label class="f sel"><span>${esc(label)}</span><input type="text" data-p="${path}" value="${esc(val)}" title="Vokale: ${Object.keys(K.VOW).join(' ')}"></label>`;
+ return `<label class="f"><span title="${esc(label)}">${esc(label)}</span><input type="range" data-r="${path}" min="${log?0:mn}" max="${log?1000:mx}" step="${log?1:st}" value="${toR(val,mn,mx,log)}" data-log="${log?1:''}" data-mn="${mn}" data-mx="${mx}"><input type="number" data-p="${path}" min="${mn}" max="${mx}" step="${st}" value="${val}"></label>`;}
+// ---------- Liste ----------
+function list(){$('list').innerHTML=K.CATS.map(([c,n])=>`<h3>${esc(n)}</h3>`+K.ORDER.filter(k=>K.DEF[k].cat===c).map(k=>`<div class="item${k===cur?' on':''}" data-k="${k}"><button class="mini" data-play="${k}" aria-label="Abspielen">▶</button><b>${esc(K.DEF[k].name)}</b>${K.changed(k)?'<i title="geändert">●</i>':''}</div>`).join('')).join('');}
+function main(){work??=JSON.parse(JSON.stringify(K.get(cur)));const p=work,d=K.DEF[cur];
+ $('main').innerHTML=`<h2>${esc(d.name)}</h2><p class="use">Im Spiel: ${esc(d.use)}</p>
+ <div class="bar"><button class="btn primary" data-act="play">▶ Abspielen</button><button class="btn" data-act="vars">▶ 4 Varianten</button><button class="btn" data-act="reset"${K.changed(cur)?'':' disabled'}>⟲ Zurücksetzen</button></div>
+ <canvas id="wave" width="1200" height="180"></canvas>
+ <div class="globals fields">${field('g.vol','Lautstärke',[0,2,.01],p.vol??1)}${field('g.room','Hall (Arena)',[0,1,.01],p.room||0)}${field('g.pitchVar','Zufall Tonhöhe',[0,.4,.01],p.pitchVar||0)}</div>
+ ${p.layers.map((L,i)=>{const S=SPEC[L.type];return `<div class="layer${L.mute?' mute':''}"><div class="lh"><strong>${i+1}. ${esc(S.name)}</strong><button class="btn" data-solo="${i}">▶ Nur diese</button><button class="btn" data-mute="${i}">${L.mute?'Einschalten':'Stumm'}</button><button class="btn" data-dup="${i}">Kopieren</button><button class="btn" data-del="${i}">Löschen</button></div>
+  <div class="fields">${COMMON.filter(c=>!(L.type==='clicks'&&['att','hold'].includes(c[0]))&&!(L.type==='clicks'&&c[0]==='dur'&&false)).map(([k,l,...s])=>field(`${i}.${k}`,k==='dur'&&L.type==='clicks'?'Länge je Knack':l,s,L[k]??0)).join('')}${S.f.map(([k,l,...s])=>field(`${i}.${k}`,l,s.length===1?[s[0]]:s,L[k])).join('')}</div></div>`;}).join('')}
+ <div class="add"><select id="addT">${Object.entries(SPEC).map(([k,s])=>`<option value="${k}">${esc(s.name)}</option>`).join('')}</select><button class="btn" data-act="add">+ Ebene</button></div>`;
+ drawWave();}
+let waveT=0;function drawWave(){clearTimeout(waveT);waveT=setTimeout(()=>{const c=$('wave');if(!c)return;const g=c.getContext('2d'),data=K.render(work,{seed:1,pitch:vp()}),W=c.width,H=c.height,n=data.length;g.fillStyle='#101719';g.fillRect(0,0,W,H);
+ const len=Math.max(n/K.SR,.5);g.strokeStyle='#26343a';g.fillStyle='#5f7470';g.font='16px monospace';for(let s=0;s<=len;s+=.25){const x=s/len*W;g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();if(s%1===0)g.fillText(s+' s',x+4,18);}
+ g.fillStyle='#dfb66d';for(let x=0;x<W;x++){const a=Math.floor(x/W*len*K.SR),b=Math.min(n,Math.floor((x+1)/W*len*K.SR));let mn=0,mx=0;for(let i=a;i<b;i++){const v=data[i];if(v<mn)mn=v;if(v>mx)mx=v;}if(b>a)g.fillRect(x,H/2-mx*H/2,1,Math.max(1,(mx-mn)*H/2));}},60);}
+function commit(){K.set(cur,work);list();const r=document.querySelector('[data-act="reset"]');if(r)r.disabled=false;drawWave();status('Gespeichert');}
+let stT=0;function status(t){$('status').textContent=t;clearTimeout(stT);stT=setTimeout(()=>$('status').textContent='',1500);}
+function setPath(path,v){const [a,k]=path.split('.');if(a==='g')work[k]=v;else work.layers[+a][k]=v;}
+function select(k){cur=k;work=null;main();list();}
+// ---------- Szenen ----------
+const R=Math.random,pick=a=>a[Math.floor(R()*a.length)];
+const SCENES={
+ duell:[[0,'gong'],[.9,'cry',.95],[1.7,'swing'],[1.92,'blockShield'],[2.35,'effort',1.05],[2.4,'swingHeavy'],[2.75,'hitBlade'],[2.8,'painScream',1.1],[3.0,'roar'],[3.8,'swing'],[4.0,'parry'],[4.5,'hitStab'],[4.53,'painLight',.95],[5.2,'effort',1.05],[5.25,'swingHeavy'],[5.6,'hitBlunt'],[5.62,'deathScream',1.1],[6.0,'fall'],[6.9,'crowd'],[7.6,'dying',1.1]],
+ bogen:[[0,'bow'],[.04,'arrow'],[.55,'arrowBody'],[.58,'painScream',1.2],[1.4,'bow'],[1.44,'arrow'],[1.95,'arrowShield'],[2.6,'crossbow'],[3.1,'arrowSand'],[3.4,'reload'],[4.2,'bow'],[4.24,'arrow'],[4.75,'arrowBody'],[4.77,'deathScream',.9],[5.2,'fall']],
+ box:[[0,'boxBell'],[1.2,'boxJab'],[1.5,'boxJab'],[1.9,'boxWhiff'],[2.3,'effort',1],[2.33,'boxHook'],[2.36,'roar'],[3.0,'boxBlock'],[3.3,'boxBody'],[3.9,'effort',1.1],[3.93,'boxUpper'],[4.4,'boxDown']]};
+function battle(){const ev=[[0,'gong'],[.6,'cry',.9],[.75,'cry',1.15],[.9,'cry',1],[1.05,'rush']];const swords=['swing','swingHeavy'],hits=['hitBlade','hitStab','hitBlunt','armorHit','blockShield','parry','blockShield'];
+ for(let t=1.6;t<9;t+=.12+R()*.25){const k=pick(hits),p=.75+R()*.6;ev.push([t-.2,pick(swords)],[t,k]);if(['hitBlade','hitStab','hitBlunt'].includes(k))ev.push([t+.02,R()<.35?'painScream':'painLight',p]);if(R()<.15)ev.push([t-.25,'effort',p]);if(R()<.08)ev.push([t+.05,'sever'],[t+.07,'deathScream',p],[t+.5,'fall']);if(R()<.18)ev.push([t,'bow'],[t+.04,'arrow'],[t+.5,pick(['arrowBody','arrowShield','arrowSand'])]);}
+ ev.push([9.4,'crowd']);return ev;}
+function scene(name,btn){stop();btn?.classList.add('scene-on');const ev=name==='schlacht'?battle():SCENES[name];let end=0;for(const [t,k,p] of ev){const d=playKey(k,t,(p||1)*(name==='schlacht'?1:vp()),name==='schlacht'?.55:1);end=Math.max(end,t+d);}setTimeout(()=>btn?.classList.remove('scene-on'),end*1000);}
+// ---------- Ereignisse ----------
+document.addEventListener('click',e=>{const t=e.target.closest('button,.item');if(!t)return;
+ if(t.dataset.play){e.stopPropagation();audio();playKey(t.dataset.play);return;}
+ if(t.dataset.k){select(t.dataset.k);if(innerWidth<820)$('main').scrollIntoView({behavior:'smooth'});return;}
+ if(t.dataset.scene){audio();scene(t.dataset.scene,t);return;}
+ if(t.dataset.solo){audio();const L=work.layers[+t.dataset.solo];playData(K.render({...work,layers:[{...L,mute:false,start:0}]},{pitch:vp()}));return;}
+ if(t.dataset.mute){const L=work.layers[+t.dataset.mute];L.mute=!L.mute;commit();main();return;}
+ if(t.dataset.dup){const i=+t.dataset.dup;work.layers.splice(i+1,0,JSON.parse(JSON.stringify(work.layers[i])));commit();main();return;}
+ if(t.dataset.del){work.layers.splice(+t.dataset.del,1);commit();main();return;}
+ const a=t.dataset.act;if(!a)return;
+ if(a==='play'){audio();playKey(cur);}
+ else if(a==='vars'){audio();let at=0;for(let i=0;i<4;i++)at+=playKey(cur,at)*.75+.1;}
+ else if(a==='stop')stop();
+ else if(a==='reset'){K.reset(cur);work=null;main();list();status('Zurückgesetzt');}
+ else if(a==='add'){const ty=$('addT').value,mk={tone:K.make.T,noise:K.make.N,voice:K.make.V,metal:K.make.Mt,crowd:K.make.C,clicks:K.make.K}[ty];work.layers.push(mk({}));commit();main();}
+ else if(a==='export'){ovl('Export','Alle geänderten Geräusche als Text. Kopieren und weitergeben (oder an Claude schicken, dann werden sie fest eingebaut).',JSON.stringify(K.saved(),null,1),null);}
+ else if(a==='import'){ovl('Import','Exportierten Text einfügen. Ersetzt alle Änderungen auf diesem Gerät.','',x=>{try{K.load(JSON.parse(x||'{}'));work=null;main();list();status('Importiert');}catch{status('Text nicht lesbar');}});}
+ else if(a==='resetall'){if(t.dataset.sure){K.reset();work=null;main();list();t.textContent='Alles zurücksetzen';delete t.dataset.sure;status('Alles zurückgesetzt');}else{t.dataset.sure='1';t.textContent='Wirklich alles zurücksetzen?';setTimeout(()=>{if(t.dataset.sure){delete t.dataset.sure;t.textContent='Alles zurücksetzen';}},3000);}}
+ else if(a==='ovlok'){const f=ovlFn;$('ovl').hidden=true;f?.($('ovlX').value);}
+ else if(a==='ovlno')$('ovl').hidden=true;});
+let ovlFn=null;function ovl(t,n,x,fn){$('ovlT').textContent=t;$('ovlN').textContent=n;$('ovlX').value=x;ovlFn=fn;$('ovl').hidden=false;$('ovlX').focus();$('ovlX').select();}
+document.addEventListener('input',e=>{const el=e.target;
+ if(el.id==='mvol'||el.id==='mvolN'||el.id==='vp'||el.id==='vpN'){const base=el.id.replace('N',''),v=el.value;$(base).value=v;$(base+'N').value=v;if(out)out.gain.value=+$('mvol').value;if(base==='vp')drawWave();return;}
+ if(el.dataset.r){const path=el.dataset.r,v=+(+fromR(+el.value,+el.dataset.mn,+el.dataset.mx,el.dataset.log)).toFixed(el.dataset.log?0:4);setPath(path,v);const n=el.parentNode.querySelector('input[type=number]');if(n)n.value=v;commit();return;}
+ if(el.dataset.p){const path=el.dataset.p,num=el.type==='number',v=num?+el.value:el.value;if(num&&!Number.isFinite(v))return;setPath(path,v);if(num){const r=el.parentNode.querySelector('input[type=range]');if(r)r.value=toR(v,+r.dataset.mn,+r.dataset.mx,r.dataset.log);}commit();}});
+document.addEventListener('change',e=>{if(e.target.tagName==='SELECT'&&e.target.dataset.p){setPath(e.target.dataset.p,e.target.value);commit();}});
+list();main();
+window.KSE={select,scene,stop,get work(){return work;}};
+})();
+</script>
+</body></html>
