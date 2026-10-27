@@ -181,6 +181,10 @@ function head(q,T,C,o,yaw,t,mood){
  for(let i=0;i<(m.sweat||0);i++){const y=16+((t*.65+i*.5)%1)*23;R(i?-24:23,y,1,3,'#c3d9d4');R(i?-24:23,y,1,1,'#edf2df');}
 
  if(o.blood>0)R(8,53,1,Math.round(o.blood*8),'#943a33');
+ // Schaum vor dem Mund (Rabies immer, sonst o.foam): Blasen an beiden Mundwinkeln, Fäden laufen ins Kinn, Tropfen fallen
+ {const fo=o.foam??(o.g?.foam?1:0);if(fo>0){const W1='#f7f5ee',W2='#dcd8cc';for(const s of [-1,1]){const cx=s*11;R(cx-2,my-1,4,2,W1);R(cx-1,my-2,2,1,W1);R(cx+s,my+1,2,1,W2);R(s*8,my+1,3,1,W1);
+   const len=3+Math.round(2.5*(.5+.5*Math.sin(t*2.2+s)));R(cx,my+1,1,len,W1);R(cx+s,my+1,1,Math.max(1,len-2),W2);const q=(t*.55+(s>0?0:.5))%1;if(q<.8)R(cx,my+2+len+Math.round(q*q*16),1,2,W1);}
+  for(let i=0;i<5;i++)R(-5+i*2+Math.round(Math.sin(t*3+i)),my+2,1,1,W1);}}
 
 
  feature=false;

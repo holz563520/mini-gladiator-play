@@ -60,7 +60,7 @@ DOG.portrait=function(c,D,o={}){let d=portraits.get(D);if(!d){d=dogAct(D,'stand'
  const k=(o.w||100)/(82*d.P.sz);drawDog(c,d,o.x,o.y,k,o.face??1,o.t??performance.now()/1000);};
 
 // ---------- Der Hundsgraf: grauer Bart, hager, Hundefellumhang, Hundeschädel als Kapuze, Fliegen ----------
-function makeRabies(){const g=gen(1);g.id='hf-rabies';g.name=TX.NAME;g.height=183;g.weight=66;g.age=54;g.muscle=40;
+function makeRabies(){const g=gen(1);g.id='hf-rabies';g.foam=true;g.name=TX.NAME;g.height=183;g.weight=66;g.age=54;g.muscle=40;
  g.appearance={...g.appearance,skin:'#c49470',shade:'#94664a',hair:'#b1a592',style:3,beard:3};
  g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};g.equipment=g.enemyGear;return g;}
 let RABIES=null;const rabies=()=>RABIES??=makeRabies();
@@ -89,7 +89,12 @@ function rabiesCloak(c,x,y,K,dir,t,front){const u=K*.6,hh=rabies().height/180,Y=
  px(c,X(-6),T+2.5*u,4*u,3*u,'#1a1210');px(c,X(2),T+2.5*u,4*u,3*u,'#1a1210');px(c,X(-2.5),T+5*u,5*u,5*u,'#d8ccb0');px(c,X(-1.5),T+5.5*u,3*u,1.4*u,'#2a1a10');
  for(const k of [-4.5,3.2])px(c,X(k),T+8*u,1.3*u,3.5*u,'#fff8e8');for(let i=0;i<4;i++)px(c,X(-2.4+i*1.3),T+9.6*u,.8*u,1.4*u,'#fff8e8');}
 function rabiesFlies(c,x,y,K,t){const u=K*.6;c.fillStyle='#120c08';for(let i=0;i<5;i++){const a=t*(3+i*.7)+i*2,r=(12+i*3)*u;c.fillRect(Math.round(x+Math.cos(a)*r),Math.round(y-100*u+Math.sin(a*1.3)*r*.5),Math.max(1,u*.9),Math.max(1,u*.9));}}
-function drawRabies(c,x,y,K,dir,t,extra={}){rabiesCloak(c,x,y,K,dir,t,false);fig(c,rabies(),x,y,K,dir,extra);rabiesCloak(c,x,y,K,dir,t,true);rabiesFlies(c,x,y,K,t);}
+// Schaum vor dem Mund (Tollwut im Namen): Blasen am Mund, Faden ins Kinn, ab und zu fällt ein Tropfen
+function rabiesFoam(c,x,y,K,dir,t){const u=K*.6,hh=rabies().height/180,X=v=>x+v*u,Y=v=>y-v*hh*u,mx=X(FOAM.x*dir),my=Y(FOAM.y),W1='#f7f5ee',W2='#d8d4c6';
+ px(c,mx-2*u,my,4.2*u,1.6*u,W1);px(c,mx-1*u,my-.8*u,2*u,1*u,W1);px(c,mx+dir*1.4*u,my+1.2*u,1.4*u,1*u,W2);
+ const len=(1.6+1.6*(.5+.5*Math.sin(t*2.3)))*u;px(c,mx+dir*.6*u,my+1.4*u,.9*u,len,W1);const q=(t*.6)%1;if(q<.75)px(c,mx+dir*.6*u,my+1.6*u+len+q*q*14*u,.9*u,.9*u,W1);}
+const FOAM={x:1.4,y:69.5};
+function drawRabies(c,x,y,K,dir,t,extra={}){rabiesCloak(c,x,y,K,dir,t,false);fig(c,rabies(),x,y,K,dir,extra);rabiesCloak(c,x,y,K,dir,t,true);rabiesFoam(c,x,y,K,dir,t);rabiesFlies(c,x,y,K,t);}
 function rabiesFace(cv,mood='grin'){face(cv,rabies(),mood,{zoom:1.05});}
 // Große, lebendige Großaufnahme (wie beim Medicus): Kamera schwenkt, Mund bewegt sich, wenn er spricht
 function rabiesLive(id,mood='grin'){const c=$(id);if(!c||c._live)return;c._live=true;let t=0;const tick=()=>{if(!c.isConnected)return;t+=1/30;try{M.faceShot.paint(c.getContext('2d'),c.width,c.height,{g:rabies(),team:0,mood:(t%7)<1.4?'confident':mood,yaw:Math.sin(t*.55)*.32,zoom:1.12},t+2);}catch(e){}setTimeout(()=>requestAnimationFrame(tick),33);};tick();}
@@ -534,6 +539,6 @@ function mapCart(g,t){const s=st();if(s.stage!=='open')return;const own=s.dogs.f
 const prevOverlay2=M.ludusOverlay;M.ludusOverlay=(g,t)=>{prevOverlay2?.(g,t);try{mapCart(g,t);}catch(e){console.warn(e);}};
 const prevHit=M.ludusHit;M.ludusHit=(x,y)=>{const h=MAP.hit;if(st().stage==='open'&&x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){M.ui.click('nav:hundefang');return true;}return prevHit?prevHit(x,y):false;};
 // Musik: Rabies' Lied, sobald er im Mittelpunkt steht (Filme, Karren/Aufträge), „Beastrium“ unten im Zwinger
-M.hundefang={music:()=>{const p=M.ui?.getPage?.();return F.on||p==='hundefang'?'rabies':p==='zwinger'?'beast':'';},state:st,intro:()=>introFilm(false),sighting,startFight,openBook,paintPlace,jobDog,daily,get fight(){return fight;},F};
+M.hundefang={drawRabies,FOAM,rabies,music:()=>{const p=M.ui?.getPage?.();return F.on||p==='hundefang'?'rabies':p==='zwinger'?'beast':'';},state:st,intro:()=>introFilm(false),sighting,startFight,openBook,paintPlace,jobDog,daily,get fight(){return fight;},F};
 window.HUNDEFANG_READY=true;
 })();

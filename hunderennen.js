@@ -112,6 +112,15 @@ const SFX={crowd:null,
   this.run={a,paws:mk1(bf.paws,.0001),pant:mk1(bf.pant,.0001),wind:w};},
  runSet(v,near){const R=this.run;if(!R)return;const k=Math.min(1,v/16),t=R.a.currentTime;try{R.paws.s.playbackRate.setTargetAtTime(.75+.45*k,t,.15);R.paws.g.gain.setTargetAtTime(Math.max(.0001,.55*k),t,.15);R.pant.s.playbackRate.setTargetAtTime(.8+.4*k,t,.2);R.pant.g.gain.setTargetAtTime(Math.max(.0001,.22*near),t,.2);R.wind.g.gain.setTargetAtTime(Math.max(.0001,.3*k*k),t,.25);}catch{}},
  runStop(){const R=this.run;if(!R)return;this.run=null;const t=R.a.currentTime;for(const n of [R.paws,R.pant,R.wind]){try{n.g.gain.setTargetAtTime(.0001,t,.3);setTimeout(()=>{try{n.s.stop();}catch{}},1500);}catch{}}},
+ // Klatschen: 4 s vorgerechnet (30 Klatscher mit eigenem Takt), Jubel = Rauschen + Klatschen, „Ooh“ = Vokalfilter
+ clapBuf(a){if(this._cb&&this._cb.sampleRate===a.sampleRate)return this._cb;const sr=a.sampleRate,len=Math.floor(sr*4),d=new Float32Array(len);let sd=11;const rn=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  for(let k=0;k<30;k++){const P=.2+rn()*.12,amp=.3+rn()*.7;for(let st=rn()*P;st<4;st+=P*(.9+rn()*.2)){const t0=Math.floor(st*sr);let hp=0,pr=0;for(let i=0;i<sr*.012&&t0+i<len;i++){const n=rn()*2-1;hp=n-pr;pr=n;d[t0+i]+=hp*Math.exp(-i/sr*420)*amp*.18;}}}
+  const B=a.createBuffer(1,len,sr);B.getChannelData(0).set(d);return this._cb=B;},
+ applause(g=.5,dur=3){const x=this.ctx();if(!x||!sndOn())return;const {a,B}=x,s=a.createBufferSource();s.buffer=this.clapBuf(a);s.playbackRate.value=.92+Math.random()*.16;const e=a.createGain(),t0=a.currentTime+.02;e.gain.setValueAtTime(.0001,t0);e.gain.exponentialRampToValueAtTime(g*.55,t0+.35);e.gain.setValueAtTime(g*.55,t0+Math.max(.4,dur-1.2));e.gain.exponentialRampToValueAtTime(.0001,t0+dur);s.connect(e).connect(B.dry);e.connect(B.rev);s.start(t0,Math.random()*1.5);s.stop(t0+dur+.1);},
+ cheer(g=.5){const now=performance.now();if(now-(this._ch||0)<1100)return;this._ch=now;this.roar(.18*g+.08,1.6+g);this.applause(.35+.4*g,1.8+g*1.5);},
+ ooh(g=.5){const x=this.ctx();if(!x||!sndOn())return;const {a,B,AU}=x,t0=a.currentTime+.02,s=a.createBufferSource();s.buffer=AU.noiseBuf(a,1.6);const f1=a.createBiquadFilter(),f2=a.createBiquadFilter(),e=a.createGain();f1.type=f2.type='bandpass';f1.frequency.setValueAtTime(420,t0);f1.frequency.linearRampToValueAtTime(330,t0+1.4);f1.Q.value=6;f2.frequency.value=820;f2.Q.value=8;
+  e.gain.setValueAtTime(.0001,t0);e.gain.exponentialRampToValueAtTime(g*.9,t0+.25);e.gain.exponentialRampToValueAtTime(.0001,t0+1.5);s.connect(f1).connect(e);s.connect(f2).connect(e);e.connect(B.dry);e.connect(B.rev);s.start(t0);s.stop(t0+1.6);},
+ bark(D,vol=.4){if(!sndOn())return;try{DOG.audio?.playFor?.('bark',D,vol);}catch{}},
  crowdStop(){const c=this.crowd;if(!c)return;this.crowd=null;try{c.e.gain.setTargetAtTime(.0001,c.a.currentTime,.4);setTimeout(()=>{try{c.s.stop();}catch{}},1500);}catch{}}};
 
 // ---------- Hund als Zeichenfigur ----------
@@ -229,7 +238,13 @@ function startRace(o){
  SFX.crowdStart();SFX.crowdLevel(.04);
  // Sprecher: liest mit Stadionhall vor; ohne Ton nur der Text. force unterbricht die laufende Zeile.
  const voiceOn=()=>sndOn()&&!!M.speakLine;
- const talk=(txt,force)=>{if(!voiceOn())return false;if(!force&&M.speaking?.())return false;try{return !!M.speakLine(txt,'moderator',null,{voice:'moderator',echo:.5,vol:1.12});}catch{return false;}};
+ // Immer nur eine Zeile: neue Zeilen warten in der Reihe (prio 3 = Sieger, 2 = wichtig, 1 = Kleinigkeit). Nichts wird
+ // unterbrochen; Kleinigkeiten, die zu lange warten, verfallen (sonst kommentiert er Dinge, die längst vorbei sind).
+ const Q=[];const speakNow=txt=>{try{return !!M.speakLine(txt,'moderator',null,{voice:'moderator',echo:.5,vol:1.12});}catch{return false;}};
+ const talk=(txt,prio=1)=>{if(!voiceOn())return false;if(prio>=3)for(let i=Q.length-1;i>=0;i--)if(Q[i].prio<3)Q.splice(i,1);Q.push({txt,prio,t:V.t});pumpTalk();return true;};
+ const pumpTalk=()=>{if(!voiceOn()||M.speaking?.())return;for(let i=Q.length-1;i>=0;i--){const age=V.t-Q[i].t;if(Q[i].prio===1&&age>3.5||Q[i].prio===2&&age>7)Q.splice(i,1);}
+  if(!Q.length)return;Q.sort((a,b)=>b.prio-a.prio||a.t-b.t);speakNow(Q.shift().txt);};
+ V.pumpTalk=pumpTalk;V.talkQ=Q;
  const showCard=x=>{const el=A.layer.querySelector('#hrCard');if(!el)return;if(!x){el.hidden=true;return;}el.hidden=false;el.innerHTML=`<i class="num j${x.num}">${x.num}</i><div><b>${esc(x.name)}</b><small>${esc(x.breed)}</small><span>${esc(x.school)}</span><em>${x.races} Rennen · ${x.wins} Siege · Bestzeit ${x.best?secs(x.best)+' s':'–'}</em></div>`;};
  const endIntro=()=>{if(V.phase!=='present')return;V.phase='intro';V.t=0;showCard(null);V.focus=null;const b=A.layer.querySelector('#hrIntro');if(b)b.hidden=true;try{M.speakStop?.();}catch{}};
  if(V.phase!=='present'){const b=A.layer.querySelector('#hrIntro');if(b)b.hidden=true;}
@@ -239,12 +254,12 @@ function startRace(o){
   // Ablauf: Vorstellung der Favoriten (Sprecher) → Countdown an den Boxen → Rennen → Auslauf → Ergebnis
   if(V.phase==='present'){V.pt+=dt/V.speed;const L=o.intro,cur=L[V.pi];
    const busy=cur&&(V.pt<cur.min||(cur.spoke&&M.speaking?.()&&V.pt<14)||(!cur.spoke&&V.pt<cur.read));
-   if(!busy){V.pi++;V.pt=0;const n=L[V.pi];if(!n){endIntro();}else{say('p'+V.pi,n.text,true);n.spoke=talk(n.text,true);n.min=2.2;n.read=1.6+n.text.length*.055;showCard(n.card||null);V.focus=n.card?n.card.lane:null;}}}
+   if(!busy){V.pi++;V.pt=0;const n=L[V.pi];if(!n){endIntro();}else{say('p'+V.pi,n.text,true);n.spoke=voiceOn()&&!M.speaking?.()?speakNow(n.text):false;if(n.card)SFX.applause(.35,2.2);n.min=2.2;n.read=1.6+n.text.length*.055;showCard(n.card||null);V.focus=n.card?n.card.lane:null;}}}
   else if(V.phase==='intro'){
    if(V.t<.1)say('in','Die Hunde stehen in den Startboxen. Der Hase wird gespannt …');
    const cd=[[1.4,'3'],[2.2,'2'],[3.0,'1']];for(const [tt,txt] of cd)if(V.t>=tt&&!V.said.has('c'+txt)){V.said.add('c'+txt);V.text={txt,t:V.t,big:1};SFX.beep(false);}
    if(V.t>=.3&&!V.said.has('fan')){V.said.add('fan');SFX.fanfare();}
-   if(V.t>=3.8){V.phase='run';V.text={txt:'LOS!',t:V.t,big:1.3,col:'#ffe08a'};V.shake=1;SFX.gate();SFX.beep(true);SFX.roar(.3,2.6);SFX.crowdLevel(.07);say('go','Die Boxen fliegen auf! Die Meute schießt heraus!',true);talk('Und los!',true);SFX.runStart();for(const r of acts){r.a.mode='race';}}}
+   if(V.t>=3.8){V.phase='run';V.text={txt:'LOS!',t:V.t,big:1.3,col:'#ffe08a'};V.shake=1;SFX.gate();SFX.beep(true);SFX.roar(.3,2.6);SFX.crowdLevel(.07);say('go','Die Boxen fliegen auf! Die Meute schießt heraus!',true);talk('Und los!',2);SFX.applause(.5,3);SFX.runStart();for(const r of acts){r.a.mode='race';}}}
   else if(V.phase==='run'){const slowNow=V.slow;V.tau+=dt*slowNow;}
   const tau=V.tau;
   // Läufer
@@ -260,20 +275,24 @@ function startRace(o){
   V.scroll+=vCam*PXM*dt*V.slow;
   // Ereignisse für den Sprecher
   if(V.phase==='run'){
-   if(lead&&V.lead!==lead&&tau>1.2){if(V.lead){const tx=lead.D.name+' übernimmt die Führung!'+(lead.own?' Das ist dein Hund!':'');say('lead'+lead.i+Math.floor(tau),tx,true);if(V.t-(V.lastTalk||0)>4){if(talk(tx))V.lastTalk=V.t;}}V.lead=lead;}
-   for(const r of acts){const sb=sim.lanes[r.i].stumble;if(sb&&tau>=sb.t0&&!V.said.has('st'+r.i)){const tx=r.D.name+' stolpert! Der Sand fliegt!'+(r.own?' Lanista '+lanista()+' greift sich ans Herz. Oder an den Geldbeutel.':'');say('st'+r.i,tx,true);talk(tx);}}
-   const op=ranked.indexOf(own)+1;if(tau>2&&V.ownPos!==op){if(op===1)say('own1'+Math.floor(tau/3),'Dein '+own.D.name+' liegt vorn!',true);else if(op<=3&&(V.ownPos==null||op<V.ownPos))say('ownup'+op+Math.floor(tau/3),own.D.name+' arbeitet sich auf Platz '+op+' vor!',true);V.ownPos=op;}
-   if(tau>3.5&&maxS<dist-70&&V.t-(V.lastSay||0)>4.5&&Math.random()<dt*.35){const left=QUIPS.filter(q=>!V.said.has('q'+q));if(left.length&&!M.speaking?.()){const q=left[Math.floor(Math.random()*left.length)];say('q'+q,q);talk(q);}}
-   if(maxS>dist-60&&!V.said.has('home')){say('home','Schlussgerade! Die Ränge stehen auf!',true);talk('Schlussgerade! Die Ränge stehen auf!',true);SFX.roar(.35,3);SFX.crowdLevel(.12);}
+   {const top=ranked.slice(0,3).map(r=>r.i).join();if(V.top3&&top!==V.top3&&tau>1.5)SFX.cheer(.3);V.top3=top;}
+   if(lead&&V.lead!==lead&&tau>1.2){if(V.lead){const tx=lead.D.name+' übernimmt die Führung!'+(lead.own?' Das ist dein Hund!':'');say('lead'+lead.i+Math.floor(tau),tx,true);if(V.t-(V.lastTalk||0)>4){talk(tx,lead.own?2:1);V.lastTalk=V.t;}SFX.cheer(lead.own?.75:.5);}V.lead=lead;}
+   for(const r of acts){const sb=sim.lanes[r.i].stumble;if(sb&&tau>=sb.t0&&!V.said.has('st'+r.i)){const tx=r.D.name+' stolpert! Der Sand fliegt!'+(r.own?' Lanista '+lanista()+' greift sich ans Herz. Oder an den Geldbeutel.':'');say('st'+r.i,tx,true);talk(tx,r.own?2:1);SFX.ooh(r.own?.6:.4);}}
+   const op=ranked.indexOf(own)+1;if(tau>2&&V.ownPos!==op){if(V.ownPos!=null&&op<V.ownPos)SFX.cheer(.45);if(op===1)say('own1'+Math.floor(tau/3),'Dein '+own.D.name+' liegt vorn!',true);else if(op<=3&&(V.ownPos==null||op<V.ownPos)){const tx=own.D.name+' arbeitet sich auf Platz '+op+' vor!';say('ownup'+op+Math.floor(tau/3),tx,true);talk(tx,1);}V.ownPos=op;}
+   if(tau>3.5&&maxS<dist-70&&V.t-(V.lastSay||0)>4.5&&Math.random()<dt*.35){const left=QUIPS.filter(q=>!V.said.has('q'+q));if(left.length&&!M.speaking?.()&&!Q.length){const q=left[Math.floor(Math.random()*left.length)];say('q'+q,q);talk(q,1);}}
+   if(maxS>dist-60&&!V.said.has('home')){say('home','Schlussgerade! Die Ränge stehen auf!',true);talk('Schlussgerade! Die Ränge stehen auf!',2);SFX.roar(.35,3);SFX.applause(.7,4);SFX.crowdLevel(.12);}
    // Zielankunft des Ersten: Zeitlupe; knappes Rennen: Fotofinish
    const w=sim.lanes[sim.order[0]],w2=sim.lanes[sim.order[1]];
    if(V.finishT==null&&maxS>dist-7){V.slow=.3;}
    if(V.finishT==null&&tau>=w.time){V.finishT=V.t;V.photo=w2.time-w.time<.12;const win=acts.find(r=>r.i===sim.order[0]);V.flash=V.photo?1:.5;V.text={txt:V.photo?'FOTOFINISH!':'ZIEL!',t:V.t,big:1.1,col:'#fff2c8'};SFX.roar(.45,3.5);SFX.crowdLevel(.16);
-    {const tx=(V.photo?'Fotofinish! ':'')+win.D.name+' gewinnt'+(win.own?'! Dein Hund siegt! Lanista '+lanista()+' fällt vor Freude fast aus der Loge. Leider nur fast.':'! '+(o.meta?.[win.i]?'Lanista '+o.meta[win.i].lanista.split(',')[0]+' zählt schon das Gold.':''));say('win',tx,true);talk(tx,true);}SFX.runSet(0,0);for(let i=0;i<60;i++)V.petals.push({x:Math.random()*W,y:-Math.random()*80,vx:-20-Math.random()*40,vy:30+Math.random()*30,r:Math.random()*6.3,c:['#c8302a','#e8dcc0','#e6c23a','#b23a5a'][i%4]});}
+    {const tx=(V.photo?'Fotofinish! ':'')+win.D.name+' gewinnt'+(win.own?'! Dein Hund siegt! Lanista '+lanista()+' fällt vor Freude fast aus der Loge. Leider nur fast.':'! '+(o.meta?.[win.i]?'Lanista '+o.meta[win.i].lanista.split(',')[0]+' zählt schon das Gold.':''));say('win',tx,true);talk(tx,3);SFX.applause(1,6);SFX.cheer(1);}SFX.runSet(0,0);for(let i=0;i<60;i++)V.petals.push({x:Math.random()*W,y:-Math.random()*80,vx:-20-Math.random()*40,vy:30+Math.random()*30,r:Math.random()*6.3,c:['#c8302a','#e8dcc0','#e6c23a','#b23a5a'][i%4]});}
    if(V.finishT!=null&&V.t-V.finishT>(V.photo?1.6:1.1))V.slow=Math.min(1,V.slow+dt*1.5);
    if(own.s>=dist&&V.ownPlace==null){V.ownPlace=sim.lanes[own.i].place;if(sim.order[0]!==own.i)say('ownin',own.D.name+' kommt als '+V.ownPlace+'. ins Ziel.',true);}
    if(acts.every(r=>r.done)&&tau>sim.lanes.reduce((m,l)=>Math.max(m,l.time||0),0)+1.6&&!V.end){V.end=true;setTimeout(()=>o.done(),700);}}
   SFX.crowdLevel(V.phase==='intro'||V.phase==='present'?.04:.06+(maxS/dist)*.08);
+  if(V.phase!=='present')pumpTalk();
+  // Bellen: dezent, mit Pausen – an den Boxen öfter (Aufregung), im Rennen selten, nach dem Ziel ein paar Mal
+  {const gap=V.phase==='run'?(V.finishT!=null?2.2:7):3.2;if(V.t>=(V.barkAt??=1.5)){V.barkAt=V.t+gap*(.7+Math.random()*.8);const r=acts[Math.floor(Math.random()*acts.length)];SFX.bark(r.D,V.phase==='run'&&V.finishT==null?.3:.45);}}
   if(V.phase==='run'&&V.finishT==null){const near=Math.max(0,1-Math.abs(sx(own.s)-W*.55)/(W*.7));SFX.runSet(lead?.v||0,near);}else if(V.end)SFX.runStop();
   // Anzeige
   if(now-V.boardT>180){V.boardT=now;const b=A.layer.querySelector('#hrBoard');if(b)b.innerHTML=ranked.map((r,i)=>`<li class="${r.own?'own':''}"><i class="num j${r.num}">${r.num}</i><b>${esc(r.D.name)}</b><small>${esc(r.D.breedName)}</small><span>${r.done?'Ziel':Math.max(0,Math.round(r.s))+' m'}</span></li>`).join('');
@@ -433,7 +452,7 @@ function raceresult(){const r=st().last;if(!r){A.go('race',-1);return;}const T=T
  // Sprecher liest den Rennbericht (einmal je Rennen)
  if(rep&&!r.read&&M.speakLine&&sndOn()){r.read=true;const g=r.gain,best=[['Schnelligkeit','tempo'],['Ausdauer','ausdauer'],['Kraft','kraft']].map(([l,k])=>({l,d:g[k]?g[k][1]-g[k][0]:0,a:g[k]?.[0],b:g[k]?.[1]})).sort((x,y)=>y.d-x.d)[0];
   const tx=(won?r.name+' gewinnt in '+secs(rep.time)+' Sekunden! '+(rep.newBest?'Neue Bestzeit! ':'')+'Lanista '+lanista()+' kassiert '+r.prize+' Gold und behauptet, er habe nie gezweifelt.':r.name+' wird '+r.place+'. in '+secs(rep.time)+' Sekunden, '+secs(rep.behind)+' Sekunden hinter dem Sieger. '+(r.place<=3?'Immerhin '+r.prize+' Gold. Davon kann man fast einen Rekruten kaufen. Einen kleinen.':'Kein Gold. Lanista '+lanista()+' rechnet schon, was der Hund als Wurst wert wäre.'))+(best.d>=.05?' Erfahrung: '+best.l+' steigt von '+f1(best.a)+' auf '+f1(best.b)+'.':'');
-  setTimeout(()=>{try{M.speakLine(tx,'moderator',null,{voice:'moderator',echo:.5,vol:1.12});}catch{}},600);try{M.persist();}catch{}}}
+  let n=0;(function wait(){if(M.speaking?.()&&n++<60){setTimeout(wait,250);return;}try{M.speakLine(tx,'moderator',null,{voice:'moderator',echo:.5,vol:1.12});}catch{}})();/* erst wenn die Siegeransage fertig ist */try{M.persist();}catch{}}}
 raceresult.back=go=>go('race',-1);
 
 U.screens.dogkinds=dogkinds;U.screens.race=race;U.screens.raceresult=raceresult;
