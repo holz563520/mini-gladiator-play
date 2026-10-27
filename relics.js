@@ -5,7 +5,7 @@
    fallen, der zu ihm passt: die Maske des Maskenmanns, den Bart des Barttyps, die Krähe des Krähenmanns …
    · Der Gegenstand kommt ins Trophäenlager (S.relics) und lässt sich im Platz „Besonderer Gegenstand“ der Ausrüstungspuppe
      anlegen (g.relic = {id,type,w}). Je Gladiator ein Stück, je Stück ein Träger.
-   · Wirkung: +2 Fertigkeitspunkte auf die Waffengattung des Anführers (über M.mastery, also überall, wo der Kampf die
+   · Wirkung: +2 Fertigkeitspunkte je Totenkopf des Anführers (1 ☠ +2 … 5 ☠ +10) auf seine Waffengattung (über M.mastery, also überall, wo der Kampf die
      Waffenfertigkeit liest). Der gespeicherte Wert g.mastery bleibt unverändert; Lernen und Obergrenzen wie bisher.
    · Aussehen: Der Träger trägt das Stück dezent im Kampfbild (M.figureDecor) und in jeder Großaufnahme (M.faceOverlays).
      Der Anführer selbst trägt es groß (big:true).
@@ -19,7 +19,7 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v,hash=(i,k=1)=>{const v=Math.sin(i*127.1+k*311
 const mix=(a,b,t)=>{const p=s=>[1,3,5].map(i=>parseInt(String(s).slice(i,i+2),16)||0),x=p(a),y=p(b);return '#'+x.map((v,i)=>Math.round(v+(y[i]-v)*t).toString(16).padStart(2,'0')).join('');};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // ---------- Zeichenhilfen (Gesicht/Symbol) ----------
-function Q(c,fm){const s=fm.s;return (x,y,w,h,col)=>{const p=fm.to(x,y);c.fillStyle=col;c.fillRect(Math.round(p.x),Math.round(p.y),Math.max(1,Math.ceil(w*s)),Math.max(1,Math.ceil(h*s)));};}
+function Q(c,fm){const s=fm.s;const f=(x,y,w,h,col)=>{const p=fm.to(x,y);c.fillStyle=col;c.fillRect(Math.round(p.x),Math.round(p.y),Math.max(1,Math.ceil(w*s)),Math.max(1,Math.ceil(h*s)));};f.c=c;f.fm=fm;return f;}
 function QE(q,x,y,rx,ry,col){for(let yy=-ry;yy<=ry;yy++){const w=rx*Math.sqrt(Math.max(0,1-(yy/(ry+.5))**2));if(w>.3)q(x-w,y+yy,w*2,1,col);}}
 // Ellipsenring (außen rx/ry, innen irx/iry frei)
 function QR(q,x,y,rx,ry,irx,iry,col){for(let yy=-ry;yy<=ry;yy++){const w=rx*Math.sqrt(Math.max(0,1-(yy/(ry+.5))**2)),wi=Math.abs(yy)<iry?irx*Math.sqrt(Math.max(0,1-(yy/(iry+.5))**2)):0;if(w<=.3)continue;if(wi<=.3)q(x-w,y+yy,w*2,1,col);else{q(x-w,y+yy,w-wi,1,col);q(x+wi,y+yy,w-wi,1,col);}}}
@@ -109,8 +109,8 @@ ART.strap={fig(P,R,t,o){const {rect,line,chest:c,shoulders:s,back}=P;line(s.l.x,
  face(q,R){QL(q,-40,14,30,60,5,R.c[0]);for(let k=0;k<5;k++){const u=(k+.5)/5,x=-40+70*u,y=14+46*u;QE(q,x,y+5,3.4,5,k%2?R.c[1]:R.c[2]);QE(q,x+.8,y+5,1.6,3,'#00000044');}},
  icon(q,R){QL(q,3,4,29,28,3,R.c[0]);for(let k=0;k<5;k++){const u=(k+.5)/5,x=3+26*u,y=4+24*u;QE(q,x+2,y+3,2.6,3.4,k%2?R.c[1]:R.c[2]);QE(q,x+2.6,y+3,1,2,'#00000044');}}};
 // Hörner / Geweih (auch über dem Helm)
-ART.horns={fig(P,R,t,o){const {rect,head:h}=P,[c1,c2,c3]=R.c,v=R.v;if(!o.big&&!P.armored){rect(h.x-6,h.y-6,13,2,'#5a3a22');}
-  for(const sd of [-1,1]){const bx=sd<0?h.x-6:h.x+7;
+ART.horns={fig(P,R,t,o){const {rect}=P,h={x:Math.round(P.head.x),y:Math.round(P.head.y)},[c1,c2,c3]=R.c,v=R.v;if(!o.big&&!P.armored){rect(h.x-7,h.y-6,17,2,'#5a3a22');}
+  for(const sd of [-1,1]){const bx=sd<0?h.x-8:h.x+9;
    if(v==='antler'){rect(bx,h.y-10,1,4,c1);rect(bx+sd*1,h.y-13,1,3,c1);rect(bx+sd*2,h.y-15,1,2,c2);rect(bx-sd*1,h.y-14,1,2,c2);if(o.big){rect(bx+sd*3,h.y-18,1,3,c3);rect(bx,h.y-17,1,2,c3);}}
    else if(v==='ram'){rect(bx-1,h.y-9,3,3,c1);rect(bx+sd*2-1,h.y-10,3,3,c1);rect(bx+sd*3-1,h.y-7,2,3,c2);rect(bx+sd*2,h.y-4,2,2,c3);}
    else if(v==='goat'){rect(bx,h.y-10,2,3,c1);rect(bx-sd,h.y-13,2,3,c1);rect(bx-sd*2,h.y-16,1,3,c2);if(o.big)rect(bx-sd*3,h.y-18,1,2,c3);}
@@ -323,13 +323,14 @@ R.typeOf=id=>N()?.byId?.[id]||null;
 R.def=id=>R.typeOf(id)?.relic||null;
 R.weaponOf=id=>R.typeOf(id)?.weapon||null;
 R.weaponName=w=>M.weaponDefs?.find(d=>d.id===w)?.name||w||'';
-R.BONUS=2;
+// Bonus je Totenkopf des Anführers (Wunsch Thomas 27.10.): 1 Totenkopf +2 … 5 Totenköpfe +10
+R.BONUS=2;R.bonusOf=id=>R.BONUS*Math.max(1,Math.min(5,R.typeOf(id?.type||id)?.tier||1));
 // Zeichnen
 R.fig=(rel,P,t,o={})=>{const A=ART[rel?.art];if(!A)return;if(P.layer==='back'&&!A.back)return;try{A.fig(P,rel,t,o);}catch(e){}};
 R.face=(rel,q,t,o={})=>{const A=ART[rel?.art];if(!A?.face)return;try{A.face(q,rel,t,o);}catch(e){}};
 R.icon=(cv,typeId,t=0,o={})=>{const rel=R.def(typeId);const c=cv.getContext('2d'),W=cv.width,H=cv.height,s=Math.min(W,H)/36;c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;if(!o.keep)c.clearRect(0,0,W,H);
  if(!o.bare){const gr=c.createRadialGradient(W/2,H/2,2,W/2,H/2,Math.max(W,H)*.6);gr.addColorStop(0,'#3a2c44');gr.addColorStop(1,'#140f18');c.fillStyle=gr;c.fillRect(0,0,W,H);}
- if(!rel)return;const ox=(W-32*s)/2,oy=(H-32*s)/2,q=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(ox+x*s),Math.round(oy+y*s),Math.max(1,Math.ceil(w*s)),Math.max(1,Math.ceil(h*s)));};
+ if(!rel)return;const ox=(W-32*s)/2,oy=(H-32*s)/2,q=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(ox+x*s),Math.round(oy+y*s),Math.max(1,Math.ceil(w*s)),Math.max(1,Math.ceil(h*s)));};q.c=c;q.fm={s,to:(x,y)=>({x:ox+x*s,y:oy+y*s})};
  try{ART[rel.art].icon(q,rel,t);}catch(e){}};
 
 // ---------- Lager und Träger ----------
@@ -339,12 +340,12 @@ R.holder=id=>(S()?.roster||[]).find(g=>!g.dead&&!g.retired&&g.relic?.id===id)||n
 R.free=()=>R.list().filter(r=>!R.holder(r.id));
 R.grant=function(typeId,o={}){const ty=R.typeOf(typeId);if(!ty?.relic)return null;const it={id:(typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)),type:typeId,day:S()?.day||0,from:o.from||ty.title,place:o.place||''};R.list().push(it);return it;};
 R.name=it=>R.def(it?.type||it)?.name||'Trophäe';
-R.label=it=>{const ty=R.typeOf(it?.type||it);return ty?`${ty.relic.name} · +${R.BONUS} ${R.weaponName(ty.weapon)}`:'Trophäe';};
+R.label=it=>{const ty=R.typeOf(it?.type||it);return ty?`${ty.relic.name} · +${R.bonusOf(ty.id)} ${R.weaponName(ty.weapon)}`:'Trophäe';};
 R.equip=function(g,relicId){if(!g)return 'Kein Gladiator.';if(!relicId){if(g.relic){delete g.relic;R.unregisterFace(g);}return 'Abgelegt.';}
  const it=R.list().find(r=>r.id===relicId);if(!it)return 'Nicht im Lager.';const prev=R.holder(relicId);if(prev&&prev!==g){delete prev.relic;R.unregisterFace(prev);}
  g.relic={id:it.id,type:it.type,w:R.weaponOf(it.type)};R.registerFace(g);return 'Angelegt: '+R.name(it);};
 // Wirkung: +2 auf die Waffengattung (für alle, die über M.mastery lesen: Kampf, Bewertung, Vorhersage)
-R.bonus=(g,id)=>{const r=g?.relic;if(!r||g.notorious)return 0;const w=r.w||R.weaponOf(r.type);return w&&w===id?R.BONUS:0;};
+R.bonus=(g,id)=>{const r=g?.relic;if(!r||g.notorious)return 0;const w=r.w||R.weaponOf(r.type);return w&&w===id?R.bonusOf(r.type):0;};
 if(typeof M.mastery==='function'&&!M.mastery.relic){const base=M.mastery;M.mastery=function(g,id){return base(g,id)+R.bonus(g,id);};M.mastery.relic=true;}
 
 // ---------- Darstellung am Träger ----------
@@ -358,16 +359,58 @@ M.figureDecor=function(a,P){prevDecor?.(a,P);const g=a?.g;if(!g?.relic||g.notori
 
 // ---------- Platz „Besonderer Gegenstand“ (Ausrüstungspuppe) ----------
 R.slotHTML=g=>{const it=g?.relic&&R.list().find(r=>r.id===g.relic.id);if(!it)return `<span class="special-icon" aria-hidden="true"></span><span class="eyebrow">Besonderer Gegenstand</span><strong>${R.list().length?'LEER':'NOCH LEER'}</strong><small>${R.list().length?R.free().length+' im Trophäenlager':'Trophäen der Berüchtigten'}</small>`;
- return `<canvas class="relic-ico" width="72" height="72" data-relic="${esc(it.type)}"></canvas><span class="eyebrow">Besonderer Gegenstand</span><strong>${esc(R.name(it))}</strong><small class="relic-bonus">+${R.BONUS} ${esc(R.weaponName(R.weaponOf(it.type)))}</small>`;};
+ return `<canvas class="relic-ico" width="72" height="72" data-relic="${esc(it.type)}"></canvas><span class="eyebrow">Besonderer Gegenstand</span><strong>${esc(R.name(it))}</strong><small class="relic-bonus">+${R.bonusOf(it.type)} ${esc(R.weaponName(R.weaponOf(it.type)))}</small>`;};
 R.paintIcons=root=>{for(const cv of (root||document).querySelectorAll('canvas[data-relic]'))R.icon(cv,cv.dataset.relic,0);};
 R.mountSlot=function(doll,g){let s=doll.querySelector('.doll-special');if(!s){s=document.createElement('div');doll.appendChild(s);}s.className='doll-slot doll-special'+(g?.relic?' filled':'');s.style.gridArea='empty';s.removeAttribute('aria-disabled');s.setAttribute('role','button');s.tabIndex=0;
  s.innerHTML=R.slotHTML(g);R.paintIcons(s);const open=()=>R.chooser(g,()=>{R.mountSlot(doll,g);});s.onclick=open;s.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}};};
 R.chooser=function(g,done){if(!g||!M.ui?.modal)return;const all=R.list(),cur=g.relic?.id;
- const row=it=>{const ty=R.typeOf(it.type),h=R.holder(it.id),mine=it.id===cur;return `<div class="relic-row${mine?' on':''}"><canvas width="64" height="64" data-relic="${esc(it.type)}"></canvas><div><b>${esc(R.name(it))}</b><small>${esc(ty?.relic?.text||'')}</small><small class="relic-bonus">+${R.BONUS} ${esc(R.weaponName(ty?.weapon))} · von ${esc(it.from||ty?.title||'?')}${it.day?' · Tag '+it.day:''}${h&&!mine?' · trägt '+esc(h.name):''}</small></div><button class="btn small${mine?'':' primary'}" type="button" data-relic-pick="${mine?'':esc(it.id)}">${mine?'Ablegen':h?'Übernehmen':'Anlegen'}</button></div>`;};
- const html=all.length?`<p>Trophäen der Berüchtigten. Jedes Stück gibt seinem Träger <b class="gold">+${R.BONUS} Fertigkeit</b> mit der Waffe des Anführers, der es getragen hat. Ein Stück je Gladiator.</p><div class="relic-list">${[...all].sort((a,b)=>(b.id===cur)-(a.id===cur)||(R.typeOf(a.type)?.tier||0)-(R.typeOf(b.type)?.tier||0)).map(row).join('')}</div>`
-  :`<p>Noch leer. Besiegt bei einer Plünderung den berüchtigten Anführer: Er lässt immer ein Stück fallen, das zu ihm passt (Maske, Bart, Kette …). Getragen gibt es <b class="gold">+${R.BONUS} Fertigkeit</b> mit seiner Waffe.</p>`;
+ const row=it=>{const ty=R.typeOf(it.type),h=R.holder(it.id),mine=it.id===cur;return `<div class="relic-row${mine?' on':''}"><canvas width="64" height="64" data-relic="${esc(it.type)}"></canvas><div><b>${esc(R.name(it))}</b><small>${esc(ty?.relic?.text||'')}</small><small class="relic-bonus">${'☠'.repeat(ty?.tier||1)} · +${R.bonusOf(it.type)} ${esc(R.weaponName(ty?.weapon))} · von ${esc(it.from||ty?.title||'?')}${it.day?' · Tag '+it.day:''}${h&&!mine?' · trägt '+esc(h.name):''}</small></div><button class="btn small${mine?'':' primary'}" type="button" data-relic-pick="${mine?'':esc(it.id)}">${mine?'Ablegen':h?'Übernehmen':'Anlegen'}</button></div>`;};
+ const html=all.length?`<p>Trophäen der Berüchtigten. Jedes Stück gibt seinem Träger <b class="gold">+${R.BONUS} Fertigkeit je Totenkopf</b> des Anführers (☠ +2 … ☠☠☠☠☠ +10) mit der Waffe, die er geführt hat. Ein Stück je Gladiator.</p><div class="relic-list">${[...all].sort((a,b)=>(b.id===cur)-(a.id===cur)||(R.typeOf(a.type)?.tier||0)-(R.typeOf(b.type)?.tier||0)).map(row).join('')}</div>`
+  :`<p>Noch leer. Besiegt bei einer Plünderung den berüchtigten Anführer: Er lässt immer ein Stück fallen, das zu ihm passt (Maske, Bart, Kette …). Getragen gibt es <b class="gold">+${R.BONUS} Fertigkeit je Totenkopf</b> (☠ +2 … ☠☠☠☠☠ +10) mit seiner Waffe.</p>`;
  M.ui.modal('Besonderer Gegenstand · '+esc(g.name),html);
  const box=document.getElementById('modal');if(!box)return;R.paintIcons(box);
  for(const b of box.querySelectorAll('[data-relic-pick]'))b.onclick=()=>{const msg=R.equip(g,b.dataset.relicPick||null);try{M.persist?.();}catch(e){}M.ui.close?.();M.ui.notify?.(msg);done?.();};};
+
+// ---------- Kopfstücke im Kampfbild: an den gemessenen Gesichtszellen ausgerichtet (27.10.) ----------
+// Zellen relativ zum gerundeten Kopfanker: Augen (−4…−2|3) und (3…5|3), Braue 2, Nase (1…2|4…6), Mund (−2…4|8…9), Kinn 10–11,
+// Gesicht x −5…8, Stirn ab −5, Haar bis −8, rechtes Ohr x 8–9 (y 4–7). Die Figur zeigt immer das Gesicht; beim Blick nach links
+// spiegelt die Zeichnung mit, beim Fallen dreht sie mit dem Kopf.
+const HC=P=>({x:Math.round(P.head.x),y:Math.round(P.head.y)});
+ART.beard.fig=(P,R,t,o)=>{const {rect,back}=P,{x,y}=HC(P);if(back)return;const [b,d,l]=R.c,long=R.v==='long'||(o.big&&R.v!=='short');
+ rect(x-3,y+7,9,1,b);rect(x-5,y+5,2,7,b);rect(x+6,y+5,2,7,b);rect(x-4,y+10,11,3,b);rect(x-3,y+10,1,2,l);rect(x+5,y+10,1,3,d);rect(x-5,y+5,1,7,d);
+ if(long){rect(x-3,y+13,9,4,b);rect(x-2,y+17,7,3,b);rect(x,y+20,3,2,b);rect(x+1,y+12,1,8,d);rect(x-2,y+13,1,4,l);}
+ if(R.v==='braid'){const gold=R.c[3]||'#d8a838';rect(x-2,y+13,2,long?8:6,b);rect(x+3,y+13,2,long?8:6,b);for(const yy of [15,18])for(const xx of [-2,3])rect(x+xx,y+yy,2,1,gold);}
+ if(R.v==='fork'){rect(x-3,y+13,3,5,b);rect(x+3,y+13,3,5,b);rect(x-3,y+17,1,1,d);rect(x+5,y+17,1,1,d);}
+ if(R.v==='bones'){rect(x-1,y+12,2,1,'#efe6d0');rect(x+3,y+15,2,1,'#efe6d0');rect(x,y+18,2,1,'#efe6d0');}};
+{const nf=ART.nose.fig;ART.nose.fig=(P,R,t,o)=>{const {rect,back}=P,{x,y}=HC(P);
+ if(R.v==='bone'){if(back)return;rect(x-2,y+6,7,1,'#f0e8d0');rect(x-3,y+5,1,3,'#e0d8c0');rect(x+5,y+5,1,3,'#e0d8c0');rect(x-2,y+7,7,1,'#c8bea0');return;}
+ if(R.v==='ring'){if(back)return;rect(x,y+6,1,2,R.c[0]);rect(x+3,y+6,1,2,R.c[0]);rect(x+1,y+8,2,1,R.c[2]);rect(x,y+6,1,1,R.c[1]);return;}
+ rect(x-6,y+4,16,1,'#3a2414');if(back)return;rect(x,y+3,3,4,R.c[0]);rect(x,y+3,1,3,R.c[1]);rect(x+2,y+3,1,4,R.c[2]);rect(x+1,y+6,1,1,'#2a1a10');};void nf;}
+ART.paint.fig=(P,R,t,o)=>{const {rect,back}=P,{x,y}=HC(P),[a,b]=R.c,v=R.v;if(back){rect(x-7,y-2,2,6,a);return;}
+ if(v==='pale'){rect(x-5,y-5,14,17,'rgba(240,236,228,.35)');rect(x-5,y+4,4,1,'rgba(90,60,90,.5)');rect(x+2,y+4,4,1,'rgba(90,60,90,.5)');return;}
+ if(v==='soot'){rect(x-5,y-1,14,3,'rgba(30,26,24,.5)');rect(x-4,y+5,12,3,'rgba(30,26,24,.38)');return;}
+ if(v==='gold'){rect(x-5,y+4,14,2,a);rect(x-5,y+4,14,1,b);if(o.big)rect(x-5,y-5,14,2,a);return;}
+ if(v==='hand'){rect(x+2,y+5,5,3,a);rect(x+2,y+8,1,2,a);rect(x+4,y+8,1,2,a);rect(x+6,y+8,1,1,a);rect(x+1,y+4,1,1,a);return;}
+ if(v==='skull'){for(const ex of [-5,2]){rect(x+ex,y+2,5,1,a);rect(x+ex,y+4,5,1,a);rect(x+ex,y+3,1,1,a);rect(x+ex+4,y+3,1,1,a);}rect(x+1,y+5,2,1,a);for(let k=-2;k<=4;k+=2)rect(x+k,y+10,1,1,a);return;}
+ if(v==='stripes'){rect(x-5,y+5,3,1,a);rect(x-5,y+7,3,1,b);rect(x+6,y+5,3,1,a);rect(x+6,y+7,3,1,b);rect(x+1,y-4,1,4,a);return;}
+ rect(x+1,y-4,1,o.big?5:4,a);rect(x-4,y+5,2,1,a);rect(x+4,y+5,2,1,a);rect(x-4,y+6,1,1,b);rect(x+5,y+6,1,1,b);if(o.big){rect(x+7,y-2,1,3,a);rect(x-5,y-2,1,3,b);}};
+ART.earring.fig=(P,R,t,o)=>{const {rect,back}=P,{x,y}=HC(P),px=back?x-8:x+8,py=y+8,sw=Math.round(Math.sin((t||0)*3));rect(px,py,1,1,R.c[0]);
+ if(R.v==='bell'){rect(px-1+sw,py+1,3,2,R.c[1]);rect(px+sw,py+3,1,1,R.c[2]);}else if(R.v==='tooth'){rect(px+sw,py+1,1,3,'#f2ead2');}else{rect(px-1,py+1,1,2,R.c[1]);rect(px+1,py+1,1,2,R.c[1]);rect(px,py+3,1,1,R.c[1]);}};
+ART.eye.fig=(P,R,t,o)=>{const {rect,back}=P,{x,y}=HC(P),[m,d,l]=R.c,v=R.v;if(back){rect(x-8,y+2,17,1,d);return;}
+ if(v==='patch'){rect(x-7,y+1,3,1,d);rect(x-1,y+2,10,1,d);rect(x-5,y+2,4,3,m);rect(x-5,y+2,1,1,l);rect(x-4,y+4,3,1,d);}
+ else if(v==='monocle'){rect(x+2,y+2,5,1,m);rect(x+2,y+4,5,1,m);rect(x+2,y+3,1,1,m);rect(x+6,y+3,1,1,m);rect(x+3,y+2,1,1,l);rect(x+6,y+5,1,4,d);}
+ else if(v==='goggles'){rect(x-6,y+3,16,1,d);rect(x-5,y+2,5,3,m);rect(x+2,y+2,5,3,m);rect(x-4,y+3,3,1,l);rect(x+3,y+3,3,1,l);}
+ else{rect(x-6,y+2,16,3,m);rect(x-6,y+2,16,1,l);}};
+ART.hat.fig=(P,R,t,o)=>{const {rect}=P,{x,y}=HC(P),[m,d,l]=R.c,v=R.v,helm=P.armored,big=o.big,top=helm?y-11:y-9;
+ if(v==='crown'){rect(x-6,top,15,3,m);rect(x-6,top,15,1,l);for(const xx of [-6,-2,2,6])rect(x+xx,top-2,2,2,m);for(const xx of [-6,-2,2,6])rect(x+xx,top-2,1,1,l);rect(x+1,top+1,2,1,'#c02030');rect(x-4,top+1,1,1,'#3060c0');rect(x+5,top+1,1,1,'#3060c0');return;}
+ if(v==='wreath'){for(let xx=-7;xx<=8;xx+=2){const yy=top+1+(Math.abs(xx-.5)>5?1:0);rect(x+xx,yy,2,2,xx%4?m:d);rect(x+xx,yy,1,1,l);}return;}
+ if(v==='feather'){if(!helm){rect(x-7,y-6,17,2,d);rect(x-7,y-6,17,1,l);}const bx=x+7,by=helm?y-9:y-6;for(let k=0;k<(big?10:7);k++)rect(bx+Math.round(k*.35),by-1-k,2,1,k%3?m:l);rect(bx,by,2,1,d);return;}
+ if(v==='plume'){for(let k=0;k<(big?9:7);k++)rect(x+1-k,top-1+Math.round(k*.55),3,2,k%2?m:l);return;}
+ if(helm)return;
+ if(v==='hood'){rect(x-9,y-9,19,5,m);rect(x-9,y-4,3,13,m);rect(x+7,y-4,3,13,m);rect(x-8,y-9,17,1,l);rect(x-9,y-4,1,13,d);rect(x+9,y-4,1,13,d);return;}
+ if(v==='bandana'){rect(x-7,y-7,17,3,m);rect(x-7,y-7,17,1,l);rect(x-9,y-5,3,2,m);rect(x-10,y-3,2,3,d);for(let xx=-5;xx<8;xx+=3)rect(x+xx,y-6,1,1,l);return;}
+ if(v==='cap'){rect(x-7,y-10,17,5,m);rect(x-7,y-10,17,1,l);rect(x-9,y-5,21,1,d);rect(x-9,y-4,21,1,'#00000044');return;}
+ if(v==='turban'){rect(x-8,y-12,18,7,m);for(let yy=-11;yy<-5;yy+=2)rect(x-8,y+yy,18,1,d);rect(x,y-10,2,2,l);rect(x,y-10,1,1,'#3a8ad0');return;}
+ rect(x-7,y-5,17,2,m);rect(x-7,y-5,17,1,l);rect(x+1,y-5,2,2,d);};
 window.RELICS_READY=true;
 })();

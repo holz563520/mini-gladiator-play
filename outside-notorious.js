@@ -18,7 +18,7 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 
 // ---------- Zeichenhilfen ----------
 // Kampfbild: rect(x,y,w,h,c) in Figurenpixeln (ganzzahlig). Großaufnahme: Q(x,y,w,h,c) in Gesichtskoordinaten.
-function Q(c,fm){const s=fm.s;return (x,y,w,h,col)=>{const p=fm.to(x,y);c.fillStyle=col;c.fillRect(Math.round(p.x),Math.round(p.y),Math.max(1,Math.ceil(w*s)),Math.max(1,Math.ceil(h*s)));};}
+function Q(c,fm){const s=fm.s;const f=(x,y,w,h,col)=>{const p=fm.to(x,y);c.fillStyle=col;c.fillRect(Math.round(p.x),Math.round(p.y),Math.max(1,Math.ceil(w*s)),Math.max(1,Math.ceil(h*s)));};f.c=c;f.fm=fm;return f;}
 // gefüllte Pixel-Ellipse in Gesichtskoordinaten
 function QE(q,x,y,rx,ry,col){for(let yy=-ry;yy<=ry;yy++){const w=rx*Math.sqrt(Math.max(0,1-(yy/(ry+.5))**2));if(w>.3)q(x-w,y+yy,w*2,1,col);}}
 // dicke Linie aus Pixeln (Gesichtskoordinaten)
@@ -323,6 +323,11 @@ const META={
  baer:[4,'club',{name:'Bärenfell',art:'pelt',v:'bear',c:['#5a3a22','#6e4a2c','#3e2816'],text:'Das Fell des Bären, den er erwürgt hat. Der Kopf schaut über die Schulter.'}],
  eisenmaske:[5,'greatsword',{name:'Die Eisenmaske',art:'mask',v:'iron',c:['#5e6264','#3e4244','#8a9094'],text:'Endlich ab. Darunter war … das bleibt sein Geheimnis.'}]};
 for(const t of T){const m=META[t.id];if(m){t.tier=m[0];t.weapon=m[1];t.relic={id:t.id,...m[2]};}}
+// Masken der alten Berüchtigten zeichnet jetzt relic-masks.js (wie bei den Trägern): Schnabel mit Hut, Eisenmaske mit Riemen
+{const RR=()=>window.MGRelics,sch=T.find(t=>t.id==='schnabel'),eis=T.find(t=>t.id==='eisenmaske');
+ if(sch){sch.fig=(a,P,t)=>{const {rect,head:h}=P,x=Math.round(h.x),y=Math.round(h.y);rect(x-10,y-10,22,3,'#181616');rect(x-5,y-16,13,7,'#201e1e');rect(x-5,y-11,13,1,'#5a3a2a');RR()?.fig(sch.relic,P,t,{big:true,g:a.g});};
+  sch.face=(q,t,c,fm,g,o)=>{RR()?.face(sch.relic,q,t,{...(o||{}),big:true,g});q(-46,-62,92,5,'#181616');q(-46,-62,92,1,'#3a3636');q(-24,-82,48,21,'#201e1e');q(-24,-65,48,3,'#5a3a2a');};}
+ if(eis){eis.fig=(a,P,t)=>{RR()?.fig(eis.relic,P,t,{big:true,g:a.g});};eis.face=(q,t,c,fm,g,o)=>{RR()?.face(eis.relic,q,t,{...(o||{}),big:true,g});};}}
 // weitere Anführer (bosses-1…5.js): Zeichnungen fallen auf die Trophäe in groß zurück, dazu eigene Kennzeichen (extra/extraFace)
 const R=()=>window.MGRelics;
 N.add=function(list){for(const t of list){if(!t?.id||N.byId[t.id])continue;t.relic={id:t.id,...t.relic};t.wpn=[t.weapon];t.nick??=['Namenlos'];

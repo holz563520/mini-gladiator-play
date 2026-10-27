@@ -48,7 +48,7 @@ dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;color:var(--cream)}
 .tblwrap{overflow:auto}
 </style></head><body><div class="wrap">
 <div class="tl">Arena Theory · Werkzeug</div><h1>Berüchtigte &amp; Trophäen</h1>
-<p class="sub">Alle 90 Anführer der Plünderungen, nach Totenköpfen sortiert: Auf jeder Stufe gibt es jede der 18 Waffengattungen genau einmal, und der Anführer führt immer seine Gattung. Seine Ausrüstung liegt zwei Stufen über der Bande (Metall statt Leder, Waffe und Rüstung zwei Güteklassen höher, höchstens „Legendär“). Besiegt lässt er seine Trophäe fallen; ein eigener Gladiator kann sie im Platz „Besonderer Gegenstand“ tragen und bekommt <b class="gold">+2 Fertigkeit</b> mit der Waffe des Anführers. Antippen zeigt Kampfbild, Großaufnahme, Texte und die Trophäe am eigenen Gladiator. Dein Spielstand wird nicht verändert.</p>
+<p class="sub">Alle 90 Anführer der Plünderungen, nach Totenköpfen sortiert: Auf jeder Stufe gibt es jede der 18 Waffengattungen genau einmal, und der Anführer führt immer seine Gattung. Seine Ausrüstung liegt zwei Stufen über der Bande (Metall statt Leder, Waffe und Rüstung zwei Güteklassen höher, höchstens „Legendär“). Besiegt lässt er seine Trophäe fallen; ein eigener Gladiator kann sie im Platz „Besonderer Gegenstand“ tragen und bekommt <b class="gold">+2 Fertigkeit je Totenkopf</b> (☠ +2 … ☠☠☠☠☠ +10) mit der Waffe des Anführers. Antippen zeigt Kampfbild, Großaufnahme, Texte und die Trophäe am eigenen Gladiator. Dein Spielstand wird nicht verändert.</p>
 <div class="ctrl">
  <div class="tabs" id="tabs"></div>
  <label>Waffe<select id="wpn"><option value="">alle</option></select></label>
@@ -83,7 +83,7 @@ dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;color:var(--cream)}
 <script>window.BOSS_EDITOR=true;window.onerror=(m,src,l)=>{const e=document.getElementById('err');if(e){e.hidden=false;e.textContent+='Fehler: '+m+' ('+String(src).split('/').pop()+':'+l+')\n';}};</script>
 <script>
 // Spielmodule in Reihenfolge laden (Figuren, Großaufnahmen, Anführer, Trophäen), dann den Editor
-(async()=>{const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','face-shots','outside-core','relics','outside-notorious','bosses-1','bosses-2','bosses-3','bosses-4','bosses-5','boss-editor'];
- for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v=e69c1e77';s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
+(async()=>{const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','face-shots','outside-core','relics','relic-masks','outside-notorious','bosses-1','bosses-2','bosses-3','bosses-4','bosses-5','boss-editor'];
+ for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v=f163bf16';s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
 </script>
 </body></html>
