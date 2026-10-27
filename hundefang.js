@@ -22,7 +22,7 @@ const mkc=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;
 function px(g,x,y,w,h,c){g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));}
 function ell(g,x,y,rx,ry,c){g.fillStyle=c;g.beginPath();g.ellipse(x,y,Math.max(.5,rx),Math.max(.5,ry),0,0,Math.PI*2);g.fill();}
 const W=1040,H=720,SPOT={x:600,y:410};
-const st=()=>(S.hundefang??={stage:'',day:0,jobs:[],jobDay:0,usedDay:0,dogs:[],tip:0});
+const st=()=>{const s=(S.hundefang??={stage:'',day:0,jobs:[],jobDay:0,usedDay:0,dogs:[],tip:0});if(!s.wv){for(const D of s.dogs||[])DOG.migrate(D);for(const j of s.jobs||[]){const B=DOG.BREEDS.find(x=>x.id===j.breed);if(B&&!j.done)j.skulls=DOG.skullsOf(B.soll);}s.wv=2;}return s;};// wv: alte Hunde einmal auf die Rassenwerte vom 27.10.2026 umgerechnet
 let fight=null;
 
 // =====================================================================================================
@@ -95,12 +95,11 @@ function rabiesFace(cv,mood='grin'){face(cv,rabies(),mood,{zoom:1.05});}
 function rabiesLive(id,mood='grin'){const c=$(id);if(!c||c._live)return;c._live=true;let t=0;const tick=()=>{if(!c.isConnected)return;t+=1/30;try{M.faceShot.paint(c.getContext('2d'),c.width,c.height,{g:rabies(),team:0,mood:(t%7)<1.4?'confident':mood,yaw:Math.sin(t*.55)*.32,zoom:1.12},t+2);}catch(e){}setTimeout(()=>requestAnimationFrame(tick),33);};tick();}
 
 // =====================================================================================================
-// AUFTRÄGE · Stufen nach Rassen-Soll, täglich neu; die Hunde sind aus Rasse und Samen reproduzierbar
+// AUFTRÄGE · Stufen nach Kampf-Soll der Rasse (DOG.skullsOf), täglich neu; die Hunde sind aus Rasse und Samen reproduzierbar
 // =====================================================================================================
-const STUFEN=[[30,37],[38,45],[46,53],[54,61],[62,70]];
 const breedOf=id=>DOG.BREEDS.find(b=>b.id===id);
-const skullsOf=soll=>1+STUFEN.findIndex(([a,b])=>soll>=a&&soll<=b);
-function poolOf(k){return DOG.BREEDS.filter(b=>TX.RASSEN[b.id]&&b.soll>=STUFEN[k][0]&&b.soll<=STUFEN[k][1]);}
+const skullsOf=soll=>DOG.skullsOf(soll);
+function poolOf(k){return DOG.BREEDS.filter(b=>TX.RASSEN[b.id]&&skullsOf(b.soll)===k+1);}
 function newJob(k){const pool=poolOf(k),w=pool.map(b=>b.id==='wolf'?.3:b.wolf?.5:1),sum=w.reduce((a,b)=>a+b,0);let r=Math.random()*sum,B=pool[0];for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0){B=pool[i];break;}}
  const winter=['husky','malamute','polarwolf'].includes(B.id),time=B.wolf&&B.id!=='aethiopwolf'?'abend':pick(['morgen','tag','tag','abend']);// Wölfe (alle mit B.wolf) abends, der Äthiopische Wolf jagt bei Tag
  return {id:Math.random().toString(36).slice(2),skulls:k+1,breed:B.id,seed:(Math.random()*4294967296)>>>0,mood:{season:winter?'winter':pick(['fruehling','sommer','herbst','herbst']),time,weather:B.wolf&&!['aethiopwolf','polarwolf'].includes(B.id)?'nebel':pick(['klar','klar','bewoelkt','nebel'])},done:null};}
@@ -328,7 +327,7 @@ function sighting(j,g){const bg=jobBg(j),R=TX.RASSEN[j.breed],big=j.skulls>=4||!
 // ---------- Hundebuch ----------
 let bookTimers=[],bookAll=null;
 const FINGER=`<svg class="hf-finger" id="hfFinger" viewBox="0 0 22 12" shape-rendering="crispEdges"><path fill="#2a1a10" d="M0 4h11v-1h3v1h5v1h2v4h-1v1h-9v-1h-2v-1h-8z"/><path fill="#e6b88a" d="M1 5h10v-1h2v1h5v1h2v2h-1v1h-7v-1h-2v-1h-9z"/><path fill="#c48a5e" d="M12 8h7v1h-7zM1 6h9v1h-9z"/><path fill="#8d1c13" d="M15 3h3v1h-3z"/></svg>`;
-function statBars(B){const off=B.offs||{};return DOG.STATS.map(([k,n])=>`<span>${n}</span><i style="width:${cl(B.soll+(off[k]||0),5,100)}%"></i>`).join('');}
+function statBars(B){return DOG.STATS.map(([k,n])=>`<span>${n}</span><i style="width:${cl(B.werte[k],5,100)}%"></i>`).join('');}
 function bookPortrait(D,big){const cv=mkc(360,170),c=cv.getContext('2d');c.imageSmoothingEnabled=false;const d=dogAct(D,big?'threat':'stand');d.growlT=big?1:0;drawDog(c,d,180,150,cl(2.7/d.P.sz,1.6,3.6),-1,1.2);return cv;}
 function openBook(j,g){const B=breedOf(j.breed),R=TX.RASSEN[j.breed],big=j.skulls>=4||!!breedOf(j.breed)?.wolf,D=jobDog(j);bookTimers.forEach(clearTimeout);bookTimers=[];
  const near=DOG.BREEDS.filter(b=>TX.RASSEN[b.id]).sort((a,b)=>b.soll-a.soll),i0=near.findIndex(b=>b.id===B.id),from=cl(i0-5,0,Math.max(0,near.length-13)),list=near.slice(from,from+13);

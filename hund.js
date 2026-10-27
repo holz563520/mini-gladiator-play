@@ -1,7 +1,8 @@
 'use strict';
 // =====================================================================================================
 // ARENA THEORY · HUNDE (eigenständige Testversion, ändert keine Spieldatei)
-// · Hunde-Modell: Rassen mit Sollwert, Einzelwerte 1–100 über Bernoulli-Versuche um den Sollwert (wie bei Menschen)
+// · Hunde-Modell: jede Rasse hat eigene Sollwerte je Wert (werte), Einzelwerte 1–100 über Bernoulli-Versuche darum (wie bei Menschen),
+//   Istwerte 20 Punkte darunter. Rassen-Soll (B.soll) = Kampf-Soll, das gewichtete Mittel der Sollwerte (Totenköpfe, Zielstufe)
 // · Zeichner: Pixel-Hund in Seitenansicht (Arena und 1:1-Nahansicht), Wunden, Blut im Fell, Blutlachen, Spritzer
 // · Kampf: KI wie beim Löwen (dist/lion.js, dist/arena-beasts.js) als „rex“-Kämpfer im Spiel:
 //   Menschen treffen den Hund über M.rexReceive, der Hund trifft Menschen über M.hit, gezeichnet über M.drawRex.
@@ -19,36 +20,38 @@ const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.leng
 // Wie bernoulliValue in dist/data.js: 64 Versuche mit p aus dem Sollwert, Ergebnis wieder 1–100
 function bern(r,mean,n=64){let hits=0;const p=cl((mean-1)/99,.01,.98);for(let i=0;i<n;i++)if(r()<p)hits++;return Math.round(1+99*hits/n);}
 
-// ---------------------------------------------------------------- Rassen (Sollwerte 70 → 30)
+// ---------------------------------------------------------------- Rassen (nach Kampf-Soll, Wölfe vorn)
+// werte: Sollwerte je Wert (Anlage, Obergrenze fürs Training), seit 27.10.2026 je Rasse einzeln und möglichst wirklichkeitsnah:
+// Windhunde am schnellsten (Greyhound 97), Schlittenhunde am ausdauerndsten, Molosser am kräftigsten; die Wölfe sind im Kampf am stärksten.
 const BREEDS=[
- {id:'wolf',wolf:true,cm0:80,kg0:45,name:'Wolf',soll:70,active:true,look:'hochbeinig, schmale tiefe Brust, langer Kopf mit Stehohren, Halskrause, buschige hängende Rute',fur:'Grau, heller Bauch und Kehle, dunkler Sattel, helle Maske um das Maul',offs:{kraft:-4,biss:6,tempo:10,ausdauer:10,zaeh:0,wild:4,mut:-2},
-  // Stufe 6 (Zielgegner: Legende). Eigene Gestalt: kein Hund, ein Wolf. Lange Beine, schmaler Rumpf, schmale tiefe Brust, aufgezogener Bauch, Halskrause, langer schmaler Kopf, Stehohren, buschige Rute hängt gerade, nie Halsband
+ {id:'wolf',wolf:true,cm0:80,kg0:45,name:'Wolf',active:true,look:'hochbeinig, schmale tiefe Brust, langer Kopf mit Stehohren, Halskrause, buschige hängende Rute',fur:'Grau, heller Bauch und Kehle, dunkler Sattel, helle Maske um das Maul',werte:{kraft:74,biss:92,tempo:78,ausdauer:94,zaeh:74,wild:92,mut:72},
+  // Eigene Gestalt: kein Hund, ein Wolf. Lange Beine, schmaler Rumpf, schmale tiefe Brust, aufgezogener Bauch, Halskrause, langer schmaler Kopf, Stehohren, buschige Rute hängt gerade, nie Halsband
   shape:{head:'wo',L:31,leg:1.18,thick:.82,chest:.9,tuck:1.9,withers:.4,crest:7.8,dew:3.2,tailW:4.8,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.86,hindW:.9,neckX:1.4,neckY:-.6,ruff:1,saddle:1,mouth:{x:12.6,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
   // Lautpaket: bellt kaum (kurzes Wuffen), dafür kehliges Knurren und Fauchen, Jaulen hoch
   sound:{barkF:150,barkF1:[760,560,430],barkF2:[1280,1000,820],barkLen:.22,barkRate:.08,huff:.4,growlF:60,growlLp:2300,yelpF:640,whineF:760,vol:.8},
   coats:[{id:'grau',name:'Grau',w:1,base:'#8a857a',light:'#b5afa2',shade:'#5f5a51',dark:'#3a3630',saddle:'#4a463f',belly:'#cfc8b7'}],tier:'Legende'},
- {id:'polarwolf',wolf:true,cm0:82,kg0:55,name:'Polarwolf',soll:68,active:true,look:'Wolf aus dem hohen Norden: groß und schwer, dichter weißer Pelz, kurze runde Ohren, kürzere Schnauze, breite Pfoten, buschige Rute',fur:'Weiß, leicht cremefarben überhaucht',offs:{kraft:2,biss:6,tempo:6,ausdauer:10,zaeh:4,wild:4,mut:0},
-  // Stufe 5 (fünf Totenköpfe). Eigene Gestalt: wie der Wolf, aber massiger im dicken Winterpelz, kleine runde Ohren, kurze Schnauze
+ {id:'polarwolf',wolf:true,cm0:82,kg0:55,name:'Polarwolf',active:true,look:'Wolf aus dem hohen Norden: groß und schwer, dichter weißer Pelz, kurze runde Ohren, kürzere Schnauze, breite Pfoten, buschige Rute',fur:'Weiß, leicht cremefarben überhaucht',werte:{kraft:76,biss:84,tempo:68,ausdauer:92,zaeh:74,wild:84,mut:66},
+  // Eigene Gestalt: wie der Wolf, aber massiger im dicken Winterpelz, kleine runde Ohren, kurze Schnauze
   shape:{head:'wo',wolfEar:.72,wolfMz:.9,L:31,leg:1.12,thick:.94,chest:.9,tuck:1.4,withers:.4,crest:8.2,dew:3.6,tailW:5.2,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.94,hindW:.96,neckX:1.2,neckY:-.4,ruff:1,saddle:.6,rough:1,mouth:{x:12,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
   sound:{barkF:140,barkF1:[720,540,420],barkF2:[1240,980,800],barkLen:.24,barkRate:.06,huff:.45,growlF:56,growlLp:2100,yelpF:600,whineF:720,vol:.85},
   coats:[{id:'weiss',name:'Weiß',w:1,base:'#e6e2d8',light:'#f6f4ee',shade:'#bcb6a8',dark:'#8a8478',saddle:'#d2ccc0',belly:'#f4f0e8',tailTip:'#d8d2c6'}]},
- {id:'schwarzwolf',wolf:true,cm0:80,kg0:48,name:'Schwarzer Wolf',soll:66,active:true,look:'großer schwarzer Waldwolf: hochbeinig und kräftig, schwarzer Pelz mit grauem Schimmer an Kehle und Bauch, gelbe Augen, große Stehohren, buschige Rute',fur:'Schwarz, an Kehle und Bauch grau überhaucht',offs:{kraft:2,biss:6,tempo:8,ausdauer:8,zaeh:2,wild:6,mut:2},
-  // Stufe 5 (fünf Totenköpfe). Eigene Gestalt: Wolf in Schwarz, größer und schwerer als der graue Wolf; die gelben Augen leuchten im Dunkel
+ {id:'schwarzwolf',wolf:true,cm0:80,kg0:48,name:'Schwarzer Wolf',active:true,look:'großer schwarzer Waldwolf: hochbeinig und kräftig, schwarzer Pelz mit grauem Schimmer an Kehle und Bauch, gelbe Augen, große Stehohren, buschige Rute',fur:'Schwarz, an Kehle und Bauch grau überhaucht',werte:{kraft:72,biss:88,tempo:74,ausdauer:88,zaeh:70,wild:90,mut:68},
+  // Eigene Gestalt: Wolf in Schwarz, größer und schwerer als der graue Wolf; die gelben Augen leuchten im Dunkel
   shape:{head:'wo',wolfEar:1,wolfMz:1.04,L:32,leg:1.2,thick:.88,chest:1,tuck:1.8,withers:.5,crest:8,dew:3.4,tailW:5,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.9,hindW:.94,neckX:1.4,neckY:-.6,ruff:1,saddle:1,mouth:{x:12.9,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
   sound:{barkF:130,barkF1:[680,500,400],barkF2:[1160,920,760],barkLen:.24,barkRate:.06,huff:.45,growlF:52,growlLp:2000,yelpF:580,whineF:700,vol:.9},
   coats:[{id:'schwarz',name:'Schwarz',w:1,base:'#2e2c2a',light:'#4c4844',shade:'#1e1c1b',dark:'#121110',saddle:'#1a1817',belly:'#55504a',tailTip:'#141312'}]},
- {id:'apenninwolf',wolf:true,cm0:70,kg0:32,name:'Apenninwolf',soll:60,active:true,look:'Italienischer Wolf: kleiner und schlanker als der Nordwolf, graubraun mit rötlichem Hauch, dunkler Sattel, schwarzer Strich vorn an den Vorderläufen, helle Maske',fur:'Graubraun mit rötlichem Hauch, dunkler Sattel, helle Kehle',offs:{kraft:-4,biss:5,tempo:10,ausdauer:10,zaeh:-1,wild:5,mut:-1},
-  // Stufe 4 (vier Totenköpfe). Eigene Gestalt: der Wolf Roms – kleiner, schmaler und brauner als der graue Wolf, etwas kürzere Ohren
+ {id:'apenninwolf',wolf:true,cm0:70,kg0:32,name:'Apenninwolf',active:true,look:'Italienischer Wolf: kleiner und schlanker als der Nordwolf, graubraun mit rötlichem Hauch, dunkler Sattel, schwarzer Strich vorn an den Vorderläufen, helle Maske',fur:'Graubraun mit rötlichem Hauch, dunkler Sattel, helle Kehle',werte:{kraft:66,biss:86,tempo:78,ausdauer:90,zaeh:64,wild:88,mut:66},
+  // Eigene Gestalt: der Wolf Roms – kleiner, schmaler und brauner als der graue Wolf, etwas kürzere Ohren
   shape:{head:'wo',wolfEar:.9,wolfMz:.98,L:30,leg:1.16,thick:.78,chest:.9,tuck:2,withers:.3,crest:7.6,dew:3,tailW:4.4,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.84,hindW:.88,neckX:1.4,neckY:-.6,ruff:1,saddle:1,mouth:{x:12.4,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
   sound:{barkF:156,barkF1:[780,580,440],barkF2:[1300,1020,840],barkLen:.2,barkRate:.08,huff:.4,growlF:62,growlLp:2300,yelpF:660,whineF:780,vol:.8},
   coats:[{id:'graubraun',name:'Graubraun',w:1,base:'#94826a',light:'#b8a688',shade:'#6a5c4a',dark:'#3e352a',saddle:'#4c4236',belly:'#d8cab0'}]},
- {id:'aethiopwolf',wolf:true,bal:1.08,cm0:60,kg0:16,name:'Äthiopischer Wolf',soll:56,active:true,look:'roter Wolf aus dem Hochland Aethiopias: schlank und hochbeinig, leuchtend rotes Fell, weiße Kehle und Brust, sehr lange schmale Schnauze, große spitze Ohren, buschige Rute mit schwarzer Spitze',fur:'Rot mit weißer Kehle, Brust und Innenseite der Läufe, schwarze Rutenspitze',offs:{kraft:-6,biss:4,tempo:12,ausdauer:8,zaeh:-3,wild:5,mut:0},
-  // Stufe 4 (vier Totenköpfe). Eigene Gestalt: kleiner roter Wolf wie ein großer Fuchs, sehr lange Schnauze und große Ohren, weiße Kehle, schwarze Rutenspitze
+ {id:'aethiopwolf',wolf:true,cm0:60,kg0:16,name:'Äthiopischer Wolf',active:true,look:'roter Wolf aus dem Hochland Aethiopias: schlank und hochbeinig, leuchtend rotes Fell, weiße Kehle und Brust, sehr lange schmale Schnauze, große spitze Ohren, buschige Rute mit schwarzer Spitze',fur:'Rot mit weißer Kehle, Brust und Innenseite der Läufe, schwarze Rutenspitze',werte:{kraft:58,biss:86,tempo:82,ausdauer:88,zaeh:62,wild:90,mut:70},
+  // Eigene Gestalt: kleiner roter Wolf wie ein großer Fuchs, sehr lange Schnauze und große Ohren, weiße Kehle, schwarze Rutenspitze
   shape:{head:'wo',wolfEar:1.22,wolfMz:1.22,L:29,leg:1.22,thick:.72,chest:.8,tuck:2.2,withers:.2,crest:7.2,dew:2.4,tailW:4.2,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.78,hindW:.84,neckX:1.6,neckY:-1,ruff:0,saddle:.5,mouth:{x:14.2,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
   sound:{barkF:190,barkF1:[860,650,500],barkF2:[1440,1130,920],barkLen:.18,barkRate:.2,huff:.3,growlF:70,growlLp:2500,yelpF:720,whineF:860,vol:.75},
   coats:[{id:'rot',name:'Rot',w:1,base:'#b8642e',light:'#d4844c',shade:'#8a4620',dark:'#4e2812',saddle:'#9e5226',belly:'#f0e6d6',tailTip:'#1c1814'}]},
- {id:'owtscharka',cm0:72,kg0:75,name:'Kaukasischer Owtscharka',soll:69,active:true,look:'riesig, bärenhaft, dichtes langes Fell mit Mähne, breiter Kopf, kurze Ohren (meist kupiert), buschige Sichelrute',fur:'Grau (wolfsfarben), Falb oder Rot, oft helle Abzeichen',offs:{kraft:7,biss:5,tempo:-6,ausdauer:3,zaeh:8,wild:3,mut:6},
-  // Stufe 5,8 (Zielgegner: Legende). Eigene Gestalt: Herdenschutzhund aus dem Kaukasus, Wolfsjäger. Massig, dichtes langes Fell (Zotteln, Mähne, Hosen), dicke Läufe, buschige Rute leicht sichelförmig, breiter Bärenkopf
+ {id:'owtscharka',cm0:72,kg0:75,name:'Kaukasischer Owtscharka',active:true,look:'riesig, bärenhaft, dichtes langes Fell mit Mähne, breiter Kopf, kurze Ohren (meist kupiert), buschige Sichelrute',fur:'Grau (wolfsfarben), Falb oder Rot, oft helle Abzeichen',werte:{kraft:80,biss:86,tempo:44,ausdauer:66,zaeh:80,wild:66,mut:74},
+  // Eigene Gestalt: Herdenschutzhund aus dem Kaukasus, Wolfsjäger. Massig, dichtes langes Fell (Zotteln, Mähne, Hosen), dicke Läufe, buschige Rute leicht sichelförmig, breiter Bärenkopf
   shape:{head:'ow',L:30.5,leg:1,thick:1.16,chest:1.1,tuck:.3,withers:.5,crest:11.2,dew:6,tailW:5.4,tailSeg:2.5,tailUp:.15,tailCurl:.05,bushy:1,legW:1.18,hindW:1.14,neckX:.2,neckY:-.4,rough:1,ruff:1,mouth:{x:11.2,y:2},eye:{x:4.3,y:-4.4},whiteChest:.25,earCut:.7,collar:.3},
   // Lautpaket: sehr tief und dröhnend, warnt oft (Wachhund), Knurren tief und lang
   sound:{barkF:108,barkF1:[600,410,330],barkF2:[1020,800,680],barkLen:.4,barkRate:.5,huff:.5,growlF:47,growlLp:1650,yelpF:420,whineF:550,vol:.9},
@@ -56,8 +59,8 @@ const BREEDS=[
    {id:'grau',name:'Grau (wolfsfarben)',w:.5,base:'#8d8478',light:'#b7ad9e',shade:'#625a50',dark:'#3a342e'},
    {id:'falb',name:'Falb',w:.3,base:'#b8935e',light:'#d6b585',shade:'#8a6a40',dark:'#544028'},
    {id:'rot',name:'Rot',w:.2,base:'#9a5a34',light:'#bb7a4e',shade:'#6c3c20',dark:'#3e2212'}]},
- {id:'tosa',cm0:66,kg0:68,name:'Tosa Inu',soll:67,active:true,look:'japanischer Kampfhund, muskulös, kurzes glattes Fell, breiter Kopf mit deutlichem Stop, kleine hoch angesetzte Hängeohren, Wamme, dicke hängende Rute',fur:'Rot, auch Falb, Schwarz oder gestromt',offs:{kraft:6,biss:6,tempo:-4,ausdauer:0,zaeh:6,wild:2,mut:7},
-  // Stufe 5,5 (Zielgegner: Legende). Eigene Gestalt: Ringkampfhund aus Tosa (Japan), kämpft stumm. Muskulös und gerade, breite tiefe Brust, Wamme, kräftige Läufe, Rute am Ansatz dick und lang hängend
+ {id:'tosa',cm0:66,kg0:68,name:'Tosa Inu',active:true,look:'japanischer Kampfhund, muskulös, kurzes glattes Fell, breiter Kopf mit deutlichem Stop, kleine hoch angesetzte Hängeohren, Wamme, dicke hängende Rute',fur:'Rot, auch Falb, Schwarz oder gestromt',werte:{kraft:76,biss:73,tempo:48,ausdauer:54,zaeh:79,wild:52,mut:85},
+  // Eigene Gestalt: Ringkampfhund aus Tosa (Japan), kämpft stumm. Muskulös und gerade, breite tiefe Brust, Wamme, kräftige Läufe, Rute am Ansatz dick und lang hängend
   shape:{head:'to',L:31,leg:1.03,thick:1.02,chest:1.1,tuck:1,withers:.6,crest:10.4,dew:6,tailW:5,tailSeg:2.6,tailUp:.25,tailCurl:-.04,legW:1.1,hindW:1.06,neckX:.3,neckY:-.6,mouth:{x:11.6,y:2},eye:{x:4.4,y:-4.6},whiteChest:.25,earCut:0,collar:.5},
   // Lautpaket: kämpft stumm, bellt sehr selten, tief; Knurren tief
   sound:{barkF:116,barkF1:[620,430,340],barkF2:[1040,820,700],barkLen:.34,barkRate:.12,huff:.45,growlF:50,growlLp:1750,yelpF:450,whineF:580,vol:.85},
@@ -66,14 +69,14 @@ const BREEDS=[
    {id:'falb',name:'Falb',w:.18,base:'#c09862',light:'#dab886',shade:'#906c40',dark:'#5a4226'},
    {id:'gestromt',name:'Gestromt',w:.12,base:'#8a5a36',light:'#a8764e',shade:'#603c22',dark:'#3a2414',stripe:'#24160c'},
    {id:'schwarz',name:'Schwarz',w:.1,base:'#2e2824',light:'#4a423c',shade:'#1e1a17',dark:'#110e0c'}]},
- {id:'molosser',cm0:78,kg0:85,name:'Molosser',soll:66,active:true,look:'massig, riesiger Schädel mit Falten, schwere Hängelefzen, tiefe Wamme, Hängeohren (oft kupiert), Stachelhalsband',fur:'Dunkel gestromt',offs:{kraft:4,biss:5,tempo:-6,ausdauer:-3,zaeh:4,wild:2,mut:4},
-  // Stufe 5,3 (Zielgegner: Champion). Eigene Gestalt: Kriegshund aus Epirus, schwerer als der Mastiff, breite Brust, dicker Nacken, tiefe Wamme, kräftige Läufe, dicke Rute
+ {id:'molosser',cm0:78,kg0:85,name:'Molosser',active:true,look:'massig, riesiger Schädel mit Falten, schwere Hängelefzen, tiefe Wamme, Hängeohren (oft kupiert), Stachelhalsband',fur:'Dunkel gestromt',werte:{kraft:85,biss:79,tempo:42,ausdauer:46,zaeh:79,wild:64,mut:70},
+  // Eigene Gestalt: Kriegshund aus Epirus, schwerer als der Mastiff, breite Brust, dicker Nacken, tiefe Wamme, kräftige Läufe, dicke Rute
   shape:{head:'mo',L:31.5,leg:1.02,thick:1.1,chest:1.5,tuck:.8,withers:.8,crest:10.8,dew:7,tailW:5,tailSeg:2.4,tailUp:.1,tailCurl:-.06,legW:1.14,hindW:1.08,neckX:.2,neckY:-.2,mouth:{x:11.8,y:2.2},eye:{x:4.4,y:-4.3},whiteChest:.12,earCut:.35,collar:.9},
   // Lautpaket: sehr tief und dröhnend, bellt selten, schnaubt viel, Knurren sehr tief
   sound:{barkF:104,barkF1:[590,400,320],barkF2:[1000,790,670],barkLen:.42,barkRate:.22,huff:.85,growlF:46,growlLp:1600,yelpF:410,whineF:540,vol:.9},
   coats:[{id:'gestromt',name:'Dunkel gestromt',w:1,base:'#5e4632',light:'#7c6046',shade:'#3e2d20',dark:'#241a12',stripe:'#1a120c'}]},
- {id:'fila',cm0:70,kg0:56,name:'Fila Brasileiro',soll:64,active:true,look:'groß, lose Haut, tiefe Wamme bis zur Brust, Kruppe höher als der Widerrist, birnenförmiger Kopf, schwere Hängelefzen, große V-Hängeohren',fur:'Falb oder gestromt, oft schwarze Maske; auch Schwarz',offs:{kraft:4,biss:5,tempo:0,ausdauer:2,zaeh:6,wild:7,mut:6},
-  // Stufe 5 (Zielgegner: Champion). Eigene Gestalt: brasilianischer Treib- und Wachhund (Fährte, Festhalten), misstrauisch gegen Fremde. Lose Haut, sehr tiefe Wamme, Widerrist tiefer als die Kruppe, kräftige Hinterhand, Rute breit am Ansatz, hängt, Spitze leicht gebogen
+ {id:'fila',cm0:70,kg0:56,name:'Fila Brasileiro',active:true,look:'groß, lose Haut, tiefe Wamme bis zur Brust, Kruppe höher als der Widerrist, birnenförmiger Kopf, schwere Hängelefzen, große V-Hängeohren',fur:'Falb oder gestromt, oft schwarze Maske; auch Schwarz',werte:{kraft:67,biss:70,tempo:56,ausdauer:60,zaeh:73,wild:79,mut:76},
+  // Eigene Gestalt: brasilianischer Treib- und Wachhund (Fährte, Festhalten), misstrauisch gegen Fremde. Lose Haut, sehr tiefe Wamme, Widerrist tiefer als die Kruppe, kräftige Hinterhand, Rute breit am Ansatz, hängt, Spitze leicht gebogen
   shape:{head:'fi',L:31.5,leg:1.05,thick:.98,chest:1.1,tuck:.9,withers:-.5,crest:9.4,dew:7.6,tailW:5,tailSeg:2.6,tailUp:.35,tailCurl:.03,legW:1.04,hindW:1.08,neckX:.6,neckY:.5,mouth:{x:12,y:2.4},eye:{x:4.3,y:-4.3},whiteChest:.2,earCut:0,collar:.3,whiteFeet:.15},
   // Lautpaket: tief, dumpf und drohend, bellt mäßig, Knurren tief und lang
   sound:{barkF:114,barkF1:[600,420,330],barkF2:[1020,800,680],barkLen:.38,barkRate:.35,huff:.6,growlF:49,growlLp:1700,yelpF:440,whineF:570,vol:.88},
@@ -81,8 +84,8 @@ const BREEDS=[
    {id:'falb',name:'Falb',w:.5,base:'#b8874e',light:'#d4a672',shade:'#8a6034',dark:'#563a1e'},
    {id:'gestromt',name:'Gestromt',w:.35,base:'#8e6640',light:'#ac8258',shade:'#64462a',dark:'#3c2a18',stripe:'#2a1c10'},
    {id:'schwarz',name:'Schwarz',w:.15,base:'#2c2622',light:'#463e38',shade:'#1c1815',dark:'#100d0b'}]},
- {id:'dogge',cm0:82,kg0:68,name:'Deutsche Dogge',soll:63,active:true,look:'riesig und elegant, sehr hochbeinig, kurzes glattes Fell, langer rechteckiger Kopf mit deutlichem Stop, Lefzen, Ohren oft kupiert (hohe Stehohren), lange dünne Rute',fur:'Gelb oder gestromt mit schwarzer Maske, Schwarz, Blau oder Harlekin (weiß mit gerissenen schwarzen Platten)',offs:{kraft:4,biss:3,tempo:2,ausdauer:-2,zaeh:2,wild:0,mut:4},
-  // Stufe 4,8 (Zielgegner: Champion). Eigene Gestalt: deutscher Saupacker und Hatzrüde, der „Apollo unter den Hunden“. Sehr groß und hochbeinig, quadratisch, tiefe Brust, aufgezogener Bauch, langer Hals, Kopf hoch getragen; Harlekin über Platten (patch)
+ {id:'dogge',cm0:82,kg0:68,name:'Deutsche Dogge',active:true,look:'riesig und elegant, sehr hochbeinig, kurzes glattes Fell, langer rechteckiger Kopf mit deutlichem Stop, Lefzen, Ohren oft kupiert (hohe Stehohren), lange dünne Rute',fur:'Gelb oder gestromt mit schwarzer Maske, Schwarz, Blau oder Harlekin (weiß mit gerissenen schwarzen Platten)',werte:{kraft:67,biss:58,tempo:60,ausdauer:46,zaeh:52,wild:37,mut:58},
+  // Eigene Gestalt: deutscher Saupacker und Hatzrüde, der „Apollo unter den Hunden“. Sehr groß und hochbeinig, quadratisch, tiefe Brust, aufgezogener Bauch, langer Hals, Kopf hoch getragen; Harlekin über Platten (patch)
   shape:{head:'dd',L:32,leg:1.2,thick:.94,chest:1.4,tuck:2,withers:.7,crest:9.4,dew:3.6,tailW:3.8,tailSeg:3,tailUp:-.15,tailCurl:.04,legW:1.04,hindW:1.04,neckX:1.8,neckY:-2.2,piebald:1,mouth:{x:13.2,y:2},eye:{x:4.3,y:-4.6},whiteChest:.12,earCut:.55,collar:.5},
   // Lautpaket: sehr tief, dröhnend und hallend, bellt selten, Knurren tief
   sound:{barkF:108,barkF1:[600,420,330],barkF2:[1020,800,680],barkLen:.42,barkRate:.2,huff:.45,growlF:48,growlLp:1700,yelpF:430,whineF:560,vol:.9},
@@ -92,20 +95,20 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz',w:.2,base:'#262321',light:'#423c38',shade:'#181615',dark:'#0e0d0c'},
    {id:'blau',name:'Blau',w:.15,base:'#5a606a',light:'#787e88',shade:'#3e434c',dark:'#24272e'},
    {id:'harlekin',name:'Harlekin',w:.15,base:'#ece8e0',light:'#faf8f2',shade:'#c4beb2',dark:'#9a9488',patch:'#1e1c1a',patchHi:'#3a3632'}]},
- {id:'dogo',cm0:64,kg0:42,name:'Dogo Argentino',soll:62,active:true,look:'reinweiß, athletisch und muskulös, kurzes glattes Fell, breiter gewölbter Schädel, kräftige Schnauze, enge Lefzen, Ohren meist kupiert (Stehohren), lange tief getragene Rute',fur:'Reinweiß, rosa Haut an Lefzen und Ohren, selten ein dunkler Fleck am Kopf',offs:{kraft:3,biss:6,tempo:4,ausdauer:4,zaeh:2,wild:6,mut:7},
-  // Stufe 4,7 (Zielgegner: Veteran). Eigene Gestalt: argentinischer Großwildjäger (Puma, Wildschwein). Athletisch, tiefe Brust, deutliche Taille, muskulöser Nacken, kräftige Läufe, lange dünne Rute tief getragen
+ {id:'dogo',cm0:64,kg0:42,name:'Dogo Argentino',active:true,look:'reinweiß, athletisch und muskulös, kurzes glattes Fell, breiter gewölbter Schädel, kräftige Schnauze, enge Lefzen, Ohren meist kupiert (Stehohren), lange tief getragene Rute',fur:'Reinweiß, rosa Haut an Lefzen und Ohren, selten ein dunkler Fleck am Kopf',werte:{kraft:64,biss:76,tempo:64,ausdauer:66,zaeh:64,wild:73,mut:82},
+  // Eigene Gestalt: argentinischer Großwildjäger (Puma, Wildschwein). Athletisch, tiefe Brust, deutliche Taille, muskulöser Nacken, kräftige Läufe, lange dünne Rute tief getragen
   shape:{head:'dg',L:30,leg:1.06,thick:.92,chest:1.1,tuck:1.7,withers:.7,crest:10.2,dew:3.6,tailW:3.8,tailSeg:2.6,tailUp:.15,tailCurl:-.04,legW:1.02,hindW:1.04,neckX:.6,neckY:-.8,mouth:{x:11.4,y:1.8},eye:{x:4.4,y:-4.6},whiteChest:0,earCut:.8,collar:.3},
   // Lautpaket: mitteltief, kräftig und hart, bellt selten (jagt stumm), Knurren rau
   sound:{barkF:132,barkF1:[700,510,400],barkF2:[1180,920,760],barkLen:.3,barkRate:.25,huff:.3,growlF:56,growlLp:2100,yelpF:500,whineF:640,vol:.88},
   coats:[{id:'weiss',name:'Reinweiß',w:1,base:'#e4ded2',light:'#f4f0e8',shade:'#b8b0a2',dark:'#8c8476',patch:'#2a2622',patchHi:'#48413a'}]},
- {id:'alaunt',cm0:72,kg0:60,name:'Alaunt',soll:61,active:true,look:'kurzhaarig, athletisch, kurze breite Schnauze, gestutzte Stehohren',fur:'Weiß mit schwarzen Platten (gescheckt), oft schwarzer Kopffleck',offs:{kraft:2,biss:5,tempo:4,ausdauer:0,zaeh:0,wild:6,mut:3},
-  // Stufe 4,5 (Zielgegner: Veteran). Eigene Gestalt: Kampf- und Hetzhund der Alanen, athletisch zwischen Mastiff und Windhund, tiefe Brust, Taille, muskulöser Nacken, kurze breite Schnauze, Ohren fast immer gestutzt
+ {id:'alaunt',cm0:72,kg0:60,name:'Alaunt',active:true,look:'kurzhaarig, athletisch, kurze breite Schnauze, gestutzte Stehohren',fur:'Weiß mit schwarzen Platten (gescheckt), oft schwarzer Kopffleck',werte:{kraft:61,biss:67,tempo:70,ausdauer:64,zaeh:58,wild:70,mut:67},
+  // Eigene Gestalt: Kampf- und Hetzhund der Alanen, athletisch zwischen Mastiff und Windhund, tiefe Brust, Taille, muskulöser Nacken, kurze breite Schnauze, Ohren fast immer gestutzt
   shape:{head:'al',L:30,leg:1.07,thick:.94,chest:1.2,tuck:1.9,withers:.6,crest:10,dew:4,tailW:3.6,tailSeg:2.5,tailUp:.05,tailCurl:-.08,legW:1.02,hindW:1.04,neckX:.7,neckY:-1.2,piebald:1,mouth:{x:11.2,y:1.7},eye:{x:4.4,y:-4.6},whiteChest:0,earCut:.85},
   // Lautpaket: mitteltief, hart und kräftig, bellt oft (Hetz- und Kampfhund), wenig Schnauben, Knurren rau
   sound:{barkF:134,barkF1:[720,520,400],barkF2:[1200,940,770],barkLen:.3,barkRate:.65,huff:.25,growlF:56,growlLp:2100,yelpF:500,whineF:640,vol:.9},
   coats:[{id:'gescheckt',name:'Weiß, schwarz gescheckt',w:1,base:'#d8d2c4',light:'#efe9dc',shade:'#a8a194',dark:'#2a2622',patch:'#2a2622',patchHi:'#48413a'}]},
- {id:'presa',cm0:62,kg0:50,name:'Presa Canario',soll:60,active:true,look:'kompakt und rechteckig, breite Brust, dicker Nacken, massiger würfelförmiger Kopf, kurze breite Schnauze, schwarze Maske, Ohren oft kupiert (sonst Rosenohren)',fur:'Gestromt oder Falb, immer schwarze Maske, manchmal weißer Brustfleck',offs:{kraft:5,biss:6,tempo:0,ausdauer:2,zaeh:5,wild:5,mut:6},
-  // Stufe 4,3 (Zielgegner: Veteran). Eigene Gestalt: Hofhund und Viehpacker der Kanaren. Länger als hoch, breite tiefe Brust, wenig Taille, sehr dicker Nacken, kräftige Läufe, dicke mittellange Rute hängend
+ {id:'presa',cm0:62,kg0:50,name:'Presa Canario',active:true,look:'kompakt und rechteckig, breite Brust, dicker Nacken, massiger würfelförmiger Kopf, kurze breite Schnauze, schwarze Maske, Ohren oft kupiert (sonst Rosenohren)',fur:'Gestromt oder Falb, immer schwarze Maske, manchmal weißer Brustfleck',werte:{kraft:73,biss:79,tempo:54,ausdauer:56,zaeh:73,wild:73,mut:82},
+  // Eigene Gestalt: Hofhund und Viehpacker der Kanaren. Länger als hoch, breite tiefe Brust, wenig Taille, sehr dicker Nacken, kräftige Läufe, dicke mittellange Rute hängend
   shape:{head:'pc',L:31.5,leg:.98,thick:1.04,chest:1,tuck:.9,withers:.4,crest:10.6,dew:4.6,tailW:4.6,tailSeg:2.5,tailUp:.2,tailCurl:-.05,legW:1.1,hindW:1.08,neckX:.2,neckY:-.3,mouth:{x:10.8,y:2},eye:{x:4.4,y:-4.6},whiteChest:.3,earCut:.55,collar:.4},
   // Lautpaket: tief, kurz und hart, bellt mäßig, Knurren tief und rau
   sound:{barkF:124,barkF1:[660,470,370],barkF2:[1120,880,730],barkLen:.3,barkRate:.4,huff:.5,growlF:52,growlLp:1850,yelpF:470,whineF:600,vol:.88},
@@ -113,8 +116,8 @@ const BREEDS=[
    {id:'gestromt',name:'Gestromt',w:.5,base:'#8a6440',light:'#a88058',shade:'#62452a',dark:'#3a2818',stripe:'#24180e'},
    {id:'falb',name:'Falb',w:.3,base:'#bc9460',light:'#d8b484',shade:'#8c6a3e',dark:'#563f24'},
    {id:'dunkel',name:'Dunkel gestromt',w:.2,base:'#4a3a2c',light:'#64503e',shade:'#30251c',dark:'#1c1610',stripe:'#120d09'}]},
- {id:'boerboel',cm0:65,kg0:70,name:'Boerboel',soll:58,active:true,look:'blockig und sehr muskulös, starke Knochen, breite Brust, kurzer Rücken, breiter kantiger Kopf, fleischige Lefzen, hoch angesetzte V-Hängeohren',fur:'Falb, Rot, Braun oder gestromt, schwarze Maske',offs:{kraft:7,biss:5,tempo:-2,ausdauer:0,zaeh:6,wild:3,mut:6},
-  // Stufe 4 (Zielgegner: Veteran). Eigene Gestalt: Farm- und Wachhund der Buren (Südafrika). Blockig, kurzer Rücken, breite tiefe Brust, sehr dicker Nacken, starke Knochen, kräftige Hinterhand, dicke Rute hängend
+ {id:'boerboel',cm0:65,kg0:70,name:'Boerboel',active:true,look:'blockig und sehr muskulös, starke Knochen, breite Brust, kurzer Rücken, breiter kantiger Kopf, fleischige Lefzen, hoch angesetzte V-Hängeohren',fur:'Falb, Rot, Braun oder gestromt, schwarze Maske',werte:{kraft:82,biss:79,tempo:48,ausdauer:54,zaeh:76,wild:58,mut:79},
+  // Eigene Gestalt: Farm- und Wachhund der Buren (Südafrika). Blockig, kurzer Rücken, breite tiefe Brust, sehr dicker Nacken, starke Knochen, kräftige Hinterhand, dicke Rute hängend
   shape:{head:'bo',L:30,leg:1,thick:1.1,chest:1.1,tuck:.8,withers:.6,crest:11,dew:4.8,tailW:4.8,tailSeg:2.5,tailUp:.2,tailCurl:-.05,legW:1.16,hindW:1.12,neckX:.2,neckY:-.4,mouth:{x:11.2,y:2},eye:{x:4.4,y:-4.5},whiteChest:.15,earCut:0,collar:.4},
   // Lautpaket: tief und voll, bellt mäßig (Wachhund), Knurren tief
   sound:{barkF:118,barkF1:[630,440,350],barkF2:[1060,830,700],barkLen:.34,barkRate:.38,huff:.55,growlF:50,growlLp:1750,yelpF:450,whineF:580,vol:.88},
@@ -123,14 +126,14 @@ const BREEDS=[
    {id:'rot',name:'Rot',w:.3,base:'#a86a3a',light:'#c48856',shade:'#7a4a24',dark:'#4a2c14'},
    {id:'gestromt',name:'Gestromt',w:.15,base:'#94704a',light:'#b28c62',shade:'#684e32',dark:'#3e2e1c',stripe:'#281c10'},
    {id:'braun',name:'Braun',w:.1,base:'#6e4a30',light:'#8a6246',shade:'#4c321e',dark:'#2c1c10'}]},
- {id:'baerenbeisser',bal:1.07,cm0:68,kg0:55,name:'Bärenbeißer',soll:57,active:true,look:'gedrungen, massiger Kiefer, Vorbiss, kurze Schnauze, Rosenohren (oft kupiert)',fur:'Rotbraun, weiße Brust, schwarze Maske',offs:{kraft:5,biss:8,tempo:-2,ausdauer:-2,zaeh:4,wild:4,mut:4},
-  // Stufe 4 (Zielgegner: Veteran). Eigene Gestalt: kürzerer Rumpf, tiefe Brust mit Taille, breiter Kopf, kurze Schnauze, Unterkiefer steht vor
+ {id:'baerenbeisser',cm0:68,kg0:55,name:'Bärenbeißer',active:true,look:'gedrungen, massiger Kiefer, Vorbiss, kurze Schnauze, Rosenohren (oft kupiert)',fur:'Rotbraun, weiße Brust, schwarze Maske',werte:{kraft:67,biss:76,tempo:52,ausdauer:52,zaeh:67,wild:64,mut:70},
+  // Eigene Gestalt: kürzerer Rumpf, tiefe Brust mit Taille, breiter Kopf, kurze Schnauze, Unterkiefer steht vor
   shape:{head:'bb',L:28,chest:1.3,tuck:1.1,withers:.8,crest:9.6,dew:4.4,tailW:3.6,tailSeg:2.2,tailUp:.35,legW:1.08,mouth:{x:10.4,y:1.8},eye:{x:4.3,y:-4.6},whiteChest:.92,earCut:.45,whiteFeet:.4},
   // Lautpaket: mitteltief, hart und kurz, bellt öfter als der Mastiff, Knurren rauer
   sound:{barkF:138,barkF1:[700,500,390],barkF2:[1180,920,760],barkLen:.29,barkRate:.55,huff:.35,growlF:58,growlLp:2000,yelpF:500,whineF:640,vol:.9},
   coats:[{id:'rotbraun',name:'Rotbraun',w:1,base:'#8e4e2c',light:'#ad6a42',shade:'#64341c',dark:'#3e1f10'}]},
- {id:'corso',cm0:64,kg0:46,name:'Cane Corso',soll:56,active:true,look:'athletisch und muskulös, kurzes glattes Fell, breiter Kopf mit eckiger Schnauze, Ohren meist kupiert (Dreiecke), dicke Rute',fur:'Schwarz, Grau (Blei), Falb oder gestromt; Falb mit dunkler Maske',offs:{kraft:4,biss:5,tempo:2,ausdauer:2,zaeh:4,wild:4,mut:6},
-  // Stufe 3,7 (Zielgegner: Veteran). Eigene Gestalt: italienischer Treib- und Wachhund (Nachfahre der römischen Molosser). Athletisch, etwas länger als hoch, tiefe Brust, deutliche Taille, kräftiger Nacken, gerader Rücken
+ {id:'corso',cm0:64,kg0:46,name:'Cane Corso',active:true,look:'athletisch und muskulös, kurzes glattes Fell, breiter Kopf mit eckiger Schnauze, Ohren meist kupiert (Dreiecke), dicke Rute',fur:'Schwarz, Grau (Blei), Falb oder gestromt; Falb mit dunkler Maske',werte:{kraft:67,biss:79,tempo:58,ausdauer:60,zaeh:67,wild:64,mut:76},
+  // Eigene Gestalt: italienischer Treib- und Wachhund (Nachfahre der römischen Molosser). Athletisch, etwas länger als hoch, tiefe Brust, deutliche Taille, kräftiger Nacken, gerader Rücken
   shape:{head:'co',L:30.5,leg:1.05,thick:.98,chest:1.1,tuck:1.4,withers:.6,crest:10.4,dew:3.8,tailW:4.2,tailSeg:2.6,tailUp:.1,tailCurl:-.04,legW:1.06,hindW:1.06,neckX:.5,neckY:-.8,mouth:{x:11.4,y:2},eye:{x:4.4,y:-4.6},whiteChest:.15,earCut:.7,collar:.4},
   // Lautpaket: tief und kräftig, bellt mäßig, Knurren tief
   sound:{barkF:126,barkF1:[660,470,370],barkF2:[1120,880,730],barkLen:.32,barkRate:.38,huff:.4,growlF:52,growlLp:1850,yelpF:470,whineF:600,vol:.88},
@@ -139,8 +142,8 @@ const BREEDS=[
    {id:'grau',name:'Grau (Blei)',w:.3,base:'#5c5c5e',light:'#7c7c7e',shade:'#3e3e40',dark:'#242426'},
    {id:'gestromt',name:'Gestromt',w:.2,base:'#6a5038',light:'#846850',shade:'#4a3624',dark:'#2c2016',stripe:'#1a120c'},
    {id:'falb',name:'Falb',w:.15,base:'#b48c5c',light:'#d0aa7c',shade:'#86643c',dark:'#523c22'}]},
- {id:'leonberger',cm0:76,kg0:62,name:'Leonberger',soll:55,active:true,look:'groß und kräftig, langes wasserabweisendes Fell, Löwenmähne an Hals und Brust, schwarze Maske, Hängeohren, buschige hängende Rute, Hosen an den Hinterläufen',fur:'Löwengelb, Rot, Rotbraun oder Sand, oft schwarze Haarspitzen, immer schwarze Maske',offs:{kraft:4,biss:2,tempo:0,ausdauer:4,zaeh:5,wild:-2,mut:4},
-  // Stufe 3,5 (Zielgegner: Veteran). Eigene Gestalt: Zuchtziel war ein „Löwe“ als Stadtwappen von Leonberg. Groß, kräftig, langes Fell (rough), Mähne (ruff), buschige tief hängende Rute (bushy)
+ {id:'leonberger',cm0:76,kg0:62,name:'Leonberger',active:true,look:'groß und kräftig, langes wasserabweisendes Fell, Löwenmähne an Hals und Brust, schwarze Maske, Hängeohren, buschige hängende Rute, Hosen an den Hinterläufen',fur:'Löwengelb, Rot, Rotbraun oder Sand, oft schwarze Haarspitzen, immer schwarze Maske',werte:{kraft:64,biss:52,tempo:46,ausdauer:60,zaeh:61,wild:22,mut:55},
+  // Eigene Gestalt: Zuchtziel war ein „Löwe“ als Stadtwappen von Leonberg. Groß, kräftig, langes Fell (rough), Mähne (ruff), buschige tief hängende Rute (bushy)
   shape:{head:'lb',L:32,leg:1.06,thick:1.06,chest:1.1,tuck:.8,withers:.5,crest:10.8,dew:4.6,tailW:5.2,tailSeg:2.7,tailUp:.4,tailCurl:.06,bushy:1,legW:1.08,hindW:1.08,neckX:.8,neckY:-1,rough:1,ruff:1,mouth:{x:12,y:1.8},eye:{x:4.3,y:-4.5},whiteChest:.15,earCut:0,collar:.35},
   // Lautpaket: tief und voll, bellt mäßig, Knurren tief
   sound:{barkF:118,barkF1:[620,440,350],barkF2:[1040,820,700],barkLen:.38,barkRate:.3,huff:.4,growlF:50,growlLp:1700,yelpF:450,whineF:580,vol:.86},
@@ -149,8 +152,8 @@ const BREEDS=[
    {id:'rot',name:'Rot',w:.25,base:'#a8603a',light:'#c47e56',shade:'#7a4224',dark:'#2a1810'},
    {id:'rotbraun',name:'Rotbraun',w:.2,base:'#8a4e2e',light:'#a86a46',shade:'#62361e',dark:'#24140c'},
    {id:'sand',name:'Sand',w:.15,base:'#c8aa7a',light:'#dec49a',shade:'#987c50',dark:'#3a2e1e'}]},
- {id:'mastino',cm0:70,kg0:68,name:'Mastino Napoletano',soll:54,active:true,look:'massig und schwer, sehr lose Haut mit tiefen Falten am ganzen Kopf, riesige Wamme in Lagen, schwere Hängelefzen, hängende Augenlider, Ohren oft kupiert',fur:'Grau (Blei), Schwarz, Mahagoni oder Falb',offs:{kraft:6,biss:4,tempo:-8,ausdauer:-4,zaeh:8,wild:0,mut:5},
-  // Stufe 3,3 (Zielgegner: Soldat). Eigene Gestalt: Wachhund aus Neapel, direkter Nachfahre der römischen Molosser. Lang und schwer, sehr tiefe Brust, kaum Taille, lose Hautfalten an Hals und Schultern, riesige Wamme, schwere Knochen, Rute dick und tief getragen
+ {id:'mastino',cm0:70,kg0:68,name:'Mastino Napoletano',active:true,look:'massig und schwer, sehr lose Haut mit tiefen Falten am ganzen Kopf, riesige Wamme in Lagen, schwere Hängelefzen, hängende Augenlider, Ohren oft kupiert',fur:'Grau (Blei), Schwarz, Mahagoni oder Falb',werte:{kraft:76,biss:64,tempo:32,ausdauer:36,zaeh:85,wild:40,mut:70},
+  // Eigene Gestalt: Wachhund aus Neapel, direkter Nachfahre der römischen Molosser. Lang und schwer, sehr tiefe Brust, kaum Taille, lose Hautfalten an Hals und Schultern, riesige Wamme, schwere Knochen, Rute dick und tief getragen
   shape:{head:'mn',L:32,leg:.98,thick:1.12,chest:1.4,tuck:.4,withers:.4,crest:10,dew:8.6,tailW:5,tailSeg:2.5,tailUp:.35,tailCurl:-.03,legW:1.14,hindW:1.08,neckX:.2,neckY:.4,folds:1,mouth:{x:11.6,y:2.8},eye:{x:4.3,y:-4.1},whiteChest:.12,earCut:.5,collar:.3},
   // Lautpaket: sehr tief und dröhnend, bellt selten, schnaubt und sabbert, Knurren sehr tief
   sound:{barkF:102,barkF1:[580,400,320],barkF2:[980,780,660],barkLen:.44,barkRate:.18,huff:.9,growlF:45,growlLp:1550,yelpF:400,whineF:530,vol:.9},
@@ -159,8 +162,8 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz',w:.2,base:'#2a2828',light:'#444040',shade:'#1a1919',dark:'#0e0d0d'},
    {id:'mahagoni',name:'Mahagoni',w:.2,base:'#6e3e2a',light:'#8c5640',shade:'#4c2a1c',dark:'#2c180f'},
    {id:'falb',name:'Falb',w:.1,base:'#a88458',light:'#c4a278',shade:'#7c5e38',dark:'#4a3820'}]},
- {id:'tibet',cm0:66,kg0:58,name:'Tibetdogge',soll:53,active:true,look:'groß, dichtes langes Doppelfell, Löwenmähne um Hals und Schultern, breiter schwerer Kopf, V-Hängeohren, buschige Rute über dem Rücken geringelt',fur:'Schwarz mit Lohfarbe, Schwarz, Gold oder Braun',offs:{kraft:4,biss:3,tempo:-2,ausdauer:4,zaeh:6,wild:2,mut:4},
-  // Stufe 3,2 (Zielgegner: Soldat). Eigene Gestalt: Wachhund der Klöster und Nomaden im Himalaya (Do Khyi). Dichtes langes Fell, mächtige Mähne, Hosen an den Hinterläufen, buschige Rute hoch über dem Rücken geringelt
+ {id:'tibet',cm0:66,kg0:58,name:'Tibetdogge',active:true,look:'groß, dichtes langes Doppelfell, Löwenmähne um Hals und Schultern, breiter schwerer Kopf, V-Hängeohren, buschige Rute über dem Rücken geringelt',fur:'Schwarz mit Lohfarbe, Schwarz, Gold oder Braun',werte:{kraft:64,biss:64,tempo:44,ausdauer:64,zaeh:73,wild:55,mut:64},
+  // Eigene Gestalt: Wachhund der Klöster und Nomaden im Himalaya (Do Khyi). Dichtes langes Fell, mächtige Mähne, Hosen an den Hinterläufen, buschige Rute hoch über dem Rücken geringelt
   shape:{head:'tb',L:30.5,leg:1.02,thick:1.12,chest:1.1,tuck:.4,withers:.5,crest:11.6,dew:5.6,tailW:5.4,tailSeg:2.5,tailUp:-1.5,tailCurl:.3,bushy:1,legW:1.14,hindW:1.12,neckX:.4,neckY:-.8,rough:1,ruff:1,mouth:{x:11.2,y:2},eye:{x:4.3,y:-4.5},whiteChest:.1,earCut:0,collar:.35},
   // Lautpaket: sehr tief, voll und hallend (berühmtes Bellen), bellt mäßig, nachts mehr; Knurren tief
   sound:{barkF:106,barkF1:[600,410,330],barkF2:[1010,800,680],barkLen:.46,barkRate:.4,huff:.4,growlF:48,growlLp:1650,yelpF:430,whineF:560,vol:.9},
@@ -169,22 +172,22 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz',w:.2,base:'#262220',light:'#423a36',shade:'#181514',dark:'#0e0c0b'},
    {id:'gold',name:'Gold',w:.2,base:'#c08a48',light:'#dcaa6c',shade:'#905e2c',dark:'#5a3a18'},
    {id:'braun',name:'Braun',w:.15,base:'#5a3a26',light:'#765038',shade:'#3e2818',dark:'#24160c'}]},
- {id:'mastiff',name:'Alter Mastiff',soll:52,active:true,look:'breiter Kopf, schwere Brust, Hängelefzen, Schlappohren',fur:'Falb, Apricot oder gestromt, schwarze Maske',
-  cm0:76,kg0:80,sound:{barkF:112,barkF1:[620,420,340],barkF2:[1050,820,700],barkLen:.38,barkRate:.25,huff:.75,growlF:50,growlLp:1700,yelpF:430,whineF:560,vol:.85},offs:{kraft:6,biss:4,tempo:-8,ausdauer:-5,zaeh:7,wild:-3,mut:5},
+ {id:'mastiff',name:'Alter Mastiff',active:true,look:'breiter Kopf, schwere Brust, Hängelefzen, Schlappohren',fur:'Falb, Apricot oder gestromt, schwarze Maske',
+  cm0:76,kg0:80,sound:{barkF:112,barkF1:[620,420,340],barkF2:[1050,820,700],barkLen:.38,barkRate:.25,huff:.75,growlF:50,growlLp:1700,yelpF:430,whineF:560,vol:.85},werte:{kraft:79,biss:70,tempo:36,ausdauer:40,zaeh:76,wild:31,mut:67},
   coats:[
    {id:'falb',name:'Falb',w:.58,base:'#c49b5d',light:'#ddbc86',shade:'#946f3f',dark:'#644827'},
    {id:'apricot',name:'Apricot',w:.26,base:'#c4834b',light:'#dea56c',shade:'#925c31',dark:'#61381c'},
    {id:'gestromt',name:'Gestromt',w:.16,base:'#93714a',light:'#b08e5f',shade:'#664b31',dark:'#3d2c1d',stripe:'#2c1f15'}]},
- {id:'bernhardiner',cm0:76,kg0:74,name:'Bernhardiner',soll:51,active:true,look:'sehr groß und massig, mächtiger Kopf, kurze Schnauze, Hängelefzen, dunkle Maske um die Augen, weiße Blesse, Hängeohren, langes oder kurzes Fell, buschige hängende Rute',fur:'Weiß mit rotbraunen Platten oder rotbraunem Mantel, weiße Brust, Pfoten, Blesse und Rutenspitze',offs:{kraft:5,biss:2,tempo:-6,ausdauer:2,zaeh:6,wild:-4,mut:4},
-  // Stufe 2,8 (Zielgegner: Soldat). Eigene Gestalt: Hospizhund vom Großen St. Bernhard, Lawinenhund. Sehr massig, breite tiefe Brust, schwere Knochen, Wamme, langes Fell, buschige tief hängende Rute; Platten (patch) oder Mantel (saddle)
+ {id:'bernhardiner',cm0:76,kg0:74,name:'Bernhardiner',active:true,look:'sehr groß und massig, mächtiger Kopf, kurze Schnauze, Hängelefzen, dunkle Maske um die Augen, weiße Blesse, Hängeohren, langes oder kurzes Fell, buschige hängende Rute',fur:'Weiß mit rotbraunen Platten oder rotbraunem Mantel, weiße Brust, Pfoten, Blesse und Rutenspitze',werte:{kraft:73,biss:49,tempo:36,ausdauer:52,zaeh:70,wild:22,mut:52},
+  // Eigene Gestalt: Hospizhund vom Großen St. Bernhard, Lawinenhund. Sehr massig, breite tiefe Brust, schwere Knochen, Wamme, langes Fell, buschige tief hängende Rute; Platten (patch) oder Mantel (saddle)
   shape:{head:'bh2',L:32,leg:1,thick:1.12,chest:1.3,tuck:.5,withers:.5,crest:10.4,dew:6.4,tailW:5.4,tailSeg:2.6,tailUp:.4,tailCurl:.04,bushy:1,legW:1.16,hindW:1.1,neckX:.3,neckY:-.2,rough:1,piebald:1,saddle:2.6,mouth:{x:11.2,y:2.6},eye:{x:4.3,y:-4.3},whiteChest:1,earCut:0,collar:.25,whiteFeet:.9},
   // Lautpaket: sehr tief und dröhnend, bellt selten, schnaubt, Knurren tief
   sound:{barkF:104,barkF1:[580,400,320],barkF2:[990,780,660],barkLen:.44,barkRate:.18,huff:.7,growlF:46,growlLp:1600,yelpF:420,whineF:550,vol:.88},
   coats:[
    {id:'platten',name:'Weiß mit Platten',w:.55,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#8e6040',patch:'#9a5a30',patchHi:'#b8764a',tailTip:'#f2ece2'},
    {id:'mantel',name:'Rotbrauner Mantel',w:.45,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#6e3e20',saddle:'#94522a',belly:'#ece6da',tailTip:'#f2ece2'}]},
- {id:'malamute',cm0:63,kg0:39,name:'Alaskan Malamute',soll:50,active:true,look:'kräftiger Schlittenhund, dichtes Doppelfell, breiter Kopf mit Gesichtsmaske, kleine dreieckige Stehohren, buschige Federrute über dem Rücken, weiße Unterseite',fur:'Grau-Weiß, Schwarz-Weiß, Sable-Weiß oder Rot-Weiß; weißes Gesicht mit Kappe und Brille, weiße Unterseite und Läufe',offs:{kraft:4,biss:3,tempo:1,ausdauer:9,zaeh:4,wild:2,mut:3},
-  // Stufe 2,7 (Zielgegner: Soldat). Eigene Gestalt: arktischer Lastschlittenhund. Kräftig, tiefe Brust, schwere Knochen, dichtes Fell mit Halskrause, buschige Federrute locker über dem Rücken; weiße Unterseite über urajiro/belly
+ {id:'malamute',cm0:63,kg0:39,name:'Alaskan Malamute',active:true,look:'kräftiger Schlittenhund, dichtes Doppelfell, breiter Kopf mit Gesichtsmaske, kleine dreieckige Stehohren, buschige Federrute über dem Rücken, weiße Unterseite',fur:'Grau-Weiß, Schwarz-Weiß, Sable-Weiß oder Rot-Weiß; weißes Gesicht mit Kappe und Brille, weiße Unterseite und Läufe',werte:{kraft:67,biss:52,tempo:52,ausdauer:88,zaeh:64,wild:40,mut:49},
+  // Eigene Gestalt: arktischer Lastschlittenhund. Kräftig, tiefe Brust, schwere Knochen, dichtes Fell mit Halskrause, buschige Federrute locker über dem Rücken; weiße Unterseite über urajiro/belly
   shape:{head:'mm',L:30.5,leg:1.04,thick:1.04,chest:1.1,tuck:.8,withers:.5,crest:10.4,dew:4,tailW:5.4,tailSeg:2.6,tailUp:-1.3,tailCurl:.22,bushy:1,legW:1.1,hindW:1.08,neckX:.4,neckY:-1,ruff:1,urajiro:1,mouth:{x:11.6,y:1.8},eye:{x:4.3,y:-4.6},whiteChest:0,earCut:0,collar:.35,whiteFeet:1},
   // Lautpaket: bellt kaum, „wuuu“-Heulen und Plappern (tief), Knurren mittel
   sound:{barkF:128,barkF1:[640,470,370],barkF2:[1080,860,720],barkLen:.5,barkRate:.12,huff:.4,growlF:54,growlLp:1900,yelpF:500,whineF:620,vol:.82},
@@ -193,8 +196,8 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz-Weiß',w:.25,base:'#2e2c2a',light:'#4a4642',shade:'#1e1c1b',dark:'#121110',belly:'#ece8e0',tailTip:'#ece8e0'},
    {id:'sable',name:'Sable-Weiß',w:.2,base:'#7a5a3e',light:'#987656',shade:'#563e28',dark:'#2e2014',belly:'#ece6d8',tailTip:'#ece6d8'},
    {id:'rot',name:'Rot-Weiß',w:.1,base:'#a8683c',light:'#c48658',shade:'#7a4624',dark:'#4a2a14',belly:'#efe8da',tailTip:'#efe8da'}]},
- {id:'bordeaux',cm0:63,kg0:52,name:'Bordeauxdogge',soll:50,active:true,look:'gedrungen und kräftig, riesiger breiter Kopf mit tiefen Falten, kurze aufgeworfene Schnauze mit Vorbiss, schwere Lefzen, kleine Hängeohren, Wamme',fur:'Falb von Mahagoni bis Isabell, rotbraune oder schwarze Maske',offs:{kraft:5,biss:4,tempo:-4,ausdauer:-3,zaeh:6,wild:2,mut:5},
-  // Stufe 2,7 (Zielgegner: Soldat). Eigene Gestalt: französischer Wach- und Kampfhund. Gedrungen, kurze Läufe, breite tiefe Brust, Wamme, sehr dicker Nacken, Rute dick und tief getragen; der Kopf ist im Verhältnis der größte aller Hunde
+ {id:'bordeaux',cm0:63,kg0:52,name:'Bordeauxdogge',active:true,look:'gedrungen und kräftig, riesiger breiter Kopf mit tiefen Falten, kurze aufgeworfene Schnauze mit Vorbiss, schwere Lefzen, kleine Hängeohren, Wamme',fur:'Falb von Mahagoni bis Isabell, rotbraune oder schwarze Maske',werte:{kraft:70,biss:70,tempo:38,ausdauer:40,zaeh:73,wild:46,mut:70},
+  // Eigene Gestalt: französischer Wach- und Kampfhund. Gedrungen, kurze Läufe, breite tiefe Brust, Wamme, sehr dicker Nacken, Rute dick und tief getragen; der Kopf ist im Verhältnis der größte aller Hunde
   shape:{head:'bx',L:30,leg:.94,thick:1.1,chest:1.3,tuck:.6,withers:.5,crest:10.6,dew:6.6,tailW:4.8,tailSeg:2.5,tailUp:.35,tailCurl:-.04,legW:1.12,hindW:1.06,neckX:.1,neckY:0,mouth:{x:10.6,y:2.4},eye:{x:4.3,y:-4.4},whiteChest:.15,earCut:0,collar:.35},
   // Lautpaket: tief, rau und kurz, bellt selten, schnaubt viel (kurze Schnauze), Knurren tief
   sound:{barkF:112,barkF1:[620,430,340],barkF2:[1040,820,690],barkLen:.32,barkRate:.25,huff:.85,growlF:49,growlLp:1700,yelpF:440,whineF:570,vol:.88},
@@ -202,8 +205,8 @@ const BREEDS=[
    {id:'mahagoni',name:'Mahagoni',w:.45,base:'#9a4e2c',light:'#b86a44',shade:'#6c341a',dark:'#401e0e'},
    {id:'rotfalb',name:'Rotfalb',w:.35,base:'#b8743e',light:'#d4925a',shade:'#884e24',dark:'#522e12'},
    {id:'isabell',name:'Isabell',w:.2,base:'#c8a070',light:'#e0bc90',shade:'#987448',dark:'#5e4628'}]},
- {id:'bullmastiff',cm0:65,kg0:54,name:'Bullmastiff',soll:49,active:true,look:'kräftig und ebenmäßig, kurzes Fell, großer quadratischer Kopf, kurze breite Schnauze, schwarze Maske, dunkle V-Ohren, Stirnfalten bei Aufmerksamkeit',fur:'Falb, Rot oder gestromt, immer schwarze Maske und dunkle Ohren',offs:{kraft:5,biss:4,tempo:0,ausdauer:0,zaeh:5,wild:2,mut:5},
-  // Stufe 2,5 (Zielgegner: Soldat). Eigene Gestalt: englischer Wildhüterhund (stellt Wilderer), aus Mastiff und Bulldogge. Kräftig, fast quadratisch, gerader kurzer Rücken, breite tiefe Brust, Rute hoch angesetzt und hängend
+ {id:'bullmastiff',cm0:65,kg0:54,name:'Bullmastiff',active:true,look:'kräftig und ebenmäßig, kurzes Fell, großer quadratischer Kopf, kurze breite Schnauze, schwarze Maske, dunkle V-Ohren, Stirnfalten bei Aufmerksamkeit',fur:'Falb, Rot oder gestromt, immer schwarze Maske und dunkle Ohren',werte:{kraft:67,biss:64,tempo:48,ausdauer:46,zaeh:67,wild:46,mut:70},
+  // Eigene Gestalt: englischer Wildhüterhund (stellt Wilderer), aus Mastiff und Bulldogge. Kräftig, fast quadratisch, gerader kurzer Rücken, breite tiefe Brust, Rute hoch angesetzt und hängend
   shape:{head:'bm',L:30,leg:1,thick:1.04,chest:1.1,tuck:1.1,withers:.5,crest:10.4,dew:4.4,tailW:4.4,tailSeg:2.6,tailUp:.1,tailCurl:-.05,legW:1.08,hindW:1.06,neckX:.3,neckY:-.5,mouth:{x:10.8,y:2},eye:{x:4.4,y:-4.6},whiteChest:.1,earCut:0,collar:.4},
   // Lautpaket: tief, bellt selten (stellt stumm), schnaubt, Knurren tief
   sound:{barkF:116,barkF1:[630,440,350],barkF2:[1060,830,700],barkLen:.34,barkRate:.2,huff:.65,growlF:50,growlLp:1750,yelpF:450,whineF:580,vol:.86},
@@ -211,14 +214,14 @@ const BREEDS=[
    {id:'falb',name:'Falb',w:.4,base:'#c09660',light:'#dab684',shade:'#906c3e',dark:'#584026'},
    {id:'rot',name:'Rot',w:.35,base:'#a8603a',light:'#c47e56',shade:'#7a4224',dark:'#482614'},
    {id:'gestromt',name:'Gestromt',w:.25,base:'#8c6844',light:'#aa845c',shade:'#644a2e',dark:'#3a2a1a',stripe:'#24180e'}]},
- {id:'wolfshund',bal:1.05,cm0:86,kg0:60,name:'Irischer Wolfshund',soll:48,active:true,look:'riesig, hochbeinig, zottelig, langer Kopf mit Bart, kleine Rosenohren, lange Rute',fur:'Graues Rauhaar',offs:{kraft:2,biss:0,tempo:6,ausdauer:4,zaeh:-2,wild:-6,mut:2},
-  // Stufe 2,3 (Zielgegner: Soldat). Eigene Gestalt: lange Beine, schlanker Rumpf, tiefe Brust, stark aufgezogener Bauch, langer Hals, Rauhaar
+ {id:'wolfshund',cm0:86,kg0:60,name:'Irischer Wolfshund',active:true,look:'riesig, hochbeinig, zottelig, langer Kopf mit Bart, kleine Rosenohren, lange Rute',fur:'Graues Rauhaar',werte:{kraft:55,biss:49,tempo:78,ausdauer:54,zaeh:40,wild:22,mut:49},
+  // Eigene Gestalt: lange Beine, schlanker Rumpf, tiefe Brust, stark aufgezogener Bauch, langer Hals, Rauhaar
   shape:{head:'wh',L:33,leg:1.2,thick:.84,chest:1.6,tuck:2.6,withers:0,crest:7.2,dew:4,tailW:3.2,tailSeg:3.3,tailUp:-.2,tailCurl:-.13,legW:.84,hindW:.86,neckX:2.2,neckY:-2.6,rough:1,mouth:{x:13,y:1.7},eye:{x:4,y:-4.1},whiteChest:.1,earCut:0},
   // Lautpaket: tief, aber weicher und länger als der Mastiff, bellt selten, kaum Schnauben, Knurren leise und dunkel
   sound:{barkF:122,barkF1:[600,440,350],barkF2:[1000,800,680],barkLen:.42,barkRate:.22,huff:.3,growlF:54,growlLp:1700,yelpF:470,whineF:600,vol:.8},
   coats:[{id:'grau',name:'Graues Rauhaar',w:1,base:'#8c8a84',light:'#aeaba3',shade:'#64625c',dark:'#3e3d39'}]},
- {id:'neufundlaender',cm0:70,kg0:64,name:'Neufundländer',soll:47,active:true,look:'groß und massig, dichtes langes wasserabweisendes Fell, breiter massiver Kopf, kurze quadratische Schnauze, kleine Hängeohren dicht am Kopf, lange buschige hängende Rute',fur:'Schwarz, Braun oder Landseer (weiß mit schwarzen Platten, schwarzer Kopf)',offs:{kraft:5,biss:0,tempo:-4,ausdauer:5,zaeh:6,wild:-8,mut:3},
-  // Stufe 2,2 (Zielgegner: Soldat). Eigene Gestalt: Arbeits- und Wasserrettungshund aus Neufundland. Groß, massig, breiter Rücken, tiefe Brust, schwere Knochen, langes dichtes Fell, Schwimmhäute; Landseer über Platten (patch)
+ {id:'neufundlaender',cm0:70,kg0:64,name:'Neufundländer',active:true,look:'groß und massig, dichtes langes wasserabweisendes Fell, breiter massiver Kopf, kurze quadratische Schnauze, kleine Hängeohren dicht am Kopf, lange buschige hängende Rute',fur:'Schwarz, Braun oder Landseer (weiß mit schwarzen Platten, schwarzer Kopf)',werte:{kraft:67,biss:43,tempo:40,ausdauer:58,zaeh:67,wild:22,mut:49},
+  // Eigene Gestalt: Arbeits- und Wasserrettungshund aus Neufundland. Groß, massig, breiter Rücken, tiefe Brust, schwere Knochen, langes dichtes Fell, Schwimmhäute; Landseer über Platten (patch)
   shape:{head:'nf',L:31.5,leg:1,thick:1.14,chest:1.2,tuck:.4,withers:.4,crest:10.6,dew:5,tailW:5.6,tailSeg:2.7,tailUp:.45,tailCurl:.05,bushy:1,legW:1.16,hindW:1.1,neckX:.3,neckY:-.4,rough:1,piebald:1,mouth:{x:11.2,y:2.2},eye:{x:4.3,y:-4.4},whiteChest:.15,earCut:0,collar:.25},
   // Lautpaket: sehr tief und weich, bellt selten, Knurren tief
   sound:{barkF:106,barkF1:[580,400,320],barkF2:[980,780,660],barkLen:.44,barkRate:.15,huff:.5,growlF:46,growlLp:1600,yelpF:420,whineF:550,vol:.85},
@@ -226,8 +229,8 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz',w:.6,base:'#262321',light:'#423c38',shade:'#181615',dark:'#0e0d0c'},
    {id:'braun',name:'Braun',w:.25,base:'#4e3324',light:'#6a4834',shade:'#342218',dark:'#1e140c'},
    {id:'landseer',name:'Landseer',w:.15,base:'#ece8e0',light:'#faf8f2',shade:'#c4beb2',dark:'#262321',patch:'#262321',patchHi:'#423c38',tailTip:'#ece8e0'}]},
- {id:'ridgeback',cm0:65,kg0:36,name:'Rhodesian Ridgeback',soll:46,active:true,look:'schlank und athletisch, kurzes Fell mit dem „Ridge“ (Haarkamm gegen den Strich auf dem Rücken, vorn zwei Wirbel), tiefe Brust, flacher Schädel, lange Schnauze, hoch angesetzte Hängeohren',fur:'Weizenfarben von hell bis rot, manchmal dunkle Schnauze',offs:{kraft:1,biss:3,tempo:6,ausdauer:6,zaeh:2,wild:3,mut:5},
-  // Stufe 2 (Zielgegner: Soldat). Eigene Gestalt: afrikanischer Löwenhund (stellt Löwen, bis der Jäger kommt). Schlank, hochbeinig, tiefe Brust, deutlich aufgezogener Bauch, lange leicht gebogene Rute; neuer Gestaltwert ridge: Haarkamm auf dem Rücken
+ {id:'ridgeback',cm0:65,kg0:36,name:'Rhodesian Ridgeback',active:true,look:'schlank und athletisch, kurzes Fell mit dem „Ridge“ (Haarkamm gegen den Strich auf dem Rücken, vorn zwei Wirbel), tiefe Brust, flacher Schädel, lange Schnauze, hoch angesetzte Hängeohren',fur:'Weizenfarben von hell bis rot, manchmal dunkle Schnauze',werte:{kraft:46,biss:49,tempo:70,ausdauer:76,zaeh:55,wild:52,mut:70},
+  // Eigene Gestalt: afrikanischer Löwenhund (stellt Löwen, bis der Jäger kommt). Schlank, hochbeinig, tiefe Brust, deutlich aufgezogener Bauch, lange leicht gebogene Rute; neuer Gestaltwert ridge: Haarkamm auf dem Rücken
   shape:{head:'rr',L:31,leg:1.1,thick:.88,chest:1.1,tuck:2,withers:.4,crest:8.6,dew:3,tailW:3.8,tailSeg:2.6,tailUp:-.1,tailCurl:.03,legW:.94,hindW:.96,neckX:1,neckY:-1,ridge:1,mouth:{x:12.6,y:1.7},eye:{x:4.3,y:-4.4},whiteChest:.15,earCut:0,collar:.3},
   // Lautpaket: mittlere Stimme, bellt selten (ruhiger Jäger), Knurren mittel
   sound:{barkF:140,barkF1:[700,510,400],barkF2:[1180,920,760],barkLen:.3,barkRate:.25,huff:.25,growlF:58,growlLp:2100,yelpF:520,whineF:660,vol:.82},
@@ -235,14 +238,14 @@ const BREEDS=[
    {id:'weizenrot',name:'Rot-Weizen',w:.45,base:'#b07440',light:'#cc925e',shade:'#824f26',dark:'#4e2e14'},
    {id:'weizenhell',name:'Hell-Weizen',w:.35,base:'#c8a064',light:'#e0bc86',shade:'#987440',dark:'#5e4424'},
    {id:'rot',name:'Rot',w:.2,base:'#9c5a30',light:'#ba7a4c',shade:'#6e3c1c',dark:'#40220e'}]},
- {id:'komondor',cm0:72,kg0:52,name:'Komondor',soll:45,active:true,look:'groß und kräftig, ganzer Körper in langen weißen Filzschnüren (Zotteln) bis zum Boden, Kopf verschwindet unter den Schnüren, Augen kaum sichtbar, buschige hängende Rute',fur:'Weiß (cremeweiß), dunkle Haut, schwarze Nase',offs:{kraft:4,biss:2,tempo:-2,ausdauer:3,zaeh:6,wild:4,mut:6},
-  // Stufe 1,8 (Zielgegner: leichter Soldat). Eigene Gestalt: ungarischer Herdenschutzhund. Groß, kräftig, ganzer Körper mit langen Filzschnüren bedeckt (neuer Gestaltwert cords), die bis über die Läufe hängen; tiefe Brust, buschige hängende Rute
+ {id:'komondor',cm0:72,kg0:52,name:'Komondor',active:true,look:'groß und kräftig, ganzer Körper in langen weißen Filzschnüren (Zotteln) bis zum Boden, Kopf verschwindet unter den Schnüren, Augen kaum sichtbar, buschige hängende Rute',fur:'Weiß (cremeweiß), dunkle Haut, schwarze Nase',werte:{kraft:58,biss:55,tempo:46,ausdauer:64,zaeh:76,wild:61,mut:73},
+  // Eigene Gestalt: ungarischer Herdenschutzhund. Groß, kräftig, ganzer Körper mit langen Filzschnüren bedeckt (neuer Gestaltwert cords), die bis über die Läufe hängen; tiefe Brust, buschige hängende Rute
   shape:{head:'ko',L:31,leg:1.02,thick:1.12,chest:1,tuck:.2,withers:.5,crest:10.8,dew:5,tailW:5.6,tailSeg:2.6,tailUp:.45,tailCurl:.06,bushy:1,legW:1.18,hindW:1.14,neckX:.4,neckY:-.6,cords:1,mouth:{x:11.6,y:2},eye:{x:4.3,y:-4.4},whiteChest:0,earCut:0,collar:0},
   // Lautpaket: tief und laut, warnt oft (Herdenschutz), Knurren tief
   sound:{barkF:114,barkF1:[610,430,340],barkF2:[1030,810,690],barkLen:.38,barkRate:.5,huff:.35,growlF:50,growlLp:1750,yelpF:450,whineF:580,vol:.86},
   coats:[{id:'weiss',name:'Cremeweiß',w:1,base:'#e6dfcf',light:'#f4efe4',shade:'#bdb3a0',dark:'#8e8472',tailTip:'#e6dfcf'}]},
- {id:'akita',cm0:66,kg0:40,name:'Akita Inu',soll:45,active:true,look:'kräftig, dichtes Doppelfell, breiter Kopf, kleine dreieckige Stehohren nach vorn geneigt, kleine tiefliegende Augen, große Ringelrute über dem Rücken, weiße Abzeichen (Urajiro)',fur:'Rot-Falb, Sesam, gestromt oder Weiß; Urajiro (weiß an Backen, Schnauzenseiten, Brust, Bauch, Innenseite der Läufe)',offs:{kraft:2,biss:3,tempo:3,ausdauer:4,zaeh:3,wild:4,mut:5},
-  // Stufe 1,8 (Zielgegner: leichter Soldat). Eigene Gestalt: japanischer Jagd- und Wachhund (Bär, Wildschwein). Kräftig, dichtes Fell, tiefe Brust, große buschige Rute in einem Ring über dem Rücken; neuer Gestaltwert urajiro: weiße Unterseite
+ {id:'akita',cm0:66,kg0:40,name:'Akita Inu',active:true,look:'kräftig, dichtes Doppelfell, breiter Kopf, kleine dreieckige Stehohren nach vorn geneigt, kleine tiefliegende Augen, große Ringelrute über dem Rücken, weiße Abzeichen (Urajiro)',fur:'Rot-Falb, Sesam, gestromt oder Weiß; Urajiro (weiß an Backen, Schnauzenseiten, Brust, Bauch, Innenseite der Läufe)',werte:{kraft:52,biss:55,tempo:56,ausdauer:66,zaeh:61,wild:58,mut:70},
+  // Eigene Gestalt: japanischer Jagd- und Wachhund (Bär, Wildschwein). Kräftig, dichtes Fell, tiefe Brust, große buschige Rute in einem Ring über dem Rücken; neuer Gestaltwert urajiro: weiße Unterseite
   shape:{head:'ak',L:30,leg:1.04,thick:1.02,chest:1,tuck:1,withers:.5,crest:10,dew:3.6,tailW:5.2,tailSeg:2.5,tailUp:-1.6,tailCurl:.34,bushy:1,legW:1.04,hindW:1.06,neckX:.4,neckY:-1,urajiro:1,mouth:{x:11.6,y:1.8},eye:{x:4.4,y:-4.6},whiteChest:0,earCut:0,collar:.3},
   // Lautpaket: bellt selten (still und würdevoll), dafür murmelnde Laute, Knurren mittel-tief
   sound:{barkF:136,barkF1:[700,510,400],barkF2:[1180,920,760],barkLen:.3,barkRate:.15,huff:.45,growlF:56,growlLp:2000,yelpF:520,whineF:660,vol:.82},
@@ -251,8 +254,8 @@ const BREEDS=[
    {id:'sesam',name:'Sesam',w:.2,base:'#a86e3a',light:'#c48c56',shade:'#704622',dark:'#2c1c10',belly:'#efe6d6',stripe:'#3a281a'},
    {id:'gestromt',name:'Gestromt',w:.15,base:'#6e5440',light:'#8a6c56',shade:'#4c3828',dark:'#2c2018',belly:'#e6dccb',stripe:'#1e160e'},
    {id:'weiss',name:'Weiß',w:.15,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#948c7e',belly:'#f6f2ea'}]},
- {id:'dobermann',cm0:68,kg0:38,name:'Dobermann',soll:44,active:true,look:'schlank, elegant und muskulös, fast quadratisch, kurzes glänzendes Fell, langer Hals, langer keilförmiger Kopf, Ohren meist kupiert (hohe Stehohren), stark aufgezogener Bauch',fur:'Schwarz oder Braun mit rostroten Abzeichen (Schnauze, Backen, Brauenpunkte, Kehle, Brust, Läufe, unter der Rute); selten Blau',offs:{kraft:1,biss:3,tempo:7,ausdauer:5,zaeh:1,wild:4,mut:5},
-  // Stufe 1,7 (Zielgegner: leichter Soldat). Eigene Gestalt: deutscher Schutzhund (Steuereintreiber Dobermann). Fast quadratisch, hochbeinig, schmal, sehr stark aufgezogener Bauch, langer Hals, Kopf hoch getragen, dünne Rute
+ {id:'dobermann',cm0:68,kg0:38,name:'Dobermann',active:true,look:'schlank, elegant und muskulös, fast quadratisch, kurzes glänzendes Fell, langer Hals, langer keilförmiger Kopf, Ohren meist kupiert (hohe Stehohren), stark aufgezogener Bauch',fur:'Schwarz oder Braun mit rostroten Abzeichen (Schnauze, Backen, Brauenpunkte, Kehle, Brust, Läufe, unter der Rute); selten Blau',werte:{kraft:46,biss:52,tempo:74,ausdauer:70,zaeh:46,wild:55,mut:70},
+  // Eigene Gestalt: deutscher Schutzhund (Steuereintreiber Dobermann). Fast quadratisch, hochbeinig, schmal, sehr stark aufgezogener Bauch, langer Hals, Kopf hoch getragen, dünne Rute
   shape:{head:'db',L:29,leg:1.12,thick:.86,chest:.9,tuck:2.2,withers:.7,crest:8.4,dew:2.6,tailW:3.4,tailSeg:2.6,tailUp:-.4,tailCurl:.02,legW:.92,hindW:.96,neckX:1.6,neckY:-2,mouth:{x:12.8,y:1.6},eye:{x:4.3,y:-4.6},whiteChest:0,earCut:.7,collar:.3},
   // Lautpaket: mittel bis hell, scharf und kurz, bellt mäßig oft, Knurren mittel
   sound:{barkF:150,barkF1:[760,560,430],barkF2:[1280,1000,820],barkLen:.26,barkRate:.5,huff:.25,growlF:60,growlLp:2300,yelpF:560,whineF:700,vol:.82},
@@ -260,8 +263,8 @@ const BREEDS=[
    {id:'schwarzrot',name:'Schwarz-Rost',w:.6,base:'#262120',light:'#423936',shade:'#181514',dark:'#0e0c0b',tan:'#a85a2c'},
    {id:'braunrot',name:'Braun-Rost',w:.3,base:'#5a2e1c',light:'#784432',shade:'#3e1e12',dark:'#24100a',tan:'#b8703c'},
    {id:'blau',name:'Blau-Rost',w:.1,base:'#4e5258',light:'#6a6e74',shade:'#36393e',dark:'#202226',tan:'#b07448'}]},
- {id:'sharpei',cm0:48,kg0:24,name:'Shar-Pei',soll:42,active:true,look:'mittelgroß und kompakt, lose Haut mit tiefen Falten an Kopf, Hals und Schultern, borstiges kurzes Fell, breite „Nilpferd“-Schnauze, kleine tiefliegende Augen, winzige anliegende Ohren, dicke Ringelrute hoch getragen, blauschwarze Zunge',fur:'Rehbraun, Rot, Schwarz, Creme oder Blau',offs:{kraft:2,biss:3,tempo:0,ausdauer:2,zaeh:5,wild:2,mut:4},
-  // Stufe 1,3 (Zielgegner: leichter Soldat). Eigene Gestalt: chinesischer Wach- und Kampfhund; die lose Haut lässt ihn sich im Griff des Gegners drehen. Kompakt, quadratisch, kurzer Rücken, Falten (folds 2: auch an Flanke und Hals), dicke Ringelrute
+ {id:'sharpei',cm0:48,kg0:24,name:'Shar-Pei',active:true,look:'mittelgroß und kompakt, lose Haut mit tiefen Falten an Kopf, Hals und Schultern, borstiges kurzes Fell, breite „Nilpferd“-Schnauze, kleine tiefliegende Augen, winzige anliegende Ohren, dicke Ringelrute hoch getragen, blauschwarze Zunge',fur:'Rehbraun, Rot, Schwarz, Creme oder Blau',werte:{kraft:37,biss:46,tempo:46,ausdauer:54,zaeh:70,wild:46,mut:58},
+  // Eigene Gestalt: chinesischer Wach- und Kampfhund; die lose Haut lässt ihn sich im Griff des Gegners drehen. Kompakt, quadratisch, kurzer Rücken, Falten (folds 2: auch an Flanke und Hals), dicke Ringelrute
   shape:{head:'sp2',L:27,leg:.96,thick:1.06,chest:1,tuck:1,withers:.6,crest:10.4,dew:5.6,tailW:4.6,tailSeg:2.2,tailUp:-1.5,tailCurl:.32,legW:1.06,hindW:1.04,neckX:.2,neckY:-.4,folds:2,mouth:{x:10.6,y:2},eye:{x:4.3,y:-4.3},whiteChest:0,earCut:0,collar:.4},
   // Lautpaket: mitteltief, bellt selten, schnaubt, Knurren tief und rau
   sound:{barkF:140,barkF1:[700,500,400],barkF2:[1160,910,750],barkLen:.26,barkRate:.2,huff:.6,growlF:56,growlLp:2000,yelpF:520,whineF:660,vol:.8},
@@ -271,8 +274,8 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz',w:.15,base:'#2a2624',light:'#46403c',shade:'#1a1716',dark:'#0e0c0b'},
    {id:'creme',name:'Creme',w:.15,base:'#d8c098',light:'#ecd8b4',shade:'#a8906a',dark:'#6a5638'},
    {id:'blau',name:'Blau',w:.1,base:'#5e646c',light:'#7c828a',shade:'#42474e',dark:'#272a30'}]},
- {id:'schaeferhund',cm0:62,kg0:35,name:'Deutscher Schäferhund',soll:41,active:true,look:'mittelgroß, länger als hoch, abfallende Rückenlinie, große Stehohren, keilförmiger Kopf, buschige Säbelrute',fur:'Schwarzer Sattel auf Lohfarbe, Schwarz oder Grau (wolfsfarben); dunkle Maske',offs:{kraft:1,biss:3,tempo:4,ausdauer:6,zaeh:2,wild:3,mut:5},
-  // Stufe 1,2 (Zielgegner: Rekrut). Eigene Gestalt: Hüte- und Diensthund. Länger als hoch, hoher Widerrist, abfallende Rückenlinie, tiefe Brust, buschige tief hängende Säbelrute, Stockhaar mit Sattel
+ {id:'schaeferhund',cm0:62,kg0:35,name:'Deutscher Schäferhund',active:true,look:'mittelgroß, länger als hoch, abfallende Rückenlinie, große Stehohren, keilförmiger Kopf, buschige Säbelrute',fur:'Schwarzer Sattel auf Lohfarbe, Schwarz oder Grau (wolfsfarben); dunkle Maske',werte:{kraft:43,biss:52,tempo:66,ausdauer:80,zaeh:52,wild:49,mut:67},
+  // Eigene Gestalt: Hüte- und Diensthund. Länger als hoch, hoher Widerrist, abfallende Rückenlinie, tiefe Brust, buschige tief hängende Säbelrute, Stockhaar mit Sattel
   shape:{head:'sh',L:32,leg:1.04,thick:.9,chest:1,tuck:1.6,withers:1.2,crest:9,dew:3,tailW:4.6,tailSeg:2.6,tailUp:.3,tailCurl:.03,bushy:1,legW:.98,hindW:1.02,neckX:1,neckY:-1.4,saddle:1,mouth:{x:12.4,y:1.6},eye:{x:4.3,y:-4.5},whiteChest:0,earCut:0,collar:.4},
   // Lautpaket: mittlere Stimme, kräftiges Bellen, bellt oft (Wach- und Hütehund), Knurren mittel
   sound:{barkF:146,barkF1:[740,540,420],barkF2:[1240,970,800],barkLen:.28,barkRate:.6,huff:.25,growlF:58,growlLp:2200,yelpF:540,whineF:680,vol:.82},
@@ -280,8 +283,8 @@ const BREEDS=[
    {id:'sattel',name:'Schwarz-Loh (Sattel)',w:.55,base:'#a8703c',light:'#c48e58',shade:'#7a4e24',dark:'#2a1e14',saddle:'#211c19',belly:'#c89a66'},
    {id:'grau',name:'Grau (wolfsfarben)',w:.3,base:'#8a7a62',light:'#a8987e',shade:'#625644',dark:'#2c2620',saddle:'#3a342c',belly:'#b2a284'},
    {id:'schwarz',name:'Schwarz',w:.15,base:'#272321',light:'#423b37',shade:'#191615',dark:'#0f0d0c',saddle:'#1d1a18',belly:'#3a332e'}]},
- {id:'chow',cm0:52,kg0:27,name:'Chow-Chow',soll:40,active:true,look:'kompakt und kräftig, dichtes abstehendes Fell mit Löwenmähne, breiter flacher Schädel, kurze breite Schnauze, finsterer Blick, kleine dicke runde Stehohren, gerade steife Hinterläufe, Ringelrute flach auf dem Rücken, blauschwarze Zunge',fur:'Rot, Schwarz, Blau, Zimt oder Creme',offs:{kraft:2,biss:3,tempo:-3,ausdauer:1,zaeh:4,wild:4,mut:5},
-  // Stufe 1 (Zielgegner: Rekrut). Eigene Gestalt: chinesischer Wach- und Jagdhund. Kompakt, quadratisch, tiefe Brust, dichtes Fell (rough), Löwenmähne (ruff), buschige Rute flach über dem Rücken
+ {id:'chow',cm0:52,kg0:27,name:'Chow-Chow',active:true,look:'kompakt und kräftig, dichtes abstehendes Fell mit Löwenmähne, breiter flacher Schädel, kurze breite Schnauze, finsterer Blick, kleine dicke runde Stehohren, gerade steife Hinterläufe, Ringelrute flach auf dem Rücken, blauschwarze Zunge',fur:'Rot, Schwarz, Blau, Zimt oder Creme',werte:{kraft:43,biss:49,tempo:38,ausdauer:48,zaeh:58,wild:55,mut:64},
+  // Eigene Gestalt: chinesischer Wach- und Jagdhund. Kompakt, quadratisch, tiefe Brust, dichtes Fell (rough), Löwenmähne (ruff), buschige Rute flach über dem Rücken
   shape:{head:'ch',L:27.5,leg:.98,thick:1.14,chest:1,tuck:.6,withers:.4,crest:11.4,dew:4.6,tailW:5.6,tailSeg:2.4,tailUp:-1.75,tailCurl:.34,bushy:1,legW:1.12,hindW:1.08,neckX:.2,neckY:-.6,rough:1,ruff:1,mouth:{x:10.8,y:1.8},eye:{x:4.3,y:-4.5},whiteChest:0,earCut:0,collar:.3},
   // Lautpaket: tief und kurz, bellt selten (zurückhaltend), Knurren tief
   sound:{barkF:132,barkF1:[680,490,390],barkF2:[1140,900,740],barkLen:.28,barkRate:.2,huff:.45,growlF:54,growlLp:1900,yelpF:510,whineF:650,vol:.8},
@@ -291,22 +294,22 @@ const BREEDS=[
    {id:'blau',name:'Blau',w:.1,base:'#5a606a',light:'#787e88',shade:'#3e434c',dark:'#24272e',tailTip:'#787e88'},
    {id:'zimt',name:'Zimt',w:.1,base:'#a07a58',light:'#bc9674',shade:'#74563c',dark:'#463222',tailTip:'#bc9674'},
    {id:'creme',name:'Creme',w:.1,base:'#e0cca8',light:'#f0e2c6',shade:'#b49c78',dark:'#7a6648',tailTip:'#f0e2c6'}]},
- {id:'malinois',cm0:62,kg0:28,name:'Malinois',soll:40,active:true,look:'leicht und drahtig, quadratisch, kurzes Fell, schwarze Maske, große dreieckige Stehohren, schmaler Kopf, hängende Rute',fur:'Falb (rehbraun) mit schwarzen Haarspitzen, schwarze Maske und schwarze Ohren',offs:{kraft:-2,biss:4,tempo:9,ausdauer:7,zaeh:0,wild:6,mut:6},
-  // Stufe 1 (Zielgegner: Rekrut). Eigene Gestalt: belgischer Schäferhund, sehr schnell und wendig. Quadratisch, schlank, leicht, kurzhaarig, waagerechter Rücken, mittellange hängende Rute
+ {id:'malinois',cm0:62,kg0:28,name:'Malinois',active:true,look:'leicht und drahtig, quadratisch, kurzes Fell, schwarze Maske, große dreieckige Stehohren, schmaler Kopf, hängende Rute',fur:'Falb (rehbraun) mit schwarzen Haarspitzen, schwarze Maske und schwarze Ohren',werte:{kraft:37,biss:55,tempo:76,ausdauer:84,zaeh:49,wild:70,mut:76},
+  // Eigene Gestalt: belgischer Schäferhund, sehr schnell und wendig. Quadratisch, schlank, leicht, kurzhaarig, waagerechter Rücken, mittellange hängende Rute
   shape:{head:'ml',L:29.5,leg:1.08,thick:.84,chest:.9,tuck:1.9,withers:.6,crest:8.6,dew:2.6,tailW:3.8,tailSeg:2.6,tailUp:.25,tailCurl:.04,legW:.9,hindW:.94,neckX:1.2,neckY:-1.6,mouth:{x:12.2,y:1.6},eye:{x:4.3,y:-4.5},whiteChest:.1,earCut:0,collar:.4},
   // Lautpaket: hell, scharf, bellt oft (sehr lebhaft), Knurren mittel
   sound:{barkF:160,barkF1:[780,580,450],barkF2:[1320,1030,840],barkLen:.24,barkRate:.65,huff:.2,growlF:62,growlLp:2400,yelpF:600,whineF:740,vol:.8},
   coats:[
    {id:'falb',name:'Falb, schwarz überflammt',w:.75,base:'#b8824a',light:'#d4a068',shade:'#885a2c',dark:'#2a1e14'},
    {id:'rotfalb',name:'Rotfalb',w:.25,base:'#a8683a',light:'#c48656',shade:'#78461e',dark:'#26180e'}]},
- {id:'saupacker',bal:1.4,cm0:66,kg0:40,name:'Saupacker',soll:43,active:true,look:'mittelschwer, athletisch, kräftiger Nacken, mittellange Schnauze, Ohren meist kupiert',fur:'Schwarz-braun gestromt',offs:{kraft:2,biss:4,tempo:2,ausdauer:2,zaeh:2,wild:5,mut:4},
-  // Stufe 1,5 (Zielgegner: leichter Soldat). Eigene Gestalt: Packer für die Saujagd, etwas hochbeiniger als der Mastiff, schlanker, dicker Nacken, Taille
+ {id:'saupacker',cm0:66,kg0:40,name:'Saupacker',active:true,look:'mittelschwer, athletisch, kräftiger Nacken, mittellange Schnauze, Ohren meist kupiert',fur:'Schwarz-braun gestromt',werte:{kraft:52,biss:58,tempo:62,ausdauer:64,zaeh:58,wild:67,mut:67},
+  // Eigene Gestalt: Packer für die Saujagd, etwas hochbeiniger als der Mastiff, schlanker, dicker Nacken, Taille
   shape:{head:'sp',L:30,leg:1.08,thick:.92,chest:.6,tuck:1.6,withers:.5,crest:10.4,dew:4.6,tailW:3.4,tailSeg:2.6,tailUp:.1,tailCurl:-.09,legW:.95,hindW:.95,neckX:.6,neckY:-1,mouth:{x:11.9,y:1.6},eye:{x:4.4,y:-4.4},whiteChest:.2,earCut:.6},
   // Lautpaket: mittlere Stimme, helles, scharfes Bellen und oft (Hetzhund), wenig Schnauben, Knurren mittel
   sound:{barkF:162,barkF1:[800,580,450],barkF2:[1350,1040,850],barkLen:.27,barkRate:.75,huff:.2,growlF:66,growlLp:2400,yelpF:610,whineF:730,vol:.85},
   coats:[{id:'gestromt',name:'Schwarz-braun gestromt',w:1,base:'#4e3a2a',light:'#6a503a',shade:'#33261b',dark:'#1e1610',stripe:'#14100b'}]},
- {id:'barsoi',cm0:78,kg0:40,name:'Barsoi',soll:41,active:true,look:'Windhund der russischen Wolfsjagd: groß und hochbeinig, gewölbte Rückenlinie, sehr langer schmaler Kopf mit leicht gewölbtem Nasenrücken, kleine Rosenohren, seidiges gewelltes Fell mit Halskrause, Hosen und langer befederter Säbelrute',fur:'Weiß mit goldenen, roten, gestromten oder schwarzen Platten, selten ganz weiß',offs:{kraft:-1,biss:2,tempo:10,ausdauer:-2,zaeh:-3,wild:3,mut:4},
-  // Stufe 1,5 (zwei Totenköpfe). Eigene Gestalt: größter Windhund, Wolfsjäger. Hochbeinig, gewölbter Rücken, Halskrause, langes welliges Fell an Bauch, Läufen und Rute
+ {id:'barsoi',cm0:78,kg0:40,name:'Barsoi',active:true,look:'Windhund der russischen Wolfsjagd: groß und hochbeinig, gewölbte Rückenlinie, sehr langer schmaler Kopf mit leicht gewölbtem Nasenrücken, kleine Rosenohren, seidiges gewelltes Fell mit Halskrause, Hosen und langer befederter Säbelrute',fur:'Weiß mit goldenen, roten, gestromten oder schwarzen Platten, selten ganz weiß',werte:{kraft:37,biss:37,tempo:90,ausdauer:56,zaeh:25,wild:43,mut:43},
+  // Eigene Gestalt: größter Windhund, Wolfsjäger. Hochbeinig, gewölbter Rücken, Halskrause, langes welliges Fell an Bauch, Läufen und Rute
   shape:{head:'bz',L:33,leg:1.26,thick:.78,chest:2.2,tuck:3,withers:.6,crest:7.6,dew:2.2,tailW:2.8,tailSeg:3.4,tailUp:-.3,tailCurl:.14,legW:.8,hindW:.88,neckX:2.4,neckY:-1.6,mouth:{x:15,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:0,earCut:0,collar:.45,piebald:1,ruff:1,silk:.8,legFeather:.9,tailFeather:1.8},
   // Lautpaket: bellt selten, tiefer als die kleinen Windhunde, kurzes heiseres Knurren
   sound:{barkF:132,barkF1:[640,480,380],barkF2:[1100,880,720],barkLen:.3,barkRate:.1,huff:.3,growlF:56,growlLp:2000,yelpF:540,whineF:700,vol:.8},
@@ -316,8 +319,8 @@ const BREEDS=[
    {id:'rot',name:'Weiß mit roten Platten',w:.15,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678',patch:'#a8603a',patchHi:'#c47e56'},
    {id:'schwarz',name:'Weiß mit schwarzen Platten',w:.1,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678',patch:'#2a2622',patchHi:'#46403a'},
    {id:'weiss',name:'Weiß',w:.15,base:'#ece8e0',light:'#faf8f2',shade:'#c8c2b6',dark:'#948e82'}]},
- {id:'deerhound',bal:1.3,cm0:76,kg0:42,name:'Deerhound',soll:44,active:true,look:'Schottischer Hirschhund: sehr groß und hochbeinig, rauhes drahtiges Fell, Bart und Augenbrauen, langer Kopf, kleine dunkle Rosenohren, lange tief getragene Rute',fur:'Dunkelblaugrau, Grau, Gestromt-Grau oder Sandrot',offs:{kraft:1,biss:1,tempo:8,ausdauer:2,zaeh:0,wild:1,mut:3},
-  // Stufe 2 (zwei Totenköpfe). Eigene Gestalt: wie ein Greyhound in zotteligem Rauhaar, schlanker als der Irische Wolfshund, Bart und Brauen
+ {id:'deerhound',cm0:76,kg0:42,name:'Deerhound',active:true,look:'Schottischer Hirschhund: sehr groß und hochbeinig, rauhes drahtiges Fell, Bart und Augenbrauen, langer Kopf, kleine dunkle Rosenohren, lange tief getragene Rute',fur:'Dunkelblaugrau, Grau, Gestromt-Grau oder Sandrot',werte:{kraft:37,biss:34,tempo:86,ausdauer:60,zaeh:31,wild:28,mut:40},
+  // Eigene Gestalt: wie ein Greyhound in zotteligem Rauhaar, schlanker als der Irische Wolfshund, Bart und Brauen
   shape:{head:'dh',L:33,leg:1.22,thick:.82,chest:1.8,tuck:2.6,withers:.5,crest:7.6,dew:2.4,tailW:3,tailSeg:3.3,tailUp:-.3,tailCurl:.12,legW:.86,hindW:.92,neckX:2.2,neckY:-1.8,mouth:{x:14,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.15,earCut:0,collar:.4,rough:1},
   sound:{barkF:120,barkF1:[600,450,360],barkF2:[1020,820,680],barkLen:.34,barkRate:.12,huff:.4,growlF:52,growlLp:1900,yelpF:520,whineF:680,vol:.85},
   coats:[
@@ -325,8 +328,8 @@ const BREEDS=[
    {id:'grau',name:'Grau',w:.25,base:'#8a8680',light:'#a8a49c',shade:'#646058',dark:'#3a3834'},
    {id:'gestromt',name:'Gestromt-Grau',w:.15,base:'#6e6458',light:'#8a8072',shade:'#4e463c',dark:'#2e2a24',stripe:'#2a241e'},
    {id:'sandrot',name:'Sandrot',w:.15,base:'#b08458',light:'#c8a074',shade:'#845e3a',dark:'#503822'}]},
- {id:'taigan',bal:1.25,cm0:66,kg0:30,name:'Taigan',soll:42,active:true,look:'Bergwindhund aus Kirgisien: kräftiger als die Steppenwindhunde, dichtes langes Fell gegen die Kälte, befederte Hängeohren, Fransen an den Läufen, Rute mit Ring am Ende',fur:'Schwarz-Loh, Grau, Falb, Weiß oder Gestromt',offs:{kraft:0,biss:1,tempo:6,ausdauer:6,zaeh:3,wild:2,mut:3},
-  // Stufe 2 (zwei Totenköpfe). Eigene Gestalt: Windhund im Winterpelz, Ringelrute, hängt mit Fransenohren, jagt in den Bergen Wölfe und Steinböcke
+ {id:'taigan',cm0:66,kg0:30,name:'Taigan',active:true,look:'Bergwindhund aus Kirgisien: kräftiger als die Steppenwindhunde, dichtes langes Fell gegen die Kälte, befederte Hängeohren, Fransen an den Läufen, Rute mit Ring am Ende',fur:'Schwarz-Loh, Grau, Falb, Weiß oder Gestromt',werte:{kraft:31,biss:37,tempo:84,ausdauer:80,zaeh:43,wild:40,mut:43},
+  // Eigene Gestalt: Windhund im Winterpelz, Ringelrute, hängt mit Fransenohren, jagt in den Bergen Wölfe und Steinböcke
   shape:{head:'tg',L:31,leg:1.14,thick:.88,chest:1.4,tuck:2,withers:.3,crest:7.8,dew:2.6,tailW:2.8,tailSeg:2.8,tailUp:.5,tailCurl:.14,tailRing:.6,legW:.88,hindW:.96,neckX:1.8,neckY:-2,mouth:{x:13.4,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.3,earCut:0,collar:.3,silk:.9,legFeather:.8,tailFeather:.8},
   sound:{barkF:138,barkF1:[660,500,390],barkF2:[1140,900,740],barkLen:.3,barkRate:.25,huff:.35,growlF:56,growlLp:2000,yelpF:560,whineF:720,vol:.8},
   coats:[
@@ -335,8 +338,8 @@ const BREEDS=[
    {id:'falb',name:'Falb',w:.2,base:'#c49a64',light:'#dcb886',shade:'#946e3c',dark:'#5a4224'},
    {id:'weiss',name:'Weiß',w:.15,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678'},
    {id:'gestromt',name:'Gestromt',w:.15,base:'#8a6a48',light:'#a88660',shade:'#624a30',dark:'#3a2a1a',stripe:'#24180e'}]},
- {id:'lurcher',cm0:66,kg0:30,name:'Lurcher',soll:39,active:true,look:'Wildererhund: Windhund gekreuzt mit Terrier oder Hütehund, kräftiger als ein reiner Windhund, struppiges Rauhaar, Bart, halb aufgestellte Ohren',fur:'Grau-Gestromt, Sand, Schwarz, Blaugrau oder Rot',offs:{kraft:2,biss:3,tempo:6,ausdauer:3,zaeh:2,wild:4,mut:4},
-  // Stufe 2 (zwei Totenköpfe). Eigene Gestalt: Mischling – Windhundbeine, kräftigerer Rumpf, Rauhaar, kurzer Bart, Kopf etwas breiter
+ {id:'lurcher',cm0:66,kg0:30,name:'Lurcher',active:true,look:'Wildererhund: Windhund gekreuzt mit Terrier oder Hütehund, kräftiger als ein reiner Windhund, struppiges Rauhaar, Bart, halb aufgestellte Ohren',fur:'Grau-Gestromt, Sand, Schwarz, Blaugrau oder Rot',werte:{kraft:34,biss:37,tempo:84,ausdauer:70,zaeh:40,wild:46,mut:46},
+  // Eigene Gestalt: Mischling – Windhundbeine, kräftigerer Rumpf, Rauhaar, kurzer Bart, Kopf etwas breiter
   shape:{head:'lu',L:30,leg:1.12,thick:.92,chest:1.2,tuck:1.8,withers:.2,crest:7.8,dew:2.8,tailW:3.2,tailSeg:3,tailUp:-.1,tailCurl:.12,legW:.92,hindW:.98,neckX:1.6,neckY:-1.4,mouth:{x:13,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.35,whiteFeet:.2,earCut:0,collar:.6,rough:1},
   sound:{barkF:146,barkF1:[700,530,410],barkF2:[1200,940,780],barkLen:.24,barkRate:.5,huff:.4,growlF:60,growlLp:2200,yelpF:600,whineF:760,vol:.85},
   coats:[
@@ -345,8 +348,8 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz',w:.2,base:'#2a2624',light:'#46403c',shade:'#1a1716',dark:'#0e0c0b'},
    {id:'blaugrau',name:'Blaugrau',w:.15,base:'#626870',light:'#80868e',shade:'#454a50',dark:'#2a2d30'},
    {id:'rot',name:'Rot',w:.1,base:'#a8643a',light:'#c4825a',shade:'#7a4424',dark:'#482814'}]},
- {id:'husky',cm0:56,kg0:23,name:'Siberian Husky',soll:38,active:true,look:'mittelgroß, leicht und flink, dichtes Doppelfell, Gesichtsmaske, blaue oder braune Augen (auch zweifarbig), dreieckige Stehohren dicht beieinander, buschige Sichelrute',fur:'Grau-Weiß, Schwarz-Weiß, Rot-Weiß oder Agouti; weißes Gesicht mit Maske, weiße Unterseite',offs:{kraft:-1,biss:1,tempo:7,ausdauer:12,zaeh:2,wild:2,mut:1},
-  // Stufe 0,7 (Zielgegner: Rekrut). Eigene Gestalt: Schlittenhund der Tschuktschen, leicht, schnell und ausdauernd. Mittellang, mäßig tiefe Brust, gerader Rücken, schlanke Läufe, buschige Sichelrute; weiße Unterseite über urajiro/belly
+ {id:'husky',cm0:56,kg0:23,name:'Siberian Husky',active:true,look:'mittelgroß, leicht und flink, dichtes Doppelfell, Gesichtsmaske, blaue oder braune Augen (auch zweifarbig), dreieckige Stehohren dicht beieinander, buschige Sichelrute',fur:'Grau-Weiß, Schwarz-Weiß, Rot-Weiß oder Agouti; weißes Gesicht mit Maske, weiße Unterseite',werte:{kraft:28,biss:37,tempo:68,ausdauer:95,zaeh:49,wild:34,mut:31},
+  // Eigene Gestalt: Schlittenhund der Tschuktschen, leicht, schnell und ausdauernd. Mittellang, mäßig tiefe Brust, gerader Rücken, schlanke Läufe, buschige Sichelrute; weiße Unterseite über urajiro/belly
   shape:{head:'hk',L:29.5,leg:1.04,thick:.92,chest:.9,tuck:1.4,withers:.4,crest:9.2,dew:2.8,tailW:4.8,tailSeg:2.6,tailUp:-1,tailCurl:.16,bushy:1,legW:.94,hindW:.96,neckX:.8,neckY:-1.2,urajiro:1,mouth:{x:11.8,y:1.6},eye:{x:4.3,y:-4.6},whiteChest:0,earCut:0,collar:.4,whiteFeet:1},
   // Lautpaket: bellt kaum, heult und „redet“ (hell, lang), Knurren mittel-hell
   sound:{barkF:168,barkF1:[800,600,460],barkF2:[1360,1060,860],barkLen:.5,barkRate:.1,huff:.3,growlF:62,growlLp:2400,yelpF:640,whineF:780,vol:.78},
@@ -355,8 +358,8 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz-Weiß',w:.3,base:'#2c2a28',light:'#484440',shade:'#1c1a19',dark:'#121110',belly:'#eeeae2',tailTip:'#eeeae2'},
    {id:'rot',name:'Rot-Weiß',w:.2,base:'#b06a3a',light:'#cc8856',shade:'#804620',dark:'#4e2810',belly:'#f0e8da',tailTip:'#f0e8da'},
    {id:'agouti',name:'Agouti',w:.1,base:'#5e5446',light:'#7a6e5e',shade:'#403a30',dark:'#26221c',belly:'#d8cfbf',tailTip:'#26221c'}]},
- {id:'bullterrier',cm0:53,kg0:27,name:'Bullterrier',soll:38,active:true,look:'sehr muskulös und rund, kurzes glattes Fell, eiförmiger Kopf ohne Stop mit gebogenem Nasenrücken, kleine schmale dreieckige Augen, kleine Stehohren dicht beieinander, kurze waagerecht getragene Rute',fur:'Weiß (oft mit farbigem Fleck am Kopf), gestromt, rot, schwarz-gestromt oder dreifarbig mit weißen Abzeichen',offs:{kraft:4,biss:5,tempo:1,ausdauer:3,zaeh:5,wild:4,mut:8},
-  // Stufe 0,7 (Zielgegner: Rekrut). Eigene Gestalt: englischer Kampfhund (Bulldogge × Terrier). Rund und muskulös, breite tiefe Brust, kurzer Rücken, kräftige Läufe, kurze dicke waagerecht getragene Rute
+ {id:'bullterrier',cm0:53,kg0:27,name:'Bullterrier',active:true,look:'sehr muskulös und rund, kurzes glattes Fell, eiförmiger Kopf ohne Stop mit gebogenem Nasenrücken, kleine schmale dreieckige Augen, kleine Stehohren dicht beieinander, kurze waagerecht getragene Rute',fur:'Weiß (oft mit farbigem Fleck am Kopf), gestromt, rot, schwarz-gestromt oder dreifarbig mit weißen Abzeichen',werte:{kraft:52,biss:58,tempo:54,ausdauer:58,zaeh:67,wild:61,mut:85},
+  // Eigene Gestalt: englischer Kampfhund (Bulldogge × Terrier). Rund und muskulös, breite tiefe Brust, kurzer Rücken, kräftige Läufe, kurze dicke waagerecht getragene Rute
   shape:{head:'bt',L:28,leg:.98,thick:1.08,chest:1.1,tuck:1.2,withers:.6,crest:10.2,dew:2.6,tailW:3.8,tailSeg:2.1,tailUp:.6,tailCurl:-.06,legW:1.1,hindW:1.08,neckX:.6,neckY:-.6,mouth:{x:12.2,y:2},eye:{x:4.6,y:-4.2},whiteChest:.6,earCut:0,collar:.45,whiteFeet:.5},
   // Lautpaket: mittlere Stimme, bellt selten, knurrt viel, Knurren rau
   sound:{barkF:150,barkF1:[740,540,420],barkF2:[1240,970,800],barkLen:.26,barkRate:.2,huff:.45,growlF:60,growlLp:2200,yelpF:580,whineF:720,vol:.8},
@@ -366,16 +369,16 @@ const BREEDS=[
    {id:'rot',name:'Rot',w:.15,base:'#a8603a',light:'#c47e56',shade:'#7a4224',dark:'#482614'},
    {id:'dreifarbig',name:'Dreifarbig',w:.1,base:'#2a2422',light:'#463e3a',shade:'#1a1615',dark:'#0e0c0b',tan:'#a8683a'},
    {id:'schwarzgestromt',name:'Schwarz-gestromt',w:.1,base:'#3a2e26',light:'#56463a',shade:'#261e18',dark:'#16110d',stripe:'#100c09'}]},
- {id:'boxer',cm0:60,kg0:30,name:'Boxer',soll:37,active:true,look:'quadratisch und muskulös, kurzes glattes Fell, kurze nach oben gerichtete Schnauze, Vorbiss, schwarze Maske, Stirnfalten, Ohren oft kupiert (Stehohren)',fur:'Gelb (Falb) oder gestromt, schwarze Maske, oft weiße Abzeichen an Brust, Pfoten und Schnauze',offs:{kraft:2,biss:3,tempo:3,ausdauer:2,zaeh:2,wild:2,mut:5},
-  // Stufe 0,5 (Zielgegner: Rekrut). Eigene Gestalt: deutscher Gebrauchshund, Nachfahre des Bullenbeißers. Quadratisch, breite tiefe Brust, kurzer gerader Rücken, Taille, kurze hoch getragene Rute
+ {id:'boxer',cm0:60,kg0:30,name:'Boxer',active:true,look:'quadratisch und muskulös, kurzes glattes Fell, kurze nach oben gerichtete Schnauze, Vorbiss, schwarze Maske, Stirnfalten, Ohren oft kupiert (Stehohren)',fur:'Gelb (Falb) oder gestromt, schwarze Maske, oft weiße Abzeichen an Brust, Pfoten und Schnauze',werte:{kraft:46,biss:49,tempo:62,ausdauer:62,zaeh:49,wild:40,mut:67},
+  // Eigene Gestalt: deutscher Gebrauchshund, Nachfahre des Bullenbeißers. Quadratisch, breite tiefe Brust, kurzer gerader Rücken, Taille, kurze hoch getragene Rute
   shape:{head:'bx2',L:28,leg:1.04,thick:.98,chest:1.1,tuck:1.6,withers:.7,crest:9.6,dew:3,tailW:3.6,tailSeg:2.2,tailUp:-.2,tailCurl:-.02,legW:1.02,hindW:1.02,neckX:.8,neckY:-1.2,mouth:{x:10.4,y:1.8},eye:{x:4.4,y:-4.6},whiteChest:.6,earCut:.5,collar:.4,whiteFeet:.45},
   // Lautpaket: mittlere Stimme, kurzes kräftiges Bellen, bellt mäßig, schnaubt (kurze Schnauze), Knurren mittel
   sound:{barkF:144,barkF1:[720,520,410],barkF2:[1200,940,780],barkLen:.26,barkRate:.45,huff:.7,growlF:58,growlLp:2100,yelpF:540,whineF:680,vol:.82},
   coats:[
    {id:'gelb',name:'Gelb',w:.6,base:'#c08a4e',light:'#dcaa6e',shade:'#906030',dark:'#5a3a1a'},
    {id:'gestromt',name:'Gestromt',w:.4,base:'#9a6c40',light:'#b88858',shade:'#6c4a28',dark:'#3e2a16',stripe:'#24180c'}]},
- {id:'amstaff',cm0:46,kg0:28,name:'American Staffordshire Terrier',soll:36,active:true,look:'klein, gedrungen und sehr muskulös, breiter Schädel mit kräftigen Backen, mittellange Schnauze, enge Lefzen, Rosenohren oder kupierte Stehohren, kurze dünne Rute',fur:'Jede Farbe: Blau, Rot, Falb, Schwarz, gestromt, oft mit weißen Abzeichen',offs:{kraft:4,biss:6,tempo:2,ausdauer:3,zaeh:3,wild:4,mut:8},
-  // Stufe 0,3 (Zielgegner: Rekrut). Eigene Gestalt: Terrier vom Bulldoggen-Typ, klein und gedrungen, sehr breite Brust, kurzer Rücken, stämmige weit gestellte Läufe, dicker Nacken, kurze dünne Rute (tief getragen)
+ {id:'amstaff',cm0:46,kg0:28,name:'American Staffordshire Terrier',active:true,look:'klein, gedrungen und sehr muskulös, breiter Schädel mit kräftigen Backen, mittellange Schnauze, enge Lefzen, Rosenohren oder kupierte Stehohren, kurze dünne Rute',fur:'Jede Farbe: Blau, Rot, Falb, Schwarz, gestromt, oft mit weißen Abzeichen',werte:{kraft:55,biss:61,tempo:58,ausdauer:58,zaeh:64,wild:61,mut:82},
+  // Eigene Gestalt: Terrier vom Bulldoggen-Typ, klein und gedrungen, sehr breite Brust, kurzer Rücken, stämmige weit gestellte Läufe, dicker Nacken, kurze dünne Rute (tief getragen)
   shape:{head:'as',L:27,leg:.9,thick:1.06,chest:1.2,tuck:1.4,withers:.6,crest:10.2,dew:2.8,tailW:3.4,tailSeg:2,tailUp:.25,tailCurl:-.04,legW:1.14,hindW:1.08,neckX:.2,neckY:-.6,mouth:{x:10.8,y:1.8},eye:{x:4.4,y:-4.6},whiteChest:.6,earCut:.35,collar:.5,whiteFeet:.35},
   // Lautpaket: mittlere bis helle Stimme, bellt selten (Terrier, aber eher still), Knurren rau
   sound:{barkF:158,barkF1:[760,560,440],barkF2:[1280,1000,820],barkLen:.24,barkRate:.3,huff:.45,growlF:62,growlLp:2300,yelpF:600,whineF:740,vol:.8},
@@ -385,20 +388,20 @@ const BREEDS=[
    {id:'gestromt',name:'Gestromt',w:.2,base:'#7c5c40',light:'#9a7858',shade:'#563e28',dark:'#322216',stripe:'#1e140c'},
    {id:'falb',name:'Falb',w:.15,base:'#c09a68',light:'#dab888',shade:'#90703e',dark:'#584226'},
    {id:'schwarz',name:'Schwarz',w:.15,base:'#2a2624',light:'#46403c',shade:'#1a1716',dark:'#0e0c0b'}]},
- {id:'metzgerhund',bal:1.2,cm0:62,kg0:45,name:'Metzgerhund',soll:39,active:true,look:'kompakt, muskulös, breite Brust, mittellange Schnauze, dreieckige Hängeohren',fur:'Schwarz mit rotbraunen Abzeichen (Schnauze, Backen, Brauenpunkte, Brust, Läufe)',offs:{kraft:4,biss:2,tempo:0,ausdauer:2,zaeh:2,wild:0,mut:2},
-  // Stufe 0,8 (Zielgegner: leichter Soldat). Eigene Gestalt: Treib- und Wachhund der Metzger, kurz und massig, breite Brust, wenig Taille, kurze kräftige Rute
+ {id:'metzgerhund',cm0:62,kg0:45,name:'Metzgerhund',active:true,look:'kompakt, muskulös, breite Brust, mittellange Schnauze, dreieckige Hängeohren',fur:'Schwarz mit rotbraunen Abzeichen (Schnauze, Backen, Brauenpunkte, Brust, Läufe)',werte:{kraft:55,biss:49,tempo:50,ausdauer:64,zaeh:55,wild:37,mut:55},
+  // Eigene Gestalt: Treib- und Wachhund der Metzger, kurz und massig, breite Brust, wenig Taille, kurze kräftige Rute
   shape:{head:'mg',L:28.5,thick:1.06,chest:.9,tuck:.6,withers:.6,crest:9.8,dew:4.8,tailW:4,tailSeg:2,tailUp:.3,tailCurl:-.08,legW:1.06,hindW:1.03,neckX:.2,neckY:-.5,mouth:{x:11.5,y:1.6},eye:{x:4.4,y:-4.4},whiteChest:0,earCut:.1},
   // Lautpaket: mitteltief, voll, bellt mäßig, schnaubt, Knurren tief und lang
   sound:{barkF:142,barkF1:[690,500,400],barkF2:[1160,900,750],barkLen:.34,barkRate:.45,huff:.55,growlF:58,growlLp:1950,yelpF:520,whineF:660,vol:.85},
   coats:[{id:'schwarzrot',name:'Schwarz mit Abzeichen',w:1,base:'#2c2420',light:'#463a32',shade:'#1c1714',dark:'#120e0b',tan:'#8a4c26'}]},
- {id:'hirtenhund',bal:0.8,cm0:74,kg0:55,name:'Hirtenhund',soll:34,active:true,look:'schwer, wachsam, hochbeinig, dichter Halskragen, breiter Kopf, schwarze Hängeohren (oft kupiert), Rute hoch geringelt',fur:'Sandfarben, schwarze Maske',offs:{kraft:2,biss:0,tempo:-2,ausdauer:4,zaeh:2,wild:-2,mut:4},
-  // Stufe 0 (Zielgegner: Rekrut). Eigene Gestalt: Herdenschutzhund, groß und hochbeinig, tiefe Brust, aufgezogener Bauch, dichter Halskragen gegen Wolfsbisse, Kopf wachsam hoch, Rute über dem Rücken geringelt
+ {id:'hirtenhund',cm0:74,kg0:55,name:'Hirtenhund',active:true,look:'schwer, wachsam, hochbeinig, dichter Halskragen, breiter Kopf, schwarze Hängeohren (oft kupiert), Rute hoch geringelt',fur:'Sandfarben, schwarze Maske',werte:{kraft:55,biss:52,tempo:52,ausdauer:72,zaeh:58,wild:52,mut:61},
+  // Eigene Gestalt: Herdenschutzhund, groß und hochbeinig, tiefe Brust, aufgezogener Bauch, dichter Halskragen gegen Wolfsbisse, Kopf wachsam hoch, Rute über dem Rücken geringelt
   shape:{head:'hh',L:32,leg:1.1,thick:.96,chest:1.1,tuck:1.5,withers:.2,crest:9.8,dew:5.2,tailW:4.4,tailSeg:2.5,tailUp:-1.55,tailCurl:.3,legW:.98,hindW:.98,neckX:.8,neckY:-1.6,ruff:1,mouth:{x:12.2,y:1.6},eye:{x:4.3,y:-4.5},whiteChest:.15,earCut:.5,collar:.85},
   // Lautpaket: tief und voll, kräftiges Warnbellen in Salven (Wachhund), wenig Schnauben, Knurren tief und lang
   sound:{barkF:126,barkF1:[640,460,370],barkF2:[1080,850,720],barkLen:.36,barkRate:.6,huff:.3,growlF:52,growlLp:1800,yelpF:460,whineF:600,vol:.85},
   coats:[{id:'sand',name:'Sandfarben',w:1,base:'#c2a77a',light:'#dcc59c',shade:'#937a52',dark:'#5e4c32'}]},
- {id:'bulldogge',cm0:38,kg0:24,name:'Englische Bulldogge',soll:33,active:true,look:'niedrig, breit und schwer, kurze stämmige Läufe, sehr breite Brust und Schultern, schmalere Hüften, großer breiter Kopf mit Falten, sehr kurze Schnauze, starker Vorbiss, hängende Lefzen, Rosenohren, kurze Korkenzieher-Rute',fur:'Rot, Falb, gestromt, Weiß oder gescheckt (weiß mit farbigen Platten)',offs:{kraft:4,biss:5,tempo:-8,ausdauer:-6,zaeh:6,wild:0,mut:6},
-  // unter Stufe 0 (Zielgegner: Rekrut mit improvisierter Waffe). Eigene Gestalt: Nachfahre der englischen Bullenbeißer. Sehr niedrig (leg .78), breit (thick 1.18), tiefe Brust, Karpfenrücken, Falten an Hals und Schultern, Wamme, sehr kurze tief angesetzte Rute; Schecken über Platten (patch)
+ {id:'bulldogge',cm0:38,kg0:24,name:'Englische Bulldogge',active:true,look:'niedrig, breit und schwer, kurze stämmige Läufe, sehr breite Brust und Schultern, schmalere Hüften, großer breiter Kopf mit Falten, sehr kurze Schnauze, starker Vorbiss, hängende Lefzen, Rosenohren, kurze Korkenzieher-Rute',fur:'Rot, Falb, gestromt, Weiß oder gescheckt (weiß mit farbigen Platten)',werte:{kraft:46,biss:46,tempo:26,ausdauer:26,zaeh:67,wild:37,mut:70},
+  // Eigene Gestalt: Nachfahre der englischen Bullenbeißer. Sehr niedrig (leg .78), breit (thick 1.18), tiefe Brust, Karpfenrücken, Falten an Hals und Schultern, Wamme, sehr kurze tief angesetzte Rute; Schecken über Platten (patch)
   shape:{head:'eb',L:26,leg:.78,thick:1.18,chest:1.6,tuck:.6,withers:.2,crest:10.4,dew:6.4,tailW:3.4,tailSeg:1.5,tailUp:.9,tailCurl:-.3,legW:1.2,hindW:1.04,neckX:-.4,neckY:.6,folds:1,piebald:1,mouth:{x:9.4,y:2.6},eye:{x:4.2,y:-4.2},whiteChest:.5,earCut:0,collar:.4,whiteFeet:.4},
   // Lautpaket: tief, rau und kurz, bellt selten, schnauft und schnarcht viel, Knurren rau
   sound:{barkF:130,barkF1:[660,470,370],barkF2:[1100,860,720],barkLen:.24,barkRate:.15,huff:.95,growlF:54,growlLp:1900,yelpF:500,whineF:640,vol:.82},
@@ -408,16 +411,16 @@ const BREEDS=[
    {id:'gestromt',name:'Gestromt',w:.2,base:'#8a6444',light:'#a8805c',shade:'#62462c',dark:'#3a2818',stripe:'#24160c'},
    {id:'gescheckt',name:'Gescheckt',w:.2,base:'#ece6dc',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678',patch:'#a8603a',patchHi:'#c47e56'},
    {id:'weiss',name:'Weiß',w:.1,base:'#ece6dc',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678'}]},
- {id:'dalmatiner',cm0:58,kg0:27,name:'Dalmatiner',soll:32,active:true,look:'elegant und ausdauernd, kurzes glattes Fell, weiß mit runden Tupfen, mittellange Schnauze, hoch angesetzte Hängeohren, lange leicht gebogene Rute',fur:'Weiß mit schwarzen oder leberbraunen Tupfen',offs:{kraft:-2,biss:0,tempo:5,ausdauer:9,zaeh:0,wild:0,mut:2},
-  // unter Stufe 0 (Zielgegner: Rekrut mit improvisierter Waffe). Eigene Gestalt: Kutschenhund (lief neben Pferden und Wagen). Schlank, ausdauernd, gerader Rücken, tiefe Brust, lange Rute; neuer Gestaltwert spots: runde Tupfen über den ganzen Körper
+ {id:'dalmatiner',cm0:58,kg0:27,name:'Dalmatiner',active:true,look:'elegant und ausdauernd, kurzes glattes Fell, weiß mit runden Tupfen, mittellange Schnauze, hoch angesetzte Hängeohren, lange leicht gebogene Rute',fur:'Weiß mit schwarzen oder leberbraunen Tupfen',werte:{kraft:31,biss:31,tempo:74,ausdauer:88,zaeh:37,wild:28,mut:37},
+  // Eigene Gestalt: Kutschenhund (lief neben Pferden und Wagen). Schlank, ausdauernd, gerader Rücken, tiefe Brust, lange Rute; neuer Gestaltwert spots: runde Tupfen über den ganzen Körper
   shape:{head:'dm',L:30,leg:1.06,thick:.88,chest:.9,tuck:1.7,withers:.5,crest:8.4,dew:2.6,tailW:3.4,tailSeg:2.7,tailUp:-.15,tailCurl:.05,legW:.92,hindW:.96,neckX:1,neckY:-1.4,spots:1,mouth:{x:12.4,y:1.6},eye:{x:4.3,y:-4.5},whiteChest:0,earCut:0,collar:.4},
   // Lautpaket: mittlere Stimme, bellt mäßig, Knurren mittel-hell
   sound:{barkF:156,barkF1:[760,560,440],barkF2:[1280,1000,820],barkLen:.26,barkRate:.4,huff:.25,growlF:62,growlLp:2300,yelpF:580,whineF:720,vol:.8},
   coats:[
    {id:'schwarz',name:'Weiß mit schwarzen Tupfen',w:.75,base:'#ece8e0',light:'#faf8f2',shade:'#c4beb2',dark:'#9a9488',spot:'#1c1a18'},
    {id:'leber',name:'Weiß mit leberbraunen Tupfen',w:.25,base:'#ece8e0',light:'#faf8f2',shade:'#c4beb2',dark:'#9a9488',spot:'#5a2e1c'}]},
- {id:'greyhound',cm0:72,kg0:32,name:'Greyhound',soll:31,active:true,look:'Windhund: sehr hochbeinig und schlank, extrem tiefe Brust, stark aufgezogener Bauch, gewölbter Rücken, langer schmaler Kopf, kleine nach hinten gefaltete Rosenohren, lange dünne Rute',fur:'Gestromt, Falb, Schwarz, Blau oder Weiß mit Platten',offs:{kraft:-4,biss:-2,tempo:12,ausdauer:-2,zaeh:-3,wild:0,mut:0},
-  // unter Stufe 0 (Zielgegner: Rekrut mit improvisierter Waffe). Eigene Gestalt: Windhund, schnellster Hund. Sehr lange Beine, sehr schmaler Rumpf, extrem tiefe Brust, Wespentaille, gewölbte Lende, langer Hals, lange dünne Rute tief getragen mit leichtem Haken
+ {id:'greyhound',cm0:72,kg0:32,name:'Greyhound',active:true,look:'Windhund: sehr hochbeinig und schlank, extrem tiefe Brust, stark aufgezogener Bauch, gewölbter Rücken, langer schmaler Kopf, kleine nach hinten gefaltete Rosenohren, lange dünne Rute',fur:'Gestromt, Falb, Schwarz, Blau oder Weiß mit Platten',werte:{kraft:28,biss:22,tempo:97,ausdauer:50,zaeh:22,wild:22,mut:22},
+  // Eigene Gestalt: Windhund, schnellster Hund. Sehr lange Beine, sehr schmaler Rumpf, extrem tiefe Brust, Wespentaille, gewölbte Lende, langer Hals, lange dünne Rute tief getragen mit leichtem Haken
   shape:{head:'gh',L:31,leg:1.24,thick:.76,chest:2,tuck:3.2,withers:.2,crest:7.4,dew:2,tailW:2.8,tailSeg:3.2,tailUp:-.25,tailCurl:.12,legW:.8,hindW:.88,neckX:2,neckY:-1.8,mouth:{x:13.4,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.3,earCut:0,collar:.6,whiteFeet:.25},
   // Lautpaket: bellt kaum (stiller Hetzhund), helles Jaulen, leises Knurren
   sound:{barkF:164,barkF1:[780,580,450],barkF2:[1320,1030,840],barkLen:.22,barkRate:.08,huff:.2,growlF:64,growlLp:2400,yelpF:640,whineF:780,vol:.75},
@@ -427,8 +430,8 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz',w:.2,base:'#262321',light:'#423c38',shade:'#181615',dark:'#0e0d0c'},
    {id:'blau',name:'Blau',w:.1,base:'#5c626a',light:'#7a8088',shade:'#40454c',dark:'#26292e'},
    {id:'weiss',name:'Weiß mit Platten',w:.15,base:'#e8e2d6',light:'#f6f2ea',shade:'#bfb8aa',dark:'#8e8678',patch:'#3a2c20',patchHi:'#584434'}]},
- {id:'afghane',cm0:70,kg0:27,name:'Afghanischer Windhund',soll:35,active:true,look:'Windhund aus den Bergen: langes seidiges Fell, das den ganzen Körper und die Läufe bedeckt, Haarschopf auf dem Kopf, lange behaarte Hängeohren, feiner langer Kopf, oft dunkle Maske, hoch getragene Rute mit Ring am Ende',fur:'Gold mit dunkler Maske, Creme, Schwarz, Silber (Domino) oder Rot',offs:{kraft:-3,biss:-1,tempo:8,ausdauer:3,zaeh:2,wild:2,mut:-3},
-  // Stufe 1 (ein Totenkopf). Eigene Gestalt: ganz in langes Haar gehüllt (Fransen bis fast zum Boden, behaarte Läufe), Schopf, Ohren wie Vorhänge, Ringelrute hoch getragen
+ {id:'afghane',cm0:70,kg0:27,name:'Afghanischer Windhund',active:true,look:'Windhund aus den Bergen: langes seidiges Fell, das den ganzen Körper und die Läufe bedeckt, Haarschopf auf dem Kopf, lange behaarte Hängeohren, feiner langer Kopf, oft dunkle Maske, hoch getragene Rute mit Ring am Ende',fur:'Gold mit dunkler Maske, Creme, Schwarz, Silber (Domino) oder Rot',werte:{kraft:22,biss:22,tempo:88,ausdauer:68,zaeh:31,wild:34,mut:22},
+  // Eigene Gestalt: ganz in langes Haar gehüllt (Fransen bis fast zum Boden, behaarte Läufe), Schopf, Ohren wie Vorhänge, Ringelrute hoch getragen
   shape:{head:'af',L:32,leg:1.2,thick:.82,chest:1.4,tuck:2.4,withers:.4,crest:7.6,dew:2.4,tailW:2.6,tailSeg:3,tailUp:.5,tailCurl:.1,tailRing:.55,legW:.86,hindW:.94,neckX:2,neckY:-2.4,mouth:{x:13.5,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:0,earCut:0,collar:.35,silk:1.6,legFeather:1.6,tailFeather:.5},
   // Lautpaket: hochnäsig, bellt selten und dann gedehnt, jault und mault gern
   sound:{barkF:150,barkF1:[720,540,420],barkF2:[1220,960,800],barkLen:.32,barkRate:.12,huff:.3,growlF:60,growlLp:2200,yelpF:600,whineF:760,vol:.75},
@@ -438,8 +441,8 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz',w:.15,base:'#2a2624',light:'#46403c',shade:'#1a1716',dark:'#0e0c0b'},
    {id:'silber',name:'Silber (Domino)',w:.15,base:'#b0aca4',light:'#d0ccc4',shade:'#86827a',dark:'#4a4640',muzzle:'#2a2826'},
    {id:'rot',name:'Rot mit Maske',w:.1,base:'#b06a3a',light:'#cc8a58',shade:'#80461e',dark:'#4a2812',muzzle:'#2a1a12'}]},
- {id:'saluki',cm0:64,kg0:22,name:'Saluki',soll:33,active:true,look:'Windhund der Wüste: schlank und anmutig, langer schmaler Kopf, lange Hängeohren mit seidigen Fransen, glattes Fell, Fransen an Rute und Läufen, Rute tief mit Bogen',fur:'Creme, Gold, Rot, Schwarz-Loh oder Grizzle',offs:{kraft:-4,biss:-2,tempo:11,ausdauer:8,zaeh:-3,wild:1,mut:-1},
-  // Stufe 1 (ein Totenkopf). Eigene Gestalt: wie ein Greyhound, aber leichter und mit befederten Ohren, Rute und Läufen; ausdauerndster Windhund (Gazellenjagd)
+ {id:'saluki',cm0:64,kg0:22,name:'Saluki',active:true,look:'Windhund der Wüste: schlank und anmutig, langer schmaler Kopf, lange Hängeohren mit seidigen Fransen, glattes Fell, Fransen an Rute und Läufen, Rute tief mit Bogen',fur:'Creme, Gold, Rot, Schwarz-Loh oder Grizzle',werte:{kraft:22,biss:22,tempo:92,ausdauer:86,zaeh:22,wild:28,mut:25},
+  // Eigene Gestalt: wie ein Greyhound, aber leichter und mit befederten Ohren, Rute und Läufen; ausdauerndster Windhund (Gazellenjagd)
   shape:{head:'sl',L:31,leg:1.24,thick:.74,chest:1.8,tuck:3.2,withers:.2,crest:7.4,dew:2,tailW:2.6,tailSeg:3.2,tailUp:-.1,tailCurl:.16,legW:.78,hindW:.86,neckX:2.2,neckY:-2,mouth:{x:13.4,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.25,earCut:0,collar:.5,tailFeather:1.6,legFeather:.6},
   // Lautpaket: stiller Hetzhund wie der Greyhound, etwas tiefer, langes helles Jaulen
   sound:{barkF:170,barkF1:[800,600,460],barkF2:[1340,1050,860],barkLen:.24,barkRate:.06,huff:.2,growlF:66,growlLp:2400,yelpF:660,whineF:820,vol:.7},
@@ -449,8 +452,8 @@ const BREEDS=[
    {id:'rot',name:'Rot',w:.15,base:'#a8643a',light:'#c4825a',shade:'#7a4424',dark:'#482814'},
    {id:'schwarzloh',name:'Schwarz-Loh',w:.15,base:'#2a2420',light:'#463c34',shade:'#1a1613',dark:'#0f0c0a',tan:'#c08a52'},
    {id:'grizzle',name:'Grizzle',w:.1,base:'#8a7a68',light:'#a89880',shade:'#625646',dark:'#3a3228'}]},
- {id:'whippet',cm0:48,kg0:13,name:'Whippet',soll:30,active:true,look:'kleiner Windhund: wie ein Greyhound im Kleinformat, sehr schlank, tiefe Brust, stark aufgezogener Bauch, kurze Schnauze im Verhältnis, große dunkle Augen, Rosenohren',fur:'Falb, Gestromt, Blau, Schwarz oder Weiß mit Platten',offs:{kraft:-6,biss:-3,tempo:14,ausdauer:0,zaeh:-5,wild:-2,mut:-2},
-  // unter Stufe 0 (Zielgegner: Rekrut mit improvisierter Waffe). Eigene Gestalt: Greyhound im Kleinformat, leichter, etwas kürzere Schnauze, große Augen
+ {id:'whippet',cm0:48,kg0:13,name:'Whippet',active:true,look:'kleiner Windhund: wie ein Greyhound im Kleinformat, sehr schlank, tiefe Brust, stark aufgezogener Bauch, kurze Schnauze im Verhältnis, große dunkle Augen, Rosenohren',fur:'Falb, Gestromt, Blau, Schwarz oder Weiß mit Platten',werte:{kraft:22,biss:22,tempo:90,ausdauer:52,zaeh:22,wild:22,mut:22},
+  // Eigene Gestalt: Greyhound im Kleinformat, leichter, etwas kürzere Schnauze, große Augen
   shape:{head:'wp',L:29,leg:1.18,thick:.74,chest:1.6,tuck:3,withers:.2,crest:7.2,dew:1.8,tailW:2.6,tailSeg:3,tailUp:-.25,tailCurl:.12,legW:.76,hindW:.84,neckX:1.8,neckY:-1.6,mouth:{x:12.4,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.45,earCut:0,collar:.5,whiteFeet:.35,piebald:1},
   // Lautpaket: klein und hell, kurzes Kläffen, Fiepen
   sound:{barkF:210,barkF1:[900,680,520],barkF2:[1500,1180,960],barkLen:.18,barkRate:.1,huff:.15,growlF:78,growlLp:2600,yelpF:760,whineF:900,vol:.6},
@@ -460,16 +463,16 @@ const BREEDS=[
    {id:'blau',name:'Blau',w:.15,base:'#5c626a',light:'#7a8088',shade:'#40454c',dark:'#26292e'},
    {id:'schwarz',name:'Schwarz',w:.1,base:'#262321',light:'#423c38',shade:'#181615',dark:'#0e0d0c'},
    {id:'weiss',name:'Weiß mit Platten',w:.2,base:'#e8e2d6',light:'#f6f2ea',shade:'#bfb8aa',dark:'#8e8678',patch:'#b88a58',patchHi:'#d0a474'}]},
- {id:'podenco',bal:1.2,cm0:68,kg0:23,name:'Podenco Ibicenco',soll:37,active:true,look:'Jagdhund von den Balearen: hochbeinig und schlank, rot und weiß gefleckt, riesige Stehohren, langer kegelförmiger Kopf, fleischfarbene Nase, Bernsteinaugen, Sichelrute',fur:'Rot-Weiß, Weiß oder Rot mit weißen Abzeichen',offs:{kraft:-2,biss:0,tempo:9,ausdauer:4,zaeh:-1,wild:2,mut:1},
-  // Stufe 1 (ein Totenkopf, obere Grenze). Eigene Gestalt: größer und hochbeiniger als der Pharaonenhund, rot-weiß gescheckt, springt hoch aus dem Stand
+ {id:'podenco',cm0:68,kg0:23,name:'Podenco Ibicenco',active:true,look:'Jagdhund von den Balearen: hochbeinig und schlank, rot und weiß gefleckt, riesige Stehohren, langer kegelförmiger Kopf, fleischfarbene Nase, Bernsteinaugen, Sichelrute',fur:'Rot-Weiß, Weiß oder Rot mit weißen Abzeichen',werte:{kraft:22,biss:22,tempo:82,ausdauer:76,zaeh:25,wild:37,mut:31},
+  // Eigene Gestalt: größer und hochbeiniger als der Pharaonenhund, rot-weiß gescheckt, springt hoch aus dem Stand
   shape:{head:'pi',L:31,leg:1.24,thick:.78,chest:1.4,tuck:2.6,withers:.1,crest:7.6,dew:2.2,tailW:2.8,tailSeg:3,tailUp:.3,tailCurl:.2,legW:.8,hindW:.88,neckX:2,neckY:-2.6,mouth:{x:13.6,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.8,whiteFeet:.7,earCut:0,collar:.35,piebald:1},
   sound:{barkF:180,barkF1:[840,630,490],barkF2:[1400,1100,900],barkLen:.2,barkRate:.4,huff:.25,growlF:70,growlLp:2400,yelpF:690,whineF:850,vol:.75},
   coats:[
    {id:'rotweiss',name:'Rot-Weiß',w:.55,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678',patch:'#b0603a',patchHi:'#cc7e56'},
    {id:'rot',name:'Rot mit weißen Abzeichen',w:.3,base:'#b0603a',light:'#cc7e56',shade:'#80421e',dark:'#4a2610'},
    {id:'weiss',name:'Weiß',w:.15,base:'#ece8e0',light:'#faf8f2',shade:'#c8c2b6',dark:'#948e82'}]},
- {id:'galgo',cm0:66,kg0:27,name:'Galgo Español',soll:33,active:true,look:'spanischer Windhund: wie ein Greyhound, aber leichter und länger, flachere Brust, stark abfallende Kruppe, lange Rute tief mit Haken am Ende, Rosenohren, ruhiger Blick',fur:'Gestromt, Schwarz, Falb, Rot oder Weiß mit Platten',offs:{kraft:-3,biss:-1,tempo:10,ausdauer:5,zaeh:-2,wild:0,mut:0},
-  // Stufe 1 (ein Totenkopf). Eigene Gestalt: länger und flacher als der Greyhound, Kruppe abfallend, Rute mit Haken, Schnauze etwas länger
+ {id:'galgo',cm0:66,kg0:27,name:'Galgo Español',active:true,look:'spanischer Windhund: wie ein Greyhound, aber leichter und länger, flachere Brust, stark abfallende Kruppe, lange Rute tief mit Haken am Ende, Rosenohren, ruhiger Blick',fur:'Gestromt, Schwarz, Falb, Rot oder Weiß mit Platten',werte:{kraft:22,biss:22,tempo:92,ausdauer:72,zaeh:22,wild:22,mut:25},
+  // Eigene Gestalt: länger und flacher als der Greyhound, Kruppe abfallend, Rute mit Haken, Schnauze etwas länger
   shape:{head:'ga',L:33,leg:1.2,thick:.74,chest:1.2,tuck:2.6,withers:-.2,crest:7.2,dew:1.8,tailW:2.6,tailSeg:3.4,tailUp:-.4,tailCurl:.2,legW:.78,hindW:.86,neckX:2.2,neckY:-1.6,mouth:{x:13.8,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.3,whiteFeet:.25,earCut:0,collar:.5,piebald:1},
   sound:{barkF:160,barkF1:[770,580,450],barkF2:[1300,1020,840],barkLen:.22,barkRate:.08,huff:.2,growlF:64,growlLp:2400,yelpF:640,whineF:800,vol:.72},
   coats:[
@@ -478,15 +481,15 @@ const BREEDS=[
    {id:'falb',name:'Falb',w:.2,base:'#c8a070',light:'#e0bc90',shade:'#987448',dark:'#5e4628'},
    {id:'rot',name:'Rot',w:.1,base:'#a8643a',light:'#c4825a',shade:'#7a4424',dark:'#482814'},
    {id:'weiss',name:'Weiß mit Platten',w:.15,base:'#e8e2d6',light:'#f6f2ea',shade:'#bfb8aa',dark:'#8e8678',patch:'#6a4e34',patchHi:'#86684c'}]},
- {id:'pharao',cm0:58,kg0:22,name:'Pharaonenhund',soll:36,active:true,look:'schlanker rotbrauner Laufhund, sehr große Stehohren, fleischfarbene Nase und bernsteinfarbene Augen, weiße Rutenspitze, oft weißer Brustfleck; errötet an Nase und Ohren',fur:'Lohfarben oder Kastanie mit weißer Rutenspitze',offs:{kraft:-2,biss:0,tempo:7,ausdauer:3,zaeh:-1,wild:2,mut:0},
-  // Stufe 1 (ein Totenkopf). Eigene Gestalt: kantiger Jagdhund mit riesigen Stehohren, Rute hoch und gebogen mit weißer Spitze, rosa Nase
+ {id:'pharao',cm0:58,kg0:22,name:'Pharaonenhund',active:true,look:'schlanker rotbrauner Laufhund, sehr große Stehohren, fleischfarbene Nase und bernsteinfarbene Augen, weiße Rutenspitze, oft weißer Brustfleck; errötet an Nase und Ohren',fur:'Lohfarben oder Kastanie mit weißer Rutenspitze',werte:{kraft:22,biss:22,tempo:80,ausdauer:72,zaeh:25,wild:34,mut:28},
+  // Eigene Gestalt: kantiger Jagdhund mit riesigen Stehohren, Rute hoch und gebogen mit weißer Spitze, rosa Nase
   shape:{head:'ph',L:30,leg:1.14,thick:.84,chest:1.2,tuck:2,withers:.1,crest:7.6,dew:2.4,tailW:3,tailSeg:2.9,tailUp:.6,tailCurl:.2,legW:.86,hindW:.92,neckX:1.8,neckY:-2.4,mouth:{x:12.8,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.7,earCut:0,collar:.4,tipWhite:1},
   sound:{barkF:176,barkF1:[820,620,480],barkF2:[1380,1080,880],barkLen:.2,barkRate:.35,huff:.25,growlF:70,growlLp:2400,yelpF:680,whineF:840,vol:.75},
   coats:[
    {id:'loh',name:'Lohfarben',w:.7,base:'#b8683a',light:'#d4885a',shade:'#8a4a24',dark:'#522a12',tailTip:'#f2ece0'},
    {id:'kastanie',name:'Kastanie',w:.3,base:'#9a5230',light:'#b66e4a',shade:'#70381c',dark:'#40200e',tailTip:'#f2ece0'}]},
- {id:'sloughi',cm0:68,kg0:25,name:'Sloughi',soll:34,active:true,look:'nordafrikanischer Windhund: glattes kurzes Fell, schlank, langer Kopf mit kräftigerem Schädel, flach anliegende Hängeohren, große dunkle melancholische Augen',fur:'Sand, Rotsand, Sand mit schwarzer Maske oder gestromt',offs:{kraft:-3,biss:-1,tempo:10,ausdauer:5,zaeh:-2,wild:1,mut:1},
-  // Stufe 1 (ein Totenkopf). Eigene Gestalt: glatter Windhund wie der Greyhound, etwas kräftiger, Hängeohren statt Rosenohren, trauriger Blick
+ {id:'sloughi',cm0:68,kg0:25,name:'Sloughi',active:true,look:'nordafrikanischer Windhund: glattes kurzes Fell, schlank, langer Kopf mit kräftigerem Schädel, flach anliegende Hängeohren, große dunkle melancholische Augen',fur:'Sand, Rotsand, Sand mit schwarzer Maske oder gestromt',werte:{kraft:22,biss:22,tempo:90,ausdauer:72,zaeh:22,wild:31,mut:31},
+  // Eigene Gestalt: glatter Windhund wie der Greyhound, etwas kräftiger, Hängeohren statt Rosenohren, trauriger Blick
   shape:{head:'sg',L:31,leg:1.24,thick:.76,chest:1.8,tuck:3,withers:.3,crest:7.4,dew:2,tailW:2.6,tailSeg:3.2,tailUp:-.2,tailCurl:.16,legW:.8,hindW:.86,neckX:2.2,neckY:-2,mouth:{x:13.1,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.2,earCut:0,collar:.4},
   sound:{barkF:160,barkF1:[760,580,450],barkF2:[1300,1020,840],barkLen:.24,barkRate:.08,huff:.2,growlF:62,growlLp:2300,yelpF:620,whineF:780,vol:.72},
   coats:[
@@ -494,8 +497,8 @@ const BREEDS=[
    {id:'rotsand',name:'Rotsand',w:.25,base:'#bc8650',light:'#d4a26e',shade:'#8e6034',dark:'#56381c'},
    {id:'maske',name:'Sand mit schwarzer Maske',w:.2,base:'#d2b080',light:'#e6c89c',shade:'#a88a5c',dark:'#6a5638',muzzle:'#2a201a'},
    {id:'gestromt',name:'Gestromt',w:.15,base:'#a07a50',light:'#bc966a',shade:'#765634',dark:'#463220',stripe:'#2a1c10'}]},
- {id:'azawakh',cm0:68,kg0:20,name:'Azawakh',soll:32,active:true,look:'Wüstenwindhund der Sahelzone: extrem dürr und hochbeinig, jede Rippe und die Hüftknochen sichtbar, sehr kurzes Fell, hoch angesetzte flache Hängeohren, weiße Pfoten und Brustlatz',fur:'Falb, Sand, Rot oder gestromt, fast immer mit weißen Abzeichen',offs:{kraft:-5,biss:-1,tempo:12,ausdauer:6,zaeh:-5,wild:3,mut:2},
-  // Stufe 1 (ein Totenkopf). Eigene Gestalt: das dürrste Tier im Buch – sehr lange Beine, schmaler Rumpf, sichtbare Rippen, weiße Strümpfe
+ {id:'azawakh',cm0:68,kg0:20,name:'Azawakh',active:true,look:'Wüstenwindhund der Sahelzone: extrem dürr und hochbeinig, jede Rippe und die Hüftknochen sichtbar, sehr kurzes Fell, hoch angesetzte flache Hängeohren, weiße Pfoten und Brustlatz',fur:'Falb, Sand, Rot oder gestromt, fast immer mit weißen Abzeichen',werte:{kraft:22,biss:22,tempo:92,ausdauer:74,zaeh:22,wild:43,mut:40},
+  // Eigene Gestalt: das dürrste Tier im Buch – sehr lange Beine, schmaler Rumpf, sichtbare Rippen, weiße Strümpfe
   shape:{head:'az',L:30,leg:1.36,thick:.66,chest:1.6,tuck:3.8,withers:.1,crest:7.2,dew:1.6,tailW:2.2,tailSeg:3.2,tailUp:-.1,tailCurl:.18,legW:.7,hindW:.78,neckX:2.4,neckY:-2.6,mouth:{x:13.6,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.85,whiteFeet:.85,earCut:0,collar:.6,ribs:1},
   sound:{barkF:168,barkF1:[800,600,460],barkF2:[1340,1050,860],barkLen:.2,barkRate:.25,huff:.2,growlF:66,growlLp:2400,yelpF:660,whineF:820,vol:.72},
   coats:[
@@ -503,16 +506,16 @@ const BREEDS=[
    {id:'sand',name:'Sand',w:.25,base:'#d8bc8e',light:'#ecd4ac',shade:'#ac9268',dark:'#6e5a3c'},
    {id:'rot',name:'Rot',w:.2,base:'#a85e34',light:'#c47c52',shade:'#7a401e',dark:'#46240e'},
    {id:'gestromt',name:'Gestromt',w:.15,base:'#8e6a44',light:'#aa865c',shade:'#644a2e',dark:'#3a2a1a',stripe:'#2a1c10'}]},
- {id:'cirneco',cm0:48,kg0:11,name:'Cirneco dell’Etna',soll:30,active:true,look:'kleiner Jagdhund vom Ätna: wie ein Pharaonenhund im Kleinformat, große Stehohren, fleischfarbene Nase, bernsteinfarbene Augen, kurzes Fell',fur:'Lohfarben, Isabell oder Hell-Loh',offs:{kraft:-5,biss:-2,tempo:8,ausdauer:4,zaeh:-2,wild:2,mut:1},
-  // unter Stufe 0 (Zielgegner: Rekrut mit improvisierter Waffe). Eigene Gestalt: klein, kompakter als die Windhunde, riesige Ohren im Verhältnis
+ {id:'cirneco',cm0:48,kg0:11,name:'Cirneco dell’Etna',active:true,look:'kleiner Jagdhund vom Ätna: wie ein Pharaonenhund im Kleinformat, große Stehohren, fleischfarbene Nase, bernsteinfarbene Augen, kurzes Fell',fur:'Lohfarben, Isabell oder Hell-Loh',werte:{kraft:22,biss:22,tempo:72,ausdauer:70,zaeh:22,wild:31,mut:31},
+  // Eigene Gestalt: klein, kompakter als die Windhunde, riesige Ohren im Verhältnis
   shape:{head:'ci',L:28,leg:1.1,thick:.82,chest:1,tuck:1.8,withers:.1,crest:7.4,dew:2.2,tailW:2.8,tailSeg:2.8,tailUp:.5,tailCurl:.18,legW:.84,hindW:.9,neckX:1.6,neckY:-2.2,mouth:{x:12.4,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.4,whiteFeet:.25,earCut:0,collar:.45},
   sound:{barkF:200,barkF1:[880,660,510],barkF2:[1460,1140,920],barkLen:.18,barkRate:.45,huff:.25,growlF:76,growlLp:2600,yelpF:740,whineF:880,vol:.65},
   coats:[
    {id:'loh',name:'Lohfarben',w:.6,base:'#c08050',light:'#d8a070',shade:'#906038',dark:'#583820'},
    {id:'isabell',name:'Isabell',w:.25,base:'#d4b088',light:'#e8caa6',shade:'#a8865e',dark:'#6a543a'},
    {id:'hell',name:'Hell-Loh',w:.15,base:'#d8a878',light:'#ecc49a',shade:'#ac7e50',dark:'#6c4e30'}]},
- {id:'windspiel',cm0:36,kg0:4.5,name:'Italienisches Windspiel',soll:30,active:true,look:'winziger Windhund der feinen Damen: Greyhound im Taschenformat, sehr dünne Beine, tiefe Brust, Wespentaille, kurzer feiner Kopf, große Augen, Rosenohren',fur:'Grau, Schwarz, Falb, Isabell oder Blau, oft mit weißer Brust',offs:{kraft:-14,biss:-10,tempo:10,ausdauer:-4,zaeh:-12,wild:-4,mut:-6},
-  // unter Stufe 0 (Zielgegner: Rekrut mit improvisierter Waffe). Eigene Gestalt: kleinster Hund im Buch, Beine wie Stöckchen, großer Kopf im Verhältnis
+ {id:'windspiel',cm0:36,kg0:4.5,name:'Italienisches Windspiel',active:true,look:'winziger Windhund der feinen Damen: Greyhound im Taschenformat, sehr dünne Beine, tiefe Brust, Wespentaille, kurzer feiner Kopf, große Augen, Rosenohren',fur:'Grau, Schwarz, Falb, Isabell oder Blau, oft mit weißer Brust',werte:{kraft:12,biss:12,tempo:70,ausdauer:40,zaeh:12,wild:12,mut:12},
+  // Eigene Gestalt: kleinster Hund im Buch, Beine wie Stöckchen, großer Kopf im Verhältnis
   shape:{head:'iw',L:27,leg:1.22,thick:.66,chest:1.4,tuck:3.2,withers:.3,crest:7,dew:1.4,tailW:2,tailSeg:2.9,tailUp:-.3,tailCurl:.14,legW:.62,hindW:.7,neckX:2.2,neckY:-2.4,mouth:{x:11.6,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.5,whiteFeet:.4,earCut:0,collar:.7},
   sound:{barkF:300,barkF1:[1100,860,660],barkF2:[1800,1420,1160],barkLen:.14,barkRate:.6,huff:.1,growlF:96,growlLp:3000,yelpF:900,whineF:1100,vol:.5},
   coats:[
@@ -521,13 +524,23 @@ const BREEDS=[
    {id:'falb',name:'Falb',w:.2,base:'#c8a070',light:'#e0bc90',shade:'#987448',dark:'#5e4628'},
    {id:'isabell',name:'Isabell',w:.15,base:'#d8c4a2',light:'#ecdcc0',shade:'#ac9a78',dark:'#6e6048'},
    {id:'blau',name:'Blau',w:.1,base:'#5c626a',light:'#7a8088',shade:'#40454c',dark:'#26292e'}]},
- {id:'bluthund',bal:1.5,cm0:66,kg0:45,name:'Bluthund',soll:30,active:true,look:'Spürhund, lange tiefe Schnauze, sehr lange Hängeohren, lose Haut mit Falten, Hängelefzen, Kopf tief, Rute säbelförmig hoch',fur:'Schwarzer Sattel, lohfarbener Kopf, Brust und Läufe',offs:{kraft:-2,biss:-2,tempo:-2,ausdauer:6,zaeh:0,wild:-6,mut:-2},
-  // unter Stufe 0 (Zielgegner: Rekrut mit improvisierter Waffe). Eigene Gestalt: Spürhund, lang, lose Haut, Wamme, Kopf tief zur Fährte, sehr lange Ohren, Rute hoch wie ein Säbel
+ {id:'bluthund',cm0:66,kg0:45,name:'Bluthund',active:true,look:'Spürhund, lange tiefe Schnauze, sehr lange Hängeohren, lose Haut mit Falten, Hängelefzen, Kopf tief, Rute säbelförmig hoch',fur:'Schwarzer Sattel, lohfarbener Kopf, Brust und Läufe',werte:{kraft:40,biss:25,tempo:44,ausdauer:82,zaeh:40,wild:22,mut:22},
+  // Eigene Gestalt: Spürhund, lang, lose Haut, Wamme, Kopf tief zur Fährte, sehr lange Ohren, Rute hoch wie ein Säbel
   shape:{head:'bh',L:31.5,leg:1.02,thick:.9,chest:.9,tuck:.9,withers:.2,crest:7.8,dew:6.8,tailW:4,tailSeg:2.6,tailUp:-1.15,tailCurl:.08,legW:.96,hindW:.96,neckX:1.4,neckY:1.4,mouth:{x:12.4,y:2.6},eye:{x:4.2,y:-4},whiteChest:.08,earCut:0,collar:.4},
   // Lautpaket: tiefes, langes, klagendes Geläut (Baying), bellt mäßig, schnaubt beim Schnüffeln, Knurren leise
   sound:{barkF:118,barkF1:[560,420,330],barkF2:[940,760,640],barkLen:.55,barkRate:.4,huff:.7,growlF:52,growlLp:1600,yelpF:440,whineF:580,vol:.85},
   coats:[{id:'schwarzloh',name:'Schwarz-lohfarben',w:1,base:'#2e231c',light:'#4a3a2e',shade:'#1d1612',dark:'#130e0b',tan:'#9a6236'}]}];
 const STATS=[['kraft','Kraft'],['biss','Bisskraft'],['tempo','Schnelligkeit'],['ausdauer','Ausdauer'],['zaeh','Zähigkeit'],['wild','Wildheit'],['mut','Mut']];
+// Kampfgewicht je Wert (Summe 7): Biss, Kraft und Zähigkeit zählen im Kampf am meisten, Schnelligkeit und Ausdauer weniger
+// (die zählen bei Hunderennen). Kampf-Soll = gewichtetes Mittel; daraus Zielstufe, Totenköpfe, Kampfwert.
+const KAMPF={kraft:1.3,biss:1.5,tempo:.6,ausdauer:.4,zaeh:1.2,wild:1,mut:1};
+const kampfOf=v=>STATS.reduce((n,[k])=>n+(v[k]||0)*KAMPF[k],0)/7;
+for(const B of BREEDS)B.soll=Math.round(kampfOf(B.werte)*10)/10;
+// Ausgleich je Rasse (Körpergewicht, Bauweise): eingemessen, sodass ein frischer Hund gegen den Menschen seiner Zielstufe ≈ 50 % gewinnt
+const BAL={wolf:1.14,polarwolf:0.86,schwarzwolf:1.09,apenninwolf:0.93,aethiopwolf:0.92,owtscharka:0.76,tosa:0.7,molosser:0.77,fila:0.74,dogge:0.82,dogo:0.88,alaunt:0.86,presa:0.76,boerboel:0.79,baerenbeisser:0.79,corso:0.79,leonberger:1,mastino:0.71,tibet:0.8,mastiff:0.71,bernhardiner:0.91,malamute:0.96,bordeaux:0.79,bullmastiff:0.81,wolfshund:0.96,neufundlaender:1,ridgeback:1.07,komondor:0.84,akita:0.94,dobermann:1.08,sharpei:1.25,schaeferhund:1.01,chow:1.22,malinois:1.03,saupacker:0.92,barsoi:1.2,deerhound:0.97,taigan:1.19,lurcher:1.18,husky:1.13,bullterrier:0.92,boxer:1.24,amstaff:1,metzgerhund:1.19,hirtenhund:0.95,bulldogge:1.43,dalmatiner:0.97,greyhound:1.35,afghane:1.07,saluki:1.18,whippet:1.69,podenco:1.06,galgo:1.45,pharao:1.2,sloughi:1.13,azawakh:0.9,cirneco:1.52,windspiel:2.69,bluthund:0.87};
+for(const B of BREEDS)B.bal=BAL[B.id]??1;
+// Alte Rassenwerte bis 26.10.2026 (Soll und Zuschläge kraft…mut) – nur zum Umrechnen gefangener Hunde aus alten Spielständen
+const OLD={"wolf":[70,-4,6,10,10,0,4,-2],"polarwolf":[68,2,6,6,10,4,4,0],"schwarzwolf":[66,2,6,8,8,2,6,2],"apenninwolf":[60,-4,5,10,10,-1,5,-1],"aethiopwolf":[56,-6,4,12,8,-3,5,0],"owtscharka":[69,7,5,-6,3,8,3,6],"tosa":[67,6,6,-4,0,6,2,7],"molosser":[66,4,5,-6,-3,4,2,4],"fila":[64,4,5,0,2,6,7,6],"dogge":[63,4,3,2,-2,2,0,4],"dogo":[62,3,6,4,4,2,6,7],"alaunt":[61,2,5,4,0,0,6,3],"presa":[60,5,6,0,2,5,5,6],"boerboel":[58,7,5,-2,0,6,3,6],"baerenbeisser":[57,5,8,-2,-2,4,4,4],"corso":[56,4,5,2,2,4,4,6],"leonberger":[55,4,2,0,4,5,-2,4],"mastino":[54,6,4,-8,-4,8,0,5],"tibet":[53,4,3,-2,4,6,2,4],"mastiff":[52,6,4,-8,-5,7,-3,5],"bernhardiner":[51,5,2,-6,2,6,-4,4],"malamute":[50,4,3,1,9,4,2,3],"bordeaux":[50,5,4,-4,-3,6,2,5],"bullmastiff":[49,5,4,0,0,5,2,5],"wolfshund":[48,2,0,6,4,-2,-6,2],"neufundlaender":[47,5,0,-4,5,6,-8,3],"ridgeback":[46,1,3,6,6,2,3,5],"komondor":[45,4,2,-2,3,6,4,6],"akita":[45,2,3,3,4,3,4,5],"dobermann":[44,1,3,7,5,1,4,5],"sharpei":[42,2,3,0,2,5,2,4],"schaeferhund":[41,1,3,4,6,2,3,5],"chow":[40,2,3,-3,1,4,4,5],"malinois":[40,-2,4,9,7,0,6,6],"saupacker":[43,2,4,2,2,2,5,4],"barsoi":[41,-1,2,10,-2,-3,3,4],"deerhound":[44,1,1,8,2,0,1,3],"taigan":[42,0,1,6,6,3,2,3],"lurcher":[39,2,3,6,3,2,4,4],"husky":[38,-1,1,7,12,2,2,1],"bullterrier":[38,4,5,1,3,5,4,8],"boxer":[37,2,3,3,2,2,2,5],"amstaff":[36,4,6,2,3,3,4,8],"metzgerhund":[39,4,2,0,2,2,0,2],"hirtenhund":[34,2,0,-2,4,2,-2,4],"bulldogge":[33,4,5,-8,-6,6,0,6],"dalmatiner":[32,-2,0,5,9,0,0,2],"greyhound":[31,-4,-2,12,-2,-3,0,0],"afghane":[35,-3,-1,8,3,2,2,-3],"saluki":[33,-4,-2,11,8,-3,1,-1],"whippet":[30,-6,-3,14,0,-5,-2,-2],"podenco":[37,-2,0,9,4,-1,2,1],"galgo":[33,-3,-1,10,5,-2,0,0],"pharao":[36,-2,0,7,3,-1,2,0],"sloughi":[34,-3,-1,10,5,-2,1,1],"azawakh":[32,-5,-1,12,6,-5,3,2],"cirneco":[30,-5,-2,8,4,-2,2,1],"windspiel":[30,-14,-10,10,-4,-12,-4,-6],"bluthund":[30,-2,-2,-2,6,0,-6,-2]};
 const NAMES=['Brutus','Ferox','Saevus','Molossus','Cerberus','Nero','Hektor','Furia','Lupa','Tyrann','Grimm','Asch','Rabe','Morro','Bärbeiß','Kaltzahn','Titus','Vulkan','Sturm','Mörser','Ajax','Bruna','Scylla','Gorgo'];
 const PARTS={kopf:'Kopf',hals:'Hals',brust:'Brust',bauch:'Flanke',vl:'Vorderlauf',hl:'Hinterlauf'};
 const PART_MAX={kopf:105,hals:95,brust:150,bauch:110,vl:70,hl:70};
@@ -536,30 +549,30 @@ const PART_MAX={kopf:105,hals:95,brust:150,bauch:110,vl:70,hl:70};
 // am schwächsten Hund am höchsten, dann deutlich absteigend, Wolf nur 1 %.
 DOG.SIGHTING={bluthund:25,hirtenhund:20,metzgerhund:16,saupacker:12,wolfshund:9,mastiff:7,baerenbeisser:5,alaunt:3,molosser:2,wolf:1};
 DOG.sightBreed=(r=Math.random())=>{let a=0;for(const [id,p] of Object.entries(DOG.SIGHTING)){a+=p/100;if(r<a)return id;}return 'bluthund';};
-DOG.BREEDS=BREEDS;DOG.STATS=STATS;DOG.PARTS=PARTS;DOG.POW={dmg:1.6,res:3,exp:1.3,resExp:1.3,off:.15};// eingemessen: Rasse gegen Menschen ihrer Zielstufe ≈ 50 % (Mastiff gegen Soldat Stufe 3, Wolf gegen Legende Stufe 6)
+DOG.BREEDS=BREEDS;DOG.STATS=STATS;DOG.KAMPF=KAMPF;DOG.kampfOf=kampfOf;DOG.BAL=BAL;DOG.PARTS=PARTS;DOG.POW={dmg:2.88,res:5.4,exp:1.3,resExp:1.3,off:.15,ref:42};// eingemessen: Rasse gegen Menschen ihrer Zielstufe ≈ 50 % (Wolf gegen Legende Stufe 6); ref = Bezugs-Istwert (Kampfmittel)
 const breed=id=>BREEDS.find(b=>b.id===id)||BREEDS.find(b=>b.id==='mastiff');
 
 function shadeHex(h,f){const n=parseInt(h.slice(1),16),c=[n>>16,n>>8&255,n&255].map(v=>cl(Math.round(v*f),0,255));return '#'+c.map(v=>v.toString(16).padStart(2,'0')).join('');}
 // Größe → Schulterhöhe und Gewicht: Faktor 0,88–1,12 um die Grundgröße der Rasse; Gewicht wächst mit der Größe hoch 2,6 und etwas mit der Kraft-Anlage
-function sizeOf(B,groesse,kraftCap,bulk=.5){const f=cl(1+(groesse-50)*.004,.88,1.12);return {height:Math.round(B.cm0*f),weight:Math.round(B.kg0*Math.pow(f,2.6)*(.94+.12*bulk)*(1+((kraftCap??B.soll)-B.soll)*.003))};}
+function sizeOf(B,groesse,kraftCap,bulk=.5){const f=cl(1+(groesse-50)*.004,.88,1.12);return {height:Math.round(B.cm0*f),weight:Math.round(B.kg0*Math.pow(f,2.6)*(.94+.12*bulk)*(1+((kraftCap??B.werte.kraft)-B.werte.kraft)*.003))};}
 DOG.resize=function(D,groesse){const B=breed(D.breed);D.groesse=cl(Math.round(groesse),1,100);Object.assign(D,sizeOf(B,D.groesse,D.caps?.kraft,D.bulk??.5));return D;};
 // Ein einzelner Hund (reines JSON wie ein Gladiator)
 DOG.create=function(breedId='mastiff',seed=(Math.random()*4294967296)>>>0){
  const B=breed(breedId),r=mulberry(seed);
- // Sollwerte (Anlage, Obergrenze fürs Training) um den Rassen-Soll; Istwerte etwa 20 Punkte darunter, beide Bernoulli-verteilt
- const caps={},stats={};for(const [k] of STATS){const m=B.soll+(B.offs?.[k]||0);caps[k]=bern(r,m);stats[k]=Math.min(caps[k],bern(r,m-20));}
+ // Sollwerte (Anlage, Obergrenze fürs Training) um den Sollwert der Rasse je Wert; Istwerte etwa 20 Punkte darunter, beide Bernoulli-verteilt
+ const caps={},stats={};for(const [k] of STATS){const m=B.werte[k];caps[k]=bern(r,m);stats[k]=Math.min(caps[k],bern(r,m-20));}
  let x=r()*B.coats.reduce((n,c)=>n+c.w,0),coat=B.coats[0];for(const c of B.coats){x-=c.w;if(x<=0){coat=c;break;}}
  const f=.93+r()*.14,col={};for(const k of ['base','light','shade','dark','stripe','tan','patch','patchHi','saddle','belly','spot','tailTip','muzzle'])if(coat[k])col[k]=shadeHex(coat[k],f);
  // Größe: eigene Bernoulli-Streuung, leicht an die Kraft-Anlage gekoppelt; Gewicht folgt Größe und Kraft
  const groesse=bern(r,50,12),bulk=r();const {height,weight}=sizeOf(B,groesse,caps.kraft,bulk);
- return {id:'hund-'+seed.toString(36),seed,breed:B.id,breedName:B.name,soll:B.soll,name:NAMES[Math.floor(r()*NAMES.length)],sex:r()<.6?'Rüde':'Hündin',ageYears:2+Math.floor(r()*6),
+ return {id:'hund-'+seed.toString(36),seed,wv:2,breed:B.id,breedName:B.name,soll:B.soll,name:NAMES[Math.floor(r()*NAMES.length)],sex:r()<.6?'Rüde':'Hündin',ageYears:2+Math.floor(r()*6),
   groesse,bulk,height,weight,stats,caps,appearance:{coat:coat.id,coatName:coat.name,colors:col,mask:'#1e1611',whiteChest:r()<(B.shape?.whiteChest??.3),earCut:r()<(B.shape?.earCut??.15),scarSeed:Math.floor(r()*1e6),collar:r()<(B.shape?.collar??.55),scars:Math.floor(r()*3),...(B.shape?.whiteFeet?{whiteFeet:r()<B.shape.whiteFeet}:{})},
   wins:0,losses:0,kills:0,dead:false};};
 
 // ---------------------------------------------------------------- Kampfparameter aus den Werten
-function params(D){const s=D.stats,ref=32,f=v=>v/ref,B=breed(D.breed),rel=D.weight/(B.kg0||80),W=DOG.POW;
- // Stärke der Rasse: mittleres Ist-Niveau (32 = typischer Mastiff) hoch einem Exponenten; Größe innerhalb der Rasse über rel
- const lvl=DOG.STATS.reduce((n,[k])=>n+s[k],0)/DOG.STATS.length/ref,bal=B.bal??1,pw=bal*Math.pow((lvl+W.off)/(1+W.off),W.exp),pr=bal*Math.pow((lvl+W.off)/(1+W.off),W.resExp),sr=Math.sqrt(rel);
+function params(D){const s=D.stats,W=DOG.POW,ref=W.ref,f=v=>v/ref,B=breed(D.breed),rel=D.weight/(B.kg0||80);
+ // Stärke: Kampfmittel der Istwerte (gewichtet wie das Kampf-Soll, Bezug ref) hoch einem Exponenten; Größe innerhalb der Rasse über rel
+ const lvl=kampfOf(s)/ref,bal=B.bal??1,pw=bal*Math.pow((lvl+W.off)/(1+W.off),W.exp),pr=bal*Math.pow((lvl+W.off)/(1+W.off),W.resExp),sr=Math.sqrt(rel);
  return {lvl,snap:W.dmg*pw*22*(.55+.45*f(s.biss))*sr,throat:W.dmg*pw*34*(.55+.45*f(s.biss))*sr,shake:W.dmg*pw*12*(.5+.5*f(s.biss))*(.6+.4*f(s.kraft))*sr,lunge:W.dmg*pw*18*(.5+.5*f(s.kraft))*rel,
   run:250*(.62+.38*f(s.tempo)),circle:118*(.7+.3*f(s.tempo)),res:W.res*pr*1.55*(.62+.38*f(s.zaeh))*sr,hold:2.6+1.55*(f(s.kraft)+f(s.wild))/2,interrupt:30*pr*(.7+.3*f(s.zaeh))*(.8+.2*f(s.wild)),
   mass:D.weight*(.6+.4*f(s.kraft)),stam:.75+.25*f(s.ausdauer),wild:cl(f(s.wild)*.47,0,1),mut:cl(f(s.mut)*.52,0,1),evade:cl(.08+f(s.tempo)*.22,.05,.55),sz:D.height/75};}
@@ -570,7 +583,7 @@ DOG.makeActor=function(D,team,x,y){
  const rng=S.rng,g=M.makeGladiator(0,team===1);S.rng=rng;
  g.name=D.name;g.id='hund-'+D.id+'-'+Math.floor(Math.random()*1e6).toString(36);g.role='Soldat';g.traits=[];g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};
  for(const k in g.stats)g.stats[k]=45;Object.assign(g.stats,{will:100,morale:100,agility:cl(D.stats.tempo,15,95),reflex:cl(D.stats.tempo,15,95),dexterity:cl(D.stats.biss,15,95),strength:D.stats.kraft,toughness:D.stats.zaeh});g.weight=D.weight;g.height=D.height;
- const P=params(D),l=M.createCombatActor(g,team,0),k=D.weight/(breed(D.breed).kg0||80)*(.7+.3*D.stats.zaeh/32);
+ const P=params(D),l=M.createCombatActor(g,team,0),k=D.weight/(breed(D.breed).kg0||80)*(.7+.3*D.stats.zaeh/DOG.POW.ref);
  const tissue={},max={};for(const [p,v] of Object.entries(PART_MAX)){max[p]=v*k;tissue[p]=max[p];}
  Object.assign(l,{rex:true,dog:D,P,x,y,r:16*P.sz,tissue,max,wounds:[],blood:100,bleed:{},trauma:0,morale:100,energy:100,gore:{},mouthBlood:0,spray:[],pool:null,
   velocity:0,heading:team?Math.PI:0,a:team?Math.PI:0,mode:'circle',clock:0,duration:0,cool:.9+Math.random()*.8,side:Math.random()<.5?-1:1,z:0,hit:0,phase:Math.random()*6,
@@ -2285,11 +2298,18 @@ DOG.writeBack=function(a,won){const D=a.dog?._src||a.dog;if(!D)return;const c=DO
 // Heilung je Tag: Blut +20, jedes Körperteil +15 % (höchstens voll), alte Wunden verblassen
 DOG.heal=function(D,days=1){if(D.dead)return;const c=DOG.cond(D);for(let i=0;i<days;i++){c.blood=Math.min(100,c.blood+20);for(const p of PARTKEYS)c.t[p]=Math.min(1,Math.round((c.t[p]+.15)*100)/100);if(c.wounds.length)c.wounds.splice(0,Math.max(1,Math.ceil(c.wounds.length/3)));}};
 // Kampfwert (Skala der Arena): ein frisch gewürfelter Hund (Ist ≈ Soll − 20) entspricht dem Menschen seiner Zielstufe
-// (Mastiff → Stufe 3, Wolf → Stufe 6; Kampfwert eines Gegners der Stufe q ≈ 33 + 14·q). Stärkere Istwerte zählen mit.
-// Geschätzt aus der Abstimmung der 10. Fassung, nicht in eigenen Probekämpfen geeicht.
-DOG.targetQ=soll=>cl(3+(soll-52)/6,-1,6);
-DOG.kw=function(D,withCond=true){const B=breed(D.breed),fresh=STATS.reduce((n,[k])=>n+Math.max(1,B.soll+(B.offs?.[k]||0)-20),0)/STATS.length,now=STATS.reduce((n,[k])=>n+D.stats[k],0)/STATS.length;
+// (Kampf-Soll 37 → Stufe 0, Mastiff 62 → Stufe 3,4, Wolf 82 → Stufe 6; Kampfwert eines Gegners der Stufe q ≈ 33 + 14·q). Stärkere Istwerte zählen mit.
+DOG.targetQ=soll=>cl((soll-37)/7.4,-1,6);
+// Totenköpfe (Hundefang) nach Kampf-Soll: 1 unter 38 · 2 bis 50 · 3 bis 60 · 4 bis 70 · 5 ab 70
+DOG.SKULLS=[38,50,60,70];
+DOG.skullsOf=soll=>1+DOG.SKULLS.filter(x=>soll>=x).length;
+DOG.kw=function(D,withCond=true){const B=breed(D.breed),fresh=kampfOf(Object.fromEntries(STATS.map(([k])=>[k,Math.max(1,B.werte[k]-20)]))),now=kampfOf(D.stats);
  const base=Math.max(18,33+14*DOG.targetQ(B.soll))*Math.pow(Math.max(.3,now/fresh),1.1)*Math.pow(D.weight/(B.kg0||80),.25);
  return Math.max(5,Math.round(base*(withCond?Math.pow(Math.max(.05,DOG.condHealth(D)/100),.6):1)));};
+// Gefangene Hunde aus alten Spielständen (vor 27.10.2026) auf die neuen Rassenwerte umrechnen: jeder Ist- und Sollwert
+// wandert um den Unterschied zwischen altem und neuem Sollwert der Rasse; eigene Abweichung und Trainingsfortschritt bleiben.
+DOG.migrate=function(D){if(!D||D.wv>=2)return D;const B=breed(D.breed),o=OLD[B.id];
+ if(o){STATS.forEach(([k],i)=>{const d=B.werte[k]-(o[0]+o[i+1]);if(D.caps&&k in D.caps)D.caps[k]=cl(Math.round(D.caps[k]+d),1,100);if(D.stats&&k in D.stats)D.stats[k]=cl(Math.round((D.stats[k]+d)*10)/10,1,D.caps?.[k]??100);});}
+ D.soll=B.soll;D.wv=2;return D;};
 window.DOG_LOADED=true;
 })();
