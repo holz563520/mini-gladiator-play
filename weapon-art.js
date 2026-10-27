@@ -48,14 +48,23 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practic
  rect(n-3,-3,7,6,dark);rect(n-2,-2,5,4,metal);pix(n,-1,gold);pix(n,0,gold);
  if(!dbl){rect(n-2,-4,5,1,dark);pix(n,-4,mid);}
  if(q>=4){line(n-2,-3,n+2,-3,gold);if(dbl)line(n-2,2,n+2,2,gold);}
- }else if(blunts.includes(id)){shaft(22);if(id==='club'){poly([[9,-3],[12,-6],[23,-8],[28,-4],[29,3],[24,7],[12,5]],'#352c26',true);poly([[10,-2],[13,-5],[23,-6],[26,-3],[27,2],[23,5],[12,4]],'#93653e',true);line(13,-4,23,-5,'#c09a63',true);for(const x of [13,21]){rect(x,-5,3,11,dark,true);rect(x,-4,1,9,metal,true);pix(x+1,-3,edge,true)}}else if(id==='mace'){/* Streitkolben (Wunsch Thomas 26.10.): kleiner eiserner Kern mit spitzen Schlagblättern, die deutlich abstehen (je Seite drei: schräg nach hinten, gerade, schräg nach vorn), Kragen, Eisenschienen am Stiel, Spitze vorn */
+ }else if(blunts.includes(id)){shaft(id==='hammer'?27:22);if(id==='club'){poly([[9,-3],[12,-6],[23,-8],[28,-4],[29,3],[24,7],[12,5]],'#352c26',true);poly([[10,-2],[13,-5],[23,-6],[26,-3],[27,2],[23,5],[12,4]],'#93653e',true);line(13,-4,23,-5,'#c09a63',true);for(const x of [13,21]){rect(x,-5,3,11,dark,true);rect(x,-4,1,9,metal,true);pix(x+1,-3,edge,true)}}else if(id==='mace'){/* Streitkolben (Wunsch Thomas 26.10.): kleiner eiserner Kern mit spitzen Schlagblättern, die deutlich abstehen (je Seite drei: schräg nach hinten, gerade, schräg nach vorn), Kragen, Eisenschienen am Stiel, Spitze vorn */
  for(const y of [-2,1]){line(9,y,17,y,dark);pix(11,y,metal);pix(14,y,metal)}rect(16,-3,3,7,dark);rect(17,-3,1,7,gold);pix(17,-2,edge);
  for(const sg of [-1,1])for(const [bx,tx,ty,w] of [[21,17,9,3.6],[25,25,11,4.2],[29,33,9,3.6]]){const P=(x,y)=>[x,y*sg];
   poly([P(bx-w,3),P(tx,ty),P(bx+w,3)],dark,true);poly([P(bx-w+1,4),P(tx,ty-1),P(bx+w-1,4)],metal,true);line(bx,4*sg,tx,(ty-1)*sg,sg<0?edge:mid,true);}
  poly([[19,-4],[22,-5],[28,-5],[31,-4],[32,0],[31,4],[28,5],[22,5],[19,4],[18,0]],dark,true);poly([[20,-3],[22,-4],[28,-4],[30,-3],[31,0],[30,3],[28,4],[22,4],[20,3],[19,0]],metal,true);
  line(21,-3,29,-3,edge,true);pix(22,-2,'#ffffff',true);line(21,2,29,2,'#4e5b60',true);line(20,0,30,0,mid,true);
  poly([[31,-2],[37,0],[31,2]],dark,true);line(32,-1,36,0,edge,true);
- if(q>=4){line(22,-5,28,-5,gold);line(22,5,28,5,gold)}}else{rect(17,-11,18,22,dark,true);rect(19,-10,14,20,metal,true);rect(19,-10,3,20,edge,true);rect(30,-10,3,20,mid,true);rect(23,-7,6,14,'#657079',true);rect(23,-1,7,3,gold,true);pix(25,0,edge,true);poly([[17,-4],[11,-2],[11,2],[17,4]],metal,true)}
+ if(q>=4){line(22,-5,28,-5,gold);line(22,5,28,5,gold)}}else{/* Kriegshammer (Wunsch Thomas 27.10.): langer schlanker Stiel mit Eisenschienen, kleiner Kopf – oben eine flache, leicht
+   ausgestellte Schlagfläche (mit Zähnen ab Güte 2), unten ein nach hinten gebogener Dorn (Rabenschnabel), vorn eine kurze Stoßspitze */
+ for(const y of [-2,1]){line(15,y,27,y,dark);pix(18,y,metal);pix(22,y,metal);pix(26,y,metal)}
+ poly([[27,-4],[26,-9],[24,-12],[35,-12],[33,-9],[32,-4]],dark,true);poly([[28,-4],[27,-9],[25,-11],[34,-11],[32,-9],[31,-4]],metal,true);
+ line(25,-11,34,-11,edge,true);line(28,-9,28,-5,edge,true);line(31,-9,31,-5,'#4e5b60',true);
+ if(q>=2)for(const x of [25,28,31,34])pix(x,-12,edge,true);
+ poly([[27,4],[32,4],[31,8],[29,13],[26,18],[24,18],[26,12],[27,8]],dark,true);poly([[28,4],[31,4],[30,8],[28,12],[25,17],[27,11],[28,8]],metal,true);line(28,5,26,15,edge,true);pix(25,17,edge,true);
+ rect(26,-4,7,8,dark,true);rect(27,-3,5,6,metal,true);line(27,-3,31,-3,edge,true);pix(28,-2,'#ffffff',true);line(27,2,31,2,'#4e5b60',true);
+ poly([[32,-2],[40,0],[32,2]],dark,true);line(33,-1,39,0,edge,true);line(33,1,38,0,mid,true);
+ rect(25,-3,1,7,q>=3?gold:dark);if(q>=5){rect(28,-1,3,3,gold,true);pix(29,0,look.gem||'#c66e4c',true)}}
  }else if(id==='bow'){for(const sign of [-1,1]){poly([[5,0],[8,sign*8],[7,sign*17],[2,sign*24],[-3,sign*25],[-5,sign*22],[0,sign*21],[3,sign*15],[4,sign*6]],dark);line(5,sign*3,5,sign*15,wood);line(5,sign*15,0,sign*23,'#c8a06a');line(0,sign*23,-4,sign*22,gold)}rect(3,-4,6,8,'#483326');for(let y=-3;y<=3;y+=2)line(3,y,8,y,'#b18a55');
  }else if(id==='crossbow'){poly([[-14,-4],[17,-4],[23,-2],[23,3],[-6,3],[-9,6],[-14,5]],dark);rect(-12,-3,32,5,wood);line(-11,-2,19,-2,'#b78d5b');rect(1,-3,18,2,metal);for(const sign of [-1,1]){poly([[17,0],[18,sign*12],[12,sign*23],[9,sign*22],[14,sign*11],[14,0]],dark);line(16,sign*2,16,sign*11,metal);line(16,sign*11,11,sign*22,edge)}rect(-4,-4,3,8,gold);rect(3,3,2,4,mid);
  }else if(id==='net'){const n=13+Math.floor(q/2);poly([[-n,-n],[n-1,-n+1],[n,n],[-n+1,n-1]],'#554c39');for(let y=-n;y<n;y+=5)for(let x=-n;x<n;x+=5){g.clearRect(x+1+ox,y+1+oy,4,4);pix(x,y,'#d1ba85');pix(x+1,y,'#887448')}for(const [x,y]of [[-n,-n],[n,-n],[n,n],[-n,n]]){rect(x-2,y-2,5,5,dark);rect(x-1,y-1,3,3,metal);pix(x-1,y-1,edge)}
@@ -66,10 +75,10 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practic
  const wetPoints=[];if(b>0&&mask.size){const points=[...mask].map(p=>p.split(',').map(Number)),xs=points.map(p=>p[0]),min=Math.min(...xs),max=Math.max(...xs),level=b/12;
  for(const [x,y]of points){const u=(x-min)/Math.max(1,max-min),n=noise(Math.floor(x/3),Math.floor(y/2),k),fine=noise(x,y,k+37),edgeBias=(Math.sin(x*.37+k)*.5+.5)*.16;
  // Swords keep a readable metal edge and a patchy stain near the tip.
- const ax=axes.includes(id)?clamp((Math.abs(y)-3)/Math.max(1,axeEdge),0,1):0,pr=axes.includes(id)?ax:u;
+ const ax=axes.includes(id)?clamp((Math.abs(y)-3)/Math.max(1,axeEdge),0,1):0,pr=axes.includes(id)?ax:id==='hammer'?clamp(Math.max((-y-5)/6,(y-4)/12,(x-32)/7),0,1):u;
  // Dezent: Blut nur an Spitze bzw. Schneide, nie geschlossen. Stufe 1 = ein paar Spritzer, volle Stufe = etwa ein Drittel der
  // Schneidenzone gesprenkelt, dazu einzelne Tropfenspuren. Schwerter weniger als Äxte und Hämmer.
- const reach=lengths[id]?.3:.42,band=pr>1-level*reach+edgeBias*.5,dens=fine>.62-level*.22,streak=n<level*.06&&pr>.35&&fine>.55;
+ const reach=lengths[id]?.3:id==='hammer'?.62:.42,band=pr>1-level*reach+edgeBias*.5,dens=fine>.62-level*.22,streak=n<level*.06&&pr>.35&&fine>.55;
  if(!(band&&dens||streak))continue;
  wetPoints.push([x,y]);const colors=dry?['#3b2224','#4f2427','#62292b']:['#4a1b21','#6e1d26','#8e232e'];const ix=fine>.85?2:fine>.5?1:0;pix(x,y,colors[ix]);if(!dry&&fine>.985&&level>.6)pix(x,y,'#b8454a');
  }
@@ -77,7 +86,7 @@ function sprite(item,blood,age){const q=clamp(item.q||0,0,6),id=item.def,practic
  const points=[...mask].map(p=>p.split(',').map(Number)),maxContactX=points.length?Math.max(...points.map(p=>p[0])):0;
  const image=document.createElement('canvas');image.width=Math.max(1,maxX-minX+1);image.height=Math.max(1,maxY-minY+1);
  image.getContext('2d').drawImage(c,minX,minY,image.width,image.height,0,0,image.width,image.height);
- const result={canvas:image,ox:ox-minX,oy:oy-minY,dripPoints:axes.includes(id)?wetPoints.filter(p=>Math.abs(p[1])>=axeEdge):wetPoints.filter(p=>p[0]>maxContactX-12),def:id};
+ const result={canvas:image,ox:ox-minX,oy:oy-minY,dripPoints:axes.includes(id)?wetPoints.filter(p=>Math.abs(p[1])>=axeEdge):id==='hammer'?wetPoints.filter(p=>p[1]>=12||p[1]<=-10||p[0]>=36):wetPoints.filter(p=>p[0]>maxContactX-12),def:id};
  cache.set(key,result);cachePixels+=image.width*image.height;
  while(cache.size>MAX_CACHE||cachePixels*4>MAX_BYTES){const first=cache.keys().next().value,old=cache.get(first);cachePixels-=old.canvas.width*old.canvas.height;cache.delete(first);}return result;
 }

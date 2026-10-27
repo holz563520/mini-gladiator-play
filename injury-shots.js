@@ -214,6 +214,9 @@ function weaponFx(q,T,V,cls,wid,t,kind){const k=t-HIT,A=V.A;if(cls==='none')retu
  if(cls==='blunt'){/* Kopf der Waffe fällt von oben auf die Stelle und prallt zurück */const p=k<0?cl(1+k/.3):1-cl(k/.3)*.8,hx=A.x+26-p*22,hy=A.y-70+p*62,hw=wid==='hammer'?26:wid==='mace'?18:15,hh=wid==='hammer'?18:wid==='mace'?16:26;
   T.line(hx+hw/2,hy+hh/2,hx+60,hy-58,'#5a4128',4);T.line(hx+hw/2,hy+hh/2,hx+60,hy-58,'#8b6b45',2);
   if(wid==='club'){for(let j=0;j<hh;j++){const w=hw-Math.abs(j-hh/2)*.5;T.r(hx+(hw-w)/2,hy+j,w,1,j<3?'#a8845a':j>hh-4?'#4d3620':'#7b5a38');}T.r(hx+3,hy+5,3,2,'#3a2a1c');T.r(hx+9,hy+14,3,2,'#3a2a1c');}
+  else if(wid==='hammer'){/* Kriegshammer: flache Schlagfläche unten trifft, Dorn zeigt nach oben, kleiner Kopf */const cx=hx+hw/2;
+   T.r(cx-5,hy+2,10,9,'#3f4642');T.r(cx-4,hy+3,8,7,'#7d8687');T.r(cx-7,hy+11,14,7,'#3f4642');T.r(cx-6,hy+12,12,5,'#8d9693');T.r(cx-6,hy+12,12,2,'#c2c9bf');T.r(cx-7,hy+17,14,1,'#2e3431');
+   for(let i=0;i<12;i++){const w=Math.max(1,6-Math.floor(i/2));T.r(cx-w/2-i*.35,hy+2-i,w,1,i%3?'#7d8687':'#c2c9bf');}}
   else{T.r(hx,hy,hw,hh,'#3f4642');T.r(hx+1,hy+1,hw-2,hh-2,'#7d8687');T.r(hx+1,hy+1,hw-2,3,'#c2c9bf');T.r(hx+1,hy+hh-5,hw-2,4,'#515a55');if(wid==='mace')for(let i=0;i<4;i++){T.r(hx-3,hy+2+i*4,4,2,'#9aa39b');T.r(hx+hw-1,hy+2+i*4,4,2,'#5f6863');}}}
  else if(cls==='spear'){/* Spitze stößt schräg hinein und wird wieder herausgezogen */const ang=-2.5,dep=k<0?-cl(-k/.25)*60:k<.18?6:6-(k-.18)/.3*70,tx=A.x+Math.cos(ang)*-dep,ty=A.y+Math.sin(ang)*-dep,sx=tx+Math.cos(ang)*120,sy=ty+Math.sin(ang)*120;
   T.line(tx+Math.cos(ang)*14,ty+Math.sin(ang)*14,sx,sy,'#5a4128',4);T.line(tx+Math.cos(ang)*14,ty+Math.sin(ang)*14-1,sx,sy-1,'#9a7848',1);for(let i=0;i<16;i++){const w=i<3?1+i:i<10?5:Math.max(1,5-(i-10));if(kind==='pierce'||i>(dep>0?dep:0)/1)T.r(tx+Math.cos(ang)*i-w/2,ty+Math.sin(ang)*i-w/2,w,w,i%2?'#dfe4d2':'#aab4aa');}

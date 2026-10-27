@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kriegshämmer · Galerie</title>
+<style>
+:root{--bg:#120c09;--panel:#1d282b;--line:#394b4d;--gold:#dfb66d;--cream:#eae4cd;--muted:#97aaa8;--red:#b8454a}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#2a1d14,#120c09 60%);color:var(--cream);font-family:'Courier Prime',ui-monospace,monospace;min-height:100vh}
+header{padding:20px 16px 8px;text-align:center}
+header small{display:block;letter-spacing:4px;color:var(--muted);font-size:11px}
+header h1{margin:4px 0 0;font-size:26px;letter-spacing:6px;color:var(--gold);text-shadow:3px 3px 0 #000}
+header p{margin:8px auto 0;max-width:640px;font-size:13px;color:var(--muted);line-height:1.45}
+.hero{display:grid;place-items:center;margin:8px auto 4px}
+.hero canvas{width:min(92vw,520px);aspect-ratio:13/7;image-rendering:pixelated;border:3px solid #6b5230;box-shadow:6px 6px 0 #000a;background:#000}
+.hero .cap{margin-top:8px;font-size:13px;color:var(--gold);letter-spacing:2px;text-align:center}
+.ctl{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 16px}
+.ctl button{font:inherit;color:var(--cream);background:var(--panel);border:2px solid var(--line);padding:7px 12px;box-shadow:3px 3px 0 #0008;cursor:pointer}
+.ctl button.on{border-color:var(--gold);color:var(--gold)}
+main{max-width:1000px;margin:0 auto;padding:6px 12px 40px}
+h2{font-size:13px;letter-spacing:3px;color:var(--gold);margin:22px 4px 8px;text-transform:uppercase}
+.wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:separate;border-spacing:6px;min-width:640px;width:100%}
+th{font-size:11px;letter-spacing:2px;color:var(--muted);font-weight:normal;text-align:center;padding:0 2px}
+th.row{text-align:left;width:150px}
+td{background:#1d282bcc;border:1px solid var(--line);padding:4px;text-align:center;vertical-align:middle}
+td.name{text-align:left;padding:6px 8px;font-size:12px}
+td.name b{display:block;color:var(--cream);font-size:13px}
+td.name span{color:var(--muted);font-size:11px}
+td canvas{display:block;margin:0 auto;width:100%;max-width:150px;aspect-ratio:3/2;image-rendering:pixelated}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin:14px 4px 0}
+</style></head>
+<body>
+<header><small>ARENA THEORY · WAFFENKAMMER</small><h1>KRIEGSHÄMMER</h1>
+<p>Alle Güten von Steinhammer bis Vulcanus – sauber, mit Spritzern, blutig, getränkt (frische Tropfen) und angetrocknet. Gezeichnet mit dem echten Waffen-Zeichner des Spiels (<code>weapon-art.js</code>), also genau so wie in Laden, Arena und Nahaufnahmen.</p></header>
+<div class="hero"><canvas id="hero" width="260" height="140"></canvas><div class="cap" id="heroCap"></div></div>
+<div class="ctl" id="heroCtl"></div>
+<main>
+ <h2>Alle Güten · Blutstufen</h2>
+ <div class="wrap"><table id="grid"></table></div>
+ <h2>Legendäre Stücke · Übungshammer</h2>
+ <div class="wrap"><table id="extra"></table></div>
+ <p class="note">Blut sitzt nur an den Trefferflächen: an der flachen Schlagfläche, an der Spitze des Dorns und an der Stoßspitze – nie am Stiel. Ab „getränkt“ fallen frische Tropfen vom tiefsten blutigen Punkt (die Schwerkraft zeigt immer nach unten, auch wenn der Hammer gedreht ist). Angetrocknetes Blut ist dunkler und tropft nicht mehr.</p>
+</main>
+<script src="data.js?v=568b962d"></script>
+<script src="weapon-art.js?v=568b962d"></script>
+<script>
+(()=>{const M=window.MG,A=M.weaponArt;
+const STAGES=[['Sauber',0,0],['Spritzer',.3,0],['Blutig',.62,0],['Getränkt',1,0],['Angetrocknet',1,.85]];
+const item=(q,extra={})=>({...M.makeItem('weapon','hammer',q),...extra});
+const live=[];// [canvas, item, blood, age, angle]
+function cell(it,blood,age,scale=2.2,angle=-.35){const c=document.createElement('canvas');c.width=150;c.height=100;live.push([c,it,blood,age,angle,scale]);return c;}
+function rowHtml(table,label,sub,items){const tr=document.createElement('tr'),td=document.createElement('td');td.className='name';td.innerHTML=`<b>${label}</b><span>${sub}</span>`;tr.appendChild(td);
+ for(const [it,b,age] of items){const t=document.createElement('td');t.appendChild(cell(it,b,age));tr.appendChild(t);}table.appendChild(tr);}
+const grid=document.getElementById('grid');grid.innerHTML='<tr><th class="row">Güte</th>'+STAGES.map(s=>`<th>${s[0]}</th>`).join('')+'</tr>';
+for(let q=0;q<=6;q++){const it=item(q),name=M.itemName(it).split(' · ');rowHtml(grid,name[0],'Güte '+q+(name[1]?' · '+name[1]:''),STAGES.map(([,b,a])=>[it,b,a]));}
+const extra=document.getElementById('extra');extra.innerHTML='<tr><th class="row">Stück</th>'+STAGES.map(s=>`<th>${s[0]}</th>`).join('')+'</tr>';
+rowHtml(extra,'Mit Geschichte','Legendär, Stufe 1',STAGES.map(([,b,a])=>[item(4,{story:{stage:1}}),b,a]));
+rowHtml(extra,'Legende','Legendär, Stufe 2',STAGES.map(([,b,a])=>[item(6,{story:{stage:2}}),b,a]));
+rowHtml(extra,'Übungshammer','Holz, blutet nicht',STAGES.map(([,b,a])=>[item(2,{trainingWood:true}),b,a]));
+// Großansicht: dreht sich langsam, Tropfen fallen
+const H=document.getElementById('hero'),hc=H.getContext('2d');let hq=6,hb=1;
+const ctl=document.getElementById('heroCtl');
+function ctlHtml(){ctl.innerHTML=[0,1,2,3,4,5,6].map(q=>`<button data-q="${q}" class="${q===hq?'on':''}">${q}</button>`).join('')+STAGES.slice(0,4).map((s,i)=>`<button data-b="${s[1]}" class="${s[1]===hb?'on':''}">${s[0]}</button>`).join('');
+ document.getElementById('heroCap').textContent=M.itemName(item(hq)).split(' · ').slice(0,2).join(' · ');}
+ctl.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.q)hq=+b.dataset.q;if(b.dataset.b)hb=+b.dataset.b;ctlHtml();};ctlHtml();
+let heroItem=null,heroKey='';
+function frame(now){requestAnimationFrame(frame);const t=now/1000;
+ const key=hq+'|'+hb;if(key!==heroKey){heroKey=key;heroItem=item(hq);}
+ hc.imageSmoothingEnabled=false;const g=hc.createLinearGradient(0,0,0,140);g.addColorStop(0,'#3a2a1c');g.addColorStop(1,'#1a110b');hc.fillStyle=g;hc.fillRect(0,0,260,140);
+ hc.fillStyle='#c9a26a';hc.fillRect(0,118,260,22);hc.fillStyle='#b8915c';for(let x=0;x<260;x+=7)hc.fillRect(x,120+(x*13%9),2,1);
+ if(hb>=.6){hc.fillStyle='#5a1a1e';hc.beginPath();hc.ellipse(150,124,22+hb*6,4,0,0,Math.PI*2);hc.fill();}
+ A.draw(hc,heroItem,{x:120,y:66,angle:-.5+Math.sin(t*.7)*.35,scale:2.4,blood:hb,time:t});
+ for(const [c,it,b,age,angle,scale] of live){const x=c.getContext('2d');x.imageSmoothingEnabled=false;x.clearRect(0,0,150,100);
+  x.fillStyle='#0004';x.beginPath();x.ellipse(78,90,40,4,0,0,Math.PI*2);x.fill();A.draw(x,it,{x:58,y:52,angle,scale,blood:b,age,time:t});}}
+requestAnimationFrame(frame);})();
+</script>
+</body></html>
