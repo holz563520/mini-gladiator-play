@@ -21,12 +21,32 @@ function bern(r,mean,n=64){let hits=0;const p=cl((mean-1)/99,.01,.98);for(let i=
 
 // ---------------------------------------------------------------- Rassen (Sollwerte 70 → 30)
 const BREEDS=[
- {id:'wolf',cm0:80,kg0:45,name:'Wolf',soll:70,active:true,look:'hochbeinig, schmale tiefe Brust, langer Kopf mit Stehohren, Halskrause, buschige hängende Rute',fur:'Grau, heller Bauch und Kehle, dunkler Sattel, helle Maske um das Maul',offs:{kraft:-4,biss:6,tempo:10,ausdauer:10,zaeh:0,wild:4,mut:-2},
+ {id:'wolf',wolf:true,cm0:80,kg0:45,name:'Wolf',soll:70,active:true,look:'hochbeinig, schmale tiefe Brust, langer Kopf mit Stehohren, Halskrause, buschige hängende Rute',fur:'Grau, heller Bauch und Kehle, dunkler Sattel, helle Maske um das Maul',offs:{kraft:-4,biss:6,tempo:10,ausdauer:10,zaeh:0,wild:4,mut:-2},
   // Stufe 6 (Zielgegner: Legende). Eigene Gestalt: kein Hund, ein Wolf. Lange Beine, schmaler Rumpf, schmale tiefe Brust, aufgezogener Bauch, Halskrause, langer schmaler Kopf, Stehohren, buschige Rute hängt gerade, nie Halsband
   shape:{head:'wo',L:31,leg:1.18,thick:.82,chest:.9,tuck:1.9,withers:.4,crest:7.8,dew:3.2,tailW:4.8,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.86,hindW:.9,neckX:1.4,neckY:-.6,ruff:1,saddle:1,mouth:{x:12.6,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
   // Lautpaket: bellt kaum (kurzes Wuffen), dafür kehliges Knurren und Fauchen, Jaulen hoch
   sound:{barkF:150,barkF1:[760,560,430],barkF2:[1280,1000,820],barkLen:.22,barkRate:.08,huff:.4,growlF:60,growlLp:2300,yelpF:640,whineF:760,vol:.8},
   coats:[{id:'grau',name:'Grau',w:1,base:'#8a857a',light:'#b5afa2',shade:'#5f5a51',dark:'#3a3630',saddle:'#4a463f',belly:'#cfc8b7'}],tier:'Legende'},
+ {id:'polarwolf',wolf:true,cm0:82,kg0:55,name:'Polarwolf',soll:68,active:true,look:'Wolf aus dem hohen Norden: groß und schwer, dichter weißer Pelz, kurze runde Ohren, kürzere Schnauze, breite Pfoten, buschige Rute',fur:'Weiß, leicht cremefarben überhaucht',offs:{kraft:2,biss:6,tempo:6,ausdauer:10,zaeh:4,wild:4,mut:0},
+  // Stufe 5 (fünf Totenköpfe). Eigene Gestalt: wie der Wolf, aber massiger im dicken Winterpelz, kleine runde Ohren, kurze Schnauze
+  shape:{head:'wo',wolfEar:.72,wolfMz:.9,L:31,leg:1.12,thick:.94,chest:.9,tuck:1.4,withers:.4,crest:8.2,dew:3.6,tailW:5.2,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.94,hindW:.96,neckX:1.2,neckY:-.4,ruff:1,saddle:.6,rough:1,mouth:{x:12,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
+  sound:{barkF:140,barkF1:[720,540,420],barkF2:[1240,980,800],barkLen:.24,barkRate:.06,huff:.45,growlF:56,growlLp:2100,yelpF:600,whineF:720,vol:.85},
+  coats:[{id:'weiss',name:'Weiß',w:1,base:'#e6e2d8',light:'#f6f4ee',shade:'#bcb6a8',dark:'#8a8478',saddle:'#d2ccc0',belly:'#f4f0e8',tailTip:'#d8d2c6'}]},
+ {id:'schwarzwolf',wolf:true,cm0:80,kg0:48,name:'Schwarzer Wolf',soll:66,active:true,look:'großer schwarzer Waldwolf: hochbeinig und kräftig, schwarzer Pelz mit grauem Schimmer an Kehle und Bauch, gelbe Augen, große Stehohren, buschige Rute',fur:'Schwarz, an Kehle und Bauch grau überhaucht',offs:{kraft:2,biss:6,tempo:8,ausdauer:8,zaeh:2,wild:6,mut:2},
+  // Stufe 5 (fünf Totenköpfe). Eigene Gestalt: Wolf in Schwarz, größer und schwerer als der graue Wolf; die gelben Augen leuchten im Dunkel
+  shape:{head:'wo',wolfEar:1,wolfMz:1.04,L:32,leg:1.2,thick:.88,chest:1,tuck:1.8,withers:.5,crest:8,dew:3.4,tailW:5,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.9,hindW:.94,neckX:1.4,neckY:-.6,ruff:1,saddle:1,mouth:{x:12.9,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
+  sound:{barkF:130,barkF1:[680,500,400],barkF2:[1160,920,760],barkLen:.24,barkRate:.06,huff:.45,growlF:52,growlLp:2000,yelpF:580,whineF:700,vol:.9},
+  coats:[{id:'schwarz',name:'Schwarz',w:1,base:'#2e2c2a',light:'#4c4844',shade:'#1e1c1b',dark:'#121110',saddle:'#1a1817',belly:'#55504a',tailTip:'#141312'}]},
+ {id:'apenninwolf',wolf:true,cm0:70,kg0:32,name:'Apenninwolf',soll:60,active:true,look:'Italienischer Wolf: kleiner und schlanker als der Nordwolf, graubraun mit rötlichem Hauch, dunkler Sattel, schwarzer Strich vorn an den Vorderläufen, helle Maske',fur:'Graubraun mit rötlichem Hauch, dunkler Sattel, helle Kehle',offs:{kraft:-4,biss:5,tempo:10,ausdauer:10,zaeh:-1,wild:5,mut:-1},
+  // Stufe 4 (vier Totenköpfe). Eigene Gestalt: der Wolf Roms – kleiner, schmaler und brauner als der graue Wolf, etwas kürzere Ohren
+  shape:{head:'wo',wolfEar:.9,wolfMz:.98,L:30,leg:1.16,thick:.78,chest:.9,tuck:2,withers:.3,crest:7.6,dew:3,tailW:4.4,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.84,hindW:.88,neckX:1.4,neckY:-.6,ruff:1,saddle:1,mouth:{x:12.4,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
+  sound:{barkF:156,barkF1:[780,580,440],barkF2:[1300,1020,840],barkLen:.2,barkRate:.08,huff:.4,growlF:62,growlLp:2300,yelpF:660,whineF:780,vol:.8},
+  coats:[{id:'graubraun',name:'Graubraun',w:1,base:'#94826a',light:'#b8a688',shade:'#6a5c4a',dark:'#3e352a',saddle:'#4c4236',belly:'#d8cab0'}]},
+ {id:'aethiopwolf',wolf:true,bal:1.08,cm0:60,kg0:16,name:'Äthiopischer Wolf',soll:56,active:true,look:'roter Wolf aus dem Hochland Aethiopias: schlank und hochbeinig, leuchtend rotes Fell, weiße Kehle und Brust, sehr lange schmale Schnauze, große spitze Ohren, buschige Rute mit schwarzer Spitze',fur:'Rot mit weißer Kehle, Brust und Innenseite der Läufe, schwarze Rutenspitze',offs:{kraft:-6,biss:4,tempo:12,ausdauer:8,zaeh:-3,wild:5,mut:0},
+  // Stufe 4 (vier Totenköpfe). Eigene Gestalt: kleiner roter Wolf wie ein großer Fuchs, sehr lange Schnauze und große Ohren, weiße Kehle, schwarze Rutenspitze
+  shape:{head:'wo',wolfEar:1.22,wolfMz:1.22,L:29,leg:1.22,thick:.72,chest:.8,tuck:2.2,withers:.2,crest:7.2,dew:2.4,tailW:4.2,tailSeg:2.6,tailUp:.3,tailCurl:-.02,bushy:1,legW:.78,hindW:.84,neckX:1.6,neckY:-1,ruff:0,saddle:.5,mouth:{x:14.2,y:1.6},eye:{x:4.2,y:-4.6},whiteChest:0,earCut:0,collar:0},
+  sound:{barkF:190,barkF1:[860,650,500],barkF2:[1440,1130,920],barkLen:.18,barkRate:.2,huff:.3,growlF:70,growlLp:2500,yelpF:720,whineF:860,vol:.75},
+  coats:[{id:'rot',name:'Rot',w:1,base:'#b8642e',light:'#d4844c',shade:'#8a4620',dark:'#4e2812',saddle:'#9e5226',belly:'#f0e6d6',tailTip:'#1c1814'}]},
  {id:'owtscharka',cm0:72,kg0:75,name:'Kaukasischer Owtscharka',soll:69,active:true,look:'riesig, bärenhaft, dichtes langes Fell mit Mähne, breiter Kopf, kurze Ohren (meist kupiert), buschige Sichelrute',fur:'Grau (wolfsfarben), Falb oder Rot, oft helle Abzeichen',offs:{kraft:7,biss:5,tempo:-6,ausdauer:3,zaeh:8,wild:3,mut:6},
   // Stufe 5,8 (Zielgegner: Legende). Eigene Gestalt: Herdenschutzhund aus dem Kaukasus, Wolfsjäger. Massig, dichtes langes Fell (Zotteln, Mähne, Hosen), dicke Läufe, buschige Rute leicht sichelförmig, breiter Bärenkopf
   shape:{head:'ow',L:30.5,leg:1,thick:1.16,chest:1.1,tuck:.3,withers:.5,crest:11.2,dew:6,tailW:5.4,tailSeg:2.5,tailUp:.15,tailCurl:.05,bushy:1,legW:1.18,hindW:1.14,neckX:.2,neckY:-.4,rough:1,ruff:1,mouth:{x:11.2,y:2},eye:{x:4.3,y:-4.4},whiteChest:.25,earCut:.7,collar:.3},
@@ -846,7 +866,7 @@ function ik(jx,jy,fx,fy,a,b,dir){let dx=fx-jx,dy=fy-jy,dd=Math.hypot(dx,dy);cons
  const th=Math.atan2(dy,dx),al=Math.acos(cl((a*a+dd*dd-b*b)/(2*a*dd),-1,1)),an=th+dir*al;return {kx:jx+Math.cos(an)*a,ky:jy+Math.sin(an)*a,fx,fy};}
 const HS=1.22,MOUTH={x:11.6,y:1.3};
 // Gestalt je Rasse (Standard = Mastiff). Rassen ohne eigenes shape werden in Mastiff-Gestalt gezeichnet.
-const SHAPE0={head:'mastiff',L:31,leg:1,thick:1,chest:0,tuck:0,withers:0,crest:8.5,dew:5.5,tailW:4.6,tailSeg:2.5,tailUp:0,tailCurl:-.07,legW:1,hindW:1,neckX:0,neckY:0,rough:0,ruff:0,piebald:0,bushy:0,saddle:0,folds:0,ridge:0,urajiro:0,spots:0,cords:0,silk:0,legFeather:0,tailFeather:0,tailRing:0,ribs:0,tipWhite:0,mouth:MOUTH,eye:{x:4.6,y:-4.2}},SHAPES=new Map();
+const SHAPE0={head:'mastiff',L:31,leg:1,thick:1,chest:0,tuck:0,withers:0,crest:8.5,dew:5.5,tailW:4.6,tailSeg:2.5,tailUp:0,tailCurl:-.07,legW:1,hindW:1,neckX:0,neckY:0,rough:0,ruff:0,piebald:0,bushy:0,saddle:0,folds:0,ridge:0,urajiro:0,spots:0,cords:0,silk:0,legFeather:0,tailFeather:0,tailRing:0,ribs:0,tipWhite:0,wolfEar:1,wolfMz:1,mouth:MOUTH,eye:{x:4.6,y:-4.2}},SHAPES=new Map();
 function shapeOf(d){const id=(d?.dog||d)?.breed||'mastiff';let s=SHAPES.get(id);if(!s){s={...SHAPE0,...(breed(id).shape||{})};SHAPES.set(id,s);}return s;}
 DOG.shapeOf=shapeOf;
 // Stimmung: Kopf, Ohren, Rute, Lefzen
@@ -1959,13 +1979,16 @@ function headBH(c,d,o,A,col,t,dead,gore,woundsOn){const light=col.light,shade=co
  gore('kopf',3,-2,5);woundsOn('kopf',2,-3);
  if(o.bone){rr(c,8.6,3.6,9,1.6,'#e7dcc2');disk(c,8.6,4.4,1.4,'#e7dcc2');disk(c,17.6,4.4,1.4,'#e7dcc2');rr(c,9.6,4.8,7,.6,'#b8ab8c');}}
 // ---- Kopf des Wolfs: langer schmaler Schädel, lange spitze Schnauze, helle Maske um Maul und Backen, gelbe Augen mit dunklem Strich, große Stehohren, dunkle Stirn
-function headWO(c,d,o,A,col,t,dead,gore,woundsOn){const light=col.light,shade=col.shade,dark=col.dark,base=col.base,sad=col.saddle||dark,bel=col.belly||light;
+function headWO(c,d,o,A,col,t,dead,gore,woundsOn){const light=col.light,shade=col.shade,dark=col.dark,base=col.base,sad=col.saddle||dark,bel=col.belly||light,SW=shapeOf(d),eF=SW.wolfEar,mz=SW.wolfMz;
  const ear=cl((o.ears||0)+(o.earFlick?Math.sin(t*38)*.35*o.earFlick:0),-.4,1.3);
- poly(c,[[-3.6,-7.8],[-2.6-ear*2.4,-14.8+ear*4.2],[.6-ear*1.4,-9]],sad);poly(c,[[-2.8,-8.4],[-2.4-ear*2,-12.8+ear*3.6],[-.2-ear*1.2,-9.2]],shade);// große Stehohren (flach angelegt bei Angst)
+ // Ohrgröße je Wolf (Polarwolf klein und rund, Äthiopischer Wolf groß), Schnauzenlänge über mz
+ c.save();c.translate(-1.6,-8.4);c.scale(.85+eF*.15,eF);c.translate(1.6,8.4);
+ poly(c,[[-3.6,-7.8],[-2.6-ear*2.4,-14.8+ear*4.2],[.6-ear*1.4,-9]],sad);poly(c,[[-2.8,-8.4],[-2.4-ear*2,-12.8+ear*3.6],[-.2-ear*1.2,-9.2]],eF<.8?bel:shade);if(eF<.8)disk(c,-2.4-ear*1.6,-13.2+ear*3.6,1.2,sad);c.restore();// große Stehohren (flach angelegt bei Angst); Polarwolf mit runder Spitze
  poly(c,[[-6,-4.6],[-4.2,-8],[1,-9.2],[5,-8.4],[7.4,-5.8],[7.6,1.8],[3.2,5],[-3,5],[-6.4,2]],base);
  seg(c,-3.2,-8.5,4.2,-8.7,.9,sad);seg(c,-1,-7.2,4.6,-7.6,.8,sad+'aa');// dunkle Stirn
  poly(c,[[-3.4,.6],[.6,-.6],[3.4,.4],[5,3.4],[3.2,5],[-2.6,5],[-4.6,2.6]],bel);seg(c,-2.4,.4,2.6,-.2,.7,base);seg(c,-5.6,-3,-5.2,2.6,1,light);for(let i=0;i<4;i++)seg(c,-5.8+i*.6,1+i,-7.4+i*.4,2.6+i*.9,.7,bel);// helle Backen, Backenbart
  const jaw=o.jaw||0,jA=jaw*.66,snarl=jaw>.15||(o.lips||0)>.6;
+ c.save();c.translate(6,0);c.scale(mz,1);c.translate(-6,0);
  c.save();c.translate(5.4,1.9);c.rotate(jA);poly(c,[[-1,0],[8.4,0],[8.2,1.6],[0,2.6]],bel);rr(c,0,2,7.8,.5,shade);
  if(jaw>.2){rr(c,7.2,-.9,.9,1.5,'#f0eadb');rr(c,5,-.5,.8,.8,'#f0eadb');rr(c,3,-.5,.8,.8,'#f0eadb');rr(c,1,0,5.6,.8,'#9a3b42');}
  if(o.tongue||o.pant){rr(c,1.4,.2,6.6,1.3,'#c8606a');if(o.tongue>.6)rr(c,6.8,1,1.8,2.4+o.tongue*2.6,'#b9505a');}
@@ -1978,6 +2001,7 @@ function headWO(c,d,o,A,col,t,dead,gore,woundsOn){const light=col.light,shade=co
  else{poly(c,[[6,1],[13.6,1],[13,2.6],[9.4,3.4],[6.8,3.2],[6,2.6]],bel);seg(c,6.4,1.1,13.4,1,.6,'#1a1410');}// enge schwarze Lefzenlinie
  if(o.drool&&!dead)rr(c,7.4,3.4,.5,2+Math.sin(t*3)*1.2,'#e6e1d6cc');
  if(d.mouthBlood>.05){const mb=d.mouthBlood;rr(c,6,1.2,8,1.4*mb+.4,'#7d1a12');rr(c,9.4,2.6,.9,2+mb*5,'#8f2017');if(mb>.4){rr(c,12.4,2.4,.9,1+mb*4,'#8f2017');rr(c,7.4,3.6,.9,1+mb*3,'#7d1a12');}}
+ c.restore();
  if(dead||o.blink)seg(c,3,-4.8,5.2,-4.4,.6,'#0d0907');else{if(o.eyeWhite)rr(c,2.4,-5.6,1,1.4,'#e9e2d0');poly(c,[[3,-5.6],[5.4,-5.2],[5,-3.8],[3.2,-4.2]],'#0d0907');rr(c,3.8,-5.2,1.2,.9,(o.lips||0)>.6?'#f2d84a':'#d8b03c');rr(c,4.1,-5,.5,.5,'#0d0907');seg(c,5.4,-4.4,7.2,-3.6,.5,'#1a1410');seg(c,2.6,-6.2,5.8,-6.1-(o.lips>.6?.6:0),.6,bel);}// schräges gelbes Auge, dunkler Augenstrich, helle Braue
  gore('kopf',3,-2,5);woundsOn('kopf',2,-3);
  if(o.bone){rr(c,9,2.6,9,1.6,'#e7dcc2');disk(c,9,3.4,1.4,'#e7dcc2');disk(c,18,3.4,1.4,'#e7dcc2');rr(c,10,3.8,7,.6,'#b8ab8c');}}
@@ -2090,6 +2114,7 @@ function drawDog(c,d,px,py,k,face,opt={}){const D=d.dog,col=D.appearance.colors,
   poly(c,[[fx-3.2,fy-.3],[fx-2.8,fy-2.9],[fx+2.2,fy-3],[fx+3.6,fy-1.2],[fx+3.4,fy+.3]],A.whiteFeet&&l.front?(l.near?'#e9dfcb':'#bdb3a0'):tanC||cc);rr(c,fx-3.2,fy-.3,6.6,1,lo);
   if(l.near){rr(c,fx-.9,fy-2.8,.7,2,lo);rr(c,fx+1.2,fy-2.6,.7,1.8,lo);rr(c,fx+3.3,fy-.4,.8,.8,'#ddd4bf');rr(c,fx+1.7,fy+.1,.7,.7,'#ddd4bf');}c.restore();
   if(SH.spots&&col.spot&&l.near){const ps=(D.seed||0)%9973+(l.front?11:23);for(let i=0;i<4;i++){const u=.15+hrand(ps+i*1.9)*.75,a=l.front?l.k:l.h,b=l.front?l.w:l.k,x=(l.j.x+(a.x-l.j.x)*u)*(i<2?1:0)+(a.x+(b.x-a.x)*u)*(i<2?0:1),y=(l.j.y+(a.y-l.j.y)*u)*(i<2?1:0)+(a.y+(b.y-a.y)*u)*(i<2?0:1);disk(c,x+(hrand(ps+i)-.5)*2,y,.6+hrand(ps+i*2.3)*.6,col.spot);}}// Tupfen an den Läufen
+  if(SH.head==='wo'&&D.breed==='apenninwolf'&&l.front){const a=l.k,b=l.w;seg(c,a.x+1.6,a.y-1,b.x+1,b.y-.6,l.near?1.2:.9,'#1e1a16');}// Apenninwolf: schwarzer Strich vorn am Vorderlauf
   if(SH.legFeather){// Befederung (Windhunde mit langem Haar): Fransen an der Rückseite der Läufe, beim Afghanen bis über die Pfoten
    const fl=SH.legFeather,ps=(D.seed||0)%9973+(l.front?5:17),hc=l.near?light:base,sw=(d.moveSpeed||0)>8?Math.sin((d.cyc||0)*TAU*2+(l.front?0:1.6))*.6:0;
    const pts=l.front?[l.j,l.k,l.w]:[l.j,l.k,l.h],n=fl>1.2?9:6;for(let i=0;i<n;i++){const u=(i+.5)/n*(pts.length-1),a=pts[Math.floor(u)],b=pts[Math.min(pts.length-1,Math.floor(u)+1)],f=u-Math.floor(u),x=a.x+(b.x-a.x)*f,y=a.y+(b.y-a.y)*f,h=hrand(ps+i*1.7),len=fl*(1.6+h*1.6)*(l.front&&u<1?.5:1);

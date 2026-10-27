@@ -101,9 +101,9 @@ const STUFEN=[[30,37],[38,45],[46,53],[54,61],[62,70]];
 const breedOf=id=>DOG.BREEDS.find(b=>b.id===id);
 const skullsOf=soll=>1+STUFEN.findIndex(([a,b])=>soll>=a&&soll<=b);
 function poolOf(k){return DOG.BREEDS.filter(b=>TX.RASSEN[b.id]&&b.soll>=STUFEN[k][0]&&b.soll<=STUFEN[k][1]);}
-function newJob(k){const pool=poolOf(k),w=pool.map(b=>b.id==='wolf'?.3:1),sum=w.reduce((a,b)=>a+b,0);let r=Math.random()*sum,B=pool[0];for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0){B=pool[i];break;}}
- const winter=['husky','malamute'].includes(B.id),time=B.id==='wolf'?'abend':pick(['morgen','tag','tag','abend']);
- return {id:Math.random().toString(36).slice(2),skulls:k+1,breed:B.id,seed:(Math.random()*4294967296)>>>0,mood:{season:winter?'winter':pick(['fruehling','sommer','herbst','herbst']),time,weather:B.id==='wolf'?'nebel':pick(['klar','klar','bewoelkt','nebel'])},done:null};}
+function newJob(k){const pool=poolOf(k),w=pool.map(b=>b.id==='wolf'?.3:b.wolf?.5:1),sum=w.reduce((a,b)=>a+b,0);let r=Math.random()*sum,B=pool[0];for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0){B=pool[i];break;}}
+ const winter=['husky','malamute','polarwolf'].includes(B.id),time=B.wolf&&B.id!=='aethiopwolf'?'abend':pick(['morgen','tag','tag','abend']);// Wölfe (alle mit B.wolf) abends, der Äthiopische Wolf jagt bei Tag
+ return {id:Math.random().toString(36).slice(2),skulls:k+1,breed:B.id,seed:(Math.random()*4294967296)>>>0,mood:{season:winter?'winter':pick(['fruehling','sommer','herbst','herbst']),time,weather:B.wolf&&!['aethiopwolf','polarwolf'].includes(B.id)?'nebel':pick(['klar','klar','bewoelkt','nebel'])},done:null};}
 const cache=new Map();// Hund und Schauplatz je Auftrag (nicht gespeichert)
 function jobDog(j){let c=cache.get(j.id);if(!c){c={};cache.set(j.id,c);}return c.D??=DOG.create(j.breed,j.seed);}
 function jobBg(j){let c=cache.get(j.id);if(!c){c={};cache.set(j.id,c);}return c.bg??=paintPlace(j);}
@@ -302,7 +302,7 @@ function binoMask(c,cx,cy,r){const m=binoMask.c||(binoMask.c=mkc(1280,720)),g=m.
  for(const dx of [-r*.62,r*.62]){const gr=g.createRadialGradient(cx+dx,cy,r*.75,cx+dx,cy,r);gr.addColorStop(0,'#000');gr.addColorStop(1,'#0000');g.fillStyle=gr;g.beginPath();g.arc(cx+dx,cy,r,0,Math.PI*2);g.fill();}
  g.globalCompositeOperation='source-over';c.drawImage(m,0,0);c.save();c.globalAlpha=.08;ell(c,cx-r*.9,cy-r*.45,r*.25,r*.1,'#bfe0ff');c.restore();
  c.strokeStyle='#ffffff22';c.lineWidth=2;c.beginPath();c.moveTo(cx-r*.62-10,cy);c.lineTo(cx-r*.62+10,cy);c.moveTo(cx-r*.62,cy-10);c.lineTo(cx-r*.62,cy+10);c.stroke();}
-function sighting(j,g){const bg=jobBg(j),R=TX.RASSEN[j.breed],big=j.skulls>=4||j.breed==='wolf',d=dogFor(j);let found=-1,phase='sneak',intro=null,shotC=null;const K=2.6;
+function sighting(j,g){const bg=jobBg(j),R=TX.RASSEN[j.breed],big=j.skulls>=4||!!breedOf(j.breed)?.wolf,d=dogFor(j);let found=-1,phase='sneak',intro=null,shotC=null;const K=2.6;
  const tl=timeline([[.2,()=>caption(`<b>${esc(g.name)}</b> schleicht sich an. Rabies bleibt beim Karren. „Ich hab Rücken“, sagt er.`)],[3.2,()=>{phase='glass';caption('Wo ist das Vieh …');}]]);
  function wide(c,t){const Z=1280/1040,cy=365;c.save();c.translate(640,360);c.scale(Z,Z);c.translate(-520,-cy);c.drawImage(bg,0,0);liveMischief(c,j,t);animDog(d,j,t);drawDog(c,d,d.x,d.y,1,d.face,t);c.restore();
   const sx=190,sy=742;fig(c,g,sx,sy,K,1,{state:'idle'});const u=K*.6,hy=sy-(g.height/180)*86*u+16*u,lift=ease((t-1.6)/.8);
@@ -310,13 +310,13 @@ function sighting(j,g){const bg=jobBg(j),R=TX.RASSEN[j.breed],big=j.skulls>=4||j
   for(let i=0;i<9;i++){ell(c,40+i*70,720-Math.sin(i*1.7)*10,60,44,i%2?'#2c3a1c':'#34461f');ell(c,30+i*70,700-Math.sin(i)*12,30,24,'#3f5226');}}
  function glass(c,t){const tt=t-3.2,find=1.9,ex=SPOT.x-260,ey=SPOT.y-90;let k=ease(tt/find),cx=lerp(ex,d.x-10,k)+Math.sin(t*1.3)*6,cy=lerp(ey,d.y-26+(R.unfug==='baum'?-55:0),k)+Math.sin(t*1.9)*4;
   let Z=2.5;if(found>=0){const q=t-found;Z=big?lerp(2.5,3.6,ease(q/.25)):lerp(2.5,2.9,ease(q/.6));if(big&&q<.6){cx+=(Math.random()-.5)*14;cy+=(Math.random()-.5)*14;}}
-  if(found<0&&tt>=find){found=t;caption((big?'<b>'+(j.breed==='wolf'?'BEI ALLEN GÖTTERN.':'GROSSE GÖTTER.')+'</b> ':'')+esc(R.sicht));
+  if(found<0&&tt>=find){found=t;caption((big?'<b>'+(breedOf(j.breed)?.wolf?'BEI ALLEN GÖTTERN.':'GROSSE GÖTTER.')+'</b> ':'')+esc(R.sicht));
    if(big){F.flash=1.2;F.flashCol='#7a0a04';F.shake=.9;sfx('thunder');sfx('drum');d.mode='threat';d.growlT=1;DOG.playSound('bark',d.dog);setTimeout(()=>DOG.playSound('growl',d.dog),600);}else DOG.playSound(['leiche','kehle','schaf','bein','wurst'].includes(R.unfug)?'growl':'bark',d.dog);}
   if(big&&found>=0&&t-found>1.4){d.mode='threat';d.growlT=1;}
   c.save();c.translate(640,360);c.scale(Z,Z);c.translate(-cx,-cy);c.drawImage(bg,0,0);liveMischief(c,j,t);if(!(big&&found>=0&&t-found>1.4))animDog(d,j,t);drawDog(c,d,d.x,d.y,1,d.face,t);c.restore();
   if(j.mood.weather==='nebel'){c.fillStyle='#c8d0d81a';c.fillRect(0,0,1280,720);}
   binoMask(c,640,360,300);
-  if(big&&found>=0){const q=t-found;if(q>.3&&q<3.2)bigText(c,j.breed==='wolf'?'KEIN HUND.':j.skulls>=5?'ER HAT UNS GESEHEN.':'BESTIE!',640,600,Math.round(lerp(90,62,ease((q-.3)*2))),'#ff6a4a',cl((3.2-q)*1.5,0,1));}
+  if(big&&found>=0){const q=t-found;if(q>.3&&q<3.2)bigText(c,breedOf(j.breed)?.wolf?'KEIN HUND.':j.skulls>=5?'ER HAT UNS GESEHEN.':'BESTIE!',640,600,Math.round(lerp(90,62,ease((q-.3)*2))),'#ff6a4a',cl((3.2-q)*1.5,0,1));}
   if(found>=0&&t-found>(big?4.2:4.6)&&phase==='glass'){phase=j.skulls>=3?'blick':'book';if(phase==='blick')startBlick();else startBook();}}
  F.tap=()=>{if(phase==='blick')intro=null;};
  function startBlick(){intro=SH.makeIntro(dogAct(jobDog(j),'threat'));intro.preview=true;shotC??=mkc(850,520);caption(big?'<b>Er hat Witterung aufgenommen.</b>':'Er hat etwas gehört.');sfx('drum',.7);if(big)DOG.playSound('growl',jobDog(j));}
@@ -330,7 +330,7 @@ let bookTimers=[],bookAll=null;
 const FINGER=`<svg class="hf-finger" id="hfFinger" viewBox="0 0 22 12" shape-rendering="crispEdges"><path fill="#2a1a10" d="M0 4h11v-1h3v1h5v1h2v4h-1v1h-9v-1h-2v-1h-8z"/><path fill="#e6b88a" d="M1 5h10v-1h2v1h5v1h2v2h-1v1h-7v-1h-2v-1h-9z"/><path fill="#c48a5e" d="M12 8h7v1h-7zM1 6h9v1h-9z"/><path fill="#8d1c13" d="M15 3h3v1h-3z"/></svg>`;
 function statBars(B){const off=B.offs||{};return DOG.STATS.map(([k,n])=>`<span>${n}</span><i style="width:${cl(B.soll+(off[k]||0),5,100)}%"></i>`).join('');}
 function bookPortrait(D,big){const cv=mkc(360,170),c=cv.getContext('2d');c.imageSmoothingEnabled=false;const d=dogAct(D,big?'threat':'stand');d.growlT=big?1:0;drawDog(c,d,180,150,cl(2.7/d.P.sz,1.6,3.6),-1,1.2);return cv;}
-function openBook(j,g){const B=breedOf(j.breed),R=TX.RASSEN[j.breed],big=j.skulls>=4||j.breed==='wolf',D=jobDog(j);bookTimers.forEach(clearTimeout);bookTimers=[];
+function openBook(j,g){const B=breedOf(j.breed),R=TX.RASSEN[j.breed],big=j.skulls>=4||!!breedOf(j.breed)?.wolf,D=jobDog(j);bookTimers.forEach(clearTimeout);bookTimers=[];
  const near=DOG.BREEDS.filter(b=>TX.RASSEN[b.id]).sort((a,b)=>b.soll-a.soll),i0=near.findIndex(b=>b.id===B.id),from=cl(i0-5,0,Math.max(0,near.length-13)),list=near.slice(from,from+13);
  $('hfPageL').innerHTML=`<h4>LIBER CANUM</h4><div style="text-align:center;font-size:.85em;margin-bottom:4px">Das Hundebuch des Hundsgrafen · Band I · Seiten mit Sabber</div><ul class="hf-idx" id="hfIdx">${list.map(b=>`<li data-b="${b.id}"><span>${esc(b.name)}</span><span class="sk">${'☠'.repeat(skullsOf(b.soll))}</span></li>`).join('')}</ul>${FINGER}`;
  $('hfPageR').innerHTML=`<div class="hf-entry" id="hfEntry"><p class="nm">${esc(B.name)}</p><div style="text-align:center">${'☠'.repeat(j.skulls)} <small>Gefahr ${j.skulls} von 5</small></div><div id="hfPort"></div><div>${esc(R.buch)}</div><b>Besonderheiten:</b><ul>${R.merk.map(m=>`<li>${esc(m)}</li>`).join('')}</ul><div class="bars">${statBars(B)}</div><div class="note">„${esc(R.notiz)}“ · S. R.</div></div><div class="hf-seal" id="hfSeal">${j.breed==='wolf'?'NICHT HINGEHEN':j.skulls>=5?'LEBENSGEFAHR':'VORSICHT'}</div>`;
