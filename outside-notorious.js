@@ -1,7 +1,7 @@
 'use strict';
 /* =====================================================================================================
-   PLÜNDERUNGEN · DIE BERÜCHTIGTEN (20 Anführer mit eigenem Aussehen)
-   Jeder Bandenanführer einer Plünderung ist einer von 20 Berüchtigten: ein extremes Kennzeichen (der Zahnlose,
+   PLÜNDERUNGEN · DIE BERÜCHTIGTEN (90 Anführer: 20 hier, 70 in bosses-1…5.js; je Stufe jede Waffengattung einmal)
+   Jeder Bandenanführer einer Plünderung ist einer der Berüchtigten seiner Stufe: ein extremes Kennzeichen (der Zahnlose,
    der Verbrannte, der Gehängte …), eigene Texte für die Vorstellung (Opferzahl, Waffe, warum berüchtigt, schwarzer
    Humor), eigener Wortwechsel vor dem Kampf, eigene Rufe. Das Aussehen steckt teils in den echten Figurenwerten
    (Größe, Gewicht, Haut, Haar, Bart, Zähne, fehlende Hand), teils in Zeichnungen:
@@ -297,6 +297,41 @@ const T=N.TYPES=[
   if((t%3.3)>.15)q(cx+9,cy-12+bob,2,2,'#e8e8e8');q(cx+9,cy-12+bob,1,1,'#141216');q(cx-1,cy+6,1,4,'#4a4a4a');q(cx+3,cy+6,1,4,'#4a4a4a');
   if(Math.sin(t*1.1)>.9){q(cx-12,cy-14,10,6,f2);q(cx-6,cy-18,8,6,f);}}}
 ];
+// ---------- Stufe (Totenköpfe), Waffe und Trophäe (seit 27.10.) ----------
+// Jeder Berüchtigte gehört zu genau einer Stufe (1–5 Totenköpfe) und führt genau eine Waffengattung. Je Stufe gibt es jede der
+// 18 Gattungen einmal (90 Anführer; die übrigen 70 stehen in bosses-1…5.js). Besiegt lässt er seine Trophäe fallen (relics.js):
+// relic = {name, art (Zeichenart in relics.js), v (Variante), c (Farben), text}.
+const META={
+ zahnlos:[1,'club',{name:'Zahnkette',art:'teeth',c:['#4a3424','#f2ead2','#d8c8a0'],text:'Fremde Zähne an einer Lederschnur. Reicht zweimal um den Hals.'}],
+ nasenlos:[1,'short',{name:'Holznase',art:'nose',c:['#9a6438','#c8a070','#7a4a26'],text:'Geschnitzt, mit Band. Wer sie trägt, riecht keine Angst mehr.'}],
+ ohren:[1,'dagger',{name:'Ohrenriemen',art:'strap',c:['#3a2a1a','#c88a70','#a8705a'],text:'Ein Riemen voller getrockneter Ohren. Hört angeblich mit.'}],
+ bemalt:[1,'spear',{name:'Waidtopf',art:'paint',v:'spiral',c:['#2a4aa0','#4a70c8'],text:'Blaue Farbe für Kringel im Gesicht. Wäscht sich nicht raus.'}],
+ glasauge:[2,'javelin',{name:'Glasauge',art:'pendant',v:'eye',c:['#5a4a3a','#eef6ff','#ffffff','#2a6ad0'],text:'Sein Ersatzauge an einem Band. Es schaut immer zu.'}],
+ halbe:[2,'axe',{name:'Zopfbart mit Goldringen',art:'beard',v:'braid',c:['#5a4636','#2a2018','#8a7a68','#d8a838'],text:'Zwei Bartzöpfe mit Goldringen, zum Umbinden. Macht nicht größer, nur gefährlicher.'}],
+ grinse:[2,'short',{name:'Narrenschelle',art:'earring',v:'bell',c:['#d8b040','#e0b838','#8a6a18'],text:'Ein Glöckchen fürs Ohr. Klingelt, bevor es weh tut.'}],
+ gehaengt:[2,'club',{name:'Galgenstrick',art:'noose',c:['#a8884a','#8a6a3a','#c8aa6a'],text:'Der Strick, der ihn nicht wollte. Bringt Glück, sagt man. Ihm jedenfalls.'}],
+ haken:[2,'gladius',{name:'Eisenhaken',art:'belt',v:'hook',c:['#9aa2a6','#5a6064','#d8e0e4'],text:'Sein Haken, jetzt am Gürtel. Für Mäntel, Feinde und Ohrfeigen.'}],
+ verbrannt:[3,'doubleaxe',{name:'Glutamulett',art:'pendant',v:'ember',c:['#3a2a1e','#ff8a20','#ffe080','#5a2418'],text:'Ein Stück Kohle aus seinem eigenen Scheiterhaufen. Glimmt noch.'}],
+ gehoernt:[3,'spear',{name:'Stierhörner',art:'horns',v:'bull',c:['#e6dcc0','#b8a888','#f4ecd8'],text:'Zwei Stierhörner, passen auf jeden Helm. Muhen nicht.'}],
+ schnabel:[3,'dagger',{name:'Schnabelmaske',art:'mask',v:'beak',c:['#d8ccb0','#a89c7e','#f0e8d0'],text:'Die Maske des Pestarztes. Riecht innen nach Kräutern und außen nach Tod.'}],
+ schlachter:[3,'axe',{name:'Metzgerschürze',art:'apron',c:['#e8e2d4','#c8c2b4','#a0302a'],text:'Ungewaschen, damit jeder weiß, woran er ist.'}],
+ bleich:[3,'long',{name:'Leichentuch',art:'scarf',c:['#ece8e0','#c4bcb0','#ffffff'],text:'Ein Stück aus seinem Sarg. Kühlt den Hals, wärmt das Herz nicht.'}],
+ kraehe:[3,'bow',{name:'Zahme Krähe',art:'pet',v:'crow',c:['#141216','#2e2a38','#e8e8e8'],text:'Eine Krähe aus seinem Schwarm. Sitzt auf der Schulter und zählt die Toten.'}],
+ riese:[4,'hammer',{name:'Sklavenkette',art:'collar',c:['#5a5e60','#8a9094','#3e4244'],text:'Der Eisenkragen vom Sklavenmarkt. Das andere Ende hing am Händler.'}],
+ witwe:[4,'net',{name:'Die sieben Eheringe',art:'pendant',v:'rings',c:['#141016','#e6c040','#fff0a0','#8a6a18'],text:'Sieben Ringe an einer schwarzen Schnur. Die Finger hat sie zurückgegeben.'}],
+ rotbart:[4,'doubleaxe',{name:'Rotbarts Bart',art:'beard',v:'bones',c:['#c4421c','#8a2a10','#ee7a44'],text:'Der berühmte rote Bart, mit Knochen darin. Klappert beim Kämmen.'}],
+ baer:[4,'club',{name:'Bärenfell',art:'pelt',v:'bear',c:['#5a3a22','#6e4a2c','#3e2816'],text:'Das Fell des Bären, den er erwürgt hat. Der Kopf schaut über die Schulter.'}],
+ eisenmaske:[5,'greatsword',{name:'Die Eisenmaske',art:'mask',v:'iron',c:['#5e6264','#3e4244','#8a9094'],text:'Endlich ab. Darunter war … das bleibt sein Geheimnis.'}]};
+for(const t of T){const m=META[t.id];if(m){t.tier=m[0];t.weapon=m[1];t.relic={id:t.id,...m[2]};}}
+// weitere Anführer (bosses-1…5.js): Zeichnungen fallen auf die Trophäe in groß zurück, dazu eigene Kennzeichen (extra/extraFace)
+const R=()=>window.MGRelics;
+N.add=function(list){for(const t of list){if(!t?.id||N.byId[t.id])continue;t.relic={id:t.id,...t.relic};t.wpn=[t.weapon];t.nick??=['Namenlos'];
+  const art=R()?.ART?.[t.relic.art];t.back??=!!(art?.back||t.extraBack);
+  /* Kopfschmuck soll man sehen: ohne Helm, außer Helmbusch und Feder */t.noHelm??=['hat','mask','paint','eye','nose'].includes(t.relic.art)&&!['plume','feather'].includes(t.relic.v);
+  t.fig??=(a,P,tm)=>{if(P.layer==='back'){t.extraBack?.(a,P,tm);R()?.fig(t.relic,P,tm,{big:true,g:a.g});return;}t.under?.(a,P,tm);R()?.fig(t.relic,P,tm,{big:!t.small,g:a.g});t.extra?.(a,P,tm);};
+  t.face??=(q,tm,c,fm,g,o)=>{t.faceUnder?.(q,tm,g,o);R()?.face(t.relic,q,tm,{...(o||{}),big:!t.small,g});t.extraFace?.(q,tm,g,o);};
+  T.push(t);N.byId[t.id]=t;}};
+N.ofTier=d=>T.filter(t=>t.tier===d);
 N.byId=Object.fromEntries(T.map(x=>[x.id,x]));
 
 // ---------- Allgemeine Sätze ----------
@@ -320,7 +355,7 @@ N.dress=function(g,typeId,r,diff=3){const ty=N.byId[typeId]||T[0];g.notorious=ty
  N.registerFace(g);return g;};
 N.typeOf=g=>g&&g.notorious?N.byId[g.notorious]||null:null;
 // Großaufnahmen: Kennzeichen über das Gesicht legen (face-shots.js ruft M.faceOverlays[g.id] auf)
-N.registerFace=function(g){const ty=N.typeOf(g);if(!ty?.face)return;const map=M.faceOverlays??={};map[g.id]=(c,fm,t)=>{try{ty.face(Q(c,fm),t,c,fm,g);}catch(e){}};};
+N.registerFace=function(g){const ty=N.typeOf(g);if(!ty?.face)return;const map=M.faceOverlays??={};map[g.id]=(c,fm,t,o)=>{try{ty.face(Q(c,fm),t,c,fm,g,o);}catch(e){}};};
 N.unregister=g=>{if(g&&M.faceOverlays)delete M.faceOverlays[g.id];};
 // Kampfbild: Haken in arena.js (drawGladiator), Figurenkoordinaten
 const prevDecor=M.figureDecor;

@@ -237,10 +237,10 @@ function boardPage(){const st=ST();
   <div class="buttons"><button class="btn primary" data-action="outside:go" ${can?'':'disabled'}>Aufbrechen ▶</button></div>
   ${hist?`<h3>Unterwegs gewesen</h3><ul class="ow-hist">${hist}</ul>`:''}</div></div></section>`;}
 function paintBoard(){const st=ST();for(const c of document.querySelectorAll('canvas[data-owmap]')){const kind=c.dataset.owmap;try{const P=kind==='quest'?placeFor('quest'):placeFor('adventure');A.map(c,P,{reveal:0,cleared:-1,progress:0,party:A.mapPoint(P,0)});}catch(e){console.error(e);}}void st;}
-function resultPage(){const r=result,cls={won:'ok',fled:'',withdrawn:'',spared:'',passed:'',lost:'red'}[r.kind]||'';requestAnimationFrame(()=>{});
+function resultPage(){const r=result,cls={won:'ok',fled:'',withdrawn:'',spared:'',passed:'',lost:'red'}[r.kind]||'';requestAnimationFrame(()=>{});setTimeout(()=>window.MGRelics?.paintIcons(),0);
  return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">PLÜNDERUNG · ZURÜCK IM LUDUS</p><h1 class="${cls}">${esc(r.title)}</h1></div><div class="buttons"><button class="btn primary" data-action="outside:board">Weiter</button><button class="btn" data-action="nav:home">‹ Ludus</button></div></div>
  <div class="box"><p class="ow-res-text">${esc(r.text)}</p><p class="tiny">${esc(r.stats)}</p></div>
- <div class="ow-cols"><div class="box"><h2>Beute</h2><ul class="ow-hist">${r.loot.length?r.loot.map(l=>`<li><b>${esc(l.name)}</b> <small>von ${esc(l.from)}</small></li>`).join(''):'<li>Keine Beute.</li>'}${r.gold?`<li><b class="gold">${r.gold} Gold</b> <small>${esc(r.goldFrom)}</small></li>`:''}${r.extra?`<li><b>${esc(r.extra)}</b></li>`:''}</ul>${r.loot.length?'<p class="tiny">Alles liegt im Lager (Waffenkammer).</p>':''}</div>
+ <div class="ow-cols"><div class="box"><h2>Beute</h2><ul class="ow-hist">${r.loot.length?r.loot.map(l=>`<li${l.relic?' class="ow-relic"':''}>${l.relic?`<canvas width="56" height="56" data-relic="${esc(l.relic)}"></canvas>`:''}<b>${esc(l.name)}</b> <small>von ${esc(l.from)}${l.relic?' · liegt im Trophäenlager (Ausrüsten → Besonderer Gegenstand)':''}</small></li>`).join(''):'<li>Keine Beute.</li>'}${r.gold?`<li><b class="gold">${r.gold} Gold</b> <small>${esc(r.goldFrom)}</small></li>`:''}${r.extra?`<li><b>${esc(r.extra)}</b></li>`:''}</ul>${r.loot.length?'<p class="tiny">Alles liegt im Lager (Waffenkammer).</p>':''}</div>
  <div class="box"><h2>Truppe</h2><ul class="ow-hist">${r.party.map(p=>`<li class="${p.dead?'red':''}"><b>${p.dead?'† ':''}${esc(p.name)}</b> <small>${esc(p.role)}</small><br><small>${esc(p.line)}</small></li>`).join('')}</ul></div></div>${reportBlock()}</section>`;}
 // Gelernte Werte vorher → nachher (wie der Kampfbericht der Arena)
 function valueOf(g,path){const [grp,key]=path.split(':');try{if(grp==='stats')return [g.stats[key],g.caps.stats[key]];if(grp==='moves')return [g.moves[key],g.caps.moves[key]];if(grp==='weapons')return [g.mastery[key],g.caps.weapons[key]];const [id,k]=key.split('.');return [g.body[id][k],g.caps.body[id][k]];}catch{return [null,null];}}
@@ -735,6 +735,8 @@ function finishMission(kind){const m=R.m;if(R.ended)return;R.ended=true;R.ending
 function applyResult(m,kind){const st=ST(),adv=m.kind==='adventure',keep=kind==='won';/* Beute nur, wenn die ganze Mission geschafft ist */
  if(st.run?.id!==R.runId)return;// anderer Spielstand: nichts anwenden
  const loot=[];if(keep)for(const l of m.loot){const item=M.copy(l.item);item.id=M.uid();item.durability=Math.max(1,Math.round(Math.min(item.durability??item.maxDurability,item.maxDurability??item.durability??1)));S.inventory.push(item);loot.push({name:M.itemName(item),from:l.from});}
+ // Trophäe des Berüchtigten (seit 27.10.): bei gewonnener Bandenjagd immer, ins Trophäenlager (relics.js)
+ if(keep&&kind==='won'&&adv&&m.mode!=='wagon'&&m.boss?.notorious&&window.MGRelics){try{const it=window.MGRelics.grant(m.boss.notorious,{from:m.boss.name,place:m.place.name});if(it)loot.push({name:'★ '+window.MGRelics.label(it),from:m.boss.name,relic:it.type});}catch(e){console.error(e);}}
  const gold=keep&&kind==='won'?m.gold:0;if(gold){S.gold+=gold;if(S.stats)S.stats.earned=(S.stats.earned||0)+gold;}
  if(!adv&&kind==='won'){st.stage='done';st.wins++;st.questDay=S.day;st.adv=newAdventure();st.lastAdventure=S.day;}
  if(adv&&kind==='won')st.advWins++;

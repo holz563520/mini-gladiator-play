@@ -21,8 +21,11 @@ const WEAPON={club:'Ein Knüppel. Einfach, ehrlich, tödlich. Wie ein Steuereint
  spear:'Ein Speer. Lang genug, um euch zu erreichen, bevor ihr „Gnade“ sagen könnt.',short:'Ein Kurzschwert. Kurz wie das Gebet, das ihr gleich sprecht.',hammer:'Ein Kriegshammer. Wer den abbekommt, wird in Raten begraben.',
  mace:'Ein Streitkolben. Macht aus Helmen Suppenschüsseln und aus Köpfen Suppe.',gladius:'Ein Gladius. Er hat ihn einem toten Gladiator abgenommen. Der Gladiator hat nicht protestiert.',
  long:'Ein Langschwert. Lang, scharf und eitel. Wie sein Besitzer.',greatsword:'Ein Zweihänder. Groß wie eine Tür, und er öffnet damit Leute.',doubleaxe:'Eine Doppelaxt. Zwei Klingen, damit er nicht umdrehen muss.',
- halberd:'Eine Hellebarde. Der Mann hat Ambitionen.',dagger:'Ein Dolch. Klein, gemein und immer da, wo man nicht hinschaut.'};
-const ARMOR={leather:'Leder. Riecht nach Pferd und hält nach Hoffnung.',medium:'Verstärktes Leder mit Eisenplatten. Eine Klasse besser als seine Leute. Bezahlt hat er dafür natürlich nicht.',metal:'Eisen. Zwei Klassen über seinen Leuten. Wer ihn aufmachen will, braucht einen Dosenöffner.'};
+ halberd:'Eine Hellebarde. Der Mann hat Ambitionen.',dagger:'Ein Dolch. Klein, gemein und immer da, wo man nicht hinschaut.',
+ javelin:'Wurfspeere. Er wirft sie, holt sie sich zurück und wirft sie wieder. Meistens durch jemanden hindurch.',throwaxe:'Wurfäxte. Er hat sie an Scheunentoren geübt. Die Scheunen stehen noch. Die Bauern nicht.',
+ net:'Ein Wurfnetz und ein Dreizack. Erst fängt er dich, dann piekst er dich. Fischer nennen das Handwerk.',bow:'Ein Bogen. Er trifft eine Fliege auf hundert Schritt. Ihr seid größer als Fliegen.',
+ crossbow:'Eine Armbrust. Spannt langsam, trifft schnell. Das Nachladen ist eure einzige Gelegenheit zu beten.'};
+const ARMOR={leather:'Leder. Riecht nach Pferd und hält nach Hoffnung.',medium:'Verstärktes Leder mit Eisenplatten. Eine Klasse besser als seine Leute. Bezahlt hat er dafür natürlich nicht.',metal:'Eisen, zwei Klassen über dem Leder seiner Leute, und zwei Güteklassen besser geschmiedet. Wer ihn aufmachen will, braucht einen Dosenöffner.'};
 const TRAINER=['Und denkt dran: Wer ihn umbringt, kriegt die Truhe. Wer stirbt, kriegt ein Lied. Ein kurzes.','Die Bande wartet. Der Anführer grinst. Die Krähen auch.','Entscheidet euch. Er hat Zeit. Ihr eher nicht.'];
 
 // ---------- Kamera ----------
@@ -67,6 +70,7 @@ async function present(b,m,boss,crew){const g=boss.g,ty=N()?.typeOf(g),place=m.p
  if(w){fact('Waffe',esc(M.itemName(w)));await narrate(`${w.nickname?`Seine Waffe heißt „${w.nickname}“. `:''}${WEAPON[w.def]||'Scharf genug.'}`);if(!live(b))return end('leave');}
  const parts=armor.length;fact('Rüstung',`${mat==='metal'?'Metall':mat==='medium'?'Verstärkt':'Leder'} · ${parts} Teile${g.enemyGear?.shield?' · Schild':''}`);await narrate(ARMOR[mat]);if(!live(b))return end('leave');
  if(ty){const why=pick(ty.why).replace(/\{P\}/g,place);fact('Berüchtigt',esc(why));await narrate(`Berüchtigt, weil … ${why}`);if(!live(b))return end('leave');}
+ if(ty?.relic){const RL=window.MGRelics,wn=RL?.weaponName(ty.weapon)||'';fact('Trophäe',`${esc(ty.relic.name)} · <b class="gold">+${RL?.BONUS||2} ${esc(wn)}</b>`);await narrate(`Und wer ihn erledigt, nimmt ihm das ab: ${ty.relic.name}. Wer es trägt, führt ${wn==='Wurfnetz'?'das':'die'} ${wn} besser.`);if(!live(b))return end('leave');}
  // Die Bande: bis zu vier mit Gesicht und Spruch, Kamera fährt mit
  if(all.length){const box=$('shCrew');box.hidden=false;showFace(g,'grin');const lines=[...N()?.CREW||[]].sort(()=>Math.random()-.5);
   await narrate(`Mit ihm: ${crewName}. ${all.length+Math.max(0,reserve)} Mann${reserve>0?`, ${reserve} davon in der zweiten Reihe`:''}.`);

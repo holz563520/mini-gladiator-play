@@ -5,8 +5,7 @@
 //   Die Auswahl „Klasse/Sortierung/Gladiator“ rückt unter die Puppe; oben Name, KW und Pfeile zum vorigen/nächsten Gladiator.
 // · Die Figur in der Mitte atmet, schaut sich um und macht ab und zu eine Geste (Waffe hoch, zeigen, brüllen, Brust raus).
 //   Gezeichnet mit der Figur des Spiels (M.renderForgeActors) und der echten angelegten Ausrüstung.
-// · Neuer, noch leerer Platz „Besonderer Gegenstand“ (nur Optik, z. B. später ein Löwenhelm). Keine Spielwirkung, kein
-//   neuer Speicherwert; der Platz bleibt gesperrt, bis es solche Gegenstände gibt.
+// · Platz „Besonderer Gegenstand“: Trophäen der Berüchtigten (relics.js) anlegen; +2 auf die Waffe des Anführers.
 // Die Plätze selbst (Antippen → passende Gegenstände aus dem Lager) sind die des Spiels und funktionieren unverändert.
 // =====================================================================================================
 (()=>{
@@ -22,7 +21,8 @@ function gladiatorOnPage(){// Die Seite zeigt den zuletzt gewählten Gladiator; 
 function enhance(){const doll=document.querySelector('.paperdoll');if(!doll||doll.dataset.plus)return;doll.dataset.plus='1';const g=gladiatorOnPage();
  doll.classList.add('armory');
  // Besonderer Gegenstand (leer, gesperrt)
- if(!doll.querySelector('.doll-special')){const s=document.createElement('div');s.className='doll-slot doll-special';s.style.gridArea='empty';s.setAttribute('aria-disabled','true');
+ if(window.MGRelics&&g)window.MGRelics.mountSlot(doll,g);/* Trophäen der Berüchtigten (relics.js) */
+ else if(!doll.querySelector('.doll-special')){const s=document.createElement('div');s.className='doll-slot doll-special';s.style.gridArea='empty';s.setAttribute('aria-disabled','true');
   s.innerHTML='<span class="special-icon" aria-hidden="true"></span><span class="eyebrow">Besonderer Gegenstand</span><strong>NOCH LEER</strong><small>nur Optik · z. B. Löwenhelm · bald</small>';doll.appendChild(s);}
  // Kopfzeile mit Name, KW und Blättern
  if(g&&!document.querySelector('.armory-head')){const pool=S.roster.filter(x=>!x.dead&&!x.retired),i=pool.indexOf(g),prev=pool[(i-1+pool.length)%pool.length],next=pool[(i+1)%pool.length];let kw='';try{kw=M.power(g);}catch{}

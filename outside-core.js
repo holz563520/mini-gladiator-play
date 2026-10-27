@@ -244,24 +244,30 @@ function veteran(g,r,q){g.veteran=true;for(const grp of ['stats','moves','master
  const w=g.enemyGear.weapon?.def||'gladius';g.enemyGear.weapon=M.makeItem('weapon',w,Math.min(5,q+1));g.mastery[w]=clamp(Math.max(g.mastery[w]||0,30),3,100);
  g.enemyGear.armor.helm??=M.makeItem('armor','helm',Math.max(0,q-1),'leather');g.enemyGear.armor.chestplate??=M.makeItem('armor','chestplate',Math.max(0,q-1),r()<.4?'medium':'leather');for(const it of D.gearList(g))it.durability=it.maxDurability;}
 D.brute=brute;D.veteran=veteran;
-// Anführer einer Bande (Plünderung): einer der 20 Berüchtigten (outside-notorious.js: Aussehen, Texte), deutlich stärker als seine Leute,
-// eine Waffe eine Stufe über der Bande (ab 4 Totenköpfen zwei). Rüstung (seit 26.10.): Die Bande trägt Leder; der Anführer eine
-// Rüstungsklasse darüber (verstärkt), ab 4 Totenköpfen zwei darüber (Metall), dazu mehr Teile (Arme ab 3, Beine ab 4 Totenköpfen) und eine Güte über der Bande.
+// Anführer einer Bande (Plünderung): einer der Berüchtigten seiner Stufe (outside-notorious.js, bosses-1…5.js: Aussehen, Texte, Trophäe),
+// deutlich stärker als seine Leute. Seit 27.10. (Wunsch Thomas): Jede Stufe (1–5 Totenköpfe) hat jede der 18 Waffengattungen genau einmal;
+// der Anführer führt immer seine Gattung (Bogen/Armbrust als Fernkämpfer mit Dolch, Wurfspeer/Wurfaxt als Assassine mit Klinge,
+// Wurfnetz als Soldat mit Dreizack). Ausrüstung zwei Stufen über der Bande: Waffe und Rüstung zwei Güteklassen höher (höchstens
+// „Legendär“), Rüstung zwei Klassen über dem Leder der Bande (Metall), dazu mehr Teile (Arme ab 3, Beine ab 4 Totenköpfen).
 const FEMALE=['Hilde','Livia','Agrippina','Fulvia','Gerlinde','Messalina','Brunhild','Octavia','Kunigunde','Valeria'];
-D.LEADER={stat:1.12,maxStat:2.4};
+D.LEADER={stat:1.12,maxStat:2.4,gearUp:2,maxQ:6};
+// Zweitwaffe und Klasse je Hauptwaffe
+D.LEADER_KIT={bow:['Fernkämpfer','dagger'],crossbow:['Fernkämpfer','dagger'],javelin:['Assassine','gladius'],throwaxe:['Assassine','axe'],net:['Soldat','trident']};
 D.leader=function(seed,biome,k,bonus=1,o={}){const r=rng32(seed),AD=D.ADV[biome]||D.ADV.dorf,NT=window.DebtNotorious,diff=clamp(Math.round(o.diff||3),1,5);
- return makeG(seed^0x1ead,g=>{const types=NT?NT.TYPES.filter(t=>!(o.avoid||[]).includes(t.id)):[],ty=types.length?types[Math.floor(r()*types.length)]:null;
-  const nm=ty?.id==='witwe'?pick(r,FEMALE):pick(r,AD.names||T.names).split(' ')[0];
-  Object.assign(g,{id:'adv-lead-'+seed,name:ty?nm+' '+ty.title.charAt(0).toUpperCase()+ty.title.slice(1):nm+' '+pick(r,AD.leaderTitle),enemy:true,role:'Soldat',traits:['Aggressiv']});
+ return makeG(seed^0x1ead,g=>{const all=NT?NT.TYPES:[],tier=all.filter(t=>t.tier===diff),base=tier.length?tier:all,types=base.filter(t=>!(o.avoid||[]).includes(t.id)),pool0=types.length?types:base,ty=pool0.length?pool0[Math.floor(r()*pool0.length)]:null;
+  const nm=ty?.female||ty?.id==='witwe'?pick(r,FEMALE):pick(r,AD.names||T.names).split(' ')[0];
+  const w=ty?.weapon||pick(r,['greatsword','long','axe','mace','gladius','doubleaxe','hammer','spear']),kit=D.LEADER_KIT[w]||['Soldat',null];
+  Object.assign(g,{id:'adv-lead-'+seed,name:ty?nm+' '+ty.title.charAt(0).toUpperCase()+ty.title.slice(1):nm+' '+pick(r,AD.leaderTitle),enemy:true,role:kit[0],traits:['Aggressiv']});
   if(ty&&/^(der|die|das) /.test(ty.title))g.name=nm+' '+ty.title;
   scaleStats(g,Math.min(D.LEADER.maxStat,k*2.2*D.LEADER.stat),['morale']);g.stats.morale=85;
-  const pool=['greatsword','long','axe','mace','gladius','doubleaxe','hammer','spear'],w=ty?pick(r,ty.wpn):pick(r,pool),qBand=clamp(Math.round((k-.4)*2.2),0,3),q=clamp(qBand+bonus+(r()<.25?1:0),0,5);
-  g.mastery[w]=clamp(Math.max(g.mastery[w]||0,Math.round(30*k*2.2)),3,100);
-  const two=['hammer','doubleaxe','halberd','greatsword'].includes(w),mat=diff>=4?'metal':'medium',aq=clamp(qBand+1,0,4),A=(id,m=mat)=>M.makeItem('armor',id,aq,m);
+  const qBand=clamp(Math.round((k-.4)*2.2),0,3),up=D.LEADER.gearUp,q=clamp(qBand+up,0,D.LEADER.maxQ);void bonus;
+  g.mastery[w]=clamp(Math.max(g.mastery[w]||0,Math.round(30*k*2.2)),3,100);if(kit[1])g.mastery[kit[1]]=clamp(Math.max(g.mastery[kit[1]]||0,Math.round(22*k*2.2)),3,100);
+  const two=['hammer','doubleaxe','halberd','greatsword','bow','crossbow'].includes(w),mat='metal',aq=q,A=(id,m=mat)=>M.makeItem('armor',id,aq,m);
   const armor={chestplate:A('chestplate'),leftshoulder:A('leftshoulder'),rightshoulder:A('rightshoulder')};
   if(!ty?.noHelm)armor.helm=A('helm');if(diff>=3){armor.leftarm=A('leftarm');armor.rightarm=A('rightarm');}if(diff>=4){armor.leftleg=A('leftleg');armor.rightleg=A('rightleg');}
   const weapon=M.makeItem('weapon',w,q);if(ty)weapon.nickname=pick(r,ty.nick);
-  g.enemyGear={weapon,secondary:null,shield:!two&&!ty?.oneHand?M.makeItem('shield',r()<.5?'roundshield':'smallshield',Math.max(0,q-1)):null,armor};
+  const shield=kit[0]==='Soldat'&&!two&&w!=='net'&&!ty?.oneHand&&!ty?.noShield?M.makeItem('shield',r()<.5?'roundshield':'smallshield',Math.max(0,q-1)):null;
+  g.enemyGear={weapon,secondary:kit[1]?M.makeItem('weapon',kit[1],Math.max(0,q-1)):null,shield,armor};
   for(const it of D.gearList(g))it.durability=it.maxDurability;
   if(ty)NT.dress(g,ty.id,r,diff);
   g.advLeader=true;g.debtBoss=true;});};

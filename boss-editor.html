@@ -1,0 +1,89 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Berüchtigte · Editor</title>
+<link rel="stylesheet" href="brand.css">
+<link rel="stylesheet" href="manager.css">
+<style>
+/* Berüchtigte & Trophäen (Wunsch Thomas 27.10.): alle 90 Anführer der Plünderungen, nach Totenköpfen sortiert, mit Kampfbild,
+   Großaufnahme, Texten, Ausrüstung und Trophäe (wie sie ein eigener Gladiator trägt). Nur ansehen; ändert keinen Spielstand. */
+[hidden]{display:none!important}
+body{min-height:100vh;margin:0}
+.wrap{max-width:1280px;margin:auto;padding:14px 16px 60px}
+.tl{font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+h1{font-size:clamp(22px,5vw,34px);color:var(--gold);letter-spacing:3px;margin:4px 0;text-transform:uppercase}
+h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;margin:18px 0 8px}
+h3{margin:0;font-size:14px;color:var(--cream)}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px;line-height:1.55;max-width:920px}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end;margin:10px 0 14px}
+.ctrl label{display:grid;gap:3px;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.ctrl select{min-height:38px;background:#293639;color:var(--cream);border:1px solid #52625b;font:inherit;font-size:13px;padding:4px 8px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}.tabs .btn{min-height:38px}.tabs .btn.on{background:var(--gold);color:#29271f;border-color:#efd194}
+.skull{color:#e8d8b0;letter-spacing:-1px}
+.tierhead{margin:14px 0 6px;display:flex;gap:10px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:4px}
+.tierhead b{color:var(--gold);font-size:15px;letter-spacing:.06em;text-transform:uppercase}.tierhead small{color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.card{display:grid;grid-template-rows:auto auto;background:#182326;border:1px solid var(--line);padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer;position:relative}
+.card:hover,.card:focus-visible{border-color:var(--gold)}.card.on{border-color:var(--gold);box-shadow:0 0 0 2px #dfb66d55}
+.card canvas.face{display:block;width:100%;height:auto;image-rendering:pixelated;background:#120c09}
+.card canvas.ico{position:absolute;right:4px;top:4px;width:34px;height:34px;image-rendering:pixelated;border:1px solid #5a4470}
+.card div{padding:5px 7px 7px}.card b{display:block;font-size:12px;color:var(--cream);line-height:1.3}.card small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.card small i{font-style:normal;color:#e6c96a}
+.detail{position:relative;background:var(--surface);border:1px solid #8b7751;border-top:4px solid var(--gold);padding:14px;margin:14px 0}
+.dgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px}
+@media(max-width:820px){.dgrid{grid-template-columns:1fr}}
+.stage{background:#101719;border:1px solid var(--line);position:relative}
+.stage canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.stage .cap{position:absolute;left:8px;top:6px;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.row2 .cap{font-size:9px}
+dl.facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0;font-size:13px}
+dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;color:var(--cream)}
+.texts p{margin:4px 0;font-size:13px;line-height:1.5;color:#d8d0b8}.texts .q{color:var(--cream)}.texts .q b{color:var(--gold)}
+.relic{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center;background:#1c1622;border:1px solid #5a4470;padding:10px;margin-top:10px}
+.relic canvas{width:110px;height:110px;image-rendering:pixelated}
+.relic b{color:#f0dfa8;font-size:15px}.relic p{margin:4px 0;font-size:13px;color:#cdbfd8;line-height:1.5}.relic .bonus{color:#e6c96a;font-weight:bold}
+.wear{margin-top:10px}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.close{position:absolute;right:8px;top:8px}
+.err{color:#f29b83;white-space:pre-wrap}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}.tbl th,.tbl td{border:1px solid var(--line);padding:4px 6px;text-align:left}.tbl th{color:var(--muted);font-weight:normal}
+.tblwrap{overflow:auto}
+</style></head><body><div class="wrap">
+<div class="tl">Arena Theory · Werkzeug</div><h1>Berüchtigte &amp; Trophäen</h1>
+<p class="sub">Alle 90 Anführer der Plünderungen, nach Totenköpfen sortiert: Auf jeder Stufe gibt es jede der 18 Waffengattungen genau einmal, und der Anführer führt immer seine Gattung. Seine Ausrüstung liegt zwei Stufen über der Bande (Metall statt Leder, Waffe und Rüstung zwei Güteklassen höher, höchstens „Legendär“). Besiegt lässt er seine Trophäe fallen; ein eigener Gladiator kann sie im Platz „Besonderer Gegenstand“ tragen und bekommt <b class="gold">+2 Fertigkeit</b> mit der Waffe des Anführers. Antippen zeigt Kampfbild, Großaufnahme, Texte und die Trophäe am eigenen Gladiator. Dein Spielstand wird nicht verändert.</p>
+<div class="ctrl">
+ <div class="tabs" id="tabs"></div>
+ <label>Waffe<select id="wpn"><option value="">alle</option></select></label>
+ <label>Ansicht<select id="view"><option value="cards">Karten</option><option value="table">Tabelle (Stufe × Waffe)</option></select></label>
+</div>
+<section class="detail" id="detail" hidden>
+ <button class="btn small close" type="button" id="closeD">✕</button>
+ <div class="dgrid">
+  <div>
+   <div class="stage"><span class="cap">Großaufnahme (Steckbrief)</span><canvas id="dFace" width="480" height="312"></canvas></div>
+   <div class="row2">
+    <div class="stage"><span class="cap">Kampfbild</span><canvas id="dFig" width="260" height="300"></canvas></div>
+    <div class="stage"><span class="cap">In der Arena (klein)</span><canvas id="dSmall" width="260" height="300"></canvas></div>
+   </div>
+   <div class="btns"><button class="btn small" type="button" id="bMood">Stimmung wechseln</button><button class="btn small" type="button" id="bTurn">Umdrehen</button><button class="btn small" type="button" id="bReroll">Anderer Kerl (Zufall)</button></div>
+  </div>
+  <div>
+   <h2 id="dName" style="margin-top:0"></h2>
+   <dl class="facts" id="dFacts"></dl>
+   <div class="relic"><canvas id="dIco" width="110" height="110"></canvas><div><b id="rName"></b><p id="rText"></p><p class="bonus" id="rBonus"></p></div></div>
+   <div class="wear"><h2>Trophäe am eigenen Gladiator</h2>
+    <div class="row2"><div class="stage"><span class="cap">Kampfbild</span><canvas id="wFig" width="260" height="300"></canvas></div><div class="stage"><span class="cap">Großaufnahme</span><canvas id="wFace" width="300" height="195"></canvas></div></div>
+    <div class="btns"><button class="btn small" type="button" id="bHelm">Mit Helm</button><button class="btn small" type="button" id="bArmor">Mit Rüstung</button></div></div>
+   <h2>Texte</h2><div class="texts" id="dTexts"></div>
+  </div>
+ </div>
+</section>
+<div id="list"></div>
+<p class="sub err" id="err" hidden></p>
+</div>
+<canvas id="arenaCanvas" width="1040" height="720" hidden></canvas>
+<script>window.BOSS_EDITOR=true;window.onerror=(m,src,l)=>{const e=document.getElementById('err');if(e){e.hidden=false;e.textContent+='Fehler: '+m+' ('+String(src).split('/').pop()+':'+l+')\n';}};</script>
+<script>
+// Spielmodule in Reihenfolge laden (Figuren, Großaufnahmen, Anführer, Trophäen), dann den Editor
+(async()=>{const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','face-shots','outside-core','relics','outside-notorious','bosses-1','bosses-2','bosses-3','bosses-4','bosses-5','boss-editor'];
+ for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v=e69c1e77';s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
+</script>
+</body></html>

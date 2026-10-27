@@ -19,3 +19,15 @@
  radial-gradient(circle at 50% 70%,transparent 9px,#c9a4e0 9px 11px,transparent 11px),
  linear-gradient(#c9a4e0,#c9a4e0) 50% 0/4px 10px no-repeat;animation:armGlow 2.4s ease-in-out infinite}
 @keyframes armGlow{50%{opacity:1;filter:drop-shadow(0 0 6px #c9a4e0)}}
+/* Trophäen der Berüchtigten (relics.js) */
+.doll-special.filled{cursor:pointer;opacity:1;border-style:solid!important;border-color:#c9a4e0!important}
+.paperdoll.armory .doll-special{cursor:pointer;opacity:1}
+.doll-special .relic-ico{width:54px;height:54px;image-rendering:pixelated;border:1px solid #5a4470}
+.relic-bonus{color:#e6c96a!important}
+.relic-list{display:grid;gap:8px;margin-top:12px}
+.relic-row{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:8px;border:1px solid #4a3c58;background:#1c1622}
+.relic-row.on{border-color:#c9a4e0;background:#2a2034}
+.relic-row canvas{width:64px;height:64px;image-rendering:pixelated}
+.relic-row b{display:block;color:#f0dfa8}.relic-row small{display:block;color:var(--muted);font-size:11px;line-height:1.5}
+@media(max-width:520px){.relic-row{grid-template-columns:52px 1fr}.relic-row canvas{width:52px;height:52px}.relic-row .btn{grid-column:1/-1}}
+.ow-relic{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ow-relic canvas{width:48px;height:48px;image-rendering:pixelated;border:1px solid #5a4470}
