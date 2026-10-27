@@ -285,6 +285,17 @@ const BREEDS=[
   // Lautpaket: mittlere Stimme, helles, scharfes Bellen und oft (Hetzhund), wenig Schnauben, Knurren mittel
   sound:{barkF:162,barkF1:[800,580,450],barkF2:[1350,1040,850],barkLen:.27,barkRate:.75,huff:.2,growlF:66,growlLp:2400,yelpF:610,whineF:730,vol:.85},
   coats:[{id:'gestromt',name:'Schwarz-braun gestromt',w:1,base:'#4e3a2a',light:'#6a503a',shade:'#33261b',dark:'#1e1610',stripe:'#14100b'}]},
+ {id:'barsoi',cm0:78,kg0:40,name:'Barsoi',soll:41,active:true,look:'Windhund der russischen Wolfsjagd: groß und hochbeinig, gewölbte Rückenlinie, sehr langer schmaler Kopf mit leicht gewölbtem Nasenrücken, kleine Rosenohren, seidiges gewelltes Fell mit Halskrause, Hosen und langer befederter Säbelrute',fur:'Weiß mit goldenen, roten, gestromten oder schwarzen Platten, selten ganz weiß',offs:{kraft:-1,biss:2,tempo:10,ausdauer:-2,zaeh:-3,wild:3,mut:4},
+  // Stufe 1,5 (zwei Totenköpfe). Eigene Gestalt: größter Windhund, Wolfsjäger. Hochbeinig, gewölbter Rücken, Halskrause, langes welliges Fell an Bauch, Läufen und Rute
+  shape:{head:'bz',L:33,leg:1.26,thick:.78,chest:2.2,tuck:3,withers:.6,crest:7.6,dew:2.2,tailW:2.8,tailSeg:3.4,tailUp:-.3,tailCurl:.14,legW:.8,hindW:.88,neckX:2.4,neckY:-1.6,mouth:{x:15,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:0,earCut:0,collar:.45,piebald:1,ruff:1,silk:.8,legFeather:.9,tailFeather:1.8},
+  // Lautpaket: bellt selten, tiefer als die kleinen Windhunde, kurzes heiseres Knurren
+  sound:{barkF:132,barkF1:[640,480,380],barkF2:[1100,880,720],barkLen:.3,barkRate:.1,huff:.3,growlF:56,growlLp:2000,yelpF:540,whineF:700,vol:.8},
+  coats:[
+   {id:'gold',name:'Weiß mit goldenen Platten',w:.4,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678',patch:'#c08a50',patchHi:'#d8a870'},
+   {id:'gestromt',name:'Weiß mit gestromten Platten',w:.2,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678',patch:'#6a5038',patchHi:'#86684c'},
+   {id:'rot',name:'Weiß mit roten Platten',w:.15,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678',patch:'#a8603a',patchHi:'#c47e56'},
+   {id:'schwarz',name:'Weiß mit schwarzen Platten',w:.1,base:'#ece6da',light:'#faf6ee',shade:'#c4bcae',dark:'#8e8678',patch:'#2a2622',patchHi:'#46403a'},
+   {id:'weiss',name:'Weiß',w:.15,base:'#ece8e0',light:'#faf8f2',shade:'#c8c2b6',dark:'#948e82'}]},
  {id:'husky',cm0:56,kg0:23,name:'Siberian Husky',soll:38,active:true,look:'mittelgroß, leicht und flink, dichtes Doppelfell, Gesichtsmaske, blaue oder braune Augen (auch zweifarbig), dreieckige Stehohren dicht beieinander, buschige Sichelrute',fur:'Grau-Weiß, Schwarz-Weiß, Rot-Weiß oder Agouti; weißes Gesicht mit Maske, weiße Unterseite',offs:{kraft:-1,biss:1,tempo:7,ausdauer:12,zaeh:2,wild:2,mut:1},
   // Stufe 0,7 (Zielgegner: Rekrut). Eigene Gestalt: Schlittenhund der Tschuktschen, leicht, schnell und ausdauernd. Mittellang, mäßig tiefe Brust, gerader Rücken, schlanke Läufe, buschige Sichelrute; weiße Unterseite über urajiro/belly
   shape:{head:'hk',L:29.5,leg:1.04,thick:.92,chest:.9,tuck:1.4,withers:.4,crest:9.2,dew:2.8,tailW:4.8,tailSeg:2.6,tailUp:-1,tailCurl:.16,bushy:1,legW:.94,hindW:.96,neckX:.8,neckY:-1.2,urajiro:1,mouth:{x:11.8,y:1.6},eye:{x:4.3,y:-4.6},whiteChest:0,earCut:0,collar:.4,whiteFeet:1},
@@ -367,6 +378,39 @@ const BREEDS=[
    {id:'schwarz',name:'Schwarz',w:.2,base:'#262321',light:'#423c38',shade:'#181615',dark:'#0e0d0c'},
    {id:'blau',name:'Blau',w:.1,base:'#5c626a',light:'#7a8088',shade:'#40454c',dark:'#26292e'},
    {id:'weiss',name:'Weiß mit Platten',w:.15,base:'#e8e2d6',light:'#f6f2ea',shade:'#bfb8aa',dark:'#8e8678',patch:'#3a2c20',patchHi:'#584434'}]},
+ {id:'afghane',cm0:70,kg0:27,name:'Afghanischer Windhund',soll:35,active:true,look:'Windhund aus den Bergen: langes seidiges Fell, das den ganzen Körper und die Läufe bedeckt, Haarschopf auf dem Kopf, lange behaarte Hängeohren, feiner langer Kopf, oft dunkle Maske, hoch getragene Rute mit Ring am Ende',fur:'Gold mit dunkler Maske, Creme, Schwarz, Silber (Domino) oder Rot',offs:{kraft:-3,biss:-1,tempo:8,ausdauer:3,zaeh:2,wild:2,mut:-3},
+  // Stufe 1 (ein Totenkopf). Eigene Gestalt: ganz in langes Haar gehüllt (Fransen bis fast zum Boden, behaarte Läufe), Schopf, Ohren wie Vorhänge, Ringelrute hoch getragen
+  shape:{head:'af',L:32,leg:1.2,thick:.82,chest:1.4,tuck:2.4,withers:.4,crest:7.6,dew:2.4,tailW:2.6,tailSeg:3,tailUp:.5,tailCurl:.1,tailRing:.55,legW:.86,hindW:.94,neckX:2,neckY:-2.4,mouth:{x:13.5,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:0,earCut:0,collar:.35,silk:1.6,legFeather:1.6,tailFeather:.5},
+  // Lautpaket: hochnäsig, bellt selten und dann gedehnt, jault und mault gern
+  sound:{barkF:150,barkF1:[720,540,420],barkF2:[1220,960,800],barkLen:.32,barkRate:.12,huff:.3,growlF:60,growlLp:2200,yelpF:600,whineF:760,vol:.75},
+  coats:[
+   {id:'gold',name:'Gold mit Maske',w:.4,base:'#d0a868',light:'#e8c88e',shade:'#a07c44',dark:'#5e4626',muzzle:'#2a201a'},
+   {id:'creme',name:'Creme',w:.2,base:'#e6d6b4',light:'#f4e8d0',shade:'#bca886',dark:'#7e6c50',muzzle:'#3a2e24'},
+   {id:'schwarz',name:'Schwarz',w:.15,base:'#2a2624',light:'#46403c',shade:'#1a1716',dark:'#0e0c0b'},
+   {id:'silber',name:'Silber (Domino)',w:.15,base:'#b0aca4',light:'#d0ccc4',shade:'#86827a',dark:'#4a4640',muzzle:'#2a2826'},
+   {id:'rot',name:'Rot mit Maske',w:.1,base:'#b06a3a',light:'#cc8a58',shade:'#80461e',dark:'#4a2812',muzzle:'#2a1a12'}]},
+ {id:'saluki',cm0:64,kg0:22,name:'Saluki',soll:33,active:true,look:'Windhund der Wüste: schlank und anmutig, langer schmaler Kopf, lange Hängeohren mit seidigen Fransen, glattes Fell, Fransen an Rute und Läufen, Rute tief mit Bogen',fur:'Creme, Gold, Rot, Schwarz-Loh oder Grizzle',offs:{kraft:-4,biss:-2,tempo:11,ausdauer:8,zaeh:-3,wild:1,mut:-1},
+  // Stufe 1 (ein Totenkopf). Eigene Gestalt: wie ein Greyhound, aber leichter und mit befederten Ohren, Rute und Läufen; ausdauerndster Windhund (Gazellenjagd)
+  shape:{head:'sl',L:31,leg:1.24,thick:.74,chest:1.8,tuck:3.2,withers:.2,crest:7.4,dew:2,tailW:2.6,tailSeg:3.2,tailUp:-.1,tailCurl:.16,legW:.78,hindW:.86,neckX:2.2,neckY:-2,mouth:{x:13.4,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.25,earCut:0,collar:.5,tailFeather:1.6,legFeather:.6},
+  // Lautpaket: stiller Hetzhund wie der Greyhound, etwas tiefer, langes helles Jaulen
+  sound:{barkF:170,barkF1:[800,600,460],barkF2:[1340,1050,860],barkLen:.24,barkRate:.06,huff:.2,growlF:66,growlLp:2400,yelpF:660,whineF:820,vol:.7},
+  coats:[
+   {id:'creme',name:'Creme',w:.3,base:'#e2cfa8',light:'#f0e2c4',shade:'#b8a27a',dark:'#7a6848'},
+   {id:'gold',name:'Gold',w:.3,base:'#c89a5c',light:'#e0b880',shade:'#9a703a',dark:'#5e4424'},
+   {id:'rot',name:'Rot',w:.15,base:'#a8643a',light:'#c4825a',shade:'#7a4424',dark:'#482814'},
+   {id:'schwarzloh',name:'Schwarz-Loh',w:.15,base:'#2a2420',light:'#463c34',shade:'#1a1613',dark:'#0f0c0a',tan:'#c08a52'},
+   {id:'grizzle',name:'Grizzle',w:.1,base:'#8a7a68',light:'#a89880',shade:'#625646',dark:'#3a3228'}]},
+ {id:'whippet',cm0:48,kg0:13,name:'Whippet',soll:30,active:true,look:'kleiner Windhund: wie ein Greyhound im Kleinformat, sehr schlank, tiefe Brust, stark aufgezogener Bauch, kurze Schnauze im Verhältnis, große dunkle Augen, Rosenohren',fur:'Falb, Gestromt, Blau, Schwarz oder Weiß mit Platten',offs:{kraft:-6,biss:-3,tempo:14,ausdauer:0,zaeh:-5,wild:-2,mut:-2},
+  // unter Stufe 0 (Zielgegner: Rekrut mit improvisierter Waffe). Eigene Gestalt: Greyhound im Kleinformat, leichter, etwas kürzere Schnauze, große Augen
+  shape:{head:'wp',L:29,leg:1.18,thick:.74,chest:1.6,tuck:3,withers:.2,crest:7.2,dew:1.8,tailW:2.6,tailSeg:3,tailUp:-.25,tailCurl:.12,legW:.76,hindW:.84,neckX:1.8,neckY:-1.6,mouth:{x:12.4,y:1.4},eye:{x:4.2,y:-4.2},whiteChest:.45,earCut:0,collar:.5,whiteFeet:.35,piebald:1},
+  // Lautpaket: klein und hell, kurzes Kläffen, Fiepen
+  sound:{barkF:210,barkF1:[900,680,520],barkF2:[1500,1180,960],barkLen:.18,barkRate:.1,huff:.15,growlF:78,growlLp:2600,yelpF:760,whineF:900,vol:.6},
+  coats:[
+   {id:'falb',name:'Falb',w:.3,base:'#c8a070',light:'#e0bc90',shade:'#987448',dark:'#5e4628'},
+   {id:'gestromt',name:'Gestromt',w:.25,base:'#8a6a48',light:'#a88660',shade:'#624a30',dark:'#3a2a1a',stripe:'#24180e'},
+   {id:'blau',name:'Blau',w:.15,base:'#5c626a',light:'#7a8088',shade:'#40454c',dark:'#26292e'},
+   {id:'schwarz',name:'Schwarz',w:.1,base:'#262321',light:'#423c38',shade:'#181615',dark:'#0e0d0c'},
+   {id:'weiss',name:'Weiß mit Platten',w:.2,base:'#e8e2d6',light:'#f6f2ea',shade:'#bfb8aa',dark:'#8e8678',patch:'#b88a58',patchHi:'#d0a474'}]},
  {id:'bluthund',bal:1.5,cm0:66,kg0:45,name:'Bluthund',soll:30,active:true,look:'Spürhund, lange tiefe Schnauze, sehr lange Hängeohren, lose Haut mit Falten, Hängelefzen, Kopf tief, Rute säbelförmig hoch',fur:'Schwarzer Sattel, lohfarbener Kopf, Brust und Läufe',offs:{kraft:-2,biss:-2,tempo:-2,ausdauer:6,zaeh:0,wild:-6,mut:-2},
   // unter Stufe 0 (Zielgegner: Rekrut mit improvisierter Waffe). Eigene Gestalt: Spürhund, lang, lose Haut, Wamme, Kopf tief zur Fährte, sehr lange Ohren, Rute hoch wie ein Säbel
   shape:{head:'bh',L:31.5,leg:1.02,thick:.9,chest:.9,tuck:.9,withers:.2,crest:7.8,dew:6.8,tailW:4,tailSeg:2.6,tailUp:-1.15,tailCurl:.08,legW:.96,hindW:.96,neckX:1.4,neckY:1.4,mouth:{x:12.4,y:2.6},eye:{x:4.2,y:-4},whiteChest:.08,earCut:0,collar:.4},
@@ -395,7 +439,7 @@ DOG.create=function(breedId='mastiff',seed=(Math.random()*4294967296)>>>0){
  // Sollwerte (Anlage, Obergrenze fürs Training) um den Rassen-Soll; Istwerte etwa 20 Punkte darunter, beide Bernoulli-verteilt
  const caps={},stats={};for(const [k] of STATS){const m=B.soll+(B.offs?.[k]||0);caps[k]=bern(r,m);stats[k]=Math.min(caps[k],bern(r,m-20));}
  let x=r()*B.coats.reduce((n,c)=>n+c.w,0),coat=B.coats[0];for(const c of B.coats){x-=c.w;if(x<=0){coat=c;break;}}
- const f=.93+r()*.14,col={};for(const k of ['base','light','shade','dark','stripe','tan','patch','patchHi','saddle','belly','spot','tailTip'])if(coat[k])col[k]=shadeHex(coat[k],f);
+ const f=.93+r()*.14,col={};for(const k of ['base','light','shade','dark','stripe','tan','patch','patchHi','saddle','belly','spot','tailTip','muzzle'])if(coat[k])col[k]=shadeHex(coat[k],f);
  // Größe: eigene Bernoulli-Streuung, leicht an die Kraft-Anlage gekoppelt; Gewicht folgt Größe und Kraft
  const groesse=bern(r,50,12),bulk=r();const {height,weight}=sizeOf(B,groesse,caps.kraft,bulk);
  return {id:'hund-'+seed.toString(36),seed,breed:B.id,breedName:B.name,soll:B.soll,name:NAMES[Math.floor(r()*NAMES.length)],sex:r()<.6?'Rüde':'Hündin',ageYears:2+Math.floor(r()*6),
@@ -712,7 +756,7 @@ function ik(jx,jy,fx,fy,a,b,dir){let dx=fx-jx,dy=fy-jy,dd=Math.hypot(dx,dy);cons
  const th=Math.atan2(dy,dx),al=Math.acos(cl((a*a+dd*dd-b*b)/(2*a*dd),-1,1)),an=th+dir*al;return {kx:jx+Math.cos(an)*a,ky:jy+Math.sin(an)*a,fx,fy};}
 const HS=1.22,MOUTH={x:11.6,y:1.3};
 // Gestalt je Rasse (Standard = Mastiff). Rassen ohne eigenes shape werden in Mastiff-Gestalt gezeichnet.
-const SHAPE0={head:'mastiff',L:31,leg:1,thick:1,chest:0,tuck:0,withers:0,crest:8.5,dew:5.5,tailW:4.6,tailSeg:2.5,tailUp:0,tailCurl:-.07,legW:1,hindW:1,neckX:0,neckY:0,rough:0,ruff:0,piebald:0,bushy:0,saddle:0,folds:0,ridge:0,urajiro:0,spots:0,cords:0,mouth:MOUTH,eye:{x:4.6,y:-4.2}},SHAPES=new Map();
+const SHAPE0={head:'mastiff',L:31,leg:1,thick:1,chest:0,tuck:0,withers:0,crest:8.5,dew:5.5,tailW:4.6,tailSeg:2.5,tailUp:0,tailCurl:-.07,legW:1,hindW:1,neckX:0,neckY:0,rough:0,ruff:0,piebald:0,bushy:0,saddle:0,folds:0,ridge:0,urajiro:0,spots:0,cords:0,silk:0,legFeather:0,tailFeather:0,tailRing:0,mouth:MOUTH,eye:{x:4.6,y:-4.2}},SHAPES=new Map();
 function shapeOf(d){const id=(d?.dog||d)?.breed||'mastiff';let s=SHAPES.get(id);if(!s){s={...SHAPE0,...(breed(id).shape||{})};SHAPES.set(id,s);}return s;}
 DOG.shapeOf=shapeOf;
 // Stimmung: Kopf, Ohren, Rute, Lefzen
@@ -1253,6 +1297,48 @@ function headGH(c,d,o,A,col,t,dead,gore,woundsOn){const light=col.light,shade=co
  if(d.mouthBlood>.05){const mb=d.mouthBlood;rr(c,6,1,8.4,1.4*mb+.4,'#7d1a12');rr(c,9.8,2.4,.9,2+mb*5,'#8f2017');if(mb>.4){rr(c,13,2.2,.9,1+mb*4,'#8f2017');rr(c,7.6,3.2,.9,1+mb*3,'#7d1a12');}}
  if(dead||o.blink)seg(c,3.1,-4.3,5,-4.1,.6,'#0d0907');else{if(o.eyeWhite)rr(c,2.6,-5,1,1.3,'#e9e2d0');poly(c,[[3,-4.9],[5.2,-4.9],[5,-3.8],[3.2,-3.7]],'#0d0907');rr(c,4.2,-4.7,.6,.5,(o.lips||0)>.6?'#e9d27a':'#5a3a20');}// dunkles ovales Auge
  const fold=1-cl(ear,0,1);poly(c,[[-3.6,-7],[-.8,-7.6],[-1.6-ear*1.2,-9.4+fold*2.6-ear*1.4],[-4.8-ear*.8,-8.6+fold*2.4-ear*.8]],headP?pt:shade);seg(c,-3.2,-7.2,-1-ear*.8,-8.4+fold*2-ear*1.2,.5,headP?(col.patchHi||base):base);// kleines Rosenohr, nach hinten gefaltet, bei Aufmerksamkeit halb aufgestellt
+ gore('kopf',3,-2,5);woundsOn('kopf',2,-3);
+ if(o.bone){rr(c,9.4,2.2,9,1.6,'#e7dcc2');disk(c,9.4,3,1.4,'#e7dcc2');disk(c,18.4,3,1.4,'#e7dcc2');rr(c,10.4,3.4,7,.6,'#b8ab8c');}}
+// ---- Köpfe der Windhunde Whippet, Saluki, Afghane, Barsoi: ein Zeichner mit Rassen-Varianten (Schnauzenlänge mz, Ramsnase rom, Ohrform, Haarschopf, Augengröße)
+// wp Whippet: kürzere Schnauze, große runde Augen, Rosenohren · sl Saluki: lange Hängeohren mit Seidenfransen · af Afghane: Haarschopf, Ohren wie Vorhänge aus Haar, dunkle Maske, leichte Ramsnase · bz Barsoi: sehr lange Schnauze mit gewölbtem Nasenrücken, kleine Rosenohren
+const WIND={wp:{mz:.86,rom:0,ear:'rose',eye:1.3},sl:{mz:1,rom:.2,ear:'silk',len:8,eye:1},af:{mz:1.02,rom:.5,ear:'hair',len:12,top:1,eye:.9},bz:{mz:1.2,rom:1,ear:'rose',eye:.9}};
+function headWind(c,d,o,A,col,t,dead,gore,woundsOn,V){const light=col.light,shade=col.shade,dark=col.dark,base=col.base,D=d.dog,sd=(D?.seed||0)%131,pt=col.patch,ps=(D?.seed||0)%9973,headP=pt&&hrand(ps*.53)<.55,mzC=col.muzzle||null;
+ const ear=cl((o.ears||0)+(o.earFlick?Math.sin(t*38)*.35*o.earFlick:0),-.4,1.3),sw=(d.moveSpeed||0)>8?Math.sin((d.cyc||0)*TAU*2)*.8:Math.sin(t*1.4)*.25,mz=V.mz,r=V.rom;
+ // Hängeohren (Saluki, Afghane) hängen hinter dem Schädel: erst die ferne Seite andeuten
+ if(V.ear!=='rose')poly(c,[[-4.6,-6.6],[-2.2,-7.4],[-2.6+sw*.3,-6.8+V.len],[-5.6+sw*.5,-7.4+V.len]],dark);
+ poly(c,[[-5.4,-3.8],[-3.8,-7.2],[1,-8.2],[5,-7.6],[7.4,-5.4],[7.6,1.4],[3.2,4],[-2.8,4],[-5.8,1.4]],base);// schmaler flacher Schädel
+ if(col.stripe)for(let i=0;i<4;i++){const x=-4+i*1.6+hrand(i+sd)*.5;seg(c,x,-6.6+hrand(i*3+sd),x-.8,-.6+hrand(i*5+sd)*2,.5,col.stripe+'80');}
+ if(headP)poly(c,[[-5,-3.6],[-3.6,-7],[1.4,-8],[4.6,-7.4],[6,-4.6],[4,-2.6],[.6,-3],[-3,-1.4]],pt);// Platte über Auge und Ohr
+ seg(c,-2.8,-7.7,4.2,-7.9,.8,headP?(col.patchHi||shade):light);
+ poly(c,[[-3.6,0],[3.2,-.6],[4.2,3.8],[-2.2,4]],shade+'80');
+ if(col.tan){poly(c,[[3.6,-6.4],[5.2,-6.4],[5,-5.6],[3.8,-5.6]],col.tan);poly(c,[[-2,1.4],[3.6,.4],[4.4,3.8],[-1.4,4]],col.tan);}// Brauenpunkte und Backen (Schwarz-Loh)
+ const jaw=o.jaw||0,jA=jaw*.68,snarl=jaw>.15||(o.lips||0)>.6;
+ // Schnauze und Kiefer: Länge je Rasse (mz), Ansatz bleibt am Auge
+ c.save();c.translate(6,0);c.scale(mz,1);c.translate(-6,0);
+ c.save();c.translate(5.6,1.6);c.rotate(jA);poly(c,[[-1,0],[9,0],[8.8,1.5],[0,2.3]],shade);if(mzC)poly(c,[[4,0],[9,0],[8.8,1.5],[4,2]],mzC+'b0');
+ if(jaw>.2){rr(c,7.8,-.9,.9,1.5,'#f0eadb');rr(c,5.4,-.5,.8,.8,'#f0eadb');rr(c,3.2,-.5,.8,.8,'#f0eadb');rr(c,1,0,6,.8,'#9a3b42');}
+ if(o.tongue||o.pant){rr(c,1.4,.2,7,1.2,'#c8606a');if(o.tongue>.6)rr(c,7.2,1,1.8,2.4+o.tongue*2.6,'#b9505a');}
+ if(d.mouthBlood>.1)rr(c,1,1.8,7.8*d.mouthBlood,1,'#7a1a12');c.restore();
+ poly(c,[[6,-5],[9,-4.6-r*.9],[11.8,-4-r*.7],[13.8,-3],[14.6,-1.8],[14.4,.6],[13,1.2],[6,1.6]],base);seg(c,6.8,-4.4,12.2,-3.6-r*.6,.7,light);seg(c,7.2,-2.6,13.6,-2.2,.5,shade);// lange spitze Schnauze, beim Barsoi mit gewölbtem Nasenrücken
+ if(mzC){poly(c,[[10.6,-3.9-r*.6],[12.4,-3.6-r*.4],[13.8,-3],[14.6,-1.8],[14.4,.6],[13,1.2],[10.2,1.2]],mzC+'c0');poly(c,[[8,-4.2-r*.7],[10.6,-3.9-r*.6],[10.2,1.2],[8,1.4]],mzC+'60');}// dunkle Maske, nach hinten auslaufend
+ poly(c,[[13.4,-3.9],[15,-3.5],[15.5,-2.4],[15.1,-1.4],[13.6,-1.6]],A.coat==='blau'?'#3a3e44':'#0d0907');rr(c,14.4,-3.4,.7,.5,'#5a4f49');if(o.sniff)rr(c,15,-2.2+Math.sin(t*34)*.3,.8,.8,'#2a2420');
+ if(o.lick>.05)poly(c,[[13,.8],[14.8,.8],[15.4,.8-3*o.lick],[14,.8-3.6*o.lick]],'#c8606a');
+ if((o.lips||0)>.6){for(let i=0;i<4;i++)seg(c,7.2+i*1.4,-4.6+i*.25,7.8+i*1.4,-3.4+i*.25,.5,shade);seg(c,4.4,-5.8,6.4,-6.2,.5,shade);}
+ if(snarl){const qv=o.quiver?Math.sin(t*46)*.45*o.quiver:0;c.translate(0,qv);poly(c,[[6,.8],[9.8,.9],[9,2.3],[6,2.3]],'#2a201c');rr(c,12.4,.8,.8,2.4,'#f2ecdd');rr(c,11,1,.6,1.2,'#f2ecdd');rr(c,13.6,1,.6,1,'#f2ecdd');seg(c,6.4,-.7,14,-1.1,.7,'#1a1410');c.translate(0,-qv);}
+ else{poly(c,[[6,.8],[14.2,.8],[13.6,2.2],[9.8,3],[6.8,2.8],[6,2.3]],base);if(mzC)poly(c,[[10,.8],[14.2,.8],[13.6,2.2],[10,2.9]],mzC+'b0');seg(c,6.4,.9,14,.8,.5,'#1a1410');}// enge Lefzen
+ if(o.drool&&!dead)rr(c,7.4,3,.5,2+Math.sin(t*3)*1.2,'#e6e1d6cc');
+ if(d.mouthBlood>.05){const mb=d.mouthBlood;rr(c,6,1,8.4,1.4*mb+.4,'#7d1a12');rr(c,9.8,2.4,.9,2+mb*5,'#8f2017');if(mb>.4){rr(c,13,2.2,.9,1+mb*4,'#8f2017');rr(c,7.6,3.2,.9,1+mb*3,'#7d1a12');}}
+ c.restore();
+ // Auge: Whippet groß und rund, Afghane schmal und schräg (mandelförmig)
+ const ey=V.eye;if(dead||o.blink)seg(c,3.1,-4.3,5,-4.1,.6,'#0d0907');else{if(o.eyeWhite)rr(c,2.6,-5,1,1.3,'#e9e2d0');if(ey>1.1)poly(c,[[2.8,-5.4],[5.4,-5.3],[5.3,-3.5],[3,-3.4]],'#0d0907');else if(ey<1)poly(c,[[2.8,-4.4],[5.4,-5.2],[5,-4],[3.2,-3.8]],'#0d0907');else poly(c,[[3,-4.9],[5.2,-4.9],[5,-3.8],[3.2,-3.7]],'#0d0907');rr(c,4.2,-4.7,.6,.5,(o.lips||0)>.6?'#e9d27a':'#5a3a20');if(mzC)seg(c,2.4,-4.2,5.8,-5.4,.5,mzC+'90');}
+ // Ohren
+ if(V.ear==='rose'){const fold=1-cl(ear,0,1),ec=headP?pt:shade;poly(c,[[-3.6,-7],[-.8,-7.6],[-1.6-ear*1.2,-9.4+fold*2.6-ear*1.4],[-4.8-ear*.8,-8.6+fold*2.4-ear*.8]],ec);seg(c,-3.2,-7.2,-1-ear*.8,-8.4+fold*2-ear*1.2,.5,headP?(col.patchHi||base):base);}// kleines Rosenohr
+ else{const L=V.len*(1-cl(ear,0,1)*.25),lift=cl(ear,0,1)*1.6,ec=headP?pt:(V.ear==='hair'?base:shade),hc=headP?(col.patchHi||base):light;
+  poly(c,[[-3.8,-7.2],[-.6,-7.8],[.2-lift,-6.6+L*.45],[-.6+sw*.4,-7+L],[-4.6+sw*.6,-7.4+L],[-5.2,-6.4+L*.5]],ec);// Hängeohr, bei Aufmerksamkeit etwas gehoben
+  const n=V.ear==='hair'?6:4;for(let i=0;i<n;i++){const x=-4.6+i*(4.2/(n-1)),h=hrand(i*2.7+sd);seg(c,x,-6+L*.4,x-.4+sw*.6,-7+L+h*1.6,.8,i%2?hc:ec);}// Fransen bzw. Haarsträhnen
+  seg(c,-3.4,-7,-1,-7.4+L*.5,.5,hc+'b0');}
+ if(V.top){// Haarschopf (Afghane): lange Strähnen von der Stirn nach hinten über den Kopf
+  const hc=headP?(col.patchHi||base):light;for(let i=0;i<6;i++){const x=-2.6+i*1.2,h=hrand(i*3.3+sd);seg(c,x,-8.4-h*.8,x-3.4+sw*.4,-6.4+h*1.4,.9,i%2?hc:base);}seg(c,-2.4,-9,2.8,-9.2,.8,base);}
  gore('kopf',3,-2,5);woundsOn('kopf',2,-3);
  if(o.bone){rr(c,9.4,2.2,9,1.6,'#e7dcc2');disk(c,9.4,3,1.4,'#e7dcc2');disk(c,18.4,3,1.4,'#e7dcc2');rr(c,10.4,3.4,7,.6,'#b8ab8c');}}
 // ---- Kopf des Dalmatiners: langer schlanker Kopf, flacher Schädel, mittellange Schnauze, weiß mit kleinen Tupfen, Nase und Lidrand schwarz (bei leberbraunen Tupfen braun), runde Augen, hoch angesetzte Hängeohren mit Tupfen
@@ -1905,6 +1991,11 @@ function drawDog(c,d,px,py,k,face,opt={}){const D=d.dog,col=D.appearance.colors,
   poly(c,[[fx-3.2,fy-.3],[fx-2.8,fy-2.9],[fx+2.2,fy-3],[fx+3.6,fy-1.2],[fx+3.4,fy+.3]],A.whiteFeet&&l.front?(l.near?'#e9dfcb':'#bdb3a0'):tanC||cc);rr(c,fx-3.2,fy-.3,6.6,1,lo);
   if(l.near){rr(c,fx-.9,fy-2.8,.7,2,lo);rr(c,fx+1.2,fy-2.6,.7,1.8,lo);rr(c,fx+3.3,fy-.4,.8,.8,'#ddd4bf');rr(c,fx+1.7,fy+.1,.7,.7,'#ddd4bf');}c.restore();
   if(SH.spots&&col.spot&&l.near){const ps=(D.seed||0)%9973+(l.front?11:23);for(let i=0;i<4;i++){const u=.15+hrand(ps+i*1.9)*.75,a=l.front?l.k:l.h,b=l.front?l.w:l.k,x=(l.j.x+(a.x-l.j.x)*u)*(i<2?1:0)+(a.x+(b.x-a.x)*u)*(i<2?0:1),y=(l.j.y+(a.y-l.j.y)*u)*(i<2?1:0)+(a.y+(b.y-a.y)*u)*(i<2?0:1);disk(c,x+(hrand(ps+i)-.5)*2,y,.6+hrand(ps+i*2.3)*.6,col.spot);}}// Tupfen an den Läufen
+  if(SH.legFeather){// Befederung (Windhunde mit langem Haar): Fransen an der Rückseite der Läufe, beim Afghanen bis über die Pfoten
+   const fl=SH.legFeather,ps=(D.seed||0)%9973+(l.front?5:17),hc=l.near?light:base,sw=(d.moveSpeed||0)>8?Math.sin((d.cyc||0)*TAU*2+(l.front?0:1.6))*.6:0;
+   const pts=l.front?[l.j,l.k,l.w]:[l.j,l.k,l.h],n=fl>1.2?9:6;for(let i=0;i<n;i++){const u=(i+.5)/n*(pts.length-1),a=pts[Math.floor(u)],b=pts[Math.min(pts.length-1,Math.floor(u)+1)],f=u-Math.floor(u),x=a.x+(b.x-a.x)*f,y=a.y+(b.y-a.y)*f,h=hrand(ps+i*1.7),len=fl*(1.6+h*1.6)*(l.front&&u<1?.5:1);
+    seg(c,x-1,y,x-1.4-len*.7+sw,y+len*.9,.9,i%2?hc:cc);if(l.near&&i%2===0)seg(c,x-.6,y+.6,x-1-len*.5+sw,y+len*.8,.5,lo);}
+   if(fl>1.2){const f2=l.f;for(let i=0;i<3;i++)seg(c,f2.x-2+i*1.6,f2.y-6,f2.x-2.4+i*1.6+sw*.5,f2.y-1.2,1,i%2?hc:cc);}}// Haar fällt über die Pfote
   if(l.near)woundsOn(l.front?'vl':'hl',(l.j.x+l.k.x)/2,(l.j.y+l.k.y)/2);}
  // ---- ferne Beine
  drawLeg(legs[2]);drawLeg(legs[3]);
@@ -1912,7 +2003,7 @@ function drawDog(c,d,px,py,k,face,opt={}){const D=d.dog,col=D.appearance.colors,
  {const wag=dead?0:(R.legs&&d.moveSpeed>8?Math.sin((d.cyc||0)*TAU*2)*.12:Math.sin(t*(o.tail>.4?6:2))*.1);const tb=body(-5,-5);let th=R.lie?2.95:(o.tuck?1.05:1.95+o.tail*1.25-SH.tailUp)+wag-p,tx=tb.x,ty=tb.y;
   for(let i=1;i<=8;i++){const nx=tx+Math.cos(th)*SH.tailSeg;let ny=ty+Math.sin(th)*SH.tailSeg;if(SH.tailSeg>2.6&&ny>-.8){ny=-.8;th=Math.PI+.05;}// lange Rute liegt auf dem Boden auf
    if(SH.bushy){const w=SH.tailW*(.55+.55*Math.sin(Math.PI*cl((i-.5)/8,0,1)));seg(c,tx,ty,nx,ny,w,i>6?(col.tailTip||col.saddle||dark):i===1?base:shade);seg(c,tx+Math.sin(th)*w*.25,ty-Math.cos(th)*w*.25,nx+Math.sin(th)*w*.25,ny-Math.cos(th)*w*.25,w*.45,i>6?(col.tailTip||col.saddle||dark):base);if(i>1&&i<8)seg(c,nx,ny,nx-Math.sin(th)*w*.6-.6,ny+Math.cos(th)*w*.6,.7,light+'aa');}// buschige Rute, dunkle Spitze
-   else seg(c,tx,ty,nx,ny,cl(SH.tailW-i*.42*SH.tailW/4.6,1.5*SH.tailW/4.6,SH.tailW),i>6?shade:base);if(SH.rough&&i>1&&i<8&&i%2===0)seg(c,nx,ny,nx-Math.sin(th)*1.8-.6,ny+Math.cos(th)*1.8,.7,i%4?light:shade);tx=nx;ty=ny;th+=R.lie?0:(o.tuck?.12:SH.tailCurl);}
+   else seg(c,tx,ty,nx,ny,cl(SH.tailW-i*.42*SH.tailW/4.6,1.5*SH.tailW/4.6,SH.tailW),i>6?shade:base);if(SH.rough&&i>1&&i<8&&i%2===0)seg(c,nx,ny,nx-Math.sin(th)*1.8-.6,ny+Math.cos(th)*1.8,.7,i%4?light:shade);if(SH.tailFeather&&i>1){const fl=SH.tailFeather*(i<7?1:.6)*(.8+hrand(i*2.9+(D.seed||0)%29)*.5);seg(c,(tx+nx)/2,(ty+ny)/2,(tx+nx)/2-Math.sin(th)*fl*2.2-.8,(ty+ny)/2+Math.cos(th)*fl*2.2,.9,i%2?light:base);}tx=nx;ty=ny;th+=R.lie?0:(o.tuck?.12:SH.tailCurl+(SH.tailRing&&i>5?SH.tailRing:0));}
   }
  // ---- Rumpf im Körperrahmen (Becken bei 0,0; Schulter bei L,0), geneigt um p
  c.save();c.translate(R.hipX,R.hipY);c.rotate(-p);
@@ -1933,6 +2024,10 @@ function drawDog(c,d,px,py,k,face,opt={}){const D=d.dog,col=D.appearance.colors,
    const n=2+Math.floor(hrand(ps*.37)*3);for(let i=0;i<n;i++){const cx=-5+hrand(ps+i*1.7)*(L+10),cy=-9+hrand(ps+i*2.3)*9,rx=4+hrand(ps+i*3.1)*6.5,ry=3.5+hrand(ps+i*4.7)*4,pts=[];
     for(let j=0;j<9;j++){const a=j/9*TAU,w=.75+hrand(ps+i*5.3+j*.91)*.45;pts.push([cx+Math.cos(a)*rx*w,cy+Math.sin(a)*ry*w]);}poly(c,pts,col.patch);seg(c,cx-rx*.6,cy-ry*.55,cx+rx*.5,cy-ry*.6,.8,col.patchHi);}
    c.restore();}
+  if(SH.silk){// langes seidiges Fell (Afghane, Barsoi): Strähnen über die Seite, Fransen unter Brust und Bauch, schwingen beim Laufen
+   const sk=SH.silk,ps=(D.seed||0)%9973,sw=(d.moveSpeed||0)>8?Math.sin((d.cyc||0)*TAU*2)*.9:Math.sin(t*1.2)*.2;
+   for(let i=2;i<15;i++){const [x,y]=top[i],[,yb]=bot[i],h=hrand(ps+i*3.1);if(i%2===0)seg(c,x+.4,y+2+h,x-1.2+sw*.4,yb-1,.6,(i%4?light:shade)+'70');}
+   for(let i=1;i<16;i++){const [x,y]=bot[i],h=hrand(ps+i*2.3),len=sk*(2.4+h*2.2)*(i>10?1.25:1);seg(c,x,y-2.2,x-1.4+sw,y+len,1.5,i%2?light:base);seg(c,x+.8,y-1,x-.4+sw,y+len-1.2,.7,shade);}}
   if(SH.saddle&&col.saddle){// Wolfszeichnung: dunkler Sattel über Rücken und Schultern, heller Bauch
    poly(c,bot.slice(1,16).map(([x,y],j)=>[x,y-3.4-1.2*Math.sin(j*.45)]).concat(bot.slice(1,16).reverse().map(([x,y])=>[x,y])),col.belly);
    const sa=top.slice(2,15),sw=SH.saddle;poly(c,sa.concat(sa.slice().reverse().map(([x,y],j)=>[x,y+(3.2+1.4*Math.sin(j*.9+((D.seed||0)%7)))*sw])),col.saddle);
@@ -1975,7 +2070,7 @@ function drawDog(c,d,px,py,k,face,opt={}){const D=d.dog,col=D.appearance.colors,
  const nm=R.anchors.hals;gore('hals',nm.x,nm.y,5);woundsOn('hals',nm.x,nm.y);
  // ---- Kopf
  c.save();c.translate(Hp.x,Hp.y);c.rotate(ha);c.scale(HS,HS);
- if(SH.head==='eb')headEB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bt')headBT(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='hk')headHK(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ch')headCH(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='sp2')headSP2(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ko')headKO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='nf')headNF(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='mm')headMM(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bh2')headSB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='lb')headLB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='dd')headDD(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='gh')headGH(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='dm')headDM(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='as')headAS(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bx2')headBXR(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ml')headML(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='sh')headSH(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='db')headDB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ak')headAK(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='rr')headRR(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bm')headBM(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bx')headBX(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='tb')headTB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='mn')headMN(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='co')headCO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bo')headBO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='pc')headPC(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='dg')headDG(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='fi')headFI(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='to')headTO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ow')headOW(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bh')headBH(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='wo')headWO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='mo')headMO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='al')headAL(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='hh')headHH(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bb')headBB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='mg')headMG(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='sp')headSP(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='wh')headWH(c,d,o,A,col,t,dead,gore,woundsOn);else{
+ if(SH.head==='eb')headEB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bt')headBT(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='hk')headHK(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ch')headCH(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='sp2')headSP2(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ko')headKO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='nf')headNF(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='mm')headMM(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bh2')headSB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='lb')headLB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='dd')headDD(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='gh')headGH(c,d,o,A,col,t,dead,gore,woundsOn);else if(WIND[SH.head])headWind(c,d,o,A,col,t,dead,gore,woundsOn,WIND[SH.head]);else if(SH.head==='dm')headDM(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='as')headAS(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bx2')headBXR(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ml')headML(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='sh')headSH(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='db')headDB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ak')headAK(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='rr')headRR(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bm')headBM(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bx')headBX(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='tb')headTB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='mn')headMN(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='co')headCO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bo')headBO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='pc')headPC(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='dg')headDG(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='fi')headFI(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='to')headTO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='ow')headOW(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bh')headBH(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='wo')headWO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='mo')headMO(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='al')headAL(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='hh')headHH(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='bb')headBB(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='mg')headMG(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='sp')headSP(c,d,o,A,col,t,dead,gore,woundsOn);else if(SH.head==='wh')headWH(c,d,o,A,col,t,dead,gore,woundsOn);else{
  poly(c,[[-6,-5],[-4,-8],[1,-9.2],[5,-8.4],[7.5,-5.5],[7.5,2],[3,5],[-3,5],[-6.5,2]],base);
  seg(c,-3,-8.5,4,-8.6,.9,light);seg(c,0,-6.6,4,-6.9,.6,shade);seg(c,.5,-5.5,4.5,-5.7,.6,shade);
  poly(c,[[-4,1],[3,.5],[4,4.6],[-2.5,4.8]],shade+'aa');poly(c,[[3,-6.2],[7.5,-6],[7.5,-.5],[4,-1.8]],mask+'90');
