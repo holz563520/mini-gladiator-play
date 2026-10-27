@@ -50,13 +50,24 @@ function equipmentBase(g,i,slot,mode){const v=M.itemStats(i),skill=(g.mastery[i.
  if(i.kind==='shield')return (v.area*100+v.protection*.3)*(1+g.stats.block/100)/(1+v.weight/(g.role==='Soldat'?22:7));
  const mobility=g.role==='Soldat'?24:6;return v.protection*health/(1+v.weight/(mobility+g.stats.strength*.1))*(g.role!=='Soldat'&&i.material==='leather'?1.4:1);
 }
+// Schalter „Begabte: Talentwaffe erzwingen“ (S.army.forceTalent, Wunsch Thomas 27.10.): Wer in einer Waffengattung einen SOLL-Wert
+// ab 69 hat (Talentstufe „Begabt“ der Kaserne), bekommt beim automatischen Ausrüsten zuerst eine Waffe genau dieser Gattung –
+// die mit dem höchsten SOLL –, sofern seine Klasse sie tragen darf. Liegt keine solche Waffe im Lager oder verbietet die Klasse sie,
+// wählt das Spiel wie bisher die beste Waffe. Begabtere werden zuerst bedient (sie bekommen die knappe Talentwaffe).
+const GIFTED=69;
+function talentWeapon(g){let top=null,v=0;for(const w of M.weaponDefs){const c=g.caps?.weapons?.[w.id]||0;if(c>v){v=c;top=w;}}return top&&v>=GIFTED?{def:top.id,slot:top.ammo?'weapon':'secondary',soll:v}:null;}
 function autoEquip(gs=S.roster,priority='balanced'){if(S.battle)return 'Während des Kampfes nicht möglich.';const target=gs.filter(g=>!g.dead&&!g.retired&&!g.smithDuty).map(person),ids=new Set(target.map(g=>g.id)),held=new Set();for(const g of S.roster)for(const k of slots)if(getSlot(g,k)&&(!ids.has(g.id)||g.locks[k]))held.add(getSlot(g,k));
  const rank=g=>priority==='combat'||priority==='soll'?M.power(g):priority==='hero'?(S.teamPlans.some(t=>t.leader===g.id)?1000:0)+rating(g,g.role,'current'):priority==='elite'?(S.teams[0]?.includes(g.id)?1000:0)+rating(g):priority==='talents'?rating(g,g.role,'potential')-rating(g,g.role,'current'):rating(g,g.role,priority);target.sort((a,b)=>rank(b)-rank(a));
  for(const g of target)for(const k of slots)if(!g.locks[k])putSlot(g,k,null);
  const groups={};for(const i of S.inventory){if(held.has(i.id)||i.durability<=0)continue;const k=i.kind==='weapon'?(M.definition(i).ammo?'weapon':'secondary'):i.kind==='shield'?'shield':i.def;(groups[k]??=[]).push(i);}
- let assigned=0;const notes=[];for(const g of target){for(const k of slots){if(g.locks[k])continue;if(k==='shield'&&(M.itemStats(M.gear(g,'secondary'))?.twoHand||g.role==='Fernkämpfer'))continue;let best=null,score=0;for(const i of groups[k]||[]){if(held.has(i.id)||(k==='secondary'&&!M.allowedMelee(g,i)))continue;const value=equipmentValue(g,i,k,priority);if(value>score){score=value;best=i;}}if(best){putSlot(g,k,best.id);held.add(best.id);assigned++;}}
+ let assigned=0;const notes=[],forced=new Set();let forcedN=0,missingT=0;
+ if(S.army?.forceTalent){const gifted=target.map(g=>({g,t:talentWeapon(g)})).filter(x=>x.t).sort((a,b)=>b.t.soll-a.t.soll);
+  for(const {g,t} of gifted){if(g.locks[t.slot])continue;if(t.slot==='weapon'?!M.allowedRanged(g,t.def):!M.allowedMelee(g,t.def))continue;// Klasse erlaubt die Talentwaffe nicht
+   let best=null,score=-Infinity;for(const i of groups[t.slot]||[]){if(held.has(i.id)||i.def!==t.def)continue;const v=equipmentBase(g,i,t.slot,priority);if(v>score){score=v;best=i;}}
+   if(best){putSlot(g,t.slot,best.id);held.add(best.id);forced.add(g.id+':'+t.slot);assigned++;forcedN++;}else missingT++;}}
+ for(const g of target){for(const k of slots){if(g.locks[k]||forced.has(g.id+':'+k))continue;if(k==='shield'&&(M.itemStats(M.gear(g,'secondary'))?.twoHand||g.role==='Fernkämpfer'))continue;let best=null,score=0;for(const i of groups[k]||[]){if(held.has(i.id)||(k==='secondary'&&!M.allowedMelee(g,i)))continue;const value=equipmentValue(g,i,k,priority);if(value>score){score=value;best=i;}}if(best){putSlot(g,k,best.id);held.add(best.id);assigned++;}}
  if(!g.locks.ammo){const def=M.gear(g,'weapon')?.def;g.ammoLoad=def==='crossbow'?8:def==='bow'?12:0;}notes.push(g.name+': '+M.itemName(M.gear(g,g.role==='Fernkämpfer'?'weapon':'secondary')));}
- M.world?.syncOwners();audit('Ausrüstung: '+assigned+' Teile verteilt ('+priority+'). '+notes.slice(0,8).join(' · ')+(notes.length>8?' …':''));M.persist();return assigned+' Ausrüstungsteile zugewiesen. Sperren und außerhalb der Auswahl angelegte Gegenstände bleiben geschützt.';}
+ M.world?.syncOwners();audit('Ausrüstung: '+assigned+' Teile verteilt ('+priority+'). '+notes.slice(0,8).join(' · ')+(notes.length>8?' …':''));M.persist();return assigned+' Ausrüstungsteile zugewiesen.'+(S.army?.forceTalent?' Talentwaffe erzwungen: '+forcedN+(missingT?', '+missingT+' ohne passende Waffe im Lager (beste andere genommen)':'')+'.':'')+' Sperren und außerhalb der Auswahl angelegte Gegenstände bleiben geschützt.';}
 function savePlan(){const p=plan();if(!p)return;for(const g of M.selectedTeam()){p.classes[g.id]=g.role;p.loadouts[g.id]=M.copy(g.equipment);}p.tactics=M.copy(S.tactics);p.formation=S.tactics.formation;M.persist();}
 function activateTeam(index){savePlan();if(!S.teamPlans[index])return;S.teamIndex=index;S.tactics=M.copy(plan().tactics);M.persist();}
 function newTeam(name='Neue Gruppe',size=3){if(![1,2,3,5,10,15,20,30,50,75,100].includes(+size))return;const existing=S.teamPlans.findIndex(p=>p.size===+size);if(existing>=0){activateTeam(existing);return;}S.teams.push([]);S.teamPlans.push({name:name.slice(0,40),size:+size,leader:null,reserves:[],formation:'Normal',tactics:M.copy(S.tactics),classes:{},loadouts:{}});activateTeam(S.teams.length-1);}

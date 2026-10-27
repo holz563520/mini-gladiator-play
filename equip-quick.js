@@ -69,7 +69,7 @@ function panel(g){reset(g.id);let kw='';try{const v=M.combatValues(g);kw=`KW mit
    body=`<div class="eq-pick">${isW?talentChips(g,slot==='weapon'?rangedIds(g):meleeIds(g),i?.def):''}${free.slice(0,12).map(x=>`<button class="eq-item" data-action="eq:put:${g.id}:${x.id}:${slot}"><b>${esc(M.itemName(x))}</b>${isW?tal(g,x.def):''}<small>Zustand ${Math.round(x.durability/x.maxDurability*100)} %</small><em>ANLEGEN</em></button>`).join('')||'<p class="tiny">Nichts Passendes frei im Lager.</p>'}${free.length>12?`<p class="tiny">+ ${free.length-12} weitere in der Waffenkammer.</p>`:''}${i?btn('ABLEGEN','eq:clear:'+g.id+':'+slot,'small danger'):''}</div>`;}
   return `<li class="${i?'on':''}${open?' open':''}"><button class="eq-slot" data-action="eq:slot:${g.id}:${slot}" aria-expanded="${open}"><span>${esc(label)}</span><b>${i?esc(M.itemName(i)):'— leer —'}</b>${i&&isW?tal(g,i.def):i?`<small>${Math.round(i.durability/i.maxDurability*100)} %</small>`:''}<i>${open?'▴':'▾'}</i></button>${body}</li>`;}).join('');
  return `<div class="eq-panel"><div class="eq-head"><span>${kw}</span><span class="eq-gold">${fmt(S.gold)} Gold</span></div>
- <div class="eq-actions">${btn('⚙ AUTOMATISCH AUSRÜSTEN','eq:auto:'+g.id,'small primary')}${btn('⚒ BEIM SCHMIED KAUFEN '+(smithOpen?'▴':'▾'),'eq:smith:'+g.id,'small'+(smithOpen?' active':''))}${btn('WAFFENKAMMER','eq:doll:'+g.id,'small')}</div>
+ <div class="eq-actions">${btn('⚙ AUTOMATISCH AUSRÜSTEN','eq:auto:'+g.id,'small primary')}${btn((S.army?.forceTalent?'☑':'☐')+' TALENTWAFFE ERZWINGEN','eq:forcetalent:'+g.id,'small'+(S.army?.forceTalent?' active':''))}${btn('⚒ BEIM SCHMIED KAUFEN '+(smithOpen?'▴':'▾'),'eq:smith:'+g.id,'small'+(smithOpen?' active':''))}${btn('WAFFENKAMMER','eq:doll:'+g.id,'small')}</div>
  ${smithOpen?smithHtml(g):''}
  <ul class="eq-slots">${rows}</ul></div>`;}
 // ---------- Leiste in der Waffenkammer: nur die zwei Schnellknöpfe ----------
@@ -88,6 +88,7 @@ M.schoolClick=function(a){if(typeof a!=='string'||!a.startsWith('eq:'))return ba
  if(k==='slot'){openSlot=openSlot===x?null:x;}
  else if(k==='smith'){smithOpen=!smithOpen;level=null;}
  else if(k==='auto'){M.ui.notify(M.army.autoEquip([g],S.army?.equipPriority||'balanced'));}
+ else if(k==='forcetalent'){S.army.forceTalent=!S.army.forceTalent;try{M.persist();}catch{}M.ui.notify(S.army.forceTalent?'Begabte bekommen beim automatischen Ausrüsten ihre Talentwaffe, wenn ihre Klasse sie erlaubt und sie im Lager liegt.':'Talentwaffe wird nicht mehr erzwungen.');}
  else if(k==='put'){if(M.equippedBy(x)){M.ui.notify('Dieser Gegenstand ist bereits angelegt.');}else{M.ui.notify(M.equip(g.id,x,y==='secondary'));openSlot=null;}}
  else if(k==='clear'){if(['weapon','secondary','shield'].includes(x))g.equipment[x]=null;else delete g.equipment.armor[x];try{M.persist();}catch{}}
  else if(k==='buy'){M.ui.notify(buy(g));}
