@@ -57,3 +57,9 @@
 
 .dok-protect{display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer;color:var(--cream);line-height:1.5}.dok-protect input{width:22px;height:22px;flex-shrink:0;accent-color:var(--gold)}
 .dok-overview{padding:12px;min-width:0}.dok-overview table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}.dok-overview th,.dok-overview td{padding:7px 5px;border-bottom:1px solid #44544f;text-align:right}.dok-overview th:first-child{text-align:left;font-weight:normal;overflow-wrap:anywhere}.dok-overview td{white-space:nowrap}.dok-overview td:last-child{color:var(--gold)}.dok-overview dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.dok-overview dd{margin:0;overflow-wrap:anywhere}
+/* Waffenklasse & besondere Eigenschaften (neben Apfelschuss / beste Waffenklasse erzwingen) */
+.dok-traits{padding:4px 12px 12px;min-width:0}.dok-traits h3{margin:4px 0 6px;font-size:14px;color:var(--gold);letter-spacing:1px}.dok-traits h4{margin:10px 0 6px;font-size:12px;color:var(--gold);letter-spacing:1px}
+.dok-traits table{width:100%;border-collapse:collapse;font-size:12px}.dok-traits th,.dok-traits td{padding:6px 5px;border-bottom:1px solid #44544f;text-align:left}.dok-traits thead th{font-weight:normal;color:#97aaa8;font-size:11px}
+.dok-traits td b{color:var(--gold)}.dok-traits tr.bad td:last-child{color:#f29b83}
+.dok-tr{list-style:none;margin:0;padding:0;display:grid;gap:6px}.dok-tr li{display:grid;gap:2px;padding:7px 9px;border:1px solid #44544f;background:#0003;font-size:12px;line-height:1.4}
+.dok-tr li b{color:var(--cream)}.dok-tr li.on{border-left:4px solid #88baa6}.dok-tr li.off{border-left:4px solid #6b6255;opacity:.8}.dok-tr li span{color:#c9c2ad}

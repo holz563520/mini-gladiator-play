@@ -461,12 +461,14 @@ function openChair(gid){closeAll();const men=living();if(!men.length){M.ui.notif
 <div class="dok-stage"><canvas id="dokChair" width="660" height="420"></canvas><p class="dok-line" id="dokLine"></p></div>
 <div class="dok-who" id="dokWho"></div>
 <label class="dok-protect"><input type="checkbox" id="dokAppleProtect"> Vor Apfelschuss schützen · nicht als Apfelträger anzeigen</label>
+<label class="dok-protect"><input type="checkbox" id="dokForceClass"> Automatisch ausrüsten: beste Waffenklasse erzwingen · fördert das Talent, auch wenn eine stärkere Waffe im Lager liegt</label>
+<section class="dok-traits" id="dokTraits" aria-label="Waffenklasse und besondere Eigenschaften"></section>
 <div class="dok-stats" id="dokStats"></div>
 <section class="dok-overview" id="dokOverview" aria-label="Weitere Gladiatorenwerte"></section>
 <div class="dok-go"><p class="dok-odds" id="dokOdds"></p><button class="btn primary dok-hit" type="button" data-dok="go">ZUSCHLAGEN!</button></div>
 <div class="dok-result" id="dokResult" hidden></div>
 </div>`;
- document.body.appendChild(v);v.addEventListener('change',e=>{if(e.target.id==='dokAppleProtect'&&chair){chair.g.appleProtected=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForce')chair.force=e.target.value;if(e.target.id==='dokVar')chair.variant=e.target.value;});
+ document.body.appendChild(v);v.addEventListener('change',e=>{if(e.target.id==='dokAppleProtect'&&chair){chair.g.appleProtected=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForceClass'&&chair){chair.g.forceWeaponClass=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForce')chair.force=e.target.value;if(e.target.id==='dokVar')chair.variant=e.target.value;});
  renderChair();loop();}
 function renderChair(){const C=chair;if(!C)return;const g=C.g,caps=capsOf(g),busy=!!C.P&&!C.P.done,inBed=bedDays(g);
  const men=$('dokMen');if(men){men.innerHTML=living().map(x=>{const d=bedDays(x);return `<button class="dok-man${x===g?' sel':''}" type="button" data-dok="man:${x.id}"${busy?' disabled':''}><canvas data-dokface="${x.id}" width="40" height="50"></canvas><span>${esc(first(x))}</span><small>Talent ${Math.round(x.potential??0)}${x.appleProtected?' · 🍎 geschützt':''}</small><small>${d?'🛏 '+d+' T.':x.dokCross?'schielt':'bereit'}</small></button>`;}).join('');
@@ -474,10 +476,28 @@ function renderChair(){const C=chair;if(!C)return;const g=C.g,caps=capsOf(g),bus
  const who=$('dokWho');if(who){const d=B_info(g);who.innerHTML=`<b>${esc(g.name)}</b> · ${d}${M.buyOdds?.mini('human',g)||''}${g.dok?` · ${g.dok}× behandelt`:''}${g.dokCross?' · <span class="bad">schielt</span>':''}${inBed?` · <span class="bad">liegt noch ${inBed} ${inBed===1?'Tag':'Tage'} im Krankenbett</span>`:''}`;}
  const st=$('dokStats');if(st){st.innerHTML=KEYS.map(k=>{const cap=caps[k]??0,val=g.stats[k]??0,cls=cap<45?'lo':cap>=72?'hi':'';return `<button class="dok-stat${k===C.key?' sel':''}" type="button" data-dok="key:${k}"${busy||inBed?' disabled':''}><b>${esc(statName(k))}</b><span>Wert ${val}</span><span class="cap ${cls}">Anlage ${cap}</span></button>`;}).join('');}
  const protect=$('dokAppleProtect');if(protect)protect.checked=!!g.appleProtected;
+ const fc=$('dokForceClass');if(fc)fc.checked=!!g.forceWeaponClass;const tr=$('dokTraits');if(tr)tr.innerHTML=traitsHTML(g);
  const overview=$('dokOverview');if(overview)overview.innerHTML=overviewHTML(g);
  const odds=$('dokOdds'),fp=Math.round(failChance(g)*1000)/10;if(odds)odds.innerHTML=`<b class="ok">${(100-fp).toLocaleString('de-DE')} %</b> Anlage wird neu ausgewürfelt <span>· besser oder schlechter</span><br><b class="bad">${fp.toLocaleString('de-DE')} %</b> Hirnschaden <span>· alle Werte −10 %, schielt für immer${fp<10?' · Veteran: geringeres Risiko':' · frischer Rekrut: volles Risiko'}</span><br><b>Danach</b> zehn Tage Krankenbett mit Kopfverband`;
  const go=document.querySelector('.dok-hit');if(go){go.disabled=busy||!!inBed;go.textContent=inBed?'LIEGT IM KRANKENBETT':busy?'…':'ZUSCHLAGEN!';}
  setLine(C.line);}
+// Beste Waffenklasse und besondere Eigenschaften (Wirkung so, wie sie im Spiel tatsächlich gerechnet wird)
+const TRAIT_FX={Mutig:['Lässt sich vom Tod eines Kameraden kaum entmutigen (Mut 100 statt 50).',1],Feige:['Zieht sich bei schweren Wunden doppelt so lange zurück; schnell entmutigt.',1],
+ Aggressiv:['Verliert beim Tod eines Kameraden keinen Mut. Bei Gegnern: härtere, schnellere Angriffe.',1],Egoistisch:['Wählt seine Ziele nach eigenem Vorteil statt Kameraden zu helfen.',1],
+ Teamspieler:['Hilft Kameraden gezielt und greift deren Gegner an.',1],Blutrünstig:['Erledigt Gegner am Boden auch mitten im Kampf; tötet Liegende manchmal von sich aus.',1],
+ Talentiert:['Mit höherer Anlage geboren (Talent).',1],'Schneller Lerner':['Lernt in Training und Kampf 20 % schneller.',1],
+ Diszipliniert:['Bei eigenen Kämpfern noch ohne Wirkung (Gegner: + Kondition, + Taktik).',0],Loyal:['Bei eigenen Kämpfern noch ohne Wirkung (Gegner: + Teamarbeit).',0],
+ Berserker:['Bei eigenen Kämpfern noch ohne Wirkung (Gegner: + Angriffslust).',0],Taktiker:['Bei eigenen Kämpfern noch ohne Wirkung (Gegner: + Taktik).',0],
+ Gelassen:['Bei eigenen Kämpfern noch ohne Wirkung (Gegner: + Reflexe).',0],Zäh:['Bei eigenen Kämpfern noch ohne Wirkung (Gegner: + Zähigkeit, + Schmerzresistenz).',0],
+ Verletzungsanfällig:['Noch ohne Wirkung im Spiel.',0],Spätentwickler:['Noch ohne Wirkung im Spiel.',0]};
+function traitsHTML(g){const wc=['secondary','weapon'].map(sl=>M.bestWeaponClass?.(g,sl)).filter(Boolean).filter(t=>t.slot==='secondary'||g.role!=='Soldat');
+ const cur=sl=>{const i=M.gear?.(g,sl);return i?M.weaponDefs.find(w=>w.id===i.def)?.name||i.def:'—';};
+ const forced=g.forceWeaponClass||S.army?.forceTalent;
+ let h='<h3>Waffenklasse & Eigenschaften</h3><table class="dok-wc"><thead><tr><th>Platz</th><th>Beste Klasse (SOLL)</th><th>IST</th><th>angelegt</th></tr></thead><tbody>'+
+  wc.map(t=>`<tr${cur(t.slot)!==t.name&&forced?' class="bad"':''}><th scope="row">${t.slot==='weapon'?'Fernwaffe':'Nahkampf'}</th><td>${esc(t.name)} <b>${Math.round(t.soll)}</b></td><td>${Math.round(g.mastery?.[t.def]||0)}</td><td>${esc(cur(t.slot))}</td></tr>`).join('')+'</tbody></table>';
+ h+=`<p class="tiny">${forced?'Wird beim automatischen Ausrüsten erzwungen'+(g.forceWeaponClass?'':' (Schalter für alle in der Kaserne)')+'.':'Nicht erzwungen: Automatisch ausrüsten wählt die stärkste Waffe.'}</p>`;
+ const tr=g.traits||[];h+='<h4>Besondere Eigenschaften</h4>'+(tr.length?'<ul class="dok-tr">'+tr.map(t=>{const [d,on]=TRAIT_FX[t]||['—',0];return `<li class="${on?'on':'off'}"><b>${esc(t)}</b><span>${esc(d)}</span></li>`;}).join('')+'</ul>':'<p class="tiny">Keine.</p>');
+ return h;}
 // Nur lesende Übersicht; fehlende Werte alter Spielstände bleiben als Strich sichtbar.
 function overviewHTML(g){
  const num=v=>typeof v==='number'&&Number.isFinite(v)?v.toLocaleString('de-DE',{maximumFractionDigits:1}):'—';
