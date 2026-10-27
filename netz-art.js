@@ -63,7 +63,7 @@ function state(a){const b=S.battle,now=b?.time??performance.now()/1000,dur=Math.
 function onFigure(ctx,a,time){if(!(a.netTimer>0))return;const st=state(a),c=col(a.netQ),s=(time||st.now)*7.3+seedOf(a),u=st.u;
  const sway=Math.sin(s)*3.2*(1-.4*u),pr=Math.max(0,Math.sin(s*1.7)),pl=Math.max(0,-Math.sin(s*1.7)),slide=u>.84?(u-.84)/.16:0,torn=u>.55?(u-.55)*.6:0,L=st.land;
  const top={x:sway*.7+(pr-pl)*2,y:-77+(1-L)*-24+slide*30};
- const P=rowsDiamond(9,8,(t,f,i,j)=>{const w=(5+19*Math.pow(t,.6))*(.4+.6*L),hand=t>.16&&t<.5?(f>0?pr:pl)*6*Math.sin(Math.PI*(t-.16)/.34):0,jit=(hash(i,j,a.netQ||1)-.5)*1.6;
+ const P=rowsDiamond(9,8,(t,f,i,j)=>{const w=(5+19*Math.pow(t,.6))*(.4+.6*L)*(1+(u>.86?(u-.86)/.14*.3:0)),hand=t>.16&&t<.5?(f>0?pr:pl)*6*Math.sin(Math.PI*(t-.16)/.34):0,jit=(hash(i,j,a.netQ||1)-.5)*1.6;
   const y=top.y+(1-top.y)*t*(.15+.85*L)+(1-f*f)*1.8*t*t+(t>.95?Math.abs(Math.sin(i*1.3))*1.2:0);return {x:top.x*(1-t)+f*(w+hand*(Math.abs(f)>.4?1:.3))+jit,y:y+jit*.6};});
  ctx.save();ctx.globalAlpha=.95;meshD(ctx,P,c,torn);
  ctx.fillStyle=c[1];ctx.fillRect(Math.round(top.x)-2,Math.round(top.y)-2,4,3);ctx.fillStyle=c[0];ctx.fillRect(Math.round(top.x)-1,Math.round(top.y)-4,2,2);
@@ -71,13 +71,23 @@ function onFigure(ctx,a,time){if(!(a.netTimer>0))return;const st=state(a),c=col(
  ctx.restore();}
 
 // ---------- Tier im Netz (Weltkoordinaten, nach M.drawRex) ----------
-function onBeast(ctx,l){if(!(l.netTimer>0)||l.g?.dead)return;const st=state(l),c=col(l.netQ),t=performance.now()/1000,s=t*8.1+seedOf(l),u=st.u,L=st.land;
- const big=l.lion?1.05*(l.cute||1):l.hahn?.38:l.dog?.85*(l.P?.sz||1):.8,hw=58*big,h=(l.lion?62:l.hahn?52:46)*big;
- const jerk=Math.sin(s)*4*(1-.3*u),heave=Math.max(0,Math.sin(s*1.5)),slide=u>.86?(u-.86)/.14:0,torn=u>.5?(u-.5)*.65:0;
- const x0=Math.round(l.x)+jerk,y0=Math.round(l.y)+2,topY=y0-h+(1-L)*-20+slide*h*.5-heave*4;
- const P=rowsDiamond(7,12,(tt,f,i,j)=>{const w=hw*(.3+.7*Math.pow(tt,.55))*(.4+.6*L)+(tt>.3&&tt<.7?heave*5:0),jit=(hash(i,j,l.netQ||1)-.5)*2;
-  return {x:x0+f*w+jit+(1-tt)*jerk*.3,y:topY+(y0-topY)*tt*(.2+.8*L)+(1-f*f)*3*tt*tt+jit*.6};});
- ctx.save();ctx.globalAlpha=.95;meshD(ctx,P,c,torn);ctx.restore();}
+// Ringen im Netz (Tiere): ducken und zurückziehen, nach vorn zerren, um sich schlagen – im Wechsel; am Ende das Losreißen mit Ruck nach vorn.
+// Der Körper wird dafür beim Zeichnen verschoben/gedreht; das Netz hängt oben mit, die Gewichte bleiben am Boden.
+function beastPose(l){if(!(l.netTimer>0)||l.g?.dead)return null;const st=state(l),f=(l.netFace??(Math.cos(l.a||0)>=0?1:-1)),t=st.now+seedOf(l)*.1,u=st.u,L=st.land;
+ const burst=u>.86?(u-.86)/.14:0,per=1.15-.25*u,ph=((t/per)%1+1)%1;let dx=0,lift=0,rot=0,sx=1,sy=1;
+ if(ph<.35){const k=Math.sin(ph/.35*Math.PI);dx=-3*f*k;sy=1-.07*k;sx=1+.04*k;rot=.03*f*k;}// ducken, zurückziehen
+ else if(ph<.6){const k=Math.sin((ph-.35)/.25*Math.PI);dx=5*f*k;lift=2*k;rot=-.06*f*k;}// nach vorn zerren
+ else{const k=Math.sin((ph-.6)/.4*Math.PI);rot=Math.sin(t*26)*.06*k;dx=Math.sin(t*19)*2*k;}// um sich schlagen
+ if(burst>0){const k=Math.sin(Math.min(1,burst*1.2)*Math.PI*.5);dx+=9*f*k;lift+=4*Math.sin(burst*Math.PI);rot+=-.1*f*Math.sin(burst*Math.PI)+Math.sin(t*34)*.05;}
+ dx*=L;lift*=L;rot*=L;return {f,dx,lift,rot,sx,sy,u,burst,L,st};}
+function onBeast(ctx,l,pose){pose=pose||beastPose(l);if(!pose)return;const {f,dx,lift,u,burst,L,st}=pose,c=col(l.netQ),seed=seedOf(l);
+ const dog=!!l.dog,big=l.lion?1.05*(l.cute||1):l.hahn?.38:dog?(l.P?.sz||1):.8,hw=l.lion?58*big:l.hahn?22*big*2.6:31*big,h=l.lion?62*big:l.hahn?20*big*2.6:31*big;
+ const torn=u>.5?(u-.5)*.6+burst*.6:0,slide=burst,x0=Math.round(l.x)-f*(dog?6*big:4),y0=Math.round(l.y)+2;
+ // Netz rutscht beim Losreißen nach hinten ab
+ const back=-f*slide*hw*.7,topY=y0-h+(1-L)*-20+slide*h*.45;
+ const P=rowsDiamond(7,12,(tt,ff,i,j)=>{const up=1-tt,w=hw*(.3+.7*Math.pow(tt,.55))*(.4+.6*L)*(1+burst*.15),jit=(hash(i,j,l.netQ||1)-.5)*2;
+  return {x:x0+ff*w+jit+(dx*1.25+back)*up,y:topY+(y0-topY)*tt*(.2+.8*L)+(1-ff*ff)*3*tt*tt+jit*.6-lift*up};});
+ ctx.save();ctx.globalAlpha=.95*(1-Math.max(0,burst-.7)/.3*.5);meshD(ctx,P,c,torn);ctx.restore();}
 
 // ---------- Zerrissenes Netz am Boden ----------
 const ground=[];
@@ -89,7 +99,8 @@ function drawGround(ctx,b){if(!ground.length)return;const now=b.time;for(let n=g
  ctx.fillStyle='#2c2a26';for(let i=0;i<N;i+=2)ctx.fillRect(Math.round(B[i].x)-1,Math.round(B[i].y)-1,3,2);ctx.restore();}}
 const prevU=M.battleUnderlay;M.battleUnderlay=(ctx,b)=>{prevU?.(ctx,b);try{drawGround(ctx,b);}catch(e){}};
 // Tiere: Netz nach dem eigentlichen Zeichnen darüberlegen (nach allen anderen Umhüllungen von M.drawRex)
-function wrapRex(){const base=M.drawRex;if(!base||base.__net)return!!base;const f=function(ctx,l){const r=base.apply(this,arguments);try{if(l?.netTimer>0)onBeast(ctx,l);}catch(e){}return r;};f.__net=1;M.drawRex=f;return true;}
+function wrapRex(){const base=M.drawRex;if(!base||base.__net)return!!base;const f=function(ctx,l){const pose=l?.netTimer>0?beastPose(l):null;if(!pose)return base.apply(this,arguments);
+ ctx.save();const ax=l.x,ay=l.y;ctx.translate(ax+pose.dx,ay-pose.lift);ctx.rotate(pose.rot);ctx.scale(pose.sx,pose.sy);ctx.translate(-ax,-ay);let r;try{r=base.apply(this,arguments);}finally{ctx.restore();}try{onBeast(ctx,l,pose);}catch(e){}return r;};f.__net=1;M.drawRex=f;return true;}
 if(!wrapRex()){const iv=setInterval(()=>{if(wrapRex())clearInterval(iv);},300);}
-M.netArt={flight,onFigure,onBeast,drop,drawGround,ground,wrapRex,COL};
+M.netArt={flight,onFigure,onBeast,beastPose,drop,drawGround,ground,wrapRex,COL};
 })();

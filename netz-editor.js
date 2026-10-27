@@ -39,7 +39,7 @@ function tick(){const r=run;if(!r||S.battle!==r.b){return;}const b=r.b,w=r.w,z=r
  if(z.netTimer>0&&!r.caught)r.caught={at:b.time,dur:z.netMax};
  if(r.caught&&!(z.netTimer>0)&&!r.freed)r.freed=b.time;
  const missed=r.shot&&!shot&&!r.caught&&w.ammo===0;
- const done=z.g.dead||z.down||r.freed&&b.time-r.freed>2.2||missed&&!r.end||b.time>14;
+ const done=z.g.dead||z.down||r.freed&&b.time-r.freed>2.2||missed&&!r.end||b.time>18;
  if(done&&!r.end)r.end=performance.now();
  if(r.end&&performance.now()-r.end>1400&&$('loop').checked)restart();
  const left=z.netTimer>0?z.netTimer:0,dur=z.netMax||r.caught?.dur||0;
