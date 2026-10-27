@@ -25,7 +25,7 @@ function voiceKey(who,g,name){const n=String(name||g?.name||'').toLowerCase(),w=
  if(['cap','erzaehler','narrator'].includes(w))return 'erzaehler';
  if(w==='n'||g?.sex==='female'||/schwester|händlerin|frau\b/.test(n))return 'frau';
  return 'rekrut';}
-function voiceFor(key,g,o={}){const S=window.Sprech;let v={...S.get(key)};delete v.look;if(key==='rabies')v.echo=0;/* Thomas: kein Echo bei Rabies */if(o.speedUp)v.speed=(v.speed||1)*o.speedUp;/* Bericht 27.10.: zu schnell, kaum zu verstehen – alle Stimmen im Spiel etwas langsamer */v.speed=(v.speed||1)*SPEECH_TEMPO;
+function voiceFor(key,g,o={}){const S=window.Sprech;let v={...S.get(key)};delete v.look;if(key==='rabies')v.echo=0;/* Thomas: kein Echo bei Rabies */if(o.echo!=null)v.echo=o.echo;/* eigener Hall, z. B. Rennsprecher im Circus */if(o.speedUp)v.speed=(v.speed||1)*o.speedUp;/* Bericht 27.10.: zu schnell, kaum zu verstehen – alle Stimmen im Spiel etwas langsamer */v.speed=(v.speed||1)*SPEECH_TEMPO;
  if(key==='rekrut'&&g){const tier=M.voicePitch?.(g)??1;v.pitch=Math.round(118*tier);v.size=Math.max(.88,Math.min(1.16,(g.height||180)/180));v.rough=Math.min(.6,.1+((g.scars||[]).length>0?.15:0)+(tier<.9?.12:0));}
  if(key==='frau'&&g){v.size=Math.max(.8,Math.min(.95,(g.height||168)/185));}
  return v;}

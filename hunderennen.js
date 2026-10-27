@@ -15,18 +15,19 @@ const cl=(v,a,b)=>Math.min(b,Math.max(a,v));
 function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const gauss=r=>{let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
 
-// ---------------------------------------------------------------- Klassen (wie bei echten Hunderennen)
-// Jeder Hund hat eine Klasse nach seinem Rennwert (RW = 0,72·Schnelligkeit + 0,28·Ausdauer, Istwerte). Er läuft in seiner
-// Klasse oder höher, nie tiefer. Die Gegner einer Klasse liegen im unteren Teil der Klasse (fieldLo … fieldHi):
-// ein Hund aus der Mitte seiner Klasse gewinnt so etwa jedes dritte Rennen. Schnelle Hunde laufen um viel mehr Gold.
+// ---------------------------------------------------------------- Ligen (fest, unabhängig vom eigenen Hund)
+// Rennwert RW = 0,72·Schnelligkeit + 0,28·Ausdauer (Istwerte). Jede Liga hat ein festes Gegnerfeld im Bereich fieldLo … fieldHi,
+// täglich neu gewürfelt (etwas Streuung). Liga 1: ein untrainierter Windhund hat eine Chance, ein untrainierter Molosser nicht.
+// Liga 5: nur voll trainierte Spitzenwindhunde. Ein Hund darf in jeder Liga starten.
 const TIERS=[
- {skulls:1,name:'Feldweg-Rennen',dist:200,prize:[60,25,10],lo:0,fieldLo:12,fieldHi:28},
- {skulls:2,name:'Dorfrennen',dist:250,prize:[120,50,20],lo:38,fieldLo:34,fieldHi:43},
- {skulls:3,name:'Rennen am Forum',dist:300,prize:[220,90,40],lo:50,fieldLo:45,fieldHi:52.5},
- {skulls:4,name:'Großes Rennen',dist:350,prize:[400,160,70],lo:58,fieldLo:53.5,fieldHi:61.5},
- {skulls:5,name:'Circus Maximus',dist:400,prize:[700,280,120],lo:68,fieldLo:64,fieldHi:73}];
+ {skulls:1,name:'Feldweg-Rennen',dist:200,prize:[60,25,10],fieldLo:49,fieldHi:57},
+ {skulls:2,name:'Dorfrennen',dist:250,prize:[120,50,20],fieldLo:56,fieldHi:64},
+ {skulls:3,name:'Rennen am Forum',dist:300,prize:[220,90,40],fieldLo:63,fieldHi:71},
+ {skulls:4,name:'Großes Rennen',dist:350,prize:[400,160,70],fieldLo:70,fieldHi:78},
+ {skulls:5,name:'Circus Maximus',dist:400,prize:[700,280,120],fieldLo:77,fieldHi:86}];
 const RW=s=>.72*s.tempo+.28*s.ausdauer;
-const classOf=D=>{const v=RW(D.stats);let k=0;for(let i=1;i<TIERS.length;i++)if(v>=TIERS[i].lo)k=i;return k+1;};
+// Liga, deren Feld am besten zum Hund passt (nur Anzeige)
+const classOf=D=>{const v=RW(D.stats);let k=0;for(let i=0;i<TIERS.length;i++)if(v>=TIERS[i].fieldLo+3)k=i;return k+1;};
 const NAMES=['Pfeil','Blitz','Hermes','Sagitta','Volucer','Celer','Ventus','Aura','Fulgur','Rapax','Comet','Nimbus','Furor','Tempestas','Zephyr','Boreas','Notus','Iris','Arion','Pegasus','Nike','Atalanta','Turbo','Vortex','Lepus','Cursor','Velox','Ales','Saltus','Strix'];
 
 // Ein Gegnerhund: Rasse und Samen, dazu Trainingsstand (rückt Ist von Schnelligkeit und Ausdauer zum Soll)
@@ -77,6 +78,7 @@ const S=()=>M.s,A=U.api,esc=A.esc,$q=s=>A.view.querySelector(s);
 const st=()=>{const s=(S().hunderennen??={day:-1,usedDay:-1,offers:[],races:0,wins:0,gold:0,last:null});
  if(s.day!==S().day||s.offers.length!==TIERS.length){s.day=S().day;s.offers=TIERS.map((T,k)=>makeField(k,(Math.random()*4294967296)>>>0));}return s;};
 const ranToday=()=>st().usedDay===S().day;
+const lanista=()=>String(S().lanista?.name||'Lanista').split(' ')[0];
 const dogs=()=>(C.dogs||[]).filter(D=>!D.dead);
 const healthOf=D=>Math.round(DOG.condHealth(D));
 const sk=n=>'☠'.repeat(n);
@@ -97,6 +99,19 @@ const SFX={crowd:null,
  thump(){this.noise(.06,180,.18,1.5);},
  crowdStart(){const x=this.ctx();if(!x||!sndOn()||this.crowd)return;const {a,B,AU}=x,s=a.createBufferSource();s.buffer=AU.noiseBuf(a,2);s.loop=true;const f=a.createBiquadFilter();f.type='bandpass';f.frequency.value=900;f.Q.value=.6;const e=a.createGain();e.gain.value=.0001;s.connect(f).connect(e).connect(B.dry);e.connect(B.rev);s.start();this.crowd={s,e,a};},
  crowdLevel(v){const c=this.crowd;if(!c)return;try{c.e.gain.setTargetAtTime(Math.max(.0001,v),c.a.currentTime,.3);}catch{}},
+ // Laufgeräusche: Pfotengetrommel der Meute (Viertakt-Galopp mehrerer Hunde), Hecheln, Fahrtwind – je eine vorgerechnete Schleife
+ runBufs(a){if(this._rb&&this._rb.sr===a.sampleRate)return this._rb;const sr=a.sampleRate,len=Math.floor(sr*2),paws=new Float32Array(len),pant=new Float32Array(len),wind=new Float32Array(len);let seed=7;const rn=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  for(let dog=0;dog<5;dog++){const P=.25+rn()*.06,ph=rn()*P,amp=.5+rn()*.5,f=62+rn()*40;for(let st=ph;st<2;st+=P)for(const [o,g] of [[0,1],[.045,.75],[.12,.9],[.16,.7]]){const t0=Math.floor((st+o+(rn()-.5)*.008)*sr);let lp=0;
+    for(let i=0;i<sr*.07&&t0+i<len;i++){const tt=i/sr,env=Math.exp(-tt*55),n=rn()*2-1;lp+=(n-lp)*.18;paws[t0+i]+=(Math.sin(2*Math.PI*f*tt)*.6+lp*1.6)*env*g*amp*.35;}}}
+  {const P=.27;for(let st=0;st<2;st+=P){const t0=Math.floor(st*sr);let b1=0,b2=0;for(let i=0;i<sr*.11&&t0+i<len;i++){const tt=i/sr,env=Math.sin(Math.PI*tt/.11)**2,n=rn()*2-1;b1+=(n-b1)*.5;b2+=(b1-b2)*.5;pant[t0+i]+=(b1-b2)*env*.5;}}}
+  {let lp=0;for(let i=0;i<len;i++){const n=rn()*2-1;lp+=(n-lp)*.08;wind[i]=(n-lp)*.25*(1+.3*Math.sin(i/sr*2.1));}}
+  for(const b of [paws,pant,wind]){const x=Math.floor(sr*.05);for(let i=0;i<x;i++){const f=i/x;b[i]=b[i]*f+b[len-x+i]*(1-f);}}
+  const mkB=d=>{const B=a.createBuffer(1,len,sr);B.getChannelData(0).set(d);return B;};return this._rb={sr,paws:mkB(paws),pant:mkB(pant),wind:mkB(wind)};},
+ runStart(){const x=this.ctx();if(!x||!sndOn()||this.run)return;const {a,B}=x,bf=this.runBufs(a),mk1=(buf,g0)=>{const s=a.createBufferSource();s.buffer=buf;s.loop=true;const g=a.createGain();g.gain.value=g0;s.connect(g).connect(B.dry);s.start();return {s,g};};
+  const wf=a.createBiquadFilter();wf.type='highpass';wf.frequency.value=700;const w=mk1(bf.wind,.0001);w.g.disconnect();w.g.connect(wf).connect(B.dry);
+  this.run={a,paws:mk1(bf.paws,.0001),pant:mk1(bf.pant,.0001),wind:w};},
+ runSet(v,near){const R=this.run;if(!R)return;const k=Math.min(1,v/16),t=R.a.currentTime;try{R.paws.s.playbackRate.setTargetAtTime(.75+.45*k,t,.15);R.paws.g.gain.setTargetAtTime(Math.max(.0001,.55*k),t,.15);R.pant.s.playbackRate.setTargetAtTime(.8+.4*k,t,.2);R.pant.g.gain.setTargetAtTime(Math.max(.0001,.22*near),t,.2);R.wind.g.gain.setTargetAtTime(Math.max(.0001,.3*k*k),t,.25);}catch{}},
+ runStop(){const R=this.run;if(!R)return;this.run=null;const t=R.a.currentTime;for(const n of [R.paws,R.pant,R.wind]){try{n.g.gain.setTargetAtTime(.0001,t,.3);setTimeout(()=>{try{n.s.stop();}catch{}},1500);}catch{}}},
  crowdStop(){const c=this.crowd;if(!c)return;this.crowd=null;try{c.e.gain.setTargetAtTime(.0001,c.a.currentTime,.4);setTimeout(()=>{try{c.s.stop();}catch{}},1500);}catch{}}};
 
 // ---------- Hund als Zeichenfigur ----------
@@ -149,8 +164,27 @@ function tiles(){if(TILES)return TILES;TILES={};
  return TILES;}
 function tileX(c,img,off,y,w=W){const iw=img.width,o=((off%iw)+iw)%iw;for(let x=-o;x<w;x+=iw)c.drawImage(img,Math.round(x),y);}
 
+// ---------- Steckbriefe der Gegner: Schule, Lanista, Rennen, Siege, Bestzeit (aus dem Samen, immer gleich) ----------
+// [Name, Lanista, „aus …“]
+const SCHOOLS=[['Ludus Avaritia','Gnaeus Geizhals','dem Ludus Avaritia'],['Haus der Blutigen Pfote','Lucretia, Witwe zum dritten Mal','dem Haus der Blutigen Pfote'],['Ludus Magnus Minor','Marcus Raffzahn','dem Ludus Magnus Minor'],['Schule am Schlachthof','Titus Knochenzins','der Schule am Schlachthof'],
+ ['Ludus Felix','Crassus der Jüngere','dem Ludus Felix'],['Zwinger zum Fröhlichen Pfand','Publius Pfandleiher','dem Zwinger zum Fröhlichen Pfand'],['Ludus Mortis','Aulus Ohnegnade','dem Ludus Mortis'],['Hundeschule Cerberus','Septimia Sparsam','der Hundeschule Cerberus'],['Ludus Capuanus','Quintus Kaltherz','dem Ludus Capuanus'],['Haus des Gierigen Gaius','Gaius Habenwill','dem Haus des Gierigen Gaius']];
+const LANI=['Sein Lanista füttert ihn nur nach Siegen. Er sieht entsprechend hungrig aus.',
+ 'Lanista {l} hat ihn gegen zwei Rekruten getauscht. Die Rekruten haben das schlechtere Geschäft gemacht.',
+ 'Nach der letzten Niederlage hat {l} nicht den Hund verkauft, sondern den Trainer. An den Hund.',
+ '{l} sagt, der Hund sei unbezahlbar. Verpfändet hat er ihn trotzdem schon dreimal.',
+ '{l} wettet sicherheitshalber gegen den eigenen Hund. So gewinnt er immer irgendwas.',
+ 'Der Hund bekommt mehr Fleisch als die Gladiatoren von {l}. Die Gladiatoren haben sich beschwert. Einmal.',
+ '{l} zahlt seinen Pflegern keinen Lohn, sondern Fell. Vom letzten Hund, der verloren hat.',
+ 'Wenn er verliert, wird {l} ihn nicht schlagen. Er wird ihn verkaufen. An die Wurstbude am Ausgang.'];
+const OWN_JOKES=['Lanista {l} hat das Preisgeld schon ausgegeben. Zweimal.','Lanista {l} sitzt in der Loge und rechnet. Nicht mit dem Sieg, mit den Futterkosten.','Lanista {l} hat dem Hund einen Sieg versprochen. Und dem Metzger einen Hund.','Lanista {l} hat heute Morgen seine Rekruten verkauft, um den Einsatz zu bezahlen. Sie laufen jetzt hier als Sandharker.'];
+function meta(e,k,dist){const r=mulberry((e.seed^0x5bd1e995)>>>0),[school,lanista,from]=SCHOOLS[Math.floor(r()*SCHOOLS.length)],races=4+Math.floor(r()*(10+k*9)),wins=Math.max(0,Math.floor(races*(.06+r()*.3)));
+ const D=opponent(e),R0=runner(D),best=(dist/(R0.vmax*.95)+.7)*(.985+r()*.02);return {school,lanista,from,races,wins,best:Math.round(best*100)/100,joke:LANI[Math.floor(r()*LANI.length)].replace(/\{l\}/g,lanista.split(',')[0])};}
+const secs=v=>v.toFixed(2).replace('.',',');
+
 // ---------- Sprecher: Zwischensprüche (schwarzer Humor) ----------
-const QUIPS=['Der Hase ist übrigens aus Holz. Der letzte echte wurde gefressen. Mitsamt dem Hasenführer.',
+const QUIPS=['Ein Gruß an alle Lanistas auf den Rängen: Ja, die Hunde sind billiger als eure Rekruten. Und sie laufen nicht weg. Jedenfalls nicht von hier.',
+ 'Lanista Crassus hat soeben seinen Platz verkauft, um nachzusetzen. Er steht jetzt hinter dem Zaun. Er wirkt glücklich.',
+ 'Der Hase ist übrigens aus Holz. Der letzte echte wurde gefressen. Mitsamt dem Hasenführer.',
  'In Reihe drei hat einer seinen Sitzplatz verkauft. Und seine Niere. Für eine Wette auf die Vier.',
  'Ein Gruß an die Ludus-Schule von gegenüber: Eure Rekruten laufen langsamer als diese Hunde. Und kürzer.',
  'Der Medicus wartet am Ziel. Für die Hunde. Die Zuschauer müssen sich selbst verbinden.',
@@ -179,65 +213,75 @@ const laneY=i=>142+i*20,laneK=i=>.56+.045*i,PXM=40;// PXM: Bildpunkte je Meter f
 function startRace(o){
  const T=TIERS[o.k],sim=o.sim,dist=sim.dist,runners=o.runners;// runners: [{D,own,lane,num}]
  A.layer.innerHTML=`<div class="hr-run" role="dialog" aria-label="Hunderennen"><div class="hr-head"><span class="hr-sk">${sk(T.skulls)}</span><b>${esc(T.name.toUpperCase())}</b><span class="hr-dist" id="hrDist">${dist} m</span></div>
-  <div class="hr-stage"><canvas width="${W}" height="${H}" class="px" id="hrCv"></canvas><div class="hr-mini" id="hrMini"></div></div>
+  <div class="hr-stage"><canvas width="${W}" height="${H}" class="px" id="hrCv"></canvas><div class="hr-mini" id="hrMini"></div><div class="hr-card-in" id="hrCard" hidden></div></div>
   <p class="hr-tick" id="hrTick">Die Hunde werden in die Startboxen geführt …</p><ol class="hr-board" id="hrBoard"></ol>
-  <div class="hr-ctl"><button data-a="hrspeed" id="hrSpd">⏩ 1×</button><button data-a="hrsound" id="hrSnd">${S().options?.sound===false?'🔇':'🔊'}</button><button data-a="hrskip" class="primary">Zum Ergebnis ▸</button></div></div>`;
+  <div class="hr-ctl"><button data-a="hrintro" id="hrIntro">Vorstellung überspringen ▸</button><button data-a="hrspeed" id="hrSpd">⏩ 1×</button><button data-a="hrsound" id="hrSnd">${S().options?.sound===false?'🔇':'🔊'}</button><button data-a="hrskip" class="primary">Zum Ergebnis ▸</button></div></div>`;
  const cv=A.layer.querySelector('#hrCv'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;tiles();dustImgs();CTX=c;
  const acts=runners.map(r=>{const a=actor(r.D,'stand');a.P={...a.P};return {...r,a,s:0,v:0,done:false,emit:0};});
  DUST.pool.forEach(p=>p.on=0);
  const byLane=[...acts].sort((x,y)=>x.lane-y.lane),own=acts.find(r=>r.own);
- const V={phase:'intro',t:0,tau:0,speed:1,slow:1,camS:-3,zoom:12,scroll:0,streaks:[],petals:[],shake:0,flash:0,text:null,lead:null,said:new Set(),finishT:null,photo:false,ownPlace:null,end:false,boardT:0,ownPos:null};
+ const V={phase:o.intro?.length?'present':'intro',pi:-1,pt:0,t:0,tau:0,speed:1,slow:1,camS:-3,zoom:12,scroll:0,streaks:[],petals:[],shake:0,flash:0,text:null,lead:null,said:new Set(),finishT:null,photo:false,ownPlace:null,end:false,boardT:0,ownPos:null};
  for(let i=0;i<46;i++)V.streaks.push({x:Math.random()*W,y:Math.random()*H,len:10+Math.random()*50,a:.15+Math.random()*.35});
  const posAt=(r,tau)=>{const tr=sim.lanes[r.i].trace,f=tau*FPS,i=Math.floor(f);if(i<0)return 0;if(i>=tr.length-1)return tr[tr.length-1];return tr[i]+(tr[i+1]-tr[i])*(f-i);};
  const say=(key,txt,force)=>{if(!force&&V.said.has(key))return;V.said.add(key);V.lastSay=V.t;const el=A.layer.querySelector('#hrTick');if(el){el.textContent=txt;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}};
  const nm=r=>r.D.name+(r.own?' (dein Hund)':'');
  const sx=s=>W*.62+(s-V.camS)*V.zoom;
  SFX.crowdStart();SFX.crowdLevel(.04);
+ // Sprecher: liest mit Stadionhall vor; ohne Ton nur der Text. force unterbricht die laufende Zeile.
+ const voiceOn=()=>sndOn()&&!!M.speakLine;
+ const talk=(txt,force)=>{if(!voiceOn())return false;if(!force&&M.speaking?.())return false;try{return !!M.speakLine(txt,'moderator',null,{voice:'moderator',echo:.5,vol:1.12});}catch{return false;}};
+ const showCard=x=>{const el=A.layer.querySelector('#hrCard');if(!el)return;if(!x){el.hidden=true;return;}el.hidden=false;el.innerHTML=`<i class="num j${x.num}">${x.num}</i><div><b>${esc(x.name)}</b><small>${esc(x.breed)}</small><span>${esc(x.school)}</span><em>${x.races} Rennen · ${x.wins} Siege · Bestzeit ${x.best?secs(x.best)+' s':'–'}</em></div>`;};
+ const endIntro=()=>{if(V.phase!=='present')return;V.phase='intro';V.t=0;showCard(null);V.focus=null;const b=A.layer.querySelector('#hrIntro');if(b)b.hidden=true;try{M.speakStop?.();}catch{}};
+ if(V.phase!=='present'){const b=A.layer.querySelector('#hrIntro');if(b)b.hidden=true;}
  let last=performance.now(),raf=0,cyc0=0;
- function step(now){raf=requestAnimationFrame(step);if(!cv.isConnected){cancelAnimationFrame(raf);SFX.crowdStop();return;}
+ function step(now){raf=requestAnimationFrame(step);if(!cv.isConnected){cancelAnimationFrame(raf);SFX.crowdStop();SFX.runStop();return;}
   let dt=Math.min(.05,(now-last)/1000);last=now;dt*=V.speed;V.t+=dt;
-  // Ablauf: Vorstellung (Kamera an den Boxen, Countdown) → Rennen → Auslauf → Ergebnis
-  if(V.phase==='intro'){
+  // Ablauf: Vorstellung der Favoriten (Sprecher) → Countdown an den Boxen → Rennen → Auslauf → Ergebnis
+  if(V.phase==='present'){V.pt+=dt/V.speed;const L=o.intro,cur=L[V.pi];
+   const busy=cur&&(V.pt<cur.min||(cur.spoke&&M.speaking?.()&&V.pt<14)||(!cur.spoke&&V.pt<cur.read));
+   if(!busy){V.pi++;V.pt=0;const n=L[V.pi];if(!n){endIntro();}else{say('p'+V.pi,n.text,true);n.spoke=talk(n.text,true);n.min=2.2;n.read=1.6+n.text.length*.055;showCard(n.card||null);V.focus=n.card?n.card.lane:null;}}}
+  else if(V.phase==='intro'){
    if(V.t<.1)say('in','Die Hunde stehen in den Startboxen. Der Hase wird gespannt …');
    const cd=[[1.4,'3'],[2.2,'2'],[3.0,'1']];for(const [tt,txt] of cd)if(V.t>=tt&&!V.said.has('c'+txt)){V.said.add('c'+txt);V.text={txt,t:V.t,big:1};SFX.beep(false);}
    if(V.t>=.3&&!V.said.has('fan')){V.said.add('fan');SFX.fanfare();}
-   if(V.t>=3.8){V.phase='run';V.text={txt:'LOS!',t:V.t,big:1.3,col:'#ffe08a'};V.shake=1;SFX.gate();SFX.beep(true);SFX.roar(.3,2.6);SFX.crowdLevel(.07);say('go','Die Boxen fliegen auf! Die Meute schießt heraus!',true);for(const r of acts){r.a.mode='race';}}}
-  else{const slowNow=V.slow;V.tau+=dt*slowNow;}
+   if(V.t>=3.8){V.phase='run';V.text={txt:'LOS!',t:V.t,big:1.3,col:'#ffe08a'};V.shake=1;SFX.gate();SFX.beep(true);SFX.roar(.3,2.6);SFX.crowdLevel(.07);say('go','Die Boxen fliegen auf! Die Meute schießt heraus!',true);talk('Und los!',true);SFX.runStart();for(const r of acts){r.a.mode='race';}}}
+  else if(V.phase==='run'){const slowNow=V.slow;V.tau+=dt*slowNow;}
   const tau=V.tau;
   // Läufer
-  let lead=null,maxS=-1;for(const r of acts){const s=V.phase==='intro'?0:posAt(r,tau),v=V.phase==='intro'?0:Math.max(0,(posAt(r,tau+.05)-posAt(r,tau-.05))/.1);r.s=s;r.v=v;if(s>maxS){maxS=s;lead=r;}
-   if(V.phase!=='intro'){const stride=2.4+1.8*r.a.P.sz;r.a.cyc+=v*dt*V.slow/stride;r.a.raceStretch=Math.min(1,Math.max(.25,v/13));r.a.mode=v>3.2?'race':'stand';}
+  let lead=null,maxS=-1;for(const r of acts){const pre=V.phase==='intro'||V.phase==='present',s=pre?0:posAt(r,tau),v=pre?0:Math.max(0,(posAt(r,tau+.05)-posAt(r,tau-.05))/.1);r.s=s;r.v=v;if(s>maxS){maxS=s;lead=r;}
+   if(V.phase==='run'){const stride=2.4+1.8*r.a.P.sz;r.a.cyc+=v*dt*V.slow/stride;r.a.raceStretch=Math.min(1,Math.max(.25,v/13));r.a.mode=v>3.2?'race':'stand';}
    if(!r.done&&r.s>=dist){r.done=true;}}
   const ranked=[...acts].sort((a,b)=>b.s-a.s||(sim.lanes[a.i].place-sim.lanes[b.i].place));
   // Kamera: folgt dem Spitzenfeld, zoomt je nach Abstand
   const tail=ranked[Math.min(ranked.length-1,6)].s,spread=Math.max(4,maxS-tail);
-  const camGoal=V.phase==='intro'?-3:Math.min(maxS,dist+6),zoomGoal=V.phase==='intro'?14:Math.max(5,Math.min(13,215/(spread+5)));
+  const camGoal=V.phase==='intro'||V.phase==='present'?-3:Math.min(maxS,dist+6),zoomGoal=V.phase==='intro'||V.phase==='present'?14:Math.max(5,Math.min(13,215/(spread+5)));
   V.camS+=(camGoal-V.camS)*Math.min(1,dt*V.slow*(V.phase==='intro'?2:5));V.zoom+=(zoomGoal-V.zoom)*Math.min(1,dt*1.6);
-  const vCam=V.phase==='intro'?0:Math.max(0,lead?.v||0)*(maxS>dist+4?Math.max(0,1-(maxS-dist-4)/6):1);
+  const vCam=V.phase==='intro'||V.phase==='present'?0:Math.max(0,lead?.v||0)*(maxS>dist+4?Math.max(0,1-(maxS-dist-4)/6):1);
   V.scroll+=vCam*PXM*dt*V.slow;
   // Ereignisse für den Sprecher
   if(V.phase==='run'){
-   if(lead&&V.lead!==lead&&tau>1.2){if(V.lead)say('lead'+lead.i+Math.floor(tau),lead.D.name+' übernimmt die Führung!'+(lead.own?' Das ist DEIN Hund!':''),true);V.lead=lead;}
-   for(const r of acts){const sb=sim.lanes[r.i].stumble;if(sb&&tau>=sb.t0&&!V.said.has('st'+r.i)){say('st'+r.i,nm(r)+' stolpert! Der Sand fliegt!',true);}}
+   if(lead&&V.lead!==lead&&tau>1.2){if(V.lead){const tx=lead.D.name+' übernimmt die Führung!'+(lead.own?' Das ist dein Hund!':'');say('lead'+lead.i+Math.floor(tau),tx,true);if(V.t-(V.lastTalk||0)>4){if(talk(tx))V.lastTalk=V.t;}}V.lead=lead;}
+   for(const r of acts){const sb=sim.lanes[r.i].stumble;if(sb&&tau>=sb.t0&&!V.said.has('st'+r.i)){const tx=r.D.name+' stolpert! Der Sand fliegt!'+(r.own?' Lanista '+lanista()+' greift sich ans Herz. Oder an den Geldbeutel.':'');say('st'+r.i,tx,true);talk(tx);}}
    const op=ranked.indexOf(own)+1;if(tau>2&&V.ownPos!==op){if(op===1)say('own1'+Math.floor(tau/3),'Dein '+own.D.name+' liegt vorn!',true);else if(op<=3&&(V.ownPos==null||op<V.ownPos))say('ownup'+op+Math.floor(tau/3),own.D.name+' arbeitet sich auf Platz '+op+' vor!',true);V.ownPos=op;}
-   if(tau>3.5&&maxS<dist-70&&V.t-(V.lastSay||0)>4.5&&Math.random()<dt*.35){const left=QUIPS.filter(q=>!V.said.has('q'+q));if(left.length){const q=left[Math.floor(Math.random()*left.length)];say('q'+q,q);}}
-   if(maxS>dist-60&&!V.said.has('home')){say('home','Schlussgerade! Die Ränge stehen auf!',true);SFX.roar(.35,3);SFX.crowdLevel(.12);}
+   if(tau>3.5&&maxS<dist-70&&V.t-(V.lastSay||0)>4.5&&Math.random()<dt*.35){const left=QUIPS.filter(q=>!V.said.has('q'+q));if(left.length&&!M.speaking?.()){const q=left[Math.floor(Math.random()*left.length)];say('q'+q,q);talk(q);}}
+   if(maxS>dist-60&&!V.said.has('home')){say('home','Schlussgerade! Die Ränge stehen auf!',true);talk('Schlussgerade! Die Ränge stehen auf!',true);SFX.roar(.35,3);SFX.crowdLevel(.12);}
    // Zielankunft des Ersten: Zeitlupe; knappes Rennen: Fotofinish
    const w=sim.lanes[sim.order[0]],w2=sim.lanes[sim.order[1]];
    if(V.finishT==null&&maxS>dist-7){V.slow=.3;}
    if(V.finishT==null&&tau>=w.time){V.finishT=V.t;V.photo=w2.time-w.time<.12;const win=acts.find(r=>r.i===sim.order[0]);V.flash=V.photo?1:.5;V.text={txt:V.photo?'FOTOFINISH!':'ZIEL!',t:V.t,big:1.1,col:'#fff2c8'};SFX.roar(.45,3.5);SFX.crowdLevel(.16);
-    say('win',(V.photo?'Fotofinish! ':'')+win.D.name+' gewinnt'+(win.own?' – DEIN HUND SIEGT!':'!'),true);for(let i=0;i<60;i++)V.petals.push({x:Math.random()*W,y:-Math.random()*80,vx:-20-Math.random()*40,vy:30+Math.random()*30,r:Math.random()*6.3,c:['#c8302a','#e8dcc0','#e6c23a','#b23a5a'][i%4]});}
+    {const tx=(V.photo?'Fotofinish! ':'')+win.D.name+' gewinnt'+(win.own?'! Dein Hund siegt! Lanista '+lanista()+' fällt vor Freude fast aus der Loge. Leider nur fast.':'! '+(o.meta?.[win.i]?'Lanista '+o.meta[win.i].lanista.split(',')[0]+' zählt schon das Gold.':''));say('win',tx,true);talk(tx,true);}SFX.runSet(0,0);for(let i=0;i<60;i++)V.petals.push({x:Math.random()*W,y:-Math.random()*80,vx:-20-Math.random()*40,vy:30+Math.random()*30,r:Math.random()*6.3,c:['#c8302a','#e8dcc0','#e6c23a','#b23a5a'][i%4]});}
    if(V.finishT!=null&&V.t-V.finishT>(V.photo?1.6:1.1))V.slow=Math.min(1,V.slow+dt*1.5);
    if(own.s>=dist&&V.ownPlace==null){V.ownPlace=sim.lanes[own.i].place;if(sim.order[0]!==own.i)say('ownin',own.D.name+' kommt als '+V.ownPlace+'. ins Ziel.',true);}
    if(acts.every(r=>r.done)&&tau>sim.lanes.reduce((m,l)=>Math.max(m,l.time||0),0)+1.6&&!V.end){V.end=true;setTimeout(()=>o.done(),700);}}
-  SFX.crowdLevel(V.phase==='intro'?.04:.06+(maxS/dist)*.08);
+  SFX.crowdLevel(V.phase==='intro'||V.phase==='present'?.04:.06+(maxS/dist)*.08);
+  if(V.phase==='run'&&V.finishT==null){const near=Math.max(0,1-Math.abs(sx(own.s)-W*.55)/(W*.7));SFX.runSet(lead?.v||0,near);}else if(V.end)SFX.runStop();
   // Anzeige
   if(now-V.boardT>180){V.boardT=now;const b=A.layer.querySelector('#hrBoard');if(b)b.innerHTML=ranked.map((r,i)=>`<li class="${r.own?'own':''}"><i class="num j${r.num}">${r.num}</i><b>${esc(r.D.name)}</b><small>${esc(r.D.breedName)}</small><span>${r.done?'Ziel':Math.max(0,Math.round(r.s))+' m'}</span></li>`).join('');
    const d=A.layer.querySelector('#hrDist');if(d)d.textContent=Math.max(0,Math.round(dist-maxS))+' m';
    const m=A.layer.querySelector('#hrMini');if(m)m.innerHTML=acts.map(r=>`<i class="j${r.num}${r.own?' own':''}" style="left:${Math.min(100,Math.max(0,r.s/dist*100))}%"></i>`).join('');}
   // ---- Zeichnen ----
   draw(dt,ranked,vCam,lead,maxS);}
- function draw(dt,ranked,vCam,lead,maxS){const t=performance.now()/1000,tl=TILES,run=V.phase!=='intro',spd=vCam;
+ function draw(dt,ranked,vCam,lead,maxS){const t=performance.now()/1000,tl=TILES,run=V.phase==='run',spd=vCam;
   {const k=dt*V.slow;for(const p of DUST.pool){if(!p.on)continue;p.age+=k;if(p.age>=p.life){p.on=0;continue;}p.x+=(p.vx-spd*PXM*.35)*k;p.y+=p.vy*k;p.vy*=.96;p.vx*=.97;}}
   c.save();if(V.shake>0){c.translate(Math.round((Math.random()-.5)*4*V.shake),Math.round((Math.random()-.5)*3*V.shake));V.shake=Math.max(0,V.shake-dt*2.5);}
   // Himmel, Ränge, Spina, Bande
@@ -260,9 +304,10 @@ function startRace(o){
   // Startboxen
   {const x=sx(0);if(x>-120&&x<W+60){c.fillStyle='#3a2414';c.fillRect(Math.round(x)-2,laneY(0)-58,3,58);c.fillStyle='#6a4426';c.fillRect(Math.round(x)-6,laneY(0)-60,12,3);}}
   // Hase (Attrappe) an der inneren Bande vor dem Feld
-  if(run||V.t>.5){const hs=run?Math.max(maxS+7+Math.sin(t*3)*.6,V.tau*16+4):2,hx=sx(Math.min(hs,dist+30)),hy=110-Math.abs(Math.sin(t*14))*3;
+  if(run||(V.phase==='intro'&&V.t>.5)){const hs=run?Math.max(maxS+7+Math.sin(t*3)*.6,V.tau*16+4):2,hx=sx(Math.min(hs,dist+30)),hy=110-Math.abs(Math.sin(t*14))*3;
    c.fillStyle='#5a3a1c';c.fillRect(hx-30,107,60,1);c.fillStyle='#d8c4a0';c.fillRect(hx-4,hy-4,9,5);c.fillRect(hx+4,hy-7,3,4);c.fillRect(hx+5,hy-11,1,5);c.fillRect(hx+3,hy-11,1,5);c.fillStyle='#fff';c.fillRect(hx-6,hy-4,3,3);c.fillStyle='#2a1a10';c.fillRect(hx+5,hy-6,1,1);}
   // Hunde von hinten nach vorn
+  if(V.focus!=null){const y=laneY(V.focus);c.fillStyle=`rgba(255,224,138,${(.18+.1*Math.sin(t*6)).toFixed(2)})`;c.fillRect(0,y-12,W,13);}
   for(const r of byLane){const k=laneK(r.lane),len=82*r.a.P.sz*k,x=sx(r.s)+(r.lane-3.5)*1.6-len*.42,y=laneY(r.lane);
    if(x<-len||x>W+len){if(x<-len){c.fillStyle='#000a';c.fillRect(2,y-12,44,10);c.fillStyle=r.own?'#ffe08a':'#ece4d0';c.font='bold 8px "Courier Prime",monospace';c.textAlign='left';c.textBaseline='middle';c.fillText('◂ '+r.num+' · '+Math.round(maxS-r.s)+'m',4,y-7);}continue;}
    // Fahrtwind hinter dem Hund
@@ -293,7 +338,8 @@ function startRace(o){
  const ctl=e=>{const el=e.target.closest('[data-a]');if(!el||!A.layer.contains(el))return;const a=el.dataset.a;
   if(a==='hrspeed'){V.speed=V.speed===1?2:V.speed===2?4:1;el.textContent='⏩ '+V.speed+'×';}
   else if(a==='hrsound'){S().options.sound=S().options?.sound===false;el.textContent=S().options.sound===false?'🔇':'🔊';if(S().options.sound===false)SFX.crowdStop();else SFX.crowdStart();try{M.persist();}catch{}}
-  else if(a==='hrskip'){if(!V.end){V.end=true;cancelAnimationFrame(raf);SFX.crowdStop();o.done();}}};
+  else if(a==='hrintro'){endIntro();}
+  else if(a==='hrskip'){if(!V.end){V.end=true;cancelAnimationFrame(raf);SFX.crowdStop();SFX.runStop();try{M.speakStop?.();}catch{}o.done();}}};
  A.layer.addEventListener('click',ctl);V.cleanup=()=>A.layer.removeEventListener('click',ctl);
  return V;}
 
@@ -325,46 +371,69 @@ function race(){A.setTitle('BEAST · HUNDERENNEN');const s=st(),list=dogs();
  if(!R.sel||!list.some(D=>D.id===R.sel))R.sel=[...list].filter(DOG.fit).sort((a,b)=>API.RW(b.stats)-API.RW(a.stats))[0]?.id||list[0]?.id;
  const D=list.find(x=>x.id===R.sel),cls=D?classOf(D):1,done=ranToday();
  A.view.innerHTML=`<section class="an-panel hr-pick"><header><p class="eyebrow">Dein Läufer</p><span class="hr-rec">Rennen ${s.races} · Siege ${s.wins}</span></header>
-  ${list.length?`<div class="hr-dogs">${list.map(x=>{const f=DOG.fit(x),c=classOf(x);return `<button class="hr-dog${x.id===R.sel?' on':''}${f?'':' unfit'}" data-a="hrdog:${x.id}"><span class="th" data-d="${x.id}"></span><b>${esc(x.name)}</b><small>${esc(x.breedName)}</small><span class="hr-cls">${sk(c)}</span><span class="hr-bars"><i title="Schnelligkeit"><em style="width:${Math.round(x.stats.tempo)}%"></em></i><i title="Ausdauer" class="aus"><em style="width:${Math.round(x.stats.ausdauer)}%"></em></i></span><span class="hr-rw">Rennwert ${Math.round(API.RW(x.stats))}${f?'':' · verletzt'}</span></button>`;}).join('')}</div>
-  <p class="an-hint">Klasse nach dem Rennwert (Schnelligkeit und Ausdauer). Ein Hund läuft in seiner Klasse oder höher, nie tiefer. Balken: Schnelligkeit (gelb), Ausdauer (grün).</p>`:'<p class="an-empty">Du hast keinen Hund. Der Hundsgraf hat Aufträge (Beastrium).</p>'}</section>
+  ${list.length?`<div class="hr-dogs">${list.map(x=>{const f=DOG.fit(x),c=classOf(x);return `<button class="hr-dog${x.id===R.sel?' on':''}${f?'':' unfit'}" data-a="hrdog:${x.id}"><span class="th" data-d="${x.id}"></span><b>${esc(x.name)}</b><small>${esc(x.breedName)}</small><span class="hr-cls" title="passende Liga">${sk(c)}</span><span class="hr-bars"><i title="Schnelligkeit"><em style="width:${Math.round(x.stats.tempo)}%"></em></i><i title="Ausdauer" class="aus"><em style="width:${Math.round(x.stats.ausdauer)}%"></em></i></span><span class="hr-rw">Rennwert ${Math.round(API.RW(x.stats))}${f?'':' · verletzt'}</span></button>`;}).join('')}</div>
+  <p class="an-hint">Rennwert aus Schnelligkeit und Ausdauer. Die Ligen sind fest – jeder Hund darf überall starten. Für Liga ☠ braucht es schon einen Windhund oder einen gut trainierten Hund. Balken: Schnelligkeit (gelb), Ausdauer (grün).</p>`:'<p class="an-empty">Du hast keinen Hund. Der Hundsgraf hat Aufträge (Beastrium).</p>'}</section>
  ${done?`<div class="hr-done"><b>Heute ist schon gelaufen worden.</b><span>Ein Rennen am Tag. Die Hunde brauchen ihre Ruhe – und der Buchmacher auch.</span><button data-a="hrday">Nächster Tag ▸</button></div>`:''}
- <section class="an-chall"><header><p class="eyebrow">Heutige Rennen · ${D?esc(D.name)+' läuft in Klasse '+sk(cls)+' oder höher':'kein Hund gewählt'}</p></header>
- <div class="hr-cards">${TIERS.map((T,k)=>{const f=s.offers[k],low=D&&k+1<cls,fit=D&&DOG.fit(D),ok=D&&!low&&!done&&fit,p=ok?odds(D,k):null,[ot,oc]=p!=null?oddsTxt(p):['',''];
+ <section class="an-chall"><header><p class="eyebrow">Heutige Rennen · ${D?'passend für '+esc(D.name)+': Liga '+sk(cls):'kein Hund gewählt'}</p></header>
+ <div class="hr-cards">${TIERS.map((T,k)=>{const f=s.offers[k],low=false,fit=D&&DOG.fit(D),ok=D&&!low&&!done&&fit,p=ok?odds(D,k):null,[ot,oc]=p!=null?oddsTxt(p):['',''];
   return `<button class="hr-card t${T.skulls}${ok?'':' off'}${D&&k+1===cls?' mine':''}" data-a="${ok?'hrgo:'+k:low?'hrlow':done?'hrdone':!fit?'hrunfit':'hrnone'}"><div class="hr-ct"><span class="sk">${sk(T.skulls)}</span><b>${esc(T.name)}</b><span class="m">${T.dist} m</span></div>
    <div class="hr-prize"><span><small>1.</small>${T.prize[0]}</span><span><small>2.</small>${T.prize[1]}</span><span><small>3.</small>${T.prize[2]}</span><i class="an-coin"></i></div>
    <p class="hr-field">${f.field.map(e=>esc(DOG.BREEDS.find(b=>b.id===e.breed)?.name||e.breed)).join(' · ')}</p>
-   <p class="hr-odds ${oc}">${low?'Dein Hund ist zu schnell für diese Klasse':done?'Morgen wieder':!fit?'Dein Hund ist zu angeschlagen':D&&k+1===cls?'Deine Klasse · '+ot:ot}</p></button>`;}).join('')}</div></section>`;
+   <p class="hr-odds ${oc}">${low?'Dein Hund ist zu schnell für diese Klasse':done?'Morgen wieder':!fit?'Dein Hund ist zu angeschlagen':ot}</p></button>`;}).join('')}</div></section>`;
  A.view.querySelectorAll('.th[data-d]').forEach(el=>{const x=list.find(d=>d.id===el.dataset.d);if(x)el.appendChild(A.thumb({kind:'dog',D:x,key:'d:'+x.id},44,40));});}
 race.back=go=>go('dogkinds',-1);
 
 // ---------- Rennen starten: Ergebnis steht sofort fest und wird gespeichert, dann läuft der Film ----------
-function launch(k){const s=st(),D=dogs().find(x=>x.id===R.sel);if(!D||ranToday()||!DOG.fit(D)||k+1<classOf(D))return;const T=TIERS[k],f=s.offers[k],opp=f.field.map(opponent);
+function launch(k){const s=st(),D=dogs().find(x=>x.id===R.sel);if(!D||ranToday()||!DOG.fit(D))return;const T=TIERS[k],f=s.offers[k],opp=f.field.map(opponent);
  const lanes=[0,1,2,3,4,5,6,7].sort(()=>Math.random()-.5),hp=healthOf(D);
  const runners=[{D,own:true},...opp.map(x=>({D:x,own:false}))].map((r,i)=>({...r,i,lane:lanes[i],num:lanes[i]+1}));
  const sim=simulate(runners.map(r=>({D:r.D,health:r.own?hp:100})),f.dist,(Math.random()*4294967296)>>>0);
- const place=sim.lanes[0].place,prize=T.prize[place-1]||0,before={tempo:D.stats.tempo,ausdauer:D.stats.ausdauer};
- // Lernen: Schnelligkeit und Ausdauer rücken 4 % der Lücke zum Soll heran (Sieg 7 %)
- const fr=place===1?.07:.04;for(const k2 of ['tempo','ausdauer']){const gap=(D.caps[k2]||0)-(D.stats[k2]||0);if(gap>0)D.stats[k2]=Math.round((D.stats[k2]+gap*fr)*10)/10;}
+ const place=sim.lanes[0].place,prize=T.prize[place-1]||0,before={tempo:D.stats.tempo,ausdauer:D.stats.ausdauer,kraft:D.stats.kraft};
+ // Lernen (Erfahrung): Schnelligkeit und Ausdauer rücken 4 % der Lücke zum Soll heran (Sieg 7 %), Kraft halb so viel
+ const fr=place===1?.07:.04;for(const [k2,m] of [['tempo',1],['ausdauer',1],['kraft',.5]]){const gap=(D.caps[k2]||0)-(D.stats[k2]||0);if(gap>0)D.stats[k2]=Math.round((D.stats[k2]+gap*fr*m)*10)/10;}
+ // Rennbericht: Zeit, Rückstand, Tempo, Plätze unterwegs, Bestzeit
+ const me=sim.lanes[0],tr=me.trace,top=Math.max(...tr.slice(1).map((x,i)=>(x-tr[i])*FPS).filter(v=>v<40)),wt=sim.lanes[sim.order[0]].time;
+ const posAtD=q=>{const f=tr.findIndex(x=>x>=q*f2.dist);if(f<0)return 8;return 1+sim.lanes.filter((l,j)=>j!==0&&(l.trace[f]??l.trace[l.trace.length-1])>tr[f]).length;},f2=f;
+ const pb=(D.raceBest??={})[f.dist],newBest=!pb||me.time<pb;if(newBest)D.raceBest[f.dist]=Math.round(me.time*100)/100;
+ const report={time:Math.round(me.time*100)/100,behind:Math.round((me.time-wt)*100)/100,top:Math.round(top*3.6),avg:Math.round(f.dist/me.time*3.6),pos:[.25,.5,.75].map(posAtD),best:D.raceBest[f.dist],oldBest:pb||null,newBest,react:Math.round(me.react*100)/100,stumble:!!me.stumble};
  D.races=(D.races||0)+1;if(place===1)D.raceWins=(D.raceWins||0)+1;
  s.usedDay=S().day;s.races++;if(place===1)s.wins++;s.gold=(s.gold||0)+prize;
  if(prize){S().gold+=prize;if(S().stats)S().stats.earned=(S().stats.earned||0)+prize;}
  const res={k,day:S().day,dog:D.id,name:D.name,breed:D.breedName,place,prize,dist:f.dist,
   table:sim.order.map(i=>({name:runners[i].D.name,breed:runners[i].D.breedName,own:runners[i].own,num:runners[i].num,time:Math.round(sim.lanes[i].time*100)/100})),
-  gain:{tempo:[before.tempo,D.stats.tempo,D.caps.tempo],ausdauer:[before.ausdauer,D.stats.ausdauer,D.caps.ausdauer]}};
+  gain:{tempo:[before.tempo,D.stats.tempo,D.caps.tempo],ausdauer:[before.ausdauer,D.stats.ausdauer,D.caps.ausdauer],kraft:[before.kraft,D.stats.kraft,D.caps.kraft]},report,races:D.races,raceWins:D.raceWins||0};
  s.last=res;try{M.persist();}catch{}
- const V=startRace({k,sim,runners,done:()=>{V?.cleanup?.();SFX.crowdStop();A.layer.innerHTML='';A.go('raceresult');A.root.scrollTop=0;}});}
+ // Steckbriefe und Vorstellung durch den Sprecher: Begrüßung, drei Favoriten (nach erwarteter Zeit), eigener Hund, Wetten
+ const metas=runners.map((r,i)=>r.own?{school:S().schoolName||'deinem Ludus',from:S().schoolName?'dem '+(/^ludus\b/i.test(S().schoolName)?'':'Ludus ')+S().schoolName:'deinem Ludus',lanista:lanista(),races:(D.races||1)-1,wins:(D.raceWins||0)-(place===1?1:0),best:pb||null}:meta(f.field[i-1],k,f.dist));
+ const exp=runners.map((r,i)=>{const R0=runner(r.D,r.own?hp:100);return f.dist/(R0.vmax*.95);});
+ const fav=runners.map((r,i)=>i).filter(i=>i>0).sort((a,b)=>exp[a]-exp[b]).slice(0,3);
+ const card=i=>({num:runners[i].num,lane:runners[i].lane,name:runners[i].D.name,breed:runners[i].D.breedName,...metas[i]});
+ const W0=['Willkommen im Circus! Heute: '+T.name+', '+f.dist+' Meter Sand, acht Hunde und ein Hase aus Holz. Wetten Sie jetzt. Beten Sie später.',
+  'Guten Tag, Rom! '+T.name+' über '+f.dist+' Meter. Die Hunde sind hungrig, die Lanistas gierig, und der Medicus hat Feierabend. Perfekte Bedingungen!'];
+ const intro=[{text:W0[Math.floor(Math.random()*W0.length)]},
+  ...fav.map((i,n)=>{const m=metas[i],x=card(i);return {card:x,text:(n===0?'Der große Favorit: ':n===1?'Dahinter: ':'Und nicht zu unterschätzen: ')+'Startnummer '+x.num+': '+x.name+', Rasse '+x.breed+', aus '+m.from+'. '+m.races+' Rennen, '+m.wins+' Siege, Bestzeit '+secs(m.best)+' Sekunden. '+m.joke};}),
+  {card:card(0),text:'Und auf Startnummer '+runners[0].num+': dein '+D.name+', Rasse '+D.breedName+', aus '+metas[0].from+'. '+(metas[0].races>0?metas[0].races+' Rennen, '+metas[0].wins+' Siege'+(pb?', Bestzeit '+secs(pb)+' Sekunden.':'.'):'Sein erstes Rennen. Keine Bestzeit, nur Hoffnung und Flöhe.')+' '+OWN_JOKES[Math.floor(Math.random()*OWN_JOKES.length)].replace(/\{l\}/g,lanista())},
+  {text:'Die Wettbüros schließen. Wer jetzt noch Geld hat, hat nicht verstanden, wie das hier funktioniert.'}];
+ const V=startRace({k,sim,runners,intro,meta:metas,done:()=>{V?.cleanup?.();SFX.crowdStop();A.layer.innerHTML='';A.go('raceresult');A.root.scrollTop=0;}});}
 
 // ---------- Bildschirm: Ergebnis ----------
-function raceresult(){const r=st().last;if(!r){A.go('race',-1);return;}const T=TIERS[r.k],won=r.place===1;A.setTitle(won?'SIEG IM RENNEN':'RENNEN · PLATZ '+r.place);
+function raceresult(){const r=st().last;if(!r){A.go('race',-1);return;}const T=TIERS[r.k],won=r.place===1,rep=r.report;A.setTitle(won?'SIEG IM RENNEN':'RENNEN · PLATZ '+r.place);
  const f1=v=>(Math.round(v*10)/10).toLocaleString('de-DE');
  A.view.innerHTML=`<section class="an-res ${won?'won':'lost'} hr-res"><p class="eyebrow">${sk(T.skulls)} ${esc(T.name)} · ${r.dist} m</p><h1>${won?'SIEG!':r.place+'. PLATZ'}</h1>
   <div class="an-pay"><small>${r.prize?'Preisgeld':'Kein Preisgeld'}</small><b data-count="${r.prize}">0</b><span>Gold</span></div>
   <ol class="hr-table">${r.table.map((x,i)=>`<li class="${x.own?'own':''}"><span class="pl">${i+1}.</span><i class="num j${x.num}">${x.num}</i><b>${esc(x.name)}</b><small>${esc(x.breed)}</small><span class="tm">${f1(x.time)} s</span></li>`).join('')}</ol>
-  <div class="an-gains"><h3>Fortschritt durch das Rennen</h3><div class="an-gain"><b>${esc(r.name)}</b><ul>${[['Schnelligkeit','tempo'],['Ausdauer','ausdauer']].map(([l,k])=>{const [a,b,cap]=r.gain[k];return `<li><span>${l}</span><b>${f1(a)} → ${f1(b)}</b><small>SOLL ${Math.round(cap)}</small></li>`;}).join('')}</ul></div></div>
+  ${rep?`<div class="an-gains hr-report"><h3>RENNBERICHT</h3><div class="hr-rgrid"><span><small>Zeit</small><b>${secs(rep.time)} s</b></span><span><small>${won?'Vorsprung':'Rückstand'}</small><b>${won?'—':'+'+secs(rep.behind)+' s'}</b></span><span><small>Spitze</small><b>${rep.top} km/h</b></span><span><small>Schnitt</small><b>${rep.avg} km/h</b></span><span><small>Start</small><b>${secs(rep.react)} s</b></span><span><small>Bestzeit ${r.dist} m</small><b>${secs(rep.best)} s${rep.newBest?' <em>NEU</em>':''}</b></span></div>
+   <p class="hr-pos">Platz unterwegs: ${rep.pos.map((p,i)=>`<span>${['¼','½','¾'][i]} <b>${p}.</b></span>`).join(' → ')} → <span>Ziel <b>${r.place}.</b></span>${rep.stumble?' · <em>gestolpert</em>':''}</p>
+   <p class="hr-pos">Bilanz: ${r.races} Rennen · ${r.raceWins} Siege</p></div>`:''}
+  <div class="an-gains"><h3>Erfahrung durch das Rennen</h3><div class="an-gain an-dog"><b>${esc(r.name)}</b><ul>${[['Schnelligkeit','tempo'],['Ausdauer','ausdauer'],['Kraft','kraft']].filter(([l,k])=>r.gain[k]).map(([l,k])=>{const [a,b,cap]=r.gain[k],up=b-a>=.05;return `<li class="${up?'up':''}"><span>${l}</span><b>${f1(a)} → ${f1(b)}${up?' <em>▲ +'+f1(b-a)+'</em>':''}</b><small>SOLL ${Math.round(cap)}</small><i class="an-dogbar"><i style="width:${Math.round(a/Math.max(1,cap)*100)}%"></i><i class="new" style="width:${Math.max(0,Math.round((b-a)/Math.max(1,cap)*100))}%"></i></i></li>`;}).join('')}</ul></div></div>
   <p class="an-note">${won?'Die Menge wirft Rosen. Der Buchmacher wirft böse Blicke.':r.place<=3?'Auf dem Treppchen. Nächstes Mal vielleicht ganz oben.':'Nicht jeder Tag ist ein Renntag. Morgen gibt es ein neues Feld.'}</p>
   <div class="an-actions"><button data-a="hrday">Nächster Tag ▸</button><button class="primary" data-a="hrback">Zur Rennbahn</button></div>${C.close?'<div class="an-actions"><button data-a="leave">◂ Arena verlassen</button></div>':''}</section>`;
  const n=A.view.querySelector('[data-count]'),goal=+n.dataset.count,t0=performance.now();(function tick(){const q=Math.min(1,(performance.now()-t0)/900);n.textContent=Math.round(goal*q*(2-q));if(q<1)requestAnimationFrame(tick);})();
- A.setTitle(won?'SIEG IM RENNEN':'RENNEN · PLATZ '+r.place);}
+ A.setTitle(won?'SIEG IM RENNEN':'RENNEN · PLATZ '+r.place);
+ // Sprecher liest den Rennbericht (einmal je Rennen)
+ if(rep&&!r.read&&M.speakLine&&sndOn()){r.read=true;const g=r.gain,best=[['Schnelligkeit','tempo'],['Ausdauer','ausdauer'],['Kraft','kraft']].map(([l,k])=>({l,d:g[k]?g[k][1]-g[k][0]:0,a:g[k]?.[0],b:g[k]?.[1]})).sort((x,y)=>y.d-x.d)[0];
+  const tx=(won?r.name+' gewinnt in '+secs(rep.time)+' Sekunden! '+(rep.newBest?'Neue Bestzeit! ':'')+'Lanista '+lanista()+' kassiert '+r.prize+' Gold und behauptet, er habe nie gezweifelt.':r.name+' wird '+r.place+'. in '+secs(rep.time)+' Sekunden, '+secs(rep.behind)+' Sekunden hinter dem Sieger. '+(r.place<=3?'Immerhin '+r.prize+' Gold. Davon kann man fast einen Rekruten kaufen. Einen kleinen.':'Kein Gold. Lanista '+lanista()+' rechnet schon, was der Hund als Wurst wert wäre.'))+(best.d>=.05?' Erfahrung: '+best.l+' steigt von '+f1(best.a)+' auf '+f1(best.b)+'.':'');
+  setTimeout(()=>{try{M.speakLine(tx,'moderator',null,{voice:'moderator',echo:.5,vol:1.12});}catch{}},600);try{M.persist();}catch{}}}
 raceresult.back=go=>go('race',-1);
 
 U.screens.dogkinds=dogkinds;U.screens.race=race;U.screens.raceresult=raceresult;

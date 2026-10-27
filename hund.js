@@ -889,7 +889,7 @@ function mood(d,t){const m=d.mode,dead=d.g?.dead;const o={head:0,headX:0,headY:0
  if(m==='threat'){o.head=.2;o.headY=3;o.hackle=1;o.jaw=.18;o.lips=1;o.tail=.6;}
  else if(m==='stalk'){o.head=.28;o.headY=4;o.hackle=.9;o.lips=.7;o.tail=.35;}
  else if(m==='circle'||m==='approach'){o.hackle=.7;o.head=.1;o.headY=1.5;o.tail=.45;o.lips=.6;}
- else if(m==='race'){o.head=-.12;o.headX=3;o.headY=1.5;o.ears=1;o.tail=-.05;o.jaw=.42;o.lips=0;o.tongue=.75;o.pant=1;o.drool=.4;}
+ else if(m==='race'){const sd=(d.dog?.seed||0)%7,h=Math.sin(t*10.5+sd);o.head=-.12+.05*Math.sin(t*5.2+sd);o.headX=3;o.headY=1.5+1.3*h;o.ears=1;o.tail=-.05;o.jaw=.24+.34*Math.max(0,h);o.lips=0;o.tongue=.62+.38*Math.max(0,Math.sin(t*10.5+sd+.6));o.pant=1;o.drool=.55;}// hechelt kräftig: Maul auf und zu, Zunge schlackert, Kopf wippt
  else if(m==='charge'){o.head=.05;o.headX=2;o.headY=1;o.ears=.8;o.tail=.2;o.hackle=.4;o.jaw=.35;o.lips=.6;o.tongue=.3;}
  else if(m==='snap'||m==='leg'||m==='throat'){const p=cl(d.clock/.18,0,1),back=d.clock>.22?cl((d.clock-.22)/.15,0,1):0;o.headX=6*p*(1-back);o.headY=(m==='leg'?10:m==='throat'?7:1)*p*(1-back);o.head=(m==='leg'?.55:m==='throat'?.4:-.05)*p;o.jaw=p<.85?.95:.05;o.lips=1;o.hackle=.8;o.ears=.3;}
  else if(m==='leap'){o.jaw=.95;o.lips=1;o.headX=3;o.hackle=1;o.tail=.1;o.ears=.7;}
@@ -938,7 +938,7 @@ function rig(d,t,target=null){const o=mood(d,t),dead=!!d.g?.dead,m=d.mode,SH=sha
  const breathe=dead?0:Math.sin(t*(o.pant?15:sleep?1.6:3))*(o.pant?.8:sleep?.7:.4);
  let p=0,L=SH.L,LG=SH.leg,hipX=-17+(31-SH.L)*.5,hipY=-27-(LG-1)*21+breathe*.3,bend=0,shake=d.shaking>0?Math.sin(t*44)*(d.shaking/.32):0;
  let nod=0;
- if(gi===4){const e=d.raceStretch??1;L+=4.6*e*Math.cos(ph);p=.06*Math.sin(ph)-.03;hipY-=(3.2*Math.abs(Math.sin(ph))+1.2)*e;bend=-3.6*e*Math.cos(ph);nod=1.4*Math.sin(ph+.6);}
+ if(gi===4){const e=d.raceStretch??1;L+=4.6*e*Math.cos(ph);p=.06*Math.sin(ph)-.03;hipY-=(3.2*Math.abs(Math.sin(ph))+1.2)*e;bend=-3.6*e*Math.cos(ph);nod=3.2*Math.sin(ph+.6);}
  else if(gi===3){L+=2.6*Math.cos(ph);p=.08*Math.sin(ph);hipY-=1.8*Math.abs(Math.sin(ph));bend=-2.4*Math.cos(ph);nod=2.4*Math.sin(ph+.6);}
  else if(gi>0){hipY+=Math.sin(ph*2)*.7*(gi===2?1.5:1);p+=.035*Math.sin(ph*2+1.2)*(gi===2?1.3:1);nod=(gi===2?1.2:1.6)*Math.sin(ph*2+.9);}
  // Gewicht verlagern im Stand
