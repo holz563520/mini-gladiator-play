@@ -493,8 +493,9 @@ const TRAIT_FX={Mutig:['Lässt sich vom Tod eines Kameraden kaum entmutigen (Mut
 function traitsHTML(g){const wc=['secondary','weapon'].map(sl=>M.bestWeaponClass?.(g,sl)).filter(Boolean).filter(t=>t.slot==='secondary'||g.role!=='Soldat');
  const cur=sl=>{const i=M.gear?.(g,sl);return i?M.weaponDefs.find(w=>w.id===i.def)?.name||i.def:'—';};
  const forced=g.forceWeaponClass||S.army?.forceTalent;
+ const stock=t=>{const k=M.weaponClassStock?.(t.def,g.id);if(!k)return '';const mine=M.gear?.(g,t.slot)?.def===t.def;return mine?'angelegt':k.free?k.free+' frei im Lager':k.worn.length?'trägt '+k.worn.slice(0,2).join(', '):k.broken?'nur kaputte':'keine im Lager';};
  let h='<h3>Waffenklasse & Eigenschaften</h3><table class="dok-wc"><thead><tr><th>Platz</th><th>Beste Klasse (SOLL)</th><th>IST</th><th>angelegt</th></tr></thead><tbody>'+
-  wc.map(t=>`<tr${cur(t.slot)!==t.name&&forced?' class="bad"':''}><th scope="row">${t.slot==='weapon'?'Fernwaffe':'Nahkampf'}</th><td>${esc(t.name)} <b>${Math.round(t.soll)}</b></td><td>${Math.round(g.mastery?.[t.def]||0)}</td><td>${esc(cur(t.slot))}</td></tr>`).join('')+'</tbody></table>';
+  wc.map(t=>`<tr${cur(t.slot)!==t.name&&forced?' class="bad"':''}><th scope="row">${t.slot==='weapon'?'Fernwaffe':'Nahkampf'}</th><td>${esc(t.name)} <b>${Math.round(t.soll)}</b><br><small>${esc(stock(t))}</small></td><td>${Math.round(g.mastery?.[t.def]||0)}</td><td>${esc(cur(t.slot))}</td></tr>`).join('')+'</tbody></table>';
  h+=`<p class="tiny">${forced?'Wird beim automatischen Ausrüsten erzwungen'+(g.forceWeaponClass?'':' (Schalter für alle in der Kaserne)')+'.':'Nicht erzwungen: Automatisch ausrüsten wählt die stärkste Waffe.'}</p>`;
  const tr=g.traits||[];h+='<h4>Besondere Eigenschaften</h4>'+(tr.length?'<ul class="dok-tr">'+tr.map(t=>{const [d,on]=TRAIT_FX[t]||['—',0];return `<li class="${on?'on':'off'}"><b>${esc(t)}</b><span>${esc(d)}</span></li>`;}).join('')+'</ul>':'<p class="tiny">Keine.</p>');
  return h;}
