@@ -455,9 +455,13 @@ function dieDog(d,a,cause){if(d.g.dead)return;DOG.sound?.('death',d);releaseAll(
 
 // ---------------------------------------------------------------- Treffer eines Menschen am Hund (über M.rexReceive)
 function receive(a,d,projectile,snapshot){if(d.g.dead)return;const ef=snapshot||M.effective(a),w=ef.w;if(!projectile&&dist(a,d)>ef.range+d.r+14)return;
+ /* Wurfnetz (27.10.): fängt den Hund ein, er lässt los, steht fest und zerrt sich frei; solange leicht zu treffen */
+ if(projectile&&w.id==='net'){const fast0=d.mode==='lunge'||d.mode==='leap'?.3:d.velocity>140?.18:0;if(Math.random()>cl(.72+(a.g.stats.precision||48)*.002-fast0,.25,.95)){M.floater?.(d.x,d.y-30,'NETZ VERFEHLT','#c5c5a0');return;}
+  const pw=cl(20+d.dog.weight*.6+((d.dog.stats.kraft||32)-32)*.8,10,90),t=M.netDuration?M.netDuration(w.item,pw):2.5;releaseAll(d);d.z=0;d.netTimer=Math.max(d.netTimer||0,t);d.netMax=d.netTimer;d.netQ=w.item?.q??1;d.netBy=a.id;d.velocity=0;state(d,'threat',t);
+  M.recordDamage?.(a,'throw:net',0);M.floater?.(d.x,d.y-30,'IM NETZ','#e9d1a2');log(d.g.name+' verheddert sich im Netz.');DOG.sound?.('whine',d);return;}
  const fast=d.mode==='lunge'?.32:['approach','evade','flee'].includes(d.mode)&&d.velocity>120?.22:d.mode==='circle'?.1:0;
- const ag=a.g.stats,acc=cl(-.24+(projectile?ag.precision:ag.dexterity||48)*.022+(ag.experience||0)*.01-fast+(d.mode==='grip'?.18:0)+(d.down||d.heldBy?.25:0),.12,.95);
- if(Math.random()>acc){if(!projectile&&!d.down&&d.mode!=='grip'&&Math.random()<d.P.evade){state(d,'evade',.4);d.escapeAngle=M.angle(a,d)+rnd(-.6,.6);}return;}
+ const ag=a.g.stats,acc=cl(-.24+(projectile?ag.precision:ag.dexterity||48)*.022+(ag.experience||0)*.01-(d.netTimer>0?0:fast)+(d.mode==='grip'?.18:0)+(d.down||d.heldBy?.25:0)+(d.netTimer>0?.3:0),.12,.95);
+ if(Math.random()>acc){if(!projectile&&!d.down&&!(d.netTimer>0)&&d.mode!=='grip'&&Math.random()<d.P.evade){state(d,'evade',.4);d.escapeAngle=M.angle(a,d)+rnd(-.6,.6);}return;}
  let dmg=ef.damage*rnd(.8,1.2)*(projectile?1:M.spacingFactor(w,dist(a,d),ef.range))*(a.energy<15?.6:1);if(w.id==='fist')dmg*=.45;else if(w.bladed)dmg*=1.1;
  const rel=Math.abs(M.angleDiff(M.angle(d,a),d.a)),r=Math.random();
  const part=rel<.9?(r<.28?'kopf':r<.45?'hals':r<.78?'brust':'vl'):rel<2.2?(r<.1?'hals':r<.35?'brust':r<.7?'bauch':r<.85?'vl':'hl'):(r<.5?'hl':r<.9?'bauch':'hals');
@@ -570,6 +574,9 @@ function step(d,dt){const b=S.battle;d.hit=Math.max(0,d.hit-dt);d.yelpT=Math.max
  if(!['grip','leap','held','rear'].includes(d.mode)&&!d.down)for(const a of b.actors){if(a===d||a.g.dead&&!a.down)continue;const dx=d.x-a.x,dy=d.y-a.y,dl=Math.hypot(dx,dy)||1,min=(d.r+(a.r||12))*.85;if(dl<min){const mv=Math.min(min-dl,70*dt);d.x=cl(d.x+dx/dl*mv,BX[0],BX[1]);d.y=cl(d.y+dy/dl*mv,BY[0],BY[1]);}}
  if(!d.fled&&!d.submit&&d.morale<12&&(DOG.health(d)<55||d.blood<60)&&!d.heldBy&&d.mode!=='grip'){if(P.mut<.45||Math.random()<.5){d.submit=true;state(d,'submit',99);log(d.g.name+' wirft sich winselnd auf den Rücken.');}else{d.fled=true;state(d,'flee',99);log(d.g.name+' klemmt die Rute ein und flieht!');}releaseAll(d);return;}
  if(d.submit){d.velocity=0;return;}
+ /* im Netz: steht fest, wirft sich hin und her (Kopfschütteln), reißt sich nach Ablauf los */
+ if(d.netTimer>0){d.netTimer-=dt;d.velocity=0;d.moveSpeed=0;d.energy=Math.max(0,d.energy-dt*4);if(Math.random()<dt*2.2){d.shaking=.32;d.a+=rnd(-.5,.5);}if(Math.random()<dt*.9)DOG.sound?.('growl',d);
+  if(d.netTimer<=0){d.netTimer=0;d.netFree=b.time;M.floater?.(d.x,d.y-30,'LOSGERISSEN','#d8c79a');M.netArt?.drop?.(d);log(d.g.name+' reißt sich aus dem Netz.');state(d,'backoff',.4);}return;}
  if(d.fled||d.submit){if(Math.random()<dt*.7)DOG.sound?.('whine',d);}
  if(d.fled){const t=foes[0];if(t)away(d,t,dt,P.run*.85*cond);d.energy=Math.max(0,d.energy-dt*6);return;}
  if(d.down){d.velocity=0;if(d.clock>=d.duration&&!d.heldBy){d.down=false;state(d,'backoff',.5);d.escapeAngle=d.a+Math.PI;}return;}

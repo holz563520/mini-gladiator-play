@@ -1,0 +1,63 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Wurfnetz · Editor</title>
+<link rel="stylesheet" href="brand.css">
+<link rel="stylesheet" href="manager.css">
+<style>
+/* Wurfnetz-Editor (Wunsch Thomas 27.10.): echter Kampf aus dem Spiel (arena-core, sim, hund, lion), nur ein Netzwerfer gegen ein Ziel.
+   Zeigt Wurf, Fangen, Zappeln und Losreißen; daneben die Bildfolge und die Fangzeiten aller Netzgüten. Ändert keinen Spielstand. */
+[hidden]{display:none!important}
+body{min-height:100vh;margin:0}
+.wrap{max-width:1240px;margin:auto;padding:14px 16px 60px}
+.tl{font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+h1{font-size:clamp(22px,5vw,34px);color:var(--gold);letter-spacing:3px;margin:4px 0;text-transform:uppercase}
+h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;margin:18px 0 6px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px;line-height:1.5;max-width:900px}
+.bbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:end;margin:10px 0}
+.bbar label{display:grid;gap:3px;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.bbar select,.bbar input[type=range]{min-height:36px;background:#293639;color:var(--cream);border:1px solid #52625b;font:inherit;font-size:13px;padding:4px 8px}
+.bbar .btn{min-height:38px}
+.stage{position:relative;background:#101719;border:1px solid var(--line)}
+#arenaCanvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.hud{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--cream);margin:8px 0}
+.hud b{color:var(--gold);font-weight:normal}
+.bar{height:8px;background:#26343a;border:1px solid #52625b;width:220px;display:inline-block;vertical-align:middle}
+.bar i{display:block;height:100%;background:#d8b25a;width:0}
+table{border-collapse:collapse;font-size:13px;margin:6px 0;width:100%;max-width:760px}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:right}th:first-child,td:first-child{text-align:left}
+td.on{background:#2c3c41;color:var(--gold)}
+.frames{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.frames figure{margin:0;background:#101719;border:1px solid var(--line)}
+.frames canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.frames figcaption{font-size:11px;color:var(--muted);padding:3px 6px}
+.err{color:#f29b83}
+</style></head><body><div class="wrap">
+<div class="tl">Arena Theory · Werkzeug</div><h1>Wurfnetz-Editor</h1>
+<p class="sub">Ein Netzwerfer (Soldat mit Wurfnetz und Gladius) gegen ein Ziel – mit der echten Kampflogik des Spiels. Hier siehst du Wurf, Flug, das Fangen, wie sich das Ziel windet und losreißt, und wie lange das bei welcher Netzgüte dauert. Während das Ziel im Netz hängt, kann es nicht angreifen, nicht ausweichen, kaum blocken und wird leichter getroffen. Der Werfer greift danach mit dem Gladius an (zeigt, wie empfindlich das Ziel ist). Dein Spielstand wird nicht verändert.</p>
+<div class="bbar">
+ <label>Ziel<select id="target"><option value="human">Mensch</option><option value="dog">Hund</option><option value="lion">Löwe</option></select></label>
+ <label>Netzgüte<select id="q"></select></label>
+ <label id="strL">Kraft des Ziels <span id="strV"></span><input type="range" id="str" min="10" max="95" value="50"></label>
+ <label id="breedL" hidden>Hunderasse<select id="breed"></select></label>
+ <label>Ansicht<select id="zoom"><option value="1">ganze Arena</option><option value="2.2" selected>nah</option><option value="3.4">sehr nah</option></select></label>
+ <label>Tempo<select id="spd"><option value="0.25">¼ (Zeitlupe)</option><option value="0.5">½</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
+ <label>Angriff danach<select id="follow"><option value="1" selected>Werfer greift an</option><option value="0">nur zusehen</option></select></label>
+ <button class="btn primary" id="go" type="button">▶ Werfen</button>
+ <button class="btn" id="pause" type="button">⏸ Pause</button>
+ <label style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px"><input type="checkbox" id="loop" checked> immer wieder</label>
+</div>
+<div class="stage"><canvas id="arenaCanvas" width="1040" height="720"></canvas></div>
+<div class="hud" id="hud">Lädt …</div>
+<h2>Bildfolge</h2>
+<p class="sub">Links das Netz im Flug (öffnet sich, Gewichte am Rand), rechts ein Mensch im Netz vom Fangen bis zum Losreißen – für die gewählte Netzgüte. Die Bilder bewegen sich (Zappeln).</p>
+<div class="frames" id="frames"></div>
+<h2>Fangzeiten</h2>
+<p class="sub">So lange hängt das Ziel im Netz (Sekunden, Netz in gutem Zustand). Kräftige Ziele reißen sich schneller los. Höchstens 5,5 s, damit das Netz nicht unfair wird.</p>
+<div id="times"></div>
+<p class="sub err" id="err" hidden></p>
+</div>
+<script>window.NETZ_EDITOR=true;window.onerror=(m,src,l)=>{const e=document.getElementById('err');if(e){e.hidden=false;e.textContent+='Fehler: '+m+' ('+String(src).split('/').pop()+':'+l+')\n';}};</script>
+<script>
+// Spielmodule in Reihenfolge laden (wie der Spionage-Worker, dazu Zeichnen und Netzbilder)
+(async()=>{const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','lion','hahn-engine','hahn-arena','arena-beasts','hund','arena-core','netz-art','netz-editor'];
+ for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v='+Date.now().toString(36).slice(-4);s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
+</script>
+</body></html>
