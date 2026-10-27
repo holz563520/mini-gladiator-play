@@ -385,11 +385,11 @@ function updBubbles(){const l=$('owBubbles');if(!l)return;const placed=[];for(co
 // ---------- Vollständig vorlesen, Jubel, Gelächter (Plünderungen, 26.10.) ----------
 // sayFull: wartet, bis niemand mehr spricht, zeigt die Blase und liest sie mit der Stimme der Figur ganz vor (Klick aufs Feld überspringt).
 async function sayFull(a,text,o={}){if(!a||!text)return;const b=S.battle;
- for(let n=0;n<240&&M.speechHold?.();n++)await sleep(100);if(R.ended||S.battle!==b)return;
+ for(let n=0;n<240&&M.speechHold?.()&&!o.stop?.();n++)await sleep(100);if(R.ended||S.battle!==b||o.stop?.())return;
  const ms=Math.max(2400,1600+String(text).length*80);bubbleNow(a,text,{name:o.name,boss:o.boss,lead:o.lead,loud:o.loud,ms});BQ.until=performance.now()+ms;M.fieldTalk?.mark?.(ms);
  M.speakLine?.(text,null,a.g||null,{name:o.name||a.g?.name,keep:true});if(o.log!==false)mlog(`<b class="${a.team?'foe':o.lead?'ldr':''}">${esc(o.name||a.g?.name||'')}:</b> „${esc(text)}“`);
  const t0=performance.now(),min=Math.max(1100,Math.min(ms,900+String(text).length*45))/Math.min(2,speed());await sleep(200);
- while(!R.ended&&S.battle===b&&(performance.now()-t0<min||M.speechHold?.())&&performance.now()-t0<22000)await sleep(90);}
+ while(!R.ended&&S.battle===b&&!o.stop?.()&&(performance.now()-t0<min||M.speechHold?.())&&performance.now()-t0<22000)await sleep(90);}
 // Truppe feiert (Waffen hoch, Hüpfen, Jubel) oder lacht (Klatschen, Lachgesicht). Läuft auch, während der Kampf steht.
 const ANIM={until:0,kind:null};
 function partyAnim(kind,sec){ANIM.kind=kind;ANIM.until=performance.now()+sec*1000;}

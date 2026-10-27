@@ -17,7 +17,7 @@ const leaderA=b=>b?.lead?b.actors.find(a=>a.id===b.lead.leaderId):null;
 function lname(a){return '★ '+first(a.g)+' · Anführer';}
 function routeTo(b,a,tx,ty,sp){const path=D().findPath(b,a.x,a.y,tx,ty);const pts=(path&&path.length?path:[{x:tx,y:ty}]).map(p=>[p.x,p.y,sp]);a.to=pts.shift();a.path=pts;a.goal=[tx,ty,sp];}
 const D=()=>window.Debt;
-function walkSome(b,list,limit=9000){const t0=performance.now();return new Promise(res=>{const chk=()=>{if(!live(b))return res(false);if(list.every(a=>!a.to||a.down||a.g.dead)||performance.now()-t0>limit/Math.min(2,spd())){for(const a of list){a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}return res(true);}setTimeout(chk,80);};chk();});}
+function walkSome(b,list,limit=9000,stop=null){const t0=performance.now();return new Promise(res=>{const chk=()=>{if(!live(b))return res(false);if(list.every(a=>!a.to||a.down||a.g.dead)||performance.now()-t0>limit/Math.min(2,spd())||stop?.()){for(const a of list){a.to=null;a.path=[];a.state='idle';a.moveSpeed=0;}return res(true);}setTimeout(chk,80);};chk();});}
 // Gebüsch vor versteckten Assassinen (Tiefen-Sprite ohne Kollision) und Markierung unter dem Anführer
 const BUSH={wald:['#1f3a1e','#2f5527','#467a33','#5f9a3d'],dorf:['#2b3f1d','#41612a','#5b8236','#79a243'],stadt:['#3a2f22','#5a4630','#7b6040','#9a7a52']};
 // Deckung der Assassinen: Zweige vor dem knienden Körper (Stadt: Kisten). Nach dem Losstürmen liegen die Zweige am Boden.
@@ -86,34 +86,41 @@ const PLEAS=[['Gnade! Ich hab drei Kinder!','Dann haben drei Kinder ab heute fre
  ['Ich bin noch so jung!','Und du bleibst es. Für immer.'],['Lass mich leben, ich verrat dir, wo das Gold ist!','Steht schon auf deinem Gürtel. Danke.']];
 const LOOT=['Drei Kupferstücke und ein Zahn. Der Zahn war seiner.','Ein Liebesbrief: „Komm heil zurück.“ Tja. Zurück kommt er. In Teilen.','Die Stiefel stinken nach Tod. Passen aber.','Ein Glücksbringer. Offensichtlich eine Fälschung.','Ein halbes Brot. Die andere Hälfte hat er noch im Hals.',
  'Gezinkte Würfel. Das Glück hat er trotzdem verloren.','Nichts. Nicht mal Würde. Die hat er beim Betteln liegen lassen.','Ein Ring. Der Finger kommt mit, der Ring geht nicht ab.','Eine Locke. Von seiner Frau oder seinem Hund. Egal, die kriegt jetzt der Ofen.','Ein Schuldschein. Er schuldet jetzt niemandem mehr was. Wir auch nicht.'];
-const AF={on:false,o:null,t0:0,skip:false};
-function afShow(label,count,who,text){$('after').hidden=false;$('afLabel').textContent=label;$('afCount').textContent=count||'';$('afWho').textContent=who;$('afSay').textContent=text;}
+const AF={on:false,o:null,t0:0,skip:false,all:false};
+// Überspringen (Wunsch Thomas 27.10.): „Weiter ▶“ beendet den laufenden Schritt (wie Klick aufs Feld), „Überspringen ▶▶“ die ganze Szene – die übrigen Überlebenden sterben dann ohne Szene, das Plündern wird nur gemeldet.
+const afStop=()=>AF.all||AF.skip;
+function afShow(label,count,who,text){AF.skip=false;$('after').hidden=false;$('afLabel').textContent=label;$('afCount').textContent=count||'';$('afWho').textContent=who;$('afSay').textContent=text;}
 function afFrame(now){if(!AF.on)return;const cv=$('afCv'),g=cv.getContext('2d'),t=(now-AF.t0)/1000;g.imageSmoothingEnabled=false;const o=typeof AF.o==='function'?AF.o(t):AF.o;try{M.faceShot.paint(g,cv.width,cv.height,o,t+3);}catch(e){}
  if(AF.flash&&t>=AF.flash&&t<AF.flash+.12){g.globalAlpha=.8*(1-(t-AF.flash)/.12);g.fillStyle='#fff6dc';g.fillRect(0,0,cv.width,cv.height);g.globalAlpha=1;}requestAnimationFrame(afFrame);}
 function afPaint(o,flash=0){AF.o=o;AF.t0=performance.now();AF.flash=flash;if(!AF.on){AF.on=true;requestAnimationFrame(afFrame);}}
 function afHide(){AF.on=false;$('after').hidden=true;}
-const afWait=ms=>new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());AF.skip=false;const chk=()=>{if(AF.skip||(performance.now()-t0>=lim&&!M.speechHold?.()))return res();setTimeout(chk,50);};chk();});
+const afWait=ms=>new Promise(res=>{const t0=performance.now(),lim=Math.max(ms*.6,ms/spd());AF.skip=false;const chk=()=>{if(AF.skip||AF.all||(performance.now()-t0>=lim&&!M.speechHold?.()))return res();setTimeout(chk,50);};chk();});
 function nearestParty(b,e){return partyActors(b).reduce((m,a)=>!m||Math.hypot(a.x-e.x,a.y-e.y)<Math.hypot(m.x-e.x,m.y-e.y)?a:m,null);}
-function walkTo(b,a,x,y,sp=95){routeTo(b,a,x,y,sp);return walkSome(b,[a],7000);}
-async function aftermath(b){const alive=b.encEnemies.filter(e=>!e.g.dead&&(e.down||e.surrendered)),cl=v=>Math.max(0,Math.min(1,v));let n=0;
- for(const e of alive){if(!live(b))break;const k=nearestParty(b,e);if(!k)break;n++;const side=k.x<e.x?-1:1,[plea,reply]=pick(PLEAS),hurt=cl(1.15-M.health(e.g)/100);
-  setState('Nach dem Kampf …');await walkTo(b,k,e.x+side*28,e.y+4);if(!live(b))break;k.a=side<0?0:Math.PI;
+function walkTo(b,a,x,y,sp=95){routeTo(b,a,x,y,sp);return walkSome(b,[a],7000,()=>AF.all);}
+async function aftermath(b){const alive=b.encEnemies.filter(e=>!e.g.dead&&(e.down||e.surrendered)),cl=v=>Math.max(0,Math.min(1,v));let n=0;AF.all=false;AF.skip=false;
+ for(const e of alive){if(!live(b)||AF.all)break;const k=nearestParty(b,e);if(!k)break;n++;const side=k.x<e.x?-1:1,[plea,reply]=pick(PLEAS),hurt=cl(1.15-M.health(e.g)/100);
+  setState('Nach dem Kampf …');afShow('Wird gestellt',`${n} / ${alive.length}`,e.g.name,'');afPaint({g:e.g,team:1,hurt,zoom:.92,ground:true,mood:'terror',yaw:-.35});/* Knöpfe schon während des Hingehens sichtbar */
+  await walkTo(b,k,e.x+side*28,e.y+4);if(!live(b)||AF.all)break;k.a=side<0?0:Math.PI;
   afShow('Fleht um Gnade',`${n} / ${alive.length}`,e.g.name,'„'+plea+'“');afPaint({g:e.g,team:1,hurt,zoom:.92,ground:true,mood:'plead',yaw:-.35});mlog(`<b class="foe">${esc(e.g.name)}</b> fleht: „${esc(plea)}“`);
-  if(C.sayFull)await C.sayFull(e,plea,{name:first(e.g),log:false});else await afWait(2600);if(!live(b))break;
+  if(C.sayFull)await C.sayFull(e,plea,{name:first(e.g),log:false,stop:afStop});else await afWait(2600);if(!live(b)||AF.all)break;
   afShow('Keine Gnade',`${n} / ${alive.length}`,k.g.name,'„'+reply+'“');afPaint({g:k.g,team:0,zoom:.95,mood:'grin',yaw:.35});mlog(`<b>${esc(k.g.name)}:</b> „${esc(reply)}“`);
-  if(C.sayFull)await C.sayFull(k,reply,{name:first(k.g),log:false});else{bubble(k,reply,{name:first(k.g),ms:2400});await afWait(2400);}if(!live(b))break;
+  if(C.sayFull)await C.sayFull(k,reply,{name:first(k.g),log:false,stop:afStop});else{bubble(k,reply,{name:first(k.g),ms:2400});await afWait(2400);}if(!live(b)||AF.all)break;
   afShow('Gnadenstoß',`${n} / ${alive.length}`,e.g.name,first(k.g)+' stößt zu.');M.speakLine?.(first(k.g)+' stößt zu.','erzaehler',null,{keep:true});
   afPaint(t=>{const q=t-1;return {g:e.g,team:1,hurt,zoom:.92,ground:true,mood:q<0?'terror':q<.5?'shock':q<.9?'pain':'out',pale:cl(q/1.5),blood:cl((q-.3)/1.2),tilt:q>.9?Math.min(.3,(q-.9)*.3):0,sink:q>.9?Math.min(16,(q-.9)*14):0,fx:{stab:t-.8},pool:cl(q/2),dark:cl((q-1.4)/1.2)*.6,yaw:-.35+.4*cl(t/3)};},1);
   setTimeout(()=>{if(!e.g.dead){try{M.death(e,'Gnadenstoß',k);}catch(err){e.g.dead=true;e.down=true;e.state='dead';}M.sound?.('stick');}},Math.max(600,1000/spd()));
-  await afWait(2700);mlog(`<b>${esc(k.g.name)}</b> gibt <b class="foe">${esc(e.g.name)}</b> den Gnadenstoß.`);
+  await afWait(2700);if(!e.g.dead){try{M.death(e,'Gnadenstoß',k);}catch(err){e.g.dead=true;e.down=true;e.state='dead';}}mlog(`<b>${esc(k.g.name)}</b> gibt <b class="foe">${esc(e.g.name)}</b> den Gnadenstoß.`);if(AF.all)break;
   // danach lacht die Truppe (Gesicht des Henkers lacht mit)
-  if(C.laugh&&live(b)){afShow('Gelächter',`${n} / ${alive.length}`,k.g.name,'');afPaint({g:k.g,team:0,zoom:.95,mood:'grin',yaw:.2,shake:1});await C.laugh(b,k);}}
+  if(C.laugh&&live(b)&&!AF.all){afShow('Gelächter',`${n} / ${alive.length}`,k.g.name,'');afPaint({g:k.g,team:0,zoom:.95,mood:'grin',yaw:.2,shake:1});await C.laugh(b,k);}}
+ if(AF.all&&live(b)){// Szene übersprungen: übrige Überlebende ohne Szene erledigen, Plündern nur melden
+  M.speakStopAll?.();let left=0;for(const e of alive){if(e.g.dead)continue;const k=nearestParty(b,e);left++;try{M.death(e,'Gnadenstoß',k);}catch(err){e.g.dead=true;e.down=true;e.state='dead';}}
+  if(left)M.sound?.('stick');mlog(left?`Übersprungen: ${left===1?'Der letzte Überlebende bekommt':'Die übrigen '+left+' Überlebenden bekommen'} den Gnadenstoß. Die Taschen werden geleert.`:'Übersprungen: Die Taschen werden geleert.','narr');afHide();return;}
  const bodies=b.encEnemies.filter(e=>e.g.dead).slice(0,3);let i=0;
- for(const e of bodies){if(!live(b))break;const k=nearestParty(b,e);if(!k)break;i++;await walkTo(b,k,e.x+(k.x<e.x?-24:24),e.y+6);if(!live(b))break;k.a=k.x<e.x?0:Math.PI;
+ for(const e of bodies){if(!live(b)||AF.all)break;const k=nearestParty(b,e);if(!k)break;i++;await walkTo(b,k,e.x+(k.x<e.x?-24:24),e.y+6);if(!live(b))break;k.a=k.x<e.x?0:Math.PI;
   const w=e.g.enemyGear?.weapon,line=pick(LOOT);afShow('Wird geplündert',`${i} / ${bodies.length}`,k.g.name+' durchsucht '+first(e.g),'„'+line+'“'+(w?' · Dazu: '+M.itemName(w)+'.':''));
   afPaint({g:k.g,team:0,zoom:.95,mood:pick(['grin','confident','dumb']),yaw:.3});mlog(`<b>${esc(k.g.name)}</b> durchsucht ${esc(e.g.name)}: „${esc(line)}“`);
-  if(C.sayFull)await C.sayFull(k,line,{name:first(k.g),log:false});else{bubble(k,line,{name:first(k.g),ms:2600});await afWait(2600);}
-  if(w&&live(b)){M.speakLine?.('Dazu: '+M.itemName(w)+'.','erzaehler',null,{keep:true});await afWait(900);}}
+  if(C.sayFull)await C.sayFull(k,line,{name:first(k.g),log:false,stop:afStop});else{bubble(k,line,{name:first(k.g),ms:2600});await afWait(2600);}
+  if(w&&live(b)&&!AF.all){M.speakLine?.('Dazu: '+M.itemName(w)+'.','erzaehler',null,{keep:true});await afWait(900);}}
+ if(AF.all){M.speakStopAll?.();mlog('Übersprungen: Die übrigen Taschen werden geleert.','narr');}
  afHide();}
 const SPY={on:false,focus:null,fx:0,fy:0};
 // Fernrohr: Die Kamera zoomt wirklich auf den Gegner (M.battleCamera), darüber eine schwarze Maske mit einem runden Ausschnitt.
@@ -144,11 +151,11 @@ function camera(b,width,height,W,H){const fit=Math.min(width/W,height/H),k=heigh
  if(CLOSE.on&&CLOSE.v){const v=CLOSE.v,a=CLOSE.a,cx=(v.x+(a?a.x:v.x))/2,cy=(v.y+(a?a.y:v.y))/2-44,Z=2.3,vw=width/(k*Z),vh=C.VH/Z;return {zoom:k/fit*Z,x:clamp(cx,vw/2,W-vw/2),y:clamp(cy,vh/2,H-vh/2)};}
  if(SPY.on){const z=k/fit*SPY.zoom,vw=width/(k*SPY.zoom),vh=C.VH/SPY.zoom;return {zoom:z,x:clamp(SPY.fx,vw/2,W-vw/2),y:clamp(SPY.fy+vh*.06,vh/2,H-vh/2)};}
  return null;}
-const MARKUP='<div id="after" hidden><div class="af-top"><span id="afLabel"></span><i id="afCount"></i></div><canvas id="afCv" width="480" height="250"></canvas><button class="btn" id="afterSkip" type="button">Weiter ▶</button><blockquote><b id="afWho"></b><span id="afSay"></span></blockquote></div>'
+const MARKUP='<div id="after" hidden><div class="af-top"><span id="afLabel"></span><i id="afCount"></i></div><canvas id="afCv" width="480" height="250"></canvas><div class="af-btns"><button class="btn" id="afterSkip" type="button">Weiter ▶</button><button class="btn" id="afterAll" type="button">Überspringen ▶▶</button></div><blockquote><b id="afWho"></b><span id="afSay"></span></blockquote></div>'
  +'<div id="cine" hidden><canvas id="closeCv" width="320" height="200"></canvas><div class="close-cap"><b id="closeTitle"></b><span id="closeText"></span></div></div>'
  +'<div id="spy" hidden><canvas id="spyMask"></canvas><canvas id="spyFace" width="160" height="104"></canvas><div class="spy-cap"><b id="spyName"></b><span id="spyText"></span></div><button class="btn" id="spySkip" type="button">Überspringen ▶▶</button></div>';
 // Overlay-Elemente in den Kampfbild-Container einsetzen (einmal je Container)
-function mount(host){if(!host||host.querySelector('#spy'))return;host.insertAdjacentHTML('beforeend',MARKUP);$('spySkip').onclick=()=>{SPY.skip=true;};$('afterSkip').onclick=()=>{AF.skip=true;};}
+function mount(host){if(!host||host.querySelector('#spy'))return;host.insertAdjacentHTML('beforeend',MARKUP);$('spySkip').onclick=()=>{SPY.skip=true;};$('afterSkip').onclick=()=>{AF.skip=true;M.speakStop?.();};$('afterAll').onclick=()=>{AF.all=true;AF.skip=true;M.speakStopAll?.();};}
 function stow(b,on){for(const a of b.actors)if(a.team===0)a.stowed=on;}
 function drawWeapons(b,who){stow(b,false);const a=who||leaderA(b)||partyActors(b)[0];if(a)bubble(a,pick(['Waffen raus! Leise!','Klingen raus. Bögen runter vom Rücken.','Zieht blank. Und keiner hustet.']),{lead:!!b.lead,name:b.lead?lname(a):first(a.g),ms:1800});}
 function leadSay(b,text,o={}){const a=leaderA(b);if(!a)return;bubble(a,text,{lead:true,name:lname(a),...o});mlog(`<b class="ldr">★ ${esc(a.g.name)}:</b> „${esc(text)}“`);}
