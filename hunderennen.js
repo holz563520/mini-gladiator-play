@@ -42,18 +42,23 @@ function makeField(k,seed){const r=mulberry(seed),T=TIERS[k],field=[],ids=DOG.BR
 
 // ---------------------------------------------------------------- Rennrechnung
 // Liefert für jeden Läufer die Strecke je Bild (30 Bilder je Sekunde) bis alle im Ziel sind, Platz und Zeit.
-const FPS=30,FORM_SD=+(G.RACE_SD||.07);
+const FPS=30,FORM_SD=+(G.RACE_SD||.07),WIND=+(G.RACE_WIND||.008);
 function runner(D,health=100){const s=D.stats,h=cl(health/100,.3,1);
  return {vmax:(7+s.tempo*.12)*(.72+.28*h),acc:1.15+s.tempo/110,s0:60+s.ausdauer*3,tire:.0012*(1-s.ausdauer/140)};}
 function simulate(dogs,dist,seed){const r=mulberry(seed),dt=1/FPS;
  const L=dogs.map(x=>{const R=runner(x.D,x.health);return {...R,form:1+gauss(r)*FORM_SD,react:.05+r()*.35,ph:[r()*6.3,r()*6.3,r()*6.3],fq:[.7+r()*.6,1.6+r()*.8,3+r()*1.5],
-  stumble:r()<.08?{at:dist*(.15+r()*.7),len:.45+r()*.4}:null,s:0,v:0,t:null,trace:[]};});
+  stumble:r()<.08?{at:dist*(.15+r()*.7),len:.45+r()*.4}:null,s:0,v:0,t:null,trace:[],
+  // versteckt: Laufstil (+ = Schlussspurtler, − = Frühstarter) und 3–5 Antritte oder Durchhänger je Rennen
+  kick:gauss(r)*0.07,surge:Array.from({length:3+Math.floor(r()*3)},()=>({at:.08+r()*.88,len:1+r()*1.8,amp:(r()<.62?1:-.75)*(0.06+r()*0.06)}))};});
  let t=0,end=null;
  while(t<120&&(end==null||t<end)){t+=dt;if(end==null&&L.every(l=>l.t!=null))end=t+3;
+  const front=Math.max(...L.filter(l=>l.t==null).map(l=>l.s),0);// Windschatten: die Spitze läuft im Wind, Verfolger holen etwas auf
   for(const l of L){if(l.t!=null){l.s+=l.v*dt;l.v*=.97;l.trace.push(l.s);continue;}
    if(t<l.react){l.trace.push(0);continue;}
    const n=.026*Math.sin(t*l.fq[0]+l.ph[0])+.014*Math.sin(t*l.fq[1]+l.ph[1])+.008*Math.sin(t*l.fq[2]+l.ph[2]);
-   const fat=1-Math.max(0,l.s-l.s0)*l.tire;let goal=l.vmax*l.form*(1+n)*cl(fat,.55,1);
+   const q=l.s/dist,fat=1-Math.max(0,l.s-l.s0)*l.tire;let sg=0;for(const u of l.surge){const ts=u.t0??(q>=u.at?(u.t0=t):null);if(ts!=null&&t-ts<u.len){const x=(t-ts)/u.len;sg+=u.amp*Math.sin(Math.PI*x)**2;}}
+   const gap=front-l.s,draft=gap<.5?-.022:Math.min(.07,gap*(WIND||.006));
+   let goal=l.vmax*l.form*(1+n+sg+draft+l.kick*(q-.5)*2)*cl(fat,.55,1);
    if(l.stumble&&l.s>=l.stumble.at&&!l.stumble.done){l.stumble.t0??=t;if(t-l.stumble.t0<l.stumble.len)goal*=.25;else l.stumble.done=true;}
    l.v+=(goal-l.v)*Math.min(1,dt*l.acc);const s1=l.s+l.v*dt;
    if(s1>=dist&&l.t==null)l.t=t-dt+(dist-l.s)/Math.max(.1,l.v);
@@ -116,6 +121,9 @@ function tiles(){if(TILES)return TILES;TILES={};
   for(let r=0;r<9;r++){const y=4+r*8;c.fillStyle=r%2?'#a3815c':'#977452';c.fillRect(0,y+6,320,2);
    for(let x=0;x<320;x+=4){const h=hash(x*31+r*977);if(h<.08)continue;const tone=['#e8d0b0','#d6a77a','#a8744a','#6e4a2e','#f2e2c6'][Math.floor(h*5)],cloth=['#b23a2a','#e8e0cc','#3a5a8a','#c8a040','#5a7a3a','#7a3a6a','#d8d0b8'][Math.floor(hash(x*7+r*13)*7)];
     const up=pose&&hash(x*3+r*5+pose)<.35?1:0;c.fillStyle=cloth;c.fillRect(x,y+2,3,4);c.fillStyle=tone;c.fillRect(x+1,y-up,2,2);if(up){c.fillRect(x+(hash(x+r)<.5?0:2),y-3,1,2);}}}
+  // Transparente der Zuschauer
+  const signs=[['MAMA, ICH BIN IM CIRCUS',30],['WO IST MEIN HUND?',150],['GEBT IHM DEN HASEN!',226]];c.font='bold 7px "Courier Prime",monospace';c.textBaseline='middle';
+  for(const [txt,sx0] of signs){const w=c.measureText(txt).width+6,y=44+((sx0/10)%3)*8;c.fillStyle='#ece4d0';c.fillRect(sx0,y,w,9);c.fillStyle='#5a3a1c';c.fillRect(sx0,y+9,1,4);c.fillRect(sx0+w-1,y+9,1,4);c.fillStyle='#9a2a1e';c.fillText(txt,sx0+3,y+5);}
   // Arkaden unten
   c.fillStyle='#6e5238';c.fillRect(0,76,320,8);for(let x=6;x<320;x+=26){c.fillStyle='#3a2a1c';c.fillRect(x,78,14,6);c.beginPath();c.arc(x+7,78,7,Math.PI,0);c.fill();}
   // Sonnensegel
@@ -128,14 +136,34 @@ function tiles(){if(TILES)return TILES;TILES={};
   for(const x of [240,500]){c.fillStyle='#8a7a5a';c.fillRect(x-14,28,28,10);c.fillStyle='#c7b48a';for(let i=0;i<5;i++){c.fillRect(x-12+i*6,18-(i%2)*2,4,10);}}
   c.fillStyle='#3c6a8a';c.fillRect(0,36,520,2);TILES.spina=cv;}
  // Bande mit Werbung
- {const cv=mk(600,14),c=cv.getContext('2d');c.fillStyle='#ece4d0';c.fillRect(0,0,600,14);c.fillStyle='#9a2a1e';c.fillRect(0,0,600,2);c.fillRect(0,12,600,2);
-  const ads=[['SPQR','#9a2a1e','#ece4d0'],['PANEM ET CIRCENSES','#2a3a6a','#ece4d0'],['GARVM · BESTE SOSSE','#c8a040','#2a1a10'],['LVDVS ARENA THEORY','#1c1c1c','#dfb66d'],['VINVM FALERNVM','#6a1a3a','#ece4d0']];
-  let x=6;for(const [txt,bg,fg] of ads){c.font='bold 9px "Courier Prime",monospace';const w=c.measureText(txt).width+12;c.fillStyle=bg;c.fillRect(x,3,w,8);c.fillStyle=fg;c.textBaseline='middle';c.fillText(txt,x+6,7.5);x+=w+18;}TILES.wall=cv;}
+ {const ads=[['SPQR','#9a2a1e','#ece4d0'],['LUDUS SUCHT REKRUTEN · BILLIG · ERSETZBAR','#1c1c1c','#dfb66d'],['MEDICUS FLAVIUS · AMPUTATION AB 2 SESTERZEN','#2a3a6a','#ece4d0'],
+   ['GARUM · JETZT MIT 20 % MEHR FISCH','#c8a040','#2a1a10'],['BESTATTUNGEN CHARON · ZWEI ZUM PREIS VON EINEM','#3a2a3a','#d8c8e0'],['WETTBÜRO CRASSUS · DIE BANK GEWINNT, DER HUND STIRBT','#6a1a1a','#ffe1a0'],
+   ['PANEM ET CIRCENSES · BROT IST AUS','#2a3a6a','#ece4d0'],['HUNDEFUTTER „GLADIUS“ · AUS DEN RESTEN VON GESTERN','#5a3a1c','#ece4d0'],['SKLAVENMARKT · JETZT MIT ZÄHNEN','#1c1c1c','#ece4d0'],
+   ['VINUM FALERNUM · DAMIT DU DAS RENNEN VERGISST','#6a1a3a','#ece4d0'],['RABIES FÄNGT HUNDE · FINGER NICHT GARANTIERT','#3a4a2a','#e8dcc0']];
+  const tmp=mk(10,10).getContext('2d');tmp.font='bold 9px "Courier Prime",monospace';const ws=ads.map(([t])=>tmp.measureText(t).width+12),total=ws.reduce((a,b)=>a+b+22,6);
+  const cv=mk(Math.ceil(total),14),c=cv.getContext('2d');c.fillStyle='#ece4d0';c.fillRect(0,0,cv.width,14);c.fillStyle='#9a2a1e';c.fillRect(0,0,cv.width,2);c.fillRect(0,12,cv.width,2);
+  let x=6;ads.forEach(([txt,bg,fg],i)=>{c.font='bold 9px "Courier Prime",monospace';const w=ws[i];c.fillStyle=bg;c.fillRect(x,3,w,8);c.fillStyle=fg;c.textBaseline='middle';c.fillText(txt,x+6,7.5);x+=w+22;});TILES.wall=cv;}
  // Sand mit Spuren
  {const cv=mk(256,150),c=cv.getContext('2d');c.fillStyle='#c9a26a';c.fillRect(0,0,256,150);for(let i=0;i<900;i++){const x=hash(i*3)*256,y=hash(i*7+1)*150,h=hash(i*11);c.fillStyle=h<.4?'#b8915c':h<.75?'#d6b27c':'#a8814e';c.fillRect(Math.floor(x),Math.floor(y),h<.9?1:2,1);}
   for(let i=0;i<40;i++){const x=hash(i*91)*256,y=hash(i*17)*150;c.fillStyle='#b088547a';c.fillRect(Math.floor(x),Math.floor(y),6+Math.floor(hash(i)*10),1);}TILES.sand=cv;}
  return TILES;}
 function tileX(c,img,off,y,w=W){const iw=img.width,o=((off%iw)+iw)%iw;for(let x=-o;x<w;x+=iw)c.drawImage(img,Math.round(x),y);}
+
+// ---------- Sprecher: Zwischensprüche (schwarzer Humor) ----------
+const QUIPS=['Der Hase ist übrigens aus Holz. Der letzte echte wurde gefressen. Mitsamt dem Hasenführer.',
+ 'In Reihe drei hat einer seinen Sitzplatz verkauft. Und seine Niere. Für eine Wette auf die Vier.',
+ 'Ein Gruß an die Ludus-Schule von gegenüber: Eure Rekruten laufen langsamer als diese Hunde. Und kürzer.',
+ 'Der Medicus wartet am Ziel. Für die Hunde. Die Zuschauer müssen sich selbst verbinden.',
+ 'Wer verliert, landet nicht im Zwinger, sondern in der Wurst. Nur ein Gerücht. Das Gerücht schmeckt gut.',
+ 'Der Buchmacher lächelt. Das ist nie ein gutes Zeichen.',
+ 'Senator Gaius hat auf alle acht gewettet. Er versteht das Prinzip nicht. Er ist Senator.',
+ 'Der Sand wurde heute frisch geharkt. Was man darunter findet, geht uns nichts an.',
+ 'Ein Zuschauer fragt, ob die Hunde auch Gladiatoren jagen. Antwort: Nur montags.',
+ 'Die Hunde laufen um Ruhm. Die Besitzer um Gold. Der Hase um sein Leben – obwohl er aus Holz ist.'];
+
+// ---------- Staub: 72 Teilchen fest, drei vorgezeichnete Wölkchen (16 × 16 Pixel) ----------
+const DUST={pool:Array.from({length:72},()=>({on:0,lane:0,x:0,y:0,vx:0,vy:0,age:0,life:1,s0:4,k:0})),next:0,img:[]};
+function dustImgs(){if(DUST.img.length)return;for(let v=0;v<3;v++){const cv=mk(16,16),c=cv.getContext('2d');for(let y=0;y<16;y++)for(let x=0;x<16;x++){const dx=(x-7.5)/7.5,dy=(y-8.5)/7,d=dx*dx+dy*dy+(hash(x*17+y*31+v*101)-.5)*.5;if(d<1){c.fillStyle=d<.35?'#e2c493':d<.7?'#d2b07c':'#b99462';c.fillRect(x,y,1,1);}}DUST.img.push(cv);}}
 
 // ---------- Startboxen ----------
 function box(i,x){const k=laneK(i),len=82*k,w=Math.round(len*1.2),h=Math.round(len*.82),y=laneY(i);return {x0:Math.round(x-w+4),y0:Math.round(y-h),w,h,y,k};}
@@ -154,13 +182,14 @@ function startRace(o){
   <div class="hr-stage"><canvas width="${W}" height="${H}" class="px" id="hrCv"></canvas><div class="hr-mini" id="hrMini"></div></div>
   <p class="hr-tick" id="hrTick">Die Hunde werden in die Startboxen geführt …</p><ol class="hr-board" id="hrBoard"></ol>
   <div class="hr-ctl"><button data-a="hrspeed" id="hrSpd">⏩ 1×</button><button data-a="hrsound" id="hrSnd">${S().options?.sound===false?'🔇':'🔊'}</button><button data-a="hrskip" class="primary">Zum Ergebnis ▸</button></div></div>`;
- const cv=A.layer.querySelector('#hrCv'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;tiles();CTX=c;
- const acts=runners.map(r=>{const a=actor(r.D,'stand');a.P={...a.P};return {...r,a,s:0,v:0,done:false,dust:[]};});
+ const cv=A.layer.querySelector('#hrCv'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;tiles();dustImgs();CTX=c;
+ const acts=runners.map(r=>{const a=actor(r.D,'stand');a.P={...a.P};return {...r,a,s:0,v:0,done:false,emit:0};});
+ DUST.pool.forEach(p=>p.on=0);
  const byLane=[...acts].sort((x,y)=>x.lane-y.lane),own=acts.find(r=>r.own);
  const V={phase:'intro',t:0,tau:0,speed:1,slow:1,camS:-3,zoom:12,scroll:0,streaks:[],petals:[],shake:0,flash:0,text:null,lead:null,said:new Set(),finishT:null,photo:false,ownPlace:null,end:false,boardT:0,ownPos:null};
  for(let i=0;i<46;i++)V.streaks.push({x:Math.random()*W,y:Math.random()*H,len:10+Math.random()*50,a:.15+Math.random()*.35});
  const posAt=(r,tau)=>{const tr=sim.lanes[r.i].trace,f=tau*FPS,i=Math.floor(f);if(i<0)return 0;if(i>=tr.length-1)return tr[tr.length-1];return tr[i]+(tr[i+1]-tr[i])*(f-i);};
- const say=(key,txt,force)=>{if(!force&&V.said.has(key))return;V.said.add(key);const el=A.layer.querySelector('#hrTick');if(el){el.textContent=txt;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}};
+ const say=(key,txt,force)=>{if(!force&&V.said.has(key))return;V.said.add(key);V.lastSay=V.t;const el=A.layer.querySelector('#hrTick');if(el){el.textContent=txt;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}};
  const nm=r=>r.D.name+(r.own?' (dein Hund)':'');
  const sx=s=>W*.62+(s-V.camS)*V.zoom;
  SFX.crowdStart();SFX.crowdLevel(.04);
@@ -191,6 +220,7 @@ function startRace(o){
    if(lead&&V.lead!==lead&&tau>1.2){if(V.lead)say('lead'+lead.i+Math.floor(tau),lead.D.name+' übernimmt die Führung!'+(lead.own?' Das ist DEIN Hund!':''),true);V.lead=lead;}
    for(const r of acts){const sb=sim.lanes[r.i].stumble;if(sb&&tau>=sb.t0&&!V.said.has('st'+r.i)){say('st'+r.i,nm(r)+' stolpert! Der Sand fliegt!',true);}}
    const op=ranked.indexOf(own)+1;if(tau>2&&V.ownPos!==op){if(op===1)say('own1'+Math.floor(tau/3),'Dein '+own.D.name+' liegt vorn!',true);else if(op<=3&&(V.ownPos==null||op<V.ownPos))say('ownup'+op+Math.floor(tau/3),own.D.name+' arbeitet sich auf Platz '+op+' vor!',true);V.ownPos=op;}
+   if(tau>3.5&&maxS<dist-70&&V.t-(V.lastSay||0)>4.5&&Math.random()<dt*.35){const left=QUIPS.filter(q=>!V.said.has('q'+q));if(left.length){const q=left[Math.floor(Math.random()*left.length)];say('q'+q,q);}}
    if(maxS>dist-60&&!V.said.has('home')){say('home','Schlussgerade! Die Ränge stehen auf!',true);SFX.roar(.35,3);SFX.crowdLevel(.12);}
    // Zielankunft des Ersten: Zeitlupe; knappes Rennen: Fotofinish
    const w=sim.lanes[sim.order[0]],w2=sim.lanes[sim.order[1]];
@@ -208,6 +238,7 @@ function startRace(o){
   // ---- Zeichnen ----
   draw(dt,ranked,vCam,lead,maxS);}
  function draw(dt,ranked,vCam,lead,maxS){const t=performance.now()/1000,tl=TILES,run=V.phase!=='intro',spd=vCam;
+  {const k=dt*V.slow;for(const p of DUST.pool){if(!p.on)continue;p.age+=k;if(p.age>=p.life){p.on=0;continue;}p.x+=(p.vx-spd*PXM*.35)*k;p.y+=p.vy*k;p.vy*=.96;p.vx*=.97;}}
   c.save();if(V.shake>0){c.translate(Math.round((Math.random()-.5)*4*V.shake),Math.round((Math.random()-.5)*3*V.shake));V.shake=Math.max(0,V.shake-dt*2.5);}
   // Himmel, Ränge, Spina, Bande
   const sky=c.createLinearGradient(0,0,0,20);sky.addColorStop(0,'#e9b77a');sky.addColorStop(1,'#f7dcaa');c.fillStyle=sky;c.fillRect(0,0,W,20);
@@ -237,8 +268,9 @@ function startRace(o){
    // Fahrtwind hinter dem Hund
    if(run&&r.v>6){const a=Math.min(.75,(r.v-6)/14);c.strokeStyle=`rgba(255,248,232,${a})`;c.lineWidth=1;for(let j=0;j<4;j++){const yy=y-len*(.22+.13*j),ph=(t*9+j*1.7+r.i)%1,l=24+r.v*3.2*(1-j*.15);c.beginPath();c.moveTo(x-len*.45-ph*6,yy);c.quadraticCurveTo(x-len*.45-l*.5,yy+Math.sin(t*20+j)*2,x-len*.45-l-ph*10,yy+1);c.stroke();}}
    // Staub aus den Pfoten
-   if(run&&r.v>2&&Math.random()<Math.min(.9,r.v/14)*V.slow)r.dust.push({x:x-len*.25,y:y-1,vx:-(r.v*PXM*.06)-Math.random()*20,vy:-6-Math.random()*10,a:.6,s:1+Math.random()*2});
-   for(let j=r.dust.length-1;j>=0;j--){const p=r.dust[j];p.x+=(p.vx-spd*PXM*.02)*dt*V.slow;p.y+=p.vy*dt*V.slow;p.vy+=20*dt;p.a-=dt*1.4*V.slow;p.s+=dt*5;if(p.a<=0){r.dust.splice(j,1);continue;}c.fillStyle=`rgba(214,184,132,${p.a.toFixed(2)})`;c.fillRect(Math.round(p.x-p.s/2),Math.round(p.y-p.s/2),Math.ceil(p.s),Math.ceil(p.s*.7));}
+   // Staubwolke hinter dem Hund: Teilchen aus dem festen Vorrat (keine neuen Objekte), hinter dem Hund dieser Bahn gezeichnet
+   if(run&&r.v>3){r.emit=(r.emit||0)+r.v*dt*V.slow*.7;while(r.emit>=1){r.emit--;const p=DUST.pool[DUST.next];DUST.next=(DUST.next+1)%DUST.pool.length;p.on=1;p.lane=r.lane;p.x=x-len*(.32+Math.random()*.2);p.y=y-1-Math.random()*3;p.vx=-(20+r.v*4+Math.random()*25);p.vy=-(4+Math.random()*9);p.age=0;p.life=.7+Math.random()*.5;p.s0=5+len*.08;p.k=Math.floor(Math.random()*3);}}
+   for(const p of DUST.pool){if(!p.on||p.lane!==r.lane)continue;const q=p.age/p.life,sz=Math.round(p.s0*(1+q*2.6));c.globalAlpha=Math.max(0,.62*(1-q)*(1-q*.6));c.drawImage(DUST.img[p.k],Math.round(p.x-sz/2),Math.round(p.y-sz*.75),sz,sz);}c.globalAlpha=1;
    const d=r.a;d.clock+=dt;
    if(run&&r.v>8){const col=r.D.appearance.colors.base||'#a08060',a=Math.min(.32,(r.v-8)/22),hh=len*.42,L2=6+r.v*1.6;c.globalAlpha=a;c.fillStyle=col;for(let j=0;j<6;j++){const yy=Math.round(y-len*.18-hh*j/6),ll=L2*(.5+.5*Math.sin(j*1.7+t*30));c.fillRect(Math.round(x-len*.42-ll),yy,Math.round(ll),1);}c.globalAlpha=1;}
    try{DOG.draw(c,d,Math.round(x),Math.round(y),k,1,{time:t,key:d.id});}catch(e){}
