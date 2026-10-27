@@ -1,0 +1,349 @@
+'use strict';
+// =====================================================================================================
+// HUNDERENNEN · neue Turnierart für Hunde (Arena → BEAST → Hund → Hunderennen)
+// · 8 Hunde je Rennen: der eigene Hund + 7 Gegner. Stufen 1–5 Totenköpfe (Feld, Strecke und Prämie wachsen).
+// · Ein Rennen pro Tag (S.hunderennen.usedDay). Täglich je Stufe ein neues Feld (aus Rasse und Samen reproduzierbar).
+// · Rennen: Höchsttempo aus Schnelligkeit, Durchhalten aus Ausdauer, Gesundheit zählt; dazu Tagesform, Start,
+//   kurze Schübe und selten ein Stolperer. Ein passender Hund gewinnt in seiner Stufe etwa jedes dritte Rennen.
+// · Lernen: Schnelligkeit und Ausdauer rücken je Rennen 4 % der Lücke zum Sollwert heran (Sieg 7 %).
+// · Speicherwert: S.hunderennen = {day, usedDay, offers:[{skulls,dist,field:[{breed,seed,train,name}]}], races, wins, last}
+// Entfernen: 'hunderennen' aus boot.js streichen; arena-ui.js fällt dann von selbst auf die Hundekämpfe zurück.
+// =====================================================================================================
+(()=>{
+const G=typeof window!=='undefined'?window:globalThis,DOG=G.DOG;if(!DOG)return;
+const cl=(v,a,b)=>Math.min(b,Math.max(a,v));
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const gauss=r=>{let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+
+// ---------------------------------------------------------------- Klassen (wie bei echten Hunderennen)
+// Jeder Hund hat eine Klasse nach seinem Rennwert (RW = 0,72·Schnelligkeit + 0,28·Ausdauer, Istwerte). Er läuft in seiner
+// Klasse oder höher, nie tiefer. Die Gegner einer Klasse liegen im unteren Teil der Klasse (fieldLo … fieldHi):
+// ein Hund aus der Mitte seiner Klasse gewinnt so etwa jedes dritte Rennen. Schnelle Hunde laufen um viel mehr Gold.
+const TIERS=[
+ {skulls:1,name:'Feldweg-Rennen',dist:200,prize:[60,25,10],lo:0,fieldLo:12,fieldHi:28},
+ {skulls:2,name:'Dorfrennen',dist:250,prize:[120,50,20],lo:38,fieldLo:34,fieldHi:43},
+ {skulls:3,name:'Rennen am Forum',dist:300,prize:[220,90,40],lo:50,fieldLo:45,fieldHi:52.5},
+ {skulls:4,name:'Großes Rennen',dist:350,prize:[400,160,70],lo:58,fieldLo:53.5,fieldHi:61.5},
+ {skulls:5,name:'Circus Maximus',dist:400,prize:[700,280,120],lo:68,fieldLo:64,fieldHi:73}];
+const RW=s=>.72*s.tempo+.28*s.ausdauer;
+const classOf=D=>{const v=RW(D.stats);let k=0;for(let i=1;i<TIERS.length;i++)if(v>=TIERS[i].lo)k=i;return k+1;};
+const NAMES=['Pfeil','Blitz','Hermes','Sagitta','Volucer','Celer','Ventus','Aura','Fulgur','Rapax','Comet','Nimbus','Furor','Tempestas','Zephyr','Boreas','Notus','Iris','Arion','Pegasus','Nike','Atalanta','Turbo','Vortex','Lepus','Cursor','Velox','Ales','Saltus','Strix'];
+
+// Ein Gegnerhund: Rasse und Samen, dazu Trainingsstand (rückt Ist von Schnelligkeit und Ausdauer zum Soll)
+function opponent(e){const D=DOG.create(e.breed,e.seed);for(const k of ['tempo','ausdauer'])D.stats[k]=Math.round(D.stats[k]+(D.caps[k]-D.stats[k])*e.train);if(e.name)D.name=e.name;D.npc=true;return D;}
+// Feld: 7 Gegner, deren Rennwert im Gegnerbereich der Klasse liegt (Rasse und Trainingsstand zufällig, passend gesucht)
+function makeField(k,seed){const r=mulberry(seed),T=TIERS[k],field=[],ids=DOG.BREEDS.map(B=>B.id);
+ for(let i=0;i<7;i++){let e=null;
+  for(let n=0;n<400&&!e;n++){const c={breed:ids[Math.floor(r()*ids.length)],seed:Math.floor(r()*4294967296)>>>0,train:Math.round(r()*100)/100};
+   if(field.filter(f=>f.breed===c.breed).length>=2)continue;const v=RW(opponent(c).stats);if(v>=T.fieldLo&&v<T.fieldHi)e=c;}
+  if(!e)e={breed:'greyhound',seed:Math.floor(r()*4294967296)>>>0,train:.5};
+  let nm;do nm=NAMES[Math.floor(r()*NAMES.length)];while(field.some(f=>f.name===nm));e.name=nm;field.push(e);}
+ return {skulls:k+1,dist:T.dist,seed,field};}
+
+// ---------------------------------------------------------------- Rennrechnung
+// Liefert für jeden Läufer die Strecke je Bild (30 Bilder je Sekunde) bis alle im Ziel sind, Platz und Zeit.
+const FPS=30,FORM_SD=+(G.RACE_SD||.07);
+function runner(D,health=100){const s=D.stats,h=cl(health/100,.3,1);
+ return {vmax:(7+s.tempo*.12)*(.72+.28*h),acc:1.15+s.tempo/110,s0:60+s.ausdauer*3,tire:.0012*(1-s.ausdauer/140)};}
+function simulate(dogs,dist,seed){const r=mulberry(seed),dt=1/FPS;
+ const L=dogs.map(x=>{const R=runner(x.D,x.health);return {...R,form:1+gauss(r)*FORM_SD,react:.05+r()*.35,ph:[r()*6.3,r()*6.3,r()*6.3],fq:[.7+r()*.6,1.6+r()*.8,3+r()*1.5],
+  stumble:r()<.08?{at:dist*(.15+r()*.7),len:.45+r()*.4}:null,s:0,v:0,t:null,trace:[]};});
+ let t=0,end=null;
+ while(t<120&&(end==null||t<end)){t+=dt;if(end==null&&L.every(l=>l.t!=null))end=t+3;
+  for(const l of L){if(l.t!=null){l.s+=l.v*dt;l.v*=.97;l.trace.push(l.s);continue;}
+   if(t<l.react){l.trace.push(0);continue;}
+   const n=.026*Math.sin(t*l.fq[0]+l.ph[0])+.014*Math.sin(t*l.fq[1]+l.ph[1])+.008*Math.sin(t*l.fq[2]+l.ph[2]);
+   const fat=1-Math.max(0,l.s-l.s0)*l.tire;let goal=l.vmax*l.form*(1+n)*cl(fat,.55,1);
+   if(l.stumble&&l.s>=l.stumble.at&&!l.stumble.done){l.stumble.t0??=t;if(t-l.stumble.t0<l.stumble.len)goal*=.25;else l.stumble.done=true;}
+   l.v+=(goal-l.v)*Math.min(1,dt*l.acc);const s1=l.s+l.v*dt;
+   if(s1>=dist&&l.t==null)l.t=t-dt+(dist-l.s)/Math.max(.1,l.v);
+   l.s=s1;l.trace.push(l.s);}}
+ const order=L.map((l,i)=>i).sort((a,b)=>(L[a].t??999)-(L[b].t??999));const place=[];order.forEach((i,p)=>place[i]=p+1);
+ return {dist,frames:Math.max(...L.map(l=>l.trace.length)),lanes:L.map((l,i)=>({trace:l.trace,time:l.t,place:place[i],stumble:l.stumble&&l.stumble.t0!=null?{t0:l.stumble.t0,len:l.stumble.len}:null,form:l.form,react:l.react})),order};}
+
+const API={TIERS,RW,classOf,makeField,opponent,simulate,runner,FPS};
+G.DogRace=API;
+
+// =====================================================================================================
+// IM SPIEL · Bildschirme in der Arena (ArenaUI.screens): „dogkinds“ (Kämpfe | Rennen), „race“ (Rennbahn), „raceresult“
+// =====================================================================================================
+const M=G.MG,U=G.ArenaUI,C=G.ArenaCareer;if(!M||!U?.api||!C||G.ARENA_NEU_TEST)return;
+const S=()=>M.s,A=U.api,esc=A.esc,$q=s=>A.view.querySelector(s);
+const st=()=>{const s=(S().hunderennen??={day:-1,usedDay:-1,offers:[],races:0,wins:0,gold:0,last:null});
+ if(s.day!==S().day||s.offers.length!==TIERS.length){s.day=S().day;s.offers=TIERS.map((T,k)=>makeField(k,(Math.random()*4294967296)>>>0));}return s;};
+const ranToday=()=>st().usedDay===S().day;
+const dogs=()=>(C.dogs||[]).filter(D=>!D.dead);
+const healthOf=D=>Math.round(DOG.condHealth(D));
+const sk=n=>'☠'.repeat(n);
+const R={sel:null,odds:{},oddsKey:''};// Auswahl auf der Rennbahn
+const JACKET=[['#c8302a','#fff'],['#2a55b8','#fff'],['#efe9da','#1a1a1a'],['#1d1d1d','#fff'],['#e2781e','#1a1a1a'],['stripe','#e6c23a'],['#2e8a3e','#fff'],['#e6c23a','#1a1a1a']];
+const N=['dog','race'];
+
+// ---------- Ton (WebAudio über das Hunde-Lautpaket, wenn vorhanden) ----------
+const sndOn=()=>S().options?.sound!==false&&!document.hidden;
+const SFX={crowd:null,
+ ctx(){const AU=DOG.audio;if(!AU?.ac)return null;try{const a=AU.ac();return a?{a,B:AU.bus(a),AU}:null;}catch{return null;}},
+ tone(f0,f1,dur,g,type='sawtooth',delay=0){const x=this.ctx();if(!x||!sndOn())return;const {a,B}=x,t0=a.currentTime+.01+delay,o=a.createOscillator(),e=a.createGain(),f=a.createBiquadFilter();o.type=type;o.frequency.setValueAtTime(f0,t0);o.frequency.exponentialRampToValueAtTime(f1,t0+dur);f.type='lowpass';f.frequency.value=2400;e.gain.setValueAtTime(.0001,t0);e.gain.exponentialRampToValueAtTime(g,t0+.02);e.gain.setValueAtTime(g,t0+dur*.7);e.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(f).connect(e).connect(B.dry);e.connect(B.rev);o.start(t0);o.stop(t0+dur+.05);},
+ noise(dur,freq,g,q=.7,delay=0){const x=this.ctx();if(!x||!sndOn())return;const {a,B,AU}=x,t0=a.currentTime+.01+delay,s=a.createBufferSource();s.buffer=AU.noiseBuf(a,dur);const f=a.createBiquadFilter();f.type='bandpass';f.frequency.value=freq;f.Q.value=q;const e=a.createGain();e.gain.setValueAtTime(.0001,t0);e.gain.exponentialRampToValueAtTime(g,t0+Math.min(.08,dur*.2));e.gain.exponentialRampToValueAtTime(.0001,t0+dur);s.connect(f).connect(e).connect(B.dry);e.connect(B.rev);s.start(t0);},
+ fanfare(){[[392,0],[523,.18],[659,.36],[784,.54],[659,.86],[784,1.02]].forEach(([f,d],i)=>this.tone(f,f*1.01,i===5?.7:.2,.13,'sawtooth',d));},
+ gate(){this.noise(.18,900,.5,1.2);this.noise(.25,300,.4,.8,.03);},
+ beep(hi){this.tone(hi?880:440,hi?880:440,hi?.5:.16,.12,'square');},
+ roar(g=.25,dur=2.4){this.noise(dur,700,g,.5);this.noise(dur*.8,1600,g*.5,.6,.1);},
+ thump(){this.noise(.06,180,.18,1.5);},
+ crowdStart(){const x=this.ctx();if(!x||!sndOn()||this.crowd)return;const {a,B,AU}=x,s=a.createBufferSource();s.buffer=AU.noiseBuf(a,2);s.loop=true;const f=a.createBiquadFilter();f.type='bandpass';f.frequency.value=900;f.Q.value=.6;const e=a.createGain();e.gain.value=.0001;s.connect(f).connect(e).connect(B.dry);e.connect(B.rev);s.start();this.crowd={s,e,a};},
+ crowdLevel(v){const c=this.crowd;if(!c)return;try{c.e.gain.setTargetAtTime(Math.max(.0001,v),c.a.currentTime,.3);}catch{}},
+ crowdStop(){const c=this.crowd;if(!c)return;this.crowd=null;try{c.e.gain.setTargetAtTime(.0001,c.a.currentTime,.4);setTimeout(()=>{try{c.s.stop();}catch{}},1500);}catch{}}};
+
+// ---------- Hund als Zeichenfigur ----------
+function actor(D,mode='stand'){return {dog:D,P:DOG.params(D),id:'hr'+Math.random().toString(36).slice(2),g:{dead:false,name:D.name},team:0,mode,clock:1,duration:1,cyc:Math.random(),moveSpeed:0,wounds:[],gore:{},bleed:{},mouthBlood:0,energy:100,hit:0,z:0,spray:[],a:0,down:false,raceStretch:1};}
+// Startdecke mit Nummer auf dem Rücken (Farben wie bei Windhundrennen)
+function jacket(c,d,x,y,k,num,t){let Rg;try{Rg=DOG.rig(d,t);}catch{return;}const sz=d.P.sz,L=Rg.L,P=(bx,by)=>{const q=Rg.body(bx,by);return [x+k*sz*q.x,y+k*sz*q.y];};
+ const pts=[P(L*.2,-5.2),P(L*.8,-5.4),P(L*.76,2.4),P(L*.24,2.6)],[bg,fg]=JACKET[num-1];
+ c.save();c.beginPath();pts.forEach(([a,b],i)=>i?c.lineTo(a,b):c.moveTo(a,b));c.closePath();
+ if(bg==='stripe'){c.fillStyle='#1d1d1d';c.fill();c.clip();c.fillStyle='#efe9da';const [x0,y0]=pts[0];for(let i=-4;i<8;i++)c.fillRect(x0+i*4*k*sz,y0-10,2*k*sz,40);}else{c.fillStyle=bg;c.fill();}
+ c.restore();c.strokeStyle='#0006';c.lineWidth=1;c.beginPath();pts.forEach(([a,b],i)=>i?c.lineTo(a,b):c.moveTo(a,b));c.closePath();c.stroke();
+ const cx=(pts[0][0]+pts[1][0]+pts[2][0]+pts[3][0])/4,cy=(pts[0][1]+pts[1][1]+pts[2][1]+pts[3][1])/4;
+ c.fillStyle=bg==='stripe'?'#e6c23a':fg;c.font=`bold ${Math.max(7,Math.round(9*k*1.9))}px "Courier Prime",monospace`;c.textAlign='center';c.textBaseline='middle';c.fillText(String(num),cx,cy+.5);}
+
+// ---------- Kulisse (vorgezeichnet, wird gekachelt verschoben) ----------
+const W=400,H=300;
+function hash(n){n=(n^61)^(n>>>16);n=n+(n<<3);n^=n>>>4;n=Math.imul(n,0x27d4eb2d);n^=n>>>15;return(n>>>0)/4294967296;}
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
+let TILES=null;
+function tiles(){if(TILES)return TILES;TILES={};
+ // Ränge mit Publikum (3 Haltungen fürs Jubeln)
+ TILES.stands=[0,1,2].map(pose=>{const cv=mk(320,84),c=cv.getContext('2d');c.fillStyle='#8a6a4a';c.fillRect(0,0,320,84);
+  for(let r=0;r<9;r++){const y=4+r*8;c.fillStyle=r%2?'#a3815c':'#977452';c.fillRect(0,y+6,320,2);
+   for(let x=0;x<320;x+=4){const h=hash(x*31+r*977);if(h<.08)continue;const tone=['#e8d0b0','#d6a77a','#a8744a','#6e4a2e','#f2e2c6'][Math.floor(h*5)],cloth=['#b23a2a','#e8e0cc','#3a5a8a','#c8a040','#5a7a3a','#7a3a6a','#d8d0b8'][Math.floor(hash(x*7+r*13)*7)];
+    const up=pose&&hash(x*3+r*5+pose)<.35?1:0;c.fillStyle=cloth;c.fillRect(x,y+2,3,4);c.fillStyle=tone;c.fillRect(x+1,y-up,2,2);if(up){c.fillRect(x+(hash(x+r)<.5?0:2),y-3,1,2);}}}
+  // Arkaden unten
+  c.fillStyle='#6e5238';c.fillRect(0,76,320,8);for(let x=6;x<320;x+=26){c.fillStyle='#3a2a1c';c.fillRect(x,78,14,6);c.beginPath();c.arc(x+7,78,7,Math.PI,0);c.fill();}
+  // Sonnensegel
+  for(let x=0;x<320;x+=80){c.fillStyle=x%160?'#c8402e':'#e8dcc0';c.beginPath();c.moveTo(x,0);c.lineTo(x+80,0);c.lineTo(x+70,5);c.lineTo(x+10,5);c.fill();}
+  return cv;});
+ // Spina mit Obelisk, Säulen, Statuen, Delfinen
+ {const cv=mk(520,52),c=cv.getContext('2d');c.fillStyle='#cfc2a6';c.fillRect(0,38,520,14);c.fillStyle='#b5a888';c.fillRect(0,38,520,2);c.fillRect(0,50,520,2);
+  const ob=(x)=>{c.fillStyle='#d9c79a';c.beginPath();c.moveTo(x-4,38);c.lineTo(x-2,4);c.lineTo(x,0);c.lineTo(x+2,4);c.lineTo(x+4,38);c.fill();c.fillStyle='#b8a272';c.fillRect(x,6,2,32);};ob(70);ob(330);
+  for(const x of [150,190,410,450]){c.fillStyle='#e8e2d2';c.fillRect(x,14,5,24);c.fillRect(x-2,12,9,3);c.fillStyle='#b8b0a0';c.fillRect(x+3,14,2,24);c.fillStyle='#c79a4a';c.fillRect(x-1,6,7,6);}
+  for(const x of [240,500]){c.fillStyle='#8a7a5a';c.fillRect(x-14,28,28,10);c.fillStyle='#c7b48a';for(let i=0;i<5;i++){c.fillRect(x-12+i*6,18-(i%2)*2,4,10);}}
+  c.fillStyle='#3c6a8a';c.fillRect(0,36,520,2);TILES.spina=cv;}
+ // Bande mit Werbung
+ {const cv=mk(600,14),c=cv.getContext('2d');c.fillStyle='#ece4d0';c.fillRect(0,0,600,14);c.fillStyle='#9a2a1e';c.fillRect(0,0,600,2);c.fillRect(0,12,600,2);
+  const ads=[['SPQR','#9a2a1e','#ece4d0'],['PANEM ET CIRCENSES','#2a3a6a','#ece4d0'],['GARVM · BESTE SOSSE','#c8a040','#2a1a10'],['LVDVS ARENA THEORY','#1c1c1c','#dfb66d'],['VINVM FALERNVM','#6a1a3a','#ece4d0']];
+  let x=6;for(const [txt,bg,fg] of ads){c.font='bold 9px "Courier Prime",monospace';const w=c.measureText(txt).width+12;c.fillStyle=bg;c.fillRect(x,3,w,8);c.fillStyle=fg;c.textBaseline='middle';c.fillText(txt,x+6,7.5);x+=w+18;}TILES.wall=cv;}
+ // Sand mit Spuren
+ {const cv=mk(256,150),c=cv.getContext('2d');c.fillStyle='#c9a26a';c.fillRect(0,0,256,150);for(let i=0;i<900;i++){const x=hash(i*3)*256,y=hash(i*7+1)*150,h=hash(i*11);c.fillStyle=h<.4?'#b8915c':h<.75?'#d6b27c':'#a8814e';c.fillRect(Math.floor(x),Math.floor(y),h<.9?1:2,1);}
+  for(let i=0;i<40;i++){const x=hash(i*91)*256,y=hash(i*17)*150;c.fillStyle='#b088547a';c.fillRect(Math.floor(x),Math.floor(y),6+Math.floor(hash(i)*10),1);}TILES.sand=cv;}
+ return TILES;}
+function tileX(c,img,off,y,w=W){const iw=img.width,o=((off%iw)+iw)%iw;for(let x=-o;x<w;x+=iw)c.drawImage(img,Math.round(x),y);}
+
+// ---------- Startboxen ----------
+function box(i,x){const k=laneK(i),len=82*k,w=Math.round(len*1.2),h=Math.round(len*.82),y=laneY(i);return {x0:Math.round(x-w+4),y0:Math.round(y-h),w,h,y,k};}
+let CTX=null;
+function boxFront(i,x,open){const c=CTX,b=box(i,x),[bg,fg]=JACKET[i],gx=Math.round(x+2+(i-3.5)*1.6),dh=Math.round(b.h*.8),lift=Math.round(dh*open*1.1),gy=b.y-dh-lift;
+ // Startgatter von der Seite: Pfosten, Tür mit Gitter (klappt beim Start nach oben), Schild mit Startnummer
+ c.fillStyle='#3a2414';c.fillRect(gx+3,b.y-dh-8,2,dh+8);
+ if(open<1){c.fillStyle='#8a5a30';c.fillRect(gx,gy,4,dh);c.fillStyle='#4a2e18';for(let yy=gy+2;yy<gy+dh-1;yy+=4)c.fillRect(gx,yy,4,1);}
+ c.fillStyle=bg==='stripe'?'#1d1d1d':bg;c.fillRect(gx-3,b.y-dh-16,11,9);c.fillStyle=bg==='stripe'?'#e6c23a':fg;c.font='bold 8px "Courier Prime",monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(String(i+1),gx+2.5,b.y-dh-11);}
+
+// ---------- Die Rennansicht ----------
+const laneY=i=>142+i*20,laneK=i=>.56+.045*i,PXM=40;// PXM: Bildpunkte je Meter für Boden, Zaun, Fahrtwind (Gefühl für Tempo)
+function startRace(o){
+ const T=TIERS[o.k],sim=o.sim,dist=sim.dist,runners=o.runners;// runners: [{D,own,lane,num}]
+ A.layer.innerHTML=`<div class="hr-run" role="dialog" aria-label="Hunderennen"><div class="hr-head"><span class="hr-sk">${sk(T.skulls)}</span><b>${esc(T.name.toUpperCase())}</b><span class="hr-dist" id="hrDist">${dist} m</span></div>
+  <div class="hr-stage"><canvas width="${W}" height="${H}" class="px" id="hrCv"></canvas><div class="hr-mini" id="hrMini"></div></div>
+  <p class="hr-tick" id="hrTick">Die Hunde werden in die Startboxen geführt …</p><ol class="hr-board" id="hrBoard"></ol>
+  <div class="hr-ctl"><button data-a="hrspeed" id="hrSpd">⏩ 1×</button><button data-a="hrsound" id="hrSnd">${S().options?.sound===false?'🔇':'🔊'}</button><button data-a="hrskip" class="primary">Zum Ergebnis ▸</button></div></div>`;
+ const cv=A.layer.querySelector('#hrCv'),c=cv.getContext('2d');c.imageSmoothingEnabled=false;tiles();CTX=c;
+ const acts=runners.map(r=>{const a=actor(r.D,'stand');a.P={...a.P};return {...r,a,s:0,v:0,done:false,dust:[]};});
+ const byLane=[...acts].sort((x,y)=>x.lane-y.lane),own=acts.find(r=>r.own);
+ const V={phase:'intro',t:0,tau:0,speed:1,slow:1,camS:-3,zoom:12,scroll:0,streaks:[],petals:[],shake:0,flash:0,text:null,lead:null,said:new Set(),finishT:null,photo:false,ownPlace:null,end:false,boardT:0,ownPos:null};
+ for(let i=0;i<46;i++)V.streaks.push({x:Math.random()*W,y:Math.random()*H,len:10+Math.random()*50,a:.15+Math.random()*.35});
+ const posAt=(r,tau)=>{const tr=sim.lanes[r.i].trace,f=tau*FPS,i=Math.floor(f);if(i<0)return 0;if(i>=tr.length-1)return tr[tr.length-1];return tr[i]+(tr[i+1]-tr[i])*(f-i);};
+ const say=(key,txt,force)=>{if(!force&&V.said.has(key))return;V.said.add(key);const el=A.layer.querySelector('#hrTick');if(el){el.textContent=txt;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}};
+ const nm=r=>r.D.name+(r.own?' (dein Hund)':'');
+ const sx=s=>W*.62+(s-V.camS)*V.zoom;
+ SFX.crowdStart();SFX.crowdLevel(.04);
+ let last=performance.now(),raf=0,cyc0=0;
+ function step(now){raf=requestAnimationFrame(step);if(!cv.isConnected){cancelAnimationFrame(raf);SFX.crowdStop();return;}
+  let dt=Math.min(.05,(now-last)/1000);last=now;dt*=V.speed;V.t+=dt;
+  // Ablauf: Vorstellung (Kamera an den Boxen, Countdown) → Rennen → Auslauf → Ergebnis
+  if(V.phase==='intro'){
+   if(V.t<.1)say('in','Die Hunde stehen in den Startboxen. Der Hase wird gespannt …');
+   const cd=[[1.4,'3'],[2.2,'2'],[3.0,'1']];for(const [tt,txt] of cd)if(V.t>=tt&&!V.said.has('c'+txt)){V.said.add('c'+txt);V.text={txt,t:V.t,big:1};SFX.beep(false);}
+   if(V.t>=.3&&!V.said.has('fan')){V.said.add('fan');SFX.fanfare();}
+   if(V.t>=3.8){V.phase='run';V.text={txt:'LOS!',t:V.t,big:1.3,col:'#ffe08a'};V.shake=1;SFX.gate();SFX.beep(true);SFX.roar(.3,2.6);SFX.crowdLevel(.07);say('go','Die Boxen fliegen auf! Die Meute schießt heraus!',true);for(const r of acts){r.a.mode='race';}}}
+  else{const slowNow=V.slow;V.tau+=dt*slowNow;}
+  const tau=V.tau;
+  // Läufer
+  let lead=null,maxS=-1;for(const r of acts){const s=V.phase==='intro'?0:posAt(r,tau),v=V.phase==='intro'?0:Math.max(0,(posAt(r,tau+.05)-posAt(r,tau-.05))/.1);r.s=s;r.v=v;if(s>maxS){maxS=s;lead=r;}
+   if(V.phase!=='intro'){const stride=2.4+1.8*r.a.P.sz;r.a.cyc+=v*dt*V.slow/stride;r.a.raceStretch=Math.min(1,Math.max(.25,v/13));r.a.mode=v>3.2?'race':'stand';}
+   if(!r.done&&r.s>=dist){r.done=true;}}
+  const ranked=[...acts].sort((a,b)=>b.s-a.s||(sim.lanes[a.i].place-sim.lanes[b.i].place));
+  // Kamera: folgt dem Spitzenfeld, zoomt je nach Abstand
+  const tail=ranked[Math.min(ranked.length-1,6)].s,spread=Math.max(4,maxS-tail);
+  const camGoal=V.phase==='intro'?-3:Math.min(maxS,dist+6),zoomGoal=V.phase==='intro'?14:Math.max(5,Math.min(13,215/(spread+5)));
+  V.camS+=(camGoal-V.camS)*Math.min(1,dt*V.slow*(V.phase==='intro'?2:5));V.zoom+=(zoomGoal-V.zoom)*Math.min(1,dt*1.6);
+  const vCam=V.phase==='intro'?0:Math.max(0,lead?.v||0)*(maxS>dist+4?Math.max(0,1-(maxS-dist-4)/6):1);
+  V.scroll+=vCam*PXM*dt*V.slow;
+  // Ereignisse für den Sprecher
+  if(V.phase==='run'){
+   if(lead&&V.lead!==lead&&tau>1.2){if(V.lead)say('lead'+lead.i+Math.floor(tau),lead.D.name+' übernimmt die Führung!'+(lead.own?' Das ist DEIN Hund!':''),true);V.lead=lead;}
+   for(const r of acts){const sb=sim.lanes[r.i].stumble;if(sb&&tau>=sb.t0&&!V.said.has('st'+r.i)){say('st'+r.i,nm(r)+' stolpert! Der Sand fliegt!',true);}}
+   const op=ranked.indexOf(own)+1;if(tau>2&&V.ownPos!==op){if(op===1)say('own1'+Math.floor(tau/3),'Dein '+own.D.name+' liegt vorn!',true);else if(op<=3&&(V.ownPos==null||op<V.ownPos))say('ownup'+op+Math.floor(tau/3),own.D.name+' arbeitet sich auf Platz '+op+' vor!',true);V.ownPos=op;}
+   if(maxS>dist-60&&!V.said.has('home')){say('home','Schlussgerade! Die Ränge stehen auf!',true);SFX.roar(.35,3);SFX.crowdLevel(.12);}
+   // Zielankunft des Ersten: Zeitlupe; knappes Rennen: Fotofinish
+   const w=sim.lanes[sim.order[0]],w2=sim.lanes[sim.order[1]];
+   if(V.finishT==null&&maxS>dist-7){V.slow=.3;}
+   if(V.finishT==null&&tau>=w.time){V.finishT=V.t;V.photo=w2.time-w.time<.12;const win=acts.find(r=>r.i===sim.order[0]);V.flash=V.photo?1:.5;V.text={txt:V.photo?'FOTOFINISH!':'ZIEL!',t:V.t,big:1.1,col:'#fff2c8'};SFX.roar(.45,3.5);SFX.crowdLevel(.16);
+    say('win',(V.photo?'Fotofinish! ':'')+win.D.name+' gewinnt'+(win.own?' – DEIN HUND SIEGT!':'!'),true);for(let i=0;i<60;i++)V.petals.push({x:Math.random()*W,y:-Math.random()*80,vx:-20-Math.random()*40,vy:30+Math.random()*30,r:Math.random()*6.3,c:['#c8302a','#e8dcc0','#e6c23a','#b23a5a'][i%4]});}
+   if(V.finishT!=null&&V.t-V.finishT>(V.photo?1.6:1.1))V.slow=Math.min(1,V.slow+dt*1.5);
+   if(own.s>=dist&&V.ownPlace==null){V.ownPlace=sim.lanes[own.i].place;if(sim.order[0]!==own.i)say('ownin',own.D.name+' kommt als '+V.ownPlace+'. ins Ziel.',true);}
+   if(acts.every(r=>r.done)&&tau>sim.lanes.reduce((m,l)=>Math.max(m,l.time||0),0)+1.6&&!V.end){V.end=true;setTimeout(()=>o.done(),700);}}
+  SFX.crowdLevel(V.phase==='intro'?.04:.06+(maxS/dist)*.08);
+  // Anzeige
+  if(now-V.boardT>180){V.boardT=now;const b=A.layer.querySelector('#hrBoard');if(b)b.innerHTML=ranked.map((r,i)=>`<li class="${r.own?'own':''}"><i class="num j${r.num}">${r.num}</i><b>${esc(r.D.name)}</b><small>${esc(r.D.breedName)}</small><span>${r.done?'Ziel':Math.max(0,Math.round(r.s))+' m'}</span></li>`).join('');
+   const d=A.layer.querySelector('#hrDist');if(d)d.textContent=Math.max(0,Math.round(dist-maxS))+' m';
+   const m=A.layer.querySelector('#hrMini');if(m)m.innerHTML=acts.map(r=>`<i class="j${r.num}${r.own?' own':''}" style="left:${Math.min(100,Math.max(0,r.s/dist*100))}%"></i>`).join('');}
+  // ---- Zeichnen ----
+  draw(dt,ranked,vCam,lead,maxS);}
+ function draw(dt,ranked,vCam,lead,maxS){const t=performance.now()/1000,tl=TILES,run=V.phase!=='intro',spd=vCam;
+  c.save();if(V.shake>0){c.translate(Math.round((Math.random()-.5)*4*V.shake),Math.round((Math.random()-.5)*3*V.shake));V.shake=Math.max(0,V.shake-dt*2.5);}
+  // Himmel, Ränge, Spina, Bande
+  const sky=c.createLinearGradient(0,0,0,20);sky.addColorStop(0,'#e9b77a');sky.addColorStop(1,'#f7dcaa');c.fillStyle=sky;c.fillRect(0,0,W,20);
+  const cheer=maxS>dist-70||V.finishT!=null?Math.floor(t*6)%3:Math.floor(t*1.5)%2?0:(run?1:0);
+  tileX(c,tl.stands[cheer],V.scroll*.18,-6);
+  tileX(c,tl.spina,V.scroll*.45,46);
+  c.fillStyle='#7a5c3c';c.fillRect(0,96,W,4);tileX(c,tl.wall,V.scroll*.9,100);
+  // Sand und Bahnen
+  for(let y=114;y<H;y+=150)tileX(c,tl.sand,V.scroll,y);
+  const g=c.createLinearGradient(0,114,0,H);g.addColorStop(0,'#3a200a30');g.addColorStop(.3,'#0000');g.addColorStop(1,'#3a200a22');c.fillStyle=g;c.fillRect(0,114,W,H-114);
+  c.fillStyle='#e8dcc099';for(let i=0;i<=8;i++){const y=Math.round(laneY(i)-11);c.fillRect(0,y,W,1);}
+  // Rechenspuren des Sands, schnell verschoben
+  c.fillStyle='#a8814e66';for(let i=0;i<14;i++){const x=((i*97-V.scroll*1.05)%W+W)%W,y=124+((i*37)%170);c.fillRect(Math.round(x),y,18,1);}
+  // Entfernungstafeln an der inneren Bande
+  for(let m=50;m<dist;m+=50){const x=sx(m);if(x<-30||x>W+30)continue;c.fillStyle='#5a3a1c';c.fillRect(Math.round(x),86,2,14);c.fillStyle='#ece4d0';c.fillRect(Math.round(x)-9,78,20,9);c.fillStyle='#2a1a10';c.font='bold 8px "Courier Prime",monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(String(dist-m),Math.round(x)+1,83);}
+  // Ziellinie
+  {const x=sx(dist);if(x>-60&&x<W+60){c.fillStyle='#f4efe2';for(let i=0;i<8;i++){const y=laneY(i)-11,xx=x+(i-3.5)*1.6;c.fillRect(Math.round(xx),Math.round(y),3,20);}
+   c.fillStyle='#ece4d0';c.fillRect(Math.round(x)-1,40,3,60);c.fillRect(Math.round(x)+30,40,3,60);c.fillStyle='#9a2a1e';c.fillRect(Math.round(x)-1,40,34,12);c.fillStyle='#ffe9b0';c.font='bold 9px "Courier Prime",monospace';c.textAlign='center';c.textBaseline='middle';c.fillText('META',Math.round(x)+16,46.5);}}
+  // Startboxen
+  {const x=sx(0);if(x>-120&&x<W+60){c.fillStyle='#3a2414';c.fillRect(Math.round(x)-2,laneY(0)-58,3,58);c.fillStyle='#6a4426';c.fillRect(Math.round(x)-6,laneY(0)-60,12,3);}}
+  // Hase (Attrappe) an der inneren Bande vor dem Feld
+  if(run||V.t>.5){const hs=run?Math.max(maxS+7+Math.sin(t*3)*.6,V.tau*16+4):2,hx=sx(Math.min(hs,dist+30)),hy=110-Math.abs(Math.sin(t*14))*3;
+   c.fillStyle='#5a3a1c';c.fillRect(hx-30,107,60,1);c.fillStyle='#d8c4a0';c.fillRect(hx-4,hy-4,9,5);c.fillRect(hx+4,hy-7,3,4);c.fillRect(hx+5,hy-11,1,5);c.fillRect(hx+3,hy-11,1,5);c.fillStyle='#fff';c.fillRect(hx-6,hy-4,3,3);c.fillStyle='#2a1a10';c.fillRect(hx+5,hy-6,1,1);}
+  // Hunde von hinten nach vorn
+  for(const r of byLane){const k=laneK(r.lane),len=82*r.a.P.sz*k,x=sx(r.s)+(r.lane-3.5)*1.6-len*.42,y=laneY(r.lane);
+   if(x<-len||x>W+len){if(x<-len){c.fillStyle='#000a';c.fillRect(2,y-12,44,10);c.fillStyle=r.own?'#ffe08a':'#ece4d0';c.font='bold 8px "Courier Prime",monospace';c.textAlign='left';c.textBaseline='middle';c.fillText('◂ '+r.num+' · '+Math.round(maxS-r.s)+'m',4,y-7);}continue;}
+   // Fahrtwind hinter dem Hund
+   if(run&&r.v>6){const a=Math.min(.75,(r.v-6)/14);c.strokeStyle=`rgba(255,248,232,${a})`;c.lineWidth=1;for(let j=0;j<4;j++){const yy=y-len*(.22+.13*j),ph=(t*9+j*1.7+r.i)%1,l=24+r.v*3.2*(1-j*.15);c.beginPath();c.moveTo(x-len*.45-ph*6,yy);c.quadraticCurveTo(x-len*.45-l*.5,yy+Math.sin(t*20+j)*2,x-len*.45-l-ph*10,yy+1);c.stroke();}}
+   // Staub aus den Pfoten
+   if(run&&r.v>2&&Math.random()<Math.min(.9,r.v/14)*V.slow)r.dust.push({x:x-len*.25,y:y-1,vx:-(r.v*PXM*.06)-Math.random()*20,vy:-6-Math.random()*10,a:.6,s:1+Math.random()*2});
+   for(let j=r.dust.length-1;j>=0;j--){const p=r.dust[j];p.x+=(p.vx-spd*PXM*.02)*dt*V.slow;p.y+=p.vy*dt*V.slow;p.vy+=20*dt;p.a-=dt*1.4*V.slow;p.s+=dt*5;if(p.a<=0){r.dust.splice(j,1);continue;}c.fillStyle=`rgba(214,184,132,${p.a.toFixed(2)})`;c.fillRect(Math.round(p.x-p.s/2),Math.round(p.y-p.s/2),Math.ceil(p.s),Math.ceil(p.s*.7));}
+   const d=r.a;d.clock+=dt;
+   if(run&&r.v>8){const col=r.D.appearance.colors.base||'#a08060',a=Math.min(.32,(r.v-8)/22),hh=len*.42,L2=6+r.v*1.6;c.globalAlpha=a;c.fillStyle=col;for(let j=0;j<6;j++){const yy=Math.round(y-len*.18-hh*j/6),ll=L2*(.5+.5*Math.sin(j*1.7+t*30));c.fillRect(Math.round(x-len*.42-ll),yy,Math.round(ll),1);}c.globalAlpha=1;}
+   try{DOG.draw(c,d,Math.round(x),Math.round(y),k,1,{time:t,key:d.id});}catch(e){}
+   jacket(c,d,Math.round(x),Math.round(y),k,r.num,t);
+   {const bx=sx(0);if(bx>-120&&bx<W+60)boxFront(r.lane,bx,run?Math.min(1,V.tau*3.5):0);}
+   if(r.own){c.fillStyle='#ffe08a';c.beginPath();const ty=y-len*.95-6+Math.sin(t*6)*1.5;c.moveTo(x-4,ty);c.lineTo(x+4,ty);c.lineTo(x,ty+5);c.fill();}}
+  // Fahrtwind-Streifen über dem Bild
+  if(run&&spd>4){const a=Math.min(1,(spd-4)/12);for(const s of V.streaks){s.x-=(spd*PXM*1.4+s.len*4)*dt*V.slow;if(s.x+s.len<0){s.x=W+Math.random()*60;s.y=Math.random()<.75?118+Math.random()*(H-118):Math.random()*95;}c.fillStyle=`rgba(255,250,236,${(s.a*a).toFixed(2)})`;c.fillRect(Math.round(s.x),Math.round(s.y),Math.round(s.len*a),1);}}
+  // Vorderer Zaun, rasend schnell und verwischt
+  {const off=V.scroll*1.6,gap=PXM*2.5*1.6;c.fillStyle='#5a3a1c';c.fillRect(0,H-9,W,3);const blur=Math.min(26,spd*1.8*V.slow);for(let x=-((off%gap)+gap)%gap;x<W+gap;x+=gap){c.fillStyle='#6a4426';c.fillRect(Math.round(x),H-14,4,14);if(blur>3){c.fillStyle='rgba(106,68,38,.35)';c.fillRect(Math.round(x+4),H-14,Math.round(blur),14);}}}
+  // Rosenblätter nach dem Zieleinlauf
+  for(let j=V.petals.length-1;j>=0;j--){const p=V.petals[j];p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=dt*4;if(p.y>H){V.petals.splice(j,1);continue;}c.fillStyle=p.c;c.fillRect(Math.round(p.x),Math.round(p.y),Math.abs(Math.cos(p.r))*3+1,2);}
+  // Vignette, Zeitlupe, Blitz, große Schrift
+  const vg=c.createRadialGradient(W/2,H*.6,H*.35,W/2,H*.6,H*.95);vg.addColorStop(0,'#0000');vg.addColorStop(1,V.slow<.9?'#000a':'#0006');c.fillStyle=vg;c.fillRect(0,0,W,H);
+  if(V.slow<.9){c.fillStyle='#000';c.fillRect(0,0,W,12);c.fillRect(0,H-12,W,12);c.fillStyle='#ffe08a';c.font='bold 9px "Courier Prime",monospace';c.textAlign='right';c.fillText('ZEITLUPE',W-8,7);}
+  if(V.flash>0){c.fillStyle=`rgba(255,255,255,${V.flash.toFixed(2)})`;c.fillRect(0,0,W,H);V.flash=Math.max(0,V.flash-dt*1.8);}
+  if(V.text){const q=V.t-V.text.t;if(q>1.1)V.text=null;else{const sc=V.text.big*(1+Math.max(0,.25-q)*2.4),al=Math.min(1,(1.1-q)*3);c.globalAlpha=al;c.font=`bold ${Math.round(46*sc)}px "Courier Prime",monospace`;c.textAlign='center';c.textBaseline='middle';c.fillStyle='#000';c.fillText(V.text.txt,W/2+3,H*.4+3);c.fillStyle=V.text.col||'#fff3d6';c.fillText(V.text.txt,W/2,H*.4);c.globalAlpha=1;}}
+  c.restore();}
+ raf=requestAnimationFrame(step);
+ const ctl=e=>{const el=e.target.closest('[data-a]');if(!el||!A.layer.contains(el))return;const a=el.dataset.a;
+  if(a==='hrspeed'){V.speed=V.speed===1?2:V.speed===2?4:1;el.textContent='⏩ '+V.speed+'×';}
+  else if(a==='hrsound'){S().options.sound=S().options?.sound===false;el.textContent=S().options.sound===false?'🔇':'🔊';if(S().options.sound===false)SFX.crowdStop();else SFX.crowdStart();try{M.persist();}catch{}}
+  else if(a==='hrskip'){if(!V.end){V.end=true;cancelAnimationFrame(raf);SFX.crowdStop();o.done();}}};
+ A.layer.addEventListener('click',ctl);V.cleanup=()=>A.layer.removeEventListener('click',ctl);
+ return V;}
+
+// ---------- Aussichten (schnelle Probeläufe ohne Bild) ----------
+function odds(D,k){const key=D.id+'|'+k+'|'+S().day+'|'+Math.round(API.RW(D.stats))+'|'+healthOf(D);if(R.odds[key]!=null)return R.odds[key];const f=st().offers[k];let w=0;const n=60,opp=f.field.map(opponent);
+ for(let i=0;i<n;i++){const res=simulate([{D,health:healthOf(D)},...opp.map(x=>({D:x}))],f.dist,(i*7919+k*104729+1)>>>0);if(res.lanes[0].place===1)w++;}return R.odds[key]=w/n;}
+const oddsTxt=p=>p>=.45?['Favorit','fav']:p>=.25?['gute Chancen','good']:p>=.1?['Außenseiter','out']:['chancenlos','none'];
+
+// ---------- Bildschirm: Hundekämpfe oder Hunderennen ----------
+function dogkinds(){A.setTitle('BEAST · HUNDE');const n=dogs().length;
+ A.view.innerHTML=`<section class="an-hero"><p class="eyebrow">Was sollen deine Hunde tun?</p></section>
+ <div class="an-modes hr-kinds"><button class="an-mode beast" data-a="hrkind:fight"><canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>KÄMPFE</b><small>Zähne, Fell, kein Gewissen · gegen Hunde und Menschen</small></span></button>
+ <button class="an-mode hr-mode" data-a="hrkind:race"><canvas width="300" height="170" class="px"></canvas><span class="an-mlabel"><b>RENNEN</b><small>${ranToday()?'Heute schon gelaufen · morgen wieder':'8 Hunde · 1–5 Totenköpfe · ein Rennen am Tag'}</small></span></button></div>
+ <p class="an-note">Für Rennen zählen Schnelligkeit und Ausdauer, nicht Biss und Mut. Windhunde sind hier zu Hause.</p>`;
+ const [a,b]=A.view.querySelectorAll('.an-mode canvas'),D0=dogs()[0],fa=D0&&actor(D0,'threat');
+ A.anim(a,(ctx,t)=>{A.ART.arena(ctx,300,170,t,{night:1});if(fa)try{DOG.draw(ctx,fa,150,160,1.15,-1,{time:t,key:fa.id});}catch{}ctx.fillStyle='rgba(20,6,6,.3)';ctx.fillRect(0,0,300,170);});
+ const fast=[...dogs()].sort((x,y)=>API.RW(y.stats)-API.RW(x.stats)),pre=[0,1,2].map(i=>actor(fast[i]||DOG.create(['greyhound','saluki','whippet'][i],11+i),'race'));tiles();let sc=0,lt=0;
+ A.anim(b,(ctx,t)=>{const dt=lt?Math.min(.05,t-lt):0;lt=t;sc+=dt*600;ctx.imageSmoothingEnabled=false;tileX(ctx,TILES.stands[Math.floor(t*4)%3],sc*.18,-30,300);tileX(ctx,TILES.wall,sc*.9,54,300);tileX(ctx,TILES.sand,sc,68,300);
+  pre.forEach((d,i)=>{d.cyc+=dt*3.6+i*.002;const y=112+i*24,x=120+i*30+Math.sin(t*1.3+i)*14,k=.62+i*.08;
+   ctx.strokeStyle='rgba(255,248,232,.5)';for(let j=0;j<3;j++){const yy=y-28*k-j*5,ph=(t*9+j)%1;ctx.beginPath();ctx.moveTo(x-30*k-ph*6,yy);ctx.lineTo(x-30*k-36-ph*10,yy+1);ctx.stroke();}
+   try{DOG.draw(ctx,d,Math.round(x),y,k,1,{time:t,key:d.id});}catch{}jacket(ctx,d,Math.round(x),y,k,[1,6,8][i],t);});
+  for(let i=0;i<14;i++){const x=((i*53-sc*1.4)%300+300)%300;ctx.fillStyle='rgba(255,250,236,.35)';ctx.fillRect(x,70+((i*29)%100),24,1);}
+  ctx.fillStyle='#6a4426';const off=sc*1.6;for(let x=-((off%60)+60)%60;x<300;x+=60){ctx.fillRect(Math.round(x),158,4,12);ctx.fillStyle='rgba(106,68,38,.4)';ctx.fillRect(Math.round(x)+4,158,22,12);ctx.fillStyle='#6a4426';}
+  if(ranToday()){ctx.fillStyle='rgba(10,6,4,.5)';ctx.fillRect(0,0,300,170);}});}
+dogkinds.back=go=>go('beast',-1);
+
+// ---------- Bildschirm: Rennbahn ----------
+function race(){A.setTitle('BEAST · HUNDERENNEN');const s=st(),list=dogs();
+ if(!R.sel||!list.some(D=>D.id===R.sel))R.sel=[...list].filter(DOG.fit).sort((a,b)=>API.RW(b.stats)-API.RW(a.stats))[0]?.id||list[0]?.id;
+ const D=list.find(x=>x.id===R.sel),cls=D?classOf(D):1,done=ranToday();
+ A.view.innerHTML=`<section class="an-panel hr-pick"><header><p class="eyebrow">Dein Läufer</p><span class="hr-rec">Rennen ${s.races} · Siege ${s.wins}</span></header>
+  ${list.length?`<div class="hr-dogs">${list.map(x=>{const f=DOG.fit(x),c=classOf(x);return `<button class="hr-dog${x.id===R.sel?' on':''}${f?'':' unfit'}" data-a="hrdog:${x.id}"><span class="th" data-d="${x.id}"></span><b>${esc(x.name)}</b><small>${esc(x.breedName)}</small><span class="hr-cls">${sk(c)}</span><span class="hr-bars"><i title="Schnelligkeit"><em style="width:${Math.round(x.stats.tempo)}%"></em></i><i title="Ausdauer" class="aus"><em style="width:${Math.round(x.stats.ausdauer)}%"></em></i></span><span class="hr-rw">Rennwert ${Math.round(API.RW(x.stats))}${f?'':' · verletzt'}</span></button>`;}).join('')}</div>
+  <p class="an-hint">Klasse nach dem Rennwert (Schnelligkeit und Ausdauer). Ein Hund läuft in seiner Klasse oder höher, nie tiefer. Balken: Schnelligkeit (gelb), Ausdauer (grün).</p>`:'<p class="an-empty">Du hast keinen Hund. Der Hundsgraf hat Aufträge (Beastrium).</p>'}</section>
+ ${done?`<div class="hr-done"><b>Heute ist schon gelaufen worden.</b><span>Ein Rennen am Tag. Die Hunde brauchen ihre Ruhe – und der Buchmacher auch.</span><button data-a="hrday">Nächster Tag ▸</button></div>`:''}
+ <section class="an-chall"><header><p class="eyebrow">Heutige Rennen · ${D?esc(D.name)+' läuft in Klasse '+sk(cls)+' oder höher':'kein Hund gewählt'}</p></header>
+ <div class="hr-cards">${TIERS.map((T,k)=>{const f=s.offers[k],low=D&&k+1<cls,fit=D&&DOG.fit(D),ok=D&&!low&&!done&&fit,p=ok?odds(D,k):null,[ot,oc]=p!=null?oddsTxt(p):['',''];
+  return `<button class="hr-card t${T.skulls}${ok?'':' off'}${D&&k+1===cls?' mine':''}" data-a="${ok?'hrgo:'+k:low?'hrlow':done?'hrdone':!fit?'hrunfit':'hrnone'}"><div class="hr-ct"><span class="sk">${sk(T.skulls)}</span><b>${esc(T.name)}</b><span class="m">${T.dist} m</span></div>
+   <div class="hr-prize"><span><small>1.</small>${T.prize[0]}</span><span><small>2.</small>${T.prize[1]}</span><span><small>3.</small>${T.prize[2]}</span><i class="an-coin"></i></div>
+   <p class="hr-field">${f.field.map(e=>esc(DOG.BREEDS.find(b=>b.id===e.breed)?.name||e.breed)).join(' · ')}</p>
+   <p class="hr-odds ${oc}">${low?'Dein Hund ist zu schnell für diese Klasse':done?'Morgen wieder':!fit?'Dein Hund ist zu angeschlagen':D&&k+1===cls?'Deine Klasse · '+ot:ot}</p></button>`;}).join('')}</div></section>`;
+ A.view.querySelectorAll('.th[data-d]').forEach(el=>{const x=list.find(d=>d.id===el.dataset.d);if(x)el.appendChild(A.thumb({kind:'dog',D:x,key:'d:'+x.id},44,40));});}
+race.back=go=>go('dogkinds',-1);
+
+// ---------- Rennen starten: Ergebnis steht sofort fest und wird gespeichert, dann läuft der Film ----------
+function launch(k){const s=st(),D=dogs().find(x=>x.id===R.sel);if(!D||ranToday()||!DOG.fit(D)||k+1<classOf(D))return;const T=TIERS[k],f=s.offers[k],opp=f.field.map(opponent);
+ const lanes=[0,1,2,3,4,5,6,7].sort(()=>Math.random()-.5),hp=healthOf(D);
+ const runners=[{D,own:true},...opp.map(x=>({D:x,own:false}))].map((r,i)=>({...r,i,lane:lanes[i],num:lanes[i]+1}));
+ const sim=simulate(runners.map(r=>({D:r.D,health:r.own?hp:100})),f.dist,(Math.random()*4294967296)>>>0);
+ const place=sim.lanes[0].place,prize=T.prize[place-1]||0,before={tempo:D.stats.tempo,ausdauer:D.stats.ausdauer};
+ // Lernen: Schnelligkeit und Ausdauer rücken 4 % der Lücke zum Soll heran (Sieg 7 %)
+ const fr=place===1?.07:.04;for(const k2 of ['tempo','ausdauer']){const gap=(D.caps[k2]||0)-(D.stats[k2]||0);if(gap>0)D.stats[k2]=Math.round((D.stats[k2]+gap*fr)*10)/10;}
+ D.races=(D.races||0)+1;if(place===1)D.raceWins=(D.raceWins||0)+1;
+ s.usedDay=S().day;s.races++;if(place===1)s.wins++;s.gold=(s.gold||0)+prize;
+ if(prize){S().gold+=prize;if(S().stats)S().stats.earned=(S().stats.earned||0)+prize;}
+ const res={k,day:S().day,dog:D.id,name:D.name,breed:D.breedName,place,prize,dist:f.dist,
+  table:sim.order.map(i=>({name:runners[i].D.name,breed:runners[i].D.breedName,own:runners[i].own,num:runners[i].num,time:Math.round(sim.lanes[i].time*100)/100})),
+  gain:{tempo:[before.tempo,D.stats.tempo,D.caps.tempo],ausdauer:[before.ausdauer,D.stats.ausdauer,D.caps.ausdauer]}};
+ s.last=res;try{M.persist();}catch{}
+ const V=startRace({k,sim,runners,done:()=>{V?.cleanup?.();SFX.crowdStop();A.layer.innerHTML='';A.go('raceresult');A.root.scrollTop=0;}});}
+
+// ---------- Bildschirm: Ergebnis ----------
+function raceresult(){const r=st().last;if(!r){A.go('race',-1);return;}const T=TIERS[r.k],won=r.place===1;A.setTitle(won?'SIEG IM RENNEN':'RENNEN · PLATZ '+r.place);
+ const f1=v=>(Math.round(v*10)/10).toLocaleString('de-DE');
+ A.view.innerHTML=`<section class="an-res ${won?'won':'lost'} hr-res"><p class="eyebrow">${sk(T.skulls)} ${esc(T.name)} · ${r.dist} m</p><h1>${won?'SIEG!':r.place+'. PLATZ'}</h1>
+  <div class="an-pay"><small>${r.prize?'Preisgeld':'Kein Preisgeld'}</small><b data-count="${r.prize}">0</b><span>Gold</span></div>
+  <ol class="hr-table">${r.table.map((x,i)=>`<li class="${x.own?'own':''}"><span class="pl">${i+1}.</span><i class="num j${x.num}">${x.num}</i><b>${esc(x.name)}</b><small>${esc(x.breed)}</small><span class="tm">${f1(x.time)} s</span></li>`).join('')}</ol>
+  <div class="an-gains"><h3>Fortschritt durch das Rennen</h3><div class="an-gain"><b>${esc(r.name)}</b><ul>${[['Schnelligkeit','tempo'],['Ausdauer','ausdauer']].map(([l,k])=>{const [a,b,cap]=r.gain[k];return `<li><span>${l}</span><b>${f1(a)} → ${f1(b)}</b><small>SOLL ${Math.round(cap)}</small></li>`;}).join('')}</ul></div></div>
+  <p class="an-note">${won?'Die Menge wirft Rosen. Der Buchmacher wirft böse Blicke.':r.place<=3?'Auf dem Treppchen. Nächstes Mal vielleicht ganz oben.':'Nicht jeder Tag ist ein Renntag. Morgen gibt es ein neues Feld.'}</p>
+  <div class="an-actions"><button data-a="hrday">Nächster Tag ▸</button><button class="primary" data-a="hrback">Zur Rennbahn</button></div>${C.close?'<div class="an-actions"><button data-a="leave">◂ Arena verlassen</button></div>':''}</section>`;
+ const n=A.view.querySelector('[data-count]'),goal=+n.dataset.count,t0=performance.now();(function tick(){const q=Math.min(1,(performance.now()-t0)/900);n.textContent=Math.round(goal*q*(2-q));if(q<1)requestAnimationFrame(tick);})();
+ A.setTitle(won?'SIEG IM RENNEN':'RENNEN · PLATZ '+r.place);}
+raceresult.back=go=>go('race',-1);
+
+U.screens.dogkinds=dogkinds;U.screens.race=race;U.screens.raceresult=raceresult;
+A.root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el||A.layer.contains(el))return;const [a,v]=el.dataset.a.split(/:(.*)/s);
+ if(a==='hrkind'){if(v==='race'){A.go('race');}else{U.mode='beast';U.species='hund';U.size=1;U.picked=[];U.chall=null;A.go('hub');}}
+ else if(a==='hrdog'){R.sel=v;A.render();}
+ else if(a==='hrgo')launch(+v);
+ else if(a==='hrlow')M.ui?.notify?.('Zu schnell für diese Klasse – such dir Gegner auf Augenhöhe.');
+ else if(a==='hrdone')M.ui?.notify?.('Heute ist schon gelaufen worden. Morgen wieder.');
+ else if(a==='hrunfit')M.ui?.notify?.('Dein Hund ist zu angeschlagen. Ein paar Tage Ruhe helfen.');
+ else if(a==='hrday'){const d=S().day;C.nextDay(1);let n=0;const show=()=>{A.go('race',-1);A.root.scrollTop=0;};show();(function wait(){if(S().day!==d)show();else if(n++<60)setTimeout(wait,50);})();}// Tageswechsel kann verzögert ablaufen
+ else if(a==='hrback'){A.go('race',-1);A.root.scrollTop=0;}},true);
+G.HUNDERENNEN_READY=true;
+})();

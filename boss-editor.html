@@ -84,6 +84,6 @@ dl.facts dt{color:var(--muted)}dl.facts dd{margin:0;color:var(--cream)}
 <script>
 // Spielmodule in Reihenfolge laden (Figuren, Großaufnahmen, Anführer, Trophäen), dann den Editor
 (async()=>{const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','face-shots','outside-core','relics','relic-masks','outside-notorious','bosses-1','bosses-2','bosses-3','bosses-4','bosses-5','boss-editor'];
- for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v=2c75f7fc';s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
+ for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v=b97e0dc9';s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
 </script>
 </body></html>

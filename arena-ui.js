@@ -284,12 +284,12 @@ function result(){const R=U.result;if(!R){go('home');return;}setTitle(R.won?'SIE
 // ---------- Eingaben ----------
 root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const [a,v]=el.dataset.a.split(/:(.*)/s);
  switch(a){
-  case 'back':if(layer.innerHTML){stopSpy();layer.innerHTML='';U.pres=null;return;}if(U.screen==='home'){C.close?.();break;}if(U.screen==='hub')go(U.mode==='beast'?'beast':C.boxMenu?'kinds':'home',-1);else if(U.screens[U.screen]?.back){U.screens[U.screen].back(go);}else go(U.screen==='kinds'||!U.screens[U.screen]?'home':'kinds',-1);break;
+  case 'back':if(layer.innerHTML){stopSpy();layer.innerHTML='';U.pres=null;return;}if(U.screen==='home'){C.close?.();break;}if(U.screen==='hub')go(U.mode==='beast'?(U.species==='hund'&&U.screens.dogkinds?'dogkinds':'beast'):C.boxMenu?'kinds':'home',-1);else if(U.screens[U.screen]?.back){U.screens[U.screen].back(go);}else go(U.screen==='kinds'||!U.screens[U.screen]?'home':'kinds',-1);break;
   case 'mode':U.mode=v;if(v==='human'){U.species=null;U.size=3;U.picked=[];U.chall=null;if(C.boxMenu)go('kinds');else go('hub');}else go('beast');break;
   case 'kind':if(v==='box'){U.mode='human';go('box');}else{U.mode='human';U.species=null;U.size=3;U.picked=[];U.chall=null;go('hub');}break;
   case 'kindlock':M.ui?.notify?.(C.boxMenu?.()?.msg||'Boxkämpfe sind noch gesperrt.');break;
   case 'classic':C.classic?.();break;
-  case 'species':if(!(v==='loewe'?C.lions:v==='hund'?(C.dogs||[]):C.roosters).some(x=>!x.dead)){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(v==='loewe'?'Du besitzt noch keinen Löwen. Der Tierhändler kommt später.':v==='hund'?'Du besitzt noch keinen Hund. Der Hundsgraf hat Aufträge (Beastrium).':'Du besitzt noch keine Hähne. Der Tierhändler kommt später.');break;}U.mode='beast';U.species=v;U.size=v==='loewe'||v==='hund'?1:3;U.picked=[];U.chall=null;go('hub');break;
+  case 'species':if(!(v==='loewe'?C.lions:v==='hund'?(C.dogs||[]):C.roosters).some(x=>!x.dead)){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(v==='loewe'?'Du besitzt noch keinen Löwen. Der Tierhändler kommt später.':v==='hund'?'Du besitzt noch keinen Hund. Der Hundsgraf hat Aufträge (Beastrium).':'Du besitzt noch keine Hähne. Der Tierhändler kommt später.');break;}U.mode='beast';U.species=v;U.size=v==='loewe'||v==='hund'?1:3;U.picked=[];U.chall=null;go(v==='hund'&&U.screens.dogkinds?'dogkinds':'hub');break;// Hunde: erst Kämpfe oder Rennen (hunderennen.js)
   case 'locked':el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');break;
   case 'lockedmsg':el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');M.ui?.notify?.(lockMsg(v));break;
   case 'auto':{const cur=team().map(u=>u.key);U.auto=v==='1';if(!U.auto&&!U.picked.length)U.picked=cur;render();break;}

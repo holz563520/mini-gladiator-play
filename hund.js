@@ -547,7 +547,7 @@ const PART_MAX={kopf:105,hals:95,brust:150,bauch:110,vl:70,hl:70};
 // GEPLANT, NOCH NICHT VERWENDET – Hundefang-Abenteuer (siehe README „Geplant: Hundefang“). Nur hinterlegt, keine Spielwirkung.
 // Sichtung mit dem Fernglas in der Waldmission: Wahrscheinlichkeit je Rasse in Prozent (Summe 100). Vorschlag, Zahlen legt Thomas fest:
 // am schwächsten Hund am höchsten, dann deutlich absteigend, Wolf nur 1 %.
-DOG.SIGHTING={bluthund:25,hirtenhund:20,metzgerhund:16,saupacker:12,wolfshund:0.92,mastiff:7,baerenbeisser:5,alaunt:3,molosser:2,wolf:1};
+DOG.SIGHTING={bluthund:25,hirtenhund:20,metzgerhund:16,saupacker:12,wolfshund:9,mastiff:7,baerenbeisser:5,alaunt:3,molosser:2,wolf:1};
 DOG.sightBreed=(r=Math.random())=>{let a=0;for(const [id,p] of Object.entries(DOG.SIGHTING)){a+=p/100;if(r<a)return id;}return 'bluthund';};
 DOG.BREEDS=BREEDS;DOG.STATS=STATS;DOG.KAMPF=KAMPF;DOG.kampfOf=kampfOf;DOG.BAL=BAL;DOG.PARTS=PARTS;DOG.POW={dmg:2.88,res:5.4,exp:1.3,resExp:1.3,off:.15,ref:42};// eingemessen: Rasse gegen Menschen ihrer Zielstufe ≈ 50 % (Wolf gegen Legende Stufe 6); ref = Bezugs-Istwert (Kampfmittel)
 const breed=id=>BREEDS.find(b=>b.id===id)||BREEDS.find(b=>b.id==='mastiff');
@@ -643,7 +643,9 @@ const baseReceive=M.rexReceive;M.rexReceive=function(a,d){if(d?.dog)return recei
 // ---------------------------------------------------------------- Bewegung
 const BX=[140,900],BY=[188,598];// Laufbereich des Hundes: Arena minus Körperlänge, damit Kopf und Rute nicht an den Rand stoßen
 // Gangarten: Fußfolge [VL nah, HL nah, VL fern, HL fern], Standphase, Schrittlänge, Fußhub (Einheiten vor Größe)
-const GAITS=[null,{name:'Schritt',off:[.25,0,.75,.5],duty:.62,stride:9,lift:2.6},{name:'Trab',off:[.5,0,0,.5],duty:.5,stride:13,lift:3.6},{name:'Galopp',off:[.55,0,.45,.1],duty:.36,stride:21,lift:5.5}];
+const GAITS=[null,{name:'Schritt',off:[.25,0,.75,.5],duty:.62,stride:9,lift:2.6},{name:'Trab',off:[.5,0,0,.5],duty:.5,stride:13,lift:3.6},{name:'Galopp',off:[.55,0,.45,.1],duty:.36,stride:21,lift:5.5},
+ // Renngalopp (nur Modus 'race', Hunderennen): doppelte Schwebephase wie beim Windhund – kurze Bodenkontakte, weit gestreckte Läufe
+ {name:'Renngalopp',off:[.58,0,.5,.07],duty:.24,stride:30,lift:7.5}];
 const gaitOf=sp=>sp<6?0:sp<100?1:sp<185?2:3;
 const cycLen=g=>GAITS[g]?GAITS[g].stride/GAITS[g].duty:1;
 DOG.gaitOf=gaitOf;DOG.cycLen=cycLen;
@@ -887,6 +889,7 @@ function mood(d,t){const m=d.mode,dead=d.g?.dead;const o={head:0,headX:0,headY:0
  if(m==='threat'){o.head=.2;o.headY=3;o.hackle=1;o.jaw=.18;o.lips=1;o.tail=.6;}
  else if(m==='stalk'){o.head=.28;o.headY=4;o.hackle=.9;o.lips=.7;o.tail=.35;}
  else if(m==='circle'||m==='approach'){o.hackle=.7;o.head=.1;o.headY=1.5;o.tail=.45;o.lips=.6;}
+ else if(m==='race'){o.head=-.12;o.headX=3;o.headY=1.5;o.ears=1;o.tail=-.05;o.jaw=.42;o.lips=0;o.tongue=.75;o.pant=1;o.drool=.4;}
  else if(m==='charge'){o.head=.05;o.headX=2;o.headY=1;o.ears=.8;o.tail=.2;o.hackle=.4;o.jaw=.35;o.lips=.6;o.tongue=.3;}
  else if(m==='snap'||m==='leg'||m==='throat'){const p=cl(d.clock/.18,0,1),back=d.clock>.22?cl((d.clock-.22)/.15,0,1):0;o.headX=6*p*(1-back);o.headY=(m==='leg'?10:m==='throat'?7:1)*p*(1-back);o.head=(m==='leg'?.55:m==='throat'?.4:-.05)*p;o.jaw=p<.85?.95:.05;o.lips=1;o.hackle=.8;o.ears=.3;}
  else if(m==='leap'){o.jaw=.95;o.lips=1;o.headX=3;o.hackle=1;o.tail=.1;o.ears=.7;}
@@ -931,11 +934,12 @@ function mood(d,t){const m=d.mode,dead=d.g?.dead;const o={head:0,headX:0,headY:0
 DOG.mood=mood;
 // Skelett berechnen. target: Bisspunkt in lokalen Einheiten (Verbeißen)
 function rig(d,t,target=null){const o=mood(d,t),dead=!!d.g?.dead,m=d.mode,SH=shapeOf(d),MO=SH.mouth;
- const rest=m==='rest'||m==='gnaw',sleep=m==='sleep',sit=m==='sit'||m==='scratch',lie=dead||d.down||m==='submit'||d.submit||sleep,low=lie||rest,sp=d.moveSpeed||0,gi=low||sit||m==='leap'||m==='rear'||m==='bars'||m==='grip'||m==='drink'?0:gaitOf(sp),G=GAITS[gi],c=d.cyc||0,ph=c*TAU;
+ const rest=m==='rest'||m==='gnaw',sleep=m==='sleep',sit=m==='sit'||m==='scratch',lie=dead||d.down||m==='submit'||d.submit||sleep,low=lie||rest,sp=d.moveSpeed||0,gi=m==='race'?4:low||sit||m==='leap'||m==='rear'||m==='bars'||m==='grip'||m==='drink'?0:gaitOf(sp),G=GAITS[gi],c=d.cyc||0,ph=c*TAU;
  const breathe=dead?0:Math.sin(t*(o.pant?15:sleep?1.6:3))*(o.pant?.8:sleep?.7:.4);
  let p=0,L=SH.L,LG=SH.leg,hipX=-17+(31-SH.L)*.5,hipY=-27-(LG-1)*21+breathe*.3,bend=0,shake=d.shaking>0?Math.sin(t*44)*(d.shaking/.32):0;
  let nod=0;
- if(gi===3){L+=2.6*Math.cos(ph);p=.08*Math.sin(ph);hipY-=1.8*Math.abs(Math.sin(ph));bend=-2.4*Math.cos(ph);nod=2.4*Math.sin(ph+.6);}
+ if(gi===4){const e=d.raceStretch??1;L+=4.6*e*Math.cos(ph);p=.06*Math.sin(ph)-.03;hipY-=(3.2*Math.abs(Math.sin(ph))+1.2)*e;bend=-3.6*e*Math.cos(ph);nod=1.4*Math.sin(ph+.6);}
+ else if(gi===3){L+=2.6*Math.cos(ph);p=.08*Math.sin(ph);hipY-=1.8*Math.abs(Math.sin(ph));bend=-2.4*Math.cos(ph);nod=2.4*Math.sin(ph+.6);}
  else if(gi>0){hipY+=Math.sin(ph*2)*.7*(gi===2?1.5:1);p+=.035*Math.sin(ph*2+1.2)*(gi===2?1.3:1);nod=(gi===2?1.2:1.6)*Math.sin(ph*2+.9);}
  // Gewicht verlagern im Stand
  if(!gi&&!low&&!sit&&!['leap','rear','bars','grip'].includes(m)){p+=.012*Math.sin(t*.9+(d.dog?.seed||0));hipY+=.4*Math.sin(t*.7);}
