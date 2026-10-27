@@ -12,6 +12,7 @@ function getWorker(){if(!workerOk)return null;if(worker)return worker;try{worker
 function renderAsync(text,voice){return new Promise(res=>{const W=getWorker(),id=++seq;if(W){wait.set(id,res);W.postMessage({id,text,voice});setTimeout(()=>{if(wait.has(id)){wait.delete(id);res(local());}},2500);}else res(local());
  function local(){try{const R=window.Sprech.render(text,voice);return {data:R.data,dur:R.dur,mouth:R.mouth};}catch(e){return {error:String(e)};}}});}
 // Welche Stimme? Bekannte Figuren haben eigene, alle anderen eine allgemeine, die zu Stimmlage (Erfahrung), Größe und Geschlecht passt.
+const SPEECH_TEMPO=.8;
 const smithNameNow=()=>String(M.workshop?.state?.master?.name||M.s?.forgeWorkshop?.master?.name||'').toLowerCase();
 function voiceKey(who,g,name){const n=String(name||g?.name||'').toLowerCase(),w=String(who||'').toLowerCase(),sm=smithNameNow();
  if(sm&&n&&(n===sm||n.includes(sm)))return 'schmied';
@@ -24,7 +25,7 @@ function voiceKey(who,g,name){const n=String(name||g?.name||'').toLowerCase(),w=
  if(['cap','erzaehler','narrator'].includes(w))return 'erzaehler';
  if(w==='n'||g?.sex==='female'||/schwester|händlerin|frau\b/.test(n))return 'frau';
  return 'rekrut';}
-function voiceFor(key,g,o={}){const S=window.Sprech;let v={...S.get(key)};delete v.look;if(key==='rabies')v.echo=0;/* Thomas: kein Echo bei Rabies */if(o.speedUp)v.speed=(v.speed||1)*o.speedUp;
+function voiceFor(key,g,o={}){const S=window.Sprech;let v={...S.get(key)};delete v.look;if(key==='rabies')v.echo=0;/* Thomas: kein Echo bei Rabies */if(o.speedUp)v.speed=(v.speed||1)*o.speedUp;/* Bericht 27.10.: zu schnell, kaum zu verstehen – alle Stimmen im Spiel etwas langsamer */v.speed=(v.speed||1)*SPEECH_TEMPO;
  if(key==='rekrut'&&g){const tier=M.voicePitch?.(g)??1;v.pitch=Math.round(118*tier);v.size=Math.max(.88,Math.min(1.16,(g.height||180)/180));v.rough=Math.min(.6,.1+((g.scars||[]).length>0?.15:0)+(tier<.9?.12:0));}
  if(key==='frau'&&g){v.size=Math.max(.8,Math.min(.95,(g.height||168)/185));}
  return v;}

@@ -636,12 +636,20 @@ const tick=M.ludusTick;M.ludusTick=dt=>{if(film){stepFilm(Math.min(dt,.05));retu
 // Im Spiel: Start, sobald das Löwen-Kapitel in dieser Sitzung endet. Spielstände, in denen es schon früher vorbei war, überspringen das Kapitel.
 // Nach Neuladen setzt die laufende Szene von vorn an; bereits gefallene Treffer bleiben bestehen (fire() löst jedes Ereignis nur einmal aus).
 // Bestehende Spielstände werden nie vom Kapitel überrascht: Es startet und setzt sich nach einem Neuladen nicht von selbst fort. Nur wer das Löwen-Kapitel in DIESER Sitzung beendet, bekommt es, und zwar einmal. Offene Reste und Vormerkungen aus früheren Sitzungen gelten als gesehen (das Szenenmenü bleibt).
-if(!TEST){const m=st();if(m.stage&&!['done','skip','free'].includes(m.stage)){m.stage='skip';m.armed=false;}else if(!m.stage&&(m.armed||['done','skip'].includes(S.lion?.stage))){m.stage='skip';m.armed=false;}}
+// Ausnahme (Bericht 27.10.): Ein Kapitel, das in diesem Spielstand regulär nach dem Löwen-Kapitel begonnen hat (m.live), läuft nach
+// einem Neuladen weiter – z. B. nach „Neue Version – antippen zum Laden“ mitten im Tutorial. Früher wurde es dabei übersprungen und
+// mit ihm die ganze Kette (Doktor, Lektion des Lanisters, Hühnerschule mit Beastrium).
+// Reparatur für Spielstände, die genau dadurch hängen geblieben sind (Medicus „skip“ direkt nach dem Löwen, danach nichts begonnen):
+// Medicus gilt als erledigt, Doktor und Lektion kommen von selbst (S.storyRepair, nur einmal).
+if(!TEST){const m=st();
+ if(!S.storyRepair&&m.stage==='skip'&&!m.live&&S.lion?.stage==='done'&&!['done'].includes(S.doktor?.stage)&&!S.lesson?.stage&&!S.huehner?.stage&&!S.box?.tutDone){S.storyRepair=1;m.stage='done';m.armed=false;S.doktor={...(S.doktor||{}),stage:'',armed:true,live:true};S.lesson={stage:'ready',live:true};}
+ else if(m.live){if(!m.stage&&!m.armed)m.armed=true;}
+ else if(m.stage&&!['done','skip','free'].includes(m.stage)){m.stage='skip';m.armed=false;}else if(!m.stage&&(m.armed||['done','skip'].includes(S.lion?.stage))){m.stage='skip';m.armed=false;}}
 let wait=0,lastLion=S.lion?.stage;
 const busy=()=>!!S.battle||!!film||!!M.lionChapter?.film||!!M.lionChapter?.guide||!!M.smithWrath?.scene||!!M.archerPlot?.scene||!!M.hall?.film||!!M.intro?.active?.()||!!window.ArenaTheoryIntro?.active?.()||!!M.trader?.tutorial||!!document.querySelector('.smith-ceremony,#introView,#brandIntro,.medic-night,.medic-end')||($('modal')&&!$('modal').hidden);
 function resume(){const s=st().stage;({s1:scene1,day:stepDay,night:scene1b,s1b:scene1b,buy:()=>stepBuy(),s2:scene2,s3:scene3,s4:scene4,s5:scene5,s6:scene6,s7:scene7,s8:scene8,s9:scene9,s10:scene10,s11:scene11,medic:()=>stepMedic(),s12:scene12,end:()=>finale()})[s]?.();}
 function autoStart(dt){if(document.hidden||M.benchmarkActive)return;const s=st(),lion=S.lion?.stage;
- if(!s.stage){if(!['done','skip'].includes(lastLion)&&lion==='done'){s.armed=true;M.persist?.();}lastLion=lion;if(!s.armed)return;if(M.ui.getPage()!=='home'||busy()){wait=0;return;}wait+=dt;if(wait>1.5){wait=0;scene1();}return;}
+ if(!s.stage){if(!['done','skip'].includes(lastLion)&&lion==='done'){s.armed=true;s.live=true;M.persist?.();}lastLion=lion;if(!s.armed)return;if(M.ui.getPage()!=='home'||busy()){wait=0;return;}wait+=dt;if(wait>1.5){wait=0;scene1();}return;}
  if(['done','skip','free'].includes(s.stage)||guide||film)return;if(busy()){wait=0;return;}if(M.ui.getPage()!=='home'&&!['buy','medic'].includes(s.stage))return;wait+=dt;if(wait>1.2){wait=0;resume();}}
 const click=M.schoolClick;M.schoolClick=a=>{const stage=st().stage,[p,b,c]=a.split(':');
  if(stage==='day'){if(p==='rest'){setStage('night');hideGuide();nightfall(()=>scene1b());return true;}if((p==='nav'&&b!=='home')||p==='detail'||a==='ludus:owner'){M.ui.notify('Erst einen Tag verstreichen lassen: „NÄCHSTER TAG ▸“.');return true;}}

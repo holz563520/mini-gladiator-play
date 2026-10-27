@@ -675,12 +675,25 @@ const ORDER=Object.keys(DEF);
 let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch{saved={};}
 const copy=o=>JSON.parse(JSON.stringify(o));
 function get(k){return saved[k]||DEF[k];}
-function set(k,p){saved[k]=copy(p);try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}}
-function reset(k){if(k)delete saved[k];else saved={};try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}}
+function set(k,p){saved[k]=copy(p);try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}try{wk?.postMessage({init:saved});}catch{}}
+function reset(k){if(k)delete saved[k];else saved={};try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}try{wk?.postMessage({init:saved});}catch{}}
 // ---------- Abspielen (für Spiel und Editor): je Geräusch drei Varianten im Zwischenspeicher ----------
 const cache=new Map();
-function buffer(ctx,k,opt={}){const p=get(k);if(!p)return null;const pitch=Math.round((opt.pitch||1)*10)/10,id=k+'|'+pitch+'|'+(saved[k]?JSON.stringify(saved[k]).length:0);let list=cache.get(id);if(!list){list=[];cache.set(id,list);}
- if(list.length<(opt.max||3)){const data=render(p,{pitch});const b=ctx.createBuffer(1,data.length,SR);b.copyToChannel?b.copyToChannel(data,0):b.getChannelData(0).set(data);list.push(b);return b;}return list[Math.floor(Math.random()*list.length)];}
+// Aufwendige Geräusche (Publikum, Stimmen) rechnet ein Hintergrund-Worker (kampfsound-worker.js), damit das Spiel auf
+// langsamen Handys nicht sekundenlang stehen bleibt (Bericht 27.10.). Fehlt ein solcher Puffer noch, bleibt das Geräusch
+// dieses eine Mal stumm statt das Bild anzuhalten; leichte Geräusche (Treffer, Klingen) werden wie bisher sofort gerechnet.
+let wk=null,wkOk=typeof Worker==='function'&&typeof document!=='undefined',wseq=0;const wwait=new Map(),inflight=new Map();
+function worker(){if(!wkOk)return null;if(wk)return wk;try{wk=new Worker('kampfsound-worker.js?v='+(window.ARENA_BUILD||''));wk.onmessage=e=>{const w=wwait.get(e.data?.id);if(w){wwait.delete(e.data.id);w(e.data);}};wk.onerror=()=>{wkOk=false;wk=null;for(const [,w] of wwait)w({error:'worker'});wwait.clear();};wk.postMessage({init:saved});}catch{wkOk=false;wk=null;}return wk;}
+const costly=p=>(p.layers||[]).some(L=>!L.mute&&L.dur>0&&(L.type==='crowd'||L.type==='voice'));
+const idOf=(k,pitch)=>k+'|'+pitch+'|'+(saved[k]?JSON.stringify(saved[k]).length:0);
+// Rechnet eine weitere Fassung im Hintergrund. Liefert ein Versprechen (true = neuer Puffer liegt bereit) oder null ohne Worker.
+function prefill(ctx,k,opt={}){const p=get(k);if(!p)return Promise.resolve(false);const pitch=Math.round((opt.pitch||1)*10)/10,id=idOf(k,pitch);let list=cache.get(id);if(!list){list=[];cache.set(id,list);}
+ if(list.length>=(opt.max||3))return Promise.resolve(false);if(inflight.has(id))return inflight.get(id);const W=worker();if(!W)return null;
+ const job=new Promise(res=>{const n=++wseq;wwait.set(n,res);W.postMessage({id:n,k,pitch});}).then(R=>{inflight.delete(id);if(R.error||!R.data)return false;try{const b=ctx.createBuffer(1,R.data.length,SR);b.copyToChannel?b.copyToChannel(R.data,0):b.getChannelData(0).set(R.data);if(list.length<(opt.max||3))list.push(b);return true;}catch{return false;}});
+ inflight.set(id,job);return job;}
+function buffer(ctx,k,opt={}){const p=get(k);if(!p)return null;const pitch=Math.round((opt.pitch||1)*10)/10,id=idOf(k,pitch);let list=cache.get(id);if(!list){list=[];cache.set(id,list);}
+ if(list.length<(opt.max||3)){if(costly(p)&&!opt.sync&&prefill(ctx,k,opt))return list.length?list[Math.floor(Math.random()*list.length)]:null;
+  const data=render(p,{pitch});const b=ctx.createBuffer(1,data.length,SR);b.copyToChannel?b.copyToChannel(data,0):b.getChannelData(0).set(data);list.push(b);return b;}return list[Math.floor(Math.random()*list.length)];}
 function play(ctx,dest,k,opt={}){const b=buffer(ctx,k,opt);if(!b)return null;const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;g.gain.value=opt.vol??1;s.connect(g);g.connect(dest);s.start(Math.max(ctx.currentTime,opt.at||0));s.onended=()=>{s.disconnect();g.disconnect();};return s;}
-window.KampfSound={SR,KEY,CATS,DEF,ORDER,VOW,PART,render,get,set,reset,changed:k=>!!saved[k],saved:()=>copy(saved),load(o){saved=copy(o||{});try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}cache.clear();},clear:()=>cache.clear(),buffer,play,make:{T,N,V,Mt,C,K}};
+window.KampfSound={SR,KEY,CATS,DEF,ORDER,VOW,PART,render,get,set,reset,changed:k=>!!saved[k],saved:()=>copy(saved),load(o){saved=copy(o||{});try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}cache.clear();try{wk?.postMessage({init:saved});}catch{}},clear:()=>cache.clear(),buffer,prefill,play,make:{T,N,V,Mt,C,K}};
 })();

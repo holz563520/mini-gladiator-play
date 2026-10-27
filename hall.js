@@ -216,7 +216,7 @@ function playGate(){play('map',[
 ],{label:'Das Tor der Gefallenen',smith:{x:194,y:254},lan:{x:278,y:238},cam:{x:168,y:236},done:()=>{setStage('open1');waitForGate();}});}
 // 4. Die leere Heldenhalle
 function playEmpty(){play('hall',[
- {to:[240,214],speed:34},
+ {to:[240,214],speed:52},
  {face:Math.PI,dur:1},{face:0,dur:1},{gesture:'shout',pose:'shake',dur:1.3},
  {say:'Hm.',gesture:'shout'},{dur:.9},
  {say:'Scheiße.'},
@@ -224,7 +224,7 @@ function playEmpty(){play('hall',[
  {say:'Kein einziger Toter. Wie soll ich dir denn jetzt erklären, wie der Laden funktioniert?',face:Math.PI},
  {pose:'inspect',dur:1.5},
  {say:'Ach, das kriegen wir hin.'},
- {to:[240,236],speed:30},
+ {to:[240,236],speed:44},
  {say:'Komm mit, Chef. Wir brauchen einen Freiwilligen.',face:0}
 ],{label:'Die leere Halle',smith:{x:240,y:330},cam:{x:240,y:140},list:[],done:()=>{setStage('exec');playExec();}});}
 // 5./6. Der erste Rekrut und die Totenverwaltung (Durchteilung aus der Herumtreiber-Szene)
@@ -239,7 +239,7 @@ function finishExec(g){const h=H();if(h.tut!=='exec')return;h.tag[g.id]={title:'
 // 7. Zurück in die Halle: ein schiefer Stein, darüber der Geist
 const firstEntry=()=>(S.fallen||[]).map(view).find(e=>String(e.id)===String(H().firstId))||(S.fallen||[]).map(view).find(e=>e.tutorial)||null;
 function playVisit(){const e=firstEntry();if(!e){finishTutorial();return;}play('hall',[
- {to:[166,224],speed:40},
+ {to:[166,224],speed:54},
  {say:'Na bitte! Sieht doch gleich viel besser aus!',face:Math.PI},
  {say:'Unser erster Held. Ein kurzer, aber bemerkenswert erfolgloser Lebenslauf.',face:Math.PI,pose:'inspect'},
  {say:'Schauen wir uns den armen Bastard mal genauer an.',face:Math.PI,gesture:'point'}
@@ -254,7 +254,7 @@ function guide(e){const steps=[['name','Hier steht sein Name. Falls du ihn verge
  box.addEventListener('click',()=>{if(performance.now()-box._at>350)show();});show();}
 // 14. Abschluss vor dem Grab
 function playFinale(){const e=firstEntry();play('hall',[
- {to:[166,226],speed:40},
+ {to:[166,226],speed:54},
  {say:'Merk dir eines, Chef.',face:0},
  {say:'Deine Männer werden kämpfen. Manche werden siegen. Manche werden zu verdammten Legenden.',face:0,gesture:'point'},
  {pose:'sip',dur:1.4},
@@ -273,8 +273,8 @@ function waitForGate(){if(M.ui.getPage()!=='home')M.ui.click('nav:home');setTime
 let hint=null;function showHint(text){if(!hint){hint=document.createElement('div');hint.id='hallHint';hint.className='hall-hint';hint.setAttribute('role','status');document.body.appendChild(hint);}if(hint.textContent!==text)hint.textContent=text;hint.hidden=false;}
 function hideHint(){if(hint)hint.hidden=true;}
 // Takt: startet, setzt fort, zeigt Hinweise
-let settle=0,clock=0;
-const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(traderWait>0&&!film&&M.ui.getPage()==='home'&&!document.hidden)traderWait=Math.max(0,traderWait-dt);if(film){hideHint();if(document.hidden)return;clock+=dt;if(clock>=1/30){stepFilm(Math.min(clock,.1));clock=0;}return;}
+let settle=0,clock=0,wallT=0;
+const tick=M.ludusTick;M.ludusTick=dt=>{tick?.(dt);if(traderWait>0&&!film&&M.ui.getPage()==='home'&&!document.hidden)traderWait=Math.max(0,traderWait-dt);if(film){hideHint();if(document.hidden){wallT=0;return;}/* Echte Uhrzeit statt gedrosseltem Bildtakt: auf langsamen Handys lief der Schmied sonst in Zeitlupe (Bericht 27.10.) */const now=performance.now(),real=wallT?Math.min(.25,(now-wallT)/1000):dt;wallT=now;clock+=real;if(clock>=1/30){stepFilm(Math.min(clock,.25));clock=0;}return;}wallT=0;
  const h=H(),st=h.tut,home=M.ui.getPage()==='home';
  if((st==='open1'||st==='open2')&&home&&!busy())showHint(st==='open1'?'Klicke auf das Tor der HALL OF THE FALLEN.':'Besuche die HALL OF THE FALLEN.');else hideHint();
  if(st==='done'||M.benchmarkActive||!S.lanista)return;

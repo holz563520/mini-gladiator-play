@@ -420,7 +420,7 @@ const click=M.schoolClick;M.schoolClick=a=>{if(a==='lion:fight'){hideGuide();sce
 function begin(){const h=L();if(h.stage)return;const rs=S.roster.filter(g=>!g.dead).slice(0,5);h.recruits=rs.map(g=>g.id);setStage('smith1');scene1();}
 function resume(){const st=L().stage;if(!st||st==='done'||film||guide)return;({smith1:scene1,buy:()=>{M.ui.click('nav:forge');stepBuy();},barracks:()=>{M.ui.click('nav:gladiators');stepBarracks();},arenawalk:scene3,arenainfo:()=>{M.ui.click('nav:arena');stepArena();},challenge:()=>{M.ui.click('nav:arena');stepArena();},speech:scene5,demo:scene6,helmet:scene7,heroes:scene8,team:()=>{M.ui.click('nav:team');stepTeam();},spy:()=>{M.ui.click('nav:arena');stepSpy();},entrance:scene11,fight:()=>{if(!S.battle)scene11();},aftermath:playAftermath})[st]?.();}
 // Start: direkt nach der Händler-Einführung (in dieser Sitzung abgeschlossen). Spielstände, in denen der Händler schon früher fertig war, überspringen das Kapitel.
-{const T0=M.trader?.state;if(T0?.intro==='done'&&!L().stage)L().stage='skip';}
+{const T0=M.trader?.state;if(T0?.intro==='done'&&!L().stage&&!L().armed)L().stage='skip';}/* armed: in diesem Spielstand schon vorgemerkt – nach Neuladen trotzdem starten (Bericht 27.10.) */
 let wait=0,lastIntro=M.trader?.state?.intro;
 const busy=()=>!!S.battle||!!film||!!M.smithWrath?.scene||!!M.archerPlot?.scene||!!M.hall?.film||!!M.intro?.active?.()||!!window.ArenaTheoryIntro?.active?.()||!!M.trader?.tutorial||!!document.querySelector('.smith-ceremony,#introView,#brandIntro')||($('modal')&&!$('modal').hidden);
 const auto=M.ludusTick;M.ludusTick=dt=>{auto?.(dt);if(document.hidden||M.benchmarkActive)return;const st=L().stage,T=M.trader?.state,home=M.ui.getPage()==='home';

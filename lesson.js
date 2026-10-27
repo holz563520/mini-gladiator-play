@@ -402,7 +402,7 @@ document.addEventListener('click',e=>{const el=e.target.closest?.('[data-les]');
  else if(a==='jump'){document.querySelector('.lesson-menu')?.remove();jump(+v);}
  else if(a==='again'){clearAll();prepare();scene1();}
  else if(a==='close'){el.closest('.lesson-end')?.remove();if(!TEST)M.huehner?.begin();}
- else if(a==='offeryes'){el.closest('.lesson-start')?.remove();S.lesson={stage:'ready',keepGold:true};try{M.persist();}catch{}scene1();}
+ else if(a==='offeryes'){el.closest('.lesson-start')?.remove();S.lesson={stage:'ready',keepGold:true,live:true};try{M.persist();}catch{}scene1();}
  else if(a==='offerno'){el.closest('.lesson-start')?.remove();}
  else if(a==='ch2'){clearAll();M.huehner?.start();}
  else if(a==='jump2'){document.querySelector('.lesson-menu')?.remove();clearAll();M.huehner?.jump(+v);}});
@@ -424,8 +424,8 @@ if(TEST){prepare();startCard();}
 // Spielstände, die das Medikus-Kapitel schon früher abgeschlossen hatten, bekommen nichts von selbst: Das Kapitel ist über das Medicus-Menü erreichbar und behält dann ihr Gold.
 else{let medicSeen=S.medic?.stage;
  // Bestehende Spielstände: Das Kapitel setzt sich nach einem Neuladen nie von selbst fort und bietet sich nie von selbst an. Offene Reste aus früheren Sitzungen (auch „ready“) gelten als gesehen; die Stufe wird NICHT auf einen neuen Wert gesetzt, weil wanderers.js und arena-game.js jede Stufe außer „end“ als laufendes Tutorial lesen.
- {const l=S.lesson;if(l?.stage&&l.stage!=='end')S.lesson={stage:'',declined:true};}
- setInterval(()=>{const med=S.medic?.stage;if(medicSeen!=='done'&&med==='done'&&!S.lesson?.stage){S.lesson={stage:'ready'};try{M.persist();}catch{}}medicSeen=med;
+ {const l=S.lesson;if(l?.stage&&l.stage!=='end'){/* Bericht 27.10.: regulär begonnen (live) → nach dem Neuladen von vorn weiterspielen statt verwerfen */if(l.live)S.lesson={stage:'ready',live:true,...(l.keepGold?{keepGold:true}:{})};else S.lesson={stage:'',declined:true};}}
+ setInterval(()=>{const med=S.medic?.stage;if(medicSeen!=='done'&&med==='done'&&!S.lesson?.stage){S.lesson={stage:'ready',live:true};try{M.persist();}catch{}}medicSeen=med;
   if(S.doktor?.armed&&!S.doktor?.stage)return; /* erst kommt das Doktor-Kapitel (doktor.js) */
   if(film||S.battle||window.ArenaUI?.isOpen?.()||M.ui.getPage?.()!=='home'||document.querySelector('.lesson-end,.lesson-start,.medic-end,.medic-film,.medic-start,.lion-film,.smith-ceremony,.mg-dawn,.hs-market,.hs-present'))return;
   const ls=S.lesson?.stage;if(ls==='ready'){scene1();return;}
