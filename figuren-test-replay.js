@@ -1,7 +1,7 @@
 'use strict';
 // Test-only delta recording. Every simulation tick is retained; playback never calls the simulation.
 (()=>{
-const clone=v=>v===undefined?undefined:structuredClone(v),object=v=>v!==null&&typeof v==='object';
+const clone=(v,seen=new Map())=>{if(v===null||typeof v!=='object')return v;if(seen.has(v))return seen.get(v);const out=Array.isArray(v)?new Array(v.length):{};seen.set(v,out);for(const k of Object.keys(v))out[k]=clone(v[k],seen);return out;},object=v=>v!==null&&typeof v==='object';
 class Tape{
  constructor(initial,budget=256*1048576){this.initial=clone(initial);this.shadow=clone(initial);this.frames=[];this.paths=[];this.pathIds=new Map();this.bytes=JSON.stringify(initial).length*4;this.budget=budget;this.complete=false;this.checkBudget();}
  checkBudget(){if(this.bytes>this.budget)throw Error('Speicherbudget erreicht. Keine vollständige Wiedergabe verfügbar. Weniger Figuren oder ein größeres Speicherbudget wählen.');}
