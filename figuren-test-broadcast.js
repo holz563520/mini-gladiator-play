@@ -2,6 +2,8 @@
 (()=>{
 const copy=v=>JSON.parse(JSON.stringify(v)),yieldUI=()=>new Promise(r=>setTimeout(r,0));
 function line(key,values,index=0){const pool=window.FigureLabLines[key]||['{v}: {inj}.'];return pool[index%pool.length].replace(/\{(\w+)\}/g,(_,k)=>values[k]??'');}
+// Match sprech-game.js voiceFor: strip appearance and apply the game speech tempo.
+function moderatorVoice(){const v={...FigureLabSpeech.get('moderator')};delete v.look;v.speed=(v.speed||1)*.8;return v;}
 function signature(a){return{dead:!!a.g.dead,down:!!a.down,taken:a.taken||0,parts:Object.fromEntries(Object.entries(a.g.body).map(([id,p])=>[id,{missing:!!p.missing,fracture:!!p.fracture,grade:MG.injuryGrade(p),injury:p.injury||''}]))};}
 async function build(tape,{enabled=true,voice=true,closeups=true,cancelled=()=>false,progress=()=>{}}={}){
  if(!tape.complete)throw Error('Kommentar benötigt einen vollständigen Kampf.');
@@ -27,11 +29,11 @@ async function build(tape,{enabled=true,voice=true,closeups=true,cancelled=()=>f
  for(let i=0;i<events.length;i++){
   if(cancelled())throw Error('Kommentierung abgebrochen.');const event=events[i],time=Math.max(combat,Math.min(tape.duration,event.time));
   if(time>combat){segments.push({start:output,end:output+time-combat,combatStart:combat,type:'run'});output+=time-combat;combat=time;}
-  const rendered=voice?FigureLabSpeech.render(event.text,FigureLabSpeech.get('moderator'),{seed:i+1701}):null;
+  const rendered=voice?FigureLabSpeech.render(event.text,moderatorVoice(),{seed:i+1701}):null;
   if(rendered){audioBytes+=rendered.data.byteLength;if(audioBytes>64*1048576)throw Error('Kommentar-Audiobudget erreicht. Kürzeren Kampf wählen oder Stimme ausschalten.');}
   const length=Math.max(3,rendered?rendered.data.length/rendered.sr+.25:Math.min(9,1+event.text.length*.045));
   const cue={combatTime:combat,start:output,end:output+length,text:event.text,pcm:rendered?.data||null,sr:rendered?.sr||22050};cues.push(cue);
-  const shot=closeups&&event.g&&event.kind!=='field'?{g:event.g,part:event.part,kind:event.kind,title:event.title,line1:event.g.name,line3:'Aufgezeichnet bei '+event.time.toFixed(1)+' s Kampfzeit',mute:true,team:event.team}:null;
+  const shot=closeups&&event.g&&event.kind!=='field'?{g:event.g,part:event.part,kind:event.kind,title:event.title,line1:event.g.name,line3:'Aufgezeichnet bei '+event.time.toFixed(1)+' s Kampfzeit',mute:true,team:event.team,fall:event.kind==='collapse',variant:i%3}:null;
   segments.push({start:output,end:output+length,combatStart:combat,type:shot?'closeup':'hold',shot,cue:i});output+=length;progress('Kommentar vorberechnen: '+(i+1)+' / '+events.length);await yieldUI();
  }
  return{enabled:true,duration:output,combatDuration:tape.duration,segments,cues,audioBytes,eventCount:events.length};
@@ -50,5 +52,5 @@ class AudioTrack{
  }
  close(){this.stop();this.buffers.clear();this.ctx?.close()?.catch?.(()=>{});this.ctx=null;}
 }
-window.FigureBroadcast={build,sample,AudioTrack};
+window.FigureBroadcast={build,sample,AudioTrack,moderatorVoice};
 })();
