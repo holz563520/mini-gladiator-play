@@ -210,19 +210,22 @@ function equip(){const gs=lineup().map(x=>x.g);if(!gs.length)return toast('Niema
 // ---------- Echter Kampf in der Kampfansicht des Spiels ----------
 const fs0=M.fixedStep;
 M.fixedStep=function(){const r=fs0.apply(this,arguments);if(tracker&&S.battle===tracker.b)tracker.tick();return r;};
-let leader0;
+// Formation des Anführers: bei Kämpfen aus der Aufstellung bleiben alle auf ihren Rasterplätzen
+{const LD=M.outsideLeader;if(LD?.arenaFormation&&!LD._aufWrap){const f0=LD.arenaFormation;LD._aufWrap=true;
+ LD.arenaFormation=function(b){const f=f0.apply(this,arguments);try{if(b?.aufForm&&f?.pts)f.pts=f.pts.map(([a])=>[a,{x:a.x,y:a.y}]);}catch(e){}return f;};}}
 function fight(){const o=offers[sel];if(!o)return;const L=lineup();busy=true;const kwBefore={};for(const x of L)kwBefore[x.id]={kw:x.kw,role:x.role,g:x.g};
  const spec=A.spec(L,o,false);
  S.battle=null;try{M.ui.click('nav:home');}catch(e){}try{window.HahnArena?.resetScene?.();}catch(e){}
  M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;for(const p of [...(M.fx||[]),...(M.shots||[])])p.active=false;
  if(TEST)S.gold=st.gold; // Goldanzeige der Kampfansicht zeigt das Simulator-Gold
- // Die Aufstellung kommt aus diesem Bildschirm; die Anführer-Aufstellung (ab 5 Kämpfern) bleibt für diesen Kampf aus
- leader0=M.leaderArena;M.leaderArena=false;
  const b=AN.build(spec);b.league=0;A.place(b,L);S.battle=b;const bid=b.id;
+ // Anführer wie in normalen Arenakämpfen (ab 5 eigenen Kämpfern): Lagebesprechung, Gong, Rufe im Kampf.
+ // Die Anführer-Logik schließt Kämpfe der neuen Arena aus (b.neu) – hier ausdrücklich angehängt. Die Positionen
+ // kommen aus dem Raster: die Formationsphase lässt jeden dort stehen, wo er aufgestellt wurde (b.aufForm).
+ b.aufForm=true;try{const LD=M.outsideLeader;if(LD?.attachArena){b.neu=false;try{LD.attachArena(b,{leaderId:S.arenaLeaderId});}finally{b.neu=true;}}}catch(e){console.warn(e);}
  tracker=A.tracker(b,L,o,{vows:st.vows,hero:st.hero,fame:st.fame});
  document.body.classList.add('auf-fighting');
  AN.listeners.push(out=>{const T=tracker;tracker=null;let r;try{r=T.done(out);}catch(e){console.error(e);}
-  M.leaderArena=leader0;
   // Im Spiel: Prämie statt Ligaprämie buchen (wie arena-ui.js über ArenaCareer.settle); Lernen, Verletzungen, Tod, Bericht bucht das Spiel
   if(!TEST&&r){try{C().settle?.(r.gold,out);}catch(e){console.error(e);}try{C().record?.(r.won);}catch(e){}}
   setTimeout(()=>{S.battle=null;try{M.ui.render();}catch(e){}document.body.classList.remove('auf-fighting');busy=false;try{ART.clearFigures?.();}catch(e){}pc.clear();if(r)settle(r,o,kwBefore,bid);else{step='group';render();}},1400);});

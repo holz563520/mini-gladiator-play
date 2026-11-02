@@ -5,7 +5,7 @@
 // misst dabei Spannung und Blut und bewertet daraus das Gold. Ändert keine Spieldateien und keinen Spielstand.
 //
 // Gold = Grundbörse × Risiko × Spektakel × Gelübde × Ruhm ÷ Verlustteiler
-//   Grundbörse  = 70 × (KW-Summe Gegner / 30)^0,9                     (stärkere Gegner = größere Bühne)
+//   Grundbörse  = 210 × (KW-Summe Gegner / 30)^0,9   (2.11. nachmittags verdreifacht, Wunsch Thomas)                     (stärkere Gegner = größere Bühne)
 //   Ansage      = 1 / (1 + (KW-Summe Gegner / KW-Summe eigen × (Köpfe Gegner / Köpfe eigen)^0,7)^3)
 //                 (Siegchance laut Buchmacher; Überzahl zählt, gemessen in echten Kämpfen, balance.cjs)
 //   Risiko      = (2·(1 − Ansage))^1,3, höchstens 2,5                  (sichere Kämpfe ≈ 0)
@@ -19,7 +19,7 @@
 const M=G.MG,CH=G.Challenges,AN=G.AN,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 const A={};G.Aufstellung=A;
 
-A.P={G0:70,bExp:.9,k:3,nExp:.7,riskExp:1.3,riskMax:2.5,lossC:0,severeW:.5,loseShare:.3,
+A.P={G0:210,bExp:.9,k:3,nExp:.7,riskExp:1.3,riskMax:2.5,lossC:0,severeW:.5,loseShare:.3,
  sBase:.3,sSwing:.3,sSwingMax:5,sTight:.6,sSevere:.06,sInjured:.02,sComeback:1.6,sClose:.7,sBlood:.12,sBloodMax:1.6,sUnder:.25,sHero:.15,sHeroMax:2.4,
  fameStep:10,fameMul:.006,sForm:.1,sFormMax:.3};
 
