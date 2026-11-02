@@ -62,6 +62,8 @@ const pc=new Map();
 function portrait(g){const k=g.id+(g.dead?'d':'');let p=pc.get(k);if(!p){try{p=ART.portrait(g);}catch(e){p=null;}pc.set(k,p);}return p;}
 function paint(scope){for(const cv of scope.querySelectorAll('canvas[data-por]')){const g=G(cv.dataset.por)||enemyG(cv.dataset.por);if(!g)continue;const p=portrait(g);const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);if(p)ctx.drawImage(p,0,0,80,90,0,0,cv.width,cv.height);if(g.dead){ctx.fillStyle='#000a';ctx.fillRect(0,0,cv.width,cv.height);}}}
 function enemyG(id){const k=lastRes?.gs&&Object.values(lastRes.gs).find(x=>x.g.id===id);if(k)return k.g;for(const o of offers)for(const u of o.enemy)if(u.g.id===id)return u.g;return null;}
+// Talent-Abzeichen (talent-tags.js); nur eigene Gladiatoren, Gegner nie
+const tal=g=>{try{return g&&S.roster.includes(g)&&M.talentTag?M.talentTag(g):'';}catch{return '';}};
 const por=(g,w=40,h=45)=>`<canvas class="a-px" width="${w}" height="${h}" data-por="${esc(g.id)}"></canvas>`;
 
 // ---------- Darstellung ----------
@@ -74,10 +76,10 @@ function viewGroup(){
  const cols=ROLES.map(r=>{const list=alive().filter(g=>g.role===r).sort((a,b)=>A.kw(b)-A.kw(a));
   return `<div class="a-col" data-r="${r}"><h3><span>${ICON[r]} ${PLURAL[r]}</span><span>${list.length}</span></h3><div class="a-list" data-roster>${list.map(g=>{const f=fit(g),cls=['a-card'];if(inL(g.id))cls.push('a-in');if(!f.ok)cls.push('a-out');if(st.hero===g.id)cls.push('a-hero');
    const sub=!f.ok?esc((f.causes||[])[0]||'nicht einsatzbereit'):(g.auf?.kills?g.auf.kills+' Kills · ':'')+(g.auf?.fights?g.auf.fights+' Kämpfe':'frisch');
-   return `<div class="${cls.join(' ')}" data-drag="${esc(g.id)}" data-from="roster">${por(g)}<div class="a-nm">${esc(g.name)}<small><b class="a-kw">${A.kw(g)}</b> ${sub}</small></div></div>`;}).join('')}</div>${TEST?`<button class="a-buy" data-buy="${r}">+ Rekrut · 100</button>`:''}</div>`;}).join('');
+   return `<div class="${cls.join(' ')}" data-drag="${esc(g.id)}" data-from="roster">${por(g)}<div class="a-nm">${esc(g.name)}<small>${tal(g)}<b class="a-kw">${A.kw(g)}</b> ${sub}</small></div></div>`;}).join('')}</div>${TEST?`<button class="a-buy" data-buy="${r}">+ Rekrut · 100</button>`:''}</div>`;}).join('');
  let grid='<div></div>'+ROWS.map(r=>`<div class="a-gh">${r}</div>`).join('');
  for(const lane of LANES){grid+=`<div class="a-gl">${lane}</div>`;for(const row of ROWS){const here=st.lineup.filter(x=>x.row===row&&x.lane===lane);
-  grid+=`<div class="a-cell" data-cell="${row}|${lane}">${here.map(x=>{const g=G(x.id);return `<div class="a-chip${selChip===g.id?' a-sel':''}${st.hero===g.id?' a-hero':''}" data-r="${g.role}" data-drag="${esc(g.id)}" data-from="grid">${por(g,24,27)}<span class="a-n">${st.hero===g.id?'★':''}${esc(g.name)}</span><b>${A.kw(g)}</b></div>`;}).join('')}</div>`;}}
+  grid+=`<div class="a-cell" data-cell="${row}|${lane}">${here.map(x=>{const g=G(x.id);return `<div class="a-chip${selChip===g.id?' a-sel':''}${st.hero===g.id?' a-hero':''}" data-r="${g.role}" data-drag="${esc(g.id)}" data-from="grid">${por(g,24,27)}<span class="a-n">${st.hero===g.id?'★':''}${esc(g.name)}</span><b>${A.kw(g)}</b>${tal(g)}</div>`;}).join('')}</div>`;}}
  grid+='<div></div><div class="a-foe">GEGNER ▶</div>';
  root.innerHTML=top('AUFSTELLUNG','ARENA THEORY · TESTVERSION')+`<main>${steps(0)}
  <section class="a-box"><div class="a-bh"><h2>Kader</h2><span>nach Kampfwert · ziehen oder antippen</span></div><div class="a-cols">${cols}</div></section>
@@ -134,7 +136,7 @@ function learnHtml(){const rep=S.lastReport;if(!rep||!lastRes||rep.id!==lastRes.
  const blocks=(rep.actors||[]).map(a=>{const g=G(a.id)||lastRes.gs?.[a.id]?.g,learn=Object.entries(a.learning||{}).filter(([,v])=>v>.0001).sort((x,y)=>y[1]-x[1]);
   const rows=learn.slice(0,6).map(([k,v])=>{const [now,cap]=g?valueOf(g,k):[null,null];return `<li><span>${esc(M.learningLabel?.(k)||k)}</span><b>${now!=null?f1(now-v)+' → '+f1(now):'+'+v.toFixed(2)}</b><small>${cap!=null?'SOLL '+Math.round(cap):''}</small></li>`;}).join('');
   const st2=(n,v)=>`<span><b>${Math.round(v||0)}</b> ${n}</span>`;
-  return `<div class="a-learn${a.dead?' a-dead':''}"><div class="a-lh">${g?por(g,40,45):''}<div><b>${a.dead?'✝ ':''}${esc(a.name)}</b><small>${a.dead?'gefallen':a.down?'kampfunfähig · überlebt':'überlebt'}${a.xpMultiplier>1?' · Lernen ×'+String(a.xpMultiplier).replace('.',','):''}</small></div></div>
+  return `<div class="a-learn${a.dead?' a-dead':''}"><div class="a-lh">${g?por(g,40,45):''}<div><b>${a.dead?'✝ ':''}${esc(a.name)}${g?tal(g):''}</b><small>${a.dead?'gefallen':a.down?'kampfunfähig · überlebt':'überlebt'}${a.xpMultiplier>1?' · Lernen ×'+String(a.xpMultiplier).replace('.',','):''}</small></div></div>
   <div class="a-lstats">${st2('Schaden',a.damage)}${st2('Erlitten',a.taken)}${st2('Kills',a.kills)}${st2('Blocks',a.blocks)}${st2('Ausgew.',a.dodges)}</div>
   ${rows?`<ul>${rows}</ul>${learn.length>6?`<p class="a-hint">+ ${learn.length-6} weitere gelernte Werte</p>`:''}`:'<p class="a-hint">Keine messbare Verbesserung in diesem Kampf.</p>'}</div>`;}).join('');
  const rec=rep.recipes?.length?`<p class="a-hint">⚒ Schmiederezept erlernt: <b>${rep.recipes.map(esc).join(', ')}</b></p>`:'';

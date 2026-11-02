@@ -117,3 +117,6 @@ body.auf-fighting #auf{display:none}
 #auf .a-bar{display:grid;grid-template-columns:118px 1fr 44px;gap:8px;align-items:center;font-size:12px;line-height:1.4;margin:5px 0;height:auto}
 #auf .a-bar>span{display:block}
 #auf .a-bar .a-bg{height:9px}
+
+#auf .a-card .a-nm small .tal-b{margin:0 4px 0 0}
+#auf .a-chip .tal-b{margin-left:2px;font-size:8px;padding:0 2px}
