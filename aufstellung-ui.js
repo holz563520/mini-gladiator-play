@@ -84,6 +84,7 @@ function viewGroup(){
  <section class="a-box"><div class="a-bh"><h2>Aufstellung</h2><span>${L.length}/10</span></div><div class="a-grid${selChip?' a-picking':''}">${grid}</div>
   <div class="a-sum">${L.length?`<span>Köpfe <b>${L.length}</b></span><span>KW-Summe <b>${sum}</b></span>${ROLES.map(r=>`<span>${ICON[r]} <b>${L.filter(x=>x.role===r).length}</b></span>`).join('')}<span>${st.hero?'★ <b>'+esc(G(st.hero)?.name)+'</b>':'kein ★-Held'}</span>`:'<span>Zieh Kämpfer aus dem Kader auf ein Feld.</span>'}</div>
   <div class="a-forms">${Object.entries(FORMS).map(([k,[l,h]])=>`<span class="a-badge${fs.includes(k)?' a-on':''}" title="${esc(h)}">${l}</span>`).join('')}</div>
+  <div class="a-acts"><button data-act="equip" ${L.length?'':'disabled'}>⚙ AUTOMATISCH AUSRÜSTEN</button></div>
   ${selChip?`<div class="a-acts"><button data-act="hero">${st.hero===selChip?'★ Held weg':'★ Held'}</button><button data-act="remove">Abziehen</button><button data-act="unsel">Fertig</button></div>`:''}
   <p class="a-hint">${selChip?esc(G(selChip)?.name)+': Feld antippen zum Versetzen.':'Karten seitlich aus dem Kader ziehen (oder antippen). Zurück in den Kader ziehen = abziehen. Hinten wartet, bis es ernst wird. Schaubilder mag das Publikum.'}</p></section>
  ${st.fallen.length?`<section class="a-box a-fallen"><b>Gefallen:</b> ${st.fallen.slice(-12).map(f=>`✝ ${esc(f.name)} (${f.kw}, Tag ${f.day})`).join(' · ')}</section>`:''}
@@ -193,10 +194,16 @@ root.addEventListener('click',e=>{const t=e.target.closest('[data-act],[data-cel
  else if(a==='nextday'){nextDay();}
  else if(a==='menu')menu();
  else if(a==='exit')exitToArena();
+ else if(a==='equip')equip();
  else if(a==='report'){close();try{M.ui.click('nav:report');}catch(e){}}
  else if(a==='classic')classic();
 });
 function nextDay(){try{M.advanceDay(1);}catch(e){console.warn(e);}pc.clear();st.lineup=st.lineup.filter(x=>G(x.id)&&!G(x.id).dead);save();step='group';offers=[];sel=null;render();toast('Tag '+(S.day||1)+' · Verletzte erholen sich');}
+
+// ---------- Automatisch ausrüsten (wie in der Kampfvorbereitung: beste Waffengattung nach SOLL) ----------
+function equip(){const gs=lineup().map(x=>x.g);if(!gs.length)return toast('Niemand in der Gruppe.');let msg='';
+ try{msg=M.army?.autoEquip?M.army.autoEquip(gs,'soll'):'Automatisches Ausrüsten nicht verfügbar.';}catch(e){msg='Ausrüsten fehlgeschlagen: '+e.message;}
+ pc.clear();try{ART.clearFigures?.();}catch(e){}save();render();toast(String(msg||'Ausgerüstet.').slice(0,120));}
 
 // ---------- Echter Kampf in der Kampfansicht des Spiels ----------
 const fs0=M.fixedStep;
@@ -253,11 +260,14 @@ function menu(){const P=Object.assign({},P0,st.P);
 
 // ---------- Start ----------
 function close(){root.hidden=true;closeOverlay();document.body.classList.remove('auf-open');}
-function open(){if(!TEST)st=gameState();offers=[];sel=null;selChip=null;if(step!=='result'||!lastRes)step='group';root.hidden=false;document.body.classList.add('auf-open');render();root.scrollTop=0;}
+function open(){if(!TEST){st=gameState();
+ // Leere Gruppe: Vorschlag wie bisher AUTO – die drei stärksten Einsatzbereiten, je nach Klasse ins Raster
+ if(!st.lineup.length){for(const g of alive().filter(g=>fit(g).ok).sort((a,b)=>A.kw(b)-A.kw(a)).slice(0,3))st.lineup.push(Object.assign({id:g.id},auto(g.role)));}}
+ offers=[];sel=null;selChip=null;if(step!=='result'||!lastRes)step='group';root.hidden=false;document.body.classList.add('auf-open');render();root.scrollTop=0;}
 // Zurück in die Arena des Spiels (HUMAN → Art des Kampfes)
 function exitToArena(){close();step='group';const U=window.ArenaUI;if(!U)return;try{U.open();U.api?.go?.(C().boxMenu?'kinds':'home',-1);}catch(e){console.warn(e);}}
 // Bisherige Herausforderungen der neuen Arena (Rückweg, falls gewünscht)
-function classic(){close();const U=window.ArenaUI;if(!U)return;window.AUF_CLASSIC=true;try{U.open();U.mode='human';U.api?.go?.('kinds');setTimeout(()=>{const b=U.api?.root?.querySelector?.('[data-a="kind:arena"]');if(b)b.click();else window.AUF_CLASSIC=false;},0);}catch(e){window.AUF_CLASSIC=false;}}
+function classic(){close();const U=window.ArenaUI;if(!U)return;try{U.open();window.AUF_CLASSIC=true;U.mode='human';U.api?.go?.('kinds');setTimeout(()=>{const b=U.api?.root?.querySelector?.('[data-a="kind:arena"]');if(b)b.click();else window.AUF_CLASSIC=false;},0);}catch(e){window.AUF_CLASSIC=false;}}
 window.AufstellungUI={open,close,isOpen:()=>!root.hidden,get state(){return st;}};
 if(TEST){try{window.ArenaUI?.close?.();}catch(e){}try{M.ui.click('nav:home');}catch(e){}if(!load())fresh();root.hidden=false;render();}
 window.AUF_READY=true;
