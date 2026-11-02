@@ -32,6 +32,8 @@ let nameIdx=0;
 A.kw=g=>Math.round(M.power(g));
 A.fighter=(r,role,kw,id)=>{
  const g=CH.gladiator(r,{q:cl((kw-33)/14,0,6),role,kwTarget:kw,enemy:false});
+ // Rüstung nach Klasse wie im Spiel (Fernkämpfer Leder, Assassine verstärkt, Soldat Metall)
+ {const mat=M.classArmor?.[role];if(mat&&g.enemyGear?.armor)for(const [id,it] of Object.entries(g.enemyGear.armor))if(it&&it.material!==mat)g.enemyGear.armor[id]=M.makeItem('armor',id,it.q??1,mat);}
  g.name=NAMES[nameIdx++%NAMES.length]+(nameIdx>NAMES.length?' '+Math.ceil(nameIdx/NAMES.length):'');
  return {id,role,name:g.name,g,kw:A.kw(g)};
 };
