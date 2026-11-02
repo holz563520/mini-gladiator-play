@@ -5,20 +5,22 @@
 // misst dabei Spannung und Blut und bewertet daraus das Gold. Ändert keine Spieldateien und keinen Spielstand.
 //
 // Gold = Grundbörse × Risiko × Spektakel × Gelübde × Ruhm ÷ Verlustteiler
-//   Grundbörse  = 100 × (KW-Summe Gegner / 30)^0,9                     (stärkere Gegner = größere Bühne)
+//   Grundbörse  = 70 × (KW-Summe Gegner / 30)^0,9                     (stärkere Gegner = größere Bühne)
 //   Ansage      = 1 / (1 + (KW-Summe Gegner / KW-Summe eigen × (Köpfe Gegner / Köpfe eigen)^0,7)^3)
 //                 (Siegchance laut Buchmacher; Überzahl zählt, gemessen in echten Kämpfen, balance.cjs)
 //   Risiko      = (2·(1 − Ansage))^1,3, höchstens 2,5                  (sichere Kämpfe ≈ 0)
 //   Spektakel   = aus dem echten Kampf gemessen (Führungswechsel, Aufholjagd, knappes Ende, Gefallene, Heldentaten)
-//   Verlustteiler = 1 + 2 × (Tote + ½ Schwerverletzte) / Gruppengröße   (jeder Kopf zählt gleich, egal wie stark)
+//   Spektakel   = Führungswechsel + enges Ringen + Aufholjagd + knappes Ende + Blut auf BEIDEN Seiten (Tote, Schwer-, Leichtverletzte)
+//                 + Heldentaten (steigend je Kill: 2 → 0,15 · 3 → 0,45 · 4 → 0,9 · 5 → 1,5 · 6 → 2,25) + Außenseiter + Schaubild
+//   Verlustteiler (lossC) seit 2.11. mittags 0 = aus: eigene Verluste bringen Spektakel statt Abzug (Wunsch Thomas)
 //   Niederlage: 30 % davon (die Menge zahlt für einen großen Kampf auch dem Verlierer etwas)
 // =====================================================================================================
 (G=>{
 const M=G.MG,CH=G.Challenges,AN=G.AN,cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 const A={};G.Aufstellung=A;
 
-A.P={G0:100,bExp:.9,k:3,nExp:.7,riskExp:1.3,riskMax:2.5,lossC:2,severeW:.5,loseShare:.3,
- sBase:.3,sSwing:.25,sSwingMax:4,sComeback:1.6,sClose:.7,sBlood:.1,sBloodMax:1,sUnder:.25,sHero:.3,
+A.P={G0:70,bExp:.9,k:3,nExp:.7,riskExp:1.3,riskMax:2.5,lossC:0,severeW:.5,loseShare:.3,
+ sBase:.3,sSwing:.3,sSwingMax:5,sTight:.6,sSevere:.06,sInjured:.02,sComeback:1.6,sClose:.7,sBlood:.12,sBloodMax:1.6,sUnder:.25,sHero:.15,sHeroMax:2.4,
  fameStep:10,fameMul:.006,sForm:.1,sFormMax:.3};
 
 A.ROLES=['Soldat','Assassine','Fernkämpfer'];
@@ -118,23 +120,27 @@ A.judge=({out,curve,events,actorKW,s0,lineup,offer,vows,hero,fame})=>{
  const own=out.units.filter(u=>u.team===0),foe=out.units.filter(u=>u.team===1);
  const deaths=own.filter(u=>u.dead).length,severe=own.filter(u=>!u.dead&&u.severe).length,injured=own.filter(u=>!u.dead&&!u.severe&&u.injured).length;
  // Spannung: Anteil der eigenen Restkraft an der Gesamtkraft, Führungswechsel mit Schwelle
- let lead=0,swings=0,minShare=1,maxShare=0;const swingT=[];
+ let lead=0,swings=0,minShare=1,maxShare=0,tightN=0,allN=0;const swingT=[];
  for(const [t,a,e] of curve){const sh=a/(a+e||1);if(t>2){minShare=Math.min(minShare,sh);maxShare=Math.max(maxShare,sh);}
-  const now=sh>.56?1:sh<.44?-1:lead;if(lead&&now!==lead){swings++;swingT.push(t);}lead=now;}
+  if(t>2){allN++;if(Math.abs(sh-.5)<.1)tightN++;}const now=sh>.56?1:sh<.44?-1:lead;if(lead&&now!==lead){swings++;swingT.push(t);}lead=now;}
  const last=curve[curve.length-1]||[0,1,1],rest=won?last[1]:last[2];
  const comeback=won?cl((.42-minShare)/.42,0,1):0,choke=!won&&out.winner===1?cl((maxShare-.58)/.42,0,1):0;
  const close=out.winner===-1?.5:cl(1-rest,0,1);
- const fallen=events.filter(e=>e.type==='tot').length;
+ const fallen=events.filter(e=>e.type==='tot').length,tight=allN?tightN/allN:0;
+ // Blut auf beiden Seiten: Tote, Schwer- und Leichtverletzte – eigene zählen genauso wie die des Gegners
+ const all=out.units,deadAll=all.filter(u=>u.dead).length,sevAll=all.filter(u=>!u.dead&&u.severe).length,injAll=all.filter(u=>!u.dead&&!u.severe&&u.injured).length;
  // Heldentaten: Kills je Kämpfer, Außenseiter-Kills (Opfer stärker als Täter)
  let heroBonus=0,underBonus=0;const heroes=[];
  const ownAvg=lineup.reduce((a,L)=>a+L.kw,0)/Math.max(1,N);
  for(const u of out.units){const me=actorKW[u.team+'|'+u.key];if(!me)continue;
-  if(u.kills>=3){heroBonus+=P.sHero*(u.kills-2);heroes.push({name:me.name,kills:u.kills,team:u.team,id:u.key});}}
+  if(u.kills>=2)heroBonus+=P.sHero*u.kills*(u.kills-1)/2*(u.team===0?1:.5);
+  if(u.kills>=3)heroes.push({name:me.name,kills:u.kills,team:u.team,id:u.key});}
  for(const e of events){if(e.type!=='tot'&&e.type!=='kampfunfaehig')continue;const killer=Object.values(actorKW).find(x=>x.name===e.by&&x.team!==e.team);
   if(killer&&e.kw>killer.kw*1.15){underBonus+=P.sUnder*Math.min(2,e.kw/killer.kw-1);e.under=true;}}
  const dur=out.time;const tempo=dur<12?.7:out.timeout?.8:1;
  const parts={grund:P.sBase,spannung:P.sSwing*Math.min(swings,P.sSwingMax),aufholjagd:P.sComeback*comeback*.5+P.sComeback*choke*.25,knapp:P.sClose*close,
-  blut:Math.min(P.sBloodMax,P.sBlood*fallen),aussenseiter:Math.min(1,underBonus),helden:Math.min(1.2,heroBonus),
+  enge:P.sTight*tight,
+  blut:Math.min(P.sBloodMax,P.sBlood*deadAll+P.sSevere*sevAll+P.sInjured*injAll),aussenseiter:Math.min(1,underBonus),helden:Math.min(P.sHeroMax,heroBonus),
   schaubild:Math.min(P.sFormMax,P.sForm*A.formations(lineup,hero).length)};
  let spect=Object.values(parts).reduce((a,b)=>a+b,0)*tempo;spect=Math.round(spect*100)/100;
  // Gelübde
