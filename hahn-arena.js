@@ -242,8 +242,9 @@ function roosterUpdate(a,dt){
 
 // ---------- Umhüllen der Spielhaken ----------
 const baseUpdate=M.updateActor,baseResolve=M.resolveStrike,baseLoco=M.updateLocomotion;
-M.updateActor=function(a,dt){if(a?.hahn)return roosterUpdate(a,dt);return baseUpdate.apply(this,arguments);};
-M.resolveStrike=function(a,dt){if(a?.hahn)return;return baseResolve.apply(this,arguments);};
+/* Leistung: .call statt .apply(arguments) – alle Aufrufer übergeben genau (a,dt), Verhalten gleich */
+M.updateActor=function(a,dt){if(a?.hahn)return roosterUpdate(a,dt);return baseUpdate.call(this,a,dt);};
+M.resolveStrike=function(a,dt){if(a?.hahn)return;return baseResolve.call(this,a,dt);};
 M.updateLocomotion=function(a){if(a?.hahn){a.phase=(a.phase||0)+.1;return;}return baseLoco.apply(this,arguments);};
 const baseDraw=M.drawRex;
 M.drawRex=function(ctx,l){if(!l?.hahn)return baseDraw?.apply(this,arguments);drawRooster(ctx,l);};

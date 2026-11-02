@@ -40,14 +40,19 @@ function nameNode(el,g){const full=g.name,short=first(g.name);let box=el;
  for(let up=0;up<4&&box;up++,box=box.parentElement){
   if(box.querySelector?.(`.tal-b[data-tal="${CSS.escape(g.id)}"]`))return 'done';
   const cands=box.querySelectorAll?.('b,strong,h2,h3,h4,h5,span,div,p,small,em,td,li,button,a')||[];
-  for(const c of [box,...cands]){if(c.closest?.('#auf'))continue;
-   let txt='';for(const ch of c.childNodes)if(ch.nodeType===3)txt+=ch.nodeValue;txt=txt.replace(/^[✝★☠⚔\s·]+/,'').trim();
+  for(let ci=-1;ci<cands.length;ci++){const c=ci<0?box:cands[ci];
+   let txt=ownText.get(c);if(txt===undefined){txt='';for(const ch of c.childNodes)if(ch.nodeType===3)txt+=ch.nodeValue;ownText.set(c,txt);}
+   /* Leistung: jeder Treffer unten beginnt mit dem (Kurz-)Namen; fehlt er im Text ganz, kann es kein Treffer sein */if(!txt.includes(short))continue;
+   if(c.closest?.('#auf'))continue;
+   txt=txt.replace(/^[✝★☠⚔\s·]+/,'').trim();
    if(!txt)continue;if(txt===full||txt===short||txt.startsWith(full+' ')||txt.startsWith(full+' ·')||(txt.startsWith(short)&&txt.length<=short.length+3))return shown(c,g)?'done':c;}}
  return null;}
 // Zeigt die Ansicht das Talent schon (Kaserne, Profil)? Dann kein zweites Abzeichen.
 function shown(c,g){const card=c.closest('article,section,li,.bk-card')||c.parentElement;const t=card?.textContent||'';return t.length<4000&&(t.includes('Talent '+Math.round(g.potential))||t.includes('Lerntalent'));}
 let timer=0;
-function scan(){timer=0;if(!S.roster?.length)return;
+/* Leistung: eigener Text (direkte Textknoten) je Element, nur für einen Durchlauf gemerkt – Abzeichen werden als Element angehängt und ändern ihn nicht */
+let ownText=new WeakMap();
+function scan(){timer=0;ownText=new WeakMap();if(!S.roster?.length)return;
  for(const rootId of ['app','battleView','modal','an']){const root=document.getElementById(rootId);if(!root||root.hidden)continue;
   for(const el of root.querySelectorAll(SEL)){const g=gladOf(el);if(!g||g.potential==null)continue;
    const n=nameNode(el,g);if(!n||n==='done')continue;

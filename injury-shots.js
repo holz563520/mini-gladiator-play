@@ -31,7 +31,9 @@ function tools(q){const r=(x,y,w,h,c)=>{q.fillStyle=c;q.fillRect(Math.round(x),M
  const disc=(x,y,rad,C)=>{for(let j=-rad;j<=rad;j++){const hw=Math.sqrt(Math.max(0,rad*rad-j*j));for(let i=-Math.ceil(hw);i<=Math.ceil(hw);i++){const d=Math.hypot(i,j);r(x+i,y+j,1,1,d>rad-1?C.line:j<-rad*.4?C.light:j>rad*.35||i>rad*.5?C.shade:C.skin);}}};
  const oval=(x,y,rx,ry,c,a=1)=>{q.globalAlpha=a;q.fillStyle=c;for(let j=-Math.ceil(ry);j<=Math.ceil(ry);j++){const hw=rx*Math.sqrt(Math.max(0,1-(j*j)/(ry*ry)));if(hw>=.5)q.fillRect(Math.round(x-hw),Math.round(y+j),Math.round(hw*2),1);}q.globalAlpha=1;};
  const line=(x0,y0,x1,y1,c,w=1)=>{const n=Math.ceil(Math.hypot(x1-x0,y1-y0));for(let i=0;i<=n;i++)r(x0+(x1-x0)*i/n,y0+(y1-y0)*i/n,w,w,c);};
- return {r,tube,disc,oval,line};}
+ // Leistung: eine Pixelzeile mit Farbe je Pixel; direkt benachbarte Pixel gleicher Farbe werden als ein Rechteck gezeichnet (Bild identisch zu Einzelpixeln über r)
+ const seq=(xf,y,from,to,col)=>{const run={n:0,x:0,y:0,c:null},flush=()=>{if(run.n){q.fillStyle=run.c;q.fillRect(run.x,run.y,run.n,1);run.n=0;}};for(let i=from;i<to;i++){const c=col(i),rx=Math.round(xf(i)),ry=Math.round(y);if(run.n&&c===run.c&&ry===run.y&&rx===run.x+run.n){run.n++;continue;}flush();run.x=rx;run.y=ry;run.c=c;run.n=1;}flush();};
+ return {r,tube,disc,oval,line,seq};}
 // Gedrehte Teile (hängende Hand, fallendes Glied, sinkender Kopf) erst gerade zeichnen, dann als Pixelbild drehen: bleibt scharf
 let scratch=null;
 function turned(q,cx,cy,ang,dx,dy,draw){if(!ang&&!dx&&!dy){draw(tools(q),q);return;}if(!scratch){scratch=document.createElement('canvas');scratch.width=FW*2;scratch.height=FH*2;}const s=scratch.getContext('2d');s.setTransform(1,0,0,1,0,0);s.clearRect(0,0,FW*2,FH*2);s.translate(FW/2,FH/2);draw(tools(s),s);q.save();q.imageSmoothingEnabled=false;q.translate(Math.round(cx+dx),Math.round(cy+dy));q.rotate(ang);q.drawImage(scratch,-Math.round(cx)-FW/2,-Math.round(cy)-FH/2);q.restore();}
@@ -75,7 +77,7 @@ function headShape(q,T,C,cx,top,R,o={}){const sc=R/26,half=y=>{const u=(y-28)/34
  else T.r(mx+1,my+2,mw-2,2,lip);
  if(o.blood>0){const n=Math.round(o.blood*9*sc);T.r(mx+mw-4,my+3,2,n,BLOOD);T.r(mx+mw-4,my+3+n,2,1,DARK);}}
 function torso(q,T,C,ox,oy,o={}){/* Rumpf von vorn: Hals, Schultern, Brust, Bauch, Lendentuch, hängende Oberarme */
- const X=x=>80+ox+x,Y=y=>oy+y,row=(y,hw)=>{for(let x=-Math.ceil(hw);x<Math.ceil(hw);x++){const s=x/hw;T.r(X(x),Y(y),1,1,Math.abs(s)>.96?C.line:s>.5?C.shade:s<-.55?C.light:C.skin);}};
+ const X=x=>80+ox+x,Y=y=>oy+y,row=(y,hw)=>T.seq(X,Y(y),-Math.ceil(hw),Math.ceil(hw),x=>{const s=x/hw;return Math.abs(s)>.96?C.line:s>.5?C.shade:s<-.55?C.light:C.skin;});
  T.tube(X(-70),Y(30),X(-79),Y(104),24,21,C);T.tube(X(70),Y(30),X(79),Y(104),24,21,{...C,skin:C.shade,light:C.skin});
  for(let y=o.cutNeck?9:-14;y<16;y++)row(y,10);/* der Hals reicht bis unter das Kinn; eine Lücke gibt es nur, wenn der Kopf abgetrennt ist */for(let y=12;y<26;y++)row(y,22+(y-12)*3.6);T.disc(X(-66),Y(28),13,C);T.disc(X(66),Y(28),13,{...C,skin:C.shade,light:C.skin});
  for(let y=24;y<62;y++)row(y,63-(y-24)*.28);for(let y=62;y<108;y++)row(y,52-Math.sin((y-62)/46*Math.PI)*6);
@@ -85,7 +87,7 @@ function torso(q,T,C,ox,oy,o={}){/* Rumpf von vorn: Hals, Schultern, Brust, Bauc
  T.r(X(-1),Y(30),1,26,C.shade);T.r(X(-34),Y(44),2,2,mix(C.shade,'#6b2420',.4));T.r(X(32),Y(44),2,2,mix(C.shade,'#6b2420',.5));
  T.r(X(-1),Y(62),1,40,C.shade);for(const y of [70,81,92]){T.r(X(-16),Y(y),14,1,C.shade);T.r(X(2),Y(y),14,1,C.shade);}T.r(X(-1),Y(97),3,3,mix(C.shade,'#000000',.3));
  for(const s of [-1,1])for(let n=0;n<3;n++)T.r(X(s*(40+n*2))-(s>0?6:0),Y(63+n*5),6,1,C.shade);
- for(let y=108;y<130;y++)for(let x=-50;x<50;x++)T.r(X(x),Y(y),1,1,y<112?C.belt:x>24?mix(C.cloth,'#000000',.25):C.cloth);
+ {const dark=mix(C.cloth,'#000000',.25);for(let y=108;y<130;y++)T.seq(X,Y(y),-50,50,x=>y<112?C.belt:x>24?dark:C.cloth);}
  if(o.cutNeck){T.oval(X(0),Y(9),10,3,DARK);T.oval(X(0),Y(9),7,2,BLOOD);T.r(X(-1),Y(8),3,2,'#efe6d0');}
  if(o.head){const f=o.off||{dx:0,dy:0,ang:0};turned(q,X(0),Y(-30),f.ang,f.dx,f.dy,(TT,qq)=>{if(o.cutNeck){TT.r(X(-9),Y(-4),18,10,C.skin);TT.r(X(4),Y(-4),5,10,C.shade);TT.oval(X(0),Y(6),9,2.5,DARK);TT.oval(X(0),Y(6),6,1.5,BLOOD);}headShape(qq,TT,C,X(0),Y(-62),23,o.head);});}}
 // Ansichten: jede liefert {A:Wundpunkt, dir, w, limbInfo?}
