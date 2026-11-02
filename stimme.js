@@ -144,7 +144,7 @@ const legalLetters=r=>/^(sch[lmnrw]?|spr|str|sp|st|pfl|pfr|pf|[bpgkf][lr]|tr|dr|
 function parseLex(s){const ph=[];let st=-1;for(const tok of s.split(' ')){if(tok.startsWith("'")){ph.push(tok.slice(1));st=ph.length-1;}else ph.push(tok);}return {ph,stressPh:st};}
 function lastVowel(o){for(let k=o.length-1;k>=0;k--)if(isVow(o[k]))return o[k];return '';}
 // Kernregeln für ein Wort ohne Vorsilben
-function core(w,fn){
+function core(w,fn,lat){
  const o=[],n=w.length;let i=0;const nVg=(w.match(/[aeiouäöüy]+/g)||[]).length;
  while(i<n){const r=w.slice(i),c=w[i];
   if(i===0&&isV(c))o.push('?');
@@ -189,10 +189,10 @@ function core(w,fn){
   const dbl=w[i+1]===c;let p=null;
   switch(c){
    case 'b':case 'd':case 'g':case 'p':case 't':case 'k':case 'f':case 'l':case 'm':case 'n':p=c;break;
-   case 'v':p=isV(w[i-1])&&isV(w[i+1])?'v':'f';break;
+   case 'v':p=lat||isV(w[i-1])&&isV(w[i+1])?'v':'f';break;
    case 'w':p='v';break;case 'j':p='j';break;
    case 'h':p=isV(w[i+1])?'h':null;break;
-   case 'r':p=isV(w[i+1])?'R':(isVow(o[o.length-1])?'6g':'R');break;
+   case 'r':p=isV(w[i+1])||(dbl&&isV(w[i+2]))?'R':(isVow(o[o.length-1])?'6g':'R');break;
    case 's':p=isV(w[i+1])&&(i===0||isV(w[i-1])||'lnmrh'.includes(w[i-1]))?'z':'s';break;
    case 'ß':p='s';break;
    case 'z':o.push('t');p='s';break;
@@ -229,12 +229,16 @@ function build(w,fn,allowUn,opt){
  if(allowUn&&!NOPRE.some(x=>w.startsWith(x)))for(const p of UNPRE){if(!w.startsWith(p)||w.length<p.length+3)continue;const rest=w.slice(p.length);if(!vgroups(rest))continue;
   if(isV(rest[0])){if(p==='be'||p==='ge'||rest.length<4)continue;}else if(!legalLetters(rest)||/^(.)\1/.test(rest))continue;
   const A=UNPH[p].split(' '),B=build(rest,false,false,opt),ph=[...A,...B.ph],syls=syllabify(ph),nA=syllabify(A).length;return {ph,syls,stress:Math.min(syls.length-1,nA+B.stress)};}
- const ph=core(w,fn);
+ // lateinische Namen (Varro, Valerius, Silvanus): v = w
+ const lat=!!opt.cap&&/(us|um|ius|ia|o|ex|ax|ix)$/.test(w);
+ const ph=core(w,fn,lat);
  // Auslautverhärtung: b d g v z vor Wortende oder Geräuschlaut
  for(let k=0;k<ph.length;k++){const h={b:'p',d:'t',g:'k',v:'f',z:'s',Z:'S'}[ph[k]];if(h&&(k===ph.length-1||isObs(ph[k+1])))ph[k]=h;}
  const syls=syllabify(ph);let stress=0;const n=syls.length;
  if(n>1){for(const [re,minS,ex] of SUFF){const m=re.exec(w);if(!m||n<minS||(ex&&ex.test(w)))continue;const tail=w.slice(m.index+m[0].indexOf(m[1])+m[1].length);stress=clamp(n-1-vgroups(tail),0,n-1);break;}
-  if(!stress&&opt.cap&&n>=3&&/(us|um|es)$/.test(w)){const pen=syls[n-2],heavy=pen.b-pen.nuc>1||P[ph[pen.nuc]]?.k==='d';stress=heavy?n-2:n-3;}}
+  if(!stress&&opt.cap&&n>=3&&/(us|um|es)$/.test(w)){const pen=syls[n-2],vg=[...w.matchAll(/[aeiouäöüy]/g)],pv=vg[vg.length-2];
+   // schwer = geschlossene Silbe; Doppelmitlaut zählt (Mar|cel|lus), auch wenn er als ein Laut gesprochen wird
+   const heavy=pen.b-pen.nuc>1||P[ph[pen.nuc]]?.k==='d'||(pv&&/^[^aeiouäöüy]{2}/.test(w.slice(pv.index+1)));stress=heavy?n-2:n-3;}}
  // betonte offene Endsilbe: Vokal lang (Sa|lat, Na|tur)
  if(stress===n-1&&n>1){const s=syls[stress],v=ph[s.nuc];if(s.b-s.nuc<=2&&{a:'a:',E:'e:',I:'i:',O:'o:',U:'u:',Y:'y:','9':'2:'}[v])ph[s.nuc]={a:'a:',E:'e:',I:'i:',O:'o:',U:'u:',Y:'y:','9':'2:'}[v];}
  return {ph,syls,stress};}

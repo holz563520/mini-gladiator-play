@@ -133,6 +133,10 @@ summary{cursor:pointer;color:var(--gold);font-size:12px;letter-spacing:.08em;tex
    </div>
    <div class="now" id="now"><span>Antippen spielt eine neue Zufallsvariante.</span><span></span></div>
    <canvas class="melody" id="melody2" width="1100" height="110" aria-label="Tonhöhe des letzten Schreis"></canvas>
+   <div class="cat"><div class="cathead"><h2>Publikum</h2></div>
+    <div class="row"><label class="ctl">Name des Helden<input id="hero" value="Marcellus" maxlength="20" style="background:var(--ink);border:1px solid var(--line);color:var(--cream);padding:8px;width:14ch"></label>
+     <button class="btn primary" id="chant">▶ Namenschor (Niederschlag)</button><button class="btn" id="chantKill">▶ Nach Tötung</button><button class="btn" id="chantWild">▶ Zweites Opfer (wild)</button></div>
+    <p class="hint">So reagiert die Arena im Spiel: Jubel, dann brüllt das Publikum den Namen, jedes Mal gefolgt von drei Klatschern. Das erste Mal wird kurz gerechnet.</p></div>
    <div id="cats" class="cat"></div>
   </div>
  </section>
@@ -216,6 +220,14 @@ $('intensity').addEventListener('input',e=>{opts.intensity=+e.target.value;$('vI
 // Reiter
 for(const [tab,panel] of [['tabSpeak','speak'],['tabScream','scream']])$(tab).onclick=()=>{for(const [t2,p2] of [['tabSpeak','speak'],['tabScream','scream']]){$(t2).setAttribute('aria-selected',t2===tab);$(p2).hidden=p2!==panel;}try{localStorage.setItem('stimmlabor-tab',tab);}catch{}};
 try{const t=localStorage.getItem('stimmlabor-tab');if(t&&$(t))$(t).click();}catch{}
+// Publikum: Namenschor wie im Spiel (audio.js crowdChant): Jubel aus dem Spiel fehlt hier, Muster und Klänge sind dieselben
+const CH={};let clapsB=null;
+function chorus(reps,wild){stop();const c=audio(),name=($('hero').value||'Marcellus').trim().split(/\s+/)[0],k=name+(wild?'|w':'');
+ if(!CH[k])CH[k]=[Sc.chant(name,{wild}),Sc.chant(name,{wild})];if(!clapsB)clapsB=[Sc.claps(),Sc.claps(),Sc.claps()];
+ let t=c.currentTime+.1;for(let r=0;r<reps;r++){const C=CH[k][r%2],g=.5+.22*r/Math.max(1,reps-1);playing.push(St.playData(c,out,C,{at:t,vol:g*(wild?1.1:1)}));
+  for(const d of [.08,.36,.64])playing.push(St.playData(c,out,clapsB[Math.floor(Math.random()*3)],{at:t+C.len+d,vol:.5*g}));t+=C.len+.95;}
+ $('now').innerHTML=`<span><b>Namenschor „${name}“</b> · ${reps}×</span><span></span>`;}
+$('chant').onclick=()=>chorus(3,false);$('chantKill').onclick=()=>chorus(4,false);$('chantWild').onclick=()=>chorus(5,true);
 voices();figs();cats();pick(0);loop();
 window.LAB={say,scream};
 })();

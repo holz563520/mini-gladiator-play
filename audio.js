@@ -110,6 +110,31 @@ function scream(kind,g,pitch,vol){if(!SCR[kind]||!window.Schrei&&!swkOk)return f
  if(L.length>=2&&Math.random()<.6){L.splice(i,1);sFill(kind,F);}
  try{const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;s.playbackRate.value=.97+Math.random()*.06;gn.gain.value=vol;s.connect(gn);gn.connect(fxBus);s.start();ksVoices++;s.onended=()=>{ksVoices--;s.disconnect();gn.disconnect();};}catch{return false;}return true;}
 function screamWarmup(){if(!swkOk)return;for(let t=1;t<=5;t++){const F=scrFig(null,TIERS[t-1][0]);for(const k of ['pain','hurt','death','effort','battlecry'])sFill(k,F);}const W=scrFig({sex:'female',fights:8},1);for(const k of ['pain','hurt','death'])sFill(k,W);}
+// ---------- Publikum: Namenschor mit Klatschen (seit 2.11.2026) ----------
+// Streckt ein Kämpfer in der Arena jemanden nieder oder tötet ihn, jubelt das Publikum und brüllt seinen Namen im Chor,
+// jedes Mal gefolgt von drei Klatschern („Marcellus! – klatsch, klatsch, klatsch“), 3× nach Niederschlag, 4× nach Tötung,
+// 5× und wilder ab dem zweiten Opfer. Immer nur ein Chor zugleich; währenddessen nur Jubel. Spricht der Moderator, ist der
+// Chor leiser. Gerechnet in einem eigenen Worker (schrei-worker.js), damit die Kampfschreie nicht warten; die Namen der
+// Kämpfer werden zu Kampfbeginn vorbereitet.
+let cwk=null,cwkOk=typeof Worker==='function',cseq=0,chantUntil=0,clapB=[],chorB=null;const CWAIT=new Map(),CHOR=new Map();
+function cWorker(){if(!cwkOk)return null;if(cwk)return cwk;try{cwk=new Worker('schrei-worker.js?v='+(window.ARENA_BUILD||''));cwk.onmessage=e=>{const w=CWAIT.get(e.data?.id);if(w){CWAIT.delete(e.data.id);w(e.data);}};cwk.onerror=()=>{cwkOk=false;cwk=null;for(const [,w] of CWAIT)w({error:'worker'});CWAIT.clear();};}catch{cwkOk=false;cwk=null;}return cwk;}
+function cJob(msg,cb){const W=cWorker();if(!W||!ctx)return false;const id=++cseq;CWAIT.set(id,R=>{if(R.error||!R.data?.length){cb(null);return;}try{const b=ctx.createBuffer(1,R.data.length,R.sr||32000);b.getChannelData(0).set(R.data);b.len=R.len;cb(b);}catch{cb(null);}});W.postMessage({...msg,id,seed:Math.floor(Math.random()*1e9)});return true;}
+const chantName=g=>String(g?.name||'').trim().split(/\s+/)[0];
+function chorPrep(name,n=1,wild=false){if(!name)return null;let E=CHOR.get(name);if(!E){E={b:[],w:[],pend:0,wild:[]};CHOR.set(name,E);if(CHOR.size>18)CHOR.delete(CHOR.keys().next().value);}
+ const L=wild?E.wild:E.b;while(L.length+E.pend<n){E.pend++;if(!cJob({type:'chant',name,wild},b=>{E.pend--;if(b)L.push(b);const w=E.w.splice(0);for(const f of w)f(E);})){E.pend--;break;}}return E;}
+function clapPrep(){if(clapB.length+(clapB.pend||0)>=3)return;clapB.pend=(clapB.pend||0)+1;if(!cJob({type:'claps'},b=>{clapB.pend--;if(b)clapB.push(b);}))clapB.pend--;}
+function chantPrefill(b){if(!cwkOk||!arenaCrowd())return;for(let i=0;i<3;i++)clapPrep();const hum=(b.actors||[]).filter(a=>a.g&&!a.dog&&!a.rex&&!a.hahn).sort((x,y)=>(x.team-y.team));for(const a of hum.slice(0,12))chorPrep(chantName(a.g),1);}
+function playAt(b,t,vol,rate=1){try{const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;s.playbackRate.value=rate;gn.gain.value=vol;s.connect(gn);gn.connect(fxBus);s.start(t);ksVoices++;s.onended=()=>{ksVoices--;s.disconnect();gn.disconnect();};}catch{}}
+function crowdCheer(vol=.6){if(!enabled(false)||!ctx||!arenaCrowd())return;crowdNext=0;crowdReact('jubel',vol);if(window.KampfSound?.DEF?.applause&&ctx.currentTime>chantUntil)ks('applause',.35,.3);}
+function crowdChant(g,o={}){if(!enabled(false)||!ctx||!arenaCrowd()||!g?.name)return;const now=ctx.currentTime;crowdNext=0;crowdReact('jubel',o.kill?.72:.6);
+ if(now<chantUntil)return;const name=chantName(g),wild=!!o.big,reps=wild?5:o.kill?4:3;chantUntil=now+4;const t0=now;
+ const go=E=>{const L=(wild&&E.wild.length?E.wild:E.b);if(!L.length||ctx.currentTime-t0>3){chantUntil=0;return;}
+  let t=ctx.currentTime+.12;const quiet=M.speaking?.('moderator')?.55:1;
+  for(let r=0;r<reps;r++){const b=L[r%L.length],len=b.len||.8,gv=(.48+.22*r/Math.max(1,reps-1))*quiet*(wild?1.1:1);playAt(b,t,gv,.98+Math.random()*.04);
+   if(clapB.length)for(const k of [.08,.36,.64])playAt(clapB[Math.floor(Math.random()*clapB.length)],t+len+k,.5*gv,.95+Math.random()*.1);t+=len+.95;}
+  chantUntil=t+.3;chorPrep(name,2,wild);};
+ const E=chorPrep(name,1,wild);if(!E){chantUntil=0;return;}const L=wild?E.wild:E.b;if(L.length||(wild&&E.b.length))go(E);else E.w.push(go);clapPrep();}
+M.crowdChant=crowdChant;M.crowdCheer=crowdCheer;
 function voice(kind='pain',pitch=1,strong=false){const g=vpG;vpG=null;if(!enabled(false)||ctx.currentTime-lastVoice<.22||active>44)return;lastVoice=ctx.currentTime;
  if(kind==='pain'&&!strong&&Math.random()<.4)return;
  {const sk=kind==='pain'&&strong?'hurt':kind;if(SCR[sk]&&scream(sk,g,pitch,{pain:.55,hurt:.68,death:.8,dying:.6,effort:.5,battlecry:.62}[sk]))return;}
@@ -141,7 +166,7 @@ for(const ev of ['pointerdown','touchend','keydown'])document.addEventListener(e
 {const seen=new WeakSet();let lastB=null;const scan=(b,quiet)=>{let crack=0,skull=0;for(const a of b.actors||[]){const body=a.g?.body;if(!body)continue;for(const k in body){const p=body[k];if(!p)continue;
   const f=p.fracture;if(f&&typeof f==='object'&&!seen.has(f)){seen.add(f);if(!quiet){if(p.skullFracture||f.skull)skull++;else crack++;}}}}
  if(skull)sound('skullCrack');else if(crack)sound('boneCrack');};
- const step0=M.fixedStep;if(typeof step0==='function'){M.fixedStep=function(){const r=step0.apply(this,arguments);try{const b=M.s.battle;if(b&&(b.actors?.length||0)<=80){if(b!==lastB){lastB=b;scan(b,true);}else scan(b,false);}}catch(e){}return r;};}}
+ const step0=M.fixedStep;if(typeof step0==='function'){M.fixedStep=function(){const r=step0.apply(this,arguments);try{const b=M.s.battle;if(b&&(b.actors?.length||0)<=80){if(b!==lastB){lastB=b;scan(b,true);try{if(ctx&&enabled(false))chantPrefill(b);}catch{}}else scan(b,false);}}catch(e){}return r;};}}
 M.audioEngine={start,sound,voice,
  // Sprechstimmen (sprech-game.js): Ausgang für Sprache, nur wenn Geräusche an sind
  voiceOut:()=>enabled(false)?{ctx,bus:fxBus}:null,
@@ -150,6 +175,7 @@ M.audioEngine={start,sound,voice,
  // Schmiede-Party: Uhr und Sprungmarken des Schmiede-Liedes (nur lesen bzw. umstellen, die Wiedergabe steuert weiter songTick).
  smithClock:()=>{const t=songs.smith;return{idx:t.idx,time:t.el?t.el.currentTime||0:0,playing:!!(t.playing&&t.el&&!t.el.paused)};},
  smithSeek:u=>{const t=songs.smith,first=132.4,idx=u<first?0:1;t.idx=idx;if(!t.el||!t.ext)return;const want='music/'+t.files[idx]+'.'+t.ext;if(!t.el.src.endsWith(want))t.el.src=want;try{t.el.currentTime=idx?u-first:u;}catch{}if(t.playing){const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}},
+ chants:()=>({names:[...CHOR.keys()],ready:[...CHOR.values()].reduce((n,E)=>n+E.b.length+E.wild.length,0),claps:clapB.length,until:chantUntil,now:ctx?.currentTime||0}),
  screams:()=>({types:SPOOL.size,ready:[...SPOOL.values()].reduce((n,L)=>n+L.length,0),queue:SQ.length,worker:swkOk}),
  diagnostics:()=>({active,musicVoices,scene,song:songs.home.playing?'home':songs.battle.playing?'battle':songs.smith.playing?'smith':songs.hall.playing?'hall':songs.raid.playing?'raid':songs.medic.playing?'medic':'',state:ctx?.state||'not-started'})};
 })();

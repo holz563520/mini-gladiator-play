@@ -164,5 +164,21 @@ function render(id,o={}){const E=L.find(x=>x.id===id);if(!E)throw new Error('Unb
  const mouth=[];for(let t=0;t<dur;t+=.02){const i=Math.min(TT.n-1,Math.round(t/St.FR));mouth.push({t,o:TT.MO[i]*((TT.AV[i]+TT.AF[i]+TT.AH[i])>.05?1:.3)});}
  const f0=[];for(let i=0;i<TT.n;i+=10)f0.push(TT.AV[i]>.12?TT.f0[i]:0);
  return {data,sr:SR,dur:data.length/SR,mouth,id,seed,info:{f0,f0step:St.FR*10}};}
-W.Schrei={FIG,CATS,LIST:L,render};
+// ---------- Publikum: Sprechchor mit dem Namen und gemeinsames Klatschen ----------
+// Chor: viele verschiedene Stimmen (Männer und einige Frauen, Lage, Größe, Rauheit gemischt) rufen den Namen mit der
+// Sprachausgabe, jede etwas versetzt (bis 70 ms) – so klingt es wie eine Menge, nicht wie ein Echo. len = Ende des Rufs ohne Hall.
+function chant(name,o={}){const r=rng(o.seed??Math.floor(Math.random()*1e9)),N=o.voices||14,txt=String(name||'').replace(/[^A-Za-zÄÖÜäöüß ]/g,'')+'!',parts=[];let n=0;
+ for(let k=0;k<N;k++){const fem=r()<.2,v={pitch:fem?188+r()*45:90+r()*58,size:fem?.84+r()*.06:.95+r()*.2,range:8+r()*5,speed:.9+r()*.18,rough:.08+r()*.3,breath:.08+r()*.15,oq:.5,tilt:.6,creak:0,breathIn:0};
+  const R=St.render(txt,v,{style:o.wild?(r()<.7?'schrei':'ruf'):(r()<.35?'schrei':'ruf'),seed:Math.floor(r()*1e9),room:0}),off=Math.floor(r()*.07*SR);let e=R.data.length;while(e>1&&Math.abs(R.data[e-1])<.01)e--;
+  parts.push({d:R.data.subarray(0,e),off,g:.55+r()*.45});n=Math.max(n,off+e);}
+ const dry=new Float32Array(n);for(const P of parts)for(let i=0;i<P.d.length;i++)dry[P.off+i]+=P.d[i]*P.g;
+ let pk=0;for(let i=0;i<n;i++)pk=Math.max(pk,Math.abs(dry[i]));let e=n;while(e>1&&Math.abs(dry[e-1])<pk*.04)e--;
+ const data=finish(dry,{drive:1.3,room:o.room??.38,roomSize:1.25});return {data,sr:SR,dur:data.length/SR,len:e/SR};}
+// Klatschen: viele Hände zugleich, jede ein kurzer gefilterter Rauschstoß, Zeitstreuung wie bei Menschen (± 15 ms)
+function claps(o={}){const r=rng(o.seed??Math.floor(Math.random()*1e9)),n=o.people||45,len=Math.floor(.32*SR),x=new Float32Array(len);
+ for(let p=0;p<n;p++){const g=(r()+r()+r()-1.5)*.02,t0=Math.floor(Math.max(0,.025+g)*SR),fc=850+r()*1900,q=1+r()*1.4,dec=(.005+r()*.011)*SR,amp=.4+r()*.6;
+  const w=2*Math.PI*fc/SR,al=Math.sin(w)/(2*q),a0=1+al,b0=al/a0,b2=-al/a0,a1=-2*Math.cos(w)/a0,a2=(1-al)/a0;let x1=0,x2=0,y1=0,y2=0;
+  for(let i=0;i<dec*7&&t0+i<len;i++){const v=(r()*2-1)*Math.exp(-i/dec)*amp,y=b0*v+b2*x2-a1*y1-a2*y2;x2=x1;x1=v;y2=y1;y1=y;x[t0+i]+=y;}}
+ const data=finish(x,{drive:1.2,room:o.room??.22,roomSize:.9});return {data,sr:SR,dur:data.length/SR};}
+W.Schrei={FIG,CATS,LIST:L,render,chant,claps};
 })();
