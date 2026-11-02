@@ -50,7 +50,9 @@ A.KINDS={
  schuetzen:{label:'Schützen & Schilde',n:N=>Math.max(2,N),roles:(r,i)=>i%2?'Fernkämpfer':'Soldat',spread:.2},
  meuchler:{label:'Meuchlerbande',n:N=>Math.max(2,N),roles:(r,i)=>i===0?'Soldat':'Assassine',spread:.25},
  anfuehrer:{label:'Anführer mit Gefolge',n:N=>Math.max(3,N+1),roles:(r,i)=>i===0?'Soldat':r()<.3?'Fernkämpfer':'Soldat',spread:0,lead:true}};
-A.RATIOS=[.45,.75,.95,1.1,1.35,1.75];
+// Fünf Angebote, eins je Totenkopf: Ziel-Ansage 90 / 72 / 55 / 37 / 20 %
+A.SKULL_P=[.9,.72,.55,.37,.2];
+A.skulls=pA=>pA>=.82?1:pA>=.63?2:pA>=.46?3:pA>=.29?4:5;
 function enemyGroup(r,kind,kwSum,N){
  const K=A.KINDS[kind],n=K.n(N);let w=Array.from({length:n},()=>1+(r()*2-1)*K.spread);
  if(K.lead)w=w.map((v,i)=>i===0?n*.9:v);
@@ -60,14 +62,14 @@ function enemyGroup(r,kind,kwSum,N){
   return {kind:'human',key:'e'+i,row:role==='Fernkämpfer'||(n>=6&&i>=Math.ceil(n/2))?'back':'front',g};});
  return units;}
 A.offers=(own,seed)=>{const r=CH.rngOf(seed),sum=own.reduce((a,f)=>a+f.kw,0),N=own.length,kinds=Object.keys(A.KINDS),out=[];
- A.RATIOS.forEach((ratio,i)=>{let kind;
-  for(let t=0;t<8;t++){kind=kinds[Math.floor(r()*kinds.length)];if(!(N===1&&kind==='champion'&&ratio>1.4)&&!out.some(o=>o.kind===kind))break;}
-  const heads=A.KINDS[kind].n(N),enemy=enemyGroup(r,kind,sum*ratio*(.95+r()*.1)/Math.pow(heads/N,A.P.nExp),N);
-  out.push(A.describe({kind,label:A.KINDS[kind].label,enemy,id:'o'+seed+'-'+i},own));});
+ A.SKULL_P.forEach((p,i)=>{let kind;const eff=Math.pow((1-p)/p,1/A.P.k);
+  for(let t=0;t<10;t++){kind=kinds[Math.floor(r()*kinds.length)];if(!(N===1&&kind==='champion'&&i>=3)&&!out.some(o=>o.kind===kind))break;}
+  const heads=A.KINDS[kind].n(N),enemy=enemyGroup(r,kind,sum*eff*(.97+r()*.06)/Math.pow(heads/N,A.P.nExp),N);
+  out.push(A.describe({kind,label:A.KINDS[kind].label,enemy,id:'o'+seed+'-'+i,level:i+1},own));});
  return out;};
 A.describe=(o,own)=>{const ownKW=own.reduce((a,f)=>a+f.kw,0),enKW=o.enemy.reduce((a,u)=>a+A.kw(u.g),0);
  const eff=enKW/Math.max(1,ownKW)*Math.pow(o.enemy.length/Math.max(1,own.length),A.P.nExp),pA=1/(1+Math.pow(eff,A.P.k)),base=A.P.G0*Math.pow(enKW/30,A.P.bExp),risk=Math.min(A.P.riskMax,Math.pow(2*(1-pA),A.P.riskExp));
- return Object.assign(o,{ownKW,enKW,eff,pA,base,risk,quote:1/Math.max(.02,pA),
+ return Object.assign(o,{ownKW,enKW,eff,pA,base,risk,quote:1/Math.max(.02,pA),skulls:A.skulls(pA),
   roster:o.enemy.map(u=>({name:u.g.name,role:u.g.role,kw:A.kw(u.g)}))});};
 
 // ---------- Aufstellung: 3 Reihen × 3 Bahnen ----------
@@ -81,30 +83,33 @@ function placeOwn(b,lineup){
   a.x=260+ROW_X[L.slot.row]+(i%2)*-22;a.y=cl(LANE_Y[L.slot.lane]+(i-(list.length-1)/2)*46,170,610);a.row=L.slot.row==='hinten'?'back':'front';});}
 
 // ---------- Kampf mit Messung ----------
+// Der Messer läuft neben dem Kampf her: headless (A.fight) oder sichtbar in der Kampfansicht (tick je Simulationsschritt)
 const alive=a=>!a.g.dead&&!a.down&&!a.surrendered&&!a.fled&&!a.submit;
 function hp(a){try{return a.unit.kind==='human'?cl(M.health(a.g)/100,0,1):1;}catch{return 1;}}
-A.fight=(lineup,offer,opt={})=>{
- const blue=lineup.map(L=>({kind:'human',key:L.id,row:L.slot.row==='hinten'?'back':'front',g:L.g}));
- const spec=JSON.parse(JSON.stringify({title:offer.label,blue,red:offer.enemy}));
- const S=M.s;S.battle=AN.build(spec);M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;
- const b=S.battle;placeOwn(b,lineup);
+A.spec=(lineup,offer,copy=true)=>{const blue=lineup.map(L=>({kind:'human',key:L.id,row:L.slot.row==='hinten'?'back':'front',g:L.g}));
+ const spec={title:offer.label,blue,red:offer.enemy};return copy?JSON.parse(JSON.stringify(spec)):spec;};
+A.place=placeOwn;
+A.tracker=(b,lineup,offer,opt={})=>{
  const kwOf={};for(const a of b.actors)kwOf[a.unitKey+'|'+a.team]=a.team===0?(lineup.find(L=>L.id===a.unitKey)||{}).kw||A.kw(a.g):A.kw(a.g);
- const K=a=>kwOf[a.unitKey+'|'+a.team]||30;
- let out=null;AN.listeners.push(o=>{out=o;});
- const dt=1/60,limit=Math.ceil((AN.TMAX+60)/dt)+5400,curve=[],events=[],dead=new Set(),kills={};
+ const K=a=>kwOf[a.unitKey+'|'+a.team]||30,curve=[],events=[],dead=new Set();
  const strength=t=>b.actors.filter(a=>a.team===t&&alive(a)).reduce((s,a)=>s+K(a)*(.35+.65*hp(a)),0);
- const s0=[strength(0),strength(1)];let n=0;
+ const s0=[Math.max(1,strength(0)),Math.max(1,strength(1))];let n=0;
  const sample=()=>{const t=Math.round((b.time-b.startTime)*10)/10,s=[strength(0),strength(1)];curve.push([t,s[0]/s0[0],s[1]/s0[1]]);
   for(const a of b.actors){const key=a.team+'|'+a.unitKey;
-   if((a.kills||0)>(kills[key]||0)){kills[key]=a.kills;}
    if(!dead.has(key)&&(a.g.dead||a.down||a.surrendered||a.fled||a.submit)){dead.add(key);
     events.push({t,type:a.g.dead?'tot':'kampfunfaehig',team:a.team,name:a.g.name,kw:K(a),by:a.g.killer||''});}}};
- while(S.battle&&!out&&n<limit){M.fixedStep(dt);n++;if(n%15===0)sample();}
+ return {b,tick(){if(++n%15===0)sample();},
+  done(out){sample();const actorKW={};for(const a of b.actors)actorKW[a.team+'|'+a.unitKey]={kw:K(a),name:a.g.name,team:a.team,id:a.unitKey};
+   return A.judge({out,curve,events,actorKW,s0,lineup,offer,vows:opt.vows||[],hero:opt.hero||null,fame:opt.fame||0});}};
+};
+A.fight=(lineup,offer,opt={})=>{
+ const S=M.s;S.battle=AN.build(A.spec(lineup,offer));M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;
+ const b=S.battle;placeOwn(b,lineup);const T=A.tracker(b,lineup,offer,opt);
+ let out=null;AN.listeners.push(o=>{out=o;});
+ const dt=1/60,limit=Math.ceil((AN.TMAX+60)/dt)+5400;let n=0;
+ while(S.battle&&!out&&n<limit){M.fixedStep(dt);n++;T.tick();}
  if(!out){out=AN.outcome(b,-1);out.stuck=true;}
- sample();
- const actorKW={};for(const a of b.actors)actorKW[a.team+'|'+a.unitKey]={kw:K(a),name:a.g.name,team:a.team,id:a.unitKey};
- S.battle=null;S.records=[];S.inventory=[];
- return A.judge({out,curve,events,actorKW,s0,lineup,offer,vows:opt.vows||[],hero:opt.hero||null,fame:opt.fame||0});
+ const res=T.done(out);S.battle=null;S.records=[];S.inventory=[];return res;
 };
 
 // ---------- Bewertung ----------
