@@ -176,6 +176,7 @@ function fight(){const o=offers[sel];if(!o)return;const L=lineup();busy=true;con
  const spec=A.spec(L,o,false);
  S.battle=null;try{M.ui.click('nav:home');}catch(e){}try{window.HahnArena?.resetScene?.();}catch(e){}
  M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;for(const p of [...(M.fx||[]),...(M.shots||[])])p.active=false;
+ S.gold=st.gold; // Goldanzeige der Kampfansicht zeigt das Simulator-Gold
  const b=AN.build(spec);b.league=0;A.place(b,L);S.battle=b;
  tracker=A.tracker(b,L,o,{vows:st.vows,hero:st.hero,fame:st.fame});
  document.body.classList.add('auf-fighting');

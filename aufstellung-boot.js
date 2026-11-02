@@ -2,7 +2,7 @@
 // AUFSTELLUNG · EIGENSTÄNDIGE TESTVERSION (wie die Arena-Testversion): lädt das unveränderte Spiel, aber ohne Zugriff
 // auf echte Spielstände. Das Spiel schreibt nur in den Arbeitsspeicher dieser Seite; der Simulator speichert seinen eigenen
 // Kader unter einem eigenen Schlüssel (aufstellung-sim-v2), getrennt von allen Profilen.
-var BUILD='a596de3b';
+var BUILD='5a7025d5';
 (()=>{
  let real=null;try{real=window.localStorage;}catch{}
  window.AUF_STORE={get(k){try{return real?real.getItem(k):null;}catch{return null;}},set(k,v){try{real&&real.setItem(k,v);return true;}catch{return false;}},del(k){try{real&&real.removeItem(k);}catch{}}};
@@ -17,6 +17,9 @@ var BUILD='a596de3b';
  // Die Arena-Oberfläche des Spiels erwartet einen Gastgeber; hier bleibt sie geschlossen (startHidden) und bucht nichts
  window.ArenaCareer={test:true,startHidden:true,gold:0,fights:0,wins:0,roosters:[],lions:[],dogs:[],fallen:[],log:[],settle(){},record(){},addFallen(){},nextDay(){},close(){}};   // Anschluss der Arena an echte Spielstände (arena-game.js) bleibt aus
  window.ArenaTheoryIntro={active:()=>false,finish(){}};
+ // Ladebild-Vorbereitung des Spiels (scene-loader.js) aus: sie bereitet beim Start den Ludus vor und hält bis zum Antippen
+ // von „Weiter“ jede Simulation an – auch den Kampf. Vorhandener Schalter des Spiels: ?preload=off
+ try{const u=new URL(location.href);if(u.searchParams.get('preload')!=='off'){u.searchParams.set('preload','off');history.replaceState(null,'',u.toString());}}catch{}
  // Spieldateien wie boot.js (ohne Pixel-Varianten und Aktualisierungshinweis), danach der Simulator
  const files=['profiles','data','household','management','scout','sim','benchmark','school','world','forge','spy','kampfsound','audio','sprechsound','sprech-game','weapon-art','arena','techniques','manager','school-ui','world-ui','mobile','medicus-art','ludus','intro','forge-ui','forge-party','forge-intro','scene-nav','barracks','trader','wanderer-talk','wanderers','village-life','practice-yard','smith-wrath','archer-plot','hall','lion','hahn-engine','hahn-shots','hahn-arena','arena-beasts','arena-core','injury-shots','medic','battle-hud','face-shots','doktor','moderator','arena-calibration','arena-challenges','arena-art','arena-game','arena-ui','box-engine','box-art','box-sfx','box-game','lesson','quality-odds','buy-odds-data','buy-odds','hahn-closeup','hs-career','hs-art','hs-sfx','huehnerschule','day-gold','equip-plus','wanderer-scene','beast-crypt','equip-quick','arena-report','outside-core','outside-art','outside-leader','outside-leader-ui','arena-leader-ui','relics','relic-masks','outside-notorious','bosses-1','bosses-2','bosses-3','bosses-4','bosses-5','outside-show','outside-wagon','outside','smith-quotes','scene-loader','bogner','hund','hund-sound','hund-shots','hund-zwinger','hundefang-texte','hundefang','hunderennen','netz-art','aufstellung-core','aufstellung-ui'];
  const fail=msg=>{const el=document.getElementById('aufBoot');if(el)el.innerHTML='<b>Testversion konnte nicht starten</b><br>'+String(msg).replace(/</g,'&lt;')+'<br><button onclick="location.reload()">Erneut laden</button>';};
