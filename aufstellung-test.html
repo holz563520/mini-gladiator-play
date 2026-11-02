@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aufstellung · Testsimulator</title>
+<style>
+:root{--bg:#17120d;--panel:#241c14;--panel2:#2e241a;--line:#4a3a28;--sand:#e8d6b0;--dim:#a8957a;--gold:#e6b450;--red:#c8483b;--blue:#5b8fd1;--green:#7fb47b;--sold:#c98d4a;--ass:#9a7fd1;--fern:#6fae9a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--sand);font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+h1,h2,h3{font-family:Georgia,'Times New Roman',serif;letter-spacing:.04em;margin:0}
+button{font:inherit;color:inherit;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+.top{position:sticky;top:0;z-index:5;background:linear-gradient(#1d160f,#17120d);border-bottom:1px solid var(--line);padding:8px 12px calc(8px);display:flex;align-items:center;gap:10px}
+.top h1{font-size:15px;flex:1;line-height:1.1}.top h1 small{display:block;font:11px system-ui;color:var(--dim);letter-spacing:0}
+.stat{text-align:right;font-size:12px;color:var(--dim)}.stat b{display:block;font-size:16px;color:var(--gold)}
+.ico{width:34px;height:34px;padding:0;font-size:16px}
+main{max-width:760px;margin:0 auto;padding:10px 12px 110px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:12px}
+.sh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;gap:8px}.sh h2{font-size:15px}.sh span{font-size:12px;color:var(--dim)}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.col h3{font:600 11px system-ui;text-transform:uppercase;letter-spacing:0;white-space:nowrap;padding:4px 2px 6px;display:flex;justify-content:space-between}
+.col[data-r=Soldat] h3{color:var(--sold)}.col[data-r=Assassine] h3{color:var(--ass)}.col[data-r=Fernkämpfer] h3{color:var(--fern)}
+.list{display:flex;flex-direction:column;gap:4px;max-height:290px;overflow:auto}
+.card{border:1px solid var(--line);background:var(--panel2);border-radius:7px;padding:5px 6px;display:flex;align-items:center;gap:4px;min-height:38px;cursor:pointer;user-select:none}
+.card .nm{flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.card .nm small{display:block;color:var(--dim);font-size:10px}
+.card .kw{font:700 15px Georgia,serif;color:var(--gold)}
+.card.in{border-color:var(--gold);background:#3a2c18}.card.out{opacity:.45}.card.hero .nm::before{content:'★ ';color:var(--gold)}
+.buy{font-size:11px;padding:5px;margin-top:4px;width:100%;color:var(--dim)}
+.gridwrap{display:grid;grid-template-columns:28px repeat(3,1fr);gap:4px;align-items:stretch}
+.gh{font-size:10px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:.06em;align-self:end;padding-bottom:2px}
+.gl{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;text-align:center}
+.cell{min-height:62px;border:1px dashed var(--line);border-radius:8px;padding:3px;display:flex;flex-wrap:wrap;gap:3px;align-content:flex-start;background:#1f1811}
+.cell.target{border-color:var(--gold);border-style:solid;background:#2c2215}
+.chip{font-size:11px;border-radius:6px;padding:3px 5px;background:var(--panel2);border:1px solid var(--line);display:flex;gap:3px;align-items:center;max-width:100%}
+.chip b{color:var(--gold);font-family:Georgia,serif}.chip.sel{outline:2px solid var(--gold)}
+.chip[data-r=Soldat]{border-left:3px solid var(--sold)}.chip[data-r=Assassine]{border-left:3px solid var(--ass)}.chip[data-r=Fernkämpfer]{border-left:3px solid var(--fern)}
+.chip .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62px}
+.arrow{grid-column:2/5;text-align:right;font-size:11px;color:var(--red);padding-top:2px}
+.sum{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:12px;color:var(--dim)}.sum b{color:var(--sand)}
+.badge{font-size:11px;border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:2px 8px}
+.badge.off{border-color:var(--line);color:var(--dim)}
+.actbar{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.actbar button{flex:1;font-size:12px;padding:7px}
+.hint{font-size:12px;color:var(--dim);margin:6px 0 0}
+.offer{border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:6px;background:var(--panel2);cursor:pointer}
+.offer.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.offer .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.offer .t h3{font-size:14px}
+.offer .meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--dim);margin-top:4px}.offer .meta b{color:var(--sand)}
+.foes{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}.foes span{font-size:11px;padding:1px 5px;border-radius:5px;background:#1f1811;border:1px solid var(--line)}
+.tag{font-size:11px;border-radius:5px;padding:1px 6px}.tag.yawn{background:#3a3a3a;color:#bbb}.tag.brave{background:#5a1f1a;color:#ffb3a8}.tag.fair{background:#3c3216;color:var(--gold)}
+.chance{height:5px;border-radius:3px;background:#1f1811;margin-top:6px;overflow:hidden}.chance i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--gold),var(--green))}
+.vows{display:grid;grid-template-columns:1fr 1fr;gap:6px}.vow{text-align:left;font-size:12px;padding:7px}.vow b{display:block;font-size:13px}.vow small{color:var(--dim)}.vow.on{border-color:var(--gold);background:#3a2c18}
+.go{position:fixed;left:0;right:0;bottom:0;z-index:6;background:linear-gradient(transparent,#17120d 30%);padding:18px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;max-width:760px;margin:0 auto}
+.go button{flex:1;padding:13px;font-weight:700}.go .main{background:linear-gradient(#b8432f,#8a2a1d);border-color:#d45a43;font-family:Georgia,serif;letter-spacing:.05em;font-size:16px;flex:2}
+.modal{position:fixed;inset:0;z-index:10;background:rgba(10,7,4,.86);display:flex;align-items:flex-end;justify-content:center}
+.modal[hidden]{display:none}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:16px 16px 0 0;width:100%;max-width:760px;max-height:92vh;overflow:auto;padding:14px 14px calc(16px + env(safe-area-inset-bottom))}
+.res h2{font-size:24px;text-align:center}.res .gold{text-align:center;font:700 34px Georgia,serif;color:var(--gold);margin:4px 0}
+.res .sub{text-align:center;color:var(--dim);font-size:12px}
+.chart{width:100%;height:auto;background:#1a140e;border:1px solid var(--line);border-radius:8px;margin:10px 0 4px}
+.legend{display:flex;gap:12px;font-size:11px;color:var(--dim);justify-content:center}.legend i{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:4px}
+.bars{margin:8px 0}.bar{display:grid;grid-template-columns:118px 1fr 38px;gap:6px;align-items:center;font-size:12px;margin:3px 0}.bar .bg{height:8px;background:#1a140e;border-radius:4px;overflow:hidden}.bar .bg i{display:block;height:100%;background:var(--gold)}
+.formula{font-size:12px;background:#1a140e;border:1px solid var(--line);border-radius:8px;padding:8px;line-height:1.7}
+.formula b{color:var(--gold)}
+.ticker{font-size:12px;max-height:180px;overflow:auto;border-left:2px solid var(--line);padding-left:8px;margin:8px 0}.ticker div{margin:2px 0}.ticker .t{color:var(--dim);display:inline-block;width:42px}
+.ticker .o{color:#ffb3a8}.ticker .e{color:#a9c8f0}.ticker .x{color:var(--gold)}
+.fighters{display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px}.fighters div{background:var(--panel2);border-radius:6px;padding:4px 6px}.fighters .dead{color:#ff9d90}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl td{padding:5px 4px;border-bottom:1px solid var(--line)}.tbl td:last-child{text-align:right;color:var(--gold);font-weight:600}
+.row{display:flex;gap:8px;margin-top:12px}.row button{flex:1;padding:11px}
+.spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:s 1s linear infinite;margin:18px auto}@keyframes s{to{transform:rotate(360deg)}}
+.prog{height:6px;background:#1a140e;border-radius:3px;overflow:hidden;margin:8px 0}.prog i{display:block;height:100%;background:var(--gold);transition:width .2s}
+.set label{display:grid;grid-template-columns:1fr 60px;gap:4px 8px;font-size:12px;margin:8px 0;align-items:center}.set label small{grid-column:1/3;color:var(--dim)}.set input{grid-column:1/3;width:100%}
+.set output{text-align:right;color:var(--gold)}
+.fallen{font-size:12px;color:var(--dim)}
+@media(min-width:600px){.list{max-height:420px}.cell{min-height:74px}}
+</style>
+</head>
+<body>
+<div class="top">
+ <h1>Aufstellung<small>Testsimulator · echte Kämpfe, Spiel unverändert</small></h1>
+ <div class="stat">Gold<b id="gold">0</b></div>
+ <div class="stat">Ruhm<b id="fame">0</b></div>
+ <div class="stat">Tag<b id="day">1</b></div>
+ <button class="ico" id="btnMenu" aria-label="Menü">☰</button>
+</div>
+<main>
+ <section>
+  <div class="sh"><h2>Kader</h2><span>nach Kampfwert sortiert · antippen = aufstellen</span></div>
+  <div class="cols" id="cols"></div>
+ </section>
+ <section>
+  <div class="sh"><h2>Aufstellung</h2><span id="cap">1–10 Kämpfer</span></div>
+  <div class="gridwrap" id="grid"></div>
+  <div class="sum" id="sum"></div>
+  <div id="forms" class="sum"></div>
+  <div class="actbar" id="act" hidden></div>
+  <p class="hint" id="ghint">Kämpfer antippen, dann ein Feld antippen, um ihn zu versetzen. Hinten wartet, bis es ernst wird.</p>
+ </section>
+ <section>
+  <div class="sh"><h2>Gegner</h2><span id="offHint">täglich neu, passend zur Gruppe</span></div>
+  <div id="offers"><p class="hint">Stelle zuerst Kämpfer auf.</p></div>
+ </section>
+ <section>
+  <div class="sh"><h2>Gelübde</h2><span>höchstens zwei · Wette der Menge</span></div>
+  <div class="vows" id="vows"></div>
+ </section>
+ <section>
+  <div class="sh"><h2>Wie das Gold entsteht</h2></div>
+  <div class="formula">Gold = <b>Grundbörse</b> × <b>Risiko</b> × <b>Spektakel</b> × Gelübde × Ruhm ÷ <b>Verlustteiler</b><br>
+  · Grundbörse wächst mit der KW-Summe der Gegner.<br>
+  · Risiko kommt aus der Ansage des Buchmachers: sichere Kämpfe ≈ 0.<br>
+  · Spektakel misst der echte Kampf: Führungswechsel, Aufholjagd, knappes Ende, Gefallene, Außenseiter-Siege, Heldentaten (3+ Gegner), Schaubild.<br>
+  · Verlustteiler = 1 + 2 × (Tote + ½ Schwerverletzte) / Köpfe. Jeder Kopf zählt gleich, ob Held oder Rekrut.<br>
+  · Niederlage: 30 %. Ruhm steigt mit spektakulären Kämpfen und sinkt bei langweiligen.</div>
+  <div class="fallen" id="fallen"></div>
+ </section>
+</main>
+<div class="go"><button id="btnProbe" disabled>Probe ×10</button><button class="main" id="btnFight" disabled>In die Arena!</button></div>
+
+<div class="modal" id="mRes" hidden><div class="sheet res" id="res"></div></div>
+<div class="modal" id="mMenu" hidden><div class="sheet set" id="menu"></div></div>
+
+<script>
+'use strict';
+const BUILD='e2a17774',KEY='aufstellung-sim-v1';
+const ROLES=['Soldat','Assassine','Fernkämpfer'],ICON={Soldat:'🛡',Assassine:'🗡',Fernkämpfer:'🏹'},PLURAL={Soldat:'Soldaten',Assassine:'Assassinen',Fernkämpfer:'Fernkämpfer'};
+const ROWS=['hinten','mitte','vorne'],LANES=['oben','mitte','unten'];
+const VOWS={keiner:['Niemand fällt','Sieg ohne eigenen Toten: ×1,5 · sonst ×0,6'],held:['Der Held','★-Held schafft 3+ Gegner: ×1,7 · sonst ×0,7'],blitz:['Blitzsieg','Sieg unter 25 s: ×1,4 · sonst ×0,75'],menge:['Vor vollen Rängen','Spektakel ≥ 1,5: ×1,5 · sonst ×0,7']};
+const FORMS={schildwall:['Schildwall','3+ Soldaten vorne'],zange:['Zange','Assassinen oben und unten'],pfeilhagel:['Pfeilhagel','2+ Fernkämpfer hinten'],keil:['Keil','★-Held vorne Mitte, dahinter oben und unten je einer'],dreiklang:['Drei Klassen','alle drei Klassen dabei'],allein:['Einer gegen alle','nur ein Kämpfer']};
+const PARAMS=[['G0','Grundbörse je 30 KW Gegner',20,300,5],['riskExp','Risiko-Steilheit (höher = sichere Kämpfe zahlen weniger)',.5,3,.1],['k','Buchmacher: Steilheit der Ansage',1,8,.25],['nExp','Buchmacher: Gewicht der Überzahl',0,1.5,.05],
+ ['lossC','Verlustteiler-Stärke',0,6,.25],['severeW','Schwerverletzte zählen als … Tote',0,1,.05],['loseShare','Anteil bei Niederlage',0,1,.05],['sBlood','Spektakel je Gefallenem',0,.4,.02],['sHero','Spektakel je Kill ab dem 3.',0,1,.05],['sSwing','Spektakel je Führungswechsel',0,1,.05],['sClose','Spektakel für knappes Ende',0,2,.05],['sForm','Spektakel je Schaubild',0,.4,.02]];
+const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),fmt=n=>Math.round(n).toLocaleString('de-DE');
+
+let st=null,P0={},offers=[],offerKey='',selOffer=null,selChip=null,busy=false;
+function blank(){return {gold:300,fame:0,day:1,roster:[],lineup:[],hero:null,vows:[],fallen:[],seed:1,P:{},log:[]};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(st));}catch{}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.roster&&s.roster.length)return s;}catch{}return null;}
+
+// ---------- Worker ----------
+const W=new Worker('aufstellung-worker.js?v='+BUILD);let rid=0;const waiting={};let ready;
+const readyP=new Promise(r=>ready=r);
+W.onmessage=e=>{const d=e.data;if(d.ready){P0=d.P;ready();return;}const h=waiting[d.id];if(h)h(d);};
+W.onerror=e=>{alert('Fehler im Rechenwerk: '+(e.message||e));};
+function call(cmd,data,onEach){return readyP.then(()=>new Promise((res,rej)=>{const id=++rid;
+ waiting[id]=d=>{if(d.error){delete waiting[id];rej(new Error(d.error));return;}
+  if(cmd==='fight'){if(d.result)onEach&&onEach(d.result,d.i);if(d.done){delete waiting[id];res();}}else{delete waiting[id];res(d);}};
+ W.postMessage(Object.assign({cmd,id,P:st.P},data));}));}
+
+// ---------- Hilfen ----------
+const F=id=>st.roster.find(f=>f.id===id);
+const inLineup=id=>st.lineup.some(x=>x.id===id);
+const autoSlot=role=>role==='Fernkämpfer'?{row:'hinten',lane:'mitte'}:role==='Assassine'?{row:'mitte',lane:st.lineup.filter(x=>F(x.id)?.role==='Assassine').length%2?'unten':'oben'}:{row:'vorne',lane:['mitte','oben','unten'][st.lineup.filter(x=>F(x.id)?.role==='Soldat').length%3]};
+function lineupFull(){return st.lineup.map(x=>{const f=F(x.id);return {id:f.id,g:f.g,kw:f.kw,role:f.role,slot:{row:x.row,lane:x.lane}};});}
+function formations(){const L=st.lineup.map(x=>({id:x.id,role:F(x.id).role,slot:{row:x.row,lane:x.lane}}));const out=[];
+ const at=(row,lane,role)=>L.filter(x=>(!row||x.slot.row===row)&&(!lane||x.slot.lane===lane)&&(!role||x.role===role));
+ if(at('vorne',null,'Soldat').length>=3)out.push('schildwall');if(at(null,'oben','Assassine').length&&at(null,'unten','Assassine').length)out.push('zange');
+ if(at('hinten',null,'Fernkämpfer').length>=2)out.push('pfeilhagel');if(at('vorne','mitte').some(x=>x.id===st.hero)&&at('mitte','oben').length&&at('mitte','unten').length)out.push('keil');
+ if(ROLES.every(r=>L.some(x=>x.role===r)))out.push('dreiklang');if(L.length===1)out.push('allein');return out;}
+function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+
+// ---------- Darstellung ----------
+function renderTop(){$('gold').textContent=fmt(st.gold);$('fame').textContent=st.fame;$('day').textContent=st.day;}
+function renderCols(){$('cols').innerHTML=ROLES.map(r=>{const list=st.roster.filter(f=>f.role===r).sort((a,b)=>b.kw-a.kw);
+ return `<div class="col" data-r="${r}"><h3><span>${ICON[r]} ${PLURAL[r]}</span><span>${list.length}</span></h3><div class="list">${list.map(f=>{
+  const cls=['card'];if(inLineup(f.id))cls.push('in');if(f.out>0)cls.push('out');if(st.hero===f.id)cls.push('hero');
+  const sub=f.out>0?`verletzt · ${f.out} T`:(f.kills?`${f.kills} Kills · `:'')+(f.fights?`${f.fights} Kämpfe`:'frisch');
+  return `<div class="${cls.join(' ')}" data-f="${f.id}"><div class="nm">${esc(f.name)}<small>${sub}</small></div><div class="kw">${f.kw}</div></div>`;}).join('')}</div>
+  <button class="buy" data-buy="${r}">+ Rekrut · 100 G</button></div>`;}).join('');}
+function renderGrid(){let h='<div></div>'+ROWS.map(r=>`<div class="gh">${r}</div>`).join('');
+ for(const lane of LANES){h+=`<div class="gl">${lane}</div>`;for(const row of ROWS){const here=st.lineup.filter(x=>x.row===row&&x.lane===lane);
+  h+=`<div class="cell${selChip?' target':''}" data-row="${row}" data-lane="${lane}">${here.map(x=>{const f=F(x.id);return `<div class="chip${selChip===x.id?' sel':''}" data-r="${f.role}" data-c="${f.id}">${st.hero===f.id?'★':ICON[f.role]}<span class="n">${esc(f.name)}</span><b>${f.kw}</b></div>`;}).join('')}</div>`;}}
+ h+='<div></div><div class="arrow">Gegner →</div>';$('grid').innerHTML=h;
+ const L=st.lineup.map(x=>F(x.id)),sum=L.reduce((a,f)=>a+f.kw,0);
+ $('sum').innerHTML=L.length?`<span>Köpfe <b>${L.length}</b></span><span>KW-Summe <b>${sum}</b></span>`+ROLES.map(r=>`<span>${ICON[r]} <b>${L.filter(f=>f.role===r).length}</b></span>`).join('')+(st.hero?`<span>★ <b>${esc(F(st.hero)?.name||'')}</b></span>`:'<span>kein ★-Held</span>'):'<span>Noch niemand aufgestellt.</span>';
+ const fs=formations();$('forms').innerHTML=Object.entries(FORMS).map(([k,[l,hint]])=>`<span class="badge${fs.includes(k)?'':' off'}" title="${esc(hint)}">${l}</span>`).join('');
+ const act=$('act');if(selChip){const f=F(selChip);act.hidden=false;act.innerHTML=`<button data-a="hero">${st.hero===selChip?'★ Held entfernen':'★ zum Held'}</button><button data-a="remove">Abziehen</button><button data-a="cancel">Fertig</button>`;$('ghint').textContent=`${f.name}: Feld antippen zum Versetzen.`;}
+ else{act.hidden=true;$('ghint').textContent='Kämpfer antippen, dann ein Feld antippen, um ihn zu versetzen. Hinten wartet, bis es ernst wird.';}}
+function renderVows(){$('vows').innerHTML=Object.entries(VOWS).map(([k,[l,h]])=>`<button class="vow${st.vows.includes(k)?' on':''}" data-v="${k}"><b>${l}</b><small>${h}</small></button>`).join('');}
+function renderOffers(){const box=$('offers');
+ if(!st.lineup.length){box.innerHTML='<p class="hint">Stelle zuerst Kämpfer auf.</p>';return;}
+ if(!offers.length){box.innerHTML='<div class="spin"></div>';return;}
+ box.innerHTML=offers.map((o,i)=>{const p=Math.round(o.pA*100),tag=o.pA>.9?'<span class="tag yawn">Die Menge gähnt</span>':o.pA<.3?'<span class="tag brave">Todesmut</span>':o.pA<.62?'<span class="tag fair">Großer Kampf</span>':'';
+  const typ=Math.round(o.base*o.risk/5)*5,epic=Math.round(o.base*o.risk*2.4/5)*5;
+  const foes=o.roster.slice(0,12).map(u=>`<span>${ICON[u.role]} ${u.kw}</span>`).join('')+(o.roster.length>12?`<span>+${o.roster.length-12}</span>`:'');
+  return `<div class="offer${selOffer===i?' sel':''}" data-o="${i}"><div class="t"><h3>${esc(o.label)}</h3>${tag}</div>
+  <div class="meta"><span>Köpfe <b>${o.roster.length}</b></span><span>KW-Summe <b>${o.enKW}</b> gegen ${o.ownKW}</span><span>Ansage <b>${p} %</b></span><span>Quote <b>1:${o.quote.toFixed(1)}</b></span></div>
+  <div class="foes">${foes}</div><div class="chance"><i style="width:${p}%"></i></div>
+  <div class="meta"><span>Gold bei Sieg: gewöhnlich <b>${fmt(typ)}</b> · episch bis <b>${fmt(epic)}</b></span></div></div>`;}).join('');}
+function renderButtons(){const ok=!busy&&st.lineup.length&&selOffer!=null&&offers[selOffer];$('btnFight').disabled=!ok;$('btnProbe').disabled=!ok;}
+function renderFallen(){$('fallen').innerHTML=st.fallen.length?'<p><b>Gefallen:</b> '+st.fallen.slice(-20).map(f=>`✝ ${esc(f.name)} (${f.kw}, Tag ${f.day})`).join(' · ')+'</p>':'';}
+function render(){renderTop();renderCols();renderGrid();renderVows();renderOffers();renderButtons();renderFallen();}
+
+// ---------- Gegner neu, wenn sich die Gruppe ändert ----------
+let offTimer=0;
+function refreshOffers(){const key=st.day+'|'+st.lineup.map(x=>x.id).sort().join(',')+'|'+JSON.stringify(st.P);
+ if(key===offerKey&&offers.length)return;offerKey=key;offers=[];selOffer=null;renderOffers();renderButtons();if(!st.lineup.length)return;
+ clearTimeout(offTimer);offTimer=setTimeout(()=>{const k=offerKey;call('offers',{lineup:lineupFull(),seed:hash(k)}).then(d=>{if(k!==offerKey)return;offers=d.offers;renderOffers();renderButtons();}).catch(e=>{$('offers').innerHTML='<p class="hint">Fehler: '+esc(e.message)+'</p>';});},350);}
+
+// ---------- Bedienung ----------
+document.addEventListener('click',e=>{const t=e.target.closest('[data-f],[data-buy],[data-c],[data-row],[data-a],[data-v],[data-o]');if(!t||busy)return;
+ if(t.dataset.f){const f=F(t.dataset.f);if(inLineup(f.id)){st.lineup=st.lineup.filter(x=>x.id!==f.id);if(st.hero===f.id)st.hero=null;if(selChip===f.id)selChip=null;}
+  else{if(f.out>0)return toast(f.name+' ist verletzt.');if(st.lineup.length>=10)return toast('Höchstens 10 Kämpfer.');st.lineup.push(Object.assign({id:f.id},autoSlot(f.role)));}
+  save();render();refreshOffers();return;}
+ if(t.dataset.buy){if(st.gold<100)return toast('Zu wenig Gold.');st.gold-=100;const n=st.roster.length+st.fallen.length+st.seed;
+  call('recruit',{seed:hash('r'+n+Date.now()),role:t.dataset.buy,n}).then(d=>{d.fighter.out=0;st.roster.push(d.fighter);save();render();toast(`${d.fighter.name} (${d.fighter.kw} KW) gekauft.`);});return;}
+ if(t.dataset.c){e.stopPropagation();selChip=selChip===t.dataset.c?null:t.dataset.c;renderGrid();return;}
+ if(t.dataset.row){if(!selChip)return;const x=st.lineup.find(x=>x.id===selChip);if(x){x.row=t.dataset.row;x.lane=t.dataset.lane;}save();renderGrid();return;}
+ if(t.dataset.a){if(t.dataset.a==='hero'){st.hero=st.hero===selChip?null:selChip;}else if(t.dataset.a==='remove'){st.lineup=st.lineup.filter(x=>x.id!==selChip);if(st.hero===selChip)st.hero=null;selChip=null;refreshOffers();}else selChip=null;save();render();return;}
+ if(t.dataset.v){const v=t.dataset.v;if(st.vows.includes(v))st.vows=st.vows.filter(x=>x!==v);else{if(st.vows.length>=2)st.vows.shift();st.vows.push(v);}save();renderVows();return;}
+ if(t.dataset.o){selOffer=+t.dataset.o;renderOffers();renderButtons();return;}
+});
+function toast(m){const d=document.createElement('div');d.textContent=m;d.style.cssText='position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:20;background:#3a2c18;border:1px solid #e6b450;padding:8px 14px;border-radius:8px;font-size:13px';document.body.appendChild(d);setTimeout(()=>d.remove(),1800);}
+
+// ---------- Kampf ----------
+$('btnFight').onclick=()=>{const o=offers[selOffer];if(!o)return;busy=true;renderButtons();
+ openRes(`<h2>Die Tore öffnen sich …</h2><div class="spin"></div><p class="sub">${esc(o.label)} · echter Kampf mit der Arena-Engine</p>`);
+ let res=null;call('fight',{lineup:lineupFull(),offer:o,vows:st.vows,hero:st.hero,fame:st.fame,n:1},r=>{res=r;}).then(()=>{busy=false;apply(res,o);showResult(res,o);}).catch(err=>{busy=false;openRes(`<h2>Fehler</h2><pre style="white-space:pre-wrap;font-size:11px">${esc(err.message)}</pre><div class="row"><button onclick="closeRes()">Schließen</button></div>`);});};
+$('btnProbe').onclick=()=>{const o=offers[selOffer];if(!o)return;busy=true;renderButtons();const n=10,all=[];
+ const draw=()=>openRes(`<h2>Probekämpfe</h2><p class="sub">${all.length} / ${n} · zählt nicht für Gold, Ruhm und Verletzungen</p><div class="prog"><i style="width:${all.length/n*100}%"></i></div>${all.length?probeTable(all):'<div class="spin"></div>'}`+(all.length===n?'<div class="row"><button onclick="closeRes()">Schließen</button></div>':''));
+ draw();call('fight',{lineup:lineupFull(),offer:o,vows:st.vows,hero:st.hero,fame:st.fame,n},r=>{all.push(r);draw();}).then(()=>{busy=false;renderButtons();draw();}).catch(err=>{busy=false;renderButtons();toast(err.message);});};
+function probeTable(a){const n=a.length,avg=f=>a.reduce((s,r)=>s+f(r),0)/n,golds=a.map(r=>r.gold).sort((x,y)=>x-y);
+ return `<table class="tbl"><tr><td>Siege</td><td>${a.filter(r=>r.won).length} / ${n}</td></tr><tr><td>Ø Gold</td><td>${fmt(avg(r=>r.gold))}</td></tr><tr><td>Gold-Spanne</td><td>${fmt(golds[0])} – ${fmt(golds[n-1])}</td></tr>
+ <tr><td>Ø Tote</td><td>${avg(r=>r.deaths).toFixed(2)}</td></tr><tr><td>Ø Schwerverletzte</td><td>${avg(r=>r.severe).toFixed(2)}</td></tr><tr><td>Ø Spektakel</td><td>${avg(r=>r.spect).toFixed(2)}</td></tr><tr><td>Ø Dauer</td><td>${Math.round(avg(r=>r.time))} s</td></tr>
+ <tr><td>Gold − 100 je Toten</td><td>${fmt(avg(r=>r.gold-100*r.deaths))}</td></tr><tr><td>Gelübde erfüllt</td><td>${st.vows.length?Math.round(100*avg(r=>r.vowRes.every(v=>v.ok)?1:0))+' %':'–'}</td></tr></table>`;}
+function apply(r,o){st.gold+=r.gold;st.fame=Math.max(-50,Math.min(150,st.fame+r.fameDelta));
+ for(const u of r.units.filter(u=>u.team===0)){const f=F(u.key);if(!f)continue;f.fights=(f.fights||0)+1;f.kills=(f.kills||0)+(u.kills||0);
+  if(u.dead){st.fallen.push({name:f.name,kw:f.kw,role:f.role,day:st.day,cause:u.cause});st.roster=st.roster.filter(x=>x.id!==f.id);st.lineup=st.lineup.filter(x=>x.id!==f.id);if(st.hero===f.id)st.hero=null;}
+  else if(u.severe)f.out=3;else if(u.injured)f.out=Math.max(f.out||0,1);}
+ st.lineup=st.lineup.filter(x=>!(F(x.id)?.out>0));st.log.push({day:st.day,offer:o.label,won:r.won,gold:r.gold});if(st.log.length>60)st.log.shift();
+ offerKey='';save();}
+function chart(r){const W=340,H=130,pad=16,T=Math.max(5,r.curve[r.curve.length-1][0]);
+ const X=t=>pad+(W-2*pad)*t/T,Y=v=>H-pad-(H-2*pad)*Math.max(0,Math.min(1,v));
+ const line=i=>r.curve.map(c=>X(c[0]).toFixed(1)+','+Y(c[i]).toFixed(1)).join(' ');
+ const marks=r.events.map(e=>`<line x1="${X(e.t)}" x2="${X(e.t)}" y1="${H-pad}" y2="${H-pad+6}" stroke="${e.team?'#c8483b':'#5b8fd1'}" stroke-width="2"/>`).join('');
+ const sw=r.swingT.map(t=>`<line x1="${X(t)}" x2="${X(t)}" y1="${pad}" y2="${H-pad}" stroke="#e6b450" stroke-dasharray="3 3" opacity=".6"/>`).join('');
+ return `<svg class="chart" viewBox="0 0 ${W} ${H}"><line x1="${pad}" x2="${W-pad}" y1="${H-pad}" y2="${H-pad}" stroke="#4a3a28"/>${sw}<polyline fill="none" stroke="#5b8fd1" stroke-width="2.2" points="${line(1)}"/><polyline fill="none" stroke="#c8483b" stroke-width="2.2" points="${line(2)}"/>${marks}
+ <text x="${W-pad}" y="${H-3}" fill="#a8957a" font-size="9" text-anchor="end">${Math.round(T)} s</text><text x="${pad}" y="11" fill="#a8957a" font-size="9">Restkraft</text></svg>
+ <div class="legend"><span><i style="background:#5b8fd1"></i>deine Gruppe</span><span><i style="background:#c8483b"></i>Gegner</span><span><i style="background:#e6b450"></i>Führungswechsel</span></div>`;}
+const PART={grund:'Grundlage',spannung:'Führungswechsel',aufholjagd:'Aufholjagd',knapp:'Knappes Ende',blut:'Gefallene',aussenseiter:'Außenseiter',helden:'Heldentaten',schaubild:'Schaubild'};
+function showResult(r,o){const title=r.draw?'Unentschieden':r.won?'SIEG':'NIEDERLAGE';
+ const verdict=r.spect>=1.8?'Die Ränge toben!':r.spect>=1.2?'Ein Kampf, über den man spricht.':r.spect>=.8?'Ordentlicher Kampf.':'Die Menge gähnt und pfeift.';
+ const ev=r.events.map(e=>`<div><span class="t">${e.t.toFixed(1)} s</span><span class="${e.team?'e':'o'}">${e.type==='tot'?'✝':'⤓'} ${esc(e.name)} (${e.kw})</span>${e.by?` ← ${esc(e.by)}`:''}${e.under?' <span class="x">Außenseiter!</span>':''}</div>`).join('')||'<div>Keine Gefallenen.</div>';
+ const own=r.units.filter(u=>u.team===0).map(u=>`<div class="${u.dead?'dead':''}">${u.dead?'✝':u.severe?'🩸':u.injured?'🩹':'✔'} ${esc(u.name)}${u.kills?` · ${u.kills}×`:''}<br><small style="color:#a8957a">${u.dead?esc(u.cause||'gefallen'):u.severe?'schwer verletzt · 3 Tage':u.injured?'leicht verletzt · 1 Tag':'unverletzt'}</small></div>`).join('');
+ const maxP=Math.max(.5,...Object.values(r.parts));
+ const bars=Object.entries(r.parts).filter(([,v])=>v>0.004).map(([k,v])=>`<div class="bar"><span>${PART[k]||k}</span><span class="bg"><i style="width:${v/maxP*100}%"></i></span><span>${v.toFixed(2)}</span></div>`).join('');
+ const vow=r.vowRes.map(v=>`${v.ok?'✔':'✘'} ${v.label} ×${String(v.mul).replace('.',',')}`).join(' · ');
+ openRes(`<h2>${title}</h2><div class="gold">+${fmt(r.gold)} Gold</div><p class="sub">${esc(o.label)} · ${r.time} s · ${verdict}</p>${chart(r)}
+ <h3 style="margin-top:10px">Spektakel ${r.spect.toFixed(2)}${r.tempo<1?' <small style="color:#a8957a">(×'+r.tempo+' wegen Dauer)</small>':''}</h3><div class="bars">${bars}</div>
+ <div class="formula">${fmt(r.base)} Grundbörse × ${r.risk.toFixed(2)} Risiko × ${r.spect.toFixed(2)} Spektakel${r.vowRes.length?' × '+r.vowMul.toFixed(2)+' Gelübde':''} × ${r.fameMul.toFixed(2)} Ruhm ÷ ${r.divisor.toFixed(2)} Verlustteiler${r.won?'':' × '+(st.P.loseShare??P0.loseShare)+' Niederlage'} = <b>${fmt(r.gold)}</b><br>
+ Verlustteiler: ${r.deaths} Tote, ${r.severe} Schwerverletzte bei ${r.N} Köpfen · Ruhm ${r.fameDelta>=0?'+':''}${r.fameDelta}${vow?'<br>Gelübde: '+vow:''}${r.heroes.length?'<br>Heldentaten: '+r.heroes.map(h=>esc(h.name)+' '+h.kills+'×'+(h.team?' (Gegner)':'')).join(', '):''}</div>
+ <h3 style="margin-top:10px">Deine Kämpfer</h3><div class="fighters">${own}</div><h3 style="margin-top:10px">Verlauf</h3><div class="ticker">${ev}</div>
+ <div class="row"><button onclick="closeRes()">Weiter</button></div>`);}
+function openRes(h){$('res').innerHTML=h;$('mRes').hidden=false;}
+function closeRes(){$('mRes').hidden=true;render();refreshOffers();}
+window.closeRes=closeRes;
+
+// ---------- Menü: Tag, Neubeginn, Stellschrauben ----------
+$('btnMenu').onclick=()=>{const P=Object.assign({},P0,st.P);
+ $('menu').innerHTML=`<h2>Menü</h2><div class="row"><button id="mDay">Neuer Tag (heilt 1 Tag)</button><button id="mNew">Neu beginnen</button></div>
+ <h3 style="margin-top:14px">Stellschrauben</h3><p class="hint">Nur für diesen Simulator. Änderungen wirken auf neue Angebote und Kämpfe.</p>
+ ${PARAMS.map(([k,l,a,b,s])=>`<label>${l}<output id="o_${k}">${P[k]}</output><input type="range" min="${a}" max="${b}" step="${s}" value="${P[k]}" data-p="${k}"></label>`).join('')}
+ <div class="row"><button id="mReset">Standardwerte</button><button id="mClose">Schließen</button></div>
+ <h3 style="margin-top:14px">Letzte Kämpfe</h3><table class="tbl">${st.log.slice(-10).reverse().map(l=>`<tr><td>Tag ${l.day} · ${esc(l.offer)} · ${l.won?'Sieg':'Niederlage'}</td><td>${fmt(l.gold)}</td></tr>`).join('')||'<tr><td>noch keine</td><td></td></tr>'}</table>`;
+ $('mMenu').hidden=false;
+ $('mDay').onclick=()=>{st.day++;for(const f of st.roster)if(f.out>0)f.out--;save();$('mMenu').hidden=true;render();refreshOffers();toast('Tag '+st.day);};
+ $('mNew').onclick=()=>{if(!confirm('Simulator neu beginnen? Kader, Gold und Ruhm werden zurückgesetzt.'))return;$('mMenu').hidden=true;start(true);};
+ $('mReset').onclick=()=>{st.P={};save();$('mMenu').hidden=true;refreshOffers();toast('Standardwerte');};
+ $('mClose').onclick=()=>{$('mMenu').hidden=true;refreshOffers();};
+ $('menu').querySelectorAll('[data-p]').forEach(inp=>inp.oninput=()=>{st.P[inp.dataset.p]=+inp.value;$('o_'+inp.dataset.p).textContent=inp.value;save();});};
+$('mMenu').onclick=e=>{if(e.target===$('mMenu'))$('mMenu').hidden=true;};
+
+// ---------- Start ----------
+async function start(fresh){st=(!fresh&&load())||null;
+ if(!st){st=blank();renderTop();$('cols').innerHTML='<div class="spin"></div>';const d=await call('roster',{seed:Math.floor(Math.random()*1e9)});st.roster=d.roster.map(f=>Object.assign(f,{out:0}));
+  const pick=(r,i)=>st.roster.filter(f=>f.role===r).sort((a,b)=>b.kw-a.kw)[i];
+  for(const f of [pick('Soldat',1),pick('Soldat',2),pick('Assassine',1),pick('Fernkämpfer',1)])st.lineup.push(Object.assign({id:f.id},autoSlot(f.role)));save();}
+ offers=[];offerKey='';selOffer=null;selChip=null;render();refreshOffers();}
+start(false);
+</script>
+</body>
+</html>
