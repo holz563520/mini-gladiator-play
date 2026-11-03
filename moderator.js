@@ -274,7 +274,10 @@ function dramaRender(){const d=drama,el=$('modCard');if(!d||!el)return;{const vs
  const st=$('dramaStamp');st.hidden=!['doom','saved','walk','exec'].includes(d.phase);st.textContent=d.phase==='saved'?'DARF LEBEN':'KEINE GNADE';st.className='mod-verdict '+(d.phase==='saved'?'live':'die');
  M.battleHud.spot={x:d.victim.x,y:d.victim.y-10};
  clearTimeout(dTimer);const auto={plead:7,vote:2.8,doom:7,saved:7,exec:5.6}[d.phase];if(auto)dTimer=setTimeout(dramaAdvance,auto*1000);}
-function dramaPaint(g2,c,now){const d=drama,t=(now-d.t0)/1000,g=d.victim.g,team=d.victim.team,hurt=cl01(1.15-M.health(g)/100),base={g,team,hurt,zoom:.92,ground:true};let o;
+/* Hinrichtung: bis zum Hieb folgt die Großaufnahme der Zeit auf dem Feld (dort fällt der Hieb 1,6 s nach Beginn), danach läuft sie normal weiter.
+   So bleiben Großaufnahme und Feld zusammen, auch wenn das Feld ruckelt oder kurz steht. */
+function execClock(d,now){const f=S.battle?.finale;if(d.phase!=='exec'||d.synced)return;if(f&&f.stage==='act'&&f.judgments[f.index]===d.j&&!d.j.done){const t=Math.min(1.58,f.elapsed||0);d.t0=now-t*1000;return;}d.synced=true;d.t0=now-1600;}
+function dramaPaint(g2,c,now){const d=drama;execClock(d,now);const t=(now-d.t0)/1000,g=d.victim.g,team=d.victim.team,hurt=cl01(1.15-M.health(g)/100),base={g,team,hurt,zoom:.92,ground:true};let o;
  const needle=$('dramaNeedle');
  if(d.phase==='plead'){o={...base,mood:'plead'};if(needle)needle.style.left='50%';}
  else if(d.phase==='vote'){o={...base,mood:'plead'};const k=cl01(t/2.6),end=d.j.execute?86:14;if(needle)needle.style.left=(50+(end-50)*k*k+Math.sin(t*9)*38*(1-k))+'%';}
@@ -294,7 +297,7 @@ function dramaAdvance(){const d=drama;if(!d)return;clearTimeout(dTimer);const f=
  else if(d.phase==='vote'){/* das Spiel verkündet (mit seinem Ton), dann steht es wieder */d.wait='sentence';d.hold=false;f.elapsed=99;dramaPhase(d.j.execute?'doom':'saved',line(d.j.execute?'noMercy':'mercy',{v}));M.crowdMood?.('clap');}
  else if(d.phase==='saved'){dramaClose();f.elapsed=99;}
  else if(d.phase==='doom'){d.wait='act';d.hold=false;f.elapsed=99;d.phase='walk';dramaRender();clearTimeout(dTimer);}
- else if(d.phase==='exec'){dramaClose();}}
+ else if(d.phase==='exec'){/* erst schließen, wenn der Hieb auf dem Feld gefallen ist (höchstens 6 s warten) */if(!d.synced&&performance.now()-d.t0<6000){dTimer=setTimeout(dramaAdvance,400);return;}dramaClose();}}
 function dramaReached(stage){const d=drama;if(!d)return;if(stage==='act'){d.hold=false;const ex=S.battle.actors.find(a=>a.id===S.battle.finale.executor);d.hit=false;dramaPhase('exec',line(T.exec[d.j.method]||T.exec.Enthauptung,{k:ex?.g.name||'Der Sieger',v:d.victim.g.name}));}}
 /* Alle restlichen Urteile auf einmal: Karte schließen, Urteile sofort vollstrecken (sim.js) */
 function skipAll(){if(drama)dramaClose();M.skipAllVerdicts?.();try{M.updateBattleHUD?.();}catch(e){}}

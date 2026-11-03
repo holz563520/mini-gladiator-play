@@ -144,7 +144,8 @@ let fieldNext=0;const fieldSpeaking=()=>!!cur&&cur.soft&&(cur.start===Infinity||
 const fieldTalk={ok:()=>performance.now()>=fieldNext&&!fieldSpeaking(),mark:ms=>{fieldNext=performance.now()+(ms||3000)+10000;},speaking:fieldSpeaking};
 // Abenteuer und Kämpfe mit Anführer: Solange jemand (nicht leise) spricht, steht der Kampf still, damit man die Blase lesen kann.
 // Klick aufs Spielfeld überspringt den Satz (Thomas 26.10.).
-function speechFreeze(){const b=M.s?.battle;return !!b&&!b.result&&!!(b.mission||b.lead)&&speechHold();}
+/* Nicht beim Urteil (b.finale): dort gibt die Urteilskarte den Takt vor; sonst stünde das Feld, während die Hinrichtung in Großaufnahme schon läuft */
+function speechFreeze(){const b=M.s?.battle;return !!b&&!b.result&&!b.finale&&!!(b.mission||b.lead)&&speechHold();}
 if(typeof document!=='undefined')document.addEventListener('pointerdown',ev=>{const bv=document.getElementById('battleView');if(!bv||bv.hidden||!bv.contains(ev.target)||ev.target.closest?.('button,select,input,a,.modal'))return;
  const sh=M.injuryShots?.arena;if(sh&&!sh.live){M.injuryShots.skip();ev.stopPropagation();ev.preventDefault();return;}if(speechFreeze()){stop();ev.stopPropagation();ev.preventDefault();}},true);
 Object.assign(M,{speechHold,speechFreeze,fieldTalk,speechNow:()=>cur&&{key:cur.key,who:cur.who,soft:cur.soft,text:cur.text},speakLine,speechLog:()=>dl.slice(),speakStop:stop,speakStopAll:stopAll,speechQueued:()=>pend.length,speakOnChange,talkMouth,speaking,speechVoiceKey:voiceKey});
