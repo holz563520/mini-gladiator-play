@@ -132,9 +132,13 @@ function arenaTraces(index,a,X0=68,Y0=124,W=904,H=520,round=false){const tones=s
 // ---------- Runde Arena (seit 3.11.2026) ----------
 // Sandoval mit Mauerring (Podium, im Norden mit sichtbarer Mauerfront), ringsum ansteigende Ränge mit Treppen, Tor oben.
 // Die Spielfeldgrenze dazu steht in sim.js (FIELD, etwas kleiner als der Sand). Hinterhof (5) bleibt eckig.
-const RA={cx:520,cy:392,rx:478,ry:282,face:22,pod:16,tier:17};
+const RA={cx:520,cy:392,rx:478,ry:282,face:22,pod:16,tier:17,lift:67};
+/* Nordseite: Podiumsmauer so hoch wie das Tor, die Ränge beginnen erst darüber (Blick schräg von Süden) */
 const tierAxes=k=>[RA.rx+RA.pod+k*RA.tier,RA.ry+RA.pod*.82+k*RA.tier*.8];
-const onRing=(ang,ax,ay)=>[RA.cx+Math.cos(ang)*ax,RA.cy+Math.sin(ang)*ay];
+const onRing=(ang,ax,ay)=>{const sn=Math.sin(ang);return [RA.cx+Math.cos(ang)*ax,RA.cy+sn*(ay+(sn<0&&ay>RA.ry+1?RA.lift:0))];};
+function ringPath(ax,ay,dy=0){ctx.moveTo(RA.cx-ax,RA.cy+dy);ctx.ellipse(RA.cx,RA.cy+dy,ax,ay+RA.lift,0,Math.PI,TAU);ctx.ellipse(RA.cx,RA.cy+dy,ax,ay,0,0,Math.PI);ctx.closePath();}
+const ringFill=(ax,ay,c,dy=0)=>{ctx.fillStyle=c;ctx.beginPath();ringPath(ax,ay,dy);ctx.fill();};
+const ringStroke=(ax,ay,c,w,dy=0)=>{ctx.lineWidth=w;ctx.strokeStyle=c;ctx.beginPath();ringPath(ax,ay,dy);ctx.stroke();};
 const deg=d=>d*Math.PI/180;
 const AISLES=[-130,-50,-12,12,50,90,128,168,-168].map(deg);
 const RSTYLE=[
@@ -147,14 +151,19 @@ function ellPath(cx,cy,rx,ry){ctx.moveTo(cx+rx,cy);ctx.ellipse(cx,cy,rx,ry,0,0,T
 function arenaRound(index,level,a){const St=RSTYLE[index]||RSTYLE[0],K=22;
  rect(0,0,1040,720,St.outer);
  // Ränge von außen nach innen: Sitzstufe, Kante, Schatten der Stufe davor
- for(let k=K;k>=1;k--){const [ax,ay]=tierAxes(k);ellipse(RA.cx,RA.cy,ax,ay,St.seat[k%2]);ctx.lineWidth=1;ctx.strokeStyle=St.edge+'66';ctx.beginPath();ctx.ellipse(RA.cx,RA.cy,ax,ay,0,0,TAU);ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle=St.riser+'aa';ctx.beginPath();ctx.ellipse(RA.cx,RA.cy+2,ax-RA.tier*.5,ay-RA.tier*.42,0,0,TAU);ctx.stroke();}
+ for(let k=K;k>=1;k--){const [ax,ay]=tierAxes(k);ringFill(ax,ay,St.seat[k%2]);ringStroke(ax,ay,St.edge+'66',1);ringStroke(ax-RA.tier*.5,ay-RA.tier*.42,St.riser+'aa',2,2);}
  // Treppen
  for(const ang of AISLES){const [x0,y0]=onRing(ang,...tierAxes(0)),[x1,y1]=onRing(ang,...tierAxes(K));line(x0,y0,x1,y1,St.stair,10);line(x0,y0,x1,y1,St.edge+'40',2);for(let k=1;k<=K;k++){const [px,py]=onRing(ang,...tierAxes(k));rect(px-5,py-1,10,2,St.riser);}}
  // Durchgang über dem Tor
- if(index!==4){rect(436,0,168,40,'#0d1213');rect(436,0,6,40,St.pod);rect(598,0,6,40,St.pod);}
+ if(index!==4){const wt=RA.cy-tierAxes(0)[1]-RA.lift;rect(436,0,168,wt+4,'#0d1213');rect(436,0,6,wt+4,St.pod);rect(598,0,6,wt+4,St.pod);}
  // Podium (Mauerring)
- const [px,py]=tierAxes(0);ellipse(RA.cx,RA.cy,px,py,St.pod);ctx.lineWidth=2;ctx.strokeStyle=St.podTop;ctx.beginPath();ctx.ellipse(RA.cx,RA.cy,px-1,py-1,0,0,TAU);ctx.stroke();
- ctx.lineWidth=1;ctx.strokeStyle=St.joint;for(let n=0;n<96;n++){const ang=n*TAU/96,[x0,y0]=onRing(ang,RA.rx+2,RA.ry+2),[x1,y1]=onRing(ang,px-2,py-2);if(St.fence){rect(x1-2,y1-5,4,9,'#6a5037');rect(x1-1,y1-4,1,7,'#a58855');}else line(x0,y0,x1,y1,St.joint);}
+ const [px,py]=tierAxes(0);ringFill(px,py,St.pod);ringStroke(px-1,py-1,St.podTop,2);
+ /* hohe Mauerfront im Norden: von der Mauerkrone bis zum Sand, mit Quadern und Schatten nach unten */
+ ctx.save();ctx.beginPath();ringPath(px-3,py-9);ctx.moveTo(RA.cx+px,RA.cy);ctx.ellipse(RA.cx,RA.cy,px,py,0,0,TAU);ctx.clip('evenodd');ctx.beginPath();ctx.rect(0,0,1040,RA.cy);ctx.clip();
+ rect(0,0,1040,RA.cy,St.face);for(let x=30;x<1020;x+=26)rect(x,0,1,RA.cy,St.joint);for(let y=RA.cy-py-RA.lift+12;y<RA.cy;y+=15){rect(0,y,1040,1,St.joint);for(let x=43+(Math.round(y/15)%2)*13;x<1020;x+=26)rect(x,y+1,1,14,St.joint+'00');}
+ const wg=ctx.createLinearGradient(0,RA.cy-py-RA.lift,0,RA.cy-RA.ry+8);wg.addColorStop(0,'rgba(255,255,255,.07)');wg.addColorStop(1,'rgba(0,0,0,.28)');ctx.fillStyle=wg;ctx.fillRect(0,0,1040,RA.cy);ctx.restore();
+ ringStroke(px-3,py-9,St.podTop,2);
+ ctx.lineWidth=1;ctx.strokeStyle=St.joint;for(let n=0;n<96;n++){const ang=n*TAU/96;if(Math.sin(ang)<-.05)continue;const [x0,y0]=onRing(ang,RA.rx+2,RA.ry+2),[x1,y1]=onRing(ang,px-2,py-2);if(St.fence){rect(x1-2,y1-5,4,9,'#6a5037');rect(x1-1,y1-4,1,7,'#a58855');}else line(x0,y0,x1,y1,St.joint);}
  if(level>=3){for(let n=0;n<48;n++){const [x,y]=onRing(n*TAU/48,px-7,py-6);rect(x-1,y-1,3,3,n%2?a.accent:'#e2ca8e');}}
  // Sand
  ellipse(RA.cx,RA.cy,RA.rx,RA.ry,a.floor);sandTexture(index,a,40,108,960,572,true);
@@ -171,8 +180,8 @@ function arenaRound(index,level,a){const St=RSTYLE[index]||RSTYLE[0],K=22;
  ctx.restore();
  ctx.lineWidth=2;ctx.strokeStyle=St.podTop;ctx.beginPath();ctx.ellipse(RA.cx,RA.cy,RA.rx,RA.ry,Math.PI,0,Math.PI);ctx.stroke();
  // Fahnen an der Mauerfront, Schilde/Feuerkörbe dazwischen, Statuen links und rechts
- const faceTop=x=>RA.cy-RA.ry*Math.sqrt(Math.max(0,1-((x-RA.cx)/RA.rx)**2));
- for(const d of (level>=1?[24,50,74]:[50]))for(const s of [-1,1]){const [x]=onRing(deg(-90+s*d),RA.rx,RA.ry),y=faceTop(x);rect(x-9,y-3,18,RA.face+16,a.accent);rect(x-9,y-3,18,3,'#d7b475');rect(x-2,y+5,4,12,'#cfb078');rect(x-6,y+9,12,3,'#cfb078');rect(x-9,y+RA.face+11,18,2,'#00000044');}
+ const faceTop=x=>RA.cy-RA.ry*Math.sqrt(Math.max(0,1-((x-RA.cx)/RA.rx)**2));const wallTop=x=>RA.cy-(py-9+RA.lift)*Math.sqrt(Math.max(0,1-((x-RA.cx)/(px-3))**2));
+ for(const d of (level>=1?[24,50,74]:[50]))for(const s of [-1,1]){const [x]=onRing(deg(-90+s*d),RA.rx,RA.ry),ft=faceTop(x),wt=wallTop(x),y=ft-wt>48?wt+10:ft;rect(x-9,y-3,18,RA.face+16,a.accent);rect(x-9,y-3,18,3,'#d7b475');rect(x-2,y+5,4,12,'#cfb078');rect(x-6,y+9,12,3,'#cfb078');rect(x-9,y+RA.face+11,18,2,'#00000044');}
  for(const d of [37,62])for(const s of [-1,1]){const [x]=onRing(deg(-90+s*d),RA.rx,RA.ry),y=faceTop(x)+RA.face*.55;
   if(index<2){const c=['#8a4a34','#56684a','#7a6a3c','#4d5d6a'][(d+s+index+4)%4];circle(x,y,7,'#2f251b');circle(x,y,6,c);circle(x,y,2,'#c9b27a');}
   else if(index===2){rect(x-8,y-6,16,10,'#1d1a18');rect(x-6,y-3,12,5,'#8e3519');rect(x-4,y-2,8,3,'#d8642a');rect(x-2,y-2,4,2,'#f7c060');}
@@ -198,7 +207,7 @@ const NTYPES=16,CTYPES=Array.from({length:NTYPES},(_,i)=>{const h=k=>hash2(i,k,4
  cloth:['#8f4d43','#426b73','#958859','#756084','#65816b','#ad784b','#b2aa88','#374d60','#c9c0a4'][Math.floor(h(3)*9)],cloth2:['#4a3f33','#3b4447','#5a4a3a','#2f3330'][Math.floor(h(4)*4)],style:Math.floor(h(5)*6)};});
 function seatsFor(index,level){const key=index+':'+level;if(CROWD.key===key)return CROWD.people;const out=[],fill=FILL[clamp(level,0,6)];let n=0;
  for(let k=0;k<22;k++){const [ax,ay]=tierAxes(k),rx=ax+RA.tier*.62,ry=ay+RA.tier*.5;
-  for(let ang=0;ang<TAU;){const x=RA.cx+Math.cos(ang)*rx,y=RA.cy+Math.sin(ang)*ry,step=13.5/Math.hypot(rx*Math.sin(ang),ry*Math.cos(ang));const here=ang;ang+=step;n++;
+  for(let ang=0;ang<TAU;){const x=RA.cx+Math.cos(ang)*rx,y=RA.cy+Math.sin(ang)*(ry+(Math.sin(ang)<0?RA.lift:0)),step=13.5/Math.hypot(rx*Math.sin(ang),ry*Math.cos(ang));const here=ang;ang+=step;n++;
    if(x<6||x>1034||y<22||y>718)continue;if(Math.abs(x-520)<98&&y<122)continue;if(index===4&&Math.abs(x-520)<82&&y<40)continue;
    if(AISLES.some(a=>{let d=Math.abs(((here-a)%TAU+TAU*1.5)%TAU-Math.PI);return d*Math.hypot(rx*Math.sin(here),ry*Math.cos(here))<9;}))continue;
    const h=hash2(n,k,index*7+11);if(h>fill*(1-k*.012))continue;
