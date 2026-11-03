@@ -66,21 +66,33 @@ document.addEventListener('click',e=>{if(shotOn&&e.target.closest?.('#arenaCanva
  update();},true);
 // Kamera: Ausschnitt um alle, die noch stehen oder liegen und leben; weich nachgeführt. Bei ausgewähltem Kämpfer bleibt er im Bild.
 // Große Arena: Kamera mit Finger/Maus über das Feld ziehen; danach folgt sie nach ein paar Sekunden wieder den Kämpfern.
-let pan=null,drag=null,dragged=false;
+let pan=null,drag=null,dragged=false,userZ=null,pinch=null,zKey=null;const ptrs=new Map();
 const panClamp=(w,h,W,H)=>{const base=Math.min(w/W,h/H),vw=w/(base*pan.zoom),vh=h/(base*pan.zoom),UP=M.arenaViewUp||0;pan.x=vw>=W?W/2:Math.max(vw/2,Math.min(W-vw/2,pan.x));pan.y=vh>=H?H/2-UP:Math.max(vh/2-UP,Math.min(H-vh/2,pan.y));};
-document.addEventListener('pointerdown',e=>{if(!e.target.closest?.('#arenaCanvas')||!S.battle||(S.battle.view||1)<=1)return;drag={x:e.clientX,y:e.clientY,id:e.pointerId};dragged=false;},true);
+// Zwei Finger: zoomen (bleibt eingestellt, die Kamera folgt den Kämpfern dann in dieser Nähe). Punkt zwischen den Fingern bleibt stehen.
+const canvasPt=(cx,cy)=>{const cv=$('arenaCanvas'),r=cv.getBoundingClientRect(),v=M.arenaView,k=v.width/Math.max(1,r.width);return {sx:(cx-r.left)*k,sy:(cy-r.top)*k,k};};
+const toWorld=(sx,sy)=>{const v=M.arenaView;return {x:v.cx+(sx-v.width/2)/v.scale,y:v.cy+(sy-v.height/2)/v.scale};};
+const ZMAX=4.2;
+document.addEventListener('pointerdown',e=>{if(!e.target.closest?.('#arenaCanvas')||!S.battle||(S.battle.view||1)<=1||!M.arenaView)return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(ptrs.size===2){const [a,b]=[...ptrs.values()],v=M.arenaView,base=Math.min(v.width/v.W,v.height/v.H),m=canvasPt((a.x+b.x)/2,(a.y+b.y)/2);pinch={d0:Math.max(20,Math.hypot(a.x-b.x,a.y-b.y)),z0:v.scale/base,w:toWorld(m.sx,m.sy)};drag=null;dragged=true;return;}
+ drag={x:e.clientX,y:e.clientY,id:e.pointerId};dragged=false;},true);
+document.addEventListener('pointermove',e=>{if(!pinch||!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size<2)return;const [a,b]=[...ptrs.values()],v=M.arenaView;if(!v)return;
+ const base=Math.min(v.width/v.W,v.height/v.H),z=Math.max(1,Math.min(ZMAX,pinch.z0*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d0)),m=canvasPt((a.x+b.x)/2,(a.y+b.y)/2),sc=base*z;
+ pan={x:pinch.w.x-(m.sx-v.width/2)/sc,y:pinch.w.y-(m.sy-v.height/2)/sc,zoom:z,until:performance.now()+2500};userZ=z;e.preventDefault();e.stopImmediatePropagation();},{capture:true,passive:false});
+const ptrEnd=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;};document.addEventListener('pointerup',ptrEnd,true);document.addEventListener('pointercancel',ptrEnd,true);
+document.addEventListener('wheel',e=>{if(!e.target.closest?.('#arenaCanvas')||!S.battle||(S.battle.view||1)<=1||!M.arenaView)return;const v=M.arenaView,base=Math.min(v.width/v.W,v.height/v.H),z0=v.scale/base,z=Math.max(1,Math.min(ZMAX,z0*Math.exp(-e.deltaY*.0015))),m=canvasPt(e.clientX,e.clientY),w=toWorld(m.sx,m.sy),sc=base*z;
+ pan={x:w.x-(m.sx-v.width/2)/sc,y:w.y-(m.sy-v.height/2)/sc,zoom:z,until:performance.now()+2500};userZ=z;e.preventDefault();},{passive:false});
 document.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!dragged&&Math.hypot(dx,dy)<8)return;const v=M.arenaView,cv=$('arenaCanvas');if(!v||!cv)return;
  if(!dragged){dragged=true;const base=Math.min(v.width/v.W,v.height/v.H);pan={x:v.cx,y:v.cy,zoom:v.scale/base};}
  const k=v.width/Math.max(1,cv.clientWidth);pan.x-=dx*k/v.scale;pan.y-=dy*k/v.scale;pan.until=performance.now()+4500;drag.x=e.clientX;drag.y=e.clientY;e.preventDefault();},{capture:true,passive:false});
 document.addEventListener('pointerup',e=>{if(drag&&e.pointerId===drag.id)drag=null;},true);document.addEventListener('pointercancel',()=>{drag=null;},true);
 document.addEventListener('click',e=>{if(dragged&&e.target.closest?.('#arenaCanvas')){dragged=false;e.stopPropagation();e.preventDefault();}},true);
-M.battleCamera=(b,w,h,W,H,zoom,target)=>{const VG=b.view||1;
+M.battleCamera=(b,w,h,W,H,zoom,target)=>{const VG=b.view||1;if(zKey!==b.id){zKey=b.id;userZ=null;pan=null;}
  if(pan&&VG>1&&!b.finale&&!b.cinematic&&(drag||performance.now()<pan.until)){panClamp(w,h,W,H);cam={x:pan.x,y:pan.y,zoom:pan.zoom};return cam;}if(pan&&!drag)pan=null;
  const sp=M.battleHud?.spot;if(sp&&document.body.classList.contains('bhud')){/* Scheinwerfer des Moderators: nah an einen Kämpfer */const base=Math.min(w/W,h/H),z=2.3*VG,vw=w/(base*z),vh=h/(base*z),tx=Math.max(vw/2,Math.min(W-vw/2,sp.x)),ty=Math.max(vh/2-(M.arenaViewUp||0),Math.min(H-vh/2,sp.y));if(!cam)cam={x:tx,y:ty,zoom:z};else{cam.x+=(tx-cam.x)*.1;cam.y+=(ty-cam.y)*.1;cam.zoom+=(z-cam.zoom)*.08;}return cam;}
  if(!document.body.classList.contains('bhud')||!autoCam||zoom>1||b.finale||b.cinematic)return (cam=null);
  const live=b.actors.filter(a=>!a.g.dead&&!a.surrendered);if(!live.length)return (cam=null);
  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const a of live){x0=Math.min(x0,a.x);x1=Math.max(x1,a.x);y0=Math.min(y0,a.y-50);y1=Math.max(y1,a.y+20);}
- const pad=90,bw=Math.max(260,x1-x0+pad*2),bh=Math.max(190,y1-y0+pad*2),base=Math.min(w/W,h/H),want=Math.min(w/bw,h/bh)/base,z=Math.max(1,Math.min(VG>1?1.9:2.1,want)),vw=w/(base*z),vh=h/(base*z);
+ const pad=90,bw=Math.max(260,x1-x0+pad*2),bh=Math.max(190,y1-y0+pad*2),base=Math.min(w/W,h/H),want=Math.min(w/bw,h/bh)/base,z=VG>1&&userZ&&zKey===b.id?userZ:Math.max(1,Math.min(VG>1?1.9:2.1,want)),vw=w/(base*z),vh=h/(base*z);
  const UP=M.arenaViewUp||0,tx=vw>=W?W/2:Math.max(vw/2,Math.min(W-vw/2,(x0+x1)/2)),ty=vh>=H?H/2-UP:Math.max(vh/2-UP,Math.min(H-vh/2,(y0+y1)/2));
  if(!cam)cam={x:tx,y:ty,zoom:z};else{const k=.06;cam.x+=(tx-cam.x)*k;cam.y+=(ty-cam.y)*k;cam.zoom+=(z-cam.zoom)*(z<cam.zoom?.12:.03);}return cam;};
 // Farbige Kreise am Boden: Blau links, Rot rechts, in jedem Kampf gleich
