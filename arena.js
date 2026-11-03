@@ -508,22 +508,22 @@ function drawMantle(g,a,back){const m=M.mantle(g);if(!m)return;const len=m.lengt
  const dt=clamp(time-st.t,0,.1);st.t=time;
  if(dt>0){/* gedämpfte Feder: Stoff hängt nach und schwingt leicht über */const acc=(tgtTrail-st.trail)*38-st.vt*7.5;st.vt+=acc*dt;st.trail+=st.vt*dt;st.flare+=(tgtFlare-st.flare)*(1-Math.exp(-dt*(tgtFlare>st.flare?6:2.5)));}
  const ph=still?0:time*(2.1+st.flare*6.5)+st.seed+(a.phase||0)*.15,amp=still?0:1.3+st.flare*2.2,trail=st.trail,flare=st.flare;
- // Punkt auf der Stoffbahn: s = -1 (linke Kante) … 1 (rechte Kante), u = 0 (Schulter) … 1 (Saum)
- const P=(s,u)=>{const w0=8,w1=13+flare*2.5+(back?dirY*run*2:0),half=w0+(w1-w0)*u,cx=-1+u*-1.5;
-  const bend=trail*Math.pow(u,1.6),wave=Math.sin(ph-u*3.2+s*.9)*amp*u*u+Math.sin(ph*.57+u*5+s*2.1)*amp*.35*u;
-  const lift=1-.2*Math.min(1,flare)*u*(back?.5:1);return{x:cx+s*half+bend+wave,y:u*len*lift+Math.sin(ph*1.3+s*2.4)*amp*.3*u*u};};
- const N=7;ctx.save();ctx.translate(x0,-51);ctx.beginPath();ctx.moveTo(-9,0);
- for(let i=1;i<=N;i++){const q=P(-1,i/N);ctx.lineTo(q.x,q.y);}
- for(let j=1;j<=6;j++){/* Saum mit kleinen Wellen */const s=-1+j*2/6,q=P(s,1);ctx.lineTo(q.x,q.y+(j%2?1.2:-.4)*(.5+flare*.5));}
- for(let i=N-1;i>=1;i--){const q=P(1,i/N);ctx.lineTo(q.x,q.y);}ctx.lineTo(7,0);ctx.closePath();
- ctx.fillStyle=m.color;ctx.fill();ctx.strokeStyle=m.trim;ctx.lineWidth=m.tier>25?2:1;ctx.stroke();
- const path=(s,col,wd,from=.08,to=.96)=>{ctx.beginPath();for(let i=0;i<=6;i++){const q=P(s,from+(to-from)*i/6);i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y);}ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.stroke();};
- // Falten folgen der Biegung; die Schattenseite wechselt mit der Welle
- for(let n=0;n<3;n++){const s=-.55+n*.55;path(s,Math.sin(ph-n)>0?'#101b2040':'#101b2026',1);}
- if(m.pattern>=1){path(-.82,m.trim,1);path(.82,m.trim,1);}
- if(m.pattern>=2){for(let y=9;y<len-4;y+=8){const u=y/len,q=P(-.3,u),r=P(.3,(y+3)/len);rect(q.x-1,q.y,3,3,m.trim);rect(r.x,r.y,2,2,m.trim);}}
+ // Punkt auf der Stoffbahn: s = -1 (linke Kante) … 1 (rechte Kante), u = 0 (Schulter) … 1 (Saum); ins = Einzug für die Füllung innerhalb der Borte
+ const w1=13+flare*2.5+(back?dirY*run*2:0),P=(s,u,ins=0)=>{const half=8+(w1-8)*u-ins,cx=-1-u*1.5;
+  const wave=Math.sin(ph-u*3.2+s*.9)*amp*u*u+Math.sin(ph*.57+u*5+s*2.1)*amp*.35*u;
+  return{x:cx+s*half+trail*Math.pow(u,1.6)+wave,y:u*len*(1-.2*Math.min(1,flare)*u*(back?.5:1))+Math.sin(ph*1.3+s*2.4)*amp*.3*u*u};};
+ const N=5,shape=ins=>{ctx.beginPath();ctx.moveTo(-9+ins,ins);for(let i=1;i<=N;i++){const q=P(-1,i/N,ins);ctx.lineTo(q.x,q.y-(i===N?ins:0));}
+  for(let j=1;j<=5;j++){const q=P(-1+j*.4,1,ins);ctx.lineTo(q.x,q.y-ins+(j%2?1.2:-.4)*(.5+flare*.5));}
+  for(let i=N-1;i>=1;i--){const q=P(1,i/N,ins);ctx.lineTo(q.x,q.y);}ctx.lineTo(7-ins,ins);ctx.closePath();ctx.fill();};
+ // Borte als Fläche, Stoff eingerückt darüber: zwei Füllungen statt teurem Umrissstrich
+ const bw=m.tier>25?2:1;ctx.save();ctx.translate(x0,-51);ctx.fillStyle=m.trim;shape(0);ctx.fillStyle=m.color;shape(bw);
+ const fine=!still&&renderQuality>=.9&&(save.battle?.actors.length||0)<=40;
+ const seg=(s,from=.08,to=.96)=>{for(let i=0;i<=3;i++){const q=P(s,from+(to-from)*i/3);i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y);}};
+ if(fine||still){/* Falten folgen der Biegung – alle in einem Strich */ctx.beginPath();for(let n=0;n<3;n++)seg(-.55+n*.55);ctx.strokeStyle=Math.sin(ph)>0?'#101b2040':'#101b2030';ctx.lineWidth=1;ctx.stroke();
+  if(m.pattern>=1){ctx.beginPath();seg(-.8);seg(.8);ctx.strokeStyle=m.trim;ctx.stroke();}}
+ if(m.pattern>=2&&(fine||still)){for(let y=9;y<len-4;y+=8){const q=P(-.3,y/len),r=P(.3,(y+3)/len);rect(q.x-1,q.y,3,3,m.trim);rect(r.x,r.y,2,2,m.trim);}}
  if(m.pattern>=3){rect(-7,1,14,4,'#e0d9bd');for(let n=-8;n<9;n+=4)rect(n,4,2,2,'#fff2cf')}
- if(m.pattern>=4){for(let j=0;j<7;j++){const q=P(-1+j/3,1);rect(q.x-1,q.y-1,2,5+Math.round(Math.sin(ph*1.7+j)*1.5),m.trim);}const a1=P(-.45,.12),b1=P(.35,.3),a2=P(.4,.12),b2=P(-.45,.3);line(a1.x,a1.y,b1.x,b1.y,m.trim,2);line(a2.x,a2.y,b2.x,b2.y,m.trim,2);}
+ if(m.pattern>=4){for(let j=0;j<7;j++){const q=P(-1+j/3,1);rect(q.x-1,q.y-1,2,5+Math.round(Math.sin(ph*1.7+j)*1.5),m.trim);}if(fine||still){const a1=P(-.45,.12),b1=P(.35,.3),a2=P(.4,.12),b2=P(-.45,.3);ctx.beginPath();ctx.moveTo(a1.x,a1.y);ctx.lineTo(b1.x,b1.y);ctx.moveTo(a2.x,a2.y);ctx.lineTo(b2.x,b2.y);ctx.strokeStyle=m.trim;ctx.lineWidth=2;ctx.stroke();}}
  rect(-8,-1,3,3,m.trim);rect(5,-1,3,3,m.trim);ctx.restore()}
 // Blutlache: unregelmäßige Form aus wenigen Teilflächen in einem Pfad – zwei Füllungen je Lache (plus Glanz), in großen Schlachten vereinfacht.
 function bloodPool(p,simple){const r=p.r,s=p.x*.37+p.y*.91,n=simple?3:6,cx=p.x+5,cy=p.y,f=v=>{const x=Math.sin(v*127.1+311.7)*43758.5453;return x-Math.floor(x);};
