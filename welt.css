@@ -1,0 +1,42 @@
+/* Weltkarte (Testversion): eigene Klassen mit Präfix w-, damit Spielstile nichts überlagern */
+body.welt-page{margin:0;overflow:hidden;background:#120c09;overscroll-behavior:none}
+/* Das Spiel läuft unsichtbar darunter weiter (der Ludus zeichnet sich in #ludusCanvas, die Karte übernimmt das Bild) */
+body.welt-page #app{position:fixed;inset:0;opacity:0;pointer-events:none;z-index:0;overflow:auto}
+body.welt-page.w-admin #app{opacity:1;pointer-events:auto;z-index:40;background:#120c09}
+body.welt-page #modal{z-index:60}body.welt-page #notice{z-index:70}
+#welt{position:fixed;inset:0;z-index:10;font-family:ui-monospace,Menlo,Consolas,monospace;color:#f1dfb4}
+body.w-admin #welt{visibility:hidden}body.w-admin #welt .w-back{visibility:visible}
+#weltCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;image-rendering:pixelated;display:block}
+#weltCanvas:active{cursor:grabbing}
+#weltBoot{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#120c09}
+#weltBoot b{font-size:22px;letter-spacing:.2em}#weltBoot small{opacity:.7;letter-spacing:.15em}
+#weltBoot .bar{width:220px;height:6px;background:#2b211b}#weltBoot .bar i{display:block;height:100%;width:0;background:#d7b24a}
+#weltUi{position:absolute;inset:0;pointer-events:none}
+#weltUi>*{pointer-events:auto}
+.w-bar{position:absolute;left:8px;right:8px;top:8px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:7px 10px;background:rgba(18,12,9,.86);border:2px solid #5e4229;box-shadow:0 2px 0 #000}
+.w-title{display:flex;flex-direction:column;line-height:1.15;margin-right:4px}.w-title b{letter-spacing:.18em;font-size:13px;color:#f4d37a}.w-title small{font-size:10px;opacity:.7}
+.w-chip{font-size:11px;padding:3px 7px;background:#2b211b;border:1px solid #5e4229}
+.w-perf{position:relative;width:150px;height:18px;background:#2b211b;border:1px solid #5e4229;overflow:hidden}
+.w-perf i{position:absolute;left:0;top:0;bottom:0;width:0;background:#6fae5a;transition:width .3s}
+.w-perf span{position:relative;font-size:10px;line-height:18px;padding-left:5px;color:#fff;text-shadow:0 1px 0 #000;white-space:nowrap}
+.w-sel{font-size:11px;display:flex;align-items:center;gap:5px}
+.w-sel select,.w-btn,.w-kader button,.w-filter button{font:inherit;font-size:11px;color:#f1dfb4;background:#3b2a1b;border:1px solid #8a6a42;padding:4px 8px;cursor:pointer}
+.w-btn:hover,.w-kader button:hover,.w-filter button:hover{background:#5e4229}
+.w-kader{font-size:11px;display:flex;align-items:center;gap:4px;margin-left:auto}
+#wMini{position:absolute;left:8px;bottom:8px;width:240px;height:160px;border:2px solid #5e4229;background:#2b3a22;box-shadow:0 2px 0 #000;cursor:pointer;image-rendering:auto}
+#wTablePanel{position:absolute;right:8px;top:64px;bottom:8px;width:min(460px,calc(100% - 16px));display:flex;flex-direction:column;background:rgba(18,12,9,.94);border:2px solid #5e4229}
+#wTablePanel>header{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #5e4229;color:#f4d37a}
+.w-x{font:inherit;background:none;border:0;color:#f1dfb4;font-size:15px;cursor:pointer}
+.w-filter{display:flex;flex-wrap:wrap;gap:4px;padding:8px}.w-filter button.on{background:#8a6a42;color:#120c09}
+.w-list{overflow:auto;flex:1;padding:0 8px 8px}
+.w-list table{width:100%;border-collapse:collapse;font-size:11px}
+.w-list th{position:sticky;top:0;background:#1d1510;text-align:left;padding:5px 4px;color:#d7b24a;font-weight:normal}
+.w-list td{padding:5px 4px;border-top:1px solid #2b211b;vertical-align:top}.w-list td small{display:block;opacity:.6}
+.w-list tr[data-i]{cursor:pointer}.w-list tr[data-i]:hover td{background:#2b211b}
+.w-eye{color:#6fae5a}.w-eye.off{color:#8a7a62}
+#wInfo{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(380px,calc(100% - 24px));background:rgba(18,12,9,.95);border:2px solid #8a6a42;padding:10px 12px;font-size:12px;box-shadow:0 3px 0 #000}
+#wInfo header{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}#wInfo header b{color:#f4d37a;font-size:14px}#wInfo header small{opacity:.7;flex:1}
+#wInfo p{margin:4px 0}#wInfo ul{margin:4px 0;padding-left:18px}.w-tiny{font-size:11px;opacity:.75}.w-dim{opacity:.3}
+.w-back{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:80;font-size:13px!important;padding:8px 14px!important;background:#5e4229!important;box-shadow:0 2px 0 #000}
+@media (max-width:700px){.w-bar{gap:5px;padding:5px 6px;left:4px;right:4px;top:4px}.w-title,#wClock,.w-lab{display:none}.w-chip{font-size:10px;padding:2px 5px}.w-perf{width:96px}.w-sel select,.w-btn{font-size:10px;padding:3px 5px}#wMini{width:150px;height:100px;left:4px;bottom:4px}.w-kader{margin-left:0}#wInfo{bottom:112px}#wTablePanel{top:auto;height:62%;right:4px;bottom:4px;width:calc(100% - 8px)}}
+body.welt-page .mg-gold{display:none}
