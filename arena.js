@@ -305,9 +305,45 @@ function crowdView(main){let x0=0,y0=0,x1=1040,y1=720;const T=main.getTransform?
   x0=Math.min(...P.map(p=>p[0]))-40;x1=Math.max(...P.map(p=>p[0]))+40;y0=Math.min(...P.map(p=>p[1]))-40;y1=Math.max(...P.map(p=>p[1]))+60;}
  return [Math.max(0,Math.floor(x0)),Math.max(LY0,Math.floor(y0)),Math.min(1040,Math.ceil(x1)),Math.min(LY1,Math.ceil(y1))];}
 let LY0=0,LY1=720;
-function drawCrowd(main,index,level){const sv=svOn(index),people=seatsFor(index,level),T0=sv?SV_TOP:0,LH=720+(sv?SV_TOP+SV_BOT:0);LY0=-T0;LY1=720+(sv?SV_BOT:0);if(!CROWD.layer||CROWD.layer.height!==LH)CROWD.layer=surface(1040,LH);const lk=index+':'+level+':'+T0,full=CROWD.layerKey!==lk;
+// Leistung (3.11.2026): Das Publikum wird im Hintergrund-Thread (Worker) gezeichnet – derselbe Code (crowdPose, gleiche Bildchen,
+// gleiche Reihenfolge, gleiche Vergrößerung vorn im Südtribünen-Blick), also dasselbe Bild. Der Worker legt das Publikum gleich auf
+// die Kulisse (die deckend ist), der Hauptthread (Kampf, Figuren) schickt nur noch, was gerade los ist (Ereignis, Chor, Welle,
+// Kamera-Ausschnitt), und kopiert ein fertiges Bild statt zwei. Vorher zeichnete er alle paar Bilder bis zu 970 Zuschauer auf einmal –
+// das waren die Ruckler. Der erste Aufbau (Ladebildschirm, neue Arena/Ansicht), Prüfbilder und Messungen laufen wie bisher direkt.
+// Ohne Worker/OffscreenCanvas oder bei einem Fehler: alter Weg. Abschalten: localStorage['mg-crowd-worker']='off'.
+const CW={w:null,off:false,ready:false,merged:false,busy:false,key:'',n:-1,seq:0,bmp:null,sent:0};
+function crowdWorkerMain(){let L=null,G=null,K=null,KG=null,T0=0,back=null,people=[],sprites=new Map(),pages=[];
+ const canvas=(c,h)=>{if(!c||c.height!==h)c=new OffscreenCanvas(1040,h);return c;};
+ onmessage=e=>{const m=e.data;try{
+  if(m.init){for(const b of pages)b.close?.();people=m.people;sprites=new Map(m.sprites);pages=m.pages;T0=m.T0;L=canvas(L,m.H);G=L.getContext('2d');G.setTransform(1,0,0,1,0,0);G.clearRect(0,0,1040,m.H);
+   if(m.layer){G.drawImage(m.layer,0,0);m.layer.close?.();}back?.close?.();back=m.back||null;if(back){K=canvas(K,m.H);KG=K.getContext('2d');}postMessage({ready:true,seq:m.seq,merged:!!back});return;}
+  const [x0,y0,x1,y1]=m.view,C=m.C;G.save();G.translate(0,T0);G.imageSmoothingEnabled=false;G.clearRect(x0,y0,x1-x0,y1-y0);let vis=0;
+  for(const p of people){if(p.x<x0-16||p.x>x1+16||p.y<y0-8||p.y>y1+40)continue;vis++;const [pose,jump]=crowdPose(p,C),sp=sprites.get(p.t+'|'+pose+'|'+(p.back?1:0)+'|'+p.fan);if(!sp)continue;const q=p.s||1,src=pages[sp.pg];
+   if(q===1)G.drawImage(src,sp.sx+13+sp.ox,sp.sy+38+sp.oy,sp.w,sp.h,Math.round(p.x)+sp.ox,Math.round(p.y)+sp.oy-jump,sp.w,sp.h);else G.drawImage(src,sp.sx+13+sp.ox,sp.sy+38+sp.oy,sp.w,sp.h,Math.round(p.x+sp.ox*q),Math.round(p.y+(sp.oy-jump)*q),Math.round(sp.w*q),Math.round(sp.h*q));}
+  G.restore();let out=L;if(back){KG.drawImage(back,0,0);KG.drawImage(L,0,0);out=K;}
+  createImageBitmap(out).then(b=>postMessage({bmp:b,vis,seq:m.seq},[b]),err=>postMessage({fail:String(err)}));}catch(err){postMessage({fail:String(err)});}};}
+function crowdWorkerStart(){if(CW.w||CW.off)return CW.w;try{if(typeof Worker==='undefined'||typeof OffscreenCanvas==='undefined'||typeof createImageBitmap!=='function'||typeof Blob==='undefined'||localStorage?.getItem?.('mg-crowd-worker')==='off'){CW.off=true;return null;}
+  const src='"use strict";const TAU=Math.PI*2;\n'+hash2+'\n'+crowdPose+'\n('+crowdWorkerMain+')();',url=URL.createObjectURL(new Blob([src],{type:'text/javascript'})),w=new Worker(url);setTimeout(()=>URL.revokeObjectURL(url),10000);
+  w.onmessage=e=>{const m=e.data;if(m.fail){CW.off=true;CW.busy=false;console.warn('Publikum-Worker aus:',m.fail);return;}if(m.ready){if(m.seq===CW.seq){CW.ready=true;CW.merged=m.merged;}return;}
+   if(m.bmp){if(m.seq!==CW.seq){m.bmp.close?.();return;}CW.busy=false;CW.bmp?.close?.();CW.bmp=m.bmp;CROWD.lastVis=m.vis;}};
+  w.onerror=e=>{CW.off=true;CW.busy=false;console.warn('Publikum-Worker aus:',e?.message||e);};CW.w=w;}catch(e){CW.off=true;}return CW.w;}
+// Worker mit Sitzplätzen, Bildbögen, Kulisse und dem fertigen ersten Bild versorgen (nach dem direkten ersten Aufbau)
+function crowdWorkerInit(lk,akey,T0){const seq=++CW.seq,H=CROWD.layer.height;CW.ready=CW.busy=CW.merged=false;CW.key=lk;CW.n=ATLAS.n;CW.bmp?.close?.();CW.bmp=null;
+ const sprites=[];for(const [k,c] of CROWD.sprites){const pg=ATLAS.pages.indexOf(c.pg);if(pg>=0)sprites.push([k,{pg,sx:c.sx,sy:c.sy,ox:c.ox,oy:c.oy,w:c.w,h:c.h}]);}
+ const people=CROWD.people.map(p=>({x:p.x,y:p.y,ang:p.ang,k:p.k,t:p.t,fan:p.fan,flag:p.flag,seed:p.seed,ph:p.ph,i:p.i,back:p.back,s:p.s}));
+ const backSrc=arenaLayer&&arenaLayerKey===akey&&arenaLayer.height===H?arenaLayer:null;
+ Promise.all([...ATLAS.pages.map(pg=>createImageBitmap(pg.c)),createImageBitmap(CROWD.layer),backSrc?createImageBitmap(backSrc):null]).then(bs=>{if(seq!==CW.seq||!CW.w){for(const b of bs)b?.close?.();return;}const back=bs.pop(),layer=bs.pop();
+  try{CW.w.postMessage({init:true,seq,H,T0,people,sprites,pages:bs,layer,back},[...bs,layer,...(back?[back]:[])]);}catch(e){CW.off=true;}},()=>{CW.off=true;});}
+// true: dieses Bild übernimmt der Worker (Auftrag schicken, fertiges Bild kopieren)
+function crowdAsync(main,lk,tk,under,akey,T0){if(CROWD.sync||CROWD.layerKey!==lk||!crowdWorkerStart()||CW.off)return false;
+ if(CW.key!==lk||CW.n!==ATLAS.n){crowdWorkerInit(lk,akey,T0);return false;}if(!CW.ready)return false;
+ if(CW.busy&&performance.now()-CW.sent>3000)CW.busy=false;/* Antwort verloren: neu anstoßen */
+ if(tk!==CROWD.tick&&!CW.busy){const view=crowdView(main);if(view[2]>view[0]&&view[3]>view[1]){try{CW.w.postMessage({seq:CW.seq,view,C:crowdContext()});CW.busy=true;CW.sent=performance.now();}catch(e){CW.off=true;return false;}}CROWD.tick=tk;}
+ if(!CW.bmp)return false;if(!CW.merged&&under)main.drawImage(under,0,-T0);main.drawImage(CW.bmp,0,-T0);return true;}
+function drawCrowd(main,index,level,under=null){const sv=svOn(index),people=seatsFor(index,level),T0=sv?SV_TOP:0,LH=720+(sv?SV_TOP+SV_BOT:0);LY0=-T0;LY1=720+(sv?SV_BOT:0);if(!CROWD.layer||CROWD.layer.height!==LH)CROWD.layer=surface(1040,LH);const lk=index+':'+level+':'+T0,full=CROWD.layerKey!==lk;
  /* Haushalt: höchstens ca. 4000 Zuschauer-Bildchen je Sekunde (langsame Darstellung weniger) – viele Sichtbare = seltener neu, 2–8× je s */
  const budget=renderQuality>=.95?4200:renderQuality>=.8?2800:1800,rate=clamp(budget/Math.max(1,CROWD.lastVis||300),2,8),tk=Math.floor(performance.now()/1000*rate);
+ if(crowdAsync(main,lk,tk,under,index+':'+level+(sv?':sv':''),T0))return;if(under)main.drawImage(under,0,-T0);
  if(full||tk!==CROWD.tick){const g=CROWD.layer.getContext?.('2d');if(g){const [x0,y0,x1,y1]=full?[0,LY0,1040,LY1]:crowdView(main);if(x1>x0&&y1>y0){const C=crowdContext();/* ohne Zuschneiden: Ränder liegen 40 px außerhalb des Bildes, Überstand dort ist unsichtbar und wird beim nächsten Mal mit gelöscht */ctx=g;ctx.save();ctx.translate(0,T0);ctx.imageSmoothingEnabled=false;ctx.clearRect(x0,y0,x1-x0,y1-y0);
    let vis=0;for(const p of people){if(p.x<x0-16||p.x>x1+16||p.y<y0-8||p.y>y1+40)continue;vis++;const [pose,jump]=crowdPose(p,C),sp=personSprite(p,pose);if(!sp)continue;const q=p.s||1;if(q===1)ctx.drawImage(sp.pg.bmp||sp.pg.c,sp.sx+13+sp.ox,sp.sy+38+sp.oy,sp.w,sp.h,Math.round(p.x)+sp.ox,Math.round(p.y)+sp.oy-jump,sp.w,sp.h);else ctx.drawImage(sp.pg.bmp||sp.pg.c,sp.sx+13+sp.ox,sp.sy+38+sp.oy,sp.w,sp.h,Math.round(p.x+sp.ox*q),Math.round(p.y+(sp.oy-jump)*q),Math.round(sp.w*q),Math.round(sp.h*q));}
    ctx.restore();ctx=main;CROWD.lastVis=vis;atlasFreeze();}}CROWD.tick=tk;CROWD.layerKey=lk;}
@@ -331,12 +367,12 @@ function arenaDraw(index,forced,noFront){if(M.missionBackdrop){M.missionBackdrop
  const level=clamp(forced??save.battle?.league??save.fightLeague??save.league,0,6),sv=svOn(index),key=index+':'+level+(sv?':sv':''),main=ctx,T0=sv?SV_TOP:0;
  if(!arenaLayer||arenaLayerKey!==key){arenaLayer=surface(1040,720+(sv?SV_TOP+SV_BOT:0));ctx=arenaLayer.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.translate(0,T0);arenaStatic(index,level);
   if(sv){svFront=surface(1040,720+SV_BOT-SV_RAIL+16);ctx=svFront.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.translate(0,-(SV_RAIL-16));svParapet(index);}else svFront=null;ctx=main;arenaLayerKey=key;crowdLayerKey='';}
- ctx.drawImage(arenaLayer,0,-T0);if(index===5)return;
- drawCrowd(ctx,index,level);if(svFront&&!noFront)ctx.drawImage(svFront,0,SV_RAIL-16);
+ if(index===5){ctx.drawImage(arenaLayer,0,-T0);return;}
+ /* Kulisse und Publikum (im Worker meist schon zu einem Bild zusammengelegt) */drawCrowd(ctx,index,level,arenaLayer);if(svFront&&!noFront)ctx.drawImage(svFront,0,SV_RAIL-16);
  // The imperial box stays in front of its spectators.
  if(index===4){rect(445,0,150,30,'#694551');rect(450,2,140,3,'#c1a270');rect(512,10,16,15,'#ba995c');rect(508,8,24,4,'#e0be76');}
  gate(0);
- const TP=roundTorches();for(const [x,y] of TP)torch(x,y);torchGlow(TP.map(([x,y])=>[x,y-14]));
+ /* nur Fackeln, deren Flamme oder Lichtschein ins Bild reicht */const [vx0,vy0,vx1,vy1]=crowdView(ctx),TP=(RTORCH.pos||=roundTorches()).filter(([x,y])=>x>vx0-100&&x<vx1+100&&y>vy0-100&&y<vy1+100);for(const [x,y] of TP)torch(x,y);if(TP.length)torchGlow(TP.map(([x,y])=>[x,y-14]));
 }
 function shadeCrowd(n,index){const h=n?36:90,op=ctx.globalCompositeOperation;ctx.globalCompositeOperation='source-atop';const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,n?'rgba(10,14,16,.12)':'rgba(10,14,16,.38)');g.addColorStop(1,'rgba(10,14,16,0)');ctx.fillStyle=g;ctx.fillRect(0,0,1040,h);
  if(!n&&index>=2){ctx.fillStyle='rgba(12,16,20,.16)';for(let x=30;x<1010;x+=140)ctx.fillRect(x,0,70,h);}ctx.globalCompositeOperation=op;}
@@ -854,11 +890,11 @@ function beltPlan(a,t,plan){const items=a.items||{hammer:a.hammer,sword:a.sword}
 M.graphicsPreparation={
  arena(index,level){const old=ctx;const c=surface(1040,720);ctx=c.getContext('2d');try{arenaDraw(index,level);}finally{ctx=old;c.width=c.height=1;}},
  // Für Messungen: n vollständige Neuzeichnungen des Publikums (ganze Arena sichtbar = ungünstigster Fall), ms je Neuzeichnung
- crowdBench(index,level,n=20){const old=ctx;const c=surface(1040,720);ctx=c.getContext('2d');try{seatsFor(index,level);drawCrowd(ctx,index,level);const t0=performance.now();for(let i=0;i<n;i++){CROWD.tick=-1;CROWD.events.push({kind:i%3?'kill':'hit',team:i%2,t:performance.now()/1000});drawCrowd(ctx,index,level);}return {ms:(performance.now()-t0)/n,people:CROWD.people.length,sprites:CROWD.sprites.size};}finally{ctx=old;}},
+ crowdBench(index,level,n=20){const old=ctx;const c=surface(1040,720);ctx=c.getContext('2d');CROWD.sync=true;try{seatsFor(index,level);drawCrowd(ctx,index,level);const t0=performance.now();for(let i=0;i<n;i++){CROWD.tick=-1;CROWD.events.push({kind:i%3?'kill':'hit',team:i%2,t:performance.now()/1000});drawCrowd(ctx,index,level);}return {ms:(performance.now()-t0)/n,people:CROWD.people.length,sprites:CROWD.sprites.size};}finally{ctx=old;CROWD.sync=false;}},
  // Für Prüfbilder: ganze Arena (Kulisse, Publikum, Fackeln) in eine eigene Leinwand
- snapshot(index,level){const old=ctx;const c=surface(1040,720);ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;try{arenaDraw(index,level);}finally{ctx=old;}return c;},
- release(){sandCache.clear();glowSprite=null;CROWD.layer=null;CROWD.layerKey='';CROWD.key='';CROWD.sprites.clear();ATLAS.pages=[];ATLAS.n=0;arenaLayer=null;arenaLayerKey='';crowdLayers=null;crowdLayerKey='';crowdLayerTick=-1;crowdSprites.clear();crowdCache.clear();},
- stats(){return {bytes:sandCache.size*960*572*4+(CROWD.layer?1040*720*4:0)+ATLAS.pages.length*1024*1012*4+(arenaLayer?1040*720*4:0)+(crowdLayers?1040*126*4:0)+crowdSprites.size*24*26*4};}
+ snapshot(index,level){const old=ctx;const c=surface(1040,720);ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;CROWD.sync=true;try{arenaDraw(index,level);}finally{ctx=old;CROWD.sync=false;}return c;},
+ release(){sandCache.clear();glowSprite=null;CW.seq++;CW.key='';CW.ready=CW.busy=CW.merged=false;CW.bmp?.close?.();CW.bmp=null;CROWD.layer=null;CROWD.layerKey='';CROWD.key='';CROWD.sprites.clear();ATLAS.pages=[];ATLAS.n=0;arenaLayer=null;arenaLayerKey='';crowdLayers=null;crowdLayerKey='';crowdLayerTick=-1;crowdSprites.clear();crowdCache.clear();},
+ stats(){return {crowdWorker:!!(CW.w&&!CW.off&&CW.ready),bytes:sandCache.size*960*572*4+(CROWD.layer?1040*720*4:0)+(CW.bmp?1040*720*4:0)+ATLAS.pages.length*1024*1012*4+(arenaLayer?1040*720*4:0)+(crowdLayers?1040*126*4:0)+crowdSprites.size*24*26*4};}
 };
 Object.assign(M,{gaitArms,limitArm,supportGrip,plantFoot,stepPose,strikePhase,figureMotion,beltPlan,renderForgeEffects,scarVisible,renderStory,renderLudusActors,sampleRenderQuality,resetRenderQuality,renderMetrics:()=>({quality:renderQuality,paintInterval}),resetBenchmarkRender:()=>{resetRenderQuality();zoom=1;accumulator=0;},bladeSurface,renderTeamFigure,renderTechnique,renderGear,breathing,audienceFor,renderMantle,voice,bodyGeometry,renderFigure,expression,expressionLabel,sound:sfx,audioStart,renderPortrait,renderBody,renderPreview,drawGladiator,renderBattle,bodyColor,focus:id=>focus=id,setZoom:()=>zoom=zoom===1?1.4:zoom===1.4?1.9:1,getZoom:()=>zoom});requestAnimationFrame(loop);
 })();
