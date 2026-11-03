@@ -259,7 +259,7 @@ M.schoolClick=action=>{if(!action.startsWith('outside:'))return prevClick?prevCl
  if(k==='auto'){autoPick(+v||5);M.ui.render();return true;}
  if(k==='lead'){st.leaderId=v;persist();M.ui.render();return true;}
  if(k==='none'){sel=new Set();M.ui.render();return true;}
- if(k==='equip'){const team=selected();let msg=team.length?M.army.autoEquip(team,S.army?.equipPriority||'balanced'):'Erst Kämpfer auswählen.';
+ if(k==='equip'){const team=selected();let msg=team.length?M.army.autoEquip(team,S.army?.equipPriority||'balanced',{take:true}):'Erst Kämpfer auswählen.';
   // Fernkämpfer und Assassinen nur in Leder/Mittel: Metall nimmt ihnen den Laufvorteil
   let off=0;for(const g of team)if(g.role!=='Soldat')for(const [slot,id] of Object.entries(g.equipment?.armor||{})){const it=id&&M.inventoryItem?.(id);if(it?.material==='metal'){g.equipment.armor[slot]=null;off++;}}
   if(off)msg+=` · ${off} Metallteil${off>1?'e':''} bei Schützen/Assassinen abgelegt (schneller zu Fuß)`;notify(msg);persist();M.ui.render();return true;}

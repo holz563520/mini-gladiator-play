@@ -204,7 +204,7 @@ function nextDay(){try{M.advanceDay(1);}catch(e){console.warn(e);}pc.clear();st.
 
 // ---------- Automatisch ausrüsten (wie in der Kampfvorbereitung: beste Waffengattung nach SOLL) ----------
 function equip(){const gs=lineup().map(x=>x.g);if(!gs.length)return toast('Niemand in der Gruppe.');let msg='';
- try{msg=M.army?.autoEquip?M.army.autoEquip(gs,'soll'):'Automatisches Ausrüsten nicht verfügbar.';}catch(e){msg='Ausrüsten fehlgeschlagen: '+e.message;}
+ try{msg=M.army?.autoEquip?M.army.autoEquip(gs,'soll',{take:true}):'Automatisches Ausrüsten nicht verfügbar.';}catch(e){msg='Ausrüsten fehlgeschlagen: '+e.message;}
  pc.clear();try{ART.clearFigures?.();}catch(e){}save();render();toast(String(msg||'Ausgerüstet.').slice(0,120));}
 
 // ---------- Echter Kampf in der Kampfansicht des Spiels ----------

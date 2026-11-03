@@ -303,7 +303,7 @@ root.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)r
   case 'pskip':U.pres?.skip();break;
   case 'close':stopSpy();layer.innerHTML='';break;
   case 'present':present(U.sel);break;
-  case 'equipbest':{const gs=team().filter(u=>u.kind==='human').map(u=>u.g);if(!gs.length){M.ui?.notify?.('Keine Gladiatoren in der Gruppe, die Ausrüstung brauchen.');break;}M.ui?.notify?.(M.army.autoEquip(gs,'soll'));if(layer.querySelector('.an-spy')){spyBuild?.();}else prep(U.sel);break;}
+  case 'equipbest':{const gs=team().filter(u=>u.kind==='human').map(u=>u.g);if(!gs.length){M.ui?.notify?.('Keine Gladiatoren in der Gruppe, die Ausrüstung brauchen.');break;}M.ui?.notify?.(M.army.autoEquip(gs,'soll',{take:true}));if(layer.querySelector('.an-spy')){spyBuild?.();}else prep(U.sel);break;}
   case 'spy':spy();break;
    case 'spyclose':stopSpy();layer.querySelector('.an-spy')?.remove();prep(U.sel);break;
   case 'rows':U.rowsAuto=v==='auto';if(!U.rowsAuto){for(const u of team())U.rows[u.key]=u.row;}rowsChanged();break;
