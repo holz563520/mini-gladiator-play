@@ -82,9 +82,11 @@ A.describe=(o,own)=>{const ownKW=own.reduce((a,f)=>a+f.kw,0),enKW=o.enemy.reduce
 const ROW_X={vorne:70,mitte:5,hinten:-80},LANE_Y={oben:250,mitte:390,unten:530};
 A.autoSlot=role=>role==='Fernkämpfer'?{row:'hinten',lane:'mitte'}:role==='Assassine'?{row:'mitte',lane:'oben'}:{row:'vorne',lane:'mitte'};
 function placeOwn(b,lineup){
+ /* große Arena (sim.js growArena): Plätze gelten im alten 1040×720-Feld und werden wie dort in die Mitte des größeren Feldes geschoben */
+ const G=b.view||1,F=G>1&&M.fieldGeom?M.fieldGeom(b):null,dx=F?F.cx*(1-1/G):0,dy=F?F.cy*(1-1/G):0;
  const cells={};for(const L of lineup){const k=L.slot.row+L.slot.lane;(cells[k]=cells[k]||[]).push(L);}
  for(const list of Object.values(cells))list.forEach((L,i)=>{const a=b.actors.find(x=>x.team===0&&x.unitKey===L.id);if(!a)return;
-  a.x=260+ROW_X[L.slot.row]+(i%2)*-22;a.y=cl(LANE_Y[L.slot.lane]+(i-(list.length-1)/2)*46,170,610);a.row=L.slot.row==='hinten'?'back':'front';M.fieldPt?.(a,(a.r||14)+6,b);});}
+  a.x=dx+260+ROW_X[L.slot.row]+(i%2)*-22;a.y=dy+cl(LANE_Y[L.slot.lane]+(i-(list.length-1)/2)*46,170,610);a.row=L.slot.row==='hinten'?'back':'front';M.fieldPt?.(a,(a.r||14)+6,b);});}
 
 // ---------- Kampf mit Messung ----------
 // Der Messer läuft neben dem Kampf her: headless (A.fight) oder sichtbar in der Kampfansicht (tick je Simulationsschritt)

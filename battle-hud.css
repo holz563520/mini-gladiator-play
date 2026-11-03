@@ -138,8 +138,8 @@ body.bhud-shot #arenaCanvas{filter:brightness(.55)}
 #modCard.champ{background:radial-gradient(circle at 50% 25%,#4a3a14,#0c1214 78%);border:0}#modCard.champ .mod-top span{font-size:14px;color:#f4d37a;letter-spacing:.2em}
 #modCard.champ .mod-main canvas{border-color:#f4d37a;box-shadow:0 0 26px #f4d37a66}#modCard.champ .mod-name h3{color:#f4d37a}
 
-/* Das Urteil läuft über die Karten des Moderators; der alte Knopf zum Überspringen entfällt hier */
-body.bhud #verdictSkip{display:none!important}
+/* Das Urteil läuft über die Karten des Moderators (dort eigener Knopf „Alle überspringen“); der Knopf hier erscheint nur, wenn keine Karte offen ist */
+body.bhud #verdictSkip{top:calc(var(--bhf,300px)*.84)!important;min-height:40px;padding:8px 16px;font-size:12px}body.bhud #verdictSkip small{display:none}
 
 /* Unterste Leiste: eine Zeile Knöpfe; die Ereignisse stehen schon in der Tafel */
 body.bhud #battleBottom .fight-log{display:none}

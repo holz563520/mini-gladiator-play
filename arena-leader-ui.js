@@ -66,7 +66,9 @@ function drain(b){const ev=b.events;if(!ev?.length)return;const keep=[];
  ev.push(...keep);}
 // ---------- Einzug: Aufstellung und Lagebesprechung ----------
 function startForm(b){const f=L.arenaFormation(b),me=b.actors.find(a=>a.g.id===b.lead.leaderId),pts=[];
- for(const [a,p] of f.pts){p.y=clamp(p.y,190,590);p.x=clamp(p.x,60,980);pts.push([a,p]);}
+ /* Feldgrenzen nach echter Feldgröße (große Arena ist 2× so groß; im runden Feld setzt arenaFormation die Plätze schon ins Oval) */
+ const W=b.width||1040,H=b.height||720;
+ for(const [a,p] of f.pts){p.y=clamp(p.y,190*H/720,H-130*H/720);p.x=clamp(p.x,60,W-60);pts.push([a,p]);}
  A.form={pts,t0:performance.now(),said:false};
  const sold=f.line.filter(a=>a.g.role==='Soldat'),txt=[sold.length?(sold.length>1?'Schilde nach vorn! '+sold.slice(0,3).map(a=>first(a.g)).join(', ')+', ihr seid die Mauer!':first(sold[0].g)+', du bist vorn. Du bist die Mauer.'):'Linie bilden! Schulter an Schulter!',
   f.arch.length?f.arch.map(a=>first(a.g)).join(' und ')+': hinter die Linie, freies Schussfeld!':'',
