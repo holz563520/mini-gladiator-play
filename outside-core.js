@@ -417,7 +417,7 @@ D.collect=function(m,b){m.rep??={};for(const a of b.actors){if(a.team!==0)contin
  for(const k of REP_KEYS){const v=a[k]||0;r[k]=(r[k]||0)+(v-(last[k]||0));last[k]=v;}
  for(const [k,v] of Object.entries(a.learning||{})){r.learning[k]=(r.learning[k]||0)+(v-(last.learning[k]||0));last.learning[k]=v;}
  r.xpMultiplier=Math.max(r.xpMultiplier,a.xpMultiplier||1);}};
-D.endEncounter=function(m,b,o={}){D.collect(m,b);const st=m.place.stations[b.encounter],w=o.fled?-2:(b.done?.winner??-1),out={station:st,winner:w,loot:[],downed:[],died:[],time:b.time-b.encStart,kills:0,rest:0};
+D.endEncounter=function(m,b,o={}){for(const a of b.actors)if(a.team===0)M.learnAllround?.(a);D.collect(m,b);const st=m.place.stations[b.encounter],w=o.fled?-2:(b.done?.winner??-1),out={station:st,winner:w,loot:[],downed:[],died:[],time:b.time-b.encStart,kills:0,rest:0};
  for(const a of b.actors.filter(a=>a.team===0)){const g=a.g,snap=b.gearSnap.get(g);
   // Fallen gelassene Waffen und Schilde werden nach dem Gefecht wieder aufgehoben
   if(snap?.equipment){if(!g.dead){for(const k of ['weapon','secondary','shield'])if(snap.equipment[k]&&!g.equipment[k]&&(S.inventory||[]).some(i=>i.id===snap.equipment[k]))g.equipment[k]=snap.equipment[k];}a.disarmed=false;a.droppedShield=false;}

@@ -76,14 +76,15 @@ function viewGroup(){
  const cols=ROLES.map(r=>{const list=alive().filter(g=>g.role===r).sort((a,b)=>A.kw(b)-A.kw(a));
   return `<div class="a-col" data-r="${r}"><h3><span>${ICON[r]} ${PLURAL[r]}</span><span>${list.length}</span></h3><div class="a-list" data-roster>${list.map(g=>{const f=fit(g),cls=['a-card'];if(inL(g.id))cls.push('a-in');if(!f.ok)cls.push('a-out');if(st.hero===g.id)cls.push('a-hero');
    const sub=!f.ok?esc((f.causes||[])[0]||'nicht einsatzbereit'):(g.auf?.kills?g.auf.kills+' Kills · ':'')+(g.auf?.fights?g.auf.fights+' Kämpfe':'frisch');
-   return `<div class="${cls.join(' ')}" data-drag="${esc(g.id)}" data-from="roster">${por(g)}<div class="a-nm">${esc(g.name)}<small>${tal(g)}<b class="a-kw">${A.kw(g)}</b> ${sub}</small></div></div>`;}).join('')}</div>${TEST?`<button class="a-buy" data-buy="${r}">+ Rekrut · 100</button>`:''}</div>`;}).join('');
+   const hp=Math.round(Math.max(0,Math.min(100,(()=>{try{return M.health(g);}catch{return 100;}})())));
+   return `<div class="${cls.join(' ')}" data-drag="${esc(g.id)}" data-from="roster">${por(g)}<div class="a-nm"><span class="a-name">${esc(g.name)}</span><span class="a-vals"><b class="a-kw" title="Kampfwert">${A.kw(g)}</b><b class="a-hp${hp<50?' a-lo':hp<80?' a-mid':''}" title="Gesundheit">♥ ${hp} %</b>${tal(g)}</span><small>${sub}</small></div></div>`;}).join('')}</div>${TEST?`<button class="a-buy" data-buy="${r}">+ Rekrut · 100</button>`:''}</div>`;}).join('');
  let grid='<div></div>'+ROWS.map(r=>`<div class="a-gh">${r}</div>`).join('');
  for(const lane of LANES){grid+=`<div class="a-gl">${lane}</div>`;for(const row of ROWS){const here=st.lineup.filter(x=>x.row===row&&x.lane===lane);
   grid+=`<div class="a-cell" data-cell="${row}|${lane}">${here.map(x=>{const g=G(x.id);return `<div class="a-chip${selChip===g.id?' a-sel':''}${st.hero===g.id?' a-hero':''}" data-r="${g.role}" data-drag="${esc(g.id)}" data-from="grid">${por(g,24,27)}<span class="a-n">${st.hero===g.id?'★':''}${esc(g.name)}</span><b>${A.kw(g)}</b>${tal(g)}</div>`;}).join('')}</div>`;}}
  grid+='<div></div><div class="a-foe">GEGNER ▶</div>';
  root.innerHTML=top('AUFSTELLUNG','ARENA THEORY · TESTVERSION')+`<main>${steps(0)}
  <section class="a-box"><div class="a-bh"><h2>Kader</h2><span>nach Kampfwert · ziehen oder antippen</span></div><div class="a-cols">${cols}</div></section>
- <section class="a-box"><div class="a-bh"><h2>Aufstellung</h2><span>${L.length}/10</span></div><div class="a-grid${selChip?' a-picking':''}">${grid}</div>
+ <section class="a-box"><div class="a-bh"><h2>Aufstellung</h2><span>${L.length} Kämpfer</span></div><div class="a-grid${selChip?' a-picking':''}">${grid}</div>
   <div class="a-sum">${L.length?`<span>Köpfe <b>${L.length}</b></span><span>KW-Summe <b>${sum}</b></span>${ROLES.map(r=>`<span>${ICON[r]} <b>${L.filter(x=>x.role===r).length}</b></span>`).join('')}<span>${st.hero?'★ <b>'+esc(G(st.hero)?.name)+'</b>':'kein ★-Held'}</span>`:'<span>Zieh Kämpfer aus dem Kader auf ein Feld.</span>'}</div>
   <div class="a-forms">${Object.entries(FORMS).map(([k,[l,h]])=>`<span class="a-badge${fs.includes(k)?' a-on':''}" title="${esc(h)}">${l}</span>`).join('')}</div>
   <div class="a-acts"><button data-act="equip" ${L.length?'':'disabled'}>⚙ AUTOMATISCH AUSRÜSTEN</button></div>

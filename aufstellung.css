@@ -37,10 +37,10 @@ body.auf-fighting #auf{display:none}
 #auf .a-list.a-drop{border-color:var(--red);background:#d5766812}
 #auf .a-card{position:relative;display:flex;align-items:center;gap:5px;padding:3px 5px 3px 3px;border:2px solid var(--line);background:var(--raised);box-shadow:2px 2px 0 #0008;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y;cursor:grab}
 #auf .a-card canvas{width:30px;height:37px;flex:none;background:#0d1314}
-#auf .a-card .a-nm{flex:1;min-width:0;font-size:11px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#auf .a-card .a-nm small{display:block;color:var(--muted);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#auf .a-card .a-nm{flex:1;min-width:0;font-size:12px;line-height:1.2;overflow-wrap:anywhere}#auf .a-card .a-name{display:block;color:var(--cream);font-weight:700}#auf .a-card .a-vals{display:flex;flex-wrap:wrap;align-items:center;gap:1px 6px;margin-top:1px}#auf .a-card .a-nm small{display:block;color:#b8c4c2;font-size:11px;line-height:1.2;margin-top:1px}#auf .a-card .a-hp{font-size:12px;color:var(--green,#8fd18a);white-space:nowrap}#auf .a-card .a-hp.a-mid{color:var(--gold)}#auf .a-card .a-hp.a-lo{color:#ff8f80}
 #auf .a-card .a-kw{font-size:13px;font-weight:700;color:var(--gold)}
 #auf .a-card.a-in{border-color:var(--gold);background:#3a2c18}#auf .a-card.a-in::after{content:'✓';position:absolute;right:2px;top:0;font-size:9px;color:var(--gold)}
-#auf .a-card.a-out{opacity:.42;cursor:not-allowed}#auf .a-card.a-hero .a-nm::before{content:'★ ';color:var(--gold)}
+#auf .a-card.a-out{opacity:.7;filter:saturate(.4);cursor:not-allowed}#auf .a-card.a-hero .a-nm::before{content:'★ ';color:var(--gold)}
 #auf .a-buy{width:100%;margin-top:5px;padding:5px 2px;font-size:10px;border:2px dashed var(--line);background:transparent;color:var(--muted)}
 /* Raster */
 #auf .a-grid{display:grid;grid-template-columns:20px repeat(3,minmax(0,1fr));gap:4px}
@@ -118,5 +118,5 @@ body.auf-fighting #auf{display:none}
 #auf .a-bar>span{display:block}
 #auf .a-bar .a-bg{height:9px}
 
-#auf .a-card .a-nm small .tal-b{margin:0 4px 0 0}
+#auf .a-card .a-vals .tal-b{margin:0}
 #auf .a-chip .tal-b{margin-left:2px;font-size:8px;padding:0 2px}
