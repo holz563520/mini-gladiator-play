@@ -20,12 +20,19 @@ function outsideField(p,pad=0){if(!roundField())return false;const F=fieldGeom()
 function prepareCombatCache(){const b=S.battle;if(!b)return;if(largeCache.battle!==b||largeCache.time!==b.time){largeCache.battle=b;largeCache.time=b.time;largeCache.eff.clear();largeCache.limbs.clear();largeCache.threats.clear();largeCache.weapons.clear();largeCache.ids=new Map(b.actors.map(a=>[a.id,a]));}}
 function actorById(id){return largeCache.battle===S.battle&&largeCache.time===S.battle?.time?largeCache.ids.get(id):S.battle?.actors.find(a=>a.id===id);}
 function invalidateActor(a){largeCache.eff.delete(a);largeCache.limbs.delete(a.g);largeCache.threats.delete(a);largeCache.weapons.delete(a);}
+/* Große Arena (Testschalter window.ARENA_BIG): Kulisse, Ränge und Sand doppelt so groß wie die Kämpfer. Aufstellung wie bisher,
+   nur in die Mitte des größeren Feldes geschoben; Hindernisse verteilen sich über das ganze Feld. b.view merkt sich den Faktor. */
+const ARENA_GROW=2;
+function arenaGrow(b){return typeof window!=='undefined'&&window.ARENA_BIG&&roundField(b)?ARENA_GROW:1;}
 function arrangeBattle(b){
- const count=Math.max(...[0,1].map(t=>b.actors.filter(a=>a.team===t).length));
- if(count<=20){b.width=1040;b.height=720;return;}
- const factor=Math.sqrt(count/20);b.width=Math.round(1040*factor);b.height=Math.round(720*factor);
- for(const team of [0,1]){const list=b.actors.filter(a=>a.team===team),rows=Math.ceil(Math.sqrt(list.length)),spacing=Math.min(80,(b.height-300)/rows);list.forEach((a,i)=>{const col=Math.floor(i/rows),roleOffset=a.g.role==='Soldat'?35:a.g.role==='Fernkämpfer'?-60:0;a.x=(team?b.width*.68:b.width*.32)+(team?1:-1)*(col*46-roleOffset);a.y=b.height/2+(i%rows-(rows-1)/2)*spacing;});}
- for(const o of b.obstacles||[]){o.x*=b.width/1040;o.y*=b.height/720;}
+ const count=Math.max(...[0,1].map(t=>b.actors.filter(a=>a.team===t).length)),G=arenaGrow(b);b.view=G;
+ const factor=count<=20?1:Math.sqrt(count/20),bw=Math.round(1040*factor),bh=Math.round(720*factor);
+ if(count>20)for(const team of [0,1]){const list=b.actors.filter(a=>a.team===team),rows=Math.ceil(Math.sqrt(list.length)),spacing=Math.min(80,(bh-300)/rows);list.forEach((a,i)=>{const col=Math.floor(i/rows),roleOffset=a.g.role==='Soldat'?35:a.g.role==='Fernkämpfer'?-60:0;a.x=(team?bw*.68:bw*.32)+(team?1:-1)*(col*46-roleOffset);a.y=bh/2+(i%rows-(rows-1)/2)*spacing;});}
+ if(count>20)for(const o of b.obstacles||[]){o.x*=bw/1040;o.y*=bh/720;}
+ b.width=Math.round(bw*G);b.height=Math.round(bh*G);if(G===1)return;
+ const ox=FIELD.cx*factor,oy=FIELD.cy*factor,nx=ox*G,ny=oy*G;
+ for(const a of b.actors){a.x+=nx-ox;a.y+=ny-oy;}
+ for(const o of b.obstacles||[]){o.x=nx+(o.x-ox)*G;o.y=ny+(o.y-oy)*G;}
 }
 function collisionPairs(b){
  const grid=largeCache.grid;grid.clear();
