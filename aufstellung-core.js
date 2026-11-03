@@ -86,7 +86,7 @@ function placeOwn(b,lineup){
  const G=b.view||1,F=G>1&&M.fieldGeom?M.fieldGeom(b):null,dx=F?F.cx*(1-1/G):0,dy=F?F.cy*(1-1/G):0;
  const cells={};for(const L of lineup){const k=L.slot.row+L.slot.lane;(cells[k]=cells[k]||[]).push(L);}
  for(const list of Object.values(cells))list.forEach((L,i)=>{const a=b.actors.find(x=>x.team===0&&x.unitKey===L.id);if(!a)return;
-  a.x=dx+260+ROW_X[L.slot.row]+(i%2)*-22;a.y=dy+cl(LANE_Y[L.slot.lane]+(i-(list.length-1)/2)*46,170,610);a.row=L.slot.row==='hinten'?'back':'front';M.fieldPt?.(a,(a.r||14)+6,b);});}
+  /* bis 3 je Feld wie bisher; mehr Kämpfer (unbegrenzte Gruppe) stehen in Spalten zu je 3 hintereinander */const n=list.length,col=n>3?Math.floor(i/3):0,j=n>3?i%3:i,m=n>3?Math.min(3,n-col*3):n;a.x=dx+260+ROW_X[L.slot.row]+(n>3?col*-22:(i%2)*-22);a.y=dy+cl(LANE_Y[L.slot.lane]+(j-(m-1)/2)*46,170,610);a.row=L.slot.row==='hinten'?'back':'front';M.fieldPt?.(a,(a.r||14)+6,b);});}
 
 // ---------- Kampf mit Messung ----------
 // Der Messer läuft neben dem Kampf her: headless (A.fight) oder sichtbar in der Kampfansicht (tick je Simulationsschritt)

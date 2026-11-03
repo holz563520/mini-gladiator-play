@@ -151,7 +151,7 @@ function showOffers(){const L=lineup();if(!L.length)return;const bad=L.filter(x=
 
 // ---------- Ziehen und Ablegen (Maus sofort, Finger nach kurzem Halten) ----------
 let drag=null;
-function place(id,row,lane){const x=st.lineup.find(x=>x.id===id);if(x){x.row=row;x.lane=lane;}else{const g=G(id);if(!g||!fit(g).ok)return toast((g?.name||'')+' ist nicht einsatzbereit.');if(st.lineup.length>=10)return toast('Höchstens 10 Kämpfer.');st.lineup.push({id,row,lane});}save();render();}
+function place(id,row,lane){const x=st.lineup.find(x=>x.id===id);if(x){x.row=row;x.lane=lane;}else{const g=G(id);if(!g||!fit(g).ok)return toast((g?.name||'')+' ist nicht einsatzbereit.');st.lineup.push({id,row,lane});}save();render();}
 function remove(id){st.lineup=st.lineup.filter(x=>x.id!==id);if(st.hero===id)st.hero=null;if(selChip===id)selChip=null;save();render();}
 function tap(id,from){if(from==='roster'){if(inL(id))return remove(id);const g=G(id);const s=auto(g.role);place(id,s.row,s.lane);}else{selChip=selChip===id?null:id;render();}}
 root.addEventListener('pointerdown',e=>{if(step!=='group'||busy)return;const el=e.target.closest('[data-drag]');if(!el||e.button>0)return;
