@@ -14,7 +14,7 @@ const fresh=()=>({v:1,person:sketch(),day:0,lot:[],gone:false,arrived:0,intro:(S
 S.trader??=fresh();const T=S.trader;T.person??=sketch();T.lot??=[];
 const who=()=>T.person.name,short=()=>T.person.name.split(' ').pop();
 let avatar=null;
-function figure(){if(avatar?.p===T.person)return avatar.g;const rng=S.rng,g=M.makeGladiator(0);S.rng=rng;const p=T.person;Object.assign(g,{id:'slave-trader',name:p.name,height:p.height,weight:p.weight,age:51,fame:0,scars:[],muscle:38});g.appearance={...g.appearance,...p.appearance};g.stats.morale=90;g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};avatar={p,g};return g;}
+function figure(){if(avatar?.p===T.person)return avatar.g;const rng=S.rng,g=M.makeGladiator(0);S.rng=rng;const p=T.person;Object.assign(g,{id:'slave-trader',name:p.name,height:p.height,weight:p.weight,age:51,fame:0,scars:[],muscle:38,armStrength:60});g.appearance={...g.appearance,...p.appearance};g.stats.morale=90;g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};avatar={p,g};return g;}
 // ---------- Tagesware ----------
 const left=()=>T.lot.filter(Boolean).length,started=()=>!!S.lanista&&(T.intro==='active'||T.intro==='done'),here=()=>started()&&T.day===S.day&&!T.gone&&left()>0;
 function stock(){if(T.day===S.day&&T.lot.length===LOT)return false;T.lot=Array.from({length:LOT},()=>M.makeGladiator(0));T.day=S.day;T.gone=false;T.arrived=0;T.soldToday=0;M.persist();return true;}
