@@ -1,0 +1,171 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Schädelbruch · Varianten</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#17120e;color:#efe0b3;font:16px system-ui,sans-serif}
+main{max-width:1100px;margin:auto;padding:16px}
+h1{font:700 clamp(24px,5vw,34px) Georgia,serif;margin:6px 0}h2{font:700 22px Georgia,serif;margin:26px 0 4px;color:#f4d37a}
+p{line-height:1.5;color:#c5bba8;margin:6px 0}.tag{font-size:12px;letter-spacing:2px;color:#9f8f70}
+.bar{position:sticky;top:0;z-index:5;background:#17120ef2;border-bottom:1px solid #3a2e22;padding:8px 0;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+label{font-size:14px;color:#d9cba8}select,button{font:inherit;font-size:14px;background:#2a2119;color:#efe0b3;border:1px solid #5a4630;padding:6px 10px;border-radius:4px}
+button.primary{background:#7a4a1c;border-color:#a8692a}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-top:10px}
+.card{background:#211a14;border:1px solid #3a2e22;border-radius:6px;padding:10px}
+.card.now{border-color:#6a6050}.card h3{margin:0;font:700 19px Georgia,serif;color:#f6e6bb;display:flex;justify-content:space-between;gap:8px}
+.card h3 b{font:700 13px system-ui;color:#17120e;background:#dfb66d;border-radius:3px;padding:2px 7px;align-self:center}
+.card.now h3 b{background:#8a8070}.card small{display:block;color:#a99c80;font-size:13px;margin:2px 0 6px}
+canvas{display:block;width:100%;height:auto;image-rendering:pixelated;background:#0d0a08;border-radius:3px}
+.mini{margin-top:6px}.cap{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;font-size:12px;color:#a99c80;margin-top:2px}
+</style>
+<main><span class="tag">ARENA THEORY · VORSCHAU · NICHT IM SPIEL</span><h1>Schädelbruch – Beispiele</h1>
+<p>Je drei Vorschläge für <b>Schlagwaffen</b> (Keule, Streitkolben, Hammer) und <b>Klingenwaffen</b> (Schwert, Axt). Oben die Nahaufnahme, darunter die kleine Figur auf dem Spielfeld ohne Helm, mit Lederhelm und mit Metallhelm. „Jetzt im Spiel“ ist zum Vergleich die bisherige Darstellung. Sag einfach, welche Kennungen dir gefallen (z. B. „S2 und K1“) oder was du an einer ändern willst.</p>
+<div class="bar"><label>Helm in der Nahaufnahme <select id="helm"><option value="none">ohne Helm</option><option value="leather">Lederhelm</option><option value="medium">Leder mit Metall</option><option value="metal">Metallhelm</option></select></label>
+<label>Hautton <select id="skin"><option value="0">Hell</option><option value="1" selected>Mittel</option><option value="2">Braun</option><option value="3">Dunkel</option></select></label>
+<label>Tempo <select id="speed"><option value="1">Normal</option><option value="0.5">Halb</option><option value="0.25">Zeitlupe</option></select></label>
+<button id="replay" class="primary">▶ Alle neu abspielen</button></div>
+<h2>Schlagwaffen: Bruch, Delle, Trümmer</h2><div class="grid" id="blunt"></div>
+<h2>Klingenwaffen: Spalten</h2><div class="grid" id="blade"></div>
+<p><small>Vorschau mit dem Nahaufnahme-Renderer und den Figuren des Spiels. Die neuen Varianten sind nur auf dieser Seite gezeichnet; im Spiel ist nichts verändert. Nichts wird gespeichert.</small></p>
+</main>
+<script>/* Testseite: nichts darf in Spielstände schreiben */try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};}catch(e){}</script>
+<canvas id="arenaCanvas" width="10" height="10" hidden></canvas>
+<script src="data.js"></script><script src="household.js"></script><script src="management.js"></script><script src="scout.js"></script><script src="sim.js"></script><script src="benchmark.js"></script><script src="school.js"></script><script src="weapon-art.js"></script><script src="arena.js"></script>
+<script src="injury-shots.js"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id),M=MG,IS=M.injuryShots,FX=IS.effects,ORIG=FX.skullfracture;
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),out=v=>1-(1-cl(v))*(1-cl(v));
+const RED='#a8372f',RED2='#c9584a',DRK='#6b2420',HOLE='#2a0b0c',DEEP='#45090b',BONE='#e6dcc0',BONEHI='#f6efd8',BONELO='#b9ab8c';
+function poly(T,pts,col){let y0=1e9,y1=-1e9;for(const p of pts){y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);}for(let y=Math.floor(y0);y<=Math.ceil(y1);y++){const xs=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];if((a[1]<=y&&b[1]>y)||(b[1]<=y&&a[1]>y))xs.push(a[0]+(y-a[1])/(b[1]-a[1])*(b[0]-a[0]));}xs.sort((m,n)=>m-n);for(let i=0;i+1<xs.length;i+=2)T.r(xs[i],y,xs[i+1]-xs[i]+1,1,col);}}
+function helmCols(H){if(!H)return null;const lk=IS.helmLook(H);return {dome:H.mat==='medium'?lk.leather:lk.metal,edge:lk.edge};}
+// Blut läuft in Bahnen über die Stirn
+function runs(T,k,list,start=.25,speed=1.2){const run=cl((k-start)/speed);if(run<=0)return;for(const [x,y,len,w,c] of list){const L=len*run;T.r(x,y,w,L,c);T.r(x,y,1,L,RED2);T.r(x-.5,y+L,w+1,2,DRK);}}
+
+// ================= NAHAUFNAHMEN =================
+// --- Klinge: der Schädel wird entlang der Schneide gespalten ---
+function split(T,k,C,o){
+ const dx=o.x1-o.x0,dy=o.y1-o.y0,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;let nx=-uy,ny=ux;if(ny<0){nx=-nx;ny=-ny;}
+ const op=out(k/o.open),H=helmCols(C.helm),fill=cl((k-.35)/.9),pulse=.5+.5*Math.sin(k*9),drop=(o.drop||0)*out(k/.25);
+ const at=s=>({x:o.x0+ux*s,y:o.y0+uy*s,f:Math.pow(Math.sin(Math.PI*s/L),.55)});
+ // Aufprall: feiner Riss läuft vor dem Spalt her
+ if(k<.12)for(let s=0;s<=L*out(k/.06);s+=1){const p=at(s);T.r(p.x,p.y,1,1,'#2a1214');}
+ if(op<=0)return;
+ if(!H)for(let s=0;s<=L;s+=2){const p=at(s),hw=o.w*op*p.f;T.oval(p.x+nx*drop*.5,p.y+ny*drop*.5+1,hw+4,hw*.6+3,'#5a1d1a',.45);}
+ for(let s=0;s<=L;s+=.5){const p=at(s),hw=o.w*op*p.f;if(hw<.3)continue;
+  for(let j=-hw-3;j<=hw+3;j+=.5){const lower=j>0,sh=lower?drop:0,x=p.x+nx*(j+sh),y=p.y+ny*(j+sh),aj=Math.abs(j);let c;
+   if(aj>hw+2)c=H?H.edge:'#d8806e';else if(aj>hw+1)c=H?H.dome:RED;else if(aj>hw)c=p.f>.3?(lower?BONELO:BONE):RED;else c=aj<hw*.45?(fill>0?(pulse>.6?RED:'#7c1f1c'):DEEP):(fill>.5?'#5a1414':HOLE);
+   T.r(x,y,1,1,c);}
+  // Bruchkante: helle Knochenlinie auf der oberen Seite
+  if(p.f>.35&&hw>1)T.r(p.x+nx*(-hw-.5),p.y+ny*(-hw-.5),1,1,BONEHI);}
+ // Blut quillt aus dem Spalt und rinnt über die Unterkante
+ if(fill>0)for(const u of [.22,.4,.58,.76]){const p=at(L*u),hw=o.w*op*p.f;T.oval(p.x+nx*(hw+drop),p.y+ny*(hw+drop)+1,2.2,1.2+pulse*.8,RED,.9);}
+ const lo=[.25,.45,.62,.8].map((u,i)=>{const p=at(L*u),hw=o.w*op*p.f;return [p.x+nx*(hw+drop+1),p.y+ny*(hw+drop+1),[26,38,30,20][i]*(o.blood||1),i%2?2:3,i%2?DRK:RED];});
+ runs(T,k,lo,.3,1.1);
+ // Spritzer entlang der Schneide beim Treffer
+ if(k<.6){const u=k/.6;for(let i=0;i<16;i++){const p=at(L*(i+.5)/16),d=u*(6+(i*7)%15)*(o.spray||1);T.r(p.x-nx*d+ux*d*.3*((i%3)-1),p.y-ny*d+u*u*26,i%3?1:2,i%3?1:2,i%2?RED2:RED);}}
+ // Herzschlag: Spritzer aus der Mitte des Spalts
+ if(k>.8&&o.beat){const bt=(k*1.15)%1;if(bt<.35){const v=bt/.35,p=at(L*.5);for(let i=0;i<6;i++){const a=(i-2.5)*.35;T.r(p.x-nx*v*(10+i%3*3)+a*v*8,p.y-ny*v*(10+i%3*3)+v*v*14,i%2?2:1,i%2?2:1,i%3?RED:RED2);}}}
+ return {at,L,nx,ny,ux,uy};}
+// K1 Schwert: schräger, klaffender Spalt über der Schläfe
+const K1=(T,V,k,C)=>split(T,k,C,{x0:70,y0:22,x1:94,y1:47,w:2.2,open:.18,drop:1,blood:1,beat:true});
+// K2 Zweihänder: langer, tiefer Scheitelspalt, die untere Hälfte sackt ab
+const K2=(T,V,k,C)=>split(T,k,C,{x0:60,y0:22,x1:100,y1:44,w:3.8,open:.24,drop:2.4,blood:1.3,spray:1.3,beat:true});
+// K3 Axt: Blatt bleibt kurz im Schädel stecken, wird herausgerissen, dann bricht das Blut hervor
+const K3=(T,V,k,C)=>{const pull=.62,st=split(T,k,C,{x0:68,y0:25,x1:95,y1:43,w:k<pull?2.2:4.4,open:.12,drop:k<pull?.5:2,blood:1.4,spray:.6,beat:k>pull+.3});
+ const {at,L,nx,ny}=st,p=at(L*.5),off=k<pull?Math.sin(k*40)*Math.exp(-k*8)*1.5:out((k-pull)/.14)*60;if(off<55){
+  const bx=p.x-nx*(2+off),by=p.y-ny*(2+off),ux=st.ux,uy=st.uy,w=15;
+  poly(T,[[bx-ux*w,by-uy*w],[bx+ux*w,by+uy*w],[bx+ux*(w-3)-nx*16,by+uy*(w-3)-ny*16],[bx-ux*(w-5)-nx*15,by-uy*(w-5)-ny*15]],'#6e7679');
+  poly(T,[[bx-ux*(w-1),by-uy*(w-1)-1],[bx+ux*(w-1),by+uy*(w-1)-1],[bx+ux*(w-4)-nx*14,by+uy*(w-4)-ny*14],[bx-ux*(w-6)-nx*13,by-uy*(w-6)-ny*13]],'#c9d0d2');
+  for(let i=-w+1;i<w;i++)T.r(bx+ux*i-nx*1,by+uy*i-ny*1,1,1,k<pull?'#8a2a24':'#f2f5f5');
+  const hx=bx-nx*15,hy=by-ny*15;T.line(hx,hy,hx-nx*40,hy-ny*40,'#3d2a18',5);T.line(hx,hy,hx-nx*40,hy-ny*40,'#7a5530',3);}
+ // Blutschwall beim Herausreißen
+ if(k>pull&&k<pull+.55){const u=(k-pull)/.55;for(let i=0;i<22;i++){const a=(i/22-.5)*1.6,d=u*(10+(i*11)%22);T.r(p.x-nx*d*Math.cos(a)+st.ux*d*Math.sin(a),p.y-ny*d*Math.cos(a)+u*u*34,i%3?1:2,i%3?1:2,i%2?RED2:RED);}}};
+
+// --- Schlag: Delle oder Trümmer ---
+// S2 Keule: runde Delle, Kopfhaut platzt sternförmig, starke Schwellung, Blut sickert langsam
+const S2=(T,V,k,C)=>{const cx=80,cy=37,op=out(k/.12),sw=out(k/1.6),H=helmCols(C.helm),pulse=.5+.5*Math.sin(k*7);
+ if(k<.2){const r=4+k/.2*24,a=1-k/.2;for(let i=0;i<28;i++){const ang=i/28*6.283;T.r(cx+Math.cos(ang)*r*1.3,cy+Math.sin(ang)*r*.7,1,1,a>.5?'#fff3d0':'#d8c8a0');}}
+ if(H){T.oval(cx,cy,14*op,7*op,'#00000055');T.oval(cx,cy+1,10*op,4.5*op,'#00000077');T.oval(cx-3,cy-3,8*op,2*op,H.edge,.8);T.oval(cx+2,cy+3,9*op,1.5*op,'#ffffff22');
+  runs(T,k,[[cx-14,cy+13,22,2,RED],[cx+11,cy+12,30,3,RED],[cx+16,cy+10,14,2,DRK]],.45,1.4);return;}
+ T.oval(cx,cy+1,(13+6*sw)*op,(8+3*sw)*op,'#6a3a5a',.75);T.oval(cx,cy+1,(10+3*sw)*op,(6+2*sw)*op,'#7c3a50',.7);
+ for(let i=0;i<6;i++){const ang=i*1.05+.3,len=(6+(i*5)%6)*op;for(let d=6;d<6+len;d++)T.r(cx+Math.cos(ang)*d*1.4,cy+Math.sin(ang)*d*.8,1.4,1.4,d>6+len-2?RED2:RED);}
+ T.oval(cx,cy,9*op,5*op,'#4a141a');T.oval(cx+.5,cy+.5,7*op,3.8*op,HOLE);T.oval(cx+1,cy+1,4*op,2*op,'#1a0507');
+ for(const [x,y,w] of [[-7,-4,4],[-2,-5,4],[3,-4,3]])T.r(cx+x*op,cy+y*op,w*op,1,BONE);T.r(cx-1,cy-5*op,2,1,BONEHI);
+ T.oval(cx,cy+4.5*op,6*op,1.6+pulse*.6,RED,.9);
+ runs(T,k,[[cx-6,cy+6,24,2,RED],[cx+3,cy+6,32,3,RED],[cx+8,cy+5,16,2,DRK]],.4,1.6);
+ if(k<.4)for(let i=0;i<6;i++){const u=k/.4,a=-2.4+i*.55,d=u*(8+i*3);T.r(cx+Math.cos(a)*d*1.2,cy+Math.sin(a)*d+u*u*18,1,1,RED);}};
+// S3 Hammer: Krater aus vielen Knochenstücken, die nach innen sinken, Splitter fliegen
+const S3=(T,V,k,C)=>{const cx=80,cy=37,op=out(k/.1),sink=out((k-.05)/.5),H=helmCols(C.helm),pulse=.5+.5*Math.sin(k*9);
+ if(k<.15){const a=1-k/.15;T.oval(cx,cy,22*a+6,12*a+3,'#fff6dc',.35*a);}
+ if(H){T.oval(cx,cy+1,17*op,9*op,'#00000066');T.oval(cx,cy+1,13*op,6.5*op,H.dome);T.oval(cx,cy+1,11*op,5*op,'#00000099');for(let i=0;i<7;i++){const a=i*.9;T.line(cx+Math.cos(a)*6*op,cy+Math.sin(a)*3*op,cx+Math.cos(a)*15*op,cy+Math.sin(a)*8*op,H.edge,1);}}
+ else{T.oval(cx,cy+2,22*op,12*op,'#5a1d1a',.8);T.oval(cx,cy+1,17*op,9.5*op,RED);T.oval(cx,cy+1,15*op,8*op,'#d8806e',.55);}
+ T.oval(cx,cy+1,12*op,6.5*op,HOLE);
+ for(let i=0;i<11;i++){const a=i/11*6.283+.2,r=(9-sink*3.5)*op,x=cx+Math.cos(a)*r*1.25,y=cy+1+Math.sin(a)*r*.62+sink*1.5,s=2.3+(i%3)*.8;
+  poly(T,[[x-s,y-s*.5],[x+s*.6,y-s*.8],[x+s,y+s*.4],[x-s*.4,y+s*.7]],(i%3)?BONE:BONELO);T.r(x-1,y-1,1,1,BONEHI);T.r(x,y+s*.6,1,1,RED);}
+ T.oval(cx,cy+2,5*op,2.5*op,'#7c1f1c');T.oval(cx,cy+6*op,9*op,1.8+pulse*.8,RED,.95);
+ if(k<.7)for(let i=0;i<18;i++){const u=k/.7,a=-3+i*.36,d=u*(14+(i*13)%24);T.r(cx+Math.cos(a)*d*1.3,cy-3+Math.sin(a)*d*.9+u*u*32,i%3?1:2,i%3?1:2,i%3===0?BONEHI:i%2?RED2:RED);}
+ runs(T,k,[[cx-12,cy+7,30,3,RED],[cx-4,cy+8,22,2,RED],[cx+5,cy+8,42,3,RED],[cx+12,cy+6,24,2,DRK],[cx-16,cy+5,16,2,DRK]],.12,1.1);};
+
+// ================= KLEINE FIGUREN (Spielfeld) =================
+const now=()=>performance.now()/1000;
+function drip(r,x,y,len,speed,c=RED){const u=(now()*speed)%1;r(x,y,1,1+Math.round(len*u),c);if(u>.8)r(x,y+len+1,1,1,c);}
+// Wunden sitzen auf der Schädeldecke (Kopfmitte y−8 … y−12); Blut läuft in Bahnen übers Gesicht, damit es auch klein auffällt
+function face(r,x,y,list,back){for(const [dx,len,sp,c] of list){if(back&&dx<0)continue;const u=(now()*sp)%1,L=Math.round(len*(.55+.45*u));r(x+dx,y,1,L,c||RED);if(u>.85)r(x+dx,y+L+1,1,1,c||RED);}}
+// Klinge, schräg (zu K1)
+function mK1(r,h,a,helm,back){const x=h.x,y=h.y,lk=helm&&M.itemLook(helm),lip=helm?lk.edge:RED;
+ for(let i=0;i<8;i++){const px=x-4+i,py=y-11+Math.round(i*.6);r(px,py-1,1,1,helm?lip:BONE);r(px,py,1,1,HOLE);r(px,py+1,1,1,lip);}
+ r(x-1,y-9,2,1,(now()*1.15)%1<.3?RED:DEEP);face(r,x,y-6,[[3,7,.8],[0,5,.6,DRK],[-2,4,.9]],back);}
+// Klinge, Scheitel gespalten, eine Hälfte abgesackt (zu K2)
+function mK2(r,h,a,helm,back){const x=h.x,y=h.y,lk=helm&&M.itemLook(helm),edge=helm?lk.edge:RED;
+ r(x-1,y-12,2,6,HOLE);r(x,y-11,1,4,DEEP);r(x-2,y-12,1,6,helm?edge:BONE);r(x+1,y-11,1,6,helm?edge:BONELO);r(x+2,y-11,3,1,'#00000077');
+ if((now()*1.15)%1<.25){r(x,y-14,1,1,RED);r(x-1,y-15,1,1,RED2);r(x+1,y-16,1,1,RED);}
+ face(r,x,y-6,[[-2,9,.8],[1,10,.6,DRK],[-1,6,1]],back);}
+// Axt: breite Kerbe mit Knochenrand, kräftiger Strom (zu K3)
+function mK3(r,h,a,helm,back){const x=h.x,y=h.y,lk=helm&&M.itemLook(helm),edge=helm?lk.edge:RED;
+ for(let i=0;i<7;i++){const px=x-3+i,py=y-11+Math.round(i*.5);r(px,py,1,3,HOLE);r(px,py-1,1,1,helm?edge:BONE);r(px,py+3,1,1,helm?edge:BONELO);}
+ r(x-1,y-9,3,1,DEEP);if((now()*1.15)%1<.3){r(x,y-13,1,1,RED);r(x+1,y-14,1,1,RED2);}
+ face(r,x,y-6,[[3,10,.7],[1,8,.9],[-2,7,.8,DRK],[-3,5,1]],back);}
+// Schlag: Delle mit Schwellung (zu S2)
+function mS2(r,h,a,helm,back){const x=h.x,y=h.y;
+ if(helm){const lk=M.itemLook(helm);r(x-4,y-11,9,3,'#00000077');r(x-3,y-10,7,1,'#000000aa');r(x-4,y-12,9,1,lk.edge);r(x-3,y-8,7,1,'#ffffff33');face(r,x,y-6,[[4,6,.5],[-4,4,.6,DRK]],back);return;}
+ r(x-5,y-11,11,5,'#7a3a5a');r(x-4,y-10,9,3,'#4a141a');r(x-3,y-10,6,2,HOLE);r(x-3,y-11,2,1,BONE);r(x+1,y-11,2,1,BONELO);r(x-6,y-9,1,2,RED);r(x+5,y-9,1,2,RED);r(x-2,y-7,5,1,RED);
+ face(r,x,y-6,[[1,6,.5],[-2,4,.4,DRK]],back);}
+// Schlag: Trümmerkrater (zu S3)
+function mS3(r,h,a,helm,back){const x=h.x,y=h.y,lk=helm&&M.itemLook(helm);
+ r(x-6,y-11,13,6,helm?'#00000077':'#5a1d1a');r(x-5,y-11,11,5,helm?(helm.material==='medium'?lk.leather:lk.metal):RED);r(x-4,y-10,9,3,HOLE);
+ for(const [dx,dy,c] of [[-4,-11,BONE],[-2,-12,BONEHI],[0,-11,BONE],[2,-12,BONELO],[4,-11,BONE],[-4,-8,BONELO],[3,-8,BONE],[-1,-9,BONELO]])r(x+dx,y+dy,1,1,c);
+ r(x-2,y-9,4,1,(now()*1.15)%1<.3?RED:'#7c1f1c');face(r,x,y-6,[[-3,9,.8],[2,11,.6],[4,6,1,DRK],[0,7,.7]],back);}
+
+const SETS={
+ blunt:[
+  {id:'S1',name:'Eingedrückt',now:true,w:'mace',wn:'Streitkolben',d:'Die bisherige Darstellung: Schädeldecke bricht ein, Splitter stehen auf.',close:null,mini:null},
+  {id:'S2',name:'Delle',w:'club',wn:'Keule',d:'Dumpfer Schlag: runde Delle, die Kopfhaut platzt sternförmig, starke Schwellung, kaum Splitter. Das Blut sickert langsam.',close:S2,mini:mS2},
+  {id:'S3',name:'Trümmerkrater',w:'hammer',wn:'Hammer',d:'Schwerer Schlag: ein Krater aus vielen Knochenstücken, die nach innen sinken. Splitter fliegen, viel Blut.',close:S3,mini:mS3}],
+ blade:[
+  {id:'K1',name:'Klaffender Spalt',w:'gladius',wn:'Gladius / Schwert',d:'Die Schneide spaltet den Schädel schräg über der Schläfe. Der Spalt klafft auf, an den Kanten ist Knochen zu sehen, das Blut rinnt aus der ganzen Länge.',close:K1,mini:mK1},
+  {id:'K2',name:'Scheitel gespalten',w:'greatsword',wn:'Langschwert / Zweihänder',d:'Langer, tiefer Spalt, die eine Schädelhälfte sackt sichtbar ab. Herzschlag spritzt aus der Mitte.',close:K2,mini:mK2},
+  {id:'K3',name:'Axt steckt',w:'axe',wn:'Axt',cls:'none',d:'Das Axtblatt bleibt im Schädel stecken, zittert und wird herausgerissen. Danach bricht ein Blutschwall hervor, die Kerbe ist breit.',close:K3,mini:mK3}]};
+
+const SKINS=[['#e0b48c','#a87a56'],['#c19169','#875e43'],['#9a6a48','#694530'],['#6e4630','#4a2e20']];
+const look=()=>{const s=SKINS[+$('skin').value];return {skin:s[0],shade:s[1],hair:'#443025',style:1,beard:0};};
+const HELMS=[null,{mat:'leather',q:2},{mat:'metal',q:3}];
+const cards=[];
+for(const [key,list] of Object.entries(SETS))for(const v of list){
+ const el=document.createElement('div');el.className='card'+(v.now?' now':'');
+ el.innerHTML=`<h3>${v.name}<b>${v.id}${v.now?' · jetzt im Spiel':''}</b></h3><small>${v.wn}</small><canvas width="480" height="300"></canvas><p>${v.d}</p><canvas class="mini" width="480" height="240"></canvas><div class="cap"><span>ohne Helm</span><span>Lederhelm</span><span>Metallhelm</span></div>`;
+ $(key).appendChild(el);const [c1,c2]=el.querySelectorAll('canvas');cards.push({v,g:c1.getContext('2d'),f:c2.getContext('2d'),actors:null});}
+
+function mkActor(v,i){const gg=M.makeGladiator(2,true);gg.id='v'+v.id+i;gg.name='Testgladiator';gg.appearance=Object.assign({},gg.appearance,look());gg.height=180;gg.weight=80;gg.role='Soldat';const h=HELMS[i];
+ gg.enemyGear={weapon:M.makeItem('weapon',v.w,2),secondary:null,shield:null,armor:h?{head:M.makeItem('armor','helm',h.q,h.mat)}:{}};gg.body.head.skullFracture=true;
+ const a=M.createCombatActor(gg,0,0,92);Object.assign(a,{x:0,y:0,a:Math.PI/2,state:'idle',phase:0});return a;}
+function build(){for(const c of cards)c.actors=[0,1,2].map(i=>mkActor(c.v,i));}
+
+const FREEZE=new URLSearchParams(location.search).get('t');/* ?t=1.2 hält die Nahaufnahmen bei diesem Zeitpunkt an */
+let t=FREEZE!=null?+FREEZE:0,last=performance.now(),pause=0;
+function frame(n){const dt=Math.min(.08,(n-last)/1000);last=n;if(FREEZE!=null){}else if(t>=3.1){pause+=dt;if(pause>.8){t=0;pause=0;}}else t=Math.min(3.1,t+dt*+$('speed').value);
+ const hv=$('helm').value,helm=hv==='none'?null:{mat:hv,q:3};
+ for(const c of cards){try{FX.skullfracture=c.v.close||ORIG;IS.paint(c.g,480,300,{helm,g:{id:'vp-'+c.v.id,name:'Testgladiator',appearance:look()},part:'head',kind:'skullfracture',wid:c.v.w,cls:c.v.cls,noFace:true,mute:true,line1:'Kopftreffer · '+c.v.wn,title:'Schädelbruch '+c.v.id,line3:c.v.name},t);}catch(e){c.g.fillStyle='#fff';c.g.fillText('Fehler: '+e.message,10,20);}
+  try{const f=c.f;f.setTransform(1,0,0,1,0,0);f.imageSmoothingEnabled=false;f.fillStyle='#8a7452';f.fillRect(0,0,480,240);M.skullWoundPreview=c.v.mini;
+   c.actors.forEach((a,i)=>{f.save();f.translate(80+i*160,205);f.scale(3.2,3.2);M.renderLudusActors(f,[a]);f.restore();});}catch(e){c.f.fillStyle='#fff';c.f.fillText('Fehler: '+e.message,10,20);}finally{M.skullWoundPreview=null;}}
+ FX.skullfracture=ORIG;requestAnimationFrame(frame);}
+$('replay').onclick=()=>{t=0;pause=0;};$('helm').onchange=()=>{if(FREEZE==null)t=0;};$('skin').onchange=()=>{build();if(FREEZE==null)t=0;};
+build();requestAnimationFrame(frame);
+</script></html>
