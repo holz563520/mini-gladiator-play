@@ -387,6 +387,7 @@ L.arenaFormation=function(b){const me=party(b).filter(fit),cx=me.reduce((t,a)=>t
  line.forEach((a,i)=>pts.set(a,{x:front+(i%2?-dir*8:0),y:cy+(i-(line.length-1)/2)*gap,job:'line'}));
  arch.forEach((a,i)=>pts.set(a,{x:front-dir*110,y:cy+(i-(arch.length-1)/2)*90,job:'archer'}));
  assa.forEach((a,i)=>{const side=i%2?1:-1;pts.set(a,{x:front-dir*10,y:cy+side*(half+70+Math.floor(i/2)*50),job:'wing'});});
+ /* runde Arena: Plätze im Oval */for(const p of pts.values())M.fieldPt?.(p,34,b);
  return {pts,dir,line,arch,assa};};
 const powerScore=e=>{const g=e.g,w=M.gear(g,'weapon');return powerOf(g)+(w?(w.q||0)*6:0)+(isRanged(e)?18:0)+(g.kills||0)*2;};
 const sideOf=(e,part)=>part[0]==='l'?'links':'rechts';

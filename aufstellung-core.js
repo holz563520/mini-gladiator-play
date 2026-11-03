@@ -84,7 +84,7 @@ A.autoSlot=role=>role==='Fernkämpfer'?{row:'hinten',lane:'mitte'}:role==='Assas
 function placeOwn(b,lineup){
  const cells={};for(const L of lineup){const k=L.slot.row+L.slot.lane;(cells[k]=cells[k]||[]).push(L);}
  for(const list of Object.values(cells))list.forEach((L,i)=>{const a=b.actors.find(x=>x.team===0&&x.unitKey===L.id);if(!a)return;
-  a.x=260+ROW_X[L.slot.row]+(i%2)*-22;a.y=cl(LANE_Y[L.slot.lane]+(i-(list.length-1)/2)*46,170,610);a.row=L.slot.row==='hinten'?'back':'front';});}
+  a.x=260+ROW_X[L.slot.row]+(i%2)*-22;a.y=cl(LANE_Y[L.slot.lane]+(i-(list.length-1)/2)*46,170,610);a.row=L.slot.row==='hinten'?'back':'front';M.fieldPt?.(a,(a.r||14)+6,b);});}
 
 // ---------- Kampf mit Messung ----------
 // Der Messer läuft neben dem Kampf her: headless (A.fight) oder sichtbar in der Kampfansicht (tick je Simulationsschritt)

@@ -129,9 +129,10 @@ function crowdCheer(vol=.6){if(!enabled(false)||!ctx||!arenaCrowd())return;crowd
 function crowdChant(g,o={}){if(!enabled(false)||!ctx||!arenaCrowd()||!g?.name)return;const now=ctx.currentTime;crowdNext=0;crowdReact('jubel',o.kill?.72:.6);
  if(now<chantUntil)return;const name=chantName(g),wild=!!o.big,reps=wild?5:o.kill?4:3;chantUntil=now+4;const t0=now;
  const go=E=>{const L=(wild&&E.wild.length?E.wild:E.b);if(!L.length||ctx.currentTime-t0>3){chantUntil=0;return;}
-  let t=ctx.currentTime+.12;const quiet=M.speaking?.('moderator')?.55:1;
-  for(let r=0;r<reps;r++){const b=L[r%L.length],len=b.len||.8,gv=(.48+.22*r/Math.max(1,reps-1))*quiet*(wild?1.1:1);playAt(b,t,gv,.98+Math.random()*.04);
-   if(clapB.length)for(const k of [.08,.36,.64])playAt(clapB[Math.floor(Math.random()*clapB.length)],t+len+k,.5*gv,.95+Math.random()*.1);t+=len+.95;}
+  let t=ctx.currentTime+.12;const quiet=M.speaking?.('moderator')?.55:1,calls=[],claps=[];
+  for(let r=0;r<reps;r++){const b=L[r%L.length],len=b.len||.8,gv=(.48+.22*r/Math.max(1,reps-1))*quiet*(wild?1.1:1);playAt(b,t,gv,.98+Math.random()*.04);calls.push([t,t+len]);
+   if(clapB.length)for(const k of [.08,.36,.64]){playAt(clapB[Math.floor(Math.random()*clapB.length)],t+len+k,.5*gv,.95+Math.random()*.1);claps.push(t+len+k+.02);}t+=len+.95;}
+  /* Zuschauer bewegen sich im Takt (arena.js): Rufzeiten und Klatscher in der Bildschirmuhr */{const off=performance.now()/1000-ctx.currentTime;M.crowdBeat={team:o.team??-1,calls:calls.map(([a,b])=>[a+off,b+off]),claps:claps.map(x=>x+off),end:t+off};}
   chantUntil=t+.3;chorPrep(name,2,wild);};
  const E=chorPrep(name,1,wild);if(!E){chantUntil=0;return;}const L=wild?E.wild:E.b;if(L.length||(wild&&E.b.length))go(E);else E.w.push(go);clapPrep();}
 M.crowdChant=crowdChant;M.crowdCheer=crowdCheer;

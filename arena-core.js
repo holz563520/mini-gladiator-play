@@ -38,9 +38,10 @@ AN.build=function(spec){
  // Löwen zuerst: das Spiel sucht für Greif-Darstellung „den“ Löwen per find
  actors.sort((a,b)=>(b.lion?1:0)-(a.lion?1:0));
  const b={id:'arena-neu-'+Date.now()+'-'+Math.floor(Math.random()*1e6),neu:true,trainingLocked:false,actors,opponent:spec.title||'Herausforderung',time:3.2,startTime:3.2,type:'arena-neu',league:0,log:[],paused:false,result:null,
-  obstacles:[{x:170,y:215,r:17,type:'barrel',hp:60},{x:870,y:555,r:17,type:'barrel',hp:60}],width:1040,height:720,moralePressure:[0,0],moraleBonus:[0,0],lastSave:0,groundWeapons:[],dropped:[],fee:0,spec};
+  obstacles:[{x:215,y:268,r:17,type:'barrel',hp:60},{x:825,y:520,r:17,type:'barrel',hp:60}],width:1040,height:720,moralePressure:[0,0],moraleBonus:[0,0],lastSave:0,groundWeapons:[],dropped:[],fee:0,spec};
  b.hasDogs=actors.some(a=>a.dog);
  for(const a of actors)if(a.g&&!animal(a.unit))for(const slot of ['weapon','secondary']){try{const it=M.gear(a.g,slot);if(it)it.blood=0;}catch{}}
+ /* runde Arena (sim.js): Startplätze ins Oval */for(const a of b.actors)M.fieldPt?.(a,a.r||14,b);
  return b;};
 
 // ---------- Erste/zweite Reihe: die zweite Reihe wartet, bis es ernst wird ----------
