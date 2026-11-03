@@ -627,7 +627,7 @@ const cookieCard=()=>card('PROTOKOLL DES MEDICUS','<p>Die sexuellen Vorlieben de
 // 5 · DIE STORY-SZENE IM HOF (Filmbühne nach dem Muster von medic.js)
 // =====================================================================================================
 const K=.6,Wk=()=>M.workshop.state,smithName=()=>Wk().master?.name||'Der Schmied';
-function smithActor(x,y){const p=Wk().master||{},rng=S.rng,g=M.makeGladiator(0);S.rng=rng;Object.assign(g,{id:'dok-smith',name:p.name||'Der Schmied',height:p.height||g.height,weight:p.weight||g.weight,muscle:58,fame:0,scars:[]});g.appearance=p.appearance?{...p.appearance}:g.appearance;g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};
+function smithActor(x,y){const p=Wk().master||{},rng=S.rng,g=M.makeGladiator(0);S.rng=rng;Object.assign(g,{id:'dok-smith',name:p.name||'Der Schmied',height:p.height||g.height,weight:p.weight||g.weight,muscle:58,armStrength:100,fame:0,scars:[]});g.appearance=p.appearance?{...p.appearance}:g.appearance;g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};
  return {id:'dok-smith',g,team:0,x,y,a:Math.PI,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,forgeWorker:true,forgeHold:'beer',bloodMarks:{},noNav:true};}
 function recActor(g,i,x,y){return {id:'dk-'+g.id,g,slot:i,team:0,x,y,a:0,phase:i*1.7,state:'idle',energy:100,ammo:0,moveSpeed:0,unarmored:true,noNav:true,seed:i*2.3};}
 const dressHead=g=>{const v=M.medic.state().vis[g.id]??={};(v.dressings??={}).head=true;};

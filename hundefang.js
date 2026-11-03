@@ -60,7 +60,7 @@ DOG.portrait=function(c,D,o={}){let d=portraits.get(D);if(!d){d=dogAct(D,'stand'
  const k=(o.w||100)/(82*d.P.sz);drawDog(c,d,o.x,o.y,k,o.face??1,o.t??performance.now()/1000);};
 
 // ---------- Der Hundsgraf: grauer Bart, hager, Hundefellumhang, Hundeschädel als Kapuze, Fliegen ----------
-function makeRabies(){const g=gen(1);g.id='hf-rabies';g.foam=true;g.name=TX.NAME;g.height=183;g.weight=66;g.age=54;g.muscle=40;
+function makeRabies(){const g=gen(1);g.id='hf-rabies';g.foam=true;g.name=TX.NAME;g.height=183;g.weight=66;g.age=54;g.muscle=40;g.armStrength=70;
  g.appearance={...g.appearance,skin:'#c49470',shade:'#94664a',hair:'#b1a592',style:3,beard:3};
  g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};g.equipment=g.enemyGear;return g;}
 let RABIES=null;const rabies=()=>RABIES??=makeRabies();

@@ -39,12 +39,12 @@ M.outside={state:ST,tutorialsDone,get running(){return !!R.m;},get film(){return
 // =====================================================================================================
 const actor=(g,o={})=>({id:g.id,g,team:0,x:0,y:0,a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},...o});
 const CAST={};
-function smithG(){const p=M.workshop?.state?.master;if(!p)return D.makeG(1312,g=>{Object.assign(g,{id:'ow-smith',name:'Der Schmied',height:186,weight:104,muscle:58});g.appearance={...g.appearance,style:0,beard:2,hair:'#3a2a1e',cloth:'#4a3a2a'};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};});
- return D.makeG(1312,g=>{Object.assign(g,{id:'ow-smith',name:p.name,height:p.height||186,weight:p.weight||104,muscle:58,fame:0,scars:[]});if(p.appearance)g.appearance={...p.appearance};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};});}
+function smithG(){const p=M.workshop?.state?.master;if(!p)return D.makeG(1312,g=>{Object.assign(g,{id:'ow-smith',name:'Der Schmied',height:186,weight:104,muscle:58,armStrength:100});g.appearance={...g.appearance,style:0,beard:2,hair:'#3a2a1e',cloth:'#4a3a2a'};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};});
+ return D.makeG(1312,g=>{Object.assign(g,{id:'ow-smith',name:p.name,height:p.height||186,weight:p.weight||104,muscle:58,armStrength:100,fame:0,scars:[]});if(p.appearance)g.appearance={...p.appearance};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};});}
 function buildCast(){
  CAST.lan=S.lanista?M.ludus.ownerFigure(S.lanista):D.makeG(4242,g=>{g.name='Lanista';g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};});
  CAST.smith=smithG();
- CAST.oro=D.makeG(70707,g=>{Object.assign(g,{id:'ow-oro',name:'Orontes Pfeilkopf',height:167,weight:60,age:63,muscle:22});g.appearance={...g.appearance,skin:'#c08a5c',shade:'#83553a',hair:'#d5d0ba',style:5,beard:2,cloth:'#6b2f73',voice:1};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};});
+ CAST.oro=D.makeG(70707,g=>{Object.assign(g,{id:'ow-oro',name:'Orontes Pfeilkopf',height:167,weight:60,age:63,muscle:22,armStrength:60});g.appearance={...g.appearance,skin:'#c08a5c',shade:'#83553a',hair:'#d5d0ba',style:5,beard:2,cloth:'#6b2f73',voice:1};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};});
  CAST.kra=D.boss(1);M.registerFace?.(/krassus|knochenzins/i,()=>CAST.kra);
  CAST.g1=D.henchman(4711,1);CAST.g1.name='Titus der Zahnlose';CAST.g1.enemyGear.weapon=M.makeItem('weapon','club',0);CAST.g1.enemyGear.shield=null;CAST.g1.teeth={missing:[1,2,4,5,6],gold:[]};
  CAST.g2=D.henchman(4712,2);CAST.g2.name='Gnaeus Brecheisen';CAST.g2.enemyGear.weapon=M.makeItem('weapon','mace',1);CAST.g2.enemyGear.shield=null;

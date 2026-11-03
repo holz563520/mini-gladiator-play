@@ -404,8 +404,8 @@ function obstacleDraw(o){if(o.type==='sprite'){M.drawSprite?.(ctx,o);return;}if(
 const colors=['#729b99','#b1765d'];
 // Muskel-Gliedmaße: geformter Umriss statt gerader Balken. front/back = halbe Breite an t=0,.25,.5,.75,1 (vorn = Bizeps-Seite).
 // Ein Pfad (Umriss zuerst, Füllung darüber) – innere Umrisslinien der Gelenkkappen verschwinden so von selbst. Kosten wie zwei Linien.
-// Armstatur nach trainierter Stärke: mk = Muskelaufbau (0 … 1,25), thin = Breitenfaktor (unter Stärke 35 bis hinunter zu Laucharmen)
-function armBuild(g){const st=g.stats?.strength??40;return[clamp((st-35)/45,0,1.25),1-.45*clamp((35-st)/25,0,1)];}
+// Armstatur nach trainierter Stärke: mk = Muskelaufbau (bei 70 fast voll, darüber nur noch wenig mehr); feste Werte für Figuren über g.armStrength, thin = Breitenfaktor (unter Stärke 35 bis hinunter zu Laucharmen)
+function armBuild(g){const st=g.armStrength??g.stats?.strength??40;return[clamp((st-35)/33,0,1)+clamp((st-70)/30,0,1)*.12,1-.45*clamp((35-st)/25,0,1)];}
 const MUSCLE_T=[0,.25,.5,.75,1];
 function muscleShape(p,q,front,back,cap0,cap1,o){const dx=q.x-p.x,dy=q.y-p.y,len=Math.hypot(dx,dy)||1,nx=dy/len,ny=-dx/len,ex=dx/len,ey=dy/len,c0=cap0||front[0],c1=cap1||Math.max(front[4],back[4]);
  ctx.moveTo(p.x+nx*(Math.max(front[0],c0*.75)+o),p.y+ny*(Math.max(front[0],c0*.75)+o));

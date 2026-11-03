@@ -217,7 +217,7 @@ C.boxCard=(ctx,t,w,h)=>{if(!cardImg&&!cardBusy){cardBusy=true;setTimeout(()=>{tr
 // ---------- Kleine Szene: Der Schmied erklärt die Boxkämpfe ----------
 const smithName=()=>S().forgeWorkshop?.master?.name||'Der Schmied';
 function smithActor(){const p=S().forgeWorkshop?.master,s=S(),rng=s.rng;let g;try{g=M.makeGladiator(0);}finally{s.rng=rng;}
- Object.assign(g,{id:'box-smith',name:p?.name||'Schmied',height:p?.height||186,weight:p?.weight||104,muscle:58,fame:0,scars:[]});if(p?.appearance)g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};
+ Object.assign(g,{id:'box-smith',name:p?.name||'Schmied',height:p?.height||186,weight:p?.weight||104,muscle:58,armStrength:100,fame:0,scars:[]});if(p?.appearance)g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};
  return {id:'box-smith',g,team:0,x:0,y:0,a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,forgeWorker:true,forgeHold:'beer',bloodMarks:{},noNav:true};}
 const BEATS=[
  {say:'So, Chef. Die Hühner sind erledigt. Jetzt zeige ich dir was, das nach noch mehr Blut und noch weniger Gold riecht.',pose:'sip'},

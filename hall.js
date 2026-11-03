@@ -177,7 +177,7 @@ M.ludus?.rebuild?.();
 // ---------- Kleine Filmbühne für Tor- und Hallen-Szenen ----------
 // Szenen bestehen aus Takten: Jeder Takt setzt Haltung/Ziel und zeigt optional einen Satz. Weiter geht es, wenn gelesen (oder angetippt) und der Weg zu Ende ist.
 const need=text=>Math.max(2.4,1.1+text.length*.068);
-function smithFigure(){const p=W().master,rng=S.rng,g=M.makeGladiator(0);S.rng=rng;Object.assign(g,{id:'hall-smith',name:p.name,height:p.height,weight:p.weight,muscle:58,fame:0,scars:[]});g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};
+function smithFigure(){const p=W().master,rng=S.rng,g=M.makeGladiator(0);S.rng=rng;Object.assign(g,{id:'hall-smith',name:p.name,height:p.height,weight:p.weight,muscle:58,armStrength:100,fame:0,scars:[]});g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};
  const items={sword:M.makeItem('weapon','gladius',1),hammer:M.makeItem('weapon','hammer',1)};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};S.rng=rng;return {id:'hall-smith',g,items,team:0,x:0,y:0,a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,forgeWorker:true,forgeHold:'beer',bloodMarks:{}};}
 let film=null;
 function play(kind,beats,opt={}){if(film)stopFilm();const smith=smithFigure();Object.assign(smith,opt.smith||{});const actors=[smith];let lan=null;if(opt.lan&&S.lanista){lan={id:'hall-lan',g:M.ludus.ownerFigure(S.lanista),lanista:true,team:0,a:Math.PI,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},...opt.lan};actors.push(lan);}

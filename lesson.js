@@ -20,7 +20,7 @@ const first=g=>String(g?.name||'Rekrut').split(' ')[0];
 const items={};const item=def=>items[def]??=M.makeItem('weapon',def,1);
 
 // ---------- Figuren ----------
-function smithActor(x,y){const p=M.workshop.state.master||{name:'Der Schmied',height:182,weight:96,appearance:{}},rng=S.rng,g=M.makeGladiator(0);S.rng=rng;Object.assign(g,{id:'les-smith',name:p.name,height:p.height,weight:p.weight,muscle:58,fame:0,scars:[]});g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};
+function smithActor(x,y){const p=M.workshop.state.master||{name:'Der Schmied',height:182,weight:96,appearance:{}},rng=S.rng,g=M.makeGladiator(0);S.rng=rng;Object.assign(g,{id:'les-smith',name:p.name,height:p.height,weight:p.weight,muscle:58,armStrength:100,fame:0,scars:[]});g.appearance={...p.appearance};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};
  return {id:'les-smith',g,team:0,x,y,a:0,phase:0,state:'idle',energy:100,ammo:0,moveSpeed:0,forgeWorker:true,forgeHold:'beer',bloodMarks:{},noNav:true};}
 // Eigene Kopie der Lanister-Figur (das Spiel zwischenspeichert seine Figur; die bleibt unberührt)
 function lanFigure(){const g=JSON.parse(JSON.stringify(M.ludus.ownerFigure(S.lanista)));g.id='les-lanista';g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};g.equipment={weapon:null,secondary:null,shield:null,armor:{}};return g;}
