@@ -41,6 +41,7 @@ AN.build=function(spec){
   obstacles:[{x:215,y:268,r:17,type:'barrel',hp:60},{x:825,y:520,r:17,type:'barrel',hp:60}],width:1040,height:720,moralePressure:[0,0],moraleBonus:[0,0],lastSave:0,groundWeapons:[],dropped:[],fee:0,spec};
  b.hasDogs=actors.some(a=>a.dog);
  for(const a of actors)if(a.g&&!animal(a.unit))for(const slot of ['weapon','secondary']){try{const it=M.gear(a.g,slot);if(it)it.blood=0;}catch{}}
+ /* große Arena (sim.js): Feld 2× um die Kämpfer, außer bei Lektionen (spec.small) */if(!spec.small)M.growArena?.(b);
  /* runde Arena (sim.js): Startplätze ins Oval */for(const a of b.actors)M.fieldPt?.(a,a.r||14,b);
  return b;};
 

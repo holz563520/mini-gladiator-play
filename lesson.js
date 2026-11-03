@@ -261,7 +261,7 @@ function fighter(){const g=lanFigure();g.id='les-fighter-'+Date.now();g.name=lan
 let fightOut=null;
 function startFight(){setStage('fight');fightOut=null;S.battle=null;try{M.ui.click('nav:home');}catch{}
  window.HahnArena?.resetScene?.();M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;for(const p of [...(M.fx||[]),...(M.shots||[])])p.active=false;
- const spec={title:'Rex',blue:[{kind:'human',key:'lan',row:'front',g:fighter()}],red:[{kind:'lion',key:'rex',row:'front',L:{...REX,condition:{...REX.condition}}}]};
+ const spec={title:'Rex',small:true,blue:[{kind:'human',key:'lan',row:'front',g:fighter()}],red:[{kind:'lion',key:'rex',row:'front',L:{...REX,condition:{...REX.condition}}}]};
  const b=AN.build(spec);b.lesson=true;b.opponent='Rex';b.league=0;S.battle=b;goldBefore=S.gold;
  AN.listeners.push(out=>{fightOut=out;pendingPay=true;});
  M.ui.render();}

@@ -86,7 +86,7 @@ document.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)retu
  const k=v.width/Math.max(1,cv.clientWidth);pan.x-=dx*k/v.scale;pan.y-=dy*k/v.scale;pan.until=performance.now()+4500;drag.x=e.clientX;drag.y=e.clientY;e.preventDefault();},{capture:true,passive:false});
 document.addEventListener('pointerup',e=>{if(drag&&e.pointerId===drag.id)drag=null;},true);document.addEventListener('pointercancel',()=>{drag=null;},true);
 document.addEventListener('click',e=>{if(dragged&&e.target.closest?.('#arenaCanvas')){dragged=false;e.stopPropagation();e.preventDefault();}},true);
-M.battleCamera=(b,w,h,W,H,zoom,target)=>{const VG=b.view||1;if(zKey!==b.id){zKey=b.id;userZ=null;pan=null;}
+M.battleCamera=(b,w,h,W,H,zoom,target)=>{const VG=b.view||1;if(zKey!==b.id){zKey=b.id;userZ=null;pan=null;const cv=$('arenaCanvas');if(cv)cv.style.touchAction=VG>1?'none':'';}
  if(pan&&VG>1&&!b.finale&&!b.cinematic&&(drag||performance.now()<pan.until)){panClamp(w,h,W,H);cam={x:pan.x,y:pan.y,zoom:pan.zoom};return cam;}if(pan&&!drag)pan=null;
  const sp=M.battleHud?.spot;if(sp&&document.body.classList.contains('bhud')){/* Scheinwerfer des Moderators: nah an einen Kämpfer */const base=Math.min(w/W,h/H),z=2.3*VG,vw=w/(base*z),vh=h/(base*z),tx=Math.max(vw/2,Math.min(W-vw/2,sp.x)),ty=Math.max(vh/2-(M.arenaViewUp||0),Math.min(H-vh/2,sp.y));if(!cam)cam={x:tx,y:ty,zoom:z};else{cam.x+=(tx-cam.x)*.1;cam.y+=(ty-cam.y)*.1;cam.zoom+=(z-cam.zoom)*.08;}return cam;}
  if(!document.body.classList.contains('bhud')||!autoCam||zoom>1||b.finale||b.cinematic)return (cam=null);
