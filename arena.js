@@ -134,6 +134,11 @@ function arenaTraces(index,a,X0=68,Y0=124,W=904,H=520,round=false){const tones=s
 // Die Spielfeldgrenze dazu steht in sim.js (FIELD, etwas kleiner als der Sand). Hinterhof (5) bleibt eckig.
 const RA={cx:520,cy:392,rx:478,ry:282,face:22,pod:16,tier:17};
 const tierAxes=k=>[RA.rx+RA.pod+k*RA.tier,RA.ry+RA.pod*.82+k*RA.tier*.8];
+/* Testschalter window.ARENA_SOUTH: Blick von der Südtribüne. Ränge nur hinten und an den Seiten (über den Bildrand hinaus, sichtbar wo Platz ist),
+   Zuschauer weiter vorn (unten im Bild) etwas größer, im Süden statt Rängen eine Brüstung im Vordergrund. Spielfeld unverändert. */
+const SV_TOP=130,SV_BOT=120,SV_RAIL=656,SV_UP=62;
+const svOn=index=>typeof window!=='undefined'&&!!window.ARENA_SOUTH&&index<5&&!!RSTYLE[index];
+const svScale=y=>y<520?1:1.25;
 const onRing=(ang,ax,ay)=>[RA.cx+Math.cos(ang)*ax,RA.cy+Math.sin(ang)*ay];
 const deg=d=>d*Math.PI/180;
 const AISLES=[-130,-50,-12,12,50,90,128,168,-168].map(deg);
@@ -144,8 +149,8 @@ const RSTYLE=[
  {seat:['#4b5855','#53615d'],riser:'#263130',edge:'#9fb3ac',stair:'#62746f',pod:'#566862',podTop:'#b3c6bf',face:'#43534e',joint:'#2a3532',outer:'#1b2321'},
  {seat:['#8b8374','#968e7f'],riser:'#4a453d',edge:'#e2dac6',stair:'#aaa291',pod:'#7d766a',podTop:'#ebe3cf',face:'#655f55',joint:'#3f3a33',outer:'#2b2824'}];
 function ellPath(cx,cy,rx,ry){ctx.moveTo(cx+rx,cy);ctx.ellipse(cx,cy,rx,ry,0,0,TAU);}
-function arenaRound(index,level,a){const St=RSTYLE[index]||RSTYLE[0],K=22;
- rect(0,0,1040,720,St.outer);
+function arenaRound(index,level,a){const St=RSTYLE[index]||RSTYLE[0],K=22,sv=svOn(index);
+ if(sv)rect(0,-SV_TOP,1040,720+SV_TOP+SV_BOT,St.outer);else rect(0,0,1040,720,St.outer);
  // Ränge von außen nach innen: Sitzstufe, Kante, Schatten der Stufe davor
  for(let k=K;k>=1;k--){const [ax,ay]=tierAxes(k);ellipse(RA.cx,RA.cy,ax,ay,St.seat[k%2]);ctx.lineWidth=1;ctx.strokeStyle=St.edge+'66';ctx.beginPath();ctx.ellipse(RA.cx,RA.cy,ax,ay,0,0,TAU);ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle=St.riser+'aa';ctx.beginPath();ctx.ellipse(RA.cx,RA.cy+2,ax-RA.tier*.5,ay-RA.tier*.42,0,0,TAU);ctx.stroke();}
  // Treppen
@@ -179,6 +184,14 @@ function arenaRound(index,level,a){const St=RSTYLE[index]||RSTYLE[0],K=22;
   else{rect(x-7,y-7,14,13,St.joint);rect(x-5,y-5,10,9,a.accent+'aa');rect(x-1,y-4,2,7,'#d9cfa8');rect(x-4,y-1,8,2,'#d9cfa8');}}
  if(level>=2)for(const ang of [deg(180),0]){const [x,y]=onRing(ang,px-6,py-5);rect(x-9,y-6,18,10,'#9eaa93');rect(x-11,y-8,22,3,'#d1c7a2');rect(x-4,y-30,8,24,'#b9bfae');rect(x-3,y-37,6,7,'#c9cdbc');rect(x-7,y-27,14,5,'#a3aa98');}
 }
+// Südtribünen-Blick: Brüstung im Vordergrund (vor den Zuschauern gezeichnet) mit ein paar Hinterköpfen
+function svParapet(index){const St=RSTYLE[index]||RSTYLE[0],Y=SV_RAIL;
+ const g=ctx.createLinearGradient(0,Y-14,0,Y);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.35)');ctx.fillStyle=g;ctx.fillRect(0,Y-14,1040,14);
+ rect(0,Y+12,1040,720+SV_BOT-Y-12,St.outer);
+ for(let x=-4;x<1046;x+=20){rect(x+6,Y+11,9,22,St.pod);rect(x+6,Y+11,2,22,St.podTop+'99');rect(x+13,Y+11,2,22,St.joint);rect(x+5,Y+15,11,3,St.pod);rect(x+5,Y+15,11,1,St.podTop+'77');rect(x+5,Y+27,11,3,St.pod);}
+ rect(0,Y,1040,9,St.pod);rect(0,Y,1040,2,St.podTop);rect(0,Y+8,1040,2,St.joint);for(let x=12;x<1040;x+=52)rect(x,Y+2,1,6,St.joint);
+ rect(0,Y+33,1040,5,St.pod);rect(0,Y+33,1040,1,St.podTop+'aa');rect(0,Y+38,1040,720+SV_BOT-Y-38,'#0e0c0a');
+}
 // Fackeln auf dem Mauerring (Fuß) und ihr Lichtfleck
 const RTORCH=[-126,-54,-154,-26,166,14,194,-14].map(deg);
 function roundTorches(){const out=[];for(const ang of RTORCH){const [x,y]=onRing(ang,RA.rx+9,RA.ry+8);out.push([x,y]);}return out;}
@@ -196,7 +209,7 @@ const FILL=[.28,.4,.5,.6,.7,.8,.9];
 const TEAMC=[['#3f6fa8','#5a86c0'],['#a8473f','#c0605a']];
 const NTYPES=16,CTYPES=Array.from({length:NTYPES},(_,i)=>{const h=k=>hash2(i,k,4242);return {skin:['#dab18c','#bc8c62','#94704e','#6d4b37'][Math.floor(h(1)*4)],hair:['#2e2620','#5b4030','#8a6440','#b89b60','#9a948c','#1e1a17'][Math.floor(h(2)*6)],
  cloth:['#8f4d43','#426b73','#958859','#756084','#65816b','#ad784b','#b2aa88','#374d60','#c9c0a4'][Math.floor(h(3)*9)],cloth2:['#4a3f33','#3b4447','#5a4a3a','#2f3330'][Math.floor(h(4)*4)],style:Math.floor(h(5)*6)};});
-function seatsFor(index,level){const key=index+':'+level;if(CROWD.key===key)return CROWD.people;const out=[],fill=FILL[clamp(level,0,6)];let n=0;
+function seatsFor(index,level){const sv=svOn(index),key=index+':'+level+(sv?':sv':'');if(CROWD.key===key)return CROWD.people;if(sv)return seatsSouth(index,level,key);const out=[],fill=FILL[clamp(level,0,6)];let n=0;
  for(let k=0;k<22;k++){const [ax,ay]=tierAxes(k),rx=ax+RA.tier*.62,ry=ay+RA.tier*.5;
   for(let ang=0;ang<TAU;){const x=RA.cx+Math.cos(ang)*rx,y=RA.cy+Math.sin(ang)*ry,step=13.5/Math.hypot(rx*Math.sin(ang),ry*Math.cos(ang));const here=ang;ang+=step;n++;
    if(x<6||x>1034||y<22||y>718)continue;if(Math.abs(x-520)<98&&y<122)continue;if(index===4&&Math.abs(x-520)<82&&y<40)continue;
@@ -207,6 +220,23 @@ function seatsFor(index,level){const key=index+':'+level;if(CROWD.key===key)retu
  out.sort((p,q)=>p.y-q.y);CROWD.key=key;CROWD.people=out;
  /* alle Bildchen gleich jetzt (Ladebildschirm) vorbereiten: Ändert sich der Bildbogen später im Kampf, muss der Browser ihn
     jedes Mal neu kopieren – das kostete mehr als das ganze Zeichnen */
+ const seen=new Set();for(const p of out){const k=p.t+'|'+(p.back?1:0)+'|'+p.fan+'|'+(p.flag?1:0);if(seen.has(k))continue;seen.add(k);for(const pose of Object.keys(POSES))if(p.flag||POSES[pose].flag===undefined)personSprite(p,pose);}
+ atlasFreeze();return out;}
+// Südtribünen-Blick: gleiche Sitzlogik, aber Plätze auch über dem oberen Bildrand und nicht unter der Brüstung. Gleich viele Zuschauer
+// im sichtbaren Bild wie in der normalen Ansicht: Dichte so angehoben, dass die erwartete Zahl gleich bleibt.
+function seatsSouth(index,level,key){const fill=FILL[clamp(level,0,6)],cand=[];let n=0,oldWant=0,newWant=0;
+ const nearAisle=(here,rx,ry)=>AISLES.some(a=>{let d=Math.abs(((here-a)%TAU+TAU*1.5)%TAU-Math.PI);return d*Math.hypot(rx*Math.sin(here),ry*Math.cos(here))<9;});
+ for(let k=0;k<22;k++){const [ax,ay]=tierAxes(k),rx=ax+RA.tier*.62,ry=ay+RA.tier*.5;
+  for(let ang=0;ang<TAU;){const x=RA.cx+Math.cos(ang)*rx,y=RA.cy+Math.sin(ang)*ry,step=13.5/Math.hypot(rx*Math.sin(ang),ry*Math.cos(ang));const here=ang;ang+=step;n++;
+   const aisle=nearAisle(here,rx,ry),w=fill*(1-k*.012);
+   if(!(x<6||x>1034||y<22||y>718)&&!(Math.abs(x-520)<98&&y<122)&&!(index===4&&Math.abs(x-520)<82&&y<40)&&!aisle)oldWant+=w;
+   if(x<6||x>1034||y<-SV_TOP+8||y>SV_RAIL+6||aisle)continue;if(Math.sin(here)>.55&&Math.abs(Math.cos(here))<.62)continue;if(Math.abs(x-520)<98&&y>-4&&y<122)continue;if(index===4&&Math.abs(x-520)<82&&y>-4&&y<40)continue;
+   newWant+=w;cand.push({x,y,here,k,n,w});}}
+ const m=newWant>0?Math.min(1.25,oldWant/newWant):1,out=[];/* gleich viele Zuschauer insgesamt wie in der normalen Ansicht */
+ for(const c of cand){const h=hash2(c.n,c.k,index*7+11);if(h>Math.min(.97,c.w*m))continue;const {x,y,here,k}=c,n2=c.n;
+  const side=Math.cos(here),fan=side<-.86&&hash2(n2,3,9)<.7?0:side>.86&&hash2(n2,4,9)<.7?1:-1;
+  out.push({x,y,ang:here,k,t:Math.floor(hash2(n2,5,9)*NTYPES),fan,flag:fan>=0&&hash2(n2,6,9)<.07,seed:hash2(n2,7,9)*TAU,ph:hash2(n2,8,9)*3,i:n2,back:Math.sin(here)>.3,s:svScale(y)});}
+ out.sort((p,q)=>p.y-q.y);CROWD.key=key;CROWD.people=out;
  const seen=new Set();for(const p of out){const k=p.t+'|'+(p.back?1:0)+'|'+p.fan+'|'+(p.flag?1:0);if(seen.has(k))continue;seen.add(k);for(const pose of Object.keys(POSES))if(p.flag||POSES[pose].flag===undefined)personSprite(p,pose);}
  atlasFreeze();return out;}
 // Bildchen eines Zuschauers: Anker = Sitz (12,27). Stehende Posen 3 px höher, mit Beinen.
@@ -273,14 +303,15 @@ M.crowdEvent=(kind,o={})=>{const now=performance.now()/1000;CROWD.events.push({k
 // sichtbarer Ausschnitt (Weltkoordinaten der Kulisse) aus der Kamera-Umrechnung der Hauptleinwand
 function crowdView(main){let x0=0,y0=0,x1=1040,y1=720;const T=main.getTransform?.();if(T&&typeof T.a==='number'&&(T.a*T.d-T.b*T.c)){const det=T.a*T.d-T.b*T.c,cw=main.canvas?.width||1040,chh=main.canvas?.height||720,inv=(X,Y)=>[(T.d*(X-T.e)-T.c*(Y-T.f))/det,(-T.b*(X-T.e)+T.a*(Y-T.f))/det],P=[inv(0,0),inv(cw,0),inv(0,chh),inv(cw,chh)];
   x0=Math.min(...P.map(p=>p[0]))-40;x1=Math.max(...P.map(p=>p[0]))+40;y0=Math.min(...P.map(p=>p[1]))-40;y1=Math.max(...P.map(p=>p[1]))+60;}
- return [Math.max(0,Math.floor(x0)),Math.max(0,Math.floor(y0)),Math.min(1040,Math.ceil(x1)),Math.min(720,Math.ceil(y1))];}
-function drawCrowd(main,index,level){const people=seatsFor(index,level);if(!CROWD.layer)CROWD.layer=surface(1040,720);const lk=index+':'+level,full=CROWD.layerKey!==lk;
+ return [Math.max(0,Math.floor(x0)),Math.max(LY0,Math.floor(y0)),Math.min(1040,Math.ceil(x1)),Math.min(LY1,Math.ceil(y1))];}
+let LY0=0,LY1=720;
+function drawCrowd(main,index,level){const sv=svOn(index),people=seatsFor(index,level),T0=sv?SV_TOP:0,LH=720+(sv?SV_TOP+SV_BOT:0);LY0=-T0;LY1=720+(sv?SV_BOT:0);if(!CROWD.layer||CROWD.layer.height!==LH)CROWD.layer=surface(1040,LH);const lk=index+':'+level+':'+T0,full=CROWD.layerKey!==lk;
  /* Haushalt: höchstens ca. 4000 Zuschauer-Bildchen je Sekunde (langsame Darstellung weniger) – viele Sichtbare = seltener neu, 2–8× je s */
  const budget=renderQuality>=.95?4200:renderQuality>=.8?2800:1800,rate=clamp(budget/Math.max(1,CROWD.lastVis||300),2,8),tk=Math.floor(performance.now()/1000*rate);
- if(full||tk!==CROWD.tick){const g=CROWD.layer.getContext?.('2d');if(g){const [x0,y0,x1,y1]=full?[0,0,1040,720]:crowdView(main);if(x1>x0&&y1>y0){const C=crowdContext();/* ohne Zuschneiden: Ränder liegen 40 px außerhalb des Bildes, Überstand dort ist unsichtbar und wird beim nächsten Mal mit gelöscht */ctx=g;ctx.save();ctx.imageSmoothingEnabled=false;ctx.clearRect(x0,y0,x1-x0,y1-y0);
-   let vis=0;for(const p of people){if(p.x<x0-16||p.x>x1+16||p.y<y0-8||p.y>y1+40)continue;vis++;const [pose,jump]=crowdPose(p,C),sp=personSprite(p,pose);if(sp)ctx.drawImage(sp.pg.bmp||sp.pg.c,sp.sx+13+sp.ox,sp.sy+38+sp.oy,sp.w,sp.h,Math.round(p.x)+sp.ox,Math.round(p.y)+sp.oy-jump,sp.w,sp.h);}
+ if(full||tk!==CROWD.tick){const g=CROWD.layer.getContext?.('2d');if(g){const [x0,y0,x1,y1]=full?[0,LY0,1040,LY1]:crowdView(main);if(x1>x0&&y1>y0){const C=crowdContext();/* ohne Zuschneiden: Ränder liegen 40 px außerhalb des Bildes, Überstand dort ist unsichtbar und wird beim nächsten Mal mit gelöscht */ctx=g;ctx.save();ctx.translate(0,T0);ctx.imageSmoothingEnabled=false;ctx.clearRect(x0,y0,x1-x0,y1-y0);
+   let vis=0;for(const p of people){if(p.x<x0-16||p.x>x1+16||p.y<y0-8||p.y>y1+40)continue;vis++;const [pose,jump]=crowdPose(p,C),sp=personSprite(p,pose);if(!sp)continue;const q=p.s||1;if(q===1)ctx.drawImage(sp.pg.bmp||sp.pg.c,sp.sx+13+sp.ox,sp.sy+38+sp.oy,sp.w,sp.h,Math.round(p.x)+sp.ox,Math.round(p.y)+sp.oy-jump,sp.w,sp.h);else ctx.drawImage(sp.pg.bmp||sp.pg.c,sp.sx+13+sp.ox,sp.sy+38+sp.oy,sp.w,sp.h,Math.round(p.x+sp.ox*q),Math.round(p.y+(sp.oy-jump)*q),Math.round(sp.w*q),Math.round(sp.h*q));}
    ctx.restore();ctx=main;CROWD.lastVis=vis;atlasFreeze();}}CROWD.tick=tk;CROWD.layerKey=lk;}
- main.drawImage(CROWD.layer,0,0);}
+ main.drawImage(CROWD.layer,0,-T0);}
 
 function arenaStatic(index,forced){if(index===5){backyard();return;}const level=clamp(forced??save.battle?.league??save.fightLeague??save.league,0,6),a=arenas[index];if(index<5&&RSTYLE[index]){arenaRound(index,level,a);return;}rect(0,0,1040,720,'#202a2b');rect(46,101,948,570,'#302f2a');rect(54,110,932,550,a.floor);sandTexture(index,a);stands(index,level);
 
@@ -294,13 +325,14 @@ for(const [xx,yy]of [[91,155],[948,155],[91,622],[948,622]]){rect(xx-7,yy-5,14,9
 stands(index,level,true);
 if(index===1){for(const y of [660])for(let x=64;x<975;x+=22){rect(x,y-10,8,27,'#6a5037');rect(x+1,y-8,2,23,'#a58855')}}if(index===4){rect(445,0,150,30,'#694551');rect(450,2,140,3,'#c1a270');rect(512,10,16,15,'#ba995c');rect(508,8,24,4,'#e0be76')}}
 // One static arena and two small animated crowd strips: no per-frame sand/stone redraw.
-let arenaLayer=null,arenaLayerKey='',crowdLayers=null,crowdLayerKey='',crowdLayerTick=-1;
+let svFront=null,arenaLayer=null,arenaLayerKey='',crowdLayers=null,crowdLayerKey='',crowdLayerTick=-1;
 function surface(w,h){const c=typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(w,h):document.createElement('canvas');c.width=w;c.height=h;return c;}
-function arenaDraw(index,forced){if(M.missionBackdrop){M.missionBackdrop(ctx,index,forced);return;}/* Außenwelt: Schauplatz statt Arena */
- const level=clamp(forced??save.battle?.league??save.fightLeague??save.league,0,6),key=index+':'+level,main=ctx;
- if(!arenaLayer||arenaLayerKey!==key){arenaLayer=surface(1040,720);ctx=arenaLayer.getContext('2d');ctx.imageSmoothingEnabled=false;arenaStatic(index,level);ctx=main;arenaLayerKey=key;crowdLayerKey='';}
- ctx.drawImage(arenaLayer,0,0);if(index===5)return;
- drawCrowd(ctx,index,level);
+function arenaDraw(index,forced,noFront){if(M.missionBackdrop){M.missionBackdrop(ctx,index,forced);return;}/* Außenwelt: Schauplatz statt Arena */
+ const level=clamp(forced??save.battle?.league??save.fightLeague??save.league,0,6),sv=svOn(index),key=index+':'+level+(sv?':sv':''),main=ctx,T0=sv?SV_TOP:0;
+ if(!arenaLayer||arenaLayerKey!==key){arenaLayer=surface(1040,720+(sv?SV_TOP+SV_BOT:0));ctx=arenaLayer.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.translate(0,T0);arenaStatic(index,level);
+  if(sv){svFront=surface(1040,720+SV_BOT-SV_RAIL+16);ctx=svFront.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.translate(0,-(SV_RAIL-16));svParapet(index);}else svFront=null;ctx=main;arenaLayerKey=key;crowdLayerKey='';}
+ ctx.drawImage(arenaLayer,0,-T0);if(index===5)return;
+ drawCrowd(ctx,index,level);if(svFront&&!noFront)ctx.drawImage(svFront,0,SV_RAIL-16);
  // The imperial box stays in front of its spectators.
  if(index===4){rect(445,0,150,30,'#694551');rect(450,2,140,3,'#c1a270');rect(512,10,16,15,'#ba995c');rect(508,8,24,4,'#e0be76');}
  gate(0);
@@ -691,8 +723,8 @@ function measureArena(){const r=c.getBoundingClientRect();canvasSize={width:Math
  if(save.battle.leaders?.includes(a.id)&&!g.dead){rect(-9,-72,3,3,'#edcf83');rect(8,-72,3,3,'#edcf83');}ctx.restore();
 }
 
-function renderBattle(){if(!save.battle)return;if(!canvasSize)measureArena();const reduction=Math.min(1,1040/canvasSize.width,720/canvasSize.height)*renderQuality;let width=Math.max(1,Math.round(canvasSize.width*reduction)),height=Math.max(1,Math.round(canvasSize.height*reduction));if(c.width!==width||c.height!==height){c.width=width;c.height=height}ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;rect(0,0,width,height,'#101b20');let b=save.battle,W=b.width||1040,H=b.height||720,scale=Math.min(width/W,height/H)*zoom,cx=W/2,cy=H/2;let target=b.actors.find(a=>a.id===focus);if(zoom>1&&target){cx=clamp(target.x,W/(zoom*2),W-W/(zoom*2));cy=clamp(target.y,H/(zoom*2),H-H/(zoom*2))}/* Kamera-Anschluss (Kampf-HUD): darf Ausschnitt und Maßstab der normalen Ansicht vorgeben */const auto=M.battleCamera?.(b,width,height,W,H,zoom,target);if(auto){scale=Math.min(width/W,height/H)*auto.zoom;cx=auto.x;cy=auto.y;}if(b.verdictCamera){const v=b.verdictCamera,m=v.mix||0;scale=Math.min(width/W,height/H)*(zoom+(3.3-zoom)*m);cx+=(v.x-cx)*m;cy+=(v.y-cy)*m;}if(b.cinematic){const k=b.cinematic,p=clamp(Math.min((k.duration-k.left)/.22,k.left/.35),0,1);scale=Math.min(width/W,height/H)*((b.verdictCamera?3.3:zoom)+(3.5-(b.verdictCamera?3.3:zoom))*p);cx+=(k.x-cx)*p;cy+=(k.y-cy)*p;}M.arenaView={scale,cx,cy,width,height,W,H};ctx.save();ctx.translate(Math.round(width/2-cx*scale+(save.options.shake?rand(-M.shake,M.shake):0)),Math.round(height/2-cy*scale+(save.options.shake?rand(-M.shake,M.shake):0)));ctx.scale(scale,scale);ctx.save();ctx.scale(W/1040,H/720);arenaDraw(b.challengeData?.wanderer?5:M.leagues[b.league].arena);ctx.restore();drawStains();for(const f of b.boneFragments||[]){rect(f.x,f.y,f.size+1,f.size,'#cabd9d');rect(f.x,f.y,1,1,'#e0d6bb');}for(const a of b.actors){const p=a.pool;if(p&&p.r>.1)bloodPool(p,b.actors.length>60);}for(const p of b.groundWeapons||[]){ellipse(p.x+5,p.y+2,p.sprite===1?17:9,2,'#413c3044');weaponDraw(p.sprite,p.x,p.y,p.angle,.67,p.team?'#c99c70':'#c8cdb5',p.blood,p.def?{def:p.def,q:p.q||0}:null);}for(const limb of M.limbs)drawDetached(limb);for(const d of b.dropped||[]){if(d.kind==='weapon')weaponDraw(d.sprite,d.x,d.y,d.angle,.7,undefined,0,d.def?{def:d.def,q:d.q||0}:null);else if(d.def){ctx.save();ctx.translate(d.x,d.y);ctx.scale(.75,.3);shieldDraw({def:d.def,q:d.q||0},0,0,d.angle);ctx.restore();}else{rect(d.x-7,d.y-3,14,6,'#a08b60');rect(d.x-5,d.y-2,10,3,'#4a6e61');}}
-/* Anschluss (Kampf-HUD): Markierungen am Boden unter den Figuren, in Feldkoordinaten */M.battleUnderlay?.(ctx,b);const objects=[...b.obstacles.map(o=>({y:o.y,render:()=>obstacleDraw(o)})),...b.actors.map(a=>({y:a.y,render:()=>{/* Anschluss: im Kampfnebel verborgene Figuren nicht zeichnen */if(M.battleHidden?.(a))return;const f=b.finale,subject=f?.judgments[Math.min(f.index,f.judgments.length-1)]?.id,dim=b.verdictCamera&&a.id!==subject&&a.id!==f?.executor;ctx.save();if(dim)ctx.globalAlpha=.27;drawBattleActor(a);ctx.restore();}}))];objects.sort((a,b)=>a.y-b.y);objects.forEach(o=>o.render());for(const p of M.shots)if(p.active){/* Wurfnetz: eigenes Flugbild (netz-art.js) */if(p.kind===8&&M.netArt?.flight){try{M.netArt.flight(ctx,p);}catch(e){}continue;}ellipse(p.x,p.y+12,7,2,'#413c3044');weaponDraw(p.kind,p.x,p.y-(p.z||0),p.kind===2?p.rotation:Math.atan2(p.vy,p.vx),.67,p.team?'#d19b75':'#ecdaa4',p.snapshot?.w?.item?.blood||0,p.snapshot?.w?.item,true);}ctx.globalAlpha=1;for(const p of M.fx)if(p.active){ctx.globalAlpha=Math.min(1,p.life*3);rect(p.x,p.y-p.z,p.size,p.size,p.color)}ctx.globalAlpha=1;if(target&&!target.g.dead){ctx.lineWidth=2;ctx.strokeStyle='#e7c786';ctx.beginPath();ctx.ellipse(target.x,target.y+5,23,10,0,0,TAU);ctx.stroke()}/* Anschluss: Überlagerung in Feldkoordinaten (z. B. Kampfnebel) */M.battleOverlay?.(ctx,b);ctx.restore()}
+function renderBattle(){if(!save.battle)return;if(!canvasSize)measureArena();const reduction=Math.min(1,1040/canvasSize.width,720/canvasSize.height)*renderQuality;let width=Math.max(1,Math.round(canvasSize.width*reduction)),height=Math.max(1,Math.round(canvasSize.height*reduction));if(c.width!==width||c.height!==height){c.width=width;c.height=height}ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;rect(0,0,width,height,'#101b20');let b=save.battle,W=b.width||1040,H=b.height||720,AI=b.challengeData?.wanderer?5:M.leagues[b.league].arena,SV=svOn(AI),UP=SV?SV_UP*H/720:0,scale=Math.min(width/W,height/H)*zoom,cx=W/2,cy=H/2-UP;M.arenaViewUp=UP;let target=b.actors.find(a=>a.id===focus);if(zoom>1&&target){cx=clamp(target.x,W/(zoom*2),W-W/(zoom*2));cy=clamp(target.y,H/(zoom*2)-UP,H-H/(zoom*2))}/* Kamera-Anschluss (Kampf-HUD): darf Ausschnitt und Maßstab der normalen Ansicht vorgeben */const auto=M.battleCamera?.(b,width,height,W,H,zoom,target);if(auto){scale=Math.min(width/W,height/H)*auto.zoom;cx=auto.x;cy=auto.y;}if(b.verdictCamera){const v=b.verdictCamera,m=v.mix||0;scale=Math.min(width/W,height/H)*(zoom+(3.3-zoom)*m);cx+=(v.x-cx)*m;cy+=(v.y-cy)*m;}if(b.cinematic){const k=b.cinematic,p=clamp(Math.min((k.duration-k.left)/.22,k.left/.35),0,1);scale=Math.min(width/W,height/H)*((b.verdictCamera?3.3:zoom)+(3.5-(b.verdictCamera?3.3:zoom))*p);cx+=(k.x-cx)*p;cy+=(k.y-cy)*p;}M.arenaView={scale,cx,cy,width,height,W,H};ctx.save();ctx.translate(Math.round(width/2-cx*scale+(save.options.shake?rand(-M.shake,M.shake):0)),Math.round(height/2-cy*scale+(save.options.shake?rand(-M.shake,M.shake):0)));ctx.scale(scale,scale);ctx.save();ctx.scale(W/1040,H/720);arenaDraw(AI,undefined,SV);ctx.restore();drawStains();for(const f of b.boneFragments||[]){rect(f.x,f.y,f.size+1,f.size,'#cabd9d');rect(f.x,f.y,1,1,'#e0d6bb');}for(const a of b.actors){const p=a.pool;if(p&&p.r>.1)bloodPool(p,b.actors.length>60);}for(const p of b.groundWeapons||[]){ellipse(p.x+5,p.y+2,p.sprite===1?17:9,2,'#413c3044');weaponDraw(p.sprite,p.x,p.y,p.angle,.67,p.team?'#c99c70':'#c8cdb5',p.blood,p.def?{def:p.def,q:p.q||0}:null);}for(const limb of M.limbs)drawDetached(limb);for(const d of b.dropped||[]){if(d.kind==='weapon')weaponDraw(d.sprite,d.x,d.y,d.angle,.7,undefined,0,d.def?{def:d.def,q:d.q||0}:null);else if(d.def){ctx.save();ctx.translate(d.x,d.y);ctx.scale(.75,.3);shieldDraw({def:d.def,q:d.q||0},0,0,d.angle);ctx.restore();}else{rect(d.x-7,d.y-3,14,6,'#a08b60');rect(d.x-5,d.y-2,10,3,'#4a6e61');}}
+/* Anschluss (Kampf-HUD): Markierungen am Boden unter den Figuren, in Feldkoordinaten */M.battleUnderlay?.(ctx,b);const objects=[...b.obstacles.map(o=>({y:o.y,render:()=>obstacleDraw(o)})),...b.actors.map(a=>({y:a.y,render:()=>{/* Anschluss: im Kampfnebel verborgene Figuren nicht zeichnen */if(M.battleHidden?.(a))return;const f=b.finale,subject=f?.judgments[Math.min(f.index,f.judgments.length-1)]?.id,dim=b.verdictCamera&&a.id!==subject&&a.id!==f?.executor;ctx.save();if(dim)ctx.globalAlpha=.27;drawBattleActor(a);ctx.restore();}}))];objects.sort((a,b)=>a.y-b.y);objects.forEach(o=>o.render());for(const p of M.shots)if(p.active){/* Wurfnetz: eigenes Flugbild (netz-art.js) */if(p.kind===8&&M.netArt?.flight){try{M.netArt.flight(ctx,p);}catch(e){}continue;}ellipse(p.x,p.y+12,7,2,'#413c3044');weaponDraw(p.kind,p.x,p.y-(p.z||0),p.kind===2?p.rotation:Math.atan2(p.vy,p.vx),.67,p.team?'#d19b75':'#ecdaa4',p.snapshot?.w?.item?.blood||0,p.snapshot?.w?.item,true);}ctx.globalAlpha=1;for(const p of M.fx)if(p.active){ctx.globalAlpha=Math.min(1,p.life*3);rect(p.x,p.y-p.z,p.size,p.size,p.color)}ctx.globalAlpha=1;if(target&&!target.g.dead){ctx.lineWidth=2;ctx.strokeStyle='#e7c786';ctx.beginPath();ctx.ellipse(target.x,target.y+5,23,10,0,0,TAU);ctx.stroke()}/* Anschluss: Überlagerung in Feldkoordinaten (z. B. Kampfnebel) */if(SV&&svFront){ctx.save();ctx.scale(W/1040,H/720);ctx.drawImage(svFront,0,SV_RAIL-16);ctx.restore();}M.battleOverlay?.(ctx,b);ctx.restore()}
 /* Speichern im laufenden Kampf (Kompromiss für große Kämpfe): Stürze, Gliedverluste, Verbände, gegnerische Tode und die
    5-Sekunden-Sicherung lösen im Kampf jeweils einen kompletten Spielstand aus (~2 MB, 25–40 ms Ruckler). Solche Speicherungen
    aus dem Simulationsschritt werden jetzt gesammelt und höchstens alle 10 Sekunden geschrieben. Sofort gespeichert wird weiterhin:

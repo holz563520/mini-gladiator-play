@@ -65,12 +65,12 @@ document.addEventListener('click',e=>{if(shotOn&&e.target.closest?.('#arenaCanva
  else if(cmd==='who'){const o=S.options,order=['all','own','key'];if(o.closeups==='off')return;o.closeups=order[(order.indexOf(M.injuryShots.mode())+1)%3];}
  update();},true);
 // Kamera: Ausschnitt um alle, die noch stehen oder liegen und leben; weich nachgeführt. Bei ausgewähltem Kämpfer bleibt er im Bild.
-M.battleCamera=(b,w,h,W,H,zoom,target)=>{const sp=M.battleHud?.spot;if(sp&&document.body.classList.contains('bhud')){/* Scheinwerfer des Moderators: nah an einen Kämpfer */const base=Math.min(w/W,h/H),z=2.3,vw=w/(base*z),vh=h/(base*z),tx=Math.max(vw/2,Math.min(W-vw/2,sp.x)),ty=Math.max(vh/2,Math.min(H-vh/2,sp.y));if(!cam)cam={x:tx,y:ty,zoom:z};else{cam.x+=(tx-cam.x)*.1;cam.y+=(ty-cam.y)*.1;cam.zoom+=(z-cam.zoom)*.08;}return cam;}
+M.battleCamera=(b,w,h,W,H,zoom,target)=>{const sp=M.battleHud?.spot;if(sp&&document.body.classList.contains('bhud')){/* Scheinwerfer des Moderators: nah an einen Kämpfer */const base=Math.min(w/W,h/H),z=2.3,vw=w/(base*z),vh=h/(base*z),tx=Math.max(vw/2,Math.min(W-vw/2,sp.x)),ty=Math.max(vh/2-(M.arenaViewUp||0),Math.min(H-vh/2,sp.y));if(!cam)cam={x:tx,y:ty,zoom:z};else{cam.x+=(tx-cam.x)*.1;cam.y+=(ty-cam.y)*.1;cam.zoom+=(z-cam.zoom)*.08;}return cam;}
  if(!document.body.classList.contains('bhud')||!autoCam||zoom>1||b.finale||b.cinematic)return (cam=null);
  const live=b.actors.filter(a=>!a.g.dead&&!a.surrendered);if(!live.length)return (cam=null);
  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const a of live){x0=Math.min(x0,a.x);x1=Math.max(x1,a.x);y0=Math.min(y0,a.y-50);y1=Math.max(y1,a.y+20);}
  const pad=90,bw=Math.max(260,x1-x0+pad*2),bh=Math.max(190,y1-y0+pad*2),base=Math.min(w/W,h/H),want=Math.min(w/bw,h/bh)/base,z=Math.max(1,Math.min(2.1,want)),vw=w/(base*z),vh=h/(base*z);
- const tx=vw>=W?W/2:Math.max(vw/2,Math.min(W-vw/2,(x0+x1)/2)),ty=vh>=H?H/2:Math.max(vh/2,Math.min(H-vh/2,(y0+y1)/2));
+ const UP=M.arenaViewUp||0,tx=vw>=W?W/2:Math.max(vw/2,Math.min(W-vw/2,(x0+x1)/2)),ty=vh>=H?H/2-UP:Math.max(vh/2-UP,Math.min(H-vh/2,(y0+y1)/2));
  if(!cam)cam={x:tx,y:ty,zoom:z};else{const k=.06;cam.x+=(tx-cam.x)*k;cam.y+=(ty-cam.y)*k;cam.zoom+=(z-cam.zoom)*(z<cam.zoom?.12:.03);}return cam;};
 // Farbige Kreise am Boden: Blau links, Rot rechts, in jedem Kampf gleich
 M.battleUnderlay=(g,b)=>{if(!document.body.classList.contains('bhud'))return;for(const a of b.actors){if(a.g.dead)continue;const c=a.team?'#e0524a':'#4aa6e0';g.save();g.globalAlpha=a.down||a.surrendered?.4:.95;g.lineWidth=a.id===sel?4.5:3;g.strokeStyle=c;g.beginPath();g.ellipse(a.x,a.y+5,21,9,0,0,Math.PI*2);g.stroke();g.globalAlpha*=.22;g.fillStyle=c;g.fill();g.restore();}};
