@@ -24,8 +24,10 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const normal=(mean,sd)=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return mean+sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
 const NAME={dwarf:'Kleinwuchs',giant:'Riesenwuchs',sumo:'Sumo'},DOUBLE=new Set(['dwarf','giant']),BADGE={dwarf:'▼ KLEINWUCHS',giant:'▲ RIESENWUCHS',sumo:'● SUMO'};
 // IST und SOLL um denselben Betrag verschieben; SOLL bleibt mindestens so hoch wie IST
-function shiftStat(g,k,d,max=Infinity){const v=Math.round(clamp(g.stats[k]+d,1,max));g.stats[k]=v;if(g.caps?.stats)g.caps.stats[k]=Math.max(v,Math.round(clamp((g.caps.stats[k]??v)+d,1,max)));}
-function shiftWeapon(g,id,d){const v=Math.round(clamp((g.mastery[id]||10)+d,1,Infinity));g.mastery[id]=v;if(g.caps?.weapons)g.caps.weapons[id]=Math.max(v,Math.round((g.caps.weapons[id]??v)+d));}
+// Wunsch Thomas 4.11.: IST und SOLL fallen entsprechend höher/niedriger aus, der Abstand zwischen beiden bleibt wie bei normalen Rekruten.
+// Stößt der IST-Wert unten an (Wert 1), bleibt das SOLL trotzdem um den bisherigen Abstand darüber, damit Raum zum Lernen bleibt.
+function shiftStat(g,k,d,max=Infinity){const ist=g.stats[k],cap=g.caps?.stats?.[k]??ist,gap=Math.max(0,cap-ist),v=Math.round(clamp(ist+d,1,max));g.stats[k]=v;if(g.caps?.stats)g.caps.stats[k]=Math.round(clamp(Math.max(cap+d,v+gap),v,max));}
+function shiftWeapon(g,id,d){const ist=g.mastery[id]||10,cap=g.caps?.weapons?.[id]??ist,gap=Math.max(0,cap-ist),v=Math.round(Math.max(1,ist+d));g.mastery[id]=v;if(g.caps?.weapons)g.caps.weapons[id]=Math.round(Math.max(cap+d,v+gap));}
 function body(g,h,armK,legK){g.height=h;g.arm=Math.round(h*armK+normal(0,2));g.leg=Math.round(h*legK+normal(0,2));g.weight=Math.round((h-100)*.62+g.muscle*.58+g.fat*.6);g.build=g.weight>95?'Kräftig':h<171?'Kompakt':g.fat<13?'Sehnig':'Athletisch';}
 // Aus einem fertig erzeugten Kandidaten einen besonderen machen
 function make(g,kind){if(!g||g.stature||!NAME[kind])return g;M.ensureCareer?.(g);g.stature=kind;
