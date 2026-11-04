@@ -53,6 +53,10 @@ const inL=id=>st.lineup.some(x=>x.id===id);
 // Herumtreiber (Wunsch Thomas 4.11.): dieselbe Aufstellung, Gegner fest (die Gruppe vor dem Tor, unverändert), bis zu 10 eigene Kämpfer,
 // auch gegen kleine Gruppen. Keine Prämie, keine Gunst; wer gewinnt, nimmt alles, was die Herumtreiber tragen (wanderers.js afterLineup).
 let wmode=null;const WMAX=10;
+// Plünderungen (Wunsch Thomas 4.11.): dieselbe Aufstellung; das Raster bestimmt die Marschordnung (vorne/mitte/hinten, oben/mitte/unten).
+// ★ wählt hier den Anführer (ab 5 Kämpfern). Losgeschickt wird über amode.start (outside.js).
+let amode=null;
+const HERO=()=>amode?(amode.leaderId&&inL(amode.leaderId)?amode.leaderId:null):st.hero;
 // Reparieren (Wunsch 4.11.): alle angelegten Sachen der aufgestellten Gruppe auf einen Schlag (Preis wie beim Schmied, M.repairCost)
 const gearList=g=>{try{return [M.gear(g,'weapon'),M.gear(g,'secondary'),M.gear(g,'shield'),...M.armorItems(g)].filter(i=>i&&i.durability<i.maxDurability);}catch{return [];}};
 const repairList=()=>{const seen=new Set(),out=[];for(const x of lineup())if(!x.g.enemyGear)for(const i of gearList(x.g))if(!seen.has(i.id)){seen.add(i.id);out.push(i);}return out;};
@@ -62,7 +66,7 @@ function repair(){const items=repairList(),cost=repairPrice();if(!items.length)r
 function auto(role){const n=r=>st.lineup.filter(x=>G(x.id)?.role===r).length;
  return role==='Fernkämpfer'?{row:'hinten',lane:['mitte','oben','unten'][n(role)%3]}:role==='Assassine'?{row:'mitte',lane:n(role)%2?'unten':'oben'}:{row:'vorne',lane:['mitte','oben','unten'][n(role)%3]};}
 const lineup=()=>st.lineup.filter(x=>G(x.id)).map(x=>{const g=G(x.id);return {id:g.id,g,kw:A.kw(g),role:g.role,slot:{row:x.row,lane:x.lane}};});
-const forms=()=>A.formations(lineup(),st.hero);
+const forms=()=>A.formations(lineup(),HERO());
 function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
 function params(){A.P=Object.assign(JSON.parse(JSON.stringify(P0)),TEST?st.P||{}:{});}
 
@@ -84,26 +88,27 @@ function viewGroup(){
  const L=lineup(),sum=L.reduce((a,x)=>a+x.kw,0),fs=forms(),rc=repairPrice(),wsum=wmode?wmode.members.reduce((a,g)=>a+A.kw(g),0):0;
  /* Einordnung vom Medicus (sortierung.js): Kader danach anzeigen */const T=M.sortTag,sf=T&&st.sortFilter&&st.sortFilter!=='all'?st.sortFilter:'all',bySort=g=>sf==='all'||(sf==='none'?!T.get(g):T.get(g)===sf);
  const cols=ROLES.map(r=>{const list=alive().filter(g=>g.role===r&&bySort(g)).sort((a,b)=>A.kw(b)-A.kw(a));
-  return `<div class="a-col" data-r="${r}"><h3><span>${ICON[r]} ${PLURAL[r]}</span><span>${list.length}</span></h3><div class="a-list" data-roster>${list.map(g=>{const f=fit(g),cls=['a-card'];if(inL(g.id))cls.push('a-in');if(!f.ok)cls.push('a-out');if(st.hero===g.id)cls.push('a-hero');
+  return `<div class="a-col" data-r="${r}"><h3><span>${ICON[r]} ${PLURAL[r]}</span><span>${list.length}</span></h3><div class="a-list" data-roster>${list.map(g=>{const f=fit(g),cls=['a-card'];if(inL(g.id))cls.push('a-in');if(!f.ok)cls.push('a-out');if(HERO()===g.id)cls.push('a-hero');
    const sub=!f.ok?esc((f.causes||[])[0]||'nicht einsatzbereit'):(g.auf?.kills?g.auf.kills+' Kills · ':'')+(g.auf?.fights?g.auf.fights+' Kämpfe':'frisch');
    const hp=Math.round(Math.max(0,Math.min(100,(()=>{try{return M.health(g);}catch{return 100;}})())));
    return `<div class="${cls.join(' ')}" data-drag="${esc(g.id)}" data-from="roster">${por(g)}<div class="a-nm"><span class="a-name">${esc(g.name)}</span><span class="a-vals"><b class="a-kw" title="Kampfwert">${A.kw(g)}</b><b class="a-hp${hp<50?' a-lo':hp<80?' a-mid':''}" title="Gesundheit">♥ ${hp} %</b>${tal(g)}</span><small>${sub}</small></div>${T?T.icon(T.get(g),18):''}</div>`;}).join('')}</div>${TEST?`<button class="a-buy" data-buy="${r}">+ Rekrut · 100</button>`:''}</div>`;}).join('');
  let grid='<div></div>'+ROWS.map(r=>`<div class="a-gh">${r}</div>`).join('');
  for(const lane of LANES){grid+=`<div class="a-gl">${lane}</div>`;for(const row of ROWS){const here=st.lineup.filter(x=>x.row===row&&x.lane===lane);
-  grid+=`<div class="a-cell" data-cell="${row}|${lane}">${here.map(x=>{const g=G(x.id);return `<div class="a-chip${selChip===g.id?' a-sel':''}${st.hero===g.id?' a-hero':''}" data-r="${g.role}" data-drag="${esc(g.id)}" data-from="grid">${por(g,24,27)}<span class="a-n">${st.hero===g.id?'★':''}${esc(g.name)}</span><b>${A.kw(g)}</b>${tal(g)}</div>`;}).join('')}</div>`;}}
+  grid+=`<div class="a-cell" data-cell="${row}|${lane}">${here.map(x=>{const g=G(x.id);return `<div class="a-chip${selChip===g.id?' a-sel':''}${HERO()===g.id?' a-hero':''}" data-r="${g.role}" data-drag="${esc(g.id)}" data-from="grid">${por(g,24,27)}<span class="a-n">${HERO()===g.id?'★':''}${esc(g.name)}</span><b>${A.kw(g)}</b>${tal(g)}</div>`;}).join('')}</div>`;}}
  grid+='<div></div><div class="a-foe">GEGNER ▶</div>';
- root.innerHTML=top(wmode?'HERUMTREIBER':'AUFSTELLUNG','ARENA THEORY · TESTVERSION')+`<main>${wmode?'':steps(0)}
+ root.innerHTML=top(wmode?'HERUMTREIBER':amode?'PLÜNDERUNG':'AUFSTELLUNG','ARENA THEORY · TESTVERSION')+`<main>${wmode||amode?'':steps(0)}
+ ${amode?`<section class="a-box"><div class="a-bh"><h2>${esc(amode.title||'Plünderung')}</h2><span>${esc(amode.sub||'')}</span></div>${amode.info?`<p class="a-hint">${amode.info}</p>`:''}<p class="a-hint">Stell ${amode.min||1} bis ${amode.max} Kämpfer auf. Das Raster ist eure Marschordnung: vorne geht voran, hinten bleibt zurück. Ab ${amode.leadMin} Kämpfern führt ein Anführer (★ wählt ihn).</p></section>`:''}
  ${wmode?`<section class="a-box"><div class="a-bh"><h2>Vor dem Tor: ${esc(wmode.leader.name)}</h2><span>${wmode.members.length} Herumtreiber · KW ${wsum}</span></div><div class="a-mine">${wmode.members.map(g=>`<span class="a-f">${por(g,40,45)}<small>${esc(g.role)} · ${A.kw(g)}</small></span>`).join('')}</div><p class="a-hint">Stell bis zu ${WMAX} Kämpfer auf – auch gegen eine kleine Gruppe. Keine Prämie: Wer gewinnt, nimmt alles, was die Herumtreiber tragen.</p></section>`:''}
  <section class="a-box"><div class="a-bh"><h2>Kader</h2><span>nach Kampfwert · ziehen oder antippen</span></div>${T?`<div class="a-sortbar">${[['all','Alle',''],...T.ORDER.map(k=>[k,T.KINDS[k].short,T.icon(k,14)]),['none','Ohne','']].map(([k,l,ic])=>{const n=alive().filter(g=>k==='all'||(k==='none'?!T.get(g):T.get(g)===k)).length;return `<button data-sortf="${k}" class="${sf===k?'a-on':''}" title="${k==='all'||k==='none'?'':esc(T.KINDS[k].tip)}">${ic}${l} <small>${n}</small></button>`;}).join('')}</div>`:''}<div class="a-cols">${cols}</div></section>
  <section class="a-box"><div class="a-bh"><h2>Aufstellung</h2><span>${L.length} Kämpfer</span></div><div class="a-grid${selChip?' a-picking':''}">${grid}</div>
-  <div class="a-sum">${L.length?`<span>Köpfe <b>${L.length}</b></span><span>KW-Summe <b>${sum}</b></span>${ROLES.map(r=>`<span>${ICON[r]} <b>${L.filter(x=>x.role===r).length}</b></span>`).join('')}<span>${st.hero?'★ <b>'+esc(G(st.hero)?.name)+'</b>':'kein ★-Held'}</span>`:'<span>Zieh Kämpfer aus dem Kader auf ein Feld.</span>'}</div>
+  <div class="a-sum">${L.length?`<span>Köpfe <b>${L.length}</b></span><span>KW-Summe <b>${sum}</b></span>${ROLES.map(r=>`<span>${ICON[r]} <b>${L.filter(x=>x.role===r).length}</b></span>`).join('')}<span>${HERO()?'★ <b>'+esc(G(HERO())?.name)+'</b>'+(amode?' führt':''):amode?(L.length>=amode.leadMin?'★ Anführer: bester Führungswert':'Anführer ab '+amode.leadMin+' Kämpfern'):'kein ★-Held'}</span>`:'<span>Zieh Kämpfer aus dem Kader auf ein Feld.</span>'}</div>
   <div class="a-forms">${Object.entries(FORMS).map(([k,[l,h]])=>`<span class="a-badge${fs.includes(k)?' a-on':''}" title="${esc(h)}">${l}</span>`).join('')}</div>
   <div class="a-acts"><button data-act="equip" ${L.length?'':'disabled'}>⚙ AUTOMATISCH AUSRÜSTEN</button><button data-act="repair" ${rc?'':'disabled'} title="Alle angelegten Waffen, Schilde und Rüstungen der Gruppe">🔧 ALLES REPARIEREN${rc?' · '+fmt(rc)+' Gold':''}</button></div>
-  ${selChip?`<div class="a-acts"><button data-act="hero">${st.hero===selChip?'★ Held weg':'★ Held'}</button><button data-act="remove">Abziehen</button><button data-act="unsel">Fertig</button></div>`:''}
+  ${selChip?`<div class="a-acts"><button data-act="hero">${amode?(HERO()===selChip?'★ Anführer weg':'★ Anführer'):st.hero===selChip?'★ Held weg':'★ Held'}</button><button data-act="remove">Abziehen</button><button data-act="unsel">Fertig</button></div>`:''}
   <p class="a-hint">${selChip?esc(G(selChip)?.name)+': Feld antippen zum Versetzen.':'Karten seitlich aus dem Kader ziehen (oder antippen). Zurück in den Kader ziehen = abziehen. Hinten wartet, bis es ernst wird. Schaubilder mag das Publikum.'}</p></section>
  ${st.fallen.length?`<section class="a-box a-fallen"><b>Gefallen:</b> ${st.fallen.slice(-12).map(f=>`✝ ${esc(f.name)} (${f.kw}, Tag ${f.day})`).join(' · ')}</section>`:''}
- ${TEST||wmode?'':'<p class="a-hint" style="text-align:center"><button class="a-link" data-act="classic">Bisherige Herausforderungen ▸</button></p>'}
- </main><div class="a-go">${wmode?`<button class="a-main" data-act="wfight" ${L.length&&L.length<=WMAX?'':'disabled'}>⚔ KAMPF · ${L.length} GEGEN ${wmode.members.length}</button>`:`<button class="a-main" data-act="ready" ${L.length?'':'disabled'}>GRUPPE STEHT · GEGNER ☠</button>`}</div>`;}
+ ${TEST||wmode||amode?'':'<p class="a-hint" style="text-align:center"><button class="a-link" data-act="classic">Bisherige Herausforderungen ▸</button></p>'}
+ </main><div class="a-go">${amode?`<button class="a-main" data-act="afight" ${L.length>=(amode.min||1)&&L.length<=amode.max&&amode.ready!==false?'':'disabled'}>${amode.ready===false?'HEUTE SCHON DRAUSSEN':'AUFBRECHEN ▶ · '+L.length+' KÄMPFER'}</button>`:wmode?`<button class="a-main" data-act="wfight" ${L.length&&L.length<=WMAX?'':'disabled'}>⚔ KAMPF · ${L.length} GEGEN ${wmode.members.length}</button>`:`<button class="a-main" data-act="ready" ${L.length?'':'disabled'}>GRUPPE STEHT · GEGNER ☠</button>`}</div>`;}
 function offerCard(o,i){const sk=SKULL[o.skulls],typ=Math.round(o.base*o.risk/5)*5,epic=Math.round(o.base*o.risk*2.4/5)*5,shown=o.enemy.slice(0,10);
  return `<div class="a-offer${sel===i?' a-sel':''}" data-offer="${i}"><p class="a-sk" style="color:${sk.color}">${'☠'.repeat(o.skulls)}<small>${sk.label.toUpperCase()}</small></p><h3>${esc(o.label)}</h3>
  <div class="a-foes">${shown.map(u=>`<span class="a-f">${por(u.g,40,45)}${A.kw(u.g)}</span>`).join('')}${o.enemy.length>10?`<span class="a-f">+${o.enemy.length-10}</span>`:''}</div>
@@ -163,7 +168,7 @@ function showOffers(){const L=lineup();if(!L.length)return;const bad=L.filter(x=
 
 // ---------- Ziehen und Ablegen (Maus sofort, Finger nach kurzem Halten) ----------
 let drag=null;
-function place(id,row,lane){const x=st.lineup.find(x=>x.id===id);if(x){x.row=row;x.lane=lane;}else{const g=G(id);if(!g||!fit(g).ok)return toast((g?.name||'')+' ist nicht einsatzbereit.');if(wmode&&st.lineup.length>=WMAX)return toast('Gegen Herumtreiber höchstens '+WMAX+' Kämpfer.');st.lineup.push({id,row,lane});}save();render();}
+function place(id,row,lane){const x=st.lineup.find(x=>x.id===id);if(x){x.row=row;x.lane=lane;}else{const g=G(id);if(!g||!fit(g).ok)return toast((g?.name||'')+' ist nicht einsatzbereit.');if(wmode&&st.lineup.length>=WMAX)return toast('Gegen Herumtreiber höchstens '+WMAX+' Kämpfer.');if(amode&&st.lineup.length>=amode.max)return toast('Höchstens '+amode.max+' Kämpfer.');st.lineup.push({id,row,lane});}save();render();}
 function remove(id){st.lineup=st.lineup.filter(x=>x.id!==id);if(st.hero===id)st.hero=null;if(selChip===id)selChip=null;save();render();}
 function tap(id,from){if(from==='roster'){if(inL(id))return remove(id);const g=G(id);const s=auto(g.role);place(id,s.row,s.lane);}else{selChip=selChip===id?null:id;render();}}
 root.addEventListener('pointerdown',e=>{if(step!=='group'||busy)return;const el=e.target.closest('[data-drag]');if(!el||e.button>0)return;
@@ -198,7 +203,8 @@ root.addEventListener('click',e=>{const t=e.target.closest('[data-act],[data-cel
  if(t.dataset.vow){const v=t.dataset.vow;if(st.vows.includes(v))st.vows=st.vows.filter(x=>x!==v);else{if(st.vows.length>=2)st.vows.shift();st.vows.push(v);}save();render();return;}
  if(t.dataset.offer){sel=+t.dataset.offer;render();return;}
  const a=t.dataset.act;
- if(a==='hero'){st.hero=st.hero===selChip?null:selChip;save();render();}
+ if(a==='hero'&&amode){amode.leaderId=HERO()===selChip?null:selChip;try{amode.lead?.(amode.leaderId);}catch(e){}render();}
+ else if(a==='hero'){st.hero=st.hero===selChip?null:selChip;save();render();}
  else if(a==='remove')remove(selChip);
  else if(a==='unsel'){selChip=null;render();}
  else if(a==='ready'){selChip=null;showOffers();}
@@ -209,6 +215,8 @@ root.addEventListener('click',e=>{const t=e.target.closest('[data-act],[data-cel
  else if(a==='again'){step='group';offers=[];sel=null;st.seed++;save();render();root.scrollTop=0;}
  else if(a==='nextday'){nextDay();}
  else if(a==='menu')menu();
+ else if(a==='exit'&&amode){const b=amode.back;close();amode=null;step='group';try{b?.();}catch(e){console.warn(e);}}
+ else if(a==='afight')afight();
  else if(a==='exit'){if(wmode){close();wmode=null;step='group';try{M.ui.click('nav:home');}catch(e){}}else exitToArena();}
  else if(a==='repair')repair();
  else if(a==='wfight')wfight();
@@ -232,6 +240,11 @@ M.fixedStep=function(){const r=fs0.apply(this,arguments);if(tracker&&S.battle===
 // Herumtreiber: Gegner ist die Gruppe vor dem Tor, so wie sie ist
 function wfight(){const g=wmode,L=lineup();if(!g||!L.length||busy)return;if(L.length>WMAX)return toast('Gegen Herumtreiber höchstens '+WMAX+' Kämpfer.');const bad=L.filter(x=>!fit(x.g).ok);if(bad.length)return toast(bad[0].g.name+' ist nicht einsatzbereit.');
  params();const o=A.describe({kind:'gemischt',label:'Herumtreiber · '+g.leader.name,enemy:g.members.map((m,i)=>({kind:'human',key:'w'+i,row:m.role==='Fernkämpfer'?'back':'front',g:m})),id:'w-'+g.id,level:1},L);offers=[o];sel=0;fight();}
+// Plünderung: Gruppe und Rasterplätze an outside.js übergeben, dort startet der Marsch
+function afight(){const m=amode,L=lineup();if(!m||busy)return;if(m.ready===false)return toast('Heute wart ihr schon plündern.');if(L.length<(m.min||1))return toast('Mindestens ein Kämpfer.');if(L.length>m.max)return toast('Höchstens '+m.max+' Kämpfer.');
+ const bad=L.filter(x=>!fit(x.g).ok);if(bad.length)return toast(bad[0].g.name+' ist nicht einsatzbereit.');
+ const slots={};for(const x of L)slots[x.id]={row:x.slot.row,lane:x.slot.lane};const ids=L.map(x=>x.id),lead=HERO(),go=m.start;
+ close();amode=null;step='group';try{go?.(ids,slots,lead);}catch(e){console.error(e);}}
 function fight(){const o=offers[sel];if(!o)return;const L=lineup(),wg=wmode;busy=true;const kwBefore={};for(const x of L)kwBefore[x.id]={kw:x.kw,role:x.role,g:x.g};
  const spec=A.spec(L,o,false);
  S.battle=null;try{M.ui.click('nav:home');}catch(e){}try{window.HahnArena?.resetScene?.();}catch(e){}
@@ -284,8 +297,8 @@ function menu(){const P=Object.assign({},P0,st.P);
   else if(x==='new'){if(!confirm('Testversion neu beginnen? Kader, Gold und Gunst werden zurückgesetzt.'))return;closeOverlay();store.del(KEY);fresh();step='group';offers=[];render();}};}
 
 // ---------- Start ----------
-function close(){root.hidden=true;closeOverlay();document.body.classList.remove('auf-open');}
-function open(opt){wmode=opt?.wanderer||null;if(wmode)step='group';if(!TEST){st=gameState();
+function close(){if(amode&&!root.hidden)amode=null;root.hidden=true;closeOverlay();document.body.classList.remove('auf-open');}
+function open(opt){wmode=opt?.wanderer||null;amode=!wmode&&opt?.adventure||null;if(amode){amode.max=amode.max||WMAX;amode.leadMin=amode.leadMin||5;}if(wmode||amode)step='group';if(!TEST){st=gameState();
  // Leere Gruppe: Vorschlag wie bisher AUTO – die drei stärksten Einsatzbereiten, je nach Klasse ins Raster
  if(!st.lineup.length){for(const g of alive().filter(g=>fit(g).ok).sort((a,b)=>A.kw(b)-A.kw(a)).slice(0,3))st.lineup.push(Object.assign({id:g.id},auto(g.role)));}}
  offers=[];sel=null;selChip=null;if(step!=='result'||!lastRes)step='group';root.hidden=false;document.body.classList.add('auf-open');render();root.scrollTop=0;}

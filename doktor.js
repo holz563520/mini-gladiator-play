@@ -465,6 +465,7 @@ function openChair(gid){closeAll();const men=living();if(!men.length){M.ui.notif
 <div class="dok-who" id="dokWho"></div>
 <label class="dok-protect"><input type="checkbox" id="dokAppleProtect"> Vor Apfelschuss schützen · nicht als Apfelträger anzeigen</label>
 <label class="dok-protect"><input type="checkbox" id="dokForceClass"> Automatisch ausrüsten: beste Waffenklasse erzwingen · fördert das Talent, auch wenn eine stärkere Waffe im Lager liegt</label>
+<label class="dok-protect">Feste Waffe beim automatischen Ausrüsten <select id="dokForceDef"></select></label>
 <section class="dok-sort" id="dokSort" aria-label="Einordnung: Müll, Talent, Supertalent"></section>
 <section class="dok-traits" id="dokTraits" aria-label="Waffenklasse und besondere Eigenschaften"></section>
 <div class="dok-stats" id="dokStats"></div>
@@ -472,7 +473,7 @@ function openChair(gid){closeAll();const men=living();if(!men.length){M.ui.notif
 <div class="dok-go"><p class="dok-odds" id="dokOdds"></p><button class="btn primary dok-hit" type="button" data-dok="go">ZUSCHLAGEN!</button></div>
 <div class="dok-result" id="dokResult" hidden></div>
 </div>`;
- document.body.appendChild(v);v.addEventListener('change',e=>{if(e.target.id==='dokAppleProtect'&&chair){chair.g.appleProtected=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForceClass'&&chair){chair.g.forceWeaponClass=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForce')chair.force=e.target.value;if(e.target.id==='dokVar')chair.variant=e.target.value;});
+ document.body.appendChild(v);v.addEventListener('change',e=>{if(e.target.id==='dokAppleProtect'&&chair){chair.g.appleProtected=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForceClass'&&chair){chair.g.forceWeaponClass=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForceDef'&&chair){if(e.target.value)chair.g.forceWeaponDef=e.target.value;else delete chair.g.forceWeaponDef;M.persist();renderChair();}if(e.target.id==='dokForce')chair.force=e.target.value;if(e.target.id==='dokVar')chair.variant=e.target.value;});
  renderChair();loop();}
 function renderChair(){const C=chair;if(!C)return;const g=C.g,caps=capsOf(g),busy=!!C.P&&!C.P.done,inBed=bedDays(g);
  const men=$('dokMen');if(men){men.innerHTML=living().map(x=>{const d=bedDays(x);return `<button class="dok-man${x===g?' sel':''}" type="button" data-dok="man:${x.id}"${busy?' disabled':''}><canvas data-dokface="${x.id}" width="40" height="50"></canvas><span>${M.sortTag?.icon(M.sortTag.get(x),12)||''}${esc(first(x))}</span><small>Talent ${Math.round(x.potential??0)}${x.appleProtected?' · 🍎 geschützt':''}</small><small>${d?'🛏 '+d+' T.':x.dokCross?'schielt':'bereit'}</small></button>`;}).join('');
@@ -481,7 +482,7 @@ function renderChair(){const C=chair;if(!C)return;const g=C.g,caps=capsOf(g),bus
  const st=$('dokStats');if(st){st.innerHTML=KEYS.map(k=>{const cap=caps[k]??0,val=g.stats[k]??0,cls=cap<45?'lo':cap>=72?'hi':'';return `<button class="dok-stat${k===C.key?' sel':''}" type="button" data-dok="key:${k}"${busy||inBed?' disabled':''}><b>${esc(statName(k))}</b><span>Wert ${val}</span><span class="cap ${cls}">Anlage ${cap}</span></button>`;}).join('');}
  /* Einordnung (Wunsch Thomas 4.11.): Müll · Talent · Supertalent */const so=$('dokSort');if(so&&M.sortTag){const T=M.sortTag,cur=T.get(g);so.innerHTML=`<b>EINORDNUNG</b>${T.ORDER.map(k=>`<button type="button" data-dok="sort:${k}" class="${cur===k?'sel':''}" style="--sc:${T.KINDS[k].color}" title="${esc(T.KINDS[k].tip)}">${T.icon(k,20)} ${T.KINDS[k].label}</button>`).join('')}<button type="button" data-dok="sort:none" class="${cur?'':'sel'}">– keine</button><small>${cur?esc(T.KINDS[cur].tip):'Noch nicht eingeordnet. Wird in der Aufstellung angezeigt.'}</small>`;}
  const protect=$('dokAppleProtect');if(protect)protect.checked=!!g.appleProtected;
- const fc=$('dokForceClass');if(fc)fc.checked=!!g.forceWeaponClass;const tr=$('dokTraits');if(tr)tr.innerHTML=traitsHTML(g);
+ const fc=$('dokForceClass');if(fc)fc.checked=!!g.forceWeaponClass;const fd=$('dokForceDef');if(fd){const ok=w=>w.ammo?M.allowedRanged?.(g,w.id):M.allowedMelee?.(g,w.id),ws=(M.weaponDefs||[]).filter(ok).sort((a,b)=>(b.ammo?1:0)-(a.ammo?1:0)||(g.caps?.weapons?.[b.id]||0)-(g.caps?.weapons?.[a.id]||0));fd.innerHTML='<option value="">Automatisch · höchstes SOLL</option>'+ws.map(w=>`<option value="${esc(w.id)}"${g.forceWeaponDef===w.id?' selected':''}>${esc(w.name)}${w.ammo?' (Fernwaffe)':''} · SOLL ${Math.round(g.caps?.weapons?.[w.id]||0)}</option>`).join('')+(g.forceWeaponDef&&!ws.some(w=>w.id===g.forceWeaponDef)?`<option value="${esc(g.forceWeaponDef)}" selected>${esc(M.weaponDefs.find(w=>w.id===g.forceWeaponDef)?.name||g.forceWeaponDef)} · passt nicht zur Klasse</option>`:'');}const tr=$('dokTraits');if(tr)tr.innerHTML=traitsHTML(g);
  const overview=$('dokOverview');if(overview)overview.innerHTML=overviewHTML(g);
  const odds=$('dokOdds'),fp=Math.round(failChance(g)*1000)/10;if(odds)odds.innerHTML=`<b class="ok">${(100-fp).toLocaleString('de-DE')} %</b> Anlage wird neu ausgewürfelt <span>· besser oder schlechter</span><br><b class="bad">${fp.toLocaleString('de-DE')} %</b> Hirnschaden <span>· alle Werte −10 %, schielt für immer${fp<10?' · Veteran: geringeres Risiko':' · frischer Rekrut: volles Risiko'}</span><br><b>Danach</b> zehn Tage Krankenbett mit Kopfverband`;
  const go=document.querySelector('.dok-hit');if(go){go.disabled=busy||!!inBed;go.textContent=inBed?'LIEGT IM KRANKENBETT':busy?'…':'ZUSCHLAGEN!';}
@@ -497,11 +498,12 @@ const TRAIT_FX={Mutig:['Lässt sich vom Tod eines Kameraden kaum entmutigen (Mut
  Verletzungsanfällig:['Noch ohne Wirkung im Spiel.',0],Spätentwickler:['Noch ohne Wirkung im Spiel.',0]};
 function traitsHTML(g){const wc=['secondary','weapon'].map(sl=>M.bestWeaponClass?.(g,sl)).filter(Boolean).filter(t=>t.slot==='secondary'||g.role!=='Soldat');
  const cur=sl=>{const i=M.gear?.(g,sl);return i?M.weaponDefs.find(w=>w.id===i.def)?.name||i.def:'—';};
- const forced=g.forceWeaponClass||S.army?.forceTalent;
+ const forced=g.forceWeaponClass||S.army?.forceTalent;const pick=['secondary','weapon'].map(sl=>M.chosenWeaponClass?.(g,sl)).find(Boolean);
  const stock=t=>{const k=M.weaponClassStock?.(t.def,g.id);if(!k)return '';const mine=M.gear?.(g,t.slot)?.def===t.def;return mine?'angelegt':k.free?k.free+' frei im Lager':k.worn.length?'trägt '+k.worn.slice(0,2).join(', '):k.broken?'nur kaputte':'keine im Lager';};
  let h='<h3>Waffenklasse & Eigenschaften</h3><table class="dok-wc"><thead><tr><th>Platz</th><th>Beste Klasse (SOLL)</th><th>IST</th><th>angelegt</th></tr></thead><tbody>'+
   wc.map(t=>`<tr${cur(t.slot)!==t.name&&forced?' class="bad"':''}><th scope="row">${t.slot==='weapon'?'Fernwaffe':'Nahkampf'}</th><td>${esc(t.name)} <b>${Math.round(t.soll)}</b><br><small>${esc(stock(t))}</small></td><td>${Math.round(g.mastery?.[t.def]||0)}</td><td>${esc(cur(t.slot))}</td></tr>`).join('')+'</tbody></table>';
- h+=`<p class="tiny">${forced?'Wird beim automatischen Ausrüsten erzwungen'+(g.forceWeaponClass?'':' (Schalter für alle in der Kaserne)')+'.':'Nicht erzwungen: Automatisch ausrüsten wählt die stärkste Waffe.'}</p>`;
+ if(pick)h+=`<p class="tiny"><b>Feste Waffe: ${esc(pick.name)}</b> (SOLL ${Math.round(pick.soll)}, ${esc(stock(pick))}) · automatisch ausrüsten nimmt sie statt der besten Klasse${pick.slot==='weapon'?' als Fernwaffe':''}.</p>`;
+ if(!(pick&&!forced))h+=`<p class="tiny">${forced?'Wird beim automatischen Ausrüsten erzwungen'+(g.forceWeaponClass?'':' (Schalter für alle in der Kaserne)')+'.':'Nicht erzwungen: Automatisch ausrüsten wählt die stärkste Waffe.'}</p>`;
  const tr=g.traits||[];h+='<h4>Besondere Eigenschaften</h4>'+(tr.length?'<ul class="dok-tr">'+tr.map(t=>{const [d,on]=TRAIT_FX[t]||['—',0];return `<li class="${on?'on':'off'}"><b>${esc(t)}</b><span>${esc(d)}</span></li>`;}).join('')+'</ul>':'<p class="tiny">Keine.</p>');
  return h;}
 // Nur lesende Übersicht; fehlende Werte alter Spielstände bleiben als Strich sichtbar.

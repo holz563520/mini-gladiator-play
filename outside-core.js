@@ -307,10 +307,14 @@ D.pickBanter=(st,seed,m)=>{const B=m?.kind==='adventure'?D.ADV.banter:T.banter;r
 const TACTICS=[{aggression:'Ausgeglichen',formation:'Normal',priority:'Nächster Gegner',ranged:'Abstand halten',help:'Normal'},{aggression:'Aggressiv',formation:'Normal',priority:'Nächster Gegner',ranged:'Abstand halten',help:'Normal'}];
 D.marginX=W=>78*W/1040;
 // Abschnitt aufbauen: eine breite Karte, durch die die Truppe marschiert. Der Kampf ruht, bis eine Begegnung beginnt.
+// Marschordnung aus der Aufstellung (m.slots: id → {row,lane}); ohne Raster wie bisher je drei nebeneinander
+D.slotPos=function(m,gs){const S=m?.slots,RW={vorne:0,mitte:1,hinten:2},LN={oben:0,mitte:1,unten:2},seen={};
+ return gs.map((g,k)=>{const s=S&&g&&S[g.id];if(!s||RW[s.row]==null||LN[s.lane]==null)return {col:k%3,line:Math.floor(k/3),dx:0,dy:0};
+  const key=s.row+'|'+s.lane,d=seen[key]=(seen[key]??-1)+1;return {col:LN[s.lane],line:RW[s.row],dx:-d*30,dy:d?(d%2?18:-18):0};});};
 D.startSection=function(m,si,o={}){
  const sec=m.place.sections[si],L=D.layout(sec,m.place),W=sec.W;m.sec=si;
  const fighters=m.party.filter(D.fit),x0=D.marginX(W)+46;
- const py0=D.pathY(L,x0+60);const actors=fighters.map((g,k)=>{const a=M.createCombatActor(g,0,k);if(a.ammo>0)a.ammo=Math.round(a.ammo*D.CFG.partyAmmo);const col=k%3,line=Math.floor(k/3);a.x=o.headless?x0+60:x0-150-line*52-(col===1?0:20);a.y=py0+(col-1)*52+(line%2?14:0);a.r=12;a.a=0;a.cool=.6+(k%3)*.12;return a;});
+ const py0=D.pathY(L,x0+60),sp0=D.slotPos(m,fighters);const actors=fighters.map((g,k)=>{const a=M.createCombatActor(g,0,k);/* ein Netz bleibt ein Netz (Wunsch 4.11.: wurde sonst dreimal geworfen); Wurfspeere/-äxte wie bisher */if(a.ammo>0&&M.gear(g,'weapon')?.def!=='net')a.ammo=Math.round(a.ammo*D.CFG.partyAmmo);const {col,line,dx,dy}=sp0[k];a.x=o.headless?x0+60:x0-150-line*52-(col===1?0:20)+dx;a.y=py0+(col-1)*52+(line%2?14:0)+dy;a.r=12;a.a=0;a.cool=.6+(k%3)*.12;return a;});
  const b={id:'outside-'+m.seed+'-s'+si,benchmark:true,mission:m,section:si,L,actors,opponent:m.kind==='adventure'?(m.texts?.band||'Bande'):'Dorftrottel',champion:false,time:0,type:'mission',league:0,log:[],paused:true,result:null,lastSave:0,obstacles:L.obstacles.map(x=>({...x})),fee:0,
   teamTactics:M.copy(TACTICS),leaders:[null,null],moraleBonus:[0,0],width:W,height:L.H,groundWeapons:[],dropped:[],
   queue:[],spawns:[],spawnT:1,spawnIndex:0,gearSnap:new Map(fighters.map(g=>[g,g.enemyGear?{...g.enemyGear,armor:{...g.enemyGear.armor}}:{equipment:{...g.equipment,armor:{...(g.equipment.armor||{})}}}])),enemiesAll:[],encEnemies:[],events:[],started:false,done:null,bossHurt:false,encounter:-1,triggered:new Set()};

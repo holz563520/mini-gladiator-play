@@ -79,7 +79,9 @@ const role=a=>a.g.role;
 const party=b=>b.actors.filter(a=>a.team===0);
 const foes=b=>b.actors.filter(a=>a.team===1&&fit(a));
 function lowThreat(e){if(!fit(e))return true;if(M.harmless?.(e))return true;const ls=M.limbState?.(e.g),hp=M.health(e.g);
- return hp<26||e.g.blood<34||(ls&&(ls.lostLeg||Math.max(ls.left,ls.right)<.3))||(e.kneeTimer>0&&hp<40);}
+ return hp<26||e.g.blood<34||(ls&&(ls.lostLeg||Math.max(ls.left,ls.right)<.3))||(e.kneeTimer>0&&hp<40)||limper(e);}
+/* humpelt oder ist verlangsamt und bedroht gerade niemanden (Wunsch 4.11.): später erledigen */
+function limper(e){return !!(M.lameFoe?.(e)&&!M.threatNow?.(e,1-e.team));}
 L.lowThreat=lowThreat;
 const say=(b,a,text,kind,o={})=>{const ld=b.lead;if(!a)return;ld.lastSay=b.time;ld.stats.calls++;b.events.push({type:'lead',actor:a,text,kind,leader:a.id===ld.leaderId,...o});};
 const leaderActor=b=>b.actors.find(a=>a.id===b.lead?.leaderId);
@@ -316,14 +318,14 @@ function helpCall(b,me){const ld=b.lead,P=party(b).filter(a=>fit(a)&&!ld.hidden.
   return true;}return false;}
 function switchCall(b,me){const ld=b.lead,P=party(b).filter(a=>fit(a)&&!ld.hidden.includes(a.id)),E=foes(b);if(ld.q.sharp<25)return false;
  const danger=E.filter(e=>!lowThreat(e));if(!danger.length)return false;
- for(const e of E){if(!lowThreat(e))continue;const beaters=P.filter(a=>a.target===e.id&&dist(a,e)<100&&!isRanged(a));
-  if(beaters.length<2&&!(beaters.length===1&&danger.some(d=>{const t=b.actors.find(x=>x.id===d.target);return t&&t.team===0&&!P.some(h=>h!==t&&h.target===d.id);})))continue;
+ for(const e of E){if(!lowThreat(e)&&!(M.lameFoe?.(e)&&!(e.ammo>0&&isRanged(e))))continue;const lame=M.lameFoe?.(e)&&M.health(e.g)>=26&&!(e.ammo>0&&isRanged(e)),beaters=P.filter(a=>a.target===e.id&&dist(a,e)<(lame?340:100)&&!isRanged(a)&&!(lame&&e.target===a.id&&dist(a,e)<130));
+  if(!(lame&&beaters.length)&&beaters.length<2&&!(beaters.length===1&&danger.some(d=>{const t=b.actors.find(x=>x.id===d.target);return t&&t.team===0&&!P.some(h=>h!==t&&h.target===d.id);})))continue;
   if(!cool(b,'sw'+e.id,8))continue;
-  const keep=beaters.length>=2?beaters.slice().sort((x,y)=>dist(x,e)-dist(y,e))[0]:null,go=beaters.filter(a=>a!==keep);if(!go.length)continue;
+  const keep=lame?null:beaters.length>=2?beaters.slice().sort((x,y)=>dist(x,e)-dist(y,e))[0]:null,go=beaters.filter(a=>a!==keep);if(!go.length)continue;
   // gefährlichster: greift einen von uns an und hat die wenigsten Gegner
   const d=danger.slice().sort((x,y)=>score(x)-score(y))[0];function score(t){const att=P.filter(h=>h.target===t.id).length,hits=b.actors.find(x=>x.id===t.target)?.team===0?-1:0;return att*2+hits+dist(go[0],t)/300;}
   ld.stats.switches++;
-  say(b,me,fill(pick(['{B}! Lasst {E} liegen, der ist erledigt! Geht auf {D}!','{B}, {E} stirbt auch ohne euch! Nehmt {D}!','Hört auf, {E} zu verprügeln! {D} ist gefährlicher! {B}, los!']),{B:names(go),E:first(e.g),D:first(d.g)}),'switch',{subject:e.id,target:d.id});
+  say(b,me,fill(pick(lame?['{B}! {E} humpelt nur, der läuft nicht weg! Erst {D}!','Lasst {E} hinken, {B}! {D} ist die Gefahr!','{B}, {E} holen wir uns später! Jetzt {D}!']:['{B}! Lasst {E} liegen, der ist erledigt! Geht auf {D}!','{B}, {E} stirbt auch ohne euch! Nehmt {D}!','Hört auf, {E} zu verprügeln! {D} ist gefährlicher! {B}, los!']),{B:names(go),E:first(e.g),D:first(d.g)}),'switch',{subject:e.id,target:d.id});
   for(const a of go){const fl=L.follow(a.g,'leave');if(Math.random()>fl.obey){ignored(b,a);continue;}later(b,ld.q.react*.5+fl.react*rnd(.8,1.2),()=>{if(fit(a)&&fit(d)){order(b,a,d,{avoid:e,time:7});ack(b,a,.3);}});}
   return true;}return false;}
 function skirmish(b,dt,me){const ld=b.lead;if(!ld.alert)return;const E=foes(b);if(!E.length)return;
@@ -449,7 +451,7 @@ function arenaThink(b,me,talkOk){const ld=b.lead,P=party(b).filter(a=>fit(a)),E=
  // Pfeile verteilen, solange noch kein Nahkampf läuft (manchmal auch später wieder)
  if(!melee(b)&&volley(b,false))return;
  // Sammelziel: der gefährlichste Gegner (Schütze, Spitzenwaffe, oder einer, der einen von uns gerade zerlegt)
- if(cool(b,'focusChk',4)){const beating=E.find(e=>{const t=b.actors.find(x=>x.id===e.target);return t&&t.team===0&&M.health(t.g)<55&&dist(e,t)<90;}),cand=beating||E.find(isRanged)||E.slice().sort((x,y)=>powerScore(y)-powerScore(x))[0];
+ if(cool(b,'focusChk',4)){const beating=E.find(e=>{const t=b.actors.find(x=>x.id===e.target);return t&&t.team===0&&M.health(t.g)<55&&dist(e,t)<90;}),E2=E.filter(e=>!lowThreat(e)),cand=beating||E2.find(isRanged)||(E2.length?E2:E).slice().sort((x,y)=>powerScore(y)-powerScore(x))[0];
   if(cand&&cool(b,'focus',12)){const go=P.filter(a=>a.target!==cand.id&&!a.leadRetreat&&!E.some(e=>e!==cand&&e.target===a.id&&dist(e,a)<70)).sort((x,y)=>dist(x,cand)-dist(y,cand)).slice(0,3);
    if(go.length){ld.stats.focus++;say(b,me,fill(pick(['Alle auf {E}! {N}, los!','{N}: {E}! Den zuerst!','{E} ist der Gefährlichste! {N}, macht ihn fertig!']),{E:first(cand.g),N:names(go)}),'focus');
     for(const a of go){const fl=L.follow(a.g);if(Math.random()>fl.obey){ignored(b,a);continue;}later(b,ld.q.react*.5+fl.react*rnd(.8,1.2),()=>{if(fit(a)&&fit(cand)){order(b,a,cand,{time:7});ack(b,a,.3);}});}return;}}}

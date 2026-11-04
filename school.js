@@ -54,7 +54,14 @@ function equipmentBase(g,i,slot,mode){const v=M.itemStats(i),skill=(g.mastery[i.
 // über S.army.forceTalent (Kaserne/Schnell-Ausrüstung). Für jeden Waffenplatz, den die Klasse nutzt, wird die Gattung mit dem
 // höchsten SOLL unter den für die Klasse erlaubten Waffen genommen – auch wenn der IST-Wert niedriger ist oder im Lager eine
 // stärkere Waffe liegt. Liegt keine Waffe dieser Gattung frei im Lager, wählt das Spiel wie bisher die beste. Höheres SOLL zuerst.
-const forcedFor=g=>!!(g.forceWeaponClass||S.army?.forceTalent);
+const forcedFor=g=>!!(g.forceWeaponClass||S.army?.forceTalent||g.forceWeaponDef);
+// Feste Waffe (Wunsch Thomas 4.11.): g.forceWeaponDef = Waffengattung, die automatisch ausrüsten statt der Gattung mit dem höchsten
+// SOLL nehmen muss (Doktor, Behandlungstisch). Gilt für den Platz, zu dem sie passt; passt sie nicht (mehr) zur Klasse, wie bisher.
+// Feste Wahl geht vor der Talent-Reihenfolge. Fehlt sie im Lager, die beste andere Waffe.
+function chosenClass(g,slot){const id=g?.forceWeaponDef;if(!id)return null;const w=M.weaponDefs.find(w=>w.id===id);if(!w)return null;
+ const ok=slot==='weapon'?!!(w.ammo&&M.allowedRanged(g,w.id)):!w.ammo&&M.allowedMelee(g,w.id);return ok?{def:w.id,name:w.name,slot,soll:g.caps?.weapons?.[w.id]||0,pick:true}:null;}
+M.chosenWeaponClass=chosenClass;
+function targetClass(g,slot){return chosenClass(g,slot)||(g.forceWeaponClass||S.army?.forceTalent?bestClass(g,slot):null);}
 function bestClass(g,slot){let top=null,v=-1;for(const w of M.weaponDefs){if(slot==='weapon'?!(w.ammo&&M.allowedRanged(g,w.id)):(w.ammo||!M.allowedMelee(g,w.id)))continue;const c=g.caps?.weapons?.[w.id]||0;if(c>v){v=c;top=w;}}return top?{def:top.id,name:top.name,slot,soll:v}:null;}
 M.bestWeaponClass=bestClass;
 // Warum liegt die Waffe der besten Klasse nicht bereit? (für Meldung und Doktor-Übersicht)
@@ -67,11 +74,11 @@ function autoEquip(gs=S.roster,priority='balanced',opt={}){if(S.battle)return 'W
  for(const g of target)for(const k of slots)if(!g.locks[k])putSlot(g,k,null);
  const groups={};for(const i of S.inventory){if(held.has(i.id)||i.durability<=0)continue;const k=i.kind==='weapon'?(M.definition(i).ammo?'weapon':'secondary'):i.kind==='shield'?'shield':i.def;(groups[k]??=[]).push(i);}
  let assigned=0;const notes=[],forced=new Set();let forcedN=0,missingT=0;
- const why=[],moves=[];{const want=[];for(const g of target)if(forcedFor(g))for(const slot of ['secondary','weapon']){const t=bestClass(g,slot);if(!t)continue;if(g.locks[slot]){if(slot==='secondary')why.push(g.name.split(' ')[0]+': '+t.name+' – Waffenplatz gesperrt');continue;}want.push({g,t});}want.sort((a,b)=>b.t.soll-a.t.soll);
+ const why=[],moves=[];{const want=[];for(const g of target)if(forcedFor(g))for(const slot of ['secondary','weapon']){const t=targetClass(g,slot);if(!t)continue;if(g.locks[slot]){if(slot==='secondary')why.push(g.name.split(' ')[0]+': '+t.name+' – Waffenplatz gesperrt');continue;}want.push({g,t});}const wkey=t=>(t.pick?1e4:0)+t.soll;want.sort((a,b)=>wkey(b.t)-wkey(a.t));
   // Vorrang nach Talent (Wunsch Thomas): höheres SOLL in der Klasse bekommt die bessere Waffe – auch wenn sie gerade ein anderer
   // mit geringerem Talent trägt (nicht gesperrt). Der gibt sie ab und bekommt die bisherige Waffe des Talentierteren oder die beste freie.
   for(const {g,t} of want){let best=null,score=-Infinity,from=null;for(const i of groups[t.slot]||[]){if(held.has(i.id)||i.def!==t.def)continue;const v=equipmentBase(g,i,t.slot,priority);if(v>score){score=v;best=i;from=null;}}
-   for(const x of S.roster){if(ids.has(x.id)||x.dead)continue;for(const k2 of ['weapon','secondary']){const i=M.inventoryItem(getSlot(x,k2));if(!i||i.def!==t.def||i.durability<=0||x.locks?.[k2]||(x.caps?.weapons?.[t.def]||0)>=t.soll)continue;const v=equipmentBase(g,i,t.slot,priority);if(v>score){score=v;best=i;from={x,k2};}}}
+   for(const x of S.roster){if(ids.has(x.id)||x.dead)continue;for(const k2 of ['weapon','secondary']){const i=M.inventoryItem(getSlot(x,k2));if(!i||i.def!==t.def||i.durability<=0||x.locks?.[k2]||(x.caps?.weapons?.[t.def]||0)>=t.soll||(x.forceWeaponDef===t.def&&!t.pick))continue;const v=equipmentBase(g,i,t.slot,priority);if(v>score){score=v;best=i;from={x,k2};}}}
    if(best&&from){const {x,k2}=from;putSlot(x,k2,null);const fits=i=>i&&i.durability>0&&!held.has(i.id)&&(k2==='secondary'?M.allowedMelee(x,i):M.allowedRanged(x,i));
     let rep=M.inventoryItem(prev[g.id]?.[k2]);if(!fits(rep)){rep=null;let sc=0;for(const i of groups[k2]||[]){if(!fits(i))continue;const v=equipmentValue(x,i,k2,priority);if(v>sc){sc=v;rep=i;}}}
     if(rep){putSlot(x,k2,rep.id);held.add(rep.id);}moves.push(g.name.split(' ')[0]+' ← '+t.name+' von '+x.name.split(' ')[0]+' (Talent '+Math.round(t.soll)+' > '+Math.round(x.caps?.weapons?.[t.def]||0)+')'+(rep?', '+x.name.split(' ')[0]+' bekommt '+M.itemName(rep).split(' · ')[0]:''));}
@@ -87,7 +94,7 @@ function autoEquip(gs=S.roster,priority='balanced',opt={}){if(S.battle)return 'W
    if(best){const before=getSlot(x,k);putSlot(x,k,best.id);if(getSlot(x,k)===best.id){used.add(best.id);if(before)used.delete(before);}}
    else if(k==='secondary'&&!x.trainingWeapon)x.trainingWeapon=def; /* keine Waffe dieser Gattung frei: Unterricht bleibt bei der bisherigen Gattung */}}
  M.world?.syncOwners();audit('Ausrüstung: '+assigned+' Teile verteilt ('+priority+'). '+notes.slice(0,8).join(' · ')+(notes.length>8?' …':''));M.persist();const whyTxt=why.map(w=>typeof w==='string'?w:w.txt+' → '+M.itemName(M.gear(w.g,w.t.slot)).split(' · ')[0]);
- return assigned+' Ausrüstungsteile zugewiesen.'+(target.some(forcedFor)?' Beste Waffenklasse erzwungen: '+forcedN+'×.'+(moves.length?' Nach Talent umverteilt: '+moves.slice(0,4).join(' · ')+'.':'')+(whyTxt.length?' Nicht möglich – '+whyTxt.slice(0,4).join(' · ')+(whyTxt.length>4?' …':'')+'.':''):'')+(take?(taken?' '+taken+' Teile von Gladiatoren außerhalb der Gruppe übernommen.':'')+' Gesperrte Plätze bleiben geschützt.':' Sperren und außerhalb der Auswahl angelegte Gegenstände bleiben geschützt.');}
+ return assigned+' Ausrüstungsteile zugewiesen.'+(target.some(forcedFor)?(target.some(g=>g.forceWeaponDef)?' Feste Waffe / beste Waffenklasse':' Beste Waffenklasse')+' erzwungen: '+forcedN+'×.'+(moves.length?' Nach Talent umverteilt: '+moves.slice(0,4).join(' · ')+'.':'')+(whyTxt.length?' Nicht möglich – '+whyTxt.slice(0,4).join(' · ')+(whyTxt.length>4?' …':'')+'.':''):'')+(take?(taken?' '+taken+' Teile von Gladiatoren außerhalb der Gruppe übernommen.':'')+' Gesperrte Plätze bleiben geschützt.':' Sperren und außerhalb der Auswahl angelegte Gegenstände bleiben geschützt.');}
 function savePlan(){const p=plan();if(!p)return;for(const g of M.selectedTeam()){p.classes[g.id]=g.role;p.loadouts[g.id]=M.copy(g.equipment);}p.tactics=M.copy(S.tactics);p.formation=S.tactics.formation;M.persist();}
 function activateTeam(index){savePlan();if(!S.teamPlans[index])return;S.teamIndex=index;S.tactics=M.copy(plan().tactics);M.persist();}
 function newTeam(name='Neue Gruppe',size=3){if(![1,2,3,5,10,15,20,30,50,75,100].includes(+size))return;const existing=S.teamPlans.findIndex(p=>p.size===+size);if(existing>=0){activateTeam(existing);return;}S.teams.push([]);S.teamPlans.push({name:name.slice(0,40),size:+size,leader:null,reserves:[],formation:'Normal',tactics:M.copy(S.tactics),classes:{},loadouts:{}});activateTeam(S.teams.length-1);}

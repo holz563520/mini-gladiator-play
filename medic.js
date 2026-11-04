@@ -109,7 +109,7 @@ function traderActor(x,y){return {id:'medic-trader',g:M.trader.figure(),team:0,x
 function recActor(g,i){const v=vis(g),at=v.at||ROW[i];return {id:'mr-'+g.id,g,slot:i,team:0,x:at[0],y:at[1],a:Math.PI,phase:i*1.7,state:'idle',energy:100,ammo:0,moveSpeed:0,unarmored:true,noNav:true,seed:i*2.3};}
 const pose=(a,o)=>Object.assign(a,{state:'idle',moveSpeed:0,traderPose:null,forgePose:'',...o});
 const RANGED={bow:'Fernkämpfer',crossbow:'Fernkämpfer',net:'Soldat',javelin:'Assassine',throwaxe:'Assassine'};
-const hold=(a,def)=>{a.role0??=a.g.role;a.g.role=RANGED[def]||a.role0;a.g.enemyGear.secondary=def&&!RANGED[def]?item(def):null;a.g.enemyGear.weapon=def&&RANGED[def]?item(def):null;a.ammo=a.g.enemyGear.weapon?3:0;a.forgeHold=def?null:'beer';a.held=def||null;};
+const hold=(a,def)=>{a.role0??=a.g.role;a.g.role=RANGED[def]||a.role0;a.g.enemyGear.secondary=def&&!RANGED[def]?item(def):null;a.g.enemyGear.weapon=def&&RANGED[def]?item(def):null;a.ammo=a.g.enemyGear.weapon?(def==='net'?1:3):0;a.forgeHold=def?null:'beer';a.held=def||null;};
 function walker(a,dt){if(!a.to)return false;const dx=a.to[0]-a.x,dy=a.to[1]-a.y,d=Math.hypot(dx,dy),s=(a.to[2]||40)*dt;if(d<=s){a.x=a.to[0];a.y=a.to[1];if(a.to[3]!=null)a.a=a.to[3];a.to=null;a.state='idle';a.moveSpeed=0;return false;}a.x+=dx/d*s;a.y+=dy/d*s;a.state='move';a.moveSpeed=10;a.odo=(a.odo||0)+s;a.phase=a.odo*.267;if(Math.abs(dx)>.5)a.a=dx>0?0:Math.PI;return true;}
 // Sichtbarer Zustand eines Rekruten aus dem gemerkten Szenenzustand (übersteht Überspringen und Szenenwahl)
 function applyVis(a,dt){const v=vis(a.g),s=st();a.shackled=s.chained>a.slot&&!v.free;if(a.fallT>0){a.fallT-=dt;a.fallDuration=2.1;a.fallTimer=1.3+Math.max(0,a.fallT);a.down=false;}else{a.fallTimer=0;a.down=!!v.down;}

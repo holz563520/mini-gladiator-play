@@ -230,12 +230,26 @@ function boardPage(){const st=ST();
  requestAnimationFrame(paintBoard);
  return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">PLÜNDERUNGEN · VOR DEM TOR</p><h1>${quest?'Krassus wartet':'Auf zum Plündern'}</h1></div><div class="buttons"><button class="btn" data-action="nav:home">‹ Ludus</button><button class="btn" data-action="outside:intro">▶ Szene „Der Schuldeneintreiber“</button></div></div>
  <div class="ow-cols"><div>${card}</div>
- <div class="box"><h2>Wer geht mit?</h2><p class="tiny">1 bis ${D.CFG.maxParty} Kämpfer. Kein Steuern unterwegs: nur Weiter oder Fliehen. Fliehen geht immer. Verletzungen bleiben, Tote bleiben tot. Nach jedem gesäuberten Ort eine kurze Rast.</p>
+ ${window.AufstellungUI?.open?lineupBox(team,quest,can,hist,ldr):`<div class="box"><h2>Wer geht mit?</h2><p class="tiny">1 bis ${D.CFG.maxParty} Kämpfer. Kein Steuern unterwegs: nur Weiter oder Fliehen. Fliehen geht immer. Verletzungen bleiben, Tote bleiben tot. Nach jedem gesäuberten Ort eine kurze Rast.</p>
   <div class="buttons"><button class="btn" data-action="outside:auto:5">Beste 5</button><button class="btn" data-action="outside:auto:10">Beste 10</button><button class="btn" data-action="outside:none">Keiner</button><button class="btn" data-action="outside:equip" title="Verteilt die beste freie Ausrüstung aus dem Lager an die gewählten Kämpfer (gesperrte Plätze bleiben)">⚔ Gruppe ausrüsten</button></div>
   ${leadBox}<div class="ow-picks">${rows||'<p>Keine Kämpfer im Kader.</p>'}</div>
   <p class="ow-need ${can?'ok':''}">${n>D.CFG.maxParty?'Höchstens '+D.CFG.maxParty+' Kämpfer.':n<1?'Mindestens ein kampffähiger Kämpfer.':n+' von höchstens '+D.CFG.maxParty+' gewählt.'}</p>
   <div class="buttons"><button class="btn primary" data-action="outside:go" ${can?'':'disabled'}>Aufbrechen ▶</button></div>
-  ${hist?`<h3>Unterwegs gewesen</h3><ul class="ow-hist">${hist}</ul>`:''}</div></div></section>`;}
+  ${hist?`<h3>Unterwegs gewesen</h3><ul class="ow-hist">${hist}</ul>`:''}</div>`}</div></section>`;}
+// Aufstellung wie in der Arena (Wunsch Thomas 4.11.): Gruppe, Raster (= Marschordnung) und Anführer kommen aus AufstellungUI
+function lineupBox(team0,quest,can,hist,ldr0){const ok=quest||adventureReady(),st=ST(),ids=(S.aufstellung?.lineup||[]).map(x=>x.id),team=ids.map(id=>fighters().find(g=>g.id===id)).filter(g=>g&&D.fit(g)).slice(0,D.CFG.maxParty),ldr=team.find(g=>g.id===st.leaderId)||null;
+ return `<div class="box"><h2>Wer geht mit?</h2><p class="tiny">1 bis ${D.CFG.maxParty} Kämpfer, aufgestellt wie in der Arena. Das Raster ist die Marschordnung. Kein Steuern unterwegs: nur Weiter oder Fliehen. Verletzungen bleiben, Tote bleiben tot.</p>
+  ${team.length?`<p class="ow-lead">${team.map(g=>`${ldr&&ldr.id===g.id?'★ ':''}${ROLE_ICON[g.role]||''} ${esc(g.name)}`).join(' · ')}</p>`:''}
+  <p class="ow-need ${ok?'ok':''}">${ok?(team.length?team.length+' Kämpfer stehen in der Aufstellung.':'Noch niemand aufgestellt.'):'<b class="red">Heute wart ihr schon plündern. Morgen wieder.</b>'}</p>
+  <div class="buttons"><button class="btn primary" data-action="outside:lineup" ${fighters().some(D.fit)?'':'disabled'}>Zur Aufstellung ▶</button></div>
+  ${hist?`<h3>Unterwegs gewesen</h3><ul class="ow-hist">${hist}</ul>`:''}</div>`;}
+function openLineup(){const st=ST(),U=window.AufstellungUI;if(!U?.open)return false;const quest=st.stage!=='done';if(quest)st.quest??=newQuestPlace();else st.adv??=newAdventure();
+ const P=placeFor(quest?'quest':'adventure'),dv=st.adv?.diff||2;
+ U.open({adventure:{title:quest?'Der Schuldeneintreiber · '+P.name:(st.adv.mode==='wagon'?'Wagenüberfall · ':'Bandenjagd · ')+P.label+' '+P.name,
+  sub:quest?'Hauptauftrag':'☠'.repeat(dv)+' '+(D.DIFF.names[dv-1]||''),info:quest?'':esc('Aussicht auf Erfolg '+DIFF_CHANCE[dv-1]+' · Gegner richten sich nach eurer Gruppe.'),
+  min:D.CFG.minParty,max:D.CFG.maxParty,leadMin:L?.CFG?.minParty||5,leaderId:st.leaderId||null,ready:quest||adventureReady(),
+  lead:id=>{st.leaderId=id;persist();},back:()=>openBoard(),
+  start:(ids,slots,lead)=>{sel=new Set(ids);st.slots=slots;if(lead)st.leaderId=lead;persist();view='board';M.ui.click('nav:outside');startMission();}}});return true;}
 function paintBoard(){const st=ST();for(const c of document.querySelectorAll('canvas[data-owmap]')){const kind=c.dataset.owmap;try{const P=kind==='quest'?placeFor('quest'):placeFor('adventure');A.map(c,P,{reveal:0,cleared:-1,progress:0,party:A.mapPoint(P,0)});}catch(e){console.error(e);}}void st;}
 function resultPage(){const r=result,cls={won:'ok',fled:'',withdrawn:'',spared:'',passed:'',lost:'red'}[r.kind]||'';requestAnimationFrame(()=>{});setTimeout(()=>window.MGRelics?.paintIcons(),0);
  return `<section class="ow-board"><div class="ow-head"><div><p class="eyebrow">PLÜNDERUNG · ZURÜCK IM LUDUS</p><h1 class="${cls}">${esc(r.title)}</h1></div><div class="buttons"><button class="btn primary" data-action="outside:board">Weiter</button><button class="btn" data-action="nav:home">‹ Ludus</button></div></div>
@@ -269,6 +283,7 @@ M.schoolClick=action=>{if(!action.startsWith('outside:'))return prevClick?prevCl
  if(k==='intro'){playIntro();return true;}
  if(k==='board'){view='board';result=null;M.ui.render();return true;}
  if(k==='open'){openBoard();return true;}
+ if(k==='lineup'){if(!openLineup())notify('Aufstellung nicht verfügbar.');return true;}
  if(k==='go'){startMission();return true;}
  return true;};
 
@@ -482,6 +497,7 @@ async function startMission(){if(S.battle||R.m)return;bypassLoader();const state
  let m;if(quest){st.quest??=newQuestPlace();m=D.newMission(st.quest.seed,team,'dorf',{kind:'quest'});m.place.name=st.quest.name;}
  else if(st.adv.mode==='wagon'&&D.newWagonMission){m=D.newWagonMission(st.adv.seed,team,st.adv.biome,{diff:st.adv.diff||2});}
  else{m=D.newMission(st.adv.seed,team,st.adv.biome,{kind:'adventure',diff:st.adv.diff||2,avoid:st.recentLeaders||[]});if(m.boss?.notorious)st.recentLeaders=[m.boss.notorious,...(st.recentLeaders||[]).filter(x=>x!==m.boss.notorious)].slice(0,8);}
+ m.slots=window.AufstellungUI?.open&&st.slots?Object.fromEntries(team.filter(g=>st.slots[g.id]).map(g=>[g.id,st.slots[g.id]])):null;
  R.missionTime=0;R.lastSeen=null;R.m=m;R.zoom=R.zoomPref||1;R.ended=false;R.ending=false;R.fleeing=false;R.progress=0;R.rows=[];R.rowKey=0;R.full=[];R.lastTime=0;R.awaiting='march';R.runId='run'+Date.now();loopT={map:0,info:0};
  if(quest)st.tries++;else{st.lastAdventure=S.day;st.adventures++;}
  st.run={id:R.runId,kind:m.kind,place:m.place.name,day:S.day,party:team.map(g=>g.id)};persist();
@@ -506,7 +522,7 @@ function clearPoint(b,x,y){for(let k=0;k<12;k++){const yy=y+(k%2?1:-1)*Math.ceil
 // Fortschritt), plant neu. Alle brechen gemeinsam auf (nur kleine Verzögerung) und der Marsch endet erst, wenn alle da sind.
 function freeSpot(b,x,y){for(let k=0;k<18;k++){const yy=y+(k%2?1:-1)*Math.ceil(k/2)*16;if(D.navFreeAt(b,x,yy))return yy;}return y;}
 function routeTo(b,a,tx,ty,sp){const path=D.findPath(b,a.x,a.y,tx,ty);const pts=(path&&path.length?path:[{x:tx,y:ty}]).map(p=>[p.x,p.y,sp]);a.to=pts.shift();a.path=pts;a.goal=[tx,ty,sp];}
-function marchTo(b,x,sp=58){if(!b.started)LU?.stow(b,true);const pa=partyActors(b);pa.forEach((a,k)=>{a.startDelay=Math.random()*.45;const col=k%3,line=Math.floor(k/3),tx=x-line*60-(col===1?0:26)+(Math.random()-.5)*44,y=freeSpot(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*58+(Math.random()-.5)*20,b.L.mT+30,b.L.mB-30));routeTo(b,a,tx,y,sp);a.face=0;a.replan=0;});
+function marchTo(b,x,sp=58){if(!b.started)LU?.stow(b,true);const pa=partyActors(b),sp0=D.slotPos(R.m,pa.map(a=>a.g));pa.forEach((a,k)=>{a.startDelay=Math.random()*.45;const {col,line,dx,dy}=sp0[k],tx=x-line*60-(col===1?0:26)+dx+(Math.random()-.5)*44,y=freeSpot(b,tx,clamp(D.pathY(b.L,tx)+(col-1)*58+dy+(Math.random()-.5)*20,b.L.mT+30,b.L.mB-30));routeTo(b,a,tx,y,sp);a.face=0;a.replan=0;});
  R.marching=true;setButtons('march');const start=performance.now(),prog=new Map();
  return new Promise(res=>{const chk=()=>{if(!live(b)){R.marching=false;return res(false);}const now=performance.now();
    if(M.ui.getPage()==='profiles'){setTimeout(chk,200);return;}
