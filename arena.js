@@ -754,7 +754,9 @@ function drawTorso(){const [mk,thin]=armBuild(g),fat=clamp(((g.fat??16)-12)/14,0
  lx=y=>pelvis.x+(chest.x-pelvis.x)*clamp((-30-y)/(-30-chest.y),0,1.3),bel=bare?0:fat*1.6;
  for(let o=1;o>=0;o--){ctx.beginPath();for(const [y,w] of L){ctx.lineTo(lx(y)+w+o+(y>-40&&y<-28?bel:0),y-(y===L[0][0]?o:0));}for(let k=L.length-1;k>=0;k--){const [y,w]=L[k];ctx.lineTo(lx(y)-w-o,y-(k===0?o:0)+(k===L.length-1?o:0));}ctx.closePath();ctx.fillStyle=o?'#29332d':col;ctx.fill();}
  const cx=lx(-44),hi=fine&&renderQuality>=.9,dk=skinShade+'cc',lit='#f4d3af66';
- if(armd){armorChest(armorMap.chest,chest.x,chest.y+7);return;}
+ if(armd){/* Brustpanzer sitzt auf dem Körper (Wunsch Thomas 4.11.): auf die Rumpfform beschnitten, so breit wie der Rumpf und mit der Neigung (Brust gegenüber Becken) geschert – ein clip und eine Transformation je Figur, keine zusätzlichen Pixel */
+  /* Leistung: Beschneiden nur bei voller Detailstufe; in großen Schlachten bzw. bei gedrosselter Grafik nur Neigung und Breite */ctx.save();if(hi){ctx.beginPath();for(const [y,w] of L)ctx.lineTo(lx(y)+w+(y>-40&&y<-28?bel:0),y);for(let k=L.length-1;k>=0;k--){const [y,w]=L[k];ctx.lineTo(lx(y)-w,y);}ctx.closePath();ctx.clip();}
+  const sk=(lx(-30)-lx(chest.y))/(-30-chest.y),fx=hi?Math.max(1,(2*Math.max(sh,rib)+2)/19):Math.max(1,(2*sh-1)/19);ctx.translate(chest.x,chest.y+7);ctx.transform(fx,0,sk,1,0,0);armorChest(armorMap.chest,0,0);ctx.restore();return;}
  if(bare){/* nackter Oberkörper: Brustmuskeln, Brustbein, Bauchmuskeln je nach Stärke; Speckbauch bei viel Fett */
   if(back){if(hi)muscleLines(dk,{x:lx(-50),y:chest.y-1},{x:lx(-32),y:-32},{x:cx-6,y:chest.y+4},{x:cx-2,y:chest.y+9},{x:cx+6,y:chest.y+4},{x:cx+2,y:chest.y+9});return;}
   if(hi&&mk>.12){muscleLines(dk,{x:cx-8-mk,y:chest.y+7+mk},{x:cx-1,y:chest.y+8+mk*.6},{x:cx+1,y:chest.y+8+mk*.6},{x:cx+8+mk,y:chest.y+7+mk},{x:cx,y:chest.y-1},{x:cx,y:chest.y+8});rect(cx-6,chest.y+2,3,2,lit);rect(cx+3,chest.y+2,3,2,lit);
