@@ -44,6 +44,7 @@ function sand(q,T,o,t){const c=stillArt('sand',FW,FH+40,sandBase);if(c&&typeof q
  if(o.pool>0){const r=10+o.pool*24;for(let j=-r;j<=r;j++){const hw=Math.sqrt(r*r-j*j)*1.6;T.r(80-hw,88+j*.45,hw*2,1,j>r*.3?'#5e1f1c':'#8f2f28');}}}
 // ---------- Schultern und Rüstung ----------
 function torso(q,T,C,o,yaw){/* Besondere Gladiatoren (4.11.): breitere Schultern */const SW={sumo:1.8,giant:1.5,dwarf:1.35}[o.g?.stature]||1,H=o.ground?FH+38:FH,sx=Math.round(yaw*3),A=o.armor||{},chest=A.chestplate,sk=C.skin,sh=C.shade,row=(y,hw,c0,c1,c2)=>{/* gleiche Pixel wie früher, aber gleichfarbige Nachbarn als ein Streifen statt einzeln (Leistung) */const e=Math.ceil(hw);let x0=-e,cp=null;for(let x=-e;x<=e;x++){const c=x<e?(x/hw>.5?c2:x/hw<-.55?c0:c1):null;if(c!==cp){if(cp!==null)T.r(80+sx+x0,y,x-x0,1,cp);x0=x;cp=c;}}};
+ /* breiter Hals, der weich in die Schultern übergeht (sonst wirkt der Hals bei breiten Figuren abgeschnitten) */if(SW>1)for(let y=56;y<80;y++){const u=(y-56)/24,hw=(16+u*u*14)*SW;row(y,hw,C.light,sk,sh);if(o.g?.stature==='sumo'&&(y===66||y===73))T.r(80+sx-hw*.7,y,hw*1.4,1,mix(sh,'#3b2523',.35));}
  for(let y=80;y<H;y++){const hw=(30+(y-80)*4.4)*SW;row(y,Math.min(80,hw),C.light,sk,sh);}
  // Trapezmuskel und Schlüsselbein
  T.r(80+sx-30,88,22,1,C.light);T.r(80+sx+10,88,22,1,sh);
