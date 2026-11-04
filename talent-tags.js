@@ -18,7 +18,7 @@ function tier(p){try{const t=M.barracks?.tierOf?.(p);if(t)return t;}catch{}const
 const COL=['#6f7774','#7d8580','#8f9a8f','#a3b58c','#88baa6','#7fb1d6','#dfb66d','#f0c46a','#c79cf0','#ff7a6a'];
 function tagFor(g){const p=Math.round(g.potential||0),t=tier(p),lvl=Math.max(1,Math.min(10,t.level||1));
  const s=document.createElement('span');s.className='tal-b'+(lvl>=7?' tal-hi':'');s.dataset.tal=g.id;s.dataset.p=p;
- s.style.setProperty('--tal',COL[lvl-1]);s.textContent='T'+p+(g.stature==='dwarf'?' ▼':g.stature==='giant'?' ▲':'');s.title='Talent '+p+' · '+t.name+(g.stature?' · '+(g.stature==='dwarf'?'Kleinwuchs':'Riesenwuchs')+' (Publikumsliebling)':'');s.setAttribute('aria-label','Talent '+p+', '+t.name);return s;}
+ s.style.setProperty('--tal',COL[lvl-1]);s.textContent='T'+p+(g.stature==='dwarf'?' ▼':g.stature==='giant'?' ▲':g.stature==='sumo'?' ●':'');s.title='Talent '+p+' · '+t.name+(g.stature?' · '+({dwarf:'Kleinwuchs',giant:'Riesenwuchs',sumo:'Sumo'}[g.stature])+' (Publikumsliebling)':'');s.setAttribute('aria-label','Talent '+p+', '+t.name);return s;}
 // Kleine Hilfe für andere Bausteine (z. B. die Aufstellung): HTML des Abzeichens
 M.talentTag=g=>{if(!g||g.potential==null)return '';const el=tagFor(g);return el.outerHTML;};
 
