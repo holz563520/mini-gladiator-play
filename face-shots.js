@@ -43,7 +43,7 @@ function sandBase(q,T){T.r(0,0,FW,FH+40,'#b38c54');for(let y=0;y<FH+40;y+=2)for(
 function sand(q,T,o,t){const c=stillArt('sand',FW,FH+40,sandBase);if(c&&typeof q.drawImage==='function')q.drawImage(c,0,0);else sandBase(q,T);
  if(o.pool>0){const r=10+o.pool*24;for(let j=-r;j<=r;j++){const hw=Math.sqrt(r*r-j*j)*1.6;T.r(80-hw,88+j*.45,hw*2,1,j>r*.3?'#5e1f1c':'#8f2f28');}}}
 // ---------- Schultern und Rüstung ----------
-function torso(q,T,C,o,yaw){/* Besondere Gladiatoren (4.11.): breitere Schultern */const SW={sumo:1.45,giant:1.25,dwarf:1.2}[o.g?.stature]||1,H=o.ground?FH+38:FH,sx=Math.round(yaw*3),A=o.armor||{},chest=A.chestplate,sk=C.skin,sh=C.shade,row=(y,hw,c0,c1,c2)=>{/* gleiche Pixel wie früher, aber gleichfarbige Nachbarn als ein Streifen statt einzeln (Leistung) */const e=Math.ceil(hw);let x0=-e,cp=null;for(let x=-e;x<=e;x++){const c=x<e?(x/hw>.5?c2:x/hw<-.55?c0:c1):null;if(c!==cp){if(cp!==null)T.r(80+sx+x0,y,x-x0,1,cp);x0=x;cp=c;}}};
+function torso(q,T,C,o,yaw){/* Besondere Gladiatoren (4.11.): breitere Schultern */const SW={sumo:1.8,giant:1.5,dwarf:1.35}[o.g?.stature]||1,H=o.ground?FH+38:FH,sx=Math.round(yaw*3),A=o.armor||{},chest=A.chestplate,sk=C.skin,sh=C.shade,row=(y,hw,c0,c1,c2)=>{/* gleiche Pixel wie früher, aber gleichfarbige Nachbarn als ein Streifen statt einzeln (Leistung) */const e=Math.ceil(hw);let x0=-e,cp=null;for(let x=-e;x<=e;x++){const c=x<e?(x/hw>.5?c2:x/hw<-.55?c0:c1):null;if(c!==cp){if(cp!==null)T.r(80+sx+x0,y,x-x0,1,cp);x0=x;cp=c;}}};
  for(let y=80;y<H;y++){const hw=(30+(y-80)*4.4)*SW;row(y,Math.min(80,hw),C.light,sk,sh);}
  // Trapezmuskel und Schlüsselbein
  T.r(80+sx-30,88,22,1,C.light);T.r(80+sx+10,88,22,1,sh);
@@ -64,7 +64,7 @@ function torso(q,T,C,o,yaw){/* Besondere Gladiatoren (4.11.): breitere Schultern
 function head(q,T,C,o,yaw,t,mood){
  const r=T.r,dx=Math.round(yaw*4),cx=80+dx,cy=10,m=MOODS[mood]||MOODS.calm;
  let seed=2166136261;for(const c of String(o.g?.appearance?.faceSeed??C.faceSeed??o.g?.id??C.identity??'portrait'))seed=Math.imul(seed^c.charCodeAt(0),16777619);seed>>>=0;
- /* Besondere Gladiatoren (4.11.): Sumo rundes, breites Gesicht mit Doppelkinn, Riese langes, schweres Gesicht, Kleinwuchs breit und kurz */const STW={sumo:[1.34,.96],giant:[1.08,1.13],dwarf:[1.14,.9]}[o.g?.stature]||[1,1],sx=(.96+(seed%9)*.01)*STW[0],sy=(.98+((seed>>>5)%5)*.01)*STW[1],pale=Math.max(m.pale||0,o.pale||0),sk=mix(C.skin,'#c9c4b0',pale*.6),sh=mix(C.shade,'#8a8778',pale*.6);
+ /* Besondere Gladiatoren (4.11.): Sumo rundes, breites Gesicht mit Doppelkinn, Riese langes, schweres Gesicht, Kleinwuchs breit und kurz */const STW={sumo:[1.55,.95],giant:[1.18,1.2],dwarf:[1.28,.84]}[o.g?.stature]||[1,1],sx=(.96+(seed%9)*.01)*STW[0],sy=(.98+((seed>>>5)%5)*.01)*STW[1],pale=Math.max(m.pale||0,o.pale||0),sk=mix(C.skin,'#c9c4b0',pale*.6),sh=mix(C.shade,'#8a8778',pale*.6);
  const st=C.style,beard=C.beard;let feature=false;
  const X=x=>cx+x*sx+(feature?yaw*5:0),Y=y=>cy+y*sy;
 
@@ -76,7 +76,8 @@ function head(q,T,C,o,yaw,t,mood){
  poly([[-13,55],[12,55],[14,76],[23,82],[-23,82],[-15,76]],P.half);
  poly([[-13,58],[-3,63],[-3,78],[-16,79]],P.light);poly([[3,63],[12,58],[14,76],[22,82],[6,82]],P.shadow);
  poly([[-14,57],[14,57],[12,65],[1,70],[-11,65]],P.deep);
- if(o.g?.stature==='sumo'){/* Doppelkinn und Speckfalten am Hals */poly([[-22,52],[22,52],[20,64],[10,71],[-10,71],[-20,64]],P.outline);poly([[-21,53],[21,53],[19,63],[9,69],[-9,69],[-19,63]],P.half);poly([[-15,62],[15,62],[9,68],[-9,68]],P.shadow);R(-12,66,24,1,P.deep);}
+ if(o.g?.stature==='sumo'){/* Doppelkinn, Hängebacken und Speckfalten am Hals */poly([[-27,44],[27,44],[26,62],[14,74],[-14,74],[-26,62]],P.outline);poly([[-26,45],[26,45],[25,61],[13,72],[-13,72],[-25,61]],P.half);poly([[-18,62],[18,62],[11,71],[-11,71]],P.shadow);R(-15,67,30,1,P.deep);R(-10,71,20,1,P.deep);}
+ if(o.g?.stature==='giant'){/* massiger, kantiger Unterkiefer */poly([[-27,40],[27,40],[25,58],[14,68],[-14,68],[-25,58]],P.outline);poly([[-26,41],[26,41],[24,57],[13,66],[-13,66],[-24,57]],P.shadow);}
  if(st===3||st===4){poly([[-24,5],[-33,17],[-32,73],[-23,77],[-21,40]],P.hair);poly([[22,7],[32,18],[31,74],[23,72],[22,37]],P.hairDark);for(const x of [-30,-26,26,29])R(x,31,1,36,x<0?P.hairMid:P.hair);}
  // Ears, helix and concha remain attached to the head silhouette.
  for(const sd of [-1,1]){const x=sd*28;R(x-3,25,6,16,P.deep);R(x-3,26,5,12,sd<0?P.warm:P.half);R(x-2,27,3,2,P.light);R(x-1,30,2,7,P.shadow);R(x-2,36,2,3,P.red);}
