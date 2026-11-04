@@ -184,7 +184,7 @@ function finish(){if(!ov||!B.fight)return;const F=B.fight,own=F.own,o=F.o,f=figh
  const rest=2+Math.floor(o.L.n/4)+Math.min(3,new Set(inj).size)+(f.b[0].skull?5:0);own.boxRest={until:S().day+rest,days:rest};
  // Preisgeld
  const perf=R.points?cl(R.points[0]/Math.max(1,R.points[0]+R.points[1]),0,1):.5;
- const pay=won?o.gold.win:Math.round(o.gold.loss*(.35+.65*perf)/5)*5;
+ const crowdX=M.special?.purseFactor([own])||1,pay=(won?o.gold.win:Math.round(o.gold.loss*(.35+.65*perf)/5)*5)*crowdX;
  const s=S();s.gold+=pay;if(s.stats)s.stats.earned=(s.stats.earned||0)+pay;
  own.boxRec??={fights:0,wins:0};own.boxRec.fights++;if(won)own.boxRec.wins++;const bg=BG();bg.fights++;if(won)bg.wins++;
  try{own.history.unshift({day:s.day,text:'Boxkampf gegen '+foe+' (Stufe '+o.L.n+'): '+(won?'Sieg':R.winner<0?'Unentschieden':'Niederlage')+' · '+R.how});own.history=own.history.slice(0,100);}catch{}
@@ -197,7 +197,7 @@ function finish(){if(!ov||!B.fight)return;const F=B.fight,own=F.own,o=F.o,f=figh
 function resultScreen(){const r=B.result;if(!r){A.go('box');return;}const g=r.own,L=r.o.L,R=r.R,head=r.won?'SIEG':R.winner<0?'UNENTSCHIEDEN':'NIEDERLAGE';A.setTitle('BOXKAMPF · '+head);
  const gain=r.gains.length?r.gains.map(x=>`<li><span>${esc(x.label)}</span><b>${nf(x.from,1)} → ${nf(x.to,1)}</b><small>+${nf(x.to-x.from,2)}</small></li>`).join(''):'<li class="none">Diesmal kein spürbarer Fortschritt (Obergrenze erreicht oder zu kurzer Kampf).</li>';
  A.view.innerHTML=`<section class="an-res bx-res ${r.won?'won':'lost'}"><p class="eyebrow">Stufe ${L.n} · ${esc(L.label)} · ${esc(r.o.g.name)}</p><h1>${head}</h1><p class="bx-how">${esc(R.how)} nach ${nf(R.time,0)} Sekunden · Punkte ${Math.round(R.points?.[0]||0)} : ${Math.round(R.points?.[1]||0)}</p>
-  <div class="an-pay"><small>${r.won?'Siegprämie':'Antrittsgeld'}</small><b data-count="${r.pay}">0</b><span>Gold</span></div>
+  <div class="an-pay"><small>${r.won?'Siegprämie':'Antrittsgeld'}${r.own?.stature?' · ×2 Publikumsliebling':''}</small><b data-count="${r.pay}">0</b><span>Gold</span></div>
   <div class="bx-reshead"><canvas class="px" id="bxrA"></canvas><div><h2>${esc(g.name)}</h2>${r.dead?'<p class="bx-dead">✝ '+esc(r.death)+'</p>':''}<p class="bx-warn">Erschöpfung ${Math.round(g.fatigue||0)} % · Gesundheit ${Math.round(M.health?.(g)??100)} %${g.boxRest&&g.boxRest.until>S().day?' · braucht '+(g.boxRest.until-S().day)+' Tage Ruhe':''}</p><p>${r.inj.length?'Verletzungen: <b>'+esc([...new Set(r.inj)].join(', '))+'</b>':'Keine nennenswerten Verletzungen'}</p>
    <p>${r.teeth?'<b>'+r.teeth+' Zahn'+(r.teeth>1?'zähne':'')+' ausgeschlagen</b>'+(r.vet?' · als Veteran bekommt er nach '+BX.GOLD_DAYS+' Tagen einen Goldzahn':' · die Lücke bleibt'):'Alle Zähne noch da'}</p>${teethHtml(g.teeth||{})}</div></div>
   <div class="an-gains bx-gains"><h3>Fortschritt durch den Kampf <small>(Lernfaktor ×${nf(r.mult,2)} je nach Gegner)</small></h3><p class="an-hint">Geschick, Schnelligkeit, Stärke, Ausdauer, Zähigkeit, Reflex, Blocken und Ausweichen gelten auch im Arenakampf. Gerade, Schwinger und Uppercut nur beim Boxen.</p><ul class="bx-gainlist">${gain}</ul></div>

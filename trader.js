@@ -17,8 +17,8 @@ let avatar=null;
 function figure(){if(avatar?.p===T.person)return avatar.g;const rng=S.rng,g=M.makeGladiator(0);S.rng=rng;const p=T.person;Object.assign(g,{id:'slave-trader',name:p.name,height:p.height,weight:p.weight,age:51,fame:0,scars:[],muscle:38,armStrength:60});g.appearance={...g.appearance,...p.appearance};g.stats.morale=90;g.equipment={weapon:null,secondary:null,shield:null,armor:{}};g.enemyGear={weapon:null,secondary:null,shield:null,armor:{}};avatar={p,g};return g;}
 // ---------- Tagesware ----------
 const left=()=>T.lot.filter(Boolean).length,started=()=>!!S.lanista&&(T.intro==='active'||T.intro==='done'),here=()=>started()&&T.day===S.day&&!T.gone&&left()>0;
-function stock(){if(T.day===S.day&&T.lot.length===LOT)return false;T.lot=Array.from({length:LOT},()=>M.makeGladiator(0));T.day=S.day;T.gone=false;T.arrived=0;T.soldToday=0;M.persist();return true;}
-function buy(i){const g=T.lot[i];if(!g||T.day!==S.day||T.gone)return false;if(S.gold<PRICE)return false;T.lot[i]=null;if(!A.buyCandidate(g,who())){T.lot[i]=g;return false;}T.soldToday=(T.soldToday||0)+1;if(!left())T.gone=true;M.persist();return g;}
+function stock(){if(T.day===S.day&&T.lot.length===LOT)return false;T.lot=Array.from({length:LOT},()=>{const g=M.makeGladiator(0);return M.special?M.special.roll(g):g;});T.day=S.day;T.gone=false;T.arrived=0;T.soldToday=0;M.persist();return true;}
+function buy(i){const g=T.lot[i];if(!g||T.day!==S.day||T.gone)return false;if(S.gold<PRICE)return false;T.lot[i]=null;if(!A.buyCandidate(g,who())){T.lot[i]=g;return false;}T.soldToday=(T.soldToday||0)+1;M.special?.arrive(g);if(!left())T.gone=true;M.persist();return g;}
 // ---------- Sprüche ----------
 const L={
  // Nach dem Kauf: was der Händler zur aufgedeckten Ware sagt, je Talentstufe 1 (Nichtsnutz) bis 10 (Prodigy), je 20
@@ -50,6 +50,7 @@ function claims(g){const d=B.info(g),out=[];
  const bmi=g.weight/((g.height/100)**2);if(bmi<21.5)spins.push(...L.thin);if(bmi>26.5)spins.push(...L.fat);if(g.height<170)spins.push(...L.small);if(g.height>191)spins.push(...L.tall);if(g.age>=32)spins.push(...L.old);if(g.age<=19)spins.push(...L.young);
  for(const t of g.traits||[])if(L.trait[t])spins.push(...L.trait[t]);
  const ranks=T.lot.filter(Boolean).map(x=>B.info(x).kw).sort((a,b)=>a-b);if(ranks.length>1&&d.kw<=ranks[0])spins.push(...L.weak);
+ const sp=M.special?.traderLines(g)||[];if(sp.length)out.unshift(sp[hash(g.id)%sp.length]);
  const h=hash(g.id);if(spins.length){const first=spins[h%spins.length];out.push(first,...spins.filter(s=>s!==first));}
  if(!out.length)out.push(L.pitch[h%L.pitch.length]);return out;}
 const pitchFor=g=>claims(g)[0];
@@ -113,14 +114,14 @@ const ICON={Soldat:'🛡',Assassine:'🗡',Fernkämpfer:'🏹'},stars=n=>'★'.r
 function cardHtml(i){const g=T.lot[i],d=B.info(g),an=B.analysis(g,d),marks=[...an.plus.slice(0,3).map(x=>`<span class="tr-plus">＋ ${esc(x.text)}</span>`),...an.minus.slice(0,2).map(x=>`<span class="tr-minus">− ${esc(x.text)}</span>`)],locked=tut?.step==='buy';
  return `<div class="tr-card tr-hidden"><p class="tr-quote"><b>${esc(short())}:</b> „${esc(pitchFor(g))}“</p>
 <nav class="tr-tabs" aria-label="Heutige Ware">${T.lot.map((x,n)=>x?`<button class="btn small${n===i?' active':''}" data-action="trader:show:${n}" aria-pressed="${n===i}"${locked&&n!==i?' disabled':''}>${['I','II','III','IV','V'][n]}</button>`:`<span class="tr-gone" title="Verkauft">${['I','II','III','IV','V'][n]}</span>`).join('')}</nav>
-<div class="tr-head"><canvas id="traderPortrait" width="80" height="100" aria-label="${esc(g.name)}"></canvas><div><h3>${esc(g.name)}</h3><p>${g.age} Jahre · ${esc(g.origin)}<br>${g.height} cm · ${g.weight} kg</p><p class="tr-kw">Kampfwert <b>?</b></p><p class="bk-talent"><span class="bk-stars" aria-hidden="true">?????</span> <strong>???</strong> · Talent ?</p></div></div>
+<div class="tr-head"><canvas id="traderPortrait" width="80" height="100" aria-label="${esc(g.name)}"></canvas><div><h3>${esc(g.name)}</h3><p>${g.age} Jahre · ${esc(g.origin)}<br>${g.height} cm · ${g.weight} kg${M.special?.badge(g)?'<br>'+M.special.badge(g):''}</p><p class="tr-kw">Kampfwert <b>?</b></p><p class="bk-talent"><span class="bk-stars" aria-hidden="true">?????</span> <strong>???</strong> · Talent ?</p></div></div>
 <div class="tr-classes">${M.roles.map(r=>`<div class="tr-class"><span>${ICON[r]} ${r.toUpperCase()}</span><span>? → <b>?</b></span><small>Waffe ? ★?</small></div>`).join('')}</div>
 <p class="tr-traits"><span>Eigenschaften: ?</span></p><p class="tiny">Was er wirklich kann, zeigt sich erst nach dem Kauf.</p>
 <div class="tr-buy"><span>Preis <b>${PRICE} Gold</b> · du hast ${Math.round(S.gold).toLocaleString('de-DE')}</span><button class="btn primary" data-action="trader:buy:${i}"${S.gold<PRICE?' disabled':''}>KAUFEN – ${PRICE} GOLD</button></div></div>`;}
 // Nach dem Kauf: Werte aufdecken und vom Händler kommentieren lassen
 function revealHtml(g){const d=B.info(g),an=B.analysis(g,d),marks=[...an.plus.slice(0,3).map(x=>`<span class="tr-plus">＋ ${esc(x.text)}</span>`),...an.minus.slice(0,2).map(x=>`<span class="tr-minus">− ${esc(x.text)}</span>`)],list=L.reveal[d.tier.level]||L.reveal[5],line=list[Math.floor(Math.random()*list.length)].replaceAll('{N}',g.name.split(' ')[0]);
  return `<div class="tr-card tr-reveal bk-t${d.tier.level}"><p class="tr-quote"><b>${esc(short())}:</b> „${esc(line)}“</p>${M.buyOdds?.html('human',g)||''}
-<div class="tr-head"><canvas id="traderPortrait" width="80" height="100" aria-label="${esc(g.name)}"></canvas><div><h3>${esc(g.name)}</h3><p>${g.age} Jahre · ${esc(g.origin)}<br>${g.height} cm · ${g.weight} kg</p><p class="tr-kw">Kampfwert <b>${d.kw}</b></p><p class="bk-talent"><span class="bk-stars" aria-hidden="true">${stars(d.tier.level)}</span> <strong>${d.tier.name.toUpperCase()}</strong> · Talent ${d.talent}</p></div></div>
+<div class="tr-head"><canvas id="traderPortrait" width="80" height="100" aria-label="${esc(g.name)}"></canvas><div><h3>${esc(g.name)}</h3><p>${g.age} Jahre · ${esc(g.origin)}<br>${g.height} cm · ${g.weight} kg${M.special?.badge(g)?'<br>'+M.special.badge(g):''}</p><p class="tr-kw">Kampfwert <b>${d.kw}</b></p><p class="bk-talent"><span class="bk-stars" aria-hidden="true">${stars(d.tier.level)}</span> <strong>${d.tier.name.toUpperCase()}</strong> · Talent ${d.talent}</p></div></div>
 <div class="tr-classes">${M.roles.map(r=>{const c=d.classes[r];return `<div class="tr-class${d.best===r?' best':''}"><span>${ICON[r]} ${r.toUpperCase()}</span><span>${Math.round(c.ist)} → <b>${Math.round(c.pot)}</b></span><small>${esc(weapon(c.weapon))} ★${Math.round(c.weaponPot)}</small></div>`;}).join('')}</div>
 <p class="tr-traits">${[...(g.traits||[]).map(t=>`<span>${esc(t)}</span>`),...marks].join('')||'<span>Nichts Auffälliges</span>'}</p>
 <div class="buttons"><button class="btn primary" data-action="trader:revealok">WEITER</button></div></div>`;}
