@@ -465,6 +465,7 @@ function openChair(gid){closeAll();const men=living();if(!men.length){M.ui.notif
 <div class="dok-who" id="dokWho"></div>
 <label class="dok-protect"><input type="checkbox" id="dokAppleProtect"> Vor Apfelschuss schützen · nicht als Apfelträger anzeigen</label>
 <label class="dok-protect"><input type="checkbox" id="dokForceClass"> Automatisch ausrüsten: beste Waffenklasse erzwingen · fördert das Talent, auch wenn eine stärkere Waffe im Lager liegt</label>
+<section class="dok-sort" id="dokSort" aria-label="Einordnung: Müll, Talent, Supertalent"></section>
 <section class="dok-traits" id="dokTraits" aria-label="Waffenklasse und besondere Eigenschaften"></section>
 <div class="dok-stats" id="dokStats"></div>
 <section class="dok-overview" id="dokOverview" aria-label="Weitere Gladiatorenwerte"></section>
@@ -474,10 +475,11 @@ function openChair(gid){closeAll();const men=living();if(!men.length){M.ui.notif
  document.body.appendChild(v);v.addEventListener('change',e=>{if(e.target.id==='dokAppleProtect'&&chair){chair.g.appleProtected=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForceClass'&&chair){chair.g.forceWeaponClass=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForce')chair.force=e.target.value;if(e.target.id==='dokVar')chair.variant=e.target.value;});
  renderChair();loop();}
 function renderChair(){const C=chair;if(!C)return;const g=C.g,caps=capsOf(g),busy=!!C.P&&!C.P.done,inBed=bedDays(g);
- const men=$('dokMen');if(men){men.innerHTML=living().map(x=>{const d=bedDays(x);return `<button class="dok-man${x===g?' sel':''}" type="button" data-dok="man:${x.id}"${busy?' disabled':''}><canvas data-dokface="${x.id}" width="40" height="50"></canvas><span>${esc(first(x))}</span><small>Talent ${Math.round(x.potential??0)}${x.appleProtected?' · 🍎 geschützt':''}</small><small>${d?'🛏 '+d+' T.':x.dokCross?'schielt':'bereit'}</small></button>`;}).join('');
+ const men=$('dokMen');if(men){men.innerHTML=living().map(x=>{const d=bedDays(x);return `<button class="dok-man${x===g?' sel':''}" type="button" data-dok="man:${x.id}"${busy?' disabled':''}><canvas data-dokface="${x.id}" width="40" height="50"></canvas><span>${M.sortTag?.icon(M.sortTag.get(x),12)||''}${esc(first(x))}</span><small>Talent ${Math.round(x.potential??0)}${x.appleProtected?' · 🍎 geschützt':''}</small><small>${d?'🛏 '+d+' T.':x.dokCross?'schielt':'bereit'}</small></button>`;}).join('');
   for(const c of men.querySelectorAll('canvas[data-dokface]')){const x=S.roster.find(y=>y.id===c.dataset.dokface);if(x)M.renderPortrait(c,x,{unarmored:true});}}
  const who=$('dokWho');if(who){const d=B_info(g);who.innerHTML=`<b>${esc(g.name)}</b> · ${d}${M.buyOdds?.mini('human',g)||''}${g.dok?` · ${g.dok}× behandelt`:''}${g.dokCross?' · <span class="bad">schielt</span>':''}${inBed?` · <span class="bad">liegt noch ${inBed} ${inBed===1?'Tag':'Tage'} im Krankenbett</span>`:''}`;}
  const st=$('dokStats');if(st){st.innerHTML=KEYS.map(k=>{const cap=caps[k]??0,val=g.stats[k]??0,cls=cap<45?'lo':cap>=72?'hi':'';return `<button class="dok-stat${k===C.key?' sel':''}" type="button" data-dok="key:${k}"${busy||inBed?' disabled':''}><b>${esc(statName(k))}</b><span>Wert ${val}</span><span class="cap ${cls}">Anlage ${cap}</span></button>`;}).join('');}
+ /* Einordnung (Wunsch Thomas 4.11.): Müll · Talent · Supertalent */const so=$('dokSort');if(so&&M.sortTag){const T=M.sortTag,cur=T.get(g);so.innerHTML=`<b>EINORDNUNG</b>${T.ORDER.map(k=>`<button type="button" data-dok="sort:${k}" class="${cur===k?'sel':''}" style="--sc:${T.KINDS[k].color}" title="${esc(T.KINDS[k].tip)}">${T.icon(k,20)} ${T.KINDS[k].label}</button>`).join('')}<button type="button" data-dok="sort:none" class="${cur?'':'sel'}">– keine</button><small>${cur?esc(T.KINDS[cur].tip):'Noch nicht eingeordnet. Wird in der Aufstellung angezeigt.'}</small>`;}
  const protect=$('dokAppleProtect');if(protect)protect.checked=!!g.appleProtected;
  const fc=$('dokForceClass');if(fc)fc.checked=!!g.forceWeaponClass;const tr=$('dokTraits');if(tr)tr.innerHTML=traitsHTML(g);
  const overview=$('dokOverview');if(overview)overview.innerHTML=overviewHTML(g);
@@ -518,7 +520,7 @@ function overviewHTML(g){
 }
 function B_info(g){try{const d=M.barracks?.info?.(g);if(d)return `${'★'.repeat(Math.round(d.tier.level/2))}${'☆'.repeat(5-Math.round(d.tier.level/2))} ${esc(d.tier.name)} · Talent ${d.talent}`;}catch{}return 'Talent '+Math.round(g.potential||0);}
 function setLine(t){const el=$('dokLine');if(el&&el._t!==t){el._t=t;el.innerHTML='<b>'+esc(DOC_SHORT)+':</b> „'+esc(t)+'“';}}
-function chairClick(cmd,arg){const C=chair;if(!C)return;
+function chairClick(cmd,arg){const C=chair;if(!C)return;if(cmd==='sort'){if(!M.sortTag)return;M.sortTag.set(C.g,arg);C.line=M.sortTag.line(M.sortTag.get(C.g)||'none');C.lineT=0;renderChair();return;}
  if(cmd==='close'){closeChair();return;}
  if(cmd==='days'){for(let i=0;i<RULE.days;i++)M.advanceDay?.();M.ui.close?.();M.ui.render?.();C.line='Zehn Tage später. Alle Verbände ab. Die Narben bleiben.';renderChair();return;}
  if(cmd==='new'){const rng=S.rng,g=M.makeGladiator(0);S.rng=rng;S.roster.push(g);C.g=g;C.key=lowKey(g);C.line='Frische Ware! Und so ein unberührter Schädel …';C.P=null;$('dokResult').hidden=true;renderChair();return;}
