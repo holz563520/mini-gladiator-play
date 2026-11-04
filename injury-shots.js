@@ -25,15 +25,31 @@ const kindOf=name=>({'Tiefe Stichwunde':'deepstab','Kritische Bauchverletzung':'
 const injuriesFor=part=>KINDS.filter(k=>k[2](part)).map(k=>k[0]);
 const BLUNT=['club','mace','hammer'],weaponClass=wid=>BLUNT.includes(wid)?'blunt':['bow','crossbow'].includes(wid)?'arrow':['spear','trident','javelin','halberd'].includes(wid)?'spear':'blade';
 // ---------- Zeichenwerkzeug auf dem kleinen Bild ----------
+// Leistung: Röhren, Scheiben und Füße bestehen aus Hunderten Einzelpixeln. Gleiche Aufrufe (gleiche Lage, gleiche Farben) werden einmal in ein
+// kleines Bild gezeichnet und danach nur kopiert. Pixelgleich, weil nur bei deckenden Farben, voller Deckkraft und ganzzahliger Verschiebung.
+const SPR=new Map();let sprOff=false;
+const deck=c=>typeof c==='string'&&c.length===7&&c[0]==='#';
+function sprite(q,key,C,draw,direct){if(sprOff||typeof document==='undefined'||typeof q.getTransform!=='function')return direct();
+ const m=q.getTransform();if(q.globalAlpha!==1||q.globalCompositeOperation!=='source-over'||m.a!==1||m.b!==0||m.c!==0||m.d!==1||m.e!==Math.round(m.e)||m.f!==Math.round(m.f)||(q.filter&&q.filter!=='none')||q.shadowBlur||q.shadowOffsetX||q.shadowOffsetY||!deck(C.line)||!deck(C.light)||!deck(C.shade)||!deck(C.skin))return direct();
+ let s=SPR.get(key);
+ if(s===undefined){const rec=[];let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  draw((x,y,w,h,c)=>{x=Math.round(x);y=Math.round(y);w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));rec.push(x,y,w,h,c);if(x<x0)x0=x;if(y<y0)y0=y;if(x+w>x1)x1=x+w;if(y+h>y1)y1=y+h;});
+  if(!rec.length||x1-x0>400||y1-y0>400)s=null;else{const cv=document.createElement('canvas');cv.width=x1-x0;cv.height=y1-y0;const g=cv.getContext('2d');for(let i=0;i<rec.length;i+=5){g.fillStyle=rec[i+4];g.fillRect(rec[i]-x0,rec[i+1]-y0,rec[i+2],rec[i+3]);}s={c:cv,x:x0,y:y0,last:rec[rec.length-1]};}
+  if(SPR.size>500)SPR.clear();SPR.set(key,s);}
+ if(!s)return direct();q.drawImage(s.c,s.x,s.y);q.fillStyle=s.last;}
+const tubePx=(r,x0,y0,x1,y1,w0,w1,C)=>{const dx=x1-x0,dy=y1-y0,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,n=Math.ceil(len*1.4);for(let i=0;i<=n;i++){const u=i/n,cx=x0+dx*u,cy=y0+dy*u,w=w0+(w1-w0)*u,h=w/2;for(let j=-Math.ceil(h);j<=Math.ceil(h);j++){const a=Math.abs(j);if(a>h+.2)continue;const side=ny>=0?j:-j,col=a>h-1?C.line:side<-h*.45?C.light:side>h*.3?C.shade:C.skin;r(cx+nx*j,cy+ny*j,1.3,1.3,col);}}};
+const discPx=(r,x,y,rad,C)=>{for(let j=-rad;j<=rad;j++){const hw=Math.sqrt(Math.max(0,rad*rad-j*j));for(let i=-Math.ceil(hw);i<=Math.ceil(hw);i++){const d=Math.hypot(i,j);r(x+i,y+j,1,1,d>rad-1?C.line:j<-rad*.4?C.light:j>rad*.35||i>rad*.5?C.shade:C.skin);}}};
+const ckey=C=>C.line+C.light+C.shade+C.skin;
 function tools(q){const r=(x,y,w,h,c)=>{q.fillStyle=c;q.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
  // Körperröhre zwischen zwei Punkten: Lichtkante oben, Schatten unten, dunkle Kontur
- const tube=(x0,y0,x1,y1,w0,w1,C)=>{const dx=x1-x0,dy=y1-y0,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,n=Math.ceil(len*1.4);for(let i=0;i<=n;i++){const u=i/n,cx=x0+dx*u,cy=y0+dy*u,w=w0+(w1-w0)*u,h=w/2;for(let j=-Math.ceil(h);j<=Math.ceil(h);j++){const a=Math.abs(j);if(a>h+.2)continue;const side=ny>=0?j:-j,col=a>h-1?C.line:side<-h*.45?C.light:side>h*.3?C.shade:C.skin;r(cx+nx*j,cy+ny*j,1.3,1.3,col);}}};
- const disc=(x,y,rad,C)=>{for(let j=-rad;j<=rad;j++){const hw=Math.sqrt(Math.max(0,rad*rad-j*j));for(let i=-Math.ceil(hw);i<=Math.ceil(hw);i++){const d=Math.hypot(i,j);r(x+i,y+j,1,1,d>rad-1?C.line:j<-rad*.4?C.light:j>rad*.35||i>rad*.5?C.shade:C.skin);}}};
+ const tube=(x0,y0,x1,y1,w0,w1,C)=>sprite(q,'T'+x0+','+y0+','+x1+','+y1+','+w0+','+w1+ckey(C),C,R=>tubePx(R,x0,y0,x1,y1,w0,w1,C),()=>tubePx(r,x0,y0,x1,y1,w0,w1,C));
+ const disc=(x,y,rad,C)=>sprite(q,'D'+x+','+y+','+rad+ckey(C),C,R=>discPx(R,x,y,rad,C),()=>discPx(r,x,y,rad,C));
+ const memo=(key,C,body)=>sprite(q,key+ckey(C),C,R=>body({r:R}),()=>body({r}));
  const oval=(x,y,rx,ry,c,a=1)=>{q.globalAlpha=a;q.fillStyle=c;for(let j=-Math.ceil(ry);j<=Math.ceil(ry);j++){const hw=rx*Math.sqrt(Math.max(0,1-(j*j)/(ry*ry)));if(hw>=.5)q.fillRect(Math.round(x-hw),Math.round(y+j),Math.round(hw*2),1);}q.globalAlpha=1;};
  const line=(x0,y0,x1,y1,c,w=1)=>{const n=Math.ceil(Math.hypot(x1-x0,y1-y0));for(let i=0;i<=n;i++)r(x0+(x1-x0)*i/n,y0+(y1-y0)*i/n,w,w,c);};
  // Leistung: eine Pixelzeile mit Farbe je Pixel; direkt benachbarte Pixel gleicher Farbe werden als ein Rechteck gezeichnet (Bild identisch zu Einzelpixeln über r)
  const seq=(xf,y,from,to,col)=>{const run={n:0,x:0,y:0,c:null},flush=()=>{if(run.n){q.fillStyle=run.c;q.fillRect(run.x,run.y,run.n,1);run.n=0;}};for(let i=from;i<to;i++){const c=col(i),rx=Math.round(xf(i)),ry=Math.round(y);if(run.n&&c===run.c&&ry===run.y&&rx===run.x+run.n){run.n++;continue;}flush();run.x=rx;run.y=ry;run.c=c;run.n=1;}flush();};
- return {r,tube,disc,oval,line,seq};}
+ return {r,tube,disc,oval,line,seq,memo};}
 // Gedrehte Teile (hängende Hand, fallendes Glied, sinkender Kopf) erst gerade zeichnen, dann als Pixelbild drehen: bleibt scharf
 let scratch=null;
 function turned(q,cx,cy,ang,dx,dy,draw){if(!ang&&!dx&&!dy){draw(tools(q),q);return;}if(!scratch){scratch=document.createElement('canvas');scratch.width=FW*2;scratch.height=FH*2;}const s=scratch.getContext('2d');s.setTransform(1,0,0,1,0,0);s.clearRect(0,0,FW*2,FH*2);s.translate(FW/2,FH/2);draw(tools(s),s);q.save();q.imageSmoothingEnabled=false;q.translate(Math.round(cx+dx),Math.round(cy+dy));q.rotate(ang);q.drawImage(scratch,-Math.round(cx)-FW/2,-Math.round(cy)-FH/2);q.restore();}
@@ -56,7 +72,7 @@ function handShape(T,C,x,y,o={}){const limp=o.limp||0;/* Handrücken, Daumen, vi
  T.tube(x-2,y,x+30,y+1,28,26,C);T.disc(x+30,y+1,13,C);T.tube(x+6,y-12,x+22,y-27+limp*10,8,6,C);
  for(let i=0;i<4;i++){const fy=y-10+i*7.2,len=i===0||i===3?24:29,bx=x+40,k1=limp*(.5+i*.08)+(o.splay||0)*Math.sin(i*2.3+1)*.55,mx=bx+Math.cos(k1)*len*.5,my=fy+Math.sin(k1)*len*.5,ex=mx+Math.cos(k1*2.1)*len*.5,ey=my+Math.sin(k1*2.1)*len*.5;T.tube(bx-6,fy,mx,my,6.5,6,C);T.tube(mx,my,ex,ey,6,5,C);T.r(ex-1,ey-2,2,3,mix(C.light,'#ffffff',.3));T.r(bx-1,fy-3,1,6,C.shade);}}
 function footShape(T,C,x,y){/* Fuß mit Sandale: Ferse links, Zehen rechts */
- for(let i=0;i<=62;i++){const top=i<14?y-2:y+ (i-14)*.2+2,h=y+20-top;for(let j=0;j<h;j++)T.r(x-8+i,top+j,1,1,j<1?C.line:j<3?C.light:j>h-5?C.shade:C.skin);}
+ T.memo('F'+x+','+y,C,P=>{for(let i=0;i<=62;i++){const top=i<14?y-2:y+ (i-14)*.2+2,h=y+20-top;for(let j=0;j<h;j++)P.r(x-8+i,top+j,1,1,j<1?C.line:j<3?C.light:j>h-5?C.shade:C.skin);}});
  for(let n=0;n<5;n++){T.r(x+53+n*.6,y+9+n*2.1,4-n*.3,3,C.light);T.r(x+56+n*.6,y+9+n*2.1,1,3,C.line);}
  T.r(x-10,y+20,70,3,'#3a2a1c');T.r(x-10,y+23,70,1,'#1f150d');T.tube(x+6,y+19,x+22,y+2,3,3,{skin:'#6c5437',light:'#8a6c48',shade:'#4a3824',line:'#2a1f14'});T.tube(x+30,y+20,x+38,y+5,3,3,{skin:'#6c5437',light:'#8a6c48',shade:'#4a3824',line:'#2a1f14'});T.r(x-6,y-2,18,3,'#6c5437');}
 function headShape(q,T,C,cx,top,R,o={}){const sc=R/26,half=y=>{const u=(y-28)/34;let hw=R*Math.sqrt(Math.max(0,1-u*u));if(y>48)hw-=(y-48)*.28*sc;return Math.max(0,hw);},Y=v=>top+Math.round(v*sc),pale=o.pale||0,skin=mix(C.skin,'#c9c4b0',pale*.6),shade=mix(C.shade,'#8a8778',pale*.6),light=mix(C.light,'#e6e2d0',pale*.5),bald=C.style===2,dark=mix(shade,'#2a160e',.35),lip=mix(shade,'#8a2a24',.45);
@@ -369,17 +385,21 @@ function arenaShot(x){const {e,k,inj}=x,g=e.g,p=g.body[e.part],gr=M.injuryGrade(
  if(host){cfg.onShot?.(true,o,!!x.live);arena={v:null,shot,c:host,g:host.getContext('2d'),battle:S.battle.id,live:!!x.live,after};}
  else{const v=document.createElement('div');v.className='injury-shot injury-shot-arena';v.innerHTML='<canvas width="660" height="420"></canvas>';document.body.appendChild(v);v.addEventListener('click',()=>{shot.done=true;shot.skipped=true;M.speakStop?.();});arena={v,shot,c:v.firstChild,g:v.firstChild.getContext('2d'),battle:S.battle.id,after};}if(!x.live)gap=tap()?1.2:L?1.5:GAP;}
 function endArena(){arena?.v?.remove();const hosted=arena&&!arena.v;arena=null;if(hosted)cfg.onShot?.(false);}
+/* Leistung: Steht die Nahaufnahme still (fertig, wartet auf Moderator oder Antippen), ist jedes Bild gleich – dann nicht neu zeichnen.
+   Großaufnahmen der Gesichter (Tod, Zusammenbruch) bewegen Mund und Augen nach der Uhr und werden immer gezeichnet. */
+function paintShot(A){const s=A.shot,k=s.o.kind,face=k==='death'||(k==='collapse'&&s.o.fall),blink=s.o.waiting?Math.sin(performance.now()/260)>-.2:null,key=face?null:s.t+'|'+A.c.width+'x'+A.c.height+'|'+blink;
+ if(key!==null&&key===A.painted)return;A.painted=key;s.paint(A.g,A.c.width,A.c.height);}
 if(typeof M.fixedStep==='function'&&typeof M.presentationStep==='function'){
  const fixed=M.fixedStep,present=M.presentationStep,effects=M.effectsStep;
  M.fixedStep=function(dt){if(arena&&!arena.live){/* mit Bestätigung: erst kurz Zeitlupe, dann Stillstand */if(arena.shot.o.hold&&arena.shot.t-SHOT_FROM<.45&&!arena.shot.o.waiting){arena.slow=(arena.slow||0)+1;if(arena.slow%6)return;}else return;}return fixed.apply(this,arguments);};
  if(typeof effects==='function')M.effectsStep=function(dt){if(arena&&!arena.live)return;return effects.apply(this,arguments);};
  M.presentationStep=function(dt){if(arena){const fin=!S.battle||S.battle.id!==arena.battle||arena.shot.skipped||((arena.shot.done||!arena.shot.step(dt))&&(arena.live||!M.speechHold?.()));
-  if(fin&&arena.after&&!arena.shot.skipped&&S.battle?.id===arena.battle){/* nach dem Tod im Abenteuer: erst ausreden, dann Gelächter */M.audioEngine?.sound?.(arena.after);arena.after=null;arena.tail=1.3;arena.shot.paint(arena.g,arena.c.width,arena.c.height);}
-  else if(fin&&arena.tail>0&&!arena.shot.skipped&&S.battle?.id===arena.battle){arena.tail-=dt;arena.shot.paint(arena.g,arena.c.width,arena.c.height);}
-  else if(fin)endArena();else arena.shot.paint(arena.g,arena.c.width,arena.c.height);if(arena&&!arena.live)return;}
+  if(fin&&arena.after&&!arena.shot.skipped&&S.battle?.id===arena.battle){/* nach dem Tod im Abenteuer: erst ausreden, dann Gelächter */M.audioEngine?.sound?.(arena.after);arena.after=null;arena.tail=1.3;paintShot(arena);}
+  else if(fin&&arena.tail>0&&!arena.shot.skipped&&S.battle?.id===arena.battle){arena.tail-=dt;paintShot(arena);}
+  else if(fin)endArena();else paintShot(arena);if(arena&&!arena.live)return;}
   const r=present.apply(this,arguments);try{if(mode()!=='off'&&watching()){const x=pick(dt,!!arena);if(x){if(arena)endArena();arenaShot(x);}}else if(pend.length)pend=[];}catch(err){pend=[];}return r;};}
 // Zeile für die Einstellungsseite und ihre Auswahl
 M.injuryOptions=()=>`<div class="list-row"><span>Nahaufnahmen bei Verletzungen<br><small>Der Kampf hält dafür kurz an. Antippen überspringt.</small></span><select class="select" id="closeups">${MODES.map(([k,n])=>`<option value="${k}"${k===mode()?' selected':''}>${n}</option>`).join('')}</select></div>`;
 {const change=M.schoolChange;M.schoolChange=ev=>{if(ev?.target?.id==='closeups'){S.options.closeups=ev.target.value;M.persist?.();return true;}return change?.(ev);};}
-M.injuryShots={/* nur für Vorschauseiten (schaedelbruch-varianten.html) */effects:EFFECT,helmLook,skullStage,SKULL_STAGES,SKULL_DAYS,start,play,stop,paint,kinds:KINDS,kindOf,injuriesFor,viewOf,weaponClass,relevant,HIT,LEN,modes:MODES,mode,level,config:cfg,skip:()=>{if(arena){arena.shot.done=true;arena.shot.skipped=true;M.speakStop?.();/* Antippen: aktuelle Nahaufnahme weg, aufgestaute verwerfen, kurz Ruhe (Thomas 18.10.) */pend=[];falls=[];gap=Math.max(gap,2.5);}},get arena(){return arena;},get pending(){return pend;}};
+M.injuryShots={/* nur für Vorschauseiten (schaedelbruch-varianten.html) */spriteCache:on=>{sprOff=!on;SPR.clear();},effects:EFFECT,helmLook,skullStage,SKULL_STAGES,SKULL_DAYS,start,play,stop,paint,kinds:KINDS,kindOf,injuriesFor,viewOf,weaponClass,relevant,HIT,LEN,modes:MODES,mode,level,config:cfg,skip:()=>{if(arena){arena.shot.done=true;arena.shot.skipped=true;M.speakStop?.();/* Antippen: aktuelle Nahaufnahme weg, aufgestaute verwerfen, kurz Ruhe (Thomas 18.10.) */pend=[];falls=[];gap=Math.max(gap,2.5);}},get arena(){return arena;},get pending(){return pend;}};
 })();

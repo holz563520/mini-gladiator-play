@@ -73,7 +73,10 @@ function mount(){const bar=$('mapuiBar');let el=document.querySelector('.mg-gold
 const fmt=n=>Math.round(n).toLocaleString('de-DE');
 // Runde Pixelmünze (16×16), dreht sich um die senkrechte Achse; Vorderseite mit geprägtem Kopf, dazu ein wandernder Glanz
 const COIN=['.....######.....','...##yyyyyy##...','..#yyYYYYYYyy#..','.#yYYYYYYYYYYy#.','.#yYYYddddYYYy#.','#yYYYdYYYYdYYYy#','#yYYdYYddYYdYYy#','#yYYdYdYYdYdYYy#','#yYYdYYYYYYdYYy#','#yYYYdYYYYdYYYy#','.#yYYYddddYYYy#.','.#yYYYYYYYYYYy#.','..#yyYYYYYYyy#..','...##yyyyyy##...','.....######.....','................'];
-function coin(c,spin,t){const g=c.getContext('2d');g.clearRect(0,0,16,16);g.imageSmoothingEnabled=false;const sx=Math.cos(spin),w=Math.abs(sx),face=sx>=0;
+/* Leistung: nur neu zeichnen, wenn sich ein Pixel ändert (Lage der Spalten, Seite, Kante, Glanz) */
+const coinKeys=new WeakMap();
+function coin(c,spin,t){const sx0=Math.cos(spin),w0=Math.abs(sx0),sh0=t%4.5;let key=(sx0>=0?'f':'b')+Math.ceil(w0)+(w0<.35?'e':'')+(sh0<.6&&w0>.6?'s'+Math.round(8-5*w0+sh0/.6*10*w0):'');for(let x=0;x<16;x++)key+=','+Math.floor(8+(x+.5-8)*w0);if(coinKeys.get(c)===key)return;coinKeys.set(c,key);
+ const g=c.getContext('2d');g.clearRect(0,0,16,16);g.imageSmoothingEnabled=false;const sx=Math.cos(spin),w=Math.abs(sx),face=sx>=0;
  const col={'#':'#6a4a10','y':'#c9922a','Y':face?'#f2c94a':'#e0b23c','d':face?'#b8862a':'#e0b23c'};
  for(let y=0;y<16;y++)for(let x=0;x<16;x++){const ch=COIN[y][x];if(ch==='.')continue;const nx=8+(x+.5-8)*w;g.fillStyle=col[ch];g.fillRect(Math.floor(nx),y,Math.max(1,Math.ceil(w)),1);}
  if(w<.35){g.fillStyle='#8a6418';g.fillRect(7,1,2,14);}

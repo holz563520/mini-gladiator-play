@@ -692,7 +692,8 @@ function prefill(ctx,k,opt={}){const p=get(k);if(!p)return Promise.resolve(false
  const job=new Promise(res=>{const n=++wseq;wwait.set(n,res);W.postMessage({id:n,k,pitch});}).then(R=>{inflight.delete(id);if(R.error||!R.data)return false;try{const b=ctx.createBuffer(1,R.data.length,SR);b.copyToChannel?b.copyToChannel(R.data,0):b.getChannelData(0).set(R.data);if(list.length<(opt.max||3))list.push(b);return true;}catch{return false;}});
  inflight.set(id,job);return job;}
 function buffer(ctx,k,opt={}){const p=get(k);if(!p)return null;const pitch=Math.round((opt.pitch||1)*10)/10,id=idOf(k,pitch);let list=cache.get(id);if(!list){list=[];cache.set(id,list);}
- if(list.length<(opt.max||3)){if(costly(p)&&!opt.sync&&prefill(ctx,k,opt))return list.length?list[Math.floor(Math.random()*list.length)]:null;
+ /* Leistung: liegt schon eine Fassung bereit, die nächste im Hintergrund-Worker rechnen statt mitten im Kampf auf dem Hauptthread */
+ if(list.length<(opt.max||3)){if((costly(p)||list.length)&&!opt.sync&&prefill(ctx,k,opt))return list.length?list[Math.floor(Math.random()*list.length)]:null;
   const data=render(p,{pitch});const b=ctx.createBuffer(1,data.length,SR);b.copyToChannel?b.copyToChannel(data,0):b.getChannelData(0).set(data);list.push(b);return b;}return list[Math.floor(Math.random()*list.length)];}
 function play(ctx,dest,k,opt={}){const b=buffer(ctx,k,opt);if(!b)return null;const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;g.gain.value=opt.vol??1;s.connect(g);g.connect(dest);s.start(Math.max(ctx.currentTime,opt.at||0));s.onended=()=>{s.disconnect();g.disconnect();};return s;}
 window.KampfSound={SR,KEY,CATS,DEF,ORDER,VOW,PART,render,get,set,reset,changed:k=>!!saved[k],saved:()=>copy(saved),load(o){saved=copy(o||{});try{localStorage.setItem(KEY,JSON.stringify(saved));}catch{}cache.clear();try{wk?.postMessage({init:saved});}catch{}},clear:()=>cache.clear(),buffer,prefill,play,make:{T,N,V,Mt,C,K}};

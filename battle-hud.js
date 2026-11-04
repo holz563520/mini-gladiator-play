@@ -42,7 +42,7 @@ const text=(id,v)=>{const el=$(id);if(el&&el.textContent!==v)el.textContent=v;};
 let detailKey='';
 function update(){const b=S.battle,view=$('battleView');if(!b||!view||view.hidden||b.actors.length>40){if(document.body.classList.contains('bhud')){document.body.classList.remove('bhud');panel?.remove();panel=null;key='';}return;}
  const k=b.id+':'+b.actors.length;if(k!==key||!panel?.isConnected){key=k;build(b);document.body.classList.add('bhud');}
- const fieldH=$('arenaCanvas').getBoundingClientRect().height;view.style.setProperty('--bhf',Math.round(fieldH)+'px');
+ const fieldH=$('arenaCanvas').getBoundingClientRect().height,bhf=Math.round(fieldH)+'px';/* Leistung: nur bei Änderung setzen (sonst Stil-Neuberechnung des ganzen Kampfbilds) */if(view.style.getPropertyValue('--bhf')!==bhf)view.style.setProperty('--bhf',bhf);
  text('bhClock',Math.floor(b.time/60)+':'+String(Math.floor(b.time%60)).padStart(2,'0'));
  {const m0=might(b,0),m1=might(b,1),sum=m0+m1||1,p=Math.round(100*m0/sum);width('bhLead0',p);width('bhLead1',100-p);text('bhLeadText',Math.abs(p-50)<4?'AUSGEGLICHEN':(p>50?'BLAU':'ROT')+' FÜHRT · '+Math.max(p,100-p)+' %');const L=$('bhLead'),c=Math.abs(p-50)<4?'even':p>50?'t0':'t1';if(L&&L.dataset.c!==c)L.dataset.c=c;}
  for(const t of [0,1]){const all=b.actors.filter(a=>a.team===t),up=all.filter(a=>!a.g.dead&&!a.down&&!a.surrendered).length;text('bhAlive'+t,up+' / '+all.length+' stehen');}
