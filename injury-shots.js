@@ -7,7 +7,7 @@
 // Reine Darstellung: liest nur, ändert keinen Spielzustand.
 (()=>{
 const M=window.MG;if(!M)return;
-const FW=160,FH=100,HIT=.55,LEN=3.1;
+const FW=160,FH=100,HIT=.55,LEN=3.1,HEADX={sumo:1.35,dwarf:1.15,giant:1.06};
 const mix=(a,b,k)=>{const p=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)),x=p(a),y=p(b);return '#'+x.map((v,i)=>Math.max(0,Math.min(255,Math.round(v+(y[i]-v)*k))).toString(16).padStart(2,'0')).join('');};
 const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),ease=v=>{v=cl(v);return v*v*(3-2*v);},out=v=>1-(1-cl(v))*(1-cl(v));
 const BLOOD='#a8372f',DARK='#6b2420',WET='#c9584a';
@@ -37,7 +37,7 @@ function tools(q){const r=(x,y,w,h,c)=>{q.fillStyle=c;q.fillRect(Math.round(x),M
 // Gedrehte Teile (hängende Hand, fallendes Glied, sinkender Kopf) erst gerade zeichnen, dann als Pixelbild drehen: bleibt scharf
 let scratch=null;
 function turned(q,cx,cy,ang,dx,dy,draw){if(!ang&&!dx&&!dy){draw(tools(q),q);return;}if(!scratch){scratch=document.createElement('canvas');scratch.width=FW*2;scratch.height=FH*2;}const s=scratch.getContext('2d');s.setTransform(1,0,0,1,0,0);s.clearRect(0,0,FW*2,FH*2);s.translate(FW/2,FH/2);draw(tools(s),s);q.save();q.imageSmoothingEnabled=false;q.translate(Math.round(cx+dx),Math.round(cy+dy));q.rotate(ang);q.drawImage(scratch,-Math.round(cx)-FW/2,-Math.round(cy)-FH/2);q.restore();}
-const palette=g=>{const A=g?.appearance||{},skin=A.skin||'#c19169',shade=A.shade||'#875e43';return {skin,shade,light:mix(skin,'#fff2dc',.22),line:mix(shade,'#1a0f0a',.55),hair:A.hair||'#443025',style:(A.style??0)%6,beard:(A.beard??0)%4,cloth:'#665748',belt:'#3a2a22'};};
+const palette=g=>{const A=g?.appearance||{},skin=A.skin||'#c19169',shade=A.shade||'#875e43';return {stature:g?.stature||null,skin,shade,light:mix(skin,'#fff2dc',.22),line:mix(shade,'#1a0f0a',.55),hair:A.hair||'#443025',style:(A.style??0)%6,beard:(A.beard??0)%4,cloth:'#665748',belt:'#3a2a22'};};
 // ---------- Hintergrund: Sand des Hofs im Gegenlicht ----------
 function backdrop(q,T,t){T.r(0,0,FW,FH,'#231a12');const gr=q.createRadialGradient(46,26,4,80,50,110);gr.addColorStop(0,'rgba(232,182,110,.55)');gr.addColorStop(.6,'rgba(150,110,64,.25)');gr.addColorStop(1,'rgba(0,0,0,0)');q.fillStyle=gr;q.fillRect(0,0,FW,FH);for(let i=0;i<7;i++){const k=(t*.25+i/7)%1;T.r(8+i*23+Math.sin(t*.8+i)*4,FH-6-k*80,1,1,'#e8c890');}}
 // ---------- Ansichten je Körperstelle: zeichnen die Stelle und liefern den Wundpunkt mit Richtung ----------
@@ -92,7 +92,7 @@ function torso(q,T,C,ox,oy,o={}){/* Rumpf von vorn: Hals, Schultern, Brust, Bauc
  if(o.head){const f=o.off||{dx:0,dy:0,ang:0};turned(q,X(0),Y(-30),f.ang,f.dx,f.dy,(TT,qq)=>{if(o.cutNeck){TT.r(X(-9),Y(-4),18,10,C.skin);TT.r(X(4),Y(-4),5,10,C.shade);TT.oval(X(0),Y(6),9,2.5,DARK);TT.oval(X(0),Y(6),6,1.5,BLOOD);}headShape(qq,TT,C,X(0),Y(-62),23,o.head);});}}
 // Ansichten: jede liefert {A:Wundpunkt, dir, w, limbInfo?}
 const VIEW={
- head:(q,T,C,o)=>{T.tube(40,104,120,104,36,36,C);T.r(70,78,20,20,C.shade);T.r(72,78,14,18,C.skin);const dy=o.sink||0;turned(q,80,60,o.tilt||0,0,dy,(TT,qq)=>headShape(qq,TT,C,80,10,27,o.face));return {A:{x:93,y:26+dy},dir:{x:.3,y:.95},w:20,flat:true};},
+ head:(q,T,C,o)=>{/* Besondere Gladiatoren (4.11.): Kopf breiter (Sumo, Kleinwuchs) */const hx=HEADX[C.stature]||1;T.tube(40,104,120,104,36*hx,36*hx,C);T.r(80-10*hx,78,20*hx,20,C.shade);T.r(80-8*hx,78,14*hx,18,C.skin);const dy=o.sink||0;if(hx!==1){q.save();q.translate(80,0);q.scale(hx,1);q.translate(-80,0);}turned(q,80,60,o.tilt||0,0,dy,(TT,qq)=>headShape(qq,TT,C,80,10,27,o.face));if(hx!==1)q.restore();return {A:{x:93,y:26+dy},dir:{x:.3,y:.95},w:20,flat:true};},
  neck:(q,T,C,o)=>{torso(q,T,C,0,46,{head:o.face,cutNeck:o.cut,off:o.off});return o.cut?{A:{x:80,y:54},dir:{x:0,y:-1},w:20,flat:true}:{A:{x:88,y:54},dir:{x:.25,y:.97},w:16,flat:true};},
  chest:(q,T,C,o)=>{torso(q,T,C,0,6,{head:o.face});return {A:{x:98,y:50},dir:{x:.96,y:.28},w:34,flat:true};},
  belly:(q,T,C,o)=>{torso(q,T,C,0,-36,{});return {A:{x:88,y:52},dir:{x:.97,y:.24},w:34,flat:true};},

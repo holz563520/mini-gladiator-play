@@ -72,13 +72,16 @@ function candle(q,W,H,t,x,y){const {R}=tl(q);const f=Math.sin(t*11)+Math.sin(t*1
 // ---------- Ausschnitt aus M.faceShot: Kopf, Hals, Schultern freistellen (pixelgenau, ohne Kantenschimmer) ----------
 const FW=160,FH=104,HEAD={cx:80,cy:38,rx:30,ry:36};
 function faceBuf(key){const b=faceBuf.m??=new Map();if(!b.has(key)){const a=mk(FW,FH),z=mk(FW,FH);b.set(key,{a,z,qa:a.getContext('2d',{willReadFrequently:true}),qz:z.getContext('2d')});}return b.get(key);}
-const inHead=(x,y,k=1)=>{const dx=(x-HEAD.cx)/(HEAD.rx*k),dy=(y-HEAD.cy)/(HEAD.ry*k);return dx*dx+dy*dy<=1;};
+/* Besondere Gladiatoren (4.11.): Freistellung so breit wie ihr Gesicht in face-shots.js (Sumo, Riese, Kleinwuchs), sonst würden Wangen, Doppelkinn und Schultern abgeschnitten */
+const STF={sumo:{x:1.55,y:.95,n:1.9,s:1.8},giant:{x:1.18,y:1.2,n:1.5,s:1.5},dwarf:{x:1.28,y:.84,n:1.4,s:1.35}};let cutSt=null;
+const inHead=(x,y,k=1)=>{const f=cutSt||{x:1,y:1},top=HEAD.cy-HEAD.ry,ry=HEAD.ry*f.y*k,cy=top+HEAD.ry*f.y,dx=(x-HEAD.cx)/(HEAD.rx*f.x*k),dy=(y-cy)/ry;return dx*dx+dy*dy<=1;};
+const neckW=()=>15*(cutSt?.n||1),bustW=u=>(46+u*28)*(cutSt?.s||1);
 const shapes={
- head:(x,y)=>inHead(x,y)||(x>=65&&x<=95&&y>=58&&y<=86),
- bust:(x,y)=>inHead(x,y)||(x>=64&&x<=96&&y>=56&&y<=86)||(y>=78&&x>=lerp(34,6,(y-78)/26)&&x<=lerp(126,154,(y-78)/26))};
+ head:(x,y)=>inHead(x,y)||(Math.abs(x-80)<=neckW()&&y>=58&&y<=86),
+ bust:(x,y)=>inHead(x,y)||(Math.abs(x-80)<=neckW()+1&&y>=56&&y<=86)||(y>=78&&Math.abs(x-80)<=Math.min(80,bustW((y-78)/26)))};
 function cutFace(key,o,t,shape){const B=faceBuf(key),z=1/(1.12*(1+.07*ease(t/5)));B.qa.setTransform(1,0,0,1,0,0);
  try{M.faceShot.paint(B.qa,FW,FH,{team:2,lines:0,yaw:0,...o,clear:true,zoom:z,shake:0},t);}catch(e){B.qa.fillStyle='#000';B.qa.fillRect(0,0,FW,FH);}
- const d=B.qa.getImageData(0,0,FW,FH),p=d.data,fn=shapes[shape||'bust'];for(let y=0;y<FH;y++)for(let x=0;x<FW;x++)if(!fn(x,y))p[(y*FW+x)*4+3]=0;
+ cutSt=STF[o.g?.stature]||null;const d=B.qa.getImageData(0,0,FW,FH),p=d.data,fn=shapes[shape||'bust'];for(let y=0;y<FH;y++)for(let x=0;x<FW;x++)if(!fn(x,y))p[(y*FW+x)*4+3]=0;cutSt=null;
  B.qz.clearRect(0,0,FW,FH);B.qz.putImageData(d,0,0);return B.z;}
 
 // ---------- Doktor: Großaufnahme (transparent, 160 × 104) ----------

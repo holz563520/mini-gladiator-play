@@ -29,7 +29,7 @@ const hr=i=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x);}
 const ease=v=>{v=cl(v);return v*v*(3-2*v);};
 const mixc=(a,b,t)=>{const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*cl(t)).toString(16).padStart(2,'0')).join('');};
 // Stift, der nur innerhalb der Maske zeichnet
-function pen(T,C){const inside=(x,y)=>{const hw=Math.max(headHW(y),C.helm?helmHW(y):0);return Math.abs(x+.5-80)<hw;};
+function pen(T,C){const hx=({sumo:1.35,dwarf:1.15,giant:1.06})[C.stature]||1,inside=(x,y)=>{const hw=Math.max(headHW(y)*hx,C.helm?helmHW(y):0);return Math.abs(x+.5-80)<hw;};
  const R=(x,y,w,h,c)=>{x=Math.round(x);y=Math.round(y);w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));for(let j=0;j<h;j++){let run=-1;for(let i=0;i<=w;i++){const ok=i<w&&inside(x+i,y+j);if(ok&&run<0)run=i;if(!ok&&run>=0){T.r(x+run,y+j,i-run,1,c);run=-1;}}}};
  const P=(x,y,c)=>R(x,y,1,1,c);
  const OV=(x,y,rx,ry,c)=>{for(let j=-Math.ceil(ry);j<=Math.ceil(ry);j++){const hw=rx*Math.sqrt(Math.max(0,1-(j*j)/(ry*ry)));if(hw>=.5)R(x-hw,y+j,hw*2,1,c);}};
