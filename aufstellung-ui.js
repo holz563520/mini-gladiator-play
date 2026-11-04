@@ -48,7 +48,7 @@ function fresh(){st=blank();nameReset();const R=A.roster(Math.floor(Math.random(
 function nameReset(){}
 const alive=()=>S.roster.filter(g=>!g.dead&&!g.retired&&!(g.age<18));
 const G=id=>S.roster.find(g=>g.id===id);
-const fit=g=>{try{return M.army?.eligibility?M.army.eligibility(g):{ok:!g.dead,causes:[]};}catch{return {ok:!g.dead,causes:[]};}};
+/* lanista-gier.js (M.lineupEligibility): jeder Lebende darf aufgestellt werden, Verletzungen nur als Warnung */const fit=g=>{try{return M.lineupEligibility?M.lineupEligibility(g):M.army?.eligibility?M.army.eligibility(g):{ok:!g.dead,causes:[]};}catch{return {ok:!g.dead,causes:[]};}};
 const inL=id=>st.lineup.some(x=>x.id===id);
 // Herumtreiber (Wunsch Thomas 4.11.): dieselbe Aufstellung, Gegner fest (die Gruppe vor dem Tor, unverändert), bis zu 10 eigene Kämpfer,
 // auch gegen kleine Gruppen. Keine Prämie, keine Gunst; wer gewinnt, nimmt alles, was die Herumtreiber tragen (wanderers.js afterLineup).
@@ -300,7 +300,7 @@ function menu(){const P=Object.assign({},P0,st.P);
 function close(){if(amode&&!root.hidden)amode=null;root.hidden=true;closeOverlay();document.body.classList.remove('auf-open');}
 function open(opt){wmode=opt?.wanderer||null;amode=!wmode&&opt?.adventure||null;if(amode){amode.max=amode.max||WMAX;amode.leadMin=amode.leadMin||5;}if(wmode||amode)step='group';if(!TEST){st=gameState();
  // Leere Gruppe: Vorschlag wie bisher AUTO – die drei stärksten Einsatzbereiten, je nach Klasse ins Raster
- if(!st.lineup.length){for(const g of alive().filter(g=>fit(g).ok).sort((a,b)=>A.kw(b)-A.kw(a)).slice(0,3))st.lineup.push(Object.assign({id:g.id},auto(g.role)));}}
+ if(!st.lineup.length){for(const g of alive().filter(g=>fit(g).ok&&!(fit(g).warn||[]).length).sort((a,b)=>A.kw(b)-A.kw(a)).slice(0,3))st.lineup.push(Object.assign({id:g.id},auto(g.role)));}}
  offers=[];sel=null;selChip=null;if(step!=='result'||!lastRes)step='group';root.hidden=false;document.body.classList.add('auf-open');render();root.scrollTop=0;}
 // Zurück in die Arena des Spiels (HUMAN → Art des Kampfes)
 function exitToArena(){close();step='group';const U=window.ArenaUI;if(!U)return;try{U.open();U.api?.go?.(C().boxMenu?'kinds':'home',-1);}catch(e){console.warn(e);}}

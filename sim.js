@@ -39,7 +39,7 @@ function arrangeBattle(b){
 }
 function collisionPairs(b){
  const grid=largeCache.grid;grid.clear();
- for(const a of b.actors){if(a.down||a.g.dead||onGround(a))continue;const cx=Math.floor(a.x/64),cy=Math.floor(a.y/64);for(let x=cx-1;x<=cx+1;x++)for(let y=cy-1;y<=cy+1;y++)for(const t of grid.get(x+','+y)||[]){if(a.grabbedBy===t.id||t.grabbedBy===a.id||a.mountOf===t.id||t.mountOf===a.id)continue;const dx=t.x-a.x,dy=t.y-a.y,min=a.r+t.r+(a.team===t.team?12:6);if(dx*dx+dy*dy>=min*min)continue;const d=Math.hypot(dx,dy);if(d>.01){const k=(min-d)*.5;move(a,-dx/d*k,-dy/d*k);move(t,dx/d*k,dy/d*k);}}const key=cx+','+cy;if(!grid.has(key))grid.set(key,[]);grid.get(key).push(a);}
+ for(const a of b.actors){if(a.down||a.g.dead||onGround(a))continue;const cx=Math.floor(a.x/64),cy=Math.floor(a.y/64);for(let x=cx-1;x<=cx+1;x++)for(let y=cy-1;y<=cy+1;y++)for(const t of grid.get(x+','+y)||[]){if(a.grabbedBy===t.id||t.grabbedBy===a.id)continue;const dx=t.x-a.x,dy=t.y-a.y,min=a.r+t.r+(a.team===t.team?12:6);if(dx*dx+dy*dy>=min*min)continue;const d=Math.hypot(dx,dy);if(d>.01){const k=(min-d)*.5;move(a,-dx/d*k,-dy/d*k);move(t,dx/d*k,dy/d*k);}}const key=cx+','+cy;if(!grid.has(key))grid.set(key,[]);grid.get(key).push(a);}
 }
 function projectileDefense(a,dt){
  if(a.g.role!=='Assassine'||a.down||a.g.dead||a.wind>0||a.swing>0||a.pendingStrike||a.rearFinish||a.grabbedBy||a.stun>0||a.stagger>0||a.kneeTimer>0||a.fallTimer>0||a.netTimer>0)return false;
