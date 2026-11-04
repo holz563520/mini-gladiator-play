@@ -3,7 +3,8 @@
 // BESONDERE GLADIATOREN (Wunsch Thomas 4.11.2026): Beim Sklavenhändler ist ab und zu jemand mit Kleinwuchs oder Riesenwuchs dabei.
 // · Je Kandidat 1 : 150 Kleinwuchs und 1 : 150 Riesenwuchs (bei fünf Kandidaten am Tag etwa alle 15 Tage einer).
 // · Kleinwuchs: etwa 50 cm kleiner (Mittel 129 cm statt 179 cm), kurze Arme und Beine, stämmig gezeichnet;
-//   Stärke +20 (normalverteilt), bringt seine eigene Doppelaxt mit (Güte „Solide“, wird beim Kauf ausgerüstet).
+//   Stärke +20 (normalverteilt). (Die zuerst eingebaute eigene Doppelaxt hat Thomas am 4.11. wieder gestrichen.)
+// · Stimme (audio.js): Kleinwuchs sehr hoch, Riesenwuchs tief.
 // · Riesenwuchs: groß (Mittel 222 cm); Stärke +40 (normalverteilt, darf über 100 steigen), Beweglichkeit (Laufgeschwindigkeit) −10,
 //   Zweihandwaffen (Doppelaxt, Hammer, Hellebarde, Zweihandschwert) +30.
 //   Die Zuschläge gelten für IST und SOLL (Potenzial), damit sie bleiben und weiter wachsen können.
@@ -24,19 +25,19 @@ function shiftWeapon(g,id,d){const v=Math.round(clamp((g.mastery[id]||10)+d,1,In
 function body(g,h,armK,legK){g.height=h;g.arm=Math.round(h*armK+normal(0,2));g.leg=Math.round(h*legK+normal(0,2));g.weight=Math.round((h-100)*.62+g.muscle*.58+g.fat*.6);g.build=g.weight>95?'Kräftig':h<171?'Kompakt':g.fat<13?'Sehnig':'Athletisch';}
 // Aus einem fertig erzeugten Kandidaten einen besonderen machen
 function make(g,kind){if(!g||g.stature||!NAME[kind])return g;M.ensureCareer?.(g);g.stature=kind;
- if(kind==='dwarf'){body(g,Math.round(clamp(normal(129,5),116,142)),.38,.41);g.statureWide=1.3;shiftStat(g,'strength',normal(20,4));g.ownWeapon={def:'doubleaxe',q:2};}
+ if(kind==='dwarf'){body(g,Math.round(clamp(normal(129,5),116,142)),.38,.41);g.statureWide=1.3;shiftStat(g,'strength',normal(20,4));}
  else{body(g,Math.round(clamp(normal(222,6),208,238)),.43,.49);g.statureWide=1.06;shiftStat(g,'strength',normal(40,6));shiftStat(g,'agility',-normal(10,2),100);for(const id of TWO)shiftWeapon(g,id,normal(30,4));}
  if(g.genes&&typeof g.genes==='object'){g.genes.height=g.height;}return g;}
 // Würfeln beim Erzeugen der Tagesware
 function roll(g){const r=Math.random();return r<CHANCE?make(g,'dwarf'):r<2*CHANCE?make(g,'giant'):g;}
-// Nach dem Kauf: eigene Doppelaxt ins Lager und anlegen (Doppelaxt braucht die Klasse Soldat)
-function arrive(g){if(!g?.ownWeapon)return;const w=g.ownWeapon;delete g.ownWeapon;try{const it=M.makeItem('weapon',w.def,w.q);it.source=g.name+' brachte sie mit';S.inventory.push(it);if(g.stature==='dwarf'&&g.role!=='Soldat'&&!M.allowedMelee(g,it))g.role='Soldat';let r=M.equip(g.id,it.id,true);if(r!=='Ausrüstung zugewiesen.')r=M.equip(g.id,it.id,false);M.persist?.();}catch(e){console.warn(e);}}
+// Nach dem Kauf: nichts Besonderes mehr (Altlast aus der ersten Fassung: mitgebrachte Doppelaxt entfällt)
+function arrive(g){if(g)delete g.ownWeapon;}
 const fans=gs=>gs.filter(g=>g&&g.stature);
 // ---------- Sprüche ----------
 const L={
- traderDwarf:['Klein, ich weiß. Aber schau dir die Arme an! Und die Doppelaxt gehört ihm. Geht nicht ohne.','Das Publikum wird ihn lieben. Klein, wütend und mit Doppelaxt – mehr Spektakel gibt es für hundert Gold nirgends.','Unterschätz ihn nicht. Das haben schon viele. Die liegen jetzt unter der Erde, er steht noch.','Er reicht dir bis zum Gürtel und hebt dich trotzdem hoch. Die Axt bringt er selbst mit.','In Ostia haben sie für ihn doppelten Eintritt bezahlt. Doppelt, Lanista!'],
+ traderDwarf:['Klein, ich weiß. Aber schau dir die Arme an! Der stemmt mehr als du.','Das Publikum wird ihn lieben. Klein und wütend – mehr Spektakel gibt es für hundert Gold nirgends.','Unterschätz ihn nicht. Das haben schon viele. Die liegen jetzt unter der Erde, er steht noch.','Er reicht dir bis zum Gürtel und hebt dich trotzdem hoch.','In Ostia haben sie für ihn doppelten Eintritt bezahlt. Doppelt, Lanista!'],
  traderGiant:['Ein Riese! Kein Witz, schau nach oben. Weiter. Noch weiter.','Den habe ich mit drei Ketten bringen müssen. Eine hat er unterwegs zerrissen.','Langsam ist er, ja. Aber wenn er trifft, steht keiner mehr auf. Gib ihm was Zweihändiges.','Die Menge wird toben. Bei einem Riesen tobt die Menge immer. Doppeltes Preisgeld, wenn du mich fragst.','Er isst für drei. Er kämpft auch für drei.'],
- chantDwarf:['Die Menge skandiert: „{N}! {N}!“ – der Kleine ist ihr Liebling.','Das Publikum steht auf für {N}. Klein, aber der Sand bebt.','„Hau sie um, Kleiner!“ – die Ränge feuern {N} an.','Jubel auf allen Rängen: {N} schwingt die Doppelaxt.','Die Leute stampfen im Takt für {N}. Sie lieben ihn.'],
+ chantDwarf:['Die Menge skandiert: „{N}! {N}!“ – der Kleine ist ihr Liebling.','Das Publikum steht auf für {N}. Klein, aber der Sand bebt.','„Hau sie um, Kleiner!“ – die Ränge feuern {N} an.','Jubel auf allen Rängen: {N} wirbelt durch den Sand.','Die Leute stampfen im Takt für {N}. Sie lieben ihn.'],
  chantGiant:['Die Menge skandiert: „RIESE! RIESE!“ – {N} ist der Liebling der Ränge.','Das Publikum tobt, sobald {N} sich bewegt. Der Boden zittert mit.','„Zerdrück sie, {N}!“ – die Ränge sind außer sich.','Jeder Schritt von {N} bekommt Applaus. Das hat die Arena lange nicht gesehen.','Die Leute recken die Fäuste für {N}. Ein Riese im Sand – dafür kommen sie.'],
  hitDwarf:['{N} schlägt zu – die Menge brüllt vor Begeisterung!','Der Kleine hat ihn erwischt! Die Ränge explodieren.'],
  hitGiant:['{N} fegt ihn um – die Ränge kochen!','Ein Schlag wie ein Baumstamm! Das Publikum feiert {N}.']};
