@@ -50,6 +50,15 @@ const alive=()=>S.roster.filter(g=>!g.dead&&!g.retired&&!(g.age<18));
 const G=id=>S.roster.find(g=>g.id===id);
 const fit=g=>{try{return M.army?.eligibility?M.army.eligibility(g):{ok:!g.dead,causes:[]};}catch{return {ok:!g.dead,causes:[]};}};
 const inL=id=>st.lineup.some(x=>x.id===id);
+// Herumtreiber (Wunsch Thomas 4.11.): dieselbe Aufstellung, Gegner fest (die Gruppe vor dem Tor, unverändert), bis zu 10 eigene Kämpfer,
+// auch gegen kleine Gruppen. Keine Prämie, keine Gunst; wer gewinnt, nimmt alles, was die Herumtreiber tragen (wanderers.js afterLineup).
+let wmode=null;const WMAX=10;
+// Reparieren (Wunsch 4.11.): alle angelegten Sachen der aufgestellten Gruppe auf einen Schlag (Preis wie beim Schmied, M.repairCost)
+const gearList=g=>{try{return [M.gear(g,'weapon'),M.gear(g,'secondary'),M.gear(g,'shield'),...M.armorItems(g)].filter(i=>i&&i.durability<i.maxDurability);}catch{return [];}};
+const repairList=()=>{const seen=new Set(),out=[];for(const x of lineup())if(!x.g.enemyGear)for(const i of gearList(x.g))if(!seen.has(i.id)){seen.add(i.id);out.push(i);}return out;};
+const repairPrice=()=>repairList().reduce((n,i)=>n+(M.repairCost?.(i)||0),0);
+function repair(){const items=repairList(),cost=repairPrice();if(!items.length)return toast('Alles Angelegte ist intakt.');if(GOLD()<cost)return toast('Zu wenig Gold ('+fmt(cost)+' nötig).');
+ if(TEST)st.gold-=cost;else{S.gold-=cost;if(S.stats)S.stats.spent=(S.stats.spent||0)+cost;}for(const i of items)i.durability=i.maxDurability;try{if(!TEST)M.persist?.();}catch(e){}pc.clear();save();render();toast(items.length+' Gegenstände für '+fmt(cost)+' Gold repariert.');}
 function auto(role){const n=r=>st.lineup.filter(x=>G(x.id)?.role===r).length;
  return role==='Fernkämpfer'?{row:'hinten',lane:['mitte','oben','unten'][n(role)%3]}:role==='Assassine'?{row:'mitte',lane:n(role)%2?'unten':'oben'}:{row:'vorne',lane:['mitte','oben','unten'][n(role)%3]};}
 const lineup=()=>st.lineup.filter(x=>G(x.id)).map(x=>{const g=G(x.id);return {id:g.id,g,kw:A.kw(g),role:g.role,slot:{row:x.row,lane:x.lane}};});
@@ -61,7 +70,7 @@ function params(){A.P=Object.assign(JSON.parse(JSON.stringify(P0)),TEST?st.P||{}
 const pc=new Map();
 function portrait(g){const k=g.id+(g.dead?'d':'');let p=pc.get(k);if(!p){try{p=ART.portrait(g);}catch(e){p=null;}pc.set(k,p);}return p;}
 function paint(scope){for(const cv of scope.querySelectorAll('canvas[data-por]')){const g=G(cv.dataset.por)||enemyG(cv.dataset.por);if(!g)continue;const p=portrait(g);const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);if(p)ctx.drawImage(p,0,0,80,90,0,0,cv.width,cv.height);if(g.dead){ctx.fillStyle='#000a';ctx.fillRect(0,0,cv.width,cv.height);}}}
-function enemyG(id){const k=lastRes?.gs&&Object.values(lastRes.gs).find(x=>x.g.id===id);if(k)return k.g;for(const o of offers)for(const u of o.enemy)if(u.g.id===id)return u.g;return null;}
+function enemyG(id){if(wmode){const w=wmode.members.find(g=>g.id===id);if(w)return w;}const k=lastRes?.gs&&Object.values(lastRes.gs).find(x=>x.g.id===id);if(k)return k.g;for(const o of offers)for(const u of o.enemy)if(u.g.id===id)return u.g;return null;}
 // Talent-Abzeichen (talent-tags.js); nur eigene Gladiatoren, Gegner nie
 const tal=g=>{try{return g&&S.roster.includes(g)&&M.talentTag?M.talentTag(g):'';}catch{return '';}};
 const por=(g,w=40,h=45)=>`<canvas class="a-px" width="${w}" height="${h}" data-por="${esc(g.id)}"></canvas>`;
@@ -72,7 +81,7 @@ function top(title,sub){return `<header class="a-top">${TEST?'':'<button class="
 const steps=n=>`<div class="a-steps">${['1 · AUFSTELLUNG','2 · GEGNER ☠','3 · KAMPF'].map((s,i)=>`<span class="${i===n?'a-on':''}">${s}</span>`).join('')}</div>`;
 function render(){params();if(step==='group')viewGroup();else if(step==='offers')viewOffers();else if(step==='result')viewResult();paint(root);}
 function viewGroup(){
- const L=lineup(),sum=L.reduce((a,x)=>a+x.kw,0),fs=forms();
+ const L=lineup(),sum=L.reduce((a,x)=>a+x.kw,0),fs=forms(),rc=repairPrice(),wsum=wmode?wmode.members.reduce((a,g)=>a+A.kw(g),0):0;
  const cols=ROLES.map(r=>{const list=alive().filter(g=>g.role===r).sort((a,b)=>A.kw(b)-A.kw(a));
   return `<div class="a-col" data-r="${r}"><h3><span>${ICON[r]} ${PLURAL[r]}</span><span>${list.length}</span></h3><div class="a-list" data-roster>${list.map(g=>{const f=fit(g),cls=['a-card'];if(inL(g.id))cls.push('a-in');if(!f.ok)cls.push('a-out');if(st.hero===g.id)cls.push('a-hero');
    const sub=!f.ok?esc((f.causes||[])[0]||'nicht einsatzbereit'):(g.auf?.kills?g.auf.kills+' Kills · ':'')+(g.auf?.fights?g.auf.fights+' Kämpfe':'frisch');
@@ -82,17 +91,18 @@ function viewGroup(){
  for(const lane of LANES){grid+=`<div class="a-gl">${lane}</div>`;for(const row of ROWS){const here=st.lineup.filter(x=>x.row===row&&x.lane===lane);
   grid+=`<div class="a-cell" data-cell="${row}|${lane}">${here.map(x=>{const g=G(x.id);return `<div class="a-chip${selChip===g.id?' a-sel':''}${st.hero===g.id?' a-hero':''}" data-r="${g.role}" data-drag="${esc(g.id)}" data-from="grid">${por(g,24,27)}<span class="a-n">${st.hero===g.id?'★':''}${esc(g.name)}</span><b>${A.kw(g)}</b>${tal(g)}</div>`;}).join('')}</div>`;}}
  grid+='<div></div><div class="a-foe">GEGNER ▶</div>';
- root.innerHTML=top('AUFSTELLUNG','ARENA THEORY · TESTVERSION')+`<main>${steps(0)}
+ root.innerHTML=top(wmode?'HERUMTREIBER':'AUFSTELLUNG','ARENA THEORY · TESTVERSION')+`<main>${wmode?'':steps(0)}
+ ${wmode?`<section class="a-box"><div class="a-bh"><h2>Vor dem Tor: ${esc(wmode.leader.name)}</h2><span>${wmode.members.length} Herumtreiber · KW ${wsum}</span></div><div class="a-mine">${wmode.members.map(g=>`<span class="a-f">${por(g,40,45)}<small>${esc(g.role)} · ${A.kw(g)}</small></span>`).join('')}</div><p class="a-hint">Stell bis zu ${WMAX} Kämpfer auf – auch gegen eine kleine Gruppe. Keine Prämie: Wer gewinnt, nimmt alles, was die Herumtreiber tragen.</p></section>`:''}
  <section class="a-box"><div class="a-bh"><h2>Kader</h2><span>nach Kampfwert · ziehen oder antippen</span></div><div class="a-cols">${cols}</div></section>
  <section class="a-box"><div class="a-bh"><h2>Aufstellung</h2><span>${L.length} Kämpfer</span></div><div class="a-grid${selChip?' a-picking':''}">${grid}</div>
   <div class="a-sum">${L.length?`<span>Köpfe <b>${L.length}</b></span><span>KW-Summe <b>${sum}</b></span>${ROLES.map(r=>`<span>${ICON[r]} <b>${L.filter(x=>x.role===r).length}</b></span>`).join('')}<span>${st.hero?'★ <b>'+esc(G(st.hero)?.name)+'</b>':'kein ★-Held'}</span>`:'<span>Zieh Kämpfer aus dem Kader auf ein Feld.</span>'}</div>
   <div class="a-forms">${Object.entries(FORMS).map(([k,[l,h]])=>`<span class="a-badge${fs.includes(k)?' a-on':''}" title="${esc(h)}">${l}</span>`).join('')}</div>
-  <div class="a-acts"><button data-act="equip" ${L.length?'':'disabled'}>⚙ AUTOMATISCH AUSRÜSTEN</button></div>
+  <div class="a-acts"><button data-act="equip" ${L.length?'':'disabled'}>⚙ AUTOMATISCH AUSRÜSTEN</button><button data-act="repair" ${rc?'':'disabled'} title="Alle angelegten Waffen, Schilde und Rüstungen der Gruppe">🔧 ALLES REPARIEREN${rc?' · '+fmt(rc)+' Gold':''}</button></div>
   ${selChip?`<div class="a-acts"><button data-act="hero">${st.hero===selChip?'★ Held weg':'★ Held'}</button><button data-act="remove">Abziehen</button><button data-act="unsel">Fertig</button></div>`:''}
   <p class="a-hint">${selChip?esc(G(selChip)?.name)+': Feld antippen zum Versetzen.':'Karten seitlich aus dem Kader ziehen (oder antippen). Zurück in den Kader ziehen = abziehen. Hinten wartet, bis es ernst wird. Schaubilder mag das Publikum.'}</p></section>
  ${st.fallen.length?`<section class="a-box a-fallen"><b>Gefallen:</b> ${st.fallen.slice(-12).map(f=>`✝ ${esc(f.name)} (${f.kw}, Tag ${f.day})`).join(' · ')}</section>`:''}
- ${TEST?'':'<p class="a-hint" style="text-align:center"><button class="a-link" data-act="classic">Bisherige Herausforderungen ▸</button></p>'}
- </main><div class="a-go"><button class="a-main" data-act="ready" ${L.length?'':'disabled'}>GRUPPE STEHT · GEGNER ☠</button></div>`;}
+ ${TEST||wmode?'':'<p class="a-hint" style="text-align:center"><button class="a-link" data-act="classic">Bisherige Herausforderungen ▸</button></p>'}
+ </main><div class="a-go">${wmode?`<button class="a-main" data-act="wfight" ${L.length&&L.length<=WMAX?'':'disabled'}>⚔ KAMPF · ${L.length} GEGEN ${wmode.members.length}</button>`:`<button class="a-main" data-act="ready" ${L.length?'':'disabled'}>GRUPPE STEHT · GEGNER ☠</button>`}</div>`;}
 function offerCard(o,i){const sk=SKULL[o.skulls],typ=Math.round(o.base*o.risk/5)*5,epic=Math.round(o.base*o.risk*2.4/5)*5,shown=o.enemy.slice(0,10);
  return `<div class="a-offer${sel===i?' a-sel':''}" data-offer="${i}"><p class="a-sk" style="color:${sk.color}">${'☠'.repeat(o.skulls)}<small>${sk.label.toUpperCase()}</small></p><h3>${esc(o.label)}</h3>
  <div class="a-foes">${shown.map(u=>`<span class="a-f">${por(u.g,40,45)}${A.kw(u.g)}</span>`).join('')}${o.enemy.length>10?`<span class="a-f">+${o.enemy.length-10}</span>`:''}</div>
@@ -118,16 +128,16 @@ function viewResult(){const r=lastRes.r,o=lastRes.o,maxP=Math.max(.5,...Object.v
  const own=r.units.filter(u=>u.team===0).map(u=>{const g=G(u.key)||lastRes.gs?.[u.key]?.g;return `<div class="${u.dead?'a-dead':''}">${g?por(g,40,45):''}<span>${u.dead?'✝ ':''}${esc(u.name)}${u.kills?` · ${u.kills}×`:''}<small>${u.dead?esc(u.cause||'gefallen'):(u.injuries||[]).length?esc(u.injuries.slice(0,2).join(', ')):u.injured?'leicht verletzt':'unverletzt'}</small></span></div>`;}).join('');
  const ev=r.events.map(e=>`<div><span class="a-t">${e.t.toFixed(1)} s</span><span class="${e.team?'a-e':'a-o'}">${e.type==='tot'?'✝':'⤓'} ${esc(e.name)} (${e.kw})</span>${e.by?' ← '+esc(e.by):''}${e.under?' <span class="a-x">Außenseiter!</span>':''}</div>`).join('')||'<div>Keine Gefallenen.</div>';
  const vow=r.vowRes.map(v=>`${v.ok?'✔':'✘'} ${v.label} ×${String(v.mul).replace('.',',')}`).join(' · ');
- root.innerHTML=top('ABRECHNUNG','ARENA THEORY · TESTVERSION')+`<main>${steps(2)}<section class="a-box a-res">
- <p class="a-eyebrow" style="color:${SKULL[o.skulls].color}">${'☠'.repeat(o.skulls)} ${esc(o.label)}</p><h2 class="${r.won?'a-won':'a-lost'}">${r.draw?'UNENTSCHIEDEN':r.won?'SIEG':'NIEDERLAGE'}</h2><div class="a-gold">+${fmt(r.gold)} Gold</div><p class="a-sub">${r.time} s · ${verdict}</p>${chart(r)}
- <h2 style="margin-top:12px;font-size:13px">Spektakel ${f2(r.spect)}${r.tempo<1?' <small style="color:#97aaa8">(×'+String(r.tempo).replace('.',',')+' Dauer)</small>':''}</h2>
+ root.innerHTML=top('ABRECHNUNG','ARENA THEORY · TESTVERSION')+`<main>${r.loot?'':steps(2)}<section class="a-box a-res${r.loot?' a-wres':''}">
+ <p class="a-eyebrow" style="color:${SKULL[o.skulls].color}">${'☠'.repeat(o.skulls)} ${esc(o.label)}</p><h2 class="${r.won?'a-won':'a-lost'}">${r.draw?'UNENTSCHIEDEN':r.won?'SIEG':'NIEDERLAGE'}</h2>${r.loot?`<div class="a-gold">${r.loot.length?'Beute: '+r.loot.length+' Gegenstände':'Keine Beute'}</div>${r.loot.length?`<p class="a-sub">${r.loot.map(x=>esc(x.name)+(x.sold?' (verkauft · '+fmt(x.sold)+' Gold)':'')).join(' · ')}</p>`:''}`:`<div class="a-gold">+${fmt(r.gold)} Gold</div>`}<p class="a-sub">${r.time} s${r.loot?' · im Hinterhof':' · '+verdict}</p>${chart(r)}
+ <h2 class="a-spect" style="margin-top:12px;font-size:13px">Spektakel ${f2(r.spect)}${r.tempo<1?' <small style="color:#97aaa8">(×'+String(r.tempo).replace('.',',')+' Dauer)</small>':''}</h2>
  <div class="a-bars">${Object.entries(r.parts).filter(([,v])=>v>.004).map(([k,v])=>`<div class="a-bar"><span>${PART[k]||k}</span><span class="a-bg"><i style="width:${v/maxP*100}%"></i></span><span>${f2(v)}</span></div>`).join('')}</div>
  <div class="a-formula">${fmt(r.base)} Grundbörse × ${f2(r.risk)} Risiko × ${f2(r.spect)} Spektakel${r.vowRes.length?' × '+f2(r.vowMul)+' Gelübde':''} × ${f2(r.fameMul)} Gunst${r.divisor>1.001?' ÷ '+f2(r.divisor)+' Verlustteiler':''}${r.won?'':' × '+String(A.P.loseShare).replace('.',',')+' Niederlage'} = <b>${fmt(r.gold)}</b><br>
  Blut: ${r.deaths} eigene Tote, ${r.severe} eigene Schwerverletzte · Gunst der Menge ${r.fameDelta>=0?'+':''}${r.fameDelta}${vow?'<br>Gelübde: '+vow:''}${r.heroes.length?'<br>Heldentaten: '+r.heroes.map(h=>esc(h.name)+' '+h.kills+'×'+(h.team?' (Gegner)':'')).join(', '):''}</div>
  <h2 style="margin:12px 0 6px;font-size:13px;text-align:left">Deine Kämpfer</h2><div class="a-fighters">${own}</div>
  <h2 style="margin:12px 0 0;font-size:13px;text-align:left">Verlauf</h2><div class="a-ticker">${ev}</div></section>
  ${learnHtml()}</main>
- <div class="a-go">${TEST?'<button data-act="nextday">NEUER TAG</button>':'<button data-act="report">KAMPFBERICHT</button>'}<button class="a-main" data-act="again">WEITER</button></div>`;}
+ <div class="a-go">${TEST?'<button data-act="nextday">NEUER TAG</button>':'<button data-act="report">KAMPFBERICHT</button>'}<button class="a-main" data-act="again">${r.loot?'ZURÜCK ZUM LUDUS':'WEITER'}</button></div>`;}
 // ---------- Gewohnter Kampfbericht des Spiels: was jeder Gladiator gelernt hat (S.lastReport, wie arena-report.js) ----------
 function valueOf(g,path){const [grp,key]=path.split(':');try{
  if(grp==='stats')return [g.stats[key],g.caps.stats[key]];if(grp==='moves')return [g.moves[key],g.caps.moves[key]];if(grp==='weapons')return [g.mastery[key],g.caps.weapons[key]];
@@ -152,7 +162,7 @@ function showOffers(){const L=lineup();if(!L.length)return;const bad=L.filter(x=
 
 // ---------- Ziehen und Ablegen (Maus sofort, Finger nach kurzem Halten) ----------
 let drag=null;
-function place(id,row,lane){const x=st.lineup.find(x=>x.id===id);if(x){x.row=row;x.lane=lane;}else{const g=G(id);if(!g||!fit(g).ok)return toast((g?.name||'')+' ist nicht einsatzbereit.');st.lineup.push({id,row,lane});}save();render();}
+function place(id,row,lane){const x=st.lineup.find(x=>x.id===id);if(x){x.row=row;x.lane=lane;}else{const g=G(id);if(!g||!fit(g).ok)return toast((g?.name||'')+' ist nicht einsatzbereit.');if(wmode&&st.lineup.length>=WMAX)return toast('Gegen Herumtreiber höchstens '+WMAX+' Kämpfer.');st.lineup.push({id,row,lane});}save();render();}
 function remove(id){st.lineup=st.lineup.filter(x=>x.id!==id);if(st.hero===id)st.hero=null;if(selChip===id)selChip=null;save();render();}
 function tap(id,from){if(from==='roster'){if(inL(id))return remove(id);const g=G(id);const s=auto(g.role);place(id,s.row,s.lane);}else{selChip=selChip===id?null:id;render();}}
 root.addEventListener('pointerdown',e=>{if(step!=='group'||busy)return;const el=e.target.closest('[data-drag]');if(!el||e.button>0)return;
@@ -193,10 +203,13 @@ root.addEventListener('click',e=>{const t=e.target.closest('[data-act],[data-cel
  else if(a==='back'){step='group';offers=[];sel=null;render();}
  else if(a==='fight')fight();
  else if(a==='probe')probe();
+ else if(a==='again'&&wmode){close();wmode=null;step='group';try{M.ui.click('nav:home');}catch(e){}}
  else if(a==='again'){step='group';offers=[];sel=null;st.seed++;save();render();root.scrollTop=0;}
  else if(a==='nextday'){nextDay();}
  else if(a==='menu')menu();
- else if(a==='exit')exitToArena();
+ else if(a==='exit'){if(wmode){close();wmode=null;step='group';try{M.ui.click('nav:home');}catch(e){}}else exitToArena();}
+ else if(a==='repair')repair();
+ else if(a==='wfight')wfight();
  else if(a==='equip')equip();
  else if(a==='report'){close();try{M.ui.click('nav:report');}catch(e){}}
  else if(a==='classic')classic();
@@ -214,21 +227,25 @@ M.fixedStep=function(){const r=fs0.apply(this,arguments);if(tracker&&S.battle===
 // Formation des Anführers: bei Kämpfen aus der Aufstellung bleiben alle auf ihren Rasterplätzen
 {const LD=M.outsideLeader;if(LD?.arenaFormation&&!LD._aufWrap){const f0=LD.arenaFormation;LD._aufWrap=true;
  LD.arenaFormation=function(b){const f=f0.apply(this,arguments);try{if(b?.aufForm&&f?.pts)f.pts=f.pts.map(([a])=>[a,{x:a.x,y:a.y}]);}catch(e){}return f;};}}
-function fight(){const o=offers[sel];if(!o)return;const L=lineup();busy=true;const kwBefore={};for(const x of L)kwBefore[x.id]={kw:x.kw,role:x.role,g:x.g};
+// Herumtreiber: Gegner ist die Gruppe vor dem Tor, so wie sie ist
+function wfight(){const g=wmode,L=lineup();if(!g||!L.length||busy)return;if(L.length>WMAX)return toast('Gegen Herumtreiber höchstens '+WMAX+' Kämpfer.');const bad=L.filter(x=>!fit(x.g).ok);if(bad.length)return toast(bad[0].g.name+' ist nicht einsatzbereit.');
+ params();const o=A.describe({kind:'gemischt',label:'Herumtreiber · '+g.leader.name,enemy:g.members.map((m,i)=>({kind:'human',key:'w'+i,row:m.role==='Fernkämpfer'?'back':'front',g:m})),id:'w-'+g.id,level:1},L);offers=[o];sel=0;fight();}
+function fight(){const o=offers[sel];if(!o)return;const L=lineup(),wg=wmode;busy=true;const kwBefore={};for(const x of L)kwBefore[x.id]={kw:x.kw,role:x.role,g:x.g};
  const spec=A.spec(L,o,false);
  S.battle=null;try{M.ui.click('nav:home');}catch(e){}try{window.HahnArena?.resetScene?.();}catch(e){}
  M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;for(const p of [...(M.fx||[]),...(M.shots||[])])p.active=false;
  if(TEST)S.gold=st.gold; // Goldanzeige der Kampfansicht zeigt das Simulator-Gold
- const b=AN.build(spec);b.league=0;A.place(b,L);S.battle=b;const bid=b.id;
+ const b=AN.build(spec);b.league=0;A.place(b,L);S.battle=b;const bid=b.id;if(wg){wg.fightId=bid;wg.lineupFight=true;try{M.persist?.();}catch(e){}}
  // Anführer wie in normalen Arenakämpfen (ab 5 eigenen Kämpfern): Lagebesprechung, Gong, Rufe im Kampf.
  // Die Anführer-Logik schließt Kämpfe der neuen Arena aus (b.neu) – hier ausdrücklich angehängt. Die Positionen
  // kommen aus dem Raster: die Formationsphase lässt jeden dort stehen, wo er aufgestellt wurde (b.aufForm).
  b.aufForm=true;try{const LD=M.outsideLeader;if(LD?.attachArena){b.neu=false;try{LD.attachArena(b,{leaderId:S.arenaLeaderId});}finally{b.neu=true;}}}catch(e){console.warn(e);}
- tracker=A.tracker(b,L,o,{vows:st.vows,hero:st.hero,fame:st.fame});
+ tracker=A.tracker(b,L,o,{vows:wg?[]:st.vows,hero:st.hero,fame:wg?0:st.fame});
  document.body.classList.add('auf-fighting');
  AN.listeners.push(out=>{const T=tracker;tracker=null;let r;try{r=T.done(out);}catch(e){console.error(e);}
   // Im Spiel: Prämie statt Ligaprämie buchen (wie arena-ui.js über ArenaCareer.settle); Lernen, Verletzungen, Tod, Bericht bucht das Spiel
-  if(!TEST&&r){try{C().settle?.(r.gold,out);}catch(e){console.error(e);}try{C().record?.(r.won);}catch(e){}}
+  if(r&&wg){r.gold=0;r.fameDelta=0;/* Herumtreiber zahlen nichts: Ligaprämie des Spiels durch 0 ersetzen (wie die Arena ihre Prämie bucht) */if(!TEST){try{C().settle?.(0,out);}catch(e){console.error(e);}}try{r.loot=M.wanderers?.afterLineup?.(wg,r.won,r.draw)||[];}catch(e){console.error(e);r.loot=[];}}
+  else if(!TEST&&r){try{C().settle?.(r.gold,out);}catch(e){console.error(e);}try{C().record?.(r.won);}catch(e){}}
   setTimeout(()=>{S.battle=null;try{M.ui.render();}catch(e){}document.body.classList.remove('auf-fighting');busy=false;try{ART.clearFigures?.();}catch(e){}pc.clear();if(r)settle(r,o,kwBefore,bid);else{step='group';render();}},1400);});
  try{M.ui.render();}catch(e){console.error(e);}}
 function settle(r,o,kwBefore={},bid=null){if(TEST)st.gold+=r.gold;st.fame=Math.max(-50,Math.min(150,st.fame+r.fameDelta));
@@ -266,7 +283,7 @@ function menu(){const P=Object.assign({},P0,st.P);
 
 // ---------- Start ----------
 function close(){root.hidden=true;closeOverlay();document.body.classList.remove('auf-open');}
-function open(){if(!TEST){st=gameState();
+function open(opt){wmode=opt?.wanderer||null;if(wmode)step='group';if(!TEST){st=gameState();
  // Leere Gruppe: Vorschlag wie bisher AUTO – die drei stärksten Einsatzbereiten, je nach Klasse ins Raster
  if(!st.lineup.length){for(const g of alive().filter(g=>fit(g).ok).sort((a,b)=>A.kw(b)-A.kw(a)).slice(0,3))st.lineup.push(Object.assign({id:g.id},auto(g.role)));}}
  offers=[];sel=null;selChip=null;if(step!=='result'||!lastRes)step='group';root.hidden=false;document.body.classList.add('auf-open');render();root.scrollTop=0;}

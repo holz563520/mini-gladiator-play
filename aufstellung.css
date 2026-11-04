@@ -120,3 +120,6 @@ body.auf-fighting #auf{display:none}
 
 #auf .a-card .a-vals .tal-b{margin:0}
 #auf .a-chip .tal-b{margin-left:2px;font-size:8px;padding:0 2px}
+
+/* Herumtreiber-Kampf (4.11.): keine Prämie, daher keine Börsenrechnung */
+.a-wres .a-formula,.a-wres .a-bars,.a-wres .a-spect{display:none}
