@@ -27,8 +27,8 @@ canvas{display:block;width:100%;height:auto;image-rendering:pixelated;background
 </main>
 <script>/* Testseite: nichts darf in Spielstände schreiben */try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};}catch(e){}</script>
 <canvas id="arenaCanvas" width="10" height="10" hidden></canvas>
-<script src="data.js"></script><script src="household.js"></script><script src="management.js"></script><script src="scout.js"></script><script src="sim.js"></script><script src="benchmark.js"></script><script src="school.js"></script><script src="weapon-art.js"></script><script src="arena.js"></script>
-<script src="injury-shots.js"></script>
+<script src="data.js?v=4d65596f"></script><script src="household.js?v=4d65596f"></script><script src="management.js?v=4d65596f"></script><script src="scout.js?v=4d65596f"></script><script src="sim.js?v=4d65596f"></script><script src="benchmark.js?v=4d65596f"></script><script src="school.js?v=4d65596f"></script><script src="weapon-art.js?v=4d65596f"></script><script src="arena.js?v=4d65596f"></script>
+<script src="injury-shots.js?v=4d65596f"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),M=MG,IS=M.injuryShots,FX=IS.effects,ORIG=FX.skullfracture;
@@ -64,7 +64,7 @@ function pen(T,C){const inside=(x,y)=>{const hw=Math.max(headHW(y),C.helm?helmHW
  const PG=(pts,c)=>{let y0=1e9,y1=-1e9;for(const p of pts){y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);}for(let y=Math.floor(y0);y<=Math.ceil(y1);y++){const xs=[];for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];if((a[1]<=y&&b[1]>y)||(b[1]<=y&&a[1]>y))xs.push(a[0]+(y-a[1])/(b[1]-a[1])*(b[0]-a[0]));}xs.sort((m,n)=>m-n);for(let i=0;i+1<xs.length;i+=2)R(xs[i],y,xs[i+1]-xs[i]+1,1,c);}};
  return {R,P,OV,ROV,LN,PG,inside};}
 // Haarriss: zackig, verzweigt, wächst mit g (0–1)
-function crack(D,x,y,ang,len,seed,g,c,c2){let px=x,py=y;const n=Math.floor(len*g);for(let i=0;i<n;i++){ang+=(hr(seed+i)-.5)*.8;px+=Math.cos(ang);py+=Math.sin(ang);D.P(px,py,c);if(c2)D.P(px+Math.sin(ang)*.9,py-Math.cos(ang)*.9,c2);if(i===Math.floor(len*.5)&&len>8)crack(D,px,py,ang+(hr(seed+77)>.5?.95:-.95),len*.45,seed+40,g,c);}}
+function crack(D,x,y,ang,len,seed,g,c,c2){let px=x,py=y;const n=Math.floor(len*g);for(let i=0;i<n;i++){ang+=(hr(seed+i)-.5)*.8;px+=Math.cos(ang);py+=Math.sin(ang);if(py>41)return;D.P(px,py,c);if(c2)D.P(px+Math.sin(ang)*.9,py-Math.cos(ang)*.9,c2);if(i===Math.floor(len*.5)&&len>8)crack(D,px,py,ang+(hr(seed+77)>.5?.95:-.95),len*.45,seed+40,g,c);}}
 // Blut läuft in Bahnen bergab (auf dem Kopf beschnitten), mit Tropfenkopf
 function rivers(D,k,list,start,dur){const run=cl((k-start)/dur);if(run<=0)return;for(const [x,y,len,w,c,wig] of list){const L=len*ease(run);let px=x;for(let s=0;s<L;s++){px=x+Math.sin(s*.25+wig)*.8;D.R(px,y+s,w,1,c);if(w>1)D.P(px,y+s,RED2);}D.R(px-.5,y+L,w+1,2,DRK);}}
 // Fliegende Teilchen (dürfen den Kopf verlassen): Blut, Splitter, Haare, Funken
@@ -102,17 +102,17 @@ function axeAt(T,o,k){const {cx,cy,ux,uy,nx,ny}=o;let d,rot=0,wob=0;
 // Klinge: Spalt mit Schichten (Kopfhaut, Fett, Knochen, Höhle), Haarrissen, Blut, das sich sammelt und überläuft
 function split(T,k,C,o){const D=pen(T,C),H=helmCols(C.helm),sz=C.helm?(C.helm.mat==='leather'?.85:C.helm.mat==='medium'?.72:.6):1;
  const dx=o.x1-o.x0,dy=o.y1-o.y0,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy,ny=ux,cx=(o.x0+o.x1)/2,cy=(o.y0+o.y1)/2,geo={cx,cy,ux,uy,nx,ny};
- const hitP={x:cx,y:cy};speedlines(T,cx,cy,nx,ny,k,o.seed);
+ const hitP={x:cx,y:cy};if(o.reveal)speedlines(T,o.x0,o.y0,ux,uy,k,o.seed);else speedlines(T,cx,cy,nx,ny,k,o.seed);
  if(k<0){o.weapon?.(T,{...geo,...o},k);return geo;}
- const op=out(k/o.open)*sz,drop=(o.drop||0)*out((k-.03)/.25)*sz,fill=cl((k-.2)/.9),pulse=.5+.5*Math.sin(k*9),at=s=>({x:o.x0+ux*s,y:o.y0+uy*s,f:Math.pow(Math.sin(Math.PI*cl(s/L)),.5)});
+ const lim=o.reveal?o.reveal(k,L):Infinity,op=out(k/o.open)*sz,drop=(o.drop||0)*out((k-.03)/.25)*sz,fill=cl((k-.2)/.9),pulse=.5+.5*Math.sin(k*9),at=s=>({x:o.x0+ux*s,y:o.y0+uy*s,f:Math.pow(Math.sin(Math.PI*cl(s/L)),.5)});
  const skinHi=mixc(C.skin,'#fff2dc',.35),skinLo=mixc(C.shade,'#3a1410',.3);
  // 1 verklebtes Blut im Haar rund um den Spalt (wächst)
- for(let s=0;s<=L;s+=2){const p=at(s),hw=o.w*op*p.f;D.ROV(p.x+nx*(drop*.5+1),p.y+ny*(drop*.5+1),2+hw*.4,hw+2+fill*1.5,ux,uy,'#5a1d1a77');}
+ for(let s=0;s<=Math.min(L,lim);s+=2){const p=at(s),hw=o.w*op*p.f;D.ROV(p.x+nx*(drop*.5+1),p.y+ny*(drop*.5+1),2+hw*.4,hw+2+fill*1.5,ux,uy,'#5a1d1a77');}
  // 2 Haarrisse laufen über die Enden hinaus und von der Mitte weg
  const cg=out(k/.18);crack(D,o.x0,o.y0,Math.atan2(-uy,-ux),o.cr||9,o.seed,cg,'#2a1012');crack(D,o.x1,o.y1,Math.atan2(uy,ux),o.cr||9,o.seed+7,cg,'#2a1012');
  for(const [u,sd,sd2] of [[.35,1,11],[.6,-1,23],[.8,1,31]]){const p=at(L*u),hw=o.w*op*p.f;crack(D,p.x+nx*sd*(hw+2),p.y+ny*sd*(hw+2),Math.atan2(ny*sd,nx*sd)+(hr(sd2)-.5),5+hr(sd2+1)*5,o.seed+sd2,cg,'#3a1416');}
  // 3 der Spalt selbst, Schicht für Schicht quer zur Schnittlinie
- for(let s=0;s<=L;s+=.5){const p=at(s),hw=o.w*op*p.f;if(hw<.25)continue;const chip=hr(Math.floor(s*1.3)+o.seed),chip2=hr(Math.floor(s*1.7)+o.seed+5);
+ for(let s=0;s<=Math.min(L,lim);s+=.5){const p=at(s),hw=o.w*op*p.f*cl((lim-s)/4+.25);if(hw<.25)continue;const chip=hr(Math.floor(s*1.3)+o.seed),chip2=hr(Math.floor(s*1.7)+o.seed+5);
   for(let j=-hw-3.5;j<=hw+3.5;j+=.5){const lower=j>0,sh=lower?drop:0,x=p.x+nx*(j+sh),y=p.y+ny*(j+sh),aj=Math.abs(j),edge=aj-hw;let c;
    if(edge>2.5)c=H?(lower?mixc(H.dome,'#000000',.25):H.edge):(lower?skinLo:skinHi);/* Lippe: Kopfhaut bzw. aufgebogenes Blech */
    else if(edge>1.6)c=H?mixc(H.dome,'#000000',.45):(lower?'#c98a6a':'#e8c79a');/* Fett / Helmfutter */
@@ -131,7 +131,20 @@ function split(T,k,C,o){const D=pen(T,C),H=helmCols(C.helm),sz=C.helm?(C.helm.ma
  // 6 Herzschlag: Spritzer aus der Spaltmitte im Bogen nach außen
  if(k>.9&&o.beat){const bt=(k*1.15)%1;if(bt<.4){const v=bt/.4,p=at(L*.5);for(let i=0;i<9;i++){const a=(hr(i+o.seed)-.5)*.9,vx=-nx*Math.cos(a)+ux*Math.sin(a),vy=-ny*Math.cos(a)+uy*Math.sin(a),d=v*(12+i%3*5);T.r(p.x+vx*d,p.y+vy*d+v*v*20,i%3?1:2,i%3?1:2,i%2?RED2:RED);}}}
  o.weapon?.(T,{...geo,...o},k);return geo;}
-const K1=(T,V,k,C)=>split(T,k,C,{x0:70,y0:27,x1:92,y1:40,w:2.4,open:.16,drop:1,beat:true,seed:11,cr:10,len:66,w2:5,bite:2,hold:.18,weapon:(T,o,k)=>swordAt(T,{...o,len:66,w:5,bite:2,hold:.18},k)});
+// K1 Gladius/Schwert (Wunsch 4.11.): kleinere Wunde, die in Hiebrichtung verläuft – von rechts oben nach links unten. Das Schwert gleitet
+// mit der Spitze voran durch den Schnitt, der Spalt öffnet sich hinter der Klinge.
+const K1_SLIDE=.16;
+function swordSlide(T,o,k){const {x0,y0,ux,uy,nx,ny}=o,L=o.L;if(k<-.3||k>.42)return;let s;/* Lage der Spitze auf der Schnittlinie */
+ if(k<0)s=-70*Math.pow(cl(-k/.3),1.4);else if(k<K1_SLIDE)s=(L+6)*ease(k/K1_SLIDE);else if(k<K1_SLIDE+.07)s=L+6;else s=L+6-Math.pow((k-K1_SLIDE-.07)/.19,1.5)*(L+80);
+ const len=58,W=4.5,fade=k>.36?'#ffffff40':null,draw=(off,ghost)=>{const tx=x0+ux*(s+off),ty=y0+uy*(s+off);
+  for(let a=0;a<=len;a+=.5){const w=a<5?W*a/5:W,x=tx-ux*a,y=ty-uy*a;for(let j=-w/2;j<=w/2;j+=.6){const px=x+nx*j,py=y+ny*j;T.r(px,py,1,1,ghost||fade||(j>w/2-1?'#f6f8ee':j<-w/2+1?'#5f6a66':Math.abs(j)<.6?'#8d9893':'#bcc5bf'));}
+   if(!ghost&&k>0&&a<len*.6&&hr(a*3)<.4)T.r(x+nx*(W/2-.5),y+ny*(W/2-.5),1,1,RED);}
+  if(ghost)return;const gx=tx-ux*len,gy=ty-uy*len;T.line(gx+nx*5,gy+ny*5,gx-nx*5,gy-ny*5,'#6e5a2c',3);T.line(gx+nx*5,gy+ny*5,gx-nx*5,gy-ny*5,'#d6b25e',1);T.line(gx,gy,gx-ux*14,gy-uy*14,'#3a2616',4);T.line(gx,gy,gx-ux*14,gy-uy*14,'#7a5532',2);T.r(gx-ux*15-1,gy-uy*15-1,4,4,'#c9a24e');};
+ if(k<-.02)for(let g=3;g>=1;g--)draw(-g*10*cl(-k/.15+.2),g===3?'#ffffff18':g===2?'#ffffff28':'#ffffff40');
+ if(k>0&&k<K1_SLIDE+.08){/* heller Schnittblitz entlang der Bahn */const e=Math.min(L,s);for(let a=0;a<e;a+=1)T.r(x0+ux*a-nx*1.5,y0+uy*a-ny*1.5,1,1,'#fffbe8aa');}
+ draw(0);}
+const K1=(T,V,k,C)=>split(T,k,C,{x0:90,y0:27,x1:75,y1:38,w:1.7,open:.24,drop:.6,beat:true,seed:11,cr:7,flow:.8,reveal:(k,L)=>k<K1_SLIDE?(L+6)*ease(k/K1_SLIDE):Infinity,
+ weapon:(T,o,k)=>swordSlide(T,{...o,L:Math.hypot(75-90,38-27)},k)});
 const K2=(T,V,k,C)=>split(T,k,C,{x0:64,y0:24,x1:97,y1:41,w:4,open:.22,drop:2.6,spray:1.4,flow:1.3,beat:true,seed:37,cr:12,weapon:(T,o,k)=>swordAt(T,{...o,len:90,w:7,bite:3.5,hold:.24},k)});
 const K3=(T,V,k,C)=>{const pull=.7,wide=k<pull?2.4:4.6;const g=split(T,k,C,{x0:72,y0:26,x1:91,y1:39,w:wide,open:.12,drop:k<pull?.6:2.4,spray:.8,flow:k<pull?.6:1.5,beat:k>pull+.3,seed:59,cr:8,weapon:(T,o,k)=>axeAt(T,{...o,bite:4,pull},k)});
  // Herausreißen: Knochenstück und Blutschwall folgen der Axt
@@ -188,8 +201,8 @@ const beat=()=>(now()*1.15)%1<.28;
 // Schnitt als Pixelzeile von (x0,y0) nach (x1,y1): Höhle, Knochen oben, Blut unten
 function cut(r,x0,y0,x1,y1,helm,lk,thick){const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));for(let i=0;i<=n;i++){const px=Math.round(x0+(x1-x0)*i/n),py=Math.round(y0+(y1-y0)*i/n),mid=i>0&&i<n;
  r(px,py-1,1,1,helm?lk.edge:BONE);r(px,py,1,1,HOLE);if(thick&&mid)r(px,py+1,1,1,DEEP);r(px,py+(thick&&mid?2:1),1,1,helm?mixc(lk.edge,'#000000',.4):RED);}}
-function mK1(r0,h,a,helm,back){const r=clipR(r0,h,helm),x=h.x,y=h.y,lk=helm&&M.itemLook(helm);cut(r,x-5,y-7,x+4,y-2,helm,lk,false);
- if(!helm){r(x-6,y-7,1,1,'#2a1012');r(x+5,y-1,1,1,'#2a1012');}r(x,y-4,1,1,beat()?RED2:DEEP);face(r,x,y-1,[[2,8,.8],[0,6,.6,DRK],[-2,5,.9]],back);}
+function mK1(r0,h,a,helm,back){const r=clipR(r0,h,helm),x=h.x,y=h.y,lk=helm&&M.itemLook(helm);cut(r,x+4,y-7,x-2,y-3,helm,lk,false);
+ if(!helm){r(x+5,y-8,1,1,'#2a1012');}r(x+1,y-5,1,1,beat()?RED2:DEEP);face(r,x,y-2,[[1,8,.8],[-1,6,.6,DRK],[-3,4,.9]],back);}
 function mK2(r0,h,a,helm,back){const r=clipR(r0,h,helm),x=h.x,y=h.y,lk=helm&&M.itemLook(helm);cut(r,x-7,y-8,x+6,y-1,helm,lk,true);
  /* untere Hälfte sackt ab: dunkle Stufe */r(x-6,y-5,4,1,'#00000055');if(!helm){r(x-7,y-8,1,1,'#2a1012');r(x+7,y-1,1,1,'#2a1012');}
  if(beat()){r(x,y-4,1,1,RED2);r(x+1,y-5,1,1,RED);}face(r,x,y,[[-3,8,.8],[0,9,.6,DRK],[2,7,1],[4,5,.7]],back);}
