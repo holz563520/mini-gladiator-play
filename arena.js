@@ -828,7 +828,7 @@ function measureArena(){const r=c.getBoundingClientRect();canvasSize={width:Math
  if((save.battle?.actors.length||0)<=60||zoom>1.4||save.battle?.cinematic||save.battle?.verdictCamera){drawGladiator(a);return;}
  if(M.woundCare(a).count||M.legImpairment(a.g,'l')||M.legImpairment(a.g,'r')||a.sandKick>0||a.wipeTimer>0||a.rearFinish||a.grabbedBy||a.pierceContact){drawGladiator(a,false,true);return;}
  const g=a.g,w=M.weapon(a),motion=figureMotion(a,w,time),face=Math.cos(a.a)>=0?1:-1,fall=a.down||g.dead||a.fallTimer>0,knee=a.kneeTimer>0||a.state==='bandage',stride=a.moveSpeed>5?Math.sin(a.phase)*10:0,bend=(a.state==='charge'?5:0)+motion.lean,back=Math.sin(a.a||0)<-.42;
- ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.scale(g.height/180*face,g.height/180);if(fall){ctx.translate(10,0);ctx.rotate(-1.35);}else if(knee)ctx.translate(0,15);
+ ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-(a.mountLift||0)));ctx.scale(g.height/180*face,g.height/180);if(fall){ctx.translate(10,0);ctx.rotate(-1.35);}else if(knee)ctx.translate(0,15);
  const skin=g.appearance.skin,cloth=a.team?'#b7694f':'#55938e',armorItems=M.armorItems(g),armored=!!M.gear(g,'armor')||armorItems.length>0,metal=armored?'#939f96':cloth;
  function massLeg(side,x,offset){if(g.body[side+'t'].missing)return;const p=stepPose((a.phase||0)+offset,clamp(a.moveSpeed/120,0,1)),moving=a.moveSpeed>1.5&&!fall&&!knee,hip={x,y:-26},foot={x:x+(moving?p.x*(a.gaitStride||36)*p.support/(2*(g.height/180))*(a.gaitForward??1):0),y:g.body[side+'sh'].missing?-17:g.body[side+'f'].missing?-5:knee?-15:moving?-p.lift*4:0},joint=limbJoint(hip,foot,14,-1);pixelBone(hip,joint,6,skin);if(!g.body[side+'sh'].missing)pixelBone(joint,foot,5,skin);}
  massLeg('l',-5,Math.PI);massLeg('r',5,0);

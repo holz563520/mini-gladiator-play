@@ -1,0 +1,57 @@
+/* LANISTA-GIER · Testversion (lanista-test.html) */
+.lg-warn{box-shadow:inset 0 0 0 2px #b8432f!important;position:relative}
+.a-chip.lg-warn,.a-card.lg-warn{background-image:repeating-linear-gradient(135deg,rgba(184,67,47,.14) 0 6px,transparent 6px 12px)}
+.lg-badge{position:absolute;top:2px;right:3px;font-style:normal;font-size:12px;line-height:1;filter:drop-shadow(0 1px 0 #000)}
+.lg-dogmark{position:absolute;bottom:2px;right:3px;font-style:normal;font-size:13px;line-height:1}
+.a-chip .lg-badge{top:-4px;right:-2px;font-size:10px}.a-chip .lg-dogmark{bottom:-3px;right:-2px;font-size:11px}
+.lg-say{position:fixed;left:50%;top:64px;transform:translate(-50%,-20px);opacity:0;pointer-events:none;z-index:400;display:flex;gap:10px;align-items:center;max-width:min(560px,calc(100vw - 24px));padding:10px 14px 10px 10px;background:#24160f;border:2px solid #c99a4e;border-radius:6px;box-shadow:0 8px 24px #000a;color:#f0e2c3;font-size:13px;line-height:1.45;transition:opacity .25s,transform .25s}
+.lg-say.on{opacity:1;transform:translate(-50%,0);pointer-events:auto;cursor:pointer}
+.lg-say.warn{border-color:#d0573e}
+.lg-say canvas,.lg-q canvas,.lg-lan canvas,.lg-box canvas,.lg-rider canvas,.lg-mbox li canvas{image-rendering:pixelated;flex-shrink:0;background:#3a2619;border-radius:3px}
+.lg-say b{display:block;color:#f1c64a;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.lg-dogs .a-hint{margin:4px 0 8px}
+.lg-rider{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #ffffff14}
+.lg-rn{flex:1;min-width:120px}.lg-rn b{display:block;font-size:13px}.lg-rn small{color:#b9a98c;font-size:11px}
+.lg-dogpick{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+.lg-dog{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 6px;background:#1c2427;border:1px solid #3b4a4c;border-radius:5px;color:#e5dcc8;font:inherit;font-size:11px;cursor:pointer}
+.lg-dog canvas{image-rendering:pixelated;width:64px;height:40px}
+.lg-dog small{color:#97aaa8;font-size:10px}
+.lg-dog.on{border-color:#e0b45a;background:#3a2a14;box-shadow:0 0 0 1px #e0b45a}
+.lg-dog:disabled{opacity:.4;cursor:default}
+.lg-unbind{align-self:center;padding:6px 10px;background:none;border:1px dashed #6b5a44;color:#c9b38a;border-radius:4px;font:inherit;font-size:11px;cursor:pointer}
+.lg-modal{position:fixed;inset:0;z-index:420;background:#080504d9;display:flex;align-items:center;justify-content:center;padding:16px}
+.lg-mbox{width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#1e1410;border:2px solid #b8432f;border-radius:8px;padding:16px;color:#efe2c6;box-shadow:0 16px 40px #000}
+.lg-mbox h2{margin:0 0 4px;color:#e46a4e;font-size:16px;letter-spacing:.06em}
+.lg-msub{margin:0 0 10px;color:#b9a98c;font-size:12px}
+.lg-mbox ul{list-style:none;margin:0;padding:0}
+.lg-mbox li{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #ffffff12}
+.lg-mbox li b{display:block;font-size:13px}.lg-mbox li small{display:block;color:#d58c72;font-size:11px}.lg-mbox li em{display:block;margin-top:3px;color:#f1d48a;font-size:12px}
+.lg-lan{display:flex;gap:10px;align-items:center;margin:12px 0;padding:10px;background:#2c1d13;border-radius:6px}
+.lg-lan p{margin:0;font-size:13px;line-height:1.45}.lg-lan b{color:#f1c64a}
+.lg-mrow{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.lg-mrow button{padding:10px 14px;border-radius:5px;border:1px solid #6b5a44;background:#2a2019;color:#e5dcc8;font:inherit;font-size:12px;cursor:pointer}
+.lg-mrow .lg-go{background:#9a2f22;border-color:#e0664c;color:#fff;font-weight:700;letter-spacing:.06em}
+.lg-banner{position:absolute;left:50%;top:18%;transform:translate(-50%,-10px) scale(.9);opacity:0;z-index:40;pointer-events:none;max-width:min(620px,92%);padding:10px 18px;background:linear-gradient(#3a2408,#24160a);border:2px solid #f1c64a;border-radius:6px;color:#fff1c4;font-weight:700;font-size:15px;text-align:center;letter-spacing:.04em;text-shadow:0 2px 0 #000;box-shadow:0 0 30px #f1c64a55;transition:opacity .3s,transform .3s}
+.lg-banner.on{opacity:1;transform:translate(-50%,0) scale(1);animation:lgPulse .6s ease-in-out 3 alternate}
+@keyframes lgPulse{to{box-shadow:0 0 46px #f1c64aaa}}
+.lg-note{margin-top:12px;padding:10px;background:#2c1d13;border:1px solid #6b4a28;border-radius:6px;text-align:left;font-size:13px;line-height:1.45}
+.lg-note p{margin:4px 0}.lg-q{display:flex;gap:10px;align-items:center}.lg-q b{color:#f1c64a}
+.lg-scenebtn{display:block;width:100%;margin-top:10px;padding:12px;background:#5a1d16;border:1px solid #d0573e;border-radius:5px;color:#ffe9d6;font:inherit;font-weight:700;font-size:12px;letter-spacing:.06em;cursor:pointer}
+.lg-scene{position:fixed;inset:0;z-index:450;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px;animation:lgIn .6s}
+.lg-scene.out{opacity:0;transition:opacity .5s}
+@keyframes lgIn{from{opacity:0}}
+.lg-stage{position:relative;width:min(100%,calc((100vh - 190px)*16/9));aspect-ratio:16/9;border:2px solid #3b2a1a;box-shadow:0 0 50px #000}
+.lg-stage canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+.lg-title{position:absolute;left:0;right:0;top:8px;text-align:center;pointer-events:none;animation:lgTitle 3.2s forwards}
+.lg-title small{display:block;color:#c9a45a;font-size:10px;letter-spacing:.3em;text-transform:uppercase}
+.lg-title b{color:#f3e3bc;font-size:clamp(18px,4vw,30px);letter-spacing:.18em;text-shadow:0 3px 0 #000,0 0 18px #b8432f}
+@keyframes lgTitle{0%{opacity:0;transform:translateY(-6px)}15%,70%{opacity:1;transform:none}100%{opacity:0}}
+.lg-skip{position:absolute;right:8px;bottom:8px;padding:6px 10px;background:#000a;border:1px solid #6b5a44;color:#d9c9a8;border-radius:4px;font:inherit;font-size:11px;cursor:pointer}
+.lg-box{display:flex;gap:12px;align-items:flex-start;width:min(100%,760px);min-height:92px;padding:12px;background:#1b130e;border:2px solid #6b4a28;border-radius:6px;color:#f0e2c3;cursor:pointer;user-select:none}
+.lg-box.lan{border-color:#f1c64a;background:#24170c}
+.lg-box b.lg-who{display:block;color:#e8b86a;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.lg-box.lan b.lg-who{color:#f1c64a}
+.lg-text{margin:4px 0 0;font-size:15px;line-height:1.5;min-height:46px}
+.lg-tap{color:#8a7a62;font-size:10px}
+
+body.lg-scene-on #sprechFace{display:none!important}

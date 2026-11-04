@@ -9,7 +9,7 @@
 // =====================================================================================================
 (()=>{
 const M=window.MG,S=M.s,A=window.Aufstellung,AN=window.AN,ART=window.ArenaArt,store=window.AUF_STORE||{get:()=>null,set:()=>false,del(){}};
-const KEY='aufstellung-sim-v2',ROLES=['Soldat','Assassine','Fernkämpfer'],ICON={Soldat:'🛡',Assassine:'🗡',Fernkämpfer:'🏹'},PLURAL={Soldat:'Soldaten',Assassine:'Assassinen',Fernkämpfer:'Schützen'};
+const KEY=window.AUF_KEY||'aufstellung-sim-v2',ROLES=['Soldat','Assassine','Fernkämpfer'],ICON={Soldat:'🛡',Assassine:'🗡',Fernkämpfer:'🏹'},PLURAL={Soldat:'Soldaten',Assassine:'Assassinen',Fernkämpfer:'Schützen'};
 const ROWS=['hinten','mitte','vorne'],LANES=['oben','mitte','unten'];
 const SKULL=[null,{label:'Leicht',color:'#a9c27a'},{label:'Machbar',color:'#cfc173'},{label:'Großer Kampf',color:'#dfb66d'},{label:'Gefährlich',color:'#d98a52'},{label:'Todesmut',color:'#d0473e'}];
 const VOWS={keiner:['Niemand fällt','Sieg ohne eigenen Toten ×1,5 · sonst ×0,6'],held:['Der Held','★ schafft 3+ Gegner ×1,7 · sonst ×0,7'],blitz:['Blitzsieg','Sieg unter 25 s ×1,4 · sonst ×0,75'],menge:['Volle Ränge','Spektakel ≥ 1,5 ×1,5 · sonst ×0,7']};

@@ -270,7 +270,7 @@ function drawBattleActorVector(a){
  if(a.sandKick>0||a.wipeTimer>0||a.rearFinish||a.grabbedBy||a.pierceContact){drawGladiator(a,false,true);return;}
  const __previousLOD=V.lod();V.lod(true);V.view(Math.sin(a.a||0)<-.42);try{
  const g=a.g,w=M.weapon(a),face=Math.cos(a.a)>=0?1:-1,fall=a.down||g.dead||a.fallTimer>0,knee=a.kneeTimer>0||a.state==='bandage',stride=a.moveSpeed>5?Math.sin(a.phase)*10:0,bend=a.state==='charge'?5:0;
- ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.scale(g.height/180*face,g.height/180);if(fall){ctx.translate(10,0);ctx.rotate(-1.35);}else if(knee)ctx.translate(0,15);
+ ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-(a.mountLift||0)));ctx.scale(g.height/180*face,g.height/180);if(fall){ctx.translate(10,0);ctx.rotate(-1.35);}else if(knee)ctx.translate(0,15);
  const skin=g.appearance.skin,cloth=a.team?'#b7694f':'#55938e',armored=!!M.gear(g,'armor')||M.armorItems(g).length>0,metal=armored?'#939f96':cloth;
  if(!g.body.lt.missing)pixelBone({x:-5,y:-26},{x:-5+stride,y:g.body.lsh.missing?-17:g.body.lf.missing?-5:knee?-15:0},6,skin);
  if(!g.body.rt.missing)pixelBone({x:5,y:-26},{x:5-stride,y:g.body.rsh.missing?-17:g.body.rf.missing?-5:knee?-15:0},6,skin);
