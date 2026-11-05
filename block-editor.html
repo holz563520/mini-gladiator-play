@@ -51,7 +51,7 @@ table.mx{border-collapse:collapse;font-size:11px;min-width:980px;width:100%}
 .rules li{margin:4px 0}.rules em{color:var(--gold);font-style:normal}.warn{color:#e6a45c}
 </style></head>
 <body>
-<header><small>ARENA THEORY · KAMPF-WERKSTATT · FASSUNG 2 (ECHTE FIGUREN) · STAND 7f247e79</small><h1>BLOCK-EDITOR</h1>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · FASSUNG 2 (ECHTE FIGUREN) · STAND cb77b03d</small><h1>BLOCK-EDITOR</h1>
 <p>Echter Arenakampf mit den Figuren, Schlägen und Zeiten des Spiels, dazu das neue sichtbare Blocken (<code>block-contact.js</code>): Schild oder Waffe stehen genau in der Schlagbahn, der Block passiert im Moment der Berührung, Klinge an Klinge gibt es eine Kraftprobe. Spielstände bleiben unberührt.</p></header>
 <main>
 <div class="top">
@@ -69,16 +69,18 @@ table.mx{border-collapse:collapse;font-size:11px;min-width:980px;width:100%}
  <div>
   <div class="panel"><h3><span class="dot" style="background:#55938e"></span>Kämpfer links</h3>
    <label>Waffe <select id="w0"></select></label><label>Schild <select id="s0"></select></label>
+   <label>Rüstung <select id="a0"><option value="none">keine</option><option value="leather">Leder</option><option value="medium">verstärkt</option><option value="metal">Metall</option></select></label>
    <label>Fernkampf <select id="r0"><option value="">aus (Nahkampf)</option><option value="bow">Bogen</option><option value="crossbow">Armbrust</option><option value="javelin">Wurfspeer</option></select></label>
    <label>Blockwert <input type="range" id="b0" min="0" max="100" value="50"><span class="val" id="b0v">50</span></label>
    <label>Stärke <input type="range" id="st0" min="10" max="100" value="55"><span class="val" id="st0v">55</span></label></div>
   <div class="panel"><h3><span class="dot" style="background:#b7694f"></span>Kämpfer rechts</h3>
    <label>Waffe <select id="w1"></select></label><label>Schild <select id="s1"></select></label>
+   <label>Rüstung <select id="a1"><option value="none">keine</option><option value="leather">Leder</option><option value="medium">verstärkt</option><option value="metal">Metall</option></select></label>
    <label>Blockwert <input type="range" id="b1" min="0" max="100" value="50"><span class="val" id="b1v">50</span></label>
    <label>Stärke <input type="range" id="st1" min="10" max="100" value="55"><span class="val" id="st1v">55</span></label></div>
   <div class="panel"><h3>Kampf</h3>
    <label>Schlagart <select id="tech"><option value="all">wie im Spiel (gemischt)</option><option value="slash">nur Hieb</option><option value="thrust">nur Stich</option><option value="overhead">nur Überkopf</option><option value="spin">nur Wirbel</option></select></label>
-   <label>Blocks <select id="often"><option value="show">viele (Vorführung)</option><option value="game">wie im Spiel</option></select></label>
+   <label>Blocks <select id="often"><option value="show">viele (Vorführung)</option><option value="game">wie im Spiel</option><option value="hits">wenige (Treffer ansehen)</option></select></label>
    <label>Tempo <select id="speed"><option value=".25">0,25×</option><option value=".5" selected>0,5×</option><option value="1">1×</option></select></label>
    <label>Seitlich gegenüber halten <input type="checkbox" id="side" checked></label>
    <label>Zeitlupe beim Block <input type="checkbox" id="slow" checked></label>
@@ -90,9 +92,15 @@ table.mx{border-collapse:collapse;font-size:11px;min-width:980px;width:100%}
    <label>Deckung durchschlagen <input type="checkbox" id="rBroken" checked></label>
    <label>Kraftprobe Klinge an Klinge <input type="checkbox" id="rBind" checked></label>
    <label>Pfeile mit der Waffe nur sehr selten abwehren <input type="checkbox" id="rArrows" checked></label>
+   <label>Abstand passend zur Waffe (KI) <input type="checkbox" id="rReach" checked></label>
+   <label>Neue Treffer: Klang, Wunden, Stopp am Körper, Drehschlag <input type="checkbox" id="rHit" checked></label>
    <label>Kraftprobe-Anteil <input type="range" id="bindP" min="0" max="100" value="45"><span class="val" id="bindPv">45 %</span></label></div>
  </div>
 </div>
+
+<h2>Klangprobe Treffer</h2>
+<p class="note">Jede Waffengattung auf ungeschützte Haut, Leder, verstärkte und Metallrüstung. Antippen spielt den Treffer so, wie er im Kampf erklingt (Kern plus Rüstungsschicht).</p>
+<div class="wrap"><table class="mx" id="sndBoard"></table></div>
 
 <h2>Alle Waffen gegeneinander</h2>
 <p class="note">Was passiert, wenn der Block gelingt: Zeilen greifen an, Spalten blocken – links mit der eigenen Waffe, rechts mit Schild (und Gladius). Gleiche Rechnung wie im Kampf oben (Wucht gegen Halt bei Blockwert 50 und Stärke 55). Ein Klick startet diese Paarung oben.</p>
@@ -103,8 +111,10 @@ table.mx{border-collapse:collapse;font-size:11px;min-width:980px;width:100%}
 <h2>So kommt es ins Spiel</h2>
 <div class="panel rules" id="rules"></div>
 </main>
-<script src="data.js?v=7f247e79"></script><script src="household.js?v=7f247e79"></script><script src="management.js?v=7f247e79"></script><script src="scout.js?v=7f247e79"></script><script src="sim.js?v=7f247e79"></script><script src="benchmark.js?v=7f247e79"></script><script src="school.js?v=7f247e79"></script><script src="weapon-art.js?v=7f247e79"></script><script src="arena.js?v=7f247e79"></script><script src="injury-shots.js?v=7f247e79"></script>
-<script src="kampfsound.js?v=7f247e79"></script>
-<script src="block-contact.js?v=7f247e79"></script>
-<script src="block-editor.js?v=7f247e79"></script>
+<script src="data.js?v=cb77b03d"></script><script src="household.js?v=cb77b03d"></script><script src="management.js?v=cb77b03d"></script><script src="scout.js?v=cb77b03d"></script><script src="sim.js?v=cb77b03d"></script><script src="benchmark.js?v=cb77b03d"></script><script src="school.js?v=cb77b03d"></script><script src="weapon-art.js?v=cb77b03d"></script><script src="arena.js?v=cb77b03d"></script><script src="injury-shots.js?v=cb77b03d"></script>
+<script src="kampfsound.js?v=cb77b03d"></script>
+<script src="block-contact.js?v=cb77b03d"></script>
+<script src="hit-contact.js?v=cb77b03d"></script>
+<script src="reach-ai.js?v=cb77b03d"></script>
+<script src="block-editor.js?v=cb77b03d"></script>
 </body></html>

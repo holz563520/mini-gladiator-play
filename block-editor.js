@@ -5,9 +5,9 @@
 // M.blockContact.active = true. Kampf-Parameter (M.T) werden nur hier und nur für die Vorführung verstellt.
 // =====================================================================================================
 (()=>{
-const M=window.MG,S=M.s,BC=M.blockContact,KS=window.KampfSound,$=id=>document.getElementById(id);
+const M=window.MG,S=M.s,BC=M.blockContact,HC=M.hitContact,KS=window.KampfSound,$=id=>document.getElementById(id);
 const cl=(x,a,b)=>Math.max(a,Math.min(b,x));
-BC.active=true;
+const RA=M.reachAI;BC.active=true;HC.active=true;if(RA)RA.active=true;
 const MELEE=M.weaponDefs.filter(w=>!w.ammo&&w.id!=='net'),WD=Object.fromEntries(M.weaponDefs.map(w=>[w.id,w])),SH=M.shieldDefs,SD=Object.fromEntries(SH.map(s=>[s.id,s]));
 const T0={...M.T};// Spielwerte zum Zurücksetzen
 
@@ -16,10 +16,10 @@ let ac=null,out=null;const bufs=new Map();
 function audio(){if(ac)return ac;try{ac=new (window.AudioContext||window.webkitAudioContext)();out=ac.createGain();out.gain.value=.8;out.connect(ac.destination);}catch{ac=null;}return ac;}
 function buf(k,v){const id=k+'|'+v;let b=bufs.get(id);if(b)return b;const t=KS?.get?.(k)||KS?.DEF?.[k];if(!t||!ac)return null;const d=KS.render(t,{seed:977+v*7919+k.length*13});b=ac.createBuffer(1,d.length,KS.SR);b.getChannelData(0).set(d);bufs.set(id,b);return b;}
 function play(k,vol=1,pitch=1){if(!$('snd').checked||!audio()||ac.state!=='running')return;const b=buf(k,Math.floor(Math.random()*3));if(!b)return;const s=ac.createBufferSource(),g=ac.createGain();s.buffer=b;s.playbackRate.value=cl(pitch,.5,1.8);g.gain.value=vol;s.connect(g);g.connect(out);s.start();s.onended=()=>{s.disconnect();g.disconnect();};}
-BC.play=play;
+BC.play=play;HC.play=play;
 const GAME_SND={swing:['swing',.45],swingHeavy:['swingHeavy',.5],slash:['hitBlade',.8],hit:['hitBlade',.8],heavy:['hitBlunt',.8],stick:['hitStab',.8],armorhit:['armorHit',.7],fall:['fall',.7],sever:['sever',.8]};
 M.sound=type=>{const m=GAME_SND[type];if(m)play(m[0],m[1]);};
-function unlock(){if(!audio())return;ac.resume?.();let i=0;const keys=[...Object.keys(BC.SOUNDS),'swing','swingHeavy','hitBlade','hitBlunt','hitStab','armorHit'];(function pre(){const k=keys[i++];if(!k)return;for(let v=0;v<3;v++)buf(k,v);setTimeout(pre,25);})();}
+function unlock(){if(!audio())return;ac.resume?.();let i=0;const keys=[...Object.keys(BC.SOUNDS),...Object.keys(KS.DEF).filter(k=>k.startsWith('tr_')),'swing','swingHeavy','hitBlade','hitBlunt','hitStab','armorHit'];(function pre(){const k=keys[i++];if(!k)return;for(let v=0;v<3;v++)buf(k,v);setTimeout(pre,25);})();}
 addEventListener('pointerdown',unlock,{once:true});addEventListener('keydown',unlock,{once:true});
 
 // ---------------------------------------------------------------- Bedienung
@@ -28,8 +28,9 @@ fill($('w0'),MELEE);fill($('w1'),MELEE);fill($('s0'),SH,true);fill($('s1'),SH,tr
 $('w0').value='gladius';$('s0').value='roundshield';$('w1').value='long';$('s1').value='none';
 function sync(){for(const t of [0,1]){const two=WD[$('w'+t).value].twoHand;$('s'+t).disabled=two;if(two)$('s'+t).value='none';}}
 for(const id of ['b0','b1','st0','st1'])$(id).addEventListener('input',()=>{$(id+'v').textContent=$(id).value;applyStats();});
+$('rReach').addEventListener('change',()=>{if(RA)RA.active=$('rReach').checked;});$('rHit').addEventListener('change',()=>{HC.active=$('rHit').checked;});
 $('bindP').addEventListener('input',()=>{$('bindPv').textContent=$('bindP').value+' %';BC.bindChance=$('bindP').value/100;});
-for(const id of ['w0','w1','s0','s1','r0'])$(id).addEventListener('change',()=>{sync();restart();});
+for(const id of ['w0','w1','s0','s1','r0','a0','a1'])$(id).addEventListener('change',()=>{sync();restart();});
 for(const id of ['tech','often'])$(id).addEventListener('change',()=>{params();restart();});
 $('speed').addEventListener('change',()=>{base=+$('speed').value;S.options.speed=base;});
 $('labels').addEventListener('change',()=>BC.labels=$('labels').checked);
@@ -43,13 +44,14 @@ BC.labels=true;
 // Vorführung: viele Blocks, kaum Ausweichen; gewählte Schlagart. Alles nur in M.T dieser Seite.
 function params(){Object.assign(M.T,T0);const tech=$('tech').value;
  if($('often').value==='show'){M.T.blockStat=.009;M.T.dodgeRate=0;M.T.dmgMult=T0.dmgMult*.6;}
+ if($('often').value==='hits'){M.T.blockStat=0;M.T.blockActive=0;M.T.blockWeapon=0;M.T.blockShieldMelee=.15;M.T.dodgeRate=0;M.T.dmgMult=T0.dmgMult*.5;}
  if(tech!=='all'){for(const k of ['wSlash','wThrust','wOverhead','wSpin'])M.T[k]=0;M.T[{slash:'wSlash',thrust:'wThrust',overhead:'wOverhead',spin:'wSpin'}[tech]]=3;M.T.shieldChooseRange=0;M.T.wKickNear=0;}}
 function applyStats(){const b=S.battle;if(!b)return;for(const a of b.actors){a.g.stats.block=+$('b'+a.team).value;a.g.stats.strength=+$('st'+a.team).value;}}
 
 // ---------------------------------------------------------------- Kampf starten
 let base=.5,slowUntil=0,startedAt=0,tour=null,lastPair='';
-function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}BC.reset();params();sync();
- const rw=$('r0').value,cfg={count:1,count0:1,count1:1,role0:rw?'Fernkämpfer':'Soldat',role1:'Soldat',weapon0:rw||$('w0').value,weapon1:$('w1').value,shield0:rw&&WD[rw].twoHand?'none':$('s0').value,shield1:$('s1').value,armor0:'none',armor1:'none',quality0:2,quality1:2,seed:Math.floor(Math.random()*1e6)};
+function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}BC.reset();HC.reset();params();sync();
+ const rw=$('r0').value,cfg={count:1,count0:1,count1:1,role0:rw?'Fernkämpfer':'Soldat',role1:'Soldat',weapon0:rw||$('w0').value,weapon1:$('w1').value,shield0:rw&&WD[rw].twoHand?'none':$('s0').value,shield1:$('s1').value,armor0:$('a0').value,armor1:$('a1').value,quality0:2,quality1:2,seed:Math.floor(Math.random()*1e6)};
  const err=M.startBenchmark(cfg);if(err){log('Fehler: '+err);return;}
  const b=S.battle;M.benchmarkFinale=false;b.paused=false;base=+$('speed').value;S.options.speed=base;
  // nah beieinander in der Mitte starten
@@ -79,6 +81,17 @@ const R=M.combatResponses,origImpact=R.impact;R.impact=(a,b,d,p,w,part)=>{origIm
 const logBox=$('log');function clearLog(){logBox.innerHTML='';}
 function log(h){const d=document.createElement('div');d.className='row';d.innerHTML=h;logBox.prepend(d);while(logBox.children.length>14)logBox.lastChild.remove();}
 
+
+// ---------------------------------------------------------------- Treffer: Log und Klangprobe
+const CLS={schwerklinge:'Langschwert/Zweihänder',klinge:'Kurzschwert/Gladius',dolch:'Dolch',axt:'Axt/Hellebarde',stich:'Stich (Speer, Dreizack, Klingenstich)',keule:'Keule/Faust',kolben:'Streitkolben',hammer:'Hammer'},MAT={null:'Haut',leather:'Leder',medium:'verstärkt',metal:'Metall'};
+const PART={head:'Kopf',neck:'Hals',chest:'Brust',belly:'Bauch',ls:'l. Schulter',rs:'r. Schulter',lua:'l. Oberarm',rua:'r. Oberarm',lfa:'l. Unterarm',rfa:'r. Unterarm',lh:'l. Hand',rh:'r. Hand',lt:'l. Oberschenkel',rt:'r. Oberschenkel',lsh:'l. Unterschenkel',rsh:'r. Unterschenkel',lf:'l. Fuß',rf:'r. Fuß'};
+HC.onEvent=ev=>{if(ev.kind==='hitSound'){log(`<b>Treffer</b> · ${ev.att.team?'rechts':'links'} trifft ${PART[ev.part]||ev.part} (${MAT[ev.mat]}) · ${CLS[ev.cls]} · Schaden ${Math.round(ev.dmg)}`);}};
+(function soundBoard(){const mats=[null,'leather','medium','metal'];let h='<tr><th class="rowh">Waffe ↓ · Ziel →</th>'+mats.map(m=>`<th>${MAT[m]}</th>`).join('')+'</tr>';
+ for(const [k,v] of Object.entries(CLS))h+=`<tr><th class="rowh">${v}</th>`+mats.map(m=>`<td data-c="${k}" data-m="${m}" style="color:#dfb66d">▶</td>`).join('')+'</tr>';
+ $('sndBoard').innerHTML=h;$('sndBoard').style.minWidth='0';
+ $('sndBoard').onclick=e=>{const td=e.target.closest('td');if(!td)return;unlock();const c=td.dataset.c,m=td.dataset.m==='null'?null:td.dataset.m,blunt=['keule','kolben','hammer','axt'].includes(c);
+  setTimeout(()=>{let core=1;if(m==='metal'){core=.35;play(blunt?'tr_metallStumpf':'tr_metallKlinge',.9);}else if(m==='medium'){core=.6;play('tr_leder',.7);play(blunt?'tr_metallStumpf':'tr_metallKlinge',.4);}else if(m==='leather'){core=.75;play('tr_leder',.75);}play('tr_'+c,.9*core);},40);};})();
+
 // ---------------------------------------------------------------- Takt: Zeitlupe, Neustart, Anzeige
 function tick(){const b=S.battle,t=performance.now();
  // Vorführung: beide auf gleicher Tiefe halten, damit man die Waffen von der Seite sieht (nur diese Seite)
@@ -87,7 +100,7 @@ function tick(){const b=S.battle,t=performance.now();
  if(b&&(b.result||b.finale||b.actors.some(a=>a.down||a.g.dead)||t-startedAt>45000)){if(!b.ended){b.ended=true;setTimeout(()=>{if(tour)tourNext();else restart();},1400);}}
  if(tour&&b&&!b.ended&&(tour.blocks>=4||t-startedAt>14000)){b.ended=true;setTimeout(tourNext,700);}
  if(b){const [p,q]=b.actors;$('hudL').innerHTML=`<b>links</b> ${WD[M.weapon(p).id]?.name||''} · Ausdauer ${Math.round(p.energy)}`;$('hudR').innerHTML=`${WD[M.weapon(q).id]?.name||''} · Ausdauer ${Math.round(q.energy)} <b>rechts</b>`;}
- $('counts').innerHTML=`<span>Blocks <b>${counts.blocks}</b></span><span>Kraftproben <b>${counts.binds}</b></span><span>durchschlagen <b>${counts.broken}</b></span><span>abgeglitten <b>${counts.glance}</b></span><span>Combos abgebrochen <b>${counts.combo}</b></span><span>Treffer <b>${counts.hits}</b></span><span>Geschosse abgelenkt <b>${counts.arrows}</b></span><span>Funken <b>${BC.stats.particles}</b></span>`;
+ $('counts').innerHTML=`<span>Blocks <b>${counts.blocks}</b></span><span>Kraftproben <b>${counts.binds}</b></span><span>durchschlagen <b>${counts.broken}</b></span><span>abgeglitten <b>${counts.glance}</b></span><span>Combos abgebrochen <b>${counts.combo}</b></span><span>Treffer <b>${counts.hits}</b></span><span>Geschosse abgelenkt <b>${counts.arrows}</b></span><span>Funken <b>${BC.stats.particles}</b></span><span>Wundbilder <b>${HC.stats.marks}</b></span>`;
  requestAnimationFrame(tick);}
 
 // ---------------------------------------------------------------- Übersicht
@@ -119,6 +132,9 @@ $('rules').innerHTML=`<ul>
 <li><em>Klänge</em> sind kurz und trocken (kein Nachklingen) und stehen im Kampfsound-Editor unter „Waffen“ (Block: …, Kraftprobe: …), dort weiter einstellbar.</li>
 <li><em>Kraftprobe:</em> Zwei Schwerter (Kurzschwert, Gladius, Langschwert, Zweihänder) können sich binden. Beide drücken 0,45–0,95 s gegeneinander, der Kreuzpunkt wandert zum Schwächeren; Stärke, Gleichgewicht, Blockwert, Waffengewicht und Ausdauer entscheiden, ein knappes Duell auch mal der Zufall. Der Verlierer wird weggestoßen und taumelt, der Gewinner ist als Nächster dran.</li>
 <li><em>Pfeile, Bolzen, Wurfwaffen:</em> Mit Schild wie bisher (Pfeil steckt im Schild). Ohne Schild wehrt heute die Waffe etwa jedes neunte Geschoss unsichtbar ab (gemessen: 11 % gegen Gladius, mit Rundschild 36 %). Neu: ohne Schild nur noch etwa ein Achtel davon (rund 1–2 %), dann sichtbar – Funken, leises Klirren, der Pfeil fliegt weggeschlagen davon.</li>
+<li><em>Treffer:</em> eigener Klang je Waffengattung (Langschwert/Zweihänder hackt, Gladius schneidet, Dolch sticht, Axt hackt mit Knacken, Speer dringt ein, Keule dumpf, Streitkolben knirscht, Hammer kracht), darüber eine Schicht für Leder, verstärkte oder Metallrüstung. Die Waffe endet auf dem Körper bzw. in passender Tiefe und wird dann herausgezogen oder federt zurück, statt durch den Gegner zu schwingen. Das Wundbild passt zur Waffe: Kerbe (Langschwert, Zweihänder), Schnitt (Gladius, Kurzschwert), Stichloch (Dolch, Speer; Dreizack drei Löcher), Hackwunde mit Knochen bei schweren Treffern (Axt), Bluterguss (Keule), Quetschung (Streitkolben), Krater (Hammer); auf Metall Dellen und Kratzer, auf Leder Risse. Reine Darstellung, keine Regeländerung.</li>
+<li><em>Drehschlag:</em> Die Figur wird nicht mehr flach gestaucht, sondern dreht sich (zweite Hälfte gespiegelt, nie schmaler als 84 %).</li>
+<li><em>Abstand (KI):</em> Lange Waffen weichen zurück, wenn ein Kürzerer zu nah kommt (rückwärts langsamer als vorwärts). Kurze Waffen warten knapp außerhalb, bis der Gegner zugeschlagen hat, und stürmen dann hinein und bleiben dicht dran. <span class="warn">Regeländerung, nicht freigegeben.</span> Gemessen (je 40 Kämpfe 1 gegen 1, gleich starke Kämpfer): Lange Waffen gewinnen schon heute fast immer (Speer gegen Gladius 93 %, Hellebarde gegen Dolch 100 %) – daran ändert die KI wenig (93–100 %). Ausgeglichener würde es erst mit einer Balance-Änderung (z. B. lange Waffen innerhalb der halben Reichweite schwächer).</li>
 <li><span class="warn">Noch nicht freigegeben</span> (Regeländerung): Initiative nach dem Block, Combo-Abbruch, Taumeln bei durchschlagener Deckung, die Kraftprobe und seltenere Pfeilabwehr ohne Schild. Jede ist einzeln abschaltbar. Kampfdauer gemessen (60 feste Kämpfe, Spiel-Blockchance): ohne Modul 23,3 s, mit Modul und allen Regeln 22,9 s – nicht länger.</li>
 <li><em>Noch offen:</em> Zum Einschalten im Spiel <code>block-contact.js</code> in die Ladereihenfolge aufnehmen und <code>active</code> setzen. Die beiden Testfiguren-Zeichner (<code>?figures=v4</code>, <code>pixel2</code>) haben den Haken noch nicht.</li>
 </ul>`;
