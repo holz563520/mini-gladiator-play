@@ -74,6 +74,7 @@ const plans=new Map(),strikes=new Map(),binds=new Map(),drawn=new Map(),flags=ne
 
 // ---------------------------------------------------------------- 1. Schlagbeginn: Blockwurf vorziehen
 BC.plan=(a,b,ef)=>{
+ try{M.reachAI?.onStrike?.(a,b,ef);}catch{}
  if(!BC.active||!S.battle||!human(a)||!human(b)||ef?.w?.ammo||['kick','shieldBash','groundFinish'].includes(a.technique))return;
  const r=M.rng();ef.blockRoll=r;let p=0;try{p=M.blockChanceNow?.(a,b,ef.w)||0;}catch{}
  const t=now(),sh=M.usableShield(b),bw=M.weapon(b),useShield=!!sh&&!bw.twoHand;

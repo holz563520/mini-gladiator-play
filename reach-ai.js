@@ -68,6 +68,26 @@ RA.pose=(a,main,off,angle,c)=>{const s=shoves.get(a.id);if(!s)return null;const 
  if(s.shield)return{main:{x:6-pull*3,y:-42},off:lerp(base,{x:T.x,y:T.y},u),angle:-1.2};
  return{main:lerp(base,{x:T.x,y:T.y-3},u),off:lerp({x:base.x-2,y:base.y+5},{x:T.x,y:T.y+4},u),angle:-1.25};};
 RA.lungeFor=a=>{const s=shoves.get(a.id);if(!s)return null;const k=s.t<SHOVE.wind?0:s.t<SHOVE.hit+.06?Math.min(1,(s.t-SHOVE.wind)/(SHOVE.hit-SHOVE.wind)):Math.max(0,1-(s.t-SHOVE.hit-.06)/(SHOVE.end-SHOVE.hit-.06));return{front:7*k,back:3*k,drop:2.5*k,lift:0};};
+
+// ---------------------------------------------------------------- Amputationsschlag gegen Kniende und Gestürzte
+// Wer einen Gegner in der Hocke oder am Boden (gestürzt, nicht kampfunfähig) vor sich hat, holt manchmal weit zu einem
+// gezielten Schlag auf Arm oder Bein aus (längeres Ausholen, sichtbar). Gelingt der Treffer, trennt er leichter ab.
+// Kniende können noch (schwächer) blocken, Liegende nicht. Nur Klingen und Äxte, keine Stichwaffen.
+const AMP_W=new Set(['short','gladius','long','greatsword','axe','doubleaxe','halberd']);
+RA.amp={chance:.25,wind:1.35,hp:14,bonus:.25,dmg:1.2,kneel:.4};RA.stats.amp=0;RA.stats.ampCut=0;
+RA.kneelBlock=()=>RA.active?RA.amp.kneel:0;
+RA.amputate=(a,b,followup)=>{a.amputate=null;if(!RA.active||followup||!b||b.down||a.hahn||a.lion||a.rex||b.hahn||b.lion||b.rex)return;
+ if(!(b.kneeTimer>0||b.fallTimer>0))return;const w=M.weapon(a);if(!w||w.ammo||!AMP_W.has(w.id)||['kick','shieldBash','spin','thrust'].includes(a.technique))return;
+ if(M.rng()>RA.amp.chance)return;
+ const legs=b.fallTimer>0?.6:.4,pool=M.rng()<legs?['lt','rt','lsh','rsh']:['lua','rua','lfa','rfa'],free=pool.filter(id=>!b.g.body[id]?.missing);if(!free.length)return;
+ const part=free[Math.floor(M.rng()*free.length)];a.technique=['axe','doubleaxe','halberd','greatsword'].includes(w.id)?'overhead':'slash';
+ a.windMax=(M.meleeTiming?M.meleeTiming(a.g,w,a.technique).wind:a.windMax)*RA.amp.wind;a.amputate={target:b.id,part};RA.stats.amp++;
+ try{RA.onEvent?.({kind:'ampStart',att:a,def:b,part,kneel:b.kneeTimer>0});}catch{}};
+RA.onStrike=(a,b,ef)=>{const am=a.amputate;if(!am||am.target!==b.id||b.g.body[am.part]?.missing)return;ef.partId=am.part;ef.amputate=true;ef.damage*=RA.amp.dmg;try{a.contactPoint=M.contactAnchor(b,am.part);}catch{}};
+// Gezielter Schlag: auch ein noch nicht zerstörtes Glied kann abgetrennt werden – je mehr Wucht und je verletzter, desto eher.
+// Gesamtchance (ohne Arena-Risiko, Kritisch, tiefen Schnitt) etwa 10–35 %; das Spiel rechnet sein Grundrisiko (13 %) mit ein.
+RA.amputeBonus=(a,b,id,w,dmg)=>{const am=a.amputate;if(!RA.active||!am||am.target!==b.id||am.part!==id)return null;const p=b.g.body[id];
+ const want=Math.max(.04,Math.min(.35,.05+(dmg-12)*.01+(1-Math.max(0,p.hp)/100)*.25));return{hp:999,chance:want-.13};};
 RA.shove=true;
 
 RA.steer=(a,t,ef,d,keep,pressure,ranged)=>{
