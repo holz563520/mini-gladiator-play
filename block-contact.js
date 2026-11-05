@@ -16,7 +16,7 @@
 const M=window.MG;if(!M||M.blockContact)return;
 const S=M.s,TAU=Math.PI*2,cl=(x,a,b)=>Math.max(a,Math.min(b,x)),sm=t=>{t=cl(t,0,1);return t*t*(3-2*t);};
 const lerp=(a,b,t)=>a+(b-a)*t,lerpA=(a,b,t)=>{const d=Math.atan2(Math.sin(b-a),Math.cos(b-a));return a+d*t;};
-const BC={active:false,labels:false,rules:{initiative:true,combo:true,bind:true,broken:true},bindChance:.45,onEvent:null,
+const BC={active:false,labels:false,rules:{initiative:true,combo:true,bind:true,broken:true,arrows:true},bindChance:.45,onEvent:null,
  stats:{planned:0,blocks:0,binds:0,mismatch:0,particles:0},play:null};
 M.blockContact=BC;
 
@@ -82,8 +82,12 @@ BC.plan=(a,b,ef)=>{
 // ---------------------------------------------------------------- 2. Im Treffermoment geblockt (aus combatResponses.block)
 const R=M.combatResponses;
 // Nur echte Nahkampfwaffen gegen Menschen; Tritt, Schildstoß, Faust und Geschosse behalten das bisherige Blocken
-BC.handles=(a,b,w,projectile)=>BC.active&&!projectile&&human(a)&&human(b)&&!!WDEF[w?.id]&&!w.ammo&&!['kick','shieldBash'].includes(a.swingKind);
-if(R?.block){const orig=R.block;R.block=(a,b,projectile,w)=>{orig(a,b,projectile,w);if(BC.handles(a,b,w,projectile))onBlock(a,b,w);};}
+BC.handles=(a,b,w,projectile)=>{if(!BC.active||!human(b))return false;
+ if(projectile)return !!w?.ammo&&w.id!=='net'&&!(M.usableShield(b)&&!M.weapon(b).twoHand)&&!!WDEF[M.weapon(b).id]&&!M.weapon(b).ammo;// Geschoss an der Waffe abgelenkt (mit Schild bleibt es beim bisherigen Schildblock)
+ return human(a)&&!!WDEF[w?.id]&&!w.ammo&&!['kick','shieldBash'].includes(a.swingKind);};
+// Pfeile, Bolzen, Wurfwaffen ohne Schild: mit der Waffe nur sehr selten abzuwehren (Regel „arrows“)
+BC.arrowFactor=()=>BC.rules.arrows?.12:1;
+if(R?.block){const orig=R.block;R.block=(a,b,projectile,w)=>{orig(a,b,projectile,w);if(BC.handles(a,b,w,projectile)){if(projectile)onArrowParry(a,b,w);else onBlock(a,b,w);}};}
 function onBlock(a,b,w){
  let pl=plans.get(b.id);
  if(!pl||pl.att!==a.id||pl.done){// ungeplant (Wurf beim Ausholen sagte nein, im Treffer doch ja): schnelle Notdeckung
@@ -110,6 +114,14 @@ function onBlock(a,b,w){
  fire(ev);
 }
 function fire(ev){try{BC.onEvent?.(ev);}catch(e){console.warn('blockContact.onEvent',e);}}
+// Geschoss prallt an der Klinge ab: Funken, leises Klirren, abgelenkter Pfeil fliegt weg, kurzes Zucken der Waffe
+const flicks=new Map(),deflects=[];
+function onArrowParry(a,b,w){const d=drawn.get(b.id),bw=M.weapon(b),tip=tipOf(bw),P=d?{x:d.hand.x+d.dir.x*tip*.55,y:d.hand.y+d.dir.y*tip*.55}:{x:b.x,y:b.y-50};
+ const dir=Math.sign(b.x-a.x)||1;sound('bk_pfeilKlinge',w.id==='crossbow'?.9:1.05,.85);emit(1,P.x,P.y,6,-dir,-1,1.1,130,.22);flash(P.x,P.y,'metal',4);
+ deflects.push({x:P.x,y:P.y,vx:dir*(40+Math.random()*50),vy:-(110+Math.random()*60),ang:Math.atan2(0,dir),spin:(Math.random()<.5?-1:1)*(14+Math.random()*8),life:.9,len:w.id==='crossbow'?6:8});if(deflects.length>6)deflects.shift();
+ flicks.set(b.id,{t0:now(),dur:.24});BC.stats.arrows=(BC.stats.arrows||0)+1;
+ if(BC.labels){labels.length=0;labels.push({x:P.x,y:Math.min(P.y,b.y-88)-4,t:'ABGELENKT',life:.6,c:'#d8d0b0'});}
+ fire({kind:'arrow',att:a,def:b,weapon:w.id,defWeapon:bw.id,time:now()});}
 const mid=(a,b)=>({x:(a.x+b.x)/2,y:Math.min(a.y,b.y)-48});
 function canBind(a,b){return !(b.wind>0)&&!(b.swing>0)&&!b.pendingStrike&&!b.down&&!a.down&&!(b.stun>0)&&!(a.stun>0)&&!binds.has(a.id)&&!binds.has(b.id);}
 
@@ -155,6 +167,8 @@ BC.pose=(a,main,off,angle,c)=>{
    let H={x:XL.x-dir.x*tipL*u,y:XL.y-dir.y*tipL*u};const d=Math.hypot(H.x-root.x,H.y-root.y);if(d>25)H={x:root.x+(H.x-root.x)*25/d,y:root.y+(H.y-root.y)*25/d};
    const aim=Math.atan2(XL.y-H.y,XL.x-H.x);out={main:H,off:c.shield?{x:off.x-2,y:off.y}:{x:H.x-6,y:H.y+4},angle:aim};
    if(B.a===a.id){B.spark-=1/60;if(B.spark<=0){B.spark=.09+Math.random()*.06;emit(1,X.x,X.y,1+Math.floor(Math.random()*2),0,-1,1.4,70,.22);}}}}
+ // Geschoss abgelenkt: Waffe zuckt kurz hoch
+ const fl=flicks.get(a.id);if(!out&&fl){const k=(t-fl.t0)/fl.dur;if(k>=1||k<0)flicks.delete(a.id);else{const s=Math.sin(k*Math.PI);out={main:{x:main.x+5*s,y:main.y-4*s},off,angle:lerpA(angle,-1.25,s)};}}
  // Verteidiger: Deckung in die Bahn
  const pl=plans.get(a.id);
  if(!out&&pl&&t>=pl.t0&&t<=pl.tc+.6){const att=actor(pl.att);
@@ -216,11 +230,12 @@ BC.draw=(ctx)=>{if(!BC.active)return;const t=now();let dt=lastDraw==null?0:cl(t-
   else if(k===3){ctx.fillStyle=i%3?'#a87a4a':'#e0c18f';ctx.fillRect(x,y,(i&1)?3:2,(i&1)?2:3);}
   else{ctx.globalAlpha=f*.35;ctx.fillStyle='#c8b28a';const r=3+(1-f)*6;ctx.fillRect(Math.round(x-r),Math.round(y-r*.6),Math.round(r*2),Math.round(r*1.2));ctx.globalAlpha=1;}}
  BC.stats.particles=alive;
+ for(let i=deflects.length-1;i>=0;i--){const f=deflects[i];f.life-=dt;if(f.life<=0){deflects.splice(i,1);continue;}f.vy+=320*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.ang+=f.spin*dt;const c=Math.cos(f.ang)*f.len,s=Math.sin(f.ang)*f.len;ctx.globalAlpha=cl(f.life*3,0,1);ctx.strokeStyle='#c9b48a';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(f.x-c,f.y-s);ctx.lineTo(f.x+c,f.y+s);ctx.stroke();ctx.fillStyle='#d7e1cc';ctx.fillRect(Math.round(f.x+c)-1,Math.round(f.y+s)-1,2,2);ctx.globalAlpha=1;}
  for(let i=flashes.length-1;i>=0;i--){const f=flashes[i];f.t+=dt;if(f.t>=f.max){flashes.splice(i,1);continue;}const k=1-f.t/f.max,x=Math.round(f.x),y=Math.round(f.y),r=Math.round(f.size*k);
   if(f.kind==='boss'){ctx.strokeStyle=`rgba(255,226,150,${k})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,3+f.size*(1-k)*1.6,0,TAU);ctx.stroke();}
   ctx.fillStyle=f.kind==='wood'?`rgba(240,214,170,${k})`:`rgba(255,255,236,${k})`;ctx.fillRect(x-r,y-1,r*2+1,2);ctx.fillRect(x-1,y-r,2,r*2+1);if(f.kind!=='wood'&&r>2)ctx.fillRect(x-2,y-2,4,4);}
  if(labels.length){ctx.save();ctx.font='bold 11px "Courier Prime",monospace';ctx.textAlign='center';for(let i=labels.length-1;i>=0;i--){const L=labels[i];L.life-=dt;if(L.life<=0){labels.splice(i,1);continue;}ctx.globalAlpha=cl(L.life*3,0,1);ctx.fillStyle='#000';ctx.fillText(L.t,L.x+1,L.y-(.6-L.life)*14+1);ctx.fillStyle=L.c;ctx.fillText(L.t,L.x,L.y-(.6-L.life)*14);}ctx.restore();}};
 // Aufräumen zwischen Kämpfen
-BC.reset=()=>{plans.clear();strikes.clear();binds.clear();drawn.clear();flags.clear();P.l.fill(0);flashes.length=0;labels.length=0;lastDraw=null;};
+BC.reset=()=>{flicks.clear();deflects.length=0;plans.clear();strikes.clear();binds.clear();drawn.clear();flags.clear();P.l.fill(0);flashes.length=0;labels.length=0;lastDraw=null;};
 BC.state=()=>({plans:plans.size,binds:binds.size/2});
 })();

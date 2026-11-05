@@ -29,11 +29,11 @@ $('w0').value='gladius';$('s0').value='roundshield';$('w1').value='long';$('s1')
 function sync(){for(const t of [0,1]){const two=WD[$('w'+t).value].twoHand;$('s'+t).disabled=two;if(two)$('s'+t).value='none';}}
 for(const id of ['b0','b1','st0','st1'])$(id).addEventListener('input',()=>{$(id+'v').textContent=$(id).value;applyStats();});
 $('bindP').addEventListener('input',()=>{$('bindPv').textContent=$('bindP').value+' %';BC.bindChance=$('bindP').value/100;});
-for(const id of ['w0','w1','s0','s1'])$(id).addEventListener('change',()=>{sync();restart();});
+for(const id of ['w0','w1','s0','s1','r0'])$(id).addEventListener('change',()=>{sync();restart();});
 for(const id of ['tech','often'])$(id).addEventListener('change',()=>{params();restart();});
 $('speed').addEventListener('change',()=>{base=+$('speed').value;S.options.speed=base;});
 $('labels').addEventListener('change',()=>BC.labels=$('labels').checked);
-for(const [id,k] of [['rInit','initiative'],['rCombo','combo'],['rBroken','broken'],['rBind','bind']])$(id).addEventListener('change',()=>BC.rules[k]=$(id).checked);
+for(const [id,k] of [['rInit','initiative'],['rCombo','combo'],['rBroken','broken'],['rBind','bind'],['rArrows','arrows']])$(id).addEventListener('change',()=>BC.rules[k]=$(id).checked);
 $('restart').onclick=()=>{tour=null;$('tour').classList.remove('on');restart();};
 $('pause').onclick=()=>{if(!S.battle)return;S.battle.paused=!S.battle.paused;$('pause').textContent=S.battle.paused?'▶ Weiter':'⏸ Pause';};
 let zoom=3;$('zoom').onclick=()=>{zoom=zoom>=3?1.9:zoom>=1.9?1:3;M.setZoom?.(zoom);$('zoom').textContent='Zoom '+String(zoom).replace('.',',')+'×';};
@@ -42,24 +42,24 @@ BC.labels=true;
 
 // Vorführung: viele Blocks, kaum Ausweichen; gewählte Schlagart. Alles nur in M.T dieser Seite.
 function params(){Object.assign(M.T,T0);const tech=$('tech').value;
- if($('often').value==='show'){M.T.blockStat=.016;M.T.dodgeRate=0;M.T.dmgMult=T0.dmgMult*.35;}
+ if($('often').value==='show'){M.T.blockStat=.009;M.T.dodgeRate=0;M.T.dmgMult=T0.dmgMult*.6;}
  if(tech!=='all'){for(const k of ['wSlash','wThrust','wOverhead','wSpin'])M.T[k]=0;M.T[{slash:'wSlash',thrust:'wThrust',overhead:'wOverhead',spin:'wSpin'}[tech]]=3;M.T.shieldChooseRange=0;M.T.wKickNear=0;}}
 function applyStats(){const b=S.battle;if(!b)return;for(const a of b.actors){a.g.stats.block=+$('b'+a.team).value;a.g.stats.strength=+$('st'+a.team).value;}}
 
 // ---------------------------------------------------------------- Kampf starten
 let base=.5,slowUntil=0,startedAt=0,tour=null,lastPair='';
 function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}BC.reset();params();sync();
- const cfg={count:1,count0:1,count1:1,role0:'Soldat',role1:'Soldat',weapon0:$('w0').value,weapon1:$('w1').value,shield0:$('s0').value,shield1:$('s1').value,armor0:'none',armor1:'none',quality0:2,quality1:2,seed:Math.floor(Math.random()*1e6)};
+ const rw=$('r0').value,cfg={count:1,count0:1,count1:1,role0:rw?'Fernkämpfer':'Soldat',role1:'Soldat',weapon0:rw||$('w0').value,weapon1:$('w1').value,shield0:rw&&WD[rw].twoHand?'none':$('s0').value,shield1:$('s1').value,armor0:'none',armor1:'none',quality0:2,quality1:2,seed:Math.floor(Math.random()*1e6)};
  const err=M.startBenchmark(cfg);if(err){log('Fehler: '+err);return;}
  const b=S.battle;M.benchmarkFinale=false;b.paused=false;base=+$('speed').value;S.options.speed=base;
  // nah beieinander in der Mitte starten
- const [p,q]=b.actors,mx=(p.x+q.x)/2,my=(p.y+q.y)/2;p.x=mx-70;q.x=mx+70;p.y=q.y=my;
- applyStats();M.focus?.(p.id);M.setZoom?.(zoom);
- counts={blocks:0,binds:0,hits:0,broken:0,glance:0,combo:0};startedAt=performance.now();lastPair=`${WD[cfg.weapon0].name}${cfg.shield0!=='none'?' + '+SD[cfg.shield0].name:''} gegen ${WD[cfg.weapon1].name}${cfg.shield1!=='none'?' + '+SD[cfg.shield1].name:''}`;
+ const [p,q]=b.actors,mx=(p.x+q.x)/2,my=(p.y+q.y)/2,gap=rw?190:70;p.x=mx-gap;q.x=mx+70;p.y=q.y=my;
+ applyStats();M.focus?.(rw?q.id:p.id);M.setZoom?.(rw?Math.min(zoom,2.4):zoom);
+ counts={blocks:0,binds:0,hits:0,broken:0,glance:0,combo:0,arrows:0};startedAt=performance.now();lastPair=`${WD[cfg.weapon0].name}${rw?' (Fernkampf)':''}${cfg.shield0!=='none'?' + '+SD[cfg.shield0].name:''} gegen ${WD[cfg.weapon1].name}${cfg.shield1!=='none'?' + '+SD[cfg.shield1].name:''}`;
  $('pause').textContent='⏸ Pause';clearLog();log(`<b>${lastPair}</b> · ${$('tech').selectedOptions[0].text}`);markCell();}
 
 // ---------------------------------------------------------------- Ereignisse
-let counts={blocks:0,binds:0,hits:0,broken:0,glance:0,combo:0};
+let counts={blocks:0,binds:0,hits:0,broken:0,glance:0,combo:0,arrows:0};
 const ON={clean:'Sauber geblockt',glance:'Abgeglitten',bind:'Kraftprobe',broken:'Deckung durchschlagen'};
 const SNAME=Object.fromEntries(Object.entries(BC.SOUNDS).map(([k,v])=>[k,v.name.replace(/^Block: |^Kraftprobe: /,'')]));
 const wn=id=>WD[id]?.name||(id==='fist'?'Faust':id||'?');
@@ -71,6 +71,7 @@ BC.onEvent=ev=>{
    (ev.outcome==='bind'?'':` · Initiative: ${ev.init==='D'?'Blockender':'Angreifer'}`)+(combo?' · <span class="warn">Combo abgebrochen</span>':''));
   if($('slow').checked)slowUntil=performance.now()+380;}
  else if(ev.kind==='bindStart'){counts.binds++;log(`<b>Kraftprobe</b> · Klinge an Klinge, Kraft links ${Math.round(ev.att.team?ev.pb:ev.pa)} gegen rechts ${Math.round(ev.att.team?ev.pa:ev.pb)} · ${ev.winner.team?'rechts':'links'} setzt sich durch · ${ev.dur.toFixed(2)} s`);if($('slow').checked)slowUntil=performance.now()+ev.dur*1000*.8;}
+ else if(ev.kind==='arrow'){counts.arrows++;log(`<b>Abgelenkt</b> · ${ev.def.team?'rechts':'links'} schlägt ${wn(ev.weapon)}-Geschoss mit ${wn(ev.defWeapon)} weg (sehr selten) · Klang: Pfeil an der Waffe`);if($('slow').checked)slowUntil=performance.now()+300;}
  else if(ev.kind==='bindEnd'){log(`<b>Weggedrückt</b> · ${ev.winner.team?'rechts':'links'} drückt weg, ${ev.loser.team?'rechts':'links'} taumelt zurück und ist als Zweiter dran.`);}
  if(tour){tour.blocks++;}
 };
@@ -81,12 +82,12 @@ function log(h){const d=document.createElement('div');d.className='row';d.innerH
 // ---------------------------------------------------------------- Takt: Zeitlupe, Neustart, Anzeige
 function tick(){const b=S.battle,t=performance.now();
  // Vorführung: beide auf gleicher Tiefe halten, damit man die Waffen von der Seite sieht (nur diese Seite)
- if(b&&$('side').checked&&!b.paused){const [p,q]=b.actors;if(!p.down&&!q.down){const my=(p.y+q.y)/2;p.y+=(my-p.y)*.25;q.y+=(my-q.y)*.25;const dx=q.x-p.x,min=cl(Math.min(M.weapon(p).range||50,M.weapon(q).range||50)*.95,36,80);if(Math.abs(dx)<min){const s=dx>=0?1:-1,c=(p.x+q.x)/2;p.x+=((c-s*min/2)-p.x)*.6;q.x+=((c+s*min/2)-q.x)*.6;}}}
+ if(b&&$('side').checked&&!b.paused){const [p,q]=b.actors;if(!p.down&&!q.down&&!M.weapon(p).ammo&&!M.weapon(q).ammo){const my=(p.y+q.y)/2;p.y+=(my-p.y)*.25;q.y+=(my-q.y)*.25;const dx=q.x-p.x,min=cl(Math.min(M.weapon(p).range||50,M.weapon(q).range||50)*.95,36,80);if(Math.abs(dx)<min){const s=dx>=0?1:-1,c=(p.x+q.x)/2;p.x+=((c-s*min/2)-p.x)*.6;q.x+=((c+s*min/2)-q.x)*.6;}}}
  if(b&&!b.paused)S.options.speed=t<slowUntil?Math.min(base,.18):base;
  if(b&&(b.result||b.finale||b.actors.some(a=>a.down||a.g.dead)||t-startedAt>45000)){if(!b.ended){b.ended=true;setTimeout(()=>{if(tour)tourNext();else restart();},1400);}}
  if(tour&&b&&!b.ended&&(tour.blocks>=4||t-startedAt>14000)){b.ended=true;setTimeout(tourNext,700);}
  if(b){const [p,q]=b.actors;$('hudL').innerHTML=`<b>links</b> ${WD[M.weapon(p).id]?.name||''} · Ausdauer ${Math.round(p.energy)}`;$('hudR').innerHTML=`${WD[M.weapon(q).id]?.name||''} · Ausdauer ${Math.round(q.energy)} <b>rechts</b>`;}
- $('counts').innerHTML=`<span>Blocks <b>${counts.blocks}</b></span><span>Kraftproben <b>${counts.binds}</b></span><span>durchschlagen <b>${counts.broken}</b></span><span>abgeglitten <b>${counts.glance}</b></span><span>Combos abgebrochen <b>${counts.combo}</b></span><span>Treffer <b>${counts.hits}</b></span><span>Funken <b>${BC.stats.particles}</b></span>`;
+ $('counts').innerHTML=`<span>Blocks <b>${counts.blocks}</b></span><span>Kraftproben <b>${counts.binds}</b></span><span>durchschlagen <b>${counts.broken}</b></span><span>abgeglitten <b>${counts.glance}</b></span><span>Combos abgebrochen <b>${counts.combo}</b></span><span>Treffer <b>${counts.hits}</b></span><span>Geschosse abgelenkt <b>${counts.arrows}</b></span><span>Funken <b>${BC.stats.particles}</b></span>`;
  requestAnimationFrame(tick);}
 
 // ---------------------------------------------------------------- Übersicht
@@ -117,7 +118,8 @@ $('rules').innerHTML=`<ul>
 <li><em>Echte Figuren und Schläge:</em> Hieb (drei Varianten), Stich, Überkopf und Wirbel kommen unverändert aus dem Spiel. Das Modul biegt nur die Arme: Verteidiger zur Deckung, Angreifer endet an der Deckung und federt zurück.</li>
 <li><em>Klänge</em> sind kurz und trocken (kein Nachklingen) und stehen im Kampfsound-Editor unter „Waffen“ (Block: …, Kraftprobe: …), dort weiter einstellbar.</li>
 <li><em>Kraftprobe:</em> Zwei Schwerter (Kurzschwert, Gladius, Langschwert, Zweihänder) können sich binden. Beide drücken 0,45–0,95 s gegeneinander, der Kreuzpunkt wandert zum Schwächeren; Stärke, Gleichgewicht, Blockwert, Waffengewicht und Ausdauer entscheiden, ein knappes Duell auch mal der Zufall. Der Verlierer wird weggestoßen und taumelt, der Gewinner ist als Nächster dran.</li>
-<li><span class="warn">Noch nicht freigegeben</span> (Regeländerung): Initiative nach dem Block, Combo-Abbruch, Taumeln bei durchschlagener Deckung und die Kraftprobe. Jede ist einzeln abschaltbar. Die Kraftprobe macht einen Kampf um ihre Dauer länger, kommt aber nur bei Schwert gegen Schwert vor.</li>
+<li><em>Pfeile, Bolzen, Wurfwaffen:</em> Mit Schild wie bisher (Pfeil steckt im Schild). Ohne Schild wehrt heute die Waffe etwa jedes neunte Geschoss unsichtbar ab (gemessen: 11 % gegen Gladius, mit Rundschild 36 %). Neu: ohne Schild nur noch etwa ein Achtel davon (rund 1–2 %), dann sichtbar – Funken, leises Klirren, der Pfeil fliegt weggeschlagen davon.</li>
+<li><span class="warn">Noch nicht freigegeben</span> (Regeländerung): Initiative nach dem Block, Combo-Abbruch, Taumeln bei durchschlagener Deckung, die Kraftprobe und seltenere Pfeilabwehr ohne Schild. Jede ist einzeln abschaltbar. Kampfdauer gemessen (60 feste Kämpfe, Spiel-Blockchance): ohne Modul 23,3 s, mit Modul und allen Regeln 22,9 s – nicht länger.</li>
 <li><em>Noch offen:</em> Zum Einschalten im Spiel <code>block-contact.js</code> in die Ladereihenfolge aufnehmen und <code>active</code> setzen. Die beiden Testfiguren-Zeichner (<code>?figures=v4</code>, <code>pixel2</code>) haben den Haken noch nicht.</li>
 </ul>`;
 
