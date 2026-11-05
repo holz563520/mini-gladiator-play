@@ -149,6 +149,7 @@ function endBind(B){binds.delete(B.a);binds.delete(B.b);const w=actor(B.winner),
 
 // ---------------------------------------------------------------- 4. Schritt (sim.js updateActor, vor allen Aktionen)
 BC.step=(a,dt)=>{
+ if(M.reachAI?.active&&M.reachAI.step?.(a,dt))return true;
  if(!BC.active)return false;
  const f=flags.get(a.id);if(f){flags.delete(a.id);if(f.breakCombo)M.resetCombo?.(a);if(f.slow)a.cool=Math.max(a.cool||0,f.slow);}
  const B=binds.get(a.id);if(!B)return false;
@@ -162,6 +163,7 @@ let lastBattle=null;
 BC.pose=(a,main,off,angle,c)=>{
  if(!BC.active||!S.battle)return null;
  if(S.battle!==lastBattle){lastBattle=S.battle;plans.clear();strikes.clear();binds.clear();drawn.clear();flags.clear();flicks.clear();}
+ {const sp=M.reachAI?.active&&M.reachAI.shoves?.size?M.reachAI.pose(a,main,off,angle,c):null;if(sp)return sp;}
  if(!binds.has(a.id)&&!plans.has(a.id)&&!strikes.has(a.id)&&!flicks.has(a.id))return null;
  const sx=c.sx,sy=c.sy,fs=Math.sign(sx)||1,toL=P=>({x:(P.x-a.x)/sx,y:(P.y-a.y)/sy-c.bob}),toW=L=>({x:a.x+L.x*sx,y:a.y+(L.y+c.bob)*sy});
  const t=now(),w=c.w,tipL=tipOf(w),root=c.shoulders?.r||{x:4,y:-56};

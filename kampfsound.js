@@ -699,6 +699,10 @@ Object.assign(DEF,{
  tr_leder:{cat:'waffen',name:'Treffer: auf Leder',use:'Schicht über dem Kern: Lederrüstung fängt mit.',vol:.9,room:.04,pitchVar:.1,layers:[T({f0:150,f1:90,dur:.06,vol:.5,drive:1.5}),N({f0:900,q:2,dur:.05,vol:.4}),N({filter:'hp',f0:3000,dur:.02,vol:.2})]},
  tr_metallKlinge:{cat:'waffen',name:'Treffer: Klinge auf Metallrüstung',use:'Schicht: Klinge schrammt über Metall.',vol:.85,room:.07,pitchVar:.1,layers:[Mb({f:1400,partials:'klinge',decay:.1,dur:.3,vol:.16,bright:.35}),N({filter:'hp',f0:4000,f1:2500,dur:.08,vol:.3}),T({f0:200,f1:120,dur:.04,vol:.3})]},
  tr_metallStumpf:{cat:'waffen',name:'Treffer: Wucht auf Metallrüstung',use:'Schicht: dumpfes Blech-Bonk.',vol:.9,room:.07,pitchVar:.08,layers:[Mb({f:380,decay:.12,dur:.3,vol:.3,click:.8}),T({f0:100,f1:50,dur:.14,vol:.7,drive:2.4})]}});
+// ----- Schubsen (reach-ai.js): Körper bzw. Schild prallt auf den Gegner
+Object.assign(DEF,{
+ tr_schubs:{cat:'waffen',name:'Schubsen: mit den Händen',use:'Gladiator stößt den Gegner mit beiden Händen weg.',vol:1,room:.05,pitchVar:.1,layers:[T({f0:120,f1:70,dur:.1,vol:.75,drive:2}),N({color:'brown',filter:'lp',f0:520,dur:.1,vol:.5}),N({f0:900,q:2,dur:.04,vol:.25})]},
+ tr_schildstoss:{cat:'waffen',name:'Schubsen: mit dem Schild',use:'Schild rammt den Gegner – dumpfes Holz, etwas Metall.',vol:1,room:.06,pitchVar:.08,layers:[T({f0:95,f1:50,dur:.14,vol:.85,drive:2.4}),N({f0:650,q:4,dur:.1,vol:.45}),Mb({f:420,partials:'schild',decay:.08,dur:.2,vol:.14,click:.5})]}});
 const ORDER=Object.keys(DEF);
 // ---------- Speichern (nur Änderungen) ----------
 let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch{saved={};}

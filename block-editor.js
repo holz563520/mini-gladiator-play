@@ -28,7 +28,7 @@ fill($('w0'),MELEE);fill($('w1'),MELEE);fill($('s0'),SH,true);fill($('s1'),SH,tr
 $('w0').value='gladius';$('s0').value='roundshield';$('w1').value='long';$('s1').value='none';
 function sync(){for(const t of [0,1]){const two=WD[$('w'+t).value].twoHand;$('s'+t).disabled=two;if(two)$('s'+t).value='none';}}
 for(const id of ['b0','b1','st0','st1'])$(id).addEventListener('input',()=>{$(id+'v').textContent=$(id).value;applyStats();});
-$('rReach').addEventListener('change',()=>{if(RA)RA.active=$('rReach').checked;});$('rHit').addEventListener('change',()=>{HC.active=$('rHit').checked;});
+$('rReach').addEventListener('change',()=>{if(RA)RA.active=$('rReach').checked;});$('rShove').addEventListener('change',()=>{if(RA)RA.shove=$('rShove').checked;});$('rHit').addEventListener('change',()=>{HC.active=$('rHit').checked;});
 $('bindP').addEventListener('input',()=>{$('bindPv').textContent=$('bindP').value+' %';BC.bindChance=$('bindP').value/100;});
 for(const id of ['w0','w1','s0','s1','r0','a0','a1'])$(id).addEventListener('change',()=>{sync();restart();});
 for(const id of ['tech','often'])$(id).addEventListener('change',()=>{params();restart();});
@@ -57,11 +57,11 @@ function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}BC.reset(
  // nah beieinander in der Mitte starten
  const [p,q]=b.actors,mx=(p.x+q.x)/2,my=(p.y+q.y)/2,gap=rw?190:70;p.x=mx-gap;q.x=mx+70;p.y=q.y=my;
  applyStats();M.focus?.(rw?q.id:p.id);M.setZoom?.(rw?Math.min(zoom,2.4):zoom);
- counts={blocks:0,binds:0,hits:0,broken:0,glance:0,combo:0,arrows:0};startedAt=performance.now();lastPair=`${WD[cfg.weapon0].name}${rw?' (Fernkampf)':''}${cfg.shield0!=='none'?' + '+SD[cfg.shield0].name:''} gegen ${WD[cfg.weapon1].name}${cfg.shield1!=='none'?' + '+SD[cfg.shield1].name:''}`;
+ counts={blocks:0,binds:0,hits:0,broken:0,glance:0,combo:0,arrows:0,shoves:0,falls:0};startedAt=performance.now();lastPair=`${WD[cfg.weapon0].name}${rw?' (Fernkampf)':''}${cfg.shield0!=='none'?' + '+SD[cfg.shield0].name:''} gegen ${WD[cfg.weapon1].name}${cfg.shield1!=='none'?' + '+SD[cfg.shield1].name:''}`;
  $('pause').textContent='⏸ Pause';clearLog();log(`<b>${lastPair}</b> · ${$('tech').selectedOptions[0].text}`);markCell();}
 
 // ---------------------------------------------------------------- Ereignisse
-let counts={blocks:0,binds:0,hits:0,broken:0,glance:0,combo:0,arrows:0};
+let counts={blocks:0,binds:0,hits:0,broken:0,glance:0,combo:0,arrows:0,shoves:0,falls:0};
 const ON={clean:'Sauber geblockt',glance:'Abgeglitten',bind:'Kraftprobe',broken:'Deckung durchschlagen'};
 const SNAME=Object.fromEntries(Object.entries(BC.SOUNDS).map(([k,v])=>[k,v.name.replace(/^Block: |^Kraftprobe: /,'')]));
 const wn=id=>WD[id]?.name||(id==='fist'?'Faust':id||'?');
@@ -92,15 +92,18 @@ HC.onEvent=ev=>{if(ev.kind==='hitSound'){log(`<b>Treffer</b> · ${ev.att.team?'r
  $('sndBoard').onclick=e=>{const td=e.target.closest('td');if(!td)return;unlock();const c=td.dataset.c,m=td.dataset.m==='null'?null:td.dataset.m,blunt=['keule','kolben','hammer','axt'].includes(c);
   setTimeout(()=>{let core=1;if(m==='metal'){core=.35;play(blunt?'tr_metallStumpf':'tr_metallKlinge',.9);}else if(m==='medium'){core=.6;play('tr_leder',.7);play(blunt?'tr_metallStumpf':'tr_metallKlinge',.4);}else if(m==='leather'){core=.75;play('tr_leder',.75);}play('tr_'+c,.9*core);},40);};})();
 
+
+if(RA)RA.onEvent=ev=>{if(ev.kind!=='shove')return;counts.shoves++;if(ev.result==='umgestoßen')counts.falls++;
+ log(`<b>${ev.shield?'Schildstoß':'Geschubst'}</b> · ${ev.att.team?'rechts':'links'} stößt ${ev.def.team?'rechts':'links'} weg – ${ev.result} (Kraft ${ev.q.toFixed(2)}×)`);if($('slow').checked&&ev.result==='umgestoßen')slowUntil=performance.now()+500;};
 // ---------------------------------------------------------------- Takt: Zeitlupe, Neustart, Anzeige
 function tick(){const b=S.battle,t=performance.now();
  // Vorführung: beide auf gleicher Tiefe halten, damit man die Waffen von der Seite sieht (nur diese Seite)
- if(b&&$('side').checked&&!b.paused){const [p,q]=b.actors;if(!p.down&&!q.down&&!M.weapon(p).ammo&&!M.weapon(q).ammo){const my=(p.y+q.y)/2;p.y+=(my-p.y)*.25;q.y+=(my-q.y)*.25;const dx=q.x-p.x,min=cl(Math.min(M.weapon(p).range||50,M.weapon(q).range||50)*.95,36,80);if(Math.abs(dx)<min){const s=dx>=0?1:-1,c=(p.x+q.x)/2;p.x+=((c-s*min/2)-p.x)*.6;q.x+=((c+s*min/2)-q.x)*.6;}}}
+ if(b&&$('side').checked&&!b.paused){const [p,q]=b.actors;if(!p.down&&!q.down&&!M.weapon(p).ammo&&!M.weapon(q).ammo){const my=(p.y+q.y)/2;p.y+=(my-p.y)*.25;q.y+=(my-q.y)*.25;const dx=q.x-p.x,min=cl(Math.min(M.weapon(p).range||50,M.weapon(q).range||50)*.95,44,80);if(Math.abs(dx)<min){const s=dx>=0?1:-1,c=(p.x+q.x)/2;p.x+=((c-s*min/2)-p.x)*.6;q.x+=((c+s*min/2)-q.x)*.6;}}}
  if(b&&!b.paused)S.options.speed=t<slowUntil?Math.min(base,.18):base;
  if(b&&(b.result||b.finale||b.actors.some(a=>a.down||a.g.dead)||t-startedAt>45000)){if(!b.ended){b.ended=true;setTimeout(()=>{if(tour)tourNext();else restart();},1400);}}
  if(tour&&b&&!b.ended&&(tour.blocks>=4||t-startedAt>14000)){b.ended=true;setTimeout(tourNext,700);}
  if(b){const [p,q]=b.actors;$('hudL').innerHTML=`<b>links</b> ${WD[M.weapon(p).id]?.name||''} · Ausdauer ${Math.round(p.energy)}`;$('hudR').innerHTML=`${WD[M.weapon(q).id]?.name||''} · Ausdauer ${Math.round(q.energy)} <b>rechts</b>`;}
- $('counts').innerHTML=`<span>Blocks <b>${counts.blocks}</b></span><span>Kraftproben <b>${counts.binds}</b></span><span>durchschlagen <b>${counts.broken}</b></span><span>abgeglitten <b>${counts.glance}</b></span><span>Combos abgebrochen <b>${counts.combo}</b></span><span>Treffer <b>${counts.hits}</b></span><span>Geschosse abgelenkt <b>${counts.arrows}</b></span><span>Funken <b>${BC.stats.particles}</b></span><span>Wundbilder <b>${HC.stats.marks}</b></span>`;
+ $('counts').innerHTML=`<span>Blocks <b>${counts.blocks}</b></span><span>Kraftproben <b>${counts.binds}</b></span><span>durchschlagen <b>${counts.broken}</b></span><span>abgeglitten <b>${counts.glance}</b></span><span>Combos abgebrochen <b>${counts.combo}</b></span><span>Treffer <b>${counts.hits}</b></span><span>Geschosse abgelenkt <b>${counts.arrows}</b></span><span>Geschubst <b>${counts.shoves}</b></span><span>umgestoßen <b>${counts.falls}</b></span><span>Funken <b>${BC.stats.particles}</b></span><span>Wundbilder <b>${HC.stats.marks}</b></span>`;
  requestAnimationFrame(tick);}
 
 // ---------------------------------------------------------------- Übersicht
@@ -135,6 +138,7 @@ $('rules').innerHTML=`<ul>
 <li><em>Treffer:</em> eigener Klang je Waffengattung (Langschwert/Zweihänder hackt, Gladius schneidet, Dolch sticht, Axt hackt mit Knacken, Speer dringt ein, Keule dumpf, Streitkolben knirscht, Hammer kracht), darüber eine Schicht für Leder, verstärkte oder Metallrüstung. Die Waffe endet auf dem Körper bzw. in passender Tiefe und wird dann herausgezogen oder federt zurück, statt durch den Gegner zu schwingen. Das Wundbild passt zur Waffe: Kerbe (Langschwert, Zweihänder), Schnitt (Gladius, Kurzschwert), Stichloch (Dolch, Speer; Dreizack drei Löcher), Hackwunde mit Knochen bei schweren Treffern (Axt), Bluterguss (Keule), Quetschung (Streitkolben), Krater (Hammer); auf Metall Dellen und Kratzer, auf Leder Risse. Reine Darstellung, keine Regeländerung.</li>
 <li><em>Drehschlag:</em> Die Figur wird nicht mehr flach gestaucht, sondern dreht sich (zweite Hälfte gespiegelt, nie schmaler als 84 %).</li>
 <li><em>Abstand (KI):</em> Lange Waffen weichen zurück, wenn ein Kürzerer zu nah kommt (rückwärts langsamer als vorwärts). Kurze Waffen warten knapp außerhalb, bis der Gegner zugeschlagen hat, und stürmen dann hinein und bleiben dicht dran. <span class="warn">Regeländerung, nicht freigegeben.</span> Gemessen (je 40 Kämpfe 1 gegen 1, gleich starke Kämpfer): Lange Waffen gewinnen schon heute fast immer (Speer gegen Gladius 93 %, Hellebarde gegen Dolch 100 %) – daran ändert die KI wenig (93–100 %). Ausgeglichener würde es erst mit einer Balance-Änderung (z. B. lange Waffen innerhalb der halben Reichweite schwächer).</li>
+<li><em>Schubsen:</em> Steht jemand zu dicht für seine Waffe, stößt er den Gegner mit beiden Händen oder dem Schild weg. Kraft (Stärke, Körper- und Schildgewicht) gegen Halt (Stärke, Gleichgewicht, Gewicht): schwach – prallt ab; gleich – weggeschoben; stärker – Gegner taumelt; deutlich stärker – Gegner fällt um. Dolchkämpfer schubsen nur, wenn es wirklich eng ist.</li>
 <li><span class="warn">Noch nicht freigegeben</span> (Regeländerung): Initiative nach dem Block, Combo-Abbruch, Taumeln bei durchschlagener Deckung, die Kraftprobe und seltenere Pfeilabwehr ohne Schild. Jede ist einzeln abschaltbar. Kampfdauer gemessen (60 feste Kämpfe, Spiel-Blockchance): ohne Modul 23,3 s, mit Modul und allen Regeln 22,9 s – nicht länger.</li>
 <li><em>Noch offen:</em> Zum Einschalten im Spiel <code>block-contact.js</code> in die Ladereihenfolge aufnehmen und <code>active</code> setzen. Die beiden Testfiguren-Zeichner (<code>?figures=v4</code>, <code>pixel2</code>) haben den Haken noch nicht.</li>
 </ul>`;

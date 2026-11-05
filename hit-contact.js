@@ -130,7 +130,7 @@ HC.spin=(a,phase)=>{if(!HC.active)return null;const c=Math.cos(phase*Math.PI*2);
 // ---------------------------------------------------------------- 5. Ausfallschritt (arena.js Beine): vorderer Fuß tritt vor, hinterer stemmt,
 // Körper senkt sich – je nach Schlagart. Nur die Beine und die Höhe, der Rumpf bleibt am Platz (Treffpunkte stimmen weiter).
 const LUNGE={thrust:[9,3,3.5],overhead:[6,2,4],slash:[5,1.5,2.5]},L={front:0,back:0,drop:0,lift:0};
-HC.lunge=(a,motion)=>{if(!HC.active||!motion?.enabled)return null;const kind=a.swing>0?a.swingKind:a.wind>0?a.technique:null,p=LUNGE[kind];if(!p)return null;
+HC.lunge=(a,motion)=>{if(!HC.active||!motion?.enabled)return null;{const sv=M.reachAI?.shoves?.size?M.reachAI.lungeFor(a):null;if(sv)return sv;}const kind=a.swing>0?a.swingKind:a.wind>0?a.technique:null,p=LUNGE[kind];if(!p)return null;
  const w=M.weapon(a);if(!w||w.ammo)return null;const big=w.twoHand?1.15:1,k=motion.drive,load=motion.load||0;
  const raw=a.swing>0?cl(1-a.swing/(a.swingMax||.3),0,1):0;
  L.front=(p[0]*k-1.5*load)*big;L.back=p[1]*k*big;L.drop=p[2]*k;L.lift=raw>0&&raw<.45?Math.sin(raw/.45*Math.PI)*2.2:0;return L;};
