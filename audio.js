@@ -170,7 +170,7 @@ for(const ev of ['pointerdown','touchend','keydown'])document.addEventListener(e
   const f=p.fracture;if(f&&typeof f==='object'&&!seen.has(f)){seen.add(f);if(!quiet){if(p.skullFracture||f.skull)skull++;else crack++;}}}}
  if(skull)sound('skullCrack');else if(crack)sound('boneCrack');};
  const step0=M.fixedStep;if(typeof step0==='function'){M.fixedStep=function(){const r=step0.apply(this,arguments);try{const b=M.s.battle;if(b&&(b.actors?.length||0)<=80){if(b!==lastB){lastB=b;scan(b,true);try{if(ctx&&enabled(false))chantPrefill(b);}catch{}}else scan(b,false);}}catch(e){}return r;};}}
-M.audioEngine={start,sound,voice,
+M.audioEngine={ksPlay:(k,vol=1,pitch=1)=>enabled(false)?ks(k,vol,0,pitch):false,start,sound,voice,
  // Sprechstimmen (sprech-game.js): Ausgang für Sprache, nur wenn Geräusche an sind
  voiceOut:()=>enabled(false)?{ctx,bus:fxBus}:null,
  crowdMood,
