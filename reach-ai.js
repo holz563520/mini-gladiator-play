@@ -10,7 +10,7 @@
 // =====================================================================================================
 (()=>{
 const M=window.MG;if(!M||M.reachAI)return;
-const RA={active:false,holdBand:false,backMul:.68,rushMul:1.55,stats:{back:0,hold:0,rush:0,stick:0}};M.reachAI=RA;
+const RA={active:true,holdBand:false,backMul:.68,rushMul:1.55,stats:{back:0,hold:0,rush:0,stick:0}};M.reachAI=RA;
 const away=(a,t)=>{const an=Math.atan2(a.y-t.y,a.x-t.x);return{x:Math.cos(an),y:Math.sin(an)};};
 RA.steer=(a,t,ef,d,keep,pressure,ranged)=>{
  if(!RA.active||ranged||!t||ef.w.ammo||a.retreat>0||a.flankTimer>0||a.g.role==='Assassine')return null;

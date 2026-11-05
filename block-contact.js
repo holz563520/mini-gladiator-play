@@ -16,7 +16,7 @@
 const M=window.MG;if(!M||M.blockContact)return;
 const S=M.s,TAU=Math.PI*2,cl=(x,a,b)=>Math.max(a,Math.min(b,x)),sm=t=>{t=cl(t,0,1);return t*t*(3-2*t);};
 const lerp=(a,b,t)=>a+(b-a)*t,lerpA=(a,b,t)=>{const d=Math.atan2(Math.sin(b-a),Math.cos(b-a));return a+d*t;};
-const BC={active:false,labels:false,rules:{initiative:true,combo:true,bind:true,broken:true,arrows:true},bindChance:.45,onEvent:null,
+const BC={active:true,labels:false,rules:{initiative:true,combo:true,bind:true,broken:true,arrows:true},bindChance:.45,onEvent:null,
  stats:{planned:0,blocks:0,binds:0,mismatch:0,particles:0},play:null};
 M.blockContact=BC;
 
@@ -63,9 +63,12 @@ Object.defineProperty(BC,'SOUNDS',{get:()=>Object.fromEntries(Object.entries(win
 function sound(k,pitch=1,vol=1){if(!k)return;try{if(BC.play)BC.play(k,vol,pitch);else M.audioEngine?.ksPlay?.(k,vol,pitch);}catch{}}
 
 // ---------------------------------------------------------------- Helfer
-const actor=id=>S.battle?.actors?.find(a=>a.id===id);
+// Leistung: Nachschlagen per Tabelle statt Suche durch alle Kämpfer (einmal je Kampfzeitpunkt aufgebaut)
+let amap=new Map(),amapT=-1,amapB=null;
+const actor=id=>{const b=S.battle;if(!b)return null;if(b!==amapB||b.time!==amapT){amapB=b;amapT=b.time;amap.clear();for(const x of b.actors)amap.set(x.id,x);}return amap.get(id);};
+BC.actor=actor;
 const now=()=>S.battle?.time||0;
-const human=a=>a&&!a.hahn&&!a.lion&&!a.rex&&!a.beast;
+const human=a=>a&&!a.hahn&&!a.lion&&!a.rex&&!a.beast&&!a.dog;
 function tipOf(w){return M.bladeSurface?.(w.id,w.item?.q??1)?.tip||({hammer:33,mace:32,club:27}[w.id]||38);}
 const plans=new Map(),strikes=new Map(),binds=new Map(),drawn=new Map(),flags=new Map();
 
@@ -76,7 +79,10 @@ BC.plan=(a,b,ef)=>{
  const t=now(),sh=M.usableShield(b),bw=M.weapon(b),useShield=!!sh&&!bw.twoHand;
  const spotR=Math.random(),spot=spotR<.22?'boss':spotR<.48?'rim':'wood';// nur Darstellung: wo am Schild es trifft
  const pl={att:a.id,def:b.id,will:r<p,chance:p,t0:t,tc:t+(a.swingMax||.3)*.55,tech:a.technique,shield:useShield,sid:useShield?sh.def:null,spot,res:null,done:false,G:null};
- plans.set(b.id,pl);strikes.set(a.id,pl);BC.stats.planned++;
+ BC.stats.planned++;
+ // Leistung: nur Schläge, die geblockt werden, brauchen eine Deckungsbewegung (der Rest bleibt wie im Spiel)
+ if(!pl.will)return;
+ plans.set(b.id,pl);strikes.set(a.id,pl);
 };
 
 // ---------------------------------------------------------------- 2. Im Treffermoment geblockt (aus combatResponses.block)
@@ -117,7 +123,7 @@ function fire(ev){try{BC.onEvent?.(ev);}catch(e){console.warn('blockContact.onEv
 // Geschoss prallt an der Klinge ab: Funken, leises Klirren, abgelenkter Pfeil fliegt weg, kurzes Zucken der Waffe
 const flicks=new Map(),deflects=[];
 function onArrowParry(a,b,w){const d=drawn.get(b.id),bw=M.weapon(b),tip=tipOf(bw),P=d?{x:d.hand.x+d.dir.x*tip*.55,y:d.hand.y+d.dir.y*tip*.55}:{x:b.x,y:b.y-50};
- const dir=Math.sign(b.x-a.x)||1;sound('bk_pfeilKlinge',w.id==='crossbow'?.9:1.05,.85);emit(1,P.x,P.y,6,-dir,-1,1.1,130,.22);flash(P.x,P.y,'metal',4);
+ const dir=Math.sign(b.x-a.x)||1;sound('bk_pfeilKlinge',w.id==='crossbow'?.9:1.05,.85);emit(1,P.x,P.y,4,-dir,-1,1.1,120,.18);flash(P.x,P.y,'metal',3);
  deflects.push({x:P.x,y:P.y,vx:dir*(40+Math.random()*50),vy:-(110+Math.random()*60),ang:Math.atan2(0,dir),spin:(Math.random()<.5?-1:1)*(14+Math.random()*8),life:.9,len:w.id==='crossbow'?6:8});if(deflects.length>6)deflects.shift();
  flicks.set(b.id,{t0:now(),dur:.24});BC.stats.arrows=(BC.stats.arrows||0)+1;
  if(BC.labels){labels.length=0;labels.push({x:P.x,y:Math.min(P.y,b.y-88)-4,t:'ABGELENKT',life:.6,c:'#d8d0b0'});}
@@ -152,8 +158,11 @@ BC.step=(a,dt)=>{
  return true;};
 
 // ---------------------------------------------------------------- 5. Pose (arena.js drawGladiator, vor limitArm)
+let lastBattle=null;
 BC.pose=(a,main,off,angle,c)=>{
  if(!BC.active||!S.battle)return null;
+ if(S.battle!==lastBattle){lastBattle=S.battle;plans.clear();strikes.clear();binds.clear();drawn.clear();flags.clear();flicks.clear();}
+ if(!binds.has(a.id)&&!plans.has(a.id)&&!strikes.has(a.id)&&!flicks.has(a.id))return null;
  const sx=c.sx,sy=c.sy,fs=Math.sign(sx)||1,toL=P=>({x:(P.x-a.x)/sx,y:(P.y-a.y)/sy-c.bob}),toW=L=>({x:a.x+L.x*sx,y:a.y+(L.y+c.bob)*sy});
  const t=now(),w=c.w,tipL=tipOf(w),root=c.shoulders?.r||{x:4,y:-56};
  let out=null;
@@ -166,11 +175,11 @@ BC.pose=(a,main,off,angle,c)=>{
    const XL=toL(X),ang=-.95+(B.winner===a.id?.12*k:-.12*k)+tremble*.01,dir={x:Math.cos(ang),y:Math.sin(ang)},u=.5;
    let H={x:XL.x-dir.x*tipL*u,y:XL.y-dir.y*tipL*u};const d=Math.hypot(H.x-root.x,H.y-root.y);if(d>25)H={x:root.x+(H.x-root.x)*25/d,y:root.y+(H.y-root.y)*25/d};
    const aim=Math.atan2(XL.y-H.y,XL.x-H.x);out={main:H,off:c.shield?{x:off.x-2,y:off.y}:{x:H.x-6,y:H.y+4},angle:aim};
-   if(B.a===a.id){B.spark-=1/60;if(B.spark<=0){B.spark=.09+Math.random()*.06;emit(1,X.x,X.y,1+Math.floor(Math.random()*2),0,-1,1.4,70,.22);}}}}
+   if(B.a===a.id){B.spark-=1/60;if(B.spark<=0){B.spark=.15+Math.random()*.1;emit(1,X.x,X.y,1,0,-1,1.4,60,.18);}}}}
  // Geschoss abgelenkt: Waffe zuckt kurz hoch
  const fl=flicks.get(a.id);if(!out&&fl){const k=(t-fl.t0)/fl.dur;if(k>=1||k<0)flicks.delete(a.id);else{const s=Math.sin(k*Math.PI);out={main:{x:main.x+5*s,y:main.y-4*s},off,angle:lerpA(angle,-1.25,s)};}}
  // Verteidiger: Deckung in die Bahn
- const pl=plans.get(a.id);
+ const pl=plans.get(a.id);if(pl&&t>pl.tc+.7){plans.delete(a.id);if(strikes.get(pl.att)===pl)strikes.delete(pl.att);}
  if(!out&&pl&&t>=pl.t0&&t<=pl.tc+.6){const att=actor(pl.att);
   if(att){const resp=M.combatResponses?.pose?.(a);if(resp?.kind!=='dodge'){
    const cp=att.contactPoint||{x:a.x,y:a.y-50},ad=drawn.get(att.id),sa=ad?ad.hand:{x:att.x,y:att.y-58};
@@ -215,10 +224,10 @@ const PM=256,P={x:new Float32Array(PM),y:new Float32Array(PM),vx:new Float32Arra
 const flashes=[],labels=[];
 function emit(kind,x,y,n,dx,dy,spread,speed,life){const a0=Math.atan2(dy,dx);for(let i=0;i<n;i++){const j=pn;pn=(pn+1)%PM;const a=a0+(Math.random()*2-1)*spread,v=speed*(.45+Math.random()*.8);P.x[j]=x;P.y[j]=y;P.vx[j]=Math.cos(a)*v;P.vy[j]=Math.sin(a)*v;P.m[j]=P.l[j]=life*(.6+Math.random()*.7);P.k[j]=kind;}}
 // 1 Funke, 2 Glut, 3 Splitter, 4 Staub
-function burst(x,y,res,a,b){const back=Math.sign(a.x-b.x)||1,o=res.outcome,n=o==='broken'?20:res.heavy?14:10;
- if(res.fx==='metal'||res.fx==='boss'){emit(1,x,y,n,back*.5,-1,1.2,150,.28);emit(2,x,y,3,back,-.6,.6,55,.5);flash(x,y,res.fx,res.heavy?8:6);}
- else{emit(3,x,y,res.heavy?11:7,back,-1,1.1,95,.45);emit(4,x,y,2,back,0,.5,14,.45);flash(x,y,'wood',5);}
- if(o==='glance')emit(1,x,y,6,-back,-.2,.35,170,.2);
+function burst(x,y,res,a,b){const back=Math.sign(a.x-b.x)||1,o=res.outcome,n=o==='broken'?11:res.heavy?8:5;
+ if(res.fx==='metal'||res.fx==='boss'){emit(1,x,y,n,back*.5,-1,1.1,120,.2);emit(2,x,y,1,back,-.6,.6,45,.4);flash(x,y,res.fx,res.heavy?5:4);}
+ else{emit(3,x,y,res.heavy?7:4,back,-1,1.1,85,.4);emit(4,x,y,1,back,0,.5,14,.4);flash(x,y,'wood',3);}
+ if(o==='glance')emit(1,x,y,3,-back,-.2,.35,150,.16);
  if(BC.labels){const t={clean:'BLOCK',glance:'ABGEGLITTEN',bind:'KRAFTPROBE',broken:'DURCHGESCHLAGEN',shove:'WEGGEDRÜCKT'}[o]||'';if(t){labels.length=0;labels.push({x,y:Math.min(y,Math.min(a.y,b.y)-88)-4,t,life:.6,c:{clean:'#9fd0f0',glance:'#a6d98a',bind:'#f0dc8e',broken:'#f08a70',shove:'#f0dc8e'}[o]});}}}
 function flash(x,y,kind,size){flashes.push({x,y,t:0,max:kind==='boss'?.18:.1,kind,size});if(flashes.length>8)flashes.shift();}
 BC.draw=(ctx)=>{if(!BC.active)return;const t=now();let dt=lastDraw==null?0:cl(t-lastDraw,0,.05);lastDraw=t;let alive=0;

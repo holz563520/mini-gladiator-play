@@ -12,7 +12,7 @@
 (()=>{
 const M=window.MG;if(!M||M.hitContact)return;
 const S=M.s,cl=(x,a,b)=>Math.max(a,Math.min(b,x));
-const HC={active:false,play:null,stats:{sounds:0,stops:0,marks:0},onEvent:null};
+const HC={active:true,play:null,stats:{sounds:0,stops:0,marks:0},onEvent:null};
 M.hitContact=HC;
 const now=()=>S.battle?.time||0;
 function fire(ev){try{HC.onEvent?.(ev);}catch(e){console.warn('hitContact.onEvent',e);}}
@@ -56,14 +56,15 @@ const DEPTH={schwerklinge:3,klinge:2,dolch:4,axt:3.5,stich:7,keule:0,kolben:.5,h
 const HOLD={schwerklinge:.08,klinge:.06,dolch:.09,axt:.1,stich:.12,keule:.05,kolben:.06,hammer:.08};
 const stops=new Map();
 const R=M.combatResponses;
-if(R?.impact){const orig=R.impact;R.impact=(a,b,dmg,projectile,w,part)=>{orig(a,b,dmg,projectile,w,part);if(!HC.active||projectile||!w||w.ammo||!a||!b)return;
+let lastB=null;
+if(R?.impact){const orig=R.impact;R.impact=(a,b,dmg,projectile,w,part)=>{orig(a,b,dmg,projectile,w,part);if(!HC.active||projectile||!w||w.ammo||!a||!b||a.dog||b.dog)return;if(S.battle!==lastB){lastB=S.battle;stops.clear();}
  const cls=strikeClass(w.id,a.swingKind);
  stops.set(a.id,{t:now(),target:b.id,part,cls,dmg,off:(HALF[part]??5)-(DEPTH[cls]??2)*(.7+cl(dmg/30,0,1)*.6)});HC.stats.stops++;
  markWound(a,b,w,part,dmg,cls);};}
 const tipOf=w=>M.bladeSurface?.(w.id,w.item?.q??1)?.tip||({hammer:33,mace:32,club:27}[w.id]||38);
-HC.pose=(a,main,off,angle,c)=>{if(!HC.active||!S.battle)return null;const st=stops.get(a.id);if(!st)return null;
+HC.pose=(a,main,off,angle,c)=>{if(!HC.active||!S.battle||!stops.size)return null;const st=stops.get(a.id);if(!st)return null;
  const t=now()-st.t,hold=HOLD[st.cls]??.07,pull=.2;if(t<0||t>hold+pull){stops.delete(a.id);return null;}
- const b=S.battle.actors.find(x=>x.id===st.target);if(!b||b.g.dead&&t>hold)return null;
+ const b=M.blockContact?.actor?M.blockContact.actor(st.target):S.battle.actors.find(x=>x.id===st.target);if(!b||b.g.dead&&t>hold)return null;
  const sx=c.sx,sy=c.sy,fs=Math.sign(sx)||1,toL=P=>({x:(P.x-a.x)/sx,y:(P.y-a.y)/sy-c.bob});
  let cp;try{cp=M.contactAnchor(b,st.part);}catch{cp=null;}if(!cp)return null;
  const root=c.shoulders?.r||{x:4,y:-56},CL=toL(cp),dx0=CL.x-root.x,dy0=CL.y-root.y,d0=Math.max(1,Math.hypot(dx0,dy0)),ux=dx0/d0,uy=dy0/d0;
@@ -89,16 +90,18 @@ HC.pose=(a,main,off,angle,c)=>{if(!HC.active||!S.battle)return null;const st=sto
 // Höchstens 3 je Körperteil; nur im Arbeitsspeicher (WeakMap je Gladiator), nichts im Spielstand.
 const marks=new WeakMap();
 const KIND={schwerklinge:'kerbe',klinge:'schnitt',dolch:'stich',axt:'hack',stich:'loch',keule:'prellung',kolben:'quetsch',hammer:'krater'};
-function markWound(a,b,w,part,dmg,cls){if(!b?.g)return;let L=marks.get(b.g);if(!L){L={};marks.set(b.g,L);}const list=(L[part]??=[]);
+function markWound(a,b,w,part,dmg,cls){if(!b?.g)return;const bid=S.battle?.id;let L=marks.get(b.g);if(!L||L.bid!==bid){L={bid};marks.set(b.g,L);}const list=(L[part]??=[]);
  let kind=KIND[cls]||'prellung';if(w.id==='trident')kind='dreiloch';if(cls==='klinge'&&/thrust/.test(a.swingKind||''))kind='stich';if(w.id==='dagger'&&!/thrust/.test(a.swingKind||''))kind='schnitt';
  const tech=a.swingKind,v=a.attackVariant??0,ang=tech==='overhead'?(Math.random()-.5)*.3:tech==='spin'?.12:v===1?-.65:v===2?.15:.6;
  const mat=armorAt(b.g,part);
  list.push({kind,ang:ang+(Math.random()-.5)*.25,u:(Math.random()-.5)*.5,v:(Math.random()-.5)*.4,size:cl(dmg/11,.7,2),mat,heavy:dmg>16});if(list.length>3)list.shift();HC.stats.marks++;}
-HC.hasMarks=(a,id)=>HC.active&&!!marks.get(a.g)?.[id]?.length;
+// Wundbilder gelten nur im laufenden Kampf; danach zeigt der Körper wieder die normale Wunddarstellung
+const live=g=>{const L=marks.get(g);return L&&L.bid===S.battle?.id?L:null;};
+HC.hasMarks=(a,id)=>HC.active&&!!live(a.g)?.[id]?.length;
 function px(ctx,x,y,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),1,1);}
 function lineMark(ctx,cx,cy,ang,len,cols){const c=Math.cos(ang),s=Math.sin(ang);for(let i=-len/2;i<=len/2;i+=1){const x=cx+c*i,y=cy+s*i;for(let k=0;k<cols.length;k++)if(cols[k])px(ctx,x-s*(k-((cols.length-1)/2)),y+c*(k-((cols.length-1)/2)),cols[k]);}}
 // Leistung: jedes Wundbild wird einmal in ein kleines Bild gemalt und danach nur noch kopiert
-HC.surface=(ctx,a,id,item,bounds)=>{if(!HC.active)return false;const list=marks.get(a.g)?.[id];if(!list?.length)return false;
+HC.surface=(ctx,a,id,item,bounds)=>{if(!HC.active)return false;const list=live(a.g)?.[id];if(!list?.length)return false;
  const [bx,by,bw,bh]=bounds,W=Math.max(2,bw),Hh=Math.max(2,bh),cx0=bx+W/2,cy0=by+Hh/2;
  for(const m of list){const key=item?'sa':'sf';let spr=m[key];if(!spr){spr=document.createElement('canvas');spr.width=spr.height=20;paint(spr.getContext('2d'),m,!!item);m[key]=spr;}
   ctx.drawImage(spr,Math.round(cx0+m.v*W*.5)-10,Math.round(cy0+m.u*Hh*.6)-10);}
@@ -123,5 +126,13 @@ function paint(ctx,m,item){const cx=10,cy=10,sz=m.size,ang=m.ang;{
 // ---------------------------------------------------------------- 4. Drehschlag (arena.js): statt die Figur bis auf ein Drittel flach zu stauchen
 // dreht sie sich wirklich: in der hinteren Hälfte der Drehung gespiegelt, nie schmaler als 84 %.
 HC.spin=(a,phase)=>{if(!HC.active)return null;const c=Math.cos(phase*Math.PI*2);return{mag:.84+.16*Math.abs(c),flip:c<0};};
+
+// ---------------------------------------------------------------- 5. Ausfallschritt (arena.js Beine): vorderer Fuß tritt vor, hinterer stemmt,
+// Körper senkt sich – je nach Schlagart. Nur die Beine und die Höhe, der Rumpf bleibt am Platz (Treffpunkte stimmen weiter).
+const LUNGE={thrust:[9,3,3.5],overhead:[6,2,4],slash:[5,1.5,2.5]},L={front:0,back:0,drop:0,lift:0};
+HC.lunge=(a,motion)=>{if(!HC.active||!motion?.enabled)return null;const kind=a.swing>0?a.swingKind:a.wind>0?a.technique:null,p=LUNGE[kind];if(!p)return null;
+ const w=M.weapon(a);if(!w||w.ammo)return null;const big=w.twoHand?1.15:1,k=motion.drive,load=motion.load||0;
+ const raw=a.swing>0?cl(1-a.swing/(a.swingMax||.3),0,1):0;
+ L.front=(p[0]*k-1.5*load)*big;L.back=p[1]*k*big;L.drop=p[2]*k;L.lift=raw>0&&raw<.45?Math.sin(raw/.45*Math.PI)*2.2:0;return L;};
 HC.reset=()=>{stops.clear();};HC.marksOf=g=>marks.get(g)||null;
 })();
