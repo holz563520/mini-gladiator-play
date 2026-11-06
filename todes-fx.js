@@ -219,13 +219,8 @@ function shotDone(g,w,h,o,k,t,kind){const id=o?.g?.id;if(id!=null&&ovSaved.has(i
  const L=lensSurface(w,h,Math.max(2,Math.round(Math.min(w,h)/200)));paintSplats(L.q,L.W,L.H,list,k);g.save();g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.drawImage(L.c,0,0,w,h);g.restore();}
 // Verletzungs-Nahaufnahmen: zusätzliches Blut im kleinen Pixelbild (Spritzer, Stöße aus der Wunde, Rinnsale)
 const GORE={scrape:.1,cut:.35,deepcut:.8,stab:.4,deepstab:.8,arrow:.5,sinew:.5,gut:1,pierce:.9,crush:.3,skullfracture:.7,fracture:.25,badfracture:.55,shatter:.75,pulp:1,sever:1};
-function gore(T,V,k,C,kind,o,t){if(!api.active||k<0)return;const I=GORE[kind]||0;if(!I||!V?.A)return;const A=V.A,seed=[...String(kind+(o.part||''))].reduce((n,c)=>n+c.charCodeAt(0),0);
- // Spritzer um die Wunde (erscheinen mit dem Treffer)
- const n=Math.round(10+I*40);for(let i=0;i<n;i++){const a=hash(seed+i)*6.283,d=(4+hash(seed+i*1.9)*30*I)*cl(k/.12),x=A.x+Math.cos(a)*d,y=A.y+Math.sin(a)*d*.7;T.r(x,y,hash(seed+i*5)<.3?2:1,1,hash(seed+i*7)<.5?'#8f2a24':'#a8372f');}
- // Stöße aus der Wunde, langsamer werdend
- if(I>=.5){const beat=Math.max(0,Math.sin(k*(9-k)*1.1)),m=Math.round(14*I);for(let i=0;i<m;i++){const v=((k*1.4+i/m)%1),dir=hash(seed+i*3)<.5?-1:1,x=A.x+dir*v*(14+22*I)*(.5+beat*.6),y=A.y-v*12*beat+v*v*26;T.r(x,y,i%3?1:2,i%3?1:2,i%2?'#a8372f':'#c9584a');}}
- // Rinnsale nach unten
- for(let i=0;i<Math.round(2+I*5);i++){const L=cl((k-.1-hash(seed+i*2.7)*.8)*(10+I*14),0,10+hash(seed+i*3.9)*24*I);T.r(A.x-6+hash(seed+i*1.3)*12,A.y+2,1,L,i%2?'#8f2a24':'#6b2420');}}
+function gore(T,V,k,C,kind,o,t){/* nur feine Spritzer um schwere Wunden; Rinnsale und Stöße zeichnen die Wundmaler selbst */if(!api.active||k<0)return;const I=GORE[kind]||0;if(I<.35||!V?.A)return;const A=V.A,seed=sh(kind+(o.part||'')+(o.g?.id||''));
+ const n=Math.round(6+I*18),p=cl(k/.1);for(let i=0;i<n;i++){const a=-2.6+hash(seed+i)*2.2+(hash(seed+i*5)<.3?3.1:0),d=(6+hash(seed+i*1.9)*26*I)*p,x=A.x+Math.cos(a)*d,y=A.y+Math.sin(a)*d*.75;const big=hash(seed+i*7)<.18;T.r(x,y,big?2:1,1,big?'#7a1712':'#8f1d16');if(big)T.r(x,y,1,1,'#b0372c');}}
 
 // ---------------------------------------------------------------- Anschluss
 const prevStep=M.effectsStep;if(typeof prevStep==='function')M.effectsStep=function(dt){const r=prevStep.apply(this,arguments);try{step(dt);}catch(e){if(!api.err){api.err=e;console.error(e);}}return r;};
