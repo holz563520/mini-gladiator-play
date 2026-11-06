@@ -127,6 +127,6 @@ $('rules').innerHTML=[
  '<em>Blut auf der Kamera</em>: Spritzer auf der Linse, mehr bei schweren Toden und nahem Zoom. Sie laufen langsam herunter, und solange das Blut frisch ist, liegt ein roter Schleier über dem Bild. Das gilt auch in den Nahaufnahmen.',
  '<em>Todes-Nahaufnahme je Todesart</em>: Bei der Enthauptung fährt eine Klinge durch, der Kopf kippt weg und aus dem Bild, und der Stumpf spritzt. Die Kehle klafft auf und das Blut schießt in Stößen heraus. Die Schädeldecke bricht ein und Blut läuft in Strähnen übers Gesicht. Bei Stich und Bauchwunde hustet er Blut, ein Pfeil steckt sichtbar, und bei der Durchtrennung geht ein Schnitt quer durch.',
  '<em>Verletzungs-Nahaufnahmen</em>: Spritzer um die Wunde, bei schweren Wunden pulsierende Stöße, dazu Rinnsale und bei den schwersten Blut auf der Linse.',
- 'Alles ist nur Darstellung. Würfel, Schaden, Todeschancen und Kampfablauf bleiben unverändert. Im Spiel ist das noch <b>nicht</b> eingeschaltet, <code>boot.js</code> lädt <code>todes-fx.js</code> nicht.'].map(x=>`<li>${x}</li>`).join('');
+ 'Alles ist nur Darstellung. Würfel, Schaden, Todeschancen und Kampfablauf bleiben unverändert. Im Spiel ist das eingeschaltet, <code>boot.js</code> lädt <code>todes-fx.js</code>.'].map(x=>`<li>${x}</li>`).join('');
 fillKinds();stage('decap');requestAnimationFrame(tick);
 })();
