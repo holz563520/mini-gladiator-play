@@ -477,6 +477,10 @@ function cartPanel(){const s=st(),alive=s.dogs.filter(D=>!D.dead).length,left=us
  <div class="buttons"><button class="btn primary" data-action="nav:hundefang">🐕 Aufträge${left?' ('+left+')':' · morgen wieder'}</button><button class="btn" data-action="nav:zwinger">▼ Treppe hinab · Zwinger (${alive} ${alive===1?'Hund':'Hunde'})</button><button class="btn" data-action="hf:intro">Vorstellung ansehen</button></div></div></section>`;}
 function cleanTeam(){team.men=team.men.filter(id=>{const g=byId(id);return g&&fit(g)&&id!==team.bait&&!g.smithDuty&&!g.retired;}).slice(0,2);if(team.bait&&!baitCands().some(g=>g.id===team.bait))team.bait=null;
  if(!team.bait){const c=baitCands().find(g=>!team.men.includes(g.id));team.bait=c?.id||null;if(team.bait)team.quip=fill(pick(TX_LOCK.pick),c);}}
+// Automatisch ausrüsten (Wunsch Thomas 6.11.): wie in der Arena-Vorbereitung, nur für die Kämpfer des Trupps
+const autoEq=()=>st().autoEq!==false;
+function equipTeam(quiet){const men=team.men.map(byId).filter(Boolean);if(!men.length)return '';let msg='';try{msg=M.army?.autoEquip?M.army.autoEquip(men,'soll',{take:true}):'Automatisches Ausrüsten nicht verfügbar.';}catch(e){msg='Ausrüsten fehlgeschlagen: '+e.message;}try{M.persist();}catch{}if(!quiet&&msg)M.ui.notify?.(msg);return msg;}
+document.addEventListener('change',e=>{if(e.target?.hasAttribute?.('data-hfauto')){st().autoEq=!!e.target.checked;try{M.persist();}catch{}}});
 const teamOk=()=>!!byId(team.bait)&&team.men.length<=2&&team.men.every(id=>id!==team.bait&&byId(id)&&fit(byId(id)));
 function teamHTML(j,gs){const B=byId(team.bait),lockC=baitCands();
  const card=(g,act,on,extra)=>`<button type="button" class="hf-pick${on?' on':''}${extra.cls||''}" data-action="${act}:${g.id}"><canvas data-hfface="${g.id}" width="160" height="104"></canvas><div><b>${esc(g.name)}</b>${extra.html}</div></button>`;
@@ -487,6 +491,7 @@ function teamHTML(j,gs){const B=byId(team.bait),lockC=baitCands();
  <h3 class="hf-h3">⚔ Kämpfer <small>· ${team.men.length} von 2 · eigene Ausrüstung</small></h3>
  <div class="hf-picks">${gs.map(g=>{const ok=fit(g),on=team.men.includes(g.id),v=j?verdictOf(g,j):{i:2,txt:'–'};return card(g,'hf:pick',on,{cls:ok&&g.id!==team.bait?'':' unfit',html:`<small>${esc(g.role||'')} · KW ${Math.round(M.power?.(g)||0)} · ${esc(gearLabel(g))}${hasNet(g)?' 🕸':''}</small><small>${g.id===team.bait?'ist der Lockvogel':ok?`Einschätzung: <span class="hf-v hf-v${v.i}">${v.txt}</span>`:'nicht einsatzbereit'}</small>`});}).join('')||'<p>Niemand im Kader.</p>'}</div>
  <p style="font-size:13px;opacity:.85">Der Hund geht meist auf den Nächsten los, also zuerst auf den Lockvogel. Die Einschätzung kennt nur die Gefahrenstufe, nicht die Rasse. Wunden, Tod und Lernen zählen wie im echten Kampf. Fangen: Unterwirft sich der Hund, hält ihn ein Netz sicher (hat keiner eins dabei und war er nicht im Netz, nur jedes zweite Mal); manchmal bleibt er auch nur bewusstlos liegen, nach stumpfen Waffen oder Fäusten öfter.</p>
+ <div class="hf-gear"><button class="btn" type="button" data-action="hf:equip" ${team.men.length?'':'disabled'}>⚒ Automatisch ausrüsten</button><label><input type="checkbox" data-hfauto ${autoEq()?'checked':''}> beim Aufbrechen automatisch ausrüsten</label><small style="opacity:.75">wie in der Arena: beste Waffengattung nach SOLL, darf anderen (auch dem Lockvogel) die Ausrüstung abnehmen</small></div>
  <div class="buttons"><button class="btn primary" data-action="hf:go" ${!teamOk()||j?.done?'disabled':''}>🔭 Aufbrechen${B?' · '+(1+team.men.length)+' '+(team.men.length?'Leute':'Mann (nur der Lockvogel)'):''}</button></div>`;}
 function boardPage(){const s=st(),j=s.jobs[selJob]||s.jobs[0],gs=fighters().sort((a,b)=>(M.power(b)||0)-(M.power(a)||0)),used=usedToday();cleanTeam();
  const quote=used?'Für heute hab ich genug Köter gesehen. Morgen frisst schon der Nächste jemanden.':TX.STUFE[(j?.skulls||1)-1];
@@ -542,7 +547,8 @@ M.schoolClick=function(action){if(action==='hs:species:hund'&&st().stage==='open
  else if(k==='job'){selJob=+v;M.ui.render();}
  else if(k==='pick'){const g=byId(v);if(!g)return true;if(team.men.includes(v)){team.men=team.men.filter(x=>x!==v);M.ui.render();}else if(v===team.bait)M.ui.notify?.('Der ist schon der Lockvogel. Bewaffnen wäre Verschwendung.');else if(!fit(g))M.ui.notify?.('Nicht einsatzbereit. Ein paar Tage Ruhe helfen. Oder als Lockvogel.');else{if(team.men.length>=2)team.men.shift();team.men.push(v);M.ui.render();}}
  else if(k==='bait'){const g=byId(v);if(!g)return true;if(team.men.includes(v))team.men=team.men.filter(x=>x!==v);team.bait=v;team.quip=fill(pick(TX_LOCK.pick),g);M.ui.render();}
- else if(k==='go'){const j=s.jobs[selJob];cleanTeam();if(!j||j.done||usedToday()||!teamOk()||S.battle)return true;goTeam={bait:team.bait,men:[...team.men]};const lead=byId(team.men[0])||byId(team.bait);sighting(j,lead);}
+ else if(k==='equip'){equipTeam(false);M.ui.render();}
+ else if(k==='go'){const j=s.jobs[selJob];cleanTeam();if(!j||j.done||usedToday()||!teamOk()||S.battle)return true;if(autoEq())equipTeam(true);goTeam={bait:team.bait,men:[...team.men]};const lead=byId(team.men[0])||byId(team.bait);sighting(j,lead);}
  else if(k==='zw'){zwPage+=+v;M.ui.render();}
  else if(k==='sell'){const key=action.slice(8);if(sellArm===key){sellArm='';sell(key);}else sellArm=key;M.ui.render();}
  return true;};
