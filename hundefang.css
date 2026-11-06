@@ -102,3 +102,8 @@
 .hf-lockq canvas{width:96px;height:auto;image-rendering:pixelated;border-radius:6px;background:#1b2426}
 .hf-lockline{font-style:italic}
 .hf-lock .hf-pick.on{border-color:#d57668;box-shadow:0 0 0 2px #d5766855}
+/* Köderwert (6.11.) */
+.hf-tier{color:var(--tc);font-weight:700;opacity:1!important}
+.hf-amp{color:#f29b83;font-weight:700;opacity:1!important}
+.hf-baitq{font-style:italic;color:#e8d8a8}
+.hf-lock .hf-pick.hf-prime{background:#3a2316}
