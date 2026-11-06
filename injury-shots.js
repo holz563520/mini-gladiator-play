@@ -174,6 +174,35 @@ function dressArmor(q,C,V,o,kind,k){const part=o.part;if(part==='head'||part==='
   d[i]=col[0];d[i+1]=col[1];d[i+2]=col[2];keep.push(i);}
  q.putImageData(img,0,0);
  /* stumpfe Treffer: Bluterguss und Schwellung nur in der offenen Stelle, nicht auf der Rüstung */return {restore:q2=>{const im=q2.getImageData(0,0,FW,FH),e=im.data;for(const i of keep){e[i]=d[i];e[i+1]=d[i+1];e[i+2]=d[i+2];e[i+3]=255;}q2.putImageData(im,0,0);}};}
+/* aufgerissene Haut: zerfetzter Rand, darunter rohes Fleisch */
+function tear(T,V,rx,ry,C){if(rx<1)return;const s=V.seed||0;for(let a=0;a<6.283;a+=.12){const j=1+.35*Math.sin(a*5+s)+.2*Math.sin(a*11+s*2),x=V.A.x+Math.cos(a)*rx*j,y=V.A.y+Math.sin(a)*ry*j;T.r(x,y,2,2,a<3.14?(C.light||'#e0b48c'):(C.shade||'#875e43'));T.r(V.A.x+Math.cos(a)*rx*j*.85,V.A.y+Math.sin(a)*ry*j*.85,1,1,'#c8564a');}
+ T.oval(V.A.x,V.A.y,rx*.82,ry*.82,'#7a1712');T.oval(V.A.x+.5,V.A.y+.5,rx*.55,ry*.55,'#4a0a08');}
+/* rohes Muskelfleisch mit Fasern entlang der Gliedmaße */
+function meat(T,V,rx,ry){if(rx<1)return;const ux=V.dir?.x??1,uy=V.dir?.y??0,s=V.seed||0;for(let i=0;i<rx*ry*1.4;i++){const a=rnd(i,s)*6.283,r=Math.sqrt(rnd(i+3,s)),x=V.A.x+Math.cos(a)*rx*r,y=V.A.y+Math.sin(a)*ry*r,L=2+rnd(i+5,s)*4;for(let j=0;j<L;j++)T.r(x+ux*j,y+uy*j,1,1,j%3===0?'#c45a4a':i%4===0?'#5a0c09':'#a8372f');}}
+/* Knochenende: Schaft aus der Wunde, gezackte Bruchkante, Mark, blutverschmiert */
+function bone(T,V,len,w,ang,C,n=0){if(len<1)return;if(V.deferred){V.deferred.push(()=>bone(T,{...V,deferred:null},len,w,ang,C,n));return;}const s=(V.seed||0)+n*17,base=Math.atan2(V.dir?.y??0,V.dir?.x??1),a=base+ang,cx=Math.cos(a),cy=Math.sin(a),nx=-cy,ny=cx,x0=V.A.x+(rnd(n,s)-.5)*3,y0=V.A.y+(rnd(n+1,s)-.5)*3;
+ for(let i=0;i<len;i++){const ww=w*(1-.2*i/len);T.r(x0+cx*i+nx*(ww/2+1),y0+cy*i+ny*(ww/2+1),1,1,'#3a0c0a');for(let o=-ww/2;o<=ww/2;o+=.5){const c=o<-ww/4?'#f6efd8':o>ww/4?'#b5a684':'#e6dcc0';T.r(x0+cx*i+nx*o,y0+cy*i+ny*o,1,1,i<len*.2?(o>0?'#7a1712':'#a8372f'):c);}if(i>len*.2&&i<len*.6&&i%5===2)T.r(x0+cx*i+nx*ww/4,y0+cy*i+ny*ww/4,1,1,'#a8372f');}
+ const ex=x0+cx*len,ey=y0+cy*len;for(let o=-w/2;o<=w/2;o+=.5){const j=Math.round((rnd(o*7,s)-.3)*3);T.r(ex+cx*j+nx*o,ey+cy*j+ny*o,1,1,'#efe6d0');}T.r(ex-cx*.5,ey-cy*.5,Math.max(1,w*.5),1,'#8a2a20');T.r(ex+nx*w*.3,ey+ny*w*.3,1,1,'#ffffff');}
+/* Pumpen: Blut quillt im Herzschlag aus der Wunde, bei starken Wunden spritzt es in Bögen; wird langsam schwächer */
+const PUMP={scrape:.12,cut:.3,deepcut:.75,stab:.35,deepstab:.8,arrow:.45,sinew:.6,gut:.9,pierce:.85,fracture:.35,badfracture:.75,shatter:.9,pulp:1,sever:.6,skullfracture:.4};
+const beatOf=k=>{const r=1.25,b=k*r;return {n:Math.floor(b),u:(b%1)/r};};
+function pump(T,V,k,kind){const S=PUMP[kind]||0;if(!S||k<.05||!V?.A)return;const {n,u}=beatOf(k),fade=Math.max(.35,1-k/9),P=Math.exp(-u*7)*S*fade,s=V.seed||0;
+ /* Quellen */T.oval(V.A.x,V.A.y+1,1+2.5*S+3*P,.8+1.6*S+2*P,'#8f1d16');T.oval(V.A.x-.5,V.A.y+.5,.6+1.5*P+S,.5+P,'#b02a20');if(P>.15)T.r(V.A.x-1,V.A.y-1,1,1,'#e8907c');
+ /* Stoß: Tropfen fliegen im Bogen nach außen */if(S>=.3){const m=Math.round(4+S*16),up=-Math.PI/2;for(let i=0;i<m;i++){const t=u-(i%4)*.02;if(t<0||t>.75)continue;const a=up+(rnd(i+n*7,s)-.5)*2.2*(.5+S*.5),v=(18+rnd(i+2,s)*34)*S*fade,x=V.A.x+Math.cos(a)*v*t*1.6,y=V.A.y+Math.sin(a)*v*t*1.6+t*t*60;T.r(x,y,i%3?1:2,i%3?1:2,i%2?'#a8372f':'#c43a2c');}}}
+/* Blut auf der Linse: Spritzer beim Treffer und bei starken Herzschlägen, laufen langsam herunter */
+const LENS={scrape:0,cut:.25,deepcut:.55,stab:.25,deepstab:.55,arrow:.35,sinew:.45,gut:.8,pierce:.7,fracture:.35,badfracture:.7,shatter:.85,pulp:1,sever:.9,skullfracture:.7,crush:.15};
+let lensC=null;
+function lensShot(g,w,h,o,k,kind){const A=LENS[kind]||0;if(!A||k<0||o.noLens)return;const seed=[...String((o.g?.id||'')+o.part+kind)].reduce((n,c)=>(n*31+c.charCodeAt(0))%9973,7),L=[];
+ const add=(born,amt,i)=>{const cx=.1+rnd(i,seed)*.8,cy=.08+rnd(i+1,seed)*.55,r0=(.014+amt*.03)*(.6+rnd(i+2,seed)*.8),blobs=[],tiny=[],drips=[];const nb=2+Math.floor(rnd(i+3,seed)*3+amt*3);for(let j=0;j<nb;j++){const a=rnd(i*13+j,seed)*6.283,d=j?r0*(.5+rnd(i+j*5,seed)*1.2):0;blobs.push([cx+Math.cos(a)*d,cy+Math.sin(a)*d*.8,r0*(j?.3+rnd(i+j*3,seed)*.5:1)]);}
+  for(let j=0;j<8+amt*22;j++){const a=rnd(i*7+j,seed)*6.283,d=r0*(1.4+rnd(i+j*9,seed)*5);tiny.push([cx+Math.cos(a)*d,cy+Math.sin(a)*d*.85,r0*(.08+rnd(i+j*11,seed)*.18)]);}
+  for(let j=0;j<1+Math.floor(amt*3*rnd(i+8,seed));j++){const b=blobs[j%blobs.length];drips.push([b[0]+(rnd(i+j*4,seed)-.5)*b[2],b[1],b[2]*(.22+rnd(i+j*6,seed)*.25),.05+rnd(i+j*2,seed)*.3*amt,.012+rnd(i+j,seed)*.03]);}L.push({born,blobs,tiny,drips});};
+ const n0=1+Math.round(A*2.5);for(let i=0;i<n0;i++)add(i*.03,A*(.6+rnd(i+40,seed)*.5),i*10);
+ const S=PUMP[kind]||0;if(S>=.5){const nb=Math.floor(k*1.25);for(let b=1;b<=nb;b++)if(rnd(b+70,seed)<S*.55)add(b/1.25,A*.45,100+b*10);}
+ const div=Math.max(2,Math.round(Math.min(w,h)/200)),W=Math.round(w/div),H=Math.round(h/div);if(!lensC)lensC=document.createElement('canvas');if(lensC.width!==W||lensC.height!==H){lensC.width=W;lensC.height=H;}const q=lensC.getContext('2d');q.clearRect(0,0,W,H);const D=Math.min(W,H);
+ for(const sp of L){const age=k-sp.born;if(age<0)continue;const gr=cl(age/.08);for(const d of sp.drips){const Lh=Math.min(d[3],age*d[4])*H;q.globalAlpha=.85;q.fillStyle='#6d0f0c';q.fillRect(Math.round(d[0]*W-d[2]*D/2),Math.round(d[1]*H),Math.max(1,Math.round(d[2]*D)),Math.round(Lh));q.beginPath();q.fillStyle='#7a120e';q.arc(d[0]*W,d[1]*H+Lh,Math.max(1,d[2]*D*.75),0,6.283);q.fill();}
+  q.globalAlpha=.8;q.fillStyle='#7d130f';for(const t of sp.tiny){q.beginPath();q.arc(t[0]*W,t[1]*H,Math.max(.7,t[2]*D*gr),0,6.283);q.fill();}
+  for(const b of sp.blobs){const r=b[2]*D*gr;q.globalAlpha=.75;q.fillStyle='#5e0b09';q.beginPath();q.ellipse(b[0]*W,b[1]*H,r*1.1,r*.85,b[0]*9,0,6.283);q.fill();q.globalAlpha=.7;q.fillStyle='#8a1712';q.beginPath();q.ellipse(b[0]*W-r*.12,b[1]*H-r*.1,r*.8,r*.6,b[1]*7,0,6.283);q.fill();q.globalAlpha=.5;q.fillStyle='#d8705e';q.beginPath();q.arc(b[0]*W-r*.38,b[1]*H-r*.38,Math.max(.6,r*.16),0,6.283);q.fill();}}
+ q.globalAlpha=1;g.save();g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;const fresh=cl(1-k/1.1)*A;if(fresh>0){g.globalAlpha=fresh*.2;g.fillStyle='#5a0000';g.fillRect(0,0,w,h);g.globalAlpha=1;}g.drawImage(lensC,0,0,w,h);g.restore();}
 function stars(T,x,y,t,n=4,rad=22){for(let i=0;i<n;i++){const a=t*4+i*Math.PI*2/n,sx=x+Math.cos(a)*rad,sy=y+Math.sin(a)*rad*.3;if(Math.sin(a)>-.3){T.r(sx-2,sy,5,1,'#f4d37a');T.r(sx,sy-2,1,5,'#f4d37a');T.r(sx,sy,1,1,'#ffffff');}}}
 // Heilung des Schädelbruchs (Vorschlag; Regeln legt Thomas fest): Tage im Krankenhaus bis zur vollständigen Ausheilung
 const SKULL_DAYS=20,SKULL_STAGES=[['fresh','Frischer Bruch',0,0,'Notversorgung: Blutung stillen, Splitter entfernen'],['bandage','Kopfverband',1,3,'Bettruhe, Verband wird täglich gewechselt'],['patch','Wundauflage',4,7,'Wunde wird genäht und abgedeckt'],['scab','Wundschorf mit Fäden',8,13,'Verband ab, Knochen wächst langsam zusammen'],['scar','Vernarbung',14,19,'Haut schließt sich, Knochen festigt sich'],['plate','Ausgeheilt – Metallplatte',20,20,'Schädel mit Metallplatte versorgt, dauerhaft sichtbar']];
@@ -193,10 +222,11 @@ const EFFECT={
  crush:(T,V,k,C)=>{patch(T,V,k,23,['#7a4a70','#4a2a52','#2e1838'],.9);const p=out(k/.6);T.oval(V.A.x-3,V.A.y-4,9*p,3*p,C.light,.5);for(let i=0;i<4;i++)T.r(V.A.x-12+i*8,V.A.y+9+(i%2)*2,5,1,'#3a1f3a');},
  concussion:(T,V,k)=>{patch(T,V,k,10,['#8a5a78','#6b3a66'],.5);stars(T,80,10,k);},
  joint:(T,V,k)=>{patch(T,V,k,14,['#b0504a','#8a3a4a','#5a2a44'],.6);if(k<.45)for(let i=0;i<8;i++){const a=i*Math.PI/4,d=10+k*26;T.r(V.A.x+Math.cos(a)*d,V.A.y+Math.sin(a)*d*.7,2,2,'#fff2c8');}T.oval(V.A.x,V.A.y,5,3,'#d98a78',.35);},
- fracture:(T,V,k,C)=>{patch(T,V,k,15,['#8a5a78','#5a2a52'],.9);crack(T,V,k);T.oval(V.A.x,V.A.y-2,4,2,C.light,.6);},
- badfracture:(T,V,k,C)=>{patch(T,V,k,19,['#8a4a68','#5a2a52','#3a1838'],.9);crack(T,V,k);T.oval(V.A.x+1,V.A.y-3,6,3,'#efe6d0',.75);T.r(V.A.x-1,V.A.y-5,4,2,'#fffbe8');},
- shatter:(T,V,k,C)=>{patch(T,V,k,26,['#7a4a70','#4a2a52','#2e1838'],.9);crack(T,V,k);shards(T,V,6,11,C);},
- pulp:(T,V,k,C)=>{patch(T,V,k,30,['#6a3a60','#3a1c3e','#22102a'],.9);crack(T,V,k);shards(T,V,10,15,C);flow(T,V,k,3,12);},
+  /* Brüche (Wunsch Thomas 06.11.: viel brutaler): Knochen stößt durch die Haut, Splitter, offenes Fleisch, Blut pumpt */
+  fracture:(T,V,k,C)=>{patch(T,V,k,17,['#6a3a5a','#4a2244','#2e1430'],.7);crack(T,V,k);const p=out((k-.02)/.12);if(p>0){tear(T,V,p*7,p*4,C);bone(T,V,p*7,3,-.5,C);}flow(T,V,k,3,16);},
+  badfracture:(T,V,k,C)=>{patch(T,V,k,21,['#6a3050','#3e1a38','#24102a'],.8);crack(T,V,k);const p=out((k-.02)/.1);if(p>0){tear(T,V,p*11,p*6,C);bone(T,V,p*20,5,-.95,C);bone(T,V,p*10,4,2.2,C,1);}flow(T,V,k,6,26);},
+  shatter:(T,V,k,C)=>{patch(T,V,k,26,['#5e2848','#3a1634','#200c22'],.9);crack(T,V,k);const p=out((k-.02)/.1);if(p>0){tear(T,V,p*13,p*8,C);meat(T,V,p*9,p*5);bone(T,V,p*16,4.5,-.9,C);for(let i=0;i<4;i++)bone(T,V,p*(6+(i*5)%8),2+(i%2),-.2+i*1.5,C,i+2);shards(T,V,5,16,C);}flow(T,V,k,7,28);},
+  pulp:(T,V,k,C)=>{patch(T,V,k,32,['#4e1e3a','#2e0e26','#1a0612'],.9);const p=out((k-.02)/.1);if(p>0){tear(T,V,p*17,p*11,C);meat(T,V,p*14,p*9);bone(T,V,p*14,4.5,-1,C);bone(T,V,p*11,4,2.1,C,1);for(let i=0;i<5;i++)bone(T,V,p*(4+(i*7)%8),1.5+(i%2),-.4+i*1.3,C,i+5);shards(T,V,8,20,C);T.oval(V.A.x,V.A.y,p*4,p*3,'#1a0505');}flow(T,V,k,9,32);},
  sever:(T,V,k)=>{/* Stumpf: Schnittfläche, pulsierende Blutung */const nx=-V.dir.y,ny=V.dir.x,h=V.w/2-1;for(let j=-h;j<=h;j++){T.r(V.A.x+nx*j-1,V.A.y+ny*j-1,4,2,Math.abs(j)>h-2?DARK:BLOOD);}T.r(V.A.x-1,V.A.y-1,3,3,'#efe6d0');const up=V.dir.y<-.9,pulse=.6+.4*Math.sin(k*8);for(let i=0;i<(up?30:16);i++){const u=((k*1.4+i/16)%1),a=Math.atan2(V.dir.y,V.dir.x)+(((i*29)%16)/16-.5)*(up?.7:.9),d=u*(up?54:30)*pulse;T.r(V.A.x+Math.cos(a)*d,V.A.y+Math.sin(a)*d+u*u*26,i%3?1:2,i%3?1:2,i%2?BLOOD:WET);}flow(T,V,k,5,26);},
  scar:(T,V,k)=>{const p=out(k/.5),nx=-V.dir.y,ny=V.dir.x;for(let i=-9;i<=9;i++){if(Math.abs(i)>9*p)continue;const x=V.A.x+V.dir.x*i*.3+nx*i,y=V.A.y+V.dir.y*i*.3+ny*i;T.r(x,y,2,1.5,'#e3b6a8');if(i%4===0){T.r(x-3*V.dir.x,y-3*V.dir.y,1,1,'#b08a80');T.r(x+3*V.dir.x,y+3*V.dir.y,1,1,'#b08a80');}}},
  skullfracture:(T,V,k,C)=>{
@@ -322,7 +352,7 @@ function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
  if(kind==='skullheal'){V.A=(o.day|0)>0?{x:82,y:20}:{x:80,y:38};C.healDay=o.day;}V.C=C;try{V.arm=dressArmor(q,C,V,o,kind,k);}catch(e){V.arm=null;}
  if(kind==='skullfracture'){V.A={x:80,y:38};C.wid=o.wid;C.helm=o.helm===undefined?helmOf(o.g):o.helm;if(C.helm&&!V.newHead)helmClose(T,C.helm,k);}
  /* Effekte mit .pre zeichnen auch vor dem Treffer (eigene, zur Wunde passende Waffenbahn; Schädelbruch-Varianten) */if(k<0&&EFFECT[kind]?.pre)fxCall(q,T,V,k,C,kind);
- if(k>=0){fxCall(q,T,V,k,C,kind);if(V.arm&&BLUNT_K.includes(kind))V.arm.restore(q);M.deathFx?.gore?.(T,V,k,C,kind,o,t);if(kind==='collapse'||kind==='death'){for(let i=0;i<5;i++){const u=(t*.9+i/5)%1;T.r(60+i*9,70+u*26,1,2,BLOOD);}T.oval(80,97,cl(k/2)*46,cl(k/2)*4,DARK);T.oval(82,97,cl(k/2)*30,cl(k/2)*2.4,BLOOD);}}
+ if(k>=0){V.deferred=V.arm?[]:null;fxCall(q,T,V,k,C,kind);if(V.arm&&BLUNT_K.includes(kind))V.arm.restore(q);/* Knochen ragen auch über die Rüstung */for(const f of V.deferred||[])f();V.deferred=null;pump(T,V,k,kind);M.deathFx?.gore?.(T,V,k,C,kind,o,t);if(kind==='collapse'||kind==='death'){for(let i=0;i<5;i++){const u=(t*.9+i/5)%1;T.r(60+i*9,70+u*26,1,2,BLOOD);}T.oval(80,97,cl(k/2)*46,cl(k/2)*4,DARK);T.oval(82,97,cl(k/2)*30,cl(k/2)*2.4,BLOOD);}}
  if(kind==='death'&&k>0){q.globalAlpha=cl((k-(o.dramatic?2.2:1.3))/(o.dramatic?2.4:1.4))*(o.dramatic?.55:.38);T.r(0,0,FW,FH,'#050302');q.globalAlpha=1;}
  if(kind!=='collapse'&&kind!=='scar'&&kind!=='death'&&kind!=='skullheal')weaponFx(q,T,V,kind==='arrow'?'arrow':cls,o.wid,t,kind);
  if(k>=0&&k<.09){q.globalAlpha=.75*(1-k/.09);T.r(0,0,FW,FH,'#fff6dc');q.globalAlpha=1;}
@@ -331,7 +361,7 @@ function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
  g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#120c09';g.fillRect(0,0,w,h);g.save();if(right){g.translate(w,0);g.scale(-1,1);}g.drawImage(b,dx,dy,dw,dh);g.restore();
  const vg=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.6)');g.fillStyle=vg;g.fillRect(0,0,w,h);
  if(o.dramatic){/* Kinobalken und roter Rand */const bar=Math.round(h*.07);g.fillStyle='#050302';g.fillRect(0,0,w,bar);const rv=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.7);rv.addColorStop(0,o.team===0?'rgba(10,60,120,0)':'rgba(120,0,0,0)');rv.addColorStop(1,(o.team===0?'rgba(20,90,170,':'rgba(140,10,6,')+(.25+.12*Math.sin(t*5)).toFixed(3)+')');g.fillStyle=rv;g.fillRect(0,0,w,h);}
- M.deathFx?.shotDone?.(g,w,h,o,k,t,kind);caption(g,w,h,o,t,kind);}
+ lensShot(g,w,h,o,k,kind);M.deathFx?.shotDone?.(g,w,h,o,k,t,kind);caption(g,w,h,o,t,kind);}
 // Beschriftung wie eine Einblendung im Kampf: Porträt und Name des Getroffenen, wer womit, die Verletzung groß
 const faces=new WeakMap();
 function caption(g,w,h,o,t,kind){const k=t-HIT,u=Math.min(w/660,h/420)*(o.textScale||1);let f=faces.get(o.g);if(!f&&o.g&&!o.noFace){f=document.createElement('canvas');try{M.renderPortrait(f,o.g,{unarmored:true});}catch{}faces.set(o.g,f);}

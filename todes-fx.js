@@ -214,12 +214,13 @@ function air(ctx,T,st){const {type,u,opts,seed}=st,s=T.s,sink=opts.sink||0,put=(
  if(type==='skull'&&u<.7){const p=headPt(st,80,16),v=u/.7;for(let i=0;i<30;i++){const a=hash(seed+i*9)*6.283;put(p.x+Math.cos(a)*v*(40+hash(seed+i)*40),p.y+Math.sin(a)*v*30-v*24+v*v*40,hash(seed+i*3)<.3?2:1,hash(seed+i*3)<.3?2:1,i%4?'#a8372f':i%3?'#e6dcc2':'#d9a0a0',1-v*.6);}}}
 // nach jeder Nahaufnahme: Blut auf der Linse der Nahaufnahme; geborgte Gesichtszeichnung zurückgeben
 function shotDone(g,w,h,o,k,t,kind){const id=o?.g?.id;if(id!=null&&ovSaved.has(id)){const prev=ovSaved.get(id);if(prev)M.faceOverlays[id]=prev;else delete M.faceOverlays[id];ovSaved.delete(id);}
- if(!api.active||!api.lens||k<0)return;let amount=0;if(kind==='death'){amount=(TYPES[shotType(o)]||TYPES.generic).lens;}else amount=({sever:.9,pulp:.7,shatter:.5,gut:.7,deepcut:.5,deepstab:.45,pierce:.6,skullfracture:.6})[kind]||0;if(amount<=0)return;
+ if(!api.active||!api.lens||k<0)return;let amount=0;if(kind==='death'){amount=(TYPES[shotType(o)]||TYPES.generic).lens;}else return;/* Verletzungen: Linsenblut in injury-shots.js */if(amount<=0)return;
  const seed=sh((o.g?.id??3)+'|'+(o.part||'')+'|'+kind),list=[],n=1+Math.round(amount*3);for(let i=0;i<n;i++){const a=amount*(.6+hash(seed+i)*.6);list.push({born:(i?.04*i:0),life:99,amount:a,...makeSplat(seed+i*17,a,.12+hash(seed+i*2.2)*.76,.1+hash(seed+i*4.4)*.55)});}
  const L=lensSurface(w,h,Math.max(2,Math.round(Math.min(w,h)/200)));paintSplats(L.q,L.W,L.H,list,k);g.save();g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.drawImage(L.c,0,0,w,h);g.restore();}
 // Verletzungs-Nahaufnahmen: zusätzliches Blut im kleinen Pixelbild (Spritzer, Stöße aus der Wunde, Rinnsale)
 const GORE={scrape:.1,cut:.35,deepcut:.8,stab:.4,deepstab:.8,arrow:.5,sinew:.5,gut:1,pierce:.9,crush:.3,skullfracture:.7,fracture:.25,badfracture:.55,shatter:.75,pulp:1,sever:1};
-function gore(T,V,k,C,kind,o,t){/* nur feine Spritzer um schwere Wunden; Rinnsale und Stöße zeichnen die Wundmaler selbst */if(!api.active||k<0)return;const I=GORE[kind]||0;if(I<.35||!V?.A)return;const A=V.A,seed=sh(kind+(o.part||'')+(o.g?.id||''));
+function gore(T,V,k,C,kind,o,t){return;/* Blut, Pumpen und Linse macht injury-shots.js jetzt selbst (auch im Spiel) */
+ /* alt: nur feine Spritzer um schwere Wunden; Rinnsale und Stöße zeichnen die Wundmaler selbst */if(!api.active||k<0)return;const I=GORE[kind]||0;if(I<.35||!V?.A)return;const A=V.A,seed=sh(kind+(o.part||'')+(o.g?.id||''));
  const n=Math.round(6+I*18),p=cl(k/.1);for(let i=0;i<n;i++){const a=-2.6+hash(seed+i)*2.2+(hash(seed+i*5)<.3?3.1:0),d=(6+hash(seed+i*1.9)*26*I)*p,x=A.x+Math.cos(a)*d,y=A.y+Math.sin(a)*d*.75;const big=hash(seed+i*7)<.18;T.r(x,y,big?2:1,1,big?'#7a1712':'#8f1d16');if(big)T.r(x,y,1,1,'#b0372c');}}
 
 // ---------------------------------------------------------------- Anschluss
