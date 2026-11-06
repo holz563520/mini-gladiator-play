@@ -368,11 +368,22 @@ function arenaDraw(index,forced,noFront){if(M.missionBackdrop){M.missionBackdrop
  if(!arenaLayer||arenaLayerKey!==key){arenaLayer=surface(1040,720+(sv?SV_TOP+SV_BOT:0));ctx=arenaLayer.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.translate(0,T0);arenaStatic(index,level);
   if(sv){svFront=surface(1040,720+SV_BOT-SV_RAIL+16);ctx=svFront.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.translate(0,-(SV_RAIL-16));svParapet(index);}else svFront=null;ctx=main;arenaLayerKey=key;crowdLayerKey='';}
  if(index===5){ctx.drawImage(arenaLayer,0,-T0);return;}
+ /* Leistung (Thomas 06.11.): Im laufenden Kampf schaut man kaum auf die Ränge. Dann ist die ganze Kulisse – Sand, Mauern, Ränge, Publikum,
+    Fackeln – ein einziges fertiges Standbild (einmal gebaut, danach je Bild nur kopiert): kein Neuzeichnen der Zuschauer, kein Worker,
+    kein Fackelschein je Bild. Lebendig (wie bisher) bei Vorstellung, Urteil/Finale, Kinokamera und Sieg; der Wechsel blendet in 0,6 s
+    vom Standbild ins lebende Publikum über. Immer lebendig: localStorage['mg-stands']='live'. Spielregeln und Feldgröße unverändert. */
+ const calm=standsCalm(),a0=ctx.globalAlpha;if(calm||standLive<1){const sk=key+':'+T0+(noFront?'':':f');if(!standStill||standStillKey!==sk){standStill=surface(1040,arenaLayer.height);const g=standStill.getContext('2d');g.imageSmoothingEnabled=false;g.translate(0,T0);ctx=g;try{arenaTail(index,level,noFront,true);}finally{ctx=main;}standStillKey=sk;}
+  ctx.drawImage(standStill,0,-T0);if(calm){standLive=0;standLiveAt=0;return;}const now=performance.now();if(!standLiveAt)standLiveAt=now;standLive=Math.min(1,(now-standLiveAt)/600);ctx.globalAlpha=a0*standLive;}
+ try{arenaTail(index,level,noFront,false);}finally{ctx.globalAlpha=a0;}
+}
+let standStill=null,standStillKey='',standLive=1,standLiveAt=0,standsLive=false;try{standsLive=localStorage.getItem('mg-stands')==='live';}catch{}
+function standsCalm(){const b=save.battle;if(standsLive||!b||b.mission||b.finale||b.result||b.cinematic||b.verdictCamera||b.celebrate)return false;if(M.modIntro?.())return false;if(b.lead?.phase&&b.lead.phase!=='fight')return false;return true;}
+function arenaTail(index,level,noFront,all){
  /* Kulisse und Publikum (im Worker meist schon zu einem Bild zusammengelegt) */drawCrowd(ctx,index,level,arenaLayer);if(svFront&&!noFront)ctx.drawImage(svFront,0,SV_RAIL-16);
  // The imperial box stays in front of its spectators.
  if(index===4){rect(445,0,150,30,'#694551');rect(450,2,140,3,'#c1a270');rect(512,10,16,15,'#ba995c');rect(508,8,24,4,'#e0be76');}
  gate(0);
- /* nur Fackeln, deren Flamme oder Lichtschein ins Bild reicht */const [vx0,vy0,vx1,vy1]=crowdView(ctx),TP=(RTORCH.pos||=roundTorches()).filter(([x,y])=>x>vx0-100&&x<vx1+100&&y>vy0-100&&y<vy1+100);for(const [x,y] of TP)torch(x,y);if(TP.length)torchGlow(TP.map(([x,y])=>[x,y-14]));
+ /* nur Fackeln, deren Flamme oder Lichtschein ins Bild reicht */const [vx0,vy0,vx1,vy1]=all?[-1e9,-1e9,1e9,1e9]:crowdView(ctx),TP=(RTORCH.pos||=roundTorches()).filter(([x,y])=>x>vx0-100&&x<vx1+100&&y>vy0-100&&y<vy1+100);for(const [x,y] of TP)torch(x,y);if(TP.length)torchGlow(TP.map(([x,y])=>[x,y-14]));
 }
 function shadeCrowd(n,index){const h=n?36:90,op=ctx.globalCompositeOperation;ctx.globalCompositeOperation='source-atop';const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,n?'rgba(10,14,16,.12)':'rgba(10,14,16,.38)');g.addColorStop(1,'rgba(10,14,16,0)');ctx.fillStyle=g;ctx.fillRect(0,0,1040,h);
  if(!n&&index>=2){ctx.fillStyle='rgba(12,16,20,.16)';for(let x=30;x<1010;x+=140)ctx.fillRect(x,0,70,h);}ctx.globalCompositeOperation=op;}
@@ -967,7 +978,7 @@ M.graphicsPreparation={
 let warmCanvas=null;function warmFigure(a){if(typeof document==='undefined'||!a?.g||a.rex)return 0;warmCanvas??=document.createElement('canvas');warmCanvas.width=200;warmCanvas.height=200;const q=warmCanvas.getContext('2d');q.imageSmoothingEnabled=false;
  const g=a.g,poses=[{},{state:'move',moveSpeed:70,gaitSpeed:70,phase:1.3},{state:'guard'},...['slash','overhead','thrust','spin','sweep'].flatMap(k=>[{state:'attack',swingKind:k,swing:.25},{state:'attack',swingKind:k,swing:.6}]),{state:'stagger',stagger:.3,staggerMax:.6},{state:'kneeling',kneeTimer:1.2,kneeDuration:2.4},{down:true,state:'down'},{down:true,state:'dead',g:{...g,dead:true}}];
  const main=ctx;let n=0;ctx=q;try{for(const o of poses){const c={...a,...o};delete c.contactPoint;q.setTransform(1,0,0,1,100-c.x,150-c.y);q.clearRect(c.x-100,c.y-150,200,200);try{drawBattleActorLive(c);n++;}catch(e){}}}finally{ctx=main;}return n;}
-M.lieCache=lieCache;M.warmFigure=warmFigure;Object.assign(M,{gaitArms,limitArm,supportGrip,plantFoot,stepPose,strikePhase,figureMotion,beltPlan,renderForgeEffects,scarVisible,renderStory,renderLudusActors,sampleRenderQuality,resetRenderQuality,renderMetrics:()=>({quality:renderQuality,paintInterval,fps:fpsGovernor.fps}),resetBenchmarkRender:()=>{resetRenderQuality();zoom=1;accumulator=0;},bladeSurface,renderTeamFigure,renderTechnique,renderGear,breathing,audienceFor,renderMantle,voice,bodyGeometry,renderFigure,expression,expressionLabel,sound:sfx,audioStart,renderPortrait,renderBody,renderPreview,drawGladiator,renderBattle,bodyColor,focus:id=>focus=id,setZoom:z=>zoom=typeof z==='number'?z:zoom===1?1.4:zoom===1.4?1.9:1,getZoom:()=>zoom});requestAnimationFrame(loop);
+M.lieCache=lieCache;M.warmFigure=warmFigure;M.arenaStands={get live(){return standsLive;},set live(v){standsLive=!!v;},get calm(){return standsCalm();}};Object.assign(M,{gaitArms,limitArm,supportGrip,plantFoot,stepPose,strikePhase,figureMotion,beltPlan,renderForgeEffects,scarVisible,renderStory,renderLudusActors,sampleRenderQuality,resetRenderQuality,renderMetrics:()=>({quality:renderQuality,paintInterval,fps:fpsGovernor.fps}),resetBenchmarkRender:()=>{resetRenderQuality();zoom=1;accumulator=0;},bladeSurface,renderTeamFigure,renderTechnique,renderGear,breathing,audienceFor,renderMantle,voice,bodyGeometry,renderFigure,expression,expressionLabel,sound:sfx,audioStart,renderPortrait,renderBody,renderPreview,drawGladiator,renderBattle,bodyColor,focus:id=>focus=id,setZoom:z=>zoom=typeof z==='number'?z:zoom===1?1.4:zoom===1.4?1.9:1,getZoom:()=>zoom});requestAnimationFrame(loop);
 })();
 
 
