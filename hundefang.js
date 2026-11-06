@@ -371,7 +371,7 @@ const wname=i=>i?(M.weaponDefs?.find(w=>w.id===i.def)?.name||i.def):null;
 const gearLabel=g=>[wname(M.gear(g,'secondary')),wname(M.gear(g,'weapon')),M.gear(g,'shield')?'Schild':null].filter(Boolean).join(' + ')||'nur Fäuste';
 const TX_LOCK={
  pick:['{n} riecht schon nach Wurst. Perfekt.','Wer humpelt, lockt. Das ist ein Naturgesetz.','Rennen muss er nicht. Nur schreien. Das kann er.','Wenn der Hund ihn frisst, hat er wenigstens einmal etwas Nützliches getan.','Ich reibe ihn mit Schinken ein. Kostet extra.','{n}? Gute Wahl. Den vermisst keiner. Nicht mal er selbst.','Ein Lockvogel braucht kein Talent. Nur Fleisch an den Knochen. Ein bisschen reicht.','Sag ihm, es ist eine Ehre. Er glaubt alles.','Unbewaffnet ist er am ehrlichsten. Er hat nichts zu verbergen. Außer Angst.','Der blutet schon. Spart mir die Wurst.','Läuft er zu schnell weg, ist er kein Lockvogel mehr, sondern ein Deserteur. Dann jag ich ihn selbst.','Ich hab Hunde gesehen, die vor so einem weglaufen. Aus Mitleid.','Rüstung? Wozu. Der Hund soll ja nicht an der Verpackung scheitern.','Ich häng ihm noch eine Ziegenleber um. Die ist erst drei Wochen alt.','Talent? Der Hund prüft nur, ob er schmeckt.'],
- go:['Lauf, {n}! Du duftest nach Mittagessen!','Vorwärts, {n}! Mach Geräusche wie ein verletztes Lamm! Ach, du bist eins.','Hier, Hundchen! Frischfleisch auf zwei Beinen! Na ja, fast zwei.','{n}, wink mal! Mit beiden Armen, solange du noch beide hast!','Nicht weglaufen, {n}. Erst, wenn er zubeißt. Dann auch nicht.','Geh vor, {n}. Die anderen kommen nach. Irgendwann. Vielleicht.','Stell dich nicht so an, {n}. Hunde beißen nur, wenn man lebt.','Ruf ihn, {n}! Egal wie, er hört eh nicht zu.','Lächeln, {n}! Hunde riechen Angst. Und Wurst. Du hast beides.','Die Ratten folgen dir schon, {n}. Die wissen, was kommt.','Schön schaukeln lassen, {n}! Das Fleisch muss duften!','Die Fliegen haben dich schon gefunden, {n}. Der Hund ist langsamer, aber gründlicher.','Ausziehen hat sich gelohnt, {n}. Jetzt sieht er gleich, wo er hinbeißen muss.'],
+ go:['Lauf, {n}! Du duftest nach Mittagessen!','Vorwärts, {n}! Mach Geräusche wie ein verletztes Lamm! Ach, du bist eins.','Hier, Hundchen! Frischfleisch auf zwei Beinen! Na ja, fast zwei.','{n}, wink mal! Mit beiden Armen, solange du noch beide hast!','Nicht weglaufen, {n}. Erst, wenn er zubeißt. Dann auch nicht.','Geh vor, {n}. Die anderen kommen nach. Irgendwann. Vielleicht.','Stell dich nicht so an, {n}. Hunde beißen nur, wenn man lebt.','Ruf ihn, {n}! Egal wie, er hört eh nicht zu.','Lächeln, {n}! Hunde riechen Angst. Und Wurst. Du hast beides.','Die Ratten folgen dir schon, {n}. Die wissen, was kommt.','Schön schaukeln lassen, {n}! Das Fleisch muss duften!','Die Fliegen haben dich schon gefunden, {n}. Der Hund ist langsamer, aber gründlicher.','Ausziehen hat sich gelohnt, {n}. Jetzt sieht er gleich, wo er hinbeißen muss.','Trag die Hände mit Stolz, {n}. Eine davon war mal dein Vorgänger.','Lass die Köpfe ordentlich baumeln, {n}! Die haben auch mal so geguckt wie du.','Die Füße um deinen Hals sind nur geliehen, {n}. Deine kommen bald dazu.','Wackel mit den Fingern, {n}! Mit den fremden, deine brauchst du noch kurz.'],
  dead:['{n} hat seinen Zweck erfüllt. Ganz und gar.','Ein guter Lockvogel. Hat bis zum Schluss gelockt.','{n} ist jetzt Teil der Hundediät. Rabies nickt anerkennend.','Rabies schreibt {n} auf die Liste: „Köder, verbraucht“.','Wenigstens war {n} heute mal der Beliebteste.'],
  alive:['{n} lebt noch. Rabies wirkt fast enttäuscht.','{n} zittert, aber er ist ganz. Nächstes Mal mehr Wurst.','{n} hat überlebt. Das spricht gegen ihn als Lockvogel.','Rabies tätschelt {n} den Kopf. Wie einem Hund. Einem schlechten.']};
 // Lockvogel-Liste: Schwerverletzte oben (schwerste zuerst), danach die schwächsten Talente
@@ -484,18 +484,34 @@ M.armyBattleHUD=function(b){if(!b?.hundefang)return prevHud?prevHud.apply(this,a
  bot.querySelector('.hf-status').innerHTML=b.actors.map(a=>{if(isDog(a)){const hh=DOG.health(a);return `<div class="hf-st t1"><span class="n">${esc(a.g.name)}</span> <small>${esc(a.dog.breedName)} · ${a.dog.weight} kg</small><div class="hb"><i style="width:${hh}%"></i></div><small>${a.g.dead?'tot':a.ko?'bewusstlos':a.submit?'unterwirft sich':a.fled?'flieht':'Blut '+Math.round(a.blood)+' % · Mut '+Math.round(Math.max(0,a.morale))}</small></div>`;}
   const hh=M.health(a.g);return `<div class="hf-st t0"><span class="n">${esc(a.g.name)}</span> <small>${a.hfBait?'🍖 Lockvogel · unbewaffnet':esc(gearLabel(a.g))}</small><div class="hb"><i style="width:${hh}%"></i></div><small>${a.g.dead?'tot':a.down?'kampfunfähig':a.draggedBy?'wird gezerrt':a.grabbedBy?'wird festgehalten':'kämpft'} · Blut ${Math.round(a.g.blood)} %</small></div>`;}).join('');
  return true;};
-// ---------- Lockvogel im Kampf (Wunsch Thomas 6.11.): verfaultes Fleisch umgehängt, Fliegen schwirren, Ratten laufen hinterher ----------
+// ---------- Lockvogel im Kampf (Wunsch Thomas 6.11.): abgetrennte Körperteile umgehängt, Fliegen schwirren, Ratten laufen hinterher ----------
 // Nur Bild. Weltkoordinaten (wie das Netz). Ratten folgen seiner Spur mit Verzögerung; steht oder liegt er, wuseln sie um ihn herum.
 const MEAT=[{dx:-9,dy:-47,r:4.2,len:5},{dx:-3,dy:-44,r:3.6,len:7},{dx:5,dy:-45,r:4.6,len:6},{dx:11,dy:-48,r:3.4,len:4},{dx:-7,dy:-29,r:4.8,len:6},{dx:2,dy:-27,r:4,len:8},{dx:9,dy:-30,r:3.8,len:5}];
-function meatChunk(ctx,x,y,r,i,rot){ctx.save();ctx.translate(x,y);ctx.rotate(rot);
- ctx.fillStyle='#3e1a12';ctx.beginPath();ctx.ellipse(0,0,r+.8,r*.78+.8,0,0,TAU2);ctx.fill();
- ctx.fillStyle=i%3===0?'#7a3a26':i%3===1?'#6e2a1e':'#83432c';ctx.beginPath();ctx.ellipse(0,0,r,r*.78,0,0,TAU2);ctx.fill();
- ctx.fillStyle='#d8c8a0';ctx.fillRect(Math.round(-r*.6),Math.round(-r*.5),Math.max(1,Math.round(r*.6)),1);// Fettrand
- ctx.fillStyle='#6b7a2e';ctx.fillRect(Math.round(r*.1),Math.round(-r*.1),2,2);ctx.fillRect(Math.round(-r*.4),Math.round(r*.3),1,1);// Schimmel
- ctx.fillStyle='#8f9a3a';ctx.fillRect(Math.round(r*.2),Math.round(-r*.2),1,1);
- if(i%2===0){ctx.fillStyle='#e8dcc0';ctx.fillRect(Math.round(r*.5),Math.round(-1),Math.round(r*.9),2);ctx.fillRect(Math.round(r*1.3),-2,2,4);}// Knochenstummel
- ctx.restore();}
 const TAU2=Math.PI*2;
+// Abgetrennte Körperteile statt Fleischbrocken (Wunsch Thomas 6.11.): Hände, Füße, Unterarme, Köpfe – je Kampf neu gemischt.
+// Jedes Teil hängt mit dem Stumpf (Hand, Fuß, Unterarm) bzw. an den Haaren (Kopf) an der Schnur; Ursprung (0,0) = Schnurende, es hängt nach unten.
+const SKINS=[['#f0d0b0','#c9a080'],['#e8c19a','#b98e68'],['#d9ac82','#a87c56'],['#c08a5e','#8e6240'],['#9a6a44','#6e4a2e'],['#6e4a30','#4a301e']];
+const HAIRS=['#2a1c14','#443025','#6a4a2a','#b08a4a','#d8c8a8','#8a2a1a',null];
+const mix=(a,b,t)=>{const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');};
+function makeParts(){let heads=0;return MEAT.map(()=>{let r=Math.random(),kind=r<.34?'hand':r<.62?'foot':r<.8?'arm':'head';if(kind==='head'&&heads++>=2)kind='hand';
+ const [sk,sh]=SKINS[Math.floor(Math.random()*SKINS.length)],rot=Math.random()*.9;
+ return {kind,s:.85+Math.random()*.35,flip:Math.random()<.5,sk:mix(sk,'#8a9a6a',rot*.5),sh:mix(sh,'#5a6a3a',rot*.5),rot,hair:HAIRS[Math.floor(Math.random()*HAIRS.length)],eyes:Math.floor(Math.random()*3),mouth:Math.random()<.5,curl:Math.random()<.4,spots:Array.from({length:1+Math.floor(rot*4)},()=>[Math.floor(Math.random()*5)-2,1+Math.floor(Math.random()*6)]),drip:Math.random()};});}
+function limbPart(ctx,x,y,P,rot,k,now){ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.rotate(rot);const z=P.s*k;ctx.scale(z*(P.flip?-1:1),z);
+ const R=(a,b,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(a,b,w,h);},sk=P.sk,sh=P.sh,ol='#2a1a12',bl='#6e120c',bd='#a82018',bn='#efe4c8';
+ if(P.kind==='hand'){R(-2.5,.5,5,5.5,ol);R(-2,0,4,1,bl);R(-1,0,2,1,bn);R(-2,1,4,4,sk);R(1,1,1,4,sh);
+  const L=P.curl?[1,2,2,1]:[2,3,3,2];for(let f=0;f<4;f++){R(-2+f,5,1,L[f],f%2?sk:mix(sk,sh,.35));}R(2,2,1,2,sk);R(-2,5,4,.4,sh);}
+ else if(P.kind==='foot'){R(-2,.5,4,4,ol);R(-1.5,0,3,1,bl);R(-.5,0,1,1,bn);R(-1.5,1,3,3.5,sk);R(.5,1,1,3.5,sh);R(-2.5,4,7.5,2.6,ol);R(-2,4,7,2,sk);R(-2,5.6,7,.6,sh);R(-2.4,4.2,1,1.6,sh);for(let t=0;t<4;t++)R(4.6,4+t*.5,.7,.45,t%2?sk:sh);}
+ else if(P.kind==='arm'){R(-1.5,.5,3,9,ol);R(-1,0,2,1,bl);R(-.5,0,1,1,bn);R(-1,1,2,5.5,sk);R(.4,1,.6,5.5,sh);R(-1.5,6.5,3,2.2,sk);for(let f=0;f<3;f++)R(-1.5+f,8.7,.8,P.curl?.8:1.6,sk);}
+ else{// Kopf: an den Haaren aufgehängt
+  if(P.hair){R(-.5,0,1,1.5,P.hair);}else{R(-.4,0,.8,1.6,'#9a8a6a');}
+  ctx.fillStyle=ol;ctx.beginPath();ctx.ellipse(0,5,3.9,4.2,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=sk;ctx.beginPath();ctx.ellipse(0,5,3.4,3.7,0,0,Math.PI*2);ctx.fill();R(1.6,2.5,1,5,sh);
+  if(P.hair){R(-3,1.4,6,1.6,P.hair);R(-3.2,2.6,1,2,P.hair);R(2.4,2.6,1,2,P.hair);}
+  if(P.eyes===0){R(-2,4.4,1.2,.5,ol);R(.8,4.4,1.2,.5,ol);}else if(P.eyes===1){R(-2,4,1.2,1,'#f4eee0');R(.8,4,1.2,1,'#f4eee0');R(-1.4,4.3,.5,.5,ol);R(1.2,4.3,.5,.5,ol);}else{R(-2,3.9,1,1,ol);R(-1,4.9,1,1,ol);R(-1,3.9,1,1,ol);R(-2,4.9,1,1,ol);R(.9,3.9,1,1,ol);R(1.9,4.9,1,1,ol);R(1.9,3.9,1,1,ol);R(.9,4.9,1,1,ol);}
+  R(-.4,5.2,.8,1,sh);R(-1.2,6.6,2.4,P.mouth?1.3:.5,'#3a0a08');if(P.mouth)R(-.4,7.3,.8,.6,'#b8545a');
+  R(-1.8,8.5,3.6,1,bl);R(-.5,8.6,1,.6,bn);}
+ for(const [sx,sy] of P.spots)R(sx*.7,sy+.5,1,1,P.rot>.5?'#5a6a2a':'#7a8a3a');
+ const d=(P.drip*3+(now||0)*.8)%1.6;if(P.kind!=='head')R(-.3,-0.1+d*0,.6,.1,bd);R(.2,(P.kind==='head'?9.5:P.kind==='arm'?10.5:P.kind==='foot'?7:8)+d*2,.6,.9,bd);
+ ctx.restore();}
 function rat(ctx,x,y,face,s,ph,moving){ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(face*s,s);const hop=moving?Math.abs(Math.sin(ph))*1.2:0;
  ctx.strokeStyle='#8a6a5e';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-5,-1.5);ctx.quadraticCurveTo(-10,-1+Math.sin(ph*.7)*3,-15,1+Math.sin(ph*.9)*2);ctx.stroke();// Schwanz
  ctx.fillStyle='#2e2620';ctx.fillRect(-4,-1,1,2);ctx.fillRect(2,-1,1,2);if(moving){const l=Math.sin(ph)>0?1:-1;ctx.fillRect(-3+l,0,1,1);ctx.fillRect(3-l,0,1,1);}
@@ -509,7 +525,7 @@ const baitLying=h=>h.g.dead||h.down||h.state==='fallen'||(h.fallTimer||0)>0||!!h
 function baitUnder(ctx,b,f){const h=f.hs?.find(x=>x.hfBait);if(!h)return;const g=h.g,T=b.time,now=performance.now()/1000,k=(g.height||180)/180*1.14,lying=baitLying(h);
  const tr=f.trail??=[];const last=tr[tr.length-1];if(!last||T-last.t>=.04){tr.push({t:T,x:h.x,y:h.y});if(tr.length>90)tr.shift();}
  const at=lag=>{const tt=T-lag;for(let i=tr.length-1;i>=0;i--)if(tr[i].t<=tt)return tr[i];return tr[0];};
- if(lying){const pts=[];MEAT.forEach((m,i)=>{const a=i*.9+1.3,x=h.x+Math.cos(a)*(18+i*4)*k,y=h.y+5+Math.sin(a)*8*k;meatChunk(ctx,x,y,m.r*k*.9,i,a);pts.push({x,y});});f.meatPts=pts;}
+ if(lying){const pts=[],P=f.parts??=makeParts();MEAT.forEach((m,i)=>{const a=i*.9+1.3,x=h.x+Math.cos(a)*(18+i*4)*k,y=h.y+5+Math.sin(a)*8*k;limbPart(ctx,x,y-3*k,P[i],a*1.7+1.2,k*1.15,0);pts.push({x,y});});f.meatPts=pts;}
  const pts=f.meatPts||[];
  const R=f.rats??=[{lag:.5,off:-7,s:1},{lag:.85,off:8,s:.85},{lag:1.25,off:-2,s:1.1},{lag:1.7,off:11,s:.8},{lag:2.2,off:-10,s:.95}];
  for(const r of R){const p=at(r.lag)||h,q=at(r.lag+.15)||p,mx=p.x-q.x,my=p.y-q.y,mv=Math.hypot(mx,my)>.8&&!lying;let x,y,face;
@@ -521,7 +537,7 @@ function baitUnder(ctx,b,f){const h=f.hs?.find(x=>x.hfBait);if(!h)return;const g
 function baitBody(ctx,h){const f=fight;if(!f||!h.hfBait||baitLying(h))return;const g=h.g,now=performance.now()/1000,k=(g.height||180)/180*1.14,dir=Math.cos(h.a||0)>=0?1:-1;
  const tr=f.trail||[],q=tr[Math.max(0,tr.length-3)]||h,sp=Math.hypot(h.x-q.x,h.y-q.y),pts=[];
  ctx.strokeStyle='#9a8a6a';ctx.lineWidth=1;for(const row of [-47,-28]){ctx.beginPath();ctx.moveTo(h.x-12*k,h.y+(row-1)*k);ctx.quadraticCurveTo(h.x,h.y+(row+3)*k,h.x+13*k,h.y+(row-2)*k);ctx.stroke();}
- MEAT.forEach((m,i)=>{const sw=Math.sin(now*5+i*1.7)*(.18+Math.min(.5,sp*.1)),ax=h.x+m.dx*dir*k,ay=h.y+m.dy*k,len=m.len*k,x=ax+Math.sin(sw)*len,y=ay+Math.cos(sw)*len;ctx.strokeStyle='#9a8a6a';ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(x,y);ctx.stroke();meatChunk(ctx,x,y+m.r*.6,m.r*k*.9,i,sw*.8);pts.push({x,y});});
+ MEAT.forEach((m,i)=>{const sw=Math.sin(now*5+i*1.7)*(.18+Math.min(.5,sp*.1)),ax=h.x+m.dx*dir*k,ay=h.y+m.dy*k,len=m.len*k,x=ax+Math.sin(sw)*len,y=ay+Math.cos(sw)*len;ctx.strokeStyle='#9a8a6a';ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(x,y);ctx.stroke();limbPart(ctx,x,y,(f.parts??=makeParts())[i],sw*.8,k*1.15,now);pts.push({x,y:y+4*k});});
  f.meatPts=pts;}
 // Über allem: Gestank und Fliegen
 function baitTop(ctx,b,f){const h=f.hs?.find(x=>x.hfBait);if(!h)return;const now=performance.now()/1000,k=(h.g.height||180)/180*1.14,lying=baitLying(h),pts=f.meatPts||[];
@@ -567,8 +583,8 @@ document.addEventListener('change',e=>{if(e.target?.hasAttribute?.('data-hfauto'
 const teamOk=()=>!!byId(team.bait)&&team.men.length<=2&&team.men.every(id=>id!==team.bait&&byId(id)&&fit(byId(id)));
 function teamHTML(j,gs){const B=byId(team.bait),lockC=baitCands();
  const card=(g,act,on,extra)=>`<button type="button" class="hf-pick${on?' on':''}${extra.cls||''}" data-action="${act}:${g.id}"><canvas data-hfface="${g.id}" width="160" height="104"></canvas><div><b>${esc(g.name)}</b>${extra.html}</div></button>`;
- return `<h2>Wen schickst du?</h2><p class="hf-sub">Bis zu drei Leute. Einer geht immer als <b>Lockvogel</b> vor – ohne Waffe, ohne Rüstung, mit verfaultem Fleisch behängt – bis zu zwei Kämpfer folgen mit ihrer ganzen eigenen Ausrüstung (alle Waffen, auch Netz und Fernwaffen). Rabies verleiht nichts mehr: „Mein Knüppel? Der ist zum Frühstück da.“</p>
- <h3 class="hf-h3">🍖 Lockvogel <small>· ohne Waffe und Rüstung, mit verfaultem Fleisch behängt, geht vor · sortiert nach Köderwert: Amputationen und schwaches Talent zählen voll, Wunden nur, solange sie noch nicht verheilt sind</small></h3>
+ return `<h2>Wen schickst du?</h2><p class="hf-sub">Bis zu drei Leute. Einer geht immer als <b>Lockvogel</b> vor – ohne Waffe, ohne Rüstung, behängt mit abgetrennten, verfaulenden Händen, Füßen und Köpfen – bis zu zwei Kämpfer folgen mit ihrer ganzen eigenen Ausrüstung (alle Waffen, auch Netz und Fernwaffen). Rabies verleiht nichts mehr: „Mein Knüppel? Der ist zum Frühstück da.“</p>
+ <h3 class="hf-h3">🍖 Lockvogel <small>· ohne Waffe und Rüstung, mit Händen, Füßen und Köpfen behängt, geht vor · sortiert nach Köderwert: Amputationen und schwaches Talent zählen voll, Wunden nur, solange sie noch nicht verheilt sind</small></h3>
  ${B?`<div class="hf-lockq"><canvas id="hfLockFace" width="160" height="104"></canvas><span class="hf-lockline"><b>Rabies:</b> „${esc(team.quip||fill(pick(TX_LOCK.pick),B))}“</span></div>`:''}
  <div class="hf-picks hf-lock">${lockC.map(g=>{const v=baitScore(g),on=g.id===team.bait,inMen=team.men.includes(g.id);return card(g,'hf:bait',on,{cls:(inMen?' unfit':'')+(v.score>=55?' hf-prime':''),html:`<small class="hf-tier" style="--tc:${TCOL[v.t.level-1]}">Talent ${v.t.p} · ${esc(v.t.name)}${v.tag?' · '+esc(M.sortTag?.KINDS?.[v.tag]?.label||v.tag):''}</small>${v.amp.length?`<small class="hf-amp">🦴 fehlt: ${v.amp.map(a=>esc(a.name)).join(', ')}</small>`:''}<small>${keulen(Math.round(v.score/20))} <b>${esc(v.grade)}</b> · ${v.score}</small><small>${Math.round(v.hp)} % Gesundheit${v.days?' · heilt in '+v.days+' T.':''}${v.chronic?' · Dauerschaden −'+Math.round(v.chronic)+' %':''}${inMen?' · ist Kämpfer':''}</small><small class="hf-baitq">„${esc(baitQuip(v))}“</small>`});}).join('')||'<p>Niemand im Kader.</p>'}</div>
  <h3 class="hf-h3">⚔ Kämpfer <small>· ${team.men.length} von 2 · eigene Ausrüstung</small></h3>
@@ -663,6 +679,6 @@ function mapCart(g,t){const s=st();if(s.stage!=='open')return;const own=s.dogs.f
 const prevOverlay2=M.ludusOverlay;M.ludusOverlay=(g,t)=>{prevOverlay2?.(g,t);try{mapCart(g,t);}catch(e){console.warn(e);}};
 const prevHit=M.ludusHit;M.ludusHit=(x,y)=>{const h=MAP.hit;if(st().stage==='open'&&x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){M.ui.click('nav:hundefang');return true;}return prevHit?prevHit(x,y):false;};
 // Musik: Rabies' Lied, sobald er im Mittelpunkt steht (Filme, Karren/Aufträge), „Beastrium“ unten im Zwinger
-M.hundefang={drawRabies,FOAM,rabies,music:()=>{const p=M.ui?.getPage?.();return F.on||p==='hundefang'?'rabies':p==='zwinger'?'beast':'';},state:st,intro:()=>introFilm(false),sighting,startFight,openBook,paintPlace,jobDog,daily,get fight(){return fight;},F};
+M.hundefang={drawRabies,FOAM,rabies,music:()=>{const p=M.ui?.getPage?.();return F.on||p==='hundefang'?'rabies':p==='zwinger'?'beast':'';},state:st,intro:()=>introFilm(false),sighting,startFight,openBook,paintPlace,jobDog,daily,limbPart,makeParts,get fight(){return fight;},F};
 window.HUNDEFANG_READY=true;
 })();
