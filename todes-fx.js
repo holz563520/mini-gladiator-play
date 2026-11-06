@@ -160,50 +160,58 @@ function busy(b){return api.active&&api.rec.has(b.id);}
 // Todes-Großaufnahme: Optionen für face-shots.js nach der Todesart; eigene Zeichnung über M.faceOverlays (Gesichtskoordinaten)
 const ovSaved=new Map();
 function shotType(o){const g=o?.g;const r=g&&[...api.rec.values()].find(x=>x.g===g);return o?.deathType||r?.type||classify(g?.cause,'',false);}
-function shot(opts,o,k,t,dead){if(!api.active||!dead||!o?.g)return opts;const type=shotType(o),g=o.g,u=k;opts={...opts};const X={};
- // Die Bildunterschrift deckt alles unter dem Kinn ab: was zu sehen sein soll, spielt sich am Gesicht oder in der Lücke über dem Hals ab.
+function shot(opts,o,k,t,dead){if(!api.active||!dead||!o?.g)return opts;const type=shotType(o),g=o.g,u=k;opts={...opts};
+ // Drei Ebenen (Wunsch Thomas 06.11.): under = hinter dem Kopf (Hals, Stumpf, Kehle) · onHead = am Kopf, neigt sich mit ihm
+ // (Wunden im Stil der Verletzungs-Nahaufnahmen) · Luft = Spritzer im Raum, ausgehend von Punkten am Kopf
  const later=ease((u-1)/1.6);opts.mood=u<0?'determined':u<.15?'shock':opts.mood;
- if(type==='decap'){X.blade=cl(u/.2);X.bladeY=70;const f=ease((u-.14)/.75);opts.sink=-f*125;opts.tilt=f*1.6*(sh(g.id)%2?1:-1);opts.mood=u<.18?'shock':'out';opts.shake=u>0&&u<.6?5:0;opts.pale=cl(u/1);}
- else if(type==='bisect'){X.gash=Math.max(0,u);opts.shake=u>0&&u<.5?3:0;opts.blood=cl(u/.5);}
- else if(type==='throat'||type==='maul'){const open=cl(u/.2);opts.sink=-17*open*(1-later)+later*30;opts.tilt=-.12*open*(1-later)+(opts.tilt||0)*later;opts.mood=u<.12?'shock':u<1.3?'scared':'out';opts.shake=u>0&&u<.3?3:0;opts.pale=cl(u/1.6);}
- else if(type==='skull'){opts.shake=u>0&&u<.35?7:0;opts.sink=(opts.sink||0)+cl(u/.12)*6;opts.tilt=(opts.tilt||0)-cl(u/.12)*.3;opts.mood=u<.04?'shock':'out';}
- else if(type==='heart'||type==='generic'){opts.blood=cl(u/.6);opts.mood=u<.15?'shock':u<1.1?'pain':'out';opts.sink=(opts.sink||0)*.7-cl(u/.15)*6*(1-later);}
- else if(type==='ground'){opts.blood=cl(u/.5);opts.mood=u<.1?'scared':u<.8?'pain':'out';opts.shake=u>0&&u<.25?4:0;}
- else if(type==='gut'){opts.blood=cl(u/.5);opts.mood=u<1.3?'pain':'out';opts.sink=(opts.sink||0)+Math.max(0,Math.sin(u*6))*3*(1-later);}
- else if(type==='arrow'){opts.sink=-cl(u/.06)*12*(1-later)+later*26;opts.tilt=-cl(u/.06)*.25*(1-later)+(opts.tilt||0)*later;opts.mood=u<.1?'shock':'out';opts.shake=u>0&&u<.15?5:0;}
+ if(type==='decap'){const f=ease((u-.14)/.75);opts.sink=-f*125;opts.tilt=f*1.6*(sh(g.id)%2?1:-1);opts.mood=u<.18?'shock':'out';opts.shake=u>0&&u<.6?5:0;opts.pale=cl(u/1);opts.fx={blade:cl(u/.2),bladeY:70};}
+ else if(type==='bisect'){opts.fx={gash:Math.max(0,u)};opts.shake=u>0&&u<.5?3:0;}
+ else if(type==='throat'||type==='maul'){const open=cl(u/.2),drop=ease((u-2)/1.5);opts.sink=-16*open*(1-drop)+drop*30;opts.tilt=-.14*open*(1-drop)+(opts.tilt||0)*drop;opts.mood=u<.12?'shock':u<1.3?'scared':'out';opts.shake=u>0&&u<.3?3:0;opts.pale=cl(u/1.6);}
+ else if(type==='skull'){opts.shake=u>0&&u<.35?7:0;opts.sink=(opts.sink||0)+cl(u/.12)*5;opts.tilt=(opts.tilt||0)-cl(u/.12)*.28;opts.mood=u<.04?'shock':'out';}
+ else if(type==='heart'||type==='generic'){opts.mood=u<.15?'shock':u<1.1?'pain':'out';opts.sink=(opts.sink||0)*.7-cl(u/.15)*6*(1-later);}
+ else if(type==='ground'){opts.mood=u<.1?'scared':u<.8?'pain':'out';opts.shake=u>0&&u<.25?4:0;}
+ else if(type==='gut'){opts.mood=u<1.3?'pain':'out';opts.sink=(opts.sink||0)+Math.max(0,Math.sin(u*6))*3*(1-later);}
+ else if(type==='arrow'){opts.sink=-cl(u/.06)*10*(1-later)+later*26;opts.tilt=-cl(u/.06)*.25*(1-later)+(opts.tilt||0)*later;opts.mood=u<.1?'shock':'out';opts.shake=u>0&&u<.15?5:0;}
  else if(type==='bleed'){opts.pale=cl(.55+u/1.2);opts.mood=u<1?'pain':'out';}
- opts.fx=X;
- const id=g.id;if(id!=null){M.faceOverlays??={};if(!ovSaved.has(id))ovSaved.set(id,M.faceOverlays[id]);const prev=ovSaved.get(id);M.faceOverlays[id]=(ctx,T,tt,oo)=>{try{prev?.(ctx,T,tt,oo);}catch{}faceGore(ctx,T,type,u,tt,g,o,opts);};}
+ /* Hals soll sichtbar sein: Kamera etwas zurück, sonst liegt er unter der Bildunterschrift */if(['decap','throat','maul'].includes(type)||type==='arrow'&&partOf(o.line3||g.cause,type,g)!=='head')opts.zoom=(opts.zoom||1)*.76;
+ const st={type,u,g,o,opts,seed:sh(g.id)*13.7,part:partOf(o.line3||g.cause,type,g)};
+ opts.under=(q,T)=>{if(u>=0)underNeck(q,T,st);};
+ opts.onHead=(hq,HT,tt,yaw)=>{st.m=hq.getTransform();st.ya=Math.round(yaw*4);st.yaw=yaw;if(u>=0)headWound(hq,HT,st);};
+ const id=g.id;if(id!=null){M.faceOverlays??={};if(!ovSaved.has(id))ovSaved.set(id,M.faceOverlays[id]);const prev=ovSaved.get(id);M.faceOverlays[id]=(ctx,T,tt,oo)=>{try{prev?.(ctx,T,tt,oo);}catch{}if(u>=0)air(ctx,T,st);};}
  return opts;}
-// Zeichnen über der Großaufnahme. F(): Gesichtskoordinaten (0,0 = Kinn), B(): fest am Rumpf (0,0 = wo das Kinn sonst sitzt)
-function faceGore(ctx,T,type,u,t,g,o,opts){if(u<0)return;const s=T.s,sink=opts.sink||0;
- const put=(p,w,h,c,a)=>{ctx.globalAlpha=a??1;ctx.fillStyle=c;ctx.fillRect(Math.round(p.x),Math.round(p.y),Math.max(1,Math.round(w*s)),Math.max(1,Math.round(h*s)));ctx.globalAlpha=1;};
- const F=(x,y,w,h,c,a)=>put(T.to(x,y),w,h,c,a),B=(x,y,w,h,c,a)=>put(T.to(x,y-sink),w,h,c,a);
- const seed=sh(g.id)*13.7,skin=/^#[0-9a-f]{6}$/i.test(g.appearance?.skin||'')?g.appearance.skin:'#c19169',shade=/^#[0-9a-f]{6}$/i.test(g.appearance?.shade||'')?g.appearance.shade:'#875e43';
- // Hals in der Lücke unter dem gehobenen Kopf
- const neck=(top)=>{if(top>=14)return;for(let y=Math.round(top);y<18;y++){B(-11,y,22,1,skin);B(5,y,6,1,shade);B(-11,y,1,1,'#3a2418');B(10,y,1,1,'#3a2418');}};
- if(type==='decap'){const top=Math.max(sink+1,-4);if(u>.12){neck(top);
-   /* Stumpf: Fleisch, Luftröhre, Wirbel */B(-9,top-1,18,4,'#6b2420');B(-7,top-1,14,2,'#a8372f');B(-1,top-1,4,3,'#efe6d0');B(2,top,3,2,'#2a0b09');
-   const k=Math.exp(-u/4.5),pulse=.5+.5*Math.max(0,Math.sin(u*10.5));
-   for(let i=0;i<70;i++){const v=((u*1.7+i/70)%1),side=hash(seed+i)-.5,h=v*95*pulse*k,x=side*8+side*v*46*(.5+pulse),y=top-2-h+v*v*85*k;B(x,y,i%4?1:2,i%4?1:2,i%3?'#a8372f':i%2?'#c9584a':'#8f2a24',1-v*.3);}
-   for(let i=0;i<10;i++){const L=cl((u-.2-i*.04)*40,0,26);B(-8+i*1.7,top+2,1,L,i%2?'#8f2a24':'#6b2420');}}}
- else if(type==='throat'||type==='maul'){const open=cl(u/.2),top=Math.min(0,sink+1);neck(top);
-  const gy=Math.max(top+3,-9),wd=Math.round(18*open);B(-wd/2,gy,wd,2+open*2.5,'#3d0f0d');B(-wd/2,gy-1,wd,1,'#c9584a');B(-3,gy+1,6,1,'#e6cfc0');
-  if(type==='maul')for(let i=0;i<6;i++){B(-11+i*4,gy-3+(i%2)*6,3,3,'#5a1310');B(-10+i*4,gy-2+(i%2)*6,1,1,'#e6cfc0');}
-  const k=Math.exp(-u/3.5),pulse=.45+.55*Math.max(0,Math.sin(u*9.5));
-  for(let i=0;i<54;i++){const v=((u*1.5+i/54)%1),dir=hash(seed+i*2)<.65?1:-1,x=dir*(3+v*(30+hash(seed+i)*24)*pulse*k),y=gy+1-v*10*pulse+v*v*34;B(x,y,i%3?1:2,i%3?1:2,i%2?'#a8372f':'#c9584a',1-v*.25);}
-  for(let i=0;i<9;i++){const L=cl((u-.12-i*.05)*30,0,30);B(-8+i*2,gy+3,i%2?2:1,L,'#8f2a24');}
-  if(u>.5)F(-2,-9,2,cl((u-.5)*12,0,10),'#943a33');}
- else if(type==='skull'){/* Schädeldecke bricht ein, Blut läuft in Strähnen über Stirn und Gesicht */const c=cl(u/.1);
-  for(let i=0;i<11;i++)F(-12+i*2.4,-58+Math.abs(i-5)*1.3+c*4,2.4,1.5+c*2.2,i%2?'#3d0f0d':'#6b2420');for(let i=0;i<6;i++)F(-8+i*3.2,-55+c*5,2,1,i%2?'#e6dcc2':'#d9a0a0');
-  for(let i=0;i<8;i++){const L=cl((u-.04-hash(seed+i)*.6)*(20+hash(seed+i*5)*26),0,30+hash(seed+i*7)*30),x0=-16+hash(seed+i*2)*30,y0=-54+hash(seed+i*4)*6,wd=hash(seed+i*6)<.4?2:1;for(let y=0;y<L;y+=1){F(x0+Math.sin((y+i*3)*.22)*1.4,y0+y,wd,1,i%3?'#a8372f':'#7d1e18',.9);}if(L>4)F(x0+Math.sin((L+i*3)*.22)*1.4,y0+L,wd+1,2,'#8f2a24');}
-  F(-7,-24,1,cl((u-.3)*10,0,12),'#8f2a24');F(6,-24,1,cl((u-.4)*10,0,12),'#8f2a24');
-  if(u<.7)for(let i=0;i<30;i++){const v=u/.7,a=hash(seed+i*9)*6.283;F(Math.cos(a)*v*(40+hash(seed+i)*40),-58+Math.sin(a)*v*30-v*24+v*v*40,hash(seed+i*3)<.3?2:1,hash(seed+i*3)<.3?2:1,i%4?'#a8372f':i%3?'#e6dcc2':'#d9a0a0',1-v*.6);}}
- else if(type==='arrow'&&partOf(o.line3||g.cause,type,g)==='head'){/* Pfeil im Auge */const d=(1-cl(u/.05))*70;for(let i=0;i<34;i++)F(-7-i*1.7-d,-29-i*1.1-d*.6,2,2,i<3?'#c2cbc0':i>29?(i%2?'#e8e2cc':'#b5402f'):'#7a5a34');F(-9,-31,5,4,'#6b2420');for(let i=0;i<5;i++)F(-9+i,-27,1,cl((u-.06-i*.05)*24,0,30),'#a8372f');if(u>.3)F(-2,-9,2,cl((u-.3)*12,0,10),'#943a33');}
- else if(type==='arrow'){const top=Math.min(0,sink+1);neck(top);const y=Math.max(top+4,-6),d=(1-cl(u/.05))*70;for(let i=0;i<34;i++)B(5+i*1.7+d,y-i*1.1-d*.6,2,2,i<3?'#c2cbc0':i>29?(i%2?'#e8e2cc':'#b5402f'):'#7a5a34');B(3,y-1,5,4,'#6b2420');for(let i=0;i<6;i++)B(2+i,y+3,1,cl((u-.06-i*.05)*24,0,26),'#a8372f');if(u>.3)F(-2,-9,2,cl((u-.3)*12,0,10),'#943a33');}
- else if(type==='gut'||type==='heart'||type==='generic'||type==='ground'||type==='bisect'){/* Blut aus dem Mund: Husten in Stößen */const gut=type==='gut',n=gut?44:22;for(let i=0;i<n;i++){const v=((u*1.2+i/n)%1),cough=Math.max(0,Math.sin(u*(gut?6.5:4.5)))*(gut?1:.6),x=(hash(seed+i)-.5)*8+(hash(seed+i*3)-.5)*v*48*cough,y=-10+v*16-v*14*cough+v*v*24;F(x,y,i%3?1:2,i%3?1:2,i%2?'#a8372f':'#8f2a24',1-v*.4);}
-  for(let i=0;i<5;i++)F(-5+i*2.2,-8,1,cl((u-.15-i*.08)*18,0,16),i%2?'#8f2a24':'#a8372f');}
- else if(type==='bleed'){for(let i=0;i<3;i++)F(-3+i*3,-14,1,cl((u-i*.2)*6,0,12),'#8f2a24');F(-4,-21,1,cl((u-.4)*8,0,8),'#8f2a24');}}
+const skinOf=g=>{const A=g?.appearance||{},ok=v=>/^#[0-9a-f]{6}$/i.test(v||'');return {skin:ok(A.skin)?A.skin:'#c19169',shade:ok(A.shade)?A.shade:'#875e43'};};
+// Kopfpunkt (Kopfkoordinaten: Mitte x 80, Augen y 40, Mund y 57, Kinn y 68) → Gesichtskoordinaten der Luftebene, mit Helm, Neigung und Senkung
+function headPt(st,hx,hy){if(!st.m)return {x:hx-80,y:hy-70};const p=st.m.transformPoint(new DOMPoint(hx+(st.ya||0),hy)),lx=p.x-80,ly=p.y-90,a=st.opts.tilt||0,c=Math.cos(a),s=Math.sin(a);return {x:c*lx-s*ly-(st.ya||0),y:s*lx+c*ly};}
+// hinter dem Kopf: Hals in der Lücke unter dem gehobenen Kopf, klaffende Kehle, Halsstumpf (Rumpfkoordinaten, Kinn sonst bei y 70)
+function underNeck(q,T,st){const {type,u,opts}=st,sink=opts.sink||0,C=skinOf(st.g);if(!['decap','throat','maul','arrow'].includes(type))return;
+ const top=type==='decap'?72:Math.min(72,62+sink);for(let y=top;y<92;y++){T.r(69,y,22,1,C.skin);T.r(85,y,6,1,C.shade);T.r(69,y,1,1,'#3a2418');T.r(90,y,1,1,'#3a2418');}
+ if(type==='decap'){if(u<.14)return;/* Schnittfläche: Fleisch, Luftröhre, Wirbel */T.r(67,top-2,26,4,'#6b2420');T.r(69,top-2,22,2,'#a8372f');T.r(78,top-2,5,3,'#efe6d0');T.r(73,top-1,3,2,'#2a0b09');for(let i=0;i<9;i++)T.r(69+i*2.4,top+2,1,cl((u-.2-i*.04)*40,0,20),i%2?'#8f2a24':'#6b2420');return;}
+ if(type==='arrow'){if(st.part==='head')return;const d=(1-cl(u/.05))*70,y=Math.max(top+5,64);M.injuryShots?.woundOn?.(q,'arrow',{x:84,y},{x:0,y:1},12,u,st.g);for(let i=0;i<30;i++)T.r(85+i*1.7+d,y-i*1.1-d*.6,2,2,i<3?'#c2cbc0':i>25?(i%2?'#e8e2cc':'#b5402f'):'#7a5a34');return;}
+ /* Kehle: Schnitt quer über den Hals im Stil der Verletzungs-Nahaufnahme, Biss mit Zahnspuren */const gy=Math.max(top+4,64);
+ M.injuryShots?.woundOn?.(q,type==='maul'?'gut':'deepcut',{x:80,y:gy},{x:1,y:0},22,u,st.g,3);
+ if(type==='maul')for(let i=0;i<5;i++){T.r(70+i*4.5,gy-4+(i%2)*7,3,2,'#3d0f0d');T.r(71+i*4.5,gy-4+(i%2)*7,1,1,'#e6cfc0');}
+ for(let i=0;i<10;i++){const L=cl((u-.1-i*.05)*30,0,30);T.r(70+i*2,gy+3,i%2?2:1,L,i%3?'#8f2a24':'#a8372f');}}
+// am Kopf (Kopfkoordinaten): tödliche Wunde im Stil der Nahaufnahmen, dazu Blut, das übers Gesicht läuft
+function headWound(q,T,st){const {type,u,g,seed}=st,W=(kind,x,y,dir,w,s=0)=>M.injuryShots?.woundOn?.(q,kind,{x,y},dir,w,u,g,s);
+ if(type==='skull'){/* Schädelbruch wie in der Verletzungs-Nahaufnahme, auf die Schädeldecke gesetzt */q.save();q.translate(0,-18);W('skullfracture',80,37,{x:0,y:1},20);q.restore();
+  for(let i=0;i<7;i++){const L=cl((u-.08-hash(seed+i)*.5)*(18+hash(seed+i*5)*22),0,26+hash(seed+i*7)*26),x0=66+hash(seed+i*2)*28,wd=hash(seed+i*6)<.35?2:1;for(let y=0;y<L;y++)T.r(x0+Math.sin((y+i*3)*.22)*1.2,24+y,wd,1,i%3?'#a8372f':'#7d1e18');if(L>4)T.r(x0+Math.sin((L+i*3)*.22)*1.2,24+L,wd+1,2,'#8f2a24');}
+  T.r(70,46,1,cl((u-.3)*10,0,10),'#8f2a24');T.r(90,46,1,cl((u-.4)*10,0,10),'#8f2a24');return;}
+ if(type==='arrow'&&st.part==='head'){W('arrow',72,40,{x:0,y:1},10);const d=(1-cl(u/.05))*70;for(let i=0;i<32;i++)T.r(71-i*1.7-d,38-i*1.1-d*.6,2,2,i<3?'#c2cbc0':i>27?(i%2?'#e8e2cc':'#b5402f'):'#7a5a34');for(let i=0;i<4;i++)T.r(70+i,42,1,cl((u-.06-i*.05)*24,0,24),'#a8372f');}
+ if(type==='maul'){W('deepcut',70,50,{x:.3,y:.95},12,5);}
+ // Blut aus Mund (und bei Kopfverletzung aus der Nase)
+ const mouth={heart:1,generic:.7,gut:1.3,ground:1,throat:.7,maul:.8,arrow:.6,bisect:.8,bleed:.4}[type]||0;
+ if(mouth){for(let i=0;i<4;i++){const L=cl((u-.15-i*.12)*14*mouth,0,14*mouth);T.r(76+i*2.6,58,i%2?1:2,L,i%2?'#8f2a24':'#a8372f');}T.r(75,57,10,1,'#6b2420');}
+ // vorhandene Kopfverletzung aus dem Kampf ist auch zu sehen
+ const inj=g?.body?.head?.injury,helm=st.m&&st.m.a<.9;if(inj&&!helm&&type!=='skull'&&type!=='decap'){const kd=M.injuryShots?.kindOf?.(inj);if(kd&&kd!=='skullfracture'&&kd!=='concussion')W(kd,90,26,{x:.3,y:.95},12,7);}}
+// Luft: Fontäne aus dem Stumpf, Stöße aus der Kehle, Blut gehustet, Knochensplitter
+function air(ctx,T,st){const {type,u,opts,seed}=st,s=T.s,sink=opts.sink||0,put=(x,y,w,h,c,a)=>{const p=T.to(x,y);ctx.globalAlpha=a??1;ctx.fillStyle=c;ctx.fillRect(Math.round(p.x),Math.round(p.y),Math.max(1,Math.round(w*s)),Math.max(1,Math.round(h*s)));ctx.globalAlpha=1;},
+ Bp=(bx,by)=>({x:bx-80-(st.ya||0),y:by-70-sink});
+ if(type==='decap'&&u>.14){const o0=Bp(80,70),k=Math.exp(-u/4.5),pulse=.5+.5*Math.max(0,Math.sin(u*10.5));
+  for(let i=0;i<70;i++){const v=((u*1.7+i/70)%1),side=hash(seed+i)-.5,h=v*95*pulse*k;put(o0.x+side*8+side*v*46*(.5+pulse),o0.y-2-h+v*v*85*k,i%4?1:2,i%4?1:2,i%3?'#a8372f':i%2?'#c9584a':'#8f2a24',1-v*.3);}}
+ if((type==='throat'||type==='maul')&&u>0){const gy=Math.max(Math.min(72,62+sink)+4,64),o0=Bp(80,gy),k=Math.exp(-u/3.5),pulse=.45+.55*Math.max(0,Math.sin(u*9.5));
+  for(let i=0;i<54;i++){const v=((u*1.5+i/54)%1),dir=hash(seed+i*2)<.65?1:-1;put(o0.x+dir*(3+v*(30+hash(seed+i)*24)*pulse*k),o0.y+1-v*10*pulse+v*v*34,i%3?1:2,i%3?1:2,i%2?'#a8372f':'#c9584a',1-v*.25);}}
+ const cough={gut:1,heart:.6,generic:.5,ground:.6,bisect:.5}[type];if(cough&&u>.1){const m=headPt(st,80,58),n=Math.round(40*cough);for(let i=0;i<n;i++){const v=((u*1.2+i/n)%1),c=Math.max(0,Math.sin(u*(type==='gut'?6.5:4.5)))*cough;put(m.x+(hash(seed+i)-.5)*6+(hash(seed+i*3)-.5)*v*48*c,m.y+v*14-v*14*c+v*v*24,i%3?1:2,i%3?1:2,i%2?'#a8372f':'#8f2a24',1-v*.4);}}
+ if(type==='skull'&&u<.7){const p=headPt(st,80,16),v=u/.7;for(let i=0;i<30;i++){const a=hash(seed+i*9)*6.283;put(p.x+Math.cos(a)*v*(40+hash(seed+i)*40),p.y+Math.sin(a)*v*30-v*24+v*v*40,hash(seed+i*3)<.3?2:1,hash(seed+i*3)<.3?2:1,i%4?'#a8372f':i%3?'#e6dcc2':'#d9a0a0',1-v*.6);}}}
 // nach jeder Nahaufnahme: Blut auf der Linse der Nahaufnahme; geborgte Gesichtszeichnung zurückgeben
 function shotDone(g,w,h,o,k,t,kind){const id=o?.g?.id;if(id!=null&&ovSaved.has(id)){const prev=ovSaved.get(id);if(prev)M.faceOverlays[id]=prev;else delete M.faceOverlays[id];ovSaved.delete(id);}
  if(!api.active||!api.lens||k<0)return;let amount=0;if(kind==='death'){amount=(TYPES[shotType(o)]||TYPES.generic).lens;}else amount=({sever:.9,pulp:.7,shatter:.5,gut:.7,deepcut:.5,deepstab:.45,pierce:.6,skullfracture:.6})[kind]||0;if(amount<=0)return;
