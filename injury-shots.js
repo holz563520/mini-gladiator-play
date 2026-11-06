@@ -180,7 +180,7 @@ const EFFECT={
   for(const [a,b,c,d] of [[-5,-4,-1,0],[-1,0,-3,4],[-1,0,5,2],[5,2,7,-2],[0,-5,2,-1]])T.line(cx+a*op,cy+b*op+dp,cx+c*op,cy+d*op+dp,'#8d7f62',1);
   // aufgestellte Knochensplitter am Rand: ragen aus der Wunde, an der Basis blutig
   const sp=[[-12,-1,-17,-9,-8,-6],[-4,-6,-5,-17,3,-8],[7,-5,14,-14,12,-2],[11,3,19,0,13,7],[-10,4,-17,7,-9,9]];
-  sp.forEach(([x0,y0,x1,y1,x2,y2],i)=>{const l=lift*(i%2?.85:1),f=(a,b,c)=>[cx+(a+(b-a)*0)*op,cy+c*op],tip={x:cx+x1*l*1,y:cy+y1*l},b1={x:cx+x0*op,y:cy+y0*op},b2={x:cx+x2*op,y:cy+y2*op};
+  sp.forEach(([x0,y0,x1,y1,x2,y2],i)=>{const l=lift*(i%2?.85:1),f=(a,b,c)=>[cx+(a+(b-a)*0)*op,cy+c*op],tip={x:cx+x1*l*1,y:cy+y1*l},b1={x:cx+x0*op,y:cy+y0*op},b2={x:cx+x2*op,y:cy+y2*op};/* C.shardScale (schaedelbruch.js): Splitter ragen nur minimal heraus */if(C.shardScale!=null){const bx=(b1.x+b2.x)/2,by=(b1.y+b2.y)/2;tip.x=bx+(tip.x-bx)*C.shardScale;tip.y=by+(tip.y-by)*C.shardScale;}
    poly([[b1.x,b1.y],[tip.x,tip.y],[b2.x,b2.y]],'#9a8c6c');poly([[b1.x+1,b1.y],[tip.x+(b1.x-tip.x)*.12,tip.y+(b1.y-tip.y)*.12],[b2.x-.5,b2.y]],'#e6dcc0');T.r(tip.x,tip.y,1,1,'#fffbe8');
    T.oval((b1.x+b2.x)/2,(b1.y+b2.y)/2,3,1.6,'#a8372f',.85);});
   // Blut quillt aus den Fugen, pulsierend

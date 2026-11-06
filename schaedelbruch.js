@@ -145,6 +145,10 @@ function crater(T,k,C,o){const D=pen(T,C),H=helmCols(C.helm),{x:cx,y:cy,nx,ny}=o
  for(let i=0;i<o.plates;i++){const an=i/o.plates*6.283+.3,r=o.a*(.62-sink*.22),px=cx+Math.cos(an)*r*.95+nx*sink*(2+hr(seed+i)*2),py=cy+Math.sin(an)*r*.6+ny*sink*(2+hr(seed+i)*2),s=1.6+hr(seed+i+8)*1.6;
   D.PG([[px-s,py-s*.5],[px+s*.7,py-s*.8],[px+s,py+s*.4],[px-s*.3,py+s*.8]],hr(seed+i+2)<.5?BONE:BONELO);D.P(px-1,py-1,BONEHI);D.P(px,py+s*.6,RED);}
  if(o.plates>6)D.ROV(cx+nx*3,cy+ny*3,3*op,2*op,ux,uy,'#7c1f1c');
+ // Wunsch 6.11.: kleine Knochenstücke schauen minimal aus der Wunde (1–3 px), schräg nach außen, Spitze hell, Basis blutig
+ const lift=out((k-.04)/.3);if(op>.5)for(let i=0;i<(o.shards||0);i++){const an=-2.6+i*(2.2/Math.max(1,o.shards-1))+(hr(seed+i+40)-.5)*.3,bx=cx+Math.cos(an)*o.a*1.05*op,by=cy+Math.sin(an)*o.b*1.05*op,
+  len=Math.max(1,Math.round((2+hr(seed+i+44))*lift)),ox=Math.cos(an)*.75,oy=Math.sin(an)*.75-.45;D.P(bx,by+1,RED);D.P(bx-1,by+1,'#5a1d1a');
+  for(let s=0;s<len;s++){const px=bx+ox*s,py=by+oy*s;D.P(px+1,py+1,'#3a1214');D.P(px,py,s===len-1?BONEHI:s===0?BONELO:BONE);}}
  // Blut füllt die Mulde, quillt am unteren Rand, läuft
  D.ROV(cx+nx*(o.b*.7),cy+ny*(o.b*.7)+1,o.a*.6*op,(1.3+pulse*.8),ux,uy,RED);
  rivers(D,k,o.runs.map(([dx,len,w,c],i)=>[cx+dx,cy+o.b*.7+2,len,w,c,i*2.1]),o.runStart,o.runDur);
@@ -153,12 +157,12 @@ function crater(T,k,C,o){const D=pen(T,C),H=helmCols(C.helm),{x:cx,y:cy,nx,ny}=o
 const BLUNT_N={x:-.5,y:.866};/* Schlag von rechts oben schräg nach unten */
 // Schaft zeigt nach rechts zum Angreifer, quer zur Schlagrichtung
 const SHAFT={x:.96,y:-.28};
-const S2=(T,V,k,C)=>crater(T,k,C,{x:83,y:31,nx:BLUNT_N.x,ny:BLUNT_N.y,a:8,b:5,cracks:5,flaps:6,plates:3,seed:5,spray:16,sprSpeed:34,boneShare:.1,runStart:.5,runDur:1.8,runs:[[-5,22,1,RED],[0,32,2,RED],[6,18,1,DRK]],
+const S2=(T,V,k,C)=>crater(T,k,C,{x:83,y:31,nx:BLUNT_N.x,ny:BLUNT_N.y,a:8,b:5,cracks:5,flaps:6,plates:3,shards:3,seed:5,spray:16,sprSpeed:34,boneShare:.1,runStart:.5,runDur:1.8,runs:[[-5,22,1,RED],[0,32,2,RED],[6,18,1,DRK]],
  weapon:(T,o,k)=>bluntAt(T,{...o,bite:1.5},k,(T,x,y,ghost,g)=>{const ax=SHAFT.x,ay=SHAFT.y,px=-ay,py=ax,col=ghost?(g===2?'#ffffff16':'#ffffff2c'):null,cx0=x-o.nx*5,cy0=y-o.ny*5;
   /* Keule: dickes Ende liegt auf dem Kopf, verjüngt sich zum Griff */for(let i=-3;i<34;i++){const w=i<0?9:Math.max(4,10-i*.18),bx=cx0+ax*i,by=cy0+ay*i;for(let j=-w/2;j<=w/2;j+=.6){const c=col||(i<-1?'#5a4128':j<-w*.28?'#b08c60':j>w*.28?'#4d3620':'#7b5a38');T.r(bx+px*j,by+py*j,1.2,1.2,c);}
    if(!ghost&&(i===4||i===13||i===22))T.r(bx+px*(i%2?1.5:-2),by+py*(i%2?1.5:-2),2,2,'#3a2a1c');}
   if(!ghost){T.line(cx0+ax*34,cy0+ay*34,cx0+ax*56,cy0+ay*56,'#3d2a18',5);T.line(cx0+ax*34,cy0+ay*34,cx0+ax*56,cy0+ay*56,'#6e4c2c',3);for(let i=38;i<56;i+=3)T.r(cx0+ax*i,cy0+ay*i-1,1,3,'#2a1a10');}})});
-const S3=(T,V,k,C)=>crater(T,k,C,{x:82,y:30,nx:BLUNT_N.x,ny:BLUNT_N.y,a:10,b:6.5,cracks:8,flaps:8,plates:11,seed:21,spray:34,sprSpeed:52,boneShare:.35,runStart:.15,runDur:1.1,runs:[[-9,26,1,RED],[-3,20,2,RED],[3,40,2,RED],[8,24,1,DRK],[11,32,2,RED]],
+const S3=(T,V,k,C)=>crater(T,k,C,{x:82,y:30,nx:BLUNT_N.x,ny:BLUNT_N.y,a:10,b:6.5,cracks:8,flaps:8,plates:11,shards:4,seed:21,spray:34,sprSpeed:52,boneShare:.35,runStart:.15,runDur:1.1,runs:[[-9,26,1,RED],[-3,20,2,RED],[3,40,2,RED],[8,24,1,DRK],[11,32,2,RED]],
  weapon:(T,o,k)=>bluntAt(T,{...o,bite:3},k,(T,x,y,ghost,g)=>{const ax=SHAFT.x,ay=SHAFT.y,nx=o.nx,ny=o.ny,col=ghost?(g===2?'#ffffff16':'#ffffff2c'):null;
   /* Hammerkopf: Schlagfläche liegt auf dem Treffpunkt, Kopf längs der Schlagrichtung, hinten der Dorn; Stiel quer dazu nach rechts */
   for(let j=0;j<13;j++)for(let i=-4.5;i<=4.5;i+=.6){const c=col||(j<1.5?'#e2e7dc':j>10.5?'#3f4642':Math.abs(i)>3.6?'#4a524e':i<-1.5?'#a9b2aa':'#7d8687');T.r(x-nx*j+ax*i,y-ny*j+ay*i,1.2,1.2,c);}
@@ -185,7 +189,7 @@ function mK3(r0,h,a,helm,back){const r=clipR(r0,h,helm),x=h.x,y=h.y,lk=helm&&M.i
  r(x-1,y-5,3,1,beat()?RED2:DEEP);face(r,x,y-1,[[3,9,.7],[1,8,.9],[-2,7,.8,DRK],[-3,5,1]],back);}
 function mS2(r0,h,a,helm,back){const r=clipR(r0,h,helm),x=h.x,y=h.y;
  if(helm){const lk=M.itemLook(helm);r(x-1,y-8,6,3,'#00000066');r(x,y-7,4,1,'#000000aa');r(x-1,y-9,6,1,lk.edge);r(x,y-5,4,1,'#ffffff33');face(r,x,y,[[3,6,.5],[-3,4,.6,DRK]],back);return;}
- r(x-2,y-8,8,5,'#7a3a5a');r(x-1,y-7,6,3,'#4a141a');r(x,y-7,4,2,HOLE);r(x,y-8,2,1,BONE);r(x+3,y-8,1,1,BONELO);r(x-2,y-6,1,1,RED);r(x+5,y-5,1,1,RED);r(x,y-4,4,1,RED);
+ r(x-2,y-8,8,5,'#7a3a5a');r(x-1,y-7,6,3,'#4a141a');r(x,y-7,4,2,HOLE);r(x,y-8,2,1,BONE);r(x+3,y-8,1,1,BONELO);r(x-2,y-7,1,1,BONEHI);r(x+5,y-7,1,1,BONE);r(x-2,y-6,1,1,RED);r(x+5,y-5,1,1,RED);r(x,y-4,4,1,RED);
  face(r,x,y-3,[[1,8,.5],[3,6,.4,DRK]],back);}
 function mS3(r0,h,a,helm,back){const r=clipR(r0,h,helm),x=h.x,y=h.y,lk=helm&&M.itemLook(helm);
  r(x-4,y-8,10,6,helm?'#00000077':'#5a1d1a');r(x-3,y-8,8,5,helm?(helm.material==='medium'?lk.leather:lk.metal):RED);r(x-2,y-7,6,3,HOLE);
@@ -195,7 +199,7 @@ function mS3(r0,h,a,helm,back){const r=clipR(r0,h,helm),x=h.x,y=h.y,lk=helm&&M.i
 
 // ---------- S1: bisherige Darstellung, auf Kopf/Helm beschnitten ----------
 const ORIG=IS.effects.skullfracture;
-const S1=(T,V,k,C)=>{if(k<0)return;const D=pen(T,C);ORIG({...T,r:D.R,line:D.LN,oval:(x,y,rx,ry,c)=>D.OV(x,y,rx,ry,c)},V,k,C);};
+const S1=(T,V,k,C)=>{if(k<0)return;const D=pen(T,C);ORIG({...T,r:D.R,line:D.LN,oval:(x,y,rx,ry,c)=>D.OV(x,y,rx,ry,c)},V,k,{...C,shardScale:.28});};
 function mS1(r0,h,a,helm,back){const r=clipR(r0,h,helm),x=h.x,y=h.y,lk=helm&&M.itemLook(helm);
  r(x-4,y-8,9,5,helm?'#00000066':'#7c2a25');r(x-3,y-8,7,4,helm?(helm.material==='medium'?lk.leather:lk.metal):RED);r(x-2,y-7,5,2,HOLE);
  for(const [dx,dy,c] of [[-3,-8,BONE],[-1,-8,BONEHI],[1,-8,BONE],[3,-7,BONELO],[0,-6,BONELO]])r(x+dx,y+dy,1,1,c);

@@ -27,9 +27,9 @@ canvas{display:block;width:100%;height:auto;image-rendering:pixelated;background
 </main>
 <script>/* Testseite: nichts darf in Spielstände schreiben */try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};}catch(e){}</script>
 <canvas id="arenaCanvas" width="10" height="10" hidden></canvas>
-<script src="data.js?v=5b5b0a40"></script><script src="household.js?v=5b5b0a40"></script><script src="management.js?v=5b5b0a40"></script><script src="scout.js?v=5b5b0a40"></script><script src="sim.js?v=5b5b0a40"></script><script src="benchmark.js?v=5b5b0a40"></script><script src="school.js?v=5b5b0a40"></script><script src="weapon-art.js?v=5b5b0a40"></script><script src="arena.js?v=5b5b0a40"></script>
-<script src="injury-shots.js?v=5b5b0a40"></script>
-<script src="schaedelbruch.js?v=5b5b0a40"></script>
+<script src="data.js?v=1bcb82a2"></script><script src="household.js?v=1bcb82a2"></script><script src="management.js?v=1bcb82a2"></script><script src="scout.js?v=1bcb82a2"></script><script src="sim.js?v=1bcb82a2"></script><script src="benchmark.js?v=1bcb82a2"></script><script src="school.js?v=1bcb82a2"></script><script src="weapon-art.js?v=1bcb82a2"></script><script src="arena.js?v=1bcb82a2"></script>
+<script src="injury-shots.js?v=1bcb82a2"></script>
+<script src="schaedelbruch.js?v=1bcb82a2"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),M=MG,IS=M.injuryShots,FX=IS.effects,ORIG=FX.skullfracture;
@@ -44,9 +44,9 @@ function runs(T,k,list,start=.25,speed=1.2){const run=cl((k-start)/speed);if(run
 const {K1,K2,K3,S1,S2,S3,mK1,mK2,mK3,mS1,mS2,mS3}=M.skullVariants.parts;
 const SETS={
  blunt:[
-  {id:'S1',name:'Eingedrückt',w:'mace',wn:'Streitkolben (und Speer, Sonstiges)',d:'Die bisherige Darstellung: Schädeldecke bricht ein, Splitter stehen auf – jetzt auf den Kopf beschnitten.',close:S1,mini:mS1},
-  {id:'S2',cls:'none',name:'Delle',w:'club',wn:'Keule',d:'Dumpfer Schlag: runde Delle, die Kopfhaut platzt sternförmig, starke Schwellung, kaum Splitter. Das Blut sickert langsam.',close:S2,mini:mS2},
-  {id:'S3',cls:'none',name:'Trümmerkrater',w:'hammer',wn:'Hammer',d:'Schwerer Schlag: ein Krater aus vielen Knochenstücken, die nach innen sinken. Splitter fliegen, viel Blut.',close:S3,mini:mS3}],
+  {id:'S1',name:'Eingedrückt',w:'mace',wn:'Streitkolben (und Speer, Sonstiges)',d:'Die bisherige Darstellung: Schädeldecke bricht ein, auf den Kopf beschnitten; die Knochensplitter schauen jetzt nur noch minimal heraus.',close:S1,mini:mS1},
+  {id:'S2',cls:'none',name:'Delle',w:'club',wn:'Keule',d:'Dumpfer Schlag: runde Delle, die Kopfhaut platzt sternförmig, starke Schwellung, nur drei winzige Knochenstücke schauen am Rand heraus. Das Blut sickert langsam.',close:S2,mini:mS2},
+  {id:'S3',cls:'none',name:'Trümmerkrater',w:'hammer',wn:'Hammer',d:'Schwerer Schlag: ein Krater aus vielen Knochenstücken, die nach innen sinken; ein paar kleine Kanten stehen minimal heraus. Splitter fliegen, viel Blut.',close:S3,mini:mS3}],
  blade:[
   {id:'K1',cls:'none',name:'Klaffender Spalt',w:'gladius',wn:'Gladius / Schwert',d:'Die Schneide spaltet den Schädel schräg über der Schläfe. Der Spalt klafft auf, an den Kanten ist Knochen zu sehen, das Blut rinnt aus der ganzen Länge.',close:K1,mini:mK1},
   {id:'K2',cls:'none',name:'Scheitel gespalten',w:'greatsword',wn:'Langschwert / Zweihänder',d:'Langer, tiefer Spalt, die eine Schädelhälfte sackt sichtbar ab. Herzschlag spritzt aus der Mitte.',close:K2,mini:mK2},
