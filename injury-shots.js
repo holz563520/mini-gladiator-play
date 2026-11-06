@@ -35,7 +35,7 @@ function sprite(q,key,C,draw,direct){if(sprOff||typeof document==='undefined'||t
  if(s===undefined){const rec=[];let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
   draw((x,y,w,h,c)=>{x=Math.round(x);y=Math.round(y);w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));rec.push(x,y,w,h,c);if(x<x0)x0=x;if(y<y0)y0=y;if(x+w>x1)x1=x+w;if(y+h>y1)y1=y+h;});
   if(!rec.length||x1-x0>400||y1-y0>400)s=null;else{const cv=document.createElement('canvas');cv.width=x1-x0;cv.height=y1-y0;const g=cv.getContext('2d');for(let i=0;i<rec.length;i+=5){g.fillStyle=rec[i+4];g.fillRect(rec[i]-x0,rec[i+1]-y0,rec[i+2],rec[i+3]);}s={c:cv,x:x0,y:y0,last:rec[rec.length-1]};}
-  if(SPR.size>500)SPR.clear();SPR.set(key,s);}
+  /* Leistung: voll → nur die ältesten verwerfen statt alles (sonst baut die nächste Nahaufnahme jedes Teil neu) */if(SPR.size>1200){let n=SPR.size-900;for(const k of SPR.keys()){SPR.delete(k);if(--n<=0)break;}}SPR.set(key,s);}
  if(!s)return direct();q.drawImage(s.c,s.x,s.y);q.fillStyle=s.last;}
 const tubePx=(r,x0,y0,x1,y1,w0,w1,C)=>{const dx=x1-x0,dy=y1-y0,len=Math.hypot(dx,dy)||1,nx=-dy/len,ny=dx/len,n=Math.ceil(len*1.4);for(let i=0;i<=n;i++){const u=i/n,cx=x0+dx*u,cy=y0+dy*u,w=w0+(w1-w0)*u,h=w/2;for(let j=-Math.ceil(h);j<=Math.ceil(h);j++){const a=Math.abs(j);if(a>h+.2)continue;const side=ny>=0?j:-j,col=a>h-1?C.line:side<-h*.45?C.light:side>h*.3?C.shade:C.skin;r(cx+nx*j,cy+ny*j,1.3,1.3,col);}}};
 const discPx=(r,x,y,rad,C)=>{for(let j=-rad;j<=rad;j++){const hw=Math.sqrt(Math.max(0,rad*rad-j*j));for(let i=-Math.ceil(hw);i<=Math.ceil(hw);i++){const d=Math.hypot(i,j);r(x+i,y+j,1,1,d>rad-1?C.line:j<-rad*.4?C.light:j>rad*.35||i>rad*.5?C.shade:C.skin);}}};
@@ -387,7 +387,7 @@ function arenaShot(x){const {e,k,inj}=x,g=e.g,p=g.body[e.part],gr=M.injuryGrade(
 function endArena(){arena?.v?.remove();const hosted=arena&&!arena.v;arena=null;if(hosted)cfg.onShot?.(false);}
 /* Leistung: Steht die Nahaufnahme still (fertig, wartet auf Moderator oder Antippen), ist jedes Bild gleich – dann nicht neu zeichnen.
    Großaufnahmen der Gesichter (Tod, Zusammenbruch) bewegen Mund und Augen nach der Uhr und werden immer gezeichnet. */
-function paintShot(A){const s=A.shot,k=s.o.kind,face=k==='death'||(k==='collapse'&&s.o.fall),blink=s.o.waiting?Math.sin(performance.now()/260)>-.2:null,key=face?null:s.t+'|'+A.c.width+'x'+A.c.height+'|'+blink;
+function paintShot(A){/* Leistung (06.11.): läuft die Nahaufnahme neben dem Kampf her, reichen 30 Bilder je Sekunde */if(A.live){const now=performance.now();if(now-(A.paintAt||0)<30)return;A.paintAt=now;}const s=A.shot,k=s.o.kind,face=k==='death'||(k==='collapse'&&s.o.fall),blink=s.o.waiting?Math.sin(performance.now()/260)>-.2:null,key=face?null:s.t+'|'+A.c.width+'x'+A.c.height+'|'+blink;
  if(key!==null&&key===A.painted)return;A.painted=key;s.paint(A.g,A.c.width,A.c.height);}
 if(typeof M.fixedStep==='function'&&typeof M.presentationStep==='function'){
  const fixed=M.fixedStep,present=M.presentationStep,effects=M.effectsStep;
@@ -401,5 +401,5 @@ if(typeof M.fixedStep==='function'&&typeof M.presentationStep==='function'){
 // Zeile für die Einstellungsseite und ihre Auswahl
 M.injuryOptions=()=>`<div class="list-row"><span>Nahaufnahmen bei Verletzungen<br><small>Der Kampf hält dafür kurz an. Antippen überspringt.</small></span><select class="select" id="closeups">${MODES.map(([k,n])=>`<option value="${k}"${k===mode()?' selected':''}>${n}</option>`).join('')}</select></div>`;
 {const change=M.schoolChange;M.schoolChange=ev=>{if(ev?.target?.id==='closeups'){S.options.closeups=ev.target.value;M.persist?.();return true;}return change?.(ev);};}
-M.injuryShots={/* nur für Vorschauseiten (schaedelbruch-varianten.html) */spriteCache:on=>{sprOff=!on;SPR.clear();},effects:EFFECT,helmLook,skullStage,SKULL_STAGES,SKULL_DAYS,start,play,stop,paint,kinds:KINDS,kindOf,injuriesFor,viewOf,weaponClass,relevant,HIT,LEN,modes:MODES,mode,level,config:cfg,skip:()=>{if(arena){arena.shot.done=true;arena.shot.skipped=true;M.speakStop?.();/* Antippen: aktuelle Nahaufnahme weg, aufgestaute verwerfen, kurz Ruhe (Thomas 18.10.) */pend=[];falls=[];gap=Math.max(gap,2.5);}},get arena(){return arena;},get pending(){return pend;}};
+M.injuryShots={/* nur für Vorschauseiten (schaedelbruch-varianten.html) */spriteCache:on=>{sprOff=!on;SPR.clear();},effects:EFFECT,helmLook,skullStage,SKULL_STAGES,SKULL_DAYS,start,play,stop,paint,kinds:KINDS,kindOf,injuriesFor,viewOf,weaponClass,relevant,HIT,LEN,modes:MODES,mode,level,config:cfg,skip:()=>{if(arena){arena.shot.done=true;arena.shot.skipped=true;M.speakStop?.();/* Antippen: aktuelle Nahaufnahme weg, aufgestaute verwerfen, kurz Ruhe (Thomas 18.10.) */pend=[];falls=[];gap=Math.max(gap,2.5);}},get arena(){return arena;},get pending(){return pend;},/* Kampf steht ganz still (nicht in der kurzen Zeitlupe am Anfang): arena.js zeichnet dann ein Standbild */get frozen(){return !!arena&&!arena.live&&!(arena.shot.o.hold&&arena.shot.t-SHOT_FROM<.45&&!arena.shot.o.waiting);}};
 })();

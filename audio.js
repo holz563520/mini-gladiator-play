@@ -170,7 +170,22 @@ for(const ev of ['pointerdown','touchend','keydown'])document.addEventListener(e
   const f=p.fracture;if(f&&typeof f==='object'&&!seen.has(f)){seen.add(f);if(!quiet){if(p.skullFracture||f.skull)skull++;else crack++;}}}}
  if(skull)sound('skullCrack');else if(crack)sound('boneCrack');};
  const step0=M.fixedStep;if(typeof step0==='function'){M.fixedStep=function(){const r=step0.apply(this,arguments);try{const b=M.s.battle;if(b&&(b.actors?.length||0)<=80){if(b!==lastB){lastB=b;scan(b,true);try{if(ctx&&enabled(false))chantPrefill(b);}catch{}}else scan(b,false);}}catch(e){}return r;};}}
-M.audioEngine={ksPlay:(k,vol=1,pitch=1)=>enabled(false)?ks(k,vol,0,pitch):false,start,sound,voice,
+/* Ladebildschirm (Thomas 06.11.): Die Kampfgeräusche dieses Kampfes werden vorher im Hintergrund-Worker fertig gerechnet. Gesammelt
+   wird genau, was die Kämpfer erzeugen können: Blockklang je Angreiferwaffe, Abwehrwaffe/Schild, Schlagart und Trefferstelle (mit der
+   Tonhöhe, die block-contact.js daraus macht), Trefferklang je Waffengattung und Rüstung, dazu die allgemeinen Treffer/Stürze. Sonst rechnet
+   der erste Block mit einer neuen Tonhöhe mitten im Kampf auf dem Hauptthread (gemessen bis ~50 ms am PC, am Handy ein Mehrfaches).
+   Wartet höchstens limit ms; ohne Ton oder Worker sofort fertig. */
+function fightSounds(b){const out=new Map(),add=(k,p=1)=>{if(!k||!window.KampfSound?.DEF?.[k])return;const q=Math.round(p*10)/10;out.set(k+'|'+q,[k,q]);};
+ const acts=(b?.actors||[]).filter(a=>a.g&&!a.rex&&!a.hahn&&!a.dog&&!a.lion),arms=a=>{const w=[M.weapon?.(a)?.id,M.gear?.(a.g,'secondary')?.def].filter(Boolean);return w.length?w:['fist'];},shield=a=>M.gear?.(a.g,'shield')?.def||null,BC=M.blockContact,HC=M.hitContact;
+ if(BC?.classify){for(const A of acts)for(const D of acts){if(A.team===D.team)continue;const sid=shield(D);for(const aw of arms(A))for(const tech of ['slash','overhead','thrust','spin'])for(const dw of arms(D))for(const s of sid?[sid,null]:[null])for(const spot of s?['wood','boss','rim']:['wood']){try{const r=BC.classify(aw,tech,dw,s,D.g.stats?.block||0,spot,A.g.stats?.strength||50,D.g.stats?.strength||50);add(r.snd,r.pitch);add(r.extra);}catch{}}}
+  add('bk_reiben');add('bk_wegdruecken');if(acts.some(a=>arms(a).some(w=>w==='bow'||w==='crossbow'))){add('bk_pfeilKlinge',.9);add('bk_pfeilKlinge',1.05);}}
+ if(HC?.strikeClass){const armored=acts.some(a=>(M.armorItems?.(a.g)||[]).length);for(const A of acts)for(const wid of arms(A))for(const k of ['slash','overhead','thrust','spin','kick']){const cls=HC.strikeClass(wid,k);for(const p of [1,.93]){add('tr_'+cls,p);if(wid==='fist'||k==='kick')add('tr_'+cls,p*1.25);if(armored){add('tr_leder',p);for(const m of ['tr_metallStumpf','tr_metallKlinge']){add(m,p);add(m,p*1.05);}}}}}
+ /* zuletzt (Block-/Trefferklänge zuerst, sie sind am teuersten): Publikum, Jubel, Gong usw. rechnet weiter ksWarmup nebenher; hier nur das, was im ersten Schlagabtausch gebraucht wird */for(const v of Object.values(KMAP))if(!heavyKey(v[0]))add(v[0]);for(const k of ['painLight','painScream','arrow'])add(k);
+ return [...out.values()];}
+function prepareFight(limit=6000,b=M.s.battle){const K=window.KampfSound;if(!K?.prefill||!M.s.options?.sound||!init())return Promise.resolve(0);ksWarmup();
+ const jobs=[];for(const [k,p] of fightSounds(b)){let j=null;try{j=K.prefill(ctx,k,{pitch:p,max:heavyKey(k)?1:2});}catch{}if(j)jobs.push(j);}
+ if(!jobs.length)return Promise.resolve(0);return Promise.race([Promise.allSettled(jobs).then(()=>jobs.length),new Promise(r=>setTimeout(()=>r(-jobs.length),limit))]);}
+M.audioEngine={prepareFight,fightSounds,ksPlay:(k,vol=1,pitch=1)=>enabled(false)?ks(k,vol,0,pitch):false,start,sound,voice,
  // Sprechstimmen (sprech-game.js): Ausgang für Sprache, nur wenn Geräusche an sind
  voiceOut:()=>enabled(false)?{ctx,bus:fxBus}:null,
  crowdMood,
