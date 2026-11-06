@@ -65,3 +65,10 @@
 .dok-tr li b{color:var(--cream)}.dok-tr li.on{border-left:4px solid #88baa6}.dok-tr li.off{border-left:4px solid #6b6255;opacity:.8}.dok-tr li span{color:#c9c2ad}
 
 .dok-protect select{flex:1;min-width:0;max-width:100%;padding:6px 8px;background:#1d1510;color:var(--cream);border:1px solid #6b5230;border-radius:4px;font:inherit}
+/* Dauerhafte Einschränkungen operieren (6.11.) */
+.dok-chronic{border:1px dashed #ffffff33;padding:8px;margin:6px 0;background:#111a16}
+.dok-chronic h3{margin:0 0 6px;font-size:13px;letter-spacing:.08em}
+.dok-chronic .bad{color:#f29b83}
+.dok-oplist{display:grid;gap:4px;margin-bottom:6px}
+.dok-op{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 6px;background:#0003;border:1px solid #ffffff1a}
+.dok-chronic .dok-result{margin-top:6px}.dok-chronic .dok-result .bad{color:#8a2a24}

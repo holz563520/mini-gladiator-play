@@ -3,11 +3,13 @@
    HUNDEFANG · Septimus Rabies, „der Hundsgraf“ (Wunsch Thomas, 25.10.2026)
    · Vorstellung: nächstes Kapitel nach dem Schuldeneintreiber (S.outside.stage==='done'), einmal, im Ludus. Danach steht sein Karren
      am Beastrium (Seite „beastrium“ bekommt oben den Karren).
-   · Aufträge (Seite „hundefang“): täglich fünf Gerüchte mit 1–5 Totenköpfen, einer pro Tag. Kämpfer aus dem eigenen Kader,
-     wahlweise mit Knüppel und Netz (leiht Rabies) oder eigener Ausrüstung (ohne Netz).
+   · Aufträge (Seite „hundefang“): täglich fünf Gerüchte mit 1–5 Totenköpfen, einer pro Tag. Trupp aus dem eigenen Kader
+     (Wunsch Thomas 6.11.): bis zu drei Leute, einer davon ist immer der unbewaffnete Lockvogel, der vorgeschickt wird (Rüstung
+     darf er behalten); bis zu zwei Kämpfer mit ihrer ganzen eigenen Ausrüstung (alle Waffen, auch Netz und Fernwaffen).
+     Rabies verleiht nichts mehr. Lockvogel-Auswahl: Schwerverletzte und niedrige Talente stehen oben.
    · Sichtung durchs Fernglas, Hundebuch, Urteil des Kämpfers, dann Kampf Mann gegen Hund auf einem gemalten Schauplatz
      (Kampf und KI aus hund.js). Wunden, Tod und Lernen des Kämpfers zählen wie im echten Kampf.
-   · Fang: Unterwerfung (mit Netz sicher, ohne Netz 50 %) oder bewusstlos statt tot (stumpf 75 %, sonst 40 %, verblutet 20 %).
+   · Fang: Unterwerfung (sicher, wenn einer ein Netz dabei hat oder der Hund im Netz war, sonst 50 %) oder bewusstlos statt tot (stumpf 75 %, sonst 40 %, verblutet 20 %).
    · Gefangene Hunde: S.hundefang.dogs, Zwinger unter dem Beastrium (Seite „zwinger“, Treppe hinab), Kämpfe in der Arena
      (BEAST → Hund, arena-core/-challenges/-ui), Heilung je Tag (DOG.heal).
    · Speicherwert: S.hundefang = {stage:''|'open', day, jobs:[{id,skulls,breed,seed,mood,done}], jobDay, usedDay, dogs:[D], tip}
@@ -307,7 +309,7 @@ function binoMask(c,cx,cy,r){const m=binoMask.c||(binoMask.c=mkc(1280,720)),g=m.
  g.globalCompositeOperation='source-over';c.drawImage(m,0,0);c.save();c.globalAlpha=.08;ell(c,cx-r*.9,cy-r*.45,r*.25,r*.1,'#bfe0ff');c.restore();
  c.strokeStyle='#ffffff22';c.lineWidth=2;c.beginPath();c.moveTo(cx-r*.62-10,cy);c.lineTo(cx-r*.62+10,cy);c.moveTo(cx-r*.62,cy-10);c.lineTo(cx-r*.62,cy+10);c.stroke();}
 function sighting(j,g){const bg=jobBg(j),R=TX.RASSEN[j.breed],big=j.skulls>=4||!!breedOf(j.breed)?.wolf,d=dogFor(j);let found=-1,phase='sneak',intro=null,shotC=null;const K=2.6;
- const tl=timeline([[.2,()=>caption(`<b>${esc(g.name)}</b> schleicht sich an. Rabies bleibt beim Karren. „Ich hab Rücken“, sagt er.`)],[3.2,()=>{phase='glass';caption('Wo ist das Vieh …');}]]);
+ const tl=timeline([[.2,()=>caption((goTeam&&byId(goTeam.bait)?`<b>${esc(byId(goTeam.bait).name)}</b> wird vorgeschickt${goTeam.men.length?', '+goTeam.men.map(id=>'<b>'+esc(first(byId(id)))+'</b>').join(' und ')+(goTeam.men.length>1?' schleichen':' schleicht')+' hinterher':', ganz allein'}.`:`<b>${esc(g.name)}</b> schleicht sich an.`)+` Rabies bleibt beim Karren. „Ich hab Rücken“, sagt er.`)],[3.2,()=>{phase='glass';caption('Wo ist das Vieh …');}]]);
  function wide(c,t){const Z=1280/1040,cy=365;c.save();c.translate(640,360);c.scale(Z,Z);c.translate(-520,-cy);c.drawImage(bg,0,0);liveMischief(c,j,t);animDog(d,j,t);drawDog(c,d,d.x,d.y,1,d.face,t);c.restore();
   const sx=190,sy=742;fig(c,g,sx,sy,K,1,{state:'idle'});const u=K*.6,hy=sy-(g.height/180)*86*u+16*u,lift=ease((t-1.6)/.8);
   if(t>1.6){px(c,sx+6*u,hy-u*lift,16*u,3.2*u,'#b88a3a');px(c,sx+6*u,hy+3*u-u*lift,16*u,3.2*u,'#a8782a');px(c,sx+20*u,hy-1.5*u,3*u,9*u,'#6a4a1a');}
@@ -360,21 +362,41 @@ function openBook(j,g){const B=breedOf(j.breed),R=TX.RASSEN[j.breed],big=j.skull
 // KAMPF · Mann gegen Hund im Kampfbild des Spiels (eigener Kampf, wie Missionen der Außenwelt), Schauplatz statt Arena
 // =====================================================================================================
 const BLUNT=['club','mace','hammer'];
+// ---------- Trupp (Wunsch Thomas 6.11.): Lockvogel + bis zu zwei Kämpfer ----------
+const byId=id=>id?(S.roster||[]).find(g=>g.id===id&&!g.dead)||null:null;
+let team={bait:null,men:[]},goTeam=null;
+const first=g=>String(g?.name||'').split(' ')[0];
+const fill=(t,g)=>String(t).replace(/\{n\}/g,first(g));
+const wname=i=>i?(M.weaponDefs?.find(w=>w.id===i.def)?.name||i.def):null;
+const gearLabel=g=>[wname(M.gear(g,'secondary')),wname(M.gear(g,'weapon')),M.gear(g,'shield')?'Schild':null].filter(Boolean).join(' + ')||'nur Fäuste';
+const TX_LOCK={
+ pick:['{n} riecht schon nach Wurst. Perfekt.','Wer humpelt, lockt. Das ist ein Naturgesetz.','Rennen muss er nicht. Nur schreien. Das kann er.','Wenn der Hund ihn frisst, hat er wenigstens einmal etwas Nützliches getan.','Ich reibe ihn mit Schinken ein. Kostet extra.','{n}? Gute Wahl. Den vermisst keiner. Nicht mal er selbst.','Ein Lockvogel braucht kein Talent. Nur Fleisch an den Knochen. Ein bisschen reicht.','Sag ihm, es ist eine Ehre. Er glaubt alles.','Unbewaffnet ist er am ehrlichsten. Er hat nichts zu verbergen. Außer Angst.','Der blutet schon. Spart mir die Wurst.','Läuft er zu schnell weg, ist er kein Lockvogel mehr, sondern ein Deserteur. Dann jag ich ihn selbst.','Ich hab Hunde gesehen, die vor so einem weglaufen. Aus Mitleid.','Die Rüstung darf er anbehalten. Der Hund mag Dosenfutter.','Talent? Der Hund prüft nur, ob er schmeckt.'],
+ go:['Lauf, {n}! Du duftest nach Mittagessen!','Vorwärts, {n}! Mach Geräusche wie ein verletztes Lamm! Ach, du bist eins.','Hier, Hundchen! Frischfleisch auf zwei Beinen! Na ja, fast zwei.','{n}, wink mal! Mit beiden Armen, solange du noch beide hast!','Nicht weglaufen, {n}. Erst, wenn er zubeißt. Dann auch nicht.','Geh vor, {n}. Die anderen kommen nach. Irgendwann. Vielleicht.','Stell dich nicht so an, {n}. Hunde beißen nur, wenn man lebt.','Ruf ihn, {n}! Egal wie, er hört eh nicht zu.','Lächeln, {n}! Hunde riechen Angst. Und Wurst. Du hast beides.'],
+ dead:['{n} hat seinen Zweck erfüllt. Ganz und gar.','Ein guter Lockvogel. Hat bis zum Schluss gelockt.','{n} ist jetzt Teil der Hundediät. Rabies nickt anerkennend.','Rabies schreibt {n} auf die Liste: „Köder, verbraucht“.','Wenigstens war {n} heute mal der Beliebteste.'],
+ alive:['{n} lebt noch. Rabies wirkt fast enttäuscht.','{n} zittert, aber er ist ganz. Nächstes Mal mehr Wurst.','{n} hat überlebt. Das spricht gegen ihn als Lockvogel.','Rabies tätschelt {n} den Kopf. Wie einem Hund. Einem schlechten.']};
+// Lockvogel-Liste: Schwerverletzte oben (schwerste zuerst), danach die schwächsten Talente
+function sev(g){const ps=Object.values(g.body||{}),miss=ps.filter(p=>p.missing).length,mg=Math.max(0,...ps.map(p=>p.missing?6:(M.injuryGrade?.(p)??p.grade??0))),hp=M.health(g);return {mg,hp,miss,badly:mg>=3||hp<60||miss>0,score:(100-hp)+mg*12+(100-(g.blood??100))*.5+miss*20};}
+const baitCands=()=>(S.roster||[]).filter(g=>!g.dead&&!g.smithDuty&&!g.retired&&!(g.age<18)).map(g=>({g,v:sev(g)})).sort((a,b)=>(b.v.badly-a.v.badly)||(a.v.badly?b.v.score-a.v.score:0)||(a.g.potential??0)-(b.g.potential??0)||b.v.score-a.v.score).map(x=>x.g);
 const TACTIC={aggression:'Ausgeglichen',formation:'Normal',priority:'Nächster Gegner',ranged:'Abstand halten',help:'Normal'};
-let loanMode='leihe';
-function lend(g){const W0=M.gear(g,'weapon');g.enemyGear={weapon:M.makeItem('weapon','club',1),secondary:null,shield:M.gear(g,'shield'),armor:Object.fromEntries(M.armorItems(g).map(i=>[i.def,i]))};g.hfLoan=true;return W0;}
-function unlend(g){if(g?.hfLoan){delete g.enemyGear;delete g.hfLoan;}}
-for(const g of S.roster||[])unlend(g);// Kampf abgebrochen (Neuladen mitten im Kampf): geliehener Knüppel weg
-function startFight(j,g){const s=st();if(S.battle)return;
- const loan=loanMode==='leihe';if(loan)lend(g);
- const h=M.createCombatActor(g,0,0,72);h.x=250;h.y=420;h.a=0;
+// Lockvogel: ohne Waffe und Schild (nur für diesen Kampf, über enemyGear wie Gegner), die eigene Rüstung bleibt
+function bait(g){g.enemyGear={weapon:null,secondary:null,shield:null,armor:Object.fromEntries(M.armorItems(g).map(i=>[i.def,i]))};g.hfBait=true;}
+function unbait(g){if(g?.hfBait||g?.hfLoan){delete g.enemyGear;delete g.hfBait;delete g.hfLoan;}}
+for(const g of S.roster||[])unbait(g);// Kampf abgebrochen (Neuladen mitten im Kampf): Lockvogel bekommt seine Ausrüstung zurück, alte Leihknüppel sind weg
+const hasNet=g=>['weapon','secondary'].some(sl=>M.gear(g,sl)?.def==='net');
+function startFight(j){const s=st();if(S.battle)return;const T=goTeam||team,bg=byId(T.bait),men=T.men.map(byId).filter(Boolean);if(!bg)return;
+ bait(bg);const hb=M.createCombatActor(bg,0,0,72);hb.x=SPOT.x-140;hb.y=SPOT.y+16;hb.a=0;hb.hfBait=true;
+ const hs=[hb,...men.map((g,i)=>{const h=M.createCombatActor(g,0,0,72);h.x=230-i*30;h.y=men.length>1?(i?470:375):420;h.a=0;return h;})];
  const D=JSON.parse(JSON.stringify(jobDog(j))),d=DOG.makeActor(D,1,SPOT.x+120,SPOT.y+20);d.a=Math.PI;
- const b={id:'hundefang-'+j.id,hundefang:true,dogTest:true,hasDogs:true,actors:[h,d],opponent:D.breedName,time:0,startTime:0,type:'hundefang',league:0,log:[],paused:false,result:null,obstacles:[],width:1040,height:720,
+ const blunt=!men.length||men.some(g=>{const w=M.gear(g,'secondary')?.def||M.gear(g,'weapon')?.def;return !w||BLUNT.includes(w);});
+ const b={id:'hundefang-'+j.id,hundefang:true,dogTest:true,hasDogs:true,actors:[...hs,d],opponent:D.breedName,time:0,startTime:0,type:'hundefang',league:0,log:[],paused:false,result:null,obstacles:[],width:1040,height:720,
   teamTactics:[{...TACTIC},{...TACTIC}],leaders:[null,null],moraleBonus:[0,0],moralePressure:[0,0],groundWeapons:[],dropped:[],fee:0};
  Object.defineProperty(b,'toJSON',{value:()=>null,enumerable:false});
  s.usedDay=S.day;j.done='UNTERWEGS';
  M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;for(const p of [...(M.fx||[]),...(M.shots||[])])p.active=false;
- fight={b,j,g,loan,net:loan,h,d,netT:-1,outcome:null};M.missionBackdrop=ctx=>ctx.drawImage(jobBg(j),0,0);S.battle=b;try{M.persist();}catch{}M.ui.render();}
+ const lead=men[0]||bg;fight={b,j,g:lead,bait:bg,men,hs,h:hs[0],d,blunt,net:men.some(hasNet),netT:-1,outcome:null};
+ const line=fill(pick(TX_LOCK.go),bg);b.log.unshift({time:0,text:'Lockvogel: '+bg.name+' wird vorgeschickt. Rabies: „'+line+'“'});
+ setTimeout(()=>{if(fight?.b!==b)return;try{M.floater?.(hb.x,hb.y-70,'LOCKVOGEL','#f4d37a');}catch{}M.speakLine?.(line,'rabies',rabies(),{name:'Rabies'});},700);
+ M.missionBackdrop=ctx=>ctx.drawImage(jobBg(j),0,0);S.battle=b;try{M.persist();}catch{}M.ui.render();}
 const isDog=a=>!!a.dog,dogOut=a=>DOG.out(a)||a.ko,live=(b,t)=>b.actors.filter(a=>a.team===t&&!(isDog(a)?dogOut(a):DOG.out(a)));
 // Nahaufnahme eines Hundes hält den Kampf an (wie im Hunde-Prototyp); wird sie nicht gezeichnet, entfällt sie
 DOG.paused=()=>{if(!(SH.cur||SH.q.length))return false;if(performance.now()-(SH.lastPaint||0)<400)return true;SH.cur=null;SH.q=[];return false;};
@@ -394,39 +416,42 @@ M.fixedStep=function(dt){const b=S.battle;if(!b?.hundefang)return inner.apply(th
  if(L[0]&&L[1]&&b.time-b.startTime<180){b.endAt=null;return;}
  b.endAt??=b.time;if(b.time-b.endAt<2.4)return;
  b.dogOver={winner:L[0]&&!L[1]?0:L[1]&&!L[0]?1:-1,timeout:!!(L[0]&&L[1])};finish(b);};
-function koCheck(b,d){if(!d.g.dead||d._fate)return;d._fate=true;const cause=d.g.cause||'',wid=fight?.loan?'club':M.gear(fight?.g,'weapon')?.def||'',p=/Verblutet|verendet/.test(cause)?.2:(BLUNT.includes(wid)||!wid)?.75:.4;
+function koCheck(b,d){if(!d.g.dead||d._fate)return;d._fate=true;const cause=d.g.cause||'',p=/Verblutet|verendet/.test(cause)?.2:fight?.blunt?.75:.4;
  if(Math.random()<p){d.g.dead=false;d.death=false;d.down=true;d.ko=true;d.mode='down';d.clock=1;d.duration=99;d.blood=Math.max(d.blood,18);d.g.cause='';b.log.unshift({time:Math.floor(b.time),text:d.g.name+' bleibt liegen. Er atmet noch: bewusstlos!'});}}
-function finish(b,retreat){const f=fight;if(!f||f.outcome)return;const d=f.d,h=f.h,manDead=h.g.dead,manOut=DOG.out(h)||h.down;let kind,title,cls,txt;
- if(retreat){kind='rueckzug';title='Rückzug';cls='meh';txt=f.g.name+' zieht sich zurück. Rabies spuckt aus und sagt etwas über Großmütter.';}
- else if(d.ko||(d.submit&&!d.g.dead&&!d.fled)){const free=!d.ko&&!f.net&&Math.random()<.5;
+function finish(b,retreat){const f=fight;if(!f||f.outcome)return;const d=f.d,hs=f.hs,out=h=>h.g.dead||DOG.out(h)||h.down,manDead=hs.every(h=>h.g.dead),manOut=hs.every(out);let kind,title,cls,txt;
+ const names=hs.filter(h=>!h.g.dead).map(h=>h.g.name.split(' ')[0]),net=f.net||d.netAt!=null||(d.netTimer||0)>0;
+ if(retreat){kind='rueckzug';title='Rückzug';cls='meh';txt=(names.length>1?names.slice(0,-1).join(', ')+' und '+names.at(-1)+' ziehen':(names[0]||'Niemand')+' zieht')+' sich zurück. Rabies spuckt aus und sagt etwas über Großmütter.';}
+ else if(d.ko||(d.submit&&!d.g.dead&&!d.fled)){const free=!d.ko&&!net&&Math.random()<.5;
   if(free){kind='flucht';d.submit=false;d.fled=true;title='Losgerissen!';cls='bad';txt='Ohne Netz bekommt man ihn nicht zu fassen. Er windet sich frei und ist weg. '+pick(TX.FLUCHT);}
-  else{kind='fang';title='Gefangen!';cls='ok';txt=(d.ko?pick(TX.KO)+' ':'')+pick(TX.FANG);f.netT=b.time;sfx('net');}}
+  else{kind='fang';title='Gefangen!';cls='ok';txt=(d.ko?pick(TX.KO)+' ':'')+pick(TX.FANG);f.netT=b.time;f.netWall=performance.now()/1000;f.netFrom=hs.find(h=>!out(h)&&!h.hfBait)||hs.find(h=>!out(h))||null;sfx('net');}}
  else if(d.g.dead){kind='tot';title='Der Hund ist tot';cls='meh';txt=pick(TX.TOT);}
  else if(d.fled){kind='flucht';title='Entkommen';cls='bad';txt=pick(TX.FLUCHT);}
- else if(manDead){kind='totmann';title=h.g.name+' ist tot';cls='bad';txt=pick(TX.TOTMANN);}
+ else if(manDead){kind='totmann';title=hs.length>1?'Alle tot':hs[0].g.name+' ist tot';cls='bad';txt=pick(TX.TOTMANN);}
  else if(manOut){kind='niederlage';title='Der Hund gewinnt';cls='bad';txt=pick(TX.NIEDERLAGE);}
  else{kind='zeit';title='Unentschieden';cls='meh';txt='Nach drei Minuten gehen beide auseinander, keuchend. Rabies nennt das „Diplomatie“.';}
  b.dogOver??={winner:-1};f.outcome=kind;const j=f.j;j.done={fang:'GEFANGEN',tot:'TOT',flucht:'ENTKOMMEN',totmann:'GESCHEITERT',niederlage:'GESCHEITERT',zeit:'OFFEN',rueckzug:'ABGEBROCHEN'}[kind];
- if(kind==='fang'){const D=JSON.parse(JSON.stringify(jobDog(j)));d.dog._src=D;DOG.writeBack(d,false);D.fights=0;D.losses=0;D.kills=0;D.wins=0;D.caughtDay=S.day;D.caughtBy=h.g.name;D.from=TX.RASSEN[j.breed].wo;D.skulls=j.skulls;st().dogs.push(D);}
+ if(kind==='fang'){const D=JSON.parse(JSON.stringify(jobDog(j)));d.dog._src=D;DOG.writeBack(d,false);D.fights=0;D.losses=0;D.kills=0;D.wins=0;D.caughtDay=S.day;D.caughtBy=(f.netFrom||hs.find(h=>!h.g.dead)||hs[0]).g.name;D.from=TX.RASSEN[j.breed].wo;D.skulls=j.skulls;st().dogs.push(D);}
  try{M.persist();}catch{}
- const hp=Math.round(M.health(h.g)),inj=Object.entries(h.g.body).filter(([,p])=>p.grade>=2||p.missing).map(([id])=>M.partName?M.partName(id):id);
+ if(f.bait.dead&&kind!=='totmann')txt+=' '+fill(pick(TX_LOCK.dead),f.bait);else if(!f.bait.dead&&['fang','tot'].includes(kind))txt+=' '+fill(pick(TX_LOCK.alive),f.bait);
+ const who=h=>{const hp=Math.round(M.health(h.g)),inj=Object.entries(h.g.body).filter(([,p])=>p.grade>=2||p.missing).map(([id])=>M.partName?M.partName(id):id);return esc(h.g.name)+(h.hfBait?' (Lockvogel)':'')+': '+(h.g.dead?'tot':hp+' % Gesundheit'+(inj.length?', verletzt: '+esc(inj.slice(0,4).join(', ')):''));};
  const el=document.createElement('div');el.className='hf-result';el.id='hfResult';
- el.innerHTML=`<h3 class="${cls}">${esc(title)}</h3><p>${esc(txt)}</p><p style="opacity:.8;font-size:13px">${esc(h.g.name)}: ${manDead?'tot':hp+' % Gesundheit'+(inj.length?', verletzt: '+inj.slice(0,4).join(', '):'')} · ${esc(d.g.name)} (${esc(d.dog.breedName)}): ${d.g.dead?'tot':d.ko?'bewusstlos':d.submit?'unterworfen':d.fled?'geflohen':Math.round(DOG.health(d))+' % Gesundheit'} · ${Math.round(b.time)} s</p><div>${kind==='fang'?'<button class="hf-go" type="button" data-hf="zw">🐕 Ab in den Zwinger</button>':''}<button type="button" data-hf="board">↩ Zum Karren</button></div>`;
+ el.innerHTML=`<h3 class="${cls}">${esc(title)}</h3><p>${esc(txt)}</p><p style="opacity:.8;font-size:13px">${hs.map(who).join(' · ')} · ${esc(d.g.name)} (${esc(d.dog.breedName)}): ${d.g.dead?'tot':d.ko?'bewusstlos':d.submit?'unterworfen':d.fled?'geflohen':Math.round(DOG.health(d))+' % Gesundheit'} · ${Math.round(b.time)} s</p><div>${kind==='fang'?'<button class="hf-go" type="button" data-hf="zw">🐕 Ab in den Zwinger</button>':''}<button type="button" data-hf="board">↩ Zum Karren</button></div>`;
  document.body.appendChild(el);el.onclick=e=>{const k=e.target.closest('[data-hf]')?.dataset.hf;if(k)endFight(k==='zw'?'zwinger':'hundefang');};}
-function endFight(page){const f=fight;$('hfResult')?.remove();const bb=$('battleBottom');if(bb){bb.innerHTML='';bb.onclick=null;}SH.live=false;SH.cur=null;SH.q=[];if(f)unlend(f.g);if(S.battle?.hundefang)S.battle=null;M.missionBackdrop=null;fight=null;try{M.persist();}catch{}try{M.ui.click('nav:'+page);}catch(e){console.warn(e);try{M.ui.render();}catch{}}}
+function endFight(page){const f=fight;$('hfResult')?.remove();const bb=$('battleBottom');if(bb){bb.innerHTML='';bb.onclick=null;}SH.live=false;SH.cur=null;SH.q=[];if(f)for(const h of f.hs)unbait(h.g);if(S.battle?.hundefang)S.battle=null;M.missionBackdrop=null;fight=null;try{M.persist();}catch{}try{M.ui.click('nav:'+page);}catch(e){console.warn(e);try{M.ui.render();}catch{}}}
 // Leiste unter dem Kampfbild: Ort, Tempo, Rückzug, Zustand von Mensch und Hund (die Seitenleiste des Spiels bleibt)
 const prevHud=M.armyBattleHUD;
 M.armyBattleHUD=function(b){if(!b?.hundefang)return prevHud?prevHud.apply(this,arguments):false;const f=fight,bot=$('battleBottom');if(!f||!bot)return true;
  if(!bot.querySelector('.hf-hudtop')){bot.innerHTML=`<div class="hf-hudtop"><span>HUNDEFANG · ${'☠'.repeat(f.j.skulls)} · ${esc(TX.RASSEN[f.j.breed].wo)}</span><span><button type="button" data-hfk="spd">⏩ ${S.options.speed||1}×</button> <button type="button" data-hfk="flee">Rückzug</button></span></div><div class="hf-status"></div>`;
   bot.onclick=e=>{const k=e.target.closest('[data-hfk]')?.dataset.hfk;if(k==='spd'){const v=[1,2,.5],i=v.indexOf(S.options.speed||1);S.options.speed=v[(i+1)%v.length];e.target.textContent='⏩ '+S.options.speed+'×';}if(k==='flee'&&!f.outcome){b.dogOver={winner:-1};finish(b,true);}};}
  bot.querySelector('.hf-status').innerHTML=b.actors.map(a=>{if(isDog(a)){const hh=DOG.health(a);return `<div class="hf-st t1"><span class="n">${esc(a.g.name)}</span> <small>${esc(a.dog.breedName)} · ${a.dog.weight} kg</small><div class="hb"><i style="width:${hh}%"></i></div><small>${a.g.dead?'tot':a.ko?'bewusstlos':a.submit?'unterwirft sich':a.fled?'flieht':'Blut '+Math.round(a.blood)+' % · Mut '+Math.round(Math.max(0,a.morale))}</small></div>`;}
-  const hh=M.health(a.g);return `<div class="hf-st t0"><span class="n">${esc(a.g.name)}</span> <small>${f.loan?'Knüppel & Netz':'eigene Waffe'}</small><div class="hb"><i style="width:${hh}%"></i></div><small>${a.g.dead?'tot':a.down?'kampfunfähig':a.draggedBy?'wird gezerrt':a.grabbedBy?'wird festgehalten':'kämpft'} · Blut ${Math.round(a.g.blood)} %</small></div>`;}).join('');
+  const hh=M.health(a.g);return `<div class="hf-st t0"><span class="n">${esc(a.g.name)}</span> <small>${a.hfBait?'🍖 Lockvogel · unbewaffnet':esc(gearLabel(a.g))}</small><div class="hb"><i style="width:${hh}%"></i></div><small>${a.g.dead?'tot':a.down?'kampfunfähig':a.draggedBy?'wird gezerrt':a.grabbedBy?'wird festgehalten':'kämpft'} · Blut ${Math.round(a.g.blood)} %</small></div>`;}).join('');
  return true;};
 // Netz über dem gefangenen Hund, Sterne über dem bewusstlosen
 const prevOverlay=M.battleOverlay;
 M.battleOverlay=(ctx,b)=>{prevOverlay?.(ctx,b);const f=fight;if(!f||f.b!==b)return;const d=f.d;
  if(d.ko&&!f.outcome){const t=b.time;ctx.fillStyle='#f3e2b0';for(let i=0;i<3;i++){const a=t*3+i*2.1;ctx.fillRect(Math.round(d.x+Math.cos(a)*14),Math.round(d.y-40+Math.sin(a)*5),3,3);}}
- if(f.netT>=0){const k=cl((b.time-f.netT)/.5,0,1),cx=d.x,cy=d.y-22,rw=46*d.P.sz,rh=30*d.P.sz,top=cy-rh-(1-k)*120;ctx.save();ctx.globalAlpha=.9;ctx.strokeStyle='#d8c8a0';ctx.lineWidth=1.2;
+ if(f.netT>=0&&M.netArt?.capture){const fr=f.netFrom,ni=fr&&['weapon','secondary'].map(sl=>M.gear(fr.g,sl)).find(i=>i?.def==='net');try{M.netArt.capture(ctx,{x:d.x,y:d.y,sz:d.P.sz,face:Math.cos(d.a||0)>=0?1:-1,from:fr&&!fr.g.dead?{x:fr.x,y:fr.y}:null,q:ni?.q??1,t:f.netWall!=null?performance.now()/1000-f.netWall:b.time-f.netT,now:performance.now()/1000,still:!!d.ko,lying:!!(d.ko||d.down||d.mode==='down'||d.mode==='submit'),seed:(d.dog?.seed||7)%13});}catch(e){console.warn(e);}}
+ else if(f.netT>=0){const k=cl((b.time-f.netT)/.5,0,1),cx=d.x,cy=d.y-22,rw=46*d.P.sz,rh=30*d.P.sz,top=cy-rh-(1-k)*120;ctx.save();ctx.globalAlpha=.9;ctx.strokeStyle='#d8c8a0';ctx.lineWidth=1.2;
   for(let i=-6;i<=6;i++){ctx.beginPath();ctx.moveTo(cx+i*rw/6-rw*.3,top);ctx.lineTo(cx+i*rw/6+rw*.3,top+rh*2);ctx.stroke();ctx.beginPath();ctx.moveTo(cx+i*rw/6+rw*.3,top);ctx.lineTo(cx+i*rw/6-rw*.3,top+rh*2);ctx.stroke();}
   ctx.fillStyle='#8a6a3a';for(const s of [-1,1])ctx.fillRect(Math.round(cx+s*rw*.9),Math.round(top+rh*2-3),4,4);ctx.restore();}};
 // Nahaufnahmen der Hunde (hund-shots.js) über dem Kampfbild: im Hundefang und in Arenakämpfen mit Hunden
@@ -446,20 +471,29 @@ requestAnimationFrame(frame);
 // =====================================================================================================
 const fighters=()=>(S.roster||[]).filter(g=>!g.dead&&!g.smithDuty&&!g.retired&&!(g.age<18));
 const fit=g=>{try{return M.army?.eligibility?M.army.eligibility(g).ok:!g.dead;}catch{return !g.dead;}};
-let selJob=0,selG=null;
+let selJob=0;
 function cartPanel(){const s=st(),alive=s.dogs.filter(D=>!D.dead).length,left=usedToday()?0:s.jobs.filter(j=>!j.done).length;
  return `<section class="box hf-cart"><canvas id="hfCartFace" width="160" height="104" data-action="nav:hundefang" title="Zu den Aufträgen" style="cursor:pointer"></canvas><div><p class="eyebrow">VOR DEM BEASTRIUM · DER KARREN DES HUNDSGRAFEN</p><h2>${esc(TX.NAME)}</h2><q>${esc(TX.BRETT[(S.day+3)%TX.BRETT.length])}</q>
  <div class="buttons"><button class="btn primary" data-action="nav:hundefang">🐕 Aufträge${left?' ('+left+')':' · morgen wieder'}</button><button class="btn" data-action="nav:zwinger">▼ Treppe hinab · Zwinger (${alive} ${alive===1?'Hund':'Hunde'})</button><button class="btn" data-action="hf:intro">Vorstellung ansehen</button></div></div></section>`;}
-function boardPage(){const s=st(),j=s.jobs[selJob]||s.jobs[0],gs=fighters(),used=usedToday();if(!selG||!gs.some(g=>g.id===selG&&fit(g)))selG=gs.filter(fit).sort((a,b)=>(M.power(b)||0)-(M.power(a)||0))[0]?.id||null;
+function cleanTeam(){team.men=team.men.filter(id=>{const g=byId(id);return g&&fit(g)&&id!==team.bait&&!g.smithDuty&&!g.retired;}).slice(0,2);if(team.bait&&!baitCands().some(g=>g.id===team.bait))team.bait=null;
+ if(!team.bait){const c=baitCands().find(g=>!team.men.includes(g.id));team.bait=c?.id||null;if(team.bait)team.quip=fill(pick(TX_LOCK.pick),c);}}
+const teamOk=()=>!!byId(team.bait)&&team.men.length<=2&&team.men.every(id=>id!==team.bait&&byId(id)&&fit(byId(id)));
+function teamHTML(j,gs){const B=byId(team.bait),lockC=baitCands();
+ const card=(g,act,on,extra)=>`<button type="button" class="hf-pick${on?' on':''}${extra.cls||''}" data-action="${act}:${g.id}"><canvas data-hfface="${g.id}" width="160" height="104"></canvas><div><b>${esc(g.name)}</b>${extra.html}</div></button>`;
+ return `<h2>Wen schickst du?</h2><p class="hf-sub">Bis zu drei Leute. Einer geht immer unbewaffnet als <b>Lockvogel</b> vor, bis zu zwei Kämpfer folgen mit ihrer ganzen eigenen Ausrüstung (alle Waffen, auch Netz und Fernwaffen). Rabies verleiht nichts mehr: „Mein Knüppel? Der ist zum Frühstück da.“</p>
+ <h3 class="hf-h3">🍖 Lockvogel <small>· unbewaffnet, geht vor · Schwerverletzte und schwache Talente oben</small></h3>
+ ${B?`<div class="hf-lockq"><canvas id="hfLockFace" width="160" height="104"></canvas><span class="hf-lockline"><b>Rabies:</b> „${esc(team.quip||fill(pick(TX_LOCK.pick),B))}“</span></div>`:''}
+ <div class="hf-picks hf-lock">${lockC.map(g=>{const v=sev(g),on=g.id===team.bait,inMen=team.men.includes(g.id);return card(g,'hf:bait',on,{cls:inMen?' unfit':'',html:`<small>Talent ${Math.round(g.potential??0)} · ${Math.round(v.hp)} % Gesundheit${v.miss?' · '+v.miss+' Glied'+(v.miss>1?'er':'')+' ab':''}</small><small>${v.badly?'<span class="hf-v hf-v5">schwer verletzt</span>':fit(g)?'einsatzbereit':'angeschlagen'}${inMen?' · ist Kämpfer':''}</small>`});}).join('')||'<p>Niemand im Kader.</p>'}</div>
+ <h3 class="hf-h3">⚔ Kämpfer <small>· ${team.men.length} von 2 · eigene Ausrüstung</small></h3>
+ <div class="hf-picks">${gs.map(g=>{const ok=fit(g),on=team.men.includes(g.id),v=j?verdictOf(g,j):{i:2,txt:'–'};return card(g,'hf:pick',on,{cls:ok&&g.id!==team.bait?'':' unfit',html:`<small>${esc(g.role||'')} · KW ${Math.round(M.power?.(g)||0)} · ${esc(gearLabel(g))}${hasNet(g)?' 🕸':''}</small><small>${g.id===team.bait?'ist der Lockvogel':ok?`Einschätzung: <span class="hf-v hf-v${v.i}">${v.txt}</span>`:'nicht einsatzbereit'}</small>`});}).join('')||'<p>Niemand im Kader.</p>'}</div>
+ <p style="font-size:13px;opacity:.85">Der Hund geht meist auf den Nächsten los, also zuerst auf den Lockvogel. Die Einschätzung kennt nur die Gefahrenstufe, nicht die Rasse. Wunden, Tod und Lernen zählen wie im echten Kampf. Fangen: Unterwirft sich der Hund, hält ihn ein Netz sicher (hat keiner eins dabei und war er nicht im Netz, nur jedes zweite Mal); manchmal bleibt er auch nur bewusstlos liegen, nach stumpfen Waffen oder Fäusten öfter.</p>
+ <div class="buttons"><button class="btn primary" data-action="hf:go" ${!teamOk()||j?.done?'disabled':''}>🔭 Aufbrechen${B?' · '+(1+team.men.length)+' '+(team.men.length?'Leute':'Mann (nur der Lockvogel)'):''}</button></div>`;}
+function boardPage(){const s=st(),j=s.jobs[selJob]||s.jobs[0],gs=fighters().sort((a,b)=>(M.power(b)||0)-(M.power(a)||0)),used=usedToday();cleanTeam();
  const quote=used?'Für heute hab ich genug Köter gesehen. Morgen frisst schon der Nächste jemanden.':TX.STUFE[(j?.skulls||1)-1];
  return `<section class="box hf-board"><div class="hf-head"><canvas id="hfBoardFace" width="320" height="208"></canvas><div><p class="eyebrow">DER KARREN DES HUNDSGRAFEN · TAG ${S.day}</p><h1>Aufträge</h1><q>${esc(quote)}</q></div></div>
  <p>Je mehr Totenköpfe, desto gefährlicher der Hund. Welche Rasse es ist, sieht man erst durchs Fernglas. Ein Auftrag am Tag.</p>
  <div class="hf-jobs">${s.jobs.map((x,i)=>{const R=TX.RASSEN[x.breed];return `<button type="button" class="hf-job t${x.skulls}${i===selJob?' on':''}${x.done?' done':''}" data-action="hf:job:${i}">${skulls(x.skulls)}<span class="wo">${esc(R.wo)}</span><span class="txt">${esc(R.geruecht)}</span>${x.done?`<span class="stamp">${esc(x.done)}</span>`:''}</button>`;}).join('')}</div>
- ${used?`<div class="hf-note"><b>Heute warst du schon unterwegs.</b> Morgen gibt es neue Gerüchte.</div>`:`<h2>Wen schickst du?</h2>
- <div class="hf-picks">${gs.map(g=>{const ok=fit(g),v=j?verdictOf(g,j):{i:2,txt:'–'};return `<button type="button" class="hf-pick${g.id===selG?' on':''}${ok?'':' unfit'}" data-action="hf:pick:${g.id}"><canvas data-hfface="${g.id}" width="160" height="104"></canvas><div><b>${esc(g.name)}</b><small>${esc(g.role||'')} · KW ${Math.round(M.power?.(g)||0)}</small><small>${ok?`Einschätzung: <span class="hf-v hf-v${v.i}">${v.txt}</span>`:'nicht einsatzbereit'}</small></div></button>`;}).join('')||'<p>Niemand im Kader.</p>'}</div>
- <div class="hf-gear"><label><input type="radio" name="hfGear" value="leihe" ${loanMode==='leihe'?'checked':''} data-hfgear="leihe"> Knüppel & Netz (leiht Rabies; Rüstung und Schild bleiben)</label><label><input type="radio" name="hfGear" value="eigen" ${loanMode==='eigen'?'checked':''} data-hfgear="eigen"> Eigene Waffe, ohne Netz</label></div>
- <p style="font-size:13px;opacity:.85">Die Einschätzung kennt nur die Gefahrenstufe, nicht die Rasse. Wunden, Tod und Lernen zählen wie im echten Kampf. Fangen: Unterwirft sich der Hund, hält ihn das Netz sicher (ohne Netz jedes zweite Mal); manchmal bleibt er auch nur bewusstlos liegen, nach Knüppel, Keule, Streitkolben oder Hammer öfter.</p>
- <div class="buttons"><button class="btn primary" data-action="hf:go" ${!selG||j?.done?'disabled':''}>🔭 Aufbrechen</button></div>`}
+ ${used?`<div class="hf-note"><b>Heute warst du schon unterwegs.</b> Morgen gibt es neue Gerüchte.</div>`:teamHTML(j,gs)}
  ${tradeSection()}
  <div class="buttons" style="margin-top:10px"><button class="btn" data-action="nav:beastrium">◂ Zurück zum Beastrium</button><button class="btn" data-action="nav:zwinger">▼ Zwinger</button></div></section>`;}
 // ---------- Tierhandel: Rabies kauft gefangene Hunde und Hähne der Hühnerschule (Marktwert) ----------
@@ -488,7 +522,8 @@ function zwingerPage(){const s=st(),alive=s.dogs.filter(D=>!D.dead),dead=s.dogs.
  <div class="hf-dogs">${alive.map(card).join('')}</div>${dead.length?`<h2 style="margin-top:14px">Gefallen</h2><div class="hf-dogs">${dead.map(card).join('')}</div>`:''}
  <div class="buttons" style="margin-top:12px"><button class="btn" data-action="nav:beastrium">▲ Treppe hinauf · Beastrium</button><button class="btn" data-action="nav:hundefang">🐕 Aufträge</button></div></section>`;}
 function mount(){rabiesFace($('hfCartFace'));rabiesLive('hfBoardFace',usedToday()?'confident':'grin');
- const s=st(),j=s.jobs[selJob];document.querySelectorAll('canvas[data-hfface]').forEach(cv=>{const g=S.roster.find(x=>x.id===cv.dataset.hfface);if(!g)return;const v=j?verdictOf(g,j).i:2;face(cv,g,['confident','determined','calm','nervous','scared','terror'][v+1]||'calm');});
+ const s=st(),j=s.jobs[selJob];document.querySelectorAll('canvas[data-hfface]').forEach(cv=>{const g=S.roster.find(x=>x.id===cv.dataset.hfface);if(!g)return;if(cv.closest('.hf-lock')){face(cv,g,g.id===team.bait?'terror':'nervous');return;}const v=j?verdictOf(g,j).i:2;face(cv,g,['confident','determined','calm','nervous','scared','terror'][v+1]||'calm');});
+ rabiesFace($('hfLockFace'),'grin');
  document.querySelectorAll('canvas[data-hfdog]').forEach(cv=>{const D=s.dogs.find(x=>x.id===cv.dataset.hfdog);if(!D)return;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#120d0a';c.fillRect(0,0,128,80);DOG.portrait(c,D,{x:64,y:72,w:100,mood:'focus',face:1,t:1});});
  if(document.querySelector('canvas.hf-cage')){const alive=s.dogs.filter(D=>!D.dead);ZW.setDogs(alive.slice(zwPage*3,zwPage*3+3));}}
 const prevPage=M.schoolPage;
@@ -505,12 +540,12 @@ M.schoolClick=function(action){if(action==='hs:species:hund'&&st().stage==='open
  if(k==='intro')introFilm(false);
  else if(k==='intro1'){if(!st().stage)introFilm(true);}
  else if(k==='job'){selJob=+v;M.ui.render();}
- else if(k==='pick'){const g=S.roster.find(x=>x.id===v);if(g&&fit(g)){selG=v;M.ui.render();}else M.ui.notify?.('Nicht einsatzbereit. Ein paar Tage Ruhe helfen.');}
- else if(k==='go'){const j=s.jobs[selJob],g=S.roster.find(x=>x.id===selG);if(!j||j.done||usedToday()||!g||!fit(g)||S.battle)return true;sighting(j,g);}
+ else if(k==='pick'){const g=byId(v);if(!g)return true;if(team.men.includes(v)){team.men=team.men.filter(x=>x!==v);M.ui.render();}else if(v===team.bait)M.ui.notify?.('Der ist schon der Lockvogel. Bewaffnen wäre Verschwendung.');else if(!fit(g))M.ui.notify?.('Nicht einsatzbereit. Ein paar Tage Ruhe helfen. Oder als Lockvogel.');else{if(team.men.length>=2)team.men.shift();team.men.push(v);M.ui.render();}}
+ else if(k==='bait'){const g=byId(v);if(!g)return true;if(team.men.includes(v))team.men=team.men.filter(x=>x!==v);team.bait=v;team.quip=fill(pick(TX_LOCK.pick),g);M.ui.render();}
+ else if(k==='go'){const j=s.jobs[selJob];cleanTeam();if(!j||j.done||usedToday()||!teamOk()||S.battle)return true;goTeam={bait:team.bait,men:[...team.men]};const lead=byId(team.men[0])||byId(team.bait);sighting(j,lead);}
  else if(k==='zw'){zwPage+=+v;M.ui.render();}
  else if(k==='sell'){const key=action.slice(8);if(sellArm===key){sellArm='';sell(key);}else sellArm=key;M.ui.render();}
  return true;};
-document.addEventListener('change',e=>{const v=e.target?.dataset?.hfgear;if(v)loanMode=v;});
 
 // =====================================================================================================
 // KAPITEL · Vorstellung am Ende der bisherigen Geschichte: nach dem Schuldeneintreiber (Außenwelt-Quest erledigt,

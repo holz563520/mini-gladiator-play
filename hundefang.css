@@ -95,3 +95,10 @@
 .hf-result .ok{color:#a8e0b8}.hf-result .bad{color:#ff9a80}.hf-result .meh{color:#f3c87a}
 .hf-result button{font:700 15px 'Courier Prime',monospace;margin:6px 4px;padding:9px 14px;color:#f3e2b0;background:#30251b;border:1px solid #806247;border-radius:6px;cursor:pointer}.hf-result button.hf-go{background:#873a2e;border-color:#bf7357}
 .hf-trade{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #4a3a2b}.hf-trade b{display:block}.hf-trade small{opacity:.8}
+/* Trupp mit Lockvogel (6.11.) */
+.hf-sub{font-size:14px;opacity:.9;margin:4px 0 8px}
+.hf-h3{margin:12px 0 4px;font-size:16px}.hf-h3 small{font-size:12px;opacity:.75;font-weight:400}
+.hf-lockq{display:flex;gap:10px;align-items:center;margin:6px 0;padding:6px 8px;border:1px dashed #e6b42a88;border-radius:8px;background:#2b201788}
+.hf-lockq canvas{width:96px;height:auto;image-rendering:pixelated;border-radius:6px;background:#1b2426}
+.hf-lockline{font-style:italic}
+.hf-lock .hf-pick.on{border-color:#d57668;box-shadow:0 0 0 2px #d5766855}

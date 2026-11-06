@@ -85,6 +85,12 @@ let faceQ=[];function paintFaces(){const t=faceQ.splice(0,3);for(const f of t)f(
 const SK=[['stats','dexterity','Geschick'],['stats','strength','Stärke'],['stats','stamina','Ausdauer'],['stats','reflex','Reflex'],['stats','agility','Schnelligkeit'],['stats','toughness','Zähigkeit'],['boxing','gerade','Gerade'],['boxing','schwinger','Schwinger'],['boxing','uppercut','Uppercut'],['stats','block','Blocken'],['moves','dodge','Ausweichen']];
 const val=(g,grp,k)=>g[grp]?.[k]??0;
 function chipHtml(g){const ok=fit(g);return `<button class="an-card bx-fighter${B.sel===g.id?' on':''}${ok.ok?'':' unfit'}" data-a="${ok.ok?'bxpick:'+g.id:'bxunfit:'+g.id}"><span class="th"></span><b>${esc(g.name)}</b><small>${esc(g.role)} · KW ${nf(BX.rating(prep(g)),0)}</small>${ok.ok?'':'<em>'+esc((ok.causes||[]).slice(0,2).join(', ')||'nicht einsatzbereit')+'</em>'}</button>`;}
+// Filter (Wunsch Thomas 6.11.): Einordnung, Wuchs, Talent; Sortierung nach Talent oder Box-Kampfwert. Nur Anzeige.
+const BOX_F={defSort:'kw-',kw:g=>BX.rating(prep(g)),flags:[{key:'fit',label:'nur einsatzbereit',pred:g=>fit(g).ok}]};
+function pickList(list){const KF=M.kaderFilter;return KF?KF.apply('box',list,BOX_F):list;}
+function pickHtml(list){const KF=M.kaderFilter,shown=pickList(list);return (KF?KF.bar('box',{...BOX_F,total:list.length,shown:shown.length}):'')+`<div class="an-roster">${shown.map(chipHtml).join('')||'<p class="an-hint">Niemand passt zum Filter.</p>'}</div>`;}
+function pickThumbs(view,list){view.querySelectorAll('.bx-fighter .th').forEach(el=>{const g=list.find(x=>x.id===el.parentElement.dataset.a.split(':')[1]);if(g)el.appendChild(A.thumb({kind:'human',g},40,46));});}
+M.kaderFilter?.on('box',()=>{const box=A.view?.querySelector('.bx-pick .bx-pickin');if(!box)return;const list=roster();box.innerHTML=pickHtml(list);pickThumbs(box,list);});
 function boxScreen(){syncDays();A.setTitle('HUMAN · BOXKÄMPFE');const view=A.view,list=roster();
  if(!list.length){view.innerHTML='<section class="an-hero"><p class="eyebrow">Dein Kader ist leer</p></section>';return;}
  const own=ownG();if(!own){view.innerHTML='<section class="an-hero"><p class="eyebrow">Niemand ist einsatzbereit</p></section>';return;}
@@ -95,12 +101,12 @@ function boxScreen(){syncDays();A.setTitle('HUMAN · BOXKÄMPFE');const view=A.v
    <p class="bx-kw">Kampfwert <b>${nf(BX.rating(own),1)}</b> · Boxkämpfe ${own.boxRec?.fights||0} · Siege ${own.boxRec?.wins||0}</p>
    <p class="bx-teeth">Zähne ${teethHtml(teeth)}</p>${ok?'':'<p class="bx-warn">Nicht einsatzbereit: '+esc((fit(own).causes||[]).join(', '))+'</p>'}</div></div>
   <div class="bx-skills">${SK.map(([grp,k,l])=>bar(own,grp,k,l)).join('')}</div>
-  <details class="bx-pick"><summary>Anderen Boxer wählen</summary><div class="an-roster">${list.map(chipHtml).join('')}</div></details></section>
+  <details class="bx-pick"${M.kaderFilter?.active('box',BOX_F)?' open':''}><summary>Anderen Boxer wählen</summary><div class="bx-pickin">${pickHtml(list)}</div></details></section>
   <section class="an-chall bx-chall"><header><p class="eyebrow">Gegner · 15 Stufen von total einfach bis extrem schwer</p><button class="an-link" data-a="bxreroll">↻ andere Gegner</button></header>
   <p class="an-hint">Immer 1 gegen 1, nackte Fäuste, höchstens 30 Sekunden. Je stärker der Gegner, desto höher das Preisgeld und desto mehr lernt dein Kämpfer.</p>
   <div class="bx-grid">${opps.map((o,i)=>cardHtml(o,i)).join('')}</div></section>`;
  face(view.querySelector('.bx-meface'),own,'determined',0,200,130);
- view.querySelectorAll('.bx-fighter .th').forEach(el=>{const g=list.find(x=>x.id===el.parentElement.dataset.a.split(':')[1]);if(g)el.appendChild(A.thumb({kind:'human',g},40,46));});
+ pickThumbs(view,list);
  faceQ=[];opps.forEach((o,i)=>faceQ.push(()=>{const cv=view.querySelector('[data-lv="'+i+'"] canvas');if(cv)face(cv,o.g,moodFor(o.L),1);}));paintFaces();
  estimate(own,opps);}
 function teethHtml(T){let h='<span class="bx-tt">';for(let i=0;i<8;i++){const c=(T.missing||[]).includes(i)?'gap':(T.gold||[]).includes(i)?'gold':(T.pending||[]).some(p=>p.i===i)?'gap':'';h+=`<i class="${c}"></i>`;}return h+'</span>';}

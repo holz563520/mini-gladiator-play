@@ -336,7 +336,19 @@ const perDay=()=>(3+(S.buildings?.hospital||0))*(M.HEAL_SPEED||1);
 function toBed(g,fail,variant){const h=g.body.head;h.hp=Math.max(4,Math.round(100-(h.chronic||0)-RULE.days*perDay()));h.pain=Math.max(h.pain||0,fail?70:40);h.injury=fail?'Meißelunfall':'Meißelbehandlung';h.grade=M.injuryGrade?.(h)??h.grade;
  try{M.noteInjury?.(g,'head',h.injury,DOC,'Meißel und Hammer');}catch{}h.hp=Math.max(4,Math.round(100-(h.chronic||0)-RULE.days*perDay()));h.dokUntil=S.day+RULE.days;g.dok=(g.dok||0)+1;{const vis=M.medic?.state?.().vis;if(vis){const v=vis[g.id]??={};v.marks={...(v.marks||{}),head:1};}}if(fail&&variant==='skull'){g.dokSkull=true;h.fracture={days:RULE.days,total:RULE.days,severe:true,skull:true};}}
 // Zehn Tage Bettruhe ab dem Schlag, unabhängig davon, wie schnell die Kopfwunde nach den Heilregeln zuheilt
-function bedDays(g){const h=g?.body?.head;if(!h)return 0;if(h.dokUntil)return Math.max(0,h.dokUntil-S.day);if(!/^Meißel/.test(h.injury||''))return 0;const open=100-(h.chronic||0)-h.hp;return open>0?Math.ceil(open/perDay()):0;}
+function bedDays(g){const h=g?.body?.head;if(!h)return 0;/* Operationen an Dauerschäden (6.11.): Bettruhe an jeder Körperstelle */let op=0;for(const [id,p] of Object.entries(g.body))if(id!=='head'&&p?.dokUntil)op=Math.max(op,p.dokUntil-S.day);if(op>0)return Math.max(op,h.dokUntil?h.dokUntil-S.day:0);if(h.dokUntil)return Math.max(0,h.dokUntil-S.day);if(!/^Meißel/.test(h.injury||''))return 0;const open=100-(h.chronic||0)-h.hp;return open>0?Math.ceil(open/perDay()):0;}
+// ---------- Dauerhafte Einschränkungen operieren (Wunsch Thomas 6.11., Werte noch nicht bestätigt) ----------
+// Etwa 60 %: Dauerschaden sinkt um 40–100 %. Etwa 25 %: unverändert. Etwa 15 %: schlimmer (×1,2–1,5, höchstens 40 %).
+// Verlorene Glieder wachsen nicht nach. So oder so zehn Tage Krankenbett, die operierte Stelle ist frisch verwundet.
+const OP={ok:.60,same:.25,max:40};
+const chronicParts=g=>Object.entries(g?.body||{}).filter(([,p])=>p&&!p.missing&&(p.chronic||0)>0);
+function operate(g,id,force){const p=g.body[id];if(!p||p.missing||!(p.chronic>0))return null;const old=p.chronic,r=Math.random();
+ const kind=force||(r<OP.ok?'ok':r<OP.ok+OP.same?'same':'worse');let nv=old;
+ if(kind==='ok')nv=Math.round(old*Math.random()*.6*10)/10;else if(kind==='worse'){nv=Math.min(OP.max,Math.round(old*(1.2+Math.random()*.3)));if(nv<=old)nv=Math.min(OP.max,old+1);}
+ p.chronic=nv;p.hp=Math.max(4,Math.round(100-nv-RULE.days*perDay()));p.pain=Math.max(p.pain||0,kind==='worse'?70:45);
+ try{M.noteInjury?.(g,id,kind==='worse'?'Verpfuschte Operation':'Operation',DOC,'Säge und Zange');}catch{}p.injury=kind==='worse'?'Verpfuschte Operation':'Operation';p.grade=M.injuryGrade?.(p)??p.grade;
+ p.dokUntil=S.day+RULE.days;g.dokOps=(g.dokOps||0)+1;if(kind==='worse')M.addScar?.(g,id,'Verpfuschte Operation');try{M.persist?.();}catch{}
+ return {kind,id,old,nv};}
 function treat(g,key,outcome,better,variant){const r=outcome==='ok'?reroll(g,key,better):wreck(g,key);if(outcome==='ok'){g.dokWound=key;g.dokSkull=false;}toBed(g,outcome!=='ok',variant);M.persist?.();return r;}
 
 // =====================================================================================================
@@ -352,6 +364,9 @@ const SAY={
  ok:['TADAA! Ein neuer Mensch! Teilweise.','Sehen Sie? MEDIZIN!','Hervorragend. Ich bin ein Genie. Schwester, schreiben Sie das auf.','Klonk. Das schönste Geräusch der Welt.'],
  fail:['Hoppla.','Das ... war so nicht geplant. Aber interessant!','Schwester! Den Eimer! Nein, den GROSSEN Eimer!','Ich nenne es: Charakterbildung.','Na ja. Schielen ist auch eine Art, die Welt zu sehen.','Sieh es positiv: Er wird nie wieder Angst haben. Er weiß nicht mehr, wovor.','Er lacht. Ich werte das als Behandlungserfolg.','Notieren Sie, Schwester: Patient sehr zufrieden. Glaube ich.'],
  skull:['Oh. Habe ich wieder mal vergessen, den Meißel zu benutzen.'],nurse:['Was? Ich war konzentriert! Auf ... Dinge.'],flyhead:['Der Hammer ist schuld. Ich verklage ihn.'],slip:['Der Meißel ist gerutscht. Ganz allein. Ich war nicht mal in der Nähe.'],sneeze:['Gesundheit! Für mich, meine ich.'],
+ op:{ok:['{p}: aufgeschnitten, gerade gebogen, zugenäht. Schwester, notieren Sie: Genie.','Die alte Narbe ist raus. Die neue ist schöner. Ich signiere sie.','{p} wie neu! Na ja. Wie gebraucht, aber gepflegt.','Ich habe etwas herausgeholt. Ich weiß nicht, was. Aber jetzt geht es besser.'],
+  same:['{p}: Ich habe nachgesehen. Es ist noch da. Das Problem auch.','Aufgemacht, reingeschaut, zugemacht. Medizin ist manchmal auch Neugier.','Kein Fortschritt. Aber ich habe viel gelernt. Er weniger.'],
+  worse:['{p}… Schwester, wo ist die Zange? Ach. Da drin.','Ich habe die falsche Seite operiert. Oder die richtige falsch. Eins von beiden.','Das war eine sehr lehrreiche Operation. Für die Nachwelt.','Er wird hinken. Aber mit Würde. Und mit Schmerzen.']},
  bed:['Zehn Tage Bettruhe. Und keine Rechenaufgaben.','Schwester Valeria macht Visite. Ich mache Mittag.']};
 const fill=(s,k)=>s.replace(/\{s\}/g,statName(k)).replace(/\{w\}/g,WHERE[k]||'irgendwo');
 // Ablauf eines Schlags. o: {g,key,outcome:'ok'|'fail',variant,from,better,onImpact,onDone}
@@ -460,9 +475,11 @@ function openChair(gid){closeAll();const men=living();if(!men.length){M.ui.notif
  chair={g,key:lowKey(g),from:null,aim:1,P:null,t:0,line:'Ah! Ein Freiwilliger! Setz dich. Das Blut auf dem Polster ist schon trocken.',lineT:0,nurse:null,nurseT:6+Math.random()*6,force:'rand',variant:'rand',last:null};
  const v=document.createElement('div');v.className='dok-chair';v.setAttribute('role','dialog');v.setAttribute('aria-label','Behandlungstisch');
  v.innerHTML=`<div class="dok-panel"><header><div><b>BEHANDLUNGSTISCH</b><small>${esc(DOC)} · Schwester Valeria</small></div><button class="btn small" type="button" data-dok="close" aria-label="Schließen">✕</button></header>
+<div id="dokFilter"></div>
 <div class="dok-men" id="dokMen"></div>
 <div class="dok-stage"><canvas id="dokChair" width="660" height="420"></canvas><p class="dok-line" id="dokLine"></p></div>
 <div class="dok-who" id="dokWho"></div>
+<section class="dok-chronic" id="dokChronic" aria-label="Dauerhafte Einschränkungen operieren"></section>
 <label class="dok-protect"><input type="checkbox" id="dokAppleProtect"> Vor Apfelschuss schützen · nicht als Apfelträger anzeigen</label>
 <label class="dok-protect"><input type="checkbox" id="dokForceClass"> Automatisch ausrüsten: beste Waffenklasse erzwingen · fördert das Talent, auch wenn eine stärkere Waffe im Lager liegt</label>
 <label class="dok-protect">Feste Waffe beim automatischen Ausrüsten <select id="dokForceDef"></select></label>
@@ -475,8 +492,20 @@ function openChair(gid){closeAll();const men=living();if(!men.length){M.ui.notif
 </div>`;
  document.body.appendChild(v);v.addEventListener('change',e=>{if(e.target.id==='dokAppleProtect'&&chair){chair.g.appleProtected=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForceClass'&&chair){chair.g.forceWeaponClass=e.target.checked;M.persist();renderChair();}if(e.target.id==='dokForceDef'&&chair){if(e.target.value)chair.g.forceWeaponDef=e.target.value;else delete chair.g.forceWeaponDef;M.persist();renderChair();}if(e.target.id==='dokForce')chair.force=e.target.value;if(e.target.id==='dokVar')chair.variant=e.target.value;});
  renderChair();loop();}
+const DOK_F={flags:[{key:'chronic',label:'nur mit Dauerschaden',pred:g=>chronicParts(g).length>0},{key:'ready',label:'nur bereit (nicht im Bett)',pred:g=>!bedDays(g)}]};
+M.kaderFilter?.on('dok',()=>renderChair());
+const fmt1=v=>(Math.round(v*10)/10).toLocaleString('de-DE');
+function chronicHTML(g,busy,inBed,last){const list=chronicParts(g),lost=Object.entries(g.body||{}).filter(([,p])=>p?.missing);
+ let h='<h3>DAUERHAFTE EINSCHRÄNKUNGEN · OPERIEREN</h3>';
+ if(!list.length&&!lost.length)h+='<p class="tiny">Keine dauerhaften Einschränkungen. Der Doktor ist enttäuscht.</p>';
+ if(list.length)h+='<div class="dok-oplist">'+list.sort((a,b)=>b[1].chronic-a[1].chronic).map(([id,p])=>`<div class="dok-op"><span><b>${esc(M.partName?.(id)||id)}</b> · <span class="bad">Dauerschaden −${fmt1(p.chronic)} %</span></span><button class="btn small primary" type="button" data-dok="op:${id}"${busy||inBed?' disabled':''}>🪚 OPERIEREN</button></div>`).join('')+'</div>';
+ if(lost.length)h+=`<p class="tiny">Verloren: ${lost.map(([id])=>esc(M.partName?.(id)||id)).join(', ')} · „Nachwachsen lassen kann ich nichts. Annähen schon. Nur nicht an ihn.“</p>`;
+ if(list.length)h+=`<p class="dok-odds"><b class="ok">${Math.round(OP.ok*100)} %</b> gelingt <span>· Dauerschaden sinkt um 40–100 %</span><br><b>${Math.round(OP.same*100)} %</b> nichts passiert <span>· außer Schmerzen</span><br><b class="bad">${Math.round((1-OP.ok-OP.same)*100)} %</b> verpfuscht <span>· Dauerschaden steigt (höchstens ${OP.max} %), Narbe</span><br><b>Danach</b> zehn Tage Krankenbett${inBed?' · <span class="bad">liegt gerade noch im Bett</span>':''}</p>`;
+ if(last&&last.g===g){const r=last.r,nm=esc(M.partName?.(r.id)||r.id);h+=`<div class="dok-result ${r.kind==='worse'?'fail':'ok'}"><h4${r.kind==='worse'?' class="bad"':''}>${r.kind==='ok'?'OPERATION GEGLÜCKT':r.kind==='same'?'OPERATION · NICHTS GEWONNEN':'OPERATION VERPFUSCHT'} · ${esc(g.name)}</h4><p><b>${nm}</b>: Dauerschaden <b>−${fmt1(r.old)} % → −${fmt1(r.nv)} %</b>. Zehn Tage Krankenbett.</p></div>`;}
+ return h;}
 function renderChair(){const C=chair;if(!C)return;const g=C.g,caps=capsOf(g),busy=!!C.P&&!C.P.done,inBed=bedDays(g);
- const men=$('dokMen');if(men){men.innerHTML=living().map(x=>{const d=bedDays(x);return `<button class="dok-man${x===g?' sel':''}" type="button" data-dok="man:${x.id}"${busy?' disabled':''}><canvas data-dokface="${x.id}" width="40" height="50"></canvas><span>${M.sortTag?.icon(M.sortTag.get(x),12)||''}${esc(first(x))}</span><small>Talent ${Math.round(x.potential??0)}${x.appleProtected?' · 🍎 geschützt':''}</small><small>${d?'🛏 '+d+' T.':x.dokCross?'schielt':'bereit'}</small></button>`;}).join('');
+ const KF=M.kaderFilter,all=living(),shown=KF?KF.apply('dok',all,DOK_F):all;const fb=$('dokFilter');if(fb&&KF)fb.innerHTML=KF.bar('dok',{...DOK_F,total:all.length,shown:shown.length});
+ const men=$('dokMen');if(men){men.innerHTML=(shown.length?'':'<p class="tiny">Niemand passt zum Filter.</p>')+shown.map(x=>{const d=bedDays(x);return `<button class="dok-man${x===g?' sel':''}" type="button" data-dok="man:${x.id}"${busy?' disabled':''}><canvas data-dokface="${x.id}" width="40" height="50"></canvas><span>${M.sortTag?.icon(M.sortTag.get(x),12)||''}${esc(first(x))}</span><small>Talent ${Math.round(x.potential??0)}${x.appleProtected?' · 🍎 geschützt':''}</small><small>${d?'🛏 '+d+' T.':x.dokCross?'schielt':'bereit'}${chronicParts(x).length?' · 🦴':''}</small></button>`;}).join('');
   for(const c of men.querySelectorAll('canvas[data-dokface]')){const x=S.roster.find(y=>y.id===c.dataset.dokface);if(x)M.renderPortrait(c,x,{unarmored:true});}}
  const who=$('dokWho');if(who){const d=B_info(g);who.innerHTML=`<b>${esc(g.name)}</b> · ${d}${M.buyOdds?.mini('human',g)||''}${g.dok?` · ${g.dok}× behandelt`:''}${g.dokCross?' · <span class="bad">schielt</span>':''}${inBed?` · <span class="bad">liegt noch ${inBed} ${inBed===1?'Tag':'Tage'} im Krankenbett</span>`:''}`;}
  const st=$('dokStats');if(st){st.innerHTML=KEYS.map(k=>{const cap=caps[k]??0,val=g.stats[k]??0,cls=cap<45?'lo':cap>=72?'hi':'';return `<button class="dok-stat${k===C.key?' sel':''}" type="button" data-dok="key:${k}"${busy||inBed?' disabled':''}><b>${esc(statName(k))}</b><span>Wert ${val}</span><span class="cap ${cls}">Anlage ${cap}</span></button>`;}).join('');}
@@ -486,6 +515,7 @@ function renderChair(){const C=chair;if(!C)return;const g=C.g,caps=capsOf(g),bus
  const overview=$('dokOverview');if(overview)overview.innerHTML=overviewHTML(g);
  const odds=$('dokOdds'),fp=Math.round(failChance(g)*1000)/10;if(odds)odds.innerHTML=`<b class="ok">${(100-fp).toLocaleString('de-DE')} %</b> Anlage wird neu ausgewürfelt <span>· besser oder schlechter</span><br><b class="bad">${fp.toLocaleString('de-DE')} %</b> Hirnschaden <span>· alle Werte −10 %, schielt für immer${fp<10?' · Veteran: geringeres Risiko':' · frischer Rekrut: volles Risiko'}</span><br><b>Danach</b> zehn Tage Krankenbett mit Kopfverband`;
  const go=document.querySelector('.dok-hit');if(go){go.disabled=busy||!!inBed;go.textContent=inBed?'LIEGT IM KRANKENBETT':busy?'…':'ZUSCHLAGEN!';}
+ const ch=$('dokChronic');if(ch)ch.innerHTML=chronicHTML(g,busy,inBed,C.op);
  setLine(C.line);}
 // Beste Waffenklasse und besondere Eigenschaften (Wirkung so, wie sie im Spiel tatsächlich gerechnet wird)
 const TRAIT_FX={Mutig:['Lässt sich vom Tod eines Kameraden kaum entmutigen (Mut 100 statt 50).',1],Feige:['Zieht sich bei schweren Wunden doppelt so lange zurück; schnell entmutigt.',1],
@@ -527,7 +557,9 @@ function chairClick(cmd,arg){const C=chair;if(!C)return;if(cmd==='sort'){if(!M.s
  if(cmd==='days'){for(let i=0;i<RULE.days;i++)M.advanceDay?.();M.ui.close?.();M.ui.render?.();C.line='Zehn Tage später. Alle Verbände ab. Die Narben bleiben.';renderChair();return;}
  if(cmd==='new'){const rng=S.rng,g=M.makeGladiator(0);S.rng=rng;S.roster.push(g);C.g=g;C.key=lowKey(g);C.line='Frische Ware! Und so ein unberührter Schädel …';C.P=null;$('dokResult').hidden=true;renderChair();return;}
  if(C.P&&!C.P.done)return;
- if(cmd==='man'){const g=S.roster.find(x=>x.id===arg);if(!g)return;C.g=g;C.from=null;C.key=lowKey(g);C.aim=1;C.P=null;$('dokResult').hidden=true;C.line=bedDays(g)?pick(SAY.bed):g.dokCross?'Den hatte ich schon. Er winkt mir immer zu. Beiden von mir.':'Ah, '+first(g)+'! Setz dich. Das Blut auf dem Polster ist schon trocken.';renderChair();return;}
+ if(cmd==='op'){const g=C.g;if(bedDays(g)){M.ui.notify?.('Der liegt noch im Krankenbett.');return;}const name=M.partName?.(arg)||arg,force=C.force==='ok'?'ok':C.force==='fail'?'worse':null,r=operate(g,arg,force);if(!r)return;
+  C.op={g,r};C.line=pick(SAY.op[r.kind]).replace(/\{p\}/g,name);C.lineT=0;M.sound?.(r.kind==='worse'?'heavy':'block');if(r.kind!=='ok')M.voice?.('pain',(M.voicePitch?.(g)??1),true);renderChair();$('dokChronic')?.scrollIntoView?.({block:'nearest',behavior:'smooth'});return;}
+ if(cmd==='man'){const g=S.roster.find(x=>x.id===arg);if(!g)return;C.g=g;C.op=null;C.from=null;C.key=lowKey(g);C.aim=1;C.P=null;$('dokResult').hidden=true;C.line=bedDays(g)?pick(SAY.bed):g.dokCross?'Den hatte ich schon. Er winkt mir immer zu. Beiden von mir.':'Ah, '+first(g)+'! Setz dich. Das Blut auf dem Polster ist schon trocken.';renderChair();return;}
  if(cmd==='key'){if(arg===C.key)return;C.from=C.key;C.key=arg;C.aim=0;C.P=null;$('dokResult').hidden=true;C.line=fill(pick(SAY.aim.slice(1)),arg);renderChair();return;}
  if(cmd==='go'){if(bedDays(C.g)){M.ui.notify?.('Der liegt noch im Krankenbett.');return;}const outcome=C.force==='rand'?(Math.random()<failChance(C.g)?'fail':'ok'):C.force;let variant=C.variant==='rand'?null:C.variant;if(variant&&!VARS[outcome].some(v=>v[0]===variant))variant=null;
   $('dokResult').hidden=true;C.line=fill(SAY.aim[0],C.key);$('dokChair')?.scrollIntoView?.({block:'start',behavior:'smooth'});

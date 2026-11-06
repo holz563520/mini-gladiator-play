@@ -89,6 +89,48 @@ function onBeast(ctx,l,pose){pose=pose||beastPose(l);if(!pose)return;const {f,dx
   return {x:x0+ff*w+jit+(dx*1.25+back)*up,y:topY+(y0-topY)*tt*(.2+.8*L)+(1-ff*ff)*3*tt*tt+jit*.6-lift*up};});
  ctx.save();ctx.globalAlpha=.95*(1-Math.max(0,burst-.7)/.3*.5);meshD(ctx,P,c,torn);ctx.restore();}
 
+// ---------- Fangnetz über einem gefangenen Tier (Hundefang, Wunsch Thomas 6.11.: „muss besser aussehen“) ----------
+// Weltkoordinaten. o: {x,y Fußpunkt des Tiers, sz Größe, face ±1 Blickrichtung, from {x,y} Werfer oder null, q Güte, t Sekunden seit dem Fang, now, still}
+// Ablauf: Wurf im Bogen (Netz öffnet und dreht sich, Halteleine) → fällt als weite Scheibe herab → legt sich über den Körper
+// (Kuppel mit Kopf- und Hüftbuckel), Bleigewichte schlagen auf und federn nach, Staub → liegt danach ruhig, hebt und senkt sich
+// mit dem Atem, zuckt ab und zu, die Leine hängt durch zum Werfer.
+const backOut=k=>{const c=1.9;k-=1;return 1+(c+1)*k*k*k+c*k*k;};
+function capture(ctx,o){const t=Math.max(0,o.t||0),sz=o.sz||1,face=o.face||1,c=col(o.q),now=o.now??t,seed=o.seed||0;
+ const FLY=.42,LAND=.5,lying=o.lying!==false,x0=Math.round(o.x)+face*(lying?16:4)*sz,y0=Math.round(o.y)+3,hw=(lying?42:36)*sz,h=(lying?22:30)*sz;
+ const from=o.from||{x:o.x-face*-160,y:o.y-10},hx=from.x,hy=from.y-40;
+ ctx.save();
+ if(t<FLY){// Flug: gleiche Bildsprache wie flight()
+  const k=t/FLY,e=1-Math.pow(1-k,2),x=hx+(x0-hx)*e,yb=hy+(y0-h-20-hy)*e-Math.sin(Math.PI*k)*46,open=Math.min(1,k*1.5),r=6+hw*.9*open,spin=k*6+seed;
+  ctx.fillStyle='rgba(30,26,20,.25)';ctx.beginPath();ctx.ellipse(x,hy+40+(y0-hy-40)*e+6,r*.9,r*.28,0,0,TAU);ctx.fill();
+  ctx.strokeStyle=c[1];ctx.lineWidth=1;ctx.globalAlpha=.8;ctx.beginPath();ctx.moveTo(hx,hy);ctx.quadraticCurveTo((hx+x)/2,Math.max(hy,yb)+18,x,yb);ctx.stroke();ctx.globalAlpha=1;
+  const N=14,rim=[],ctr={x,y:yb-r*.15};for(let i=0;i<N;i++){const an=spin+i/N*TAU,w=1+.1*Math.sin(i*2.3+now*16);rim.push({x:x+Math.cos(an)*r*w,y:yb+Math.sin(an)*r*.45*w});}
+  ctx.strokeStyle=c[1];ctx.beginPath();for(let i=0;i<N;i++){const a=rim[i],b=rim[(i+1)%N];seg(ctx,a.x+.7,a.y+.7,b.x+.7,b.y+.7);seg(ctx,ctr.x+.7,ctr.y+.7,a.x+.7,a.y+.7);}ctx.stroke();
+  ctx.strokeStyle=c[0];ctx.beginPath();for(let i=0;i<N;i++){const a=rim[i],b=rim[(i+1)%N];seg(ctx,a.x,a.y,b.x,b.y);seg(ctx,ctr.x,ctr.y,a.x,a.y);for(const m of [.4,.7]){const p1={x:ctr.x+(a.x-ctr.x)*m,y:ctr.y+(a.y-ctr.y)*m},p2={x:ctr.x+(b.x-ctr.x)*m,y:ctr.y+(b.y-ctr.y)*m};seg(ctx,p1.x,p1.y,p2.x,p2.y);}}ctx.stroke();
+  ctx.fillStyle='#2c2a26';for(const a of rim)ctx.fillRect(Math.round(a.x)-1,Math.round(a.y)-1,3,3);ctx.restore();return;}
+ const L=cl((t-FLY)/LAND,0,1),Lb=backOut(L),settle=cl((t-FLY-LAND)/.6,0,1);
+ // ruhige Bewegung danach: Atem, gelegentliches Zucken (nicht bei Bewusstlosen)
+ const breath=Math.sin(now*2.4+seed)*1.1*settle,tw=o.still?0:Math.pow(Math.max(0,Math.sin(now*1.3+seed*3)),12)*Math.sin(now*31)*2.2*settle;
+ // Schatten unter dem Netz
+ ctx.fillStyle='rgba(20,16,10,'+(.18+.12*L).toFixed(3)+')';ctx.beginPath();ctx.ellipse(x0,y0+1,hw*(1.1+.25*(1-L)),6*sz,0,0,TAU);ctx.fill();
+ // Höhe der Kuppel je Spalte: Buckel über Hüfte und Kopf, dazwischen Sattel; Kopfseite etwas tiefer
+ const crest=ff=>{const u=ff*face;return h*(.9-.42*ff*ff+.14*Math.exp(-Math.pow((u+.45)/.3,2))+.12*Math.exp(-Math.pow((u-.6)/.25,2)));};
+ const R=6,C=11;
+ const P=rowsDiamond(R,C,(tt,ff,i,j)=>{const jit=(hash(i,j,(o.q||1)+seed)-.5)*1.4;
+  // Endform: von der Kuppel (oben) zum Boden; Saum weiter außen als der Körper
+  const topY=y0-crest(ff)-breath*(1-tt),wx=hw*(.78+.32*Math.pow(tt,.8)),sag=(1-ff*ff)*2.5*tt*(1-tt);
+  const fx=x0+ff*wx+jit+tw*(1-tt),fy=topY+(y0-topY)*Math.pow(tt,1.05)+sag+jit*.5+(tt>.98?Math.abs(Math.sin(i*1.7))*1.2:0);
+  // Anflug: weite, flache Scheibe über dem Tier, die herabsinkt und sich anlegt (mit leichtem Nachfedern)
+  const dx=x0+ff*hw*1.6*(.35+.65*tt),dy=y0-h-26-tt*10*(1-Math.abs(ff));
+  return {x:dx+(fx-dx)*Lb,y:dy+(fy-dy)*Math.min(1.08,Lb)};});
+ ctx.globalAlpha=.97;meshD(ctx,P,c,0);
+ // Knoten oben etwas heller (Licht von oben)
+ ctx.fillStyle=c[0];for(let j=1;j<=3;j++)for(const a of P[j])ctx.fillRect(Math.round(a.x),Math.round(a.y)-1,1,1);
+ // Leine: vom Werfer zum Netzrand, spannt sich beim Aufprall und hängt dann durch
+ if(o.from){const edge=P[R][hx<x0?0:P[R].length-1],sagL=Math.min(6+18*settle,Math.hypot(edge.x-hx,edge.y-hy)*.18);ctx.strokeStyle=c[1];ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(hx,hy+2);ctx.quadraticCurveTo((hx+edge.x)/2,Math.max(hy,edge.y)+sagL,edge.x,edge.y);ctx.stroke();ctx.strokeStyle=c[0];ctx.beginPath();ctx.moveTo(hx,hy+1);ctx.quadraticCurveTo((hx+edge.x)/2,Math.max(hy,edge.y)+sagL-1,edge.x,edge.y-1);ctx.stroke();}
+ // Staub beim Aufschlag der Gewichte
+ const dust=t-FLY-LAND*.55;if(dust>0&&dust<.7){const k=dust/.7;ctx.globalAlpha=.45*(1-k);ctx.fillStyle='#b9a888';for(const a of P[R]){if(hash(a.x|0,3,seed)<.45)continue;const r=1.5+5*k;ctx.beginPath();ctx.ellipse(a.x,a.y-1-k*3,r,r*.55,0,0,TAU);ctx.fill();}}
+ ctx.restore();}
+
 // ---------- Zerrissenes Netz am Boden ----------
 const ground=[];
 function drop(a){const b=S.battle;if(!b)return;ground.push({x:a.x,y:a.y,q:a.netQ??1,t0:b.time,big:a.rex?(a.lion?1.6:a.hahn?.6:1.2):1,b:b.id||b});if(ground.length>24)ground.shift();}
@@ -102,5 +144,5 @@ const prevU=M.battleUnderlay;M.battleUnderlay=(ctx,b)=>{prevU?.(ctx,b);try{drawG
 function wrapRex(){const base=M.drawRex;if(!base||base.__net)return!!base;const f=function(ctx,l){const pose=l?.netTimer>0?beastPose(l):null;if(!pose)return base.apply(this,arguments);
  ctx.save();const ax=l.x,ay=l.y;ctx.translate(ax+pose.dx,ay-pose.lift);ctx.rotate(pose.rot);ctx.scale(pose.sx,pose.sy);ctx.translate(-ax,-ay);let r;try{r=base.apply(this,arguments);}finally{ctx.restore();}try{onBeast(ctx,l,pose);}catch(e){}return r;};f.__net=1;M.drawRex=f;return true;}
 if(!wrapRex()){const iv=setInterval(()=>{if(wrapRex())clearInterval(iv);},300);}
-M.netArt={flight,onFigure,onBeast,beastPose,drop,drawGround,ground,wrapRex,COL};
+M.netArt={flight,onFigure,onBeast,beastPose,capture,drop,drawGround,ground,wrapRex,COL};
 })();
