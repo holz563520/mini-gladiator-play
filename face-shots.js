@@ -259,7 +259,7 @@ function paint(g,w,h,o,t){if(g?.canvas&&o?.g&&!o._sprech){recs.set(g.canvas,{ctx
  // Kamerafahrt um den Kopf: langsamer Schwenk von einer Seite zur anderen
  const yaw=o.yaw??Math.sin(t*.55+(o.team===1?Math.PI:0))*.75;
  const bq=B.a.getContext('2d');bq.imageSmoothingEnabled=false;bq.setTransform(1,0,0,1,0,0);bq.clearRect(0,0,FW,FH+40);const BT=tools(bq);
- if(o.ground)sand(bq,BT,opt,t);else if(!o.clear)backdrop(bq,BT,opt,yaw,t);
+ /* black: schwarzer Hintergrund (Nahaufnahmen im Kampf – passt auch, wenn er liegt oder unterwegs ist) */if(o.black&&!o.clear)BT.r(0,0,FW,FH+40,'#000');else if(o.ground)sand(bq,BT,opt,t);else if(!o.clear)backdrop(bq,BT,opt,yaw,t);
  // Figur auf eigener Fläche, damit sie am Boden als Ganzes liegen kann
  const q=B.c.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,FW,FH+40);const T=tools(q);torso(q,T,C,opt,yaw);
  const hq=B.b.getContext('2d');hq.imageSmoothingEnabled=false;hq.setTransform(1,0,0,1,0,0);hq.clearRect(0,0,FW,FH+40);if(armor.helm){hq.translate(80,43);hq.scale(.78,.78);hq.translate(-80,0);}else hq.translate(0,20);head(hq,tools(hq),C,opt,yaw,t,mood);hq.setTransform(1,0,0,1,0,0);
