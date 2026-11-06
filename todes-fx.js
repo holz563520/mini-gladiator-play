@@ -10,7 +10,7 @@
 //    Verletzungs-Nahaufnahmen.
 // Reine Darstellung: ändert keine Würfel, keine Werte, kein Speichern. Anschlüsse (wirkungslos ohne dieses Modul):
 //  sim.js death() → onDeath; arena.js Figur → fall/knee/busy, Kampfbild → lensDraw; injury-shots.js → shot/shotDone/gore.
-// Zurzeit nur im Todes-Editor (todes-editor.html) geladen, im Spiel NICHT (boot.js unverändert).
+// Im Spiel geladen (boot.js, nach face-shots) seit 06.11.; außerdem im Todes-Editor (todes-editor.html).
 // =====================================================================================================
 (()=>{
 const M=window.MG;if(!M)return;const S=M.s;
