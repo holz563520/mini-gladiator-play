@@ -271,7 +271,7 @@ function helmClose(T,h,k,cx=80,top=28){const q=cl(h.q|0,0,6),p=helmLook(h),soft=
 function helmOf(g){try{const it=M.armorItems?.(g)?.find(i=>M.definition(i)?.parts?.includes('head'));return it?{mat:['leather','medium','metal'].includes(it.material)?it.material:'metal',q:it.q|0}:null;}catch{return null;}}
 function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
  if((kind0==='death'||(kind0==='collapse'&&o.fall))&&M.faceShot){/* Wer fällt: Großaufnahme des Kämpfers mit Rüstung (face-shots.js), Augen schließen sich, der Kopf sinkt */const k=t-HIT,dead=kind0==='death',slow=o.dramatic?1.7:1,p=ease((k-.5*slow)/(1.5*slow)),way=o.variant||0;
-  M.faceShot.paint(g,w,h,{g:o.g,team:o.team,mood:k<0?'determined':k<.3*slow?'shock':k<.65*slow&&dead?'pain':'out',pale:dead?cl(k/(1.6*slow)):0,blood:dead&&way===2?cl((k-.3)/1.2):0,sink:p*(dead?30:18),tilt:p*(way===1?-.5:way===2?-.2:.45)*(dead?1:.6),dark:dead?cl((k-(o.dramatic?2.4:1.5))/(o.dramatic?2.4:1.4))*(o.dramatic?.6:.42):0,yaw:(o.team===1?-1:1)*(.55-.5*cl(t/(o.dramatic?5:3))),zoom:1+.12*cl(k/2)},t);
+  M.faceShot.paint(g,w,h,(M.deathFx?.shot||(x=>x))({g:o.g,team:o.team,mood:k<0?'determined':k<.3*slow?'shock':k<.65*slow&&dead?'pain':'out',pale:dead?cl(k/(1.6*slow)):0,blood:dead&&way===2?cl((k-.3)/1.2):0,sink:p*(dead?30:18),tilt:p*(way===1?-.5:way===2?-.2:.45)*(dead?1:.6),dark:dead?cl((k-(o.dramatic?2.4:1.5))/(o.dramatic?2.4:1.4))*(o.dramatic?.6:.42):0,yaw:(o.team===1?-1:1)*(.55-.5*cl(t/(o.dramatic?5:3))),zoom:1+.12*cl(k/2)},o,k,t,dead),t);M.deathFx?.shotDone?.(g,w,h,o,k,t,kind0);
   if(k>=0&&k<.09){g.globalAlpha=.7*(1-k/.09);g.fillStyle='#fff6dc';g.fillRect(0,0,w,h);g.globalAlpha=1;}
   if(o.dramatic){const bar=Math.round(h*.07);g.fillStyle='#050302';g.fillRect(0,0,w,bar);const rv=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.7);rv.addColorStop(0,o.team===0?'rgba(10,60,120,0)':'rgba(120,0,0,0)');rv.addColorStop(1,(o.team===0?'rgba(20,90,170,':'rgba(140,10,6,')+(.25+.12*Math.sin(t*5)).toFixed(3)+')');g.fillStyle=rv;g.fillRect(0,0,w,h);}
   caption(g,w,h,{...o,noFace:true},t,kind0);return;}
@@ -282,7 +282,7 @@ function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
  if(kind==='skullheal'){V.A=(o.day|0)>0?{x:82,y:20}:{x:80,y:38};C.healDay=o.day;}
  if(kind==='skullfracture'){V.A={x:80,y:38};C.wid=o.wid;C.helm=o.helm===undefined?helmOf(o.g):o.helm;if(C.helm)helmClose(T,C.helm,k);}
  /* Effekte mit .pre zeichnen auch vor dem Treffer (eigene, zur Wunde passende Waffenbahn; Schädelbruch-Varianten) */if(k<0&&EFFECT[kind]?.pre)EFFECT[kind](T,V,k,C);
- if(k>=0){EFFECT[kind]?.(T,V,k,C);if(kind==='collapse'||kind==='death'){for(let i=0;i<5;i++){const u=(t*.9+i/5)%1;T.r(60+i*9,70+u*26,1,2,BLOOD);}T.oval(80,97,cl(k/2)*46,cl(k/2)*4,DARK);T.oval(82,97,cl(k/2)*30,cl(k/2)*2.4,BLOOD);}}
+ if(k>=0){EFFECT[kind]?.(T,V,k,C);M.deathFx?.gore?.(T,V,k,C,kind,o,t);if(kind==='collapse'||kind==='death'){for(let i=0;i<5;i++){const u=(t*.9+i/5)%1;T.r(60+i*9,70+u*26,1,2,BLOOD);}T.oval(80,97,cl(k/2)*46,cl(k/2)*4,DARK);T.oval(82,97,cl(k/2)*30,cl(k/2)*2.4,BLOOD);}}
  if(kind==='death'&&k>0){q.globalAlpha=cl((k-(o.dramatic?2.2:1.3))/(o.dramatic?2.4:1.4))*(o.dramatic?.55:.38);T.r(0,0,FW,FH,'#050302');q.globalAlpha=1;}
  if(kind!=='collapse'&&kind!=='scar'&&kind!=='death'&&kind!=='skullheal')weaponFx(q,T,V,kind==='arrow'?'arrow':cls,o.wid,t,kind);
  if(k>=0&&k<.09){q.globalAlpha=.75*(1-k/.09);T.r(0,0,FW,FH,'#fff6dc');q.globalAlpha=1;}
@@ -291,7 +291,7 @@ function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
  g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#120c09';g.fillRect(0,0,w,h);g.save();if(right){g.translate(w,0);g.scale(-1,1);}g.drawImage(b,dx,dy,dw,dh);g.restore();
  const vg=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.6)');g.fillStyle=vg;g.fillRect(0,0,w,h);
  if(o.dramatic){/* Kinobalken und roter Rand */const bar=Math.round(h*.07);g.fillStyle='#050302';g.fillRect(0,0,w,bar);const rv=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.7);rv.addColorStop(0,o.team===0?'rgba(10,60,120,0)':'rgba(120,0,0,0)');rv.addColorStop(1,(o.team===0?'rgba(20,90,170,':'rgba(140,10,6,')+(.25+.12*Math.sin(t*5)).toFixed(3)+')');g.fillStyle=rv;g.fillRect(0,0,w,h);}
- caption(g,w,h,o,t,kind);}
+ M.deathFx?.shotDone?.(g,w,h,o,k,t,kind);caption(g,w,h,o,t,kind);}
 // Beschriftung wie eine Einblendung im Kampf: Porträt und Name des Getroffenen, wer womit, die Verletzung groß
 const faces=new WeakMap();
 function caption(g,w,h,o,t,kind){const k=t-HIT,u=Math.min(w/660,h/420)*(o.textScale||1);let f=faces.get(o.g);if(!f&&o.g&&!o.noFace){f=document.createElement('canvas');try{M.renderPortrait(f,o.g,{unarmored:true});}catch{}faces.set(o.g,f);}

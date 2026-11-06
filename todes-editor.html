@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Todes-Editor · Arena Theory</title>
+<script>try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}</script>
+<style>
+@font-face{font-family:'Courier Prime';src:url(fonts/courier-prime-400.woff) format('woff');font-weight:400}
+@font-face{font-family:'Courier Prime';src:url(fonts/courier-prime-700.woff) format('woff');font-weight:700}
+:root{--line:#4b3434;--gold:#dfb66d;--cream:#eae4cd;--muted:#a99f97;--panel:#2a1c1c;--panel2:#1e1414;--blood:#b8372e}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#3a1612,#120807 60%);color:var(--cream);font-family:'Courier Prime',ui-monospace,monospace;min-height:100vh}
+header{padding:14px 16px 4px;text-align:center}
+header small{display:block;letter-spacing:4px;color:var(--muted);font-size:11px}
+header h1{margin:4px 0 0;font-size:24px;letter-spacing:6px;color:var(--blood);text-shadow:3px 3px 0 #000}
+header p{margin:6px auto 0;max-width:860px;font-size:13px;color:var(--muted);line-height:1.45}
+main{max-width:1240px;margin:0 auto;padding:6px 12px 40px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+@media (max-width:940px){.top{grid-template-columns:1fr}}
+.stage{position:relative;border:3px solid #6b3030;box-shadow:6px 6px 0 #000a;background:#0d0a07}
+#arenaCanvas{display:block;width:100%;height:auto;aspect-ratio:850/520;image-rendering:pixelated}
+#hud{position:absolute;left:8px;top:6px;right:8px;display:flex;justify-content:space-between;font-size:12px;text-shadow:1px 1px 0 #000;pointer-events:none;gap:8px}
+#hud b{color:var(--gold);font-weight:400}
+.panel{background:#2a1c1cdd;border:2px solid var(--line);box-shadow:3px 3px 0 #0008;padding:10px 12px;margin-bottom:10px}
+.panel h3{margin:0 0 8px;font-size:12px;letter-spacing:3px;color:var(--gold);text-transform:uppercase}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin:5px 0;color:var(--muted)}
+select{font:inherit;font-size:12px;color:var(--cream);background:var(--panel2);border:1px solid var(--line);padding:3px 4px;width:170px}
+input[type=checkbox]{accent-color:#b8372e}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+button{font:inherit;font-size:12px;color:var(--cream);background:var(--panel);border:2px solid var(--line);padding:6px 9px;box-shadow:3px 3px 0 #0008;cursor:pointer}
+button.on{border-color:var(--blood);color:#ffb1a4;background:#3a1a18}
+button.main{border-color:var(--gold);color:var(--gold)}
+#deaths{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#deaths button{text-align:left;padding:6px 7px;line-height:1.25}
+#deaths button small{display:block;color:var(--muted);font-size:10px}
+#log{font-size:12px;line-height:1.5;max-height:180px;overflow:auto}
+#log .row{border-bottom:1px dashed var(--line);padding:3px 0}
+#log b{color:var(--gold);font-weight:400}
+h2{font-size:13px;letter-spacing:3px;color:var(--gold);margin:22px 4px 6px;text-transform:uppercase}
+.note{font-size:12px;color:var(--muted);line-height:1.55;margin:4px 4px 8px}
+.shots{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+@media (max-width:940px){.shots{grid-template-columns:1fr}}
+.shot{border:3px solid #6b3030;background:#120c09;box-shadow:6px 6px 0 #000a}
+.shot canvas{display:block;width:100%;height:auto;aspect-ratio:660/420;image-rendering:pixelated}
+.wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:2px solid var(--line);background:#1e1414cc}
+table.mx{border-collapse:collapse;font-size:11px;min-width:900px;width:100%}
+.mx th{color:var(--muted);font-weight:400;padding:4px 3px;background:#1e1414;letter-spacing:1px}
+.mx th.col{writing-mode:vertical-rl;transform:rotate(180deg);height:96px;text-align:left;vertical-align:bottom}
+.mx th.rowh{text-align:left;position:sticky;left:0;background:#1e1414;white-space:nowrap;padding-right:8px;z-index:1}
+.mx td{text-align:center;border:1px solid #3a2626;height:22px;min-width:22px;cursor:pointer;color:#b8372e;font-weight:700}
+.mx td.no{cursor:default;background:#140d0d;color:#3a2a2a}
+.mx td:hover:not(.no),.mx td.cur{outline:2px solid var(--gold);outline-offset:-2px}
+.rules{font-size:12.5px;line-height:1.6}.rules li{margin:3px 0}.rules em{color:var(--gold);font-style:normal}
+.range{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.range input{flex:1}
+</style></head>
+<body>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · TODESARTEN · STAND 4e9b01ed</small><h1>TODES-EDITOR</h1>
+<p>Echte Arena mit den Figuren des Spiels. Jede Todesart wird so gezeigt, wie sie im Kampf entsteht: Der Angreifer schlägt mit der passenden Waffe zu, und der Getroffene stirbt so, wie es zu seiner tödlichen Verletzung passt, mit Blutfontänen, Zuckungen, Blutlache und Blut auf der Kamera. Darunter stehen die Todes-Nahaufnahme und alle Verletzungsanzeigen. Neu ist <code>todes-fx.js</code>. Es ist <b>nur hier geladen und noch nicht im Spiel</b>. Spielstände bleiben unberührt.</p></header>
+<main>
+<div class="top">
+ <div>
+  <div class="stage"><canvas id="arenaCanvas" width="850" height="520"></canvas><div id="hud"><span id="hudL"></span><span id="hudR"></span></div></div>
+  <div class="btns"><button id="again" class="main">↻ Nochmal</button><button id="tour">▶ Alle nacheinander</button><button id="pause">⏸ Pause</button><button id="zoom">Zoom 3×</button></div>
+ </div>
+ <div>
+  <div class="panel"><h3>Todesart</h3><div id="deaths"></div></div>
+  <div class="panel"><h3>Einstellungen</h3>
+   <label>Neue Todesdarstellung <input type="checkbox" id="newfx" checked></label>
+   <label>Blut auf der Kamera <input type="checkbox" id="lens" checked></label>
+   <label>Zeitlupe beim Tod <input type="checkbox" id="slow" checked></label>
+   <label>Rüstung Opfer <select id="arm"><option value="none">keine</option><option value="leather" selected>Leder</option><option value="medium">verstärkt</option><option value="metal">Metall</option></select></label>
+   <label>Tempo <select id="speed"><option value=".35">langsam</option><option value=".6" selected>normal</option><option value="1">schnell</option></select></label>
+  </div>
+  <div class="panel"><h3>Ablauf</h3><div id="log"></div></div>
+ </div>
+</div>
+
+<h2>Todes-Nahaufnahme</h2>
+<div class="shots">
+ <div class="shot"><canvas id="deathShot" width="660" height="420"></canvas></div>
+ <div class="panel"><h3>Großaufnahme beim Tod</h3>
+  <p class="note" style="margin:0 0 6px">Startet automatisch mit jedem Tod in der Arena. Du kannst sie auch hier für jede Todesart einzeln abspielen.</p>
+  <label>Todesart <select id="dsType"></select></label>
+  <label>Wichtiger Kämpfer (lang) <input type="checkbox" id="dsDram"></label>
+  <div class="range">Zeit <input type="range" id="dsT" min="0" max="600" value="0"><span id="dsTv">0,0 s</span></div>
+  <div class="btns"><button id="dsPlay" class="main">▶ Abspielen</button><button id="dsAll">▶ Alle Todesarten</button></div>
+ </div>
+</div>
+
+<h2>Verletzungsanzeigen (alle Nahaufnahmen)</h2>
+<p class="note">Jede Verletzungsart an jeder Körperstelle, an der sie im Spiel vorkommt. Klick auf ein Feld spielt die Nahaufnahme ab. Neu dazugekommen sind Spritzer um die Wunde, pulsierende Stöße bei schweren Wunden, Rinnsale und bei den schwersten Verletzungen Blut auf der Kamera.</p>
+<div class="shots">
+ <div class="shot"><canvas id="injShot" width="660" height="420"></canvas></div>
+ <div class="panel"><h3>Nahaufnahme</h3>
+  <label>Körperstelle <select id="inPart"></select></label>
+  <label>Verletzung <select id="inKind"></select></label>
+  <label>Waffe <select id="inW"></select></label>
+  <div class="btns"><button id="inPlay" class="main">▶ Abspielen</button><button id="inAll">▶ Alle durchgehen</button></div>
+  <div id="inInfo" class="note" style="margin:6px 0 0"></div>
+ </div>
+</div>
+<div class="wrap" style="margin-top:10px"><table class="mx" id="mx"></table></div>
+
+<h2>Was neu ist</h2>
+<ul class="rules" id="rules"></ul>
+</main>
+<script src="data.js?v=4e9b01ed"></script>
+<script src="household.js?v=4e9b01ed"></script>
+<script src="management.js?v=4e9b01ed"></script>
+<script src="scout.js?v=4e9b01ed"></script>
+<script src="sim.js?v=4e9b01ed"></script>
+<script src="benchmark.js?v=4e9b01ed"></script>
+<script src="school.js?v=4e9b01ed"></script>
+<script src="weapon-art.js?v=4e9b01ed"></script>
+<script src="arena.js?v=4e9b01ed"></script>
+<script src="face-shots.js?v=4e9b01ed"></script>
+<script src="injury-shots.js?v=4e9b01ed"></script>
+<script src="kampfsound.js?v=4e9b01ed"></script>
+<script src="block-contact.js?v=4e9b01ed"></script>
+<script src="hit-contact.js?v=4e9b01ed"></script>
+<script src="reach-ai.js?v=4e9b01ed"></script>
+<script src="todes-fx.js?v=4e9b01ed"></script>
+<script src="todes-editor.js?v=4e9b01ed"></script>
+</body></html>

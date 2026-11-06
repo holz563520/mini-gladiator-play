@@ -1,0 +1,226 @@
+'use strict';
+// =====================================================================================================
+// TODESDARSTELLUNG (todes-fx.js, M.deathFx) – Wunsch Thomas 06.11.: Jeder Tod sieht aus wie die Verletzung,
+// an der er stirbt, sehr brutal, mit Blut auf der Kamera.
+//  · Ablauf auf dem Kampffeld je Todesart: stehen bleiben, an die Wunde greifen, auf die Knie sinken, fallen
+//    (vor- oder rückwärts), Aufprall, Todeszuckungen; dazu pulsierende Blutfontänen aus der tödlichen Wunde,
+//    Blut aus dem Mund, Knochen- und Hirnsplitter, große Blutlache unter der Wunde.
+//  · Blut auf der Kamera: Spritzer auf der „Linse“, die langsam herunterlaufen (Kampfbild und Nahaufnahmen).
+//  · Todes-Nahaufnahme je Todesart (Kopf fällt ab, Kehle klafft auf, Schädel bricht …) und mehr Blut in den
+//    Verletzungs-Nahaufnahmen.
+// Reine Darstellung: ändert keine Würfel, keine Werte, kein Speichern. Anschlüsse (wirkungslos ohne dieses Modul):
+//  sim.js death() → onDeath; arena.js Figur → fall/knee/busy, Kampfbild → lensDraw; injury-shots.js → shot/shotDone/gore.
+// Zurzeit nur im Todes-Editor (todes-editor.html) geladen, im Spiel NICHT (boot.js unverändert).
+// =====================================================================================================
+(()=>{
+const M=window.MG;if(!M)return;const S=M.s;
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),ease=v=>{v=cl(v);return v*v*(3-2*v);},easeIn=v=>{v=cl(v);return v*v;};
+const R=(a,b)=>a+Math.random()*(b-a);
+const sh=v=>{const t=String(v??'');let h=7;for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))%9973;return h;};
+const hash=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);};
+const BLOOD=['#a8372f','#8f2a24','#c9584a','#6b2420'];
+
+// ---------------------------------------------------------------- Todesarten
+// dir: +1 fällt vornüber, -1 nach hinten · stand/knee/fall: Dauer der Abschnitte (s) · clutch: Hände an diese Stelle
+// jet: pulsierende Fontäne (at: Stelle, dur: Dauer, beat: Herzschläge/s, speed, n: Tropfen je Schlag, spread)
+// mouth: Blut aus dem Mund · burst: einmaliger Ausbruch (bone/brain: Splitter) · twitch: Zuckungen am Boden
+// lens: Blut auf der Kamera (0–1) · pool: größte Blutlache
+const TYPES={
+ decap:{name:'Enthauptung',dir:1,stand:.85,knee:.35,fall:.5,flail:1,jet:{at:'stump',dur:6,beat:1.8,speed:[120,200],n:10,spread:.32},burst:{at:'stump',n:40,speed:[70,170]},twitch:{amp:1,dur:3.4,rate:12},lens:1,pool:36,shake:6},
+ bisect:{name:'Durchtrennung',dir:-1,stand:0,fall:0,jet:{at:'belly',dur:4.5,beat:1.6,speed:[60,130],n:9,spread:.9},burst:{at:'belly',n:46,speed:[60,160],bone:4,gut:10},twitch:{amp:.8,dur:2.6,rate:10},lens:1,pool:40,shake:6},
+ throat:{name:'Kehle durchschnitten',dir:1,stand:.75,clutch:'neck',knee:1.15,fall:.7,jet:{at:'throat',dur:5,beat:1.5,speed:[45,105],n:6,spread:.45},mouth:{dur:3.5,n:2},twitch:{amp:.75,dur:2.6,rate:8},lens:.6,pool:28},
+ skull:{name:'Schädel zertrümmert',dir:-1,stand:0,fall:.24,limp:1,burst:{at:'head',n:30,speed:[50,150],bone:9,brain:12},jet:{at:'head',dur:2.8,beat:1.1,speed:[14,40],n:3,spread:1},twitch:{amp:1,dur:4.2,rate:15,posture:1},lens:.7,pool:22,shake:5},
+ heart:{name:'Stich in Brust/Herz',dir:-1,stand:.6,clutch:'chest',knee:.5,fall:.55,jet:{at:'chest',dur:3.4,beat:1.7,speed:[40,90],n:5,spread:.55},mouth:{dur:2.6,n:2},twitch:{amp:.6,dur:2.1,rate:9},lens:.4,pool:24},
+ gut:{name:'Bauch / innere Verletzung',dir:1,stand:.95,clutch:'belly',knee:1,fall:.75,mouth:{dur:4,n:5,cough:1},jet:{at:'belly',dur:3.2,beat:1.2,speed:[20,50],n:4,spread:.7},twitch:{amp:.85,dur:3.2,rate:6},lens:.35,pool:26},
+ arrow:{name:'Tödlicher Pfeil',dir:-1,stand:.14,fall:.32,jerk:1,jet:{at:'part',dur:2.4,beat:1.6,speed:[25,65],n:3,spread:.5},twitch:{amp:.55,dur:1.8,rate:12},lens:.25,pool:16},
+ bleed:{name:'Verblutet',dir:1,stand:1.5,sway:1,knee:1.5,fall:1.15,mouth:{dur:1.2,n:1},twitch:{amp:.35,dur:2.8,rate:4},lens:0,pool:40},
+ ground:{name:'Gnadenstoß am Boden',dir:0,stand:0,fall:0,jet:{at:'part',dur:3.2,beat:1.9,speed:[55,125],n:7,spread:.5},burst:{at:'part',n:18,speed:[40,110]},twitch:{amp:1,dur:2.8,rate:13,kick:1},lens:.5,pool:30},
+ maul:{name:'Zerfleischt / Biss',dir:-1,stand:.3,clutch:'neck',fall:.4,jet:{at:'throat',dur:4.2,beat:2,speed:[40,115],n:8,spread:.95},burst:{at:'throat',n:16,speed:[40,100]},twitch:{amp:1,dur:3.6,rate:12},lens:.6,pool:32},
+ generic:{name:'Tödlicher Treffer',dir:-1,stand:.3,clutch:'chest',fall:.45,jet:{at:'chest',dur:2.2,beat:1.5,speed:[30,70],n:3,spread:.6},twitch:{amp:.5,dur:1.8,rate:9},lens:.25,pool:18}};
+const BLUNT=['club','mace','hammer','fist'];
+const PARTS={'Kopf':'head','Hals':'neck','Brust':'chest','Bauch':'belly'};
+function classify(cause='',wid='',wasDown=false){const c=String(cause);let t='generic';
+ if(c==='Enthauptung')t='decap';else if(c==='Durchtrennung')t='bisect';
+ else if(/Kehlbiss|durchgebissen|zerfleischt|Bestien|Biss|Sporn|Schnabel/i.test(c))t='maul';
+ else if(/Halsschnitt|Kehle|Schnittwunde/i.test(c))t='throat';
+ else if(/Pfeil/i.test(c))t='arrow';
+ else if(/Schädel|Kopftreffer|Stich: Kopf/i.test(c))t='skull';
+ else if(/Stich: Hals/i.test(c))t='throat';
+ else if(/Brust|Stich|Herz/i.test(c))t='heart';
+ else if(/Innere|Bauch/i.test(c))t='gut';
+ else if(/Blutung|Verblutet/i.test(c))t='bleed';
+ else if(/Gnadenstoß|Abschluss|am Boden|Urteil/i.test(c))t='ground';
+ else if(BLUNT.includes(wid))t='skull';
+ return t;}
+const partOf=(cause,type,g)=>{const m=/: (\S+)$/.exec(String(cause||''));if(m&&PARTS[m[1]])return PARTS[m[1]];
+ if(type==='skull')return 'head';if(type==='throat'||type==='maul'||type==='decap')return 'neck';if(type==='gut'||type==='bisect')return 'belly';
+ let best='chest',v=-1;for(const id of ['head','neck','chest','belly']){const p=g?.body?.[id];if(!p)continue;const s=(100-(p.hp??100))+(p.bleed||0)*3;if(s>v){v=s;best=id;}}return best;};
+// Stellen am Körper in Figurmaß (y nach oben negativ) und Austrittsrichtung
+const SITE={stump:{x:1,y:-58,dx:.15,dy:-1},throat:{x:5,y:-57,dx:1,dy:-.15},neck:{x:5,y:-57,dx:1,dy:-.15},head:{x:2,y:-68,dx:.25,dy:-1},chest:{x:4,y:-46,dx:1,dy:-.25},belly:{x:4,y:-35,dx:1,dy:0},mouth:{x:7,y:-63,dx:1,dy:-.1},limb:{x:0,y:-28,dx:1,dy:-.3}};
+
+// ---------------------------------------------------------------- Zustand
+const api={active:true,lens:true,rec:new Map(),types:TYPES,classify,onEvent:null,
+ get on(){return this.active;}};
+let clock=0;
+const lens=[];// Spritzer auf der Kamera: {x,y,r,born,seed,drips,amount}
+
+function onDeath(b,a,cause){if(!api.active||!b)return;const wid=a?(M.weapon?.(a)?.id||''):'';const wasDown=!!(b.down||b.fallTimer>0||b.kneeTimer>0&&false);
+ let type=classify(cause,wid,wasDown);const P=TYPES[type];const part=partOf(cause,type,b.g);
+ const face=Math.cos(b.a||0)>=0?1:-1;
+ // Fallrichtung: vornüber (zum Gegner hin) oder nach hinten; die Figur dreht im eigenen Bild, also nur das Vorzeichen
+ if(!wasDown&&P.dir)b.fallSide=P.dir;
+ const r={type,P,part,g:b.g,t0:clock,wasDown,face,seed:Math.random()*1000,cause:String(cause||''),wid,beatN:0,mouthN:0,landed:wasDown,burstDone:false,spasms:[]};
+ for(let t=.3;t<(P.twitch?.dur||0)*1.4;t+=R(.35,.9))r.spasms.push(t);
+ api.rec.set(b.id,r);
+ if(P.shake)M.shake=Math.max(M.shake||0,P.shake);
+ if(api.lens&&P.lens>0)splash(P.lens*viewNear(),b);
+ api.onEvent?.({kind:'death',actor:b,attacker:a,cause,type,part,wasDown});}
+
+// Körperstelle → Weltpunkt (wie contactAnchor in sim.js, aber für jeden Zwischenstand des Fallens)
+function sitePoint(b,site,fall){const g=b.g,scale=(g.height||180)/180*1.14,wide=cl(.85+(g.weight||80)/420,.98,1.18)*(g.statureWide||1),face=Math.cos(b.a||0)>=0?1:-1,rot=(b.fallSide||-1)*1.35*fall,s=SITE[site]||SITE.chest;
+ const c=Math.cos(rot),n=Math.sin(rot),lx=12*fall+c*s.x-n*s.y,ly=5*fall+n*s.x+c*s.y;
+ return {x:b.x+lx*scale*wide*face,y:b.y+ly*scale,dx:(c*s.dx-n*s.dy)*face,dy:n*s.dx+c*s.dy,scale};}
+
+// ---------------------------------------------------------------- Ablauf je Bild
+function phase(r,t){const P=r.P;if(r.wasDown||(!P.stand&&!P.fall))return {fall:1,knee:0,lying:true};
+ const st=P.stand||0,kn=P.knee||0,fa=P.fall||.3;
+ if(t<st){const sway=P.sway?Math.sin(t*3.2)*.05+t/st*.06:P.jerk?-.12*Math.sin(cl(t/st)*Math.PI):P.flail?Math.sin(t*7)*.03:.02*Math.sin(t*4);return {fall:Math.max(0,sway),knee:0,lying:false,stand:true};}
+ if(t<st+kn){const u=(t-st)/kn;return {fall:.06+u*.06,knee:ease(u/.35),lying:false,kneel:true};}
+ const u=(t-st-kn)/fa;if(u<1){const f0=kn?.12:0;return {fall:f0+(1-f0)*easeIn(u),knee:kn?1-u:0,lying:u>.75};}
+ const v=t-st-kn-fa,bounce=Math.abs(Math.sin(v*14))*Math.exp(-v*6)*.07;return {fall:1-bounce,knee:0,lying:true};}
+const live=r=>{const t=clock-r.t0;return t<(r.P.stand||0)+(r.P.knee||0)+(r.P.fall||0)+Math.max(r.P.jet?.dur||0,(r.P.twitch?.dur||0)*1.4,r.P.mouth?.dur||0)+.6;};
+
+function fx(){return M.fx||[];}let cur=0;
+function particle(o){const L=fx();if(!L.length)return;let p=null;for(let i=0;i<L.length;i++){const q=L[(cur+i)%L.length];if(!q.active){p=q;cur=(cur+i+1)%L.length;break;}}if(!p){p=L[cur++%L.length];}Object.assign(p,{active:true,groundKind:'blood',life:2.8,size:2,...o});}
+function spray(b,site,fall,n,sp,spread,col,extra){const q=sitePoint(b,site,fall);for(let i=0;i<n;i++){const a=Math.atan2(q.dy,q.dx)+R(-spread,spread),v=R(sp[0],sp[1]);
+ particle({x:q.x+R(-1.5,1.5),y:b.y+R(-2,3),z:Math.max(1,b.y-q.y),vx:Math.cos(a)*v,vz:-Math.sin(a)*v,vy:R(-14,14),color:col||BLOOD[(Math.random()*3)|0],size:Math.random()<.3?3:2,...(extra||{})});}}
+
+function step(dt){if(!api.active||!S.battle){return;}if(M.injuryShots?.frozen)return;clock+=dt;
+ for(const [id,r] of api.rec){const b=S.battle.actors.find(x=>x.id===id);if(!b||!b.g.dead){api.rec.delete(id);continue;}
+  const t=clock-r.t0,P=r.P,ph=phase(r,t);r.ph=ph;
+  // Hände, Beine, Zucken (über die vorhandene Liegepose agony)
+  const tw=P.twitch,landT=r.wasDown?0:(P.stand||0)+(P.knee||0)+(P.fall||0),since=t-landT;
+  let amp=0;if(tw&&since>0&&since<tw.dur*1.4){amp=tw.amp*Math.exp(-since/tw.dur*2.1);for(const s of r.spasms)if(since>s&&since<s+.25)amp=Math.max(amp,tw.amp*(1-(since-s)/.25)*Math.exp(-s/tw.dur*1.4));}
+  if(ph.stand||ph.kneel){b.agony=P.clutch?{pose:0,part:P.clutch,rate:7,live:.5,lie:1.35,twitch:true,noLegs:true}:P.flail?{pose:1,part:'chest',rate:18,live:1.2,lie:1.35,twitch:true,noLegs:true}:null;}
+  else{const posture=tw?.posture&&since>0&&since<tw.dur;b.agony={pose:posture?2:P.clutch?0:1,part:P.clutch||(r.part==='head'?'head':'chest'),rate:tw?.rate||8,live:+amp.toFixed(2),lie:1.35,twitch:amp>.02,noLegs:false};}
+  // Aufprall
+  if(!r.landed&&ph.lying&&ph.fall>.95){r.landed=true;M.sound?.('fall');M.shake=Math.max(M.shake||0,2.5);const q=sitePoint(b,'chest',1);for(let i=0;i<10;i++)particle({x:q.x+R(-14,14),y:b.y+R(-3,4),z:1,vx:R(-30,30),vz:R(15,40),vy:R(-8,8),color:Math.random()<.5?'#c4a876':'#a8372f',groundKind:null,life:.6});
+   if(P.pool)spray(b,P.jet?.at==='stump'?'stump':P.jet?.at==='part'?siteOfPart(r.part):(P.jet?.at||'chest'),1,8,[20,60],1.2);}
+  // einmaliger Ausbruch (Kopf, Stumpf, Rumpf)
+  if(!r.burstDone&&P.burst){r.burstDone=true;const B=P.burst,site=B.at==='part'?siteOfPart(r.part):B.at;spray(b,site,ph.fall,B.n,B.speed,1.3);
+   for(let i=0;i<(B.bone||0);i++)spray(b,site,ph.fall,1,[40,110],1.4,Math.random()<.5?'#e6dcc2':'#cfc2a2',{groundKind:'bone',size:2});
+   for(let i=0;i<(B.brain||0);i++)spray(b,site,ph.fall,1,[30,90],1.3,Math.random()<.5?'#d9a0a0':'#c98686',{size:Math.random()<.4?3:2});
+   for(let i=0;i<(B.gut||0);i++)spray(b,site,ph.fall,1,[20,70],1.2,Math.random()<.5?'#b5615a':'#d48b7c',{size:3});}
+  // pulsierende Fontäne: Herzschläge werden langsamer und schwächer
+  const J=P.jet;if(J&&t<J.dur){/* Strahl im Herzschlag: kräftig in jedem Schlag, dazwischen fast still; wird langsamer und schwächer */const beat=J.beat*(1-.4*t/J.dur),k=Math.exp(-t/J.dur*1.5);r.ph2=(r.ph2||0)+dt*beat;const w=Math.pow(Math.max(0,Math.sin(r.ph2*6.283)),2),site=J.at==='part'?siteOfPart(r.part):J.at,hands=P.clutch&&(ph.stand||ph.kneel)?.6:1;
+   r.acc=(r.acc||0)+dt*J.n*beat*7*w*k*hands;const n=Math.floor(r.acc);r.acc-=n;
+   if(n>0)spray(b,site,ph.fall,n,[J.speed[0]*(.55+.45*k)*(.7+.3*w),J.speed[1]*(.5+.5*k)*(.7+.3*w)],J.spread*(hands<1?1.7:1),null,{size:Math.random()<.45?3:2});
+   const n2=Math.floor(t*beat);if(n2>=r.beatN){r.beatN=n2+1;if(api.lens&&P.lens>.45&&k>.5&&Math.random()<P.lens*.3*viewNear())splash(P.lens*.4*viewNear(),b,true);}
+   if(Math.random()<dt*10*k)spray(b,site,ph.fall,1,[5,22],1.2);}
+  const MO=P.mouth;if(MO&&t>.25&&t<MO.dur){const n=Math.floor(t*(MO.cough?1.4:.9));if(n>r.mouthN){r.mouthN=n;spray(b,'mouth',ph.fall,MO.n*(MO.cough?2:1),MO.cough?[40,90]:[10,30],MO.cough?.5:.4);}}
+  // Blutlache unter der Wunde
+  if(P.pool){b.pool??={x:b.x,y:b.y,r:0};const max=P.pool*((b.g.height||180)/180);if(ph.lying){const site=P.jet?.at==='stump'?'stump':P.jet?.at==='part'?siteOfPart(r.part):P.jet?.at||(r.part==='head'?'head':'chest'),q=sitePoint(b,site,1);if(!r.poolSet){r.poolSet=true;b.pool.x=q.x-5;b.pool.y=b.y+2;}b.pool.r=Math.max(b.pool.r,Math.min(max,b.pool.r+dt*max/(r.type==='bleed'?3:4.5)));b.majorBleed=true;}}
+  if(!live(r)){b.agony={...(b.agony||{pose:0,part:'chest',rate:1,lie:1.35}),live:0,twitch:false,noLegs:false};api.rec.delete(id);}}
+ for(let i=lens.length-1;i>=0;i--)if(clock-lens[i].born>lens[i].life)lens.splice(i,1);}
+const siteOfPart=p=>p==='head'?'head':p==='neck'?'throat':p==='belly'?'belly':p==='chest'?'chest':'limb';
+
+// Kamera nah? (Zoom) → mehr Blut auf der Linse
+function viewNear(){const s=M.arenaView?.scale||1.5;return cl(s/2,.45,1.5);}
+
+// ---------------------------------------------------------------- Blut auf der Kamera
+function makeSplat(seed,amount,cx,cy){const n=2+Math.floor(hash(seed)*3+amount*3),blobs=[];const r0=.012+amount*.026*(.6+hash(seed+1)*.8);
+ for(let i=0;i<n;i++){const a=hash(seed+i*7.3)*6.283,d=r0*(i?(.5+hash(seed+i)*1.2):0);blobs.push({x:cx+Math.cos(a)*d,y:cy+Math.sin(a)*d*.8,r:r0*(i?.25+hash(seed+i*3.1)*.5:1)});}
+ const tiny=[];for(let i=0;i<8+amount*22;i++){const a=hash(seed+i*1.7)*6.283,d=r0*(1.4+hash(seed+i*2.9)*5);tiny.push({x:cx+Math.cos(a)*d,y:cy+Math.sin(a)*d*.85,r:r0*(.08+hash(seed+i*5.3)*.18)});}
+ const drips=[];for(let i=0;i<1+Math.floor(amount*4*hash(seed+9));i++){const b=blobs[i%blobs.length];drips.push({x:b.x+(hash(seed+i*4.4)-.5)*b.r,y:b.y,w:b.r*(.22+hash(seed+i*8.8)*.25),len:.05+hash(seed+i*6.6)*.3*amount,speed:.012+hash(seed+i*3.3)*.03});}
+ return {blobs,tiny,drips,r0};}
+function splash(amount,b,small){if(!api.lens||amount<=0)return;const v=M.arenaView;let cx=.5,cy=.45;if(v&&b){cx=cl(.5+((b.x-v.cx)*v.scale)/(v.width||1)+R(-.25,.25),.08,.92);cy=cl(.45+((b.y-40-v.cy)*v.scale)/(v.height||1)+R(-.25,.2),.08,.8);}else{cx=R(.15,.85);cy=R(.1,.6);}
+ const k=small?1:1+Math.round(amount*1.6);for(let i=0;i<k;i++){const seed=Math.random()*1e4,a=cl(amount*(small?.5:1)*R(.55,1),.15,1.2),edge=Math.random()<.5,x=i?(edge?(Math.random()<.5?R(.03,.2):R(.8,.97)):R(.1,.9)):cx,y=i?R(.05,.75):cy;lens.push({born:clock+(i?R(0,.12):0),life:6+a*4,amount:a,...makeSplat(seed,a,x,y)});}
+ if(lens.length>26)lens.splice(0,lens.length-26);}
+// Zeichnen in einer kleinen Fläche (Pixelstil), dann grob vergrößert
+const lensCv={};function lensSurface(w,h,div){const W=Math.max(1,Math.round(w/div)),H=Math.max(1,Math.round(h/div));let c=lensCv[div];if(!c){c=lensCv[div]=document.createElement('canvas');}if(c.width!==W||c.height!==H){c.width=W;c.height=H;}const q=c.getContext('2d');q.clearRect(0,0,W,H);return {c,q,W,H};}
+function paintSplats(q,W,H,list,now){const D=Math.min(W,H);q.save();for(const s of list){const age=now-s.born;if(age<0)continue;const fade=cl(1-(age-(s.life-2.2))/2.2)*cl(age/.04);if(fade<=0)continue;const grow=cl(age/.08);
+  // Tropfen laufen langsam herunter
+  for(const d of s.drips){const L=Math.min(d.len,age*d.speed)*H;q.globalAlpha=.85*fade;q.fillStyle='#6d0f0c';q.fillRect(Math.round(d.x*W-d.w*D/2),Math.round(d.y*H),Math.max(1,Math.round(d.w*D)),Math.round(L));q.fillStyle='#8f1a14';q.fillRect(Math.round(d.x*W-d.w*D/2),Math.round(d.y*H),Math.max(1,Math.round(d.w*D*.5)),Math.round(L));
+   q.beginPath();q.fillStyle='#7a120e';q.arc(d.x*W,d.y*H+L,Math.max(1,d.w*D*.75),0,6.283);q.fill();}
+  for(const t of s.tiny){q.globalAlpha=.8*fade;q.fillStyle='#7d130f';q.beginPath();q.arc(t.x*W,t.y*H,Math.max(.7,t.r*D*grow),0,6.283);q.fill();}
+  for(const bl of s.blobs){const r=bl.r*D*grow;q.globalAlpha=.75*fade;q.fillStyle='#5e0b09';q.beginPath();q.ellipse(bl.x*W,bl.y*H,r*1.1,r*.85,bl.x*9,0,6.283);q.fill();q.globalAlpha=.7*fade;q.fillStyle='#8a1712';q.beginPath();q.ellipse(bl.x*W-r*.12,bl.y*H-r*.1,r*.8,r*.6,bl.y*7,0,6.283);q.fill();
+   q.globalAlpha=.55*fade;q.fillStyle='#d8705e';q.beginPath();q.arc(bl.x*W-r*.38,bl.y*H-r*.38,Math.max(.6,r*.16),0,6.283);q.fill();}}
+ q.restore();}
+function lensDraw(ctx,w,h){if(!api.active||!api.lens||!lens.length)return;const L=lensSurface(w,h,Math.max(2,Math.round(Math.min(w,h)/220)));paintSplats(L.q,L.W,L.H,lens,clock);ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;
+ // roter Schleier, solange frisches Blut auf der Linse ist
+ const fresh=lens.reduce((m,s)=>Math.max(m,s.amount*cl(1-(clock-s.born)/1.2)),0);if(fresh>0){ctx.globalAlpha=cl(fresh*.22);ctx.fillStyle='#5a0000';ctx.fillRect(0,0,w,h);ctx.globalAlpha=1;}
+ ctx.drawImage(L.c,0,0,w,h);ctx.restore();}
+
+// ---------------------------------------------------------------- Figur (arena.js)
+function fall(b){const r=api.rec.get(b.id);if(!r)return 1;const ph=r.ph||phase(r,clock-r.t0);return ph.fall;}
+function knee(b){const r=api.rec.get(b.id);if(!r)return 0;const ph=r.ph||phase(r,clock-r.t0);return ph.knee||0;}
+function busy(b){return api.active&&api.rec.has(b.id);}
+
+// ---------------------------------------------------------------- Nahaufnahmen (injury-shots.js)
+// Todes-Großaufnahme: Optionen für face-shots.js nach der Todesart; eigene Zeichnung über M.faceOverlays (Gesichtskoordinaten)
+const ovSaved=new Map();
+function shotType(o){const g=o?.g;const r=g&&[...api.rec.values()].find(x=>x.g===g);return o?.deathType||r?.type||classify(g?.cause,'',false);}
+function shot(opts,o,k,t,dead){if(!api.active||!dead||!o?.g)return opts;const type=shotType(o),g=o.g,u=k;opts={...opts};const X={};
+ // Die Bildunterschrift deckt alles unter dem Kinn ab: was zu sehen sein soll, spielt sich am Gesicht oder in der Lücke über dem Hals ab.
+ const later=ease((u-1)/1.6);opts.mood=u<0?'determined':u<.15?'shock':opts.mood;
+ if(type==='decap'){X.blade=cl(u/.2);X.bladeY=70;const f=ease((u-.14)/.75);opts.sink=-f*125;opts.tilt=f*1.6*(sh(g.id)%2?1:-1);opts.mood=u<.18?'shock':'out';opts.shake=u>0&&u<.6?5:0;opts.pale=cl(u/1);}
+ else if(type==='bisect'){X.gash=Math.max(0,u);opts.shake=u>0&&u<.5?3:0;opts.blood=cl(u/.5);}
+ else if(type==='throat'||type==='maul'){const open=cl(u/.2);opts.sink=-17*open*(1-later)+later*30;opts.tilt=-.12*open*(1-later)+(opts.tilt||0)*later;opts.mood=u<.12?'shock':u<1.3?'scared':'out';opts.shake=u>0&&u<.3?3:0;opts.pale=cl(u/1.6);}
+ else if(type==='skull'){opts.shake=u>0&&u<.35?7:0;opts.sink=(opts.sink||0)+cl(u/.12)*6;opts.tilt=(opts.tilt||0)-cl(u/.12)*.3;opts.mood=u<.04?'shock':'out';}
+ else if(type==='heart'||type==='generic'){opts.blood=cl(u/.6);opts.mood=u<.15?'shock':u<1.1?'pain':'out';opts.sink=(opts.sink||0)*.7-cl(u/.15)*6*(1-later);}
+ else if(type==='ground'){opts.blood=cl(u/.5);opts.mood=u<.1?'scared':u<.8?'pain':'out';opts.shake=u>0&&u<.25?4:0;}
+ else if(type==='gut'){opts.blood=cl(u/.5);opts.mood=u<1.3?'pain':'out';opts.sink=(opts.sink||0)+Math.max(0,Math.sin(u*6))*3*(1-later);}
+ else if(type==='arrow'){opts.sink=-cl(u/.06)*12*(1-later)+later*26;opts.tilt=-cl(u/.06)*.25*(1-later)+(opts.tilt||0)*later;opts.mood=u<.1?'shock':'out';opts.shake=u>0&&u<.15?5:0;}
+ else if(type==='bleed'){opts.pale=cl(.55+u/1.2);opts.mood=u<1?'pain':'out';}
+ opts.fx=X;
+ const id=g.id;if(id!=null){M.faceOverlays??={};if(!ovSaved.has(id))ovSaved.set(id,M.faceOverlays[id]);const prev=ovSaved.get(id);M.faceOverlays[id]=(ctx,T,tt,oo)=>{try{prev?.(ctx,T,tt,oo);}catch{}faceGore(ctx,T,type,u,tt,g,o,opts);};}
+ return opts;}
+// Zeichnen über der Großaufnahme. F(): Gesichtskoordinaten (0,0 = Kinn), B(): fest am Rumpf (0,0 = wo das Kinn sonst sitzt)
+function faceGore(ctx,T,type,u,t,g,o,opts){if(u<0)return;const s=T.s,sink=opts.sink||0;
+ const put=(p,w,h,c,a)=>{ctx.globalAlpha=a??1;ctx.fillStyle=c;ctx.fillRect(Math.round(p.x),Math.round(p.y),Math.max(1,Math.round(w*s)),Math.max(1,Math.round(h*s)));ctx.globalAlpha=1;};
+ const F=(x,y,w,h,c,a)=>put(T.to(x,y),w,h,c,a),B=(x,y,w,h,c,a)=>put(T.to(x,y-sink),w,h,c,a);
+ const seed=sh(g.id)*13.7,skin=/^#[0-9a-f]{6}$/i.test(g.appearance?.skin||'')?g.appearance.skin:'#c19169',shade=/^#[0-9a-f]{6}$/i.test(g.appearance?.shade||'')?g.appearance.shade:'#875e43';
+ // Hals in der Lücke unter dem gehobenen Kopf
+ const neck=(top)=>{if(top>=14)return;for(let y=Math.round(top);y<18;y++){B(-11,y,22,1,skin);B(5,y,6,1,shade);B(-11,y,1,1,'#3a2418');B(10,y,1,1,'#3a2418');}};
+ if(type==='decap'){const top=Math.max(sink+1,-4);if(u>.12){neck(top);
+   /* Stumpf: Fleisch, Luftröhre, Wirbel */B(-9,top-1,18,4,'#6b2420');B(-7,top-1,14,2,'#a8372f');B(-1,top-1,4,3,'#efe6d0');B(2,top,3,2,'#2a0b09');
+   const k=Math.exp(-u/4.5),pulse=.5+.5*Math.max(0,Math.sin(u*10.5));
+   for(let i=0;i<70;i++){const v=((u*1.7+i/70)%1),side=hash(seed+i)-.5,h=v*95*pulse*k,x=side*8+side*v*46*(.5+pulse),y=top-2-h+v*v*85*k;B(x,y,i%4?1:2,i%4?1:2,i%3?'#a8372f':i%2?'#c9584a':'#8f2a24',1-v*.3);}
+   for(let i=0;i<10;i++){const L=cl((u-.2-i*.04)*40,0,26);B(-8+i*1.7,top+2,1,L,i%2?'#8f2a24':'#6b2420');}}}
+ else if(type==='throat'||type==='maul'){const open=cl(u/.2),top=Math.min(0,sink+1);neck(top);
+  const gy=Math.max(top+3,-9),wd=Math.round(18*open);B(-wd/2,gy,wd,2+open*2.5,'#3d0f0d');B(-wd/2,gy-1,wd,1,'#c9584a');B(-3,gy+1,6,1,'#e6cfc0');
+  if(type==='maul')for(let i=0;i<6;i++){B(-11+i*4,gy-3+(i%2)*6,3,3,'#5a1310');B(-10+i*4,gy-2+(i%2)*6,1,1,'#e6cfc0');}
+  const k=Math.exp(-u/3.5),pulse=.45+.55*Math.max(0,Math.sin(u*9.5));
+  for(let i=0;i<54;i++){const v=((u*1.5+i/54)%1),dir=hash(seed+i*2)<.65?1:-1,x=dir*(3+v*(30+hash(seed+i)*24)*pulse*k),y=gy+1-v*10*pulse+v*v*34;B(x,y,i%3?1:2,i%3?1:2,i%2?'#a8372f':'#c9584a',1-v*.25);}
+  for(let i=0;i<9;i++){const L=cl((u-.12-i*.05)*30,0,30);B(-8+i*2,gy+3,i%2?2:1,L,'#8f2a24');}
+  if(u>.5)F(-2,-9,2,cl((u-.5)*12,0,10),'#943a33');}
+ else if(type==='skull'){/* Schädeldecke bricht ein, Blut läuft in Strähnen über Stirn und Gesicht */const c=cl(u/.1);
+  for(let i=0;i<11;i++)F(-12+i*2.4,-58+Math.abs(i-5)*1.3+c*4,2.4,1.5+c*2.2,i%2?'#3d0f0d':'#6b2420');for(let i=0;i<6;i++)F(-8+i*3.2,-55+c*5,2,1,i%2?'#e6dcc2':'#d9a0a0');
+  for(let i=0;i<8;i++){const L=cl((u-.04-hash(seed+i)*.6)*(20+hash(seed+i*5)*26),0,30+hash(seed+i*7)*30),x0=-16+hash(seed+i*2)*30,y0=-54+hash(seed+i*4)*6,wd=hash(seed+i*6)<.4?2:1;for(let y=0;y<L;y+=1){F(x0+Math.sin((y+i*3)*.22)*1.4,y0+y,wd,1,i%3?'#a8372f':'#7d1e18',.9);}if(L>4)F(x0+Math.sin((L+i*3)*.22)*1.4,y0+L,wd+1,2,'#8f2a24');}
+  F(-7,-24,1,cl((u-.3)*10,0,12),'#8f2a24');F(6,-24,1,cl((u-.4)*10,0,12),'#8f2a24');
+  if(u<.7)for(let i=0;i<30;i++){const v=u/.7,a=hash(seed+i*9)*6.283;F(Math.cos(a)*v*(40+hash(seed+i)*40),-58+Math.sin(a)*v*30-v*24+v*v*40,hash(seed+i*3)<.3?2:1,hash(seed+i*3)<.3?2:1,i%4?'#a8372f':i%3?'#e6dcc2':'#d9a0a0',1-v*.6);}}
+ else if(type==='arrow'&&partOf(o.line3||g.cause,type,g)==='head'){/* Pfeil im Auge */const d=(1-cl(u/.05))*70;for(let i=0;i<34;i++)F(-7-i*1.7-d,-29-i*1.1-d*.6,2,2,i<3?'#c2cbc0':i>29?(i%2?'#e8e2cc':'#b5402f'):'#7a5a34');F(-9,-31,5,4,'#6b2420');for(let i=0;i<5;i++)F(-9+i,-27,1,cl((u-.06-i*.05)*24,0,30),'#a8372f');if(u>.3)F(-2,-9,2,cl((u-.3)*12,0,10),'#943a33');}
+ else if(type==='arrow'){const top=Math.min(0,sink+1);neck(top);const y=Math.max(top+4,-6),d=(1-cl(u/.05))*70;for(let i=0;i<34;i++)B(5+i*1.7+d,y-i*1.1-d*.6,2,2,i<3?'#c2cbc0':i>29?(i%2?'#e8e2cc':'#b5402f'):'#7a5a34');B(3,y-1,5,4,'#6b2420');for(let i=0;i<6;i++)B(2+i,y+3,1,cl((u-.06-i*.05)*24,0,26),'#a8372f');if(u>.3)F(-2,-9,2,cl((u-.3)*12,0,10),'#943a33');}
+ else if(type==='gut'||type==='heart'||type==='generic'||type==='ground'||type==='bisect'){/* Blut aus dem Mund: Husten in Stößen */const gut=type==='gut',n=gut?44:22;for(let i=0;i<n;i++){const v=((u*1.2+i/n)%1),cough=Math.max(0,Math.sin(u*(gut?6.5:4.5)))*(gut?1:.6),x=(hash(seed+i)-.5)*8+(hash(seed+i*3)-.5)*v*48*cough,y=-10+v*16-v*14*cough+v*v*24;F(x,y,i%3?1:2,i%3?1:2,i%2?'#a8372f':'#8f2a24',1-v*.4);}
+  for(let i=0;i<5;i++)F(-5+i*2.2,-8,1,cl((u-.15-i*.08)*18,0,16),i%2?'#8f2a24':'#a8372f');}
+ else if(type==='bleed'){for(let i=0;i<3;i++)F(-3+i*3,-14,1,cl((u-i*.2)*6,0,12),'#8f2a24');F(-4,-21,1,cl((u-.4)*8,0,8),'#8f2a24');}}
+// nach jeder Nahaufnahme: Blut auf der Linse der Nahaufnahme; geborgte Gesichtszeichnung zurückgeben
+function shotDone(g,w,h,o,k,t,kind){const id=o?.g?.id;if(id!=null&&ovSaved.has(id)){const prev=ovSaved.get(id);if(prev)M.faceOverlays[id]=prev;else delete M.faceOverlays[id];ovSaved.delete(id);}
+ if(!api.active||!api.lens||k<0)return;let amount=0;if(kind==='death'){amount=(TYPES[shotType(o)]||TYPES.generic).lens;}else amount=({sever:.9,pulp:.7,shatter:.5,gut:.7,deepcut:.5,deepstab:.45,pierce:.6,skullfracture:.6})[kind]||0;if(amount<=0)return;
+ const seed=sh((o.g?.id??3)+'|'+(o.part||'')+'|'+kind),list=[],n=1+Math.round(amount*3);for(let i=0;i<n;i++){const a=amount*(.6+hash(seed+i)*.6);list.push({born:(i?.04*i:0),life:99,amount:a,...makeSplat(seed+i*17,a,.12+hash(seed+i*2.2)*.76,.1+hash(seed+i*4.4)*.55)});}
+ const L=lensSurface(w,h,Math.max(2,Math.round(Math.min(w,h)/200)));paintSplats(L.q,L.W,L.H,list,k);g.save();g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.drawImage(L.c,0,0,w,h);g.restore();}
+// Verletzungs-Nahaufnahmen: zusätzliches Blut im kleinen Pixelbild (Spritzer, Stöße aus der Wunde, Rinnsale)
+const GORE={scrape:.1,cut:.35,deepcut:.8,stab:.4,deepstab:.8,arrow:.5,sinew:.5,gut:1,pierce:.9,crush:.3,skullfracture:.7,fracture:.25,badfracture:.55,shatter:.75,pulp:1,sever:1};
+function gore(T,V,k,C,kind,o,t){if(!api.active||k<0)return;const I=GORE[kind]||0;if(!I||!V?.A)return;const A=V.A,seed=[...String(kind+(o.part||''))].reduce((n,c)=>n+c.charCodeAt(0),0);
+ // Spritzer um die Wunde (erscheinen mit dem Treffer)
+ const n=Math.round(10+I*40);for(let i=0;i<n;i++){const a=hash(seed+i)*6.283,d=(4+hash(seed+i*1.9)*30*I)*cl(k/.12),x=A.x+Math.cos(a)*d,y=A.y+Math.sin(a)*d*.7;T.r(x,y,hash(seed+i*5)<.3?2:1,1,hash(seed+i*7)<.5?'#8f2a24':'#a8372f');}
+ // Stöße aus der Wunde, langsamer werdend
+ if(I>=.5){const beat=Math.max(0,Math.sin(k*(9-k)*1.1)),m=Math.round(14*I);for(let i=0;i<m;i++){const v=((k*1.4+i/m)%1),dir=hash(seed+i*3)<.5?-1:1,x=A.x+dir*v*(14+22*I)*(.5+beat*.6),y=A.y-v*12*beat+v*v*26;T.r(x,y,i%3?1:2,i%3?1:2,i%2?'#a8372f':'#c9584a');}}
+ // Rinnsale nach unten
+ for(let i=0;i<Math.round(2+I*5);i++){const L=cl((k-.1-hash(seed+i*2.7)*.8)*(10+I*14),0,10+hash(seed+i*3.9)*24*I);T.r(A.x-6+hash(seed+i*1.3)*12,A.y+2,1,L,i%2?'#8f2a24':'#6b2420');}}
+
+// ---------------------------------------------------------------- Anschluss
+const prevStep=M.effectsStep;if(typeof prevStep==='function')M.effectsStep=function(dt){const r=prevStep.apply(this,arguments);try{step(dt);}catch(e){if(!api.err){api.err=e;console.error(e);}}return r;};
+Object.assign(api,{onDeath,fall,knee,busy,lensDraw,shot,shotDone,gore,splash,phase,classify,sitePoint,clearLens:()=>{lens.length=0;},get clock(){return clock;}});
+M.deathFx=api;
+})();
