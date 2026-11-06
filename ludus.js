@@ -149,6 +149,54 @@ const cypress=(x,y)=>{soft(.25,()=>oval(x+6,y+24,13,5,'#2f2a1f'));rect(x-3,y,6,2
 for(const [x,y]of [[853,372],[46,440]])cypress(x,y);
 M.hallGate?.paint(g,rect,label);
 for(const [x,y]of [[294,152],[304,160]]){rect(x-7,y-14,14,16,'#7a6141');rect(x-7,y-10,14,1,'#3a3024');rect(x-7,y-3,14,1,'#3a3024');rect(x-6,y-15,12,2,'#a08459');}rect(290,160,12,10,'#8f7a55');rect(290,160,12,2,'#b39d70');rect(295,160,1,10,'#5f4a31');
+// ---- Schöner & schwärzer (2026-11-06): nur Bodenfarbe, flache Schilder und Kleinkram auf freien Flächen. Wege, Türen, Klickflächen unverändert; alles einmal gemalt.
+{const blood=(x,y,rx,ry,a=.28)=>soft(a,()=>{oval(x,y,rx,ry,'#5a1f17');oval(x+rx*.3,y-ry*.2,rx*.55,ry*.5,'#6e2a1e');}),
+ sign=(x,y,w,lines,o={})=>{const h=o.h??(4+lines.length*9);soft(.3,()=>rect(x+2,y+h,w,3,'#2f2a1f'));if(o.post)for(const px of o.post){rect(px,y+h,2,o.postH??8,'#4b3c2a');}rect(x,y,w,h,'#4d3d2b');rect(x+1,y+1,w-2,h-2,o.bg??'#8b6c45');rect(x+1,y+1,w-2,1,'#a8865a');for(let yy=y+4;yy<y+h-1;yy+=4)rect(x+2,yy,w-4,1,tint(o.bg??'#8b6c45',.9));g.font=`bold ${o.size??8}px 'Courier Prime',monospace`;g.textAlign='center';g.fillStyle=o.ink??'#2a1d12';lines.forEach((t,i)=>g.fillText(t,x+w/2,y+10+i*9));},
+ skull=(x,y,s=1)=>{oval(x,y,3*s,3*s,'#d9d2bb');rect(x-2*s,y+2*s,4*s,2*s,'#d9d2bb');rect(x-2*s,y-1*s,1*s+1,1*s+1,'#2a2420');rect(x+1*s,y-1*s,1*s+1,1*s+1,'#2a2420');rect(x,y+1*s,1,1,'#5a5144');},
+ bone=(x,y,w=7)=>{rect(x,y,w,1,'#d9d2bb');rect(x-1,y-1,2,3,'#e6dfc8');rect(x+w-1,y-1,2,3,'#e6dfc8');};
+ // Warmes Spätnachmittagslicht auf dem Hofboden (unter Gebäuden bleibt es wie bisher, weil die Gebäude schon stehen: nur ganz schwach)
+ // Schleifspur mit Blutstropfen vom Arena-Tor über den Weg zur Halle der Gefallenen
+ const drag=[[462,176],[430,188],[392,196],[350,202],[312,206],[290,210],[262,214],[232,216],[204,214],[178,212],[160,214]];
+ for(let i=0;i<drag.length-1;i++){const [x0,y0]=drag[i],[x1,y1]=drag[i+1];for(let k=0;k<1;k+=.08){const x=x0+(x1-x0)*k,y=y0+(y1-y0)*k,j=rnd(i*13+k*50);soft(.16,()=>{rect(x,y-3,3,1,'#6b4a33');rect(x,y+2,3,1,'#6b4a33');});if(j>.62)soft(.55,()=>rect(x+j*3,y-1+j*2,j>.85?2:1,j>.85?2:1,'#6e2219'));}}
+ blood(468,180,6,2,.35);blood(166,214,7,3,.3);
+ // Trainingshof: alte Flecken unter den Puppen, ein Eimer Zähne, die unbesiegte Puppe
+ for(const [x,y]of [[375,366],[519,368],[448,476]]){blood(x+9,y+9,9,3,.18);blood(x-12,y+6,5,2,.14);}
+ blood(470,420,12,4,.12);blood(402,440,6,2,.16);
+ {const bx=399,by=383;soft(.3,()=>oval(bx+2,by+9,8,3,'#2f2a1f'));rect(bx-6,by,12,9,'#6b5236');rect(bx-7,by,14,2,'#8a7446');rect(bx-6,by+5,12,1,'#4d3d2b');for(let i=0;i<6;i++)rect(bx-4+(i*3)%9,by-1+(i>2?1:0),2,2,i%2?'#efe8d2':'#d9d0b4');rect(bx-4,by-3,8,1,'#5b4934');
+  sign(bx-18,by+12,36,['ZÄHNE'],{size:8,h:12});}
+ sign(470,448,58,['UNBESIEGT','SEIT 12 J.'],{post:[497],postH:9,size:8});
+ // Schießbahn: Pfeil daneben, im Boden steckend, plus „Zielwasser"
+ for(const [x,y]of [[512,548],[507,556],[561,529]]){rect(x,y,1,7,'#a88c60');rect(x-1,y-1,3,2,'#c9c6ac');}
+ // Wegweiser zwischen Kaserne und Arena-Tor
+ {const px=309;rect(px,58,3,72,'#4d3d2b');rect(px+1,58,1,72,'#6b5236');
+  const arrow=(y,dir,text)=>{const w=42,x=dir>0?px-14:px-26;poly(dir>0?[[x,y],[x+w,y],[x+w+5,y+5],[x+w,y+10],[x,y+10]]:[[x,y],[x+w,y],[x+w,y+10],[x,y+10],[x-5,y+5]],'#4d3d2b');rect(x+1,y+1,w-2,8,'#9a7a4f');rect(x+1,y+1,w-2,1,'#b8956a');g.font="bold 8px 'Courier Prime',monospace";g.textAlign='center';g.fillStyle='#2a1d12';g.fillText(text,x+w/2,y+8);};
+  arrow(62,1,'RUHM');arrow(76,-1,'HALLE');arrow(90,1,'GRAB');arrow(104,-1,'FLUCHT');rect(px-24,109,40,1,'#7a2418');
+  skull(px+12,124);bone(px-14,128);bone(px-8,131,5);}
+ // Arena-Tor: Knochen auf den Stufen, Krallenspuren im Sand
+ bone(418,166,6);bone(506,167,5);skull(526,166,.8);
+ for(let i=0;i<4;i++)soft(.35,()=>rect(440+i*4,170,1,5,'#5f4f37'));
+ // Kaserne: „Betten frei"-Tafel und Strichliste an der Wand
+ sign(186,130,44,['BETTEN','FREI'],{size:7});
+ for(let i=0;i<7;i++)rect(60+i*3+(i===4?2:0),141,1,8,'#4f4636');rect(59,145,15,1,'#4f4636');
+ // Sklavenmarkt: Kundendienst
+ {const m=places[5];sign(m.x+62,m.y+89,104,['KEIN UMTAUSCH'],{size:8,h:12,bg:'#9d7f52'});}
+ // Truppenplatz: Schlachtplan
+ sign(652,516,62,['PLAN A: SIEG','PLAN B: SARG'],{size:7,bg:'#3d4a3e',ink:'#e8e2c8'});
+ // Schädel auf den Ecktürmen: die Hausordnung der Tauben
+ for(const [x,y]of [[22,26],[878,26],[22,642],[878,642]]){skull(x,y);for(let i=0;i<3;i++)rect(x-7+i*6,y-8+(i%2)*13,1,1,'#efefe4');}
+ // Ein paar Krähenfedern und alte Flecken auf dem Pflaster vor dem Medicus
+ blood(258,606,6,2,.25);blood(214,612,4,1,.2);
+}
+// ---- Efeu an der Innenseite der Mauer und Laternenschein (einmal gemalt)
+{const ivy=(x,y,w,h,seed)=>{for(let i=0;i<w*h/5;i++){const t=rnd(seed+i*1.7),u=rnd(seed+i*2.9),fall=u*u*h*(1-Math.abs(t-.5)*1.2);const yy=y+Math.max(0,fall),xx=x+t*w;rect(xx,yy+1,3,2,'#2f4428');rect(xx,yy,3,2,['#4e6a3e','#5f7a48','#567245','#6f8b52'][i%4]);if(i%5===0)rect(xx+1,yy,1,1,'#88a165');}};
+ ivy(232,24,36,22,11);ivy(612,24,26,18,23);ivy(16,300,16,60,37);ivy(868,180,16,50,41);ivy(868,470,16,40,53);ivy(440,632,30,8,61);
+ const glow=(x,y,r,a=.22)=>{const q=g.createRadialGradient(x,y,1,x,y,r);q.addColorStop(0,`rgba(255,196,110,${a})`);q.addColorStop(1,'rgba(255,170,80,0)');g.fillStyle=q;g.fillRect(x-r,y-r,r*2,r*2);};
+ for(const p of [places[0],places[4]]){const dx=Math.round(p.x+p.w*.43);glow(dx-10,p.y+p.h-37,22);}
+ glow(377,100,26,.2);glow(547,100,26,.2);glow(226,254,24,.18);glow(799,203,30,.2);glow(833,408,16,.2);
+ {const m=places[5];for(const sx of [m.x+34,m.x+90,m.x+150])glow(sx+1,m.y+62,16,.18);}}
+// ---- Licht: warme Sonne von oben links, dunklere Ränder. Einmal gemalt, kostet im Spiel nichts.
+{g.save();const sun=g.createRadialGradient(260,140,40,330,260,620);sun.addColorStop(0,'rgba(255,214,150,.17)');sun.addColorStop(.55,'rgba(255,190,120,.04)');sun.addColorStop(1,'rgba(40,20,30,.0)');g.fillStyle=sun;g.fillRect(0,0,900,670);
+ const vig=g.createRadialGradient(450,335,250,450,335,620);vig.addColorStop(0,'rgba(0,0,0,0)');vig.addColorStop(1,'rgba(22,14,12,.32)');g.fillStyle=vig;g.fillRect(0,0,900,670);g.globalCompositeOperation='soft-light';g.fillStyle='rgba(214,160,96,.35)';g.fillRect(0,0,900,670);g.restore();}
 drawGate(g);rect(330,640,240,17,'#1f2b25');label('LUDUS · '+S.schoolName.toUpperCase().slice(0,35),450,653,14);return c;}
 function ambient(g,t){const r=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h);},flick=Math.floor(t*7)%3;
  for(let i=0;i<5;i++){const k=(t*.22+i/5)%1;g.globalAlpha=.34*(1-k);r(812+Math.sin(k*5+i)*5+k*10,48-k*40,5+k*7,4+k*5,'#c9c6b4');}g.globalAlpha=1;
@@ -156,7 +204,13 @@ function ambient(g,t){const r=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(
  r(222,254-(flick?1:0),7,3+(flick?1:0),'#c8642e');r(224,252,3,2,flick===2?'#f4d37a':'#e2ab5c');g.globalAlpha=.3;r(225+Math.sin(t*2)*2,232-((t*9)%10),3,3,'#d8d2bd');g.globalAlpha=1;
  for(const x of [337,583]){const w=Math.sin(t*2.2+x)*2;r(x+19+w,74,4,38,'#7a4439');r(x+10,96+Math.abs(w),8,2,'#a2604f');}
  for(let i=0;i<3;i++){const k=(t*.9+i*.37)%1;g.globalAlpha=.7*(1-k);r(722+i*17+Math.sin(t*3+i)*2,347+(i%2)*4,3+i%2,1,'#cfe6e8');}g.globalAlpha=1;r(741,331+Math.floor(t*6)%3,1,2,'#cfe6e8');
- r(830,406-(flick===1?1:0),6,3,flick?'#e2ab5c':'#f4d37a');}
+ r(830,406-(flick===1?1:0),6,3,flick?'#e2ab5c':'#f4d37a');
+ // Geierschatten zieht langsam über den Hof (zwei Flächen je Bild)
+ {const k=t*.05,x=450+Math.cos(k*Math.PI*2)*300,y=350+Math.sin(k*Math.PI*2)*190,f=Math.sin(t*1.3)>0?1:0;g.globalAlpha=.12;r(x-16,y-1,32,2+f,'#1c1410');r(x-3,y-4,6,9,'#1c1410');g.globalAlpha=1;}
+ // Krähen auf der Nordmauer: hüpfen und picken ab und zu
+ for(const [x,c]of [[156,0],[472,1.7],[748,3.1]]){const p=(t+c*2.3)%6,hop=p<.3?-2:0,peck=p>3&&p<3.4?2:0;r(x,25+hop,5,3,'#1d1b1e');r(x+4,23+hop+peck,3,3,'#1d1b1e');r(x+7,24+hop+peck,1,1,'#b08a3c');r(x+1,28+hop,1,1,'#1d1b1e');r(x+3,28+hop,1,1,'#1d1b1e');}
+ // Fliegen über dem Zahneimer und dem Fleck unter der Puppe
+ for(let i=0;i<5;i++){const fx=i<3?399:470,fy=i<3?378:418,q=t*(3+i)+i*2;r(fx+Math.sin(q)*6+Math.sin(q*2.7)*2,fy+Math.cos(q*1.3)*4,1,1,'#1a1612');}}
 function selectPeople(){const injured=[],healthy=[];for(const g of S.roster){if(g.dead||M.ludusHidden?.(g))continue;(M.health(g)<75||g.blood<65?injured:healthy).push(g);}const shown=healthy.slice(0,12-Math.min(3,injured.length)),bows=healthy.filter(g=>['bow','crossbow'].includes(M.gear(g,'weapon')?.def)).slice(0,2);for(const g of bows){if(shown.includes(g))continue;for(let k=shown.length-1;k>=0;k--)if(!bows.includes(shown[k])){shown[k]=g;break;}}const selected=[...injured.slice(0,3),...shown];return selected.map((g,i)=>{const hurt=injured.includes(g),archer=hurt?0:bows.indexOf(g)+1,training=!hurt&&!archer&&i%3===0;const index=hurt?injured.indexOf(g):i;return {g,team:0,ammo:M.itemStats(M.gear(g,'weapon'))?.ammo||0,x:hurt?(M.medicusArt?.bedSpot(index).x??79+index*58):archer?352:training?i%2?490:345:320+(i*59)%280,y:hurt?(M.medicusArt?.bedSpot(index).y??599):archer?range[archer-1].y:training?i%2?367:364:210+(i*47)%370,baseX:0,baseY:0,a:0,state:hurt?'down':'idle',down:hurt,fallSide:-1,phase:0,moveSpeed:0,energy:100,hurt,training,archer,closeCombat:training,index:i};});}
 function refreshScene(){actors=selectPeople();arrows=[];for(const a of actors){a.baseX=a.x;a.baseY=a.y;}if(S.lanista){actors.push({g:ownerFigure(S.lanista),lanista:true,x:574,y:608,baseX:574,baseY:608,a:0,state:'idle',phase:0,energy:100,ammo:0,moveSpeed:0,index:12});}}
 function draw(dt){if(!canvas||canvas.isConnected===false||document.hidden||!onScreen||M.ui.getPage()!=='home'||window.ArenaTheoryIntro?.active?.())return;elapsed+=dt;paintTime+=dt;if(paintTime<1/30)return;const step=Math.min(paintTime,.1);paintTime=0;M.ludusRenderTest?.begin();const g=canvas.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(bg,0,0);g.drawImage(south??=southStrip(),0,670);g.fillStyle='#8d7650';g.fillRect(595,650,30,20);g.fillStyle='#9a8358';g.fillRect(598,650,24,20);ambient(g,elapsed);M.medicusArt?.frame(g,elapsed);if(M.ludusRenderTest)M.ludusRenderTest.pass(g,elapsed,'back');else M.ludusOverlay?.(g,elapsed);M.practiceYard?.update(actors,step);M.villageLife?.update(actors,step);for(const a of actors){if(a.hurt||M.practiceYard?.owns(a)||M.villageLife?.owns(a))continue;const t=elapsed*.6+a.index;if(a.archer){const lane=a.archer-1,clock=elapsed+a.index*1.7,k=clock%4.2,shot=Math.floor(clock/4.2),cross=M.gear(a.g,'weapon')?.def==='crossbow';a.a=0;a.moveSpeed=0;a.technique=null;a.state=cross&&k<2.2?'reload':'idle';a.reloadDuration=2.2;a.reloadTimer=cross?Math.max(0,2.2-k):0;a.windMax=1.1;a.wind=!cross&&k>=1.3&&k<2.8?Math.max(.01,2.4-k):0;a.swingKind='shoot';a.swingMax=.3;a.swing=k>=2.8&&k<3.1?3.1-k:0;if(k>=2.8&&a.lastShot!==shot){if(a.lastShot!==undefined||k<2.9)arrows.push({x:a.x+16,y:a.y-33,x0:a.x+16,y0:a.y-33,ty:range[lane].y-33+random(-11,11),lane,bolt:cross});a.lastShot=shot;}}else if(a.training&&M.practiceYard){a.wind=a.swing=0;a.moveSpeed=0;a.state='idle';}else if(a.training){a.technique='overhead';const k=t%3;a.windMax=.7;a.wind=k<.7?.7-k:0;a.swingMax=.5;a.swing=k>=.7&&k<1.2?1.2-k:0;a.swingKind='overhead';a.state='attack';}else{const priorX=a.x,priorY=a.y,priorPhase=a.phase||0;const walk=Math.sin(t*.35);a.x=a.baseX+walk*26;a.y=a.baseY+Math.sin(t*.25)*9;a.a=Math.cos(t*.35)>0?0:Math.PI;a.moveSpeed=Math.abs(Math.cos(t*.35))*10;a.phase=elapsed*2+a.index;a.state='move';M.updateLocomotion(a,priorX,priorY,priorPhase,step,a.lanista?.7:.6);}}actors.sort((a,b)=>a.y-b.y);M.renderLudusActors(g,[...actors,...(M.villageLife?.extraActors()||[])].sort((a,b)=>a.y-b.y));M.villageLife?.draw(g);M.practiceYard?.draw(g);if(M.ludusRenderTest)M.ludusRenderTest.pass(g,elapsed,'front');else M.ludusOverlay?.(g,elapsed);const shaft=(x,y,bolt)=>{const n=bolt?9:13;g.fillStyle='#a88c60';g.fillRect(Math.round(x-n),Math.round(y),n,1);g.fillStyle='#c9c6ac';g.fillRect(Math.round(x-n),Math.round(y)-1,2,3);g.fillStyle='#d9dccb';g.fillRect(Math.round(x),Math.round(y),2,1);};for(const s of stuck)for(const p of s)shaft(p.x,p.y,p.bolt);arrows=arrows.filter(p=>{const tx=range[p.lane].x-2;p.x+=440*step;if(p.x>=tx){stuck[p.lane].push({x:tx,y:p.ty,bolt:p.bolt});if(stuck[p.lane].length>3)stuck[p.lane].shift();return false;}shaft(p.x,p.y0+(p.ty-p.y0)*(p.x-p.x0)/(tx-p.x0),p.bolt);return true;});g.fillStyle=elapsed%1>.5?'#c88945':'#e2ab5c';g.fillRect(790,205,7,10);g.fillRect(805,210,5,7);M.ludusRenderTest?.end();}
@@ -171,6 +225,14 @@ function southStrip(){const c=document.createElement('canvas');c.width=900;c.hei
  for(let y=0;y<H;y+=2){const w=30+y*.12,x=610-w/2+Math.sin(y*.08)*2;rect(x,y,w,2,'#8d7650');rect(x+3,y,w-6,2,'#9a8358');if((y>>1)%4===0)rect(x+6+rnd(y)*(w-12),y,2,1,'#7d6a4a');}
  // Grasbüschel
  for(let n=0;n<70;n++){const x=rnd(n+300)*890+5,y=8+rnd(n+400)*(H-10);if(x>585&&x<640)continue;rect(x,y-3,1,4,'#5f7a48');rect(x+2,y-5,1,6,'#6f8b52');rect(x+4,y-2,1,3,'#56704a');}
+ // Kleiner Friedhof der Schule zwischen den Bäumen: alte Kreuze, frisches Grab, ein offenes „auf Vorrat“ mit Schaufel
+ {const cross=(x,y,tilt=0,old=false)=>{const c=old?'#5d5240':'#7a6141';rect(x-1+tilt,y-12,3,13,c);rect(x-5+tilt,y-9,11,3,c);rect(x+tilt,y-12,1,13,old?'#6e6250':'#957650');},mound=(x,y,fresh)=>{g.fillStyle=fresh?'#5a4430':'#46523a';g.beginPath();g.ellipse(x,y+4,9,4,0,0,Math.PI*2);g.fill();if(fresh)for(let i=0;i<5;i++)rect(x-6+i*3,y+2+(i%2),2,1,'#6e5638');};
+  for(const [x,y,t,o,f]of [[236,40,0,true,false],[256,46,1,true,false],[248,26,-1,true,false],[408,30,0,false,true],[432,40,1,true,false],[420,52,0,false,false]]){mound(x,y,f);cross(x,y,t,o);}
+  // offenes Grab mit Schaufel
+  rect(330,34,18,9,'#2a2016');rect(331,35,16,2,'#3b2d1f');rect(328,32,22,2,'#6e5638');rect(349,30,6,6,'#6e5638');rect(352,22,1,12,'#7a6141');rect(350,33,5,3,'#9aa39a');
+  {g.font="bold 8px 'Courier Prime',monospace";g.textAlign='center';rect(312,10,54,12,'#4d3d2b');rect(313,11,52,10,'#8b6c45');g.fillStyle='#2a1d12';g.fillText('RESERVIERT',339,19);rect(338,22,2,10,'#4b3c2a');}
+  // Schild am Weg
+  rect(548,24,2,16,'#4b3c2a');rect(520,10,58,16,'#4d3d2b');rect(521,11,56,14,'#8b6c45');g.fillStyle='#2a1d12';g.font="bold 7px 'Courier Prime',monospace";g.fillText('FRIEDHOF',549,17);g.fillText('PLÄTZE FREI',549,24);}
  // Bäume und Büsche links und ganz rechts (die Fläche rechts vom Weg bleibt frei)
  const D=window.DebtArt;if(D?.tree){let k=7;const r=()=>(k=(k*16807)%2147483647)/2147483647,P=D.palette({season:'sommer',time:'mittag',weather:'klar'},'dorf');
   for(const [x,y,s] of [[40,70,1.1],[120,84,1.25],[205,66,1],[290,82,1.2],[380,70,1.05],[470,86,1.15],[875,80,1.1]])D.tree(g,x,y,s,r,P);

@@ -33,7 +33,25 @@ const exchanges=[
  ['Ich habe keine Angst vor dem Tod.','Gut. Vor dem Frühstück wäre vernünftiger.'],
  ['Der Schmied wirkt heute entspannt.','Dann schau nach, wer fehlt.'],
  ['Wir sind hier wie eine Familie.','Mit erstaunlich vielen Erbfällen.'],
- ['Ich habe meinen letzten Willen geändert.','Wieder: mehr Salz in die Suppe?']
+ ['Ich habe meinen letzten Willen geändert.','Wieder: mehr Salz in die Suppe?'],
+ ['Hast du den neuen Wegweiser gesehen?','Ja. Bei „Flucht“ hat jemand nachgeholfen.'],
+ ['Die Puppe da hinten ist seit zwölf Jahren unbesiegt.','Kein Wunder. Sie hat kein Herz, das man treffen kann.'],
+ ['Wem gehört der Eimer mit den Zähnen?','Uns allen. Anteilig.'],
+ ['Draußen haben sie ein Grab „reserviert“.','Hoffentlich mit Blick auf die Arena.'],
+ ['Der Geier kreist schon wieder.','Er macht nur Inventur.'],
+ ['Die Krähen auf der Mauer starren mich an.','Die schätzen das Gewicht.'],
+ ['Plan A ist Sieg.','Und Plan B steht direkt darunter. In Holz geschnitzt.'],
+ ['In der Kaserne sind Betten frei.','Ich weiß. Ich kannte die Vorbesitzer.'],
+ ['Der Sklavenmarkt nimmt nichts zurück.','Der Friedhof schon. Alles.'],
+ ['Ich will heute mal gemütlich trainieren.','Sag das der Puppe. Sie hat noch nie verloren.'],
+ ['Wohin führt eigentlich die Schleifspur?','Zur Halle. Manche gehen den Weg lieber zu Fuß.'],
+ ['Mein Bein tut weh.','Sei froh, dass du noch beide zum Jammern hast.'],
+ ['Der Medicus hat mir Ruhe verschrieben.','Ewige oder nur bis Freitag?'],
+ ['Ich habe heute einen Gegner zum Lachen gebracht.','Bis zum letzten Atemzug? Respekt.'],
+ ['Was ist das Geheimnis eines langen Lebens?','Nicht hier wohnen.'],
+ ['Der Totengräber hat mir zugezwinkert.','Er zwinkert nicht. Er misst ab.'],
+ ['Ich glaube, die Götter sind auf meiner Seite.','Die Götter wetten auch. Meistens dagegen.'],
+ ['Heute gibt es Fleisch!','Frag nicht, von wem.']
 ];
 const sniffLines=['Der Hund prüft wohl meine Herkunft.','Das ist kein Bewerbungsgespräch, Köter.','Hinten gibt es auch nichts zu holen.','Der einzige Späher, der hier gründlich arbeitet.'];
 const sickLines=['Selbst der Hund hat Ansprüche.','Das war die ehrlichste Bewertung heute.','Der Medicus nennt das ein Gutachten.'];

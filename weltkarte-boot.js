@@ -1,7 +1,7 @@
 'use strict';
 // WELTKARTE · EIGENSTÄNDIGE TESTVERSION (wie die Aufstellungs-Testversion): lädt das unveränderte Spiel, aber ohne Zugriff
 // auf echte Spielstände. Das Spiel schreibt nur in den Arbeitsspeicher dieser Seite; nichts wird dauerhaft gespeichert.
-var BUILD='c6f1c06b';
+var BUILD='e9670d01';
 (()=>{
  let real=null;try{real=window.localStorage;}catch{}
  window.WELT_STORE={get(k){try{return real?real.getItem(k):null;}catch{return null;}},set(k,v){try{real&&real.setItem(k,v);return true;}catch{return false;}},del(k){try{real&&real.removeItem(k);}catch{}}};
