@@ -9,8 +9,14 @@ const songs={home:{file:'ludus-at-sunset',files:['ludus-at-sunset','arena-theory
  // Hundsgraf (hundefang.js): Vorstellung, Aufträge, Fernglas, Hundebuch, Zwinger – nur als MP3 vorhanden
  beast:{file:'beastrium',only:'mp3',el:null,broken:false,level:0,playing:false},
  // Rabies' eigenes Lied „Invisible Hound“: sein Vorstellungsfilm, Fernglas und Hundebuch, sein Karren (Aufträge) – wie beim Schmied
- rabies:{file:'rabies-invisible-hound',only:'mp3',el:null,broken:false,level:0,playing:false}};
-function songWanted(){if(document.querySelector?.('.scene-silence'))return '';if(window.ArenaTheoryIntro?.active?.()||!M.s.options.music||document.hidden)return '';if(raidOn())return 'raid';if(M.s.battle?.paused)return '';if(M.s.battle||M.intro?.active?.())return 'battle';if(medicOn())return 'medic';{const hf=M.hundefang?.music?.();if(hf)return hf;}const hall=M.hall?.music?.();if(hall)return hall;return smithOnStage()?'smith':'home';}
+ rabies:{file:'rabies-invisible-hound',only:'mp3',el:null,broken:false,level:0,playing:false},
+ // „You Bleed, I Get Paid“ (Wunsch Thomas 7.11.): bei allen Kampfberichten und bei der Abrechnung beim Lanista (Überlebende beschweren sich) – fängt
+ // von vorn an, wenn es länger als 15 s nicht lief; nur als MP3 vorhanden
+ report:{file:'you-bleed-i-get-paid',only:'mp3',fresh:true,el:null,broken:false,level:0,playing:false}};
+function songWanted(){if(document.querySelector?.('.scene-silence'))return '';if(window.ArenaTheoryIntro?.active?.()||!M.s.options.music||document.hidden)return '';if(reportOn())return 'report';if(raidOn())return 'raid';if(M.s.battle?.paused)return '';if(M.s.battle||M.intro?.active?.())return 'battle';if(medicOn())return 'medic';{const hf=M.hundefang?.music?.();if(hf)return hf;}const hall=M.hall?.music?.();if(hall)return hall;return smithOnStage()?'smith':'home';}
+// Kampfberichte: Ergebnisbild der Arena (mit Bericht, auch Hunde) und des Boxkampfs (nicht Hunderennen), Ergebnis der Aufstellung, Plünderungs-Ergebnis, Hundefang-Ergebnis,
+// die Seite „Kampfbericht“ – und die Abrechnung beim Lanista (lanista-gier.js). Hat Vorrang vor Kampf- und Plünderungslied.
+function reportOn(){return M.ui?.getPage?.()==='report'||!!document.querySelector?.('.an-res:not(.hr-res),.a-learn,.a-ticker,.ow-report,#hfResult,.lg-scene:not(.out)');}
 // Plündermodus (Außenwelt): Plünderungs-Seite vor dem Tor, laufende Mission und deren Kämpfe – dort läuft „Arena Theory“ statt Ludus- bzw. Kampflied.
 // Durchgängig: auch beim Umhergehen zwischen den Kämpfen (dort ist S.battle.paused gesetzt), ohne Abbrechen oder Neustart beim Kampfbeginn.
 function raidOn(){return !!M.s.battle?.mission||!!M.outside?.running||M.ui?.getPage?.()==='outside';}
@@ -21,11 +27,11 @@ function smithOnStage(){return M.ui?.getPage?.()==='forge'||!!M.forgeIntro?.scen
 function songReady(t){if(t.broken||typeof Audio==='undefined')return false;if(t.el)return true;try{const el=new Audio();el.loop=!t.files;el.preload='none';el.volume=0;const pick=t.only?(el.canPlayType('audio/mpeg')?t.only:''):el.canPlayType('audio/webm; codecs="opus"')?'webm':el.canPlayType('audio/mp4; codecs="mp4a.40.2"')?'m4a':'';if(!pick){t.broken=true;return false;}t.ext=pick;el.src='music/'+(t.files?t.files[t.idx]:t.file)+'.'+pick;el.addEventListener('error',()=>{t.broken=true;t.playing=false;});if(t.files)el.addEventListener('ended',()=>songNext(t));t.el=el;return true;}catch{t.broken=true;return false;}}
 // Lieder mit Liste (Schmiede): ein einziges Audio-Element, das nach dem Ende auf die nächste Datei umgestellt wird; es wird nur das gerade laufende Lied geladen.
 function songNext(t){if(!t.el||!t.files)return;t.idx=(t.idx+1)%t.files.length;t.el.src='music/'+t.files[t.idx]+'.'+t.ext;if(t.playing){const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}}
-function songStop(t){if(t.el&&t.playing){t.playing=false;t.level=0;t.el.pause();}}
+function songStop(t){if(t.el&&t.playing){t.playing=false;t.stopAt=Date.now();t.level=0;t.el.pause();}}
 // Hat der Browser ein gewünschtes Lied von sich aus angehalten (Handy: Audio-Unterbrechung, Ladepause, Speicher), läuft es an derselben Stelle weiter – kein Neustart.
 // Sprechstimmen: Musik wird leiser, solange jemand spricht (duck 0–1), damit die Stimme nicht untergeht
 let duckT=1,duckC=1;
-function songTick(){const wanted=songWanted();for(const key in songs){const t=songs[key],want=wanted===key&&songReady(t);if(!t.el||t.broken)continue;t.level+=((want?.42:0)-t.level)*.12;duckC+=(duckT-duckC)*.22;if(want&&!t.playing){t.playing=true;const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}else if(want&&t.el.paused&&Date.now()-(t.retry||0)>700){t.retry=Date.now();const p=t.el.play();if(p?.catch)p.catch(()=>{});}else if(t.playing&&t.level<.02)songStop(t);try{t.el.volume=Math.max(0,Math.min(1,t.level*duckC));}catch{}}}
+function songTick(){const wanted=songWanted();for(const key in songs){const t=songs[key],want=wanted===key&&songReady(t);if(!t.el||t.broken)continue;t.level+=((want?.42:0)-t.level)*.12;duckC+=(duckT-duckC)*.22;if(want&&!t.playing){t.playing=true;if(t.fresh&&Date.now()-(t.stopAt||0)>15000){try{t.el.currentTime=0;}catch{}}const p=t.el.play();if(p?.catch)p.catch(()=>{t.playing=false;});}else if(want&&t.el.paused&&Date.now()-(t.retry||0)>700){t.retry=Date.now();const p=t.el.play();if(p?.catch)p.catch(()=>{});}else if(t.playing&&t.level<.02)songStop(t);try{t.el.volume=Math.max(0,Math.min(1,t.level*duckC));}catch{}}}
 const recent=new Map(),hz=n=>440*Math.pow(2,(n-69)/12);
 function init(){if(ctx)return true;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;try{
  ctx=new AC();master=ctx.createGain();master.gain.value=.62;musicBus=ctx.createGain();fxBus=ctx.createGain();musicBus.gain.value=.34;fxBus.gain.value=.7;
