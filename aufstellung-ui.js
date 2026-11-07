@@ -84,6 +84,13 @@ const SUB=TEST?'ARENA THEORY · TESTVERSION':'ARENA THEORY · ARENA';
 function top(title,sub){return `<header class="a-top">${TEST?'':'<button class="a-ico" data-act="exit" aria-label="Zurück zur Arena">◀</button>'}<div class="a-title"><small>${SUB}</small><b>${title}</b></div><div class="a-pill"><small>GOLD</small><b>${fmt(GOLD())}</b></div><div class="a-pill" title="Gunst der Menge: steigt mit spektakulären Kämpfen und hebt die Börse"><small>GUNST</small><b>${st.fame}</b></div><div class="a-pill"><small>TAG</small><b>${S.day||1}</b></div>${TEST?'<button class="a-ico" data-act="menu" aria-label="Menü">☰</button>':''}</header>`;}
 const steps=n=>`<div class="a-steps">${['1 · AUFSTELLUNG','2 · GEGNER ☠','3 · KAMPF'].map((s,i)=>`<span class="${i===n?'a-on':''}">${s}</span>`).join('')}</div>`;
 function render(){params();if(step==='group')viewGroup();else if(step==='offers')viewOffers();else if(step==='result')viewResult();paint(root);}
+// Begleithund (begleithund.js): eigener Platz, zählt nicht zur Gruppe. Nur eigene Hunde aus dem Zwinger.
+function dogBox(){const BH=window.Begleithund,DG=window.DOG;if(TEST||wmode||!BH||!DG)return '';const list=BH.kennel();
+ if(st.dog&&!list.some(D=>D.id===st.dog&&BH.fit(D)))st.dog=null;
+ const card=D=>{const ok=BH.fit(D),on=st.dog===D.id,hp=Math.round((()=>{try{return DG.condHealth(D);}catch{return 100;}})()),kw=(()=>{try{return DG.kw(D);}catch{return '?';}})(),br=(()=>{try{return DG.BREEDS.find(b=>b.id===D.breed)?.name||'';}catch{return '';}})();
+  return `<button class="a-dog${on?' a-on':''}${ok?'':' a-out'}" data-dog="${ok?esc(D.id):''}" ${ok?'':'disabled'}><span class="a-dogi">🐕</span><span class="a-nm"><span class="a-name">${esc(D.name)}</span><small>${esc(br)}</small><span class="a-vals"><b class="a-kw" title="Kampfwert">${kw}</b><b class="a-hp${hp<50?' a-lo':hp<80?' a-mid':''}" title="Gesundheit">♥ ${hp} %</b>${D.fights?`<small>${D.fights} Kämpfe${D.kills?' · '+D.kills+' Kills':''}</small>`:''}</span>${ok?'':'<small>muss sich erst erholen</small>'}</span>${on?'<b class="a-dogon">DABEI</b>':''}</button>`;};
+ return `<section class="a-box a-dogs"><div class="a-bh"><h2>🐕 Hund</h2><span>${st.dog?'1 Hund dabei':'ohne Hund'} · eigener Platz</span></div>
+ ${list.length?`<div class="a-doglist">${list.map(card).join('')}</div><p class="a-hint">Antippen nimmt den Hund mit, nochmal antippen lässt ihn daheim. Wunden und Tod bleiben. Mit Anführer und Assassinen wird er manchmal versteckt gehalten und mit ihnen von hinten losgelassen.</p>`:'<p class="a-hint">Der Zwinger ist leer. Hunde fängt man bei Septimus Rabies (Hundefang).</p>'}</section>`;}
 function viewGroup(){
  const L=lineup(),sum=L.reduce((a,x)=>a+x.kw,0),fs=forms(),rc=repairPrice(),wsum=wmode?wmode.members.reduce((a,g)=>a+A.kw(g),0):0;
  /* Einordnung vom Medicus (sortierung.js): Kader danach anzeigen */const T=M.sortTag,sf=T&&st.sortFilter&&st.sortFilter!=='all'?st.sortFilter:'all',bySort=g=>sf==='all'||(sf==='none'?!T.get(g):T.get(g)===sf);
@@ -106,6 +113,7 @@ function viewGroup(){
   <div class="a-acts"><button data-act="equip" ${L.length?'':'disabled'}>⚙ AUTOMATISCH AUSRÜSTEN</button><button data-act="repair" ${rc?'':'disabled'} title="Alle angelegten Waffen, Schilde und Rüstungen der Gruppe">🔧 ALLES REPARIEREN${rc?' · '+fmt(rc)+' Gold':''}</button></div>
   ${selChip?`<div class="a-acts"><button data-act="hero">${amode?(HERO()===selChip?'★ Anführer weg':'★ Anführer'):st.hero===selChip?'★ Held weg':'★ Held'}</button><button data-act="remove">Abziehen</button><button data-act="unsel">Fertig</button></div>`:''}
   <p class="a-hint">${selChip?esc(G(selChip)?.name)+': Feld antippen zum Versetzen.':'Karten seitlich aus dem Kader ziehen (oder antippen). Zurück in den Kader ziehen = abziehen. Hinten wartet, bis es ernst wird. Schaubilder mag das Publikum.'}</p></section>
+ ${dogBox()}
  ${st.fallen.length?`<section class="a-box a-fallen"><b>Gefallen:</b> ${st.fallen.slice(-12).map(f=>`✝ ${esc(f.name)} (${f.kw}, Tag ${f.day})`).join(' · ')}</section>`:''}
  ${TEST||wmode||amode?'':'<p class="a-hint" style="text-align:center"><button class="a-link" data-act="classic">Bisherige Herausforderungen ▸</button></p>'}
  </main><div class="a-go">${amode?`<button class="a-main" data-act="afight" ${L.length>=(amode.min||1)&&L.length<=amode.max&&amode.ready!==false?'':'disabled'}>${amode.ready===false?'HEUTE SCHON DRAUSSEN':'AUFBRECHEN ▶ · '+L.length+' KÄMPFER'}</button>`:wmode?`<button class="a-main" data-act="wfight" ${L.length&&L.length<=WMAX?'':'disabled'}>⚔ KAMPF · ${L.length} GEGEN ${wmode.members.length}</button>`:`<button class="a-main" data-act="ready" ${L.length?'':'disabled'}>GRUPPE STEHT · GEGNER ☠</button>`}</div>`;}
@@ -195,7 +203,8 @@ window.addEventListener('pointerup',e=>end(e,false));window.addEventListener('po
 root.addEventListener('contextmenu',e=>{if(e.target.closest('[data-drag]'))e.preventDefault();});
 
 // ---------- Klicks ----------
-root.addEventListener('click',e=>{const t=e.target.closest('[data-act],[data-cell],[data-buy],[data-vow],[data-offer],[data-sortf]');if(!t||busy)return;
+root.addEventListener('click',e=>{const t=e.target.closest('[data-act],[data-cell],[data-buy],[data-vow],[data-offer],[data-sortf],[data-dog]');if(!t||busy)return;
+ if(t.dataset.dog!==undefined){const id=t.dataset.dog||null;st.dog=st.dog===id?null:id;save();render();return;}
  if(t.dataset.sortf){st.sortFilter=t.dataset.sortf;save();render();return;}
  if(t.dataset.cell){if(selChip&&!e.target.closest('[data-drag]')){const [row,lane]=t.dataset.cell.split('|');place(selChip,row,lane);}return;}
  if(false){const [row,lane]=t.dataset.cell.split('|');place(selChip,row,lane);return;}
@@ -244,7 +253,7 @@ function wfight(){const g=wmode,L=lineup();if(!g||!L.length||busy)return;if(L.le
 function afight(){const m=amode,L=lineup();if(!m||busy)return;if(m.ready===false)return toast('Heute wart ihr schon plündern.');if(L.length<(m.min||1))return toast('Mindestens ein Kämpfer.');if(L.length>m.max)return toast('Höchstens '+m.max+' Kämpfer.');
  const bad=L.filter(x=>!fit(x.g).ok);if(bad.length)return toast(bad[0].g.name+' ist nicht einsatzbereit.');
  const slots={};for(const x of L)slots[x.id]={row:x.slot.row,lane:x.slot.lane};const ids=L.map(x=>x.id),lead=HERO(),go=m.start;
- close();amode=null;step='group';try{go?.(ids,slots,lead);}catch(e){console.error(e);}}
+ close();amode=null;step='group';try{window.Begleithund?.prepare?.();}catch(e){console.warn(e);}try{go?.(ids,slots,lead);}catch(e){console.error(e);}}
 function fight(){const o=offers[sel];if(!o)return;const L=lineup(),wg=wmode;busy=true;const kwBefore={};for(const x of L)kwBefore[x.id]={kw:x.kw,role:x.role,g:x.g};
  const spec=A.spec(L,o,false);
  S.battle=null;try{M.ui.click('nav:home');}catch(e){}try{window.HahnArena?.resetScene?.();}catch(e){}
@@ -255,6 +264,7 @@ function fight(){const o=offers[sel];if(!o)return;const L=lineup(),wg=wmode;busy
  // Die Anführer-Logik schließt Kämpfe der neuen Arena aus (b.neu) – hier ausdrücklich angehängt. Die Positionen
  // kommen aus dem Raster: die Formationsphase lässt jeden dort stehen, wo er aufgestellt wurde (b.aufForm).
  b.aufForm=true;try{const LD=M.outsideLeader;if(LD?.attachArena){b.neu=false;try{LD.attachArena(b,{leaderId:S.arenaLeaderId});}finally{b.neu=true;}}}catch(e){console.warn(e);}
+ /* Begleithund (begleithund.js): nicht bei Herumtreibern; kommt nach dem Anführer, sonst schlösse die Anführer-Logik den Kampf aus */if(!wg&&!TEST)try{const BH=window.Begleithund,D=BH?.chosen();if(D)BH.arena(b,D);}catch(e){console.warn(e);}
  tracker=A.tracker(b,L,o,{vows:wg?[]:st.vows,hero:st.hero,fame:wg?0:st.fame});
  document.body.classList.add('auf-fighting');
  AN.listeners.push(out=>{const T=tracker;tracker=null;let r;try{r=T.done(out);}catch(e){console.error(e);}

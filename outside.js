@@ -425,8 +425,8 @@ async function celebrate(b){if(!live(b))return;await sleep(1100);await waitShots
  while(live(b)&&performance.now()<ANIM.until)await sleep(80);}
 async function laugh(b,who){if(!live(b))return;await waitShots(b,9000);if(!live(b))return;partyAnim('laugh',2.6);try{M.audioEngine?.sound?.('laugh');}catch(e){}const k=who||anyParty(b);if(k)await sayFull(k,pickL(LAUGH),{name:first(k.g),log:false});
  while(live(b)&&performance.now()<ANIM.until)await sleep(80);}
-function partyActors(b){return b.actors.filter(a=>a.team===0&&!a.down&&!a.g.dead);}
-function anyParty(b){const l=partyActors(b);return l[Math.floor(Math.random()*l.length)]||b.actors.find(a=>a.team===0);}
+function partyActors(b){return b.actors.filter(a=>a.team===0&&!a.down&&!a.g.dead&&!a.companion);}
+function anyParty(b){const l=partyActors(b);return l[Math.floor(Math.random()*l.length)]||b.actors.find(a=>a.team===0&&!a.companion);}
 const first=g=>String(g?.name||'').split(' ')[0];
 // Nach jeder Begegnung geht es von selbst weiter (Countdown). „Weiter ▶“ springt sofort, „Heimkehren (ohne Beute)“ beendet die Mission; Beute gibt es nur für die ganze Mission.
 function setButtons(state){R.awaiting=state;clearInterval(R.autoT);const fl=$('owFlee'),au=$('owAuto');

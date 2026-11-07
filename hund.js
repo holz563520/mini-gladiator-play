@@ -641,7 +641,7 @@ function receive(a,d,projectile,snapshot){if(d.g.dead)return;const ef=snapshot||
 const baseReceive=M.rexReceive;M.rexReceive=function(a,d){if(d?.dog)return receive.apply(this,arguments);return baseReceive?.apply(this,arguments);};
 
 // ---------------------------------------------------------------- Bewegung
-const BX=[140,900],BY=[188,598];// Laufbereich des Hundes: Arena minus Körperlänge, damit Kopf und Rute nicht an den Rand stoßen
+const BX=[140,900],BY=[188,598];/* Begleithund (7.11.): in Außenwelt-Karten gilt die Karte */function fitBounds(){const b=S.battle;if(b?.L&&b.width){BX[0]=60;BX[1]=b.width-60;BY[0]=b.L.mT+24;BY[1]=b.L.mB-12;}else{/* vergrößerte Arena (M.growArena): Bereich mitskalieren */const sx=(b?.width||1040)/1040,sy=(b?.height||720)/720;BX[0]=140*sx;BX[1]=900*sx;BY[0]=188*sy;BY[1]=598*sy;}}// Laufbereich des Hundes: Arena minus Körperlänge, damit Kopf und Rute nicht an den Rand stoßen
 // Gangarten: Fußfolge [VL nah, HL nah, VL fern, HL fern], Standphase, Schrittlänge, Fußhub (Einheiten vor Größe)
 const GAITS=[null,{name:'Schritt',off:[.25,0,.75,.5],duty:.62,stride:9,lift:2.6},{name:'Trab',off:[.5,0,0,.5],duty:.5,stride:13,lift:3.6},{name:'Galopp',off:[.55,0,.45,.1],duty:.36,stride:21,lift:5.5},
  // Renngalopp (nur Modus 'race', Hunderennen): doppelte Schwebephase wie beim Windhund – kurze Bodenkontakte, weit gestreckte Läufe
@@ -734,7 +734,7 @@ function stepBlood(d,dt){let bleed=0;for(const p in d.bleed){d.bleed[p]*=Math.ex
 function pickHumanPart(d,t){if(t.fallTimer>0||t.down||t.draggedBy)return 'neck';const facing=Math.cos(M.angleDiff(M.angle(t,d),t.a)),r=Math.random();
  // von vorn: Arme (Schild vorne links, Schwert rechts), Brust; von der Seite/hinten: Beine
  if(facing>.3)return r<.45?'rfa':r<.68?'lfa':r<.82?'chest':pick(['rt','lt']);return r<.45?pick(['rt','lt','rsh','lsh']):r<.75?pick(['rfa','lfa']):'chest';}
-function step(d,dt){const b=S.battle;d.hit=Math.max(0,d.hit-dt);d.yelpT=Math.max(0,(d.yelpT||0)-dt);d.clock+=dt;d.cool-=dt;d.shaking=Math.max(0,(d.shaking||0)-dt);stepSpray(d,dt);stepBlood(d,dt);if(d.mode!=='leap'&&d.z>0)d.z=Math.max(0,d.z-dt*140);
+function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);d.yelpT=Math.max(0,(d.yelpT||0)-dt);d.clock+=dt;d.cool-=dt;d.shaking=Math.max(0,(d.shaking||0)-dt);stepSpray(d,dt);stepBlood(d,dt);if(d.mode!=='leap'&&d.z>0)d.z=Math.max(0,d.z-dt*140);
  if(d.g.dead){if(d.clock<3&&d.bleedSum>.2&&Math.random()<dt*3){const w=partWorld(d,'hals');spray(d,w.x,w.y,4,3,.4);}d.moveSpeed=0;return;}
  if(d.blood<=14){dieDog(d,b.actors.find(a=>a.id===d.lastAttacker),'Verblutet');return;}
  d.energy=Math.min(100,d.energy+dt*(['stalk','circle','threat'].includes(d.mode)?9:3)*d.P.stam);d.morale=Math.min(100,d.morale+dt*.6);

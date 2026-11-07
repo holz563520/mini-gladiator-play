@@ -123,3 +123,12 @@ body.auf-fighting #auf{display:none}
 
 /* Herumtreiber-Kampf (4.11.): keine Prämie, daher keine Börsenrechnung */
 .a-wres .a-formula,.a-wres .a-bars,.a-wres .a-spect{display:none}
+/* Begleithund (begleithund.js) */
+#auf .a-doglist{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+#auf .a-dog{position:relative;display:flex;align-items:center;gap:6px;padding:4px 6px;border:2px solid var(--line);background:var(--raised);box-shadow:2px 2px 0 #0008;color:inherit;font:inherit;text-align:left;cursor:pointer}
+#auf .a-dog.a-on{border-color:#d9b45a;background:#3a3222}
+#auf .a-dog.a-out{opacity:.55;cursor:not-allowed}
+#auf .a-dogi{font-size:22px;line-height:1}
+#auf .a-dog .a-nm{display:flex;flex-direction:column;min-width:0}
+#auf .a-dogon{position:absolute;right:5px;top:4px;font-size:9px;color:#d9b45a;letter-spacing:.05em}
+#auf .a-dog .a-vals{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
