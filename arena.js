@@ -948,6 +948,8 @@ M.liveCache=liveCache;
 function drawBattleActorLive(a){
  /* Einfache Figuren: ab 60 Kämpfern automatisch, sonst über den Schalter in der Kampf-Anzeige (save.options.figures='simple', Thomas 08.11.) bzw. M.renderTest.simple im Grafik-Benchmark */
  if(((save.battle?.actors.length||0)<=60&&!(M.renderTest?M.renderTest.simple:save.options?.figures==='simple'))||zoom>1.4||save.battle?.cinematic||save.battle?.verdictCamera){drawGladiator(a);return;}
+ /* Tiere (Hunde, Löwe, Hahn) haben eigene Zeichner; die einfache Figur kennt nur Menschen (Thomas 08.11.: Hunde sahen in der Miniaturansicht aus wie kleine Menschen) */
+ if(a.rex||a.hahn){drawGladiator(a);return;}
  /* Schalter „einfach“ bei kleinen Kämpfen (Thomas 08.11.): Wundgriff und Humpeln entfallen, sonst würden Verletzte wieder voll gezeichnet; Griffe & Co. bleiben voll */
  const forced=(save.battle?.actors.length||0)<=60;
  if((!forced&&(M.woundCare(a).count||M.legImpairment(a.g,'l')||M.legImpairment(a.g,'r')))||a.sandKick>0||a.wipeTimer>0||a.rearFinish||a.grabbedBy||a.pierceContact){drawGladiator(a,false,true);return;}

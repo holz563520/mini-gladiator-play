@@ -429,7 +429,7 @@ function startFight(j){const s=st();if(S.battle)return;const T=goTeam||team,bg=b
  const b={id:'hundefang-'+j.id,hundefang:true,dogTest:true,hasDogs:true,actors:[...hs,d],opponent:D.breedName,time:0,startTime:0,type:'hundefang',league:0,log:[],paused:false,result:null,obstacles:[],width:1040,height:720,
   teamTactics:[{...TACTIC},{...TACTIC}],leaders:[null,null],moraleBonus:[0,0],moralePressure:[0,0],groundWeapons:[],dropped:[],fee:0};
  Object.defineProperty(b,'toJSON',{value:()=>null,enumerable:false});
- s.usedDay=S.day;j.done='UNTERWEGS';
+ s.usedDay=S.day;j.done='UNTERWEGS';S.options.speed=1;/* Hundefang beginnt immer in Geschwindigkeit 1 (Thomas 08.11.) */
  M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;for(const p of [...(M.fx||[]),...(M.shots||[])])p.active=false;
  const lead=men[0]||bg;fight={b,j,g:lead,bait:bg,men,hs,h:hs[0],d,blunt,net:men.some(hasNet),netT:-1,outcome:null};
  const line=fill(pick(TX_LOCK.go),bg);b.log.unshift({time:0,text:'Lockvogel: '+bg.name+' wird vorgeschickt. Rabies: „'+line+'“'});
