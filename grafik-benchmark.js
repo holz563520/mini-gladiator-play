@@ -30,7 +30,7 @@ function drawBox(ctx,a){
 }
 
 function applyMode(m){
- mode=m;RT.none=m==='none';RT.actor=m==='box'?drawBox:null;RT.arena=$('arena').checked;RT.effects=$('fx').checked;RT.stage=$('stage').value;RT.liveFps=parseInt($('live').value)||0;RT.liveCopy=/b$/.test($('live').value)?'bitmap':'';
+ mode=m;RT.simple=m==='simple';RT.none=m==='none';RT.actor=m==='box'?drawBox:null;RT.arena=$('arena').checked;RT.effects=$('fx').checked;RT.stage=$('stage').value;RT.liveFps=parseInt($('live').value)||0;RT.liveCopy=/b$/.test($('live').value)?'bitmap':'';
  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{applyMode(b.dataset.mode);live.reset();});
@@ -76,7 +76,7 @@ M.benchmarkSample=(wallMs,simMs,paintMs,painted,steps,dropped)=>{try{baseSample?
 const fmt=(v,d=1)=>v.toFixed(d).replace('.',',');
 const cls=(v,good,mid)=>v>=good?'ok':v>=mid?'mid':'bad';
 function meterText(r){const b=S.battle,alive=b?[0,1].map(t=>b.actors.filter(a=>a.team===t&&!a.g.dead).length):[0,0],q=M.renderMetrics?.()?.quality;
- return `<b>${b?b.actors.length:0} Kämpfer</b> · ${{full:'volle Figuren',box:'Kästen',none:'nichts gezeichnet'}[mode]}<br>`+
+ return `<b>${b?b.actors.length:0} Kämpfer</b> · ${{full:'volle Figuren',simple:'einfache Figuren',box:'Kästen',none:'nichts gezeichnet'}[mode]}<br>`+
   `Bilder/s <span class="${cls(r.fps,50,30)}">${fmt(r.fps,0)}</span> · Spieltempo <span class="${cls(r.tempo*100,95,80)}">${fmt(r.tempo*100,0)} %</span><br>`+
   `Logik ${fmt(r.sim)} ms · Zeichnen ${fmt(r.paint)} ms · <span class="${cls(-(r.sim+r.paint),-16.7,-33)}">zusammen ${fmt(r.sim+r.paint)}</span><br>`+
   (mode==='none'?'':`<span style="color:#d8cdb4">Kulisse ${fmt(r.split.stage)} · Boden ${fmt(r.split.ground)} · Figuren ${fmt(r.split.actors)} · Rest ${fmt(r.split.rest)}</span><br>`)+
@@ -88,7 +88,7 @@ setInterval(()=>{
 },200);
 
 // ---------------------------------------------------------------- Messreihe
-const SIZES=[5,10,20,50,100],MODES=[['full','Volle Figuren'],['box','Kästen'],['none','Nichts']];
+const SIZES=[5,10,20,50,100],MODES=[['full','Volle Figuren'],['simple','Einfache Figuren'],['box','Kästen'],['none','Nichts']];
 const results={};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function runSeries(){
@@ -149,6 +149,7 @@ const smooth=r=>r&&r.fps>=50&&r.tempo>=.95;
 function verdictFor(n){const r=results[n];if(!r)return '';const f=r.full,b=r.box,z=r.none;
  if(z&&z.tempo<.95)return `<b>${n} gegen ${n}</b>: <span class="bad">Die Kampfberechnung ist zu langsam.</span> Selbst ohne Zeichnen läuft der Kampf nur mit ${fmt(z.tempo*100,0)} % Tempo. Neue Grafik allein hilft hier nicht.`;
  if(smooth(f))return `<b>${n} gegen ${n}</b>: <span class="ok">Läuft flüssig mit voller Grafik.</span>`;
+ if(smooth(r.simple))return `<b>${n} gegen ${n}</b>: <span class="mid">Mit einfachen Figuren flüssig</span> (${fmt(r.simple.fps,0)} Bilder/s), mit vollen Figuren ${fmt(f.fps,0)} Bilder/s.`;
  if(smooth(b))return `<b>${n} gegen ${n}</b>: <span class="mid">Die Grafik bremst.</span> Mit Kästen flüssig (${fmt(b.fps,0)} Bilder/s), mit vollen Figuren ${fmt(f.fps,0)} Bilder/s. Sparsamere Figuren lohnen sich.`;
  return `<b>${n} gegen ${n}</b>: <span class="bad">Auch mit Kästen nicht ganz flüssig</span> (${fmt(b.fps,0)} Bilder/s, ${fmt(b.tempo*100,0)} %), obwohl die Berechnung allein reicht. Logik und Zeichnen zusammen sind zu viel. Neue Grafik hilft etwas, die Berechnung muss aber auch schneller werden.`;}
 function verdict(){$('verdict').innerHTML=SIZES.map(n=>`<li>${verdictFor(n)}</li>`).join('');}

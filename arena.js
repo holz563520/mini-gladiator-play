@@ -921,7 +921,8 @@ const liveCache=(()=>{const RESCALE=.03,BUDGET=8e6,map=new Map();let battleId=nu
  return {draw,reset,stats:()=>({entries:map.size,pixels,bytes:pixels*4,copies,paints,tKey,tPaint,tCopy})};})();
 M.liveCache=liveCache;
 function drawBattleActorLive(a){
- if((save.battle?.actors.length||0)<=60||zoom>1.4||save.battle?.cinematic||save.battle?.verdictCamera){drawGladiator(a);return;}
+ /* Einfache Figuren: ab 60 Kämpfern automatisch, sonst über den Schalter in der Kampf-Anzeige (save.options.figures='simple', Thomas 08.11.) bzw. M.renderTest.simple im Grafik-Benchmark */
+ if(((save.battle?.actors.length||0)<=60&&!(M.renderTest?M.renderTest.simple:save.options?.figures==='simple'))||zoom>1.4||save.battle?.cinematic||save.battle?.verdictCamera){drawGladiator(a);return;}
  if(M.woundCare(a).count||M.legImpairment(a.g,'l')||M.legImpairment(a.g,'r')||a.sandKick>0||a.wipeTimer>0||a.rearFinish||a.grabbedBy||a.pierceContact){drawGladiator(a,false,true);return;}
  const g=a.g,w=M.weapon(a),motion=figureMotion(a,w,time),face=Math.cos(a.a)>=0?1:-1,fall=a.down||g.dead||a.fallTimer>0,knee=a.kneeTimer>0||a.state==='bandage',stride=a.moveSpeed>5?Math.sin(a.phase)*10:0,bend=(a.state==='charge'?5:0)+motion.lean,back=Math.sin(a.a||0)<-.42;
  ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.scale(g.height/180*face,g.height/180);if(fall){ctx.translate(10,0);ctx.rotate(-1.35);}else if(knee)ctx.translate(0,15);
