@@ -30,11 +30,11 @@ function drawBox(ctx,a){
 }
 
 function applyMode(m){
- mode=m;RT.none=m==='none';RT.actor=m==='box'?drawBox:null;RT.arena=$('arena').checked;RT.effects=$('fx').checked;RT.stage=$('stage').value;
+ mode=m;RT.none=m==='none';RT.actor=m==='box'?drawBox:null;RT.arena=$('arena').checked;RT.effects=$('fx').checked;RT.stage=$('stage').value;RT.liveFps=parseInt($('live').value)||0;RT.liveCopy=/b$/.test($('live').value)?'bitmap':'';
  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{applyMode(b.dataset.mode);live.reset();});
-$('arena').onchange=$('fx').onchange=$('stage').onchange=()=>{applyMode(mode);live.reset();};
+$('arena').onchange=$('fx').onchange=$('stage').onchange=$('live').onchange=()=>{applyMode(mode);live.reset();};
 
 // ---------------------------------------------------------------- Kampf starten / beenden
 const realEnd=M.endBenchmark;let mine=false,ended=false;
@@ -92,7 +92,7 @@ const results={};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function runSeries(){
  if(series)return;$('series').disabled=true;$('copy').disabled=true;for(const k in results)delete results[k];renderTable();$('verdict').innerHTML='';
- const keep={mode,count,view:$('view').value,fps:$('fps').value,stage:$('stage').value,arena:$('arena').checked};$('stage').value='';$('arena').checked=true;$('view').value='1';$('fps').value='60';applyFps();
+ const keep={mode,count,view:$('view').value,fps:$('fps').value,stage:$('stage').value,arena:$('arena').checked,live:$('live').value};$('stage').value='';$('arena').checked=true;$('live').value='0';$('view').value='1';$('fps').value='60';applyFps();
  const total=SIZES.length*MODES.length;let done=0;series={m:meter(),hold:false};
  try{
   for(const n of SIZES)for(const [m,label] of MODES){
@@ -102,7 +102,7 @@ async function runSeries(){
    (results[n]||={})[m]=r;done++;renderTable();
   }
   $('progress').textContent='Fertig. '+device();verdict();$('copy').disabled=false;
- }finally{series=null;$('series').disabled=false;$('view').value=keep.view;$('fps').value=keep.fps;applyFps();$('count').value=String(keep.count);$('stage').value=keep.stage;$('arena').checked=keep.arena;applyMode(keep.mode);start(keep.count);live.reset();}
+ }finally{series=null;$('series').disabled=false;$('view').value=keep.view;$('fps').value=keep.fps;applyFps();$('count').value=String(keep.count);$('stage').value=keep.stage;$('arena').checked=keep.arena;$('live').value=keep.live;applyMode(keep.mode);start(keep.count);live.reset();}
 }
 $('series').onclick=runSeries;
 // ---------------------------------------------------------------- Kulisse-Test: dieselbe Szene (5 gegen 5, Kästen) mit vier Kulissen-Varianten
@@ -120,6 +120,22 @@ async function runStageTest(){
 }
 function renderStage(){$('stageres').innerHTML='<tr><th>Kulisse</th><th>Bilder/s</th><th>Zeichnen</th><th>davon Kulisse</th><th>Rest</th></tr>'+stageResults.map(r=>`<tr><td class="l">${r.label}</td><td class="${cls(r.fps,50,30)}">${fmt(r.fps,0)}</td><td>${fmt(r.paint)} ms</td><td>${fmt(r.split.stage)} ms</td><td>${fmt(r.split.rest)} ms</td></tr>`).join('');}
 $('stagetest').onclick=runStageTest;
+// ---------------------------------------------------------------- Figuren-Test: 20 gegen 20 volle Figuren, Figuren jedes Bild neu oder seltener (Zwischenspeicher)
+const LIVES=[['0','jedes Bild (wie im Spiel)'],['20','20-mal je Sekunde'],['20b','20-mal, als Bitmap'],['15','15-mal je Sekunde'],['15b','15-mal, als Bitmap'],['10','10-mal je Sekunde'],['10b','10-mal, als Bitmap']];
+const figResults=[];
+async function runFigTest(){
+ if(series)return;$('series').disabled=$('stagetest').disabled=$('figtest').disabled=true;figResults.length=0;renderFig();
+ const n=+$('figcount').value||20;
+ const keep={mode,count,view:$('view').value,fps:$('fps').value,live:$('live').value};$('view').value='1';$('fps').value='60';applyFps();series={m:meter(),hold:false};
+ try{for(let i=0;i<LIVES.length;i++){const [v,label]=LIVES[i];$('figprog').textContent=`Messe Figuren ${label} … (${i+1}/${LIVES.length})`;
+   $('live').value=String(v);applyMode('full');$('count').value=String(n);start(n);
+   let r=null;for(let tries=0;tries<2;tries++){if(tries)start(n);await wait(2000);series.m.reset();await wait(5000);r=series.m.result();if(r.secs>=3&&r.fps>0)break;}
+   figResults.push({label,n,...r});renderFig();}
+  $('figprog').textContent='Fertig. '+device();$('copy').disabled=false;
+ }finally{series=null;$('series').disabled=$('stagetest').disabled=$('figtest').disabled=false;$('view').value=keep.view;$('fps').value=keep.fps;$('live').value=keep.live;applyFps();$('count').value=String(keep.count);applyMode(keep.mode);start(keep.count);live.reset();}
+}
+function renderFig(){$('figres').innerHTML='<tr><th>Figuren neu</th><th>Bilder/s</th><th>Tempo</th><th>Zeichnen</th><th>davon Figuren</th></tr>'+figResults.map(r=>`<tr><td class="l">${r.label}</td><td class="${cls(r.fps,50,30)}">${fmt(r.fps,0)}</td><td class="${cls(r.tempo*100,95,80)}">${fmt(r.tempo*100,0)} %</td><td>${fmt(r.paint)} ms</td><td>${fmt(r.split.actors)} ms</td></tr>`).join('');}
+$('figtest').onclick=runFigTest;
 function device(){return `Gerät: ${innerWidth}×${innerHeight} px, Pixeldichte ${devicePixelRatio||1}, ${navigator.hardwareConcurrency||'?'} Kerne.`;}
 function renderTable(){
  let h='<tr><th>Je Seite</th>'+MODES.map(([,l])=>`<th>${l}</th>`).join('')+'</tr>';
@@ -138,6 +154,7 @@ function verdict(){$('verdict').innerHTML=SIZES.map(n=>`<li>${verdictFor(n)}</li
 $('copy').onclick=async()=>{
  const lines=['Arena Theory · Grafik-Benchmark',device(),''];
  for(const n of SIZES){lines.push(`${n} gegen ${n}:`);for(const [m,l] of MODES){const r=results[n]?.[m];if(r)lines.push(`  ${l}: ${fmt(r.fps,0)} Bilder/s, Tempo ${fmt(r.tempo*100,0)} %, Logik ${fmt(r.sim)} ms, Zeichnen ${fmt(r.paint)} ms (Kulisse ${fmt(r.split.stage)}, Boden ${fmt(r.split.ground)}, Figuren ${fmt(r.split.actors)}, Rest ${fmt(r.split.rest)}), p95 ${fmt(r.p95)} ms`);}}
+ if(figResults.length){lines.push('',`Figuren-Test (${figResults[0].n} gegen ${figResults[0].n}, volle Figuren):`);for(const r of figResults)lines.push(`  ${r.label}: ${fmt(r.fps,0)} Bilder/s, Tempo ${fmt(r.tempo*100,0)} %, Zeichnen ${fmt(r.paint)} ms (Figuren ${fmt(r.split.actors)}), Logik ${fmt(r.sim)} ms`);}
  if(stageResults.length){lines.push('','Kulisse-Test (5 gegen 5, Kästen):');for(const r of stageResults)lines.push(`  ${r.label}: ${fmt(r.fps,0)} Bilder/s, Zeichnen ${fmt(r.paint)} ms (Kulisse ${fmt(r.split.stage)}, Rest ${fmt(r.split.rest)})`);}
  const text=lines.join('\n');
  try{await navigator.clipboard.writeText(text);$('copy').textContent='Kopiert ✓';}

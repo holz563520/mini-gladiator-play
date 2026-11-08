@@ -852,7 +852,7 @@ function renderPreview(canvas){if(!canvas)return;const old=ctx;canvas.width=1040
 let last=0,accumulator=0,hudTime=0,zoom=1,focus=null;const c=document.getElementById('arenaCanvas');let canvasSize=null,renderQuality=1,renderCost=0,lastPaint=0,slowFrames=0,fastFrames=0,paintInterval=1000/60;let qualityBattle=null,qualityWarmup=0,qualityCooldown=0,paintCost=0;
 function resetRenderQuality(){const n=save.battle?.actors.length||0;renderQuality=n>120?.6:n>60?.75:1;renderCost=paintCost=0;slowFrames=fastFrames=qualityWarmup=qualityCooldown=0;paintInterval=(save.battle?.actors.length||0)>60?1000/30:1000/60;/* Anschluss (grafik-benchmark.html): volle Auflösung, 60 Bilder/s erlaubt; im Spiel nie gesetzt */if(M.renderTest?.uncapped){renderQuality=1;paintInterval=1000/60;}}
 function sampleRenderQuality(dt,paint,total,paused=false){if(M.renderTest?.uncapped)return;if(paused||dt<=0||dt>.12){slowFrames=fastFrames=0;return;}qualityWarmup+=dt;qualityCooldown=Math.max(0,qualityCooldown-dt);const mix=1-Math.exp(-dt*3);renderCost+=(total-renderCost)*mix;paintCost+=(paint-paintCost)*mix;if(qualityWarmup<2||qualityCooldown>0)return;const overloaded=dt>1/45&&renderCost>22&&paintCost>12;slowFrames=overloaded?slowFrames+dt:Math.max(0,slowFrames-dt*2);fastFrames=renderCost<14&&paintCost<10&&dt<1/40?fastFrames+dt:0;if(slowFrames>=2.5){renderQuality=Math.max((save.battle?.actors.length||0)>60?.5:.8,Math.round((renderQuality-.1)*10)/10);slowFrames=fastFrames=0;qualityCooldown=5;}else if(fastFrames>=5&&renderQuality<1){renderQuality=Math.min((save.battle?.actors.length||0)>120?.6:(save.battle?.actors.length||0)>60?.75:1,Math.round((renderQuality+.1)*10)/10);slowFrames=fastFrames=0;qualityCooldown=5;}}
-function measureArena(){const r=c.getBoundingClientRect();canvasSize={width:Math.max(320,Math.round(r.width)),height:Math.max(300,Math.round(r.height))};}if(typeof ResizeObserver!=='undefined')new ResizeObserver(measureArena).observe(c);window.addEventListener?.('resize',()=>canvasSize=null);function drawBattleActor(a){/* Anschluss (grafik-benchmark.html): Ersatzdarstellung zum Messen, im Spiel nie gesetzt */if(M.renderTest?.actor?.(ctx,a,time))return;if(lieCache.draw(a))return;drawBattleActorLive(a);}
+function measureArena(){const r=c.getBoundingClientRect();canvasSize={width:Math.max(320,Math.round(r.width)),height:Math.max(300,Math.round(r.height))};}if(typeof ResizeObserver!=='undefined')new ResizeObserver(measureArena).observe(c);window.addEventListener?.('resize',()=>canvasSize=null);function drawBattleActor(a){/* Anschluss (grafik-benchmark.html): Ersatzdarstellung zum Messen, im Spiel nie gesetzt */if(M.renderTest?.actor?.(ctx,a,time))return;if(lieCache.draw(a))return;if(liveCache.draw(a))return;drawBattleActorLive(a);}
 /* Leistung (Thomas 06.11.): Wer am Boden liegt oder tot ist, sieht fast immer gleich aus. Statt die Figur in jedem Bild aus Hunderten
    Pixeln neu zu bauen, wird sie einmal in ein kleines Bild gezeichnet und danach nur kopiert: Tote als Standbild, Lebende am Boden
    8-mal je Sekunde neu (Atmen, Krümmen und Tropfen sind langsam und klein). Neu gezeichnet wird sofort, wenn sich etwas ändert: Tod,
@@ -886,6 +886,34 @@ const lieCache=(()=>{let off=false;try{off=localStorage.getItem('mg-lie-cache')=
  function prepare(ms=4){const b=save.battle;if(off||!b||battleId!==b.id||typeof document==='undefined')return 0;const end=performance.now()+ms;let n=0;const view=M.arenaView;if(!view)return 0;
   for(const a of b.actors){if(performance.now()>end)break;const e=map.get(a.id);if(!e||e.c&&e.ref===e.key&&Math.abs(view.scale/e.s-1)<=RESCALE||time-e.since<(a.g.body.head?.missing?10:SETTLE)||!settled(a)||sig(a)!==e.key)continue;paint(a,e,view.scale);e.ref=e.key;n++;}return n;}
  return {draw,prepare,reset,stats:()=>({entries:map.size,pixels,bytes:pixels*4,copies,paints,off}),set off(v){off=!!v;if(off)reset();},get off(){return off;}};})();
+/* Test (Grafik-Benchmark, Thomas 08.11.): Zwischenspeicher für stehende und laufende Figuren. Jede Figur wird nur noch fps-mal je Sekunde
+   neu gezeichnet (versetzt über die Bilder verteilt) und dazwischen als fertiges kleines Bild kopiert; die Position folgt jedem Bild.
+   Sofort neu bei neuem Zustand, Blickrichtung, Sturz, Treffer, Waffe/Rüstung/Schild oder Maßstab > 3 %. Gleiche Verschiebungsregel wie
+   beim Liegenden-Speicher (pixelgleich im neu gezeichneten Bild). Nur aktiv mit M.renderTest.liveFps > 0, im Spiel nie gesetzt. */
+const liveCache=(()=>{const RESCALE=.03,BUDGET=8e6,map=new Map();let battleId=null,pixels=0,copies=0,paints=0,seq=0,tKey=0,tPaint=0,tCopy=0;const pn=()=>performance.now();
+ const OC=typeof OffscreenCanvas!=='undefined';
+ const freeC=e=>{if(e.c){pixels-=e.c.width*e.c.height;e.c=null;}e.bmp?.close?.();e.bmp=null;};
+ function reset(){for(const e of map.values())freeC(e);map.clear();pixels=0;}
+ function quick(a){const g=a.g,w=M.weapon(a);return (g.dead?'D':'L')+(a.down?1:0)+(a.fallTimer>0?1:0)+(a.kneeTimer>0?1:0)+a.state+(Math.cos(a.a||0)>=0?1:0)+(Math.sin(a.a||0)<-.42?1:0)+'|'+(w?.id||'')+'|'+(M.usableShield?.(a)?.id||'')+'|'+M.armorItems(g).length+'|'+(M.woundCare(a).count||0)+'|'+(a.hitFlash>0||a.hit>0?1:0);}
+ function room(n){if(pixels+n<=BUDGET)return true;for(const [id,e] of map){freeC(e);map.delete(id);if(pixels+n<=BUDGET)return true;}return pixels+n<=BUDGET;}
+ function paint(a,e,s){const g=a.g,k=Math.max(1,(g.height||180)/180)*(g.statureWide||1),bx=150*k,top=150*k,bottom=60*k,W=Math.ceil(2*bx*s)+3,H=Math.ceil((top+bottom)*s)+3;
+  if(!e.c||e.c.width<W||e.c.height<H||e.c.width>W*1.6+64){freeC(e);const cw=Math.ceil(W/32)*32,ch=Math.ceil(H/32)*32;if(!room(cw*ch))return false;e.c=OC?new OffscreenCanvas(cw,ch):document.createElement('canvas');e.c.width=cw;e.c.height=ch;pixels+=cw*ch;}
+  const q=e.c.getContext('2d');q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,e.c.width,e.c.height);q.imageSmoothingEnabled=false;
+  e.ax=Math.floor(bx*s)+1+(s*a.x-Math.floor(s*a.x));e.ay=Math.floor(top*s)+1+(s*a.y-Math.floor(s*a.y));q.setTransform(s,0,0,s,e.ax-s*a.x,e.ay-s*a.y);
+  const main=ctx;ctx=q;try{drawBattleActorLive(a);}finally{ctx=main;}
+  /* Test liveCopy='bitmap': fertiges Bild als ImageBitmap (am PC ohne Grafikkarte Kopieren billiger, Umwandeln teurer; Handy offen); das OffscreenCanvas wird dabei geleert und wiederverwendet */
+  e.bmp?.close?.();e.bmp=M.renderTest?.liveCopy==='bitmap'&&OC&&e.c.transferToImageBitmap?e.c.transferToImageBitmap():null;
+  e.s=s;e.at=time;e.tip=a.weaponTipX!==undefined?[a.weaponTipX-a.x,a.weaponTipY-a.y]:null;e.contact=a.contactPoint;e.reach=a.reach;e.belt=a.belt;e.x=a.x;e.y=a.y;paints++;return true;}
+ function draw(a){const fps=M.renderTest?.liveFps,b=save.battle;if(!(fps>0)||!b||b.cinematic||b.verdictCamera||typeof document==='undefined'||ctx.globalAlpha!==1)return false;
+  if(battleId!==b.id){reset();battleId=b.id;}
+  const m=ctx.getTransform?.(),s=m?.a;if(!m||m.b||m.c||!(s>0)||Math.abs(m.d-s)>1e-9)return false;
+  let t0=pn();let e=map.get(a.id);const key=quick(a);let t1=pn();tKey+=t1-t0;if(!e){e={c:null,at:-1e9,phase:(seq++%7)/7};map.set(a.id,e);}
+  const due=time-e.at>=1/fps*(e.c?1:e.phase)||time<e.at;
+  if(!e.c||e.key!==key||Math.abs(s/e.s-1)>RESCALE||due){if(!paint(a,e,s)){map.delete(a.id);return false;}e.key=key;t0=pn();tPaint+=t0-t1;t1=t0;}
+  else{/* Werte, die beim Zeichnen entstehen, mit der Figur verschieben */const dx=a.x-e.x,dy=a.y-e.y;if(e.tip){a.weaponTipX=a.x+e.tip[0];a.weaponTipY=a.y+e.tip[1];}a.contactPoint=e.contact;a.reach=e.reach;a.belt=e.belt;}
+  ctx.drawImage(e.bmp||e.c,Math.round((a.x-e.x)*s)/s+e.x-e.ax/e.s,Math.round((a.y-e.y)*s)/s+e.y-e.ay/e.s,e.c.width/e.s,e.c.height/e.s);copies++;tCopy+=pn()-t1;return true;}
+ return {draw,reset,stats:()=>({entries:map.size,pixels,bytes:pixels*4,copies,paints,tKey,tPaint,tCopy})};})();
+M.liveCache=liveCache;
 function drawBattleActorLive(a){
  if((save.battle?.actors.length||0)<=60||zoom>1.4||save.battle?.cinematic||save.battle?.verdictCamera){drawGladiator(a);return;}
  if(M.woundCare(a).count||M.legImpairment(a.g,'l')||M.legImpairment(a.g,'r')||a.sandKick>0||a.wipeTimer>0||a.rearFinish||a.grabbedBy||a.pierceContact){drawGladiator(a,false,true);return;}
