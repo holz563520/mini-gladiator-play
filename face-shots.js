@@ -86,7 +86,7 @@ function head(q,T,C,o,yaw,t,mood){
  if(st===10){poly([[-27,12],[-31,18],[-31,44],[-26,48],[-24,30]],P.hairDark);poly([[25,12],[30,18],[30,44],[25,47],[24,30]],P.hairDark);}
  if(st===3||st===4){poly([[-24,5],[-33,17],[-32,73],[-23,77],[-21,40]],P.hair);poly([[22,7],[32,18],[31,74],[23,72],[22,37]],P.hairDark);for(const x of [-30,-26,26,29])R(x,31,1,36,x<0?P.hairMid:P.hair);}
  // Ears, helix and concha remain attached to the head silhouette.
- if(F.ears===2)for(const sd of [-1,1]){const x=sd*32;R(x-4,22,8,21,P.deep);R(x-3,23,6,18,sd<0?P.warm:P.half);R(x-2,25,3,3,P.light);R(x-1,28,2,9,P.shadow);}
+ for(const sd of [-1,1]){if(F.ears!==2&&F.oneEar!==sd)continue;const x=sd*32;R(x-4,22,8,21,P.deep);R(x-3,23,6,18,sd<0?P.warm:P.half);R(x-2,25,3,3,P.light);R(x-1,28,2,9,P.shadow);}
  if(F.ears===0)for(const sd of [-1,1]){const x=sd*28;R(x-3,25,6,16,P.deep);R(x-3,26,5,12,sd<0?P.warm:P.half);}
  else for(const sd of [-1,1]){const x=sd*28;R(x-3,25,6,16,P.deep);R(x-3,26,5,12,sd<0?P.warm:P.half);R(x-2,27,3,2,P.light);R(x-1,30,2,7,P.shadow);R(x-2,36,2,3,P.red);}
  // Angular skull: narrower temples and a distinct jaw, avoiding a circular mask.
@@ -111,11 +111,11 @@ function head(q,T,C,o,yaw,t,mood){
  poly([[6,24],[10,22],[20,22],[23,25],[19,26],[8,26]],P.shadow);
  const blink=(t%4.4)<.12&&m.open>.2,open=blink?0:m.open,look=m.dart?Math.round(Math.sin(t*5.5)*2):Math.round(yaw*1.6),eyeY=27;
  function eye(x,far){
-  const w=(far?10:12)+(F.size-1)-(F.uneven&&far?Math.min(3,F.uneven):0)+(F.uneven>1&&!far?1:0),up=(m.uneven&&far?-2:0)+(far?F.uneven:0),yy=eyeY+up,eh=open<.2?0:Math.max(1,Math.round(open*3)+(F.size===2&&open>.5?1:0)-(F.lid===1&&open>.5?1:0)),dx=(m.cross||o.crossEyes)?(far?-2:2):F.wall?(far?2:-2):look;
+  const w=(far?10:12)+(F.size-1)-(F.uneven&&far?Math.min(3,F.uneven):0)+(F.uneven>1&&!far?1:0),up=(m.uneven&&far?-2:0)+(far?F.uneven:0),yy=eyeY+up,eh=open<.2?0:Math.max(1,Math.round(open*3)+(F.size===2&&open>.5?1:0)+(F.bulge&&open>.4?2:0)-(F.lid===1&&open>.5?1:0)),dx=(m.cross||o.crossEyes)?(far?-2:2):F.wall?(far?2:-2):look;
   if(eh===0){R(x+1,yy+1,w-2,1,P.deep);R(x+2,yy+2,w-4,1,P.half);}
   else{
    R(x+1,yy-1,w-2,eh+3,P.shadow);R(x,yy,w,1,P.deep);R(x+1,yy+1,w-2,eh,'#c6b89c');R(x+2,yy+1,w-4,Math.max(1,eh-1),'#e0d4b7');
-   const iw=m.tiny?2:3,ix=x+Math.floor(w/2)-1+dx,ih=Math.min(eh,iw),iy=yy+1+Math.max(0,Math.floor((eh-ih)/2)-(m.up?1:0));R(ix,iy,iw,ih,F.iris);R(ix+1,iy,1,ih,'#282c24');if(!m.tiny)R(ix,iy,1,1,'#f5efcf');
+   const iw=m.tiny||F.bulge?2:3,ix=x+Math.floor(w/2)-1+dx,ih=Math.min(eh,iw),iy=yy+1+Math.max(0,Math.floor((eh-ih)/2)-(m.up?1:0));R(ix,iy,iw,ih,F.iris);R(ix+1,iy,1,ih,'#282c24');if(!m.tiny&&!F.bulge)R(ix,iy,1,1,'#f5efcf');if(F.bulge)R(x+1,yy-1,w-2,1,P.deep);
    R(x,yy+1,1,Math.min(2,eh),P.red);R(x+w-1,yy+1,1,eh,P.deep);R(x+2,yy+eh+1,w-4,1,P.half);R(x+3,yy+eh+2,w-5,1,P.light);
    /* Lider: hängend (stumpf) oder klar gezeichnet (wach) */if(F.lid===-1&&eh>1){R(x+1,yy,w-2,2,P.half);R(x+1,yy+2,w-2,1,P.deep);R(x+2,yy-1,w-4,1,P.light);}else if(F.lid===1){R(x,yy,w,1,P.outline);R(x+w-2,yy-1,2,1,P.outline);}
   }
@@ -123,7 +123,8 @@ function head(q,T,C,o,yaw,t,mood){
  }
  eye(-22-F.gap,false);eye(9+F.gap,true);
  // Separate hair strokes in the brows; expressive shape without giant rectangular eyebrows.
- function brow(x,side){const w=side<0?17:16,bi=m.brow[0],bo=m.brow[1],raise=(m.lift&&side>0?-2:0)+(F.browLow?2:0),thick=F.brow===2||F.brow===3?1:F.brow===0?-1:0,arch=F.browArch?2:1;for(let i=0;i<w;i++){const inner=side<0?i/(w-1):1-i/(w-1),y=21+raise+Math.round(bo+(bi-bo)*inner)-Math.round(Math.sin(i/(w-1)*Math.PI)*arch);R(x+i,y,1,Math.max(1,2+thick+(i%4===0?1:0)),P.hairDark);if(i>3&&i<w-3)R(x+i,y,1,1,P.hairMid);}}
+ function brow(x,side){const w=side<0?17:16,bi=m.brow[0],bo=m.brow[1],raise=(m.lift&&side>0?-2:0)+(F.browLow?2:0)+(F.puzzled?(F.puzzled===side?-4:1):0),thick=F.brow===2||F.brow===3?1:F.brow===0?-1:0,arch=F.browArch?2:1;for(let i=0;i<w;i++){const inner=side<0?i/(w-1):1-i/(w-1),y=21+raise+Math.round(bo+(bi-bo)*inner)-Math.round(Math.sin(i/(w-1)*Math.PI)*arch);R(x+i,y,1,Math.max(1,2+thick+(i%4===0?1:0)),P.hairDark);if(i>3&&i<w-3)R(x+i,y,1,1,P.hairMid);}}
+ if(F.ridge){poly([[-27,15],[-10,13],[10,13],[27,15],[26,21],[-26,21]],P.light);R(-26,21,52,2,P.half);R(-24,23,20,1,P.deep);R(5,23,20,1,P.deep);}
  brow(-24-F.gap,-1);brow(6+F.gap,1);if(F.brow===3){R(-8,22+(F.browLow?2:0),16,2,P.hairDark);R(-5,21+(F.browLow?2:0),10,1,P.hairDark);}R(-3,22,1,5,P.half);R(3,22,1,5,P.shadow);
  if(['determined','roar','pain'].includes(mood)){R(-5,21,1,4,P.shadow);R(4,21,1,4,P.shadow);}
  // Nose has a continuous light-facing ridge, a side plane, tip and nostrils.
@@ -138,6 +139,7 @@ function head(q,T,C,o,yaw,t,mood){
  /* Nasenform: 2 Knolle, 3 Römernase (Höcker oben, edel), 0 schmal */if(F.nose===2){poly(NP([[-6,37],[5,37],[9,41],[7,46],[-7,46],[-9,41]]),P.warm);poly(NP([[-6,38],[-1,37],[0,41],[-4,43],[-8,42]]),P.light);R(NX(-7,44),44,4,2,P.deep);R(NX(4,44),44,4,2,P.deep);R(NX(-3,39),39,4,1,P.bright);}
  else if(F.nose===3){R(NX(-1,29),29,3,4,P.light);R(NX(2,30),30,1,5,P.deep);R(NX(-2,28),28,2,1,P.bright);}
  else if(F.nose===0){R(NX(2,30),30,1,6,P.shadow);}
+ if(F.redNose){poly(NP([[-5,37],[4,37],[7,41],[5,45],[-5,45],[-7,41]]),mix(P.red,'#c24e44',.45));R(NX(-3,39),39,3,1,mix(P.bright,'#ffd0c0',.4));}
  R(NX(-5,43),43,3,1,P.deep);R(NX(3,43),43,3,1,P.deep);R(NX(-1,43),43,3,2,P.skin);R(NX(-1,46),46,2,2,P.shadow);
  if(nk>.05){const s=ndir;
   if(ntype==='hoecker'){const hw=Math.round(2+nk*2);R(-hw,29,hw*2+1,3,P.light);R(-hw+1,28,hw*2-1,1,P.bright);R(-hw,32,hw*2+1,1,P.shadow);R(-hw-1,30,1,2,P.deep);R(hw+1,30,1,2,P.deep);/* dicker Höcker in der Mitte, Schatten darunter */}
@@ -151,6 +153,7 @@ function head(q,T,C,o,yaw,t,mood){
  /* Kinn: 0 fliehend, 2 kantig, 3 kantig mit Grübchen; Wangenknochen bei Begabten */
  if(F.chin===0){poly([[-15,57],[15,57],[12,67],[-12,67]],P.half);poly([[-12,58],[12,58],[9,64],[-9,64]],P.shadow);poly([[-17,54],[-9,59],[0,60],[9,59],[17,54],[16,57],[9,61],[0,62],[-9,61],[-16,57]],P.outline);R(-6,56,10,1,P.light);}
  else if(F.chin>=2){poly([[-13,57],[13,57],[12,65],[-12,65]],P.outline);poly([[-12,57],[12,57],[11,63],[-11,63]],P.skin);poly([[3,58],[11,57],[10,63],[4,63]],P.shadow);R(-8,59,9,1,P.light);if(F.chin===3)R(0,59,1,4,P.deep);}
+ if(F.pox)for(let i=0;i<14;i++){const px=(i%2?1:-1)*(10+((i*37)%11)),py=32+((i*53)%14);R(px,py,1,1,i%3?P.shadow:P.deep);}
  if(F.cheek){R(-23,33,10,1,P.bright);R(14,34,9,1,P.light);R(-22,39,9,1,P.shadow);R(13,40,8,1,P.deep);}
  if(beard===2){
   poly([[-25,35],[-21,39],[-19,46],[-13,49],[-7,47],[-2,49],[5,48],[12,46],[18,44],[24,36],[23,50],[17,59],[7,65],[-6,65],[-17,60],[-24,52]],P.hairDark);
@@ -180,6 +183,9 @@ function head(q,T,C,o,yaw,t,mood){
   if(teeth)R(-wide+2,bot-2,wide*2-4,1,'#d0bc99');else{R(-wide+4,bot-3,wide*2-8,2,'#854943');R(-wide+5,bot-3,wide*2-10,1,'#ac635a');}
   R(-wide+3,bot+1,wide*2-6,1,P.red);R(-wide-1,top+2,1,3,P.shadow);R(wide,top+2,1,3,P.deep);
  }
+ /* Hängelippe, Zungenspitze, Hasenzähne bei geschlossenem oder schlaffem Mund */
+ if(tk<=.06&&['line','firm','slack','smirk','wobble'].includes(mouth)){if(F.droopLip){R(-5+LO,my+2,10,2,P.red);R(-4+LO,my+4,8,1,P.deep);R(-3+LO,my+2,5,1,mix(P.red,P.light,.3));}if(F.tongue&&mouth==='slack')R(-1+LO,my+2,4,2,'#c45a5a');if(F.buck){R(-3+LO,my+1,3,3,'#e6dcbc');R(0+LO,my+1,3,3,'#d6c8a4');R(0+LO,my+1,1,3,'#9e8c72');R(-3+LO,my+4,6,1,P.deep);}}
+ if(F.wart){const [wx,wy]=F.wart;R(wx,wy,3,3,mix(P.shadow,'#5a3a2a',.35));R(wx,wy,1,1,P.light);R(wx+1,wy-1,1,1,P.hairDark);}
  if(beard===2){for(const [x,y,len]of [[-23,43,3],[-21,48,3],[-18,52,4],[-14,55,3],[-11,59,2],[-6,63,2],[0,63,2],[6,63,2],[12,57,3],[17,50,3],[20,45,3]])R(x,y,1,len,x<0?P.hairMid:P.hair);}
  if(beard===3){R(-4,60,1,3,P.hairMid);R(3,61,1,3,P.hair);}
  /* Schnurrbart über der Oberlippe (4 Schnurrbart, 5 Spitzbart, 6 Backenbart, 7 Langbart) */
