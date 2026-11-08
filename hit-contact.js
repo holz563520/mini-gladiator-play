@@ -103,9 +103,11 @@ function lineMark(ctx,cx,cy,ang,len,cols){const c=Math.cos(ang),s=Math.sin(ang);
 // Leistung: jedes Wundbild wird einmal in ein kleines Bild gemalt und danach nur noch kopiert
 HC.surface=(ctx,a,id,item,bounds)=>{if(!HC.active)return false;const list=live(a.g)?.[id];if(!list?.length)return false;
  const [bx,by,bw,bh]=bounds,W=Math.max(2,bw),Hh=Math.max(2,bh),cx0=bx+W/2,cy0=by+Hh/2;
- for(const m of list){const key=item?'sa':'sf';let spr=m[key];if(!spr){spr=document.createElement('canvas');spr.width=spr.height=20;paint(spr.getContext('2d'),m,!!item);m[key]=spr;}
+ for(const m of list){const key=item?'sa':'sf';let spr=m[key];if(!spr){spr=sprite(m,!!item);m[key]=spr;}
   ctx.drawImage(spr,Math.round(cx0+m.v*W*.5)-10,Math.round(cy0+m.u*Hh*.6)-10);}
  return true;};
+/* Trefferspur einmal malen und als ImageBitmap ablegen (Handy 08.11.: kleine Zeichenflächen werden bei jedem Kopieren neu hochgeladen) */
+function sprite(m,item){const c=document.createElement('canvas');c.width=c.height=20;paint(c.getContext('2d'),m,item);try{if(typeof OffscreenCanvas!=='undefined'){const o=new OffscreenCanvas(20,20);o.getContext('2d').drawImage(c,0,0);return o.transferToImageBitmap();}}catch{}return c;}
 function paint(ctx,m,item){const cx=10,cy=10,sz=m.size,ang=m.ang;{
   if(item){// auf der Rüstung
    if(m.mat==='leather'&&/kerbe|schnitt|hack/.test(m.kind)){lineMark(ctx,cx,cy,ang,3+sz*3,['#2a1a12','#a33a2e']);return;}
