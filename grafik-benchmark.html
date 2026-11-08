@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grafik-Benchmark · Arena Theory</title>
+<script>try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}</script>
+<style>
+@font-face{font-family:'Courier Prime';src:url(fonts/courier-prime-400.woff) format('woff');font-weight:400}
+@font-face{font-family:'Courier Prime';src:url(fonts/courier-prime-700.woff) format('woff');font-weight:700}
+:root{--line:#4b3434;--gold:#dfb66d;--cream:#eae4cd;--muted:#a99f97;--panel:#2a1c1c;--panel2:#1e1414;--blood:#b8372e;--ok:#8fc28a;--bad:#e0705f;--mid:#d9b25e}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#3a1612,#120807 60%);color:var(--cream);font-family:'Courier Prime',ui-monospace,monospace;min-height:100vh}
+header{padding:14px 16px 4px;text-align:center}
+header small{display:block;letter-spacing:4px;color:var(--muted);font-size:11px}
+header h1{margin:4px 0 0;font-size:24px;letter-spacing:6px;color:var(--blood);text-shadow:3px 3px 0 #000}
+header p{margin:6px auto 0;max-width:860px;font-size:13px;color:var(--muted);line-height:1.45}
+main{max-width:1240px;margin:0 auto;padding:6px 12px 40px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}
+@media (max-width:940px){.top{grid-template-columns:1fr}}
+.stage{position:relative;border:3px solid #6b3030;box-shadow:6px 6px 0 #000a;background:#0d0a07}
+#arenaCanvas{display:block;width:100%;height:auto;aspect-ratio:1040/720;image-rendering:pixelated}
+#meter{position:absolute;left:6px;top:6px;font-size:12px;line-height:1.35;background:#000a;padding:5px 7px;pointer-events:none;text-shadow:1px 1px 0 #000}
+#meter b{color:var(--gold);font-weight:700}
+.panel{background:#2a1c1cdd;border:2px solid var(--line);box-shadow:3px 3px 0 #0008;padding:10px 12px;margin-bottom:10px}
+.panel h3{margin:0 0 8px;font-size:12px;letter-spacing:3px;color:var(--gold);text-transform:uppercase}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;margin:7px 0;color:var(--muted)}
+select{font:inherit;font-size:13px;color:var(--cream);background:var(--panel2);border:1px solid var(--line);padding:4px;min-width:150px}
+input[type=checkbox]{accent-color:#b8372e;width:18px;height:18px}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0 8px}
+button{font:inherit;font-size:13px;color:var(--cream);background:var(--panel);border:2px solid var(--line);padding:7px 9px;box-shadow:3px 3px 0 #0008;cursor:pointer}
+button.on{border-color:var(--blood);color:#ffb1a4;background:#3a1a18}
+button.main{border-color:var(--gold);color:var(--gold)}
+button:disabled{opacity:.5;cursor:default}
+h2{font-size:13px;letter-spacing:3px;color:var(--gold);margin:22px 4px 6px;text-transform:uppercase}
+.note{font-size:12.5px;color:var(--muted);line-height:1.55;margin:4px 4px 8px}
+.wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:2px solid var(--line);background:#1e1414cc}
+table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
+.res th,.res td{border:1px solid #3a2626;padding:5px 6px;text-align:center}
+.res th{color:var(--muted);font-weight:400;background:#1e1414}
+.res td.l{text-align:left;color:var(--gold)}
+.res small{display:block;color:var(--muted);font-size:10.5px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.mid{color:var(--mid)}
+#verdict{font-size:13px;line-height:1.6;margin:8px 4px}
+#verdict li{margin:3px 0}
+#progress{font-size:12px;color:var(--muted);margin:6px 0 0}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.tile{background:#1e1414;border:2px solid var(--line);padding:4px;text-align:center;font-size:11px;color:var(--muted)}
+.tile canvas{display:block;width:100%;height:auto;image-rendering:pixelated;background:#7d6d4f}
+.tile b{display:block;color:var(--cream);font-weight:400;font-size:11.5px;margin-top:3px}
+.galbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 4px 10px}
+.galbar label{margin:0}
+.galbar select{min-width:110px}
+</style></head>
+<body>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · LEISTUNG · STAND f9b1519d</small><h1>GRAFIK-BENCHMARK</h1>
+<p>Echter Kampf mit der Kampflogik des Spiels. Du kannst die Kämpfer als volle Figuren, als einfache Kästen oder gar nicht zeichnen lassen. So siehst du, ob die Grafik oder die Kampfberechnung bremst. Am Kampf selbst ändert sich nichts, Spielstände bleiben unberührt.</p></header>
+<main>
+<div class="top">
+ <div>
+  <div class="stage"><canvas id="arenaCanvas" width="1040" height="720"></canvas><div id="meter">Lädt …</div></div>
+  <div class="btns"><button id="restart" class="main">↻ Neu starten</button><button id="pause">⏸ Pause</button></div>
+ </div>
+ <div>
+  <div class="panel"><h3>Kampf</h3>
+   <label>Kämpfer je Seite <select id="count"><option>1</option><option selected>5</option><option>10</option><option>20</option><option>30</option><option>50</option><option>75</option><option>100</option></select></label>
+   <label>Ansicht <select id="view"><option value="1" selected>ganzes Feld</option><option value="2">nah (2×, folgt einem Kämpfer)</option></select></label>
+   <label>Bildrate <select id="fps"><option value="60" selected>immer 60, volle Auflösung</option><option value="0">wie im Spiel (Automatik)</option></select></label>
+  </div>
+  <div class="panel"><h3>Darstellung der Kämpfer</h3>
+   <div class="seg"><button data-mode="full" class="on">Volle Figuren</button><button data-mode="box">Kästen</button><button data-mode="none">Nichts</button></div>
+   <label>Arena-Kulisse (Sand, Ränge, Publikum) <input type="checkbox" id="arena" checked></label>
+   <label>Blut, Flecken, Funken <input type="checkbox" id="fx" checked></label>
+   <p class="note" style="margin:6px 0 0">„Nichts“ zeichnet gar nichts, auch keine Kulisse. Dann misst die Seite nur die Kampfberechnung.</p>
+  </div>
+ </div>
+</div>
+
+<h2>Messreihe</h2>
+<p class="note">Spielt nacheinander 5, 10, 20, 50 und 100 Kämpfer je Seite in allen drei Darstellungen durch, jeweils 2 Sekunden Anlauf und 6 Sekunden Messung, insgesamt etwa 2 Minuten. Bildschirm dabei an lassen und die Seite nicht wechseln. Am besten auf dem Gerät, auf dem das Spiel ruckelt.</p>
+<div class="btns"><button id="series" class="main">▶ Messreihe starten</button><button id="copy" disabled>Ergebnis kopieren</button></div>
+<div id="progress"></div>
+<div class="wrap" style="margin-top:8px"><table class="res" id="res"></table></div>
+<ul id="verdict"></ul>
+<p class="note"><b style="color:var(--gold)">Bilder/s</b>: wie viele Bilder je Sekunde gezeichnet werden (60 = ganz flüssig, unter 30 ruckelt es sichtbar). <b style="color:var(--gold)">Spieltempo</b>: wie schnell der Kampf im Vergleich zur echten Zeit läuft. Unter 100 % schafft das Gerät die Berechnung nicht und der Kampf läuft wie in Zeitlupe. <b style="color:var(--gold)">Logik</b>: Rechenzeit der Kampfberechnung je 1/60 Sekunde Kampf. <b style="color:var(--gold)">Zeichnen</b>: Millisekunden je gezeichnetes Bild. Für 60 Bilder/s stehen zusammen nur knapp 17 ms zur Verfügung, für 30 Bilder/s etwa 33 ms. Im echten Spiel kommen noch Kampf-Anzeige, Nahaufnahmen und Klänge dazu, es läuft also eher etwas schlechter als hier.</p>
+
+<h2>Galerie: alle Kampffiguren</h2>
+<p class="note">Die Figuren, die in Arena und Spielfeld laufen, mit dem Zeichner des Spiels. Hier lassen sich später neue, sparsamere Grafiken daneben vergleichen. Nahaufnahmen sind nicht dabei, die bleiben wie sie sind.</p>
+<div class="galbar"><label>Rüstung <select id="gArmor"><option value="none">keine</option><option value="leather" selected>Leder</option><option value="metal">Metall</option></select></label><label>Seite <select id="gTeam"><option value="0">Blau (eigene)</option><option value="1">Rot (Gegner)</option></select></label><label>Schild <select id="gShield"><option value="auto" selected>passend</option><option value="none">keins</option></select></label></div>
+<h2 style="margin-top:10px">Waffen</h2><div class="gal" id="galWeapons"></div>
+<h2>Besondere Körper</h2><div class="gal" id="galBodies"></div>
+<h2>Tiere</h2><div class="gal" id="galBeasts"></div>
+<h2>Ersatzdarstellung im Benchmark</h2><div class="gal" id="galBoxes"></div>
+</main>
+<script src="data.js?v=f9b1519d"></script>
+<script src="household.js?v=f9b1519d"></script>
+<script src="management.js?v=f9b1519d"></script>
+<script src="scout.js?v=f9b1519d"></script>
+<script src="sim.js?v=f9b1519d"></script>
+<script src="benchmark.js?v=f9b1519d"></script>
+<script src="school.js?v=f9b1519d"></script>
+<script src="weapon-art.js?v=f9b1519d"></script>
+<script src="arena.js?v=f9b1519d"></script>
+<script src="block-contact.js?v=f9b1519d"></script>
+<script src="hit-contact.js?v=f9b1519d"></script>
+<script src="reach-ai.js?v=f9b1519d"></script>
+<script src="lion.js?v=f9b1519d"></script>
+<script src="hahn-engine.js?v=f9b1519d"></script>
+<script src="hahn-arena.js?v=f9b1519d"></script>
+<script src="hund.js?v=f9b1519d"></script>
+<script src="grafik-benchmark.js?v=f9b1519d"></script>
+</body></html>
