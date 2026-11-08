@@ -231,31 +231,38 @@ function scene(d){if(SC)return;const lines=script(d);const W=300,H=169,ov=docume
  const corpses=Dd.map((g,i)=>{const layer=Math.floor(i/3),slot=i%3;return {g,a:(i%2?Math.PI:0),state:'dead',down:true,death:true,phase:0,energy:0,ammo:0,moveSpeed:0,id:'lg-d'+i,ox:(slot-1)*13+(layer%2?6:0),lift:15+layer*6+(slot===1?1:0)};});
  const legSlow=k=>k.some(x=>['bein','fuss','beinbruch'].includes(x.k));
  const walkers=Al.map((g,i)=>{const k=d.hurt?.get(g.id)||[],crawl=legless(g),sp=crawl?13:legSlow(k)?17:k.length?24:30;return {g,x:380-i*26,y:606+(i%3)*10,tx:572+i*19-(i%2)*6,ty:602+(i%3)*11+(i>2?8:0),a:0,state:'idle',phase:Math.random()*6,energy:50,ammo:0,moveSpeed:0,id:'lg-s'+i,hurt:true,sp,delay:(Dd.length?3.4:.6)+i*1.15+Math.random()*.5,crawl};});
+ /* Laufweg (8.11.): nicht durch den Karren – erst auf die Bahn hinter dem Karren, dort am Karren vorbei, dann zum Platz */
+ if(Dd.length)walkers.forEach((w,i)=>{const lane=cart.y-27-(i%2)*5;w.via=[{x:w.x+6,y:lane},{x:cart.tx+50+i*5,y:lane}];});
  const flies=[];for(let i=0;i<Math.min(46,8+Dd.length*6);i++)flies.push({ph:Math.random()*7,r:4+Math.random()*16,sp:(Math.random()<.5?-1:1)*(3+Math.random()*5),h:Math.random()*14,jx:0,jy:0,lan:false});
  const rats=[0,1,2].slice(0,Dd.length?Math.min(3,1+Math.floor(Dd.length/2)):0).map(i=>({x:300-i*40,y:628+i*4,tx:0,ty:0,f:1,t:0,mode:'follow',climb:0,wait:Math.random()*2,id:i}));
  SC={ov,lines,i:-1,t:0,last:performance.now(),dance:0,coins:[],gold:d.gold,goldShown:0,lan,walkers,corpses,cart,knecht,flies,rats,arrived:false,typing:false,extra:new Map([...d.alive,...d.dead].map(g=>[g.id,g]))};
  const cv=ov.querySelector('#lgCv'),cx=cv.getContext('2d');cx.imageSmoothingEnabled=false;
  const box=ov.querySelector('.lg-box'),txt=ov.querySelector('.lg-text'),who=ov.querySelector('.lg-who'),pcv=box.querySelector('canvas');
- function next(){if(!SC)return;if(SC.typing&&SC.shown<SC.full.length){SC.shown=SC.full.length;txt.textContent=SC.full;return;}
+ /* Dialog (8.11., Wunsch Thomas: wurde mitten im Satz weggeschaltet): Antippen springt zur nächsten Zeile (laufende Stimme wird
+    abgebrochen); ohne Antippen geht es erst weiter, wenn die Zeile ganz geschrieben und ganz gesprochen ist, plus kurze Pause. */
+ function tap(){if(!SC)return;if(SC.i>=0&&performance.now()-(SC.lineAt||0)<250)return;if(SC.i<0&&!SC.arrived)return;try{M.speakStop?.();}catch(e){}next();}
+ function next(){if(!SC)return;
   SC.i++;if(SC.i>=SC.lines.length){end();return;}const l=SC.lines[SC.i],g=l.who==='L'?lan.g:l.g||walkers[0]?.g;
   who.textContent=l.who==='L'?LAN():g?.name||'';pcv.dataset.lgpor=l.who==='L'?'lan':g?.id||'';paintPor(box);box.classList.toggle('lan',l.who==='L');
   SC.full=l.text;SC.shown=0;SC.typing=true;txt.textContent='';SC.speaker=l.who==='L'?lan:walkers.find(w=>w.g===g)||walkers[0];
   if(l.away&&SC.corpses.length){SC.cart.tx=1000;for(const r of SC.rats){r.mode='follow';r.climb=0;r.wait=Math.random()*.6;}for(const f of SC.flies)f.lan=false;}
   if(l.dance){SC.dance=5.5;lan.state='celebrate';for(const f of SC.flies)if(Math.random()<.3)f.lan=true;}
-  try{M.speakLine?.(l.text,l.who==='L'?'L':'N',g);}catch(e){}
-  const idx=SC.i;clearTimeout(SC.auto);SC.auto=setTimeout(()=>{if(SC&&SC.i===idx)next();},Math.max(3800,l.text.length*72)+(l.dance?3200:0));}
+  let spoke=null;try{spoke=M.speakLine?.(l.text,l.who==='L'?'L':'N',g);}catch(e){}
+  SC.lineAt=performance.now();SC.lineT=0;SC.quiet=0;SC.voice=!!spoke;SC.hold=(l.dance?3.2:0)+(SC.voice?.9:Math.max(2.4,l.text.length*.06));clearTimeout(SC.auto);}
  function end(){if(!SC)return;cancelAnimationFrame(SC.raf);clearTimeout(SC.auto);ov.classList.add('out');setTimeout(()=>{ov.remove();document.body.classList.remove('lg-scene-on');},500);SC=null;
   say(pick(['Schönes Gespräch. Das sollten wir öfter machen. Am besten nach jedem Kampf.','Ich glaube, sie mögen mich. Tief im Innern. Ganz tief. Unter den Narben.','Personalführung ist eine Kunst. Und ich bin Künstler.','Ich muss den Karren noch zurückbringen. Leer. Sonst kostet es Pfand.']));}
- ov.querySelector('.lg-skip').onclick=e=>{e.stopPropagation();end();};box.onclick=()=>next();cv.onclick=()=>next();
+ ov.querySelector('.lg-skip').onclick=e=>{e.stopPropagation();end();};box.onclick=()=>tap();cv.onclick=()=>tap();
  function step(o,tx,ty,sp,dt){const dx=tx-o.x,dy=ty-o.y,dd=Math.hypot(dx,dy);if(dd<=2)return false;const s=Math.min(dd,sp*dt);o.x+=dx/dd*s;o.y+=dy/dd*s;return true;}
  function frame(t){if(!SC)return;const dt=Math.min(.05,(t-SC.last)/1000);SC.last=t;SC.t+=dt;
   // Karren rollt heran, Knecht zieht
   const cMoving=step(cart,cart.tx,cart.y,26,dt);if(cMoving){cart.wheel+=dt*26/9;cart.shake=Math.sin(SC.t*14)*.6;}else cart.shake=0;
   if(knecht){if(Dd.length){const px=knecht.x,py=knecht.y,ph=knecht.phase;knecht.x=cart.x+44;knecht.a=0;knecht.moveSpeed=cMoving?26:0;knecht.state=cMoving?'move':'idle';if(cMoving){knecht.phase+=dt*26*.16;try{M.updateLocomotion?.(knecht,px,py,ph,dt,.6);}catch(e){}}}else knecht=SC.knecht=null;}
   // Überlebende schleppen sich einzeln heran, jeder in seinem Tempo
-  let moving=cMoving;for(const w of walkers){if(SC.t<w.delay){moving=true;continue;}const px=w.x,py=w.y,ph=w.phase;if(step(w,w.tx,w.ty,w.sp,dt)){moving=true;w.state=w.crawl?'crawl':'move';w.moveSpeed=w.sp;w.phase+=dt*w.sp*.16;w.a=0;try{M.updateLocomotion?.(w,px,py,ph,dt,.6);}catch(e){}}else{w.moveSpeed=0;if(w.state==='move')w.state='idle';w.a=0;}}
+  let moving=cMoving;for(const w of walkers){if(SC.t<w.delay){moving=true;continue;}const px=w.x,py=w.y,ph=w.phase;while(w.via?.length&&!step(w,w.via[0].x,w.via[0].y,0,0))w.via.shift();const goal=w.via?.[0]||{x:w.tx,y:w.ty};if(step(w,goal.x,goal.y,w.sp,dt)){moving=true;w.state=w.crawl?'crawl':'move';w.moveSpeed=w.sp;w.phase+=dt*w.sp*.16;w.a=0;try{M.updateLocomotion?.(w,px,py,ph,dt,.6);}catch(e){}}else{w.moveSpeed=0;if(w.state==='move')w.state='idle';w.a=0;}}
   if(!moving&&!SC.arrived){SC.arrived=true;setTimeout(()=>{if(SC&&SC.i<0)next();},400);}
   if(SC.typing&&SC.shown<SC.full.length){SC.shown=Math.min(SC.full.length,SC.shown+dt*48);txt.textContent=SC.full.slice(0,Math.floor(SC.shown));}
+  // Weiter erst, wenn geschrieben und ausgesprochen (Stimme still, nichts in der Warteschlange), dann Pause SC.hold
+  if(SC.i>=0&&SC.full){SC.lineT+=dt;const talking=SC.voice&&(!!M.speaking?.()||(M.speechQueued?.()||0)>0);if(SC.shown>=SC.full.length&&!talking&&SC.lineT>.6)SC.quiet+=dt;else SC.quiet=0;if(SC.quiet>=SC.hold||SC.lineT>40)next();}
   // Fliegen: kreisen über dem Leichenstapel, zittern, ein Teil fliegt beim Tanz zum Lanista
   for(const f of SC.flies){f.ph+=dt*f.sp;f.jx=(Math.random()-.5)*1.6;f.jy=(Math.random()-.5)*1.6;}
   // Ratten: folgen dem Karren, wuseln um die Räder, eine klettert auf den Stapel
@@ -289,14 +296,15 @@ function draw(cx,cv,bg,VX,VY,W,H){const k=cv.width/W;cx.setTransform(1,0,0,1,0,0
  const lan=SC.lan,hop=SC.dance>0?Math.abs(Math.sin(SC.t*7))*9:0,ct=SC.cart;
  for(const c of SC.coins)if(c.land)coin(cx,c);
  // Karren mit dem Stapel: Rückwand, Tote quer, Vorderwand und Räder
+ const list=[...SC.walkers,...(SC.knecht?[SC.knecht]:[]),{...lan,y:lan.y-hop}].sort((a,b)=>a.y-b.y),hasCart=SC.corpses.length>0,behind=hasCart?list.filter(a=>a.y<ct.y-1):[],front=hasCart?list.filter(a=>a.y>=ct.y-1):list;
+ if(behind.length)try{M.renderLudusActors(cx,behind);}catch(e){console.warn(e);}
  if(SC.corpses.length){cx.fillStyle='rgba(0,0,0,.28)';cx.fillRect(Math.round(ct.x-40),Math.round(ct.y-2),80,4);drawCartBack(cx,ct);
   for(const c of SC.corpses){cx.save();cx.translate(0,-c.lift+ct.shake);try{M.renderLudusActors(cx,[{...c,x:ct.x+c.ox,y:ct.y}]);}catch(e){}cx.restore();}
   drawCartFront(cx,ct);
   // Gestank: grüne Schwaden
   for(let i=0;i<4;i++){const ph=(SC.t*.5+i*.25)%1,sx=ct.x-24+i*16,sy=ct.y-36-ph*26;cx.globalAlpha=(1-ph)*.55;for(let j=0;j<6;j++)PX(cx,sx+Math.sin(ph*9+j*.9+i)*3,sy-j*2,1,2,'#7d9a3a');cx.globalAlpha=1;}
   for(const r of SC.rats)drawRat(cx,r,ct);}
- const list=[...SC.walkers,...(SC.knecht?[SC.knecht]:[]),{...lan,y:lan.y-hop}].sort((a,b)=>a.y-b.y);
- try{M.renderLudusActors(cx,list);}catch(e){console.warn(e);}
+ try{M.renderLudusActors(cx,front);}catch(e){console.warn(e);}
  for(const c of SC.coins)if(!c.land)coin(cx,c);
  // Fliegen (über allem)
  for(const f of SC.flies){const tx=f.lan&&SC.dance>0?lan.x:ct.x,ty=f.lan&&SC.dance>0?lan.y-70-hop:ct.y-34-f.h,x=tx+Math.cos(f.ph)*f.r+f.jx,y=ty+Math.sin(f.ph*1.3)*f.r*.45+f.jy;PX(cx,x,y,1,1,'#120d0a');if(Math.floor(SC.t*30+f.ph*5)%2)PX(cx,x-1,y-1,1,1,'rgba(220,230,240,.55)');}
