@@ -131,7 +131,7 @@ function impact(f,a){
   if(kind==='gerade'){fz.nose+=P*.05;fz[side]+=P*.03;}else if(kind==='schwinger'){fz.cheek+=P*.05;fz[side]+=P*.05;}else{fz.lip+=P*.05;fz.cheek+=P*.02;}
   for(const k of Object.keys(fz))fz[k]=Math.min(1.6,fz[k]);
   if(P>5&&r()<.2*(P/8)){fz.cut=Math.min(1.5,fz.cut+.6);fz.blood+=.5;addInjury(f,d,'Platzwunde','Augenbraue',P/6);}
-  /* Nasenbruch (8.11.): bleibt für immer schief (g.nose), kein Einfluss auf die Kampfkraft. Gerade und Schwinger, einmal je Kampf. */if(!d.noseBreak&&((kind==='gerade'&&P>6.5&&r()<.11*(P/8))||(kind==='schwinger'&&P>7&&r()<.06*(P/8)))){const old=d.g.nose?.bend||0,dir=old?Math.sign(old):(a.side?-1:1)*(kind==='schwinger'?-1:1),bend=Math.max(-1.6,Math.min(1.6,old+dir*(.6+r()*.5)));d.noseBreak={from:old,bend};addInjury(f,d,'Nasenbruch','Nase',P/6);fz.nose=1.6;fz.blood+=1.2;ev(f,'nose',{who:d.side,from:old,bend});}
+  /* Nasenbruch (8.11.): bleibt für immer schief (g.nose), kein Einfluss auf die Kampfkraft. Gerade und Schwinger, einmal je Kampf. */if(!d.noseBreak&&((kind==='gerade'&&P>6.5&&r()<.11*(P/8))||(kind==='schwinger'&&P>7&&r()<.06*(P/8)))){/* drei Formen (schief · hoecker · zickzack), beim ersten Bruch gewürfelt, bleiben für immer; Richtung aus der Schlagseite; weitere Brüche verstärken */const N0=d.g.nose,type=N0?.type||(N0?.bend?'schief':['schief','hoecker','zickzack'][Math.floor(r()*3)]),dir=N0?.dir||(N0?.bend?Math.sign(N0.bend):(a.side?-1:1)*(kind==='schwinger'?-1:1)),from=N0?.k??Math.abs(N0?.bend||0),k=Math.min(1.6,from+.6+r()*.5);d.noseBreak={type,dir,from,k,bend:dir*k};addInjury(f,d,'Nasenbruch','Nase',P/6);fz.nose=1.6;fz.blood+=1.2;ev(f,'nose',{who:d.side,form:type,dir,from,k,bend:dir*k});/* Feld heißt form: type ist der Ereignisname */}
   // Zahn ausgeschlagen: harte Treffer auf den Mund (Schwinger, Uppercut)
   if(P>(kind==='gerade'?6.5:4.8)&&r()<(kind==='gerade'?.06:.15)*Math.pow(P/7,2)){const left=[...Array(TEETH).keys()].filter(i=>!d.teethLost.includes(i)&&!(d.g.teeth?.missing||[]).includes(i)&&!(d.g.teeth?.gold||[]).includes(i));if(left.length){const front=left.filter(i=>i>=2&&i<=5),pool=front.length&&r()<.75?front:left,i=pool[Math.floor(r()*pool.length)];d.teethLost.push(i);fz.lip=Math.min(1.6,fz.lip+.5);fz.blood+=.6;addInjury(f,d,'Zahn ausgeschlagen','Mund',1,{tooth:i});ev(f,'tooth',{who:d.side,tooth:i});}}
   // Schädelbruch: nur wenn der Schläger viel stärker ist als der Getroffene zäh ist, und nur bei schweren Treffern
@@ -210,7 +210,7 @@ BX.applyAftermath=function(f,{apply=true,learn=null,potentialRate=true}={}){
    const rate=2*(.7+(g.potential??50)/150)*(.08+.92*Math.pow(Math.max(0,(cap-v)/Math.max(1,cap)),.65));let real=a*rate;
    if(apply){if(learn)real=learn(g,grp,key,real);else{const nv=Math.min(cap,v+real);real=Math.max(0,nv-v);if(bk)g.body[bk[0]][bk[1]]=nv;else if(g[grp])g[grp][key]=nv;}}
    gain[path]=Math.round(real*100)/100;}
-  if(apply){g.teeth={missing:miss,gold,pending:pend};if(b.noseBreak){g.nose={bend:b.noseBreak.bend,breaks:(g.nose?.breaks||0)+1,day:window.MG?.s?.day??0};}}out.push({gold:b.teethLost.length,vet,gain,nose:!!b.noseBreak});}
+  if(apply){g.teeth={missing:miss,gold,pending:pend};if(b.noseBreak){const N=b.noseBreak;g.nose={type:N.type,dir:N.dir,k:N.k,bend:N.bend,breaks:(g.nose?.breaks||0)+1,day:window.MG?.s?.day??0};}}out.push({gold:b.teethLost.length,vet,gain,nose:!!b.noseBreak});}
  return out;};
 window.BX=BX;
 })();

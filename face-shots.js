@@ -120,13 +120,18 @@ function head(q,T,C,o,yaw,t,mood){
  if(['determined','roar','pain'].includes(mood)){R(-5,21,1,4,P.shadow);R(4,21,1,4,P.shadow);}
  // Nose has a continuous light-facing ridge, a side plane, tip and nostrils.
  /* Gebrochene Nase (8.11., Boxen): bleibt für immer schief. bend −1,6…1,6 = Richtung und Stärke; unterhalb des Höckers knickt die Nase zur Seite ab, am Nasenrücken ein Höcker */
- const nb=o.noseBend??o.g?.nose?.bend??0,NX=(x,y)=>x+Math.round(nb*Math.max(0,y-30)*.8),NP=pts=>pts.map(([x,y])=>[NX(x,y),y]);
+ const GN=o.g?.nose,ntype=o.noseType||GN?.type||'schief',ndir=o.noseDir||GN?.dir||Math.sign(GN?.bend||1)||1,nk=o.noseK??GN?.k??Math.abs(GN?.bend||0),nb=ndir*nk;
+ /* schief: unterhalb der Wurzel zur Seite · zickzack: oben zur einen, Spitze zur anderen Seite · hoecker: gerade, Höcker mitten auf dem Rücken */
+ const NX=(x,y)=>x+Math.round(ntype==='zickzack'?ndir*nk*(y<35?(Math.max(0,y-26))*.55:5-(y-35)*.95):ntype==='hoecker'?0:nb*Math.max(0,y-30)*.8),NP=pts=>pts.map(([x,y])=>[NX(x,y),y]);
  poly(NP([[-3,26],[1,25],[3,36],[7,41],[5,44],[-5,44],[-7,41],[-3,37]]),P.half);
  poly(NP([[-3,27],[-1,27],[0,37],[-3,40],[-5,40]]),P.light);
  poly(NP([[1,27],[3,36],[7,41],[5,44],[2,42],[1,36]]),P.shadow);
  poly(NP([[-3,38],[1,37],[4,40],[2,42],[-3,42],[-5,41]]),P.warm);R(NX(-3,39),39,4,1,P.bright);
  R(NX(-5,43),43,3,1,P.deep);R(NX(3,43),43,3,1,P.deep);R(NX(-1,43),43,3,2,P.skin);R(NX(-1,46),46,2,2,P.shadow);
- if(Math.abs(nb)>.05){const s=Math.sign(nb);R(s>0?1:-4,29,4,3,P.light);R(s>0?3:-4,32,2,1,P.shadow);/* Höcker */R(s>0?-2:1,31,1,4,P.deep);R(s>0?-1:0,35,1,2,P.shadow);/* Knick */}
+ if(nk>.05){const s=ndir;
+  if(ntype==='hoecker'){const hw=Math.round(2+nk*2);R(-hw,29,hw*2+1,3,P.light);R(-hw+1,28,hw*2-1,1,P.bright);R(-hw,32,hw*2+1,1,P.shadow);R(-hw-1,30,1,2,P.deep);R(hw+1,30,1,2,P.deep);/* dicker Höcker in der Mitte, Schatten darunter */}
+  else if(ntype==='zickzack'){R(NX(0,31)+(s>0?2:-3),30,2,2,P.light);R(NX(0,38)+(s>0?-3:2),38,2,2,P.light);R(NX(0,35)+(s>0?-2:1),34,1,3,P.deep);/* zwei Knicke */}
+  else{R(s>0?1:-4,29,4,3,P.light);R(s>0?3:-4,32,2,1,P.shadow);R(s>0?-2:1,31,1,4,P.deep);R(s>0?-1:0,35,1,2,P.shadow);}}
  if(o.noseCrack>0){const c=o.noseCrack;for(let i=0;i<3;i++){const y=29+i*2,x=NX(0,y)+(i%2?2:-2);R(x,y,2,1,c>.5?'#fff2e0':'#e8c9b0');}}
  feature=false;
  // Chin and lip anatomy remains visible for clean-shaven men as well as under beards.
