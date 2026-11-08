@@ -9,7 +9,7 @@
 // =====================================================================================================
 (()=>{
 const M=window.MG,S=M.s,$=id=>document.getElementById(id);
-const RT={actor:null,none:false,arena:true,effects:true,uncapped:true,stage:'',split:{stage:0,ground:0,actors:0,rest:0,frames:0}};M.renderTest=RT;
+const RT={actor:null,none:false,arena:true,effects:true,uncapped:true,stage:'',liveFps:15,liveCopy:'bitmap',split:{stage:0,ground:0,actors:0,rest:0,frames:0}};M.renderTest=RT;
 const TEAM=['#55938e','#b7694f'],TEAM_DARK=['#2f5754','#6b3a2c'];
 const cl=(x,a,b)=>Math.max(a,Math.min(b,x));
 let mode='full',paused=false;
@@ -30,7 +30,7 @@ function drawBox(ctx,a){
 }
 
 function applyMode(m){
- mode=m;RT.none=m==='none';RT.actor=m==='box'?drawBox:null;RT.arena=$('arena').checked;RT.effects=$('fx').checked;RT.stage=$('stage').value;RT.liveFps=parseInt($('live').value)||0;RT.liveCopy=/b$/.test($('live').value)?'bitmap':/a$/.test($('live').value)?'atlas':'';
+ mode=m;RT.none=m==='none';RT.actor=m==='box'?drawBox:null;RT.arena=$('arena').checked;RT.effects=$('fx').checked;RT.stage=$('stage').value;RT.liveFps=parseInt($('live').value)||0;RT.liveCopy=/b$/.test($('live').value)?'bitmap':'';
  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{applyMode(b.dataset.mode);live.reset();});
@@ -93,7 +93,7 @@ const results={};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function runSeries(){
  if(series)return;$('series').disabled=true;$('copy').disabled=true;for(const k in results)delete results[k];renderTable();$('verdict').innerHTML='';
- const keep={mode,count,view:$('view').value,fps:$('fps').value,stage:$('stage').value,arena:$('arena').checked,live:$('live').value};$('stage').value='';$('arena').checked=true;$('live').value='0';$('view').value='1';$('fps').value='60';applyFps();
+ const keep={mode,count,view:$('view').value,fps:$('fps').value,stage:$('stage').value,arena:$('arena').checked,live:$('live').value};$('stage').value='';$('arena').checked=true;$('live').value='15b';$('view').value='1';$('fps').value='60';applyFps();
  const total=SIZES.length*MODES.length;let done=0;series={m:meter(),hold:false};
  try{
   for(const n of SIZES)for(const [m,label] of MODES){
@@ -122,7 +122,7 @@ async function runStageTest(){
 function renderStage(){$('stageres').innerHTML='<tr><th>Kulisse</th><th>Bilder/s</th><th>Zeichnen</th><th>davon Kulisse</th><th>Rest</th></tr>'+stageResults.map(r=>`<tr><td class="l">${r.label}</td><td class="${cls(r.fps,50,30)}">${fmt(r.fps,0)}</td><td>${fmt(r.paint)} ms</td><td>${fmt(r.split.stage)} ms</td><td>${fmt(r.split.rest)} ms</td></tr>`).join('');}
 $('stagetest').onclick=runStageTest;
 // ---------------------------------------------------------------- Figuren-Test: 20 gegen 20 volle Figuren, Figuren jedes Bild neu oder seltener (Zwischenspeicher)
-const LIVES=[['0','jedes Bild (wie im Spiel)'],['20a','20-mal, Sammelbild'],['15a','15-mal, Sammelbild'],['10a','10-mal, Sammelbild'],['15b','15-mal, als Bitmap'],['10b','10-mal, als Bitmap']];
+const LIVES=[['0','jedes Bild (alte Art)'],['15b','15-mal, Bitmap (wie im Spiel)'],['20b','20-mal, Bitmap'],['10b','10-mal, Bitmap']];
 const figResults=[];
 async function runFigTest(){
  if(series)return;$('series').disabled=$('stagetest').disabled=$('figtest').disabled=true;figResults.length=0;renderFig();
