@@ -51,7 +51,7 @@ table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
 .galbar select{min-width:110px}
 </style></head>
 <body>
-<header><small>ARENA THEORY · KAMPF-WERKSTATT · LEISTUNG · STAND b8a2144e</small><h1>GRAFIK-BENCHMARK</h1>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · LEISTUNG · STAND ce97fa2c</small><h1>GRAFIK-BENCHMARK</h1>
 <p>Echter Kampf mit der Kampflogik des Spiels. Du kannst die Kämpfer als volle Figuren, als einfache Kästen oder gar nicht zeichnen lassen. So siehst du, ob die Grafik oder die Kampfberechnung bremst. Am Kampf selbst ändert sich nichts, Spielstände bleiben unberührt.</p></header>
 <main>
 <div class="top">
@@ -70,7 +70,7 @@ table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
    <label>Arena-Kulisse (Sand, Ränge, Publikum) <input type="checkbox" id="arena" checked></label>
    <label>Blut, Flecken, Funken <input type="checkbox" id="fx" checked></label>
    <label>Kulisse kopieren <select id="stage"><option value="" selected>wie im Spiel (Bitmap)</option><option value="plain">alte Art</option><option value="screen">vorverkleinert (Test)</option></select></label>
-   <label>Figuren neu zeichnen <select id="live"><option value="0" selected>jedes Bild (wie im Spiel)</option><option value="30">30-mal je Sekunde (Test)</option><option value="20">20-mal je Sekunde (Test)</option><option value="20b">20-mal, als Bitmap (Test)</option><option value="15">15-mal je Sekunde (Test)</option><option value="15b">15-mal, als Bitmap (Test)</option><option value="10">10-mal je Sekunde (Test)</option><option value="10b">10-mal, als Bitmap (Test)</option></select></label>
+   <label>Figuren neu zeichnen <select id="live"><option value="0" selected>jedes Bild (wie im Spiel)</option><option value="30a">30-mal, Sammelbild (Test)</option><option value="20a">20-mal, Sammelbild (Test)</option><option value="15a">15-mal, Sammelbild (Test)</option><option value="10a">10-mal, Sammelbild (Test)</option><option value="15b">15-mal, als Bitmap (Test)</option><option value="10b">10-mal, als Bitmap (Test)</option><option value="15">15-mal, einzeln (Test)</option></select></label>
    <p class="note" style="margin:6px 0 0">„Nichts“ zeichnet gar nichts, auch keine Kulisse. Dann misst die Seite nur die Kampfberechnung.</p>
   </div>
  </div>
@@ -83,7 +83,7 @@ table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
 <div class="wrap" style="margin-top:8px"><table class="res" id="res"></table></div>
 <ul id="verdict"></ul>
 <h2>Figuren-Test</h2>
-<p class="note">Die vorhandenen Figuren werden nicht mehr in jedem Bild neu gebaut, sondern nur 20-, 15- oder 10-mal je Sekunde, versetzt über die Bilder verteilt. Dazwischen wird das fertige Bild der Figur nur kopiert, die Position folgt jedem Bild. Grafik unverändert, nur die Körperhaltung springt gröber. Jeweils auf zwei Arten kopiert (normal und als Bitmap), weil das auf Handys sehr verschieden schnell sein kann. Dauert etwa eine Minute. Danach gern selbst mit dem Schalter oben anschauen, ab wann es dir zu ruckelig aussieht.</p>
+<p class="note">Die vorhandenen Figuren werden nicht mehr in jedem Bild neu gebaut, sondern nur 20-, 15- oder 10-mal je Sekunde, versetzt über die Bilder verteilt. Dazwischen wird das fertige Bild der Figur nur kopiert, die Position folgt jedem Bild. Grafik unverändert, nur die Körperhaltung springt gröber. Neu: „Sammelbild“ legt alle Figurenbilder in ein großes Bild auf dem Grafikchip, damit beim Kopieren nichts hochgeladen werden muss (das bremste beim letzten Test). Dauert etwa 50 Sekunden. Danach gern selbst mit dem Schalter oben anschauen, ab wann es dir zu ruckelig aussieht.</p>
 <div class="btns"><label style="margin:0 8px 0 0">Kämpfer je Seite <select id="figcount" style="min-width:70px"><option>5</option><option>10</option><option selected>20</option><option>50</option></select></label><button id="figtest" class="main">▶ Figuren testen</button></div>
 <div id="figprog" class="note"></div>
 <div class="wrap"><table class="res" id="figres" style="min-width:460px"></table></div>
@@ -103,21 +103,21 @@ table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
 <h2>Tiere</h2><div class="gal" id="galBeasts"></div>
 <h2>Ersatzdarstellung im Benchmark</h2><div class="gal" id="galBoxes"></div>
 </main>
-<script src="data.js?v=b8a2144e"></script>
-<script src="household.js?v=b8a2144e"></script>
-<script src="management.js?v=b8a2144e"></script>
-<script src="scout.js?v=b8a2144e"></script>
-<script src="sim.js?v=b8a2144e"></script>
-<script src="benchmark.js?v=b8a2144e"></script>
-<script src="school.js?v=b8a2144e"></script>
-<script src="weapon-art.js?v=b8a2144e"></script>
-<script src="arena.js?v=b8a2144e"></script>
-<script src="block-contact.js?v=b8a2144e"></script>
-<script src="hit-contact.js?v=b8a2144e"></script>
-<script src="reach-ai.js?v=b8a2144e"></script>
-<script src="lion.js?v=b8a2144e"></script>
-<script src="hahn-engine.js?v=b8a2144e"></script>
-<script src="hahn-arena.js?v=b8a2144e"></script>
-<script src="hund.js?v=b8a2144e"></script>
-<script src="grafik-benchmark.js?v=b8a2144e"></script>
+<script src="data.js?v=ce97fa2c"></script>
+<script src="household.js?v=ce97fa2c"></script>
+<script src="management.js?v=ce97fa2c"></script>
+<script src="scout.js?v=ce97fa2c"></script>
+<script src="sim.js?v=ce97fa2c"></script>
+<script src="benchmark.js?v=ce97fa2c"></script>
+<script src="school.js?v=ce97fa2c"></script>
+<script src="weapon-art.js?v=ce97fa2c"></script>
+<script src="arena.js?v=ce97fa2c"></script>
+<script src="block-contact.js?v=ce97fa2c"></script>
+<script src="hit-contact.js?v=ce97fa2c"></script>
+<script src="reach-ai.js?v=ce97fa2c"></script>
+<script src="lion.js?v=ce97fa2c"></script>
+<script src="hahn-engine.js?v=ce97fa2c"></script>
+<script src="hahn-arena.js?v=ce97fa2c"></script>
+<script src="hund.js?v=ce97fa2c"></script>
+<script src="grafik-benchmark.js?v=ce97fa2c"></script>
 </body></html>

@@ -30,7 +30,7 @@ function drawBox(ctx,a){
 }
 
 function applyMode(m){
- mode=m;RT.none=m==='none';RT.actor=m==='box'?drawBox:null;RT.arena=$('arena').checked;RT.effects=$('fx').checked;RT.stage=$('stage').value;RT.liveFps=parseInt($('live').value)||0;RT.liveCopy=/b$/.test($('live').value)?'bitmap':'';
+ mode=m;RT.none=m==='none';RT.actor=m==='box'?drawBox:null;RT.arena=$('arena').checked;RT.effects=$('fx').checked;RT.stage=$('stage').value;RT.liveFps=parseInt($('live').value)||0;RT.liveCopy=/b$/.test($('live').value)?'bitmap':/a$/.test($('live').value)?'atlas':'';
  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{applyMode(b.dataset.mode);live.reset();});
@@ -121,7 +121,7 @@ async function runStageTest(){
 function renderStage(){$('stageres').innerHTML='<tr><th>Kulisse</th><th>Bilder/s</th><th>Zeichnen</th><th>davon Kulisse</th><th>Rest</th></tr>'+stageResults.map(r=>`<tr><td class="l">${r.label}</td><td class="${cls(r.fps,50,30)}">${fmt(r.fps,0)}</td><td>${fmt(r.paint)} ms</td><td>${fmt(r.split.stage)} ms</td><td>${fmt(r.split.rest)} ms</td></tr>`).join('');}
 $('stagetest').onclick=runStageTest;
 // ---------------------------------------------------------------- Figuren-Test: 20 gegen 20 volle Figuren, Figuren jedes Bild neu oder seltener (Zwischenspeicher)
-const LIVES=[['0','jedes Bild (wie im Spiel)'],['20','20-mal je Sekunde'],['20b','20-mal, als Bitmap'],['15','15-mal je Sekunde'],['15b','15-mal, als Bitmap'],['10','10-mal je Sekunde'],['10b','10-mal, als Bitmap']];
+const LIVES=[['0','jedes Bild (wie im Spiel)'],['20a','20-mal, Sammelbild'],['15a','15-mal, Sammelbild'],['10a','10-mal, Sammelbild'],['15b','15-mal, als Bitmap'],['10b','10-mal, als Bitmap']];
 const figResults=[];
 async function runFigTest(){
  if(series)return;$('series').disabled=$('stagetest').disabled=$('figtest').disabled=true;figResults.length=0;renderFig();
