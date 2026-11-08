@@ -41,6 +41,7 @@ const S={
  dodge(){if(!this.ready)return;this.whoosh(1.1);if(Math.random()<.4)shout(now()+.1,{peak:.06});},
  down(){if(!this.ready)return;const t=now();if(KS('boxDown')){roar(t+.05,.4,2.2);return;}tone(t,{f0:70,f1:30,dur:.35,peak:1});burst(t,{dur:.25,type:'lowpass',f0:400,peak:.7});roar(t+.05,.4,2.2);},
  tooth(){if(!this.ready)return;const t=now();tone(t+.25,{type:'triangle',f0:3200,dur:.06,peak:.18});tone(t+.42,{type:'triangle',f0:2800,dur:.05,peak:.12});tone(t+.55,{type:'triangle',f0:3000,dur:.04,peak:.07});ooh(t,.18);},
+ /* Nasenbruch (8.11.): trockenes Knacken (Knorpel), dumpfer Schlag, Raunen */nose(){if(!this.ready)return;const t=now();burst(t,{dur:.025,type:'highpass',f0:4800,peak:.8});burst(t+.018,{dur:.03,type:'highpass',f0:3300,peak:.6});burst(t+.045,{dur:.02,type:'highpass',f0:5600,peak:.45});tone(t,{f0:140,f1:60,dur:.18,peak:.7});ooh(t+.12,.35);},
  skull(){if(!this.ready)return;const t=now();tone(t,{f0:80,f1:28,dur:.5,peak:1});burst(t,{dur:.04,type:'highpass',f0:3500,peak:.7});burst(t+.03,{dur:.05,type:'highpass',f0:2200,peak:.5});burst(t+.09,{dur:.04,type:'highpass',f0:4200,peak:.4});burst(t+.2,{dur:.3,type:'lowpass',f0:600,peak:.5});ooh(t+.15,.4);},
  step(){if(!this.ready)return;if(Math.random()<.5)burst(now(),{dur:.05,type:'highpass',f0:2500,peak:.05});},
  end(how){if(!this.ready)return;this.bell(3);roar(now()+.1,.5,3);},
@@ -48,7 +49,7 @@ const S={
   case 'throw':this.whoosh(e.kind==='gerade'?.7:1);break;
   case 'hit':this.hit(e.kind,e.head,e.power,e.crit);if(e.skull)this.skull();break;
   case 'block':this.block();break;case 'dodge':case 'evade':this.dodge();break;case 'backstep':burst(now(),{dur:.07,type:'highpass',f0:1800,peak:.12});burst(now()+.09,{dur:.06,type:'highpass',f0:2200,peak:.1});break;case 'miss':break;
-  case 'down':this.down();break;case 'tooth':this.tooth();break;case 'end':this.end(e.how);break;case 'rise':roar(now(),.25,1.2);break;}}
+  case 'down':this.down();break;case 'tooth':this.tooth();break;case 'nose':break;/* Knacken spielt die Nahaufnahme beim Aufprall (sfx.nose) */case 'end':this.end(e.how);break;case 'rise':roar(now(),.25,1.2);break;}}
 };
 window.BXS=S;
 })();

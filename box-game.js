@@ -171,7 +171,7 @@ function hurt(p,hp,pain){p.hp=Math.max(4,p.hp-hp);p.pain=Math.max(p.pain||0,pain
 function writeInjuries(g,b,foe){const out=[];
  for(const j of b.injuries){const id=BODY[j.part]||'head',p=g.body[id];if(!p||p.missing)continue;
   if(j.type==='Schädelbruch'){const u=45;p.fracture={days:u,total:u,severe:true,skull:true};p.skullFracture=true;p.hp=Math.min(p.hp,24);p.pain=Math.max(p.pain||0,90);p.bleed=Math.max(p.bleed||0,3);p.injury='Schädelbruch';p.grade=M.injuryGrade?.(p)??p.grade;try{M.noteInjury(g,'head','Schädelbruch',foe,'Faust');}catch{}out.push('Schädelbruch');}
-  else if(j.type==='Nasenbruch'){hurt(p,7,45);p.injury='Nasenbruch';try{M.noteInjury(g,'head','Nasenbruch',foe,'Faust');}catch{}out.push('Nasenbruch');}
+  else if(j.type==='Nasenbruch'){/* 8.11.: nur Aussehen (g.nose, schief für immer), keine Gesundheit, kein Schmerz, kein Ruhetag */try{M.noteInjury(g,'head','Nasenbruch',foe,'Faust');}catch{}}
   else if(j.type==='Platzwunde'){hurt(p,3+j.sev*2,30);p.bleed=Math.max(p.bleed||0,1);try{M.noteInjury(g,'head','Platzwunde',foe,'Faust');}catch{}out.push('Platzwunde');}
   else if(j.type==='Rippenprellung'){hurt(p,4+j.sev*3,40);try{M.noteInjury(g,'chest','Rippenprellung',foe,'Faust');}catch{}out.push('Rippenprellung');}
   else if(j.type==='Prellung'){hurt(p,1.5+j.sev*1.8,12);out.push('Prellung');}}
@@ -196,7 +196,7 @@ function finish(){if(!ov||!B.fight)return;const F=B.fight,own=F.own,o=F.o,f=figh
  try{own.history.unshift({day:s.day,text:'Boxkampf gegen '+foe+' (Stufe '+o.L.n+'): '+(won?'Sieg':R.winner<0?'Unentschieden':'Niederlage')+' · '+R.how});own.history=own.history.slice(0,100);}catch{}
  let death=null;if(dead){death='Im Faustkampf gegen '+foe+' gestorben ('+(b0.skull?'Schädelbruch':'schwere Kopfverletzung')+')';try{M.kill(own,death,foe);}catch(e){console.warn(e);}}
  try{M.persist();}catch{}
- B.result={own,o,won,R,pay,gains,inj,teeth:b0.teethLost.length,vet:after[0]?.vet,dead,death,mult,time:f.t};B.fight=null;B.opps=null;B.rev++;fight=null;
+ B.result={own,o,won,R,pay,gains,inj,teeth:b0.teethLost.length,vet:after[0]?.vet,nose:!!after[0]?.nose,dead,death,mult,time:f.t};B.fight=null;B.opps=null;B.rev++;fight=null;
  A.root.hidden=false;A.go('boxresult');}
 
 // ---------- Bildschirm: Ergebnis ----------
@@ -205,7 +205,7 @@ function resultScreen(){const r=B.result;if(!r){A.go('box');return;}const g=r.ow
  A.view.innerHTML=`<section class="an-res bx-res ${r.won?'won':'lost'}"><p class="eyebrow">Stufe ${L.n} · ${esc(L.label)} · ${esc(r.o.g.name)}</p><h1>${head}</h1><p class="bx-how">${esc(R.how)} nach ${nf(R.time,0)} Sekunden · Punkte ${Math.round(R.points?.[0]||0)} : ${Math.round(R.points?.[1]||0)}</p>
   <div class="an-pay"><small>${r.won?'Siegprämie':'Antrittsgeld'}${r.own?.stature?' · ×2 Publikumsliebling':''}</small><b data-count="${r.pay}">0</b><span>Gold</span></div>
   <div class="bx-reshead"><canvas class="px" id="bxrA"></canvas><div><h2>${esc(g.name)}</h2>${r.dead?'<p class="bx-dead">✝ '+esc(r.death)+'</p>':''}<p class="bx-warn">Erschöpfung ${Math.round(g.fatigue||0)} % · Gesundheit ${Math.round(M.health?.(g)??100)} %${g.boxRest&&g.boxRest.until>S().day?' · braucht '+(g.boxRest.until-S().day)+' Tage Ruhe':''}</p><p>${r.inj.length?'Verletzungen: <b>'+esc([...new Set(r.inj)].join(', '))+'</b>':'Keine nennenswerten Verletzungen'}</p>
-   <p>${r.teeth?'<b>'+r.teeth+' Zahn'+(r.teeth>1?'zähne':'')+' ausgeschlagen</b>'+(r.vet?' · als Veteran bekommt er nach '+BX.GOLD_DAYS+' Tagen einen Goldzahn':' · die Lücke bleibt'):'Alle Zähne noch da'}</p>${teethHtml(g.teeth||{})}</div></div>
+   <p>${r.teeth?'<b>'+r.teeth+' Zahn'+(r.teeth>1?'zähne':'')+' ausgeschlagen</b>'+(r.vet?' · als Veteran bekommt er nach '+BX.GOLD_DAYS+' Tagen einen Goldzahn':' · die Lücke bleibt'):'Alle Zähne noch da'}${r.nose?' · <b>Nase gebrochen</b>: bleibt für immer schief':''}</p>${teethHtml(g.teeth||{})}</div></div>
   <div class="an-gains bx-gains"><h3>Fortschritt durch den Kampf <small>(Lernfaktor ×${nf(r.mult,2)} je nach Gegner)</small></h3><p class="an-hint">Geschick, Schnelligkeit, Stärke, Ausdauer, Zähigkeit, Reflex, Blocken und Ausweichen gelten auch im Arenakampf. Gerade, Schwinger und Uppercut nur beim Boxen.</p><ul class="bx-gainlist">${gain}</ul></div>
   <div class="an-actions"><button data-a="bxday">Nächster Tag (Heilung)</button><button class="primary" data-a="bxagain">NEUER BOXKAMPF ▸</button></div><div class="an-actions"><button data-a="bxleave">◂ Arena verlassen</button></div></section>`;
  face(A.view.querySelector('#bxrA'),g,r.won?'relief':r.dead?'out':'pain',0,200,130);try{A.root.scrollTop=0;A.view.scrollTop=0;window.scrollTo(0,0);}catch{}

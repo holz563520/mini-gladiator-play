@@ -72,7 +72,7 @@ function params(){A.P=Object.assign(JSON.parse(JSON.stringify(P0)),TEST?st.P||{}
 
 // ---------- Porträts (Zeichner des Spiels) ----------
 const pc=new Map();
-function portrait(g){const k=g.id+(g.dead?'d':'');let p=pc.get(k);if(!p){try{p=ART.portrait(g);}catch(e){p=null;}pc.set(k,p);}return p;}
+function portrait(g){const k=g.id+(g.dead?'d':'')+(g.nose?.bend?'n'+g.nose.bend:'');let p=pc.get(k);if(!p){try{p=ART.portrait(g);}catch(e){p=null;}pc.set(k,p);}return p;}
 function paint(scope){for(const cv of scope.querySelectorAll('canvas[data-dogpor]')){const D=(MG.s.hundefang?.dogs||[]).find(x=>x.id===cv.dataset.dogpor);if(!D||!window.DOG?.portrait)continue;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#1b1712';c.fillRect(0,0,cv.width,cv.height);try{const h=window.DOG.condHealth(D);window.DOG.portrait(c,D,{x:cv.width/2,y:cv.height-5,w:cv.width*.86,mood:h<50?'fear':'focus',face:1,t:1});}catch(e){console.warn(e);}}
  for(const cv of scope.querySelectorAll('canvas[data-por]')){const g=G(cv.dataset.por)||enemyG(cv.dataset.por);if(!g)continue;const p=portrait(g);const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);if(p)ctx.drawImage(p,0,0,80,90,0,0,cv.width,cv.height);if(g.dead){ctx.fillStyle='#000a';ctx.fillRect(0,0,cv.width,cv.height);}}}
 function enemyG(id){if(wmode){const w=wmode.members.find(g=>g.id===id);if(w)return w;}const k=lastRes?.gs&&Object.values(lastRes.gs).find(x=>x.g.id===id);if(k)return k.g;for(const o of offers)for(const u of o.enemy)if(u.g.id===id)return u.g;return null;}
