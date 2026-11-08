@@ -104,7 +104,8 @@ function lineMark(ctx,cx,cy,ang,len,cols){const c=Math.cos(ang),s=Math.sin(ang);
 HC.surface=(ctx,a,id,item,bounds)=>{if(!HC.active)return false;const list=live(a.g)?.[id];if(!list?.length)return false;
  const [bx,by,bw,bh]=bounds,W=Math.max(2,bw),Hh=Math.max(2,bh),cx0=bx+W/2,cy0=by+Hh/2;
  for(const m of list){const key=item?'sa':'sf';let spr=m[key];if(!spr){spr=sprite(m,!!item);m[key]=spr;}
-  ctx.drawImage(spr,Math.round(cx0+m.v*W*.5)-10,Math.round(cy0+m.u*Hh*.6)-10);}
+  /* auf die Körperteil-Fläche kürzen statt Zuschnitt (Thomas 08.11.) */const dx=Math.round(cx0+m.v*W*.5)-10,dy=Math.round(cy0+m.u*Hh*.6)-10,x0=Math.max(dx,bx),y0=Math.max(dy,by),x1=Math.min(dx+20,bx+bw),y1=Math.min(dy+20,by+bh);
+  if(x1>x0&&y1>y0)ctx.drawImage(spr,x0-dx,y0-dy,x1-x0,y1-y0,x0,y0,x1-x0,y1-y0);}
  return true;};
 /* Trefferspur einmal malen und als ImageBitmap ablegen (Handy 08.11.: kleine Zeichenflächen werden bei jedem Kopieren neu hochgeladen) */
 function sprite(m,item){const c=document.createElement('canvas');c.width=c.height=20;paint(c.getContext('2d'),m,item);try{if(typeof OffscreenCanvas!=='undefined'){const o=new OffscreenCanvas(20,20);o.getContext('2d').drawImage(c,0,0);return o.transferToImageBitmap();}}catch{}return c;}
