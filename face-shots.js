@@ -120,13 +120,13 @@ function head(q,T,C,o,yaw,t,mood){
  if(['determined','roar','pain'].includes(mood)){R(-5,21,1,4,P.shadow);R(4,21,1,4,P.shadow);}
  // Nose has a continuous light-facing ridge, a side plane, tip and nostrils.
  /* Gebrochene Nase (8.11., Boxen): bleibt für immer schief. bend −1,6…1,6 = Richtung und Stärke; unterhalb des Höckers knickt die Nase zur Seite ab, am Nasenrücken ein Höcker */
- const nb=o.noseBend??o.g?.nose?.bend??0,NX=(x,y)=>x+Math.round(nb*Math.max(0,y-31)*.55),NP=pts=>pts.map(([x,y])=>[NX(x,y),y]);
+ const nb=o.noseBend??o.g?.nose?.bend??0,NX=(x,y)=>x+Math.round(nb*Math.max(0,y-30)*.8),NP=pts=>pts.map(([x,y])=>[NX(x,y),y]);
  poly(NP([[-3,26],[1,25],[3,36],[7,41],[5,44],[-5,44],[-7,41],[-3,37]]),P.half);
  poly(NP([[-3,27],[-1,27],[0,37],[-3,40],[-5,40]]),P.light);
  poly(NP([[1,27],[3,36],[7,41],[5,44],[2,42],[1,36]]),P.shadow);
  poly(NP([[-3,38],[1,37],[4,40],[2,42],[-3,42],[-5,41]]),P.warm);R(NX(-3,39),39,4,1,P.bright);
  R(NX(-5,43),43,3,1,P.deep);R(NX(3,43),43,3,1,P.deep);R(NX(-1,43),43,3,2,P.skin);R(NX(-1,46),46,2,2,P.shadow);
- if(Math.abs(nb)>.05){const s=Math.sign(nb);R(s>0?1:-3,30,3,2,P.light);R(s>0?2:-3,32,2,1,P.shadow);/* Höcker */R(s>0?-2:1,31,1,4,P.deep);/* Knick */}
+ if(Math.abs(nb)>.05){const s=Math.sign(nb);R(s>0?1:-4,29,4,3,P.light);R(s>0?3:-4,32,2,1,P.shadow);/* Höcker */R(s>0?-2:1,31,1,4,P.deep);R(s>0?-1:0,35,1,2,P.shadow);/* Knick */}
  if(o.noseCrack>0){const c=o.noseCrack;for(let i=0;i<3;i++){const y=29+i*2,x=NX(0,y)+(i%2?2:-2);R(x,y,2,1,c>.5?'#fff2e0':'#e8c9b0');}}
  feature=false;
  // Chin and lip anatomy remains visible for clean-shaven men as well as under beards.
