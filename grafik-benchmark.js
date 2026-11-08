@@ -106,7 +106,7 @@ async function runSeries(){
 }
 $('series').onclick=runSeries;
 // ---------------------------------------------------------------- Kulisse-Test: dieselbe Szene (5 gegen 5, Kästen) mit vier Kulissen-Varianten
-const STAGES=[['','wie im Spiel',true],['bitmap','als Bitmap (Test)',true],['screen','vorverkleinert (Test)',true],['','ohne Kulisse',false]];
+const STAGES=[['plain','alte Art',true],['bitmap','als Bitmap (jetzt im Spiel)',true],['screen','vorverkleinert (Test)',true],['','ohne Kulisse',false]];
 const stageResults=[];
 async function runStageTest(){
  if(series)return;$('series').disabled=$('stagetest').disabled=true;stageResults.length=0;renderStage();
