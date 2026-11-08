@@ -82,6 +82,7 @@ function meterText(r){const b=S.battle,alive=b?[0,1].map(t=>b.actors.filter(a=>a
   (mode==='none'?'':`<span style="color:#d8cdb4">Kulisse ${fmt(r.split.stage)} · Boden ${fmt(r.split.ground)} · Figuren ${fmt(r.split.actors)} · Rest ${fmt(r.split.rest)}</span><br>`)+
   `<span style="color:#a99f97">stehen ${alive[0]}:${alive[1]}${q&&q<1?' · Auflösung '+Math.round(q*100)+' %':''}</span>`;}
 setInterval(()=>{
+ if(window.GB_ERR?.length)return;/* Fehler bleibt sichtbar */
  if(ended&&!series?.hold){start(count);}
  const now=performance.now();if(now-windowAt>=1000){const r=live.result();if(r.secs>.3)$('meter').innerHTML=meterText(r);else if(!S.battle)$('meter').textContent='kein Kampf';live.reset();windowAt=now;}
 },200);

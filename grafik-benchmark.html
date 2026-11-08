@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Grafik-Benchmark · Arena Theory</title>
+<script>/* Fehler sichtbar machen (Fehlersuche auf dem Handy): erste Fehler oben in der Anzeige */window.GB_ERR=[];function gbErr(t){GB_ERR.push(String(t).slice(0,300));const m=document.getElementById('meter');if(m)m.innerHTML='<b style="color:#e0705f">Fehler:</b> '+GB_ERR.slice(0,3).map(x=>x.replace(/</g,'&lt;')).join('<br>');}
+addEventListener('error',e=>gbErr((e.message||'Ladefehler')+(e.filename?' ('+e.filename.split('/').pop().split('?')[0]+':'+e.lineno+')':e.target?.src?' ('+e.target.src.split('/').pop()+')':'')),true);addEventListener('unhandledrejection',e=>gbErr(e.reason?.message||e.reason));</script>
 <script>try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}</script>
 <style>
 @font-face{font-family:'Courier Prime';src:url(fonts/courier-prime-400.woff) format('woff');font-weight:400}
@@ -51,7 +53,7 @@ table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
 .galbar select{min-width:110px}
 </style></head>
 <body>
-<header><small>ARENA THEORY · KAMPF-WERKSTATT · LEISTUNG · STAND ce97fa2c</small><h1>GRAFIK-BENCHMARK</h1>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · LEISTUNG · STAND 145db46d</small><h1>GRAFIK-BENCHMARK</h1>
 <p>Echter Kampf mit der Kampflogik des Spiels. Du kannst die Kämpfer als volle Figuren, als einfache Kästen oder gar nicht zeichnen lassen. So siehst du, ob die Grafik oder die Kampfberechnung bremst. Am Kampf selbst ändert sich nichts, Spielstände bleiben unberührt.</p></header>
 <main>
 <div class="top">
@@ -103,21 +105,21 @@ table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
 <h2>Tiere</h2><div class="gal" id="galBeasts"></div>
 <h2>Ersatzdarstellung im Benchmark</h2><div class="gal" id="galBoxes"></div>
 </main>
-<script src="data.js?v=ce97fa2c"></script>
-<script src="household.js?v=ce97fa2c"></script>
-<script src="management.js?v=ce97fa2c"></script>
-<script src="scout.js?v=ce97fa2c"></script>
-<script src="sim.js?v=ce97fa2c"></script>
-<script src="benchmark.js?v=ce97fa2c"></script>
-<script src="school.js?v=ce97fa2c"></script>
-<script src="weapon-art.js?v=ce97fa2c"></script>
-<script src="arena.js?v=ce97fa2c"></script>
-<script src="block-contact.js?v=ce97fa2c"></script>
-<script src="hit-contact.js?v=ce97fa2c"></script>
-<script src="reach-ai.js?v=ce97fa2c"></script>
-<script src="lion.js?v=ce97fa2c"></script>
-<script src="hahn-engine.js?v=ce97fa2c"></script>
-<script src="hahn-arena.js?v=ce97fa2c"></script>
-<script src="hund.js?v=ce97fa2c"></script>
-<script src="grafik-benchmark.js?v=ce97fa2c"></script>
+<script src="data.js?v=145db46d"></script>
+<script src="household.js?v=145db46d"></script>
+<script src="management.js?v=145db46d"></script>
+<script src="scout.js?v=145db46d"></script>
+<script src="sim.js?v=145db46d"></script>
+<script src="benchmark.js?v=145db46d"></script>
+<script src="school.js?v=145db46d"></script>
+<script src="weapon-art.js?v=145db46d"></script>
+<script src="arena.js?v=145db46d"></script>
+<script src="block-contact.js?v=145db46d"></script>
+<script src="hit-contact.js?v=145db46d"></script>
+<script src="reach-ai.js?v=145db46d"></script>
+<script src="lion.js?v=145db46d"></script>
+<script src="hahn-engine.js?v=145db46d"></script>
+<script src="hahn-arena.js?v=145db46d"></script>
+<script src="hund.js?v=145db46d"></script>
+<script src="grafik-benchmark.js?v=145db46d"></script>
 </body></html>
