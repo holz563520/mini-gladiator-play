@@ -76,7 +76,11 @@ function footShape(T,C,x,y){/* Fuß mit Sandale: Ferse links, Zehen rechts */
  for(let n=0;n<5;n++){T.r(x+53+n*.6,y+9+n*2.1,4-n*.3,3,C.light);T.r(x+56+n*.6,y+9+n*2.1,1,3,C.line);}
  T.r(x-10,y+20,70,3,'#3a2a1c');T.r(x-10,y+23,70,1,'#1f150d');T.tube(x+6,y+19,x+22,y+2,3,3,{skin:'#6c5437',light:'#8a6c48',shade:'#4a3824',line:'#2a1f14'});T.tube(x+30,y+20,x+38,y+5,3,3,{skin:'#6c5437',light:'#8a6c48',shade:'#4a3824',line:'#2a1f14'});T.r(x-6,y-2,18,3,'#6c5437');}
 /* Kopf in der Qualität der Todes-Großaufnahme (face-shots.js, mit Helm), wenn vorhanden; sonst der einfache Kopf */
-let curHead=null;function fxCall(q,T,V,k,C,kind){if(kind==='skullfracture'&&V.newHead){q.save();q.translate(80,HEAD_OY);q.scale(HEAD_SC,HEAD_SC);q.translate(-80,-18);EFFECT[kind](tools(q),V,k,C);q.restore();return;}EFFECT[kind]?.(T,V,k,C);}
+let curHead=null;function fxCall(q,T,V,k,C,kind){if(kind==='skullfracture'&&V.newHead){
+ /* 8.11. (Wunsch Thomas: Schädelbruch saß über dem Kopf): Scheitel des gezeichneten Kopfes messen und die Wunde (gezeichnet für den alten Kopf,
+    Scheitel bei y≈21,8) genau dorthin versetzen; die Varianten (schaedelbruch.js) beschneiden auf die echte Kopffläche (C.headMap). */
+ let dy=0;const MK=V.mask;if(MK){let top=FH;for(let x=74;x<=86;x++)for(let y=0;y<FH;y++)if(MK[y*FW+x]){if(y<top)top=y;break;}if(top<FH)dy=top-(HEAD_OY+(21.8-18)*HEAD_SC)+7;C.headMap={mask:MK,dy,sc:HEAD_SC,oy:HEAD_OY};}
+ q.save();q.translate(80,HEAD_OY+dy);q.scale(HEAD_SC,HEAD_SC);q.translate(-80,-18);EFFECT[kind](tools(q),V,k,C);q.restore();return;}EFFECT[kind]?.(T,V,k,C);}
 const HEAD_SC=.98,HEAD_OY=13;
 function prettyHead(q,T,C,cx,top,R,o={},main){const g=curHead;if(!g||!M.faceShot?.paintHead)return headShape(q,T,C,cx,top,R,o);const sc=main?HEAD_SC:R/26*1.02,arm={};try{for(const it of M.armorItems?.(g)||[])arm[M.definition(it)?.id||it.def]=it;}catch{}
  q.save();q.translate(cx,main?HEAD_OY:top-6*sc);q.scale(sc,sc);q.translate(-80,0);M.faceShot.paintHead(q,g,{armor:arm,mood:o.mood||'calm',pale:o.pale||0,hurt:o.mood==='pain'?.6:0,yaw:0},Math.max(0,o.t||0));q.restore();}
@@ -346,8 +350,8 @@ function helmOf(g){try{const it=M.armorItems?.(g)?.find(i=>M.definition(i)?.part
    entlang des Körperteils und werden notfalls kürzer. Blut darf weiterhin herunterlaufen und spritzen. */
 const FIT_R={scrape:4,cut:3,deepcut:4,stab:4,deepstab:5,arrow:3,sinew:4,gut:6,pierce:5,bruise:7,contusion:8,crush:9,concussion:6,skullfracture:17,skullheal:11,joint:7,fracture:6,badfracture:7,shatter:8,pulp:9,scar:3};
 const FIT_HALF={cut:8,deepcut:13,sinew:10,gut:15,scar:7,scrape:6};
-function fitWound(q,V,kind,view){if(!V.A||!(kind in FIT_R))return;let img;try{img=q.getImageData(0,0,FW,FH);}catch{return;}const d=img.data,N=FW*FH,D=new Float32Array(N);
- const MK=new Uint8Array(N);for(let i=0;i<N;i++){const r=d[i*4],g=d[i*4+1],b=d[i*4+2];let on=r+g+b>24;if(on&&view==='foot'&&((r===138&&g===108&&b===68)||(r===176&&g===142&&b===92)))on=false;D[i]=on?1e4:0;MK[i]=on?1:0;}V.mask=MK;V.under=img;
+function fitWound(q,V,kind,view,noMove){if(!V.A||!(kind in FIT_R))return;let img;try{img=q.getImageData(0,0,FW,FH);}catch{return;}const d=img.data,N=FW*FH,D=new Float32Array(N);
+ const MK=new Uint8Array(N);for(let i=0;i<N;i++){const r=d[i*4],g=d[i*4+1],b=d[i*4+2];let on=r+g+b>24;if(on&&view==='foot'&&((r===138&&g===108&&b===68)||(r===176&&g===142&&b===92)))on=false;D[i]=on?1e4:0;MK[i]=on?1:0;}V.mask=MK;V.under=img;if(noMove)return;
  // Abstand zur Körperkante (Chamfer, zwei Durchläufe)
  for(let y=0;y<FH;y++)for(let x=0;x<FW;x++){const i=y*FW+x;if(!D[i])continue;let v=D[i];if(x>0)v=Math.min(v,D[i-1]+1);if(y>0)v=Math.min(v,D[i-FW]+1);if(x>0&&y>0)v=Math.min(v,D[i-FW-1]+1.4);if(x<FW-1&&y>0)v=Math.min(v,D[i-FW+1]+1.4);if(x===0||y===0||x===FW-1)v=Math.min(v,1);D[i]=v;}
  for(let y=FH-1;y>=0;y--)for(let x=FW-1;x>=0;x--){const i=y*FW+x;if(!D[i])continue;let v=D[i];if(x<FW-1)v=Math.min(v,D[i+1]+1);if(y<FH-1)v=Math.min(v,D[i+FW]+1);if(x<FW-1&&y<FH-1)v=Math.min(v,D[i+FW+1]+1.4);if(x>0&&y<FH-1)v=Math.min(v,D[i+FW-1]+1.4);if(y===FH-1)v=Math.min(v,1);D[i]=v;}
@@ -371,8 +375,8 @@ function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
  const T=tools(q),C=palette(o.g),kind=o.kind||kindOf(o.injury),k=t-HIT,cls=o.cls||(kind==='skullfracture'&&M.skullVariants?.ownWeapon(o.wid)?'none':weaponClass(o.wid)),right=o.part[0]==='r'&&o.part!=='r';
  curHead=kind==='skullheal'||o.simpleHead?null:o.g||null;backdrop(q,T,t);const view=kind==='sever'&&o.part==='head'?'neck':viewOf(o.part),V=VIEW[view](q,T,C,viewOptions(kind,o.part,k,o));V.A=V.mid?{x:V.mid.x,y:V.mid.y}:V.A;V.seed=[...(o.part+kind+(o.g?.id||o.g?.name||''))].reduce((n,c)=>(n*31+c.charCodeAt(0))%9973,7);
  if(kind==='sever'&&k>=0&&V.rest&&o.part!=='head'&&o.part!=='neck'){const fall=k*k*70;V.rest(V.dir.x*(4+k*22),V.dir.y*4+fall,k*1.4);}
- if(kind==='skullheal'){V.A=(o.day|0)>0?{x:82,y:20}:{x:80,y:38};C.healDay=o.day;}if(kind==='skullfracture')V.A={x:80,y:38};V.C=C;if(kind!=='sever'&&!o.noFit)fitWound(q,V,kind,view);try{V.arm=dressArmor(q,C,V,o,kind,k);}catch(e){V.arm=null;}
- if(kind==='skullfracture'){C.wid=o.wid;C.helm=o.helm===undefined?helmOf(o.g):o.helm;if(C.helm&&!V.newHead)helmClose(T,C.helm,k);}
+ if(kind==='skullheal'){V.A=(o.day|0)>0?{x:82,y:20}:{x:80,y:38};C.healDay=o.day;}if(kind==='skullfracture')V.A={x:80,y:38};V.C=C;if(kind!=='sever'&&!o.noFit)fitWound(q,V,kind,view,kind==='skullfracture'&&V.newHead);try{V.arm=dressArmor(q,C,V,o,kind,k);}catch(e){V.arm=null;}
+ if(kind==='skullfracture'){C.wid=o.wid;C.noWeapon=!!o.noWeapon;C.helm=o.helm===undefined?helmOf(o.g):o.helm;if(C.helm&&!V.newHead)helmClose(T,C.helm,k);}
  /* Effekte mit .pre zeichnen auch vor dem Treffer (eigene, zur Wunde passende Waffenbahn; Schädelbruch-Varianten) */if(k<0&&EFFECT[kind]?.pre)fxCall(q,T,V,k,C,kind);
  if(k>=0){V.deferred=V.arm?[]:null;fxCall(q,T,V,k,C,kind);if(V.arm&&BLUNT_K.includes(kind))V.arm.restore(q);/* Knochen ragen auch über die Rüstung */for(const f of V.deferred||[])f();V.deferred=null;pump(T,V,k,kind);M.deathFx?.gore?.(T,V,k,C,kind,o,t);if(!o.noFit)clipBruise(q,V);if(kind==='collapse'||kind==='death'){for(let i=0;i<5;i++){const u=(t*.9+i/5)%1;T.r(60+i*9,70+u*26,1,2,BLOOD);}T.oval(80,97,cl(k/2)*46,cl(k/2)*4,DARK);T.oval(82,97,cl(k/2)*30,cl(k/2)*2.4,BLOOD);}}
  if(kind==='death'&&k>0){q.globalAlpha=cl((k-(o.dramatic?2.2:1.3))/(o.dramatic?2.4:1.4))*(o.dramatic?.55:.38);T.r(0,0,FW,FH,'#050302');q.globalAlpha=1;}

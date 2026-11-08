@@ -29,7 +29,7 @@ const hr=i=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x);}
 const ease=v=>{v=cl(v);return v*v*(3-2*v);};
 const mixc=(a,b,t)=>{const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*cl(t)).toString(16).padStart(2,'0')).join('');};
 // Stift, der nur innerhalb der Maske zeichnet
-function pen(T,C){const hx=({sumo:1.35,dwarf:1.15,giant:1.06})[C.stature]||1,inside=(x,y)=>{const hw=Math.max(headHW(y)*hx,C.helm?helmHW(y):0);return Math.abs(x+.5-80)<hw;};
+function pen(T,C){const hx=({sumo:1.35,dwarf:1.15,giant:1.06})[C.stature]||1,HM=C.headMap,inside=HM?(x,y)=>{/* 8.11.: echte Kopffläche des neuen Kopfes (injury-shots.js misst sie) */const bx=Math.round(80+(x+.5-80)*HM.sc),by=Math.round(HM.oy+HM.dy+(y+.5-18)*HM.sc);return bx>=0&&by>=0&&bx<160&&by<100&&!!HM.mask[by*160+bx];}:(x,y)=>{const hw=Math.max(headHW(y)*hx,C.helm?helmHW(y):0);return Math.abs(x+.5-80)<hw;};
  const R=(x,y,w,h,c)=>{x=Math.round(x);y=Math.round(y);w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));for(let j=0;j<h;j++){let run=-1;for(let i=0;i<=w;i++){const ok=i<w&&inside(x+i,y+j);if(ok&&run<0)run=i;if(!ok&&run>=0){T.r(x+run,y+j,i-run,1,c);run=-1;}}}};
  const P=(x,y,c)=>R(x,y,1,1,c);
  const OV=(x,y,rx,ry,c)=>{for(let j=-Math.ceil(ry);j<=Math.ceil(ry);j++){const hw=rx*Math.sqrt(Math.max(0,1-(j*j)/(ry*ry)));if(hw>=.5)R(x-hw,y+j,hw*2,1,c);}};
@@ -130,7 +130,7 @@ for(const f of [K1,K2,K3])f.pre=true;
 function bluntAt(T,o,k,draw){const {x,y,nx,ny}=o;let d;if(k<-.3)return;if(k<0)d=90*Math.pow(cl(-k/.3),1.6);else if(k<.1)d=-(o.bite||1)+Math.sin(k*90)*.5;else{const v=(k-.1)/.4;if(v>1)return;d=-(o.bite||1)+v*v*70;}
  const px=x-nx*d,py=y-ny*d;if(k<-.02)for(let g=2;g>=1;g--)draw(T,px-nx*g*10*cl(-k/.15+.2),py-ny*g*10*cl(-k/.15+.2),true,g);draw(T,px,py,false,0);}
 const handle=(T,x,y,hx,hy,L,w)=>{T.line(x,y,x+hx*L,y+hy*L,'#3d2a18',w+1);T.line(x,y,x+hx*L,y+hy*L,'#7a5530',w-1);};
-function crater(T,k,C,o){const D=pen(T,C),H=helmCols(C.helm),{x:cx,y:cy,nx,ny}=o,ux=-ny,uy=nx,pulse=.5+.5*Math.sin(k*8),op=out(k/.1),sink=out((k-.04)/.45),sw=out(k/1.8),seed=o.seed;
+function crater(T,k,C,o){if(C.noWeapon)o={...o,weapon:()=>{}};/* 8.11.: Boxen zeigt die Faust selbst */const D=pen(T,C),H=helmCols(C.helm),{x:cx,y:cy,nx,ny}=o,ux=-ny,uy=nx,pulse=.5+.5*Math.sin(k*8),op=out(k/.1),sink=out((k-.04)/.45),sw=out(k/1.8),seed=o.seed;
  speedlines(T,cx,cy,nx,ny,k,seed);if(k<0){o.weapon(T,o,k);return;}
  // Druckwelle (frei) und Prellung (im Kopf)
  if(k<.16){const a=1-k/.16,r=8+k/.16*30;for(let i=0;i<28;i++){const an=i/28*6.283+hr(seed+i)*.2;T.r(cx+Math.cos(an)*r*1.3,cy+Math.sin(an)*r*.7,1,1,a>.6?'#fff3d0aa':'#fff3d044');}}
