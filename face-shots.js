@@ -89,6 +89,7 @@ function head(q,T,C,o,yaw,t,mood){
  for(const sd of [-1,1]){if(F.ears!==2&&F.oneEar!==sd)continue;const x=sd*32;R(x-4,22,8,21,P.deep);R(x-3,23,6,18,sd<0?P.warm:P.half);R(x-2,25,3,3,P.light);R(x-1,28,2,9,P.shadow);}
  if(F.ears===0)for(const sd of [-1,1]){const x=sd*28;R(x-3,25,6,16,P.deep);R(x-3,26,5,12,sd<0?P.warm:P.half);}
  else for(const sd of [-1,1]){const x=sd*28;R(x-3,25,6,16,P.deep);R(x-3,26,5,12,sd<0?P.warm:P.half);R(x-2,27,3,2,P.light);R(x-1,30,2,7,P.shadow);R(x-2,36,2,3,P.red);}
+ if(F.cauli)for(const sd of [-1,1]){const x=sd*29;R(x-3,27,3,3,P.warm);R(x+1,31,3,3,P.half);R(x-2,35,3,2,P.shadow);R(x,29,1,1,P.light);}
  // Angular skull: narrower temples and a distinct jaw, avoiding a circular mask.
  poly([[-20,0],[-8,-5],[10,-5],[23,2],[29,14],[28,39],[24,51],[16,60],[6,65],[-6,65],[-18,59],[-26,49],[-29,34],[-28,14]],P.outline);
  poly([[-19,1],[-7,-3],[11,-3],[22,4],[26,16],[25,37],[21,49],[13,58],[4,62],[-7,61],[-18,55],[-24,44],[-26,29],[-25,14]],P.skin);
@@ -115,7 +116,7 @@ function head(q,T,C,o,yaw,t,mood){
   if(eh===0){R(x+1,yy+1,w-2,1,P.deep);R(x+2,yy+2,w-4,1,P.half);}
   else{
    R(x+1,yy-1,w-2,eh+3,P.shadow);R(x,yy,w,1,P.deep);R(x+1,yy+1,w-2,eh,'#c6b89c');R(x+2,yy+1,w-4,Math.max(1,eh-1),'#e0d4b7');
-   const iw=m.tiny||F.bulge?2:3,ix=x+Math.floor(w/2)-1+dx,ih=Math.min(eh,iw),iy=yy+1+Math.max(0,Math.floor((eh-ih)/2)-(m.up?1:0));R(ix,iy,iw,ih,F.iris);R(ix+1,iy,1,ih,'#282c24');if(!m.tiny&&!F.bulge)R(ix,iy,1,1,'#f5efcf');if(F.bulge)R(x+1,yy-1,w-2,1,P.deep);
+   const iw=m.tiny||F.bulge?2:3,ix=x+Math.floor(w/2)-1+dx,ih=Math.min(eh,iw),iy=yy+1+Math.max(0,Math.floor((eh-ih)/2)-(m.up?1:0));R(ix,iy,iw,ih,F.iris);R(ix+1,iy,1,ih,'#282c24');if(!m.tiny&&!F.bulge)R(ix,iy,1,1,'#f5efcf');if(F.eyeBags){R(x+1,yy+eh+3,w-2,1,P.shadow);R(x+2,yy+eh+4,w-4,1,mix(P.shadow,'#6a4a6a',.35));}if(F.bulge)R(x+1,yy-1,w-2,1,P.deep);
    R(x,yy+1,1,Math.min(2,eh),P.red);R(x+w-1,yy+1,1,eh,P.deep);R(x+2,yy+eh+1,w-4,1,P.half);R(x+3,yy+eh+2,w-5,1,P.light);
    /* Lider: hängend (stumpf) oder klar gezeichnet (wach) */if(F.lid===-1&&eh>1){R(x+1,yy,w-2,2,P.half);R(x+1,yy+2,w-2,1,P.deep);R(x+2,yy-1,w-4,1,P.light);}else if(F.lid===1){R(x,yy,w,1,P.outline);R(x+w-2,yy-1,2,1,P.outline);}
   }
@@ -140,7 +141,7 @@ function head(q,T,C,o,yaw,t,mood){
  else if(F.nose===3){R(NX(-1,29),29,3,4,P.light);R(NX(2,30),30,1,5,P.deep);R(NX(-2,28),28,2,1,P.bright);}
  else if(F.nose===0){R(NX(2,30),30,1,6,P.shadow);}
  if(F.redNose){poly(NP([[-5,37],[4,37],[7,41],[5,45],[-5,45],[-7,41]]),mix(P.red,'#c24e44',.45));R(NX(-3,39),39,3,1,mix(P.bright,'#ffd0c0',.4));}
- R(NX(-5,43),43,3,1,P.deep);R(NX(3,43),43,3,1,P.deep);R(NX(-1,43),43,3,2,P.skin);R(NX(-1,46),46,2,2,P.shadow);
+ R(NX(-5,43),43,3,1,P.deep);R(NX(3,43),43,3,1,P.deep);if(F.pigNose){R(NX(-6,40),40,4,4,P.deep);R(NX(-5,41),41,2,2,'#2a1414');R(NX(2,40),40,4,4,P.deep);R(NX(3,41),41,2,2,'#2a1414');R(NX(-2,38),38,4,1,P.bright);}if(F.noseHair){R(NX(-4,44),44,1,3,P.hairDark);R(NX(3,44),44,1,3,P.hairDark);R(NX(-3,45),45,1,2,P.hairDark);}R(NX(-1,43),43,3,2,P.skin);R(NX(-1,46),46,2,2,P.shadow);
  if(nk>.05){const s=ndir;
   if(ntype==='hoecker'){const hw=Math.round(2+nk*2);R(-hw,29,hw*2+1,3,P.light);R(-hw+1,28,hw*2-1,1,P.bright);R(-hw,32,hw*2+1,1,P.shadow);R(-hw-1,30,1,2,P.deep);R(hw+1,30,1,2,P.deep);/* dicker Höcker in der Mitte, Schatten darunter */}
   else if(ntype==='zickzack'){R(NX(0,31)+(s>0?2:-3),30,2,2,P.light);R(NX(0,38)+(s>0?-3:2),38,2,2,P.light);R(NX(0,35)+(s>0?-2:1),34,1,3,P.deep);/* zwei Knicke */}
@@ -154,6 +155,9 @@ function head(q,T,C,o,yaw,t,mood){
  if(F.chin===0){poly([[-15,57],[15,57],[12,67],[-12,67]],P.half);poly([[-12,58],[12,58],[9,64],[-9,64]],P.shadow);poly([[-17,54],[-9,59],[0,60],[9,59],[17,54],[16,57],[9,61],[0,62],[-9,61],[-16,57]],P.outline);R(-6,56,10,1,P.light);}
  else if(F.chin>=2){poly([[-13,57],[13,57],[12,65],[-12,65]],P.outline);poly([[-12,57],[12,57],[11,63],[-11,63]],P.skin);poly([[3,58],[11,57],[10,63],[4,63]],P.shadow);R(-8,59,9,1,P.light);if(F.chin===3)R(0,59,1,4,P.deep);}
  if(F.pox)for(let i=0;i<14;i++){const px=(i%2?1:-1)*(10+((i*37)%11)),py=32+((i*53)%14);R(px,py,1,1,i%3?P.shadow:P.deep);}
+ if(F.chubby)for(const sd of [-1,1]){poly([[sd*27,34],[sd*21,32],[sd*15,40],[sd*17,50],[sd*25,48]],sd<0?P.warm:P.half);R(sd<0?-23:16,38,6,2,mix(P.red,P.light,.25));}
+ if(F.doubleChin){poly([[-15,62],[15,62],[13,71],[-13,71]],P.half);R(-13,66,26,1,P.shadow);R(-11,71,22,1,P.deep);R(-8,63,14,1,P.light);}
+ if(F.pimples)for(let i=0;i<6;i++){const px=(i%2?1:-1)*(6+((i*29)%15)),py=14+((i*41)%30);R(px,py,2,2,'#b8504a');R(px,py,1,1,'#f0b0a0');}
  if(F.cheek){R(-23,33,10,1,P.bright);R(14,34,9,1,P.light);R(-22,39,9,1,P.shadow);R(13,40,8,1,P.deep);}
  if(beard===2){
   poly([[-25,35],[-21,39],[-19,46],[-13,49],[-7,47],[-2,49],[5,48],[12,46],[18,44],[24,36],[23,50],[17,59],[7,65],[-6,65],[-17,60],[-24,52]],P.hairDark);
@@ -184,7 +188,7 @@ function head(q,T,C,o,yaw,t,mood){
   R(-wide+3,bot+1,wide*2-6,1,P.red);R(-wide-1,top+2,1,3,P.shadow);R(wide,top+2,1,3,P.deep);
  }
  /* Hängelippe, Zungenspitze, Hasenzähne bei geschlossenem oder schlaffem Mund */
- if(tk<=.06&&['line','firm','slack','smirk','wobble'].includes(mouth)){if(F.droopLip){R(-5+LO,my+2,10,2,P.red);R(-4+LO,my+4,8,1,P.deep);R(-3+LO,my+2,5,1,mix(P.red,P.light,.3));}if(F.tongue&&mouth==='slack')R(-1+LO,my+2,4,2,'#c45a5a');if(F.buck){R(-3+LO,my+1,3,3,'#e6dcbc');R(0+LO,my+1,3,3,'#d6c8a4');R(0+LO,my+1,1,3,'#9e8c72');R(-3+LO,my+4,6,1,P.deep);}}
+ if(tk<=.06&&['line','firm','slack','smirk','wobble'].includes(mouth)){if(F.droopLip){R(-5+LO,my+2,10,2,P.red);R(-4+LO,my+4,8,1,P.deep);R(-3+LO,my+2,5,1,mix(P.red,P.light,.3));}if(F.tongue&&mouth==='slack')R(-1+LO,my+2,4,2,'#c45a5a');if(F.toothGap&&mouth==='slack')R(LO,my+1,1,2,'#1a0c0c');if(F.fang){R(3+LO,my+1,2,4,'#e6dcbc');R(3+LO,my+5,2,1,P.deep);}if(F.drool){const dl=3+Math.round(2*(.5+.5*Math.sin(t*1.7)));R(7+LO,my+1,1,dl,'#d8e8e6');R(7+LO,my+1+dl,2,2,'#c4dcda');}if(F.buck){R(-3+LO,my+1,3,3,'#e6dcbc');R(0+LO,my+1,3,3,'#d6c8a4');R(0+LO,my+1,1,3,'#9e8c72');R(-3+LO,my+4,6,1,P.deep);}}
  if(F.wart){const [wx,wy]=F.wart;R(wx,wy,3,3,mix(P.shadow,'#5a3a2a',.35));R(wx,wy,1,1,P.light);R(wx+1,wy-1,1,1,P.hairDark);}
  if(beard===2){for(const [x,y,len]of [[-23,43,3],[-21,48,3],[-18,52,4],[-14,55,3],[-11,59,2],[-6,63,2],[0,63,2],[6,63,2],[12,57,3],[17,50,3],[20,45,3]])R(x,y,1,len,x<0?P.hairMid:P.hair);}
  if(beard===3){R(-4,60,1,3,P.hairMid);R(3,61,1,3,P.hair);}
