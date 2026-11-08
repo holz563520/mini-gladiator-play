@@ -831,7 +831,7 @@ function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);
     if(!v.g.dead&&!vLying){const ratio=d.dog.weight/(v.g.weight||80),weak=weakMoment(d,v);
      /* Umreißen je nach Rüstungstyp (8.11.): schwere Rüstung macht steif und kopflastig, der Hund zerrt statt zu beißen */
      const bodyA=armorMat(v,'chest')?.r||0,legA=armorMat(v,d.gripPart)?.r||0,tdK=[1,1.1,1.3,1.5][bodyA]*(legA?1.25:1);
-     if(LEG.includes(d.gripPart)&&Math.random()<.025*ratio*(weak?4:1)*(1+P.wild*.5)*tdK){M.knockdown(v,'Von '+d.g.name+' am Bein umgerissen',2.4);log(d.g.name+' reißt '+nameOf(v)+' am Bein von den Füßen!');}
+     if(LEG.includes(d.gripPart)&&Math.random()<.025*ratio*(weak?4:1)*(1+P.wild*.5)*tdK*(1-.2*(M.bodyKs?.(v.g,['lf','rf'],'strength')||0))){M.knockdown(v,'Von '+d.g.name+' am Bein umgerissen',2.4);log(d.g.name+' reißt '+nameOf(v)+' am Bein von den Füßen!');}
      else if(Math.random()<.25)log(d.g.name+(ARM.includes(d.gripPart)?' zerrt am Arm von ':LEG.includes(d.gripPart)?' zerrt am Bein von ':' reißt an ')+nameOf(v)+'.');}
     if(!v.g.dead&&throat&&v.g.body.neck.hp<8)M.death(v,'Kehle durchgebissen',d);
     // Losreißen (8.11. stärker): Kraft und Gewandtheit des Menschen gegen den Griff; aus Rüstung rutschen die Zähne leichter, auch im Liegen eine Chance (nicht an der Kehle)
@@ -844,7 +844,7 @@ function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);
   if(!d.leapHit&&p>.45&&dist(d,t)<34*P.sz+t.r){d.leapHit=true;
    if(isDog(t)){if(hitDog(d,t,'leap','brust',P.lunge*.6)){const knock=P.mass*rnd(.6,1.3)>t.P.mass*rnd(.85,1.35)*(t.energy>30?1:.75);if(knock){t.down=true;releaseAll(t);state(t,'down',.9+Math.random()*.7);log(d.g.name+' springt '+t.g.name+' an und wirft ihn um!');}d.leapPart=knock?'hals':pick(['hals','kopf','vl']);}}
    else{const part=pickHumanPart(d,t),ok=hurtHuman(d,t,'leap',part,P.lunge*.45+P.snap*.5);
-    if(ok){d.leapPart=part;if(part==='chest'){const weak=weakMoment(d,t),mass=d.dog.weight*rnd(.8,1.25),stand=(t.g.weight||80)*(.6+(t.g.stats.balance||50)/125);
+    if(ok){d.leapPart=part;if(part==='chest'){const weak=weakMoment(d,t),mass=d.dog.weight*rnd(.8,1.25),stand=(t.g.weight||80)*(.6+(t.g.stats.balance||50)/125)*(1+.2*(M.bodyKs?.(t.g,['lf','rf'],'strength')||0));
       if(Math.random()<(weak?.45:.06)&&mass>stand*.7){M.knockdown(t,'Von '+d.g.name+' angesprungen',2.6);t.kx+=Math.cos(d.a)*35;t.ky+=Math.sin(d.a)*35;d.leapPart=null;log(d.g.name+' springt '+nameOf(t)+' im falschen Moment an und reißt ihn um!');}
       else{d.leapPart=pick(['rfa','lfa']);log(d.g.name+' prallt gegen '+nameOf(t)+', der Mann hält stand.');}}}
     else log(nameOf(t)+' wehrt den Sprung von '+d.g.name+' ab.');}}

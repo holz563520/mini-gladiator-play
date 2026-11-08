@@ -198,10 +198,17 @@ BX.applyAftermath=function(f,{apply=true,learn=null,potentialRate=true}={}){
   const op=f.b[b===f.b[0]?1:0].st,got=(op.headHits||0)+(op.bodyHits||0);
   const amount={'stats:toughness':.03*secs+.035*got,'stats:agility':.07*secs+.02*(b.st.dodges+b.st.evaded)+.005*tot,'stats:dexterity':.10*secs+.006*tot,'stats:strength':.06*secs+.02*(b.st.landed.schwinger+b.st.landed.uppercut),'stats:stamina':.16*secs+.004*tot,'stats:reflex':.02*(b.st.blocks+b.st.dodges+b.st.evaded),
    'boxing:gerade':.035*used.gerade,'boxing:schwinger':.05*used.schwinger,'boxing:uppercut':.07*used.uppercut,'stats:block':.05*b.st.blocks+.01*b.st.blocked,'moves:dodge':.06*b.st.dodges+.02*Math.max(0,b.st.dodgeTries||0),'moves:backstep':.05*b.st.backsteps+.04*b.st.evaded};
+  /* Körperteile (8.11.): Boxen trainiert Fäuste, Unter- und Oberarme, Schultern (Kraft), Beine und Rumpf (Beweglichkeit),
+     und härtet, was getroffen wird (Robustheit an Kopf, Hals, Brust, Bauch). Anteil der passenden Grundwerte. */
+  {const S0=amount['stats:strength']||0,A0=amount['stats:agility']||0,D0=amount['stats:dexterity']||0,T0=amount['stats:toughness']||0;
+   for(const sd of ['l','r']){amount['body:'+sd+'h.strength']=.35*S0;amount['body:'+sd+'fa.strength']=.35*S0;amount['body:'+sd+'ua.strength']=.3*S0;amount['body:'+sd+'s.strength']=.25*S0;amount['body:'+sd+'h.agility']=.3*D0;amount['body:'+sd+'fa.agility']=.25*D0;
+    for(const lg of ['t','sh','f'])amount['body:'+sd+lg+'.agility']=.25*A0;}
+   amount['body:belly.agility']=.25*A0;amount['body:chest.agility']=.2*(amount['stats:stamina']||0);
+   amount['body:head.robust']=.5*T0;amount['body:neck.robust']=.3*T0;amount['body:chest.robust']=.4*T0;amount['body:belly.robust']=.4*T0;}
   const gain={};
-  for(const [path,a] of Object.entries(amount)){if(!(a>0))continue;const [grp,key]=path.split(':'),cap=g.caps?.[grp]?.[key]??100,v=g[grp]?.[key]??0;
+  for(const [path,a] of Object.entries(amount)){if(!(a>0))continue;const [grp,key]=path.split(':'),bk=grp==='body'?key.split('.'):null;if(bk&&(!g.body?.[bk[0]]||g.body[bk[0]].missing))continue;if(bk&&g.body[bk[0]][bk[1]]==null)window.MG?.ensureRobust?.(g);const cap=bk?(g.caps?.body?.[bk[0]]?.[bk[1]]??100):g.caps?.[grp]?.[key]??100,v=bk?(g.body[bk[0]][bk[1]]??0):g[grp]?.[key]??0;
    const rate=2*(.7+(g.potential??50)/150)*(.08+.92*Math.pow(Math.max(0,(cap-v)/Math.max(1,cap)),.65));let real=a*rate;
-   if(apply){if(learn)real=learn(g,grp,key,real);else{const nv=Math.min(cap,v+real);real=Math.max(0,nv-v);if(g[grp])g[grp][key]=nv;}}
+   if(apply){if(learn)real=learn(g,grp,key,real);else{const nv=Math.min(cap,v+real);real=Math.max(0,nv-v);if(bk)g.body[bk[0]][bk[1]]=nv;else if(g[grp])g[grp][key]=nv;}}
    gain[path]=Math.round(real*100)/100;}
   if(apply){g.teeth={missing:miss,gold,pending:pend};}out.push({gold:b.teethLost.length,vet,gain});}
  return out;};
