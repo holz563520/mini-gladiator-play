@@ -79,6 +79,9 @@ function head(q,T,C,o,yaw,t,mood){
  poly([[-14,57],[14,57],[12,65],[1,70],[-11,65]],P.deep);
  if(o.g?.stature==='sumo'){/* Doppelkinn, Hängebacken und Speckfalten am Hals */poly([[-27,44],[27,44],[26,62],[14,74],[-14,74],[-26,62]],P.outline);poly([[-26,45],[26,45],[25,61],[13,72],[-13,72],[-25,61]],P.half);poly([[-18,62],[18,62],[11,71],[-11,71]],P.shadow);R(-15,67,30,1,P.deep);R(-10,71,20,1,P.deep);}
  if(o.g?.stature==='giant'){/* massiger, kantiger Unterkiefer */poly([[-27,40],[27,40],[25,58],[14,68],[-14,68],[-25,58]],P.outline);poly([[-26,41],[26,41],[24,57],[13,66],[-13,66],[-24,57]],P.shadow);}
+ /* 8.11.: Pferdeschwanz hängt hinter dem Kopf auf seiner linken Seite herab */
+ if(st===8){poly([[18,6],[29,12],[34,30],[33,55],[29,72],[24,74],[26,52],[26,30],[21,16]],P.hairDark);poly([[22,12],[29,18],[31,34],[29,56],[26,68],[27,48],[27,30]],P.hair);for(const y of [24,40,56])R(25,y,6,1,P.hairDark);R(23,14,7,3,'#6b4a2a');}
+ if(st===10){poly([[-27,12],[-31,18],[-31,44],[-26,48],[-24,30]],P.hairDark);poly([[25,12],[30,18],[30,44],[25,47],[24,30]],P.hairDark);}
  if(st===3||st===4){poly([[-24,5],[-33,17],[-32,73],[-23,77],[-21,40]],P.hair);poly([[22,7],[32,18],[31,74],[23,72],[22,37]],P.hairDark);for(const x of [-30,-26,26,29])R(x,31,1,36,x<0?P.hairMid:P.hair);}
  // Ears, helix and concha remain attached to the head silhouette.
  for(const sd of [-1,1]){const x=sd*28;R(x-3,25,6,16,P.deep);R(x-3,26,5,12,sd<0?P.warm:P.half);R(x-2,27,3,2,P.light);R(x-1,30,2,7,P.shadow);R(x-2,36,2,3,P.red);}
@@ -143,6 +146,12 @@ function head(q,T,C,o,yaw,t,mood){
   poly([[-17,51],[-8,55],[7,55],[15,51],[14,57],[6,62],[-5,62]],P.hair);poly([[-18,52],[-10,56],[-6,60],[-14,57]],P.hairMid);
  }else if(beard===3){poly([[-7,55],[8,55],[7,64],[2,67],[-5,64]],P.hairDark);poly([[-6,55],[-1,57],[0,64],[-4,63]],P.hair);}
  if(beard===1){for(let y=47;y<61;y+=2)for(let x=-18;x<=18;x+=3){if(Math.abs(x)<6&&y<56||Math.abs(x)>(62-y)*1.7)continue;R(x+(y%3),y,1,1,mix(P.half,P.hair,.48));}}
+ /* 8.11.: Backenbart (6) und Langbart (7) unter dem Mund; 5 Spitzbart */
+ if(beard===6){for(const sd of [-1,1]){poly([[sd*25,26],[sd*21,26],[sd*19,40],[sd*15,48],[sd*12,53],[sd*13,57],[sd*18,54],[sd*23,46],[sd*26,36]].map(([x,y])=>[x,y]),sd<0?P.hairDark:P.hair);poly([[sd*24,30],[sd*21,31],[sd*19,42],[sd*16,48],[sd*20,47],[sd*23,40]],sd<0?P.hair:P.hairMid);}}
+ if(beard===7){poly([[-25,35],[-21,40],[-19,46],[-13,49],[-7,47],[-2,49],[5,48],[12,46],[18,44],[24,36],[24,52],[20,64],[13,76],[5,84],[-4,85],[-13,77],[-20,65],[-25,52]],P.hairDark);
+  poly([[-23,41],[-18,49],[-12,54],[-6,58],[-4,72],[-2,82],[-10,75],[-17,64],[-22,52]],P.hair);poly([[2,58],[10,54],[17,49],[20,54],[15,66],[9,76],[3,80],[4,68]],P.hair);
+  for(const [x,y,len]of [[-18,56,8],[-13,62,10],[-8,64,12],[-3,66,14],[3,64,12],[8,62,10],[13,58,8],[17,52,7]])R(x,y,1,len,x<0?P.hairMid:P.hairLight);}
+ if(beard===5){poly([[-7,55],[8,55],[7,63],[3,70],[0,74],[-3,70],[-6,63]],P.hairDark);poly([[-5,56],[0,58],[1,68],[0,72],[-3,66]],P.hair);R(-1,62,1,6,P.hairMid);}
  feature=true;
  const my=51,mouth=m.mouth;
  if(beard===2||beard===3)poly([[-8,47],[-3,46],[0,48],[3,46],[8,47],[11,50],[4,50],[0,49],[-5,50],[-11,51]],P.hair);
@@ -161,6 +170,8 @@ function head(q,T,C,o,yaw,t,mood){
  }
  if(beard===2){for(const [x,y,len]of [[-23,43,3],[-21,48,3],[-18,52,4],[-14,55,3],[-11,59,2],[-6,63,2],[0,63,2],[6,63,2],[12,57,3],[17,50,3],[20,45,3]])R(x,y,1,len,x<0?P.hairMid:P.hair);}
  if(beard===3){R(-4,60,1,3,P.hairMid);R(3,61,1,3,P.hair);}
+ /* Schnurrbart über der Oberlippe (4 Schnurrbart, 5 Spitzbart, 6 Backenbart, 7 Langbart) */
+ if(beard>=4){const tk2=cl(+o.talk||0)>.06||['roar','grin','teeth','open','scream'].includes(mouth)?-1:0;poly([[-13,51],[-8,47],[-3,46],[0,47],[3,46],[8,47],[13,51],[15,55],[11,52],[5,50+tk2],[0,50+tk2],[-5,50+tk2],[-11,52],[-15,55]],P.hairDark);poly([[-10,49],[-4,47],[0,48],[4,47],[10,49],[5,49],[0,49],[-5,49]],P.hair);R(-6,48,3,1,P.hairLight);R(3,48,3,1,P.hairMid);}
  feature=false;
  // Six real game hairstyles, each built on the same anatomical head.
  if(st===0){poly([[-27,13],[-24,17],[-23,27],[-26,30]],P.hair);poly([[24,13],[27,17],[26,29],[23,26]],P.hairDark);poly([[-17,5],[-7,1],[8,1],[15,5],[12,8],[-10,8]],P.light);}
@@ -177,6 +188,18 @@ function head(q,T,C,o,yaw,t,mood){
  }else if(st===1){poly([[-28,22],[-28,9],[-22,0],[-9,-5],[9,-5],[23,1],[28,10],[27,25],[23,22],[22,12],[16,8],[5,7],[-7,8],[-19,12],[-24,23]],P.hairDark);poly([[-24,9],[-18,2],[-6,-2],[9,-2],[18,3],[20,7],[8,5],[-5,6],[-19,11]],P.hair);for(let i=0;i<9;i++)R(-19+i*4,3+(i%3),2,1,P.hairMid);}
  else if(st===3||st===4){poly([[-29,24],[-29,10],[-23,0],[-10,-6],[9,-6],[23,1],[29,11],[27,29],[22,20],[19,9],[9,6],[1,4],[-8,6],[-19,12],[-23,29]],P.hairDark);poly([[-25,12],[-19,3],[-8,-2],[0,1],[-9,6],[-18,15],[-22,29],[-25,38]],P.hair);poly([[2,0],[12,-2],[22,5],[25,15],[22,25],[18,10],[10,5]],P.hair);for(const [x,y]of [[-21,10],[-18,7],[-13,4],[14,5],[20,12]])R(x,y,1,9,P.hairMid);if(st===4){poly([[-7,-5],[-9,-11],[-4,-16],[6,-15],[10,-9],[7,-4]],P.hairDark);R(-5,-12,9,4,P.hair);R(-3,-13,5,1,P.hairMid);}}
  else if(st===5){poly([[-6,10],[-8,0],[-6,-14],[0,-18],[7,-14],[8,-2],[5,11]],P.hairDark);poly([[-4,5],[-4,-12],[0,-15],[4,-12],[3,6]],P.hair);R(-3,-11,2,12,P.hairMid);R(-2,8,7,2,P.hair);}
+ /* 8.11.: Fransen (6), Glatze (7), Pferdeschwanz (8), Locken (9), Haarkranz (10), Zöpfe (11) */
+ else if(st===6){poly([[-28,20],[-28,8],[-22,-1],[-9,-6],[9,-6],[23,0],[28,9],[27,22],[23,19],[22,12],[16,13],[10,11],[4,13],[-2,11],[-8,13],[-14,11],[-19,13],[-24,20]],P.hairDark);
+  poly([[-24,8],[-18,1],[-6,-3],[9,-3],[19,2],[22,9],[16,10],[10,9],[4,10],[-2,9],[-8,10],[-14,9],[-20,11]],P.hair);for(let i=0;i<10;i++)R(-19+i*4,3+(i%2),1,6,P.hairMid);R(-8,0,10,1,P.hairLight);}
+ else if(st===7){poly([[-16,0],[-7,-3],[4,-3],[-4,1],[-12,4]],P.bright);poly([[-12,1],[-5,-1],[1,-1],[-6,2]],mix(P.bright,'#ffffff',.35));R(18,4,4,1,P.half);R(21,7,3,1,P.shadow);}
+ else if(st===8){poly([[-28,20],[-28,8],[-22,-1],[-9,-6],[9,-6],[23,0],[28,9],[27,22],[23,19],[21,11],[14,7],[4,6],[-7,7],[-19,11],[-24,20]],P.hairDark);poly([[-24,8],[-18,1],[-6,-3],[9,-3],[18,1],[21,6],[9,4],[-5,5],[-19,10]],P.hair);for(let i=0;i<6;i++)R(-16+i*6,0+(i%2),5,1,P.hairLight);}
+ else if(st===9){const curl=(x,y)=>{R(x-2,y-3,5,1,P.hairDark);R(x-3,y-2,7,4,P.hairDark);R(x-2,y+2,5,1,P.hairDark);R(x-2,y-2,4,3,P.hair);R(x-1,y-2,2,1,P.hairLight);R(x+1,y,2,1,P.hairMid);R(x-1,y+1,1,1,P.hairMid);};
+  poly([[-29,22],[-29,9],[-23,-1],[-10,-7],[9,-7],[23,0],[29,10],[28,24],[22,18],[14,10],[0,8],[-14,10],[-23,20]],P.hairDark);
+  for(const [x,y]of [[-26,18],[-27,10],[-23,3],[-16,-2],[-8,-5],[0,-6],[8,-5],[16,-2],[22,3],[26,10],[26,18],[-18,6],[-10,3],[-2,2],[6,3],[14,6],[-20,12],[20,12]])curl(x,y);}
+ else if(st===10){poly([[-28,24],[-29,12],[-25,8],[-22,14],[-22,26]],P.hair);poly([[23,10],[27,12],[28,24],[24,24],[23,16]],P.hairDark);for(const x of [-27,-25,25])R(x,13,1,10,P.hairMid);
+  poly([[-15,1],[-6,-2],[3,-2],[-5,2],[-12,5]],P.bright);R(-7,0,5,1,mix(P.bright,'#ffffff',.35));}
+ else if(st===11){poly([[-29,24],[-29,9],[-23,-1],[-10,-7],[9,-7],[23,0],[29,10],[28,24],[23,19],[21,11],[14,8],[5,9],[-6,7],[-18,12],[-24,22]],P.hairDark);poly([[-25,10],[-19,2],[-7,-3],[8,-3],[19,2],[22,8],[12,5],[2,6],[-8,5],[-19,11]],P.hair);for(let i=0;i<8;i++)R(-18+i*5,1+(i%3),3,1,P.hairMid);
+  for(const sd of [-1,1]){const x0=sd*29;for(let k=0;k<7;k++){const y=24+k*7;poly([[x0-4,y],[x0+3,y],[x0+4,y+4],[x0,y+8],[x0-5,y+4]],k%2?P.hairDark:P.hair);R(x0-2,y+1,2,2,P.hairLight);}R(x0-3,74,7,3,'#6b4a2a');R(x0-2,77,5,4,P.hair);}}
  // Small skin highlights, a lower eyelid crease and subtle age lines.
  R(-19,16,8,1,P.warm);R(-12,14,14,1,P.light);R(4,16,8,1,P.half);
  R(-24,30,2,1,P.shadow);R(22,30,2,1,P.deep);R(-19,38,3,1,P.light);
@@ -263,7 +286,7 @@ function paint(g,w,h,o,t){if(g?.canvas&&o?.g&&!o._sprech){recs.set(g.canvas,{ctx
     Mit o.throttle (ms) wird dieselbe Figur auf derselben Leinwand höchstens so oft neu gemalt; die Leinwand behält das letzte Bild. Nur für Aufrufer,
     die die Leinwand nicht selbst vorher leeren. Wechselt die Figur oder die Größe, wird sofort gemalt; Mundbewegung beim Sprechen (_sprech) immer. */
  if(o?.throttle&&g?.canvas&&!o._sprech&&typeof performance!=='undefined'){const now=performance.now(),id=o?.g?.id??o?.g?.name??'',L=paintClock.get(g.canvas);if(L&&L.id===id&&L.w===w&&L.h===h&&now-L.t<o.throttle)return;paintClock.set(g.canvas,{t:now,id,w,h});}let B=bufs.get(g.canvas);if(!B){B={a:document.createElement('canvas'),b:document.createElement('canvas'),c:document.createElement('canvas'),d:document.createElement('canvas')};B.a.width=B.b.width=B.c.width=B.d.width=FW;B.a.height=B.b.height=B.c.height=B.d.height=FH+40;bufs.set(g.canvas,B);}
- const colors=x=>{const A=x?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';return {identity:x?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};},gearOf=x=>{const r={};try{for(const it of M.armorItems(x)||[])r[it.def]=it;}catch{}return r;},C=colors(o.g),armor=gearOf(o.g);
+ const colors=x=>{const A=x?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';return {identity:x?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%12,beard:(A.beard??0)%8};},gearOf=x=>{const r={};try{for(const it of M.armorItems(x)||[])r[it.def]=it;}catch{}return r;},C=colors(o.g),armor=gearOf(o.g);
  const opt={talk:o.talk??(M.talkMouth?.(o.g)||0),...o,armor,scar:o.scar??((o.g?.scars||[]).length>0||(o.g?.kills||0)>=5)},mood=o.mood||'calm',m=MOODS[mood]||MOODS.calm;
  // Kamerafahrt um den Kopf: langsamer Schwenk von einer Seite zur anderen
  const yaw=o.yaw??Math.sin(t*.55+(o.team===1?Math.PI:0))*.75;
@@ -297,7 +320,7 @@ function paint(g,w,h,o,t){if(g?.canvas&&o?.g&&!o._sprech){recs.set(g.canvas,{ctx
  if(o.lines>0){/* Schrei: Linien vom Rand zur Mitte */g.save();g.globalAlpha=cl(o.lines)*.75;g.strokeStyle='#fff6dc';g.lineWidth=Math.max(2,w/160);for(let i=0;i<18;i++){const a=i/18*Math.PI*2+Math.floor(t*14)*.37,r0=Math.max(w,h)*.74,r1=Math.max(w,h)*(.4+((i*7)%5)*.035);g.beginPath();g.moveTo(w/2+Math.cos(a)*r0,h*.45+Math.sin(a)*r0);g.lineTo(w/2+Math.cos(a)*r1,h*.45+Math.sin(a)*r1);g.stroke();}g.restore();}
  if(o.clear)return;const vg=g.createRadialGradient(w/2,h*.45,Math.min(w,h)*.35,w/2,h*.5,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.62)');g.fillStyle=vg;g.fillRect(0,0,w,h);}
 M.faceShot={records:()=>recs,paint,moods:Object.keys(MOODS),FW,FH,version:'helmet-lab-v4'};
-M.faceShot.paintHead=(q,actor,o={},t=0)=>{const A=actor?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';const C={identity:actor?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%6,beard:(A.beard??0)%4};head(q,tools(q),C,{...o,g:actor,armor:o.armor||{}},o.yaw||0,t,o.mood||'calm');};
+M.faceShot.paintHead=(q,actor,o={},t=0)=>{const A=actor?.appearance||{},skin=hex(A.skin)||'#c19169',shade=hex(A.shade)||'#875e43';const C={identity:actor?.id,faceSeed:A.faceSeed,skin,shade,light:mix(skin,'#fff2dc',.22),hair:hex(A.hair)||'#443025',style:(A.style??1)%12,beard:(A.beard??0)%8};head(q,tools(q),C,{...o,g:actor,armor:o.armor||{}},o.yaw||0,t,o.mood||'calm');};
 })();
 
 // Hühnerhändlerin: besondere Großaufnahme im Stil des gemeinsamen Kopf-Renderers.
