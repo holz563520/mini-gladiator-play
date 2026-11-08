@@ -85,7 +85,7 @@ function startBrief(b){A.form=null;b.lead.phase='brief';const lines=L.arenaBrief
 function stepBrief(b){const B=A.brief,now=performance.now();if(now<B.next)return;B.i++;if(B.i>=B.lines.length){gong(b);return;}const l=B.lines[B.i];if(fit(l.who))bubble(l.who,l.text,{lead:!l.foe,ms:readMs(l.text)});B.next=now+readMs(l.text)*.72;}
 function gong(b){A.brief=null;A.form=null;bar('');L.arenaStart(b);M.sound?.('gong');M.cheer=Math.max(M.cheer||0,.7);}
 function skipBrief(){const b=A.b;if(!b?.lead)return;if(b.lead.phase==='form'){const f=A.form;if(f)for(const [a,p] of f.pts)if(fit(a)){a.x=p.x;a.y=p.y;}startBrief(b);}else if(b.lead.phase==='brief')gong(b);}
-function swapLeader(){const b=A.b,ld=b?.lead;if(!ld||ld.phase==='fight')return;const c=b.actors.filter(a=>a.team===0&&fit(a)).map(a=>a.g).sort((x,y)=>L.leaderScore(y)-L.leaderScore(x));if(c.length<2)return;
+function swapLeader(){const b=A.b,ld=b?.lead;if(!ld||ld.phase==='fight')return;const c=b.actors.filter(a=>a.team===0&&!a.dog&&fit(a)).map(a=>a.g).sort((x,y)=>L.leaderScore(y)-L.leaderScore(x));if(c.length<2)return;
  const i=c.findIndex(g=>g.id===ld.leaderId),g=c[(i+1)%c.length];ld.leaderId=g.id;ld.q=L.quality(g);b.leaders[0]=g.id;S.arenaLeaderId=g.id;
  const me=b.actors.find(a=>a.g.id===g.id),q=ld.q;bubble(me,['Ich führe. Wer meckert, kämpft vorne.','Hört auf mich, dann lebt ihr länger.','Na gut. Dann eben ich.'][Math.random()*3|0],{lead:true});
  bar('<span>Anführer: <b>'+esc(g.name)+'</b> <small>Führung '+Math.round(q.lead)+'</small></span><button class="btn" data-al="swap">Wechseln</button><button class="btn primary" data-al="skip">Weiter ▶</button>');try{M.persist?.();}catch(e){}}

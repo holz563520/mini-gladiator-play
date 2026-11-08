@@ -627,19 +627,35 @@ function sell(key){const [kind,id]=key.split(/:(.*)/s);let price=0,name='';
  else{const a=S.huehner?.roosters||[],i=a.findIndex(R=>String(R.id)===id&&!R.dead);if(i<0)return;price=roosterValue(a[i]);name=a[i].name;a.splice(i,1);}
  S.gold=(S.gold||0)+price;if(S.stats)S.stats.earned=(S.stats.earned||0)+price;try{M.sound?.('coin');}catch{}try{M.persist();}catch{}
  M.ui.notify?.(`${name} gehört jetzt Rabies. +${price} Gold. „${pick(kind==='d'?['Der bekommt einen schönen Käfig. Fast so schön wie deiner.','Gutes Tier. Hätte dich bestimmt irgendwann gebissen.','Ich nenn ihn um. Vielleicht.']:['Wird morgen gefressen. Nicht von mir. Meistens.','Ein Hahn weniger, ein Hund glücklicher.','Gackert noch. Nicht mehr lange.'])}“`);}
-let zwPage=0;
-function zwingerPage(){const s=st(),alive=s.dogs.filter(D=>!D.dead),dead=s.dogs.filter(D=>D.dead),pages=Math.max(1,Math.ceil(alive.length/3));zwPage=cl(zwPage,0,pages-1);
+let zwPage=0,zwSort='kw',zwCls=0;// Zwinger: Einteilung nach Gefahrenklasse (☠ wie die Aufträge), Sortierung (Wunsch Thomas 7.11.)
+function zwInfo(D){try{return window.Begleithund?.info?window.Begleithund.info(D):null;}catch{return null;}}
+const ZW_SORT=[['kw','Kampfwert'],['tal','Talent'],['hp','Gesundheit'],['wins','Siege'],['kills','Tote'],['name','Name']];
+function zwSorted(list){const by={kw:(a,b)=>b.I.kw-a.I.kw,tal:(a,b)=>(b.I.tal?.p||0)-(a.I.tal?.p||0),hp:(a,b)=>b.I.hp-a.I.hp,wins:(a,b)=>b.I.wins-a.I.wins||b.I.fights-a.I.fights,kills:(a,b)=>b.I.kills-a.I.kills,name:(a,b)=>a.D.name.localeCompare(b.D.name,'de')}[zwSort]||((a,b)=>b.I.kw-a.I.kw);return list.slice().sort((a,b)=>by(a,b)||b.I.kw-a.I.kw);}
+function zwingerPage(){const s=st(),all=s.dogs.map(D=>({D,I:zwInfo(D)||{kw:DOG.kw(D),hp:Math.round(DOG.condHealth(D)),sk:1,cls:'',breed:D.breedName,inj:{k:0,label:'',icon:''},wins:D.wins||0,losses:D.losses||0,kills:D.kills||0,fights:D.fights||0,fit:DOG.fit(D)}}));
+ const aliveAll=zwSorted(all.filter(x=>!x.D.dead)),deadL=all.filter(x=>x.D.dead),alive=aliveAll.filter(x=>!zwCls||x.I.sk===zwCls).map(x=>x.D),pages=Math.max(1,Math.ceil(alive.length/3));zwPage=cl(zwPage,0,pages-1);
  const bars=D=>DOG.STATS.map(([k,n])=>`<span>${n}</span><i><b style="width:${cl(D.stats[k],0,100)}%"></b><em style="left:${cl(D.caps[k],0,100)}%"></em></i><span>${Math.round(D.stats[k])}</span>`).join('');
- const card=D=>`<div class="hf-dog${D.dead?' dead':''}"><canvas data-hfdog="${D.id}" width="128" height="80"></canvas><div><b>${esc(D.name)}</b><small>${esc(D.breedName)} · ${D.sex} · ${D.height} cm · ${D.weight} kg</small><small>${D.dead?'✝ '+esc(D.cause||'gefallen')+(D.killer?' · durch '+esc(D.killer):''):'Gesundheit '+Math.round(DOG.condHealth(D))+' % · Kampfwert '+DOG.kw(D)}</small><small>${D.fights?`${D.wins||0} Siege, ${D.losses||0} Niederlagen, ${D.kills||0} Tote`:'Noch kein Arenakampf'}${D.from?' · gefangen: '+esc(D.from)+(D.caughtBy?' ('+esc(D.caughtBy)+')':''):''}</small>${D.dead?'':`<div class="hf-bars">${bars(D)}</div>`}</div></div>`;
- return `<section class="box hf-zw"><p class="eyebrow">UNTER DEM BEASTRIUM · ${esc(S.schoolName||'Ludus')}</p><h1>Zwinger</h1><p>Die Treppe führt in ein feuchtes Gewölbe. Rabies hat hier „ein bisschen umgebaut“. Gefangene Hunde kämpfen in der Arena (BEAST → Hund) und heilen jeden Tag ein Stück. Balken: Istwert, heller Strich: Sollwert (Anlage).</p>
- ${alive.length?`<canvas class="hf-cage" width="960" height="420"></canvas>${pages>1?`<div class="buttons" style="justify-content:center;margin:6px 0"><button class="btn" data-action="hf:zw:-1">◂</button><span style="align-self:center">Käfige ${zwPage*3+1}–${Math.min(alive.length,zwPage*3+3)} von ${alive.length}</span><button class="btn" data-action="hf:zw:1">▸</button></div>`:''}`:'<div class="hf-note">Leere Käfige. Es riecht trotzdem nach Hund. Bring Rabies einen Kämpfer, dann kommt hier Leben rein.</div>'}
- <div class="hf-dogs">${alive.map(card).join('')}</div>${dead.length?`<h2 style="margin-top:14px">Gefallen</h2><div class="hf-dogs">${dead.map(card).join('')}</div>`:''}
+ const card=({D,I})=>`<div class="hf-dog hf-dogc${D.dead?' dead':''}${!D.dead&&!I.fit?' unfit':''}"><canvas data-hfdog="${D.id}" width="128" height="80"></canvas><div class="hf-dogi">
+  <div class="hf-dn"><b>${esc(D.name)}</b><span class="hf-sk" title="Gefahrenklasse ${I.sk}${I.cls?': '+esc(I.cls):''}">${'☠'.repeat(I.sk)}</span></div>
+  <small>${esc(I.breed||D.breedName)} · ${D.sex==='Hündin'?'♀':'♂'} · ${D.height} cm · ${D.weight} kg</small>
+  ${D.dead?`<small>✝ ${esc(D.cause||'gefallen')}${D.killer?' · durch '+esc(D.killer):''}</small>`:`<div class="hf-ic"><span class="hf-kw" title="Kampfwert">⚔ ${I.kw}</span>${window.Begleithund?.talTag&&I.tal?window.Begleithund.talTag(D,I):''}<span class="hf-hp${I.hp<50?' lo':I.hp<80?' mid':''}" title="Gesundheit">♥ ${I.hp} %</span><span class="hf-inj i${I.inj.k}" title="${esc(I.inj.label)}">● ${esc(I.inj.label)}</span>${I.fit?'':'<span class="hf-rest" title="Nicht einsatzbereit">⏳ erholt sich</span>'}</div>`}
+  <div class="hf-ic hf-rec"><span title="Kämpfe">🥊 ${I.fights}</span><span title="Siege">🏆 ${I.wins}</span><span title="Niederlagen">✗ ${I.losses}</span><span title="getötete Gegner">✝ ${I.kills}</span>${D.from?`<span title="gefangen">⛓ ${esc(D.from)}</span>`:''}</div>
+  ${D.dead?'':`<details class="hf-more"><summary>Werte</summary><div class="hf-bars">${bars(D)}</div></details>`}</div></div>`;
+ const counts=[0,1,2,3,4,5].map(k=>k?aliveAll.filter(x=>x.I.sk===k).length:aliveAll.length);
+ const bar=aliveAll.length?`<div class="hf-zbar"><div class="hf-zf"><span class="hf-zl">Klasse</span>${[0,1,2,3,4,5].filter(k=>!k||counts[k]).map(k=>`<button class="hf-chip${zwCls===k?' on':''}" data-action="hf:zwcls:${k}" title="${k?esc(window.Begleithund?.CLASS?.[k]||''):'alle Klassen'}">${k?'☠'.repeat(k):'Alle'} <small>${counts[k]}</small></button>`).join('')}</div>
+  <div class="hf-zf"><span class="hf-zl">Sortieren</span>${ZW_SORT.map(([k,n])=>`<button class="hf-chip${zwSort===k?' on':''}" data-action="hf:zwsort:${k}">${n}</button>`).join('')}</div></div>`:'';
+ // nach Klassen gruppiert (bei „Alle“), sonst eine Liste
+ const groups=zwCls?[[zwCls,aliveAll.filter(x=>x.I.sk===zwCls)]]:[5,4,3,2,1].map(k=>[k,aliveAll.filter(x=>x.I.sk===k)]).filter(([,l])=>l.length);
+ const lists=groups.map(([k,l])=>`<h3 class="hf-gh"><span>${'☠'.repeat(k)}</span> ${esc(window.Begleithund?.CLASS?.[k]||'Klasse '+k)} <small>${l.length}</small></h3><div class="hf-dogs">${l.map(card).join('')}</div>`).join('');
+ return `<section class="box hf-zw"><p class="eyebrow">UNTER DEM BEASTRIUM · ${esc(S.schoolName||'Ludus')}</p><h1>Zwinger</h1><p>Die Treppe führt in ein feuchtes Gewölbe. Rabies hat hier „ein bisschen umgebaut“. Gefangene Hunde kämpfen in der Arena (BEAST → Hund), gehen in der Aufstellung mit (Arena und Abenteuer) und heilen jeden Tag ein Stück. ☠ Gefahrenklasse der Rasse.</p>
+ ${alive.length?`<canvas class="hf-cage" width="960" height="420"></canvas>${pages>1?`<div class="buttons" style="justify-content:center;margin:6px 0"><button class="btn" data-action="hf:zw:-1">◂</button><span style="align-self:center">Käfige ${zwPage*3+1}–${Math.min(alive.length,zwPage*3+3)} von ${alive.length}</span><button class="btn" data-action="hf:zw:1">▸</button></div>`:''}`:aliveAll.length?'':'<div class="hf-note">Leere Käfige. Es riecht trotzdem nach Hund. Bring Rabies einen Kämpfer, dann kommt hier Leben rein.</div>'}
+ ${bar}${lists}${deadL.length?`<h3 class="hf-gh"><span>✝</span> Gefallen <small>${deadL.length}</small></h3><div class="hf-dogs">${deadL.map(card).join('')}</div>`:''}
  <div class="buttons" style="margin-top:12px"><button class="btn" data-action="nav:beastrium">▲ Treppe hinauf · Beastrium</button><button class="btn" data-action="nav:hundefang">🐕 Aufträge</button></div></section>`;}
+function zwCageDogs(){const s=st();return zwSorted(s.dogs.filter(D=>!D.dead).map(D=>({D,I:zwInfo(D)||{kw:DOG.kw(D),sk:1}}))).filter(x=>!zwCls||x.I.sk===zwCls).map(x=>x.D);}
 function mount(){rabiesFace($('hfCartFace'));rabiesLive('hfBoardFace',usedToday()?'confident':'grin');
  const s=st(),j=s.jobs[selJob];document.querySelectorAll('canvas[data-hfface]').forEach(cv=>{const g=S.roster.find(x=>x.id===cv.dataset.hfface);if(!g)return;if(cv.closest('.hf-lock')){face(cv,g,g.id===team.bait?'terror':'nervous');return;}const v=j?verdictOf(g,j).i:2;face(cv,g,['confident','determined','calm','nervous','scared','terror'][v+1]||'calm');});
  rabiesFace($('hfLockFace'),'grin');
  document.querySelectorAll('canvas[data-hfdog]').forEach(cv=>{const D=s.dogs.find(x=>x.id===cv.dataset.hfdog);if(!D)return;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#120d0a';c.fillRect(0,0,128,80);DOG.portrait(c,D,{x:64,y:72,w:100,mood:'focus',face:1,t:1});});
- if(document.querySelector('canvas.hf-cage')){const alive=s.dogs.filter(D=>!D.dead);ZW.setDogs(alive.slice(zwPage*3,zwPage*3+3));}}
+ if(document.querySelector('canvas.hf-cage')){const alive=zwCageDogs();ZW.setDogs(alive.slice(zwPage*3,zwPage*3+3));}}
 const prevPage=M.schoolPage;
 M.schoolPage=function(p){
  if(p==='hundefang'&&st().stage==='open'){daily();setTimeout(mount,0);return boardPage();}
@@ -659,6 +675,8 @@ M.schoolClick=function(action){if(action==='hs:species:hund'&&st().stage==='open
  else if(k==='equip'){equipTeam(false);M.ui.render();}
  else if(k==='go'){const j=s.jobs[selJob];cleanTeam();if(!j||j.done||usedToday()||!teamOk()||S.battle)return true;if(autoEq())equipTeam(true);goTeam={bait:team.bait,men:[...team.men]};const lead=byId(team.men[0])||byId(team.bait);sighting(j,lead);}
  else if(k==='zw'){zwPage+=+v;M.ui.render();}
+ else if(k==='zwcls'){zwCls=+v||0;zwPage=0;M.ui.render();}
+ else if(k==='zwsort'){zwSort=v;zwPage=0;M.ui.render();}
  else if(k==='sell'){const key=action.slice(8);if(sellArm===key){sellArm='';sell(key);}else sellArm=key;M.ui.render();}
  return true;};
 

@@ -110,3 +110,24 @@
 /* Gelernt nach dem Hundefang (6.11.) */
 .hf-learn{margin:6px 0;padding:6px 8px;border:1px solid #4a3a2b;border-radius:6px;background:#0003;font-size:13px}
 .hf-learn b{letter-spacing:.06em}.hf-learn ul{margin:4px 0 0;padding-left:16px}.hf-learn li{margin:2px 0}
+/* Zwinger: Klassen, Sortierung, kleine Icons (7.11.) */
+.hf-zbar{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0 2px;align-items:center}
+.hf-zf{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.hf-zl{font-size:.75em;opacity:.7;margin-right:2px;text-transform:uppercase;letter-spacing:.06em}
+.hf-chip{font:inherit;font-size:.82em;padding:3px 8px;border:1px solid #4a3a2b;background:#2b2017;color:#e8dcc2;border-radius:12px;cursor:pointer}
+.hf-chip small{opacity:.6;margin-left:2px}
+.hf-chip.on{background:#6b4a26;border-color:#c99a52;color:#fff1d2}
+.hf-gh{margin:14px 0 0;font-size:1em;display:flex;align-items:baseline;gap:6px;border-bottom:1px solid #4a3a2b;padding-bottom:3px}
+.hf-gh span{color:#d8c9a6;letter-spacing:-1px}.hf-gh small{opacity:.6;font-weight:normal}
+.hf-dogc .hf-dogi{min-width:0}
+.hf-dn{display:flex;align-items:baseline;gap:6px}.hf-dn b{display:inline}
+.hf-sk{font-size:.8em;color:#d8c9a6;letter-spacing:-1px}
+.hf-ic{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:.82em;margin-top:3px}
+.hf-ic span{white-space:nowrap}
+.hf-kw{font-weight:bold;color:#f0dfb0}
+.hf-hp.mid{color:#d9b45a}.hf-hp.lo{color:#e0663a}
+.hf-inj.i0{color:#7fb36a}.hf-inj.i1{color:#c8c25a}.hf-inj.i2{color:#d9963f}.hf-inj.i3{color:#d4643a}.hf-inj.i4{color:#e0453a}
+.hf-rest{color:#b9a98a}
+.hf-rec{opacity:.85}
+.hf-dog.unfit canvas{filter:grayscale(.5)}
+.hf-more{margin-top:4px;font-size:.85em}.hf-more summary{cursor:pointer;opacity:.75}

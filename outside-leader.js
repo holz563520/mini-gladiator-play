@@ -76,7 +76,7 @@ L.eligible=party=>party.filter(g=>D.fit(g)).length>=L.CFG.minParty;
 const fit=a=>a&&!a.down&&!a.g.dead&&!a.surrendered;
 const isRanged=a=>{const w=M.gear(a.g,'weapon');return !!w&&['bow','crossbow'].includes(w.def)&&a.ammo>0;};
 const role=a=>a.g.role;
-const party=b=>b.actors.filter(a=>a.team===0);
+const party=b=>b.actors.filter(a=>a.team===0&&!a.dog);/* Hunde (Begleithund) sprechen nicht, führen nicht, stehen in keiner Linie */
 const foes=b=>b.actors.filter(a=>a.team===1&&fit(a));
 function lowThreat(e){if(!fit(e))return true;if(M.harmless?.(e))return true;const ls=M.limbState?.(e.g),hp=M.health(e.g);
  return hp<26||e.g.blood<34||(ls&&(ls.lostLeg||Math.max(ls.left,ls.right)<.3))||(e.kneeTimer>0&&hp<40)||limper(e);}

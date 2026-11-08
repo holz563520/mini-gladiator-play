@@ -73,7 +73,8 @@ function params(){A.P=Object.assign(JSON.parse(JSON.stringify(P0)),TEST?st.P||{}
 // ---------- Porträts (Zeichner des Spiels) ----------
 const pc=new Map();
 function portrait(g){const k=g.id+(g.dead?'d':'');let p=pc.get(k);if(!p){try{p=ART.portrait(g);}catch(e){p=null;}pc.set(k,p);}return p;}
-function paint(scope){for(const cv of scope.querySelectorAll('canvas[data-por]')){const g=G(cv.dataset.por)||enemyG(cv.dataset.por);if(!g)continue;const p=portrait(g);const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);if(p)ctx.drawImage(p,0,0,80,90,0,0,cv.width,cv.height);if(g.dead){ctx.fillStyle='#000a';ctx.fillRect(0,0,cv.width,cv.height);}}}
+function paint(scope){for(const cv of scope.querySelectorAll('canvas[data-dogpor]')){const D=(MG.s.hundefang?.dogs||[]).find(x=>x.id===cv.dataset.dogpor);if(!D||!window.DOG?.portrait)continue;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#1b1712';c.fillRect(0,0,cv.width,cv.height);try{const h=window.DOG.condHealth(D);window.DOG.portrait(c,D,{x:cv.width/2,y:cv.height-5,w:cv.width*.86,mood:h<50?'fear':'focus',face:1,t:1});}catch(e){console.warn(e);}}
+ for(const cv of scope.querySelectorAll('canvas[data-por]')){const g=G(cv.dataset.por)||enemyG(cv.dataset.por);if(!g)continue;const p=portrait(g);const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,cv.width,cv.height);if(p)ctx.drawImage(p,0,0,80,90,0,0,cv.width,cv.height);if(g.dead){ctx.fillStyle='#000a';ctx.fillRect(0,0,cv.width,cv.height);}}}
 function enemyG(id){if(wmode){const w=wmode.members.find(g=>g.id===id);if(w)return w;}const k=lastRes?.gs&&Object.values(lastRes.gs).find(x=>x.g.id===id);if(k)return k.g;for(const o of offers)for(const u of o.enemy)if(u.g.id===id)return u.g;return null;}
 // Talent-Abzeichen (talent-tags.js); nur eigene Gladiatoren, Gegner nie
 const tal=g=>{try{return g&&S.roster.includes(g)&&M.talentTag?M.talentTag(g):'';}catch{return '';}};
@@ -85,12 +86,18 @@ function top(title,sub){return `<header class="a-top">${TEST?'':'<button class="
 const steps=n=>`<div class="a-steps">${['1 · AUFSTELLUNG','2 · GEGNER ☠','3 · KAMPF'].map((s,i)=>`<span class="${i===n?'a-on':''}">${s}</span>`).join('')}</div>`;
 function render(){params();if(step==='group')viewGroup();else if(step==='offers')viewOffers();else if(step==='result')viewResult();paint(root);}
 // Begleithund (begleithund.js): eigener Platz, zählt nicht zur Gruppe. Nur eigene Hunde aus dem Zwinger.
-function dogBox(){const BH=window.Begleithund,DG=window.DOG;if(TEST||wmode||!BH||!DG)return '';const list=BH.kennel();
- if(st.dog&&!list.some(D=>D.id===st.dog&&BH.fit(D)))st.dog=null;
- const card=D=>{const ok=BH.fit(D),on=st.dog===D.id,hp=Math.round((()=>{try{return DG.condHealth(D);}catch{return 100;}})()),kw=(()=>{try{return DG.kw(D);}catch{return '?';}})(),br=(()=>{try{return DG.BREEDS.find(b=>b.id===D.breed)?.name||'';}catch{return '';}})();
-  return `<button class="a-dog${on?' a-on':''}${ok?'':' a-out'}" data-dog="${ok?esc(D.id):''}" ${ok?'':'disabled'}><span class="a-dogi">🐕</span><span class="a-nm"><span class="a-name">${esc(D.name)}</span><small>${esc(br)}</small><span class="a-vals"><b class="a-kw" title="Kampfwert">${kw}</b><b class="a-hp${hp<50?' a-lo':hp<80?' a-mid':''}" title="Gesundheit">♥ ${hp} %</b>${D.fights?`<small>${D.fights} Kämpfe${D.kills?' · '+D.kills+' Kills':''}</small>`:''}</span>${ok?'':'<small>muss sich erst erholen</small>'}</span>${on?'<b class="a-dogon">DABEI</b>':''}</button>`;};
+function dogBox(){const BH=window.Begleithund,DG=window.DOG;if(TEST||wmode||!BH||!DG)return '';const list=BH.kennel().map(D=>({D,I:BH.info(D)}));
+ if(st.dog&&!list.some(x=>x.D.id===st.dog&&x.I.fit))st.dog=null;
+ list.sort((p,q)=>(q.I.fit-p.I.fit)||(q.D.id===st.dog)-(p.D.id===st.dog)||(q.I.kw-p.I.kw));
+ const card=({D,I})=>{const on=st.dog===D.id;
+  return `<button class="a-dog${on?' a-on':''}${I.fit?'':' a-out'}" data-dog="${I.fit?esc(D.id):''}" ${I.fit?'':'disabled'} title="${esc(I.cls)} · ${esc(I.breed)}">
+   <canvas class="a-dogpx" width="84" height="56" data-dogpor="${esc(D.id)}"></canvas>
+   <span class="a-nm"><span class="a-name">${esc(D.name)}<i class="a-sk" title="Gefahrenklasse ${I.sk}: ${esc(I.cls)}">${'☠'.repeat(I.sk)}</i></span>
+    <small>${esc(I.breed)} · ${D.sex==='w'||D.sex==='Hündin'?'♀':'♂'} · ${D.weight||'?'} kg</small>
+    <span class="a-vals"><b class="a-kw" title="Kampfwert">${I.kw}</b>${BH.talTag(D,I)}<b class="a-hp${I.hp<50?' a-lo':I.hp<80?' a-mid':''}" title="Gesundheit">♥ ${I.hp} %</b><span class="a-inj a-inj${I.inj.k}" title="${esc(I.inj.label)}${I.wounds?' · '+I.wounds+' Wunden':''}">${I.inj.icon} ${esc(I.inj.label)}</span></span>
+    <small class="a-rec">${I.fights?`⚔ ${I.fights} · 🏆 ${I.wins} · ✝ ${I.kills}`:'noch kein Kampf'}${I.fit?'':' · muss sich erholen'}</small></span>${on?'<b class="a-dogon">DABEI</b>':''}</button>`;};
  return `<section class="a-box a-dogs"><div class="a-bh"><h2>🐕 Hund</h2><span>${st.dog?'1 Hund dabei':'ohne Hund'} · eigener Platz</span></div>
- ${list.length?`<div class="a-doglist">${list.map(card).join('')}</div><p class="a-hint">Antippen nimmt den Hund mit, nochmal antippen lässt ihn daheim. Wunden und Tod bleiben. Mit Anführer und Assassinen wird er manchmal versteckt gehalten und mit ihnen von hinten losgelassen.</p>`:'<p class="a-hint">Der Zwinger ist leer. Hunde fängt man bei Septimus Rabies (Hundefang).</p>'}</section>`;}
+ ${list.length?`<div class="a-doglist">${list.map(card).join('')}</div><p class="a-hint">Antippen nimmt den Hund mit, nochmal antippen lässt ihn daheim. ☠ Gefahrenklasse der Rasse, T Talent (Anlage gegenüber der Rasse, wie bei den Rekruten), ✝ getötete Gegner. Wunden und Tod bleiben. Er macht hinten Sitz, bis es losgeht; mit Anführer und Assassinen lässt der Anführer ihn manchmal von hinten los.</p>`:'<p class="a-hint">Der Zwinger ist leer. Hunde fängt man bei Septimus Rabies (Hundefang).</p>'}</section>`;}
 function viewGroup(){
  const L=lineup(),sum=L.reduce((a,x)=>a+x.kw,0),fs=forms(),rc=repairPrice(),wsum=wmode?wmode.members.reduce((a,g)=>a+A.kw(g),0):0;
  /* Einordnung vom Medicus (sortierung.js): Kader danach anzeigen */const T=M.sortTag,sf=T&&st.sortFilter&&st.sortFilter!=='all'?st.sortFilter:'all',bySort=g=>sf==='all'||(sf==='none'?!T.get(g):T.get(g)===sf);

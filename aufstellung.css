@@ -132,3 +132,11 @@ body.auf-fighting #auf{display:none}
 #auf .a-dog .a-nm{display:flex;flex-direction:column;min-width:0}
 #auf .a-dogon{position:absolute;right:5px;top:4px;font-size:9px;color:#d9b45a;letter-spacing:.05em}
 #auf .a-dog .a-vals{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+#auf .a-dog{align-items:stretch}
+#auf .a-dogpx{width:84px;height:56px;image-rendering:pixelated;flex:none;border:1px solid #0006;background:#1b1712}
+#auf .a-dog .a-name{display:flex;align-items:baseline;gap:6px}
+#auf .a-sk{font-style:normal;font-size:10px;color:#d8c9a6;letter-spacing:-1px}
+#auf .a-inj{font-size:10px;white-space:nowrap}
+#auf .a-inj0{color:#7fb36a}#auf .a-inj1{color:#c8c25a}#auf .a-inj2{color:#d9963f}#auf .a-inj3{color:#d4643a}#auf .a-inj4{color:#e0453a}
+#auf .a-rec{font-size:10px;opacity:.85}
+#auf .a-doglist{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}

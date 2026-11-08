@@ -12,7 +12,7 @@ const first=g=>String(g?.name||'').split(' ')[0];
 let C=null;// Kontext aus outside.js
 const R={get b(){return S.battle;},get cam(){return C.cam();}};
 const bubble=(...a)=>C.bubble(...a),mlog=(...a)=>C.mlog(...a),toScreen=(...a)=>C.toScreen(...a),spd=()=>Math.max(1,S.options?.speed||1),live=b=>C.live(b),setState=t=>C.state?.(t);
-const partyActors=b=>b.actors.filter(a=>a.team===0&&!a.down&&!a.g.dead);
+const partyActors=b=>b.actors.filter(a=>a.team===0&&!a.down&&!a.g.dead&&!a.dog);
 const leaderA=b=>b?.lead?b.actors.find(a=>a.id===b.lead.leaderId):null;
 function lname(a){return '★ '+first(a.g)+' · Anführer';}
 function routeTo(b,a,tx,ty,sp){const path=D().findPath(b,a.x,a.y,tx,ty);const pts=(path&&path.length?path:[{x:tx,y:ty}]).map(p=>[p.x,p.y,sp]);a.to=pts.shift();a.path=pts;a.goal=[tx,ty,sp];}

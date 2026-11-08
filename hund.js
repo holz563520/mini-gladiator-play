@@ -608,9 +608,11 @@ const WOUND_AT={kopf:[[-2,4],[-3,3]],hals:[[-4,4],[-4,4]],brust:[[-6,5],[-4,5]],
 function addWound(d,part,size,kind){const [u,v]=WOUND_AT[part]||[[-3,3],[-3,3]];d.wounds.push({part,u:rnd(u[0],u[1]),v:rnd(v[0],v[1]),size:cl(size,1,6),kind,seed:Math.random()*1e4,t:S.battle?.time||0});if(d.wounds.length>40)d.wounds.shift();d.gore[part]=Math.min(1,(d.gore[part]||0)+size*.07);}
 // Schaden am Hund. kind: bite | tear | cut | stab | blunt | crush
 function dogHurt(d,part,dmg,kind,att){if(d.g.dead||dmg<=0)return 0;const P=d.P,wd=dmg/P.res;d.tissue[part]=Math.max(0,d.tissue[part]-wd);d.trauma+=wd;d.hurtTaken+=wd;
+ /* Trefferwirkung (8.11.): der Hund zuckt sichtbar, wird zurückgestoßen (stumpf stärker), stockt kurz */
+ d.hitAmp=cl(wd/5*(kind==='blunt'||kind==='crush'?1.4:1),.5,2.6);if(att&&!isDog(att)){const an=Math.atan2(d.y-att.y,d.x-att.x),kb=cl(wd*(kind==='blunt'||kind==='crush'?11:6)/Math.sqrt(P.mass||1),8,140);d.kbx=(d.kbx||0)+Math.cos(an)*kb;d.kby=(d.kby||0)+Math.sin(an)*kb*.6;d.hitStun=Math.max(d.hitStun||0,cl(.1+wd*.025,.1,.55));}
  const bleedK={bite:.034,tear:.05,cut:.045,stab:.04,blunt:.008,crush:.012}[kind]??.02,partK={hals:1.8,kopf:1.1,brust:1,bauch:1.2,vl:.8,hl:.8}[part];
  d.bleed[part]=(d.bleed[part]||0)+wd*bleedK*partK;d.blood=Math.max(0,d.blood-wd*{bite:.09,tear:.13,cut:.12,stab:.1,blunt:.03,crush:.05}[kind]*partK);
- d.morale-=wd*(.85-P.mut*.5)*(part==='kopf'?1.2:1);d.hit=.26;d.yelpT=.35;if(wd>3&&(S.battle?.time||0)-(d.lastYelp||-9)>.5){d.lastYelp=S.battle?.time||0;DOG.sound?.('yelp',d);}
+ d.morale-=wd*(.85-P.mut*.5)*(part==='kopf'?1.2:1);d.hit=.32;d.yelpT=.35;if(wd>3&&(S.battle?.time||0)-(d.lastYelp||-9)>.5){d.lastYelp=S.battle?.time||0;DOG.sound?.('yelp',d);}
  addWound(d,part,wd/4.5,kind);const w=partWorld(d,part);spray(d,w.x,w.y,w.z,Math.min(26,3+wd*1.3),kind==='blunt'?.6:1,att?Math.atan2(d.y-att.y,d.x-att.x):null);if(wd>6)stain(w.x,w.y,2+wd*.15);
  if(att){d.lastAttacker=att.id;att.damage=(att.damage||0)+wd;}
  d.taken=(d.taken||0)+wd;
@@ -633,7 +635,7 @@ function receive(a,d,projectile,snapshot){if(d.g.dead)return;const ef=snapshot||
  const rel=Math.abs(M.angleDiff(M.angle(d,a),d.a)),r=Math.random();
  const part=rel<.9?(r<.28?'kopf':r<.45?'hals':r<.78?'brust':'vl'):rel<2.2?(r<.1?'hals':r<.35?'brust':r<.7?'bauch':r<.85?'vl':'hl'):(r<.5?'hl':r<.9?'bauch':'hals');
  const kind=w.bladed?(w.attack==='thrust'||/spear|trident|dagger|javelin/.test(w.id||'')?'stab':'cut'):projectile?'stab':'blunt';
- const wd=dogHurt(d,part,dmg,kind,a);DOG.shotNote?.({kind:'weapon',victim:d,attacker:a,part,dmg:wd,wid:w.id,wname:w.name,wound:d.wounds[d.wounds.length-1],kill:d.g.dead});a.damage=(a.damage||0);M.recordDamage?.(a,ef.attackKey||a.lastAttackKey||'slash',dmg);a.contactPoint={x:d.x,y:d.y-24};if(w.item)w.item.blood=Math.min(1,(w.item.blood||0)+dmg/55);
+ const wd=dogHurt(d,part,dmg,kind,a);if(!d.g.dead&&d.mode==='leap'&&wd>5&&!d.leapHit){d.leapHit=true;d.leapPart=null;d.z=0;d.down=true;state(d,'down',.5+Math.min(.6,wd*.04));log(nameOf(a)+' fängt '+d.g.name+' im Sprung ab.');}DOG.shotNote?.({kind:'weapon',victim:d,attacker:a,part,dmg:wd,wid:w.id,wname:w.name,wound:d.wounds[d.wounds.length-1],kill:d.g.dead});a.damage=(a.damage||0);M.recordDamage?.(a,ef.attackKey||a.lastAttackKey||'slash',dmg);a.contactPoint={x:d.x,y:d.y-24};if(w.item)w.item.blood=Math.min(1,(w.item.blood||0)+dmg/55);
  if(wd>9)log(nameOf(a)+' trifft '+d.g.name+' '+{kopf:'am Kopf',hals:'am Hals',brust:'an der Brust',bauch:'in die Flanke',vl:'am Vorderlauf',hl:'am Hinterlauf'}[part]+'.');
  if(d.g.dead)return;
  if(d.mode==='grip'){d.interruptDamage=(d.interruptDamage||0)+wd;if(d.interruptDamage>=d.P.interrupt*.35||wd>d.P.interrupt*.25&&Math.random()<.5){release(d);d.escapeAngle=M.angle(a,d);state(d,'evade',.6);d.cool=.8;log(nameOf(a)+' schlägt '+d.g.name+' los.');}}
@@ -671,10 +673,21 @@ function away(d,from,dt,v){const an=freeDir(d,Math.atan2(d.y-from.y,d.x-from.x)+
 // ---------------------------------------------------------------- Angriffe
 const DEF={snap:{name:'Schnappbiss',reach:30,hitAt:.16,dur:.34,energy:6},leg:{name:'Beinbiss',reach:30,hitAt:.2,dur:.38,energy:7},throat:{name:'Kehlbiss',reach:30,hitAt:.18,dur:.36,energy:9},leap:{name:'Ansprung',dur:.4,energy:16},rear:{name:'Aufsteigen und Ringen',dur:1,energy:14}};
 DOG.ATTACKS=[['stalk','Lauern','Umkreist den Gegner auf Abstand, Kopf tief, Nackenhaare hoch, knurrt. Sucht die Lücke.'],['charge','Anlauf','Galoppiert aus 150–250 Einheiten Abstand gerade auf den Gegner zu.'],['leap','Ansprung','Springt aus vollem Lauf ab (etwa 1,5 m). Packt Arm, Bein oder Brust; mit genug Gewicht wirft er den Menschen um.'],['grip','Verbeißen','Der Kopf bleibt am gepackten Körperteil. Am Arm steigt der Hund hoch und hängt sich hinein, am Bein geht er tief und stemmt sich nach hinten. Schüttelt den Kopf um den Bisspunkt, zerrt und reißt Wunden.'],['arm','Waffenarm gepackt','Hängt der Hund am Schwertarm, kann der Mensch nicht zuschlagen. Am Schildarm schlägt er mit der Waffe zu.'],['throat','Kehle am Boden','Liegt der Gegner, wechselt der Hund an die Kehle und zerrt ihn.'],['snap','Schnappbiss / Beinbiss','Kurze Bisse aus der Nähe, danach Rücksprung.'],['rear','Aufsteigen und Ringen','Nur Hund gegen Hund: Brust an Brust auf den Hinterbeinen. Der Stärkere wirft den anderen um.'],['evade','Ausweichen und neuer Anlauf','Springt beim Ausholen zurück. Nach dem Loslassen weicht er zurück und nimmt neuen Anlauf.'],['flee','Flucht oder Unterwerfung','Bei gebrochenem Mut: Rute eingeklemmt, flieht oder wirft sich auf den Rücken.']];
+/* Rüstung gegen Biss (8.11., Wunsch Thomas: Hunde waren in Rüstung zu tödlich). Zähne kommen durch Leder schlecht, durch Metall
+   fast gar nicht. Der Anprall (leap) bleibt Wucht, nur ein wenig gedämpft. Bleibt dem Hund vor allem Kehle und Umreißen. */
+function armorMat(t,part){try{let best=null;for(const i of M.armorItems(t.g)){const def=M.definition(i);if(!def?.parts?.includes(part))continue;const m=['leather','medium','metal'].includes(i.material)?i.material:'metal',r=ARMOR_RANK[m];if(!best||r>best.r)best={m,r,q:i.q|0};}return best;}catch{return null;}}
+const ARMOR_RANK={leather:1,medium:2,metal:3};
+const BITE_THROUGH={leather:.5,medium:.27,metal:.1};// Anteil des Bissschadens, der durchkommt (Qualität je Stufe −0,02)
+function biteFactor(t,part,kind){const A=armorMat(t,part);if(!A)return {f:1,A:null};
+ if(part==='neck')return {f:[1,.92,.85,.78][A.r],A:null};// Der Helm deckt die Kehle kaum: der Kehlbiss bleibt die Waffe gegen Gepanzerte
+ let f=Math.max(.05,BITE_THROUGH[A.m]-A.q*.02);if(kind==='leap')f=.55+f*.45;return {f,A};}
+DOG.armorMat=armorMat;DOG.biteFactor=biteFactor;
 function hurtHuman(d,t,kind,partId,dmg){const old=t.taken,wasDead=t.g.dead;
- const ef={...M.effective(d),damage:dmg,range:40,attackKey:'dog-'+kind,partId,w:{id:'dog-'+kind,name:{leap:'Ansprung',grip:'Verbeißen',snap:'Biss',leg:'Beinbiss',throat:'Kehlbiss'}[kind]||'Biss',damage:dmg,range:40,weight:kind==='leap'?7:2,pen:.35,crit:1.2,bladed:false,ammo:0,block:0}};
+ const BF=biteFactor(t,partId,kind);dmg*=BF.f;
+ const ef={...M.effective(d),damage:dmg,range:40,attackKey:'dog-'+kind,partId,w:{id:'dog-'+kind,name:{leap:'Ansprung',grip:'Verbeißen',snap:'Biss',leg:'Beinbiss',throat:'Kehlbiss'}[kind]||'Biss',damage:dmg,range:40,weight:kind==='leap'?7:2,pen:BF.A?0:.35,crit:1.2,bladed:false,ammo:0,block:0}};
  M.hit(d,t,false,ef);const landed=t.taken>old;
- if(landed){d.bites++;d.mouthBlood=Math.min(1,d.mouthBlood+.16);if(kind!=='leap')DOG.shotNote?.({kind:'human',victim:t,attacker:d,part:partId,dmg:t.taken-old,kill:!wasDead&&t.g.dead});const p=t.g.body[partId];if(p)p.bleed=(p.bleed||0)+.5+dmg*.02;
+ if(BF.A&&kind!=='leap'&&BF.A.r>=2&&(S.battle?.time||0)-(d.clankAt||-9)>1.2){d.clankAt=S.battle?.time||0;M.floater?.(t.x,t.y-46,BF.A.r>=3?'ZÄHNE AUF METALL':'ZÄHNE AUF SCHIENE','#c9c2a8');}
+ if(landed){d.bites++;d.mouthBlood=Math.min(1,d.mouthBlood+.16*BF.f);if(kind!=='leap')DOG.shotNote?.({kind:'human',victim:t,attacker:d,part:partId,dmg:t.taken-old,kill:!wasDead&&t.g.dead});const p=t.g.body[partId];if(p)p.bleed=(p.bleed||0)+(.5+dmg*.02)*BF.f;
   try{const pt=M.contactAnchor(t,partId||'chest');spray(d,pt.x,pt.y+8,Math.max(4,t.y-pt.y),7+dmg*.4,1,d.a);}catch{}
   if(!wasDead&&t.g.dead)d.kills++;}
  return landed;}
@@ -698,7 +711,7 @@ const ARM=['rfa','lfa','rua','lua','rh','lh'],LEG=['lt','rt','lsh','rsh'];
 const weaponArm=p=>['rfa','rua','rh'].includes(p);
 // Verbeißen beginnen
 function beginGrip(d,t,part){d.victim=t.id;d.gripPart=part;d.grips++;d.interruptDamage=0;d.shakeT=.25;d.gripT=0;d.gripFace=t.x>=d.x?1:-1;d.a=d.gripFace>0?0:Math.PI;
- const hold=d.P.hold*(isDog(t)?.75:ARM.includes(part)?1.5:1.2)*(t.down||t.fallTimer>0?1.25:1);state(d,'grip',hold);
+ const A0=isDog(t)||part==='neck'?null:armorMat(t,part),hold=d.P.hold*(isDog(t)?.75:ARM.includes(part)?1.5:1.2)*(t.down||t.fallTimer>0?1.25:1)*(A0?[1,.8,.6,.42][A0.r]:1);state(d,'grip',hold);
  if(isDog(t)){t.heldBy=d.id;if(!t.down)state(t,'held',99);log(d.g.name+' verbeißt sich '+{hals:'in die Kehle von ',kopf:'im Kopf von ',vl:'im Vorderlauf von ',hl:'im Hinterlauf von ',brust:'in der Brust von ',bauch:'in der Flanke von '}[part]+t.g.name+'!');}
  else{const lying=t.fallTimer>0||t.down;t.grabbedBy=d.id;if(lying){t.draggedBy=d.id;t.fallTimer=Math.max(2.3,t.fallTimer||0);t.fallDuration=Math.max(t.fallDuration||0,t.fallTimer);}
   t.wind=0;t.pendingStrike=null;log(d.g.name+' verbeißt sich in '+({rfa:'den Schwertarm',rua:'den Schwertarm',rh:'die Schwerthand',lfa:'den Schildarm',lua:'den Schildarm',lh:'die linke Hand',lt:'den Oberschenkel',rt:'den Oberschenkel',lsh:'das Bein',rsh:'das Bein',neck:'die Kehle',head:'das Gesicht',chest:'die Brust'}[part]||part)+' von '+nameOf(t)+'!');}}
@@ -731,10 +744,14 @@ function stepBlood(d,dt){let bleed=0;for(const p in d.bleed){d.bleed[p]*=Math.ex
  d.blood=Math.max(0,d.blood-bleed*dt*.5);d.bleedSum=bleed;
  if(bleed>.25){d.drip=(d.drip||0)-dt;if(d.drip<=0){d.drip=.25+.9/(bleed+.6);const ps=Object.entries(d.bleed).sort((a,b)=>b[1]-a[1])[0][0],w=partWorld(d,ps);stain(w.x,w.y,1+Math.min(3,bleed*.6));if(ps==='hals'&&d.tissue.hals<d.max.hals*.55&&!d.g.dead)spray(d,w.x,w.y,w.z,4+bleed*1.5,.7,d.a);}}
  if((d.down||d.g.dead||d.submit)&&bleed>.1){d.pool??={r:1};d.pool.r=Math.min(26*d.P.sz,d.pool.r+dt*(.25+bleed*.5)*(d.g.dead?1.4:1));}}
-function pickHumanPart(d,t){if(t.fallTimer>0||t.down||t.draggedBy)return 'neck';const facing=Math.cos(M.angleDiff(M.angle(t,d),t.a)),r=Math.random();
+function pickHumanPart0(d,t){if(t.fallTimer>0||t.down||t.draggedBy)return 'neck';const facing=Math.cos(M.angleDiff(M.angle(t,d),t.a)),r=Math.random();
  // von vorn: Arme (Schild vorne links, Schwert rechts), Brust; von der Seite/hinten: Beine
  if(facing>.3)return r<.45?'rfa':r<.68?'lfa':r<.82?'chest':pick(['rt','lt']);return r<.45?pick(['rt','lt','rsh','lsh']):r<.75?pick(['rfa','lfa']):'chest';}
-function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);d.yelpT=Math.max(0,(d.yelpT||0)-dt);d.clock+=dt;d.cool-=dt;d.shaking=Math.max(0,(d.shaking||0)-dt);stepSpray(d,dt);stepBlood(d,dt);if(d.mode!=='leap'&&d.z>0)d.z=Math.max(0,d.z-dt*140);
+// Gepanzerte Stellen meidet der Hund, so gut es geht (8.11.): bis zu drei Versuche, eine offenere Stelle zu finden
+function pickHumanPart(d,t){let best=pickHumanPart0(d,t),br=best==='neck'?0:armorMat(t,best)?.r||0;for(let i=0;i<3&&br>0;i++){const p=pickHumanPart0(d,t),r=armorMat(t,p)?.r||0;if(r<br&&Math.random()<.8){best=p;br=r;}}return best;}
+function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);
+ if(d.kbx||d.kby){if(!d.g.dead&&d.mode!=='grip'&&d.mode!=='held'&&!(d.netTimer>0)){d.x=cl(d.x+d.kbx*dt,BX[0],BX[1]);d.y=cl(d.y+d.kby*dt,BY[0],BY[1]);}const k=Math.exp(-dt*9);d.kbx*=k;d.kby*=k;if(Math.abs(d.kbx)+Math.abs(d.kby)<2)d.kbx=d.kby=0;}
+ if(d.hitStun>0){d.hitStun-=dt;if(!d.g.dead&&['charge','approach','stalk','circle','snap','leg'].includes(d.mode)&&!d.down){d.velocity*=Math.exp(-dt*12);if(d.mode==='charge'&&(d.hitAmp||0)>1.1){state(d,'recover',d.hitStun);d.hitStun=0;}}}d.yelpT=Math.max(0,(d.yelpT||0)-dt);d.clock+=dt;d.cool-=dt;d.shaking=Math.max(0,(d.shaking||0)-dt);stepSpray(d,dt);stepBlood(d,dt);if(d.mode!=='leap'&&d.z>0)d.z=Math.max(0,d.z-dt*140);
  if(d.g.dead){if(d.clock<3&&d.bleedSum>.2&&Math.random()<dt*3){const w=partWorld(d,'hals');spray(d,w.x,w.y,4,3,.4);}d.moveSpeed=0;return;}
  if(d.blood<=14){dieDog(d,b.actors.find(a=>a.id===d.lastAttacker),'Verblutet');return;}
  d.energy=Math.min(100,d.energy+dt*(['stalk','circle','threat'].includes(d.mode)?9:3)*d.P.stam);d.morale=Math.min(100,d.morale+dt*.6);
@@ -781,11 +798,16 @@ function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);d.ye
    if(isDog(v)){hitDog(d,v,'grip',d.gripPart,dmg*.5);if((d.gripPart==='vl'||d.gripPart==='hl')&&!v.down&&Math.random()<.22*(d.P.mass/v.P.mass)){v.down=true;state(v,'down',1.1);log(d.g.name+' reißt '+v.g.name+' von den Beinen.');}}
    else{hurtHuman(d,v,'grip',d.gripPart,dmg*1.4);
     if(!v.g.dead&&!vLying){const ratio=d.dog.weight/(v.g.weight||80),weak=weakMoment(d,v);
-     if(LEG.includes(d.gripPart)&&Math.random()<.025*ratio*(weak?4:1)*(1+P.wild*.5)){M.knockdown(v,'Von '+d.g.name+' am Bein umgerissen',2.4);log(d.g.name+' reißt '+nameOf(v)+' am Bein von den Füßen!');}
+     /* Umreißen je nach Rüstungstyp (8.11.): schwere Rüstung macht steif und kopflastig, der Hund zerrt statt zu beißen */
+     const bodyA=armorMat(v,'chest')?.r||0,legA=armorMat(v,d.gripPart)?.r||0,tdK=[1,1.1,1.3,1.5][bodyA]*(legA?1.25:1);
+     if(LEG.includes(d.gripPart)&&Math.random()<.025*ratio*(weak?4:1)*(1+P.wild*.5)*tdK){M.knockdown(v,'Von '+d.g.name+' am Bein umgerissen',2.4);log(d.g.name+' reißt '+nameOf(v)+' am Bein von den Füßen!');}
      else if(Math.random()<.25)log(d.g.name+(ARM.includes(d.gripPart)?' zerrt am Arm von ':LEG.includes(d.gripPart)?' zerrt am Bein von ':' reißt an ')+nameOf(v)+'.');}
     if(!v.g.dead&&throat&&v.g.body.neck.hp<8)M.death(v,'Kehle durchgebissen',d);
-    // Abschütteln: Kraft des Menschen gegen den Griff
-    if(!v.g.dead&&!vLying&&Math.random()<.045*((v.g.stats.strength||50)/50)*(1.25-P.wild)*(weaponArm(d.gripPart)?.8:1)){release(d);state(d,'backoff',.7);d.escapeAngle=M.angle(v,d);d.cool=.9;log(nameOf(v)+' schüttelt '+d.g.name+' ab.');return;}}}
+    // Losreißen (8.11. stärker): Kraft und Gewandtheit des Menschen gegen den Griff; aus Rüstung rutschen die Zähne leichter, auch im Liegen eine Chance (nicht an der Kehle)
+    if(!v.g.dead){const gA=d.gripPart==='neck'?0:armorMat(v,d.gripPart)?.r||0,st=((v.g.stats.strength||50)*.65+(v.g.stats.agility||50)*.35)/50,tired=(v.energy??60)<15?.5:1,
+      ch=(vLying?(throat?0:.03):.08)*st*(1.3-P.wild*.6)*(weaponArm(d.gripPart)?.85:1)*[1,1.4,1.9,2.6][gA]*tired*(d.energy<25?1.5:1);
+     if(Math.random()<ch){release(d);state(d,'backoff',.7);d.escapeAngle=M.angle(v,d);d.cool=.9;d.kbx=(d.kbx||0)+Math.cos(M.angle(v,d))*70;d.kby=(d.kby||0)+Math.sin(M.angle(v,d))*30;M.floater?.(v.x,v.y-46,'LOSGERISSEN','#d8c79a');
+      log(gA?nameOf(v)+' reißt sich los, die Zähne rutschen an der Rüstung ab.':vLying?nameOf(v)+' tritt '+d.g.name+' weg und kommt frei.':nameOf(v)+' reißt sich von '+d.g.name+' los.');return;}}}}
   if(d.clock>=d.duration||d.energy<8){release(d);state(d,'backoff',.6);d.cool=.6;}
   return;}
  case 'leap':{const p=cl(d.clock/d.duration,0,1),q=p*(2-p);d.x=d.sx+(d.ex-d.sx)*q;d.y=d.sy+(d.ey-d.sy)*q;d.z=Math.sin(p*Math.PI)*(human?15:11)*P.sz;d.moveSpeed=P.run;
@@ -810,7 +832,7 @@ function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);d.ye
   if(!d.struck&&d.clock>=A.hitAt){d.struck=true;if(dist(d,t)<=A.reach*P.sz+t.r+12){
    let part,dmg=d.mode==='throat'?P.throat:P.snap;
    if(isDog(t))part=d.mode==='throat'?'hals':d.mode==='leg'?pick(['vl','vl','hl']):pick(['kopf','hals','brust','brust','vl']);
-   else part=d.mode==='throat'?'neck':d.mode==='leg'?pick(['lsh','rsh','lt','rt']):pick(['rfa','lfa','rt','lt']);
+   else{const pool=d.mode==='throat'?['neck']:d.mode==='leg'?['lsh','rsh','lt','rt']:['rfa','lfa','rt','lt'];part=pool.map(p=>[p,(armorMat(t,p)?.r||0)+Math.random()*1.2]).sort((x,y)=>x[1]-y[1])[0][0];}
    const ok=isDog(t)?hitDog(d,t,d.mode,part,dmg):hurtHuman(d,t,d.mode,part,dmg);
    const gripChance=d.mode==='throat'?.9:(d.mode==='leg'?.5+P.wild*.3:.25+P.wild*.25);
    if(ok&&!out(t)&&Math.random()<gripChance&&(isDog(t)||reachable(d,t,part))){beginGrip(d,t,part);return;}}}
@@ -2109,7 +2131,7 @@ function drawDog(c,d,px,py,k,face,opt={}){const D=d.dog,col=D.appearance.colors,
  if(d.pool&&opt.pool!==false){c.fillStyle='#4f100c';c.beginPath();c.ellipse(-2*face*sz,1,d.pool.r*1.25,d.pool.r*.42,0,0,TAU);c.fill();c.fillStyle='#6e1912';c.beginPath();c.ellipse(-3*face*sz,.6,d.pool.r*.9,d.pool.r*.28,0,0,TAU);c.fill();}
  if(!opt.noShadow){const zz=(d.z||0);c.fillStyle='#1c140c55';c.beginPath();c.ellipse(0,1.5,(R.lie?30:26)*sz*(1-zz/60),(R.lie?5:4)*sz,0,0,TAU);c.fill();}
  c.translate(0,-(d.z||0));c.scale(face*sz,sz);
- const recoil=d.hit>0?Math.sin(d.hit/.26*Math.PI)*2:0;c.translate(-recoil,0);if(d.mode==='shakeoff'){c.translate(0,-20);c.rotate(Math.sin(t*26)*.07);c.translate(0,20);}
+ const hq=d.hit>0?Math.sin(d.hit/.32*Math.PI):0,recoil=hq*(2+2.4*(d.hitAmp||.5));c.translate(-recoil,-hq*(d.hitAmp||.5)*1.2);if(hq>0){c.translate(-6,-8);c.rotate(-hq*.06*(d.hitAmp||.5));c.translate(6,8);}if(d.mode==='shakeoff'){c.translate(0,-20);c.rotate(Math.sin(t*26)*.07);c.translate(0,20);}
  // ---- Wunden und Blut im Fell
  function gore(part,x,y,r){const gv=Math.min(1,d.gore?.[part]||0);if(gv<=.02)return;const n=Math.ceil(gv*10);for(let i=0;i<n;i++){const a=hrand(i*7.3+part.length*13+(D.seed%97))*TAU,rad=hrand(i*3.1+part.length)*r;
   rr(c,x+Math.cos(a)*rad-1.5,y+Math.sin(a)*rad*.7-1,2+hrand(i+9)*2.5,1.2+hrand(i+3)*1.4,i%3?'#5e1510b8':'#7a1d15a8');if(gv>.4&&i%2===0)rr(c,x+Math.cos(a)*rad,y+Math.sin(a)*rad*.7+1,.9,1.5+gv*3.5,'#6a1611aa');}}
@@ -2303,6 +2325,10 @@ DOG.writeBack=function(a,won){const D=a.dog?._src||a.dog;if(!D)return;const c=DO
 DOG.heal=function(D,days=1){if(D.dead)return;const c=DOG.cond(D);for(let i=0;i<days;i++){c.blood=Math.min(100,c.blood+20);for(const p of PARTKEYS)c.t[p]=Math.min(1,Math.round((c.t[p]+.15)*100)/100);if(c.wounds.length)c.wounds.splice(0,Math.max(1,Math.ceil(c.wounds.length/3)));}};
 // Kampfwert (Skala der Arena): ein frisch gewürfelter Hund (Ist ≈ Soll − 20) entspricht dem Menschen seiner Zielstufe
 // (Kampf-Soll 37 → Stufe 0, Mastiff 62 → Stufe 3,4, Wolf 82 → Stufe 6; Kampfwert eines Gegners der Stufe q ≈ 33 + 14·q). Stärkere Istwerte zählen mit.
+// Talent (8.11.): Anlage des Hundes gegen seine Rasse, auf der Talentskala der Rekruten (Mitte 63, Stufen wie in der Kaserne)
+DOG.talent=function(D){const B=breed(D.breed);if(!D.caps||!B)return 50;let n=0,c=0;for(const [k] of STATS){if(D.caps[k]==null)continue;n+=D.caps[k]-B.werte[k];c++;}return Math.round(cl(63+3.5*(c?n/c:0),1,99));};
+DOG.TIERS=[[91,'Prodigy'],[88,'Elite-Talent'],[85,'Ausnahmetalent'],[81,'Hochbegabt'],[75,'Talentiert'],[69,'Begabt'],[63,'Brauchbar'],[57,'Mittelmaß'],[50,'Unbegabt'],[0,'Nichtsnutz']];
+DOG.talentTier=function(D){const p=DOG.talent(D);let t=null;try{t=M.barracks?.tierOf?.(p);}catch{}if(!t){const i=DOG.TIERS.findIndex(([m])=>p>=m);t={level:10-i,name:DOG.TIERS[i][1]};}return {p,level:t.level,name:t.name};};
 DOG.targetQ=soll=>cl((soll-37)/7.4,-1,6);
 // Totenköpfe (Hundefang) nach Kampf-Soll: 1 unter 38 · 2 bis 50 · 3 bis 60 · 4 bis 70 · 5 ab 70
 DOG.SKULLS=[38,50,60,70];
