@@ -1,0 +1,62 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hund wegtreten · Test</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#17120e;color:#efe0b3;font:16px system-ui,sans-serif}main{max-width:850px;margin:auto;padding:16px}h1{font:700 clamp(22px,5vw,34px) Georgia,serif;margin:6px 0}p{line-height:1.5;color:#c5bba8}.tag{color:#f29b83;font-size:12px;letter-spacing:2px}.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:12px 0}label{display:grid;gap:4px;font-size:14px}select,button{font:inherit;min-height:44px;background:#30251b;color:#efe0b3;border:1px solid #806247;border-radius:5px;padding:8px 12px}button{cursor:pointer}button.primary{background:#873a2e;border-color:#bf7357}#arenaCanvas{width:100%;height:auto;aspect-ratio:850/520;background:#0d0a07;border:1px solid #4a3a2a;image-rendering:pixelated;touch-action:none}#info{min-height:1.5em;color:#f29b83;margin:8px 0}</style>
+<main><span class="tag">ARENA THEORY · TESTSEITE</span><h1>Hund wegtreten</h1>
+<p>Der Hund hat sich verbissen, dann reißt sich der Mensch los. Die Szene läuft in Schleife in der echten Spielgrafik. Langsam abspielen zeigt die Bewegung genau. Spielstände werden nicht verändert.</p>
+<div class="controls"><label>Szene<select id="scene"><option value="ground">Am Boden: Hund wegtreten</option><option value="leg">Stehend: Bein freitreten</option><option value="arm">Stehend: Arm losreißen</option></select></label>
+<label>Hund<select id="breed"><option value="mastiff">Mastiff</option><option value="wolf">Wolf</option><option value="dobermann">Dobermann</option></select></label>
+<label>Rüstung<select id="armor"><option value="none">Keine</option><option value="leather" selected>Leder</option><option value="metal">Metall</option></select></label>
+<label>Zoom<select id="zoom"><option value="2">2×</option><option value="3.2" selected>3×</option><option value="4.5">4,5×</option></select></label>
+<label>Tempo<select id="spd"><option value="1">1×</option><option value="0.5">0,5×</option><option value="0.25" selected>0,25×</option></select></label>
+<button id="again" class="primary">↻ Neu starten</button><button id="pause">⏸ Pause</button></div>
+<div id="battleView"><canvas id="arenaCanvas" width="850" height="520"></canvas></div><div id="info"></div>
+<p><small>Ablauf: Hund packt zu und schüttelt (etwa 1,6 s), dann reißt sich der Mensch los. Am Boden zieht er das Bein an und stößt den Fuß gegen den Hund; der Hund jault, fliegt zurück und liegt kurz. Stehend tritt er das Bein frei oder reißt den Arm ruckartig weg.</small></p></main>
+<script src="data.js?v=a505d052"></script><script src="household.js?v=a505d052"></script><script src="management.js?v=a505d052"></script><script src="scout.js?v=a505d052"></script><script src="sim.js?v=a505d052"></script><script src="benchmark.js?v=a505d052"></script><script src="school.js?v=a505d052"></script><script src="weapon-art.js?v=a505d052"></script><script src="arena.js?v=a505d052"></script><script src="hund.js?v=a505d052"></script>
+<script>
+const $=id=>document.getElementById(id),M=MG,S=M.s;
+const KICK_AT=1.6,LOOP=4.2;
+let man=null,dog=null,t0=0,kicked=false,running=true;
+function setup(){
+ if(S.battle){try{M.endBenchmark(-1,'Test');}catch(e){}}
+ const armor=$('armor').value;
+ const err=M.startBenchmark({count:1,count0:1,count1:1,role0:'Soldat',role1:'Soldat',weapon0:'gladius',weapon1:'gladius',armor0:armor==='none'?'none':armor,armor1:'none',shield0:'none',shield1:'none',varied:false,quality0:2,quality1:2,seed:7});
+ if(err){$('info').textContent=err;return;}
+ const b=S.battle;M.benchmarkFinale=true;S.options.speed=+$('spd').value;b.paused=false;
+ man=b.actors.find(a=>a.team===0);b.actors=b.actors.filter(a=>a===man);
+ const D=DOG.create($('breed').value,11);D.name={mastiff:'Brutus',wolf:'Fenrir',dobermann:'Nero'}[$('breed').value];
+ dog=DOG.makeFighter(D,1,0,0);b.actors.push(dog);b.hasDogs=true;
+ restart();}
+function restart(){const b=S.battle;if(!b)return;t0=b.time;kicked=false;const sc=$('scene').value;
+ const W=b.width||1040,H=b.height||720,cx=Math.round(W/2),cy=Math.round(H/2);window._c=[cx,cy];
+ Object.assign(man,{x:cx,y:cy,a:0,wind:0,swing:0,pendingStrike:null,kickTimer:0,postKickPose:0,hit:0,stagger:0,moveSpeed:0,state:'idle',groundKickAt:null,surrendered:false,down:false});
+ delete man.draggedBy;delete man.grabbedBy;
+ if(sc==='ground'){man.fallTimer=98;man.fallDuration=99;man.riseDuration=1.25;man.fallSide=-1;man.state='fallen';}else{man.fallTimer=0;}
+ Object.assign(dog,{team:1,down:false,kbx:0,kby:0,hitStun:0,hit:0,hitAmp:0,shaking:0,energy:100,morale:100,cool:0,z:0,velocity:0,fled:false,submit:false});
+ const part=sc==='arm'?'rfa':'rsh';try{DOG.fitBounds();}catch(e){}
+ /* Hund steht rechts vom Menschen (am Boden: bei den Füßen), Maul genau am Bisspunkt */
+ let an={x:man.x+30,y:man.y-20,ground:man.y};try{an=DOG.anchorOf(man,part,b.time)||an;}catch(e){}
+ dog.gripFace=-1;dog.x=an.x+23*dog.P.sz;dog.y=an.ground+2.5;
+ dog.mode='grip';dog.clock=0;dog.duration=99;dog.victim=man.id;dog.gripPart=part;dog.a=Math.PI;dog.gripT=0;dog.shakeT=.2;
+ man.grabbedBy=dog.id;if(sc==='ground')man.draggedBy=dog.id;
+ $('info').textContent='';}
+// Eigener Schritt statt Kampf-KI: nur die Szene, im Takt der Spielgrafik
+const realStep=M.fixedStep;
+M.fixedStep=function(dt){const b=S.battle;if(!b||!man||!dog||!running)return;b.time+=dt;const t=b.time-t0,sc=$('scene').value;
+ man.kickTimer=Math.max(0,(man.kickTimer||0)-dt);man.hit=Math.max(0,(man.hit||0)-dt);
+ if(!kicked){
+  if(sc==='ground'){man.fallTimer=98;}
+  dog.shakeT-=dt;dog.shaking=Math.max(0,(dog.shaking||0)-dt);if(dog.shakeT<=0){dog.shakeT=.45+Math.random()*.25;dog.shaking=.32;man.hit=.12;}
+  try{DOG.fitBounds();DOG.holdOn(dog,man,dt);}catch(e){}man.x=window._c[0];
+  if(t>=KICK_AT){kicked=true;DOG.kickFree(man,dog,sc,sc!=='ground'&&$('armor').value==='metal'?3:0);delete man.grabbedBy;delete man.draggedBy;dog.team=man.team;
+   const L=b.log||[];$('info').textContent=(L[L.length-1]?.text||L[L.length-1]||'').toString();}
+ }else{
+  if(sc==='ground')man.fallTimer=98;
+  try{DOG.step(dog,dt);}catch(e){console.warn(e);}
+ }
+ if(t>=LOOP)restart();};
+$('again').onclick=setup;for(const id of ['breed','armor'])$(id).onchange=setup;$('scene').onchange=restart;
+$('spd').onchange=()=>{S.options.speed=+$('spd').value;};
+$('pause').onclick=()=>{running=!running;$('pause').textContent=running?'⏸ Pause':'▶ Weiter';};
+/* Nahansicht auf die Szene */M.battleCamera=()=>man?{zoom:+($('zoom')?.value||3.2),x:man.x+30,y:man.y-18}:null;
+window.sceneTime=()=>S.battle?S.battle.time-t0:0;
+setup();
+</script></html>

@@ -735,6 +735,22 @@ function holdOn(d,v,dt){const P=d.P,f=d.gripFace||1,an=anchorOf(v,d.gripPart,S.b
  {const back=clearance(d.x,d.y,f>0?Math.PI:0,120);if(back<70)pull*=Math.max(0,(back-20)/50);}// nicht in die Wand zerren
  v.x=cl(v.x-f*pull*dt,BX[0]+10,BX[1]-10);if(!isDog(v)){v.kx=v.ky=0;}d.moveSpeed=pull*.8;d.cyc=(d.cyc||0)-pull*dt/P.sz/cycLen(1)*.6;}
 DOG.holdOn=holdOn;
+/* Losreißen mit Bewegung (8.11.): am Boden tritt der Mensch den Hund weg (Bein anziehen, zustoßen; Hund jault, fliegt zurück, liegt kurz),
+   stehend tritt er das gepackte Bein frei (Tritt-Bewegung) oder reißt den Arm ruckartig weg (Rückprall). Kleiner stumpfer Treffer am Hund. */
+function kickFree(v,d,how='ground',gA=0){const b=S.battle,part0=d.gripPart||'';release(d);
+ if(how==='ground')v.groundKickAt=b.time;else if(how==='leg'){v.kickTimer=Math.max(v.kickTimer||0,.48);v.postKickPose=0;}else{v.hit=.23;v.armYankAt=b.time;v.armYankSide=part0[0]==='l'?'l':'r';}
+ // Der Hund bleibt, bis der Fuß trifft (am Boden nach dem Anziehen, stehend auf dem Höhepunkt des Tritts), dann fliegt er
+ d.kick={v:v.id,how,gA};d.kickWait={ground:.27,leg:.2,arm:.07}[how];d.velocity=0;state(d,'recover',d.kickWait+.05);d.cool=1;
+ if(!d.kickWait)kickLand(d);
+ log(how==='ground'?nameOf(v)+' tritt '+d.g.name+' weg und kommt frei.':how==='leg'?nameOf(v)+' tritt '+d.g.name+' vom Bein weg.':gA?nameOf(v)+' reißt den Arm los, die Zähne rutschen an der Rüstung ab.':nameOf(v)+' reißt den Arm aus dem Maul von '+d.g.name+'.');}
+function kickLand(d){const K=d.kick;d.kick=null;d.kickWait=0;const v=S.battle?.actors.find(a=>a.id===K?.v);if(!K||!v||d.g.dead)return;const how=K.how,an=M.angle(v,d),st=((v.g.stats.strength||50)/50),light=cl(30/Math.sqrt(d.dog.weight||30),.6,1.6);
+ const kb={ground:240,leg:200,arm:220}[how]*light;d.kbx=(d.kbx||0)+Math.cos(an)*kb;d.kby=(d.kby||0)+Math.sin(an)*kb*.55;d.escapeAngle=an;
+ if(how==='ground'){dogHurt(d,Math.random()<.5?'kopf':'brust',2.5*st*d.P.res,'blunt',v);if(!d.g.dead){d.down=true;state(d,'down',.55);}}
+ else if(how==='leg'){dogHurt(d,'brust',2*st*d.P.res,'blunt',v);if(!d.g.dead){if(light>1.15){d.down=true;state(d,'down',.4);}else state(d,'evade',.6);}}
+ else{dogHurt(d,'kopf',1.2*st*d.P.res,'blunt',v);if(!d.g.dead)state(d,'evade',.8);}
+ d.hitAmp=Math.max(d.hitAmp||0,how==='arm'?1.2:1.9);DOG.sound?.('yelp',d);M.sound?.('heavy');
+ M.floater?.(v.x,v.y-46,how==='ground'?'WEGGETRETEN':'LOSGERISSEN','#d8c79a');}
+DOG.kickFree=kickFree;DOG.state=(d,m,t)=>state(d,m,t);
 // Mensch am Waffenarm gepackt: kann nicht zuschlagen
 DOG.humanPre=function(a){const b=S.battle;if(!a.grabbedBy)return false;const d=b.actors.find(x=>x.id===a.grabbedBy);if(!d||d.g.dead||d.victim!==a.id){delete a.grabbedBy;return false;}
  if(weaponArm(d.gripPart)){a.wind=0;a.pendingStrike=null;a.swing=0;a.cool=Math.max(a.cool||0,.2);return true;}return false;};
@@ -750,6 +766,7 @@ function pickHumanPart0(d,t){if(t.fallTimer>0||t.down||t.draggedBy)return 'neck'
 // Gepanzerte Stellen meidet der Hund, so gut es geht (8.11.): bis zu drei Versuche, eine offenere Stelle zu finden
 function pickHumanPart(d,t){let best=pickHumanPart0(d,t),br=best==='neck'?0:armorMat(t,best)?.r||0;for(let i=0;i<3&&br>0;i++){const p=pickHumanPart0(d,t),r=armorMat(t,p)?.r||0;if(r<br&&Math.random()<.8){best=p;br=r;}}return best;}
 function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);
+ if(d.kickWait>0){d.kickWait-=dt;d.velocity=0;d.moveSpeed=0;d.clock+=dt;if(d.kickWait<=0)kickLand(d);return;}
  if(d.kbx||d.kby){if(!d.g.dead&&d.mode!=='grip'&&d.mode!=='held'&&!(d.netTimer>0)){d.x=cl(d.x+d.kbx*dt,BX[0],BX[1]);d.y=cl(d.y+d.kby*dt,BY[0],BY[1]);}const k=Math.exp(-dt*9);d.kbx*=k;d.kby*=k;if(Math.abs(d.kbx)+Math.abs(d.kby)<2)d.kbx=d.kby=0;}
  if(d.hitStun>0){d.hitStun-=dt;if(!d.g.dead&&['charge','approach','stalk','circle','snap','leg'].includes(d.mode)&&!d.down){d.velocity*=Math.exp(-dt*12);if(d.mode==='charge'&&(d.hitAmp||0)>1.1){state(d,'recover',d.hitStun);d.hitStun=0;}}}d.yelpT=Math.max(0,(d.yelpT||0)-dt);d.clock+=dt;d.cool-=dt;d.shaking=Math.max(0,(d.shaking||0)-dt);stepSpray(d,dt);stepBlood(d,dt);if(d.mode!=='leap'&&d.z>0)d.z=Math.max(0,d.z-dt*140);
  if(d.g.dead){if(d.clock<3&&d.bleedSum>.2&&Math.random()<dt*3){const w=partWorld(d,'hals');spray(d,w.x,w.y,4,3,.4);}d.moveSpeed=0;return;}
@@ -806,8 +823,7 @@ function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);
     // Losreißen (8.11. stärker): Kraft und Gewandtheit des Menschen gegen den Griff; aus Rüstung rutschen die Zähne leichter, auch im Liegen eine Chance (nicht an der Kehle)
     if(!v.g.dead){const gA=d.gripPart==='neck'?0:armorMat(v,d.gripPart)?.r||0,st=((v.g.stats.strength||50)*.65+(v.g.stats.agility||50)*.35)/50,tired=(v.energy??60)<15?.5:1,
       ch=(vLying?(throat?0:.03):.08)*st*(1.3-P.wild*.6)*(weaponArm(d.gripPart)?.85:1)*[1,1.4,1.9,2.6][gA]*tired*(d.energy<25?1.5:1);
-     if(Math.random()<ch){release(d);state(d,'backoff',.7);d.escapeAngle=M.angle(v,d);d.cool=.9;d.kbx=(d.kbx||0)+Math.cos(M.angle(v,d))*70;d.kby=(d.kby||0)+Math.sin(M.angle(v,d))*30;M.floater?.(v.x,v.y-46,'LOSGERISSEN','#d8c79a');
-      log(gA?nameOf(v)+' reißt sich los, die Zähne rutschen an der Rüstung ab.':vLying?nameOf(v)+' tritt '+d.g.name+' weg und kommt frei.':nameOf(v)+' reißt sich von '+d.g.name+' los.');return;}}}}
+     if(Math.random()<ch){kickFree(v,d,vLying?'ground':LEG.includes(d.gripPart)?'leg':'arm',gA);return;}}}}
   if(d.clock>=d.duration||d.energy<8){release(d);state(d,'backoff',.6);d.cool=.6;}
   return;}
  case 'leap':{const p=cl(d.clock/d.duration,0,1),q=p*(2-p);d.x=d.sx+(d.ex-d.sx)*q;d.y=d.sy+(d.ey-d.sy)*q;d.z=Math.sin(p*Math.PI)*(human?15:11)*P.sz;d.moveSpeed=P.run;
@@ -886,7 +902,7 @@ function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);
    if((behind||busy)&&dd<120){d.next=Math.random()<.6?'leg':'snap';state(d,'approach',0);log(d.g.name+(busy?' fällt '+t.g.name+' in die Flanke!':' packt '+t.g.name+' von hinten!'));return;}
    const r=Math.random();if(dd>70&&r<.22){state(d,'charge',0);return;}d.next=dd<60&&r<.45+P.wild*.15&&!t.down?'rear':r<.75?'snap':'leg';state(d,'approach',0);}
  }}}
-DOG.step=step;DOG.release=release;DOG.out=out;
+DOG.step=step;DOG.release=release;DOG.out=out;DOG.fitBounds=fitBounds;
 
 // =====================================================================================================
 // SKELETT · Seitenansicht, Kopf nach +x, Ursprung = Boden unter der Körpermitte, 1 Einheit = 2,22 cm (vor Größe)
