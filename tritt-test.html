@@ -9,11 +9,11 @@
 <label>Tempo<select id="spd"><option value="1">1×</option><option value="0.5">0,5×</option><option value="0.25" selected>0,25×</option></select></label>
 <button id="again" class="primary">↻ Neu starten</button><button id="pause">⏸ Pause</button></div>
 <div id="battleView"><canvas id="arenaCanvas" width="850" height="520"></canvas></div><div id="info"></div>
-<p><small>Ablauf: Hund packt zu und schüttelt (etwa 1,6 s), dann reißt sich der Mensch los. Am Boden zieht er das Bein an und stößt den Fuß gegen den Hund; der Hund jault, fliegt zurück und liegt kurz. Stehend tritt er das Bein frei oder reißt den Arm ruckartig weg.</small></p></main>
-<script src="data.js?v=a505d052"></script><script src="household.js?v=a505d052"></script><script src="management.js?v=a505d052"></script><script src="scout.js?v=a505d052"></script><script src="sim.js?v=a505d052"></script><script src="benchmark.js?v=a505d052"></script><script src="school.js?v=a505d052"></script><script src="weapon-art.js?v=a505d052"></script><script src="arena.js?v=a505d052"></script><script src="hund.js?v=a505d052"></script>
+<p><small>Ablauf: Hund packt zu und schüttelt, dann reißt sich der Mensch los. Am Boden tritt er schon während des Bisses immer wieder nach dem Hund (der zuckt und hält fest), nach 3,6 s kommt er mit einem Tritt frei: der Hund jault, fliegt zurück und liegt kurz. Stehend tritt er das Bein frei oder reißt den Arm ruckartig weg.</small></p></main>
+<script src="data.js?v=d08b147c"></script><script src="household.js?v=d08b147c"></script><script src="management.js?v=d08b147c"></script><script src="scout.js?v=d08b147c"></script><script src="sim.js?v=d08b147c"></script><script src="benchmark.js?v=d08b147c"></script><script src="school.js?v=d08b147c"></script><script src="weapon-art.js?v=d08b147c"></script><script src="arena.js?v=d08b147c"></script><script src="hund.js?v=d08b147c"></script>
 <script>
 const $=id=>document.getElementById(id),M=MG,S=M.s;
-const KICK_AT=1.6,LOOP=4.2;
+const kickAt=()=>$('scene').value==='ground'?3.6:1.6,loopAt=()=>kickAt()+2.6;
 let man=null,dog=null,t0=0,kicked=false,running=true;
 function setup(){
  if(S.battle){try{M.endBenchmark(-1,'Test');}catch(e){}}
@@ -35,7 +35,7 @@ function restart(){const b=S.battle;if(!b)return;t0=b.time;kicked=false;const sc
  /* Hund steht rechts vom Menschen (am Boden: bei den Füßen), Maul genau am Bisspunkt */
  let an={x:man.x+30,y:man.y-20,ground:man.y};try{an=DOG.anchorOf(man,part,b.time)||an;}catch(e){}
  dog.gripFace=-1;dog.x=an.x+23*dog.P.sz;dog.y=an.ground+2.5;
- dog.mode='grip';dog.clock=0;dog.duration=99;dog.victim=man.id;dog.gripPart=part;dog.a=Math.PI;dog.gripT=0;dog.shakeT=.2;
+ dog.mode='grip';dog.clock=0;dog.duration=99;dog.victim=man.id;dog.gripPart=part;dog.a=Math.PI;dog.gripT=0;dog.shakeT=.2;dog.gkT=.7;dog.gkHit=null;
  man.grabbedBy=dog.id;if(sc==='ground')man.draggedBy=dog.id;
  $('info').textContent='';}
 // Eigener Schritt statt Kampf-KI: nur die Szene, im Takt der Spielgrafik
@@ -46,13 +46,14 @@ M.fixedStep=function(dt){const b=S.battle;if(!b||!man||!dog||!running)return;b.t
   if(sc==='ground'){man.fallTimer=98;}
   dog.shakeT-=dt;dog.shaking=Math.max(0,(dog.shaking||0)-dt);if(dog.shakeT<=0){dog.shakeT=.45+Math.random()*.25;dog.shaking=.32;man.hit=.12;}
   try{DOG.fitBounds();DOG.holdOn(dog,man,dt);}catch(e){}man.x=window._c[0];
-  if(t>=KICK_AT){kicked=true;DOG.kickFree(man,dog,sc,sc!=='ground'&&$('armor').value==='metal'?3:0);delete man.grabbedBy;delete man.draggedBy;dog.team=man.team;
+  dog.hit=Math.max(0,(dog.hit||0)-dt);dog.kbx=dog.kby=0;if(sc==='ground')try{DOG.groundKickTick(dog,man,dt,false);}catch(e){}
+  if(t>=kickAt()){kicked=true;DOG.kickFree(man,dog,sc,sc!=='ground'&&$('armor').value==='metal'?3:0);delete man.grabbedBy;delete man.draggedBy;dog.team=man.team;
    const L=b.log||[];$('info').textContent=(L[L.length-1]?.text||L[L.length-1]||'').toString();}
  }else{
   if(sc==='ground')man.fallTimer=98;
   try{DOG.step(dog,dt);}catch(e){console.warn(e);}
  }
- if(t>=LOOP)restart();};
+ if(t>=loopAt())restart();};
 $('again').onclick=setup;for(const id of ['breed','armor'])$(id).onchange=setup;$('scene').onchange=restart;
 $('spd').onchange=()=>{S.options.speed=+$('spd').value;};
 $('pause').onclick=()=>{running=!running;$('pause').textContent=running?'⏸ Pause':'▶ Weiter';};

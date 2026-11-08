@@ -710,7 +710,7 @@ DOG.anchorOf=anchorOf;
 const ARM=['rfa','lfa','rua','lua','rh','lh'],LEG=['lt','rt','lsh','rsh'];
 const weaponArm=p=>['rfa','rua','rh'].includes(p);
 // Verbeißen beginnen
-function beginGrip(d,t,part){d.victim=t.id;d.gripPart=part;d.grips++;d.interruptDamage=0;d.shakeT=.25;d.gripT=0;d.gripFace=t.x>=d.x?1:-1;d.a=d.gripFace>0?0:Math.PI;
+function beginGrip(d,t,part){d.gkT=null;d.gkHit=null;d.victim=t.id;d.gripPart=part;d.grips++;d.interruptDamage=0;d.shakeT=.25;d.gripT=0;d.gripFace=t.x>=d.x?1:-1;d.a=d.gripFace>0?0:Math.PI;
  const A0=isDog(t)||part==='neck'?null:armorMat(t,part),hold=d.P.hold*(isDog(t)?.75:ARM.includes(part)?1.5:1.2)*(t.down||t.fallTimer>0?1.25:1)*(A0?[1,.8,.6,.42][A0.r]:1);state(d,'grip',hold);
  if(isDog(t)){t.heldBy=d.id;if(!t.down)state(t,'held',99);log(d.g.name+' verbeißt sich '+{hals:'in die Kehle von ',kopf:'im Kopf von ',vl:'im Vorderlauf von ',hl:'im Hinterlauf von ',brust:'in der Brust von ',bauch:'in der Flanke von '}[part]+t.g.name+'!');}
  else{const lying=t.fallTimer>0||t.down;t.grabbedBy=d.id;if(lying){t.draggedBy=d.id;t.fallTimer=Math.max(2.3,t.fallTimer||0);t.fallDuration=Math.max(t.fallDuration||0,t.fallTimer);}
@@ -750,7 +750,20 @@ function kickLand(d){const K=d.kick;d.kick=null;d.kickWait=0;const v=S.battle?.a
  else{dogHurt(d,'kopf',1.2*st*d.P.res,'blunt',v);if(!d.g.dead)state(d,'evade',.8);}
  d.hitAmp=Math.max(d.hitAmp||0,how==='arm'?1.2:1.9);DOG.sound?.('yelp',d);M.sound?.('heavy');
  M.floater?.(v.x,v.y-46,how==='ground'?'WEGGETRETEN':'LOSGERISSEN','#d8c79a');}
-DOG.kickFree=kickFree;DOG.state=(d,m,t)=>state(d,m,t);
+DOG.kickFree=kickFree;
+/* Tritte im Liegen (8.11., Wunsch Thomas): Solange ein Hund einen Liegenden gepackt hat, tritt der immer wieder nach ihm
+   (alle 1–1,9 s, erschöpft seltener). Der Fuß trifft nach 0,27 s: der Hund zuckt (kleiner stumpfer Treffer), hält meist fest.
+   Mit etwas Glück kommt der Mensch frei (an der Kehle nicht). Ersetzt die frühere Chance beim Schütteln (3 %), insgesamt etwa gleich oft frei. */
+function groundKickTick(d,v,dt,allowFree=true){const b=S.battle,lying=v.fallTimer>0||v.down||v.draggedBy;if(!lying||v.g.dead||(v.daze||0)>.8){d.gkT=null;return false;}
+ if(d.gkT==null)d.gkT=.6+Math.random()*.8;
+ if(d.gkHit!=null&&b.time>=d.gkHit){d.gkHit=null;const st=(v.g.stats.strength||50)/50,throat=d.gripPart==='neck';
+  dogHurt(d,Math.random()<.5?'kopf':'brust',1.1*st*d.P.res,'blunt',v);if(d.g.dead)return true;d.shaking=0;d.shakeT=Math.max(d.shakeT,.35);DOG.sound?.('yelp',d);M.sound?.('heavy');
+  const gA=throat?0:armorMat(v,d.gripPart)?.r||0,tired=(v.energy??60)<15?.5:1;
+  if(allowFree&&!throat&&Math.random()<.085*st*(1.3-d.P.wild*.6)*[1,1.3,1.6,2][gA]*tired*(d.energy<25?1.5:1)){release(d);d.kick={v:v.id,how:'ground',gA};kickLand(d);d.cool=1;log(nameOf(v)+' tritt '+d.g.name+' weg und kommt frei.');return true;}
+  if(Math.random()<.3)log(nameOf(v)+' tritt nach '+d.g.name+'.');}
+ d.gkT-=dt;if(d.gkT<=0&&d.gkHit==null){d.gkT=(1+Math.random()*.9)*((v.energy??60)<15?1.6:1);v.groundKickAt=b.time;d.gkHit=b.time+.27;}
+ return false;}
+DOG.groundKickTick=groundKickTick;DOG.state=(d,m,t)=>state(d,m,t);
 // Mensch am Waffenarm gepackt: kann nicht zuschlagen
 DOG.humanPre=function(a){const b=S.battle;if(!a.grabbedBy)return false;const d=b.actors.find(x=>x.id===a.grabbedBy);if(!d||d.g.dead||d.victim!==a.id){delete a.grabbedBy;return false;}
  if(weaponArm(d.gripPart)){a.wind=0;a.pendingStrike=null;a.swing=0;a.cool=Math.max(a.cool||0,.2);return true;}return false;};
@@ -810,6 +823,7 @@ function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);
  switch(d.mode){
  case 'grip':{const v=b.actors.find(a=>a.id===d.victim);if(!v||v.g.dead&&d.clock>1||v.surrendered){release(d);state(d,'backoff',.6);d.cool=.6;return;}
   d.velocity=0;d.energy-=dt*6;d.shakeT-=dt;d.gripT+=dt;
+  if(!isDog(v)&&groundKickTick(d,v,dt))return;
   if(d.shakeT<=0){d.shakeT=.42+Math.random()*.3;d.shaking=.32;DOG.sound?.('shake',d);
    const throat=d.gripPart==='hals'||d.gripPart==='neck',vLying=isDog(v)?v.down:(v.fallTimer>0||v.down||v.draggedBy),dmg=P.shake*(throat&&vLying?1.6:1)*rnd(.75,1.25);
    if(isDog(v)){hitDog(d,v,'grip',d.gripPart,dmg*.5);if((d.gripPart==='vl'||d.gripPart==='hl')&&!v.down&&Math.random()<.22*(d.P.mass/v.P.mass)){v.down=true;state(v,'down',1.1);log(d.g.name+' reißt '+v.g.name+' von den Beinen.');}}
@@ -822,7 +836,7 @@ function step(d,dt){fitBounds();const b=S.battle;d.hit=Math.max(0,d.hit-dt);
     if(!v.g.dead&&throat&&v.g.body.neck.hp<8)M.death(v,'Kehle durchgebissen',d);
     // Losreißen (8.11. stärker): Kraft und Gewandtheit des Menschen gegen den Griff; aus Rüstung rutschen die Zähne leichter, auch im Liegen eine Chance (nicht an der Kehle)
     if(!v.g.dead){const gA=d.gripPart==='neck'?0:armorMat(v,d.gripPart)?.r||0,st=((v.g.stats.strength||50)*.65+(v.g.stats.agility||50)*.35)/50,tired=(v.energy??60)<15?.5:1,
-      ch=(vLying?(throat?0:.03):.08)*st*(1.3-P.wild*.6)*(weaponArm(d.gripPart)?.85:1)*[1,1.4,1.9,2.6][gA]*tired*(d.energy<25?1.5:1);
+      ch=(vLying?0:.08)*st*(1.3-P.wild*.6)*(weaponArm(d.gripPart)?.85:1)*[1,1.4,1.9,2.6][gA]*tired*(d.energy<25?1.5:1);
      if(Math.random()<ch){kickFree(v,d,vLying?'ground':LEG.includes(d.gripPart)?'leg':'arm',gA);return;}}}}
   if(d.clock>=d.duration||d.energy<8){release(d);state(d,'backoff',.6);d.cool=.6;}
   return;}
