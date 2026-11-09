@@ -210,9 +210,9 @@ const GROUND_K=[
  {name:'Am Boden – Wurfaxt in den Liegenden',inj:'Tiefe Schnittwunde',kind:'deepcut',parts:ONLY(['chest','belly','lt','rt']),ws:['throwaxe'],tech:'throw',pose:'lying'},
  {name:'Am Boden – Bauch aufschlitzen',inj:'Ausgeweidet',kind:'gutted',parts:ONLY(['belly']),ws:[...HEAVY,'long','gladius'],tech:'groundFinish',pose:'lying'},
  {name:'Kniend – Amputationsschlag',kind:'sever',inj:'Abgetrennt',parts:ONLY(['lua','rua','lt','rt','lfa','rfa']),ws:CHOP,tech:'overhead',pose:'kneel'},
- {name:'Kniend – Kehle durchschneiden (von hinten)',kind:'deepcut',inj:'Tiefe Schnittwunde',parts:ONLY(['neck']),ws:['dagger','gladius','short'],tech:'slash',pose:'kneelBack',title:'Kehle durchgeschnitten'},
+ {name:'Kniend – Kehle durchschneiden (von hinten)',kind:'deepcut',inj:'Tiefe Schnittwunde',parts:ONLY(['neck']),ws:['dagger','gladius','short'],tech:'grab',grab:'throat',pose:'kneelBack',title:'Kehle durchgeschnitten'},
  {name:'Kniend – Genickbruch von hinten',inj:'Genickbruch',kind:'neckbreak',parts:ONLY(['neck']),ws:[...BLUNT,'axe','doubleaxe'],tech:'overhead',pose:'kneelBack'},
- {name:'Kniend – Stich in die Niere (von hinten)',inj:'Nierenverletzung',kind:'kidney',parts:ONLY(['belly']),ws:POINT,tech:'thrust',pose:'kneelBack'},
+ {name:'Kniend – Stich in die Niere (von hinten)',inj:'Nierenverletzung',kind:'kidney',parts:ONLY(['belly']),ws:GRAB,tech:'grab',grab:'kidney',pose:'kneelBack'},
  {name:'Kniend – Kopf zertrümmern',kind:'skullfracture',inj:'Schädelbruch',parts:ONLY(['head']),ws:BLUNT,tech:'overhead',pose:'kneel'}];
 // Von hinten im Lauf: Sonderangriffe, wenn der Gegner den Rücken zudreht (Vorschlag)
 const BACK_K=[
@@ -261,6 +261,7 @@ function stage2(){const b=S.battle;if(!b||(!ST()))return;const [p,q]=fighters,K=
  if(pose==='lying')Object.assign(q,{fallTimer:9,fallDuration:10,riseDuration:1.25,state:'fallen',fallSide:-1});
  if(pose==='kneel'||pose==='kneelBack')Object.assign(q,{kneeTimer:3,kneeDuration:4,kneeRise:1,state:'kneeling'});
  Object.assign(p,{ammo:99,closeCombat:false,x:q.x-reach-(K.run?240:0),y:q.y,a:0,gaitOff:true,moveSpeed:0,gaitSpeed:0,state:'idle',wind:0,swing:0,pierceContact:null,technique:null,finisher:null,finFix:null,finHold:0});b.paused=false;liveShot=null;if(p.puppet)p.puppet.drive=null;
+ /* Zeichenreihenfolge: von vorn steht der Angreifer einen Hauch näher zur Kamera (Waffe trifft sichtbar auf), von hinten dahinter (Klinge verschwindet im Rücken) */p.y=q.y+(pose==='kneelBack'||pose==='standBack'?-1:1);
  if(tech==='groundFinish'){const part=$('sPart').value;p.finisher={target:q.id,part,started:true};const sp=G.finSpot(p,q,part);if(sp){p.x=sp.x-sp.face*34;p.y=sp.y;p.a=sp.face>0?0:Math.PI;}}
  const tm=M.meleeTiming?.(p.g,w,['shoot','throw','grab','ram'].includes(tech)?'thrust':tech==='groundFinish'?'groundFinish':tech)||{wind:.4,swing:.3};scene={t:0,tech,ranged,run:!!K.run,runT:1.3,x0:q.x-reach-240,x1:q.x-reach,wind:Math.max(.32,tm.wind*(tech==='groundFinish'?1.6:K.run?.7:1.25)),swing:Math.max(.22,tm.swing),hit:false,K,part:$('sPart').value,done:0,pose};
  $('hudL').innerHTML=`<b>${K.name}</b> · ${M.partName(scene.part)} · ${WN(w.id)}`;$('hudR').innerHTML=queue.length?`noch ${queue.length}`:'';}
@@ -275,7 +276,7 @@ function stepStudio(dtReal){const b=S.battle;if(!b||!scene)return;const [p,q]=fi
  s.t+=dt;const t0=s.run?s.runT:.45,tw=t0+s.wind,ts=tw+s.swing;
  if(s.run&&s.t<t0){/* Anlauf: Sprint mit Kampfschrei, Waffe hoch */const f=cl(s.t/t0,0,1),e=f**1.6;p.puppet.drive={x:s.x0+(s.x1-s.x0)*e,y:s.y0??p.y,face:0};p.a=0;p.state='move';p.gaitOff=false;p.gaitW={stand:0,walk:0,guard:0,jog:f<.25?1:0,sprint:f<.25?0:1,side:0,back:0};p.gaitBase=80;
   if(!s.cried&&f>.12){s.cried=true;p.shoutTimer=1;p.cried=true;M.voice?.('battlecry',M.voicePitch?.(p.g)??1,true);M.floater?.(p.x,p.y-66,'HAAA!','#ffcf6a');}return;}
- if(s.run&&!s.arrived){s.arrived=true;p.puppet.drive=null;p.x=s.x1;p.gaitOff=true;p.state='idle';
+ if((s.run||s.tech==='grab')&&!s.arrived&&s.t>=t0){s.arrived=true;p.puppet.drive=null;p.x=s.x1;p.gaitOff=true;p.state='idle';
   if(s.tech==='grab'){G.grab(p,q,s.K.grab);p.pierceContact.studio=true;return;}
   if(s.tech==='ram'){q.hit=.4;q.facePain=1.4;M.shake=6;M.sound?.('heavy');M.knockdown?.(q,'Umgerannt',6);s.fell=true;s.knock=90;M.floater?.(q.x,q.y-62,'UMGERANNT!','#ff8a5a');hitScene(p,q,s);return;}}
  if(s.tech==='grab'||s.tech==='ram')return;

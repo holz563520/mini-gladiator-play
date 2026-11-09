@@ -223,7 +223,7 @@ G.grab=(a,b,mode)=>{const w=M.weapon(a);a.pierceContact={target:b.id,part:mode==
  b.stun=Math.max(b.stun||0,P.grabTime+.3);b.grabbedBy=a.id;b.wind=0;b.swing=0;b.block=false;b.hit=.4;b.facePain=1.6;M.voice?.('pain',M.voicePitch?.(b.g)??1,true);M.floater?.(b.x,b.y-64,'GEPACKT!','#ffcf6a');M.sound?.('grab');ev('grab',a,{b,mode});};
 G.grabStep=(a,b,f,dt)=>{f.t=(f.t||0)+dt;const k=f.t/(f.len||1.7),face=Math.cos(a.a||0)>=0?1:-1,sc=a.g.height/180*1.14,w=M.weapon(a);
  // der Gepackte steht dicht vor dem Angreifer, mit dem Rücken zu ihm
- const tx=a.x+face*13*sc,ty=a.y+1.2,r=Math.min(1,dt*14);b.x+=(tx-b.x)*r;b.y+=(ty-b.y)*r;b.a=a.a;b.stun=Math.max(b.stun||0,.2);b.facePain=Math.max(b.facePain||0,1);b.moveSpeed=0;
+ const tx=a.x+face*19*sc,ty=a.y+1.2,r=Math.min(1,dt*14);b.x+=(tx-b.x)*r;b.y+=(ty-b.y)*r;b.a=a.a;b.stun=Math.max(b.stun||0,.2);if(b.hit>0)b.hit=Math.max(0,b.hit-dt*1.5);/* Trefferaufhellung klingt ab (gesteuerte Figuren tun das sonst nicht) */b.facePain=Math.max(b.facePain||0,1);b.moveSpeed=0;
  const cp=G.anchor(b,f.part);a.contactPoint=cp;
  if(f.grab==='kidney'){const at=[.32,.5,.68];while(f.stabs<at.length&&k>=at[f.stabs]){f.stabs++;b.hit=.35;M.sound?.('stick');M.emit?.(cp.x-face*4,cp.y,8,'#aa3c36',70);M.voice?.('pain',M.voicePitch?.(b.g)??1,true);if(f.stabs===1){f.result=G.applyInjury(a,b,'kidney','belly',w.id,'Nierenverletzung');f.cut=true;M.floater?.(b.x,b.y-58,GRAB_TXT.kidney,'#ff5a4a');ev('backFinish',a,{b,mode:'kidney',part:'belly',kind:'kidney',weapon:w.id});}}}
  else if(!f.cut&&k>=.45){f.cut=true;b.hit=.45;M.shake=Math.max(M.shake||0,5);
@@ -277,11 +277,12 @@ G.anchor=(b,id)=>{if(!b)return null;if(!onGroundA(b)&&!(b.fallTimer>0))return M.
 const TIPL={dagger:17,short:36,gladius:40,long:48,greatsword:56,spear:55,javelin:45,trident:55,halberd:41,axe:37,doubleaxe:29,throwaxe:22,club:30,mace:27,hammer:30,fist:4};
 // gemessene Feinkorrektur der Hand je Waffe (Griffversatz bei Zweihandwaffen, Kopfmitte bei Keulen), Figureneinheiten
 const FCORR={trident:[7.5,0],long:[-5.3,-2],greatsword:[-8.7,-11],axe:[11,9],halberd:[-11,-16],doubleaxe:[6,-2],mace:[-6,-3.6],hammer:[-6,-4.4],club:[0,4.7]};
-const finGeo=a=>{const w=M.weapon(a),chop=CHOP.has(w.id)||!w.bladed;return {chop,an:chop?1.22:Math.PI/2,tipL:(TIPL[w.id]||30)*.7,pen:chop?1.5:(PIERCE.has(w.id)||w.bladed?7:2),reachX:14};};
-// Standplatz: neben der Stelle (zwischen Stelle und Körpermitte, nie hinter dem Kopf hinaus), etwas hinter dem Liegenden
+const finGeo=a=>{const w=M.weapon(a),chop=CHOP.has(w.id)||!w.bladed;return {chop,an:chop?1.22:Math.PI/2,tipL:(TIPL[w.id]||30)*.7,pen:chop?1:1,reachX:chop?14:20};/* Stich: Hände weiter vorn, damit der Oberkörper die Stelle nicht verdeckt */};
+// Standplatz: neben der Stelle (zwischen Stelle und Körpermitte, nie hinter dem Kopf hinaus), etwas VOR dem Liegenden (zur Kamera hin):
+// so wird der Angreifer über dem Liegenden gezeichnet, die ganze Waffe ist bis zur Wunde sichtbar und endet genau dort (der Rest steckt im Körper)
 G.finSpot=(a,t,part)=>{const W=G.anchor(t,part||'chest');if(!W)return null;const o=finGeo(a),sc=a.g.height/180*1.14*cl(.85+a.g.weight/420,.98,1.18)*(a.g.statureWide||1);
  let face=Math.abs(W.x-t.x)<10?(a.x<=W.x?1:-1):(W.x>=t.x?1:-1);const px=o.reachX+(o.chop?Math.cos(o.an)*(o.tipL-o.pen):0);
- return {x:W.x-face*px*sc,y:t.y-5,face,W};};
+ return {x:W.x-face*px*sc,y:t.y+4,face,W};};
 function finStart(a){if(a.finisher&&a.finisher.started||a.technique!=='groundFinish')return;const t=M.s.battle.actors.find(x=>x.id===a.target);a.finCount=(a.finCount||0)+1;a.finisher={target:a.target,started:true,part:a.finisher?.part||(t?pickPart(a,t):null)};
  const sp=t&&G.finSpot(a,t,a.finisher.part),d=sp?Math.hypot(sp.x-a.x,sp.y-a.y):0;a.wind*=P.finWind;a.windMax*=P.finWind;if(d>6){const add=Math.min(1.2,d/150);a.wind+=add;a.windMax+=add;}
  a.shoutTimer=Math.max(a.shoutTimer||0,1);M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-66,cryText(a),'#ff8a5a');ev('finStart',a,{part:a.finisher.part});}
@@ -291,7 +292,14 @@ G.finStep=(a,dt)=>{const f=a.finisher;if(!f?.part)return;const t=M.s.battle.acto
 // Haltung beim Abstechen (arena.js): beide Hände hoch über den Kopf, zurücklehnen – dann mit Ausfallschritt und tief gebeugt
 // senkrecht hinein, genau auf die Stelle; Waffenlänge je Waffe (TIPL)
 const ease=t=>t<0?0:t>1?1:t*t*(3-2*t);
-G.finPose=(a,sc,scY)=>{if(!G.active||!a.finisher&&!(a.wind>0))return null;const w=M.weapon(a),o=finGeo(a),chop=o.chop,shield=!!M.usableShield?.(a)&&!w.twoHand;
+// Haltung im Griff von hinten: freie Hand um den Hals, Waffenhand an Kehle bzw. Niere (Klinge zielt in den Körper, kommt vorn nicht heraus)
+function grabPose(a,sc,scY){const f=a.pierceContact,b=M.s.battle?.actors.find(x=>x.id===f.target);if(!b||!sc)return null;const face=Math.cos(a.a||0)>=0?1:-1,sy=scY||sc,drop=2,L=v=>({x:(v.x-a.x)*face/sc,y:(v.y-a.y)/sy-drop}),k=(f.t||0)/(f.len||1.7);
+ const neck=L(G.anchor(b,'neck')),belly=L(G.anchor(b,'belly')),tipL=(TIPL[M.weapon(a).id]||30)*.7,off={x:neck.x+4,y:neck.y+1};let main,angle;
+ if(f.grab==='kidney'){const j=Math.max(0,Math.sin(k*Math.PI*5.5)),an=1.0,T={x:belly.x-6,y:belly.y+2},dep=k>.2&&k<.85?2+j*9:-4;main={x:T.x-Math.cos(an)*(tipL-dep),y:T.y-Math.sin(an)*(tipL-dep)};angle=an;}
+ else if(f.grab==='throat'){const s=k<.35?0:k<.55?(k-.35)/.2:1;angle=-.08;main={x:neck.x-2+s*2-Math.cos(angle)*tipL,y:neck.y+3-Math.sin(angle)*tipL};/* Hand hinter dem Kopf des Gepackten, Spitze genau an der Kehle (Schnitt zeichnet grabDecor vorn) */}
+ else{const head=L(G.anchor(b,'head'));main={x:head.x+2,y:head.y+2};angle=-1.2;}
+ return {lean:4,drop,main,off,angle};}
+G.finPose=(a,sc,scY)=>{if(G.active&&a.pierceContact?.grab)return grabPose(a,sc,scY);if(!G.active||!a.finisher&&!(a.wind>0))return null;const w=M.weapon(a),o=finGeo(a),chop=o.chop,shield=!!M.usableShield?.(a)&&!w.twoHand;
  let u,low;if(a.wind>0){u=ease(1-a.wind/Math.max(.01,a.windMax||.5));low=0;}else{const s=1-a.swing/Math.max(.01,a.swingMax||.4);u=1;low=s<.45?ease(s/.45):a.finHold>0||s<.72?1:1-ease((s-.72)/.28)*.65;}/* unten kurz stehen lassen: die Waffe sitzt */
  const f=a.finisher,t=M.s.battle?.actors.find(x=>x.id===(f?.target||a.target)),face=Math.cos(a.a||0)>=0?1:-1,drop=11*low+1.5*u;
  let deep;const W=t&&f?.part?G.anchor(t,f.part):null;
