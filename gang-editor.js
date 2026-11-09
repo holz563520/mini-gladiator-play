@@ -127,7 +127,7 @@ function gaitOf(a){if(a.puppet)return a.gaitShown||'stand';if(a.state==='charge'
 function v0(a){return a.puppet?(a.gaitV||0):(a.moveSpeed||0);}
 function labels(){const c=$('arenaCanvas'),V=M.arenaView;if(lab.width!==c.width||lab.height!==c.height){lab.width=c.width;lab.height=c.height;}lx.clearRect(0,0,lab.width,lab.height);
  $('hud').style.visibility=liveShot?'hidden':'';
- if(liveShot){const t=(performance.now()-liveT0)/1000*Math.max(.5,+$('speed').value);if(t>liveShot.dur){liveShot=null;if(livePaused&&S.battle){S.battle.paused=false;}livePaused=false;}else{M.pierceFx.draw(lx,lab.width,lab.height,liveShot,t,{names:true});return;}}
+ if(liveShot){const now=performance.now(),dt=Math.min(.05,(now-liveT0)/1000)*Math.max(.5,+$('speed').value);liveT0=now;if(!liveShot.step(dt)){liveShot=null;if(livePaused&&S.battle){S.battle.paused=false;}livePaused=false;}else{liveShot.paint(lx,lab.width,lab.height);return;}}
  const b=S.battle;if(!b||!V)return;
  const fs=Math.max(11,Math.round(lab.width/70));lx.font=`700 ${fs}px "Courier Prime",monospace`;lx.textAlign='center';
  for(const a of fighters){if(!a||a.g.dead||mode==='atk'&&a!==fighters[0])continue;const sx=(a.x-V.cx)*V.scale+V.width/2,sy=(a.y-V.cy)*V.scale+V.height/2-a.g.height/180*1.14*84*V.scale;const m=gaitOf(a),old=a.gaitOff;
@@ -158,7 +158,7 @@ let cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finishe
 function camera(base){return (bb,width,height,W,H,zoom,target)=>{const now=performance.now();if(closeUp&&now<closeUp.until){const k=Math.min(1,(closeUp.until-now)/400,(now-(closeUp.until-2600))/250),b0=base?.(bb,width,height,W,H,zoom,target)||{zoom:Math.max(1,zoom),x:target?.x??W/2,y:target?.y??H/2},z=b0.zoom+(3.6-b0.zoom)*k;return {zoom:z,x:cl(b0.x+(closeUp.x-b0.x)*k,W/(z*2),W-W/(z*2)),y:cl(b0.y+(closeUp.y-b0.y)*k,H/(z*2),H-H/(z*2))};}return base?.(bb,width,height,W,H,zoom,target)||null;};}const TN={slash:'Hieb',thrust:'Stich',overhead:'Überkopf',spin:'Wirbel'};
 const who=a=>a?.team?'Gegner':'Kämpfer';
 const WK={ground:'am Boden',knee:'auf den Knien',stagger:'taumelt',back:'dreht den Rücken zu'},WH={pierced:'durchbohrt',beheaded:'schlägt den Kopf ab',severed:'schlägt ab',pierced:'durchbohrt',hacked:'hackt hinein',crushed:'zerschmettert'};
-G.onEvent=e=>{if((e.kind==='pierce'||e.kind==='finisher'&&(e.what==='pierced'||e.what==='crushed'))&&$('cu').checked&&M.pierceFx&&S.battle){liveShot=M.pierceFx.make({part:e.part,weapon:e.weapon||M.weapon(e.a).id,down:!!e.down,kind:e.what==='crushed'?'crush':'pierce',def:e.b.g,attName:e.a.g.name,defName:e.b.g.name,seed:(cntShots++)*7919+e.part.length});liveT0=performance.now();if(!S.battle.paused){S.battle.paused=true;livePaused=true;}}
+G.onEvent=e=>{if((e.kind==='pierce'||e.kind==='finisher'&&(e.what==='pierced'||e.what==='crushed'))&&$('cu').checked&&M.pierceFx&&S.battle){liveShot=shotFor({part:e.part,weapon:e.weapon||M.weapon(e.a).id,down:!!e.down,crush:e.what==='crushed',g:e.b.g,team:e.b.team,attName:e.a.g.name,seed:(cntShots++)*7919+e.part.length});liveT0=performance.now();if(!S.battle.paused){S.battle.paused=true;livePaused=true;}}
  if(e.kind==='finisher'&&!$('cu').checked){if($('aSlow').checked)slowUntil=performance.now()+1300;closeUp={x:e.b.x,y:e.b.y-20,until:performance.now()+2600};}if(!(e.kind in cnt))return;cnt[e.kind]++;const pct=x=>Math.round(x*100)+' %';
  const t={cry:`<b>Kampfschrei</b> · ${who(e.a)} stürmt mit erhobener Waffe los`,charge:`<b>Ansturm</b> · ${who(e.a)} · Schaden ×${e.boost?.toFixed(2).replace('.',',')}`,
   runAttack:`<b>Ausholen im Lauf</b> · ${who(e.a)} · ${TN[e.tech]||e.tech} bei Tempo ${Math.round(e.v)} · Schaden ×${e.boost?.toFixed(2).replace('.',',')}`,
@@ -170,6 +170,13 @@ const BC=M.blockContact;if(BC){BC.labels=false;const ON={clean:'Sauber geblockt'
   const d=document.createElement('div');d.className='row';d.innerHTML=t;$('evlog').prepend(d);while($('evlog').children.length>12)$('evlog').lastChild.remove();};}
 function counts(){$('counts').innerHTML=`<div class="row"><span>Kampfschreie</span><b>${cnt.cry}</b></div><div class="row"><span>Ansturm</span><b>${cnt.charge}</b></div><div class="row"><span>Ausholen im Lauf</span><b>${cnt.runAttack}</b></div><div class="row"><span>Umgerannt / zurückgestoßen</span><b>${cnt.ram} / ${cnt.shove}</b></div><div class="row"><span>Durchstiche</span><b>${cnt.pierce}</b></div><div class="row"><span>Initiative genutzt / abgestochen</span><b>${cnt.seize} / ${cnt.finisher}</b></div><div class="row"><span>Geblockt / Kraftproben</span><b>${cnt.block} / ${cnt.bind}</b></div>`;}
 
+// ---------------------------------------------------------------- Nahaufnahmen über injury-shots.js (gewohnte Qualität)
+const IS=M.injuryShots,WN=id=>WD[id]?.name||id;
+function shotFor(o){// o: {part, weapon, crush, g (Getroffener), team, attName, down}
+ const lab=M.pierceFx.labelFor(M.pierceFx.make({part:o.crush?'head':o.part,weapon:o.weapon,kind:o.crush?'crush':'pierce',down:o.down,seed:o.seed||7}));
+ const base={g:o.g,team:o.team,part:o.crush?'head':o.part,wid:o.weapon,cls:o.crush?'blunt':undefined,attacker:o.attName,weaponName:WN(o.weapon),dramatic:true,line3:lab.de,color:'#ff6a5a'};
+ return IS.start(o.crush?{...base,kind:'skullfracture',injury:'Schädelbruch',title:'Schädel zertrümmert',helm:null}:{...base,kind:'through',injury:'Durchstochen',title:o.down?'Abgestochen – durchbohrt':'Durchstich'});}
+
 // ---------------------------------------------------------------- Galerie der Nahaufnahmen
 const GAL=[['chest','Brust'],['belly','Bauch'],['head','Kopf'],['neck','Hals'],['ls','Schulter'],['rua','Oberarm'],['lfa','Unterarm'],['rh','Hand'],['lt','Oberschenkel'],['rsh','Unterschenkel'],['lf','Fuß'],['crush','Schädel zertrümmert'],['all','Alle nacheinander']];
 fill($('gW'),MELEE);$('gW').value='spear';
@@ -179,13 +186,13 @@ let galShot=null,galT0=0,galAll=-1,galSeed=1;const gcv=$('galCv'),gcx=gcv.getCon
 const armorItems0=M.armorItems;M.armorItems=g=>g&&g.__armor!==undefined?(g.__armor==='none'?[]:[{material:g.__armor,def:'x'}]):armorItems0(g);
 function galDef(){const src=(fighters[1]||fighters[0])?.g;const g=src?JSON.parse(JSON.stringify(src)):{appearance:{}};g.__armor=$('gA').value;return g;}
 function galPlay(k){const w=$('gW').value,down=$('gDown').value==='1',crushK=k==='crush';
- galShot=M.pierceFx.make({part:crushK?'head':k,weapon:crushK&&M.pierceFx.WTYPE(w)!=='blunt'?'mace':w,down:crushK?true:down,kind:crushK?'crush':'pierce',def:galDef(),seed:galSeed++*7919+k.length*31});galT0=performance.now();
+ galShot=shotFor({part:k,weapon:crushK&&!['club','mace','hammer'].includes(w)?'mace':w,crush:crushK,down,g:galDef(),team:1,attName:fighters[0]?.g?.name||'Angreifer',seed:galSeed++*7919+k.length*31});galShot.key=k;galT0=performance.now();
  for(const b of $('galParts').children)b.classList.toggle('on',b.dataset.p===(galAll>=0?'all':k));}
 $('galParts').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.p==='all'){galAll=0;galPlay(GAL[0][0]);}else{galAll=-1;galPlay(b.dataset.p);}};
-for(const id of ['gW','gDown','gA'])$(id).onchange=()=>{if(galShot)galPlay(galAll>=0?GAL[galAll][0]:galShot.kind==='crush'?'crush':galShot.part);};
+for(const id of ['gW','gDown','gA'])$(id).onchange=()=>{if(galShot)galPlay(galAll>=0?GAL[galAll][0]:galShot.key);};
 function gallery(){if(!galShot){gcx.fillStyle='#000';gcx.fillRect(0,0,gcv.width,gcv.height);gcx.fillStyle='#97aaa8';gcx.font='16px "Courier Prime",monospace';gcx.textAlign='center';gcx.fillText('Stelle wählen ▸',gcv.width/2,gcv.height/2);return;}
- const t=(performance.now()-galT0)/1000;if(t>galShot.dur+.4){if(galAll>=0){galAll++;if(galAll>=GAL.length-1)galAll=0;galPlay(GAL[galAll][0]);}else galT0=performance.now();return;}
- M.pierceFx.draw(gcx,gcv.width,gcv.height,galShot,Math.min(t,galShot.dur-.01),{});}
+ const now=performance.now(),dt=Math.min(.05,(now-galT0)/1000);galT0=now;if(!galShot.step(dt)){if(galAll>=0){galAll++;if(galAll>=GAL.length-1)galAll=0;}galPlay(galAll>=0?GAL[galAll][0]:galShot.key);return;}
+ galShot.paint(gcx,gcv.width,gcv.height);}
 
 // ---------------------------------------------------------------- Schleife
 let last=performance.now();
@@ -211,5 +218,5 @@ $('rules').innerHTML=`<ul>
 <li><em>Noch offen:</em> Zum Einschalten <code>gangarten.js</code> in die Ladereihenfolge aufnehmen und <code>M.gait.active</code> setzen; die Massenfiguren großer Schlachten bekommen bisher nur die Armhaltung, nicht den Schritt. Danach als Folgeschritte: neue Verletzungsarten, Durchstich, filmische Einblendungen.</li></ul>`;
 
 sync();restart();requestAnimationFrame(tick);
-window.GangEditor={G,restart,fighters:()=>fighters};
+window.GangEditor={G,restart,fighters:()=>fighters,shotFor:o=>shotFor(o)};
 })();

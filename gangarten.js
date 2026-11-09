@@ -109,6 +109,16 @@ G.pierceStep=(a,dt)=>{const f=a.pierceContact;if(!f?.through)return;const b=M.s.
  if(!f.spray&&k>.25){f.spray=true;const cp=M.contactAnchor(b,f.part),ox=Math.cos(dir)*14;M.emit?.(cp.x+ox,cp.y,18,'#aa3c36',110);M.emit?.(cp.x-ox*.3,cp.y,6,'#9d2f2a',40);}
  if(k>.35&&M.rng()<dt*10){const cp=M.contactAnchor(b,f.part);M.emit?.(cp.x+Math.cos(dir)*12,cp.y+2,1,'#8f2a24',20);}
  if(f.left<=dt*1.5&&!f.out){f.out=true;const cp=M.contactAnchor(b,f.part);M.emit?.(cp.x,cp.y,14,'#aa3c36',80);M.sound?.('stick');}};
+// Durchstich auf der kleinen Figur: am Rücken des Getroffenen tritt die blutige Spitze aus, Blut tropft und spritzt (Ebene vor der Figur)
+const TIP_Y={head:-64,neck:-57,chest:-48,belly:-37,ls:-50,rs:-50,lua:-44,rua:-44,lfa:-36,rfa:-36,lh:-30,rh:-30,lt:-22,rt:-22,lsh:-11,rsh:-11,lf:-3,rf:-3};
+{const prev=M.figureDecor;M.figureDecor=function(a,P){prev?.call(this,a,P);if(!G.active||P.layer!=='front'||P.portrait||!a?.g||a.g.dead&&!a.pierceSeen)return;
+ const b=M.s.battle;if(!b)return;const att=b.actors.find(x=>x.pierceContact?.through&&x.pierceContact.target===a.id);if(!att)return;const f=att.pierceContact,k=(f.t||0)/(f.len||.9);
+ const out=k<.3?k/.3:k<.82?1:Math.max(0,1-(k-.82)/.12),L=Math.round(13*out);if(L<1)return;const y=TIP_Y[f.part]??-45,x0=-9,R=(x,y,w,h,c)=>{P.ctx.fillStyle=c;P.ctx.fillRect(Math.round(x),Math.round(y),w,h);};
+ const spear=['spear','javelin','trident','halberd'].includes(M.weapon(att).id);
+ for(let i=0;i<L;i++){const w=i>L-4?1:spear&&i>L-9?3:2;R(x0-i,y-w/2,1,w,i>L-5?'#dfe4d2':i%2?'#9d2f2a':'#c9584a');}
+ if(M.weapon(att).id==='trident')for(const o of [-3,3])for(let i=0;i<L-2;i++)R(x0-i,y+o,1,1,i>L-6?'#dfe4d2':'#9d2f2a');
+ const tt=(P.time||0)*1;for(let i=0;i<4;i++){const u=((tt*1.4+i/4)%1);R(x0-L*.6-i,y+2+u*(18+(f.part==='head'?40:20)),1,2,'#8f2a24');}
+ R(x0-1,y-3,2,6,'#6b2420');};}
 // geblockter Ansturm: mit voller Wucht in die Deckung – kann trotzdem umwerfen (60 % der Chance), sonst zurückgestoßen
 G.blocked=ev=>{if(ev?.kind==='block'&&ev.att?.rushHit?.kind==='charge')G.ram(ev.att,ev.def,0,.6);};
 {const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p){G.ram(a,b,d);G.thrust(a,b,d,w,part);}return out;};R.__gait=true;}}
