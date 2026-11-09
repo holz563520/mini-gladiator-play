@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zwei-Kerne-Test · Arena Theory</title>
+<script>window.ZK_ERR=[];addEventListener('error',e=>{ZK_ERR.push((e.message||'Ladefehler')+(e.filename?' ('+e.filename.split('/').pop().split('?')[0]+':'+e.lineno+')':''));const m=document.getElementById('prog');if(m)m.innerHTML='<b style="color:#e0705f">Fehler:</b> '+ZK_ERR.slice(0,3).join('<br>');},true);</script>
+<script>/* Spielstände bleiben unberührt */try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}</script>
+<style>
+body{margin:0;background:#120807;color:#eae4cd;font-family:ui-monospace,monospace;font-size:14px}
+main{max-width:760px;margin:0 auto;padding:14px}
+h1{font-size:20px;letter-spacing:4px;color:#b8372e;margin:6px 0}
+p{color:#a99f97;line-height:1.5}
+button{font:inherit;color:#dfb66d;background:#2a1c1c;border:2px solid #dfb66d;padding:9px 12px;margin:4px 6px 4px 0;cursor:pointer}
+button:disabled{opacity:.5}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:12.5px;margin-top:10px}
+th,td{border:1px solid #3a2626;padding:5px;text-align:center}th{color:#a99f97;font-weight:400}
+.ok{color:#8fc28a}.mid{color:#d9b25e}.bad{color:#e0705f}
+#prog{color:#d9b25e;margin:8px 0}
+</style></head><body><main>
+<h1>ZWEI-KERNE-TEST</h1>
+<p>Probe für die Idee „ein Prozessorkern rechnet, ein zweiter zeichnet“. Der zweite Kern müsste bei jedem Bild den Kampf geschickt bekommen. Diese Seite misst, wie lange das Rüberschicken auf diesem Gerät dauert. Es wird nichts gezeichnet, am Spiel ändert sich nichts.</p>
+<p><b>Ganz</b> = der ganze Kampf mit allen Gladiatoren-Daten bei jedem Bild. <b>Schlank</b> = nur Bewegung und Blut bei jedem Bild, Körper und Wunden nur gelegentlich. Dauert etwa 40 Sekunden, Bildschirm anlassen.</p>
+<button id="go">▶ Test starten</button><button id="copy" disabled>Ergebnis kopieren</button>
+<div id="prog"></div>
+<div class="wrap"><table id="res"></table></div>
+<p id="verdict"></p>
+</main>
+<script src="data.js?v=b0f72528"></script>
+<script src="household.js?v=b0f72528"></script>
+<script src="management.js?v=b0f72528"></script>
+<script src="scout.js?v=b0f72528"></script>
+<script src="sim.js?v=b0f72528"></script>
+<script src="benchmark.js?v=b0f72528"></script>
+<script src="school.js?v=b0f72528"></script>
+<script src="zwei-kerne-test.js?v=b0f72528"></script>
+</body></html>
