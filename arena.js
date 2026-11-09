@@ -1016,6 +1016,52 @@ const liveCache=(()=>{const RESCALE=.03,BUDGET=8e6,map=new Map();let battleId=nu
   ctx.drawImage(e.bmp||e.c,Math.round((a.x-e.x)*s)/s+e.x-e.ax/e.s,Math.round((a.y-e.y)*s)/s+e.y-e.ay/e.s,e.c.width/e.s,e.c.height/e.s);copies++;tCopy+=pn()-t1;return true;}
  return {draw,reset,stats:()=>({entries:map.size,pixels,bytes:pixels*4,copies,paints,tKey,tPaint,tCopy})};})();
 M.liveCache=liveCache;
+/* Fertige Posenbilder für einfache Figuren (GROSSE_KAEMPFE_AUFTRAG.md Teil A, 09.11.). Die Haltung wird in jedem Bild genau berechnet
+   (Waffenspitze für Bluttropfen bleibt exakt); gezeichnet wird aber nur, wenn es diese Haltung – auf halbe Bildpunkte gerundet – für
+   diesen Kämpfer noch nicht als Bild gibt (jedes Gelenk höchstens poseTol Bildpunkte entfernt). Sonst wird das fertige ImageBitmap kopiert. Schlüssel: Gelenke, Hände, Waffenwinkel (Toleranz in Bildpunkten),
+   Blickrichtung, Sturz/Knien, Blut an der Waffe, Verbände, Anführer; je Kämpfer neu bei anderer Ausrüstung oder Maßstab > 3 %.
+   Neuanlagen je Bild begrenzt (Handy-Lehre: viele neue Bitmaps je Bild sind teuer), sonst wird wie bisher direkt gezeichnet.
+   Eine Zeichenfläche (OffscreenCanvas) für alle Neuanlagen, transferToImageBitmap leert sie. Nur Darstellung.
+   Schalter: Grafik-Benchmark M.renderTest.simplePose (true/false), poseTol (Toleranz in Bildpunkten), poseNew (Neuanlagen je Bild);
+   im Spiel localStorage['mg-simplepose']='on'/'off'. */
+let massWoundPref=null;try{massWoundPref=localStorage.getItem('mg-masswound');}catch{}
+function massWoundSimple(){const rt=M.renderTest;return rt?!!rt.simpleWounded:massWoundPref==='on';}
+const simplePose=(()=>{const OC=typeof OffscreenCanvas!=='undefined',RESCALE=.03,BUDGET=6e6,map=new Map();let pref=null;try{pref=localStorage.getItem('mg-simplepose');}catch{}
+ let battleId=null,pixels=0,scratch=null,frameT=null,frameNew=0,hits=0,paints=0,skips=0,sprites=0,tLook=0,tPaint=0,tCopy=0;const pn=()=>performance.now();
+ const RT=()=>M.renderTest;
+ function on(){if(!OC||typeof document==='undefined')return false;const rt=RT();if(rt)return !!rt.simplePose;return pref==='on';}
+ function freeE(e){for(const L of e.sprites.values())for(const s of L){pixels-=s.w*s.h;s.bmp.close?.();sprites--;}e.sprites.clear();}
+ function reset(){for(const e of map.values())freeE(e);map.clear();pixels=0;sprites=0;}
+ const qo=(o,k)=>{let s='';for(const n in o){const v=o[n];if(typeof v==='number')s+=Math.round(v*k)+',';else if(typeof v==='boolean')s+=(v?1:0);}return s;};
+ let curS=1;
+ /* Schlüssel = feste Merkmale (Text) + Haltung als Zahlenreihe in Bildpunkten. Ein vorhandenes Bild passt, wenn jede Zahl höchstens
+    poseTol Bildpunkte abweicht (Toleranz statt starrem Raster: deutlich weniger Bilder je Kämpfer) */
+ function key(a,P){const m=ctx.getTransform?.(),s=m?.a;if(!m||m.b||m.c||!(s>0)||Math.abs(m.d-s)>1e-9||ctx.globalAlpha!==1)return null;curS=s;
+  const g=P.g,w=P.w,px=s*g.height/180,v=[P.bend*px,P.h.x*px,P.h.y*px,P.other.x*px,P.other.y*px,Math.cos(P.ang)*40*px,Math.sin(P.ang)*40*px];
+  for(const l of [P.legL,P.legR])if(l)v.push(l.joint.x*px,l.joint.y*px,l.foot.x*px,l.foot.y*px);
+  let f=(P.face>0?'R':'L')+(P.back?'b':'')+(P.fall?'f':'')+(P.knee?'k':'')+(P.leader?'A':'')+(a.blockFlash>0?'x':'')+(P.legL?(P.legL.shin?'':'n'):'-')+(P.legR?(P.legR.shin?'':'n'):'-')+'|'+Math.round((w.item?.blood||0)*10);
+  if(P.wounds)f+='|w'+P.wounds;if(a.dressings)f+='|'+Object.keys(a.dressings).join(',');if(w.id==='bow'||w.id==='crossbow'){const rp=M.rangedPose(a,w.id);if(rp)f+='|'+qo(rp,8);}
+  return {f,v};}
+ function sig(a){const g=a.g,w=M.weapon(a),it=w?.item;let s=a.team+'|'+(g.height||180)+'|'+(w?.id||'')+(it?':'+(it.id||it.def)+':'+(it.q||0):'')+'|'+(M.usableShield?.(a)?.id||'')+'|'+(a.unarmored?'u':'')+M.armorItems(g).map(i=>i.id||i.def).join(',')+'|'+!!M.gear(g,'armor')+'|';for(const id in g.body)if(g.body[id].missing)s+=id+',';return s;}
+ function room(n){if(pixels+n<=BUDGET)return true;for(const [id,e] of map){freeE(e);map.delete(id);if(pixels+n<=BUDGET)return true;}return pixels+n<=BUDGET;}
+ function draw(a,k,paint){const b=save.battle;if(!b)return false;let t0=pn();if(battleId!==b.id){reset();battleId=b.id;}const s=curS;
+  if(frameT!==time){frameT=time;frameNew=0;}
+  let e=map.get(a.id);const sg=sig(a);if(!e){e={sig:sg,s,sprites:new Map()};map.set(a.id,e);}else if(e.sig!==sg||Math.abs(s/e.s-1)>RESCALE){freeE(e);e.sig=sg;e.s=s;}
+  const T=RT()?.poseTol??1,list=e.sprites.get(k.f)||[];let sp=null;
+  for(const c of list){const cv=c.v,v=k.v;let ok=cv.length===v.length;for(let i=0;ok&&i<v.length;i++)if(Math.abs(cv[i]-v[i])>T)ok=false;if(ok){sp=c;break;}}
+  if(!sp){const limit=RT()?.poseNew??3;if(frameNew>=limit){skips++;return false;}
+   const g=a.g,kk=Math.max(1,(g.height||180)/180)*(g.statureWide||1),bx=150*kk,top=150*kk,bottom=60*kk,W=Math.ceil(2*bx*s)+3,H=Math.ceil((top+bottom)*s)+3;
+   if(!room(W*H))return false;if(!map.has(a.id))map.set(a.id,e);
+   if(!scratch)scratch=new OffscreenCanvas(W,H);else if(scratch.width!==W||scratch.height!==H){scratch.width=W;scratch.height=H;}
+   const c2=scratch.getContext('2d');c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,W,H);c2.imageSmoothingEnabled=false;
+   const ax=Math.floor(bx*s)+1+(s*a.x-Math.floor(s*a.x)),ay=Math.floor(top*s)+1+(s*a.y-Math.floor(s*a.y));c2.setTransform(s,0,0,s,ax-s*a.x,ay-s*a.y);
+   let t1=pn();tLook+=t1-t0;const main=ctx;ctx=c2;try{paint();}finally{ctx=main;}
+   t0=pn();tPaint+=t0-t1;sp={bmp:scratch.transferToImageBitmap(),ax,ay,x:a.x,y:a.y,w:W,h:H,v:k.v};list.push(sp);e.sprites.set(k.f,list);pixels+=W*H;sprites++;frameNew++;paints++;}
+  else{hits++;const t1=pn();tLook+=t1-t0;t0=t1;}
+  ctx.drawImage(sp.bmp,Math.round((a.x-sp.x)*s)/s+sp.x-sp.ax/s,Math.round((a.y-sp.y)*s)/s+sp.y-sp.ay/s,sp.w/s,sp.h/s);
+  /* zuletzt benutzt nach hinten (Verdrängung trifft zuerst lange nicht gesehene Kämpfer) */map.delete(a.id);map.set(a.id,e);tCopy+=pn()-t0;return true;}
+ return {on,key,draw,reset,stats:()=>({actors:map.size,sprites,pixels,bytes:pixels*4,hits,paints,skips,msLook:+tLook.toFixed(1),msPaint:+tPaint.toFixed(1),msCopy:+tCopy.toFixed(1)}),resetStats(){hits=paints=skips=0;tLook=tPaint=tCopy=0;}};})();
+M.simplePose=simplePose;
 function drawBattleActorLive(a){
  /* Einfache Figuren: ab 60 Kämpfern automatisch, sonst über den Schalter in der Kampf-Anzeige (save.options.figures='simple', Thomas 08.11.) bzw. M.renderTest.simple im Grafik-Benchmark */
  if(((save.battle?.actors.length||0)<=60&&!(M.renderTest?M.renderTest.simple:save.options?.figures==='simple'))||zoom>1.4||save.battle?.cinematic||save.battle?.verdictCamera){drawGladiator(a);return;}
@@ -1023,31 +1069,41 @@ function drawBattleActorLive(a){
  if(a.rex||a.hahn){drawGladiator(a);return;}
  /* Schalter „einfach“ bei kleinen Kämpfen (Thomas 08.11.): Wundgriff und Humpeln entfallen, sonst würden Verletzte wieder voll gezeichnet; Griffe & Co. bleiben voll */
  const forced=(save.battle?.actors.length||0)<=60;
- if((!forced&&(M.woundCare(a).count||M.legImpairment(a.g,'l')||M.legImpairment(a.g,'r')))||a.sandKick>0||a.wipeTimer>0||a.rearFinish||a.grabbedBy||a.pierceContact){drawGladiator(a,false,true);return;}
+ /* Große Kämpfe (> 60): Verwundete/Humpelnde fielen bisher auf die volle Figur zurück (Handy 09.11.: der größte Teil der Zeichenzeit). Mit simpleWounded bleiben auch sie einfach, wie beim Schalter */
+ if((!forced&&!massWoundSimple()&&(M.woundCare(a).count||M.legImpairment(a.g,'l')||M.legImpairment(a.g,'r')))||a.sandKick>0||a.wipeTimer>0||a.rearFinish||a.grabbedBy||a.pierceContact){drawGladiator(a,false,true);return;}
  const g=a.g,w=M.weapon(a),motion=figureMotion(a,w,time),face=Math.cos(a.a)>=0?1:-1,fall=a.down||g.dead||a.fallTimer>0,knee=a.kneeTimer>0||a.state==='bandage',stride=a.moveSpeed>5?Math.sin(a.phase)*10:0,bend=(a.state==='charge'?5:0)+motion.lean,back=Math.sin(a.a||0)<-.42;
- ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.scale(g.height/180*face,g.height/180);if(fall){ctx.translate(10,0);ctx.rotate(-1.35);}else if(knee)ctx.translate(0,15);
  const skin=g.appearance.skin,cloth=a.team?'#b7694f':'#55938e',armorItems=M.armorItems(g),armored=!!M.gear(g,'armor')||armorItems.length>0,metal=armored?'#939f96':cloth;
- function massLeg(side,x,offset){if(g.body[side+'t'].missing)return;const p=stepPose((a.phase||0)+offset,clamp(a.moveSpeed/120,0,1)),moving=a.moveSpeed>1.5&&!fall&&!knee,hip={x,y:-26},foot={x:x+(moving?p.x*(a.gaitStride||36)*p.support/(2*(g.height/180))*(a.gaitForward??1):0),y:g.body[side+'sh'].missing?-17:g.body[side+'f'].missing?-5:knee?-15:moving?-p.lift*4:0},joint=limbJoint(hip,foot,14,-1);pixelBone(hip,joint,6,skin);if(!g.body[side+'sh'].missing)pixelBone(joint,foot,5,skin);}
- massLeg('l',-5,Math.PI);massLeg('r',5,0);
+ /* Haltung zuerst nur berechnen (ohne Zeichnen), damit fertige Posenbilder (simplePose) sie als Schlüssel nutzen können; gezeichnet wird unten in paintSimple in derselben Reihenfolge wie bisher */
+ function legPose(side,x,offset){if(g.body[side+'t'].missing)return null;const p=stepPose((a.phase||0)+offset,clamp(a.moveSpeed/120,0,1)),moving=a.moveSpeed>1.5&&!fall&&!knee,hip={x,y:-26},foot={x:x+(moving?p.x*(a.gaitStride||36)*p.support/(2*(g.height/180))*(a.gaitForward??1):0),y:g.body[side+'sh'].missing?-17:g.body[side+'f'].missing?-5:knee?-15:moving?-p.lift*4:0},joint=limbJoint(hip,foot,14,-1);return {hip,joint,foot,shin:!g.body[side+'sh'].missing};}
+ function massLeg(L){if(!L)return;pixelBone(L.hip,L.joint,6,skin);if(L.shin)pixelBone(L.joint,L.foot,5,skin);}
+ const legL=legPose('l',-5,Math.PI),legR=legPose('r',5,0);
  const roots={l:{x:-7+bend,y:-46},r:{x:8+bend,y:-46}},gait=gaitArms(a,w,roots,!!M.usableShield(a)),progress=motion.swing,ang=a.wind>0?-1.7:a.swing>0?(a.swingKind==='thrust'?0:-1.7+progress*3):gait.angle,h=gait.main,other=gait.off;
  if(a.wind>0){h.x=5+bend;h.y=-65;}else if(a.swing>0){h.x=12+bend+Math.sin(progress*Math.PI)*9;h.y=-42;}if(a.block){other.x=18;other.y=-49;}
  const primary=w.hand==='l'?'l':'r',secondary=primary==='l'?'r':'l';limitArm(roots[primary],h);limitArm(roots[secondary],other);if(w.twoHand&&!w.ammo&&!fall)supportGrip(h,other,roots[primary],roots[secondary],ang);
+ /* Waffenspitze für Bluttropfen (wird von der Kampfberechnung gelesen): immer aus der genauen Haltung, auch wenn ein fertiges Posenbild kopiert wird */
+ if(!fall&&w.id!=='fist'&&w.item?.blood&&(w.bladed||['club','mace','hammer'].includes(w.id))){const pt=M.weaponArt?.dripPoint(w.item,w.item.blood,ang)||[bladeSurface(w.id,w.item.q||0).tip,0],co=Math.cos(ang),si=Math.sin(ang),size=g.height/180;a.weaponTipX=a.x+(h.x+(co*pt[0]-si*pt[1])*.8)*size*face;a.weaponTipY=a.y+(h.y+(si*pt[0]+co*pt[1])*.8+(knee?15:0))*size;}
  function paintArms(){for(const side of ['l','r']){if(g.body[side+'s'].missing||g.body[side+'ua'].missing)continue;const root=roots[side],target=side===primary?h:other,elbow=limbJoint(root,target,14,1);pixelBone(root,elbow,5,skin);if(!g.body[side+'fa'].missing)pixelBone(elbow,target,4,skin);}}
- function paintWeapon(){if(!fall&&w.id!=='fist'){if(w.item?.blood&&(w.bladed||['club','mace','hammer'].includes(w.id))){const pt=M.weaponArt?.dripPoint(w.item,w.item.blood,ang)||[bladeSurface(w.id,w.item.q||0).tip,0],co=Math.cos(ang),si=Math.sin(ang),size=g.height/180;a.weaponTipX=a.x+(h.x+(co*pt[0]-si*pt[1])*.8)*size*face;a.weaponTipY=a.y+(h.y+(si*pt[0]+co*pt[1])*.8+(knee?15:0))*size;}weaponDraw(w.sprite,h.x,h.y,ang,.8,undefined,w.item?.blood||0,w.item||{def:w.id,q:1},false,['bow','crossbow'].includes(w.id)?M.rangedPose(a,w.id):null);}}
+ function paintWeapon(){if(!fall&&w.id!=='fist'){weaponDraw(w.sprite,h.x,h.y,ang,.8,undefined,w.item?.blood||0,w.item||{def:w.id,q:1},false,['bow','crossbow'].includes(w.id)?M.rangedPose(a,w.id):null);}}
  function paintShield(){const shield=M.usableShield(a);if(shield&&!fall&&!w.twoHand)shieldDraw(shield,other.x,other.y,0,a.team,a.blockFlash>0,0,0);}
- function paintDressings(limbs){for(const id in a.dressings||{}){if(g.body[id]?.missing)continue;const central=['head','neck','chest','belly'].includes(id);if(central===limbs)continue;let x=0,y=-32;if(central){x=id==='belly'?0:bend;y=id==='head'?-57:id==='neck'?-51:id==='chest'?-43:-32;}else{const left=id[0]==='l';if(['lt','rt','lsh','rsh','lf','rf'].includes(id)){const f=id.endsWith('t')?.25:id.endsWith('sh')?.75:1;x=(left?-5:5)+(left?stride:-stride)*f;y=-26+26*f;}else{const side=left?'l':'r',root=roots[side],hand=side===primary?h:other,elbow=limbJoint(root,hand,14,1),p=id.endsWith('s')?root:id.endsWith('ua')?{x:(root.x+elbow.x)/2,y:(root.y+elbow.y)/2}:id.endsWith('fa')?{x:(hand.x+elbow.x)/2,y:(hand.y+elbow.y)/2}:hand;x=p.x;y=p.y;}}rect(x-1,y-1,3,3,'#d8cdaa');}}
- if(back){paintShield();paintArms();if(a.dressings)paintDressings(true);paintWeapon();}
+ function partPos(id){const central=['head','neck','chest','belly'].includes(id);let x=0,y=-32;if(central){x=id==='belly'?0:bend;y=id==='head'?-57:id==='neck'?-51:id==='chest'?-43:-32;}else{const left=id[0]==='l';if(['lt','rt','lsh','rsh','lf','rf'].includes(id)){const f=id.endsWith('t')?.25:id.endsWith('sh')?.75:1;x=(left?-5:5)+(left?stride:-stride)*f;y=-26+26*f;}else{const side=left?'l':'r',root=roots[side],hand=side===primary?h:other,elbow=limbJoint(root,hand,14,1),p=id.endsWith('s')?root:id.endsWith('ua')?{x:(root.x+elbow.x)/2,y:(root.y+elbow.y)/2}:id.endsWith('fa')?{x:(hand.x+elbow.x)/2,y:(hand.y+elbow.y)/2}:hand;x=p.x;y=p.y;}}return {x,y,central};}
+ function paintDressings(limbs){for(const id in a.dressings||{}){if(g.body[id]?.missing)continue;const P=partPos(id);if(P.central===limbs)continue;rect(P.x-1,P.y-1,3,3,'#d8cdaa');}}
+ /* Große Kämpfe mit simpleWounded: statt der vollen Figur nur billige Blutflecken an verletzten Körperteilen (sonst sähen Verwundete sauber aus) */
+ const woundMarks=[];if(!forced&&massWoundSimple())for(const id in g.body){const p=g.body[id];if(p.missing||a.dressings?.[id])continue;const r=p.hp/(p.max||100);const lv=p.bleed>0?(r<.5?3:2):r<.6?2:r<.85?1:0;if(lv)woundMarks.push([id,lv]);}
+ function paintWounds(limbs){for(const [id,lv] of woundMarks){const P=partPos(id);if(P.central===limbs)continue;const n=lv+2;rect(P.x-(n>>1),P.y-(n>>1),n,n,lv>2?'#6e1d18':'#9a2c25');if(lv>1)rect(P.x-(n>>1)+1,P.y+(n>>1),Math.max(1,n-2),2,'#7c2a25');}}
+ const leader=!!(save.battle.leaders?.includes(a.id)&&!g.dead);
+ function paintSimple(){
+ ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.scale(g.height/180*face,g.height/180);if(fall){ctx.translate(10,0);ctx.rotate(-1.35);}else if(knee)ctx.translate(0,15);
+ massLeg(legL);massLeg(legR);
+ if(back){paintShield();paintArms();if(woundMarks.length)paintWounds(true);if(a.dressings)paintDressings(true);paintWeapon();}
  pixelBone({x:0,y:-27},{x:bend,y:-48},15,metal);rect(-8,-29,16,8,cloth);
  if(!g.body.head.missing){rect(bend-6,-65,13,15,skin);if(g.appearance.style!==7)rect(bend-7,-67,14,5,g.appearance.style===10?skin:g.appearance.hair);if(back){const ap=g.appearance;if(ap.style!==0&&ap.style!==5&&ap.style!==7)rect(bend-6,-62,13,11,ap.hair);else if(ap.style===5)rect(bend-1,-67,3,16,ap.hair);}else rect(bend+3,-59,2,2,'#282c26');const helm=armorItems.find(it=>it.def==='helm');if(helm){const look=M.itemLook(helm),dome=helm.material==='medium'?look.leather:look.metal;rect(bend-7,-67,15,7,dome);if(back)rect(bend-6,-60,13,8,dome);rect(bend-7,-61,15,1,look.trim);}}
-
-
-
-
- if(a.dressings)paintDressings(false);
- if(!back){paintArms();if(a.dressings)paintDressings(true);paintWeapon();paintShield();}
+ if(woundMarks.length)paintWounds(false);if(a.dressings)paintDressings(false);
+ if(!back){paintArms();if(woundMarks.length)paintWounds(true);if(a.dressings)paintDressings(true);paintWeapon();paintShield();}
  // Close zoom uses the detailed surfaces; the 60+ overview keeps its cheap geometry.
-
- if(save.battle.leaders?.includes(a.id)&&!g.dead){rect(-9,-72,3,3,'#edcf83');rect(8,-72,3,3,'#edcf83');}ctx.restore();
+ if(leader){rect(-9,-72,3,3,'#edcf83');rect(8,-72,3,3,'#edcf83');}ctx.restore();
+ }
+ if(simplePose.on()){const k=simplePose.key(a,{g,w,face,fall,knee,back,bend,legL,legR,roots,h,other,ang,leader,wounds:woundMarks.join(';')});if(k&&simplePose.draw(a,k,paintSimple))return;}
+ paintSimple();
 }
 
 /* Leistung: Sichtprüfung für Figuren. Großzügiger Rand (Waffe über dem Kopf, liegender Körper, Riesen, Wackeln), damit nichts Sichtbares fehlt */
