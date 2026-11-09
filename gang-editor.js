@@ -260,7 +260,7 @@ function stage2(){const b=S.battle;if(!b||(!ST()))return;const [p,q]=fighters,K=
  Object.assign(q,{grabbedBy:null,a:pose==='kneelBack'||pose==='standBack'?0:Math.PI,state:'idle',hit:0,facePain:0,fallTimer:0,fallDuration:0,kneeTimer:0,down:false});
  if(pose==='lying')Object.assign(q,{fallTimer:9,fallDuration:10,riseDuration:1.25,state:'fallen',fallSide:-1});
  if(pose==='kneel'||pose==='kneelBack')Object.assign(q,{kneeTimer:3,kneeDuration:4,kneeRise:1,state:'kneeling'});
- Object.assign(p,{ammo:99,closeCombat:false,x:q.x-reach-(K.run?240:0),y:q.y,a:0,gaitOff:true,moveSpeed:0,gaitSpeed:0,state:'idle',wind:0,swing:0,pierceContact:null,technique:null,finisher:null,finFix:null,finHold:0});b.paused=false;liveShot=null;
+ Object.assign(p,{ammo:99,closeCombat:false,x:q.x-reach-(K.run?240:0),y:q.y,a:0,gaitOff:true,moveSpeed:0,gaitSpeed:0,state:'idle',wind:0,swing:0,pierceContact:null,technique:null,finisher:null,finFix:null,finHold:0});b.paused=false;liveShot=null;if(p.puppet)p.puppet.drive=null;
  if(tech==='groundFinish'){const part=$('sPart').value;p.finisher={target:q.id,part,started:true};const sp=G.finSpot(p,q,part);if(sp){p.x=sp.x-sp.face*34;p.y=sp.y;p.a=sp.face>0?0:Math.PI;}}
  const tm=M.meleeTiming?.(p.g,w,['shoot','throw','grab','ram'].includes(tech)?'thrust':tech==='groundFinish'?'groundFinish':tech)||{wind:.4,swing:.3};scene={t:0,tech,ranged,run:!!K.run,runT:1.3,x0:q.x-reach-240,x1:q.x-reach,wind:Math.max(.32,tm.wind*(tech==='groundFinish'?1.6:K.run?.7:1.25)),swing:Math.max(.22,tm.swing),hit:false,K,part:$('sPart').value,done:0,pose};
  $('hudL').innerHTML=`<b>${K.name}</b> · ${M.partName(scene.part)} · ${WN(w.id)}`;$('hudR').innerHTML=queue.length?`noch ${queue.length}`:'';}
@@ -273,9 +273,9 @@ function stepStudio(dtReal){const b=S.battle;if(!b||!scene)return;const [p,q]=fi
  if(s.hit&&!liveShot&&s.after&&!p.pierceContact?.grab){const r=s.after;s.after=null;if(r==='sever'&&!q.g.body[s.part]?.missing)M.sever?.(p,q,s.part);else if(r==='death'){M.death?.(q,s.K.inj||s.K.name,p);s.fell=true;}else if(r==='down'){M.knockdown?.(q,s.K.inj||s.K.name,6);s.fell=true;}s.done=r==='death'||r==='down'?2.4:1.4;}
  if(s.hit&&!liveShot){s.done-=dtReal;if(s.done<=0){scene=null;const dead=q.g.dead||!q.g.body.head||q.g.body.head.missing;if(queue.length)next();else setTimeout(()=>{if((ST())&&!scene&&!queue.length){if(dead||S.battle?.finale||S.battle?.result)restart();else stage2();}},600);}}
  s.t+=dt;const t0=s.run?s.runT:.45,tw=t0+s.wind,ts=tw+s.swing;
- if(s.run&&s.t<t0){/* Anlauf: Sprint mit Kampfschrei, Waffe hoch */const f=cl(s.t/t0,0,1),e=f**1.6,v=(s.x1-s.x0)*1.6*f**.6/t0;p.x=s.x0+(s.x1-s.x0)*e;p.a=0;p.state='move';p.gaitOff=false;p.gaitW={stand:0,walk:0,guard:0,jog:f<.25?1:0,sprint:f<.25?0:1,side:0,back:0};p.gaitBase=80;p.moveSpeed=p.gaitSpeed=Math.max(2,v);p.phase=(p.phase||0)+dt*v*.16;
+ if(s.run&&s.t<t0){/* Anlauf: Sprint mit Kampfschrei, Waffe hoch */const f=cl(s.t/t0,0,1),e=f**1.6;p.puppet.drive={x:s.x0+(s.x1-s.x0)*e,y:s.y0??p.y,face:0};p.a=0;p.state='move';p.gaitOff=false;p.gaitW={stand:0,walk:0,guard:0,jog:f<.25?1:0,sprint:f<.25?0:1,side:0,back:0};p.gaitBase=80;
   if(!s.cried&&f>.12){s.cried=true;p.shoutTimer=1;p.cried=true;M.voice?.('battlecry',M.voicePitch?.(p.g)??1,true);M.floater?.(p.x,p.y-66,'HAAA!','#ffcf6a');}return;}
- if(s.run&&!s.arrived){s.arrived=true;p.x=s.x1;p.moveSpeed=p.gaitSpeed=0;p.gaitOff=true;p.state='idle';
+ if(s.run&&!s.arrived){s.arrived=true;p.puppet.drive=null;p.x=s.x1;p.gaitOff=true;p.state='idle';
   if(s.tech==='grab'){G.grab(p,q,s.K.grab);p.pierceContact.studio=true;return;}
   if(s.tech==='ram'){q.hit=.4;q.facePain=1.4;M.shake=6;M.sound?.('heavy');M.knockdown?.(q,'Umgerannt',6);s.fell=true;s.knock=90;M.floater?.(q.x,q.y-62,'UMGERANNT!','#ff8a5a');hitScene(p,q,s);return;}}
  if(s.tech==='grab'||s.tech==='ram')return;

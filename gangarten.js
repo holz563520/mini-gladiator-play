@@ -287,7 +287,7 @@ function finStart(a){if(a.finisher&&a.finisher.started||a.technique!=='groundFin
  a.shoutTimer=Math.max(a.shoutTimer||0,1);M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-66,cryText(a),'#ff8a5a');ev('finStart',a,{part:a.finisher.part});}
 // beim Ausholen zur Stelle gehen (Kampfschritt), dann stehen bleiben und zur Stelle drehen
 G.finStep=(a,dt)=>{const f=a.finisher;if(!f?.part)return;const t=M.s.battle.actors.find(x=>x.id===f.target);if(!t)return;const sp=G.finSpot(a,t,f.part);if(!sp)return;f.spot=sp;
- const dx=sp.x-a.x,dy=sp.y-a.y,d=Math.hypot(dx,dy);if(d>.5&&a.wind>0){const st=Math.min(d,150*dt);a.x+=dx/d*st;a.y+=dy/d*st;a.moveSpeed=st/dt;a.phase=(a.phase||0)+dt*a.moveSpeed*.16;}else a.moveSpeed=0;a.a=sp.face>0?0:Math.PI;};
+ const dx=sp.x-a.x,dy=sp.y-a.y,d=Math.hypot(dx,dy);a.a=sp.face>0?0:Math.PI;if(a.puppet?.hold){a.puppet.drive={x:sp.x,y:sp.y,v:a.wind>0?120:0,face:a.a};a.state=d>.5&&a.wind>0?'move':a.state;return;}if(d>.5&&a.wind>0){const st=Math.min(d,150*dt);a.x+=dx/d*st;a.y+=dy/d*st;a.moveSpeed=st/dt;a.phase=(a.phase||0)+dt*a.moveSpeed*.16;}else a.moveSpeed=0;};
 // Haltung beim Abstechen (arena.js): beide Hände hoch über den Kopf, zurücklehnen – dann mit Ausfallschritt und tief gebeugt
 // senkrecht hinein, genau auf die Stelle; Waffenlänge je Waffe (TIPL)
 const ease=t=>t<0?0:t>1?1:t*t*(3-2*t);
@@ -407,7 +407,9 @@ G.arms=(R,a,w,roots,shield)=>{
 // a.puppet={mode, lane:{x0,x1,y,dy}, dir, combat, old}; old = bisheriges Spiel (sofort volles Tempo, keine Gangarten)
 const OLD={stand:0,walk:1,guard:.63,jog:1,sprint:1.45,side:.5,back:1};
 G.puppet=(a,dt)=>{
- /* hold: der Editor steuert die Figur selbst (Nahaufnahmen-Studio) */if(a.puppet.hold)return;
+ /* hold: der Editor steuert die Figur selbst (Nahaufnahmen-Studio); Wege (drive) laufen hier im Simulationsschritt,
+    damit Schrittlänge, Beine und Tempo wie bei echter Bewegung entstehen (sonst gleitet die Figur) */
+ if(a.puppet.hold){const D=a.puppet.drive;if(D){const dx=D.x-a.x,dy=D.y-a.y,d=Math.hypot(dx,dy),st=Math.min(d,(D.v??1e9)*dt);if(d>.01){a.x+=dx/d*st;a.y+=dy/d*st;}if(D.face!=null)a.a=D.face;if(d-st<.01&&D.once)a.puppet.drive=null;}return;}
  const p=a.puppet,ef=M.effective(a),base=ef.speed,L=p.lane;a.cool=1;a.wind=0;a.swing=0;a.block=false;
  if(p.energy!=null)a.energy=p.energy;
  let mode=p.mode,face=p.face??(p.dir>0?0:Math.PI),dir=null;
