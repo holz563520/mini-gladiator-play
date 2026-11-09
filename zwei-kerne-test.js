@@ -50,7 +50,7 @@ function verdict(){
  return r.slim.send<1.5?`Bei 10 gegen 10 kostet das Schicken ${f(r.slim.send)} ms je Bild. Das ist billig, der Umbau auf zwei Kerne ist machbar.`:`Bei 10 gegen 10 kostet das Schicken ${f(r.slim.send)} ms je Bild, fast so viel wie das Rechnen selbst. Der Umbau lohnt sich auf diesem Gerät kaum.`;
 }
 function text(){
- return `Zwei-Kerne-Test, Stand ${window.ARENA_BUILD||'aa98b9fb'}\nGerät: ${innerWidth}×${innerHeight} px, Pixeldichte ${devicePixelRatio||1}, ${navigator.hardwareConcurrency||'?'} Kerne\n`+
+ return `Zwei-Kerne-Test, Stand ${window.ARENA_BUILD||'f1c55edf'}\nGerät: ${innerWidth}×${innerHeight} px, Pixeldichte ${devicePixelRatio||1}, ${navigator.hardwareConcurrency||'?'} Kerne\n`+
   results.map(r=>`${r.n} je Seite: Rechnen ${f(r.logic)} ms | ganz ${r.full.fail||f(r.full.send)+' ms (hin+zurück '+f(r.full.rt)+')'} | schlank ${r.slim.fail||f(r.slim.send)+' ms (hin+zurück '+f(r.slim.rt)+')'}`).join('\n')+'\n'+verdict();
 }
 $('go').onclick=async()=>{

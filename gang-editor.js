@@ -163,7 +163,7 @@ let cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finishe
 function camera(base){return (bb,width,height,W,H,zoom,target)=>{const now=performance.now();if(closeUp&&now<closeUp.until){const k=Math.min(1,(closeUp.until-now)/400,(now-(closeUp.until-2600))/250),b0=base?.(bb,width,height,W,H,zoom,target)||{zoom:Math.max(1,zoom),x:target?.x??W/2,y:target?.y??H/2},z=b0.zoom+(3.6-b0.zoom)*k;return {zoom:z,x:cl(b0.x+(closeUp.x-b0.x)*k,W/(z*2),W-W/(z*2)),y:cl(b0.y+(closeUp.y-b0.y)*k,H/(z*2),H-H/(z*2))};}return base?.(bb,width,height,W,H,zoom,target)||null;};}const TN={slash:'Hieb',thrust:'Stich',overhead:'Überkopf',spin:'Wirbel'};
 const who=a=>a?.team?'Gegner':'Kämpfer';
 const WK={ground:'am Boden',knee:'auf den Knien',stagger:'taumelt',back:'dreht den Rücken zu'},WH={pierced:'durchbohrt',beheaded:'schlägt den Kopf ab',severed:'schlägt ab',pierced:'durchbohrt',hacked:'hackt hinein',crushed:'zerschmettert'};
-G.onEvent=e=>{if((e.kind==='pierce'||e.kind==='finisher'&&(e.what==='pierced'||e.what==='crushed'))&&$('cu').checked&&M.pierceFx&&S.battle){liveShot=shotFor({part:e.part,weapon:e.weapon||M.weapon(e.a).id,down:!!e.down,crush:e.what==='crushed',g:e.b.g,team:e.b.team,attName:e.a.g.name,seed:(cntShots++)*7919+e.part.length});liveT0=performance.now();}
+G.onEvent=e=>{if((e.kind==='pierce'||e.kind==='finisher'&&(e.what==='pierced'||e.what==='crushed'))&&$('cu').checked&&M.pierceFx&&S.battle){liveShot=shotFor({part:e.part,wq:M.weapon(e.a).item?.q,weapon:e.weapon||M.weapon(e.a).id,down:!!e.down,crush:e.what==='crushed',g:e.b.g,team:e.b.team,attName:e.a.g.name,seed:(cntShots++)*7919+e.part.length});liveT0=performance.now();}
  if(e.kind==='finisher'&&!$('cu').checked){if($('aSlow').checked)slowUntil=performance.now()+1300;closeUp={x:e.b.x,y:e.b.y-20,until:performance.now()+2600};}if(!(e.kind in cnt))return;cnt[e.kind]++;const pct=x=>Math.round(x*100)+' %';
  const t={cry:`<b>Kampfschrei</b> · ${who(e.a)} stürmt mit erhobener Waffe los`,charge:`<b>Ansturm</b> · ${who(e.a)} · Schaden ×${e.boost?.toFixed(2).replace('.',',')}`,
   runAttack:`<b>Ausholen im Lauf</b> · ${who(e.a)} · ${TN[e.tech]||e.tech} bei Tempo ${Math.round(e.v)} · Schaden ×${e.boost?.toFixed(2).replace('.',',')}`,
@@ -179,7 +179,7 @@ function counts(){$('counts').innerHTML=`<div class="row"><span>Kampfschreie</sp
 const IS=M.injuryShots,WN=id=>WD[id]?.name||id;
 function shotFor(o){// o: {part, weapon, crush, g (Getroffener), team, attName, down}
  const lab=M.pierceFx.labelFor(M.pierceFx.make({part:o.crush?'head':o.part,weapon:o.weapon,kind:o.crush?'crush':'pierce',down:o.down,seed:o.seed||7}));
- const base={g:o.g,team:o.team,part:o.crush?'head':o.part,wid:o.weapon,cls:o.crush?'blunt':undefined,attacker:o.attName,weaponName:WN(o.weapon),dramatic:true,line3:lab.de,color:'#ff6a5a'};
+ const base={g:o.g,team:o.team,part:o.crush?'head':o.part,wid:o.weapon,wq:o.wq,cls:o.crush?'blunt':undefined,attacker:o.attName,weaponName:WN(o.weapon),dramatic:true,line3:lab.de,color:'#ff6a5a'};
  return IS.start(o.crush?{...base,kind:'skullfracture',injury:'Schädelbruch',title:'Schädel zertrümmert',helm:null}:{...base,kind:'through',injury:'Durchstochen',title:o.down?'Abgestochen – durchbohrt':'Durchstich'});}
 
 // ---------------------------------------------------------------- Nahaufnahmen-Studio und „Am Boden“: alle Nahaufnahmen, mit kleiner Szene davor
@@ -248,20 +248,20 @@ function stage2(){const b=S.battle;if(!b||(mode!=='studio'&&mode!=='ground'))ret
  $('hudL').innerHTML=`<b>${K.name}</b> · ${M.partName(scene.part)} · ${WN(w.id)}`;$('hudR').innerHTML=queue.length?`noch ${queue.length}`:'';}
 function stepStudio(dtReal){const b=S.battle;if(!b||!scene)return;const [p,q]=fighters,sp=+$('speed').value||1,s=scene;
  const slow=liveShot?.15:1,dt=dtReal*sp*slow;
- if(p.pierceContact){p.pierceContact.t+=dt;p.pierceContact.left-=dt;if(p.pierceContact.left<=0)p.pierceContact=null;}
+ if(p.pierceContact){const f=p.pierceContact;f.t+=dt;f.left-=dt;G.pierceLunge(p,q,f,dt);G.pierceBlood(p,q,f,f.t/(f.len||1),dt,Math.atan2(q.y-p.y,q.x-p.x));if(f.left<=0){p.pierceContact=null;p.y=q.y;}}
  if(s.hit&&!liveShot&&s.after){const r=s.after;s.after=null;if(r==='sever'&&!q.g.body[s.part]?.missing)M.sever?.(p,q,s.part);else if(r==='death')M.death?.(q,s.K.inj||s.K.name,p);else if(r==='down')M.knockdown?.(q,s.K.inj||s.K.name,6);s.done=r==='death'||r==='down'?2.4:1.4;}
  if(s.hit&&!liveShot){s.done-=dtReal;if(s.done<=0){scene=null;const dead=q.g.dead||!q.g.body.head||q.g.body.head.missing;if(queue.length)next();else setTimeout(()=>{if((mode==='studio'||mode==='ground')&&!scene&&!queue.length){if(dead||S.battle?.finale||S.battle?.result)restart();else stage2();}},600);}}
  s.t+=dt;const t0=.45,tw=t0+s.wind,ts=tw+s.swing;
  if(s.t<t0){p.state='idle';return;}
  const techR=s.tech==='shoot'?'thrust':s.tech;
  if(s.t<tw){p.state='attack';p.technique=techR;p.windMax=s.wind;p.wind=Math.max(.001,tw-s.t);p.swing=0;if(s.tech==='groundFinish'){p.finisher={target:q.id};if(!s.cried){s.cried=true;p.shoutTimer=1;M.voice?.('battlecry',M.voicePitch?.(p.g)??1,true);}}return;}
- if(s.t<ts||p.finHold>0){p.wind=0;p.swingKind=techR;p.swingMax=s.swing;p.swing=Math.max(.001,ts-s.t);if(p.finHold>0){p.finHold-=dt;p.swing=Math.max(p.swing,s.swing*.5);}p.state='attack';
+ if((s.t<ts||p.finHold>0)&&!p.pierceContact){p.wind=0;p.swingKind=techR;p.swingMax=s.swing;p.swing=Math.max(.001,ts-s.t);if(p.finHold>0){p.finHold-=dt;p.swing=Math.max(p.swing,s.swing*.5);}p.state='attack';
   if(!s.hit&&s.t>tw+s.swing*.45){s.hit=true;q.hit=.35;q.facePain=1.4;const cp=M.contactAnchor(q,['head','neck','belly'].includes(s.part)?s.part:'chest');M.emit?.(cp.x,cp.y,16,'#aa3c36',90);M.shake=4;M.sound?.(BLUNT.includes(M.weapon(p).id)?'heavy':'hit');
-   if(s.K.kind==='through')(s.tech==='groundFinish'?(p.finHold=.7):p.pierceContact={target:q.id,part:s.part,left:.9,len:.9,t:0,through:true,weaponId:M.weapon(p).item?.id});
+   if(s.K.kind==='through'){const TH=G.throughOf(M.weapon(p).id);if(s.tech==='groundFinish')p.finHold=.7;else{p.pierceContact={target:q.id,part:s.part,left:1.1,len:1.1,t:0,through:true,exit:TH.exit,depthMul:TH.depth,weaponId:M.weapon(p).item?.id};p.y=q.y-1;}if(M.weapon(p).item)M.weapon(p).item.blood=.9;}
    const kind=s.K.kind,lab=kind==='through'?M.pierceFx?.labelFor(M.pierceFx.make({part:s.part,weapon:M.weapon(p).id,kind:'pierce',seed:7,down:s.pose==='lying'})):null,wid=M.weapon(p).id;
-   liveShot=IS.start({g:q.g,team:1,part:s.part,kind,injury:s.K.inj||(kind==='through'?'Durchstochen':s.K.name),title:s.K.title||(kind==='through'?(s.pose==='lying'?'Abgestochen':'Durchstich'):undefined),wid,cls:techR==='thrust'&&POINT.includes(wid)&&kind!=='through'?'spear':undefined,attacker:p.g.name,weaponName:WN(wid),dramatic:true,line3:lab?.de||anat(kind,s.part,q.g)||undefined});liveT0=performance.now();s.done=1;s.after=G.applyInjury(p,q,kind,s.part,wid,s.K.inj||s.K.name);}
+   liveShot=IS.start({g:q.g,team:1,part:s.part,kind,injury:s.K.inj||(kind==='through'?'Durchstochen':s.K.name),title:s.K.title||(kind==='through'?(s.pose==='lying'?'Abgestochen':'Durchstich'):undefined),wid,wq:M.weapon(p).item?.q,cls:techR==='thrust'&&POINT.includes(wid)&&kind!=='through'?'spear':undefined,attacker:p.g.name,weaponName:WN(wid),dramatic:true,line3:lab?.de||anat(kind,s.part,q.g)||undefined});liveT0=performance.now();s.done=1;s.after=G.applyInjury(p,q,kind,s.part,wid,s.K.inj||s.K.name);}
   return;}
- p.swing=0;p.state='idle';p.finisher=null;}
+ p.swing=0;p.state=p.pierceContact?'piercing':'idle';p.finisher=null;}
 studioFill(true);
 
 // ---------------------------------------------------------------- Neue Verletzungen (Vorschlag)
