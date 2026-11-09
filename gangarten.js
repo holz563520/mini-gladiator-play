@@ -103,6 +103,7 @@ G.thrust=(a,b,dmg,w,id)=>{
  a.pierceContact={target:b.id,part:id,left:P.pierceHold,len:P.pierceHold,weaponId:w.item?.id,through:true,t:0};a.swing=0;a.pendingStrike=null;a.wind=0;a.state='piercing';
  b.stun=Math.max(b.stun||0,P.pierceHold*.9);b.hit=.4;M.shake=Math.max(M.shake||0,6);
  M.floater?.(b.x,b.y-58,'DURCHSTOCHEN!','#ff5a4a');M.voice?.('pain',M.voicePitch?.(b.g)??1,true);M.sound?.('stick');
+ (b.g.gaitMarks||(b.g.gaitMarks=[])).push({m:'stab',part:id},{m:'stabBack',part:id});
  ev('pierce',a,{b,part:id,weapon:w.id,dmg:dmg+extra,down:false});};
 // während der Durchstich hält: kleiner Ausfallschritt hinein, Angreifer hinter dem Getroffenen gezeichnet (Klinge verschwindet im Körper,
 // die Spitze kommt hinten heraus), Blut tritt vorn und hinten aus
@@ -127,6 +128,55 @@ const TIP_Y={head:-64,neck:-57,chest:-48,belly:-37,ls:-50,rs:-50,lua:-44,rua:-44
 const LONGPOINT=new Set(['spear','trident']);
 G.tech=(a,b)=>{if(!G.active||a.gaitOff)return;const w=M.weapon(a);if(!LONGPOINT.has(w.id)||['kick','shieldBash','groundFinish'].includes(a.technique))return;if(M.rng()<P.spearThrust)a.technique='thrust';};
 G.cool=(a,w)=>{if(!G.active||a.gaitOff||!LONGPOINT.has(w?.id)||a.technique!=='thrust')return;a.cool*=P.spearCool;a.swingMax*=P.spearSwing;a.swing=a.swingMax;/* kurzer Stoß kostet weniger Kraft */a.energy+=(M.T.atkEnergy+(w.weight||3)*M.T.atkEnergyWeight)*P.spearJabEnergy;};
+// ---------------------------------------------------------------- Verletzungen auf der kleinen Figur (bleiben bestehen)
+// Echter Körperzustand, den das Spiel schon zeigt und speichert (Bruch → Arm hängt/Humpeln, tiefe Stichwunde → Wundgriff,
+// Schädelbruch → Wunde im Kopf, abgetrennt → Glied fehlt), dazu eigene Bilder für die neuen Verletzungen (g.gaitMarks).
+const MARK_OF={through:['stab','stabBack'],heart:['stab','bloodChest'],lung:['bruiseChest','mouthBlood'],ribs:['bruiseChest'],ribseries:['bruiseChest','dent'],sternum:['bruiseChest','dent'],
+ liver:['bruiseBelly','stab'],spleen:['bruiseBelly'],kidney:['stabBack'],gutted:['guts'],pelvis:['bruiseHip'],neckbreak:['bruiseNeck'],larynx:['bruiseNeck','mouthBlood'],collarbone:['bruiseShoulder'],deepcut:['cut'],cut:['cut'],stab:['stab'],deepstab:['stab'],pierce:['stab','stabBack'],gut:['guts'],bruise:['bruise'],contusion:['bruise'],crush:['bruise'],concussion:['bruiseHead']};
+const NEW_NAME={ribs:'Rippenbruch',ribseries:'Rippenserienfraktur',sternum:'Brustbeinbruch',lung:'Lungendurchstich',heart:'Herzstich',liver:'Leberriss',spleen:'Milzriss',kidney:'Nierenverletzung',gutted:'Ausgeweidet',pelvis:'Beckenbruch',neckbreak:'Genickbruch',larynx:'Kehlkopfbruch',collarbone:'Schlüsselbeinbruch',through:'Durchstochen'};
+// returns: 'sever' (nach der Nahaufnahme abtrennen), 'death' (danach tot), 'down' (bricht zusammen) oder null
+G.applyInjury=(att,vic,kind,part,wid,name)=>{const g=vic.g,B=g.body,p=B[part]||B.chest;if(!p)return null;const fr=(id,days,severe)=>{const q=B[id];if(q&&!q.missing){q.fracture={days,total:days,severe:!!severe};q.hp=Math.min(q.hp,severe?20:38);q.pain=Math.max(q.pain||0,70);}};
+ const wound=(id,type,bl)=>{const q=B[id];if(!q||q.missing)return;q.bleed=(q.bleed||0)+bl;q.hp=Math.max(1,q.hp-18);try{M.recordWound(g,id,type,att?.g?.name||'',M.weapon(att)?.name||wid,20);}catch{}};
+ const marks=g.gaitMarks||(g.gaitMarks=[]);const side=(part||'').startsWith('r')?'r':(part||'').startsWith('l')&&part.length>2?'l':((marks.length%2)?'l':'r');
+ for(const m of MARK_OF[kind]||[])marks.push({m,part,side,t:M.s.battle?.time||0});if(marks.length>24)marks.splice(0,marks.length-24);
+ let out=null;
+ switch(kind){
+  case 'through':case 'pierce':wound(part,'Durchstochen',2.5);p.deepStabs=(p.deepStabs||0)+1;if(part==='chest'||part==='belly')p.internal=true;break;
+  case 'heart':wound('chest','Herzstich',8);B.chest.deepStabs=(B.chest.deepStabs||0)+1;B.chest.internal=true;out='death';break;
+  case 'lung':wound('chest','Lungendurchstich',3);B.chest.internal=true;B.chest.deepStabs=(B.chest.deepStabs||0)+1;break;
+  case 'ribs':fr('chest',21);break;case 'ribseries':fr('chest',35,true);break;case 'sternum':fr('chest',28);break;
+  case 'liver':case 'spleen':case 'kidney':wound('belly',NEW_NAME[kind],4);B.belly.internal=true;B.belly.deepStabs=(B.belly.deepStabs||0)+1;break;
+  case 'gutted':wound('belly','Ausgeweidet',6);B.belly.internal=true;B.belly.deepStabs=(B.belly.deepStabs||0)+2;out='down';break;
+  case 'pelvis':fr('belly',60,true);B.lt.hp=Math.min(B.lt.hp,30);B.rt.hp=Math.min(B.rt.hp,30);out='down';break;
+  case 'neckbreak':fr('neck',60,true);out='death';break;
+  case 'larynx':fr('neck',30);wound('neck','Kehlkopfbruch',1);break;
+  case 'collarbone':fr(part==='rs'?'rs':'ls',28);break;
+  case 'skullfracture':if(!B.head.missing){B.head.fracture={days:60,total:60,severe:true,skull:true};B.head.skullFracture=true;B.head.skullBy=wid;B.head.hp=Math.min(B.head.hp,20);}break;
+  case 'fracture':case 'badfracture':case 'shatter':case 'pulp':fr(part,kind==='fracture'?21:42,kind!=='fracture');if(kind==='pulp'||kind==='shatter')p.fracture.crushed=true;break;
+  case 'sever':out='sever';break;
+  case 'deepcut':wound(part,'Tiefe Schnittwunde',part==='neck'?7:3);if(part==='neck')out='death';break;
+  case 'cut':case 'scrape':wound(part,kind==='cut'?'Schnittwunde':'Schürfwunde',1);break;
+  case 'stab':case 'deepstab':wound(part,kind==='stab'?'Stichverletzung':'Tiefe Stichverletzung',kind==='stab'?1:3);if(kind==='deepstab')p.deepStabs=(p.deepStabs||0)+1;break;
+  case 'sinew':wound(part,'Sehnenverletzung',2);p.grade=Math.max(p.grade||0,3);break;
+  case 'gut':wound('belly','Tiefe Bauchwunde',4);B.belly.internal=true;break;
+  case 'arrow':wound(part,'Pfeil steckt',2);break;
+  default:if(p){p.hp=Math.max(1,p.hp-12);p.pain=Math.max(p.pain||0,40);}}
+ g.blood=Math.max(30,(g.blood??100)-(out==='death'?20:6));return out;};
+const PARTPOS={chest:P=>({x:P.chest.x+4,y:P.chest.y+4}),belly:P=>({x:P.chest.x*.5+3,y:-36}),neck:P=>({x:P.head.x+1,y:-57}),head:P=>({x:P.head.x+2,y:P.head.y}),ls:P=>({x:P.shoulders.l.x,y:P.shoulders.l.y+2}),rs:P=>({x:P.shoulders.r.x,y:P.shoulders.r.y+2})};
+function drawMarks(a,P){const L=a.g.gaitMarks;if(!L?.length)return;const R=(x,y,w,h,c)=>{P.ctx.fillStyle=c;P.ctx.fillRect(Math.round(x),Math.round(y),w,h);},t=P.time||0;
+ const at=(m,def)=>(PARTPOS[m.part]||PARTPOS[def])(P);
+ for(const k of L){const m=k.m;
+  if(m==='stab'||m==='stabBack'){const p=at(k,'chest'),x=m==='stabBack'?p.x-11:p.x;R(x-1.5,p.y-1.5,4,4,'#a8372f');R(x,p.y,1,1,'#2a0505');const len=4+((Math.sin(t*2+x)+1)*2|0);R(x,p.y+2,1,len,'#8f1d16');}
+  else if(m==='bloodChest'){const p=at(k,'chest');for(let i=0;i<4;i++)R(p.x-1+i,p.y+1,1,8+i*2,'#8f1d16');}
+  else if(m==='bruiseChest'||m==='bruiseBelly'||m==='bruiseHip'||m==='bruise'){const p=m==='bruiseHip'?{x:2,y:-31}:at(k,m==='bruiseBelly'?'belly':'chest');P.ctx.globalAlpha=.75;R(p.x-3,p.y-2,6,5,'#6b3a66');R(p.x-2,p.y-1,4,3,'#8a5a78');P.ctx.globalAlpha=1;}
+  else if(m==='dent'){const p=at(k,'chest');R(p.x-3,p.y+1,6,1,'#3a1f3a');}
+  else if(m==='bruiseNeck'){const p=at(k,'neck');P.ctx.globalAlpha=.8;R(p.x-2,p.y-1,5,3,'#6b3a66');P.ctx.globalAlpha=1;}
+  else if(m==='bruiseHead'){P.ctx.globalAlpha=.7;R(P.head.x+3,P.head.y-6,4,3,'#6b3a66');P.ctx.globalAlpha=1;}
+  else if(m==='bruiseShoulder'){const p=at(k,k.side==='r'?'rs':'ls');P.ctx.globalAlpha=.8;R(p.x-2,p.y-2,5,4,'#6b3a66');P.ctx.globalAlpha=1;R(p.x-1,p.y-1,3,1,'#3a1f3a');}
+  else if(m==='mouthBlood'){const x=P.head.x+5,y=P.head.y+5;R(x,y,1,3+((Math.sin(t*3)+1)*1.5|0),'#8f1d16');R(x-1,y,2,1,'#a8372f');}
+  else if(m==='cut'){const p=at(k,'chest');R(p.x-3,p.y,7,1,'#a8372f');R(p.x-2,p.y+1,5,1,'#5a0c09');R(p.x,p.y+2,1,6,'#8f1d16');}
+  else if(m==='guts'){const p=at(k,'belly');R(p.x-3,p.y-1,6,3,'#3a0a08');for(let i=0;i<9;i++){const sw=Math.sin(t*2.2+i*.9)*(1+i*.15),x=p.x-1+i*.4+sw,y=p.y+2+i*2.3;R(x-1.5,y-1.5,4,3,i%2?'#e0a0a0':'#c97a7a');R(x-.5,y-1.5,1,1,'#fbe0e0');}R(p.x+3,p.y+20,1,5,'#8f1d16');R(p.x-2,p.y+3,1,7,'#8f1d16');}}}
+{const prev=M.figureDecor;M.figureDecor=function(a,P){prev?.call(this,a,P);if(G.active&&P.layer==='front'&&!P.portrait&&a?.g)drawMarks(a,P);};}
 // geblockter Ansturm: mit voller Wucht in die Deckung – kann trotzdem umwerfen (60 % der Chance), sonst zurückgestoßen
 G.blocked=ev=>{if(ev?.kind==='block'&&ev.att?.rushHit?.kind==='charge')G.ram(ev.att,ev.def,0,.6);};
 {const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p){G.ram(a,b,d);G.thrust(a,b,d,w,part);}return out;};R.__gait=true;}}
@@ -174,7 +224,8 @@ function finImpact(a,b,dmg,w,id){
  M.shake=Math.max(M.shake||0,7);const cp=a.contactPoint||{x:b.x,y:b.y-10};M.emit?.(cp.x,cp.y,26,'#aa3c36',120);
  const label={beheaded:'KOPF AB!',severed:M.partName?.(id)?.toUpperCase()+' AB!',pierced:'DURCHBOHRT!',hacked:'HINEINGEHACKT!',crushed:'ZERSCHMETTERT!'}[what];M.floater?.(b.x,b.y-48,label,'#ff5a4a');
  if(!M.s.battle.cinematic)M.s.battle.cinematic={x:b.x,y:b.y-18,left:1.6,duration:1.6};
- if(what==='crushed'&&id==='head'){part.hp=Math.min(part.hp,4);part.bleed+=2;}
+ if(what==='crushed'&&id==='head'){part.hp=Math.min(part.hp,4);part.bleed+=2;part.fracture={days:60,total:60,severe:true,skull:true};part.skullFracture=true;part.skullBy=w.id;}
+ if(what==='pierced')(b.g.gaitMarks||(b.g.gaitMarks=[])).push({m:'stab',part:id});
  ev('finisher',a,{b,what,part:id,dmg:dmg+extra,weapon:w.id,down:true});if(what!=='pierced')a.finisher=null;}
 {const R=M.combatResponses;if(R?.groundImpact&&!R.__gaitG){const orig=R.groundImpact;R.groundImpact=(a,b,d,w,id)=>{const out=orig.call(R,a,b,d,w,id);if(G.active)finImpact(a,b,d,w,id);return out;};R.__gaitG=true;}}
 

@@ -68,7 +68,9 @@ function condition(a,c){const g=a.g,B=g.body;
 
 // ---------------------------------------------------------------- Start
 let startedAt=0,fighters=[];
-function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}G.P.sprintGap=G.DEF.sprintGap;sync();hist=[];params();cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finisher:0,pierce:0};$('evlog').innerHTML='';
+let carry=null;
+function restart(){/* Studio: Verletzungen des Getroffenen in den nächsten Durchgang mitnehmen */{const v=fighters[1];carry=(mode==='studio'||mode==='ground')&&$('sKeep')?.checked&&v&&!v.g.dead&&S.battle&&v.g.__who===$('sWho').value?{body:JSON.parse(JSON.stringify(v.g.body)),marks:[...(v.g.gaitMarks||[])],blood:v.g.blood,scars:v.g.scars}:null;}
+ if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}G.P.sprintGap=G.DEF.sprintGap;sync();hist=[];params();cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finisher:0,pierce:0};$('evlog').innerHTML='';
  $('mShow').classList.toggle('on',mode==='show');$('mFight').classList.toggle('on',mode==='fight');$('mAtk').classList.toggle('on',mode==='atk');$('pAtk').style.display=mode==='atk'?'':'none';$('mStudio').classList.toggle('on',mode==='studio');$('mGround').classList.toggle('on',mode==='ground');$('pStudio').style.display=mode==='studio'||mode==='ground'?'':'none';$('cuWrap').style.display=mode==='studio'||mode==='ground'?'':'none';
  $('pShow').style.display=mode==='show'?'':'none';$('pFight').style.display=mode==='fight'?'':'none';$('pEv').style.display=mode==='fight'||mode==='atk'?'':'none';
  const show=mode==='show',atk=mode==='atk',studio=mode==='studio'||mode==='ground',cfg={count:1,count0:show?2:1,count1:1,role0:studio&&['bow','crossbow'].includes($('sW').value)?'Fernkämpfer':'Soldat',role1:'Soldat',weapon0:studio?$('sW').value:$('w0').value,weapon1:show||atk||studio?'gladius':$('w1').value,shield0:studio?'none':$('s0').value,shield1:atk?($('aShield').checked?'roundshield':'none'):show||studio?'none':$('s1').value,armor0:$('a0').value,armor1:show?'none':'leather',quality0:2,quality1:2,seed:show?4242:studio?(+$('sWho').value||5151):Math.floor(Math.random()*1e6)};
@@ -219,6 +221,7 @@ function studioFill(reset){const L=KL();if(reset||kindsFor!==L){kindsFor=L;$('sK
  const tech=K.tech||TECH(K.kind,$('sW').value);$('sInfo').textContent=`${ws.length} Waffen können das auslösen · ${parts.length} Stelle(n) · ${({slash:'Hieb',thrust:'Stich',overhead:'Überkopf',shoot:'Schuss',groundFinish:'Abstechen'})[tech]}${K.pose?' · Gegner '+({lying:'liegt',kneel:'kniet',kneelBack:'kniet, von hinten'})[K.pose]:''}`;}
 $('sKind').onchange=()=>{studioFill();if(mode==='studio'||mode==='ground')restart();};$('sPart').onchange=()=>{if(mode==='studio'||mode==='ground')stage2();};
 for(const id of ['sW','sA','sQ','sHelm','sWho'])$(id).onchange=()=>{studioFill();if(mode==='studio'||mode==='ground')restart();};
+$('sHeal').onclick=()=>{queue=[];const v=fighters[1];if(v)v.g.__who=null;restart();};
 $('sPlay').onclick=()=>{queue=[];if(mode!=='studio'&&mode!=='ground'){mode='studio';studioFill(true);restart();}else stage2();};
 $('sParts').onclick=()=>{const L=KL(),K=+$('sKind').value;queue=PARTS.filter(L[K].parts).map(p=>[K,p]);next();};
 $('sAll').onclick=()=>{const L=KL();queue=L.map((k,i)=>{const ps=PARTS.filter(k.parts);return [i,ps.includes('chest')?'chest':ps[0]];});next();};
@@ -226,7 +229,7 @@ let queue=[],scene=null;
 function next(){const it=queue.shift();if(!it)return;$('sKind').value=String(it[0]);studioFill();$('sPart').value=it[1];restart();}
 function armorSet(){const m=$('sA').value,q=+$('sQ').value;if(m==='none')return $('sHelm').checked?{helm:M.makeItem('armor','helm',q,'leather')}:{};const ids=['chestplate','leftarm','rightarm','leftleg','rightleg','leftshoulder','rightshoulder',...($('sHelm').checked?['helm']:[])];return Object.fromEntries(ids.map(d=>[d,M.makeItem('armor',d,q,m)]));}
 function studioSetup(b,F,p,q){fighters=[p,q];M.battleCamera=(bb,width,height,W,H)=>{const z=5,x=(p.x+q.x)/2,y=(p.y+q.y)/2-30;return {zoom:z,x:cl(x,W/(z*2),W-W/(z*2)),y:cl(y,H/(z*2),H-H/(z*2))};};
- q.g.enemyGear={...(q.g.enemyGear||{}),armor:armorSet(),shield:null};p.g.enemyGear={...(p.g.enemyGear||{}),shield:null};for(const a of [p,q]){a.gaitOff=true;a.puppet={hold:true};a.energy=200;}
+ q.g.enemyGear={...(q.g.enemyGear||{}),armor:armorSet(),shield:null};q.g.__who=$('sWho').value;if(carry){q.g.body=carry.body;q.g.gaitMarks=carry.marks;q.g.blood=carry.blood;if(carry.scars)q.g.scars=carry.scars;}p.g.enemyGear={...(p.g.enemyGear||{}),shield:null};for(const a of [p,q]){a.gaitOff=true;a.puppet={hold:true};a.energy=200;}
  q.x=F.cx+40;q.y=F.cy;p.y=F.cy;stage2();}
 // gleiche Rechnung wie injury-shots.js (V.seed), damit Beschriftung und Bild (Rippe, Seite, Halswirbel) übereinstimmen
 const vseed=(part,kind,g)=>[...(part+kind+(g?.id||g?.name||''))].reduce((n,c)=>(n*31+c.charCodeAt(0))%9973,7);
@@ -235,7 +238,7 @@ function anat(kind,part,g){const sd=vseed(part,kind,g),side=sd%2?'links':'rechts
   liver:'Leber eingerissen · Ruptura hepatis',spleen:'Milz geplatzt · Ruptura lienis',kidney:`Niere ${side} durchstochen · Ren ${sd%2?'sinister':'dexter'}`,gutted:'Bauchdecke aufgeschlitzt, Darm tritt aus · Prolapsus intestini',pelvis:'Becken gebrochen · Fractura ossis ilii',
   neckbreak:`${3+sd%3}. Halswirbel gebrochen (C${3+sd%3}) · Vertebra cervicalis ${ROM[3+sd%3]}`,larynx:'Kehlkopf zertrümmert · Cartilago thyroidea',collarbone:`Schlüsselbein ${part==='ls'?'links':'rechts'} gebrochen · Clavicula ${part==='ls'?'sinistra':'dextra'}`}[kind]||null;}
 function stage2(){const b=S.battle;if(!b||(mode!=='studio'&&mode!=='ground'))return;const [p,q]=fighters,K=KL()[+$('sKind').value],w=M.weapon(p),tech=K.tech||TECH(K.kind,w.id),pose=K.pose||'stand';
- for(const pt of Object.values(q.g.body)){pt.hp=100;pt.bleed=0;pt.missing=false;pt.fracture=null;}q.g.blood=100;
+ if(!$('sKeep').checked||q.g.dead){for(const pt of Object.values(q.g.body)){pt.hp=100;pt.bleed=0;pt.missing=false;pt.fracture=null;pt.internal=false;pt.deepStabs=0;pt.skullFracture=false;}q.g.blood=100;q.g.gaitMarks=[];}else{for(const pt of Object.values(q.g.body))pt.bleed=Math.min(pt.bleed||0,1.5);q.g.blood=Math.max(q.g.blood,70);}
  const reach=K.kind==='arrow'?220:tech==='groundFinish'?38:pose==='kneelBack'?26:Math.max(40,(M.effective(p).range||60)*.82+10);
  Object.assign(q,{a:pose==='kneelBack'?0:Math.PI,state:'idle',hit:0,facePain:0,fallTimer:0,fallDuration:0,kneeTimer:0,down:false});
  if(pose==='lying')Object.assign(q,{fallTimer:9,fallDuration:10,riseDuration:1.25,state:'fallen',fallSide:-1});
@@ -246,7 +249,8 @@ function stage2(){const b=S.battle;if(!b||(mode!=='studio'&&mode!=='ground'))ret
 function stepStudio(dtReal){const b=S.battle;if(!b||!scene)return;const [p,q]=fighters,sp=+$('speed').value||1,s=scene;
  const slow=liveShot?.15:1,dt=dtReal*sp*slow;
  if(p.pierceContact){p.pierceContact.t+=dt;p.pierceContact.left-=dt;if(p.pierceContact.left<=0)p.pierceContact=null;}
- if(s.hit&&!liveShot){s.done-=dtReal;if(s.done<=0){scene=null;if(queue.length)next();else setTimeout(()=>{if((mode==='studio'||mode==='ground')&&!scene&&!queue.length)stage2();},600);}}
+ if(s.hit&&!liveShot&&s.after){const r=s.after;s.after=null;if(r==='sever'&&!q.g.body[s.part]?.missing)M.sever?.(p,q,s.part);else if(r==='death')M.death?.(q,s.K.inj||s.K.name,p);else if(r==='down')M.knockdown?.(q,s.K.inj||s.K.name,6);s.done=r==='death'||r==='down'?2.4:1.4;}
+ if(s.hit&&!liveShot){s.done-=dtReal;if(s.done<=0){scene=null;const dead=q.g.dead||!q.g.body.head||q.g.body.head.missing;if(queue.length)next();else setTimeout(()=>{if((mode==='studio'||mode==='ground')&&!scene&&!queue.length){if(dead||S.battle?.finale||S.battle?.result)restart();else stage2();}},600);}}
  s.t+=dt;const t0=.45,tw=t0+s.wind,ts=tw+s.swing;
  if(s.t<t0){p.state='idle';return;}
  const techR=s.tech==='shoot'?'thrust':s.tech;
@@ -255,7 +259,7 @@ function stepStudio(dtReal){const b=S.battle;if(!b||!scene)return;const [p,q]=fi
   if(!s.hit&&s.t>tw+s.swing*.45){s.hit=true;q.hit=.35;q.facePain=1.4;const cp=M.contactAnchor(q,['head','neck','belly'].includes(s.part)?s.part:'chest');M.emit?.(cp.x,cp.y,16,'#aa3c36',90);M.shake=4;M.sound?.(BLUNT.includes(M.weapon(p).id)?'heavy':'hit');
    if(s.K.kind==='through')(s.tech==='groundFinish'?(p.finHold=.7):p.pierceContact={target:q.id,part:s.part,left:.9,len:.9,t:0,through:true,weaponId:M.weapon(p).item?.id});
    const kind=s.K.kind,lab=kind==='through'?M.pierceFx?.labelFor(M.pierceFx.make({part:s.part,weapon:M.weapon(p).id,kind:'pierce',seed:7,down:s.pose==='lying'})):null,wid=M.weapon(p).id;
-   liveShot=IS.start({g:q.g,team:1,part:s.part,kind,injury:s.K.inj||(kind==='through'?'Durchstochen':s.K.name),title:s.K.title||(kind==='through'?(s.pose==='lying'?'Abgestochen':'Durchstich'):undefined),wid,cls:techR==='thrust'&&POINT.includes(wid)&&kind!=='through'?'spear':undefined,attacker:p.g.name,weaponName:WN(wid),dramatic:true,line3:lab?.de||anat(kind,s.part,q.g)||undefined});liveT0=performance.now();s.done=1;}
+   liveShot=IS.start({g:q.g,team:1,part:s.part,kind,injury:s.K.inj||(kind==='through'?'Durchstochen':s.K.name),title:s.K.title||(kind==='through'?(s.pose==='lying'?'Abgestochen':'Durchstich'):undefined),wid,cls:techR==='thrust'&&POINT.includes(wid)&&kind!=='through'?'spear':undefined,attacker:p.g.name,weaponName:WN(wid),dramatic:true,line3:lab?.de||anat(kind,s.part,q.g)||undefined});liveT0=performance.now();s.done=1;s.after=G.applyInjury(p,q,kind,s.part,wid,s.K.inj||s.K.name);}
   return;}
  p.swing=0;p.state='idle';p.finisher=null;}
 studioFill(true);
