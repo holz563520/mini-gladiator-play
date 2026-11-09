@@ -92,8 +92,8 @@ const R=M.combatResponses;
 BC.handles=(a,b,w,projectile)=>{if(!BC.active||!human(b))return false;
  if(projectile)return !!w?.ammo&&w.id!=='net'&&!(M.usableShield(b)&&!M.weapon(b).twoHand)&&!!WDEF[M.weapon(b).id]&&!M.weapon(b).ammo;// Geschoss an der Waffe abgelenkt (mit Schild bleibt es beim bisherigen Schildblock)
  return human(a)&&!!WDEF[w?.id]&&!w.ammo&&!['kick','shieldBash'].includes(a.swingKind);};
-// Pfeile, Bolzen, Wurfwaffen ohne Schild: mit der Waffe nur sehr selten abzuwehren (Regel „arrows“)
-BC.arrowFactor=()=>BC.rules.arrows?.12:1;
+// Pfeile, Bolzen, Wurfwaffen ohne Schild: mit der Waffe etwas seltener abzuwehren, etwa 10 % (Regel „arrows“, 9.11. Wunsch Thomas)
+BC.arrowFactor=()=>BC.rules.arrows?.9:1;
 if(R?.block){const orig=R.block;R.block=(a,b,projectile,w)=>{orig(a,b,projectile,w);if(BC.handles(a,b,w,projectile)){if(projectile)onArrowParry(a,b,w);else onBlock(a,b,w);}};}
 function onBlock(a,b,w){
  let pl=plans.get(b.id);
