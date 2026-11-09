@@ -21,7 +21,9 @@ const DEF={
  sprintGap:200,jogGap:70,hold:.35,
  tiredNoSprint:.3,tiredWalk:.12,legsNoSprint:.72,legsWalk:.45,
  // Schrittfrequenz (Doppelschritte je Sekunde) je Gangart
- cWalk:.95,cGuard:1.1,cJog:1.5,cSprint:1.95,cSide:1.25,cBack:1.15
+ cWalk:.95,cGuard:1.1,cJog:1.5,cSprint:1.95,cSide:1.25,cBack:1.15,
+ // Ansturm und Angriff im Lauf (Vorschlag, nicht freigegeben)
+ runAttack:1,runHit:.3,chargeDmg:1.5,ramCharge:.32,ramRun:.15,cryDist:260
 };
 const P={...DEF};
 const G=M.gait={active:false,P,DEF,MODES,NAME,COLOR};
@@ -49,20 +51,56 @@ function physics(a,mode,dirWanted,base,ef,dt,cap=Infinity){
 function nearestFoe(a){const b=M.s.battle;let best=Infinity;if(!b)return best;for(const o of b.actors)if(o.team!==a.team&&!o.down&&!o.g.dead){const d=Math.hypot(o.x-a.x,o.y-a.y);if(d<best)best=d;}return best;}
 function combatNear(a,dt){const d=nearestFoe(a),c=d<230?1:d>380?0:1-(d-230)/150;a.gaitC=(a.gaitC??c)+(c-(a.gaitC??c))*(1-Math.exp(-4*dt));}
 
+const ev=(kind,a,extra)=>{try{G.onEvent?.({kind,a,...extra});}catch{}};
+const pitch=a=>M.voicePitch?.(a.g)??1;
+// Kampfschrei: wer mit der Waffe auf seinen Gegner zusprintet, hebt die Waffe und schreit (einmal je Ansturm)
+function rushCry(a,o,mode,dt){
+ const w=M.weapon(a),melee=!o.isRanged&&!w.ammo,running=(mode==='sprint'||mode==='jog'&&(a.cried||a.gaitW?.sprint>.3))&&(a.gv||0)>(a.gaitBase||80)*.85,want=(running&&melee&&o.target&&!o.target.down&&o.d-o.keep<P.cryDist)?1:0;
+ a.gaitRush=(a.gaitRush||0)+(want-(a.gaitRush||0))*(1-Math.exp(-(want?5:3)*dt));
+ if(want&&a.gaitRush>.5&&!a.cried){a.cried=true;a.shoutTimer=.8;M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-62,w.id==='fist'?'HAAA!':'KAMPFSCHREI!','#f1cb7c');ev('cry',a);}
+ if(!o.target||o.d-o.keep>P.cryDist+160)a.cried=false;}
+// Ausholen im Lauf: rechtzeitig vor der Schlagdistanz ausholen, im Lauf weiter heran, der Schlag landet bei der Ankunft
+function runAttack(a,o,base){
+ const t=o.target,w=M.weapon(a);if(!P.runAttack||!t||t.down||t.g.dead||t.surrendered||o.isRanged||w.ammo||o.flank||a.block||a.retreat>0||a.cool>0||a.energy<18||a.state!=='move'||a.netTimer>0)return false;
+ if((a.gv||0)<base*.6||Math.abs(ad(Math.atan2(t.y-a.y,t.x-a.x),a.a))>.6)return false;
+ const reach=o.ef.range+t.r,wind=(M.meleeTiming?.(a.g,w,'slash')?.wind||.3)*1.1,lead=a.gv*wind*.85;
+ if(!(o.d>reach-2&&o.d<reach+lead+6))return false;
+ M.beginAttack(a,t);if(!(a.wind>0)||['kick','shieldBash','groundFinish'].includes(a.technique))return true;
+ const k=cl((a.gv/base-.6)/.85,0,1);a.runAttack={v:a.gv,base,target:t.id};a.chargeBoost=Math.max(a.chargeBoost||0,1+P.runHit*k);
+ if(a.gv>base*1.15)a.rushHit={t:M.s.battle.time,v:a.gv,base,kind:'run'};ev('runAttack',a,{v:a.gv,boost:a.chargeBoost,tech:a.technique});return true;}
+G.windMove=(a,dt,ef)=>{
+ const r=a.runAttack;if(!r)return;const t=M.s.battle.actors.find(x=>x.id===r.target);if(!t||t.g.dead||t.down){a.runAttack=null;return;}
+ const d=Math.hypot(t.x-a.x,t.y-a.y),contact=ef.range+t.r-3,dir=Math.atan2(t.y-a.y,t.x-a.x),A=accelOf(a,ef);
+ a.gv=Math.max(r.base*P.guard,(a.gv||r.v)-A*P.dec*.5*dt);const step=Math.min(a.gv*dt,Math.max(0,d-contact));
+ if(step>0){a.x+=Math.cos(dir)*step;a.y+=Math.sin(dir)*step;if(M.roundField?.())M.fieldPt?.(a,a.r||14);}
+ a.a+=cl(ad(dir,a.a),-6*dt,6*dt);if(a.wind<=dt)a.runAttack=null;};
+// Ansturm (Soldaten): deutlich mehr Wucht, kann umrennen
+G.rush=(a,t)=>{a.chargeBoost=P.chargeDmg+(a.g.moves?.charge||0)*.003;a.rushHit={t:M.s.battle.time,v:a.gv||0,base:a.gaitBase||M.effective(a).speed,kind:'charge'};a.cried=true;ev('charge',a,{boost:a.chargeBoost});};
+// Umrennen: nur bei echtem Treffer (nicht geblockt) kurz nach Ansturm/Sprint-Angriff
+G.ram=(a,b,dmg)=>{
+ const r=a.rushHit;if(!G.active||!r||!b||b.g.dead)return;a.rushHit=null;if(M.s.battle.time-r.t>1.6)return;
+ const sk=cl(r.v/Math.max(1,r.base),0,2.2),ga=a.g,gb=b.g,shield=!!M.usableShield?.(b);
+ const chance=cl((r.kind==='charge'?P.ramCharge:P.ramRun)+((ga.weight||80)-(gb.weight||80))*.006+((ga.stats.strength||50)-(gb.stats.strength||50))*.004+(sk-1)*.12-((gb.stats.balance??50)-50)*.004-(shield?.08:0),.04,.85);
+ const ang=Math.atan2(b.y-a.y,b.x-a.x),roll=M.rng();
+ b.kx=(b.kx||0)+Math.cos(ang)*(roll<chance?170:95);b.ky=(b.ky||0)+Math.sin(ang)*(roll<chance?170:95);
+ if(roll<chance&&M.knockdown(b,'Umgerannt',2.6)){M.floater?.(b.x,b.y-62,'UMGERANNT!','#ff8a5a');M.shake=Math.max(M.shake||0,5);M.sound?.('fall');ev('ram',a,{b,chance});}
+ else ev('shove',a,{b,chance});};
+{const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p)G.ram(a,b,d);return out;};R.__gait=true;}}
+
 // --------------------------------------------------------------- KI-Haken (sim.js updateActor)
 G.drive=(a,o)=>{
  if(!G.active||a.gaitOff)return null;
  const T=M.T,b=M.s.battle,t=b?.time||0,dt=o.dt;
  if(a.gaitT==null||t-a.gaitT>.15){a.gv=0;a.gdir=undefined;}// nach Schlag/Taumeln/Ausweichen: aus dem Stand
  a.gaitT=t;
- const base=o.speed/(a.sprinting?T.sprintMult:1),l=Math.hypot(o.vx,o.vy),gap=o.d-o.keep;
+ a.runAttack=null;const base=o.speed/(a.sprinting?T.sprintMult:1),l=Math.hypot(o.vx,o.vy),gap=o.d-o.keep;
  let mode;
  if(l<.05)mode='stand';
  else if(a.state==='circle')mode='side';
  else if(a.state==='retreat'){mode='back';a.gaitFar=o.d>o.keep+90;}
  else if(a.state==='flank')mode=gap>P.sprintGap+60?'sprint':'jog';
  else if(o.hunt)mode=gap>140?'sprint':'jog';
- else if(a.state==='move')mode=gap>P.sprintGap?'sprint':gap>P.jogGap?'jog':'guard';
+ else if(a.state==='move'){mode=gap>P.sprintGap?'sprint':gap>P.jogGap?'jog':'guard';/* wer im Lauf zuschlagen kann, läuft durch bis zum Ausholen */if(mode==='guard'&&P.runAttack&&!(a.cool>0)&&a.energy>=18&&!o.flank&&!o.isRanged&&(a.gv||0)>base*.6&&o.target&&!o.target.down)mode=a.gaitMode==='sprint'?'sprint':'jog';}
  else mode='jog';
  mode=capMode(a,mode,o.ef);
  // kurze Haltezeit gegen Flackern zwischen Gangarten (Stehen/Umschalten in langsamere Gangart sofort)
@@ -70,11 +108,13 @@ G.drive=(a,o)=>{
  if(a.gaitMode&&mode!==a.gaitMode&&order[mode]>order[a.gaitMode]&&t-(a.gaitSince||0)<P.hold)mode=a.gaitMode;
  if(mode!==a.gaitMode){a.gaitMode=mode;a.gaitSince=t;}
  // vorausschauend abbremsen: höchstens so schnell, dass man bis zur Schlagdistanz auf Kampfschritt herunterkommt
- const cap=a.state==='move'&&!o.hunt&&!o.isRanged?base*P.guard+Math.sqrt(2*accelOf(a,o.ef)*P.dec*Math.max(0,gap)):Infinity;
+ const swingReady=P.runAttack&&!(a.cool>0)&&a.energy>=18&&!o.flank;// wer zuschlagen kann, bremst nicht ab, sondern holt im Lauf aus
+ const cap=a.state==='move'&&!o.hunt&&!o.isRanged&&!swingReady?base*P.guard+Math.sqrt(2*accelOf(a,o.ef)*P.dec*Math.max(0,gap)):Infinity;
  const v=physics(a,mode,l>=.05?Math.atan2(o.vy,o.vx):null,base,o.ef,dt,cap);
  // Sprint kostet Ausdauer nur, wenn wirklich gesprintet wird (Spiel: dt*3)
  const mySprint=mode==='sprint'&&v>base*1.05;if(a.sprinting&&!mySprint)a.energy+=dt*3;else if(!a.sprinting&&mySprint)a.energy=Math.max(0,a.energy-dt*3);a.sprinting=mySprint;
- a.gaitBase=base;combatNear(a,dt);blendTo(a,v<3&&mode==='stand'?'stand':mode==='stand'?(a.gaitW?.sprint>.4?'jog':'walk'):mode,dt);
+ a.gaitBase=base;combatNear(a,dt);rushCry(a,o,mode,dt);
+ if(runAttack(a,o,base))return {speed:0,vx:0,vy:0};blendTo(a,v<3&&mode==='stand'?'stand':mode==='stand'?(a.gaitW?.sprint>.4?'jog':'walk'):mode,dt);
  if(v<.5)return {speed:0,vx:0,vy:0};
  if(l<.05&&!['move','circle','retreat','flank'].includes(a.state))a.state='move';// Auslaufen
  return {speed:v,vx:Math.cos(a.gdir),vy:Math.sin(a.gdir)};
@@ -83,7 +123,7 @@ G.drive=(a,o)=>{
 // Ansturm (sim.js, Spiel-eigene Bewegung): kein Sprung auf volles Tempo, sondern explosiver Antritt aus dem aktuellen Lauf
 G.charge=(a,speed,ef,dt)=>{
  if(!G.active||a.gaitOff)return speed;const t=M.s.battle?.time||0;if(a.gaitT==null||t-a.gaitT>.15)a.gv=0;a.gaitT=t;
- a.gv=Math.min(speed,(a.gv||0)+accelOf(a,ef)*1.35*dt);a.gaitMode='sprint';a.sprinting=true;blendTo(a,'sprint',dt);a.gdir=a.a;return a.gv;
+ a.gv=Math.min(speed,(a.gv||0)+accelOf(a,ef)*1.35*dt);a.gaitMode='sprint';a.gaitRush=Math.min(1,(a.gaitRush||0)+dt*6);a.sprinting=true;blendTo(a,'sprint',dt);a.gdir=a.a;return a.gv;
 };
 // --------------------------------------------------------------- Schrittlänge (sim.js updateLocomotion)
 G.stride=(a,speed,renderScale=1)=>{
@@ -97,7 +137,7 @@ G.stride=(a,speed,renderScale=1)=>{
 const GAIT_STATES=['move','circle','flank','retreat','charge'];
 const RUSH={stand:0,walk:0,guard:0,jog:0,sprint:1,side:0,back:0};
 // Ansturm (Spiel-eigene Bewegung) wird wie Sprinten gezeichnet; Taumeln, Ausweichen usw. bleiben wie bisher
-function shownWeights(a){if(!G.active||a.gaitOff||!a.gaitW||!GAIT_STATES.includes(a.state))return null;return a.state==='charge'?RUSH:a.gaitW;}
+function shownWeights(a){if(!G.active||a.gaitOff||!a.gaitW||!(GAIT_STATES.includes(a.state)||a.runAttack&&a.wind>0))return null;return a.state==='charge'?RUSH:a.gaitW;}
 G.style=a=>{
  const W=shownWeights(a);if(!W)return null;const v=Math.max(0,a.gaitSpeed??a.moveSpeed??0)/Math.max(.3,a.renderScale||1),base=a.gaitBase||80,fw=a.gaitForward??1;
  const run=cl(W.jog*.42*cl(v/(base*.8),0,1)+W.sprint*cl(v/(base*1.25),.3,1),0,1);
@@ -123,6 +163,11 @@ G.arms=(R,a,w,roots,shield)=>{
  const acc={mx:0,my:0,ox:0,oy:0,an:0,k:0};
  mixP(acc,nat,W.stand);mixP(acc,walk,W.walk);mixP(acc,gd,W.guard+W.side);mixP(acc,back,W.back);mixP(acc,jog,W.jog);mixP(acc,sprint,W.sprint);
  const k=acc.k||1;R.main.x=acc.mx/k;R.main.y=acc.my/k;R.off.x=acc.ox/k;R.off.y=acc.oy/k;R.angle=acc.an/k;
+ // Ansturm/Sprint auf den Gegner: Waffe hoch (Speer eingelegt nach vorn), Schild vorn
+ const rush=(a.gaitRush||0)*cl(W.sprint+W.jog,0,1);if(rush>.01&&!fist){const bob=Math.sin(ph*2)*1.2;
+  const up=poke?{m:{x:r.x+11,y:r.y+6+bob},an:-.08}:two?{m:{x:r.x-1,y:r.y-15+bob},an:-2.35}:{m:{x:r.x+2,y:r.y-21+bob},an:-2.05};
+  R.main.x+=(up.m.x-R.main.x)*rush;R.main.y+=(up.m.y-R.main.y)*rush;R.angle+=(up.an-R.angle)*rush;
+  if(shield){R.off.x+=(l.x+18-R.off.x)*rush;R.off.y+=(l.y+3-R.off.y)*rush;}}
 };
 
 // --------------------------------------------------------------- Vorführfigur (Gang-Editor)
