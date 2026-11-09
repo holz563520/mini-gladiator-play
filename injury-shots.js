@@ -188,7 +188,7 @@ function bone(T,V,len,w,ang,C,n=0){if(len<1)return;if(V.deferred){V.deferred.pus
  for(let i=0;i<len;i++){const ww=w*(1-.2*i/len);T.r(x0+cx*i+nx*(ww/2+1),y0+cy*i+ny*(ww/2+1),1,1,'#3a0c0a');for(let o=-ww/2;o<=ww/2;o+=.5){const c=o<-ww/4?'#f6efd8':o>ww/4?'#b5a684':'#e6dcc0';T.r(x0+cx*i+nx*o,y0+cy*i+ny*o,1,1,i<len*.2?(o>0?'#7a1712':'#a8372f'):c);}if(i>len*.2&&i<len*.6&&i%5===2)T.r(x0+cx*i+nx*ww/4,y0+cy*i+ny*ww/4,1,1,'#a8372f');}
  const ex=x0+cx*len,ey=y0+cy*len;for(let o=-w/2;o<=w/2;o+=.5){const j=Math.round((rnd(o*7,s)-.3)*3);T.r(ex+cx*j+nx*o,ey+cy*j+ny*o,1,1,'#efe6d0');}T.r(ex-cx*.5,ey-cy*.5,Math.max(1,w*.5),1,'#8a2a20');T.r(ex+nx*w*.3,ey+ny*w*.3,1,1,'#ffffff');}
 /* Pumpen: Blut quillt im Herzschlag aus der Wunde, bei starken Wunden spritzt es in Bögen; wird langsam schwächer */
-const PUMP={scrape:.12,cut:.3,deepcut:.75,stab:.35,deepstab:.8,arrow:.45,sinew:.6,gut:.9,pierce:.85,fracture:.35,badfracture:.75,shatter:.9,pulp:1,sever:.6,skullfracture:.4};
+const PUMP={gutted:.8,scrape:.12,cut:.3,deepcut:.75,stab:.35,deepstab:.8,arrow:.45,sinew:.6,gut:.9,pierce:.85,fracture:.35,badfracture:.75,shatter:.9,pulp:1,sever:.6,skullfracture:.4};
 const beatOf=k=>{const r=1.25,b=k*r;return {n:Math.floor(b),u:(b%1)/r};};
 function pump(T,V,k,kind){const S=PUMP[kind]||0;if(!S||k<.05||!V?.A)return;const {n,u}=beatOf(k),fade=Math.max(.35,1-k/9),P=Math.exp(-u*7)*S*fade,s=V.seed||0;
  /* Quellen */T.oval(V.A.x,V.A.y+1,1+2.5*S+3*P,.8+1.6*S+2*P,'#8f1d16');T.oval(V.A.x-.5,V.A.y+.5,.6+1.5*P+S,.5+P,'#b02a20');if(P>.15)T.r(V.A.x-1,V.A.y-1,1,1,'#e8907c');
@@ -236,9 +236,86 @@ function throughFx(T,V,k,C){const MK=V.mask,inside=(x,y)=>{x=Math.round(x);y=Mat
   T.r(x-w/2,y-w/2,w,w,c);}
  // Tempolinien beim Anflug
  if(k<0&&k>-.3)for(let i=0;i<6;i++){const o=(i-2.5)*4,x=tx-u.x*60-u.y*o,y=ty-u.y*60+u.x*o;for(let j=0;j<30;j+=2)T.r(x-u.x*j,y-u.y*j,1,1,'#ffffff22');}}
+// ---------- Innere Verletzungen (Gang-Editor, Vorschlag – im Spiel noch nicht ausgelöst) ----------
+// Über der Stelle öffnet sich ein anatomisches Fenster (Haut reißt kreisförmig auf, Rand glimmt): darin Knochen und Organe,
+// an denen die Verletzung abläuft. Alles pixelweise innerhalb der Körpermaske.
+const TAU=Math.PI*2,BONE='#efe6cc',BONE_S='#c9bd9a',BONE_D='#6b5a44',MARROW='#b8423a';
+function cutaway(T,V,k,R,ry){const A=V.A,MK=V.mask,o=out(cl((k+.02)/.3)),r=R*o,rr=(ry||R)*o;
+ const inW=(x,y)=>{const dx=(x-A.x)/Math.max(1,r),dy=(y-A.y)/Math.max(1,rr);const X=Math.round(x),Y=Math.round(y);return dx*dx+dy*dy<=1&&X>=0&&Y>=0&&X<FW&&Y<FH&&(!MK||MK[Y*FW+X]);};
+ for(let y=Math.floor(A.y-rr);y<=A.y+rr;y++)for(let x=Math.floor(A.x-r);x<=A.x+r;x++)if(inW(x,y)){const d=Math.hypot((x-A.x)/r,(y-A.y)/rr);T.r(x,y,1,1,d>.86?'#4a1210':d>.6?'#2e0b0a':'#240807');}
+ return {inW,r,ry:rr,A,ok:r>2};}
+function rim(T,W,k){if(!W.ok)return;const n=64;for(let i=0;i<n;i++){const a=i/n*TAU,j=1+((i*37)%5)*.04,x=W.A.x+Math.cos(a)*W.r*j,y=W.A.y+Math.sin(a)*W.ry*j;if(!W.inW(W.A.x+Math.cos(a)*W.r*.9,W.A.y+Math.sin(a)*W.ry*.9))continue;T.r(x,y,1,1,i%3?'#a8372f':'#e8907c');}
+ if(k<.6){const g=1-k/.6;for(let i=0;i<n;i+=2){const a=i/n*TAU;T.r(W.A.x+Math.cos(a)*(W.r+1),W.A.y+Math.sin(a)*(W.ry+1),1,1,g>.5?'#ffd27a':'#c98a3a');}}}
+function px(T,W,x,y,c,w=1,h=1){if(W.inW(x,y))T.r(x,y,w,h,c);}
+function ribBand(T,W,y0,slope,curve,brk,gap,drop,crackK){// eine Rippe als gebogenes Band; brk: Bruchstelle (x), gap: Spalt, drop: Versatz
+ for(let x=Math.floor(W.A.x-W.r);x<=W.A.x+W.r;x++){const dx=x-W.A.x,yc=y0+dx*slope+dx*dx*curve,after=brk!=null&&x>brk,off=after?drop:0;if(brk!=null&&Math.abs(x-brk)<gap/2)continue;
+  for(let t=0;t<4;t++){const y=Math.round(yc+t+off);px(T,W,x,y,t===0?'#fbf5e6':t===3?BONE_D:t===2?BONE_S:BONE);}}
+ if(brk!=null&&crackK>0){for(let i=0;i<5;i++){px(T,W,brk-gap/2-1,y0+(brk-W.A.x)*slope+i-1,i%2?MARROW:'#fbf5e6');px(T,W,brk+gap/2+1,y0+(brk-W.A.x)*slope+i-1+drop,i%2?MARROW:'#fbf5e6');}}}
+function splinters(T,W,x,y,k,n,seed,spread=1){for(let i=0;i<n;i++){const a=((i*53+seed)%20)/20*TAU,v=(8+((i*31+seed)%10))*spread,u=cl(k/.5),X=x+Math.cos(a)*v*u,Y=y+Math.sin(a)*v*u+u*u*6;px(T,W,X,Y,i%3?BONE:'#fbf5e6',i%4?1:2,1);}}
+function bleedIn(T,W,x,y,k,amt,seed){const n=Math.round(amt*cl(k/1.2)*40);for(let i=0;i<n;i++){const a=((i*71+seed)%40)/40*TAU,d=((i*17+seed)%13)*cl(k/1.2)*amt*.8,yy=y+Math.sin(a)*d*.6+cl(k-.3)*((i*13)%7);px(T,W,x+Math.cos(a)*d,yy,i%3?'#8f1d16':'#b02a20',2,2);}}
+function poolUp(T,W,k,from,amt){const lvl=W.A.y+W.ry-cl((k-from)/2)*W.ry*2*amt;for(let y=Math.floor(lvl);y<=W.A.y+W.ry;y++)for(let x=Math.floor(W.A.x-W.r);x<=W.A.x+W.r;x++)px(T,W,x,y,(x+y)%5?'#6b0f0b':'#8f1d16');}
+const sideOf=V=>(V.seed||0)%2?'links':'rechts';
+const INNER={
+ ribs:(T,V,k)=>{const W=cutaway(T,V,k,24,20);if(!W.ok)return;const c=W.A.y-2;for(let y=W.A.y-W.ry;y<W.A.y+W.ry;y+=2)for(let x=W.A.x-W.r;x<W.A.x+W.r;x+=3)px(T,W,x+((y*7)%3),y,'#8a3a3a');
+  const crack=cl((k-.05)/.25),gap=2+crack*3;for(let i=-2;i<=2;i++)ribBand(T,W,c+i*8,.18,.004,i===0?W.A.x+2:null,gap,i===0?crack*3:0,crack);
+  if(crack>0)splinters(T,W,W.A.x+2,c,k,10,V.seed||1);bleedIn(T,W,W.A.x+2,c+2,k,.8,V.seed||1);rim(T,W,k);},
+ ribseries:(T,V,k)=>{const W=cutaway(T,V,k,26,22);if(!W.ok)return;const c=W.A.y-6;for(let y=W.A.y-W.ry;y<W.A.y+W.ry;y+=2)for(let x=W.A.x-W.r;x<W.A.x+W.r;x+=3)px(T,W,x+((y*7)%3),y,'#7a3030');
+  for(let i=-2;i<=3;i++){const ci=i>=-1&&i<=1?cl((k-(.05+(i+1)*.22))/.2):0;ribBand(T,W,c+i*8,.15,.003,ci>0?W.A.x+(i*3):null,2+ci*4,ci*(4+i),ci);if(ci>0&&ci<1)splinters(T,W,W.A.x+i*3,c+i*8,k-(.05+(i+1)*.22),6,(V.seed||1)+i,.8);}
+  bleedIn(T,W,W.A.x,c+6,k,1.1,V.seed||2);rim(T,W,k);},
+ sternum:(T,V,k)=>{const W=cutaway(T,V,k,18,26);if(!W.ok)return;const crack=cl((k-.05)/.25),cy=W.A.y;
+  for(let i=-3;i<=3;i++)for(const s of [-1,1])for(let x=0;x<16;x++){const X=W.A.x+s*(5+x),Y=W.A.y+i*8+x*.3;px(T,W,X,Y,BONE_S,1,2);}
+  for(let y=Math.floor(W.A.y-W.ry);y<=W.A.y+W.ry;y++){const off=y>cy?crack*3:0;for(let x=-4;x<=4;x++)if(!(Math.abs(y-cy)<1+crack*2))px(T,W,W.A.x+x+off*.4,y+off,x===-4?'#fbf5e6':x===4?BONE_D:BONE);}
+  if(crack>0)splinters(T,W,W.A.x,cy,k,12,V.seed||3);bleedIn(T,W,W.A.x,cy+3,k,.7,V.seed||3);rim(T,W,k);},
+ lung:(T,V,k)=>{const W=cutaway(T,V,k,25,21);if(!W.ok)return;const col=cl((k-.35)/1.6),sz=1-col*.45,c=W.A.y;
+  for(let y=Math.floor(W.A.y-W.ry);y<=W.A.y+W.ry;y++)for(let x=Math.floor(W.A.x-W.r);x<=W.A.x+W.r;x++){const dx=(x-W.A.x+4)/(W.r*.9*sz),dy=(y-W.A.y)/(W.ry*.95*sz);if(dx*dx+dy*dy<1){const sh=dx*.6-dy*.5;px(T,W,x,y,(x*3+y*5)%7===0?'#c97a7a':sh>.2?'#e8a8a8':sh<-.3?'#b06060':'#d98a8a');}}
+  const crack=cl((k-.05)/.2);for(let i=-2;i<=2;i++)ribBand(T,W,c+i*8,.16,.004,i===0?W.A.x+4:null,2+crack*2,i===0?crack*5:0,crack);
+  if(k>.2){for(let i=0;i<14;i++){const u=((k*1.3+i/14)%1),x=W.A.x+6+((i*29)%12)-6,y=c+4-u*16;px(T,W,x,y,u<.5?'#f6e6e6':'#e8b0b0',(i%3?1:2),(i%3?1:2));}bleedIn(T,W,W.A.x+4,c+6,k,1,V.seed||4);}rim(T,W,k);},
+ heart:(T,V,k)=>{const W=cutaway(T,V,k,24,22);if(!W.ok)return;const rate=k<.15?7.5:Math.max(1.2,7.5-(k-.15)*2.6),ph=k*rate,beat=Math.max(0,Math.sin(ph))**6,dead=k>2.6,s=(1+(dead?0:beat*.12))*(1-cl((k-1.6)/1.5)*.12),cx=W.A.x-2,cy=W.A.y+1;
+  for(let y=Math.floor(W.A.y-W.ry);y<=W.A.y+W.ry;y++)for(let x=Math.floor(W.A.x-W.r);x<=W.A.x+W.r;x++){const X=(x-cx)/(13*s),Y=(y-cy)/(13*s),hh=(X*X+Y*Y-1)**3-X*X*(-Y)**3;if(hh<=0){const sh=-X*.5-Y*.4,pale=cl((k-1.2)/1.6)*.4;px(T,W,x,y,mix(sh>.3?'#d0584a':sh<-.3?'#7a1a14':'#a8302a','#5a4a48',pale));}}
+  for(let i=0;i<6;i++)px(T,W,cx+4+i,cy-11-i*1.5,'#7a2a6a',2,1);for(let i=0;i<5;i++)px(T,W,cx-6-i,cy-10-i,'#c03a30',2,1);
+  if(k>.08){const kk=cl((k-.08)/.12),L=W.r+4;for(let i=0;i<L*kk;i++){const x=W.A.x-W.r-2+i,y=cy+1+i*.15;px(T,W,x,y,i>L*kk-6?'#f4f6ea':'#c2cbc0',1,2);}
+   if(!dead&&beat>.4)for(let i=0;i<10;i++){const a=-1.4+(i%5)*.35,d=beat*(6+i);px(T,W,cx+3+Math.cos(a)*d,cy+Math.sin(a)*d,'#d33a2c',2,2);}bleedIn(T,W,cx,cy+6,k,1.2,V.seed||5);poolUp(T,W,k,.6,.35);}rim(T,W,k);},
+ liver:(T,V,k)=>{const W=cutaway(T,V,k,26,19);if(!W.ok)return;const tear=cl((k-.05)/.5);
+  for(let y=Math.floor(W.A.y-W.ry);y<=W.A.y+W.ry;y++)for(let x=Math.floor(W.A.x-W.r);x<=W.A.x+W.r;x++){const dx=(x-W.A.x-3)/(W.r*.95),dy=(y-W.A.y+2+dx*5)/(W.ry*.75);if(dx*dx+dy*dy<1){const sh=-dx*.3-dy*.6;px(T,W,x,y,(x*7+y*3)%11===0?'#8e2c24':sh>.3?'#8e2c24':sh<-.4?'#4a120e':'#6b1f1a');}}
+  for(let i=0;i<22*tear;i++){const x=W.A.x-10+i,y=W.A.y-6+i*.5+((i*7)%3)-1;px(T,W,x,y,'#1a0505',1,2);px(T,W,x,y+2,'#b02a20');}
+  bleedIn(T,W,W.A.x,W.A.y+4,k,1.4,V.seed||6);poolUp(T,W,k,.5,.6);rim(T,W,k);},
+ spleen:(T,V,k)=>{const W=cutaway(T,V,k,20,18);if(!W.ok)return;const burst=cl((k-.05)/.25);
+  for(let y=Math.floor(W.A.y-W.ry);y<=W.A.y+W.ry;y++)for(let x=Math.floor(W.A.x-W.r);x<=W.A.x+W.r;x++){const dx=(x-W.A.x)/(11+burst*2),dy=(y-W.A.y-dx*4)/7;if(dx*dx+dy*dy<1&&!(burst>.3&&Math.abs(dx*3-dy)<.3*burst))px(T,W,x,y,dy<-.4?'#9a3a4a':'#7a2a3a');}
+  if(burst>0)for(let i=0;i<24;i++){const a=i/24*TAU,d=burst*(10+((i*13)%8)),x=W.A.x+Math.cos(a)*d,y=W.A.y+Math.sin(a)*d*.7+cl(k-.3)*6;px(T,W,x,y,'#b02a20',2,2);}
+  poolUp(T,W,k,.4,.55);rim(T,W,k);},
+ kidney:(T,V,k)=>{const W=cutaway(T,V,k,20,20);if(!W.ok)return;
+  for(let y=Math.floor(W.A.y-W.ry);y<=W.A.y+W.ry;y++)for(let x=Math.floor(W.A.x-W.r);x<=W.A.x+W.r;x++){const dx=(x-W.A.x)/8,dy=(y-W.A.y)/13,notch=(x-W.A.x+9)**2+(y-W.A.y)**2<20;if(dx*dx+dy*dy<1&&!notch)px(T,W,x,y,dx>.4?'#a84a3a':'#8a3a30');}
+  for(let i=0;i<4;i++)px(T,W,W.A.x-6-i,W.A.y+i*2-3,'#e0c070',1,1);
+  if(k>.05){const kk=cl((k-.05)/.12);for(let i=0;i<30*kk;i++)px(T,W,W.A.x+W.r-i,W.A.y-2+i*.1,i>30*kk-5?'#f4f6ea':'#c2cbc0',1,2);bleedIn(T,W,W.A.x,W.A.y,k,1,V.seed||7);poolUp(T,W,k,.6,.45);}rim(T,W,k);},
+ gutted:(T,V,k)=>{const A=V.A,open=out(cl((k-.02)/.35)),w=30,h=3+open*7,MK=V.mask,inM=(x,y)=>{x=Math.round(x);y=Math.round(y);return !MK||x>=0&&y>=0&&x<FW&&y<FH&&MK[y*FW+x];};
+  for(let x=-w;x<=w;x++){const hh=h*Math.sqrt(1-(x/w)**2);for(let y=-hh;y<=hh;y++)if(inM(A.x+x,A.y+y))T.r(A.x+x,A.y+y,1,1,Math.abs(y)>hh-1.5?'#c9584a':'#3a0a08');}
+  const slide=cl((k-.35)/1.6);for(let i=0;i<9;i++){const lx=A.x-22+i*5.5,ly=A.y+Math.sin(i*1.7)*2+slide*(10+((i*7)%9))*(i%3?1:.6),rr=3.2+((i*5)%3)*.6;if(k<.3)continue;
+   for(let y=-rr;y<=rr;y++)for(let x=-rr;x<=rr;x++)if(x*x+y*y<=rr*rr){const sh=-x*.3-y*.5;T.r(lx+x,ly+y,1,1,sh>1?'#f2c4c4':sh<-1?'#b86a6a':'#e0a0a0');}T.r(lx-1,ly-rr+1,2,1,'#fbe0e0');}
+  for(let i=0;i<14;i++){const x=A.x-26+i*4,len=cl((k-.2-i*.03)/1.2)*20;if(len>0)T.r(x,A.y+h,1,len,'#8f1d16');}},
+ pelvis:(T,V,k)=>{const W=cutaway(T,V,k,28,18);if(!W.ok)return;const crack=cl((k-.05)/.25),cy=W.A.y+2;
+  for(const s of [-1,1])for(let a=0;a<28;a++){const t=a/27,x=W.A.x+s*(4+t*22),y=cy-8+Math.sin(t*Math.PI)*-7+t*12,brk=s===1&&Math.abs(t-.5)<.05+crack*.04;if(brk)continue;const dy=s===1&&t>.5?crack*3:0;for(let j=0;j<5-t*2;j++)px(T,W,x,y+j+dy,j===0?'#fbf5e6':j>=3?BONE_S:BONE);}
+  for(let x=-5;x<=5;x++)for(let j=0;j<4;j++)px(T,W,W.A.x+x,cy+6+j,j===0?'#fbf5e6':BONE);
+  if(crack>0)splinters(T,W,W.A.x+15,cy-2,k,10,V.seed||8);bleedIn(T,W,W.A.x+12,cy+2,k,1,V.seed||8);rim(T,W,k);},
+ neckbreak:(T,V,k)=>{const W=cutaway(T,V,k,11,28);if(!W.ok)return;const hit=cl((k-.03)/.15),n=7,top=W.A.y-W.ry+2,hgt=(W.ry*2-4)/n,bad=2+((V.seed||0)%3);// C1..C7, gebrochen C3–C5
+  for(let y=Math.floor(W.A.y-W.ry);y<=W.A.y+W.ry;y++)px(T,W,W.A.x+3+(y>top+hgt*(bad+.5)?hit*4:0),y,'#e8d28a',1,1);// Rückenmark
+  for(let i=0;i<n;i++){const y0=top+i*hgt,sh=i===bad?hit*5:i>bad?hit*3:0,tilt=i===bad?hit*.25:0;for(let y=0;y<hgt-1.5;y++)for(let x=-6;x<=6;x++){const X=W.A.x+x+sh+(y-hgt/2)*tilt,Y=y0+y;if(i===bad&&hit>.3&&Math.abs(x+y-3)<1)continue;px(T,W,X,Y,x===-6?'#fbf5e6':x>=5?BONE_D:(y===0?'#fbf5e6':BONE));}
+   for(let x=-5;x<=5;x++)px(T,W,W.A.x+x+sh,y0+hgt-1.5,i===bad||i===bad-1?(hit>.2?'#b02a20':'#b0a080'):'#b0a080',1,1);}
+  if(hit>0){splinters(T,W,W.A.x+2,top+hgt*bad+2,k,12,V.seed||9,.7);bleedIn(T,W,W.A.x+6,top+hgt*bad+3,k,.8,V.seed||9);}
+  // Beschriftung der Wirbel am Rand
+  rim(T,W,k);},
+ larynx:(T,V,k)=>{const W=cutaway(T,V,k,13,22);if(!W.ok)return;const crush=cl((k-.05)/.2);
+  for(let i=0;i<6;i++){const y=W.A.y+4+i*3;for(let x=-5;x<=5;x++)px(T,W,W.A.x+x,y,'#d8c8b8',1,2);}
+  for(let y=-10;y<=3;y++){const half=8-Math.abs(y+3)*.4,dent=y>-8&&y<0?crush*4*(1-Math.abs(y+4)/4):0;for(let x=-half;x<=half;x++){const X=W.A.x+x,Y=W.A.y-6+y+(Math.abs(x)<3?dent:0);px(T,W,X,Y,x<-half+1.5?'#fbf5e6':x>half-1.5?'#a89888':'#e8d8c8');}}
+  if(crush>0){for(let i=0;i<6;i++)px(T,W,W.A.x-3+i,W.A.y-8+i*.6+crush*3,'#6b2420');splinters(T,W,W.A.x,W.A.y-6,k,8,V.seed||10,.6);bleedIn(T,W,W.A.x,W.A.y,k,.7,V.seed||10);}
+  if(k>.4)for(let i=0;i<8;i++){const u=((k*1.1+i/8)%1);px(T,W,W.A.x-2+((i*5)%5),W.A.y+14-u*20,'#f6e6e6');}rim(T,W,k);},
+ collarbone:(T,V,k)=>{const W=cutaway(T,V,k,24,12);if(!W.ok)return;const crack=cl((k-.05)/.2),bx=W.A.x+2;
+  for(let x=Math.floor(W.A.x-W.r);x<=W.A.x+W.r;x++){const after=x>bx,dy=after?-crack*4:0;if(Math.abs(x-bx)<1+crack*2)continue;const yc=W.A.y-2+Math.sin((x-W.A.x)/W.r*Math.PI)*-2+dy;for(let t=0;t<4;t++)px(T,W,x,yc+t,t===0?'#fbf5e6':t===3?BONE_D:BONE);}
+  if(crack>0)splinters(T,W,bx,W.A.y,k,10,V.seed||11);bleedIn(T,W,bx,W.A.y+3,k,.8,V.seed||11);rim(T,W,k);}};
 function out_(v){v=cl(v);return 1-(1-v)*(1-v);}
+
 const EFFECT={
  through:Object.assign((T,V,k,C)=>throughFx(T,V,k,C),{pre:true,ownWeapon:true}),
+ ...INNER,
  scrape:(T,V,k)=>{for(let i=0;i<5;i++){const p=out((k-i*.02)/.1),x=V.A.x-8+i*4,y=V.A.y-5+i*1.2;for(let j=0;j<9*p;j++)T.r(x+j*.5,y+j,1,1,j%3?WET:'#d98a78');}},
  cut:(T,V,k)=>{gash(T,V,k,16,2);flow(T,V,k,2,9);},
  deepcut:(T,V,k)=>{gash(T,V,k,26,5);flow(T,V,k,6,24);if(k>.2&&k<1.4)spurt(T,V,k,5,10);},
@@ -375,7 +452,7 @@ function helmOf(g){try{const it=M.armorItems?.(g)?.find(i=>M.definition(i)?.part
    Nach dem Zeichnen der Ansicht: Körperfläche = nicht schwarze Bildpunkte (Hintergrund ist schwarz; Boden der Fußansicht ausgenommen).
    Der Wundpunkt rückt an die nächste Stelle, an der die Wunde mit ihrem Radius ganz auf dem Körper liegt; Schnitte drehen sich bei Bedarf
    entlang des Körperteils und werden notfalls kürzer. Blut darf weiterhin herunterlaufen und spritzen. */
-const FIT_R={through:6,scrape:4,cut:3,deepcut:4,stab:4,deepstab:5,arrow:3,sinew:4,gut:6,pierce:5,bruise:7,contusion:8,crush:9,concussion:6,skullfracture:17,skullheal:11,joint:7,fracture:6,badfracture:7,shatter:8,pulp:9,scar:3};
+const FIT_R={through:6,ribs:10,ribseries:12,sternum:8,lung:12,heart:12,liver:12,spleen:10,kidney:10,gutted:8,pelvis:12,neckbreak:6,larynx:7,collarbone:8,scrape:4,cut:3,deepcut:4,stab:4,deepstab:5,arrow:3,sinew:4,gut:6,pierce:5,bruise:7,contusion:8,crush:9,concussion:6,skullfracture:17,skullheal:11,joint:7,fracture:6,badfracture:7,shatter:8,pulp:9,scar:3};
 const FIT_HALF={cut:8,deepcut:13,sinew:10,gut:15,scar:7,scrape:6};
 function fitWound(q,V,kind,view,noMove){if(!V.A||!(kind in FIT_R))return;let img;try{img=q.getImageData(0,0,FW,FH);}catch{return;}const d=img.data,N=FW*FH,D=new Float32Array(N);
  const MK=new Uint8Array(N);for(let i=0;i<N;i++){const r=d[i*4],g=d[i*4+1],b=d[i*4+2];let on=r+g+b>24;if(on&&view==='foot'&&((r===138&&g===108&&b===68)||(r===176&&g===142&&b===92)))on=false;D[i]=on?1e4:0;MK[i]=on?1:0;}V.mask=MK;V.under=img;if(noMove)return;

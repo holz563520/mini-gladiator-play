@@ -27,7 +27,9 @@ const DEF={
  // Initiative nutzen und Abstechen am Boden (Vorschlag, nicht freigegeben)
  seize:1,seizeRange:320,finWind:1.4,finDmg:1.3,finSever:.45,finHold:.7,
  // Durchstich im Stehen (Stich-Angriff)
- pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9
+ pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9,
+ // Speer/Dreizack zweihändig: Anteil Stiche, Abklingzeit nach dem Stich
+ spearThrust:.85,spearCool:.5,spearWind:.65,spearJabEnergy:.5,spearSwing:.65
 };
 const P={...DEF};
 const G=M.gait={active:false,P,DEF,MODES,NAME,COLOR};
@@ -73,6 +75,7 @@ function runAttack(a,o,base){
  const k=cl((a.gv/base-.6)/.85,0,1);a.runAttack={v:a.gv,base,target:t.id};a.chargeBoost=Math.max(a.chargeBoost||0,1+P.runHit*k);
  if(a.gv>base*1.15)a.rushHit={t:M.s.battle.time,v:a.gv,base,kind:'run'};ev('runAttack',a,{v:a.gv,boost:a.chargeBoost,tech:a.technique});return true;}
 G.windMove=(a,dt,ef)=>{
+ /* Speer/Dreizack: kurzer Stoß aus dem Stand (schnelles Ausholen) */if(a.technique==='thrust'&&!a.jab&&LONGPOINT.has(M.weapon(a).id)&&!a.gaitOff){a.jab=true;a.wind*=P.spearWind;a.windMax*=P.spearWind;}if(a.wind<=dt)a.jab=false;
  if(a.technique==='groundFinish')finStart(a);const r=a.runAttack;if(!r)return;const t=M.s.battle.actors.find(x=>x.id===r.target);if(!t||t.g.dead||t.down){a.runAttack=null;return;}
  const d=Math.hypot(t.x-a.x,t.y-a.y),contact=ef.range+t.r-3,dir=Math.atan2(t.y-a.y,t.x-a.x),A=accelOf(a,ef);
  a.gv=Math.max(r.base*P.guard,(a.gv||r.v)-A*P.dec*.5*dt);const step=Math.min(a.gv*dt,Math.max(0,d-contact));
@@ -119,6 +122,11 @@ const TIP_Y={head:-64,neck:-57,chest:-48,belly:-37,ls:-50,rs:-50,lua:-44,rua:-44
  if(M.weapon(att).id==='trident')for(const o of [-3,3])for(let i=0;i<L-2;i++)R(x0-i,y+o,1,1,i>L-6?'#dfe4d2':'#9d2f2a');
  const tt=(P.time||0)*1;for(let i=0;i<4;i++){const u=((tt*1.4+i/4)%1);R(x0-L*.6-i,y+2+u*(18+(f.part==='head'?40:20)),1,2,'#8f2a24');}
  R(x0-1,y-3,2,6,'#6b2420');};}
+// Speer und Dreizack (Vorschlag): zweihändig geführt (gang-editor.js setzt twoHand), stechen meist und in schneller Folge –
+// halten den Gegner mit vielen Stichen auf Abstand (Abstand selbst regelt reach-ai.js wie bisher)
+const LONGPOINT=new Set(['spear','trident']);
+G.tech=(a,b)=>{if(!G.active||a.gaitOff)return;const w=M.weapon(a);if(!LONGPOINT.has(w.id)||['kick','shieldBash','groundFinish'].includes(a.technique))return;if(M.rng()<P.spearThrust)a.technique='thrust';};
+G.cool=(a,w)=>{if(!G.active||a.gaitOff||!LONGPOINT.has(w?.id)||a.technique!=='thrust')return;a.cool*=P.spearCool;a.swingMax*=P.spearSwing;a.swing=a.swingMax;/* kurzer Stoß kostet weniger Kraft */a.energy+=(M.T.atkEnergy+(w.weight||3)*M.T.atkEnergyWeight)*P.spearJabEnergy;};
 // geblockter Ansturm: mit voller Wucht in die Deckung – kann trotzdem umwerfen (60 % der Chance), sonst zurückgestoßen
 G.blocked=ev=>{if(ev?.kind==='block'&&ev.att?.rushHit?.kind==='charge')G.ram(ev.att,ev.def,0,.6);};
 {const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p){G.ram(a,b,d);G.thrust(a,b,d,w,part);}return out;};R.__gait=true;}}

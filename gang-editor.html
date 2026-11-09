@@ -47,17 +47,19 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
 .hide{display:none}
 </style></head>
 <body>
-<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND 65b63639</small><h1>GANG-EDITOR</h1>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND 62f13366</small><h1>GANG-EDITOR</h1>
 <p>Gehen, Kampfschritt, Laufen, Sprinten, Seitschritt und Rückwärts mit echten Figuren des Spiels: jede Gangart mit eigenem Tempo, Schrittrhythmus, Körperhaltung und Armhaltung. Das Tempo baut sich beim Anlaufen auf und beim Bremsen ab. Oben läuft die neue Bewegung, unten zum Vergleich die bisherige. Nur Testseite: Spiel und Spielstände bleiben unberührt.</p></header>
 <main>
 <div class="top">
  <div>
   <div class="stage"><canvas id="arenaCanvas" width="850" height="520"></canvas><canvas id="labels" width="850" height="520"></canvas><div id="hud"><span id="hudL"></span><span id="hudR"></span></div></div>
+  <div class="stage" id="cuWrap" style="display:none;margin-top:6px"><canvas id="cuCv" width="880" height="420" style="display:block;width:100%;height:auto;aspect-ratio:880/420;image-rendering:pixelated"></canvas></div>
   <div class="btns">
    <button class="main on" id="mShow">Vorführung</button>
    <button class="main" id="mFight">Echter Kampf</button>
    <button class="main" id="mAtk">Angriffe</button>
    <button class="main" id="mStudio">Nahaufnahmen</button>
+   <button class="main" id="mGround">Am Boden</button>
    <button id="pause">⏸ Pause</button>
    <button id="zoom">Zoom 1,3×</button>
    <label style="margin:0 0 0 6px">Tempo <select id="speed" style="width:80px"><option value=".25">0,25×</option><option value=".5">0,5×</option><option value="1" selected>1×</option></select></label>
@@ -71,7 +73,7 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
    <label style="margin-top:10px">Gegner in der Nähe (Kampfhaltung) <input type="checkbox" id="combat" checked></label>
    <label>Bisherige Bewegung zum Vergleich <input type="checkbox" id="cmp" checked></label>
   </div>
-  <div class="panel" id="pStudio"><h3>Nahaufnahmen-Studio</h3>
+  <div class="panel" id="pStudio"><h3 id="sTitle">Nahaufnahmen-Studio</h3>
    <label>Verletzung <select id="sKind"></select></label>
    <label>Stelle <select id="sPart"></select></label>
    <label>Waffe <select id="sW"></select></label>
@@ -128,8 +130,8 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
 <h2>So soll es ins Spiel</h2>
 <div class="panel rules" id="rules"></div>
 </main>
-<script src="data.js?v=65b63639"></script><script src="household.js?v=65b63639"></script><script src="management.js?v=65b63639"></script><script src="scout.js?v=65b63639"></script><script src="sim.js?v=65b63639"></script><script src="benchmark.js?v=65b63639"></script><script src="school.js?v=65b63639"></script><script src="weapon-art.js?v=65b63639"></script><script src="arena.js?v=65b63639"></script><script src="block-contact.js?v=65b63639"></script><script src="hit-contact.js?v=65b63639"></script><script src="reach-ai.js?v=65b63639"></script><script src="face-shots.js?v=65b63639"></script><script src="injury-shots.js?v=65b63639"></script><script src="schaedelbruch.js?v=65b63639"></script><script src="todes-fx.js?v=65b63639"></script>
-<script src="kampfsound.js?v=65b63639"></script><script src="audio.js?v=65b63639"></script><script src="sprechsound.js?v=65b63639"></script><script src="stimme.js?v=65b63639"></script><script src="schreie.js?v=65b63639"></script>
-<script src="durchstich-fx.js?v=65b63639"></script><script src="gangarten.js?v=65b63639"></script>
-<script src="gang-editor.js?v=65b63639"></script>
+<script src="data.js?v=62f13366"></script><script src="household.js?v=62f13366"></script><script src="management.js?v=62f13366"></script><script src="scout.js?v=62f13366"></script><script src="sim.js?v=62f13366"></script><script src="benchmark.js?v=62f13366"></script><script src="school.js?v=62f13366"></script><script src="weapon-art.js?v=62f13366"></script><script src="arena.js?v=62f13366"></script><script src="block-contact.js?v=62f13366"></script><script src="hit-contact.js?v=62f13366"></script><script src="reach-ai.js?v=62f13366"></script><script src="face-shots.js?v=62f13366"></script><script src="injury-shots.js?v=62f13366"></script><script src="schaedelbruch.js?v=62f13366"></script><script src="todes-fx.js?v=62f13366"></script>
+<script src="kampfsound.js?v=62f13366"></script><script src="audio.js?v=62f13366"></script><script src="sprechsound.js?v=62f13366"></script><script src="stimme.js?v=62f13366"></script><script src="schreie.js?v=62f13366"></script>
+<script src="durchstich-fx.js?v=62f13366"></script><script src="gangarten.js?v=62f13366"></script>
+<script src="gang-editor.js?v=62f13366"></script>
 </body></html>
