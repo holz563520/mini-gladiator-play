@@ -120,7 +120,7 @@ function onBlock(a,b,w){
  const ev={kind:'block',outcome,res,att:a,def:b,weapon:w.id,defWeapon:dw,shield:pl.sid,tech,init,combo:(a.comboCount||0),planned:pl.chance,time:now()};
  fire(ev);
 }
-function fire(ev){try{BC.onEvent?.(ev);}catch(e){console.warn('blockContact.onEvent',e);}}
+function fire(ev){/* Gangarten (nur Gang-Editor): Ansturm in die Deckung kann trotzdem umrennen */if(M.gait?.active)M.gait.blocked?.(ev);try{BC.onEvent?.(ev);}catch(e){console.warn('blockContact.onEvent',e);}}
 // Geschoss prallt an der Klinge ab: Funken, leises Klirren, abgelenkter Pfeil fliegt weg, kurzes Zucken der Waffe
 const flicks=new Map(),deflects=[];
 function onArrowParry(a,b,w){const d=drawn.get(b.id),bw=M.weapon(b),tip=tipOf(bw),P=d?{x:d.hand.x+d.dir.x*tip*.55,y:d.hand.y+d.dir.y*tip*.55}:{x:b.x,y:b.y-50};
