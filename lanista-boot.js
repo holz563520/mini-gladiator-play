@@ -2,7 +2,7 @@
 // LANISTA-GIER · TESTVERSION (Verletzte schicken, Abrechnung) (wie die Arena-Testversion): lädt das unveränderte Spiel, aber ohne Zugriff
 // auf echte Spielstände. Das Spiel schreibt nur in den Arbeitsspeicher dieser Seite; der Simulator speichert seinen eigenen
 // Kader unter einem eigenen Schlüssel (aufstellung-sim-v2), getrennt von allen Profilen.
-var BUILD='87bdbb6c';window.AUF_KEY='lanista-sim-v1';
+var BUILD='e0b6e5ac';window.AUF_KEY='lanista-sim-v1';
 (()=>{
  let real=null;try{real=window.localStorage;}catch{}
  window.AUF_STORE={get(k){try{return real?real.getItem(k):null;}catch{return null;}},set(k,v){try{real&&real.setItem(k,v);return true;}catch{return false;}},del(k){try{real&&real.removeItem(k);}catch{}}};
