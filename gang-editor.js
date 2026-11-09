@@ -9,8 +9,8 @@
 const M=window.MG,S=M.s,G=M.gait,$=id=>document.getElementById(id),cl=(x,a,b)=>Math.max(a,Math.min(b,x));
 const MELEE=M.weaponDefs.filter(w=>!w.ammo&&w.id!=='net'),WD=Object.fromEntries(M.weaponDefs.map(w=>[w.id,w])),SH=M.shieldDefs;
 G.active=true;M.benchmarkTimeLimit=1e9;
-// Vorschlag: Speer und Dreizack zweihändig (nur diese Seite) – kein Schild, Stichfolge über gangarten.js
-for(const w of M.weaponDefs)if(w.id==='spear'||w.id==='trident')w.twoHand=true;const CHARGE0=M.T.chargeRate,T0={...M.T},RAM0=G.P.ramCharge,RUN0=G.P.ramRun;
+// Speer und Dreizack einhändig wie im Spiel (Schild möglich), Stichfolge über gangarten.js
+const CHARGE0=M.T.chargeRate,T0={...M.T},RAM0=G.P.ramCharge,RUN0=G.P.ramRun;
 // Ton: Spiel-Klangmaschine (audio.js) nach dem ersten Antippen starten
 function unlock(){try{M.audioEngine?.start?.();}catch{}}addEventListener('pointerdown',unlock,{once:true});addEventListener('keydown',unlock,{once:true});
 function params(){Object.assign(M.T,T0);G.P.ramCharge=RAM0;G.P.ramRun=RUN0;S.options.sound=$('snd').checked;
@@ -116,7 +116,7 @@ function stepAtk(dt){const b=S.battle;if(!b||b.paused)return;const [p,q]=fighter
   if(none&&!lying&&atkHit){q.puppet={mode:'stand',lane:{x0:q.x,x1:q.x,y:q.y,dy:0},dir:-1,old:true,face:Math.PI};}}
  if(q.g.dead||q.g.blood<40)heal(q);
  if(p.swing>0||p.pendingStrike)atkHit=atkHit||atkT;
- const done=atkHit&&atkT-atkHit>(q.fallTimer>0||q.down||q.g.dead?3.6:1.8)||atkT>(SITU.has(ATKS[atkI][0])?7:9);
+ const done=!p.pierceContact&&!(p.finHold>0)&&atkHit&&atkT-atkHit>(q.fallTimer>0||q.down||q.g.dead?3.6:1.8)||atkT>(SITU.has(ATKS[atkI][0])?7:9);
  if(done){if(atkAll){atkI=(atkI+1)%ATKS.length;markAtk();}if(q.g.dead||p.g.dead||Object.values(q.g.body).some(x=>x.missing))restart();else stage();}}
 
 // ---------------------------------------------------------------- Vorführung: Ablauf steuern
@@ -237,7 +237,8 @@ function studioFill(reset){const L=KL();if(reset||kindsFor!==L){kindsFor=L;$('sK
  $('sW').innerHTML=ws.map(id=>`<option value="${id}">${WN(id)}</option>`).join('');$('sW').value=ws.includes(wv)?wv:ws[0];
  const tech=K.tech||TECH(K.kind,$('sW').value);$('sInfo').textContent=`${ws.length} Waffen können das auslösen · ${parts.length} Stelle(n) · ${({slash:'Hieb',thrust:'Stich',overhead:'Überkopf',shoot:'Schuss',throw:'Wurf',groundFinish:'Abstechen',grab:'Griff von hinten',ram:'Rammstoß'})[tech]}${K.run?' · aus dem Lauf':''}${K.pose?' · Gegner '+({lying:'liegt',kneel:'kniet',kneelBack:'kniet, von hinten',standBack:'dreht den Rücken zu'})[K.pose]:''}`;}
 $('sKind').onchange=()=>{studioFill();if(ST())restart();};$('sPart').onchange=()=>{if(ST())stage2();};
-for(const id of ['sW','sA','sQ','sHelm','sWho'])$(id).onchange=()=>{studioFill();if(ST())restart();};
+fill($('sSh'),SH,true);$('sSh').value='none';
+for(const id of ['sW','sA','sQ','sHelm','sWho','sPose','sSh'])$(id).onchange=()=>{studioFill();if(ST())restart();};
 $('sHeal').onclick=()=>{queue=[];const v=fighters[1];if(v)v.g.__who=null;restart();};
 $('sPlay').onclick=()=>{queue=[];if(!ST()){mode='studio';studioFill(true);restart();}else stage2();};
 $('sParts').onclick=()=>{const L=KL(),K=+$('sKind').value;queue=PARTS.filter(L[K].parts).map(p=>[K,p]);next();};
@@ -246,7 +247,7 @@ let queue=[],scene=null;
 function next(){const it=queue.shift();if(!it)return;$('sKind').value=String(it[0]);studioFill();$('sPart').value=it[1];restart();}
 function armorSet(){const m=$('sA').value,q=+$('sQ').value;if(m==='none')return $('sHelm').checked?{helm:M.makeItem('armor','helm',q,'leather')}:{};const ids=['chestplate','leftarm','rightarm','leftleg','rightleg','leftshoulder','rightshoulder',...($('sHelm').checked?['helm']:[])];return Object.fromEntries(ids.map(d=>[d,M.makeItem('armor',d,q,m)]));}
 function studioSetup(b,F,p,q){fighters=[p,q];M.battleCamera=(bb,width,height,W,H)=>{const z=5,x=(p.x+q.x)/2,y=(p.y+q.y)/2-30;return {zoom:z,x:cl(x,W/(z*2),W-W/(z*2)),y:cl(y,H/(z*2),H-H/(z*2))};};
- q.g.enemyGear={...(q.g.enemyGear||{}),armor:armorSet(),shield:null};q.g.__who=$('sWho').value;if(carry){q.g.body=carry.body;q.g.gaitMarks=carry.marks;q.g.blood=carry.blood;if(carry.scars)q.g.scars=carry.scars;}p.g.enemyGear={...(p.g.enemyGear||{}),shield:null};for(const a of [p,q]){a.gaitOff=true;a.puppet={hold:true};a.energy=200;}
+ q.g.enemyGear={...(q.g.enemyGear||{}),armor:armorSet(),shield:$('sSh').value==='none'?null:M.makeItem('shield',$('sSh').value,+$('sQ').value)};q.g.__who=$('sWho').value;if(carry){q.g.body=carry.body;q.g.gaitMarks=carry.marks;q.g.blood=carry.blood;if(carry.scars)q.g.scars=carry.scars;}p.g.enemyGear={...(p.g.enemyGear||{}),shield:null};for(const a of [p,q]){a.gaitOff=true;a.puppet={hold:true};a.energy=200;}
  q.x=F.cx+40;q.y=F.cy;p.y=F.cy;p.ammo=99;p.closeCombat=false;stage2();}
 // gleiche Rechnung wie injury-shots.js (V.seed), damit Beschriftung und Bild (Rippe, Seite, Halswirbel) übereinstimmen
 const vseed=(part,kind,g)=>[...(part+kind+(g?.id||g?.name||''))].reduce((n,c)=>(n*31+c.charCodeAt(0))%9973,7);
@@ -254,7 +255,7 @@ function anat(kind,part,g){const sd=vseed(part,kind,g),side=sd%2?'links':'rechts
  return {ribs:`${n}. Rippe ${side} gebrochen · Costa ${ROM[n]} ${lat}`,ribseries:`${n}. bis ${n+2}. Rippe ${side} gebrochen · Costae ${ROM[n]}–${ROM[n+2]} ${lat}`,sternum:'Brustbein quer gebrochen · Corpus sterni',lung:`Lunge ${side} angestochen, fällt zusammen · Pneumothorax`,heart:'Herz durchstochen · Ventriculus sinister cordis',
   liver:'Leber eingerissen · Ruptura hepatis',spleen:'Milz geplatzt · Ruptura lienis',kidney:`Niere ${side} durchstochen · Ren ${sd%2?'sinister':'dexter'}`,gutted:'Bauchdecke aufgeschlitzt, Darm tritt aus · Prolapsus intestini',pelvis:'Becken gebrochen · Fractura ossis ilii',
   neckbreak:`${3+sd%3}. Halswirbel gebrochen (C${3+sd%3}) · Vertebra cervicalis ${ROM[3+sd%3]}`,larynx:'Kehlkopf zertrümmert · Cartilago thyroidea',collarbone:`Schlüsselbein ${part==='ls'?'links':'rechts'} gebrochen · Clavicula ${part==='ls'?'sinistra':'dextra'}`}[kind]||null;}
-function stage2(){const b=S.battle;if(!b||(!ST()))return;const [p,q]=fighters,K=KL()[+$('sKind').value],w=M.weapon(p),tech=K.tech||TECH(K.kind,w.id),pose=K.pose||'stand';
+function stage2(){const b=S.battle;if(!b||(!ST()))return;const [p,q]=fighters,K=KL()[+$('sKind').value],w=M.weapon(p),tech=K.tech||TECH(K.kind,w.id),pose=K.pose||($('sPose')?.value==='kneel'?'kneel':'stand');
  if(!$('sKeep').checked||q.g.dead){for(const pt of Object.values(q.g.body)){pt.hp=100;pt.bleed=0;pt.missing=false;pt.fracture=null;pt.internal=false;pt.deepStabs=0;pt.skullFracture=false;}q.g.blood=100;q.g.gaitMarks=[];}else{for(const pt of Object.values(q.g.body))pt.bleed=Math.min(pt.bleed||0,1.5);q.g.blood=Math.max(q.g.blood,70);}
  const ranged=tech==='shoot'||tech==='throw',reach=ranged?(pose==='lying'?(tech==='shoot'?64:90):tech==='shoot'?200:140):tech==='groundFinish'?38:tech==='grab'||tech==='ram'?17:pose==='kneelBack'?26:Math.max(40,(M.effective(p).range||60)*.82+10);
  Object.assign(q,{grabbedBy:null,a:pose==='kneelBack'||pose==='standBack'?0:Math.PI,state:'idle',hit:0,facePain:0,fallTimer:0,fallDuration:0,kneeTimer:0,down:false});
@@ -266,6 +267,7 @@ function stage2(){const b=S.battle;if(!b||(!ST()))return;const [p,q]=fighters,K=
  const tm=M.meleeTiming?.(p.g,w,['shoot','throw','grab','ram'].includes(tech)?'thrust':tech==='groundFinish'?'groundFinish':tech)||{wind:.4,swing:.3};scene={t:0,tech,ranged,run:!!K.run,runT:1.3,x0:q.x-reach-240,x1:q.x-reach,wind:Math.max(.32,tm.wind*(tech==='groundFinish'?1.6:K.run?.7:1.25)),swing:Math.max(.22,tm.swing),hit:false,K,part:$('sPart').value,done:0,pose};
  $('hudL').innerHTML=`<b>${K.name}</b> · ${M.partName(scene.part)} · ${WN(w.id)}`;$('hudR').innerHTML=queue.length?`noch ${queue.length}`:'';}
 function stepStudio(dtReal){const b=S.battle;if(!b||!scene)return;const [p,q]=fighters,sp=+$('speed').value||1,s=scene;
+ /* Trefferaufhellung in Echtzeit abklingen lassen (Zeitlupe der Nahaufnahme hielt den Rumpf sonst lange hell) */if(q.hit>0)q.hit=Math.max(0,q.hit-dtReal);
  const slow=liveShot?.15:1,dt=dtReal*sp*slow;
  if(s.fell&&q.fallTimer>(q.riseDuration||1.25)+.05){q.fallTimer=Math.max((q.riseDuration||1.25)+.05,q.fallTimer-dt);if(s.knock){q.x+=s.knock*dt;s.knock*=Math.max(0,1-dt*5);}}
  if(s.proj&&!s.hit)s.proj.t+=dt;
@@ -376,10 +378,11 @@ $('rules').innerHTML=`<ul>
 <li><em>Initiative nutzen:</em> Liegt ein Gegner am Boden, kniet er, taumelt er oder dreht er einem den Rücken zu (weil er mit jemand anderem kämpft), stürzt der Gladiator sofort darauf zu (bis ${G.P.seizeRange} Punkte, Sprint mit Schrei) und ist sofort schlagbereit – außer ein anderer Gegner schlägt gerade auf ihn ein.</li>
 <li><em>Abstechen am Boden:</em> Weit ausholen (${G.P.finWind.toFixed(1).replace('.',',')}× so lang) mit Schrei, dann die Waffe mit voller Wucht hinein (Schaden ×${G.P.finDmg.toFixed(1).replace('.',',')}), Erschütterung, Blut, Nahaufnahme und Zeitlupe. Je nach Waffe: Axt, Doppelaxt, Hellebarde, Zweihänder, Langschwert zielen auf Hals oder Arm/Bein und schlagen ab (etwa ${Math.round(G.P.finSever*100)} % plus Wucht; Hals = Kopf ab); Speer, Dreizack, Dolch, Gladius und andere Klingen durchbohren Kopf, Brust oder Bauch, die Waffe steckt ${G.P.finHold.toFixed(1).replace('.',',')} s fest und wird herausgerissen; Keule, Streitkolben, Hammer zerschmettern. Gegen Kniende: Amputationsschlag häufiger (75 % statt 25 % in dieser Vorführung).</li>
 <li><em>Abstechen genau an der Stelle:</em> Die Stelle (Kopf, Hals, Brust, Bauch, Arm, Bein) wird schon beim Ausholen gewählt. Der Angreifer geht während des Ausholens neben diese Stelle (etwas hinter den Liegenden), so dass er sie mit seiner Waffe erreicht, und haut senkrecht von oben hinein (Stichwaffen genau senkrecht, Hiebwaffen steil). Die Waffe bleibt kurz unten stecken. Treffer, Blut und Nahaufnahme sitzen an derselben Stelle.</li>
-<li><em>Von hinten im Lauf:</em> Wer im Lauf (Sprint, Ansturm, Initiative auf einen zugedrehten Rücken) von hinten trifft, macht Schaden ×${G.P.backDmg.toFixed(1).replace('.',',')} und bekommt eine Sonderattacke: Stichwaffen stechen durch den Rücken; Dolch, Kurzschwert, Gladius packen von hinten (${Math.round(G.P.backGrab*100)} %) und schneiden die Kehle durch (nicht durch einen Halsschutz) oder stechen in die Niere; Starke packen manchmal im Würgegriff und brechen das Genick; Keulen schlagen auf den Hinterkopf (Schädelbruch möglich, oft umgeworfen); Äxte und große Schwerter hacken in den Rücken (oft umgeworfen).</li>
+<li><em>Durchstich-Chance (je Stich, der trifft):</em> ${(()=>{const P=G.P,B=G.PIERCE_BASE||{},row=(id,n)=>`${n} ${[0,12.9,19.8,34.5].map(a=>(Math.max(.001,B[id]*P.pierceRate*Math.exp(-a/P.pierceArmor))*100).toFixed(1).replace('.',',')+' %').join(' / ')}`;return [row('spear','Speer'),row('trident','Dreizack'),row('gladius','Gladius/Dolch/Kurzschwert'),row('long','Langschwert')].join(' · ');})()} – ohne Rüstung / Leder (Güte 2) / Metall (Güte 2) / Metall (Güte 4) an der Brust, bei üblicher Wucht. Rüstung der getroffenen Stelle wirkt stark (je ${G.P.pierceArmor} Schutzpunkte rund ×0,37), mehr Wucht bis ×1,6, Glieder und Hals ×1,25, von hinten im Lauf ×${G.P.pierceBack}. Ein Speerkämpfer schafft gegen Ungerüstete etwa einen Durchstich in zwei Kämpfen, gegen Metall selten.</li>
+<li><em>Von hinten im Lauf:</em> Wer im Lauf (Sprint, Ansturm, Initiative auf einen zugedrehten Rücken) von hinten trifft, macht Schaden ×${G.P.backDmg.toFixed(1).replace('.',',')} und bekommt eine Sonderattacke: Stichwaffen stechen durch den Rücken (dreifache Durchstich-Chance, Rüstung zählt); Dolch, Kurzschwert, Gladius packen von hinten (${Math.round(G.P.backGrab*100)} %) und schneiden die Kehle durch (nicht durch einen Halsschutz) oder stechen in die Niere; Starke packen manchmal im Würgegriff und brechen das Genick; Keulen schlagen auf den Hinterkopf (Schädelbruch möglich, oft umgeworfen); Äxte und große Schwerter hacken in den Rücken (oft umgeworfen).</li>
 <li><em>Alle Waffen im Editor:</em> Bogen, Armbrust, Wurfspeer und Wurfaxt sind bei allen passenden Verletzungen wählbar. Das Geschoss fliegt sichtbar, bleibt auf der kleinen Figur stecken (Pfeil, Bolzen, Wurfspeer, Wurfaxt) und erscheint in der Nahaufnahme. Pfeil und Bolzen gehen nur durch Arme, Beine und Hals ganz durch.</li>
 <li><span class="warn">Regeländerung, von Thomas am 09.11. freigegeben und im Spiel eingeschaltet:</span> Anlaufen, Kampfschritt, Ansturm (Schaden ×1,5, Umrennen), Durchstich, Abstechen am Boden und Angriffe von hinten (Schaden ×1,6) gelten jetzt auch in echten Kämpfen. Abschaltbar in den Einstellungen („Natürliche Kampfbewegungen“).</li>
-<li><em>Im Spiel eingeschaltet (09.11.):</em> <code>gangarten.js</code> lädt im Spiel; an/aus über die Einstellung „Natürliche Kampfbewegungen“ (Standard an). Wunden aus dem echten Kampf erscheinen auf der Figur, heilen über die Tage (frisch → Schorf → Narbe) und bleiben gespeichert. Nur im Editor: Speer und Dreizack zweihändig. Die Massenfiguren großer Schlachten bekommen nur die Armhaltung, nicht den Schritt.</li></ul>`;
+<li><em>Im Spiel eingeschaltet (09.11.):</em> <code>gangarten.js</code> lädt im Spiel; an/aus über die Einstellung „Natürliche Kampfbewegungen“ (Standard an). Wunden aus dem echten Kampf erscheinen auf der Figur, heilen über die Tage (frisch → Schorf → Narbe) und bleiben gespeichert. Speer und Dreizack einhändig wie im Spiel. Die Massenfiguren großer Schlachten bekommen nur die Armhaltung, nicht den Schritt.</li></ul>`;
 
 sync();restart();requestAnimationFrame(tick);
 window.GangEditor={G,restart,fighters:()=>fighters,shotFor:o=>shotFor(o),scene:()=>scene};
