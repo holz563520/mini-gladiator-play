@@ -122,7 +122,7 @@ async function runStageTest(){
 function renderStage(){$('stageres').innerHTML='<tr><th>Kulisse</th><th>Bilder/s</th><th>Zeichnen</th><th>davon Kulisse</th><th>Rest</th></tr>'+stageResults.map(r=>`<tr><td class="l">${r.label}</td><td class="${cls(r.fps,50,30)}">${fmt(r.fps,0)}</td><td>${fmt(r.paint)} ms</td><td>${fmt(r.split.stage)} ms</td><td>${fmt(r.split.rest)} ms</td></tr>`).join('');}
 $('stagetest').onclick=runStageTest;
 // ---------------------------------------------------------------- Boden-Test (09.11.): Blutflecken als Ebene (wie im Spiel), als Bitmap, direkt, ohne Blut
-const GROUNDS=[['','Ebene (wie im Spiel)',true],['bitmap','als Bitmap (Test)',true],['direct','direkt gezeichnet (Test)',true],['','ohne Blut',false]];
+const GROUNDS=[['layer','Ebene (alte Art)',true],['direct','direkt (jetzt im Spiel)',true],['bitmap','als Bitmap (Test)',true],['','ohne Blut',false]];
 const groundResults=[];
 async function runGroundTest(){
  if(series)return;$('series').disabled=$('stagetest').disabled=$('groundtest').disabled=true;groundResults.length=0;renderGround();
