@@ -129,7 +129,11 @@ G.cool=(a,w)=>{if(!G.active||a.gaitOff||!LONGPOINT.has(w?.id)||a.technique!=='th
 const THROUGH={spear:{exit:true,depth:4.8,near:46},javelin:{exit:true,depth:4.6,near:42},trident:{exit:false,depth:2.3,near:46},gladius:{exit:true,depth:3,near:30},short:{exit:true,depth:2.8,near:28},long:{exit:true,depth:3.2,near:36},greatsword:{exit:true,depth:3.4,near:40},rapier:{exit:true,depth:3.2,near:34},dagger:{exit:false,depth:1.7,near:24},halberd:{exit:false,depth:.72,near:48}};
 G.throughOf=id=>THROUGH[id]||{exit:false,depth:1.4,near:34};
 // Nachstoßen: in den ersten 35 % der Haltezeit rasch auf den Waffenabstand heran
-G.pierceLunge=(a,b,f,dt)=>{const k=(f.t||0)/(f.len||.9),d=Math.hypot(b.x-a.x,b.y-a.y),near=G.throughOf(M.weapon(a).id).near;if(k<.35&&Math.abs(d-near)>1){/* auf Stoßdistanz der Waffe: heran oder (zu nah für die lange Waffe) einen Schritt zurück */const dir=Math.atan2(b.y-a.y,b.x-a.x),st=Math.sign(d-near)*Math.min(Math.abs(d-near),160*dt);a.x+=Math.cos(dir)*st;a.y+=Math.sin(dir)*st;}a.y=Math.max(a.y,b.y+.6);/* Angreifer vor dem Getroffenen gezeichnet: Waffe bis zum Eintrittsloch sichtbar, Stück im Körper wird in arena.js ausgespart */};
+G.pierceLunge=(a,b,f,dt)=>{const k=(f.t||0)/(f.len||.9),d=Math.hypot(b.x-a.x,b.y-a.y),dir=Math.atan2(b.y-a.y,b.x-a.x);
+ /* Abstand so, dass die Hand bequem erreichbar bleibt (arena.js misst Schulter→Hand, Ziel 22 Figureneinheiten); sonst Waffen-Richtwert */
+ if(k<.55){let st=0;if(a._pReach!=null){const sc=a.g.height/180*1.14*cl(.85+a.g.weight/420,.98,1.18);st=cl((a._pReach-22)*sc,-90*dt,90*dt);}else{const near=G.throughOf(M.weapon(a).id).near;if(Math.abs(d-near)>1)st=Math.sign(d-near)*Math.min(Math.abs(d-near),160*dt);}
+  if(Math.abs(st)>.01){a.x+=Math.cos(dir)*st;a.y+=Math.sin(dir)*st;}}
+ a.y=Math.max(a.y,b.y+.6);/* Angreifer vor dem Getroffenen gezeichnet: Waffe bis zum Eintrittsloch sichtbar, Stück im Körper wird in arena.js ausgespart */};
 // ---------------------------------------------------------------- Verletzungen auf der kleinen Figur (bleiben bestehen)
 // Echter Körperzustand, den das Spiel schon zeigt und speichert (Bruch → Arm hängt/Humpeln, tiefe Stichwunde → Wundgriff,
 // Schädelbruch → Wunde im Kopf, abgetrennt → Glied fehlt), dazu eigene Bilder für die neuen Verletzungen (g.gaitMarks).
@@ -137,10 +141,12 @@ const MARK_OF={through:['stab','stabBack'],heart:['stab','bloodChest'],lung:['br
  liver:['bruiseBelly','stab'],spleen:['bruiseBelly'],kidney:['stabBack'],gutted:['guts'],pelvis:['bruiseHip'],neckbreak:['bruiseNeck'],larynx:['bruiseNeck','mouthBlood'],collarbone:['bruiseShoulder'],deepcut:['cut'],cut:['cut'],stab:['stab'],deepstab:['stab'],pierce:['stab','stabBack'],gut:['guts'],bruise:['bruise'],contusion:['bruise'],crush:['bruise'],concussion:['bruiseHead']};
 const NEW_NAME={ribs:'Rippenbruch',ribseries:'Rippenserienfraktur',sternum:'Brustbeinbruch',lung:'Lungendurchstich',heart:'Herzstich',liver:'Leberriss',spleen:'Milzriss',kidney:'Nierenverletzung',gutted:'Ausgeweidet',pelvis:'Beckenbruch',neckbreak:'Genickbruch',larynx:'Kehlkopfbruch',collarbone:'Schlüsselbeinbruch',through:'Durchstochen'};
 // returns: 'sever' (nach der Nahaufnahme abtrennen), 'death' (danach tot), 'down' (bricht zusammen) oder null
+// Wunde genau an einen Feldpunkt setzen: über die Zeichenmatrix des Getroffenen (letztes Bild) in seine Figurenkoordinaten
+G.markAt=(v,m,w)=>{if(!v?._vK||!w||!m)return;try{const q=new DOMMatrix().translate(v.x,v.y).multiply(v._vK).inverse().transformPoint(new DOMPoint(w.x,w.y));m.lx=q.x;m.ly=q.y;m.fixed=true;}catch(e){}};
 G.applyInjury=(att,vic,kind,part,wid,name,opt={})=>{const g=vic.g,B=g.body,p=B[part]||B.chest;if(!p)return null;const fr=(id,days,severe)=>{const q=B[id];if(q&&!q.missing){q.fracture={days,total:days,severe:!!severe};q.hp=Math.min(q.hp,severe?20:38);q.pain=Math.max(q.pain||0,70);}};
  const wound=(id,type,bl)=>{const q=B[id];if(!q||q.missing)return;q.bleed=(q.bleed||0)+bl;q.hp=Math.max(1,q.hp-18);try{M.recordWound(g,id,type,att?.g?.name||'',M.weapon(att)?.name||wid,20);}catch{}};
  const marks=g.gaitMarks||(g.gaitMarks=[]);const side=(part||'').startsWith('r')?'r':(part||'').startsWith('l')&&part.length>2?'l':((marks.length%2)?'l':'r');
- for(const m of MARK_OF[kind]||[]){if(m==='stabBack'&&(kind==='through'||kind==='pierce')&&!G.throughOf(wid).exit)continue;marks.push({m,part,side,t:M.s.battle?.time||0});}if(marks.length>24)marks.splice(0,marks.length-24);
+ const lying=onGroundA(vic)||vic.fallTimer>0;for(const m of MARK_OF[kind]||[]){if(m==='stabBack'&&((kind==='through'||kind==='pierce')&&!G.throughOf(wid).exit||lying))continue;const mk={m,part,side,t:M.s.battle?.time||0};marks.push(mk);/* liegend: Einstich genau an der Stelle, an der die Waffe sitzt */if(lying&&(m==='stab'||m==='cut'))G.markAt(vic,mk,G.anchor(vic,part));}if(marks.length>24)marks.splice(0,marks.length-24);
  let out=null;
  /* Geschoss bleibt stecken: Pfeil, Bolzen, Wurfspeer, Wurfaxt */const PT={bow:'arrow',crossbow:'bolt',javelin:'javelin',throwaxe:'throwaxe'}[wid];if(PT&&opt.thrown!==false&&!['skullfracture','sever','bruise','contusion','concussion','scar','collapse'].includes(kind))marks.push({m:'shaft',type:PT,part,side,back:!!opt.back,t:M.s.battle?.time||0});
  switch(kind){
@@ -186,7 +192,10 @@ function drawMarks(a,P){const L=a.g.gaitMarks;if(!L?.length)return;const R=(x,y,
    if(ty==='throwaxe'){R(p.x-1+dir*1,p.y-3,3,5,'#9aa39b');R(p.x+dir*2,p.y-2,1,3,'#dfe4d2');for(let i=1;i<=L;i++)R(p.x+dir*(2+i),p.y-1+up*i*2,1,1,'#6e5230');}
    else{const c=ty==='javelin'?'#7a5232':'#8a6a3c';for(let i=1;i<=L;i++)R(p.x+dir*i,p.y+up*i,1,1,c);const ex=p.x+dir*L,ey=p.y+up*L;if(ty==='arrow'||ty==='bolt'){R(ex-dir*2,ey-1,2,1,'#f0ead8');R(ex-dir*2,ey+1,2,1,ty==='bolt'?'#4a3a2a':'#b8423a');}}}
   else if(m==='guts'){const p=at(k,'belly');R(p.x-3,p.y-1,6,3,'#3a0a08');for(let i=0;i<9;i++){const sw=Math.sin(t*2.2+i*.9)*(1+i*.15),x=p.x-1+i*.4+sw,y=p.y+2+i*2.3;R(x-1.5,y-1.5,4,3,i%2?'#e0a0a0':'#c97a7a');R(x-.5,y-1.5,1,1,'#fbe0e0');}R(p.x+3,p.y+20,1,5,'#8f1d16');R(p.x-2,p.y+3,1,7,'#8f1d16');}}}
-{const prev=M.figureDecor;M.figureDecor=function(a,P){prev?.call(this,a,P);if(G.active&&P.layer==='front'&&!P.portrait&&a?.g){drawMarks(a,P);G.grabDecor(a,P);}};}
+// Zeichenmatrizen kamera- und ortsunabhängig ablegen (nach jeder Figur, Kamera = aktuelle Matrix): Figurenkoordinaten → Feld minus Figurenort.
+// arena.js rechnet damit Ein-/Austrittsloch (Getroffener, dieses Bild) und Waffenhand (Angreifer, letztes Bild) exakt ineinander um.
+{const prevA=M.afterActor;M.afterActor=(ctx,a)=>{prevA?.(ctx,a);if(!G.active||!a)return;try{const BI=ctx.getTransform().inverse(),T=new DOMMatrix().translate(-a.x,-a.y).multiply(BI);if(a._decorM)a._vK=T.multiply(a._decorM);if(a._wpM)a._aK=T.multiply(a._wpM);}catch(e){}};}
+{const prev=M.figureDecor;M.figureDecor=function(a,P){prev?.call(this,a,P);if(G.active&&P.layer==='front'&&!P.portrait&&a?.g){a._decorM=P.ctx.getTransform();/* Zeichenmatrix: arena.js legt damit Ein- und Austrittsloch exakt fest */drawMarks(a,P);G.grabDecor(a,P);}};}
 // geblockter Ansturm: mit voller Wucht in die Deckung – kann trotzdem umwerfen (60 % der Chance), sonst zurückgestoßen
 G.blocked=ev=>{if(ev?.kind==='block'&&ev.att?.rushHit?.kind==='charge')G.ram(ev.att,ev.def,0,.6);};
 {const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p){if(!G.backRun(a,b,d,w,part))G.thrust(a,b,d,w,part);G.ram(a,b,d);}return out;};R.__gait=true;}}
@@ -322,7 +331,7 @@ function finImpact(a,b,dmg,w,id){
  const label={beheaded:'KOPF AB!',severed:M.partName?.(id)?.toUpperCase()+' AB!',pierced:'DURCHBOHRT!',hacked:'HINEINGEHACKT!',crushed:'ZERSCHMETTERT!'}[what];M.floater?.(b.x,b.y-48,label,'#ff5a4a');
  if(!M.s.battle.cinematic)M.s.battle.cinematic={x:b.x,y:b.y-18,left:1.6,duration:1.6};
  if(what==='crushed'&&id==='head'){part.hp=Math.min(part.hp,4);part.bleed+=2;part.fracture={days:60,total:60,severe:true,skull:true};part.skullFracture=true;part.skullBy=w.id;}
- if(what==='pierced')(b.g.gaitMarks||(b.g.gaitMarks=[])).push({m:'stab',part:id});
+ if(what==='pierced'){const mk={m:'stab',part:id};(b.g.gaitMarks||(b.g.gaitMarks=[])).push(mk);G.markAt(b,mk,G.anchor(b,id));}
  ev('finisher',a,{b,what,part:id,dmg:dmg+extra,weapon:w.id,down:true});if(what!=='pierced')a.finisher=null;}
 {const R=M.combatResponses;if(R?.groundImpact&&!R.__gaitG){const orig=R.groundImpact;R.groundImpact=(a,b,d,w,id)=>{const out=orig.call(R,a,b,d,w,id);if(G.active)finImpact(a,b,d,w,id);return out;};R.__gaitG=true;}}
 
