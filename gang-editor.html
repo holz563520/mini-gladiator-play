@@ -47,7 +47,7 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
 .hide{display:none}
 </style></head>
 <body>
-<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND 1ab1169a</small><h1>GANG-EDITOR</h1>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND 65b63639</small><h1>GANG-EDITOR</h1>
 <p>Gehen, Kampfschritt, Laufen, Sprinten, Seitschritt und Rückwärts mit echten Figuren des Spiels: jede Gangart mit eigenem Tempo, Schrittrhythmus, Körperhaltung und Armhaltung. Das Tempo baut sich beim Anlaufen auf und beim Bremsen ab. Oben läuft die neue Bewegung, unten zum Vergleich die bisherige. Nur Testseite: Spiel und Spielstände bleiben unberührt.</p></header>
 <main>
 <div class="top">
@@ -57,6 +57,7 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
    <button class="main on" id="mShow">Vorführung</button>
    <button class="main" id="mFight">Echter Kampf</button>
    <button class="main" id="mAtk">Angriffe</button>
+   <button class="main" id="mStudio">Nahaufnahmen</button>
    <button id="pause">⏸ Pause</button>
    <button id="zoom">Zoom 1,3×</button>
    <label style="margin:0 0 0 6px">Tempo <select id="speed" style="width:80px"><option value=".25">0,25×</option><option value=".5">0,5×</option><option value="1" selected>1×</option></select></label>
@@ -69,6 +70,17 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
    <div class="gaits" id="gaits"></div>
    <label style="margin-top:10px">Gegner in der Nähe (Kampfhaltung) <input type="checkbox" id="combat" checked></label>
    <label>Bisherige Bewegung zum Vergleich <input type="checkbox" id="cmp" checked></label>
+  </div>
+  <div class="panel" id="pStudio"><h3>Nahaufnahmen-Studio</h3>
+   <label>Verletzung <select id="sKind"></select></label>
+   <label>Stelle <select id="sPart"></select></label>
+   <label>Waffe <select id="sW"></select></label>
+   <label>Rüstung <select id="sA"><option value="none">keine</option><option value="leather">Leder</option><option value="medium">verstärkt</option><option value="metal" selected>Metall</option></select></label>
+   <label>Güte <select id="sQ"><option value="0">0 Improvisiert</option><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6 Legendär</option></select></label>
+   <label>Helm <input type="checkbox" id="sHelm" checked></label>
+   <label>Getroffener <select id="sWho"></select></label>
+   <div class="btns"><button class="main" id="sPlay">▶ Abspielen</button><button id="sParts">Alle Stellen</button><button id="sAll">Alle Verletzungen</button></div>
+   <div class="note" id="sInfo" style="margin:4px 0 0"></div>
   </div>
   <div class="panel" id="pAtk"><h3>Angriffe und Initiative</h3>
    <div class="gaits" id="atks"></div>
@@ -110,16 +122,14 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
 <p class="note">Tempo in Spielpunkten je Sekunde für den gewählten Kämpfer (mit Rüstung und Zustand), dazu Anteil am bisherigen Lauftempo und Schrittrhythmus.</p>
 <div class="panel" style="padding:0"><table class="tbl" id="tbl"></table></div>
 
-<h2>Nahaufnahmen Durchstich und Schädel</h2>
-<p class="note">Nahaufnahme im Stil der Spiel-Nahaufnahmen (echtes Körperteil, Haut, Rüstung, Porträt), wie sie im Kampf beim Durchstich (Stich im Stehen) und beim Abstechen am Boden erscheint: die Waffe dringt ein, geht ganz durch, die Spitze tritt hinten aus, sie hält kurz und wird herausgerissen. Keule, Streitkolben und Hammer zertrümmern den Schädel. Haut, Haar und Rüstung vom Gegner, Beschriftung deutsch und lateinisch.</p>
-<div class="panel"><div class="btns" id="galParts"></div>
- <div class="btns"><label style="margin:0">Waffe <select id="gW"></select></label><label style="margin:0 0 0 10px">Lage <select id="gDown"><option value="0">Stich im Stehen (von der Seite)</option><option value="1">Abstechen am Boden (von oben)</option></select></label><label style="margin:0 0 0 10px">Rüstung <select id="gA"><option value="none">keine</option><option value="leather">Leder</option><option value="medium">verstärkt</option><option value="metal">Metall</option></select></label></div>
- <canvas id="galCv" width="960" height="540" style="width:100%;height:auto;aspect-ratio:16/9;display:block;background:#000;image-rendering:pixelated"></canvas></div>
+<h2>Neue Verletzungen (Vorschlag)</h2>
+<p class="note">Mögliche neue Verletzungsarten mit genauer anatomischer Stelle, auslösenden Waffen und Wirkung. Noch nicht eingebaut – zum Auswählen, was als Nächstes kommt. „Durchstochen“ ist bereits im Studio abspielbar.</p>
+<div class="panel" style="padding:0;overflow-x:auto"><table class="tbl" id="newInj"></table></div>
 <h2>So soll es ins Spiel</h2>
 <div class="panel rules" id="rules"></div>
 </main>
-<script src="data.js?v=1ab1169a"></script><script src="household.js?v=1ab1169a"></script><script src="management.js?v=1ab1169a"></script><script src="scout.js?v=1ab1169a"></script><script src="sim.js?v=1ab1169a"></script><script src="benchmark.js?v=1ab1169a"></script><script src="school.js?v=1ab1169a"></script><script src="weapon-art.js?v=1ab1169a"></script><script src="arena.js?v=1ab1169a"></script><script src="block-contact.js?v=1ab1169a"></script><script src="hit-contact.js?v=1ab1169a"></script><script src="reach-ai.js?v=1ab1169a"></script><script src="injury-shots.js?v=1ab1169a"></script><script src="schaedelbruch.js?v=1ab1169a"></script>
-<script src="kampfsound.js?v=1ab1169a"></script><script src="audio.js?v=1ab1169a"></script><script src="sprechsound.js?v=1ab1169a"></script><script src="stimme.js?v=1ab1169a"></script><script src="schreie.js?v=1ab1169a"></script>
-<script src="durchstich-fx.js?v=1ab1169a"></script><script src="gangarten.js?v=1ab1169a"></script>
-<script src="gang-editor.js?v=1ab1169a"></script>
+<script src="data.js?v=65b63639"></script><script src="household.js?v=65b63639"></script><script src="management.js?v=65b63639"></script><script src="scout.js?v=65b63639"></script><script src="sim.js?v=65b63639"></script><script src="benchmark.js?v=65b63639"></script><script src="school.js?v=65b63639"></script><script src="weapon-art.js?v=65b63639"></script><script src="arena.js?v=65b63639"></script><script src="block-contact.js?v=65b63639"></script><script src="hit-contact.js?v=65b63639"></script><script src="reach-ai.js?v=65b63639"></script><script src="face-shots.js?v=65b63639"></script><script src="injury-shots.js?v=65b63639"></script><script src="schaedelbruch.js?v=65b63639"></script><script src="todes-fx.js?v=65b63639"></script>
+<script src="kampfsound.js?v=65b63639"></script><script src="audio.js?v=65b63639"></script><script src="sprechsound.js?v=65b63639"></script><script src="stimme.js?v=65b63639"></script><script src="schreie.js?v=65b63639"></script>
+<script src="durchstich-fx.js?v=65b63639"></script><script src="gangarten.js?v=65b63639"></script>
+<script src="gang-editor.js?v=65b63639"></script>
 </body></html>

@@ -215,7 +215,7 @@ const skullStage=d=>{const x=SKULL_STAGES.find(v=>d>=v[2]&&d<=v[3])||SKULL_STAGE
 // ist im Körper verdeckt (Körpermaske), die Spitze tritt am anderen Rand aus, hält zitternd, wird herausgerissen.
 function throughFx(T,V,k,C){const MK=V.mask,inside=(x,y)=>{x=Math.round(x);y=Math.round(y);return !!MK&&x>=0&&y>=0&&x<FW&&y<FH&&MK[y*FW+x]===1;};
  const vw=V.view,A0=V.A0||(V.A0={x:V.A.x,y:V.A.y});let u=vw==='head'?{x:1,y:-.12}:vw==='neck'?{x:1,y:.02}:['chest','belly','shoulder'].includes(vw)?{x:1,y:.2}:{x:-V.dir.y,y:V.dir.x};if(u.x<0)u={x:-u.x,y:-u.y};const ul=Math.hypot(u.x,u.y);u={x:u.x/ul,y:u.y/ul};
- const front=['chest','belly'].includes(vw);/* Rumpf: Eintritt vorn an der Wunde (Klinge davor sichtbar), Austritt an der Flanke; Kopf, Hals, Glieder: von Rand zu Rand */
+ const front=['chest','belly','head'].includes(vw);/* Rumpf: Eintritt vorn an der Wunde (Klinge davor sichtbar), Austritt an der Flanke; Kopf, Hals, Glieder: von Rand zu Rand */
  if(!V.E){let a=0,b=0;if(!front)while(a<120&&inside(A0.x-u.x*a,A0.y-u.y*a))a++;else a=1;while(b<120&&inside(A0.x+u.x*b,A0.y+u.y*b))b++;V.E={x:A0.x-u.x*(a-1),y:A0.y-u.y*(a-1)};V.X={x:A0.x+u.x*(b-1),y:A0.y+u.y*(b-1)};}
  const E=V.E,X=V.X,span=Math.hypot(X.x-E.x,X.y-E.y),out=Math.min(26,10+span*.35),wid=C.wid||'gladius',spear=['spear','javelin','halberd','trident'].includes(wid),bone=!['belly','neck'].includes(vw);
  // Spitze entlang u (0 = Eintrittsrand)

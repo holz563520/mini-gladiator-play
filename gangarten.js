@@ -259,6 +259,7 @@ G.arms=(R,a,w,roots,shield)=>{
 // a.puppet={mode, lane:{x0,x1,y,dy}, dir, combat, old}; old = bisheriges Spiel (sofort volles Tempo, keine Gangarten)
 const OLD={stand:0,walk:1,guard:.63,jog:1,sprint:1.45,side:.5,back:1};
 G.puppet=(a,dt)=>{
+ /* hold: der Editor steuert die Figur selbst (Nahaufnahmen-Studio) */if(a.puppet.hold)return;
  const p=a.puppet,ef=M.effective(a),base=ef.speed,L=p.lane;a.cool=1;a.wind=0;a.swing=0;a.block=false;
  if(p.energy!=null)a.energy=p.energy;
  let mode=p.mode,face=p.face??(p.dir>0?0:Math.PI),dir=null;
