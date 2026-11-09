@@ -28,6 +28,7 @@ const DEF={
  seize:1,seizeRange:320,finWind:1.4,finDmg:1.3,finSever:.45,finHold:.7,
  // Durchstich im Stehen (Stich-Angriff)
  pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9,
+ backRun:1,backDmg:1.6,backGrab:.6,grabTime:1.7,backKnock:.45,
  // Speer/Dreizack zweihändig: Anteil Stiche, Abklingzeit nach dem Stich
  spearThrust:.85,spearCool:.5,spearWind:.65,spearJabEnergy:.5,spearSwing:.65
 };
@@ -76,7 +77,7 @@ function runAttack(a,o,base){
  if(a.gv>base*1.15)a.rushHit={t:M.s.battle.time,v:a.gv,base,kind:'run'};ev('runAttack',a,{v:a.gv,boost:a.chargeBoost,tech:a.technique});return true;}
 G.windMove=(a,dt,ef)=>{
  /* Speer/Dreizack: kurzer Stoß aus dem Stand (schnelles Ausholen) */if(a.technique==='thrust'&&!a.jab&&LONGPOINT.has(M.weapon(a).id)&&!a.gaitOff){a.jab=true;a.wind*=P.spearWind;a.windMax*=P.spearWind;}if(a.wind<=dt)a.jab=false;
- if(a.technique==='groundFinish')finStart(a);const r=a.runAttack;if(!r)return;const t=M.s.battle.actors.find(x=>x.id===r.target);if(!t||t.g.dead||t.down){a.runAttack=null;return;}
+ if(a.technique==='groundFinish'){finStart(a);G.finStep(a,dt);}const r=a.runAttack;if(!r)return;const t=M.s.battle.actors.find(x=>x.id===r.target);if(!t||t.g.dead||t.down){a.runAttack=null;return;}
  const d=Math.hypot(t.x-a.x,t.y-a.y),contact=ef.range+t.r-3,dir=Math.atan2(t.y-a.y,t.x-a.x),A=accelOf(a,ef);
  a.gv=Math.max(r.base*P.guard,(a.gv||r.v)-A*P.dec*.5*dt);const step=Math.min(a.gv*dt,Math.max(0,d-contact));
  if(step>0){a.x+=Math.cos(dir)*step;a.y+=Math.sin(dir)*step;if(M.roundField?.())M.fieldPt?.(a,a.r||14);}
@@ -95,19 +96,19 @@ G.ram=(a,b,dmg,mult=1)=>{
 // Durchstich im Stehen: ein Stich kann ganz durch den Körper gehen (je nach Waffe, Wucht und Rüstung) – Klinge tritt hinten aus,
 // der Getroffene hängt kurz auf der Waffe, dann wird sie herausgerissen
 const PIERCE_BASE={spear:.4,trident:.34,javelin:.4,rapier:.3,dagger:.24,gladius:.24,short:.24,long:.15,greatsword:.12,halberd:.18};
-G.thrust=(a,b,dmg,w,id)=>{
- if(!G.active||!P.pierce||!b?.g||b.g.dead||a.pierceContact||a.swingKind!=='thrust'||!w||w.ammo)return;const base=PIERCE_BASE[w.id];if(!base)return;const part=b.g.body[id];if(!part||part.missing)return;
- const armor=M.armorProtection?.(b.g,id)||0,chance=P.pierceForce?1:cl(base+(dmg-10)*.01-armor*.012,.03,.65);if(M.rng()>chance)return;
+G.thrust=(a,b,dmg,w,id,opt={})=>{
+ if(!G.active||!P.pierce||!b?.g||b.g.dead||a.pierceContact||a.swingKind!=='thrust'&&!opt.force||!w||w.ammo)return;const base=PIERCE_BASE[w.id];if(!base)return;const part=b.g.body[id];if(!part||part.missing)return;
+ const armor=M.armorProtection?.(b.g,id)||0,chance=P.pierceForce||opt.force?1:cl(base+(dmg-10)*.01-armor*.012,.03,.65);if(M.rng()>chance)return;
  const extra=dmg*(P.pierceDmg-1);part.hp=Math.max(0,part.hp-extra);a.damage+=extra;b.taken+=extra;part.bleed+=2.5;part.deepStabs=(part.deepStabs||0)+1;if(id==='chest'||id==='belly')part.internal=true;
  M.recordWound?.(b.g,id,'Durchstochen',a.g.name,w.name,dmg+extra);
  const TH=G.throughOf(w.id);a.pierceContact={target:b.id,part:id,left:P.pierceHold,len:P.pierceHold,weaponId:w.item?.id,through:true,exit:TH.exit,depthMul:TH.depth,t:0};if(w.item)w.item.blood=Math.max(w.item.blood||0,.85);a.swing=0;a.pendingStrike=null;a.wind=0;a.state='piercing';
  b.stun=Math.max(b.stun||0,P.pierceHold*.9);b.hit=.4;M.shake=Math.max(M.shake||0,6);
- M.floater?.(b.x,b.y-58,'DURCHSTOCHEN!','#ff5a4a');M.voice?.('pain',M.voicePitch?.(b.g)??1,true);M.sound?.('stick');
+ M.floater?.(b.x,b.y-58,opt.back?'VON HINTEN DURCHBOHRT!':'DURCHSTOCHEN!','#ff5a4a');M.voice?.('pain',M.voicePitch?.(b.g)??1,true);M.sound?.('stick');
  (b.g.gaitMarks||(b.g.gaitMarks=[])).push({m:'stab',part:id},...(TH.exit?[{m:'stabBack',part:id}]:[]));
- ev('pierce',a,{b,part:id,weapon:w.id,dmg:dmg+extra,down:false});};
+ ev('pierce',a,{b,part:id,weapon:w.id,dmg:dmg+extra,down:false,back:!!opt.back});return true;};
 // während der Durchstich hält: kleiner Ausfallschritt hinein, Angreifer hinter dem Getroffenen gezeichnet (Klinge verschwindet im Körper,
 // die Spitze kommt hinten heraus), Blut tritt vorn und hinten aus
-G.pierceStep=(a,dt)=>{const f=a.pierceContact;if(!f?.through)return;const b=M.s.battle.actors.find(x=>x.id===f.target);if(!b)return;f.t=(f.t||0)+dt;const k=f.t/(f.len||.9);
+G.pierceStep=(a,dt)=>{const f=a.pierceContact;if(f?.grab){const b=M.s.battle.actors.find(x=>x.id===f.target);if(b)G.grabStep(a,b,f,dt);return;}if(!f?.through)return;const b=M.s.battle.actors.find(x=>x.id===f.target);if(!b)return;f.t=(f.t||0)+dt;const k=f.t/(f.len||.9);
  const dir=Math.atan2(b.y-a.y,b.x-a.x);G.pierceLunge(a,b,f,dt);
  G.pierceBlood(a,b,f,k,dt,dir);};
 // Blut beim Durchstich: Eintritt vorn, Austritt an der echten Waffenspitze (a.weaponTipX/Y aus arena.js), Tropfen von der Spitze, Schwall beim Herausreißen
@@ -136,11 +137,12 @@ const MARK_OF={through:['stab','stabBack'],heart:['stab','bloodChest'],lung:['br
  liver:['bruiseBelly','stab'],spleen:['bruiseBelly'],kidney:['stabBack'],gutted:['guts'],pelvis:['bruiseHip'],neckbreak:['bruiseNeck'],larynx:['bruiseNeck','mouthBlood'],collarbone:['bruiseShoulder'],deepcut:['cut'],cut:['cut'],stab:['stab'],deepstab:['stab'],pierce:['stab','stabBack'],gut:['guts'],bruise:['bruise'],contusion:['bruise'],crush:['bruise'],concussion:['bruiseHead']};
 const NEW_NAME={ribs:'Rippenbruch',ribseries:'Rippenserienfraktur',sternum:'Brustbeinbruch',lung:'Lungendurchstich',heart:'Herzstich',liver:'Leberriss',spleen:'Milzriss',kidney:'Nierenverletzung',gutted:'Ausgeweidet',pelvis:'Beckenbruch',neckbreak:'Genickbruch',larynx:'Kehlkopfbruch',collarbone:'Schlüsselbeinbruch',through:'Durchstochen'};
 // returns: 'sever' (nach der Nahaufnahme abtrennen), 'death' (danach tot), 'down' (bricht zusammen) oder null
-G.applyInjury=(att,vic,kind,part,wid,name)=>{const g=vic.g,B=g.body,p=B[part]||B.chest;if(!p)return null;const fr=(id,days,severe)=>{const q=B[id];if(q&&!q.missing){q.fracture={days,total:days,severe:!!severe};q.hp=Math.min(q.hp,severe?20:38);q.pain=Math.max(q.pain||0,70);}};
+G.applyInjury=(att,vic,kind,part,wid,name,opt={})=>{const g=vic.g,B=g.body,p=B[part]||B.chest;if(!p)return null;const fr=(id,days,severe)=>{const q=B[id];if(q&&!q.missing){q.fracture={days,total:days,severe:!!severe};q.hp=Math.min(q.hp,severe?20:38);q.pain=Math.max(q.pain||0,70);}};
  const wound=(id,type,bl)=>{const q=B[id];if(!q||q.missing)return;q.bleed=(q.bleed||0)+bl;q.hp=Math.max(1,q.hp-18);try{M.recordWound(g,id,type,att?.g?.name||'',M.weapon(att)?.name||wid,20);}catch{}};
  const marks=g.gaitMarks||(g.gaitMarks=[]);const side=(part||'').startsWith('r')?'r':(part||'').startsWith('l')&&part.length>2?'l':((marks.length%2)?'l':'r');
  for(const m of MARK_OF[kind]||[]){if(m==='stabBack'&&(kind==='through'||kind==='pierce')&&!G.throughOf(wid).exit)continue;marks.push({m,part,side,t:M.s.battle?.time||0});}if(marks.length>24)marks.splice(0,marks.length-24);
  let out=null;
+ /* Geschoss bleibt stecken: Pfeil, Bolzen, Wurfspeer, Wurfaxt */const PT={bow:'arrow',crossbow:'bolt',javelin:'javelin',throwaxe:'throwaxe'}[wid];if(PT&&opt.thrown!==false&&!['skullfracture','sever','bruise','contusion','concussion','scar','collapse'].includes(kind))marks.push({m:'shaft',type:PT,part,side,back:!!opt.back,t:M.s.battle?.time||0});
  switch(kind){
   case 'through':case 'pierce':wound(part,'Durchstochen',2.5);p.deepStabs=(p.deepStabs||0)+1;if(part==='chest'||part==='belly')p.internal=true;break;
   case 'heart':wound('chest','Herzstich',8);B.chest.deepStabs=(B.chest.deepStabs||0)+1;B.chest.internal=true;out='death';break;
@@ -163,9 +165,10 @@ G.applyInjury=(att,vic,kind,part,wid,name)=>{const g=vic.g,B=g.body,p=B[part]||B
   case 'arrow':wound(part,'Pfeil steckt',2);break;
   default:if(p){p.hp=Math.max(1,p.hp-12);p.pain=Math.max(p.pain||0,40);}}
  g.blood=Math.max(30,(g.blood??100)-(out==='death'?20:6));return out;};
+const LIMB_Y={lua:-44,rua:-44,lfa:-36,rfa:-36,lh:-30,rh:-30,lt:-22,rt:-22,lsh:-11,rsh:-11,lf:-3,rf:-3};
 const PARTPOS={chest:P=>({x:P.chest.x+4,y:P.chest.y+4}),belly:P=>({x:P.chest.x*.5+3,y:-36}),neck:P=>({x:P.head.x+1,y:-57}),head:P=>({x:P.head.x+2,y:P.head.y}),ls:P=>({x:P.shoulders.l.x,y:P.shoulders.l.y+2}),rs:P=>({x:P.shoulders.r.x,y:P.shoulders.r.y+2})};
 function drawMarks(a,P){const L=a.g.gaitMarks;if(!L?.length)return;const R=(x,y,w,h,c)=>{P.ctx.fillStyle=c;P.ctx.fillRect(Math.round(x),Math.round(y),w,h);},t=P.time||0;
- const at=(m,def)=>(PARTPOS[m.part]||PARTPOS[def])(P);
+ const at=(m,def)=>LIMB_Y[m.part]!=null?{x:P.chest.x*.4+(m.part[0]==='r'?2:-1),y:LIMB_Y[m.part]}:(PARTPOS[m.part]||PARTPOS[def])(P);
  for(const k of L){const m=k.m;
   if(m==='stab'||m==='stabBack'){const p=at(k,'chest'),x=m==='stabBack'?p.x-11:p.x;R(x-1.5,p.y-1.5,4,4,'#a8372f');R(x,p.y,1,1,'#2a0505');const len=4+((Math.sin(t*2+x)+1)*2|0);R(x,p.y+2,1,len,'#8f1d16');}
   else if(m==='bloodChest'){const p=at(k,'chest');for(let i=0;i<4;i++)R(p.x-1+i,p.y+1,1,8+i*2,'#8f1d16');}
@@ -176,12 +179,71 @@ function drawMarks(a,P){const L=a.g.gaitMarks;if(!L?.length)return;const R=(x,y,
   else if(m==='bruiseShoulder'){const p=at(k,k.side==='r'?'rs':'ls');P.ctx.globalAlpha=.8;R(p.x-2,p.y-2,5,4,'#6b3a66');P.ctx.globalAlpha=1;R(p.x-1,p.y-1,3,1,'#3a1f3a');}
   else if(m==='mouthBlood'){const x=P.head.x+5,y=P.head.y+5;R(x,y,1,3+((Math.sin(t*3)+1)*1.5|0),'#8f1d16');R(x-1,y,2,1,'#a8372f');}
   else if(m==='cut'){const p=at(k,'chest');R(p.x-3,p.y,7,1,'#a8372f');R(p.x-2,p.y+1,5,1,'#5a0c09');R(p.x,p.y+2,1,6,'#8f1d16');}
+  else if(m==='backCut'){for(let i=0;i<9;i++){R(-9+i*.6,-48+i*1.4,2,1,i%2?'#a8372f':'#5a0c09');}R(-8,-38,1,5+((Math.sin(t*2)+1)*1.5|0),'#8f1d16');R(-5,-41,1,4,'#8f1d16');}
+  else if(m==='throat'){const p=at(k,'neck');R(p.x-3,p.y+1,7,1,'#5a0c09');R(p.x-3,p.y+2,7,1,'#a8372f');for(let i=0;i<3;i++)R(p.x-2+i*2,p.y+3,1,4+((Math.sin(t*2.5+i)+1)*2|0),'#8f1d16');}
+  else if(m==='shaft'){const p=at(k,'chest'),dir=k.back?-1:1,ty=k.type,L={arrow:11,bolt:7,javelin:18,throwaxe:5}[ty]||9,up=ty==='javelin'?-.35:-.22;
+   R(p.x-1,p.y-1,3,3,'#8f1d16');R(p.x,p.y+1,1,4,'#8f1d16');
+   if(ty==='throwaxe'){R(p.x-1+dir*1,p.y-3,3,5,'#9aa39b');R(p.x+dir*2,p.y-2,1,3,'#dfe4d2');for(let i=1;i<=L;i++)R(p.x+dir*(2+i),p.y-1+up*i*2,1,1,'#6e5230');}
+   else{const c=ty==='javelin'?'#7a5232':'#8a6a3c';for(let i=1;i<=L;i++)R(p.x+dir*i,p.y+up*i,1,1,c);const ex=p.x+dir*L,ey=p.y+up*L;if(ty==='arrow'||ty==='bolt'){R(ex-dir*2,ey-1,2,1,'#f0ead8');R(ex-dir*2,ey+1,2,1,ty==='bolt'?'#4a3a2a':'#b8423a');}}}
   else if(m==='guts'){const p=at(k,'belly');R(p.x-3,p.y-1,6,3,'#3a0a08');for(let i=0;i<9;i++){const sw=Math.sin(t*2.2+i*.9)*(1+i*.15),x=p.x-1+i*.4+sw,y=p.y+2+i*2.3;R(x-1.5,y-1.5,4,3,i%2?'#e0a0a0':'#c97a7a');R(x-.5,y-1.5,1,1,'#fbe0e0');}R(p.x+3,p.y+20,1,5,'#8f1d16');R(p.x-2,p.y+3,1,7,'#8f1d16');}}}
-{const prev=M.figureDecor;M.figureDecor=function(a,P){prev?.call(this,a,P);if(G.active&&P.layer==='front'&&!P.portrait&&a?.g)drawMarks(a,P);};}
+{const prev=M.figureDecor;M.figureDecor=function(a,P){prev?.call(this,a,P);if(G.active&&P.layer==='front'&&!P.portrait&&a?.g){drawMarks(a,P);G.grabDecor(a,P);}};}
 // geblockter Ansturm: mit voller Wucht in die Deckung – kann trotzdem umwerfen (60 % der Chance), sonst zurückgestoßen
 G.blocked=ev=>{if(ev?.kind==='block'&&ev.att?.rushHit?.kind==='charge')G.ram(ev.att,ev.def,0,.6);};
-{const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p){G.ram(a,b,d);G.thrust(a,b,d,w,part);}return out;};R.__gait=true;}}
+{const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p){if(!G.backRun(a,b,d,w,part))G.thrust(a,b,d,w,part);G.ram(a,b,d);}return out;};R.__gait=true;}}
 
+
+// --------------------------------------------------------------- Angriffe von hinten im Lauf (Vorschlag, nur Gang-Editor)
+// Wer im Lauf (Sprint, Ansturm, Ausholen im Lauf) einen Gegner von hinten trifft, der ihm den Rücken zudreht, macht mehr Schaden
+// (×backDmg) und bekommt eine Sonderattacke je Waffe:
+//  Stichwaffen: Durchstich von hinten (geht immer ganz durch, so weit die Waffe reicht)
+//  Dolch, Kurzschwert, Gladius: Griff von hinten – Arm um den Hals, dann Kehle durchschneiden oder Stiche in die Niere
+//  starke Kämpfer: Würgegriff mit Genickbruch
+//  Keule, Streitkolben, Hammer: Schlag auf den Hinterkopf (Schädelbruch, oft umgeworfen)
+//  Äxte, Langschwert, Zweihänder, Hellebarde (Hieb): Hieb in den Rücken, Rücken aufgehackt, oft umgeworfen
+const GRAB_W=new Set(['dagger','short','gladius']),BACK_CHOP=new Set(['axe','doubleaxe','long','greatsword','halberd','throwaxe']);
+G.isBack=(a,b)=>Math.abs(ad(Math.atan2(a.y-b.y,a.x-b.x),b.a||0))>2.1;
+const runningHit=a=>{const r=a.rushHit,T=M.s.battle.time;return !!(r&&T-r.t<1.6)||a.backRush!=null&&T-a.backRush<2.5||!!a.runAttack||(a.gaitSpeed||a.gv||0)>(a.gaitBase||80)*.85;};
+G.backMode=(a,b,w,tech)=>{const st=a.g.stats?.strength||50,armNeck=(M.armorProtection?.(b.g,'neck')||0)>6;
+ if(tech==='thrust'&&PIERCE_BASE[w.id])return 'through';
+ if(GRAB_W.has(w.id)&&M.rng()<P.backGrab)return M.rng()<(w.id==='dagger'?.6:.4)&&!armNeck?'throat':'kidney';
+ if(!w.twoHand&&st>62&&M.rng()<.25)return 'neck';
+ if(!w.bladed)return 'skull';if(BACK_CHOP.has(w.id))return 'chop';if(PIERCE_BASE[w.id])return 'through';return 'chop';};
+G.backRun=(a,b,dmg,w,id,force)=>{if(!G.active||!P.backRun||!b?.g||b.g.dead||b.down||a.pierceContact||!w||w.ammo)return false;
+ if(!force&&(!G.isBack(a,b)||!runningHit(a)))return false;const mode=force||G.backMode(a,b,w,a.swingKind);
+ const part=b.g.body[id]||b.g.body.chest,extra=dmg*(P.backDmg-1);part.hp=Math.max(0,part.hp-extra);a.damage+=extra;b.taken+=extra;M.shake=Math.max(M.shake||0,6);
+ ev('backRun',a,{b,mode,part:id,weapon:w.id,dmg:dmg+extra});
+ if(mode==='through'){const pid=['chest','belly'].includes(id)?id:(M.rng()<.6?'chest':'belly');return !!G.thrust(a,b,dmg,w,pid,{force:true,back:true});}
+ if(mode==='throat'||mode==='kidney'||mode==='neck'){G.grab(a,b,mode);return true;}
+ if(mode==='skull'){M.floater?.(b.x,b.y-62,'HINTERKOPF!','#ff5a4a');if(M.rng()<.55)G.applyInjury(a,b,'skullfracture','head',w.id);if(M.rng()<P.backKnock+.1)M.knockdown?.(b,'Schlag auf den Hinterkopf',2.8);return true;}
+ if(mode==='chop'){M.floater?.(b.x,b.y-60,'RÜCKEN AUFGEHACKT!','#ff5a4a');G.applyInjury(a,b,'deepcut','chest',w.id);(b.g.gaitMarks||(b.g.gaitMarks=[])).push({m:'backCut',part:'chest'});if(M.rng()<P.backKnock)M.knockdown?.(b,'Hieb in den Rücken',2.4);return true;}
+ return false;};
+// Griff von hinten: Arm um den Hals, der Gepackte wird vor dem Körper gehalten (kann sich nicht wehren), dann der Stich oder Schnitt
+const GRAB_TXT={throat:'KEHLE DURCHGESCHNITTEN!',kidney:'IN DIE NIERE!',neck:'GENICK GEBROCHEN!'};
+G.grab=(a,b,mode)=>{const w=M.weapon(a);a.pierceContact={target:b.id,part:mode==='kidney'?'belly':'neck',left:P.grabTime,len:P.grabTime,weaponId:w.item?.id,grab:mode,t:0,stabs:0};a.swing=0;a.pendingStrike=null;a.wind=0;a.state='piercing';
+ b.stun=Math.max(b.stun||0,P.grabTime+.3);b.grabbedBy=a.id;b.wind=0;b.swing=0;b.block=false;b.hit=.4;b.facePain=1.6;M.voice?.('pain',M.voicePitch?.(b.g)??1,true);M.floater?.(b.x,b.y-64,'GEPACKT!','#ffcf6a');M.sound?.('grab');ev('grab',a,{b,mode});};
+G.grabStep=(a,b,f,dt)=>{f.t=(f.t||0)+dt;const k=f.t/(f.len||1.7),face=Math.cos(a.a||0)>=0?1:-1,sc=a.g.height/180*1.14,w=M.weapon(a);
+ // der Gepackte steht dicht vor dem Angreifer, mit dem Rücken zu ihm
+ const tx=a.x+face*13*sc,ty=a.y+1.2,r=Math.min(1,dt*14);b.x+=(tx-b.x)*r;b.y+=(ty-b.y)*r;b.a=a.a;b.stun=Math.max(b.stun||0,.2);b.facePain=Math.max(b.facePain||0,1);b.moveSpeed=0;
+ const cp=G.anchor(b,f.part);a.contactPoint=cp;
+ if(f.grab==='kidney'){const at=[.32,.5,.68];while(f.stabs<at.length&&k>=at[f.stabs]){f.stabs++;b.hit=.35;M.sound?.('stick');M.emit?.(cp.x-face*4,cp.y,8,'#aa3c36',70);M.voice?.('pain',M.voicePitch?.(b.g)??1,true);if(f.stabs===1){f.result=G.applyInjury(a,b,'kidney','belly',w.id,'Nierenverletzung');f.cut=true;M.floater?.(b.x,b.y-58,GRAB_TXT.kidney,'#ff5a4a');ev('backFinish',a,{b,mode:'kidney',part:'belly',kind:'kidney',weapon:w.id});}}}
+ else if(!f.cut&&k>=.45){f.cut=true;b.hit=.45;M.shake=Math.max(M.shake||0,5);
+  if(f.grab==='throat'){f.result=G.applyInjury(a,b,'deepcut','neck',w.id,'Kehle durchgeschnitten');M.emit?.(cp.x+face*6,cp.y,30,'#aa3c36',140);M.pixelBloodJet?.(b,'neck',true);if(w.item)w.item.blood=Math.max(w.item.blood||0,.9);(b.g.gaitMarks||(b.g.gaitMarks=[])).push({m:'throat',part:'neck'});}
+  else{f.result=G.applyInjury(a,b,'neckbreak','neck',w.id,'Genickbruch');M.sound?.('heavy');}
+  M.floater?.(b.x,b.y-58,GRAB_TXT[f.grab],'#ff5a4a');ev('backFinish',a,{b,mode:f.grab,part:'neck',kind:f.grab==='throat'?'deepcut':'neckbreak',weapon:w.id});}
+ if(f.grab==='throat'&&f.cut&&k<.95&&M.rng()<dt*16)M.emit?.(cp.x+face*5,cp.y+2,2,'#9d2f2a',50);
+ if(f.left<=dt*1.5&&!f.out){f.out=true;b.grabbedBy=null;if(!f.studio){if(f.result==='death')M.death?.(b,f.grab==='throat'?'Kehle durchgeschnitten':'Genickbruch',a);else M.knockdown?.(b,'Von hinten gepackt',2.2);}}};
+// Bild: der Unterarm des Angreifers liegt quer über dem Hals des Gepackten, die Klinge an der Kehle bzw. in der Niere
+G.grabDecor=(v,P)=>{if(!v.grabbedBy)return;const a=M.s.battle?.actors.find(x=>x.id===v.grabbedBy),f=a?.pierceContact;if(!f?.grab)return;
+ const R=(x,y,w,h,c)=>{P.ctx.fillStyle=c;P.ctx.fillRect(Math.round(x),Math.round(y),w,h);},k=f.t/(f.len||1.7),skin=a.g.appearance?.skin||'#b89066',dk=mixC(skin,'#000',.3),nx=P.head.x,ny=-56;
+ // Unterarm von hinten über den Hals, Hand am Kinn bzw. am Kopf
+ const squeeze=f.grab==='neck'&&k>.4?Math.sin(Math.min(1,(k-.4)/.1)*Math.PI/2):0;
+ R(nx-10,ny-1.5,15,4,dk);R(nx-10,ny-1,15,3,skin);R(nx+4,ny-3-squeeze*3,4,4,skin);R(nx+4,ny-3-squeeze*3,1,4,dk);
+ if(f.grab==='neck'){R(nx-4,P.head.y-7,6,4,skin);R(nx-4,P.head.y-7,6,1,dk);}
+ const w=M.weapon(a),L=w.id==='dagger'?7:w.id==='short'?9:10,met='#c9d0c4',edge='#eef2e2';
+ if(f.grab==='throat'){const s=k<.35?0:k<.55?(k-.35)/.2:1,x=nx+6-s*12,y=ny+3;if(k>.25&&k<.9){R(x,y,L,2,met);R(x,y,L,1,edge);R(x+L,y,3,3,'#6e5230');}
+  if(s>0){R(nx+6-s*12,ny+2,s*12,1,'#5a0c09');if(s>=1)for(let i=0;i<5;i++)R(nx-5+i*2.4,ny+3,1,2+((Math.sin((P.time||0)*6+i)+1)*2|0),'#8f1d16');}}
+ if(f.grab==='kidney'){const j=Math.max(0,Math.sin(k*Math.PI*5.5)),x=-9+j*4;if(k>.2&&k<.85){R(x-4,-34,4,3,skin);if(j<.6)R(x,-33,3-j*2,2,met);}R(-6,-33,2,2,'#a8372f');}};
+const mixC=(a,b,t)=>{const p=c=>{c=c.replace('#','');if(c.length===3)c=[...c].map(x=>x+x).join('');return [0,2,4].map(i=>parseInt(c.slice(i,i+2),16));},A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');};
 // --------------------------------------------------------------- Initiative und Abstechen
 const CRIES=['STIRB!','JETZT!','FÜR DIE EHRE!','HAAA!','BLEIB LIEGEN!'];
 const cryText=a=>CRIES[((a.seed||0)+(a.finCount||0))%CRIES.length];
@@ -198,25 +260,51 @@ function seize(a,o){
  if(!best)return null;
  // nicht, wenn ihn gerade jemand anderes angreift und gleich trifft
  if(b.actors.some(x=>x.team!==a.team&&x!==best.t&&!x.down&&!x.g.dead&&x.target===a.id&&(x.wind>0||x.swing>0)&&Math.hypot(x.x-a.x,x.y-a.y)<90))return null;
- if(a.target!==best.t.id||a.seizeOn!==best.t.id+best.k){a.target=best.t.id;a.seizeOn=best.t.id+best.k;a.cool=Math.min(a.cool||0,.1);a.retreat=0;a.flankTimer=0;
+ if(a.target!==best.t.id||a.seizeOn!==best.t.id+best.k){a.target=best.t.id;a.seizeOn=best.t.id+best.k;if(best.k==='back')a.backRush=M.s.battle.time;a.cool=Math.min(a.cool||0,.1);a.retreat=0;a.flankTimer=0;
   if(best.d>70){a.shoutTimer=.8;a.cried=true;M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-62,cryText(a),'#ffcf6a');}ev('seize',a,{b:best.t,why:best.k});}
  return best;}
 // Abstechen: weit ausholen (mit Schrei), dann die Waffe mit voller Wucht hineinrammen
-G.finPart=(a,b)=>{const w=M.weapon(a),B=b.g.body,r=M.rng();if(!w.bladed&&!['spear','trident','javelin'].includes(w.id)&&!B.head.missing&&r<.85)return 'head';/* Keule, Streitkolben, Hammer: auf den Kopf */if(CHOP.has(w.id)){if(r<.45&&!B.neck.missing)return 'neck';const limbs=['lua','rua','lt','rt'].filter(id=>!B[id].missing);if(r<.8&&limbs.length)return limbs[Math.floor(M.rng()*limbs.length)];}
+// Abstechen: Stelle am Boden zuerst wählen (beim Ausholen), dann stellt sich der Angreifer genau daneben hin und haut senkrecht von oben hinein
+const pickPart=(a,b)=>{const w=M.weapon(a),B=b.g.body,r=M.rng();if(!w.bladed&&!['spear','trident','javelin'].includes(w.id)&&!B.head.missing&&r<.85)return 'head';/* Keule, Streitkolben, Hammer: auf den Kopf */if(CHOP.has(w.id)){if(r<.45&&!B.neck.missing)return 'neck';const limbs=['lua','rua','lt','rt'].filter(id=>!B[id].missing);if(r<.8&&limbs.length)return limbs[Math.floor(M.rng()*limbs.length)];}
  if(r<.6&&!B.head.missing)return 'head';return B.chest.missing?null:(M.rng()<.6?'chest':'belly');};
-function finStart(a){if(a.finisher||a.technique!=='groundFinish')return;a.finCount=(a.finCount||0)+1;a.finisher={target:a.target};a.wind*=P.finWind;a.windMax*=P.finWind;a.shoutTimer=Math.max(a.shoutTimer||0,1);M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-66,cryText(a),'#ff8a5a');ev('finStart',a,{});}
-// Haltung beim Abstechen (arena.js): beide Hände hoch über den Kopf, zurücklehnen – dann mit Ausfallschritt und tief gebeugt hinein, kurz halten, herausreißen
+G.finPart=(a,b)=>a.finisher?.part&&a.finisher.target===b.id&&!b.g.body[a.finisher.part]?.missing?a.finisher.part:pickPart(a,b);
+// Lage der Körperstellen am liegenden Körper (wie contactAnchor im Spiel, dazu Arme, Beine, Füße)
+const LIE={head:[0,-62],neck:[0,-56],chest:[2,-41],belly:[0,-35],ls:[-4,-49],rs:[4,-49],lua:[-5,-43],rua:[5,-43],lfa:[-5,-34],rfa:[5,-34],lh:[-5,-27],rh:[5,-27],lt:[-3,-22],rt:[3,-22],lsh:[-3,-11],rsh:[3,-11],lf:[-3,-2],rf:[3,-2]};
+G.anchor=(b,id)=>{if(!b)return null;if(!onGroundA(b)&&!(b.fallTimer>0))return M.contactAnchor?.(b,id)||{x:b.x,y:b.y-30};
+ const sc=b.g.height/180*1.14,wide=cl(.85+b.g.weight/420,.98,1.18)*(b.g.statureWide||1),face=Math.cos(b.a||0)>=0?1:-1,rot=(b.fallSide||-1)*1.35,[x,y]=LIE[id]||LIE.chest;
+ return {x:b.x+(12+Math.cos(rot)*x-Math.sin(rot)*y)*sc*wide*face,y:b.y+(5+Math.sin(rot)*x+Math.cos(rot)*y)*sc};};
+// Waffenlänge Hand→Spitze in Figureneinheiten (Zeichnung: Klingenmaß × 0,8 / 1,14)
+const TIPL={dagger:17,short:36,gladius:40,long:48,greatsword:56,spear:55,javelin:45,trident:55,halberd:41,axe:37,doubleaxe:29,throwaxe:22,club:30,mace:27,hammer:30,fist:4};
+// gemessene Feinkorrektur der Hand je Waffe (Griffversatz bei Zweihandwaffen, Kopfmitte bei Keulen), Figureneinheiten
+const FCORR={trident:[7.5,0],long:[-5.3,-2],greatsword:[-8.7,-11],axe:[11,9],halberd:[-11,-16],doubleaxe:[6,-2],mace:[-6,-3.6],hammer:[-6,-4.4],club:[0,4.7]};
+const finGeo=a=>{const w=M.weapon(a),chop=CHOP.has(w.id)||!w.bladed;return {chop,an:chop?1.22:Math.PI/2,tipL:(TIPL[w.id]||30)*.7,pen:chop?1.5:(PIERCE.has(w.id)||w.bladed?7:2),reachX:14};};
+// Standplatz: neben der Stelle (zwischen Stelle und Körpermitte, nie hinter dem Kopf hinaus), etwas hinter dem Liegenden
+G.finSpot=(a,t,part)=>{const W=G.anchor(t,part||'chest');if(!W)return null;const o=finGeo(a),sc=a.g.height/180*1.14*cl(.85+a.g.weight/420,.98,1.18)*(a.g.statureWide||1);
+ let face=Math.abs(W.x-t.x)<10?(a.x<=W.x?1:-1):(W.x>=t.x?1:-1);const px=o.reachX+(o.chop?Math.cos(o.an)*(o.tipL-o.pen):0);
+ return {x:W.x-face*px*sc,y:t.y-5,face,W};};
+function finStart(a){if(a.finisher&&a.finisher.started||a.technique!=='groundFinish')return;const t=M.s.battle.actors.find(x=>x.id===a.target);a.finCount=(a.finCount||0)+1;a.finisher={target:a.target,started:true,part:a.finisher?.part||(t?pickPart(a,t):null)};
+ const sp=t&&G.finSpot(a,t,a.finisher.part),d=sp?Math.hypot(sp.x-a.x,sp.y-a.y):0;a.wind*=P.finWind;a.windMax*=P.finWind;if(d>6){const add=Math.min(1.2,d/150);a.wind+=add;a.windMax+=add;}
+ a.shoutTimer=Math.max(a.shoutTimer||0,1);M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-66,cryText(a),'#ff8a5a');ev('finStart',a,{part:a.finisher.part});}
+// beim Ausholen zur Stelle gehen (Kampfschritt), dann stehen bleiben und zur Stelle drehen
+G.finStep=(a,dt)=>{const f=a.finisher;if(!f?.part)return;const t=M.s.battle.actors.find(x=>x.id===f.target);if(!t)return;const sp=G.finSpot(a,t,f.part);if(!sp)return;f.spot=sp;
+ const dx=sp.x-a.x,dy=sp.y-a.y,d=Math.hypot(dx,dy);if(d>.5&&a.wind>0){const st=Math.min(d,150*dt);a.x+=dx/d*st;a.y+=dy/d*st;a.moveSpeed=st/dt;a.phase=(a.phase||0)+dt*a.moveSpeed*.16;}else a.moveSpeed=0;a.a=sp.face>0?0:Math.PI;};
+// Haltung beim Abstechen (arena.js): beide Hände hoch über den Kopf, zurücklehnen – dann mit Ausfallschritt und tief gebeugt
+// senkrecht hinein, genau auf die Stelle; Waffenlänge je Waffe (TIPL)
 const ease=t=>t<0?0:t>1?1:t*t*(3-2*t);
-G.finPose=(a,sc)=>{if(!G.active||!a.finisher&&!(a.wind>0))return null;const w=M.weapon(a),chop=CHOP.has(w.id)||!w.bladed,shield=!!M.usableShield?.(a)&&!w.twoHand;
- let u,low;if(a.wind>0){u=ease(1-a.wind/Math.max(.01,a.windMax||.5));low=0;}else{const s=1-a.swing/Math.max(.01,a.swingMax||.4);u=1;low=s<.5?ease(s/.5):1-ease((s-.5)/.5)*.65;}
- const t=M.s.battle?.actors.find(x=>x.id===(a.finisher?.target||a.target)),face=Math.cos(a.a||0)>=0?1:-1;let tx=26;if(t&&sc)tx=cl((t.x-a.x)*face/sc,16,34);
- const top={x:2,y:-86},deep=chop?{x:tx-2,y:-30}:{x:tx-4,y:-34},raise={x:14+(top.x-14)*u,y:-50+(top.y+50)*u};
+G.finPose=(a,sc,scY)=>{if(!G.active||!a.finisher&&!(a.wind>0))return null;const w=M.weapon(a),o=finGeo(a),chop=o.chop,shield=!!M.usableShield?.(a)&&!w.twoHand;
+ let u,low;if(a.wind>0){u=ease(1-a.wind/Math.max(.01,a.windMax||.5));low=0;}else{const s=1-a.swing/Math.max(.01,a.swingMax||.4);u=1;low=s<.45?ease(s/.45):a.finHold>0||s<.72?1:1-ease((s-.72)/.28)*.65;}/* unten kurz stehen lassen: die Waffe sitzt */
+ const f=a.finisher,t=M.s.battle?.actors.find(x=>x.id===(f?.target||a.target)),face=Math.cos(a.a||0)>=0?1:-1,drop=11*low+1.5*u;
+ let deep;const W=t&&f?.part?G.anchor(t,f.part):null;
+ if(W&&sc){const sy=scY||sc,pt={x:(W.x-a.x)*face/sc,y:(W.y-a.y)/sy-drop};const c=FCORR[w.id]||[0,0];deep={x:pt.x-Math.cos(o.an)*(o.tipL-o.pen)+c[0],y:pt.y-Math.sin(o.an)*(o.tipL-o.pen)+c[1]};}
+
+ else{let tx=26;if(t&&sc)tx=cl((t.x-a.x)*face/sc,16,34);deep=chop?{x:tx-2,y:-30}:{x:tx-4,y:-34};}
+ const top={x:2,y:-86},raise={x:14+(top.x-14)*u,y:-50+(top.y+50)*u};
  const m={x:raise.x+(deep.x-raise.x)*low,y:raise.y+(deep.y-raise.y)*low};
- const angUp=chop?-2.45:1.5,angDown=chop?.95:1.42,an=(chop?(-1.1+(angUp+1.1)*u):1.5)+(angDown-(chop?angUp:1.5))*low;
- return {lean:-5*u*(1-low)+13*low,drop:11*low+1.5*u,main:m,off:shield?{x:-5+3*low,y:-42+6*low}:{x:m.x-3,y:m.y+5},angle:an};};
+ const up=chop?-1.1+(-2.45+1.1)*u:1.5,an=up+(o.an-up)*low;/* Hieb: über den Kopf zurück, Stich: Spitze nach unten über dem Kopf */
+ return {lean:-5*u*(1-low)+13*low,drop,main:m,off:shield?{x:-5+3*low,y:-42+6*low}:{x:m.x-3,y:m.y+5},angle:an};};
 G.hold=(a,dt)=>{if(!(a.finHold>0))return;a.finHold-=dt;a.swing=Math.max(a.swing||0,(a.swingMax||.4)*.5);a.moveSpeed=0;const t=M.s.battle.actors.find(x=>x.id===a.finisher?.target);if(t&&a.contactPoint&&M.rng()<dt*8)M.emit?.(a.contactPoint.x,a.contactPoint.y,2,'#9d2f2a',30);if(a.finHold<=0){a.finisher=null;if(t&&a.contactPoint)M.emit?.(a.contactPoint.x,a.contactPoint.y,12,'#aa3c36',90);M.sound?.('stick');}};
 function finImpact(a,b,dmg,w,id){
- const fin=a.finisher;if(!fin||!b?.g)return;const part=b.g.body[id];if(!part)return;const B=b.g.body;let what;
+ const fin=a.finisher;if(!fin||!b?.g)return;a.contactPoint=G.anchor(b,id)||a.contactPoint;const part=b.g.body[id];if(!part)return;const B=b.g.body;let what;
  // Wucht: mehr Schaden
  const extra=dmg*(P.finDmg-1);part.hp=Math.max(0,part.hp-extra);a.damage+=extra;b.taken+=extra;
  if(CHOP.has(w.id)&&['neck','lua','rua','lt','rt'].includes(id)&&M.rng()<P.finSever+dmg*.004){what=id==='neck'?'beheaded':'severed';M.sever(a,b,id);}

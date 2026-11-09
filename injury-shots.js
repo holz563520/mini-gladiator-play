@@ -225,7 +225,11 @@ const WCM={
  gladius:{pierce:48,parts:[['blade',0,50,5.4],['guard',50,53,10],['grip',53,64,3],['pommel',64,69,5]]},
  long:{pierce:80,fuller:true,parts:[['blade',0,82,4.6],['guard',82,85,18],['grip',85,102,2.8],['pommel',102,106,4.2]]},
  greatsword:{pierce:108,fuller:true,parts:[['blade',0,110,5.6],['guard',110,114,26],['grip',114,140,3.2],['pommel',140,145,5.2]]},
- rapier:{pierce:90,parts:[['blade',0,92,2.2],['guard',92,95,14],['grip',95,108,2.6],['pommel',108,111,4]]}};
+ rapier:{pierce:90,parts:[['blade',0,92,2.2],['guard',92,95,14],['grip',95,108,2.6],['pommel',108,111,4]]},
+ /* Geschosse: fliegen herein und bleiben stecken (kein Herausreißen); Pfeil und Bolzen gehen nur durch Glieder und Hals */
+ bow:{pierce:30,proj:true,parts:[['head',0,4,1.6],['shaft',4,50,.9],['fletch',50,62,2.6],['nock',62,64,1]]},
+ crossbow:{pierce:26,proj:true,parts:[['head',0,3,1.9],['shaft',3,26,1.3],['fletch',26,34,2.4]]},
+ throwaxe:{pierce:6,proj:true,parts:[['spike',0,6,2.2],['axe',6,20,3],['shaft',20,52,2.2]]}};
 const PXCM={head:2.4,neck:2.6,chest:2.2,belly:2.2,shoulder:2.4,upperarm:2.8,forearm:3,hand:3.4,thigh:2.4,shin:2.8,foot:3.2};
 function throughFx(T,V,k,C){const MK=V.mask,inside=(x,y)=>{x=Math.round(x);y=Math.round(y);return !!MK&&x>=0&&y>=0&&x<FW&&y<FH&&MK[y*FW+x]===1;};
  const vw=V.view,A0=V.A0||(V.A0={x:V.A.x,y:V.A.y});let u=vw==='head'?{x:1,y:-.1}:vw==='neck'?{x:1,y:.03}:['chest','belly'].includes(vw)?{x:1,y:.18}:Math.abs(V.dir.y)>.35?{x:1,y:.15}:{x:-V.dir.y,y:V.dir.x};if(u.x<0)u={x:-u.x,y:-u.y};const ul=Math.hypot(u.x,u.y);u={x:u.x/ul,y:u.y/ul};if(V.U)u=V.U;let nx=-u.y,ny=u.x;
@@ -237,10 +241,11 @@ function throughFx(T,V,k,C){const MK=V.mask,inside=(x,y)=>{x=Math.round(x);y=Mat
   {const d=best.dir;let p={x:-d.y,y:d.x};if(Math.abs(p.x)<.3?p.y<0:p.x<0)p={x:-p.x,y:-p.y};const r=.26*(p.x*d.x+p.y*d.y>=0?1:Math.sign(d.x)||1),c=Math.cos(r),sN=Math.sin(r);u={x:p.x*c-p.y*sN,y:p.x*sN+p.y*c};if(u.x<-.05){u={x:-u.x,y:-u.y};}V.U=u;nx=-u.y;ny=u.x;}
   const sn=Math.max(.35,Math.abs(u.x*best.dir.y-u.y*best.dir.x)),h=best.w/2/sn;V.E={x:best.c.x-u.x*h,y:best.c.y-u.y*h};V.X={x:best.c.x+u.x*h,y:best.c.y+u.y*h};}
  if(!V.E){let a=0,b=0;if(!front)while(a<120&&inside(A0.x-u.x*a,A0.y-u.y*a))a++;else a=1;while(b<120&&inside(A0.x+u.x*b,A0.y+u.y*b))b++;V.E={x:A0.x-u.x*(a-1),y:A0.y-u.y*(a-1)};V.X={x:A0.x+u.x*(b-1),y:A0.y+u.y*(b-1)};}
+ /* von hinten: Eintritt an der abgewandten Seite (verdeckt), Austritt vorn an der Wunde */if(C.fromBack&&front&&!tubeV&&!V.swapped){V.swapped=true;const e=V.E;V.E=V.X;V.X=e;}if(V.swapped){u={x:-u.x,y:-u.y};nx=-u.y;ny=u.x;}
  const E=V.E,X=V.X,span=Math.hypot(X.x-E.x,X.y-E.y),wid=WCM[C.wid]?C.wid:'gladius',W=WCM[wid],S=PXCM[vw]||2.4,look=M.itemLook?.({kind:'weapon',q:C.wq??2})||{metal:'#a3b2ac',edge:'#dae1ca',trim:'#a4844e'};
- const maxPen=W.pierce*S,exit=wid!=='halberd'&&maxPen>span+3,/* Hellebarde: nur der Stachel dringt ein, nie hinten heraus */pen=exit?Math.min(span+Math.min(30,maxPen-span),maxPen):Math.min(maxPen,span-2),bone=!['belly','neck'].includes(vw);
+ const maxPen=W.pierce*S,proj=!!(W.proj||C.thrown),exit=wid!=='halberd'&&maxPen>span+3&&!(W.proj&&['chest','belly','head'].includes(vw)),/* Hellebarde: nur der Stachel dringt ein, nie hinten heraus */pen=exit?Math.min(span+Math.min(30,maxPen-span),maxPen):Math.min(maxPen,span-2),bone=!['belly','neck'].includes(vw);
  // Zeitplan: anfliegen (k<0), hineinstoßen (0–0,16), halten und zittern, herausreißen (1,45–1,72)
- const tipD=k<0?-150*cl(-k/.3):k<.16?pen*out_(k/.16):k<1.45?pen+Math.sin(k*46)*.5:k<1.72?pen-(pen+170)*cl((k-1.45)/.27)**2:-999,through=exit&&k>=0&&tipD>span+1,inT=k>=0&&k<1.72;
+ const tipD=proj?(k<0?-260*cl(-k/.2):k<.05?pen*out_(k/.05):pen+Math.sin(k*40)*Math.exp(-k*5)*1.2):k<0?-150*cl(-k/.3):k<.16?pen*out_(k/.16):k<1.45?pen+Math.sin(k*46)*.5:k<1.72?pen-(pen+170)*cl((k-1.45)/.27)**2:-999,through=exit&&k>=0&&tipD>span+1,inT=k>=0&&(proj||k<1.72);
  const hidden=(x,y,along)=>inT&&(front?along>0&&along<span:inside(x,y));
  // Wunden, Blut im Bild
  if(k>=0){const keep={x:V.A.x,y:V.A.y},lip0=V.lip;V.A={x:E.x,y:E.y};hole(T,V,k,2.4+(wid==='trident'?2:0));flow(T,V,k,4,24);
@@ -250,17 +255,19 @@ function throughFx(T,V,k,C){const MK=V.mask,inside=(x,y)=>{x=Math.round(x);y=Mat
   const tEx=exit?.16*cl(span/Math.max(1,pen)):99;if(k>tEx){const kk=k-tEx;for(let i=0;i<26;i++){const sp=40+((i*37)%50),a=(((i*53)%21)/21-.5)*.9,vx=(u.x*Math.cos(a)-u.y*Math.sin(a))*sp,vy=(u.y*Math.cos(a)+u.x*Math.sin(a))*sp,life=.5+((i*13)%9)/12;if(kk>life)continue;T.r(X.x+vx*kk,X.y+vy*kk+70*kk*kk,i%5?2:1,i%5?2:1,i%3?'#a8372f':'#c9584a');}
    if(bone&&kk<.9)for(let i=0;i<8;i++){const sp=30+((i*41)%30),a=(((i*29)%17)/17-.5)*1.2;T.r(X.x+(u.x*Math.cos(a)-u.y*Math.sin(a))*sp*kk,X.y+(u.y*Math.cos(a)+u.x*Math.sin(a))*sp*kk+60*kk*kk,i%2?2:1,1,'#efe6cc');}}
   // Herausreißen: Schwall aus beiden Wunden, nach vorn bzw. hinten
-  if(k>1.5&&k<2.6){const kk=k-1.5;for(let i=0;i<22;i++){const sp=30+((i*31)%60),a=(((i*47)%19)/19-.5)*1.1,life=.4+((i*11)%9)/10;if(kk>life)continue;const dx=-(u.x*Math.cos(a)-u.y*Math.sin(a))*sp,dy=-(u.y*Math.cos(a)+u.x*Math.sin(a))*sp;T.r(E.x+dx*kk,E.y+dy*kk+80*kk*kk,2,2,i%3?'#a8372f':'#7a1a14');if(exit&&i%2)T.r(X.x-dx*kk*.6,X.y-dy*kk*.6+80*kk*kk,2,1,'#a8372f');}}}
+  if(!proj&&k>1.5&&k<2.6){const kk=k-1.5;for(let i=0;i<22;i++){const sp=30+((i*31)%60),a=(((i*47)%19)/19-.5)*1.1,life=.4+((i*11)%9)/10;if(kk>life)continue;const dx=-(u.x*Math.cos(a)-u.y*Math.sin(a))*sp,dy=-(u.y*Math.cos(a)+u.x*Math.sin(a))*sp;T.r(E.x+dx*kk,E.y+dy*kk+80*kk*kk,2,2,i%3?'#a8372f':'#7a1a14');if(exit&&i%2)T.r(X.x-dx*kk*.6,X.y-dy*kk*.6+80*kk*kk,2,1,'#a8372f');}}}
  if(tipD<-160)return;
  // Waffe zeichnen: Querschnitt für Querschnitt von der Spitze nach hinten, im Körper verdeckt
  const tx=E.x+u.x*tipD,ty=E.y+u.y*tipD,bloodTo=Math.max(0,Math.min(tipD,pen)),wet=k>=0;
  const dot=(x,y,c,along)=>{if(!hidden(x,y,along))T.r(x,y,1,1,c);};
- const total=Math.min(W.parts[W.parts.length-1][2]*S,260);
+ const total=Math.min(Math.max(...W.parts.map(p=>p[2]))*S,260);
  for(let d=0;d<total;d+=.7){const cm=d/S,part=W.parts.find(p=>cm>=p[1]&&cm<p[2]);if(!part)break;const [kind,from,to,wcm0]=part,wcm=kind==='bar'||kind==='guard'?wcm0*.8:wcm0*.62,x=tx-u.x*d,y=ty-u.y*d,along=tipD-d;let half=wcm*S/2,c=look.metal,ce=look.edge;
   if(kind==='head'){const f=(cm-from)/(to-from);half=Math.max(.6,(f<.65?f/.65:1-(f-.65)/.35*.55)*wcm*S/2);}
   else if(kind==='blade'&&cm<6)half=Math.max(.5,cm/6*wcm*S/2);
   else if(kind==='spike'){half=Math.max(.5,(cm/18)*wcm*S/2);}
-  else if(kind==='shaft'){c=d%5<1?'#5a3c22':'#7a5232';ce='#9a6e44';}
+  else if(kind==='shaft'){c=W.proj&&wid!=='throwaxe'?(d%6<1?'#6a4a28':'#8a6a3c'):d%5<1?'#5a3c22':'#7a5232';ce=W.proj?'#c49a58':'#9a6e44';}
+  else if(kind==='fletch'){const f=(cm-from)/(to-from);half=wcm*S/2*(f<.2?f/.2:1);c=Math.floor(d/2)%2?'#f0ead8':'#cfc6b0';ce=wid==='bow'?'#b8423a':'#4a3a2a';}
+  else if(kind==='nock'){c='#3a2a1c';ce=c;}
   else if(kind==='grip'){c=(Math.floor(d/2)%2)?'#4a3424':'#6e5230';ce=c;}
   else if(kind==='guard'||kind==='pommel'||kind==='socket'||kind==='bar'){c=look.trim;ce=mix(look.trim,'#ffffff',.3);}
   const blood=wet&&along>-1&&along<bloodTo+.5&&['blade','head','prong','spike'].includes(kind)&&(along<pen-1||!exit||k>.16);
@@ -454,7 +461,7 @@ function weaponFx(q,T,V,cls,wid,t,kind){const k=t-HIT,A=V.A;if(cls==='none')retu
   T.line(tx+Math.cos(ang)*14,ty+Math.sin(ang)*14,sx,sy,'#5a4128',4);T.line(tx+Math.cos(ang)*14,ty+Math.sin(ang)*14-1,sx,sy-1,'#9a7848',1);for(let i=0;i<16;i++){const w=i<3?1+i:i<10?5:Math.max(1,5-(i-10));if(kind==='pierce'||i>(dep>0?dep:0)/1)T.r(tx+Math.cos(ang)*i-w/2,ty+Math.sin(ang)*i-w/2,w,w,i%2?'#dfe4d2':'#aab4aa');}
   if(kind==='pierce'&&k>=0&&k<.3)for(let i=0;i<12;i++){T.r(A.x+Math.cos(ang+Math.PI)*(i+3),A.y+Math.sin(ang+Math.PI)*(i+3),Math.max(1,4-i*.3),Math.max(1,4-i*.3),i%2?'#c9584a':'#dfe4d2');}}
  else{/* Klinge zieht quer über die Stelle; im Kontakt eine helle Schnittspur */const p=k<0?cl(1+k/.22):1,nx=-V.dir.y,ny=V.dir.x,sw=(p-.5)*70,ux=V.dir.x*.7+nx*.7,uy=V.dir.y*.7+ny*.7,bx=A.x+ux*sw,by=A.y+uy*sw,ang=-2.2;
-  if(k<.12){const L=wid==='dagger'?34:wid==='axe'||wid==='doubleaxe'?30:56;for(let i=0;i<L;i++){const w=Math.max(1,(wid==='axe'||wid==='doubleaxe')?(i<12?10-i*.3:3):4-i/L*3);T.r(bx+Math.cos(ang)*i-w/2,by+Math.sin(ang)*i-w/2,w+1,w+1,i%5===0?'#f4f6ea':'#c2cbc0');}T.line(bx+Math.cos(ang)*((wid==='dagger'?34:56)),by+Math.sin(ang)*((wid==='dagger'?34:56)),bx+Math.cos(ang)*((wid==='dagger'?34:56)+16),by+Math.sin(ang)*((wid==='dagger'?34:56)+16),'#6e5230',4);}
+  if(k<.12){const L=wid==='dagger'?34:wid==='axe'||wid==='doubleaxe'||wid==='throwaxe'?30:56;for(let i=0;i<L;i++){const w=Math.max(1,(wid==='axe'||wid==='doubleaxe'||wid==='throwaxe')?(i<12?10-i*.3:3):4-i/L*3);T.r(bx+Math.cos(ang)*i-w/2,by+Math.sin(ang)*i-w/2,w+1,w+1,i%5===0?'#f4f6ea':'#c2cbc0');}T.line(bx+Math.cos(ang)*((wid==='dagger'?34:56)),by+Math.sin(ang)*((wid==='dagger'?34:56)),bx+Math.cos(ang)*((wid==='dagger'?34:56)+16),by+Math.sin(ang)*((wid==='dagger'?34:56)+16),'#6e5230',4);}
   if(k>=0&&k<.16){q.globalAlpha=1-k/.16;T.line(A.x-ux*30,A.y-uy*30,A.x+ux*30,A.y+uy*30,'#fffbe8',2);}}
  q.globalAlpha=1;}
 // ---------- Ein Bild der Nahaufnahme ----------
@@ -513,7 +520,7 @@ function paint(g,w,h,o,t){const kind0=o.kind||kindOf(o.injury);
   caption(g,w,h,{...o,noFace:true},t,kind0);return;}
  let b=buffers.get(g.canvas);if(!b){b=document.createElement('canvas');b.width=FW;b.height=FH;buffers.set(g.canvas,b);}const q=b.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,FW,FH);
  const T=tools(q),C=palette(o.g),kind=o.kind||kindOf(o.injury),k=t-HIT,cls=o.cls||(kind==='skullfracture'&&M.skullVariants?.ownWeapon(o.wid)?'none':weaponClass(o.wid)),right=o.part[0]==='r'&&o.part!=='r';
- curHead=kind==='skullheal'||o.simpleHead?null:o.g||null;backdrop(q,T,t);const view=kind==='sever'&&o.part==='head'?'neck':viewOf(o.part),V=VIEW[view](q,T,C,viewOptions(kind,o.part,k,o));V.A=V.mid?{x:V.mid.x,y:V.mid.y}:V.A;V.seed=[...(o.part+kind+(o.g?.id||o.g?.name||''))].reduce((n,c)=>(n*31+c.charCodeAt(0))%9973,7);V.view=view;if(kind==='through'||EFFECT[kind]?.ownWeapon){C.wid=o.wid;C.wq=o.wq;}
+ curHead=kind==='skullheal'||o.simpleHead?null:o.g||null;backdrop(q,T,t);const view=kind==='sever'&&o.part==='head'?'neck':viewOf(o.part),V=VIEW[view](q,T,C,viewOptions(kind,o.part,k,o));V.A=V.mid?{x:V.mid.x,y:V.mid.y}:V.A;V.seed=[...(o.part+kind+(o.g?.id||o.g?.name||''))].reduce((n,c)=>(n*31+c.charCodeAt(0))%9973,7);V.view=view;if(o.throat&&!V.gdir)V.gdir={x:.99,y:.12};/* Kehlschnitt: quer über den Hals */if(kind==='through'||EFFECT[kind]?.ownWeapon){C.wid=o.wid;C.wq=o.wq;C.thrown=!!o.thrown;C.fromBack=!!o.fromBack;}
  if(kind==='sever'&&k>=0&&V.rest&&o.part!=='head'&&o.part!=='neck'){const fall=k*k*70;V.rest(V.dir.x*(4+k*22),V.dir.y*4+fall,k*1.4);}
  if(kind==='skullheal'){V.A=(o.day|0)>0?{x:82,y:20}:{x:80,y:38};C.healDay=o.day;}if(kind==='skullfracture')V.A={x:80,y:38};V.C=C;if(kind!=='sever'&&!o.noFit)fitWound(q,V,kind,view,kind==='skullfracture'&&V.newHead);try{V.arm=dressArmor(q,C,V,o,kind,k);}catch(e){V.arm=null;}
  if(kind==='skullfracture'){C.wid=o.wid;C.noWeapon=!!o.noWeapon;C.helm=o.helm===undefined?helmOf(o.g):o.helm;if(C.helm&&!V.newHead)helmClose(T,C.helm,k);}
