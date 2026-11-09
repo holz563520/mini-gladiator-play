@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gang-Editor · Arena Theory</title>
+<script>try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}</script>
+<style>
+@font-face{font-family:'Courier Prime';src:url(fonts/courier-prime-400.woff) format('woff');font-weight:400}
+@font-face{font-family:'Courier Prime';src:url(fonts/courier-prime-700.woff) format('woff');font-weight:700}
+:root{--line:#394b4d;--gold:#dfb66d;--cream:#eae4cd;--muted:#97aaa8;--panel:#1d282b;--panel2:#162023}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#2a1d14,#120c09 60%);color:var(--cream);font-family:'Courier Prime',ui-monospace,monospace;min-height:100vh}
+header{padding:14px 16px 4px;text-align:center}
+header small{display:block;letter-spacing:4px;color:var(--muted);font-size:11px}
+header h1{margin:4px 0 0;font-size:24px;letter-spacing:6px;color:var(--gold);text-shadow:3px 3px 0 #000}
+header p{margin:6px auto 0;max-width:840px;font-size:13px;color:var(--muted);line-height:1.45}
+main{max-width:1240px;margin:0 auto;padding:6px 12px 40px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+@media (max-width:940px){.top{grid-template-columns:1fr}}
+.stage{position:relative;border:3px solid #6b5230;box-shadow:6px 6px 0 #000a;background:#0d0a07}
+#arenaCanvas{display:block;width:100%;height:auto;aspect-ratio:850/520;image-rendering:pixelated}
+#labels{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+#hud{position:absolute;left:8px;top:6px;right:8px;display:flex;justify-content:space-between;font-size:12px;text-shadow:1px 1px 0 #000;pointer-events:none;gap:8px}
+#hud b{color:var(--gold);font-weight:400}
+.panel{background:#1d282bdd;border:2px solid var(--line);box-shadow:3px 3px 0 #0008;padding:10px 12px;margin-bottom:10px}
+.panel h3{margin:0 0 8px;font-size:12px;letter-spacing:3px;color:var(--gold);text-transform:uppercase}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin:5px 0;color:var(--muted)}
+select,input[type=range]{font:inherit;font-size:12px;color:var(--cream);background:var(--panel2);border:1px solid var(--line);padding:3px 4px;width:160px}
+input[type=range]{width:120px}
+input[type=checkbox]{accent-color:#dfb66d}
+.val{color:var(--cream);min-width:44px;text-align:right}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+button{font:inherit;font-size:12px;color:var(--cream);background:var(--panel);border:2px solid var(--line);padding:6px 10px;box-shadow:3px 3px 0 #0008;cursor:pointer}
+button.main,button.on{border-color:var(--gold);color:var(--gold)}
+.gaits{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.gaits button{text-align:left;padding:6px 8px}
+.gaits button i{display:inline-block;width:9px;height:9px;margin-right:6px;font-style:normal}
+.live{font-size:12px;line-height:1.6}
+.live .row{display:flex;justify-content:space-between;border-bottom:1px dashed #394b4d}
+.live b{font-weight:400}
+.graphBox{border:2px solid var(--line);background:#141d1fcc;margin-top:10px}
+#graph{display:block;width:100%;height:auto;aspect-ratio:850/180}
+h2{font-size:13px;letter-spacing:3px;color:var(--gold);margin:22px 4px 6px;text-transform:uppercase}
+.note{font-size:12px;color:var(--muted);line-height:1.55;margin:4px 4px 8px}
+table.tbl{border-collapse:collapse;font-size:12px;width:100%}
+.tbl th,.tbl td{border:1px solid #26353a;padding:4px 6px;text-align:left}
+.tbl th{color:var(--muted);font-weight:400;background:#141d1f}
+.rules{font-size:12.5px;line-height:1.6}.rules li{margin:4px 0}.rules em{color:var(--gold);font-style:normal}.warn{color:#e6a45c}
+.hide{display:none}
+</style></head>
+<body>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND 2df284df</small><h1>GANG-EDITOR</h1>
+<p>Gehen, Kampfschritt, Laufen, Sprinten, Seitschritt und Rückwärts mit echten Figuren des Spiels: jede Gangart mit eigenem Tempo, Schrittrhythmus, Körperhaltung und Armhaltung. Das Tempo baut sich beim Anlaufen auf und beim Bremsen ab. Oben läuft die neue Bewegung, unten zum Vergleich die bisherige. Nur Testseite: Spiel und Spielstände bleiben unberührt.</p></header>
+<main>
+<div class="top">
+ <div>
+  <div class="stage"><canvas id="arenaCanvas" width="850" height="520"></canvas><canvas id="labels" width="850" height="520"></canvas><div id="hud"><span id="hudL"></span><span id="hudR"></span></div></div>
+  <div class="btns">
+   <button class="main on" id="mShow">Vorführung</button>
+   <button class="main" id="mFight">Echter Kampf</button>
+   <button id="pause">⏸ Pause</button>
+   <button id="zoom">Zoom 1,3×</button>
+   <label style="margin:0 0 0 6px">Tempo <select id="speed" style="width:80px"><option value=".25">0,25×</option><option value=".5">0,5×</option><option value="1" selected>1×</option></select></label>
+  </div>
+  <div class="graphBox"><canvas id="graph" width="850" height="180"></canvas></div>
+  <p class="note">Tempokurve der letzten 12 Sekunden. Farbe = Gangart, gestrichelt = bisherige Bewegung. Die bisherige Figur springt sofort auf volles Tempo und steht sofort; die neue läuft an und bremst ab.</p>
+ </div>
+ <div>
+  <div class="panel" id="pShow"><h3>Gangart</h3>
+   <div class="gaits" id="gaits"></div>
+   <label style="margin-top:10px">Gegner in der Nähe (Kampfhaltung) <input type="checkbox" id="combat" checked></label>
+   <label>Bisherige Bewegung zum Vergleich <input type="checkbox" id="cmp" checked></label>
+  </div>
+  <div class="panel" id="pFight"><h3>Echter Kampf</h3>
+   <label>Neue Gangarten <input type="checkbox" id="gOn" checked></label>
+   <label>Gegner: Waffe <select id="w1"></select></label>
+   <label>Gegner: Schild <select id="s1"></select></label>
+   <label>Startabstand <select id="gap"><option value="200">nah</option><option value="420">mittel</option><option value="640" selected>weit</option></select></label>
+   <div class="btns"><button class="main" id="restart">↻ Neuer Kampf</button></div>
+  </div>
+  <div class="panel"><h3>Kämpfer</h3>
+   <label>Waffe <select id="w0"></select></label>
+   <label>Schild <select id="s0"></select></label>
+   <label>Rüstung <select id="a0"><option value="none">keine</option><option value="leather">Leder</option><option value="medium">verstärkt</option><option value="metal">Metall</option></select></label>
+   <label>Zustand <select id="cond"><option value="ok">gesund</option><option value="limp">Bein verletzt (humpelt)</option><option value="break">Bein gebrochen</option><option value="tired">erschöpft</option><option value="hurt">schwer verletzt</option></select></label>
+  </div>
+  <div class="panel"><h3>Jetzt</h3><div class="live" id="live"></div></div>
+  <div class="panel"><h3>Stellgrößen</h3>
+   <div id="knobs"></div>
+   <div class="btns"><button id="resetP">Werte zurücksetzen</button></div>
+  </div>
+ </div>
+</div>
+
+<h2>Gangarten im Überblick</h2>
+<p class="note">Tempo in Spielpunkten je Sekunde für den gewählten Kämpfer (mit Rüstung und Zustand), dazu Anteil am bisherigen Lauftempo und Schrittrhythmus.</p>
+<div class="panel" style="padding:0"><table class="tbl" id="tbl"></table></div>
+
+<h2>So soll es ins Spiel</h2>
+<div class="panel rules" id="rules"></div>
+</main>
+<script src="data.js?v=2df284df"></script><script src="household.js?v=2df284df"></script><script src="management.js?v=2df284df"></script><script src="scout.js?v=2df284df"></script><script src="sim.js?v=2df284df"></script><script src="benchmark.js?v=2df284df"></script><script src="school.js?v=2df284df"></script><script src="weapon-art.js?v=2df284df"></script><script src="arena.js?v=2df284df"></script><script src="injury-shots.js?v=2df284df"></script>
+<script src="gangarten.js?v=2df284df"></script>
+<script src="gang-editor.js?v=2df284df"></script>
+</body></html>
