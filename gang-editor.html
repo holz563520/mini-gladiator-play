@@ -47,7 +47,7 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
 .hide{display:none}
 </style></head>
 <body>
-<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND d7f66258</small><h1>GANG-EDITOR</h1>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND 53f86e0d</small><h1>GANG-EDITOR</h1>
 <p>Gehen, Kampfschritt, Laufen, Sprinten, Seitschritt und Rückwärts mit echten Figuren des Spiels: jede Gangart mit eigenem Tempo, Schrittrhythmus, Körperhaltung und Armhaltung. Das Tempo baut sich beim Anlaufen auf und beim Bremsen ab. Oben läuft die neue Bewegung, unten zum Vergleich die bisherige. Nur Testseite: Spiel und Spielstände bleiben unberührt.</p></header>
 <main>
 <div class="top">
@@ -70,12 +70,13 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
    <label style="margin-top:10px">Gegner in der Nähe (Kampfhaltung) <input type="checkbox" id="combat" checked></label>
    <label>Bisherige Bewegung zum Vergleich <input type="checkbox" id="cmp" checked></label>
   </div>
-  <div class="panel" id="pAtk"><h3>Angriffe aus dem Lauf</h3>
+  <div class="panel" id="pAtk"><h3>Angriffe und Initiative</h3>
    <div class="gaits" id="atks"></div>
    <label style="margin-top:10px">Anlauf <select id="aRun"><option value="sprint" selected>Sprint (mit Kampfschrei)</option><option value="jog">Laufen</option></select></label>
    <label>Abwehr des Gegners <select id="aDef"><option value="many" selected>viele Blocks (Vorführung)</option><option value="game">wie im Spiel</option><option value="none">keine (jeder Treffer sitzt)</option></select></label>
    <label>Gegner mit Schild <input type="checkbox" id="aShield"></label>
    <label>Umrennen immer zeigen <input type="checkbox" id="aRam" checked></label>
+   <label>Zeitlupe beim Abstechen <input type="checkbox" id="aSlow" checked></label>
    <div class="btns"><button id="aAgain">↻ Nochmal</button></div>
   </div>
   <div class="panel" id="pFight"><h3>Echter Kampf</h3>
@@ -110,8 +111,8 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
 <h2>So soll es ins Spiel</h2>
 <div class="panel rules" id="rules"></div>
 </main>
-<script src="data.js?v=d7f66258"></script><script src="household.js?v=d7f66258"></script><script src="management.js?v=d7f66258"></script><script src="scout.js?v=d7f66258"></script><script src="sim.js?v=d7f66258"></script><script src="benchmark.js?v=d7f66258"></script><script src="school.js?v=d7f66258"></script><script src="weapon-art.js?v=d7f66258"></script><script src="arena.js?v=d7f66258"></script><script src="block-contact.js?v=d7f66258"></script><script src="hit-contact.js?v=d7f66258"></script><script src="reach-ai.js?v=d7f66258"></script><script src="injury-shots.js?v=d7f66258"></script>
-<script src="kampfsound.js?v=d7f66258"></script><script src="audio.js?v=d7f66258"></script><script src="sprechsound.js?v=d7f66258"></script><script src="stimme.js?v=d7f66258"></script><script src="schreie.js?v=d7f66258"></script>
-<script src="gangarten.js?v=d7f66258"></script>
-<script src="gang-editor.js?v=d7f66258"></script>
+<script src="data.js?v=53f86e0d"></script><script src="household.js?v=53f86e0d"></script><script src="management.js?v=53f86e0d"></script><script src="scout.js?v=53f86e0d"></script><script src="sim.js?v=53f86e0d"></script><script src="benchmark.js?v=53f86e0d"></script><script src="school.js?v=53f86e0d"></script><script src="weapon-art.js?v=53f86e0d"></script><script src="arena.js?v=53f86e0d"></script><script src="block-contact.js?v=53f86e0d"></script><script src="hit-contact.js?v=53f86e0d"></script><script src="reach-ai.js?v=53f86e0d"></script><script src="injury-shots.js?v=53f86e0d"></script>
+<script src="kampfsound.js?v=53f86e0d"></script><script src="audio.js?v=53f86e0d"></script><script src="sprechsound.js?v=53f86e0d"></script><script src="stimme.js?v=53f86e0d"></script><script src="schreie.js?v=53f86e0d"></script>
+<script src="gangarten.js?v=53f86e0d"></script>
+<script src="gang-editor.js?v=53f86e0d"></script>
 </body></html>

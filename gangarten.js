@@ -23,7 +23,9 @@ const DEF={
  // Schrittfrequenz (Doppelschritte je Sekunde) je Gangart
  cWalk:.95,cGuard:1.1,cJog:1.5,cSprint:1.95,cSide:1.25,cBack:1.15,
  // Ansturm und Angriff im Lauf (Vorschlag, nicht freigegeben)
- runAttack:1,runHit:.3,chargeDmg:1.5,ramCharge:.32,ramRun:.15,cryDist:260
+ runAttack:1,runHit:.3,chargeDmg:1.5,ramCharge:.32,ramRun:.15,cryDist:260,
+ // Initiative nutzen und Abstechen am Boden (Vorschlag, nicht freigegeben)
+ seize:1,seizeRange:320,finWind:1.4,finDmg:1.3,finSever:.45,finHold:.7
 };
 const P={...DEF};
 const G=M.gait={active:false,P,DEF,MODES,NAME,COLOR};
@@ -61,7 +63,7 @@ function rushCry(a,o,mode,dt){
  if(!o.target||o.d-o.keep>P.cryDist+160)a.cried=false;}
 // Ausholen im Lauf: rechtzeitig vor der Schlagdistanz ausholen, im Lauf weiter heran, der Schlag landet bei der Ankunft
 function runAttack(a,o,base){
- const t=o.target,w=M.weapon(a);if(!P.runAttack||!t||t.down||t.g.dead||t.surrendered||o.isRanged||w.ammo||o.flank||a.block||a.retreat>0||a.cool>0||a.energy<18||a.state!=='move'||a.netTimer>0)return false;
+ const t=o.target,w=M.weapon(a);if(!P.runAttack||!t||t.down||t.fallTimer>0||t.g.dead||t.surrendered||o.isRanged||w.ammo||o.flank||a.block||a.retreat>0||a.cool>0||a.energy<18||a.state!=='move'||a.netTimer>0)return false;
  if((a.gv||0)<base*.6||Math.abs(ad(Math.atan2(t.y-a.y,t.x-a.x),a.a))>.6)return false;
  const reach=o.ef.range+t.r,wind=(M.meleeTiming?.(a.g,w,'slash')?.wind||.3)*1.1,lead=a.gv*wind*.85;
  if(!(o.d>reach-2&&o.d<reach+lead+6))return false;
@@ -69,7 +71,7 @@ function runAttack(a,o,base){
  const k=cl((a.gv/base-.6)/.85,0,1);a.runAttack={v:a.gv,base,target:t.id};a.chargeBoost=Math.max(a.chargeBoost||0,1+P.runHit*k);
  if(a.gv>base*1.15)a.rushHit={t:M.s.battle.time,v:a.gv,base,kind:'run'};ev('runAttack',a,{v:a.gv,boost:a.chargeBoost,tech:a.technique});return true;}
 G.windMove=(a,dt,ef)=>{
- const r=a.runAttack;if(!r)return;const t=M.s.battle.actors.find(x=>x.id===r.target);if(!t||t.g.dead||t.down){a.runAttack=null;return;}
+ if(a.technique==='groundFinish')finStart(a);const r=a.runAttack;if(!r)return;const t=M.s.battle.actors.find(x=>x.id===r.target);if(!t||t.g.dead||t.down){a.runAttack=null;return;}
  const d=Math.hypot(t.x-a.x,t.y-a.y),contact=ef.range+t.r-3,dir=Math.atan2(t.y-a.y,t.x-a.x),A=accelOf(a,ef);
  a.gv=Math.max(r.base*P.guard,(a.gv||r.v)-A*P.dec*.5*dt);const step=Math.min(a.gv*dt,Math.max(0,d-contact));
  if(step>0){a.x+=Math.cos(dir)*step;a.y+=Math.sin(dir)*step;if(M.roundField?.())M.fieldPt?.(a,a.r||14);}
@@ -89,6 +91,52 @@ G.ram=(a,b,dmg,mult=1)=>{
 G.blocked=ev=>{if(ev?.kind==='block'&&ev.att?.rushHit?.kind==='charge')G.ram(ev.att,ev.def,0,.6);};
 {const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p)G.ram(a,b,d);return out;};R.__gait=true;}}
 
+// --------------------------------------------------------------- Initiative und Abstechen
+const CRIES=['STIRB!','JETZT!','FÜR DIE EHRE!','HAAA!','BLEIB LIEGEN!'];
+const cryText=a=>CRIES[((a.seed||0)+(a.finCount||0))%CRIES.length];
+const CHOP=new Set(['axe','doubleaxe','halberd','greatsword','long']),PIERCE=new Set(['spear','trident','javelin','dagger','gladius','short','rapier']);
+const BLUNT_LIKE=w=>!w.bladed;
+function onGroundA(t){return !(t.kneeTimer>0)&&(t.down||t.fallTimer>(t.riseDuration||1.25)&&(t.fallDuration-t.fallTimer)>=.35);}
+function weakness(a,t){if(!t||t.g.dead||t.surrendered||t.rex)return null;if(onGroundA(t)||t.fallTimer>0)return 'ground';if(t.kneeTimer>0)return 'knee';if(t.stagger>0)return 'stagger';
+ const back=Math.abs(ad(Math.atan2(a.y-t.y,a.x-t.x),t.a||0))>2.1,busy=t.target&&t.target!==a.id;return back&&busy?'back':null;}
+const WEAK={ground:'am Boden',knee:'auf den Knien',stagger:'taumelt',back:'dreht den Rücken zu'};
+// Wer eine Schwäche sieht (am Boden, kniet, taumelt, Rücken), stürzt sofort mit Schrei darauf zu und ist schlagbereit
+function seize(a,o){
+ if(!P.seize||o.isRanged||M.weapon(a).ammo||a.energy<16)return null;const b=M.s.battle;let best=null,bd=P.seizeRange;
+ for(const t of b.actors){if(t.team===a.team)continue;const k=weakness(a,t);if(!k)continue;if(k==='ground'&&t.down&&b.actors.some(x=>x.team===t.team&&!x.down&&!x.g.dead&&!x.surrendered))continue;const d=Math.hypot(t.x-a.x,t.y-a.y);if(d<bd){bd=d;best={t,k,d};}}
+ if(!best)return null;
+ // nicht, wenn ihn gerade jemand anderes angreift und gleich trifft
+ if(b.actors.some(x=>x.team!==a.team&&x!==best.t&&!x.down&&!x.g.dead&&x.target===a.id&&(x.wind>0||x.swing>0)&&Math.hypot(x.x-a.x,x.y-a.y)<90))return null;
+ if(a.target!==best.t.id||a.seizeOn!==best.t.id+best.k){a.target=best.t.id;a.seizeOn=best.t.id+best.k;a.cool=Math.min(a.cool||0,.1);a.retreat=0;a.flankTimer=0;
+  if(best.d>70){a.shoutTimer=.8;a.cried=true;M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-62,cryText(a),'#ffcf6a');}ev('seize',a,{b:best.t,why:best.k});}
+ return best;}
+// Abstechen: weit ausholen (mit Schrei), dann die Waffe mit voller Wucht hineinrammen
+G.finPart=(a,b)=>{const w=M.weapon(a),B=b.g.body,r=M.rng();if(CHOP.has(w.id)){if(r<.45&&!B.neck.missing)return 'neck';const limbs=['lua','rua','lt','rt'].filter(id=>!B[id].missing);if(r<.8&&limbs.length)return limbs[Math.floor(M.rng()*limbs.length)];}
+ if(r<.6&&!B.head.missing)return 'head';return B.chest.missing?null:(M.rng()<.6?'chest':'belly');};
+function finStart(a){if(a.finisher||a.technique!=='groundFinish')return;a.finCount=(a.finCount||0)+1;a.finisher={target:a.target};a.wind*=P.finWind;a.windMax*=P.finWind;a.shoutTimer=Math.max(a.shoutTimer||0,1);M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-66,cryText(a),'#ff8a5a');ev('finStart',a,{});}
+// Haltung beim Abstechen (arena.js): beide Hände hoch über den Kopf, zurücklehnen – dann mit Ausfallschritt und tief gebeugt hinein, kurz halten, herausreißen
+const ease=t=>t<0?0:t>1?1:t*t*(3-2*t);
+G.finPose=(a,sc)=>{if(!G.active||!a.finisher&&!(a.wind>0))return null;const w=M.weapon(a),chop=CHOP.has(w.id)||!w.bladed,shield=!!M.usableShield?.(a)&&!w.twoHand;
+ let u,low;if(a.wind>0){u=ease(1-a.wind/Math.max(.01,a.windMax||.5));low=0;}else{const s=1-a.swing/Math.max(.01,a.swingMax||.4);u=1;low=s<.5?ease(s/.5):1-ease((s-.5)/.5)*.65;}
+ const t=M.s.battle?.actors.find(x=>x.id===(a.finisher?.target||a.target)),face=Math.cos(a.a||0)>=0?1:-1;let tx=26;if(t&&sc)tx=cl((t.x-a.x)*face/sc,16,34);
+ const top={x:2,y:-86},deep=chop?{x:tx-2,y:-30}:{x:tx-4,y:-34},raise={x:14+(top.x-14)*u,y:-50+(top.y+50)*u};
+ const m={x:raise.x+(deep.x-raise.x)*low,y:raise.y+(deep.y-raise.y)*low};
+ const angUp=chop?-2.45:1.5,angDown=chop?.95:1.42,an=(chop?(-1.1+(angUp+1.1)*u):1.5)+(angDown-(chop?angUp:1.5))*low;
+ return {lean:-5*u*(1-low)+13*low,drop:11*low+1.5*u,main:m,off:shield?{x:-5+3*low,y:-42+6*low}:{x:m.x-3,y:m.y+5},angle:an};};
+G.hold=(a,dt)=>{if(!(a.finHold>0))return;a.finHold-=dt;a.swing=Math.max(a.swing||0,(a.swingMax||.4)*.5);a.moveSpeed=0;const t=M.s.battle.actors.find(x=>x.id===a.finisher?.target);if(t&&a.contactPoint&&M.rng()<dt*8)M.emit?.(a.contactPoint.x,a.contactPoint.y,2,'#9d2f2a',30);if(a.finHold<=0){a.finisher=null;if(t&&a.contactPoint)M.emit?.(a.contactPoint.x,a.contactPoint.y,12,'#aa3c36',90);M.sound?.('stick');}};
+function finImpact(a,b,dmg,w,id){
+ const fin=a.finisher;if(!fin||!b?.g)return;const part=b.g.body[id];if(!part)return;const B=b.g.body;let what;
+ // Wucht: mehr Schaden
+ const extra=dmg*(P.finDmg-1);part.hp=Math.max(0,part.hp-extra);a.damage+=extra;b.taken+=extra;
+ if(CHOP.has(w.id)&&['neck','lua','rua','lt','rt'].includes(id)&&M.rng()<P.finSever+dmg*.004){what=id==='neck'?'beheaded':'severed';M.sever(a,b,id);}
+ else if(!BLUNT_LIKE(w)&&(PIERCE.has(w.id)||w.bladed)&&!['lua','rua','lt','rt'].includes(id)){what='pierced';part.bleed+=3;part.deepStabs=(part.deepStabs||0)+1;if(id==='chest'||id==='belly')part.internal=true;M.recordWound?.(b.g,id,'Durchbohrt',a.g.name,w.name,dmg);a.finHold=P.finHold;M.pixelBloodJet?.(b,id,false);}
+ else{what=w.bladed?'hacked':'crushed';part.bleed+=w.bladed?2:.5;}
+ M.shake=Math.max(M.shake||0,7);const cp=a.contactPoint||{x:b.x,y:b.y-10};M.emit?.(cp.x,cp.y,26,'#aa3c36',120);
+ const label={beheaded:'KOPF AB!',severed:M.partName?.(id)?.toUpperCase()+' AB!',pierced:'DURCHBOHRT!',hacked:'HINEINGEHACKT!',crushed:'ZERSCHMETTERT!'}[what];M.floater?.(b.x,b.y-48,label,'#ff5a4a');
+ if(!M.s.battle.cinematic)M.s.battle.cinematic={x:b.x,y:b.y-18,left:1.6,duration:1.6};
+ ev('finisher',a,{b,what,part:id,dmg:dmg+extra});if(what!=='pierced')a.finisher=null;}
+{const R=M.combatResponses;if(R?.groundImpact&&!R.__gaitG){const orig=R.groundImpact;R.groundImpact=(a,b,d,w,id)=>{const out=orig.call(R,a,b,d,w,id);if(G.active)finImpact(a,b,d,w,id);return out;};R.__gaitG=true;}}
+
 // --------------------------------------------------------------- KI-Haken (sim.js updateActor)
 G.drive=(a,o)=>{
  if(!G.active||a.gaitOff)return null;
@@ -96,8 +144,10 @@ G.drive=(a,o)=>{
  if(a.gaitT==null||t-a.gaitT>.15){a.gv=0;a.gdir=undefined;}// nach Schlag/Taumeln/Ausweichen: aus dem Stand
  a.gaitT=t;
  a.runAttack=null;const base=o.speed/(a.sprinting?T.sprintMult:1),l=Math.hypot(o.vx,o.vy),gap=o.d-o.keep;
+ const sz=seize(a,o);
  let mode;
- if(l<.05)mode='stand';
+ if(sz&&sz.t===o.target&&o.d>40)mode=sz.d>110?'sprint':'jog';
+ else if(l<.05)mode='stand';
  else if(a.state==='circle')mode='side';
  else if(a.state==='retreat'){mode='back';a.gaitFar=o.d>o.keep+90;}
  else if(a.state==='flank')mode=gap>P.sprintGap+60?'sprint':'jog';
@@ -112,7 +162,7 @@ G.drive=(a,o)=>{
  // vorausschauend abbremsen: höchstens so schnell, dass man bis zur Schlagdistanz auf Kampfschritt herunterkommt
  const swingReady=P.runAttack&&!(a.cool>0)&&a.energy>=18&&!o.flank;// wer zuschlagen kann, bremst nicht ab, sondern holt im Lauf aus
  const cap=a.state==='move'&&!o.hunt&&!o.isRanged&&!swingReady?base*P.guard+Math.sqrt(2*accelOf(a,o.ef)*P.dec*Math.max(0,gap)):Infinity;
- const v=physics(a,mode,l>=.05?Math.atan2(o.vy,o.vx):null,base,o.ef,dt,cap);
+ const v=physics(a,mode,sz&&sz.t===o.target&&o.d>40?Math.atan2(sz.t.y-a.y,sz.t.x-a.x):l>=.05?Math.atan2(o.vy,o.vx):null,base,o.ef,dt,cap);
  // Sprint kostet Ausdauer nur, wenn wirklich gesprintet wird (Spiel: dt*3)
  const mySprint=mode==='sprint'&&v>base*1.05;if(a.sprinting&&!mySprint)a.energy+=dt*3;else if(!a.sprinting&&mySprint)a.energy=Math.max(0,a.energy-dt*3);a.sprinting=mySprint;
  a.gaitBase=base;combatNear(a,dt);rushCry(a,o,mode,dt);

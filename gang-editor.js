@@ -15,7 +15,8 @@ function params(){Object.assign(M.T,T0);G.P.ramCharge=RAM0;G.P.ramRun=RUN0;S.opt
  if(mode!=='atk'){M.T.chargeRate=$('chg').checked?CHARGE0:0;G.P.runAttack=$('runA').checked?1:0;return;}
  // Angriffs-Vorführung: gewählte Technik erzwingen (nur M.T dieser Seite)
  const k=ATKS[atkI][0];M.T.dodgeRate=0;M.T.wKickNear=0;M.T.shieldChooseRange=0;M.T.kickChooseRange=0;M.T.sandRate=0;M.T.sandMelee=0;M.T.rearGripAny=0;
- if(k==='charge'){M.T.chargeRate=60;M.T.chargeMinDist=24;G.P.runAttack=0;}else{M.T.chargeRate=0;G.P.runAttack=1;for(const w of ['wSlash','wThrust','wOverhead','wSpin'])M.T[w]=0;M.T[{slash:'wSlash',thrust:'wThrust',overhead:'wOverhead',spin:'wSpin'}[k]]=3;}
+ if(M.reachAI?.amp)M.reachAI.amp.chance=k==='knee'?.75:.25;
+ if(SITU.has(k)){M.T.chargeRate=0;G.P.runAttack=1;}else if(k==='charge'){M.T.chargeRate=60;M.T.chargeMinDist=24;G.P.runAttack=0;}else{M.T.chargeRate=0;G.P.runAttack=1;for(const w of ['wSlash','wThrust','wOverhead','wSpin'])M.T[w]=0;M.T[{slash:'wSlash',thrust:'wThrust',overhead:'wOverhead',spin:'wSpin'}[k]]=3;}
  if($('aRam').checked){G.P.ramCharge=.85;G.P.ramRun=.85;}
  if($('aDef').value==='many'){M.T.blockStat=.009;}M.T.bsAfterPressure=0;M.T.bsAfterFree=0;M.T.jumpBase=0;}
 
@@ -31,8 +32,8 @@ $('gaits').innerHTML=GAITS.map(([k,n])=>`<button data-g="${k}"><i style="backgro
 function markGait(){for(const b of $('gaits').children)b.classList.toggle('on',b.dataset.g===gait);}
 $('gaits').onclick=e=>{const b=e.target.closest('button');if(!b)return;gait=b.dataset.g;seqI=0;seqT=0;markGait();};markGait();
 let mode='show';
-const ATKS=[['slash','Hieb im Lauf'],['thrust','Stich im Lauf'],['overhead','Überkopf im Lauf'],['spin','Wirbel im Lauf'],['charge','Ansturm (Soldat)']];let atkI=0,atkAll=true,atkT=0,atkHit=0;
-$('atks').innerHTML=`<button data-a="all"><i style="background:linear-gradient(90deg,#dfb66d,#e0703f,#ff4a3a)"></i>Alle nacheinander</button>`+ATKS.map(([k,n],i)=>`<button data-a="${i}"><i style="background:${k==='charge'?'#ff4a3a':'#e0703f'}"></i>${n}</button>`).join('');
+const ATKS=[['slash','Hieb im Lauf'],['thrust','Stich im Lauf'],['overhead','Überkopf im Lauf'],['spin','Wirbel im Lauf'],['charge','Ansturm (Soldat)'],['ground','Abstechen am Boden'],['knee','Gegner auf den Knien'],['stagger','Gegner taumelt']];const SITU=new Set(['ground','knee','stagger']);let atkI=0,atkAll=true,atkT=0,atkHit=0;
+$('atks').innerHTML=`<button data-a="all"><i style="background:linear-gradient(90deg,#dfb66d,#e0703f,#ff4a3a)"></i>Alle nacheinander</button>`+ATKS.map(([k,n],i)=>`<button data-a="${i}"><i style="background:${k==='charge'?'#ff4a3a':SITU.has(k)?'#c23b3b':'#e0703f'}"></i>${n}</button>`).join('');
 function markAtk(){for(const b of $('atks').children)b.classList.toggle('on',atkAll?b.dataset.a==='all':b.dataset.a===String(atkI));}
 $('atks').onclick=e=>{const b=e.target.closest('button');if(!b)return;atkAll=b.dataset.a==='all';atkI=atkAll?0:+b.dataset.a;markAtk();if(mode==='atk')stage();};markAtk();
 $('mAtk').onclick=()=>{mode='atk';restart();};$('aAgain').onclick=()=>stage();
@@ -64,7 +65,7 @@ function condition(a,c){const g=a.g,B=g.body;
 
 // ---------------------------------------------------------------- Start
 let startedAt=0,fighters=[];
-function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}G.P.sprintGap=G.DEF.sprintGap;sync();hist=[];params();cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0};$('evlog').innerHTML='';
+function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}G.P.sprintGap=G.DEF.sprintGap;sync();hist=[];params();cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finisher:0};$('evlog').innerHTML='';
  $('mShow').classList.toggle('on',mode==='show');$('mFight').classList.toggle('on',mode==='fight');$('mAtk').classList.toggle('on',mode==='atk');$('pAtk').style.display=mode==='atk'?'':'none';
  $('pShow').style.display=mode==='show'?'':'none';$('pFight').style.display=mode==='fight'?'':'none';$('pEv').style.display=mode!=='show'?'':'none';
  const show=mode==='show',atk=mode==='atk',cfg={count:1,count0:show?2:1,count1:1,role0:'Soldat',role1:'Soldat',weapon0:$('w0').value,weapon1:show||atk?'gladius':$('w1').value,shield0:$('s0').value,shield1:atk?($('aShield').checked?'roundshield':'none'):show?'none':$('s1').value,armor0:$('a0').value,armor1:show?'none':'leather',quality0:2,quality1:2,seed:show?4242:Math.floor(Math.random()*1e6)};
@@ -83,17 +84,21 @@ function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}G.P.sprin
   M.battleCamera=(bb,width,height,W,H)=>{const z=Math.max(2,ZOOMS[zi]),[a,t]=fighters;const x=(a.x+t.x)/2,y=(a.y+t.y)/2-10;return {zoom:z,x:cl(x,W/(z*2),W-W/(z*2)),y:cl(y,H/(z*2),H-H/(z*2))};};}
  else{M.battleCamera=null;const [p]=team0,q=foe,gap=+$('gap').value;p.x=F.cx-gap/2;q.x=F.cx+gap/2;p.y=q.y=F.cy;p.a=0;q.a=Math.PI;condition(p,$('cond').value);
   for(const a of b.actors)a.gaitOff=!$('gOn').checked;fighters=[p,q];M.focus?.(p.id);M.setZoom?.(Math.max(1.3,ZOOMS[zi]));}
- table();}
+ M.battleCamera=camera(M.battleCamera);table();}
 
 // ---------------------------------------------------------------- Angriffe: Aufstellung und Ablauf
 let F0=null;
 function heal(a){const g=a.g;for(const p of Object.values(g.body)){p.hp=100;p.bleed=0;p.fracture=null;p.pain=0;p.deepStabs=0;p.injury='';if(p.wounds)p.wounds.length=0;}g.blood=100;g.fatigue=0;Object.assign(a,{down:false,fallTimer:0,kneeTimer:0,stagger:0,stun:0,hit:0,daze:0,kx:0,ky:0,wind:0,swing:0,pendingStrike:null,surrendered:false,riseHold:0,state:'idle'});}
 function stage(){const b=S.battle;if(!b||mode!=='atk')return;params();const [p,q]=fighters,F=M.roundField?.()?M.fieldGeom():{cx:520,cy:392,rx:440,ry:250},k=ATKS[atkI][0],sprint=$('aRun').value==='sprint'||k==='charge';
- heal(q);if($('cond').value==='ok')heal(p);Object.assign(p,{x:F.cx-(sprint?300:150),y:F.cy,a:0,energy:p.g?M.effective(p).maxEnergy:100,cool:0,chargeCD:0,gv:0,gaitT:null,gaitW:null,gaitMode:null,cried:false,runAttack:null,rushHit:null,comboReady:false,comboCount:0,retreat:0,flankTimer:0,flankCD:9,decision:0});
+ heal(q);if($('cond').value==='ok')heal(p);Object.assign(p,{seizeOn:null,finisher:null,finHold:0,x:F.cx-(sprint?300:150),y:F.cy,a:0,energy:p.g?M.effective(p).maxEnergy:100,cool:0,chargeCD:0,gv:0,gaitT:null,gaitW:null,gaitMode:null,cried:false,runAttack:null,rushHit:null,comboReady:false,comboCount:0,retreat:0,flankTimer:0,flankCD:9,decision:0});
  if($('cond').value!=='ok'){p.energy=Math.max(p.energy,40);}
  q.x=F.cx+130;q.y=F.cy;q.a=Math.PI;q.gaitOff=true;q.cool=99;q.pin={x:q.x,y:q.y};q.energy=M.effective(q).maxEnergy;q.block=false;q.guardTime=0;
  // keine Abwehr: steif stehende Puppe; sonst echte KI, die nur abwehrt (greift nie an, bleibt an ihrem Platz)
  q.puppet=$('aDef').value==='none'?{mode:'stand',lane:{x0:q.x,x1:q.x,y:q.y,dy:0},dir:-1,old:true,face:Math.PI}:null;M.blockContact?.reset?.();M.hitContact?.reset?.();
+ if(k==='ground'){q.puppet=null;M.knockdown(q,'Vorführung',6);q.fallTimer=q.fallDuration=Math.max(q.fallDuration||0,7);q.state='fallen';}
+ if(k==='knee'){q.puppet=null;M.kneel(q);q.kneeTimer=q.kneeDuration=4.5;}
+ if(k==='stagger'){q.puppet=null;q.stagger=q.staggerMax=2.6;q.staggerDir=0;q.staggerSeed=1;q.state='stagger';}
+ if(SITU.has(k))p.x=F.cx-170;
  p.target=q.id;b.paused=false;atkT=0;atkHit=0;$('hudL').innerHTML=`<b>${ATKS[atkI][1]}</b>${k!=='charge'?' · Anlauf '+(sprint?'Sprint':'Laufen'):''}`;$('hudR').innerHTML=atkAll?`${atkI+1} / ${ATKS.length}`:'';
  // Laufen statt Sprint: Sprint erst ab sehr großem Abstand
  G.P.sprintGap=sprint?G.DEF.sprintGap:9999;}
@@ -105,8 +110,8 @@ function stepAtk(dt){const b=S.battle;if(!b||b.paused)return;const [p,q]=fighter
   if(none&&!lying&&atkHit){q.puppet={mode:'stand',lane:{x0:q.x,x1:q.x,y:q.y,dy:0},dir:-1,old:true,face:Math.PI};}}
  if(q.g.dead||q.g.blood<40)heal(q);
  if(p.swing>0||p.pendingStrike)atkHit=atkHit||atkT;
- const done=atkHit&&atkT-atkHit>(q.fallTimer>0||q.down?3.4:1.8)||atkT>9;
- if(done){if(atkAll){atkI=(atkI+1)%ATKS.length;markAtk();}stage();}}
+ const done=atkHit&&atkT-atkHit>(q.fallTimer>0||q.down||q.g.dead?3.6:1.8)||atkT>(SITU.has(ATKS[atkI][0])?7:9);
+ if(done){if(atkAll){atkI=(atkI+1)%ATKS.length;markAtk();}if(q.g.dead||p.g.dead||Object.values(q.g.body).some(x=>x.missing))restart();else stage();}}
 
 // ---------------------------------------------------------------- Vorführung: Ablauf steuern
 function steerShow(dtReal){const b=S.battle;if(!b||b.paused)return;const sp=S.options.speed||1;
@@ -144,22 +149,26 @@ function table(){const a=fighters[0];if(!a)return;const ef=M.effective(a),base=e
  `<tr><td>Anlaufen</td><td colspan="5">aus dem Stand bis Laufen ${(1/(P.acc*.95/base)).toFixed(2).replace('.',',')} s, weiter bis Sprint ${(base*(P.sprint-1)/(P.acc*.95*P.accSprint)).toFixed(2).replace('.',',')} s · Bremsen aus dem Sprint ${(base*P.sprint/(P.acc*.95*P.dec)).toFixed(2).replace('.',',')} s · bisher sofort</td></tr>`;}
 
 // ---------------------------------------------------------------- Ereignisse (Kampfschrei, Ansturm, Angriff im Lauf, Umrennen)
-let cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0};const TN={slash:'Hieb',thrust:'Stich',overhead:'Überkopf',spin:'Wirbel'};
+let cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finisher:0};let slowUntil=0,closeUp=null;
+// Nahaufnahme beim Abstechen (im Spiel macht das die Kinokamera; der Benchmark schaltet sie ab)
+function camera(base){return (bb,width,height,W,H,zoom,target)=>{const now=performance.now();if(closeUp&&now<closeUp.until){const k=Math.min(1,(closeUp.until-now)/400,(now-(closeUp.until-2600))/250),b0=base?.(bb,width,height,W,H,zoom,target)||{zoom:Math.max(1,zoom),x:target?.x??W/2,y:target?.y??H/2},z=b0.zoom+(3.6-b0.zoom)*k;return {zoom:z,x:cl(b0.x+(closeUp.x-b0.x)*k,W/(z*2),W-W/(z*2)),y:cl(b0.y+(closeUp.y-b0.y)*k,H/(z*2),H-H/(z*2))};}return base?.(bb,width,height,W,H,zoom,target)||null;};}const TN={slash:'Hieb',thrust:'Stich',overhead:'Überkopf',spin:'Wirbel'};
 const who=a=>a?.team?'Gegner':'Kämpfer';
-G.onEvent=e=>{if(!(e.kind in cnt))return;cnt[e.kind]++;const pct=x=>Math.round(x*100)+' %';
+const WK={ground:'am Boden',knee:'auf den Knien',stagger:'taumelt',back:'dreht den Rücken zu'},WH={beheaded:'schlägt den Kopf ab',severed:'schlägt ab',pierced:'durchbohrt',hacked:'hackt hinein',crushed:'zerschmettert'};
+G.onEvent=e=>{if(e.kind==='finisher'){if($('aSlow').checked)slowUntil=performance.now()+1300;closeUp={x:e.b.x,y:e.b.y-20,until:performance.now()+2600};}if(!(e.kind in cnt))return;cnt[e.kind]++;const pct=x=>Math.round(x*100)+' %';
  const t={cry:`<b>Kampfschrei</b> · ${who(e.a)} stürmt mit erhobener Waffe los`,charge:`<b>Ansturm</b> · ${who(e.a)} · Schaden ×${e.boost?.toFixed(2).replace('.',',')}`,
   runAttack:`<b>Ausholen im Lauf</b> · ${who(e.a)} · ${TN[e.tech]||e.tech} bei Tempo ${Math.round(e.v)} · Schaden ×${e.boost?.toFixed(2).replace('.',',')}`,
-  ram:`<b style="color:#ff8a5a">Umgerannt</b> · ${who(e.a)} rennt ${who(e.b)} um (Chance ${pct(e.chance)})`,shove:`<b>Zurückgestoßen</b> · ${who(e.b)} bleibt stehen (Umrenn-Chance war ${pct(e.chance)})`}[e.kind];
+  ram:`<b style="color:#ff8a5a">Umgerannt</b> · ${who(e.a)} rennt ${who(e.b)} um (Chance ${pct(e.chance)})`,seize:`<b>Initiative</b> · ${who(e.b)} ${WK[e.why]} – ${who(e.a)} stürzt sofort darauf zu`,finisher:`<b style="color:#ff5a4a">Abgestochen</b> · ${who(e.a)} ${WH[e.what]} (${M.partName?.(e.part)||e.part}, Schaden ${Math.round(e.dmg)})`,shove:`<b>Zurückgestoßen</b> · ${who(e.b)} bleibt stehen (Umrenn-Chance war ${pct(e.chance)})`}[e.kind];
  const d=document.createElement('div');d.className='row';d.innerHTML=t;$('evlog').prepend(d);while($('evlog').children.length>12)$('evlog').lastChild.remove();};
 const BC=M.blockContact;if(BC){BC.labels=false;const ON={clean:'Sauber geblockt',glance:'Abgeglitten',bind:'Kraftprobe',broken:'Deckung durchschlagen'};
  BC.onEvent=e=>{let t='';if(e.kind==='block'){cnt.block++;t=`<b>${ON[e.outcome]||'Geblockt'}</b> · ${who(e.def)} wehrt mit ${e.shield?'Schild':'der Waffe'} ab`;}
   else if(e.kind==='bindStart'){cnt.bind++;t=`<b>Kraftprobe</b> · Klinge an Klinge, ${who(e.winner)} drückt weg`;}else return;
   const d=document.createElement('div');d.className='row';d.innerHTML=t;$('evlog').prepend(d);while($('evlog').children.length>12)$('evlog').lastChild.remove();};}
-function counts(){$('counts').innerHTML=`<div class="row"><span>Kampfschreie</span><b>${cnt.cry}</b></div><div class="row"><span>Ansturm</span><b>${cnt.charge}</b></div><div class="row"><span>Ausholen im Lauf</span><b>${cnt.runAttack}</b></div><div class="row"><span>Umgerannt / zurückgestoßen</span><b>${cnt.ram} / ${cnt.shove}</b></div><div class="row"><span>Geblockt / Kraftproben</span><b>${cnt.block} / ${cnt.bind}</b></div>`;}
+function counts(){$('counts').innerHTML=`<div class="row"><span>Kampfschreie</span><b>${cnt.cry}</b></div><div class="row"><span>Ansturm</span><b>${cnt.charge}</b></div><div class="row"><span>Ausholen im Lauf</span><b>${cnt.runAttack}</b></div><div class="row"><span>Umgerannt / zurückgestoßen</span><b>${cnt.ram} / ${cnt.shove}</b></div><div class="row"><span>Initiative genutzt / abgestochen</span><b>${cnt.seize} / ${cnt.finisher}</b></div><div class="row"><span>Geblockt / Kraftproben</span><b>${cnt.block} / ${cnt.bind}</b></div>`;}
 
 // ---------------------------------------------------------------- Schleife
 let last=performance.now();
 function tick(){const t=performance.now(),dt=Math.min(.1,(t-last)/1000);last=t;const b=S.battle;
+ if(b&&!b.paused)S.options.speed=t<slowUntil?Math.min(+$('speed').value,.22):+$('speed').value;
  if(mode==='show')steerShow(dt);
  else if(mode==='atk')stepAtk(dt);
  else if(mode==='fight'&&b&&(b.result||b.finale||b.actors.some(a=>a.down||a.g.dead)||t-startedAt>40000)){if(!b.ended){b.ended=true;setTimeout(restart,1800);}}
@@ -174,6 +183,8 @@ $('rules').innerHTML=`<ul>
 <li><em>Ausholen im Lauf:</em> Wer laufend oder sprintend ankommt und zuschlagen kann, holt schon im Lauf aus, läuft während des Ausholens weiter heran und trifft bei der Ankunft, statt erst stehen zu bleiben. Der Schwung gibt bis zu ×${(1+G.P.runHit).toFixed(1).replace('.',',')} Schaden (voller Sprint), im normalen Lauf etwa ×1,1. Wer gerade nicht zuschlagen kann, bremst wie bisher vorausschauend ab.</li>
 <li><em>Ansturm:</em> Schaden ×${G.P.chargeDmg.toFixed(1).replace('.',',')} plus Ansturm-Übung (bisher ×1,12 plus Übung, etwa ×1,2). Trifft der Ansturm (oder ein Sprint-Angriff), kann er den Gegner umrennen: Grundchance ${Math.round(G.P.ramCharge*100)} % (Sprint-Angriff ${Math.round(G.P.ramRun*100)} %), mehr bei schwererem und stärkerem Angreifer und höherem Tempo, weniger bei gutem Gleichgewicht und Schild (5–85 %). Sonst wird der Getroffene ein Stück zurückgestoßen. Geblockt wird wie bisher geblockt.</li>
 <li><em>Angriffe (Vorführung):</em> Hieb, Stich, Überkopf und Wirbel aus dem Lauf sowie der Ansturm, einzeln oder alle nacheinander, gegen einen Gegner, der an seinem Platz bleibt und mit den Spiel-Modulen abwehrt (sichtbares Blocken mit Schild oder Waffe, Abgleiten, Kraftprobe Klinge an Klinge, durchschlagene Deckung). Ein Ansturm in die Deckung kann trotzdem umwerfen (60 % der Umrenn-Chance), sonst stößt er zurück.</li>
+<li><em>Initiative nutzen:</em> Liegt ein Gegner am Boden, kniet er, taumelt er oder dreht er einem den Rücken zu (weil er mit jemand anderem kämpft), stürzt der Gladiator sofort darauf zu (bis ${G.P.seizeRange} Punkte, Sprint mit Schrei) und ist sofort schlagbereit – außer ein anderer Gegner schlägt gerade auf ihn ein.</li>
+<li><em>Abstechen am Boden:</em> Weit ausholen (${G.P.finWind.toFixed(1).replace('.',',')}× so lang) mit Schrei, dann die Waffe mit voller Wucht hinein (Schaden ×${G.P.finDmg.toFixed(1).replace('.',',')}), Erschütterung, Blut, Nahaufnahme und Zeitlupe. Je nach Waffe: Axt, Doppelaxt, Hellebarde, Zweihänder, Langschwert zielen auf Hals oder Arm/Bein und schlagen ab (etwa ${Math.round(G.P.finSever*100)} % plus Wucht; Hals = Kopf ab); Speer, Dreizack, Dolch, Gladius und andere Klingen durchbohren Kopf, Brust oder Bauch, die Waffe steckt ${G.P.finHold.toFixed(1).replace('.',',')} s fest und wird herausgerissen; Keule, Streitkolben, Hammer zerschmettern. Gegen Kniende: Amputationsschlag häufiger (75 % statt 25 % in dieser Vorführung).</li>
 <li><span class="warn">Regeländerung, nicht freigegeben:</span> Im Kampf ändert das Anlaufen und der langsamere Kampfschritt das Tempo, mit dem die Gegner aufeinander zukommen. Im Spiel ist noch nichts eingeschaltet: <code>gangarten.js</code> wird nur hier geladen, die Haken in <code>sim.js</code> und <code>arena.js</code> tun ohne das Modul nichts.</li>
 <li><em>Noch offen:</em> Zum Einschalten <code>gangarten.js</code> in die Ladereihenfolge aufnehmen und <code>M.gait.active</code> setzen; die Massenfiguren großer Schlachten bekommen bisher nur die Armhaltung, nicht den Schritt. Danach als Folgeschritte: neue Verletzungsarten, Durchstich, filmische Einblendungen.</li></ul>`;
 
