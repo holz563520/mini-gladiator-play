@@ -12,11 +12,12 @@ G.active=true;M.benchmarkTimeLimit=1e9;const CHARGE0=M.T.chargeRate,T0={...M.T},
 // Ton: Spiel-Klangmaschine (audio.js) nach dem ersten Antippen starten
 function unlock(){try{M.audioEngine?.start?.();}catch{}}addEventListener('pointerdown',unlock,{once:true});addEventListener('keydown',unlock,{once:true});
 function params(){Object.assign(M.T,T0);G.P.ramCharge=RAM0;G.P.ramRun=RUN0;S.options.sound=$('snd').checked;
- if(mode!=='atk'){M.T.chargeRate=$('chg').checked?CHARGE0:0;G.P.runAttack=$('runA').checked?1:0;return;}
+ if(mode!=='atk'){G.P.pierceForce=0;M.T.chargeRate=$('chg').checked?CHARGE0:0;G.P.runAttack=$('runA').checked?1:0;return;}
  // Angriffs-Vorführung: gewählte Technik erzwingen (nur M.T dieser Seite)
  const k=ATKS[atkI][0];M.T.dodgeRate=0;M.T.wKickNear=0;M.T.shieldChooseRange=0;M.T.kickChooseRange=0;M.T.sandRate=0;M.T.sandMelee=0;M.T.rearGripAny=0;
  if(M.reachAI?.amp)M.reachAI.amp.chance=k==='knee'?.75:.25;
- if(SITU.has(k)){M.T.chargeRate=0;G.P.runAttack=1;}else if(k==='charge'){M.T.chargeRate=60;M.T.chargeMinDist=24;G.P.runAttack=0;}else{M.T.chargeRate=0;G.P.runAttack=1;for(const w of ['wSlash','wThrust','wOverhead','wSpin'])M.T[w]=0;M.T[{slash:'wSlash',thrust:'wThrust',overhead:'wOverhead',spin:'wSpin'}[k]]=3;}
+ G.P.pierceForce=$('aPierce').checked?1:0;
+ if(SITU.has(k)){M.T.chargeRate=0;G.P.runAttack=1;}else if(k==='charge'){M.T.chargeRate=60;M.T.chargeMinDist=24;G.P.runAttack=0;}else{M.T.chargeRate=0;G.P.runAttack=1;for(const w of ['wSlash','wThrust','wOverhead','wSpin'])M.T[w]=0;M.T[{slash:'wSlash',thrust:'wThrust',pierce:'wThrust',overhead:'wOverhead',spin:'wSpin'}[k]]=3;}
  if($('aRam').checked){G.P.ramCharge=.85;G.P.ramRun=.85;}
  if($('aDef').value==='many'){M.T.blockStat=.009;}M.T.bsAfterPressure=0;M.T.bsAfterFree=0;M.T.jumpBase=0;}
 
@@ -32,12 +33,12 @@ $('gaits').innerHTML=GAITS.map(([k,n])=>`<button data-g="${k}"><i style="backgro
 function markGait(){for(const b of $('gaits').children)b.classList.toggle('on',b.dataset.g===gait);}
 $('gaits').onclick=e=>{const b=e.target.closest('button');if(!b)return;gait=b.dataset.g;seqI=0;seqT=0;markGait();};markGait();
 let mode='show';
-const ATKS=[['slash','Hieb im Lauf'],['thrust','Stich im Lauf'],['overhead','Überkopf im Lauf'],['spin','Wirbel im Lauf'],['charge','Ansturm (Soldat)'],['ground','Abstechen am Boden'],['knee','Gegner auf den Knien'],['stagger','Gegner taumelt']];const SITU=new Set(['ground','knee','stagger']);let atkI=0,atkAll=true,atkT=0,atkHit=0;
+const ATKS=[['pierce','Stich mit Durchstich'],['slash','Hieb im Lauf'],['thrust','Stich im Lauf'],['overhead','Überkopf im Lauf'],['spin','Wirbel im Lauf'],['charge','Ansturm (Soldat)'],['ground','Abstechen am Boden'],['knee','Gegner auf den Knien'],['stagger','Gegner taumelt']];const SITU=new Set(['ground','knee','stagger']);let atkI=0,atkAll=true,atkT=0,atkHit=0;
 $('atks').innerHTML=`<button data-a="all"><i style="background:linear-gradient(90deg,#dfb66d,#e0703f,#ff4a3a)"></i>Alle nacheinander</button>`+ATKS.map(([k,n],i)=>`<button data-a="${i}"><i style="background:${k==='charge'?'#ff4a3a':SITU.has(k)?'#c23b3b':'#e0703f'}"></i>${n}</button>`).join('');
 function markAtk(){for(const b of $('atks').children)b.classList.toggle('on',atkAll?b.dataset.a==='all':b.dataset.a===String(atkI));}
 $('atks').onclick=e=>{const b=e.target.closest('button');if(!b)return;atkAll=b.dataset.a==='all';atkI=atkAll?0:+b.dataset.a;markAtk();if(mode==='atk')stage();};markAtk();
 $('mAtk').onclick=()=>{mode='atk';restart();};$('aAgain').onclick=()=>stage();
-for(const id of ['aRun','aRam','aDef'])$(id).addEventListener('change',()=>{if(mode==='atk')stage();});$('aShield').addEventListener('change',()=>{if(mode==='atk')restart();});
+for(const id of ['aRun','aRam','aDef','aPierce'])$(id).addEventListener('change',()=>{if(mode==='atk')stage();});$('aShield').addEventListener('change',()=>{if(mode==='atk')restart();});
 $('mShow').onclick=()=>{mode='show';restart();};$('mFight').onclick=()=>{mode='fight';restart();};
 $('restart').onclick=()=>restart();
 $('pause').onclick=()=>{if(!S.battle)return;S.battle.paused=!S.battle.paused;$('pause').textContent=S.battle.paused?'▶ Weiter':'⏸ Pause';};
@@ -65,7 +66,7 @@ function condition(a,c){const g=a.g,B=g.body;
 
 // ---------------------------------------------------------------- Start
 let startedAt=0,fighters=[];
-function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}G.P.sprintGap=G.DEF.sprintGap;sync();hist=[];params();cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finisher:0};$('evlog').innerHTML='';
+function restart(){if(S.battle){try{M.endBenchmark(-1,'Test');}catch{}}G.P.sprintGap=G.DEF.sprintGap;sync();hist=[];params();cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finisher:0,pierce:0};$('evlog').innerHTML='';
  $('mShow').classList.toggle('on',mode==='show');$('mFight').classList.toggle('on',mode==='fight');$('mAtk').classList.toggle('on',mode==='atk');$('pAtk').style.display=mode==='atk'?'':'none';
  $('pShow').style.display=mode==='show'?'':'none';$('pFight').style.display=mode==='fight'?'':'none';$('pEv').style.display=mode!=='show'?'':'none';
  const show=mode==='show',atk=mode==='atk',cfg={count:1,count0:show?2:1,count1:1,role0:'Soldat',role1:'Soldat',weapon0:$('w0').value,weapon1:show||atk?'gladius':$('w1').value,shield0:$('s0').value,shield1:atk?($('aShield').checked?'roundshield':'none'):show?'none':$('s1').value,armor0:$('a0').value,armor1:show?'none':'leather',quality0:2,quality1:2,seed:show?4242:Math.floor(Math.random()*1e6)};
@@ -124,7 +125,10 @@ function steerShow(dtReal){const b=S.battle;if(!b||b.paused)return;const sp=S.op
 let hist=[];const lab=$('labels'),lx=lab.getContext('2d'),gr=$('graph'),gx=gr.getContext('2d');
 function gaitOf(a){if(a.puppet)return a.gaitShown||'stand';if(a.state==='charge')return 'charge';if(a.gaitOff||!a.gaitW){const v=a.moveSpeed||0;return v<3?'stand':a.sprinting?'sprint':a.state==='circle'?'side':a.state==='retreat'?'back':'jog';}return v0(a)<3?'stand':G.current(a);}
 function v0(a){return a.puppet?(a.gaitV||0):(a.moveSpeed||0);}
-function labels(){const c=$('arenaCanvas'),V=M.arenaView;if(lab.width!==c.width||lab.height!==c.height){lab.width=c.width;lab.height=c.height;}lx.clearRect(0,0,lab.width,lab.height);const b=S.battle;if(!b||!V)return;
+function labels(){const c=$('arenaCanvas'),V=M.arenaView;if(lab.width!==c.width||lab.height!==c.height){lab.width=c.width;lab.height=c.height;}lx.clearRect(0,0,lab.width,lab.height);
+ $('hud').style.visibility=liveShot?'hidden':'';
+ if(liveShot){const t=(performance.now()-liveT0)/1000*Math.max(.5,+$('speed').value);if(t>liveShot.dur){liveShot=null;if(livePaused&&S.battle){S.battle.paused=false;}livePaused=false;}else{M.pierceFx.draw(lx,lab.width,lab.height,liveShot,t,{names:true});return;}}
+ const b=S.battle;if(!b||!V)return;
  const fs=Math.max(11,Math.round(lab.width/70));lx.font=`700 ${fs}px "Courier Prime",monospace`;lx.textAlign='center';
  for(const a of fighters){if(!a||a.g.dead||mode==='atk'&&a!==fighters[0])continue;const sx=(a.x-V.cx)*V.scale+V.width/2,sy=(a.y-V.cy)*V.scale+V.height/2-a.g.height/180*1.14*84*V.scale;const m=gaitOf(a),old=a.gaitOff;
   const t=(mode==='show'?(old?'BISHER · ':'NEU · '):'')+G.name(m).toUpperCase()+' '+Math.round(v0(a));
@@ -149,21 +153,39 @@ function table(){const a=fighters[0];if(!a)return;const ef=M.effective(a),base=e
  `<tr><td>Anlaufen</td><td colspan="5">aus dem Stand bis Laufen ${(1/(P.acc*.95/base)).toFixed(2).replace('.',',')} s, weiter bis Sprint ${(base*(P.sprint-1)/(P.acc*.95*P.accSprint)).toFixed(2).replace('.',',')} s · Bremsen aus dem Sprint ${(base*P.sprint/(P.acc*.95*P.dec)).toFixed(2).replace('.',',')} s · bisher sofort</td></tr>`;}
 
 // ---------------------------------------------------------------- Ereignisse (Kampfschrei, Ansturm, Angriff im Lauf, Umrennen)
-let cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finisher:0};let slowUntil=0,closeUp=null;
+let cnt={cry:0,charge:0,runAttack:0,ram:0,shove:0,block:0,bind:0,seize:0,finisher:0,pierce:0};let slowUntil=0,closeUp=null,liveShot=null,liveT0=0,livePaused=false,cntShots=1;
 // Nahaufnahme beim Abstechen (im Spiel macht das die Kinokamera; der Benchmark schaltet sie ab)
 function camera(base){return (bb,width,height,W,H,zoom,target)=>{const now=performance.now();if(closeUp&&now<closeUp.until){const k=Math.min(1,(closeUp.until-now)/400,(now-(closeUp.until-2600))/250),b0=base?.(bb,width,height,W,H,zoom,target)||{zoom:Math.max(1,zoom),x:target?.x??W/2,y:target?.y??H/2},z=b0.zoom+(3.6-b0.zoom)*k;return {zoom:z,x:cl(b0.x+(closeUp.x-b0.x)*k,W/(z*2),W-W/(z*2)),y:cl(b0.y+(closeUp.y-b0.y)*k,H/(z*2),H-H/(z*2))};}return base?.(bb,width,height,W,H,zoom,target)||null;};}const TN={slash:'Hieb',thrust:'Stich',overhead:'Überkopf',spin:'Wirbel'};
 const who=a=>a?.team?'Gegner':'Kämpfer';
-const WK={ground:'am Boden',knee:'auf den Knien',stagger:'taumelt',back:'dreht den Rücken zu'},WH={beheaded:'schlägt den Kopf ab',severed:'schlägt ab',pierced:'durchbohrt',hacked:'hackt hinein',crushed:'zerschmettert'};
-G.onEvent=e=>{if(e.kind==='finisher'){if($('aSlow').checked)slowUntil=performance.now()+1300;closeUp={x:e.b.x,y:e.b.y-20,until:performance.now()+2600};}if(!(e.kind in cnt))return;cnt[e.kind]++;const pct=x=>Math.round(x*100)+' %';
+const WK={ground:'am Boden',knee:'auf den Knien',stagger:'taumelt',back:'dreht den Rücken zu'},WH={pierced:'durchbohrt',beheaded:'schlägt den Kopf ab',severed:'schlägt ab',pierced:'durchbohrt',hacked:'hackt hinein',crushed:'zerschmettert'};
+G.onEvent=e=>{if((e.kind==='pierce'||e.kind==='finisher'&&(e.what==='pierced'||e.what==='crushed'))&&$('cu').checked&&M.pierceFx&&S.battle){liveShot=M.pierceFx.make({part:e.part,weapon:e.weapon||M.weapon(e.a).id,down:!!e.down,kind:e.what==='crushed'?'crush':'pierce',def:e.b.g,attName:e.a.g.name,defName:e.b.g.name,seed:(cntShots++)*7919+e.part.length});liveT0=performance.now();if(!S.battle.paused){S.battle.paused=true;livePaused=true;}}
+ if(e.kind==='finisher'&&!$('cu').checked){if($('aSlow').checked)slowUntil=performance.now()+1300;closeUp={x:e.b.x,y:e.b.y-20,until:performance.now()+2600};}if(!(e.kind in cnt))return;cnt[e.kind]++;const pct=x=>Math.round(x*100)+' %';
  const t={cry:`<b>Kampfschrei</b> · ${who(e.a)} stürmt mit erhobener Waffe los`,charge:`<b>Ansturm</b> · ${who(e.a)} · Schaden ×${e.boost?.toFixed(2).replace('.',',')}`,
   runAttack:`<b>Ausholen im Lauf</b> · ${who(e.a)} · ${TN[e.tech]||e.tech} bei Tempo ${Math.round(e.v)} · Schaden ×${e.boost?.toFixed(2).replace('.',',')}`,
-  ram:`<b style="color:#ff8a5a">Umgerannt</b> · ${who(e.a)} rennt ${who(e.b)} um (Chance ${pct(e.chance)})`,seize:`<b>Initiative</b> · ${who(e.b)} ${WK[e.why]} – ${who(e.a)} stürzt sofort darauf zu`,finisher:`<b style="color:#ff5a4a">Abgestochen</b> · ${who(e.a)} ${WH[e.what]} (${M.partName?.(e.part)||e.part}, Schaden ${Math.round(e.dmg)})`,shove:`<b>Zurückgestoßen</b> · ${who(e.b)} bleibt stehen (Umrenn-Chance war ${pct(e.chance)})`}[e.kind];
+  ram:`<b style="color:#ff8a5a">Umgerannt</b> · ${who(e.a)} rennt ${who(e.b)} um (Chance ${pct(e.chance)})`,pierce:`<b style="color:#ff5a4a">Durchstich</b> · ${who(e.a)} sticht ${who(e.b)} durch (${M.partName?.(e.part)||e.part}, Schaden ${Math.round(e.dmg)})`,seize:`<b>Initiative</b> · ${who(e.b)} ${WK[e.why]} – ${who(e.a)} stürzt sofort darauf zu`,finisher:`<b style="color:#ff5a4a">Abgestochen</b> · ${who(e.a)} ${WH[e.what]} (${M.partName?.(e.part)||e.part}, Schaden ${Math.round(e.dmg)})`,shove:`<b>Zurückgestoßen</b> · ${who(e.b)} bleibt stehen (Umrenn-Chance war ${pct(e.chance)})`}[e.kind];
  const d=document.createElement('div');d.className='row';d.innerHTML=t;$('evlog').prepend(d);while($('evlog').children.length>12)$('evlog').lastChild.remove();};
 const BC=M.blockContact;if(BC){BC.labels=false;const ON={clean:'Sauber geblockt',glance:'Abgeglitten',bind:'Kraftprobe',broken:'Deckung durchschlagen'};
  BC.onEvent=e=>{let t='';if(e.kind==='block'){cnt.block++;t=`<b>${ON[e.outcome]||'Geblockt'}</b> · ${who(e.def)} wehrt mit ${e.shield?'Schild':'der Waffe'} ab`;}
   else if(e.kind==='bindStart'){cnt.bind++;t=`<b>Kraftprobe</b> · Klinge an Klinge, ${who(e.winner)} drückt weg`;}else return;
   const d=document.createElement('div');d.className='row';d.innerHTML=t;$('evlog').prepend(d);while($('evlog').children.length>12)$('evlog').lastChild.remove();};}
-function counts(){$('counts').innerHTML=`<div class="row"><span>Kampfschreie</span><b>${cnt.cry}</b></div><div class="row"><span>Ansturm</span><b>${cnt.charge}</b></div><div class="row"><span>Ausholen im Lauf</span><b>${cnt.runAttack}</b></div><div class="row"><span>Umgerannt / zurückgestoßen</span><b>${cnt.ram} / ${cnt.shove}</b></div><div class="row"><span>Initiative genutzt / abgestochen</span><b>${cnt.seize} / ${cnt.finisher}</b></div><div class="row"><span>Geblockt / Kraftproben</span><b>${cnt.block} / ${cnt.bind}</b></div>`;}
+function counts(){$('counts').innerHTML=`<div class="row"><span>Kampfschreie</span><b>${cnt.cry}</b></div><div class="row"><span>Ansturm</span><b>${cnt.charge}</b></div><div class="row"><span>Ausholen im Lauf</span><b>${cnt.runAttack}</b></div><div class="row"><span>Umgerannt / zurückgestoßen</span><b>${cnt.ram} / ${cnt.shove}</b></div><div class="row"><span>Durchstiche</span><b>${cnt.pierce}</b></div><div class="row"><span>Initiative genutzt / abgestochen</span><b>${cnt.seize} / ${cnt.finisher}</b></div><div class="row"><span>Geblockt / Kraftproben</span><b>${cnt.block} / ${cnt.bind}</b></div>`;}
+
+// ---------------------------------------------------------------- Galerie der Nahaufnahmen
+const GAL=[['chest','Brust'],['belly','Bauch'],['head','Kopf'],['neck','Hals'],['ls','Schulter'],['rua','Oberarm'],['lfa','Unterarm'],['rh','Hand'],['lt','Oberschenkel'],['rsh','Unterschenkel'],['lf','Fuß'],['crush','Schädel zertrümmert'],['all','Alle nacheinander']];
+fill($('gW'),MELEE);$('gW').value='spear';
+$('galParts').innerHTML=GAL.map(([k,n])=>`<button data-p="${k}">${n}</button>`).join('');
+let galShot=null,galT0=0,galAll=-1,galSeed=1;const gcv=$('galCv'),gcx=gcv.getContext('2d');
+// Rüstungswahl der Galerie nur für die Darstellung: Kopie des Gegners mit Merker __armor
+const armorItems0=M.armorItems;M.armorItems=g=>g&&g.__armor!==undefined?(g.__armor==='none'?[]:[{material:g.__armor,def:'x'}]):armorItems0(g);
+function galDef(){const src=(fighters[1]||fighters[0])?.g;const g=src?JSON.parse(JSON.stringify(src)):{appearance:{}};g.__armor=$('gA').value;return g;}
+function galPlay(k){const w=$('gW').value,down=$('gDown').value==='1',crushK=k==='crush';
+ galShot=M.pierceFx.make({part:crushK?'head':k,weapon:crushK&&M.pierceFx.WTYPE(w)!=='blunt'?'mace':w,down:crushK?true:down,kind:crushK?'crush':'pierce',def:galDef(),seed:galSeed++*7919+k.length*31});galT0=performance.now();
+ for(const b of $('galParts').children)b.classList.toggle('on',b.dataset.p===(galAll>=0?'all':k));}
+$('galParts').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.p==='all'){galAll=0;galPlay(GAL[0][0]);}else{galAll=-1;galPlay(b.dataset.p);}};
+for(const id of ['gW','gDown','gA'])$(id).onchange=()=>{if(galShot)galPlay(galAll>=0?GAL[galAll][0]:galShot.kind==='crush'?'crush':galShot.part);};
+function gallery(){if(!galShot){gcx.fillStyle='#000';gcx.fillRect(0,0,gcv.width,gcv.height);gcx.fillStyle='#97aaa8';gcx.font='16px "Courier Prime",monospace';gcx.textAlign='center';gcx.fillText('Stelle wählen ▸',gcv.width/2,gcv.height/2);return;}
+ const t=(performance.now()-galT0)/1000;if(t>galShot.dur+.4){if(galAll>=0){galAll++;if(galAll>=GAL.length-1)galAll=0;galPlay(GAL[galAll][0]);}else galT0=performance.now();return;}
+ M.pierceFx.draw(gcx,gcv.width,gcv.height,galShot,Math.min(t,galShot.dur-.01),{});}
 
 // ---------------------------------------------------------------- Schleife
 let last=performance.now();
@@ -172,7 +194,7 @@ function tick(){const t=performance.now(),dt=Math.min(.1,(t-last)/1000);last=t;c
  if(mode==='show')steerShow(dt);
  else if(mode==='atk')stepAtk(dt);
  else if(mode==='fight'&&b&&(b.result||b.finale||b.actors.some(a=>a.down||a.g.dead)||t-startedAt>40000)){if(!b.ended){b.ended=true;setTimeout(restart,1800);}}
- sample();labels();graph();live();counts();requestAnimationFrame(tick);}
+ sample();labels();graph();live();counts();gallery();requestAnimationFrame(tick);}
 
 $('rules').innerHTML=`<ul>
 <li><em>Sechs Gangarten statt einer:</em> Gehen (${Math.round(G.P.walk*100)} % des bisherigen Tempos), Kampfschritt (${Math.round(G.P.guard*100)} %), Laufen (wie bisher), Sprinten (${Math.round(G.P.sprint*100)} %, wie der bisherige Sprint), Seitschritt (${Math.round(G.P.side*100)} %), Rückwärts (${Math.round(G.P.back*100)} %, weiter weg ${Math.round(G.P.backFar*100)} %). Jede hat einen eigenen Schrittrhythmus: Gehen langsam mit langem Bodenkontakt, Laufen mit kurzer Flugphase, Sprinten mit hohen Knien, weit vorgebeugt und schnellem Rhythmus.</li>

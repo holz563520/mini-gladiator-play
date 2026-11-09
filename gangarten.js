@@ -25,7 +25,9 @@ const DEF={
  // Ansturm und Angriff im Lauf (Vorschlag, nicht freigegeben)
  runAttack:1,runHit:.3,chargeDmg:1.5,ramCharge:.32,ramRun:.15,cryDist:260,
  // Initiative nutzen und Abstechen am Boden (Vorschlag, nicht freigegeben)
- seize:1,seizeRange:320,finWind:1.4,finDmg:1.3,finSever:.45,finHold:.7
+ seize:1,seizeRange:320,finWind:1.4,finDmg:1.3,finSever:.45,finHold:.7,
+ // Durchstich im Stehen (Stich-Angriff)
+ pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9
 };
 const P={...DEF};
 const G=M.gait={active:false,P,DEF,MODES,NAME,COLOR};
@@ -87,9 +89,29 @@ G.ram=(a,b,dmg,mult=1)=>{
  b.kx=(b.kx||0)+Math.cos(ang)*(roll<chance?170:95);b.ky=(b.ky||0)+Math.sin(ang)*(roll<chance?170:95);
  if(roll<chance&&M.knockdown(b,'Umgerannt',2.6)){M.floater?.(b.x,b.y-62,'UMGERANNT!','#ff8a5a');M.shake=Math.max(M.shake||0,5);M.sound?.('fall');ev('ram',a,{b,chance});}
  else ev('shove',a,{b,chance});};
+// Durchstich im Stehen: ein Stich kann ganz durch den Körper gehen (je nach Waffe, Wucht und Rüstung) – Klinge tritt hinten aus,
+// der Getroffene hängt kurz auf der Waffe, dann wird sie herausgerissen
+const PIERCE_BASE={spear:.4,trident:.34,javelin:.4,rapier:.3,dagger:.24,gladius:.24,short:.24,long:.15,greatsword:.12,halberd:.18};
+G.thrust=(a,b,dmg,w,id)=>{
+ if(!G.active||!P.pierce||!b?.g||b.g.dead||a.pierceContact||a.swingKind!=='thrust'||!w||w.ammo)return;const base=PIERCE_BASE[w.id];if(!base)return;const part=b.g.body[id];if(!part||part.missing)return;
+ const armor=M.armorProtection?.(b.g,id)||0,chance=P.pierceForce?1:cl(base+(dmg-10)*.01-armor*.012,.03,.65);if(M.rng()>chance)return;
+ const extra=dmg*(P.pierceDmg-1);part.hp=Math.max(0,part.hp-extra);a.damage+=extra;b.taken+=extra;part.bleed+=2.5;part.deepStabs=(part.deepStabs||0)+1;if(id==='chest'||id==='belly')part.internal=true;
+ M.recordWound?.(b.g,id,'Durchstochen',a.g.name,w.name,dmg+extra);
+ a.pierceContact={target:b.id,part:id,left:P.pierceHold,len:P.pierceHold,weaponId:w.item?.id,through:true,t:0};a.swing=0;a.pendingStrike=null;a.wind=0;a.state='piercing';
+ b.stun=Math.max(b.stun||0,P.pierceHold*.9);b.hit=.4;M.shake=Math.max(M.shake||0,6);
+ M.floater?.(b.x,b.y-58,'DURCHSTOCHEN!','#ff5a4a');M.voice?.('pain',M.voicePitch?.(b.g)??1,true);M.sound?.('stick');
+ ev('pierce',a,{b,part:id,weapon:w.id,dmg:dmg+extra,down:false});};
+// während der Durchstich hält: kleiner Ausfallschritt hinein, Angreifer hinter dem Getroffenen gezeichnet (Klinge verschwindet im Körper,
+// die Spitze kommt hinten heraus), Blut tritt vorn und hinten aus
+G.pierceStep=(a,dt)=>{const f=a.pierceContact;if(!f?.through)return;const b=M.s.battle.actors.find(x=>x.id===f.target);if(!b)return;f.t=(f.t||0)+dt;const k=f.t/(f.len||.9);
+ const d=Math.hypot(b.x-a.x,b.y-a.y),dir=Math.atan2(b.y-a.y,b.x-a.x);if(k<.35&&d>34){const st=Math.min(d-34,40*dt);a.x+=Math.cos(dir)*st;a.y+=Math.sin(dir)*st;}
+ a.y=Math.min(a.y,b.y-.6);
+ if(!f.spray&&k>.25){f.spray=true;const cp=M.contactAnchor(b,f.part),ox=Math.cos(dir)*14;M.emit?.(cp.x+ox,cp.y,18,'#aa3c36',110);M.emit?.(cp.x-ox*.3,cp.y,6,'#9d2f2a',40);}
+ if(k>.35&&M.rng()<dt*10){const cp=M.contactAnchor(b,f.part);M.emit?.(cp.x+Math.cos(dir)*12,cp.y+2,1,'#8f2a24',20);}
+ if(f.left<=dt*1.5&&!f.out){f.out=true;const cp=M.contactAnchor(b,f.part);M.emit?.(cp.x,cp.y,14,'#aa3c36',80);M.sound?.('stick');}};
 // geblockter Ansturm: mit voller Wucht in die Deckung – kann trotzdem umwerfen (60 % der Chance), sonst zurückgestoßen
 G.blocked=ev=>{if(ev?.kind==='block'&&ev.att?.rushHit?.kind==='charge')G.ram(ev.att,ev.def,0,.6);};
-{const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p)G.ram(a,b,d);return out;};R.__gait=true;}}
+{const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p){G.ram(a,b,d);G.thrust(a,b,d,w,part);}return out;};R.__gait=true;}}
 
 // --------------------------------------------------------------- Initiative und Abstechen
 const CRIES=['STIRB!','JETZT!','FÜR DIE EHRE!','HAAA!','BLEIB LIEGEN!'];
@@ -111,7 +133,7 @@ function seize(a,o){
   if(best.d>70){a.shoutTimer=.8;a.cried=true;M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-62,cryText(a),'#ffcf6a');}ev('seize',a,{b:best.t,why:best.k});}
  return best;}
 // Abstechen: weit ausholen (mit Schrei), dann die Waffe mit voller Wucht hineinrammen
-G.finPart=(a,b)=>{const w=M.weapon(a),B=b.g.body,r=M.rng();if(CHOP.has(w.id)){if(r<.45&&!B.neck.missing)return 'neck';const limbs=['lua','rua','lt','rt'].filter(id=>!B[id].missing);if(r<.8&&limbs.length)return limbs[Math.floor(M.rng()*limbs.length)];}
+G.finPart=(a,b)=>{const w=M.weapon(a),B=b.g.body,r=M.rng();if(!w.bladed&&!['spear','trident','javelin'].includes(w.id)&&!B.head.missing&&r<.85)return 'head';/* Keule, Streitkolben, Hammer: auf den Kopf */if(CHOP.has(w.id)){if(r<.45&&!B.neck.missing)return 'neck';const limbs=['lua','rua','lt','rt'].filter(id=>!B[id].missing);if(r<.8&&limbs.length)return limbs[Math.floor(M.rng()*limbs.length)];}
  if(r<.6&&!B.head.missing)return 'head';return B.chest.missing?null:(M.rng()<.6?'chest':'belly');};
 function finStart(a){if(a.finisher||a.technique!=='groundFinish')return;a.finCount=(a.finCount||0)+1;a.finisher={target:a.target};a.wind*=P.finWind;a.windMax*=P.finWind;a.shoutTimer=Math.max(a.shoutTimer||0,1);M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-66,cryText(a),'#ff8a5a');ev('finStart',a,{});}
 // Haltung beim Abstechen (arena.js): beide Hände hoch über den Kopf, zurücklehnen – dann mit Ausfallschritt und tief gebeugt hinein, kurz halten, herausreißen
@@ -134,7 +156,8 @@ function finImpact(a,b,dmg,w,id){
  M.shake=Math.max(M.shake||0,7);const cp=a.contactPoint||{x:b.x,y:b.y-10};M.emit?.(cp.x,cp.y,26,'#aa3c36',120);
  const label={beheaded:'KOPF AB!',severed:M.partName?.(id)?.toUpperCase()+' AB!',pierced:'DURCHBOHRT!',hacked:'HINEINGEHACKT!',crushed:'ZERSCHMETTERT!'}[what];M.floater?.(b.x,b.y-48,label,'#ff5a4a');
  if(!M.s.battle.cinematic)M.s.battle.cinematic={x:b.x,y:b.y-18,left:1.6,duration:1.6};
- ev('finisher',a,{b,what,part:id,dmg:dmg+extra});if(what!=='pierced')a.finisher=null;}
+ if(what==='crushed'&&id==='head'){part.hp=Math.min(part.hp,4);part.bleed+=2;}
+ ev('finisher',a,{b,what,part:id,dmg:dmg+extra,weapon:w.id,down:true});if(what!=='pierced')a.finisher=null;}
 {const R=M.combatResponses;if(R?.groundImpact&&!R.__gaitG){const orig=R.groundImpact;R.groundImpact=(a,b,d,w,id)=>{const out=orig.call(R,a,b,d,w,id);if(G.active)finImpact(a,b,d,w,id);return out;};R.__gaitG=true;}}
 
 // --------------------------------------------------------------- KI-Haken (sim.js updateActor)
