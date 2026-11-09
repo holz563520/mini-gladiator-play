@@ -88,7 +88,14 @@ function cutFace(key,o,t,shape){const B=faceBuf(key),z=1/(1.12*(1+.07*ease(t/5))
 // o: {mood, look (−1 links … 1 rechts), shout, blood, sneeze, hearts, t}
 // Die Augen des Gesichtsrenderers werden entfernt (Wangenfarbe von unten nachgezogen), bevor eigene Augen gemalt werden.
 const EYE_ZONES=[[54,30,77,47],[85,25,108,45]];
-function blankEyes(q){for(const [x0,y0,x1,y1] of EYE_ZONES){const w=x1-x0,h=y1-y0,src=q.getImageData(x0,y1+3,w,1),dst=q.getImageData(x0,y0,w,h);
+// tilt: Kopf ist um (80,70) gedreht (Schielen, wackelnder Kopf) – die Augenfelder werden mitgedreht, sonst bleiben die alten Augen halb stehen und Wangenfarbe malt über den Kopfrand (sah aus wie ein zweiter Kopf dahinter).
+function blankEyes(q,tilt=0){if(!tilt)return blankEyes0(q);const cs=Math.cos(tilt),sn=Math.sin(tilt),src=q.getImageData(0,0,FW,FH),d=q.getImageData(0,0,FW,FH),S=src.data,D=d.data;
+ const at=(u,v)=>[Math.round(80+(u-80)*cs-(v-70)*sn),Math.round(70+(u-80)*sn+(v-70)*cs)];
+ for(const [x0,y0,x1,y1] of EYE_ZONES){const h=y1-y0;for(let y=0;y<FH;y++)for(let x=0;x<FW;x++){const u=80+(x-80)*cs+(y-70)*sn,v=70-(x-80)*sn+(y-70)*cs;if(u<x0||u>=x1||v<y0||v>=y1)continue;
+  const i=(y*FW+x)*4;if(S[i+3]===0)continue;const [sx,sy]=at(u,y1+3);if(sx<0||sy<0||sx>=FW||sy>=FH)continue;const j=(sy*FW+sx)*4;if(S[j+3]===0)continue;const sh=((v-y0)/h)*6;
+  D[i]=Math.max(0,S[j]-sh);D[i+1]=Math.max(0,S[j+1]-sh);D[i+2]=Math.max(0,S[j+2]-sh);D[i+3]=255;}}
+ q.putImageData(d,0,0);}
+function blankEyes0(q){for(const [x0,y0,x1,y1] of EYE_ZONES){const w=x1-x0,h=y1-y0,src=q.getImageData(x0,y1+3,w,1),dst=q.getImageData(x0,y0,w,h);
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4,j=x*4;if(dst.data[i+3]===0||src.data[j+3]===0)continue;const sh=(y/h)*6;dst.data[i]=Math.max(0,src.data[j]-sh);dst.data[i+1]=Math.max(0,src.data[j+1]-sh);dst.data[i+2]=Math.max(0,src.data[j+2]-sh);dst.data[i+3]=255;}
   q.putImageData(dst,x0,y0);}}
 function doctorBuf(t,o={}){const yaw=o.yaw??Math.sin(t*.8)*.25,base=cutFace('doc',{g:docG(),mood:o.mood||'grin',crossEyes:o.cross??true,yaw},t,'head');
@@ -220,7 +227,7 @@ function chiselWound(q,cx,cy,T){const pix=(x,y,c)=>{q.fillStyle=c;q.fillRect(Mat
 // Auf dem Behandlungstisch immer ohne Helm und ohne Rüstung (Kopf in voller Größe, Meißel trifft die richtige Stelle)
 const bare=g=>({...g,enemyGear:{weapon:null,secondary:null,shield:null,armor:{}}});
 function patientBuf(g,t,o0={}){const o={...o0,g};const cross=o.cross??!!g.dokCross,tilt=o.tilt??(cross&&o.crossX!==false?Math.sin(t*1.9)*.1:0),base=cutFace('pat:'+g.id,{g:bare(g),mood:o.mood||(cross?'dumb':'nervous'),crossEyes:cross,hurt:o.hurt||0,blood:o.blood||0,tilt,yaw:o.yaw??Math.sin(t*.7)*.15},t,'bust');
- const c=faceBuf('patOut'),q=c.qz;q.clearRect(0,0,FW,FH);q.drawImage(base,0,0);if(o.crossX??cross)blankEyes(q);const {R,E,L}=tl(q);const sx=Math.round((o.yaw??Math.sin(t*.7)*.15)*6);{const dx=sx,dy=-63,cs=Math.cos(tilt||0),sn=Math.sin(tilt||0);patientBuf.anchor={x:80+dx*cs-dy*sn,y:70+dx*sn+dy*cs};}q.save();if(tilt){q.translate(80,70);q.rotate(tilt);q.translate(-80,-70);}
+ const c=faceBuf('patOut'),q=c.qz;q.clearRect(0,0,FW,FH);q.drawImage(base,0,0);if(o.crossX??cross)blankEyes(q,tilt||0);const {R,E,L}=tl(q);const sx=Math.round((o.yaw??Math.sin(t*.7)*.15)*6);{const dx=sx,dy=-63,cs=Math.cos(tilt||0),sn=Math.sin(tilt||0);patientBuf.anchor={x:80+dx*cs-dy*sn,y:70+dx*sn+dy*cs};}q.save();if(tilt){q.translate(80,70);q.rotate(tilt);q.translate(-80,-70);}
  const X=o.crossX??cross;if(X){const sp=o.spin||0;for(const [cx,cy,ew,eh,i] of [[66,35,12,9,0],[93,33,14,11,1]]){R(cx-ew/2-1,cy-eh/2-1,ew+2,eh+2,'#3a2418');R(cx-ew/2,cy-eh/2,ew,eh,'#f6f1df');R(cx-ew/2,cy+eh/2-1,ew,1,'#d8ccb0');for(let k=0;k<3;k++)R(cx-ew/2+1+k*3,cy-eh/2+1+(k%2),1,2,'#d88a8a');
   let px,py;if(sp){const a=t*17*(i?-1:1);px=cx-1.5+Math.cos(a)*(ew/2-2.5);py=cy-1.5+Math.sin(a)*(eh/2-2.5);}else{const w=Math.round(Math.sin(t*2.3));px=i?cx-ew/2+.5:cx+ew/2-3.5;py=i?cy-eh/2+.5+(w>0?1:0):cy+eh/2-3.5;}R(px,py,3,3,'#160d0a');R(px+1,py,1,1,'#ffffff');}
   R(57,26,14,2,'#3a2418');R(59,24,6,2,'#3a2418');R(86,23,15,2,'#3a2418');}
