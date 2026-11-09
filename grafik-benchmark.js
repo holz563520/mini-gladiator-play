@@ -9,7 +9,7 @@
 // =====================================================================================================
 (()=>{
 const M=window.MG,S=M.s,$=id=>document.getElementById(id);
-const RT={actor:null,none:false,arena:true,effects:true,uncapped:true,stage:'',liveFps:15,liveCopy:'bitmap',split:{stage:0,ground:0,actors:0,rest:0,frames:0}};M.renderTest=RT;
+const RT={actor:null,none:false,arena:true,effects:true,uncapped:true,stage:'',liveFps:15,liveCopy:'bitmap',split:{stage:0,ground:0,stains:0,pools:0,actors:0,rest:0,frames:0}};M.renderTest=RT;
 const TEAM=['#55938e','#b7694f'],TEAM_DARK=['#2f5754','#6b3a2c'];
 const cl=(x,a,b)=>Math.max(a,Math.min(b,x));
 let mode='full',paused=false;
@@ -66,7 +66,7 @@ function meter(){
   if(m.battle!==b.id){m.battle=b.id;m.lastT=b.time||0;}else{m.game+=Math.max(0,(b.time||0)-m.lastT);m.lastT=b.time||0;}
   m.wall+=wallMs;m.iter++;m.sim+=simMs;if(painted){m.frames++;m.paint+=paintMs;m.costs.push(simMs+paintMs);}};
  /* Logik in ms je 1/60 s Kampfzeit: vergleichbar, egal wie viele Bilder ausfallen (dann holt die Schleife mehrere Schritte je Bild nach) */
- m.result=()=>{const s=m.wall/1000,c=[...m.costs].sort((a,b)=>a-b);return {fps:s?m.frames/s:0,sim:m.game>.05?m.sim/(m.game*60):0,paint:m.frames?m.paint/m.frames:0,tempo:s?m.game/(s*(S.options.speed||1)):0,p95:c[Math.floor(c.length*.95)]||0,secs:s,split:(()=>{const a=m.sp0||{},b=RT.split,n=Math.max(1,b.frames-(a.frames||0)),d=k=>(b[k]-(a[k]||0))/n;return {stage:d('stage'),ground:d('ground'),actors:d('actors'),rest:d('rest')};})()};};
+ m.result=()=>{const s=m.wall/1000,c=[...m.costs].sort((a,b)=>a-b);return {fps:s?m.frames/s:0,sim:m.game>.05?m.sim/(m.game*60):0,paint:m.frames?m.paint/m.frames:0,tempo:s?m.game/(s*(S.options.speed||1)):0,p95:c[Math.floor(c.length*.95)]||0,secs:s,split:(()=>{const a=m.sp0||{},b=RT.split,n=Math.max(1,b.frames-(a.frames||0)),d=k=>(b[k]-(a[k]||0))/n;return {stage:d('stage'),ground:d('ground'),stains:d('stains'),pools:d('pools'),actors:d('actors'),rest:d('rest')};})()};};
  return m;
 }
 const live=meter();let windowAt=0,series=null;
@@ -79,7 +79,7 @@ function meterText(r){const b=S.battle,alive=b?[0,1].map(t=>b.actors.filter(a=>a
  return `<b>${b?b.actors.length:0} Kämpfer</b> · ${{full:'volle Figuren',simple:'einfache Figuren',box:'Kästen',none:'nichts gezeichnet'}[mode]}<br>`+
   `Bilder/s <span class="${cls(r.fps,50,30)}">${fmt(r.fps,0)}</span> · Spieltempo <span class="${cls(r.tempo*100,95,80)}">${fmt(r.tempo*100,0)} %</span><br>`+
   `Logik ${fmt(r.sim)} ms · Zeichnen ${fmt(r.paint)} ms · <span class="${cls(-(r.sim+r.paint),-16.7,-33)}">zusammen ${fmt(r.sim+r.paint)}</span><br>`+
-  (mode==='none'?'':`<span style="color:#d8cdb4">Kulisse ${fmt(r.split.stage)} · Boden ${fmt(r.split.ground)} · Figuren ${fmt(r.split.actors)} · Rest ${fmt(r.split.rest)}</span><br>`)+
+  (mode==='none'?'':`<span style="color:#d8cdb4">Kulisse ${fmt(r.split.stage)} · Boden ${fmt(r.split.ground)} (Flecken ${fmt(r.split.stains)}, Lachen ${fmt(r.split.pools)}) · Figuren ${fmt(r.split.actors)} · Rest ${fmt(r.split.rest)}</span><br>`)+
   `<span style="color:#a99f97">stehen ${alive[0]}:${alive[1]}${q&&q<1?' · Auflösung '+Math.round(q*100)+' %':''}</span>`;}
 setInterval(()=>{
  if(window.GB_ERR?.length)return;/* Fehler bleibt sichtbar */
@@ -121,6 +121,21 @@ async function runStageTest(){
 }
 function renderStage(){$('stageres').innerHTML='<tr><th>Kulisse</th><th>Bilder/s</th><th>Zeichnen</th><th>davon Kulisse</th><th>Rest</th></tr>'+stageResults.map(r=>`<tr><td class="l">${r.label}</td><td class="${cls(r.fps,50,30)}">${fmt(r.fps,0)}</td><td>${fmt(r.paint)} ms</td><td>${fmt(r.split.stage)} ms</td><td>${fmt(r.split.rest)} ms</td></tr>`).join('');}
 $('stagetest').onclick=runStageTest;
+// ---------------------------------------------------------------- Boden-Test (09.11.): Blutflecken als Ebene (wie im Spiel), als Bitmap, direkt, ohne Blut
+const GROUNDS=[['','Ebene (wie im Spiel)',true],['bitmap','als Bitmap (Test)',true],['direct','direkt gezeichnet (Test)',true],['','ohne Blut',false]];
+const groundResults=[];
+async function runGroundTest(){
+ if(series)return;$('series').disabled=$('stagetest').disabled=$('groundtest').disabled=true;groundResults.length=0;renderGround();
+ const keep={mode,count,view:$('view').value,fps:$('fps').value,fx:$('fx').checked};$('view').value='1';$('fps').value='60';applyFps();series={m:meter(),hold:false};
+ try{for(let i=0;i<GROUNDS.length;i++){const [st,label,fx]=GROUNDS[i];$('groundprog').textContent=`Messe Boden ${label} … (${i+1}/${GROUNDS.length})`;
+   RT.stains=st;$('fx').checked=fx;applyMode('box');$('count').value='20';start(20);
+   let r=null;for(let tries=0;tries<2;tries++){if(tries)start(20);await wait(3000);series.m.reset();await wait(5000);r=series.m.result();if(r.secs>=3&&r.fps>0)break;}
+   groundResults.push({label,stainsN:(M.stains||[]).length,...r});renderGround();}
+  $('groundprog').textContent='Fertig. '+device();$('copy').disabled=false;
+ }finally{RT.stains='';series=null;$('series').disabled=$('stagetest').disabled=$('groundtest').disabled=false;$('view').value=keep.view;$('fps').value=keep.fps;$('fx').checked=keep.fx;applyFps();$('count').value=String(keep.count);applyMode(keep.mode);start(keep.count);live.reset();}
+}
+function renderGround(){$('groundres').innerHTML='<tr><th>Blutflecken</th><th>Bilder/s</th><th>Zeichnen</th><th>Boden</th><th>davon Flecken</th></tr>'+groundResults.map(r=>`<tr><td class="l">${r.label}</td><td class="${cls(r.fps,50,30)}">${fmt(r.fps,0)}</td><td>${fmt(r.paint)} ms</td><td>${fmt(r.split.ground)} ms</td><td>${fmt(r.split.stains)} ms</td></tr>`).join('');}
+$('groundtest').onclick=runGroundTest;
 // ---------------------------------------------------------------- Figuren-Test: 20 gegen 20 volle Figuren, Figuren jedes Bild neu oder seltener (Zwischenspeicher)
 const LIVES=[['0','jedes Bild (alte Art)'],['15b','15-mal, Bitmap (wie im Spiel)'],['20b','20-mal, Bitmap'],['10b','10-mal, Bitmap']];
 const figResults=[];
@@ -155,8 +170,9 @@ function verdictFor(n){const r=results[n];if(!r)return '';const f=r.full,b=r.box
 function verdict(){$('verdict').innerHTML=SIZES.map(n=>`<li>${verdictFor(n)}</li>`).join('');}
 $('copy').onclick=async()=>{
  const lines=['Arena Theory · Grafik-Benchmark',device(),''];
- for(const n of SIZES){lines.push(`${n} gegen ${n}:`);for(const [m,l] of MODES){const r=results[n]?.[m];if(r)lines.push(`  ${l}: ${fmt(r.fps,0)} Bilder/s, Tempo ${fmt(r.tempo*100,0)} %, Logik ${fmt(r.sim)} ms, Zeichnen ${fmt(r.paint)} ms (Kulisse ${fmt(r.split.stage)}, Boden ${fmt(r.split.ground)}, Figuren ${fmt(r.split.actors)}, Rest ${fmt(r.split.rest)}), p95 ${fmt(r.p95)} ms`);}}
+ for(const n of SIZES){lines.push(`${n} gegen ${n}:`);for(const [m,l] of MODES){const r=results[n]?.[m];if(r)lines.push(`  ${l}: ${fmt(r.fps,0)} Bilder/s, Tempo ${fmt(r.tempo*100,0)} %, Logik ${fmt(r.sim)} ms, Zeichnen ${fmt(r.paint)} ms (Kulisse ${fmt(r.split.stage)}, Boden ${fmt(r.split.ground)} [Flecken ${fmt(r.split.stains)}, Lachen ${fmt(r.split.pools)}], Figuren ${fmt(r.split.actors)}, Rest ${fmt(r.split.rest)}), p95 ${fmt(r.p95)} ms`);}}
  if(figResults.length){lines.push('',`Figuren-Test (${figResults[0].n} gegen ${figResults[0].n}, volle Figuren):`);for(const r of figResults)lines.push(`  ${r.label}: ${fmt(r.fps,0)} Bilder/s, Tempo ${fmt(r.tempo*100,0)} %, Zeichnen ${fmt(r.paint)} ms (Figuren ${fmt(r.split.actors)}), Logik ${fmt(r.sim)} ms`);}
+ if(groundResults.length){lines.push('','Boden-Test (20 gegen 20, Kästen):');for(const r of groundResults)lines.push(`  ${r.label}: ${fmt(r.fps,0)} Bilder/s, Zeichnen ${fmt(r.paint)} ms, Boden ${fmt(r.split.ground)} ms (Flecken ${fmt(r.split.stains)}, Lachen ${fmt(r.split.pools)}), Flecken ${r.stainsN}`);}
  if(stageResults.length){lines.push('','Kulisse-Test (5 gegen 5, Kästen):');for(const r of stageResults)lines.push(`  ${r.label}: ${fmt(r.fps,0)} Bilder/s, Zeichnen ${fmt(r.paint)} ms (Kulisse ${fmt(r.split.stage)}, Rest ${fmt(r.split.rest)})`);}
  const text=lines.join('\n');
  try{await navigator.clipboard.writeText(text);$('copy').textContent='Kopiert ✓';}

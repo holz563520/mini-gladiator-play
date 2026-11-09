@@ -53,7 +53,7 @@ table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
 .galbar select{min-width:110px}
 </style></head>
 <body>
-<header><small>ARENA THEORY · KAMPF-WERKSTATT · LEISTUNG · STAND b0f72528</small><h1>GRAFIK-BENCHMARK</h1>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · LEISTUNG · STAND c76a0cab</small><h1>GRAFIK-BENCHMARK</h1>
 <p>Echter Kampf mit der Kampflogik des Spiels. Du kannst die Kämpfer als volle Figuren, als einfache Kästen oder gar nicht zeichnen lassen. So siehst du, ob die Grafik oder die Kampfberechnung bremst. Am Kampf selbst ändert sich nichts, Spielstände bleiben unberührt.</p></header>
 <main>
 <div class="top">
@@ -90,6 +90,12 @@ table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
 <div id="figprog" class="note"></div>
 <div class="wrap"><table class="res" id="figres" style="min-width:460px"></table></div>
 
+<h2>Boden-Test</h2>
+<p class="note">Der „Boden“ kostete auf dem Handy 6–7 ms je Bild, auch mit Kästen. Dieser Test prüft, ob es an den Blutflecken liegt: 20 gegen 20 mit Kästen, Flecken als Ebene (wie im Spiel), als Bitmap, direkt gezeichnet und ganz ohne Blut. Dauert etwa 35 Sekunden. „Ergebnis kopieren“ nimmt das Ergebnis mit.</p>
+<div class="btns"><button id="groundtest" class="main">▶ Boden testen</button></div>
+<div id="groundprog" class="note"></div>
+<div class="wrap"><table class="res" id="groundres" style="min-width:460px"></table></div>
+
 <h2>Kulisse-Test</h2>
 <p class="note">Prüft, ob die Arena-Kulisse auf dem Handy bremst und ob eine andere Art des Kopierens hilft: 5 gegen 5 mit Kästen, Kulisse auf die alte Art, als Bitmap (jetzt im Spiel), vorverkleinert und ganz ohne. Dauert etwa 30 Sekunden. „Ergebnis kopieren“ nimmt das Ergebnis mit.</p>
 <div class="btns"><button id="stagetest" class="main">▶ Kulisse testen</button></div>
@@ -105,21 +111,21 @@ table.res{border-collapse:collapse;font-size:12px;width:100%;min-width:620px}
 <h2>Tiere</h2><div class="gal" id="galBeasts"></div>
 <h2>Ersatzdarstellung im Benchmark</h2><div class="gal" id="galBoxes"></div>
 </main>
-<script src="data.js?v=b0f72528"></script>
-<script src="household.js?v=b0f72528"></script>
-<script src="management.js?v=b0f72528"></script>
-<script src="scout.js?v=b0f72528"></script>
-<script src="sim.js?v=b0f72528"></script>
-<script src="benchmark.js?v=b0f72528"></script>
-<script src="school.js?v=b0f72528"></script>
-<script src="weapon-art.js?v=b0f72528"></script>
-<script src="arena.js?v=b0f72528"></script>
-<script src="block-contact.js?v=b0f72528"></script>
-<script src="hit-contact.js?v=b0f72528"></script>
-<script src="reach-ai.js?v=b0f72528"></script>
-<script src="lion.js?v=b0f72528"></script>
-<script src="hahn-engine.js?v=b0f72528"></script>
-<script src="hahn-arena.js?v=b0f72528"></script>
-<script src="hund.js?v=b0f72528"></script>
-<script src="grafik-benchmark.js?v=b0f72528"></script>
+<script src="data.js?v=c76a0cab"></script>
+<script src="household.js?v=c76a0cab"></script>
+<script src="management.js?v=c76a0cab"></script>
+<script src="scout.js?v=c76a0cab"></script>
+<script src="sim.js?v=c76a0cab"></script>
+<script src="benchmark.js?v=c76a0cab"></script>
+<script src="school.js?v=c76a0cab"></script>
+<script src="weapon-art.js?v=c76a0cab"></script>
+<script src="arena.js?v=c76a0cab"></script>
+<script src="block-contact.js?v=c76a0cab"></script>
+<script src="hit-contact.js?v=c76a0cab"></script>
+<script src="reach-ai.js?v=c76a0cab"></script>
+<script src="lion.js?v=c76a0cab"></script>
+<script src="hahn-engine.js?v=c76a0cab"></script>
+<script src="hahn-arena.js?v=c76a0cab"></script>
+<script src="hund.js?v=c76a0cab"></script>
+<script src="grafik-benchmark.js?v=c76a0cab"></script>
 </body></html>
