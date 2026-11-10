@@ -62,7 +62,7 @@ function tick(){if(!ctx)return;const b=M.s.battle,live=!document.hidden&&(!b?.pa
 function start(){if(!init())return;ctx.resume().catch(()=>{});ksWarmup();if(!timer)timer=setInterval(tick,40);tick();}
 // ---- Neue Kampfgeräusche (kampfsound.js, im Editor kampfsound-editor.html einstellbar): alte Namen → neue Vorlagen.
 // Änderungen aus dem Editor (localStorage „mg-kampfsound-v1“) gelten auch hier. Namen ohne Eintrag klingen wie bisher.
-const KMAP={boneCrack:['boneCrack'],skullCrack:['skullCrack'],jubel:['jubel1'],boo:['boo1'],step:['step',.45],slash:['hitBlade'],heavy:['hitBlunt'],hit:['hitBlade'],backstab:['backstab'],sever:['sever'],stick:['hitStab'],lodge:['arrowShield'],block:['blockShield'],armorhit:['armorHit'],parry:['parry'],fall:['fall'],rise:['rise',.8],sand:['sand'],land:['land'],rush:['rush'],crowd:['crowd',.75],roar:['roar'],gong:['gong'],win:['win'],mercy:['mercy'],verdictDeath:['verdictDeath'],die:['die'],gold:['coin'],coin:['coin'],coins:['coin'],throw:['throw'],net:['net'],bow:['bow'],crossbow:['crossbow'],reload:['reload',.8],arrowBody:['arrowBody'],arrowSand:['arrowSand'],swing:['swing',.6],swingHeavy:['swingHeavy',.7]};
+const KMAP={boneCrack:['boneCrack'],skullCrack:['skullCrack'],jubel:['jubel1'],boo:['boo1'],step:['step',.45],slash:['hitBlade'],heavy:['hitBlunt'],hit:['hitBlade'],backstab:['backstab'],sever:['sever'],stick:['hitStab'],lodge:['arrowShield'],block:['bk_schild'],armorhit:['armorHit'],parry:['bk_klinge'],fall:['fall'],rise:['rise',.8],sand:['sand'],land:['land'],rush:['rush'],crowd:['crowd',.75],roar:['roar'],gong:['gong'],win:['win'],mercy:['mercy'],verdictDeath:['verdictDeath'],die:['die'],gold:['coin'],coin:['coin'],coins:['coin'],throw:['throw'],net:['net'],bow:['bow'],crossbow:['crossbow'],reload:['reload',.8],arrowBody:['arrowBody'],arrowSand:['arrowSand'],swing:['swing',.6],swingHeavy:['swingHeavy',.7]};
 // Publikum bei der Vorstellung: 'applause' = dezentes Klatschen in Schleife (Veteranen), 'laugh' = Gelächter (Trottel), null = Ruhe.
 let moodLoop=null,moodTimer=0;
 // 'boo' = kurz buhen (schwacher Kämpfer), 'booLong' = buhen bis zur Entscheidung, 'clap' = Klatschen für ein paar Sekunden
@@ -90,7 +90,7 @@ const VAR={pain:'pain01 pain02 pain03 pain04 pain05 pain06 pain07 pain08 pain09 
  cheer:['cheer1','cheer2','cheer3','cheer4','crowd'],laugh:['laugh1','laugh2','laugh3','laugh4','laugh5'],jubel:['jubel1','jubel2','jubel3'],ooh:['ooh1','ooh2','ooh3','roar'],boo:['boo1','boo2'],warcry:['warcry1','warcry2','warcry3','warcry4']};
 const lastVar={};function variant(g){const L=VAR[g].filter(k=>window.KampfSound?.DEF?.[k]);if(!L.length)return null;let k;do{k=L[Math.floor(Math.random()*L.length)];}while(L.length>1&&k===lastVar[g]);lastVar[g]=k;return k;}
 // Publikumsklänge gehen direkt auf fxBus, alles von den Kämpfern über fightBus (Entfernung/Hall)
-// Aufprall (Treffer, Blocks, Paraden, Knochenknacken) bleibt in der Arena gut hörbar: fast direkt, wenig Hall, nicht leiser bei Jubel
+// Aufprall (Treffer, Blocks, Paraden, Knochenknacken) bleibt in der Arena gut hörbar: direkt und trocken (kein Arenahall, sonst klingen die kurzen bk_-Blocks wieder lang nach), nicht leiser bei Jubel
 const impactKey=k=>/^(hit|backstab|sever|boneCrack|skullCrack|block|parry|armorHit|arrowBody|arrowShield|bk_|tr_|box)/.test(k);
 const crowdKey=k=>/^(cheer|jubel|ooh|boo|laugh|applause|crowd|roar|gong|win|mercy|verdictDeath|coin|partyClap)/.test(k);
 const heavyKey=k=>/^(cheer|jubel|ooh|boo|warcry|laugh|applause|crowd|roar|gong|win|mercy|verdictDeath)/.test(k);

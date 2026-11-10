@@ -13,14 +13,14 @@
    Einstellbar im Toneditor (kampfsound-editor.html, Abschnitt „Zuschauer“), gespeichert unter localStorage „mg-zuschauer-v1“. */
 (()=>{
 const W=window,KEY='mg-zuschauer-v1';
-const DEF={vol:1,murmur:.6,roar:.85,claps:.75,calls:.7,whistles:.45,stomps:.55,callRate:1,cheerLen:1,hero:1,fightDry:.5,fightWet:.34,fightTone:3200,fightDuck:.4,impactDry:1,impactWet:.22,swells:.8,variety:1};
+const DEF={vol:1,murmur:.6,roar:.85,claps:.75,calls:.7,whistles:.45,stomps:.55,callRate:1,cheerLen:1,hero:1,fightDry:.5,fightWet:.34,fightTone:3200,fightDuck:.4,impactDry:1,impactWet:0,swells:.8,variety:1};
 const FIELDS=[['vol','Publikum gesamt',0,2,.01],['murmur','Murmeln',0,2,.01],['roar','Brüllen/Jubel',0,2,.01],['claps','Klatschen',0,2,.01],['calls','Rufe (Namen)',0,2,.01],
  ['whistles','Pfiffe',0,2,.01],['stomps','Stampfen',0,2,.01],['callRate','Rufe Häufigkeit',.2,3,.05],['cheerLen','Anfeuern Dauer',.3,3,.05],['hero','Helden extra',0,3,.05],
  ['fightDry','Kämpfer direkt',0,1.2,.01],['fightWet','Kämpfer Hall',0,1.2,.01],['fightTone','Kämpfer dumpf (Hz)',600,20000,50],['fightDuck','Kämpfer leiser bei Jubel',0,1,.01],
- ['impactDry','Block/Knacken/Treffer direkt',0,1.5,.01],['impactWet','Block/Knacken Hall',0,1,.01],['swells','Ooh/Aah/Uuh der Menge',0,2,.01],['variety','Abwechslung',0,2,.05]];
+ ['impactDry','Block/Knacken/Treffer direkt',0,1.5,.01],['impactWet','Block/Knacken Hall (0 = trocken wie bisher)',0,1,.01],['swells','Ooh/Aah/Uuh der Menge',0,2,.01],['variety','Abwechslung',0,2,.05]];
 let S=load();
-function load(){const o={...DEF};try{const s=JSON.parse(W.localStorage?.getItem(KEY)||'{}');for(const k in DEF)if(typeof s[k]==='number'&&isFinite(s[k]))o[k]=s[k];}catch{}return o;}
-function save(p){for(const k in p)if(k in DEF&&isFinite(+p[k]))S[k]=+p[k];try{W.localStorage?.setItem(KEY,JSON.stringify(S));}catch{}}
+function load(){const o={...DEF};try{const s=JSON.parse(W.localStorage?.getItem(KEY)||'{}');if(!(s.v>=2))delete s.impactWet;for(const k in DEF)if(typeof s[k]==='number'&&isFinite(s[k]))o[k]=s[k];}catch{}return o;}
+function save(p){for(const k in p)if(k in DEF&&isFinite(+p[k]))S[k]=+p[k];try{W.localStorage?.setItem(KEY,JSON.stringify({...S,v:2}));}catch{}}
 function reset(){S={...DEF};try{W.localStorage?.removeItem(KEY);}catch{}}
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),R=Math.random,pick=a=>a[Math.floor(R()*a.length)];
 function rng(seed){let s=seed>>>0||1;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
