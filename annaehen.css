@@ -1,0 +1,29 @@
+/* Glieder annähen beim Medicus (10.11.) – nutzt die Grundformen des Behandlungstischs (doktor.css) */
+.gr-win .dok-stage{position:relative}
+.gr-skip{position:absolute;right:6px;top:6px;opacity:.85}
+.gr-sec{border:1px dashed #ffffff33;padding:8px;background:#111a16}
+.gr-sec[hidden]{display:none}
+.gr-sec h3{margin:0 0 6px;font-size:13px;letter-spacing:.08em;color:#f4d37a}
+.gr-sec h3 small{font-size:10px;letter-spacing:0;color:#c9c2ad;font-weight:normal;margin-left:6px}
+.gr-sec .bad{color:#f29b83}.gr-sec .ok{color:#9fd48a}
+.gr-men .dok-man span{display:flex;gap:3px;align-items:center}
+.gr-pieces{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:5px}
+.gr-piece{display:grid;gap:1px;text-align:left;padding:6px 8px;background:#1f2b26;border:2px solid #3c4a42;color:#e8dcc0;font-family:inherit;font-size:12px;cursor:pointer}
+.gr-piece small{font-size:10.5px;opacity:.75}.gr-piece.sel{border-color:#f4d37a;background:#2b2a1c}.gr-piece:disabled{opacity:.5;cursor:default}
+.gr-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:12px}
+.gr-head small{opacity:.8}
+.gr-head select{font-family:inherit;background:#1f2b26;color:#e8dcc0;border:1px solid #596452;padding:3px;margin-left:4px}
+.gr-donors{display:grid;gap:5px}
+.gr-don{display:grid;grid-template-columns:40px 1fr 1.25fr;gap:4px 10px;align-items:center;text-align:left;padding:5px 8px;background:#1f2b26;border:2px solid #3c4a42;color:#e8dcc0;font-family:inherit;font-size:12px;cursor:pointer}
+.gr-don canvas{width:40px;height:50px;image-rendering:pixelated;background:#202d2f}
+.gr-don small{display:block;font-size:10.5px;opacity:.85;line-height:1.35}
+.gr-don i{font-style:normal}
+.gr-don.sel{border-color:#f4d37a;background:#2b2a1c}.gr-don:disabled{opacity:.5;cursor:default}
+.gr-dn b{display:inline-flex;gap:3px;align-items:center}
+.gr-lv{font-size:13px}.gr-lv.hi{color:#9fd48a}.gr-lv.lo{color:#f29b83}
+.gr-go{margin-top:8px}
+.gr-piece:focus-visible,.gr-don:focus-visible{outline:2px solid #f4d37a;outline-offset:1px}
+.gr-rules{opacity:.7;line-height:1.45}
+.gr-parts span{display:block}
+@media (max-width:520px){.gr-don{grid-template-columns:40px 1fr}.gr-dv{grid-column:1/-1}}
+.gr-parts b{color:#17201c}.gr-parts i{color:#8a2a24}

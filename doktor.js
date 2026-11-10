@@ -508,7 +508,7 @@ function chronicHTML(g,busy,inBed,last){const list=chronicParts(g),lost=Object.e
  let h='<h3>DAUERHAFTE EINSCHRÄNKUNGEN · OPERIEREN</h3>';
  if(!list.length&&!lost.length)h+='<p class="tiny">Keine dauerhaften Einschränkungen. Der Doktor ist enttäuscht.</p>';
  if(list.length)h+='<div class="dok-oplist">'+list.sort((a,b)=>b[1].chronic-a[1].chronic).map(([id,p])=>`<div class="dok-op"><span><b>${esc(M.partName?.(id)||id)}</b> · <span class="bad">Dauerschaden −${fmt1(p.chronic)} %</span></span><button class="btn small primary" type="button" data-dok="op:${id}"${busy||inBed?' disabled':''}>🪚 OPERIEREN</button></div>`).join('')+'</div>';
- if(lost.length)h+=`<p class="tiny">Verloren: ${lost.map(([id])=>esc(M.partName?.(id)||id)).join(', ')} · „Nachwachsen lassen kann ich nichts. Annähen schon. Nur nicht an ihn.“</p>`;
+ if(lost.length)h+=`<p class="tiny">Verloren: ${lost.map(([id])=>esc(M.partName?.(id)||id)).join(', ')} · „Nachwachsen lassen kann ich nichts. Annähen schon.“${M.graft&&M.graft.missingPieces(g).length?` <button class="btn small" type="button" data-dok="graft:${g.id}"${busy?' disabled':''}>🧵 ANNÄHEN</button>`:''}</p>`;
  if(list.length)h+=`<p class="dok-odds"><b class="ok">${Math.round(OP.ok*100)} %</b> gelingt <span>· Dauerschaden sinkt um 40–100 %</span><br><b>${Math.round(OP.same*100)} %</b> nichts passiert <span>· außer Schmerzen</span><br><b class="bad">${Math.round((1-OP.ok-OP.same)*100)} %</b> verpfuscht <span>· Dauerschaden steigt (höchstens ${OP.max} %), Narbe</span><br><b>Danach</b> zehn Tage Krankenbett${inBed?' · <span class="bad">liegt gerade noch im Bett</span>':''}</p>`;
  if(last&&last.g===g){const r=last.r,nm=esc(M.partName?.(r.id)||r.id);h+=`<div class="dok-result ${r.kind==='worse'?'fail':'ok'}"><h4${r.kind==='worse'?' class="bad"':''}>${r.kind==='ok'?'OPERATION GEGLÜCKT':r.kind==='same'?'OPERATION · NICHTS GEWONNEN':'OPERATION VERPFUSCHT'} · ${esc(g.name)}</h4><p><b>${nm}</b>: Dauerschaden <b>−${fmt1(r.old)} % → −${fmt1(r.nv)} %</b>. Zehn Tage Krankenbett.</p></div>`;}
  return h;}
@@ -566,6 +566,7 @@ function chairClick(cmd,arg){const C=chair;if(!C)return;if(cmd==='sort'){if(!M.s
  if(cmd==='days'){for(let i=0;i<RULE.days;i++)M.advanceDay?.();M.ui.close?.();M.ui.render?.();C.line='Zehn Tage später. Alle Verbände ab. Die Narben bleiben.';renderChair();return;}
  if(cmd==='new'){const rng=S.rng,g=M.makeGladiator(0);S.rng=rng;S.roster.push(g);C.g=g;C.key=lowKey(g);C.line='Frische Ware! Und so ein unberührter Schädel …';C.P=null;$('dokResult').hidden=true;renderChair();return;}
  if(C.P&&!C.P.done)return;
+ if(cmd==='graft'){closeChair();M.graft?.open(arg);return;}
  if(cmd==='op'){const g=C.g;if(bedDays(g)){M.ui.notify?.('Der liegt noch im Krankenbett.');return;}const name=M.partName?.(arg)||arg,force=C.force==='ok'?'ok':C.force==='fail'?'worse':null,r=operate(g,arg,force);if(!r)return;
   C.op={g,r};C.line=pick(SAY.op[r.kind]).replace(/\{p\}/g,name);C.lineT=0;M.sound?.(r.kind==='worse'?'heavy':'block');if(r.kind!=='ok')M.voice?.('pain',(M.voicePitch?.(g)??1),true);renderChair();$('dokChronic')?.scrollIntoView?.({block:'nearest',behavior:'smooth'});return;}
  if(cmd==='man'){const g=S.roster.find(x=>x.id===arg);if(!g)return;C.g=g;C.op=null;C.from=null;C.key=lowKey(g);C.aim=1;C.P=null;$('dokResult').hidden=true;C.line=bedDays(g)?pick(SAY.bed):g.dokCross?'Den hatte ich schon. Er winkt mir immer zu. Beiden von mir.':'Ah, '+first(g)+'! Setz dich. Das Blut auf dem Polster ist schon trocken.';renderChair();return;}
@@ -850,14 +851,14 @@ let bypass=false;
 const ds=()=>S.doktor??={stage:'',armed:false};
 const CHOICE_LINES=['Willkommen! Wer kommt zuerst dran? Und wer zuletzt?','Betten oder Stuhl? Die Betten sind bequemer. Der Stuhl ist lustiger.','Schwester Valeria hat frisch bezogen. Die Flecken gehen nicht mehr raus, aber sie sind trocken.','Heute im Angebot: ein Schlag, zwei Möglichkeiten.'];
 function choice(){M.ui.modal('Medicus',`<div class="dok-choice"><canvas id="dokChoiceFace" width="320" height="200"></canvas><p class="medic-quip"><b>${esc(DOC_SHORT)}:</b> „${esc(pick(CHOICE_LINES))}“</p></div>`,
- `<button class="btn" data-action="dok:ward">🛏 KRANKENBETTEN · ÜBERSICHT</button><button class="btn primary" data-action="dok:chair">🔨 BEHANDLUNGSTISCH</button><button class="btn small" data-action="dok:story">🎬 DER DOKTOR · VORSTELLUNG NOCHMAL ANSEHEN</button>`);
+ `<button class="btn" data-action="dok:ward">🛏 KRANKENBETTEN · ÜBERSICHT</button><button class="btn primary" data-action="dok:chair">🔨 BEHANDLUNGSTISCH</button>${M.graft?'<button class="btn" data-action="dok:graft">🧵 GLIEDER ANNÄHEN</button>':''}<button class="btn small" data-action="dok:story">🎬 DER DOKTOR · VORSTELLUNG NOCHMAL ANSEHEN</button>`);
  let t=0;const tick=()=>{const c=$('dokChoiceFace');if(!c)return;t+=1/30;closeup(c.getContext('2d'),c.width,c.height,t,doctorBuf(t,{mood:Math.sin(t*.7)>.5?'roar':'grin',yaw:Math.sin(t*.8)*.25}));setTimeout(()=>requestAnimationFrame(tick),33);};requestAnimationFrame(tick);}
 // Während des Medicus-Kapitels bleibt der normale Ablauf; die Auswahl gibt es davor nicht und danach immer.
 const chapterIdle=()=>{const st=M.medic.state().stage||'';/* 'end' = Abschlusskarte des Kapitels; hängt sie ohne Karte fest (Thomas 10.11.), gilt das Kapitel als erledigt */return ['','done','skip','free'].includes(st)||st==='end'&&!document.querySelector('.medic-end');};
 /* Ein offener Kampf (auch im Hintergrund) sperrt die Auswahl; der Klick führt dann über manager.js zurück zum Kampf */
 const fighting=()=>!!S.battle;
 const baseClick=M.schoolClick;M.schoolClick=function(action){const a=String(action||''),[p,b]=a.split(':');
- if(p==='dok'){M.ui.close?.();if(b==='ward'){bypass=true;try{M.ui.click('nav:medic');}finally{bypass=false;}}else if(b==='chair')openChair();else if(b==='story'){if(!fighting())story(true);}return true;}
+ if(p==='dok'){M.ui.close?.();if(b==='ward'){bypass=true;try{M.ui.click('nav:medic');}finally{bypass=false;}}else if(b==='chair')openChair();else if(b==='graft')M.graft?.open();else if(b==='story'){if(!fighting())story(true);}return true;}
  if(a==='nav:medic'&&!bypass&&!fighting()&&M.ui.getPage?.()==='home'&&chapterIdle()&&!film&&!chair){choice();return true;}
  return baseClick?.apply(this,arguments);};
 
