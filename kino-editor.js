@@ -8,7 +8,7 @@
 (()=>{
 /* Spielstand schützen: nur die Kino-Einstellung darf geschrieben werden */
 try{const set=Storage.prototype.setItem,rem=Storage.prototype.removeItem;
- Storage.prototype.setItem=function(k,v){if(String(k).startsWith('mg-kino'))return set.call(this,k,v);};
+ Storage.prototype.setItem=function(k,v){if(String(k).startsWith('mg-kino')||k==='mg-tempo')return set.call(this,k,v);};
  Storage.prototype.removeItem=function(k){if(String(k).startsWith('mg-kino'))return rem.call(this,k);};}catch{}
 const $=id=>document.getElementById(id);
 const OPT={
@@ -45,6 +45,7 @@ function panel(){const P=M.kinoCam.presets,el=document.createElement('div');el.i
  <div class="ke-pre">${Object.entries(P).map(([k,p])=>`<button data-p="${k}">${p.name}</button>`).join('')}</div>
  ${Object.keys(OPT).map(sel).join('')}
  <label><span>Nähe</span><input type="range" data-k="fill" min="0.5" max="0.97" step="0.01"></label>
+ <label><span>Bewegungs&shy;tempo</span><input type="range" id="keTempo" min="0.7" max="1" step="0.05"></label><div style="text-align:right;margin-top:-4px"><small id="keTempoV"></small></div>
  <label><span>Kino-Ton</span><select id="keTon"><option value="1">An (Zeitlupe, Herzschlag, Dröhnen)</option><option value="0">Aus</option></select></label>
  <div class="ke-st" id="keSt">Testkampf wird vorbereitet …</div>
  <hr><label><span>Waffen</span><select id="keW">${WEAP.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label>
@@ -57,6 +58,7 @@ function panel(){const P=M.kinoCam.presets,el=document.createElement('div');el.i
  el.querySelector('h3').onclick=()=>{el.classList.toggle('zu');el.querySelector('.ke-tog').textContent=el.classList.contains('zu')?'aufklappen':'einklappen';};
  el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{setLook(P[b.dataset.p].look);});
  el.querySelectorAll('[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=i.value;setLook({...look,[k]:['others','slow','bars','fill'].includes(k)?+v:v});});
+ {const r=$('keTempo'),v=$('keTempoV'),show=()=>{v.textContent=Math.round(M.battleTempo*100)+' % (gilt auch im Spiel)';};r.value=String(M.battleTempo);show();r.oninput=()=>{M.setBattleTempo(+r.value);show();};}
  $('keTon').value=M.kinoCam.sound?'1':'0';$('keTon').onchange=()=>{M.kinoCam.sound=$('keTon').value==='1';};
  $('keNew').onclick=()=>newFight();$('kePause').onclick=()=>{const b=M.s.battle;if(b){b.paused=!b.paused;$('kePause').classList.toggle('on',b.paused);}};
  $('keSkip').onclick=()=>M.injuryShots.skip?.();
@@ -69,8 +71,10 @@ function setLook(v){look={...M.kinoCam.defaults,...v};M.kinoCam.setLook(look,fal
  document.querySelectorAll('#kinoEd [data-k]').forEach(i=>{i.value=String(look[i.dataset.k]);});
  const P=M.kinoCam.presets;document.querySelectorAll('#kinoEd [data-p]').forEach(b=>b.classList.toggle('on',JSON.stringify({...M.kinoCam.defaults,...P[b.dataset.p].look})===JSON.stringify(look)));}
 function newFight(){const S=M.s;try{if(S.battle)M.endBenchmark(-1,'Kino-Editor');}catch{}const n=+$('keN').value,w=$('keW').value,a=$('keA').value,mix=['gladius','axe','mace','spear','hammer','bow','greatsword','trident'];
- const pick=t=>w==='mix'?mix[(fights*3+t*5+Math.floor(Math.random()*8))%mix.length]:w;
- const err=M.startBenchmark({count:n,count0:n,count1:n,weapon0:pick(0),weapon1:pick(1),armor0:a,armor1:a,shield0:'auto',shield1:'auto',seed:(Math.random()*4294967295>>>0)||7});
+ /* jeder Kämpfer einzeln (Thomas 10.11.: „gemischt“ wurde nicht übernommen); die gespeicherten Vorgaben der Testkampf-Seite (Rüstung, Rollen, Einzelwerte) gelten hier nicht */
+ const off=Math.floor(Math.random()*mix.length),wOf=(t,i)=>w==='mix'?mix[(off+i*2+t*3)%mix.length]:w,shOf=wid=>['greatsword','doubleaxe','halberd','bow','spear','trident','hammer'].includes(wid)?'none':'roundshield';
+ const entries=[0,1].map(t=>Array.from({length:n},(_,i)=>{const wid=wOf(t,i);return {role:wid==='bow'?'Fernkämpfer':'Soldat',weapon:wid,armor:a,shield:shOf(wid),quality:2};}));
+ const err=M.startBenchmark({count:n,count0:n,count1:n,role0:'Soldat',role1:'Soldat',weapon0:wOf(0,0),weapon1:wOf(1,0),armor0:a,armor1:a,shield0:'auto',shield1:'auto',quality0:2,quality1:2,entries,gen:null,bodyHp:null,bodyHp0:null,bodyHp1:null,teamTactics:null,leaderIndices:null,scatter:false,varied:false,selfFight:null,fighters:null,seed:(Math.random()*4294967295>>>0)||7});
  if(err){$('keSt').textContent='Fehler: '+err;return;}fights++;M.ui.render();$('kePause').classList.remove('on');}
 function tick(){const S=M.s,b=S.battle,st=$('keSt');
  /* Ladebild „Weiter“ selbst drücken */const go=document.querySelector('.smith-loading-continue');if(go&&!go.hidden&&go.offsetParent)go.click();
