@@ -213,7 +213,7 @@ function lier(g,x,slot){return {id:'gr-'+slot+'-'+g.id,g,slot,team:0,x,y:AY,a:0,
 let W=null,raf=0,last=0;
 function open(gid){close();const v=document.createElement('div');v.className='dok-chair gr-win';v.setAttribute('role','dialog');v.setAttribute('aria-label','Glieder annähen');
  v.innerHTML=`<div class="dok-panel"><header><div><b>🧵 GLIEDER ANNÄHEN</b><small>${esc(DOC)} · ${esc(NURSE)} · Ersatzteillager</small></div><button class="btn small" type="button" data-gr="close" aria-label="Schließen">✕</button></header>
-<div class="dok-stage"><canvas id="grStage" width="660" height="420"></canvas><p class="dok-line" id="grLine"></p><button class="btn small gr-skip" type="button" data-gr="skip" hidden>FILM ÜBERSPRINGEN ›</button></div>
+<div class="dok-stage"><canvas id="grStage" width="660" height="420"></canvas><p class="dok-line" id="grLine"></p><button class="btn small gr-skip" type="button" data-gr="skip" hidden>FILM ÜBERSPRINGEN ›</button><small class="gr-tap" hidden>TIPPEN ▸</small></div>
 <section class="gr-sec gr-fix" id="grFix" aria-label="Schief angenäht · nachnähen" hidden></section>
 <section class="gr-sec" id="grRecs" aria-label="Amputierte"></section>
 <section class="gr-sec" id="grPieces" aria-label="Was soll dran?"></section>
@@ -227,12 +227,15 @@ function open(gid){close();const v=document.createElement('div');v.className='do
  if(pre){const ps=missingPieces(pre);if(ps.length===1)W.root=ps[0];}
  const fixPre=!pre&&crookedMen().find(g=>g.id===gid);W.fixFocus=fixPre?gid:null;
  say('d',fixPre?fill(pick(L.fixPick),vars(fixPre,null,crookedRoots(fixPre)[0])):list.length?(pre?fill(pick(ps0(pre).length>1?L.recMany:L.rec),vars(pre,null,W.root||ps0(pre)[0])):pick(L.intro)):crookedMen().length?pick(L.fixIntro):pick(L.none));
- v.addEventListener('click',onClick);v.addEventListener('change',e=>{if(e.target.id==='grSort'){W.sort=e.target.value;render();}});
+ v.addEventListener('click',onClick);
+ v.querySelector('.dok-stage')?.addEventListener('click',e=>{if(e.target.closest?.('[data-gr]')||!W?.op?.hold)return;W.op.ack=true;M.speakStop?.();});v.addEventListener('change',e=>{if(e.target.id==='grSort'){W.sort=e.target.value;render();}});
  render();loop();}
 const ps0=g=>missingPieces(g);
 function close(){if(W?.view)W.view.remove();W=null;}
 const recG=()=>W?.rec?S.roster.find(g=>g.id===W.rec):null,donG=()=>W?.don?S.roster.find(g=>g.id===W.don):null;
-function say(who,text,g){if(!W||!text)return;const name=who==='d'?DOC:who==='n'?NURSE:first(g);W.line={who,name,text};W.lineT=0;const el=$('grLine');if(el)el.innerHTML=`<b>${esc(name)}:</b> „${esc(text)}“`;
+// Im Film wartet die Uhr, bis die Zeile gelesen und fertig vorgelesen ist (wie in den anderen Filmen des Doktors); Tippen aufs Bild überspringt sie.
+const need=t=>Math.max(2.3,1.1+String(t).length*.062);
+function say(who,text,g){if(!W||!text)return;const name=who==='d'?DOC:who==='n'?NURSE:first(g);W.line={who,name,text};W.lineT=0;if(W.op&&!W.op.skipAll){W.op.hold={text,shown:0};W.op.ack=false;}const el=$('grLine');if(el)el.innerHTML=`<b>${esc(name)}:</b> „${esc(text)}“`;
  try{M.speakLine?.(text,who==='d'||who==='n'?who:null,who==='d'||who==='n'?null:g,{name});}catch{}}
 const portrait=(c,g)=>{try{M.renderPortrait?.(c,g,{unarmored:true});}catch{}};
 const tal=g=>{try{return M.talentTag?M.talentTag(g):'T'+Math.round(g.potential??0);}catch{return 'T'+Math.round(g.potential??0);}};
@@ -262,11 +265,11 @@ function render(){if(!W)return;const busy=!!W.op,rec=recG(),list=amputees();
    :`<p class="tiny">${esc(fill(pick(L.noDonor),vars(rec,null,W.root)))}</p>`)+(inBed.length?`<p class="tiny">${inBed.length} weitere ${inBed.length===1?'hätte':'hätten'} ${esc(P.akk)}, ${inBed.length===1?'liegt':'liegen'} aber im Krankenbett.</p>`:'')+
   (sel?`<div class="dok-go gr-go"><p class="dok-odds"><b>${esc(sel.d.name)}</b> verliert ${esc(P.akk)}. <b>${esc(rec.name)}</b> bekommt es mit Kraft ${Math.round(sel.v.s)}, Beweglichkeit ${Math.round(sel.v.a)}, Robustheit ${Math.round(sel.v.r)}.<br><b class="ok">${pct(sel.o.ok)}</b> wächst an <span>· Dauerschaden ${RULE.okMin}–${RULE.okMax} %</span><br><b>${pct(sel.o.cr)}</b> schief angenäht <span>· Dauerschaden ${RULE.crMin}–${RULE.crMax} %, Narbe</span><br><b class="bad">${pct(sel.o.ab)}</b> abgestoßen <span>· Stück verloren, ${esc(first(sel.d))} trotzdem ohne</span><br><b>Danach</b> beide ${RULE.days} Tage Krankenbett</p><button class="btn primary dok-hit" type="button" data-gr="go"${busy||inRecBed?' disabled':''}>${inRecBed?'LIEGT IM KRANKENBETT':busy?'…':'🪚 SÄGEN UND NÄHEN!'}</button></div>`:'');
   for(const c of dn.querySelectorAll('canvas[data-grface]')){const g=S.roster.find(y=>y.id===c.dataset.grface);if(g)portrait(c,g);}}}
- const sk=W.view.querySelector('.gr-skip');if(sk)sk.hidden=!W.op;
+ const sk=W.view.querySelector('.gr-skip');if(sk)sk.hidden=!W.op;const tp=W.view.querySelector('.gr-tap');if(tp)tp.hidden=!W.op;
  W.cast=null;}
 function onClick(e){const b=e.target.closest?.('[data-gr]');if(!b||!W)return;e.preventDefault();e.stopPropagation();const [cmd,arg]=b.dataset.gr.split(':');
  if(cmd==='close'){close();M.ui.render?.();return;}
- if(cmd==='skip'){if(W.op)W.op.t=Math.max(W.op.t,W.op.end-.01);return;}
+ if(cmd==='skip'){if(W.op){W.op.t=Math.max(W.op.t,W.op.end-.01);W.op.hold=null;W.op.skipAll=true;M.speakStop?.();}return;}
  if(W.op)return;
  if(cmd==='fix'){const [gid,root]=b.dataset.gr.slice(4).split('|'),g=S.roster.find(x=>x.id===gid);if(!g||!root)return;W.fixFocus=g.id;
   if(bed(g)){say('d',fill(pick(L.inBed),{...vars(g,null,root),n:bed(g)}));render();return;}if(gold()<RULE.fixCost){say('d',pick(L.fixPoor));M.ui.notify?.('Nachnähen kostet '+fmtG(RULE.fixCost)+' Gold.');render();return;}
@@ -298,12 +301,16 @@ function stepFix(dt){const op=W.op,t=op.t+=dt,g=op.recG,root=op.root,P=PIECES[ro
   if(t>5.4)once(op,'nurse',()=>say('n',pick(L.fixNurse)));}
  else{once(op,'done',()=>{op.flash=1;op.word={text:'GERADE!',t:0,c:'#9fd48a'};op.docPose='flail';M.sound?.('crowd');op.shake=1;A.rec.agony={pose:1,part:P.kind,rate:5,live:.6,lie:1.35};op.twitch=1.2;say('d',pick(L.fixDone));});
   if(t>8)once(op,'gold',()=>say('d',pick(L.fixGold)));if(t>9.4)once(op,'rec',()=>say('r',pick(L.fixRec),g));}
- for(const p of op.fx){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vz-=140*dt;p.z+=p.vz*dt;if(p.z<=0){p.z=0;p.vx=p.vy=p.vz=0;if(!p.landed){p.landed=1;if(op.stains.length<40)op.stains.push({x:p.x,y:p.y,w:2,h:1});}}}op.fx=op.fx.filter(p=>p.life>0);
- if(op.twitch>0){op.twitch-=dt;if(op.twitch<=0)A.rec.agony=null;}if(op.word)op.word.t+=dt;op.flash=Math.max(0,op.flash-dt*2.2);op.shake=Math.max(0,op.shake-dt*4);
+ tickFx(op,dt);
  if(t>=op.end){W.op=null;W.last=op.res;W.fixFocus=op.res.recId;showResult(op.res);render();}}
 const once=(op,k,fn)=>{if(op.once[k])return;op.once[k]=1;fn();};
 const blood=(op,x,y,n,sp=40)=>{for(let i=0;i<n;i++)op.fx.push({x,y,z:4+Math.random()*6,vx:(Math.random()-.5)*sp,vy:(Math.random()-.3)*sp*.4,vz:10+Math.random()*sp*.8,life:.6+Math.random()*.7,c:Math.random()<.6?'#a8372f':'#7a2420'});};
-function stepOp(dt){if(W.op?.fix)return stepFix(dt);const op=W.op,t=op.t+=dt,res=op.res,rec=op.recG,don=op.donG,root=op.root,v=vars(rec,don,root),P=PIECES[root],A=op.A,cd=cutPt(A.don,root),cr=cutPt(A.rec,root);
+function tickFx(op,dt){for(const p of op.fx){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vz-=140*dt;p.z+=p.vz*dt;if(p.z<=0){p.z=0;p.vx=p.vy=p.vz=0;if(!p.landed){p.landed=1;if(op.stains.length<40)op.stains.push({x:p.x,y:p.y,w:2,h:1});}}}op.fx=op.fx.filter(p=>p.life>0);
+ if(op.twitch>0){op.twitch-=dt;if(op.twitch<=0)op.A.rec.agony=null;}if(op.word)op.word.t+=dt;op.flash=Math.max(0,op.flash-dt*2.2);op.shake=Math.max(0,op.shake-dt*4);}
+// Ein Filmschritt: steht still, solange die gesprochene Zeile noch läuft (nicht angetippt)
+function filmStep(dt){const op=W.op,h=op.hold;if(h){h.shown+=dt;if(op.ack||(h.shown>=need(h.text)&&!M.speechHold?.({})))op.hold=null;}
+ if(op.hold){tickFx(op,dt);return;}if(op.fix)stepFix(dt);else stepOp(dt);}
+function stepOp(dt){const op=W.op,t=op.t+=dt,res=op.res,rec=op.recG,don=op.donG,root=op.root,v=vars(rec,don,root),P=PIECES[root],A=op.A,cd=cutPt(A.don,root),cr=cutPt(A.rec,root);
  // Betäubung: Schwester geht zum Spender und haut zu
  if(t<2.2){op.nurseX=lerp(248,TAB.don-20,ease(t/1.3));op.docX=lerp(132,cd.x+12,ease((t-.6)/1.4));op.docPose=t>.6&&t<2?'walk':'stand';once(op,'sed',()=>say('n',fill(pick(L.sedate),v)));
   if(t>1.55)once(op,'bonk',()=>{op.word={text:'BONK!',t:0,c:'#f4d37a'};M.sound?.('block');op.shake=.6;op.zz=1;});}
@@ -333,8 +340,7 @@ function stepOp(dt){if(W.op?.fix)return stepFix(dt);const op=W.op,t=op.t+=dt,res
   if(res.kind!=='ab'&&t>11.6)once(op,'recAfter',()=>say('r',fill(pick(L.okRec),v),rec));
   if(t>(res.kind==='ab'?14.6:13.8))once(op,'final',()=>say('d',fill(pick(res.kind==='ab'?L.ab:res.kind==='ok'?L.ok:L.crooked),v)));
   if(t>(res.kind==='ab'?15.9:15))once(op,'donAfter',()=>say('r',pick(L.donAfter),don));}
- for(const p of op.fx){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vz-=140*dt;p.z+=p.vz*dt;if(p.z<=0){p.z=0;p.vx=p.vy=p.vz=0;if(!p.landed){p.landed=1;if(op.stains.length<40)op.stains.push({x:p.x,y:p.y,w:2,h:1});}}}op.fx=op.fx.filter(p=>p.life>0);
- if(op.twitch>0){op.twitch-=dt;if(op.twitch<=0)A.rec.agony=null;}if(op.word)op.word.t+=dt;op.flash=Math.max(0,op.flash-dt*2.2);op.shake=Math.max(0,op.shake-dt*4);
+ tickFx(op,dt);
  if(t>=op.end)finish();}
 function finish(){const op=W.op;W.op=null;W.last=op.res;showResult(op.res);say('d',pick(L.donAfterDoc));const keep={rec:op.res.recId};
  W.rec=keep.rec;const rec=recG();const ps=rec?missingPieces(rec):[];if(!ps.length)W.rec=null;W.root=ps.includes(op.root)?op.root:ps[0]||null;W.don=null;render();}
@@ -365,14 +371,14 @@ function paint(){const c=$('grStage');if(!c||!W)return;const g=c.getContext('2d'
  // Gurte über den Patienten
  for(const a of list){R(q,a.x-38,a.y-3,2,9,'#3a2a1c');R(q,a.x-2,a.y-6,2,10,'#3a2a1c');}
  if(op?.fix){const A=op.A,cr=cutPt(A.rec,op.root);
-  if(op.t>1.8&&op.t<4.2)sawAt(q,cr.x+1,cr.y,op.t*22);
-  if(op.t>=4.8&&op.t<7.4)needleAt(q,cr.x+2,cr.y-1,op.t*9,{x:cr.x-2,y:cr.y});
+  if(op.t>1.8&&op.t<4.2)sawAt(q,cr.x+1,cr.y,t*22);
+  if(op.t>=4.8&&op.t<7.4)needleAt(q,cr.x+2,cr.y-1,t*9,{x:cr.x-2,y:cr.y});
   if(op.t>=4.8)for(const s of op.stitches){R(q,cr.x+s.dx,cr.y+s.dy,1,1,'#1a1010');R(q,cr.x+s.dx+1,cr.y+s.dy+1,1,1,'#c43a46');}
   for(const p of op.fx)R(q,p.x,p.y-p.z,p.z>0?2:1,p.z>0?2:1,p.c);
   if(op.zz>0){for(let i=0;i<3;i++){const u=(t*.6+i/3)%1;q.globalAlpha=1-u;R(q,A.rec.x-34+u*8,A.rec.y-16-u*16,3,1,'#e8dcc0');R(q,A.rec.x-33+u*8,A.rec.y-15-u*16,1,1,'#e8dcc0');R(q,A.rec.x-34+u*8,A.rec.y-14-u*16,3,1,'#e8dcc0');q.globalAlpha=1;}}}
  else if(op){const A=op.A,cd=cutPt(A.don,op.root),cr=cutPt(A.rec,op.root);
-  if(op.t>2.2&&op.t<4.85)sawAt(q,cd.x+1,cd.y,op.t*22);
-  if(op.t>=6.8&&op.t<10){needleAt(q,cr.x+2,cr.y-1,op.t*9,{x:cr.x-2,y:cr.y});}
+  if(op.t>2.2&&op.t<4.85)sawAt(q,cd.x+1,cd.y,t*22);
+  if(op.t>=6.8&&op.t<10){needleAt(q,cr.x+2,cr.y-1,t*9,{x:cr.x-2,y:cr.y});}
   if(op.t>=6.8){for(const s of op.stitches){R(q,cr.x+s.dx,cr.y+s.dy,1,1,'#1a1010');R(q,cr.x+s.dx+1,cr.y+s.dy+1,1,1,'#c43a46');}}
   for(const p of op.fx)R(q,p.x,p.y-p.z,p.z>0?2:1,p.z>0?2:1,p.c);
   if(op.zz>0){for(let i=0;i<3;i++){const u=(t*.6+i/3)%1;q.globalAlpha=1-u;R(q,A.don.x-34+u*8,A.don.y-16-u*16,3,1,'#e8dcc0');R(q,A.don.x-33+u*8,A.don.y-15-u*16,1,1,'#e8dcc0');R(q,A.don.x-34+u*8,A.don.y-14-u*16,3,1,'#e8dcc0');q.globalAlpha=1;}}
@@ -396,10 +402,10 @@ function word(g,c,op){const w=op.word;if(!w||w.t>1.6)return;const s=Math.max(26,
 // Ohne Operation: der gewählte Empfänger rechts, der gewählte Spender links (sonst leerer Tisch)
 function castIdle(){const rec=recG(),don=donG(),key=(rec?.id||'')+'|'+(don?.id||'')+'|'+(rec?JSON.stringify(rec.body&&Object.values(rec.body).map(p=>p.missing?1:0)):'')+'|'+(don?Object.values(don.body).map(p=>p.missing?1:0).join(''):'');
  if(!W.cast||W.cast.key!==key){W.cast={key,rec:rec?lier(vis(rec),TAB.rec+14,2):null,don:don?lier(vis(don),TAB.don+14,1):null};}return W.cast;}
-function loop(){if(raf)return;last=0;const run=now=>{if(!W){raf=0;return;}const dt=Math.min(.05,last?(now-last)/1000:0);last=now;W.t+=dt;if(W.op)stepOp(dt);else{W.lineT+=dt;if(W.lineT>11){const rec=recG(),don=donG();say('d',rec&&don?donorLine(rec,don,W.root):pick(L.idle));}}paint();raf=requestAnimationFrame(run);};raf=requestAnimationFrame(run);}
+function loop(){if(raf)return;last=0;const run=now=>{if(!W){raf=0;return;}const dt=Math.min(.05,last?(now-last)/1000:0);last=now;W.t+=dt;if(W.op)filmStep(dt);else{W.lineT+=dt;if(W.lineT>11){const rec=recG(),don=donG();say('d',rec&&don?donorLine(rec,don,W.root):pick(L.idle));}}paint();raf=requestAnimationFrame(run);};raf=requestAnimationFrame(run);}
 
 // ---------- 7 · Anschluss ----------
 M.graft={open,close,operate,fixOperate,crookedRoots,crookedMen,odds,limbValue,lenDiff,missingPieces,amputees,donors,donorOk,PIECES,RULE,L,get win(){return W;},
  // Nur für Tests: Ausgang erzwingen ('ok' | 'crooked' | 'ab'), Film vorspulen
- force(k){if(W)W.force=k||null;},skip(){if(W?.op)W.op.t=W.op.end-.01;}};
+ force(k){if(W)W.force=k||null;},skip(){if(W?.op){W.op.t=W.op.end-.01;W.op.hold=null;W.op.skipAll=true;}},tap(){if(W?.op?.hold){W.op.ack=true;M.speakStop?.();}}};
 })();

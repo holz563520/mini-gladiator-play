@@ -36,3 +36,7 @@
 .gr-fixman b{display:inline-flex;gap:3px;align-items:center}
 .gr-fixrow{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;justify-content:space-between;margin-top:4px}
 .gr-fixrow small{font-size:10.5px}
+/* Film wartet auf die Zeile; Tippen aufs Bild überspringt sie (10.11.) */
+.gr-win .dok-stage canvas{cursor:pointer}
+.gr-tap{position:absolute;right:8px;bottom:6px;font-size:10px;opacity:.7;pointer-events:none;color:#f4d37a}
+.gr-tap[hidden]{display:none}
