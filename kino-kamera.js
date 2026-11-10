@@ -90,7 +90,7 @@ let begin=function(o){const b=S.battle,a=b?.actors.find(x=>x.g===o.g),field=$('a
  const el=overlay();K.mode=r.width>=r.height*.8?'side':'stack';/* nebeneinander, solange das Feld nicht deutlich hochkant ist */el.className='on '+K.mode;place(r);
  const pane=el.querySelector('.ks-pane'),pw=K.mode==='side'?r.width*.52:r.width,ph=K.mode==='side'?r.height*.84:r.height*(.5+.06)-r.height*.08;pane.appendChild(c);c.width=660;c.height=Math.max(240,Math.round(660*ph/Math.max(1,pw)));
  const tc=a.team?'#f08a80':'#7cc4f0';el.style.setProperty('--tc',tc);el.style.setProperty('--fx',K.mode==='side'?'25%':'50%');el.style.setProperty('--fy',K.mode==='side'?'50%':'27%');el.querySelector('.ks-edge').style.background=tc;el.querySelector('.ks-edge').style.color=tc;edge(r);
- el.querySelector('.ks-name b').textContent=o.g.name||'';el.querySelector('.ks-name i').textContent=(o.kind==='death'?'† gefallen':String(o.title||'')).toUpperCase();
+ el.querySelector('.ks-name b').textContent=o.g.name||'';el.querySelector('.ks-name i').textContent=(o.kind==='death'?'† gefallen':(o.dead?'† ':'')+String(o.title||'')).toUpperCase();
  const fl=el.querySelector('.ks-flash');fl.classList.remove('go');void fl.offsetWidth;fl.classList.add('go');
  const v=M.arenaView;K.from=v?{x:v.cx,y:v.cy,zoom:v.scale/Math.min(v.width/v.W,v.height/v.H)}:null;K.a=a;K.o=o;K.set=subjectsLook(b,a,o);K.t0=performance.now();K.on=true;document.body.classList.add('kino-split');
  requestAnimationFrame(()=>{if(K.on)el.classList.add('in');});cancelAnimationFrame(K.raf);K.raf=requestAnimationFrame(watch);}
@@ -183,7 +183,7 @@ function filmPaint(){const r=FM.rects,src=$('arenaCanvas');if(!r||r.A.hide||!src
 function filmBegin(o,a){const field=$('arenaCanvas'),c=$('bhShot');const el=filmEl();el.className='on';const tc=a.team?'#f08a80':'#7cc4f0';el.style.setProperty('--tc',tc);FM.shotKey='';FM.phase=-1;
  FM.B.appendChild(c);c.hidden=false;FM.ca.style.filter=GRADE[look.grade]||'none';FM.B.style.filter=look.grade==='blass'?GRADE.blass:'';
  const by=K.set.find(x=>x!==a),nm=x=>'<span class="t'+(x.team?1:0)+'">'+String(x.g.name||'').replace(/[<&]/g,'')+'</span>';
- FM.who.innerHTML=(by?nm(by)+' <em>⟶</em> ':'')+nm(a)+(o.kind==='death'?' <em>† gefallen</em>':'');
+ FM.who.innerHTML=(by?nm(by)+' <em>⟶</em> ':'')+nm(a)+(o.kind==='death'||o.dead?' <em>† gefallen</em>':'');
  K.t0=performance.now();filmLayout(K.t0);kick(look.sync==='gemeinsam');if(look.sync==='gemeinsam')el.classList.add('beat');
  requestAnimationFrame(()=>{if(K.on)el.classList.add('in');});}
 function filmEnd(){const el=FM.el;if(el){el.className='';FM.ca&&(FM.ca.style.filter='');}FM.rects=null;}
@@ -224,7 +224,7 @@ const LAYER={through:[['hitStab',1.5,.6],['backstab',1.1,.7]],pierce:[['hitStab'
  fracture:[['boneCrack',1.4,.62]],badfracture:[['boneCrack',1.6,.58]],shatter:[['boneCrack',1.7,.55],['hitBlunt',1,.6]],pulp:[['hitBlunt',1.6,.55],['boneCrack',1.2,.6]],
  heart:[['hitStab',1.5,.6]],lung:[['hitStab',1.4,.62]],liver:[['hitStab',1.4,.62]],spleen:[['hitStab',1.4,.62]],kidney:[['backstab',1.3,.65]],gutted:[['hitBlade',1.5,.6],['sever',.8,.7]],
  cut:[['hitBlade',1.2,.68]],deepcut:[['hitBlade',1.5,.62]],gut:[['hitBlade',1.5,.62]],sinew:[['hitBlade',1.3,.65]]};
-function tonStart(o){if(T.on)tonStop();const X=A();if(!X)return;T.on=true;T.hit=false;T.n++;T.death=o?.kind==='death';T.kind=o?.kind;const t=X.ctx.currentTime;duck(X,true);
+function tonStart(o){if(T.on)tonStop();const X=A();if(!X)return;T.on=true;T.hit=false;T.n++;T.death=o?.kind==='death'||!!o?.dead;T.kind=o?.kind;const t=X.ctx.currentTime;duck(X,true);
  /* Sog in die Zeitlupe: Rauschen von tief nach hoch, darunter ein abfallender Ton */noise(X,t,.5,.22,'bandpass',260,2600,1.4,.3);osc(X,'sawtooth',220,70,t,.55,.035,.2);
  /* tiefes Dröhnen, hält bis zum Ende */const c=X.ctx,g=c.createGain(),f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=180;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.09,t+.6);for(const fr of [41,61.5]){const o2=c.createOscillator();o2.type='sine';o2.frequency.value=fr;o2.connect(f);o2.start(t);T.nodes.push(o2);}f.connect(g);g.connect(X.master);T.nodes.push({g});
  T.beat=t+.05;cancelAnimationFrame(T.raf);T.raf=requestAnimationFrame(tonTick);}
