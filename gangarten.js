@@ -386,7 +386,9 @@ const finGeo=a=>{const w=M.weapon(a),chop=CHOP.has(w.id)||!w.bladed;return {chop
 // so wird der Angreifer über dem Liegenden gezeichnet, die ganze Waffe ist bis zur Wunde sichtbar und endet genau dort (der Rest steckt im Körper)
 G.finSpot=(a,t,part)=>{const W=G.anchor(t,part||'chest');if(!W)return null;const o=finGeo(a),sc=a.g.height/180*1.14*cl(.85+a.g.weight/420,.98,1.18)*(a.g.statureWide||1);
  let face=Math.abs(W.x-t.x)<10?(a.x<=W.x?1:-1):(W.x>=t.x?1:-1);const px=o.reachX+(o.chop?Math.cos(o.an)*(o.tipL-o.pen):0);
- return {x:W.x-face*px*sc,y:t.y+4,face,W};};
+ /* Thomas 10.11.: mit nur 4 vor dem Liegenden standen die Füße auf dessen Körper, die Figur schien zu schweben – jetzt klar davor auf dem Boden */
+ return {x:W.x-face*px*sc,y:t.y+G.FIN_DY,face,W};};
+G.FIN_DY=14;
 function finStart(a){if(a.finisher&&a.finisher.started||a.technique!=='groundFinish')return;const t=M.s.battle.actors.find(x=>x.id===a.target);a.finCount=(a.finCount||0)+1;a.finisher={target:a.target,started:true,part:a.finisher?.part||(t?pickPart(a,t):null)};
  const sp=t&&G.finSpot(a,t,a.finisher.part),d=sp?Math.hypot(sp.x-a.x,sp.y-a.y):0;a.wind*=P.finWind;a.windMax*=P.finWind;if(d>6){const add=Math.min(1.2,d/150);a.wind+=add;a.windMax+=add;}
  a.shoutTimer=Math.max(a.shoutTimer||0,1);M.voice?.('battlecry',pitch(a),true);M.floater?.(a.x,a.y-66,cryText(a),'#ff8a5a');ev('finStart',a,{part:a.finisher.part});}
