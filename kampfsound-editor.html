@@ -165,7 +165,7 @@ function boot(){if(ctx){if(ctx.state==='suspended')ctx.resume();return;}const AC
  eng=Z.create(ctx,fx,{duck:()=>performance.now()<mod});eng.prepGeneric();eng.setFighters(FIG,true);}
 const IMP=/^(hit|backstab|sever|boneCrack|skullCrack|block|parry|armorHit|arrowBody|arrowShield|bk_|tr_)/;
 function fight(k,vol=1,pitch=1){if(!$('zsFight').checked||!K?.DEF?.[k])return;if(/^(bk_|block|parry)/.test(k))eng.notify('block');else if(/Crack$/.test(k))eng.notify('crack');else if(k==='fall')eng.notify('fall');try{K.play(ctx,IMP.test(k)?dist.impact:dist.input,k,{vol,pitch:pitch*(.95+R()*.1)});}catch{}}
-function startMusic(){if(!$('zsMusic').checked)return;if(!music){music=new Audio();music.loop=true;music.src='music/sanguis-et-gloria.'+(music.canPlayType('audio/webm; codecs="opus"')?'webm':'m4a');}music.volume=.42;music.play().catch(()=>{});}
+function startMusic(){if(!$('zsMusic').checked)return;if(!music){music=new Audio();music.loop=true;music.src='music/medieval-techno.mp3';}music.volume=.42;music.play().catch(()=>{});}
 function run(){boot();eng.setActive(true);startMusic();clearInterval(iv);iv=setInterval(loop,100);eng.event('start');clearTimeout(sim);simT=0;step();}
 function stop(){clearInterval(iv);iv=0;clearTimeout(sim);sim=0;eng?.setActive(false);music?.pause();$('zsE').style.width='0';}
 // Ein Schlagabtausch alle 0,3–0,9 s; ab und zu Verletzung, selten Niederschlag/Tötung/Glied ab
