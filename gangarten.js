@@ -123,7 +123,9 @@ G.pierceStep=(a,dt)=>{const f=a.pierceContact;if(f?.grab){const b=M.s.battle.act
 G.pierceBlood=(a,b,f,k,dt,dir)=>{const cp=M.contactAnchor(b,f.part),tip=a.weaponTipX!=null?{x:a.weaponTipX,y:a.weaponTipY}:{x:cp.x+Math.cos(dir)*12,y:cp.y};
  if(!f.spray&&k>.22){f.spray=true;M.emit?.(cp.x-Math.cos(dir)*3,cp.y,8,'#9d2f2a',45);if(f.exit){M.emit?.(tip.x,tip.y,22,'#aa3c36',120);}M.shake=Math.max(M.shake||0,4);}
  if(k>.3&&k<.85&&M.rng()<dt*(f.exit?14:6)){const p=f.exit?tip:cp;M.emit?.(p.x,p.y+1,1,'#8f2a24',18);}
- if(f.left<=dt*1.5&&!f.out){f.out=true;for(const m of b.g.gaitMarks||[])if(m.lx!=null)m.fixed=true;M.emit?.(cp.x,cp.y,16,'#aa3c36',90);if(f.exit)M.emit?.(cp.x+Math.cos(dir)*10,cp.y,10,'#9d2f2a',70);M.sound?.('stick');}};
+ if(f.left<=dt*1.5&&!f.out)G.pierceOut(a,b,f,cp,dir);};
+// Herausreißen: Wunden bleiben fest an der Stelle, Blutschwall. Auch wenn der Durchstich vorzeitig endet (Getroffener stürzt, kniet, stirbt)
+G.pierceOut=(a,b,f,cp,dir)=>{if(!f||f.out||!b?.g)return;f.out=true;for(const m of b.g.gaitMarks||[])if(m.lx!=null)m.fixed=true;cp=cp||M.contactAnchor?.(b,f.part);if(dir==null)dir=Math.atan2(b.y-a.y,b.x-a.x);if(cp){M.emit?.(cp.x,cp.y,16,'#aa3c36',90);if(f.exit)M.emit?.(cp.x+Math.cos(dir)*10,cp.y,10,'#9d2f2a',70);}M.sound?.('stick');};
 // Durchstich auf der kleinen Figur: keine eigene Spitze – die echte Waffe des Angreifers wird tief genug hineingestoßen und
 // der Angreifer hinter dem Getroffenen gezeichnet; so verschwindet die Klinge im Körper und tritt hinten im selben Winkel aus.
 // Wie tief, hängt von der Waffe ab: Speer, Wurfspeer, Dreizack und Schwerter gehen durch, der Dolch steckt bis zum Heft,
@@ -247,7 +249,7 @@ function drawMarks(a,P,layer){if(a.g.gaitMarks?.length&&a.g._gaitPruned!==(M.s.b
 G.bodyLayer=(a,P)=>{if(G.active&&!P.portrait&&a?.g)drawMarks(a,P,'body');};G.limbLayer=(a,P)=>{if(G.active&&!P.portrait&&a?.g)drawMarks(a,P,P.layer);};
 // geblockter Ansturm: mit voller Wucht in die Deckung – kann trotzdem umwerfen (60 % der Chance), sonst zurückgestoßen
 G.blocked=ev=>{if(ev?.kind==='block'&&ev.att?.rushHit?.kind==='charge')G.ram(ev.att,ev.def,0,.6);};
-{const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{/* für die Nahaufnahme: von welcher Seite, womit, wie getroffen (nur Darstellung) */if(G.active&&a&&b&&!p)b._lastHit={ax:a.x,bx:b.x,tech:a.swingKind||a.technique,wid:w?.id,part,t:M.s.battle?.time||0,back:G.isBack(a,b)};const out=orig.call(R,a,b,d,p,w,part);if(G.trace&&!p)G.trace.hits++;if(G.active&&!p){if(!G.backRun(a,b,d,w,part)&&!G.thrust(a,b,d,w,part))G.special(a,b,d,w,part);G.ram(a,b,d);}return out;};R.__gait=true;}}
+{const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{/* für die Nahaufnahme: von welcher Seite, womit, wie getroffen (nur Darstellung) */if(G.active&&a&&b&&!p)b._lastHit={ax:a.x,bx:b.x,tech:a.swingKind||a.technique,wid:w?.id,part,t:M.s.battle?.time||0,back:G.isBack(a,b)};const out=orig.call(R,a,b,d,p,w,part);if(G.trace&&!p)G.trace.hits++;if(G.active&&!p){let pierced=false;if(!G.backRun(a,b,d,w,part)&&!(pierced=!!G.thrust(a,b,d,w,part)))G.special(a,b,d,w,part);/* wer gerade durchbohrt wird, hängt auf der Waffe – kein Umrennen im selben Treffer */if(!pierced)G.ram(a,b,d);}return out;};R.__gait=true;}}
 
 
 // --------------------------------------------------------------- Erlernbare Sonderattacken (Wunsch Thomas 10.11.)

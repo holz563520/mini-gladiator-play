@@ -361,7 +361,7 @@ function tryPiercingContact(a,b,id,w,damage,priorHP,armor){
 function stepPiercingContact(a,dt){
  const f=a.pierceContact;if(!f)return false;
  const b=actorById(f.target);
- if(!b||a.down||a.g.dead||a.stun>0||a.stagger>0||a.kneeTimer>0||a.fallTimer>0||weapon(a).item?.id!==f.weaponId||dist(a,b)>100){a.pierceContact=null;return false;}
+ if(!b||a.down||a.g.dead||a.stun>0||a.stagger>0||a.kneeTimer>0||a.fallTimer>0||weapon(a).item?.id!==f.weaponId||dist(a,b)>100||f.through&&(b.down||b.g.dead||b.fallTimer>0||b.kneeTimer>0)){/* Durchstich im Stehen: stürzt, kniet oder stirbt der Getroffene, wird die Waffe herausgerissen (sonst stünde sie neben dem liegenden Körper in der Luft) */if(f.through&&b)M.gait?.pierceOut?.(a,b,f);a.pierceContact=null;if(a.state==='piercing')a.state='guard';return false;}
  f.left-=dt;a.moveSpeed=0;a.state='piercing';a.contactPoint=contactAnchor(b,f.part);a.a=angle(a,b);
  if(f.left<=0){a.pierceContact=null;a.state='guard';}return true;
 }
