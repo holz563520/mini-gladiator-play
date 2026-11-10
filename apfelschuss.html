@@ -25,6 +25,13 @@ input[type=range]{accent-color:#bf7357;padding:0;width:100%;min-height:34px}
 .picks{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
 .pick{text-align:left;display:grid;grid-template-columns:104px 1fr;gap:10px;align-items:start;padding:10px;border:2px solid var(--line);background:var(--panel2);border-radius:8px;min-height:0}
 .pick.on{border-color:var(--gold);box-shadow:0 0 0 2px #e6b42a55}
+.kf-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px;padding:6px 8px;border:1px solid #ffffff1f;background:#0003;border-radius:6px;font-size:13px}
+.kf-t{font-weight:700;letter-spacing:.08em;opacity:.7;font-size:11px}
+.kf-sel{min-height:32px;padding:4px 6px;max-width:100%}
+.kf-flag{display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
+.kf-reset{min-height:30px;padding:2px 8px;color:#f29b83;border-color:#d5766866;background:none}
+.kf-n{margin-left:auto;opacity:.75;white-space:nowrap}
+@media (max-width:520px){.kf-sel{flex:1 1 45%}.kf-n{margin-left:0}}
 .pick.dead{opacity:.35;pointer-events:none}
 .pick canvas{width:104px;height:auto;background:#1b2426;border:1px solid var(--line);border-radius:6px;image-rendering:pixelated}
 .pick b{display:block;font-size:15px;color:#fff3d6}
@@ -73,14 +80,14 @@ body.ingame .testonly{display:none!important}.daydone{background:#2a1a10;border:
 <div class="card">
  <h2>1 · Fernkämpfer wählen</h2>
  <p class="hint" style="margin:0 0 8px">Wichtig fürs Treffen: <b>Präzision</b> und <b>Bogenfertigkeit</b> zählen am meisten, dazu Geschick, Willenskraft (Nerven), Balance (ruhige Hand) und Stärke (Zugkraft, flacherer Flug). Der <b>Schusswert</b> fasst sie zusammen.</p>
- <div class="picks" id="archers"></div>
+ <div id="kfA"></div><div class="picks" id="archers"></div>
  <div class="row testonly"><button id="newRoster">↻ Neue Kämpfer auswürfeln</button><span class="hint">(setzt auch Training und tote Rekruten zurück)</span></div>
 </div>
 
 <div class="card">
  <h2>2 · Rekrut als Zielscheibe</h2>
  <p class="hint" style="margin:0 0 8px">Ein besserer Rekrut bringt mehr Gold, aber ein Fehlschuss in den Kopf kostet mehr.</p>
- <div class="picks" id="recruits"></div>
+ <div id="kfR"></div><div class="picks" id="recruits"></div>
 </div>
 
 <div class="card">
@@ -208,7 +215,7 @@ function newRoster(){try{newRoster2();}catch(e){const el=document.getElementById
 function parentGame(){try{const P=window.parent;if(P&&P!==window&&P.MG&&P.MG.s&&Array.isArray(P.MG.s.roster))return P.MG;}catch(e){}return null;}
 function fromParent(){const PM=parentGame();if(!PM)return null;const cp=v=>JSON.parse(JSON.stringify(v));
  const clone=g=>{const c=cp(g),w=PM.gear(g,'weapon');c.enemyGear={weapon:w?cp(w):null,secondary:null,shield:null,armor:{}};c.equipment={weapon:null,secondary:null,shield:null,armor:{}};c.fromGame=true;return c;};
- const alive=PM.s.roster.filter(g=>!g.dead&&!g.smithDuty),ok=g=>g.role==='Fernkämpfer'&&['bow','crossbow'].includes(PM.gear(g,'weapon')?.def)&&PM.gear(g,'secondary')?.def==='dagger',ar=alive.filter(ok).map(clone),why=alive.filter(g=>!ok(g)&&g.role==='Fernkämpfer').map(g=>{const m=[];if(!['bow','crossbow'].includes(PM.gear(g,'weapon')?.def))m.push('keine Fernwaffe (Bogen/Armbrust)');if(PM.gear(g,'secondary')?.def!=='dagger')m.push('kein Dolch');return g.name+': '+m.join(' und ');}),rc=alive.filter(g=>g.role!=='Fernkämpfer'&&!g.appleProtected).slice(0,8).map(clone);
+ const alive=PM.s.roster.filter(g=>!g.dead&&!g.smithDuty),ok=g=>g.role==='Fernkämpfer'&&['bow','crossbow'].includes(PM.gear(g,'weapon')?.def)&&PM.gear(g,'secondary')?.def==='dagger',ar=alive.filter(ok).map(clone),why=alive.filter(g=>!ok(g)&&g.role==='Fernkämpfer').map(g=>{const m=[];if(!['bow','crossbow'].includes(PM.gear(g,'weapon')?.def))m.push('keine Fernwaffe (Bogen/Armbrust)');if(PM.gear(g,'secondary')?.def!=='dagger')m.push('kein Dolch');return g.name+': '+m.join(' und ');}),rc=alive.filter(g=>g.role!=='Fernkämpfer'&&!g.appleProtected).map(clone);
  if(!ar.length||!rc.length)return{none:true,why,noRecruit:!rc.length,noFk:!alive.some(g=>g.role==='Fernkämpfer')};return{ar,rc,lan:PM.s.lanista?.name||''};}
 // Im Spiel-Test: Ergebnis zurück in den echten Spielstand – Verletzungen und Tod des Rekruten, Preisgeld für den Lanista
 // Im Spiel: der Apfelschuss geht nur einmal am Tag (zählt ab dem ersten Pfeil)
@@ -233,10 +240,16 @@ function newRoster2(){const PG=fromParent();if(PG)document.body.classList.add('i
 const A=()=>archers.find(g=>g.id===selA),R=()=>recruits.find(g=>g.id===selR);
 
 function barsHtml(g){return ATTR.map(([k,l0])=>{const l=k==='bow'&&wKey(g)==='crossbow'?'Armbrustfertigkeit':l0;const v=val(g,k);return `<span>${l}</span><span class="b${k==='precision'||k==='bow'?' hi':''}"><i style="width:${clamp(v,0,100)}%"></i></span><span class="n">${nf(v,0)}</span>`;}).join('');}
-function render(){
- $('archers').innerHTML=archers.map(g=>`<button class="pick${g.id===selA?' on':''}" data-a="${g.id}"><canvas id="ta${g.id}"></canvas><div><b>${esc(g.name)}</b><small>Schusswert <b style="display:inline;color:var(--gold)">${nf(skill(g),1)}</b> · ${g.height} cm · ${isXB(g)?'Armbrust':'Bogen'}${M.drawWeight?' '+M.drawWeight(g.enemyGear?.weapon)+' Pfd.':''}${aimF(g)>1.01?' <span style="color:var(--red)">· zu schwer für seine Kraft (Zielen −'+Math.round((1-1/aimF(g))*100)+' %)</span>':''}</small><div class="bars">${barsHtml(g)}</div></div></button>`).join('');
- $('recruits').innerHTML=recruits.map(g=>`<button class="pick${g.id===selR?' on':''}${g.dead?' dead':''}" data-r="${g.id}"><canvas id="tr${g.id}"></canvas><div><b>${esc(g.name)}</b><small>${g.dead?'✝ tot':'Qualität: <b style="display:inline;color:var(--gold)">'+M.qualities[g.quality]+'</b>'}</small><small>Wert ${M.price(g)} Gold</small>${injuryList(g).length?'<small style="color:var(--red)">verletzt: '+esc(injuryList(g).join(', '))+'</small>':''}</div></button>`).join('');
- for(const g of [...archers,...recruits]){const isA=archers.includes(g),c=$((isA?'ta':'tr')+g.id);if(c)try{c.width=160;c.height=104;M.faceShot.paint(c.getContext('2d'),160,104,{g,team:isA?0:1,mood:g.dead?'out':isA?'confident':'nervous',yaw:isA?.4:-.4,zoom:1.12,pale:g.dead?.6:0,dark:g.dead?.35:0},2);}catch(e){console.warn(e);}}
+// Filter (Wunsch Thomas 10.11.): alle Gladiatoren wählbar, Filterleiste des Spiels (Talent, Einordnung, Wuchs, Sortierung). Nur im Spiel.
+const KF_A={defSort:'shot',sorts:[{key:'shot',label:'Schusswert ↓',cmp:(a,b)=>skill(b)-skill(a)}]},KF_R={defSort:'value',sorts:[{key:'value',label:'Wert ↓ (teuerste zuerst)',cmp:(a,b)=>M.price(b)-M.price(a)},{key:'value+',label:'Wert ↑ (billigste zuerst)',cmp:(a,b)=>M.price(a)-M.price(b)}]};
+function kfList(scope,list,opts,sel,el){const KF=parentGame()?.kaderFilter,box=$(el);if(!KF){if(box)box.innerHTML='';return list;}let out=KF.apply(scope,list,opts);const on=list.find(g=>g.id===sel);if(on&&!out.includes(on))out=[on,...out];
+ if(box)box.innerHTML=KF.bar(scope,{...opts,total:list.length,shown:out.length})+(out.length?'':'<p class="hint">Niemand passt zum Filter.</p>');return out;}
+document.addEventListener('change',e=>{const el=e.target.closest&&e.target.closest('[data-kf]');const KF=parentGame()?.kaderFilter;if(!el||!KF)return;e.stopPropagation();KF.set(el.dataset.kf,el.type==='checkbox'?el.checked:el.value);render();},true);
+document.addEventListener('click',e=>{const el=e.target.closest&&e.target.closest('[data-kfreset]');const KF=parentGame()?.kaderFilter;if(!el||!KF)return;e.preventDefault();e.stopPropagation();KF.reset(el.dataset.kfreset);render();},true);
+function render(){const shownA=kfList('apfelA',archers,KF_A,selA,'kfA'),shownR=kfList('apfelR',recruits,KF_R,selR,'kfR');
+ $('archers').innerHTML=shownA.map(g=>`<button class="pick${g.id===selA?' on':''}" data-a="${g.id}"><canvas id="ta${g.id}"></canvas><div><b>${esc(g.name)}</b><small>Schusswert <b style="display:inline;color:var(--gold)">${nf(skill(g),1)}</b> · ${g.height} cm · ${isXB(g)?'Armbrust':'Bogen'}${M.drawWeight?' '+M.drawWeight(g.enemyGear?.weapon)+' Pfd.':''}${aimF(g)>1.01?' <span style="color:var(--red)">· zu schwer für seine Kraft (Zielen −'+Math.round((1-1/aimF(g))*100)+' %)</span>':''}</small><div class="bars">${barsHtml(g)}</div></div></button>`).join('');
+ $('recruits').innerHTML=shownR.map(g=>`<button class="pick${g.id===selR?' on':''}${g.dead?' dead':''}" data-r="${g.id}"><canvas id="tr${g.id}"></canvas><div><b>${esc(g.name)}</b><small>${g.dead?'✝ tot':'Qualität: <b style="display:inline;color:var(--gold)">'+M.qualities[g.quality]+'</b>'}</small><small>Wert ${M.price(g)} Gold</small>${injuryList(g).length?'<small style="color:var(--red)">verletzt: '+esc(injuryList(g).join(', '))+'</small>':''}</div></button>`).join('');
+ for(const g of [...shownA,...shownR]){const isA=archers.includes(g),c=$((isA?'ta':'tr')+g.id);if(c)try{c.width=160;c.height=104;M.faceShot.paint(c.getContext('2d'),160,104,{g,team:isA?0:1,mood:g.dead?'out':isA?'confident':'nervous',yaw:isA?.4:-.4,zoom:1.12,pale:g.dead?.6:0,dark:g.dead?.35:0},2);}catch(e){console.warn(e);}}
  refresh();wpnLabel();}
 function label(p){return p>=.9?'Kinderspiel':p>=.7?'Machbar':p>=.45?'Riskant':p>=.2?'Sehr riskant':p>=.05?'Wahnsinn':'Quasi unmöglich';}
 let ARROWS=1;

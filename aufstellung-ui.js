@@ -63,6 +63,13 @@ const repairList=()=>{const seen=new Set(),out=[];for(const x of lineup())if(!x.
 const repairPrice=()=>repairList().reduce((n,i)=>n+(M.repairCost?.(i)||0),0);
 function repair(){const items=repairList(),cost=repairPrice();if(!items.length)return toast('Alles Angelegte ist intakt.');if(GOLD()<cost)return toast('Zu wenig Gold ('+fmt(cost)+' nötig).');
  if(TEST)st.gold-=cost;else{S.gold-=cost;if(S.stats)S.stats.spent=(S.stats.spent||0)+cost;}for(const i of items)i.durability=i.maxDurability;try{if(!TEST)M.persist?.();}catch(e){}pc.clear();save();render();toast(items.length+' Gegenstände für '+fmt(cost)+' Gold repariert.');}
+// Filter-Einstellungen der Aufstellung: Einordnung haben eigene Knöpfe, Standard nach Kampfwert
+const AUF_F={noTag:true,defSort:'kw-',kw:g=>A.kw(g),flags:[{key:'fit',label:'nur einsatzbereit',pred:g=>fit(g).ok}]};
+M.kaderFilter?.on('auf',()=>{try{render();}catch(e){console.warn(e);}});
+// Alle angezeigten (Filter und Einordnung) einsatzbereiten Gladiatoren aufstellen, bis zur Höchstzahl
+function addAll(){const T=M.sortTag,sf=st.sortFilter||'all',KF=M.kaderFilter,base=alive().filter(g=>sf==='all'||!T||(sf==='none'?!T.get(g):T.get(g)===sf)),list=(KF?KF.apply('auf',base,AUF_F):base).filter(g=>!inL(g.id)&&fit(g).ok);
+ const max=wmode?WMAX:amode?amode.max:Infinity;let n=0;for(const g of list){if(st.lineup.length>=max)break;const s=auto(g.role);st.lineup.push({id:g.id,row:s.row,lane:s.lane});n++;}
+ save();render();toast(n?n+' '+(n===1?'Gladiator':'Gladiatoren')+' aufgestellt'+(list.length>n?' (Höchstzahl erreicht)':'')+'.':'Niemand mehr frei.');}
 function auto(role){const n=r=>st.lineup.filter(x=>G(x.id)?.role===r).length;
  return role==='Fernkämpfer'?{row:'hinten',lane:['mitte','oben','unten'][n(role)%3]}:role==='Assassine'?{row:'mitte',lane:n(role)%2?'unten':'oben'}:{row:'vorne',lane:['mitte','oben','unten'][n(role)%3]};}
 const lineup=()=>st.lineup.filter(x=>G(x.id)).map(x=>{const g=G(x.id);return {id:g.id,g,kw:A.kw(g),role:g.role,slot:{row:x.row,lane:x.lane}};});
@@ -101,7 +108,10 @@ function dogBox(){const BH=window.Begleithund,DG=window.DOG;if(TEST||wmode||!BH|
 function viewGroup(){
  const L=lineup(),sum=L.reduce((a,x)=>a+x.kw,0),fs=forms(),rc=repairPrice(),wsum=wmode?wmode.members.reduce((a,g)=>a+A.kw(g),0):0;
  /* Einordnung vom Medicus (sortierung.js): Kader danach anzeigen */const T=M.sortTag,sf=T&&st.sortFilter&&st.sortFilter!=='all'?st.sortFilter:'all',bySort=g=>sf==='all'||(sf==='none'?!T.get(g):T.get(g)===sf);
- const cols=ROLES.map(r=>{const list=alive().filter(g=>g.role===r&&bySort(g)).sort((a,b)=>A.kw(b)-A.kw(a));
+ /* Filter (Wunsch Thomas 10.11.): Talent, Wuchs, Sortierung aus kader-filter.js; Gladiatoren in der Aufstellung bleiben immer sichtbar */
+ const KF=M.kaderFilter,base=alive().filter(bySort),shown=KF?KF.apply('auf',base,AUF_F):[...base].sort((a,b)=>A.kw(b)-A.kw(a));for(const g of base)if(inL(g.id)&&!shown.includes(g))shown.push(g);
+ const addable=shown.filter(g=>!inL(g.id)&&fit(g).ok);
+ const cols=ROLES.map(r=>{const list=shown.filter(g=>g.role===r);
   return `<div class="a-col" data-r="${r}"><h3><span>${ICON[r]} ${PLURAL[r]}</span><span>${list.length}</span></h3><div class="a-list" data-roster>${list.map(g=>{const f=fit(g),cls=['a-card'];if(inL(g.id))cls.push('a-in');if(!f.ok)cls.push('a-out');if(HERO()===g.id)cls.push('a-hero');
    const sub=!f.ok?esc((f.causes||[])[0]||'nicht einsatzbereit'):(g.auf?.kills?g.auf.kills+' Kills · ':'')+(g.auf?.fights?g.auf.fights+' Kämpfe':'frisch');
    const hp=Math.round(Math.max(0,Math.min(100,(()=>{try{return M.health(g);}catch{return 100;}})())));
@@ -113,7 +123,7 @@ function viewGroup(){
  root.innerHTML=top(wmode?'HERUMTREIBER':amode?'PLÜNDERUNG':'AUFSTELLUNG','ARENA THEORY · TESTVERSION')+`<main>${wmode||amode?'':steps(0)}
  ${amode?`<section class="a-box"><div class="a-bh"><h2>${esc(amode.title||'Plünderung')}</h2><span>${esc(amode.sub||'')}</span></div>${amode.info?`<p class="a-hint">${amode.info}</p>`:''}<p class="a-hint">Stell ${amode.min||1} bis ${amode.max} Kämpfer auf. Das Raster ist eure Marschordnung: vorne geht voran, hinten bleibt zurück. Ab ${amode.leadMin} Kämpfern führt ein Anführer (★ wählt ihn).</p></section>`:''}
  ${wmode?`<section class="a-box"><div class="a-bh"><h2>Vor dem Tor: ${esc(wmode.leader.name)}</h2><span>${wmode.members.length} Herumtreiber · KW ${wsum}</span></div><div class="a-mine">${wmode.members.map(g=>`<span class="a-f">${por(g,40,45)}<small>${esc(g.role)} · ${A.kw(g)}</small></span>`).join('')}</div><p class="a-hint">Stell bis zu ${WMAX} Kämpfer auf – auch gegen eine kleine Gruppe. Keine Prämie: Wer gewinnt, nimmt alles, was die Herumtreiber tragen.</p></section>`:''}
- <section class="a-box"><div class="a-bh"><h2>Kader</h2><span>nach Kampfwert · ziehen oder antippen</span></div>${T?`<div class="a-sortbar">${[['all','Alle',''],...T.ORDER.map(k=>[k,T.KINDS[k].short,T.icon(k,14)]),['none','Ohne','']].map(([k,l,ic])=>{const n=alive().filter(g=>k==='all'||(k==='none'?!T.get(g):T.get(g)===k)).length;return `<button data-sortf="${k}" class="${sf===k?'a-on':''}" title="${k==='all'||k==='none'?'':esc(T.KINDS[k].tip)}">${ic}${l} <small>${n}</small></button>`;}).join('')}</div>`:''}<div class="a-cols">${cols}</div></section>
+ <section class="a-box"><div class="a-bh"><h2>Kader</h2><span>nach Kampfwert · ziehen oder antippen</span></div>${T?`<div class="a-sortbar">${[['all','Alle',''],...T.ORDER.map(k=>[k,T.KINDS[k].short,T.icon(k,14)]),['none','Ohne','']].map(([k,l,ic])=>{const n=alive().filter(g=>k==='all'||(k==='none'?!T.get(g):T.get(g)===k)).length;return `<button data-sortf="${k}" class="${sf===k?'a-on':''}" title="${k==='all'||k==='none'?'':esc(T.KINDS[k].tip)}">${ic}${l} <small>${n}</small></button>`;}).join('')}</div>`:''}${KF?KF.bar('auf',{...AUF_F,total:base.length,shown:shown.length}):''}<div class="a-acts a-allacts"><button data-act="addall" ${addable.length?'':'disabled'} title="Alle angezeigten, einsatzbereiten Gladiatoren aufstellen">＋ ALLE AUFSTELLEN${addable.length?' · '+addable.length:''}</button><button data-act="clearall" ${st.lineup.length?'':'disabled'}>✕ ALLE ABZIEHEN</button></div><div class="a-cols">${cols}</div></section>
  <section class="a-box"><div class="a-bh"><h2>Aufstellung</h2><span>${L.length} Kämpfer</span></div><div class="a-grid${selChip?' a-picking':''}">${grid}</div>
   <div class="a-sum">${L.length?`<span>Köpfe <b>${L.length}</b></span><span>KW-Summe <b>${sum}</b></span>${ROLES.map(r=>`<span>${ICON[r]} <b>${L.filter(x=>x.role===r).length}</b></span>`).join('')}<span>${HERO()?'★ <b>'+esc(G(HERO())?.name)+'</b>'+(amode?' führt':''):amode?(L.length>=amode.leadMin?'★ Anführer: bester Führungswert':'Anführer ab '+amode.leadMin+' Kämpfern'):'kein ★-Held'}</span>`:'<span>Zieh Kämpfer aus dem Kader auf ein Feld.</span>'}</div>
   <div class="a-forms">${Object.entries(FORMS).map(([k,[l,h]])=>`<span class="a-badge${fs.includes(k)?' a-on':''}" title="${esc(h)}">${l}</span>`).join('')}</div>
@@ -237,6 +247,8 @@ root.addEventListener('click',e=>{const t=e.target.closest('[data-act],[data-cel
  else if(a==='repair')repair();
  else if(a==='wfight')wfight();
  else if(a==='equip')equip();
+ else if(a==='addall')addAll();
+ else if(a==='clearall'){st.lineup=[];selChip=null;st.hero=null;save();render();}
  else if(a==='report'){close();try{M.ui.click('nav:report');}catch(e){}}
  else if(a==='classic')classic();
 });
