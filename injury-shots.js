@@ -606,7 +606,14 @@ const cfg={host:null,onShot:null,busy:null,benchmark:true,textScale:1,fallShots:
 const tap=()=>cfg.confirm&&!!cfg.host?.(),fallsOn=()=>cfg.fallShots&&!!cfg.host?.();
 let pend=[],seen=new Set(),seenBattle=null,arena=null,gap=0,keyIds=null,must=[];
 const watching=()=>{const b=S.battle;return typeof document!=='undefined'&&!!b&&(cfg.benchmark||(!b.benchmark&&!M.benchmarkActive))&&!b.result&&!b.finale&&!b.cinematic&&!b.paused&&document.getElementById('battleView')?.hidden===false;};
-function note(g,part,injury,attacker,weapon,extra){const b=S.battle;if(!b||(!cfg.benchmark&&(b.benchmark||M.benchmarkActive))||!g?.body?.[part]||g.id==='rex')return;let e=pend.find(x=>x.g===g&&x.part===part&&!x.collapse);if(!e){e={g,part,injury:null,attacker:null,weapon:null,time:b.time};pend.push(e);if(pend.length>24)pend.shift();}
+/* Hundebiss am Boden (Thomas 10.11.): der Hund beißt immer wieder zu – jede Verletzungsart je Opfer nur einmal zeigen, egal an welcher Stelle.
+   Laufen die Hunde-Nahaufnahmen (hund-shots.js, Arena mit Hund, Hundefang), zeigen nur diese den Biss, damit er nicht doppelt erscheint. */
+const DOGW=['Ansprung','Verbeißen','Biss','Beinbiss','Kehlbiss'];let dogSkip=null;
+function dogGround(g,attacker,weapon){const b=S.battle;if(!b?.hasDogs||!attacker||!DOGW.includes(weapon))return false;if(!b.actors.some(a=>a.dog&&a.g.name===attacker))return false;const v=b.actors.find(a=>a.g===g);if(!v||!(v.fallTimer>0||v.down||v.draggedBy||v.kneeTimer>0))return false;return window.DOG?.shots?.live?'skip':true;}
+const spot=e=>e.dogGround?'dog':e.part;
+function note(g,part,injury,attacker,weapon,extra){const b=S.battle;if(!b||(!cfg.benchmark&&(b.benchmark||M.benchmarkActive))||!g?.body?.[part]||g.id==='rex')return;
+ const dg=dogGround(g,attacker,weapon);if(dg==='skip'){dogSkip={g,part,t:b.time};return;}if(!attacker&&dogSkip&&dogSkip.g===g&&dogSkip.part===part&&dogSkip.t===b.time)return;
+ let e=pend.find(x=>x.g===g&&x.part===part&&!x.collapse);if(!e){e={g,part,injury:null,attacker:null,weapon:null,time:b.time};pend.push(e);if(pend.length>24)pend.shift();}if(dg)e.dogGround=true;
  if(injury&&(!e.injury||(RANK[kindOf(injury)]||0)>=(RANK[kindOf(e.injury)]||0)))e.injury=injury;if(attacker)e.attacker=attacker;if(weapon)e.weapon=weapon;if(extra)Object.assign(e,extra);}
 const wrap=(name,fn)=>{const base=M[name];if(typeof base!=='function')return;M[name]=function(){const r=base.apply(this,arguments);try{fn(...arguments);}catch{}return r;};};
 wrap('recordWound',(g,id,injury,attacker,weapon)=>note(g,id,injury,attacker,weapon));
@@ -622,10 +629,10 @@ function pick(dt,busy){const b=S.battle;if(seenBattle!==b.id){seenBattle=b.id;se
   const f=must.find(e=>e.death)||must[0];if(f){must=must.filter(x=>x!==f);pend=pend.filter(e=>e.g!==f.g);return {e:{...f,part:f.death?'head':'chest'},k:f.death?'death':'collapse',inj:'',key:'',live:false,fall:true};}}
  if(!pend.length)return null;
  if(level()==='all'){/* schwere halten den Kampf an; leichte laufen nebenher in der Tafel, solange sie frei ist */pend=pend.filter(e=>!e.g.dead&&wanted(e.g));const make=(e,live)=>{const p=e.g.body[e.part],inj=e.injury||p.injury||'Schnittwunde';return {e,k:e.collapse?'collapse':kindOf(inj),inj,key:'',live};};
-  const keyOf=e=>{const p=e.g.body[e.part];return e.g.id+'|'+e.part+'|'+(e.collapse?'collapse':kindOf(e.injury||p.injury||''))+(e.lasting?'|L':'');};
-  /* anhalten höchstens alle GAP Sekunden und je Kämpfer, Stelle und Art einmal; alles andere läuft nebenher */const hard=gap>0?null:pend.find(e=>scoreOf(e)>=3&&!seen.has(keyOf(e)));if(hard){seen.add(keyOf(hard));pend=pend.filter(e=>e!==hard);return make(hard,false);}if(tap()){/* jede gezeigte Verletzung hält an und wartet auf Antippen; leichte der Reihe nach */const one=gap>0?null:pend.shift();return one?make(one,false):null;}const soft=busy||!cfg.host?.()||cfg.busy?.()?null:pend[pend.length-1];pend=[];return soft?make(soft,true):null;}
+  const keyOf=e=>{const p=e.g.body[e.part];return e.g.id+'|'+spot(e)+'|'+(e.collapse?'collapse':kindOf(e.injury||p.injury||''))+(e.lasting?'|L':'');};
+  /* anhalten höchstens alle GAP Sekunden und je Kämpfer, Stelle und Art einmal; alles andere läuft nebenher */const hard=gap>0?null:pend.find(e=>scoreOf(e)>=3&&!seen.has(keyOf(e)));if(hard){seen.add(keyOf(hard));pend=pend.filter(e=>e!==hard);return make(hard,false);}pend=pend.filter(e=>!e.dogGround||!seen.has(keyOf(e)));if(tap()){/* jede gezeigte Verletzung hält an und wartet auf Antippen; leichte der Reihe nach */const one=gap>0?null:pend.shift();if(one?.dogGround)seen.add(keyOf(one));return one?make(one,false):null;}const soft=busy||!cfg.host?.()||cfg.busy?.()?null:pend[pend.length-1];pend=[];if(soft?.dogGround)seen.add(keyOf(soft));return soft?make(soft,true):null;}
  if(gap>0){pend=pend.filter(e=>b.time-e.time<2.5);return null;}
- let best=null,top=-1;for(const e of pend){if(e.g.dead)continue;const p=e.g.body[e.part],inj=e.injury||p.injury||'Schnittwunde',k=e.collapse?'collapse':kindOf(inj),score=e.collapse?5.5:(p.missing?9:RANK[k]||0)+(e.lasting?4:0)+(M.injuryGrade(p)>=3?3:0),key=e.g.id+'|'+e.part+'|'+k+(e.lasting?'|L':'');if(score<3||seen.has(key)||!wanted(e.g))continue;if(score>top){top=score;best={e,k,inj,key};}}
+ let best=null,top=-1;for(const e of pend){if(e.g.dead)continue;const p=e.g.body[e.part],inj=e.injury||p.injury||'Schnittwunde',k=e.collapse?'collapse':kindOf(inj),score=e.collapse?5.5:(p.missing?9:RANK[k]||0)+(e.lasting?4:0)+(M.injuryGrade(p)>=3?3:0),key=e.g.id+'|'+spot(e)+'|'+k+(e.lasting?'|L':'');if(score<3||seen.has(key)||!wanted(e.g))continue;if(score>top){top=score;best={e,k,inj,key};}}
  pend=[];if(!best)return null;seen.add(best.key);return best;}
 // Waffe aus dem Namen im Kampfbericht (Titel je Qualitätsstufe). Unbekannt (Pranken, Tritt, Schildstoß): keine Waffe im Bild.
 let titles=null;

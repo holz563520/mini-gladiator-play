@@ -89,9 +89,11 @@ document.addEventListener('pointerup',e=>{if(drag&&e.pointerId===drag.id)drag=nu
 document.addEventListener('click',e=>{if(dragged&&e.target.closest?.('#arenaCanvas')){dragged=false;e.stopPropagation();e.preventDefault();}},true);
 M.battleCamera=(b,w,h,W,H,zoom,target)=>{const VG=b.view||1;if(zKey!==b.id){zKey=b.id;userZ=null;pan=null;const cv=$('arenaCanvas');if(cv)cv.style.touchAction=VG>1?'none':'';}
  if(pan&&VG>1&&!b.finale&&!b.cinematic&&(drag||performance.now()<pan.until)){panClamp(w,h,W,H);cam={x:pan.x,y:pan.y,zoom:pan.zoom};return cam;}if(pan&&!drag)pan=null;
+ /* Kino-Kamera (kino-kamera.js): geteiltes Bild bei schweren Verletzungen */{const ks=M.kinoCam?.camera(b,w,h,W,H);if(ks)return (cam=ks);}
  const sp=M.battleHud?.spot;if(sp&&document.body.classList.contains('bhud')){/* Scheinwerfer des Moderators: nah an einen Kämpfer */const base=Math.min(w/W,h/H),z=2.3*VG,vw=w/(base*z),vh=h/(base*z),tx=Math.max(vw/2,Math.min(W-vw/2,sp.x)),ty=Math.max(vh/2-(M.arenaViewUp||0),Math.min(H-vh/2,sp.y));if(!cam)cam={x:tx,y:ty,zoom:z};else{cam.x+=(tx-cam.x)*.1;cam.y+=(ty-cam.y)*.1;cam.zoom+=(z-cam.zoom)*.08;}return cam;}
  if(!document.body.classList.contains('bhud')||!autoCam||zoom>1||b.finale||b.cinematic)return (cam=null);
  const live=b.actors.filter(a=>!a.g.dead&&!a.surrendered);if(!live.length)return (cam=null);
+ /* Kino-Kamera: Regie folgt dem spannendsten Zweikampf; ohne sie die bisherige Totale */{const kf=M.kinoCam?.follow(b,w,h,W,H,VG,live,cam,VG>1&&userZ&&zKey===b.id?userZ:null);if(kf)return (cam=kf);}
  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const a of live){x0=Math.min(x0,a.x);x1=Math.max(x1,a.x);y0=Math.min(y0,a.y-50);y1=Math.max(y1,a.y+20);}
  const pad=90,bw=Math.max(260,x1-x0+pad*2),bh=Math.max(190,y1-y0+pad*2),base=Math.min(w/W,h/H),want=Math.min(w/bw,h/bh)/base,z=VG>1&&userZ&&zKey===b.id?userZ:Math.max(1,Math.min(VG>1?1.9:2.1,want)),vw=w/(base*z),vh=h/(base*z);
  const UP=M.arenaViewUp||0,tx=vw>=W?W/2:Math.max(vw/2,Math.min(W-vw/2,(x0+x1)/2)),ty=vh>=H?H/2-UP:Math.max(vh/2-UP,Math.min(H-vh/2,(y0+y1)/2));

@@ -20,7 +20,10 @@ const TITLE={sword:['Schnittwunde','Tiefe Schnittwunde'],dagger:['Stichwunde','T
 // o: {kind:'weapon'|'bite'|'human', victim, attacker, part, dmg, wid, wname, wound, kill}
 DOG.shotNote=function(o){if(!SH.live||SH.mode==='off'||!S.battle)return;if(SH.cur&&!o.kill)return;
  const thr=SH.mode==='all'?4:o.kind==='human'?6:9;if(!o.kill&&o.dmg<thr)return;if(SH.gap>0&&!o.kill)return;
- const e=snapshot(o);if(!e)return;if(o.kill)SH.q=[e];else if(!SH.q.length)SH.q.push(e);};
+ const e=snapshot(o);if(!e)return;
+ /* Biss am Boden (Thomas 10.11.): jede Verletzungsart je Opfer nur einmal je Kampf zeigen, egal an welcher Stelle; der tödliche Biss immer */
+ if(o.kind==='human'&&!o.kill){const v=o.victim;if(v.fallTimer>0||v.down||v.draggedBy||v.kneeTimer>0){if(SH.seenB!==S.battle.id){SH.seenB=S.battle.id;SH.seen=new Set();}const key=(v.id??v.g.name)+'|'+e.title;if(SH.seen.has(key))return;if(!SH.q.length)SH.seen.add(key);}}
+ if(o.kill)SH.q=[e];else if(!SH.q.length)SH.q.push(e);};
 function cloneDog(a){if(!a)return null;return {dog:a.dog,P:a.P,id:'shot-'+a.id,g:{dead:false,name:a.g.name},mode:a.down?'down':'stand',down:!!a.down,clock:1,duration:1,cyc:a.cyc||0,moveSpeed:0,wounds:(a.wounds||[]).map(w=>({...w,t:-99})),gore:{...(a.gore||{})},bleed:{...(a.bleed||{})},mouthBlood:a.mouthBlood||0,energy:a.energy,hit:0,z:0,spray:[],a:0};}
 function snapshot(o){const v=o.victim,a=o.attacker;if(!v)return null;const b=S.battle;
  const e={kind:o.kind,part:o.part,dmg:o.dmg,kill:!!o.kill,t:0,parts:[],stains:[],shake:0,flash:0,impact:false,line1:'',title:'',line3:''};
