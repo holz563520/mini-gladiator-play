@@ -17,7 +17,7 @@ const OPT={
  bg:['Hintergrund',[['schwarz','Schwarz'],['spot','Scheinwerfer'],['dunkel','Abgedunkelt'],['arena','Arena wie immer']]],
  others:['Andere Kämpfer',[['0','Unsichtbar'],['0.12','Schatten'],['0.32','Durchsichtig']]],
  who:['Im Bild',[['paar','Nur Schläger und Getroffener'],['gruppe','Alle, die gerade zuschlagen (bis 3)']]],
- slow:['Zeitlupe',[['4','1/4'],['8','1/8'],['16','1/16'],['0','Standbild']]],
+ slow:['Zeitlupe',[['2','1/2 (Kämpfer laufen mit der Nahaufnahme)'],['4','1/4'],['8','1/8'],['16','1/16'],['0','Standbild']]],
  sync:['Takt',[['gemeinsam','Gemeinsam: Blitz, Wackeln, Herzschlag in beiden Bildern'],['frei','Frei (ohne)']]],
  grade:['Farbe',[['normal','Normal'],['warm','Warm'],['rot','Blutrot'],['kalt','Kalt'],['blass','Ausgeblichen']]],
  bars:['Kinobalken',[['0','Aus'],['7','Schmal'],['9','Mittel'],['12','Breit']]]};

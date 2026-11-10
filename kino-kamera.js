@@ -122,7 +122,7 @@ let alpha=function(a){if(!K.on||K.set.includes(a))return 1;const p=cl((performan
 const LOOK0={layout:'alt',frame:'feld',bg:'arena',others:.32,who:'gruppe',fill:.8,slow:8,sync:'frei',grade:'normal',bars:8};
 const PRESETS={
  bisher:{name:'Bisher',look:{...LOOK0}},
- buehne:{name:'Schwarze Bühne',look:{layout:'split',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.84,slow:8,sync:'gemeinsam',grade:'normal',bars:9}},
+ buehne:{name:'Schwarze Bühne',look:{layout:'split',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.84,slow:2,sync:'gemeinsam',grade:'normal',bars:9}},
  spot:{name:'Scheinwerfer',look:{layout:'split',frame:'schirm',bg:'spot',others:0,who:'paar',fill:.8,slow:8,sync:'gemeinsam',grade:'warm',bars:9}},
  leinwand:{name:'Großleinwand + Bild im Bild',look:{layout:'pip',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.86,slow:8,sync:'gemeinsam',grade:'normal',bars:7}},
  wunde:{name:'Wunde groß, Kämpfer klein',look:{layout:'piprev',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.84,slow:8,sync:'gemeinsam',grade:'normal',bars:7}},
@@ -130,6 +130,10 @@ const PRESETS={
  dunkel:{name:'Feld abgedunkelt',look:{layout:'split',frame:'feld',bg:'dunkel',others:.12,who:'paar',fill:.8,slow:8,sync:'gemeinsam',grade:'normal',bars:8}}};
 /* Thomas 10.11.: „Schwarze Bühne“ ist jetzt die Darstellung im Spiel; eine im Kino-Editor gewählte gilt weiter (auch „Bisher“) */
 const GAME_LOOK={...LOOK0,...PRESETS.buehne.look};let look={...GAME_LOOK};try{const j=JSON.parse(localStorage.getItem('mg-kino-look')||'null');if(j&&typeof j==='object')look={...LOOK0,...j};}catch{}
+/* Wunsch Thomas 10.11. abends: In der Schwarzen Bühne standen die kleinen Gladiatoren nach dem (synchronen) Schlag minutenlang still – bei 1/8 vergingen
+   in 4–10 s Kino-Moment nur 0,3–1,3 Kampfsekunden. Jetzt 1/2, so schnell wie die Wiederholung des Schlags; der Kampf läuft mit der Nahaufnahme weiter.
+   Einmalig: eine früher gespeicherte Bühne mit 1/8 (z. B. über „Im Spiel verwenden“) wird ebenfalls auf 1/2 gesetzt. */
+try{if(localStorage.getItem('mg-kino-slow2')!=='1'){if(look.layout!=='alt'&&+look.slow===8){look.slow=2;if(localStorage.getItem('mg-kino-look'))localStorage.setItem('mg-kino-look',JSON.stringify(look));}localStorage.setItem('mg-kino-slow2','1');}}catch{}
 const film=()=>look.layout!=='alt';
 const GRADE={normal:'none',warm:'sepia(.25) saturate(1.15) contrast(1.06)',kalt:'saturate(.7) hue-rotate(-12deg) contrast(1.1) brightness(.95)',rot:'sepia(.35) saturate(1.5) hue-rotate(-18deg) contrast(1.12)',blass:'saturate(.35) contrast(1.15)'};
 const FM={el:null,A:null,ga:null,B:null,who:null,rects:null,shotKey:'',phase:-1,step:null,beatT:0};
