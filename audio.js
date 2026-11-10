@@ -2,7 +2,7 @@
 (()=>{
 const M=window.MG;
 // One audio clock, two buses and a fixed voice budget, independent of simulation RNG/speed.
-let ctx,musicBus,fxBus,master,timer,scene='',noiseBuffer,waves={},active=0,musicVoices=0,lastVoice=-10;
+let ctx,musicBus,fxBus,fightBus=null,distBus=null,crowdE=0,master,timer,scene='',noiseBuffer,waves={},active=0,musicVoices=0,lastVoice=-10;
 // Spielfeld (Ludus/Menüs): „Ludus at Sunset“ und „Arena Theory 1“ laufen abwechselnd nacheinander (Liste wie bei der Schmiede).
 // Aufgenommene Lieder: gestreamt (kein Dekodieren in den Arbeitsspeicher), erst beim ersten Bedarf geladen. Ludus/Menüs und Kampfszenen (Arenakampf, Intro) haben je ein Lied. Die frühere erzeugte Musik ist entfernt; Geräusche laufen weiter über die Web-Audio-Stimmen unten.
 const songs={home:{file:'ludus-at-sunset',files:['ludus-at-sunset','arena-theory-1'],idx:0,ext:'',el:null,broken:false,level:0,playing:false},battle:{file:'sanguis-et-gloria',el:null,broken:false,level:0,playing:false},smith:{file:'smith-the-motherfucker',files:['smith-the-motherfucker','smyth'],idx:0,ext:'',el:null,broken:false,level:0,playing:false},hall:{file:'aula-lorum',el:null,broken:false,level:0,playing:false},raid:{file:'arena-theory',el:null,broken:false,level:0,playing:false},medic:{file:'medicus-bill',el:null,broken:false,level:0,playing:false},
@@ -37,6 +37,8 @@ function init(){if(ctx)return true;const AC=window.AudioContext||window.webkitAu
  ctx=new AC();master=ctx.createGain();master.gain.value=.62;musicBus=ctx.createGain();fxBus=ctx.createGain();musicBus.gain.value=.34;fxBus.gain.value=.7;
  const compressor=ctx.createDynamicsCompressor();compressor.threshold.value=-17;compressor.knee.value=18;compressor.ratio.value=4;compressor.attack.value=.004;compressor.release.value=.16;musicBus.connect(master);fxBus.connect(master);master.connect(compressor);compressor.connect(ctx.destination);
  const delay=ctx.createDelay(.5),feedback=ctx.createGain(),send=ctx.createGain(),low=ctx.createBiquadFilter();delay.delayTime.value=.205;feedback.gain.value=.19;send.gain.value=.12;low.type='lowpass';low.frequency.value=2200;musicBus.connect(delay);delay.connect(low);low.connect(feedback);feedback.connect(delay);low.connect(send);send.connect(master);
+ /* Zuschauer-Kulisse (zuschauer.js, 10.11.2026): Kämpfer (Treffer, Schreie, Kampfrufe) laufen über fightBus – in der Arena weiter weg und hallend, das Publikum direkt */
+ fightBus=ctx.createGain();try{if(window.Zuschauer?.distance){distBus=window.Zuschauer.distance(ctx,fxBus);fightBus.connect(distBus.input);}else fightBus.connect(fxBus);}catch{distBus=null;try{fightBus.connect(fxBus);}catch{}}
  noiseBuffer=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);const data=noiseBuffer.getChannelData(0);let brown=0;for(let i=0;i<data.length;i++){brown=(brown+(Math.random()*2-1)*.14)/1.02;data[i]=(Math.random()*2-1)*.65+brown*.35;}
  for(const [name,fall]of [['horn',1.25],['strings',1.9],['pluck',1.5],['flute',3.8]]){const re=new Float32Array(17),im=new Float32Array(17);for(let n=1;n<17;n++)im[n]=1/Math.pow(n,fall)*(name==='horn'&&n%2===0?.4:1);waves[name]=ctx.createPeriodicWave(re,im);}
  return true;
@@ -48,15 +50,15 @@ function note(f,d=.2,instrument='triangle',vol=.1,at=ctx?.currentTime||0,music=f
  const o=ctx.createOscillator(),g=ctx.createGain(),filter=ctx.createBiquadFilter(),p=ctx.createStereoPanner();at=Math.max(ctx.currentTime,at);if(waves[instrument])o.setPeriodicWave(waves[instrument]);else o.type=instrument;o.frequency.setValueAtTime(Math.max(20,f),at);if(end)o.frequency.exponentialRampToValueAtTime(Math.max(20,end),at+d);
  filter.type='lowpass';filter.frequency.setValueAtTime(instrument==='horn'?2300:instrument==='strings'?1400:6500,at);p.pan.value=pan;
  const attack=instrument==='strings'?.09:instrument==='horn'?.025:.004;g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(vol,at+Math.min(d*.2,attack));g.gain.exponentialRampToValueAtTime(Math.max(.0002,vol*.55),at+d*.6);g.gain.exponentialRampToValueAtTime(.0001,at+d);
- o.connect(filter);filter.connect(g);g.connect(p);p.connect(music?musicBus:fxBus);o.onended=()=>{active--;if(music)musicVoices--;for(const node of [o,filter,g,p])node.disconnect();};o.start(at);o.stop(at+d+.015);
+ o.connect(filter);filter.connect(g);g.connect(p);p.connect(music?musicBus:fightBus||fxBus);o.onended=()=>{active--;if(music)musicVoices--;for(const node of [o,filter,g,p])node.disconnect();};o.start(at);o.stop(at+d+.015);
 }
-function noise(d,vol,freq,type='lowpass',at=ctx?.currentTime||0,music=false,pan=0){if(!enabled(music)||active>=52||(music&&musicVoices>=28))return;active++;if(music)musicVoices++;const src=ctx.createBufferSource(),g=ctx.createGain(),filter=ctx.createBiquadFilter(),p=ctx.createStereoPanner();at=Math.max(ctx.currentTime,at);src.buffer=noiseBuffer;filter.type=type;filter.frequency.value=freq;filter.Q.value=.75;p.pan.value=pan;g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(vol,at+.005);g.gain.exponentialRampToValueAtTime(.0001,at+d);src.connect(filter);filter.connect(g);g.connect(p);p.connect(music?musicBus:fxBus);src.onended=()=>{active--;if(music)musicVoices--;for(const node of [src,filter,g,p])node.disconnect();};src.start(at,Math.random()*.65);src.stop(at+d+.015);}
+function noise(d,vol,freq,type='lowpass',at=ctx?.currentTime||0,music=false,pan=0){if(!enabled(music)||active>=52||(music&&musicVoices>=28))return;active++;if(music)musicVoices++;const src=ctx.createBufferSource(),g=ctx.createGain(),filter=ctx.createBiquadFilter(),p=ctx.createStereoPanner();at=Math.max(ctx.currentTime,at);src.buffer=noiseBuffer;filter.type=type;filter.frequency.value=freq;filter.Q.value=.75;p.pan.value=pan;g.gain.setValueAtTime(.0001,at);g.gain.linearRampToValueAtTime(vol,at+.005);g.gain.exponentialRampToValueAtTime(.0001,at+d);src.connect(filter);filter.connect(g);g.connect(p);p.connect(music?musicBus:fightBus||fxBus);src.onended=()=>{active--;if(music)musicVoices--;for(const node of [src,filter,g,p])node.disconnect();};src.start(at,Math.random()*.65);src.stop(at+d+.015);}
 function drum(at,strong=true,music=true,vol=1){note(strong?112:165,strong?.26:.16,'sine',.22*vol,at,music,strong?43:68);noise(.06,.08*vol,strong?850:1350,'lowpass',at,music);}
 /* Missionen (Plünderungen) stehen für Gespräche still (paused): Stimmen und Geräusche müssen dann trotzdem hörbar bleiben.
    Vorher drehte das die Lautstärke für Geräusche UND Stimmen auf null – die Stimme lief, war aber stumm (Thomas 26.10.). */
 function tick(){if(!ctx)return;const b=M.s.battle,live=!document.hidden&&(!b?.paused||!!b.mission);
  musicBus.gain.setTargetAtTime(0,ctx.currentTime,.06);fxBus.gain.setTargetAtTime(live&&M.s.options.sound?.7:0,ctx.currentTime,.025);
- songTick();scene=M.s.battle&&!M.s.battle.finale?'battle':'home';}
+ songTick();scene=M.s.battle&&!M.s.battle.finale?'battle':'home';try{distBus?.update(arenaCrowd()&&!reportOn(),crowdE);}catch{}}
 function start(){if(!init())return;ctx.resume().catch(()=>{});ksWarmup();if(!timer)timer=setInterval(tick,40);tick();}
 // ---- Neue Kampfgeräusche (kampfsound.js, im Editor kampfsound-editor.html einstellbar): alte Namen → neue Vorlagen.
 // Änderungen aus dem Editor (localStorage „mg-kampfsound-v1“) gelten auch hier. Namen ohne Eintrag klingen wie bisher.
@@ -87,6 +89,8 @@ let ksVoices=0,ksWarm=false;
 const VAR={pain:'pain01 pain02 pain03 pain04 pain05 pain06 pain07 pain08 pain09 pain10 pain11 pain12 pain13 pain14'.split(' '),hurt:'hurt01 hurt02 hurt03 hurt04 hurt05 hurt06 hurt07 hurt08'.split(' '),
  cheer:['cheer1','cheer2','cheer3','cheer4','crowd'],laugh:['laugh1','laugh2','laugh3','laugh4','laugh5'],jubel:['jubel1','jubel2','jubel3'],ooh:['ooh1','ooh2','ooh3','roar'],boo:['boo1','boo2'],warcry:['warcry1','warcry2','warcry3','warcry4']};
 const lastVar={};function variant(g){const L=VAR[g].filter(k=>window.KampfSound?.DEF?.[k]);if(!L.length)return null;let k;do{k=L[Math.floor(Math.random()*L.length)];}while(L.length>1&&k===lastVar[g]);lastVar[g]=k;return k;}
+// Publikumsklänge gehen direkt auf fxBus, alles von den Kämpfern über fightBus (Entfernung/Hall)
+const crowdKey=k=>/^(cheer|jubel|ooh|boo|laugh|applause|crowd|roar|gong|win|mercy|verdictDeath|coin|partyClap)/.test(k);
 const heavyKey=k=>/^(cheer|jubel|ooh|boo|warcry|laugh|applause|crowd|roar|gong|win|mercy|verdictDeath)/.test(k);
 // Publikum gibt es nur in der Arena (nicht im Abenteuer, nicht bei der Hundejagd)
 function arenaCrowd(){const b=M.s.battle;return !!b&&!raidOn()&&!b.hundefang;}
@@ -94,7 +98,7 @@ let crowdNext=0,warNext=0;
 function crowdReact(g,vol=.6,at=0){if(!ctx||!arenaCrowd()||ctx.currentTime<crowdNext)return;const k=variant(g);if(!k)return;crowdNext=ctx.currentTime+3.2+Math.random()*2;ks(k,vol,at);}
 function warcry(vol=.6,at=0){if(!ctx||ctx.currentTime<warNext)return;const k=variant('warcry');if(!k)return;warNext=ctx.currentTime+14+Math.random()*8;ks(k,vol,at);}
 M.crowdReact=(g,vol)=>{if(enabled(false))crowdReact(g,vol);};
-function ks(k,vol=1,at=0,pitch=1){const K=window.KampfSound;if(!K?.DEF?.[k])return false;if(ksVoices>30)return true;try{const s=K.play(ctx,fxBus,k,{vol,at:ctx.currentTime+at,pitch,max:heavyKey(k)?1:2});if(s){ksVoices++;s.addEventListener('ended',()=>{ksVoices--;});}}catch(e){return false;}return true;}
+function ks(k,vol=1,at=0,pitch=1){const K=window.KampfSound;if(!K?.DEF?.[k])return false;if(ksVoices>30)return true;try{const s=K.play(ctx,crowdKey(k)?fxBus:fightBus||fxBus,k,{vol,at:ctx.currentTime+at,pitch,max:heavyKey(k)?1:2});if(s){ksVoices++;s.addEventListener('ended',()=>{ksVoices--;});}}catch(e){return false;}return true;}
 // Vorrechnen in kleinen Schritten, damit der erste Treffer im Kampf nicht ruckelt
 function ksWarmup(){if(ksWarm||!window.KampfSound||!ctx)return;ksWarm=true;setTimeout(screamWarmup,600);const keys=[...new Set([...Object.values(KMAP).map(v=>v[0]),...Object.values(VMAP),'painLight','painScream','arrow','applause','laugh',...(M.blockContact||M.hitContact?Object.keys(window.KampfSound.DEF).filter(k=>/^(bk|tr)_/.test(k)):[])])];const jobs=[];const all=[...new Set([...keys,...VAR.cheer,...VAR.jubel,...VAR.ooh,...VAR.boo,...VAR.warcry,...VAR.laugh])];for(let n=0;n<2;n++)for(const k of all)if(n===0||!heavyKey(k))jobs.push([k,1]);for(const k of Object.values(VMAP).concat(VAR.pain,VAR.hurt))for(const [p] of TIERS)jobs.push([k,p]);for(let n=1;n<=20;n++)for(const [p] of TIERS)jobs.push(['bruell'+String(n).padStart(2,'0'),p]);let i=0;const idle=f=>window.requestIdleCallback?requestIdleCallback(f,{timeout:400}):setTimeout(f,35);const next=()=>{if(i>=jobs.length)return;const [k,p]=jobs[i++],o={pitch:p,max:heavyKey(k)?1:2};/* Hintergrund-Worker: eins nach dem anderen, das Bild läuft weiter (Bericht 27.10.) */let job=null;try{job=window.KampfSound.prefill?.(ctx,k,o);}catch{}if(job){job.then(()=>idle(next),()=>idle(next));return;}try{window.KampfSound.buffer(ctx,k,o);}catch{}idle(next);};setTimeout(()=>idle(next),400);}
 // ---------- Schreie (seit 2.11.2026): schreie.js, gerechnet in schrei-worker.js ----------
@@ -116,7 +120,7 @@ function scream(kind,g,pitch,vol){if(!SCR[kind]||!window.Schrei&&!swkOk)return f
  let i=Math.floor(Math.random()*L.length);if(L.length>1&&L[i]===SLAST[kind])i=(i+1)%L.length;const b=L[i];SLAST[kind]=b;
  // benutzte Variante nach und nach ersetzen, damit es nicht immer dieselben sind
  if(L.length>=2&&Math.random()<.6){L.splice(i,1);sFill(kind,F);}
- try{const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;s.playbackRate.value=.97+Math.random()*.06;gn.gain.value=vol;s.connect(gn);gn.connect(fxBus);s.start();ksVoices++;s.onended=()=>{ksVoices--;s.disconnect();gn.disconnect();};}catch{return false;}return true;}
+ try{const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;s.playbackRate.value=.97+Math.random()*.06;gn.gain.value=vol;s.connect(gn);gn.connect(fightBus||fxBus);s.start();ksVoices++;s.onended=()=>{ksVoices--;s.disconnect();gn.disconnect();};}catch{return false;}return true;}
 function screamWarmup(){if(!swkOk)return;for(let t=1;t<=5;t++){const F=scrFig(null,TIERS[t-1][0]);for(const k of ['pain','hurt','death','effort','battlecry'])sFill(k,F);}const W=scrFig({sex:'female',fights:8},1);for(const k of ['pain','hurt','death'])sFill(k,W);}
 // ---------- Publikum: Namenschor mit Klatschen (seit 2.11.2026) ----------
 // Streckt ein Kämpfer in der Arena jemanden nieder oder tötet ihn, jubelt das Publikum und brüllt seinen Namen im Chor,
@@ -194,6 +198,8 @@ function prepareFight(limit=6000,b=M.s.battle){const K=window.KampfSound;if(!K?.
 M.audioEngine={prepareFight,fightSounds,ksPlay:(k,vol=1,pitch=1)=>enabled(false)?ks(k,vol,0,pitch):false,start,sound,voice,
  // Sprechstimmen (sprech-game.js): Ausgang für Sprache, nur wenn Geräusche an sind
  voiceOut:()=>enabled(false)?{ctx,bus:fxBus}:null,
+ // Zuschauer-Kulisse (zuschauer.js): Ausgang nur im Arenakampf mit Ton; Aufregung 0–1 zurück (Kämpfer treten bei Jubel zurück)
+ crowdOut:()=>enabled(false)&&arenaCrowd()&&!reportOn()?{ctx,bus:fxBus}:null,setCrowdExcite:v=>{crowdE=+v||0;},
  crowdMood,
  duck:v=>{duckT=Math.max(0,Math.min(1,v??1));if(musicBus&&ctx)musicBus.gain.setTargetAtTime(.34*duckT,ctx.currentTime,.12);},
  // Schmiede-Party: Uhr und Sprungmarken des Schmiede-Liedes (nur lesen bzw. umstellen, die Wiedergabe steuert weiter songTick).

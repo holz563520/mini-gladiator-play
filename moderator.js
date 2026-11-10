@@ -110,7 +110,7 @@ const weight=g=>(g.kills||0)*3+(g.fights||0)+(g.fame||0)/150+(g.potential||50)/2
 const untested=g=>(g.fights||0)<=1&&(g.kills||0)===0;
 const important=(g,a)=>!!(a&&S.battle?.leaders?.[a.team]===a.id)||(g.kills||0)>=3||(g.fights||0)>=8||(talentOf(g)?.tier?.level??0)>=7||heroes.has(g.id);
 /* Waffenvorstellung: nie das Wurfnetz (keine Kills, uninteressant; Thomas 27.10.) – stattdessen die Nahkampfwaffe */const story=a=>{let it=M.weapon(a).item;if(it?.def==='net')it=M.gear(a.g,'secondary');if(it?.def==='net')it=null;const h=it?.story;return h&&(h.kills>=5||(h.owners||[]).length>=2)?{it,h}:null;};
-let heroes=new Set();
+let heroes=new Set();M.modHeroes=()=>heroes;/* Helden dieses Kampfes für die Zuschauer-Kulisse (zuschauer.js), nur lesen */
 // ---------- Vorschau: der Kampf wird vorab viele Male mit dem Rechenmodell der Spionage (spy.js) durchgespielt ----------
 // Eigener Zufall, berührt den Kampf nicht. Ergebnis je Kämpfer: Anteil der Durchläufe, in denen er stirbt, zu Boden geht, unversehrt bleibt.
 function forecast(b){const P=M.spyModel;if(!P)return null;try{const base=[];for(const t of [0,1]){const team=b.actors.filter(a=>a.team===t);team.forEach((a,i)=>base.push(P.fighter(a.g,t,i,team.length,'Normal')));}
