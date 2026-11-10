@@ -86,7 +86,7 @@ function edge(r){const e=K.el.querySelector('.ks-edge'),bar=r.height*.08;let p0,
  else{const ph=r.height*(.5+.06)-bar,top=r.height-bar-ph;p0={x:0,y:top};p1={x:r.width,y:top+ph*.16};}
  /* senkrechter Strich, um seine Oberkante gedreht: Richtung (dx,dy) ⇒ Winkel atan2(−dx,dy) */const dx=p1.x-p0.x,dy=p1.y-p0.y;
  Object.assign(e.style,{left:(p0.x-1.5)+'px',top:p0.y+'px',height:Math.hypot(dx,dy)+'px'});e.style.setProperty('--ea',(Math.atan2(-dx,dy)*180/Math.PI).toFixed(2)+'deg');}
-function begin(o){const b=S.battle,a=b?.actors.find(x=>x.g===o.g),field=$('arenaCanvas'),c=$('bhShot');if(!a||!field||!c)return;const r=field.getBoundingClientRect();if(r.width<160||r.height<100)return;
+let begin=function(o){const b=S.battle,a=b?.actors.find(x=>x.g===o.g),field=$('arenaCanvas'),c=$('bhShot');if(!a||!field||!c)return;const r=field.getBoundingClientRect();if(r.width<160||r.height<100)return;
  const el=overlay();K.mode=r.width>=r.height*.8?'side':'stack';/* nebeneinander, solange das Feld nicht deutlich hochkant ist */el.className='on '+K.mode;place(r);
  const pane=el.querySelector('.ks-pane'),pw=K.mode==='side'?r.width*.52:r.width,ph=K.mode==='side'?r.height*.84:r.height*(.5+.06)-r.height*.08;pane.appendChild(c);c.width=660;c.height=Math.max(240,Math.round(660*ph/Math.max(1,pw)));
  const tc=a.team?'#f08a80':'#7cc4f0';el.style.setProperty('--tc',tc);el.style.setProperty('--fx',K.mode==='side'?'25%':'50%');el.style.setProperty('--fy',K.mode==='side'?'50%':'27%');el.querySelector('.ks-edge').style.background=tc;el.querySelector('.ks-edge').style.color=tc;edge(r);
@@ -94,10 +94,10 @@ function begin(o){const b=S.battle,a=b?.actors.find(x=>x.g===o.g),field=$('arena
  const fl=el.querySelector('.ks-flash');fl.classList.remove('go');void fl.offsetWidth;fl.classList.add('go');
  const v=M.arenaView;K.from=v?{x:v.cx,y:v.cy,zoom:v.scale/Math.min(v.width/v.W,v.height/v.H)}:null;K.a=a;K.o=o;K.set=subjects(b,a);K.t0=performance.now();K.on=true;document.body.classList.add('kino-split');
  requestAnimationFrame(()=>{if(K.on)el.classList.add('in');});cancelAnimationFrame(K.raf);K.raf=requestAnimationFrame(watch);}
-function end(){if(!K.on)return;K.on=false;cancelAnimationFrame(K.raf);const el=K.el,c=el?.querySelector('#bhShot'),stage=$('bhStage');
+let end=function(){if(!K.on)return;K.on=false;cancelAnimationFrame(K.raf);const el=K.el,c=el?.querySelector('#bhShot'),stage=$('bhStage');
  if(c){if(stage&&!stage.querySelector('#bhShot'))stage.insertBefore(c,$('bhLog'));else c.remove();}
  if(el)el.className='';document.body.classList.remove('kino-split');K.a=K.o=null;K.set=[];F.reset=true;/* Regie fährt vom großen Bild weich zurück */}
-function watch(){if(!K.on)return;const b=S.battle,view=$('battleView'),field=$('arenaCanvas');if(!b||!view||view.hidden||!field||!M.injuryShots.arena||!document.body.classList.contains('bhud')){end();return;}
+let watch=function(){if(!K.on)return;const b=S.battle,view=$('battleView'),field=$('arenaCanvas');if(!b||!view||view.hidden||!field||!M.injuryShots.arena||!document.body.classList.contains('bhud')){end();return;}
  place(field.getBoundingClientRect());K.raf=requestAnimationFrame(watch);}
 /* Kamera für den Kino-Moment (Thomas 10.11., 2. Fassung): Getroffener und wer zuschlägt groß und ganz im Bild, in ihrer Bildhälfte
    eingepasst (nichts abgeschnitten), 0,5 s Fahrt hinein, danach folgt sie ihnen weich in der Zeitlupe. */
@@ -109,12 +109,121 @@ function fit(b,w,h,W,H){const base=Math.min(w/W,h/H),side=K.mode==='side';/* Fig
  const pad=8,bw=x1-x0+pad*2,bh=y1-y0+pad*2,cx=(x0+x1)/2,cy=(y0+y1)/2;
  /* freie Fläche für die Figuren in Bildpunkten und ihr Mittelpunkt auf dem Bildschirm *//* Platz für Breitwandbalken und Namensschild lassen */const aw=side?w*.44:w*.92,ah=side?h*.62:h*.3,sx=side?w*.235:w/2,sy=side?h*.44:h*.32;
  const z=cl(Math.min(aw/(base*bw),ah/(base*bh)),1,14),s=base*z;return {x:cx+(w/2-sx)/s,y:cy+(h/2-sy)/s,zoom:z};}
-function camera(b,w,h,W,H){if(!K.on||off||!K.a||!b.actors.includes(K.a))return null;const tg=fit(b,w,h,W,H),t=performance.now()-K.t0,p=ease(cl(t/500,0,1)),f=K.from||{x:W/2,y:H/2,zoom:1};
+let camera=function(b,w,h,W,H){if(!K.on||off||!K.a||!b.actors.includes(K.a))return null;const tg=fit(b,w,h,W,H),t=performance.now()-K.t0,p=ease(cl(t/500,0,1)),f=K.from||{x:W/2,y:H/2,zoom:1};
  return {x:f.x+(tg.x-f.x)*p,y:f.y+(tg.y-f.y)*p,zoom:f.zoom*Math.pow(tg.zoom/f.zoom,p)};}
 /* Unbeteiligte werden in 0,3 s angenehm durchsichtig */
-function alpha(a){if(!K.on||K.set.includes(a))return 1;const p=cl((performance.now()-K.t0)/(FADE*1000),0,1);return 1-.68*p;}
+let alpha=function(a){if(!K.on||K.set.includes(a))return 1;const p=cl((performance.now()-K.t0)/(FADE*1000),0,1);return 1-.68*p;}
+
+// ---------------------------------------------------------------- 3) Kino-Look wählbar (Thomas 10.11., 3. Fassung, kino-editor.html)
+// Wunsch: Wer den Schaden zufügt und wer ihn empfängt immer groß in Nahaufnahme, der Rest ausgeblendet, gern schwarzer Hintergrund,
+// große Aufnahme, Nahaufnahme im Takt dazu. Mehrere Möglichkeiten zum Anschauen im Editor; gespeichert in localStorage['mg-kino-look'].
+// layout 'alt' = bisherige Darstellung (oben, unverändert, Standard). Alle anderen: „Filmbild“ – das Kampfbild wird in eine eigene
+// Bildfläche kopiert, die wie die Nahaufnahme frei angeordnet werden kann (Kampffeld oder ganzer Bildschirm).
+const LOOK0={layout:'alt',frame:'feld',bg:'arena',others:.32,who:'gruppe',fill:.8,slow:8,sync:'frei',grade:'normal',bars:8};
+const PRESETS={
+ bisher:{name:'Bisher',look:{...LOOK0}},
+ buehne:{name:'Schwarze Bühne',look:{layout:'split',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.84,slow:8,sync:'gemeinsam',grade:'normal',bars:9}},
+ spot:{name:'Scheinwerfer',look:{layout:'split',frame:'schirm',bg:'spot',others:0,who:'paar',fill:.8,slow:8,sync:'gemeinsam',grade:'warm',bars:9}},
+ leinwand:{name:'Großleinwand + Bild im Bild',look:{layout:'pip',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.86,slow:8,sync:'gemeinsam',grade:'normal',bars:7}},
+ wunde:{name:'Wunde groß, Kämpfer klein',look:{layout:'piprev',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.84,slow:8,sync:'gemeinsam',grade:'normal',bars:7}},
+ schnitt:{name:'Schnittfolge',look:{layout:'cut',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.86,slow:16,sync:'gemeinsam',grade:'rot',bars:12}},
+ dunkel:{name:'Feld abgedunkelt',look:{layout:'split',frame:'feld',bg:'dunkel',others:.12,who:'paar',fill:.8,slow:8,sync:'gemeinsam',grade:'normal',bars:8}}};
+let look={...LOOK0};try{const j=JSON.parse(localStorage.getItem('mg-kino-look')||'null');if(j&&typeof j==='object')look={...LOOK0,...j};}catch{}
+const film=()=>look.layout!=='alt';
+const GRADE={normal:'none',warm:'sepia(.25) saturate(1.15) contrast(1.06)',kalt:'saturate(.7) hue-rotate(-12deg) contrast(1.1) brightness(.95)',rot:'sepia(.35) saturate(1.5) hue-rotate(-18deg) contrast(1.12)',blass:'saturate(.35) contrast(1.15)'};
+const FM={el:null,A:null,ga:null,B:null,who:null,rects:null,shotKey:'',phase:-1,step:null,beatT:0};
+const fcss=`#kinoFilm{position:fixed;z-index:30;pointer-events:none;overflow:hidden;display:none;background:#000}
+#kinoFilm.on{display:block}
+#kinoFilm .kf-pane{position:absolute;overflow:hidden;transition:opacity .18s}
+#kinoFilm .kf-a canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#kinoFilm .kf-b{pointer-events:auto;background:#0b0705}
+#kinoFilm .kf-b #bhShot{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#kinoFilm .kf-b.inset{outline:2px solid var(--tc,#e0b565);box-shadow:0 0 0 1px #000,0 6px 24px #000}
+#kinoFilm .kf-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 80% at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.7) 100%)}
+#kinoFilm .kf-beat{position:absolute;inset:0;pointer-events:none;opacity:0;box-shadow:inset 0 0 70px 10px rgba(170,10,0,.75)}
+#kinoFilm.beat .kf-beat{animation:kfBeat .9s ease-out infinite}
+@keyframes kfBeat{0%{opacity:0}8%{opacity:.85}22%{opacity:.25}30%{opacity:.6}100%{opacity:0}}
+#kinoFilm .kf-bar{position:absolute;left:0;right:0;background:#000;z-index:6;transition:transform .38s cubic-bezier(.2,.8,.2,1)}
+#kinoFilm .kf-bar.top{top:0;transform:translateY(-101%)}#kinoFilm .kf-bar.bot{bottom:0;transform:translateY(101%)}
+#kinoFilm.in .kf-bar{transform:none}
+#kinoFilm .kf-edge{position:absolute;z-index:4;pointer-events:none;background:var(--tc,#e0b565);box-shadow:0 0 10px 1px var(--tc,#e0b565);transform-origin:0 0}
+#kinoFilm .kf-who{position:absolute;z-index:5;display:flex;align-items:center;gap:.5em;padding:4px 12px 5px 10px;font-family:'Courier Prime',monospace;font-weight:bold;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(11px,2.2vw,20px);color:#f1e6c8;background:linear-gradient(90deg,rgba(0,0,0,.85),rgba(0,0,0,.4) 75%,rgba(0,0,0,0));text-shadow:0 1px 0 #000;opacity:0;transform:translateX(-20px);transition:opacity .3s .3s,transform .45s cubic-bezier(.2,.8,.2,1) .3s;white-space:nowrap}
+#kinoFilm.in .kf-who{opacity:1;transform:none}
+#kinoFilm .kf-who .t0{color:#7cc4f0}#kinoFilm .kf-who .t1{color:#f08a80}#kinoFilm .kf-who em{font-style:normal;color:#e6bf99;font-size:.8em;letter-spacing:.06em}
+#kinoFilm .kf-flash{position:absolute;inset:0;background:#fff6dc;opacity:0;z-index:7;pointer-events:none}
+#kinoFilm .kf-flash.go{animation:ksFlash .3s ease-out}
+#kinoFilm.shake{animation:kfShake .34s linear}
+@keyframes kfShake{0%,100%{transform:none}20%{transform:translate(-7px,4px)}40%{transform:translate(6px,-5px)}60%{transform:translate(-4px,3px)}80%{transform:translate(3px,-2px)}}
+@keyframes ksFlash{0%{opacity:.6}100%{opacity:0}}`;
+function filmEl(){if(FM.el?.isConnected)return FM.el;if(!$('kinoFilmStyle')){const st=document.createElement('style');st.id='kinoFilmStyle';st.textContent=fcss;document.head.appendChild(st);}
+ const el=document.createElement('div');el.id='kinoFilm';el.innerHTML='<div class="kf-pane kf-a"><canvas></canvas><div class="kf-vig"></div><div class="kf-beat"></div></div><div class="kf-pane kf-b"><div class="kf-beat"></div></div><div class="kf-edge"></div><div class="kf-who"></div><div class="kf-bar top"></div><div class="kf-bar bot"></div><div class="kf-flash"></div>';
+ document.body.appendChild(el);FM.el=el;FM.A=el.querySelector('.kf-a');FM.ca=FM.A.querySelector('canvas');FM.ga=FM.ca.getContext('2d');FM.B=el.querySelector('.kf-b');FM.who=el.querySelector('.kf-who');return el;}
+const CUT1=1.25,CUT2=2.85;/* Schnittfolge: Kämpfer allein → Nahaufnahme allein → beide */
+function filmRoot(){const f=$('arenaCanvas');return look.frame==='schirm'?{left:0,top:0,width:innerWidth,height:innerHeight}:f.getBoundingClientRect();}
+/* Lage der beiden Bilder im Overlay (Bildpunkte), abhängig von Aufteilung, Ausrichtung und (Schnittfolge) Zeit */
+function rects(W,H,t){const bar=Math.round(H*(look.bars||0)/100),side=W>=H*.8,full={x:0,y:bar,w:W,h:H-2*bar},none={x:0,y:0,w:0,h:0,hide:true};let L=look.layout;
+ if(L==='cut'){if(t<CUT1)return {A:full,B:{...none},phase:0};if(t<CUT2)return {A:{...full,hide:true},B:full,phase:1};L='split';}
+ if(L==='pip'||L==='piprev'){const iw=Math.round(side?W*.4:W*.62),ih=Math.round(iw*.64),m=Math.round(Math.min(W,H)*.03),ins={x:W-iw-m,y:H-bar-ih-m,w:iw,h:ih,inset:true};
+  /* Kämpfer klein oben rechts: dort verdeckt das Bild weder Namen noch Unterzeile der Nahaufnahme */return L==='pip'?{A:full,B:ins,phase:2}:{A:{...ins,y:bar+m},B:full,phase:2};}
+ if(side){const wa=Math.round(W*.54);return {A:{x:0,y:bar,w:wa,h:H-2*bar},B:{x:Math.round(W*.46),y:bar,w:W-Math.round(W*.46),h:H-2*bar,clip:'polygon(15% 0,100% 0,100% 100%,0 100%)',e:[[W*.46+(W-W*.46)*.15,bar],[W*.46,H-bar]]},phase:2};}
+ const ha=Math.round((H-2*bar)*.5),yb=bar+Math.round((H-2*bar)*.44);return {A:{x:0,y:bar,w:W,h:ha},B:{x:0,y:yb,w:W,h:H-bar-yb,clip:'polygon(0 12%,100% 0,100% 100%,0 100%)',e:[[0,yb+(H-bar-yb)*.12],[W,yb]]},phase:2};}
+function setPane(el,r){const s=el.style;s.left=r.x+'px';s.top=r.y+'px';s.width=r.w+'px';s.height=r.h+'px';s.opacity=r.hide?'0':'1';s.clipPath=r.clip||'none';el.classList.toggle('inset',!!r.inset);}
+function filmLayout(now){const el=FM.el,R=filmRoot(),W=Math.round(R.width),H=Math.round(R.height),s=el.style;s.left=Math.round(R.left)+'px';s.top=Math.round(R.top)+'px';s.width=W+'px';s.height=H+'px';
+ const t=(now-K.t0)/1000,r=rects(W,H,t);FM.rects=r;setPane(FM.A,r.A);setPane(FM.B,r.B);FM.A.style.zIndex=r.A.inset?3:1;FM.B.style.zIndex=r.B.inset?3:2;
+ const bar=Math.round(H*(look.bars||0)/100);for(const b of el.querySelectorAll('.kf-bar'))b.style.height=bar+'px';
+ /* Trennkante in Teamfarbe genau auf der schrägen Seite */const e=el.querySelector('.kf-edge');if(r.B.e&&!r.B.hide){const [[x0,y0],[x1,y1]]=r.B.e,len=Math.hypot(x1-x0,y1-y0);Object.assign(e.style,{display:'block',left:x0+'px',top:y0+'px',width:len+'px',height:'3px',transform:'rotate('+Math.atan2(y1-y0,x1-x0)+'rad)'});}else e.style.display='none';
+ /* Namen: wer zuschlägt → wer getroffen wird, unten links im Kämpferbild */const A=r.A;Object.assign(FM.who.style,{display:A.hide?'none':'flex',left:(A.x+Math.round(Math.min(W,H)*.025))+'px',top:(A.y+A.h-Math.round(Math.min(W,H)*.03)-FM.who.offsetHeight)+'px',fontSize:A.inset?'11px':''});
+ /* Nahaufnahme: Zeichenfläche passend zum Bild */const B=r.B;if(!B.hide&&B.w>20&&B.h>20){const c=$('bhShot'),key=B.w+'x'+B.h;if(c&&FM.shotKey!==key){FM.shotKey=key;c.width=660;c.height=Math.max(160,Math.round(660*B.h/B.w));}}
+ /* harter Schnitt: Blitz */if(r.phase!==FM.phase){if(FM.phase>=0&&look.layout==='cut')kick(look.sync==='gemeinsam');FM.phase=r.phase;}
+ return r;}
+function kick(shake){const el=FM.el,fl=el.querySelector('.kf-flash');fl.classList.remove('go');void fl.offsetWidth;fl.classList.add('go');if(shake){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');}}
+/* Kampfbild kopieren: Ausschnitt „füllend“ (cover), Pixel scharf */
+function filmPaint(){const r=FM.rects,src=$('arenaCanvas');if(!r||r.A.hide||!src||!src.width)return;const A=r.A,c=FM.ca,dpr=Math.min(2,devicePixelRatio||1),cw=Math.max(1,Math.round(A.w*dpr)),ch=Math.max(1,Math.round(A.h*dpr));
+ if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch;}const g=FM.ga,sw=src.width,sh=src.height,k=Math.max(cw/sw,ch/sh);g.imageSmoothingEnabled=false;g.fillStyle='#000';g.fillRect(0,0,cw,ch);g.drawImage(src,(cw-sw*k)/2,(ch-sh*k)/2,sw*k,sh*k);}
+function filmBegin(o,a){const field=$('arenaCanvas'),c=$('bhShot');const el=filmEl();el.className='on';const tc=a.team?'#f08a80':'#7cc4f0';el.style.setProperty('--tc',tc);FM.shotKey='';FM.phase=-1;
+ FM.B.appendChild(c);c.hidden=false;FM.ca.style.filter=GRADE[look.grade]||'none';FM.B.style.filter=look.grade==='blass'?GRADE.blass:'';
+ const by=K.set.find(x=>x!==a),nm=x=>'<span class="t'+(x.team?1:0)+'">'+String(x.g.name||'').replace(/[<&]/g,'')+'</span>';
+ FM.who.innerHTML=(by?nm(by)+' <em>⟶</em> ':'')+nm(a)+(o.kind==='death'?' <em>† gefallen</em>':'');
+ K.t0=performance.now();filmLayout(K.t0);kick(look.sync==='gemeinsam');if(look.sync==='gemeinsam')el.classList.add('beat');
+ requestAnimationFrame(()=>{if(K.on)el.classList.add('in');});}
+function filmEnd(){const el=FM.el;if(el){el.className='';FM.ca&&(FM.ca.style.filter='');}FM.rects=null;}
+/* Kamera im Filmbild: Beteiligte mittig und groß im sichtbaren Ausschnitt des Kämpferbildes */
+function filmFit(b,w,h,W,H){const base=Math.min(w/W,h/H),R=filmRoot(),t=(performance.now()-K.t0)/1000,/* Schnittfolge: während die Nahaufnahme allein steht, schon auf das spätere geteilte Bild zielen */tt=look.layout==='cut'?(t<CUT1?0:CUT2+.01):t,rr=rects(Math.round(R.width),Math.round(R.height),tt),A=rr.A;
+ /* Bild im Bild: die Kämpfer links neben die kleine Nahaufnahme setzen */const k=Math.max(A.w/w,A.h/h)||1,free=rr.B.inset?Math.max(A.w*.45,rr.B.x-A.x):A.w,vw=free/k,vh=A.h/k,dx=(A.w-free)/2/k;let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+ /* großzügig: erhobene Waffen, Schilde, Liegende reichen weit über den Standpunkt hinaus */for(const a of K.set){const lying=a.g.dead||a.down||a.fallTimer>0||a.kneeTimer>0;x0=Math.min(x0,a.x-(lying?74:44));x1=Math.max(x1,a.x+(lying?74:44));y0=Math.min(y0,a.y-(lying?48:98));y1=Math.max(y1,a.y+18);}
+ const fill=cl(+look.fill||.8,.4,.97),z=cl(Math.min(vw*fill/(base*(x1-x0)),vh*fill*.92/(base*(y1-y0))),1,12),s=base*z;
+ return {x:(x0+x1)/2+dx/s,y:(y0+y1)/2+vh*.03/s,zoom:z};}
+/* Hintergrund unter den Figuren (Feldkoordinaten, vor den Figuren gezeichnet) */
+function backdrop(g,b){if(!K.on||off||!film()||look.bg==='arena')return;const p=cl((performance.now()-K.t0)/350,0,1);g.save();
+ if(look.bg==='spot'){let x=0,y=0;for(const a of K.set){x+=a.x;y+=a.y-30;}x/=K.set.length||1;y/=K.set.length||1;let r=60;for(const a of K.set)r=Math.max(r,Math.hypot(a.x-x,a.y-30-y)+70);
+  const gr=g.createRadialGradient(x,y,r*.35,x,y,r*1.25);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(.6,'rgba(0,0,0,'+(.55*p)+')');gr.addColorStop(1,'rgba(0,0,0,'+p+')');g.fillStyle=gr;}
+ else g.fillStyle=look.bg==='dunkel'?'rgba(0,0,0,'+(.72*p)+')':'rgba(0,0,0,'+p+')';
+ g.fillRect(-6000,-6000,14000,14000);g.restore();}
+{const ul=M.battleUnderlay;M.battleUnderlay=function(g,b){ul?.apply(this,arguments);try{backdrop(g,b);}catch(e){}};}
+/* Wer im Bild ist: „paar“ = nur wer zuschlägt und wer getroffen wird (auch Schützen von weiter weg) */
+function subjectsLook(b,a){if(look.who!=='paar')return subjects(b,a);const by=b.actors.find(x=>x.id===a.lastAttackerId&&x!==a&&Math.hypot(x.x-a.x,x.y-a.y)<620);return by?[a,by]:[a];}
 
 const cfg=M.injuryShots.config,shown=cfg.onShot;
+const beginOld=begin;
+begin=function(o){if(!film())return beginOld(o);const b=S.battle,a=b?.actors.find(x=>x.g===o.g),field=$('arenaCanvas'),c=$('bhShot');if(!a||!field||!c)return;const r=field.getBoundingClientRect();if(r.width<160||r.height<100)return;
+ const v=M.arenaView;K.from=v?{x:v.cx,y:v.cy,zoom:v.scale/Math.min(v.width/v.W,v.height/v.H)}:null;K.a=a;K.o=o;K.set=subjectsLook(b,a);K.on=true;document.body.classList.add('kino-split');filmBegin(o,a);cancelAnimationFrame(K.raf);K.raf=requestAnimationFrame(watch);};
+const endOld=end;
+end=function(){if(!K.on||!FM.rects){endOld();if(FM.el?.classList.contains('on'))filmEnd();return;}
+ const c=$('bhShot'),stage=$('bhStage');if(c&&FM.B.contains(c)){if(stage&&!stage.querySelector('#bhShot'))stage.insertBefore(c,$('bhLog'));else c.remove();}
+ filmEnd();K.on=false;cancelAnimationFrame(K.raf);document.body.classList.remove('kino-split');K.a=K.o=null;K.set=[];F.reset=true;};
+const watchOld=watch;
+watch=function(){if(!K.on)return;if(!FM.rects)return watchOld();const b=S.battle,view=$('battleView'),field=$('arenaCanvas');if(!b||!view||view.hidden||!field||!M.injuryShots.arena||!document.body.classList.contains('bhud')){end();return;}
+ /* Nahaufnahme im Takt: in der Schnittfolge wartet sie, bis sie ins Bild kommt (die Aufnahme entsteht erst nach dem Anschluss) */const sh=M.injuryShots.arena?.shot;if(sh&&!sh.kinoWrap){const step=sh.step;sh.kinoWrap=true;sh.step=function(dt){if(K.on&&FM.rects&&look.layout==='cut'&&(performance.now()-K.t0)/1000<CUT1)dt=0;return step.call(this,dt);};}
+ filmLayout(performance.now());filmPaint();K.raf=requestAnimationFrame(watch);};
+const cameraOld=camera;
+camera=function(b,w,h,W,H){if(!film()||!FM.rects)return cameraOld(b,w,h,W,H);if(!K.on||off||!K.a||!b.actors.includes(K.a))return null;const tg=filmFit(b,w,h,W,H),t=performance.now()-K.t0,dur=look.sync==='gemeinsam'?650:500,p=ease(cl(t/dur,0,1)),f=K.from||{x:W/2,y:H/2,zoom:1};
+ return {x:f.x+(tg.x-f.x)*p,y:f.y+(tg.y-f.y)*p,zoom:f.zoom*Math.pow(tg.zoom/f.zoom,p)};};
+const alphaOld=alpha;
+alpha=function(a){if(!film()||!K.on)return alphaOld(a);if(K.set.includes(a))return 1;const p=cl((performance.now()-K.t0)/(FADE*1000),0,1),o=cl(+look.others,0,1);return 1-(1-o)*p;};
 cfg.onShot=function(on,o,live){const r=shown?.apply(this,arguments);try{if(on&&!live&&o&&!off&&cfg.host?.())begin(o);else end();}catch(e){console.warn('Kino-Kamera',e);end();}return r;};
-M.kinoCam={camera,follow,alpha,/* Zeitlupe statt Stillstand während des Kino-Moments (injury-shots.js, arena.js) */get slow(){return K.on&&!off?SLOW:0;},get on(){return K.on;},get subjects(){return K.set.map(a=>a.id);},get off(){return off;},set off(v){off=!!v;if(off)end();try{localStorage.setItem('mg-kino',off?'off':'on');}catch{}},state:()=>({shot:F.shot,pair:F.pair?.key||null,punch:+F.punch.toFixed(3),split:K.on?K.mode:null})};
+const slowOf=()=>{if(!K.on||off)return 0;if(!film())return SLOW;const n=+look.slow;return n>0?1/n:0;};
+M.kinoCam={camera:(...x)=>camera(...x),follow,alpha:a=>alpha(a),/* Zeitlupe statt Stillstand während des Kino-Moments (injury-shots.js, arena.js) */get slow(){return slowOf();},get on(){return K.on;},get subjects(){return K.set.map(a=>a.id);},get off(){return off;},set off(v){off=!!v;if(off)end();try{localStorage.setItem('mg-kino',off?'off':'on');}catch{}},
+ /* schwarzer Hintergrund: Hindernisse (arena.js) ausblenden */get hideScenery(){return K.on&&!off&&film()&&(look.bg==='schwarz'||look.bg==='spot');},
+ /* Kino-Look (kino-editor.html) */presets:PRESETS,defaults:LOOK0,get look(){return {...look};},setLook(v,save){look={...LOOK0,...(v||{})};if(save)try{localStorage.setItem('mg-kino-look',JSON.stringify(look));}catch{}},
+ state:()=>({shot:F.shot,pair:F.pair?.key||null,punch:+F.punch.toFixed(3),split:K.on?(FM.rects?'film-'+look.layout:K.mode):null})};
 })();
