@@ -27,7 +27,7 @@ const DEF={
  // Initiative nutzen und Abstechen am Boden (Vorschlag, nicht freigegeben)
  seize:1,seizeRange:320,finWind:1.4,finDmg:1.3,finSever:.45,finHold:.7,
  // Durchstich im Stehen (Stich-Angriff)
- pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9,pierceRate:.31,pierceArmor:8,pierceBack:3,specials:1,specialRate:1,specialForce:0,
+ pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9,pierceRate:1.1,pierceArmor:8,pierceBack:3,specials:1,specialRate:1,specialForce:0,
  backRun:1,backDmg:1.6,backGrab:.6,grabTime:1.7,backKnock:.45,
  // Speer/Dreizack: Anteil Stiche, Abklingzeit nach dem Stich
  spearThrust:.85,spearCool:.5,spearWind:.65,spearJabEnergy:.5,spearSwing:.65
