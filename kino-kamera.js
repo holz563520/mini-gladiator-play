@@ -92,7 +92,7 @@ let begin=function(o){const b=S.battle,a=b?.actors.find(x=>x.g===o.g),field=$('a
  const tc=a.team?'#f08a80':'#7cc4f0';el.style.setProperty('--tc',tc);el.style.setProperty('--fx',K.mode==='side'?'25%':'50%');el.style.setProperty('--fy',K.mode==='side'?'50%':'27%');el.querySelector('.ks-edge').style.background=tc;el.querySelector('.ks-edge').style.color=tc;edge(r);
  el.querySelector('.ks-name b').textContent=o.g.name||'';el.querySelector('.ks-name i').textContent=(o.kind==='death'?'† gefallen':String(o.title||'')).toUpperCase();
  const fl=el.querySelector('.ks-flash');fl.classList.remove('go');void fl.offsetWidth;fl.classList.add('go');
- const v=M.arenaView;K.from=v?{x:v.cx,y:v.cy,zoom:v.scale/Math.min(v.width/v.W,v.height/v.H)}:null;K.a=a;K.o=o;K.set=subjects(b,a);K.t0=performance.now();K.on=true;document.body.classList.add('kino-split');
+ const v=M.arenaView;K.from=v?{x:v.cx,y:v.cy,zoom:v.scale/Math.min(v.width/v.W,v.height/v.H)}:null;K.a=a;K.o=o;K.set=subjectsLook(b,a,o);K.t0=performance.now();K.on=true;document.body.classList.add('kino-split');
  requestAnimationFrame(()=>{if(K.on)el.classList.add('in');});cancelAnimationFrame(K.raf);K.raf=requestAnimationFrame(watch);}
 let end=function(){if(!K.on)return;K.on=false;cancelAnimationFrame(K.raf);const el=K.el,c=el?.querySelector('#bhShot'),stage=$('bhStage');
  if(c){if(stage&&!stage.querySelector('#bhShot'))stage.insertBefore(c,$('bhLog'));else c.remove();}
@@ -201,7 +201,9 @@ function backdrop(g,b){if(!K.on||off||!film()||look.bg==='arena')return;const p=
  g.fillRect(-6000,-6000,14000,14000);g.restore();}
 {const ul=M.battleUnderlay;M.battleUnderlay=function(g,b){ul?.apply(this,arguments);try{backdrop(g,b);}catch(e){}};}
 /* Wer im Bild ist: „paar“ = nur wer zuschlägt und wer getroffen wird (auch Schützen von weiter weg) */
-function subjectsLook(b,a){if(look.who!=='paar')return subjects(b,a);const by=b.actors.find(x=>x.id===a.lastAttackerId&&x!==a&&Math.hypot(x.x-a.x,x.y-a.y)<620);return by?[a,by]:[a];}
+/* Thomas 10.11.: immer genau der Verursacher aus der Nahaufnahme – nicht wer zwischendurch zuletzt getroffen hat */
+function causer(b,a,o){const n=o?.byName;if(n){const x=b.actors.find(q=>q!==a&&q.g.name===n&&q.team!==a.team)||b.actors.find(q=>q!==a&&q.g.name===n);if(x)return x;}return b.actors.find(x=>x.id===a.lastAttackerId&&x!==a)||null;}
+function subjectsLook(b,a,o){const by=causer(b,a,o);if(look.who!=='paar'){const l=subjects(b,a);if(by&&!l.includes(by)){l.splice(1,0,by);if(l.length>3)l.pop();}return l;}return by&&Math.hypot(by.x-a.x,by.y-a.y)<620?[a,by]:[a];}
 
 // ---------------------------------------------------------------- 4) Kino-Ton (Thomas 10.11.: Verletzungsaufnahmen wie im Kino, Zeitlupe mit passenden Tönen)
 // Bei jeder Nahaufnahme, die den Kampf anhält: Welt wird leiser (Musik und Kämpfer gedämpft), Sog in die Zeitlupe, tiefes Dröhnen,
@@ -240,7 +242,7 @@ function tonStop(){if(!T.on)return;T.on=false;cancelAnimationFrame(T.raf);T.t0=n
 const cfg=M.injuryShots.config,shown=cfg.onShot;
 const beginOld=begin;
 begin=function(o){if(!film())return beginOld(o);const b=S.battle,a=b?.actors.find(x=>x.g===o.g),field=$('arenaCanvas'),c=$('bhShot');if(!a||!field||!c)return;const r=field.getBoundingClientRect();if(r.width<160||r.height<100)return;
- const v=M.arenaView;K.from=v?{x:v.cx,y:v.cy,zoom:v.scale/Math.min(v.width/v.W,v.height/v.H)}:null;K.a=a;K.o=o;K.set=subjectsLook(b,a);K.on=true;document.body.classList.add('kino-split');filmBegin(o,a);cancelAnimationFrame(K.raf);K.raf=requestAnimationFrame(watch);};
+ const v=M.arenaView;K.from=v?{x:v.cx,y:v.cy,zoom:v.scale/Math.min(v.width/v.W,v.height/v.H)}:null;K.a=a;K.o=o;K.set=subjectsLook(b,a,o);K.on=true;document.body.classList.add('kino-split');filmBegin(o,a);cancelAnimationFrame(K.raf);K.raf=requestAnimationFrame(watch);};
 const endOld=end;
 end=function(){if(!K.on||!FM.rects){endOld();if(FM.el?.classList.contains('on'))filmEnd();return;}
  const c=$('bhShot'),stage=$('bhStage');if(c&&FM.B.contains(c)){if(stage&&!stage.querySelector('#bhShot'))stage.insertBefore(c,$('bhLog'));else c.remove();}
