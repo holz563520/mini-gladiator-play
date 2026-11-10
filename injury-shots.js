@@ -682,7 +682,7 @@ function arenaShot(x){if(x.fall&&x.cause&&(x.k==='death'||x.k==='collapse'&&x.e.
 /* Treffer der kleinen Figuren im Gleichlauf: Schläger und Getroffener spielen die letzten PRE s vor dem Treffer nach, der Treffer fällt auf HIT der Nahaufnahme */
 const PRE=.24;function wallToHit(){let t=SHOT_FROM,w=0;const s={t,o:{}};while(s.t<HIT&&w<5){const r=slowmo(s);s.t+=1/240*r;w+=1/240;}return w;}
 function replayFor(x,o){try{if(x.live||!M.kinoReplay)return;const e=x.e,at=e?.time;if(at==null)return;const b=S.battle,v=b.actors.find(q=>q.g===o.g);if(!v)return;const n=o.byName||e.attacker,att=n?b.actors.find(q=>q!==v&&q.g.name===n):null;
- M.kinoReplay.start([v.id,att?.id].filter(Boolean),at-PRE,at,wallToHit()*1000);}catch(err){}}
+ M.kinoReplay.start([v.id,att?.id].filter(Boolean),at-PRE,at,wallToHit()*1000,o.part);}catch(err){}}
 function endArena(){arena?.v?.remove();const hosted=arena&&!arena.v;arena=null;if(hosted)cfg.onShot?.(false);}
 /* Leistung: Steht die Nahaufnahme still (fertig, wartet auf Moderator oder Antippen), ist jedes Bild gleich – dann nicht neu zeichnen.
    Großaufnahmen der Gesichter (Tod, Zusammenbruch) bewegen Mund und Augen nach der Uhr und werden immer gezeichnet. */

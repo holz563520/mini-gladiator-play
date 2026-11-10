@@ -59,23 +59,25 @@ const R=M.combatResponses;
 let lastB=null;
 if(R?.impact){const orig=R.impact;R.impact=(a,b,dmg,projectile,w,part)=>{orig(a,b,dmg,projectile,w,part);if(!HC.active||projectile||!w||w.ammo||!a||!b||a.dog||b.dog)return;if(S.battle!==lastB){lastB=S.battle;stops.clear();}
  const cls=strikeClass(w.id,a.swingKind);
- stops.set(a.id,{t:now(),target:b.id,part,cls,dmg,off:(HALF[part]??5)-(DEPTH[cls]??2)*(.7+cl(dmg/30,0,1)*.6)});HC.stats.stops++;
+ /* Rundschlag trifft mehrere: die Waffe bleibt beim eigentlichen Ziel des Schlags (arena.js _hitAim), nicht beim zuletzt Mitgetroffenen */const prim=a._hitAim?.v,old=stops.get(a.id);
+ if(!(old&&old.t===now()&&prim!=null&&old.target===prim&&b.id!==prim))stops.set(a.id,{t:now(),target:b.id,part,cls,dmg,off:(HALF[part]??5)-(DEPTH[cls]??2)*(.7+cl(dmg/30,0,1)*.6)});HC.stats.stops++;
  markWound(a,b,w,part,dmg,cls);};}
-const tipOf=w=>M.bladeSurface?.(w.id,w.item?.q??1)?.tip||({hammer:33,mace:32,club:27}[w.id]||38);
+/* gleiche Länge wie beim Zeichnen (arena.js): Zweihänder ×1,22, Stangenwaffen ×1,1 – sonst stach die Spitze von Speer/Dreizack/Zweihänder durch den Körper hindurch (Thomas 10.11.) */
+const tipOf=w=>(M.bladeSurface?.(w.id,w.item?.q??0)?.tip||({mace:32,hammer:33,club:30}[w.id]??30))*(w.id==='greatsword'?1.22:w.sprite===1?1.1:1);
 HC.pose=(a,main,off,angle,c)=>{if(!HC.active||!S.battle||!stops.size)return null;const st=stops.get(a.id);if(!st)return null;
  const t=now()-st.t,hold=HOLD[st.cls]??.07,pull=.2;if(t<0||t>hold+pull){stops.delete(a.id);return null;}
  const b=M.blockContact?.actor?M.blockContact.actor(st.target):S.battle.actors.find(x=>x.id===st.target);if(!b||b.g.dead&&t>hold)return null;
  const sx=c.sx,sy=c.sy,fs=Math.sign(sx)||1,toL=P=>({x:(P.x-a.x)/sx,y:(P.y-a.y)/sy-c.bob});
- let cp;try{cp=M.contactAnchor(b,st.part);}catch{cp=null;}if(!cp)return null;
- const root=c.shoulders?.r||{x:4,y:-56},CL=toL(cp),dx0=CL.x-root.x,dy0=CL.y-root.y,d0=Math.max(1,Math.hypot(dx0,dy0)),ux=dx0/d0,uy=dy0/d0;
+ /* die Stelle dort, wo sie gerade gezeichnet ist (kniend, fallend, liegend, Arm in Bewegung), sonst die Faustformel */let cp;try{cp=(M.gait?.active&&M.gait.anchor?.(b,st.part))||M.contactAnchor(b,st.part);}catch{cp=null;}if(!cp)return null;
+ const root=c.shoulders?.[c.w?.hand==='l'?'l':'r']||{x:4,y:-56},CL=toL(cp),dx0=CL.x-root.x,dy0=CL.y-root.y,d0=Math.max(1,Math.hypot(dx0,dy0)),ux=dx0/d0,uy=dy0/d0;
  // Spitze sitzt auf der Oberfläche bzw. in Eindringtiefe (Figurmaß in Weltmaß umgerechnet)
  const so=st.off,P={x:CL.x-ux*so,y:CL.y-uy*so},tip=tipOf(c.w);
  const dx=P.x-root.x,dy=P.y-root.y,d=Math.max(1,Math.hypot(dx,dy));
  // Zu nah für die Waffenlänge: erst Ellbogen einziehen (Hand bis 12 hinter die Schulter), dann die Klinge abwinkeln,
  // sodass der Rest an der Körperoberfläche entlang statt durch den Körper zeigt
  let reach=Math.min(26,d-tip),aim=Math.atan2(dy,dx),H;
- if(reach>=-12){reach=Math.max(reach,-12);H={x:root.x+dx/d*reach,y:root.y+dy/d*reach};aim=Math.atan2(P.y-H.y,P.x-H.x);}
- else{const ex=-12-reach,phi=Math.min(1.15,ex/tip*2.4),side=uy>=0?1:(st.cls==='stich'||st.cls==='dolch'?1:1);aim=Math.atan2(uy,ux)+phi*side*(ux>=0?1:-1);
+ if(reach>=-22){/* Thomas 10.11.: Hand darf weiter hinter die Schulter (lange Waffen auf kurze Entfernung), die Spitze bleibt auf der Stelle */reach=Math.max(reach,-22);H={x:root.x+dx/d*reach,y:root.y+dy/d*reach};aim=Math.atan2(P.y-H.y,P.x-H.x);}
+ else{const ex=-22-reach,phi=Math.min(1.15,ex/tip*2.4),side=uy>=0?1:(st.cls==='stich'||st.cls==='dolch'?1:1);aim=Math.atan2(uy,ux)+phi*side*(ux>=0?1:-1);
   const ax=Math.cos(aim),ay=Math.sin(aim),u=cl((d+12)/tip,.25,1);H={x:P.x-ax*u*tip,y:P.y-ay*u*tip};
   const hx=H.x-root.x,hy=H.y-root.y,hl=Math.hypot(hx,hy);if(hl>26){H={x:root.x+hx*26/hl,y:root.y+hy*26/hl};}}
  // stumpfe Waffen federn kurz zurück, Klingen werden herausgezogen
