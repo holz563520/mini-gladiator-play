@@ -128,7 +128,8 @@ const PRESETS={
  wunde:{name:'Wunde groß, Kämpfer klein',look:{layout:'piprev',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.84,slow:8,sync:'gemeinsam',grade:'normal',bars:7}},
  schnitt:{name:'Schnittfolge',look:{layout:'cut',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.86,slow:16,sync:'gemeinsam',grade:'rot',bars:12}},
  dunkel:{name:'Feld abgedunkelt',look:{layout:'split',frame:'feld',bg:'dunkel',others:.12,who:'paar',fill:.8,slow:8,sync:'gemeinsam',grade:'normal',bars:8}}};
-let look={...LOOK0};try{const j=JSON.parse(localStorage.getItem('mg-kino-look')||'null');if(j&&typeof j==='object')look={...LOOK0,...j};}catch{}
+/* Thomas 10.11.: „Schwarze Bühne“ ist jetzt die Darstellung im Spiel; eine im Kino-Editor gewählte gilt weiter (auch „Bisher“) */
+const GAME_LOOK={...LOOK0,...PRESETS.buehne.look};let look={...GAME_LOOK};try{const j=JSON.parse(localStorage.getItem('mg-kino-look')||'null');if(j&&typeof j==='object')look={...LOOK0,...j};}catch{}
 const film=()=>look.layout!=='alt';
 const GRADE={normal:'none',warm:'sepia(.25) saturate(1.15) contrast(1.06)',kalt:'saturate(.7) hue-rotate(-12deg) contrast(1.1) brightness(.95)',rot:'sepia(.35) saturate(1.5) hue-rotate(-18deg) contrast(1.12)',blass:'saturate(.35) contrast(1.15)'};
 const FM={el:null,A:null,ga:null,B:null,who:null,rects:null,shotKey:'',phase:-1,step:null,beatT:0};
@@ -261,7 +262,7 @@ cfg.onShot=function(on,o,live){const r=shown?.apply(this,arguments);try{if(on&&!
 const slowOf=()=>{if(!K.on||off)return 0;if(!film())return SLOW;const n=+look.slow;return n>0?1/n:0;};
 M.kinoCam={camera:(...x)=>camera(...x),follow,alpha:a=>alpha(a),/* Zeitlupe statt Stillstand während des Kino-Moments (injury-shots.js, arena.js) */get slow(){return slowOf();},get on(){return K.on;},get subjects(){return K.set.map(a=>a.id);},get off(){return off;},set off(v){off=!!v;if(off)end();try{localStorage.setItem('mg-kino',off?'off':'on');}catch{}},
  /* schwarzer Hintergrund: Hindernisse (arena.js) ausblenden */get hideScenery(){return K.on&&!off&&film()&&(look.bg==='schwarz'||look.bg==='spot');},
- /* Kino-Look (kino-editor.html) */presets:PRESETS,defaults:LOOK0,get look(){return {...look};},setLook(v,save){look={...LOOK0,...(v||{})};if(save)try{localStorage.setItem('mg-kino-look',JSON.stringify(look));}catch{}},
+ /* Kino-Look (kino-editor.html) */presets:PRESETS,defaults:LOOK0,gameDefault:GAME_LOOK,get look(){return {...look};},setLook(v,save){look={...LOOK0,...(v||{})};if(save)try{localStorage.setItem('mg-kino-look',JSON.stringify(look));}catch{}},
  /* Kino-Ton an/aus (kino-editor.html) */get sound(){return !tonOff;},set sound(v){tonOff=!v;if(tonOff)tonStop();try{localStorage.setItem('mg-kino-ton',tonOff?'off':'on');}catch{}},get soundOn(){return T.on;},
  state:()=>({shot:F.shot,pair:F.pair?.key||null,punch:+F.punch.toFixed(3),split:K.on?(FM.rects?'film-'+look.layout:K.mode):null})};
 })();

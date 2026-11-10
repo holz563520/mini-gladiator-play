@@ -8,7 +8,7 @@
 (()=>{
 /* Spielstand schützen: nur die Kino-Einstellung darf geschrieben werden */
 try{const set=Storage.prototype.setItem,rem=Storage.prototype.removeItem;
- Storage.prototype.setItem=function(k,v){if(String(k).startsWith('mg-kino')||k==='mg-tempo')return set.call(this,k,v);};
+ Storage.prototype.setItem=function(k,v){if(String(k).startsWith('mg-kino')||k==='mg-tempo2')return set.call(this,k,v);};
  Storage.prototype.removeItem=function(k){if(String(k).startsWith('mg-kino'))return rem.call(this,k);};}catch{}
 const $=id=>document.getElementById(id);
 const OPT={
@@ -52,7 +52,7 @@ function panel(){const P=M.kinoCam.presets,el=document.createElement('div');el.i
  <label><span>Kämpfer</span><select id="keN"><option value="1">1 gegen 1</option><option value="2">2 gegen 2</option><option value="3" selected>3 gegen 3</option><option value="5">5 gegen 5</option></select></label>
  <label><span>Rüstung</span><select id="keA"><option value="none">Keine</option><option value="leather">Leder</option><option value="metal">Metall</option></select></label>
  <div class="ke-row"><button id="keNew">Neuer Kampf</button><button id="kePause">Pause</button><button id="keSkip">Moment überspringen</button></div>
- <hr><div class="ke-row"><button id="keUse" class="ke-use">Im Spiel verwenden</button><button id="keOld">Spiel: wieder „Bisher“</button></div>
+ <hr><div class="ke-row"><button id="keUse" class="ke-use">Im Spiel verwenden</button><button id="keOld">Spiel: „Bisher“</button></div>
  <div style="margin-top:6px"><small id="keGame"></small></div></div>`;
  document.body.appendChild(el);if(innerWidth<600){el.classList.add('zu');el.querySelector('.ke-tog').textContent='aufklappen';}
  el.querySelector('h3').onclick=()=>{el.classList.toggle('zu');el.querySelector('.ke-tog').textContent=el.classList.contains('zu')?'aufklappen':'einklappen';};
@@ -64,9 +64,8 @@ function panel(){const P=M.kinoCam.presets,el=document.createElement('div');el.i
  $('keSkip').onclick=()=>M.injuryShots.skip?.();
  $('keW').onchange=$('keN').onchange=$('keA').onchange=()=>newFight();
  $('keUse').onclick=()=>{M.kinoCam.setLook(look,true);gameInfo();};
- $('keOld').onclick=()=>{try{localStorage.removeItem('mg-kino-look');}catch{}gameInfo();};}
-function gameInfo(){let j=null;try{j=JSON.parse(localStorage.getItem('mg-kino-look')||'null');}catch{}const P=M.kinoCam.presets,same=o=>Object.entries(P).find(([,p])=>JSON.stringify({...M.kinoCam.defaults,...p.look})===JSON.stringify({...M.kinoCam.defaults,...o}));
- const hit=j?same(j):null;$('keGame').textContent='Im Spiel (auf diesem Gerät): '+(!j||j.layout==='alt'?'Bisher':hit?hit[1].name:'eigene Einstellung');}
+ $('keOld').onclick=()=>{M.kinoCam.setLook(M.kinoCam.presets.bisher.look,true);setLook(look);gameInfo();};}
+function gameInfo(){let j=null;try{j=JSON.parse(localStorage.getItem('mg-kino-look')||'null');}catch{}const P=M.kinoCam.presets,norm=o=>JSON.stringify({...M.kinoCam.defaults,...o}),cur=j||M.kinoCam.gameDefault,hit=Object.entries(P).find(([,p])=>norm(p.look)===norm(cur));$('keGame').textContent='Im Spiel (auf diesem Gerät): '+(hit?hit[1].name:'eigene Einstellung')+(j?'':' (Standard)');}
 function setLook(v){look={...M.kinoCam.defaults,...v};M.kinoCam.setLook(look,false);
  document.querySelectorAll('#kinoEd [data-k]').forEach(i=>{i.value=String(look[i.dataset.k]);});
  const P=M.kinoCam.presets;document.querySelectorAll('#kinoEd [data-p]').forEach(b=>b.classList.toggle('on',JSON.stringify({...M.kinoCam.defaults,...P[b.dataset.p].look})===JSON.stringify(look)));}

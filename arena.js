@@ -1181,8 +1181,9 @@ M.fpsGovernor=fpsGovernor;let govPaintAt=0;
    gleichmäßig (Uhr, Schritte, Effekte) – reine Wiedergabe, gleiche Regeln und Würfel.
    „Mehr Frames“: Laufen weniger Kampfschritte als Bilder (Zeitlupe im Kino-Moment, Tempo unter 100 %), werden Lage und Bewegungswerte
    der Figuren zwischen den letzten beiden Schritten weich überblendet statt stufig zu springen (nur Zeichnung, bis 40 Kämpfer). */
-{let t=1;try{const v=parseFloat(localStorage.getItem('mg-tempo'));if(v>0)t=v;}catch{}M.battleTempo=Math.max(.7,Math.min(1,t));}
-M.setBattleTempo=v=>{M.battleTempo=Math.max(.7,Math.min(1,+v||1));try{localStorage.setItem('mg-tempo',String(M.battleTempo));}catch{}};
+/* Thomas 10.11.: allgemein 70 % (neuer Speicherschlüssel, damit ältere Probe-Einstellungen nicht weiter gelten); einstellbar 70–100 % */
+{let t=.7;try{const v=parseFloat(localStorage.getItem('mg-tempo2'));if(v>0)t=v;}catch{}M.battleTempo=Math.max(.7,Math.min(1,t));}
+M.setBattleTempo=v=>{M.battleTempo=Math.max(.7,Math.min(1,+v||.7));try{localStorage.setItem('mg-tempo2',String(M.battleTempo));}catch{}};
 /* Zähler, die rückwärts laufen: springt der Wert nach oben (neuer Schlag, neuer Sturz), wird nicht überblendet – sonst lief der Schwung rückwärts („Hubschrauber“) */
 const COUNTDOWN=new Set(['wind','swing','hit','fallTimer','blockFlash','guardTime','stagger','dodgeTimer','chargeTimer','kneeTimer','riseTimer','shoutTimer','dazeT']);
 const LERP_K=['x','y','wind','swing','hit','fallTimer','blockFlash','guardTime','stagger','dodgeTimer','stepClock','gaitForward','gaitDepth','chargeTimer','kneeTimer','riseTimer','shoutTimer','dazeT'],LERP_A=['a','phase','recoilAngle','attackA'];
