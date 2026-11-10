@@ -27,7 +27,7 @@ const DEF={
  // Initiative nutzen und Abstechen am Boden (Vorschlag, nicht freigegeben)
  seize:1,seizeRange:320,finWind:1.4,finDmg:1.3,finSever:.45,finHold:.7,
  // Durchstich im Stehen (Stich-Angriff)
- pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9,pierceRate:1.1,pierceArmor:8,pierceBack:3,specials:1,specialRate:1,specialForce:0,
+ pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9,pierceRate:1.8,/* Thomas 10.11.: Durchstiche öfter (vorher 1,1) */pierceArmor:8,pierceBack:3,specials:1,specialRate:1.8,/* Thomas 10.11.: Sonderverletzungen öfter (vorher 1) */specialForce:0,
  backRun:1,backDmg:1.6,backGrab:.6,grabTime:1.7,backKnock:.45,
  // Speer/Dreizack: Anteil Stiche, Abklingzeit nach dem Stich
  spearThrust:.85,spearCool:.5,spearWind:.65,spearJabEnergy:.5,spearSwing:.65
@@ -267,16 +267,16 @@ const SPECIALS=G.SPECIALS={
  pelvisBreaker:{name:'Beckenbrecher',tech:'overhead',techs:['overhead','slash','spin'],parts:['belly'],ws:['hammer','mace'],base:.045,arm:16,txt:'BECKEN GEBROCHEN!'},
  throatBlow:{name:'Kehlschlag',tech:'slash',techs:['slash','overhead','spin','thrust'],parts:['neck'],ws:SP_BLUNT,base:.1,arm:12,txt:'KEHLKOPF ZERTRÜMMERT!'},
  collarBreaker:{name:'Schlüsselbeinbrecher',tech:'overhead',techs:['overhead'],parts:['ls','rs'],ws:[...SP_BLUNT,'axe','doubleaxe'],base:.15,arm:14,txt:'SCHLÜSSELBEIN GEBROCHEN!'},
- neckBreaker:{name:'Genickbrecher',tech:'overhead',techs:['overhead','slash'],parts:['neck'],ws:SP_BLUNT,base:.12,arm:12,rear:true,txt:'GENICK GEBROCHEN!'}};
+ neckBreaker:{name:'Genickbrecher',tech:'overhead',techs:['overhead','slash'],parts:['neck'],ws:SP_BLUNT,base:.4,/* vorher .12 */arm:12,rear:true,front:.5,/* auch von vorn, halb so oft (Thomas 10.11.: Genickbrüche sah man nie) */txt:'GENICK GEBROCHEN!'}};
 // Fertigkeit (Kampfmanöver Ist 0–100): 0 → ×0,3, 50 → ×1, 100 → ×1,7; fehlt der Wert (alter Spielstand), zählt die verwandte Grundtechnik halb
 const SP_FROM={pierce:'thrust',heartStab:'thrust',lungStab:'thrust',organStab:'thrust',gutting:'slash',ribBreaker:'overhead',pelvisBreaker:'overhead',throatBlow:'slash',collarBreaker:'overhead',neckBreaker:'overhead'};
 G.skillOf=(a,key)=>{const m=a?.g?.moves||{};return m[key]??(m[SP_FROM[key]]??20)*.5;};
 G.skillF=(a,key)=>.3+1.4*cl(G.skillOf(a,key)/100,0,1);
 // welche Sonderattacke ein Treffer auslösen kann (für Testreihe und Anzeige)
-G.specialFits=(a,b,w,id,tech)=>{const out=[];if(!w||w.ammo||!b?.g)return out;for(const [key,S] of Object.entries(SPECIALS)){if(!S.ws.includes(w.id)||!S.parts.includes(id)||!S.techs.includes(tech))continue;if(S.rear&&!G.isBack(a,b))continue;out.push(key);}return out;};
+G.specialFits=(a,b,w,id,tech)=>{const out=[];if(!w||w.ammo||!b?.g)return out;for(const [key,S] of Object.entries(SPECIALS)){if(!S.ws.includes(w.id)||!S.parts.includes(id)||!S.techs.includes(tech))continue;if(S.rear&&!S.front&&!G.isBack(a,b))continue;out.push(key);}return out;};
 // Rüstung der Stelle: e^(−Schutz/k), k wächst mit der Wucht (wuchtige Treffer kommen eher durch): Stich/Schnitt k=8·(1+Schaden/30), Wucht k=16·(1+Schaden/30)
 G.armorF=(armor,k,dmg)=>Math.exp(-(armor||0)/(k*(1+cl(dmg||0,0,60)/30)));
-G.specialChance=(a,b,w,id,dmg,key)=>{const S=SPECIALS[key];if(!S)return 0;const armor=M.armorProtection?.(b.g,id)||0;return cl(S.base*P.specialRate*G.skillF(a,key)*cl((dmg||0)/15,.5,1.6)*G.armorF(armor,S.arm,dmg),0,.35);};
+G.specialChance=(a,b,w,id,dmg,key)=>{const S=SPECIALS[key];if(!S)return 0;const armor=M.armorProtection?.(b.g,id)||0;return cl(S.base*(S.rear&&S.front&&!G.isBack(a,b)?S.front:1)*P.specialRate*G.skillF(a,key)*cl((dmg||0)/15,.5,1.6)*G.armorF(armor,S.arm,dmg),0,.35);};
 const spDone=(B,key,id)=>{const q=B[id]||{};switch(key){case 'ribBreaker':return !!B.chest.fracture;case 'pelvisBreaker':return !!B.belly.fracture;case 'collarBreaker':return !!q.fracture;case 'throatBlow':case 'neckBreaker':return !!B.neck.fracture;case 'gutting':return !!B.belly.gutted;case 'lungStab':return !!B.chest.lungHit;case 'organStab':return !!B.belly.organHit;default:return false;}};
 G.special=(a,b,dmg,w,id)=>{
  if(!G.active||!P.specials||!b?.g||b.g.dead||!a?.g||a.pierceContact||!w||w.ammo||b.down)return false;const part=b.g.body[id];if(!part||part.missing)return false;

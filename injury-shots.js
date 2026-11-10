@@ -24,7 +24,7 @@ const KINDS=[
 /* Im Spiel: „Ausgeweidet“ (Darm tritt aus) nur noch über die Sonderattacke Ausweiden am unteren Bauch; innere Verletzungen und tiefe Bauchwunden
    zeigen einen tiefen Schnitt bzw. Stich (vorher kam das Ausweiden bei jedem schweren Bauch- und sogar Brusttreffer, Wunsch Thomas 10.11.) */
 const NEW_KIND={'Ausgeweidet':'gutted','Herzstich':'heart','Lungendurchstich':'lung','Rippenbruch':'ribs','Rippenserienfraktur':'ribseries','Brustbeinbruch':'sternum','Leberriss':'liver','Milzriss':'spleen','Nierenverletzung':'kidney','Beckenbruch':'pelvis','Genickbruch':'neckbreak','Kehlkopfbruch':'larynx','Schlüsselbeinbruch':'collarbone'};
-const kindOf=name=>({'Tiefe Stichwunde':'deepstab','Kritische Bauchverletzung':'deepcut','Schwere innere Verletzung':'deepstab','Tiefe Bauchwunde':'deepcut','Amputation':'sever','Tödliche Schnittwunde':'deepcut'})[name]||NEW_KIND[name]||KINDS.find(k=>k[0]===name)?.[1]||'cut';
+const kindOf=name=>({'Durchbohrt':'pierce',/* Abstechen am Boden (gangarten.js), wurde als Schnitt gezeigt */'Tiefe Stichwunde':'deepstab','Kritische Bauchverletzung':'deepcut','Schwere innere Verletzung':'deepstab','Tiefe Bauchwunde':'deepcut','Amputation':'sever','Tödliche Schnittwunde':'deepcut'})[name]||NEW_KIND[name]||KINDS.find(k=>k[0]===name)?.[1]||'cut';
 // Anatomische Zeile der neuen Verletzungen (gleiche Rechnung wie V.seed, damit Rippe/Seite/Wirbel zum Bild passen)
 const ROMN=['','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
 function anat(kind,part,g){const sd=[...(part+kind+(g?.id||g?.name||''))].reduce((n,c)=>(n*31+c.charCodeAt(0))%9973,7),side=sd%2?'links':'rechts',lat=sd%2?'sinistra':'dextra',n=3+sd%6;
@@ -165,7 +165,7 @@ function armorAt(g,part){try{const it=(M.armorItems?.(g)||[]).find(i=>M.definiti
 const hx2=c=>{c=String(c||'');if(!/^#[0-9a-f]{6}$/i.test(c))return -1;return parseInt(c.slice(1),16);},rgb=c=>{const v=hx2(c);return [v>>16&255,v>>8&255,v&255];};
 const BLUNT_K=['bruise','contusion','crush','fracture','badfracture','shatter','pulp','joint','concussion'];
 function dressArmor(q,C,V,o,kind,k){const part=o.part;if(part==='head'||part==='neck'||kind==='scar'||o.noArmor)return null;const H=o.armor===undefined?armorAt(o.g,part):o.armor;if(!H)return;const L=helmLook(H),view=viewOf(part);
- const base=H.mat==='medium'?(L.leather||L.metal):L.metal,pal={hi:rgb(mix(base,'#ffffff',H.mat==='metal'?.32:.18)),base:rgb(base),lo:rgb(mix(base,'#000000',.32)),line:rgb(mix(base,'#000000',.55)),edge:rgb(L.edge||mix(base,'#ffffff',.4)),stud:rgb(L.stud||'#c9c2a8'),trim:rgb(L.trim||mix(base,'#000000',.4)),metal:rgb(H.mat==='medium'?L.metal:base),metalHi:rgb(mix(L.metal,'#ffffff',.35))};
+ const base=H.mat==='medium'?(L.leather||L.metal):L.metal,pal={hi:rgb(mix(base,'#ffffff',H.mat==='metal'?.32:.18)),base:rgb(base),lo:rgb(mix(base,'#000000',.32)),line:rgb(mix(base,'#000000',.55)),edge:rgb(L.edge||mix(base,'#ffffff',.4)),stud:rgb(L.stud||'#c9c2a8'),trim:rgb(L.trim||mix(base,'#000000',.4)),metal:rgb(H.mat==='medium'?L.metal:base),metalHi:rgb(mix(L.metal,'#ffffff',.35)),/* Nieten: nicht mehr als grelle helle Quadrate */studM:rgb(mix(base,L.stud||'#c9c2a8',.45))};
  const role=new Map([[hx2(C.light),'hi'],[hx2(C.skin),'base'],[hx2(C.shade),'lo'],[hx2(C.line),'line']]);role.delete(-1);
  const img=q.getImageData(0,0,FW,FH),d=img.data,A=V.A,ax=V.dir||{x:1,y:0},al=Math.hypot(ax.x,ax.y)||1,ux=ax.x/al,uy=ax.y/al;
  // Bereich je Ansicht: Arm/Bein als Band um die Wunde, Rumpf ganz, Schulter und Fuß rund um die Wunde, Hand nur am Handgelenk
@@ -177,12 +177,12 @@ function dressArmor(q,C,V,o,kind,k){const part=o.part;if(part==='head'||part==='
  const noHole=['sever','collapse','death','scar','concussion'].includes(kind),keep=[];const holeF=(x,y)=>{if(p<=0||noHole)return 9;const dx=x-A.x,dy=y-A.y;let r;if(cutK){const a=dx*g.x+dy*g.y,b=-dx*g.y+dy*g.x;r=Math.hypot(a/Math.max(1,gl*p),b/Math.max(1.5,R*.55*p));}else{const ang=Math.atan2(dy,dx),j=1+.28*Math.sin(ang*5+seed)+.16*Math.sin(ang*9+seed*2);r=Math.hypot(dx,dy)/Math.max(.5,R*p*j);}return r;};
  for(let y=0;y<FH;y++)for(let x=0;x<FW;x++){const i=(y*FW+x)*4;const v=(d[i]<<16)|(d[i+1]<<8)|d[i+2],ro=role.get(v);if(!ro||!inside(x,y))continue;const h=holeF(x,y);if(h<1)continue;
   const dx=x-A.x,dy=y-A.y,s=limbV?dx*ux+dy*uy:y,c=limbV?-dx*uy+dy*ux:x;let col=pal[ro]||pal.base;
-  if(H.mat==='metal'){const m=((Math.round(s)%9)+9)%9;if(m===0)col=pal.line;else if(m===1&&ro!=='lo')col=pal.hi;if(m===4&&((Math.round(c)%12)+12)%12===0)col=pal.stud;}
+  if(H.mat==='metal'){const m=((Math.round(s)%9)+9)%9;if(m===0)col=pal.line;else if(m===1&&ro!=='lo')col=pal.hi;if(m===4&&((Math.round(c)%12)+12)%12===0)col=pal.studM;}
   else if(H.mat==='medium'){const m=((Math.round(s)%10)+10)%10;if(m>=6&&m<=8)col=m===6?pal.metalHi:ro==='lo'?pal.line:pal.metal;else if(m===9)col=pal.line;if(m===7&&((Math.round(c)%10)+10)%10===0)col=pal.stud;}
   else{const m=((Math.round(s)%14)+14)%14;if(m<3)col=m===1?pal.trim:pal.line;else if(((Math.round(c)+Math.round(s))%4===0)&&m===5)col=pal.edge;}
   if(limbV&&Math.abs(s)>half-2)col=Math.abs(s)>half-1?pal.line:pal.edge;
   // Rand des Lochs: Metall aufgebogen und blank, Leder ausgefranst
-  if(h<1.35){col=H.mat==='leather'?((x+y)%2?pal.line:pal.trim):(dy<0?pal.edge:pal.line);if(blunt&&H.mat!=='leather'&&h<1.15)col=pal.metalHi;}
+  /* Thomas 10.11.: der breite, fast weiße Rand wirkte vergrößert wie ein heller Kasten – jetzt schmal, oben nur eine Lichtkante */if(h<1.18){col=H.mat==='leather'?((x+y)%2?pal.line:pal.trim):(dy<0&&h<1.08?pal.hi:pal.line);if(blunt&&H.mat!=='leather'&&h<1.08)col=pal.hi;}
   else if(blunt&&H.mat!=='leather'&&h<1.6&&p>0)col=dx+dy<0?pal.hi:pal.lo;
   d[i]=col[0];d[i+1]=col[1];d[i+2]=col[2];keep.push(i);}
  q.putImageData(img,0,0);
@@ -598,8 +598,12 @@ const relevant=(p,down)=>!!(p?.missing||p?.chronic>0||p?.fracture||M.injuryGrade
 // =====================================================================================================
 const S=M.s,MODES=[['all','Alle Kämpfer'],['own','Nur eigene Gladiatoren'],['key','Nur wichtige (Anführer, deine drei Stärksten)'],['off','Aus']],GRADE=['Kratzer','Leicht','Mittel','Schwer','Kritisch','Verloren'];
 const mode=()=>MODES.some(m=>m[0]===S.options?.closeups)?S.options.closeups:'all';
-const RANK={sever:9,skullfracture:9,heart:9,neckbreak:9,gutted:8,pulp:8,shatter:8,badfracture:7,ribseries:7,lung:7,pelvis:7,fracture:6,gut:6,sternum:6,liver:6,spleen:6,kidney:6,larynx:6,ribs:5,collarbone:5,pierce:5,sinew:5},NOTED=['Schädelbruch','Abgetrennt','Trümmerbruch','Zertrümmert','Durchstochen',...Object.keys(NEW_KIND)];
-const GAP=5,SHOT_FROM=.3,SHOT_LEN=2;
+const RANK={sever:9,skullfracture:9,heart:9,neckbreak:9,gutted:8,pulp:8,shatter:8,badfracture:7,ribseries:7,lung:7,pelvis:7,fracture:6,gut:6,sternum:6,liver:6,spleen:6,kidney:6,larynx:6,ribs:5,collarbone:5,pierce:7,through:8,sinew:5},NOTED=['Schädelbruch','Abgetrennt','Trümmerbruch','Zertrümmert','Durchstochen',...Object.keys(NEW_KIND)];
+const GAP=5,SHOT_FROM=.3,SHOT_LEN=2.8,THRU_LEN=3.5;/* Thomas 10.11.: Nahaufnahmen etwas länger, Durchstich ganz (Eintritt, Austritt, Herausreißen) */
+/* Waffen, mit denen ein Stich ganz durchgeht (gangarten.js PIERCE_BASE): Durchstochen/Durchbohrt zeigt dann die filmische Durchstich-Aufnahme */
+const THRU_W=['spear','trident','javelin','rapier','dagger','gladius','short','long','greatsword','halberd'];
+/* Zeitlupe in der Nahaufnahme um den Treffer: Zeitfaktor je Aufnahmezeit t (HIT = Treffer) */
+const slowmo=s=>{if(s.o.live)return 1;const k=s.t-HIT;if(k<-.15)return 1;if(k<.05)return .35;if(k<(s.o.kind==='through'?1.1:.7))return .45;return 1;};
 // Erweiterungen für das Kampf-HUD (Testfassung): eigene Zeichenfläche, Stufe „alle Verletzungen“, Testschlachten
 const cfg={host:null,onShot:null,busy:null,benchmark:true,textScale:1,fallShots:false,important:null,fallText:null,confirm:false};let falls=[];const level=()=>S.options?.closeupLevel==='all'?'all':'severe';
 // Antippen zum Fortsetzen und eigene Bilder für Niedergänge gibt es nur zusammen mit der Info-Tafel (dort ist Platz dafür)
@@ -660,12 +664,12 @@ function arenaShot(x){const {e,k,inj}=x,g=e.g,p=g.body[e.part],gr=M.injuryGrade(
  if(k==='death'){const killer=g.killer&&g.killer!=='Unbekannt'?g.killer:'';o={g,team:e.a?.team,part:'head',kind:'death',cls:'none',variant:Math.floor(Math.random()*3),dramatic:!!x.dramatic,line1:killer?killer+' tötet '+g.name:g.name+' stirbt',title:'† '+g.name+' fällt',line3:g.cause||'',color:'#f29b83',...(cfg.fallText?.(x)||{})};}
  else if(k==='collapse'&&x.fall&&e.reason!=='Blutverlust')o={g,team:e.a?.team,fall:true,variant:Math.floor(Math.random()*3),part:'chest',kind:'collapse',line1:(by&&by!==g.name?by+' streckt '+g.name+' nieder':g.name+' geht zu Boden'),title:'Kampfunfähig',line3:e.reason||'',color:'#f29b83',...(cfg.fallText?.(x)||{})};
  else if(k==='collapse')o={g,part:'chest',kind:'collapse',line1:g.name+' verliert zu viel Blut',title:'Geht blutend zu Boden',line3:'Blut '+Math.round(g.blood)+' % · kampfunfähig'+(by?' · zuletzt getroffen von '+by:''),color:'#f29b83',team:e.a?.team,fall:!!x.fall,variant:1};
- else{/* Schädelbruch: die Waffe merkt sim.js am Kopf (skullBy); Namen eigener Waffen (z. B. mit Geschichte) kennt weaponId nicht */const wid=(k==='skullfracture'&&p.skullBy)||weaponId(e.weapon),kind=['bow','crossbow'].includes(wid)&&['stab','deepstab'].includes(k)?'arrow':k,
+ else{/* Schädelbruch: die Waffe merkt sim.js am Kopf (skullBy); Namen eigener Waffen (z. B. mit Geschichte) kennt weaponId nicht */const wid=(k==='skullfracture'&&p.skullBy)||weaponId(e.weapon),kind=['bow','crossbow'].includes(wid)&&['stab','deepstab'].includes(k)?'arrow':k==='pierce'&&THRU_W.includes(wid)?'through':k,
    cons=p.missing?'für immer verloren':p.fracture?.crushed?'Dauerschaden: heilt nie ganz':p.fracture?'Bruch: mindestens '+Math.ceil(p.fracture.days/(M.HEAL_SPEED||1))+' Tage':e.lasting||p.chronic>0?'Dauerschaden':p.bleed>0?'blutet weiter':'';
   o={g,team:e.a?.team,part:e.part,kind,wid,cls:wid?undefined:'none',line1:(e.attacker||'Ein Gegner')+(e.weapon?' ('+e.weapon+')':'')+' fügt '+g.name+' zu:',title:inj,line3:[p.missing?'':'Grad '+gr+' ('+GRADE[gr]+')',kind==='arrow'?'der Pfeil bleibt stecken':'',cons].filter(Boolean).join(' · '),color:gr>=3||p.missing?'#f29b83':'#f4d37a'};}
  /* schwere Verletzung: immer anhalten (auch bei schnellem Spiel), bis der Moderator ausgeredet hat */const L=M.speakLine?modLine(k,e,g,p,gr,by,o.kind):null;if(L)x.live=false;
  let after=null;if(!x.live&&L){const adv=advMode(),txt=adv&&k==='death'?(o.line1||'')+'. '+L:L;M.speakLine(txt,adv?'erzaehler':'moderator',null,{vol:1.05,keep:true});M.modSayNow?.(L);if(adv)after=k==='death'?'laugh':null;else M.audioEngine?.sound?.(k==='collapse'?pickL(['laugh','ooh']):'jubel');}
- const shot=start({...o,textScale:cfg.host?.()?cfg.textScale:1,from:SHOT_FROM,len:k==='death'?(x.dramatic?5:3):x.live?1.5:SHOT_LEN,hold:tap()&&!x.live,mute:true}),host=cfg.host?.();
+ const shot=start({...o,textScale:cfg.host?.()?cfg.textScale:1,from:SHOT_FROM,len:k==='death'?(x.dramatic?5.5:3.6):x.live?1.5:o.kind==='through'?THRU_LEN:SHOT_LEN,hold:tap()&&!x.live,mute:true}),host=cfg.host?.();
  if(host){cfg.onShot?.(true,o,!!x.live);arena={v:null,shot,c:host,g:host.getContext('2d'),battle:S.battle.id,live:!!x.live,after};}
  else{const v=document.createElement('div');v.className='injury-shot injury-shot-arena';v.innerHTML='<canvas width="660" height="420"></canvas>';document.body.appendChild(v);v.addEventListener('click',()=>{shot.done=true;shot.skipped=true;M.speakStop?.();});arena={v,shot,c:v.firstChild,g:v.firstChild.getContext('2d'),battle:S.battle.id,after};}if(!x.live)gap=tap()?1.2:L?1.5:GAP;}
 function endArena(){arena?.v?.remove();const hosted=arena&&!arena.v;arena=null;if(hosted)cfg.onShot?.(false);}
@@ -677,7 +681,7 @@ if(typeof M.fixedStep==='function'&&typeof M.presentationStep==='function'){
  const fixed=M.fixedStep,present=M.presentationStep,effects=M.effectsStep;
  M.fixedStep=function(dt){if(arena&&!arena.live){/* Kino-Moment (kino-kamera.js): statt Stillstand Zeitlupe, jeder n-te Schritt */const ks=M.kinoCam?.slow;if(ks){arena.slowN=(arena.slowN||0)+1;if(arena.slowN%Math.max(1,Math.round(1/ks)))return;return fixed.apply(this,arguments);}/* mit Bestätigung: erst kurz Zeitlupe, dann Stillstand */if(arena.shot.o.hold&&arena.shot.t-SHOT_FROM<.45&&!arena.shot.o.waiting){arena.slow=(arena.slow||0)+1;if(arena.slow%6)return;}else return;}return fixed.apply(this,arguments);};
  if(typeof effects==='function')M.effectsStep=function(dt){if(arena&&!arena.live){const ks=M.kinoCam?.slow;if(ks)return effects.call(this,dt*ks);return;}return effects.apply(this,arguments);};
- M.presentationStep=function(dt){if(arena){const fin=!S.battle||S.battle.id!==arena.battle||arena.shot.skipped||((arena.shot.done||!arena.shot.step(dt))&&(arena.live||!M.speechHold?.()));
+ M.presentationStep=function(dt){if(arena){const fin=!S.battle||S.battle.id!==arena.battle||arena.shot.skipped||((arena.shot.done||!arena.shot.step(dt*slowmo(arena.shot)))&&(arena.live||!M.speechHold?.()));
   if(fin&&arena.after&&!arena.shot.skipped&&S.battle?.id===arena.battle){/* nach dem Tod im Abenteuer: erst ausreden, dann Gelächter */M.audioEngine?.sound?.(arena.after);arena.after=null;arena.tail=1.3;paintShot(arena);}
   else if(fin&&arena.tail>0&&!arena.shot.skipped&&S.battle?.id===arena.battle){arena.tail-=dt;paintShot(arena);}
   else if(fin)endArena();else paintShot(arena);if(arena&&!arena.live)return;}

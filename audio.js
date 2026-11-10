@@ -199,7 +199,7 @@ function fightSounds(b){const out=new Map(),add=(k,p=1)=>{if(!k||!window.KampfSo
 function prepareFight(limit=6000,b=M.s.battle){const K=window.KampfSound;if(!K?.prefill||!M.s.options?.sound||!init())return Promise.resolve(0);ksWarmup();
  const jobs=[];for(const [k,p] of fightSounds(b)){let j=null;try{j=K.prefill(ctx,k,{pitch:p,max:heavyKey(k)?1:2});}catch{}if(j)jobs.push(j);}
  if(!jobs.length)return Promise.resolve(0);return Promise.race([Promise.allSettled(jobs).then(()=>jobs.length),new Promise(r=>setTimeout(()=>r(-jobs.length),limit))]);}
-M.audioEngine={prepareFight,fightSounds,ksPlay:(k,vol=1,pitch=1)=>enabled(false)?ks(k,vol,0,pitch):false,start,sound,voice,
+M.audioEngine={/* Kino-Moment (kino-kamera.js): Zugang zu Klangkette, nur wenn Ton an ist */cine:()=>ctx&&enabled(false)?{ctx,master,musicBus,fightBus,impactBus,noise:noiseBuffer}:null,prepareFight,fightSounds,ksPlay:(k,vol=1,pitch=1)=>enabled(false)?ks(k,vol,0,pitch):false,start,sound,voice,
  // Sprechstimmen (sprech-game.js): Ausgang für Sprache, nur wenn Geräusche an sind
  voiceOut:()=>enabled(false)?{ctx,bus:fxBus}:null,
  // Zuschauer-Kulisse (zuschauer.js): Ausgang nur im Arenakampf mit Ton; Aufregung 0–1 zurück (Kämpfer treten bei Jubel zurück)

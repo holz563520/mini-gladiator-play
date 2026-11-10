@@ -45,6 +45,7 @@ function panel(){const P=M.kinoCam.presets,el=document.createElement('div');el.i
  <div class="ke-pre">${Object.entries(P).map(([k,p])=>`<button data-p="${k}">${p.name}</button>`).join('')}</div>
  ${Object.keys(OPT).map(sel).join('')}
  <label><span>Nähe</span><input type="range" data-k="fill" min="0.5" max="0.97" step="0.01"></label>
+ <label><span>Kino-Ton</span><select id="keTon"><option value="1">An (Zeitlupe, Herzschlag, Dröhnen)</option><option value="0">Aus</option></select></label>
  <div class="ke-st" id="keSt">Testkampf wird vorbereitet …</div>
  <hr><label><span>Waffen</span><select id="keW">${WEAP.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label>
  <label><span>Kämpfer</span><select id="keN"><option value="1">1 gegen 1</option><option value="2">2 gegen 2</option><option value="3" selected>3 gegen 3</option><option value="5">5 gegen 5</option></select></label>
@@ -56,6 +57,7 @@ function panel(){const P=M.kinoCam.presets,el=document.createElement('div');el.i
  el.querySelector('h3').onclick=()=>{el.classList.toggle('zu');el.querySelector('.ke-tog').textContent=el.classList.contains('zu')?'aufklappen':'einklappen';};
  el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{setLook(P[b.dataset.p].look);});
  el.querySelectorAll('[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=i.value;setLook({...look,[k]:['others','slow','bars','fill'].includes(k)?+v:v});});
+ $('keTon').value=M.kinoCam.sound?'1':'0';$('keTon').onchange=()=>{M.kinoCam.sound=$('keTon').value==='1';};
  $('keNew').onclick=()=>newFight();$('kePause').onclick=()=>{const b=M.s.battle;if(b){b.paused=!b.paused;$('kePause').classList.toggle('on',b.paused);}};
  $('keSkip').onclick=()=>M.injuryShots.skip?.();
  $('keW').onchange=$('keN').onchange=$('keA').onchange=()=>newFight();

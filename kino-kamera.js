@@ -203,6 +203,40 @@ function backdrop(g,b){if(!K.on||off||!film()||look.bg==='arena')return;const p=
 /* Wer im Bild ist: „paar“ = nur wer zuschlägt und wer getroffen wird (auch Schützen von weiter weg) */
 function subjectsLook(b,a){if(look.who!=='paar')return subjects(b,a);const by=b.actors.find(x=>x.id===a.lastAttackerId&&x!==a&&Math.hypot(x.x-a.x,x.y-a.y)<620);return by?[a,by]:[a];}
 
+// ---------------------------------------------------------------- 4) Kino-Ton (Thomas 10.11.: Verletzungsaufnahmen wie im Kino, Zeitlupe mit passenden Tönen)
+// Bei jeder Nahaufnahme, die den Kampf anhält: Welt wird leiser (Musik und Kämpfer gedämpft), Sog in die Zeitlupe, tiefes Dröhnen,
+// beim Treffer ein schwerer Schlag mit dem passenden Kampfgeräusch tief verlangsamt und ein Pfeifen im Ohr, dazu ein Herzschlag
+// (im Takt des roten Pulses im Filmbild, 0,9 s); beim Tod wird er langsamer und setzt aus. Abschaltbar: localStorage['mg-kino-ton']='off'.
+const T={on:false,shot:null,hit:false,nodes:[],duck:null,beat:0,raf:0,death:false,n:0};
+let tonOff=false;try{tonOff=localStorage.getItem('mg-kino-ton')==='off';}catch{}
+const A=()=>tonOff?null:M.audioEngine?.cine?.();
+function env(c,g,at,a,peak,hold,rel){g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(peak,at+a);g.gain.setValueAtTime(peak,at+a+hold);g.gain.exponentialRampToValueAtTime(.0001,at+a+hold+rel);}
+function osc(X,type,f0,f1,at,dur,vol,a=.005){const c=X.ctx,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f0,at);if(f1!==f0)o.frequency.exponentialRampToValueAtTime(f1,at+dur);env(c,g,at,a,vol,0,dur);o.connect(g);g.connect(X.master);o.start(at);o.stop(at+a+dur+.05);return o;}
+function noise(X,at,dur,vol,type,f0,f1,q=1,a=.01){const c=X.ctx;if(!X.noise)return;const n=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();n.buffer=X.noise;n.loop=true;f.type=type;f.Q.value=q;f.frequency.setValueAtTime(f0,at);f.frequency.exponentialRampToValueAtTime(f1,at+dur);env(c,g,at,a,vol,0,dur);n.connect(f);f.connect(g);g.connect(X.master);n.start(at);n.stop(at+a+dur+.05);}
+function duck(X,on){const t=X.ctx.currentTime,set=(bus,v)=>{if(!bus)return;bus.gain.cancelScheduledValues(t);bus.gain.setValueAtTime(bus.gain.value,t);bus.gain.linearRampToValueAtTime(v,t+(on?.25:.7));};
+ if(on){if(!T.duck)T.duck={m:X.musicBus?.gain.value,f:X.fightBus?.gain.value,i:X.impactBus?.gain.value};set(X.musicBus,T.duck.m*.3);set(X.fightBus,T.duck.f*.3);set(X.impactBus,T.duck.i*.55);}
+ else if(T.duck){set(X.musicBus,T.duck.m);set(X.fightBus,T.duck.f);set(X.impactBus,T.duck.i);T.duck=null;}}
+function heart(X,at,vol){osc(X,'sine',62,40,at,.16,vol,.004);noise(X,at,.09,vol*.5,'lowpass',160,90);osc(X,'sine',58,38,at+.2,.14,vol*.65,.004);}
+const LAYER={through:[['hitStab',1.5,.6],['backstab',1.1,.7]],pierce:[['hitStab',1.5,.62]],stab:[['hitStab',1.2,.65]],deepstab:[['hitStab',1.4,.62]],arrow:[['arrowBody',1.4,.65]],
+ sever:[['sever',1.5,.6]],skullfracture:[['skullCrack',1.6,.6]],neckbreak:[['boneCrack',1.7,.55],['skullCrack',.9,.7]],ribs:[['boneCrack',1.4,.62]],ribseries:[['boneCrack',1.6,.58]],sternum:[['boneCrack',1.4,.6]],collarbone:[['boneCrack',1.4,.65]],pelvis:[['boneCrack',1.6,.55]],larynx:[['hitBlunt',1.4,.6]],
+ fracture:[['boneCrack',1.4,.62]],badfracture:[['boneCrack',1.6,.58]],shatter:[['boneCrack',1.7,.55],['hitBlunt',1,.6]],pulp:[['hitBlunt',1.6,.55],['boneCrack',1.2,.6]],
+ heart:[['hitStab',1.5,.6]],lung:[['hitStab',1.4,.62]],liver:[['hitStab',1.4,.62]],spleen:[['hitStab',1.4,.62]],kidney:[['backstab',1.3,.65]],gutted:[['hitBlade',1.5,.6],['sever',.8,.7]],
+ cut:[['hitBlade',1.2,.68]],deepcut:[['hitBlade',1.5,.62]],gut:[['hitBlade',1.5,.62]],sinew:[['hitBlade',1.3,.65]]};
+function tonStart(o){if(T.on)tonStop();const X=A();if(!X)return;T.on=true;T.hit=false;T.n++;T.death=o?.kind==='death';T.kind=o?.kind;const t=X.ctx.currentTime;duck(X,true);
+ /* Sog in die Zeitlupe: Rauschen von tief nach hoch, darunter ein abfallender Ton */noise(X,t,.5,.22,'bandpass',260,2600,1.4,.3);osc(X,'sawtooth',220,70,t,.55,.035,.2);
+ /* tiefes Dröhnen, hält bis zum Ende */const c=X.ctx,g=c.createGain(),f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=180;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.09,t+.6);for(const fr of [41,61.5]){const o2=c.createOscillator();o2.type='sine';o2.frequency.value=fr;o2.connect(f);o2.start(t);T.nodes.push(o2);}f.connect(g);g.connect(X.master);T.nodes.push({g});
+ T.beat=t+.05;cancelAnimationFrame(T.raf);T.raf=requestAnimationFrame(tonTick);}
+function tonHit(X){const t=X.ctx.currentTime;/* schwerer Schlag */osc(X,'sine',78,30,t,1.1,.5,.003);noise(X,t,.3,.35,'lowpass',420,90,.8,.003);
+ for(const [k,vol,pitch] of LAYER[T.kind]||[['hitBlunt',1.2,.65]])M.audioEngine?.ksPlay?.(k,vol,pitch);
+ /* Pfeifen im Ohr nach dem Treffer */if(T.kind!=='collapse')osc(X,'sine',2900,2750,t+.05,2.6,.022,.15);}
+function tonTick(){if(!T.on)return;const X=A();if(!X){tonStop();return;}const sh=M.injuryShots.arena?.shot;
+ if(sh&&!T.hit&&sh.hit){T.hit=true;tonHit(X);}
+ /* Herzschlag im Takt (0,9 s); Tod: wird langsamer und setzt aus */const now=X.ctx.currentTime;if(now>=T.beat-.03){const i=Math.round((T.beat-(T.t0||T.beat))/.9);heart(X,Math.max(now,T.beat),T.death?.3*Math.max(0,1-i*.22):.28);T.t0??=T.beat;T.beat+=T.death?.9+i*.25:.9;if(T.death&&i>4)T.beat=1e9;}
+ T.raf=requestAnimationFrame(tonTick);}
+function tonStop(){if(!T.on)return;T.on=false;cancelAnimationFrame(T.raf);T.t0=null;const X=M.audioEngine?.cine?.();if(!X){T.nodes=[];T.duck=null;return;}const t=X.ctx.currentTime;
+ for(const n of T.nodes){try{if(n.g){n.g.gain.cancelScheduledValues(t);n.g.gain.setValueAtTime(n.g.gain.value,t);n.g.gain.linearRampToValueAtTime(0,t+.5);}else n.stop(t+.55);}catch{}}T.nodes=[];
+ /* zurück aus der Zeitlupe: kurzer Sog rückwärts */noise(X,t,.35,.12,'bandpass',2200,300,1.2,.02);duck(X,false);}
+
 const cfg=M.injuryShots.config,shown=cfg.onShot;
 const beginOld=begin;
 begin=function(o){if(!film())return beginOld(o);const b=S.battle,a=b?.actors.find(x=>x.g===o.g),field=$('arenaCanvas'),c=$('bhShot');if(!a||!field||!c)return;const r=field.getBoundingClientRect();if(r.width<160||r.height<100)return;
@@ -220,10 +254,12 @@ camera=function(b,w,h,W,H){if(!film()||!FM.rects)return cameraOld(b,w,h,W,H);if(
  return {x:f.x+(tg.x-f.x)*p,y:f.y+(tg.y-f.y)*p,zoom:f.zoom*Math.pow(tg.zoom/f.zoom,p)};};
 const alphaOld=alpha;
 alpha=function(a){if(!film()||!K.on)return alphaOld(a);if(K.set.includes(a))return 1;const p=cl((performance.now()-K.t0)/(FADE*1000),0,1),o=cl(+look.others,0,1);return 1-(1-o)*p;};
-cfg.onShot=function(on,o,live){const r=shown?.apply(this,arguments);try{if(on&&!live&&o&&!off&&cfg.host?.())begin(o);else end();}catch(e){console.warn('Kino-Kamera',e);end();}return r;};
+cfg.onShot=function(on,o,live){const r=shown?.apply(this,arguments);try{if(on&&!live&&o&&!off&&cfg.host?.())begin(o);else end();}catch(e){console.warn('Kino-Kamera',e);end();}
+ try{if(on&&!live&&o)tonStart(o);else if(!on||live)tonStop();}catch(e){console.warn('Kino-Ton',e);}return r;};
 const slowOf=()=>{if(!K.on||off)return 0;if(!film())return SLOW;const n=+look.slow;return n>0?1/n:0;};
 M.kinoCam={camera:(...x)=>camera(...x),follow,alpha:a=>alpha(a),/* Zeitlupe statt Stillstand während des Kino-Moments (injury-shots.js, arena.js) */get slow(){return slowOf();},get on(){return K.on;},get subjects(){return K.set.map(a=>a.id);},get off(){return off;},set off(v){off=!!v;if(off)end();try{localStorage.setItem('mg-kino',off?'off':'on');}catch{}},
  /* schwarzer Hintergrund: Hindernisse (arena.js) ausblenden */get hideScenery(){return K.on&&!off&&film()&&(look.bg==='schwarz'||look.bg==='spot');},
  /* Kino-Look (kino-editor.html) */presets:PRESETS,defaults:LOOK0,get look(){return {...look};},setLook(v,save){look={...LOOK0,...(v||{})};if(save)try{localStorage.setItem('mg-kino-look',JSON.stringify(look));}catch{}},
+ /* Kino-Ton an/aus (kino-editor.html) */get sound(){return !tonOff;},set sound(v){tonOff=!v;if(tonOff)tonStop();try{localStorage.setItem('mg-kino-ton',tonOff?'off':'on');}catch{}},get soundOn(){return T.on;},
  state:()=>({shot:F.shot,pair:F.pair?.key||null,punch:+F.punch.toFixed(3),split:K.on?(FM.rects?'film-'+look.layout:K.mode):null})};
 })();
