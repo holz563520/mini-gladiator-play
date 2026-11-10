@@ -155,7 +155,7 @@ const NEW_NAME={ribs:'Rippenbruch',ribseries:'Rippenserienfraktur',sternum:'Brus
 // Wunde genau an einen Feldpunkt setzen: über die Zeichenmatrix des Getroffenen (letztes Bild) in seine Figurenkoordinaten
 // Spitze der Waffe, wie sie gerade gezeichnet ist (Feld), wenn frisch und nahe an der Stelle – dort sitzt die Wunde
 G.tipAt=(a,b,id)=>{const t=a?._tipW,W=G.anchor(b,id);if(!t||!W||(M.s.battle?.time||0)-t.t>.25)return null;return Math.hypot(t.x-W.x,t.y-W.y)<16?{x:t.x,y:t.y}:null;};
-G.markAt=(v,m,w)=>{if(!v?._vK||!w||!m)return;try{const q0=new DOMMatrix().translate(v.x,v.y).multiply(v._vK).inverse().transformPoint(new DOMPoint(w.x,w.y)),q=G.onPart(v,m.part,{x:q0.x,y:q0.y})||q0;m.lx=q.x;m.ly=q.y;const sp=SEG[m.part]&&segParam(v._anch,m.part,q);if(sp)m.ls=sp;m.fixed=true;}catch(e){}};
+G.markAt=(v,m,w)=>{if(!v?._vK||!w||!m)return;try{const q0=new DOMMatrix().translate(v.x,v.y).multiply(v._vK).inverse().transformPoint(new DOMPoint(w.x,w.y)),q=G.onPart(v,m.part,{x:q0.x,y:q0.y})||q0;m.lx=q.x;m.ly=q.y;const sp=SEG[m.part]&&segParam(v._anch,m.part,q);if(sp)m.ls=sp;else if(BOX[m.part]&&v._P)m.lb=boxRel(BOX[m.part](v._P),q);m.fixed=true;}catch(e){}};
 G.applyInjury=(att,vic,kind,part,wid,name,opt={})=>{const g=vic.g,B=g.body,p=B[part]||B.chest;if(!p)return null;const fr=(id,days,severe)=>{const q=B[id];if(q&&!q.missing){q.fracture={days,total:days,severe:!!severe};q.hp=Math.min(q.hp,severe?20:38);q.pain=Math.max(q.pain||0,70);}};
  const wound=(id,type,bl)=>{const q=B[id];if(!q||q.missing)return;q.bleed=(q.bleed||0)+bl;q.hp=Math.max(1,q.hp-18);try{M.recordWound(g,id,type,att?.g?.name||'',M.weapon(att)?.name||wid,20);}catch{}};
  const marks=g.gaitMarks||(g.gaitMarks=[]);const side=(part||'').startsWith('r')?'r':(part||'').startsWith('l')&&part.length>2?'l':((marks.length%2)?'l':'r');
@@ -213,14 +213,19 @@ G.holes=(b,id,dw)=>{if(!b?._vK||!b._P||!dw)return null;try{const VI=new DOMMatri
  let ux=q.x-o.x,uy=q.y-o.y;const ul=Math.hypot(ux,uy);if(!(ul>1e-6))return null;ux/=ul;uy/=ul;const A=b._anch,sg=segOf(A,id);let C,s;
  if(sg){const [p,q2]=sg,t=SEGT[id]??.5,vx=q2.x-p.x,vy=q2.y-p.y,vl=Math.hypot(vx,vy)||1,r=LIMBR[id]||3,cr=Math.abs(ux*vy-uy*vx)/vl;C={x:p.x+vx*t,y:p.y+vy*t};s=Math.min(r/Math.max(cr,.25),r*2.4);}
  else{const B=(BOX[id]||BOX.chest)(b._P);C=B.c;s=Math.min(B.hx/Math.max(Math.abs(ux),1e-3),B.hy/Math.max(Math.abs(uy),1e-3));}
- s*=.86;const E={x:C.x-ux*s,y:C.y-uy*s},X={x:C.x+ux*s,y:C.y+uy*s},out={E,X};if(sg){out.sE=segParam(A,id,E);out.sX=segParam(A,id,X);}return out;}catch(e){return null;}};
+ s*=sg?.86:.78;/* etwas innerhalb des Umrisses (Thomas 10.11.: Löcher lagen manchmal neben dem Körper) */const E={x:C.x-ux*s,y:C.y-uy*s},X={x:C.x+ux*s,y:C.y+uy*s},out={E,X};if(sg){out.sE=segParam(A,id,E);out.sX=segParam(A,id,X);}else{const B=(BOX[id]||BOX.chest)(b._P);out.bE=boxRel(B,E);out.bX=boxRel(B,X);}return out;}catch(e){return null;}};
 // aktuelle Lage eines Lochs (wandert mit dem Glied)
-G.holePt=(b,id,h,k)=>h?.['s'+k]&&segPoint(b?._anch,id,h['s'+k])||h?.[k];
-G.markHole=(b,m,h,k)=>{if(!m||!h?.[k])return;m.lx=h[k].x;m.ly=h[k].y;if(h['s'+k])m.ls=h['s'+k];m.fixed=true;};
+/* Löcher an Rumpf, Kopf, Hals, Schulter: relativ zur gezeichneten Fläche, wandern mit Beugen, Taumeln, Knien und Liegen mit */
+function boxRel(B,pt){return {u:cl((pt.x-B.c.x)/B.hx,-.82,.82),v:cl((pt.y-B.c.y)/B.hy,-.82,.82)};}
+function boxPt(P,id,r){const B=BOX[id]?.(P);return B&&r?{x:B.c.x+r.u*B.hx,y:B.c.y+r.v*B.hy}:null;}
+G.holePt=(b,id,h,k)=>h?.['s'+k]&&segPoint(b?._anch,id,h['s'+k])||(h?.['b'+k]&&b?._P&&boxPt(b._P,id,h['b'+k]))||h?.[k];
+G.markHole=(b,m,h,k)=>{if(!m||!h?.[k])return;m.lx=h[k].x;m.ly=h[k].y;if(h['s'+k])m.ls=h['s'+k];if(h['b'+k])m.lb=h['b'+k];m.fixed=true;};
 function drawMarks(a,P,layer){if(a.g.gaitMarks?.length&&a.g._gaitPruned!==(M.s.battle?.id??-1)){Object.defineProperty(a.g,'_gaitPruned',{value:M.s.battle?.id??-1,writable:true,configurable:true,enumerable:false});G.pruneMarks(a.g);}const L=a.g.gaitMarks;if(!L?.length)return;const R=(x,y,w,h,c)=>{P.ctx.fillStyle=c;P.ctx.fillRect(Math.round(x),Math.round(y),w,h);},T0=P.time||0;
  const AN=P.anchors||a._anch||{},at=(m,def)=>LIMB_Y[m.part]!=null?(AN[m.part]?{x:AN[m.part].x,y:AN[m.part].y}:{x:P.chest.x*.4+(m.part[0]==='r'?2:-1),y:LIMB_Y[m.part]}):(PARTPOS[m.part]||PARTPOS[def])(P),
   /* Ein-/Austritt: an Gliedern mitgeführt (Lage entlang des Glieds), am Rumpf fest in Figurenkoordinaten */stabAt=k=>{const back=k.m==='stabBack',B=BOX[k.part]?.(P);if(B)return {x:B.c.x+(back?-1:1)*B.hx*(back?.75:.55),y:B.c.y};const q=AN[k.part];if(q&&LIMBR[k.part])return {x:q.x+(back?-1:1)*LIMBR[k.part]*.5,y:q.y};return null;},
-  fix=k=>k.ls&&SEG[k.part]?segPoint(AN,k.part,k.ls)||(k.lx!=null?{x:k.lx,y:k.ly}:null):k.lx!=null?{x:k.lx,y:k.ly}:null;
+  fix=k=>{if(k.ls&&SEG[k.part]){const r=(LIMBR[k.part]||3)*.75,h={t:cl(k.ls.t,SEGT[k.part]?.8:.06,SEGT[k.part]?1.05:.94),n:cl(k.ls.n,-r,r)};return segPoint(AN,k.part,h)||(k.lx!=null?{x:k.lx,y:k.ly}:null);}
+    if(k.lb&&BOX[k.part])return boxPt(P,k.part,k.lb);if(k.lx==null)return null;
+    /* ältere Wunden ohne Flächenlage: in die aktuelle Fläche holen statt in der Luft zu zeichnen */const B=BOX[k.part]?.(P);return B?{x:cl(k.lx,B.c.x-B.hx*.82,B.c.x+B.hx*.82),y:cl(k.ly,B.c.y-B.hy*.82,B.c.y+B.hy*.82)}:{x:k.lx,y:k.ly};};
  for(const k of L){P.ctx.globalAlpha=1;const m=k.m,st=G.markStage(a.g,k);if(st==='gone')continue;if(layer&&markLayer(k)!==layer)continue;
   if(st==='scar'){const sp=(m==='stab'||m==='stabBack')&&!fix(k)?stabAt(k):null,p=fix(k)||sp||at(k,m==='guts'?'belly':m==='throat'?'neck':'chest'),x=m==='stabBack'&&k.lx==null&&!sp?p.x-11:m==='backCut'?-7:p.x,y=m==='backCut'?-42:p.y;P.ctx.globalAlpha=.55;if(m==='stab'||m==='stabBack')R(x-1,y,3,1,'#e6b8a8');else if(m==='backCut')for(let i=0;i<6;i++)R(x-2+i*.6,y-4+i*1.4,1,1,'#e6b8a8');else R(x-3,y+1,6,1,'#e6b8a8');P.ctx.globalAlpha=1;continue;}
   const t=st==='fresh'?T0:0;if(st==='scab')P.ctx.globalAlpha=.8;
