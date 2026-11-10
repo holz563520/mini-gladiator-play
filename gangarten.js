@@ -27,7 +27,7 @@ const DEF={
  // Initiative nutzen und Abstechen am Boden (Vorschlag, nicht freigegeben)
  seize:1,seizeRange:320,finWind:1.4,finDmg:1.3,finSever:.45,finHold:.7,
  // Durchstich im Stehen (Stich-Angriff)
- pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9,pierceRate:.2,pierceArmor:8,pierceBack:3,
+ pierce:1,pierceForce:0,pierceDmg:1.25,pierceHold:.9,pierceRate:.31,pierceArmor:8,pierceBack:3,specials:1,specialRate:1,specialForce:0,
  backRun:1,backDmg:1.6,backGrab:.6,grabTime:1.7,backKnock:.45,
  // Speer/Dreizack: Anteil Stiche, Abklingzeit nach dem Stich
  spearThrust:.85,spearCool:.5,spearWind:.65,spearJabEnergy:.5,spearSwing:.65
@@ -101,12 +101,12 @@ G.ram=(a,b,dmg,mult=1)=>{
 // Durchstich-Chance je Waffe (ungerüstete Stelle, Stich mit üblicher Wucht). Rüstung der getroffenen Stelle wirkt stark (je 8 Schutzpunkte rund ×0,37):
 // Leder/Metall einfacher Güte halbiert bis drittelt die Chance, gutes Metall macht einen Durchstich selten, legendäres fast unmöglich.
 const PIERCE_BASE={spear:.12,trident:.09,javelin:.12,rapier:.09,dagger:.07,gladius:.07,short:.07,long:.05,greatsword:.045,halberd:.05};
-G.PIERCE_BASE=PIERCE_BASE;G.pierceChance=(a,b,w,id,dmg,opt={})=>{const base=PIERCE_BASE[w?.id];if(!base||!b?.g)return 0;const armor=M.armorProtection?.(b.g,id)||0,
- dmgF=cl((dmg||0)/15,.5,1.6),armF=Math.exp(-armor/P.pierceArmor),thin=['lua','rua','lfa','rfa','lh','rh','lsh','rsh','lf','rf','neck'].includes(id)?1.25:1;
- return cl(base*P.pierceRate*dmgF*armF*thin*(opt.back?P.pierceBack:1),.001,.5);};
+G.PIERCE_BASE=PIERCE_BASE;G.pierceChance=(a,b,w,id,dmg,opt={})=>{const base=PIERCE_BASE[w?.id];if(!base||!b?.g)return 0;const sk=G.skillF(a,'pierce');const armor=M.armorProtection?.(b.g,id)||0,
+ dmgF=cl((dmg||0)/15,.5,1.6),armF=G.armorF(armor,P.pierceArmor,dmg),thin=['lua','rua','lfa','rfa','lh','rh','lsh','rsh','lf','rf','neck'].includes(id)?1.25:1;
+ return cl(base*P.pierceRate*sk*dmgF*armF*thin*(opt.back?P.pierceBack:1),.001,.5);};
 G.thrust=(a,b,dmg,w,id,opt={})=>{
  if(!G.active||!P.pierce||!b?.g||b.g.dead||a.pierceContact||a.swingKind!=='thrust'&&!opt.force||!w||w.ammo)return;const base=PIERCE_BASE[w.id];if(!base)return;const part=b.g.body[id];if(!part||part.missing)return;
- const chance=P.pierceForce||opt.force?1:G.pierceChance(a,b,w,id,dmg,opt);if(M.rng()>chance)return;
+ const chance=P.pierceForce||opt.force?1:G.pierceChance(a,b,w,id,dmg,opt);M.learn?.(a,'moves','pierce',.006);if(G.trace){G.trace.elig.pierce=(G.trace.elig.pierce||0)+1;G.trace.exp.pierce=(G.trace.exp.pierce||0)+chance;}if(M.rng()>chance)return;M.recordAttack?.(a,'pierce');M.learn?.(a,'moves','pierce',.05);
  const extra=dmg*(P.pierceDmg-1);part.hp=Math.max(0,part.hp-extra);a.damage+=extra;b.taken+=extra;part.bleed+=2.5;part.deepStabs=(part.deepStabs||0)+1;if(id==='chest'||id==='belly')part.internal=true;
  M.recordWound?.(b.g,id,'Durchstochen',a.g.name,w.name,dmg+extra);
  const TH=G.throughOf(w.id);a.pierceContact={target:b.id,part:id,left:P.pierceHold,len:P.pierceHold,weaponId:w.item?.id,through:true,exit:TH.exit,depthMul:TH.depth,t:0};if(w.item)w.item.blood=Math.max(w.item.blood||0,.85);a.swing=0;a.pendingStrike=null;a.wind=0;a.state='piercing';
@@ -247,8 +247,49 @@ function drawMarks(a,P,layer){if(a.g.gaitMarks?.length&&a.g._gaitPruned!==(M.s.b
 G.bodyLayer=(a,P)=>{if(G.active&&!P.portrait&&a?.g)drawMarks(a,P,'body');};G.limbLayer=(a,P)=>{if(G.active&&!P.portrait&&a?.g)drawMarks(a,P,P.layer);};
 // geblockter Ansturm: mit voller Wucht in die Deckung – kann trotzdem umwerfen (60 % der Chance), sonst zurückgestoßen
 G.blocked=ev=>{if(ev?.kind==='block'&&ev.att?.rushHit?.kind==='charge')G.ram(ev.att,ev.def,0,.6);};
-{const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{/* für die Nahaufnahme: von welcher Seite, womit, wie getroffen (nur Darstellung) */if(G.active&&a&&b&&!p)b._lastHit={ax:a.x,bx:b.x,tech:a.swingKind||a.technique,wid:w?.id,part,t:M.s.battle?.time||0,back:G.isBack(a,b)};const out=orig.call(R,a,b,d,p,w,part);if(G.active&&!p){if(!G.backRun(a,b,d,w,part))G.thrust(a,b,d,w,part);G.ram(a,b,d);}return out;};R.__gait=true;}}
+{const R=M.combatResponses;if(R?.impact&&!R.__gait){const orig=R.impact;R.impact=(a,b,d,p,w,part)=>{/* für die Nahaufnahme: von welcher Seite, womit, wie getroffen (nur Darstellung) */if(G.active&&a&&b&&!p)b._lastHit={ax:a.x,bx:b.x,tech:a.swingKind||a.technique,wid:w?.id,part,t:M.s.battle?.time||0,back:G.isBack(a,b)};const out=orig.call(R,a,b,d,p,w,part);if(G.trace&&!p)G.trace.hits++;if(G.active&&!p){if(!G.backRun(a,b,d,w,part)&&!G.thrust(a,b,d,w,part))G.special(a,b,d,w,part);G.ram(a,b,d);}return out;};R.__gait=true;}}
 
+
+// --------------------------------------------------------------- Erlernbare Sonderattacken (Wunsch Thomas 10.11.)
+// Die neuen Verletzungen des Editors kommen im Kampf vor: jede gehört zu einer eigenen Attacke (Kampfmanöver in data.js, Ist/Soll wie alle
+// Manöver, wächst nur durch Nutzung). Sie wird nicht gewählt, sondern ergibt sich aus einem passenden Treffer (Waffe, Technik, Stelle);
+// Chance je solchem Treffer = Grundwert × Fertigkeit × Wucht × Rüstung der Stelle. Rüstung wirkt bei Stichen/Schnitten stark (e^(−Schutz/8)),
+// bei Brüchen durch Wucht schwächer (e^(−Schutz/16)). Jede Verletzung höchstens einmal je Stelle (gebrochen ist gebrochen).
+const SP_POINT=['spear','trident','javelin','dagger','gladius','short','rapier','long','greatsword','halberd'],SP_BLUNT=['club','mace','hammer'];
+const SPECIALS=G.SPECIALS={
+ heartStab:{name:'Herzstich',tech:'thrust',techs:['thrust'],parts:['chest'],ws:['spear','trident','javelin','dagger','gladius','short','rapier','long'],base:.01,arm:8,txt:'HERZSTICH!'},
+ lungStab:{name:'Lungenstich',tech:'thrust',techs:['thrust'],parts:['chest'],ws:SP_POINT,base:.044,arm:8,txt:'LUNGE DURCHSTOCHEN!'},
+ organStab:{name:'Leber- und Milzstich',tech:'thrust',techs:['thrust'],parts:['belly'],ws:SP_POINT,base:.043,arm:8,txt:null},
+ gutting:{name:'Ausweiden',tech:'slash',techs:['slash','spin'],parts:['belly'],ws:['axe','doubleaxe','long','greatsword','gladius','short','halberd'],base:.07,arm:8,txt:'AUSGEWEIDET!'},
+ ribBreaker:{name:'Rippenbrecher',tech:'overhead',techs:['slash','overhead','spin','charge'],parts:['chest'],ws:SP_BLUNT,base:.066,arm:16,txt:null},
+ pelvisBreaker:{name:'Beckenbrecher',tech:'overhead',techs:['overhead','slash','spin'],parts:['belly'],ws:['hammer','mace'],base:.045,arm:16,txt:'BECKEN GEBROCHEN!'},
+ throatBlow:{name:'Kehlschlag',tech:'slash',techs:['slash','overhead','spin','thrust'],parts:['neck'],ws:SP_BLUNT,base:.1,arm:12,txt:'KEHLKOPF ZERTRÜMMERT!'},
+ collarBreaker:{name:'Schlüsselbeinbrecher',tech:'overhead',techs:['overhead'],parts:['ls','rs'],ws:[...SP_BLUNT,'axe','doubleaxe'],base:.15,arm:14,txt:'SCHLÜSSELBEIN GEBROCHEN!'},
+ neckBreaker:{name:'Genickbrecher',tech:'overhead',techs:['overhead','slash'],parts:['neck'],ws:SP_BLUNT,base:.12,arm:12,rear:true,txt:'GENICK GEBROCHEN!'}};
+// Fertigkeit (Kampfmanöver Ist 0–100): 0 → ×0,3, 50 → ×1, 100 → ×1,7; fehlt der Wert (alter Spielstand), zählt die verwandte Grundtechnik halb
+const SP_FROM={pierce:'thrust',heartStab:'thrust',lungStab:'thrust',organStab:'thrust',gutting:'slash',ribBreaker:'overhead',pelvisBreaker:'overhead',throatBlow:'slash',collarBreaker:'overhead',neckBreaker:'overhead'};
+G.skillOf=(a,key)=>{const m=a?.g?.moves||{};return m[key]??(m[SP_FROM[key]]??20)*.5;};
+G.skillF=(a,key)=>.3+1.4*cl(G.skillOf(a,key)/100,0,1);
+// welche Sonderattacke ein Treffer auslösen kann (für Testreihe und Anzeige)
+G.specialFits=(a,b,w,id,tech)=>{const out=[];if(!w||w.ammo||!b?.g)return out;for(const [key,S] of Object.entries(SPECIALS)){if(!S.ws.includes(w.id)||!S.parts.includes(id)||!S.techs.includes(tech))continue;if(S.rear&&!G.isBack(a,b))continue;out.push(key);}return out;};
+// Rüstung der Stelle: e^(−Schutz/k), k wächst mit der Wucht (wuchtige Treffer kommen eher durch): Stich/Schnitt k=8·(1+Schaden/30), Wucht k=16·(1+Schaden/30)
+G.armorF=(armor,k,dmg)=>Math.exp(-(armor||0)/(k*(1+cl(dmg||0,0,60)/30)));
+G.specialChance=(a,b,w,id,dmg,key)=>{const S=SPECIALS[key];if(!S)return 0;const armor=M.armorProtection?.(b.g,id)||0;return cl(S.base*P.specialRate*G.skillF(a,key)*cl((dmg||0)/15,.5,1.6)*G.armorF(armor,S.arm,dmg),0,.35);};
+const spDone=(B,key,id)=>{const q=B[id]||{};switch(key){case 'ribBreaker':return !!B.chest.fracture;case 'pelvisBreaker':return !!B.belly.fracture;case 'collarBreaker':return !!q.fracture;case 'throatBlow':case 'neckBreaker':return !!B.neck.fracture;case 'gutting':return !!B.belly.gutted;case 'lungStab':return !!B.chest.lungHit;case 'organStab':return !!B.belly.organHit;default:return false;}};
+G.special=(a,b,dmg,w,id)=>{
+ if(!G.active||!P.specials||!b?.g||b.g.dead||!a?.g||a.pierceContact||!w||w.ammo||b.down)return false;const part=b.g.body[id];if(!part||part.missing)return false;
+ const tech=a.swingKind==='charge'||a.rushHit?.kind==='charge'?'charge':a.swingKind||a.technique;const fits=G.specialFits(a,b,w,id,tech);if(!fits.length)return false;
+ for(const key of fits){if(spDone(b.g.body,key,id))continue;M.learn?.(a,'moves',key,.008);if(G.trace)G.trace.elig[key]=(G.trace.elig[key]||0)+1;const ch=P.specialForce===key||P.specialForce===1?1:G.specialChance(a,b,w,id,dmg,key);if(G.trace)G.trace.exp[key]=(G.trace.exp[key]||0)+ch;if(M.rng()>ch)continue;
+  const S=SPECIALS[key];let kind=key==='heartStab'?'heart':key==='lungStab'?'lung':key==='organStab'?(M.rng()<.5?'liver':'spleen'):key==='gutting'?'gutted':key==='pelvisBreaker'?'pelvis':key==='throatBlow'?'larynx':key==='collarBreaker'?'collarbone':key==='neckBreaker'?'neckbreak':'ribs';
+  if(key==='ribBreaker'){const r=M.rng();kind=(w.id==='hammer'||w.id==='mace')&&dmg>=18&&r<.4?'ribseries':tech==='overhead'&&r>.75?'sternum':'ribs';}
+  if(key==='lungStab')b.g.body.chest.lungHit=true;if(key==='organStab')b.g.body.belly.organHit=true;if(key==='gutting')b.g.body.belly.gutted=true;
+  M.recordAttack?.(a,key);M.learn?.(a,'moves',key,.06);a.specials=(a.specials||0)+1;
+  const name=NEW_NAME[kind],res=G.applyInjury(a,b,kind,id,w.id,name);try{M.noteInjury?.(b.g,id,name);}catch(e){}
+  b.hit=.4;M.shake=Math.max(M.shake||0,5);M.sound?.(SP_BLUNT.includes(w.id)?'heavy':'stick');M.voice?.('pain',M.voicePitch?.(b.g)??1,true);M.floater?.(b.x,b.y-60,S.txt||name.toUpperCase()+'!','#ff5a4a');
+  if(w.item&&!SP_BLUNT.includes(w.id))w.item.blood=Math.max(w.item.blood||0,.8);
+  if(res==='death')M.death?.(b,name,a);else if(res==='down')M.knockdown?.(b,name,key==='gutting'?6:4);else if(kind==='ribseries'||kind==='larynx')b.stun=Math.max(b.stun||0,.6);
+  ev('special',a,{b,key,inj:kind,part:id,weapon:w.id,dmg,result:res||null});return true;}
+ return false;};
 
 // --------------------------------------------------------------- Angriffe von hinten im Lauf (Vorschlag, nur Gang-Editor)
 // Wer im Lauf (Sprint, Ansturm, Ausholen im Lauf) einen Gegner von hinten trifft, der ihm den Rücken zudreht, macht mehr Schaden

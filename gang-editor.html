@@ -45,9 +45,10 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
 .tbl th{color:var(--muted);font-weight:400;background:#141d1f}
 .rules{font-size:12.5px;line-height:1.6}.rules li{margin:4px 0}.rules em{color:var(--gold);font-style:normal}.warn{color:#e6a45c}
 .hide{display:none}
+label.chk{display:block;margin:2px 0;justify-content:flex-start;gap:6px}#trTbl td,#trTbl th{white-space:nowrap}
 </style></head>
 <body>
-<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND f4402cb2</small><h1>GANG-EDITOR</h1>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND 6502a56a</small><h1>GANG-EDITOR</h1>
 <p>Gehen, Kampfschritt, Laufen, Sprinten, Seitschritt und Rückwärts mit echten Figuren des Spiels: jede Gangart mit eigenem Tempo, Schrittrhythmus, Körperhaltung und Armhaltung. Das Tempo baut sich beim Anlaufen auf und beim Bremsen ab. Oben läuft die neue Bewegung, unten zum Vergleich die bisherige. Nur Testseite: Spiel und Spielstände bleiben unberührt.</p></header>
 <main>
 <div class="top">
@@ -128,14 +129,29 @@ table.tbl{border-collapse:collapse;font-size:12px;width:100%}
 <p class="note">Tempo in Spielpunkten je Sekunde für den gewählten Kämpfer (mit Rüstung und Zustand), dazu Anteil am bisherigen Lauftempo und Schrittrhythmus.</p>
 <div class="panel" style="padding:0"><table class="tbl" id="tbl"></table></div>
 
+<h2>Testreihe Sonderattacken</h2>
+<p class="note">Echte 1-gegen-1-Kämpfe mit Gladiatoren wie bei den Schulen im Spiel: alle Grundwerte, Waffenfertigkeiten, Kampfmanöver (auch die Sonderattacken) und Körperwerte um die Schulstärke, Ausrüstungsgüte wie dort. Kampfregeln wie im Spiel, nichts wird gelernt oder gespeichert. Grün = im Zielbereich.</p>
+<div class="panel">
+ <div style="display:flex;gap:18px;flex-wrap:wrap">
+  <div><b>Stärke</b><div id="trTiers"></div></div>
+  <div><b>Rüstung</b><div id="trArm"></div></div>
+  <div><label>Waffen <select id="trW" style="max-width:320px"></select></label><label>Kämpfe je Feld <select id="trN"><option>6</option><option selected>12</option><option>24</option><option>48</option></select></label><label>Startwert <input id="trSeed" type="number" value="1" style="width:70px"></label></div>
+ </div>
+ <div class="btns"><button class="main" id="trRun">▶ Testreihe starten</button></div>
+ <div style="height:6px;background:#2a2320;border-radius:3px;margin:6px 0"><div id="trBar" style="height:6px;width:0;background:#d9a441;border-radius:3px"></div></div>
+ <div class="note" id="trInfo"></div>
+</div>
+<div class="panel" style="padding:0;overflow-x:auto"><table class="tbl" id="trTbl"></table></div>
+
 <h2>Neue Verletzungen (Vorschlag)</h2>
-<p class="note">Mögliche neue Verletzungsarten mit genauer anatomischer Stelle, auslösenden Waffen und Wirkung. Noch nicht eingebaut – zum Auswählen, was als Nächstes kommt. „Durchstochen“ ist bereits im Studio abspielbar.</p>
+<p class="note">Mögliche neue Verletzungsarten mit genauer anatomischer Stelle, auslösenden Waffen und Wirkung. Im Spiel als Sonderattacken (10.11.): Rippenbruch, Rippenserienfraktur, Brustbeinbruch, Lungendurchstich, Herzstich, Leberriss, Milzriss, Ausgeweidet, Beckenbruch, Genickbruch, Kehlkopfbruch, Schlüsselbeinbruch, dazu Durchstochen und Nierenverletzung (Griff von hinten); die übrigen sind weiter Vorschlag.</p>
 <div class="panel" style="padding:0;overflow-x:auto"><table class="tbl" id="newInj"></table></div>
 <h2>So soll es ins Spiel</h2>
 <div class="panel rules" id="rules"></div>
 </main>
-<script src="data.js?v=f4402cb2"></script><script src="household.js?v=f4402cb2"></script><script src="management.js?v=f4402cb2"></script><script src="scout.js?v=f4402cb2"></script><script src="sim.js?v=f4402cb2"></script><script src="benchmark.js?v=f4402cb2"></script><script src="school.js?v=f4402cb2"></script><script src="weapon-art.js?v=f4402cb2"></script><script src="arena.js?v=f4402cb2"></script><script src="block-contact.js?v=f4402cb2"></script><script src="hit-contact.js?v=f4402cb2"></script><script src="reach-ai.js?v=f4402cb2"></script><script src="face-shots.js?v=f4402cb2"></script><script src="injury-shots.js?v=f4402cb2"></script><script src="schaedelbruch.js?v=f4402cb2"></script><script src="todes-fx.js?v=f4402cb2"></script>
-<script src="kampfsound.js?v=f4402cb2"></script><script src="audio.js?v=f4402cb2"></script><script src="sprechsound.js?v=f4402cb2"></script><script src="stimme.js?v=f4402cb2"></script><script src="schreie.js?v=f4402cb2"></script>
-<script src="durchstich-fx.js?v=f4402cb2"></script><script src="gangarten.js?v=f4402cb2"></script>
-<script src="gang-editor.js?v=f4402cb2"></script>
+<script src="data.js?v=6502a56a"></script><script src="household.js?v=6502a56a"></script><script src="management.js?v=6502a56a"></script><script src="scout.js?v=6502a56a"></script><script src="sim.js?v=6502a56a"></script><script src="benchmark.js?v=6502a56a"></script><script src="school.js?v=6502a56a"></script><script src="weapon-art.js?v=6502a56a"></script><script src="arena.js?v=6502a56a"></script><script src="block-contact.js?v=6502a56a"></script><script src="hit-contact.js?v=6502a56a"></script><script src="reach-ai.js?v=6502a56a"></script><script src="face-shots.js?v=6502a56a"></script><script src="injury-shots.js?v=6502a56a"></script><script src="schaedelbruch.js?v=6502a56a"></script><script src="todes-fx.js?v=6502a56a"></script>
+<script src="kampfsound.js?v=6502a56a"></script><script src="audio.js?v=6502a56a"></script><script src="sprechsound.js?v=6502a56a"></script><script src="stimme.js?v=6502a56a"></script><script src="schreie.js?v=6502a56a"></script>
+<script src="durchstich-fx.js?v=6502a56a"></script><script src="gangarten.js?v=6502a56a"></script>
+<script src="testreihe.js?v=6502a56a"></script>
+<script src="gang-editor.js?v=6502a56a"></script>
 </body></html>
