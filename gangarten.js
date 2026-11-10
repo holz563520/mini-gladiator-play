@@ -107,7 +107,7 @@ G.PIERCE_BASE=PIERCE_BASE;G.pierceChance=(a,b,w,id,dmg,opt={})=>{const base=PIER
 G.thrust=(a,b,dmg,w,id,opt={})=>{
  if(!G.active||!P.pierce||!b?.g||b.g.dead||a.pierceContact||a.swingKind!=='thrust'&&!opt.force||!w||w.ammo)return;const base=PIERCE_BASE[w.id];if(!base)return;const part=b.g.body[id];if(!part||part.missing)return;
  const chance=P.pierceForce||opt.force?1:G.pierceChance(a,b,w,id,dmg,opt);M.learn?.(a,'moves','pierce',.006);if(G.trace){G.trace.elig.pierce=(G.trace.elig.pierce||0)+1;G.trace.exp.pierce=(G.trace.exp.pierce||0)+chance;}if(M.rng()>chance)return;M.recordAttack?.(a,'pierce');M.learn?.(a,'moves','pierce',.05);
- const extra=dmg*(P.pierceDmg-1);part.hp=Math.max(0,part.hp-extra);a.damage+=extra;b.taken+=extra;part.bleed+=2.5;part.deepStabs=(part.deepStabs||0)+1;if(id==='chest'||id==='belly')part.internal=true;
+ const extra=dmg*(P.pierceDmg-1);part.hp=Math.max(0,part.hp-extra);a.damage+=extra;b.taken+=extra;part.bleed+=2.5;part.deepStabs=(part.deepStabs||0)+1;if(id==='chest'||id==='belly')part.internal??={days:35,severe:true};/* wie sim.js: mit Heiltagen, sonst stürzt das Krankenhaus ab (Thomas 10.11.) */
  M.recordWound?.(b.g,id,'Durchstochen',a.g.name,w.name,dmg+extra);
  const TH=G.throughOf(w.id);a.pierceContact={target:b.id,part:id,left:P.pierceHold,len:P.pierceHold,weaponId:w.item?.id,through:true,exit:TH.exit,depthMul:TH.depth,t:0};if(w.item)w.item.blood=Math.max(w.item.blood||0,.85);a.swing=0;a.pendingStrike=null;a.wind=0;a.state='piercing';
  b.stun=Math.max(b.stun||0,P.pierceHold*.9);b.hit=.4;M.shake=Math.max(M.shake||0,6);
@@ -163,12 +163,12 @@ G.applyInjury=(att,vic,kind,part,wid,name,opt={})=>{const g=vic.g,B=g.body,p=B[p
  let out=null;
  /* Geschoss bleibt stecken: Pfeil, Bolzen, Wurfspeer, Wurfaxt */const PT={bow:'arrow',crossbow:'bolt',javelin:'javelin',throwaxe:'throwaxe'}[wid];if(PT&&opt.thrown!==false&&!['skullfracture','sever','bruise','contusion','concussion','scar','collapse'].includes(kind))marks.push({m:'shaft',type:PT,part,side,back:!!opt.back,t:M.s.battle?.time||0});
  switch(kind){
-  case 'through':case 'pierce':wound(part,'Durchstochen',2.5);p.deepStabs=(p.deepStabs||0)+1;if(part==='chest'||part==='belly')p.internal=true;break;
-  case 'heart':wound('chest','Herzstich',8);B.chest.deepStabs=(B.chest.deepStabs||0)+1;B.chest.internal=true;out='death';break;
-  case 'lung':wound('chest','Lungendurchstich',3);B.chest.internal=true;B.chest.deepStabs=(B.chest.deepStabs||0)+1;break;
+  case 'through':case 'pierce':wound(part,'Durchstochen',2.5);p.deepStabs=(p.deepStabs||0)+1;if(part==='chest'||part==='belly')p.internal??={days:35,severe:true};break;
+  case 'heart':wound('chest','Herzstich',8);B.chest.deepStabs=(B.chest.deepStabs||0)+1;B.chest.internal??={days:35,severe:true};out='death';break;
+  case 'lung':wound('chest','Lungendurchstich',3);B.chest.internal??={days:35,severe:true};B.chest.deepStabs=(B.chest.deepStabs||0)+1;break;
   case 'ribs':fr('chest',21);break;case 'ribseries':fr('chest',35,true);break;case 'sternum':fr('chest',28);break;
-  case 'liver':case 'spleen':case 'kidney':wound('belly',NEW_NAME[kind],4);B.belly.internal=true;B.belly.deepStabs=(B.belly.deepStabs||0)+1;break;
-  case 'gutted':wound('belly','Ausgeweidet',6);B.belly.internal=true;B.belly.deepStabs=(B.belly.deepStabs||0)+2;out='down';break;
+  case 'liver':case 'spleen':case 'kidney':wound('belly',NEW_NAME[kind],4);B.belly.internal??={days:35,severe:true};B.belly.deepStabs=(B.belly.deepStabs||0)+1;break;
+  case 'gutted':wound('belly','Ausgeweidet',6);B.belly.internal??={days:35,severe:true};B.belly.deepStabs=(B.belly.deepStabs||0)+2;out='down';break;
   case 'pelvis':fr('belly',60,true);B.lt.hp=Math.min(B.lt.hp,30);B.rt.hp=Math.min(B.rt.hp,30);out='down';break;
   case 'neckbreak':fr('neck',60,true);out='death';break;
   case 'larynx':fr('neck',30);wound('neck','Kehlkopfbruch',1);break;
@@ -180,7 +180,7 @@ G.applyInjury=(att,vic,kind,part,wid,name,opt={})=>{const g=vic.g,B=g.body,p=B[p
   case 'cut':case 'scrape':wound(part,kind==='cut'?'Schnittwunde':'Schürfwunde',1);break;
   case 'stab':case 'deepstab':wound(part,kind==='stab'?'Stichverletzung':'Tiefe Stichverletzung',kind==='stab'?1:3);if(kind==='deepstab')p.deepStabs=(p.deepStabs||0)+1;break;
   case 'sinew':wound(part,'Sehnenverletzung',2);p.grade=Math.max(p.grade||0,3);break;
-  case 'gut':wound('belly','Tiefe Bauchwunde',4);B.belly.internal=true;break;
+  case 'gut':wound('belly','Tiefe Bauchwunde',4);B.belly.internal??={days:35,severe:true};break;
   case 'arrow':wound(part,'Pfeil steckt',2);break;
   default:if(p){p.hp=Math.max(1,p.hp-12);p.pain=Math.max(p.pain||0,40);}}
  g.blood=Math.max(30,(g.blood??100)-(out==='death'?20:6));return out;};
@@ -422,7 +422,7 @@ function finImpact(a,b,dmg,w,id){
  // Wucht: mehr Schaden
  const extra=dmg*(P.finDmg-1);part.hp=Math.max(0,part.hp-extra);a.damage+=extra;b.taken+=extra;
  if(CHOP.has(w.id)&&['neck','lua','rua','lt','rt'].includes(id)&&M.rng()<P.finSever+dmg*.004){what=id==='neck'?'beheaded':'severed';M.sever(a,b,id);}
- else if(!BLUNT_LIKE(w)&&(PIERCE.has(w.id)||w.bladed&&!AXES.has(w.id))&&!['lua','rua','lt','rt'].includes(id)){what='pierced';part.bleed+=3;part.deepStabs=(part.deepStabs||0)+1;if(id==='chest'||id==='belly')part.internal=true;M.recordWound?.(b.g,id,'Durchbohrt',a.g.name,w.name,dmg);a.finHold=P.finHold;M.pixelBloodJet?.(b,id,false);}
+ else if(!BLUNT_LIKE(w)&&(PIERCE.has(w.id)||w.bladed&&!AXES.has(w.id))&&!['lua','rua','lt','rt'].includes(id)){what='pierced';part.bleed+=3;part.deepStabs=(part.deepStabs||0)+1;if(id==='chest'||id==='belly')part.internal??={days:35,severe:true};/* wie sim.js: mit Heiltagen, sonst stürzt das Krankenhaus ab (Thomas 10.11.) */M.recordWound?.(b.g,id,'Durchbohrt',a.g.name,w.name,dmg);a.finHold=P.finHold;M.pixelBloodJet?.(b,id,false);}
  else{what=w.bladed?'hacked':'crushed';part.bleed+=w.bladed?2:.5;}
  M.shake=Math.max(M.shake||0,7);const cp=a.contactPoint||{x:b.x,y:b.y-10};M.emit?.(cp.x,cp.y,26,'#aa3c36',120);
  const label={beheaded:'KOPF AB!',severed:M.partName?.(id)?.toUpperCase()+' AB!',pierced:'DURCHBOHRT!',hacked:'HINEINGEHACKT!',crushed:'ZERSCHMETTERT!'}[what];M.floater?.(b.x,b.y-48,label,'#ff5a4a');

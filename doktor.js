@@ -853,10 +853,12 @@ function choice(){M.ui.modal('Medicus',`<div class="dok-choice"><canvas id="dokC
  `<button class="btn" data-action="dok:ward">🛏 KRANKENBETTEN · ÜBERSICHT</button><button class="btn primary" data-action="dok:chair">🔨 BEHANDLUNGSTISCH</button><button class="btn small" data-action="dok:story">🎬 DER DOKTOR · VORSTELLUNG NOCHMAL ANSEHEN</button>`);
  let t=0;const tick=()=>{const c=$('dokChoiceFace');if(!c)return;t+=1/30;closeup(c.getContext('2d'),c.width,c.height,t,doctorBuf(t,{mood:Math.sin(t*.7)>.5?'roar':'grin',yaw:Math.sin(t*.8)*.25}));setTimeout(()=>requestAnimationFrame(tick),33);};requestAnimationFrame(tick);}
 // Während des Medicus-Kapitels bleibt der normale Ablauf; die Auswahl gibt es davor nicht und danach immer.
-const chapterIdle=()=>['','done','skip','free'].includes(M.medic.state().stage||'');
+const chapterIdle=()=>{const st=M.medic.state().stage||'';/* 'end' = Abschlusskarte des Kapitels; hängt sie ohne Karte fest (Thomas 10.11.), gilt das Kapitel als erledigt */return ['','done','skip','free'].includes(st)||st==='end'&&!document.querySelector('.medic-end');};
+/* Ein offener Kampf (auch im Hintergrund) sperrt die Auswahl; der Klick führt dann über manager.js zurück zum Kampf */
+const fighting=()=>!!S.battle;
 const baseClick=M.schoolClick;M.schoolClick=function(action){const a=String(action||''),[p,b]=a.split(':');
- if(p==='dok'){M.ui.close?.();if(b==='ward'){bypass=true;try{M.ui.click('nav:medic');}finally{bypass=false;}}else if(b==='chair')openChair();else if(b==='story'){if(!S.battle)story(true);}return true;}
- if(a==='nav:medic'&&!bypass&&!S.battle&&M.ui.getPage?.()==='home'&&chapterIdle()&&!film&&!chair){choice();return true;}
+ if(p==='dok'){M.ui.close?.();if(b==='ward'){bypass=true;try{M.ui.click('nav:medic');}finally{bypass=false;}}else if(b==='chair')openChair();else if(b==='story'){if(!fighting())story(true);}return true;}
+ if(a==='nav:medic'&&!bypass&&!fighting()&&M.ui.getPage?.()==='home'&&chapterIdle()&&!film&&!chair){choice();return true;}
  return baseClick?.apply(this,arguments);};
 
 // =====================================================================================================
