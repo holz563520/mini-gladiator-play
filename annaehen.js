@@ -11,6 +11,8 @@
 //   Dauerschaden des Spenders kommt dazu, höchstens 40 %. Danach beide zehn Tage Krankenbett.
 // · OP-Film im Saal des Doktors (Betäubung mit dem Holzhammer, Säge, Tragen, Nähen, Ausgang, Großaufnahmen),
 //   Sprüche über die Stimmen des Spiels. Das Ergebnis gilt sofort beim Klick, der Film ist nur Darstellung.
+// · NACHNÄHEN (Wunsch Thomas 10.11.2026): schief angenähte Glieder für 5.000 Gold nochmal aufmachen und gerade annähen.
+//   Danach ist der Dauerschaden an diesen Teilen weg (auch der mitgebrachte des Spenders), fünf Tage Krankenbett, eigener kurzer Film.
 // Entfernen: 'annaehen' aus der Skriptliste in boot.js streichen (Knöpfe in doktor.js verschwinden dann von selbst).
 // =====================================================================================================
 (()=>{
@@ -32,7 +34,7 @@ const PIECES={
  lt:{nom:'das linke Bein',akk:'das linke Bein',w:'Bein',kind:'leg',parent:'belly'},rt:{nom:'das rechte Bein',akk:'das rechte Bein',w:'Bein',kind:'leg',parent:'belly'}};
 const ORDER=['ls','lua','lfa','lh','rs','rua','rfa','rh','lt','lsh','lf','rt','rsh','rf'];
 const chain=root=>M.branches[root]||[root];
-const RULE={days:10,abBase:.08,perCm:.015,cmFree:3,abMax:.35,crooked:.20,okMin:5,okMax:15,crMin:20,crMax:35,maxChronic:40};
+const RULE={fixCost:5000,fixDays:5,days:10,abBase:.08,perCm:.015,cmFree:3,abMax:.35,crooked:.20,okMin:5,okMax:15,crMin:20,crMax:35,maxChronic:40};
 const perDay=()=>(3+(S.buildings?.hospital||0))*(M.HEAL_SPEED||1);
 const partName=id=>M.partName?.(id)||(M.parts||[]).find(p=>p[0]===id)?.[1]||id;
 const living=()=>S.roster.filter(g=>g&&!g.dead&&!g.retired&&!g.dokTemp);
@@ -51,6 +53,12 @@ function capValue(g,root){const ids=chain(root),C=g.caps?.body||{};let s=0,a=0,r
 function donorOk(don,rec,root){if(!don||don===rec||don.dead||don.retired||don.dokTemp)return false;if((don.age??20)<18)return false;
  for(const id of chain(root)){const p=don.body?.[id];if(!p||p.missing||p.fracture)return false;}const par=don.body?.[PIECES[root].parent];return !!par&&!par.missing;}
 function donors(rec,root){const all=living().filter(d=>donorOk(d,rec,root));return {ready:all.filter(d=>!bed(d)),inBed:all.filter(d=>bed(d))};}
+// Schief angenähte Stücke: Wurzel, deren Elternteil nicht aus derselben schiefen Naht stammt
+const sameGraft=(a,b)=>a&&b&&a.kind==='crooked'&&b.kind==='crooked'&&a.day===b.day&&a.fromId===b.fromId;
+function crookedRoots(g){const out=[];if(!g?.body)return out;for(const r of ORDER){const p=g.body[r];if(!p||p.missing||p.graft?.kind!=='crooked')continue;if(sameGraft(p.graft,g.body[PIECES[r].parent]?.graft))continue;out.push(r);}return out;}
+const crookedMen=()=>living().filter(g=>crookedRoots(g).length).sort((a,b)=>(b.potential??0)-(a.potential??0));
+const crookedChronic=(g,root)=>Math.max(0,...chain(root).map(id=>g.body[id]?.graft?.kind==='crooked'?(g.body[id].chronic||0):0));
+const gold=()=>S.gold||0,fmtG=v=>Math.round(v).toLocaleString('de-DE');
 
 // ---------- 2 · Die Operation (gilt sofort) ----------
 function operate(rec,don,root,force){const P=PIECES[root],o=odds(rec,don,root),r=Math.random(),kind=force||(r<o.ab?'ab':r<o.ab+o.cr?'crooked':'ok');
@@ -73,6 +81,15 @@ function operate(rec,don,root,force){const P=PIECES[root],o=odds(rec,don,root),r
  const res={kind,root,recId:rec.id,donId:don.id,recName:rec.name,donName:don.name,val,parts,sew:Math.round(sew*10)/10,odds:o,len:lenDiff(rec,don,root),day};
  (S.grafts??=[]).push({day,rec:rec.id,don:don.id,root,kind});if(S.grafts.length>60)S.grafts.splice(0,S.grafts.length-60);
  try{M.persist?.();}catch{}return res;}
+
+// Nachnähen: aufmachen, gerade drehen, neu nähen. Kostet 5.000 Gold, Dauerschaden an den Teilen der schiefen Naht entfällt.
+function fixOperate(g,root){if(!g||!crookedRoots(g).includes(root)||gold()<RULE.fixCost||bed(g))return null;
+ const day=S.day,until=day+RULE.fixDays,low=Math.max(4,Math.round(100-RULE.fixDays*perDay())),parts=[];S.gold=gold()-RULE.fixCost;
+ for(const id of chain(root)){const p=g.body[id];if(!p||p.missing||p.graft?.kind!=='crooked')continue;const old=p.chronic||0;
+  Object.assign(p,{chronic:0,hp:low,pain:55,bleed:0,injury:'Nachgenäht'});p.graft={...p.graft,kind:'fixed',fixDay:day,fixOld:old};p.grade=M.injuryGrade?.(p)??p.grade;parts.push({id,old});}
+ g.body[root].dokUntil=until;M.addScar?.(g,root,'Nachgenäht');try{M.noteInjury?.(g,root,'Nachgenäht','Doktor Hippolytus Hirnhammer','Säge, Nadel und Faden');}catch{}g.body[root].injury='Nachgenäht';
+ g.refixed=(g.refixed||0)+1;(S.grafts??=[]).push({day,rec:g.id,root,kind:'fixed',cost:RULE.fixCost});if(S.grafts.length>60)S.grafts.splice(0,S.grafts.length-60);
+ try{M.persist?.();}catch{}return {kind:'fixed',root,recId:g.id,recName:g.name,parts,cost:RULE.fixCost,day};}
 
 // ---------- 3 · Sprüche (schwarzer Humor) ----------
 const L={
@@ -111,7 +128,20 @@ const L={
  abDoc:['Lass sie. Die Ratten müssen auch leben.','Sie bringt es bestimmt zurück. Angeknabbert.'],
  donAfter:['Und ich? Krieg ich wenigstens eine Urkunde?','Ich will mein Teil zurück! … Ach, der hat es ja jetzt.','Zehn Tage Bett? Für ein Stück, das ich nicht mal mehr habe?'],
  donAfterDoc:['Du kriegst zehn Tage Bett und mein Mitgefühl. Das Bett ist besser.','Sieh es positiv: weniger Gewicht. Du wirst schneller laufen. Im Kreis.'],
- inBed:['{E} liegt noch {n} Tage im Bett. Erst ausheilen, dann zerschneiden.','Nicht so ungeduldig. {E} ist noch frisch zugenäht.']};
+ inBed:['{E} liegt noch {n} Tage im Bett. Erst ausheilen, dann zerschneiden.','Nicht so ungeduldig. {E} ist noch frisch zugenäht.'],
+ // Nachnähen schief angewachsener Glieder
+ fixIntro:['Schief angewachsen? Ich breche es wieder auf und mache es diesmal richtig. Vermutlich.','Gerade kostet extra. Schief war im Preis inbegriffen.','Was schief zusammengewachsen ist, reiße ich gern wieder auseinander. Für 5.000 Gold sogar gerade.','Reklamationen nehme ich an. Gegen Bezahlung. Mit der Säge.'],
+ fixPick:['{E}, {nom} zeigt in die falsche Himmelsrichtung. Das korrigieren wir. Mit Gewalt.','{Nom} sitzt schief? Dann mache ich es auf und nähe es gerade. Diesmal mit Lineal.','{E}, wenn du grüßt, winkst du nach hinten. Das ist unhöflich. Das richten wir.','Ah, mein schiefes Meisterwerk. {E}, ich habe dich vermisst. Dein {w} weniger.'],
+ fixPoor:['5.000 Gold. Nicht verhandelbar. Gerade Glieder sind Luxus.','Kein Gold, kein Gerade. Schief hast du schon, das kostet nichts.','Ich nähe nicht auf Pump. Der letzte, der auf Pump genäht wurde, zahlt heute noch. In Fingern.'],
+ fixSedate:['Noch einmal schlafen, {E}. Diesmal mit dem guten Hammer.','Bitte recht freundlich. Und jetzt: gute Nacht.','Keine Sorge, {E}. Diesmal treffe ich beim ersten Schlag.'],
+ fixSaw:['Erst wieder auf, dann gerade. Wie ein schlecht geknöpftes Hemd.','Die Naht vom letzten Mal war gut. Nur die Richtung nicht.','Ich schneide genau da, wo ich beim letzten Mal schief war. Ich erinnere mich an jeden Fehler. Es sind viele.'],
+ fixWake:['NICHT SCHON WIEDER!','Dafür hab ich 5.000 Gold bezahlt?!','War schief nicht auch irgendwie schön?!','DREH ES NICHT WEITER! DREH ES NICHT WEITER!'],
+ fixTwist:['Jetzt eine Vierteldrehung. Oder eine halbe. Schwester, wo ist vorne?','Daumen nach oben. Nein, dein anderes Oben.','Ein kleiner Ruck. Für mich klein.'],
+ fixTwistLeg:['Knie nach vorn. Zeh nach vorn. Rom nach vorn.','Er soll ja wieder geradeaus laufen. Nicht immer im Kreis um die Arena.'],
+ fixNurse:['Diesmal mit dem Lineal, Herr Doktor?','Ich habe extra geraden Faden gekauft.','Soll ich festhalten oder lieber wegsehen?'],
+ fixDone:['Gerade! So gerade wie meine Rechnung.','Kerzengerade. Ich hätte Zimmermann werden sollen.','Perfekt. Wächst es wieder schief, war es der Wille der Götter. Und kostet wieder 5.000.'],
+ fixRec:['Es zeigt nach vorn! Es zeigt wirklich nach vorn!','Ich kann wieder normal winken. Wer hätte gedacht, dass ich das vermisse.','Es tut weh. Aber es tut gerade weh.'],
+ fixGold:['5.000 Gold. Für die Gerade. Die Schmerzen gab es gratis dazu.','Schwester, zählen Sie das Gold. Zweimal. Dann zählen Sie die Finger.','Rückgabe ausgeschlossen. Beim Gold. Beim Glied sowieso.']};
 function fill(s,v){const cap=x=>x?x[0].toUpperCase()+x.slice(1):x;return s.replace(/\{E\}/g,v.E||'er').replace(/\{S\}/g,v.S||'jemand').replace(/\{nom\}/g,v.nom||'').replace(/\{Nom\}/g,cap(v.nom||'')).replace(/\{akk\}/g,v.akk||'').replace(/\{Akk\}/g,cap(v.akk||'')).replace(/\{w\}/g,v.w||'Teil').replace(/\{W\}/g,(v.w||'Teil').toUpperCase()).replace(/\{n\}/g,v.n??'');}
 const vars=(rec,don,root,n)=>({E:first(rec),S:first(don),nom:PIECES[root]?.nom,akk:PIECES[root]?.akk,w:PIECES[root]?.w,n});
 const lum=c=>{const m=/^#?([0-9a-f]{6})$/i.exec(c||'');if(!m)return 0;const v=parseInt(m[1],16);return .3*(v>>16)+.59*((v>>8)&255)+.11*(v&255);};
@@ -184,6 +214,7 @@ let W=null,raf=0,last=0;
 function open(gid){close();const v=document.createElement('div');v.className='dok-chair gr-win';v.setAttribute('role','dialog');v.setAttribute('aria-label','Glieder annähen');
  v.innerHTML=`<div class="dok-panel"><header><div><b>🧵 GLIEDER ANNÄHEN</b><small>${esc(DOC)} · ${esc(NURSE)} · Ersatzteillager</small></div><button class="btn small" type="button" data-gr="close" aria-label="Schließen">✕</button></header>
 <div class="dok-stage"><canvas id="grStage" width="660" height="420"></canvas><p class="dok-line" id="grLine"></p><button class="btn small gr-skip" type="button" data-gr="skip" hidden>FILM ÜBERSPRINGEN ›</button></div>
+<section class="gr-sec gr-fix" id="grFix" aria-label="Schief angenäht · nachnähen" hidden></section>
 <section class="gr-sec" id="grRecs" aria-label="Amputierte"></section>
 <section class="gr-sec" id="grPieces" aria-label="Was soll dran?"></section>
 <section class="gr-sec" id="grDonors" aria-label="Spender"></section>
@@ -194,7 +225,8 @@ function open(gid){close();const v=document.createElement('div');v.className='do
  const list=amputees();const pre=list.find(g=>g.id===gid)||null;
  W={view:v,rec:pre?.id||null,root:null,don:null,sort:'value',t:0,line:null,lineT:0,op:null,last:null,cast:null};
  if(pre){const ps=missingPieces(pre);if(ps.length===1)W.root=ps[0];}
- say('d',list.length?(pre?fill(pick(ps0(pre).length>1?L.recMany:L.rec),vars(pre,null,W.root||ps0(pre)[0])):pick(L.intro)):pick(L.none));
+ const fixPre=!pre&&crookedMen().find(g=>g.id===gid);W.fixFocus=fixPre?gid:null;
+ say('d',fixPre?fill(pick(L.fixPick),vars(fixPre,null,crookedRoots(fixPre)[0])):list.length?(pre?fill(pick(ps0(pre).length>1?L.recMany:L.rec),vars(pre,null,W.root||ps0(pre)[0])):pick(L.intro)):crookedMen().length?pick(L.fixIntro):pick(L.none));
  v.addEventListener('click',onClick);v.addEventListener('change',e=>{if(e.target.id==='grSort'){W.sort=e.target.value;render();}});
  render();loop();}
 const ps0=g=>missingPieces(g);
@@ -208,6 +240,11 @@ const ico=g=>M.sortTag?.icon?.(M.sortTag.get(g),12)||'';
 const pct=v=>Math.round(v*100)+' %';
 const f1=v=>(Math.round(v*10)/10).toLocaleString('de-DE');
 function render(){if(!W)return;const busy=!!W.op,rec=recG(),list=amputees();
+ // Schief angenäht: nachnähen für 5.000 Gold
+ const fx=$('grFix');if(fx){const men=crookedMen();fx.hidden=!men.length;if(men.length){const poor=gold()<RULE.fixCost;
+  fx.innerHTML=`<h3>🪡 SCHIEF ANGENÄHT · NACHNÄHEN <small>${fmtG(RULE.fixCost)} Gold je Stück · du hast ${fmtG(gold())} Gold</small></h3><div class="gr-fixlist">`+men.map(g=>{const d=bed(g);return `<div class="gr-fixman${g.id===W.fixFocus?' sel':''}"><canvas data-grface="${g.id}" width="40" height="50"></canvas><div><b>${ico(g)}${esc(g.name)}</b> ${tal(g)}${d?` <small class="bad">🛏 noch ${d} ${d===1?'Tag':'Tage'}</small>`:''}`+crookedRoots(g).map(r=>{const c=crookedChronic(g,r);return `<div class="gr-fixrow"><span>${esc(PIECES[r].nom[0].toUpperCase()+PIECES[r].nom.slice(1))} <small class="bad">schief · Dauerschaden −${f1(c)} %</small></span><button class="btn small${poor||d?'':' primary'}" type="button" data-gr="fix:${g.id}|${r}"${busy||d||poor?' disabled':''}>${d?'LIEGT IM BETT':poor?'ZU WENIG GOLD':'🪡 NACHNÄHEN · '+fmtG(RULE.fixCost)+' G'}</button></div>`;}).join('')+'</div></div>';}).join('')+
+  `</div><p class="tiny gr-rules">Der Doktor macht die schiefe Naht wieder auf, dreht das Stück gerade und näht neu. Gelingt immer. Danach ist der Dauerschaden an diesen Teilen weg (auch der alte des Spenders). ${RULE.fixDays} Tage Krankenbett.</p>`;
+  for(const c of fx.querySelectorAll('canvas[data-grface]')){const g=S.roster.find(y=>y.id===c.dataset.grface);if(g)portrait(c,g);}}}
  // Amputierte
  const rs=$('grRecs');if(rs){rs.innerHTML='<h3>1 · DIE AMPUTIERTEN <small>bestes Talent oben</small></h3>'+(list.length?'<div class="dok-men gr-men">'+list.map(g=>{const d=bed(g),ps=missingPieces(g);return `<button class="dok-man${g.id===W.rec?' sel':''}" type="button" data-gr="rec:${g.id}"${busy?' disabled':''}><canvas data-grface="${g.id}" width="40" height="50"></canvas><span>${ico(g)}${esc(first(g))} ${tal(g)}</span><small>${ps.map(r=>esc(PIECES[r].w)).join(', ')} fehlt</small><small>${d?'🛏 '+d+' T.':'bereit'}</small></button>`;}).join('')+'</div>':'<p class="tiny">Niemand hat ein Stück verloren, das man wieder annähen könnte. Kopf und Hals näht der Doktor nicht an. Noch nicht.</p>');
   for(const c of rs.querySelectorAll('canvas[data-grface]')){const g=S.roster.find(y=>y.id===c.dataset.grface);if(g)portrait(c,g);}}
@@ -231,6 +268,9 @@ function onClick(e){const b=e.target.closest?.('[data-gr]');if(!b||!W)return;e.p
  if(cmd==='close'){close();M.ui.render?.();return;}
  if(cmd==='skip'){if(W.op)W.op.t=Math.max(W.op.t,W.op.end-.01);return;}
  if(W.op)return;
+ if(cmd==='fix'){const [gid,root]=b.dataset.gr.slice(4).split('|'),g=S.roster.find(x=>x.id===gid);if(!g||!root)return;W.fixFocus=g.id;
+  if(bed(g)){say('d',fill(pick(L.inBed),{...vars(g,null,root),n:bed(g)}));render();return;}if(gold()<RULE.fixCost){say('d',pick(L.fixPoor));M.ui.notify?.('Nachnähen kostet '+fmtG(RULE.fixCost)+' Gold.');render();return;}
+  startFix(g,root);return;}
  if(cmd==='rec'){const g=S.roster.find(x=>x.id===arg);if(!g)return;W.rec=g.id;W.don=null;const ps=missingPieces(g);W.root=ps.length===1?ps[0]:null;$('grResult').hidden=true;W.last=null;
   const d=bed(g);say('d',d?fill(pick(L.inBed),{...vars(g,null,ps[0]),n:d}):fill(pick(ps.length>1?L.recMany:L.rec),vars(g,null,ps[0])));render();$('grPieces')?.scrollIntoView?.({block:'nearest',behavior:'smooth'});return;}
  if(cmd==='piece'){const rec=recG();if(!rec)return;W.root=arg;W.don=null;$('grResult').hidden=true;say('d',fill(pick(donors(rec,arg).ready.length?L.piece:L.noDonor),vars(rec,null,arg)));render();$('grDonors')?.scrollIntoView?.({block:'nearest',behavior:'smooth'});return;}
@@ -243,9 +283,27 @@ function start(rec,don,root,force){const before={rec:vis(rec),don:vis(don)},res=
  const op={res,root,t:0,end:res.kind==='ab'?17.2:16.2,recV:before.rec,donV:before.don,limb:null,fx:[],stains:[],stitches:[],once:{},word:null,flash:0,shake:0,docX:132,docPose:'stand',nurseX:248,rat:null,zz:0,recG:rec,donG:don};
  op.A={don:lier(op.donV,TAB.don+14,1),rec:lier(op.recV,TAB.rec+14,2)};
  W.op=op;W.last=null;$('grResult').hidden=true;render();$('grStage')?.scrollIntoView?.({block:'start',behavior:'smooth'});}
+// Nachnähen: nur der Empfänger auf dem rechten Tisch. Betäuben 0–1,8 · Aufsägen 1,8–4,2 · Geradedrehen 4,2–4,8 · Nähen 4,8–7,4 · GERADE! · Großaufnahme · Schluss
+function startFix(g,root){const before=vis(g),res=fixOperate(g,root);if(!res){render();return;}
+ const op={fix:true,res,root,t:0,end:10.2,recV:before,limb:null,fx:[],stains:[],stitches:[],once:{},word:null,flash:0,shake:0,docX:132,docPose:'stand',nurseX:248,rat:null,zz:0,recG:g};
+ op.A={rec:lier(op.recV,TAB.rec+14,2)};W.op=op;W.last=null;$('grResult').hidden=true;render();$('grStage')?.scrollIntoView?.({block:'start',behavior:'smooth'});}
+function stepFix(dt){const op=W.op,t=op.t+=dt,g=op.recG,root=op.root,P=PIECES[root],v=vars(g,null,root),A=op.A,cr=cutPt(A.rec,root);
+ if(t<1.8){op.nurseX=lerp(248,Math.min(WW-14,cr.x+40),ease(t/1.1));op.docX=lerp(132,cr.x+12,ease((t-.3)/1.3));op.docPose=t>.3&&t<1.6?'walk':'stand';once(op,'sed',()=>say('n',fill(pick(L.fixSedate),v)));
+  if(t>1.35)once(op,'bonk',()=>{op.word={text:'BONK!',t:0,c:'#f4d37a'};M.sound?.('block');op.shake=.6;op.zz=1;});}
+ else if(t<4.2){op.docX=cr.x+12;op.docPose='stand';once(op,'saw',()=>say('d',pick(L.fixSaw)));op.sawT=(op.sawT||0)+dt;if(op.sawT>.28){op.sawT=0;M.sound?.('stick');blood(op,cr.x,cr.y,4,28);}
+  if(t>2.9)once(op,'knack',()=>{op.word={text:'KNACK!',t:0,c:'#e2626c'};M.sound?.('sever');op.shake=1.2;blood(op,cr.x,cr.y,18,60);op.stains.push({x:cr.x-6,y:cr.y+4,w:12,h:4});});
+  if(t>3.2)once(op,'wake',()=>{op.zz=0;say('r',pick(L.fixWake),g);try{M.voice?.('pain',M.voicePitch?.(g)??1,true);}catch{}A.rec.facePain=1;A.rec.agony={pose:1,part:P.kind,rate:7,live:.8,lie:1.35};});}
+ else if(t<4.8){once(op,'twist',()=>{A.rec.agony=null;op.word={text:'KRRRK …',t:0,c:'#f4d37a'};M.sound?.('heavy');op.shake=.9;say('d',fill(pick(P.kind==='leg'&&Math.random()<.5?L.fixTwistLeg:L.fixTwist),v));});}
+ else if(t<7.4){op.stT=(op.stT||0)+dt;if(op.stT>.36&&op.stitches.length<8){op.stT=0;op.stitches.push({dx:(op.stitches.length-3.5)*1.6,dy:(op.stitches.length%2?1:-1)*1.5});M.sound?.('stick');}
+  if(t>5.4)once(op,'nurse',()=>say('n',pick(L.fixNurse)));}
+ else{once(op,'done',()=>{op.flash=1;op.word={text:'GERADE!',t:0,c:'#9fd48a'};op.docPose='flail';M.sound?.('crowd');op.shake=1;A.rec.agony={pose:1,part:P.kind,rate:5,live:.6,lie:1.35};op.twitch=1.2;say('d',pick(L.fixDone));});
+  if(t>8)once(op,'gold',()=>say('d',pick(L.fixGold)));if(t>9.4)once(op,'rec',()=>say('r',pick(L.fixRec),g));}
+ for(const p of op.fx){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vz-=140*dt;p.z+=p.vz*dt;if(p.z<=0){p.z=0;p.vx=p.vy=p.vz=0;if(!p.landed){p.landed=1;if(op.stains.length<40)op.stains.push({x:p.x,y:p.y,w:2,h:1});}}}op.fx=op.fx.filter(p=>p.life>0);
+ if(op.twitch>0){op.twitch-=dt;if(op.twitch<=0)A.rec.agony=null;}if(op.word)op.word.t+=dt;op.flash=Math.max(0,op.flash-dt*2.2);op.shake=Math.max(0,op.shake-dt*4);
+ if(t>=op.end){W.op=null;W.last=op.res;W.fixFocus=op.res.recId;showResult(op.res);render();}}
 const once=(op,k,fn)=>{if(op.once[k])return;op.once[k]=1;fn();};
 const blood=(op,x,y,n,sp=40)=>{for(let i=0;i<n;i++)op.fx.push({x,y,z:4+Math.random()*6,vx:(Math.random()-.5)*sp,vy:(Math.random()-.3)*sp*.4,vz:10+Math.random()*sp*.8,life:.6+Math.random()*.7,c:Math.random()<.6?'#a8372f':'#7a2420'});};
-function stepOp(dt){const op=W.op,t=op.t+=dt,res=op.res,rec=op.recG,don=op.donG,root=op.root,v=vars(rec,don,root),P=PIECES[root],A=op.A,cd=cutPt(A.don,root),cr=cutPt(A.rec,root);
+function stepOp(dt){if(W.op?.fix)return stepFix(dt);const op=W.op,t=op.t+=dt,res=op.res,rec=op.recG,don=op.donG,root=op.root,v=vars(rec,don,root),P=PIECES[root],A=op.A,cd=cutPt(A.don,root),cr=cutPt(A.rec,root);
  // Betäubung: Schwester geht zum Spender und haut zu
  if(t<2.2){op.nurseX=lerp(248,TAB.don-20,ease(t/1.3));op.docX=lerp(132,cd.x+12,ease((t-.6)/1.4));op.docPose=t>.6&&t<2?'walk':'stand';once(op,'sed',()=>say('n',fill(pick(L.sedate),v)));
   if(t>1.55)once(op,'bonk',()=>{op.word={text:'BONK!',t:0,c:'#f4d37a'};M.sound?.('block');op.shake=.6;op.zz=1;});}
@@ -281,6 +339,7 @@ function stepOp(dt){const op=W.op,t=op.t+=dt,res=op.res,rec=op.recG,don=op.donG,
 function finish(){const op=W.op;W.op=null;W.last=op.res;showResult(op.res);say('d',pick(L.donAfterDoc));const keep={rec:op.res.recId};
  W.rec=keep.rec;const rec=recG();const ps=rec?missingPieces(rec):[];if(!ps.length)W.rec=null;W.root=ps.includes(op.root)?op.root:ps[0]||null;W.don=null;render();}
 function showResult(r){const el=$('grResult');if(!el)return;const P=PIECES[r.root],cap=s=>s[0].toUpperCase()+s.slice(1);el.hidden=false;el.className='dok-result '+(r.kind==='ab'?'fail':'ok');
+ if(r.kind==='fixed'){el.innerHTML=`<h4>NACHGENÄHT · ${esc(r.recName)}</h4><p>${esc(cap(P.nom))} sitzt jetzt gerade. Bezahlt: ${fmtG(r.cost)} Gold.</p><div class="dok-loss gr-parts">${r.parts.map(p=>`<span>${esc(partName(p.id))} <b>Dauerschaden −${f1(p.old)} % → 0 %</b></span>`).join('')}</div><p>${RULE.fixDays} Tage Krankenbett.</p>`;el.scrollIntoView?.({block:'nearest',behavior:'smooth'});return;}
  const rows=r.parts.map(p=>`<span>${esc(partName(p.id))} <b>Kraft ${Math.round(p.s)} · Bew. ${Math.round(p.a)} · Rob. ${Math.round(p.r)}</b>${p.chronic?` <i>Dauerschaden −${f1(p.chronic)} %</i>`:''}</span>`).join('');
  el.innerHTML=r.kind==='ab'?`<h4 class="bad">ABGESTOSSEN · ${esc(r.recName)}</h4><p>${esc(cap(P.nom))} von ${esc(r.donName)} ist nicht angewachsen und abgefallen. Die Ratte hat es mitgenommen. ${esc(r.recName)} fehlt es weiter, ${esc(r.donName)} jetzt auch.</p><p>Beide ${RULE.days} Tage Krankenbett.</p>`
  :`<h4>${r.kind==='ok'?'ANGEWACHSEN':'SCHIEF ANGENÄHT'} · ${esc(r.recName)}</h4><p>${esc(cap(P.nom))} von <b>${esc(r.donName)}</b> sitzt jetzt an ${esc(r.recName)}${r.kind==='crooked'?' – etwas schief (Narbe)':''}. Naht: Dauerschaden −${f1(r.sew)} %${r.val.chronic?`, dazu der alte Dauerschaden des Spenders −${f1(r.val.chronic)} %`:''}.</p><div class="dok-loss gr-parts">${rows}</div><p>${esc(r.donName)} ist das Stück los (Amputation). Beide ${RULE.days} Tage Krankenbett.</p>`;
@@ -290,7 +349,8 @@ function showResult(r){const el=$('grResult');if(!el)return;const P=PIECES[r.roo
 const OFF=mk(WW,WH);
 function paint(){const c=$('grStage');if(!c||!W)return;const g=c.getContext('2d'),q=OFF.getContext('2d'),t=W.t,op=W.op;q.setTransform(1,0,0,1,0,0);q.imageSmoothingEnabled=false;
  // Großaufnahmen während des Ausgangs
- if(op){const res=op.res,ct=op.t,cu=res.kind==='ab'?(ct>14.6&&ct<16.4?'doc':''):(ct>11.2&&ct<12.9?'rec':ct>13.8&&ct<15.4?'doc':'');
+ if(op?.fix&&op.t>8&&op.t<9.4){D.closeup(g,c.width,c.height,t,D.doctorBuf(t,{mood:'grin',yaw:Math.sin(t*.8)*.25}));word(g,c,op);return;}
+ if(op&&!op.fix){const res=op.res,ct=op.t,cu=res.kind==='ab'?(ct>14.6&&ct<16.4?'doc':''):(ct>11.2&&ct<12.9?'rec':ct>13.8&&ct<15.4?'doc':'');
   if(cu==='doc'){D.closeup(g,c.width,c.height,t,D.doctorBuf(t,{mood:res.kind==='ok'?'roar':res.kind==='ab'?'shock':'grin',yaw:Math.sin(t*.8)*.25}));word(g,c,op);return;}
   if(cu==='rec'){D.closeup(g,c.width,c.height,t,D.patientBuf(op.recV,t,{mood:res.kind==='ok'?'relief':'scared',hurt:.4}));word(g,c,op);return;}}
  q.drawImage(room(),0,0);
@@ -304,7 +364,13 @@ function paint(){const c=$('grStage');if(!c||!W)return;const g=c.getContext('2d'
  const list=[cast.don,cast.rec].filter(Boolean);if(list.length)try{M.renderForgeActors(q,list);}catch(e){}
  // Gurte über den Patienten
  for(const a of list){R(q,a.x-38,a.y-3,2,9,'#3a2a1c');R(q,a.x-2,a.y-6,2,10,'#3a2a1c');}
- if(op){const A=op.A,cd=cutPt(A.don,op.root),cr=cutPt(A.rec,op.root);
+ if(op?.fix){const A=op.A,cr=cutPt(A.rec,op.root);
+  if(op.t>1.8&&op.t<4.2)sawAt(q,cr.x+1,cr.y,op.t*22);
+  if(op.t>=4.8&&op.t<7.4)needleAt(q,cr.x+2,cr.y-1,op.t*9,{x:cr.x-2,y:cr.y});
+  if(op.t>=4.8)for(const s of op.stitches){R(q,cr.x+s.dx,cr.y+s.dy,1,1,'#1a1010');R(q,cr.x+s.dx+1,cr.y+s.dy+1,1,1,'#c43a46');}
+  for(const p of op.fx)R(q,p.x,p.y-p.z,p.z>0?2:1,p.z>0?2:1,p.c);
+  if(op.zz>0){for(let i=0;i<3;i++){const u=(t*.6+i/3)%1;q.globalAlpha=1-u;R(q,A.rec.x-34+u*8,A.rec.y-16-u*16,3,1,'#e8dcc0');R(q,A.rec.x-33+u*8,A.rec.y-15-u*16,1,1,'#e8dcc0');R(q,A.rec.x-34+u*8,A.rec.y-14-u*16,3,1,'#e8dcc0');q.globalAlpha=1;}}}
+ else if(op){const A=op.A,cd=cutPt(A.don,op.root),cr=cutPt(A.rec,op.root);
   if(op.t>2.2&&op.t<4.85)sawAt(q,cd.x+1,cd.y,op.t*22);
   if(op.t>=6.8&&op.t<10){needleAt(q,cr.x+2,cr.y-1,op.t*9,{x:cr.x-2,y:cr.y});}
   if(op.t>=6.8){for(const s of op.stitches){R(q,cr.x+s.dx,cr.y+s.dy,1,1,'#1a1010');R(q,cr.x+s.dx+1,cr.y+s.dy+1,1,1,'#c43a46');}}
@@ -317,8 +383,9 @@ function paint(){const c=$('grStage');if(!c||!W)return;const g=c.getContext('2d'
  if(op&&op.limb){q.save();q.translate(op.limb.x,op.limb.y-(op.limb.z||0));q.scale(1.6,1.6);try{M.renderForgeEffects?.(q,[{...op.limb,x:0,y:0,z:0}],[]);}catch(e){}q.restore();}
  // Schwester vorne
  const nx=op?op.nurseX:240+Math.sin(t*.7)*3;const nwalk=op&&Math.abs(nx-(W._nx??nx))>.05;W._nx=nx;
- D.drawNurseSmall?.(q,{x:nx,y:162,t,dir:op?(op.t<2.2?-1:1):-1,walk:nwalk,phase:t*5.6,pose:op&&op.t>1.2&&op.t<1.8?'wave':'stand'});
- if(op&&op.t>1.2&&op.t<1.9)hammerAt(q,nx+8,124,op.t<1.55);
+ const hs=op?.fix?1:1.2,hb=op?.fix?1.35:1.55;
+ D.drawNurseSmall?.(q,{x:nx,y:162,t,dir:op?(op.fix?-1:op.t<2.2?-1:1):-1,walk:nwalk,phase:t*5.6,pose:op&&op.t>hs&&op.t<hs+.6?'wave':'stand'});
+ if(op&&op.t>hs&&op.t<hs+.7)hammerAt(q,nx+8,124,op.t<hb);
  // Ins große Bild
  const sh=op?op.shake:0;g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.fillStyle='#0d0907';g.fillRect(0,0,c.width,c.height);g.drawImage(OFF,(Math.random()-.5)*sh*4,(Math.random()-.5)*sh*3,WW*K,WH*K);
  // Licht: Kerzenschein, Vignette
@@ -332,7 +399,7 @@ function castIdle(){const rec=recG(),don=donG(),key=(rec?.id||'')+'|'+(don?.id||
 function loop(){if(raf)return;last=0;const run=now=>{if(!W){raf=0;return;}const dt=Math.min(.05,last?(now-last)/1000:0);last=now;W.t+=dt;if(W.op)stepOp(dt);else{W.lineT+=dt;if(W.lineT>11){const rec=recG(),don=donG();say('d',rec&&don?donorLine(rec,don,W.root):pick(L.idle));}}paint();raf=requestAnimationFrame(run);};raf=requestAnimationFrame(run);}
 
 // ---------- 7 · Anschluss ----------
-M.graft={open,close,operate,odds,limbValue,lenDiff,missingPieces,amputees,donors,donorOk,PIECES,RULE,L,get win(){return W;},
+M.graft={open,close,operate,fixOperate,crookedRoots,crookedMen,odds,limbValue,lenDiff,missingPieces,amputees,donors,donorOk,PIECES,RULE,L,get win(){return W;},
  // Nur für Tests: Ausgang erzwingen ('ok' | 'crooked' | 'ab'), Film vorspulen
  force(k){if(W)W.force=k||null;},skip(){if(W?.op)W.op.t=W.op.end-.01;}};
 })();

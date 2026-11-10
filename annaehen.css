@@ -27,3 +27,12 @@
 .gr-parts span{display:block}
 @media (max-width:520px){.gr-don{grid-template-columns:40px 1fr}.gr-dv{grid-column:1/-1}}
 .gr-parts b{color:#17201c}.gr-parts i{color:#8a2a24}
+/* Nachnähen schief angenähter Glieder (10.11.) */
+.gr-fix{border-color:#f4d37a66;background:#1c1a12}
+.gr-fixlist{display:grid;gap:5px}
+.gr-fixman{display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:start;padding:5px 8px;background:#1f2b26;border:2px solid #3c4a42;font-size:12px;color:#e8dcc0}
+.gr-fixman.sel{border-color:#f4d37a;background:#2b2a1c}
+.gr-fixman canvas{width:40px;height:50px;image-rendering:pixelated;background:#202d2f}
+.gr-fixman b{display:inline-flex;gap:3px;align-items:center}
+.gr-fixrow{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;justify-content:space-between;margin-top:4px}
+.gr-fixrow small{font-size:10.5px}
