@@ -16,6 +16,10 @@
 //  6. Klang: Glottispuls (KLGLOTT88) mit Öffnungsquotient, Spektralneigung, Hauch, Knarren, Zittern; Kaskade aus fünf
 //     Formanten + Nasal-Pol/-Nullstelle; parallele Rauschzweige für s, sch, ch, f, Verschlusslösungen und Behauchung;
 //     Formantübergänge über Lokus-Gleichungen (b/d/g klingen dadurch unterscheidbar).
+// Überarbeitung 11.11.2026: Aussprache nach Prüfung aller Spieltexte (≈9000 Wörter): unbetonte Silben kurz, Vokallänge bei sagt/lebt/gibt,
+//     Zerlegung von Zusammensetzungen über ein Stammwörterbuch (Toten|gräber, Werk|statt), Vorsilben nur vor echten Stämmen (hin|ten ≠ hin-), -ion,
+//     nächste/höchste, Ergänzungen im Wörterbuch; schwache Formen von der/den/dem/er/zu …, Vokalreduktion und natürliche Streuung der Klangfarbe;
+//     eigenes Wörterbuch aus dem Stimmlabor (setLexicon). Die vorherige Fassung liegt als stimme-v1.js für den Hörvergleich bei.
 // Schnittstelle wie sprechsound.js (render/play/mouthAt) – kann später ohne Umbau ins Spiel.
 // Der Kern (synth, Tracks) ist auch für die Schreie (schreie.js) da.
 // =====================================================================================================
@@ -49,6 +53,9 @@ shape('zisch',[[5200,1.4,1],[7600,1.4,.7]],.15);
 const P={
  'i:':{k:'v',F:[280,2250,2900,3500],d:150,m:80,o:.35,hi:1},
  'I':{k:'v',F:[370,2000,2600,3450],d:72,m:42,o:.4,hi:1},
+ // kurze gespannte Vokale in unbetonten Silben (Me|di|cus, A|re|na, Mo|ment): gleiche Klangfarbe wie die langen, nur kürzer
+ 'i':{k:'v',F:[290,2200,2900,3500],d:78,m:42,o:.35,hi:1},'e':{k:'v',F:[380,2100,2650,3500],d:78,m:42,o:.45},'o':{k:'v',F:[400,780,2400,3400],d:78,m:42,o:.5},
+ 'u':{k:'v',F:[300,720,2250,3300],d:78,m:42,o:.3,hi:1},'y':{k:'v',F:[290,1750,2150,3350],d:78,m:42,o:.35,hi:1},'2':{k:'v',F:[390,1450,2200,3400],d:80,m:44,o:.45},
  'e:':{k:'v',F:[360,2150,2650,3500],d:150,m:80,o:.45},
  'E':{k:'v',F:[560,1800,2500,3500],d:80,m:45,o:.65},
  'E:':{k:'v',F:[520,1900,2550,3500],d:150,m:80,o:.6},
@@ -75,9 +82,9 @@ const P={
  R:{k:'l',F:[520,1250,2300,3300],d:52,m:30,o:.4,pl:'uvu',fs:'R',af:.18},
  '6g':{k:'l',F:[580,1300,2450,3400],d:55,m:30,o:.55,pl:'uvu'},
  f:{k:'f',d:95,m:55,o:.2,pl:'lab',fs:'f',af:.22},
- v:{k:'f',vc:1,d:62,m:38,o:.2,pl:'lab',fs:'f',af:.15},
+ v:{k:'f',vc:1,d:62,m:38,o:.2,pl:'lab',fs:'f',af:.11},
  s:{k:'f',d:105,m:60,o:.25,pl:'alv',fs:'s',af:.45},
- z:{k:'f',vc:1,d:72,m:40,o:.25,pl:'alv',fs:'s',af:.26},
+ z:{k:'f',vc:1,d:72,m:40,o:.25,pl:'alv',fs:'s',af:.2},
  S:{k:'f',d:105,m:62,o:.35,pl:'post',fs:'S',af:.65},
  Z:{k:'f',vc:1,d:75,m:42,o:.35,pl:'post',fs:'S',af:.5},
  C:{k:'f',d:95,m:58,o:.3,pl:'pal',fs:'C',af:.38},
@@ -97,6 +104,139 @@ const isObs=p=>{const k=P[p]?.k;return k==='f'||k==='p';};
 const LOC={lab:[250,850,2200,3300],alv:[260,1700,2650,3400],post:[260,1850,2450,3300],pal:[260,2200,2900,3500],uvu:[480,1250,2300,3300]};
 function locus(pl,V){if(pl==='vel'){const f2=V?clamp(V[1]+(V[1]>1500?250:180),1250,2450):1700;return [260,f2,Math.max(f2+420,2300),3400];}return LOC[pl]||null;}
 
+// Stammwörterbuch (aus den Spieltexten, ohne Endungen und Umlaute): prüft Vorsilben und zerlegt Zusammensetzungen (Totengräber → Toten|gräber)
+const STEMTXT=`abend abendessen aber abfangen abgegeben abgelehnt abgemacht abgenommen abrechnen abschied abschluss abschotten absicht abstand abwechslung abzeichen
+ach achtung achtzehn adler ahnen ahnlich ahnt aktionen aktiven aktualisiert alanen alle allein allem aller allerdings almosen als also alt amboss
+amputationen andenken andere anderer andern anders anderswo andert anfang anfuhlt anfuhrer angeblich angebot angefangen angeguckt angekundigt angelegt
+angemeldet angepasst angeschaut angeschlagen angesehen angezundet angreifen angriff angriffstempo angst anklicken anlage anlauf annehmen ans
+anschliessend ansieht anspruche anspruchsvoll anstandig ansturm anteil antippen antreten antwort anzahlung apfel apfelhalter apfelmus apfelschuss
+appetit applaus arbeit arbeitsplatz arena arenaboden arenakampfe arenasand arenen arger arm armbrust armee armel arschlocher art arzt asche assassine
+ast atem atemzug atme auch auf auffallig aufgabe aufgeben aufgegeben aufgehort aufgenommen aufgepasst aufgestellt aufraumen aufschreiben aufstehen
+aufstellen aufstellung auftrage auftritt aufwand auge augenhohe aus ausbildung ausdauer ausdauernd ausgang ausgefuhrte ausgeglichen ausgemustert
+ausgerechnet ausgeschlossen ausgesprochen ausgesucht ausgezeichnet ausholen ausnahmetalent ausnahmsweise ausprobieren ausrede ausrusten ausrustung
+aussehen aussen ausser ausserhalb aussicht aussichtslos aussieht ausverkauft ausweichen automatische axt backer badehaus bahre bald band banner bar
+barbier barenfuhrer baron bastard bat bau bauch bauernhof baum beastrium becher bedankt bedeutet bedeutung beeindrucken beeindruckend beende
+beerdigung befehl begabt begeistert beginnen beginnt begnadigt begonnen begraben begrabnis begrusst behalt behandeln behandelst behandelt behandle
+behandlung behauptet bei beibringen beide beim beine beispiel beissen beisst bekam bekommen bekommst bekommt belegt beleidigt bellt belohnung bemalt
+bemerkenswert benehmen beneiden benutzen benutzt beobachten bequem beraten beratung beraube bereit bereuen bereut berg beruf berufserfahrung beruhmt
+beschaftigt bescheidenheit bescheuert beschwer beschwerden besen besiegt besitzer besitzt besoffener besonderes besonderheiten besonders besser
+bestatter beste bestehen besteht bestellt bester bestiarium bestie bestimmt besuch beten betet betonung betrachten betreten betritt betrunken bett
+betteln bettler bettruhe beute beutel bevor bevorzugt bewacht bewaffnet bewegen bewegt bewegung beweisen bewundert bewusstsein bezahle bezahlst
+bezahlt bezwungen bier biete bilanz bildhauer billig billigste bin bis bisher bislang bisschen bisse bitte blamiert blank blasebalg blass blatt blau
+bleib blick blieb block blod bloss blut blutverlust bock boden bogen bogenhandler bogenschutze bohrt bolzen bonus bord bose boss boxkampfe brandung
+brauchbar brauche brauchst braucht braun braver breche breit brennen brennt bricht bring brot bruch brucke bruder brullt brunnen brust brustkorb
+brustpanzer buch buchfuhrung buchmacher bunt burger burgermeister butter capua champion chance charakter charon chef chronist cousin crassus dabei
+dach dafur dagegen dahin dahinter damals damen damit danach daneben dankbar danke dann daran darauf daraus darf darin darstellung daruber darum
+darunter das dasselbe dauerhaft dauerschaden dauert daumen davon davor dazu death deckel deckt deckung dein delle dem den denar denken denkt der
+derselbe des deshalb dessen desto deutlich dich dick die dieb dienstag diese dieselbe diesem dieser diesmal ding dir direkt doch doktor dolch doppelt
+dorf dorfteich dorftrottel dort dorthin drachen dran drauf draussen dreck dreh drei dreifache dreihundert dreimal dreissig dreizack drin dringend
+dritte druben druber druck dumm dummheit dumpfer dunger dunkeln dunkle dunkler dunn durch durchschlag durchschnitt durchstehen durfen durst dutzend
+eben echse echt ecke egal ehe eher ehre ehrlich eid eigene eigener eigenschaft eigentlich eigentum eilig eimer ein eindeutig eindruck einfach eingehen
+einige einmal einsatz einsatzbereit eintritt einzeln einzige einziger eis eiserne elend elf elite ellbogen empfehlen empfehlung empfiehlt ende
+endgultig endlich energie eng entfernt entfernung entgegen entlassen entscheiden entscheidend entscheidest entscheidet entscheidung entschieden
+entsteht enttauscht enttauschung entweder entwickelt erben erde erfahren erfahrung erfolg erfolgreiche ergebe ergebnis erhalten erhoht erholt erholung
+erinnert erinnerung erkampft erkannt erkenne erkennst erkennt erklaren erklart erklarung erledigen erledigt erlegt ernst erreichen errotet ersatzbank
+erscheint erschlagen erschopfung ersetzt erst erstaunlich erwachsene erwachsener erwahnt erwartet erwischen erwischt erwurgen erwurgt erz erzahl esche
+esel esse esser essig etwas euch euer eure eurer ewig ewigkeit extra fackeln faden fahigkeiten fahne fahren fahrt fair faktor falb fall falsch familie
+familienchronik familienzeit fang farbe fass fasschen fast fauste favorit feder fehlen fehler fehlt feierabend feiern feiert feiglinge feilschen feind
+feiner feld fell fels fenster fern fernkampfer fernwaffe fertig fest festhalt fett feuer fieber fiel finde finger fisch flach flanke flasche flecken
+fleisch fleischstand fliege fliegt flohe flucht flug flugel fluss folge folgt fordert form formation forster fort fortschritt fortuna frag frau frech
+frei freiheit freiwillig fremde fresse freude freuen freund freundliches freundschaft freut friedhof frisch frisst froh front frontal fruh fruheren
+fruhstuck fuchs fuhle fuhlt fuhre fuhrmann fuhrt fuhrung funf funfzig funken funktioniert fur furchten fusel fuss futter gab gahnt gaius galgen gang
+ganz gar garantie garantiert gartner gaste gebaude gebaut gebe gebiss geblieben geblutet gebogen geboren gebracht gebraucht gebrochen gebt gebundene
+gebusch gedacht gedauert geduld geeignete gefahr gefahrliche gefahrlicher gefallen gefallt gefangen gefarbt geflohen gefragt gefressen gefruhstuckt
+gefuhl gefuhrt gefunden gefuttert gegangen gegeben gegen gegend gegenstand gegenteil gegessen geglaubt gegner gegnerische geh gehabt gehalten gehangt
+geharkt gehartet gehauen geheimnis gehirn geholfen geholt gehoren gehort geist gejagt gekampft gekauft geklappt gekommen gekundigt gekurzt gelacht
+geladen gelandet gelassen gelaunt geld geldbeutel geleert gelegenheit gelegentlich gelegt gelernt geliehen geloscht gemacht gemecker gemein gemeinsam
+gemeisselt gemeldet gemerkt gemocht gemusehandler genaht genannt genau genauso generation genesung genie genommen genug genutzt geoffnet geplant
+gepruft gerade geradeaus gerausch gerber gerechnet gerechtigkeit geredet gereicht gerettet gerissen germanen gern geruch gerufen gesagt geschafft
+geschaft geschenk geschichte geschick geschlagen geschlossen geschmack geschnitten geschnitzt geschosse geschrieben geschummelt geschutzt
+geschwindigkeit geschworen gesehen gesenkt gesetzt gesicht gesindel gespalten gespannt gespeichert gesperrt gesprochen gestanden gestank gestellt
+gestern gestohlen gestoppt gestorben gestromt gesture gesucht gesund gesundheit gesunken getan getanzt getauscht getotet getragen getraumt getrennt
+getroffen getrunken geubt gewachsen gewahlt gewalt gewaltige gewaschen geweih geweint gewesen gewettet gewicht gewinn gewischt gewisse gewogen
+gewohnheit gewohnlicher gewohnt gewonnen geworden geworfen gewusst gezahlt gezeigt gezielt gezogen gezuchtet gib gilt ging gladiator gladius glanzt
+glas glattziehen glaub glaubiger gleich gleichgewicht gleichzeitig glied gliedmassen glocke gluck glucksbringer glucksgriff gluckwunsch gnade gnadig
+gold goldenen gott grab grabstein grad gratis gratiswaffen gratuliere grau greifen greift grenzen grenzenlos greyhound griff grinst groll gross
+grossere grossmutter grosster grosszugig grube grun grund grundchance gruppe gruss guckt gunstig gurtel gut haar hab hackt hades hafen haha hahaha
+hahn haken halb halfte hall hallo hals halt hammer hand handler handschuhe handverlesen handwerk hangen hangt harmlos hart hase hasse hasslich hasst
+hast hat hattest hattet hauen haufen hauptmann hauptsache hauptsachlich hauptschmied haus haushalt haut heben hebt heil heim heimweh heiss held helfen
+hell hellebarde helm hemd henker her herab heraus herausforderung herausgezogen herde herold herr herstellung herum herumtreiber hervorragend herz
+hetzen hetzt heult heute hey hieb hielt hier hierher hihihi hilfe hilft himmel hin hinaus hinein hing hinken hinter hinterhalt hinterher hinterhof
+hinterkopf hinterlasst hirn hirnhammer hirsch hirte hoch hochbegabt hochstens hocker hof hoffe hoffentlich hoffnung hofft hofhahn hoflichkeit hohe
+hoher hohle hol holz holzfaller holzschwert hor horner hose hubsch hufeisen hufte huhn huhnerstall humpelt hund hundefutter hundert hundsgraf hunger
+hungrig hut ich idee idiot ihm ihn ihr immer immerhin imperiums improvisiert indem individuelle inhalt inklusive innen innere ins inseln interessant
+interesse interessiert investition inzwischen irgendein irgendwann irgendwas irgendwer irgendwo irre isst ist jagd jager jagt jahr jammert jede jedem
+jedenfalls jeder jemand jenseits jetzt jubel juckt jung juwel kader kafig kaiser kalt kam kamerad kameradschaft kammen kampf kampfbeginn kampfbericht
+kampfenergie kampferfahrung kampfgeist kampfhahn kampfhund kampftechnik kampfwert kandidaten kaninchen kann kanonenfutter kanten kapital kapitel
+kaputt karren kaserne kasse kassiere kassiert katze kauf kaum kehle kehren kehrt keiler kein keller kenne kennst kennt kerl kette kettenhemd keule
+kilo kinder kinn kissen kiste klang klappern klappert klappt klar klasse klatschen klebt klein kleineres klick klimpern klimpert klinge klingt klirren
+klopf klug klugste knackt knapp knarrt knecht knie knochel knochen knochenbruch knochenzins knuppel koch kochtopf koder kohle kohorte kollegen komm
+kompakt konig koniglichen koniglicher konkurrenz konnen konnt kopf korper korperteil korrigiert kosten kostenlos kostet koter kraft kraftiger krahen
+kraht krank krankenbett krankenhaus krassus kratzen kratzer krauter kredit kreis kriecht krieg kriegshund kritik krone krug krumm kuhe kunden
+kundschaft kupferstucke kurz kurzkampfer kutscher lacheln lachelt lachen lacht laden ladt ladung lag lamm land lang langsam langschwert langsten
+langweilig lanista lanister larm lass latrinen lauf laufbahn laufenden laune lause laut leben lebend lebenserwartung lebenslauf leber lebt lebzeiten
+leder leer leg legaten legendaren legende legion lehre lehrgeld lehrling leib leiche leicht leid leise leistung leiter lektion lernen lernt lesen
+letzte letzter leuchtet leute licht liebe lieber liebling liebsten liebt lied lief liefert liegen liegende liegt lies liga linie linke links lippe
+liste loch lockt lockvogel loffel lohn los losgelassen loslassen loswerden lowe lowenhelm lowenmahne lucke ludus luft lugen lugt luxus mach machbar
+mag mahlzeit mahnung mal man manche manchmal manner mannes mannschaft mantel manuelle markiert markt marmor mars maske mass material mauer maul
+meckert medicus medikus medizin meer mehl mehr mehrere mein meissel meist meisterstuck meisterwerk meldet menge mensch merk messer metall meter
+metzger mich mindestens minuten mir mischung missverstandnis mist mistgabel mit miteinander mitgebracht mitgegeben mitgenommen mitleid mittag
+mittagessen mittelmass mittelmassiger mochte moge moglich moglichkeiten moment monate moral morgen motivation motiviert mude muhe mull mund munze muss
+muster mut mutter mutze nach nachdem nachfolger nachgeholfen nachgesehen nachher nachladen nachmittag nachricht nachruf nachste nachtisch nachts
+nachwuchs nacken nadeln nagt nah nahkampf name namlich nannte narbe nase nass natur naturliche nebel neben nehm nein nenne nennst nennt neptun nervos
+nett netz neu neugier nicht nie nieder niedergestreckt niederlage niedrig niemals niemand niere nimm noch norden normal notiert nuchtern null nummer
+nun nur nutzen nutzlich nutzt oben oberen obst obwohl ochse oder ofen offen offenbar offiziell offnen offnet oft ohne ohnehin ohr onkel operation
+operiert opfer optimist ordentlich ordnung ort osten ostia paar packen packt padagogisch panzer papier partnerschaft pass passende passiert patient
+pause pech peinlich peitsche perfekt permadeath permanent person personal pfand pfau pfeifen pfeift pfeil pferd pfund pilze plan platten platz pleite
+plotzlich plundern poliert portionen positiv potenzial praktisch prallen pramie pranke prazise prazision preis preisgeld priester prima pro probe
+probekampfe probiert problem prodigy profil prozent prufe pruft prufung psst publikum puls punkte punktevergabe puppe purpur qualifikation qualitat
+quer quittung quote rabatt raben rabies rader rand rang rat rauber rauch raum raus rausgeworfen rauswerfen rechne rechnung recht rechtzeitig rede
+reflexe regel regen reibt reich reichweite reihe reihenfolge rein reinigung reise reissen reisst reiter reizend rekord rekrut rennen rennt reserve
+respekt rest rex richten richter richtig richtung riech rief riemen riese riesige riesiger ring rippe risiko ritter roh rohstoff rolle rom rosa rot
+ruben ruck ruckentreffer ruckgabe ruckgrat rucksprung ruckwarts ruckzug rudel ruf ruhe ruhestand ruhig ruhm ruhrend ruht ruiniert rum run runde runter
+russ rustung rute rutenspitze sack sag sah salbe salz sammeln sammelt sammlung samt sand sandalen sanitater sarg sargbauer sass satt sattel satz
+sauber sauer saufen saufer sauft say schade schadel schadelbruch schaf schaffen scham scharf schatten schatzen schau scheide scheint scheiss schenk
+scherben schick schief schiefgeht schielt schiene schiessen schiesst schiff schild schildflache schinken schlachter schlachtplan schlaf schlag
+schlange schlank schlecht schlechtesten schleicht schleifen schleift schliessen schliesslich schliesst schlimm schlimmere schlimmste schloss schluck
+schluss schlussel schmeckt schmelztiegel schmerz schmied schmiedelehre schnabel schnaps schnauze schnee schneide schnell schnitt schnittwunde schnur
+schon schrank schrei schreib schriftlich schritt schuchtern schuhe schuld schuldner schuldschein schule schuler schulter schuppen schurze schuss
+schusswert schuttelt schutz schwach schwanz schwarz schweigt schwein schweiss schwer schwertarm schwerter schwester schwiegermutter schwitzen schwore
+schwung sechs sechzig seele segel segen seh sehr sei seid seine seinem seiner seins seitdem seitlich sekunden selber selbst selten senator senkt
+sesterzen setz seufzt sich sicherheit sichtbar sie sieben siebzig sieg sieh sind singen singt sinn sitzen sitzt skandiert sklave sklavenhandler
+sklavenmarkt sobald sockel soeben sofort sogar sohn solange solche sold soldat soldner solide soll solltest sonderangebot sonderattacke sondern sonne
+sonntagsbraten sonst sorge sorgt sorte sowieso spaher spalt spannen spannt spannung spar spass spat speer speicher spektakel spendet sperren spiel
+spielstand spieltag spiesst spione spitz sporen sprechen spricht springt sprung spur stabil stacheln stadt stahl stall stammkundschaft stand starb
+stark starkere starkste startet statt statthalter statue staub stechen stecken steckt steh steigen steigt stein stell sterbe steuer stich
+stichverletzung stiefel stier stierhorner still stillhalten stimme stimmt stinkenden stinkt stirbt stirn stock stoff stolpert stolz stort stoss
+strasse strategie streicht streit streitkolben streuner strick stroh strohpuppe stuck stufe stuhl stumper stumpf stunden stur sturz such supertalent
+suppe tag takt taktik talent talentiert tanz tapfer tasche tatsachlich taub taugen taugt taumeln tausend taverne team technik tee teil teilweise
+tempel termin testament testversion teuer teufel teure teurer the theoretisch theory tief tier tierfanger tierhandler tierpfleger tippe tisch titanen
+titel titus tja tobt tod todlicher ton topf tor tot totengraber totenkopfe traf trage trager tragt trainer trainier training trainingshof tranen
+transport trauerfeier traurig traut treffe treffer trefferbonus trefferchance treiben treiber treibt trennen treu tribune trifft trinke trinkt tritt
+triumph trocken trog tropft trottel trotzdem truhe trummerbruch truppe tun tupfen tur turnier turrahmen tut typ ubel uben uber uberall uberblick
+uberfahrt uberfall uberhaupt uberlasst uberleben uberlebenden uberlebt uberlegt ubermacht ubernehmen ubernimmt ubernommen uberraschend uberrascht
+uberschatzt uberstanden uberstunden uberzeugung ubrig ubt ubung uff umarmt umfallen umfallt umgebracht umgeworfen umhang umland umriss umsatz
+umschmieden umsonst unbesiegbar unbewaffnet unbezahlbar und unersetzlich unfair ungefahr ungern unheimliche unpraktisch unruhig uns unsere unserer
+unsterblich unten unter unterarm unterbrochen unterricht unterschatz unterscheidet unterschenkel unterschied unterschrift unterwegs untrostlich
+unversehrt urlaub urne urteil valeria vater verandert veranstalter veranstaltung verantwortung verband verbergen verbessern verbessert verbindet
+verblutet verbraucht verdammt verdienen verdient verfolge verfolgt verfugbar vergangen vergeben vergessen vergiss vergnugen verhandelt verheilt
+verhindern verhungert verkauf verkurzt verlangen verlangst verlangt verlassen verlasst verletzt verletzung verliehen verlieren verlierer verlierst
+verliert verloren verlust vermisse vermisst vermogen vermuten vermutlich verneigt vernunftig verordnet verpflegung verprugelt verrate verringert
+versager verschenkt verschiedene verschlafen verschwendung verschwinden verschwindet verschwunden versehen verspielt versprechen verspricht
+versprochen verstand verstecken versteckt verstehen verstehst versteht verstummelt versuch verteilt vertrag vertreten vertrieben verzeiht veteran
+vetter vetus via vieh viel vielleicht vier viertel vierzig villa vogel volk voll vollidioten vollstandig vom von vor voraus vorbei vorbereitet
+vorbesitzer vorerst vorfuhrung vorganger vorgesehen vorgestellt vorhaben vorhanden vorher vorhin vorne vorrate vorrunde vorschau vorsicht
+vorsichtshalber vorsorglich vorspeise vorstellung vorwarts wach wachhund wachsen wackelt wade waffe wagen wahl wahlerisch wahr wahrheit wahrscheinlich
+wald wand wann wappen war warm warnung warter wartet warum was wasche wascherin wascht wasser wechselt weder weg wegesrand weglaufen wegzoll weh
+wehren wehrt wehtun wehtut weibern weich weil wein weise weiss weit weitere weitergehen weiterkampfen weitermachen welche welchem welcher welpen welt
+wem wen wenige weniger wenigstens wer werde werfen werk werkstatt werkstuck wertvoller wettburo wette wetter wettschein wichser wichtig wichtigste
+widersprechen widerspricht wie wieder wiederholung wiedersehen wiegt wild wilderer wildhuter will willkommen wind windhund winken winkt winter wir
+wird wirft wirken wirklich wirkt wirkung wissen wisst witwe woanders woche wochenlang wofur woher wohin wohl wohnt wolf wollen wollt woran worden wort
+wozu wucht wunde wunder wunderbar wunsch wurde wurf wurfaxte wurfel wurst wurzeln wusste wuste wut zah zahl zahne zahnlose zange zaun zehen zehn
+zehntausend zeichen zeig zeile zeit zentimeter zerfleischt zerlegt zerrissen zerrt ziegen zieh ziel zielscheibe ziemlich zinsen zittere zittern
+zittert zorn zuckt zuerst zufallig zufrieden zugabe zugenaht zugeschlagen zuhause zukunft zuletzt zum zumindest zunge zur zuruck zuruckgegeben
+zuruckgekommen zuruckkommt zusammen zusatzliche zuschauer zuschlag zusehen zuverlassig zuversicht zuvor zwanzig zwar zweck zwei zweifelhafte zweige
+zweihander zweihundert zweimal zwinger zwischen zwolf`;
 // ---------- Text → Aussprache ----------
 const ONES=['null','eins','zwei','drei','vier','fünf','sechs','sieben','acht','neun','zehn','elf','zwölf','dreizehn','vierzehn','fünfzehn','sechzehn','siebzehn','achtzehn','neunzehn'];
 const TENS=['','','zwanzig','dreißig','vierzig','fünfzig','sechzig','siebzig','achtzig','neunzig'];
@@ -109,12 +249,13 @@ const FUNC=new Set(('der die das des dem den ein eine einen einem einer eines ic
  'ist bin bist sind seid war warst waren wäre hat habe hast haben hatte hatten wird werden wirst wurde würde kann kannst können muss musst müssen soll sollst sollen will willst wollen darf mag '+
  'ja schon noch auch nur mal doch denn eben halt wer wen wem was wo wann wie welche welcher welches welchen').split(' '));
 const WH=new Set('wer wen wem wessen was wo wohin woher wann warum wieso weshalb wie welche welcher welches welchen womit worauf worum wozu'.split(' '));
+const WEAK={der:'d 6',den:'d @ n',dem:'d @ m',des:'d @ s',er:'? 6',ihr:'? I 6g',mir:'m I 6g',dir:'d I 6g',zu:'t s U',zur:'t s 6'};
 const LONGFN=new Set('den dem wen wem ihn ihm ihr schon nun wo so da du zu ja wie die sie wir mir dir der er wer vor für zur nur her'.split(' '));
 const CONJ=new Set('und aber oder denn weil dass sondern wenn als obwohl damit bevor nachdem während'.split(' '));
 // Wörterbuch: Zahl = betonte Silbe (Regeln für die Laute), Text = Lautschrift mit ' vor dem betonten Vokal
 const LEX={
  arena:1,gladiator:2,gladiatoren:3,moderator:2,medicus:0,medikus:0,latein:1,lateinisch:1,soldat:1,soldaten:1,legion:1,legionen:2,
- museum:1,augustus:1,imperator:2,senator:2,senat:1,apparat:2,mathematik:3,physik:1,lanista:1,tribun:1,centurio:1,spektakel:1,theater:1,
+ museum:1,augustus:1,imperator:2,senator:1,senat:1,apparat:2,mathematik:3,physik:1,lanista:1,tribun:1,centurio:1,spektakel:1,theater:1,
  kanone:1,november:1,oktober:1,dezember:1,april:1,hallo:1,idiot:2,idioten:2,barbar:1,barbaren:1,tyrann:1,triumph:1,kadaver:1,metall:1,kristall:1,
  granate:1,zurück:1,vorbei:1,hinaus:1,heraus:1,herein:1,hinein:1,herab:1,hinauf:1,herauf:1,herunter:1,voran:1,davon:1,dafür:1,damit:1,dabei:1,darum:1,
  daran:1,darauf:1,daraus:1,dagegen:1,warum:1,wieso:1,weshalb:1,woher:1,wohin:1,worauf:1,womit:1,vielleicht:1,allein:1,lebendig:1,zusammen:1,zuerst:1,zuletzt:1,
@@ -131,15 +272,30 @@ const LEX={
  am:"? 'a m",man:"m 'a n",von:"f 'O n",vom:"f 'O m",um:"? 'U m",zum:"t s 'U m",und:"? 'U n t",uns:"? 'U n s",hat:"h 'a t",bin:"b 'I n",
  ist:"? 'I s t",sind:"z 'I n t",kann:"k 'a n",muss:"m 'U s",will:"v 'I l",wird:"v 'I 6g t",doch:"d 'O x",noch:"n 'O x",auch:"? 'aU x",
  heute:"h 'OY t @",weil:"v 'aI l",
+ // Ergänzungen (Prüfung der Spieltexte, 11.11.2026): Wörter, bei denen die Regeln danebenliegen
+ geeignet:"g @ ? 'aI g n @ t",geeignete:"g @ ? 'aI g n @ t @",geeigneten:"g @ ? 'aI g n @ t @ n",geübt:"g @ ? 'y: p t",überlegt:"? y: b 6 l 'e: k t",überall:"? y: b 6 ? 'a l",
+ interesse:2,interessant:3,kamerad:"k a m @ R 'a: t",chance:"S 'a n s @",chancen:"S 'a n s @ n",kollegen:"k O 'l e: g @ n",kollege:"k O 'l e: g @",
+ minute:1,minuten:1,zentimeter:2,appetit:"? a p e 't i: t",favorit:"f a v o 'R i: t",kapital:2,kapitel:1,termin:1,termine:1,termin:1,
+ veteran:"v e t e R 'a: n",veteranen:"v e t e R 'a: n @ n",patient:"p a t s 'j E n t",patienten:"p a t s 'j E n t @ n",senatoren:2,
+ etwas:"? 'E t v a s",gerade:"g @ 'R a: d @",gern:"g 'E 6g n",gerne:"g 'E 6g n @",gegner:"g 'e: g n 6",gegnern:"g 'e: g n 6 n",gegners:"g 'e: g n 6 s",
+ gehört:"g @ h '2: 6g t",hört:"h '2: 6g t",hören:"h '2: R @ n",höre:"h '2: R @",gehören:"g @ h '2: R @ n",stört:"S t '2: 6g t",zerstört:"t s E 6g S t '2: 6g t",
+ publikum:"p 'u: b l i k U m",team:"t 'i: m",trainer:"t R 'E: n 6",training:"t R 'E: n I N",legende:"l e 'g E n d @",legenden:"l e 'g E n d @ n",
+ persönlich:"p E 6g 'z 2: n l I C",möglich:"m '2: k l I C",unmöglich:"? U n m '2: k l I C",erklärt:"? E 6g k l 'E: 6g t",willkommen:"v I l k 'O m @ n",
+ überleben:"? y: b 6 l 'e: b @ n",überlebt:"? y: b 6 l 'e: p t",überlebe:"? y: b 6 l 'e: b @",überlebst:"? y: b 6 l 'e: p s t",überlebte:"? y: b 6 l 'e: p t @",überlebten:"? y: b 6 l 'e: p t @ n",
+ danach:"d a n 'a: x",dazu:"d a t s 'u:",davor:"d a f 'o: 6g",daher:"d a h 'e: 6g",dahin:"d a h 'I n",darin:"d a R 'I n",darüber:"d a R 'y: b 6",darunter:"d a R 'U n t 6",dazwischen:"d a t s v 'I S @ n",daneben:"d a n 'e: b @ n",
+ nächste:"n 'E: C s t @",nächsten:"n 'E: C s t @ n",nächster:"n 'E: C s t 6",nächstes:"n 'E: C s t @ s",nächstem:"n 'E: C s t @ m",höchste:"h '2: C s t @",höchsten:"h '2: C s t @ n",höchster:"h '2: C s t 6",
 };
+// eigenes Wörterbuch aus dem Stimmlabor (Wort → Lautschrift/Betonungszahl, localStorage „mg-stimme-lex-v1“)
+const USERLEX=Object.create(null),ULKEY='mg-stimme-lex-v1';
+(()=>{try{const t=typeof localStorage!=='undefined'&&localStorage.getItem(ULKEY);if(t){const o=JSON.parse(t);for(const k of Object.keys(o))if(typeof o[k]==='string'||typeof o[k]==='number')USERLEX[k.toLowerCase()]=o[k];}}catch{}})();
 const UNPRE=['zer','ver','ent','emp','be','ge','er'];
 const UNPH={zer:'t s E 6g',ver:'f E 6g',ent:'? E n t',emp:'? E m p',be:'b @',ge:'g @',er:'? E 6g'};
-const NOPRE=['gegen','gegner','gestern','geld','gelb','gern','gerade','gest','bestie','beste','bester','besten','bestes','besen','berg','bett','bete','beil','beide','beere','erde','ernst','erst','erbe','ernte','ente','enkel','entlang','gerste','geier','geist','gehen','geht','geben','gebe','gibt','abend','abenteuer','zerren'];
+const NOPRE=['ander','unser','gegen','gegner','gestern','geld','gelb','gern','gerade','gest','bestie','beste','bester','besten','bestes','besen','berg','bett','bete','beil','beide','beere','erde','ernst','erst','erbe','ernte','ente','enkel','entlang','gerste','geier','geist','gehen','geht','geben','gebe','gibt','abend','abenteuer','zerren'];
 const SEP={zurück:1,vorbei:1,voraus:1,heraus:1,hinaus:1,herein:1,hinein:1,herab:1,hinab:1,herauf:1,hinauf:1,herunter:1,hinunter:1,zusammen:1,wieder:0,unter:0,über:0,durch:0,nach:0,fort:0,weg:0,vor:0,auf:0,aus:0,bei:0,ein:0,mit:0,los:0,ab:0,an:0,um:0,zu:0,un:0,her:0,hin:0};
 const SEPPH={zurück:"t s U R 'Y k",vorbei:"f o: 6g b 'aI",voraus:"f o: R 'aU s",heraus:"h E R 'aU s",hinaus:"h I n 'aU s",herein:"h E R 'aI n",hinein:"h I n 'aI n",herab:"h E R 'a p",hinab:"h I n 'a p",
  herauf:"h E R 'aU f",hinauf:"h I n 'aU f",herunter:"h E R 'U n t 6",hinunter:"h I n 'U n t 6",zusammen:"t s U z 'a m @ n",wieder:"v 'i: d 6",unter:"? 'U n t 6",über:"? 'y: b 6",durch:"d 'U 6g C",
  nach:"n 'a: x",fort:"f 'O 6g t",weg:"v 'E k",vor:"f 'o: 6g",auf:"? 'aU f",aus:"? 'aU s",bei:"b 'aI",ein:"? 'aI n",mit:"m 'I t",los:"l 'o: s",ab:"? 'a p",an:"? 'a n",um:"? 'U m",zu:"t s 'u:",un:"? 'U n",her:"h 'e: 6g",hin:"h 'I n"};
-const ONSET=new Set(['p l','p R','b l','b R','t R','d R','k l','k R','k v','k n','g l','g R','g n','f l','f R','S p','S t','S l','S m','S n','S v','S R','t s','t s v','p f','p f l','p f R','S p R','S t R','S p l','t S','v R']);
+const ONSET=new Set(['p l','p R','b l','b R','t R','d R','k l','k R','k v','k n','g l','g R','g n','f l','f R','S p','S t','S l','S m','S n','S v','S R','t s','t s v','p f','p f l','p f R','S p R','S t R','S p l','t S','v R','g j','l j','m j','n j','R j','b j','k j','t s j','z j']);
 const legalLetters=r=>/^(sch[lmnrw]?|spr|str|sp|st|pfl|pfr|pf|[bpgkf][lr]|tr|dr|kn|gn|qu|zw|[bcdfghjklmnpqrstvwz])/.test(r)&&!/^(ng|nk|ck|chs)/.test(r);
 function parseLex(s){const ph=[];let st=-1;for(const tok of s.split(' ')){if(tok.startsWith("'")){ph.push(tok.slice(1));st=ph.length-1;}else ph.push(tok);}return {ph,stressPh:st};}
 function lastVowel(o){for(let k=o.length-1;k>=0;k--)if(isVow(o[k]))return o[k];return '';}
@@ -150,11 +306,13 @@ function core(w,fn,lat){
   if(i===0&&isV(c))o.push('?');
   if(i===0&&/^s[pt]/.test(r)){o.push('S',r[1]);i+=2;continue;}
   if(i>0&&/^tion/.test(r)){o.push('t','s','j','o:','n');i+=4;continue;}
+  if(i>0&&/^ion(en|s)?$/.test(r)&&!isV(w[i-1])){o.push('j','o:','n');i+=3;continue;}// Legion, Region, Million (nicht Spione)
   if(i>0&&/^ig(?![aeiouäöüy])/.test(r)){o.push('I','C');i+=2;continue;}
   if(r.startsWith('tsch')){o.push('t','S');i+=4;continue;}
   if(r.startsWith('sch')){o.push('S');i+=3;continue;}
+  if(r.startsWith('chs')&&i===2&&/^(nä|hö)/.test(w)){o.push('C');i+=2;continue;}// nächste, höchste: ich-Laut + s
   if(r.startsWith('chs')){o.push('k','s');i+=3;continue;}
-  if(r.startsWith('ch')){if(i===0){o.push('k');i+=2;continue;}const pv=lastVowel(o),prevL=w[i-1];o.push(isV(prevL)&&['a','a:','O','o:','U','u:','aU'].includes(pv)?'x':'C');i+=2;continue;}
+  if(r.startsWith('ch')){if(i===0){o.push('k');i+=2;continue;}const pv=lastVowel(o),prevL=w[i-1];o.push(isV(prevL)&&['a','a:','O','o','o:','U','u','u:','aU'].includes(pv)?'x':'C');i+=2;continue;}
   if(r.startsWith('ck')){o.push('k');i+=2;continue;}
   if(r.startsWith('ph')){o.push('f');i+=2;continue;}
   if(r.startsWith('th')){o.push('t');i+=2;continue;}
@@ -172,20 +330,21 @@ function core(w,fn,lat){
    const tail=w.slice(i),hasV=o.some(isVow);
    if(c==='e'&&hasV){
     if(/^er[ns]?$/.test(tail)){o.push('6');if(tail.length>2)o.push(tail[2]);i=n;continue;}
-    if(/^(e|en|em|es|el|eln|elt|et|est|ens|end|ende|enden|ender)$/.test(tail)||/^(er|el)(e|en|er|es|em|ung|ungen|ig|ige|igen)$/.test(tail)){o.push('@');i++;continue;}}
-   let long=false,len=1;const a=w[i+1],b=w[i+2];
+    if(/^(e|en|em|es|el|eln|elt|et|est|ens|end|ende|enden|ender)$/.test(tail)||/^(er|el)(e|en|er|es|em|ung|ungen|ig|ige|igen)$/.test(tail)||/^en(e|en|er|es|em)$/.test(tail)){o.push('@');i++;continue;}}
+   let long=false,len=1,soft=false;const a=w[i+1],b=w[i+2];
    if(a===c&&'aeo'.includes(c)){long=true;len=2;}
    else if(a==='h'){long=true;len=2;}
    else if(a==='ß')long=true;
    else{let j=i+1;while(j<n&&!isV(w[j]))j++;const cons=w.slice(i+1,j);
-    if(j<n){if(cons.length===1&&!'xz'.includes(cons))long=true;}
-    else if(!cons.length)long=true;
+    if(j<n){if(cons.length===1&&!'xz'.includes(cons)){long=true;soft=true;}}
+    else if(!cons.length){long=true;soft=true;}
+    else if(/^[bg]s?t$/.test(cons)&&nVg<=2){long=true;soft=true;}// sagt, fragt, trägt, lebt, lebst, gibt: Wortstamm endet auf b/g, der Vokal bleibt lang
     else if(cons.length===1&&!'xz'.includes(cons)){
      if(nVg===1)long=!fn||cons==='r';
      else{// letzte Silbe eines Kompositums nach einer Mitlautgruppe (Toll|wut, Hunds|graf, Re|krut)
       let q=i-1,cl='';while(q>=0&&!isV(w[q])){cl=w[q]+cl;q--;}if(cl.length>=2&&!/^(.)\1$/.test(cl))long=true;}}}
    const map={a:long?'a:':'a',e:long?'e:':'E',i:long?'i:':'I',o:long?'o:':'O',u:long?'u:':'U',ä:long?'E:':'E',ö:long?'2:':'9',ü:long?'y:':'Y',y:long?'y:':'Y'};
-   o.push(map[c]);i+=len;continue;}
+   o.push(map[c]);if(long&&soft)(o.soft||(o.soft=[])).push(o.length-1);i+=len;continue;}
   const dbl=w[i+1]===c;let p=null;
   switch(c){
    case 'b':case 'd':case 'g':case 'p':case 't':case 'k':case 'f':case 'l':case 'm':case 'n':p=c;break;
@@ -207,23 +366,52 @@ function syllabify(ph){const nucs=[];ph.forEach((p,i)=>{if(isVow(p))nucs.push(i)
   for(let L=Math.min(3,cl.length);L>=1;L--){const sg=cl.slice(cl.length-L);if(L===1?!['N','6g'].includes(sg[0]):ONSET.has(sg.join(' '))){on=L;break;}}
   if(cl.includes('?'))on=cl.length-cl.lastIndexOf('?');st.push(b-on);}
  return nucs.map((nuc,k)=>({a:st[k],b:k+1<nucs.length?st[k+1]:ph.length,nuc}));}
-const SUFF=[[/(ei)(en)?$/,2],[/(ie)r(e|en|er|es|t|st|te|ten|ung|ungen)?$/,2],[/t(io)n(en)?$/,2],[/it(ä)t(en)?$/,2],[/(u)r(en)?$/,2],[/(i)st(en|in)?$/,2],[/(i)smus$/,2],
+const SUFF=[[/(ei)(en)?$/,2],[/(io)n(en)?$/,2,/tion(en)?$/],[/(ie)r(e|en|er|es|t|st|te|ten|ung|ungen)?$/,2],[/t(io)n(en)?$/,2],[/it(ä)t(en)?$/,2],[/(u)r(en)?$/,2],[/(i)st(en|in)?$/,2],[/(i)smus$/,2],
  [/(a)nt(en|in)?$/,2],[/(e)nt(en|in)?$/,2],[/(e)ll(e|en|er|es)?$/,2],[/(a)de(n)?$/,3],[/(e)tte(n)?$/,2],[/(eu)r(e|en)?$/,2],[/(ö)s(e|en|er|es)?$/,2],[/(a)tor$/,3],[/at(o)ren$/,3],
  [/(ie)$/,2,/(ilie|inie|arie|knie)$/],[/(a)l(e|en|es)?$/,2,/(sal|tal|mal|ale)$/],[/(a)t(en)?$/,2,/(monat|monaten|heimat|vorrat|unrat|zierat|rat|raten|heirat)$/],
  [/(i)k$/,2,/(chnik|ktik|ogik|anik|onik|inik|amik|atik|ntik)$/],[/(i)v(e|en|er|es)?$/,2]];
 const vgroups=s=>(s.match(/[aeiouäöüy]+/g)||[]).length;
 // Wort → {ph, syls, stress}
 const g2pCache=new Map();
-function g2p(word,opt={}){const key=word+'|'+(opt.cap?1:0);if(g2pCache.has(key))return g2pCache.get(key);const w=word.toLowerCase(),fn=FUNC.has(w);let R;
- const lx=LEX[w];
- if(typeof lx==='string'){const {ph,stressPh}=parseLex(lx);const sy=syllabify(ph);R={ph,syls:sy,stress:Math.max(0,sy.findIndex(s=>stressPh>=s.a&&stressPh<s.b))};}
- else R=build(w,fn,true,opt);
- if(typeof lx==='number')R.stress=Math.min(lx,R.syls.length-1);
- g2pCache.set(key,R);return R;}
+function g2p(word,opt={}){const key=word+'|'+(opt.cap?1:0);if(g2pCache.has(key))return g2pCache.get(key);const w=word.toLowerCase(),fn=FUNC.has(w);
+ const R=wordPh(w,fn,opt,0);g2pCache.set(key,R);return R;}
+// Ein Wort: Benutzer-Wörterbuch, Wörterbuch, trennbare Vorsilbe als ganzes Wort, Zusammensetzung, sonst Regeln
+function wordPh(w,fn,opt,depth){
+ const lx=USERLEX[w]??LEX[w];let R;
+ const fromLex=s=>{const {ph,stressPh}=parseLex(s);const sy=syllabify(ph);return {ph,syls:sy,stress:Math.max(0,sy.findIndex(s2=>stressPh>=s2.a&&stressPh<s2.b))};};
+ if(typeof lx==='string')R=fromLex(lx);
+ else if(SEPPH[w]!==undefined)R=fromLex(SEPPH[w]);
+ else{const sp=lx===undefined&&!fn&&depth<3&&w.length>=7?splitCompound(w,depth):null;
+  R=sp?buildCompound(sp,opt,depth):build(w,fn,true,opt);
+  if(typeof lx==='number')R.stress=Math.min(lx,R.syls.length-1);
+  shorten(R,w);}
+ return R;}
+// ---------- Zusammensetzungen (Totengräber → Toten|gräber, Armbrust → Arm|brust) ----------
+let STEMS=null;
+const nz=w=>w.replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ß/g,'ss');
+const ENDS=['ungen','ung','ern','ens','end','est','ten','en','er','es','em','te','et','st','e','n','s','t'];
+// Ist x ein Wortstamm (mit Endung oder Fugenelement) aus den Spieltexten?
+function isStem(x){if(!STEMS)STEMS=new Set(STEMTXT.split(/\s+/));x=nz(x);if(x.length<3)return false;if(STEMS.has(x))return true;for(const e of ENDS)if(x.length-e.length>=3&&x.endsWith(e)&&STEMS.has(x.slice(0,-e.length)))return true;return false;}
+// Vorsilben und Funktionswörter bilden keine Zusammensetzung (die Vorsilben haben ihre eigene Regel)
+const BADPART=new Set('ende enden ender endes endem chen lein lich ung heit keit ein aus bei vor nach zur zum der die das und mit von den dem ich du er sie es wir ihr ist hat war auf ab an um zu her hin los weg fort unter über durch hinter wieder voll wider gegen allein neben mehr sehr viel alle eine einer eines einem einen sein seine'.split(' '));
+const isStemP=x=>isStem(x)||UNPRE.some(p=>x.startsWith(p)&&x.length-p.length>=3&&isStem(x.slice(p.length)));// auch an|ge|bot
+const badBase=x=>{x=nz(x);if(BADPART.has(x))return true;for(const e of ENDS)if(x.length-e.length>=2&&x.endsWith(e)&&BADPART.has(x.slice(0,-e.length)))return true;return false;};
+function splitCompound(w,depth=0){let best=null,bs=0;
+ for(let i=4;i<=w.length-4;i++){const A=w.slice(0,i),B=w.slice(i);if(badBase(A)||badBase(B))continue;
+  const okA=isStem(A),okB=isStem(B);
+  if(!(okA||(depth<2&&A.length>=7&&splitCompound(A,depth+1))))continue;
+  if(!(okB||(depth<2&&B.length>=7&&splitCompound(B,depth+1))))continue;
+  const sc=Math.min(A.length,B.length)+(okA?.3:0)+(okB?.3:0);if(sc>bs){bs=sc;best={A,B};}}
+ return best;}
+function buildCompound(sp,opt,depth){const a=wordPh(sp.A,false,opt,depth+1),b=wordPh(sp.B,false,opt,depth+1);
+ const bp=b.ph.slice();if(a.ph.length&&bp.length&&a.ph[a.ph.length-1]===bp[0]&&isObs(bp[0]))bp.shift();
+ const ph=[...a.ph,...bp],syls=syllabify(ph),nuc=a.syls[a.stress]?.nuc??0;
+ return {ph,syls,stress:Math.max(0,syls.findIndex(s=>s.nuc===nuc))};}
 function build(w,fn,allowUn,opt){
  // trennbare/betonte Vorsilbe
  if(allowUn)for(const p of Object.keys(SEP).sort((a,b)=>b.length-a.length)){if(!w.startsWith(p)||w.length<p.length+3)continue;const rest=w.slice(p.length);if(!vgroups(rest))continue;
   if(isV(rest[0])?rest.length<4:!legalLetters(rest)||/^(.)\1/.test(rest))continue;if(NOPRE.some(x=>w.startsWith(x)))break;
+  if(!(isStemP(rest)||rest.length>=5))continue;// hin|ten, un|sere, bei|nen sind keine Vorsilben
   const A=parseLex(SEPPH[p]),B=build(rest,false,true,opt),ph=[...A.ph,...B.ph],syls=syllabify(ph);const preS=syllabify(A.ph).findIndex(s=>A.stressPh>=s.a&&A.stressPh<s.b);
   return {ph,syls,stress:SEP[p]?preS:0};}
  if(allowUn&&!NOPRE.some(x=>w.startsWith(x)))for(const p of UNPRE){if(!w.startsWith(p)||w.length<p.length+3)continue;const rest=w.slice(p.length);if(!vgroups(rest))continue;
@@ -241,7 +429,11 @@ function build(w,fn,allowUn,opt){
    const heavy=pen.b-pen.nuc>1||P[ph[pen.nuc]]?.k==='d'||(pv&&/^[^aeiouäöüy]{2}/.test(w.slice(pv.index+1)));stress=heavy?n-2:n-3;}}
  // betonte offene Endsilbe: Vokal lang (Sa|lat, Na|tur)
  if(stress===n-1&&n>1){const s=syls[stress],v=ph[s.nuc];if(s.b-s.nuc<=2&&{a:'a:',E:'e:',I:'i:',O:'o:',U:'u:',Y:'y:','9':'2:'}[v])ph[s.nuc]={a:'a:',E:'e:',I:'i:',O:'o:',U:'u:',Y:'y:','9':'2:'}[v];}
- return {ph,syls,stress};}
+ return {ph,syls,stress,soft:ph.soft};}
+// Unbetonte Silben sind kurz: „offene Silbe = lang“ gilt nur unter Betonung (Ge|la|di|a|tor, A|re|na, Me|di|cus). Erst nach der endgültigen Betonung anwenden.
+const SHORTV={'a:':'a','e:':'e','i:':'i','o:':'o','u:':'u','y:':'y','2:':'2','E:':'E'};
+function shorten(R,w){if(R.soft&&R.syls.length>1){const lang=(w||'').length>=9;// lange, nicht zerlegte Wörter sind meist Zusammensetzungen: nach der Betonung bleibt der Vokal lang (Mist|gabel)
+ for(const k of R.soft){const sy=R.syls.findIndex(s=>k>=s.a&&k<s.b);if(sy>=0&&sy!==R.stress&&!(lang&&sy>R.stress)&&SHORTV[R.ph[k]])R.ph[k]=SHORTV[R.ph[k]];}}return R;}
 
 // ---------- Text → Phrasen mit Satzakzenten ----------
 function normText(text){return String(text||'').replace(/\{[^}]*\}/g,'').replace(/<[^>]*>/g,' ').replace(/\bz\.\s?B\./g,'zum Beispiel').replace(/\busw\./g,'und so weiter').replace(/\bDr\./g,'Doktor')
@@ -263,6 +455,8 @@ function analyse(text){
   else if(m[2])endSent(m[2]);
   else if(m[3])close(',',m[3]===','?.2:.26);}
  if(cur.words.length)endSent('.');
+ // schwache Formen: Artikel und Fürwörter in der Phrasenmitte werden zu [dɐ], [dn̩], [ɐ] …, nur am Phrasenende und bei Betonung bleibt der volle Vokal
+ for(const p of phrases)p.words.forEach((w,i)=>{const wk=WEAK[w.lw];if(wk&&w.fn&&!w.emph&&i<p.words.length-1){const ph=wk.split(' ');w.ph=ph;w.syls=syllabify(ph);w.stress=0;}});
  for(const p of phrases)accents(p);
  return phrases;}
 function accents(p){const W=p.words;W.forEach(w=>w.acc=0);
@@ -431,11 +625,13 @@ function makeTracks(pl,V,S,r){
    if(s.breathIn&&(V.breathIn??1)>0){const b0=Math.max(t0+.04,t1-.32),b1=t1-.05;T.key('AH',b0,0);T.key('AH',(b0+b1)/2,.05*(V.breathIn??1));T.key('AH',b1,0);setF(b0,[520,1550,2500,3400]);}
    voicedPrev=false;return;}
   const prevSeg=segs[k-1],nextSeg=segs[k+1];
-  if(s.vow){const F=Q.F,tr=Math.min(.045,d*.38);
+  if(s.vow){// natürliche Streuung der Klangfarbe (±2–5 %) und Zentralisierung unbetonter Vokale zum Schwa hin (Vokalreduktion)
+   const red=!s.stressed&&!Q.sw&&!s.last?.2:0,SCH=[500,1500,2450,3450],vm=[1+(r()-.5)*.05,1+(r()-.5)*.04,1+(r()-.5)*.03,1],mod=A=>A&&A.map((f,i)=>(f+(SCH[i]-f)*red)*vm[i]);
+   const F=mod(Q.F),TO=mod(Q.to),tr=Math.min(.045,d*.38);
    const pl1=prevSeg&&!prevSeg.pause&&!prevSeg.vow?prevSeg.Q.pl:null,pl2=nextSeg&&!nextSeg.pause&&!nextSeg.vow?nextSeg.Q.pl:null;
-   const L1=pl1&&pl1!=='glot'?locus(pl1,F):null,L2=pl2&&pl2!=='glot'?locus(pl2,Q.to||F):null;
+   const L1=pl1&&pl1!=='glot'?locus(pl1,F):null,L2=pl2&&pl2!=='glot'?locus(pl2,TO||F):null;
    setF(t0,L1&&prevSeg.Q.k!=='l'?toward(L1,F):F);
-   if(Q.k==='d'){setF(t0+d*.3,F);setF(t0+d*.85,Q.to);setF(t1,L2?toward(L2,Q.to):Q.to);lastF=Q.to;}
+   if(Q.k==='d'){setF(t0+d*.3,F);setF(t0+d*.85,TO);setF(t1,L2?toward(L2,TO):TO);lastF=TO;}
    else{setF(t0+tr,F);setF(t1-tr,F);setF(t1,L2&&nextSeg.Q.k!=='l'?toward(L2,F):F);lastF=F;}
    let lvl=s.acc===2?1.25:s.acc===1?1.15:s.stressed?1:.82;if(Q.sw)lvl*=.75;if(s.last)lvl*=.85;
    T.hold('AV',t0,t1,whisper?0:lvl);T.hold('AH',t0,t1,whisper?.55*lvl:0);T.hold('AF',t0,t1,0);
@@ -496,6 +692,10 @@ function phonString(pl){let out='',lastP=-1;for(const ws of pl.words){const w=ws
 function mouthAt(list,t){if(!list?.length)return 0;let lo=0,hi=list.length-1;if(t<=list[0].t)return list[0].o;if(t>=list[hi].t)return list[hi].o;while(hi-lo>1){const m=(lo+hi)>>1;if(list[m].t<=t)lo=m;else hi=m;}const a=list[lo],b=list[hi],u=(t-a.t)/Math.max(1e-6,b.t-a.t);return a.o+(b.o-a.o)*u;}
 function playData(ctx,dest,R,opt={}){const b=ctx.createBuffer(1,R.data.length,R.sr||SR);b.getChannelData(0).set(R.data);const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;g.gain.value=opt.vol??1;s.connect(g);g.connect(dest);const at=Math.max(ctx.currentTime,opt.at||0)+.02;s.start(at);s.onended=()=>{s.disconnect();g.disconnect();};return {source:s,start:at,dur:R.dur,mouth:R.mouth,mouthAt:tt=>mouthAt(R.mouth,tt-at)};}
 function play(ctx,dest,text,voice,opt={}){const R=render(text,voice,opt);return {...playData(ctx,dest,R,opt),phon:R.phon,info:R.info,data:R.data};}
-(typeof window!=='undefined'?window:self).Stimme={SR,FR,P,PRESETS,STYLES,ORDER:Object.keys(PRESETS),g2p,analyse,render,play,playData,mouthAt,numWord,
+// Eigenes Wörterbuch: { wort: "Lautschrift mit ' vor dem betonten Vokal" | Nummer der betonten Silbe }. Wirkt sofort (Zwischenspeicher wird geleert).
+function setLexicon(o){for(const k of Object.keys(USERLEX))delete USERLEX[k];if(o&&typeof o==='object')for(const k of Object.keys(o)){const v=o[k];if(typeof v==='string'&&v.trim())USERLEX[k.toLowerCase().trim()]=v.trim();else if(typeof v==='number')USERLEX[k.toLowerCase().trim()]=v;}g2pCache.clear();}
+function getLexicon(){return {...USERLEX};}
+function saveLexicon(){try{if(typeof localStorage!=='undefined')localStorage.setItem(ULKEY,JSON.stringify(USERLEX));}catch{}}
+(typeof window!=='undefined'?window:self).Stimme={SR,FR,P,PRESETS,STYLES,ORDER:Object.keys(PRESETS),g2p,analyse,render,play,playData,mouthAt,numWord,setLexicon,getLexicon,saveLexicon,LEXKEY:ULKEY,
  core:{synth,Tracks,finish,room,retro,rng,smooth,SHN,clamp}};
 })();

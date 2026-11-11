@@ -11,7 +11,7 @@ const M=window.MG;if(!M)return;
 let cur=null,seq=0,worker=null,workerOk=true;const wait=new Map();
 function getWorker(){if(!workerOk)return null;if(worker)return worker;try{worker=new Worker('sprech-worker.js?v='+(window.ARENA_BUILD||''));worker.onmessage=e=>{const w=wait.get(e.data.id);if(!w)return;wait.delete(e.data.id);w(e.data);};worker.onerror=()=>{workerOk=false;worker=null;for(const [,w] of wait)w({error:'worker'});wait.clear();};}catch{workerOk=false;worker=null;}return worker;}
 const NEU=()=>!!window.Stimme;
-function renderAsync(text,voice,opt){const engine=NEU()?'neu':'alt';return new Promise(res=>{const W=getWorker(),id=++seq;if(W){wait.set(id,res);W.postMessage({id,text,voice,engine,opt});setTimeout(()=>{if(wait.has(id)){wait.delete(id);res(local());}},3500);}else res(local());
+function renderAsync(text,voice,opt){const engine=NEU()?'neu':'alt';return new Promise(res=>{const W=getWorker(),id=++seq;if(W){wait.set(id,res);W.postMessage({id,text,voice,engine,opt,lex:window.Stimme?.getLexicon?.()});setTimeout(()=>{if(wait.has(id)){wait.delete(id);res(local());}},3500);}else res(local());
  function local(){try{const R=engine==='neu'?window.Stimme.render(text,voice,opt):window.Sprech.render(text,voice);return {data:R.data,dur:R.dur,mouth:R.mouth,sr:R.sr};}catch(e){return {error:String(e)};}}});}
 // Welche Stimme? Bekannte Figuren haben eigene, alle anderen eine allgemeine, die zu Stimmlage (Erfahrung), Größe und Geschlecht passt.
 const SPEECH_TEMPO=.8;
