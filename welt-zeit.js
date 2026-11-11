@@ -58,7 +58,7 @@ H.tick=dt=>{if(!M.weltTag.aktiv||st.pause||S.battle||story())return;
 let glow=null;
 function glowSprite(){if(glow)return glow;const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),r=g.createRadialGradient(64,64,2,64,64,64);r.addColorStop(0,'rgba(255,196,110,.85)');r.addColorStop(.35,'rgba(255,150,70,.32)');r.addColorStop(1,'rgba(255,120,40,0)');g.fillStyle=r;g.fillRect(0,0,128,128);return glow=c;}
 const LAMPS=[];
-function lamps(){if(LAMPS.length)return LAMPS;const Hf=W.HOF;for(const s of W.SITES){if(s.hof||s.post||s.id==='friedhof')continue;LAMPS.push({x:s.x+s.w/2,y:s.y+s.h*.7,r:s.id==='dorf'||s.id==='arena'?240:150});}
+function lamps(){if(W.lamps)return W.lamps;if(LAMPS.length)return LAMPS;const Hf=W.HOF;for(const s of W.SITES){if(s.hof||s.post||s.id==='friedhof')continue;LAMPS.push({x:s.x+s.w/2,y:s.y+s.h*.7,r:s.id==='dorf'||s.id==='arena'?240:150});}
  for(const [x,y] of [[Hf.x+40,Hf.y+40],[Hf.x+Hf.w-40,Hf.y+40],[Hf.x+40,Hf.y+Hf.h-40],[Hf.x+Hf.w-40,Hf.y+Hf.h-40],[Hf.x+Hf.w*.68,Hf.y+Hf.h-6],[Hf.x+Hf.w/2,Hf.y+Hf.h/2]])LAMPS.push({x,y,r:x===Hf.x+Hf.w/2?260:130});return LAMPS;}
 let L=[255,255,255,0];
 H.light=(ctx,VW,VH)=>{L=st.licht?licht(hour()):[255,255,255,0];if(L[0]>253&&L[1]>253&&L[2]>253)return;

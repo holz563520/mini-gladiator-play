@@ -7,11 +7,11 @@
 (()=>{
 const M=window.MG,W=window.WeltKarte,T=M?.weltTag,L=M?.weltLeben,Z=window.WeltSaetze;if(!T||!L)return;const S=M.s,$=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const sub=document.querySelector('.w-title');if(sub)sub.innerHTML='<b>TAGESLAUF</b><small>Editor · nichts wird gespeichert</small>';
+const sub=document.querySelector('.w-title');if(sub)sub.innerHTML='<b>RASTERKARTE</b><small>Editor · nichts wird gespeichert</small>';
 const ed=document.createElement('aside');ed.id='wEdit';ed.innerHTML=`<header><b>EDITOR</b><button class="w-x" data-fold aria-label="Einklappen">▾</button></header><div class="ed-body">
 <p class="ed-h">Uhrzeit</p><div class="ed-row" data-zeit><button class="w-btn" data-h="5.6">kurz vor Tageswechsel</button><button class="w-btn" data-h="7">Morgen</button><button class="w-btn" data-h="12">Mittag</button><button class="w-btn" data-h="18.4">Abend</button><button class="w-btn" data-h="20.6">Dämmerung</button><button class="w-btn" data-h="23">Nacht</button></div>
 <p class="ed-h">Tempo (nur zum Prüfen)</p><div class="ed-row" data-tempo><button class="w-btn" data-t="0">⏸</button><button class="w-btn on" data-t="1">1×</button><button class="w-btn" data-t="4">4×</button><button class="w-btn" data-t="20">20×</button></div>
-<p class="ed-h">Tag</p><div class="ed-row"><label class="w-sel">Länge <select data-len><option value="120">2 Minuten</option><option value="240" selected>4 Minuten</option><option value="360">6 Minuten</option></select></label><label class="w-sel"><input type="checkbox" data-licht checked> Licht</label></div>
+<p class="ed-h">Tag</p><div class="ed-row"><label class="w-sel">Länge <select data-len><option value="120">2 Minuten</option><option value="240" selected>4 Minuten</option><option value="360">6 Minuten</option></select></label><label class="w-sel"><input type="checkbox" data-licht checked> Licht</label><label class="w-sel"><input type="checkbox" data-raster checked> Raster</label></div>
 <div class="ed-row"><button class="w-btn" data-feier>Tageswechsel-Animation zeigen</button></div>
 <p class="ed-h">Gladiatoren</p><div class="ed-row"><button class="w-btn" data-wund>Verletzungen und Kampfgeschichte geben</button><button class="w-btn" data-rand>Zufälligen ansprechen</button><button class="w-btn" data-alle>Alle Sätze des Gewählten</button></div>
 <div class="ed-list" data-list hidden></div>
@@ -25,9 +25,9 @@ ed.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
  else if(b.dataset.wund!=null){wunden();}
  else if(b.dataset.rand!=null){const sh=W.shown();const pick=sh[Math.floor(Math.random()*sh.length)]||null;if(pick){W.flyTo(pick.x,pick.y,Math.max(W.cam.s,1.3));L.open(pick.w.g);}}
  else if(b.dataset.alle!=null){const box=ed.querySelector('[data-list]'),g=L.sel;if(!g){box.hidden=false;box.textContent='Erst eine Figur antippen.';return;}
-  const all=Z.alle(g,{stunde:T.stunde,job:W.workers().find(w=>w.g.id===g.id)?.job,partName:M.partName,andere:S.roster.map(x=>x.name)});box.hidden=false;
+  const all=Z.alle(g,{stunde:T.stunde,partName:M.partName,andere:S.roster.map(x=>x.name)});box.hidden=false;
   box.innerHTML='<b>'+esc(g.name)+' · '+all.length+' mögliche Sätze</b>'+all.map(x=>'<p><i>'+esc(x.art)+'</i> '+esc(x.t)+'</p>').join('')+'<p><i>pinzette</i> '+[...Z.UP,...Z.DOWN].map(x=>esc(x[0])).join('</p><p><i>pinzette</i> ')+'</p>';}});
-ed.querySelector('[data-len]').onchange=e=>T.laenge(+e.target.value);ed.querySelector('[data-licht]').onchange=e=>T.lichtAn(e.target.checked);
+ed.querySelector('[data-len]').onchange=e=>T.laenge(+e.target.value);ed.querySelector('[data-licht]').onchange=e=>T.lichtAn(e.target.checked);ed.querySelector('[data-raster]').onchange=e=>W.raster(e.target.checked);
 // Testdaten: Verletzungen, fehlende Glieder, Siege und Niederlagen. Nur auf den Kopien dieser Seite (Speicher abgeschirmt).
 const FOES=['die Wölfe von Capua','Ludus Sanguis','die Schlächter aus Ostia','Haus Corvus','die Brüder vom Schindanger'],INJ=['Tiefe Schnittwunde','Durchstochen','Trümmerbruch','Prellung bis auf den Knochen'],LIMB=['lua','rua','lfa','rfa','lt','rt','lsh','rsh','ls','rs'];
 function wunden(){const list=S.roster.filter(g=>!g.dead);list.forEach((g,i)=>{const r=(i*7+3)%10;g.fights=2+(i%9);g.wins=Math.round(g.fights*((i%4)/3.5));g.losses=g.fights-g.wins;g.kills=i%5===0?5+(i%4):i%3;g.fame=(i*13)%40;g.history=g.history||[];
@@ -35,6 +35,6 @@ function wunden(){const list=S.roster.filter(g=>!g.dead);list.forEach((g,i)=>{co
   if(r<4){const id=LIMB[(i*3)%LIMB.length],foe=list[(i+5)%list.length].name;try{M.noteInjury(g,id,INJ[i%INJ.length],'Brutus der Schlächter','Gladius');}catch(e){g.body[id].injury=INJ[i%INJ.length];}g.body[id].hp=28+(i%30);g.body[id].grade=M.injuryGrade?.(g.body[id])??2;}
   if(r===5||r===8){const id=['lh','rh','lfa','lf'][i%4];for(const k of M.branches?.[id]||[id]){const p=g.body[k];p.missing=true;p.hp=0;p.bleed=0;p.grade=5;p.injury='Abgetrennt';}}
   if(r===6){g.fatigue=75;}if(r===7)g.blood=68;});
- W.sprites?.clear?.();W.assign();M.ui.notify?.('Testkader: Verletzungen, fehlende Glieder und Kampfgeschichte verteilt.');}
+ W.sprites?.clear?.();M.ui.notify?.('Testkader: Verletzungen, fehlende Glieder und Kampfgeschichte verteilt.');}
 window.TAGESLAUF_READY=true;
 })();

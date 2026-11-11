@@ -7,8 +7,7 @@
 //   gesprochen mit der Stimme des Spiels, wenn sie geladen ist. Knöpfe: noch ein Satz, hochnehmen, Tätigkeit, Profil.
 // · Pinzette: greift die Figur am Genick, hebt sie an, sie baumelt und strampelt. Mit der Maus folgt sie dem Zeiger,
 //   am Handy hängt sie fest im Bild, während man die Karte darunter verschiebt. Antippen der Karte setzt sie dort ab.
-//   Auf einem Gebäude oder Posten abgesetzt, übernimmt sie die Tätigkeit dort (wie die Auswahl von Hand in Schritt 1),
-//   sonst läuft sie nach kurzem Staunen zurück zu ihrer Arbeit.
+//   Dort bleibt sie nach kurzem Staunen und schlendert von da aus weiter. Sonst geschieht nichts.
 // · Leistung: eine getragene Figur, ein Zeiger über der gewählten Figur; die Nahaufnahme zeichnet nur, solange sie offen
 //   ist, höchstens 30-mal je Sekunde. Keine Spielwirkung, kein Speicherwert.
 // =====================================================================================================================
@@ -22,10 +21,10 @@ const roleOf=g=>g.role||'Soldat';
 // ---------- Nahaufnahme ----------
 const nah=document.createElement('div');nah.id='wNah';nah.hidden=true;
 nah.innerHTML=`<canvas width="220" height="170" aria-label="Nahaufnahme"></canvas><div class="nah-t"><header><b></b><small></small><button class="w-x" data-x aria-label="Schließen">✕</button></header><p class="nah-say"></p>
-<div class="nah-btn"><button class="w-btn" data-more>💬 Und sonst?</button><button class="w-btn nah-zange" data-zange><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1v4M8 5L4 15M8 5l4 10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg> Hochnehmen</button><button class="w-btn" data-job>Tätigkeit</button><button class="w-btn" data-profil>Profil</button></div></div>`;
+<div class="nah-btn"><button class="w-btn" data-more>💬 Und sonst?</button><button class="w-btn nah-zange" data-zange><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1v4M8 5L4 15M8 5l4 10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg> Hochnehmen</button><button class="w-btn" data-profil>Profil</button></div></div>`;
 document.getElementById('weltUi').appendChild(nah);
 const fc=nah.querySelector('canvas'),fg=fc.getContext('2d');let sel=null,raf=0,lastPaint=0;
-function ctxOf(g){const w=workerOf(g);return {stunde:M.weltTag?.stunde??12,job:w?.job,partName:M.partName,andere:S.roster.filter(x=>!x.dead).slice(0,40).map(x=>x.name)};}
+function ctxOf(g){return {stunde:M.weltTag?.stunde??12,partName:M.partName,andere:S.roster.filter(x=>!x.dead).slice(0,40).map(x=>x.name)};}
 function say(line){if(!sel)return;sel.line=line;sel.t0=performance.now();sel.done=false;try{M.speakLine?.(line.t,null,sel.g,{});}catch(e){}}
 function open(g){W.closeInfo();sel={g,line:null,t0:0};nah.hidden=false;nah.classList.remove('klein');nah.querySelector('header b').textContent=g.name;say(Z.satz(g,ctxOf(g)));head();if(!raf)raf=requestAnimationFrame(loop);}
 function head(){if(!sel)return;const w=workerOf(sel.g),ps=w?W.pose(w):null;nah.querySelector('header small').textContent=roleOf(sel.g)+(ps?.state?' · '+ps.state:'');}
@@ -38,7 +37,7 @@ function loop(now){raf=0;if(!sel)return;raf=requestAnimationFrame(loop);if(now-l
  if(((now/500)|0)!==loop.h){loop.h=(now/500)|0;head();}}
 nah.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!sel)return;const g=sel.g;
  if(b.dataset.x!=null)close();else if(b.dataset.more!=null)say(Z.satz(g,ctxOf(g)));else if(b.dataset.zange!=null)grab(g);
- else if(b.dataset.job!=null){const w=workerOf(g);close();if(w)W.openInfo({fig:w});}else if(b.dataset.profil!=null){close();M.ui.click('detail:'+g.id);}});
+ else if(b.dataset.profil!=null){close();M.ui.click('detail:'+g.id);}});
 
 // ---------- Pinzette ----------
 const LIFT=34,NECK=38;let hand=null;const placed=new Map(),dust=[];
@@ -50,14 +49,11 @@ function grab(g){if(hand)return;const w=workerOf(g),ps=w&&W.pose(w);if(!ps||ps.x
  placed.delete(g.id);const s=toScreen(ps.x,ps.y-LIFT-10);hand={g,state:'greif',t:0,x:ps.x,y:ps.y,h:0,ox:ps.x,oy:ps.y,sx:s.sx,sy:s.sy,sw:0,dir:(ps.dx??1)<0?1:0,open:9,off:-220};
  nah.classList.add('klein');if(sel?.g===g)say(Z.hoch(g));showHint(g.name.split(' ')[0]+' hängt an der Pinzette. Tippe auf die Karte, um ihn abzusetzen.',true);try{M.sound?.('step');}catch(e){}}
 function drop(p,back){if(!hand||hand.state!=='trag')return;hand.state='senk';hand.t=0;hand.fx=hand.x;hand.fy=hand.y;hand.fh=hand.h;hand.tx=clamp(p.x,20,W.WW-20);hand.ty=clamp(p.y,20,W.WH-20);hand.back=!!back;}
-function landed(){const g=hand.g,p={x:hand.tx,y:hand.ty};let note='';
- if(!hand.back){const site=W.SITES.find(s=>!s.hof&&p.x>=s.x-6&&p.x<=s.x+s.w+6&&p.y>=s.y-30&&p.y<=s.y+s.h+6);let job=null,post;
-  if(site){job=site.post?'lager':W.JOBS.find(j=>j.site===site.id)?.id;post=site.post?site.id:undefined;}else if(W.inHof(p.x,p.y))job='training';
-  const cur=workerOf(g);if(job&&(cur?.job!==job||(post&&cur?.post?.id!==post))){W.manual.set(g.id,{job,post});W.assign();note=g.name.split(' ')[0]+' jetzt: '+W.JOB[job].name+(site?.post?' ('+site.name.replace('Posten ','')+')':'')+'.';}}
+function landed(){const g=hand.g,p={x:hand.tx,y:hand.ty},n=g.name.split(' ')[0];W.place(g,p.x,p.y);
  placed.set(g.id,{x:p.x,y:p.y,stun:hand.back?.5:1.6,last:null,dir:hand.dir});
  for(let i=0;i<8;i++)dust.push({x:p.x+(Math.random()-.5)*14,y:p.y-1,vx:(Math.random()-.5)*46,vy:-10-Math.random()*22,t:0});
  try{M.sound?.('land');}catch(e){}if(sel?.g===g){say(Z.runter(g));nah.classList.remove('klein');}
- showHint(note||(hand.back?g.name.split(' ')[0]+' steht wieder an seinem Platz.':g.name.split(' ')[0]+' abgesetzt. Er läuft gleich zurück zu seiner Arbeit.'),false,3200);}
+ showHint(hand.back?n+' steht wieder an seinem Platz.':n+' abgesetzt.',false,2600);}
 // Maus: die Figur folgt dem Zeiger. Finger: sie bleibt an ihrer Stelle im Bild, die Karte wandert darunter.
 W.canvas.addEventListener('pointermove',e=>{if(!hand||e.pointerType!=='mouse')return;const r=W.canvas.getBoundingClientRect();hand.sx=e.clientX-r.left;hand.sy=e.clientY-r.top;});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&hand?.state==='trag')drop({x:hand.ox,y:hand.oy},true);});
@@ -67,9 +63,7 @@ const tap0=H.tap;H.tap=(p,w)=>{if(hand){if(hand.state==='trag')drop(p);return tr
 const pose0=H.pose;H.pose=(w,ps,t)=>{if(pose0)ps=pose0(w,ps,t);if(hand&&hand.g.id===w.g.id&&hand.state!=='los')return {x:null,y:null,state:'hängt an der Pinzette',work:false};
  const p=placed.get(w.g.id);if(!p)return ps;const dt=p.last==null?0:clamp(t-p.last,0,.2);p.last=t;
  if(p.stun>0){p.stun-=dt;return {x:p.x,y:p.y,dx:p.dir?-1:1,dy:0,state:'schaut sich verdutzt um',work:false,top:true};}
- if(ps.x==null){if(W.inHof(p.x,p.y)){placed.delete(w.g.id);return ps;}/* Ziel im Hof oder unter Tage: zum Hoftor laufen */ps={...ps,x:W.HOF.x+610,y:W.HOF.y+757,hidden:true};}
- const dx=ps.x-p.x,dy=ps.y-p.y,d=Math.hypot(dx,dy),step=W.SPEED*1.7*dt;if(d<=Math.max(step,4)){placed.delete(w.g.id);return ps.hidden?{x:null,y:null,state:ps.state,work:false}:ps;}
- p.x+=dx/d*step;p.y+=dy/d*step;return {x:p.x,y:p.y,dx,dy,state:'läuft zurück zur Arbeit',work:false};};
+ placed.delete(w.g.id);return ps;};
 
 function tweezers(ctx,x,y,open,k,tilt){ctx.save();ctx.translate(x,y);ctx.rotate(tilt);ctx.scale(k,k);ctx.lineCap='round';ctx.lineJoin='round';
  for(const [col,lw] of [['#20262a',5.5],['#aeb9bf',3],['#e6edf0',1.2]]){ctx.strokeStyle=col;ctx.lineWidth=lw;for(const s of [-1,1]){ctx.beginPath();ctx.moveTo(s*open,2);ctx.lineTo(s*(open+2.5),-10);ctx.lineTo(s*3,-58);if(lw<2){ctx.moveTo(s*(open+1.5),-12);ctx.lineTo(s*2.4,-54);}ctx.stroke();}}
