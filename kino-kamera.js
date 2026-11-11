@@ -122,7 +122,7 @@ let alpha=function(a){if(!K.on||K.set.includes(a))return 1;const p=cl((performan
 const LOOK0={layout:'alt',frame:'feld',bg:'arena',others:.32,who:'gruppe',fill:.8,slow:8,sync:'frei',grade:'normal',bars:8};
 const PRESETS={
  bisher:{name:'Bisher',look:{...LOOK0}},
- buehne:{name:'Schwarze Bühne',look:{layout:'split',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.84,slow:2,sync:'gemeinsam',grade:'normal',bars:9}},
+ buehne:{name:'Schwarze Bühne',look:{layout:'split',frame:'schirm',bg:'schwarz',others:.12,who:'paar',fill:.84,slow:2,sync:'gemeinsam',grade:'normal',bars:9}},
  spot:{name:'Scheinwerfer',look:{layout:'split',frame:'schirm',bg:'spot',others:0,who:'paar',fill:.8,slow:8,sync:'gemeinsam',grade:'warm',bars:9}},
  leinwand:{name:'Großleinwand + Bild im Bild',look:{layout:'pip',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.86,slow:8,sync:'gemeinsam',grade:'normal',bars:7}},
  wunde:{name:'Wunde groß, Kämpfer klein',look:{layout:'piprev',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.84,slow:8,sync:'gemeinsam',grade:'normal',bars:7}},
@@ -134,6 +134,9 @@ const GAME_LOOK={...LOOK0,...PRESETS.buehne.look};let look={...GAME_LOOK};try{co
    in 4–10 s Kino-Moment nur 0,3–1,3 Kampfsekunden. Jetzt 1/2, so schnell wie die Wiederholung des Schlags; der Kampf läuft mit der Nahaufnahme weiter.
    Einmalig: eine früher gespeicherte Bühne mit 1/8 (z. B. über „Im Spiel verwenden“) wird ebenfalls auf 1/2 gesetzt. */
 try{if(localStorage.getItem('mg-kino-slow2')!=='1'){if(look.layout!=='alt'&&+look.slow===8){look.slow=2;if(localStorage.getItem('mg-kino-look'))localStorage.setItem('mg-kino-look',JSON.stringify(look));}localStorage.setItem('mg-kino-slow2','1');}}catch{}
+/* Thomas 11.11.: Im Spiel jetzt ganzer Bildschirm, Unbeteiligte als Schatten (statt unsichtbar), abgetrennte Glieder der Beteiligten nicht abgedunkelt.
+   Einmalig: eine früher auf dem Gerät gespeicherte Einstellung wird verworfen, damit diese Fassung gilt (im Kino-Editor weiter frei wählbar). */
+try{if(localStorage.getItem('mg-kino-look3')!=='1'){if(localStorage.getItem('mg-kino-look')){localStorage.removeItem('mg-kino-look');look={...GAME_LOOK};}localStorage.setItem('mg-kino-look3','1');}}catch{}
 const film=()=>look.layout!=='alt';
 const GRADE={normal:'none',warm:'sepia(.25) saturate(1.15) contrast(1.06)',kalt:'saturate(.7) hue-rotate(-12deg) contrast(1.1) brightness(.95)',rot:'sepia(.35) saturate(1.5) hue-rotate(-18deg) contrast(1.12)',blass:'saturate(.35) contrast(1.15)'};
 const FM={el:null,A:null,ga:null,B:null,who:null,rects:null,shotKey:'',phase:-1,step:null,beatT:0};
@@ -266,6 +269,7 @@ cfg.onShot=function(on,o,live){const r=shown?.apply(this,arguments);try{if(on&&!
 const slowOf=()=>{if(!K.on||off)return 0;if(!film())return SLOW;const n=+look.slow;return n>0?1/n:0;};
 M.kinoCam={camera:(...x)=>camera(...x),follow,alpha:a=>alpha(a),/* Zeitlupe statt Stillstand während des Kino-Moments (injury-shots.js, arena.js) */get slow(){return slowOf();},get on(){return K.on;},get subjects(){return K.set.map(a=>a.id);},get off(){return off;},set off(v){off=!!v;if(off)end();try{localStorage.setItem('mg-kino',off?'off':'on');}catch{}},
  /* schwarzer Hintergrund: Hindernisse (arena.js) ausblenden */get hideScenery(){return K.on&&!off&&film()&&(look.bg==='schwarz'||look.bg==='spot');},
+ /* dunkler Hintergrund (Thomas 11.11.): abgetrennte Glieder der Beteiligten hell über dem Dunkel; die der anderen wie ihre Besitzer (others) bzw. beim abgedunkelten Feld darunter (under) */get limbs(){if(!K.on||off||!film()||look.bg==='arena')return null;const p=cl((performance.now()-K.t0)/(FADE*1000),0,1),o=cl(+look.others,0,1);return {sub:new Set(K.set.map(a=>a.id)),others:1-(1-o)*p,under:look.bg==='dunkel'};},
  /* Kino-Look (kino-editor.html) */presets:PRESETS,defaults:LOOK0,gameDefault:GAME_LOOK,get look(){return {...look};},setLook(v,save){look={...LOOK0,...(v||{})};if(save)try{localStorage.setItem('mg-kino-look',JSON.stringify(look));}catch{}},
  /* Kino-Ton an/aus (kino-editor.html) */get sound(){return !tonOff;},set sound(v){tonOff=!v;if(tonOff)tonStop();try{localStorage.setItem('mg-kino-ton',tonOff?'off':'on');}catch{}},get soundOn(){return T.on;},
  state:()=>({shot:F.shot,pair:F.pair?.key||null,punch:+F.punch.toFixed(3),split:K.on?(FM.rects?'film-'+look.layout:K.mode):null})};
