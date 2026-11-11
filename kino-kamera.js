@@ -226,7 +226,7 @@ function env(c,g,at,a,peak,hold,rel){g.gain.setValueAtTime(0,at);g.gain.linearRa
 function osc(X,type,f0,f1,at,dur,vol,a=.005){const c=X.ctx,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f0,at);if(f1!==f0)o.frequency.exponentialRampToValueAtTime(f1,at+dur);env(c,g,at,a,vol,0,dur);o.connect(g);g.connect(X.master);o.start(at);o.stop(at+a+dur+.05);return o;}
 function noise(X,at,dur,vol,type,f0,f1,q=1,a=.01){const c=X.ctx;if(!X.noise)return;const n=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();n.buffer=X.noise;n.loop=true;f.type=type;f.Q.value=q;f.frequency.setValueAtTime(f0,at);f.frequency.exponentialRampToValueAtTime(f1,at+dur);env(c,g,at,a,vol,0,dur);n.connect(f);f.connect(g);g.connect(X.master);n.start(at);n.stop(at+a+dur+.05);}
 function duck(X,on){const t=X.ctx.currentTime,set=(bus,v)=>{if(!bus)return;bus.gain.cancelScheduledValues(t);bus.gain.setValueAtTime(bus.gain.value,t);bus.gain.linearRampToValueAtTime(v,t+(on?.25:.7));};
- if(on){if(!T.duck)T.duck={m:X.musicBus?.gain.value,f:X.fightBus?.gain.value,i:X.impactBus?.gain.value};set(X.musicBus,T.duck.m*.3);set(X.fightBus,T.duck.f*.3);set(X.impactBus,T.duck.i*.55);}
+ /* Thomas 11.11.: Musik und Hintergrund deutlich leiser (Publikum: zuschauer.js fragt soundOn) */if(on){if(!T.duck)T.duck={m:X.musicBus?.gain.value,f:X.fightBus?.gain.value,i:X.impactBus?.gain.value};set(X.musicBus,T.duck.m*.14);set(X.fightBus,T.duck.f*.12);set(X.impactBus,T.duck.i*.6);}
  else if(T.duck){set(X.musicBus,T.duck.m);set(X.fightBus,T.duck.f);set(X.impactBus,T.duck.i);T.duck=null;}}
 function heart(X,at,vol){osc(X,'sine',62,40,at,.16,vol,.004);noise(X,at,.09,vol*.5,'lowpass',160,90);osc(X,'sine',58,38,at+.2,.14,vol*.65,.004);}
 const LAYER={through:[['hitStab',1.5,.6],['backstab',1.1,.7]],pierce:[['hitStab',1.5,.62]],stab:[['hitStab',1.2,.65]],deepstab:[['hitStab',1.4,.62]],arrow:[['arrowBody',1.4,.65]],
@@ -234,19 +234,52 @@ const LAYER={through:[['hitStab',1.5,.6],['backstab',1.1,.7]],pierce:[['hitStab'
  fracture:[['boneCrack',1.4,.62]],badfracture:[['boneCrack',1.6,.58]],shatter:[['boneCrack',1.7,.55],['hitBlunt',1,.6]],pulp:[['hitBlunt',1.6,.55],['boneCrack',1.2,.6]],
  heart:[['hitStab',1.5,.6]],lung:[['hitStab',1.4,.62]],liver:[['hitStab',1.4,.62]],spleen:[['hitStab',1.4,.62]],kidney:[['backstab',1.3,.65]],gutted:[['hitBlade',1.5,.6],['sever',.8,.7]],
  cut:[['hitBlade',1.2,.68]],deepcut:[['hitBlade',1.5,.62]],gut:[['hitBlade',1.5,.62]],sinew:[['hitBlade',1.3,.65]]};
-function tonStart(o){if(T.on)tonStop();const X=A();if(!X)return;T.on=true;T.hit=false;T.n++;T.death=o?.kind==='death'||!!o?.dead;T.kind=o?.kind;const t=X.ctx.currentTime;duck(X,true);
- /* Sog in die Zeitlupe: Rauschen von tief nach hoch, darunter ein abfallender Ton */noise(X,t,.5,.22,'bandpass',260,2600,1.4,.3);osc(X,'sawtooth',220,70,t,.55,.035,.2);
+/* ---- Thomas 11.11.: Ton passend zur Bewegung der Nahaufnahme.
+   · Luftzug der Waffe in Zeitlupe: schwillt an und steigt, je näher die Waffe kommt (gesteuert von der Aufnahmezeit, also immer im Gleichlauf), reißt beim Treffer ab.
+   · Pfeil/Bolzen/Wurfspeer: pfeift, solange man ihn fliegen sieht (fallender Ton), danach schnarrt der Schaft im Takt des Zitterns.
+   · Einschlag derb: tiefer Schlag, Klatschen, verzerrtes Knirschen, je nach Art Schnitt/Stich/Bruch dazu; Kampfgeräusch tief verlangsamt mit Nachhall.
+   · Durchstich: Austritt hinten und Herausreißen bekommen eigene Geräusche. */
+const HEAVY=['axe','doubleaxe','hammer','mace','club','greatsword','halberd'],SHOOT=['bow','crossbow','javelin'];
+const BLUNTK=['fracture','badfracture','shatter','pulp','skullfracture','neckbreak','ribs','ribseries','sternum','collarbone','pelvis','larynx','bruise','contusion','crush','joint','concussion'],STABK=['stab','deepstab','pierce','through','arrow','heart','lung','liver','spleen','kidney'];
+let dist=null;function crunch(X,at,dur,vol,f0,f1){const c=X.ctx;if(!X.noise)return;if(!dist){dist=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;dist[i]=Math.tanh(x*9);}}
+ const n=c.createBufferSource(),f=c.createBiquadFilter(),w=c.createWaveShaper(),g=c.createGain();n.buffer=X.noise;n.loop=true;f.type='bandpass';f.Q.value=.9;f.frequency.setValueAtTime(f0,at);f.frequency.exponentialRampToValueAtTime(f1,at+dur);w.curve=dist;env(c,g,at,.002,vol,0,dur);n.connect(f);f.connect(w);w.connect(g);g.connect(X.master);n.start(at,Math.random());n.stop(at+dur+.1);}
+function squelch(X,at,dur,vol,f0){const c=X.ctx;if(!X.noise)return;const n=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain(),l=c.createOscillator(),lg=c.createGain();n.buffer=X.noise;n.loop=true;f.type='bandpass';f.Q.value=3.5;f.frequency.setValueAtTime(f0,at);f.frequency.exponentialRampToValueAtTime(f0*.45,at+dur);
+ l.frequency.value=17;lg.gain.value=f0*.35;l.connect(lg);lg.connect(f.frequency);env(c,g,at,.012,vol,dur*.25,dur*.75);n.connect(f);f.connect(g);g.connect(X.master);n.start(at,Math.random());l.start(at);n.stop(at+dur+.1);l.stop(at+dur+.1);}
+function knack(X,at,vol){for(let i=0;i<3;i++){const t=at+i*.045+Math.random()*.02;osc(X,'square',900-i*210,140,t,.035,vol*(1-i*.22),.001);noise(X,t,.03,vol*.7,'highpass',2400,900,.7,.001);}}
+function motionStart(X,o){const c=X.ctx,t=c.currentTime,wid=o?.wid,shoot=o?.kind==='arrow'||SHOOT.includes(wid),mo={shoot,jav:wid==='javelin',heavy:HEAVY.includes(wid),wob:false,exit:false,pull:false,thru:o?.kind==='through'};
+ if(X.noise){const n=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();n.buffer=X.noise;n.loop=true;f.type='bandpass';f.Q.value=shoot?4:1.5;f.frequency.value=shoot?2600:160;g.gain.value=0;n.connect(f);f.connect(g);g.connect(X.master);n.start(t,Math.random());T.nodes.push(n,{g});mo.f=f;mo.g=g;}
+ if(shoot){const o1=c.createOscillator(),g1=c.createGain(),l=c.createOscillator(),lg=c.createGain();o1.type='triangle';o1.frequency.value=wid==='javelin'?900:2400;g1.gain.value=0;l.frequency.value=11;lg.gain.value=45;l.connect(lg);lg.connect(o1.frequency);o1.connect(g1);g1.connect(X.master);o1.start(t);l.start(t);T.nodes.push(o1,l,{g:g1});mo.w=o1;mo.wg=g1;}
+ T.mo=mo;}
+function motionTick(X,sh){const mo=T.mo;if(!mo||!sh)return;const now=X.ctx.currentTime,H=M.injuryShots.HIT||.55,k=sh.t-H,set=(p,v,tc=.03)=>p.setTargetAtTime(v,now,tc);
+ if(k<0){/* Anflug: u 0 → 1 bis zum Treffer */if(mo.shoot){const u=cl(1+k/.2,0,1),jav=mo.jav;if(mo.wg){set(mo.wg.gain,.075*Math.sin(u*Math.PI*.5),.02);set(mo.w.frequency,(jav?1000:2500)*(1-.38*u),.02);}if(mo.g){set(mo.g.gain,.14*u);set(mo.f.frequency,3200-1400*u);}}
+  else{const u=cl(1+k/.25,0,1),lo=mo.heavy?90:150,hi=mo.heavy?800:1500;if(mo.g){set(mo.g.gain,(.05+.4*u*u)*(mo.heavy?1.25:1));set(mo.f.frequency,lo*Math.pow(hi/lo,u));}}return;}
+ /* Treffer: Luftzug reißt ab */if(mo.wg)set(mo.wg.gain,0,.008);
+ if(mo.thru&&!mo.shoot&&k>1.42&&k<1.75){/* Herausreißen: nasser Zug */const u=cl((k-1.42)/.3,0,1);if(mo.g){set(mo.g.gain,.26*Math.sin(u*Math.PI));set(mo.f.frequency,1300*Math.pow(.22,u));}if(!mo.pull){mo.pull=true;const t=now;squelch(X,t,.5,.4,900);M.audioEngine?.ksPlay?.('hitStab',1.3,.8);}}
+ else if(mo.g)set(mo.g.gain,0,.012);
+ if(mo.thru&&!mo.exit&&k>.14){/* Austritt hinten */mo.exit=true;osc(X,'sine',70,34,now,.5,.4,.003);crunch(X,now,.1,.3,900,300);squelch(X,now+.02,.3,.32,1100);M.audioEngine?.ksPlay?.('backstab',1.3,.7);}
+ if(mo.shoot&&!mo.wob&&k>=0){/* Schaft zittert nach: Schnarren im Takt des Zitterns, klingt in ~0,6 s ab */mo.wob=true;const c=X.ctx,o1=c.createOscillator(),g1=c.createGain(),l=c.createOscillator(),lg=c.createGain();o1.type='sawtooth';o1.frequency.setValueAtTime(140,now);o1.frequency.exponentialRampToValueAtTime(95,now+.7);g1.gain.setValueAtTime(.0001,now);g1.gain.linearRampToValueAtTime(.09,now+.01);g1.gain.exponentialRampToValueAtTime(.0001,now+.7);
+  l.frequency.value=14;lg.gain.value=.05;l.connect(lg);lg.connect(g1.gain);const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=700;o1.connect(f);f.connect(g1);g1.connect(X.master);o1.start(now);l.start(now);o1.stop(now+.75);l.stop(now+.75);}}
+function tonStart(o){if(T.on)tonStop();const X=A();if(!X)return;T.on=true;T.hit=false;T.n++;T.death=o?.kind==='death'||!!o?.dead;T.kind=o?.kind;T.wid=o?.wid;T.mo=null;const t=X.ctx.currentTime;duck(X,true);
+ /* Sog in die Zeitlupe: Rauschen von tief nach hoch, darunter ein abfallender Ton */noise(X,t,.4,.16,'bandpass',260,2200,1.4,.25);osc(X,'sawtooth',220,70,t,.5,.03,.2);
  /* tiefes Dröhnen, hält bis zum Ende */const c=X.ctx,g=c.createGain(),f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=180;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.09,t+.6);for(const fr of [41,61.5]){const o2=c.createOscillator();o2.type='sine';o2.frequency.value=fr;o2.connect(f);o2.start(t);T.nodes.push(o2);}f.connect(g);g.connect(X.master);T.nodes.push({g});
+ try{if(!['death','collapse'].includes(o?.kind))motionStart(X,o);}catch(e){console.warn('Kino-Ton Start',e);}
  T.beat=t+.05;cancelAnimationFrame(T.raf);T.raf=requestAnimationFrame(tonTick);}
-function tonHit(X){const t=X.ctx.currentTime;/* schwerer Schlag */osc(X,'sine',78,30,t,1.1,.5,.003);noise(X,t,.3,.35,'lowpass',420,90,.8,.003);
- for(const [k,vol,pitch] of LAYER[T.kind]||[['hitBlunt',1.2,.65]])M.audioEngine?.ksPlay?.(k,vol,pitch);
- /* Pfeifen im Ohr nach dem Treffer */if(T.kind!=='collapse')osc(X,'sine',2900,2750,t+.05,2.6,.022,.15);}
+function tonHit(X){const t=X.ctx.currentTime,k=T.kind,heavy=HEAVY.includes(T.wid),blunt=BLUNTK.includes(k)||['hammer','mace','club'].includes(T.wid),stab=STABK.includes(k);
+ if(k==='collapse'||k==='death'){osc(X,'sine',78,30,t,1.1,.5,.003);noise(X,t,.3,.35,'lowpass',420,90,.8,.003);return;}
+ /* derber Einschlag: tiefer Schlag (zwei Lagen), Klatschen, verzerrtes Knirschen */osc(X,'sine',heavy?110:95,26,t,1.4,.78,.002);osc(X,'sine',52,30,t+.01,.7,.4,.004);osc(X,'triangle',190,60,t,.16,.3,.001);
+ noise(X,t,.26,.6,'lowpass',heavy?1100:800,80,.8,.002);crunch(X,t,heavy||blunt?.16:.1,heavy||blunt?.42:.3,blunt?700:1400,blunt?160:320);
+ if(blunt){/* Knochen */knack(X,t+.015,.34);osc(X,'sine',64,28,t+.06,.8,.4,.004);}
+ else if(stab){/* nasser Stich */squelch(X,t+.01,.42,.42,820);noise(X,t,.07,.3,'highpass',3800,1500,.7,.001);}
+ else{/* Schnitt: scharfes Reißen, dann nass */noise(X,t,.2,.36,'highpass',6500,900,.8,.001);squelch(X,t+.05,.4,.36,640);}
+ /* passendes Kampfgeräusch tief verlangsamt, mit dunklerem Nachhall */for(const [key,vol,pitch] of LAYER[k]||[['hitBlunt',1.2,.65]]){M.audioEngine?.ksPlay?.(key,vol*1.35,pitch);setTimeout(()=>{if(T.on)M.audioEngine?.ksPlay?.(key,vol*.6,pitch*.72);},110);}
+ /* Pfeifen im Ohr nach dem Treffer */osc(X,'sine',2900,2750,t+.05,2.4,.018,.15);}
 function tonTick(){if(!T.on)return;const X=A();if(!X){tonStop();return;}const sh=M.injuryShots.arena?.shot;
+ try{motionTick(X,sh);}catch(e){if(!T.err){T.err=1;console.warn('Kino-Ton Bewegung',e);}}
  if(sh&&!T.hit&&sh.hit){T.hit=true;tonHit(X);}
  /* Herzschlag im Takt (0,9 s); Tod: wird langsamer und setzt aus */const now=X.ctx.currentTime;if(now>=T.beat-.03){const i=Math.round((T.beat-(T.t0||T.beat))/.9);heart(X,Math.max(now,T.beat),T.death?.3*Math.max(0,1-i*.22):.28);T.t0??=T.beat;T.beat+=T.death?.9+i*.25:.9;if(T.death&&i>4)T.beat=1e9;}
  T.raf=requestAnimationFrame(tonTick);}
-function tonStop(){if(!T.on)return;T.on=false;cancelAnimationFrame(T.raf);T.t0=null;const X=M.audioEngine?.cine?.();if(!X){T.nodes=[];T.duck=null;return;}const t=X.ctx.currentTime;
- for(const n of T.nodes){try{if(n.g){n.g.gain.cancelScheduledValues(t);n.g.gain.setValueAtTime(n.g.gain.value,t);n.g.gain.linearRampToValueAtTime(0,t+.5);}else n.stop(t+.55);}catch{}}T.nodes=[];
+function tonStop(){if(!T.on)return;T.on=false;T.mo=null;cancelAnimationFrame(T.raf);T.t0=null;const X=M.audioEngine?.cine?.();if(!X){T.nodes=[];T.duck=null;return;}const t=X.ctx.currentTime;
+ for(const n of T.nodes){try{if(n.g){n.g.gain.cancelScheduledValues(t);n.g.gain.setTargetAtTime(0,t,.12);}else n.stop(t+.6);}catch{}}T.nodes=[];
  /* zurück aus der Zeitlupe: kurzer Sog rückwärts */noise(X,t,.35,.12,'bandpass',2200,300,1.2,.02);duck(X,false);}
 
 const cfg=M.injuryShots.config,shown=cfg.onShot;

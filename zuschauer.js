@@ -179,7 +179,7 @@ function create(ctx,dest,opt={}){
   else if(kind==='fall'){if(R()<.3*S.variety)ksCrowd(pick(['laugh1','laugh2','laugh3','laugh4','laugh5']),.28);else swellK('huh',.7);}}
  // ---- Takt ----
  function tick(){const t=ctx.currentTime,dt=clamp(t-last,0,.3);last=t;if(!active)return;
-  const busy=!!opt.busy?.(),duck=opt.duck?.()?.6:1,c=st.cheer&&t<st.cheer.until?st.cheer:null;if(st.cheer&&!c)st.cheer=null;if(st.mood&&t>st.moodUntil)st.mood=null;
+  const busy=!!opt.busy?.(),duck=(opt.duck?.()?.6:1)*(opt.cine?.()?.3:1)/* Kino-Moment: Publikum deutlich leiser (Thomas 11.11.) */,c=st.cheer&&t<st.cheer.until?st.cheer:null;if(st.cheer&&!c)st.cheer=null;if(st.mood&&t>st.moodUntil)st.mood=null;
   st.heat=Math.min(.55,st.heat*Math.exp(-dt/2.6));let target=st.base+st.heat;if(c){const fade=clamp((c.until-t)/2.5,0,1);target=Math.max(target,c.level*(.35+.65*fade));}
   // Langeweile: lange nichts passiert → Buhen, Rufe, Pfeifkonzert
   const bored=!c&&t-st.lastAct>9&&st.E<.4;if(bored&&!st.boo){st.boo=true;st.nextBoo=t+.3;for(const x of MOOD.boo)want(x,1,true);}
@@ -229,7 +229,7 @@ function scan(b){const now=b.time||0;for(const a of b.actors||[]){if(!human(a))c
  if(b.result&&!T.won){T.won=true;eng.event('win');}}
 setInterval(()=>{try{const A=M.audioEngine,o=A?.crowdOut?.(),b=M.s?.battle;
   if(!o||!b){if(eng)eng.setActive(false);A?.setCrowdExcite?.(0);if(!b)lastB=null;return;}
-  if(!eng){eng=gameEng=create(o.ctx,o.bus,{busy:()=>{const c=A.chants?.();return !!c&&c.until>c.now;},duck:()=>!!M.speaking?.('moderator')});eng.prepGeneric();}
+  if(!eng){eng=gameEng=create(o.ctx,o.bus,{busy:()=>{const c=A.chants?.();return !!c&&c.until>c.now;},duck:()=>!!M.speaking?.('moderator'),cine:()=>!!M.kinoCam?.soundOn});eng.prepGeneric();}
   eng.setActive(true);
   if(b!==lastB){lastB=b;T={a:{},lead:0,won:false};eng.setFighters(list(b),true);scan(b);eng.event('start');heroT=0;}
   else{scan(b);if(++heroT%10===0)eng.setFighters(list(b),false);}
