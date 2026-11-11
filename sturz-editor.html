@@ -18,6 +18,7 @@ main{max-width:1240px;margin:0 auto;padding:6px 12px 40px}
 @media (max-width:940px){.top{grid-template-columns:1fr}}
 .stage{position:relative;border:3px solid #6b5230;box-shadow:6px 6px 0 #000a;background:#0d0a07}
 #arenaCanvas{display:block;width:100%;height:auto;aspect-ratio:850/520;image-rendering:pixelated}
+@media (max-width:700px){#arenaCanvas{aspect-ratio:auto}}
 #labels{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
 #hud{position:absolute;left:8px;top:6px;right:8px;display:flex;justify-content:space-between;font-size:12px;text-shadow:1px 1px 0 #000;pointer-events:none;gap:8px}
 #hud b{color:var(--gold);font-weight:400}
@@ -39,8 +40,8 @@ h2{font-size:13px;letter-spacing:3px;color:var(--gold);margin:22px 4px 6px;text-
 .rules{font-size:12.5px;line-height:1.6}.rules li{margin:4px 0}.rules em{color:var(--gold);font-style:normal}
 </style></head>
 <body>
-<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND eabf9dd0</small><h1>STURZ-EDITOR</h1>
-<p>Hinfallen, Aufstehen und Taumeln mit den echten Figuren des Spiels. Links läuft die neue Bewegung, rechts zum Vergleich die bisherige, beide im selben Augenblick. Mit dem Regler kannst du Bild für Bild durchgehen. Nur Testseite: Im Spiel ist noch nichts geändert, Spielstände bleiben unberührt. Weitere Editoren: <a href="gang-editor.html">Gang-Editor</a> · <a href="todes-editor.html">Todes-Editor</a></p></header>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND 494ab906</small><h1>STURZ-EDITOR</h1>
+<p>Hinfallen, Aufstehen und Taumeln mit den echten Figuren des Spiels. Links läuft die neue Bewegung, rechts zum Vergleich die bisherige (auf dem Handy: oben neu, unten bisher), beide im selben Augenblick. Mit dem Regler kannst du Bild für Bild durchgehen. Nur Testseite: Im Spiel ist noch nichts geändert, Spielstände bleiben unberührt. Weitere Editoren: <a href="gang-editor.html">Gang-Editor</a> · <a href="todes-editor.html">Todes-Editor</a></p></header>
 <main>
 <div class="top">
  <div>
@@ -51,7 +52,7 @@ h2{font-size:13px;letter-spacing:3px;color:var(--gold);margin:22px 4px 6px;text-
    <button id="back">◀ Bild</button>
    <button id="fwd">Bild ▶</button>
    <button id="again">↻ Von vorn</button>
-   <button id="zoom">Zoom 3×</button>
+   <button id="zoom">Zoom: mittel</button>
    <label style="margin:0 0 0 6px">Tempo <select id="speed" style="width:90px"><option value="1">1×</option><option value=".5" selected>0,5×</option><option value=".25">0,25×</option><option value=".1">0,1×</option></select></label>
   </div>
   <p class="note" id="info"></p>
@@ -71,8 +72,8 @@ h2{font-size:13px;letter-spacing:3px;color:var(--gold);margin:22px 4px 6px;text-
 <h2>Was neu ist</h2>
 <ul class="rules" id="rules"></ul>
 </main>
-<script src="data.js?v=eabf9dd0"></script><script src="household.js?v=eabf9dd0"></script><script src="management.js?v=eabf9dd0"></script><script src="scout.js?v=eabf9dd0"></script><script src="sim.js?v=eabf9dd0"></script><script src="benchmark.js?v=eabf9dd0"></script><script src="school.js?v=eabf9dd0"></script><script src="weapon-art.js?v=eabf9dd0"></script><script src="arena.js?v=eabf9dd0"></script><script src="block-contact.js?v=eabf9dd0"></script><script src="hit-contact.js?v=eabf9dd0"></script><script src="reach-ai.js?v=eabf9dd0"></script><script src="face-shots.js?v=eabf9dd0"></script><script src="injury-shots.js?v=eabf9dd0"></script><script src="todes-fx.js?v=eabf9dd0"></script>
-<script src="kampfsound.js?v=eabf9dd0"></script><script src="durchstich-fx.js?v=eabf9dd0"></script><script src="gangarten.js?v=eabf9dd0"></script>
-<script src="sturz-fx.js?v=eabf9dd0"></script>
-<script src="sturz-editor.js?v=eabf9dd0"></script>
+<script src="data.js?v=494ab906"></script><script src="household.js?v=494ab906"></script><script src="management.js?v=494ab906"></script><script src="scout.js?v=494ab906"></script><script src="sim.js?v=494ab906"></script><script src="benchmark.js?v=494ab906"></script><script src="school.js?v=494ab906"></script><script src="weapon-art.js?v=494ab906"></script><script src="arena.js?v=494ab906"></script><script src="block-contact.js?v=494ab906"></script><script src="hit-contact.js?v=494ab906"></script><script src="reach-ai.js?v=494ab906"></script><script src="face-shots.js?v=494ab906"></script><script src="injury-shots.js?v=494ab906"></script><script src="todes-fx.js?v=494ab906"></script>
+<script src="kampfsound.js?v=494ab906"></script><script src="durchstich-fx.js?v=494ab906"></script><script src="gangarten.js?v=494ab906"></script>
+<script src="sturz-fx.js?v=494ab906"></script>
+<script src="sturz-editor.js?v=494ab906"></script>
 </body></html>

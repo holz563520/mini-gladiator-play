@@ -39,7 +39,10 @@ $('scenes').onclick=e=>{const id=e.target.closest('button')?.dataset.s;if(id)sta
 const realEnd=M.endBenchmark;let mine=false;M.endBenchmark=(w,r)=>{if(mine)return realEnd(w,r);return null;};
 function stop(){if(S.battle?.benchmark){mine=true;try{realEnd(-1,'Editor');}catch{}mine=false;}}
 
-let cur=BY.back,pair=[],base=[],tau=0,playing=true,last=0,zoomI=1,deathAt=0,dead=false;const ZOOMS=[2.2,3,4.2];
+let cur=BY.back,pair=[],base=[],tau=0,playing=true,last=0,zoomI=1,deathAt=0,dead=false,narrow=false;
+// Bildausschnitt in Feldeinheiten (nicht als Faktor): so sind die Figuren auf dem Handy genauso groß im Bild wie am PC.
+// Schmales Bild (Handy hochkant): neu oben, bisher unten – nebeneinander wären sie winzig (Thomas 11.11. „sehe nichts“).
+const VIEW={wide:[560,400,270],narrow:[380,290,200]},ZN=['weit','mittel','nah'];const viewW=()=>VIEW[narrow?'narrow':'wide'][zoomI];
 const timeline=()=>cur.kind!=='death'&&cur.kind!=='fight';
 function start(id){cur=BY[id]||cur;stop();sync();tau=0;dead=false;deathAt=performance.now()+900;
  for(const b of $('scenes').children)b.classList.toggle('on',b.dataset.s===cur.id);
@@ -49,16 +52,17 @@ function start(id){cur=BY[id]||cur;stop();sync();tau=0;dead=false;deathAt=perfor
  const b=S.battle;M.benchmarkFinale=false;b.paused=false;S.options.speed=1;S.options.closeups='off';S.options.sound=false;
  M.tweenOff=!fight&&cur.kind!=='death';F.active=fight?$('fxOn').checked:true;
  $('tlBox').style.visibility=timeline()?'':'hidden';for(const k of ['back','fwd'])$(k).disabled=!timeline();
- if(fight){pair=[];M.battleCamera=(bb,width,height,W,H)=>{const z=ZOOMS[zoomI]*.75,L=bb.actors.filter(a=>!a.g.dead&&!a.down),A=L.length?L:bb.actors,x=A.reduce((n,a)=>n+a.x,0)/A.length,y=A.reduce((n,a)=>n+a.y,0)/A.length-15;return {zoom:z,x:cl(x,W/(z*2),W-W/(z*2)),y:cl(y,H/(z*2),H-H/(z*2))};};info();return;}
+ narrow=innerWidth<700;
+ if(fight){pair=[];M.battleCamera=(bb,width,height,W,H)=>{const z=W/(viewW()*1.7),L=bb.actors.filter(a=>!a.g.dead&&!a.down),A=L.length?L:bb.actors,x=A.reduce((n,a)=>n+a.x,0)/A.length,y=A.reduce((n,a)=>n+a.y,0)/A.length-15;return {zoom:z,x:cl(x,W/(z*2),W-W/(z*2)),y:cl(y,H/(z*2),H-H/(z*2))};};info();return;}
  const G=M.roundField?.()?M.fieldGeom():{cx:M.arenaSize().width/2,cy:M.arenaSize().height/2,rx:M.arenaSize().width*.42,ry:M.arenaSize().height*.36};
  const [nu,old]=b.actors.filter(a=>a.team===0),foe=b.actors.find(a=>a.team===1);
  // gleiche Person in beiden Hälften (gleiche Werte, gleiche Ausrüstung) – nur die Bewegung unterscheidet sich
  old.g=JSON.parse(JSON.stringify(nu.g));old.g.id=(nu.g.id||'g')+'-alt';old.fallFxOff=true;
- const show=$('cmp').checked,dx=show?88:0;base=[{x:G.cx-dx,y:G.cy},show?{x:G.cx+dx,y:G.cy}:{x:G.cx+G.rx*3,y:G.cy+G.ry*3}];pair=[nu,old];
+ const show=$('cmp').checked,dx=show&&!narrow?88:0,dy=show&&narrow?44:0;base=[{x:G.cx-dx,y:G.cy-dy},show?{x:G.cx+dx,y:G.cy+dy}:{x:G.cx+G.rx*3,y:G.cy+G.ry*3}];pair=[nu,old];
  for(const [i,a] of pair.entries()){a.x=base[i].x;a.y=base[i].y;a.a=cur.face;a.puppet={hold:true};a.gaitOff=true;a.energy=200;a.seed=7;}
  foe.x=G.cx+G.rx*3;foe.y=G.cy-G.ry*3;foe.puppet={hold:true};foe.gaitOff=true;
  M.focus?.(null);
- M.battleCamera=(bb,width,height,W,H)=>{const z=ZOOMS[zoomI],lead=cur.face?-1:1,x=G.cx+(cur.kind==='stag'?-22:lead*(show?-18:-24)),y=G.cy-22;return {zoom:z,x:cl(x,W/(z*2),W-W/(z*2)),y:cl(y,H/(z*2),H-H/(z*2))};};
+ M.battleCamera=(bb,width,height,W,H)=>{const z=W/viewW(),x=G.cx-(cur.kind==='stag'?30:24),y=G.cy-(narrow&&show?36:24);return {zoom:z,x:cl(x,W/(z*2),W-W/(z*2)),y:cl(y,H/(z*2),H-H/(z*2))};};
  apply();info();}
 
 function idle(a,i){Object.assign(a,{down:false,fallTimer:0,fallDuration:0,kneeTimer:0,stagger:0,staggerMax:0,riseHold:0,state:'idle',moveSpeed:0,gaitSpeed:0,fxDown:null,daze:0,hit:0,stun:0,wind:0,swing:0,x:base[i].x,y:base[i].y,a:cur.face,phase:0,animationClock:tau});a.fallSide=Math.cos(a.a)>=0?-1:1;}
@@ -86,7 +90,7 @@ $('again').onclick=()=>{start(cur.id);setPlay(true);};
 $('back').onclick=()=>{setPlay(false);tau=Math.max(0,tau-1/60);apply();};
 $('fwd').onclick=()=>{setPlay(false);tau=Math.min(lenOf(cur),tau+1/60);apply();};
 $('tl').oninput=()=>{setPlay(false);tau=$('tl').value/1000*lenOf(cur);apply();};
-$('zoom').onclick=()=>{zoomI=(zoomI+1)%ZOOMS.length;$('zoom').textContent='Zoom '+String(ZOOMS[zoomI]).replace('.',',')+'×';};
+$('zoom').onclick=()=>{zoomI=(zoomI+1)%3;$('zoom').textContent='Zoom: '+ZN[zoomI];};
 $('speed').onchange=()=>{if(!timeline())S.options.speed=+$('speed').value;};
 for(const id of ['w0','s0','a0','cmp'])$(id).addEventListener('change',()=>start(cur.id));
 $('fxOn').onchange=()=>{if(cur.kind==='fight')F.active=$('fxOn').checked;};
@@ -94,13 +98,13 @@ $('fxOn').onchange=()=>{if(cur.kind==='fight')F.active=$('fxOn').checked;};
 function stageName(){const sc=cur,el=tau-PRE;if(sc.kind==='kd'){const p=pair[0];if(el<0)return 'steht';if(!p||!(p.fallTimer>0))return 'steht wieder';const st=F.state(p);return st?.kind==='fall'?'stürzt · '+Math.round(st.p*100)+' %':st?.kind==='rise'?(st.hold?'verschnauft auf dem Knie':'steht auf · '+Math.round(st.p*100)+' %'):'liegt';}
  if(sc.kind==='down'){if(el<0)return sc.from==='knee'?'kniet':'steht';const st=pair[0]&&F.state(pair[0]);return st?.kind==='fall'?'bricht zusammen · '+Math.round(st.p*100)+' %':'liegt, kampfunfähig';}
  if(sc.kind==='stag')return el<0?'steht':el<sc.len?'taumelt':'steht wieder';return '';}
-function info(){$('info').textContent=cur.kind==='fight'?'Echter Kampf mit der Spiel-KI. Mit dem Haken „Echter Kampf: neue Bewegung“ schaltest du im laufenden Kampf zwischen neu und bisher um.':cur.kind==='death'?'Der Tod läuft in Echtzeit über die Spielfunktionen. Den Ablauf bis zum Fallen bestimmt wie bisher die Todesart; neu ist die Bewegung des Fallens selbst. „Von vorn“ spielt es noch einmal.':'Links neu, rechts bisher. Regler ziehen oder „◀ Bild / Bild ▶“ für einzelne Bilder (je 1/60 Sekunde).';}
+function info(){$('info').textContent=cur.kind==='fight'?'Echter Kampf mit der Spiel-KI. Mit dem Haken „Echter Kampf: neue Bewegung“ schaltest du im laufenden Kampf zwischen neu und bisher um.':cur.kind==='death'?'Der Tod läuft in Echtzeit über die Spielfunktionen. Den Ablauf bis zum Fallen bestimmt wie bisher die Todesart; neu ist die Bewegung des Fallens selbst. „Von vorn“ spielt es noch einmal.':(narrow?'Oben neu, unten bisher.':'Links neu, rechts bisher.')+' Regler ziehen oder „◀ Bild / Bild ▶“ für einzelne Bilder (je 1/60 Sekunde).';}
 
 const lab=$('labels'),lx=lab.getContext('2d');
 function labels(){const c=$('arenaCanvas'),V=M.arenaView;if(lab.width!==c.width||lab.height!==c.height){lab.width=c.width;lab.height=c.height;}lx.clearRect(0,0,lab.width,lab.height);if(!S.battle||!V||!pair.length)return;
  const fs=Math.max(12,Math.round(lab.width/60));lx.font=`700 ${fs}px "Courier Prime",monospace`;lx.textAlign='center';
  for(const [i,a] of pair.entries()){if(i&&!$('cmp').checked)continue;const sx=(base[i].x-V.cx)*V.scale+V.width/2,sy=(base[i].y-V.cy)*V.scale+V.height/2-a.g.height/180*1.14*92*V.scale,t=i?'BISHER':'NEU';
-  lx.fillStyle='#000a';const w=lx.measureText(t).width+12;lx.fillRect(sx-w/2,sy-fs,w,fs+6);lx.fillStyle=i?'#c9c3ad':'#dfb66d';lx.fillText(t,sx,sy);}}
+  lx.fillStyle='#000a';const w=lx.measureText(t).width+12;if(narrow){const y=(base[i].y-V.cy)*V.scale+V.height/2-a.g.height/180*1.14*40*V.scale;lx.fillRect(6,y-fs,w,fs+6);lx.fillStyle=i?'#c9c3ad':'#dfb66d';lx.fillText(t,6+w/2,y);continue;}lx.fillRect(sx-w/2,sy-fs,w,fs+6);lx.fillStyle=i?'#c9c3ad':'#dfb66d';lx.fillText(t,sx,sy);}}
 
 function tick(now){requestAnimationFrame(tick);const dt=Math.min(.05,(now-last)/1000||0);last=now;
  if(timeline()){if(playing){tau+=dt*+$('speed').value;if(tau>lenOf(cur))tau=0;}apply();$('tl').value=Math.round(tau/lenOf(cur)*1000);$('tlV').textContent=tau.toFixed(2).replace('.',',')+' s';}
