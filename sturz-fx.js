@@ -14,7 +14,8 @@
 // Reine Darstellung: keine Würfel, keine Werte, keine Zeiten des Kampfes geändert, kein Speichern.
 // Anschlüsse (ohne dieses Modul wirkungslos): arena.js drawGladiatorBody (pose/lift/tilt/tx/lean/leg/hands),
 // Zwischenspeicher der Figuren (busy), sim.js down() → onDown.
-// Geladen nur im Sturz-Editor (sturz-editor.html). Im Spiel NICHT geladen, bis Thomas es freigibt.
+// Im Spiel geladen (boot.js, nach todes-fx) seit 11.11. (Freigabe Thomas); außerdem im Sturz-Editor (sturz-editor.html).
+// Notausschalter ohne neue Veröffentlichung: localStorage['mg-sturz-fx']='off' → bisherige Bewegungen.
 // =====================================================================================================
 (()=>{
 const M=window.MG;if(!M)return;
@@ -24,7 +25,8 @@ const LIE=1.35,LTX=12,LTY=5,HIP=30,LEG=16,ARM=27;
 // 0 Becken x · 1 Becken y · 2 Neigung · 3 Vorlage Brust · 4/5 Kopf · 6/7 Fuß hinten (l) · 8/9 Fuß vorn (r)
 // 10/11 Waffenhand · 12/13 andere Hand · 14/15 Fußwinkel l/r · 16 Waffenwinkel
 const N=17;
-const F=M.fallFx={active:true,get on(){return this.active;},
+let off=false;try{off=localStorage.getItem('mg-sturz-fx')==='off';}catch{}
+const F=M.fallFx={active:!off,get on(){return this.active;},
  P:{fall:.9,down:1,deathMin:.6,blendIn:.2,blendOut:.14,holdFall:.5,holdRise:.5}};
 
 // ---------------------------------------------------------------- Rechnen

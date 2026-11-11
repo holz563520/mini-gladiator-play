@@ -124,7 +124,7 @@ $('rules').innerHTML=[
  '<em>Taumeln</em>: Füße und Becken bleiben unter dem Körper. Der Oberkörper pendelt über der Hüfte, die Knie sind weich, der Kopf hängt nach und die Arme halten breit das Gleichgewicht. Vorher stand der ganze Körper bis zu 17 Grad schräg und die Hände zitterten.',
  '<em>Waffe und Schild</em> bleiben bis zum Aufprall in der Hand und liegen erst dann am Boden. Beim Aufstehen nimmt er sie im Kniestand wieder auf.',
  '<em>Jedes Bild wird gezeichnet</em>: Solange einer fällt oder aufsteht, wird er nicht mehr aus dem Zwischenspeicher kopiert. Auf schwächeren Geräten liefen diese Bewegungen vorher mit 15 Bildern je Sekunde.',
- 'Alles ist nur Darstellung. Würfel, Schaden, Sturz- und Aufstehzeiten bleiben unverändert. Im Spiel ist <code>sturz-fx.js</code> noch nicht geladen.'].map(x=>`<li>${x}</li>`).join('');
+ 'Alles ist nur Darstellung. Würfel, Schaden, Sturz- und Aufstehzeiten bleiben unverändert. Im Spiel aktiv seit 11.11. (<code>boot.js</code> lädt <code>sturz-fx.js</code>). Die Auswahl „Taumeln: Weg“ wirkt nur hier; im Spiel gilt „wie im Spiel“.'].map(x=>`<li>${x}</li>`).join('');
 start('back');requestAnimationFrame(tick);
 window.SturzEditor={start,set(t){setPlay(false);tau=t;apply();},len:()=>lenOf(cur),pair:()=>pair,scenes:SC};
 })();
