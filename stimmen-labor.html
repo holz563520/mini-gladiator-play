@@ -65,6 +65,15 @@ canvas.melody{width:100%;height:150px;display:block;background:var(--ink);border
 .card:hover{border-color:#6f7f64}.card.on{border-color:var(--gold);background:#30382d}.card.on b{color:var(--gold)}
 .now{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}
 .now b{color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--raised);border:1px solid var(--line);padding:7px 10px;font-size:12px;display:inline-flex;gap:8px;align-items:baseline;min-height:36px}
+.chip small{color:var(--muted);font-size:11px}.chip:hover{border-color:#8f7748}.chip.own,.chip[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:#30382d}
+.chk{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}.chk input{accent-color:var(--gold);width:18px;height:18px}
+textarea.mono{font-family:var(--mono);font-size:13px;min-height:96px}
+.lexmsg{font-size:12px;margin:0;min-height:18px}.lexmsg.err{color:var(--red)}.lexmsg.ok{color:var(--green)}
+.vg{display:grid;gap:8px}.vg h3{margin:0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:400}
+.sl.chg b{color:var(--gold)}
+.tagst{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--green);padding:1px 5px}
 details{border-top:1px solid var(--line);padding-top:10px}
 summary{cursor:pointer;color:var(--gold);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
 .how{font-size:12.5px;color:var(--muted);display:grid;gap:6px;max-width:80ch;margin:10px 0 0;padding-left:18px}
@@ -74,9 +83,9 @@ summary{cursor:pointer;color:var(--gold);font-size:12px;letter-spacing:.08em;tex
 </style>
 </head><body>
 <div class="wrap">
- <p class="eyebrow">Mini Gladiator · Testseite · nicht im Spiel</p>
+ <p class="eyebrow">Mini Gladiator · Stimmeditor</p>
  <h1>Stimmlabor</h1>
- <p class="sub">Neue Sprachausgabe mit deutscher Betonung und Satzmelodie, dazu ein eigener Generator für Schreie. Alles wird im Browser gerechnet, ohne Tondateien. Mit „Alte Stimme“ hörst du zum Vergleich, wie es heute im Spiel klingt.</p>
+ <p class="sub">Hier stellst du die Stimmen der Figuren ein und hörst jede Sprechweise: Arena-Ansage, Brüllen, Schreien, Angst, Lachen. Alles wird im Browser gerechnet, ohne Tondateien. Gespeicherte Werte gelten im Spiel.</p>
  <div class="tabs" role="tablist">
   <button class="tab" role="tab" id="tabSpeak" aria-selected="true" aria-controls="speak">Sprechen</button>
   <button class="tab" role="tab" id="tabScream" aria-selected="false" aria-controls="scream">Schreie</button>
@@ -86,36 +95,70 @@ summary{cursor:pointer;color:var(--gold);font-size:12px;letter-spacing:.08em;tex
   <div class="grid">
    <nav class="list" id="voices" aria-label="Stimme"></nav>
    <div class="panel">
-    <select id="lines" aria-label="Satz aus dem Spiel"></select>
+    <select id="lines" aria-label="Beispielsatz"></select>
     <textarea id="text" aria-label="Text zum Sprechen"></textarea>
+    <h2>Sprechweise</h2>
+    <div class="chips" id="styles" role="group" aria-label="Sprechweise"></div>
     <div class="row">
-     <label class="ctl">Sprechweise<select id="style"></select></label>
+     <label class="chk"><input type="checkbox" id="auto" checked> Satzzeichen deuten wie im Spiel („!“ = Nachdruck, GROSS oder „!!“ = Brüllen)</label>
+    </div>
+    <div class="row">
+     <button class="btn primary" id="say">▶ Sprechen</button>
+     <button class="btn" id="stop">■ Stopp</button>
+     <button class="btn alt" id="sayAll">▶ Alle Sprechweisen</button>
+     <button class="btn alt" id="sayV1">▶ Vorher (Stand 2.11.)</button>
+     <button class="btn alt" id="sayOld">▶ Alte 16-Bit-Stimme</button>
+     <button class="btn" id="wav">⬇ Aufnahme (WAV)</button>
+    </div>
+    <div class="row">
      <label class="ctl">Klang<select id="tone"><option value="clear">Klar</option><option value="retro">16-Bit (wie im Spiel)</option></select></label>
      <label class="ctl">Raum<select id="room"><option value="voice">wie die Stimme</option><option value="0">trocken</option><option value=".15">Raum</option><option value=".4">Arena</option></select></label>
+     <label class="ctl">Tempo im Spiel<select id="gtempo"><option value="1">Labor (1,00)</option><option value="1.15" selected>wie im Spiel (1,15)</option></select></label>
     </div>
-    <div class="row">
-     <button class="btn primary" id="say">▶ Neue Stimme</button>
-     <button class="btn alt" id="sayOld">▶ Alte Stimme</button>
-     <button class="btn" id="stop">■ Stopp</button>
-    </div>
-    <p class="hint">Wort in <kbd>*Sternchen*</kbd> oder GROSS schreiben = Kontrastbetonung. Komma macht eine Pause mit Weiterweisung, „?“ hebt die Stimme bei Ja/Nein-Fragen und senkt sie bei W-Fragen.</p>
+    <p class="hint">Regie im Text: <kbd>[brüllt]</kbd> <kbd>[schreit]</kbd> <kbd>[ruft]</kbd> <kbd>[flüstert]</kbd> <kbd>[ängstlich]</kbd> <kbd>[lacht]</kbd> <kbd>[wütend]</kbd> <kbd>[droht]</kbd> <kbd>[fleht]</kbd> <kbd>[jubelt]</kbd> <kbd>[spottet]</kbd> <kbd>[traurig]</kbd> <kbd>[betrunken]</kbd> <kbd>[normal]</kbd> gilt bis zur nächsten Anweisung. <kbd>Hahaha</kbd>, <kbd>Hehe</kbd>, <kbd>Hihihi</kbd>, <kbd>Hoho</kbd>, <kbd>Muhahaha</kbd> werden gelacht statt vorgelesen. <kbd>*Wort*</kbd> = betont.</p>
     <h2>Betonung</h2>
     <div class="prosody" id="prosody" aria-live="polite"></div>
-    <div class="legend"><span><b style="text-decoration:underline">Fett unterstrichen</b> Hauptakzent</span><span><b>Gold</b> Nebenakzent</span><span style="color:#7c8e8b">Grau: Funktionswort, unbetont</span><span>↘ Aussage · ↗ Ja/Nein-Frage · → Weiterweisung</span></div>
+    <div class="legend"><span><b style="text-decoration:underline">Fett unterstrichen</b> Hauptakzent</span><span><b>Gold</b> Nebenakzent</span><span style="color:#7c8e8b">Grau: unbetont</span><span>↘ Aussage · ↗ Frage · → geht weiter</span></div>
     <canvas class="melody" id="melody" width="1100" height="150" aria-label="Satzmelodie: Tonhöhe über die Zeit"></canvas>
     <div class="phon" id="phon" title="Lautschrift: ˈ betonte Silbe, ˈˈ Hauptakzent, ˌ unbetontes Wort, ‖ Satzende"></div>
-    <div class="sliders">
-     <label class="sl">Tempo <b id="vSpeed">1,00</b><input type="range" id="speed" min=".6" max="1.6" step=".05" value="1"></label>
-     <label class="sl">Tonhöhe <b id="vPitch">1,00</b><input type="range" id="pitch" min=".7" max="1.5" step=".02" value="1"></label>
-     <label class="sl">Melodieumfang <b id="vRange">1,00</b><input type="range" id="range" min="0" max="2" step=".05" value="1"></label>
-    </div>
-    <details><summary>Was die neue Stimme anders macht</summary>
+
+    <details id="voicePanel" open><summary>Stimme einstellen: <span id="vname"></span></summary>
+     <div style="display:grid;gap:12px;margin-top:10px">
+      <p class="hint">Jeder Regler ändert nur diese Figur. Loslassen spricht den Text neu. „Für das Spiel speichern“ legt die Werte in diesem Browser ab; das Spiel nimmt sie beim nächsten Laden.</p>
+      <div id="vgroups" style="display:grid;gap:14px"></div>
+      <label class="ctl" style="max-width:260px">Übliche Sprechweise dieser Figur<select id="vstyle"></select></label>
+      <div class="row">
+       <button class="btn primary" id="vSave">Für das Spiel speichern</button>
+       <button class="btn" id="vReset">Diese Stimme zurücksetzen</button>
+       <button class="btn" id="vResetAll">Alle zurücksetzen</button>
+       <button class="btn" id="vCopy">Werte kopieren</button>
+      </div>
+      <p class="lexmsg" id="vMsg" role="status"></p>
+     </div>
+    </details>
+
+    <details id="lexPanel"><summary>Aussprache anpassen</summary>
+     <div style="display:grid;gap:10px;margin-top:10px">
+      <p class="hint">Unter jedem Wort deines Textes steht, wie es gesprochen wird. Klick auf ein Wort legt eine Zeile zum Ändern an. Schreibweise: <kbd>wort = 'ge:gn6</kbd> (Apostroph vor dem betonten Vokal) oder nur eine Zahl für die betonte Silbe (<kbd>wort = 1</kbd>, 0 = erste). Die Einträge werden im Browser gespeichert und im Spiel genutzt.</p>
+      <div class="chips" id="lexChips" aria-label="Wörter des Textes mit Lautschrift"></div>
+      <textarea class="mono" id="lexText" spellcheck="false" aria-label="Eigenes Aussprache-Wörterbuch" placeholder="gegner = 'ge:gn6"></textarea>
+      <div class="row"><button class="btn primary" id="lexApply">Übernehmen und sprechen</button><button class="btn" id="lexReset">Alle eigenen Einträge löschen</button></div>
+      <p class="lexmsg" id="lexMsg" role="status"></p>
+      <ul class="how">
+       <li><b>Lange Vokale:</b> a: e: i: o: u: y: (ü) 2: (ö) E: (ä) · <b>kurz, unbetont:</b> a e i o u y 2 · <b>kurz, offen:</b> E I O U Y 9 (ö)</li>
+       <li><b>Besondere:</b> @ (e in „Rose“) · 6 (er in „Lehrer“) · 6g (r nach Vokal, „Tor“ = t o: 6g) · aI aU OY (ei, au, eu)</li>
+       <li><b>Mitlaute:</b> p b t d k g f v s z S (sch) Z (j in „Journal“) C (ich) x (ach) h m n N (ng) l R j ? (Knacklaut)</li>
+      </ul>
+     </div>
+    </details>
+
+    <details><summary>Was am 11.11. neu gemacht wurde</summary>
      <ul class="how">
-      <li><b>Wortakzent nach deutschen Regeln:</b> be-/ge-/ver- unbetont, an-/auf-/aus- betont, Endungen wie -ieren, -ion, -tät, -ei, -ur ziehen den Akzent an, lateinische Namen nach der Paenultima-Regel (Ó-ron-tes → o-RÓN-tes, MÉ-di-cus).</li>
-      <li><b>Satzakzent nach Fokusregel:</b> Inhaltswörter tragen Akzente, Artikel und Hilfsverben nicht. Der Hauptakzent liegt auf dem letzten Inhaltswort, steht aber am Ende ein Verb, rückt er auf das Hauptwort davor („Ich habe das SCHWERT gesehen“).</li>
-      <li><b>Satzmelodie als Tonziele:</b> Anstieg zu Nebenakzenten, Fall nach dem Hauptakzent einer Aussage, tiefer Akzent mit Anstieg bei Ja/Nein-Fragen, Halbhoch am Komma, Abstufung und langsames Absinken über den Satz.</li>
-      <li><b>Lautdauern:</b> betonte und phrasenfinale Silben gedehnt, unbetonte gekürzt, Konsonantenhäufungen gestaucht, Fortis-Plosive behaucht (nach s/sch nicht).</li>
-      <li><b>Klang:</b> Stimmlippen-Puls statt Rechteck, fünf Formanten mit Übergängen zum Artikulationsort, eigene Rauschspektren für s, sch, ch, f, Knacklaut vor Vokalen, Knarren am Satzende, hörbares Einatmen bei langen Pausen.</li>
+      <li><b>Deutlichkeit:</b> s, sch, ch, f und die Verschlusslaute haben eigene, steile Rauschfilter; k und g folgen dem Vokal; m, n und ng klingen wieder nach Nase statt nur zu brummen; b, d, g ohne Dauerbrummen; h ist hörbar; R flattert leicht.</li>
+      <li><b>Sprechweisen:</b> Brüllen, Schreien, Rufen und die Arena-Ansage pressen die Stimme und machen sie hell statt sie zu verzerren; die Ansage hält den Ton oben und bekommt ein Echo. Angst flackert, Lachen stößt, Betrunkene lallen.</li>
+      <li><b>Lachen:</b> „Hahaha“ im Text wird wirklich gelacht (Hauch und Stimmstoß, fallend). „Lachend“ lacht kurz davor und danach und lässt die Stimme auf den Akzenten hüpfen.</li>
+      <li><b>Figuren:</b> jede Stimme hat eigene Werte für Größe, Druck, Nase, Knurren, Nuscheln, Lebendigkeit und R.</li>
+      <li><b>Lautstärke:</b> Präsenz und Kompressor, damit die Stimme über Musik und Publikum trägt.</li>
      </ul>
     </details>
    </div>
@@ -141,31 +184,39 @@ summary{cursor:pointer;color:var(--gold);font-size:12px;letter-spacing:.08em;tex
   </div>
  </section>
 </div>
-<script src="sprechsound.js"></script>
-<script src="stimme.js"></script>
-<script src="schreie.js"></script>
+<script src="sprechsound.js?v=d04f76a5"></script>
+<script src="stimme.js?v=d04f76a5"></script>
+<script src="stimme-v1.js?v=d04f76a5"></script>
+<script src="schreie.js?v=d04f76a5"></script>
 <script>'use strict';
 // Oberfläche des Stimmlabors: Sprechen (neue Stimme, Vergleich mit der alten) und Schreie.
 (()=>{
 const St=window.Stimme,Sc=window.Schrei,Old=window.Sprech,$=id=>document.getElementById(id);
 const LINES=[
  ['moderator','Bürger von Rom! Heute kämpft ein Rekrut gegen die Bestie. Wer wird siegen?','feierlich'],
- ['moderator','Genug geredet. Lasst sie bluten!','feierlich'],
- ['moderator','Möge der Bessere gewinnen. Oder wenigstens der Unterhaltsamere.','feierlich'],
+ ['moderator','Aus dem fernen Germanien: der schreckliche Brutus! Und sein Gegner: Marcellus, der Liebling der Arena!','feierlich'],
+ ['moderator','Genug geredet. [brüllt] Lasst sie bluten!','feierlich'],
+ ['moderator','Möge der Bessere gewinnen. Oder wenigstens der Unterhaltsamere. Hahaha!','feierlich'],
  ['moderator','Der Medicus hat sich schon die Hände gewaschen. Fangt an!','feierlich'],
- ['rabies','Rabies. Das ist Latein für Tollwut.','normal'],
- ['rabies','Harmlos. Hat mir nur einmal den Daumen abgeleckt. Danach war er weg. Der Daumen.','normal'],
- ['schmied','Das ist Orontes. Er verkauft Bögen. Er ist verrückt. Ich bin raus. Prost.','normal'],
+ ['schmied','[brüllt] Raus aus meiner Schmiede! Sofort!','normal'],
+ ['schmied','Das nennst du ein Schwert? Damit schneidest du nicht mal Butter.','lachend'],
  ['schmied','Ist er weg? Gut. Der Mann schmiedet Schwerter wie ein Ochse, der Liebesbriefe schreibt.','normal'],
- ['orontes','Orontes Pfeilkopf! Bögen, Armbrüste, Pfeile, Bolzen, und Ratschläge, die keiner hören will!','normal'],
- ['krassus','Du schuldest mir Geld. Und Geld vergisst nie.','drohen'],
- ['medicus','Halt still. Das tut nur weh, wenn du noch lebst.','normal'],
- ['rekrut','Ich bin bereit! Glaube ich. Wo ist vorne?','normal'],
- ['rekrut','Hast du das Schwert gesehen?','normal'],
+ ['schmied','Noch einen Krug Wein, dann schmiede ich dir alles.','betrunken'],
+ ['rekrut','[schreit] Für Rom! Angriff!','normal'],
+ ['rekrut','Nein! Bitte nicht! Ich ergebe mich!','angst'],
+ ['rekrut','Ich bin bereit! [ängstlich] Glaube ich. Wo ist vorne?','normal'],
+ ['rekrut','Wir haben gewonnen! Ich lebe noch!','jubel'],
  ['rekrut','Ich habe nicht *gesagt*, dass ich gewinne. Ich habe gesagt, dass ich *kämpfe*.','normal'],
+ ['rabies','Hehehe. Rabies. Das ist Latein für Tollwut.','normal'],
+ ['rabies','Harmlos. Hat mir nur einmal den Daumen abgeleckt. Danach war er weg. Der Daumen.','normal'],
+ ['orontes','Hihihi! Bögen, Armbrüste, Pfeile, Bolzen, und Ratschläge, die keiner hören will!','normal'],
+ ['krassus','Du schuldest mir Geld. Und Geld vergisst nie.','drohen'],
+ ['krassus','Muhahaha! Bezahle bis morgen, oder ich hole mir deinen besten Mann.','normal'],
+ ['medicus','Halt still. Das tut nur weh, wenn du noch lebst.','normal'],
  ['frau','Noch ein Schritt, und du kannst deine Zähne einzeln zählen.','wut'],
+ ['frau','[schreit] Lauft! Die Wachen kommen!','normal'],
  ['erzaehler','Die Truppe ist zurück. Was unterwegs geschah, weiß nur noch der Wind.','normal'],
- ['rekrut','Nein! Bitte nicht! Ich ergebe mich!','angst']];
+ ['erzaehler','Am Abend begruben sie ihn hinter dem Stall.','traurig']];
 let ctx=null,out=null,playing=[],cur='moderator',last=null,lastScream=null;
 const opts={fig:'veteran',intensity:.75};
 function audio(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();out=ctx.createGain();out.gain.value=.9;out.connect(ctx.destination);}if(ctx.state==='suspended')ctx.resume();return ctx;}
@@ -174,17 +225,73 @@ const fmt=x=>x.toFixed(2).replace('.',',');
 const RETRO={rate:14332,bits:12,echo:.15};
 
 // ---------- Sprechen ----------
-function voices(){$('voices').innerHTML=St.ORDER.map(k=>`<button class="voice" data-k="${k}" aria-pressed="${k===cur}">${St.PRESETS[k].name}<small>${St.PRESETS[k].pitch} Hz</small></button>`).join('');}
-$('lines').innerHTML='<option value="">Satz aus dem Spiel wählen …</option>'+LINES.map(([k,t],i)=>`<option value="${i}">${St.PRESETS[k].name}: ${t.length>56?t.slice(0,54)+'…':t}</option>`).join('');
-$('style').innerHTML=Object.entries(St.STYLES).map(([k,s])=>`<option value="${k}">${s.name}</option>`).join('');
-function pick(i){const [k,t,s]=LINES[i];cur=k;$('text').value=t;$('style').value=s;voices();analyse();}
-function params(){const room=$('room').value;return {style:$('style').value,speed:+$('speed').value,pitch:+$('pitch').value,range:+$('range').value,retro:$('tone').value==='retro'?RETRO:null,room:room==='voice'?undefined:+room};}
-// Betonungsanzeige: Wörter mit Akzentstufe, Phrasengrenzen mit Melodierichtung
+const V1=window.StimmeV1;let curStyle='feierlich',seq=0;
+function voices(){$('voices').innerHTML=St.ORDER.map(k=>`<button class="voice" data-k="${k}" aria-pressed="${k===cur}">${St.PRESETS[k].name}<small>${Math.round(St.PRESETS[k].pitch)} Hz</small></button>`).join('');}
+$('lines').innerHTML='<option value="">Beispielsatz wählen …</option>'+LINES.map(([k,t,s],i)=>`<option value="${i}">${St.PRESETS[k].name} (${St.STYLES[s].name}): ${t.length>50?t.slice(0,48)+'…':t}</option>`).join('');
+function styles(){$('styles').innerHTML=Object.entries(St.STYLES).map(([k,s])=>`<button class="chip" data-k="${k}" aria-pressed="${k===curStyle}">${s.name}</button>`).join('');}
+function pick(i){const [k,t,s]=LINES[i];cur=k;curStyle=s;$('text').value=t;voices();styles();vpanel();analyse();}
+function params(st){const room=$('room').value;return {style:st||curStyle,auto:$('auto').checked,speed:+$('gtempo').value,retro:$('tone').value==='retro'?RETRO:null,room:room==='voice'?undefined:+room};}
+// Betonungsanzeige: Wörter mit Akzentstufe, Phrasengrenzen mit Melodierichtung, Wechsel der Sprechweise als Marke
 const ARROW={'.':'↘','?w':'↘','!':'↘!','?':'↗',',':'→','-':'·'};
-function showProsody(words,phrases){let h='',lp=-1;words.forEach((w,i)=>{if(w.phrase!==lp&&lp>=0)h+=`<span class="br">${ARROW[phrases[lp].type]||'|'}</span>`;lp=w.phrase;h+=`<span class="w ${w.fn?'fn':''} ${w.acc?'a'+w.acc:''}" data-i="${i}">${w.txt}</span>`;});if(lp>=0)h+=`<span class="br">${ARROW[phrases[lp].type]||''}</span>`;$('prosody').innerHTML=h;}
-function analyse(){const P=St.analyse($('text').value),words=[];P.forEach((p,pi)=>p.words.forEach(w=>words.push({txt:w.txt,acc:w.acc,fn:w.fn,phrase:pi})));showProsody(words,P);}
-function say(){stop();const c=audio(),R=St.render($('text').value,cur,params());if(!R.data.length)return;last={...St.playData(c,out,R),R,info:R.info};playing.push(last);$('phon').textContent=R.phon;showProsody(R.info.words,R.info.phrases);}
-function sayOld(){stop();if(!Old)return;const c=audio(),v=Old.get(cur),p=Old.play(c,out,$('text').value,v);playing.push(p);last={...p,old:true};$('phon').textContent='alte Stimme: '+(p.phon||'');}
+function showProsody(words,phrases){let h='',lp=-1,ls=null;words.forEach((w,i)=>{if(w.phrase!==lp){if(lp>=0)h+=`<span class="br">${ARROW[phrases[lp].type]||'|'}</span>`;const st=phrases[w.phrase]?.style;if(st&&st!==ls){if(ls!==null||st!==St.STYLES[curStyle]?.name)h+=`<span class="tagst">${st}</span>`;ls=st;}}lp=w.phrase;h+=`<span class="w ${w.fn?'fn':''} ${w.acc?'a'+w.acc:''}" data-i="${i}">${w.txt}</span>`;});
+ if(lp>=0)h+=`<span class="br">${ARROW[phrases[lp].type]||'|'}</span>`;$('prosody').innerHTML=h;}
+function analyse(){const parts=St.segment($('text').value,curStyle,$('auto').checked),words=[],phr=[];
+ for(const p of parts){const name=St.STYLES[p.style]?.name||'Normal';if(p.laugh){words.push({txt:'(lacht)',acc:0,fn:false,phrase:phr.length});phr.push({type:'-',style:name});continue;}
+  const P=St.analyse(p.text),b=phr.length;P.forEach((q,pi)=>{q.words.forEach(w=>words.push({txt:w.txt,acc:w.acc,fn:w.fn,phrase:b+pi}));phr.push({type:q.type,style:name});});}
+ showProsody(words,phr);lexChips();}
+function say(st){seq++;stop();const c=audio(),R=St.render($('text').value,cur,params(typeof st==='string'?st:null));if(!R.data.length)return null;last={...St.playData(c,out,R),R,info:R.info,name:cur+'-'+(typeof st==='string'?st:curStyle)};playing.push(last);$('phon').textContent=R.phon;showProsody(R.info.words,R.info.phrases);return last;}
+const plain=t=>t.replace(/\[[^\]\n]{2,24}\]/g,' ');
+function sayV1(){seq++;stop();if(!V1)return;const c=audio(),R=V1.render(plain($('text').value),cur,{style:V1.STYLES[curStyle]?curStyle:'normal',speed:+$('gtempo').value});if(!R.data.length)return;last={...V1.playData(c,out,R),R,info:R.info,name:cur+'-vorher'};playing.push(last);$('phon').textContent='Stand 2.11.: '+R.phon;showProsody(R.info.words,R.info.phrases);}
+function sayOld(){seq++;stop();if(!Old)return;const c=audio(),v=Old.get(cur),p=Old.play(c,out,plain($('text').value),v);playing.push(p);last={...p,old:true};$('phon').textContent='alte Stimme: '+(p.phon||'');}
+// Alle Sprechweisen nacheinander mit demselben Text (jede wird erst gerechnet, wenn die vorige ausklingt)
+async function sayAll(){const me=++seq;stop();const keep=curStyle;for(const k of Object.keys(St.STYLES)){if(seq!==me)return;curStyle=k;styles();await new Promise(r=>setTimeout(r,30));if(seq!==me)break;
+  stop();const c=audio(),R=St.render($('text').value,cur,{...params(k),auto:false});last={...St.playData(c,out,R),R,info:R.info,name:cur+'-'+k};playing.push(last);$('phon').textContent=St.STYLES[k].name+': '+R.phon;showProsody(R.info.words,R.info.phrases);
+  await new Promise(r=>setTimeout(r,R.dur*1000+250));}
+ if(seq===me){curStyle=keep;styles();}}
+function wav(){const d=last?.R?.data;if(!d){vmsg('Erst etwas sprechen lassen.','err');return;}const sr=last.R.sr||St.SR,n=d.length,b=new DataView(new ArrayBuffer(44+n*2)),W=(o,t)=>{for(let i=0;i<t.length;i++)b.setUint8(o+i,t.charCodeAt(i));};
+ W(0,'RIFF');b.setUint32(4,36+n*2,true);W(8,'WAVEfmt ');b.setUint32(16,16,true);b.setUint16(20,1,true);b.setUint16(22,1,true);b.setUint32(24,sr,true);b.setUint32(28,sr*2,true);b.setUint16(32,2,true);b.setUint16(34,16,true);W(36,'data');b.setUint32(40,n*2,true);
+ for(let i=0;i<n;i++)b.setInt16(44+i*2,Math.max(-32768,Math.min(32767,Math.round(d[i]*32767))),true);
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([b],{type:'audio/wav'}));a.download='stimme-'+(last.name||'aufnahme')+'.wav';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);}
+
+// ---------- Stimme einstellen (Werte je Figur, gespeichert für das Spiel) ----------
+const VG=[['Tonlage und Melodie',[['pitch','Tonhöhe',60,260,1,' Hz'],['range','Melodieumfang',2,18,.5],['lively','Lebendigkeit der Akzente',.6,1.7,.05],['wild','Sprunghaft',0,1,.05],['speed','Tempo',.7,1.4,.02],['tvar','Tempo schwankt',0,.3,.02]]],
+ ['Körper und Klang',[['size','Körpergröße',.8,1.3,.01],['tilt','Helligkeit',.3,1,.02],['oq','Stimmdruck (links gepresst, rechts weich)',.3,.75,.01],['fx1','Klangfarbe (links dunkel, rechts hell)',.9,1.1,.01],['nasal','Nasal',0,.8,.05],['presence','Präsenz',0,1,.05],['comp','Durchsetzungskraft',0,1,.05]]],
+ ['Rauheit',[['breath','Hauch',0,.6,.02],['rough','Rauheit',0,.5,.02],['creak','Knarren am Satzende',0,1,.05],['growl','Knurren auf Akzenten',0,.7,.05],['shake','Zittern',0,.8,.05],['air','Luft in der Stimme',0,.2,.01]]],
+ ['Aussprache und Raum',[['slur','Nuscheln',0,.6,.02],['rollR','R rollen',0,1,.05],['room','Hall',0,.5,.02]]]];
+const VDEF={lively:1,wild:0,tvar:0,nasal:0,presence:.5,comp:.6,growl:0,air:.05,slur:.2,rollR:.5,shake:0,room:0};
+const vget=(V,f)=>f==='fx1'?(V.fx?.[1]??1):(V[f]??VDEF[f]??0);
+const vset=(V,f,v)=>{if(f==='fx1'){V.fx=(V.fx||[1,1,1]).slice();V.fx[1]=v;}else V[f]=v;};
+const fmtV=(v,step,unit)=>(step>=1?String(Math.round(v)):fmt(v))+(unit||'');
+function vmsg(t,cls){$('vMsg').textContent=t;$('vMsg').className='lexmsg '+(cls||'');}
+function vpanel(){const V=St.PRESETS[cur],D=St.DEFAULTS[cur];$('vname').textContent=V.name;
+ $('vgroups').innerHTML=VG.map(([name,list])=>`<div class="vg"><h3>${name}</h3><div class="sliders">`+list.map(([f,label,lo,hi,step,unit])=>{const v=vget(V,f),d=vget(D,f);
+  return `<label class="sl ${Math.abs(v-d)>1e-6?'chg':''}">${label} <b>${fmtV(v,step,unit)}</b><input type="range" data-f="${f}" data-step="${step}" data-unit="${unit||''}" min="${lo}" max="${hi}" step="${step}" value="${v}"></label>`;}).join('')+'</div></div>').join('');
+ $('vstyle').innerHTML=Object.entries(St.STYLES).map(([k,s])=>`<option value="${k}">${s.name}</option>`).join('');$('vstyle').value=V.style||'normal';}
+// nur was von der Werkseinstellung abweicht
+function vdiff(){const o={};for(const k of St.ORDER){const V=St.PRESETS[k],D=St.DEFAULTS[k],d={};for(const [,list] of VG)for(const [f] of list){const v=vget(V,f);if(Math.abs(v-vget(D,f))>1e-6){if(f==='fx1')d.fx=V.fx.slice();else d[f]=v;}}if((V.style||'normal')!==(D.style||'normal'))d.style=V.style||'normal';if(Object.keys(d).length)o[k]=d;}return o;}
+function vsave(){try{const d=vdiff();if(Object.keys(d).length)localStorage.setItem(St.VOICEKEY,JSON.stringify(d));else localStorage.removeItem(St.VOICEKEY);vmsg('Gespeichert. Das Spiel nimmt die Werte beim nächsten Laden.','ok');}catch{vmsg('Speichern ist in diesem Browser nicht möglich.','err');}}
+$('vgroups').addEventListener('input',e=>{const el=e.target;if(!el.dataset?.f)return;const v=+el.value;vset(St.PRESETS[cur],el.dataset.f,v);const lab=el.closest('.sl');lab.querySelector('b').textContent=fmtV(v,+el.dataset.step,el.dataset.unit);lab.classList.toggle('chg',Math.abs(v-vget(St.DEFAULTS[cur],el.dataset.f))>1e-6);vmsg('Geändert, noch nicht gespeichert.','');if(el.dataset.f==='pitch')voices();});
+$('vgroups').addEventListener('change',e=>{if(e.target.dataset?.f)say();});
+$('vstyle').addEventListener('change',e=>{St.PRESETS[cur].style=e.target.value==='normal'?undefined:e.target.value;if(!St.PRESETS[cur].style)delete St.PRESETS[cur].style;curStyle=e.target.value;styles();vmsg('Geändert, noch nicht gespeichert.','');say();});
+$('vSave').onclick=vsave;
+$('vReset').onclick=()=>{const d=vdiff();delete d[cur];St.setVoices(d);vpanel();voices();vsave();vmsg('„'+St.PRESETS[cur].name+'“ ist wieder auf Werkseinstellung.','ok');say();};
+$('vResetAll').onclick=()=>{if(!confirm('Wirklich alle Stimmen auf Werkseinstellung zurücksetzen?'))return;St.setVoices({});vpanel();voices();vsave();vmsg('Alle Stimmen sind wieder auf Werkseinstellung.','ok');};
+$('vCopy').onclick=async()=>{const t=JSON.stringify(vdiff(),null,1);try{await navigator.clipboard.writeText(t);vmsg('Kopiert: nur die geänderten Werte ('+Object.keys(vdiff()).length+' Stimmen).','ok');}catch{prompt('Werte zum Kopieren:',t);}};
+
+// ---------- Aussprache anpassen (eigenes Wörterbuch, gilt auch im Spiel) ----------
+const LEXT=$('lexText'),KEYS=Object.keys(St.P).filter(k=>k!=='_').sort((a,b)=>b.length-a.length);
+const lexMsg=(t,cls)=>{$('lexMsg').textContent=t;$('lexMsg').className='lexmsg '+(cls||'');};
+function lexString(w){const G=St.g2p(w,{cap:/^[A-ZÄÖÜ]/.test(w)});return G.syls.map((sy,i)=>G.ph.slice(sy.a,sy.b).map((p,k)=>(i===G.stress&&sy.a+k===sy.nuc?"'":'')+p).join(' ')).join(' ');}
+function normPh(src){const t=src.replace(/\s+/g,''),o=[];let i=0,st=false;while(i<t.length){if(t[i]==="'"){st=true;i++;continue;}const k=KEYS.find(x=>t.startsWith(x,i));if(!k)return {err:'unbekanntes Zeichen „'+t[i]+'“'};o.push((st?"'":'')+k);st=false;i+=k.length;}return o.length?{ph:o.join(' ')}:{err:'leer'};}
+function readLex(){const obj={},errs=[];LEXT.value.split('\n').forEach((line,n)=>{line=line.trim();if(!line)return;const m=/^([A-Za-zÄÖÜäöüß-]+)\s*[=:]\s*(.+)$/.exec(line);if(!m){errs.push('Zeile '+(n+1)+': „Wort = Lautschrift“ erwartet');return;}
+  const w=m[1].toLowerCase(),v=m[2].trim();if(/^\d+$/.test(v)){obj[w]=+v;return;}const r=normPh(v);if(r.err)errs.push('Zeile '+(n+1)+' ('+w+'): '+r.err);else obj[w]=r.ph;});return {obj,errs};}
+function lexChips(){const own=St.getLexicon(),ws=[...new Set((plain($('text').value).match(/[A-Za-zÄÖÜäöüß]{2,}/g)||[]))];const seen=new Set();
+ $('lexChips').innerHTML=ws.filter(w=>{const l=w.toLowerCase();if(seen.has(l))return false;seen.add(l);return true;}).map(w=>`<button class="chip ${own[w.toLowerCase()]!==undefined?'own':''}" data-w="${w}" title="Zum Ändern antippen">${w}<small>${lexString(w).replace(/6g/g,'6̯').replace(/ /g,'')}</small></button>`).join('');}
+$('lexChips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const w=b.dataset.w.toLowerCase(),has=LEXT.value.split('\n').some(l=>l.trim().toLowerCase().split(/[\s=:]/)[0]===w);
+ if(!has)LEXT.value=(LEXT.value.trim()?LEXT.value.replace(/\s+$/,'')+'\n':'')+w+' = '+lexString(b.dataset.w).replace(/ /g,'');LEXT.focus();lexMsg('Zeile ändern, dann „Übernehmen und sprechen“.','');});
+$('lexApply').onclick=()=>{const {obj,errs}=readLex();if(errs.length){lexMsg(errs.join(' · '),'err');return;}St.setLexicon(obj);St.saveLexicon();const n=Object.keys(obj).length;lexMsg(n?n+(n===1?' Eintrag':' Einträge')+' gespeichert. Im Spiel gilt es nach dem nächsten Laden.':'Keine eigenen Einträge.','ok');analyse();say();};
+$('lexReset').onclick=()=>{if(!confirm('Alle eigenen Aussprache-Einträge löschen?'))return;LEXT.value='';St.setLexicon({});St.saveLexicon();lexMsg('Eigene Einträge gelöscht.','ok');analyse();};
+LEXT.value=Object.entries(St.getLexicon()).map(([k,v])=>k+' = '+(typeof v==='string'?v.replace(/ /g,''):v)).join('\n');
 // Melodiekurve: Tonhöhe (Halbton-Skala), Wellenform, Wortmarken, Abspielmarke
 function drawMelody(cv,L,now){const g=cv.getContext('2d'),W=cv.width,H=cv.height;g.fillStyle='#101719';g.fillRect(0,0,W,H);if(!L||!L.info){return;}
  const info=L.info,dur=Math.max(.5,L.dur),X=t=>8+(W-16)*t/dur,f0=info.f0,step=info.f0step,vals=f0.filter(x=>x>0);
@@ -200,12 +307,12 @@ function loop(){requestAnimationFrame(loop);const now=ctx?.currentTime||0;
  if(last&&!last.old){const t=now-last.start;drawMelody($('melody'),last,t);if(last.info?.words){const i=last.info.words.findIndex(w=>t>=w.t0&&t<w.t1);document.querySelectorAll('#prosody .w').forEach(el=>el.classList.toggle('on',+el.dataset.i===i));}}
  else if(!last)drawMelody($('melody'),null);
  if(lastScream)drawMelody($('melody2'),lastScream,now-lastScream.start);}
-$('voices').addEventListener('click',e=>{const b=e.target.closest('.voice');if(!b)return;cur=b.dataset.k;voices();const st=St.PRESETS[cur].style;if(st)$('style').value=st;});
+$('voices').addEventListener('click',e=>{const b=e.target.closest('.voice');if(!b)return;cur=b.dataset.k;curStyle=St.PRESETS[cur].style||'normal';voices();styles();vpanel();analyse();say();});
 $('lines').addEventListener('change',e=>{if(e.target.value!==''){pick(+e.target.value);say();}e.target.value='';});
-$('text').addEventListener('input',analyse);
-$('say').onclick=say;$('sayOld').onclick=sayOld;$('stop').onclick=stop;
-for(const [id,v] of [['speed','vSpeed'],['pitch','vPitch'],['range','vRange']])$(id).addEventListener('input',()=>{$(v).textContent=fmt(+$(id).value);});
-for(const id of ['speed','pitch','range','style','tone','room'])$(id).addEventListener('change',say);
+$('styles').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;curStyle=b.dataset.k;styles();analyse();say();});
+$('text').addEventListener('input',analyse);$('auto').addEventListener('change',()=>{analyse();say();});
+$('say').onclick=()=>say();$('sayAll').onclick=sayAll;$('sayV1').onclick=sayV1;$('sayOld').onclick=sayOld;$('stop').onclick=()=>{seq++;stop();};$('wav').onclick=wav;
+for(const id of ['tone','room','gtempo'])$(id).addEventListener('change',()=>say());
 
 // ---------- Schreie ----------
 function figs(){$('figs').innerHTML=Object.entries(Sc.FIG).map(([k,f])=>`<button class="fig" data-k="${k}" aria-pressed="${k===opts.fig}">${f.name}</button>`).join('');}
@@ -228,7 +335,7 @@ function chorus(reps,wild){stop();const c=audio(),name=($('hero').value||'Marcel
   for(const d of [.08,.36,.64])playing.push(St.playData(c,out,clapsB[Math.floor(Math.random()*3)],{at:t+C.len+d,vol:.5*g}));t+=C.len+.95;}
  $('now').innerHTML=`<span><b>Namenschor „${name}“</b> · ${reps}×</span><span></span>`;}
 $('chant').onclick=()=>chorus(3,false);$('chantKill').onclick=()=>chorus(4,false);$('chantWild').onclick=()=>chorus(5,true);
-voices();figs();cats();pick(0);loop();
+voices();styles();figs();cats();pick(0);loop();
 window.LAB={say,scream};
 })();
 

@@ -11,7 +11,7 @@ const M=window.MG;if(!M)return;
 let cur=null,seq=0,worker=null,workerOk=true;const wait=new Map();
 function getWorker(){if(!workerOk)return null;if(worker)return worker;try{worker=new Worker('sprech-worker.js?v='+(window.ARENA_BUILD||''));worker.onmessage=e=>{const w=wait.get(e.data.id);if(!w)return;wait.delete(e.data.id);w(e.data);};worker.onerror=()=>{workerOk=false;worker=null;for(const [,w] of wait)w({error:'worker'});wait.clear();};}catch{workerOk=false;worker=null;}return worker;}
 const NEU=()=>!!window.Stimme;
-function renderAsync(text,voice,opt){const engine=NEU()?'neu':'alt';return new Promise(res=>{const W=getWorker(),id=++seq;if(W){wait.set(id,res);W.postMessage({id,text,voice,engine,opt});setTimeout(()=>{if(wait.has(id)){wait.delete(id);res(local());}},3500);}else res(local());
+function renderAsync(text,voice,opt){const engine=NEU()?'neu':'alt';return new Promise(res=>{const W=getWorker(),id=++seq;if(W){wait.set(id,res);W.postMessage({id,text,voice,engine,opt,lex:window.Stimme?.getLexicon?.()});setTimeout(()=>{if(wait.has(id)){wait.delete(id);res(local());}},3500);}else res(local());
  function local(){try{const R=engine==='neu'?window.Stimme.render(text,voice,opt):window.Sprech.render(text,voice);return {data:R.data,dur:R.dur,mouth:R.mouth,sr:R.sr};}catch(e){return {error:String(e)};}}});}
 // Welche Stimme? Bekannte Figuren haben eigene, alle anderen eine allgemeine, die zu Stimmlage (Erfahrung), Größe und Geschlecht passt.
 const SPEECH_TEMPO=.8;
@@ -34,7 +34,13 @@ function voiceNeu(key,g,o={}){const v={...window.Stimme.PRESETS[key]||window.Sti
  if(key==='rabies')v.room=0;if(o.echo!=null)v.room=Math.min(.6,o.echo*1.2);
  if(key==='rekrut'&&g){const tier=M.voicePitch?.(g)??1;v.pitch=Math.round(118*tier);v.size=Math.max(.9,Math.min(1.16,(g.height||180)/180));v.rough=Math.min(.45,.05+((g.scars||[]).length>0?.12:0)+(tier<.9?.1:0));v.creak=tier<.9?.3:.08;}
  if(key==='frau'&&g){v.size=Math.max(.8,Math.min(.95,(g.height||168)/200));}
+ if((key==='rekrut'||key==='frau')&&g)ownVoice(v,g);
  return v;}
+// Jeder Kämpfer klingt etwas anders und bleibt dabei immer derselbe: Werte aus seinem Namen (fester Zufall), nicht aus dem Spielstand
+function ownVoice(v,g){let h=2166136261;const id=String(g.id??'')+'|'+String(g.name??'');for(let i=0;i<id.length;i++){h^=id.charCodeAt(i);h=Math.imul(h,16777619);}
+ const r=()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return ((h>>>0)%10000)/10000;};
+ v.lively=.9+r()*.45;v.slur=.08+r()*.2;v.breath=(v.breath||0)*(.6+r()*.9);v.tilt=(v.tilt||.6)*(.92+r()*.16);v.nasal=r()<.3?.1+r()*.2:0;v.fx=[1,.97+r()*.07,.98+r()*.04];
+ v.speed*=.95+r()*.1;v.range=(v.range||10)*(.8+r()*.4);v.pitch=Math.round(v.pitch*(.96+r()*.08));v.growl=r()<.25?.1+r()*.2:0;}
 function voiceFor(key,g,o={}){if(NEU())return voiceNeu(key,g,o);const S=window.Sprech;let v={...S.get(key)};delete v.look;if(key==='rabies')v.echo=0;/* Thomas: kein Echo bei Rabies */if(o.echo!=null)v.echo=o.echo;/* eigener Hall, z. B. Rennsprecher im Circus */if(o.speedUp)v.speed=(v.speed||1)*o.speedUp;/* Bericht 27.10.: zu schnell, kaum zu verstehen – alle Stimmen im Spiel etwas langsamer */v.speed=(v.speed||1)*SPEECH_TEMPO;
  if(key==='rekrut'&&g){const tier=M.voicePitch?.(g)??1;v.pitch=Math.round(118*tier);v.size=Math.max(.88,Math.min(1.16,(g.height||180)/180));v.rough=Math.min(.6,.1+((g.scars||[]).length>0?.15:0)+(tier<.9?.12:0));}
  if(key==='frau'&&g){v.size=Math.max(.8,Math.min(.95,(g.height||168)/185));}
@@ -64,7 +70,7 @@ function speakLine(text,who,g,o={}){const txt=clean(text);if(!txt||!/[a-zäöü�
  if(!o.keep&&cur&&cur.keep&&(cur.start===Infinity?now-cur.t0<9000:cur.ctx.currentTime<cur.start+cur.dur)){dlog('verworfen',txt);return null;}
  if(o.soft&&cur&&!cur.soft&&(cur.start===Infinity||cur.ctx.currentTime<cur.start+cur.dur))return null;stopCur();
  lastKey=nk;lastT=now;qProg=now;const key=o.voice||voiceKey(who,g,o.name);g=g||faceFor(key,o.name||(typeof who==='string'?who:''));const voice=voiceFor(key,g,o),me={id:++seq,key,who,g,name:o.name||g?.name||'',text:txt,soft:!!o.soft,keep:!!o.keep,t0:performance.now(),start:Infinity,dur:0,mouth:null,src:null};cur=me;
- dlog('rechne',txt);renderAsync(txt,voice,{style:voice.style}).then(R=>{if(cur!==me){dlog('ersetzt',txt);return;}if(R.error||!R.data){dlog('FEHLER '+R.error,txt);cur=null;pump();return;}const o2=M.audioEngine?.voiceOut?.();if(!o2){dlog('KEIN-TON2',txt);cur=null;pump();return;}const {ctx,bus}=o2;
+ dlog('rechne',txt);renderAsync(txt,voice,{style:o.style||voice.style}).then(R=>{if(cur!==me){dlog('ersetzt',txt);return;}if(R.error||!R.data){dlog('FEHLER '+R.error,txt);cur=null;pump();return;}const o2=M.audioEngine?.voiceOut?.();if(!o2){dlog('KEIN-TON2',txt);cur=null;pump();return;}const {ctx,bus}=o2;
   const b=ctx.createBuffer(1,R.data.length,R.sr||window.Sprech?.SR||22050);b.getChannelData(0).set(R.data);const s=ctx.createBufferSource(),gn=ctx.createGain();s.buffer=b;gn.gain.value=o.vol??(o.soft?.75:1.05);s.connect(gn);gn.connect(bus);
   const at=ctx.currentTime+.02;s.start(at);dlog('SPIELT '+R.dur.toFixed(1)+'s '+ctx.state,txt);M.audioEngine?.duck?.(o.soft?.65:.32);s.onended=()=>{s.disconnect();gn.disconnect();if(me.soft)fieldNext=Math.max(fieldNext,performance.now()+10000);if(cur===me){cur=null;M.audioEngine?.duck?.(1);pump();}};me.src=s;me.start=at;me.dur=R.dur;me.mouth=R.mouth;me.ctx=ctx;});
  return me;}
