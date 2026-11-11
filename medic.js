@@ -252,7 +252,7 @@ function scene1(){setStage('s1');M.ui.click('nav:home');const sm=smithActor(330,
   {say:'Beides hat die unangenehme Eigenschaft, viel zu schnell verbraucht zu sein.'},
   {say:'Also, Herr der Arena. Lassen wir einen Tag verstreichen.',do:f=>pose(f.smith,{traderPose:'point',gest:0,a:0})}
  ],done:()=>stepDay()});}
-function stepDay(){setStage('day');M.ui.click('nav:home');showGuide({task:{text:'Lass einen Tag verstreichen: Tippe oben rechts auf „NÄCHSTER TAG ▸“.',progress:()=>'Tag '+S.day,check:()=>st().stage!=='day'}});guide.box.classList.add('medic-low');}
+function stepDay(){setStage('day');M.ui.click('nav:home');const auto=!!M.weltTag?.aktiv;/* Tageslauf: Tage vergehen von selbst, die Uhr läuft bis zum Morgen schneller */if(auto)try{M.weltTag.eile(true);}catch(e){}showGuide({task:{text:auto?'Warte bis zum nächsten Tag. Die Tage vergehen jetzt von selbst, schau auf die Sonnenuhr oben.':'Lass einen Tag verstreichen: Tippe oben rechts auf „NÄCHSTER TAG ▸“.',progress:()=>'Tag '+S.day,check:()=>st().stage!=='day'}});guide.box.classList.add('medic-low');}
 function scene1b(){setStage('s1b');hideGuide();const sm=smithActor(748,246);sm.to=[716,268,40];
  play({label:'1 · Ein neuer Tag',smith:sm,rec:[],bg:backdrop(),paint:paintYard,tailX,cam:{x:730,y:250,vw:240},tick:(f,dt)=>{walker(f.smith,dt);stepFx(f,dt);},beats:[
   {until:f=>!f.smith.to},

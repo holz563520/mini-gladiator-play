@@ -53,11 +53,12 @@ function playDawn(run,from){const v=document.createElement('div');v.className='m
  dawn=v;}
 const baseClick=M.schoolClick;
 // Vor allen anderen: erst die Nacht, dann (mitten in der Animation) der echte Tageswechsel über die übrigen Haken
-M.schoolClick=function(a){if((a==='rest'||a==='rest3')&&!bypass&&!dawn&&!S.battle){playDawn(()=>M.ui.click(a));return true;}return baseClick?.apply(this,arguments);};
+M.schoolClick=function(a){if((a==='rest'||a==='rest3')&&!bypass&&!dawn&&!S.battle&&!M.dawnQuiet){playDawn(()=>M.ui.click(a));return true;}return baseClick?.apply(this,arguments);};
 // Jeder andere Tageswechsel (Arena „Nächster Tag“, Kartenknopf, mehrere Tage, Ruhetage …) wird bemerkt und bekommt
 // dieselbe Animation nachträglich (der Tag ist dann schon gewechselt). Nicht während Kämpfen oder Story-Szenen.
 const STORY='.medic-night,.medic-film,.lesson-film,.lion-film,.smith-ceremony,.lesson-start,.medic-start,.lesson-end,.medic-end,.hs-present';
 (function watch(){requestAnimationFrame(watch);const s=M.s;if(!s||typeof s.day!=='number')return;if(s!==seenS){seenS=s;seen=s.day;return;}
+ if(M.dawnQuiet){seen=s.day;return;}// Tageslauf (welt-zeit.js, nur Testseite) zeigt seinen eigenen Tageswechsel
  if(s.day<seen){seen=s.day;return;}if(s.day===seen||dawn||bypass)return;if(s.battle||document.querySelector(STORY)){seen=s.day;return;}
  const from=seen;seen=s.day;playDawn(null,from);})();
 

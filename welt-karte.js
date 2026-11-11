@@ -13,6 +13,7 @@
 // · Noch keine Spielwirkung: keine Erträge, kein Lernen, kein Tageswechsel, keine Kämpfe (spätere Schritte).
 // =====================================================================================================================
 (()=>{
+const H=window.WeltHook=window.WeltHook||{};// Anschlüsse für spätere Schritte (welt-zeit.js, welt-leben.js); leer = Verhalten wie Schritt 1
 const M=window.MG,S=M.s,$=id=>document.getElementById(id),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const WW=3840,WH=2560,CH=512,HOF={x:1470,y:880,w:900,h:760};
 const TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -265,7 +266,8 @@ const ROUTE={
 const postRoute=p=>p._r??=path([[GATE.x,GATE.y],[2080,1760],JOIN,...(p.x<2080?[[p.x+45,1895]]:[[p.x+55,1860]]),[p.x+p.w/2,p.y+p.h/2+(p.id==='p-bruecke'?-30:8)]]);
 const SPEED=42;// Weltpunkte je Sekunde beim Gehen
 // Position und Tätigkeit zu einer Uhrzeit: feste Rechnung, für sichtbare und unsichtbare Figuren gleich
-function pose(w,t){const J=JOB[w.job],sd=w.seed;
+function pose(w,t){const ps=pose0(w,t);return H.pose?H.pose(w,ps,t):ps;}
+function pose0(w,t){const J=JOB[w.job],sd=w.seed;
  if(J.kind==='hof')return {x:null,y:null,state:J.id==='ruhe'?'liegt beim Medicus':'trainiert im Hof',work:false};
  const lead=(r,dt)=>{const len=r.len/SPEED;return dt<len?r.at(dt*SPEED):null;};
  const T0=40+((sd*7)%30);// gestaffelter Arbeitsbeginn: in den ersten Sekunden laufen alle aus dem Tor
@@ -338,7 +340,7 @@ addEventListener('resize',resize);
 // ---------- Antippen: Hof an den Ludus weiterreichen, sonst Figur, Karren, Gebäude ----------
 let shown=[],info=null;
 function tap(p,e){
- const hitF=[...shown].reverse().find(s=>p.x>s.x-12&&p.x<s.x+12&&p.y>s.y-40&&p.y<s.y+6);if(hitF){openInfo({fig:hitF.w});return;}
+ const hitF=[...shown].reverse().find(s=>p.x>s.x-12&&p.x<s.x+12&&p.y>s.y-40&&p.y<s.y+6);if(H.tap&&H.tap(p,hitF?.w))return;if(hitF){openInfo({fig:hitF.w});return;}
  const cart=cartsAt(clock).find(c=>Math.abs(p.x-c.x)<70&&p.y>c.y-64&&p.y<c.y+10);if(cart){openInfo({cart});return;}
  if(inHof(p.x,p.y)){const lc=$('ludusCanvas');if(lc?.onclick){const r=lc.getBoundingClientRect(),lx=p.x-HOF.x,ly=p.y-HOF.y;lc.onclick({clientX:r.left+lx*r.width/900,clientY:r.top+ly*r.height/lc.height});}return;}
  const s=SITES.find(s=>!s.hof&&p.x>=s.x-6&&p.x<=s.x+s.w+6&&p.y>=s.y-30&&p.y<=s.y+s.h+6);if(s){openInfo({site:s});return;}closeInfo();}
@@ -397,6 +399,8 @@ function makeRoster(n){const keep=S.roster.filter(g=>!g.dead);let list=keep.slic
 // ---------- Zeichnen ----------
 let clock=900,last=performance.now(),perfMs=0,perfAvg=8,perfWin=[],autoT=0,smoke=[];
 function limit(){return LIMITS[limitIx];}
+const MINI=.5;let miniV=false;
+function allIn(view){const out=[];for(const w of workers){const ps=pose(w,clock);if(ps.x==null)continue;if(ps.x>view.x0-40&&ps.x<view.x1+40&&ps.y>view.y0-20&&ps.y<view.y1+80)out.push({w,ps,on:true});}return out;}
 function chooseShown(view){const L=limit(),cands=[];for(const w of workers){const ps=pose(w,clock);if(ps.x==null)continue;const on=ps.x>view.x0-40&&ps.x<view.x1+40&&ps.y>view.y0-20&&ps.y<view.y1+80;cands.push({w,ps,on});}
  if(L===Infinity)return cands.filter(c=>c.on);
  // gleichmäßig über die Tätigkeiten verteilen, damit überall Leben ist; sichtbare Ausschnitte zuerst
@@ -405,7 +409,7 @@ function chooseShown(view){const L=limit(),cands=[];for(const w of workers){cons
  return pick.filter(c=>c.on);}
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)/1000);last=now;if(document.hidden)return;
  if(document.body.classList.contains('w-admin'))return;
- const t0=performance.now();clock+=dt;let bakedNow=0;
+ const t0=performance.now();clock+=dt;H.tick?.(dt);let bakedNow=0;
  if(fly){fly.t=Math.min(1,fly.t+dt*2.2);const e=1-Math.pow(1-fly.t,3);cam.x=fly.x0+(fly.x-fly.x0)*e;cam.y=fly.y0+(fly.y-fly.y0)*e;cam.s=fly.s0+(fly.s-fly.s0)*e;clampCam();if(fly.t>=1)fly=null;}
  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#4a6435';ctx.fillRect(0,0,VW,VH);
  const view={x0:cam.x-VW/2/cam.s,y0:cam.y-VH/2/cam.s,x1:cam.x+VW/2/cam.s,y1:cam.y+VH/2/cam.s};
@@ -423,16 +427,22 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  animProps(ctx,view);
  // Figuren und Karren nach Tiefe
  spriteBudget=Math.max(2,Math.round(12-perfAvg));shown=[];
- const pick=cam.s<.34&&limit()!==Infinity?chooseShown(view).slice(0,Math.min(limit(),60)):chooseShown(view);
+ // Miniaturansicht (weit herausgezoomt): alle Figuren als winzige Männchen aus zwei Rechtecken statt als Bildbogen
+ miniV=cam.s<MINI;const pick=miniV?(limit()===0?[]:allIn(view)):chooseShown(view);
  const items=pick.map(c=>({y:c.ps.y,c})),carts=cartsAt(clock).filter(c=>c.x>view.x0-80&&c.x<view.x1+80&&c.y>view.y0-60&&c.y<view.y1+60);for(const c of carts)items.push({y:c.y,cart:c});items.sort((a,b)=>a.y-b.y);
  for(const it of items){if(it.cart){drawCart(ctx,it.cart,clock);const pool=guardPool();for(let i=0;i<it.cart.guards;i++){const gx=Math.round(it.cart.x-it.cart.dir*(62+i*20)),gy=Math.round(it.cart.y+(i%2?9:-5)),sp=spriteOf(pool[(it.cart.k+i)%pool.length]),f=Math.floor((clock*SPEED/9+i*2)%WALK);if(sp)ctx.drawImage(sp.c,f*FW,(it.cart.dir<0?1:0)*FH,FW,FH,gx-FX,gy-FY,FW,FH);}continue;}
-  const {w,ps}=it.c,sp=spriteOf(w.g),dir=(ps.dx??1)<0?1:0,x=Math.round(ps.x),y=Math.round(ps.y);
+  const {w,ps}=it.c,x=Math.round(ps.x),y=Math.round(ps.y);
+  if(miniV){const a=w.g.appearance||{},b=!ps.work&&!ps.crouch&&!ps.top&&((clock*4+w.seed)|0)%2?2:0;ctx.fillStyle='rgba(15,20,10,.35)';ctx.fillRect(x-5,y-1,10,3);ctx.fillStyle=a.cloth||'#7a6448';ctx.fillRect(x-4,y-13-b,8,12);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-3,y-19-b,6,6);shown.push({w,x,y});continue;}
+  const sp=spriteOf(w.g),dir=(ps.dx??1)<0?1:0;
   ctx.fillStyle='rgba(15,20,10,.3)';ctx.fillRect(x-8,y-1,16,3);
   if(sp){const walking=!ps.work&&!ps.crouch&&!ps.top,f=walking?Math.floor((clock*SPEED/9+w.seed)%WALK):WALK+(ps.work?Math.floor((clock*2+w.seed)%2):0);ctx.drawImage(sp.c,f*FW,dir*FH,FW,FH,x-FX,y-FY+(ps.crouch?4:0)+0,FW,FH);}
   else{px(ctx,x-4,y-26,8,22,'#7a6448');px(ctx,x-3,y-32,6,6,'#d9ac82');}
   if(ps.tool)tool(ctx,ps.tool,x,y,dir?-1:1,clock+w.seed);
   shown.push({w,x,y});
   if(focusW===w){ctx.strokeStyle='#f4d37a';ctx.lineWidth=2;ctx.strokeRect(x-12,y-46,24,50);}}
+ // Anschlüsse: Tageslicht über allem (Bildschirmkoordinaten), danach Leuchten und getragene Figur (Weltkoordinaten)
+ if(H.light){ctx.setTransform(DPR,0,0,DPR,0,0);H.light(ctx,VW,VH);ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));}
+ H.world?.(ctx,view,dt);
  // Namen der Gebäude bei mittlerem Zoom
  if(cam.s>.42&&cam.s<1.6)labels(ctx,view);
  ctx.setTransform(1,0,0,1,0,0);
@@ -443,7 +453,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  tableT+=dt;if(tableT>1||tableDirty){tableT=0;renderTable();}}
 let visCache=0;function visibleCount(){return visCache;}
 function hud(){const outside=workers.filter(w=>JOB[w.job].kind!=='hof').length;visCache=outside;
- $('wCount').textContent=`${workers.length} Leute · ${shown.length} gezeichnet`;$('wClock').textContent=`Zoom ${cam.s.toFixed(2)}×`;
+ $('wCount').textContent=`${workers.length} Leute · ${shown.length} gezeichnet`;$('wClock').textContent=`Zoom ${cam.s.toFixed(2)}×${miniV?' · Miniaturansicht':''}`;
  const ms=perfAvg,pct=clamp(ms/16.7,0,1);const bar=$('wPerfBar');bar.style.width=Math.round(pct*100)+'%';bar.style.background=ms<8?'#6fae5a':ms<13?'#d7b24a':'#c9483e';
  $('wPerf').textContent=`${ms.toFixed(1)} ms · ${auto?'auto: ':''}${limit()===Infinity?'alle':limit()} Figuren`;}
 function labels(g,view){g.font='bold 11px monospace';for(const s of SITES){if(s.hof)continue;const x=s.x+s.w/2,y=s.y-12;if(x<view.x0||x>view.x1||y<view.y0||y>view.y1)continue;const w=Math.ceil(g.measureText(s.name).width)+10;g.fillStyle='rgba(18,12,9,.72)';g.fillRect(Math.round(x-w/2),Math.round(y-12),w,16);g.fillStyle=s.post?'#e6a15a':'#f1dfb4';g.fillText(s.name,Math.round(x-w/2+5),Math.round(y));}}
@@ -473,6 +483,6 @@ makeRoster(60);resize();cam.s=clamp(Math.min(VW/1100,VH/900)*1.05,minScale(),max
  if(ovDone.size<NCX*NCY){setTimeout(prep,0);return;}
  for(let cy=0;cy<NCY;cy++)for(let cx=0;cx<NCX;cx++){const x=cx*CH+CH/2,y=cy*CH+CH/2;if(Math.abs(x-cam.x)<VW/cam.s/2+CH&&Math.abs(y-cam.y)<VH/cam.s/2+CH)chunk(cx,cy,true);}
  $('weltBoot')?.remove();last=performance.now();requestAnimationFrame(frame);})();
-window.WeltKarte={cam,workers:()=>workers,shown:()=>shown,flyTo,SITES,pose:w=>pose(w,clock),get clock(){return clock;},get perf(){return perfAvg;},bakeAll(){while(ovStep());},makeRoster};
+window.WeltKarte={cam,sprites,workers:()=>workers,shown:()=>shown,flyTo,SITES,pose:w=>pose(w,clock),pose0:w=>pose0(w,clock),toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,JOBS,JOB,POSTS,manual,assign,inHof,HOF,WW,WH,openInfo,closeInfo,canvas:cv,px,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;},bakeAll(){while(ovStep());},makeRoster};
 window.WELT_READY=true;
 })();
