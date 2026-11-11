@@ -295,7 +295,7 @@ watch=function(){if(!K.on)return;if(!FM.rects)return watchOld();const b=S.battle
  /* Nahaufnahme im Takt: in der Schnittfolge wartet sie, bis sie ins Bild kommt (die Aufnahme entsteht erst nach dem Anschluss) */const sh=M.injuryShots.arena?.shot;if(sh&&!sh.kinoWrap){const step=sh.step;sh.kinoWrap=true;sh.step=function(dt){if(K.on&&FM.rects&&look.layout==='cut'&&(performance.now()-K.t0)/1000<CUT1)dt=0;return step.call(this,dt);};}
  filmLayout(performance.now());filmPaint();K.raf=requestAnimationFrame(watch);};
 const cameraOld=camera;
-camera=function(b,w,h,W,H){if(!film()||!FM.rects)return cameraOld(b,w,h,W,H);if(!K.on||off||!K.a||!b.actors.includes(K.a))return null;const tg=filmFit(b,w,h,W,H),t=performance.now()-K.t0,dur=look.sync==='gemeinsam'?650:500,p=ease(cl(t/dur,0,1)),f=K.from||{x:W/2,y:H/2,zoom:1};
+camera=function(b,w,h,W,H){if(!film()||!FM.rects)return cameraOld(b,w,h,W,H);if(!K.on||off||!K.a||!b.actors.includes(K.a))return null;const tg=filmFit(b,w,h,W,H),t=performance.now()-K.t0,/* Thomas 11.11.: schneller heran, damit man den Anflug der Waffe schon groß sieht */dur=look.sync==='gemeinsam'?420:400,p=ease(cl(t/dur,0,1)),f=K.from||{x:W/2,y:H/2,zoom:1};
  return {x:f.x+(tg.x-f.x)*p,y:f.y+(tg.y-f.y)*p,zoom:f.zoom*Math.pow(tg.zoom/f.zoom,p)};};
 const alphaOld=alpha;
 alpha=function(a){if(!film()||!K.on)return alphaOld(a);if(K.set.includes(a))return 1;const p=cl((performance.now()-K.t0)/(FADE*1000),0,1),o=cl(+look.others,0,1);return 1-(1-o)*p;};
