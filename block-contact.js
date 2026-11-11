@@ -120,7 +120,10 @@ function onBlock(a,b,w){
  const ev={kind:'block',outcome,res,att:a,def:b,weapon:w.id,defWeapon:dw,shield:pl.sid,tech,init,combo:(a.comboCount||0),planned:pl.chance,time:now()};
  fire(ev);
 }
-function fire(ev){/* Gangarten (nur Gang-Editor): Ansturm in die Deckung kann trotzdem umrennen */if(M.gait?.active)M.gait.blocked?.(ev);try{BC.onEvent?.(ev);}catch(e){console.warn('blockContact.onEvent',e);}}
+/* Kamera (kino-kamera.js): wo gerade geblockt oder Klinge an Klinge gedrückt wird – nur Darstellung */
+const heat=new Map();BC.lastEvent=null;
+BC.heat=id=>{if(binds.has(id))return 3;const h=heat.get(id);if(!h)return 0;const age=performance.now()-h;return age<900?2*(1-age/900):0;};
+function fire(ev){try{if(ev.kind==='block'||ev.kind==='bindStart'||ev.kind==='bindEnd'){const ids=[ev.att,ev.def,ev.winner,ev.loser].filter(Boolean).map(x=>x.id),t=performance.now();for(const id of ids)heat.set(id,t);BC.lastEvent={ids,t,kind:ev.kind};}}catch{}/* Gangarten (nur Gang-Editor): Ansturm in die Deckung kann trotzdem umrennen */if(M.gait?.active)M.gait.blocked?.(ev);try{BC.onEvent?.(ev);}catch(e){console.warn('blockContact.onEvent',e);}}
 // Geschoss prallt an der Klinge ab: Funken, leises Klirren, abgelenkter Pfeil fliegt weg, kurzes Zucken der Waffe
 const flicks=new Map(),deflects=[];
 function onArrowParry(a,b,w){const d=drawn.get(b.id),bw=M.weapon(b),tip=tipOf(bw),P=d?{x:d.hand.x+d.dir.x*tip*.55,y:d.hand.y+d.dir.y*tip*.55}:{x:b.x,y:b.y-50};
@@ -178,7 +181,7 @@ BC.pose=(a,main,off,angle,c)=>{
    const XL=toL(X),ang=-.95+(B.winner===a.id?.12*k:-.12*k)+tremble*.01,dir={x:Math.cos(ang),y:Math.sin(ang)},u=.5;
    let H={x:XL.x-dir.x*tipL*u,y:XL.y-dir.y*tipL*u};const d=Math.hypot(H.x-root.x,H.y-root.y);if(d>25)H={x:root.x+(H.x-root.x)*25/d,y:root.y+(H.y-root.y)*25/d};
    const aim=Math.atan2(XL.y-H.y,XL.x-H.x);out={main:H,off:c.shield?{x:off.x-2,y:off.y}:{x:H.x-6,y:H.y+4},angle:aim};
-   if(B.a===a.id){B.spark-=1/60;if(B.spark<=0){B.spark=.15+Math.random()*.1;emit(1,X.x,X.y,1,0,-1,1.4,60,.18);}}}}
+   if(B.a===a.id){B.spark-=1/60;if(B.spark<=0){/* Klingen reiben: etwas dichtere Funken (Thomas 11.11.) */B.spark=.08+Math.random()*.07;emit(1,X.x,X.y,Math.random()<.4?2:1,0,-1,1.4,70,.2);}}}}
  // Geschoss abgelenkt: Waffe zuckt kurz hoch
  const fl=flicks.get(a.id);if(!out&&fl){const k=(t-fl.t0)/fl.dur;if(k>=1||k<0)flicks.delete(a.id);else{const s=Math.sin(k*Math.PI);out={main:{x:main.x+5*s,y:main.y-4*s},off,angle:lerpA(angle,-1.25,s)};}}
  // Verteidiger: Deckung in die Bahn
@@ -227,7 +230,7 @@ const PM=256,P={x:new Float32Array(PM),y:new Float32Array(PM),vx:new Float32Arra
 const flashes=[],labels=[];
 function emit(kind,x,y,n,dx,dy,spread,speed,life){const a0=Math.atan2(dy,dx);for(let i=0;i<n;i++){const j=pn;pn=(pn+1)%PM;const a=a0+(Math.random()*2-1)*spread,v=speed*(.45+Math.random()*.8);P.x[j]=x;P.y[j]=y;P.vx[j]=Math.cos(a)*v;P.vy[j]=Math.sin(a)*v;P.m[j]=P.l[j]=life*(.6+Math.random()*.7);P.k[j]=kind;}}
 // 1 Funke, 2 Glut, 3 Splitter, 4 Staub
-function burst(x,y,res,a,b){const back=Math.sign(a.x-b.x)||1,o=res.outcome,n=o==='broken'?11:res.heavy?8:5;
+function burst(x,y,res,a,b){const back=Math.sign(a.x-b.x)||1,o=res.outcome,/* Thomas 11.11.: etwas mehr Funken */n=o==='broken'?15:res.heavy?11:7;
  if(res.fx==='metal'||res.fx==='boss'){emit(1,x,y,n,back*.5,-1,1.1,120,.2);emit(2,x,y,1,back,-.6,.6,45,.4);flash(x,y,res.fx,res.heavy?5:4);}
  else{emit(3,x,y,res.heavy?7:4,back,-1,1.1,85,.4);emit(4,x,y,1,back,0,.5,14,.4);flash(x,y,'wood',3);}
  if(o==='glance')emit(1,x,y,3,-back,-.2,.35,150,.16);

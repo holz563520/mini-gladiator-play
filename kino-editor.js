@@ -83,7 +83,7 @@ function tick(){const S=M.s,b=S.battle,st=$('keSt');
 function ready(){M=window.MG;if(!M?.kinoCam?.setLook||!M.ui||!M.startBenchmark){setTimeout(ready,150);return;}
  /* Spielstand nicht speichern (IndexedDB) */try{if(window.MGSave){MGSave.set=()=>{};MGSave.setMany=()=>{};}}catch{}
  try{M.persist=()=>{};}catch{}
- const o=M.s.options;o.closeups='all';o.closeupLevel='severe';
+ const o=M.s.options;o.closeups='all';/* Stufe wie im Spiel: Standard (injury-shots.js) */
  css();panel();setLook(M.kinoCam.look.layout==='alt'?M.kinoCam.presets.buehne.look:M.kinoCam.look);gameInfo();
  try{M.ui.click('nav:benchmark');}catch{}newFight();setInterval(tick,250);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();

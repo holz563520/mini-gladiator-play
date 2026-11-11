@@ -25,9 +25,9 @@ function damp(cur,vel,to,time,dt){if(!(dt>0))return [cur,vel];const o=2/time,x=o
 const up=a=>!a.g.dead&&!a.down&&!a.surrendered;
 
 // ---------------------------------------------------------------- 1) Regie beim Folgen
-const F={battle:null,ok:false,x:0,y:0,z:1,vx:0,vy:0,vz:0,last:0,shot:'all',until:0,pair:null,duelSince:0,punch:0,taken:-1,cut:false,pc:null,lead:{x:0,y:0},reset:false};
+const F={battle:null,ok:false,x:0,y:0,z:1,vx:0,vy:0,vz:0,last:0,shot:'all',until:0,pair:null,duelSince:0,punch:0,taken:-1,cut:false,pc:null,lead:{x:0,y:0},reset:false,blockT:0};
 function interest(a,b){if(a.rex)return 4;let s=1;if(a.wind>0||a.swing>0)s+=3;if(a.state==='charge')s+=1.5;if(a.stagger>0||a.fallTimer>0||a.kneeTimer>0)s+=2;if(a.grabbedBy||a.rearFinish||a.netTimer>0)s+=2.5;
- if(b.leaders&&(b.leaders[0]===a.id||b.leaders[1]===a.id))s+=1;try{s+=cl((100-M.health(a.g))/45,0,2.2);}catch{}return s;}
+ if(b.leaders&&(b.leaders[0]===a.id||b.leaders[1]===a.id))s+=1;/* Thomas 11.11.: Durchstich, Block und Kraftprobe Klinge an Klinge ziehen die Kamera an */if(a.pierceContact?.through)s+=4;s+=M.blockContact?.heat?.(a.id)||0;try{s+=cl((100-M.health(a.g))/45,0,2.2);}catch{}return s;}
 function bestPair(b,live){const byId=new Map(live.map(a=>[a.id,a]));let best=null,top=-1e9;
  for(const a of live){const t=byId.get(a.target);if(!t||t.team===a.team)continue;const d=Math.hypot(a.x-t.x,a.y-t.y);if(d>420)continue;
   const key=[String(a.id),String(t.id)].sort().join('|');let s=interest(a,b)+interest(t,b)-d/120;if(F.pair&&F.pair.key===key)s+=2.5;/* nicht flattern */if(s>top){top=s;best={a,t,key};}}
@@ -39,6 +39,8 @@ function follow(b,w,h,W,H,VG,live,prev,userZ){if(off||!live.length)return null;c
  const still=b.paused||!!M.injuryShots.frozen||!!M.speechFreeze?.();if(still)dt=0;
  const base=Math.min(w/W,h/H),UP=M.arenaViewUp||0;
  /* harter Treffer: kurzer Zoom-Stoß */let tk=0;for(const a of b.actors)tk+=a.taken||0;if(F.taken>=0&&dt>0&&tk-F.taken>=10)F.punch=Math.min(.15,F.punch+(tk-F.taken)/120);F.taken=tk;F.punch*=Math.exp(-dt*5);
+ /* Block im gezeigten Zweikampf: kleiner Zoom-Stoß; Kraftprobe: nicht wegschneiden, solange gedrückt wird (kein Springen: nur im laufenden Zweikampf) */{const le=M.blockContact?.lastEvent;if(le&&le.t!==F.blockT){F.blockT=le.t;if(dt>0&&F.shot==='duel'&&F.pair&&(le.ids.includes(F.pair.a.id)||le.ids.includes(F.pair.t.id)))F.punch=Math.min(.15,F.punch+.05);}
+  if(dt>0&&F.shot==='duel'&&F.pair&&up(F.pair.a)&&up(F.pair.t)&&((M.blockContact?.heat?.(F.pair.a.id)||0)>=3||F.pair.a.pierceContact?.through||F.pair.t.pierceContact?.through))F.until=Math.max(F.until,now+500);}
  /* Regie: Zweikampf oder Totale */const pair=live.length>2?bestPair(b,live):null,lost=F.shot==='duel'&&(!F.pair||!up(F.pair.a)||!up(F.pair.t));
  if(dt>0&&(now>=F.until||lost)){const long=F.shot==='duel'&&now-F.duelSince>8000,next=pair&&!long?'duel':'all',changed=next!==F.shot||(next==='duel'&&F.pair?.key!==pair.key);
   if(next==='duel'){if(F.shot!=='duel')F.duelSince=now;F.pair=pair;F.until=now+2600;}else{F.pair=null;F.until=now+(F.shot==='duel'?2400:1600);}
