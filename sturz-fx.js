@@ -183,13 +183,18 @@ function stagFx(a,time,stK,dz){const env=Math.min(1.3,stK*(.75+dz*.5)+Math.max(0
  // Schritt: Länge aus dem Weg eines Stoßes, Richtung aus Stoß- gegen Blickrichtung
  const T=M.T||{},g=a.g,sc=(g.height||180)/180*1.14*cl(.85+(g.weight||80)/420,.98,1.18)*(g.statureWide||1)*(a.renderScale||1),rate=(T.stagStepRate||3.6)+dz*(T.stagStepDaze||2.2),
   fwd=Math.cos(a.staggerDir??0)*(Math.cos(a.a||0)>=0?1:-1),
-  S=cl((a.moveSpeed||0)*(T.stagBurst||1.9)*BURST.sum/rate/sc,0,13)*cl(fwd*1.4,-1,1),ph=((a.phase||0)%(2*Math.PI)+2*Math.PI)%(2*Math.PI),half=ph>=Math.PI?1:0,c=burstPart(ph-half*Math.PI),lk=stK>0?sm(stK*5):0;
+  /* Thomas 11.11.: Die Beine wackelten hin und her – die Schrittlänge kam aus moveSpeed (im Kampf mindestens 26, auch wenn er kaum vorrückt), die Füße
+     pendelten also weiter, als der Körper sich bewegte. Jetzt aus dem wirklichen Tempo des Taumelns (wie sim.js). Und langsamer: ein Schritt je ganzem
+     Umlauf (beide Stöße) statt je Stoß – ein Fuß wird ruhig neben den anderen gesetzt, dann der andere nachgezogen. */
+  sp=((T.stagSpeedBase??16)+dz*(T.stagSpeedDaze??14))*(.3+.7*stK),
+  S=cl(sp*(T.stagBurst||1.9)*BURST.sum/rate/sc,0,11)*cl(fwd*1.4,-1,1),turn=(a.phase||0)/(2*Math.PI),ph=(turn-Math.floor(turn))*2*Math.PI,half=ph>=Math.PI?1:0,
+  c=(half+burstPart(ph-half*Math.PI))/2,u=ph/(2*Math.PI),odd=Math.floor(turn)%2!==0,lk=stK>0?sm(stK*5):0;
  return {T:null,S:true,C:false,hx:env*s3*2.6,hy:env*(1+Math.abs(s3)*1.5),sh:0,hold:true,
   lift:l=>(L=l+dl),tilt:v=>(TL=v+dt),tx:x=>x,lean:l=>l+lean,
-  leg(side,hip,foot,knee,ft){if(!(lk>0))return ft;const r=side==='r',step=r===!half,home=r?9:-9,
-    wx=home+(step?S*(sm(c)-.5):S*(.5-c)),wy=step?-Math.sin(Math.PI*c)*Math.min(3.2,1+Math.abs(S)*.3):0,
+  leg(side,hip,foot,knee,ft){if(!(lk>0))return ft;const r=side==='r',step=r===!odd,home=r?8:-8,
+    wx=home+2*S*(step?sm(u)-.5:.5-c),wy=step?-Math.sin(Math.PI*sm(u))*Math.min(3,.8+Math.abs(S)*.35):0,
     co=Math.cos(TL),si=Math.sin(TL),dy=wy-L,fx=co*wx+si*dy,fy=-si*wx+co*dy,kn=solve(hip,fx,fy,-1);
-   foot.x=mix(foot.x,fx,lk);foot.y=mix(foot.y,fy,lk);knee.x=mix(knee.x,kn.x,lk);knee.y=mix(knee.y,kn.y,lk);return mix(ft,-TL+(step?-.18*Math.sin(Math.PI*c)*Math.sign(S||1):0),lk);},
+   foot.x=mix(foot.x,fx,lk);foot.y=mix(foot.y,fy,lk);knee.x=mix(knee.x,kn.x,lk);knee.y=mix(knee.y,kn.y,lk);return mix(ft,-TL+(step?-.14*Math.sin(Math.PI*sm(u))*Math.sign(S||1):0),lk);},
   /* Arme zum Ausgleich: breit und auf halber Höhe, gegen die Vorlage – wer nach vorn kippt, nimmt die Arme zurück */
   hands(m,o,wa,sh){if(!free)return null;const out={m,o,a:wa+s3*.18*hk};
    if(!(b.rua?.fracture||b.rfa?.fracture))out.m={x:mix(m.x,sh.r.x+13-s1*4.5-lean*.35,hk),y:mix(m.y,sh.r.y+11-s4*3.5,hk)};

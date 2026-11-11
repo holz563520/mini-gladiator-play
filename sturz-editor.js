@@ -44,7 +44,9 @@ let cur=BY.back,pair=[],base=[],tau=0,playing=true,last=0,zoomI=1,deathAt=0,dead
 // Schmales Bild (Handy hochkant): neu oben, bisher unten – nebeneinander wären sie winzig (Thomas 11.11. „sehe nichts“).
 const VIEW={wide:[560,400,270],narrow:[380,290,200]},ZN=['weit','mittel','nah'];const viewW=()=>VIEW[narrow?'narrow':'wide'][zoomI];
 const timeline=()=>cur.kind!=='death'&&cur.kind!=='fight';
-function start(id){cur=BY[id]||cur;stop();sync();tau=0;dead=false;deathAt=performance.now()+900;
+// Taumeln: Weg nur auf dieser Seite verstellbar (im Spiel gilt „wie im Spiel“, solange Thomas nichts anderes freigibt)
+const STAG0={b:M.T.stagSpeedBase,d:M.T.stagSpeedDaze};
+function start(id){cur=BY[id]||cur;stop();sync();{const k=+$('stagWay').value||1;M.T.stagSpeedBase=STAG0.b*k;M.T.stagSpeedDaze=STAG0.d*k;}tau=0;dead=false;deathAt=performance.now()+900;
  for(const b of $('scenes').children)b.classList.toggle('on',b.dataset.s===cur.id);
  const fight=cur.kind==='fight';
  const cfg={count:fight?3:1,count0:fight?3:2,count1:fight?3:1,role0:'Soldat',role1:'Soldat',weapon0:$('w0').value,weapon1:fight?'spear':'gladius',shield0:$('s0').value,shield1:fight?'roundshield':'none',armor0:$('a0').value,armor1:fight?'leather':'none',quality0:2,quality1:2,seed:fight?Math.floor(Math.random()*1e6):4242};
@@ -92,7 +94,7 @@ $('fwd').onclick=()=>{setPlay(false);tau=Math.min(lenOf(cur),tau+1/60);apply();}
 $('tl').oninput=()=>{setPlay(false);tau=$('tl').value/1000*lenOf(cur);apply();};
 $('zoom').onclick=()=>{zoomI=(zoomI+1)%3;$('zoom').textContent='Zoom: '+ZN[zoomI];};
 $('speed').onchange=()=>{if(!timeline())S.options.speed=+$('speed').value;};
-for(const id of ['w0','s0','a0','cmp'])$(id).addEventListener('change',()=>start(cur.id));
+for(const id of ['w0','s0','a0','cmp','stagWay'])$(id).addEventListener('change',()=>start(cur.id));
 $('fxOn').onchange=()=>{if(cur.kind==='fight')F.active=$('fxOn').checked;};
 
 function stageName(){const sc=cur,el=tau-PRE;if(sc.kind==='kd'){const p=pair[0];if(el<0)return 'steht';if(!p||!(p.fallTimer>0))return 'steht wieder';const st=F.state(p);return st?.kind==='fall'?'stürzt · '+Math.round(st.p*100)+' %':st?.kind==='rise'?(st.hold?'verschnauft auf dem Knie':'steht auf · '+Math.round(st.p*100)+' %'):'liegt';}
@@ -118,6 +120,7 @@ $('rules').innerHTML=[
  '<em>Verschnaufen</em>: Wer angeschlagen ist und beim Aufstehen hängen bleibt, wartet sichtbar im Kniestand und atmet schwer.',
  '<em>Kampfunfähig</em>: Wer im Stehen oder Knien kampfunfähig wird, bricht jetzt schlaff zusammen. Vorher lag er von einem Bild auf das nächste am Boden.',
  '<em>Tod</em>: Wie lange einer noch steht oder kniet, bestimmt weiter die Todesart. Das Fallen danach läuft über die neuen Bilder, schlaff und ohne Abfangen.',
+ '<em>Schritte beim Taumeln</em>: Ein Fuß wird langsam neben den anderen gesetzt, dann der andere nachgezogen, etwa ein Schritt je Sekunde. Der stehende Fuß bleibt auf seinem Fleck am Boden. Wie weit er dabei torkelt, bestimmt das Spiel; mit „Taumeln: Weg“ kannst du hier ausprobieren, wie es mit weniger Weg aussieht.',
  '<em>Taumeln</em>: Füße und Becken bleiben unter dem Körper. Der Oberkörper pendelt über der Hüfte, die Knie sind weich, der Kopf hängt nach und die Arme halten breit das Gleichgewicht. Vorher stand der ganze Körper bis zu 17 Grad schräg und die Hände zitterten.',
  '<em>Waffe und Schild</em> bleiben bis zum Aufprall in der Hand und liegen erst dann am Boden. Beim Aufstehen nimmt er sie im Kniestand wieder auf.',
  '<em>Jedes Bild wird gezeichnet</em>: Solange einer fällt oder aufsteht, wird er nicht mehr aus dem Zwischenspeicher kopiert. Auf schwächeren Geräten liefen diese Bewegungen vorher mit 15 Bildern je Sekunde.',
