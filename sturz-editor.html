@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sturz-Editor · Arena Theory</title>
+<script>try{Storage.prototype.setItem=function(){};Storage.prototype.removeItem=function(){};Storage.prototype.getItem=function(){return null;};}catch(e){}</script>
+<style>
+@font-face{font-family:'Courier Prime';src:url(fonts/courier-prime-400.woff) format('woff');font-weight:400}
+@font-face{font-family:'Courier Prime';src:url(fonts/courier-prime-700.woff) format('woff');font-weight:700}
+:root{--line:#394b4d;--gold:#dfb66d;--cream:#eae4cd;--muted:#97aaa8;--panel:#1d282b;--panel2:#162023}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#2a1d14,#120c09 60%);color:var(--cream);font-family:'Courier Prime',ui-monospace,monospace;min-height:100vh}
+header{padding:14px 16px 4px;text-align:center}
+header small{display:block;letter-spacing:4px;color:var(--muted);font-size:11px}
+header h1{margin:4px 0 0;font-size:24px;letter-spacing:6px;color:var(--gold);text-shadow:3px 3px 0 #000}
+header p{margin:6px auto 0;max-width:840px;font-size:13px;color:var(--muted);line-height:1.45}
+header a{color:var(--gold)}
+main{max-width:1240px;margin:0 auto;padding:6px 12px 40px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+@media (max-width:940px){.top{grid-template-columns:1fr}}
+.stage{position:relative;border:3px solid #6b5230;box-shadow:6px 6px 0 #000a;background:#0d0a07}
+#arenaCanvas{display:block;width:100%;height:auto;aspect-ratio:850/520;image-rendering:pixelated}
+#labels{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+#hud{position:absolute;left:8px;top:6px;right:8px;display:flex;justify-content:space-between;font-size:12px;text-shadow:1px 1px 0 #000;pointer-events:none;gap:8px}
+#hud b{color:var(--gold);font-weight:400}
+.panel{background:#1d282bdd;border:2px solid var(--line);box-shadow:3px 3px 0 #0008;padding:10px 12px;margin-bottom:10px}
+.panel h3{margin:0 0 8px;font-size:12px;letter-spacing:3px;color:var(--gold);text-transform:uppercase}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;margin:5px 0;color:var(--muted)}
+select{font:inherit;font-size:12px;color:var(--cream);background:var(--panel2);border:1px solid var(--line);padding:3px 4px;width:160px}
+input[type=checkbox]{accent-color:#dfb66d}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;align-items:center}
+button{font:inherit;font-size:12px;color:var(--cream);background:var(--panel);border:2px solid var(--line);padding:6px 10px;box-shadow:3px 3px 0 #0008;cursor:pointer}
+button.main,button.on{border-color:var(--gold);color:var(--gold)}
+#scenes{display:grid;grid-template-columns:1fr;gap:6px}
+#scenes button{text-align:left;padding:6px 8px;line-height:1.25}
+#scenes button small{display:block;color:var(--muted);font-size:10px}
+.range{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-top:8px}.range input{flex:1;accent-color:#dfb66d}
+.range span{min-width:86px;text-align:right;color:var(--cream)}
+h2{font-size:13px;letter-spacing:3px;color:var(--gold);margin:22px 4px 6px;text-transform:uppercase}
+.note{font-size:12px;color:var(--muted);line-height:1.55;margin:4px 4px 8px}
+.rules{font-size:12.5px;line-height:1.6}.rules li{margin:4px 0}.rules em{color:var(--gold);font-style:normal}
+</style></head>
+<body>
+<header><small>ARENA THEORY · KAMPF-WERKSTATT · STAND 9c28d6df</small><h1>STURZ-EDITOR</h1>
+<p>Hinfallen, Aufstehen und Taumeln mit den echten Figuren des Spiels. Links läuft die neue Bewegung, rechts zum Vergleich die bisherige, beide im selben Augenblick. Mit dem Regler kannst du Bild für Bild durchgehen. Nur Testseite: Im Spiel ist noch nichts geändert, Spielstände bleiben unberührt. Weitere Editoren: <a href="gang-editor.html">Gang-Editor</a> · <a href="todes-editor.html">Todes-Editor</a></p></header>
+<main>
+<div class="top">
+ <div>
+  <div class="stage"><canvas id="arenaCanvas" width="850" height="520"></canvas><canvas id="labels" width="850" height="520"></canvas><div id="hud"><span id="hudL"></span><span id="hudR"></span></div></div>
+  <div class="range" id="tlBox">Zeit <input type="range" id="tl" min="0" max="1000" value="0"><span id="tlV">0,00 s</span></div>
+  <div class="btns">
+   <button id="play" class="main">⏸ Pause</button>
+   <button id="back">◀ Bild</button>
+   <button id="fwd">Bild ▶</button>
+   <button id="again">↻ Von vorn</button>
+   <button id="zoom">Zoom 3×</button>
+   <label style="margin:0 0 0 6px">Tempo <select id="speed" style="width:90px"><option value="1">1×</option><option value=".5" selected>0,5×</option><option value=".25">0,25×</option><option value=".1">0,1×</option></select></label>
+  </div>
+  <p class="note" id="info"></p>
+ </div>
+ <div>
+  <div class="panel"><h3>Ablauf</h3><div id="scenes"></div></div>
+  <div class="panel"><h3>Figur</h3>
+   <label>Waffe <select id="w0"></select></label>
+   <label>Schild <select id="s0"></select></label>
+   <label>Rüstung <select id="a0"><option value="none">keine</option><option value="leather" selected>Leder</option><option value="medium">verstärkt</option><option value="metal">Metall</option></select></label>
+   <label>Bisherige Bewegung zeigen <input type="checkbox" id="cmp" checked></label>
+   <label>Echter Kampf: neue Bewegung <input type="checkbox" id="fxOn" checked></label>
+  </div>
+ </div>
+</div>
+
+<h2>Was neu ist</h2>
+<ul class="rules" id="rules"></ul>
+</main>
+<script src="data.js?v=9c28d6df"></script><script src="household.js?v=9c28d6df"></script><script src="management.js?v=9c28d6df"></script><script src="scout.js?v=9c28d6df"></script><script src="sim.js?v=9c28d6df"></script><script src="benchmark.js?v=9c28d6df"></script><script src="school.js?v=9c28d6df"></script><script src="weapon-art.js?v=9c28d6df"></script><script src="arena.js?v=9c28d6df"></script><script src="block-contact.js?v=9c28d6df"></script><script src="hit-contact.js?v=9c28d6df"></script><script src="reach-ai.js?v=9c28d6df"></script><script src="face-shots.js?v=9c28d6df"></script><script src="injury-shots.js?v=9c28d6df"></script><script src="todes-fx.js?v=9c28d6df"></script>
+<script src="kampfsound.js?v=9c28d6df"></script><script src="durchstich-fx.js?v=9c28d6df"></script><script src="gangarten.js?v=9c28d6df"></script>
+<script src="sturz-fx.js?v=9c28d6df"></script>
+<script src="sturz-editor.js?v=9c28d6df"></script>
+</body></html>
