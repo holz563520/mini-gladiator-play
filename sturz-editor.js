@@ -72,7 +72,7 @@ function apply(){const b=S.battle;if(!b||!timeline()||!pair.length)return;const 
    a.down=true;a.state='down';a.fxDown={t:b.time-el,from:sc.from,len:F.P.down};}
   else if(sc.kind==='stag'){if(el>=sc.len)continue;const T=M.T,dz=sc.dz,L=sc.len,seed=1,rate=T.stagStepRate+dz*T.stagStepDaze;
    // wie im Kampf (sim.js): Stolperschritte in Stoßrichtung mit Schlingern, vorwärts nur im Moment des Schritts
-   let x=0,y=0,ph=0;for(let t=0;t<el;t+=1/120){const k=(L-t)/L,sp=(T.stagSpeedBase+dz*T.stagSpeedDaze)*(.3+.7*k),dir=Math.PI+Math.sin(t*4.2+seed)*.95,burst=Math.pow(Math.abs(Math.sin(ph)),1.6)*T.stagBurst;x+=Math.cos(dir)*sp*burst/120;y+=Math.sin(dir)*sp*burst/120;ph+=rate/120;}
+   let x=0,y=0;const ph=rate*el,H=1/240;/* letzter Teilschritt anteilig – sonst rückt die Figur je nach Bildtakt ungleich vor (Zittern) */for(let t=0;t<el;t+=H){const h=Math.min(H,el-t),k=(L-t)/L,sp=(T.stagSpeedBase+dz*T.stagSpeedDaze)*(.3+.7*k),dir=Math.PI+Math.sin(t*4.2+seed)*.95,burst=Math.pow(Math.abs(Math.sin(rate*t)),1.6)*T.stagBurst;x+=Math.cos(dir)*sp*burst*h;y+=Math.sin(dir)*sp*burst*h;}
    const k=(L-el)/L,sp=(T.stagSpeedBase+dz*T.stagSpeedDaze)*(.3+.7*k);
    Object.assign(a,{stagger:L-el,staggerMax:L,staggerDir:Math.PI,staggerSeed:seed,state:'stagger',daze:dz,moveSpeed:Math.max(sp,26),gaitSpeed:Math.max(sp*1.6,30),phase:ph,x:base[i].x+x,y:base[i].y+y});}}}
 
