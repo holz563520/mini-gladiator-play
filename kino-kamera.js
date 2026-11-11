@@ -124,7 +124,7 @@ let alpha=function(a){if(!K.on||K.set.includes(a))return 1;const p=cl((performan
 const LOOK0={layout:'alt',frame:'feld',bg:'arena',others:.32,who:'gruppe',fill:.8,slow:8,sync:'frei',grade:'normal',bars:8};
 const PRESETS={
  bisher:{name:'Bisher',look:{...LOOK0}},
- buehne:{name:'Schwarze Bühne',look:{layout:'split',frame:'schirm',bg:'schwarz',others:.12,who:'paar',fill:.84,slow:2,sync:'gemeinsam',grade:'normal',bars:9}},
+ buehne:{name:'Schwarze Bühne',look:{layout:'split',frame:'schirm',bg:'schwarz',others:.12,who:'paar',fill:.84,slow:6,sync:'gemeinsam',grade:'normal',bars:9}},
  spot:{name:'Scheinwerfer',look:{layout:'split',frame:'schirm',bg:'spot',others:0,who:'paar',fill:.8,slow:8,sync:'gemeinsam',grade:'warm',bars:9}},
  leinwand:{name:'Großleinwand + Bild im Bild',look:{layout:'pip',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.86,slow:8,sync:'gemeinsam',grade:'normal',bars:7}},
  wunde:{name:'Wunde groß, Kämpfer klein',look:{layout:'piprev',frame:'schirm',bg:'schwarz',others:0,who:'paar',fill:.84,slow:8,sync:'gemeinsam',grade:'normal',bars:7}},
@@ -139,6 +139,8 @@ try{if(localStorage.getItem('mg-kino-slow2')!=='1'){if(look.layout!=='alt'&&+loo
 /* Thomas 11.11.: Im Spiel jetzt ganzer Bildschirm, Unbeteiligte als Schatten (statt unsichtbar), abgetrennte Glieder der Beteiligten nicht abgedunkelt.
    Einmalig: eine früher auf dem Gerät gespeicherte Einstellung wird verworfen, damit diese Fassung gilt (im Kino-Editor weiter frei wählbar). */
 try{if(localStorage.getItem('mg-kino-look3')!=='1'){if(localStorage.getItem('mg-kino-look')){localStorage.removeItem('mg-kino-look');look={...GAME_LOOK};}localStorage.setItem('mg-kino-look3','1');}}catch{}
+/* Thomas 11.11. mittags: während der Nahaufnahme extrem langsam (1/6 echte Zeit, unabhängig von der Spielgeschwindigkeit) statt 1/2; einmalig auch für eine gespeicherte Einstellung */
+try{if(localStorage.getItem('mg-kino-slow3')!=='1'){if(look.layout!=='alt'&&+look.slow>0&&+look.slow<6){look.slow=6;if(localStorage.getItem('mg-kino-look'))localStorage.setItem('mg-kino-look',JSON.stringify(look));}localStorage.setItem('mg-kino-slow3','1');}}catch{}
 const film=()=>look.layout!=='alt';
 const GRADE={normal:'none',warm:'sepia(.25) saturate(1.15) contrast(1.06)',kalt:'saturate(.7) hue-rotate(-12deg) contrast(1.1) brightness(.95)',rot:'sepia(.35) saturate(1.5) hue-rotate(-18deg) contrast(1.12)',blass:'saturate(.35) contrast(1.15)'};
 const FM={el:null,A:null,ga:null,B:null,who:null,rects:null,shotKey:'',phase:-1,step:null,beatT:0};
