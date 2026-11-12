@@ -4,7 +4,7 @@
 // Wunsch Thomas 12.11.2026 (wie die Gäste bei RollerCoaster Tycoon). Nur auf tageslauf-editor.html geladen, nicht im Spiel.
 //
 // · Es sind immer so viele Besucher unterwegs, wie im Editor eingestellt (M.weltBesucher.setze(n)); wer geht, wird ersetzt.
-// · Ablauf: Kartenrand → den Weg entlang → am Ludus vorbei zur Arena → freier Sitzplatz (welt-bau.js) → eine Weile sitzen
+// · Ablauf: Kartenrand → den Weg entlang → (etwa jeder Vierte: Abstecher zur Halle der Toten, vor einem Grab stehen) → am Ludus vorbei zur Arena → freier Sitzplatz (welt-bau.js) → eine Weile sitzen
 //   → zurück zum Kartenrand. Ohne freien Platz schauen sie kurz und gehen wieder.
 // · Aussehen: wie die Gladiatoren (klein und gepixelt, beim Heranzoomen die echte Figur des Spiels), aber Zuschauer: Bauern, Bauerntölpel,
 //   Handwerker, Händler, Bürger, Edelleute, bunt gemischt. Jeder hat einen eigenen Namen und Stand; antippen zeigt beides.
@@ -41,7 +41,9 @@ function gibSitz(v){if(v.sitz){v.sitz.v=null;frei.push(v.sitz);v.sitz=null;}}
 // ---------- Wege ----------
 const P=(tx,ty)=>W.iso(tx+rnd(-.5,.5),ty+rnd(-.5,.5));
 function spalte(west,a){let lo=LUD.tx-1.5,hi=LUD.tx+LUD.w+1.5;if(a)for(const k of a.tribs.concat(a.floor)){const x=k%N;if(x-1.5<lo)lo=x-1.5;if(x+2.5>hi)hi=x+2.5;}return west?lo:hi;}
-function hin(v){const s=nimmSitz(v),as=B.arenen();v.sitz=s;const c=W.tileAt(v.x,v.y),west=v.west,pts=[];
+// Abstecher zur Halle der Toten (Thomas 12.11.): etwa jeder Vierte geht vorher den Pfad hinauf und bewundert einen Helden
+function zurHalle(v){if(v.ehrt||Math.random()>=.28)return false;const z=M.weltHalle?.besuch?.();if(!z)return false;v.ehrt=true;v.halle=z;v.pts=z.hin.map(q=>({x:q.x+rnd(-3,3),y:q.y+rnd(-1,1)}));v.pts[v.pts.length-1]=z.hin[z.hin.length-1];v.st='zurHalle';return true;}
+function hin(v){if(zurHalle(v))return;const s=nimmSitz(v),as=B.arenen();v.sitz=s;const c=W.tileAt(v.x,v.y),west=v.west,pts=[];
  if(!as.length){v.ziel=null;v.pts=[P(west?RL+1:RR-1,WEG)];v.st='weg';return;}
  const a=s?as[s.a]||as[0]:as[(Math.random()*as.length)|0],col=spalte(west,a),ty=s?s.ty:a.ty+rnd(-2,2);
  if(c.ty>LUD.ty+LUD.h){pts.push(P(col,WEG));}
@@ -60,7 +62,8 @@ function setze(n){typenBauen();soll=Math.max(0,n|0);while(leute.length>soll)gibS
 function schritt(v,dt){if(v.st==='neu'){hin(v);}
  if(v.st==='sitz'){v.t-=dt;const s=v.sitz;if(!s){v.st='neu';return;}v.dx=s.x;v.dy=s.y;v.y=s.key;v.dir=s.links;if(v.t<=0)weg(v);return;}
  if(v.st==='schaut'){v.t-=dt;v.f=W.WALK;if(v.t<=0)weg(v);v.dx=v.x;v.dy=v.y;return;}
- const p=v.pts&&v.pts[0];if(!p){if(v.st==='hin'){if(v.sitz){v.st='sitz';v.t=rnd(40,120);}else{v.st='schaut';v.t=rnd(4,10);}}else v.st='fort';return;}
+ if(v.st==='ehrt'){v.t-=dt;v.f=W.WALK;v.dir=v.halle.blick;v.dx=v.x;v.dy=v.y;if(v.t<=0){v.pts=v.halle.zurueck.map(q=>({x:q.x+rnd(-3,3),y:q.y}));v.st='vonHalle';}return;}
+ const p=v.pts&&v.pts[0];if(!p){if(v.st==='zurHalle'){v.st='ehrt';v.t=rnd(5,13);return;}if(v.st==='vonHalle'){v.st='neu';return;}if(v.st==='hin'){if(v.sitz){v.st='sitz';v.t=rnd(40,120);}else{v.st='schaut';v.t=rnd(4,10);}}else v.st='fort';return;}
  const ex=p.x-v.x,ey=p.y-v.y,d=Math.hypot(ex,ey),step=v.sp*dt;if(d<=step){v.x=p.x;v.y=p.y;v.pts.shift();}else{v.x+=ex/d*step;v.y+=ey/d*step;}
  if(Math.abs(ex)>1)v.dir=ex<0?1:0;v.dist+=Math.min(d,step);v.f=W.gehBild(v.dist);v.dx=v.x;v.dy=v.y;}
 let clock=0;
@@ -74,5 +77,5 @@ const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(!zeig)retu
  const z=Math.min(3,Math.max(.4,.8/W.cam.s)),s=v.name+' · '+v.stand,y=v.dy-W.HOEHE-9*z;ctx.font='bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace';ctx.textAlign='center';ctx.textBaseline='middle';const w=ctx.measureText(s).width+8*z;
  ctx.fillStyle='rgba(18,12,9,.88)';ctx.fillRect(Math.round(v.dx-w/2),Math.round(y-8*z),Math.round(w),Math.round(16*z));ctx.fillStyle='#f4d37a';ctx.fillText(s,Math.round(v.dx),Math.round(y)+1);};
 B.beiAenderung(plaetze);plaetze();setze(soll);
-M.weltBesucher={setze,STAND,typen:()=>typen,get zahl(){return leute.length;},get soll(){return soll;},leute:()=>leute,sitze:()=>sitze,freie:()=>frei.length};
+M.weltBesucher={setze,STAND,typen:()=>typen,get zahl(){return leute.length;},get soll(){return soll;},leute:()=>leute,bewundern:()=>leute.filter(v=>v.st==='ehrt').length,sitze:()=>sitze,freie:()=>frei.length};
 })();

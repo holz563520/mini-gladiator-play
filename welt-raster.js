@@ -38,7 +38,7 @@ const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Fel
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
 const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
-const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt'];
+const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
 const LUD={tx:39+O,ty:40+O,w:18,h:16,px:50};
@@ -46,7 +46,7 @@ const vonLudus=(x,y)=>iso(LUD.tx+x/LUD.px,LUD.ty+y/LUD.px);
 // Gebäude der Einführungen, Lage aus dem alten Ludus (ludus.js places, hs-art.js BEASTRIUM), auf ganze Felder gelegt
 const BAU=[
  {id:'kaserne',name:'KASERNE',l:[45,50,235,133],hoch:44,wand:'#b9a27c',dach:'#a5553c',haus:T.KASERNE},
- {id:'hall',name:'HALL',l:[50,206,112,70],hoch:36,wand:'#8d8a80',dach:'#5d5a54'},
+ {id:'hall',name:'HALL',l:[50,206,112,70],hoch:36,wand:'#8d8a80',dach:'#5d5a54',weg:true},
  {id:'markt',name:'SKLAVENMARKT',l:[45,280,230,118],hoch:26,wand:'#a98458',dach:'#c9b27a',haus:T.MARKT},// offener Stand wie im Spiel, fest
  {id:'medicus',name:'MEDICUS',l:[34,447,250,163],hoch:40,wand:'#d2cbb8',dach:'#7e8a8c',haus:T.MEDICUS},// fest, nicht baubar und nicht abreißbar
  {id:'platz',name:'TRAININGSHOF',l:[310,247,275,343],hoch:0,wand:'#7a5a39',dach:'#d9c391',flach:true},
@@ -120,8 +120,8 @@ for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){let t=T.WIESE,bi=0;const k=ix(tx,
  if(tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h)t=T.LUDUS;
  if(t!==T.FLUSS)grund[k]=t;feld[k]=t;biom[k]=bi||(t===T.WALD?B_.WALD:0);}
 // Kaserne, Schmiede, Beastrium, Medicus und Sklavenmarkt stehen als echte Gebäude der mittleren Klasse da (welt-gebaeude.js, Thomas 12.11.); Lage und bauAuf bleiben für die Intros.
-for(const b of BAU)for(let y=b.ty;y<b.ty+b.h;y++)for(let x=b.tx;x<b.tx+b.w;x++){feld[ix(x,y)]=b.flach?T.PLATZ:b.haus??T.BAU;bauAuf[ix(x,y)]=b.i;}
-const SKIZZE=BAU.filter(b=>b.haus==null);
+for(const b of BAU)if(!b.weg)for(let y=b.ty;y<b.ty+b.h;y++)for(let x=b.tx;x<b.tx+b.w;x++){feld[ix(x,y)]=b.flach?T.PLATZ:b.haus??T.BAU;bauAuf[ix(x,y)]=b.i;}
+const SKIZZE=BAU.filter(b=>b.haus==null&&!b.weg);
 // Naturobjekte (welt-natur.js): je Feld höchstens eines. Alles darauf ist entfernbar (obj = 0); nicht am Weg, nicht um den Ludus.
 const NASS_OK=new Set(['Schilf','Seerosen','Moorhand']),NB=window.WeltNatur,obj=new Uint8Array(N*N),BODEN_NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FLUSS,T.FELS,T.SCHNEE]),
  BODEN_NAME={[T.WIESE]:'wiese',[T.WALD]:'wald',[T.SAND]:'sand',[T.DSCH]:'dsch',[T.SUMPF]:'sumpf',[T.MOOR]:'moor',[T.FLUSS]:'wasser',[T.FELS]:'fels',[T.SCHNEE]:'schnee'};
@@ -130,6 +130,11 @@ if(NB)for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const k=ix(tx,ty),t=feld[k]
  // Keine Bäume im Wasser (Thomas 12.11.): im Wasser, im Moor und am Ufer (eine Ecke auf Wasserhöhe) nur Schilf, Seerosen, Moorhand
  if(o&&!NASS_OK.has(NB.ARTEN[o].name)&&(t===T.FLUSS||t===T.MOOR||Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3])<=WL))o=0;
  obj[k]=o;}
+// Halle der Toten (Thomas 12.11.): nicht mehr im Ludus, sondern etwas abseits westlich davon am Waldrand. 5 × 3 Halle, davor
+// ein Gräberplatz 5 × 2 (10 Grabstellen, welt-gebaeude.js), ein Kiespfad hinunter zum Weg. Fest: nicht baubar, nicht abreißbar.
+const HALLE={tx:LUD.tx-18,w:5,h:3,hofH:2};HALLE.pfadX=HALLE.tx+2;HALLE.ty=Math.min(WEG_TY,wy[HALLE.pfadX])-13;// gut 8 Felder Pfad bis zum Weg
+for(let y=HALLE.ty-1;y<Math.max(WEG_TY,wy[HALLE.pfadX]);y++)for(let x=HALLE.tx-1;x<=HALLE.tx+HALLE.w;x++){const k=ix(x,y),inR=x>=HALLE.tx&&x<HALLE.tx+HALLE.w,hy=y-HALLE.ty;obj[k]=0;
+ if(inR&&hy>=0&&hy<HALLE.h)feld[k]=T.HALLE;else if(inR&&hy>=HALLE.h&&hy<HALLE.h+HALLE.hofH)feld[k]=T.GRAB;else if(x===HALLE.pfadX&&hy>=HALLE.h+HALLE.hofH)feld[k]=T.WEG;else if(feld[k]!==T.WEG&&feld[k]!==T.FLUSS)feld[k]=T.WIESE;}
 const ovar=(tx,ty)=>NB?NB.variante(tx,ty):0;
 
 // ---------- Bildchen: Felder und Bäume ----------
@@ -170,7 +175,9 @@ const PAL=[
  [[222,214,198],[132,36,34],[206,168,74],[92,84,78]],// Prätorianerkaserne: weiß-rotes Schachbrett mit Gold
  [[74,58,42],[68,53,38],[80,63,45],[94,31,28]],// Medicus: dunkle Dielen wie im Behandlungsraum des Spiels (4. Farbe = Blut)
  [[206,202,190],[196,192,180],[216,212,200],[150,146,134]],// Krankenhaus: helle Fliesen (4. Farbe = Fugen)
- [[154,131,88],[140,118,80],[171,148,106],[123,102,66]]// Sklavenmarkt: festgetretene Erde wie im Spiel
+ [[154,131,88],[140,118,80],[171,148,106],[123,102,66]],// Sklavenmarkt: festgetretene Erde wie im Spiel
+ [[46,50,48],[38,42,40],[56,60,57],[26,29,28]],// Halle der Toten: dunkler Stein wie im Spiel
+ [[74,86,58],[66,78,52],[84,96,66],[132,128,112]]// Gräberplatz: dunkles Gras mit Kieswegen
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
@@ -183,6 +190,8 @@ function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageDat
   if(t===T.SCHMIEDE||t===T.SCHM_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,k3=t===T.SCHMIEDE?3:2,cx=(ux*k3)%1,cy=((uy*k3)+(t===T.SCHMIEDE?(((ux*k3)|0)&1)*.5:0))%1;col=cx<.06||cy<.06?P[3]:P[n<.6?0:n<.86?1:2];if(t===T.SCHMIEDE&&n>.965)col=[64,60,56];}
   if(t===T.BST_S){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+81)>.955||h2(x>>3,y>>2,v+83)>.97)col=P[3];if(h2(x,y,v+85)>.994)col=[220,212,190];}
   if(t===T.BEAST){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,r=(uy*3)|0,cx=(ux*3+(r&1)*.5)%1,cy=(uy*3)%1;col=cx<.07||cy<.08?P[3]:P[(h2(r,(ux*3+(r&1)*.5)|0,v+87)*3)|0];if(h2(x>>1,y,v+89)>.95)col=[196,170,100];}
+  if(t===T.HALLE){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,cx=(ux*2)%1,cy=(uy*2)%1;col=cx<.06||cy<.06?P[3]:P[(h2((ux*2)|0,(uy*2)|0,v+93)*3)|0];}
+  if(t===T.GRAB){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2;col=P[n<.45?0:n<.8?1:2];if(uy>.82||ux<.08||ux>.92)col=h2(x,y,v+94)>.4?P[3]:[118,114,98];}
   if(t===T.MEDICUS){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,pl=(uy*6)|0;col=(uy*6)%1<.14?[58,44,31]:P[(h2(pl,v,95)*3)|0];if(h2(x>>2,y>>1,v+99)>.93||h2(x>>3,y>>2,v+98)>.96)col=P[3];}
   else if(t===T.KRANK){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,cx=(ux*3)%1,cy=(uy*3)%1;col=cx<.05||cy<.05?(t===T.KRANK?P[3]:[150,144,132]):P[(h2((ux*3)|0,(uy*3)|0,v+97)*3)|0];if(t===T.MEDICUS&&(h2(x>>2,y>>1,v+99)>.95||h2(x>>3,y>>2,v+98)>.975))col=P[3];}
   if(t===T.KAS_S){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,pl=(uy*5)|0;col=(uy*5)%1<.14?P[3]:P[(h2(pl,v,79)*3)|0];if(n>.95)col=P[3];}
@@ -348,7 +357,7 @@ function drawSit(ctx,g,x,y,dir){if(detailV){const sp=spriteOf(g),h=FY-22;if(sp){
  const r=simpleOf(g);if(r)ctx.drawImage(r.c,(dir*(WALK+1)+WALK)*PW,r.y,PW,SITZ_H,x-PAX,y-SITZ_H+2,PW,SITZ_H);else drawMini(ctx,g,x,y);}
 const gehBild=dist=>((dist/SCHRITT*WALK)|0)%WALK;
 function drawMini(ctx,g,x,y){const a=g.appearance||{};ctx.fillStyle=a.cloth||'#55938e';ctx.fillRect(x-2,y-7,4,6);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-1,y-10,3,3);}
-const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS&&t!==T.UNTERKUNFT&&t!==T.UNT_S&&t!==T.UNT_K&&t!==T.SCHM_S&&t!==T.SCHMIEDE&&t!==T.SCHM_K&&t!==T.BST_S&&t!==T.BEAST&&t!==T.BST_K&&t!==T.KAS_S&&t!==T.KASERNE&&t!==T.KAS_K&&t!==T.MEDICUS&&t!==T.KRANK&&t!==T.MARKT;};
+const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS&&t!==T.UNTERKUNFT&&t!==T.UNT_S&&t!==T.UNT_K&&t!==T.SCHM_S&&t!==T.SCHMIEDE&&t!==T.SCHM_K&&t!==T.BST_S&&t!==T.BEAST&&t!==T.BST_K&&t!==T.KAS_S&&t!==T.KASERNE&&t!==T.KAS_K&&t!==T.MEDICUS&&t!==T.KRANK&&t!==T.MARKT&&t!==T.HALLE;};
 const imLudus=(tx,ty)=>tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h;
 function makeRoster(n){const keep=S.roster.filter(g=>!g.dead);let list=keep.slice(0,n);const rng=S.rng;while(list.length<n){const g=M.makeGladiator(0);g.fatigue=0;list.push(g);}S.rng=rng;
  S.roster=list;try{M.army?.autoClasses?.(list);}catch(e){}for(const w of workers){figs.delete(w.g.id);pof.delete(w.g.id);}if(pNext>PROW*6){pof.clear();pNext=0;}
@@ -445,6 +454,6 @@ function ebnen(ks,L){for(const k of ks){hc.fill(L,k*4,k*4+4);gelaendeTyp(k);}if(
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
 window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
- raster(on){raster=!!on;bake();},rebake,O,WEG_TY,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
+ raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
 window.WELT_READY=true;
 })();

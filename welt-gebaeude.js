@@ -46,7 +46,7 @@
 (()=>{
 const M=window.MG,W=window.WeltKarte,H=window.WeltHook,B=M?.weltBau;if(!M||!W||!H||!B||W.T.UNTERKUNFT==null)return;const S=M.s;
 const T=W.T,N=W.N,WAND=34,STUMPF=7,STEIG=11,KAPPE=3,TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const STUFE=new Map([[T.UNT_S,0],[T.UNTERKUNFT,1],[T.UNT_K,2],[T.SCHM_S,0],[T.SCHMIEDE,1],[T.SCHM_K,2],...(T.BEAST!=null?[[T.BST_S,0],[T.BEAST,1],[T.BST_K,2]]:[]),...(T.KASERNE!=null?[[T.KAS_S,0],[T.KASERNE,1],[T.KAS_K,2]]:[]),...(T.KRANK!=null?[[T.MEDICUS,1],[T.KRANK,1]]:[]),...(T.MARKT!=null?[[T.MARKT,1]]:[])]),ART=new Map([[T.SCHM_S,'schmiede'],[T.SCHMIEDE,'schmiede'],[T.SCHM_K,'schmiede'],[T.BST_S,'beast'],[T.BEAST,'beast'],[T.BST_K,'beast'],[T.KAS_S,'kaserne'],[T.KASERNE,'kaserne'],[T.KAS_K,'kaserne'],[T.MEDICUS,'medicus'],[T.KRANK,'krankenhaus'],[T.MARKT,'markt']]),NAME_K=['BRETTERBUDE','KASERNE','PRÄTORIANERKASERNE'],NAME_B=['KNOCHENGRUBE','BEASTRIUM','KAISERLICHE MENAGERIE'],NAME_S=['ROSTGRUBE','WAFFENSCHMIEDE','KAISERLICHE WAFFENSCHMIEDE'],NAME=['RATTENLOCH','MANNSCHAFTSSTUBE','FÜRSTENGEMÄCHER'],PLATZ=[['STROHHAUFEN','STROHHAUFEN'],['BETT','BETTEN'],['PRUNKLIEGE','PRUNKLIEGEN']];
+const STUFE=new Map([[T.UNT_S,0],[T.UNTERKUNFT,1],[T.UNT_K,2],[T.SCHM_S,0],[T.SCHMIEDE,1],[T.SCHM_K,2],...(T.BEAST!=null?[[T.BST_S,0],[T.BEAST,1],[T.BST_K,2]]:[]),...(T.KASERNE!=null?[[T.KAS_S,0],[T.KASERNE,1],[T.KAS_K,2]]:[]),...(T.KRANK!=null?[[T.MEDICUS,1],[T.KRANK,1]]:[]),...(T.MARKT!=null?[[T.MARKT,1]]:[]),...(T.HALLE!=null?[[T.HALLE,1]]:[])]),ART=new Map([[T.SCHM_S,'schmiede'],[T.SCHMIEDE,'schmiede'],[T.SCHM_K,'schmiede'],[T.BST_S,'beast'],[T.BEAST,'beast'],[T.BST_K,'beast'],[T.KAS_S,'kaserne'],[T.KASERNE,'kaserne'],[T.KAS_K,'kaserne'],[T.MEDICUS,'medicus'],[T.KRANK,'krankenhaus'],[T.MARKT,'markt'],[T.HALLE,'halle']]),NAME_K=['BRETTERBUDE','KASERNE','PRÄTORIANERKASERNE'],NAME_B=['KNOCHENGRUBE','BEASTRIUM','KAISERLICHE MENAGERIE'],NAME_S=['ROSTGRUBE','WAFFENSCHMIEDE','KAISERLICHE WAFFENSCHMIEDE'],NAME=['RATTENLOCH','MANNSCHAFTSSTUBE','FÜRSTENGEMÄCHER'],PLATZ=[['STROHHAUFEN','STROHHAUFEN'],['BETT','BETTEN'],['PRUNKLIEGE','PRUNKLIEGEN']];
 const SPRUECHE=[[// Rattenloch
  'Ratten sind auch Eiweiß.','Stroh ist ein Privileg. Benimm dich entsprechend.','Das Loch im Dach ist ein Fenster. Gern geschehen.','Wer hier aufwacht, hat schon gewonnen.','Der Eimer ist für alle da. Auch für dich, Titus.','Hier ist noch keiner erfroren. Gezählt hat allerdings auch keiner.','Das ist kein Schimmel. Das ist Wandschmuck.','Nachts gebissen worden? Die Ratte hatte auch einen schweren Tag.','Das Stroh wurde zuletzt gewechselt, als sein Vorbesitzer noch lebte.','Kalt? Die Toten im Hof frieren auch nicht.','Hier stinkt es nach Ehrgeiz. Und nach Gaius.','Betten sind für Leute mit Zukunft.','Der Husten geht vorbei. So oder so.','Wer sich beschwert, schläft draußen. Da ist mehr Platz, seit dem Löwen.'],
  [// Mannschaftsstube
@@ -98,7 +98,7 @@ function wuerfeln(h){const pool=h.art==='medicus'||h.art==='krankenhaus'?[...SPR
 const NB=[[1,0],[-1,0],[0,1],[0,-1]];
 // ---------- Grundriss → Haus ----------
 function gebiet(k0){const typ=W.feld[k0],seen=new Set([k0]),st=[k0],tiles=[];while(st.length){const k=st.pop();tiles.push(k);const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=N||ny>=N)continue;const q=ny*N+nx;if(!seen.has(q)&&W.feld[q]===typ){seen.add(q);st.push(q);}}}return tiles;}
-function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get(typ)||'unterkunft',schm=art==='schmiede',bst=art==='beast',kas=art==='kaserne',med=art==='medicus',krk=art==='krankenhaus',mkt=art==='markt',set=new Set(tiles);let bx0=N,by0=N,bx1=0,by1=0;for(const k of tiles){const x=k%N,y=(k/N)|0;if(x<bx0)bx0=x;if(x>bx1)bx1=x;if(y<by0)by0=y;if(y>by1)by1=y;}
+function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get(typ)||'unterkunft',schm=art==='schmiede',bst=art==='beast',kas=art==='kaserne',med=art==='medicus',krk=art==='krankenhaus',mkt=art==='markt',hal=art==='halle',set=new Set(tiles);let bx0=N,by0=N,bx1=0,by1=0;for(const k of tiles){const x=k%N,y=(k/N)|0;if(x<bx0)bx0=x;if(x>bx1)bx1=x;if(y<by0)by0=y;if(y>by1)by1=y;}
  const has=(x,y)=>x>=0&&y>=0&&x<N&&y<N&&set.has(y*N+x);
  const lang=bx1-bx0>=by1-by0,tief=(a,b)=>(a%N+((a/N)|0))-(b%N+((b/N)|0));
  // Schmiede: die hintere Hälfte entlang der längeren Seite ist überdacht, der Rest ist Hof
@@ -107,7 +107,7 @@ function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get
  let door=null,best=1e9;const mx=(bx0+bx1)/2,my=(by0+by1)/2;
  for(const k of tiles){if(schm&&hof.length&&dach.has(k))continue;const x=k%N,y=(k/N)|0;if(!has(x,y+1)){const d=Math.abs(x-mx)+(by1-y)*3;if(d<best){best=d;door={k,side:'y'};}}if(!has(x+1,y)){const d=Math.abs(y-my)+(bx1-x)*3+.4;if(d<best){best=d;door={k,side:'x'};}}}
  // Schlafplätze: jede zweite Reihe quer zur längeren Seite, dazwischen bleibt ein Gang frei; das Feld hinter der Tür bleibt frei
- let beds=schm||bst||kas||mkt?[]:tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0)%2===0:(y-by0)%2===0);}).sort(tief);
+ let beds=schm||bst||kas||mkt||hal?[]:tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0)%2===0:(y-by0)%2===0);}).sort(tief);
  // Beastrium: zwei Reihen Käfige quer zur längeren Seite, dann eine Reihe Gang; das Türfeld bleibt frei
  const kaefig=bst?new Map(tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0):(y-by0))%3!==1;}).map(k=>[k,tierFuer(k,st)])):new Map();
  let stuhl=-1;if(med){// Medicus: Stuhl nahe der Mitte, zwei Betten an der Rückwand (am weitesten von der Tür)
@@ -115,7 +115,7 @@ function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get
   stuhl=rest.slice().sort((a,b)=>(Math.abs(a%N-cx)+Math.abs(((a/N)|0)-cy))-(Math.abs(b%N-cx)+Math.abs(((b/N)|0)-cy)))[0];beds=rest.filter(k=>k!==stuhl).sort((a,b)=>dd(b)-dd(a)).slice(0,2).sort(tief);}
  const lager=kas?staenderPlan(tiles,has,door,lang,bx0,by0,st):null;
  // Bilder des Lanista an den hinteren Innenwänden (im Beastrium nur über dem Gang, nicht hinter den Käfigen)
- const poster=[];for(const k of tiles){const x=k%N,y=(k/N)|0;for(const [side,frei,salt,p] of [['a',!has(x,y-1),52,.5],['d',!has(x-1,y),53,.42]])if(frei&&!mkt&&(!schm||dach.has(k))&&!kaefig.has(k)&&!lager?.rk.has(k)&&W.h2(x,y,salt)<(schm?.62:bst||kas?.85:p)){poster.push({k,side,text:''});}}
+ const poster=[];for(const k of tiles){const x=k%N,y=(k/N)|0;for(const [side,frei,salt,p] of [['a',!has(x,y-1),52,.5],['d',!has(x-1,y),53,.42]])if(frei&&!mkt&&!hal&&(!schm||dach.has(k))&&!kaefig.has(k)&&!lager?.rk.has(k)&&W.h2(x,y,salt)<(schm?.62:bst||kas?.85:p)){poster.push({k,side,text:''});}}
  // Dachhöhe: Ringe vom Rand nach innen (über Eck gezählt), gedeckelt
  const D=new Map();let rand=[...dach].filter(k=>{const x=k%N,y=(k/N)|0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(!hasD(x+dx,y+dy))return true;return false;}),d=1;
  while(rand.length){for(const k of rand)D.set(k,Math.min(d,KAPPE));const next=[];for(const k of rand){const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB){const q=(y+dy)*N+x+dx;if(hasD(x+dx,y+dy)&&!D.has(q)&&!next.includes(q))next.push(q);}}rand=next;d++;}
@@ -123,7 +123,7 @@ function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get
  const sufY=[];let m=-1;for(let x=bx1;x>=bx0;x--){for(let y=by1;y>=by0;y--)if(has(x,y)){if(y>m)m=y;break;}sufY[x-bx0]=m;}
  const stat=schm?stationen(tiles,dach,hof,has,door,st,tief):new Map(),ambosse=[...stat.values()].filter(r=>r==='amboss').length;
  return {id:Math.min(...tiles),st,art,tiles:tiles.slice().sort(tief),set,has,hasD,dach,stat,ambosse,kaefig,kaefige:kaefig.size,rk:lager?.rk||new Map(),slots:lager?.slots||[],plaetze:lager?.slots.length||0,trager:[],n:tiles.length,bx0,by0,bx1,by1,door,beds,betten:beds.length,poster,eck,sufY,key:W.iso(bx1+1,by1+1).y,
-  titel:schm?NAME_S[st]:bst?NAME_B[st]:kas?NAME_K[st]:med?'MEDICUS':krk?'KRANKENHAUS':mkt?'SKLAVENMARKT':NAME[st],zahl:mkt?'TÄGLICHE':schm?ambosse:bst?kaefig.size:kas?(lager.slots.length>>1)+'/'+lager.slots.length:beds.length,wort:mkt?['WARE','WARE']:schm?['AMBOSS','AMBOSSE']:bst?['KÄFIG','KÄFIGE']:kas?['PLÄTZE BELEGT','PLÄTZE BELEGT']:med||krk?['BETT','BETTEN']:PLATZ[st],stuhl};}
+  titel:schm?NAME_S[st]:bst?NAME_B[st]:kas?NAME_K[st]:med?'MEDICUS':krk?'KRANKENHAUS':mkt?'SKLAVENMARKT':hal?'HALL OF THE FALLEN':NAME[st],zahl:mkt?'TÄGLICHE':hal?(M.weltHalle?.liste?.().length??0):schm?ambosse:bst?kaefig.size:kas?(lager.slots.length>>1)+'/'+lager.slots.length:beds.length,wort:mkt?['WARE','WARE']:hal?['GEFALLENER','GEFALLENE']:schm?['AMBOSS','AMBOSSE']:bst?['KÄFIG','KÄFIGE']:kas?['PLÄTZE BELEGT','PLÄTZE BELEGT']:med||krk?['BETT','BETTEN']:PLATZ[st],stuhl};}
 // Einrichtung der Schmiede: Essen an der Rückwand, davor Amboss und Löschtrog; Werkbänke an freien Wandfeldern;
 // im Hof Schleifstein, Lager (Erz, Kohle, Holz, Barren), Waffenständer und je Klasse ein Extra. Rund ein Drittel bleibt frei zum Laufen.
 function stationen(tiles,dach,hof,has,door,st,tief){const stat=new Map(),frei=k=>!stat.has(k)&&k!==door.k,hx=(k,s)=>W.h2(k%N,(k/N)|0,s);
@@ -153,6 +153,7 @@ function oval(g,x,y,z,rx,ry,col){const p=pt(x,y,z);g.fillStyle=col;g.beginPath()
 function wand(g,x0,y0,x1,y1,h,hell,st,extra,art){const p=W.iso(x0,y0),q=W.iso(x1,y1);g.save();g.transform(q.x-p.x,q.y-p.y,0,-1,p.x,p.y);const R=(u,v,du,dv,col)=>{g.fillStyle=col;g.fillRect(u,v,du,dv);},z=(i,s)=>W.h2(x0*7+i,y0*3+x1+y1*5,s),voll=h>12;
  if(art==='medicus-innen')medInnen(R,h,hell,z,voll);
  else if(art==='medicus')medAussen(R,h,hell,z,voll);
+ else if(art==='halle')hallStein(R,h,hell,z,voll);
  else if(st===1&&art==='beast'){bruchstein(R,h,hell,z,voll);}
  else if(st===0){R(0,0,1,h,sh(LEHM,hell));R(0,0,1,Math.min(5,h*.6),sh([88,74,54],hell));for(let i=0;i<5;i++)R(z(i,61)*.9,2+z(i,62)*3,.08,1.5,sh([70,60,44],hell));
   if(voll){for(let i=0;i<2;i++){const u=.1+z(i,63)*.6,v=8+z(i,64)*(h-20);R(u,v,.2,7,sh([96,70,44],hell));for(let k=0;k<3;k++)R(u,v+1+k*2.2,.2,.7,sh([132,100,62],hell));for(let k=0;k<3;k++)R(u+.03+k*.07,v,.014,7,sh([70,50,30],hell));}// abgeplatzter Lehm, darunter Flechtwerk
@@ -216,25 +217,27 @@ function kram(g,x,y,seed,st,h){const a=S.lanista?.appearance||{};
  else if(seed<.5){for(const [dx,dy] of [[.4,.4],[.6,.42],[.5,.6]])kiste(g,x+dx-.015,y+dy-.015,x+dx+.015,y+dy+.015,0,9,BRONZE);oval(g,x+.5,y+.5,9,8,4,sh(BRONZE,1.1));oval(g,x+.5,y+.5,10,6,3,'#2a1c12');oval(g,x+.5,y+.5,11.5,4,3.4,'#ff9030');oval(g,x+.5,y+.5,13.5,2.2,3,'#ffe070');}// Feuerschale
  else if(seed<.66){kiste(g,x+.3,y+.34,x+.7,y+.66,0,8,GOLD,.92);kiste(g,x+.3,y+.48,x+.71,y+.52,0,8.3,BRONZE);kiste(g,x+.29,y+.33,x+.71,y+.67,8,9.6,GOLD);const p=pt(x+.71,y+.5,5);g.fillStyle='#20140c';g.fillRect(p[0]-1,p[1]-1.5,2,3);}// goldene Truhe
  else if(seed<.86){kiste(g,x+.46,y+.46,x+.54,y+.54,0,7,MARMOR);oval(g,x+.5,y+.5,7.5,10,5,sh(MARMOR,1.02));oval(g,x+.5,y+.5,9,5,2.5,sh(GOLD,1));for(const [dx,dy,c] of [[-.05,0,[170,40,50]],[.03,-.03,[120,150,60]],[.02,.04,[210,140,50]]])oval(g,x+.5+dx,y+.5+dy,10.5,2,2,sh(c,1));kiste(g,x+.62,y+.38,x+.67,y+.43,7.5,14,[170,96,60]);}}// Tisch mit Obst und Wein
-function male(h,offen){const bst=h.art==='beast',kas=h.art==='kaserne',med=h.art==='medicus',krk=h.art==='krankenhaus',kf=h.kaefig;const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-(WAND+STEIG*KAPPE+30),bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top),st=h.st;
+function male(h,offen){const bst=h.art==='beast',kas=h.art==='kaserne',med=h.art==='medicus',krk=h.art==='krankenhaus',hal=h.art==='halle',kf=h.kaefig,innen=hal?(M.weltHalle?.innen?.()||[]):null;let gi=0;const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-(WAND+STEIG*KAPPE+30),bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top),st=h.st;
  const c=document.createElement('canvas');c.width=Math.ceil(p1.x-p0.x+m);c.height=Math.ceil(bot-top);const g=c.getContext('2d');g.translate(-ox,-oy);const has=h.has,bed=new Set(h.beds),po=new Map(h.poster.map(p=>[p.k+p.side,p]));if(offen){h.mist=[];h.gang=[];}
  for(const k of h.tiles){const x=k%N,y=(k/N)|0,s=W.h2(x,y,51),dr=h.door.k===k;
   // hintere Wände (Innenseite), mit Bild des Lanista oder Schmuck
-  const zier=bst?schmuckB:kas?schmuckK:med?schmuckMed:krk?(()=>()=>{}):schmuck,ia=med?'medicus-innen':h.art;const zs=(salt,d)=>med?((x*2+y*3+d)%5)/5+.02:W.h2(x,y,salt);// Medicus: Wandschmuck der Reihe nach
+  const zier=bst?schmuckB:kas?schmuckK:med?schmuckMed:hal?schmuckHalle:krk?(()=>()=>{}):schmuck,ia=med?'medicus-innen':h.art;const zs=(salt,d)=>med?((x*2+y*3+d)%5)/5+.02:W.h2(x,y,salt);// Medicus: Wandschmuck der Reihe nach
   if(!has(x,y-1))wand(g,x,y,x+1,y,WAND,.98,st,offen?(po.has(k+'a')?bild(st,.98):zier(st,zs(55,0))):null,ia);if(!has(x-1,y))wand(g,x,y+1,x,y,WAND,.8,st,offen?(po.has(k+'d')?bild(st,.8):zier(st,zs(56,2))):null,ia);
   if(offen){if(dr){const a=h.door.side==='y',c0=st===0?[120,104,70]:st===1?[150,52,44]:PURPUR;quad(g,a?[pt(x+.2,y+.45),pt(x+.8,y+.45),pt(x+.8,y+.95),pt(x+.2,y+.95)]:[pt(x+.45,y+.2),pt(x+.95,y+.2),pt(x+.95,y+.8),pt(x+.45,y+.8)],sh(c0,.9),sh(c0,.6));}
+   else if(hal){h.gang.push(k);grabInnen(g,x,y,innen[gi++]||null);}
    else if(med){if(k===h.stuhl)behandlungsstuhl(g,x,y);else if(bed.has(k))amputationsbett(g,x,y,s);else{h.gang.push(k);if(s<.4)kramMed(g,x,y,s*2,h);}}
    else if(krk){if(bed.has(k))krankenbett(g,x,y,s);else h.gang.push(k);}
    else if(kas){if(h.rk.has(k))staender(g,x,y,st,h.rk.get(k));else{h.gang.push(k);if(s<.55)kramKas(g,x,y,s,st,h);}}
    else if(bst){if(kf.has(k))kaefigMalen(g,x,y,st,kf.get(k),h);else{h.gang.push(k);if(s<(st===0?.8:.62))kramB(g,x,y,s,st,h);}}
    else if(bed.has(k))bett(g,x,y,s,st);else{h.gang.push(k);if(st===0?s<.9:st===1?(!has(x,y-1)||!has(x-1,y))&&s<.66:s<.86)kram(g,x,y,s,st,h);}}
   // vordere Wände (Außenseite): geschlossen volle Höhe mit Fenster, Tür oder Bild; offen nur kniehoch mit Türlücke
-  const front=(x0,y0,x1,y1,hell,istTuer,salt)=>{if(!offen)wand(g,x0,y0,x1,y1,WAND,hell,st,istTuer?(med?tuerMed(hell):tuer(st,hell)):(x+y)%2===0?(bst?gitterfenster(st,hell,W.h2(x,y,salt+3)):fenster(st,hell)):W.h2(x,y,salt)<.6?bild(st,hell):null,h.art);
+  const front=(x0,y0,x1,y1,hell,istTuer,salt)=>{if(!offen)wand(g,x0,y0,x1,y1,WAND,hell,st,istTuer?(med?tuerMed(hell):hal?tuerHalle(hell):tuer(st,hell)):hal?saeule(hell):(x+y)%2===0?(bst?gitterfenster(st,hell,W.h2(x,y,salt+3)):fenster(st,hell)):W.h2(x,y,salt)<.6?bild(st,hell):null,h.art);
    else if(!istTuer)wand(g,x0,y0,x1,y1,STUMPF,hell,st,null,h.art);else{const a=W.iso(x0,y0),b=W.iso(x1,y1),c0=st===0?LEHM:st===1?PUTZ:MARMOR,L=(u0,u1)=>{g.save();g.transform(b.x-a.x,b.y-a.y,0,-1,a.x,a.y);g.fillStyle=sh(c0,hell);g.fillRect(u0,0,u1-u0,STUMPF);g.fillStyle=sh(st===0?[88,74,54]:st===1?SOCKEL:MARMOR,hell*.9);g.fillRect(u0,0,u1-u0,4);g.fillStyle=sh(st===2?GOLD:BALKEN,hell);g.fillRect(u0?u0:u1-.05,0,.05,STUMPF+2);g.restore();};L(0,.24);L(.76,1);}};
   if(!has(x,y+1))front(x,y+1,x+1,y+1,.74,dr&&h.door.side==='y',57);if(!has(x+1,y))front(x+1,y+1,x+1,y,.94,dr&&h.door.side==='x',58);}
  if(!offen){// Dach: je Feld eine Fläche, die Ecken steigen vom Rand zur Mitte an
   const hoch=dachMalen(g,h,h.tiles,has);
-  if(bst||kas){h.rauch=null;if(hoch){// Dachfigur ans hintere Ende des Firsts, damit das Namensschild sie nicht verdeckt
+  if(hal){h.rauch=null;if(hoch)dachSchaedel(g,hoch);}
+  else if(bst||kas){h.rauch=null;if(hoch){// Dachfigur ans hintere Ende des Firsts, damit das Namensschild sie nicht verdeckt
    const zs=k=>{const x=k%N,y=(k/N)|0;return h.eck(x,y)+h.eck(x+1,y)+h.eck(x+1,y+1)+h.eck(x,y+1);},zm=Math.max(...h.tiles.map(zs)),cx=(h.bx0+h.bx1)/2,cy=(h.by0+h.by1)/2;let e=null,ed=-1;
    for(const k of h.tiles){if(zs(k)!==zm)continue;const x=k%N,y=(k/N)|0,d=Math.abs(x-cx)+Math.abs(y-cy)-(x+y)*.01;if(d>ed){ed=d;e={x,y,z:zm+4*WAND};}}(kas?dachZier:dachTier)(g,e||hoch,st);}}
   else if(hoch&&h.n>=4&&st>0){const z=hoch.z/4,cc=st===2?MARMOR:[128,120,108];kiste(g,hoch.x+.36,hoch.y+.36,hoch.x+.64,hoch.y+.64,z-3,z+13,cc);kiste(g,hoch.x+.33,hoch.y+.33,hoch.x+.67,hoch.y+.67,z+13,z+15.5,st===2?GOLD:[96,90,82]);const p=pt(hoch.x+.5,hoch.y+.5,z+15.5);h.rauch={x:p[0],y:p[1]};}else h.rauch=null;}
@@ -242,7 +245,7 @@ function male(h,offen){const bst=h.art==='beast',kas=h.art==='kaserne',med=h.art
 
 // Dach über den Feldern tiles; has sagt, wo das Dach endet (Traufe)
 function dachMalen(g,h,tiles,has){const st=h.st;
-  const bst=h.art==='beast',farbe=st===0?[170,144,84]:st===1?(bst?[100,64,38]:h.art==='medicus'?[105,119,111]:ZIEGEL):[166,62,44];let hoch=null;
+  const bst=h.art==='beast',farbe=st===0?[170,144,84]:st===1?(bst?[100,64,38]:h.art==='medicus'?[105,119,111]:h.art==='halle'?[58,62,60]:ZIEGEL):[166,62,44];let hoch=null;
   for(const k of tiles){const x=k%N,y=(k/N)|0,zA=WAND+h.eck(x,y),zB=WAND+h.eck(x+1,y),zC=WAND+h.eck(x+1,y+1),zD=WAND+h.eck(x,y+1),A=pt(x,y,zA),Bp=pt(x+1,y,zB),C=pt(x+1,y+1,zC),Dp=pt(x,y+1,zD),s=W.h2(x,y,54);
    const hell=clamp(.86+.016*((zA+zD)-(zB+zC))+.007*((zA+zB)-(zC+zD))+(s-.5)*(st===0?.16:.06),.56,1.14),L=(P,Q,t)=>[P[0]+(Q[0]-P[0])*t,P[1]+(Q[1]-P[1])*t];
    if(!has(x,y+1))quad(g,[Dp,C,[C[0],C[1]+3],[Dp[0],Dp[1]+3]],sh(st===2?GOLD:st===0?[130,108,60]:BALKEN,.8));if(!has(x+1,y))quad(g,[C,Bp,[Bp[0],Bp[1]+3],[C[0],C[1]+3]],sh(st===2?GOLD:st===0?[130,108,60]:BALKEN,1));
@@ -551,6 +554,21 @@ function maleMarkt(h){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0)
  for(const x of [X0+.25,X1-.25]){kiste(g,x-.05,Y1-.3,x+.05,Y1-.2,0,20,[58,47,34]);kiste(g,x-.07,Y1-.32,x+.07,Y1-.18,19,21,[77,61,43]);const p=pt(x,Y1-.25,13);g.fillStyle='#34393a';g.fillRect(Math.round(p[0])+1,Math.round(p[1]),2,5);g.fillRect(Math.round(p[0])+2,Math.round(p[1])+5,3,1);}
  kiste(g,X1-1.2,Y1-.45,X1-.7,Y1-.2,0,6,[77,61,43]);flach(g,X1-1.17,Y1-.42,X1-.73,Y1-.23,6.1,'#5d8f9a');
  return {c,ox,oy};}
+// ---------- Halle der Toten (fest, abseits; Vorplatz mit 10 Grabstellen in welt-halle.js) ----------
+// Wie im Spiel (hall.js): dunkler Stein, Bronzetür mit Fackeln, Totenkopf auf dem Dach; innen die Gräber aller Gefallenen,
+// die nicht draußen stehen (Grabstufen 1–5 mit M.hall.tomb), sonst leere Grabstellen (M.hall.plot).
+function hallStein(R,h,hell,z,voll){R(0,0,1,h,sh([46,50,48],hell));for(let v=2,r=0;v<h-2;v+=7,r++)for(let u=.02+(r%2)*.12,i=0;u<.98;u+=.24,i++)R(u,v,Math.min(.23,.98-u),6,sh((i+r)%3?[56,61,58]:[50,54,52],hell));
+ if(voll){R(0,h-3,1,3,sh([60,65,60],hell));R(0,h-3,1,.6,sh([93,99,91],hell));}}
+const saeule=hell=>(R,h)=>{if(h<20)return;for(const u of [.18,.66]){R(u,2,.16,h-6,sh([83,88,79],hell));R(u+.03,2,.04,h-6,sh([108,114,104],hell));R(u+.12,2,.03,h-6,sh([62,66,59],hell));R(u-.02,h-6,.2,3,sh([100,106,96],hell));R(u-.02,1,.2,3,sh([100,106,96],hell));}};
+const tuerHalle=hell=>(R,h)=>{if(h<20)return;R(.24,0,.52,h*.72,'#0e1112');R(.22,h*.72,.56,2,sh([93,99,91],hell));for(const u of [.28,.5]){R(u,1,.22,h*.68,sh([106,80,48],hell));R(u,h*.68-1,.22,1.4,sh([138,106,58],hell));for(let v=8;v<h*.66;v+=8)R(u+.02,v,.18,.8,sh([74,56,32],hell));R(u+.09,h*.36,.04,3,'#c9a85a');}
+ for(const u of [.1,.86]){R(u,h*.42,.04,7,'#3b3226');R(u-.02,h*.42+6,.08,2.4,'#5a4a34');R(u-.01,h*.42+8,.06,3,'#ff9030');R(u,h*.42+10,.04,2.4,'#ffe070');}};// Fackeln
+const schmuckHalle=(st,seed)=>(R,h)=>{if(h<20)return;
+ if(seed<.35){R(.46,h*.42,.04,7,'#3b3226');R(.44,h*.42+6,.08,2.4,'#5a4a34');R(.45,h*.42+8,.06,3,'#ff9030');R(.46,h*.42+10,.04,2.4,'#ffe070');}// Fackel
+ else if(seed<.6){R(.3,h*.4,.4,h*.3,'#22262a');R(.3,h*.4,.4,1,'#5d635b');for(let i=0;i<4;i++)R(.34,h*.48+i*2.4,.32-(i%2)*.08,.8,'#b8b4a0');}// Inschrifttafel mit Namen
+ else if(seed<.8){for(let i=0;i<10;i++){const a=i/10*Math.PI*2;R(.48+Math.cos(a)*.08,h*.55+Math.sin(a)*4,.04,1.6,'#5e8a3a');}}};// Lorbeerkranz
+function dachSchaedel(g,hoch){const z=hoch.z/4,p=pt(hoch.x+.5,hoch.y+.5,z),k=1.6,R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(p[0]+dx*k),Math.round(p[1]+dy*k),Math.ceil(w*k),Math.ceil(h*k));};
+ R(-5,-3,10,3,'#3c413c');R(-4,-12,8,9,'#bdb9a4');R(-3,-10,2,2,'#1b1f1e');R(1,-10,2,2,'#1b1f1e');R(-1,-7,1,1,'#1b1f1e');R(-3,-4,6,1,'#8f8c7a');}
+function grabInnen(g,x,y,e){const H=M.hall,p=pt(x+.5,y+.58,0);if(!H?.tomb)return;g.save();g.translate(Math.round(p[0]),Math.round(p[1]));g.scale(W.KW,W.KW);try{if(e)H.tomb(g,e,0,0,0);else H.plot(g,0,0);}catch(err){}g.restore();}
 // ---------- Echte Tiere (Test, Thomas 12.11.) ----------
 // Im ersten Beastrium sitzen in den zwei Käfigen nahe der Tür ein echter Hahn (Hahnen-Modell, CF) und ein echter Hund (DOG) zum Ausprobieren.
 // Antippen des Käfigs im offenen Haus öffnet die Großaufnahme wie im Hauptspiel: beim Hahn genau die aus dem Beastrium
@@ -660,5 +678,7 @@ const tap0=H.tap;H.tap=(p,w)=>{if(B.mode||w)return tap0?tap0(p,w):false;const t=
  if(h.offen>.8){const b=bildAt(h,tx,ty)||bildAt(h,Math.floor(t.tx+.6),Math.floor(t.ty+.6));if(b){b.oz=h.item?.oz||0;spruch=spruch?.p===b?null:{p:b,t:6};fest.add(h.id);return true;}}
  if(fest.has(h.id))fest.delete(h.id);else fest.add(h.id);return true;};
 B.beiAenderung(neu);neu();
-M.weltGebaeude={WAND,NAME,NAME_S,NAME_B,SPRUECHE,SPR_S,SPR_B,kaefige:()=>haeuser.reduce((s,h)=>s+h.kaefige,0),plaetze:()=>haeuser.reduce((s,h)=>s+h.plaetze,0),SPR_M,NAME_K,SPR_K,ding,tragen,haeuser:()=>haeuser,betten:()=>haeuser.reduce((s,h)=>s+h.betten,0),ambosse:()=>haeuser.reduce((s,h)=>s+h.ambosse,0),testTiere,tierOeffnen,hundZu,bei(k){if(!STUFE.has(W.feld[k]))return null;const h=plan(gebiet(k));return {n:h.n,art:h.art,ambosse:h.ambosse,betten:h.betten,kaefige:h.kaefige,plaetze:h.plaetze,tuer:h.door,st:h.st,bilder:h.poster.length};},oeffne(id,an=true){if(an)fest.add(id);else fest.delete(id);},get spruch(){return spruch?.p.text||null;},male};
+// Gebäude einer Art neu zeichnen lassen (z. B. Halle der Toten, wenn sich die Gräber drinnen ändern)
+function frisch(art){for(const h of haeuser)if(!art||h.art===art){h.zu=null;h.auf=null;if(art==='halle'){h.zahl=M.weltHalle?.liste?.().length??h.zahl;}}}
+M.weltGebaeude={WAND,frisch,NAME,NAME_S,NAME_B,SPRUECHE,SPR_S,SPR_B,kaefige:()=>haeuser.reduce((s,h)=>s+h.kaefige,0),plaetze:()=>haeuser.reduce((s,h)=>s+h.plaetze,0),SPR_M,NAME_K,SPR_K,ding,tragen,haeuser:()=>haeuser,betten:()=>haeuser.reduce((s,h)=>s+h.betten,0),ambosse:()=>haeuser.reduce((s,h)=>s+h.ambosse,0),testTiere,tierOeffnen,hundZu,bei(k){if(!STUFE.has(W.feld[k]))return null;const h=plan(gebiet(k));return {n:h.n,art:h.art,ambosse:h.ambosse,betten:h.betten,kaefige:h.kaefige,plaetze:h.plaetze,tuer:h.door,st:h.st,bilder:h.poster.length};},oeffne(id,an=true){if(an)fest.add(id);else fest.delete(id);},get spruch(){return spruch?.p.text||null;},male};
 })();

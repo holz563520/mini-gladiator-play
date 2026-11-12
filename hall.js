@@ -289,4 +289,5 @@ const click=M.schoolClick;M.schoolClick=action=>{if(action==='hall:tap'){if(film
 // Musik: in der Halle immer „Aula Lorum“; im Tutorial die Schmied-Musik ab dem Durchteilen, bis man wieder in die Halle geht; sonst Stadtmusik
 function music(){if(film)return film.kind==='hall'?'hall':'home';if(M.ui.getPage?.()==='fallen')return 'hall';const st=H().tut,sc=M.smithWrath?.scene;if(sc?.p?.tut)return sc.t>=(sc.p.kills[0]?.swing??1e9)?'smith':'home';if(st==='open2')return 'smith';if(gateAnim&&st==='open1')return 'home';return '';}
 M.hall={traderReady:()=>done()&&traderWait<=0,get traderWait(){return traderWait;},music,play:{gate:playGate,empty:playEmpty,exec:playExec,visit:playVisit,finale:playFinale,finish:finishTutorial},guide,tierFor,entries,openDetail,paintHall,hallBg,sprite,state:H,get film(){return film;},stepFilm,done,setStage,recruit,TOMBS,slots:SLOTS,start:()=>{if(!H().tut){setStage('gate1');playGate();}}};
+M.hall.tomb=tomb;M.hall.plot=plot;M.hall.view=view;// für die Rasterkarte (welt-halle.js): Gräber und leere Grabstellen zeichnen
 })();
