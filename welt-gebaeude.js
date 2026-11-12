@@ -10,7 +10,8 @@
 //     1 Mannschaftsstube Putz mit rotem Sockelband, Ziegeldach, Pritschen, Truhen, Amphoren, Fackeln
 //     2 Fürstengemächer  Marmor, pompejanisch rote Felder mit Gold, Pilaster, Mosaik, Prunkliegen, Büsten, Feuerschalen
 // · Überall hängen Bilder des Lanista mit Durchhalteparolen (SPRUECHE). Im offenen Haus zeigt die Maus über einem Bild
-//   oder ein Antippen den Spruch.
+//   oder ein Antippen den Spruch; ab Zoom 1,3 steht über jedem Bild eine lesbare Tafel. Die Sprüche werden bei jedem Öffnen
+//   des Hauses neu ausgelost (ohne Wiederholung im selben Haus).
 // · Dach: wird durchsichtig, wenn die Maus über dem Haus steht, wenn man hineingezoomt hat und das Haus in der Bildmitte liegt
 //   oder wenn man es antippt (bleibt dann offen; Antippen einer Stelle ohne Bild schließt). Offen sind die vorderen Wände kniehoch.
 // · Leistung: Jedes Haus wird zweimal vorgezeichnet (geschlossen, offen) und nur neu gemalt, wenn sich sein Grundriss ändert.
@@ -22,13 +23,15 @@ const M=window.MG,W=window.WeltKarte,H=window.WeltHook,B=M?.weltBau;if(!M||!W||!
 const T=W.T,N=W.N,WAND=34,STUMPF=7,STEIG=11,KAPPE=3,TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const STUFE=new Map([[T.UNT_S,0],[T.UNTERKUNFT,1],[T.UNT_K,2]]),NAME=['RATTENLOCH','MANNSCHAFTSSTUBE','FÜRSTENGEMÄCHER'],PLATZ=[['STROHHAUFEN','STROHHAUFEN'],['BETT','BETTEN'],['PRUNKLIEGE','PRUNKLIEGEN']];
 const SPRUECHE=[[// Rattenloch
- 'Ratten sind auch Eiweiß.','Stroh ist ein Privileg. Benimm dich entsprechend.','Das Loch im Dach ist ein Fenster. Gern geschehen.','Wer hier aufwacht, hat schon gewonnen.','Der Eimer ist für alle da. Auch für dich, Titus.','Hier ist noch keiner erfroren. Gezählt hat allerdings auch keiner.'],
+ 'Ratten sind auch Eiweiß.','Stroh ist ein Privileg. Benimm dich entsprechend.','Das Loch im Dach ist ein Fenster. Gern geschehen.','Wer hier aufwacht, hat schon gewonnen.','Der Eimer ist für alle da. Auch für dich, Titus.','Hier ist noch keiner erfroren. Gezählt hat allerdings auch keiner.','Das ist kein Schimmel. Das ist Wandschmuck.','Nachts gebissen worden? Die Ratte hatte auch einen schweren Tag.','Das Stroh wurde zuletzt gewechselt, als sein Vorbesitzer noch lebte.','Kalt? Die Toten im Hof frieren auch nicht.','Hier stinkt es nach Ehrgeiz. Und nach Gaius.','Betten sind für Leute mit Zukunft.','Der Husten geht vorbei. So oder so.','Wer sich beschwert, schläft draußen. Da ist mehr Platz, seit dem Löwen.'],
  [// Mannschaftsstube
- 'Ein Bett pro Mann. Bei Verlusten wird zusammengerückt.','Ordnung ist das halbe Leben. Die andere Hälfte gehört mir.','Nachtruhe ab Sonnenuntergang. Die ewige nach Spielplan.','Wer schnarcht, kämpft morgen zuerst.','Fundsachen: ein Ohr. Bitte beim Medicus melden.'],
+ 'Ein Bett pro Mann. Bei Verlusten wird zusammengerückt.','Ordnung ist das halbe Leben. Die andere Hälfte gehört mir.','Nachtruhe ab Sonnenuntergang. Die ewige nach Spielplan.','Wer schnarcht, kämpft morgen zuerst.','Fundsachen: ein Ohr. Bitte beim Medicus melden.','Bett Nummer 7 ist frei geworden. Nicht nach dem Fleck fragen.','Dein Bettnachbar von gestern lässt grüßen. Er kann es nur nicht mehr.','Bitte keine Namen in die Betten ritzen. Lohnt sich nicht.','Decken werden vererbt, nicht gewaschen.','Wecken bei Sonnenaufgang. Wer liegen bleibt, wird nachgezählt und weggetragen.','Freunde finden ist leicht. Behalten ist hier das Problem.','Nachts wird nicht geweint. Tagsüber fehlt die Zeit.'],
  [// Fürstengemächer
- 'Du hast es geschafft. Bis morgen.','Gold steht dir. Mir steht es zu.','Sieger schlafen weich. Und kurz.','Diese Liege gehörte einem Champion. Er braucht sie nicht mehr.','Genieße den Luxus. Er wird vom Preisgeld abgezogen.'],
+ 'Du hast es geschafft. Bis morgen.','Gold steht dir. Mir steht es zu.','Sieger schlafen weich. Und kurz.','Diese Liege gehörte einem Champion. Er braucht sie nicht mehr.','Genieße den Luxus. Er wird vom Preisgeld abgezogen.','Champions leben länger. Wochen, manchmal.','Dein Purpur war teuer. Blute bitte auf den anderen.','Deine Büste ist schon bestellt. Die Inschrift auch. Nur das Datum lassen wir offen.','Ruhm ist vergänglich. Du auch, nur schneller.','Der Vorbewohner hatte denselben Blick. Bis Dienstag.','Trink den Wein. Er ist besser als deine Aussichten.','Ganz oben ist die Luft dünn und der Fall weit.'],
  [// überall
- 'Heute schon gestorben? Nein? Dann ab zum Training.','Dein Schmerz ist mein Gewinn.','Wer schläft, blutet nicht. Schlaf schnell.','Unfallfrei seit: 0 Tagen.','Du bist ersetzbar. Günstig sogar.','Lächle! Die Zuschauer zahlen für dein Gesicht. Solange du eins hast.','Teamgeist: Einer stirbt für alle.','Der Lanista sieht alles. Auch das.','Sold ist, was übrig bleibt, wenn ich fertig bin.','Narben sind Orden, die ich nicht bezahlen muss.','Mitarbeiter des Monats: Stelle frei, Vorgänger verstorben.','Beschwerden bitte in die Latrine.','Gib alles. Den Rest nehme ich mir.','Ich glaube an dich. Meine Wetten sagen etwas anderes.']];
+ 'Heute schon gestorben? Nein? Dann ab zum Training.','Dein Schmerz ist mein Gewinn.','Wer schläft, blutet nicht. Schlaf schnell.','Unfallfrei seit: 0 Tagen.','Du bist ersetzbar. Günstig sogar.','Lächle! Die Zuschauer zahlen für dein Gesicht. Solange du eins hast.','Teamgeist: Einer stirbt für alle.','Der Lanista sieht alles. Auch das.','Sold ist, was übrig bleibt, wenn ich fertig bin.','Narben sind Orden, die ich nicht bezahlen muss.','Mitarbeiter des Monats: Stelle frei, Vorgänger verstorben.','Beschwerden bitte in die Latrine.','Gib alles. Den Rest nehme ich mir.','Ich glaube an dich. Meine Wetten sagen etwas anderes.','Sterben ist kein Grund, das Training zu versäumen.','Wer zuletzt lacht, hat noch seinen Kiefer.','Du bist nicht dein Arm. Zum Glück, seit gestern.','Blut ist auch nur roter Schweiß.','Deine Familie bekommt eine Urne. Auf Wunsch sogar deine.','Schmerz ist Schwäche, die den Körper verlässt. Meistens zusammen mit Blut.','Der Medicus tut, was er kann. Er kann nicht viel.','Hinfallen ist erlaubt. Liegenbleiben wird beerdigt.','Jeder ist seines Glückes Schmied. Unserer macht gerade Sargnägel.','Angst ist normal. Sie hört nach dem ersten Stich auf. Alles hört dann auf.','Gliedmaßen bitte am Körper führen.','Wir sind eine Familie. Ich bin der Erbe.','Du wirst gebraucht. Als Beispiel.','Morgen ist auch noch ein Tag. Für die meisten.','Kopf hoch! Dann trifft man den Hals besser.','Dein Tod ist mein Verlust. Rund vierzig Denare.','Vertrau deinem Schild. Der letzte Besitzer tat es auch.','Sei wie der Löwe: satt. Die anderen waren das Futter.','Träume groß. Stirb pünktlich.','Heute gibt es Fleisch. Fragt nicht, wer fehlt.','Zähl deine Finger. Jetzt weißt du, wie gut die Woche war.','Nicht jeder kann siegen. Jemand muss ja den Sand düngen.','Aufgeben ist keine Option. Es ist eine Hinrichtung.','Das Leben ist kurz. Ich kürze gern nach.','Du schaffst das! (Angabe ohne Gewähr.)']];
+// Sprüche neu auslosen: je Haus ohne Wiederholung, gemischt aus den Sprüchen der Güteklasse und den allgemeinen
+function wuerfeln(h){const pool=[...SPRUECHE[h.st],...SPRUECHE[3]];for(let i=pool.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[pool[i],pool[j]]=[pool[j],pool[i]];}h.poster.forEach((p,i)=>p.text=pool[i%pool.length]);}
 const NB=[[1,0],[-1,0],[0,1],[0,-1]];
 // ---------- Grundriss → Haus ----------
 function gebiet(k0){const typ=W.feld[k0],seen=new Set([k0]),st=[k0],tiles=[];while(st.length){const k=st.pop();tiles.push(k);const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=N||ny>=N)continue;const q=ny*N+nx;if(!seen.has(q)&&W.feld[q]===typ){seen.add(q);st.push(q);}}}return tiles;}
@@ -40,7 +43,7 @@ function plan(tiles){const st=STUFE.get(W.feld[tiles[0]])??1,set=new Set(tiles);
  // Schlafplätze: jede zweite Reihe quer zur längeren Seite, dazwischen bleibt ein Gang frei; das Feld hinter der Tür bleibt frei
  const lang=bx1-bx0>=by1-by0,tief=(a,b)=>(a%N+((a/N)|0))-(b%N+((b/N)|0)),beds=tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0)%2===0:(y-by0)%2===0);}).sort(tief);
  // Bilder des Lanista an den hinteren Innenwänden
- const poster=[];for(const k of tiles){const x=k%N,y=(k/N)|0;for(const [side,frei,salt,p] of [['a',!has(x,y-1),52,.5],['d',!has(x-1,y),53,.42]])if(frei&&W.h2(x,y,salt)<p){const r=W.h2(x,y,salt+20),L=r<.45?SPRUECHE[st]:SPRUECHE[3];poster.push({k,side,text:L[(W.h2(y,x,salt+21)*L.length)|0]});}}
+ const poster=[];for(const k of tiles){const x=k%N,y=(k/N)|0;for(const [side,frei,salt,p] of [['a',!has(x,y-1),52,.5],['d',!has(x-1,y),53,.42]])if(frei&&W.h2(x,y,salt)<p){poster.push({k,side,text:''});}}
  // Dachhöhe: Ringe vom Rand nach innen (über Eck gezählt), gedeckelt
  const D=new Map();let rand=tiles.filter(k=>{const x=k%N,y=(k/N)|0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(!has(x+dx,y+dy))return true;return false;}),d=1;
  while(rand.length){for(const k of rand)D.set(k,Math.min(d,KAPPE));const next=[];for(const k of rand){const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB){const q=(y+dy)*N+x+dx;if(has(x+dx,y+dy)&&!D.has(q)&&!next.includes(q))next.push(q);}}rand=next;d++;}
@@ -155,7 +158,7 @@ function male(h,offen){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0
 
 // ---------- Bestand ----------
 let haeuser=[];const alt=new Map(),fest=new Set();
-function neu(){const seen=new Set(),out=[];for(let k=0;k<N*N;k++){if(!STUFE.has(W.feld[k])||seen.has(k))continue;const t=gebiet(k);for(const q of t)seen.add(q);const h=plan(t),o=alt.get(h.id);h.sig=h.st+':'+h.tiles.join(',');h.offen=o?o.offen:0;h.mist=[];h.gang=[];if(o&&o.sig===h.sig){h.zu=o.zu;h.auf=o.auf;h.rauch=o.rauch;h.mist=o.mist;h.gang=o.gang;}out.push(h);}
+function neu(){const seen=new Set(),out=[];for(let k=0;k<N*N;k++){if(!STUFE.has(W.feld[k])||seen.has(k))continue;const t=gebiet(k);for(const q of t)seen.add(q);const h=plan(t),o=alt.get(h.id);h.sig=h.st+':'+h.tiles.join(',');h.offen=o?o.offen:0;h.mist=[];h.gang=[];if(o&&o.sig===h.sig){h.zu=o.zu;h.auf=o.auf;h.rauch=o.rauch;h.mist=o.mist;h.gang=o.gang;h.poster.forEach((p,i)=>p.text=o.poster[i]?.text||'');}if(h.poster.some(p=>!p.text))wuerfeln(h);out.push(h);}
  alt.clear();for(const h of out)alt.set(h.id,h);for(const id of fest)if(!alt.has(id))fest.delete(id);haeuser=out;}
 const hausAt=(tx,ty)=>haeuser.find(h=>tx>=h.bx0&&tx<=h.bx1&&ty>=h.by0&&ty<=h.by1&&h.has(tx,ty));
 // Maus über dem Haus öffnet das Dach
@@ -177,7 +180,8 @@ const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=perfo
  // Maus über einem Bild des Lanista im offenen Haus: Spruch zeigen (die Wand steht über dem Feld, deshalb auch das Feld davor prüfen)
  if(hm&&hm.offen>.8){const p=bildAt(hm,Math.floor(mt.tx),Math.floor(mt.ty))||bildAt(hm,Math.floor(mt.tx+.6),Math.floor(mt.ty+.6));if(p)spruch={p,t:1.2};}
  if(spruch){spruch.t-=dt;if(spruch.t<=0)spruch=null;}
- for(const h of haeuser){const ziel=fest.has(h.id)||h===hm||h===hc?1:0;h.offen+=clamp(ziel-h.offen,-dt*4,dt*4);
+ for(const h of haeuser){const ziel=fest.has(h.id)||h===hm||h===hc?1:0;if(ziel&&h.offen===0)wuerfeln(h);// bei jedem Öffnen hängen andere Sprüche
+  h.offen+=clamp(ziel-h.offen,-dt*4,dt*4);
   const p0=W.iso(h.bx0,h.by1+1).x,p1=W.iso(h.bx1+1,h.by0).x;if(p1<view.x0-40||p0>view.x1+40||h.key<view.y0-10||W.iso(h.bx0,h.by0).y-90>view.y1)continue;
   if(!h.item)h.item={y:h.key,h,draw:zeichne};items.push(h.item);}};
 // Figuren vor oder hinter dem Haus: Wer südöstlich eines Hausfeldes steht, wird nach dem Haus gezeichnet
@@ -186,9 +190,20 @@ H.vorne=(tx,ty,y)=>{for(const h of haeuser){if(y>h.key||tx<h.bx0-2||ty<h.by0-2||
 function schild(ctx,s,x,y,z,hell){const w=ctx.measureText(s).width+8*z;ctx.fillStyle=hell?'rgba(244,236,214,.96)':'rgba(18,12,9,.8)';ctx.fillRect(Math.round(x-w/2),Math.round(y-8*z),Math.round(w),Math.round(16*z));ctx.fillStyle=hell?'#2a1c12':'#f4d37a';ctx.fillText(s,Math.round(x),Math.round(y)+1);}
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(W.mini)return;const z=clamp(1/W.cam.s,.5,3);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace';
  for(const h of haeuser){const p=W.iso((h.bx0+h.bx1+1)/2,(h.by0+h.by1+1)/2),y=p.y-(h.offen>.5?WAND+10:WAND+STEIG*2+16);if(p.x<view.x0-150||p.x>view.x1+150||y<view.y0-30||y>view.y1+30)continue;schild(ctx,NAME[h.st]+' · '+h.betten+' '+PLATZ[h.st][h.betten===1?0:1],p.x,y,z);}
- if(spruch){const p=spruch.p,x=p.k%N,y=(p.k/N)|0,q=p.side==='a'?W.iso(x+.5,y):W.iso(x,y+.5),t='„'+p.text+'“',yy=q.y-WAND-12*z;ctx.font='bold '+Math.round(12*z)+'px Georgia,serif';
-  if(t.length>46){const i=t.lastIndexOf(' ',Math.ceil(t.length/2)+6);schild(ctx,t.slice(0,i),q.x,yy-17*z,z,true);schild(ctx,t.slice(i+1),q.x,yy,z,true);}else schild(ctx,t,q.x,yy,z,true);
-  ctx.font='bold '+Math.round(9*z)+'px ui-monospace,Menlo,Consolas,monospace';schild(ctx,'— dein Lanista',q.x,yy+15*z,z);}};
+ // Sprüche lesbar: Im offenen Haus steht ab Zoom LESBAR über jedem Bild eine Tafel mit seinem Spruch (gestaffelt, damit sie sich
+ // nicht verdecken). Weiter weg nur die Tafel des Bildes unter der Maus oder des angetippten.
+ const lesbar=W.cam.s>=LESBAR,belegt=[];if(spruch)tafel(ctx,spruch.p,z,true,1,belegt,true);
+ for(const h of haeuser){if(h.offen<.6||!lesbar)continue;const ps=h.poster.filter(p=>p!==spruch?.p).sort((a,b)=>anker(a).x-anker(b).x);for(const p of ps)tafel(ctx,p,z,false,h.offen,belegt);}
+ if(spruch)tafel(ctx,spruch.p,z,true,1,belegt);};
+const LESBAR=1.3,anker=p=>{const x=p.k%N,y=(p.k/N)|0;return p.side==='a'?W.iso(x+.5,y):W.iso(x,y+.5);};
+// Tafel über einem Bild. belegt: schon vergebene Flächen; die Tafel rückt so weit nach oben, bis sie keine andere verdeckt.
+function tafel(ctx,p,z,stark,alpha,belegt,nurPlatz){const q=anker(p);if(p.zt!==p.text){p.zt=p.text;const ws=('„'+p.text+'“').split(' '),ls=[];let cur='';for(const w of ws){if(cur&&(cur+' '+w).length>20){ls.push(cur);cur=w;}else cur=cur?cur+' '+w:w;}ls.push(cur);p.zeilen=ls;}
+ const ls=p.zeilen,lh=13*z;ctx.font='bold '+Math.round(11*z)+'px Georgia,serif';let w=0;for(const l of ls)w=Math.max(w,ctx.measureText(l).width);w+=12*z;const hh=ls.length*lh+8*z;
+ let top;if(p.platz&&!nurPlatz&&stark)top=p.platz;else{top=q.y-WAND-6*z-hh;for(let n=0;n<12;n++){const hit=belegt.find(r=>q.x-w/2<r.x1&&q.x+w/2>r.x0&&top<r.y1&&top+hh>r.y0);if(!hit)break;top=hit.y0-hh-4*z;}}
+ if(nurPlatz){p.platz=top;belegt.push({x0:q.x-w/2-3*z,x1:q.x+w/2+3*z,y0:top-2*z,y1:top+hh+2*z});return;}if(!stark)belegt.push({x0:q.x-w/2-3*z,x1:q.x+w/2+3*z,y0:top-2*z,y1:top+hh+2*z});
+ ctx.globalAlpha=alpha;ctx.strokeStyle='#2a1c12';ctx.lineWidth=1.2*z;ctx.beginPath();ctx.moveTo(q.x,q.y-WAND+8);ctx.lineTo(q.x,top+hh);ctx.stroke();
+ ctx.fillStyle='#2a1c12';ctx.fillRect(Math.round(q.x-w/2-1.5*z),Math.round(top-1.5*z),Math.round(w+3*z),Math.round(hh+3*z));ctx.fillStyle=stark?'#fff4cf':'#efe2bf';ctx.fillRect(Math.round(q.x-w/2),Math.round(top),Math.round(w),Math.round(hh));
+ ctx.fillStyle='#a32f2a';ctx.fillRect(Math.round(q.x-w/2),Math.round(top),Math.round(w),Math.round(2.5*z));ctx.fillStyle='#2a1c12';ls.forEach((l,i)=>ctx.fillText(l,Math.round(q.x),Math.round(top+5*z+lh*(i+.5))));ctx.globalAlpha=1;}
 // Antippen: Dach bleibt offen. Im offenen Haus zeigt Antippen eines Bildes den Spruch; jede andere Stelle schließt wieder.
 const tap0=H.tap;H.tap=(p,w)=>{if(B.mode||w)return tap0?tap0(p,w):false;const t=W.tileAt(p.x,p.y),tx=Math.floor(t.tx),ty=Math.floor(t.ty),h2=hausAt(Math.floor(t.tx+.6),Math.floor(t.ty+.6)),h=hausAt(tx,ty)||(h2&&h2.offen>.8?h2:null);if(!h)return tap0?tap0(p,w):false;
  if(h.offen>.8){const b=bildAt(h,tx,ty)||bildAt(h,Math.floor(t.tx+.6),Math.floor(t.ty+.6));if(b){spruch={p:b,t:5};fest.add(h.id);return true;}}
