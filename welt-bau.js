@@ -1,0 +1,163 @@
+'use strict';
+// =====================================================================================================================
+// BAUEN (welt-bau.js) · Baufunktion der Rasterkarte: Trainingsfeld und Arena. Wunsch Thomas 11./12.11.2026 (Vorbild
+// Dungeon Keeper und RollerCoaster Tycoon). Nur auf tageslauf-editor.html geladen, nicht im Spiel. Nichts wird gespeichert.
+//
+// · „Bauen“ öffnet die Werkzeuge. Rechteck auf Wiese oder Ludus-Boden ziehen, loslassen baut. Jedes Feld kostet Gold
+//   aus S.gold des Testspielstands (Preise in WERKZEUG sind Vorschläge, noch nicht bestätigt). „Abreißen“ macht Gebautes
+//   wieder zu dem, was vorher dort war (kein Geld zurück); so wird eine Arena auch kleiner.
+// · Trainingsfeld: Hau-Puppen entstehen von selbst. Zusammenhängende Felder zählen als ein Feld: je PRO Felder eine
+//   Puppe, und je größer das Feld, desto besser die Puppen (STUFEN). Der Trainingshof des Ludus zählt mit.
+// · Arena: „Kampffläche“ ist die Grundform. „Tribüne“ daneben gebaut wird Teil der Arena: Jede Reihe weiter weg von der
+//   Kampffläche steht eine Stufe höher (bis 4), jedes Tribünenfeld hat PLAETZE Sitzplätze. Daraus formt sich die Arena von
+//   selbst (Name nach Größe, Fahnen auf der obersten Reihe). Beim Start steht eine Arena hinter dem Ludus; sie ersetzt
+//   das Arena-Tor.
+// · Grafik: Felder klappen der Reihe nach auf, neue Puppen springen mit Staub aus dem Boden, bessere Puppen blitzen auf.
+// · Noch keine Spielwirkung: kein Training, keine Kämpfe in der Arena, kein Eintritt.
+// =====================================================================================================================
+(()=>{
+const M=window.MG,W=window.WeltKarte,H=window.WeltHook;if(!M||!W||!H||!W.feld)return;const S=M.s,$=id=>document.getElementById(id);
+const T=W.T,N=W.N,clamp=(v,a,b)=>v<a?a:v>b?b:v,TAU=Math.PI*2;
+const WERKZEUG={platz:{name:'Trainingsfeld',typ:T.PLATZ,preis:50},arena:{name:'Kampffläche',typ:T.ARENA,preis:80},trib:{name:'Tribüne',typ:T.TRIB,preis:120},weg:{name:'Abreißen',preis:0}};
+const PREIS=WERKZEUG.platz.preis,PRO=4,PLAETZE=4,STUFEN=[{ab:0,name:'Strohpuppe',mz:'Strohpuppen'},{ab:10,name:'Holzpuppe',mz:'Holzpuppen'},{ab:25,name:'Rüstungspuppe',mz:'Rüstungspuppen'},{ab:60,name:'Drehpuppe',mz:'Drehpuppen'}];
+const ARENA_NAME=n=>n<20?'Sandgrube':n<48?'Kleine Arena':n<100?'Arena':'Große Arena';
+const stufeVon=n=>{let s=0;for(let i=0;i<STUFEN.length;i++)if(n>=STUFEN[i].ab)s=i;return s;};
+const ur=Uint8Array.from(W.feld);// Gelände vor allem Bauen (für „Abreißen“)
+const baubar=(tx,ty)=>W.inMap(tx,ty)&&(W.feld[W.ix(tx,ty)]===T.WIESE||W.feld[W.ix(tx,ty)]===T.LUDUS);
+const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB)&&ur[k]!==t;};
+
+// ---------- Puppen-Bilder (4 Stufen, die Drehpuppe in 8 Drehstellungen) ----------
+const PW=48,PH=66,AX=24,AY=58,FRAMES=8,img=[];
+function mk(){const c=document.createElement('canvas');c.width=PW;c.height=PH;const g=c.getContext('2d');g.imageSmoothingEnabled=false;return [c,g,(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}];}
+function fuss(g,R){g.fillStyle='rgba(15,20,10,.3)';g.beginPath();g.ellipse(AX,AY,11,4,0,0,TAU);g.fill();R(AX-7,AY-3,14,3,'#4a3420');R(AX-5,AY-4,10,2,'#6b4a2c');}
+function stroh(){const [c,g,R]=mk();fuss(g,R);R(AX-2,22,4,34,'#5e4229');R(AX-1,22,2,34,'#7a5a39');R(AX-13,27,26,3,'#5e4229');
+ R(AX-7,24,14,20,'#b8963e');R(AX-6,25,12,18,'#d9b85a');for(let i=0;i<9;i++)R(AX-6+((i*5)%11),26+((i*7)%16),1,3,'#a07c2c');R(AX-7,33,14,2,'#7a5a39');
+ R(AX-5,12,10,11,'#c9a64c');R(AX-4,13,8,9,'#e3c672');R(AX-3,16,2,2,'#3a2617');R(AX+1,16,2,2,'#3a2617');R(AX-2,20,4,1,'#3a2617');
+ for(const s of [-1,1]){R(AX+s*13-1,25,3,2,'#d9b85a');R(AX+s*15-1,24,2,5,'#b8963e');}for(let i=0;i<4;i++)R(AX-5+i*3,43+(i%2),2,4,'#b8963e');return c;}
+function holz(){const [c,g,R]=mk();fuss(g,R);R(AX-4,20,8,36,'#5e4229');R(AX-3,20,5,36,'#8a6a42');R(AX-3,20,2,36,'#a07e52');for(let y=24;y<54;y+=7)R(AX-4,y,8,1,'#4a3420');
+ R(AX-5,9,10,12,'#6b4a2c');R(AX-4,10,7,10,'#9b7848');R(AX-3,13,2,2,'#2a1c12');R(AX+1,13,2,2,'#2a1c12');R(AX-2,17,4,1,'#2a1c12');R(AX-14,25,28,3,'#5e4229');
+ g.fillStyle='#4a3420';g.beginPath();g.arc(AX-13,31,9,0,TAU);g.fill();g.fillStyle='#8a6a42';g.beginPath();g.arc(AX-13,31,7.5,0,TAU);g.fill();R(AX-14,24,2,14,'#5e4229');R(AX-20,30,14,2,'#5e4229');g.fillStyle='#c9a55a';g.beginPath();g.arc(AX-13,31,2,0,TAU);g.fill();
+ R(AX+13,8,3,20,'#a07e52');R(AX+14,8,1,20,'#c9a878');R(AX+11,26,7,2,'#5e4229');return c;}
+function ruestung(){const [c,g,R]=mk();fuss(g,R);R(AX-3,22,6,34,'#4a3420');R(AX-2,22,3,34,'#6b4a2c');R(AX-14,25,28,3,'#4a3420');
+ R(AX-8,22,16,19,'#5d666c');R(AX-7,23,14,17,'#8f9aa1');R(AX-7,23,5,17,'#b4bfc5');R(AX-7,29,14,1,'#5d666c');R(AX-7,35,14,1,'#5d666c');for(let i=0;i<4;i++)R(AX-6+i*4,41,3,5,i%2?'#7a4a3a':'#96553f');
+ R(AX-6,8,12,13,'#5d666c');R(AX-5,9,10,11,'#9aa5ac');R(AX-5,9,4,11,'#c2ccd1');R(AX-4,14,8,2,'#20262a');R(AX-1,14,2,6,'#5d666c');R(AX-1,2,3,7,'#a32f2a');R(AX,1,3,6,'#c9483e');R(AX+2,3,2,5,'#a32f2a');
+ g.fillStyle='#3a2617';g.beginPath();g.arc(AX-14,32,10,0,TAU);g.fill();g.fillStyle='#a32f2a';g.beginPath();g.arc(AX-14,32,8.5,0,TAU);g.fill();g.fillStyle='#d7b24a';g.beginPath();g.arc(AX-14,32,3,0,TAU);g.fill();R(AX-22,31,16,2,'#d7b24a');R(AX-15,24,2,16,'#d7b24a');
+ R(AX+13,6,2,22,'#c2ccd1');R(AX+12,6,1,22,'#8f9aa1');R(AX+10,26,8,2,'#d7b24a');R(AX+12,28,3,4,'#4a3420');return c;}
+function dreh(f){const [c,g,R]=mk(),a=f/FRAMES*TAU,cs=Math.cos(a),sn=Math.sin(a);fuss(g,R);R(AX-9,AY-5,18,3,'#3a2617');R(AX-3,16,6,40,'#4a3420');R(AX-2,16,3,40,'#7a5a39');R(AX-4,30,8,2,'#d7b24a');R(AX-4,44,8,2,'#d7b24a');
+ const arm=(side,back)=>{const x=AX+cs*19*side,y=18+sn*4*side;g.strokeStyle=back?'#3a2617':'#5e4229';g.lineWidth=4;g.lineCap='round';g.beginPath();g.moveTo(AX,18);g.lineTo(x,y);g.stroke();
+  if(side>0){const w=Math.max(3,Math.abs(cs)*9+3);g.fillStyle='#20140c';g.beginPath();g.ellipse(x,y+9,w+1.5,11,0,0,TAU);g.fill();g.fillStyle=back?'#7a2a26':'#c9483e';g.beginPath();g.ellipse(x,y+9,w,9.5,0,0,TAU);g.fill();g.fillStyle='#d7b24a';g.beginPath();g.ellipse(x,y+9,Math.max(1,w*.35),3,0,0,TAU);g.fill();}
+  else{g.strokeStyle='#8f9aa1';g.lineWidth=1.5;g.beginPath();g.moveTo(x,y);g.lineTo(x-sn*3,y+12);g.stroke();g.fillStyle='#20262a';g.beginPath();g.arc(x-sn*3,y+15,5.5,0,TAU);g.fill();g.fillStyle=back?'#5d666c':'#9aa5ac';g.beginPath();g.arc(x-sn*3,y+15,4.3,0,TAU);g.fill();for(let k=0;k<6;k++){const b=k/6*TAU;R(x-sn*3+Math.cos(b)*6-1,y+15+Math.sin(b)*6-1,2,2,'#c2ccd1');}}};
+ const first=sn<0?1:-1;arm(first,true);R(AX-5,6,10,12,'#5d666c');R(AX-4,7,8,10,'#9aa5ac');R(AX-4,7,3,10,'#c2ccd1');R(AX-3,11,6,2,'#20262a');R(AX-2,0,4,7,'#d7b24a');R(AX-1,0,2,6,'#f4d37a');arm(-first,false);return c;}
+img[0]=[stroh()];img[1]=[holz()];img[2]=[ruestung()];img[3]=[];for(let f=0;f<FRAMES;f++)img[3].push(dreh(f));
+
+// ---------- Tribünen-Bilder: ein Feld als Steinblock mit Sitzbänken, 4 Höhen ----------
+const TW=W.TW,TH=W.TH,HOCH=r=>8+r*9,trib=[];
+for(let r=1;r<=4;r++){const h=HOCH(r),c=document.createElement('canvas');c.width=TW;c.height=TH+h+2;const g=c.getContext('2d'),P=(pts,f)=>{g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(const p of pts.slice(1))g.lineTo(p[0],p[1]);g.closePath();g.fillStyle=f;g.fill();g.strokeStyle='#2a2019';g.lineWidth=1;g.stroke();};
+ const A=[32,0],B=[64,16],C=[32,32],D=[0,16],d=p=>[p[0],p[1]+h];
+ P([D,C,d(C),d(D)],'#8a7f6e');P([C,B,d(B),d(C)],'#a89d8a');P([A,B,C,D],'#cfc5b0');
+ g.strokeStyle='#8a7f6e';g.lineWidth=2;for(const u of [.3,.66]){g.beginPath();g.moveTo(D[0]+(A[0]-D[0])*u+3,D[1]+(A[1]-D[1])*u+2);g.lineTo(C[0]+(B[0]-C[0])*u-3,C[1]+(B[1]-C[1])*u-2);g.stroke();}
+ g.fillStyle='rgba(42,32,25,.35)';for(let y=h%6+4;y<h;y+=6){g.fillRect(2,16+y+1,1,1);g.beginPath();g.moveTo(1,17+y);g.lineTo(32,33+y);g.lineTo(63,17+y);g.lineWidth=.6;g.strokeStyle='rgba(42,32,25,.3)';g.stroke();}
+ trib[r]=c;}
+// Sitzplätze eines Tribünenfeldes (Versatz zur Feldmitte)
+const SITZ=[[-12,-3],[4,-9],[-4,5],[12,-1]];
+
+// ---------- Trainingsfelder, Puppen, Arenen ----------
+let puppen=new Map(),felder=[],arenen=[],tribs=[],clock=0;const rang=new Uint8Array(N*N),neu=new Map(),fx=[],text=[];// neu: Feld → Startzeit der Aufklapp-Animation
+const NB=[[1,0],[-1,0],[0,1],[0,-1]],NB8=[...NB,[1,1],[1,-1],[-1,1],[-1,-1]];// Reihen der Tribüne zählen auch über Eck
+function gebiete(typ){const seen=new Uint8Array(N*N),out=[];
+ for(let i=0;i<N*N;i++){if(seen[i]||W.feld[i]!==typ)continue;const tiles=[],st=[i];seen[i]=1;while(st.length){const k=st.pop();tiles.push(k);const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=N||ny>=N)continue;const q=ny*N+nx;if(!seen[q]&&W.feld[q]===typ){seen[q]=1;st.push(q);}}}out.push(tiles);}return out;}
+function plan(tiles){const n=tiles.length,max=stufeVon(n),count=Math.floor(n/PRO);let cx=0,cy=0;for(const k of tiles){cx+=k%N;cy+=(k/N)|0;}cx/=n;cy/=n;
+ const rank=k=>{const x=k%N,y=(k/N)|0;return (x%2===0&&y%2===0?0:x%2!==y%2?40:80)+Math.hypot(x-cx,y-cy);};const pick=[...tiles].sort((a,b)=>rank(a)-rank(b)).slice(0,count);
+ return {n,max,count,list:pick.map((k,i)=>({k,stufe:i<Math.ceil(count/2)?max:Math.max(0,max-1)}))};}
+// Arenen: jede zusammenhängende Kampffläche; Tribünen zählen dazu, wenn sie (über Tribünen) an die Fläche grenzen
+function arenenRechnen(){rang.fill(0);const besitz=new Int16Array(N*N).fill(-1),out=[];
+ gebiete(T.ARENA).forEach((floor,ai)=>{const a={i:ai,n:floor.length,floor,tribs:[],plaetze:0,max:0};let cx=0,cy=0;for(const k of floor){cx+=k%N+.5;cy+=((k/N)|0)+.5;}a.tx=cx/a.n;a.ty=cy/a.n;const c=W.iso(a.tx,a.ty);a.x=c.x;a.y=c.y;
+  let rand=floor,d=0;while(rand.length){d++;const next=[];for(const k of rand){const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB8){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=N||ny>=N)continue;const q=ny*N+nx;if(W.feld[q]===T.TRIB&&!rang[q]){rang[q]=Math.min(4,d);besitz[q]=ai;a.tribs.push(q);a.max=Math.max(a.max,rang[q]);next.push(q);}}}rand=next;}
+  a.plaetze=a.tribs.length*PLAETZE;a.name=ARENA_NAME(a.n);out.push(a);});
+ tribs=[];for(let k=0;k<N*N;k++)if(W.feld[k]===T.TRIB){if(!rang[k])rang[k]=1;const tx=k%N,ty=(k/N)|0,c=W.iso(tx+.5,ty+.5),a=out[besitz[k]];tribs.push({k,x:c.x,y:c.y,r:rang[k],a:besitz[k],fahne:!!a&&a.max>=2&&rang[k]===a.max&&W.h2(tx,ty,41)<.34});}
+ return out;}
+function rechne(first){const alt=puppen,altA=arenen;puppen=new Map();felder=gebiete(T.PLATZ).map(plan);let besser=-1;
+ for(const f of felder)for(const p of f.list){const o=alt.get(p.k),tx=p.k%N,ty=(p.k/N)|0,c=W.iso(tx+.5,ty+.5),d={k:p.k,x:c.x,y:c.y,stufe:p.stufe,seed:W.h2(tx,ty,31),born:o?o.born:first?-9:(neu.get(p.k)??clock)+.25,up:o?o.up:-9};
+   if(o&&o.stufe<p.stufe){d.up=clock+.5+d.seed*.5;besser=Math.max(besser,p.stufe);}puppen.set(p.k,d);}
+ arenen=arenenRechnen();for(const fn of horcher)try{fn();}catch(e){console.error(e);}
+ return {mehr:first?0:Math.max(0,puppen.size-alt.size),besser,plaetze:arenen.reduce((s,a)=>s+a.plaetze,0)-altA.reduce((s,a)=>s+a.plaetze,0)};}
+const horcher=[];
+
+// ---------- Bauen: Werkzeug wählen, Rechteck ziehen ----------
+let mode=null,drag=null,info=null;
+const bar=document.querySelector('#weltUi .w-bar'),gold=document.createElement('span');gold.className='w-chip w-gold';gold.id='wGold';bar.querySelector('.w-chips').appendChild(gold);
+const btn=document.createElement('button');btn.className='w-btn w-baubtn';btn.id='wBauBtn';btn.textContent='🔨 Bauen';bar.insertBefore(btn,bar.querySelector('.w-kader'));
+const box=document.createElement('div');box.id='wBau';box.hidden=true;
+box.innerHTML='<div class="bau-wz">'+Object.entries(WERKZEUG).map(([id,w])=>`<button class="w-btn" data-wz="${id}">${w.name}${w.preis?' <small>'+w.preis+' G</small>':''}</button>`).join('')+'<button class="w-btn" data-done>Fertig</button></div><span></span>';
+document.getElementById('weltUi').appendChild(box);
+const HILFE={platz:'Rechteck auf Wiese oder Ludus-Boden ziehen. Je '+PRO+' Felder eine Puppe; ab '+STUFEN[1].ab+' Feldern '+STUFEN[1].mz+', ab '+STUFEN[2].ab+' '+STUFEN[2].mz+', ab '+STUFEN[3].ab+' '+STUFEN[3].mz+'.',
+ arena:'Kampffläche ziehen: Das ist die Grundform der Arena. Größer machen: anbauen. Kleiner machen: abreißen.',
+ trib:'Tribünen an die Kampffläche bauen. Jede Reihe weiter außen steht eine Stufe höher. Je Feld '+PLAETZE+' Sitzplätze.',
+ weg:'Rechteck über Gebautes ziehen. Es wird wieder zu dem, was vorher dort war. Kein Geld zurück.'};
+function hilfe(){box.querySelector('span').textContent=mode?HILFE[mode]:'';}
+function setMode(m){mode=m===true?'platz':(m||null);drag=null;info=null;box.hidden=!mode;btn.classList.toggle('on',!!mode);for(const b of box.querySelectorAll('[data-wz]'))b.classList.toggle('on',b.dataset.wz===mode);hilfe();W.canvas.style.cursor=mode?'crosshair':'';if(mode)M.weltLeben?.close?.();}
+btn.onclick=()=>setMode(mode?null:'platz');
+box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.done!=null)setMode(null);else setMode(b.dataset.wz);});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&mode){if(drag){drag=null;info=null;hilfe();}else setMode(null);}});
+const tile=p=>{const t=W.tileAt(p.x,p.y);return {tx:clamp(Math.floor(t.tx),0,N-1),ty:clamp(Math.floor(t.ty),0,N-1)};};
+const mz=(n,e,m)=>n+' '+(n===1?e:m);
+function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,drag.b.tx),y0=Math.min(drag.a.ty,drag.b.ty),y1=Math.max(drag.a.ty,drag.b.ty),ok=[],no=[],wz=WERKZEUG[mode],ab=mode==='weg';
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=W.ix(x,y);((ab?abreissbar(k):baubar(x,y))?ok:no).push(k);}
+ const preis=ok.length*wz.preis;info={ok,no,preis,genug:(S.gold||0)>=preis};let t='Hier geht das nicht.';
+ if(ok.length){// Ergebnis vorab ausrechnen: Felder kurz setzen, zählen, zurücksetzen
+  const save=ok.map(k=>W.feld[k]);for(const k of ok)W.feld[k]=ab?ur[k]:wz.typ;
+  if(ab)t=mz(ok.length,'Feld','Felder')+' abreißen';
+  else{t=mz(ok.length,'Feld','Felder')+' · '+preis+' G'+(info.genug?'':' · zu wenig Gold');
+   if(mode==='platz'){const f=plan(gebiete(T.PLATZ).find(g=>g.includes(ok[0])));t+=' → Trainingsfeld mit '+mz(f.n,'Feld','Feldern')+': '+mz(f.count,'Puppe','Puppen')+', beste: '+STUFEN[f.max].name;}
+   else{const as=arenenRechnen(),a=mode==='arena'?as.find(a=>a.floor.includes(ok[0])):as.find(a=>a.tribs.includes(ok[0]));t+=a?' → '+a.name+': '+mz(a.n,'Feld','Felder')+' Kampffläche, '+a.plaetze+' Sitzplätze':' → liegt an keiner Kampffläche';}}
+  ok.forEach((k,i)=>W.feld[k]=save[i]);arenenRechnen();}
+ box.querySelector('span').textContent=t;}
+function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
+ const a=drag.a;let cx=0,cy=0;for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y;}cx/=ok.length;cy/=ok.length;
+ if(!frei)S.gold=(S.gold||0)-preis;W.rebake();const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
+ let d=0;const say=(s,col)=>{text.push({x:cx,y:cy-30,t:-d,s,col});d+=.6;};if(preis)say('−'+preis+' G','#f29b83');if(r.mehr)say('+'+mz(r.mehr,'Puppe','Puppen'),'#f4d37a');if(r.besser>=0)say('Bessere Puppen: '+STUFEN[r.besser].mz+'!','#fff2b0');
+ if(r.plaetze>0)say('+'+r.plaetze+' Sitzplätze','#f4d37a');if(r.plaetze<0)say(r.plaetze+' Sitzplätze','#f29b83');zeigeGold();}
+H.pointer=(phase,p)=>{if(!mode)return false;if(phase==='down'){const t=tile(p);drag={a:t,b:t};auswahl();return true;}if(!drag)return true;
+ if(phase==='move'){const t=tile(p);if(t.tx!==drag.b.tx||t.ty!==drag.b.ty){drag.b=t;auswahl();}}else if(phase==='up'){drag.b=tile(p);auswahl();baue();drag=null;info=null;setTimeout(()=>{if(mode&&!drag)hilfe();},2600);}else{drag=null;info=null;hilfe();}return true;};
+function zeigeGold(){gold.textContent='💰 '+Math.floor(S.gold||0)+' G';}
+setInterval(zeigeGold,500);zeigeGold();
+
+// ---------- Zeichnen ----------
+const tick0=H.tick;H.tick=dt=>{tick0?.(dt);clock+=dt;};
+function raute(ctx,k,fill,stroke){const x=k%N,y=(k/N)|0,A=W.iso(x,y),B=W.iso(x+1,y),C=W.iso(x+1,y+1),D=W.iso(x,y+1);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.lineTo(C.x,C.y);ctx.lineTo(D.x,D.y);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();}}
+function zeichneTrib(ctx){const h=HOCH(this.r);ctx.drawImage(trib[this.r],this.x-TW/2,this.y-TH/2-h);
+ if(this.fahne){const x=this.x,y=this.y-h,w=Math.sin(clock*5+this.k)*2;ctx.fillStyle='#3a2617';ctx.fillRect(x-1,y-30,2,30);ctx.fillStyle='#a32f2a';ctx.fillRect(x+1,y-30,11,8);ctx.fillStyle='#c9483e';ctx.fillRect(x+1,y-30+Math.round(w>0?1:0),9+Math.round(w),6);ctx.fillStyle='#d7b24a';ctx.fillRect(x-2,y-32,4,3);}}
+const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const mini=W.mini;
+ for(const t of tribs){if(t.x<view.x0-40||t.x>view.x1+40||t.y<view.y0-30||t.y>view.y1+70)continue;if(!t.draw)t.draw=zeichneTrib;if(t.sy==null)t.sy=t.y;items.push(t);}
+ for(const d of puppen.values()){if(d.x<view.x0-30||d.x>view.x1+30||d.y<view.y0-10||d.y>view.y1+70)continue;const age=clock-d.born;if(age<0)continue;
+  items.push({y:d.y,draw:ctx=>{if(mini){ctx.fillStyle='#5e4229';ctx.fillRect(d.x-1,d.y-14,3,14);ctx.fillStyle=['#d9b85a','#9b7848','#9aa5ac','#c9483e'][d.stufe];ctx.fillRect(d.x-4,d.y-16,9,8);return;}
+   const fr=img[d.stufe],im=fr[fr.length>1?Math.floor((clock*5+d.seed*8)%fr.length):0];let s=1,dy=0;
+   if(age<.55){const u=age/.55;s=u<.6?u/.6*1.18:1.18-(u-.6)/.4*.18;dy=-Math.sin(Math.min(1,u*1.4)*Math.PI)*14;}
+   const up=clock-d.up;if(up>=0&&up<.9){s*=1+Math.sin(up/.9*Math.PI)*.22;}
+   ctx.save();ctx.translate(Math.round(d.x),Math.round(d.y+dy));ctx.scale(s,s);ctx.drawImage(im,-AX,-AY);
+   if(up>=0&&up<.9){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=(1-up/.9)*.8;ctx.drawImage(im,-AX,-AY);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+    for(let i=0;i<7;i++){const a=i/7*TAU+d.seed*6,r=10+up*34,x=Math.cos(a)*r,y=-30+Math.sin(a)*r*.6-up*18,z=3*(1-up/.9);ctx.fillStyle=i%2?'#fff2b0':'#ffd65a';ctx.fillRect(x-z/2,y-z*1.5,z,z*3);ctx.fillRect(x-z*1.5,y-z/2,z*3,z);}}
+   ctx.restore();
+   if(age>=.3&&age<1&&!d.dust){d.dust=1;for(let i=0;i<9;i++)fx.push({x:d.x,y:d.y,vx:Math.cos(i/9*TAU)*38,vy:Math.sin(i/9*TAU)*14-8,t:0});}}});}};
+const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);
+ // frisch gebaute Felder: klappen der Reihe nach auf
+ for(const [k,t0] of neu){const a=clock-t0;if(a>.5){neu.delete(k);continue;}if(a<0){raute(ctx,k,'rgba(40,30,18,.55)');continue;}raute(ctx,k,`rgba(255,240,190,${(.75*(1-a/.5)).toFixed(3)})`,`rgba(255,214,90,${(1-a/.5).toFixed(3)})`);}
+ for(let i=fx.length-1;i>=0;i--){const d=fx[i];d.t+=dt;if(d.t>.45){fx.splice(i,1);continue;}d.x+=d.vx*dt;d.y+=d.vy*dt;ctx.globalAlpha=1-d.t/.45;ctx.fillStyle='#e8d8a8';ctx.fillRect(Math.round(d.x)-1,Math.round(d.y)-1,3,3);}ctx.globalAlpha=1;
+ const z=clamp(1/W.cam.s,1,3);ctx.textAlign='center';ctx.textBaseline='middle';
+ // Namensschild jeder Arena
+ for(const a of arenen){if(a.x<view.x0-200||a.x>view.x1+200||a.y<view.y0-60||a.y>view.y1+60)continue;const s=a.name.toUpperCase()+(a.plaetze?' · '+a.plaetze+' PLÄTZE':'');ctx.font='bold '+Math.round(12*z)+'px ui-monospace,Menlo,Consolas,monospace';const w=ctx.measureText(s).width+10*z;
+  ctx.fillStyle='rgba(18,12,9,.8)';ctx.fillRect(Math.round(a.x-w/2),Math.round(a.y-9*z),Math.round(w),Math.round(18*z));ctx.fillStyle='#f4d37a';ctx.fillText(s,Math.round(a.x),Math.round(a.y)+1);}
+ // Auswahl beim Ziehen
+ if(mode&&info){const good=mode==='weg'?'rgba(240,120,90,.45)':info.genug?'rgba(120,220,110,.42)':'rgba(240,190,80,.42)';for(const k of info.ok)raute(ctx,k,good,mode==='weg'?'#ffb09a':info.genug?'#c8f5b0':'#ffd65a');for(const k of info.no)raute(ctx,k,'rgba(210,60,50,.3)','rgba(240,120,110,.8)');}
+ // aufsteigende Schrift
+ for(let i=text.length-1;i>=0;i--){const f=text[i];f.t+=dt;if(f.t>1.9){text.splice(i,1);continue;}if(f.t<0)continue;ctx.globalAlpha=f.t>1.4?1-(f.t-1.4)/.5:1;ctx.font='bold '+Math.round(15*z)+'px ui-monospace,Menlo,Consolas,monospace';const y=f.y-f.t*26*z;ctx.lineWidth=4*z;ctx.strokeStyle='#120c09';ctx.strokeText(f.s,f.x,y);ctx.fillStyle=f.col;ctx.fillText(f.s,f.x,y);}ctx.globalAlpha=1;};
+// Im Baumodus öffnet Antippen keine Nahaufnahme
+const tap0=H.tap;H.tap=(p,w)=>mode?true:tap0?tap0(p,w):false;
+
+function bauen(wz,x0,y0,x1,y1,frei){const m=mode;mode=wz;drag={a:{tx:x0,ty:y0},b:{tx:x1,ty:y1}};auswahl();const r={felder:info.ok.length,preis:info.preis,genug:info.genug};baue(frei);drag=null;info=null;mode=m;hilfe();return r;}
+// Start: eine Arena hinter dem Ludus (ersetzt das Arena-Tor). Kampffläche 8 × 6, zwei Reihen Tribünen, Durchgang zum Ludus.
+bauen('arena',45,30,52,35,true);bauen('trib',43,28,54,37,true);for(const k of [W.ix(48,36),W.ix(49,36),W.ix(48,37),W.ix(49,37)])W.feld[k]=ur[k];
+neu.clear();W.rebake();rechne(true);
+M.weltBau={PREIS,PRO,PLAETZE,STUFEN,WERKZEUG,SITZ,HOCH,setMode,get mode(){return mode;},felder:()=>felder,puppen:()=>[...puppen.values()],arenen:()=>arenen,tribs:()=>tribs,plan,stufeVon,beiAenderung(fn){horcher.push(fn);},
+ bauen(a,b,c,d,e){return typeof a==='string'?bauen(a,b,c,d,e):bauen('platz',a,b,c,d);}};
+})();

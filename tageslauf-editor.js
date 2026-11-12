@@ -13,6 +13,8 @@ const ed=document.createElement('aside');ed.id='wEdit';ed.innerHTML=`<header><b>
 <p class="ed-h">Tempo (nur zum Prüfen)</p><div class="ed-row" data-tempo><button class="w-btn" data-t="0">⏸</button><button class="w-btn on" data-t="1">1×</button><button class="w-btn" data-t="4">4×</button><button class="w-btn" data-t="20">20×</button></div>
 <p class="ed-h">Tag</p><div class="ed-row"><label class="w-sel">Länge <select data-len><option value="120">2 Minuten</option><option value="240" selected>4 Minuten</option><option value="360">6 Minuten</option></select></label><label class="w-sel"><input type="checkbox" data-licht checked> Licht</label><label class="w-sel"><input type="checkbox" data-raster checked> Raster</label></div>
 <div class="ed-row"><button class="w-btn" data-feier>Tageswechsel-Animation zeigen</button></div>
+<p class="ed-h">Bauen</p><div class="ed-row"><button class="w-btn" data-gold>+1000 Gold</button></div>
+<p class="ed-h">Besucher (Leistung prüfen)</p><div class="ed-row"><label class="w-sel">Unterwegs <select data-besucher>${[0,50,100,200,400,800,1500].map(n=>`<option value="${n}"${n===100?' selected':''}>${n}</option>`).join('')}</select></label><span data-bz class="w-tiny"></span></div>
 <p class="ed-h">Gladiatoren</p><div class="ed-row"><button class="w-btn" data-wund>Verletzungen und Kampfgeschichte geben</button><button class="w-btn" data-rand>Zufälligen ansprechen</button><button class="w-btn" data-alle>Alle Sätze des Gewählten</button></div>
 <div class="ed-list" data-list hidden></div>
 <p class="w-tiny">Figur antippen: Nahaufnahme. „Hochnehmen“: Pinzette, dann Karte antippen zum Absetzen (Esc stellt zurück). Weit herauszoomen: Miniaturansicht.</p></div>`;
@@ -22,11 +24,13 @@ ed.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
  else if(b.dataset.h){T.setze(+b.dataset.h);}
  else if(b.dataset.t){const t=+b.dataset.t;T.pause(t===0);if(t)T.tempo(t);for(const x of ed.querySelectorAll('[data-t]'))x.classList.toggle('on',x===b);}
  else if(b.dataset.feier!=null)T.feier(S.day-1,S.day);
+ else if(b.dataset.gold!=null){S.gold=(S.gold||0)+1000;}
  else if(b.dataset.wund!=null){wunden();}
  else if(b.dataset.rand!=null){const sh=W.shown();const pick=sh[Math.floor(Math.random()*sh.length)]||null;if(pick){W.flyTo(pick.x,pick.y,Math.max(W.cam.s,1.3));L.open(pick.w.g);}}
  else if(b.dataset.alle!=null){const box=ed.querySelector('[data-list]'),g=L.sel;if(!g){box.hidden=false;box.textContent='Erst eine Figur antippen.';return;}
   const all=Z.alle(g,{stunde:T.stunde,partName:M.partName,andere:S.roster.map(x=>x.name)});box.hidden=false;
   box.innerHTML='<b>'+esc(g.name)+' · '+all.length+' mögliche Sätze</b>'+all.map(x=>'<p><i>'+esc(x.art)+'</i> '+esc(x.t)+'</p>').join('')+'<p><i>pinzette</i> '+[...Z.UP,...Z.DOWN].map(x=>esc(x[0])).join('</p><p><i>pinzette</i> ')+'</p>';}});
+ed.querySelector('[data-besucher]').onchange=e=>M.weltBesucher?.setze(+e.target.value);setInterval(()=>{const V=M.weltBesucher;if(V)ed.querySelector('[data-bz]').textContent=(V.sitze().length-V.freie())+' Plätze vergeben, '+V.freie()+' frei';},1000);
 ed.querySelector('[data-len]').onchange=e=>T.laenge(+e.target.value);ed.querySelector('[data-licht]').onchange=e=>T.lichtAn(e.target.checked);ed.querySelector('[data-raster]').onchange=e=>W.raster(e.target.checked);
 // Testdaten: Verletzungen, fehlende Glieder, Siege und Niederlagen. Nur auf den Kopien dieser Seite (Speicher abgeschirmt).
 const FOES=['die Wölfe von Capua','Ludus Sanguis','die Schlächter aus Ostia','Haus Corvus','die Brüder vom Schindanger'],INJ=['Tiefe Schnittwunde','Durchstochen','Trümmerbruch','Prellung bis auf den Knochen'],LIMB=['lua','rua','lfa','rfa','lt','rt','lsh','rsh','ls','rs'];

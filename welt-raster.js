@@ -7,7 +7,7 @@
 //   Brücke, Ludus-Boden, Gebäude, Übungsplatz). Darauf wird später gebaut.
 // · Inhalt jetzt, mehr nicht: Wald links, ein Fluss, ein Weg über die ganze Karte, in der Mitte der Ludus mit den für
 //   die Einführungen wichtigen Gebäuden als Skizze (Kästen mit Namen): Kaserne, Trainingshof, Schmiede, Medicus,
-//   Sklavenmarkt, Arena-Tor, Hall of the Fallen, Beastrium.
+//   Sklavenmarkt, Hall of the Fallen, Beastrium. Das Arena-Tor ist durch eine baubare Arena ersetzt (welt-bau.js).
 // · Einführungen: Die Gebäude liegen wie im alten Ludus (900 × 760), ein Feld = 50 alte Bildpunkte. vonLudus(x,y)
 //   rechnet jede alte Ludus-Koordinate auf die Karte um; damit lassen sich die Intros später hierher verlegen.
 // · Gladiatoren schlendern nur im Ludus herum (noch kein Tagesablauf). Uhr, Licht, Antippen und Pinzette hängen über
@@ -33,7 +33,7 @@ const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Fel
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
 const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
-const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz'];
+const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
 const LUD={tx:39,ty:40,w:18,h:16,px:50};
@@ -44,7 +44,6 @@ const BAU=[
  {id:'hall',name:'HALL',l:[50,206,112,70],hoch:36,wand:'#8d8a80',dach:'#5d5a54'},
  {id:'markt',name:'SKLAVENMARKT',l:[45,280,230,118],hoch:26,wand:'#a98458',dach:'#c9b27a'},
  {id:'medicus',name:'MEDICUS',l:[34,447,250,163],hoch:40,wand:'#d2cbb8',dach:'#7e8a8c'},
- {id:'arena',name:'ARENA-TOR',l:[351,51,226,120],hoch:54,wand:'#c2b08a',dach:'#8d7a58'},
  {id:'platz',name:'TRAININGSHOF',l:[310,247,275,343],hoch:0,wand:'#7a5a39',dach:'#d9c391',flach:true},
  {id:'schmiede',name:'SCHMIEDE',l:[638,86,215,150],hoch:42,wand:'#7d7468',dach:'#4b4640'},
  {id:'beastrium',name:'BEASTRIUM',l:[652,298,196,126],hoch:40,wand:'#96795a',dach:'#6b4a2c'}
@@ -73,7 +72,9 @@ const PAL=[
  [[122,90,57],[108,78,48],[134,100,64],[96,70,43]],// Brücke
  [[160,136,100],[168,144,106],[152,128,94],[174,150,112]],// Ludus-Boden
  [[112,106,96],[120,114,104],[104,98,90],[126,120,110]],// Gebäudefläche
- [[214,194,146],[222,202,154],[206,186,138],[226,208,162]]// Übungsplatz
+ [[214,194,146],[222,202,154],[206,186,138],[226,208,162]],// Übungsplatz
+ [[224,190,128],[232,200,140],[214,178,116],[238,210,154]],// Kampffläche der Arena (heller Sand)
+ [[120,112,100],[128,120,108],[112,104,94],[134,126,114]]// Boden unter einer Tribüne
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
@@ -140,12 +141,13 @@ function clampCam(){cam.s=clamp(cam.s,minScale(),maxScale());cam.x=clamp(cam.x,0
 const toWorld=(sx,sy)=>({x:cam.x+(sx-VW/2)/cam.s,y:cam.y+(sy-VH/2)/cam.s});
 function zoomAt(sx,sy,f){const a=toWorld(sx,sy);cam.s=clamp(cam.s*f,minScale(),maxScale());const b=toWorld(sx,sy);cam.x+=a.x-b.x;cam.y+=a.y-b.y;clampCam();}
 let fly=null;function flyTo(x,y,s){fly={x0:cam.x,y0:cam.y,s0:cam.s,x,y,s:s??Math.max(cam.s,1.2),t:0};}
-const ptrs=new Map();let dragMoved=0,pinch=null,lastTap=0;
-cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});dragMoved=0;fly=null;if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),s:cam.s};}});
-cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const r=cv.getBoundingClientRect();
+const ptrs=new Map();let dragMoved=0,pinch=null,lastTap=0,grabbed=null;// grabbed: ein Anschluss (H.pointer, z. B. Bauen) führt den Zeiger statt der Kamera
+const wp=e=>{const r=cv.getBoundingClientRect();return toWorld(e.clientX-r.left,e.clientY-r.top);};
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});dragMoved=0;fly=null;if(ptrs.size===1&&H.pointer?.('down',wp(e))){grabbed=e.pointerId;return;}if(ptrs.size===2){if(grabbed!=null){H.pointer?.('cancel',wp(e));grabbed=null;}const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),s:cam.s};}});
+cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;if(grabbed===e.pointerId){H.pointer?.('move',wp(e));return;}const r=cv.getBoundingClientRect();
  if(ptrs.size===2&&pinch){p.x=e.clientX;p.y=e.clientY;const [a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2-r.left,my=(a.y+b.y)/2-r.top;zoomAt(mx,my,(pinch.s*d/pinch.d)/cam.s);dragMoved=99;return;}
  const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;dragMoved+=Math.abs(dx)+Math.abs(dy);cam.x-=dx/cam.s;cam.y-=dy/cam.s;clampCam();});
-const up=e=>{const was=ptrs.has(e.pointerId);ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(was&&ptrs.size===0&&dragMoved<8&&e.type==='pointerup'){const r=cv.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top,now=performance.now();
+const up=e=>{const was=ptrs.has(e.pointerId);ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(grabbed===e.pointerId){grabbed=null;H.pointer?.(e.type==='pointerup'?'up':'cancel',wp(e));return;}if(was&&ptrs.size===0&&dragMoved<8&&e.type==='pointerup'){const r=cv.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top,now=performance.now();
  if(now-lastTap<300){zoomAt(sx,sy,1.6);lastTap=0;return;}lastTap=now;tap(toWorld(sx,sy));}};
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
 cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*.0016));},{passive:false});
@@ -179,13 +181,13 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
   const sp=sprites[raster?1:0],u0=Math.floor((view.x0-OX)/(TW/2))-1,u1=Math.ceil((view.x1-OX)/(TW/2))+1,v0=Math.max(0,Math.floor((view.y0-OY)/(TH/2))-2),v1=Math.min(2*N-2,Math.ceil((view.y1-OY)/(TH/2))+5);
   for(let v=v0;v<=v1;v++)for(let u=u0+((u0+v)&1);u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const i=ix(tx,ty),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY;
    ctx.drawImage(sp[feld[i]*VAR+Math.floor(h2(tx,ty,3)*VAR)],x-TW/2,y);if(baum[i]>=0)items.push({y:y+TH/2,tree:baum[i],x});}}
- for(const b of BAU)items.push({y:b.key,bau:b});
+ for(const b of BAU)items.push({y:b.key,bau:b});H.items?.(items,view);
  // Figuren; wer vor einem Gebäude steht, wird nach ihm gezeichnet
  shown=[];spriteBudget=Math.max(2,Math.round(12-perfAvg));
  for(const w of workers){const ps=pose(w);if(ps.x==null||ps.x<view.x0-40||ps.x>view.x1+40||ps.y<view.y0-20||ps.y>view.y1+80)continue;let y=ps.y;const c=tileAt(ps.x,ps.y);
   for(const b of BAU)if(!b.flach&&y<=b.key&&(c.tx>=b.tx+b.w||c.ty>=b.ty+b.h)&&c.tx>b.tx-2&&c.ty>b.ty-2)y=b.key+.01;items.push({y,w,ps});}
  items.sort((a,b)=>a.y-b.y);
- for(const it of items){if(it.tree!=null){ctx.drawImage(TREE[it.tree],it.x-22,it.y-64);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}
+ for(const it of items){if(it.tree!=null){ctx.drawImage(TREE[it.tree],it.x-22,it.y-64);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}if(it.draw){it.draw(ctx);continue;}
   const {w,ps}=it,x=Math.round(ps.x),y=Math.round(ps.y);
   if(miniV){const a=w.g.appearance||{},b=w.walk&&((clock*4+w.seed)|0)%2?2:0;ctx.fillStyle='rgba(15,20,10,.35)';ctx.fillRect(x-5,y-1,10,3);ctx.fillStyle=a.cloth||'#7a6448';ctx.fillRect(x-4,y-13-b,8,12);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-3,y-19-b,6,6);shown.push({w,x,y});continue;}
   const sp=spriteOf(w.g),dir=(ps.dx??1)<0?1:0;ctx.fillStyle='rgba(15,20,10,.3)';ctx.fillRect(x-8,y-1,16,3);
@@ -205,6 +207,6 @@ $('weltBoot')?.remove();last=performance.now();requestAnimationFrame(frame);
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
 window.WeltKarte={cam,sprites:figs,workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
- raster(on){raster=!!on;bake();},get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
+ raster(on){raster=!!on;bake();},rebake:bake,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
 window.WELT_READY=true;
 })();
