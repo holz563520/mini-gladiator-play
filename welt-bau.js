@@ -20,17 +20,19 @@ const M=window.MG,W=window.WeltKarte,H=window.WeltHook;if(!M||!W||!H||!W.feld)re
 const T=W.T,N=W.N,clamp=(v,a,b)=>v<a?a:v>b?b:v,TAU=Math.PI*2;
 const WERKZEUG={platz:{name:'Trainingsfeld',typ:T.PLATZ,preis:50},arena:{name:'Kampffläche',typ:T.ARENA,preis:80},trib:{name:'Tribüne',typ:T.TRIB,preis:120},
  // Gebäude mit Art: Boden ziehen, Wände, Dach und Einrichtung entstehen von selbst (welt-gebaeude.js). Gleiche Art nebeneinander wächst zusammen.
- unterkunft:{name:'Unterkunft',typ:T.UNTERKUNFT,preis:60,haus:1},
+ // Drei Güteklassen von schäbig bis königlich (Thomas 12.11.), jede teurer; über eine andere Klasse bauen = Umbau zum vollen Preis.
+ unterkunft1:{name:'Rattenloch',typ:T.UNT_S,preis:20,haus:1},unterkunft:{name:'Mannschaftsstube',typ:T.UNTERKUNFT,preis:60,haus:1},unterkunft3:{name:'Fürstengemächer',typ:T.UNT_K,preis:200,haus:1},
  // Fünf Straßen, jede teurer als die vorige (Preise sind Vorschläge). Noch ohne Wirkung auf Tempo oder Besucher.
  str1:{name:'Trampelpfad',typ:T.STR1,preis:5,str:1},str2:{name:'Kiesweg',typ:T.STR2,preis:12,str:1},str3:{name:'Pflasterweg',typ:T.STR3,preis:25,str:1},str4:{name:'Steinstraße',typ:T.STR4,preis:50,str:1},str5:{name:'Prachtstraße',typ:T.STR5,preis:100,str:1},
  weg:{name:'Abreißen',preis:0}};
-const istStr=t=>t>=T.STR1&&t<=T.STR5;
+const istStr=t=>t>=T.STR1&&t<=T.STR5,istHaus=t=>t===T.UNTERKUNFT||t===T.UNT_S||t===T.UNT_K;
 const PREIS=WERKZEUG.platz.preis,PRO=4,PLAETZE=8,STUFEN=[{ab:0,name:'Strohpuppe',mz:'Strohpuppen'},{ab:10,name:'Holzpuppe',mz:'Holzpuppen'},{ab:25,name:'Rüstungspuppe',mz:'Rüstungspuppen'},{ab:60,name:'Drehpuppe',mz:'Drehpuppen'}];
 const ARENA_NAME=n=>n<20?'Sandgrube':n<48?'Kleine Arena':n<100?'Arena':'Große Arena';
 const stufeVon=n=>{let s=0;for(let i=0;i<STUFEN.length;i++)if(n>=STUFEN[i].ab)s=i;return s;};
 const ur=Uint8Array.from(W.feld);// Gelände vor allem Bauen (für „Abreißen“)
 const baubar=(tx,ty)=>W.inMap(tx,ty)&&!W.gebaeudeAt?.(tx,ty)&&(W.feld[W.ix(tx,ty)]===T.WIESE||W.feld[W.ix(tx,ty)]===T.LUDUS);
-const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB||t===T.UNTERKUNFT||istStr(t))&&ur[k]!==t;};
+const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB||istHaus(t)||istStr(t))&&ur[k]!==t;};
+const hausBaubar=(k,typ)=>{const t=W.feld[k];return t===T.WIESE||t===T.LUDUS||(istHaus(t)&&t!==typ);};
 // Straßen dürfen auch auf den alten Weg und über eine andere Straße (Ausbau, voller Preis)
 const strBaubar=(k,typ)=>{if(W.gebaeudeAt?.(k%N,Math.floor(k/N)))return false;const t=W.feld[k];return t===T.WIESE||t===T.LUDUS||t===T.WEG||(istStr(t)&&t!==typ);};
 
@@ -97,30 +99,32 @@ const bar=document.querySelector('#weltUi .w-bar'),gold=document.createElement('
 const btn=document.createElement('button');btn.className='w-btn w-baubtn';btn.id='wBauBtn';btn.textContent='🔨 Bauen';bar.insertBefore(btn,bar.querySelector('.w-kader'));
 const box=document.createElement('div');box.id='wBau';box.hidden=true;
 const knopf=([id,w])=>`<button class="w-btn" data-wz="${id}">${w.name}${w.preis?' <small>'+w.preis+' G</small>':''}</button>`,WZ=Object.entries(WERKZEUG);
-box.innerHTML='<div class="bau-wz">'+WZ.filter(e=>!e[1].str&&e[0]!=='weg').map(knopf).join('')+'<button class="w-btn" data-wz="str1" data-strgruppe>Straße ▾</button>'+knopf(['weg',WERKZEUG.weg])+'<button class="w-btn" data-done>Fertig</button></div><div class="bau-wz bau-str" hidden>'+WZ.filter(e=>e[1].str).map(knopf).join('')+'</div><span></span>';
+box.innerHTML='<div class="bau-wz">'+WZ.filter(e=>!e[1].str&&!e[1].haus&&e[0]!=='weg').map(knopf).join('')+'<button class="w-btn" data-wz="unterkunft" data-hausgruppe>Unterkunft ▾</button><button class="w-btn" data-wz="str1" data-strgruppe>Straße ▾</button>'+knopf(['weg',WERKZEUG.weg])+'<button class="w-btn" data-done>Fertig</button></div><div class="bau-wz bau-haus" hidden>'+WZ.filter(e=>e[1].haus).map(knopf).join('')+'</div><div class="bau-wz bau-str" hidden>'+WZ.filter(e=>e[1].str).map(knopf).join('')+'</div><span></span>';
 document.getElementById('weltUi').appendChild(box);
 const HILFE={platz:'Rechteck auf Wiese oder Ludus-Boden ziehen. Je '+PRO+' Felder eine Puppe; ab '+STUFEN[1].ab+' Feldern '+STUFEN[1].mz+', ab '+STUFEN[2].ab+' '+STUFEN[2].mz+', ab '+STUFEN[3].ab+' '+STUFEN[3].mz+'.',
  arena:'Kampffläche ziehen: Das ist die Grundform der Arena. Größer machen: anbauen. Kleiner machen: abreißen.',
  trib:'Tribünen an die Kampffläche bauen. Jede Reihe weiter außen steht eine Stufe höher. Je Feld '+PLAETZE+' Sitzplätze.',
- unterkunft:'Boden der Unterkunft ziehen. Wände, Tür, Dach und Betten entstehen von selbst. An eine Unterkunft angebaut wird daraus ein größeres Gebäude.',
+ unterkunft1:'Rattenloch: Strohhaufen, Ratten und ein Eimer. Billiger wird es nur noch unter freiem Himmel. Boden ziehen, der Rest verkommt von selbst.',
+ unterkunft:'Mannschaftsstube: ein Bett je Mann, ein Dach ohne Löcher. Mehr Luxus wäre Verschwendung an Leuten mit kurzer Lebenserwartung. Boden ziehen.',
+ unterkunft3:'Fürstengemächer: Mosaik, Purpur und Gold. Für Champions, die du behalten willst, bis sie jemand anders zerlegt. Boden ziehen.',
  weg:'Rechteck über Gebautes ziehen. Es wird wieder zu dem, was vorher dort war. Kein Geld zurück.'};
 for(const [id,w] of Object.entries(WERKZEUG))if(w.str)HILFE[id]=w.name+': '+w.preis+' G je Feld. Rechteck oder Linie ziehen, auch über den alten Weg oder eine andere Straße (Ausbau).';
 function hilfe(){box.querySelector('span').textContent=mode?HILFE[mode]:'';}
-function setMode(m){mode=m===true?'platz':(m||null);drag=null;info=null;box.hidden=!mode;btn.classList.toggle('on',!!mode);const str=!!WERKZEUG[mode]?.str;box.querySelector('.bau-str').hidden=!str;for(const b of box.querySelectorAll('[data-wz]'))b.classList.toggle('on',b.dataset.strgruppe!=null?str:b.dataset.wz===mode);hilfe();W.canvas.style.cursor=mode?'crosshair':'';if(mode)M.weltLeben?.close?.();}
+function setMode(m){mode=m===true?'platz':(m||null);drag=null;info=null;box.hidden=!mode;btn.classList.toggle('on',!!mode);const str=!!WERKZEUG[mode]?.str,haus=!!WERKZEUG[mode]?.haus;box.querySelector('.bau-str').hidden=!str;box.querySelector('.bau-haus').hidden=!haus;for(const b of box.querySelectorAll('[data-wz]'))b.classList.toggle('on',b.dataset.strgruppe!=null?str:b.dataset.hausgruppe!=null?haus:b.dataset.wz===mode);hilfe();W.canvas.style.cursor=mode?'crosshair':'';if(mode)M.weltLeben?.close?.();}
 btn.onclick=()=>setMode(mode?null:'platz');
 box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.done!=null)setMode(null);else setMode(b.dataset.wz);});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&mode){if(drag){drag=null;info=null;hilfe();}else setMode(null);}});
 const tile=p=>{const t=W.tileAt(p.x,p.y);return {tx:clamp(Math.floor(t.tx),0,N-1),ty:clamp(Math.floor(t.ty),0,N-1)};};
 const mz=(n,e,m)=>n+' '+(n===1?e:m);
 function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,drag.b.tx),y0=Math.min(drag.a.ty,drag.b.ty),y1=Math.max(drag.a.ty,drag.b.ty),ok=[],no=[],wz=WERKZEUG[mode],ab=mode==='weg';
- for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=W.ix(x,y);((ab?abreissbar(k):wz.str?strBaubar(k,wz.typ):baubar(x,y))?ok:no).push(k);}
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=W.ix(x,y);((ab?abreissbar(k):wz.str?strBaubar(k,wz.typ):wz.haus?hausBaubar(k,wz.typ):baubar(x,y))?ok:no).push(k);}
  const preis=ok.length*wz.preis;info={ok,no,preis,genug:(S.gold||0)>=preis};let t='Hier geht das nicht.';
  if(ok.length){// Ergebnis vorab ausrechnen: Felder kurz setzen, zählen, zurücksetzen
   const save=ok.map(k=>W.feld[k]);for(const k of ok)W.feld[k]=ab?ur[k]:wz.typ;
   if(ab)t=mz(ok.length,'Feld','Felder')+' abreißen';
   else{t=mz(ok.length,'Feld','Felder')+' · '+preis+' G'+(info.genug?'':' · zu wenig Gold');
    if(mode==='platz'){const f=plan(gebiete(T.PLATZ).find(g=>g.includes(ok[0])));t+=' → Trainingsfeld mit '+mz(f.n,'Feld','Feldern')+': '+mz(f.count,'Puppe','Puppen')+', beste: '+STUFEN[f.max].name;}
-   else if(wz.haus){const h=M.weltGebaeude?.bei(ok[0]);if(h)t+=' → '+wz.name+' mit '+mz(h.n,'Feld','Feldern')+': '+mz(h.betten,'Bett','Betten');}
+   else if(wz.haus){const h=M.weltGebaeude?.bei(ok[0]);if(h)t+=' → '+wz.name+' mit '+mz(h.n,'Feld','Feldern')+': '+mz(h.betten,'Schlafplatz','Schlafplätze');}
    else if(!wz.str){const as=arenenRechnen(),a=mode==='arena'?as.find(a=>a.floor.includes(ok[0])):as.find(a=>a.tribs.includes(ok[0]));t+=a?' → '+a.name+': '+mz(a.n,'Feld','Felder')+' Kampffläche, '+a.plaetze+' Sitzplätze':' → liegt an keiner Kampffläche';}}
   ok.forEach((k,i)=>W.feld[k]=save[i]);arenenRechnen();}
  box.querySelector('span').textContent=t;}
@@ -128,7 +132,7 @@ function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg
  const a=drag.a,betten0=M.weltGebaeude?.betten()||0;let cx=0,cy=0;for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y;}cx/=ok.length;cy/=ok.length;
  if(!frei)S.gold=(S.gold||0)-preis;W.rebake();const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
  let d=0;const say=(s,col)=>{text.push({x:cx,y:cy-30,t:-d,s,col});d+=.6;};if(preis)say('−'+preis+' G','#f29b83');if(r.mehr)say('+'+mz(r.mehr,'Puppe','Puppen'),'#f4d37a');if(r.besser>=0)say('Bessere Puppen: '+STUFEN[r.besser].mz+'!','#fff2b0');
- const bd=(M.weltGebaeude?.betten()||0)-betten0;if(bd>0)say('+'+mz(bd,'Bett','Betten'),'#f4d37a');if(bd<0)say(bd+' Betten','#f29b83');
+ const bd=(M.weltGebaeude?.betten()||0)-betten0;if(bd>0)say('+'+mz(bd,'Schlafplatz','Schlafplätze'),'#f4d37a');if(bd<0)say(bd+' Schlafplätze','#f29b83');
  if(r.plaetze>0)say('+'+r.plaetze+' Sitzplätze','#f4d37a');if(r.plaetze<0)say(r.plaetze+' Sitzplätze','#f29b83');zeigeGold();}
 H.pointer=(phase,p)=>{if(!mode)return false;if(phase==='down'){const t=tile(p);drag={a:t,b:t};auswahl();return true;}if(!drag)return true;
  if(phase==='move'){const t=tile(p);if(t.tx!==drag.b.tx||t.ty!==drag.b.ty){drag.b=t;auswahl();}}else if(phase==='up'){drag.b=tile(p);auswahl();baue();drag=null;info=null;setTimeout(()=>{if(mode&&!drag)hilfe();},2600);}else{drag=null;info=null;hilfe();}return true;};
