@@ -15,19 +15,25 @@
 //     2 Kaiserliche Waffenschmiede Marmoresse mit Gold, vergoldeter Amboss, Bronzetrog, Statue des Lanista als Vulcanus
 //   Immer dabei: Esse mit Blasebalg, Amboss auf Hammerblock, Löschtrog, Schleifstein, Lager für Erz, Kohle, Holz und Barren,
 //   Waffenständer, Werkbänke, Werkzeugwände. Feuer flackert, Funken sprühen an Amboss und Schleifstein, Rauch aus den Essen.
-// · Überall hängen Bilder des Lanista mit Durchhalteparolen (SPRUECHE). Im offenen Haus zeigt die Maus über einem Bild
-//   oder ein Antippen den Spruch; ab Zoom 1,3 steht über jedem Bild eine lesbare Tafel. Die Sprüche werden bei jedem Öffnen
-//   des Hauses neu ausgelost (ohne Wiederholung im selben Haus).
+// · Beastrium in drei Klassen (Thomas 12.11.), ganz überdacht, voller Metallkäfige (zwei Reihen Käfige, eine Reihe Gang),
+//   in jedem Käfig ein Tier, Stroh und Blutknochen; außen Gitterfenster mit Augen dahinter wie im alten Beastrium:
+//     0 Knochengrube           Lehm, Strohdach mit Geier, rostige verbogene Käfige, räudige Hunde, Hähne, Eber, Gerippe
+//     1 Beastrium              Bruchstein, Schindeldach mit Wetterhahn, Eisenkäfige: Hunde, Wölfe, Eber, Hähne, ein Bär
+//     2 Kaiserliche Menagerie  Marmor, goldene Gitter, Löwen, Tiger, Bären; goldener Löwe auf dem Dach
+//   Im Gang: Futtereimer (mit Bein), Knochenhaufen, Blutlachen, Fleischhaken, Wassertrog, Stroh. Fliegen über dem Blut.
+// · Überall hängen Bilder des Lanista mit Durchhalteparolen (SPRUECHE). Der Spruch erscheint nur, wenn man im offenen Haus
+//   auf ein Bild tippt oder klickt (Thomas 12.11.: sonst keine Schrift). Die Sprüche werden bei jedem Öffnen des Hauses neu
+//   ausgelost (ohne Wiederholung im selben Haus).
 // · Dach: nur nah herangezoomt (Zoom ab 1,5) wird es durchsichtig: Haus in der Bildmitte, unter der Maus oder angetippt.
 //   Zoomt man weiter weg, sind alle Dächer von selbst wieder zu (Thomas 12.11.). Offen sind die vorderen Wände kniehoch.
 // · Leistung: Jedes Haus wird zweimal vorgezeichnet (geschlossen, offen) und nur neu gemalt, wenn sich sein Grundriss ändert.
 //   Lebendig sind nur Rauch, Ratten und Fliegen (ein paar Rechtecke je Bild).
-// · Noch keine Spielwirkung: Schlafplätze und Ambosse zählen nur.
+// · Noch keine Spielwirkung: Schlafplätze, Ambosse und Käfige zählen nur.
 // =====================================================================================================================
 (()=>{
 const M=window.MG,W=window.WeltKarte,H=window.WeltHook,B=M?.weltBau;if(!M||!W||!H||!B||W.T.UNTERKUNFT==null)return;const S=M.s;
 const T=W.T,N=W.N,WAND=34,STUMPF=7,STEIG=11,KAPPE=3,TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const STUFE=new Map([[T.UNT_S,0],[T.UNTERKUNFT,1],[T.UNT_K,2],[T.SCHM_S,0],[T.SCHMIEDE,1],[T.SCHM_K,2]]),ART=new Map([[T.SCHM_S,'schmiede'],[T.SCHMIEDE,'schmiede'],[T.SCHM_K,'schmiede']]),NAME_S=['ROSTGRUBE','WAFFENSCHMIEDE','KAISERLICHE WAFFENSCHMIEDE'],NAME=['RATTENLOCH','MANNSCHAFTSSTUBE','FÜRSTENGEMÄCHER'],PLATZ=[['STROHHAUFEN','STROHHAUFEN'],['BETT','BETTEN'],['PRUNKLIEGE','PRUNKLIEGEN']];
+const STUFE=new Map([[T.UNT_S,0],[T.UNTERKUNFT,1],[T.UNT_K,2],[T.SCHM_S,0],[T.SCHMIEDE,1],[T.SCHM_K,2],...(T.BEAST!=null?[[T.BST_S,0],[T.BEAST,1],[T.BST_K,2]]:[])]),ART=new Map([[T.SCHM_S,'schmiede'],[T.SCHMIEDE,'schmiede'],[T.SCHM_K,'schmiede'],[T.BST_S,'beast'],[T.BEAST,'beast'],[T.BST_K,'beast']]),NAME_B=['KNOCHENGRUBE','BEASTRIUM','KAISERLICHE MENAGERIE'],NAME_S=['ROSTGRUBE','WAFFENSCHMIEDE','KAISERLICHE WAFFENSCHMIEDE'],NAME=['RATTENLOCH','MANNSCHAFTSSTUBE','FÜRSTENGEMÄCHER'],PLATZ=[['STROHHAUFEN','STROHHAUFEN'],['BETT','BETTEN'],['PRUNKLIEGE','PRUNKLIEGEN']];
 const SPRUECHE=[[// Rattenloch
  'Ratten sind auch Eiweiß.','Stroh ist ein Privileg. Benimm dich entsprechend.','Das Loch im Dach ist ein Fenster. Gern geschehen.','Wer hier aufwacht, hat schon gewonnen.','Der Eimer ist für alle da. Auch für dich, Titus.','Hier ist noch keiner erfroren. Gezählt hat allerdings auch keiner.','Das ist kein Schimmel. Das ist Wandschmuck.','Nachts gebissen worden? Die Ratte hatte auch einen schweren Tag.','Das Stroh wurde zuletzt gewechselt, als sein Vorbesitzer noch lebte.','Kalt? Die Toten im Hof frieren auch nicht.','Hier stinkt es nach Ehrgeiz. Und nach Gaius.','Betten sind für Leute mit Zukunft.','Der Husten geht vorbei. So oder so.','Wer sich beschwert, schläft draußen. Da ist mehr Platz, seit dem Löwen.'],
  [// Mannschaftsstube
@@ -45,11 +51,28 @@ const SPR_S=[[// Rostgrube
  [// jede Schmiede
  'Eisen formt man mit Feuer. Gladiatoren auch.','Achtung, heiß! Gilt für Eisen, Kohle und meine Laune.','Bitte nicht auf den Amboss legen. Außer du willst flacher werden.','Der Hammer ist kein Kopfkissen.','Was nicht passt, wird passend gemacht. Auch Schultern.','Hier wird jede Klinge an echten Menschen geprüft. Freiwillige vor!','Fehlende Finger bitte beim Schmied melden. Er sammelt.','Keine Arbeit ohne Brandblasen.']];
 // Sprüche neu auslosen: je Haus ohne Wiederholung, gemischt aus den Sprüchen der Güteklasse und den allgemeinen
-function wuerfeln(h){const pool=h.art==='schmiede'?[...SPR_S[h.st],...SPR_S[3],...SPRUECHE[3].filter(t=>!/schl[aä]f|bett|deck/i.test(t))]:[...SPRUECHE[h.st],...SPRUECHE[3]];for(let i=pool.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[pool[i],pool[j]]=[pool[j],pool[i]];}h.poster.forEach((p,i)=>p.text=pool[i%pool.length]);}
+const SPR_B=[[// Knochengrube
+ 'Die Hunde haben Hunger. Du hast zwei Beine. Rechne.','Wer die Käfige putzt, darf behalten, was er findet.','Tollwut ist nur ein anderes Wort für Kampfgeist.',
+ 'Der letzte Pfleger hat nicht gekündigt. Er wurde verdaut.','Rost hält auch zusammen. Meistens.','Füttern nur mit links. Die rechte Hand brauchst du für das Schwert.',
+ 'Die Flöhe sind gratis.','Riecht nach Tod? Nein, das ist das Futter.','Ein Knochen ist ein Knochen. Frag nicht, von wem.','Wer hier überlebt, fürchtet die Arena nicht mehr.',
+ 'Der Käfig ist verbogen. Der Hund war schneller als der Schmied.'],[// Beastrium
+ 'Ein gesunder Hund braucht Bewegung. Lauf.','Heute füttert, wer gestern verloren hat.','Die Wölfe zählen mit. Du solltest es auch.',
+ 'Nicht in die Augen schauen. Nicht weglaufen. Nicht lecker sein.','Hähne kämpfen bis zum Tod. Sei ein Hahn.','Der Eber ist kein Haustier. Du auch nicht.',
+ 'Gitter schützen die Tiere vor dir. Nicht umgekehrt.','Beim Verlassen des Zwingers Finger zählen: zehn. Sonst melden.','Das Futter von heute kämpft morgen nicht mehr.',
+ 'Wer das Tor offen lässt, wird das Futter.','Unsere Tiere sind gut erzogen. Sie fressen nur, was sich bewegt.'],[// Kaiserliche Menagerie
+ 'Der Löwe hat einen Namen. Du hast eine Nummer.','Der Bär isst von goldenen Tellern. Du bist der Teller.','Ein kaiserlicher Tiger frisst nur das Beste. Gib dir Mühe.',
+ 'Diese Löwin kostet mehr als dein Leben. Benimm dich.','Wer den Löwen streichelt, bekommt ein prächtiges Begräbnis.','Die Tiere sind Gäste des Kaisers. Du bist die Vorspeise.',
+ 'Gold glänzt auch im Magen eines Tigers.','Vor dem Füttern Rüstung ablegen. Sie bekommt dem Bären schlecht.','Ruhm ist, wenn dein Name auf dem Futternapf steht.',
+ 'Der Kaiser liebt Tiere. Menschen hat er genug.'],[// alle Klassen
+ 'Jedes Tier hier hat schon einen Helden gefressen. Sei kein Held.','Blut im Stroh heißt: Die Fütterung war erfolgreich.','Ein Biest ist ein Gladiator, der nicht jammert.',
+ 'Freiwillige für die Fütterung: vortreten. Alle anderen: auch.','Wir verschwenden nichts. Frag die Hunde.','Heute Abend Fütterung. Du bist herzlich eingeladen.',
+ 'Angst riecht man. Die Tiere lieben den Duft.','Wer hier eine Hand verliert, hat ja noch eine.','Die Gitter sind stark. Die Schlösser sind alt. Viel Glück.',
+ 'Kein Tier wurde beim Training verletzt. Gladiatoren schon.']];
+function wuerfeln(h){const pool=h.art==='beast'?[...SPR_B[h.st],...SPR_B[3],...SPRUECHE[3].filter(t=>!/schl[aä]f|bett|deck/i.test(t))]:h.art==='schmiede'?[...SPR_S[h.st],...SPR_S[3],...SPRUECHE[3].filter(t=>!/schl[aä]f|bett|deck/i.test(t))]:[...SPRUECHE[h.st],...SPRUECHE[3]];for(let i=pool.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[pool[i],pool[j]]=[pool[j],pool[i]];}h.poster.forEach((p,i)=>p.text=pool[i%pool.length]);}
 const NB=[[1,0],[-1,0],[0,1],[0,-1]];
 // ---------- Grundriss → Haus ----------
 function gebiet(k0){const typ=W.feld[k0],seen=new Set([k0]),st=[k0],tiles=[];while(st.length){const k=st.pop();tiles.push(k);const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=N||ny>=N)continue;const q=ny*N+nx;if(!seen.has(q)&&W.feld[q]===typ){seen.add(q);st.push(q);}}}return tiles;}
-function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get(typ)||'unterkunft',schm=art==='schmiede',set=new Set(tiles);let bx0=N,by0=N,bx1=0,by1=0;for(const k of tiles){const x=k%N,y=(k/N)|0;if(x<bx0)bx0=x;if(x>bx1)bx1=x;if(y<by0)by0=y;if(y>by1)by1=y;}
+function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get(typ)||'unterkunft',schm=art==='schmiede',bst=art==='beast',set=new Set(tiles);let bx0=N,by0=N,bx1=0,by1=0;for(const k of tiles){const x=k%N,y=(k/N)|0;if(x<bx0)bx0=x;if(x>bx1)bx1=x;if(y<by0)by0=y;if(y>by1)by1=y;}
  const has=(x,y)=>x>=0&&y>=0&&x<N&&y<N&&set.has(y*N+x);
  const lang=bx1-bx0>=by1-by0,tief=(a,b)=>(a%N+((a/N)|0))-(b%N+((b/N)|0));
  // Schmiede: die hintere Hälfte entlang der längeren Seite ist überdacht, der Rest ist Hof
@@ -58,17 +81,19 @@ function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get
  let door=null,best=1e9;const mx=(bx0+bx1)/2,my=(by0+by1)/2;
  for(const k of tiles){if(schm&&hof.length&&dach.has(k))continue;const x=k%N,y=(k/N)|0;if(!has(x,y+1)){const d=Math.abs(x-mx)+(by1-y)*3;if(d<best){best=d;door={k,side:'y'};}}if(!has(x+1,y)){const d=Math.abs(y-my)+(bx1-x)*3+.4;if(d<best){best=d;door={k,side:'x'};}}}
  // Schlafplätze: jede zweite Reihe quer zur längeren Seite, dazwischen bleibt ein Gang frei; das Feld hinter der Tür bleibt frei
- const beds=schm?[]:tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0)%2===0:(y-by0)%2===0);}).sort(tief);
- // Bilder des Lanista an den hinteren Innenwänden
- const poster=[];for(const k of tiles){const x=k%N,y=(k/N)|0;for(const [side,frei,salt,p] of [['a',!has(x,y-1),52,.5],['d',!has(x-1,y),53,.42]])if(frei&&(!schm||dach.has(k))&&W.h2(x,y,salt)<(schm?.62:p)){poster.push({k,side,text:''});}}
+ const beds=schm||bst?[]:tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0)%2===0:(y-by0)%2===0);}).sort(tief);
+ // Beastrium: zwei Reihen Käfige quer zur längeren Seite, dann eine Reihe Gang; das Türfeld bleibt frei
+ const kaefig=bst?new Map(tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0):(y-by0))%3!==1;}).map(k=>[k,tierFuer(k,st)])):new Map();
+ // Bilder des Lanista an den hinteren Innenwänden (im Beastrium nur über dem Gang, nicht hinter den Käfigen)
+ const poster=[];for(const k of tiles){const x=k%N,y=(k/N)|0;for(const [side,frei,salt,p] of [['a',!has(x,y-1),52,.5],['d',!has(x-1,y),53,.42]])if(frei&&(!schm||dach.has(k))&&!kaefig.has(k)&&W.h2(x,y,salt)<(schm?.62:bst?.85:p)){poster.push({k,side,text:''});}}
  // Dachhöhe: Ringe vom Rand nach innen (über Eck gezählt), gedeckelt
  const D=new Map();let rand=[...dach].filter(k=>{const x=k%N,y=(k/N)|0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(!hasD(x+dx,y+dy))return true;return false;}),d=1;
  while(rand.length){for(const k of rand)D.set(k,Math.min(d,KAPPE));const next=[];for(const k of rand){const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB){const q=(y+dy)*N+x+dx;if(hasD(x+dx,y+dy)&&!D.has(q)&&!next.includes(q))next.push(q);}}rand=next;d++;}
  const dz=(x,y)=>hasD(x,y)?D.get(y*N+x):0,eck=(cx,cy)=>STEIG*Math.min(dz(cx-1,cy-1),dz(cx,cy-1),dz(cx-1,cy),dz(cx,cy));
  const sufY=[];let m=-1;for(let x=bx1;x>=bx0;x--){for(let y=by1;y>=by0;y--)if(has(x,y)){if(y>m)m=y;break;}sufY[x-bx0]=m;}
  const stat=schm?stationen(tiles,dach,hof,has,door,st,tief):new Map(),ambosse=[...stat.values()].filter(r=>r==='amboss').length;
- return {id:Math.min(...tiles),st,art,tiles:tiles.slice().sort(tief),set,has,hasD,dach,stat,ambosse,n:tiles.length,bx0,by0,bx1,by1,door,beds,betten:beds.length,poster,eck,sufY,key:W.iso(bx1+1,by1+1).y,
-  titel:schm?NAME_S[st]:NAME[st],zahl:schm?ambosse:beds.length,wort:schm?['AMBOSS','AMBOSSE']:PLATZ[st]};}
+ return {id:Math.min(...tiles),st,art,tiles:tiles.slice().sort(tief),set,has,hasD,dach,stat,ambosse,kaefig,kaefige:kaefig.size,n:tiles.length,bx0,by0,bx1,by1,door,beds,betten:beds.length,poster,eck,sufY,key:W.iso(bx1+1,by1+1).y,
+  titel:schm?NAME_S[st]:bst?NAME_B[st]:NAME[st],zahl:schm?ambosse:bst?kaefig.size:beds.length,wort:schm?['AMBOSS','AMBOSSE']:bst?['KÄFIG','KÄFIGE']:PLATZ[st]};}
 // Einrichtung der Schmiede: Essen an der Rückwand, davor Amboss und Löschtrog; Werkbänke an freien Wandfeldern;
 // im Hof Schleifstein, Lager (Erz, Kohle, Holz, Barren), Waffenständer und je Klasse ein Extra. Rund ein Drittel bleibt frei zum Laufen.
 function stationen(tiles,dach,hof,has,door,st,tief){const stat=new Map(),frei=k=>!stat.has(k)&&k!==door.k,hx=(k,s)=>W.h2(k%N,(k/N)|0,s);
@@ -95,8 +120,9 @@ const flach=(g,x0,y0,x1,y1,z,fill,line)=>quad(g,[pt(x0,y0,z),pt(x1,y0,z),pt(x1,y
 function kiste(g,x0,y0,x1,y1,z0,z1,c,k=1){quad(g,[pt(x0,y1,z0),pt(x1,y1,z0),pt(x1,y1,z1),pt(x0,y1,z1)],sh(c,.72*k));quad(g,[pt(x1,y1,z0),pt(x1,y0,z0),pt(x1,y0,z1),pt(x1,y1,z1)],sh(c,.88*k));quad(g,[pt(x0,y0,z1),pt(x1,y0,z1),pt(x1,y1,z1),pt(x0,y1,z1)],sh(c,1.08*k));}
 function oval(g,x,y,z,rx,ry,col){const p=pt(x,y,z);g.fillStyle=col;g.beginPath();g.ellipse(p[0],p[1],rx,ry,0,0,TAU);g.fill();}
 // Wandfläche von Rasterpunkt (x0,y0) nach (x1,y1), Höhe h, Güteklasse st. Gemalt wird in Wandkoordinaten: u 0…1 entlang der Wand, v in Bildpunkten nach oben.
-function wand(g,x0,y0,x1,y1,h,hell,st,extra){const p=W.iso(x0,y0),q=W.iso(x1,y1);g.save();g.transform(q.x-p.x,q.y-p.y,0,-1,p.x,p.y);const R=(u,v,du,dv,col)=>{g.fillStyle=col;g.fillRect(u,v,du,dv);},z=(i,s)=>W.h2(x0*7+i,y0*3+x1+y1*5,s),voll=h>12;
- if(st===0){R(0,0,1,h,sh(LEHM,hell));R(0,0,1,Math.min(5,h*.6),sh([88,74,54],hell));for(let i=0;i<5;i++)R(z(i,61)*.9,2+z(i,62)*3,.08,1.5,sh([70,60,44],hell));
+function wand(g,x0,y0,x1,y1,h,hell,st,extra,art){const p=W.iso(x0,y0),q=W.iso(x1,y1);g.save();g.transform(q.x-p.x,q.y-p.y,0,-1,p.x,p.y);const R=(u,v,du,dv,col)=>{g.fillStyle=col;g.fillRect(u,v,du,dv);},z=(i,s)=>W.h2(x0*7+i,y0*3+x1+y1*5,s),voll=h>12;
+ if(st===1&&art==='beast'){bruchstein(R,h,hell,z,voll);}
+ else if(st===0){R(0,0,1,h,sh(LEHM,hell));R(0,0,1,Math.min(5,h*.6),sh([88,74,54],hell));for(let i=0;i<5;i++)R(z(i,61)*.9,2+z(i,62)*3,.08,1.5,sh([70,60,44],hell));
   if(voll){for(let i=0;i<2;i++){const u=.1+z(i,63)*.6,v=8+z(i,64)*(h-20);R(u,v,.2,7,sh([96,70,44],hell));for(let k=0;k<3;k++)R(u,v+1+k*2.2,.2,.7,sh([132,100,62],hell));for(let k=0;k<3;k++)R(u+.03+k*.07,v,.014,7,sh([70,50,30],hell));}// abgeplatzter Lehm, darunter Flechtwerk
    for(let i=0;i<3;i++){const u=.08+z(i,65)*.8,v=6+z(i,66)*(h-14);R(u,v,.012,6,sh([70,58,40],hell));R(u+.012,v+5,.012,5,sh([70,58,40],hell));}// Risse
    R(0,h-2,1,2,sh([168,142,82],hell));for(let i=0;i<8;i++)R(i*.125+z(i,67)*.05,h-3-z(i,68)*2,.03,3,sh([168,142,82],hell*.85));}// Stroh hängt über
@@ -158,25 +184,29 @@ function kram(g,x,y,seed,st,h){const a=S.lanista?.appearance||{};
  else if(seed<.5){for(const [dx,dy] of [[.4,.4],[.6,.42],[.5,.6]])kiste(g,x+dx-.015,y+dy-.015,x+dx+.015,y+dy+.015,0,9,BRONZE);oval(g,x+.5,y+.5,9,8,4,sh(BRONZE,1.1));oval(g,x+.5,y+.5,10,6,3,'#2a1c12');oval(g,x+.5,y+.5,11.5,4,3.4,'#ff9030');oval(g,x+.5,y+.5,13.5,2.2,3,'#ffe070');}// Feuerschale
  else if(seed<.66){kiste(g,x+.3,y+.34,x+.7,y+.66,0,8,GOLD,.92);kiste(g,x+.3,y+.48,x+.71,y+.52,0,8.3,BRONZE);kiste(g,x+.29,y+.33,x+.71,y+.67,8,9.6,GOLD);const p=pt(x+.71,y+.5,5);g.fillStyle='#20140c';g.fillRect(p[0]-1,p[1]-1.5,2,3);}// goldene Truhe
  else if(seed<.86){kiste(g,x+.46,y+.46,x+.54,y+.54,0,7,MARMOR);oval(g,x+.5,y+.5,7.5,10,5,sh(MARMOR,1.02));oval(g,x+.5,y+.5,9,5,2.5,sh(GOLD,1));for(const [dx,dy,c] of [[-.05,0,[170,40,50]],[.03,-.03,[120,150,60]],[.02,.04,[210,140,50]]])oval(g,x+.5+dx,y+.5+dy,10.5,2,2,sh(c,1));kiste(g,x+.62,y+.38,x+.67,y+.43,7.5,14,[170,96,60]);}}// Tisch mit Obst und Wein
-function male(h,offen){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-(WAND+STEIG*KAPPE+30),bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top),st=h.st;
+function male(h,offen){const bst=h.art==='beast',kf=h.kaefig;const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-(WAND+STEIG*KAPPE+30),bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top),st=h.st;
  const c=document.createElement('canvas');c.width=Math.ceil(p1.x-p0.x+m);c.height=Math.ceil(bot-top);const g=c.getContext('2d');g.translate(-ox,-oy);const has=h.has,bed=new Set(h.beds),po=new Map(h.poster.map(p=>[p.k+p.side,p]));if(offen){h.mist=[];h.gang=[];}
  for(const k of h.tiles){const x=k%N,y=(k/N)|0,s=W.h2(x,y,51),dr=h.door.k===k;
   // hintere Wände (Innenseite), mit Bild des Lanista oder Schmuck
-  if(!has(x,y-1))wand(g,x,y,x+1,y,WAND,.98,st,offen?(po.has(k+'a')?bild(st,.98):schmuck(st,W.h2(x,y,55))):null);if(!has(x-1,y))wand(g,x,y+1,x,y,WAND,.8,st,offen?(po.has(k+'d')?bild(st,.8):schmuck(st,W.h2(x,y,56))):null);
+  const zier=bst?schmuckB:schmuck;if(!has(x,y-1))wand(g,x,y,x+1,y,WAND,.98,st,offen?(po.has(k+'a')?bild(st,.98):zier(st,W.h2(x,y,55))):null,h.art);if(!has(x-1,y))wand(g,x,y+1,x,y,WAND,.8,st,offen?(po.has(k+'d')?bild(st,.8):zier(st,W.h2(x,y,56))):null,h.art);
   if(offen){if(dr){const a=h.door.side==='y',c0=st===0?[120,104,70]:st===1?[150,52,44]:PURPUR;quad(g,a?[pt(x+.2,y+.45),pt(x+.8,y+.45),pt(x+.8,y+.95),pt(x+.2,y+.95)]:[pt(x+.45,y+.2),pt(x+.95,y+.2),pt(x+.95,y+.8),pt(x+.45,y+.8)],sh(c0,.9),sh(c0,.6));}
+   else if(bst){if(kf.has(k))kaefigMalen(g,x,y,st,kf.get(k),h);else{h.gang.push(k);if(s<(st===0?.8:.62))kramB(g,x,y,s,st,h);}}
    else if(bed.has(k))bett(g,x,y,s,st);else{h.gang.push(k);if(st===0?s<.9:st===1?(!has(x,y-1)||!has(x-1,y))&&s<.66:s<.86)kram(g,x,y,s,st,h);}}
   // vordere Wände (Außenseite): geschlossen volle Höhe mit Fenster, Tür oder Bild; offen nur kniehoch mit Türlücke
-  const front=(x0,y0,x1,y1,hell,istTuer,salt)=>{if(!offen)wand(g,x0,y0,x1,y1,WAND,hell,st,istTuer?tuer(st,hell):(x+y)%2===0?fenster(st,hell):W.h2(x,y,salt)<.6?bild(st,hell):null);
-   else if(!istTuer)wand(g,x0,y0,x1,y1,STUMPF,hell,st);else{const a=W.iso(x0,y0),b=W.iso(x1,y1),c0=st===0?LEHM:st===1?PUTZ:MARMOR,L=(u0,u1)=>{g.save();g.transform(b.x-a.x,b.y-a.y,0,-1,a.x,a.y);g.fillStyle=sh(c0,hell);g.fillRect(u0,0,u1-u0,STUMPF);g.fillStyle=sh(st===0?[88,74,54]:st===1?SOCKEL:MARMOR,hell*.9);g.fillRect(u0,0,u1-u0,4);g.fillStyle=sh(st===2?GOLD:BALKEN,hell);g.fillRect(u0?u0:u1-.05,0,.05,STUMPF+2);g.restore();};L(0,.24);L(.76,1);}};
+  const front=(x0,y0,x1,y1,hell,istTuer,salt)=>{if(!offen)wand(g,x0,y0,x1,y1,WAND,hell,st,istTuer?tuer(st,hell):(x+y)%2===0?(bst?gitterfenster(st,hell,W.h2(x,y,salt+3)):fenster(st,hell)):W.h2(x,y,salt)<.6?bild(st,hell):null,h.art);
+   else if(!istTuer)wand(g,x0,y0,x1,y1,STUMPF,hell,st,null,h.art);else{const a=W.iso(x0,y0),b=W.iso(x1,y1),c0=st===0?LEHM:st===1?PUTZ:MARMOR,L=(u0,u1)=>{g.save();g.transform(b.x-a.x,b.y-a.y,0,-1,a.x,a.y);g.fillStyle=sh(c0,hell);g.fillRect(u0,0,u1-u0,STUMPF);g.fillStyle=sh(st===0?[88,74,54]:st===1?SOCKEL:MARMOR,hell*.9);g.fillRect(u0,0,u1-u0,4);g.fillStyle=sh(st===2?GOLD:BALKEN,hell);g.fillRect(u0?u0:u1-.05,0,.05,STUMPF+2);g.restore();};L(0,.24);L(.76,1);}};
   if(!has(x,y+1))front(x,y+1,x+1,y+1,.74,dr&&h.door.side==='y',57);if(!has(x+1,y))front(x+1,y+1,x+1,y,.94,dr&&h.door.side==='x',58);}
  if(!offen){// Dach: je Feld eine Fläche, die Ecken steigen vom Rand zur Mitte an
   const hoch=dachMalen(g,h,h.tiles,has);
-  if(hoch&&h.n>=4&&st>0){const z=hoch.z/4,cc=st===2?MARMOR:[128,120,108];kiste(g,hoch.x+.36,hoch.y+.36,hoch.x+.64,hoch.y+.64,z-3,z+13,cc);kiste(g,hoch.x+.33,hoch.y+.33,hoch.x+.67,hoch.y+.67,z+13,z+15.5,st===2?GOLD:[96,90,82]);const p=pt(hoch.x+.5,hoch.y+.5,z+15.5);h.rauch={x:p[0],y:p[1]};}else h.rauch=null;}
+  if(bst){h.rauch=null;if(hoch){// Dachfigur ans hintere Ende des Firsts, damit das Namensschild sie nicht verdeckt
+   const zs=k=>{const x=k%N,y=(k/N)|0;return h.eck(x,y)+h.eck(x+1,y)+h.eck(x+1,y+1)+h.eck(x,y+1);},zm=Math.max(...h.tiles.map(zs)),cx=(h.bx0+h.bx1)/2,cy=(h.by0+h.by1)/2;let e=null,ed=-1;
+   for(const k of h.tiles){if(zs(k)!==zm)continue;const x=k%N,y=(k/N)|0,d=Math.abs(x-cx)+Math.abs(y-cy)-(x+y)*.01;if(d>ed){ed=d;e={x,y,z:zm+4*WAND};}}dachTier(g,e||hoch,st);}}
+  else if(hoch&&h.n>=4&&st>0){const z=hoch.z/4,cc=st===2?MARMOR:[128,120,108];kiste(g,hoch.x+.36,hoch.y+.36,hoch.x+.64,hoch.y+.64,z-3,z+13,cc);kiste(g,hoch.x+.33,hoch.y+.33,hoch.x+.67,hoch.y+.67,z+13,z+15.5,st===2?GOLD:[96,90,82]);const p=pt(hoch.x+.5,hoch.y+.5,z+15.5);h.rauch={x:p[0],y:p[1]};}else h.rauch=null;}
  return {c,ox,oy};}
 
 // Dach über den Feldern tiles; has sagt, wo das Dach endet (Traufe)
 function dachMalen(g,h,tiles,has){const st=h.st;
-  const farbe=st===0?[170,144,84]:st===1?ZIEGEL:[166,62,44];let hoch=null;
+  const bst=h.art==='beast',farbe=st===0?[170,144,84]:st===1?(bst?[100,64,38]:ZIEGEL):[166,62,44];let hoch=null;
   for(const k of tiles){const x=k%N,y=(k/N)|0,zA=WAND+h.eck(x,y),zB=WAND+h.eck(x+1,y),zC=WAND+h.eck(x+1,y+1),zD=WAND+h.eck(x,y+1),A=pt(x,y,zA),Bp=pt(x+1,y,zB),C=pt(x+1,y+1,zC),Dp=pt(x,y+1,zD),s=W.h2(x,y,54);
    const hell=clamp(.86+.016*((zA+zD)-(zB+zC))+.007*((zA+zB)-(zC+zD))+(s-.5)*(st===0?.16:.06),.56,1.14),L=(P,Q,t)=>[P[0]+(Q[0]-P[0])*t,P[1]+(Q[1]-P[1])*t];
    if(!has(x,y+1))quad(g,[Dp,C,[C[0],C[1]+3],[Dp[0],Dp[1]+3]],sh(st===2?GOLD:st===0?[130,108,60]:BALKEN,.8));if(!has(x+1,y))quad(g,[C,Bp,[Bp[0],Bp[1]+3],[C[0],C[1]+3]],sh(st===2?GOLD:st===0?[130,108,60]:BALKEN,1));
@@ -188,6 +218,7 @@ function dachMalen(g,h,tiles,has){const st=h.st;
     if(!has(x,y+1))for(let i=0;i<6;i++){const e=L(Dp,C,(i+W.h2(i,k,74))/6);g.strokeStyle=sh(farbe,.8);g.beginPath();g.moveTo(e[0],e[1]);g.lineTo(e[0]-1,e[1]+4+W.h2(i,k,75)*3);g.stroke();}}
    else{g.strokeStyle='rgba(60,22,14,.35)';for(const t of [.2,.4,.6,.8]){const a=L(A,Dp,t),b=L(Bp,C,t);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}
     g.strokeStyle='rgba(255,210,170,.22)';for(const t of [.1,.3,.5,.7,.9]){const a=L(A,Dp,t),b=L(Bp,C,t);g.beginPath();g.moveTo(a[0],a[1]+.6);g.lineTo(b[0],b[1]+.6);g.stroke();}
+    if(bst&&st===1){g.strokeStyle='rgba(40,24,12,.45)';for(let r=0;r<5;r++)for(let i=0;i<5;i++){const u=(i+.5+(r%2)*.5)/5.5,a=L(L(A,Bp,u),L(Dp,C,u),r*.2),b=L(L(A,Bp,u),L(Dp,C,u),r*.2+.16);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}}// Holzschindeln
     if(st===2){if(zA===zD&&zB===zC&&zA!==zB){}g.fillStyle=sh(GOLD,1.05);if(!has(x,y+1)&&!has(x+1,y)){g.beginPath();g.moveTo(C[0]-4,C[1]);g.lineTo(C[0]+4,C[1]);g.lineTo(C[0],C[1]-11);g.fill();}if(!has(x,y+1)&&!has(x-1,y)){g.beginPath();g.moveTo(Dp[0]-4,Dp[1]);g.lineTo(Dp[0]+4,Dp[1]);g.lineTo(Dp[0],Dp[1]-11);g.fill();}if(!has(x+1,y)&&!has(x,y-1)){g.beginPath();g.moveTo(Bp[0]-4,Bp[1]);g.lineTo(Bp[0]+4,Bp[1]);g.lineTo(Bp[0],Bp[1]-11);g.fill();}}}
    const z=zA+zB+zC+zD,dm=Math.abs(x-(h.bx0+h.bx1)/2)+Math.abs(y-(h.by0+h.by1)/2);if(!hoch||z>hoch.z||(z===hoch.z&&dm<hoch.d))hoch={z,x,y,d:dm};
    if(st===2&&z>=4*(WAND+STEIG)&&(x+y)%2===0){const p=pt(x+.5,y+.5,z/4);g.fillStyle=sh(GOLD,1.1);g.fillRect(p[0]-2,p[1]-3,4,4);g.fillStyle=sh(GOLD,.8);g.fillRect(p[0]-1,p[1]-6,2,3);}}// goldene Firstzier
@@ -266,6 +297,97 @@ function maleSchmiede(h,offen){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1
   if(!has(x,y+1))zaun(g,x,y+1,x+1,y+1,.74,st,dr&&h.door.side==='y');if(!has(x+1,y))zaun(g,x+1,y+1,x+1,y,.94,st,dr&&h.door.side==='x');}
  return {c,ox,oy};}
 
+// ---------- Beastrium ----------
+// Welches Tier in welchem Käfig: fest je Feld (gleiches Feld, gleiches Tier), je Klasse eigene Arten; manche Käfige hat nur noch der Vormieter
+const TIERE=[['hund','hund','hund','hahn','eber','gerippe'],['hund','wolf','hund','eber','hahn','wolf','baer','hund'],['loewe','tiger','baer','loewe','wolf','tiger','loewe']];
+function tierFuer(k,st){const x=k%N,y=(k/N)|0,L=TIERE[st],a=L[(W.h2(x,y,90)*L.length)|0],r=W.h2(x,y,91);return {art:a,pose:r<.4?'steht':r<.7?'liegt':'nagt',face:W.h2(x,y,92)<.5?1:-1,s:W.h2(x,y,93)};}
+// Farben je Tier: Körper b, dunkel d, hell l, Mähne m; k schwarz, w Knochen, r Blut, y Horn/Schnabel
+const FELL={hund:[[[120,96,70],[84,64,46],[196,150,140]],[[96,92,86],[60,58,54],[188,140,132]]],// räudig (Klasse 0): kahle rosa Stellen
+ hund1:[[[132,92,56],[86,58,34],[196,168,128]],[[64,58,54],[36,32,30],[150,140,128]],[[176,150,110],[120,96,64],[226,210,180]]],
+ wolf:[[[128,128,126],[84,84,86],[196,194,186]],[[98,96,94],[60,60,62],[170,168,160]]],eber:[[[82,64,50],[52,40,32],[150,120,100]]],
+ hahn:[[[232,226,210],[150,48,36],[214,170,60]],[[176,96,44],[44,60,64],[214,170,60]]],baer:[[[104,72,46],[66,44,28],[150,112,76]]],
+ loewe:[[[204,160,92],[150,106,56],[232,206,160],[118,72,34]]],tiger:[[[214,124,48],[150,82,30],[236,226,206]]]};
+const SCHABLONE={// [dx,dy,w,h,Farbe] mit Blick nach rechts, Boden bei dy=0
+ hund_steht:[[-5,-3,1,3,'d'],[-3,-3,1,3,'d'],[3,-3,1,3,'d'],[5,-3,1,3,'d'],[-6,-7,12,4,'b'],[-4,-4,8,1,'l'],[5,-10,4,4,'b'],[9,-8,3,2,'b'],[11,-8,1,1,'k'],[5,-11,2,2,'d'],[7,-9,1,1,'k'],[-8,-9,2,1,'b'],[-7,-8,1,1,'b']],
+ hund_liegt:[[-6,-4,12,3,'b'],[-4,-1,8,1,'l'],[5,-6,4,3,'b'],[9,-5,3,2,'b'],[11,-5,1,1,'k'],[5,-7,2,2,'d'],[7,-6,1,1,'k'],[6,-1,6,1,'d'],[-9,-2,3,1,'b']],
+ wolf_steht:[[-5,-3,1,3,'d'],[-3,-3,1,3,'d'],[3,-3,1,3,'d'],[5,-3,1,3,'d'],[-6,-7,12,4,'b'],[-4,-4,8,1,'l'],[5,-10,4,4,'b'],[9,-8,4,2,'b'],[12,-8,1,1,'k'],[5,-12,1,2,'d'],[7,-12,1,2,'d'],[7,-9,1,1,'y'],[-9,-7,3,1,'b'],[-10,-6,1,2,'d'],[-6,-8,6,1,'d']],
+ wolf_liegt:[[-6,-4,12,3,'b'],[-6,-5,6,1,'d'],[5,-6,4,3,'b'],[9,-5,4,2,'b'],[12,-5,1,1,'k'],[5,-8,1,2,'d'],[7,-8,1,2,'d'],[7,-6,1,1,'y'],[6,-1,6,1,'d'],[-10,-2,4,1,'b']],
+ eber_steht:[[-5,-3,2,3,'d'],[3,-3,2,3,'d'],[-6,-8,12,5,'b'],[-5,-9,9,1,'d'],[5,-8,4,5,'b'],[9,-6,2,3,'l'],[10,-7,1,1,'w'],[7,-7,1,1,'k'],[5,-9,1,1,'d'],[-7,-7,1,2,'d']],
+ eber_liegt:[[-6,-5,12,4,'b'],[-5,-6,9,1,'d'],[5,-5,4,4,'b'],[9,-3,2,2,'l'],[10,-4,1,1,'w'],[7,-4,1,1,'k'],[-7,-4,1,2,'d']],
+ hahn_steht:[[0,-2,1,2,'y'],[2,-2,1,2,'y'],[-2,-6,5,4,'b'],[-4,-9,2,4,'d'],[-5,-10,1,3,'d'],[2,-9,2,3,'b'],[2,-10,2,1,'r'],[4,-7,1,1,'r'],[4,-8,1,1,'y'],[3,-8,1,1,'k']],
+ baer_steht:[[-6,-4,3,4,'d'],[3,-4,3,4,'d'],[-7,-11,14,7,'b'],[-5,-12,9,1,'b'],[6,-11,5,5,'b'],[6,-12,2,1,'d'],[10,-9,2,2,'l'],[11,-9,1,1,'k'],[8,-10,1,1,'k']],
+ baer_liegt:[[-7,-6,14,5,'b'],[-5,-7,9,1,'b'],[6,-6,5,4,'b'],[6,-7,2,1,'d'],[10,-4,2,2,'l'],[11,-4,1,1,'k'],[8,-5,1,1,'k'],[6,-1,6,1,'d']],
+ loewe_steht:[[-5,-4,1,4,'b'],[-3,-4,1,4,'b'],[3,-4,1,4,'b'],[5,-4,1,4,'b'],[-6,-8,12,4,'b'],[-4,-5,8,1,'l'],[4,-12,6,7,'m'],[7,-10,4,4,'b'],[10,-8,1,1,'k'],[8,-9,1,1,'k'],[-8,-8,2,1,'b'],[-9,-7,1,2,'b'],[-10,-6,1,1,'m']],
+ loewe_liegt:[[-6,-5,12,3,'b'],[-4,-2,8,1,'l'],[4,-9,6,6,'m'],[7,-7,4,3,'b'],[10,-6,1,1,'k'],[8,-6,1,1,'k'],[7,-1,5,1,'b'],[-9,-3,3,1,'b'],[-10,-3,1,1,'m']],
+ tiger_steht:[[-5,-4,1,4,'b'],[-3,-4,1,4,'b'],[3,-4,1,4,'b'],[5,-4,1,4,'b'],[-6,-8,12,4,'b'],[-4,-5,8,1,'l'],[-4,-8,1,3,'k'],[-1,-8,1,3,'k'],[2,-8,1,3,'k'],[5,-10,5,4,'b'],[5,-11,1,1,'b'],[8,-11,1,1,'b'],[8,-8,2,1,'l'],[9,-9,1,1,'k'],[7,-9,1,1,'y'],[-8,-8,2,1,'b'],[-9,-7,1,1,'k'],[-10,-6,1,2,'b']],
+ tiger_liegt:[[-6,-5,12,3,'b'],[-4,-2,8,1,'l'],[-4,-5,1,2,'k'],[-1,-5,1,2,'k'],[2,-5,1,2,'k'],[5,-7,5,4,'b'],[5,-8,1,1,'b'],[8,-8,1,1,'b'],[8,-5,2,1,'l'],[9,-6,1,1,'k'],[7,-6,1,1,'y'],[7,-1,5,1,'b'],[-10,-2,4,1,'b'],[-8,-2,1,1,'k']]};
+const TS=1.5;
+function tier(g,px,py,t,st){if(t.art==='gerippe'){g.fillStyle='#e8e2d0';for(let i=0;i<5;i++)g.fillRect(Math.round(px-4+i*2),Math.round(py-4),1,3);g.fillRect(Math.round(px-5),Math.round(py-4),10,1);g.fillRect(Math.round(px+6),Math.round(py-5),3,3);g.fillStyle='#2a2019';g.fillRect(Math.round(px+7),Math.round(py-4),1,1);return;}
+ const art=t.art==='hund'&&st>0?'hund1':t.art,F=FELL[art]||FELL.hund1,f=F[(t.s*F.length)|0],pose=t.art==='hahn'?'steht':t.pose==='nagt'?'liegt':t.pose,L=SCHABLONE[t.art+'_'+pose]||SCHABLONE[t.art+'_steht']||SCHABLONE.hund_steht;
+ const col={b:sh(f[0],1),d:sh(f[1],1),l:sh(f[2],1),m:sh(f[3]||f[1],1),k:'#1a120c',w:'#e8e2d0',r:'#8e1c18',y:'#d9a838'},o=t.face;
+ g.fillStyle='rgba(20,14,8,.32)';g.fillRect(Math.round(px-12),Math.round(py-1),24,3);
+ // anderthalbfach groß, mit dunklem Umriss, damit das Tier vor Stroh und Gittern lesbar bleibt
+ g.save();g.translate(Math.round(px),Math.round(py));g.scale(TS,TS);px=0;py=0;g.fillStyle='#1a120c';for(const [ox,oy] of [[-.7,0],[.7,0],[0,-.7],[0,.7]])for(const [dx,dy,w,h] of L)g.fillRect((o>0?dx:-dx-w)+ox,dy+oy,w,h);
+ for(const [dx,dy,w,h,c] of L){g.fillStyle=col[c];g.fillRect(o>0?px+dx:px-dx-w,py+dy,w,h);}
+ if(t.art==='hund'&&st===0){g.fillStyle=col.l;g.fillRect(px-2,py+(pose==='liegt'?-4:-7),2,1);}// kahle Stelle
+ if(t.pose==='nagt'&&t.art!=='hahn'){const bx=o>0?px+10:px-15;g.fillStyle='#e8e2d0';g.fillRect(bx,py-2,5,1);g.fillRect(bx,py-3,1,3);g.fillStyle='#8e1c18';g.fillRect(bx+4,py-3,1,3);g.fillRect(bx+1,py-1,3,1);}
+ if(st===2&&t.art!=='wolf'){g.fillStyle=sh(GOLD,1.05);const nx=t.art==='loewe'?5:4,ny=pose==='liegt'?-4:-7;g.fillRect(o>0?px+nx:px-nx-2,py+ny,2,1);}g.restore();}// goldenes Halsband
+// Bruchsteinmauer wie im alten Beastrium (Wandkoordinaten: u 0…1, v Bildpunkte)
+function bruchstein(R,h,hell,z,voll){R(0,0,1,h,sh([85,81,63],hell));for(let v=0,r=0;v<h-1;v+=5,r++)for(let u=-(r%2)*.11,i=0;u<1;u+=.22,i++){const a=Math.max(0,u+.01),b=Math.min(1,u+.21);if(b>a)R(a,v+.6,b-a,4,sh(z(i+r*9,61)>.5?[138,132,104]:[124,119,93],hell*(.94+z(i+r*9,62)*.12)));}
+ if(voll){R(0,h-2.5,1,2.5,sh([96,90,72],hell));for(let i=0;i<3;i++)R(.1+z(i,63)*.75,4+z(i,64)*(h-12),.14,2.4,sh([96,110,62],hell*.9));}// Moos
+ R(0,0,.03,h,sh([70,66,52],hell));R(.97,0,.03,h,sh([70,66,52],hell));}
+// Gitterfenster mit Augen dahinter (wie im alten Beastrium)
+const gitterfenster=(st,hell,seed)=>(R,h)=>{if(h<20)return;const v=h*.42,dv=h*.3,ei=st===0?[132,84,56]:st===1?[92,92,84]:GOLD;R(.26,v-2,.48,dv+4,sh(st===2?MARMOR:[79,74,58],hell));R(.3,v,.4,dv,'#120d0a');
+ if(seed<.55){R(.4,v+dv*.45,.04,1.6,'#f2c040');R(.54,v+dv*.45,.04,1.6,'#f2c040');}else if(seed<.75){R(.46,v+dv*.3,.06,2,'#e8dcc0');R(.47,v+dv*.3+2,.04,1.4,'#c8322a');}
+ for(let i=0;i<5;i++){if(st===0&&i===2&&seed>.4){R(.32+i*.08,v,.025,dv*.4,sh(ei,hell));continue;}R(.32+i*.08,v,.025,dv,sh(ei,hell));}R(.3,v+dv*.48,.4,1.2,sh(ei,hell));
+ if(st===0&&seed>.6){R(.3,v-1,.1,1.2,'#7a1a16');R(.33,v-3,.02,2,'#7a1a16');}};// Kratzer und Blut am Rahmen
+// Wandschmuck im Beastrium: Ketten mit Halsband, Tierfell, Strichliste der Pfleger, Peitsche, Maulkorb, Kratzspuren
+const schmuckB=(st,seed)=>(R,h)=>{if(h<20)return;const ei=st===0?'#7a5444':st===2?sh(GOLD,1):'#56585e';
+ if(seed<.22){for(const u of [.3,.62]){for(let i=0;i<5;i++)R(u+(i%2)*.01,h*.72-i*2.2,.03,1.8,ei);R(u-.04,h*.72-12,.1,1.4,'#5a3a22');}}// Ketten mit Halsband
+ else if(seed<.4){const c=st===2?[214,124,48]:st===1?[128,128,126]:[120,96,70];R(.3,h*.36,.4,h*.32,sh(c,1));R(.26,h*.6,.08,h*.08,sh(c,.9));R(.66,h*.6,.08,h*.08,sh(c,.9));R(.24,h*.38,.06,h*.06,sh(c,.9));R(.7,h*.38,.06,h*.06,sh(c,.9));if(st===2)for(const v of [.42,.52,.6])R(.36,h*v,.28,1,'#1a120c');}// Fell an der Wand
+ else if(seed<.58){R(.28,h*.4,.44,h*.32,sh([214,198,156],1));R(.28,h*.4,.44,1,'#2a1c12');for(let i=0;i<7;i++)R(.32+i*.05,h*.46,.012,h*.18,'#2a1c12');R(.31,h*.55,.36,.8,'#2a1c12');R(.31,h*.66,.2,1,'#7a1a16');}// Strichliste: verlorene Pfleger
+ else if(seed<.72){R(.5,h*.46,.03,h*.3,'#5a3a22');for(let i=0;i<6;i++)R(.53-i*.04,h*.46-i*1.2,.04,1,'#3a2618');}// Peitsche
+ else if(seed<.84){R(.44,h*.5,.12,6,ei);R(.46,h*.5+1,.08,4,'#1a120c');for(let i=0;i<3;i++)R(.45+i*.035,h*.5,.012,6,ei);}// Maulkorb
+ else{for(let i=0;i<4;i++)R(.3+i*.06,4+i*.4,.012,h*.4,st===2?'rgba(120,100,80,.5)':'rgba(40,28,18,.55)');}};// Kratzspuren
+// Metallkäfig auf einem Feld: Boden, hintere Gitter, Inhalt und Tier, vordere Gitter, Deckel mit Schloss
+function kaefigMalen(g,x,y,st,t,h){const s=t.s,ei=st===0?[128,78,52]:st===1?[70,72,78]:GOLD,H=st===2?22:19,x0=x+.1,y0=y+.1,x1=x+.9,y1=y+.9,n=st===2?5:6,col=sh(ei,1),dk=sh(ei,.62);
+ if(st===0){oval(g,x+.5,y+.55,0,15,7,'rgba(70,40,28,.55)');if(s<.6)oval(g,x+.3+s*.2,y+.7,0,5,2.2,'rgba(122,22,18,.7)');}// Dreck und Blut
+ else{flach(g,x0+.04,y0+.04,x1-.04,y1-.04,.3,sh(STROH,.82));g.strokeStyle=sh(STROH,1.08);g.lineWidth=1;for(let i=0;i<7;i++){const p=pt(x0+.08+W.h2(i,x+y,94)*.7,y0+.08+W.h2(i,x-y,95)*.7,.5);g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(p[0]+3,p[1]-1);g.stroke();}if(s<.5)oval(g,x+.32,y+.64,.5,4,1.8,'rgba(122,22,18,.7)');}
+ if(st===2&&t.art!=='wolf')flach(g,x+.22,y+.22,x+.62,y+.62,.6,sh(PURPUR,1),sh(GOLD,1));// Kissen für die Raubkatze
+ const stab=(ax,ay,bx,by,c,lw)=>{g.strokeStyle=c;g.lineWidth=lw;g.beginPath();for(let i=0;i<=n;i++){const u=i/n,X=ax+(bx-ax)*u,Y=ay+(by-ay)*u,p=pt(X,Y,0),q=pt(X,Y,H);let ox=0;if(st===0&&W.h2(x*3+i,y+ax*7,96)<.14)ox=2;g.moveTo(Math.round(p[0])+.5,p[1]);g.quadraticCurveTo(p[0]+ox*2,(p[1]+q[1])/2,Math.round(q[0])+.5,q[1]);}g.stroke();};
+ const quer=(ax,ay,bx,by,z,c)=>{const p=pt(ax,ay,z),q=pt(bx,by,z);g.strokeStyle=c;g.lineWidth=1;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.stroke();};
+ // hinten: Gitter an den beiden hinteren Seiten
+ stab(x0,y0,x1,y0,dk,1);stab(x0,y0,x0,y1,dk,1);quer(x0,y0,x1,y0,H*.5,dk);quer(x0,y0,x0,y1,H*.5,dk);
+ // Inhalt: Wassernapf, Blutknochen, ab und zu ein Schädel oder ein Helm
+ oval(g,x+.74,y+.3,.6,3.4,1.6,st===2?sh(GOLD,1):'#5a5650');oval(g,x+.74,y+.3,1,2.4,1,st===0?'#5a6a3a':'#5a7a8a');
+ const kn=(ax,ay,bx,by,blut)=>{const p=pt(ax,ay,1),q=pt(bx,by,1);g.strokeStyle='#e8e2d0';g.lineWidth=1;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.stroke();g.fillStyle='#e8e2d0';g.fillRect(Math.round(p[0])-1,Math.round(p[1])-1,2,2);g.fillStyle=blut?'#8e1c18':'#e8e2d0';g.fillRect(Math.round(q[0])-1,Math.round(q[1])-1,2,2);if(blut){g.fillStyle='rgba(122,22,18,.6)';g.fillRect(Math.round(q[0])-2,Math.round(q[1])+1,4,1);}};
+ kn(x+.2,y+.3,x+.32,y+.22,true);if(s>.3)kn(x+.7,y+.76,x+.8,y+.66,s>.6);
+ if(s>.78){const p=pt(x+.26,y+.72,2);g.fillStyle='#e8e2d0';g.beginPath();g.ellipse(p[0],p[1],3,2.6,0,0,TAU);g.fill();g.fillStyle='#2a2019';g.fillRect(Math.round(p[0])-2,Math.round(p[1])-1,1,1);g.fillRect(Math.round(p[0])+1,Math.round(p[1])-1,1,1);}// Schädel
+ else if(s<.12){const p=pt(x+.28,y+.7,1);g.fillStyle=sh(BRONZE,1);g.beginPath();g.ellipse(p[0],p[1]-1,4,2.6,0,Math.PI,TAU);g.fill();g.fillRect(Math.round(p[0])-4,Math.round(p[1])-1,8,1);}// Helm des Vormieters
+ // das Tier
+ const c=pt(x+.52,y+.58,0);tier(g,c[0],c[1],t,st);if(t.art!=='gerippe'&&t.art!=='hahn'&&s>.45)h.mist.push([x+.3,y+.6]);
+ // vorne: Gitter an den beiden vorderen Seiten, Querstreben, Deckel, Tür mit Schloss
+ stab(x0,y1,x1,y1,col,1);stab(x1,y1,x1,y0,col,1);quer(x0,y1,x1,y1,H*.5,col);quer(x1,y1,x1,y0,H*.5,col);quer(x0,y1,x1,y1,1,col);quer(x1,y1,x1,y0,1,col);
+ for(const z of [H]){quer(x0,y0,x1,y0,z,dk);quer(x0,y0,x0,y1,z,dk);quer(x0,y1,x1,y1,z,col);quer(x1,y1,x1,y0,z,col);}
+ for(let i=1;i<4;i++)quer(x0+(x1-x0)*i/4,y0,x0+(x1-x0)*i/4,y1,H,dk);
+ const lp=pt(x+.5,y1,H*.48);g.fillStyle=st===2?sh(GOLD,1.2):st===1?'#3a3a3a':'#6a4434';g.fillRect(Math.round(lp[0])-1,Math.round(lp[1])-1,3,3);
+ if(st===2){for(const [ax,ay] of [[x0,y1],[x1,y1],[x1,y0]]){const p=pt(ax,ay,H);g.fillStyle=sh(GOLD,1.15);g.fillRect(Math.round(p[0])-1,Math.round(p[1])-3,2,3);}}// goldene Knäufe
+ if(st===0&&s>.55){const p=pt(x1,y+.5,H*.7);g.fillStyle='#7a1a16';g.fillRect(Math.round(p[0])-1,Math.round(p[1]),2,4);}}// Blut am Gitter
+// Kram im Gang: Futtereimer mit Bein, Knochenhaufen, Blutlache mit Schleifspur, Fleischhaken, Wassertrog, Stroh; Kaiserlich: goldene Futterschale, Feuerschale
+function kramB(g,x,y,seed,st,h){const a=S.lanista?.appearance||{};
+ if(seed<.16){kiste(g,x+.36,y+.36,x+.64,y+.64,0,9,st===2?BRONZE:[96,84,70]);flach(g,x+.38,y+.38,x+.62,y+.62,9.1,'#5a1410');const p=pt(x+.52,y+.46,9);g.fillStyle=hex(a.skin||'#d9ac82');g.fillRect(Math.round(p[0])-1,Math.round(p[1])-9,3,9);g.fillStyle='#6e4a2a';g.fillRect(Math.round(p[0])-2,Math.round(p[1])-11,5,3);g.fillStyle='#8e1c18';g.fillRect(Math.round(p[0])-1,Math.round(p[1]),3,1);h.mist.push([x+.5,y+.5]);}// Futtereimer, ein Bein mit Sandale schaut heraus
+ else if(seed<.3){g.strokeStyle='#e8e2d0';g.lineWidth=1.6;for(let i=0;i<6;i++){const p=pt(x+.3+W.h2(i,x,97)*.4,y+.3+W.h2(i,y,98)*.4,1+i*.8),q=pt(x+.3+W.h2(i,x,99)*.4,y+.3+W.h2(i,y,100)*.4,1+i*.8);g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.stroke();}oval(g,x+.5,y+.48,5,3,2.6,'#e8e2d0');const p=pt(x+.5,y+.48,5);g.fillStyle='#2a2019';g.fillRect(Math.round(p[0])-2,Math.round(p[1])-1,1,1);g.fillRect(Math.round(p[0])+1,Math.round(p[1])-1,1,1);g.fillStyle='#8e1c18';g.fillRect(Math.round(p[0])-3,Math.round(p[1])+2,6,1);}// Knochenhaufen mit Schädel
+ else if(seed<.44){oval(g,x+.5,y+.5,0,9,4,'rgba(122,22,18,.8)');oval(g,x+.46,y+.48,0,4,1.6,'rgba(170,40,30,.7)');for(let i=0;i<3;i++){const p=pt(x+.55+i*.1,y+.42-i*.08,0);g.fillStyle='rgba(122,22,18,.6)';g.fillRect(Math.round(p[0]),Math.round(p[1]),4,1);}h.mist.push([x+.5,y+.5]);}// Blutlache mit Schleifspur
+ else if(seed<.58){kiste(g,x+.46,y+.46,x+.54,y+.54,0,26,BALKEN);kiste(g,x+.3,y+.47,x+.7,y+.53,24,26,BALKEN);for(const [u,l] of [[.34,7],[.62,9]]){const p=pt(x+u,y+.5,24);g.strokeStyle='#3a3a3a';g.lineWidth=1;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(p[0],p[1]+3);g.stroke();g.fillStyle='#9e2a24';g.fillRect(Math.round(p[0])-2,Math.round(p[1])+3,5,l);g.fillStyle='#e8d6c8';g.fillRect(Math.round(p[0])-1,Math.round(p[1])+3,1,l);}oval(g,x+.5,y+.56,0,4,1.6,'rgba(122,22,18,.7)');h.mist.push([x+.4,y+.4]);}// Fleischhaken
+ else if(seed<.7){kiste(g,x+.24,y+.38,x+.76,y+.62,0,7,st===2?MARMOR:st===1?[128,120,108]:[110,84,56]);flach(g,x+.27,y+.41,x+.73,y+.59,7.1,st===0?'#4a5a2e':'#4a7084');}// Wassertrog
+ else if(st===2&&seed<.85){for(const [dx,dy] of [[.4,.4],[.6,.42],[.5,.6]])kiste(g,x+dx-.015,y+dy-.015,x+dx+.015,y+dy+.015,0,9,BRONZE);oval(g,x+.5,y+.5,9,8,4,sh(BRONZE,1.1));oval(g,x+.5,y+.5,10,6,3,'#2a1c12');oval(g,x+.5,y+.5,11.5,4,3.4,'#ff9030');oval(g,x+.5,y+.5,13.5,2.2,3,'#ffe070');}// Feuerschale
+ else if(st===2){oval(g,x+.5,y+.5,0,8,4,sh(GOLD,.9));oval(g,x+.5,y+.5,1.5,6,3,sh(GOLD,1.1));oval(g,x+.5,y+.5,2.5,4,2,'#9e2a24');}// goldene Futterschale
+ else{for(const [a0,b0,a1,b1,z0,z1] of [[.24,.3,.7,.62,0,8],[.3,.36,.62,.56,8,13]])kiste(g,x+a0,y+b0,x+a1,y+b1,z0,z1,STROH,.9);kiste(g,x+.24,y+.45,x+.7,y+.48,0,8.4,[120,92,50]);}}// Strohballen
+// Auf dem Dach: Geier (Knochengrube), Wetterhahn (Beastrium), goldener Löwe (Menagerie)
+function dachTier(g,hoch,st){const z=hoch.z/4,p=pt(hoch.x+.5,hoch.y+.5,z),k=1.6,R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(p[0]+dx*k),Math.round(p[1]+dy*k),Math.ceil(w*k),Math.ceil(h*k));};
+ if(st===0){R(-4,-6,7,5,'#2e2620');R(-6,-5,3,4,'#241e1a');R(3,-11,2,6,'#c89a8a');R(3,-12,3,2,'#c89a8a');R(6,-11,2,1,'#d9a838');R(4,-12,1,1,'#111');R(-1,-1,1,2,'#d9a838');R(1,-1,1,2,'#d9a838');R(-3,-7,6,1,'#e8e2d0');}// Geier wartet
+ else if(st===1){R(0,-18,1,18,'#3a3a3a');R(-4,-4,9,1,'#3a3a3a');R(-5,-24,9,5,'#2e2e2e');R(2,-27,3,4,'#2e2e2e');R(5,-26,2,1,'#2e2e2e');R(-7,-27,3,4,'#2e2e2e');R(2,-28,2,1,'#8e1c18');}// Wetterhahn
+ else{const G=sh(GOLD,1.1),D=sh(GOLD,.8);R(-6,-3,12,3,sh(MARMOR,1));R(-5,-9,9,5,G);R(-4,-4,1,1,D);R(3,-4,1,1,D);R(2,-14,6,7,D);R(4,-12,4,4,G);R(7,-10,1,1,'#2a1c12');R(-7,-9,2,1,G);R(-8,-8,1,2,D);}}// goldener Löwe
 // ---------- Bestand ----------
 let haeuser=[];const alt=new Map(),fest=new Set();
 function neu(){const seen=new Set(),out=[];for(let k=0;k<N*N;k++){if(!STUFE.has(W.feld[k])||seen.has(k))continue;const t=gebiet(k);for(const q of t)seen.add(q);const h=plan(t),o=alt.get(h.id);h.sig=h.art+h.st+':'+h.tiles.join(',');h.offen=o?o.offen:0;h.mist=[];h.gang=[];if(o&&o.sig===h.sig){h.zu=o.zu;h.auf=o.auf;h.rauch=o.rauch;h.mist=o.mist;h.gang=o.gang;h.essenZu=o.essenZu;h.essenAuf=o.essenAuf;h.poster.forEach((p,i)=>p.text=o.poster[i]?.text||'');}if(h.poster.some(p=>!p.text))wuerfeln(h);out.push(h);}
@@ -276,8 +398,8 @@ let maus=null;W.canvas.addEventListener('pointermove',e=>{if(e.pointerType!=='mo
 let last=performance.now(),spruch=null;const OFFEN_AB=1.5;
 function zeichne(ctx){const h=this.h,mal=h.art==='schmiede'?maleSchmiede:male;if(!h.zu)h.zu=mal(h,false);const a=h.offen,t=performance.now()/1000;
  if(a>.01){if(!h.auf)h.auf=mal(h,true);ctx.drawImage(h.auf.c,h.auf.ox,h.auf.oy);
-  if(h.st===0&&a>.5&&!W.mini){// Ratten huschen durch die Gänge, Fliegen kreisen über Haufen und Eimer
-   const G=h.gang;if(G.length>1)for(let i=0;i<Math.min(6,1+(h.n>>3));i++){const k0=G[(i*7)%G.length],k1=G[(i*13+3)%G.length],u=(Math.sin(t*(.5+i*.13)+i*2)+1)/2,x=k0%N+.5+((k1%N)-(k0%N))*u,y=((k0/N)|0)+.5+(((k1/N)|0)-((k0/N)|0))*u,p=W.iso(x,y),d=Math.cos(t*(.5+i*.13)+i*2)>0?1:-1;
+  if((h.st===0||h.art==='beast')&&a>.5&&!W.mini){// Ratten huschen durch die Gänge, Fliegen kreisen über Haufen, Eimer und Blut
+   const G=h.gang;if(h.st===0&&G.length>1)for(let i=0;i<Math.min(6,1+(h.n>>3));i++){const k0=G[(i*7)%G.length],k1=G[(i*13+3)%G.length],u=(Math.sin(t*(.5+i*.13)+i*2)+1)/2,x=k0%N+.5+((k1%N)-(k0%N))*u,y=((k0/N)|0)+.5+(((k1/N)|0)-((k0/N)|0))*u,p=W.iso(x,y),d=Math.cos(t*(.5+i*.13)+i*2)>0?1:-1;
     ctx.fillStyle='#2e2822';ctx.fillRect(Math.round(p.x)-2,Math.round(p.y)-2,5,2);ctx.fillRect(Math.round(p.x)+(d>0?2:-3),Math.round(p.y)-3,2,2);ctx.fillStyle='#8a6a60';ctx.fillRect(Math.round(p.x)+(d>0?-5:3),Math.round(p.y)-1,3,1);}
    ctx.fillStyle='#14100c';for(const [mx,my] of h.mist){const p=W.iso(mx,my);for(let i=0;i<3;i++)ctx.fillRect(Math.round(p.x+Math.cos(t*5+i*2.1)*6),Math.round(p.y-9-i*3+Math.sin(t*7+i)*3),1,1);}}}
  if(a<.99){ctx.globalAlpha=1-a;ctx.drawImage(h.zu.c,h.zu.ox,h.zu.oy);
@@ -296,8 +418,6 @@ const bildAt=(h,tx,ty)=>h.poster.find(p=>p.k===ty*N+tx);
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=performance.now(),dt=Math.min(.1,(now-last)/1000);last=now;if(!haeuser.length)return;
  const mw=maus&&!B.mode?W.toWorld(maus.sx,maus.sy):null,mt=mw&&W.bodenPunkt(mw.x,mw.y),ct=W.cam.s>=1.5?W.bodenPunkt(W.cam.x,W.cam.y+14):null;
  const hm=mt&&hausAt(Math.floor(mt.tx),Math.floor(mt.ty)),hc=ct&&hausAt(Math.floor(ct.tx),Math.floor(ct.ty));
- // Maus über einem Bild des Lanista im offenen Haus: Spruch zeigen (die Wand steht über dem Feld, deshalb auch das Feld davor prüfen)
- if(hm&&hm.offen>.8){const p=bildAt(hm,Math.floor(mt.tx),Math.floor(mt.ty))||bildAt(hm,Math.floor(mt.tx+.6),Math.floor(mt.ty+.6));if(p)spruch={p,t:1.2};}
  if(spruch){spruch.t-=dt;if(spruch.t<=0)spruch=null;}
  // Dach offen nur nah herangezoomt (ab OFFEN_AB): Haus in der Bildmitte, unter der Maus oder angetippt. Weiter weg sind alle Dächer zu.
  const nah=W.cam.s>=OFFEN_AB;if(!nah&&fest.size)fest.clear();
@@ -310,13 +430,10 @@ H.vorne=(tx,ty,y)=>{for(const h of haeuser){if(y>h.key||tx<h.bx0-2||ty<h.by0-2||
 // Schild über dem Haus und Spruch am Bild
 function schild(ctx,s,x,y,z,hell){const w=ctx.measureText(s).width+8*z;ctx.fillStyle=hell?'rgba(244,236,214,.96)':'rgba(18,12,9,.8)';ctx.fillRect(Math.round(x-w/2),Math.round(y-8*z),Math.round(w),Math.round(16*z));ctx.fillStyle=hell?'#2a1c12':'#f4d37a';ctx.fillText(s,Math.round(x),Math.round(y)+1);}
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(W.mini)return;const z=clamp(1/W.cam.s,.5,3);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace';
- for(const h of haeuser){const p=W.iso((h.bx0+h.bx1+1)/2,(h.by0+h.by1+1)/2),y=p.y-(h.item?.oz||0)-(h.offen>.5?WAND+10:WAND+STEIG*2+16);if(p.x<view.x0-150||p.x>view.x1+150||y<view.y0-30||y>view.y1+30)continue;schild(ctx,h.titel+' · '+h.zahl+' '+h.wort[h.zahl===1?0:1],p.x,y,z);}
- // Sprüche lesbar: Im offenen Haus steht ab Zoom LESBAR über jedem Bild eine Tafel mit seinem Spruch (gestaffelt, damit sie sich
- // nicht verdecken). Weiter weg nur die Tafel des Bildes unter der Maus oder des angetippten.
- const lesbar=W.cam.s>=LESBAR,belegt=[];if(spruch)tafel(ctx,spruch.p,z,true,1,belegt,true);
- for(const h of haeuser){if(h.offen<.6||!lesbar)continue;const ps=h.poster.filter(p=>p!==spruch?.p).sort((a,b)=>anker(a).x-anker(b).x);for(const p of ps)tafel(ctx,p,z,false,h.offen,belegt);}
- if(spruch)tafel(ctx,spruch.p,z,true,1,belegt);};
-const LESBAR=1.3,anker=p=>{const x=p.k%N,y=(p.k/N)|0;return p.side==='a'?W.iso(x+.5,y):W.iso(x,y+.5);};
+ for(const h of haeuser){const p=W.iso((h.bx0+h.bx1+1)/2,(h.by0+h.by1+1)/2),y=p.y-(h.item?.oz||0)-(h.offen>.5?WAND+10:WAND+STEIG*2+16+(h.art==='beast'?40:0));if(p.x<view.x0-150||p.x>view.x1+150||y<view.y0-30||y>view.y1+30)continue;schild(ctx,h.titel+' · '+h.zahl+' '+h.wort[h.zahl===1?0:1],p.x,y,z);}
+ // Spruch nur am angetippten Bild (Thomas 12.11.: keine Tafeln von selbst, auch nicht beim Darüberfahren)
+ if(spruch)tafel(ctx,spruch.p,z,true,1,[]);};
+const anker=p=>{const x=p.k%N,y=(p.k/N)|0,q=p.side==='a'?W.iso(x+.5,y):W.iso(x,y+.5);return {x:q.x,y:q.y-(p.oz||0)};};
 // Tafel über einem Bild. belegt: schon vergebene Flächen; die Tafel rückt so weit nach oben, bis sie keine andere verdeckt.
 function tafel(ctx,p,z,stark,alpha,belegt,nurPlatz){const q=anker(p);if(p.zt!==p.text){p.zt=p.text;const ws=('„'+p.text+'“').split(' '),ls=[];let cur='';for(const w of ws){if(cur&&(cur+' '+w).length>20){ls.push(cur);cur=w;}else cur=cur?cur+' '+w:w;}ls.push(cur);p.zeilen=ls;}
  const ls=p.zeilen,lh=13*z;ctx.font='bold '+Math.round(11*z)+'px Georgia,serif';let w=0;for(const l of ls)w=Math.max(w,ctx.measureText(l).width);w+=12*z;const hh=ls.length*lh+8*z;
@@ -327,8 +444,8 @@ function tafel(ctx,p,z,stark,alpha,belegt,nurPlatz){const q=anker(p);if(p.zt!==p
  ctx.fillStyle='#a32f2a';ctx.fillRect(Math.round(q.x-w/2),Math.round(top),Math.round(w),Math.round(2.5*z));ctx.fillStyle='#2a1c12';ls.forEach((l,i)=>ctx.fillText(l,Math.round(q.x),Math.round(top+5*z+lh*(i+.5))));ctx.globalAlpha=1;}
 // Antippen: Dach bleibt offen. Im offenen Haus zeigt Antippen eines Bildes den Spruch; jede andere Stelle schließt wieder.
 const tap0=H.tap;H.tap=(p,w)=>{if(B.mode||w)return tap0?tap0(p,w):false;const t=W.bodenPunkt(p.x,p.y),tx=Math.floor(t.tx),ty=Math.floor(t.ty),h2=hausAt(Math.floor(t.tx+.6),Math.floor(t.ty+.6)),h=hausAt(tx,ty)||(h2&&h2.offen>.8?h2:null);if(!h)return tap0?tap0(p,w):false;
- if(h.offen>.8){const b=bildAt(h,tx,ty)||bildAt(h,Math.floor(t.tx+.6),Math.floor(t.ty+.6));if(b){spruch={p:b,t:5};fest.add(h.id);return true;}}
+ if(h.offen>.8){const b=bildAt(h,tx,ty)||bildAt(h,Math.floor(t.tx+.6),Math.floor(t.ty+.6));if(b){b.oz=h.item?.oz||0;spruch=spruch?.p===b?null:{p:b,t:6};fest.add(h.id);return true;}}
  if(fest.has(h.id))fest.delete(h.id);else fest.add(h.id);return true;};
 B.beiAenderung(neu);neu();
-M.weltGebaeude={WAND,NAME,NAME_S,SPRUECHE,SPR_S,haeuser:()=>haeuser,betten:()=>haeuser.reduce((s,h)=>s+h.betten,0),ambosse:()=>haeuser.reduce((s,h)=>s+h.ambosse,0),bei(k){if(!STUFE.has(W.feld[k]))return null;const h=plan(gebiet(k));return {n:h.n,art:h.art,ambosse:h.ambosse,betten:h.betten,tuer:h.door,st:h.st,bilder:h.poster.length};},oeffne(id,an=true){if(an)fest.add(id);else fest.delete(id);},get spruch(){return spruch?.p.text||null;},male};
+M.weltGebaeude={WAND,NAME,NAME_S,NAME_B,SPRUECHE,SPR_S,SPR_B,kaefige:()=>haeuser.reduce((s,h)=>s+h.kaefige,0),haeuser:()=>haeuser,betten:()=>haeuser.reduce((s,h)=>s+h.betten,0),ambosse:()=>haeuser.reduce((s,h)=>s+h.ambosse,0),bei(k){if(!STUFE.has(W.feld[k]))return null;const h=plan(gebiet(k));return {n:h.n,art:h.art,ambosse:h.ambosse,betten:h.betten,kaefige:h.kaefige,tuer:h.door,st:h.st,bilder:h.poster.length};},oeffne(id,an=true){if(an)fest.add(id);else fest.delete(id);},get spruch(){return spruch?.p.text||null;},male};
 })();

@@ -38,7 +38,7 @@ const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Fel
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
 const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
-const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee'];
+const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
 const LUD={tx:39+O,ty:40+O,w:18,h:16,px:50};
@@ -155,7 +155,10 @@ const PAL=[
  [[84,90,56],[94,100,62],[74,80,50],[60,64,42]],// Sumpf (4. Farbe = Pfützen)
  [[46,68,56],[54,78,64],[40,60,50],[96,116,82]],// Moorwasser (4. Farbe = Algen)
  [[128,120,110],[140,132,120],[114,106,98],[100,94,88]],// Fels
- [[234,238,244],[222,228,236],[244,246,250],[204,212,226]]// Schnee
+ [[234,238,244],[222,228,236],[244,246,250],[204,212,226]],// Schnee
+ [[96,80,62],[84,70,54],[108,90,70],[112,30,26]],// Knochengrube: Dreck (4. Farbe = altes Blut)
+ [[118,112,92],[106,100,82],[130,124,104],[84,80,64]],// Beastrium: Bruchsteinboden (4. Farbe = Fugen)
+ [[226,220,206],[150,40,38],[206,168,74],[176,168,156]]// Kaiserliche Menagerie: Marmor mit rotem Rautenband und Gold
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
@@ -166,6 +169,9 @@ function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageDat
   if(t===T.MOOR){col=P[n<.6?0:n<.88?1:2];if(h2(x>>1,y,v+71)>.94)col=P[3];}
   if(t===T.SCHM_S){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+41)>.84)col=P[3];if(h2(x,y,v+43)>.996)col=[176,92,40];}
   if(t===T.SCHMIEDE||t===T.SCHM_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,k3=t===T.SCHMIEDE?3:2,cx=(ux*k3)%1,cy=((uy*k3)+(t===T.SCHMIEDE?(((ux*k3)|0)&1)*.5:0))%1;col=cx<.06||cy<.06?P[3]:P[n<.6?0:n<.86?1:2];if(t===T.SCHMIEDE&&n>.965)col=[64,60,56];}
+  if(t===T.BST_S){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+81)>.955||h2(x>>3,y>>2,v+83)>.97)col=P[3];if(h2(x,y,v+85)>.994)col=[220,212,190];}
+  if(t===T.BEAST){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,r=(uy*3)|0,cx=(ux*3+(r&1)*.5)%1,cy=(uy*3)%1;col=cx<.07||cy<.08?P[3]:P[(h2(r,(ux*3+(r&1)*.5)|0,v+87)*3)|0];if(h2(x>>1,y,v+89)>.95)col=[196,170,100];}
+  if(t===T.BST_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,m=Math.min(ux,uy,1-ux,1-uy),d=Math.abs(ux-.5)+Math.abs(uy-.5);col=m<.025?P[3]:m<.06?P[2]:Math.abs(d-.3)<.022?P[1]:P[0];if(col===P[0]&&n>.96)col=[212,208,200];}
   if(t===T.UNT_S){col=P[n<.45?0:n<.7?1:n<.9?2:0];if(h2(x>>1,y,v+31)>.93)col=P[3];if(h2(x>>3,y>>2,v+33)>.86)col=[70,58,40];}
   if(t===T.UNT_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,m=Math.min(ux,uy,1-ux,1-uy),cx=(ux*4)|0,cy=(uy*4)|0;col=m<.06?P[3]:m<.14?P[2]:m<.18?P[3]:(cx+cy)%2?P[1]:P[0];if(Math.abs(ux-.5)+Math.abs(uy-.5)<.1)col=P[3];}
   if(t===T.UNTERKUNFT){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,pl=(uy*4)|0,d=h2(pl,v,77);col=(uy*4)%1<.1||Math.abs(((ux+d)%1+1)%1-.5)<.02?P[3]:P[(h2(pl,(ux*3+d*3)|0,v+5)*3)|0];if(n>.93)col=P[2];}
@@ -325,7 +331,7 @@ function drawSit(ctx,g,x,y,dir){if(detailV){const sp=spriteOf(g),h=FY-22;if(sp){
  const r=simpleOf(g);if(r)ctx.drawImage(r.c,(dir*(WALK+1)+WALK)*PW,r.y,PW,SITZ_H,x-PAX,y-SITZ_H+2,PW,SITZ_H);else drawMini(ctx,g,x,y);}
 const gehBild=dist=>((dist/SCHRITT*WALK)|0)%WALK;
 function drawMini(ctx,g,x,y){const a=g.appearance||{};ctx.fillStyle=a.cloth||'#55938e';ctx.fillRect(x-2,y-7,4,6);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-1,y-10,3,3);}
-const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS&&t!==T.UNTERKUNFT&&t!==T.UNT_S&&t!==T.UNT_K&&t!==T.SCHM_S&&t!==T.SCHMIEDE&&t!==T.SCHM_K;};
+const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS&&t!==T.UNTERKUNFT&&t!==T.UNT_S&&t!==T.UNT_K&&t!==T.SCHM_S&&t!==T.SCHMIEDE&&t!==T.SCHM_K&&t!==T.BST_S&&t!==T.BEAST&&t!==T.BST_K;};
 const imLudus=(tx,ty)=>tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h;
 function makeRoster(n){const keep=S.roster.filter(g=>!g.dead);let list=keep.slice(0,n);const rng=S.rng;while(list.length<n){const g=M.makeGladiator(0);g.fatigue=0;list.push(g);}S.rng=rng;
  S.roster=list;try{M.army?.autoClasses?.(list);}catch(e){}for(const w of workers){figs.delete(w.g.id);pof.delete(w.g.id);}if(pNext>PROW*6){pof.clear();pNext=0;}
