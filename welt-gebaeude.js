@@ -294,7 +294,7 @@ function funken(ctx,h,a,t){ctx.globalCompositeOperation='lighter';
  ctx.globalAlpha=1;}
 const bildAt=(h,tx,ty)=>h.poster.find(p=>p.k===ty*N+tx);
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=performance.now(),dt=Math.min(.1,(now-last)/1000);last=now;if(!haeuser.length)return;
- const mw=maus&&!B.mode?W.toWorld(maus.sx,maus.sy):null,mt=mw&&W.tileAt(mw.x,mw.y),ct=W.cam.s>=1.5?W.tileAt(W.cam.x,W.cam.y+14):null;
+ const mw=maus&&!B.mode?W.toWorld(maus.sx,maus.sy):null,mt=mw&&W.bodenPunkt(mw.x,mw.y),ct=W.cam.s>=1.5?W.bodenPunkt(W.cam.x,W.cam.y+14):null;
  const hm=mt&&hausAt(Math.floor(mt.tx),Math.floor(mt.ty)),hc=ct&&hausAt(Math.floor(ct.tx),Math.floor(ct.ty));
  // Maus über einem Bild des Lanista im offenen Haus: Spruch zeigen (die Wand steht über dem Feld, deshalb auch das Feld davor prüfen)
  if(hm&&hm.offen>.8){const p=bildAt(hm,Math.floor(mt.tx),Math.floor(mt.ty))||bildAt(hm,Math.floor(mt.tx+.6),Math.floor(mt.ty+.6));if(p)spruch={p,t:1.2};}
@@ -304,13 +304,13 @@ const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=perfo
  for(const h of haeuser){const ziel=nah&&(fest.has(h.id)||h===hm||h===hc)?1:0;if(ziel&&h.offen===0)wuerfeln(h);// bei jedem Öffnen hängen andere Sprüche
   h.offen+=clamp(ziel-h.offen,-dt*4,dt*4);
   const p0=W.iso(h.bx0,h.by1+1).x,p1=W.iso(h.bx1+1,h.by0).x;if(p1<view.x0-40||p0>view.x1+40||h.key<view.y0-10||W.iso(h.bx0,h.by0).y-90>view.y1)continue;
-  if(!h.item)h.item={y:h.key,h,draw:zeichne};items.push(h.item);}};
+  if(!h.item)h.item={y:h.key,h,draw:zeichne,oz:W.hz?W.hz(h.bx0+.5,h.by0+.5):0};items.push(h.item);}};
 // Figuren vor oder hinter dem Haus: Wer südöstlich eines Hausfeldes steht, wird nach dem Haus gezeichnet
 H.vorne=(tx,ty,y)=>{for(const h of haeuser){if(y>h.key||tx<h.bx0-2||ty<h.by0-2||tx>h.bx1+3||ty>h.by1+3)continue;const fx=Math.floor(tx),fy=Math.floor(ty);if(fx>h.bx1||fy>h.sufY[Math.max(0,fx-h.bx0)])return h.key+.01;}return y;};
 // Schild über dem Haus und Spruch am Bild
 function schild(ctx,s,x,y,z,hell){const w=ctx.measureText(s).width+8*z;ctx.fillStyle=hell?'rgba(244,236,214,.96)':'rgba(18,12,9,.8)';ctx.fillRect(Math.round(x-w/2),Math.round(y-8*z),Math.round(w),Math.round(16*z));ctx.fillStyle=hell?'#2a1c12':'#f4d37a';ctx.fillText(s,Math.round(x),Math.round(y)+1);}
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(W.mini)return;const z=clamp(1/W.cam.s,.5,3);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace';
- for(const h of haeuser){const p=W.iso((h.bx0+h.bx1+1)/2,(h.by0+h.by1+1)/2),y=p.y-(h.offen>.5?WAND+10:WAND+STEIG*2+16);if(p.x<view.x0-150||p.x>view.x1+150||y<view.y0-30||y>view.y1+30)continue;schild(ctx,h.titel+' · '+h.zahl+' '+h.wort[h.zahl===1?0:1],p.x,y,z);}
+ for(const h of haeuser){const p=W.iso((h.bx0+h.bx1+1)/2,(h.by0+h.by1+1)/2),y=p.y-(h.item?.oz||0)-(h.offen>.5?WAND+10:WAND+STEIG*2+16);if(p.x<view.x0-150||p.x>view.x1+150||y<view.y0-30||y>view.y1+30)continue;schild(ctx,h.titel+' · '+h.zahl+' '+h.wort[h.zahl===1?0:1],p.x,y,z);}
  // Sprüche lesbar: Im offenen Haus steht ab Zoom LESBAR über jedem Bild eine Tafel mit seinem Spruch (gestaffelt, damit sie sich
  // nicht verdecken). Weiter weg nur die Tafel des Bildes unter der Maus oder des angetippten.
  const lesbar=W.cam.s>=LESBAR,belegt=[];if(spruch)tafel(ctx,spruch.p,z,true,1,belegt,true);
@@ -326,7 +326,7 @@ function tafel(ctx,p,z,stark,alpha,belegt,nurPlatz){const q=anker(p);if(p.zt!==p
  ctx.fillStyle='#2a1c12';ctx.fillRect(Math.round(q.x-w/2-1.5*z),Math.round(top-1.5*z),Math.round(w+3*z),Math.round(hh+3*z));ctx.fillStyle=stark?'#fff4cf':'#efe2bf';ctx.fillRect(Math.round(q.x-w/2),Math.round(top),Math.round(w),Math.round(hh));
  ctx.fillStyle='#a32f2a';ctx.fillRect(Math.round(q.x-w/2),Math.round(top),Math.round(w),Math.round(2.5*z));ctx.fillStyle='#2a1c12';ls.forEach((l,i)=>ctx.fillText(l,Math.round(q.x),Math.round(top+5*z+lh*(i+.5))));ctx.globalAlpha=1;}
 // Antippen: Dach bleibt offen. Im offenen Haus zeigt Antippen eines Bildes den Spruch; jede andere Stelle schließt wieder.
-const tap0=H.tap;H.tap=(p,w)=>{if(B.mode||w)return tap0?tap0(p,w):false;const t=W.tileAt(p.x,p.y),tx=Math.floor(t.tx),ty=Math.floor(t.ty),h2=hausAt(Math.floor(t.tx+.6),Math.floor(t.ty+.6)),h=hausAt(tx,ty)||(h2&&h2.offen>.8?h2:null);if(!h)return tap0?tap0(p,w):false;
+const tap0=H.tap;H.tap=(p,w)=>{if(B.mode||w)return tap0?tap0(p,w):false;const t=W.bodenPunkt(p.x,p.y),tx=Math.floor(t.tx),ty=Math.floor(t.ty),h2=hausAt(Math.floor(t.tx+.6),Math.floor(t.ty+.6)),h=hausAt(tx,ty)||(h2&&h2.offen>.8?h2:null);if(!h)return tap0?tap0(p,w):false;
  if(h.offen>.8){const b=bildAt(h,tx,ty)||bildAt(h,Math.floor(t.tx+.6),Math.floor(t.ty+.6));if(b){spruch={p:b,t:5};fest.add(h.id);return true;}}
  if(fest.has(h.id))fest.delete(h.id);else fest.add(h.id);return true;};
 B.beiAenderung(neu);neu();

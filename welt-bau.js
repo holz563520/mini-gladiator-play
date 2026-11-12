@@ -26,6 +26,7 @@ const WERKZEUG={platz:{name:'Trainingsfeld',typ:T.PLATZ,preis:50},arena:{name:'K
  schmiede1:{name:'Rostgrube',typ:T.SCHM_S,preis:30,haus:1,gruppe:'schmiede'},schmiede:{name:'Waffenschmiede',typ:T.SCHMIEDE,preis:90,haus:1,gruppe:'schmiede'},schmiede3:{name:'Kaiserliche Waffenschmiede',typ:T.SCHM_K,preis:260,haus:1,gruppe:'schmiede'},
  // Fünf Straßen, jede teurer als die vorige (Preise sind Vorschläge). Noch ohne Wirkung auf Tempo oder Besucher.
  str1:{name:'Trampelpfad',typ:T.STR1,preis:5,str:1},str2:{name:'Kiesweg',typ:T.STR2,preis:12,str:1},str3:{name:'Pflasterweg',typ:T.STR3,preis:25,str:1},str4:{name:'Steinstraße',typ:T.STR4,preis:50,str:1},str5:{name:'Prachtstraße',typ:T.STR5,preis:100,str:1},
+ land:{name:'Gelände',preis:3,land:1},// wie RollerCoaster Tycoon Classic, Preis je Feld und Stufe (Vorschlag)
  weg:{name:'Abreißen',preis:0}};
 const istStr=t=>t>=T.STR1&&t<=T.STR5,istHaus=t=>t===T.UNTERKUNFT||t===T.UNT_S||t===T.UNT_K||t===T.SCHM_S||t===T.SCHMIEDE||t===T.SCHM_K;
 const PREIS=WERKZEUG.platz.preis,PRO=4,PLAETZE=8,STUFEN=[{ab:0,name:'Strohpuppe',mz:'Strohpuppen'},{ab:10,name:'Holzpuppe',mz:'Holzpuppen'},{ab:25,name:'Rüstungspuppe',mz:'Rüstungspuppen'},{ab:60,name:'Drehpuppe',mz:'Drehpuppen'}];
@@ -85,13 +86,13 @@ function plan(tiles){const n=tiles.length,max=stufeVon(n),count=Math.floor(n/PRO
  return {n,max,count,list:pick.map((k,i)=>({k,stufe:i<Math.ceil(count/2)?max:Math.max(0,max-1)}))};}
 // Arenen: jede zusammenhängende Kampffläche; Tribünen zählen dazu, wenn sie (über Tribünen) an die Fläche grenzen
 function arenenRechnen(){rang.fill(0);const besitz=new Int16Array(N*N).fill(-1),out=[];
- gebiete(T.ARENA).forEach((floor,ai)=>{const a={i:ai,n:floor.length,floor,tribs:[],plaetze:0,max:0};let cx=0,cy=0;for(const k of floor){cx+=k%N+.5;cy+=((k/N)|0)+.5;}a.tx=cx/a.n;a.ty=cy/a.n;const c=W.iso(a.tx,a.ty);a.x=c.x;a.y=c.y;
+ gebiete(T.ARENA).forEach((floor,ai)=>{const a={i:ai,n:floor.length,floor,tribs:[],plaetze:0,max:0};let cx=0,cy=0;for(const k of floor){cx+=k%N+.5;cy+=((k/N)|0)+.5;}a.tx=cx/a.n;a.ty=cy/a.n;const c=W.iso(a.tx,a.ty);a.x=c.x;a.y=c.y;a.oz=W.hz?W.hz(a.tx,a.ty):0;
   let rand=floor,d=0;while(rand.length){d++;const next=[];for(const k of rand){const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB8){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=N||ny>=N)continue;const q=ny*N+nx;if(W.feld[q]===T.TRIB&&!rang[q]){rang[q]=Math.min(4,d);besitz[q]=ai;a.tribs.push(q);a.max=Math.max(a.max,rang[q]);next.push(q);}}}rand=next;}
   a.plaetze=a.tribs.length*PLAETZE;a.name=ARENA_NAME(a.n);out.push(a);});
- tribs=[];for(let k=0;k<N*N;k++)if(W.feld[k]===T.TRIB){if(!rang[k])rang[k]=1;const tx=k%N,ty=(k/N)|0,c=W.iso(tx+.5,ty+.5),a=out[besitz[k]];tribs.push({k,x:c.x,y:c.y,r:rang[k],a:besitz[k],fahne:!!a&&a.max>=2&&rang[k]===a.max&&W.h2(tx,ty,41)<.34});}
+ tribs=[];for(let k=0;k<N*N;k++)if(W.feld[k]===T.TRIB){if(!rang[k])rang[k]=1;const tx=k%N,ty=(k/N)|0,c=W.iso(tx+.5,ty+.5),a=out[besitz[k]];tribs.push({k,x:c.x,y:c.y,oz:(W.hz?W.hz(tx+.5,ty+.5):0),r:rang[k],a:besitz[k],fahne:!!a&&a.max>=2&&rang[k]===a.max&&W.h2(tx,ty,41)<.34});}
  return out;}
 function rechne(first){const alt=puppen,altA=arenen;puppen=new Map();felder=gebiete(T.PLATZ).map(plan);let besser=-1;
- for(const f of felder)for(const p of f.list){const o=alt.get(p.k),tx=p.k%N,ty=(p.k/N)|0,c=W.iso(tx+.5,ty+.5),d={k:p.k,x:c.x,y:c.y,stufe:p.stufe,seed:W.h2(tx,ty,31),born:o?o.born:first?-9:(neu.get(p.k)??clock)+.25,up:o?o.up:-9};
+ for(const f of felder)for(const p of f.list){const o=alt.get(p.k),tx=p.k%N,ty=(p.k/N)|0,c=W.iso(tx+.5,ty+.5),d={k:p.k,x:c.x,y:c.y,oz:(W.hz?W.hz(tx+.5,ty+.5):0),stufe:p.stufe,seed:W.h2(tx,ty,31),born:o?o.born:first?-9:(neu.get(p.k)??clock)+.25,up:o?o.up:-9};
    if(o&&o.stufe<p.stufe){d.up=clock+.5+d.seed*.5;besser=Math.max(besser,p.stufe);}puppen.set(p.k,d);}
  arenen=arenenRechnen();for(const fn of horcher)try{fn();}catch(e){console.error(e);}
  return {mehr:first?0:Math.max(0,puppen.size-alt.size),besser,plaetze:arenen.reduce((s,a)=>s+a.plaetze,0)-altA.reduce((s,a)=>s+a.plaetze,0)};}
@@ -103,7 +104,7 @@ const bar=document.querySelector('#weltUi .w-bar'),gold=document.createElement('
 const btn=document.createElement('button');btn.className='w-btn w-baubtn';btn.id='wBauBtn';btn.textContent='🔨 Bauen';bar.insertBefore(btn,bar.querySelector('.w-kader'));
 const box=document.createElement('div');box.id='wBau';box.hidden=true;
 const knopf=([id,w])=>`<button class="w-btn" data-wz="${id}">${w.name}${w.preis?' <small>'+w.preis+' G</small>':''}</button>`,WZ=Object.entries(WERKZEUG);
-box.innerHTML='<div class="bau-wz">'+WZ.filter(e=>!e[1].str&&!e[1].haus&&e[0]!=='weg').map(knopf).join('')+'<button class="w-btn" data-wz="unterkunft" data-hausgruppe="unterkunft">Unterkunft ▾</button><button class="w-btn" data-wz="schmiede" data-hausgruppe="schmiede">Schmiede ▾</button><button class="w-btn" data-wz="str1" data-strgruppe>Straße ▾</button>'+knopf(['weg',WERKZEUG.weg])+'<button class="w-btn" data-done>Fertig</button></div>'+['unterkunft','schmiede'].map(gr=>'<div class="bau-wz bau-haus" data-g="'+gr+'" hidden>'+WZ.filter(e=>e[1].haus&&(e[1].gruppe||'unterkunft')===gr).map(knopf).join('')+'</div>').join('')+'<div class="bau-wz bau-str" hidden>'+WZ.filter(e=>e[1].str).map(knopf).join('')+'</div><span></span>';
+box.innerHTML='<div class="bau-wz">'+WZ.filter(e=>!e[1].str&&!e[1].haus&&!e[1].land&&e[0]!=='weg').map(knopf).join('')+'<button class="w-btn" data-wz="unterkunft" data-hausgruppe="unterkunft">Unterkunft ▾</button><button class="w-btn" data-wz="schmiede" data-hausgruppe="schmiede">Schmiede ▾</button><button class="w-btn" data-wz="str1" data-strgruppe>Straße ▾</button><button class="w-btn" data-wz="land">Gelände <small>3 G</small></button>'+knopf(['weg',WERKZEUG.weg])+'<button class="w-btn" data-done>Fertig</button></div>'+['unterkunft','schmiede'].map(gr=>'<div class="bau-wz bau-haus" data-g="'+gr+'" hidden>'+WZ.filter(e=>e[1].haus&&(e[1].gruppe||'unterkunft')===gr).map(knopf).join('')+'</div>').join('')+'<div class="bau-wz bau-land" hidden><button class="w-btn" data-land="-1">−</button><b class="land-n">1 × 1</b><button class="w-btn" data-land="1">+</button></div><div class="bau-wz bau-str" hidden>'+WZ.filter(e=>e[1].str).map(knopf).join('')+'</div><span></span>';
 document.getElementById('weltUi').appendChild(box);
 const HILFE={platz:'Rechteck auf Wiese oder Ludus-Boden ziehen. Je '+PRO+' Felder eine Puppe; ab '+STUFEN[1].ab+' Feldern '+STUFEN[1].mz+', ab '+STUFEN[2].ab+' '+STUFEN[2].mz+', ab '+STUFEN[3].ab+' '+STUFEN[3].mz+'.',
  arena:'Kampffläche ziehen: Das ist die Grundform der Arena. Größer machen: anbauen. Kleiner machen: abreißen.',
@@ -114,14 +115,15 @@ const HILFE={platz:'Rechteck auf Wiese oder Ludus-Boden ziehen. Je '+PRO+' Felde
  schmiede:'Waffenschmiede: anständiges Eisen für unanständige Zwecke. Halb überdacht, halb Hof. Boden ziehen.',
  schmiede3:'Kaiserliche Waffenschmiede: Basalt, Bronze und ein vergoldeter Amboss. Hier entstehen Klingen, für die man gern stirbt. Boden ziehen.',
  unterkunft3:'Fürstengemächer: Mosaik, Purpur und Gold. Für Champions, die du behalten willst, bis sie jemand anders zerlegt. Boden ziehen.',
+ land:'Gelände wie bei RollerCoaster Tycoon: Feld wählen, gedrückt halten und nach oben ziehen hebt, nach unten senkt. Größe mit − und +; bei 1 × 1 auch eine Ecke oder Kante. 3 G je Feld und Stufe. Gebautes bleibt, wie es ist.',
  weg:'Rechteck über Gebautes ziehen. Es wird wieder zu dem, was vorher dort war. Kein Geld zurück.'};
 for(const [id,w] of Object.entries(WERKZEUG))if(w.str)HILFE[id]=w.name+': '+w.preis+' G je Feld. Rechteck oder Linie ziehen, auch über den alten Weg oder eine andere Straße (Ausbau).';
 function hilfe(){box.querySelector('span').textContent=mode?HILFE[mode]:'';}
-function setMode(m){mode=m===true?'platz':(m||null);drag=null;info=null;box.hidden=!mode;btn.classList.toggle('on',!!mode);const str=!!WERKZEUG[mode]?.str,gr=WERKZEUG[mode]?.haus?(WERKZEUG[mode].gruppe||'unterkunft'):null;box.querySelector('.bau-str').hidden=!str;for(const r of box.querySelectorAll('.bau-haus'))r.hidden=r.dataset.g!==gr;for(const b of box.querySelectorAll('[data-wz]'))b.classList.toggle('on',b.dataset.strgruppe!=null?str:b.dataset.hausgruppe!=null?b.dataset.hausgruppe===gr:b.dataset.wz===mode);hilfe();W.canvas.style.cursor=mode?'crosshair':'';if(mode)M.weltLeben?.close?.();}
+function setMode(m){mode=m===true?'platz':(m||null);drag=null;info=null;box.hidden=!mode;btn.classList.toggle('on',!!mode);const str=!!WERKZEUG[mode]?.str,gr=WERKZEUG[mode]?.haus?(WERKZEUG[mode].gruppe||'unterkunft'):null;box.querySelector('.bau-str').hidden=!str;box.querySelector('.bau-land').hidden=mode!=='land';landSel=null;landDrag=null;for(const r of box.querySelectorAll('.bau-haus'))r.hidden=r.dataset.g!==gr;for(const b of box.querySelectorAll('[data-wz]'))b.classList.toggle('on',b.dataset.strgruppe!=null?str:b.dataset.hausgruppe!=null?b.dataset.hausgruppe===gr:b.dataset.wz===mode);hilfe();W.canvas.style.cursor=mode?'crosshair':'';if(mode)M.weltLeben?.close?.();}
 btn.onclick=()=>setMode(mode?null:'platz');
-box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.done!=null)setMode(null);else setMode(b.dataset.wz);});
+box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.land){landN=clamp(landN+ +b.dataset.land,1,16);box.querySelector('.land-n').textContent=landN+' × '+landN;return;}if(b.dataset.done!=null)setMode(null);else setMode(b.dataset.wz);});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&mode){if(drag){drag=null;info=null;hilfe();}else setMode(null);}});
-const tile=p=>{const t=W.tileAt(p.x,p.y);return {tx:clamp(Math.floor(t.tx),0,N-1),ty:clamp(Math.floor(t.ty),0,N-1)};};
+const tile=p=>{const t=(W.bodenPunkt||W.tileAt)(p.x,p.y);return {tx:clamp(Math.floor(t.tx),0,N-1),ty:clamp(Math.floor(t.ty),0,N-1)};};
 const mz=(n,e,m)=>n+' '+(n===1?e:m);
 function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,drag.b.tx),y0=Math.min(drag.a.ty,drag.b.ty),y1=Math.max(drag.a.ty,drag.b.ty),ok=[],no=[],wz=WERKZEUG[mode],ab=mode==='weg';
  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=W.ix(x,y);((ab?abreissbar(k):wz.str?strBaubar(k,wz.typ):wz.haus?hausBaubar(k,wz.typ):baubar(x,y))?ok:no).push(k);}
@@ -136,25 +138,57 @@ function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,
   ok.forEach((k,i)=>W.feld[k]=save[i]);arenenRechnen();}
  box.querySelector('span').textContent=t;}
 function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
- const a=drag.a,betten0=M.weltGebaeude?.betten()||0,amb0=M.weltGebaeude?.ambosse?.()||0;let cx=0,cy=0;for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y;}cx/=ok.length;cy/=ok.length;
+ const a=drag.a,betten0=M.weltGebaeude?.betten()||0,amb0=M.weltGebaeude?.ambosse?.()||0;let cx=0,cy=0;if(!ab&&!wz.str)ebnen(ok,wz.typ);
+ for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y-(W.hz?W.hz(x+.5,y+.5):0);}cx/=ok.length;cy/=ok.length;
  if(!frei)S.gold=(S.gold||0)-preis;W.rebake(ok);const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
  let d=0;const say=(s,col)=>{text.push({x:cx,y:cy-30,t:-d,s,col});d+=.6;};if(preis)say('−'+preis+' G','#f29b83');if(r.mehr)say('+'+mz(r.mehr,'Puppe','Puppen'),'#f4d37a');if(r.besser>=0)say('Bessere Puppen: '+STUFEN[r.besser].mz+'!','#fff2b0');
  const bd=(M.weltGebaeude?.betten()||0)-betten0;if(bd>0)say('+'+mz(bd,'Schlafplatz','Schlafplätze'),'#f4d37a');if(bd<0)say(bd+' Schlafplätze','#f29b83');const ad=(M.weltGebaeude?.ambosse?.()||0)-amb0;if(ad>0)say('+'+mz(ad,'Amboss','Ambosse'),'#f4d37a');if(ad<0)say(ad+' Ambosse','#f29b83');
  if(r.plaetze>0)say('+'+r.plaetze+' Sitzplätze','#f4d37a');if(r.plaetze<0)say(r.plaetze+' Sitzplätze','#f29b83');zeigeGold();}
-H.pointer=(phase,p)=>{if(!mode)return false;if(phase==='down'){const t=tile(p);drag={a:t,b:t};auswahl();return true;}if(!drag)return true;
+H.pointer=(phase,p)=>{if(!mode)return false;if(mode==='land')return landZeiger(phase,p);if(phase==='down'){const t=tile(p);drag={a:t,b:t};auswahl();return true;}if(!drag)return true;
  if(phase==='move'){const t=tile(p);if(t.tx!==drag.b.tx||t.ty!==drag.b.ty){drag.b=t;auswahl();}}else if(phase==='up'){drag.b=tile(p);auswahl();baue();drag=null;info=null;setTimeout(()=>{if(mode&&!drag)hilfe();},2600);}else{drag=null;info=null;hilfe();}return true;};
+// ---------- Geländewerkzeug wie in RollerCoaster Tycoon Classic ----------
+// Auswahl n × n Felder (− / +). Drücken und nach oben ziehen hebt, nach unten senkt, je HZ Weltpunkte eine Stufe. Heben bringt
+// die tiefsten Ecken der Auswahl eine Stufe hoch (erst einebnen, dann alles heben), Senken umgekehrt. Bei 1 × 1 wählt die Lage
+// des Zeigers eine Ecke, eine Kante oder das ganze Feld. Nachbarfelder bleiben, wie sie sind (Klippe). Gebautes und der Weg
+// bleiben unberührt. Kosten: Preis je geändertem Feld und Stufe. Liegt ein Feld danach unter dem Wasserspiegel, wird es Wasser.
+let landN=1,landSel=null,landDrag=null;
+function landAuswahl(p){if(!W.bodenPunkt||!W.hc)return null;const q=W.bodenPunkt(p.x,p.y),tx=Math.floor(q.tx),ty=Math.floor(q.ty);if(!W.inMap(tx,ty))return null;
+ if(landN===1){const u=q.tx-tx,v=q.ty-ty;let c=-1,bd=.28;[[0,0],[1,0],[1,1],[0,1]].forEach(([a,b],i)=>{const d=Math.hypot(u-a,v-b);if(d<bd){bd=d;c=i;}});
+  if(c>=0)return {ks:[W.ix(tx,ty)],ecken:[c]};if(Math.min(u,1-u,v,1-v)<.18)return {ks:[W.ix(tx,ty)],ecken:v<.18?[0,1]:u>.82?[1,2]:v>.82?[2,3]:[3,0]};}
+ const h=(landN-1)>>1,ks=[];for(let y=ty-h;y<ty-h+landN;y++)for(let x=tx-h;x<tx-h+landN;x++)if(W.inMap(x,y))ks.push(W.ix(x,y));return {ks,ecken:null};}
+function feldFix(k,dir){const h=W.hc;for(let n=0;n<4;n++)for(let c=0;c<4;c++){const a=k*4+c,b=k*4+((c+1)&3);if(Math.abs(h[a]-h[b])<=1)continue;
+ if(dir>0){if(h[a]<h[b])h[a]=h[b]-1;else h[b]=h[a]-1;}else{if(h[a]>h[b])h[a]=h[b]+1;else h[b]=h[a]+1;}}}
+// Eine Stufe heben (dir 1) oder senken (−1). Gibt die geänderten Felder zurück, oder null, wenn es nicht geht (Gold, Grenze).
+function landSchritt(sel,dir,frei){const hc=W.hc,ks=sel.ks.filter(k=>W.BODEN_NATUR.has(W.feld[k])),alt=new Map(),neu2=[];if(!ks.length)return [];
+ for(const k of ks)alt.set(k,hc.slice(k*4,k*4+4));
+ if(sel.ecken){const k=ks[0];for(const c of sel.ecken)hc[k*4+c]+=dir;feldFix(k,dir);neu2.push(k);}
+ else{let z=dir>0?127:-128;for(const k of ks)for(let c=0;c<4;c++)z=dir>0?Math.min(z,hc[k*4+c]):Math.max(z,hc[k*4+c]);
+  for(const k of ks){let an=false;for(let c=0;c<4;c++)if(hc[k*4+c]===z){hc[k*4+c]+=dir;an=true;}if(an)neu2.push(k);}}
+ const preis=neu2.length*WERKZEUG.land.preis,raus=neu2.some(k=>{for(let c=0;c<4;c++){const v=hc[k*4+c];if(v<-12||v>60)return true;}return false;});
+ if(raus||(!frei&&(S.gold||0)<preis)){for(const [k,v] of alt)hc.set(v,k*4);if(!raus)M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig.');return null;}
+ if(!frei)S.gold=(S.gold||0)-preis;for(const k of neu2){for(let c=0;c<4;c++)W.merkeHoehe(hc[k*4+c]);W.gelaendeTyp(k);}
+ if(neu2.length){W.rebake(neu2);zeigeGold();}return neu2;}
+function landZeiger(phase,p){if(phase==='down'){landSel=landAuswahl(p);landDrag=landSel&&{y0:p.y,n:0};return true;}
+ if(phase==='move'&&landDrag){const ziel=Math.round((landDrag.y0-p.y)/(W.HZ||8));while(landDrag.n!==ziel){const d=ziel>landDrag.n?1:-1;if(!landSchritt(landSel,d)){landDrag.n=ziel;break;}landDrag.n+=d;try{M.sound?.('land');}catch(e){}}return true;}
+ if(phase==='up'||phase==='cancel')landDrag=null;return true;}
+W.canvas.addEventListener('pointermove',e=>{if(mode!=='land'||landDrag)return;const r=W.canvas.getBoundingClientRect();landSel=landAuswahl(W.toWorld(e.clientX-r.left,e.clientY-r.top));});
+// Bauen auf schrägem Boden: die Fläche wird eingeebnet, auf die Höhe eines gleichartigen ebenen Nachbarn, sonst auf den Mittelwert
+function ebnen(ok,typ){if(!W.ebnen||!W.hc)return;const hc=W.hc,set=new Set(ok);let L=null;
+ for(const k of ok){for(const n of [k-1,k+1,k-N,k+N])if(n>=0&&n<N*N&&!set.has(n)&&W.feld[n]===typ&&hc[n*4]===hc[n*4+1]&&hc[n*4]===hc[n*4+2]&&hc[n*4]===hc[n*4+3]){L=hc[n*4];break;}if(L!=null)break;}
+ if(L==null){let s=0;for(const k of ok)for(let c=0;c<4;c++)s+=hc[k*4+c];L=Math.round(s/ok.length/4);}
+ if(ok.some(k=>hc[k*4]!==L||hc[k*4+1]!==L||hc[k*4+2]!==L||hc[k*4+3]!==L))W.ebnen(ok,L);}
 function zeigeGold(){gold.textContent='💰 '+Math.floor(S.gold||0)+' G';}
 setInterval(zeigeGold,500);zeigeGold();
 
 // ---------- Zeichnen ----------
 const tick0=H.tick;H.tick=dt=>{tick0?.(dt);clock+=dt;};
-function raute(ctx,k,fill,stroke){const x=k%N,y=(k/N)|0,A=W.iso(x,y),B=W.iso(x+1,y),C=W.iso(x+1,y+1),D=W.iso(x,y+1);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.lineTo(C.x,C.y);ctx.lineTo(D.x,D.y);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();}}
+function raute(ctx,k,fill,stroke){const x=k%N,y=(k/N)|0,[A,B,C,D]=W.ecken?W.ecken(k):[W.iso(x,y),W.iso(x+1,y),W.iso(x+1,y+1),W.iso(x,y+1)];ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.lineTo(C.x,C.y);ctx.lineTo(D.x,D.y);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();}}
 function zeichneTrib(ctx){const h=HOCH(this.r);ctx.drawImage(trib[this.r],this.x-TW/2,this.y-TH/2-h);
  if(this.fahne){const x=this.x,y=this.y-h,w=Math.sin(clock*5+this.k)*2;ctx.fillStyle='#3a2617';ctx.fillRect(x-1,y-30,2,30);ctx.fillStyle='#a32f2a';ctx.fillRect(x+1,y-30,11,8);ctx.fillStyle='#c9483e';ctx.fillRect(x+1,y-30+Math.round(w>0?1:0),9+Math.round(w),6);ctx.fillStyle='#d7b24a';ctx.fillRect(x-2,y-32,4,3);}}
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const mini=W.mini;
  for(const t of tribs){if(t.x<view.x0-40||t.x>view.x1+40||t.y<view.y0-30||t.y>view.y1+70)continue;if(!t.draw)t.draw=zeichneTrib;if(t.sy==null)t.sy=t.y;items.push(t);}
  for(const d of puppen.values()){if(d.x<view.x0-30||d.x>view.x1+30||d.y<view.y0-10||d.y>view.y1+70)continue;const age=clock-d.born;if(age<0)continue;
-  items.push({y:d.y,draw:ctx=>{if(mini){ctx.fillStyle='#5e4229';ctx.fillRect(d.x-1,d.y-9,2,9);ctx.fillStyle=['#d9b85a','#9b7848','#9aa5ac','#c9483e'][d.stufe];ctx.fillRect(d.x-3,d.y-11,6,5);return;}
+  items.push({y:d.y,oz:d.oz,draw:ctx=>{if(mini){ctx.fillStyle='#5e4229';ctx.fillRect(d.x-1,d.y-9,2,9);ctx.fillStyle=['#d9b85a','#9b7848','#9aa5ac','#c9483e'][d.stufe];ctx.fillRect(d.x-3,d.y-11,6,5);return;}
    const fr=img[d.stufe],im=fr[fr.length>1?Math.floor((clock*5+d.seed*8)%fr.length):0];let s=1,dy=0;
    if(age<.55){const u=age/.55;s=u<.6?u/.6*1.18:1.18-(u-.6)/.4*.18;dy=-Math.sin(Math.min(1,u*1.4)*Math.PI)*14;}
    const up=clock-d.up;if(up>=0&&up<.9){s*=1+Math.sin(up/.9*Math.PI)*.22;}
@@ -169,10 +203,11 @@ const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);
  for(let i=fx.length-1;i>=0;i--){const d=fx[i];d.t+=dt;if(d.t>.45){fx.splice(i,1);continue;}d.x+=d.vx*dt;d.y+=d.vy*dt;ctx.globalAlpha=1-d.t/.45;ctx.fillStyle='#e8d8a8';ctx.fillRect(Math.round(d.x)-1,Math.round(d.y)-1,3,3);}ctx.globalAlpha=1;
  const z=clamp(1/W.cam.s,1,3);ctx.textAlign='center';ctx.textBaseline='middle';
  // Namensschild jeder Arena
- for(const a of arenen){if(a.x<view.x0-200||a.x>view.x1+200||a.y<view.y0-60||a.y>view.y1+60)continue;const s=a.name.toUpperCase()+(a.plaetze?' · '+a.plaetze+' PLÄTZE':'');ctx.font='bold '+Math.round(12*z)+'px ui-monospace,Menlo,Consolas,monospace';const w=ctx.measureText(s).width+10*z;
-  ctx.fillStyle='rgba(18,12,9,.8)';ctx.fillRect(Math.round(a.x-w/2),Math.round(a.y-9*z),Math.round(w),Math.round(18*z));ctx.fillStyle='#f4d37a';ctx.fillText(s,Math.round(a.x),Math.round(a.y)+1);}
+ for(const a of arenen){if(a.x<view.x0-200||a.x>view.x1+200||a.y<view.y0-60||a.y>view.y1+60)continue;ctx.save();ctx.translate(0,-(a.oz||0));const s=a.name.toUpperCase()+(a.plaetze?' · '+a.plaetze+' PLÄTZE':'');ctx.font='bold '+Math.round(12*z)+'px ui-monospace,Menlo,Consolas,monospace';const w=ctx.measureText(s).width+10*z;
+  ctx.fillStyle='rgba(18,12,9,.8)';ctx.fillRect(Math.round(a.x-w/2),Math.round(a.y-9*z),Math.round(w),Math.round(18*z));ctx.fillStyle='#f4d37a';ctx.fillText(s,Math.round(a.x),Math.round(a.y)+1);ctx.restore();}
  // Auswahl beim Ziehen
  if(mode&&info){const good=mode==='weg'?'rgba(240,120,90,.45)':info.genug?'rgba(120,220,110,.42)':'rgba(240,190,80,.42)';for(const k of info.ok)raute(ctx,k,good,mode==='weg'?'#ffb09a':info.genug?'#c8f5b0':'#ffd65a');for(const k of info.no)raute(ctx,k,'rgba(210,60,50,.3)','rgba(240,120,110,.8)');}
+ if(mode==='land'&&landSel){for(const k of landSel.ks)raute(ctx,k,landSel.ecken?null:'rgba(255,240,170,.22)','#ffe9a0');if(landSel.ecken){const P=W.ecken(landSel.ks[0]);ctx.strokeStyle='#ffd65a';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(P[landSel.ecken[0]].x,P[landSel.ecken[0]].y);for(const c of landSel.ecken)ctx.lineTo(P[c].x,P[c].y);ctx.stroke();for(const c of landSel.ecken){ctx.fillStyle='#ffd65a';ctx.fillRect(P[c].x-3,P[c].y-3,6,6);}}}
  // aufsteigende Schrift
  for(let i=text.length-1;i>=0;i--){const f=text[i];f.t+=dt;if(f.t>1.9){text.splice(i,1);continue;}if(f.t<0)continue;ctx.globalAlpha=f.t>1.4?1-(f.t-1.4)/.5:1;ctx.font='bold '+Math.round(15*z)+'px ui-monospace,Menlo,Consolas,monospace';const y=f.y-f.t*26*z;ctx.lineWidth=4*z;ctx.strokeStyle='#120c09';ctx.strokeText(f.s,f.x,y);ctx.fillStyle=f.col;ctx.fillText(f.s,f.x,y);}ctx.globalAlpha=1;};
 // Im Baumodus öffnet Antippen keine Nahaufnahme
@@ -183,5 +218,7 @@ function bauen(wz,x0,y0,x1,y1,frei){const m=mode;mode=wz;drag={a:{tx:x0,ty:y0},b
 const O=W.O||0,durch=[W.ix(48+O,36+O),W.ix(49+O,36+O),W.ix(48+O,37+O),W.ix(49+O,37+O)];bauen('arena',45+O,30+O,52+O,35+O,true);bauen('trib',43+O,28+O,54+O,37+O,true);for(const k of durch)W.feld[k]=ur[k];
 neu.clear();W.rebake(durch);rechne(true);
 M.weltBau={PREIS,PRO,PLAETZE,STUFEN,WERKZEUG,SITZ,HOCH,setMode,get mode(){return mode;},felder:()=>felder,puppen:()=>[...puppen.values()],arenen:()=>arenen,tribs:()=>tribs,plan,stufeVon,beiAenderung(fn){horcher.push(fn);},
- bauen(a,b,c,d,e){return typeof a==='string'?bauen(a,b,c,d,e):bauen('platz',a,b,c,d);}};
+ bauen(a,b,c,d,e){return typeof a==='string'?bauen(a,b,c,d,e):bauen('platz',a,b,c,d);},
+ // Test: Geländewerkzeug an Feld (tx,ty), Größe n, Stufen (+ heben, − senken), ecken z. B. [0] oder [0,1] bei n = 1
+ gelaende(tx,ty,n=1,stufen=1,ecken=null,frei=false){const h=(n-1)>>1,ks=[];if(ecken)ks.push(W.ix(tx,ty));else for(let y=ty-h;y<ty-h+n;y++)for(let x=tx-h;x<tx-h+n;x++)if(W.inMap(x,y))ks.push(W.ix(x,y));const sel={ks,ecken},d=Math.sign(stufen),out=new Set();for(let i=0;i<Math.abs(stufen);i++){const r=landSchritt(sel,d,frei);if(!r)break;r.forEach(k=>out.add(k));}return [...out];}};
 })();
