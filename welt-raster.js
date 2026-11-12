@@ -12,8 +12,9 @@
 //   rechnet jede alte Ludus-Koordinate auf die Karte um; damit lassen sich die Intros später hierher verlegen.
 // · Gladiatoren schlendern nur im Ludus herum (noch kein Tagesablauf). Uhr, Licht, Antippen und Pinzette hängen über
 //   window.WeltHook an (welt-zeit.js, welt-leben.js).
-// · Figuren: klein und grob gepixelt wie bei RollerCoaster Tycoon Classic. Die echte Figur des Spiels erscheint erst beim
-//   Heranzoomen (ab DETAIL), und nur für die, die dann im Bild sind. Ganz weit weg: zwei Rechtecke je Figur.
+// · Figuren: klein wie bei RollerCoaster Tycoon Classic. Normalansicht = die einfache Figur der großen Kämpfe (arena.js),
+//   grob gepixelt. Die volle Figur erscheint erst beim Heranzoomen (ab DETAIL), und nur für die, die dann im Bild sind.
+//   Ganz weit weg: zwei Rechtecke je Figur.
 // · Leistung: Der Boden ist in Kacheln vorgezeichnet; weit herausgezoomt wird eine einmal gezeichnete Übersicht kopiert.
 // =====================================================================================================================
 (()=>{
@@ -120,44 +121,48 @@ for(const b of BAU){const C=iso(b.tx+b.w,b.ty+b.h);b.key=b.flach?iso(b.tx,b.ty).
 for(let pass=0;pass<BAU.length;pass++)for(const b of BAU)for(const a of BAU)if(a!==b&&!a.flach&&!b.flach&&(a.tx+a.w<=b.tx||a.ty+a.h<=b.ty)&&!(b.tx+b.w<=a.tx||b.ty+b.h<=a.ty)&&b.key<=a.key)b.key=a.key+.02;
 
 // ---------- Gladiatoren: schlendern im Ludus ----------
-// Figuren wie bei RollerCoaster Tycoon Classic: winzige, grob gepixelte Männchen (10 × 16 Bildpunkte). Erst beim Heranzoomen
-// (ab DETAIL) wird die echte Figur des Spiels gezeichnet, und nur für die, die dann im Bild sind (W.spriteOf, vorgezeichnet).
-const KW=.36,SPEED=15,FW=56,FH=72,FX=28,FY=62,WALK=6,DETAIL=2,HOEHE=16,figs=new Map();let spriteBudget=0,workers=[];
+// Figuren klein wie bei RollerCoaster Tycoon Classic. Normalansicht: die „einfache Figur“ der großen Kämpfe (arena.js,
+// M.renderSimpleFigure; sieht aus wie die echte, nur gröber), auf ein Drittel verkleinert ohne Glätten, also grob gepixelt.
+// Erst beim Heranzoomen (ab DETAIL) die volle Figur des Spiels, und nur für die, die dann im Bild sind.
+// Schritte: Ein Schrittzyklus (WALK Bilder) gehört zu SCHRITT Bildpunkten Weg; das Bild richtet sich nach dem gelaufenen Weg,
+// nicht nach der Uhr. So rutschen die Füße bei keinem Tempo über den Boden.
+const KW=.46,SPEED=15,FW=56,FH=72,FX=28,FY=62,WALK=8,DETAIL=2,HOEHE=21,SCHRITT=15,figs=new Map();let spriteBudget=0,workers=[];
 function spriteOf(g){let s=figs.get(g.id);if(s)return s;if(spriteBudget<=0)return null;spriteBudget--;
- const [c,ctx]=mkCanvas(FW*(WALK+2),FH*2);const base={g,team:0,ammo:0,a:0,energy:100,index:0,baseX:0,baseY:0};
- try{ctx.fillStyle='rgba(15,20,10,.3)';for(let dir=0;dir<2;dir++)for(let f=0;f<WALK+2;f++)ctx.fillRect(f*FW+FX-9,dir*FH+FY-1,18,3);
+ const [c,ctx]=mkCanvas(FW*(WALK+1),FH*2);const base={g,team:0,ammo:0,a:0,energy:100,index:0,baseX:0,baseY:0};
+ try{ctx.fillStyle='rgba(15,20,10,.3)';for(let dir=0;dir<2;dir++)for(let f=0;f<=WALK;f++)ctx.fillRect(f*FW+FX-9,dir*FH+FY-1,18,3);
   for(let dir=0;dir<2;dir++){for(let f=0;f<WALK;f++){ctx.save();ctx.translate(f*FW,dir*FH);M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:'move',moveSpeed:40,phase:f/WALK*TAU}]);ctx.restore();}
-  for(let f=0;f<2;f++){ctx.save();ctx.translate((WALK+f)*FW,dir*FH);M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:'idle',moveSpeed:0,phase:f*1.3}]);ctx.restore();}}}catch(e){console.warn(e);}
+   ctx.save();ctx.translate(WALK*FW,dir*FH);M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:'idle',moveSpeed:0,phase:0}]);ctx.restore();}}catch(e){console.warn(e);}
  s={c};figs.set(g.id,s);return s;}
-// Pixelmännchen: ein gemeinsames Bild, je Farbkombination (Kleid, Haut, Haar) eine Zeile mit 10 Stellungen
-// (0–3 gehen nach rechts, 4–7 nach links, 8 sitzen rechts, 9 sitzen links)
-const PW=10,PH=16,PMAX=400,[patlas,pg]=mkCanvas(PW*10,PH*PMAX),prow=new Map(),pof=new Map();
-function peepRow(g){let r=pof.get(g.id);if(r!=null)return r;const a=g.appearance||{},cl=a.cloth||'#55938e',sk=a.skin||'#d9ac82',ha=a.hair||'#443025',key=cl+sk+ha;r=prow.get(key);
- if(r==null){r=prow.size%PMAX;prow.set(key,r);const sk2=a.shade||'#9c7353',oy=r*PH;pg.clearRect(0,oy,PW*10,PH);
-  for(let f=0;f<10;f++){const ox=f*PW,R=(x,y,w,h,c)=>{pg.fillStyle=c;pg.fillRect(ox+x,oy+y,w,h);},left=f<8?f>=4:f===9;
-   if(f>=8){R(2,6,6,5,cl);R(left?6:2,6,2,5,'rgba(0,0,0,.2)');R(2,11,6,2,sk2);R(1,7,1,3,sk);R(8,7,1,3,sk);R(3,1,4,5,sk);R(3,0,4,2,ha);R(left?3:6,1,1,2,ha);R(left?4:5,3,1,1,'#20140c');continue;}
-   const ph=f%4,a1=[0,1,0,-1][ph];R(2,15,6,1,'rgba(15,20,10,.3)');
-   R(3+(a1>0?1:0),11,2,a1>0?3:4,sk2);R(5-(a1<0?1:0),11,2,a1<0?3:4,sk2);if(a1)R(a1>0?5:3,14,2,1,'#3a2617');
-   R(2,5,6,6,cl);R(left?6:2,5,2,6,'rgba(0,0,0,.2)');R(2,9,6,1,'rgba(0,0,0,.25)');R(1,6+(a1>0?1:0),1,3,sk);R(8,6+(a1<0?1:0),1,3,sk);
-   R(3,1,4,4,sk);R(3,0,4,2,ha);R(left?3:6,1,1,2,ha);R(left?4:5,3,1,1,'#20140c');}}
- pof.set(g.id,r);return r;}
-// Eine Figur zeichnen. f: 0…WALK−1 gehen, WALK stehen. Wählt selbst zwischen Pixelmännchen und echter Figur.
+// Einfache Figuren: groß gemalt (NW × NH), dann auf ein Drittel verkleinert (PW × PH) in gemeinsame Bildseiten gelegt.
+// Je Figur eine Zeile: WALK Gehbilder und ein Standbild nach rechts, dann dasselbe nach links.
+const NW=48,NH=84,NAX=24,NAY=78,PW=16,PH=28,PAX=8,PAY=26,PROW=240,pages=[],pof=new Map(),[scratch,sg]=mkCanvas(NW,NH),[klein,kg]=mkCanvas(PW,PH);let pBudget=0,pNext=0;
+function simpleOf(g){let r=pof.get(g.id);if(r)return r;if(pBudget<=0||!M.renderSimpleFigure)return null;pBudget--;
+ const page=(pNext/PROW)|0,row=pNext%PROW;pNext++;if(!pages[page])pages[page]=mkCanvas(PW*(WALK+1)*2,PH*PROW);const [pc,pg]=pages[page];
+ for(let dir=0;dir<2;dir++)for(let f=0;f<=WALK;f++){sg.setTransform(1,0,0,1,0,0);sg.clearRect(0,0,NW,NH);
+  try{M.renderSimpleFigure(sg,{g,team:0,ownCloth:true,x:NAX,y:NAY,z:0,a:dir?Math.PI:0,state:f<WALK?'move':'idle',moveSpeed:f<WALK?60:0,phase:f<WALK?f/WALK*TAU:0,energy:100,ammo:0,index:0,baseX:0,baseY:0});}catch(e){if(!simpleOf.warned){simpleOf.warned=true;console.warn('einfache Figur',e);}}
+  const x=(dir*(WALK+1)+f)*PW,y=row*PH;// weich verkleinern, dann jeden Bildpunkt ganz deckend oder ganz leer machen: saubere grobe Pixel ohne Ausfälle
+  kg.clearRect(0,0,PW,PH);kg.imageSmoothingEnabled=true;kg.imageSmoothingQuality='high';kg.drawImage(scratch,0,0,NW,NH,0,0,PW,PH);const im=kg.getImageData(0,0,PW,PH),d=im.data;
+  for(let i=3;i<d.length;i+=4)d[i]=d[i]>96?255:0;for(let px=PAX-4;px<PAX+4;px++){const o=(PAY*PW+px)*4;if(!d[o+3]){d[o]=15;d[o+1]=20;d[o+2]=10;d[o+3]=77;}}pg.putImageData(im,x,y);}
+ r={c:pc,y:row*PH};pof.set(g.id,r);return r;}
+// Eine Figur zeichnen. f: 0…WALK−1 gehen, WALK stehen. Wählt selbst zwischen einfacher und voller Figur.
 function drawFig(ctx,g,x,y,f,dir){if(detailV){const sp=spriteOf(g);if(sp){ctx.imageSmoothingEnabled=true;ctx.drawImage(sp.c,f*FW,dir*FH,FW,FH,x-FX*KW,y-FY*KW,FW*KW,FH*KW);ctx.imageSmoothingEnabled=false;return;}}
- ctx.drawImage(patlas,(dir*4+(f>=WALK?0:(f*4/WALK)|0))*PW,peepRow(g)*PH,PW,PH,x-5,y-15,PW,PH);}
+ const r=simpleOf(g);if(r)ctx.drawImage(r.c,(dir*(WALK+1)+f)*PW,r.y,PW,PH,x-PAX,y-PAY,PW,PH);else drawMini(ctx,g,x,y);}
+const SITZ_H=PAY-10;// im Sitzen nur der Oberkörper, die Beine verschwinden hinter der Bank
 function drawSit(ctx,g,x,y,dir){if(detailV){const sp=spriteOf(g),h=FY-22;if(sp){ctx.imageSmoothingEnabled=true;ctx.drawImage(sp.c,WALK*FW,dir*FH,FW,h,x-FX*KW,y-h*KW+1,FW*KW,h*KW);ctx.imageSmoothingEnabled=false;return;}}
- ctx.drawImage(patlas,(8+dir)*PW,peepRow(g)*PH,PW,PH,x-5,y-12,PW,PH);}
+ const r=simpleOf(g);if(r)ctx.drawImage(r.c,(dir*(WALK+1)+WALK)*PW,r.y,PW,SITZ_H,x-PAX,y-SITZ_H+2,PW,SITZ_H);else drawMini(ctx,g,x,y);}
+const gehBild=dist=>((dist/SCHRITT*WALK)|0)%WALK;
 function drawMini(ctx,g,x,y){const a=g.appearance||{};ctx.fillStyle=a.cloth||'#55938e';ctx.fillRect(x-2,y-7,4,6);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-1,y-10,3,3);}
 const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS;};
 const imLudus=(tx,ty)=>tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h;
 function makeRoster(n){const keep=S.roster.filter(g=>!g.dead);let list=keep.slice(0,n);const rng=S.rng;while(list.length<n){const g=M.makeGladiator(0);g.fatigue=0;list.push(g);}S.rng=rng;
- S.roster=list;try{M.army?.autoClasses?.(list);}catch(e){}figs.clear();
- workers=list.map((g,i)=>{let tx,ty,k=0;do{tx=LUD.tx+h2(i,k,21)*LUD.w;ty=LUD.ty+h2(i,k,22)*LUD.h;k++;}while(!frei(tx,ty)&&k<40);const p=iso(tx,ty);return {g,x:p.x,y:p.y,seed:h2(i,7,23)*1000,wait:h2(i,3,24)*8,goal:null,dir:0,walk:false};});}
+ S.roster=list;try{M.army?.autoClasses?.(list);}catch(e){}for(const w of workers){figs.delete(w.g.id);pof.delete(w.g.id);}if(pNext>PROW*6){pof.clear();pNext=0;}
+ workers=list.map((g,i)=>{let tx,ty,k=0;do{tx=LUD.tx+h2(i,k,21)*LUD.w;ty=LUD.ty+h2(i,k,22)*LUD.h;k++;}while(!frei(tx,ty)&&k<40);const p=iso(tx,ty);return {g,x:p.x,y:p.y,dist:h2(i,7,23)*60,seed:h2(i,7,23)*1000,wait:h2(i,3,24)*8,goal:null,dir:0,walk:false};});}
 function wander(w,dt){if(w.wait>0){w.wait-=dt;w.walk=false;return;}// (schlendern)
  if(!w.goal){const c=tileAt(w.x,w.y),home=imLudus(c.tx,c.ty);for(let k=0;k<6&&!w.goal;k++){const tx=c.tx+(Math.random()-.5)*9,ty=c.ty+(Math.random()-.5)*9;if(!frei(tx,ty)||(home&&!imLudus(tx,ty)))continue;
    let ok=true;for(let s=1;s<8&&ok;s++)ok=frei(c.tx+(tx-c.tx)*s/8,c.ty+(ty-c.ty)*s/8);if(ok)w.goal=iso(tx,ty);}
   if(!w.goal){w.wait=1;return;}}
  const dx=w.goal.x-w.x,dy=w.goal.y-w.y,d=Math.hypot(dx,dy),step=SPEED*dt;w.walk=true;if(Math.abs(dx)>1)w.dir=dx<0?1:0;
- if(d<=step){w.x=w.goal.x;w.y=w.goal.y;w.goal=null;w.wait=2+Math.random()*9;w.walk=false;return;}w.x+=dx/d*step;w.y+=dy/d*step;}
+ if(d<=step){w.x=w.goal.x;w.y=w.goal.y;w.goal=null;w.wait=2+Math.random()*9;w.walk=false;return;}w.x+=dx/d*step;w.y+=dy/d*step;w.dist+=step;}
 function pose0(w){return {x:w.x,y:w.y,dx:w.dir?-1:1,dy:0,state:w.walk?'schlendert durch den Ludus':'steht herum',work:false,top:!w.walk};}
 function pose(w){const ps=pose0(w);return H.pose?H.pose(w,ps,clock):ps;}
 function place(g,x,y){const w=workers.find(w=>w.g.id===g.id);if(!w)return;w.x=x;w.y=y;w.goal=null;w.wait=2.5;w.walk=false;}
@@ -212,13 +217,13 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
   frameNo++;if(chunks.size>48)for(const [k,ch] of chunks)if(ch.used<frameNo-120){chunks.delete(k);if(chunks.size<=36)break;}}
  for(const b of BAU)items.push({y:b.key,bau:b});H.items?.(items,view);
  // Figuren; wer vor einem Gebäude steht, wird nach ihm gezeichnet
- shown=[];spriteBudget=Math.max(2,Math.round(12-perfAvg));
+ shown=[];spriteBudget=Math.max(2,Math.round(12-perfAvg));pBudget=Math.max(3,Math.round(14-perfAvg));
  for(const w of workers){const ps=pose(w);if(ps.x==null||ps.x<view.x0-40||ps.x>view.x1+40||ps.y<view.y0-20||ps.y>view.y1+80)continue;let y=ps.y;const c=tileAt(ps.x,ps.y);
   for(const b of BAU)if(!b.flach&&y<=b.key&&(c.tx>=b.tx+b.w||c.ty>=b.ty+b.h)&&c.tx>b.tx-2&&c.ty>b.ty-2)y=b.key+.01;items.push({y,w,ps});}
  items.sort((a,b)=>a.y-b.y);
  for(const it of items){if(it.tree!=null){ctx.drawImage(TREE[it.tree],it.x-22,it.y-64);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}if(it.draw){it.draw(ctx);continue;}
   const {w,ps}=it,x=Math.round(ps.x),y=Math.round(ps.y);
-  if(miniV)drawMini(ctx,w.g,x,y);else drawFig(ctx,w.g,x,y,!ps.top?Math.floor((clock*SPEED/4+w.seed)%WALK):WALK,(ps.dx??1)<0?1:0);
+  if(miniV)drawMini(ctx,w.g,x,y);else drawFig(ctx,w.g,x,y,!ps.top?gehBild(w.dist):WALK,(ps.dx??1)<0?1:0);
   shown.push({w,x,y});}
  if(H.light){ctx.setTransform(DPR,0,0,DPR,0,0);H.light(ctx,VW,VH);ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));}
  H.world?.(ctx,view,dt);
@@ -232,7 +237,7 @@ try{window.ArenaUI?.close?.();}catch(e){}M.ui.click('nav:home');
 bake();makeRoster(60);resize();cam.s=clamp(Math.min(VW/1100,VH/760)*1.1,minScale(),maxScale());clampCam();
 $('weltBoot')?.remove();last=performance.now();requestAnimationFrame(frame);
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
-window.WeltKarte={KW,HOEHE,DETAIL,drawFig,drawSit,drawMini,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
+window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
  raster(on){raster=!!on;bake();},rebake:bake,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
 window.WELT_READY=true;

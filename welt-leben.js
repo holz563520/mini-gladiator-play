@@ -40,7 +40,7 @@ nah.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!sel)
  else if(b.dataset.profil!=null){close();M.ui.click('detail:'+g.id);}});
 
 // ---------- Pinzette ----------
-const LIFT=16,NECK=13;let hand=null;const placed=new Map(),dust=[];
+const LIFT=18,NECK=17;let hand=null;const placed=new Map(),dust=[];
 const hint=document.createElement('div');hint.id='wZange';hint.hidden=true;hint.innerHTML='<span></span><button class="w-btn" data-back>Zurückstellen</button>';document.getElementById('weltUi').appendChild(hint);
 hint.querySelector('[data-back]').onclick=()=>{if(hand&&hand.state==='trag')drop({x:hand.ox,y:hand.oy},true);};
 let hintT=0;function showHint(text,btn,ms){hint.hidden=false;hint.querySelector('span').textContent=text;hint.querySelector('button').hidden=!btn;clearTimeout(hintT);if(ms)hintT=setTimeout(()=>{if(!hand)hint.hidden=true;},ms);}
@@ -73,7 +73,7 @@ const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);const t=perfo
  // Staub beim Aufsetzen
  for(let i=dust.length-1;i>=0;i--){const d=dust[i];d.t+=dt;if(d.t>.5){dust.splice(i,1);continue;}d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy+=60*dt;ctx.globalAlpha=1-d.t/.5;ctx.fillStyle='#d8c9a0';ctx.fillRect(Math.round(d.x),Math.round(d.y),2,2);}ctx.globalAlpha=1;
  // Zeiger über der gewählten Figur
- if(sel&&!(hand&&hand.g===sel.g)){const w=workerOf(sel.g),ps=w&&W.pose(w);if(ps&&ps.x!=null){const k=clamp(.7/W.cam.s,.45,3.5),y=ps.y-(W.mini?12:21)-Math.abs(Math.sin(t*4))*3*k;ctx.fillStyle='#20140c';ctx.beginPath();ctx.moveTo(ps.x-7*k,y-9*k);ctx.lineTo(ps.x+7*k,y-9*k);ctx.lineTo(ps.x,y+2*k);ctx.fill();ctx.fillStyle='#f4d37a';ctx.beginPath();ctx.moveTo(ps.x-4.5*k,y-7.5*k);ctx.lineTo(ps.x+4.5*k,y-7.5*k);ctx.lineTo(ps.x,y-.5*k);ctx.fill();}}
+ if(sel&&!(hand&&hand.g===sel.g)){const w=workerOf(sel.g),ps=w&&W.pose(w);if(ps&&ps.x!=null){const k=clamp(.7/W.cam.s,.45,3.5),y=ps.y-(W.mini?12:27)-Math.abs(Math.sin(t*4))*3*k;ctx.fillStyle='#20140c';ctx.beginPath();ctx.moveTo(ps.x-7*k,y-9*k);ctx.lineTo(ps.x+7*k,y-9*k);ctx.lineTo(ps.x,y+2*k);ctx.fill();ctx.fillStyle='#f4d37a';ctx.beginPath();ctx.moveTo(ps.x-4.5*k,y-7.5*k);ctx.lineTo(ps.x+4.5*k,y-7.5*k);ctx.lineTo(ps.x,y-.5*k);ctx.fill();}}
  if(!hand)return;const a=hand,k=clamp(.9/W.cam.s,.45,3)*.75;a.t+=dt;
  if(a.state==='greif'){const u=ease(a.t/.38);a.off=-220*(1-u);a.open=9-5*clamp((a.t-.3)/.08,0,1);if(a.t>=.42){a.state='heb';a.t=0;try{M.sound?.('stick');}catch(e){}}}
  else if(a.state==='heb'){a.h=LIFT*ease(a.t/.32);a.sw=Math.sin(a.t*18)*.12;if(a.t>=.32){a.state='trag';a.t=0;}}
