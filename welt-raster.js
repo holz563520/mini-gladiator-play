@@ -12,8 +12,9 @@
 //   rechnet jede alte Ludus-Koordinate auf die Karte um; damit lassen sich die Intros später hierher verlegen.
 // · Gladiatoren schlendern nur im Ludus herum (noch kein Tagesablauf). Uhr, Licht, Antippen und Pinzette hängen über
 //   window.WeltHook an (welt-zeit.js, welt-leben.js).
-// · Leistung: Felder sind fertige Bildchen; weit herausgezoomt wird eine einmal gezeichnete Übersicht kopiert und die
-//   Figuren werden zu Miniaturen aus zwei Rechtecken.
+// · Figuren: klein und grob gepixelt wie bei RollerCoaster Tycoon Classic. Die echte Figur des Spiels erscheint erst beim
+//   Heranzoomen (ab DETAIL), und nur für die, die dann im Bild sind. Ganz weit weg: zwei Rechtecke je Figur.
+// · Leistung: Der Boden ist in Kacheln vorgezeichnet; weit herausgezoomt wird eine einmal gezeichnete Übersicht kopiert.
 // =====================================================================================================================
 (()=>{
 const H=window.WeltHook=window.WeltHook||{};
@@ -119,15 +120,33 @@ for(const b of BAU){const C=iso(b.tx+b.w,b.ty+b.h);b.key=b.flach?iso(b.tx,b.ty).
 for(let pass=0;pass<BAU.length;pass++)for(const b of BAU)for(const a of BAU)if(a!==b&&!a.flach&&!b.flach&&(a.tx+a.w<=b.tx||a.ty+a.h<=b.ty)&&!(b.tx+b.w<=a.tx||b.ty+b.h<=a.ty)&&b.key<=a.key)b.key=a.key+.02;
 
 // ---------- Gladiatoren: schlendern im Ludus ----------
-// Figurengröße wie bei RollerCoaster Tycoon: Die Figuren des Spiels werden beim Vorzeichnen auf K verkleinert (Zelle 40 × 52 statt 56 × 72)
-const K=.7,SPEED=30,FW=40,FH=52,FX=20,FY=44,WALK=6,figs=new Map();let spriteBudget=0,workers=[];
+// Figuren wie bei RollerCoaster Tycoon Classic: winzige, grob gepixelte Männchen (10 × 16 Bildpunkte). Erst beim Heranzoomen
+// (ab DETAIL) wird die echte Figur des Spiels gezeichnet, und nur für die, die dann im Bild sind (W.spriteOf, vorgezeichnet).
+const KW=.36,SPEED=15,FW=56,FH=72,FX=28,FY=62,WALK=6,DETAIL=2,HOEHE=16,figs=new Map();let spriteBudget=0,workers=[];
 function spriteOf(g){let s=figs.get(g.id);if(s)return s;if(spriteBudget<=0)return null;spriteBudget--;
- const [c,ctx]=mkCanvas(FW*(WALK+2),FH*2);ctx.imageSmoothingEnabled=true;const base={g,team:0,ammo:0,a:0,energy:100,index:0,baseX:0,baseY:0};
- // Der Schatten wird mit ins Bild gezeichnet: ein eigenes Rechteck je Figur und Bild war das Teuerste am ganzen Zeichnen
- try{ctx.fillStyle='rgba(15,20,10,.3)';for(let dir=0;dir<2;dir++)for(let f=0;f<WALK+2;f++)ctx.fillRect(f*FW+FX-6,dir*FH+FY-1,12,2);
-  for(let dir=0;dir<2;dir++){for(let f=0;f<WALK;f++){ctx.save();ctx.translate(f*FW,dir*FH);ctx.scale(K,K);M.renderLudusActors(ctx,[{...base,x:FX/K,y:FY/K,a:dir?Math.PI:0,state:'move',moveSpeed:40,phase:f/WALK*TAU}]);ctx.restore();}
-  for(let f=0;f<2;f++){ctx.save();ctx.translate((WALK+f)*FW,dir*FH);ctx.scale(K,K);M.renderLudusActors(ctx,[{...base,x:FX/K,y:FY/K,a:dir?Math.PI:0,state:'idle',moveSpeed:0,phase:f*1.3}]);ctx.restore();}}}catch(e){console.warn(e);}
+ const [c,ctx]=mkCanvas(FW*(WALK+2),FH*2);const base={g,team:0,ammo:0,a:0,energy:100,index:0,baseX:0,baseY:0};
+ try{ctx.fillStyle='rgba(15,20,10,.3)';for(let dir=0;dir<2;dir++)for(let f=0;f<WALK+2;f++)ctx.fillRect(f*FW+FX-9,dir*FH+FY-1,18,3);
+  for(let dir=0;dir<2;dir++){for(let f=0;f<WALK;f++){ctx.save();ctx.translate(f*FW,dir*FH);M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:'move',moveSpeed:40,phase:f/WALK*TAU}]);ctx.restore();}
+  for(let f=0;f<2;f++){ctx.save();ctx.translate((WALK+f)*FW,dir*FH);M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:'idle',moveSpeed:0,phase:f*1.3}]);ctx.restore();}}}catch(e){console.warn(e);}
  s={c};figs.set(g.id,s);return s;}
+// Pixelmännchen: ein gemeinsames Bild, je Farbkombination (Kleid, Haut, Haar) eine Zeile mit 10 Stellungen
+// (0–3 gehen nach rechts, 4–7 nach links, 8 sitzen rechts, 9 sitzen links)
+const PW=10,PH=16,PMAX=400,[patlas,pg]=mkCanvas(PW*10,PH*PMAX),prow=new Map(),pof=new Map();
+function peepRow(g){let r=pof.get(g.id);if(r!=null)return r;const a=g.appearance||{},cl=a.cloth||'#55938e',sk=a.skin||'#d9ac82',ha=a.hair||'#443025',key=cl+sk+ha;r=prow.get(key);
+ if(r==null){r=prow.size%PMAX;prow.set(key,r);const sk2=a.shade||'#9c7353',oy=r*PH;pg.clearRect(0,oy,PW*10,PH);
+  for(let f=0;f<10;f++){const ox=f*PW,R=(x,y,w,h,c)=>{pg.fillStyle=c;pg.fillRect(ox+x,oy+y,w,h);},left=f<8?f>=4:f===9;
+   if(f>=8){R(2,6,6,5,cl);R(left?6:2,6,2,5,'rgba(0,0,0,.2)');R(2,11,6,2,sk2);R(1,7,1,3,sk);R(8,7,1,3,sk);R(3,1,4,5,sk);R(3,0,4,2,ha);R(left?3:6,1,1,2,ha);R(left?4:5,3,1,1,'#20140c');continue;}
+   const ph=f%4,a1=[0,1,0,-1][ph];R(2,15,6,1,'rgba(15,20,10,.3)');
+   R(3+(a1>0?1:0),11,2,a1>0?3:4,sk2);R(5-(a1<0?1:0),11,2,a1<0?3:4,sk2);if(a1)R(a1>0?5:3,14,2,1,'#3a2617');
+   R(2,5,6,6,cl);R(left?6:2,5,2,6,'rgba(0,0,0,.2)');R(2,9,6,1,'rgba(0,0,0,.25)');R(1,6+(a1>0?1:0),1,3,sk);R(8,6+(a1<0?1:0),1,3,sk);
+   R(3,1,4,4,sk);R(3,0,4,2,ha);R(left?3:6,1,1,2,ha);R(left?4:5,3,1,1,'#20140c');}}
+ pof.set(g.id,r);return r;}
+// Eine Figur zeichnen. f: 0…WALK−1 gehen, WALK stehen. Wählt selbst zwischen Pixelmännchen und echter Figur.
+function drawFig(ctx,g,x,y,f,dir){if(detailV){const sp=spriteOf(g);if(sp){ctx.imageSmoothingEnabled=true;ctx.drawImage(sp.c,f*FW,dir*FH,FW,FH,x-FX*KW,y-FY*KW,FW*KW,FH*KW);ctx.imageSmoothingEnabled=false;return;}}
+ ctx.drawImage(patlas,(dir*4+(f>=WALK?0:(f*4/WALK)|0))*PW,peepRow(g)*PH,PW,PH,x-5,y-15,PW,PH);}
+function drawSit(ctx,g,x,y,dir){if(detailV){const sp=spriteOf(g),h=FY-22;if(sp){ctx.imageSmoothingEnabled=true;ctx.drawImage(sp.c,WALK*FW,dir*FH,FW,h,x-FX*KW,y-h*KW+1,FW*KW,h*KW);ctx.imageSmoothingEnabled=false;return;}}
+ ctx.drawImage(patlas,(8+dir)*PW,peepRow(g)*PH,PW,PH,x-5,y-12,PW,PH);}
+function drawMini(ctx,g,x,y){const a=g.appearance||{};ctx.fillStyle=a.cloth||'#55938e';ctx.fillRect(x-2,y-7,4,6);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-1,y-10,3,3);}
 const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS;};
 const imLudus=(tx,ty)=>tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h;
 function makeRoster(n){const keep=S.roster.filter(g=>!g.dead);let list=keep.slice(0,n);const rng=S.rng;while(list.length<n){const g=M.makeGladiator(0);g.fatigue=0;list.push(g);}S.rng=rng;
@@ -147,7 +166,7 @@ function place(g,x,y){const w=workers.find(w=>w.g.id===g.id);if(!w)return;w.x=x;
 const cv=$('weltCanvas'),ctx=cv.getContext('2d');let VW=1,VH=1,DPR=1;
 const L0=iso(LUD.tx+LUD.w/2,LUD.ty+LUD.h/2),cam={x:L0.x,y:L0.y,s:1};
 function resize(){DPR=Math.min(2,window.devicePixelRatio||1);VW=cv.clientWidth||innerWidth;VH=cv.clientHeight||innerHeight;cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);clampCam();}
-const minScale=()=>Math.min(VW/WW,VH/WH)*.95,maxScale=()=>3.2;
+const minScale=()=>Math.min(VW/WW,VH/WH)*.95,maxScale=()=>4.5;
 function clampCam(){cam.s=clamp(cam.s,minScale(),maxScale());cam.x=clamp(cam.x,0,WW);cam.y=clamp(cam.y,0,WH);}
 const toWorld=(sx,sy)=>({x:cam.x+(sx-VW/2)/cam.s,y:cam.y+(sy-VH/2)/cam.s});
 function zoomAt(sx,sy,f){const a=toWorld(sx,sy);cam.s=clamp(cam.s*f,minScale(),maxScale());const b=toWorld(sx,sy);cam.x+=a.x-b.x;cam.y+=a.y-b.y;clampCam();}
@@ -164,7 +183,7 @@ cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
 cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*.0016));},{passive:false});
 addEventListener('resize',resize);
 let shown=[];
-function tap(p){const k=miniV?2:1,hit=[...shown].reverse().find(s=>p.x>s.x-10*k&&p.x<s.x+10*k&&p.y>s.y-32&&p.y<s.y+6*k);H.tap?.(p,hit?.w);}
+function tap(p){const k=Math.max(1,1.4/cam.s),hit=[...shown].reverse().find(s=>p.x>s.x-6*k&&p.x<s.x+6*k&&p.y>s.y-10-8*k&&p.y<s.y+4*k);H.tap?.(p,hit?.w);}
 
 // ---------- Leiste ----------
 const ui=document.createElement('div');ui.id='weltUi';ui.innerHTML=`
@@ -178,14 +197,14 @@ $('wBack').onclick=()=>{try{M.ui.close?.();}catch(e){}M.ui.click('nav:home');};
 setInterval(()=>{const page=M.ui.getPage?.(),modal=$('modal')&&!$('modal').hidden,admin=(page&&page!=='home')||modal||!!S.battle;document.body.classList.toggle('w-admin',!!admin);$('wBack').hidden=!admin||modal;},200);
 
 // ---------- Zeichnen ----------
-const MINI=.5,FERN=.6;let clock=0,last=performance.now(),perfAvg=4,perfWin=[],hudT=0,miniV=false;
+const MINI=.6,FERN=.6;let clock=0,last=performance.now(),perfAvg=4,perfWin=[],hudT=0,miniV=false,detailV=false;
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)/1000);last=now;if(document.hidden||document.body.classList.contains('w-admin'))return;
  const t0=performance.now();clock+=dt;H.tick?.(dt);for(const w of workers)wander(w,dt);
  if(fly){fly.t=Math.min(1,fly.t+dt*2.2);const e=1-Math.pow(1-fly.t,3);cam.x=fly.x0+(fly.x-fly.x0)*e;cam.y=fly.y0+(fly.y-fly.y0)*e;cam.s=fly.s0+(fly.s-fly.s0)*e;clampCam();if(fly.t>=1)fly=null;}
  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#1c2416';ctx.fillRect(0,0,VW,VH);
  const view={x0:cam.x-VW/2/cam.s,y0:cam.y-VH/2/cam.s,x1:cam.x+VW/2/cam.s,y1:cam.y+VH/2/cam.s};
  ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));
- const items=[];miniV=cam.s<MINI;
+ const items=[];miniV=cam.s<MINI;detailV=cam.s>=DETAIL;
  if(cam.s<FERN){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,0,0,overview.width*OV,overview.height*OV);ctx.imageSmoothingEnabled=false;}
  else{// Boden aus vorgezeichneten Kacheln (512 × 512): rund ein Dutzend Bilder je Bild statt über tausend einzelner Felder
   const cx0=Math.max(0,Math.floor(view.x0/CH)),cx1=Math.min(Math.ceil(WW/CH)-1,Math.floor(view.x1/CH)),cy0=Math.max(0,Math.floor(view.y0/CH)),cy1=Math.min(Math.ceil(WH/CH)-1,Math.floor((view.y1+70)/CH));
@@ -199,23 +218,21 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  items.sort((a,b)=>a.y-b.y);
  for(const it of items){if(it.tree!=null){ctx.drawImage(TREE[it.tree],it.x-22,it.y-64);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}if(it.draw){it.draw(ctx);continue;}
   const {w,ps}=it,x=Math.round(ps.x),y=Math.round(ps.y);
-  if(miniV){const a=w.g.appearance||{},b=w.walk&&((clock*4+w.seed)|0)%2?2:0;ctx.fillStyle=a.cloth||'#55938e';ctx.fillRect(x-3,y-11-b,6,9);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-2,y-16-b,5,5);shown.push({w,x,y});continue;}
-  const sp=spriteOf(w.g),dir=(ps.dx??1)<0?1:0;
-  if(sp){const f=!ps.top?Math.floor((clock*SPEED/7+w.seed)%WALK):WALK;ctx.drawImage(sp.c,f*FW,dir*FH,FW,FH,x-FX,y-FY,FW,FH);}else{ctx.fillStyle='#7a6448';ctx.fillRect(x-3,y-19,6,16);ctx.fillStyle='#d9ac82';ctx.fillRect(x-2,y-24,5,5);}
+  if(miniV)drawMini(ctx,w.g,x,y);else drawFig(ctx,w.g,x,y,!ps.top?Math.floor((clock*SPEED/4+w.seed)%WALK):WALK,(ps.dx??1)<0?1:0);
   shown.push({w,x,y});}
  if(H.light){ctx.setTransform(DPR,0,0,DPR,0,0);H.light(ctx,VW,VH);ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));}
  H.world?.(ctx,view,dt);
  ctx.setTransform(1,0,0,1,0,0);
  const ms=performance.now()-t0;perfWin.push(ms);if(perfWin.length>30)perfWin.shift();perfAvg=perfWin.reduce((a,b)=>a+b,0)/perfWin.length;
- hudT+=dt;if(hudT>1){hudT=0;$('wCount').textContent=`${workers.length} Leute · ${shown.length} im Bild`;$('wClock').textContent=`Zoom ${cam.s.toFixed(2)}×${miniV?' · Miniaturansicht':''}`;
+ hudT+=dt;if(hudT>1){hudT=0;$('wCount').textContent=`${workers.length} Leute · ${shown.length} im Bild`;$('wClock').textContent=`Zoom ${cam.s.toFixed(2)}×${miniV?' · Miniaturansicht':detailV?' · Nahansicht':''}`;
   const bar=$('wPerfBar');bar.style.width=Math.round(clamp(perfAvg/16.7,0,1)*100)+'%';bar.style.background=perfAvg<8?'#6fae5a':perfAvg<13?'#d7b24a':'#c9483e';$('wPerf').textContent=perfAvg.toFixed(1)+' ms je Bild';}}
 
 // ---------- Start ----------
 try{window.ArenaUI?.close?.();}catch(e){}M.ui.click('nav:home');
-bake();makeRoster(60);resize();cam.s=clamp(Math.min(VW/1500,VH/1000)*1.1,minScale(),maxScale());clampCam();
+bake();makeRoster(60);resize();cam.s=clamp(Math.min(VW/1100,VH/760)*1.1,minScale(),maxScale());clampCam();
 $('weltBoot')?.remove();last=performance.now();requestAnimationFrame(frame);
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
-window.WeltKarte={K,cam,sprites:figs,workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
+window.WeltKarte={KW,HOEHE,DETAIL,drawFig,drawSit,drawMini,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
  raster(on){raster=!!on;bake();},rebake:bake,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
 window.WELT_READY=true;

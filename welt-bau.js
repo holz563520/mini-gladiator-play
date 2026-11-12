@@ -19,7 +19,7 @@
 const M=window.MG,W=window.WeltKarte,H=window.WeltHook;if(!M||!W||!H||!W.feld)return;const S=M.s,$=id=>document.getElementById(id);
 const T=W.T,N=W.N,clamp=(v,a,b)=>v<a?a:v>b?b:v,TAU=Math.PI*2;
 const WERKZEUG={platz:{name:'Trainingsfeld',typ:T.PLATZ,preis:50},arena:{name:'Kampffläche',typ:T.ARENA,preis:80},trib:{name:'Tribüne',typ:T.TRIB,preis:120},weg:{name:'Abreißen',preis:0}};
-const PREIS=WERKZEUG.platz.preis,PRO=4,PLAETZE=4,STUFEN=[{ab:0,name:'Strohpuppe',mz:'Strohpuppen'},{ab:10,name:'Holzpuppe',mz:'Holzpuppen'},{ab:25,name:'Rüstungspuppe',mz:'Rüstungspuppen'},{ab:60,name:'Drehpuppe',mz:'Drehpuppen'}];
+const PREIS=WERKZEUG.platz.preis,PRO=4,PLAETZE=8,STUFEN=[{ab:0,name:'Strohpuppe',mz:'Strohpuppen'},{ab:10,name:'Holzpuppe',mz:'Holzpuppen'},{ab:25,name:'Rüstungspuppe',mz:'Rüstungspuppen'},{ab:60,name:'Drehpuppe',mz:'Drehpuppen'}];
 const ARENA_NAME=n=>n<20?'Sandgrube':n<48?'Kleine Arena':n<100?'Arena':'Große Arena';
 const stufeVon=n=>{let s=0;for(let i=0;i<STUFEN.length;i++)if(n>=STUFEN[i].ab)s=i;return s;};
 const ur=Uint8Array.from(W.feld);// Gelände vor allem Bauen (für „Abreißen“)
@@ -27,7 +27,7 @@ const baubar=(tx,ty)=>W.inMap(tx,ty)&&(W.feld[W.ix(tx,ty)]===T.WIESE||W.feld[W.i
 const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB)&&ur[k]!==t;};
 
 // ---------- Puppen-Bilder (4 Stufen, die Drehpuppe in 8 Drehstellungen) ----------
-const PW=48,PH=66,AX=24,AY=58,FRAMES=8,img=[];
+const PW=48,PH=66,AX=24,AY=58,FRAMES=8,img=[],PK=.42;// PK: Puppen passend zu den kleinen Figuren verkleinert
 function mk(){const c=document.createElement('canvas');c.width=PW;c.height=PH;const g=c.getContext('2d');g.imageSmoothingEnabled=false;return [c,g,(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}];}
 function fuss(g,R){g.fillStyle='rgba(15,20,10,.3)';g.beginPath();g.ellipse(AX,AY,11,4,0,0,TAU);g.fill();R(AX-7,AY-3,14,3,'#4a3420');R(AX-5,AY-4,10,2,'#6b4a2c');}
 function stroh(){const [c,g,R]=mk();fuss(g,R);R(AX-2,22,4,34,'#5e4229');R(AX-1,22,2,34,'#7a5a39');R(AX-13,27,26,3,'#5e4229');
@@ -59,7 +59,7 @@ for(let r=1;r<=4;r++){const h=HOCH(r),c=document.createElement('canvas');c.width
  g.fillStyle='rgba(42,32,25,.35)';for(let y=h%6+4;y<h;y+=6){g.fillRect(2,16+y+1,1,1);g.beginPath();g.moveTo(1,17+y);g.lineTo(32,33+y);g.lineTo(63,17+y);g.lineWidth=.6;g.strokeStyle='rgba(42,32,25,.3)';g.stroke();}
  trib[r]=c;}
 // Sitzplätze eines Tribünenfeldes (Versatz zur Feldmitte)
-const SITZ=[[-12,-3],[4,-9],[-4,5],[12,-1]];
+const SITZ=[[-16,-2],[-6,-7],[4,-11],[-7,4],[3,0],[13,-5],[2,9],[13,4]];// 8 Plätze: zwei Bankreihen
 
 // ---------- Trainingsfelder, Puppen, Arenen ----------
 let puppen=new Map(),felder=[],arenen=[],tribs=[],clock=0;const rang=new Uint8Array(N*N),neu=new Map(),fx=[],text=[];// neu: Feld → Startzeit der Aufklapp-Animation
@@ -130,15 +130,15 @@ function zeichneTrib(ctx){const h=HOCH(this.r);ctx.drawImage(trib[this.r],this.x
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const mini=W.mini;
  for(const t of tribs){if(t.x<view.x0-40||t.x>view.x1+40||t.y<view.y0-30||t.y>view.y1+70)continue;if(!t.draw)t.draw=zeichneTrib;if(t.sy==null)t.sy=t.y;items.push(t);}
  for(const d of puppen.values()){if(d.x<view.x0-30||d.x>view.x1+30||d.y<view.y0-10||d.y>view.y1+70)continue;const age=clock-d.born;if(age<0)continue;
-  items.push({y:d.y,draw:ctx=>{if(mini){ctx.fillStyle='#5e4229';ctx.fillRect(d.x-1,d.y-14,3,14);ctx.fillStyle=['#d9b85a','#9b7848','#9aa5ac','#c9483e'][d.stufe];ctx.fillRect(d.x-4,d.y-16,9,8);return;}
+  items.push({y:d.y,draw:ctx=>{if(mini){ctx.fillStyle='#5e4229';ctx.fillRect(d.x-1,d.y-9,2,9);ctx.fillStyle=['#d9b85a','#9b7848','#9aa5ac','#c9483e'][d.stufe];ctx.fillRect(d.x-3,d.y-11,6,5);return;}
    const fr=img[d.stufe],im=fr[fr.length>1?Math.floor((clock*5+d.seed*8)%fr.length):0];let s=1,dy=0;
    if(age<.55){const u=age/.55;s=u<.6?u/.6*1.18:1.18-(u-.6)/.4*.18;dy=-Math.sin(Math.min(1,u*1.4)*Math.PI)*14;}
    const up=clock-d.up;if(up>=0&&up<.9){s*=1+Math.sin(up/.9*Math.PI)*.22;}
-   ctx.save();ctx.translate(Math.round(d.x),Math.round(d.y+dy));ctx.scale(s,s);ctx.drawImage(im,-AX,-AY);
+   ctx.save();ctx.translate(Math.round(d.x),Math.round(d.y+dy*PK));ctx.scale(s*PK,s*PK);ctx.imageSmoothingEnabled=W.detail;ctx.drawImage(im,-AX,-AY);
    if(up>=0&&up<.9){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=(1-up/.9)*.8;ctx.drawImage(im,-AX,-AY);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
     for(let i=0;i<7;i++){const a=i/7*TAU+d.seed*6,r=10+up*34,x=Math.cos(a)*r,y=-30+Math.sin(a)*r*.6-up*18,z=3*(1-up/.9);ctx.fillStyle=i%2?'#fff2b0':'#ffd65a';ctx.fillRect(x-z/2,y-z*1.5,z,z*3);ctx.fillRect(x-z*1.5,y-z/2,z*3,z);}}
-   ctx.restore();
-   if(age>=.3&&age<1&&!d.dust){d.dust=1;for(let i=0;i<9;i++)fx.push({x:d.x,y:d.y,vx:Math.cos(i/9*TAU)*38,vy:Math.sin(i/9*TAU)*14-8,t:0});}}});}};
+   ctx.restore();ctx.imageSmoothingEnabled=false;
+   if(age>=.3&&age<1&&!d.dust){d.dust=1;for(let i=0;i<9;i++)fx.push({x:d.x,y:d.y,vx:Math.cos(i/9*TAU)*18,vy:Math.sin(i/9*TAU)*7-4,t:0});}}});}};
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);
  // frisch gebaute Felder: klappen der Reihe nach auf
  for(const [k,t0] of neu){const a=clock-t0;if(a>.5){neu.delete(k);continue;}if(a<0){raute(ctx,k,'rgba(40,30,18,.55)');continue;}raute(ctx,k,`rgba(255,240,190,${(.75*(1-a/.5)).toFixed(3)})`,`rgba(255,214,90,${(1-a/.5).toFixed(3)})`);}
