@@ -12,7 +12,8 @@ try{document.fonts&&['400','700'].forEach(w=>document.fonts.load(w+" 16px 'Couri
 // =====================================================================================================
 (()=>{
 const until=(test,ms=80)=>new Promise(res=>{const id=setInterval(()=>{try{if(test()){clearInterval(id);res();}}catch(e){}},ms);});
-until(()=>window.MG?.ui&&window.MG.trader&&window.MG.ludus&&window.ArenaArt&&window.MG.faceShot&&window.MG.weaponArt&&window.ArenaUI&&window.MG.boxGame).then(init);
+// Arena Theory 2.0 (window.AT2) lädt das Faustkampf-Modul nicht; boxGame wird hier nur mit ?. benutzt, also dort nicht darauf warten (welt-npc.js braucht drawOro)
+until(()=>window.MG?.ui&&window.MG.trader&&window.MG.ludus&&window.ArenaArt&&window.MG.faceShot&&window.MG.weaponArt&&window.ArenaUI&&(window.MG.boxGame||window.AT2)).then(init);
 function init(){
 const M=window.MG,S=()=>M.s,ART=window.ArenaArt,$=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cl=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,k)=>a+(b-a)*cl(k,0,1),ease=k=>{k=cl(k,0,1);return k*k*(3-2*k);},hr=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);};

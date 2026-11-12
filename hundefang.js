@@ -97,6 +97,7 @@ function rabiesFoam(c,x,y,K,dir,t){const u=K*.6,hh=rabies().height/180,X=v=>x+v*
  const len=(1.6+1.6*(.5+.5*Math.sin(t*2.3)))*u;px(c,mx+dir*.6*u,my+1.4*u,.9*u,len,W1);const q=(t*.6)%1;if(q<.75)px(c,mx+dir*.6*u,my+1.6*u+len+q*q*14*u,.9*u,.9*u,W1);}
 const FOAM={x:1.4,y:69.5};
 function drawRabies(c,x,y,K,dir,t,extra={}){rabiesCloak(c,x,y,K,dir,t,false);fig(c,rabies(),x,y,K,dir,extra);rabiesCloak(c,x,y,K,dir,t,true);rabiesFoam(c,x,y,K,dir,t);rabiesFlies(c,x,y,K,t);}
+M.drawRabies=drawRabies;// für die Rasterkarte (welt-npc.js): Rabies im Beastrium, nur Zeichnen
 function rabiesFace(cv,mood='grin'){face(cv,rabies(),mood,{zoom:1.05});}
 // Große, lebendige Großaufnahme (wie beim Medicus): Kamera schwenkt, Mund bewegt sich, wenn er spricht
 function rabiesLive(id,mood='grin'){const c=$(id);if(!c||c._live)return;c._live=true;let t=0;const tick=()=>{if(!c.isConnected)return;t+=1/30;try{M.faceShot.paint(c.getContext('2d'),c.width,c.height,{g:rabies(),team:0,mood:(t%7)<1.4?'confident':mood,yaw:Math.sin(t*.55)*.32,zoom:1.12},t+2);}catch(e){}setTimeout(()=>requestAnimationFrame(tick),33);};tick();}
