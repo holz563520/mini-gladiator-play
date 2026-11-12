@@ -16,10 +16,12 @@
 //   Immer dabei: Esse mit Blasebalg, Amboss auf Hammerblock, Löschtrog, Schleifstein, Lager für Erz, Kohle, Holz und Barren,
 //   Waffenständer, Werkbänke, Werkzeugwände. Feuer flackert, Funken sprühen an Amboss und Schleifstein, Rauch aus den Essen.
 // · Beastrium in drei Klassen (Thomas 12.11.), ganz überdacht, voller Metallkäfige (zwei Reihen Käfige, eine Reihe Gang),
-//   in jedem Käfig ein Tier, Stroh und Blutknochen; außen Gitterfenster mit Augen dahinter wie im alten Beastrium:
-//     0 Knochengrube           Lehm, Strohdach mit Geier, rostige verbogene Käfige, räudige Hunde, Hähne, Eber, Gerippe
-//     1 Beastrium              Bruchstein, Schindeldach mit Wetterhahn, Eisenkäfige: Hunde, Wölfe, Eber, Hähne, ein Bär
-//     2 Kaiserliche Menagerie  Marmor, goldene Gitter, Löwen, Tiger, Bären; goldener Löwe auf dem Dach
+//   Stroh und Blutknochen in jedem Käfig; außen Gitterfenster mit Augen dahinter wie im alten Beastrium. In den Käfigen sitzen nur
+//   die Tiere, die es wirklich gibt (lebende Hähne und Hunde aus dem Spielstand, dazu Testhahn und Testhund), gezeichnet wie in
+//   der Arena (Hahn: CF.drawRoosterSide, Hund: DOG.portrait), lebendig; die übrigen Käfige sind leer:
+//     0 Knochengrube           Lehm, Strohdach mit Geier, rostige verbogene Käfige
+//     1 Beastrium              Bruchstein, Schindeldach mit Wetterhahn, Eisenkäfige
+//     2 Kaiserliche Menagerie  Marmor, goldene Gitter, Purpurkissen; goldener Löwe auf dem Dach
 //   Im Gang: Futtereimer (mit Bein), Knochenhaufen, Blutlachen, Fleischhaken, Wassertrog, Stroh. Fliegen über dem Blut.
 // · Kaserne in drei Klassen (Thomas 12.11.), ganz überdacht, voller Waffenständer (zwei Reihen Ständer, eine Reihe Gang):
 //     0 Bretterbude  Lehm, wacklige Ständer, rostige blutige Klingen, Helme mit Loch, Pfeil im Schild; Helm auf dem Pfahl am Dach
@@ -318,40 +320,9 @@ function maleSchmiede(h,offen){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1
  return {c,ox,oy};}
 
 // ---------- Beastrium ----------
-// Welches Tier in welchem Käfig: fest je Feld (gleiches Feld, gleiches Tier), je Klasse eigene Arten; manche Käfige hat nur noch der Vormieter
+// Je Käfig ein fester Zufallswert s (Inhalt: Knochen, Schädel, Helm). Welches Tier drin sitzt, entscheidet belegen().
 const TIERE=[['hund','hund','hund','hahn','eber','gerippe'],['hund','wolf','hund','eber','hahn','wolf','baer','hund'],['loewe','tiger','baer','loewe','wolf','tiger','loewe']];
 function tierFuer(k,st){const x=k%N,y=(k/N)|0,L=TIERE[st],a=L[(W.h2(x,y,90)*L.length)|0],r=W.h2(x,y,91);return {art:a,pose:r<.4?'steht':r<.7?'liegt':'nagt',face:W.h2(x,y,92)<.5?1:-1,s:W.h2(x,y,93)};}
-// Farben je Tier: Körper b, dunkel d, hell l, Mähne m; k schwarz, w Knochen, r Blut, y Horn/Schnabel
-const FELL={hund:[[[120,96,70],[84,64,46],[196,150,140]],[[96,92,86],[60,58,54],[188,140,132]]],// räudig (Klasse 0): kahle rosa Stellen
- hund1:[[[132,92,56],[86,58,34],[196,168,128]],[[64,58,54],[36,32,30],[150,140,128]],[[176,150,110],[120,96,64],[226,210,180]]],
- wolf:[[[128,128,126],[84,84,86],[196,194,186]],[[98,96,94],[60,60,62],[170,168,160]]],eber:[[[82,64,50],[52,40,32],[150,120,100]]],
- hahn:[[[232,226,210],[150,48,36],[214,170,60]],[[176,96,44],[44,60,64],[214,170,60]]],baer:[[[104,72,46],[66,44,28],[150,112,76]]],
- loewe:[[[204,160,92],[150,106,56],[232,206,160],[118,72,34]]],tiger:[[[214,124,48],[150,82,30],[236,226,206]]]};
-const SCHABLONE={// [dx,dy,w,h,Farbe] mit Blick nach rechts, Boden bei dy=0
- hund_steht:[[-5,-3,1,3,'d'],[-3,-3,1,3,'d'],[3,-3,1,3,'d'],[5,-3,1,3,'d'],[-6,-7,12,4,'b'],[-4,-4,8,1,'l'],[5,-10,4,4,'b'],[9,-8,3,2,'b'],[11,-8,1,1,'k'],[5,-11,2,2,'d'],[7,-9,1,1,'k'],[-8,-9,2,1,'b'],[-7,-8,1,1,'b']],
- hund_liegt:[[-6,-4,12,3,'b'],[-4,-1,8,1,'l'],[5,-6,4,3,'b'],[9,-5,3,2,'b'],[11,-5,1,1,'k'],[5,-7,2,2,'d'],[7,-6,1,1,'k'],[6,-1,6,1,'d'],[-9,-2,3,1,'b']],
- wolf_steht:[[-5,-3,1,3,'d'],[-3,-3,1,3,'d'],[3,-3,1,3,'d'],[5,-3,1,3,'d'],[-6,-7,12,4,'b'],[-4,-4,8,1,'l'],[5,-10,4,4,'b'],[9,-8,4,2,'b'],[12,-8,1,1,'k'],[5,-12,1,2,'d'],[7,-12,1,2,'d'],[7,-9,1,1,'y'],[-9,-7,3,1,'b'],[-10,-6,1,2,'d'],[-6,-8,6,1,'d']],
- wolf_liegt:[[-6,-4,12,3,'b'],[-6,-5,6,1,'d'],[5,-6,4,3,'b'],[9,-5,4,2,'b'],[12,-5,1,1,'k'],[5,-8,1,2,'d'],[7,-8,1,2,'d'],[7,-6,1,1,'y'],[6,-1,6,1,'d'],[-10,-2,4,1,'b']],
- eber_steht:[[-5,-3,2,3,'d'],[3,-3,2,3,'d'],[-6,-8,12,5,'b'],[-5,-9,9,1,'d'],[5,-8,4,5,'b'],[9,-6,2,3,'l'],[10,-7,1,1,'w'],[7,-7,1,1,'k'],[5,-9,1,1,'d'],[-7,-7,1,2,'d']],
- eber_liegt:[[-6,-5,12,4,'b'],[-5,-6,9,1,'d'],[5,-5,4,4,'b'],[9,-3,2,2,'l'],[10,-4,1,1,'w'],[7,-4,1,1,'k'],[-7,-4,1,2,'d']],
- hahn_steht:[[0,-2,1,2,'y'],[2,-2,1,2,'y'],[-2,-6,5,4,'b'],[-4,-9,2,4,'d'],[-5,-10,1,3,'d'],[2,-9,2,3,'b'],[2,-10,2,1,'r'],[4,-7,1,1,'r'],[4,-8,1,1,'y'],[3,-8,1,1,'k']],
- baer_steht:[[-6,-4,3,4,'d'],[3,-4,3,4,'d'],[-7,-11,14,7,'b'],[-5,-12,9,1,'b'],[6,-11,5,5,'b'],[6,-12,2,1,'d'],[10,-9,2,2,'l'],[11,-9,1,1,'k'],[8,-10,1,1,'k']],
- baer_liegt:[[-7,-6,14,5,'b'],[-5,-7,9,1,'b'],[6,-6,5,4,'b'],[6,-7,2,1,'d'],[10,-4,2,2,'l'],[11,-4,1,1,'k'],[8,-5,1,1,'k'],[6,-1,6,1,'d']],
- loewe_steht:[[-5,-4,1,4,'b'],[-3,-4,1,4,'b'],[3,-4,1,4,'b'],[5,-4,1,4,'b'],[-6,-8,12,4,'b'],[-4,-5,8,1,'l'],[4,-12,6,7,'m'],[7,-10,4,4,'b'],[10,-8,1,1,'k'],[8,-9,1,1,'k'],[-8,-8,2,1,'b'],[-9,-7,1,2,'b'],[-10,-6,1,1,'m']],
- loewe_liegt:[[-6,-5,12,3,'b'],[-4,-2,8,1,'l'],[4,-9,6,6,'m'],[7,-7,4,3,'b'],[10,-6,1,1,'k'],[8,-6,1,1,'k'],[7,-1,5,1,'b'],[-9,-3,3,1,'b'],[-10,-3,1,1,'m']],
- tiger_steht:[[-5,-4,1,4,'b'],[-3,-4,1,4,'b'],[3,-4,1,4,'b'],[5,-4,1,4,'b'],[-6,-8,12,4,'b'],[-4,-5,8,1,'l'],[-4,-8,1,3,'k'],[-1,-8,1,3,'k'],[2,-8,1,3,'k'],[5,-10,5,4,'b'],[5,-11,1,1,'b'],[8,-11,1,1,'b'],[8,-8,2,1,'l'],[9,-9,1,1,'k'],[7,-9,1,1,'y'],[-8,-8,2,1,'b'],[-9,-7,1,1,'k'],[-10,-6,1,2,'b']],
- tiger_liegt:[[-6,-5,12,3,'b'],[-4,-2,8,1,'l'],[-4,-5,1,2,'k'],[-1,-5,1,2,'k'],[2,-5,1,2,'k'],[5,-7,5,4,'b'],[5,-8,1,1,'b'],[8,-8,1,1,'b'],[8,-5,2,1,'l'],[9,-6,1,1,'k'],[7,-6,1,1,'y'],[7,-1,5,1,'b'],[-10,-2,4,1,'b'],[-8,-2,1,1,'k']]};
-const TS=1.5;
-function tier(g,px,py,t,st){if(t.art==='gerippe'){g.fillStyle='#e8e2d0';for(let i=0;i<5;i++)g.fillRect(Math.round(px-4+i*2),Math.round(py-4),1,3);g.fillRect(Math.round(px-5),Math.round(py-4),10,1);g.fillRect(Math.round(px+6),Math.round(py-5),3,3);g.fillStyle='#2a2019';g.fillRect(Math.round(px+7),Math.round(py-4),1,1);return;}
- const art=t.art==='hund'&&st>0?'hund1':t.art,F=FELL[art]||FELL.hund1,f=F[(t.s*F.length)|0],pose=t.art==='hahn'?'steht':t.pose==='nagt'?'liegt':t.pose,L=SCHABLONE[t.art+'_'+pose]||SCHABLONE[t.art+'_steht']||SCHABLONE.hund_steht;
- const col={b:sh(f[0],1),d:sh(f[1],1),l:sh(f[2],1),m:sh(f[3]||f[1],1),k:'#1a120c',w:'#e8e2d0',r:'#8e1c18',y:'#d9a838'},o=t.face;
- g.fillStyle='rgba(20,14,8,.32)';g.fillRect(Math.round(px-12),Math.round(py-1),24,3);
- // anderthalbfach groß, mit dunklem Umriss, damit das Tier vor Stroh und Gittern lesbar bleibt
- g.save();g.translate(Math.round(px),Math.round(py));g.scale(TS,TS);px=0;py=0;g.fillStyle='#1a120c';for(const [ox,oy] of [[-.7,0],[.7,0],[0,-.7],[0,.7]])for(const [dx,dy,w,h] of L)g.fillRect((o>0?dx:-dx-w)+ox,dy+oy,w,h);
- for(const [dx,dy,w,h,c] of L){g.fillStyle=col[c];g.fillRect(o>0?px+dx:px-dx-w,py+dy,w,h);}
- if(t.art==='hund'&&st===0){g.fillStyle=col.l;g.fillRect(px-2,py+(pose==='liegt'?-4:-7),2,1);}// kahle Stelle
- if(t.pose==='nagt'&&t.art!=='hahn'){const bx=o>0?px+10:px-15;g.fillStyle='#e8e2d0';g.fillRect(bx,py-2,5,1);g.fillRect(bx,py-3,1,3);g.fillStyle='#8e1c18';g.fillRect(bx+4,py-3,1,3);g.fillRect(bx+1,py-1,3,1);}
- if(st===2&&t.art!=='wolf'){g.fillStyle=sh(GOLD,1.05);const nx=t.art==='loewe'?5:4,ny=pose==='liegt'?-4:-7;g.fillRect(o>0?px+nx:px-nx-2,py+ny,2,1);}g.restore();}// goldenes Halsband
 // Bruchsteinmauer wie im alten Beastrium (Wandkoordinaten: u 0…1, v Bildpunkte)
 function bruchstein(R,h,hell,z,voll){R(0,0,1,h,sh([85,81,63],hell));for(let v=0,r=0;v<h-1;v+=5,r++)for(let u=-(r%2)*.11,i=0;u<1;u+=.22,i++){const a=Math.max(0,u+.01),b=Math.min(1,u+.21);if(b>a)R(a,v+.6,b-a,4,sh(z(i+r*9,61)>.5?[138,132,104]:[124,119,93],hell*(.94+z(i+r*9,62)*.12)));}
  if(voll){R(0,h-2.5,1,2.5,sh([96,90,72],hell));for(let i=0;i<3;i++)R(.1+z(i,63)*.75,4+z(i,64)*(h-12),.14,2.4,sh([96,110,62],hell*.9));}// Moos
@@ -373,7 +344,7 @@ const schmuckB=(st,seed)=>(R,h)=>{if(h<20)return;const ei=st===0?'#7a5444':st===
 function kaefigMalen(g,x,y,st,t,h){const s=t.s,ei=st===0?[128,78,52]:st===1?[70,72,78]:GOLD,H=st===2?22:19,x0=x+.1,y0=y+.1,x1=x+.9,y1=y+.9,n=st===2?5:6,col=sh(ei,1),dk=sh(ei,.62);
  if(st===0){oval(g,x+.5,y+.55,0,15,7,'rgba(70,40,28,.55)');if(s<.6)oval(g,x+.3+s*.2,y+.7,0,5,2.2,'rgba(122,22,18,.7)');}// Dreck und Blut
  else{flach(g,x0+.04,y0+.04,x1-.04,y1-.04,.3,sh(STROH,.82));g.strokeStyle=sh(STROH,1.08);g.lineWidth=1;for(let i=0;i<7;i++){const p=pt(x0+.08+W.h2(i,x+y,94)*.7,y0+.08+W.h2(i,x-y,95)*.7,.5);g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(p[0]+3,p[1]-1);g.stroke();}if(s<.5)oval(g,x+.32,y+.64,.5,4,1.8,'rgba(122,22,18,.7)');}
- if(st===2&&t.art!=='wolf')flach(g,x+.22,y+.22,x+.62,y+.62,.6,sh(PURPUR,1),sh(GOLD,1));// Kissen für die Raubkatze
+ if(st===2)flach(g,x+.22,y+.22,x+.62,y+.62,.6,sh(PURPUR,1),sh(GOLD,1));// Kissen für die Raubkatze
  const stab=(ax,ay,bx,by,c,lw)=>{g.strokeStyle=c;g.lineWidth=lw;g.beginPath();for(let i=0;i<=n;i++){const u=i/n,X=ax+(bx-ax)*u,Y=ay+(by-ay)*u,p=pt(X,Y,0),q=pt(X,Y,H);let ox=0;if(st===0&&W.h2(x*3+i,y+ax*7,96)<.14)ox=2;g.moveTo(Math.round(p[0])+.5,p[1]);g.quadraticCurveTo(p[0]+ox*2,(p[1]+q[1])/2,Math.round(q[0])+.5,q[1]);}g.stroke();};
  const quer=(ax,ay,bx,by,z,c)=>{const p=pt(ax,ay,z),q=pt(bx,by,z);g.strokeStyle=c;g.lineWidth=1;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.stroke();};
  // hinten: Gitter an den beiden hinteren Seiten
@@ -384,16 +355,19 @@ function kaefigMalen(g,x,y,st,t,h){const s=t.s,ei=st===0?[128,78,52]:st===1?[70,
  kn(x+.2,y+.3,x+.32,y+.22,true);if(s>.3)kn(x+.7,y+.76,x+.8,y+.66,s>.6);
  if(s>.78){const p=pt(x+.26,y+.72,2);g.fillStyle='#e8e2d0';g.beginPath();g.ellipse(p[0],p[1],3,2.6,0,0,TAU);g.fill();g.fillStyle='#2a2019';g.fillRect(Math.round(p[0])-2,Math.round(p[1])-1,1,1);g.fillRect(Math.round(p[0])+1,Math.round(p[1])-1,1,1);}// Schädel
  else if(s<.12){const p=pt(x+.28,y+.7,1);g.fillStyle=sh(BRONZE,1);g.beginPath();g.ellipse(p[0],p[1]-1,4,2.6,0,Math.PI,TAU);g.fill();g.fillRect(Math.round(p[0])-4,Math.round(p[1])-1,8,1);}// Helm des Vormieters
- // das Tier
- const c=pt(x+.52,y+.58,0);tier(g,c[0],c[1],t,st);if(t.art!=='gerippe'&&t.art!=='hahn'&&s>.45)h.mist.push([x+.3,y+.6]);
- // vorne: Gitter an den beiden vorderen Seiten, Querstreben, Deckel, Tür mit Schloss
+ kaefigVorne(g,x,y,st,s);}
+// Vordere Gitter, Deckel und Schloss eines Käfigs. Auch über ein lebendig gezeichnetes Tier noch einmal gemalt (Tier steht hinter dem Gitter).
+function kaefigVorne(g,x,y,st,s){const ei=st===0?[128,78,52]:st===1?[70,72,78]:GOLD,H=st===2?22:19,x0=x+.1,y0=y+.1,x1=x+.9,y1=y+.9,n=st===2?5:6,col=sh(ei,1),dk=sh(ei,.62);
+ const stab=(ax,ay,bx,by,c,lw)=>{g.strokeStyle=c;g.lineWidth=lw;g.beginPath();for(let i=0;i<=n;i++){const u=i/n,X=ax+(bx-ax)*u,Y=ay+(by-ay)*u,p=pt(X,Y,0),q=pt(X,Y,H);let ox=0;if(st===0&&W.h2(x*3+i,y+ax*7,96)<.14)ox=2;g.moveTo(Math.round(p[0])+.5,p[1]);g.quadraticCurveTo(p[0]+ox*2,(p[1]+q[1])/2,Math.round(q[0])+.5,q[1]);}g.stroke();};
+ const quer=(ax,ay,bx,by,z,c)=>{const p=pt(ax,ay,z),q=pt(bx,by,z);g.strokeStyle=c;g.lineWidth=1;g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.stroke();};
  stab(x0,y1,x1,y1,col,1);stab(x1,y1,x1,y0,col,1);quer(x0,y1,x1,y1,H*.5,col);quer(x1,y1,x1,y0,H*.5,col);quer(x0,y1,x1,y1,1,col);quer(x1,y1,x1,y0,1,col);
  for(const z of [H]){quer(x0,y0,x1,y0,z,dk);quer(x0,y0,x0,y1,z,dk);quer(x0,y1,x1,y1,z,col);quer(x1,y1,x1,y0,z,col);}
  for(let i=1;i<4;i++)quer(x0+(x1-x0)*i/4,y0,x0+(x1-x0)*i/4,y1,H,dk);
  const lp=pt(x+.5,y1,H*.48);g.fillStyle=st===2?sh(GOLD,1.2):st===1?'#3a3a3a':'#6a4434';g.fillRect(Math.round(lp[0])-1,Math.round(lp[1])-1,3,3);
  if(st===2){for(const [ax,ay] of [[x0,y1],[x1,y1],[x1,y0]]){const p=pt(ax,ay,H);g.fillStyle=sh(GOLD,1.15);g.fillRect(Math.round(p[0])-1,Math.round(p[1])-3,2,3);}}// goldene Knäufe
  if(st===0&&s>.55){const p=pt(x1,y+.5,H*.7);g.fillStyle='#7a1a16';g.fillRect(Math.round(p[0])-1,Math.round(p[1]),2,4);}// Blut am Gitter
- if(t.echt){const p=pt(x+.5,y1,H*.78);g.fillStyle='#2a1c12';g.fillRect(Math.round(p[0])-8,Math.round(p[1])-4,17,8);g.fillStyle='#f4d37a';g.fillRect(Math.round(p[0])-7,Math.round(p[1])-3,15,6);g.fillStyle='#2a1c12';g.fillRect(Math.round(p[0])-5,Math.round(p[1])-1,11,1);g.fillRect(Math.round(p[0])-5,Math.round(p[1])+1,7,1);}}// Namensschild: echtes Tier, antippen
+}
+function schildchen(g,x,y,st){const p=pt(x+.3,y+.9,3);g.fillStyle='#2a1c12';g.fillRect(Math.round(p[0])-5,Math.round(p[1])-3,11,6);g.fillStyle='#f4d37a';g.fillRect(Math.round(p[0])-4,Math.round(p[1])-2,9,4);g.fillStyle='#2a1c12';g.fillRect(Math.round(p[0])-3,Math.round(p[1]),7,1);}// Namensschild unten am Gitter: hier sitzt ein echtes Tier, antippen
 // Kram im Gang: Futtereimer mit Bein, Knochenhaufen, Blutlache mit Schleifspur, Fleischhaken, Wassertrog, Stroh; Kaiserlich: goldene Futterschale, Feuerschale
 function kramB(g,x,y,seed,st,h){const a=S.lanista?.appearance||{};
  if(seed<.16){kiste(g,x+.36,y+.36,x+.64,y+.64,0,9,st===2?BRONZE:[96,84,70]);flach(g,x+.38,y+.38,x+.62,y+.62,9.1,'#5a1410');const p=pt(x+.52,y+.46,9);g.fillStyle=hex(a.skin||'#d9ac82');g.fillRect(Math.round(p[0])-1,Math.round(p[1])-9,3,9);g.fillStyle='#6e4a2a';g.fillRect(Math.round(p[0])-2,Math.round(p[1])-11,5,3);g.fillStyle='#8e1c18';g.fillRect(Math.round(p[0])-1,Math.round(p[1]),3,1);h.mist.push([x+.5,y+.5]);}// Futtereimer, ein Bein mit Sandale schaut heraus
@@ -502,10 +476,26 @@ function lagerMalen(ctx,h,a){ctx.globalAlpha=Math.min(1,a*1.5);const L=[];
 // (huehnerschule.js, ohne Schlachten), beim Hund Hundebild und Werte wie im Zwinger, im selben Rahmen. Nur Anzeige, kein Spielstand.
 let TT=null;
 function testTiere(){if(TT)return TT;TT={};try{TT.hahn=window.CF?.createRooster?.({seed:7031,minQuality:2,maxQuality:2});}catch(e){console.warn(e);}try{TT.hund=window.DOG?.create?.('mastiff',4242);if(TT.hund&&!TT.hund.name)TT.hund.name='Zerberus';}catch(e){console.warn(e);}return TT;}
-function echteRein(h){const tt=testTiere(),dx=h.door.k%N,dy=(h.door.k/N)|0,ks=[...h.kaefig.keys()].sort((a,b)=>Math.hypot(a%N-dx,((a/N)|0)-dy)-Math.hypot(b%N-dx,((b/N)|0)-dy));let i=0;
- for(const art of ['hahn','hund']){const R=tt[art],k=ks[i];if(!R||k==null)continue;i++;h.kaefig.set(k,{art,pose:'steht',face:1,s:.5,echt:art,R});h.echt=true;}}
-const echtAt=(h,tx,ty)=>{if(h.art!=='beast'||!h.echt)return null;const t=h.kaefig.get(ty*N+tx);return t?.echt?t:null;};
-function tierOeffnen(t){if(t.echt==='hahn'){const HS=window.HS;if(HS?.openDetail){HS.openDetail(t.R,{anim:true,nokill:true});return true;}return false;}return hundOeffnen(t.R);}
+// Nur Tiere, die wirklich da sind (Thomas 12.11.): lebende Hähne (Hühnerschule) und Hunde (Zwinger) aus dem Spielstand und die zwei
+// Testtiere. Sie werden der Reihe nach auf die Käfige verteilt (Beastrium des Ludus zuerst, dann nach Lage, Käfige nahe der Tür zuerst); leere Käfige bleiben leer.
+function tierListe(){const L=[];try{for(const R of window.HS?.alive?.()||[])L.push({art:'hahn',R});}catch{}for(const D of S.hundefang?.dogs||[])if(!D.dead)L.push({art:'hund',R:D});
+ const tt=testTiere();if(tt.hahn)L.push({art:'hahn',R:tt.hahn});if(tt.hund)L.push({art:'hund',R:tt.hund});return L;}
+let belegtT=0;
+function belegen(){const L=tierListe();let i=0;const imLudus=h=>W.bauAuf?.[h.door.k]>=0?0:1;for(const h of haeuser.filter(h=>h.art==='beast').sort((a,b)=>imLudus(a)-imLudus(b)||a.id-b.id)){const dx=h.door.k%N,dy=(h.door.k/N)|0,ks=[...h.kaefig.keys()].sort((a,b)=>Math.hypot(a%N-dx,((a/N)|0)-dy)-Math.hypot(b%N-dx,((b/N)|0)-dy));
+ for(const k of ks){const t=h.kaefig.get(k),neuT=L[i++]||null;if(t.tier?.R!==neuT?.R)t.tier=neuT?{...neuT,ph:Math.random()*9,face:Math.random()<.5?1:-1}:null;}}}
+// Hahn wie in der Arena (CF.drawRoosterSide in ein kleines Pixelbild), etwa achtmal je Sekunde neu
+const HAHNBILD=new Map();
+function hahnMalen(ctx,R,x,y,face,t){const CU=window.RoosterCloseup,CF=window.CF;if(!CU?.Sprite||!CF?.drawRoosterSide)return;let b=HAHNBILD.get(R);if(!b){b={sp:new CU.Sprite(80,70),last:-1,face:0};HAHNBILD.set(R,b);}
+ if(t-b.last>.12||b.face!==face){b.last=t;b.face=face;try{const P=b.sp.begin();P.setT(40,60,1,face,0,0,-14);CF.drawRoosterSide(P,R,{bob:Math.sin(t*6+R.height)*.3,blink:(t+R.height)%3.4<.12,peck:(t*.5+R.height)%5<.6?1:0},t*1000);b.sp.commit();}catch(e){}}
+ const k=21/(CF.WORLD?.roosterModelUnits||60)*Math.min(1.3,Math.max(.8,(R.height||45)/45));ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(0,1,6,2,0,0,TAU);ctx.fill();ctx.imageSmoothingEnabled=false;ctx.scale(k,k);ctx.drawImage(b.sp.cv,-40,-60);ctx.restore();}
+// Tiere in den Käfigen zeichnen (offenes Haus), danach das vordere Gitter darüber
+function tiereMalen(ctx,h,a,t){const L=[];for(const [k,c] of h.kaefig)if(c.tier)L.push([k,c]);if(!L.length)return;L.sort((A,B)=>(A[0]%N+((A[0]/N)|0))-(B[0]%N+((B[0]/N)|0)));ctx.globalAlpha=Math.min(1,a*1.5);
+ for(const [k,c] of L){const x=k%N,y=(k/N)|0,p=W.iso(x+.52,y+.6),z=c.tier,ph=Math.floor((t+z.ph)/4)%4,face=ph===3?-z.face:z.face;
+  try{if(z.art==='hahn')hahnMalen(ctx,z.R,p.x,p.y,face,t);else window.DOG?.portrait?.(ctx,z.R,{x:p.x,y:p.y,w:24+(z.R.height||70)*.1,mood:['focus','idle','proud','focus'][ph],face,t:t+z.ph});}catch(e){}
+  kaefigVorne(ctx,x,y,h.st,c.s);schildchen(ctx,x,y,h.st);}
+ ctx.globalAlpha=1;}
+const echtAt=(h,tx,ty)=>{if(h.art!=='beast')return null;const t=h.kaefig.get(ty*N+tx);return t?.tier?t.tier:null;};
+function tierOeffnen(t){if(t.art==='hahn'){const HS=window.HS;if(HS?.openDetail){HS.openDetail(t.R,{anim:true,nokill:true});return true;}return false;}return hundOeffnen(t.R);}
 let hd=null;
 function hundOeffnen(D){const DOG=window.DOG;if(!DOG?.portrait)return false;hundZu();const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  let I={};try{I=window.Begleithund?.info?.(D)||{};}catch{}const kw=I.kw??(()=>{try{return DOG.kw(D);}catch{return '?';}})(),hp=I.hp??(()=>{try{return Math.round(DOG.condHealth(D));}catch{return 100;}})(),sk=I.sk||1;
@@ -531,14 +521,14 @@ function hundZu(){if(!hd)return;cancelAnimationFrame(hd.raf);hd.v.remove();hd=nu
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&hd)hundZu();});
 // ---------- Bestand ----------
 let haeuser=[];const alt=new Map(),fest=new Set();
-function neu(){const seen=new Set(),out=[];let erstes=true;for(let k=0;k<N*N;k++){if(!STUFE.has(W.feld[k])||seen.has(k))continue;const t=gebiet(k);for(const q of t)seen.add(q);const h=plan(t),o=alt.get(h.id);if(h.art==='beast'&&erstes){erstes=false;echteRein(h);}h.sig=h.art+h.st+':'+h.tiles.join(',')+(h.echt?'+echt':'');h.offen=o?o.offen:0;h.mist=[];h.gang=[];if(o&&o.sig===h.sig){h.zu=o.zu;h.auf=o.auf;h.rauch=o.rauch;h.mist=o.mist;h.gang=o.gang;h.essenZu=o.essenZu;h.essenAuf=o.essenAuf;if(o.slots?.length){h.slots.forEach((sl,i)=>{const q=o.slots[i];if(q){sl.voll=q.voll;sl.ziel=q.ziel;}});h.trager=o.trager.map(tr=>({...tr,slot:tr.slot?h.slots[o.slots.indexOf(tr.slot)]:null}));h.zahl=o.zahl;}h.poster.forEach((p,i)=>p.text=o.poster[i]?.text||'');}if(h.poster.some(p=>!p.text))wuerfeln(h);out.push(h);}
- alt.clear();for(const h of out)alt.set(h.id,h);for(const id of fest)if(!alt.has(id))fest.delete(id);haeuser=out;}
+function neu(){const seen=new Set(),out=[];let erstes=true;for(let k=0;k<N*N;k++){if(!STUFE.has(W.feld[k])||seen.has(k))continue;const t=gebiet(k);for(const q of t)seen.add(q);const h=plan(t),o=alt.get(h.id);h.sig=h.art+h.st+':'+h.tiles.join(',');h.offen=o?o.offen:0;h.mist=[];h.gang=[];if(o&&o.sig===h.sig){h.zu=o.zu;h.auf=o.auf;h.rauch=o.rauch;h.mist=o.mist;h.gang=o.gang;h.essenZu=o.essenZu;h.essenAuf=o.essenAuf;if(o.slots?.length){h.slots.forEach((sl,i)=>{const q=o.slots[i];if(q){sl.voll=q.voll;sl.ziel=q.ziel;}});h.trager=o.trager.map(tr=>({...tr,slot:tr.slot?h.slots[o.slots.indexOf(tr.slot)]:null}));h.zahl=o.zahl;}h.poster.forEach((p,i)=>p.text=o.poster[i]?.text||'');}if(h.poster.some(p=>!p.text))wuerfeln(h);out.push(h);}
+ alt.clear();for(const h of out)alt.set(h.id,h);for(const id of fest)if(!alt.has(id))fest.delete(id);haeuser=out;belegen();}
 const hausAt=(tx,ty)=>haeuser.find(h=>tx>=h.bx0&&tx<=h.bx1&&ty>=h.by0&&ty<=h.by1&&h.has(tx,ty));
 // Maus über dem Haus öffnet das Dach
 let maus=null;W.canvas.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'){maus=null;return;}const r=W.canvas.getBoundingClientRect();maus={sx:e.clientX-r.left,sy:e.clientY-r.top};});W.canvas.addEventListener('pointerleave',()=>{maus=null;});
 let last=performance.now(),spruch=null;const OFFEN_AB=1.5;
 function zeichne(ctx){const h=this.h;if(h.art==='kaserne'){const n=performance.now(),dt=Math.min(.1,(n-(h.tT||n))/1000);h.tT=n;tragen(h,dt);}const mal=h.art==='schmiede'?maleSchmiede:male;if(!h.zu)h.zu=mal(h,false);const a=h.offen,t=performance.now()/1000;
- if(a>.01){if(!h.auf)h.auf=mal(h,true);ctx.drawImage(h.auf.c,h.auf.ox,h.auf.oy);if(h.art==='kaserne'&&a>.3&&!W.mini)lagerMalen(ctx,h,a);
+ if(a>.01){if(!h.auf)h.auf=mal(h,true);ctx.drawImage(h.auf.c,h.auf.ox,h.auf.oy);if(h.art==='beast'&&a>.3&&!W.mini)tiereMalen(ctx,h,a,t);if(h.art==='kaserne'&&a>.3&&!W.mini)lagerMalen(ctx,h,a);
   if((h.st===0||h.art==='beast')&&a>.5&&!W.mini){// Ratten huschen durch die Gänge, Fliegen kreisen über Haufen, Eimer und Blut
    const G=h.gang;if(h.st===0&&G.length>1)for(let i=0;i<Math.min(6,1+(h.n>>3));i++){const k0=G[(i*7)%G.length],k1=G[(i*13+3)%G.length],u=(Math.sin(t*(.5+i*.13)+i*2)+1)/2,x=k0%N+.5+((k1%N)-(k0%N))*u,y=((k0/N)|0)+.5+(((k1/N)|0)-((k0/N)|0))*u,p=W.iso(x,y),d=Math.cos(t*(.5+i*.13)+i*2)>0?1:-1;
     ctx.fillStyle='#2e2822';ctx.fillRect(Math.round(p.x)-2,Math.round(p.y)-2,5,2);ctx.fillRect(Math.round(p.x)+(d>0?2:-3),Math.round(p.y)-3,2,2);ctx.fillStyle='#8a6a60';ctx.fillRect(Math.round(p.x)+(d>0?-5:3),Math.round(p.y)-1,3,1);}
@@ -556,7 +546,7 @@ function funken(ctx,h,a,t){ctx.globalCompositeOperation='lighter';
  for(const [L,w] of [[h.essenZu,1-a],[h.essenAuf,a]]){if(!L||w<.05)continue;for(const e of L)for(let i=0;i<4;i++){const u=((t*.3+i/4+e.x*.01)%1),r=2+u*6;ctx.globalAlpha=w*(1-u)*.55;ctx.fillStyle=u<.15?'#6a625a':'#cfc9c0';ctx.fillRect(Math.round(e.x+Math.sin(u*5+i)*3+u*7-r/2),Math.round(e.y-u*30-r/2),Math.round(r),Math.round(r));}}
  ctx.globalAlpha=1;}
 const bildAt=(h,tx,ty)=>h.poster.find(p=>p.k===ty*N+tx);
-const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=performance.now(),dt=Math.min(.1,(now-last)/1000);last=now;if(!haeuser.length)return;
+const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=performance.now(),dt=Math.min(.1,(now-last)/1000);last=now;if(!haeuser.length)return;if(now-belegtT>1000){belegtT=now;belegen();}
  const mw=maus&&!B.mode?W.toWorld(maus.sx,maus.sy):null,mt=mw&&W.bodenPunkt(mw.x,mw.y),ct=W.cam.s>=1.5?W.bodenPunkt(W.cam.x,W.cam.y+14):null;
  const hm=mt&&hausAt(Math.floor(mt.tx),Math.floor(mt.ty)),hc=ct&&hausAt(Math.floor(ct.tx),Math.floor(ct.ty));
  if(spruch){spruch.t-=dt;if(spruch.t<=0)spruch=null;}

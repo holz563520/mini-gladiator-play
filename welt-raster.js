@@ -71,7 +71,8 @@ const B_=window.WeltNatur?.BIOM||{KERN:0,WALD:1,WUESTE:2,DSCHUNGEL:3,SUMPF:4},bi
 // Wasser steht überall auf WL; ein Feld, das tiefer reicht, ist Gewässer (feld = FLUSS, darunter grund).
 const HZ=8,WL=-1,V=N+1,hc=new Int8Array(N*N*4),grund=new Uint8Array(N*N),eben=new Uint8Array(N*N),wy=new Int16Array(N).fill(WEG_TY),prof=new Int8Array(V),bruecke=new Uint8Array(N);let HMAX=0,HMIN=0;
 const WEG_L=O-10,WEG_R=O+160;// dazwischen läuft der Weg gerade (Ludus-Gelände, Besucher)
-const ebenR=(x,y)=>Math.hypot(x-O-75,(y-O-46)*1.25)+(vn(x/9,y/9,31)-.5)*10,EBEN=64;// Ludus-Gelände: ebenR < EBEN
+// Ludus-Gelände: ebenR < EBEN, eben und Wiese. Thomas 12.11.: Freifläche um Arena und Ludus viel größer (vorher Radius 64 um 75/46)
+const ebenR=(x,y)=>Math.hypot(x-O-58,(y-O-42)*1.15)+(vn(x/9,y/9,31)-.5)*12,EBEN=125,EBEN_RAND=200;
 // Großes Rauschen auf einem groben Gitter vorrechnen und dazwischen mitteln (spart beim Laden)
 function grob(f,st){const n=Math.ceil(V/st)+2,a=new Float32Array(n*n);for(let j=0;j<n;j++)for(let i=0;i<n;i++)a[j*n+i]=f(i*st,j*st);
  return (x,y)=>{const fx=x/st,fy=y/st,i=fx|0,j=fy|0,u=fx-i,v=fy-j,o=j*n+i;return (a[o]*(1-u)+a[o+1]*u)*(1-v)+(a[o+n]*(1-u)+a[o+n+1]*u)*v;};}
@@ -87,7 +88,7 @@ if(GROSS){
  for(let tx=WEG_L-1;tx>=0;tx--)wy[tx]=clamp(wy[tx+1]+clamp(ziel(tx)-wy[tx+1],-1,1),3,N-5);
  // Eckhöhen auf dem gemeinsamen Punktgitter (V × V); fest: Ludus-Gelände (0) und Weg
  const hv=new Int8Array(V*V),fix=new Uint8Array(V*V);
- for(let y=0;y<V;y++)for(let x=0;x<V;x++){const r=ebenR(x,y),a=rampe(r,EBEN,130),i=y*V+x;let h=0;
+ for(let y=0;y<V;y++)for(let x=0;x<V;x++){const r=ebenR(x,y),a=rampe(r,EBEN,EBEN_RAND),i=y*V+x;let h=0;
   if(a>0){const k=KONT(x,y),b=BERG(x,y),sumpf=rampe(FEUCHT(x,y),.53,.6)*rampe(.5-WAERME(x,y),0,.05);
    const see=rampe(fbm(x/38,y/38,19),.6,.74);// verstreute Seen
    h=Math.round((((k-.33)*24+Math.max(0,k-.5)*1.7*b*30+(fbm(x/15,y/15,14)-.5)*8-see*9)*(1-.7*sumpf)-sumpf*1.5)*a);}
@@ -122,10 +123,13 @@ for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){let t=T.WIESE,bi=0;const k=ix(tx,
 for(const b of BAU)for(let y=b.ty;y<b.ty+b.h;y++)for(let x=b.tx;x<b.tx+b.w;x++){feld[ix(x,y)]=b.flach?T.PLATZ:b.haus??T.BAU;bauAuf[ix(x,y)]=b.i;}
 const SKIZZE=BAU.filter(b=>b.haus==null);
 // Naturobjekte (welt-natur.js): je Feld höchstens eines. Alles darauf ist entfernbar (obj = 0); nicht am Weg, nicht um den Ludus.
-const NB=window.WeltNatur,obj=new Uint8Array(N*N),BODEN_NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FLUSS,T.FELS,T.SCHNEE]),
+const NASS_OK=new Set(['Schilf','Seerosen','Moorhand']),NB=window.WeltNatur,obj=new Uint8Array(N*N),BODEN_NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FLUSS,T.FELS,T.SCHNEE]),
  BODEN_NAME={[T.WIESE]:'wiese',[T.WALD]:'wald',[T.SAND]:'sand',[T.DSCH]:'dsch',[T.SUMPF]:'sumpf',[T.MOOR]:'moor',[T.FLUSS]:'wasser',[T.FELS]:'fels',[T.SCHNEE]:'schnee'};
 if(NB)for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const k=ix(tx,ty),t=feld[k],lx=tx-O,ly=ty-O;if(!BODEN_NATUR.has(t)||Math.abs(ty-wy[tx]-.5)<=1.6)continue;if(lx>=24&&lx<=74&&ly>=20&&ly<=64)continue;
- obj[k]=NB.waehle(biom[k],BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6));}
+ let o=NB.waehle(biom[k],BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6));
+ // Keine Bäume im Wasser (Thomas 12.11.): im Wasser, im Moor und am Ufer (eine Ecke auf Wasserhöhe) nur Schilf, Seerosen, Moorhand
+ if(o&&!NASS_OK.has(NB.ARTEN[o].name)&&(t===T.FLUSS||t===T.MOOR||Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3])<=WL))o=0;
+ obj[k]=o;}
 const ovar=(tx,ty)=>NB?NB.variante(tx,ty):0;
 
 // ---------- Bildchen: Felder und Bäume ----------
