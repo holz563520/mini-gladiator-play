@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Schild-Galerie</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#10191d;color:#e7dfc9;font:15px system-ui;padding:12px}
+h1{font-size:18px;margin:0 0 4px}p{margin:0 0 12px;color:#a9b3a6}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+button{background:#22343a;color:#e7dfc9;border:1px solid #3b5158;border-radius:6px;padding:8px 12px;font:inherit}
+button.an{background:#b08a45;color:#141a1c;border-color:#d9b367}
+h2{font-size:15px;margin:16px 0 6px;color:#d9b367}
+.reihe{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.karte{background:#172327;border:1px solid #2b3d43;border-radius:8px;padding:6px;text-align:center;font-size:12px;color:#a9b3a6}
+canvas{width:100%;image-rendering:pixelated;display:block;background:#1c2b30;border-radius:6px;margin-bottom:4px}
+</style></head><body>
+<h1>Schild-Galerie</h1>
+<p>Jeder Schild von vorn (links) und von hinten (rechts). Nur Ansicht, ändert keinen Spielstand.</p>
+<div class="bar"><button id="t0" class="an">Eigene Farben</button><button id="t1">Gegnerfarbe</button><button id="fl">Blockblitz</button></div>
+<div id="liste"></div>
+<script>window.addEventListener('error',e=>{document.body.insertAdjacentHTML('beforeend','<p style="color:#f88">Fehler: '+e.message+'</p>')});</script>
+<script src="profiles.js?v=12f688c0"></script>
+<script src="data.js?v=12f688c0"></script>
+<script src="schild-art.js?v=12f688c0"></script>
+<script>
+(()=>{const M=window.MG,stufen=['Flicken','Rekruten','Legionärs','Veteranen','Prätorianer','Triumph','Unsterblichen'];let team=0,flash=false;
+function zeige(){const L=document.getElementById('liste');L.innerHTML='';for(const d of M.shieldDefs){const h=document.createElement('h2');h.textContent=d.name;L.appendChild(h);const r=document.createElement('div');r.className='reihe';L.appendChild(r);
+ for(let q=0;q<7;q++){const k=document.createElement('div');k.className='karte';const c=document.createElement('canvas');c.width=64;c.height=44;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  g.save();g.translate(17,22);M.shieldArt.draw(g,{def:d.id,q},{team,flash});g.restore();g.save();g.translate(47,22);M.shieldArt.draw(g,{def:d.id,q},{team,flash,rear:true});g.restore();
+  k.appendChild(c);k.appendChild(document.createTextNode(stufen[q]));r.appendChild(k);}}}
+const t0=document.getElementById('t0'),t1=document.getElementById('t1'),fl=document.getElementById('fl');
+t0.onclick=()=>{team=0;t0.className='an';t1.className='';zeige()};t1.onclick=()=>{team=1;t1.className='an';t0.className='';zeige()};fl.onclick=()=>{flash=!flash;fl.className=flash?'an':'';zeige()};zeige();})();
+</script></body></html>
