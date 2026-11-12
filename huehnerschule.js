@@ -165,11 +165,13 @@ function openDetail(R,o={}){closeDetail();const v=document.createElement('div');
  <p class="hs-legend"><i class="ist"></i> IST · was er jetzt kann &nbsp; <i class="soll"></i> SOLL · was aus ihm werden kann</p>
  <p class="hs-chips"><span>${esc(R.appearance.plumageName)}</span><span>${R.height} cm · ${f1(R.weight)} kg</span><span>${R.ageMonths} Monate</span><span>Talent: ${esc(R.profile.potentialNote)}</span><span>Bevorzugt: ${esc(R.profile.favoriteMoveLabel)}</span></p>
  ${body.length?`<p class="hs-wounds">Verletzt: ${body.map(([k,p])=>esc(CF.partName(k))+' ('+esc(CF.GRADE_LABEL?.[p.grade]||'Grad '+p.grade)+')').join(' · ')}</p>`:''}
- ${!R.dead&&!active()?`<div class="hs-kill" data-kill><button class="btn small danger" data-hs="kill1">🔪 SCHLACHTEN</button><small>Hähne, die du nicht willst, landen im Topf. Endgültig.</small></div>`:''}
+ ${!R.dead&&!active()&&!o.nokill?`<div class="hs-kill" data-kill><button class="btn small danger" data-hs="kill1">🔪 SCHLACHTEN</button><small>Hähne, die du nicht willst, landen im Topf. Endgültig.</small></div>`:''}
  ${R.history?.length?`<details class="hs-hist"><summary>Verlauf</summary><ul>${R.history.slice(0,8).map(h=>`<li>Tag ${h.day}: ${esc(h.text)}</li>`).join('')}</ul></details>`:''}</div>`;
  document.body.appendChild(v);const cv=v.querySelector('canvas'),bub=v.querySelector('.hs-bubble'),scene=new CU.CloseupScene(cv);CU.setBubble((text,tier)=>{if(!text){bub.classList.remove('show');return;}bub.textContent=text;bub.className='hs-bubble show q'+tier;});
  scene.play(R,()=>{});if(!o.anim)scene.skip();detail={v,R,scene};}
 function closeDetail(){if(!detail)return;detail.scene.stop();CU.setBubble(null);detail.v.remove();detail=null;}
+// Für die Rasterkarte (Arena Theory 2.0, welt-gebaeude.js): Großaufnahme eines Hahns aus einem Käfig öffnen. o.nokill: ohne Schlachten.
+HS.openDetail=(R,o)=>openDetail(R,o||{});HS.closeDetail=closeDetail;
 
 // =====================================================================================================
 // ARENA: Öffnen, Sperren, Empfehlung, Sonderherausforderung, Ergebnis
