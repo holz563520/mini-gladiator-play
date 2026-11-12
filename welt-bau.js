@@ -19,6 +19,8 @@
 const M=window.MG,W=window.WeltKarte,H=window.WeltHook;if(!M||!W||!H||!W.feld)return;const S=M.s,$=id=>document.getElementById(id);
 const T=W.T,N=W.N,clamp=(v,a,b)=>v<a?a:v>b?b:v,TAU=Math.PI*2;
 const WERKZEUG={platz:{name:'Trainingsfeld',typ:T.PLATZ,preis:50},arena:{name:'Kampffläche',typ:T.ARENA,preis:80},trib:{name:'Tribüne',typ:T.TRIB,preis:120},
+ // Gebäude mit Art: Boden ziehen, Wände, Dach und Einrichtung entstehen von selbst (welt-gebaeude.js). Gleiche Art nebeneinander wächst zusammen.
+ unterkunft:{name:'Unterkunft',typ:T.UNTERKUNFT,preis:60,haus:1},
  // Fünf Straßen, jede teurer als die vorige (Preise sind Vorschläge). Noch ohne Wirkung auf Tempo oder Besucher.
  str1:{name:'Trampelpfad',typ:T.STR1,preis:5,str:1},str2:{name:'Kiesweg',typ:T.STR2,preis:12,str:1},str3:{name:'Pflasterweg',typ:T.STR3,preis:25,str:1},str4:{name:'Steinstraße',typ:T.STR4,preis:50,str:1},str5:{name:'Prachtstraße',typ:T.STR5,preis:100,str:1},
  weg:{name:'Abreißen',preis:0}};
@@ -28,7 +30,7 @@ const ARENA_NAME=n=>n<20?'Sandgrube':n<48?'Kleine Arena':n<100?'Arena':'Große A
 const stufeVon=n=>{let s=0;for(let i=0;i<STUFEN.length;i++)if(n>=STUFEN[i].ab)s=i;return s;};
 const ur=Uint8Array.from(W.feld);// Gelände vor allem Bauen (für „Abreißen“)
 const baubar=(tx,ty)=>W.inMap(tx,ty)&&!W.gebaeudeAt?.(tx,ty)&&(W.feld[W.ix(tx,ty)]===T.WIESE||W.feld[W.ix(tx,ty)]===T.LUDUS);
-const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB||istStr(t))&&ur[k]!==t;};
+const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB||t===T.UNTERKUNFT||istStr(t))&&ur[k]!==t;};
 // Straßen dürfen auch auf den alten Weg und über eine andere Straße (Ausbau, voller Preis)
 const strBaubar=(k,typ)=>{if(W.gebaeudeAt?.(k%N,Math.floor(k/N)))return false;const t=W.feld[k];return t===T.WIESE||t===T.LUDUS||t===T.WEG||(istStr(t)&&t!==typ);};
 
@@ -100,6 +102,7 @@ document.getElementById('weltUi').appendChild(box);
 const HILFE={platz:'Rechteck auf Wiese oder Ludus-Boden ziehen. Je '+PRO+' Felder eine Puppe; ab '+STUFEN[1].ab+' Feldern '+STUFEN[1].mz+', ab '+STUFEN[2].ab+' '+STUFEN[2].mz+', ab '+STUFEN[3].ab+' '+STUFEN[3].mz+'.',
  arena:'Kampffläche ziehen: Das ist die Grundform der Arena. Größer machen: anbauen. Kleiner machen: abreißen.',
  trib:'Tribünen an die Kampffläche bauen. Jede Reihe weiter außen steht eine Stufe höher. Je Feld '+PLAETZE+' Sitzplätze.',
+ unterkunft:'Boden der Unterkunft ziehen. Wände, Tür, Dach und Betten entstehen von selbst. An eine Unterkunft angebaut wird daraus ein größeres Gebäude.',
  weg:'Rechteck über Gebautes ziehen. Es wird wieder zu dem, was vorher dort war. Kein Geld zurück.'};
 for(const [id,w] of Object.entries(WERKZEUG))if(w.str)HILFE[id]=w.name+': '+w.preis+' G je Feld. Rechteck oder Linie ziehen, auch über den alten Weg oder eine andere Straße (Ausbau).';
 function hilfe(){box.querySelector('span').textContent=mode?HILFE[mode]:'';}
@@ -117,13 +120,15 @@ function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,
   if(ab)t=mz(ok.length,'Feld','Felder')+' abreißen';
   else{t=mz(ok.length,'Feld','Felder')+' · '+preis+' G'+(info.genug?'':' · zu wenig Gold');
    if(mode==='platz'){const f=plan(gebiete(T.PLATZ).find(g=>g.includes(ok[0])));t+=' → Trainingsfeld mit '+mz(f.n,'Feld','Feldern')+': '+mz(f.count,'Puppe','Puppen')+', beste: '+STUFEN[f.max].name;}
+   else if(wz.haus){const h=M.weltGebaeude?.bei(ok[0]);if(h)t+=' → '+wz.name+' mit '+mz(h.n,'Feld','Feldern')+': '+mz(h.betten,'Bett','Betten');}
    else if(!wz.str){const as=arenenRechnen(),a=mode==='arena'?as.find(a=>a.floor.includes(ok[0])):as.find(a=>a.tribs.includes(ok[0]));t+=a?' → '+a.name+': '+mz(a.n,'Feld','Felder')+' Kampffläche, '+a.plaetze+' Sitzplätze':' → liegt an keiner Kampffläche';}}
   ok.forEach((k,i)=>W.feld[k]=save[i]);arenenRechnen();}
  box.querySelector('span').textContent=t;}
 function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
- const a=drag.a;let cx=0,cy=0;for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y;}cx/=ok.length;cy/=ok.length;
+ const a=drag.a,betten0=M.weltGebaeude?.betten()||0;let cx=0,cy=0;for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y;}cx/=ok.length;cy/=ok.length;
  if(!frei)S.gold=(S.gold||0)-preis;W.rebake();const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
  let d=0;const say=(s,col)=>{text.push({x:cx,y:cy-30,t:-d,s,col});d+=.6;};if(preis)say('−'+preis+' G','#f29b83');if(r.mehr)say('+'+mz(r.mehr,'Puppe','Puppen'),'#f4d37a');if(r.besser>=0)say('Bessere Puppen: '+STUFEN[r.besser].mz+'!','#fff2b0');
+ const bd=(M.weltGebaeude?.betten()||0)-betten0;if(bd>0)say('+'+mz(bd,'Bett','Betten'),'#f4d37a');if(bd<0)say(bd+' Betten','#f29b83');
  if(r.plaetze>0)say('+'+r.plaetze+' Sitzplätze','#f4d37a');if(r.plaetze<0)say(r.plaetze+' Sitzplätze','#f29b83');zeigeGold();}
 H.pointer=(phase,p)=>{if(!mode)return false;if(phase==='down'){const t=tile(p);drag={a:t,b:t};auswahl();return true;}if(!drag)return true;
  if(phase==='move'){const t=tile(p);if(t.tx!==drag.b.tx||t.ty!==drag.b.ty){drag.b=t;auswahl();}}else if(phase==='up'){drag.b=tile(p);auswahl();baue();drag=null;info=null;setTimeout(()=>{if(mode&&!drag)hilfe();},2600);}else{drag=null;info=null;hilfe();}return true;};
