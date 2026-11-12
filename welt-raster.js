@@ -243,6 +243,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
   const cx0=Math.max(0,Math.floor(view.x0/CH)),cx1=Math.min(Math.ceil(WW/CH)-1,Math.floor(view.x1/CH)),cy0=Math.max(0,Math.floor(view.y0/CH)),cy1=Math.min(Math.ceil(WH/CH)-1,Math.floor((view.y1+70)/CH));
   for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){const ch=chunk(cx,cy);ch.used=frameNo;ctx.drawImage(ch.c,cx*CH,cy*CH);for(const t of ch.trees)if(t.x>view.x0-30&&t.x<view.x1+30&&t.y>view.y0-10&&t.y<view.y1+70)items.push(t);}
   frameNo++;if(chunks.size>48)for(const [k,ch] of chunks)if(ch.used<frameNo-120){chunks.delete(k);if(chunks.size<=36)break;}}
+ H.ground?.(ctx,view);
  for(const b of BAU)items.push({y:b.key,bau:b});H.items?.(items,view);
  // Figuren; wer vor einem Gebäude steht, wird nach ihm gezeichnet
  shown=[];spriteBudget=Math.max(2,Math.round(12-perfAvg));pBudget=Math.max(3,Math.round(14-perfAvg));
