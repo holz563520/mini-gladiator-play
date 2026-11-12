@@ -95,7 +95,15 @@ const OV=2;let overview=null,raster=true;
 function bake(){const [c,g]=mkCanvas(Math.ceil(WW/OV),Math.ceil(WH/OV));g.imageSmoothingEnabled=true;g.fillStyle='#1c2416';g.fillRect(0,0,c.width,c.height);g.scale(1/OV,1/OV);const sp=sprites[raster?1:0];
  for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const p=iso(tx,ty);g.drawImage(sp[feld[ix(tx,ty)]*VAR+Math.floor(h2(tx,ty,3)*VAR)],p.x-TW/2,p.y);}
  for(let v=0;v<2*N;v++)for(let tx=Math.max(0,v-N+1);tx<=Math.min(N-1,v);tx++){const ty=v-tx,b=baum[ix(tx,ty)];if(b>=0){const p=iso(tx+.5,ty+.5);g.drawImage(TREE[b],p.x-22,p.y-64);}}
- overview=c;}
+ overview=c;chunks.clear();}
+
+// ---------- Bodenkacheln: der Boden wird in Stücken von CH × CH vorgezeichnet und beim Bauen verworfen ----------
+const CH=512,chunks=new Map();let frameNo=0;
+function chunk(cx,cy){const key=cy*1000+cx;let ch=chunks.get(key);if(ch)return ch;const [c,g]=mkCanvas(CH+2,CH+2),x0=cx*CH,y0=cy*CH,sp=sprites[raster?1:0],trees=[];g.fillStyle='#1c2416';g.fillRect(0,0,CH+2,CH+2);g.translate(-x0,-y0);
+ const u0=Math.floor((x0-OX)/(TW/2))-2,u1=Math.ceil((x0+CH+2-OX)/(TW/2))+1,v0=Math.max(0,Math.floor((y0-OY)/(TH/2))-2),v1=Math.min(2*N-2,Math.ceil((y0+CH+2-OY)/(TH/2))+1);
+ for(let v=v0;v<=v1;v++)for(let u=u0+((u0+v)&1);u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const i=ix(tx,ty),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY;
+  g.drawImage(sp[feld[i]*VAR+Math.floor(h2(tx,ty,3)*VAR)],x-TW/2,y);if(baum[i]>=0&&x>=x0&&x<x0+CH&&y+TH/2>=y0&&y+TH/2<y0+CH)trees.push({y:y+TH/2,tree:baum[i],x});}
+ ch={c,trees,used:frameNo};chunks.set(key,ch);return ch;}
 
 // ---------- Gebäude als Skizze ----------
 function shade(hex,k){const n=parseInt(hex.slice(1),16);return 'rgb('+[n>>16,(n>>8)&255,n&255].map(v=>Math.round(clamp(v*k,0,255))).join(',')+')';}
@@ -111,18 +119,21 @@ for(const b of BAU){const C=iso(b.tx+b.w,b.ty+b.h);b.key=b.flach?iso(b.tx,b.ty).
 for(let pass=0;pass<BAU.length;pass++)for(const b of BAU)for(const a of BAU)if(a!==b&&!a.flach&&!b.flach&&(a.tx+a.w<=b.tx||a.ty+a.h<=b.ty)&&!(b.tx+b.w<=a.tx||b.ty+b.h<=a.ty)&&b.key<=a.key)b.key=a.key+.02;
 
 // ---------- Gladiatoren: schlendern im Ludus ----------
-const SPEED=34,FW=56,FH=72,FX=28,FY=62,WALK=6,figs=new Map();let spriteBudget=0,workers=[];
+// Figurengröße wie bei RollerCoaster Tycoon: Die Figuren des Spiels werden beim Vorzeichnen auf K verkleinert (Zelle 40 × 52 statt 56 × 72)
+const K=.7,SPEED=30,FW=40,FH=52,FX=20,FY=44,WALK=6,figs=new Map();let spriteBudget=0,workers=[];
 function spriteOf(g){let s=figs.get(g.id);if(s)return s;if(spriteBudget<=0)return null;spriteBudget--;
- const [c,ctx]=mkCanvas(FW*(WALK+2),FH*2);const base={g,team:0,ammo:0,a:0,energy:100,index:0,baseX:0,baseY:0};
- try{for(let dir=0;dir<2;dir++){for(let f=0;f<WALK;f++){ctx.save();ctx.translate(f*FW,dir*FH);M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:'move',moveSpeed:40,phase:f/WALK*TAU}]);ctx.restore();}
-  for(let f=0;f<2;f++){ctx.save();ctx.translate((WALK+f)*FW,dir*FH);M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:'idle',moveSpeed:0,phase:f*1.3}]);ctx.restore();}}}catch(e){console.warn(e);}
+ const [c,ctx]=mkCanvas(FW*(WALK+2),FH*2);ctx.imageSmoothingEnabled=true;const base={g,team:0,ammo:0,a:0,energy:100,index:0,baseX:0,baseY:0};
+ // Der Schatten wird mit ins Bild gezeichnet: ein eigenes Rechteck je Figur und Bild war das Teuerste am ganzen Zeichnen
+ try{ctx.fillStyle='rgba(15,20,10,.3)';for(let dir=0;dir<2;dir++)for(let f=0;f<WALK+2;f++)ctx.fillRect(f*FW+FX-6,dir*FH+FY-1,12,2);
+  for(let dir=0;dir<2;dir++){for(let f=0;f<WALK;f++){ctx.save();ctx.translate(f*FW,dir*FH);ctx.scale(K,K);M.renderLudusActors(ctx,[{...base,x:FX/K,y:FY/K,a:dir?Math.PI:0,state:'move',moveSpeed:40,phase:f/WALK*TAU}]);ctx.restore();}
+  for(let f=0;f<2;f++){ctx.save();ctx.translate((WALK+f)*FW,dir*FH);ctx.scale(K,K);M.renderLudusActors(ctx,[{...base,x:FX/K,y:FY/K,a:dir?Math.PI:0,state:'idle',moveSpeed:0,phase:f*1.3}]);ctx.restore();}}}catch(e){console.warn(e);}
  s={c};figs.set(g.id,s);return s;}
 const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS;};
 const imLudus=(tx,ty)=>tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h;
 function makeRoster(n){const keep=S.roster.filter(g=>!g.dead);let list=keep.slice(0,n);const rng=S.rng;while(list.length<n){const g=M.makeGladiator(0);g.fatigue=0;list.push(g);}S.rng=rng;
  S.roster=list;try{M.army?.autoClasses?.(list);}catch(e){}figs.clear();
  workers=list.map((g,i)=>{let tx,ty,k=0;do{tx=LUD.tx+h2(i,k,21)*LUD.w;ty=LUD.ty+h2(i,k,22)*LUD.h;k++;}while(!frei(tx,ty)&&k<40);const p=iso(tx,ty);return {g,x:p.x,y:p.y,seed:h2(i,7,23)*1000,wait:h2(i,3,24)*8,goal:null,dir:0,walk:false};});}
-function wander(w,dt){if(w.wait>0){w.wait-=dt;w.walk=false;return;}
+function wander(w,dt){if(w.wait>0){w.wait-=dt;w.walk=false;return;}// (schlendern)
  if(!w.goal){const c=tileAt(w.x,w.y),home=imLudus(c.tx,c.ty);for(let k=0;k<6&&!w.goal;k++){const tx=c.tx+(Math.random()-.5)*9,ty=c.ty+(Math.random()-.5)*9;if(!frei(tx,ty)||(home&&!imLudus(tx,ty)))continue;
    let ok=true;for(let s=1;s<8&&ok;s++)ok=frei(c.tx+(tx-c.tx)*s/8,c.ty+(ty-c.ty)*s/8);if(ok)w.goal=iso(tx,ty);}
   if(!w.goal){w.wait=1;return;}}
@@ -153,17 +164,16 @@ cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
 cv.addEventListener('wheel',e=>{e.preventDefault();const r=cv.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*.0016));},{passive:false});
 addEventListener('resize',resize);
 let shown=[];
-function tap(p){const k=miniV?2:1,hit=[...shown].reverse().find(s=>p.x>s.x-12*k&&p.x<s.x+12*k&&p.y>s.y-40&&p.y<s.y+6*k);H.tap?.(p,hit?.w);}
+function tap(p){const k=miniV?2:1,hit=[...shown].reverse().find(s=>p.x>s.x-10*k&&p.x<s.x+10*k&&p.y>s.y-32&&p.y<s.y+6*k);H.tap?.(p,hit?.w);}
 
 // ---------- Leiste ----------
 const ui=document.createElement('div');ui.id='weltUi';ui.innerHTML=`
 <header class="w-bar"><div class="w-title"><b>RASTERKARTE</b><small>Testversion · nichts wird gespeichert</small></div>
 <div class="w-chips"><span class="w-chip" id="wCount"></span><span class="w-chip" id="wClock"></span></div>
 <div class="w-perf" title="Bildzeit"><i id="wPerfBar"></i><span id="wPerf"></span></div>
-<label class="w-sel w-kader"><span class="w-lab">Testkader</span><select id="wKader" title="Größe des Testkaders">${[12,60,200,500].map(n=>`<option value="${n}"${n===60?' selected':''}>${n} Gladiatoren</option>`).join('')}</select></label></header>
+<span class="w-kader"></span></header>
 <button id="wBack" class="w-btn w-back" hidden>◀ Zur Karte</button>`;
 $('welt').appendChild(ui);document.body.appendChild($('wBack'));
-$('wKader').onchange=e=>makeRoster(+e.target.value);
 $('wBack').onclick=()=>{try{M.ui.close?.();}catch(e){}M.ui.click('nav:home');};
 setInterval(()=>{const page=M.ui.getPage?.(),modal=$('modal')&&!$('modal').hidden,admin=(page&&page!=='home')||modal||!!S.battle;document.body.classList.toggle('w-admin',!!admin);$('wBack').hidden=!admin||modal;},200);
 
@@ -177,10 +187,10 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));
  const items=[];miniV=cam.s<MINI;
  if(cam.s<FERN){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,0,0,overview.width*OV,overview.height*OV);ctx.imageSmoothingEnabled=false;}
- else{// sichtbare Felder: u = tx − ty (waagerecht), v = tx + ty (senkrecht)
-  const sp=sprites[raster?1:0],u0=Math.floor((view.x0-OX)/(TW/2))-1,u1=Math.ceil((view.x1-OX)/(TW/2))+1,v0=Math.max(0,Math.floor((view.y0-OY)/(TH/2))-2),v1=Math.min(2*N-2,Math.ceil((view.y1-OY)/(TH/2))+5);
-  for(let v=v0;v<=v1;v++)for(let u=u0+((u0+v)&1);u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const i=ix(tx,ty),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY;
-   ctx.drawImage(sp[feld[i]*VAR+Math.floor(h2(tx,ty,3)*VAR)],x-TW/2,y);if(baum[i]>=0)items.push({y:y+TH/2,tree:baum[i],x});}}
+ else{// Boden aus vorgezeichneten Kacheln (512 × 512): rund ein Dutzend Bilder je Bild statt über tausend einzelner Felder
+  const cx0=Math.max(0,Math.floor(view.x0/CH)),cx1=Math.min(Math.ceil(WW/CH)-1,Math.floor(view.x1/CH)),cy0=Math.max(0,Math.floor(view.y0/CH)),cy1=Math.min(Math.ceil(WH/CH)-1,Math.floor((view.y1+70)/CH));
+  for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){const ch=chunk(cx,cy);ch.used=frameNo;ctx.drawImage(ch.c,cx*CH,cy*CH);for(const t of ch.trees)if(t.x>view.x0-30&&t.x<view.x1+30&&t.y>view.y0-10&&t.y<view.y1+70)items.push(t);}
+  frameNo++;if(chunks.size>48)for(const [k,ch] of chunks)if(ch.used<frameNo-120){chunks.delete(k);if(chunks.size<=36)break;}}
  for(const b of BAU)items.push({y:b.key,bau:b});H.items?.(items,view);
  // Figuren; wer vor einem Gebäude steht, wird nach ihm gezeichnet
  shown=[];spriteBudget=Math.max(2,Math.round(12-perfAvg));
@@ -189,9 +199,9 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  items.sort((a,b)=>a.y-b.y);
  for(const it of items){if(it.tree!=null){ctx.drawImage(TREE[it.tree],it.x-22,it.y-64);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}if(it.draw){it.draw(ctx);continue;}
   const {w,ps}=it,x=Math.round(ps.x),y=Math.round(ps.y);
-  if(miniV){const a=w.g.appearance||{},b=w.walk&&((clock*4+w.seed)|0)%2?2:0;ctx.fillStyle='rgba(15,20,10,.35)';ctx.fillRect(x-5,y-1,10,3);ctx.fillStyle=a.cloth||'#7a6448';ctx.fillRect(x-4,y-13-b,8,12);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-3,y-19-b,6,6);shown.push({w,x,y});continue;}
-  const sp=spriteOf(w.g),dir=(ps.dx??1)<0?1:0;ctx.fillStyle='rgba(15,20,10,.3)';ctx.fillRect(x-8,y-1,16,3);
-  if(sp){const f=!ps.top?Math.floor((clock*SPEED/7+w.seed)%WALK):WALK;ctx.drawImage(sp.c,f*FW,dir*FH,FW,FH,x-FX,y-FY,FW,FH);}else{ctx.fillStyle='#7a6448';ctx.fillRect(x-4,y-26,8,22);ctx.fillStyle='#d9ac82';ctx.fillRect(x-3,y-32,6,6);}
+  if(miniV){const a=w.g.appearance||{},b=w.walk&&((clock*4+w.seed)|0)%2?2:0;ctx.fillStyle=a.cloth||'#55938e';ctx.fillRect(x-3,y-11-b,6,9);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-2,y-16-b,5,5);shown.push({w,x,y});continue;}
+  const sp=spriteOf(w.g),dir=(ps.dx??1)<0?1:0;
+  if(sp){const f=!ps.top?Math.floor((clock*SPEED/7+w.seed)%WALK):WALK;ctx.drawImage(sp.c,f*FW,dir*FH,FW,FH,x-FX,y-FY,FW,FH);}else{ctx.fillStyle='#7a6448';ctx.fillRect(x-3,y-19,6,16);ctx.fillStyle='#d9ac82';ctx.fillRect(x-2,y-24,5,5);}
   shown.push({w,x,y});}
  if(H.light){ctx.setTransform(DPR,0,0,DPR,0,0);H.light(ctx,VW,VH);ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));}
  H.world?.(ctx,view,dt);
@@ -205,7 +215,7 @@ try{window.ArenaUI?.close?.();}catch(e){}M.ui.click('nav:home');
 bake();makeRoster(60);resize();cam.s=clamp(Math.min(VW/1500,VH/1000)*1.1,minScale(),maxScale());clampCam();
 $('weltBoot')?.remove();last=performance.now();requestAnimationFrame(frame);
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
-window.WeltKarte={cam,sprites:figs,workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
+window.WeltKarte={K,cam,sprites:figs,workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
  raster(on){raster=!!on;bake();},rebake:bake,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
 window.WELT_READY=true;

@@ -53,3 +53,4 @@ body.welt-page [data-action="rest"],body.welt-page [data-action="rest3"]{display
 #wBau[hidden]{display:none}#wBau button{white-space:nowrap}
 @media (max-width:700px){#wBau{top:166px}}
 .bau-wz{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}.bau-wz small{opacity:.75;margin-left:3px}.bau-wz .w-btn.on{background:#d7b24a;color:#120c09}#wBau span{text-align:center}
+.ed-reg{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;margin:4px 0}.ed-reg b{color:#f4d37a}.ed-reg input{grid-column:1/3;width:100%;accent-color:#d7b24a;height:22px}
