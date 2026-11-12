@@ -107,9 +107,12 @@ function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get
  let door=null,best=1e9;const mx=(bx0+bx1)/2,my=(by0+by1)/2;
  for(const k of tiles){if(schm&&hof.length&&dach.has(k))continue;const x=k%N,y=(k/N)|0;if(!has(x,y+1)){const d=Math.abs(x-mx)+(by1-y)*3;if(d<best){best=d;door={k,side:'y'};}}if(!has(x+1,y)){const d=Math.abs(y-my)+(bx1-x)*3+.4;if(d<best){best=d;door={k,side:'x'};}}}
  // Schlafplätze: jede zweite Reihe quer zur längeren Seite, dazwischen bleibt ein Gang frei; das Feld hinter der Tür bleibt frei
- const beds=schm||bst||kas?[]:tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0)%2===0:(y-by0)%2===0);}).sort(tief);
+ let beds=schm||bst||kas?[]:tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0)%2===0:(y-by0)%2===0);}).sort(tief);
  // Beastrium: zwei Reihen Käfige quer zur längeren Seite, dann eine Reihe Gang; das Türfeld bleibt frei
  const kaefig=bst?new Map(tiles.filter(k=>{const x=k%N,y=(k/N)|0;return k!==door.k&&(lang?(x-bx0):(y-by0))%3!==1;}).map(k=>[k,tierFuer(k,st)])):new Map();
+ let stuhl=-1;if(med){// Medicus: Stuhl nahe der Mitte, zwei Betten an der Rückwand (am weitesten von der Tür)
+  const dd=k=>Math.abs(k%N-door.k%N)+Math.abs(((k/N)|0)-((door.k/N)|0)),cx=(bx0+bx1)/2,cy=(by0+by1)/2,rest=tiles.filter(k=>k!==door.k);
+  stuhl=rest.slice().sort((a,b)=>(Math.abs(a%N-cx)+Math.abs(((a/N)|0)-cy))-(Math.abs(b%N-cx)+Math.abs(((b/N)|0)-cy)))[0];beds=rest.filter(k=>k!==stuhl).sort((a,b)=>dd(b)-dd(a)).slice(0,2).sort(tief);}
  const lager=kas?staenderPlan(tiles,has,door,lang,bx0,by0,st):null;
  // Bilder des Lanista an den hinteren Innenwänden (im Beastrium nur über dem Gang, nicht hinter den Käfigen)
  const poster=[];for(const k of tiles){const x=k%N,y=(k/N)|0;for(const [side,frei,salt,p] of [['a',!has(x,y-1),52,.5],['d',!has(x-1,y),53,.42]])if(frei&&(!schm||dach.has(k))&&!kaefig.has(k)&&!lager?.rk.has(k)&&W.h2(x,y,salt)<(schm?.62:bst||kas?.85:p)){poster.push({k,side,text:''});}}
@@ -120,7 +123,7 @@ function plan(tiles){const typ=W.feld[tiles[0]],st=STUFE.get(typ)??1,art=ART.get
  const sufY=[];let m=-1;for(let x=bx1;x>=bx0;x--){for(let y=by1;y>=by0;y--)if(has(x,y)){if(y>m)m=y;break;}sufY[x-bx0]=m;}
  const stat=schm?stationen(tiles,dach,hof,has,door,st,tief):new Map(),ambosse=[...stat.values()].filter(r=>r==='amboss').length;
  return {id:Math.min(...tiles),st,art,tiles:tiles.slice().sort(tief),set,has,hasD,dach,stat,ambosse,kaefig,kaefige:kaefig.size,rk:lager?.rk||new Map(),slots:lager?.slots||[],plaetze:lager?.slots.length||0,trager:[],n:tiles.length,bx0,by0,bx1,by1,door,beds,betten:beds.length,poster,eck,sufY,key:W.iso(bx1+1,by1+1).y,
-  titel:schm?NAME_S[st]:bst?NAME_B[st]:kas?NAME_K[st]:med?'MEDICUS':krk?'KRANKENHAUS':NAME[st],zahl:schm?ambosse:bst?kaefig.size:kas?(lager.slots.length>>1)+'/'+lager.slots.length:med?Math.max(0,beds.length-2):beds.length,wort:schm?['AMBOSS','AMBOSSE']:bst?['KÄFIG','KÄFIGE']:kas?['PLÄTZE BELEGT','PLÄTZE BELEGT']:med||krk?['BETT','BETTEN']:PLATZ[st],tische:med?beds.slice(0,2):[]};}
+  titel:schm?NAME_S[st]:bst?NAME_B[st]:kas?NAME_K[st]:med?'MEDICUS':krk?'KRANKENHAUS':NAME[st],zahl:schm?ambosse:bst?kaefig.size:kas?(lager.slots.length>>1)+'/'+lager.slots.length:beds.length,wort:schm?['AMBOSS','AMBOSSE']:bst?['KÄFIG','KÄFIGE']:kas?['PLÄTZE BELEGT','PLÄTZE BELEGT']:med||krk?['BETT','BETTEN']:PLATZ[st],stuhl};}
 // Einrichtung der Schmiede: Essen an der Rückwand, davor Amboss und Löschtrog; Werkbänke an freien Wandfeldern;
 // im Hof Schleifstein, Lager (Erz, Kohle, Holz, Barren), Waffenständer und je Klasse ein Extra. Rund ein Drittel bleibt frei zum Laufen.
 function stationen(tiles,dach,hof,has,door,st,tief){const stat=new Map(),frei=k=>!stat.has(k)&&k!==door.k,hx=(k,s)=>W.h2(k%N,(k/N)|0,s);
@@ -148,7 +151,9 @@ function kiste(g,x0,y0,x1,y1,z0,z1,c,k=1){quad(g,[pt(x0,y1,z0),pt(x1,y1,z0),pt(x
 function oval(g,x,y,z,rx,ry,col){const p=pt(x,y,z);g.fillStyle=col;g.beginPath();g.ellipse(p[0],p[1],rx,ry,0,0,TAU);g.fill();}
 // Wandfläche von Rasterpunkt (x0,y0) nach (x1,y1), Höhe h, Güteklasse st. Gemalt wird in Wandkoordinaten: u 0…1 entlang der Wand, v in Bildpunkten nach oben.
 function wand(g,x0,y0,x1,y1,h,hell,st,extra,art){const p=W.iso(x0,y0),q=W.iso(x1,y1);g.save();g.transform(q.x-p.x,q.y-p.y,0,-1,p.x,p.y);const R=(u,v,du,dv,col)=>{g.fillStyle=col;g.fillRect(u,v,du,dv);},z=(i,s)=>W.h2(x0*7+i,y0*3+x1+y1*5,s),voll=h>12;
- if(st===1&&art==='beast'){bruchstein(R,h,hell,z,voll);}
+ if(art==='medicus-innen')medInnen(R,h,hell,z,voll);
+ else if(art==='medicus')medAussen(R,h,hell,z,voll);
+ else if(st===1&&art==='beast'){bruchstein(R,h,hell,z,voll);}
  else if(st===0){R(0,0,1,h,sh(LEHM,hell));R(0,0,1,Math.min(5,h*.6),sh([88,74,54],hell));for(let i=0;i<5;i++)R(z(i,61)*.9,2+z(i,62)*3,.08,1.5,sh([70,60,44],hell));
   if(voll){for(let i=0;i<2;i++){const u=.1+z(i,63)*.6,v=8+z(i,64)*(h-20);R(u,v,.2,7,sh([96,70,44],hell));for(let k=0;k<3;k++)R(u,v+1+k*2.2,.2,.7,sh([132,100,62],hell));for(let k=0;k<3;k++)R(u+.03+k*.07,v,.014,7,sh([70,50,30],hell));}// abgeplatzter Lehm, darunter Flechtwerk
    for(let i=0;i<3;i++){const u=.08+z(i,65)*.8,v=6+z(i,66)*(h-14);R(u,v,.012,6,sh([70,58,40],hell));R(u+.012,v+5,.012,5,sh([70,58,40],hell));}// Risse
@@ -215,27 +220,29 @@ function male(h,offen){const bst=h.art==='beast',kas=h.art==='kaserne',med=h.art
  const c=document.createElement('canvas');c.width=Math.ceil(p1.x-p0.x+m);c.height=Math.ceil(bot-top);const g=c.getContext('2d');g.translate(-ox,-oy);const has=h.has,bed=new Set(h.beds),po=new Map(h.poster.map(p=>[p.k+p.side,p]));if(offen){h.mist=[];h.gang=[];}
  for(const k of h.tiles){const x=k%N,y=(k/N)|0,s=W.h2(x,y,51),dr=h.door.k===k;
   // hintere Wände (Innenseite), mit Bild des Lanista oder Schmuck
-  const zier=bst?schmuckB:kas?schmuckK:med?schmuckMed:krk?(()=>()=>{}):schmuck;if(!has(x,y-1))wand(g,x,y,x+1,y,WAND,.98,st,offen?(po.has(k+'a')?bild(st,.98):zier(st,W.h2(x,y,55))):null,h.art);if(!has(x-1,y))wand(g,x,y+1,x,y,WAND,.8,st,offen?(po.has(k+'d')?bild(st,.8):zier(st,W.h2(x,y,56))):null,h.art);
+  const zier=bst?schmuckB:kas?schmuckK:med?schmuckMed:krk?(()=>()=>{}):schmuck,ia=med?'medicus-innen':h.art;const zs=(salt,d)=>med?((x*2+y*3+d)%5)/5+.02:W.h2(x,y,salt);// Medicus: Wandschmuck der Reihe nach
+  if(!has(x,y-1))wand(g,x,y,x+1,y,WAND,.98,st,offen?(po.has(k+'a')?bild(st,.98):zier(st,zs(55,0))):null,ia);if(!has(x-1,y))wand(g,x,y+1,x,y,WAND,.8,st,offen?(po.has(k+'d')?bild(st,.8):zier(st,zs(56,2))):null,ia);
   if(offen){if(dr){const a=h.door.side==='y',c0=st===0?[120,104,70]:st===1?[150,52,44]:PURPUR;quad(g,a?[pt(x+.2,y+.45),pt(x+.8,y+.45),pt(x+.8,y+.95),pt(x+.2,y+.95)]:[pt(x+.45,y+.2),pt(x+.95,y+.2),pt(x+.95,y+.8),pt(x+.45,y+.8)],sh(c0,.9),sh(c0,.6));}
-   else if(med||krk){if(bed.has(k)){if(h.tische.includes(k))optisch(g,x,y,s);else krankenbett(g,x,y,s);}else{h.gang.push(k);if(med&&s<.8)kramMed(g,x,y,s,h);}}
+   else if(med){if(k===h.stuhl)behandlungsstuhl(g,x,y);else if(bed.has(k))amputationsbett(g,x,y,s);else{h.gang.push(k);if(s<.4)kramMed(g,x,y,s*2,h);}}
+   else if(krk){if(bed.has(k))krankenbett(g,x,y,s);else h.gang.push(k);}
    else if(kas){if(h.rk.has(k))staender(g,x,y,st,h.rk.get(k));else{h.gang.push(k);if(s<.55)kramKas(g,x,y,s,st,h);}}
    else if(bst){if(kf.has(k))kaefigMalen(g,x,y,st,kf.get(k),h);else{h.gang.push(k);if(s<(st===0?.8:.62))kramB(g,x,y,s,st,h);}}
    else if(bed.has(k))bett(g,x,y,s,st);else{h.gang.push(k);if(st===0?s<.9:st===1?(!has(x,y-1)||!has(x-1,y))&&s<.66:s<.86)kram(g,x,y,s,st,h);}}
   // vordere Wände (Außenseite): geschlossen volle Höhe mit Fenster, Tür oder Bild; offen nur kniehoch mit Türlücke
-  const front=(x0,y0,x1,y1,hell,istTuer,salt)=>{if(!offen)wand(g,x0,y0,x1,y1,WAND,hell,st,istTuer?tuer(st,hell):(x+y)%2===0?(bst?gitterfenster(st,hell,W.h2(x,y,salt+3)):fenster(st,hell)):W.h2(x,y,salt)<.6?bild(st,hell):null,h.art);
+  const front=(x0,y0,x1,y1,hell,istTuer,salt)=>{if(!offen)wand(g,x0,y0,x1,y1,WAND,hell,st,istTuer?(med?tuerMed(hell):tuer(st,hell)):(x+y)%2===0?(bst?gitterfenster(st,hell,W.h2(x,y,salt+3)):fenster(st,hell)):W.h2(x,y,salt)<.6?bild(st,hell):null,h.art);
    else if(!istTuer)wand(g,x0,y0,x1,y1,STUMPF,hell,st,null,h.art);else{const a=W.iso(x0,y0),b=W.iso(x1,y1),c0=st===0?LEHM:st===1?PUTZ:MARMOR,L=(u0,u1)=>{g.save();g.transform(b.x-a.x,b.y-a.y,0,-1,a.x,a.y);g.fillStyle=sh(c0,hell);g.fillRect(u0,0,u1-u0,STUMPF);g.fillStyle=sh(st===0?[88,74,54]:st===1?SOCKEL:MARMOR,hell*.9);g.fillRect(u0,0,u1-u0,4);g.fillStyle=sh(st===2?GOLD:BALKEN,hell);g.fillRect(u0?u0:u1-.05,0,.05,STUMPF+2);g.restore();};L(0,.24);L(.76,1);}};
   if(!has(x,y+1))front(x,y+1,x+1,y+1,.74,dr&&h.door.side==='y',57);if(!has(x+1,y))front(x+1,y+1,x+1,y,.94,dr&&h.door.side==='x',58);}
  if(!offen){// Dach: je Feld eine Fläche, die Ecken steigen vom Rand zur Mitte an
   const hoch=dachMalen(g,h,h.tiles,has);
-  if(bst||kas||med){h.rauch=null;if(hoch){// Dachfigur ans hintere Ende des Firsts, damit das Namensschild sie nicht verdeckt
+  if(bst||kas){h.rauch=null;if(hoch){// Dachfigur ans hintere Ende des Firsts, damit das Namensschild sie nicht verdeckt
    const zs=k=>{const x=k%N,y=(k/N)|0;return h.eck(x,y)+h.eck(x+1,y)+h.eck(x+1,y+1)+h.eck(x,y+1);},zm=Math.max(...h.tiles.map(zs)),cx=(h.bx0+h.bx1)/2,cy=(h.by0+h.by1)/2;let e=null,ed=-1;
-   for(const k of h.tiles){if(zs(k)!==zm)continue;const x=k%N,y=(k/N)|0,d=Math.abs(x-cx)+Math.abs(y-cy)-(x+y)*.01;if(d>ed){ed=d;e={x,y,z:zm+4*WAND};}}(kas?dachZier:med?dachMed:dachTier)(g,e||hoch,st);}}
+   for(const k of h.tiles){if(zs(k)!==zm)continue;const x=k%N,y=(k/N)|0,d=Math.abs(x-cx)+Math.abs(y-cy)-(x+y)*.01;if(d>ed){ed=d;e={x,y,z:zm+4*WAND};}}(kas?dachZier:dachTier)(g,e||hoch,st);}}
   else if(hoch&&h.n>=4&&st>0){const z=hoch.z/4,cc=st===2?MARMOR:[128,120,108];kiste(g,hoch.x+.36,hoch.y+.36,hoch.x+.64,hoch.y+.64,z-3,z+13,cc);kiste(g,hoch.x+.33,hoch.y+.33,hoch.x+.67,hoch.y+.67,z+13,z+15.5,st===2?GOLD:[96,90,82]);const p=pt(hoch.x+.5,hoch.y+.5,z+15.5);h.rauch={x:p[0],y:p[1]};}else h.rauch=null;}
  return {c,ox,oy};}
 
 // Dach über den Feldern tiles; has sagt, wo das Dach endet (Traufe)
 function dachMalen(g,h,tiles,has){const st=h.st;
-  const bst=h.art==='beast',farbe=st===0?[170,144,84]:st===1?(bst?[100,64,38]:h.art==='medicus'?[112,128,134]:ZIEGEL):[166,62,44];let hoch=null;
+  const bst=h.art==='beast',farbe=st===0?[170,144,84]:st===1?(bst?[100,64,38]:h.art==='medicus'?[105,119,111]:ZIEGEL):[166,62,44];let hoch=null;
   for(const k of tiles){const x=k%N,y=(k/N)|0,zA=WAND+h.eck(x,y),zB=WAND+h.eck(x+1,y),zC=WAND+h.eck(x+1,y+1),zD=WAND+h.eck(x,y+1),A=pt(x,y,zA),Bp=pt(x+1,y,zB),C=pt(x+1,y+1,zC),Dp=pt(x,y+1,zD),s=W.h2(x,y,54);
    const hell=clamp(.86+.016*((zA+zD)-(zB+zC))+.007*((zA+zB)-(zC+zD))+(s-.5)*(st===0?.16:.06),.56,1.14),L=(P,Q,t)=>[P[0]+(Q[0]-P[0])*t,P[1]+(Q[1]-P[1])*t];
    if(!has(x,y+1))quad(g,[Dp,C,[C[0],C[1]+3],[Dp[0],Dp[1]+3]],sh(st===2?GOLD:st===0?[130,108,60]:BALKEN,.8));if(!has(x+1,y))quad(g,[C,Bp,[Bp[0],Bp[1]+3],[C[0],C[1]+3]],sh(st===2?GOLD:st===0?[130,108,60]:BALKEN,1));
@@ -478,28 +485,49 @@ function lagerMalen(ctx,h,a){ctx.globalAlpha=Math.min(1,a*1.5);const L=[];
   W.drawFig(ctx,o.g,Math.round(p.x),Math.round(p.y),o.st==='ablegen'?8:W.gehBild(o.dist),o.dir);if(o.carry)dingMalen(ctx,{kind:o.carry},h.st,p.x+(o.dir?-3:3),p.y-W.HOEHE+6,.75);}
  ctx.globalAlpha=1;}
 // ---------- Medicus und Krankenhaus ----------
-// Medicus (fest im Ludus): zwei OP-Tische mit Blut und Riemen, sonst Krankenbetten; im Gang Eimer mit Gliedmaßen, Instrumentenschrank,
-// Kräuterkorb, Amphoren mit Tinkturen; an den Wänden Knochensäge, Zangen, Kräuterbündel, Anatomietafel. Am Dach der Äskulapstab.
+// Medicus (fest im Ludus), eingerichtet wie der Behandlungsraum im Spiel (doktor.js): ein Behandlungsstuhl, höchstens zwei Betten
+// für Amputationen, dunkle Steinfliesen, Dielen mit Blut, Regal mit Gläsern, Knochensäge, Zange, Diplom, Strichliste, Kerze.
+// Außen wie die Fassade im Spiel (medicus-art.js): heller Stein, grüngraues Schieferdach mit Kamin, weißes Kreuz über der Tür.
 // Krankenhaus (baubar): nur Betten.
 function krankenbett(g,x,y,seed){kiste(g,x+.14,y+.22,x+.86,y+.78,0,6,[150,116,78]);kiste(g,x+.14,y+.22,x+.2,y+.78,6,13,[150,116,78],.9);
  kiste(g,x+.2,y+.26,x+.84,y+.74,6,8.4,[236,232,220]);kiste(g,x+.22,y+.32,x+.36,y+.68,8.4,10.4,[246,244,236]);flach(g,x+.44,y+.26,x+.84,y+.74,8.5,sh([214,206,186],1),sh([170,160,140],1));
  if(seed>.7){const p=pt(x+.6,y+.5,8.6);g.fillStyle='rgba(142,28,24,.75)';g.beginPath();g.ellipse(p[0],p[1],5,2.2,0,0,TAU);g.fill();}}// alter Blutfleck, gewaschen wird freitags
-function optisch(g,x,y,seed){oval(g,x+.5,y+.6,0,12,5,'rgba(122,22,18,.75)');for(const [dx,dy] of [[.22,.3],[.74,.3],[.22,.7],[.74,.7]])kiste(g,x+dx,y+dy,x+dx+.05,y+dy+.05,0,9,[120,112,100]);
- kiste(g,x+.18,y+.26,x+.82,y+.74,9,12,[196,190,178]);flach(g,x+.24,y+.32,x+.76,y+.68,12.1,'rgba(150,30,24,.55)');
- for(const u of [.35,.6]){const a=pt(x+u,y+.26,12),b=pt(x+u,y+.74,12);g.strokeStyle='#5a3a22';g.lineWidth=1.5;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}// Lederriemen
- const p=pt(x+.66,y+.42,12.5);g.fillStyle='#b4b8bc';g.fillRect(Math.round(p[0])-4,Math.round(p[1])-1,8,2);g.fillStyle='#6a4a2a';g.fillRect(Math.round(p[0])+4,Math.round(p[1])-1,3,2);}// Knochensäge
 function kramMed(g,x,y,seed,h){const a=S.lanista?.appearance||{};
  if(seed<.25){kiste(g,x+.36,y+.36,x+.64,y+.64,0,9,[96,84,70]);flach(g,x+.38,y+.38,x+.62,y+.62,9.1,'#5a1410');const p=pt(x+.48,y+.5,9);g.fillStyle=hex(a.skin||'#d9ac82');g.fillRect(Math.round(p[0])-1,Math.round(p[1])-10,3,10);g.fillRect(Math.round(p[0])-3,Math.round(p[1])-12,6,3);g.fillStyle='#8e1c18';g.fillRect(Math.round(p[0])-1,Math.round(p[1]),3,1);h.mist.push([x+.5,y+.5]);}// Eimer, eine Hand winkt heraus
  else if(seed<.45){kiste(g,x+.3,y+.38,x+.7,y+.62,0,16,[120,86,52]);flach(g,x+.3,y+.38,x+.7,y+.62,16.1,sh([120,86,52],1.15));for(let i=0;i<4;i++){const p=pt(x+.36+i*.09,y+.5,16);g.fillStyle=i%2?'#b4b8bc':'#8a8e92';g.fillRect(Math.round(p[0]),Math.round(p[1])-5,1,5);}}// Instrumentenschrank
  else if(seed<.62){oval(g,x+.5,y+.5,0,8,4,'#8a6a3a');oval(g,x+.5,y+.5,3,7,3.4,'#6a8a3a');oval(g,x+.46,y+.48,5,4,2,'#8aaa4a');}// Kräuterkorb
  else if(seed<.8){for(const [dx,dy,c] of [[.4,.42,[178,104,62]],[.58,.5,[120,140,110]],[.46,.6,[150,90,120]]]){const p=pt(x+dx,y+dy);g.fillStyle=sh(c,1);g.beginPath();g.ellipse(p[0],p[1]-5,3.4,5,0,0,TAU);g.fill();g.fillStyle='#e8e0c8';g.fillRect(Math.round(p[0])-2,Math.round(p[1])-6,4,2);}}}// Tinkturen
+// Behandlungsstuhl wie im Spiel (doktor.js): Holzpfosten, Lehne mit blutigem Lederpolster, Armlehnen, Brustgurt mit Schnalle, Blut darunter
+function behandlungsstuhl(g,x,y){oval(g,x+.5,y+.62,0,13,5,'rgba(94,31,28,.85)');oval(g,x+.62,y+.7,0,5,2,'rgba(110,29,24,.9)');
+ const H=[62,44,29],HL=[107,76,46],LE=[106,47,42];
+ for(const [dx,dy] of [[.28,.32],[.68,.32],[.28,.7],[.68,.7]])kiste(g,x+dx,y+dy,x+dx+.05,y+dy+.05,0,10,H);
+ kiste(g,x+.26,y+.3,x+.75,y+.77,10,13,HL);flach(g,x+.3,y+.34,x+.71,y+.73,13.1,sh(LE,1));// Sitz mit Leder
+ kiste(g,x+.24,y+.26,x+.31,y+.32,0,32,H);kiste(g,x+.24,y+.75,x+.31,y+.81,0,32,H);// hohe Pfosten der Lehne
+ kiste(g,x+.25,y+.32,x+.3,y+.75,13,31,LE,.9);flach(g,x+.25,y+.32,x+.3,y+.75,31.1,sh([138,63,54],1));// Lederlehne
+ for(const [u,z,r] of [[.45,24,3],[.6,19,2]]){const p=pt(x+.31,y+u,z);g.fillStyle='#4a1612';g.beginPath();g.ellipse(p[0],p[1],r+1,r*.6,0,0,TAU);g.fill();}// Blut auf dem Polster
+ for(const v of [.3,.74])kiste(g,x+.3,y+v,x+.72,y+v+.05,13,16,[91,67,48]);// Armlehnen
+ kiste(g,x+.3,y+.32,x+.33,y+.76,22,24,[74,47,29]);const s=pt(x+.33,y+.54,23);g.fillStyle='#c9a85e';g.fillRect(Math.round(s[0])-2,Math.round(s[1])-2,4,4);g.fillStyle='#4a2f1d';g.fillRect(Math.round(s[0])-1,Math.round(s[1])-1,2,2);// Brustgurt mit Schnalle
+ for(const v of [.38,.68]){const p=pt(x+.27,y+v,32);g.fillStyle='#7d8687';g.fillRect(Math.round(p[0])-2,Math.round(p[1])-2,4,3);}}// Eisenkappen
+// Bett für Amputationen: blutdurchtränktes Laken, Lederriemen, Eimer daneben
+function amputationsbett(g,x,y,seed){krankenbett(g,x,y,1);const p=pt(x+.62,y+.5,8.6);g.fillStyle='rgba(122,22,18,.8)';g.beginPath();g.ellipse(p[0],p[1],9,3.6,0,0,TAU);g.fill();
+ for(const u of [.44,.7]){const a=pt(x+u,y+.24,8.8),b=pt(x+u,y+.76,8.8);g.strokeStyle='#5a3a22';g.lineWidth=1.5;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}
+ kiste(g,x+.8,y+.8,x+.94,y+.94,0,6,[96,84,70]);flach(g,x+.81,y+.81,x+.93,y+.93,6.1,'#5a1410');}
+// Wände innen (wie der Behandlungsraum im Spiel): dunkle grüngraue Steinfliesen, Fugen, Blutspritzer
+function medInnen(R,h,hell,z,voll){R(0,0,1,h,sh([52,64,59],hell));for(let v=0,r=0;v<h-1;v+=4,r++)for(let u=-(r%2)*.09,i=0;u<1;u+=.18,i++){const a=Math.max(0,u+.01),b=Math.min(1,u+.17),q=z(i+r*11,61);if(b>a)R(a,v+.5,b-a,3.4,sh(q>.66?[63,76,70]:q>.33?[57,69,64]:[67,81,74],hell));}
+ if(voll)for(let i=0;i<5;i++){const u=.08+z(i,62)*.84,v=6+z(i,63)*(h-14);R(u,v,.04,2,sh([110,29,24],hell));if(i%2===0)R(u+.012,v-3,.012,3,sh([110,29,24],hell));}}
+// Wände außen (wie die Fassade im Spiel): heller Stein, Fugen, dunkle Ecksteine, Sockelband
+function medAussen(R,h,hell,z,voll){R(0,0,1,h,sh([201,188,156],hell));for(let v=5,r=0;v<h-4;v+=6,r++)for(let u=.04+(r%2)*.12;u<.92;u+=.26)R(u,v,.12,.8,sh([184,171,138],hell));
+ R(0,0,1,Math.min(5,h*.5),sh([122,119,102],hell));R(0,Math.min(5,h*.5)-1,1,1,sh([162,158,138],hell));
+ for(const u of [0,.92])for(let v=0,i=0;v<h;v+=7,i++)R(u,v,.08,6.4,sh(i%2?[160,156,136]:[148,143,124],hell));}
+// Wandschmuck innen wie im Spiel: Regal mit Gläsern (Auge, Herz, Zähne), Knochensäge, Zange, schiefes Diplom, Strichliste der Patienten, Kerze
 const schmuckMed=(st,seed)=>(R,h)=>{if(h<20)return;
- if(seed<.25){R(.3,h*.5,.36,2,'#b4b8bc');for(let i=0;i<8;i++)R(.3+i*.045,h*.5-1,.02,1,'#8a8e92');R(.66,h*.5-.5,.12,3,'#6a4a2a');}// Knochensäge
- else if(seed<.45){R(.3,h*.36,.4,h*.4,'#e4d8b8');R(.3,h*.36,.4,1,'#5a3a22');R(.47,h*.42,.06,4,'#a07a5a');R(.44,h*.5,.12,7,'#a07a5a');R(.42,h*.64,.04,6,'#a07a5a');R(.54,h*.64,.04,6,'#a07a5a');R(.4,h*.52,.04,5,'#a07a5a');R(.56,h*.52,.04,5,'#a07a5a');R(.48,h*.55,.04,2,'#8e1c18');}// Anatomietafel, das Kreuz markiert die Stelle
- else if(seed<.65){R(.24,h*.66,.52,1.2,'#5a3a22');for(const u of [.3,.45,.6])for(let i=0;i<3;i++)R(u+i*.02,h*.66-6+i,.015,6-i,['#7a9a4a','#9aaa5a','#a08a4a'][i]);}// Kräuterbündel
- else if(seed<.8){R(.4,h*.5,.04,8,'#8a8e92');R(.46,h*.5,.04,8,'#8a8e92');R(.42,h*.5+8,.06,2,'#8a8e92');R(.56,h*.48,.02,10,'#8a8e92');R(.54,h*.48+10,.06,1.5,'#8a8e92');}};// Zange und Skalpell
-function dachMed(g,hoch,st){const z=hoch.z/4,p=pt(hoch.x+.5,hoch.y+.5,z),k=1.6,R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(p[0]+dx*k),Math.round(p[1]+dy*k),Math.ceil(w*k),Math.ceil(h*k));};
- R(0,-22,1,22,'#6a4a2a');for(let i=0;i<6;i++)R(i%2?-2:1,-20+i*3,2,2,'#5a8a3a');R(-1,-23,3,2,'#5a8a3a');R(1,-22,1,1,'#1a120c');}// Äskulapstab
+ if(seed<.22){R(.12,h*.46,.76,1.4,'#5b4330');for(const [u,c1,c2] of [[.18,'#f2f2e6','#3a7fb0'],[.42,'#b0282a','#b0282a'],[.66,'#f0ead2','#e8c24a']]){R(u,h*.46+1.4,.14,7,'#8fb8b4');R(u+.02,h*.46+2,.1,5.6,'#3f6b66');R(u+.05,h*.46+4,.04,2,c1);R(u+.06,h*.46+4.6,.02,1,c2);}}// Gläser
+ else if(seed<.4){R(.24,h*.6,.46,1.6,'#9aa3a6');for(let i=0;i<9;i++)R(.26+i*.045,h*.6-1,.02,1,'#5f686a');R(.7,h*.6-.5,.1,3,'#6b4c2e');R(.36,h*.38,.03,7,'#8a8e92');R(.42,h*.38,.03,7,'#8a8e92');R(.37,h*.38+7,.07,2,'#8a8e92');}// Knochensäge und Zange
+ else if(seed<.55){R(.3,h*.42,.38,h*.3,'#d9cfa8');R(.3,h*.42+h*.3-1,.38,1,'#b8ab8a');R(.34,h*.62,.3,1,'#3a3327');R(.34,h*.58,.22,1,'#3a3327');R(.36,h*.48,.28,.8,'#a83a2c');}// Diplom (schief durchgestrichen)
+ else if(seed<.7){R(.18,h*.42,.64,h*.36,'#2b2f2a');R(.18,h*.42+h*.36-1,.64,1,'#5b4330');R(.18,h*.42,.64,1,'#5b4330');for(let i=0;i<9;i++)R(.24+i*.05+(i>4?.03:0),h*.58,.012,4,'#d8d4c4');R(.24,h*.46,.3,.8,'#d8d4c4');R(.6,h*.46,.012,3,'#d8d4c4');}// Strichliste: PATIENTEN ||||| |||| · GESUND: |
+ else if(seed<.9){R(.46,h*.5,.08,1.4,'#5b4330');R(.48,h*.5+1.4,.04,5,'#e8dcc0');R(.495,h*.5+6.4,.012,2,'#f4c45a');}};// Kerze
+// Haustür des Medicus mit weißem Kreuz (grün umrandet) darüber
+const tuerMed=hell=>(R,h)=>{tuer(1,hell)(R,h);if(h<20)return;const v=WAND*.74+3;R(.47,v,.06,9,'#3f8a4e');R(.4,v+5,.2,2.4,'#3f8a4e');R(.48,v+.6,.04,7.8,'#e8dfc4');R(.41,v+5.4,.18,1.6,'#e8dfc4');};
 // ---------- Echte Tiere (Test, Thomas 12.11.) ----------
 // Im ersten Beastrium sitzen in den zwei Käfigen nahe der Tür ein echter Hahn (Hahnen-Modell, CF) und ein echter Hund (DOG) zum Ausprobieren.
 // Antippen des Käfigs im offenen Haus öffnet die Großaufnahme wie im Hauptspiel: beim Hahn genau die aus dem Beastrium

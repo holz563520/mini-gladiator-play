@@ -168,7 +168,7 @@ const PAL=[
  [[118,92,62],[104,80,54],[130,102,70],[58,44,30]],// Bretterbude: grobe Bretter (4. Farbe = Spalten)
  [[150,140,124],[138,128,112],[160,150,134],[96,88,76]],// Kaserne: Steinplatten (4. Farbe = Fugen)
  [[222,214,198],[132,36,34],[206,168,74],[92,84,78]],// Prätorianerkaserne: weiß-rotes Schachbrett mit Gold
- [[214,208,196],[202,196,184],[224,218,206],[150,44,36]],// Medicus: helle Steinfliesen (4. Farbe = altes Blut)
+ [[74,58,42],[68,53,38],[80,63,45],[94,31,28]],// Medicus: dunkle Dielen wie im Behandlungsraum des Spiels (4. Farbe = Blut)
  [[206,202,190],[196,192,180],[216,212,200],[150,146,134]]// Krankenhaus: helle Fliesen (4. Farbe = Fugen)
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
@@ -182,7 +182,8 @@ function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageDat
   if(t===T.SCHMIEDE||t===T.SCHM_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,k3=t===T.SCHMIEDE?3:2,cx=(ux*k3)%1,cy=((uy*k3)+(t===T.SCHMIEDE?(((ux*k3)|0)&1)*.5:0))%1;col=cx<.06||cy<.06?P[3]:P[n<.6?0:n<.86?1:2];if(t===T.SCHMIEDE&&n>.965)col=[64,60,56];}
   if(t===T.BST_S){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+81)>.955||h2(x>>3,y>>2,v+83)>.97)col=P[3];if(h2(x,y,v+85)>.994)col=[220,212,190];}
   if(t===T.BEAST){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,r=(uy*3)|0,cx=(ux*3+(r&1)*.5)%1,cy=(uy*3)%1;col=cx<.07||cy<.08?P[3]:P[(h2(r,(ux*3+(r&1)*.5)|0,v+87)*3)|0];if(h2(x>>1,y,v+89)>.95)col=[196,170,100];}
-  if(t===T.MEDICUS||t===T.KRANK){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,cx=(ux*3)%1,cy=(uy*3)%1;col=cx<.05||cy<.05?(t===T.KRANK?P[3]:[150,144,132]):P[(h2((ux*3)|0,(uy*3)|0,v+97)*3)|0];if(t===T.MEDICUS&&(h2(x>>2,y>>1,v+99)>.95||h2(x>>3,y>>2,v+98)>.975))col=P[3];}
+  if(t===T.MEDICUS){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,pl=(uy*6)|0;col=(uy*6)%1<.14?[58,44,31]:P[(h2(pl,v,95)*3)|0];if(h2(x>>2,y>>1,v+99)>.93||h2(x>>3,y>>2,v+98)>.96)col=P[3];}
+  else if(t===T.KRANK){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,cx=(ux*3)%1,cy=(uy*3)%1;col=cx<.05||cy<.05?(t===T.KRANK?P[3]:[150,144,132]):P[(h2((ux*3)|0,(uy*3)|0,v+97)*3)|0];if(t===T.MEDICUS&&(h2(x>>2,y>>1,v+99)>.95||h2(x>>3,y>>2,v+98)>.975))col=P[3];}
   if(t===T.KAS_S){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,pl=(uy*5)|0;col=(uy*5)%1<.14?P[3]:P[(h2(pl,v,79)*3)|0];if(n>.95)col=P[3];}
   if(t===T.KASERNE){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,cx=(ux*2)%1,cy=(uy*2)%1;col=cx<.06||cy<.06?P[3]:P[(h2((ux*2)|0,(uy*2)|0,v+91)*3)|0];}
   if(t===T.KAS_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,m=Math.min(ux,uy,1-ux,1-uy);col=m<.04?P[2]:(((ux*4)|0)+((uy*4)|0))%2?P[1]:P[0];if(m<.04&&n>.7)col=P[3];}
