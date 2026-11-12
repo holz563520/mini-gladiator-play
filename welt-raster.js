@@ -35,7 +35,7 @@ const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Fel
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
 const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
-const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne'];
+const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
 const LUD={tx:39,ty:40,w:18,h:16,px:50};
@@ -76,11 +76,22 @@ const PAL=[
  [[112,106,96],[120,114,104],[104,98,90],[126,120,110]],// Gebäudefläche
  [[214,194,146],[222,202,154],[206,186,138],[226,208,162]],// Übungsplatz
  [[224,190,128],[232,200,140],[214,178,116],[238,210,154]],// Kampffläche der Arena (heller Sand)
- [[120,112,100],[128,120,108],[112,104,94],[134,126,114]]// Boden unter einer Tribüne
+ [[120,112,100],[128,120,108],[112,104,94],[134,126,114]],// Boden unter einer Tribüne
+ [[134,104,70],[142,112,76],[124,96,64],[96,122,66]],// Straße 1: Trampelpfad (Erde, am Rand Gras)
+ [[168,160,144],[184,176,160],[146,138,124],[204,198,184]],// Straße 2: Kiesweg
+ [[150,142,130],[164,156,142],[136,128,116],[92,86,78]],// Straße 3: Pflasterweg (4. Farbe = Fugen)
+ [[176,172,164],[188,184,176],[166,162,154],[104,100,94]],// Straße 4: Steinstraße (große Platten)
+ [[232,226,214],[240,236,226],[222,214,200],[168,74,52]]// Straße 5: Prachtstraße (heller Marmor, rotes Band)
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
  for(let y=0;y<=TH;y++)for(let x=0;x<TW;x++){const e=Math.abs(x-31.5)/32+Math.abs(y-16)/16;if(e>1.001)continue;let n=h2(x>>1,y,t*17+v*5),col=P[n<.5?0:n<.72?1:n<.9?2:3];
+  if(t>=T.STR1){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2;// Lage im Feld 0…1 entlang der beiden Feldachsen
+   if(t===T.STR1)col=e>.82&&n>.35?P[3]:P[n<.5?0:n<.8?1:2];
+   else if(t===T.STR2)col=P[(h2(x,y,t+v*3)*4)|0];
+   else if(t===T.STR3){const cx=(ux*6)%1,cy=((uy*6)+(((ux*6)|0)&1)*.5)%1;col=cx<.16||cy<.16?P[3]:P[n<.6?0:n<.85?1:2];}
+   else if(t===T.STR4){const cx=(ux*2)%1,cy=(uy*2)%1;col=cx<.06||cy<.06?P[3]:P[n<.7?0:n<.9?1:2];}
+   else{const m=Math.min(ux,uy,1-ux,1-uy);col=m>.1&&m<.2?P[3]:Math.abs(ux-.5)<.07&&Math.abs(uy-.5)<.07?[215,178,74]:P[n<.7?0:n<.92?1:2];}}
   if(t===T.BRUECKE&&((x+y*2)>>2)%3===0)col=P[3];if(t===T.FLUSS&&((x+y*3+v*7)%23)<3&&n>.4)col=P[3];
   let k=1;if(grid&&e>.93)k=y>16?.8:.9;const o=(y*TW+x)*4;d[o]=col[0]*k;d[o+1]=col[1]*k;d[o+2]=col[2]*k;d[o+3]=255;}
  g.putImageData(img,0,0);return c;}
