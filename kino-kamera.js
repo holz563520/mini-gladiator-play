@@ -261,6 +261,19 @@ function motionTick(X,sh){const mo=T.mo;if(!mo||!sh)return;const now=X.ctx.curre
  if(mo.thru&&!mo.exit&&k>.14){/* Austritt hinten */mo.exit=true;osc(X,'sine',70,34,now,.5,.4,.003);crunch(X,now,.1,.3,900,300);squelch(X,now+.02,.3,.32,1100);M.audioEngine?.ksPlay?.('backstab',1.3,.7);}
  if(mo.shoot&&!mo.wob&&k>=0){/* Schaft zittert nach: Schnarren im Takt des Zitterns, klingt in ~0,6 s ab */mo.wob=true;const c=X.ctx,o1=c.createOscillator(),g1=c.createGain(),l=c.createOscillator(),lg=c.createGain();o1.type='sawtooth';o1.frequency.setValueAtTime(140,now);o1.frequency.exponentialRampToValueAtTime(95,now+.7);g1.gain.setValueAtTime(.0001,now);g1.gain.linearRampToValueAtTime(.09,now+.01);g1.gain.exponentialRampToValueAtTime(.0001,now+.7);
   l.frequency.value=14;lg.gain.value=.05;l.connect(lg);lg.connect(g1.gain);const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=700;o1.connect(f);f.connect(g1);g1.connect(X.master);o1.start(now);l.start(now);o1.stop(now+.75);l.stop(now+.75);}}
+/* Fremde Geschosse (Wunsch Thomas 12.11.): Pfeile, Bolzen und Wurfspeere, die während der Nahaufnahme über das Feld fliegen und nichts mit der gezeigten Szene zu tun haben,
+   pfeifen ebenfalls – derselbe Klang wie beim Pfeil der Nahaufnahme, etwas leiser, je Geschoss leicht anders gestimmt, fallender Ton solange es fliegt. Höchstens 4 zugleich. Nur Ton. */
+function byStop(X,v){const t=X.ctx.currentTime;try{v.g.gain.cancelScheduledValues(t);v.g.gain.setTargetAtTime(0,t,.02);v.ng?.gain.setTargetAtTime(0,t,.02);for(const n of v.n)n.stop(t+.2);}catch{}}
+function byTick(X){const by=T.by||(T.by=new Map()),c=X.ctx,now=c.currentTime,shots=M.shots||[];
+ for(const [p,v] of by)if(!p.active||!shots.includes(p)){byStop(X,v);by.delete(p);}
+ for(const p of shots){if(!p.active||![1,9,10].includes(p.kind))continue;let v=by.get(p);
+  if(!v){if(by.size>=4)continue;const jav=p.kind===1,f0=(jav?950:2400)*(.9+Math.random()*.2),o1=c.createOscillator(),g=c.createGain(),l=c.createOscillator(),lg=c.createGain();v={t:now,f0,g,n:[o1,l]};
+   o1.type='triangle';o1.frequency.value=f0;g.gain.value=0;l.frequency.value=9+Math.random()*5;lg.gain.value=45;l.connect(lg);lg.connect(o1.frequency);o1.connect(g);g.connect(X.master);o1.start(now);l.start(now);v.o=o1;
+   if(X.noise){const n=c.createBufferSource(),f=c.createBiquadFilter(),ng=c.createGain();n.buffer=X.noise;n.loop=true;f.type='bandpass';f.Q.value=4;f.frequency.value=jav?1500:2800;ng.gain.value=0;n.connect(f);f.connect(ng);ng.connect(X.master);n.start(now,Math.random());v.n.push(n);v.ng=ng;v.f=f;}
+   by.set(p,v);}
+  const u=cl((now-v.t)/1.4,0,1),vol=Math.sin(Math.min(1,(now-v.t)/.12)*Math.PI*.5);v.g.gain.setTargetAtTime(.05*vol,now,.03);v.o.frequency.setTargetAtTime(v.f0*(1-.36*u),now,.04);if(v.ng){v.ng.gain.setTargetAtTime(.08*vol,now,.03);v.f.frequency.setTargetAtTime((p.kind===1?1500:2800)*(1-.4*u),now,.04);}}}
+function byEnd(X){if(!T.by)return;if(X)for(const v of T.by.values())byStop(X,v);T.by.clear();}
+/* nur für Prüfungen im Testbrowser */M.kinoTonProbe={start:o=>tonStart(o),stop:()=>tonStop(),flying:()=>T.by?.size||0};
 function tonStart(o){if(T.on)tonStop();const X=A();if(!X)return;T.on=true;T.hit=false;T.n++;T.death=o?.kind==='death'||!!o?.dead;T.kind=o?.kind;T.wid=o?.wid;T.mo=null;const t=X.ctx.currentTime;duck(X,true);
  /* Sog in die Zeitlupe: Rauschen von tief nach hoch, darunter ein abfallender Ton */noise(X,t,.4,.16,'bandpass',260,2200,1.4,.25);osc(X,'sawtooth',220,70,t,.5,.03,.2);
  /* tiefes Dröhnen, hält bis zum Ende */const c=X.ctx,g=c.createGain(),f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=180;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.09,t+.6);for(const fr of [41,61.5]){const o2=c.createOscillator();o2.type='sine';o2.frequency.value=fr;o2.connect(f);o2.start(t);T.nodes.push(o2);}f.connect(g);g.connect(X.master);T.nodes.push({g});
@@ -277,10 +290,11 @@ function tonHit(X){const t=X.ctx.currentTime,k=T.kind,heavy=HEAVY.includes(T.wid
  /* Pfeifen im Ohr nach dem Treffer */osc(X,'sine',2900,2750,t+.05,2.4,.018,.15);}
 function tonTick(){if(!T.on)return;const X=A();if(!X){tonStop();return;}const sh=M.injuryShots.arena?.shot;
  try{motionTick(X,sh);}catch(e){if(!T.err){T.err=1;console.warn('Kino-Ton Bewegung',e);}}
+ try{byTick(X);}catch(e){if(!T.err2){T.err2=1;console.warn('Kino-Ton Geschosse',e);}}
  if(sh&&!T.hit&&sh.hit){T.hit=true;tonHit(X);}
  /* Herzschlag im Takt (0,9 s); Tod: wird langsamer und setzt aus */const now=X.ctx.currentTime;if(now>=T.beat-.03){const i=Math.round((T.beat-(T.t0||T.beat))/.9);heart(X,Math.max(now,T.beat),T.death?.3*Math.max(0,1-i*.22):.28);T.t0??=T.beat;T.beat+=T.death?.9+i*.25:.9;if(T.death&&i>4)T.beat=1e9;}
  T.raf=requestAnimationFrame(tonTick);}
-function tonStop(){if(!T.on)return;T.on=false;T.mo=null;cancelAnimationFrame(T.raf);T.t0=null;const X=M.audioEngine?.cine?.();if(!X){T.nodes=[];T.duck=null;return;}const t=X.ctx.currentTime;
+function tonStop(){if(!T.on)return;T.on=false;T.mo=null;cancelAnimationFrame(T.raf);T.t0=null;const X=M.audioEngine?.cine?.();byEnd(X);if(!X){T.nodes=[];T.duck=null;return;}const t=X.ctx.currentTime;
  for(const n of T.nodes){try{if(n.g){n.g.gain.cancelScheduledValues(t);n.g.gain.setTargetAtTime(0,t,.12);}else n.stop(t+.6);}catch{}}T.nodes=[];
  /* zurück aus der Zeitlupe: kurzer Sog rückwärts */noise(X,t,.35,.12,'bandpass',2200,300,1.2,.02);duck(X,false);}
 
