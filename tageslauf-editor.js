@@ -7,7 +7,8 @@
 (()=>{
 const M=window.MG,W=window.WeltKarte,T=M?.weltTag,L=M?.weltLeben,Z=window.WeltSaetze;if(!T||!L)return;const S=M.s,$=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const sub=document.querySelector('.w-title');if(sub)sub.innerHTML='<b>RASTERKARTE</b><small>Editor · nichts wird gespeichert</small>';
+// AT2 (arena-theory-2.html): dieselbe Karte als „Arena Theory 2.0“, erreichbar aus dem Hauptmenü des Spiels; Werkzeuge anfangs eingeklappt
+const AT2=!!window.AT2,sub=document.querySelector('.w-title');if(sub)sub.innerHTML=AT2?'<b>ARENA THEORY 2.0</b><small>Vorschau · nichts wird gespeichert · <a href="index.html" style="color:#f4d37a">zum Hauptspiel</a></small>':'<b>RASTERKARTE</b><small>Editor · nichts wird gespeichert</small>';
 const ed=document.createElement('aside');ed.id='wEdit';ed.innerHTML=`<header><b>EDITOR</b><button class="w-x" data-fold aria-label="Einklappen">▾</button></header><div class="ed-body">
 <p class="ed-h">Uhrzeit</p><div class="ed-row" data-zeit><button class="w-btn" data-h="5.6">kurz vor Tageswechsel</button><button class="w-btn" data-h="7">Morgen</button><button class="w-btn" data-h="12">Mittag</button><button class="w-btn" data-h="18.4">Abend</button><button class="w-btn" data-h="20.6">Dämmerung</button><button class="w-btn" data-h="23">Nacht</button></div>
 <p class="ed-h">Tempo (nur zum Prüfen)</p><div class="ed-row" data-tempo><button class="w-btn" data-t="0">⏸</button><button class="w-btn on" data-t="1">1×</button><button class="w-btn" data-t="4">4×</button><button class="w-btn" data-t="20">20×</button></div>
@@ -20,7 +21,7 @@ const ed=document.createElement('aside');ed.id='wEdit';ed.innerHTML=`<header><b>
 <p class="ed-h">Gladiatoren</p><div class="ed-row"><button class="w-btn" data-wund>Verletzungen und Kampfgeschichte geben</button><button class="w-btn" data-rand>Zufälligen ansprechen</button><button class="w-btn" data-alle>Alle Sätze des Gewählten</button></div>
 <div class="ed-list" data-list hidden></div>
 <p class="w-tiny">Figur antippen: Nahaufnahme. „Hochnehmen“: Pinzette, dann Karte antippen zum Absetzen (Esc stellt zurück). Weit herauszoomen: Miniaturansicht.</p></div>`;
-document.getElementById('weltUi').appendChild(ed);
+document.getElementById('weltUi').appendChild(ed);if(AT2){ed.classList.add('zu');ed.querySelector('[data-fold]').textContent='▸';ed.querySelector('header b').textContent='TEST-WERKZEUGE';}
 ed.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
  if(b.dataset.fold!=null){ed.classList.toggle('zu');b.textContent=ed.classList.contains('zu')?'▸':'▾';}
  else if(b.dataset.h){T.setze(+b.dataset.h);}

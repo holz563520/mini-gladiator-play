@@ -234,7 +234,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
 
 // ---------- Start ----------
 try{window.ArenaUI?.close?.();}catch(e){}M.ui.click('nav:home');
-bake();makeRoster(60);resize();cam.s=clamp(Math.min(VW/1100,VH/760)*1.1,minScale(),maxScale());clampCam();
+bake();makeRoster(60);resize();cam.s=clamp(Math.max(.85,Math.min(VW/1100,VH/760)*1.1),minScale(),maxScale());// am Handy nicht in der Miniaturansicht startenclampCam();
 $('weltBoot')?.remove();last=performance.now();requestAnimationFrame(frame);
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
 window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
