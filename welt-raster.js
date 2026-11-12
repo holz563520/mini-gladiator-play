@@ -86,16 +86,32 @@ const PAL=[
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
  for(let y=0;y<=TH;y++)for(let x=0;x<TW;x++){const e=Math.abs(x-31.5)/32+Math.abs(y-16)/16;if(e>1.001)continue;let n=h2(x>>1,y,t*17+v*5),col=P[n<.5?0:n<.72?1:n<.9?2:3];
-  if(t>=T.STR1){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2;// Lage im Feld 0…1 entlang der beiden Feldachsen
-   if(t===T.STR1)col=e>.82&&n>.35?P[3]:P[n<.5?0:n<.8?1:2];
-   else if(t===T.STR2)col=P[(h2(x,y,t+v*3)*4)|0];
-   else if(t===T.STR3){const cx=(ux*6)%1,cy=((uy*6)+(((ux*6)|0)&1)*.5)%1;col=cx<.16||cy<.16?P[3]:P[n<.6?0:n<.85?1:2];}
-   else if(t===T.STR4){const cx=(ux*2)%1,cy=(uy*2)%1;col=cx<.06||cy<.06?P[3]:P[n<.7?0:n<.9?1:2];}
-   else{const m=Math.min(ux,uy,1-ux,1-uy);col=m>.1&&m<.2?P[3]:Math.abs(ux-.5)<.07&&Math.abs(uy-.5)<.07?[215,178,74]:P[n<.7?0:n<.92?1:2];}}
   if(t===T.BRUECKE&&((x+y*2)>>2)%3===0)col=P[3];if(t===T.FLUSS&&((x+y*3+v*7)%23)<3&&n>.4)col=P[3];
   let k=1;if(grid&&e>.93)k=y>16?.8:.9;const o=(y*TW+x)*4;d[o]=col[0]*k;d[o+1]=col[1]*k;d[o+2]=col[2]*k;d[o+3]=255;}
  g.putImageData(img,0,0);return c;}
 for(let gr=0;gr<2;gr++)for(let t=0;t<PAL.length;t++)for(let v=0;v<VAR;v++)sprites[gr][t*VAR+v]=tileSprite(t,v,!!gr);
+// Straßen wie die Fußwege bei RollerCoaster Tycoon: Der Belag füllt das Feld nicht aus. In der Mitte liegt ein Stück Weg,
+// und nur zu den Seiten, an denen eine weitere Straße (oder der alte Weg, eine Brücke) anschließt, läuft ein Arm bis zum Feldrand.
+// So entstehen Geraden, Kurven, Abzweige und Kreuzungen von selbst. Ein Bild je Straßenart und Anschlussmuster (16), bei Bedarf gemalt,
+// durchsichtig außerhalb des Belags; darunter liegt der normale Boden.
+const STR_W=.3,strCache=new Map(),istStr=t=>t>=T.STR1&&t<=T.STR5,schliesstAn=t=>istStr(t)||t===T.WEG||t===T.BRUECKE;
+function strMaske(tx,ty){let m=0;if(tx+1<N&&schliesstAn(feld[ix(tx+1,ty)]))m|=1;if(tx>0&&schliesstAn(feld[ix(tx-1,ty)]))m|=2;if(ty+1<N&&schliesstAn(feld[ix(tx,ty+1)]))m|=4;if(ty>0&&schliesstAn(feld[ix(tx,ty-1)]))m|=8;return m;}
+function strBild(t,m){const key=t*16+m;let c=strCache.get(key);if(c)return c;const [cv,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
+ const innen=(ux,uy,w)=>{const dx=ux-.5,dy=uy-.5,ax=Math.abs(dx),ay=Math.abs(dy);return (ax<=w&&ay<=w)||(ay<=w&&((m&1)&&dx>0||(m&2)&&dx<0))||(ax<=w&&((m&4)&&dy>0||(m&8)&&dy<0));};
+ for(let y=0;y<=TH;y++)for(let x=0;x<TW;x++){const a=(x-31.5)/32,b=(y-16)/16;if(Math.abs(a)+Math.abs(b)>1.001)continue;const ux=(a+b+1)/2,uy=(b-a+1)/2,n=h2(x>>1,y,t*17);let col=null;
+  if(t===T.STR1){// Trampelpfad: schmaler, ausgefranster Erdstreifen ohne Randstein
+   const w=STR_W-.07+(h2(x>>2,y>>1,91)-.5)*.09;if(innen(ux,uy,w))col=!innen(ux,uy,w-.05)&&n>.55?null:P[n<.5?0:n<.8?1:2];}
+  else if(innen(ux,uy,STR_W)){
+   if(!innen(ux,uy,STR_W-.045))col=t===T.STR5?[150,140,124]:[Math.round(P[2][0]*.62),Math.round(P[2][1]*.62),Math.round(P[2][2]*.62)];// Randstein
+   else if(t===T.STR2)col=P[(h2(x,y,t)*4)|0];
+   else if(t===T.STR3){const cx=(ux*6)%1,cy=((uy*6)+(((ux*6)|0)&1)*.5)%1;col=cx<.2||cy<.2?P[3]:P[n<.6?0:n<.85?1:2];}
+   else if(t===T.STR4){const cx=((ux+.25)*2)%1,cy=((uy+.25)*2)%1;col=cx<.07||cy<.07?P[3]:P[n<.7?0:n<.9?1:2];}
+   else col=!innen(ux,uy,STR_W-.11)?P[3]:Math.abs(ux-.5)+Math.abs(uy-.5)<.09?[215,178,74]:P[n<.7?0:n<.92?1:2];}
+  if(!col)continue;const o=(y*TW+x)*4;d[o]=col[0];d[o+1]=col[1];d[o+2]=col[2];d[o+3]=255;}
+ g.putImageData(img,0,0);strCache.set(key,cv);return cv;}
+// Ein Feld malen: Boden, bei Straßen darüber der Belag mit seinen Anschlüssen
+function maleFeld(g,sp,tx,ty,x,y){const t=feld[ix(tx,ty)],v=Math.floor(h2(tx,ty,3)*VAR);if(!istStr(t)){g.drawImage(sp[t*VAR+v],x,y);return;}
+ const unten=tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h?T.LUDUS:ty===WEG_TY||ty===WEG_TY+1?T.WEG:T.WIESE;g.drawImage(sp[unten*VAR+v],x,y);g.drawImage(strBild(t,strMaske(tx,ty)),x,y);}
 const TREE=[];
 for(let v=0;v<3;v++){const [c,g]=mkCanvas(44,70),R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
  g.fillStyle='rgba(15,20,10,.28)';g.beginPath();g.ellipse(22,64,15,5,0,0,TAU);g.fill();R(20,48,4,17,'#5a4027');R(22,48,2,17,'#6e5133');
@@ -106,7 +122,7 @@ for(let v=0;v<3;v++){const [c,g]=mkCanvas(44,70),R=(x,y,w,h,col)=>{g.fillStyle=c
 // ---------- Übersicht (einmal gezeichnet, für die weite Ansicht) ----------
 const OV=2;let overview=null,raster=true;
 function bake(){const [c,g]=mkCanvas(Math.ceil(WW/OV),Math.ceil(WH/OV));g.imageSmoothingEnabled=true;g.fillStyle='#1c2416';g.fillRect(0,0,c.width,c.height);g.scale(1/OV,1/OV);const sp=sprites[raster?1:0];
- for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const p=iso(tx,ty);g.drawImage(sp[feld[ix(tx,ty)]*VAR+Math.floor(h2(tx,ty,3)*VAR)],p.x-TW/2,p.y);}
+ for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const p=iso(tx,ty);maleFeld(g,sp,tx,ty,p.x-TW/2,p.y);}
  for(let v=0;v<2*N;v++)for(let tx=Math.max(0,v-N+1);tx<=Math.min(N-1,v);tx++){const ty=v-tx,b=baum[ix(tx,ty)];if(b>=0){const p=iso(tx+.5,ty+.5);g.drawImage(TREE[b],p.x-22,p.y-64);}}
  overview=c;chunks.clear();}
 
@@ -115,7 +131,7 @@ const CH=512,chunks=new Map();let frameNo=0;
 function chunk(cx,cy){const key=cy*1000+cx;let ch=chunks.get(key);if(ch)return ch;const [c,g]=mkCanvas(CH+2,CH+2),x0=cx*CH,y0=cy*CH,sp=sprites[raster?1:0],trees=[];g.fillStyle='#1c2416';g.fillRect(0,0,CH+2,CH+2);g.translate(-x0,-y0);
  const u0=Math.floor((x0-OX)/(TW/2))-2,u1=Math.ceil((x0+CH+2-OX)/(TW/2))+1,v0=Math.max(0,Math.floor((y0-OY)/(TH/2))-2),v1=Math.min(2*N-2,Math.ceil((y0+CH+2-OY)/(TH/2))+1);
  for(let v=v0;v<=v1;v++)for(let u=u0+((u0+v)&1);u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const i=ix(tx,ty),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY;
-  g.drawImage(sp[feld[i]*VAR+Math.floor(h2(tx,ty,3)*VAR)],x-TW/2,y);if(baum[i]>=0&&x>=x0&&x<x0+CH&&y+TH/2>=y0&&y+TH/2<y0+CH)trees.push({y:y+TH/2,tree:baum[i],x});}
+  maleFeld(g,sp,tx,ty,x-TW/2,y);if(baum[i]>=0&&x>=x0&&x<x0+CH&&y+TH/2>=y0&&y+TH/2<y0+CH)trees.push({y:y+TH/2,tree:baum[i],x});}
  ch={c,trees,used:frameNo};chunks.set(key,ch);return ch;}
 
 // ---------- Gebäude als Skizze ----------
