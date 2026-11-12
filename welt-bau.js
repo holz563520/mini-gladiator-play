@@ -27,10 +27,10 @@ const PREIS=WERKZEUG.platz.preis,PRO=4,PLAETZE=8,STUFEN=[{ab:0,name:'Strohpuppe'
 const ARENA_NAME=n=>n<20?'Sandgrube':n<48?'Kleine Arena':n<100?'Arena':'Große Arena';
 const stufeVon=n=>{let s=0;for(let i=0;i<STUFEN.length;i++)if(n>=STUFEN[i].ab)s=i;return s;};
 const ur=Uint8Array.from(W.feld);// Gelände vor allem Bauen (für „Abreißen“)
-const baubar=(tx,ty)=>W.inMap(tx,ty)&&(W.feld[W.ix(tx,ty)]===T.WIESE||W.feld[W.ix(tx,ty)]===T.LUDUS);
+const baubar=(tx,ty)=>W.inMap(tx,ty)&&!W.gebaeudeAt?.(tx,ty)&&(W.feld[W.ix(tx,ty)]===T.WIESE||W.feld[W.ix(tx,ty)]===T.LUDUS);
 const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB||istStr(t))&&ur[k]!==t;};
 // Straßen dürfen auch auf den alten Weg und über eine andere Straße (Ausbau, voller Preis)
-const strBaubar=(k,typ)=>{const t=W.feld[k];return t===T.WIESE||t===T.LUDUS||t===T.WEG||(istStr(t)&&t!==typ);};
+const strBaubar=(k,typ)=>{if(W.gebaeudeAt?.(k%N,Math.floor(k/N)))return false;const t=W.feld[k];return t===T.WIESE||t===T.LUDUS||t===T.WEG||(istStr(t)&&t!==typ);};
 
 // ---------- Puppen-Bilder (4 Stufen, die Drehpuppe in 8 Drehstellungen) ----------
 const PW=48,PH=66,AX=24,AY=58,FRAMES=8,img=[],PK=.42;// PK: Puppen passend zu den kleinen Figuren verkleinert

@@ -30,7 +30,8 @@ S.lion={stage:'done',recruits:[],base:[]};S.medic=Object.assign(S.medic||{},{sta
 S.wanderers={version:1,next:(S.day||1)+99999,group:null,known:[]};
 
 // ---------- Raster ----------
-const N=96,TW=64,TH=32,OX=N*TW/2,OY=140,WW=N*TW,WH=N*TH+OY+60,TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v;
+// 2.0-Leistungstest: doppelte Seitenlänge; die bisherige Testkarte bleibt bei 96.
+const N=window.AT2?192:96,TW=64,TH=32,OX=N*TW/2,OY=140,WW=N*TW,WH=N*TH+OY+60,TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Feldes; Mitte: iso(tx+.5,ty+.5)
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
