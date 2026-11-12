@@ -18,8 +18,8 @@
 // · Überall hängen Bilder des Lanista mit Durchhalteparolen (SPRUECHE). Im offenen Haus zeigt die Maus über einem Bild
 //   oder ein Antippen den Spruch; ab Zoom 1,3 steht über jedem Bild eine lesbare Tafel. Die Sprüche werden bei jedem Öffnen
 //   des Hauses neu ausgelost (ohne Wiederholung im selben Haus).
-// · Dach: wird durchsichtig, wenn die Maus über dem Haus steht, wenn man hineingezoomt hat und das Haus in der Bildmitte liegt
-//   oder wenn man es antippt (bleibt dann offen; Antippen einer Stelle ohne Bild schließt). Offen sind die vorderen Wände kniehoch.
+// · Dach: nur nah herangezoomt (Zoom ab 1,5) wird es durchsichtig: Haus in der Bildmitte, unter der Maus oder angetippt.
+//   Zoomt man weiter weg, sind alle Dächer von selbst wieder zu (Thomas 12.11.). Offen sind die vorderen Wände kniehoch.
 // · Leistung: Jedes Haus wird zweimal vorgezeichnet (geschlossen, offen) und nur neu gemalt, wenn sich sein Grundriss ändert.
 //   Lebendig sind nur Rauch, Ratten und Fliegen (ein paar Rechtecke je Bild).
 // · Noch keine Spielwirkung: Schlafplätze und Ambosse zählen nur.
@@ -273,7 +273,7 @@ function neu(){const seen=new Set(),out=[];for(let k=0;k<N*N;k++){if(!STUFE.has(
 const hausAt=(tx,ty)=>haeuser.find(h=>tx>=h.bx0&&tx<=h.bx1&&ty>=h.by0&&ty<=h.by1&&h.has(tx,ty));
 // Maus über dem Haus öffnet das Dach
 let maus=null;W.canvas.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'){maus=null;return;}const r=W.canvas.getBoundingClientRect();maus={sx:e.clientX-r.left,sy:e.clientY-r.top};});W.canvas.addEventListener('pointerleave',()=>{maus=null;});
-let last=performance.now(),spruch=null;
+let last=performance.now(),spruch=null;const OFFEN_AB=1.5;
 function zeichne(ctx){const h=this.h,mal=h.art==='schmiede'?maleSchmiede:male;if(!h.zu)h.zu=mal(h,false);const a=h.offen,t=performance.now()/1000;
  if(a>.01){if(!h.auf)h.auf=mal(h,true);ctx.drawImage(h.auf.c,h.auf.ox,h.auf.oy);
   if(h.st===0&&a>.5&&!W.mini){// Ratten huschen durch die Gänge, Fliegen kreisen über Haufen und Eimer
@@ -299,7 +299,9 @@ const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=perfo
  // Maus über einem Bild des Lanista im offenen Haus: Spruch zeigen (die Wand steht über dem Feld, deshalb auch das Feld davor prüfen)
  if(hm&&hm.offen>.8){const p=bildAt(hm,Math.floor(mt.tx),Math.floor(mt.ty))||bildAt(hm,Math.floor(mt.tx+.6),Math.floor(mt.ty+.6));if(p)spruch={p,t:1.2};}
  if(spruch){spruch.t-=dt;if(spruch.t<=0)spruch=null;}
- for(const h of haeuser){const ziel=fest.has(h.id)||h===hm||h===hc?1:0;if(ziel&&h.offen===0)wuerfeln(h);// bei jedem Öffnen hängen andere Sprüche
+ // Dach offen nur nah herangezoomt (ab OFFEN_AB): Haus in der Bildmitte, unter der Maus oder angetippt. Weiter weg sind alle Dächer zu.
+ const nah=W.cam.s>=OFFEN_AB;if(!nah&&fest.size)fest.clear();
+ for(const h of haeuser){const ziel=nah&&(fest.has(h.id)||h===hm||h===hc)?1:0;if(ziel&&h.offen===0)wuerfeln(h);// bei jedem Öffnen hängen andere Sprüche
   h.offen+=clamp(ziel-h.offen,-dt*4,dt*4);
   const p0=W.iso(h.bx0,h.by1+1).x,p1=W.iso(h.bx1+1,h.by0).x;if(p1<view.x0-40||p0>view.x1+40||h.key<view.y0-10||W.iso(h.bx0,h.by0).y-90>view.y1)continue;
   if(!h.item)h.item={y:h.key,h,draw:zeichne};items.push(h.item);}};

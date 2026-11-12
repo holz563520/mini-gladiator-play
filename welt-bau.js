@@ -137,7 +137,7 @@ function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,
  box.querySelector('span').textContent=t;}
 function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
  const a=drag.a,betten0=M.weltGebaeude?.betten()||0,amb0=M.weltGebaeude?.ambosse?.()||0;let cx=0,cy=0;for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y;}cx/=ok.length;cy/=ok.length;
- if(!frei)S.gold=(S.gold||0)-preis;W.rebake();const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
+ if(!frei)S.gold=(S.gold||0)-preis;W.rebake(ok);const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
  let d=0;const say=(s,col)=>{text.push({x:cx,y:cy-30,t:-d,s,col});d+=.6;};if(preis)say('−'+preis+' G','#f29b83');if(r.mehr)say('+'+mz(r.mehr,'Puppe','Puppen'),'#f4d37a');if(r.besser>=0)say('Bessere Puppen: '+STUFEN[r.besser].mz+'!','#fff2b0');
  const bd=(M.weltGebaeude?.betten()||0)-betten0;if(bd>0)say('+'+mz(bd,'Schlafplatz','Schlafplätze'),'#f4d37a');if(bd<0)say(bd+' Schlafplätze','#f29b83');const ad=(M.weltGebaeude?.ambosse?.()||0)-amb0;if(ad>0)say('+'+mz(ad,'Amboss','Ambosse'),'#f4d37a');if(ad<0)say(ad+' Ambosse','#f29b83');
  if(r.plaetze>0)say('+'+r.plaetze+' Sitzplätze','#f4d37a');if(r.plaetze<0)say(r.plaetze+' Sitzplätze','#f29b83');zeigeGold();}
@@ -180,8 +180,8 @@ const tap0=H.tap;H.tap=(p,w)=>mode?true:tap0?tap0(p,w):false;
 
 function bauen(wz,x0,y0,x1,y1,frei){const m=mode;mode=wz;drag={a:{tx:x0,ty:y0},b:{tx:x1,ty:y1}};auswahl();const r={felder:info.ok.length,preis:info.preis,genug:info.genug};baue(frei);drag=null;info=null;mode=m;hilfe();return r;}
 // Start: eine Arena hinter dem Ludus (ersetzt das Arena-Tor). Kampffläche 8 × 6, zwei Reihen Tribünen, Durchgang zum Ludus.
-bauen('arena',45,30,52,35,true);bauen('trib',43,28,54,37,true);for(const k of [W.ix(48,36),W.ix(49,36),W.ix(48,37),W.ix(49,37)])W.feld[k]=ur[k];
-neu.clear();W.rebake();rechne(true);
+const O=W.O||0,durch=[W.ix(48+O,36+O),W.ix(49+O,36+O),W.ix(48+O,37+O),W.ix(49+O,37+O)];bauen('arena',45+O,30+O,52+O,35+O,true);bauen('trib',43+O,28+O,54+O,37+O,true);for(const k of durch)W.feld[k]=ur[k];
+neu.clear();W.rebake(durch);rechne(true);
 M.weltBau={PREIS,PRO,PLAETZE,STUFEN,WERKZEUG,SITZ,HOCH,setMode,get mode(){return mode;},felder:()=>felder,puppen:()=>[...puppen.values()],arenen:()=>arenen,tribs:()=>tribs,plan,stufeVon,beiAenderung(fn){horcher.push(fn);},
  bauen(a,b,c,d,e){return typeof a==='string'?bauen(a,b,c,d,e):bauen('platz',a,b,c,d);}};
 })();

@@ -14,7 +14,8 @@
 // =====================================================================================================================
 (()=>{
 const M=window.MG,W=window.WeltKarte,H=window.WeltHook,B=M?.weltBau;if(!M||!W||!H||!B)return;const S=M.s;
-const N=W.N,LUD=W.LUD,WEG=58.5,TAU=Math.PI*2,rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[(Math.random()*a.length)|0];
+// Besucher kommen auf dem Weg aus höchstens 45 Feldern Entfernung (große Karte: nicht vom echten Kartenrand)
+const N=W.N,LUD=W.LUD,WEG=(W.WEG_TY??58)+.5,RL=Math.max(-1,LUD.tx-45),RR=Math.min(N,LUD.tx+LUD.w+45),TAU=Math.PI*2,rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[(Math.random()*a.length)|0];
 // ---------- Aussehen: Stände mit Kleiderfarben und Statur ----------
 const STAND=[
  {name:'Bauer',n:5,tuch:['#8a6f4a','#7a7446','#6f5a3c','#93805a','#5f6a44'],h:[160,182],w:[62,92]},
@@ -41,18 +42,18 @@ function gibSitz(v){if(v.sitz){v.sitz.v=null;frei.push(v.sitz);v.sitz=null;}}
 const P=(tx,ty)=>W.iso(tx+rnd(-.5,.5),ty+rnd(-.5,.5));
 function spalte(west,a){let lo=LUD.tx-1.5,hi=LUD.tx+LUD.w+1.5;if(a)for(const k of a.tribs.concat(a.floor)){const x=k%N;if(x-1.5<lo)lo=x-1.5;if(x+2.5>hi)hi=x+2.5;}return west?lo:hi;}
 function hin(v){const s=nimmSitz(v),as=B.arenen();v.sitz=s;const c=W.tileAt(v.x,v.y),west=v.west,pts=[];
- if(!as.length){v.ziel=null;v.pts=[P(west?0:N-1,WEG)];v.st='weg';return;}
+ if(!as.length){v.ziel=null;v.pts=[P(west?RL+1:RR-1,WEG)];v.st='weg';return;}
  const a=s?as[s.a]||as[0]:as[(Math.random()*as.length)|0],col=spalte(west,a),ty=s?s.ty:a.ty+rnd(-2,2);
  if(c.ty>LUD.ty+LUD.h){pts.push(P(col,WEG));}
  if(Math.abs(c.tx-col)>1.5||c.ty>LUD.ty+LUD.h)pts.push(P(col,ty));
  if(s)pts.push({x:s.x,y:W.iso(s.tx,s.ty).y});v.pts=pts;v.st='hin';}
-function weg(v){gibSitz(v);const c=W.tileAt(v.x,v.y),a=B.arenen()[0],col=spalte(v.west,a);v.pts=[P(col,c.ty),P(col,WEG),P(v.west?-1:N,WEG)];v.st='weg';}
+function weg(v){gibSitz(v);const c=W.tileAt(v.x,v.y),a=B.arenen()[0],col=spalte(v.west,a);v.pts=[P(col,c.ty),P(col,WEG),P(v.west?RL:RR,WEG)];v.st='weg';}
 
 // ---------- Besucher ----------
 const leute=[];let soll=100;
 function zeichne(ctx){const x=Math.round(this.dx),y=Math.round(this.dy);
  if(W.mini)W.drawMini(ctx,this.g,x,y);else if(this.st==='sitz')W.drawSit(ctx,this.g,x,y,this.dir);else W.drawFig(ctx,this.g,x,y,this.f,this.dir);}
-function neuer(vorlauf){const west=Math.random()<.5,p=P(west?-1:N,WEG),g=pick(typen),v={x:p.x,y:p.y,dx:p.x,dy:p.y,west,g,name:pick(vornamen)+' '+pick(nachnamen),stand:g.stand,dir:west?0:1,f:0,dist:Math.random()*60,sp:rnd(13,19),seed:Math.random()*10,st:'neu',pts:null,sitz:null,t:0,draw:zeichne};leute.push(v);
+function neuer(vorlauf){const west=Math.random()<.5,p=P(west?RL:RR,WEG),g=pick(typen),v={x:p.x,y:p.y,dx:p.x,dy:p.y,west,g,name:pick(vornamen)+' '+pick(nachnamen),stand:g.stand,dir:west?0:1,f:0,dist:Math.random()*60,sp:rnd(13,19),seed:Math.random()*10,st:'neu',pts:null,sitz:null,t:0,draw:zeichne};leute.push(v);
  if(vorlauf){hin(v);if(v.st==='hin'&&v.sitz&&Math.random()<.6){v.x=v.sitz.x;v.y=W.iso(v.sitz.tx,v.sitz.ty).y;v.pts=[];v.st='sitz';v.t=rnd(5,110);}
   else if(v.pts&&v.pts.length){const i=(Math.random()*v.pts.length)|0,a=i?v.pts[i-1]:v,b=v.pts[i],u=Math.random();v.x=a.x+(b.x-a.x)*u;v.y=a.y+(b.y-a.y)*u;v.pts=v.pts.slice(i);}}}
 function setze(n){typenBauen();soll=Math.max(0,n|0);while(leute.length>soll)gibSitz(leute.pop());while(leute.length<soll)neuer(true);}

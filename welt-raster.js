@@ -30,16 +30,17 @@ S.lion={stage:'done',recruits:[],base:[]};S.medic=Object.assign(S.medic||{},{sta
 S.wanderers={version:1,next:(S.day||1)+99999,group:null,known:[]};
 
 // ---------- Raster ----------
-// 2.0-Leistungstest: doppelte Seitenlänge; die bisherige Testkarte bleibt bei 96.
-const N=window.AT2?192:96,TW=64,TH=32,OX=N*TW/2,OY=140,WW=N*TW,WH=N*TH+OY+60,TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v;
+// Arena Theory 2.0: große Karte (432 × 432, fünfmal die Fläche der 192er-Karte) mit Biomen rundherum; der alte Teil liegt
+// um O verschoben in der Mitte. Der Tageslauf-Editor bleibt bei 96 ohne Biome.
+const GROSS=!!window.AT2,N=GROSS?432:96,O=GROSS?168:0,TW=64,TH=32,OX=N*TW/2,OY=140,WW=N*TW,WH=N*TH+OY+60,TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Feldes; Mitte: iso(tx+.5,ty+.5)
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
 const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
-const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede'];
+const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
-const LUD={tx:39,ty:40,w:18,h:16,px:50};
+const LUD={tx:39+O,ty:40+O,w:18,h:16,px:50};
 const vonLudus=(x,y)=>iso(LUD.tx+x/LUD.px,LUD.ty+y/LUD.px);
 // Gebäude der Einführungen, Lage aus dem alten Ludus (ludus.js places, hs-art.js BEASTRIUM), auf ganze Felder gelegt
 const BAU=[
@@ -52,18 +53,29 @@ const BAU=[
  {id:'beastrium',name:'BEASTRIUM',l:[652,298,196,126],hoch:40,wand:'#96795a',dach:'#6b4a2c'}
 ];
 for(const [i,b] of BAU.entries()){b.tx=LUD.tx+Math.round(b.l[0]/LUD.px);b.ty=LUD.ty+Math.round(b.l[1]/LUD.px);b.w=Math.max(1,Math.round(b.l[2]/LUD.px));b.h=Math.max(1,Math.round(b.l[3]/LUD.px));b.i=i;}
-// Gelände: Wald links (linke Ecke der Raute), Fluss rechts vom Ludus, ein Weg über die ganze Karte vor dem Ludus
-const flussX=ty=>72+Math.round(3*Math.sin(ty/9)+2*Math.sin(ty/4.3)),WEG_TY=58;
-for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){let t=T.WIESE;
- if(ty-tx>30+h2(tx>>2,ty>>2,5)*9)t=T.WALD;
- if(Math.abs(tx-flussX(ty))<=1)t=T.FLUSS;
- if(ty===WEG_TY||ty===WEG_TY+1)t=t===T.FLUSS?T.BRUECKE:T.WEG;
+// Gelände: Wald links (linke Ecke der Raute), Fluss rechts vom Ludus, ein Weg über die ganze Karte vor dem Ludus.
+// Große Karte: außerhalb eines Kreises um den Ludus (Rand verrauscht) liegen die Biome, nach Richtung verteilt:
+// rechts Wüste (mit Oasen), unten Dschungel (mit Tümpeln), links Wald (mit Lichtungen), oben Sumpf (viel Moorwasser).
+const flussX=ty=>O+72+Math.round(3*Math.sin(ty/9)+2*Math.sin(ty/4.3)),WEG_TY=O+58;
+function vn(x,y,s){const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=h2(xi,yi,s),b=h2(xi+1,yi,s),c=h2(xi,yi+1,s),d=h2(xi+1,yi+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
+const fbm=(x,y,s)=>vn(x,y,s)*.65+vn(x*2.1,y*2.1,s+7)*.35;
+const B_=window.WeltNatur?.BIOM||{KERN:0,WALD:1,WUESTE:2,DSCHUNGEL:3,SUMPF:4},biom=new Uint8Array(N*N),SEKTOR=[B_.WUESTE,B_.DSCHUNGEL,B_.WALD,B_.SUMPF];
+for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){let t=T.WIESE,bi=0;const lx=tx-O,ly=ty-O;
+ if(GROSS){const dx=tx-O-48,dy=ty-O-48,d=Math.hypot(dx,dy)+(fbm(tx/22,ty/22,3)-.5)*44;
+  if(d>112){const a=Math.atan2(dx+dy,dx-dy)+(fbm(tx/40,ty/40,4)-.5)*1.6;bi=SEKTOR[((Math.round(a/(Math.PI/2))%4)+4)%4];const w=fbm(tx/9,ty/9,5);
+   t=bi===B_.WALD?(w>.72?T.WIESE:T.WALD):bi===B_.WUESTE?(w>.84?T.FLUSS:w>.77?T.WIESE:T.SAND):bi===B_.DSCHUNGEL?(w>.8?T.MOOR:T.DSCH):(w>.52?T.MOOR:T.SUMPF);}}
+ if(!bi&&ly-lx>30+h2(tx>>2,ty>>2,5)*9)t=T.WALD;
+ if(Math.abs(tx-flussX(ty))<=1)t=T.FLUSS;else if(bi===B_.SUMPF&&Math.abs(tx-flussX(ty))<=3)t=T.MOOR;
+ if(ty===WEG_TY||ty===WEG_TY+1)t=t===T.FLUSS||t===T.MOOR?T.BRUECKE:T.WEG;
  if(tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h)t=T.LUDUS;
- feld[ix(tx,ty)]=t;}
+ feld[ix(tx,ty)]=t;biom[ix(tx,ty)]=bi||(t===T.WALD?B_.WALD:0);}
 for(const b of BAU)for(let y=b.ty;y<b.ty+b.h;y++)for(let x=b.tx;x<b.tx+b.w;x++){feld[ix(x,y)]=b.flach?T.PLATZ:T.BAU;bauAuf[ix(x,y)]=b.i;}
-// Bäume: im Wald, nicht direkt am Weg
-const baum=new Int8Array(N*N).fill(-1);
-for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++)if(feld[ix(tx,ty)]===T.WALD&&Math.abs(ty-WEG_TY-.5)>1.6&&h2(tx,ty,9)<.72)baum[ix(tx,ty)]=Math.floor(h2(tx,ty,11)*3);
+// Naturobjekte (welt-natur.js): je Feld höchstens eines. Alles darauf ist entfernbar (obj = 0); nicht am Weg, nicht um den Ludus.
+const NB=window.WeltNatur,obj=new Uint8Array(N*N),BODEN_NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FLUSS]),
+ BODEN_NAME={[T.WIESE]:'wiese',[T.WALD]:'wald',[T.SAND]:'sand',[T.DSCH]:'dsch',[T.SUMPF]:'sumpf',[T.MOOR]:'moor',[T.FLUSS]:'wasser'};
+if(NB)for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const k=ix(tx,ty),t=feld[k],lx=tx-O,ly=ty-O;if(!BODEN_NATUR.has(t)||Math.abs(ty-WEG_TY-.5)<=1.6)continue;if(lx>=24&&lx<=74&&ly>=20&&ly<=64)continue;
+ obj[k]=NB.waehle(biom[k],BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6));}
+const ovar=(tx,ty)=>NB?NB.variante(tx,ty):0;
 
 // ---------- Bildchen: Felder und Bäume ----------
 function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=false;return [c,g];}
@@ -88,11 +100,19 @@ const PAL=[
  [[226,220,206],[60,66,84],[176,60,48],[206,168,74]],// Fürstengemächer: Mosaik (hell, dunkel, rot, gold)
  [[92,78,60],[80,68,52],[104,88,66],[34,30,28]],// Rostgrube: festgetretener Dreck mit Ruß
  [[132,126,116],[144,138,128],[120,114,106],[78,72,66]],// Waffenschmiede: Steinplatten (4. Farbe = Fugen)
- [[54,52,58],[64,62,68],[46,44,50],[184,140,72]]// Kaiserliche Waffenschmiede: dunkler Basalt mit Bronzeeinlage
+ [[54,52,58],[64,62,68],[46,44,50],[184,140,72]],// Kaiserliche Waffenschmiede: dunkler Basalt mit Bronzeeinlage
+ [[216,186,126],[224,196,136],[206,174,116],[186,152,98]],// Sand (4. Farbe = Rippel)
+ [[42,80,38],[50,92,44],[36,70,34],[74,112,52]],// Dschungelboden (4. Farbe = Laub)
+ [[84,90,56],[94,100,62],[74,80,50],[60,64,42]],// Sumpf (4. Farbe = Pfützen)
+ [[46,68,56],[54,78,64],[40,60,50],[96,116,82]]// Moorwasser (4. Farbe = Algen)
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
  for(let y=0;y<=TH;y++)for(let x=0;x<TW;x++){const e=Math.abs(x-31.5)/32+Math.abs(y-16)/16;if(e>1.001)continue;let n=h2(x>>1,y,t*17+v*5),col=P[n<.5?0:n<.72?1:n<.9?2:3];
+  if(t===T.SAND){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,wl=(ux*2.2+uy*.8+Math.sin(uy*6+v)*.12)%1;col=wl<.1?P[3]:P[n<.55?0:n<.85?1:2];if(n>.985)col=[168,140,96];}
+  if(t===T.DSCH){col=P[n<.5?0:n<.8?1:2];if(h2(x>>1,y,v+51)>.9)col=P[3];if(h2(x,y,v+53)>.988)col=[120,70,40];}
+  if(t===T.SUMPF){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+61)>.82)col=P[3];if(h2(x,y,v+63)>.97)col=[110,130,70];}
+  if(t===T.MOOR){col=P[n<.6?0:n<.88?1:2];if(h2(x>>1,y,v+71)>.94)col=P[3];}
   if(t===T.SCHM_S){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+41)>.84)col=P[3];if(h2(x,y,v+43)>.996)col=[176,92,40];}
   if(t===T.SCHMIEDE||t===T.SCHM_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,k3=t===T.SCHMIEDE?3:2,cx=(ux*k3)%1,cy=((uy*k3)+(t===T.SCHMIEDE?(((ux*k3)|0)&1)*.5:0))%1;col=cx<.06||cy<.06?P[3]:P[n<.6?0:n<.86?1:2];if(t===T.SCHMIEDE&&n>.965)col=[64,60,56];}
   if(t===T.UNT_S){col=P[n<.45?0:n<.7?1:n<.9?2:0];if(h2(x>>1,y,v+31)>.93)col=P[3];if(h2(x>>3,y>>2,v+33)>.86)col=[70,58,40];}
@@ -124,27 +144,35 @@ function strBild(t,m){const key=t*16+m;let c=strCache.get(key);if(c)return c;con
 // Ein Feld malen: Boden, bei Straßen darüber der Belag mit seinen Anschlüssen
 function maleFeld(g,sp,tx,ty,x,y){const t=feld[ix(tx,ty)],v=Math.floor(h2(tx,ty,3)*VAR);if(!istStr(t)){g.drawImage(sp[t*VAR+v],x,y);return;}
  const unten=tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h?T.LUDUS:ty===WEG_TY||ty===WEG_TY+1?T.WEG:T.WIESE;g.drawImage(sp[unten*VAR+v],x,y);g.drawImage(strBild(t,strMaske(tx,ty)),x,y);}
-const TREE=[];
-for(let v=0;v<3;v++){const [c,g]=mkCanvas(44,70),R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
- g.fillStyle='rgba(15,20,10,.28)';g.beginPath();g.ellipse(22,64,15,5,0,0,TAU);g.fill();R(20,48,4,17,'#5a4027');R(22,48,2,17,'#6e5133');
- if(v<2){const cols=v?['#2f5a36','#3c6e40','#4c8249']:['#27503a','#33623f','#42764a'];for(let k=0;k<4;k++){const w=34-k*7,y=40-k*11;for(let r=0;r<13;r++){const ww=Math.max(2,Math.round(w*(r+2)/14));R(22-(ww>>1),y+r,ww,1,cols[r>9?0:r>4?1:2]);}}}
- else{const cols=['#3f6b34','#4e8040','#62984c'];for(const [x,y,r] of [[22,30,15],[13,38,10],[31,37,11],[22,20,10]])for(let yy=-r;yy<=r;yy++){const ww=Math.round(Math.sqrt(r*r-yy*yy));R(x-ww,y+yy,ww*2,1,cols[yy>r*.4?0:yy>-r*.3?1:2]);}}
- TREE.push(c);}
-
 // ---------- Übersicht (einmal gezeichnet, für die weite Ansicht) ----------
-const OV=2;let overview=null,raster=true;
+// OV: Verkleinerung, damit die Übersicht höchstens ~3500 Bildpunkte breit ist (große Karte: 8). Beim Bauen wird nur der geänderte
+// Ausschnitt neu gemalt (rebake mit Feldliste).
+const OV=Math.max(2,Math.ceil(WW/3500));let overview=null,raster=true;
+function objekteMalen(g,x0,y0,x1,y1){if(!NB)return;for(let v=x0+y0;v<=x1+y1;v++)for(let tx=Math.max(x0,v-y1);tx<=Math.min(x1,v-y0);tx++){const ty=v-tx,o=obj[ix(tx,ty)];if(!o)continue;const b=NB.bild(o,ovar(tx,ty)),p=iso(tx+.5,ty+.5);g.drawImage(b.img,p.x-b.ax,p.y-b.ay);}}
 function bake(){const [c,g]=mkCanvas(Math.ceil(WW/OV),Math.ceil(WH/OV));g.imageSmoothingEnabled=true;g.fillStyle='#1c2416';g.fillRect(0,0,c.width,c.height);g.scale(1/OV,1/OV);const sp=sprites[raster?1:0];
  for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const p=iso(tx,ty);maleFeld(g,sp,tx,ty,p.x-TW/2,p.y);}
- for(let v=0;v<2*N;v++)for(let tx=Math.max(0,v-N+1);tx<=Math.min(N-1,v);tx++){const ty=v-tx,b=baum[ix(tx,ty)];if(b>=0){const p=iso(tx+.5,ty+.5);g.drawImage(TREE[b],p.x-22,p.y-64);}}
- overview=c;chunks.clear();}
+ objekteMalen(g,0,0,N-1,N-1);overview=c;chunks.clear();}
+function rebake(ks){if(!ks||!ks.length||!overview){bake();return;}let x0=N,y0=N,x1=0,y1=0;
+ for(const k of ks){const x=k%N,y=(k/N)|0;if(!BODEN_NATUR.has(feld[k]))obj[k]=0;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+ x0=Math.max(0,x0-1);y0=Math.max(0,y0-1);x1=Math.min(N-1,x1+1);y1=Math.min(N-1,y1+1);
+ const rx0=iso(x0,y1+1).x-2,rx1=iso(x1+1,y0).x+2,ry0=iso(x0,y0).y-140,ry1=iso(x1+1,y1+1).y+2,ax0=Math.max(0,x0-10),ay0=Math.max(0,y0-10),ax1=Math.min(N-1,x1+10),ay1=Math.min(N-1,y1+10),sp=sprites[raster?1:0];
+ const g=overview.getContext('2d');g.save();g.setTransform(1/OV,0,0,1/OV,0,0);g.imageSmoothingEnabled=true;g.beginPath();g.rect(rx0,ry0,rx1-rx0,ry1-ry0);g.clip();g.fillStyle='#1c2416';g.fillRect(rx0,ry0,rx1-rx0,ry1-ry0);
+ for(let v=ax0+ay0;v<=ax1+ay1;v++)for(let tx=Math.max(ax0,v-ay1);tx<=Math.min(ax1,v-ay0);tx++){const ty=v-tx,p=iso(tx,ty);maleFeld(g,sp,tx,ty,p.x-TW/2,p.y);}
+ objekteMalen(g,ax0,ay0,ax1,ay1);g.restore();
+ for(const [key,ch] of chunks)if(ch.x0<rx1&&ch.x0+ch.S+8>rx0&&ch.y0<ry1&&ch.y0+ch.S+8>ry0)chunks.delete(key);}
 
-// ---------- Bodenkacheln: der Boden wird in Stücken von CH × CH vorgezeichnet und beim Bauen verworfen ----------
+// ---------- Bodenkacheln: der Boden wird in Stücken vorgezeichnet und beim Bauen verworfen ----------
+// lod 1: 512 × 512 Weltpunkte, stehende Objekte bleiben eigene Dinge (Tiefenreihenfolge mit Figuren).
+// lod 2/4 (nur große Karte, weit herausgezoomt): größere Stücke verkleinert, Objekte mit ins Bild gemalt.
 const CH=512,chunks=new Map();let frameNo=0;
-function chunk(cx,cy){const key=cy*1000+cx;let ch=chunks.get(key);if(ch)return ch;const [c,g]=mkCanvas(CH+2,CH+2),x0=cx*CH,y0=cy*CH,sp=sprites[raster?1:0],trees=[];g.fillStyle='#1c2416';g.fillRect(0,0,CH+2,CH+2);g.translate(-x0,-y0);
- const u0=Math.floor((x0-OX)/(TW/2))-2,u1=Math.ceil((x0+CH+2-OX)/(TW/2))+1,v0=Math.max(0,Math.floor((y0-OY)/(TH/2))-2),v1=Math.min(2*N-2,Math.ceil((y0+CH+2-OY)/(TH/2))+1);
- for(let v=v0;v<=v1;v++)for(let u=u0+((u0+v)&1);u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const i=ix(tx,ty),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY;
-  maleFeld(g,sp,tx,ty,x-TW/2,y);if(baum[i]>=0&&x>=x0&&x<x0+CH&&y+TH/2>=y0&&y+TH/2<y0+CH)trees.push({y:y+TH/2,tree:baum[i],x});}
- ch={c,trees,used:frameNo};chunks.set(key,ch);return ch;}
+function chunk(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;let ch=chunks.get(key);if(ch)return ch;const [c,g]=mkCanvas(CH+2,CH+2),x0=cx*S,y0=cy*S,sp=sprites[raster?1:0],stehen=[];
+ g.fillStyle='#1c2416';g.fillRect(0,0,CH+2,CH+2);g.imageSmoothingEnabled=lod>1;g.scale(1/lod,1/lod);g.translate(-x0,-y0);
+ const u0=Math.floor((x0-OX)/(TW/2))-2,u1=Math.ceil((x0+S+2*lod-OX)/(TW/2))+1,v0=Math.max(0,Math.floor((y0-OY)/(TH/2))-2),v1=Math.min(2*N-2,Math.ceil((y0+S+2*lod-OY)/(TH/2))+1);
+ for(let v=v0;v<=v1;v++)for(let u=u0+((u0+v)&1);u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;maleFeld(g,sp,tx,ty,(tx-ty)*TW/2+OX-TW/2,v*TH/2+OY);}
+ if(NB){const V1=Math.min(2*N-2,v1+(lod>1?10:0)),U0=u0-(lod>1?3:0),U1=u1+(lod>1?3:0);
+  for(let v=v0;v<=V1;v++)for(let u=U0+((U0+v)&1);u<=U1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const o=obj[ix(tx,ty)];if(!o)continue;const b=NB.bild(o,ovar(tx,ty)),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY+TH/2;
+   if(b.flach||lod>1)g.drawImage(b.img,x-b.ax,y-b.ay);else if(x>=x0&&x<x0+S&&y>=y0&&y<y0+S)stehen.push({x,y,img:b.img,ax:b.ax,ay:b.ay});}}
+ ch={c,stehen,used:frameNo,x0,y0,S};chunks.set(key,ch);return ch;}
 
 // ---------- Gebäude als Skizze ----------
 function shade(hex,k){const n=parseInt(hex.slice(1),16);return 'rgb('+[n>>16,(n>>8)&255,n&255].map(v=>Math.round(clamp(v*k,0,255))).join(',')+')';}
@@ -241,7 +269,8 @@ $('wBack').onclick=()=>{try{M.ui.close?.();}catch(e){}M.ui.click('nav:home');};
 setInterval(()=>{const page=M.ui.getPage?.(),modal=$('modal')&&!$('modal').hidden,admin=(page&&page!=='home')||modal||!!S.battle;document.body.classList.toggle('w-admin',!!admin);$('wBack').hidden=!admin||modal;},200);
 
 // ---------- Zeichnen ----------
-const MINI=.6,FERN=.6;let clock=0,last=performance.now(),perfAvg=4,perfWin=[],hudT=0,miniV=false,detailV=false;
+// unter NAH: Boden in größeren Stücken (lod 2/4), unter FERN: nur die Übersicht
+const MINI=.6,NAH=.6,FERN=OV>2?.15:.6;let clock=0,last=performance.now(),perfAvg=4,perfWin=[],hudT=0,miniV=false,detailV=false;
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)/1000);last=now;if(document.hidden||document.body.classList.contains('w-admin'))return;
  const t0=performance.now();clock+=dt;H.tick?.(dt);for(const w of workers)wander(w,dt);
  if(fly){fly.t=Math.min(1,fly.t+dt*2.2);const e=1-Math.pow(1-fly.t,3);cam.x=fly.x0+(fly.x-fly.x0)*e;cam.y=fly.y0+(fly.y-fly.y0)*e;cam.s=fly.s0+(fly.s-fly.s0)*e;clampCam();if(fly.t>=1)fly=null;}
@@ -249,10 +278,13 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  const view={x0:cam.x-VW/2/cam.s,y0:cam.y-VH/2/cam.s,x1:cam.x+VW/2/cam.s,y1:cam.y+VH/2/cam.s};
  ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));
  const items=[];miniV=cam.s<MINI;detailV=cam.s>=DETAIL;
- if(cam.s<FERN){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,0,0,overview.width*OV,overview.height*OV);ctx.imageSmoothingEnabled=false;}
- else{// Boden aus vorgezeichneten Kacheln (512 × 512): rund ein Dutzend Bilder je Bild statt über tausend einzelner Felder
-  const cx0=Math.max(0,Math.floor(view.x0/CH)),cx1=Math.min(Math.ceil(WW/CH)-1,Math.floor(view.x1/CH)),cy0=Math.max(0,Math.floor(view.y0/CH)),cy1=Math.min(Math.ceil(WH/CH)-1,Math.floor((view.y1+70)/CH));
-  for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){const ch=chunk(cx,cy);ch.used=frameNo;ctx.drawImage(ch.c,cx*CH,cy*CH);for(const t of ch.trees)if(t.x>view.x0-30&&t.x<view.x1+30&&t.y>view.y0-10&&t.y<view.y1+70)items.push(t);}
+ const lod=cam.s>=NAH?1:cam.s>=FERN?(cam.s>=.3?2:4):0;
+ if(lod!==1){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,0,0,overview.width*OV,overview.height*OV);ctx.imageSmoothingEnabled=false;}
+ if(lod){// Boden aus vorgezeichneten Stücken; weit draußen höchstens zwei neue Stücke je Bild, darunter liegt die Übersicht
+  const S=CH*lod,cx0=Math.max(0,Math.floor(view.x0/S)),cx1=Math.min(Math.ceil(WW/S)-1,Math.floor(view.x1/S)),cy0=Math.max(0,Math.floor(view.y0/S)),cy1=Math.min(Math.ceil(WH/S)-1,Math.floor((view.y1+130)/S));let neu=lod>1?2:999;
+  for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){let ch=chunks.get((lod*1000+cy)*1000+cx);if(!ch){if(neu<=0)continue;neu--;ch=chunk(cx,cy,lod);}ch.used=frameNo;
+   if(lod===1)ctx.drawImage(ch.c,cx*S,cy*S);else{ctx.imageSmoothingEnabled=true;ctx.drawImage(ch.c,cx*S,cy*S,(CH+2)*lod,(CH+2)*lod);ctx.imageSmoothingEnabled=false;}
+   for(const t of ch.stehen)if(t.x>view.x0-50&&t.x<view.x1+50&&t.y>view.y0-10&&t.y<view.y1+130)items.push(t);}
   frameNo++;if(chunks.size>48)for(const [k,ch] of chunks)if(ch.used<frameNo-120){chunks.delete(k);if(chunks.size<=36)break;}}
  H.ground?.(ctx,view);
  for(const b of BAU)items.push({y:b.key,bau:b});H.items?.(items,view);
@@ -261,7 +293,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  for(const w of workers){const ps=pose(w);if(ps.x==null||ps.x<view.x0-40||ps.x>view.x1+40||ps.y<view.y0-20||ps.y>view.y1+80)continue;let y=ps.y;const c=tileAt(ps.x,ps.y);
   for(const b of BAU)if(!b.flach&&y<=b.key&&(c.tx>=b.tx+b.w||c.ty>=b.ty+b.h)&&c.tx>b.tx-2&&c.ty>b.ty-2)y=b.key+.01;if(H.vorne)y=H.vorne(c.tx,c.ty,y);items.push({y,w,ps});}
  items.sort((a,b)=>a.y-b.y);
- for(const it of items){if(it.tree!=null){ctx.drawImage(TREE[it.tree],it.x-22,it.y-64);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}if(it.draw){it.draw(ctx);continue;}
+ for(const it of items){if(it.img){ctx.drawImage(it.img,it.x-it.ax,it.y-it.ay);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}if(it.draw){it.draw(ctx);continue;}
   const {w,ps}=it,x=Math.round(ps.x),y=Math.round(ps.y);
   if(miniV)drawMini(ctx,w.g,x,y);else drawFig(ctx,w.g,x,y,!ps.top?gehBild(w.dist):WALK,(ps.dx??1)<0?1:0);
   shown.push({w,x,y});}
@@ -279,6 +311,6 @@ $('weltBoot')?.remove();last=performance.now();requestAnimationFrame(frame);
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
 window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
- raster(on){raster=!!on;bake();},rebake:bake,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
+ raster(on){raster=!!on;bake();},rebake,O,WEG_TY,obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
 window.WELT_READY=true;
 })();
