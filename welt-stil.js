@@ -52,7 +52,7 @@ function papier(w,h,vari,occ,mitFlecken){
   const ec=[x+y,(W-1-x)+y,x+(H-1-y),(W-1-x)+(H-1-y)];for(let k=0;k<4;k++)if(ecke[k]){const n=NZ[(x*13+y*29+k*977)&4095];e=Math.min(e,ec[k]-ecke[k]*1.4+n*1.6);}
   if(e<9)for(const z of zaehne){const dx=x-z.x,dy=y-z.y;if(dx>z.r+2||dx<-z.r-2||dy>z.r+2||dy<-z.r-2)continue;e=Math.min(e,Math.sqrt(dx*dx+dy*dy)-z.r+NZ[(x*7+y*11)&4095]*.9);}
   const bz=x<y&&x<H-y?bL[y]:(W-1-x<y&&W-1-x<H-1-y?bR[y]:(y<H/2?bT[x]:bB[x])),bb=Math.max(1.4,2.6+bz);
-  if(occ&&occ[j])e=Math.max(e,bb+1.5);
+  if(occ&&occ[j]===1)e=Math.max(e,bb+1.5);
   if(e<.5){d[i+3]=0;continue;}
   const th=BAYER[(y&3)*4+(x&3)]/16,nz=NZ[(x*73+y*151+off)&4095];
   let R=PAPV[0]-nz*10,G=PAPV[1]-nz*10,B=PAPV[2]-nz*8;
@@ -69,14 +69,15 @@ function papier(w,h,vari,occ,mitFlecken){
 function samen(el){let s=0;const t=(el.id||el.className||'x')+'';for(let i=0;i<t.length;i++)s=(s*31+t.charCodeAt(i))|0;return Math.abs(s)+1;}
 
 // ---------- Blut- und Brandflecken: zufällig je Öffnen, nie über Inhalt ----------
+const MEDIEN=new Set(['CANVAS','IMG','SVG','svg','VIDEO']);   // Bilder: keine Flecken drunter, aber der Rand darf ausfransen (sie liegen ohnehin obenauf)
 const FREI_TAGS=new Set(['BUTTON','INPUT','SELECT','TEXTAREA','CANVAS','IMG','SVG','svg','VIDEO','PROGRESS','METER']);
-// Belegung in Pergament-Pixeln: alles mit Text, Knöpfe, Bilder (mit 2 Pixeln Abstand)
+// Belegung in Pergament-Pixeln: 1 = Text und Knöpfe (Rand frisst nie hinein), 2 = Bilder/Canvas (nur keine Flecken), 1 Pixel Abstand
 function belegung(el,W,H){
  const occ=new Uint8Array(W*H),b0=el.getBoundingClientRect(),M=1;
- const mark=r=>{if(r.width<1||r.height<1)return;const x0=Math.max(0,Math.floor((r.left-b0.left)/PX)-M),x1=Math.min(W-1,Math.ceil((r.right-b0.left)/PX)+M),
-  y0=Math.max(0,Math.floor((r.top-b0.top)/PX)-M),y1=Math.min(H-1,Math.ceil((r.bottom-b0.top)/PX)+M);for(let y=y0;y<=y1;y++)occ.fill(1,y*W+x0,y*W+x1+1);};
+ const mark=(r,v=1)=>{if(r.width<1||r.height<1)return;const x0=Math.max(0,Math.floor((r.left-b0.left)/PX)-M),x1=Math.min(W-1,Math.ceil((r.right-b0.left)/PX)+M),
+  y0=Math.max(0,Math.floor((r.top-b0.top)/PX)-M),y1=Math.min(H-1,Math.ceil((r.bottom-b0.top)/PX)+M);for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=y*W+x;if(occ[k]!==1)occ[k]=v;}};
  const rg=document.createRange(),tw=document.createTreeWalker(el,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT,{acceptNode(n){
-  if(n.nodeType===1){if(n.classList?.contains('ws-rolle'))return NodeFilter.FILTER_REJECT;if(FREI_TAGS.has(n.tagName)){mark(n.getBoundingClientRect());return NodeFilter.FILTER_REJECT;}return NodeFilter.FILTER_SKIP;}
+  if(n.nodeType===1){if(n.classList?.contains('ws-rolle'))return NodeFilter.FILTER_REJECT;if(FREI_TAGS.has(n.tagName)){mark(n.getBoundingClientRect(),MEDIEN.has(n.tagName)?2:1);return NodeFilter.FILTER_REJECT;}return NodeFilter.FILTER_SKIP;}
   return n.data.trim()?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP;}});
  for(let n;(n=tw.nextNode());){rg.selectNodeContents(n);for(const r of rg.getClientRects())mark(r);}
  return occ;}
