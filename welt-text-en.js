@@ -43,4 +43,7 @@ AT2Sprache.dazu('en',{
  'br.grund.haus':'Something is in the way. Demolition usually helps.','br.grund.baum':'A tree is in the way. It was here first.',
  'br.grund.boden':'That piece would be underground. Bridges go over things.','br.grund.hoch':'More than 8 steps? Even the vultures get dizzy up there.',
  'br.grund.zurueck':'A U-turn on a bridge? Only on the way down.','br.grund.gold':'Not enough gold: {g} G needed.',
+ 'profil.titel':'Profile','profil.zeile':'{alter} years · {herkunft} · {bau}',
+ 'profil.neu':'This profile is being rebuilt. For now, the key fact: he is still breathing. Enjoy it while it lasts.',
+ 'profil.karte':'◀ Back to map','profil.zu':'Close',
 });

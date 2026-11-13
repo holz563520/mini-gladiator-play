@@ -37,7 +37,7 @@ function loop(now){raf=0;if(!sel)return;raf=requestAnimationFrame(loop);if(now-l
  if(((now/500)|0)!==loop.h){loop.h=(now/500)|0;head();}}
 nah.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!sel)return;const g=sel.g;
  if(b.dataset.x!=null)close();else if(b.dataset.more!=null)say(Z.satz(g,ctxOf(g)));else if(b.dataset.zange!=null)grab(g);
- else if(b.dataset.profil!=null){close();M.ui.click('detail:'+g.id);}});
+ else if(b.dataset.profil!=null){close();/* 2.0: eigenes Profilfenster (welt-profil.js) statt der 1.0-Profilseite */if(M.weltProfil)M.weltProfil.oeffnen(g);else M.ui.click('detail:'+g.id);}});
 
 // ---------- Pinzette ----------
 const LIFT=18,NECK=17;let hand=null;const placed=new Map(),dust=[];

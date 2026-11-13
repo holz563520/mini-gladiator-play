@@ -43,4 +43,7 @@ AT2Sprache.dazu('de',{
  'br.grund.haus':'Da steht etwas im Weg. Abreißen hilft – meistens.','br.grund.baum':'Ein Baum steht im Weg. Der war zuerst da.',
  'br.grund.boden':'Hier steckt das Stück im Boden. Brücken gehören darüber.','br.grund.hoch':'Mehr als 8 Stufen? Da oben wird selbst den Geiern schwindelig.',
  'br.grund.zurueck':'Kehrtwende auf einer Brücke? Nur im freien Fall.','br.grund.gold':'Zu wenig Gold: {g} G nötig.',
+ 'profil.titel':'Profil','profil.zeile':'{alter} Jahre · {herkunft} · {bau}',
+ 'profil.neu':'Das Profil wird gerade neu gezimmert. Bis dahin gilt: Er lebt noch. Das muss reichen.',
+ 'profil.karte':'◀ Zur Karte','profil.zu':'Schließen',
 });
