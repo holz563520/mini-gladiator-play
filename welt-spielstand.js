@@ -14,7 +14,7 @@
 // · Leistung: Speichern misst sich selbst (M.at2Spielstand.ms, Zeit auf dem Hauptfaden; mit dem Spielstand des Spiels ~6 ms wie in 1.0, sonst < 2 ms). Test: tests/welt-spielstand-browser.cjs.
 // =====================================================================================================================
 (()=>{
-const DB='arena-theory-2',ABL='plaetze',V=4,// V2: neue Karte (A3, Dorf/Platz/Park); V3: Dorf und Park größer (A3b); V4: Flächen natürlich gewachsen (A3b). Stände mit älterer Version gehören zur alten Karte
+const DB='arena-theory-2',ABL='plaetze',V=5,// V5: Biome dicht, neue Böden, Kleinzeug (T3); V2: neue Karte (A3, Dorf/Platz/Park); V3: Dorf und Park größer (A3b); V4: Flächen natürlich gewachsen (A3b). Stände mit älterer Version gehören zur alten Karte
  PLAETZE=[1,2,3],ABSTAND=10000;
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // ---------- IndexedDB ----------
@@ -81,7 +81,7 @@ function anschliessen(ctx){const M=window.MG,W=window.WeltKarte,H=window.WeltHoo
  const S=M.s,N=W.N,n=geladen?.n||0,geaendert=new Set();
  // Karte: gespeicherte Unterschiede einsetzen, dann neu zeichnen und Bauten (Arenen, Felder, Häuser) neu berechnen
  const r=geladen?.r;
- if(r){const w=r.welt,ks=w.ks||[];for(let i=0;i<ks.length;i++){const k=ks[i];if(k<0||k>=N*N)continue;W.feld[k]=w.feld[i];W.grund[k]=w.grund[i];W.obj[k]=w.obj[i];W.bauAuf[k]=w.bauAuf[i];for(let c=0;c<4;c++){W.hc[k*4+c]=w.hc[i*4+c];W.merkeHoehe(w.hc[i*4+c]);}geaendert.add(k);}
+ if(r){const w=r.welt,ks=w.ks||[];for(let i=0;i<ks.length;i++){const k=ks[i];if(k<0||k>=N*N)continue;W.feld[k]=w.feld[i];W.grund[k]=w.grund[i];W.obj[k]=w.obj[i];if(W.klein&&w.klein)W.klein[k]=w.klein[i];W.bauAuf[k]=w.bauAuf[i];for(let c=0;c<4;c++){W.hc[k*4+c]=w.hc[i*4+c];W.merkeHoehe(w.hc[i*4+c]);}geaendert.add(k);}
   // T1: Stände von vor den Parkhügeln behalten ihren flachen Park (sonst Klippen neben schon Gebautem)
   if(!w.gel&&W.huegel){const hat=new Set(ks);for(let k=0;k<N*N;k++)if(W.huegel[k]&&!hat.has(k)){W.hc.fill(0,k*4,k*4+4);geaendert.add(k);}}
   if(geaendert.size){W.rebake([...geaendert]);M.weltBau.neuRechnen?.();}
@@ -98,10 +98,10 @@ function anschliessen(ctx){const M=window.MG,W=window.WeltKarte,H=window.WeltHoo
  const A=M.at2Spielstand={platz:n,ms:0,mal:0,fehler:'',speichern,get geaendert(){return geaendert.size;}};
  function speichern(alles){if(!n)return Promise.resolve(false);if(laeuft)return laeuft.then(()=>speichern(alles));
   const t0=performance.now(),mitS=alles||sDirty||t0-letztS>60000;if(mitS){try{M.persist?.();}catch(e){console.error(e);}sDirty=false;letztS=t0;}
-  const ks=Int32Array.from(geaendert),m=ks.length,feld=new Uint8Array(m),grund=new Uint8Array(m),obj=new Uint8Array(m),bauAuf=new Int8Array(m),hc=new Int8Array(m*4);
-  for(let i=0;i<m;i++){const k=ks[i];feld[i]=W.feld[k];grund[i]=W.grund[k];obj[i]=W.obj[k];bauAuf[i]=W.bauAuf[k];for(let c=0;c<4;c++)hc[i*4+c]=W.hc[k*4+c];}
+  const ks=Int32Array.from(geaendert),m=ks.length,feld=new Uint8Array(m),grund=new Uint8Array(m),obj=new Uint8Array(m),klein=new Uint8Array(m),bauAuf=new Int8Array(m),hc=new Int8Array(m*4);
+  for(let i=0;i<m;i++){const k=ks[i];feld[i]=W.feld[k];grund[i]=W.grund[k];obj[i]=W.obj[k];klein[i]=W.klein?W.klein[k]:0;bauAuf[i]=W.bauAuf[k];for(let c=0;c<4;c++)hc[i*4+c]=W.hc[k*4+c];}
   const stand={v:V,build:window.BUILD||'',kopf:{v:V,name:S.schoolName,tag:S.day,gold:S.gold,zeit:Date.now()},cache:[...ctx.cache],mem:[...ctx.mem],
-   welt:{gel:1,schluessel,stunde:T.stunde,tempo:T.st.tempo||1,pause:!!T.st.pause,ks,feld,grund,obj,bauAuf,hc,bruecken:M.weltBruecke?.daten?.()||[]}};
+   welt:{gel:1,schluessel,stunde:T.stunde,tempo:T.st.tempo||1,pause:!!T.st.pause,ks,feld,grund,obj,klein,bauAuf,hc,bruecken:M.weltBruecke?.daten?.()||[]}};
   dirty=false;letzt=performance.now();
   laeuft=schreib(n,stand).then(()=>{A.fehler='';return true;}).catch(e=>{A.fehler=String(e?.message||e);dirty=true;return false;}).finally(()=>{laeuft=null;});
   A.ms=performance.now()-t0;A.mitS=mitS;A.mal++;return laeuft;}

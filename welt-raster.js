@@ -31,7 +31,7 @@ const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Fel
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
 const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
-const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz'];
+const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37,ERDE:38,KIES:39,SCHLAMM:40,GEROELL:41,TROCKEN:42,NADEL:43},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz','Erde','Kies','Schlamm','Geröll','Trockengras','Nadelstreu'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
 // Arena Theory 2.0, Schritt A3 (Thomas 13.11.2026): Karte neu angeordnet. An der großen Straße liegen nebeneinander das
@@ -166,11 +166,15 @@ for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){let t=T.WIESE,bi=0;const k=ix(tx,
  const c0=hc[k*4],c1=hc[k*4+1],c2=hc[k*4+2],c3=hc[k*4+3],hm=(c0+c1+c2+c3)/4;eben[k]=innen?1:0;
  if(!innen){const cx=tx+.5,cy=ty+.5,w=WAERME(cx,cy)+(vn(tx/7,ty/7,41)-.5)*.05,f=FEUCHT(cx,cy)+(vn(tx/7,ty/7,42)-.5)*.05,q=fbm(tx/9,ty/9,5);
   bi=w>.54&&f<.48?B_.WUESTE:w>.52&&f>=.52?B_.DSCHUNGEL:f>.54&&w<.49&&hm<6?B_.SUMPF:w<.465?B_.WALD:0;
-  t=bi===B_.WALD?(q>.72?T.WIESE:T.WALD):bi===B_.WUESTE?(q>.8?T.WIESE:T.SAND):bi===B_.DSCHUNGEL?(q>.8?T.MOOR:T.DSCH):bi===B_.SUMPF?(q>.52?T.MOOR:T.SUMPF):(q>.68?T.WALD:T.WIESE);
-  const fels=15+(vn(tx/5,ty/5,43)-.5)*4;if(hm>=fels)t=hm>=fels+8?T.SCHNEE:T.FELS;}
+  // T3: mehrere Böden je Biom (q2, q3: kleinere Flecken), weich überblendet beim Malen (saum)
+  const q2=fbm(tx/6,ty/6,57),q3=fbm(tx/13,ty/13,59);
+  t=bi===B_.WALD?(q>.72?T.WIESE:q3>.6?T.NADEL:q2>.68?T.ERDE:T.WALD):bi===B_.WUESTE?(q>.8?T.WIESE:q3>.7?T.KIES:q2>.68?T.TROCKEN:T.SAND):
+   bi===B_.DSCHUNGEL?(q>.8?T.MOOR:q2>.68?T.SCHLAMM:q3>.66?T.ERDE:T.DSCH):bi===B_.SUMPF?(q>.52?T.MOOR:q2>.62?T.SCHLAMM:T.SUMPF):
+   (q>.68?T.WALD:q2>.66?T.TROCKEN:q3>.68?T.ERDE:q2<.3?T.KIES:T.WIESE);
+  const fels=15+(vn(tx/5,ty/5,43)-.5)*4;if(hm>=fels){t=hm>=fels+8?(q2>.7?T.GEROELL:T.SCHNEE):q2>.58?T.GEROELL:T.FELS;bi=B_.GEBIRGE??5;}else if(hm>=fels-2&&q2>.5){t=T.GEROELL;bi=B_.GEBIRGE??5;}}
  else if(!imAnord(lx,ly,3)&&ly-lx>30+h2(tx>>2,ty>>2,5)*9)t=T.WALD;// A3: in Dorf, Platz und Park kein Wald
  // A3b: in Dorf und Park von allem ein bisschen, locker: kleine Wäldchen, Haine (Wiese mit Bäumen und Büschen), Sand- und Kiesflecken
- else if(ANORD&&nah[k]===0&&ber[k]!==BER.PLATZ&&!bfrei[k]){const g=fbm(tx/11,ty/11,51),sd=fbm(tx/8,ty/8,53);if(g>.69)t=T.WALD;else if(g>.61)bi=B_.WALD;else if(sd>.755)t=T.SAND;}
+ else if(ANORD&&nah[k]===0&&ber[k]!==BER.PLATZ&&!bfrei[k]){const g=fbm(tx/11,ty/11,51),sd=fbm(tx/8,ty/8,53),ek=fbm(tx/7,ty/7,55);if(g>.69)t=T.WALD;else if(g>.61)bi=B_.WALD;else if(sd>.755)t=T.SAND;else if(ek>.75)t=T.ERDE;else if(ek<.24)t=T.KIES;}// T3: Erd- und Kiesflecken
  if(!GROSS&&Math.abs(tx-flussX(ty))<=1)t=T.FLUSS;
  grund[k]=t;if(GROSS&&Math.min(c0,c1,c2,c3)<WL)t=T.FLUSS;
  if(ty===wy[tx]||ty===wy[tx]+1)t=(GROSS?bruecke[tx]:t===T.FLUSS)?T.BRUECKE:T.WEG;
@@ -200,8 +204,8 @@ if(ANORD){const A=ANORD,setz=(arr,x,y,v)=>{if(inMap(x,y))arr[ix(x,y)]=v;};
  TORE.push({art:'park',tx:A.parktor[0]+O,ty:A.park[1]+A.park[3]+O,w:A.parktor[1],dir:0},{art:'dorf',tx:A.dorftor[0]+O,ty:A.dorf[1]+A.dorf[3]+O,w:A.dorftor[1],dir:0},
   {art:'kaempfer',tx:A.park[0]+O,ty:A.kaempfertor[0]+O,w:A.kaempfertor[1],dir:1});}
 // Naturobjekte (welt-natur.js): je Feld höchstens eines. Alles darauf ist entfernbar (obj = 0); nicht am Weg, nicht um den Ludus.
-const NASS_OK=new Set(['Schilf','Seerosen','Moorhand']),NB=window.WeltNatur,obj=new Uint8Array(N*N),BODEN_NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FLUSS,T.FELS,T.SCHNEE]),
- BODEN_NAME={[T.WIESE]:'wiese',[T.WALD]:'wald',[T.SAND]:'sand',[T.DSCH]:'dsch',[T.SUMPF]:'sumpf',[T.MOOR]:'moor',[T.FLUSS]:'wasser',[T.FELS]:'fels',[T.SCHNEE]:'schnee'};
+const NASS_OK=new Set(['Schilf','Seerosen','Moorhand']),NB=window.WeltNatur,obj=new Uint8Array(N*N),BODEN_NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FLUSS,T.FELS,T.SCHNEE,T.ERDE,T.KIES,T.SCHLAMM,T.GEROELL,T.TROCKEN,T.NADEL]),
+ BODEN_NAME={[T.WIESE]:'wiese',[T.WALD]:'wald',[T.SAND]:'sand',[T.DSCH]:'dsch',[T.SUMPF]:'sumpf',[T.MOOR]:'moor',[T.FLUSS]:'wasser',[T.FELS]:'fels',[T.SCHNEE]:'schnee',[T.ERDE]:'erde',[T.KIES]:'kies',[T.SCHLAMM]:'schlamm',[T.GEROELL]:'geroell',[T.TROCKEN]:'trocken',[T.NADEL]:'nadel'};
 // A3b: was in Dorf und Park wächst und liegt: locker verteilt, von allem ein bisschen (Thomas: „nichts zu dicht“).
 const NA=NB&&{eiche:NB.nr('Eiche'),birke:NB.nr('Birke'),stein:NB.nr('Feldstein'),moos:NB.nr('Moosfels'),gras:NB.nr('Grasbüschel'),duerr:NB.nr('Dürrbusch'),schilf:NB.nr('Schilf'),rose:NB.nr('Seerosen')};
 function naturBereich(k,t,tx,ty){const r=h2(tx,ty,71),q=h2(tx,ty,72),c=hc.subarray(k*4,k*4+4),hm=(c[0]+c[1]+c[2]+c[3])/4;
@@ -213,7 +217,7 @@ function naturBereich(k,t,tx,ty){const r=h2(tx,ty,71),q=h2(tx,ty,72),c=hc.subarr
  if(r<.006)return q<.6?NA.eiche:NA.birke;// Einzelbäume auf der Wiese
  return NB.waehle(0,'wiese',tx,ty,0);}
 if(NB)for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const k=ix(tx,ty),t=feld[k],lx=tx-O,ly=ty-O;if(!BODEN_NATUR.has(t)||Math.abs(ty-wy[tx]-.5)<=1.6)continue;const inB=!!ANORD&&nah[k]===0;if(ANORD?(inB?bfrei[k]:nah[k]<=1):(lx>=24&&lx<=74&&ly>=20&&ly<=64))continue;
- let o=inB?naturBereich(k,t,tx,ty):NB.waehle(biom[k],BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6));
+ let o=inB?naturBereich(k,t,tx,ty):!GROSS&&NB.waehleAlt?NB.waehleAlt(biom[k],BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6)):NB.waehle(biom[k],BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6),GROSS&&fbm(tx/24,ty/24,81)>.66);
  // Keine Bäume im Wasser (Thomas 12.11.): im Wasser, im Moor und am Ufer (eine Ecke auf Wasserhöhe) nur Schilf, Seerosen, Moorhand
  if(o&&!NASS_OK.has(NB.ARTEN[o].name)&&(t===T.FLUSS||t===T.MOOR||Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3])<=WL))o=0;
  obj[k]=o;}
@@ -225,7 +229,20 @@ if(ANORD){HALLE.unten={x:HALLE.pfadX+.5,y:ANORD.pfade[3][1]+O+.5};for(let y=HALL
 else{HALLE.ty=Math.min(WEG_TY,wy[HALLE.pfadX])-13;// gut 8 Felder Pfad bis zum Weg
 for(let y=HALLE.ty-1;y<Math.max(WEG_TY,wy[HALLE.pfadX]);y++)for(let x=HALLE.tx-1;x<=HALLE.tx+HALLE.w;x++){const k=ix(x,y),inR=x>=HALLE.tx&&x<HALLE.tx+HALLE.w,hy=y-HALLE.ty;obj[k]=0;
  if(inR&&hy>=0&&hy<HALLE.h)feld[k]=T.HALLE;else if(inR&&hy>=HALLE.h&&hy<HALLE.h+HALLE.hofH)feld[k]=T.GRAB;else if(x===HALLE.pfadX&&hy>=HALLE.h+HALLE.hofH)feld[k]=T.WEG;else if(feld[k]!==T.WEG&&feld[k]!==T.FLUSS)feld[k]=T.WIESE;}}
-const ovar=(tx,ty)=>NB?NB.variante(tx,ty):0;
+const ovar=(tx,ty)=>NB?(GROSS?NB.variante(tx,ty):NB.varianteAlt(tx,ty)):0;// Editor: Varianten wie vor T3
+// ---------- Kleinzeug (T3, Thomas 13.11.2026) ----------
+// kz[k]: wie viele kleine Sachen (Gras, Blumen, Kiesel, Laub, Knochen …) auf dem Feld liegen, 0…7. Welche und wo, wird beim
+// Zeichnen eines Bodenstücks aus dem Feld berechnet (kleinMalen), nicht gespeichert. Bauen, Abreißen, Roden und Gelände setzen
+// kz[k] = 0 (geräumt); nur das kommt in den Spielstand. Wildnis dicht, Dorf und Park mäßig, nicht am Weg, nicht im Wasser.
+const kz=new Uint8Array(N*N),KLEIN_N={wald:[5,7],nadel:[5,7],dsch:[5,7],sumpf:[5,7],wiese:[5,7],trocken:[5,7],sand:[3,6],kies:[3,6],geroell:[3,6],erde:[3,6],schlamm:[3,6],fels:[3,6],schnee:[2,4],moor:[1,3]};
+if(NB&&GROSS&&NB.kleinArt)for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const k=ix(tx,ty),t=feld[k];if(!BODEN_NATUR.has(t)||t===T.FLUSS||Math.abs(ty-wy[tx]-.5)<=1.6)continue;
+ if(Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3])<WL)continue;/* unter Wasser nichts, am Ufer schon */const inB=!!ANORD&&nah[k]===0,r=h2(tx,ty,301);
+ if(inB){if(bfrei[k]||ber[k]===BER.PLATZ)continue;kz[k]=r<.35?0:r<.78?1:2;continue;}// Dorf und Park: mäßig
+ if(ANORD&&nah[k]<=1)continue;const z=KLEIN_N[BODEN_NAME[t]];if(z)kz[k]=z[0]+Math.min(z[1]-z[0],(r*(z[1]-z[0]+1))|0);}
+// Kleinzeug eines Feldes in ein Bodenstück malen (Weltkoordinaten; nur was im Stück liegt)
+function kleinMalen(g,tx,ty,k,y0,y1){const n=kz[k];if(!n)return;const bo=BODEN_NAME[feld[k]];if(!bo)return;const bi=biom[k];
+ for(let i=0;i<n;i++){const a=NB.kleinArt(bi,bo,h2(tx,ty,310+i),h2(tx,ty,320+i));if(!a)continue;const u=tx+.14+h2(tx,ty,330+i)*.72,v=ty+.14+h2(tx,ty,340+i)*.72,
+  b=NB.bild(a,(h2(tx,ty,350+i)*NB.VARN*2)|0),X=(u-v)*TW/2+OX,Y=(u+v)*TH/2+OY-hoehe(u,v)*HZ;if(Y<y0-12||Y>y1+12)continue;g.drawImage(b.img,Math.round(X-b.ax),Math.round(Y-b.ay));}}
 
 // ---------- Bildchen: Felder und Bäume ----------
 function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=false;return [c,g];}
@@ -267,7 +284,14 @@ const PAL=[
  [[206,202,190],[196,192,180],[216,212,200],[150,146,134]],// Krankenhaus: helle Fliesen (4. Farbe = Fugen)
  [[154,131,88],[140,118,80],[171,148,106],[123,102,66]],// Sklavenmarkt: festgetretene Erde wie im Spiel
  [[46,50,48],[38,42,40],[56,60,57],[26,29,28]],// Halle der Toten: dunkler Stein wie im Spiel
- [[74,86,58],[66,78,52],[84,96,66],[132,128,112]]// Gräberplatz: dunkles Gras mit Kieswegen
+ [[74,86,58],[66,78,52],[84,96,66],[132,128,112]],// Gräberplatz: dunkles Gras mit Kieswegen
+ // T3: Böden je Biom
+ [[112,84,56],[102,76,50],[124,94,62],[84,62,40]],// Erde (4. Farbe = Klumpen)
+ [[150,144,132],[162,156,144],[138,132,122],[108,102,94]],// Kies (4. Farbe = Fugen)
+ [[86,70,50],[76,62,44],[96,78,56],[112,118,104]],// Schlamm (4. Farbe = nasser Glanz)
+ [[116,110,102],[130,124,114],[102,96,88],[78,74,68]],// Geröll (4. Farbe = Schatten)
+ [[146,140,84],[158,150,92],[134,128,76],[118,108,62]],// Trockengras (4. Farbe = Halme)
+ [[74,60,42],[84,68,46],[64,52,36],[104,80,46]]// Nadelstreu (4. Farbe = Nadeln)
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
@@ -276,6 +300,13 @@ function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageDat
   if(t===T.DSCH){col=P[n<.5?0:n<.8?1:2];if(h2(x>>1,y,v+51)>.9)col=P[3];if(h2(x,y,v+53)>.988)col=[120,70,40];}
   if(t===T.SUMPF){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+61)>.82)col=P[3];if(h2(x,y,v+63)>.97)col=[110,130,70];}
   if(t===T.MOOR){col=P[n<.6?0:n<.88?1:2];if(h2(x>>1,y,v+71)>.94)col=P[3];}
+  // T3: neue Böden
+  if(t===T.ERDE){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+101)>.9)col=P[3];}
+  if(t===T.KIES){col=P[n<.4?0:n<.75?1:2];if(h2(x>>1,y,v+103)>.82)col=P[3];if(h2(x,y,v+104)>.97)col=[184,178,166];}
+  if(t===T.SCHLAMM){col=P[n<.55?0:n<.85?1:2];if(h2(x>>3,y>>1,v+105)>.9)col=P[3];}
+  if(t===T.GEROELL){const b2=h2(x>>2,y>>1,v+107);col=b2>.8?P[3]:b2<.3?P[2]:P[n<.5?0:1];if(h2(x,y,v+108)>.95)col=[150,144,134];}
+  if(t===T.TROCKEN){col=P[n<.45?0:n<.8?1:2];if(h2(x,y>>1,v+109)>.88)col=P[3];}
+  if(t===T.NADEL){col=P[n<.5?0:n<.8?1:2];if(h2(x,y,v+111)>.9)col=P[3];if(h2(x>>2,y>>1,v+112)>.95)col=[58,74,40];}
   if(t===T.SCHM_S){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+41)>.84)col=P[3];if(h2(x,y,v+43)>.996)col=[176,92,40];}
   if(t===T.SCHMIEDE||t===T.SCHM_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,k3=t===T.SCHMIEDE?3:2,cx=(ux*k3)%1,cy=((uy*k3)+(t===T.SCHMIEDE?(((ux*k3)|0)&1)*.5:0))%1;col=cx<.06||cy<.06?P[3]:P[n<.6?0:n<.86?1:2];if(t===T.SCHMIEDE&&n>.965)col=[64,60,56];}
   if(t===T.BST_S){col=P[n<.5?0:n<.8?1:2];if(h2(x>>2,y>>1,v+81)>.955||h2(x>>3,y>>2,v+83)>.97)col=P[3];if(h2(x,y,v+85)>.994)col=[220,212,190];}
@@ -339,7 +370,7 @@ function hangF(x,y,ux,uy){if(!GROSS)return 1;const a=tileAt(x,y),b=tileAt(x+ux*1
 const objHz=(tx,ty)=>GROSS?(feld[ix(tx,ty)]===T.FLUSS?Math.max(WL,hoehe(tx+.5,ty+.5)):hoehe(tx+.5,ty+.5))*HZ:0;
 // Klippen: Erdwand an den beiden vorderen Kanten, wo das Nachbarfeld tiefer liegt; am Kartenrand bis zum Grund (BASIS)
 const WANDF={fels:['#6c645c','#867e76'],sand:['#a58250','#bf9861'],erde:['#5c4027','#785533'],holz:['#47301e','#5c4028']};
-const wandArt=t=>t===T.FELS||t===T.SCHNEE?WANDF.fels:t===T.SAND?WANDF.sand:t===T.BRUECKE?WANDF.holz:WANDF.erde,BASIS=()=>Math.min(HMIN,WL)-3;
+const wandArt=t=>t===T.FELS||t===T.SCHNEE||t===T.GEROELL?WANDF.fels:t===T.SAND||t===T.KIES?WANDF.sand:t===T.BRUECKE?WANDF.holz:WANDF.erde,BASIS=()=>Math.min(HMIN,WL)-3;
 function wand(g,x1,y1,ha,hb,na,nb,x2,y2,col){if(ha<=na&&hb<=nb)return;g.fillStyle=col;g.beginPath();g.moveTo(x1,y1-Math.max(ha,na)*HZ);g.lineTo(x2,y2-Math.max(hb,nb)*HZ);g.lineTo(x2,y2-nb*HZ);g.lineTo(x1,y1-na*HZ);g.closePath();g.fill();}
 // Wasser: flach auf WL, nur wo der Boden darunter liegt (beide Dreiecke an WL abgeschnitten, ein Pfad, keine Naht)
 function wasser(g,x,y,a,b,c,d,tx,ty){const P=[[0,0,a],[1,0,b],[1,1,c],[0,1,d]],tr=teilung(a,b,c,d)?[[0,1,3],[1,2,3]]:[[0,1,2],[0,2,3]],X=(u,v)=>x+32+(u-v)*32,Y=(u,v)=>y+(u+v)*16-WL*HZ;
@@ -347,11 +378,23 @@ function wasser(g,x,y,a,b,c,d,tx,ty){const P=[[0,0,a],[1,0,b],[1,1,c],[0,1,d]],t
   if(q.length<3)continue;g.moveTo(X(q[0][0],q[0][1]),Y(q[0][0],q[0][1]));for(let i=1;i<q.length;i++)g.lineTo(X(q[i][0],q[i][1]),Y(q[i][0],q[i][1]));g.closePath();}
  g.fillStyle='#3d6f9c';g.fill();
  if(Math.max(a,b,c,d)<WL&&h2(tx,ty,7)>.62){g.fillStyle='#6d9cc4';const ox=(x+16+h2(tx,ty,8)*28)|0,oy=(y+10+h2(tx,ty,9)*12-WL*HZ)|0;g.fillRect(ox,oy,6,1);g.fillRect(ox+3,oy+3,5,1);}}
+// T3: weiche Übergänge zwischen Naturböden. Grenzt ein Feld an einen Boden mit höherem Rang (SAUM_P), malt es an dieser Kante
+// einen ausgefransten Saum aus dem Nachbarboden darüber. Ein Bild je Boden, Kante und Variante, einmal gemalt und gemerkt;
+// am Hang wie der Boden verzogen (hangBild). Kante 0: Nachbar tx+1, 1: tx−1, 2: ty+1, 3: ty−1.
+let saumAn=false;// nur beim Zeichnen naher Bodenstücke (lod 1); weit weg sieht man die Säume nicht
+const SAUM_P={[T.SCHNEE]:13,[T.WIESE]:12,[T.TROCKEN]:11,[T.WALD]:10,[T.NADEL]:9,[T.DSCH]:8,[T.SUMPF]:7,[T.MOOR]:6,[T.SCHLAMM]:5,[T.ERDE]:4,[T.KIES]:3,[T.SAND]:2,[T.GEROELL]:1,[T.FELS]:0},saumCache=new Map();
+function saumBild(sp,gr,nt,kante,v){const key=(gr*64+nt)*16+kante*4+v;let c=saumCache.get(key);if(c)return c;const src=sp[nt*VAR+v],sd=src.getContext('2d').getImageData(0,0,TW,TH+1).data,[cv,g]=mkCanvas(TW,TH+1),im=g.createImageData(TW,TH+1),d=im.data;
+ for(let y=0;y<=TH;y++)for(let x=0;x<TW;x++){const o=(y*TW+x)*4;if(!sd[o+3])continue;const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,e=kante===0?1-ux:kante===1?ux:kante===2?1-uy:uy,
+  w=.26+(vn((kante&1?uy:ux)*5+(kante>>1?7:0),v*3.1,77+kante)-.5)*.22;if(e>w+.12||(e>w-.06&&h2(x>>1,y,nt*7+kante)>(w+.12-e)/.18))continue;d[o]=sd[o];d[o+1]=sd[o+1];d[o+2]=sd[o+2];d[o+3]=255;}
+ g.putImageData(im,0,0);saumCache.set(key,cv);return cv;}
+function saeume(sp,gr,k,t,v,bild){const tx=k%N,ty=(k/N)|0,p=SAUM_P[t];
+ for(let e=0;e<4;e++){const n=e===0?(tx+1<N?k+1:-1):e===1?(tx>0?k-1:-1):e===2?(ty+1<N?k+N:-1):(ty>0?k-N:-1);if(n<0)continue;const nt=feld[n],np=SAUM_P[nt];
+  if(np==null||np<=p||Math.min(hc[n*4],hc[n*4+1],hc[n*4+2],hc[n*4+3])<WL)continue;bild(saumBild(sp,gr,nt,e,v),'u'+gr+'_'+nt+'_'+e+'_'+v);}}
 // Ein Feld malen: Boden (bei Schräge verzogen), bei Straßen darüber der Belag, dann Klippenwände, dann Wasser
 function maleFeld(g,sp,tx,ty,x,y){const k=ix(tx,ty),t=feld[k],v=Math.floor(h2(tx,ty,3)*VAR),a=hc[k*4],b=hc[k*4+1],c=hc[k*4+2],d=hc[k*4+3],m=Math.min(a,b,c,d),nass=t===T.FLUSS&&m<WL;
  const f=m===a&&m===b&&m===c&&m===d?0:Math.min(2,a-m)+Math.min(2,b-m)*3+Math.min(2,c-m)*9+Math.min(2,d-m)*27,gr=sp===sprites[1]?1:0,yo=y-m*HZ;
  const bild=(src,key)=>{if(f)g.drawImage(hangBild(src,key+':'+f),x,yo-HOB);else g.drawImage(src,x,yo);};
- if(!nass||Math.max(a,b,c,d)>WL){const i=(nass||istStr(t)?grund[k]:t)*VAR+v;bild(sp[i],gr+':'+i);if(istStr(t)){const mk=strMaske(tx,ty);bild(strBild(t,mk),'s'+t+'_'+mk);}}
+ if(!nass||Math.max(a,b,c,d)>WL){const i=(nass||istStr(t)?grund[k]:t)*VAR+v;bild(sp[i],gr+':'+i);if(saumAn&&!nass&&SAUM_P[t]!=null)saeume(sp,gr,k,t,v,bild);if(istStr(t)){const mk=strMaske(tx,ty);bild(strBild(t,mk),'s'+t+'_'+mk);}}
  if(GROSS){const r=tx+1<N?k+1:-1,l=ty+1<N?k+N:-1,B=BASIS(),col=wandArt(nass?grund[k]:t);
   wand(g,x+64,y+16,b,c,r<0?B:hc[r*4],r<0?B:hc[r*4+3],x+32,y+32,col[0]);wand(g,x,y+16,d,c,l<0?B:hc[l*4],l<0?B:hc[l*4+1],x+32,y+32,col[1]);}
  if(nass)wasser(g,x,y,a,b,c,d,tx,ty);}
@@ -365,7 +408,7 @@ function objekteMalen(g,x0,y0,x1,y1){if(!NB)return;for(let v=x0+y0;v<=x1+y1;v++)
 // Große Karte: Übersicht Punkt für Punkt (je Feld seine Grundfarbe, schattiert nach Hang, Klippen dunkel, Bäume als Tupfen);
 // das ist für 920 000 Felder viel schneller als Bildchen. Der Editor malt sie wie bisher aus den Feldbildern.
 const rgb32=(r,g,b)=>((255<<24)|(clamp(b|0,0,255)<<16)|(clamp(g|0,0,255)<<8)|clamp(r|0,0,255))>>>0,objF=new Map();
-function objFarbe(o,v){const key=o*8+v;let c=objF.get(key);if(c!=null)return c;const b=NB.bild(o,v),im=b.img.getContext('2d').getImageData(0,0,b.img.width,b.img.height).data;let r=0,g=0,bl=0,n=0;
+function objFarbe(o,v){const key=o*16+v;let c=objF.get(key);if(c!=null)return c;const b=NB.bild(o,v),im=b.img.getContext('2d').getImageData(0,0,b.img.width,b.img.height).data;let r=0,g=0,bl=0,n=0;
  for(let i=0;i<im.length;i+=16)if(im[i+3]>200){r+=im[i];g+=im[i+1];bl+=im[i+2];n++;}c=n?rgb32(r/n*.85,g/n*.85,bl/n*.85):0;objF.set(key,c);return c;}
 const hOv=k=>{const s=(hc[k*4]+hc[k*4+1]+hc[k*4+2]+hc[k*4+3])/4;return feld[k]===T.FLUSS?Math.max(s,WL):s;};
 function ovMalen(x0,y0,x1,y1,R){const im=new ImageData(R.w,R.h),px=new Uint32Array(im.data.buffer);px.fill(rgb32(28,36,22));const H8=8;
@@ -376,13 +419,13 @@ function ovMalen(x0,y0,x1,y1,R){const im=new ImageData(R.w,R.h),px=new Uint32Arr
   if(X0>=X1)continue;for(let Y=Y0;Y<Y1;Y++)px.fill(col,Y*R.w+X0,Y*R.w+X1);for(let Y=Math.max(0,Y1);Y<Yw;Y++)px.fill(wc,Y*R.w+X0,Y*R.w+X1);
   const o=obj[k];if(o&&NB&&!NB.ARTEN[o].flach){const c=objFarbe(o,ovar(tx,ty)),X=Math.round(cx/OV)-R.x,Y=Math.round((top-6)/OV)-R.y;if(c&&X>=0&&X<R.w&&Y>=0&&Y<R.h){px[Y*R.w+X]=c;if(Y+1<R.h)px[(Y+1)*R.w+X]=c;}}}
  overview.getContext('2d').putImageData(im,R.x,R.y);}
-function bake(){const [c,g]=mkCanvas(Math.ceil(WW/OV),Math.ceil(WH/OV));overview=c;chunks.clear();hangCache.clear();
+function bake(){const [c,g]=mkCanvas(Math.ceil(WW/OV),Math.ceil(WH/OV));overview=c;chunks.clear();hangCache.clear();saumCache.clear();
  if(GROSS){ovMalen(0,0,N-1,N-1,{x:0,y:0,w:c.width,h:c.height});return;}
  g.imageSmoothingEnabled=true;g.fillStyle='#1c2416';g.fillRect(0,0,c.width,c.height);g.scale(1/OV,1/OV);const sp=sprites[raster?1:0];
  for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const p=iso(tx,ty);maleFeld(g,sp,tx,ty,p.x-TW/2,p.y);}
  objekteMalen(g,0,0,N-1,N-1);}
 function rebake(ks){if(!ks||!ks.length||!overview){bake();return;}let x0=N,y0=N,x1=0,y1=0;
- for(const k of ks){const x=k%N,y=(k/N)|0;if(!BODEN_NATUR.has(feld[k]))obj[k]=0;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+ for(const k of ks){const x=k%N,y=(k/N)|0;if(!BODEN_NATUR.has(feld[k])){obj[k]=0;kz[k]=0;}if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
  x0=Math.max(0,x0-1);y0=Math.max(0,y0-1);x1=Math.min(N-1,x1+1);y1=Math.min(N-1,y1+1);
  const hoch=GROSS?(HMAX+1)*HZ:0,tief=GROSS?(-BASIS()+1)*HZ:0,rx0=iso(x0,y1+1).x-2,rx1=iso(x1+1,y0).x+2,ry0=iso(x0,y0).y-140-hoch,ry1=iso(x1+1,y1+1).y+2+tief,sp=sprites[raster?1:0];
  if(GROSS){const M=Math.ceil((hoch+tief)/16)+3,ox=Math.max(0,Math.floor(rx0/OV)),oy=Math.max(0,Math.floor(ry0/OV)),R={x:ox,y:oy,w:Math.min(overview.width,Math.ceil(rx1/OV))-ox,h:Math.min(overview.height,Math.ceil(ry1/OV))-oy};
@@ -409,12 +452,13 @@ function zaunBild(art,dir){const key=art*2+dir;let b=zaunBilder.get(key);if(b)re
   for(let i=0;i<9;i++){const p=pt((i+.5)/9),x=Math.round(p.x)-2,y=Math.round(p.y),h=H-(i%3===1?2:0);
    g.fillStyle='#4a3420';g.fillRect(x,y-h,4,h);g.fillStyle=i%2?'#7a5a39':'#8a6a42';g.fillRect(x,y-h,3,h-1);g.fillStyle='#a07e52';g.fillRect(x+1,y-h-2,1,2);g.fillStyle='#5e4229';g.fillRect(x,y-Math.round(h*.4),4,1);}}
  b={img:c,ax:W2/2,ay};zaunBilder.set(key,b);return b;}
-function chunk(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;let ch=chunks.get(key);if(ch)return ch;const [c,g]=mkCanvas(CH+2,CH+2),x0=cx*S,y0=cy*S,sp=sprites[raster?1:0],stehen=[];
+function chunk(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;let ch=chunks.get(key);if(ch)return ch;saumAn=GROSS&&lod===1;const [c,g]=mkCanvas(CH+2,CH+2),x0=cx*S,y0=cy*S,sp=sprites[raster?1:0],stehen=[];
  g.fillStyle='#1c2416';g.fillRect(0,0,CH+2,CH+2);g.imageSmoothingEnabled=lod>1;g.scale(1/lod,1/lod);g.translate(-x0,-y0);
  const unten=GROSS?Math.ceil(((HMAX+1)*HZ+150)/(TH/2)):NB?10:0,oben=GROSS?Math.ceil((-BASIS()+1)*HZ/(TH/2))+1:0;
  const u0=Math.floor((x0-OX)/(TW/2))-3,u1=Math.ceil((x0+S+2*lod-OX)/(TW/2))+3,v0=Math.max(0,Math.floor((y0-OY)/(TH/2))-2-oben),v1=Math.min(2*N-2,Math.ceil((y0+S+2*lod-OY)/(TH/2))+1+unten);
  for(let v=v0;v<=v1;v++){const u00=u0+((u0+v)&1);
   for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;maleFeld(g,sp,tx,ty,(tx-ty)*TW/2+OX-TW/2,v*TH/2+OY);}
+  if(NB&&GROSS&&lod===1)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty);if(kz[k])kleinMalen(g,tx,ty,k,y0,y0+S);}// T3: Kleinzeug, nur in der nahen Ansicht
   if(NB)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty),o=obj[k];if(!o)continue;const b=NB.bild(o,ovar(tx,ty)),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY+TH/2,z=objHz(tx,ty);
    if(b.flach||lod>1||!eben[k])g.drawImage(b.img,x-b.ax,y-z-b.ay);else if(x>=x0&&x<x0+S&&y>=y0&&y<y0+S)stehen.push({x,y,oz:z,img:b.img,ax:b.ax,ay:b.ay});}
   // A3: Zaun und Palisade; Mitte der Kante als Fußpunkt, damit Figuren davor und dahinter richtig stehen
@@ -564,13 +608,15 @@ bake();makeRoster(kader);resize();cam.s=clamp(Math.max(.85,Math.min(VW/1100,VH/7
 $('weltBoot')?.remove();last=performance.now();requestAnimationFrame(frame);
 // Für Bauen und Geländewerkzeug: angehobene Ecken eines Feldes, Felder einebnen, Bodenart nach Höhenänderung
 function ecken(k){const x=k%N,y=(k/N)|0,P=[iso(x,y),iso(x+1,y),iso(x+1,y+1),iso(x,y+1)];return P.map((p,i)=>({x:p.x,y:p.y-(GROSS?hc[k*4+i]*HZ:0)}));}
-function gelaendeTyp(k){obj[k]=0;const t=feld[k];if(!BODEN_NATUR.has(t))return;const m=Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3]);if(m<WL)feld[k]=T.FLUSS;else if(t===T.FLUSS)feld[k]=grund[k];}
+function gelaendeTyp(k){obj[k]=0;kz[k]=0;const t=feld[k];if(!BODEN_NATUR.has(t))return;const m=Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3]);if(m<WL)feld[k]=T.FLUSS;else if(t===T.FLUSS)feld[k]=grund[k];}
 function ebnen(ks,L){for(const k of ks){hc.fill(L,k*4,k*4+4);gelaendeTyp(k);}if(L>HMAX)HMAX=L;if(L<HMIN)HMIN=L;}
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
 window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
  ANORD,fest,arenaPlatz,zaunA,zaunB,TORE,imAnord,inR,ber,BER,bfrei,// A3b natürlich: Bereiche mit geschwungenen Rändern
 // A3: Dorf, Platz, Park (Lagen relativ zu O), feste Felder, Grenzen, Tore
- raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,hangF,huegel,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get tempo(){return tempo;},set tempo(v){tempo=Math.max(0,+v||0);},get perf(){return perfAvg;}};
+ raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,hangF,huegel,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,klein:kz,biom,BODEN_NATUR,BODEN_NAME,kleinZahl:k=>kz[k],ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get tempo(){return tempo;},set tempo(v){tempo=Math.max(0,+v||0);},get perf(){return perfAvg;},
+ // T3: Messung für Tests – Bodenstücke um (tx,ty) neu zeichnen, ms je Stück
+ chunkZeit(tx,ty,n=4){const q=iso(tx,ty),cx=Math.floor(q.x/CH),cy=Math.floor(q.y/CH);let t=0,m=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){const key=(1000+cy+j)*1000+cx+i;chunks.delete(key);const a=performance.now();chunk(cx+i,cy+j,1);t+=performance.now()-a;m++;}return t/m;}};
 window.WELT_READY=true;
 })();

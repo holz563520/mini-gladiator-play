@@ -47,12 +47,12 @@ const AP=W.arenaPlatz,istAP=k=>!!AP?.[k],apText=()=>sp('bau.arenaPlatz',null,'Hi
 let apZeit=0;const apMelden=()=>{const t=performance.now();if(t-apZeit<1500)return;apZeit=t;M.ui?.notify?.(apText());};
 // A3b (Thomas 13.11.2026): gebaut wird auf allen natürlichen Böden außer Wasser (vorher nur Wiese). Bäume, Büsche und Steine
 // auf dem Feld verschwinden beim Bauen von selbst (W.rebake) und kosten RODEN G je Stück (Vorschlag, Annahme: Frage offen).
-const NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FELS,T.SCHNEE]),natur=t=>NATUR.has(t),RODEN=2;
+const NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FELS,T.SCHNEE,T.ERDE,T.KIES,T.SCHLAMM,T.GEROELL,T.TROCKEN,T.NADEL]),natur=t=>NATUR.has(t),RODEN=2;// T3: neue Böden
 // T2: unter Brücken (welt-bruecke.js) keine Häuser, Felder, Arenen und kein Gelände; Wege ja; Abreißen entfernt Brückenstücke
 const unterBruecke=k=>!!W.brueckeAt?.(k);
 const baubar=(tx,ty)=>W.inMap(tx,ty)&&!istFest(W.ix(tx,ty))&&!unterBruecke(W.ix(tx,ty))&&!W.gebaeudeAt?.(tx,ty)&&(natur(W.feld[W.ix(tx,ty)])||W.feld[W.ix(tx,ty)]===T.LUDUS);
 // T2-Rückmeldung (Thomas 13.11.2026): Abreißen nimmt auch Bäume, Büsche und Steine weg (kostet Roden wie beim Bauen)
-const abreissbar=k=>{const t=W.feld[k];return unterBruecke(k)||(!!W.obj?.[k]&&natur(t))||(t===T.PLATZ||t===T.ARENA||t===T.TRIB||istHaus(t)||istStr(t))&&ur[k]!==t;};
+const abreissbar=k=>{const t=W.feld[k];return unterBruecke(k)||(!!(W.obj?.[k]||W.klein?.[k])&&natur(t))||(t===T.PLATZ||t===T.ARENA||t===T.TRIB||istHaus(t)||istStr(t))&&ur[k]!==t;};
 // Umbau nur innerhalb derselben Gebäudeart (Unterkunft ↔ Unterkunft, Schmiede ↔ Schmiede, Beastrium ↔ Beastrium)
 const gruppeVon=t=>Object.values(WERKZEUG).find(w=>w.typ===t)?.gruppe||'unterkunft';
 const hausBaubar=(k,typ)=>{if(istFest(k)||unterBruecke(k))return false;const t=W.feld[k];return natur(t)||t===T.LUDUS||(istHaus(t)&&t!==typ&&gruppeVon(t)===gruppeVon(typ));};
@@ -176,7 +176,7 @@ function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,
 function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
  const a=drag.a,betten0=M.weltGebaeude?.betten()||0,amb0=M.weltGebaeude?.ambosse?.()||0;const kf0=M.weltGebaeude?.kaefige?.()||0;let cx=0,cy=0;if(!ab&&!wz.str)ebnen(ok,wz.typ);
  for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y-(W.hz?W.hz(x+.5,y+.5):0);}cx/=ok.length;cy/=ok.length;
- if(ab){M.weltBruecke?.abreissen?.(ok);for(const k of ok)if(W.obj?.[k]&&natur(W.feld[k]))W.obj[k]=0;}if(!frei)S.gold=(S.gold||0)-preis;W.rebake(ok);const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
+ if(ab){M.weltBruecke?.abreissen?.(ok);for(const k of ok)if(natur(W.feld[k])){if(W.obj?.[k])W.obj[k]=0;if(W.klein)W.klein[k]=0;}}/* T3: Abreißen räumt auch das Kleinzeug (kostenlos) */if(!frei)S.gold=(S.gold||0)-preis;W.rebake(ok);const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
  let d=0;const say=(s,col)=>{text.push({x:cx,y:cy-30,t:-d,s,col});d+=.6;};if(preis)say('−'+preis+' G','#f29b83');if(r.mehr)say('+'+mz(r.mehr,'Puppe','Puppen'),'#f4d37a');if(r.besser>=0)say('Bessere Puppen: '+STUFEN[r.besser].mz+'!','#fff2b0');
  const bd=(M.weltGebaeude?.betten()||0)-betten0;if(bd>0)say('+'+mz(bd,'Schlafplatz','Schlafplätze'),'#f4d37a');if(bd<0)say(bd+' Schlafplätze','#f29b83');const ad=(M.weltGebaeude?.ambosse?.()||0)-amb0;if(ad>0)say('+'+mz(ad,'Amboss','Ambosse'),'#f4d37a');if(ad<0)say(ad+' Ambosse','#f29b83');const kd=(M.weltGebaeude?.kaefige?.()||0)-kf0;if(kd>0)say('+'+mz(kd,'Käfig','Käfige'),'#f4d37a');if(kd<0)say(kd+' Käfige','#f29b83');
  if(r.plaetze>0)say('+'+r.plaetze+' Sitzplätze','#f4d37a');if(r.plaetze<0)say(r.plaetze+' Sitzplätze','#f29b83');zeigeGold();}
