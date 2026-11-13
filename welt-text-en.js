@@ -28,6 +28,7 @@ AT2Sprache.dazu('en',{
  'leiste.testGoldMeldung':'1000 gold from thin air. The tax collector saw nothing. Probably.',
  'karte.kaempfertor':'FIGHTERS ONLY','karte.kaempfertorZeile':'Spectators carried out horizontally.',
  'bau.ebnenKosten':'(incl. {g} G for levelling)',
+ 'bau.rodenKosten':'(incl. {g} G for clearing. The oaks went quietly.)',
  'bau.zuWenig':'Not enough gold: {g} G needed.',
  'bau.glatt':'〰 Smooth',
  'bau.glattHilfe':'Smooth: hold or swipe across. Edges and cliffs become gentle slopes. {g} G per tile and step. The surveyor calls it art. The gravedigger calls it job security.',

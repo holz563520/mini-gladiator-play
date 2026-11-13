@@ -41,13 +41,14 @@ const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty
 // Lagen relativ zu O: [x, y, Breite, Höhe] in Feldern. Die Straße liegt bei y 58/59.
 // A3b (Thomas 13.11.2026): Dorf 38×78 → 92×110 (nach Westen und Norden), Park 59×56 → 100×110 (nach Osten und Norden); Platz, Tore,
 // Halle, Start-Ludus und Start-Arena bleiben, wo sie sind (Intros). arenaPlatz: 50×50 für die große Arena (B0), eben, frei, gesperrt.
-const ANORD=GROSS?{dorf:[-100,-52,92,110],platz:[-8,40,14,18],park:[6,-52,100,110],arenaPlatz:[36,-14,50,50],kern:[-38,31,29,26],verwaltung:[-2,40,5,4],
+const ANORD=GROSS?{dorf:[-100,-52,92,110],platz:[-8,40,14,18],park:[6,-52,100,110],arenaPlatz:[36,-14,50,50],teich:[94,12,4.6],// teich: A3b natürlich (Thomas: „natürlich gewachsen“), [x, y, Halbmesser]
+ kern:[-38,31,29,26],verwaltung:[-2,40,5,4],
  parktor:[14,3],dorftor:[-26,3],durchgang:[50,3],kaempfertor:[52,2],// Kämpfertor: vom Platz in den Park (Kämpfer, Karren), nicht für Besucher
 // Tor: erstes Feld und Breite (an der Unterkante bzw. bei durchgang an der Ostkante des Dorfes)
  halle:[7,40],arena:{boden:[24,30,8,6],trib:[22,28,12,10],durch:[[27,36],[28,36],[27,37],[28,37]],ein:[27.5,38.5]},
  pfade:[[15,38,1,20],[15,38,46,1],[9,45,1,6],[9,50,7,1]],// Kieswege im Park: Tor → Arena (A3b: weiter bis unter die Fläche der großen Arena), Halle → Hauptweg
  orte:{lanista:[-16,48],orontes:[-24,50],huehner:[-33,50]}}:null;
-const inR=(lx,ly,r,m=0)=>lx>=r[0]-m&&lx<r[0]+r[2]+m&&ly>=r[1]-m&&ly<r[1]+r[3]+m,imAnord=(lx,ly,m=0)=>!!ANORD&&(inR(lx,ly,ANORD.dorf,m)||inR(lx,ly,ANORD.platz,m)||inR(lx,ly,ANORD.park,m));
+const inR=(lx,ly,r,m=0)=>lx>=r[0]-m&&lx<r[0]+r[2]+m&&ly>=r[1]-m&&ly<r[1]+r[3]+m,imAnord=(lx,ly,m=0)=>!!ANORD&&inMap(lx+O,ly+O)&&nah[(ly+O)*N+lx+O]<=m;// A3b: nach den geschwungenen Rändern (ber, nah unten)
 const LUD=ANORD?{tx:ANORD.kern[0]+O,ty:ANORD.kern[1]+O,w:ANORD.kern[2],h:ANORD.kern[3],px:50}:{tx:39+O,ty:40+O,w:18,h:16,px:50};
 const vonLudus=(x,y)=>iso(LUD.tx+x/LUD.px,LUD.ty+y/LUD.px);
 // Gebäude der Einführungen, Lage aus dem alten Ludus (ludus.js places, hs-art.js BEASTRIUM), auf ganze Felder gelegt
@@ -76,6 +77,36 @@ const flussX=ty=>O+(ANORD?122:72)+Math.round(3*Math.sin(ty/9)+2*Math.sin(ty/4.3)
 function vn(x,y,s){const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=h2(xi,yi,s),b=h2(xi+1,yi,s),c=h2(xi,yi+1,s),d=h2(xi+1,yi+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
 const fbm=(x,y,s)=>vn(x,y,s)*.65+vn(x*2.1,y*2.1,s+7)*.35;
 const B_=window.WeltNatur?.BIOM||{KERN:0,WALD:1,WUESTE:2,DSCHUNGEL:3,SUMPF:4},biom=new Uint8Array(N*N);
+// ---------- Bereiche mit natürlich gewachsenen Rändern (A3b, Thomas 13.11.2026) ----------
+// Dorf und Park sind keine Rechtecke mehr: die Ränder schwingen sanft, der Park endet sechs Felder vor dem Fluss. Gerade bleiben
+// die Ränder zur Straße, am Platz und an den Toren (sonst passen Tore und Videosequenzen nicht). Lagen aus ANORD (Dorf 92×110, Park 100×110). Zwischen Dorf und Park bleibt
+// hinter dem Platz eine Gasse von mindestens 14 Feldern. ber[k]: 0 draußen, 1 Dorf, 2 Platz, 3 Park. nah[k]: Abstand in Feldern
+// (Schachbrett) zum nächsten Bereichsfeld bis 4, sonst 255. pInnen[k]: Parkfeld mit 3 Feldern Abstand zum Rand (dort Hügel).
+// bfrei[k]: in den Bereichen nichts Natürliches (Ludus-Kern, Gebäude, Wege, Tore, Halle, NPC-Plätze, Arena-Fläche B0, Rand innen).
+const BER={DORF:1,PLATZ:2,PARK:3},ber=new Uint8Array(N*N),nah=new Uint8Array(N*N).fill(255),pInnen=new Uint8Array(N*N),bfrei=new Uint8Array(N*N);
+const BX0=O-112,BX1=O+130,BY0=O-66,BY1=O+64;// Rahmen, in dem gerechnet wird (spart beim Laden)
+const schwing=(i,s,a)=>Math.round((vn(i/9,.5,s)-.5)*2*a);
+function bereichAt(lx,ly){const A=ANORD;if(inR(lx,ly,A.platz))return BER.PLATZ;if(ly>57)return 0;
+ const P=A.park;if(lx>=P[0]+(ly<36?Math.max(0,schwing(ly,62,3)):0)&&lx<P[0]+P[2]-Math.max(0,schwing(ly,67,5))&&ly>=P[1]+schwing(lx,61,5)&&lx<=flussX(ly+O)-O-6)return BER.PARK;
+ const D=A.dorf;if(lx<D[0]+D[2]-(ly<36?Math.max(0,schwing(ly,65,3)):0)&&lx>=D[0]+schwing(ly,63,5)&&ly>=D[1]+schwing(lx,64,5))return BER.DORF;
+ return 0;}
+if(ANORD){const A=ANORD;
+ for(let ty=BY0;ty<BY1;ty++)for(let tx=BX0;tx<BX1;tx++)ber[ix(tx,ty)]=bereichAt(tx-O,ty-O);
+ for(let ty=BY0;ty<BY1;ty++)for(let tx=BX0;tx<BX1;tx++)if(ber[ix(tx,ty)])nah[ix(tx,ty)]=0;
+ for(let d=1;d<=4;d++)for(let ty=BY0-d;ty<BY1+d;ty++)for(let tx=BX0-d;tx<BX1+d;tx++){const k=ix(tx,ty);if(nah[k]!==255)continue;
+  let hit=0;for(let j=-1;j<=1&&!hit;j++)for(let i=-1;i<=1;i++)if(nah[k+j*N+i]===d-1){hit=1;break;}if(hit)nah[k]=d;}
+ // Parkinneres: dreimal abtragen
+ let e=new Uint8Array(N*N);for(let ty=BY0;ty<BY1;ty++)for(let tx=BX0;tx<BX1;tx++)e[ix(tx,ty)]=ber[ix(tx,ty)]===BER.PARK?1:0;
+ for(let r=0;r<3;r++){const f=new Uint8Array(N*N);for(let ty=BY0;ty<BY1;ty++)for(let tx=BX0;tx<BX1;tx++){const k=ix(tx,ty);if(!e[k])continue;let ok=1;
+  for(let j=-1;j<=1&&ok;j++)for(let i=-1;i<=1;i++)if(!e[k+j*N+i]){ok=0;break;}f[k]=ok;}e=f;}
+ pInnen.set(e);
+ // Freihalten (relativ zu O): Rechteck mit Rand m
+ const halte=(r,m)=>{for(let y=r[1]-m;y<r[1]+r[3]+m;y++)for(let x=r[0]-m;x<r[0]+r[2]+m;x++)if(inMap(x+O,y+O))bfrei[ix(x+O,y+O)]=1;};
+ halte(A.kern,2);halte(A.platz,1);halte(A.arenaPlatz,0);halte(A.verwaltung,2);for(const p of A.pfade)halte(p,1);halte([A.halle[0],A.halle[1],5,5],2);
+ for(const b of BAU)halte(b.p,2);for(const o of Object.values(A.orte))halte([o[0],o[1],1,1],2);
+ halte([A.parktor[0]-3,50,A.parktor[1]+6,8],0);halte([A.dorftor[0]-3,50,A.dorftor[1]+6,8],0);halte([-12,48,4,6],0);halte([4,49,5,7],0);// Tore, Durchgang, Kämpfertor
+ for(let ty=BY0;ty<BY1;ty++)for(let tx=BX0;tx<BX1;tx++){const k=ix(tx,ty),b=ber[k];if(!b)continue;// innen am Rand ein Feld frei, damit Zaun und Palisade sichtbar bleiben
+  for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++)if(ber[k+j*N+i]!==b)bfrei[k]=1;}}
 // ---------- Höhen ----------
 // Wie bei RollerCoaster Tycoon hat jedes Feld vier eigene Eckhöhen (hc; Stufen zu HZ Bildpunkten, 0 = Höhe des Ludus;
 // Ecke 0 oben = (tx,ty), 1 rechts, 2 unten, 3 links). Im Feld unterscheiden sich Nachbarecken um höchstens eine Stufe (über
@@ -91,8 +122,10 @@ const EM=ANORD?[3,3]:[58,42],ebenR=(x,y)=>Math.hypot(x-O-EM[0],(y-O-EM[1])*1.15)
 // T1 (Thomas 13.11.2026): sanfte Hügel und Senken nur im Arena-Park (−1 … +3 Stufen); Dorf, Platz, Zaun, Tore, Wege, Arena und
 // Halle der Toten bleiben eben. Eckpunkt (x,y) → Höhe, oder null = eben und fest. Das Glätten unten hält die Hänge sanft.
 const PARK_FREI=ANORD?[[ANORD.arenaPlatz,2],[ANORD.arena.trib,3],...ANORD.pfade.map(p=>[p,1]),[[ANORD.halle[0],ANORD.halle[1],5,5],2]]:[];
-function parkH(x,y){if(!ANORD)return null;const lx=x-O,ly=y-O,P=ANORD.park;if(!(lx>=P[0]+3&&lx<=P[0]+P[2]-3&&ly>=P[1]+3&&ly<=P[1]+P[3]-3))return null;
+// A3b natürlich: Hügel im Parkinneren (pInnen, 3 Felder vom geschwungenen Rand), dazu ein Teich (−2 Stufen) mit ausgefranstem Ufer
+function parkH(x,y){if(!ANORD)return null;const lx=x-O,ly=y-O;if(!pInnen[ix(Math.min(x,N-1),Math.min(y,N-1))]||!pInnen[ix(Math.max(x-1,0),Math.max(y-1,0))])return null;
  for(const [r,m] of PARK_FREI)if(lx>=r[0]-m&&lx<=r[0]+r[2]+m&&ly>=r[1]-m&&ly<=r[1]+r[3]+m)return null;
+ const Te=ANORD.teich;if(Math.hypot(lx-Te[0],(ly-Te[1])*1.25)+(vn(x/3,y/3,66)-.5)*2.6<Te[2])return -2;
  return clamp(Math.round((fbm(x/10,y/10,27)-.47)*11),-1,3);}
 const huegel=new Uint8Array(N*N);// Felder, die durch die Parkhügel nicht mehr flach sind (für alte Spielstände, welt-spielstand.js)
 function grob(f,st){const n=Math.ceil(V/st)+2,a=new Float32Array(n*n);for(let j=0;j<n;j++)for(let i=0;i<n;i++)a[j*n+i]=f(i*st,j*st);
@@ -128,7 +161,7 @@ if(GROSS){
  for(let tx=0;tx<N;tx++)if(bruecke[tx]&&[wy[tx],wy[tx]+1].every(ty=>{const k=(ty*N+tx)*4;return Math.min(hc[k],hc[k+1],hc[k+2],hc[k+3])>=WL;}))bruecke[tx]=0;
  for(let tx=0;tx<N;tx++)if(bruecke[tx]){const L=Math.max(prof[tx],prof[tx+1],0);for(const ty of [wy[tx],wy[tx]+1])hc.fill(L,(ty*N+tx)*4,(ty*N+tx)*4+4);}
  for(let i=0;i<hc.length;i++){if(hc[i]>HMAX)HMAX=hc[i];if(hc[i]<HMIN)HMIN=hc[i];}
- if(ANORD){const P=ANORD.park;for(let ty=P[1]+O;ty<P[1]+P[3]+O;ty++)for(let tx=P[0]+O;tx<P[0]+P[2]+O;tx++){const k=ix(tx,ty);if(hc[k*4]|hc[k*4+1]|hc[k*4+2]|hc[k*4+3])huegel[k]=1;}}}
+ if(ANORD){for(let ty=BY0;ty<BY1;ty++)for(let tx=BX0;tx<BX1;tx++){const k=ix(tx,ty);if(ber[k]===BER.PARK&&(hc[k*4]|hc[k*4+1]|hc[k*4+2]|hc[k*4+3]))huegel[k]=1;}}}
 for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){let t=T.WIESE,bi=0;const k=ix(tx,ty),lx=tx-O,ly=ty-O,innen=!GROSS||ebenR(tx+.5,ty+.5)<EBEN;
  const c0=hc[k*4],c1=hc[k*4+1],c2=hc[k*4+2],c3=hc[k*4+3],hm=(c0+c1+c2+c3)/4;eben[k]=innen?1:0;
  if(!innen){const cx=tx+.5,cy=ty+.5,w=WAERME(cx,cy)+(vn(tx/7,ty/7,41)-.5)*.05,f=FEUCHT(cx,cy)+(vn(tx/7,ty/7,42)-.5)*.05,q=fbm(tx/9,ty/9,5);
@@ -136,6 +169,8 @@ for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){let t=T.WIESE,bi=0;const k=ix(tx,
   t=bi===B_.WALD?(q>.72?T.WIESE:T.WALD):bi===B_.WUESTE?(q>.8?T.WIESE:T.SAND):bi===B_.DSCHUNGEL?(q>.8?T.MOOR:T.DSCH):bi===B_.SUMPF?(q>.52?T.MOOR:T.SUMPF):(q>.68?T.WALD:T.WIESE);
   const fels=15+(vn(tx/5,ty/5,43)-.5)*4;if(hm>=fels)t=hm>=fels+8?T.SCHNEE:T.FELS;}
  else if(!imAnord(lx,ly,3)&&ly-lx>30+h2(tx>>2,ty>>2,5)*9)t=T.WALD;// A3: in Dorf, Platz und Park kein Wald
+ // A3b: in Dorf und Park von allem ein bisschen, locker: kleine Wäldchen, Haine (Wiese mit Bäumen und Büschen), Sand- und Kiesflecken
+ else if(ANORD&&nah[k]===0&&ber[k]!==BER.PLATZ&&!bfrei[k]){const g=fbm(tx/11,ty/11,51),sd=fbm(tx/8,ty/8,53);if(g>.69)t=T.WALD;else if(g>.61)bi=B_.WALD;else if(sd>.755)t=T.SAND;}
  if(!GROSS&&Math.abs(tx-flussX(ty))<=1)t=T.FLUSS;
  grund[k]=t;if(GROSS&&Math.min(c0,c1,c2,c3)<WL)t=T.FLUSS;
  if(ty===wy[tx]||ty===wy[tx]+1)t=(GROSS?bruecke[tx]:t===T.FLUSS)?T.BRUECKE:T.WEG;
@@ -153,20 +188,32 @@ if(ANORD){const A=ANORD,setz=(arr,x,y,v)=>{if(inMap(x,y))arr[ix(x,y)]=v;};
  for(const [x0,y0,w,h] of A.pfade)for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)feld[ix(x+O,y+O)]=T.STR2;
  for(let y=A.platz[1];y<A.platz[1]+A.platz[3];y++)for(let x=A.platz[0];x<A.platz[0]+A.platz[2];x++){const k=ix(x+O,y+O);if(feld[k]===T.LUDUS)fest[k]=1;}
  {const [x0,y0,w,h]=A.arenaPlatz;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++){const k=ix(x+O,y+O);fest[k]=1;arenaPlatz[k]=1;}}// A3b: Fläche der großen Arena
- // Ring um ein Rechteck; luecke(seite, i) = true lässt die Kante offen (Tor). Seiten: o oben, u unten, l links, r rechts
- const ring=([x0,y0,w,h],v,luecke,seiten='oulr')=>{for(let i=0;i<w;i++){if(seiten.includes('o')&&!luecke('o',x0+i))setz(zaunA,x0+i+O,y0+O,v);if(seiten.includes('u')&&!luecke('u',x0+i))setz(zaunA,x0+i+O,y0+h+O,v);}
-  for(let j=0;j<h;j++){if(seiten.includes('l')&&!luecke('l',y0+j))setz(zaunB,x0+O,y0+j+O,v);if(seiten.includes('r')&&!luecke('r',y0+j))setz(zaunB,x0+w+O,y0+j+O,v);}};
- const imTor=(t,i)=>i>=t[0]&&i<t[0]+t[1];
- ring(A.park,1,(s,i)=>(s==='u'&&imTor(A.parktor,i))||(s==='l'&&imTor(A.kaempfertor,i)));
- ring(A.dorf,2,(s,i)=>(s==='u'&&imTor(A.dorftor,i))||(s==='r'&&imTor(A.durchgang,i)));
- ring(A.platz,2,()=>false,'o');// hinter dem Platz eine Palisade; zur Straße hin offen, links Dorf, rechts Park
+ // A3b: Grenzen folgen den geschwungenen Rändern. Jede Kante zwischen zwei Feldern verschiedener Bereiche bekommt Zaun (Park)
+ // oder Palisade (Dorf, Rückseite des Platzes); offen bleiben die Tore und der Platz zur Straße hin.
+ const imTor=(t,i)=>i>=t[0]&&i<t[0]+t[1],B=BER;
+ const art=(a,b,waag,lx,ly)=>{const zu=x=>a===x||b===x;
+  if(zu(B.PARK))return waag&&ly===58&&imTor(A.parktor,lx)||!waag&&lx===A.park[0]&&zu(B.PLATZ)&&imTor(A.kaempfertor,ly)?0:1;
+  if(zu(B.DORF))return waag&&ly===58&&imTor(A.dorftor,lx)||!waag&&lx===A.platz[0]&&zu(B.PLATZ)&&imTor(A.durchgang,ly)?0:2;
+  return waag&&ly===A.platz[1]?2:0;};// Platz: nur hinten eine Palisade
+ for(let ty=BY0;ty<=BY1;ty++)for(let tx=BX0;tx<=BX1;tx++){const k=ix(tx,ty),b=ber[k],bo=ber[k-N],bl=ber[k-1];
+  if(b!==bo){const v=art(b,bo,1,tx-O,ty-O);if(v)zaunA[k]=v;}if(b!==bl){const v=art(b,bl,0,tx-O,ty-O);if(v)zaunB[k]=v;}}
  TORE.push({art:'park',tx:A.parktor[0]+O,ty:A.park[1]+A.park[3]+O,w:A.parktor[1],dir:0},{art:'dorf',tx:A.dorftor[0]+O,ty:A.dorf[1]+A.dorf[3]+O,w:A.dorftor[1],dir:0},
   {art:'kaempfer',tx:A.park[0]+O,ty:A.kaempfertor[0]+O,w:A.kaempfertor[1],dir:1});}
 // Naturobjekte (welt-natur.js): je Feld höchstens eines. Alles darauf ist entfernbar (obj = 0); nicht am Weg, nicht um den Ludus.
 const NASS_OK=new Set(['Schilf','Seerosen','Moorhand']),NB=window.WeltNatur,obj=new Uint8Array(N*N),BODEN_NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FLUSS,T.FELS,T.SCHNEE]),
  BODEN_NAME={[T.WIESE]:'wiese',[T.WALD]:'wald',[T.SAND]:'sand',[T.DSCH]:'dsch',[T.SUMPF]:'sumpf',[T.MOOR]:'moor',[T.FLUSS]:'wasser',[T.FELS]:'fels',[T.SCHNEE]:'schnee'};
-if(NB)for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const k=ix(tx,ty),t=feld[k],lx=tx-O,ly=ty-O;if(!BODEN_NATUR.has(t)||Math.abs(ty-wy[tx]-.5)<=1.6)continue;if(ANORD?imAnord(lx,ly,1):(lx>=24&&lx<=74&&ly>=20&&ly<=64))continue;
- let o=NB.waehle(biom[k],BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6));
+// A3b: was in Dorf und Park wächst und liegt: locker verteilt, von allem ein bisschen (Thomas: „nichts zu dicht“).
+const NA=NB&&{eiche:NB.nr('Eiche'),birke:NB.nr('Birke'),stein:NB.nr('Feldstein'),moos:NB.nr('Moosfels'),gras:NB.nr('Grasbüschel'),duerr:NB.nr('Dürrbusch'),schilf:NB.nr('Schilf'),rose:NB.nr('Seerosen')};
+function naturBereich(k,t,tx,ty){const r=h2(tx,ty,71),q=h2(tx,ty,72),c=hc.subarray(k*4,k*4+4),hm=(c[0]+c[1]+c[2]+c[3])/4;
+ if(t===T.FLUSS)return r<.22?(q<.6?NA.rose:NA.schilf):0;// Teich
+ if(Math.min(c[0],c[1],c[2],c[3])<=WL)return r<.3?NA.schilf:0;// Ufer
+ if(t===T.WALD||biom[k]===B_.WALD)return NB.waehle(B_.WALD,BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6)*.6);// Wäldchen und Haine
+ if(t===T.SAND)return r<.05?NA.stein:r<.11?NA.gras:r<.14?NA.duerr:0;// Sand- und Kiesflecken
+ if(hm>=2&&r<.025)return q<.5?NA.stein:NA.moos;// Felsbrocken auf den Hügeln
+ if(r<.006)return q<.6?NA.eiche:NA.birke;// Einzelbäume auf der Wiese
+ return NB.waehle(0,'wiese',tx,ty,0);}
+if(NB)for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const k=ix(tx,ty),t=feld[k],lx=tx-O,ly=ty-O;if(!BODEN_NATUR.has(t)||Math.abs(ty-wy[tx]-.5)<=1.6)continue;const inB=!!ANORD&&nah[k]===0;if(ANORD?(inB?bfrei[k]:nah[k]<=1):(lx>=24&&lx<=74&&ly>=20&&ly<=64))continue;
+ let o=inB?naturBereich(k,t,tx,ty):NB.waehle(biom[k],BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6));
  // Keine Bäume im Wasser (Thomas 12.11.): im Wasser, im Moor und am Ufer (eine Ecke auf Wasserhöhe) nur Schilf, Seerosen, Moorhand
  if(o&&!NASS_OK.has(NB.ARTEN[o].name)&&(t===T.FLUSS||t===T.MOOR||Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3])<=WL))o=0;
  obj[k]=o;}
@@ -518,7 +565,8 @@ function ebnen(ks,L){for(const k of ks){hc.fill(L,k*4,k*4+4);gelaendeTyp(k);}if(
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
 window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
- ANORD,fest,arenaPlatz,zaunA,zaunB,TORE,imAnord,inR,// A3: Dorf, Platz, Park (Lagen relativ zu O), feste Felder, Grenzen, Tore
+ ANORD,fest,arenaPlatz,zaunA,zaunB,TORE,imAnord,inR,ber,BER,bfrei,// A3b natürlich: Bereiche mit geschwungenen Rändern
+// A3: Dorf, Platz, Park (Lagen relativ zu O), feste Felder, Grenzen, Tore
  raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,hangF,huegel,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get tempo(){return tempo;},set tempo(v){tempo=Math.max(0,+v||0);},get perf(){return perfAvg;}};
 window.WELT_READY=true;
 })();
