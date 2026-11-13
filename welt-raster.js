@@ -519,7 +519,25 @@ const imLudus=(tx,ty)=>tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h;
 function makeRoster(n){const keep=S.roster.filter(g=>!g.dead);let list=keep.slice(0,n);const rng=S.rng;while(list.length<n){const g=M.makeGladiator(0);g.fatigue=0;list.push(g);}S.rng=rng;
  S.roster=list;try{M.army?.autoClasses?.(list);}catch(e){}for(const w of workers){figs.delete(w.g.id);pof.delete(w.g.id);}if(pNext>PROW*6){pof.clear();pNext=0;}
  workers=list.map((g,i)=>{let tx,ty,k=0;do{tx=LUD.tx+h2(i,k,21)*LUD.w;ty=LUD.ty+h2(i,k,22)*LUD.h;k++;}while(!frei(tx,ty)&&k<40);const p=iso(tx,ty);return {g,x:p.x,y:p.y,dist:h2(i,7,23)*60,seed:h2(i,7,23)*1000,wait:h2(i,3,24)*8,goal:null,dir:0,walk:false};});}
-function wander(w,dt){if(w.wait>0){w.wait-=dt;w.walk=false;return;}// (schlendern)
+// T4 (Thomas 13.11.2026): Gibt es die Begehbarkeitskarte (welt-begehbar.js, nur 2.0), schlendern Gladiatoren über gesuchte Wege
+// (nur freie Felder, Tempo je Boden, auch über Brücken) und weichen Änderungen aus; ohne sie wie bisher.
+let bgHorcht=false;
+function bgHorchen(G){bgHorcht=true;G.beiAenderung(r=>{for(const w of workers){const c=tileAt(w.x,w.y),tx=Math.floor(c.tx),ty=Math.floor(c.ty);if(tx<r[0]-1||tx>r[2]+1||ty<r[1]-1||ty>r[3]+1)continue;
+  if(w.pobj?.kaputt){w.pfad=null;w.pobj=null;w.goal=null;}const k=ix(clamp(tx,0,N-1),clamp(ty,0,N-1));if(w.brA||w.br||G.frei(G.GL,k))continue;
+  const z=G.naechstesFrei(G.GL,k,6);w.gen=(w.gen||0)+1;w.sucht=false;w.pobj=null;w.wait=0;w.goal=null;w.pfad=z>=0?[{x:z%N+.5,y:((z/N)|0)+.5,b:0}]:null;
+  if(z<0||G.eingesperrt(G.GL,z))G.melde(G.GL,w.g.name);}});}
+function wanderB(w,dt,G){if(!bgHorcht)bgHorchen(G);if(w.pobj?.kaputt&&!w.sucht){w.pfad=null;w.pobj=null;}
+ if(w.wait>0){w.wait-=dt;w.walk=false;return;}
+ if(!w.goal){if(w.pfad&&w.pfad.length){const q=w.pfad.shift();w.goal=iso(q.x,q.y);w.brA=w.br;w.br=q.b;}
+  else{if(w.sucht){w.walk=false;return;}const c=tileAt(w.x,w.y),home=imLudus(c.tx,c.ty);let ziel=null;
+   for(let k=0;k<6&&!ziel;k++){const tx=Math.floor(c.tx+(Math.random()-.5)*9),ty=Math.floor(c.ty+(Math.random()-.5)*9);if(!inMap(tx,ty)||!G.frei(G.GL,ix(tx,ty))||(home&&!imLudus(tx,ty)))continue;ziel={tx,ty};}
+   if(!ziel){w.wait=1;w.walk=false;return;}w.sucht=true;const gen=w.gen=(w.gen||0)+1;
+   G.weg(G.GL,{tx:c.tx,ty:c.ty,b:w.br},ziel,p=>{if(w.gen!==gen)return;w.sucht=false;if(!p){w.wait=1+Math.random()*2;return;}w.pobj=p;
+    w.pfad=p.pts.slice(1).map((q,i,a)=>i===a.length-1||q.b?q:{x:q.x+(Math.random()-.5)*.3,y:q.y+(Math.random()-.5)*.3,b:0});},{max:900});w.walk=false;return;}}
+ const dx=w.goal.x-w.x,dy=w.goal.y-w.y,d=Math.hypot(dx,dy),tp=G.tempoBei(G.GL,w.x,w.y,w.brA||w.br)||100,step=SPEED*dt*tp/100*(d&&!(w.brA||w.br)?hangF(w.x,w.y,dx/d,dy/d):1);w.walk=true;if(Math.abs(dx)>1)w.dir=dx<0?1:0;
+ if(d<=step){w.x=w.goal.x;w.y=w.goal.y;w.goal=null;w.dist+=d;if(!w.pfad||!w.pfad.length){w.pfad=null;w.pobj=null;w.brA=w.br;w.wait=2+Math.random()*9;w.walk=false;}return;}w.x+=dx/d*step;w.y+=dy/d*step;w.dist+=step;}
+const ozW=(w,c)=>{const z=hz(c.tx,c.ty);return (w.brA||w.br)&&M.weltBegehbar?M.weltBegehbar.deckHz(c.tx,c.ty,z):z;};
+function wander(w,dt){const G=GROSS&&M.weltBegehbar;if(G)return wanderB(w,dt,G);if(w.wait>0){w.wait-=dt;w.walk=false;return;}// (schlendern)
  if(!w.goal){const c=tileAt(w.x,w.y),home=imLudus(c.tx,c.ty);for(let k=0;k<6&&!w.goal;k++){const tx=c.tx+(Math.random()-.5)*9,ty=c.ty+(Math.random()-.5)*9;if(!frei(tx,ty)||(home&&!imLudus(tx,ty)))continue;
    let ok=true;for(let s=1;s<8&&ok;s++)ok=frei(c.tx+(tx-c.tx)*s/8,c.ty+(ty-c.ty)*s/8);if(ok)w.goal=iso(tx,ty);}
   if(!w.goal){w.wait=1;return;}}
@@ -527,7 +545,7 @@ function wander(w,dt){if(w.wait>0){w.wait-=dt;w.walk=false;return;}// (schlender
  if(d<=step){w.x=w.goal.x;w.y=w.goal.y;w.goal=null;w.wait=2+Math.random()*9;w.walk=false;return;}w.x+=dx/d*step;w.y+=dy/d*step;w.dist+=step;}
 function pose0(w){return {x:w.x,y:w.y,dx:w.dir?-1:1,dy:0,state:w.walk?'schlendert durch den Ludus':'steht herum',work:false,top:!w.walk};}
 function pose(w){const ps=pose0(w);return H.pose?H.pose(w,ps,clock):ps;}
-function place(g,x,y){const w=workers.find(w=>w.g.id===g.id);if(!w)return;if(GROSS){const q=bodenPunkt(x,y),p=iso(q.tx,q.ty);x=p.x;y=p.y;}w.x=x;w.y=y;w.goal=null;w.wait=2.5;w.walk=false;}
+function place(g,x,y){const w=workers.find(w=>w.g.id===g.id);if(!w)return;w.pfad=null;w.pobj=null;w.sucht=false;w.gen=(w.gen||0)+1;w.br=w.brA=0;if(GROSS){const q=bodenPunkt(x,y),p=iso(q.tx,q.ty);x=p.x;y=p.y;}w.x=x;w.y=y;w.goal=null;w.wait=2.5;w.walk=false;}
 
 // ---------- Ansicht, Kamera, Bedienung ----------
 const cv=$('weltCanvas'),ctx=cv.getContext('2d');let VW=1,VH=1,DPR=1;
@@ -586,7 +604,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  // Figuren; wer vor einem Gebäude steht, wird nach ihm gezeichnet
  shown=[];spriteBudget=Math.max(2,Math.round(12-perfAvg));pBudget=Math.max(3,Math.round(14-perfAvg));
  for(const w of workers){const ps=pose(w);if(ps.x==null||ps.x<view.x0-40||ps.x>view.x1+40||ps.y<view.y0-20||ps.y>view.y1+80)continue;let y=ps.y;const c=tileAt(ps.x,ps.y);
-  for(const b of SKIZZE)if(!b.flach&&y<=b.key&&(c.tx>=b.tx+b.w||c.ty>=b.ty+b.h)&&c.tx>b.tx-2&&c.ty>b.ty-2)y=b.key+.01;if(H.vorne)y=H.vorne(c.tx,c.ty,y);items.push({y,w,ps,oz:hz(c.tx,c.ty)});}
+  for(const b of SKIZZE)if(!b.flach&&y<=b.key&&(c.tx>=b.tx+b.w||c.ty>=b.ty+b.h)&&c.tx>b.tx-2&&c.ty>b.ty-2)y=b.key+.01;if(H.vorne)y=H.vorne(c.tx,c.ty,y);items.push({y,w,ps,oz:ozW(w,c)});}
  items.sort((a,b)=>a.y-b.y);
  for(const it of items){const z=it.oz||0;if(it.img){ctx.drawImage(it.img,it.x-it.ax,it.y-z-it.ay);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}
   if(it.draw){if(z){ctx.save();ctx.translate(0,-z);it.draw(ctx);ctx.restore();}else it.draw(ctx);continue;}// oz: angehoben (Höhe des Bodens)

@@ -62,11 +62,13 @@ const BILDER={
  'kkkkkkkkkk..','khhhhhhhhhk.','khhhhhhhhk..','kRRRRRRRRRk.','kRRRRRRRRk..','kRRRRRRRk...','kggggggggk..','kgggggggggk.','kgggg.gggk..','kk.kkk.kk...','k...........','k...........'],
  en:[
  'kkkkkkkkkk..','kuuWRWuuuk..','kuuWRWuuuuk.','kWWWRWWWWk..','kRRRRRRRRRk.','kWWWRWWWWk..','kuuWRWuuuk..','kuuWRWuu.uk.','kuuWRWuuuk..','kk.kkkk.kk..','k...........','k...........'],
+ begehbar:[ // Sandale, daneben eine blutige Fußspur
+ '............','..kkk.......','.kbbbk......','.kblbk...r..','.kbbbk..rRr.','kkkkkkk.rRr.','.kbbbk..rRr.','.kbbbk...r..','kkkkkkk.....','.kblbk..r.r.','..kkk.......','............'],
  pfeil:[ '............','............','.....k......','.....kk.....','kkkkkkSk....','kbbbbbSSk...','kkkkkkSk....','.....kk.....','.....k......','............','............','............'],
 };
 const EMOJI={'🔨':'bauen','🎯':'training','⚔':'kampf','🏟':'tribuene','🛏':'unterkunft','⚒':'schmiede','🐺':'beast','🛡':'kaserne','✚':'kranken',
  '🛤':'strasse','⛰':'gelaende','💥':'abreissen','💰':'gold','🌉':'bruecke','🪵':'holz','🪨':'stein','💾':'speichern','⏸':'pause','💬':'reden',
- '☠':'schaedel','✝':'kreuz','⛓':'kette','⏳':'sanduhr','🇩🇪':'de','🇬🇧':'en'};
+ '☠':'schaedel','✝':'kreuz','⛓':'kette','⏳':'sanduhr','👣':'begehbar','🇩🇪':'de','🇬🇧':'en'};
 const cache={};
 function bild(name){if(cache[name])return cache[name];const B=BILDER[name];if(!B)return '';
  const c=document.createElement('canvas');c.width=12;c.height=12;const g=c.getContext('2d');
