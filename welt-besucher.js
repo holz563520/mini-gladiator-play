@@ -42,7 +42,8 @@ function nimmSitz(v){if(!frei.length)return null;const i=(Math.random()*frei.len
 function gibSitz(v){if(v.sitz){v.sitz.v=null;frei.push(v.sitz);v.sitz=null;}}
 
 // ---------- Wege ----------
-const P=(tx,ty)=>W.iso(tx+rnd(-.5,.5),ty+rnd(-.5,.5));
+// T2-Rückmeldung (Thomas 13.11.2026): Besucher bleiben auf dem Belag, nicht auf dem Rand: Streuung ±0,2 Felder um die Wegmitte (Belag ±0,3)
+const P=(tx,ty)=>W.iso(tx+rnd(-.2,.2),ty+rnd(-.2,.2));
 function spalte(west,a){let lo=LUD.tx-1.5,hi=LUD.tx+LUD.w+1.5;if(a)for(const k of a.tribs.concat(a.floor)){const x=k%N;if(x-1.5<lo)lo=x-1.5;if(x+2.5>hi)hi=x+2.5;}return west?lo:hi;}
 // Abstecher zur Halle der Toten (Thomas 12.11.): etwa jeder Vierte geht vorher den Pfad hinauf und bewundert einen Helden
 // Park: Punkte auf dem Hauptweg (Spalte des Tores), Tor außen/innen, Eingang der Arena

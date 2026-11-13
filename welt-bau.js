@@ -51,7 +51,8 @@ const NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FELS,T.SCHNEE
 // T2: unter Brücken (welt-bruecke.js) keine Häuser, Felder, Arenen und kein Gelände; Wege ja; Abreißen entfernt Brückenstücke
 const unterBruecke=k=>!!W.brueckeAt?.(k);
 const baubar=(tx,ty)=>W.inMap(tx,ty)&&!istFest(W.ix(tx,ty))&&!unterBruecke(W.ix(tx,ty))&&!W.gebaeudeAt?.(tx,ty)&&(natur(W.feld[W.ix(tx,ty)])||W.feld[W.ix(tx,ty)]===T.LUDUS);
-const abreissbar=k=>{const t=W.feld[k];return unterBruecke(k)||(t===T.PLATZ||t===T.ARENA||t===T.TRIB||istHaus(t)||istStr(t))&&ur[k]!==t;};
+// T2-Rückmeldung (Thomas 13.11.2026): Abreißen nimmt auch Bäume, Büsche und Steine weg (kostet Roden wie beim Bauen)
+const abreissbar=k=>{const t=W.feld[k];return unterBruecke(k)||(!!W.obj?.[k]&&natur(t))||(t===T.PLATZ||t===T.ARENA||t===T.TRIB||istHaus(t)||istStr(t))&&ur[k]!==t;};
 // Umbau nur innerhalb derselben Gebäudeart (Unterkunft ↔ Unterkunft, Schmiede ↔ Schmiede, Beastrium ↔ Beastrium)
 const gruppeVon=t=>Object.values(WERKZEUG).find(w=>w.typ===t)?.gruppe||'unterkunft';
 const hausBaubar=(k,typ)=>{if(istFest(k)||unterBruecke(k))return false;const t=W.feld[k];return natur(t)||t===T.LUDUS||(istHaus(t)&&t!==typ&&gruppeVon(t)===gruppeVon(typ));};
@@ -160,11 +161,11 @@ const mz=(n,e,m)=>n+' '+(n===1?e:m);
 function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,drag.b.tx),y0=Math.min(drag.a.ty,drag.b.ty),y1=Math.max(drag.a.ty,drag.b.ty),ok=[],no=[],wz=WERKZEUG[mode],ab=mode==='weg';
  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=W.ix(x,y);((ab?abreissbar(k):wz.str?strBaubar(k,wz.typ):wz.haus?hausBaubar(k,wz.typ):baubar(x,y))?ok:no).push(k);}
  const eb=!ab&&!wz.str&&ok.length?ebnenPlan(ok,wz.typ).stufen*WERKZEUG.land.preis:0;// T1: Einebnen kostet wie das Geländewerkzeug
- const NBa=window.WeltNatur?.ARTEN,rod=ab?0:ok.reduce((n,k)=>{const o=W.obj?.[k];return n+(o&&!NBa?.[o]?.flach?RODEN:0);},0);// A3b: Roden (Bäume, Büsche, Steine; Gras und Blumen nicht)
+ const NBa=window.WeltNatur?.ARTEN,rod=ok.reduce((n,k)=>{const o=W.obj?.[k];return n+(o&&!NBa?.[o]?.flach?RODEN:0);},0);// A3b: Roden (Bäume, Büsche, Steine; Gras und Blumen nicht)
  const preis=ok.length*wz.preis+eb+rod;info={ok,no,preis,eb,rod,genug:(S.gold||0)>=preis};let t='Hier geht das nicht.';
  if(ok.length){// Ergebnis vorab ausrechnen: Felder kurz setzen, zählen, zurücksetzen
   const save=ok.map(k=>W.feld[k]);for(const k of ok)W.feld[k]=ab?ur[k]:wz.typ;
-  if(ab)t=mz(ok.length,'Feld','Felder')+' abreißen';
+  if(ab)t=mz(ok.length,'Feld','Felder')+' abreißen'+(rod?' · '+rod+' G '+sp('bau.rodenKosten',{g:rod},'(davon {g} G zum Roden. Die Eichen haben nicht protestiert.)'):'')+(info.genug?'':' · zu wenig Gold');
   else{t=mz(ok.length,'Feld','Felder')+' · '+preis+' G'+(eb?' '+sp('bau.ebnenKosten',{g:eb},'(davon {g} G zum Einebnen)'):'')+(rod?' '+sp('bau.rodenKosten',{g:rod},'(davon {g} G zum Roden. Die Eichen haben nicht protestiert.)'):'')+(info.genug?'':' · zu wenig Gold');
    if(mode==='platz'){const f=plan(gebiete(T.PLATZ).find(g=>g.includes(ok[0])));t+=' → Trainingsfeld mit '+mz(f.n,'Feld','Feldern')+': '+mz(f.count,'Puppe','Puppen')+', beste: '+STUFEN[f.max].name;}
    else if(wz.haus){const h=M.weltGebaeude?.bei(ok[0]);if(h)t+=' → '+wz.name+' mit '+mz(h.n,'Feld','Feldern')+': '+(h.art==='schmiede'?mz(h.ambosse,'Amboss','Ambosse')+', halb überdacht':h.art==='beast'?mz(h.kaefige,'Käfig','Käfige'):h.art==='kaserne'?mz(h.plaetze,'Platz','Plätze')+' für Waffen und Rüstungen':h.art==='krankenhaus'?mz(h.betten,'Krankenbett','Krankenbetten'):mz(h.betten,'Schlafplatz','Schlafplätze'));}
@@ -175,7 +176,7 @@ function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,
 function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
  const a=drag.a,betten0=M.weltGebaeude?.betten()||0,amb0=M.weltGebaeude?.ambosse?.()||0;const kf0=M.weltGebaeude?.kaefige?.()||0;let cx=0,cy=0;if(!ab&&!wz.str)ebnen(ok,wz.typ);
  for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y-(W.hz?W.hz(x+.5,y+.5):0);}cx/=ok.length;cy/=ok.length;
- if(ab)M.weltBruecke?.abreissen?.(ok);if(!frei)S.gold=(S.gold||0)-preis;W.rebake(ok);const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
+ if(ab){M.weltBruecke?.abreissen?.(ok);for(const k of ok)if(W.obj?.[k]&&natur(W.feld[k]))W.obj[k]=0;}if(!frei)S.gold=(S.gold||0)-preis;W.rebake(ok);const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
  let d=0;const say=(s,col)=>{text.push({x:cx,y:cy-30,t:-d,s,col});d+=.6;};if(preis)say('−'+preis+' G','#f29b83');if(r.mehr)say('+'+mz(r.mehr,'Puppe','Puppen'),'#f4d37a');if(r.besser>=0)say('Bessere Puppen: '+STUFEN[r.besser].mz+'!','#fff2b0');
  const bd=(M.weltGebaeude?.betten()||0)-betten0;if(bd>0)say('+'+mz(bd,'Schlafplatz','Schlafplätze'),'#f4d37a');if(bd<0)say(bd+' Schlafplätze','#f29b83');const ad=(M.weltGebaeude?.ambosse?.()||0)-amb0;if(ad>0)say('+'+mz(ad,'Amboss','Ambosse'),'#f4d37a');if(ad<0)say(ad+' Ambosse','#f29b83');const kd=(M.weltGebaeude?.kaefige?.()||0)-kf0;if(kd>0)say('+'+mz(kd,'Käfig','Käfige'),'#f4d37a');if(kd<0)say(kd+' Käfige','#f29b83');
  if(r.plaetze>0)say('+'+r.plaetze+' Sitzplätze','#f4d37a');if(r.plaetze<0)say(r.plaetze+' Sitzplätze','#f29b83');zeigeGold();}
@@ -277,7 +278,7 @@ const O=W.O||0,AA=W.ANORD?.arena,R=(a,b,c,d)=>[a+O,b+O,a+c-1+O,b+d-1+O];
 const durch=(AA?AA.durch:[[48,36],[49,36],[48,37],[49,37]]).map(([x,y])=>W.ix(x+O,y+O));
 if(AA){bauen('arena',...R(...AA.boden),true);bauen('trib',...R(...AA.trib),true);}else{bauen('arena',45+O,30+O,52+O,35+O,true);bauen('trib',43+O,28+O,54+O,37+O,true);}for(const k of durch)W.feld[k]=ur[k];
 neu.clear();W.rebake(durch);rechne(true);
-M.weltBau={neuRechnen(){rechne(true);},ebnenPlan,glatt:glattSchritt,PREIS,PRO,PLAETZE,STUFEN,WERKZEUG,SITZ,HOCH,setMode,get mode(){return mode;},felder:()=>felder,puppen:()=>[...puppen.values()],arenen:()=>arenen,tribs:()=>tribs,plan,stufeVon,beiAenderung(fn){horcher.push(fn);},
+M.weltBau={RODEN,neuRechnen(){rechne(true);},ebnenPlan,glatt:glattSchritt,PREIS,PRO,PLAETZE,STUFEN,WERKZEUG,SITZ,HOCH,setMode,get mode(){return mode;},felder:()=>felder,puppen:()=>[...puppen.values()],arenen:()=>arenen,tribs:()=>tribs,plan,stufeVon,beiAenderung(fn){horcher.push(fn);},
  bauen(a,b,c,d,e){return typeof a==='string'?bauen(a,b,c,d,e):bauen('platz',a,b,c,d);},
  // Test: Geländewerkzeug an Feld (tx,ty), Größe n, Stufen (+ heben, − senken), ecken z. B. [0] oder [0,1] bei n = 1
  gelaende(tx,ty,n=1,stufen=1,ecken=null,frei=false){const h=(n-1)>>1,ks=[];if(ecken)ks.push(W.ix(tx,ty));else for(let y=ty-h;y<ty-h+n;y++)for(let x=tx-h;x<tx-h+n;x++)if(W.inMap(x,y))ks.push(W.ix(x,y));const sel={ks,ecken},d=Math.sign(stufen),out=new Set();for(let i=0;i<Math.abs(stufen);i++){const r=landSchritt(sel,d,frei);if(!r)break;r.forEach(k=>out.add(k));}return [...out];}};

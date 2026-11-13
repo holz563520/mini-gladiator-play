@@ -48,4 +48,5 @@ AT2Sprache.dazu('en',{
  'profil.karte':'◀ Back to map','profil.zu':'Close',
  'br.neigung':'Slope','br.material':'Material','br.anschluss':'Joins the bridge · 0 G · just build straight through',
  'bau.gruppe.ludus':'Ludus','bau.gruppe.arena':'Arena','bau.gruppe.wege':'Paths','bau.gruppe.gelaende':'Terrain','bau.gruppe.werkzeug':'Tools',
+ 'br.roden':'(incl. {g} G for clearing)',
 });

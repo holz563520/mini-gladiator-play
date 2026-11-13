@@ -5,7 +5,7 @@
 // Holz oder Stein, Geisterstück mit Preis und Höhe, ↶ letztes Stück zurück mit vollem Geld). Ebene Bodenwege baut weiter welt-bau.js
 // per Ziehen; am Hang legen sie sich von selbst schräg (Rampe und Treppe sind dasselbe).
 // · Regeln: ein Stück je Feld, eine Stufe Steigung je Stück, nie im Boden, höchstens 8 Stufen über dem Boden; erlaubt über Naturboden,
-//   Fluss, Senken, Bodenwege, Straßen und die Straßenbrücke; nicht auf Gebäuden, Bäumen, Arena, Tribüne, festen Feldern, anderen Brücken.
+//   Fluss, Senken, Bodenwege, Straßen und die Straßenbrücke; nicht auf Gebäuden, Arena, Tribüne, festen Feldern, anderen Brücken; Bäume und Büsche werden gerodet.
 // · Preise (bestätigt): Holz 15 G + 5 G je Stufe über dem Boden, Stein 40 G + 10 G je Stufe (Mitte des Decks über der tiefsten Ecke).
 // · frei: Stufen frei unter dem Deck (ab 2 kann man darunter durch) – für die Begehbarkeit in T4. Figuren benutzen Brücken erst ab T4.
 // · Zugänge: W.brueckeAt(k) (welt-bau.js: kein Haus und kein Gelände darunter, Abreißen entfernt Stücke), M.weltBruecke.daten/laden
@@ -41,11 +41,13 @@ function form(p){const k=p.k,ein=EIN[p.dir],dh=c=>ein.includes(c)?p.h0:p.h1;
 // Stück prüfen: gibt Grund (Textschlüssel) oder null; rechnet Preis, Höhe über dem Boden, frei darunter
 function pruefe(p){if(!W.inMap(p.tx,p.ty))return 'rand';const k=W.ix(p.tx,p.ty),f=W.feld[k];p.k=k;
  if(stuecke.has(k))return 'bruecke';if(W.fest?.[k]||W.arenaPlatz?.[k])return 'fest';if(f===T.ARENA||f===T.TRIB)return 'arena';
- if(W.gebaeudeAt?.(p.tx,p.ty)||!ERLAUBT.has(f))return 'haus';if(W.obj?.[k])return 'baum';
+ if(W.gebaeudeAt?.(p.tx,p.ty)||!ERLAUBT.has(f))return 'haus';
+ // T2-Rückmeldung: Bäume, Büsche und Steine werden gerodet (wie beim Bauen, RODEN G je Stück; Gras und Blumen kostenlos)
+ const o=W.obj?.[k];p.roden=o&&!window.WeltNatur?.ARTEN?.[o]?.flach?(B.RODEN??2):0;
  const ein=EIN[p.dir];let gmin=99,gmax=-99,frei=99;
  for(let c=0;c<4;c++){const g=bodenE(k,c),d=ein.includes(c)?p.h0:p.h1;if(d<g)return 'boden';if(g<gmin)gmin=g;if(g>gmax)gmax=g;frei=Math.min(frei,d-g);}
  const hoch=Math.max(0,Math.round((p.h0+p.h1)/2-gmin));if(hoch>MAXH)return 'hoch';
- p.hoch=hoch;p.frei=Math.max(0,Math.min(p.h0,p.h1)-gmax);p.preis=MAT[p.mat].preis+MAT[p.mat].stufe*hoch;return null;}
+ p.hoch=hoch;p.frei=Math.max(0,Math.min(p.h0,p.h1)-gmax);p.preis=MAT[p.mat].preis+MAT[p.mat].stufe*hoch+p.roden;return null;}
 // ---------- Zeichnen ----------
 const FARBE=[{deck:'#9a7346',fuge:'#6b4a2c',seite:'#5c4028',pfeiler:'#47301e',gel:'#7a5534'},{deck:'#a8a29a',fuge:'#7d776f',seite:'#6c665e',pfeiler:'#5d574f',gel:'#8f8980'}];
 const R=(g,x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
@@ -95,13 +97,13 @@ function geistNeu(){if(!zeiger){geist=null;return;}const p=neuesStueck(zeiger,ze
  // Kreuzung: vorhandene ebene Brücke auf gleicher Höhe → hindurch, kostet nichts (das Geländer dort geht von selbst auf)
  const da=W.inMap(p.tx,p.ty)&&stuecke.get(W.ix(p.tx,p.ty));if(grund==='bruecke'&&da&&!neig&&da.h0===da.h1&&da.h0===zeiger.h){geist={...da,durch:da,preis:0,grund:null};text();return;}
  if(!grund&&(S.gold||0)<p.preis)grund='gold';p.grund=grund;if(W.inMap(p.tx,p.ty)){p.k=W.ix(p.tx,p.ty);p.geo=form(p);}geist=p;text();}
-function setzen(p){p.geo=form(p);stuecke.set(p.k,p);W.rebake?.(umgebung([p.k]));}
+function setzen(p){p.geo=form(p);stuecke.set(p.k,p);p.obj=W.obj?.[p.k]||0;if(p.obj)W.obj[p.k]=0;W.rebake?.(umgebung([p.k]));}
 function bauen(){if(!geist||geist.grund){if(geist?.grund)M.ui?.notify?.(grundText(geist));return false;}const p=geist;
  if(p.durch){stapel.push({durch:true,z:{...zeiger}});zeiger={tx:p.tx+DX[zeiger.dir],ty:p.ty+DY[zeiger.dir],h:zeiger.h,dir:zeiger.dir,vor:zeiger.dir};geistNeu();return true;}S.gold=(S.gold||0)-p.preis;delete p.grund;setzen(p);
  stapel.push({p,z:{...zeiger}});zeiger={tx:p.tx+DX[p.dir],ty:p.ty+DY[p.dir],h:p.h1,dir:p.dir,vor:p.dir};try{M.sound?.('coin');}catch(e){}
  if(neig<0&&zeiger.h<=Math.ceil(boden(zeiger.tx,zeiger.ty)))neig=0;// unten angekommen: eben weiter
  geistNeu();return true;}
-function zurueck(){const s=stapel.pop();if(!s)return false;if(s.durch){zeiger=s.z;geistNeu();return true;}stuecke.delete(s.p.k);W.rebake?.(umgebung([s.p.k]));S.gold=(S.gold||0)+s.p.preis;zeiger=s.z;geistNeu();try{M.sound?.('land');}catch(e){}return true;}
+function zurueck(){const s=stapel.pop();if(!s)return false;if(s.durch){zeiger=s.z;geistNeu();return true;}stuecke.delete(s.p.k);if(s.p.obj&&W.obj)W.obj[s.p.k]=s.p.obj;W.rebake?.(umgebung([s.p.k]));S.gold=(S.gold||0)+s.p.preis;zeiger=s.z;geistNeu();try{M.sound?.('land');}catch(e){}return true;}
 const boden=(tx,ty)=>{if(!W.inMap(tx,ty))return 0;const k=W.ix(tx,ty);let m=-99;for(let c=0;c<4;c++)m=Math.max(m,bodenE(k,c));return m;};
 // Startfeld: auf Bodenhöhe; am Ende einer vorhandenen Brücke geht es dort weiter
 function start(tx,ty){if(!W.inMap(tx,ty))return;const k=W.ix(tx,ty),p=stuecke.get(k);stapel=[];
@@ -127,7 +129,7 @@ function zeigeKnoepfe(){for(const b of feld.querySelectorAll('[data-dir]'))b.cla
 knoepfe();L?.beiWechsel(()=>{knoepfe();if(werkzeug())text();});
 const grundText=p=>t('br.grund.'+p.grund,{g:p.preis});
 function text(){if(!sp||!werkzeug())return;if(!zeiger){sp.textContent=t('br.hilfe');zeigeKnoepfe();return;}const p=geist;
- sp.textContent=p.grund?grundText(p):p.durch?t('br.anschluss'):t('br.info',{mat:t(mat?'br.stein':'br.holz'),neig:neig>0?'⬈':neig<0?'⬊':'➡',g:p.preis,h:p.hoch});zeigeKnoepfe();}
+ sp.textContent=p.grund?grundText(p):p.durch?t('br.anschluss'):t('br.info',{mat:t(mat?'br.stein':'br.holz'),neig:neig>0?'⬈':neig<0?'⬊':'➡',g:p.preis,h:p.hoch})+(p.roden?' '+t('br.roden',{g:p.roden}):'');zeigeKnoepfe();}
 feld.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b||b.disabled)return;
  if(b.dataset.dir!=null){if(zeiger){zeiger.dir=+b.dataset.dir;geistNeu();}}else if(b.dataset.neig!=null){neig=+b.dataset.neig;geistNeu();}
  else if(b.dataset.mat!=null){mat=+b.dataset.mat;geistNeu();}else if(b.dataset.bauen!=null)bauen();else if(b.dataset.zurueck!=null)zurueck();zeigeKnoepfe();});

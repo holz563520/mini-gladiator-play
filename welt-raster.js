@@ -442,7 +442,9 @@ for(let pass=0;pass<BAU.length;pass++)for(const b of BAU)for(const a of BAU)if(a
 // Erst beim Heranzoomen (ab DETAIL) die volle Figur des Spiels, und nur für die, die dann im Bild sind.
 // Schritte: Ein Schrittzyklus (WALK Bilder) gehört zu SCHRITT Bildpunkten Weg; das Bild richtet sich nach dem gelaufenen Weg,
 // nicht nach der Uhr. So rutschen die Füße bei keinem Tempo über den Boden.
-const KW=.46,SPEED=15,FW=56,FH=72,FX=28,FY=62,WALK=8,DETAIL=2,HOEHE=21,SCHRITT=15,figs=new Map();let spriteBudget=0,workers=[];
+// T2-Rückmeldung (Thomas 13.11.2026): in 2.0 Figuren ein Stück kleiner (KW .46 → .40, einfache Figur 16 × 28 → 14 × 24); Schrittlänge
+// im gleichen Maß kürzer (15 → 13 Bildpunkte je Schrittzyklus), damit die Füße nicht rutschen. Tempo unverändert.
+const KW=GROSS?.40:.46,SPEED=15,FW=56,FH=72,FX=28,FY=62,WALK=8,DETAIL=2,HOEHE=GROSS?18:21,SCHRITT=GROSS?13:15,figs=new Map();let spriteBudget=0,workers=[];
 function spriteOf(g){let s=figs.get(g.id);if(s)return s;if(spriteBudget<=0)return null;spriteBudget--;
  const [c,ctx]=mkCanvas(FW*(WALK+1),FH*2);const base={g,team:0,ammo:0,a:0,energy:100,index:0,baseX:0,baseY:0};
  try{ctx.fillStyle='rgba(15,20,10,.3)';for(let dir=0;dir<2;dir++)for(let f=0;f<=WALK;f++)ctx.fillRect(f*FW+FX-9,dir*FH+FY-1,18,3);
@@ -451,7 +453,7 @@ function spriteOf(g){let s=figs.get(g.id);if(s)return s;if(spriteBudget<=0)retur
  s={c};figs.set(g.id,s);return s;}
 // Einfache Figuren: groß gemalt (NW × NH), dann auf ein Drittel verkleinert (PW × PH) in gemeinsame Bildseiten gelegt.
 // Je Figur eine Zeile: WALK Gehbilder und ein Standbild nach rechts, dann dasselbe nach links.
-const NW=48,NH=84,NAX=24,NAY=78,PW=16,PH=28,PAX=8,PAY=26,PROW=240,pages=[],pof=new Map(),[scratch,sg]=mkCanvas(NW,NH),[klein,kg]=mkCanvas(PW,PH);let pBudget=0,pNext=0;
+const NW=48,NH=84,NAX=24,NAY=78,PW=GROSS?14:16,PH=GROSS?24:28,PAX=GROSS?7:8,PAY=GROSS?22:26,PROW=240,pages=[],pof=new Map(),[scratch,sg]=mkCanvas(NW,NH),[klein,kg]=mkCanvas(PW,PH);let pBudget=0,pNext=0;
 function simpleOf(g){let r=pof.get(g.id);if(r)return r;if(pBudget<=0||!M.renderSimpleFigure)return null;pBudget--;
  const page=(pNext/PROW)|0,row=pNext%PROW;pNext++;if(!pages[page])pages[page]=mkCanvas(PW*(WALK+1)*2,PH*PROW);const [pc,pg]=pages[page];
  for(let dir=0;dir<2;dir++)for(let f=0;f<=WALK;f++){sg.setTransform(1,0,0,1,0,0);sg.clearRect(0,0,NW,NH);

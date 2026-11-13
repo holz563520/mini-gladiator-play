@@ -48,4 +48,5 @@ AT2Sprache.dazu('de',{
  'profil.karte':'◀ Zur Karte','profil.zu':'Schließen',
  'br.neigung':'Neigung','br.material':'Material','br.anschluss':'Anschluss an die Brücke · 0 G · einfach hindurch bauen',
  'bau.gruppe.ludus':'Ludus','bau.gruppe.arena':'Arena','bau.gruppe.wege':'Wege','bau.gruppe.gelaende':'Gelände','bau.gruppe.werkzeug':'Werkzeug',
+ 'br.roden':'(davon {g} G zum Roden)',
 });
