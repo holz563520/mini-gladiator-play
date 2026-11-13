@@ -14,7 +14,7 @@
 // · Leistung: Speichern misst sich selbst (M.at2Spielstand.ms, Zeit auf dem Hauptfaden; mit dem Spielstand des Spiels ~6 ms wie in 1.0, sonst < 2 ms). Test: tests/welt-spielstand-browser.cjs.
 // =====================================================================================================================
 (()=>{
-const DB='arena-theory-2',ABL='plaetze',V=2,// V2: neue Karte (A3, Dorf/Platz/Park); Stände mit V1 gehören zur alten Karte
+const DB='arena-theory-2',ABL='plaetze',V=3,// V2: neue Karte (A3, Dorf/Platz/Park); V3: Dorf und Park größer (A3b). Stände mit älterer Version gehören zur alten Karte
  PLAETZE=[1,2,3],ABSTAND=10000;
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // ---------- IndexedDB ----------

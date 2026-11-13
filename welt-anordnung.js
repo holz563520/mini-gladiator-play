@@ -3,7 +3,8 @@
 // TORE, SCHILDER, TEST-GOLD (welt-anordnung.js) · Arena Theory 2.0, Schritt A3 (Thomas 13.11.2026, AT2_FAHRPLAN.md).
 // Die Anordnung selbst (Dorf, zentraler Platz, Arena-Park, Zaun, Palisade, Kieswege) steht in welt-raster.js (W.ANORD).
 // Diese Datei zeichnet nur, was darauf steht:
-// · Parktor (einziger Eingang der Besucher), Dorftor und Kämpfertor (Platz → Park, für Kämpfer und Karren) mit Schild, Bauplatz der Verwaltung mit Pflöcken und Schild (A4 baut dort).
+// · Parktor (einziger Eingang der Besucher), Dorftor und Kämpfertor (Platz → Park, für Kämpfer und Karren) mit Schild, Bauplatz der Verwaltung mit Pflöcken und Schild (A4 baut dort),
+//   A3b: ebenso der Bauplatz der großen Arena (B0).
 //   Texte aus der Sprachdatei (Regel 10); die Schilder werden je Sprache einmal gemalt und beim Umschalten neu gemalt.
 // · Knopf „+1000 Gold (Test)“ in der Leiste. Ersetzt die Regler der Testleiste (Wunsch Thomas). VOR VERÖFFENTLICHUNG ENTFERNEN (O1).
 // · Leistung: drei Dinge, nur im Bild gezeichnet, Schilder vorgemalt; pro Bild ein paar Rechtecke.
@@ -37,12 +38,16 @@ for(const tor of W.TORE||[]){const e=(u)=>tor.dir?W.iso(tor.tx,tor.ty+u):W.iso(t
    R(g,m.x-s.w/2+3,m.y-hoch+4,1,4,'#2a1c12');R(g,m.x+s.w/2-4,m.y-hoch+4,1,4,'#2a1c12');g.drawImage(s.c,Math.round(m.x-s.w/2),Math.round(m.y-hoch+7));
    if(o){R(g,a.x-1,a.y-hoch-9,3,7,'#7a3f8c');R(g,b.x-1,b.y-hoch-9,3,7,'#7a3f8c');}// Wimpel
    g.restore();}});}
-// Bauplatz der Verwaltung (A4): Pflöcke an den Ecken, Seil, Schild vorn in der Mitte
-{const [vx,vy,vw,vh]=A.verwaltung,ecken=[[0,0],[vw,0],[vw,vh],[0,vh]].map(([x,y])=>W.iso(vx+O+x,vy+O+y)),m=W.iso(vx+O+vw/2,vy+O+vh);
- dinge.push({art:'bau',x:m.x,y:m.y+.5,x0:Math.min(...ecken.map(e=>e.x))-40,x1:Math.max(...ecken.map(e=>e.x))+40,y0:ecken[0].y-30,
-  draw(g){for(let i=0;i<4;i++){const p=ecken[i],q=ecken[(i+1)%4];for(let u=0;u<=1;u+=1/24)R(g,p.x+(q.x-p.x)*u,p.y+(q.y-p.y)*u-5,1,1,'#c9b27a');}
-   for(const p of ecken){R(g,p.x-1,p.y-7,2,8,'#6b4a2c');R(g,p.x-1,p.y-8,2,1,'#c9483e');}
-   const s=schild(t('karte.verwaltung'),t('karte.verwaltungZeile'),'bau');R(g,m.x-1,m.y-14,2,14,'#5e4229');g.drawImage(s.c,Math.round(m.x-s.w/2),Math.round(m.y-14-s.h));}});}
+// Bauplätze: Verwaltung (A4) und große Arena (A3b, für B0): Pflöcke an den Ecken, Seil, Schild vorn in der Mitte.
+// Das Seil ist je Seite in Stücke geteilt, damit beim großen Bauplatz nur die sichtbaren Seiten gezeichnet werden.
+function bauplatz([vx,vy,vw,vh],titel,zeile){const ecken=[[0,0],[vw,0],[vw,vh],[0,vh]].map(([x,y])=>W.iso(vx+O+x,vy+O+y)),m=W.iso(vx+O+vw/2,vy+O+vh),schritte=Math.max(24,Math.round((vw+vh)*3));
+ for(let i=0;i<4;i++){const p=ecken[i],q=ecken[(i+1)%4];
+  dinge.push({art:'bau',x:(p.x+q.x)/2,y:Math.max(p.y,q.y),x0:Math.min(p.x,q.x)-4,x1:Math.max(p.x,q.x)+4,y0:Math.min(p.y,q.y)-12,
+   draw(g){for(let u=0;u<=1;u+=1/schritte)R(g,p.x+(q.x-p.x)*u,p.y+(q.y-p.y)*u-5,1,1,'#c9b27a');R(g,p.x-1,p.y-7,2,8,'#6b4a2c');R(g,p.x-1,p.y-8,2,1,'#c9483e');}});}
+ dinge.push({art:'bau',x:m.x,y:m.y+.5,x0:m.x-60,x1:m.x+60,y0:m.y-50,
+  draw(g){const s=schild(t(titel),t(zeile),'bau');R(g,m.x-1,m.y-14,2,14,'#5e4229');g.drawImage(s.c,Math.round(m.x-s.w/2),Math.round(m.y-14-s.h));}});}
+bauplatz(A.verwaltung,'karte.verwaltung','karte.verwaltungZeile');
+if(A.arenaPlatz)bauplatz(A.arenaPlatz,'karte.arenaPlatz','karte.arenaPlatzZeile');
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);for(const d of dinge)if(d.x1>view.x0&&d.x0<view.x1&&d.y>view.y0-10&&d.y0<view.y1)items.push(d);};
 // ---------- Test-Gold (vorläufig, statt der Regler; vor Veröffentlichung entfernen, Fahrplan O1) ----------
 const bar=document.querySelector('#weltUi .w-bar');

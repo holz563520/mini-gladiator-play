@@ -42,6 +42,9 @@ const ARENA_NAME=n=>n<20?'Sandgrube':n<48?'Kleine Arena':n<100?'Arena':'Große A
 const stufeVon=n=>{let s=0;for(let i=0;i<STUFEN.length;i++)if(n>=STUFEN[i].ab)s=i;return s;};
 const ur=Uint8Array.from(W.feld);// Gelände vor allem Bauen (für „Abreißen“)
 const FEST=W.fest,istFest=k=>!!FEST?.[k];// A3: Platz und Bauplatz der Verwaltung sind fest
+// A3b: Fläche der großen Arena (B0) ist fest (W.arenaPlatz): kein Bauen, kein Geländewerkzeug, mit Hinweis (höchstens alle 1,5 s)
+const AP=W.arenaPlatz,istAP=k=>!!AP?.[k],apText=()=>sp('bau.arenaPlatz',null,'Hier entsteht die große Arena. Der Sand wartet geduldig – er hat ja noch kein Blut gesehen.');
+let apZeit=0;const apMelden=()=>{const t=performance.now();if(t-apZeit<1500)return;apZeit=t;M.ui?.notify?.(apText());};
 const baubar=(tx,ty)=>W.inMap(tx,ty)&&!istFest(W.ix(tx,ty))&&!W.gebaeudeAt?.(tx,ty)&&(W.feld[W.ix(tx,ty)]===T.WIESE||W.feld[W.ix(tx,ty)]===T.LUDUS);
 const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB||istHaus(t)||istStr(t))&&ur[k]!==t;};
 // Umbau nur innerhalb derselben Gebäudeart (Unterkunft ↔ Unterkunft, Schmiede ↔ Schmiede, Beastrium ↔ Beastrium)
@@ -153,6 +156,7 @@ function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,
    else if(wz.haus){const h=M.weltGebaeude?.bei(ok[0]);if(h)t+=' → '+wz.name+' mit '+mz(h.n,'Feld','Feldern')+': '+(h.art==='schmiede'?mz(h.ambosse,'Amboss','Ambosse')+', halb überdacht':h.art==='beast'?mz(h.kaefige,'Käfig','Käfige'):h.art==='kaserne'?mz(h.plaetze,'Platz','Plätze')+' für Waffen und Rüstungen':h.art==='krankenhaus'?mz(h.betten,'Krankenbett','Krankenbetten'):mz(h.betten,'Schlafplatz','Schlafplätze'));}
    else if(!wz.str){const as=arenenRechnen(),a=mode==='arena'?as.find(a=>a.floor.includes(ok[0])):as.find(a=>a.tribs.includes(ok[0]));t+=a?' → '+a.name+': '+mz(a.n,'Feld','Felder')+' Kampffläche, '+a.plaetze+' Sitzplätze':' → liegt an keiner Kampffläche';}}
   ok.forEach((k,i)=>W.feld[k]=save[i]);arenenRechnen();}
+ if(!ab&&no.some(istAP))t=ok.length?t+' · '+apText():apText();// A3b
  box.querySelector('span').textContent=t;}
 function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
  const a=drag.a,betten0=M.weltGebaeude?.betten()||0,amb0=M.weltGebaeude?.ambosse?.()||0;const kf0=M.weltGebaeude?.kaefige?.()||0;let cx=0,cy=0;if(!ab&&!wz.str)ebnen(ok,wz.typ);
@@ -176,7 +180,7 @@ function landAuswahl(p){if(!W.bodenPunkt||!W.hc)return null;const q=W.bodenPunkt
 function feldFix(k,dir){const h=W.hc;for(let n=0;n<4;n++)for(let c=0;c<4;c++){const a=k*4+c,b=k*4+((c+1)&3);if(Math.abs(h[a]-h[b])<=1)continue;
  if(dir>0){if(h[a]<h[b])h[a]=h[b]-1;else h[b]=h[a]-1;}else{if(h[a]>h[b])h[a]=h[b]+1;else h[b]=h[a]+1;}}}
 // Eine Stufe heben (dir 1) oder senken (−1). Gibt die geänderten Felder zurück, oder null, wenn es nicht geht (Gold, Grenze).
-function landSchritt(sel,dir,frei){const hc=W.hc,ks=sel.ks.filter(k=>W.BODEN_NATUR.has(W.feld[k])),alt=new Map(),neu2=[];if(!ks.length)return [];
+function landSchritt(sel,dir,frei){const hc=W.hc,ks=sel.ks.filter(k=>W.BODEN_NATUR.has(W.feld[k])&&!istAP(k)),alt=new Map(),neu2=[];if(ks.length<sel.ks.length&&sel.ks.some(istAP))apMelden();if(!ks.length)return [];
  for(const k of ks)alt.set(k,hc.slice(k*4,k*4+4));
  if(sel.ecken){const k=ks[0];for(const c of sel.ecken)hc[k*4+c]+=dir;feldFix(k,dir);neu2.push(k);}
  else{let z=dir>0?127:-128;for(const k of ks)for(let c=0;c<4;c++)z=dir>0?Math.min(z,hc[k*4+c]):Math.max(z,hc[k*4+c]);
@@ -202,7 +206,7 @@ function ebnen(ok,typ){const e=ebnenPlan(ok,typ);if(e.stufen)W.ebnen(ok,e.L);}
 // Gedrückt halten oder darüberwischen: Jede Ecke der Auswahl geht alle 0,22 s eine Stufe auf das Mittel ihrer Umgebung zu
 // (auch der Nachbarfelder), so werden Kanten und Klippen zu sanften Hängen. Gebautes und Wege bleiben. 3 G je Feld und Stufe.
 let landGlatt=false,glattUhr=null;
-function glattSchritt(sel){const hc=W.hc;if(!sel||!hc)return null;const ks=sel.ks.filter(k=>W.BODEN_NATUR.has(W.feld[k]));if(!ks.length)return [];
+function glattSchritt(sel){const hc=W.hc;if(!sel||!hc)return null;const ks=sel.ks.filter(k=>W.BODEN_NATUR.has(W.feld[k])&&!istAP(k));if(ks.length<sel.ks.length&&sel.ks.some(istAP))apMelden();if(!ks.length)return [];
  let x0=N,y0=N,x1=0,y1=0;for(const k of ks){const x=k%N,y=(k/N)|0;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
  const gx=x0-1,gy=y0-1,w=x1-x0+4,h=y1-y0+4,p=new Float32Array(w*h),ziel=new Float32Array(w*h);
  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const X=gx+i,Y=gy+j;let s=0,n=0;

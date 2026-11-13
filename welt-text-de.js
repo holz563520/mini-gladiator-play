@@ -31,4 +31,6 @@ AT2Sprache.dazu('de',{
  'bau.zuWenig':'Zu wenig Gold: {g} G nötig.',
  'bau.glatt':'〰 Glätten',
  'bau.glattHilfe':'Glätten: gedrückt halten oder darüberwischen. Kanten und Klippen werden zu sanften Hängen. {g} G je Feld und Stufe. Der Landvermesser nennt es Kunst, der Totengräber Arbeitsbeschaffung.',
+ 'karte.arenaPlatz':'BAUPLATZ GROSSE ARENA','karte.arenaPlatzZeile':'Der Sand wartet. Auf euch.',
+ 'bau.arenaPlatz':'Hier entsteht die große Arena. Der Sand wartet geduldig – er hat ja noch kein Blut gesehen.',
 });

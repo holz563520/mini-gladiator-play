@@ -31,4 +31,6 @@ AT2Sprache.dazu('en',{
  'bau.zuWenig':'Not enough gold: {g} G needed.',
  'bau.glatt':'〰 Smooth',
  'bau.glattHilfe':'Smooth: hold or swipe across. Edges and cliffs become gentle slopes. {g} G per tile and step. The surveyor calls it art. The gravedigger calls it job security.',
+ 'karte.arenaPlatz':'GRAND ARENA SITE','karte.arenaPlatzZeile':'The sand is waiting. For you.',
+ 'bau.arenaPlatz':"Reserved for the Grand Arena. The sand is patient. It hasn't tasted anyone yet.",
 });
