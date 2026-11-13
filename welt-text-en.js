@@ -34,4 +34,13 @@ AT2Sprache.dazu('en',{
  'bau.glattHilfe':'Smooth: hold or swipe across. Edges and cliffs become gentle slopes. {g} G per tile and step. The surveyor calls it art. The gravedigger calls it job security.',
  'karte.arenaPlatz':'GRAND ARENA SITE','karte.arenaPlatzZeile':'The sand is waiting. For you.',
  'bau.arenaPlatz':"Reserved for the Grand Arena. The sand is patient. It hasn't tasted anyone yet.",
+ 'br.knopf':'🌉 Bridge','br.richtung':'Direction','br.hoch':'up','br.eben':'level','br.runter':'down','br.holz':'Wood','br.stein':'Stone','br.bauen':'✔ Build','br.zurueck':'↶ Undo',
+ 'br.hilfe':'Bridge / walkway: tap a starting tile, then build piece by piece. Wood 15 G + 5 G per step of height, stone 40 G + 10 G. The structural engineer is on holiday. Has been for years.',
+ 'br.info':'{mat} {neig} · {g} G · {h} steps above ground',
+ 'br.schild':'LOAD-BEARING*','br.schild2':'*until the fall',
+ 'br.grund.rand':'The world ends here. So does the bridge.','br.grund.bruecke':'There is already a bridge here. Stacking them is optimism, not engineering.',
+ 'br.grund.fest':'This ground is already spoken for. Bridges elsewhere, please.','br.grund.arena':'Over the arena? The crowd paid to see blood, not your underside.',
+ 'br.grund.haus':'Something is in the way. Demolition usually helps.','br.grund.baum':'A tree is in the way. It was here first.',
+ 'br.grund.boden':'That piece would be underground. Bridges go over things.','br.grund.hoch':'More than 8 steps? Even the vultures get dizzy up there.',
+ 'br.grund.zurueck':'A U-turn on a bridge? Only on the way down.','br.grund.gold':'Not enough gold: {g} G needed.',
 });

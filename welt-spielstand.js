@@ -77,7 +77,7 @@ function start(ctx){return new Promise(fertig=>{
 // ---------- Im Spiel: laden, mitschreiben, speichern ----------
 let geladen=null;
 function anschliessen(ctx){const M=window.MG,W=window.WeltKarte,H=window.WeltHook,T=M?.weltTag;
- if(!M||!W||!H||!T||!M.weltBau){if((anschliessen.n=(anschliessen.n||0)+1)<200)setTimeout(()=>anschliessen(ctx),50);return;}
+ if(!M||!W||!H||!T||!M.weltBau||(!M.weltBruecke&&(anschliessen.n||0)<40)){/* T2: kurz auf die Brücken warten (welt-bruecke.js) */if((anschliessen.n=(anschliessen.n||0)+1)<200)setTimeout(()=>anschliessen(ctx),50);return;}
  const S=M.s,N=W.N,n=geladen?.n||0,geaendert=new Set();
  // Karte: gespeicherte Unterschiede einsetzen, dann neu zeichnen und Bauten (Arenen, Felder, Häuser) neu berechnen
  const r=geladen?.r;
@@ -85,6 +85,7 @@ function anschliessen(ctx){const M=window.MG,W=window.WeltKarte,H=window.WeltHoo
   // T1: Stände von vor den Parkhügeln behalten ihren flachen Park (sonst Klippen neben schon Gebautem)
   if(!w.gel&&W.huegel){const hat=new Set(ks);for(let k=0;k<N*N;k++)if(W.huegel[k]&&!hat.has(k)){W.hc.fill(0,k*4,k*4+4);geaendert.add(k);}}
   if(geaendert.size){W.rebake([...geaendert]);M.weltBau.neuRechnen?.();}
+  M.weltBruecke?.laden?.(w.bruecken);// T2: Brücken und Hochwege
   T.setze(w.stunde);if(w.pause)T.pause(true);T.tempo(w.tempo||1);}
  // mitschreiben, was sich auf der Karte ändert
  const rb=W.rebake;W.rebake=ks=>{if(ks)for(const k of ks)geaendert.add(k);dirty=sDirty=true;return rb(ks);};
@@ -100,7 +101,7 @@ function anschliessen(ctx){const M=window.MG,W=window.WeltKarte,H=window.WeltHoo
   const ks=Int32Array.from(geaendert),m=ks.length,feld=new Uint8Array(m),grund=new Uint8Array(m),obj=new Uint8Array(m),bauAuf=new Int8Array(m),hc=new Int8Array(m*4);
   for(let i=0;i<m;i++){const k=ks[i];feld[i]=W.feld[k];grund[i]=W.grund[k];obj[i]=W.obj[k];bauAuf[i]=W.bauAuf[k];for(let c=0;c<4;c++)hc[i*4+c]=W.hc[k*4+c];}
   const stand={v:V,build:window.BUILD||'',kopf:{v:V,name:S.schoolName,tag:S.day,gold:S.gold,zeit:Date.now()},cache:[...ctx.cache],mem:[...ctx.mem],
-   welt:{gel:1,schluessel,stunde:T.stunde,tempo:T.st.tempo||1,pause:!!T.st.pause,ks,feld,grund,obj,bauAuf,hc}};
+   welt:{gel:1,schluessel,stunde:T.stunde,tempo:T.st.tempo||1,pause:!!T.st.pause,ks,feld,grund,obj,bauAuf,hc,bruecken:M.weltBruecke?.daten?.()||[]}};
   dirty=false;letzt=performance.now();
   laeuft=schreib(n,stand).then(()=>{A.fehler='';return true;}).catch(e=>{A.fehler=String(e?.message||e);dirty=true;return false;}).finally(()=>{laeuft=null;});
   A.ms=performance.now()-t0;A.mitS=mitS;A.mal++;return laeuft;}

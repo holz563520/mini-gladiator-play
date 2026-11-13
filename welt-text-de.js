@@ -34,4 +34,13 @@ AT2Sprache.dazu('de',{
  'bau.glattHilfe':'Glätten: gedrückt halten oder darüberwischen. Kanten und Klippen werden zu sanften Hängen. {g} G je Feld und Stufe. Der Landvermesser nennt es Kunst, der Totengräber Arbeitsbeschaffung.',
  'karte.arenaPlatz':'BAUPLATZ GROSSE ARENA','karte.arenaPlatzZeile':'Der Sand wartet. Auf euch.',
  'bau.arenaPlatz':'Hier entsteht die große Arena. Der Sand wartet geduldig – er hat ja noch kein Blut gesehen.',
+ 'br.knopf':'🌉 Brücke','br.richtung':'Richtung','br.hoch':'hoch','br.eben':'eben','br.runter':'runter','br.holz':'Holz','br.stein':'Stein','br.bauen':'✔ Bauen','br.zurueck':'↶ zurück',
+ 'br.hilfe':'Brücke / Hochweg: Startfeld antippen, dann Stück für Stück bauen. Holz 15 G + 5 G je Stufe Höhe, Stein 40 G + 10 G. Der Statiker ist im Urlaub. Seit Jahren.',
+ 'br.info':'{mat} {neig} · {g} G · {h} Stufen über dem Boden',
+ 'br.schild':'TRAGFÄHIG*','br.schild2':'*bis zum Sturz',
+ 'br.grund.rand':'Hier endet die Welt. Die Brücke auch.','br.grund.bruecke':'Hier liegt schon eine Brücke. Zwei übereinander hält nicht mal der Optimismus aus.',
+ 'br.grund.fest':'Dieser Boden ist schon verplant. Brücken bitte woanders.','br.grund.arena':'Über die Arena? Die Zuschauer wollen Blut sehen, keine Unterseite.',
+ 'br.grund.haus':'Da steht etwas im Weg. Abreißen hilft – meistens.','br.grund.baum':'Ein Baum steht im Weg. Der war zuerst da.',
+ 'br.grund.boden':'Hier steckt das Stück im Boden. Brücken gehören darüber.','br.grund.hoch':'Mehr als 8 Stufen? Da oben wird selbst den Geiern schwindelig.',
+ 'br.grund.zurueck':'Kehrtwende auf einer Brücke? Nur im freien Fall.','br.grund.gold':'Zu wenig Gold: {g} G nötig.',
 });

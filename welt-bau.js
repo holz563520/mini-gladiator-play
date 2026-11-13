@@ -48,11 +48,13 @@ let apZeit=0;const apMelden=()=>{const t=performance.now();if(t-apZeit<1500)retu
 // A3b (Thomas 13.11.2026): gebaut wird auf allen natürlichen Böden außer Wasser (vorher nur Wiese). Bäume, Büsche und Steine
 // auf dem Feld verschwinden beim Bauen von selbst (W.rebake) und kosten RODEN G je Stück (Vorschlag, Annahme: Frage offen).
 const NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FELS,T.SCHNEE]),natur=t=>NATUR.has(t),RODEN=2;
-const baubar=(tx,ty)=>W.inMap(tx,ty)&&!istFest(W.ix(tx,ty))&&!W.gebaeudeAt?.(tx,ty)&&(natur(W.feld[W.ix(tx,ty)])||W.feld[W.ix(tx,ty)]===T.LUDUS);
-const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB||istHaus(t)||istStr(t))&&ur[k]!==t;};
+// T2: unter Brücken (welt-bruecke.js) keine Häuser, Felder, Arenen und kein Gelände; Wege ja; Abreißen entfernt Brückenstücke
+const unterBruecke=k=>!!W.brueckeAt?.(k);
+const baubar=(tx,ty)=>W.inMap(tx,ty)&&!istFest(W.ix(tx,ty))&&!unterBruecke(W.ix(tx,ty))&&!W.gebaeudeAt?.(tx,ty)&&(natur(W.feld[W.ix(tx,ty)])||W.feld[W.ix(tx,ty)]===T.LUDUS);
+const abreissbar=k=>{const t=W.feld[k];return unterBruecke(k)||(t===T.PLATZ||t===T.ARENA||t===T.TRIB||istHaus(t)||istStr(t))&&ur[k]!==t;};
 // Umbau nur innerhalb derselben Gebäudeart (Unterkunft ↔ Unterkunft, Schmiede ↔ Schmiede, Beastrium ↔ Beastrium)
 const gruppeVon=t=>Object.values(WERKZEUG).find(w=>w.typ===t)?.gruppe||'unterkunft';
-const hausBaubar=(k,typ)=>{if(istFest(k))return false;const t=W.feld[k];return natur(t)||t===T.LUDUS||(istHaus(t)&&t!==typ&&gruppeVon(t)===gruppeVon(typ));};
+const hausBaubar=(k,typ)=>{if(istFest(k)||unterBruecke(k))return false;const t=W.feld[k];return natur(t)||t===T.LUDUS||(istHaus(t)&&t!==typ&&gruppeVon(t)===gruppeVon(typ));};
 // Straßen dürfen auch auf den alten Weg und über eine andere Straße (Ausbau, voller Preis)
 const strBaubar=(k,typ)=>{if(istFest(k)||W.gebaeudeAt?.(k%N,Math.floor(k/N)))return false;const t=W.feld[k];return natur(t)||t===T.LUDUS||t===T.WEG||(istStr(t)&&t!==typ);};
 
@@ -165,7 +167,7 @@ function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,
 function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
  const a=drag.a,betten0=M.weltGebaeude?.betten()||0,amb0=M.weltGebaeude?.ambosse?.()||0;const kf0=M.weltGebaeude?.kaefige?.()||0;let cx=0,cy=0;if(!ab&&!wz.str)ebnen(ok,wz.typ);
  for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y-(W.hz?W.hz(x+.5,y+.5):0);}cx/=ok.length;cy/=ok.length;
- if(!frei)S.gold=(S.gold||0)-preis;W.rebake(ok);const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
+ if(ab)M.weltBruecke?.abreissen?.(ok);if(!frei)S.gold=(S.gold||0)-preis;W.rebake(ok);const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}
  let d=0;const say=(s,col)=>{text.push({x:cx,y:cy-30,t:-d,s,col});d+=.6;};if(preis)say('−'+preis+' G','#f29b83');if(r.mehr)say('+'+mz(r.mehr,'Puppe','Puppen'),'#f4d37a');if(r.besser>=0)say('Bessere Puppen: '+STUFEN[r.besser].mz+'!','#fff2b0');
  const bd=(M.weltGebaeude?.betten()||0)-betten0;if(bd>0)say('+'+mz(bd,'Schlafplatz','Schlafplätze'),'#f4d37a');if(bd<0)say(bd+' Schlafplätze','#f29b83');const ad=(M.weltGebaeude?.ambosse?.()||0)-amb0;if(ad>0)say('+'+mz(ad,'Amboss','Ambosse'),'#f4d37a');if(ad<0)say(ad+' Ambosse','#f29b83');const kd=(M.weltGebaeude?.kaefige?.()||0)-kf0;if(kd>0)say('+'+mz(kd,'Käfig','Käfige'),'#f4d37a');if(kd<0)say(kd+' Käfige','#f29b83');
  if(r.plaetze>0)say('+'+r.plaetze+' Sitzplätze','#f4d37a');if(r.plaetze<0)say(r.plaetze+' Sitzplätze','#f29b83');zeigeGold();}
@@ -184,7 +186,7 @@ function landAuswahl(p){if(!W.bodenPunkt||!W.hc)return null;const q=W.bodenPunkt
 function feldFix(k,dir){const h=W.hc;for(let n=0;n<4;n++)for(let c=0;c<4;c++){const a=k*4+c,b=k*4+((c+1)&3);if(Math.abs(h[a]-h[b])<=1)continue;
  if(dir>0){if(h[a]<h[b])h[a]=h[b]-1;else h[b]=h[a]-1;}else{if(h[a]>h[b])h[a]=h[b]+1;else h[b]=h[a]+1;}}}
 // Eine Stufe heben (dir 1) oder senken (−1). Gibt die geänderten Felder zurück, oder null, wenn es nicht geht (Gold, Grenze).
-function landSchritt(sel,dir,frei){const hc=W.hc,ks=sel.ks.filter(k=>W.BODEN_NATUR.has(W.feld[k])&&!istAP(k)),alt=new Map(),neu2=[];if(ks.length<sel.ks.length&&sel.ks.some(istAP))apMelden();if(!ks.length)return [];
+function landSchritt(sel,dir,frei){const hc=W.hc,ks=sel.ks.filter(k=>W.BODEN_NATUR.has(W.feld[k])&&!istAP(k)&&!unterBruecke(k)),alt=new Map(),neu2=[];if(ks.length<sel.ks.length&&sel.ks.some(istAP))apMelden();if(!ks.length)return [];
  for(const k of ks)alt.set(k,hc.slice(k*4,k*4+4));
  if(sel.ecken){const k=ks[0];for(const c of sel.ecken)hc[k*4+c]+=dir;feldFix(k,dir);neu2.push(k);}
  else{let z=dir>0?127:-128;for(const k of ks)for(let c=0;c<4;c++)z=dir>0?Math.min(z,hc[k*4+c]):Math.max(z,hc[k*4+c]);
@@ -210,7 +212,7 @@ function ebnen(ok,typ){const e=ebnenPlan(ok,typ);if(e.stufen)W.ebnen(ok,e.L);}
 // Gedrückt halten oder darüberwischen: Jede Ecke der Auswahl geht alle 0,22 s eine Stufe auf das Mittel ihrer Umgebung zu
 // (auch der Nachbarfelder), so werden Kanten und Klippen zu sanften Hängen. Gebautes und Wege bleiben. 3 G je Feld und Stufe.
 let landGlatt=false,glattUhr=null;
-function glattSchritt(sel){const hc=W.hc;if(!sel||!hc)return null;const ks=sel.ks.filter(k=>W.BODEN_NATUR.has(W.feld[k])&&!istAP(k));if(ks.length<sel.ks.length&&sel.ks.some(istAP))apMelden();if(!ks.length)return [];
+function glattSchritt(sel){const hc=W.hc;if(!sel||!hc)return null;const ks=sel.ks.filter(k=>W.BODEN_NATUR.has(W.feld[k])&&!istAP(k)&&!unterBruecke(k));if(ks.length<sel.ks.length&&sel.ks.some(istAP))apMelden();if(!ks.length)return [];
  let x0=N,y0=N,x1=0,y1=0;for(const k of ks){const x=k%N,y=(k/N)|0;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
  const gx=x0-1,gy=y0-1,w=x1-x0+4,h=y1-y0+4,p=new Float32Array(w*h),ziel=new Float32Array(w*h);
  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const X=gx+i,Y=gy+j;let s=0,n=0;
