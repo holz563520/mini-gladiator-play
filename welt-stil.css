@@ -1,19 +1,19 @@
 /* STIL ARENA THEORY 2.0 (welt-stil.css) · „Rattenpergament“: ein Aussehen und eine Schrift für alle Menüs von 2.0. Wunsch Thomas 13.11.2026.
    ANLEITUNG FÜR NEUE MENÜS (Regel 19, AT2_FAHRPLAN.md):
    1. Fenster bekommt die Klasse `ws-papier` (oder steht in welt-stil.js → ZIELE). welt-stil.js zeichnet dann das Pixelpergament
-      (verbrannter Rand, Rattenbisse, Dreck, Blut nur am Rand) und rollt das Fenster beim Öffnen kurz auf. Nichts selbst zeichnen.
-   2. Schrift: nie eigene font-family setzen. Text erbt „AT2 Text“ (VT323), Überschriften (h1–h3, .ws-titel) „AT2 Titel“ (Jacquard 24).
-      Auf Canvas: AT2_STIL.font(px, titel) statt eigener Schriftnamen.
+      (verbrannter Rand, Rattenbisse, Dreck) mit Blut- und Brandflecken, die bei jedem Öffnen zufällig liegen, aber nie über Text,
+      Knöpfen oder Bildern, und rollt das Fenster beim Öffnen kurz auf. Nichts selbst zeichnen. Ändert sich der Inhalt stark: AT2_STIL.neuMalen(el).
+   2. Schrift: nie eigene font-family setzen. Alles in „AT2 Text“ (VT323, alte Pixelschrift). Überschriften (h1–h3, .ws-titel) gleiche Schrift,
+      nur größer und blutrot. Keine Frakturschrift (schlecht lesbar). Auf Canvas: AT2_STIL.font(px) statt eigener Schriftnamen.
    3. Farben nur aus den Variablen unten (--ws-…). Knöpfe: Klasse `w-btn` (normal) bzw. zusätzlich `ws-haupt` (Hauptaktion, blutrot).
    4. Menüs nie im Weg: klein, am Rand (unten oder oben), Karte bleibt sichtbar, kein dunkler Vollbild-Schleier, schließen per ✕ und Esc.
    5. Lesbar: Text mind. 15 px, dunkle Tinte auf hellem Papier, Blut und Flecken nie unter Text.
    Gilt nur auf arena-theory-2.html (body.at2-stil). Arena Theory 1.0 bleibt unberührt. */
 @font-face{font-family:'AT2 Text';src:url(fonts/at2-text-vt323.woff) format('woff');font-display:swap}
-@font-face{font-family:'AT2 Titel';src:url(fonts/at2-titel-jacquard24.woff) format('woff');font-display:swap}
 
 body.at2-stil{--ws-papier:#e2cc9a;--ws-tinte:#2a1608;--ws-tinte2:#5a3a22;--ws-blut:#6a0c06;--ws-blut-hell:#8e1a0e;--ws-rand:#3a1a08;
  --ws-knopf:#c9ad78;--ws-knopf-an:#e9d6a6;--ws-linie:rgba(106,58,26,.55);--ws-nacht:#120c09;--ws-knochen:#efe0b8;--ws-gut:#3c5a1e;
- --ws-text:'AT2 Text',ui-monospace,monospace;--ws-titel:'AT2 Titel','AT2 Text',serif}
+ --ws-text:'AT2 Text',ui-monospace,monospace;--ws-titel:'AT2 Text',ui-monospace,monospace}
 /* Eine Schrift für alles (font-size-adjust gleicht die kleine Pixelschrift an die bisherigen Größen an) */
 body.at2-stil,body.at2-stil #welt,body.at2-stil button,body.at2-stil input,body.at2-stil select,body.at2-stil textarea,body.at2-stil #at2Start,
 body.at2-stil .hs-detail,body.at2-stil #notice,body.at2-stil #modal{font-family:var(--ws-text)!important;font-size-adjust:.5;font-weight:normal!important;-webkit-font-smoothing:none;font-smooth:never;letter-spacing:.02em}
