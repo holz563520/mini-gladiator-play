@@ -74,12 +74,14 @@ function schritt(v,dt){if(v.st==='neu'){hin(v);}
  if(v.st==='schaut'){v.t-=dt;v.f=W.WALK;if(v.t<=0)weg(v);v.dx=v.x;v.dy=v.y;return;}
  if(v.st==='ehrt'){v.t-=dt;v.f=W.WALK;v.dir=v.halle.blick;v.dx=v.x;v.dy=v.y;if(v.t<=0){v.pts=v.halle.zurueck.map(q=>({x:q.x+rnd(-3,3),y:q.y}));v.st='vonHalle';}return;}
  const p=v.pts&&v.pts[0];if(!p){if(v.st==='zurHalle'){v.st='ehrt';v.t=rnd(5,13);return;}if(v.st==='vonHalle'){v.st='neu';return;}if(v.st==='hin'){if(v.sitz){v.st='sitz';v.t=rnd(40,120);}else{v.st='schaut';v.t=rnd(4,10);}}else v.st='fort';return;}
- const ex=p.x-v.x,ey=p.y-v.y,d=Math.hypot(ex,ey),step=v.sp*dt;if(d<=step){v.x=p.x;v.y=p.y;v.pts.shift();}else{v.x+=ex/d*step;v.y+=ey/d*step;}
+ const ex=p.x-v.x,ey=p.y-v.y,d=Math.hypot(ex,ey),step=v.sp*dt*(d&&W.hangF?W.hangF(v.x,v.y,ex/d,ey/d):1);/* T1: Hangtempo */if(d<=step){v.x=p.x;v.y=p.y;v.pts.shift();}else{v.x+=ex/d*step;v.y+=ey/d*step;}
  if(Math.abs(ex)>1)v.dir=ex<0?1:0;v.dist+=Math.min(d,step);v.f=W.gehBild(v.dist);v.dx=v.x;v.dy=v.y;}
 let clock=0;
 const tick0=H.tick;H.tick=dt=>{tick0?.(dt);clock+=dt;for(let i=leute.length-1;i>=0;i--){const v=leute[i];schritt(v,dt);if(v.st==='fort'){leute[i]=leute[leute.length-1];leute.pop();}}
  for(let k=0;k<3&&leute.length<soll;k++)neuer(false);};
-const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const x0=view.x0-10,x1=view.x1+10,y0=view.y0-10,y1=view.y1+60;for(const v of leute){if(v.dx<x0||v.dx>x1||v.dy<y0||v.dy>y1)continue;items.push(v);}};
+const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const x0=view.x0-10,x1=view.x1+10,y0=view.y0-10,y1=view.y1+60;for(const v of leute){if(v.dx<x0||v.dx>x1||v.dy<y0||v.dy>y1)continue;
+  if(W.hz){if(v.st==='sitz')v.oz=0;else{const c=W.tileAt(v.dx,v.dy);v.oz=W.hz(c.tx,c.ty);}}// T1: auf der Höhe des Bodens (nur sichtbare)
+  items.push(v);}};
 // Antippen eines Besuchers: Name und Stand stehen kurz über ihm
 let zeig=null;const tap0=H.tap;H.tap=(p,w)=>{if(tap0&&tap0(p,w))return true;if(w)return false;let best=null,bd=1e9;for(const v of leute){const k=Math.max(1,1.4/W.cam.s),ex=Math.abs(v.dx-p.x),ey=p.y-(v.dy-8);if(ex<6*k&&ey>-10*k&&ey<10*k&&ex+Math.abs(ey)<bd){bd=ex+Math.abs(ey);best=v;}}
  if(!best){zeig=null;return false;}zeig={v:best,t:4};return true;};

@@ -85,6 +85,13 @@ const WEG_L=O-(ANORD?75:10),WEG_R=O+160;// dazwischen läuft der Weg gerade (Lud
 // A3: Mitte der Freifläche zwischen Dorf und Park verschoben (vorher 58/42), damit beide ganz auf ebenem Boden liegen
 const EM=ANORD?[34,30]:[58,42],ebenR=(x,y)=>Math.hypot(x-O-EM[0],(y-O-EM[1])*1.15)+(vn(x/9,y/9,31)-.5)*12,EBEN=125,EBEN_RAND=200;
 // Großes Rauschen auf einem groben Gitter vorrechnen und dazwischen mitteln (spart beim Laden)
+// T1 (Thomas 13.11.2026): sanfte Hügel und Senken nur im Arena-Park (−1 … +3 Stufen); Dorf, Platz, Zaun, Tore, Wege, Arena und
+// Halle der Toten bleiben eben. Eckpunkt (x,y) → Höhe, oder null = eben und fest. Das Glätten unten hält die Hänge sanft.
+const PARK_FREI=ANORD?[[ANORD.arena.trib,3],...ANORD.pfade.map(p=>[p,1]),[[ANORD.halle[0],ANORD.halle[1],5,5],2]]:[];
+function parkH(x,y){if(!ANORD)return null;const lx=x-O,ly=y-O,P=ANORD.park;if(!(lx>=P[0]+3&&lx<=P[0]+P[2]-3&&ly>=P[1]+3&&ly<=P[1]+P[3]-3))return null;
+ for(const [r,m] of PARK_FREI)if(lx>=r[0]-m&&lx<=r[0]+r[2]+m&&ly>=r[1]-m&&ly<=r[1]+r[3]+m)return null;
+ return clamp(Math.round((fbm(x/10,y/10,27)-.47)*11),-1,3);}
+const huegel=new Uint8Array(N*N);// Felder, die durch die Parkhügel nicht mehr flach sind (für alte Spielstände, welt-spielstand.js)
 function grob(f,st){const n=Math.ceil(V/st)+2,a=new Float32Array(n*n);for(let j=0;j<n;j++)for(let i=0;i<n;i++)a[j*n+i]=f(i*st,j*st);
  return (x,y)=>{const fx=x/st,fy=y/st,i=fx|0,j=fy|0,u=fx-i,v=fy-j,o=j*n+i;return (a[o]*(1-u)+a[o+1]*u)*(1-v)+(a[o+n]*(1-u)+a[o+n+1]*u)*v;};}
 const wrp=(x,y,s)=>[x+(vn(x/95,y/95,s)-.5)*70,y+(vn(x/95,y/95,s+1)-.5)*70];
@@ -103,7 +110,7 @@ if(GROSS){
   if(a>0){const k=KONT(x,y),b=BERG(x,y),sumpf=rampe(FEUCHT(x,y),.53,.6)*rampe(.5-WAERME(x,y),0,.05);
    const see=rampe(fbm(x/38,y/38,19),.6,.74);// verstreute Seen
    h=Math.round((((k-.33)*24+Math.max(0,k-.5)*1.7*b*30+(fbm(x/15,y/15,14)-.5)*8-see*9)*(1-.7*sumpf)-sumpf*1.5)*a);}
-  const fl=x-flussX(Math.min(N-1,y));if(fl>=-1&&fl<=2)h=Math.min(h,WL-1);else if(r<EBEN&&(fl<-4||fl>5))fix[i]=1;
+  const fl=x-flussX(Math.min(N-1,y));if(fl>=-1&&fl<=2)h=Math.min(h,WL-1);else if(r<EBEN&&(fl<-4||fl>5)){const ph=parkH(x,y);if(ph==null)fix[i]=1;else h=ph;}
   hv[i]=clamp(h,-8,40);}
  const nass=(tx,ty)=>Math.min(hv[ty*V+tx],hv[ty*V+tx+1],hv[(ty+1)*V+tx],hv[(ty+1)*V+tx+1])<WL;
  for(let x=0;x<V;x++){let s=0;for(let d=-6;d<=6;d++){const xx=clamp(x+d,0,N);s+=hv[(wy[Math.min(xx,N-1)]+1)*V+xx];}prof[x]=x>=WEG_L&&x<=WEG_R+1?0:Math.max(0,Math.round(s/13));}
@@ -117,7 +124,8 @@ if(GROSS){
  // Brücke nur, wo nach dem Glätten wirklich Wasser ist; sonst bleibt es Weg auf dem Boden
  for(let tx=0;tx<N;tx++)if(bruecke[tx]&&[wy[tx],wy[tx]+1].every(ty=>{const k=(ty*N+tx)*4;return Math.min(hc[k],hc[k+1],hc[k+2],hc[k+3])>=WL;}))bruecke[tx]=0;
  for(let tx=0;tx<N;tx++)if(bruecke[tx]){const L=Math.max(prof[tx],prof[tx+1],0);for(const ty of [wy[tx],wy[tx]+1])hc.fill(L,(ty*N+tx)*4,(ty*N+tx)*4+4);}
- for(let i=0;i<hc.length;i++){if(hc[i]>HMAX)HMAX=hc[i];if(hc[i]<HMIN)HMIN=hc[i];}}
+ for(let i=0;i<hc.length;i++){if(hc[i]>HMAX)HMAX=hc[i];if(hc[i]<HMIN)HMIN=hc[i];}
+ if(ANORD){const P=ANORD.park;for(let ty=P[1]+O;ty<P[1]+P[3]+O;ty++)for(let tx=P[0]+O;tx<P[0]+P[2]+O;tx++){const k=ix(tx,ty);if(hc[k*4]|hc[k*4+1]|hc[k*4+2]|hc[k*4+3])huegel[k]=1;}}}
 for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){let t=T.WIESE,bi=0;const k=ix(tx,ty),lx=tx-O,ly=ty-O,innen=!GROSS||ebenR(tx+.5,ty+.5)<EBEN;
  const c0=hc[k*4],c1=hc[k*4+1],c2=hc[k*4+2],c3=hc[k*4+3],hm=(c0+c1+c2+c3)/4;eben[k]=innen?1:0;
  if(!innen){const cx=tx+.5,cy=ty+.5,w=WAERME(cx,cy)+(vn(tx/7,ty/7,41)-.5)*.05,f=FEUCHT(cx,cy)+(vn(tx/7,ty/7,42)-.5)*.05,q=fbm(tx/9,ty/9,5);
@@ -271,6 +279,10 @@ function hangBild(src,key){let cv=hangCache.get(key);if(cv)return cv;const f=+ke
 function hoehe(fx,fy){const tx=clamp(Math.floor(fx),0,N-1),ty=clamp(Math.floor(fy),0,N-1),u=clamp(fx-tx,0,1),v=clamp(fy-ty,0,1),k=(ty*N+tx)*4,a=hc[k],b=hc[k+1],c=hc[k+2],d=hc[k+3];
  if(teilung(a,b,c,d))return u+v<=1?a+(b-a)*u+(d-a)*v:b+d-c+(c-d)*u+(c-b)*v;return u>=v?a+(b-a)*u+(c-b)*v:a+(c-d)*u+(d-a)*v;}
 const hz=(fx,fy)=>GROSS?hoehe(fx,fy)*HZ:0;
+// T1 Hangtempo (Thomas 13.11.2026): bergauf bis 15 % langsamer, bergab bis 15 % schneller. (x,y) Bodenpunkt, (ux,uy) Laufrichtung (Einheit).
+// Steigung = Stufen je Feld ein halbes Feld voraus; eine Stufe je Feld zählt voll. Zwei Höhen je Läufer und Bild, sonst nichts.
+function hangF(x,y,ux,uy){if(!GROSS)return 1;const a=tileAt(x,y),b=tileAt(x+ux*16,y+uy*16),d=Math.hypot(b.tx-a.tx,b.ty-a.ty)||1;
+ return 1-clamp((hoehe(b.tx,b.ty)-hoehe(a.tx,a.ty))/d,-1,1)*.15;}
 const objHz=(tx,ty)=>GROSS?(feld[ix(tx,ty)]===T.FLUSS?Math.max(WL,hoehe(tx+.5,ty+.5)):hoehe(tx+.5,ty+.5))*HZ:0;
 // Klippen: Erdwand an den beiden vorderen Kanten, wo das Nachbarfeld tiefer liegt; am Kartenrand bis zum Grund (BASIS)
 const WANDF={fels:['#6c645c','#867e76'],sand:['#a58250','#bf9861'],erde:['#5c4027','#785533'],holz:['#47301e','#5c4028']};
@@ -412,7 +424,7 @@ function wander(w,dt){if(w.wait>0){w.wait-=dt;w.walk=false;return;}// (schlender
  if(!w.goal){const c=tileAt(w.x,w.y),home=imLudus(c.tx,c.ty);for(let k=0;k<6&&!w.goal;k++){const tx=c.tx+(Math.random()-.5)*9,ty=c.ty+(Math.random()-.5)*9;if(!frei(tx,ty)||(home&&!imLudus(tx,ty)))continue;
    let ok=true;for(let s=1;s<8&&ok;s++)ok=frei(c.tx+(tx-c.tx)*s/8,c.ty+(ty-c.ty)*s/8);if(ok)w.goal=iso(tx,ty);}
   if(!w.goal){w.wait=1;return;}}
- const dx=w.goal.x-w.x,dy=w.goal.y-w.y,d=Math.hypot(dx,dy),step=SPEED*dt;w.walk=true;if(Math.abs(dx)>1)w.dir=dx<0?1:0;
+ const dx=w.goal.x-w.x,dy=w.goal.y-w.y,d=Math.hypot(dx,dy),step=SPEED*dt*(d?hangF(w.x,w.y,dx/d,dy/d):1);w.walk=true;if(Math.abs(dx)>1)w.dir=dx<0?1:0;
  if(d<=step){w.x=w.goal.x;w.y=w.goal.y;w.goal=null;w.wait=2+Math.random()*9;w.walk=false;return;}w.x+=dx/d*step;w.y+=dy/d*step;w.dist+=step;}
 function pose0(w){return {x:w.x,y:w.y,dx:w.dir?-1:1,dy:0,state:w.walk?'schlendert durch den Ludus':'steht herum',work:false,top:!w.walk};}
 function pose(w){const ps=pose0(w);return H.pose?H.pose(w,ps,clock):ps;}
@@ -503,6 +515,6 @@ const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);
 window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
  ANORD,fest,zaunA,zaunB,TORE,imAnord,inR,// A3: Dorf, Platz, Park (Lagen relativ zu O), feste Felder, Grenzen, Tore
- raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get tempo(){return tempo;},set tempo(v){tempo=Math.max(0,+v||0);},get perf(){return perfAvg;}};
+ raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,hangF,huegel,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get tempo(){return tempo;},set tempo(v){tempo=Math.max(0,+v||0);},get perf(){return perfAvg;}};
 window.WELT_READY=true;
 })();

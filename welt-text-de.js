@@ -27,4 +27,8 @@ AT2Sprache.dazu('de',{
  'leiste.testGold':'+1000 Gold (Test)','leiste.testGoldTitel':'Nur zum Ausprobieren, kommt vor der Veröffentlichung weg',
  'leiste.testGoldMeldung':'1000 Gold aus dem Nichts. Der Steuereintreiber hat nichts gesehen.',
  'karte.kaempfertor':'KÄMPFERTOR','karte.kaempfertorZeile':'Zuschauer nur liegend.',
+ 'bau.ebnenKosten':'(davon {g} G zum Einebnen)',
+ 'bau.zuWenig':'Zu wenig Gold: {g} G nötig.',
+ 'bau.glatt':'〰 Glätten',
+ 'bau.glattHilfe':'Glätten: gedrückt halten oder darüberwischen. Kanten und Klippen werden zu sanften Hängen. {g} G je Feld und Stufe. Der Landvermesser nennt es Kunst, der Totengräber Arbeitsbeschaffung.',
 });
