@@ -20,14 +20,7 @@
 (()=>{
 const H=window.WeltHook=window.WeltHook||{};
 const M=window.MG,S=M.s,$=id=>document.getElementById(id);
-// Test-Ludus: alle Einführungen gelten als gesehen
-S.started=true;S.schoolName='Ludus Probatus';
-S.lanista={name:'Lanista',height:180,weight:85,veteran:true,appearance:{skin:'#d9ac82',shade:'#9c7353',hair:'#443025',style:1,beard:2,cloth:'#435e6a'}};
-try{const W=M.workshop;if(!W.state.master)W.hireMaster(W.sketch());W.state.intro='done';}catch(e){}
-try{M.trader.state.intro='done';}catch(e){}
-if(S.hall)S.hall.tut='done';else S.hall={tut:'done',recruit:null,tag:{}};
-S.lion={stage:'done',recruits:[],base:[]};S.medic=Object.assign(S.medic||{},{stage:'skip'});S.archerPlot={seen:0,asked:true,state:'declined'};
-S.wanderers={version:1,next:(S.day||1)+99999,group:null,known:[]};
+// Videosequenzen/Tutorial aus 1.0 und Startwerte des Test-Ludus: jetzt in welt-erzaehlung.js (Erzählsperre, vor der Karte geladen)
 
 // ---------- Raster ----------
 // Arena Theory 2.0: große Karte (960 × 960, gut fünfmal die Fläche der 432er-Karte) mit Höhen wie bei RollerCoaster Tycoon:
