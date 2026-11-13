@@ -3,7 +3,7 @@
 // TORE, SCHILDER, TEST-GOLD (welt-anordnung.js) · Arena Theory 2.0, Schritt A3 (Thomas 13.11.2026, AT2_FAHRPLAN.md).
 // Die Anordnung selbst (Dorf, zentraler Platz, Arena-Park, Zaun, Palisade, Kieswege) steht in welt-raster.js (W.ANORD).
 // Diese Datei zeichnet nur, was darauf steht:
-// · Parktor (einziger Eingang der Besucher), Dorftor und Kämpfertor (Platz → Park, für Kämpfer und Karren) mit Schild, Bauplatz der Verwaltung mit Pflöcken und Schild (A4 baut dort),
+// · Parktor (einziger Eingang der Besucher), Dorftor und Kämpfertor (Platz → Park, für Kämpfer und Karren) mit Schild, (der Bauplatz der Verwaltung ist seit A4 das Haus),
 //   A3b: ebenso der Bauplatz der großen Arena (B0).
 //   Texte aus der Sprachdatei (Regel 10); die Schilder werden je Sprache einmal gemalt und beim Umschalten neu gemalt.
 // · Knopf „+1000 Gold (Test)“ in der Leiste. Ersetzt die Regler der Testleiste (Wunsch Thomas). VOR VERÖFFENTLICHUNG ENTFERNEN (O1).
@@ -46,7 +46,7 @@ function bauplatz([vx,vy,vw,vh],titel,zeile){const ecken=[[0,0],[vw,0],[vw,vh],[
    draw(g){for(let u=0;u<=1;u+=1/schritte)R(g,p.x+(q.x-p.x)*u,p.y+(q.y-p.y)*u-5,1,1,'#c9b27a');R(g,p.x-1,p.y-7,2,8,'#6b4a2c');R(g,p.x-1,p.y-8,2,1,'#c9483e');}});}
  dinge.push({art:'bau',x:m.x,y:m.y+.5,x0:m.x-60,x1:m.x+60,y0:m.y-50,
   draw(g){const s=schild(t(titel),t(zeile),'bau');R(g,m.x-1,m.y-14,2,14,'#5e4229');g.drawImage(s.c,Math.round(m.x-s.w/2),Math.round(m.y-14-s.h));}});}
-bauplatz(A.verwaltung,'karte.verwaltung','karte.verwaltungZeile');
+// A4: Auf dem Bauplatz der Verwaltung steht jetzt das Haus (welt-raster.js BAU, welt-verwaltung.js).
 if(A.arenaPlatz)bauplatz(A.arenaPlatz,'karte.arenaPlatz','karte.arenaPlatzZeile');
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);for(const d of dinge)if(d.x1>view.x0&&d.x0<view.x1&&d.y>view.y0-10&&d.y0<view.y1)items.push(d);};
 // ---------- Test-Gold (vorläufig, statt der Regler; vor Veröffentlichung entfernen, Fahrplan O1) ----------

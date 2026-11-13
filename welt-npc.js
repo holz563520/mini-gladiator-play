@@ -13,7 +13,10 @@
 //     Septimus Rabies     M.drawRabies (hundefang.js)                          Beastrium, an der Tür
 //     Orontes Pfeilkopf   M.bowyer.drawOro (bogner.js)                         Hof, am Schießstand (wie im alten Ludus)
 //     Hühnerhändlerin     HS.art.seller und HS.art.cart (huehnerschule)        Hof, mit Karren (Platz aus dem alten Ludus)
-// · NPCs in einem Gebäude mit Dach sind nur bei offenem Dach zu sehen. Antippen zeigt Name und Rolle.
+// · NPCs in einem Gebäude mit Dach sind nur bei offenem Dach zu sehen. Antippen zeigt Name und Rolle (und, wenn vorhanden, einen Spruch).
+// · A4 (Thomas 13.11.2026): Der Lanista schlendert über begehbare Wege durch Dorf und Platz (Wegsuche welt-begehbar.js, Gehbewegung
+//   wie die Gladiatoren) und sitzt ab und zu 1–3 Spielstunden auf dem Thron der Verwaltung (welt-verwaltung.js, etwa ein Drittel der Zeit).
+//   Reine Anzeige, nicht im Spielstand. Ohne welt-begehbar.js steht er wie bisher still am Hof. M.weltNpc.dazu(npc): weitere NPCs (Berater).
 // =====================================================================================================================
 (()=>{
 const M=window.MG,W=window.WeltKarte,H=window.WeltHook,G=M?.weltGebaeude;if(!M||!W||!H||!G)return;const S=M.s,N=W.N,KW=W.KW,TAU=Math.PI*2;
@@ -31,6 +34,35 @@ function kopie(g,id){const c=JSON.parse(JSON.stringify(g));c.id=id;c.equipment={
 function schmiedG(){const p=M.workshop?.state?.master||{name:'Der Schmied',height:182,weight:96,appearance:{}},rng=S.rng,g=M.makeGladiator(0);S.rng=rng;
  Object.assign(g,{id:'welt-smith',name:p.name,height:p.height,weight:p.weight,muscle:58,armStrength:100,fame:0,scars:[]});g.appearance={...p.appearance};g.equipment={...leer,armor:{}};g.enemyGear={...leer,armor:{}};return g;}
 const forge=(a,t)=>(c,x,y)=>{try{M.renderForgeActors(c,[{team:0,a:0,phase:t*2,state:'idle',energy:100,ammo:0,moveSpeed:0,bloodMarks:{},noNav:true,forgePose:'',...a,x,y}]);}catch(e){}};
+// ---------- A4: Lanista unterwegs (Pixelkoordinaten wie die Gladiatoren in welt-raster.js) ----------
+const LAN={an:false,x:0,y:0,pfad:null,goal:null,warte:3,sucht:false,dist:0,dir:0,geht:false,thron:false,thronH:0,zumThron:false,stunde:null,gen:0,
+ haus:()=>(M.weltGebaeude?.haeuser?.()||[]).find(h=>h.art==='verwaltung')||null,
+ platz(){if(this.thron){const h=this.haus(),t=h&&M.weltVerwaltung?.thron?.(h);if(t)return {x:t.x,y:t.y,innen:true,thron:true};}const c=W.tileAt(this.x,this.y);return {x:c.tx,y:c.ty,innen:false,geht:this.geht};}};
+const imLudus=k=>{const b=W.ber?.[k],B=W.BER||{};return b===B.DORF||b===B.PLATZ;};
+function vorTuer(h){const x=h.door.k%N,y=(h.door.k/N)|0;return h.door.side==='y'?{tx:x+.5,ty:y+1.5}:{tx:x+1.5,ty:y+.5};}
+function lanTick(dt){const G=M.weltBegehbar;if(!G||!W.ANORD||!W.tileAt||!(dt>0))return;
+ if(!LAN.an){const p=ort('lanista',318,300),q=W.iso(p.x,p.y);LAN.x=q.x;LAN.y=q.y;LAN.an=true;}
+ if(LAN.thron){const st=M.weltTag?.stunde;if(st!=null){if(LAN.stunde!=null){let d=st-LAN.stunde;if(d<0)d+=24;if(d<6)LAN.thronH-=d;}LAN.stunde=st;}else LAN.thronH-=dt/10;
+  const h=LAN.haus();if(LAN.thronH>0&&h&&M.weltVerwaltung)return;// aufstehen: vor der Tür weiter
+  LAN.thron=false;LAN.stunde=null;if(h){const v=vorTuer(h),q=W.iso(v.tx,v.ty);LAN.x=q.x;LAN.y=q.y;}LAN.warte=1+Math.random()*2;LAN.pfad=null;LAN.goal=null;return;}
+ if(LAN.warte>0){LAN.warte-=dt;LAN.geht=false;return;}
+ if(!LAN.goal){if(LAN.pfad&&LAN.pfad.length){const q=LAN.pfad.shift();LAN.goal=W.iso(q.x,q.y);}
+  else if(LAN.zumThron){LAN.zumThron=false;const h=LAN.haus();if(h&&M.weltVerwaltung){LAN.thron=true;LAN.thronH=1+Math.random()*2;LAN.stunde=null;LAN.geht=false;return;}}
+  if(!LAN.goal){if(LAN.sucht){LAN.geht=false;return;}const c=W.tileAt(LAN.x,LAN.y),h=LAN.haus();let ziel=null,thron=false;
+   if(h&&M.weltVerwaltung&&Math.random()<.3){ziel=vorTuer(h);thron=true;}
+   for(let i=0;i<8&&!ziel;i++){const tx=Math.floor(c.tx+(Math.random()-.5)*20),ty=Math.floor(c.ty+(Math.random()-.5)*20);if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ty*N+tx;if(!G.frei(G.GL,k)||!imLudus(k))continue;ziel={tx:tx+.5,ty:ty+.5};}
+   if(!ziel){LAN.warte=1;LAN.geht=false;return;}LAN.sucht=true;const gen=++LAN.gen;
+   G.weg(G.GL,{tx:c.tx,ty:c.ty},ziel,p=>{if(LAN.gen!==gen)return;LAN.sucht=false;if(!p){LAN.warte=1+Math.random()*2;return;}LAN.pfad=p.pts.slice(1);LAN.zumThron=thron;},{max:2500});LAN.geht=false;return;}}
+ const dx=LAN.goal.x-LAN.x,dy=LAN.goal.y-LAN.y,d=Math.hypot(dx,dy),tp=G.tempoBei(G.GL,LAN.x,LAN.y,0)||100,step=(W.SPEED||15)*dt*tp/100*(d&&W.hangF?W.hangF(LAN.x,LAN.y,dx/d,dy/d):1);
+ LAN.geht=true;if(Math.abs(dx)>1)LAN.dir=dx<0?1:0;
+ if(d<=step){LAN.x=LAN.goal.x;LAN.y=LAN.goal.y;LAN.goal=null;LAN.dist+=d;if(!LAN.pfad||!LAN.pfad.length){LAN.pfad=null;if(!LAN.zumThron){LAN.warte=2+Math.random()*9;LAN.geht=false;}}return;}
+ LAN.x+=dx/d*step;LAN.y+=dy/d*step;LAN.dist+=step;}
+const tickL=H.tick;H.tick=dt=>{tickL?.(dt);try{lanTick(dt);}catch(e){console.warn(e);LAN.an=false;}};
+// Lanista beim Gehen: Gehbilder der Gladiatoren (W.drawFig), im Stehen und auf dem Thron seine eigene Figur (unten zeichne)
+function lanGeht(ctx){const n=this.n;if(!n.g)try{n.g=kopie(M.ludus.ownerFigure(S.lanista),'welt-lanista');}catch(e){return;}const q=W.iso(n.p.x,n.p.y);
+ try{if(W.mini)W.drawMini(ctx,n.g,Math.round(q.x),Math.round(q.y));else W.drawFig(ctx,n.g,Math.round(q.x),Math.round(q.y),W.gehBild?W.gehBild(LAN.dist):0,LAN.dir);}catch(e){}}
+function lanSitzt(ctx){const n=this.n;if(!n.g)try{n.g=kopie(M.ludus.ownerFigure(S.lanista),'welt-lanista');}catch(e){return;}const q=W.iso(n.p.x,n.p.y);if(this.alpha<1)ctx.globalAlpha=this.alpha;
+ try{W.drawSit(ctx,n.g,Math.round(q.x),Math.round(q.y-6),0);}catch(e){}ctx.globalAlpha=1;}// auf dem Thron sitzend (Oberkörper über der Sitzfläche)
 const NPCS=[
  {id:'schmied',name:()=>M.workshop?.state?.master?.name||'Der Schmied',rolle:'Schmied',ort:'schmiede',
   platz(h){const k=[...(h.stat||new Map())].find(([,r])=>r==='amboss')?.[0];return k!=null?{...nachbarFrei(h,k,h.stat),innen:h.dach?.has(k)}:null;},
@@ -39,7 +71,7 @@ const NPCS=[
   platz(h){return {x:h.bx0+1.2,y:h.by1+.62,innen:false};},
   mal:(c,x,y,t,o)=>{const g=M.trader?.figure?.();if(g)forge({id:'welt-trader',g,trader:true,a:0},t)(c,x,y);}},
  {id:'lanista',name:()=>S.lanista?.name||'Der Lanista',rolle:'Lanista, dir gehört der Laden',ort:null,
-  platz(){const p=ort('lanista',318,300);return {x:p.x,y:p.y,innen:false};},
+  platz(){if(LAN.an)return LAN.platz();const p=ort('lanista',318,300);return {x:p.x,y:p.y,innen:false};},
   mal:(c,x,y,t,o)=>{try{o.g??=kopie(M.ludus.ownerFigure(S.lanista),'welt-lanista');forge({id:'welt-lan',g:o.g,lanista:true,a:0},t)(c,x,y);}catch(e){}}},
  {id:'doktor',name:()=>'Doktor Hirnhammer',rolle:'Doktor im Medicus',ort:'medicus',
   platz(h){return h.stuhl>=0?{...nachbarFrei(h,h.stuhl,new Set([...h.beds,h.door.k])),innen:true}:null;},
@@ -82,17 +114,18 @@ let ansicht=null;function ware(){const L=(M.trader?.state?.lot||[]).filter(g=>g&
 function wareZeichnen(ctx){const h=this.h,L=ware().slice(0,5),x0=h.bx0+2,x1=h.bx1+.6;
  L.forEach((g,i)=>{const p=W.iso(x0+(x1-x0)*(L.length>1?i/(L.length-1):.5),h.by1+.7);try{if(W.mini)W.drawMini(ctx,g,Math.round(p.x),Math.round(p.y));else W.drawFig(ctx,g,Math.round(p.x),Math.round(p.y),W.WALK,1);}catch(e){}});}
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=performance.now();if(now-ortT>1000){ortT=now;orte();}
+ if(LAN.an){const n=NPCS.find(q=>q.id==='lanista');if(n){n.p=LAN.platz();n.h=n.p.thron?LAN.haus():null;}}
  for(const n of NPCS){if(!n.p)continue;const q=W.iso(n.p.x,n.p.y);if(q.x<view.x0-80||q.x>view.x1+80||q.y<view.y0-20||q.y>view.y1+120)continue;
   let alpha=1;if(n.p.innen&&n.h){alpha=Math.min(1,Math.max(0,(n.h.offen-.4)/.4));if(alpha<=0)continue;}
-  const oz=W.hz?W.hz(n.p.x,n.p.y):0,y=n.h?n.h.key+.02:q.y;n.item??={n,draw:zeichne};n.item.y=y;n.item.oz=oz;n.item.alpha=alpha;items.push(n.item);}
+  const oz=W.hz?W.hz(n.p.x,n.p.y):0,y=n.h?n.h.key+.02:(n.p.geht&&H.vorne?H.vorne(n.p.x,n.p.y,q.y):q.y);n.item??={n,draw:zeichne};n.item.draw=n.p.geht?lanGeht:n.p.thron&&W.drawSit?lanSitzt:zeichne;n.item.y=y;n.item.oz=oz;n.item.alpha=alpha;items.push(n.item);}
  const m=hausVon('markt');if(m){(m.ware??={h:m,draw:wareZeichnen}).h=m;m.ware.y=m.key+.015;m.ware.oz=m.item?.oz||0;items.push(m.ware);}};
 // Antippen: Name und Rolle über dem NPC
 let zeig=null;const tap0=H.tap;H.tap=(p,w)=>{if(!w)for(const n of NPCS){if(!n.p)continue;if(n.p.innen&&n.h&&n.h.offen<.6)continue;const q=W.iso(n.p.x,n.p.y),oz=W.hz?W.hz(n.p.x,n.p.y):0,k=Math.max(1,1.4/W.cam.s),ex=Math.abs(q.x-p.x),ey=q.y-oz-p.y;
-  if(ex<7*k&&ey>-2*k&&ey<26*k){zeig={n,t:4};return true;}}return tap0?tap0(p,w):false;};
+  if(ex<7*k&&ey>-2*k&&ey<26*k){const sp=n.spruch?.()||'';zeig={n,t:sp?6:4,spruch:sp};return true;}}return tap0?tap0(p,w):false;};
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(!zeig||W.mini)return;zeig.t-=dt;if(zeig.t<=0){zeig=null;return;}const n=zeig.n;if(!n.p)return;
- const q=W.iso(n.p.x,n.p.y),oz=W.hz?W.hz(n.p.x,n.p.y):0,z=Math.min(3,Math.max(.5,1/W.cam.s)),s1=n.name(),s2=n.rolle;ctx.font=(window.AT2_STIL?AT2_STIL.font(11*z):'bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace');ctx.textAlign='center';ctx.textBaseline='middle';
- const w=Math.max(ctx.measureText(s1).width,ctx.measureText(s2).width*.85)+10*z,y=q.y-oz-34-14*z;ctx.fillStyle='rgba(18,12,9,.86)';ctx.fillRect(Math.round(q.x-w/2),Math.round(y-10*z),Math.round(w),Math.round(24*z));
- ctx.fillStyle='#f4d37a';ctx.fillText(s1,Math.round(q.x),Math.round(y-3*z));ctx.font=(window.AT2_STIL?AT2_STIL.font(9*z):Math.round(9*z)+'px ui-monospace,Menlo,Consolas,monospace');ctx.fillStyle='#e8dcc0';ctx.fillText(s2,Math.round(q.x),Math.round(y+7*z));};
+ const q=W.iso(n.p.x,n.p.y),oz=W.hz?W.hz(n.p.x,n.p.y):0,z=Math.min(3,Math.max(.5,1/W.cam.s)),s1=n.name(),s2=typeof n.rolle==='function'?n.rolle():n.rolle,s3=zeig.spruch||'';ctx.font=(window.AT2_STIL?AT2_STIL.font(11*z):'bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace');ctx.textAlign='center';ctx.textBaseline='middle';
+ const w=Math.max(ctx.measureText(s1).width,ctx.measureText(s2).width*.85,ctx.measureText(s3).width*.85)+10*z,y=q.y-oz-34-14*z-(s3?10*z:0);ctx.fillStyle='rgba(18,12,9,.86)';ctx.fillRect(Math.round(q.x-w/2),Math.round(y-10*z),Math.round(w),Math.round((s3?34:24)*z));
+ ctx.fillStyle='#f4d37a';ctx.fillText(s1,Math.round(q.x),Math.round(y-3*z));ctx.font=(window.AT2_STIL?AT2_STIL.font(9*z):Math.round(9*z)+'px ui-monospace,Menlo,Consolas,monospace');ctx.fillStyle='#e8dcc0';ctx.fillText(s2,Math.round(q.x),Math.round(y+7*z));if(s3){ctx.fillStyle='#f0b8a8';ctx.fillText(s3,Math.round(q.x),Math.round(y+17*z));}};
 orte();
-M.weltNpc={liste:()=>NPCS.map(n=>({id:n.id,name:n.name(),rolle:n.rolle,ort:n.ort,platz:n.p?{...n.p}:null})),bilder:id=>bilder(NPCS.find(n=>n.id===id)),orte,get zeig(){return zeig?.n.id||null;}};
+M.weltNpc={dazu(n){NPCS.push(n);orte();},lanista:LAN,liste:()=>NPCS.map(n=>({id:n.id,name:n.name(),rolle:n.rolle,ort:n.ort,platz:n.p?{...n.p}:null})),bilder:id=>bilder(NPCS.find(n=>n.id===id)),orte,get zeig(){return zeig?.n.id||null;}};
 })();

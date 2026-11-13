@@ -34,6 +34,12 @@ const BILDER={
  '........kk..','.......kbk..','......kbk...','.....kbk....','....kbk.....','...kSSk.....','..kSSSk.....','.kSSSk......','..kkk...k...','....kkkbbkk.','..kkbbwbbbbk','kkbbbbbbbbbk'],
  abreissen:[ // Spitzhacke über geborstener Säule
  '.kkkk.......','kSSSSk.kk...','.kk.kSkk....','.....kSk....','....kbkSk...','...kbk..k...','..kbk.......','.kbk..kkkk..','kbk...kwwk..','.k....kwwkk.','.....kkwwwk.','....kwkwkwwk'],
+ verwaltung:[ // A4: Thron, Blutfleck auf der Lehne
+ '...kkkkkk...','..kgggggGk..','..kgRRgggk..','..kgggrggk..','..kgggggGk..','kkkkkkkkkkkk','kgkRRRRRRkgk','kgkkkkkkkkgk','kGk......kGk','kGk......kGk','kkk......kkk','............'],
+ ruhm:[ // A4: Lorbeerkranz, ein Zweig abgebrochen, ein Tropfen Blut
+ '...gg..gg...','..gGk..kGg..','.gGk....kGg.','.gk......kg.','gGk.......k.','gk..........','gGk......k..','.gk.....kGg.','.gGk...kGg..','..gGkkkGg...','....rR......','.....r......'],
+ tag:[ // A4: Sonnenuhr, der Schatten ist ein Totenkopf
+ '.....k......','....kSk.....','...kSSk.....','..kSSSk.....','kkkkkkkkkkkk','knnnnwwwnnnk','knnnwkwkwnnk','knnnwwwwwnnk','knnnnwkwnnnk','kNNNNNNNNNNk','kkkkkkkkkkkk','..kNk..kNk..'],
  gold:[ // Münze mit Totenkopf
  '...kkkkkk...','..kggggggk..','.kgGGGGGGgk.','kgGgwwwwgGgk','kgGwkwwkwGgk','kgGwwwwwwGgk','kgGgwkkwgGgk','kgGgwwwwgGgk','.kgGGGGGGgk.','..kggggggk..','...kkkkkk...','............'],
  bruecke:[ // Holzsteg über Wasser

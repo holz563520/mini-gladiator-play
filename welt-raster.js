@@ -31,7 +31,7 @@ const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Fel
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
 const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
-const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37,ERDE:38,KIES:39,SCHLAMM:40,GEROELL:41,TROCKEN:42,NADEL:43},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz','Erde','Kies','Schlamm','Geröll','Trockengras','Nadelstreu'];
+const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37,ERDE:38,KIES:39,SCHLAMM:40,GEROELL:41,TROCKEN:42,NADEL:43,VERWALTUNG:44},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz','Erde','Kies','Schlamm','Geröll','Trockengras','Nadelstreu','Verwaltung'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
 // Arena Theory 2.0, Schritt A3 (Thomas 13.11.2026): Karte neu angeordnet. An der großen Straße liegen nebeneinander das
@@ -61,7 +61,9 @@ const BAU=[
  {id:'schmiede',name:'SCHMIEDE',l:[638,86,215,150],p:[-36,33,4,3],hoch:42,wand:'#7d7468',dach:'#4b4640',haus:T.SCHMIEDE,haus2:T.SCHM_S},
  {id:'beastrium',name:'BEASTRIUM',l:[652,298,196,126],p:[-36,40,4,3],hoch:40,wand:'#96795a',dach:'#6b4a2c',haus:T.BEAST,haus2:T.BST_S},
  // Nur 2.0 (A3): Unterkunft der Gladiatoren, schäbigste Klasse
- ...(ANORD?[{id:'unterkunft',name:'UNTERKUNFT',l:[0,0,0,0],p:[-29,33,6,4],hoch:30,wand:'#8a6f4a',dach:'#6b4a2c',haus:T.UNT_S}]:[])
+ ...(ANORD?[{id:'unterkunft',name:'UNTERKUNFT',l:[0,0,0,0],p:[-29,33,6,4],hoch:30,wand:'#8a6f4a',dach:'#6b4a2c',haus:T.UNT_S}]:[]),
+ // A4 (Thomas 13.11.2026): Verwaltung, fest am zentralen Platz (Regel 12), weder baubar noch abreißbar
+ ...(ANORD?[{id:'verwaltung',name:'VERWALTUNG',l:[0,0,0,0],p:[...ANORD.verwaltung],hoch:40,wand:'#e8e4da',dach:'#a5553c',haus:T.VERWALTUNG}]:[])
 ];
 // 2.0: feste Lagen (p) im Dorf und am Platz, die Häuser des Start-Ludus in der schäbigsten Klasse (haus2; Thomas: „alles unterste Klasse,
 // der Rest muss erforscht werden“). Editor (96er Karte): Lage aus dem alten Ludus wie bisher.
@@ -191,6 +193,7 @@ const zaunA=new Uint8Array(N*N),zaunB=new Uint8Array(N*N),fest=new Uint8Array(N*
 if(ANORD){const A=ANORD,setz=(arr,x,y,v)=>{if(inMap(x,y))arr[ix(x,y)]=v;};
  for(const [x0,y0,w,h] of A.pfade)for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)feld[ix(x+O,y+O)]=T.STR2;
  for(let y=A.platz[1];y<A.platz[1]+A.platz[3];y++)for(let x=A.platz[0];x<A.platz[0]+A.platz[2];x++){const k=ix(x+O,y+O);if(feld[k]===T.LUDUS)fest[k]=1;}
+ {const [x0,y0,w,h]=A.verwaltung;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)fest[ix(x+O,y+O)]=1;}// A4: Verwaltung fest
  {const [x0,y0,w,h]=A.arenaPlatz;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++){const k=ix(x+O,y+O);fest[k]=1;arenaPlatz[k]=1;}}// A3b: Fläche der großen Arena
  // A3b: Grenzen folgen den geschwungenen Rändern. Jede Kante zwischen zwei Feldern verschiedener Bereiche bekommt Zaun (Park)
  // oder Palisade (Dorf, Rückseite des Platzes); offen bleiben die Tore und der Platz zur Straße hin.
@@ -291,7 +294,8 @@ const PAL=[
  [[86,70,50],[76,62,44],[96,78,56],[112,118,104]],// Schlamm (4. Farbe = nasser Glanz)
  [[116,110,102],[130,124,114],[102,96,88],[78,74,68]],// Geröll (4. Farbe = Schatten)
  [[146,140,84],[158,150,92],[134,128,76],[118,108,62]],// Trockengras (4. Farbe = Halme)
- [[74,60,42],[84,68,46],[64,52,36],[104,80,46]]// Nadelstreu (4. Farbe = Nadeln)
+ [[74,60,42],[84,68,46],[64,52,36],[104,80,46]],// Nadelstreu (4. Farbe = Nadeln)
+ [[230,224,210],[216,208,192],[190,182,166],[118,30,28]]// A4 Verwaltung: Marmorplatten mit feinen Fugen (4. Farbe = alter Blutfleck)
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
@@ -317,6 +321,7 @@ function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageDat
   else if(t===T.KRANK){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,cx=(ux*3)%1,cy=(uy*3)%1;col=cx<.05||cy<.05?(t===T.KRANK?P[3]:[150,144,132]):P[(h2((ux*3)|0,(uy*3)|0,v+97)*3)|0];if(t===T.MEDICUS&&(h2(x>>2,y>>1,v+99)>.95||h2(x>>3,y>>2,v+98)>.975))col=P[3];}
   if(t===T.KAS_S){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,pl=(uy*5)|0;col=(uy*5)%1<.14?P[3]:P[(h2(pl,v,79)*3)|0];if(n>.95)col=P[3];}
   if(t===T.KASERNE){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,cx=(ux*2)%1,cy=(uy*2)%1;col=cx<.06||cy<.06?P[3]:P[(h2((ux*2)|0,(uy*2)|0,v+91)*3)|0];}
+  if(t===T.VERWALTUNG){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,m=Math.min(ux,uy,1-ux,1-uy);const fu=(ux*2)%1<.04||(uy*2)%1<.04;col=m<.025||fu?P[2]:(((ux*2)|0)+((uy*2)|0))%2?P[1]:P[0];if(!fu&&m>=.025&&h2(x>>2,y>>1,v+113)>.992)col=P[3];}// A4: Marmor, feine Fugen, selten Blut
   if(t===T.KAS_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,m=Math.min(ux,uy,1-ux,1-uy);col=m<.04?P[2]:(((ux*4)|0)+((uy*4)|0))%2?P[1]:P[0];if(m<.04&&n>.7)col=P[3];}
   if(t===T.BST_K){const a=(x-31.5)/32,b=(y-16)/16,ux=(a+b+1)/2,uy=(b-a+1)/2,m=Math.min(ux,uy,1-ux,1-uy),d=Math.abs(ux-.5)+Math.abs(uy-.5);col=m<.025?P[3]:m<.06?P[2]:Math.abs(d-.3)<.022?P[1]:P[0];if(col===P[0]&&n>.96)col=[212,208,200];}
   if(t===T.UNT_S){col=P[n<.45?0:n<.7?1:n<.9?2:0];if(h2(x>>1,y,v+31)>.93)col=P[3];if(h2(x>>3,y>>2,v+33)>.86)col=[70,58,40];}
@@ -514,7 +519,7 @@ function drawSit(ctx,g,x,y,dir){if(detailV){const sp=spriteOf(g),h=FY-22;if(sp){
  const r=simpleOf(g);if(r)ctx.drawImage(r.c,(dir*(WALK+1)+WALK)*PW,r.y,PW,SITZ_H,x-PAX,y-SITZ_H+2,PW,SITZ_H);else drawMini(ctx,g,x,y);}
 const gehBild=dist=>((dist/SCHRITT*WALK)|0)%WALK;
 function drawMini(ctx,g,x,y){const a=g.appearance||{};ctx.fillStyle=a.cloth||'#55938e';ctx.fillRect(x-2,y-7,4,6);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-1,y-10,3,3);}
-const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS&&t!==T.UNTERKUNFT&&t!==T.UNT_S&&t!==T.UNT_K&&t!==T.SCHM_S&&t!==T.SCHMIEDE&&t!==T.SCHM_K&&t!==T.BST_S&&t!==T.BEAST&&t!==T.BST_K&&t!==T.KAS_S&&t!==T.KASERNE&&t!==T.KAS_K&&t!==T.MEDICUS&&t!==T.KRANK&&t!==T.MARKT&&t!==T.HALLE;};
+const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS&&t!==T.UNTERKUNFT&&t!==T.UNT_S&&t!==T.UNT_K&&t!==T.SCHM_S&&t!==T.SCHMIEDE&&t!==T.SCHM_K&&t!==T.BST_S&&t!==T.BEAST&&t!==T.BST_K&&t!==T.KAS_S&&t!==T.KASERNE&&t!==T.KAS_K&&t!==T.MEDICUS&&t!==T.KRANK&&t!==T.MARKT&&t!==T.HALLE&&t!==T.VERWALTUNG;};
 const imLudus=(tx,ty)=>tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h;
 function makeRoster(n){const keep=S.roster.filter(g=>!g.dead);let list=keep.slice(0,n);const rng=S.rng;while(list.length<n){const g=M.makeGladiator(0);g.fatigue=0;list.push(g);}S.rng=rng;
  S.roster=list;try{M.army?.autoClasses?.(list);}catch(e){}for(const w of workers){figs.delete(w.g.id);pof.delete(w.g.id);}if(pNext>PROW*6){pof.clear();pNext=0;}
