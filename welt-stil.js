@@ -22,34 +22,47 @@ const BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
 const PAP=[226,204,154];
 const cache=new Map();
 const NZ=new Float32Array(4096);{const q=rnd(4711);for(let i=0;i<4096;i++)NZ[i]=q();}  // Rauschtabelle (schneller als Zufall je Pixel)
-// Pixelpergament zeichnen (Grundpapier, je Größe gemerkt): verbrannter Rand, Rattenbisse, leichte Flecken. Blut und Brand kommen als eigene Schicht (flecken()).
-function papier(w,h,seed){
- const W=Math.max(8,Math.ceil(w/PX)),H=Math.max(6,Math.ceil(h/PX)),key=W+'x'+H+':'+(seed%5);
- if(cache.has(key))return cache.get(key);
- const r=rnd(seed*7919+W*31+H),c=document.createElement('canvas');c.width=W;c.height=H;
+// Pixelpergament zeichnen: unregelmäßig ausgefranster, verkohlter Rand in wechselnder Tiefe, abgerissene Ecken, Bissspuren aus einzelnen
+// Zahnabdrücken, Flecken. Jede Variante (var) sieht anders aus. occ (Belegung durch Text/Knöpfe) wird nie angefressen oder verkohlt.
+function linie(n,r,amp){  // 1D-Rauschen über eine Kante: große Wellen, kleine Zacken, einzelne Risse und Brandzungen
+ const a=new Float32Array(n),o=[[14+r()*22,amp*(.6+r()*.6)],[4+r()*4,amp*.45],[1.6+r()*1.2,amp*.22]];
+ for(const [per,am] of o){const k=Math.ceil(n/per)+2,pt=[];for(let i=0;i<k;i++)pt.push(r());for(let i=0;i<n;i++){const t=i/per,j=Math.floor(t),f=t-j,s=f*f*(3-2*f);a[i]+=((pt[j]*(1-s)+pt[j+1]*s)-.5)*2*am;}}
+ for(let i=0;i<n;i++)a[i]+=(r()-.5)*1.1;
+ for(let k=0,m=Math.floor(n/22+r()*2);k<m;k++){const c=Math.floor(r()*n),w=1+Math.floor(r()*3),t=2+r()*3.5;for(let i=-w;i<=w;i++)if(c+i>=0&&c+i<n)a[c+i]+=t*(1-Math.abs(i)/(w+1));}
+ return a;}
+function papier(w,h,vari,occ){
+ const W=Math.max(8,Math.ceil(w/PX)),H=Math.max(6,Math.ceil(h/PX)),key=W+'x'+H+':'+vari;
+ if(!occ&&cache.has(key))return cache.get(key);
+ const r=rnd(vari*7919+W*31+H*17+11),c=document.createElement('canvas');c.width=W;c.height=H;
  const g=c.getContext('2d'),im=g.createImageData(W,H),d=im.data;
- const nx=new Float32Array(W),ny=new Float32Array(H);for(let i=0;i<W;i++)nx[i]=r();for(let i=0;i<H;i++)ny[i]=r();
- // Bisse: an Unter- und Seitenkanten, oben nur links (rechts oben sitzt oft ✕); kleine Fenster weniger
- const bisse=[],nb=W*H>3000?2+Math.floor(r()*2):1;
- for(let i=0;i<nb;i++){const s=Math.floor(r()*4),gr=Math.min(H/4,3+r()*3);
-  if(s===0)bisse.push({x:W*(.1+r()*.45),y:-gr*.35,r:gr});else if(s===1)bisse.push({x:W+gr*.35,y:H*(.3+r()*.5),r:gr});
-  else if(s===2)bisse.push({x:W*(.15+r()*.7),y:H+gr*.35,r:gr});else bisse.push({x:-gr*.35,y:H*(.3+r()*.5),r:gr});}
- const flecken=[];for(let i=0,n=1+Math.floor(W*H/5000);i<n;i++)flecken.push({x:r()*W,y:r()*H,r:3+r()*Math.min(W,H)*.22});
+ const MAXT=4.6;  // so tief darf der Rand höchstens fressen (Pergament-Pixel)
+ const tief=(n,amp)=>{const L=linie(n,r,amp),o=.6+r()*1.4;for(let i=0;i<n;i++)L[i]=Math.max(0,Math.min(MAXT,L[i]+o));return L;};
+ const dT=tief(W,1.6+r()*1.6),dB=tief(W,1.6+r()*1.6),dL=tief(H,1.2+r()*1.4),dR=tief(H,1.2+r()*1.4);
+ const bT=linie(W,r,1.4),bB=linie(W,r,1.4),bL=linie(H,r,1.2),bR=linie(H,r,1.2);   // Breite der Brandzone schwankt
+ // abgerissene Ecken (schräg, gezackt), rechts oben kleiner (dort sitzt oft ✕)
+ const ecke=[0,1,2,3].map(i=>r()<.55?(i===1?2+r()*2.5:2.5+r()*5):0);
+ // Bisse: Gruppen aus 3–6 Zahnabdrücken an zufälligen Kanten
+ const zaehne=[];for(let k=0,n=Math.floor(r()*3)+(W*H>2500?1:0);k<n;k++){const s=Math.floor(r()*4),pos=.12+r()*.76,cx=s<2?pos*W:(s===2?-0.5:W-.5),cy=s<2?(s===0?-0.5:H-.5):pos*H;
+  for(let z=0,m=3+Math.floor(r()*4);z<m;z++){const zr=.9+r()*1.8,ab=(z-m/2)*(1.3+r()*.8);zaehne.push({x:cx+(s<2?ab:0)+(r()-.5),y:cy+(s>=2?ab:0)+(r()-.5),r:zr*(s<2?1:1)});}}
+ const fl=[];for(let i=0,n=1+Math.floor(r()*3+W*H/6000);i<n;i++)fl.push({x:r()*W,y:r()*H,rx:2+r()*Math.min(W,H)*.3,ry:2+r()*Math.min(W,H)*.2});
+ const PAPV=[PAP[0]-r()*14,PAP[1]-r()*16,PAP[2]-r()*20];   // jede Variante etwas anders vergilbt
  const off=Math.floor(r()*4096);
- for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4;
-  let e=Math.min(x,y,W-1-x,H-1-y);
-  e-=(x<2||x>W-3?nx[y%W]*2:0)+(y<2||y>H-3?ny[x%H]*2:0)+((x*7+y*13)%5===0?.6:0);
-  if(e<9)for(const b of bisse){const dx=x-b.x,dy=y-b.y;if(dx>b.r+1||dx<-b.r-1||dy>b.r+1||dy<-b.r-1)continue;e=Math.min(e,Math.sqrt(dx*dx+dy*dy)-b.r+((x+y)&1?.8:0));}
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4,j=y*W+x;
+  let e=Math.min(x-dL[y],W-1-x-dR[y],y-dT[x],H-1-y-dB[x]);
+  const ec=[x+y,(W-1-x)+y,x+(H-1-y),(W-1-x)+(H-1-y)];for(let k=0;k<4;k++)if(ecke[k]){const n=NZ[(x*13+y*29+k*977)&4095];e=Math.min(e,ec[k]-ecke[k]*1.4+n*1.6);}
+  if(e<9)for(const z of zaehne){const dx=x-z.x,dy=y-z.y;if(dx>z.r+2||dx<-z.r-2||dy>z.r+2||dy<-z.r-2)continue;e=Math.min(e,Math.sqrt(dx*dx+dy*dy)-z.r+NZ[(x*7+y*11)&4095]*.9);}
+  const bz=x<y&&x<H-y?bL[y]:(W-1-x<y&&W-1-x<H-1-y?bR[y]:(y<H/2?bT[x]:bB[x])),bb=Math.max(1.4,2.6+bz);
+  if(occ&&occ[j])e=Math.max(e,bb+1.5);
   if(e<.5){d[i+3]=0;continue;}
   const th=BAYER[(y&3)*4+(x&3)]/16,nz=NZ[(x*73+y*151+off)&4095];
-  let R=PAP[0]-nz*9,G=PAP[1]-nz*9,B=PAP[2]-nz*7;
-  if(nz>.975){R*=.84;G*=.8;B*=.72;}                                  // Fasern
-  for(let k=0;k<flecken.length;k++){const f=flecken[k];const dx=x-f.x,dy=y-f.y;if(dx>f.r||dx<-f.r||dy>f.r||dy<-f.r)continue;const q=Math.sqrt(dx*dx+dy*dy)/f.r;if(q<1&&th<(1-q)*.22){R*=.92;G*=.89;B*=.85;}}
-  if(e<1.6){R=22;G=9;B=3;}else if(e<2.6){R=66;G=27;B=8;}else if(e<4.2&&th<.5){R=R*.55+40;G=G*.45+12;B*=.35;}else if(e<6&&th<.22){R*=.82;G*=.72;B*=.6;}
+  let R=PAPV[0]-nz*10,G=PAPV[1]-nz*10,B=PAPV[2]-nz*8;
+  if(nz>.972){R*=.82;G*=.78;B*=.7;}
+  for(let k=0;k<fl.length;k++){const f=fl[k],qx=(x-f.x)/f.rx,qy=(y-f.y)/f.ry;if(qx>1||qx<-1||qy>1||qy<-1)continue;const q=Math.sqrt(qx*qx+qy*qy);if(q<1&&th<(1-q)*.26){R*=.9;G*=.86;B*=.8;}}
+  if(e<1.3){R=20+nz*10;G=8;B=3;}else if(e<bb*.55){R=58+nz*22;G=24;B=7;}else if(e<bb&&th<.6){R=R*.5+42;G=G*.42+14;B*=.3;}else if(e<bb+2.2&&th<.3){R*=.84;G*=.74;B*=.6;}
   d[i]=R;d[i+1]=G;d[i+2]=B;d[i+3]=255;}
  g.putImageData(im,0,0);const url='url('+c.toDataURL()+')';
- if(cache.size>60)cache.delete(cache.keys().next().value);
- cache.set(key,url);return url;}
+ if(!occ){if(cache.size>60)cache.delete(cache.keys().next().value);cache.set(key,url);}
+ return url;}
 
 function samen(el){let s=0;const t=(el.id||el.className||'x')+'';for(let i=0;i<t.length;i++)s=(s*31+t.charCodeAt(i))|0;return Math.abs(s)+1;}
 
@@ -93,14 +106,15 @@ const offen=new Set();let geplant=0;
 function inhalt(el){const t=performance.now();if(el._wsT&&t-el._wsT<250){if(!el._wsSpaet)el._wsSpaet=setTimeout(()=>{el._wsSpaet=0;inhalt(el);},260);return;}el._wsT=t;planen(el,false);}
 function malen(el){
  if(!el.isConnected||el.hidden)return;const b=el.getBoundingClientRect();if(b.width<4||b.height<4)return;
- const W=Math.max(8,Math.ceil(b.width/PX)),H=Math.max(6,Math.ceil(b.height/PX)),grund=papier(b.width,b.height,samen(el));
- let L=el._wsFlecken;const cs=getComputedStyle(el),roll=(/auto|scroll/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+2)||(/auto|scroll/.test(cs.overflowX)&&el.scrollWidth>el.clientWidth+2);
+ const W=Math.max(8,Math.ceil(b.width/PX)),H=Math.max(6,Math.ceil(b.height/PX));
+ if(el._wsNeu||el._wsVar==null)el._wsVar=Math.floor(Math.random()*1e6);
+ let L=el._wsFlecken,occ=null;const cs=getComputedStyle(el),roll=(/auto|scroll/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+2)||(/auto|scroll/.test(cs.overflowX)&&el.scrollWidth>el.clientWidth+2);
  if(roll)L=[];   // Inhalt scrollt: Text kann überall hin, darum keine Flecken
- else{const occ=belegung(el,W,H),gr=el._wsGr,anders=!gr||Math.abs(gr[0]-W)>W*.1||Math.abs(gr[1]-H)>H*.1;
+ else{occ=belegung(el,W,H);const gr=el._wsGr,anders=!gr||Math.abs(gr[0]-W)>W*.1||Math.abs(gr[1]-H)>H*.1;
   if(!L||el._wsNeu||anders||!L.length){L=neueFlecken(occ,W,H);el._wsGr=[W,H];}else L=L.filter(f=>noch(f,occ,W,H));}
- const key=W+'x'+H+':'+L.length;el._wsNeu=false;
+ const key=W+'x'+H+':'+L.length+':'+el._wsVar;el._wsNeu=false;
  if(el._wsKey===key&&el._wsFlecken&&el._wsFlecken.length===L.length&&L.every((f,i)=>f===el._wsFlecken[i])){return;}
- el._wsFlecken=L;el._wsKey=key;
+ el._wsFlecken=L;el._wsKey=key;const grund=papier(b.width,b.height,el._wsVar,occ);
  el.style.backgroundImage=L.length?fleckenBild(L,W,H)+','+grund:grund;el.classList.add('ws-fertig');}
 function planen(el,neu){if(neu)el._wsNeu=true;offen.add(el);if(!geplant)geplant=requestAnimationFrame(()=>{geplant=0;const a=[...offen];offen.clear();for(const e of a)malen(e);});}
 const ro=new ResizeObserver(es=>{for(const e of es){if(!e.target.isConnected){ro.unobserve(e.target);continue;}planen(e.target,false);}});
