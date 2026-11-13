@@ -408,9 +408,9 @@ setInterval(()=>{const page=M.ui.getPage?.(),modal=$('modal')&&!$('modal').hidde
 
 // ---------- Zeichnen ----------
 // unter NAH: Boden in größeren Stücken (lod 2/4), unter FERN: nur die Übersicht
-const MINI=.6,NAH=.6,FERN=OV>2?.12:.6;let clock=0,last=performance.now(),perfAvg=4,perfWin=[],hudT=0,miniV=false,detailV=false;
+const MINI=.6,NAH=.6,FERN=OV>2?.12:.6;let tempo=1,clock=0,last=performance.now(),perfAvg=4,perfWin=[],hudT=0,miniV=false,detailV=false;
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)/1000);last=now;if(document.hidden||document.body.classList.contains('w-admin'))return;
- const t0=performance.now();clock+=dt;H.tick?.(dt);for(const w of workers)wander(w,dt);
+ const t0=performance.now(),sd=dt*tempo;clock+=sd;H.tick?.(sd);for(const w of workers)wander(w,sd);// sd: Bildzeit im Spieltempo (A2), bei 3× größere Schritte, nicht mehr Rechnung
  if(fly){fly.t=Math.min(1,fly.t+dt*2.2);const e=1-Math.pow(1-fly.t,3);cam.x=fly.x0+(fly.x-fly.x0)*e;cam.y=fly.y0+(fly.y-fly.y0)*e;cam.s=fly.s0+(fly.s-fly.s0)*e;clampCam();if(fly.t>=1)fly=null;}
  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#1c2416';ctx.fillRect(0,0,VW,VH);
  const view={x0:cam.x-VW/2/cam.s,y0:cam.y-VH/2/cam.s,x1:cam.x+VW/2/cam.s,y1:cam.y+VH/2/cam.s};
@@ -454,6 +454,6 @@ function ebnen(ks,L){for(const k of ks){hc.fill(L,k*4,k*4+4);gelaendeTyp(k);}if(
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
 window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
- raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get perf(){return perfAvg;}};
+ raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get tempo(){return tempo;},set tempo(v){tempo=Math.max(0,+v||0);},get perf(){return perfAvg;}};
 window.WELT_READY=true;
 })();

@@ -626,7 +626,7 @@ const hausAt=(tx,ty)=>haeuser.find(h=>tx>=h.bx0&&tx<=h.bx1&&ty>=h.by0&&ty<=h.by1
 // Maus über dem Haus öffnet das Dach
 let maus=null;W.canvas.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'){maus=null;return;}const r=W.canvas.getBoundingClientRect();maus={sx:e.clientX-r.left,sy:e.clientY-r.top};});W.canvas.addEventListener('pointerleave',()=>{maus=null;});
 let last=performance.now(),spruch=null;const OFFEN_AB=1.5;
-function zeichne(ctx){const h=this.h;if(h.art==='kaserne'){const n=performance.now(),dt=Math.min(.1,(n-(h.tT||n))/1000);h.tT=n;tragen(h,dt);}const mal=h.art==='schmiede'?maleSchmiede:h.art==='markt'?maleMarkt:male;if(!h.zu)h.zu=mal(h,false);const a=h.offen,t=performance.now()/1000;
+function zeichne(ctx){const h=this.h;if(h.art==='kaserne'){const n=performance.now(),dt=Math.min(.1,(n-(h.tT||n))/1000)*(W.tempo??1);h.tT=n;tragen(h,dt);}const mal=h.art==='schmiede'?maleSchmiede:h.art==='markt'?maleMarkt:male;if(!h.zu)h.zu=mal(h,false);const a=h.offen,t=performance.now()/1000;
  if(a>.01){if(!h.auf)h.auf=mal(h,true);ctx.drawImage(h.auf.c,h.auf.ox,h.auf.oy);if(h.art==='beast'&&a>.3&&!W.mini)tiereMalen(ctx,h,a,t);if(h.art==='kaserne'&&a>.3&&!W.mini)lagerMalen(ctx,h,a);
   if((h.st===0||h.art==='beast')&&a>.5&&!W.mini){// Ratten huschen durch die Gänge, Fliegen kreisen über Haufen, Eimer und Blut
    const G=h.gang;if(h.st===0&&G.length>1)for(let i=0;i<Math.min(6,1+(h.n>>3));i++){const k0=G[(i*7)%G.length],k1=G[(i*13+3)%G.length],u=(Math.sin(t*(.5+i*.13)+i*2)+1)/2,x=k0%N+.5+((k1%N)-(k0%N))*u,y=((k0/N)|0)+.5+(((k1/N)|0)-((k0/N)|0))*u,p=W.iso(x,y),d=Math.cos(t*(.5+i*.13)+i*2)>0?1:-1;

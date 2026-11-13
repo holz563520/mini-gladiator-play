@@ -52,7 +52,7 @@ function wechsel(){const d0=S.day;inner=true;try{M.ui.click('rest');}catch(e){co
 const listeners=[];
 H.tick=dt=>{if(!M.weltTag.aktiv||st.pause||S.battle||story())return;
  if(st.retry>0){st.retry-=dt;if(st.retry<=0)wechsel();return;}
- st.f+=dt*(st.eile?12:st.tempo)/st.len;if(st.f>=1)wechsel();paintDial();};
+ st.f+=dt*(st.eile?12:1)/st.len;if(st.f>=1)wechsel();paintDial();};// dt ist schon mit dem Spieltempo (W.tempo) vervielfacht
 
 // ---------- Licht ----------
 let glow=null;
@@ -72,6 +72,11 @@ H.world=(ctx,view,dt)=>{if(L[3]>.02){const sp=glowSprite(),t=performance.now()/1
 // ---------- Sonnenuhr oben in der Leiste ----------
 const bar=document.querySelector('#weltUi .w-bar'),uhr=document.createElement('div');uhr.className='w-uhr';uhr.id='wUhr';
 uhr.innerHTML='<canvas width="144" height="144" aria-label="Sonnenuhr"></canvas><div><b id="wTag"></b><small id="wPhase"></small></div>';bar.insertBefore(uhr,bar.firstChild);
+// Spieltempo (A2): ⏸ 1× 2× 3× für alles auf der Karte (Uhr, Gladiatoren, Besucher). Ein Wert: W.tempo, 0 = Pause.
+const tp=document.createElement('div');tp.className='w-tempo';tp.setAttribute('role','group');tp.setAttribute('aria-label','Spieltempo');
+tp.innerHTML=[[0,'⏸','Pause'],[1,'1×','Normal'],[2,'2×','Schneller'],[3,'3×','Am schnellsten. Die Toten verwesen auch schneller.']].map(([v,t,h])=>'<button data-tp="'+v+'" title="'+h+'">'+t+'</button>').join('');uhr.appendChild(tp);
+tp.addEventListener('click',e=>{const b=e.target.closest('[data-tp]');if(!b)return;const v=+b.dataset.tp;if(v===0)M.weltTag.pause(true);else{st.pause=false;M.weltTag.tempo(v);paintDial(true);}});
+function wirk(){W.tempo=st.pause?0:st.tempo;for(const b of tp.querySelectorAll('[data-tp]'))b.classList.toggle('on',st.pause?b.dataset.tp==='0':+b.dataset.tp===st.tempo);}
 const dc=uhr.querySelector('canvas'),dg=dc.getContext('2d');let dialKey=-1;
 function paintDial(force){const h=hour(),key=Math.floor(h*12)+S.day*1000+(st.block?.5:0);if(!force&&key===dialKey)return;dialKey=key;
  const g=dg,R=72,c=72;g.clearRect(0,0,144,144);
@@ -100,7 +105,7 @@ function feier(from,to){document.getElementById('wTagwechsel')?.remove();const v
 M.weltTag={aktiv:true,st,get stunde(){return hour();},get phase(){return phase(hour());},
  eile(on){st.eile=!!on;paintDial(true);},
  setze(h){st.f=(((h-START)/24)%1+1)%1;st.retry=0;st.block='';paintDial(true);},
- tempo(x){st.tempo=x;},pause(on){st.pause=!!on;paintDial(true);},laenge(s){st.len=s;},lichtAn(on){st.licht=!!on;},
+ tempo(x){st.tempo=x;wirk();},pause(on){st.pause=!!on;wirk();paintDial(true);},laenge(s){st.len=s;},lichtAn(on){st.licht=!!on;},
  feier,beiWechsel(fn){listeners.push(fn);},welt(fn){worldHooks.push(fn);}};
-paintDial(true);
+wirk();paintDial(true);
 })();

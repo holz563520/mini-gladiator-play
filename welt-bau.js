@@ -230,7 +230,7 @@ function bauen(wz,x0,y0,x1,y1,frei){const m=mode;mode=wz;drag={a:{tx:x0,ty:y0},b
 // Start: eine Arena hinter dem Ludus (ersetzt das Arena-Tor). Kampffläche 8 × 6, zwei Reihen Tribünen, Durchgang zum Ludus.
 const O=W.O||0,durch=[W.ix(48+O,36+O),W.ix(49+O,36+O),W.ix(48+O,37+O),W.ix(49+O,37+O)];bauen('arena',45+O,30+O,52+O,35+O,true);bauen('trib',43+O,28+O,54+O,37+O,true);for(const k of durch)W.feld[k]=ur[k];
 neu.clear();W.rebake(durch);rechne(true);
-M.weltBau={PREIS,PRO,PLAETZE,STUFEN,WERKZEUG,SITZ,HOCH,setMode,get mode(){return mode;},felder:()=>felder,puppen:()=>[...puppen.values()],arenen:()=>arenen,tribs:()=>tribs,plan,stufeVon,beiAenderung(fn){horcher.push(fn);},
+M.weltBau={neuRechnen(){rechne(true);},PREIS,PRO,PLAETZE,STUFEN,WERKZEUG,SITZ,HOCH,setMode,get mode(){return mode;},felder:()=>felder,puppen:()=>[...puppen.values()],arenen:()=>arenen,tribs:()=>tribs,plan,stufeVon,beiAenderung(fn){horcher.push(fn);},
  bauen(a,b,c,d,e){return typeof a==='string'?bauen(a,b,c,d,e):bauen('platz',a,b,c,d);},
  // Test: Geländewerkzeug an Feld (tx,ty), Größe n, Stufen (+ heben, − senken), ecken z. B. [0] oder [0,1] bei n = 1
  gelaende(tx,ty,n=1,stufen=1,ecken=null,frei=false){const h=(n-1)>>1,ks=[];if(ecken)ks.push(W.ix(tx,ty));else for(let y=ty-h;y<ty-h+n;y++)for(let x=tx-h;x<tx-h+n;x++)if(W.inMap(x,y))ks.push(W.ix(x,y));const sel={ks,ecken},d=Math.sign(stufen),out=new Set();for(let i=0;i<Math.abs(stufen);i++){const r=landSchritt(sel,d,frei);if(!r)break;r.forEach(k=>out.add(k));}return [...out];}};

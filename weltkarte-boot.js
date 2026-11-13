@@ -1,7 +1,8 @@
 'use strict';
 // WELTKARTE · EIGENSTÄNDIGE TESTVERSION (wie die Aufstellungs-Testversion): lädt das unveränderte Spiel, aber ohne Zugriff
 // auf echte Spielstände. Das Spiel schreibt nur in den Arbeitsspeicher dieser Seite; nichts wird dauerhaft gespeichert.
-var BUILD='cb98ac44';
+// Ausnahme Arena Theory 2.0 (window.AT2): eigener Spielstand in eigener Datenbank über welt-spielstand.js, nie die von 1.0.
+var BUILD='8ed48056';
 (()=>{
  let real=null;try{real=window.localStorage;}catch{}
  window.WELT_STORE={get(k){try{return real?real.getItem(k):null;}catch{return null;}},set(k,v){try{real&&real.setItem(k,v);return true;}catch{return false;}},del(k){try{real&&real.removeItem(k);}catch{}}};
@@ -23,6 +24,11 @@ var BUILD='cb98ac44';
  const files=['profiles','data','household','management','scout','sim','benchmark','school','world','forge','spy','kampfsound','audio','sprechsound','sprech-game','weapon-art','arena','techniques','manager','school-ui','world-ui','mobile','medicus-art','ludus','intro','forge-ui','forge-party','forge-intro','scene-nav','barracks','trader','wanderer-talk','wanderers','village-life','practice-yard','smith-wrath','archer-plot','hall','lion','hahn-engine','hahn-shots','hahn-arena','arena-beasts','arena-core','injury-shots','medic','battle-hud','face-shots','doktor','moderator','arena-calibration','arena-challenges','arena-art','arena-game','arena-ui','box-engine','box-art','box-sfx','box-game','lesson','quality-odds','buy-odds-data','buy-odds','hahn-closeup','hs-career','hs-art','hs-sfx','huehnerschule','day-gold','equip-plus','wanderer-scene','beast-crypt','equip-quick','arena-report','outside-core','outside-art','outside-leader','outside-leader-ui','arena-leader-ui','relics','relic-masks','outside-notorious','bosses-1','bosses-2','bosses-3','bosses-4','bosses-5','outside-show','outside-wagon','outside','smith-quotes','scene-loader','bogner','hund','hund-sound','hund-shots','hund-zwinger','hundefang-texte','hundefang','hunderennen','netz-art','talent-tags',...(window.WELT_VOR||[]),window.WELT_KARTE||'welt-karte',...(window.WELT_EXTRA||[])];// WELT_EXTRA: weitere Module einer Testseite (z. B. tageslauf-editor.html)
  const fail=msg=>{const el=document.getElementById('weltBoot');if(el)el.innerHTML='<b>Testversion konnte nicht starten</b><br>'+String(msg).replace(/</g,'&lt;')+'<br><button onclick="location.reload()">Erneut laden</button>';};
  let done=0;const bar=()=>{const i=document.querySelector('#weltBoot i');if(i)i.style.width=Math.round(done/files.length*100)+'%';};
- for(const name of files){const s=document.createElement('script');s.async=false;s.src=name+'.js?v='+BUILD;s.onload=()=>{done++;bar();};s.onerror=()=>fail(name+' konnte nicht geladen werden.');document.body.appendChild(s);}
+ const ctx={cache,mem};
+ const laden=()=>{for(const name of files){const s=document.createElement('script');s.async=false;s.src=name+'.js?v='+BUILD;s.onload=()=>{done++;bar();if(done===files.length&&window.AT2)window.AT2Spielstand?.anschliessen(ctx);};s.onerror=()=>fail(name+' konnte nicht geladen werden.');document.body.appendChild(s);}};
+ // Arena Theory 2.0 (A2): zuerst das Startbild mit den 3 Spielständen (welt-spielstand.js), es füllt Zwischenspeicher und
+ // abgeschirmten localStorage mit dem gewählten Stand; erst danach wird das Spiel geladen. Andere Kartenseiten speichern nichts.
+ if(window.AT2){const s=document.createElement('script');s.src='welt-spielstand.js?v='+BUILD;s.onload=()=>window.AT2Spielstand.start(ctx).then(laden);s.onerror=()=>fail('welt-spielstand konnte nicht geladen werden.');document.body.appendChild(s);}
+ else laden();
  window.addEventListener('error',e=>{if(!window.WELT_READY)fail(e.message);});
 })();
