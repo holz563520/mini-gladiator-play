@@ -30,7 +30,7 @@ function linie(n,r,amp){  // 1D-Rauschen über eine Kante: große Wellen, kleine
  for(let i=0;i<n;i++)a[i]+=(r()-.5)*1.1;
  for(let k=0,m=Math.floor(n/22+r()*2);k<m;k++){const c=Math.floor(r()*n),w=1+Math.floor(r()*3),t=2+r()*3.5;for(let i=-w;i<=w;i++)if(c+i>=0&&c+i<n)a[c+i]+=t*(1-Math.abs(i)/(w+1));}
  return a;}
-function papier(w,h,vari,occ){
+function papier(w,h,vari,occ,mitFlecken){
  const W=Math.max(8,Math.ceil(w/PX)),H=Math.max(6,Math.ceil(h/PX)),key=W+'x'+H+':'+vari;
  if(!occ&&cache.has(key))return cache.get(key);
  const r=rnd(vari*7919+W*31+H*17+11),c=document.createElement('canvas');c.width=W;c.height=H;
@@ -60,8 +60,10 @@ function papier(w,h,vari,occ){
   for(let k=0;k<fl.length;k++){const f=fl[k],qx=(x-f.x)/f.rx,qy=(y-f.y)/f.ry;if(qx>1||qx<-1||qy>1||qy<-1)continue;const q=Math.sqrt(qx*qx+qy*qy);if(q<1&&th<(1-q)*.26){R*=.9;G*=.86;B*=.8;}}
   if(e<1.3){R=20+nz*10;G=8;B=3;}else if(e<bb*.55){R=58+nz*22;G=24;B=7;}else if(e<bb&&th<.6){R=R*.5+42;G=G*.42+14;B*=.3;}else if(e<bb+2.2&&th<.3){R*=.84;G*=.74;B*=.6;}
   d[i]=R;d[i+1]=G;d[i+2]=B;d[i+3]=255;}
- g.putImageData(im,0,0);const url='url('+c.toDataURL()+')';
- if(!occ){if(cache.size>60)cache.delete(cache.keys().next().value);cache.set(key,url);}
+ g.putImageData(im,0,0);
+ if(mitFlecken){g.globalCompositeOperation='source-atop';g.drawImage(mitFlecken,0,0);g.globalCompositeOperation='source-over';}  // Flecken nur aufs Papier, nicht in abgerissene Stellen
+ const url='url('+c.toDataURL()+')';
+ if(!occ&&!mitFlecken){if(cache.size>60)cache.delete(cache.keys().next().value);cache.set(key,url);}
  return url;}
 
 function samen(el){let s=0;const t=(el.id||el.className||'x')+'';for(let i=0;i<t.length;i++)s=(s*31+t.charCodeAt(i))|0;return Math.abs(s)+1;}
@@ -98,7 +100,7 @@ function fleckenBild(L,W,H){
 }
   else{for(let y=Math.floor(cy-r);y<=cy+r;y++)for(let x=Math.floor(cx-r);x<=cx+r;x++){const n=NZ[(x*31+y*197)&4095],q=Math.sqrt((x-cx)**2+(y-cy)**2)/r+ (n-.5)*.35;
    if(q<.42)px(x,y,24+n*14,10,3);else if(q<.62)px(x,y,62+n*20,26,8);else if(q<.82&&BAYER[(y&3)*4+(x&3)]<9)px(x,y,120+n*20,70,28);else if(q<1&&BAYER[(y&3)*4+(x&3)]<4)px(x,y,150,104,58);}}}
- g.putImageData(im,0,0);return 'url('+c.toDataURL()+')';}
+ g.putImageData(im,0,0);return c;}
 function R0(t){return t[2]<.8;}
 
 const offen=new Set();let geplant=0;
@@ -114,8 +116,7 @@ function malen(el){
   if(!L||el._wsNeu||anders||!L.length){L=neueFlecken(occ,W,H);el._wsGr=[W,H];}else L=L.filter(f=>noch(f,occ,W,H));}
  const key=W+'x'+H+':'+L.length+':'+el._wsVar;el._wsNeu=false;
  if(el._wsKey===key&&el._wsFlecken&&el._wsFlecken.length===L.length&&L.every((f,i)=>f===el._wsFlecken[i])){return;}
- el._wsFlecken=L;el._wsKey=key;const grund=papier(b.width,b.height,el._wsVar,occ);
- el.style.backgroundImage=L.length?fleckenBild(L,W,H)+','+grund:grund;el.classList.add('ws-fertig');}
+ el._wsFlecken=L;el._wsKey=key;el.style.backgroundImage=papier(b.width,b.height,el._wsVar,occ,L.length?fleckenBild(L,W,H):null);el.classList.add('ws-fertig');}
 function planen(el,neu){if(neu)el._wsNeu=true;offen.add(el);if(!geplant)geplant=requestAnimationFrame(()=>{geplant=0;const a=[...offen];offen.clear();for(const e of a)malen(e);});}
 const ro=new ResizeObserver(es=>{for(const e of es){if(!e.target.isConnected){ro.unobserve(e.target);continue;}planen(e.target,false);}});
 

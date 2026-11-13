@@ -21,7 +21,7 @@ const roleOf=g=>g.role||'Soldat';
 // ---------- Nahaufnahme ----------
 const nah=document.createElement('div');nah.id='wNah';nah.hidden=true;
 nah.innerHTML=`<canvas width="220" height="170" aria-label="Nahaufnahme"></canvas><div class="nah-t"><header><b></b><small></small><button class="w-x" data-x aria-label="Schließen">✕</button></header><p class="nah-say"></p>
-<div class="nah-btn"><button class="w-btn" data-more>💬 Und sonst?</button><button class="w-btn nah-zange" data-zange><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1v4M8 5L4 15M8 5l4 10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg> Hochnehmen</button><button class="w-btn" data-profil>Profil</button></div></div>`;
+<div class="nah-btn"><button class="w-btn" data-more>💬 Und sonst?</button><button class="w-btn nah-zange" data-zange>${window.AT2_IKON?'<i class="ws-i" data-i="zange"></i>':'<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1v4M8 5L4 15M8 5l4 10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>'} Hochnehmen</button><button class="w-btn" data-profil>Profil</button></div></div>`;
 document.getElementById('weltUi').appendChild(nah);
 const fc=nah.querySelector('canvas'),fg=fc.getContext('2d');let sel=null,raf=0,lastPaint=0;
 function ctxOf(g){return {stunde:M.weltTag?.stunde??12,partName:M.partName,andere:S.roster.filter(x=>!x.dead).slice(0,40).map(x=>x.name)};}

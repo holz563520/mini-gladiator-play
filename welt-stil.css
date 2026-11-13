@@ -5,6 +5,10 @@
       Knöpfen oder Bildern, und rollt das Fenster beim Öffnen kurz auf. Nichts selbst zeichnen. Ändert sich der Inhalt stark: AT2_STIL.neuMalen(el).
    2. Schrift: nie eigene font-family setzen. Alles in „AT2 Text“ (VT323, alte Pixelschrift). Überschriften (h1–h3, .ws-titel) gleiche Schrift,
       nur größer und blutrot. Keine Frakturschrift (schlecht lesbar). Auf Canvas: AT2_STIL.font(px) statt eigener Schriftnamen.
+   2b. Symbole: keine Emojis und keine fremden Bilder. Jedes Symbol ist ein Pixelbild aus welt-ikonen.js (12×12, doppelt groß):
+      antik und sinnbildlich (Gladius, Scutum, Amphore, Wachstafel, Münze …), manchmal blutig, mit schwarzem Humor (Ratte unterm Bett,
+      Totenkopf auf der Münze), aber immer auf einen Blick erkennbar. Neues Symbol: in welt-ikonen.js → BILDER zeichnen, Emoji in EMOJI
+      eintragen oder <i class="ws-i" data-i="name"></i> setzen. Gleiches gilt für Uhren und Anzeigen (siehe AT2_IKON.uhr).
    3. Farben nur aus den Variablen unten (--ws-…). Knöpfe: Klasse `w-btn` (normal) bzw. zusätzlich `ws-haupt` (Hauptaktion, blutrot).
    4. Menüs nie im Weg: klein, am Rand (unten oder oben), Karte bleibt sichtbar, kein dunkler Vollbild-Schleier, schließen per ✕ und Esc.
    5. Lesbar: Text mind. 15 px, dunkle Tinte auf hellem Papier, Blut und Flecken nie unter Text.
@@ -57,6 +61,10 @@ body.at2-stil .ws-hoch>.ws-rolle{animation-name:wsRolleHoch}
 @keyframes wsRolle{from{top:0}to{top:calc(100% - 15px);opacity:0}}
 @keyframes wsRolleHoch{from{top:calc(100% - 15px)}to{top:0;opacity:0}}
 @media (prefers-reduced-motion:reduce){body.at2-stil .ws-auf{animation:none}body.at2-stil .ws-rolle{display:none}}
+
+/* Pixelsymbole (welt-ikonen.js): ersetzen Emojis, 12×12 Pixel doppelt groß */
+body.at2-stil .ws-i{display:inline-block;width:24px;height:24px;vertical-align:-6px;background:center/100% 100% no-repeat;image-rendering:pixelated;flex:none;font-style:normal}
+body.at2-stil .w-chip .ws-i,body.at2-stil small .ws-i{width:20px;height:20px;vertical-align:-5px}
 
 /* ---------- Startbild ---------- */
 body.at2-stil #at2Start{background:radial-gradient(ellipse at 50% 30%,#2e1a0e,#0c0806 72%)}

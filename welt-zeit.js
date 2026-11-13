@@ -80,6 +80,8 @@ function wirk(){W.tempo=st.pause?0:st.tempo;for(const b of tp.querySelectorAll('
 const dc=uhr.querySelector('canvas'),dg=dc.getContext('2d');let dialKey=-1;
 function paintDial(force){const h=hour(),key=Math.floor(h*12)+S.day*1000+(st.block?.5:0);if(!force&&key===dialKey)return;dialKey=key;
  const g=dg,R=72,c=72;g.clearRect(0,0,144,144);
+ if(window.AT2_IKON)AT2_IKON.uhr(g,h,h>=6&&h<18,st.block);  // Pixeluhr im 2.0-Stil (welt-ikonen.js)
+ else{
  // Steinring
  g.fillStyle='#2a2019';g.beginPath();g.arc(c,c,R,0,7);g.fill();g.fillStyle='#9b8f7e';g.beginPath();g.arc(c,c,R-3,0,7);g.fill();g.fillStyle='#b8ad9a';g.beginPath();g.arc(c,c-2,R-6,0,7);g.fill();
  // Himmel oben (Tag), unten (Nacht)
@@ -93,7 +95,7 @@ function paintDial(force){const h=hour(),key=Math.floor(h*12)+S.day*1000+(st.blo
  g.strokeStyle='#2a2019';g.lineWidth=7;g.lineCap='round';g.beginPath();g.moveTo(c,c);g.lineTo(tx,ty);g.stroke();g.strokeStyle='#d7b24a';g.lineWidth=3.5;g.beginPath();g.moveTo(c,c);g.lineTo(tx,ty);g.stroke();
  if(day){g.fillStyle='#2a2019';g.beginPath();g.arc(tx,ty,12,0,7);g.fill();g.fillStyle='#ffd65a';g.beginPath();g.arc(tx,ty,10,0,7);g.fill();g.fillStyle='#fff2b0';g.beginPath();g.arc(tx-2,ty-2,5,0,7);g.fill();}
  else{g.fillStyle='#0c1024';g.beginPath();g.arc(tx,ty,12,0,7);g.fill();g.fillStyle='#e9e4cf';g.beginPath();g.arc(tx,ty,10,0,7);g.fill();g.fillStyle='#161d3a';g.beginPath();g.arc(tx+5,ty-3,8,0,7);g.fill();}
- g.fillStyle='#2a2019';g.beginPath();g.arc(c,c,7,0,7);g.fill();g.fillStyle='#d7b24a';g.beginPath();g.arc(c,c,4,0,7);g.fill();
+ g.fillStyle='#2a2019';g.beginPath();g.arc(c,c,7,0,7);g.fill();g.fillStyle='#d7b24a';g.beginPath();g.arc(c,c,4,0,7);g.fill();}
  $('wTag').textContent='TAG '+S.day;$('wPhase').textContent=st.block?'⏳ '+st.block:phase(h)+' · '+zeitText(h)+(st.pause?' · Pause':st.eile?' · die Zeit eilt':'');uhr.classList.toggle('block',!!st.block);}
 
 // ---------- Tageswechsel: Sonnenaufgang über der Karte, ohne das Spiel anzuhalten ----------
