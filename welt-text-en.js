@@ -46,4 +46,6 @@ AT2Sprache.dazu('en',{
  'profil.titel':'Profile','profil.zeile':'{alter} years · {herkunft} · {bau}',
  'profil.neu':'This profile is being rebuilt. For now, the key fact: he is still breathing. Enjoy it while it lasts.',
  'profil.karte':'◀ Back to map','profil.zu':'Close',
+ 'br.neigung':'Slope','br.material':'Material','br.anschluss':'Joins the bridge · 0 G · just build straight through',
+ 'bau.gruppe.ludus':'Ludus','bau.gruppe.arena':'Arena','bau.gruppe.wege':'Paths','bau.gruppe.gelaende':'Terrain','bau.gruppe.werkzeug':'Tools',
 });

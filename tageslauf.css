@@ -52,7 +52,32 @@ body.welt-page [data-action="rest"],body.welt-page [data-action="rest3"]{display
 #wBau{position:absolute;left:8px;right:8px;top:104px;margin:0 auto;width:fit-content;max-width:calc(100% - 16px);display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 10px;background:rgba(18,12,9,.94);border:2px solid #d7b24a;font-size:12px;box-shadow:0 2px 0 #000}
 #wBau[hidden]{display:none}#wBau button{white-space:nowrap}
 @media (max-width:700px){#wBau{top:166px}}
-.bau-wz{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}.bau-wz small{opacity:.75;margin-left:3px}.bau-wz .w-btn.on{background:#d7b24a;color:#120c09}#wBau span{text-align:center}
+.bau-wz{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+/* 2.0 (T2-Rückmeldung Thomas 13.11.2026): großes Baumenü unten über die ganze Breite, Gruppen, große Knöpfe; Brückenwerkzeug übersichtlich */
+#wBau.gross{top:auto;bottom:8px;width:auto;max-width:1240px;max-height:46vh;overflow:auto;padding:8px 12px 10px;gap:7px;font-size:15px}
+#wBau.gross .w-btn{min-height:42px;padding:4px 10px;font-size:14px;line-height:1.15}
+#wBau.gross .w-btn i{font-style:normal;font-size:16px}
+#wBau.gross .bau-wz{gap:8px}
+#wBau.gross .bau-gruppen{align-items:stretch;gap:6px}
+#wBau.gross .bau-gruppe{display:flex;flex-direction:column;gap:3px;padding:2px 5px 5px;border:1px solid rgba(215,178,74,.35);background:rgba(255,240,190,.03)}
+#wBau.gross .bau-gruppe>b{font-size:10px;letter-spacing:.12em;color:#d7b24a;text-align:center;text-transform:uppercase}
+#wBau.gross .bau-gruppe>div{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+#wBau.gross .bau-fertig{align-self:center;min-width:96px}
+#wBau.gross>span{font-size:15px;min-height:22px;color:#f4e6c0;max-width:900px}
+#wBau.gross .bau-bruecke{align-items:stretch;gap:12px}
+#wBau.gross .br-teil{display:flex;flex-direction:column;align-items:center;gap:3px}
+#wBau.gross .br-teil>b{font-size:10px;letter-spacing:.12em;color:#d7b24a;text-transform:uppercase}
+#wBau.gross .br-teil>div{display:flex;gap:6px}
+#wBau.gross .br-pfeile{display:grid!important;grid-template-columns:repeat(4,46px);gap:5px}
+#wBau.gross .br-pfeile .w-btn,#wBau.gross .br-neig .w-btn{font-size:20px;min-width:46px}
+#wBau.gross .br-bauen{font-size:19px!important;min-width:150px;min-height:48px!important;background:#3f7d3a;color:#fff;border-color:#9fe08f}
+#wBau.gross .br-bauen:disabled{background:#4a3a2a;color:#a08a6a;border-color:#6b5a3a;opacity:.8}
+@media (max-width:700px){#wBau.gross{left:4px;right:4px;bottom:4px;padding:8px;font-size:14px;max-height:58vh}#wBau.gross .w-btn{min-height:44px;font-size:14px;padding:5px 9px}#wBau.gross .bau-gruppe{padding:4px 5px 6px}
+ /* Handy: Werkzeuge als eine Leiste zum Wischen, damit Brückenfeld, Bauen-Knopf und Hinweis immer sichtbar bleiben */
+ #wBau.gross .bau-gruppen{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;width:100%;padding-bottom:3px;-webkit-overflow-scrolling:touch}
+ #wBau.gross .bau-gruppe{flex:0 0 auto;border:none;background:none;padding:0}#wBau.gross .bau-gruppe>b{display:none}#wBau.gross .bau-gruppe>div{flex-wrap:nowrap}
+ #wBau.gross .bau-fertig{flex:0 0 auto}#wBau.gross .bau-bruecke{gap:8px}#wBau.gross .br-pfeile{grid-template-columns:repeat(4,42px)}#wBau.gross .br-bauen{min-width:120px}}
+.bau-wz small{opacity:.75;margin-left:3px}.bau-wz .w-btn.on{background:#d7b24a;color:#120c09}#wBau span{text-align:center}
 .ed-reg{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;margin:4px 0}.ed-reg b{color:#f4d37a}.ed-reg input{grid-column:1/3;width:100%;accent-color:#d7b24a;height:22px}
 /* Tempo-Knöpfe an der Sonnenuhr (welt-zeit.js, Arena Theory 2.0 Schritt A2) */
 .w-tempo{display:flex;gap:3px;margin-left:2px}.w-tempo button{min-width:34px;min-height:30px;padding:2px 6px;font:inherit;font-size:13px;cursor:pointer;color:#eadfc8;background:#2a1c12;border:2px solid #5e4229;touch-action:manipulation}

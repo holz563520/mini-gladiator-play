@@ -300,7 +300,9 @@ for(let gr=0;gr<2;gr++)for(let t=0;t<PAL.length;t++)for(let v=0;v<VAR;v++)sprite
 // So entstehen Geraden, Kurven, Abzweige und Kreuzungen von selbst. Ein Bild je Straßenart und Anschlussmuster (16), bei Bedarf gemalt,
 // durchsichtig außerhalb des Belags; darunter liegt der normale Boden.
 const STR_W=.3,strCache=new Map(),istStr=t=>t>=T.STR1&&t<=T.STR5,schliesstAn=t=>istStr(t)||t===T.WEG||t===T.BRUECKE;
-function strMaske(tx,ty){let m=0;if(tx+1<N&&schliesstAn(feld[ix(tx+1,ty)]))m|=1;if(tx>0&&schliesstAn(feld[ix(tx-1,ty)]))m|=2;if(ty+1<N&&schliesstAn(feld[ix(tx,ty+1)]))m|=4;if(ty>0&&schliesstAn(feld[ix(tx,ty-1)]))m|=8;return m;}
+// T2: Brücken auf Bodenhöhe (welt-bruecke.js, W.brueckeAnschluss) öffnen den Randstein wie ein Weg
+const anB=(k,n)=>!!window.WeltKarte?.brueckeAnschluss?.(k,n),an=(k,n)=>schliesstAn(feld[n])||anB(k,n);
+function strMaske(tx,ty){let m=0;const k=ix(tx,ty);if(tx+1<N&&an(k,k+1))m|=1;if(tx>0&&an(k,k-1))m|=2;if(ty+1<N&&an(k,k+N))m|=4;if(ty>0&&an(k,k-N))m|=8;return m;}
 function strBild(t,m){const key=t*16+m;let c=strCache.get(key);if(c)return c;const [cv,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
  const innen=(ux,uy,w)=>{const dx=ux-.5,dy=uy-.5,ax=Math.abs(dx),ay=Math.abs(dy);return (ax<=w&&ay<=w)||(ay<=w&&((m&1)&&dx>0||(m&2)&&dx<0))||(ax<=w&&((m&4)&&dy>0||(m&8)&&dy<0));};
  for(let y=0;y<=TH;y++)for(let x=0;x<TW;x++){const a=(x-31.5)/32,b=(y-16)/16;if(Math.abs(a)+Math.abs(b)>1.001)continue;const ux=(a+b+1)/2,uy=(b-a+1)/2,n=h2(x>>1,y,t*17);let col=null;
