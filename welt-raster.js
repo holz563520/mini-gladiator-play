@@ -31,7 +31,7 @@ const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Fel
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
 const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
-const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37,ERDE:38,KIES:39,SCHLAMM:40,GEROELL:41,TROCKEN:42,NADEL:43,VERWALTUNG:44},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz','Erde','Kies','Schlamm','Geröll','Trockengras','Nadelstreu','Verwaltung'];
+const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37,ERDE:38,KIES:39,SCHLAMM:40,GEROELL:41,TROCKEN:42,NADEL:43,VERWALTUNG:44,ARENA_BAU:45},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz','Erde','Kies','Schlamm','Geröll','Trockengras','Nadelstreu','Verwaltung','Arena'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
 // Arena Theory 2.0, Schritt A3 (Thomas 13.11.2026): Karte neu angeordnet. An der großen Straße liegen nebeneinander das
@@ -46,7 +46,10 @@ const ANORD=GROSS?{dorf:[-100,-52,92,110],platz:[-8,40,14,18],park:[6,-52,100,11
  parktor:[14,3],dorftor:[-26,3],durchgang:[50,3],kaempfertor:[52,2],// Kämpfertor: vom Platz in den Park (Kämpfer, Karren), nicht für Besucher
 // Tor: erstes Feld und Breite (an der Unterkante bzw. bei durchgang an der Ostkante des Dorfes)
  halle:[7,40],arena:{boden:[24,30,8,6],trib:[22,28,12,10],durch:[[27,36],[28,36],[27,37],[28,37]],ein:[27.5,38.5]},
- pfade:[[15,38,1,20],[15,38,46,1],[9,45,1,6],[9,50,7,1]],// Kieswege im Park: Tor → Arena (A3b: weiter bis unter die Fläche der großen Arena), Halle → Hauptweg
+ pfade:[[15,38,1,20],[15,38,46,1],[9,45,1,6],[9,50,7,1],// Kieswege im Park: Tor → Arena (A3b: weiter bis unter die Fläche der großen Arena), Halle → Hauptweg
+  [61,38,8,1],[61,30,1,8],[68,17,1,21]],// B0: zur Warteschlange und vom Ausgang zurück zum Hauptweg
+ schlange:[[61,20,1,2],[61,22,3,8]],// B0: Kiesfläche der Warteschlange (Zickzack mit Seilen vor dem Eingang, welt-arena.js)
+ sandgrube:{c:[61.5,11.5],r:8.4},// B0 (Thomas 13.11.2026): feste Arena, Stufe 1 „Sandgrube“, Mitte und Halbmesser in Feldern (welt-arena.js)
  orte:{lanista:[-16,48],orontes:[-24,50],huehner:[-33,50]}}:null;
 const inR=(lx,ly,r,m=0)=>lx>=r[0]-m&&lx<r[0]+r[2]+m&&ly>=r[1]-m&&ly<r[1]+r[3]+m,imAnord=(lx,ly,m=0)=>!!ANORD&&inMap(lx+O,ly+O)&&nah[(ly+O)*N+lx+O]<=m;// A3b: nach den geschwungenen Rändern (ber, nah unten)
 const LUD=ANORD?{tx:ANORD.kern[0]+O,ty:ANORD.kern[1]+O,w:ANORD.kern[2],h:ANORD.kern[3],px:50}:{tx:39+O,ty:40+O,w:18,h:16,px:50};
@@ -195,6 +198,9 @@ if(ANORD){const A=ANORD,setz=(arr,x,y,v)=>{if(inMap(x,y))arr[ix(x,y)]=v;};
  for(let y=A.platz[1];y<A.platz[1]+A.platz[3];y++)for(let x=A.platz[0];x<A.platz[0]+A.platz[2];x++){const k=ix(x+O,y+O);if(feld[k]===T.LUDUS)fest[k]=1;}
  {const [x0,y0,w,h]=A.verwaltung;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)fest[ix(x+O,y+O)]=1;}// A4: Verwaltung fest
  {const [x0,y0,w,h]=A.arenaPlatz;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++){const k=ix(x+O,y+O);fest[k]=1;arenaPlatz[k]=1;}}// A3b: Fläche der großen Arena
+ // B0: Felder unter der Sandgrube (rund, Mitte der Feldmitte näher als r): gesperrt für alle, gezeichnet von welt-arena.js
+ if(A.schlange)for(const [x0,y0,w,h] of A.schlange)for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)feld[ix(x+O,y+O)]=T.KIES;
+ if(A.sandgrube){const [cx,cy]=A.sandgrube.c,r=A.sandgrube.r;for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++)if(Math.hypot(x+.5-cx,y+.5-cy)<r&&inMap(x+O,y+O)){const k=ix(x+O,y+O);feld[k]=T.ARENA_BAU;fest[k]=1;}}
  // A3b: Grenzen folgen den geschwungenen Rändern. Jede Kante zwischen zwei Feldern verschiedener Bereiche bekommt Zaun (Park)
  // oder Palisade (Dorf, Rückseite des Platzes); offen bleiben die Tore und der Platz zur Straße hin.
  const imTor=(t,i)=>i>=t[0]&&i<t[0]+t[1],B=BER;
@@ -295,7 +301,8 @@ const PAL=[
  [[116,110,102],[130,124,114],[102,96,88],[78,74,68]],// Geröll (4. Farbe = Schatten)
  [[146,140,84],[158,150,92],[134,128,76],[118,108,62]],// Trockengras (4. Farbe = Halme)
  [[74,60,42],[84,68,46],[64,52,36],[104,80,46]],// Nadelstreu (4. Farbe = Nadeln)
- [[230,224,210],[216,208,192],[190,182,166],[118,30,28]]// A4 Verwaltung: Marmorplatten mit feinen Fugen (4. Farbe = alter Blutfleck)
+ [[230,224,210],[216,208,192],[190,182,166],[118,30,28]],// A4 Verwaltung: Marmorplatten mit feinen Fugen (4. Farbe = alter Blutfleck)
+ [[86,114,60],[94,122,66],[78,104,55],[101,128,70]]// B0 Arena: wie Wiese (sieht man nur an den Rändern der runden Fassade; welt-arena.js zeichnet darüber)
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
@@ -519,7 +526,7 @@ function drawSit(ctx,g,x,y,dir){if(detailV){const sp=spriteOf(g),h=FY-22;if(sp){
  const r=simpleOf(g);if(r)ctx.drawImage(r.c,(dir*(WALK+1)+WALK)*PW,r.y,PW,SITZ_H,x-PAX,y-SITZ_H+2,PW,SITZ_H);else drawMini(ctx,g,x,y);}
 const gehBild=dist=>((dist/SCHRITT*WALK)|0)%WALK;
 function drawMini(ctx,g,x,y){const a=g.appearance||{};ctx.fillStyle=a.cloth||'#55938e';ctx.fillRect(x-2,y-7,4,6);ctx.fillStyle=a.skin||'#d9ac82';ctx.fillRect(x-1,y-10,3,3);}
-const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS&&t!==T.UNTERKUNFT&&t!==T.UNT_S&&t!==T.UNT_K&&t!==T.SCHM_S&&t!==T.SCHMIEDE&&t!==T.SCHM_K&&t!==T.BST_S&&t!==T.BEAST&&t!==T.BST_K&&t!==T.KAS_S&&t!==T.KASERNE&&t!==T.KAS_K&&t!==T.MEDICUS&&t!==T.KRANK&&t!==T.MARKT&&t!==T.HALLE&&t!==T.VERWALTUNG;};
+const frei=(tx,ty)=>{tx=Math.floor(tx);ty=Math.floor(ty);if(!inMap(tx,ty))return false;const t=feld[ix(tx,ty)];return t!==T.BAU&&t!==T.FLUSS&&t!==T.UNTERKUNFT&&t!==T.UNT_S&&t!==T.UNT_K&&t!==T.SCHM_S&&t!==T.SCHMIEDE&&t!==T.SCHM_K&&t!==T.BST_S&&t!==T.BEAST&&t!==T.BST_K&&t!==T.KAS_S&&t!==T.KASERNE&&t!==T.KAS_K&&t!==T.MEDICUS&&t!==T.KRANK&&t!==T.MARKT&&t!==T.HALLE&&t!==T.VERWALTUNG&&t!==T.ARENA_BAU;};
 const imLudus=(tx,ty)=>tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h;
 function makeRoster(n){const keep=S.roster.filter(g=>!g.dead);let list=keep.slice(0,n);const rng=S.rng;while(list.length<n){const g=M.makeGladiator(0);g.fatigue=0;list.push(g);}S.rng=rng;
  S.roster=list;try{M.army?.autoClasses?.(list);}catch(e){}for(const w of workers){figs.delete(w.g.id);pof.delete(w.g.id);}if(pNext>PROW*6){pof.clear();pNext=0;}

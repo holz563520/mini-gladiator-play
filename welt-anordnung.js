@@ -47,7 +47,8 @@ function bauplatz([vx,vy,vw,vh],titel,zeile){const ecken=[[0,0],[vw,0],[vw,vh],[
  dinge.push({art:'bau',x:m.x,y:m.y+.5,x0:m.x-60,x1:m.x+60,y0:m.y-50,
   draw(g){const s=schild(t(titel),t(zeile),'bau');R(g,m.x-1,m.y-14,2,14,'#5e4229');g.drawImage(s.c,Math.round(m.x-s.w/2),Math.round(m.y-14-s.h));}});}
 // A4: Auf dem Bauplatz der Verwaltung steht jetzt das Haus (welt-raster.js BAU, welt-verwaltung.js).
-if(A.arenaPlatz)bauplatz(A.arenaPlatz,'karte.arenaPlatz','karte.arenaPlatzZeile');
+// B0: Auf dem Bauplatz der großen Arena steht jetzt die Sandgrube (welt-arena.js); der Rest der Fläche bleibt für die Ausbaustufen frei.
+if(A.arenaPlatz&&!A.sandgrube)bauplatz(A.arenaPlatz,'karte.arenaPlatz','karte.arenaPlatzZeile');
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);for(const d of dinge)if(d.x1>view.x0&&d.x0<view.x1&&d.y>view.y0-10&&d.y0<view.y1)items.push(d);};
 // ---------- Test-Gold (vorläufig, statt der Regler; vor Veröffentlichung entfernen, Fahrplan O1) ----------
 const bar=document.querySelector('#weltUi .w-bar');

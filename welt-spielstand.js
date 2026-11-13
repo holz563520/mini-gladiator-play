@@ -81,7 +81,9 @@ function anschliessen(ctx){const M=window.MG,W=window.WeltKarte,H=window.WeltHoo
  const S=M.s,N=W.N,n=geladen?.n||0,geaendert=new Set();
  // Karte: gespeicherte Unterschiede einsetzen, dann neu zeichnen und Bauten (Arenen, Felder, Häuser) neu berechnen
  const r=geladen?.r;
- if(r){const w=r.welt,ks=w.ks||[];for(let i=0;i<ks.length;i++){const k=ks[i];if(k<0||k>=N*N)continue;W.feld[k]=w.feld[i];W.grund[k]=w.grund[i];W.obj[k]=w.obj[i];if(W.klein&&w.klein)W.klein[k]=w.klein[i];W.bauAuf[k]=w.bauAuf[i];for(let c=0;c<4;c++){W.hc[k*4+c]=w.hc[i*4+c];W.merkeHoehe(w.hc[i*4+c]);}geaendert.add(k);}
+ // B0 (Thomas 13.11.2026): selbst gebaute Kampfflächen und Tribünen alter Stände bleiben weg (feste Sandgrube, welt-arena.js), dort liegt wieder die Karte vom Start
+ const altArena=f=>!!W.ANORD?.sandgrube&&(f===W.T.ARENA||f===W.T.TRIB);
+ if(r){const w=r.welt,ks=w.ks||[];for(let i=0;i<ks.length;i++){const k=ks[i];if(k<0||k>=N*N||altArena(w.feld[i]))continue;W.feld[k]=w.feld[i];W.grund[k]=w.grund[i];W.obj[k]=w.obj[i];if(W.klein&&w.klein)W.klein[k]=w.klein[i];W.bauAuf[k]=w.bauAuf[i];for(let c=0;c<4;c++){W.hc[k*4+c]=w.hc[i*4+c];W.merkeHoehe(w.hc[i*4+c]);}geaendert.add(k);}
   // T1: Stände von vor den Parkhügeln behalten ihren flachen Park (sonst Klippen neben schon Gebautem)
   if(!w.gel&&W.huegel){const hat=new Set(ks);for(let k=0;k<N*N;k++)if(W.huegel[k]&&!hat.has(k)){W.hc.fill(0,k*4,k*4+4);geaendert.add(k);}}
   if(geaendert.size){W.rebake([...geaendert]);M.weltBau.neuRechnen?.();}

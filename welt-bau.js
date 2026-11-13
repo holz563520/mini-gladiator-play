@@ -128,7 +128,7 @@ document.getElementById('weltUi').appendChild(box);
 if(window.AT2){box.classList.add('gross');const zeile=box.querySelector('.bau-wz'),grp=document.createElement('div');grp.className='bau-gruppen';
  const BILD={platz:'🎯',arena:'⚔',trib:'🏟',unterkunft:'🛏',schmiede:'⚒',bestium:'🐺',kaserne:'🛡',krankenhaus:'✚',str1:'🛤',land:'⛰',weg:'💥'};
  for(const b of zeile.querySelectorAll('[data-wz]'))if(BILD[b.dataset.wz])b.insertAdjacentHTML('afterbegin','<i>'+BILD[b.dataset.wz]+'</i> ');
- for(const [id,wz] of [['ludus',['platz','unterkunft','schmiede','bestium','kaserne','krankenhaus']],['arena',['arena','trib']],['wege',['str1']],['gelaende',['land']],['werkzeug',['weg']]]){
+ for(const [id,wz] of [['ludus',['platz','unterkunft','schmiede','bestium','kaserne','krankenhaus']],...(W.ANORD?.sandgrube?[]:[['arena',['arena','trib']]]),['wege',['str1']],['gelaende',['land']],['werkzeug',['weg']]]){// B0: ohne Arena-Gruppe, die Arena ist fest
   const g=document.createElement('div');g.className='bau-gruppe';g.dataset.gruppe=id;g.innerHTML='<b>'+sp('bau.gruppe.'+id,null,id)+'</b><div></div>';
   for(const w of wz){const b=zeile.querySelector('[data-wz="'+w+'"]');if(b)g.lastChild.appendChild(b);}grp.appendChild(g);}
  const fertig=zeile.querySelector('[data-done]');fertig.classList.add('bau-fertig');grp.appendChild(fertig);zeile.replaceWith(grp);grp.classList.add('bau-wz');}
@@ -276,7 +276,8 @@ function bauen(wz,x0,y0,x1,y1,frei){const m=mode;mode=wz;drag={a:{tx:x0,ty:y0},b
 // 2.0 (A3): dieselbe kleine Arena steht im Arena-Park, der Durchgang zeigt zum Kiesweg vom Parktor (W.ANORD.arena).
 const O=W.O||0,AA=W.ANORD?.arena,R=(a,b,c,d)=>[a+O,b+O,a+c-1+O,b+d-1+O];
 const durch=(AA?AA.durch:[[48,36],[49,36],[48,37],[49,37]]).map(([x,y])=>W.ix(x+O,y+O));
-if(AA){bauen('arena',...R(...AA.boden),true);bauen('trib',...R(...AA.trib),true);}else{bauen('arena',45+O,30+O,52+O,35+O,true);bauen('trib',43+O,28+O,54+O,37+O,true);}for(const k of durch)W.feld[k]=ur[k];
+// B0 (Thomas 13.11.2026): In 2.0 steht statt der selbst gebauten Arena die feste Sandgrube (welt-arena.js); Kampffläche und Tribüne gibt es dort nicht mehr.
+if(AA){if(!W.ANORD.sandgrube){bauen('arena',...R(...AA.boden),true);bauen('trib',...R(...AA.trib),true);}}else{bauen('arena',45+O,30+O,52+O,35+O,true);bauen('trib',43+O,28+O,54+O,37+O,true);}for(const k of durch)W.feld[k]=ur[k];
 neu.clear();W.rebake(durch);rechne(true);
 M.weltBau={RODEN,neuRechnen(){rechne(true);},ebnenPlan,glatt:glattSchritt,PREIS,PRO,PLAETZE,STUFEN,WERKZEUG,SITZ,HOCH,setMode,get mode(){return mode;},felder:()=>felder,puppen:()=>[...puppen.values()],arenen:()=>arenen,tribs:()=>tribs,plan,stufeVon,beiAenderung(fn){horcher.push(fn);},
  bauen(a,b,c,d,e){return typeof a==='string'?bauen(a,b,c,d,e):bauen('platz',a,b,c,d);},

@@ -3,7 +3,7 @@
 // TAGESLAUF (welt-zeit.js) · Uhr, Tageszeiten, Licht, Sonnenuhr und automatischer Tageswechsel der großen Karte.
 // Nur auf tageslauf-editor.html geladen (über WELT_EXTRA in weltkarte-boot.js), nicht im Spiel. Wunsch Thomas 11.11.2026.
 //
-// · Ein Tag dauert 4 Minuten echte Zeit (LEN) und läuft von 6 Uhr bis 6 Uhr. Bei Sonnenaufgang wechselt der Tag von selbst.
+// · Ein Tag dauert 4 Minuten echte Zeit (LEN), in Arena Theory 2.0 12 Minuten (B0), und läuft von 6 Uhr bis 6 Uhr. Bei Sonnenaufgang wechselt der Tag von selbst.
 // · Es gibt nur einen Tageswechsel: Die Uhr ruft den Tageswechsel des Spiels auf (M.ui.click('rest') → M.advanceDay),
 //   genau einen Tag. Der Knopf „NÄCHSTER TAG“ ist hier gesperrt, Tage lassen sich nicht überspringen.
 // · Die Uhr steht im Kampf, bei offener Verwaltungsseite (die Karte zeichnet dann nicht) und solange eine Filmszene läuft.
@@ -30,7 +30,8 @@ window.WeltZeit=core;
 // ---------- Anschluss an die Karte ----------
 const M=window.MG,W=window.WeltKarte,H=window.WeltHook;if(!M||!W||!H)return;const S=M.s,$=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const st={f:1/24,len:LEN,tempo:1,pause:false,eile:false,licht:true,block:'',retry:0};
+// B0 (Thomas 13.11.2026): In Arena Theory 2.0 dauert ein Tag 12 Minuten (eine Spielstunde 30 s), damit Wege zur Arena in Spielstunden passen. Editor: 4 Minuten.
+const st={f:1/24,len:window.AT2?720:LEN,tempo:1,pause:false,eile:false,licht:true,block:'',retry:0};
 const hour=()=>hourOf(st.f);
 M.dawnQuiet=true;
 const STORY='.medic-night,.medic-film,.lesson-film,.lion-film,.smith-ceremony,.lesson-start,.medic-start,.lesson-end,.medic-end,.hs-present,.mg-dawn';
