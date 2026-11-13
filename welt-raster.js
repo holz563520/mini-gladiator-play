@@ -533,7 +533,7 @@ function wanderB(w,dt,G){if(!bgHorcht)bgHorchen(G);if(w.pobj?.kaputt&&!w.sucht){
    for(let k=0;k<6&&!ziel;k++){const tx=Math.floor(c.tx+(Math.random()-.5)*9),ty=Math.floor(c.ty+(Math.random()-.5)*9);if(!inMap(tx,ty)||!G.frei(G.GL,ix(tx,ty))||(home&&!imLudus(tx,ty)))continue;ziel={tx,ty};}
    if(!ziel){w.wait=1;w.walk=false;return;}w.sucht=true;const gen=w.gen=(w.gen||0)+1;
    G.weg(G.GL,{tx:c.tx,ty:c.ty,b:w.br},ziel,p=>{if(w.gen!==gen)return;w.sucht=false;if(!p){w.wait=1+Math.random()*2;return;}w.pobj=p;
-    w.pfad=p.pts.slice(1).map((q,i,a)=>i===a.length-1||q.b?q:{x:q.x+(Math.random()-.5)*.3,y:q.y+(Math.random()-.5)*.3,b:0});},{max:900});w.walk=false;return;}}
+    w.pfad=p.pts.slice(1).map((q,i,a)=>i===a.length-1||q.b||G.hindernis(ix(Math.floor(q.x),Math.floor(q.y)))?q:{x:q.x+(Math.random()-.5)*.2,y:q.y+(Math.random()-.5)*.2,b:0});},{max:900});w.walk=false;return;}}
  const dx=w.goal.x-w.x,dy=w.goal.y-w.y,d=Math.hypot(dx,dy),tp=G.tempoBei(G.GL,w.x,w.y,w.brA||w.br)||100,step=SPEED*dt*tp/100*(d&&!(w.brA||w.br)?hangF(w.x,w.y,dx/d,dy/d):1);w.walk=true;if(Math.abs(dx)>1)w.dir=dx<0?1:0;
  if(d<=step){w.x=w.goal.x;w.y=w.goal.y;w.goal=null;w.dist+=d;if(!w.pfad||!w.pfad.length){w.pfad=null;w.pobj=null;w.brA=w.br;w.wait=2+Math.random()*9;w.walk=false;}return;}w.x+=dx/d*step;w.y+=dy/d*step;w.dist+=step;}
 const ozW=(w,c)=>{const z=hz(c.tx,c.ty);return (w.brA||w.br)&&M.weltBegehbar?M.weltBegehbar.deckHz(c.tx,c.ty,z):z;};
@@ -543,6 +543,17 @@ function wander(w,dt){const G=GROSS&&M.weltBegehbar;if(G)return wanderB(w,dt,G);
   if(!w.goal){w.wait=1;return;}}
  const dx=w.goal.x-w.x,dy=w.goal.y-w.y,d=Math.hypot(dx,dy),step=SPEED*dt*(d?hangF(w.x,w.y,dx/d,dy/d):1);w.walk=true;if(Math.abs(dx)>1)w.dir=dx<0?1:0;
  if(d<=step){w.x=w.goal.x;w.y=w.goal.y;w.goal=null;w.wait=2+Math.random()*9;w.walk=false;return;}w.x+=dx/d*step;w.y+=dy/d*step;w.dist+=step;}
+// T4-Rückmeldung (Thomas 13.11.2026): Steht eine Figur hinter einem Baum, Felsen oder Busch, der fest im Bodenbild steckt (außerhalb der
+// ebenen Fläche oder herausgezoomt), wird das Objekt nach ihr noch einmal gezeichnet; davor stehende Figuren bleiben darüber. In der ebenen
+// Fläche sind die Objekte ohnehin eigene Bildteile (stehen) und werden mit den Figuren nach der Tiefe sortiert.
+// Leistung: je Figur nur die Felder davor (7 Reihen, 5 Spalten), jedes Objekt höchstens einmal je Bild.
+let verdeckt=0;const vorSet=new Set();
+function vorDran(items){verdeckt=0;if(!GROSS||!NB)return;vorSet.clear();const n=items.length,eb=cam.s>=NAH;
+ for(let i=0;i<n;i++){const it=items[i];let fx,fy;if(it.w&&it.ps){fx=it.ps.x;fy=it.ps.y;}else if(it.g&&it.dx!=null){fx=it.dx;fy=it.dy;}else continue;
+  const c=tileAt(fx,fy),ftx=Math.floor(c.tx),fty=Math.floor(c.ty),u=ftx-fty,v=ftx+fty;
+  for(let dv=0;dv<=7;dv++)for(let du=-2;du<=2;du++){const U=u+du,V=v+dv;if((U+V)&1)continue;const tx=(U+V)/2,ty=(V-U)/2;if(!inMap(tx,ty))continue;const k=ix(tx,ty),o=obj[k];
+   if(!o||(eb&&eben[k])||vorSet.has(k))continue;const b=NB.bild(o,ovar(tx,ty));if(b.flach)continue;const p=iso(tx+.5,ty+.5);if(p.y<=fy)continue;
+   if(fx<p.x-b.ax-8||fx>p.x-b.ax+b.img.width+8)continue;vorSet.add(k);verdeckt++;items.push({x:p.x,y:p.y,oz:objHz(tx,ty),img:b.img,ax:b.ax,ay:b.ay});}}}
 function pose0(w){return {x:w.x,y:w.y,dx:w.dir?-1:1,dy:0,state:w.walk?'schlendert durch den Ludus':'steht herum',work:false,top:!w.walk};}
 function pose(w){const ps=pose0(w);return H.pose?H.pose(w,ps,clock):ps;}
 function place(g,x,y){const w=workers.find(w=>w.g.id===g.id);if(!w)return;w.pfad=null;w.pobj=null;w.sucht=false;w.gen=(w.gen||0)+1;w.br=w.brA=0;if(GROSS){const q=bodenPunkt(x,y),p=iso(q.tx,q.ty);x=p.x;y=p.y;}w.x=x;w.y=y;w.goal=null;w.wait=2.5;w.walk=false;}
@@ -605,7 +616,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  shown=[];spriteBudget=Math.max(2,Math.round(12-perfAvg));pBudget=Math.max(3,Math.round(14-perfAvg));
  for(const w of workers){const ps=pose(w);if(ps.x==null||ps.x<view.x0-40||ps.x>view.x1+40||ps.y<view.y0-20||ps.y>view.y1+80)continue;let y=ps.y;const c=tileAt(ps.x,ps.y);
   for(const b of SKIZZE)if(!b.flach&&y<=b.key&&(c.tx>=b.tx+b.w||c.ty>=b.ty+b.h)&&c.tx>b.tx-2&&c.ty>b.ty-2)y=b.key+.01;if(H.vorne)y=H.vorne(c.tx,c.ty,y);items.push({y,w,ps,oz:ozW(w,c)});}
- items.sort((a,b)=>a.y-b.y);
+ vorDran(items);items.sort((a,b)=>a.y-b.y);
  for(const it of items){const z=it.oz||0;if(it.img){ctx.drawImage(it.img,it.x-it.ax,it.y-z-it.ay);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}
   if(it.draw){if(z){ctx.save();ctx.translate(0,-z);it.draw(ctx);ctx.restore();}else it.draw(ctx);continue;}// oz: angehoben (Höhe des Bodens)
   const {w,ps}=it,x=Math.round(ps.x),y=Math.round(ps.y-z);
@@ -633,7 +644,7 @@ window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfa
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
  ANORD,fest,arenaPlatz,zaunA,zaunB,TORE,imAnord,inR,ber,BER,bfrei,// A3b natürlich: Bereiche mit geschwungenen Rändern
 // A3: Dorf, Platz, Park (Lagen relativ zu O), feste Felder, Grenzen, Tore
- raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,hangF,huegel,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,klein:kz,biom,BODEN_NATUR,BODEN_NAME,kleinZahl:k=>kz[k],ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get tempo(){return tempo;},set tempo(v){tempo=Math.max(0,+v||0);},get perf(){return perfAvg;},
+ raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,hangF,huegel,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,klein:kz,biom,BODEN_NATUR,BODEN_NAME,kleinZahl:k=>kz[k],ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get tempo(){return tempo;},set tempo(v){tempo=Math.max(0,+v||0);},get perf(){return perfAvg;},get verdeckt(){return verdeckt;},
  // T3: Messung für Tests – Bodenstücke um (tx,ty) neu zeichnen, ms je Stück
  chunkZeit(tx,ty,n=4){const q=iso(tx,ty),cx=Math.floor(q.x/CH),cy=Math.floor(q.y/CH);let t=0,m=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){const key=(1000+cy+j)*1000+cx+i;chunks.delete(key);const a=performance.now();chunk(cx+i,cy+j,1);t+=performance.now()-a;m++;}return t/m;}};
 window.WELT_READY=true;

@@ -47,9 +47,12 @@ function brFrei(p){let d=99,g=-99;for(let c=0;c<4;c++){d=Math.min(d,deckE(p,c));
 const tuer=new Uint8Array(NN);
 let tuerL=[],haeuserAlt=null;
 function tuerenNeu(){const neu=[];for(const h of M.weltGebaeude?.haeuser?.()||[])if(h.door)neu.push(h.door.k);const weg=tuerL;for(const k of weg)tuer[k]=0;for(const k of neu)tuer[k]=1;tuerL=neu;return weg.concat(neu);}
+// T4-Rückmeldung (Thomas 13.11.2026): Bäume, Felsen und Büsche sperren nicht das ganze Feld, nur ihren Fuß in der Feldmitte (Radius RAD Felder).
+// Wege führen seitlich daran vorbei; geglättete Strecken halten Abstand.
+const RAD=.22,AB=.38;
+const hind=k=>{const o=W.obj[k];return o&&NB&&!NB.ARTEN[o]?.flach?RAD:0;};
 // ---------- Felder rechnen ----------
 function rechneFeld(k){const f=W.feld[k];let g=BODEN[f];
- if(g&&W.obj[k]&&NB&&!NB.ARTEN[W.obj[k]]?.flach)g=0;// großer Baum, Fels, Busch
  if(!g&&tuer[k])g=85;
  if(g&&brMark[k]){const p=brAn(k);if(p&&brFrei(p)<2)g=0;}// zu niedrig unter der Brücke
  karte[GL][k]=g;karte[TI][k]=g;
@@ -105,16 +108,25 @@ function suchWeiter(S,frist){if(!S.lauf||S.st!==stamp)suchStart(S);let i=0;
 function entspanne(S,u,v,g){if(stp[v]===stamp){if(par[v]<0||g>=gS[v])return;}else stp[v]=stamp;gS[v]=g;par[v]=u+1;hPush(v,g+heur(v,S.nach));}
 const vorg=u=>{const p=par[u];return (p<0?-1-p:p)-1;};
 function pfadAus(S){const ns=[];for(let u=S.nach;u!==-1;u=vorg(u)){ns.push(u);if(u===S.von)break;}ns.reverse();
- const gl=glaetten(S.art,ns),pts=gl.map(u=>{const k=kVon(u);return {x:k%N+.5,y:((k/N)|0)+.5,b:istBr(u)?1:0};});
+ const pts=glaetten(S.art,ns,punkte(ns));
  let x0=N,y0=N,x1=0,y1=0;for(const u of ns){const k=kVon(u),x=k%N,y=(k/N)|0;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
  return {art:S.art,pts,knoten:Int32Array.from(ns),box:[x0,y0,x1,y1],kaputt:false,ver};}
-// Glätten: von einem Ankerpunkt so weit wie möglich geradeaus (Sichtlinie über freie Felder, nicht langsamer als der Umweg, keine Brücke)
-function glaetten(a,ns){if(ns.length<3)return ns;const out=[ns[0]];let i=0;
- while(i<ns.length-1){let j=i+1;if(!istBr(ns[i]))for(let m=Math.min(ns.length-1,i+24);m>i+1;m--){if(istBr(ns[m]))continue;let lo=255;for(let q=i;q<=m;q++){if(istBr(ns[q])){lo=-1;break;}lo=Math.min(lo,karte[a][ns[q]]);}if(lo>0&&sicht(a,ns[i],ns[m],lo)){j=m;break;}}
-  out.push(ns[j]);i=j;}return out;}
-function sicht(a,k0,k1,lo){let x=k0%N+.5,y=((k0/N)|0)+.5;const ex=k1%N+.5,ey=((k1/N)|0)+.5,d=Math.hypot(ex-x,ey-y),n=Math.ceil(d*4),sx=(ex-x)/n,sy=(ey-y)/n;let k=k0;
- for(let i=1;i<=n;i++){x+=sx;y+=sy;const nk=Math.floor(y)*N+Math.floor(x);if(nk===k)continue;const ddx=nk%N-k%N,ddy=((nk/N)|0)-((k/N)|0);let v=-1;
-  if(ddx&&ddy)v=schraeg(a,k,ddx>0?0:2,ddy>0?1:3);else v=schritt(a,k,ddx>0?0:ddx<0?2:ddy>0?1:3);if(v!==nk||karte[a][nk]<lo)return false;k=nk;}return true;}
+// Punkte je Knoten: Feldmitte; steht dort ein Baum oder Fels, seitlich daran vorbei (gleiche Seite wie zuletzt), am Ziel davor stehen bleiben
+function punkte(ns){const n=ns.length,mx=i=>{const k=kVon(ns[i]);return k%N+.5;},my=i=>{const k=kVon(ns[i]);return ((k/N)|0)+.5;};let seite=1;const out=[];
+ for(let i=0;i<n;i++){const u=ns[i],k=kVon(u),x=mx(i),y=my(i);if(istBr(u)||!hind(k)||i===0){out.push({x,y,b:istBr(u)?1:0,k:u});continue;}
+  const a=i>0?i-1:i,c=i<n-1?i+1:i;let dx=mx(c)-mx(a),dy=my(c)-my(a);const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;
+  if(i===n-1)out.push({x:x-dx*AB,y:y-dy*AB,b:0,k:u});else out.push({x:x-dy*AB*seite,y:y+dx*AB*seite,b:0,k:u});}
+ return out;}
+// Glätten: von einem Ankerpunkt so weit wie möglich geradeaus (Sichtlinie über freie Felder, nicht langsamer als der Umweg, keine Brücke,
+// mit Abstand zu Bäumen und Felsen)
+function glaetten(a,ns,P){if(P.length<3)return P.map(p=>({x:p.x,y:p.y,b:p.b}));const out=[P[0]];let i=0;
+ while(i<P.length-1){let j=i+1;if(!P[i].b)for(let m=Math.min(P.length-1,i+24);m>i+1;m--){if(P[m].b)continue;let lo=255;for(let q=i;q<=m;q++){if(P[q].b){lo=-1;break;}lo=Math.min(lo,karte[a][ns[q]]);}if(lo>0&&sicht(a,P[i],P[m],lo)){j=m;break;}}
+  out.push(P[j]);i=j;}return out.map(p=>({x:p.x,y:p.y,b:p.b}));}
+function sicht(a,p0,p1,lo){let x=p0.x,y=p0.y;const d=Math.hypot(p1.x-x,p1.y-y),n=Math.max(1,Math.ceil(d*5)),sx=(p1.x-x)/n,sy=(p1.y-y)/n;let k=Math.floor(y)*N+Math.floor(x);
+ for(let i=1;i<=n;i++){x+=sx;y+=sy;const nk=Math.floor(y)*N+Math.floor(x);
+  if(nk!==k){const ddx=nk%N-k%N,ddy=((nk/N)|0)-((k/N)|0);if(Math.abs(ddx)>1||Math.abs(ddy)>1)return false;let v;
+   if(ddx&&ddy)v=schraeg(a,k,ddx>0?0:2,ddy>0?1:3);else v=schritt(a,k,ddx>0?0:ddx<0?2:ddy>0?1:3);if(v!==nk||karte[a][nk]<lo)return false;k=nk;}
+  const r=hind(k);if(r&&i<n&&Math.hypot(x-(k%N+.5),y-(((k/N)|0)+.5))<r+.1)return false;}return true;}
 // ---------- Warteschlange, Zwischenspeicher ----------
 const schlange=[],ablage=new Map();let rechenZeit=0,suchen=0;
 function kaputtIn(r){const [x0,y0,x1,y1]=r;for(const [key,p] of ablage){const b=p.box;if(b[2]<x0||b[0]>x1||b[3]<y0||b[1]>y1)continue;
@@ -174,11 +186,12 @@ function malen(ctx,view,a0){const cs=W.cam.s,TW=W.TW,TH=W.TH,o=W.iso(0,0),OX=o.x
   ctx.drawImage(k.c,k.bx0,k.by0,k.bx1-k.bx0,k.by1-k.by0);}
  ctx.restore();}
 function kachel(a,x0,y0,C,lv,bx0,by0,bx1,by1,OX,OY){const sc=KW/(bx1-bx0),cv=document.createElement('canvas');cv.width=KW;cv.height=Math.max(1,Math.ceil((by1-by0)*sc));
- const g=cv.getContext('2d'),A=karte[a],hc=W.hc,TW=W.TW,TH=W.TH,b=lv>=3?1<<(lv-2):1,P=[[],[],[]],X=(x,y)=>((x-y)*TW/2+OX-bx0)*sc,Y=(x,y,h)=>((x+y)*TH/2+OY-h*HZ-by0)*sc;
+ const g=cv.getContext('2d'),A=karte[a],hc=W.hc,TW=W.TW,TH=W.TH,b=lv>=3?1<<(lv-2):1,P=[[],[],[],[]],X=(x,y)=>((x-y)*TW/2+OX-bx0)*sc,Y=(x,y,h)=>((x+y)*TH/2+OY-h*HZ-by0)*sc;
  for(let ty=y0;ty<Math.min(N,y0+C);ty+=b)for(let tx=x0;tx<Math.min(N,x0+C);tx+=b){const k=ty*N+tx,p=brMark[k]?brAn(k):null;let c,h0,h1,h2,h3;
   if(p){c=tempoK(a,NN)?2:0;h0=deckE(p,0);h1=deckE(p,1);h2=deckE(p,2);h3=deckE(p,3);}else{const s=A[k];c=s===0?0:s<95?1:2;if(b===1){h0=hc[k*4];h1=hc[k*4+1];h2=hc[k*4+2];h3=hc[k*4+3];}else h0=h1=h2=h3=hc[k*4];}
-  const xb=tx+b,yb=ty+b;P[c].push(X(tx,ty),Y(tx,ty,h0),X(xb,ty),Y(xb,ty,h1),X(xb,yb),Y(xb,yb,h2),X(tx,yb),Y(tx,yb,h3));}
- for(let c=0;c<3;c++){const L=P[c];if(!L.length)continue;g.fillStyle=FARBE[c];g.beginPath();for(let i=0;i<L.length;i+=8){g.moveTo(L[i],L[i+1]);g.lineTo(L[i+2],L[i+3]);g.lineTo(L[i+4],L[i+5]);g.lineTo(L[i+6],L[i+7]);g.closePath();}g.fill();}
+  const xb=tx+b,yb=ty+b;P[c].push(X(tx,ty),Y(tx,ty,h0),X(xb,ty),Y(xb,ty,h1),X(xb,yb),Y(xb,yb,h2),X(tx,yb),Y(tx,yb,h3));
+  if(lv<=1&&!p&&A[k]&&hind(k)){const cx=tx+.5,cy=ty+.5,r=RAD,hh=(h0+h1+h2+h3)/4;P[3].push(X(cx-r,cy),Y(cx-r,cy,hh),X(cx,cy-r),Y(cx,cy-r,hh),X(cx+r,cy),Y(cx+r,cy,hh),X(cx,cy+r),Y(cx,cy+r,hh));}}// Fuß eines Baums oder Felsens (zuletzt gemalt)
+ for(let c=0;c<4;c++){const L=P[c];if(!L.length)continue;g.fillStyle=FARBE[c%3];g.beginPath();for(let i=0;i<L.length;i+=8){g.moveTo(L[i],L[i+1]);g.lineTo(L[i+2],L[i+3]);g.lineTo(L[i+4],L[i+5]);g.lineTo(L[i+6],L[i+7]);g.closePath();}g.fill();}
  if(lv<=1){g.strokeStyle='#5a0a04';g.lineWidth=Math.max(1.5,4*sc);g.beginPath();// Zäune und Palisaden
   for(let ty=y0;ty<Math.min(N,y0+C);ty++)for(let tx=x0;tx<Math.min(N,x0+C);tx++){const k=ty*N+tx;
    if(W.zaunA[k]){g.moveTo(X(tx,ty),Y(tx,ty,hc[k*4]));g.lineTo(X(tx+1,ty),Y(tx+1,ty,hc[k*4+1]));}
@@ -196,7 +209,7 @@ function schalte(an,art){anzeige=!!an;if(art!=null)anzArt=art;texte();}
 texte();L?.beiWechsel?.(texte);
 // ---------- Takt ----------
 const tick0=H.tick;H.tick=dt=>{tick0?.(dt);const hs=M.weltGebaeude?.haeuser?.();if(hs&&hs!==haeuserAlt){haeuserAlt=hs;if(!alles){const ks=tuerenNeu();if(ks.length){for(const k of ks)rechneFeld(k);ver++;}}}flush();arbeiten();if(anzeige&&box&&box.hidden)schalte(false);};
-M.weltBegehbar={ARTEN,GL,BE,TI,KA,BODEN,karte,tempo:(a,k)=>{flush();return karte[a][k];},frei,naechstesFrei,weg,tempoBei,deckHz,eingesperrt,melde,
+M.weltBegehbar={ARTEN,GL,BE,TI,KA,BODEN,karte,tempo:(a,k)=>{flush();return karte[a][k];},frei,naechstesFrei,weg,tempoBei,deckHz,eingesperrt,melde,hindernis:hind,RAD,
  beiAenderung(fn){horcher.push(fn);},anzeige:schalte,get an(){return anzeige;},get art(){return anzArt;},get version(){return ver;},
  schritt:(a,k,s)=>{flush();return schritt(a,k,s);},neuRechnen(){alles=true;flush();},
  // Messwerte für Tests
