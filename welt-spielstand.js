@@ -10,6 +10,7 @@
 //   über W.rebake verändert wurden: Feldart, Grund, Objekt, bauAuf, 4 Eckhöhen). Die Karte selbst entsteht immer gleich.
 // · Kein Speichern oder Laden von Hand (Wunsch Thomas: nichts zurückholen können). Gespeichert wird höchstens alle ABSTAND ms
 //   in einer Leerlaufpause, sofort beim Tageswechsel, beim Verlassen der Seite und beim Knopf „Platz n“ (zurück zum Startbild).
+// · Texte aus der Sprachdatei (welt-sprache.js, S1): Startbild mit Sprachwahl, Leiste mit Knopf 🇩🇪/🇬🇧 zum Umschalten im Spiel.
 // · Leistung: Speichern misst sich selbst (M.at2Spielstand.ms, Zeit auf dem Hauptfaden; mit dem Spielstand des Spiels ~6 ms wie in 1.0, sonst < 2 ms). Test: tests/welt-spielstand-browser.cjs.
 // =====================================================================================================================
 (()=>{
@@ -41,30 +42,34 @@ const CSS=`#at2Start{position:fixed;inset:0;z-index:100;display:flex;align-items
 #at2Start button.weg{background:#7a3a2e;color:#f4e4d0;min-height:32px;font-size:12px}#at2Start button:active{transform:translateY(2px);box-shadow:none}
 #at2Start .s-frage{margin-top:8px;padding:10px;background:#120c09;border:2px solid #7a3a2e;font-size:13px}#at2Start .s-frage div{display:flex;gap:8px;margin-top:8px}
 #at2Start .s-fuss{text-align:center;margin-top:16px;font-size:13px}#at2Start a{color:#f4d37a}#at2Start .s-warn{color:#f29b83;text-align:center;font-size:13px}
-#wPlatz{white-space:nowrap}`;
-const tag=d=>{try{return new Date(d).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return '';}};
+#at2Start .s-sprache{display:flex;justify-content:center;gap:8px;margin:0 0 6px}#at2Start .s-sprache button{min-height:34px;font-size:13px;background:#3a2a1c;color:#eadfc8}#at2Start .s-sprache button.an{background:#e2c27a;color:#120c09}
+#wPlatz,#wSprache{white-space:nowrap}`;
+const L=window.AT2Sprache,t=(k,v)=>L?L.t(k,v):k;
+const tag=d=>{try{return new Date(d).toLocaleString(L?L.locale():'de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return '';}};
 function start(ctx){return new Promise(fertig=>{
  const st=document.createElement('style');st.textContent=CSS;document.head.appendChild(st);
  const el=document.createElement('div');el.id='at2Start';document.body.appendChild(el);
  let koepfe=[],kaputt=new Set(),frage=null,ohneSpeicher=false;
- const zeige=()=>{el.innerHTML=`<div class="s-box"><h1>ARENA THEORY 2.0</h1><p class="s-sub">Wähle deinen Ludus. Gespeichert wird von selbst.</p>
-  ${ohneSpeicher?'<p class="s-warn">Dieser Browser lässt kein Speichern zu. Du kannst spielen, aber nichts bleibt.</p>':''}
+ const zeige=()=>{const sp=L?L.sprache:'de';el.innerHTML=`<div class="s-box"><div class="s-sprache" title="${esc(t('sprache.titel'))}">${(L?L.SPRACHEN:[]).map(l=>`<button data-sprache="${l}" class="${l===sp?'an':''}">${l==='de'?'🇩🇪':'🇬🇧'} ${esc(t('sprache.'+l))}</button>`).join('')}</div><h1>ARENA THEORY 2.0</h1><p class="s-sub">${esc(t('start.sub'))}</p>
+  ${ohneSpeicher?`<p class="s-warn">${esc(t('start.keinSpeicher'))}</p>`:''}
   ${PLAETZE.map((n,i)=>{const k=koepfe[i],bad=kaputt.has(n);let info,kn;
-   if(bad){info=`<b>Platz ${n}</b><small class="kaputt">Stand beschädigt oder zu alt. Er wird nicht geladen.</small>`;kn=`<button class="weg" data-loesch="${n}">Löschen</button>`;}
-   else if(k){info=`<b>${esc(k.name||'Ludus')}</b><small>Tag ${esc(k.tag)} · ${esc(Math.floor(k.gold||0))} G · ${esc(tag(k.zeit))}</small>`;kn=`<button data-weiter="${n}">Fortsetzen</button><button class="weg" data-neu="${n}">Neues Spiel</button><button class="weg" data-loesch="${n}">Löschen</button>`;}
-   else{info=`<b>Platz ${n}</b><small>Leer. Noch niemand gestorben.</small>`;kn=`<button data-neu="${n}">Neues Spiel</button>`;}
-   const f=frage&&frage.n===n?`<div class="s-frage">${frage.art==='loesch'?'Alle tot. Alle vergessen. Sicher?':'Der alte Ludus wird verscharrt. Sicher?'}<div><button data-ja="${n}">${frage.art==='loesch'?'Ja, löschen':'Ja, neu anfangen'}</button><button class="weg" data-nein>Nein</button></div></div>`:'';
+   if(bad){info=`<b>${esc(t('start.platz',{n}))}</b><small class="kaputt">${esc(t('start.kaputt'))}</small>`;kn=`<button class="weg" data-loesch="${n}">${esc(t('start.loeschen'))}</button>`;}
+   else if(k){info=`<b>${esc(k.name||t('start.ludus'))}</b><small>${esc(t('start.info',{tag:k.tag,gold:Math.floor(k.gold||0),zeit:tag(k.zeit)}))}</small>`;kn=`<button data-weiter="${n}">${esc(t('start.fortsetzen'))}</button><button class="weg" data-neu="${n}">${esc(t('start.neu'))}</button><button class="weg" data-loesch="${n}">${esc(t('start.loeschen'))}</button>`;}
+   else{info=`<b>${esc(t('start.platz',{n}))}</b><small>${esc(t('start.leer'))}</small>`;kn=`<button data-neu="${n}">${esc(t('start.neu'))}</button>`;}
+   const f=frage&&frage.n===n?`<div class="s-frage">${esc(t(frage.art==='loesch'?'start.frageLoeschen':'start.frageNeu'))}<div><button data-ja="${n}">${esc(t(frage.art==='loesch'?'start.jaLoeschen':'start.jaNeu'))}</button><button class="weg" data-nein>${esc(t('start.nein'))}</button></div></div>`:'';
    return `<div class="s-platz"><span class="s-nr">${['I','II','III'][i]}</span><div class="s-info">${info}${f}</div><div class="s-knoepfe">${kn}</div></div>`;}).join('')}
-  <p class="s-fuss"><a href="index.html">zum Hauptspiel (1.0)</a></p></div>`;};
+  <p class="s-fuss"><a href="index.html">${esc(t('start.hauptspiel'))}</a></p></div>`;};
  const los=(n,r)=>{window.AT2_PLATZ=ohneSpeicher?0:n;if(r){for(const [k,v] of r.cache)ctx.cache.set(k,v);for(const [k,v] of r.mem)ctx.mem.set(k,v);}
   geladen={n:window.AT2_PLATZ,r:r||null};el.remove();fertig();};
  el.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.sprache){L?.setze(d.sprache);zeige();return;}
   if(d.nein!=null){frage=null;zeige();return;}
   if(d.loesch){frage={n:+d.loesch,art:'loesch'};zeige();return;}
   if(d.neu){const n=+d.neu;if(koepfe[n-1]&&!(frage&&frage.n===n)){frage={n,art:'neu'};zeige();return;}if(!ohneSpeicher)try{await loesch(n);}catch(e){}los(n,null);return;}
   if(d.ja){const n=+d.ja,art=frage?.art;frage=null;try{await loesch(n);}catch(e){}if(art==='neu'){los(n,null);return;}koepfe[n-1]=null;kaputt.delete(n);zeige();return;}
   if(d.weiter){const n=+d.weiter;let r=null;try{r=(await lies([n]))[0];}catch(e){}if(!lesbar(r)){kaputt.add(n);zeige();return;}los(n,r);}});
- lies(PLAETZE.map(n=>'k'+n)).then(k=>{koepfe=k;zeige();}).catch(()=>{ohneSpeicher=true;zeige();});
+ const sp=L?L.laden():Promise.resolve();// gemerkte Sprache zuerst (S1)
+ lies(PLAETZE.map(n=>'k'+n)).then(k=>sp.then(()=>{koepfe=k;zeige();})).catch(()=>sp.then(()=>{ohneSpeicher=true;zeige();}));
  zeige();});}
 
 // ---------- Im Spiel: laden, mitschreiben, speichern ----------
@@ -103,9 +108,16 @@ function anschliessen(ctx){const M=window.MG,W=window.WeltKarte,H=window.WeltHoo
   if(!r)speichern(true);// neues Spiel: Platz sofort belegen
  }
  // Leiste: Untertitel und Knopf „Platz n“ (speichert und führt zum Startbild)
- const sub=document.querySelector('.w-title small');if(sub)sub.innerHTML=(n?'Platz '+n+' · speichert von selbst':'ohne Speichern')+' · <a href="index.html" style="color:#f4d37a">zum Hauptspiel</a>';
- const bar=document.querySelector('#weltUi .w-bar');if(bar&&n){const b=document.createElement('button');b.id='wPlatz';b.className='w-btn';b.textContent='💾 Platz '+n;b.title='Speichern und zurück zu den Spielständen';
-  b.onclick=async()=>{b.disabled=true;b.textContent='💾 …';await speichern(true);location.reload();};const u=document.getElementById('wUhr');bar.insertBefore(b,u?u.nextSibling:bar.firstChild);}
+ const sub=document.querySelector('.w-title small'),bar=document.querySelector('#weltUi .w-bar');let bP=null,bS=null;
+ const texte=()=>{if(sub)sub.innerHTML=esc(n?t('leiste.platz',{n}):t('leiste.ohne'))+' · <a href="index.html" style="color:#f4d37a">'+esc(t('leiste.hauptspiel'))+'</a>';
+  if(bP&&!bP.disabled){bP.textContent=t('leiste.knopf',{n});bP.title=t('leiste.knopfTitel');}
+  if(bS){const en=L.sprache==='en';bS.textContent=en?'🇬🇧 EN':'🇩🇪 DE';bS.title=t('sprache.titel');}};
+ if(bar&&n){bP=document.createElement('button');bP.id='wPlatz';bP.className='w-btn';
+  bP.onclick=async()=>{bP.disabled=true;bP.textContent='💾 …';await speichern(true);location.reload();};const u=document.getElementById('wUhr');bar.insertBefore(bP,u?u.nextSibling:bar.firstChild);}
+ // Sprache umschalten mitten im Spiel (S1): Texte werden neu gesetzt, der Spielstand bleibt, wie er ist
+ if(bar&&L){bS=document.createElement('button');bS.id='wSprache';bS.className='w-btn';bS.onclick=()=>L.setze(L.sprache==='en'?'de':'en');
+  const nach=bP||document.getElementById('wUhr');bar.insertBefore(bS,nach?nach.nextSibling:bar.firstChild);L.beiWechsel(texte);}
+ texte();
  window.AT2_BEREIT=true;}
 
 window.AT2Spielstand={start,anschliessen,V,DB,lesbar,_lies:lies,_loesch:loesch};
