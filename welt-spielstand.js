@@ -14,7 +14,8 @@
 // · Leistung: Speichern misst sich selbst (M.at2Spielstand.ms, Zeit auf dem Hauptfaden; mit dem Spielstand des Spiels ~6 ms wie in 1.0, sonst < 2 ms). Test: tests/welt-spielstand-browser.cjs.
 // =====================================================================================================================
 (()=>{
-const DB='arena-theory-2',ABL='plaetze',V=1,PLAETZE=[1,2,3],ABSTAND=10000;
+const DB='arena-theory-2',ABL='plaetze',V=2,// V2: neue Karte (A3, Dorf/Platz/Park); Stände mit V1 gehören zur alten Karte
+ PLAETZE=[1,2,3],ABSTAND=10000;
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // ---------- IndexedDB ----------
 let dbP=null;
@@ -52,8 +53,9 @@ function start(ctx){return new Promise(fertig=>{
  let koepfe=[],kaputt=new Set(),frage=null,ohneSpeicher=false;
  const zeige=()=>{const sp=L?L.sprache:'de';el.innerHTML=`<div class="s-box"><div class="s-sprache" title="${esc(t('sprache.titel'))}">${(L?L.SPRACHEN:[]).map(l=>`<button data-sprache="${l}" class="${l===sp?'an':''}">${l==='de'?'🇩🇪':'🇬🇧'} ${esc(t('sprache.'+l))}</button>`).join('')}</div><h1>ARENA THEORY 2.0</h1><p class="s-sub">${esc(t('start.sub'))}</p>
   ${ohneSpeicher?`<p class="s-warn">${esc(t('start.keinSpeicher'))}</p>`:''}
-  ${PLAETZE.map((n,i)=>{const k=koepfe[i],bad=kaputt.has(n);let info,kn;
-   if(bad){info=`<b>${esc(t('start.platz',{n}))}</b><small class="kaputt">${esc(t('start.kaputt'))}</small>`;kn=`<button class="weg" data-loesch="${n}">${esc(t('start.loeschen'))}</button>`;}
+  ${PLAETZE.map((n,i)=>{const k=koepfe[i],bad=kaputt.has(n),alt=!!k&&k.v!==V;let info,kn;
+   if(alt&&!bad){info=`<b>${esc(k.name||t('start.ludus'))}</b><small class="kaputt">${esc(t('start.alt'))}</small>`;kn=`<button class="weg" data-loesch="${n}">${esc(t('start.loeschen'))}</button>`;}
+   else if(bad){info=`<b>${esc(t('start.platz',{n}))}</b><small class="kaputt">${esc(t('start.kaputt'))}</small>`;kn=`<button class="weg" data-loesch="${n}">${esc(t('start.loeschen'))}</button>`;}
    else if(k){info=`<b>${esc(k.name||t('start.ludus'))}</b><small>${esc(t('start.info',{tag:k.tag,gold:Math.floor(k.gold||0),zeit:tag(k.zeit)}))}</small>`;kn=`<button data-weiter="${n}">${esc(t('start.fortsetzen'))}</button><button class="weg" data-neu="${n}">${esc(t('start.neu'))}</button><button class="weg" data-loesch="${n}">${esc(t('start.loeschen'))}</button>`;}
    else{info=`<b>${esc(t('start.platz',{n}))}</b><small>${esc(t('start.leer'))}</small>`;kn=`<button data-neu="${n}">${esc(t('start.neu'))}</button>`;}
    const f=frage&&frage.n===n?`<div class="s-frage">${esc(t(frage.art==='loesch'?'start.frageLoeschen':'start.frageNeu'))}<div><button data-ja="${n}">${esc(t(frage.art==='loesch'?'start.jaLoeschen':'start.jaNeu'))}</button><button class="weg" data-nein>${esc(t('start.nein'))}</button></div></div>`:'';
@@ -95,7 +97,7 @@ function anschliessen(ctx){const M=window.MG,W=window.WeltKarte,H=window.WeltHoo
   const t0=performance.now(),mitS=alles||sDirty||t0-letztS>60000;if(mitS){try{M.persist?.();}catch(e){console.error(e);}sDirty=false;letztS=t0;}
   const ks=Int32Array.from(geaendert),m=ks.length,feld=new Uint8Array(m),grund=new Uint8Array(m),obj=new Uint8Array(m),bauAuf=new Int8Array(m),hc=new Int8Array(m*4);
   for(let i=0;i<m;i++){const k=ks[i];feld[i]=W.feld[k];grund[i]=W.grund[k];obj[i]=W.obj[k];bauAuf[i]=W.bauAuf[k];for(let c=0;c<4;c++)hc[i*4+c]=W.hc[k*4+c];}
-  const stand={v:V,build:window.BUILD||'',kopf:{name:S.schoolName,tag:S.day,gold:S.gold,zeit:Date.now()},cache:[...ctx.cache],mem:[...ctx.mem],
+  const stand={v:V,build:window.BUILD||'',kopf:{v:V,name:S.schoolName,tag:S.day,gold:S.gold,zeit:Date.now()},cache:[...ctx.cache],mem:[...ctx.mem],
    welt:{schluessel,stunde:T.stunde,tempo:T.st.tempo||1,pause:!!T.st.pause,ks,feld,grund,obj,bauAuf,hc}};
   dirty=false;letzt=performance.now();
   laeuft=schreib(n,stand).then(()=>{A.fehler='';return true;}).catch(e=>{A.fehler=String(e?.message||e);dirty=true;return false;}).finally(()=>{laeuft=null;});

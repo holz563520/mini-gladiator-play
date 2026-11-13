@@ -20,6 +20,8 @@ const M=window.MG,W=window.WeltKarte,H=window.WeltHook,G=M?.weltGebaeude;if(!M||
 const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
 const bau=id=>W.BAU?.find(b=>b.id===id),hausVon=id=>{const b=bau(id);return b?G.haeuser().find(h=>h.has(b.tx,b.ty))||null:null;};
 const ludus=(x,y)=>({x:W.LUD.tx+x/W.LUD.px,y:W.LUD.ty+y/W.LUD.px});
+// 2.0 (A3): Plätze im Dorf statt der alten Ludus-Koordinaten (W.ANORD.orte, relativ zu O)
+const ort=(id,x,y)=>{const o=W.ANORD?.orte?.[id];return o?{x:o[0]+W.O+.5,y:o[1]+W.O+.5}:ludus(x,y);};
 const NB4=[[0,1],[1,0],[-1,0],[0,-1]];
 function nachbarFrei(h,k,meiden){const x=k%N,y=(k/N)|0;for(const [dx,dy] of NB4){const q=(y+dy)*N+x+dx;if(h.has(x+dx,y+dy)&&!meiden.has(q))return {x:x+dx+.5,y:y+dy+.5};}return {x:x+.5,y:y+1};}
 
@@ -37,7 +39,7 @@ const NPCS=[
   platz(h){return {x:h.bx0+1.2,y:h.by1+.62,innen:false};},
   mal:(c,x,y,t,o)=>{const g=M.trader?.figure?.();if(g)forge({id:'welt-trader',g,trader:true,a:0},t)(c,x,y);}},
  {id:'lanista',name:()=>S.lanista?.name||'Der Lanista',rolle:'Lanista, dir gehört der Laden',ort:null,
-  platz(){const p=ludus(318,300);return {x:p.x,y:p.y,innen:false};},
+  platz(){const p=ort('lanista',318,300);return {x:p.x,y:p.y,innen:false};},
   mal:(c,x,y,t,o)=>{try{o.g??=kopie(M.ludus.ownerFigure(S.lanista),'welt-lanista');forge({id:'welt-lan',g:o.g,lanista:true,a:0},t)(c,x,y);}catch(e){}}},
  {id:'doktor',name:()=>'Doktor Hirnhammer',rolle:'Doktor im Medicus',ort:'medicus',
   platz(h){return h.stuhl>=0?{...nachbarFrei(h,h.stuhl,new Set([...h.beds,h.door.k])),innen:true}:null;},
@@ -49,10 +51,10 @@ const NPCS=[
   platz(h){const x=h.door.k%N,y=(h.door.k/N)|0;return {x:x+.5,y:y+.45,innen:true};},
   mal:(c,x,y,t)=>M.drawRabies?.(c,x,y,1,-1,t)},
  {id:'orontes',name:()=>'Orontes Pfeilkopf',rolle:'Bogenhändler, am Schießstand',ort:null,
-  platz(){const p=ludus(560,552);return {x:p.x,y:p.y,innen:false};},
+  platz(){const p=ort('orontes',560,552);return {x:p.x,y:p.y,innen:false};},
   bereit:()=>!!M.bowyer?.drawOro,mal:(c,x,y,t)=>M.bowyer?.drawOro?.(c,x,y,1,{a:Math.PI,state:'idle',phase:t*3})},
  {id:'huehner',name:()=>'Die Hühnerhändlerin',rolle:'drei Hähne am Tag',ort:null,breit:true,
-  platz(){const p=ludus(516,238);return {x:p.x,y:p.y,innen:false};},
+  platz(){const p=ort('huehner',516,238);return {x:p.x,y:p.y,innen:false};},
   mal:(c,x,y,t)=>{const A=window.HS?.art;if(!A)return;const o=window.HS?.st?.()?.offer;try{A.cart?.(c,{x:x+52,y,t,roosters:o?.list||[],sold:o?.sold||[],face:-1,handle:[x+11,y-24]});}catch(e){}
    try{A.seller?.(c,{x,y,dir:-1,pose:Math.sin(t*.6)>.3?'sell':'hips',t,mouth:Math.sin(t*.6)>.3?'shout':'grin'});}catch(e){}}}
 ];

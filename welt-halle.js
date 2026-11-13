@@ -66,7 +66,7 @@ const tap0=H.tap;H.tap=(p,w)=>{if(!w){const k=Math.max(1,1.4/W.cam.s);for(const 
 // ---------- Besucher ----------
 // Ein Platz vor einem besetzten Grab (Bildschirm), dazu der Pfad vom Weg herauf und wieder hinunter
 function besuch(){const A=aussen(),voll=A.map((e,i)=>e?i:-1).filter(i=>i>=0);if(!voll.length)return null;const i=voll[(Math.random()*voll.length)|0],s=slot(i),
- ziel=W.iso(s.x+(Math.random()-.5)*.5,s.y+.42+Math.random()*.12),oben=W.iso(HA.pfadX+.5,HA.ty+HA.h+HA.hofH+.3),unten=W.iso(HA.pfadX+.5,(W.wegY?W.wegY(HA.pfadX):W.WEG_TY)+.5);
+ ziel=W.iso(s.x+(Math.random()-.5)*.5,s.y+.42+Math.random()*.12),oben=W.iso(HA.pfadX+.5,HA.ty+HA.h+HA.hofH+.3),unten=HA.unten?W.iso(HA.unten.x,HA.unten.y):W.iso(HA.pfadX+.5,(W.wegY?W.wegY(HA.pfadX):W.WEG_TY)+.5);// 2.0 (A3): Halle im Park, Pfad zum Kiesweg
  return {hin:[unten,oben,ziel],zurueck:[oben,unten],blick:ziel.x<W.iso(s.x,s.y).x?0:1,grab:i};}
 M.weltHalle={liste,aussen,innen,besuch,waehlen,zu,graeber:()=>graeber.map(g=>({i:g.i,x:g.x,y:g.y,id:g.e?.id??null,name:g.e?.name??null,stufe:g.e?.tomb??0})),ZAHL};
 M.weltGebaeude?.frisch?.('halle');// jetzt sind die Gräber drinnen bekannt

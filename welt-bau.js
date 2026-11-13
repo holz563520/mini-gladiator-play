@@ -39,13 +39,14 @@ const PREIS=WERKZEUG.platz.preis,PRO=4,PLAETZE=8,STUFEN=[{ab:0,name:'Strohpuppe'
 const ARENA_NAME=n=>n<20?'Sandgrube':n<48?'Kleine Arena':n<100?'Arena':'Große Arena';
 const stufeVon=n=>{let s=0;for(let i=0;i<STUFEN.length;i++)if(n>=STUFEN[i].ab)s=i;return s;};
 const ur=Uint8Array.from(W.feld);// Gelände vor allem Bauen (für „Abreißen“)
-const baubar=(tx,ty)=>W.inMap(tx,ty)&&!W.gebaeudeAt?.(tx,ty)&&(W.feld[W.ix(tx,ty)]===T.WIESE||W.feld[W.ix(tx,ty)]===T.LUDUS);
+const FEST=W.fest,istFest=k=>!!FEST?.[k];// A3: Platz und Bauplatz der Verwaltung sind fest
+const baubar=(tx,ty)=>W.inMap(tx,ty)&&!istFest(W.ix(tx,ty))&&!W.gebaeudeAt?.(tx,ty)&&(W.feld[W.ix(tx,ty)]===T.WIESE||W.feld[W.ix(tx,ty)]===T.LUDUS);
 const abreissbar=k=>{const t=W.feld[k];return (t===T.PLATZ||t===T.ARENA||t===T.TRIB||istHaus(t)||istStr(t))&&ur[k]!==t;};
 // Umbau nur innerhalb derselben Gebäudeart (Unterkunft ↔ Unterkunft, Schmiede ↔ Schmiede, Beastrium ↔ Beastrium)
 const gruppeVon=t=>Object.values(WERKZEUG).find(w=>w.typ===t)?.gruppe||'unterkunft';
-const hausBaubar=(k,typ)=>{const t=W.feld[k];return t===T.WIESE||t===T.LUDUS||(istHaus(t)&&t!==typ&&gruppeVon(t)===gruppeVon(typ));};
+const hausBaubar=(k,typ)=>{if(istFest(k))return false;const t=W.feld[k];return t===T.WIESE||t===T.LUDUS||(istHaus(t)&&t!==typ&&gruppeVon(t)===gruppeVon(typ));};
 // Straßen dürfen auch auf den alten Weg und über eine andere Straße (Ausbau, voller Preis)
-const strBaubar=(k,typ)=>{if(W.gebaeudeAt?.(k%N,Math.floor(k/N)))return false;const t=W.feld[k];return t===T.WIESE||t===T.LUDUS||t===T.WEG||(istStr(t)&&t!==typ);};
+const strBaubar=(k,typ)=>{if(istFest(k)||W.gebaeudeAt?.(k%N,Math.floor(k/N)))return false;const t=W.feld[k];return t===T.WIESE||t===T.LUDUS||t===T.WEG||(istStr(t)&&t!==typ);};
 
 // ---------- Puppen-Bilder (4 Stufen, die Drehpuppe in 8 Drehstellungen) ----------
 const PW=48,PH=66,AX=24,AY=58,FRAMES=8,img=[],PK=.42;// PK: Puppen passend zu den kleinen Figuren verkleinert
@@ -228,7 +229,10 @@ const tap0=H.tap;H.tap=(p,w)=>mode?true:tap0?tap0(p,w):false;
 
 function bauen(wz,x0,y0,x1,y1,frei){const m=mode;mode=wz;drag={a:{tx:x0,ty:y0},b:{tx:x1,ty:y1}};auswahl();const r={felder:info.ok.length,preis:info.preis,genug:info.genug};baue(frei);drag=null;info=null;mode=m;hilfe();return r;}
 // Start: eine Arena hinter dem Ludus (ersetzt das Arena-Tor). Kampffläche 8 × 6, zwei Reihen Tribünen, Durchgang zum Ludus.
-const O=W.O||0,durch=[W.ix(48+O,36+O),W.ix(49+O,36+O),W.ix(48+O,37+O),W.ix(49+O,37+O)];bauen('arena',45+O,30+O,52+O,35+O,true);bauen('trib',43+O,28+O,54+O,37+O,true);for(const k of durch)W.feld[k]=ur[k];
+// 2.0 (A3): dieselbe kleine Arena steht im Arena-Park, der Durchgang zeigt zum Kiesweg vom Parktor (W.ANORD.arena).
+const O=W.O||0,AA=W.ANORD?.arena,R=(a,b,c,d)=>[a+O,b+O,a+c-1+O,b+d-1+O];
+const durch=(AA?AA.durch:[[48,36],[49,36],[48,37],[49,37]]).map(([x,y])=>W.ix(x+O,y+O));
+if(AA){bauen('arena',...R(...AA.boden),true);bauen('trib',...R(...AA.trib),true);}else{bauen('arena',45+O,30+O,52+O,35+O,true);bauen('trib',43+O,28+O,54+O,37+O,true);}for(const k of durch)W.feld[k]=ur[k];
 neu.clear();W.rebake(durch);rechne(true);
 M.weltBau={neuRechnen(){rechne(true);},PREIS,PRO,PLAETZE,STUFEN,WERKZEUG,SITZ,HOCH,setMode,get mode(){return mode;},felder:()=>felder,puppen:()=>[...puppen.values()],arenen:()=>arenen,tribs:()=>tribs,plan,stufeVon,beiAenderung(fn){horcher.push(fn);},
  bauen(a,b,c,d,e){return typeof a==='string'?bauen(a,b,c,d,e):bauen('platz',a,b,c,d);},

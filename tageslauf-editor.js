@@ -9,6 +9,8 @@ const M=window.MG,W=window.WeltKarte,T=M?.weltTag,L=M?.weltLeben,Z=window.WeltSa
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // AT2 (arena-theory-2.html): dieselbe Karte als „Arena Theory 2.0“, erreichbar aus dem Hauptmenü des Spiels; Werkzeuge anfangs eingeklappt
 const AT2=!!window.AT2,sub=document.querySelector('.w-title');if(sub)sub.innerHTML=AT2?'<b>ARENA THEORY 2.0</b><small>Vorschau · nichts wird gespeichert · <a href="index.html" style="color:#f4d37a">zum Hauptspiel</a></small>':'<b>RASTERKARTE</b><small>Editor · nichts wird gespeichert</small>';
+// 2.0 (A3, Wunsch Thomas): keine Testleiste mit Reglern mehr im Spiel, nur der Knopf „+1000 Gold (Test)“ (welt-anordnung.js)
+if(AT2){window.TAGESLAUF_READY=true;return;}
 const ed=document.createElement('aside');ed.id='wEdit';ed.innerHTML=`<header><b>EDITOR</b><button class="w-x" data-fold aria-label="Einklappen">▾</button></header><div class="ed-body">
 <p class="ed-h">Uhrzeit</p><div class="ed-row" data-zeit><button class="w-btn" data-h="5.6">kurz vor Tageswechsel</button><button class="w-btn" data-h="7">Morgen</button><button class="w-btn" data-h="12">Mittag</button><button class="w-btn" data-h="18.4">Abend</button><button class="w-btn" data-h="20.6">Dämmerung</button><button class="w-btn" data-h="23">Nacht</button></div>
 <p class="ed-h">Tempo (nur zum Prüfen)</p><div class="ed-row" data-tempo><button class="w-btn" data-t="0">⏸</button><button class="w-btn on" data-t="1">1×</button><button class="w-btn" data-t="4">4×</button><button class="w-btn" data-t="20">20×</button></div>

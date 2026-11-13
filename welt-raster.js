@@ -34,19 +34,36 @@ const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
 const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
-const LUD={tx:39+O,ty:40+O,w:18,h:16,px:50};
+// Arena Theory 2.0, Schritt A3 (Thomas 13.11.2026): Karte neu angeordnet. An der großen Straße liegen nebeneinander das
+// Gladiatorendorf (Westen, Palisade, Dorftor), der zentrale Platz mit den festen Gebäuden (Regel 12) und der Arena-Park
+// (Osten, Zaun, genau ein Parktor). Besucher kommen nur durchs Parktor. LUD ist auf der großen Karte der Kern des Dorfes
+// (Ludus-Boden, dort laufen die Gladiatoren herum); Dorf und Park haben viel freie Fläche zum Wachsen.
+// Lagen relativ zu O: [x, y, Breite, Höhe] in Feldern. Die Straße liegt bei y 58/59.
+const ANORD=GROSS?{dorf:[-46,-20,38,78],platz:[-8,40,14,18],park:[6,2,59,56],kern:[-38,31,29,26],verwaltung:[-2,40,5,4],
+ parktor:[14,3],dorftor:[-26,3],durchgang:[50,3],kaempfertor:[52,2],// Kämpfertor: vom Platz in den Park (Kämpfer, Karren), nicht für Besucher
+// Tor: erstes Feld und Breite (an der Unterkante bzw. bei durchgang an der Ostkante des Dorfes)
+ halle:[7,40],arena:{boden:[24,30,8,6],trib:[22,28,12,10],durch:[[27,36],[28,36],[27,37],[28,37]],ein:[27.5,38.5]},
+ pfade:[[15,38,1,20],[15,38,14,1],[9,45,1,6],[9,50,7,1]],// Kieswege im Park: Tor → Arena, Halle → Hauptweg
+ orte:{lanista:[-16,48],orontes:[-24,50],huehner:[-33,50]}}:null;
+const inR=(lx,ly,r,m=0)=>lx>=r[0]-m&&lx<r[0]+r[2]+m&&ly>=r[1]-m&&ly<r[1]+r[3]+m,imAnord=(lx,ly,m=0)=>!!ANORD&&(inR(lx,ly,ANORD.dorf,m)||inR(lx,ly,ANORD.platz,m)||inR(lx,ly,ANORD.park,m));
+const LUD=ANORD?{tx:ANORD.kern[0]+O,ty:ANORD.kern[1]+O,w:ANORD.kern[2],h:ANORD.kern[3],px:50}:{tx:39+O,ty:40+O,w:18,h:16,px:50};
 const vonLudus=(x,y)=>iso(LUD.tx+x/LUD.px,LUD.ty+y/LUD.px);
 // Gebäude der Einführungen, Lage aus dem alten Ludus (ludus.js places, hs-art.js BEASTRIUM), auf ganze Felder gelegt
 const BAU=[
- {id:'kaserne',name:'KASERNE',l:[45,50,235,133],hoch:44,wand:'#b9a27c',dach:'#a5553c',haus:T.KASERNE},
- {id:'hall',name:'HALL',l:[50,206,112,70],hoch:36,wand:'#8d8a80',dach:'#5d5a54',weg:true},
- {id:'markt',name:'SKLAVENMARKT',l:[45,280,230,118],hoch:26,wand:'#a98458',dach:'#c9b27a',haus:T.MARKT},// offener Stand wie im Spiel, fest
- {id:'medicus',name:'MEDICUS',l:[34,447,250,163],hoch:40,wand:'#d2cbb8',dach:'#7e8a8c',haus:T.MEDICUS},// fest, nicht baubar und nicht abreißbar
- {id:'platz',name:'TRAININGSHOF',l:[310,247,275,343],hoch:0,wand:'#7a5a39',dach:'#d9c391',flach:true},
- {id:'schmiede',name:'SCHMIEDE',l:[638,86,215,150],hoch:42,wand:'#7d7468',dach:'#4b4640',haus:T.SCHMIEDE},
- {id:'beastrium',name:'BEASTRIUM',l:[652,298,196,126],hoch:40,wand:'#96795a',dach:'#6b4a2c',haus:T.BEAST}
+ {id:'kaserne',name:'KASERNE',l:[45,50,235,133],p:[-20,33,5,3],hoch:44,wand:'#b9a27c',dach:'#a5553c',haus:T.KASERNE,haus2:T.KAS_S},
+ {id:'hall',name:'HALL',l:[50,206,112,70],p:[8,40,2,1],hoch:36,wand:'#8d8a80',dach:'#5d5a54',weg:true},
+ {id:'markt',name:'SKLAVENMARKT',l:[45,280,230,118],p:[-8,47,5,2],hoch:26,wand:'#a98458',dach:'#c9b27a',haus:T.MARKT},// offener Stand wie im Spiel, fest
+ {id:'medicus',name:'MEDICUS',l:[34,447,250,163],p:[-8,41,5,3],hoch:40,wand:'#d2cbb8',dach:'#7e8a8c',haus:T.MEDICUS},// fest, nicht baubar und nicht abreißbar
+ {id:'platz',name:'TRAININGSHOF',l:[310,247,275,343],p:[-19,40,6,7],hoch:0,wand:'#7a5a39',dach:'#d9c391',flach:true},
+ {id:'schmiede',name:'SCHMIEDE',l:[638,86,215,150],p:[-36,33,4,3],hoch:42,wand:'#7d7468',dach:'#4b4640',haus:T.SCHMIEDE,haus2:T.SCHM_S},
+ {id:'beastrium',name:'BEASTRIUM',l:[652,298,196,126],p:[-36,40,4,3],hoch:40,wand:'#96795a',dach:'#6b4a2c',haus:T.BEAST,haus2:T.BST_S},
+ // Nur 2.0 (A3): Unterkunft der Gladiatoren, schäbigste Klasse
+ ...(ANORD?[{id:'unterkunft',name:'UNTERKUNFT',l:[0,0,0,0],p:[-29,33,6,4],hoch:30,wand:'#8a6f4a',dach:'#6b4a2c',haus:T.UNT_S}]:[])
 ];
-for(const [i,b] of BAU.entries()){b.tx=LUD.tx+Math.round(b.l[0]/LUD.px);b.ty=LUD.ty+Math.round(b.l[1]/LUD.px);b.w=Math.max(1,Math.round(b.l[2]/LUD.px));b.h=Math.max(1,Math.round(b.l[3]/LUD.px));b.i=i;}
+// 2.0: feste Lagen (p) im Dorf und am Platz, die Häuser des Start-Ludus in der schäbigsten Klasse (haus2; Thomas: „alles unterste Klasse,
+// der Rest muss erforscht werden“). Editor (96er Karte): Lage aus dem alten Ludus wie bisher.
+for(const [i,b] of BAU.entries()){if(ANORD){b.tx=O+b.p[0];b.ty=O+b.p[1];b.w=b.p[2];b.h=b.p[3];if(b.haus2!=null)b.haus=b.haus2;}
+ else{b.tx=LUD.tx+Math.round(b.l[0]/LUD.px);b.ty=LUD.ty+Math.round(b.l[1]/LUD.px);b.w=Math.max(1,Math.round(b.l[2]/LUD.px));b.h=Math.max(1,Math.round(b.l[3]/LUD.px));}b.i=i;}
 // Gelände. Editor: Wald links (linke Ecke der Raute), Fluss rechts vom Ludus, ein gerader Weg vor dem Ludus, alles flach.
 // Große Karte: Höhen aus Rauschen (Grundform, Gebirgskämme, Hügel), Wasser überall, wo der Boden unter WL liegt (Seen), dazu
 // ein Fluss über die ganze Karte. Biome nach Wärme und Feuchte in großen Flecken mit ausgefransten Rändern: Wüste (warm,
@@ -63,9 +80,10 @@ const B_=window.WeltNatur?.BIOM||{KERN:0,WALD:1,WUESTE:2,DSCHUNGEL:3,SUMPF:4},bi
 // Eck zwei = steiler Hang). Zwischen Feldern darf es Sprünge geben (Klippe mit Erdwand), wie nach dem Geländewerkzeug.
 // Wasser steht überall auf WL; ein Feld, das tiefer reicht, ist Gewässer (feld = FLUSS, darunter grund).
 const HZ=8,WL=-1,V=N+1,hc=new Int8Array(N*N*4),grund=new Uint8Array(N*N),eben=new Uint8Array(N*N),wy=new Int16Array(N).fill(WEG_TY),prof=new Int8Array(V),bruecke=new Uint8Array(N);let HMAX=0,HMIN=0;
-const WEG_L=O-10,WEG_R=O+160;// dazwischen läuft der Weg gerade (Ludus-Gelände, Besucher)
+const WEG_L=O-(ANORD?75:10),WEG_R=O+160;// dazwischen läuft der Weg gerade (Ludus-Gelände, Besucher)
 // Ludus-Gelände: ebenR < EBEN, eben und Wiese. Thomas 12.11.: Freifläche um Arena und Ludus viel größer (vorher Radius 64 um 75/46)
-const ebenR=(x,y)=>Math.hypot(x-O-58,(y-O-42)*1.15)+(vn(x/9,y/9,31)-.5)*12,EBEN=125,EBEN_RAND=200;
+// A3: Mitte der Freifläche zwischen Dorf und Park verschoben (vorher 58/42), damit beide ganz auf ebenem Boden liegen
+const EM=ANORD?[34,30]:[58,42],ebenR=(x,y)=>Math.hypot(x-O-EM[0],(y-O-EM[1])*1.15)+(vn(x/9,y/9,31)-.5)*12,EBEN=125,EBEN_RAND=200;
 // Großes Rauschen auf einem groben Gitter vorrechnen und dazwischen mitteln (spart beim Laden)
 function grob(f,st){const n=Math.ceil(V/st)+2,a=new Float32Array(n*n);for(let j=0;j<n;j++)for(let i=0;i<n;i++)a[j*n+i]=f(i*st,j*st);
  return (x,y)=>{const fx=x/st,fy=y/st,i=fx|0,j=fy|0,u=fx-i,v=fy-j,o=j*n+i;return (a[o]*(1-u)+a[o+1]*u)*(1-v)+(a[o+n]*(1-u)+a[o+n+1]*u)*v;};}
@@ -106,28 +124,48 @@ for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){let t=T.WIESE,bi=0;const k=ix(tx,
   bi=w>.54&&f<.48?B_.WUESTE:w>.52&&f>=.52?B_.DSCHUNGEL:f>.54&&w<.49&&hm<6?B_.SUMPF:w<.465?B_.WALD:0;
   t=bi===B_.WALD?(q>.72?T.WIESE:T.WALD):bi===B_.WUESTE?(q>.8?T.WIESE:T.SAND):bi===B_.DSCHUNGEL?(q>.8?T.MOOR:T.DSCH):bi===B_.SUMPF?(q>.52?T.MOOR:T.SUMPF):(q>.68?T.WALD:T.WIESE);
   const fels=15+(vn(tx/5,ty/5,43)-.5)*4;if(hm>=fels)t=hm>=fels+8?T.SCHNEE:T.FELS;}
- else if(ly-lx>30+h2(tx>>2,ty>>2,5)*9)t=T.WALD;
+ else if(!imAnord(lx,ly,3)&&ly-lx>30+h2(tx>>2,ty>>2,5)*9)t=T.WALD;// A3: in Dorf, Platz und Park kein Wald
  if(!GROSS&&Math.abs(tx-flussX(ty))<=1)t=T.FLUSS;
  grund[k]=t;if(GROSS&&Math.min(c0,c1,c2,c3)<WL)t=T.FLUSS;
  if(ty===wy[tx]||ty===wy[tx]+1)t=(GROSS?bruecke[tx]:t===T.FLUSS)?T.BRUECKE:T.WEG;
  if(tx>=LUD.tx&&tx<LUD.tx+LUD.w&&ty>=LUD.ty&&ty<LUD.ty+LUD.h)t=T.LUDUS;
+ if(ANORD&&inR(lx,ly,ANORD.platz))t=T.LUDUS;// zentraler Platz: festgetretener Boden
  if(t!==T.FLUSS)grund[k]=t;feld[k]=t;biom[k]=bi||(t===T.WALD?B_.WALD:0);}
 // Kaserne, Schmiede, Beastrium, Medicus und Sklavenmarkt stehen als echte Gebäude der mittleren Klasse da (welt-gebaeude.js, Thomas 12.11.); Lage und bauAuf bleiben für die Intros.
 for(const b of BAU)if(!b.weg)for(let y=b.ty;y<b.ty+b.h;y++)for(let x=b.tx;x<b.tx+b.w;x++){feld[ix(x,y)]=b.flach?T.PLATZ:b.haus??T.BAU;bauAuf[ix(x,y)]=b.i;}
 const SKIZZE=BAU.filter(b=>b.haus==null&&!b.weg);
+// A3: Kieswege im Park, Grenzen (Zaun um den Park, Palisade um das Dorf und hinter dem Platz) und feste Felder.
+// Grenzen liegen auf den Kanten zwischen Feldern: zaunA[k] = Kante oben rechts von Feld k (Linie ty), zaunB[k] = Kante oben links
+// (Linie tx); 1 = Parkzaun, 2 = Palisade. fest[k]: weder baubar noch abreißbar (Platz, Bauplatz der Verwaltung).
+const zaunA=new Uint8Array(N*N),zaunB=new Uint8Array(N*N),fest=new Uint8Array(N*N),TORE=[];
+if(ANORD){const A=ANORD,setz=(arr,x,y,v)=>{if(inMap(x,y))arr[ix(x,y)]=v;};
+ for(const [x0,y0,w,h] of A.pfade)for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)feld[ix(x+O,y+O)]=T.STR2;
+ for(let y=A.platz[1];y<A.platz[1]+A.platz[3];y++)for(let x=A.platz[0];x<A.platz[0]+A.platz[2];x++){const k=ix(x+O,y+O);if(feld[k]===T.LUDUS)fest[k]=1;}
+ // Ring um ein Rechteck; luecke(seite, i) = true lässt die Kante offen (Tor). Seiten: o oben, u unten, l links, r rechts
+ const ring=([x0,y0,w,h],v,luecke,seiten='oulr')=>{for(let i=0;i<w;i++){if(seiten.includes('o')&&!luecke('o',x0+i))setz(zaunA,x0+i+O,y0+O,v);if(seiten.includes('u')&&!luecke('u',x0+i))setz(zaunA,x0+i+O,y0+h+O,v);}
+  for(let j=0;j<h;j++){if(seiten.includes('l')&&!luecke('l',y0+j))setz(zaunB,x0+O,y0+j+O,v);if(seiten.includes('r')&&!luecke('r',y0+j))setz(zaunB,x0+w+O,y0+j+O,v);}};
+ const imTor=(t,i)=>i>=t[0]&&i<t[0]+t[1];
+ ring(A.park,1,(s,i)=>(s==='u'&&imTor(A.parktor,i))||(s==='l'&&imTor(A.kaempfertor,i)));
+ ring(A.dorf,2,(s,i)=>(s==='u'&&imTor(A.dorftor,i))||(s==='r'&&imTor(A.durchgang,i)));
+ ring(A.platz,2,()=>false,'o');// hinter dem Platz eine Palisade; zur Straße hin offen, links Dorf, rechts Park
+ TORE.push({art:'park',tx:A.parktor[0]+O,ty:A.park[1]+A.park[3]+O,w:A.parktor[1],dir:0},{art:'dorf',tx:A.dorftor[0]+O,ty:A.dorf[1]+A.dorf[3]+O,w:A.dorftor[1],dir:0},
+  {art:'kaempfer',tx:A.park[0]+O,ty:A.kaempfertor[0]+O,w:A.kaempfertor[1],dir:1});}
 // Naturobjekte (welt-natur.js): je Feld höchstens eines. Alles darauf ist entfernbar (obj = 0); nicht am Weg, nicht um den Ludus.
 const NASS_OK=new Set(['Schilf','Seerosen','Moorhand']),NB=window.WeltNatur,obj=new Uint8Array(N*N),BODEN_NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FLUSS,T.FELS,T.SCHNEE]),
  BODEN_NAME={[T.WIESE]:'wiese',[T.WALD]:'wald',[T.SAND]:'sand',[T.DSCH]:'dsch',[T.SUMPF]:'sumpf',[T.MOOR]:'moor',[T.FLUSS]:'wasser',[T.FELS]:'fels',[T.SCHNEE]:'schnee'};
-if(NB)for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const k=ix(tx,ty),t=feld[k],lx=tx-O,ly=ty-O;if(!BODEN_NATUR.has(t)||Math.abs(ty-wy[tx]-.5)<=1.6)continue;if(lx>=24&&lx<=74&&ly>=20&&ly<=64)continue;
+if(NB)for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const k=ix(tx,ty),t=feld[k],lx=tx-O,ly=ty-O;if(!BODEN_NATUR.has(t)||Math.abs(ty-wy[tx]-.5)<=1.6)continue;if(ANORD?imAnord(lx,ly,1):(lx>=24&&lx<=74&&ly>=20&&ly<=64))continue;
  let o=NB.waehle(biom[k],BODEN_NAME[t],tx,ty,fbm(tx/14,ty/14,6));
  // Keine Bäume im Wasser (Thomas 12.11.): im Wasser, im Moor und am Ufer (eine Ecke auf Wasserhöhe) nur Schilf, Seerosen, Moorhand
  if(o&&!NASS_OK.has(NB.ARTEN[o].name)&&(t===T.FLUSS||t===T.MOOR||Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3])<=WL))o=0;
  obj[k]=o;}
 // Halle der Toten (Thomas 12.11.): nicht mehr im Ludus, sondern etwas abseits westlich davon am Waldrand. 5 × 3 Halle, davor
 // ein Gräberplatz 5 × 2 (10 Grabstellen, welt-gebaeude.js), ein Kiespfad hinunter zum Weg. Fest: nicht baubar, nicht abreißbar.
-const HALLE={tx:LUD.tx-18,w:5,h:3,hofH:2};HALLE.pfadX=HALLE.tx+2;HALLE.ty=Math.min(WEG_TY,wy[HALLE.pfadX])-13;// gut 8 Felder Pfad bis zum Weg
+// A3 (2.0): Die Halle steht im Park an der Seite des Platzes; Besucher kommen über den Kiesweg im Park (HALLE.unten), nicht von der Straße.
+const HALLE=ANORD?{tx:ANORD.halle[0]+O,ty:ANORD.halle[1]+O,w:5,h:3,hofH:2}:{tx:LUD.tx-18,w:5,h:3,hofH:2};HALLE.pfadX=HALLE.tx+2;
+if(ANORD){HALLE.unten={x:HALLE.pfadX+.5,y:ANORD.pfade[3][1]+O+.5};for(let y=HALLE.ty;y<HALLE.ty+HALLE.h+HALLE.hofH;y++)for(let x=HALLE.tx;x<HALLE.tx+HALLE.w;x++){const k=ix(x,y);obj[k]=0;feld[k]=y-HALLE.ty<HALLE.h?T.HALLE:T.GRAB;}}
+else{HALLE.ty=Math.min(WEG_TY,wy[HALLE.pfadX])-13;// gut 8 Felder Pfad bis zum Weg
 for(let y=HALLE.ty-1;y<Math.max(WEG_TY,wy[HALLE.pfadX]);y++)for(let x=HALLE.tx-1;x<=HALLE.tx+HALLE.w;x++){const k=ix(x,y),inR=x>=HALLE.tx&&x<HALLE.tx+HALLE.w,hy=y-HALLE.ty;obj[k]=0;
- if(inR&&hy>=0&&hy<HALLE.h)feld[k]=T.HALLE;else if(inR&&hy>=HALLE.h&&hy<HALLE.h+HALLE.hofH)feld[k]=T.GRAB;else if(x===HALLE.pfadX&&hy>=HALLE.h+HALLE.hofH)feld[k]=T.WEG;else if(feld[k]!==T.WEG&&feld[k]!==T.FLUSS)feld[k]=T.WIESE;}
+ if(inR&&hy>=0&&hy<HALLE.h)feld[k]=T.HALLE;else if(inR&&hy>=HALLE.h&&hy<HALLE.h+HALLE.hofH)feld[k]=T.GRAB;else if(x===HALLE.pfadX&&hy>=HALLE.h+HALLE.hofH)feld[k]=T.WEG;else if(feld[k]!==T.WEG&&feld[k]!==T.FLUSS)feld[k]=T.WIESE;}}
 const ovar=(tx,ty)=>NB?NB.variante(tx,ty):0;
 
 // ---------- Bildchen: Felder und Bäume ----------
@@ -295,6 +333,17 @@ function rebake(ks){if(!ks||!ks.length||!overview){bake();return;}let x0=N,y0=N,
 // steht. Nur auf dem ebenen Ludus-Gelände bleiben stehende Objekte eigene Dinge (Tiefenreihenfolge mit Figuren).
 // Höhen: auch Felder unterhalb des Stücks werden gemalt, weil sie (angehoben) hineinragen.
 const CH=512,chunks=new Map();let frameNo=0;
+// A3: Bilder der Grenzen, je Art (1 Parkzaun, 2 Palisade) und Richtung (0 Kante entlang tx, 1 entlang ty) einmal gemalt
+const zaunBilder=new Map();
+function zaunBild(art,dir){const key=art*2+dir;let b=zaunBilder.get(key);if(b)return b;const H=art===2?20:11,W2=36,ay=H+12,[c,g]=mkCanvas(W2,H+22);
+ const pt=u=>{const x=2+u*32,y=ay-8+u*16;return dir?{x:W2-x,y}:{x,y};};
+ if(art===1){// Holzzaun mit zwei Latten, Pfosten an Ecken und Mitte, weiß gekalkt wie ein ordentlicher Park
+  for(const [hy,col] of [[H-3,'#8a6a42'],[5,'#8a6a42']])for(let u=0;u<=1;u+=1/32){const p=pt(u);g.fillStyle=col;g.fillRect(Math.round(p.x),Math.round(p.y-hy),1,2);}
+  for(let i=0;i<=2;i++){const p=pt(i/2),x=Math.round(p.x)-1,y=Math.round(p.y);g.fillStyle='#5e4229';g.fillRect(x,y-H,3,H);g.fillStyle='#e8dcc0';g.fillRect(x,y-H,2,H-1);g.fillStyle='#6b4a2c';g.fillRect(x,y-H-1,3,1);}}
+ else{// Palisade: angespitzte Stämme dicht an dicht
+  for(let i=0;i<9;i++){const p=pt((i+.5)/9),x=Math.round(p.x)-2,y=Math.round(p.y),h=H-(i%3===1?2:0);
+   g.fillStyle='#4a3420';g.fillRect(x,y-h,4,h);g.fillStyle=i%2?'#7a5a39':'#8a6a42';g.fillRect(x,y-h,3,h-1);g.fillStyle='#a07e52';g.fillRect(x+1,y-h-2,1,2);g.fillStyle='#5e4229';g.fillRect(x,y-Math.round(h*.4),4,1);}}
+ b={img:c,ax:W2/2,ay};zaunBilder.set(key,b);return b;}
 function chunk(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;let ch=chunks.get(key);if(ch)return ch;const [c,g]=mkCanvas(CH+2,CH+2),x0=cx*S,y0=cy*S,sp=sprites[raster?1:0],stehen=[];
  g.fillStyle='#1c2416';g.fillRect(0,0,CH+2,CH+2);g.imageSmoothingEnabled=lod>1;g.scale(1/lod,1/lod);g.translate(-x0,-y0);
  const unten=GROSS?Math.ceil(((HMAX+1)*HZ+150)/(TH/2)):NB?10:0,oben=GROSS?Math.ceil((-BASIS()+1)*HZ/(TH/2))+1:0;
@@ -302,7 +351,11 @@ function chunk(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;let ch=chun
  for(let v=v0;v<=v1;v++){const u00=u0+((u0+v)&1);
   for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;maleFeld(g,sp,tx,ty,(tx-ty)*TW/2+OX-TW/2,v*TH/2+OY);}
   if(NB)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty),o=obj[k];if(!o)continue;const b=NB.bild(o,ovar(tx,ty)),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY+TH/2,z=objHz(tx,ty);
-   if(b.flach||lod>1||!eben[k])g.drawImage(b.img,x-b.ax,y-z-b.ay);else if(x>=x0&&x<x0+S&&y>=y0&&y<y0+S)stehen.push({x,y,oz:z,img:b.img,ax:b.ax,ay:b.ay});}}
+   if(b.flach||lod>1||!eben[k])g.drawImage(b.img,x-b.ax,y-z-b.ay);else if(x>=x0&&x<x0+S&&y>=y0&&y<y0+S)stehen.push({x,y,oz:z,img:b.img,ax:b.ax,ay:b.ay});}
+  // A3: Zaun und Palisade; Mitte der Kante als Fußpunkt, damit Figuren davor und dahinter richtig stehen
+  if(ANORD)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty);
+   for(const [arr,dir] of [[zaunA,0],[zaunB,1]]){const art=arr[k];if(!art)continue;const b=zaunBild(art,dir),m=dir?iso(tx,ty+.5):iso(tx+.5,ty),z=hz(tx,ty);
+    if(lod>1)g.drawImage(b.img,m.x-b.ax,m.y-z-b.ay);else if(m.x>=x0&&m.x<x0+S&&m.y>=y0&&m.y<y0+S)stehen.push({x:m.x,y:m.y,oz:z,img:b.img,ax:b.ax,ay:b.ay});}}}
  ch={c,stehen,used:frameNo,x0,y0,S};chunks.set(key,ch);return ch;}
 
 // ---------- Gebäude als Skizze ----------
@@ -367,7 +420,7 @@ function place(g,x,y){const w=workers.find(w=>w.g.id===g.id);if(!w)return;if(GRO
 
 // ---------- Ansicht, Kamera, Bedienung ----------
 const cv=$('weltCanvas'),ctx=cv.getContext('2d');let VW=1,VH=1,DPR=1;
-const L0=iso(LUD.tx+LUD.w/2,LUD.ty+LUD.h/2),cam={x:L0.x,y:L0.y,s:1};
+const L0=ANORD?iso(O+ANORD.platz[0]+ANORD.platz[2]/2,O+ANORD.platz[1]+ANORD.platz[3]/2):iso(LUD.tx+LUD.w/2,LUD.ty+LUD.h/2),cam={x:L0.x,y:L0.y,s:1};// 2.0: Start mit Blick auf den Platz
 function resize(){DPR=Math.min(2,window.devicePixelRatio||1);VW=cv.clientWidth||innerWidth;VH=cv.clientHeight||innerHeight;cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);clampCam();}
 const minScale=()=>Math.min(VW/WW,VH/WH)*.95,maxScale=()=>4.5;
 function clampCam(){cam.s=clamp(cam.s,minScale(),maxScale());cam.x=clamp(cam.x,0,WW);cam.y=clamp(cam.y,0,WH);}
@@ -438,7 +491,9 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
 
 // ---------- Start ----------
 try{window.ArenaUI?.close?.();}catch(e){}M.ui.click('nav:home');
-bake();makeRoster(60);resize();cam.s=clamp(Math.max(.85,Math.min(VW/1100,VH/760)*1.1),minScale(),maxScale());clampCam();// am Handy nicht in der Miniaturansicht starten
+// 2.0 (A3): echter Kader, kein Auffüllen auf 60 mehr. Ein neuer Platz startet einmalig mit START_KADER Gladiatoren (Vorschlag, Thomas bestätigt).
+const START_KADER=8,lebend=S.roster.filter(g=>!g.dead).length,kader=window.AT2?(S.at2Kader?lebend:(S.at2Kader=1,Math.max(lebend,START_KADER))):60;
+bake();makeRoster(kader);resize();cam.s=clamp(Math.max(.85,Math.min(VW/1100,VH/760)*1.1),minScale(),maxScale());clampCam();// am Handy nicht in der Miniaturansicht starten
 $('weltBoot')?.remove();last=performance.now();requestAnimationFrame(frame);
 // Für Bauen und Geländewerkzeug: angehobene Ecken eines Feldes, Felder einebnen, Bodenart nach Höhenänderung
 function ecken(k){const x=k%N,y=(k/N)|0,P=[iso(x,y),iso(x+1,y),iso(x+1,y+1),iso(x,y+1)];return P.map((p,i)=>({x:p.x,y:p.y-(GROSS?hc[k*4+i]*HZ:0)}));}
@@ -447,6 +502,7 @@ function ebnen(ks,L){for(const k of ks){hc.fill(L,k*4,k*4+4);gelaendeTyp(k);}if(
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
 window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
+ ANORD,fest,zaunA,zaunB,TORE,imAnord,inR,// A3: Dorf, Platz, Park (Lagen relativ zu O), feste Felder, Grenzen, Tore
  raster(on){raster=!!on;bake();},rebake,O,WEG_TY,HALLE,wegY:tx=>wy[clamp(tx|0,0,N-1)],HZ,WL,hc,grund,eben,hoehe,hz,bodenPunkt,ecken,ebnen,gelaendeTyp,get HMAX(){return HMAX;},get HMIN(){return HMIN;},merkeHoehe(h){if(h>HMAX)HMAX=h;if(h<HMIN)HMIN=h;},obj,biom,BODEN_NATUR,ix,inMap,imLudus,h2,get vw(){return VW;},get vh(){return VH;},get mini(){return miniV;},get clock(){return clock;},get tempo(){return tempo;},set tempo(v){tempo=Math.max(0,+v||0);},get perf(){return perfAvg;}};
 window.WELT_READY=true;
 })();

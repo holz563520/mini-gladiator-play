@@ -20,4 +20,11 @@ AT2Sprache.dazu('de',{
  'leiste.hauptspiel':'zum Hauptspiel',
  'leiste.knopf':'💾 Platz {n}',
  'leiste.knopfTitel':'Speichern und zurück zu den Spielständen',
+ 'start.alt':'Alte Karte aus der Zeit vor dem Umbau. Lässt sich nur noch löschen.',
+ 'karte.parktor':'ARENA-PARK','karte.parktorZeile':'Eintritt frei. Austritt nicht garantiert.',
+ 'karte.dorftor':'LUDUS','karte.dorftorZeile':'Betreten nur für Eigentum.',
+ 'karte.verwaltung':'BAUPLATZ VERWALTUNG','karte.verwaltungZeile':'Hier entsteht Bürokratie.',
+ 'leiste.testGold':'+1000 Gold (Test)','leiste.testGoldTitel':'Nur zum Ausprobieren, kommt vor der Veröffentlichung weg',
+ 'leiste.testGoldMeldung':'1000 Gold aus dem Nichts. Der Steuereintreiber hat nichts gesehen.',
+ 'karte.kaempfertor':'KÄMPFERTOR','karte.kaempfertorZeile':'Zuschauer nur liegend.',
 });

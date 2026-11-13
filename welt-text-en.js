@@ -20,4 +20,11 @@ AT2Sprache.dazu('en',{
  'leiste.hauptspiel':'to the main game',
  'leiste.knopf':'💾 Slot {n}',
  'leiste.knopfTitel':'Save and return to the save slots',
+ 'start.alt':'Old map from before the rebuild. It can only be deleted now.',
+ 'karte.parktor':'ARENA PARK','karte.parktorZeile':'Admission free. Departure optional.',
+ 'karte.dorftor':'LUDUS','karte.dorftorZeile':'Property only. Yes, that includes you.',
+ 'karte.verwaltung':'FUTURE ADMINISTRATION','karte.verwaltungZeile':'Future site of paperwork. Bring a sword.',
+ 'leiste.testGold':'+1000 gold (test)','leiste.testGoldTitel':'For testing only, removed before release',
+ 'leiste.testGoldMeldung':'1000 gold from thin air. The tax collector saw nothing. Probably.',
+ 'karte.kaempfertor':'FIGHTERS ONLY','karte.kaempfertorZeile':'Spectators carried out horizontally.',
 });
