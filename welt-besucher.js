@@ -87,7 +87,7 @@ const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const x0=view.x
 let zeig=null;const tap0=H.tap;H.tap=(p,w)=>{if(tap0&&tap0(p,w))return true;if(w)return false;let best=null,bd=1e9;for(const v of leute){const k=Math.max(1,1.4/W.cam.s),ex=Math.abs(v.dx-p.x),ey=p.y-(v.dy-8);if(ex<6*k&&ey>-10*k&&ey<10*k&&ex+Math.abs(ey)<bd){bd=ex+Math.abs(ey);best=v;}}
  if(!best){zeig=null;return false;}zeig={v:best,t:4};return true;};
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(!zeig)return;zeig.t-=dt;const v=zeig.v;if(zeig.t<=0||v.st==='fort'){zeig=null;return;}
- const z=Math.min(3,Math.max(.4,.8/W.cam.s)),s=v.name+' · '+v.stand,y=v.dy-W.HOEHE-9*z;ctx.font='bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace';ctx.textAlign='center';ctx.textBaseline='middle';const w=ctx.measureText(s).width+8*z;
+ const z=Math.min(3,Math.max(.4,.8/W.cam.s)),s=v.name+' · '+v.stand,y=v.dy-W.HOEHE-9*z;ctx.font=(window.AT2_STIL?AT2_STIL.font(11*z):'bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace');ctx.textAlign='center';ctx.textBaseline='middle';const w=ctx.measureText(s).width+8*z;
  ctx.fillStyle='rgba(18,12,9,.88)';ctx.fillRect(Math.round(v.dx-w/2),Math.round(y-8*z),Math.round(w),Math.round(16*z));ctx.fillStyle='#f4d37a';ctx.fillText(s,Math.round(v.dx),Math.round(y)+1);};
 B.beiAenderung(plaetze);plaetze();setze(soll);
 M.weltBesucher={setze,STAND,typen:()=>typen,get zahl(){return leute.length;},get soll(){return soll;},leute:()=>leute,bewundern:()=>leute.filter(v=>v.st==='ehrt').length,sitze:()=>sitze,freie:()=>frei.length};

@@ -261,13 +261,13 @@ const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);
  for(let i=fx.length-1;i>=0;i--){const d=fx[i];d.t+=dt;if(d.t>.45){fx.splice(i,1);continue;}d.x+=d.vx*dt;d.y+=d.vy*dt;ctx.globalAlpha=1-d.t/.45;ctx.fillStyle='#e8d8a8';ctx.fillRect(Math.round(d.x)-1,Math.round(d.y)-1,3,3);}ctx.globalAlpha=1;
  const z=clamp(1/W.cam.s,1,3);ctx.textAlign='center';ctx.textBaseline='middle';
  // Namensschild jeder Arena
- for(const a of arenen){if(a.x<view.x0-200||a.x>view.x1+200||a.y<view.y0-60||a.y>view.y1+60)continue;ctx.save();ctx.translate(0,-(a.oz||0));const s=a.name.toUpperCase()+(a.plaetze?' · '+a.plaetze+' PLÄTZE':'');ctx.font='bold '+Math.round(12*z)+'px ui-monospace,Menlo,Consolas,monospace';const w=ctx.measureText(s).width+10*z;
+ for(const a of arenen){if(a.x<view.x0-200||a.x>view.x1+200||a.y<view.y0-60||a.y>view.y1+60)continue;ctx.save();ctx.translate(0,-(a.oz||0));const s=a.name.toUpperCase()+(a.plaetze?' · '+a.plaetze+' PLÄTZE':'');ctx.font=(window.AT2_STIL?AT2_STIL.font(12*z):'bold '+Math.round(12*z)+'px ui-monospace,Menlo,Consolas,monospace');const w=ctx.measureText(s).width+10*z;
   ctx.fillStyle='rgba(18,12,9,.8)';ctx.fillRect(Math.round(a.x-w/2),Math.round(a.y-9*z),Math.round(w),Math.round(18*z));ctx.fillStyle='#f4d37a';ctx.fillText(s,Math.round(a.x),Math.round(a.y)+1);ctx.restore();}
  // Auswahl beim Ziehen
  if(mode&&info){const good=mode==='weg'?'rgba(240,120,90,.45)':info.genug?'rgba(120,220,110,.42)':'rgba(240,190,80,.42)';for(const k of info.ok)raute(ctx,k,good,mode==='weg'?'#ffb09a':info.genug?'#c8f5b0':'#ffd65a');for(const k of info.no)raute(ctx,k,'rgba(210,60,50,.3)','rgba(240,120,110,.8)');}
  if(mode==='land'&&landSel){for(const k of landSel.ks)raute(ctx,k,landSel.ecken?null:'rgba(255,240,170,.22)','#ffe9a0');if(landSel.ecken){const P=W.ecken(landSel.ks[0]);ctx.strokeStyle='#ffd65a';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(P[landSel.ecken[0]].x,P[landSel.ecken[0]].y);for(const c of landSel.ecken)ctx.lineTo(P[c].x,P[c].y);ctx.stroke();for(const c of landSel.ecken){ctx.fillStyle='#ffd65a';ctx.fillRect(P[c].x-3,P[c].y-3,6,6);}}}
  // aufsteigende Schrift
- for(let i=text.length-1;i>=0;i--){const f=text[i];f.t+=dt;if(f.t>1.9){text.splice(i,1);continue;}if(f.t<0)continue;ctx.globalAlpha=f.t>1.4?1-(f.t-1.4)/.5:1;ctx.font='bold '+Math.round(15*z)+'px ui-monospace,Menlo,Consolas,monospace';const y=f.y-f.t*26*z;ctx.lineWidth=4*z;ctx.strokeStyle='#120c09';ctx.strokeText(f.s,f.x,y);ctx.fillStyle=f.col;ctx.fillText(f.s,f.x,y);}ctx.globalAlpha=1;};
+ for(let i=text.length-1;i>=0;i--){const f=text[i];f.t+=dt;if(f.t>1.9){text.splice(i,1);continue;}if(f.t<0)continue;ctx.globalAlpha=f.t>1.4?1-(f.t-1.4)/.5:1;ctx.font=(window.AT2_STIL?AT2_STIL.font(15*z):'bold '+Math.round(15*z)+'px ui-monospace,Menlo,Consolas,monospace');const y=f.y-f.t*26*z;ctx.lineWidth=4*z;ctx.strokeStyle='#120c09';ctx.strokeText(f.s,f.x,y);ctx.fillStyle=f.col;ctx.fillText(f.s,f.x,y);}ctx.globalAlpha=1;};
 // Im Baumodus öffnet Antippen keine Nahaufnahme
 const tap0=H.tap;H.tap=(p,w)=>mode?true:tap0?tap0(p,w):false;
 

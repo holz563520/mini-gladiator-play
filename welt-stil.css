@@ -1,0 +1,162 @@
+/* STIL ARENA THEORY 2.0 (welt-stil.css) · „Rattenpergament“: ein Aussehen und eine Schrift für alle Menüs von 2.0. Wunsch Thomas 13.11.2026.
+   ANLEITUNG FÜR NEUE MENÜS (Regel 19, AT2_FAHRPLAN.md):
+   1. Fenster bekommt die Klasse `ws-papier` (oder steht in welt-stil.js → ZIELE). welt-stil.js zeichnet dann das Pixelpergament
+      (verbrannter Rand, Rattenbisse, Dreck, Blut nur am Rand) und rollt das Fenster beim Öffnen kurz auf. Nichts selbst zeichnen.
+   2. Schrift: nie eigene font-family setzen. Text erbt „AT2 Text“ (VT323), Überschriften (h1–h3, .ws-titel) „AT2 Titel“ (Jacquard 24).
+      Auf Canvas: AT2_STIL.font(px, titel) statt eigener Schriftnamen.
+   3. Farben nur aus den Variablen unten (--ws-…). Knöpfe: Klasse `w-btn` (normal) bzw. zusätzlich `ws-haupt` (Hauptaktion, blutrot).
+   4. Menüs nie im Weg: klein, am Rand (unten oder oben), Karte bleibt sichtbar, kein dunkler Vollbild-Schleier, schließen per ✕ und Esc.
+   5. Lesbar: Text mind. 15 px, dunkle Tinte auf hellem Papier, Blut und Flecken nie unter Text.
+   Gilt nur auf arena-theory-2.html (body.at2-stil). Arena Theory 1.0 bleibt unberührt. */
+@font-face{font-family:'AT2 Text';src:url(fonts/at2-text-vt323.woff) format('woff');font-display:swap}
+@font-face{font-family:'AT2 Titel';src:url(fonts/at2-titel-jacquard24.woff) format('woff');font-display:swap}
+
+body.at2-stil{--ws-papier:#e2cc9a;--ws-tinte:#2a1608;--ws-tinte2:#5a3a22;--ws-blut:#6a0c06;--ws-blut-hell:#8e1a0e;--ws-rand:#3a1a08;
+ --ws-knopf:#c9ad78;--ws-knopf-an:#e9d6a6;--ws-linie:rgba(106,58,26,.55);--ws-nacht:#120c09;--ws-knochen:#efe0b8;--ws-gut:#3c5a1e;
+ --ws-text:'AT2 Text',ui-monospace,monospace;--ws-titel:'AT2 Titel','AT2 Text',serif}
+/* Eine Schrift für alles (font-size-adjust gleicht die kleine Pixelschrift an die bisherigen Größen an) */
+body.at2-stil,body.at2-stil #welt,body.at2-stil button,body.at2-stil input,body.at2-stil select,body.at2-stil textarea,body.at2-stil #at2Start,
+body.at2-stil .hs-detail,body.at2-stil #notice,body.at2-stil #modal{font-family:var(--ws-text)!important;font-size-adjust:.5;font-weight:normal!important;-webkit-font-smoothing:none;font-smooth:never;letter-spacing:.02em}
+body.at2-stil h1,body.at2-stil h2,body.at2-stil h3,body.at2-stil .ws-titel{font-family:var(--ws-titel)!important;font-weight:normal!important;font-size-adjust:.46;letter-spacing:.01em!important;text-transform:none!important}
+
+/* ---------- Grundbausteine ---------- */
+body.at2-stil .ws-papier{background-color:transparent!important;background-size:100% 100%!important;background-repeat:no-repeat!important;image-rendering:pixelated;
+ border:0!important;box-shadow:none!important;outline:0!important;color:var(--ws-tinte)!important;border-radius:0!important}
+body.at2-stil .ws-papier:not(.ws-fertig){background-color:var(--ws-papier)!important}
+body.at2-stil b,body.at2-stil strong,body.at2-stil th,body.at2-stil #welt *,body.at2-stil #at2Start *,body.at2-stil .hs-detail *{font-weight:normal!important}
+body.at2-stil .ws-papier :is(p,span,small,li,td,th,label,em,i,div,header,section,u,code){color:var(--ws-tinte)!important}
+body.at2-stil .ws-papier b,body.at2-stil .ws-papier strong,body.at2-stil .ws-papier :is(h1,h2,h3,.eyebrow b){color:var(--ws-blut)!important}
+body.at2-stil .ws-papier small,body.at2-stil .ws-papier .w-tiny,body.at2-stil .ws-papier .eyebrow{color:var(--ws-tinte2)!important}
+body.at2-stil .ws-papier :is(button,.w-btn) *{color:inherit!important}
+body.at2-stil .ws-papier .w-perf span{color:var(--ws-knochen)!important}
+body.at2-stil .ws-papier small,body.at2-stil .ws-papier .w-tiny{opacity:1!important}
+body.at2-stil .ws-papier a{color:var(--ws-blut)!important}
+body.at2-stil .ws-papier .w-btn,body.at2-stil .ws-papier button:not(.w-x):not(.hs-x),body.at2-stil .w-tempo button{font-family:var(--ws-text)!important;color:var(--ws-tinte)!important;background:var(--ws-knopf)!important;
+ border:0!important;border-radius:0!important;box-shadow:inset -3px -3px 0 rgba(58,26,8,.45),inset 3px 3px 0 rgba(255,246,220,.5),0 2px 0 rgba(20,8,2,.7)!important;
+ cursor:pointer;touch-action:manipulation;text-shadow:none!important}
+body.at2-stil .ws-papier .w-btn:hover,body.at2-stil .ws-papier button:not(.w-x):not(.hs-x):hover,body.at2-stil .w-tempo button:hover{background:var(--ws-knopf-an)!important}
+body.at2-stil .ws-papier .w-btn:active,body.at2-stil .ws-papier button:not(.w-x):not(.hs-x):active{transform:translateY(2px);box-shadow:inset 3px 3px 0 rgba(58,26,8,.45)!important}
+body.at2-stil .ws-papier .w-btn.on,body.at2-stil .ws-papier .ws-haupt,body.at2-stil .w-tempo button.on,body.at2-stil .ws-papier button.an,body.at2-stil .w-baubtn.on{
+ background:var(--ws-blut)!important;color:var(--ws-knochen)!important;box-shadow:inset -3px -3px 0 rgba(0,0,0,.45),inset 3px 3px 0 rgba(255,140,120,.3),0 2px 0 rgba(20,8,2,.7)!important}
+body.at2-stil .ws-papier .w-btn:disabled,body.at2-stil .ws-papier button:disabled{opacity:.5;cursor:default}
+body.at2-stil .ws-papier .w-x,body.at2-stil .ws-papier .hs-x{font-family:var(--ws-text)!important;background:none!important;border:0!important;box-shadow:none!important;color:var(--ws-blut)!important;font-size:22px!important;cursor:pointer;min-width:34px;min-height:34px}
+body.at2-stil .ws-papier select,body.at2-stil .ws-papier input[type=text],body.at2-stil .ws-papier input[type=number]{background:#f0dfb6!important;color:var(--ws-tinte)!important;border:2px solid var(--ws-rand)!important;border-radius:0}
+body.at2-stil .ws-papier input[type=range]{accent-color:var(--ws-blut)}
+body.at2-stil .ws-papier hr{border:0;border-top:3px dotted var(--ws-linie)}
+
+/* Aufrollen beim Öffnen: Pergament rollt sich in 9 Pixelschritten ab (oben → unten, bei Fenstern unten am Rand von unten nach oben) */
+body.at2-stil .ws-auf{animation:wsAuf .24s steps(9,end) both}
+body.at2-stil .ws-auf.ws-hoch{animation-name:wsAufHoch}
+@keyframes wsAuf{from{clip-path:inset(0 0 calc(100% - 15px) 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes wsAufHoch{from{clip-path:inset(calc(100% - 15px) 0 0 0)}to{clip-path:inset(0 0 0 0)}}
+body.at2-stil .ws-rolle{position:absolute;left:0;right:0;height:15px;z-index:5;pointer-events:none;image-rendering:pixelated;
+ background:linear-gradient(#3a1a08 0 3px,#a8814c 3px 6px,#e6d09e 6px 9px,#b8925a 9px 12px,#3a1a08 12px 15px);animation:wsRolle .24s steps(9,end) both}
+body.at2-stil .ws-rolle:before,body.at2-stil .ws-rolle:after{content:"";position:absolute;top:-3px;width:6px;height:21px;background:#2a1206}
+body.at2-stil .ws-rolle:before{left:0}body.at2-stil .ws-rolle:after{right:0}
+body.at2-stil .ws-hoch>.ws-rolle{animation-name:wsRolleHoch}
+@keyframes wsRolle{from{top:0}to{top:calc(100% - 15px);opacity:0}}
+@keyframes wsRolleHoch{from{top:calc(100% - 15px)}to{top:0;opacity:0}}
+@media (prefers-reduced-motion:reduce){body.at2-stil .ws-auf{animation:none}body.at2-stil .ws-rolle{display:none}}
+
+/* ---------- Startbild ---------- */
+body.at2-stil #at2Start{background:radial-gradient(ellipse at 50% 30%,#2e1a0e,#0c0806 72%)}
+body.at2-stil #at2Start .s-box{padding:22px 26px 20px}
+body.at2-stil #at2Start h1{font-size:42px;color:var(--ws-blut)!important;text-shadow:2px 2px 0 rgba(120,60,20,.35)}
+body.at2-stil #at2Start .s-sub{color:var(--ws-tinte2);opacity:1;font-size:17px}
+body.at2-stil #at2Start .s-platz{background:none;border:0;border-top:3px dotted var(--ws-linie);box-shadow:none;margin:0;padding:12px 2px}
+body.at2-stil #at2Start .s-nr{background:none;border:0;color:var(--ws-blut);font-family:var(--ws-titel)!important;font-size:30px;font-weight:normal}
+body.at2-stil #at2Start .s-info b{color:var(--ws-tinte)!important;font-size:19px}
+body.at2-stil #at2Start .s-info small{font-size:16px}
+body.at2-stil #at2Start .s-info .kaputt,body.at2-stil #at2Start .s-warn{color:var(--ws-blut-hell)!important}
+body.at2-stil #at2Start button{font-size:18px;min-height:42px}
+body.at2-stil #at2Start .s-knoepfe button:first-child:not(.weg){background:var(--ws-blut)!important;color:var(--ws-knochen)!important}
+body.at2-stil #at2Start button.weg{font-size:15px;min-height:32px}
+body.at2-stil #at2Start .s-frage{background:rgba(106,12,6,.08);border:2px dotted var(--ws-blut);color:var(--ws-tinte)}
+body.at2-stil #at2Start .s-fuss{font-size:16px}
+body.at2-stil #at2Start .s-sprache button{font-size:16px}
+
+/* ---------- Kopfleiste, Uhr, Tempo ---------- */
+body.at2-stil .w-bar{padding:9px 14px 11px;gap:6px 12px}
+body.at2-stil .w-title b{color:var(--ws-blut)!important;font-family:var(--ws-titel)!important;font-size:22px;letter-spacing:0;font-weight:normal;font-size-adjust:.46}
+body.at2-stil .w-title small{font-size:14px;opacity:1}
+body.at2-stil .w-chip{background:rgba(120,70,30,.14);border:0;box-shadow:inset 0 0 0 2px rgba(90,40,14,.35);font-size:15px;color:var(--ws-tinte)}
+body.at2-stil .w-gold{color:var(--ws-tinte)!important}
+body.at2-stil .w-perf{background:rgba(120,70,30,.18);border:2px solid rgba(90,40,14,.45)}
+body.at2-stil .w-perf i{background:var(--ws-gut)}
+body.at2-stil .w-perf span{color:var(--ws-knochen);text-shadow:1px 1px 0 #000;font-size:13px}
+body.at2-stil .w-uhr b{color:var(--ws-blut)!important;font-family:var(--ws-titel)!important;font-size:24px;letter-spacing:0;font-weight:normal;font-size-adjust:.46}
+body.at2-stil .w-uhr small{font-size:14px;opacity:1;color:var(--ws-tinte2)}
+body.at2-stil .w-uhr.block small{color:var(--ws-blut-hell)!important}
+body.at2-stil .w-uhr canvas{filter:none}
+body.at2-stil .w-tempo button{min-width:36px;min-height:32px;font-size:16px}
+body.at2-stil .w-btn,body.at2-stil .w-sel select{font-size:15px}
+body.at2-stil .w-baubtn{font-size:16px!important}
+body.at2-stil .w-back{color:var(--ws-knochen)!important;background:var(--ws-blut)!important}
+
+/* ---------- Baumenü und Brücke ---------- */
+body.at2-stil #wBau{padding:12px 18px 14px}
+body.at2-stil #wBau.gross{padding:14px 20px 16px}
+body.at2-stil #wBau.gross .w-btn{font-size:17px}
+@media (min-width:701px){body.at2-stil #wBau.gross .bau-gruppe{border:0;background:rgba(120,70,30,.10);box-shadow:inset 0 0 0 2px rgba(106,58,26,.35)}}
+body.at2-stil #wBau.gross .bau-gruppe>b,body.at2-stil #wBau.gross .br-teil>b{font-family:var(--ws-titel)!important;font-weight:normal;font-size:17px;letter-spacing:0;text-transform:none;color:var(--ws-blut)!important}
+body.at2-stil #wBau.gross>span,body.at2-stil #wBau>span{color:var(--ws-tinte)!important;font-size:17px}
+body.at2-stil .bau-wz small{color:var(--ws-tinte2)}
+body.at2-stil #wBau.gross .br-bauen{background:var(--ws-blut)!important;color:var(--ws-knochen)!important;font-size:21px!important}
+body.at2-stil #wBau.gross .br-bauen:disabled{background:var(--ws-knopf)!important;color:var(--ws-tinte2)!important}
+body.at2-stil .land-n{color:var(--ws-tinte)}
+
+/* ---------- Nahaufnahme, Pinzette, Profil ---------- */
+body.at2-stil #wNah{padding:14px 16px;font-size:15px}
+body.at2-stil #wNah canvas{border:3px solid var(--ws-rand);background:#1a120c}
+body.at2-stil .nah-t header b{font-family:var(--ws-titel)!important;font-weight:normal;font-size:22px;font-size-adjust:.46}
+body.at2-stil .nah-t header small{font-size:14px}
+body.at2-stil .nah-say{font-family:var(--ws-text)!important;color:var(--ws-tinte)!important;font-size:18px;line-height:1.2}
+body.at2-stil #wNah.klein .nah-say{font-size:15px}
+body.at2-stil .nah-zange{background:var(--ws-knopf)!important}
+body.at2-stil #wZange{padding:10px 16px;font-size:15px}
+body.at2-stil #wProfil{padding:16px 18px;font-size:16px}
+body.at2-stil #wProfil b{font-family:var(--ws-titel)!important;font-weight:normal;font-size:26px;font-size-adjust:.46}
+body.at2-stil #wProfil small{font-size:15px}
+
+/* ---------- Gebäudefenster (2.0-Kopien), Grabwahl ---------- */
+body.at2-stil .hs-detail{background:rgba(8,5,3,.35)!important;align-items:flex-start;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+body.at2-stil .hs-detail>.hs-dbox{margin-top:auto}
+body.at2-stil .hs-dbox :is(.hs-stats,.hs-stats td,.hs-legend,.hs-chips span,.hs-dgrid,.hs-note,.hs-wounds,.hs-hist,.hs-qcls,.hs-two p,small){font-size:15px!important}
+body.at2-stil .hs-dbox :is(.hs-stats th,.hs-stats thead th,.hs-stats td.v i){font-size:13px!important}
+body.at2-stil .hs-dbox{padding:16px 20px 18px;font-size:16px}
+body.at2-stil .hs-dbox h2{color:var(--ws-blut)!important;font-size:30px}
+body.at2-stil .hs-dbox .eyebrow{color:var(--ws-tinte2)!important;letter-spacing:.06em;font-size:14px}
+body.at2-stil .hs-dbox .hs-qual,body.at2-stil .hs-dbox .hs-legend,body.at2-stil .hs-dbox p{color:var(--ws-tinte)!important}
+body.at2-stil .hs-dbox .hs-stats,body.at2-stil .hs-dbox .hs-chips span,body.at2-stil .hs-dbox .hs-dgrid>*{background:rgba(120,70,30,.10)!important;border-color:rgba(106,58,26,.4)!important;color:var(--ws-tinte)!important}
+body.at2-stil #weltHalleWahl .w-hz{background:rgba(120,70,30,.10)!important;color:var(--ws-tinte)!important;border:0!important;box-shadow:inset 0 0 0 2px rgba(106,58,26,.35)!important;font-size:16px!important}
+body.at2-stil #weltHalleWahl .w-hz:hover,body.at2-stil #weltHalleWahl .w-hz:focus-visible{background:rgba(106,12,6,.12)!important}
+body.at2-stil #weltHalleWahl .w-hz b{color:var(--ws-blut)!important}body.at2-stil #weltHalleWahl .w-hz span{color:var(--ws-tinte2)!important}
+
+/* ---------- Editor-Leiste, Info, Listen ---------- */
+body.at2-stil #wEdit{font-size:15px}
+body.at2-stil #wEdit>header{color:var(--ws-blut);border-bottom:3px dotted var(--ws-linie);font-family:var(--ws-titel)!important;letter-spacing:0;font-size:20px;padding:10px 14px 6px}
+body.at2-stil .ed-body{padding:6px 14px 12px}
+body.at2-stil .ed-h{color:var(--ws-blut)}
+body.at2-stil .ed-list{background:rgba(120,70,30,.10);border:2px solid rgba(106,58,26,.35)}
+body.at2-stil .ed-list i,body.at2-stil .ed-reg b{color:var(--ws-blut)}
+body.at2-stil #wInfo{padding:14px 16px;font-size:15px}
+body.at2-stil #wInfo header b{color:var(--ws-blut)}
+body.at2-stil #wTablePanel>header{color:var(--ws-blut);border-bottom:3px dotted var(--ws-linie)}
+body.at2-stil .w-list th{background:transparent;color:var(--ws-blut)}
+body.at2-stil .w-list td{border-top:2px dotted var(--ws-linie)}
+
+/* ---------- Ladebild, Tageswechsel, Meldungen ---------- */
+body.at2-stil #weltBoot{color:var(--ws-knochen)}
+body.at2-stil #weltBoot b{font-family:var(--ws-titel)!important;font-weight:normal;font-size:46px;letter-spacing:0;color:#c4281a;text-shadow:3px 3px 0 #000}
+body.at2-stil #weltBoot small,body.at2-stil #weltBoot em{font-size:17px}
+body.at2-stil #weltBoot .bar{height:9px;background:#2b1a10;box-shadow:0 0 0 3px #000}body.at2-stil #weltBoot .bar i{background:var(--ws-blut-hell)}
+body.at2-stil #wTagwechsel .tw-zahl b{font-family:var(--ws-titel)!important;font-weight:normal}
+body.at2-stil #wTagwechsel .tw-say{font-size:18px}
+body.at2-stil #notice{font-size:17px}
+
+@media (max-width:700px){
+ body.at2-stil .w-bar{padding:6px 9px 8px}
+ body.at2-stil .w-chip,body.at2-stil .w-btn,body.at2-stil .w-sel select{font-size:14px}
+ body.at2-stil #wBau.gross .w-btn{font-size:15px}
+ body.at2-stil #at2Start h1{font-size:34px}
+}

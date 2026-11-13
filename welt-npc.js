@@ -90,9 +90,9 @@ const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=perfo
 let zeig=null;const tap0=H.tap;H.tap=(p,w)=>{if(!w)for(const n of NPCS){if(!n.p)continue;if(n.p.innen&&n.h&&n.h.offen<.6)continue;const q=W.iso(n.p.x,n.p.y),oz=W.hz?W.hz(n.p.x,n.p.y):0,k=Math.max(1,1.4/W.cam.s),ex=Math.abs(q.x-p.x),ey=q.y-oz-p.y;
   if(ex<7*k&&ey>-2*k&&ey<26*k){zeig={n,t:4};return true;}}return tap0?tap0(p,w):false;};
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(!zeig||W.mini)return;zeig.t-=dt;if(zeig.t<=0){zeig=null;return;}const n=zeig.n;if(!n.p)return;
- const q=W.iso(n.p.x,n.p.y),oz=W.hz?W.hz(n.p.x,n.p.y):0,z=Math.min(3,Math.max(.5,1/W.cam.s)),s1=n.name(),s2=n.rolle;ctx.font='bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+ const q=W.iso(n.p.x,n.p.y),oz=W.hz?W.hz(n.p.x,n.p.y):0,z=Math.min(3,Math.max(.5,1/W.cam.s)),s1=n.name(),s2=n.rolle;ctx.font=(window.AT2_STIL?AT2_STIL.font(11*z):'bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace');ctx.textAlign='center';ctx.textBaseline='middle';
  const w=Math.max(ctx.measureText(s1).width,ctx.measureText(s2).width*.85)+10*z,y=q.y-oz-34-14*z;ctx.fillStyle='rgba(18,12,9,.86)';ctx.fillRect(Math.round(q.x-w/2),Math.round(y-10*z),Math.round(w),Math.round(24*z));
- ctx.fillStyle='#f4d37a';ctx.fillText(s1,Math.round(q.x),Math.round(y-3*z));ctx.font=Math.round(9*z)+'px ui-monospace,Menlo,Consolas,monospace';ctx.fillStyle='#e8dcc0';ctx.fillText(s2,Math.round(q.x),Math.round(y+7*z));};
+ ctx.fillStyle='#f4d37a';ctx.fillText(s1,Math.round(q.x),Math.round(y-3*z));ctx.font=(window.AT2_STIL?AT2_STIL.font(9*z):Math.round(9*z)+'px ui-monospace,Menlo,Consolas,monospace');ctx.fillStyle='#e8dcc0';ctx.fillText(s2,Math.round(q.x),Math.round(y+7*z));};
 orte();
 M.weltNpc={liste:()=>NPCS.map(n=>({id:n.id,name:n.name(),rolle:n.rolle,ort:n.ort,platz:n.p?{...n.p}:null})),bilder:id=>bilder(NPCS.find(n=>n.id===id)),orte,get zeig(){return zeig?.n.id||null;}};
 })();

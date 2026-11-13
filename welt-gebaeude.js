@@ -659,14 +659,14 @@ const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=perfo
 H.vorne=(tx,ty,y)=>{for(const h of haeuser){if(y>h.key||tx<h.bx0-2||ty<h.by0-2||tx>h.bx1+3||ty>h.by1+3)continue;const fx=Math.floor(tx),fy=Math.floor(ty);if(fx>h.bx1||fy>h.sufY[Math.max(0,fx-h.bx0)])return h.key+.01;}return y;};
 // Schild über dem Haus und Spruch am Bild
 function schild(ctx,s,x,y,z,hell){const w=ctx.measureText(s).width+8*z;ctx.fillStyle=hell?'rgba(244,236,214,.96)':'rgba(18,12,9,.8)';ctx.fillRect(Math.round(x-w/2),Math.round(y-8*z),Math.round(w),Math.round(16*z));ctx.fillStyle=hell?'#2a1c12':'#f4d37a';ctx.fillText(s,Math.round(x),Math.round(y)+1);}
-const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(W.mini)return;const z=clamp(1/W.cam.s,.5,3);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace';
+const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(W.mini)return;const z=clamp(1/W.cam.s,.5,3);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=(window.AT2_STIL?AT2_STIL.font(11*z):'bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace');
  for(const h of haeuser){const p=W.iso((h.bx0+h.bx1+1)/2,(h.by0+h.by1+1)/2),y=p.y-(h.item?.oz||0)-(h.offen>.5?WAND+10:WAND+STEIG*2+16+(h.art==='beast'?40:0));if(p.x<view.x0-150||p.x>view.x1+150||y<view.y0-30||y>view.y1+30)continue;schild(ctx,h.titel+' · '+h.zahl+' '+h.wort[h.zahl===1?0:1],p.x,y,z);}
  // Spruch nur am angetippten Bild (Thomas 12.11.: keine Tafeln von selbst, auch nicht beim Darüberfahren)
  if(spruch)tafel(ctx,spruch.p,z,true,1,[]);};
 const anker=p=>{const x=p.k%N,y=(p.k/N)|0,q=p.side==='a'?W.iso(x+.5,y):W.iso(x,y+.5);return {x:q.x,y:q.y-(p.oz||0)};};
 // Tafel über einem Bild. belegt: schon vergebene Flächen; die Tafel rückt so weit nach oben, bis sie keine andere verdeckt.
 function tafel(ctx,p,z,stark,alpha,belegt,nurPlatz){const q=anker(p);if(p.zt!==p.text){p.zt=p.text;const ws=('„'+p.text+'“').split(' '),ls=[];let cur='';for(const w of ws){if(cur&&(cur+' '+w).length>20){ls.push(cur);cur=w;}else cur=cur?cur+' '+w:w;}ls.push(cur);p.zeilen=ls;}
- const ls=p.zeilen,lh=13*z;ctx.font='bold '+Math.round(11*z)+'px Georgia,serif';let w=0;for(const l of ls)w=Math.max(w,ctx.measureText(l).width);w+=12*z;const hh=ls.length*lh+8*z;
+ const ls=p.zeilen,lh=13*z;ctx.font=(window.AT2_STIL?AT2_STIL.font(11*z):'bold '+Math.round(11*z)+'px Georgia,serif');let w=0;for(const l of ls)w=Math.max(w,ctx.measureText(l).width);w+=12*z;const hh=ls.length*lh+8*z;
  let top;if(p.platz&&!nurPlatz&&stark)top=p.platz;else{top=q.y-WAND-6*z-hh;for(let n=0;n<12;n++){const hit=belegt.find(r=>q.x-w/2<r.x1&&q.x+w/2>r.x0&&top<r.y1&&top+hh>r.y0);if(!hit)break;top=hit.y0-hh-4*z;}}
  if(nurPlatz){p.platz=top;belegt.push({x0:q.x-w/2-3*z,x1:q.x+w/2+3*z,y0:top-2*z,y1:top+hh+2*z});return;}if(!stark)belegt.push({x0:q.x-w/2-3*z,x1:q.x+w/2+3*z,y0:top-2*z,y1:top+hh+2*z});
  ctx.globalAlpha=alpha;ctx.strokeStyle='#2a1c12';ctx.lineWidth=1.2*z;ctx.beginPath();ctx.moveTo(q.x,q.y-WAND+8);ctx.lineTo(q.x,top+hh);ctx.stroke();
