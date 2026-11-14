@@ -71,6 +71,10 @@ const BILDER={
  begehbar:[ // Sandale, daneben eine blutige Fußspur
  '............','..kkk.......','.kbbbk......','.kblbk...r..','.kbbbk..rRr.','kkkkkkk.rRr.','.kbbbk..rRr.','.kbbbk...r..','kkkkkkk.....','.kblbk..r.r.','..kkk.......','............'],
  pfeil:[ '............','............','.....k......','.....kk.....','kkkkkkSk....','kbbbbbSSk...','kkkkkkSk....','.....kk.....','.....k......','............','............','............'],
+ kaefig:[ // B0b: Käfig, eine Pranke mit blutigen Krallen greift durchs Gitter
+ 'kkkkkkkkkkkk','knnnnnnnnnnk','ks.s.s.s.s.k','ks.s.s.s.s.k','ks.s.slllsk.','ks.s.llllllw','ks.s.slllllw','ks.s.s.s.sRw','ks.s.s.s.s.R','ks.s.s.s.s.k','knnnnnnnnnnk','kkkkkkkkkkkk'],
+ herausforderer:[ // B0b: Faust mit Gladius, Blut an der Klinge
+ '.....S......','....kSk.....','....kSk.....','....kSk.....','....kSk.....','....kRk.....','..kkkgkkk...','.kllllllk...','klllllllk...','klklklklk...','.kllllllk...','..kkkkkk....'],
 };
 const EMOJI={'🔨':'bauen','🎯':'training','⚔':'kampf','🏟':'tribuene','🛏':'unterkunft','⚒':'schmiede','🐺':'beast','🛡':'kaserne','✚':'kranken',
  '🛤':'strasse','⛰':'gelaende','💥':'abreissen','💰':'gold','🌉':'bruecke','🪵':'holz','🪨':'stein','💾':'speichern','⏸':'pause','💬':'reden',

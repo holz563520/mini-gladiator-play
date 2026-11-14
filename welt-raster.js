@@ -50,6 +50,7 @@ const ANORD=GROSS?{dorf:[-100,-52,92,110],platz:[-8,40,14,18],park:[6,-52,100,11
   [61,38,8,1],[61,30,1,8],[68,17,1,21]],// B0: zur Warteschlange und vom Ausgang zurück zum Hauptweg
  schlange:[[61,20,1,2],[61,22,3,8]],// B0: Kiesfläche der Warteschlange (Zickzack mit Seilen vor dem Eingang, welt-arena.js)
  sandgrube:{c:[61.5,11.5],r:8.4},// B0 (Thomas 13.11.2026): feste Arena, Stufe 1 „Sandgrube“, Mitte und Halbmesser in Feldern (welt-arena.js)
+ vorplatz:[37,2,8,20],gang:[45,11,8,2],// B0b (Thomas 13.11.2026): fester Vorplatz der Herausforderer im Westen, Kämpfergang zum Kämpfertor (Stufe 1; welt-arena.js passt ihn je Stufe an, welt-vorplatz.js zeichnet)
  orte:{lanista:[-16,48],orontes:[-24,50],huehner:[-33,50]}}:null;
 const inR=(lx,ly,r,m=0)=>lx>=r[0]-m&&lx<r[0]+r[2]+m&&ly>=r[1]-m&&ly<r[1]+r[3]+m,imAnord=(lx,ly,m=0)=>!!ANORD&&inMap(lx+O,ly+O)&&nah[(ly+O)*N+lx+O]<=m;// A3b: nach den geschwungenen Rändern (ber, nah unten)
 const LUD=ANORD?{tx:ANORD.kern[0]+O,ty:ANORD.kern[1]+O,w:ANORD.kern[2],h:ANORD.kern[3],px:50}:{tx:39+O,ty:40+O,w:18,h:16,px:50};
@@ -199,6 +200,7 @@ if(ANORD){const A=ANORD,setz=(arr,x,y,v)=>{if(inMap(x,y))arr[ix(x,y)]=v;};
  {const [x0,y0,w,h]=A.verwaltung;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)fest[ix(x+O,y+O)]=1;}// A4: Verwaltung fest
  {const [x0,y0,w,h]=A.arenaPlatz;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++){const k=ix(x+O,y+O);fest[k]=1;arenaPlatz[k]=1;}}// A3b: Fläche der großen Arena
  // B0: Felder unter der Sandgrube (rund, Mitte der Feldmitte näher als r): gesperrt für alle, gezeichnet von welt-arena.js
+ for(const r of [A.vorplatz,A.gang])if(r)for(let y=r[1];y<r[1]+r[3];y++)for(let x=r[0];x<r[0]+r[2];x++){const k=ix(x+O,y+O);feld[k]=T.LUDUS;fest[k]=1;}// B0b: festgetretener Boden, nur für Gladiatoren (kein Weg für Besucher)
  if(A.schlange)for(const [x0,y0,w,h] of A.schlange)for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)feld[ix(x+O,y+O)]=T.KIES;
  if(A.sandgrube){const [cx,cy]=A.sandgrube.c,r=A.sandgrube.r;for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++)if(Math.hypot(x+.5-cx,y+.5-cy)<r&&inMap(x+O,y+O)){const k=ix(x+O,y+O);feld[k]=T.ARENA_BAU;fest[k]=1;}}
  // A3b: Grenzen folgen den geschwungenen Rändern. Jede Kante zwischen zwei Feldern verschiedener Bereiche bekommt Zaun (Park)
