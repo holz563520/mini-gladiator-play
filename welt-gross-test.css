@@ -1,0 +1,4 @@
+/* GROSSWELT-TEST: kompakte Touch-Navigation, keine Änderungen am Spielstil. */
+#grossPanel{position:fixed;z-index:10000;right:8px;bottom:8px;max-width:min(360px,calc(100vw - 16px));padding:10px;color:#ead9b3;background:#241e16ed;border:1px solid #96744c;border-radius:6px;font:16px 'AT2 Text',monospace;box-shadow:0 3px 12px #0008}
+#grossPanel summary{cursor:pointer;min-height:32px;font-size:19px}#grossPanel p{margin:6px 0;font-size:15px;line-height:1.2}#grossPanel .controls{display:flex;gap:5px;flex-wrap:wrap}#grossPanel button{font:inherit;min-height:40px;background:#665034;color:#fff0cf;border:1px solid #aa8956;border-radius:3px;padding:5px 9px;cursor:pointer}#grossMini{display:block;width:100%;height:120px;background:#15201b;touch-action:none;margin:6px 0}#grossStats{display:block;font-size:14px;min-height:30px;color:#cfbf9d}
+@media(max-width:600px){#grossPanel{max-width:280px;padding:7px}#grossPanel:not([open]){max-width:calc(100vw - 16px)}}
