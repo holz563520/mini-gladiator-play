@@ -31,14 +31,12 @@ const SG=W.ANORD.sandgrube,CX=SG.c[0]+O,CY=SG.c[1]+O,Z0=W.hz?W.hz(CX,CY):0,C0=W.
 // r: Halbmesser der Felder unter der Arena; rs: Sand; nr: Ränge; sp: Abstand der Plätze (Felder); adelR/adelD: Ränge und halbe Breite des Adelsblocks;
 // stein: so viele Ränge von unten aus Stein; dy: so weit rückt die Schlange nach Süden; pfade: Kieswege der Stufe (Schlange → Hauptweg, Ausgang → Hauptweg)
 const STUFEN=[
- {r:8.4,rs:4.6,nr:3,sp:.81,adelR:2,adelD:4,treppen:[0,40,90,145,275,330],morsch:[300],stein:0,name:'arena.name',dy:0,schau:[61.5,33.5],schild:[60.2,32.2],
-  pfade:[[61,30,1,8],[68,17,1,21],[61,38,8,1]]},
- {r:12,rs:6.2,nr:5,sp:.75,adelR:2,adelD:7,treppen:[0,40,90,145,275,330],morsch:[300],stein:2,name:'arena.name2',dy:4,schau:[61.5,35.5],schild:[60.2,34.4],fahne:true,knochen:true,
-  pfade:[[61,34,1,4],[71,19,1,19],[61,38,11,1]]},
- {r:16,rs:8.2,nr:7,sp:.68,adelR:4,adelD:6,treppen:[0,40,90,120,145,275,305,330],morsch:[300,160],stein:7,name:'arena.name3',dy:8,schau:[64.5,38.5],schild:[65.4,36.8],boegen:true,statue:true,knochen:true,
-  pfade:[[74,22,1,16],[61,38,14,1]]}];
+ {r:8.4,rs:4.6,nr:3,sp:.81,adelR:2,adelD:4,treppen:[0,40,90,145,275,330],morsch:[300],stein:0,name:'arena.name'},
+ {r:12,rs:6.2,nr:5,sp:.75,adelR:2,adelD:7,treppen:[0,40,90,145,275,330],morsch:[300],stein:2,name:'arena.name2',fahne:true,knochen:true},
+ {r:16,rs:8.2,nr:7,sp:.68,adelR:4,adelD:6,treppen:[0,40,90,120,145,275,305,330],morsch:[300,160],stein:7,name:'arena.name3',boegen:true,statue:true,knochen:true}];
 // ---------- Maße der aktuellen Stufe (Felder bzw. Bildpunkte), gesetzt von masse() ----------
-const BW=1,LOGE=225*DEG,TOR_A=180*DEG,EIN_A=90*DEG,AUS_A=40*DEG,GEIER_A=255*DEG;
+const BW=1,LOGE=225*DEG,TOR_A=180*DEG,GEIER_A=255*DEG,SEKT=24;// B0b: 24 Kreisausschnitte zu je 15°
+let EIN_A=90*DEG,AUS_A=40*DEG;// Eingang und Ausgang: Richtung vom Mittelpunkt, versetzbar (Werkzeug in welt-bau.js), im Spielstand
 let STUFE=1,SD=STUFEN[0],RS,NR,R_AUS,RP,HOCH,HL,NSL,TREPPEN,MORSCH;// Sand, Ränge, Außenmauer, Umgang, Höhe der Ränge, Loge, Plätze je Rang
 function masse(n){STUFE=n;SD=STUFEN[n-1];RS=SD.rs;NR=SD.nr;R_AUS=SD.r-.1;RP=R_AUS-.35;HOCH=Array.from({length:NR},(_,k)=>16+9*k);HL=HOCH[1]+2;
  NSL=Array.from({length:NR},(_,k)=>n===1?[40,48,56][k]:Math.round(TAU*(RS+k*BW+.55)/SD.sp/8)*8);TREPPEN=SD.treppen.map(d=>d*DEG);MORSCH=SD.morsch.map(d=>d*DEG);}
@@ -59,7 +57,10 @@ const mk=(w,h)=>{const c=document.createElement('canvas');c.width=Math.max(1,Mat
 const font=px=>window.AT2_STIL?AT2_STIL.font(px):'bold '+Math.round(px)+'px ui-monospace,Menlo,Consolas,monospace';
 
 // ---------- Plätze: je Rang Steckplätze im gleichen Abstand, von der Loge aus gezählt (bauen() setzt alles für die aktuelle Stufe) ----------
-let ART,KEY,SITZE,frei,LOGE_SITZ,KEILE,SAND,OBEN,GESAMT=null,TOR_K=null;
+let DEKO=[],ART,KEY,PKEY,SITZE,frei,LOGE_SITZ,SEKTOREN,SAND,OBEN,GESAMT=null,TOR_K=null;
+// B0b: Reihenfolge beim Zeichnen. Jeder Platz gehört zu einem Ausschnitt; KEY ist der Schlüssel seines Ausschnitts (hinten: Innenkante, vorn: Außenkante),
+// so stehen Leute im Sand, auf den Rängen und draußen richtig davor oder dahinter. PKEY ist die alte Reihenfolge innerhalb eines Ausschnitts.
+const sektor=a=>Math.floor((((a%TAU)+TAU)%TAU)/(TAU/SEKT))%SEKT,sektA=s=>(s+.5)*TAU/SEKT,sektKey=s=>{const a=sektA(s);return fern(a)?gy(RS,a):gy(R_AUS,a);};
 const keyAt=(r,a)=>{const k=rangBei(r);return KEY[k][slot(k,a)]+.0005+(gy(r,a)-C0.y)*1e-6;};
 const nimm=l=>{if(!l.length)return null;const i=(Math.random()*l.length)|0,s=l[i];l[i]=l[l.length-1];l.pop();return s;};
 const gib=s=>{if(!s||!s.v)return;s.v=null;(s.adel?frei.a:frei.n).push(s);};
@@ -68,7 +69,7 @@ function plaetze(){
  for(let k=0;k<SD.adelR;k++)for(let d=-SD.adelD;d<=SD.adelD;d++)ART[k][((d%NSL[k])+NSL[k])%NSL[k]]=k<2&&Math.abs(d)<=1?'loge':'adel';
  for(const a of TREPPEN)for(let k=0;k<NR;k++){const j=slot(k,a);if(ART[k][j]==='sitz')ART[k][j]='treppe';}
  for(const m of MORSCH){const j=slot(NR-1,m);if(ART[NR-1][j]==='sitz')ART[NR-1][j]='morsch';}
- KEY=NSL.map((n,k)=>Array.from({length:n},(_,j)=>gy(rOut(k),winkel(k,j))));
+ PKEY=NSL.map((n,k)=>Array.from({length:n},(_,j)=>gy(rOut(k),winkel(k,j))));KEY=NSL.map((n,k)=>Array.from({length:n},(_,j)=>sektKey(sektor(winkel(k,j)))+k*1e-4));
  SITZE=[];
  for(let k=0;k<NR;k++)for(let j=0;j<NSL[k];j++){const art=ART[k][j];if(art!=='sitz'&&art!=='adel')continue;const a=winkel(k,j),p=P(rSitz(k),a,HOCH[k]);
   SITZE.push({k,j,a,adel:art==='adel',x:Math.round(p.x),y:Math.round(p.y),key:KEY[k][j]+.001,dir:p.x>C0.x?1:0,v:null});}
@@ -84,10 +85,11 @@ function strich(g,r,a0,a1,h,ox,oy,col,w=1){g.beginPath();bogen(g,r,a0,a1,h,ox,oy
 const px=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h);};
 // Kanten hart machen (Pixelstil, keine halbdurchsichtigen Ränder)
 function hart(c,g){const im=g.getImageData(0,0,c.width,c.height),d=im.data;for(let i=3;i<d.length;i+=4)d[i]=d[i]>110?255:0;g.putImageData(im,0,0);}
-function keil(k,j){const n=NSL[k],dA=TAU/n,a=winkel(k,j),art=ART[k][j],a0=a-dA/2-.008,a1=a+dA/2+.008,r0=rIn(k),r1=rOut(k),h=art==='loge'?HL:HOCH[k],f=fern(a),C=pal(k),oben=k===NR-1;
+function keilBox(k,j){const dA=TAU/NSL[k],a=winkel(k,j),a0=a-dA/2-.008,a1=a+dA/2+.008,h=ART[k][j]==='loge'?HL:HOCH[k],oben=k===NR-1;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+ for(const r of [rIn(k),rOut(k)])for(let i=0;i<=6;i++){const aa=a0+(a1-a0)*i/6;for(const z of [0,h+(oben&&SD.fahne?36:k===1&&j===0?30:10)]){const p=P(r,aa,z);x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}}return {x0,y0,x1,y1};}
+function keil(k,j,g,ox,oy){const n=NSL[k],dA=TAU/n,a=winkel(k,j),art=ART[k][j],a0=a-dA/2-.008,a1=a+dA/2+.008,r0=rIn(k),r1=rOut(k),h=art==='loge'?HL:HOCH[k],f=fern(a),C=pal(k),oben=k===NR-1;
  const seed=(k*97+j*31)%17,tuer=oben&&(j===slot(k,EIN_A)||j===slot(k,AUS_A)),fahne=oben&&SD.fahne&&!tuer&&j%6===3,tor=k===0&&j===slot(0,TOR_A);
- let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const r of [r0,r1])for(let i=0;i<=6;i++){const aa=a0+(a1-a0)*i/6;for(const z of [0,h+(fahne?36:10)]){const p=P(r,aa,z);x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}}
- const ox=Math.floor(x0)-3,oy=Math.floor(y0)-3,[c,g]=mk(x1-ox+4,y1-oy+4),Q=(r,aa,z)=>{const p=P(r,aa,z);return {x:p.x-ox,y:p.y-oy};};
+ const Q=(r,aa,z)=>{const p=P(r,aa,z);return {x:p.x-ox,y:p.y-oy};};
  // senkrechte Fläche, die man sieht: hinten die Innenseite (Podium bzw. Stufe), vorn die Außenseite (Fassade)
  if(f){wand(g,r0,a0,a1,0,h,ox,oy,k===0?(art==='loge'?ST.rot:C.pod):C.riser);if(k>0)strich(g,r0,a0,a1,h-1,ox,oy,C===STEIN?C.edge:'#7a6440');
   if(k===0){if(art==='loge'){strich(g,r0,a0,a1,h-1,ox,oy,ST.gold);strich(g,r0,a0,a1,3,ox,oy,ST.gold);for(let i=0;i<5;i++){const q=Q(r0,a0+(a1-a0)*(i+.5)/5,4);px(g,q.x,q.y,1,2,ST.gold);}}
@@ -127,8 +129,15 @@ function keil(k,j){const n=NSL[k],dA=TAU/n,a=winkel(k,j),art=ART[k][j],a0=a-dA/2
   strich(g,R_AUS-.03,a0,a1,h+5,ox,oy,C===STEIN?'#5c564b':'#4a3826');const q0=Q(R_AUS-.03,a0+.008,h),q1=Q(R_AUS-.03,a0+.008,h+6);g.strokeStyle=C===STEIN?'#4a453c':'#3a2a1c';g.lineWidth=1;g.beginPath();g.moveTo(q0.x,q0.y);g.lineTo(q1.x,q1.y);g.stroke();
   if(j===slot(k,GEIER_A)){const q=Q(R_AUS-.03,a,h+6);px(g,q.x-2,q.y-6,5,5,'#2a221c');px(g,q.x-3,q.y-4,1,3,'#2a221c');px(g,q.x+3,q.y-4,1,3,'#2a221c');px(g,q.x-1,q.y-9,3,3,'#c9a090');px(g,q.x-2,q.y-8,1,1,'#e8c86a');px(g,q.x,q.y-1,1,2,'#c9a020');px(g,q.x+2,q.y-1,1,2,'#c9a020');}
   if(fahne){const q=Q(R_AUS-.05,a,h+5);px(g,q.x,q.y-28,1,28,'#4a3826');px(g,q.x+1,q.y-28,8,6,'#8e1f18');px(g,q.x+2,q.y-22,6,1,'#6a1410');px(g,q.x+3,q.y-27,3,3,'#e8dcc0');px(g,q.x+3,q.y-26,1,1,'#1a0e06');px(g,q.x+5,q.y-26,1,1,'#1a0e06');}}// Fahne mit Totenkopf
- hart(c,g);
- const K={k,j,a,art,c,x:ox,y:oy,key:KEY[k][j],x0:ox,x1:ox+c.width,y0:oy,y1:oy+c.height};K.item={y:K.key,draw:ctx=>ctx.drawImage(c,ox,oy)};return K;}
+ }
+// Ein Ausschnitt: alle Plätze aller Ränge in seinen 15°, in der alten Reihenfolge in EIN Bild gemalt, Kanten hart. Ohne willReadFrequently danach (bleibt auf der Grafikkarte).
+function sektorBild(s){const L=[];for(let k=0;k<NR;k++)for(let j=0;j<NSL[k];j++)if(sektor(winkel(k,j))===s)L.push([k,j]);L.sort((p,q)=>PKEY[p[0]][p[1]]-PKEY[q[0]][q[1]]);
+ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const [k,j] of L){const b=keilBox(k,j);x0=Math.min(x0,b.x0);y0=Math.min(y0,b.y0);x1=Math.max(x1,b.x1);y1=Math.max(y1,b.y1);}
+ const ox0=Math.floor(x0)-3,oy0=Math.floor(y0)-3,[c,g]=mk(x1-ox0+4,y1-oy0+4);for(const [k,j] of L)keil(k,j,g,ox0,oy0);hart(c,g);
+ // auf den sichtbaren Teil zuschneiden (weniger Bildpunkte je Bild)
+ const im=g.getImageData(0,0,c.width,c.height).data;let bx0=c.width,by0=c.height,bx1=0,by1=0;for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(im[(y*c.width+x)*4+3]){if(x<bx0)bx0=x;if(x>bx1)bx1=x;if(y<by0)by0=y;if(y>by1)by1=y;}
+ const w=Math.max(1,bx1-bx0+1),h=Math.max(1,by1-by0+1),d=document.createElement('canvas');d.width=w;d.height=h;d.getContext('2d').drawImage(c,-bx0,-by0);const ox=ox0+bx0,oy=oy0+by0,key=sektKey(s);
+ return {s,c:d,x:ox,y:oy,key,x0:ox,x1:ox+w,y0:oy,y1:oy+h,item:{y:key,draw:ctx=>ctx.drawImage(d,ox,oy)}};}
 
 // Sand (liegt flach, wird mit dem Boden gezeichnet): Spuren vom Harken, Blutflecken, Schleifspuren, eine verlorene Sandale
 function sand(){const rx=RS*45.26+4,ry=RS*22.63+4,ox=Math.floor(C0.x-rx),oy=Math.floor(C0.y-Z0-ry),[c,g]=mk(rx*2,ry*2),cx=C0.x-ox,cy=C0.y-Z0-oy,R=RS+.12;
@@ -162,7 +171,7 @@ function ueber(art){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;const pts=[];const add=(r,
  return {c,x:ox,y:oy,key,x0:ox,x1:ox+c.width,y0:oy,y1:oy+c.height,item:{y:key,draw:ctx=>ctx.drawImage(c,ox,oy)}};}
 
 // Weit herausgezoomt: alles in einem Bild (erst beim ersten Bedarf; ohne willReadFrequently, damit es auf der Grafikkarte bleibt)
-function gesamt(){if(GESAMT)return GESAMT;const all=[...KEILE,...OBEN];let x0=SAND.x,y0=SAND.y,x1=SAND.x1,y1=SAND.y1;for(const k of all){x0=Math.min(x0,k.x0);y0=Math.min(y0,k.y0);x1=Math.max(x1,k.x1);y1=Math.max(y1,k.y1);}
+function gesamt(){if(GESAMT)return GESAMT;const all=[...SEKTOREN,...OBEN];let x0=SAND.x,y0=SAND.y,x1=SAND.x1,y1=SAND.y1;for(const k of all){x0=Math.min(x0,k.x0);y0=Math.min(y0,k.y0);x1=Math.max(x1,k.x1);y1=Math.max(y1,k.y1);}
  // B0b: halbe Auflösung (Miniaturansicht zeigt höchstens 0,6×), so bleibt das Bild auch bei Stufe 3 klein
  const F=.5,c=document.createElement('canvas');c.width=Math.ceil((x1-x0)*F);c.height=Math.ceil((y1-y0)*F);const g=c.getContext('2d');g.imageSmoothingEnabled=true;g.scale(F,F);
  g.drawImage(SAND.c,SAND.x-x0,SAND.y-y0);for(const k of all.slice().sort((p,q)=>p.key-q.key))g.drawImage(k.c,k.x-x0,k.y-y0);const key=gy(R_AUS,LOGE),w=x1-x0,h=y1-y0;
@@ -177,34 +186,66 @@ function torItem(){const k=0,j=slot(0,TOR_A),dA=TAU/NSL[0],a=winkel(0,j),r=rIn(0
    if(lift<h-5){ctx.fillStyle='#b0a080';ctx.fillRect(Math.round(p0.x),Math.round(p0.y),1,2);}}// Spitzen unten
   ctx.beginPath();bogen(ctx,r,a-dA*.42,a+dA*.42,Math.min(h-4,5+lift),0,0,false,true,4);ctx.stroke();ctx.beginPath();bogen(ctx,r,a-dA*.42,a+dA*.42,Math.min(h-4,10+lift),0,0,false,true,4);ctx.stroke();}};}
 
-// ---------- Warteschlange (Zickzack mit Seilen), Wege und Felder je Stufe ----------
-let QP,QL,QLEN,SEILE,SEIL_ITEMS,T_EIN,T_AUS_IN,T_AUS,T_TREPPE,ZIEL_Q,ZIEL_SCHAU,SCHILDER,EINL_P,STATUE=null;
+// ---------- Wartestraße, Eingang und Ausgang (B0b-Nacharbeit, wie bei RollerCoaster Tycoon) ----------
+// Die Schlange ist die Kette von Wartestraßen-Feldern (T.WARTE), die am Feld vor dem Eingang beginnt. Ihr Ende ist das Feld, das an einen normalen Weg
+// grenzt (bei Abzweigungen die längste Kette). Dort steigen die Besucher ein und laufen Feld für Feld bis zum Eingang. Der Ausgang muss an einem Weg liegen.
+// Ohne Anschluss bleibt die Arena zu (Schild „Kein Anschluss“, der Berater meldet es). Nichts davon kostet beim Zeichnen etwas: die Wartestraße liegt im Bodenbild.
+let QP=[[0,0],[0,0]],QL=[0,0],QLEN=0,T_EIN,T_AUS_IN,T_AUS,T_TREPPE,ZIEL_Q=null,ZIEL_SCHAU,SCHILDER=[],EINL_P,STATUE=null,X_EIN=-1,X_AUS=-1,ENDE=-1,OFFEN=false,GRUND='',SCHL_N=0;
 const QA=.42;
 function qpunkt(d){d=Math.max(0,Math.min(QLEN,d));let i=1;while(i<QL.length-1&&QL[i]<d)i++;const u=(d-QL[i-1])/((QL[i]-QL[i-1])||1),a=QP[i-1],b=QP[i];return W.iso(a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u);}
-// Felder einer Stufe: Arena (gesperrt), Kämpfergang, Kies der Schlange, Kieswege. Stufe 1 gleicht genau der Karte aus welt-raster.js.
-function felderVon(n){const S0=STUFEN[n-1],dy=S0.dy,m=new Map(),r=S0.r,[cx,cy]=SG.c,T=W.T,set=(x,y,t)=>{if(W.inMap(x+O,y+O))m.set(W.ix(x+O,y+O),t);};
- const rect=(R,t)=>{for(let y=R[1];y<R[1]+R[3];y++)for(let x=R[0];x<R[0]+R[2];x++)set(x,y,t);};
+const istWeg=k=>{const t=W.feld[k],T=W.T;return (t===T.WEG||t===T.BRUECKE||(t>=T.STR1&&t<=T.STR5))&&W.ber?.[k]!==W.BER?.DORF&&W.ber?.[k]!==W.BER?.PLATZ;};
+const nb4=k=>[k+1,k-1,k+W.N,k-W.N],mitteF=k=>({tx:k%W.N+.5,ty:((k/W.N)|0)+.5}),feldBei=(tx,ty)=>Math.floor(ty)*W.N+Math.floor(tx);
+// Feld direkt außen vor der Tür in Richtung a (erstes Feld außerhalb der Arena)
+function aussenFeld(a,will){let k0=-1;for(let r=R_AUS-.8;r<R_AUS+3;r+=.2){const q=kachel(r,a),k=feldBei(q.tx,q.ty);if(W.feld[k]!==W.T.ARENA_BAU){k0=k;break;}}if(k0<0||!will)return k0;
+ for(let r=R_AUS-.8;r<R_AUS+1.6;r+=.2){const q=kachel(r,a),k=feldBei(q.tx,q.ty);for(const n of [k,...nb4(k)]){if(W.feld[n]===W.T.ARENA_BAU)continue;const m=mitteF(n);if(Math.hypot(m.tx-CX,m.ty-CY)<R_AUS+1.8&&Math.abs(adiff(Math.atan2(m.ty-CY,m.tx-CX),a))<.25&&will(n))return n;}}return k0;}// passendes Nachbarfeld bevorzugen (Wartestraße bzw. Weg)
+// Liegt k direkt außen am Rand (Nachbar eines Arenafelds, selbst keins)? Dann die Richtung dorthin
+function randRichtung(k){if(k<0||W.feld[k]===W.T.ARENA_BAU||!nb4(k).some(n=>W.feld[n]===W.T.ARENA_BAU))return null;const m=mitteF(k);if(Math.hypot(m.tx-CX,m.ty-CY)>R_AUS+2.2)return null;return Math.atan2(m.ty-CY,m.tx-CX);}
+const arenaNachbar=k=>{let b=-1,bd=1e9;for(const n of nb4(k))if(W.feld[n]===W.T.ARENA_BAU){const m=mitteF(n),d=Math.hypot(m.tx-CX,m.ty-CY);if(d<bd){bd=d;b=n;}}return b;};
+function tueren(){T_EIN=kachel(R_AUS+.05,EIN_A);T_AUS_IN=kachel(R_AUS+.05,AUS_A);T_TREPPE=kachel(R_AUS+1,LOGE);X_EIN=aussenFeld(EIN_A,k=>W.feld[k]===W.T.WARTE);X_AUS=aussenFeld(AUS_A,istWeg);T_AUS=X_AUS>=0?mitteF(X_AUS):kachel(R_AUS+.95,AUS_A);
+ const q=X_EIN>=0?mitteF(X_EIN):kachel(R_AUS+.95,EIN_A),px_=-Math.sin(EIN_A),py_=Math.cos(EIN_A);EINL_P={x:q.tx+px_*.75,y:q.ty+py_*.75,innen:false};
+ STATUE=SD.statue?statue(...(()=>{const p=kachel(R_AUS+1.7,EIN_A-.28);return [p.tx,p.ty];})()):null;schlangeRechnen(true);}
+let wiederMelden=false;
+function schlangeRechnen(still){const T=W.T,F=W.feld,alt=ENDE,altOffen=OFFEN;let ende=-1,ziel=-1,best=-1;const d=new Map(),par=new Map(),q=[];
+ if(X_EIN>=0&&F[X_EIN]===T.WARTE){d.set(X_EIN,0);q.push(X_EIN);for(let i=0;i<q.length;i++){const k=q[i];for(const n of nb4(k))if(F[n]===T.WARTE&&!d.has(n)){d.set(n,d.get(k)+1);par.set(n,k);q.push(n);}}
+  for(const k of q){const w=nb4(k).find(istWeg);if(w!=null&&d.get(k)>best){best=d.get(k);ende=k;ziel=w;}}}
+ ENDE=ende;SCHL_N=q.length;const qok=ende>=0,aok=X_AUS>=0&&istWeg(X_AUS);OFFEN=qok&&aok;GRUND=!qok?'schlange':!aok?'ausgang':'';
+ if(qok){const kette=[];for(let k=ende;k!=null;k=par.get(k))kette.push(k);kette.reverse();// vom Eingang zum Ende
+  QP=kette.map(k=>{const m=mitteF(k);return [m.tx,m.ty];});const z=mitteF(ziel);QP.push([z.tx,z.ty]);ZIEL_Q={tx:z.tx,ty:z.ty};ZIEL_SCHAU=ZIEL_Q;}
+ else{const m=X_EIN>=0?mitteF(X_EIN):kachel(R_AUS+1,EIN_A);QP=[[m.tx,m.ty],[m.tx,m.ty]];ZIEL_Q=null;ZIEL_SCHAU=aok?mitteF(X_AUS):{tx:61.5+O,ty:38.5+O};}
+ QL=[0];for(let i=1;i<QP.length;i++)QL.push(QL[i-1]+Math.hypot(QP[i][0]-QP[i-1][0],QP[i][1]-QP[i-1][1]));QLEN=QL[QL.length-1];
+ schilder_();
+ if(alt!==ENDE){const ks=[];for(const k of [alt,ENDE])if(k>=0)ks.push(k,...nb4(k));W.neuMalen?.(ks);}// Anschluss am Ende neu malen (Bodenbild)
+ if(!still&&altOffen!==OFFEN){try{M.ui?.notify?.(t(OFFEN?'arena.wieder':'arena.zu.'+GRUND));}catch(e){}}}
+function schilder_(){const m=ZIEL_Q||(X_EIN>=0?mitteF(X_EIN):kachel(R_AUS+1,EIN_A)),e=X_EIN>=0?mitteF(X_EIN):kachel(R_AUS+1,EIN_A),px_=-Math.sin(EIN_A),py_=Math.cos(EIN_A),qa=-Math.sin(AUS_A),qb=Math.cos(AUS_A);
+ SCHILDER=[schildItem(m.tx-.9,m.ty-.3,()=>[t(SD.name)+' · '+t('arena.plaetze',{n:SITZE.length+1}),schildText()]),
+  schildItem(e.tx-px_*.8,e.ty-py_*.8,()=>[t('arena.eingang'),t('arena.eingangZeile')]),
+  Object.assign(schildItem(T_AUS.tx+qa*.8,T_AUS.ty+qb*.8,()=>[t('arena.ausgang'),t('arena.ausgangZeile')]),{extra(ctx,x,y){ctx.fillStyle='#4a3826';ctx.fillRect(x+10,y-7,7,7);ctx.fillStyle='#6a5438';ctx.fillRect(x+10,y-8,7,1);ctx.fillStyle='#7a5a20';ctx.fillRect(x+11,y-7,5,2);}})];}// Eimer
+// Anschluss für die Wege-Bilder (welt-raster.js): Wartestraße und Ausgang öffnen sich zur Tür, normale Wege zur Wartestraße nur am Ende der Schlange
+W.anschluss=(k,n)=>{const T=W.T,a=W.feld[k],b=W.feld[n];
+ if(b===T.ARENA_BAU)return (k===X_EIN&&a===T.WARTE&&n===arenaNachbar(k))||(k===X_AUS&&a!==T.WARTE&&n===arenaNachbar(k));
+ if(a===T.WARTE&&b===T.WARTE)return true;if(a===T.WARTE)return k===ENDE&&istWeg(n);if(b===T.WARTE)return n===ENDE&&istWeg(k);return undefined;};
+// Felder ändern sich (Bauen, Abreißen, Laden): Schlange und Anschluss neu (gesammelt, höchstens einmal je Bild)
+let neuNoetig=false;{const rb=W.rebake;W.rebake=function(ks){const r=rb.apply(this,arguments);neuNoetig=true;return r;};}
+// Eingang/Ausgang versetzen (Werkzeug in welt-bau.js)
+function tuerMoeglich(k){return randRichtung(k)!=null;}
+function setzeTuer(art,k){const a=randRichtung(k);if(a==null)return false;const alt=[X_EIN,X_AUS];if(art==='ein')EIN_A=a;else AUS_A=a;
+ if(Math.abs(adiff(EIN_A,AUS_A))<TAU/NSL[NR-1]*1.5){if(art==='ein')AUS_A=EIN_A+TAU/NSL[NR-1]*2;else EIN_A=AUS_A-TAU/NSL[NR-1]*2;}// nicht in dieselbe Lücke
+ neuTuer();tueren();const ks=[];for(const x of [...alt,X_EIN,X_AUS])if(x>=0)ks.push(x,...nb4(x));W.neuMalen?.(ks);schlangeRechnen();return true;}
+// Stufenwechsel: Wartestraße bzw. Kiesweg vom neuen Rand nach außen verlängern, bis die alte Schlange bzw. ein Weg erreicht ist (höchstens 20 Felder)
+function verlaengern(){const T=W.T,neu=[];
+ // kürzester Weg (Breitensuche über freie Naturfelder) vom Feld vor der Tür bis zum nächsten passenden Feld, höchstens 25 Felder
+ const lege=(a,typ,ziel)=>{const k0=aussenFeld(a,ziel);if(k0<0||ziel(k0))return;const frei=k=>W.feld[k]===W.grund[k]&&W.feld[k]!==T.FLUSS&&(!W.fest[k]||W.arenaPlatz?.[k])&&!(W.gebaeudeAt?.(k%W.N,(k/W.N)|0));
+  if(!frei(k0))return;const par=new Map([[k0,-1]]),d=new Map([[k0,0]]),q=[k0];let gef=-1;
+  for(let i=0;i<q.length&&gef<0;i++){const k=q[i];if(d.get(k)>=25)continue;for(const n of nb4(k)){if(par.has(n))continue;if(ziel(n)){gef=k;break;}if(!frei(n))continue;par.set(n,k);d.set(n,d.get(k)+1);q.push(n);}}
+  if(gef<0)return;for(let k=gef;k>=0;k=par.get(k)){W.feld[k]=typ;if(W.obj)W.obj[k]=0;if(W.klein)W.klein[k]=0;neu.push(k);}};
+ lege(EIN_A,T.WARTE,k=>W.feld[k]===T.WARTE);lege(AUS_A,T.STR2,istWeg);
+ if(neu.length)W.rebake(neu);return neu.length;}
+// Felder einer Stufe, die die Arena selbst setzt: Arena (gesperrt) und Kämpfergang. Stufe 1 gleicht genau der Karte aus welt-raster.js.
+function felderVon(n){const S0=STUFEN[n-1],m=new Map(),r=S0.r,[cx,cy]=SG.c,T=W.T,set=(x,y,t)=>{if(W.inMap(x+O,y+O))m.set(W.ix(x+O,y+O),t);};
  const inArena=(x,y)=>Math.hypot(x+.5-cx,y+.5-cy)<r;
- for(const R of S0.pfade)rect(R,T.STR2);
- rect([61,20+dy,1,2],T.KIES);rect([61,22+dy,3,8],T.KIES);
  const G0=W.ANORD.gang;if(G0)for(let y=G0[1];y<G0[1]+G0[3];y++)for(let x=G0[0];!inArena(x,y)&&x<cx;x++)set(x,y,T.LUDUS);
  for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++)if(inArena(x,y))set(x,y,T.ARENA_BAU);
  return m;}
-function wege(){const dy=SD.dy;
- QP=[[61.5,20.6],[61.5,28.5],[62.5,28.5],[62.5,22.5],[63.5,22.5],[63.5,29.5],[61.5,29.5]].map(([x,y])=>[x+O,y+dy+O]);QP.push([61.5+O,Math.max(37.5,30.5+dy)+O]);// Ende der Schlange auf dem Weg (Stufe 3: auf dem Hauptweg)
- QL=[0];for(let i=1;i<QP.length;i++)QL.push(QL[i-1]+Math.hypot(QP[i][0]-QP[i-1][0],QP[i][1]-QP[i-1][1]));QLEN=QL[QL.length-1];
- SEILE=[];{const seil=(x0,y0,x1,y1)=>{y0+=dy;y1+=dy;const n=Math.max(1,Math.round(Math.hypot(x1-x0,y1-y0)));for(let i=0;i<n;i++)SEILE.push([x0+(x1-x0)*i/n+O,y0+(y1-y0)*i/n+O,x0+(x1-x0)*(i+1)/n+O,y0+(y1-y0)*(i+1)/n+O]);};
-  seil(61,20.4,61,30);seil(62,20.4,62,28);seil(63,23,63,29);seil(64,22,64,30);seil(62,22,64,22);seil(61,29,63,29);seil(62,30,64,30);}
- SEIL_ITEMS=SEILE.map(([x0,y0,x1,y1])=>{const a=W.iso(x0,y0),b=W.iso(x1,y1),za=W.hz?W.hz(x0,y0):0,zb=W.hz?W.hz(x1,y1):0,ay=a.y-za,by=b.y-zb;
-  return {y:Math.max(a.y,b.y)+.01,x0:Math.min(a.x,b.x)-3,x1:Math.max(a.x,b.x)+3,y0:Math.min(ay,by)-10,y1:Math.max(ay,by)+2,draw(ctx){
-   const n=Math.max(4,Math.ceil(Math.abs(b.x-a.x)));for(let i=0;i<=n;i++){const u=i/n,s=Math.round(Math.sin(u*Math.PI)*1.5),x=Math.round(a.x+(b.x-a.x)*u),y=Math.round(ay+(by-ay)*u-6+s);ctx.fillStyle='#b0482c';ctx.fillRect(x,y,1,1);ctx.fillStyle='#5a1e12';ctx.fillRect(x,y+1,1,1);}
-   for(const [x,y] of [[a.x,ay],[b.x,by]]){ctx.fillStyle='#3a2a1c';ctx.fillRect(Math.round(x)-1,Math.round(y)-8,2,8);ctx.fillStyle='#c9a040';ctx.fillRect(Math.round(x)-1,Math.round(y)-9,2,1);}}};});
- T_EIN=kachel(R_AUS+.05,EIN_A);T_AUS_IN=kachel(R_AUS+.05,AUS_A);T_AUS=kachel(R_AUS+.95,AUS_A);T_TREPPE=kachel(R_AUS+1,LOGE);
- ZIEL_Q={tx:QP[QP.length-1][0],ty:QP[QP.length-1][1]};ZIEL_SCHAU={tx:SD.schau[0]+O,ty:SD.schau[1]+O};EINL_P={x:62.45+O,y:20.95+dy+O,innen:false};
- SCHILDER=[schildItem(SD.schild[0]+O,SD.schild[1]+O,()=>[t(SD.name)+' · '+t('arena.plaetze',{n:SITZE.length+1}),schildText()]),
-  schildItem(60.4+O,20.8+dy+O,()=>[t('arena.eingang'),t('arena.eingangZeile')]),
-  Object.assign(schildItem(T_AUS.tx+1,T_AUS.ty-.25,()=>[t('arena.ausgang'),t('arena.ausgangZeile')]),{extra(ctx,x,y){ctx.fillStyle='#4a3826';ctx.fillRect(x+10,y-7,7,7);ctx.fillStyle='#6a5438';ctx.fillRect(x+10,y-8,7,1);ctx.fillStyle='#7a5a20';ctx.fillRect(x+11,y-7,5,2);}})];// Eimer
- STATUE=SD.statue?statue(58.9+O,21.6+dy+O):null;}
 // Siegerstatue (Stufe 3) am Eingang: Sieger mit erhobenem Schwert auf dem Sockel, frisch „gestrichen“
 function statue(tx,ty){const q=W.iso(tx,ty),z=W.hz?W.hz(tx,ty):0,[c,g]=mk(30,62),X=15,Y=60;
  px(g,X-11,Y-10,22,10,'#7d766a');px(g,X-11,Y-10,22,2,'#aea58e');px(g,X-9,Y-6,18,1,'#5e584d');
@@ -214,11 +255,14 @@ function statue(tx,ty){const q=W.iso(tx,ty),z=W.hz?W.hz(tx,ty):0,[c,g]=mk(30,62)
  for(const [u,v,w,h] of [[4,-50,2,6],[-2,-30,3,2],[-1,-28,1,5],[-6,-24,2,3],[-10,-9,3,4],[6,-9,2,6]])px(g,X+u,Y+v,w,h,ST.blut);
  const o={y:q.y,x0:q.x-16,x1:q.x+16,y0:q.y-z-64,y1:q.y-z+2,draw(ctx){ctx.drawImage(c,Math.round(q.x-X),Math.round(q.y-z-Y));}};return o;}
 function setzeFelder(){const T=W.T,alle=new Map();for(let n=1;n<=STUFEN.length;n++)for(const k of felderVon(n).keys())alle.set(k,1);
- const soll=felderVon(STUFE),unsere=new Set([T.ARENA_BAU,T.KIES,T.STR2,T.LUDUS]),neu=[];
+ const soll=felderVon(STUFE),unsere=new Set([T.ARENA_BAU,T.KIES,T.LUDUS,T.WARTE,T.STR1,T.STR2,T.STR3,T.STR4,T.STR5]),neu=[];
  for(const k of alle.keys()){const ziel=soll.get(k)??W.grund[k],ist=W.feld[k];if(ist===ziel)continue;if(!unsere.has(ist)&&ist!==W.grund[k])continue;// fremdes Gebäude: stehen lassen
   W.feld[k]=ziel;if(soll.has(k)){if(W.obj)W.obj[k]=0;if(W.klein)W.klein[k]=0;}if(ziel===T.ARENA_BAU||ziel===T.LUDUS)W.fest[k]=1;else if(!W.arenaPlatz?.[k])W.fest[k]=0;neu.push(k);}
  if(neu.length)W.rebake(neu);return neu.length;}
-function bauen(){masse(STUFE);plaetze();KEILE=[];for(let k=0;k<NR;k++)for(let j=0;j<NSL[k];j++)KEILE.push(keil(k,j));SAND=sand();OBEN=['baldachin','segelL','segelR'].map(ueber);GESAMT=null;TOR_K=torItem();wege();}
+function bauen(){masse(STUFE);plaetze();SEKTOREN=Array.from({length:SEKT},(_,s)=>sektorBild(s));SAND=sand();OBEN=['baldachin','segelL','segelR'].map(ueber);GESAMT=null;TOR_K=torItem();tueren();}
+// Tür versetzt: nur die betroffenen Ausschnitte neu malen
+function neuTuer(){const S=new Set();for(const a of [EIN_A,AUS_A,...ALT_T])S.add(sektor(winkel(NR-1,slot(NR-1,a))));for(const s of S)SEKTOREN[s]=sektorBild(s);GESAMT=null;ALT_T=[EIN_A,AUS_A];}
+let ALT_T=[];
 
 // ---------- Schilder (eigene Schrift, Rattenpergament-Farben) ----------
 const schilder=new Map();
@@ -230,13 +274,16 @@ const zeitText=h=>window.WeltZeit?WeltZeit.zeitText(h):String(Math.floor(h));
 function schildText(){const ph=phase();if(ph==='zu')return t('arena.schild.zu');if(ph==='einlass')return t('arena.schild.einlass',{zeit:zeitText(((AR.termin%24)+6)%24)});if(ph==='laeuft')return t('arena.schild.laeuft');return t('arena.schild.aus');}
 function schildItem(tx,ty,fn){const q=W.iso(tx,ty),z=W.hz?W.hz(tx,ty):0,o={y:q.y,x0:q.x-90,x1:q.x+90,y0:q.y-z-60,y1:q.y-z+2,draw(ctx){const [ti,ze]=fn(),s=schild(ti,ze),x=Math.round(q.x),y=Math.round(q.y-z);
  ctx.fillStyle='#5e4229';ctx.fillRect(x-1,y-14,2,14);ctx.drawImage(s.c,Math.round(x-s.w/2),y-14-s.h);o.extra?.(ctx,x,y);}};return o;}
-bauen();
+bauen();sandDeko0();
+function tueren2(){schlangeRechnen(false);}
+function sandDeko0(){const D=W.deko;if(!D)return;const r=RS+.9;for(let y=Math.floor(CY-r);y<=Math.ceil(CY+r);y++)for(let x=Math.floor(CX-r);x<=Math.ceil(CX+r);x++)if(Math.hypot(x+.5-CX,y+.5-CY)<r){const k=W.ix(x,y);D[k]=1;DEKO.push(k);}}
+let dekoErst=true;
 // ---------- Termin und Ablauf ----------
 const AR={termin:null,id:0,quote:.75,aus:false,schlange:[],drin:new Set(),einT:0,blasen:[],blT:2};
 const EIN_DT=1.1,KACHEL=Math.hypot(32,16);// KACHEL: Bildpunkte je Feld entlang eines Weges (Tempo der Besucher ist in Bildpunkten)// Sekunden Spielzeit zwischen zwei Gästen am Einlass
 const jetzt=()=>{const h=M.weltTag?.stunde;if(h==null)return null;return (S.day||1)*24+((h-6+24)%24);};
 function phase(){if(AR.termin==null)return 'zu';const n=jetzt();if(n==null)return 'zu';if(n<AR.termin)return 'einlass';if(n<AR.termin+1)return 'laeuft';return 'aus';}
-function einlass(){const ph=phase();return ph==='einlass'||ph==='laeuft';}// Einlass bis zum Ende der Wartestunde
+function einlass(){const ph=phase();return OFFEN&&(ph==='einlass'||ph==='laeuft');}// Einlass bis zum Ende der Wartestunde
 function termin(stunden=4){if(phase()!=='zu')return false;const n=jetzt();if(n==null)return false;AR.termin=n+stunden;AR.id++;AR.quote=rnd(.6,.9);AR.aus=false;
  try{M.ui?.notify?.(t('arena.termin',{zeit:zeitText(((AR.termin%24)+6)%24)}));}catch(e){}M.weltBesucher?.aufruf?.();return true;}
 // Kämpfertor: zum Kampfbeginn Gong, dann hebt sich das Fallgitter in 1,8 s (wie im Start-Intro); nach 20 s geht es wieder zu (bis B4, dann steuert der Kampf)
@@ -281,6 +328,7 @@ function murren(dt){for(let i=AR.blasen.length-1;i>=0;i--){const b=AR.blasen[i];
  blase(pick(sitzen),t('arena.murren.'+(1+((Math.random()*8)|0))));}
 let npcDa=false;
 const tick0=H.tick;H.tick=dt=>{tick0?.(dt);if(!npcDa&&M.weltNpc){npcDa=true;try{M.weltNpc.dazu(EINL);M.weltNpc.dazu(RECHEN);}catch(e){console.warn(e);}}
+ if(dekoErst){dekoErst=false;const ks=[...DEKO];for(const x of [X_EIN,X_AUS,ENDE])if(x>=0)ks.push(x,...nb4(x));W.neuMalen?.(ks);}if(neuNoetig){neuNoetig=false;tueren2();}
  if(!(dt>0))return;const ph=phase();torTick(dt,ph);
  if(ph==='aus'&&!AR.aus){AR.aus=true;for(const v of AR.drin)if(v.ar?.modus==='sitzt')v.ar.warte=rnd(0,30);}
  schlange(dt);for(const v of AR.drin){try{innen(v,dt);}catch(e){console.warn(e);AR.drin.delete(v);abweisen(v,null);}}murren(dt);
@@ -304,11 +352,16 @@ const RECHEN={id:'rechenknecht',name:()=>t('arena.rechen'),rolle:()=>t('arena.re
 
 // ---------- Zeichnen ----------
 const sicht=(o,v)=>o.x1>v.x0&&o.x0<v.x1&&o.y1>v.y0&&o.y0<v.y1;
-const g0=H.ground;H.ground=(ctx,view)=>{g0?.(ctx,view);if(W.mini||!sicht({x0:SAND.x,x1:SAND.x1,y0:SAND.y,y1:SAND.y1},view))return;ctx.drawImage(SAND.c,SAND.x,SAND.y);};
+// B0b-Nacharbeit: der Sand liegt im Bodenbild der Karte (einmal gebacken, kostet beim Zeichnen nichts)
+function sandDeko(){const D=W.deko;if(!D)return;const alt=DEKO;for(const k of alt)D[k]=0;DEKO=[];const r=RS+.9;
+ for(let y=Math.floor(CY-r);y<=Math.ceil(CY+r);y++)for(let x=Math.floor(CX-r);x<=Math.ceil(CX+r);x++)if(Math.hypot(x+.5-CX,y+.5-CY)<r){const k=W.ix(x,y);D[k]=1;DEKO.push(k);}
+ W.neuMalen?.([...alt,...DEKO]);}
+const bf0=H.bodenFeld;H.bodenFeld=(g,tx,ty,lod)=>{if(Math.hypot(tx+.5-CX,ty+.5-CY)>=RS+.9)return bf0?.(g,tx,ty,lod);
+ const z=W.hz?W.hz(tx+.5,ty+.5):0,e=[W.iso(tx,ty),W.iso(tx+1,ty),W.iso(tx+1,ty+1),W.iso(tx,ty+1)];g.save();g.beginPath();e.forEach((p,i)=>i?g.lineTo(p.x,p.y-z):g.moveTo(p.x,p.y-z));g.closePath();g.clip();g.drawImage(SAND.c,SAND.x,SAND.y);g.restore();};
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);
  if(W.mini){const G=gesamt();if(sicht({x0:G.x,x1:G.x1,y0:G.y,y1:G.y1},view))items.push(G.item);return;}
- for(const k of KEILE)if(sicht(k,view))items.push(k.item);for(const o of OBEN)if(sicht(o,view))items.push(o.item);if(TOR.auf<1&&sicht(TOR_K,view))items.push(TOR_K);if(STATUE&&sicht(STATUE,view))items.push(STATUE);
- for(const s of SEIL_ITEMS)if(sicht(s,view))items.push(s);for(const s of SCHILDER)if(sicht(s,view))items.push(s);};
+ for(const k of SEKTOREN)if(sicht(k,view))items.push(k.item);for(const o of OBEN)if(sicht(o,view))items.push(o.item);if(TOR.auf<1&&sicht(TOR_K,view))items.push(TOR_K);if(STATUE&&sicht(STATUE,view))items.push(STATUE);
+ for(const s of SCHILDER)if(sicht(s,view))items.push(s);};
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(!AR.blasen.length||W.mini)return;const z=Math.min(3,Math.max(.4,.8/W.cam.s));ctx.font=font(10*z);ctx.textAlign='center';ctx.textBaseline='middle';
  for(const b of AR.blasen){const v=b.v;if(v.unsichtbar)continue;const x=v.dx,y=v.dy-(v.sitzt?14:W.HOEHE)-8*z-(v.oz||0);if(x<view.x0-200||x>view.x1+200||y<view.y0-30||y>view.y1+30)continue;const w=ctx.measureText(b.text).width+8*z;
   ctx.globalAlpha=Math.min(1,b.t*2);ctx.fillStyle='rgba(18,12,9,.86)';ctx.fillRect(Math.round(x-w/2),Math.round(y-7*z),Math.round(w),Math.round(14*z));ctx.fillStyle='#f0e2c0';ctx.fillText(b.text,Math.round(x),Math.round(y)+1);}ctx.globalAlpha=1;};
@@ -322,18 +375,19 @@ if(bar){const b=document.createElement('button');b.id='wProbekampf';b.className=
 // ---------- Ausbaustufen wechseln (bis R1 per Testknopf, MIT DER FORSCHUNG ENTFERNEN) ----------
 const beiStufe=[];
 function stufe(n,laden){n=Math.max(1,Math.min(STUFEN.length,n|0));if(!laden&&phase()!=='zu')return false;if(n===STUFE&&(!laden||n===1))return true;
- const alt=STUFE;STUFE=n;const t0=performance.now();bauen();setzeFelder();AR.ms=performance.now()-t0;TOR.auf=0;TOR.soll=0;
+ const alt=STUFE;STUFE=n;const t0=performance.now();bauen();setzeFelder();tueren();if(!laden)verlaengern();tueren();sandDeko();AR.ms=performance.now()-t0;TOR.auf=0;TOR.soll=0;
  for(const f of beiStufe)try{f(n,alt);}catch(e){console.warn(e);}return true;}
 if(bar){const b=document.createElement('button');b.id='wAusbau';b.className='w-btn';
  const txt=()=>{b.replaceChildren(...(window.AT2_IKON?[AT2_IKON.element('bauen'),' ']:[]),t('arena.ausbau'));b.title=t('arena.ausbauTitel');};txt();L?.beiWechsel(txt);
  b.onclick=()=>{const n=STUFE%STUFEN.length+1;if(!stufe(n)){try{M.ui?.notify?.(t('arena.ausbauNein'));}catch(e){}return;}
   try{M.ui?.notify?.(t(n>1?'arena.ausbauFertig':'arena.ausbauZurueck',{name:t(SD.name),n:SITZE.length+1}));}catch(e){}};bar.appendChild(b);}
 
-M.weltArena={termin,phase,einlass,anstellen,vergiss,schild:schildItem,setzeStufe:n=>stufe(n),stufeLaden:n=>stufe(n,true),beiStufe:f=>beiStufe.push(f),stufen:STUFEN.length,
+M.weltArena={termin,phase,einlass,anstellen,vergiss,tuerMoeglich,setzeTuer,get offen(){return OFFEN;},get grund(){return GRUND;},get eingangFeld(){return X_EIN;},get ausgangFeld(){return X_AUS;},get schlangeLaenge(){return QP.length-1;},
+ tueren:()=>({ein:Math.round(EIN_A/DEG*10)/10,aus:Math.round(AUS_A/DEG*10)/10}),tuerenLaden(o){if(!o)return;EIN_A=o.ein*DEG;AUS_A=o.aus*DEG;neuTuer();tueren();},schild:schildItem,setzeStufe:n=>stufe(n),stufeLaden:n=>stufe(n,true),beiStufe:f=>beiStufe.push(f),stufen:STUFEN.length,
  tor,get torAuf(){return TOR.auf;},get stufe(){return STUFE;},felder:n=>felderVon(n||STUFE),get umbauMs(){return AR.ms;},torPunkt:()=>({...kachel(R_AUS+.6,TOR_A)}),
  get id(){return AR.id;},get quote(){return AR.quote;},get terminStunde(){return AR.termin;},
  ziel:()=>({...ZIEL_Q}),schauZiel:()=>({...ZIEL_SCHAU}),
  lanistaSoll:()=>{const ph=phase();return ph==='einlass'||ph==='laeuft';},lanistaEile:()=>phase()==='laeuft',lanistaPlatz:()=>({...LOGE_SITZ}),treppe:()=>({...T_TREPPE}),
  sitze:()=>SITZE,freie:()=>({n:frei.n.length,a:frei.a.length}),schlange:()=>AR.schlange,drin:()=>AR.drin,blasen:()=>AR.blasen,
- keile:()=>KEILE,gesamtBild:()=>gesamt().c,arten:()=>ART,mitte:{tx:CX,ty:CY},get R_AUS(){return R_AUS;},jetzt,get sand(){return SAND;}};
+ sektoren:()=>SEKTOREN,gesamtBild:()=>gesamt().c,arten:()=>ART,mitte:{tx:CX,ty:CY},get R_AUS(){return R_AUS;},jetzt,get sand(){return SAND;}};
 })();

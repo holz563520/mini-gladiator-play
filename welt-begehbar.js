@@ -27,7 +27,8 @@ const ARTEN=['gladiator','besucher','tier','karren'],GL=0,BE=1,TI=2,KA=3,BUDGET=
 const karte=ARTEN.map(()=>new Uint8Array(NN));
 // ---------- Tempo je Boden ----------
 const BODEN=new Uint8Array(256);{const s=(v,...ts)=>{for(const x of ts)if(x!=null)BODEN[x]=v;};
- s(115,T.STR4,T.STR5);s(110,T.STR3);s(100,T.STR2,T.WEG,T.BRUECKE);s(95,T.STR1);
+ s(115,T.STR4,T.STR5);s(110,T.STR3);s(100,T.STR2,T.WEG,T.BRUECKE,T.WARTE);// B0b: Wartestraße: Gladiatoren dürfen drüber, Besucher nicht (kein WEGE; die Schlange führt welt-arena.js)
+ s(95,T.STR1);
  s(85,T.WIESE,T.ERDE,T.SAND,T.TROCKEN,T.LUDUS,T.PLATZ,T.ARENA,T.GRAB);s(75,T.WALD,T.NADEL,T.KIES,T.DSCH);
  s(60,T.SCHLAMM,T.SCHNEE,T.GEROELL,T.FELS);s(45,T.SUMPF,T.MOOR);}
 const WEGE=new Set([T.WEG,T.BRUECKE,T.STR1,T.STR2,T.STR3,T.STR4,T.STR5]),KARRENWEG=new Set([T.WEG,T.BRUECKE,T.STR2,T.STR3,T.STR4,T.STR5]);

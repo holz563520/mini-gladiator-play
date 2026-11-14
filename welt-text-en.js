@@ -127,4 +127,9 @@ AT2Sprache.dazu('en',{
  'vor.schildKaefig':'Do not feed. Do not reach in. We mean it.',
  'vor.g1.n':'Brutus Shinbone, Decimus Jaw, Otho the Cracker','vor.g2.n':'Aelia and Aemilia','vor.g3.n':'Gaius',
  'vor.spruch':'Says:','vor.tierArt':'Caged beast',
+ // B0b rework: queue path, entrance and exit
+ 'bau.gruppe.attraktionen':'Attractions','bau.tuer.hier':'Put it here.','bau.tuer.nein':'Only directly outside the arena wall.','bau.tuer.hilfe':'Tap a tile directly outside the arena wall.',
+ 'bau.warte.hilfe':'Drag a queue path from the tile in front of the entrance to a path. Those who wait, wait here. Those who push, wait longer.',
+ 'arena.schild.anschluss':'Not connected. Please die outside.','arena.zu.schlange':'The arena has no queue path from the entrance to a path. People are standing around baffled, which is not entertainment yet.',
+ 'arena.zu.ausgang':'The arena exit leads nowhere. Whoever is inside stays inside. Forever, says the advisor, smiling.','arena.wieder':'The arena is connected again. The crowd may enter, and more importantly, leave.',
 });

@@ -34,9 +34,11 @@ const WERKZEUG={platz:{name:'Trainingsfeld',typ:T.PLATZ,preis:50},arena:{name:'K
  krankenhaus:{name:'Krankenhaus',typ:T.KRANK,preis:80,haus:1,gruppe:'krankenhaus'},
  // Fünf Straßen, jede teurer als die vorige (Preise sind Vorschläge). Noch ohne Wirkung auf Tempo oder Besucher.
  str1:{name:'Trampelpfad',typ:T.STR1,preis:5,str:1},str2:{name:'Kiesweg',typ:T.STR2,preis:12,str:1},str3:{name:'Pflasterweg',typ:T.STR3,preis:25,str:1},str4:{name:'Steinstraße',typ:T.STR4,preis:50,str:1},str5:{name:'Prachtstraße',typ:T.STR5,preis:100,str:1},
+ ...(T.WARTE!=null&&W.ANORD?.sandgrube?{warte:{name:'Wartestraße',typ:T.WARTE,preis:12,str:1},// B0b (Thomas 14.11.2026): Warteschlange wie bei RCT, 12 G je Feld
+  eingang:{name:'Eingang versetzen',preis:0,tuer:'ein'},ausgang:{name:'Ausgang versetzen',preis:0,tuer:'aus'}}:{}),// B0b: Eingang und Ausgang der Arena versetzen (kostenlos)
  land:{name:'Gelände',preis:3,land:1},// wie RollerCoaster Tycoon Classic, Preis je Feld und Stufe (Vorschlag)
  weg:{name:'Abreißen',preis:0}};
-const istStr=t=>t>=T.STR1&&t<=T.STR5,istHaus=t=>t===T.UNTERKUNFT||t===T.UNT_S||t===T.UNT_K||t===T.SCHM_S||t===T.SCHMIEDE||t===T.SCHM_K||t===T.BST_S||t===T.BEAST||t===T.BST_K||t===T.KAS_S||t===T.KASERNE||t===T.KAS_K||t===T.KRANK;
+const istStr=t=>t>=T.STR1&&t<=T.STR5||(T.WARTE!=null&&t===T.WARTE),istHaus=t=>t===T.UNTERKUNFT||t===T.UNT_S||t===T.UNT_K||t===T.SCHM_S||t===T.SCHMIEDE||t===T.SCHM_K||t===T.BST_S||t===T.BEAST||t===T.BST_K||t===T.KAS_S||t===T.KASERNE||t===T.KAS_K||t===T.KRANK;
 const PREIS=WERKZEUG.platz.preis,PRO=4,PLAETZE=8,STUFEN=[{ab:0,name:'Strohpuppe',mz:'Strohpuppen'},{ab:10,name:'Holzpuppe',mz:'Holzpuppen'},{ab:25,name:'Rüstungspuppe',mz:'Rüstungspuppen'},{ab:60,name:'Drehpuppe',mz:'Drehpuppen'}];
 const ARENA_NAME=n=>n<20?'Sandgrube':n<48?'Kleine Arena':n<100?'Arena':'Große Arena';
 const stufeVon=n=>{let s=0;for(let i=0;i<STUFEN.length;i++)if(n>=STUFEN[i].ab)s=i;return s;};
@@ -57,7 +59,7 @@ const abreissbar=k=>{const t=W.feld[k];return unterBruecke(k)||(!!(W.obj?.[k]||W
 const gruppeVon=t=>Object.values(WERKZEUG).find(w=>w.typ===t)?.gruppe||'unterkunft';
 const hausBaubar=(k,typ)=>{if(istFest(k)||unterBruecke(k))return false;const t=W.feld[k];return natur(t)||t===T.LUDUS||(istHaus(t)&&t!==typ&&gruppeVon(t)===gruppeVon(typ));};
 // Straßen dürfen auch auf den alten Weg und über eine andere Straße (Ausbau, voller Preis)
-const strBaubar=(k,typ)=>{if(istFest(k)||W.gebaeudeAt?.(k%N,Math.floor(k/N)))return false;const t=W.feld[k];return natur(t)||t===T.LUDUS||t===T.WEG||(istStr(t)&&t!==typ);};
+const strBaubar=(k,typ)=>{const t=W.feld[k],ap=!!W.arenaPlatz?.[k];if((istFest(k)&&!(ap&&(natur(t)||istStr(t))))||W.gebaeudeAt?.(k%N,Math.floor(k/N)))return false;return natur(t)||(t===T.LUDUS&&!ap)||t===T.WEG||(istStr(t)&&t!==typ);};// B0b: Wege und Wartestraße auch auf der freien Fläche um die Arena
 
 // ---------- Puppen-Bilder (4 Stufen, die Drehpuppe in 8 Drehstellungen) ----------
 const PW=48,PH=66,AX=24,AY=58,FRAMES=8,img=[],PK=.42;// PK: Puppen passend zu den kleinen Figuren verkleinert
@@ -126,9 +128,9 @@ box.innerHTML='<div class="bau-wz">'+WZ.filter(e=>!e[1].str&&!e[1].haus&&!e[1].l
 document.getElementById('weltUi').appendChild(box);
 // T2-Rückmeldung (Thomas 13.11.2026): in 2.0 großes Baumenü unten über die ganze Breite, Werkzeuge in Gruppen mit Bild (#wBau.gross, tageslauf.css)
 if(window.AT2){box.classList.add('gross');const zeile=box.querySelector('.bau-wz'),grp=document.createElement('div');grp.className='bau-gruppen';
- const BILD={platz:'🎯',arena:'⚔',trib:'🏟',unterkunft:'🛏',schmiede:'⚒',bestium:'🐺',kaserne:'🛡',krankenhaus:'✚',str1:'🛤',land:'⛰',weg:'💥'};
+ const BILD={eingang:'⇥',ausgang:'⇤',platz:'🎯',arena:'⚔',trib:'🏟',unterkunft:'🛏',schmiede:'⚒',bestium:'🐺',kaserne:'🛡',krankenhaus:'✚',str1:'🛤',land:'⛰',weg:'💥'};
  for(const b of zeile.querySelectorAll('[data-wz]'))if(BILD[b.dataset.wz])b.insertAdjacentHTML('afterbegin','<i>'+BILD[b.dataset.wz]+'</i> ');
- for(const [id,wz] of [['ludus',['platz','unterkunft','schmiede','bestium','kaserne','krankenhaus']],...(W.ANORD?.sandgrube?[]:[['arena',['arena','trib']]]),['wege',['str1']],['gelaende',['land']],['werkzeug',['weg']]]){// B0: ohne Arena-Gruppe, die Arena ist fest
+ for(const [id,wz] of [['ludus',['platz','unterkunft','schmiede','bestium','kaserne','krankenhaus']],...(W.ANORD?.sandgrube?[['attraktionen',['eingang','ausgang']]]:[['arena',['arena','trib']]]),['wege',['str1']],['gelaende',['land']],['werkzeug',['weg']]]){// B0: ohne Arena-Gruppe, die Arena ist fest
   const g=document.createElement('div');g.className='bau-gruppe';g.dataset.gruppe=id;g.innerHTML='<b>'+sp('bau.gruppe.'+id,null,id)+'</b><div></div>';
   for(const w of wz){const b=zeile.querySelector('[data-wz="'+w+'"]');if(b)g.lastChild.appendChild(b);}grp.appendChild(g);}
  const fertig=zeile.querySelector('[data-done]');fertig.classList.add('bau-fertig');grp.appendChild(fertig);zeile.replaceWith(grp);grp.classList.add('bau-wz');}
@@ -151,7 +153,7 @@ const HILFE={wahl:'Wähle oben, was gebaut werden soll. Bis dahin lässt sich di
  land:'Gelände wie bei RollerCoaster Tycoon: Feld wählen, gedrückt halten und nach oben ziehen hebt, nach unten senkt. Größe mit − und +; bei 1 × 1 auch eine Ecke oder Kante. 3 G je Feld und Stufe. Gebautes bleibt, wie es ist.',
  weg:'Rechteck über Gebautes ziehen. Es wird wieder zu dem, was vorher dort war. Kein Geld zurück.'};
 for(const [id,w] of Object.entries(WERKZEUG))if(w.str)HILFE[id]=w.name+': '+w.preis+' G je Feld. Rechteck oder Linie ziehen, auch über den alten Weg oder eine andere Straße (Ausbau).';
-function hilfe(){box.querySelector('span').textContent=mode==='land'&&landGlatt?sp('bau.glattHilfe',{g:WERKZEUG.land.preis},'Glätten: gedrückt halten oder darüberwischen. Kanten und Klippen werden zu sanften Hängen. {g} G je Feld und Stufe. Der Landvermesser nennt es Kunst, der Totengräber Arbeitsbeschaffung.'):mode?HILFE[mode]:'';}
+function hilfe(){box.querySelector('span').textContent=mode==='land'&&landGlatt?sp('bau.glattHilfe',{g:WERKZEUG.land.preis},'Glätten: gedrückt halten oder darüberwischen. Kanten und Klippen werden zu sanften Hängen. {g} G je Feld und Stufe. Der Landvermesser nennt es Kunst, der Totengräber Arbeitsbeschaffung.'):mode==='warte'?sp('bau.warte.hilfe',null,'Wartestraße ziehen: vom Feld vor dem Eingang bis an einen Weg. Wer wartet, wartet hier. Wer drängelt, wartet länger.'):WERKZEUG[mode]?.tuer?sp('bau.tuer.hilfe',null,'Feld direkt außen am Rand der Arena antippen.'):mode?HILFE[mode]:'';}
 function setMode(m){mode=m===true?'platz':(m||null);drag=null;info=null;box.hidden=!mode;btn.classList.toggle('on',!!mode);const str=!!WERKZEUG[mode]?.str,gr=WERKZEUG[mode]?.haus?(WERKZEUG[mode].gruppe||'unterkunft'):null;box.querySelector('.bau-str').hidden=!str;box.querySelector('.bau-land').hidden=mode!=='land';landSel=null;landDrag=null;glattStopp();for(const r of box.querySelectorAll('.bau-haus'))r.hidden=r.dataset.g!==gr;for(const b of box.querySelectorAll('[data-wz]'))b.classList.toggle('on',b.dataset.strgruppe!=null?str:b.dataset.hausgruppe!=null?b.dataset.hausgruppe===gr:b.dataset.wz===mode);hilfe();W.canvas.style.cursor=mode&&mode!=='wahl'?'crosshair':'';if(mode)M.weltLeben?.close?.();}
 btn.onclick=()=>setMode(mode?null:'wahl');  // Menü offen, noch nichts gewählt: Karte bleibt verschiebbar (Wunsch Thomas 13.11.2026)
 box.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.glatt){landGlatt=!landGlatt;glattStopp();b.classList.toggle('on',landGlatt);hilfe();return;}if(b.dataset.land){landN=clamp(landN+ +b.dataset.land,1,16);box.querySelector('.land-n').textContent=landN+' × '+landN;return;}if(b.dataset.done!=null)setMode(null);else setMode(b.dataset.wz);});
@@ -159,6 +161,8 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&mode){if(drag){drag=null;inf
 const tile=p=>{const t=(W.bodenPunkt||W.tileAt)(p.x,p.y);return {tx:clamp(Math.floor(t.tx),0,N-1),ty:clamp(Math.floor(t.ty),0,N-1)};};
 const mz=(n,e,m)=>n+' '+(n===1?e:m);
 function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,drag.b.tx),y0=Math.min(drag.a.ty,drag.b.ty),y1=Math.max(drag.a.ty,drag.b.ty),ok=[],no=[],wz=WERKZEUG[mode],ab=mode==='weg';
+ if(wz.tuer){const k=W.ix(drag.b.tx,drag.b.ty),A=M.weltArena;info={ok:A?.tuerMoeglich?.(k)?[k]:[],no:[],preis:0,genug:true,tuer:wz.tuer};if(!info.ok.length)info.no=[k];
+  box.querySelector('span').textContent=info.ok.length?sp('bau.tuer.hier',null,'Hier hin.'):sp('bau.tuer.nein',null,'Nur direkt außen am Rand der Arena.');return;}// B0b
  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=W.ix(x,y);((ab?abreissbar(k):wz.str?strBaubar(k,wz.typ):wz.haus?hausBaubar(k,wz.typ):baubar(x,y))?ok:no).push(k);}
  const eb=!ab&&!wz.str&&ok.length?ebnenPlan(ok,wz.typ).stufen*WERKZEUG.land.preis:0;// T1: Einebnen kostet wie das Geländewerkzeug
  const NBa=window.WeltNatur?.ARTEN,rod=ok.reduce((n,k)=>{const o=W.obj?.[k];return n+(o&&!NBa?.[o]?.flach?RODEN:0);},0);// A3b: Roden (Bäume, Büsche, Steine; Gras und Blumen nicht)
@@ -173,7 +177,7 @@ function auswahl(){const x0=Math.min(drag.a.tx,drag.b.tx),x1=Math.max(drag.a.tx,
   ok.forEach((k,i)=>W.feld[k]=save[i]);arenenRechnen();}
  if(!ab&&no.some(istAP))t=ok.length?t+' · '+apText():apText();// A3b
  box.querySelector('span').textContent=t;}
-function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
+function baue(frei){const {ok,preis,genug}=info,wz=WERKZEUG[mode],ab=mode==='weg';if(!ok.length)return;if(wz.tuer){M.weltArena?.setzeTuer?.(wz.tuer,ok[0]);try{M.sound?.('coin');}catch(e){}return;}// B0b: Tür versetzenif(!frei&&!genug){M.ui.notify?.('Zu wenig Gold: '+preis+' G nötig, '+Math.floor(S.gold||0)+' G da.');return;}
  const a=drag.a,betten0=M.weltGebaeude?.betten()||0,amb0=M.weltGebaeude?.ambosse?.()||0;const kf0=M.weltGebaeude?.kaefige?.()||0;let cx=0,cy=0;if(!ab&&!wz.str)ebnen(ok,wz.typ);
  for(const k of ok){W.feld[k]=ab?ur[k]:wz.typ;const x=k%N,y=(k/N)|0;neu.set(k,clock+Math.hypot(x-a.tx,y-a.ty)*.045);const c=W.iso(x+.5,y+.5);cx+=c.x;cy+=c.y-(W.hz?W.hz(x+.5,y+.5):0);}cx/=ok.length;cy/=ok.length;
  if(ab){M.weltBruecke?.abreissen?.(ok);for(const k of ok)if(natur(W.feld[k])){if(W.obj?.[k])W.obj[k]=0;if(W.klein)W.klein[k]=0;}}/* T3: Abreißen räumt auch das Kleinzeug (kostenlos) */if(!frei)S.gold=(S.gold||0)-preis;W.rebake(ok);const r=rechne(false);if(frei)return;try{M.sound?.(ab?'land':'coin');}catch(e){}

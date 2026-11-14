@@ -31,7 +31,7 @@ const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Fel
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
 const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
-const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37,ERDE:38,KIES:39,SCHLAMM:40,GEROELL:41,TROCKEN:42,NADEL:43,VERWALTUNG:44,ARENA_BAU:45},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz','Erde','Kies','Schlamm','Geröll','Trockengras','Nadelstreu','Verwaltung','Arena'];
+const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37,ERDE:38,KIES:39,SCHLAMM:40,GEROELL:41,TROCKEN:42,NADEL:43,VERWALTUNG:44,ARENA_BAU:45,WARTE:46},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz','Erde','Kies','Schlamm','Geröll','Trockengras','Nadelstreu','Verwaltung','Arena','Wartestraße'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
 // Arena Theory 2.0, Schritt A3 (Thomas 13.11.2026): Karte neu angeordnet. An der großen Straße liegen nebeneinander das
@@ -47,8 +47,8 @@ const ANORD=GROSS?{dorf:[-100,-52,92,110],platz:[-8,40,14,18],park:[6,-52,100,11
 // Tor: erstes Feld und Breite (an der Unterkante bzw. bei durchgang an der Ostkante des Dorfes)
  halle:[7,40],arena:{boden:[24,30,8,6],trib:[22,28,12,10],durch:[[27,36],[28,36],[27,37],[28,37]],ein:[27.5,38.5]},
  pfade:[[15,38,1,20],[15,38,46,1],[9,45,1,6],[9,50,7,1],// Kieswege im Park: Tor → Arena (A3b: weiter bis unter die Fläche der großen Arena), Halle → Hauptweg
-  [61,38,8,1],[61,30,1,8],[68,17,1,21]],// B0: zur Warteschlange und vom Ausgang zurück zum Hauptweg
- schlange:[[61,20,1,2],[61,22,3,8]],// B0: Kiesfläche der Warteschlange (Zickzack mit Seilen vor dem Eingang, welt-arena.js)
+  [61,38,8,1],[68,17,1,21]],// B0: Hauptweg unter der Schlange und vom Ausgang zurück zum Hauptweg
+ schlange:[[61,20,1,18]],// B0b: Start-Wartestraße vom Eingang der Sandgrube bis zum Hauptweg (welt-arena.js liest die Schlange aus den Feldern)
  sandgrube:{c:[61.5,11.5],r:8.4},// B0 (Thomas 13.11.2026): feste Arena, Stufe 1 „Sandgrube“, Mitte und Halbmesser in Feldern (welt-arena.js)
  vorplatz:[37,2,8,20],gang:[45,11,8,2],// B0b (Thomas 13.11.2026): fester Vorplatz der Herausforderer im Westen, Kämpfergang zum Kämpfertor (Stufe 1; welt-arena.js passt ihn je Stufe an, welt-vorplatz.js zeichnet)
  orte:{lanista:[-16,48],orontes:[-24,50],huehner:[-33,50]}}:null;
@@ -201,7 +201,7 @@ if(ANORD){const A=ANORD,setz=(arr,x,y,v)=>{if(inMap(x,y))arr[ix(x,y)]=v;};
  {const [x0,y0,w,h]=A.arenaPlatz;for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++){const k=ix(x+O,y+O);fest[k]=1;arenaPlatz[k]=1;}}// A3b: Fläche der großen Arena
  // B0: Felder unter der Sandgrube (rund, Mitte der Feldmitte näher als r): gesperrt für alle, gezeichnet von welt-arena.js
  for(const r of [A.vorplatz,A.gang])if(r)for(let y=r[1];y<r[1]+r[3];y++)for(let x=r[0];x<r[0]+r[2];x++){const k=ix(x+O,y+O);feld[k]=T.LUDUS;fest[k]=1;}// B0b: festgetretener Boden, nur für Gladiatoren (kein Weg für Besucher)
- if(A.schlange)for(const [x0,y0,w,h] of A.schlange)for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)feld[ix(x+O,y+O)]=T.KIES;
+ if(A.schlange)for(const [x0,y0,w,h] of A.schlange)for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)feld[ix(x+O,y+O)]=T.WARTE;// B0b: Start-Wartestraße
  if(A.sandgrube){const [cx,cy]=A.sandgrube.c,r=A.sandgrube.r;for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++)if(Math.hypot(x+.5-cx,y+.5-cy)<r&&inMap(x+O,y+O)){const k=ix(x+O,y+O);feld[k]=T.ARENA_BAU;fest[k]=1;}}
  // A3b: Grenzen folgen den geschwungenen Rändern. Jede Kante zwischen zwei Feldern verschiedener Bereiche bekommt Zaun (Park)
  // oder Palisade (Dorf, Rückseite des Platzes); offen bleiben die Tore und der Platz zur Straße hin.
@@ -215,6 +215,7 @@ if(ANORD){const A=ANORD,setz=(arr,x,y,v)=>{if(inMap(x,y))arr[ix(x,y)]=v;};
  TORE.push({art:'park',tx:A.parktor[0]+O,ty:A.park[1]+A.park[3]+O,w:A.parktor[1],dir:0},{art:'dorf',tx:A.dorftor[0]+O,ty:A.dorf[1]+A.dorf[3]+O,w:A.dorftor[1],dir:0},
   {art:'kaempfer',tx:A.park[0]+O,ty:A.kaempfertor[0]+O,w:A.kaempfertor[1],dir:1});}
 // Naturobjekte (welt-natur.js): je Feld höchstens eines. Alles darauf ist entfernbar (obj = 0); nicht am Weg, nicht um den Ludus.
+const deko=new Uint8Array(N*N);// B0b: Felder mit Bodendeko eines Moduls (WeltHook.bodenFeld malt sie beim Backen der Kachel)
 const NASS_OK=new Set(['Schilf','Seerosen','Moorhand']),NB=window.WeltNatur,obj=new Uint8Array(N*N),BODEN_NATUR=new Set([T.WIESE,T.WALD,T.SAND,T.DSCH,T.SUMPF,T.MOOR,T.FLUSS,T.FELS,T.SCHNEE,T.ERDE,T.KIES,T.SCHLAMM,T.GEROELL,T.TROCKEN,T.NADEL]),
  BODEN_NAME={[T.WIESE]:'wiese',[T.WALD]:'wald',[T.SAND]:'sand',[T.DSCH]:'dsch',[T.SUMPF]:'sumpf',[T.MOOR]:'moor',[T.FLUSS]:'wasser',[T.FELS]:'fels',[T.SCHNEE]:'schnee',[T.ERDE]:'erde',[T.KIES]:'kies',[T.SCHLAMM]:'schlamm',[T.GEROELL]:'geroell',[T.TROCKEN]:'trocken',[T.NADEL]:'nadel'};
 // A3b: was in Dorf und Park wächst und liegt: locker verteilt, von allem ein bisschen (Thomas: „nichts zu dicht“).
@@ -304,7 +305,8 @@ const PAL=[
  [[146,140,84],[158,150,92],[134,128,76],[118,108,62]],// Trockengras (4. Farbe = Halme)
  [[74,60,42],[84,68,46],[64,52,36],[104,80,46]],// Nadelstreu (4. Farbe = Nadeln)
  [[230,224,210],[216,208,192],[190,182,166],[118,30,28]],// A4 Verwaltung: Marmorplatten mit feinen Fugen (4. Farbe = alter Blutfleck)
- [[86,114,60],[94,122,66],[78,104,55],[101,128,70]]// B0 Arena: wie Wiese (sieht man nur an den Rändern der runden Fassade; welt-arena.js zeichnet darüber)
+ [[86,114,60],[94,122,66],[78,104,55],[101,128,70]],// B0 Arena: wie Wiese (sieht man nur an den Rändern der runden Fassade; welt-arena.js zeichnet darüber)
+ [[160,150,132],[172,162,142],[148,138,122],[160,40,30]]// B0b Wartestraße: heller Kies (4. Farbe = rotes Seil)
 ];
 const VAR=3,sprites=[[],[]];// [ohne Raster, mit Raster][typ*VAR+v]
 function tileSprite(t,v,grid){const [c,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
@@ -344,9 +346,11 @@ for(let gr=0;gr<2;gr++)for(let t=0;t<PAL.length;t++)for(let v=0;v<VAR;v++)sprite
 // und nur zu den Seiten, an denen eine weitere Straße (oder der alte Weg, eine Brücke) anschließt, läuft ein Arm bis zum Feldrand.
 // So entstehen Geraden, Kurven, Abzweige und Kreuzungen von selbst. Ein Bild je Straßenart und Anschlussmuster (16), bei Bedarf gemalt,
 // durchsichtig außerhalb des Belags; darunter liegt der normale Boden.
-const STR_W=.3,strCache=new Map(),istStr=t=>t>=T.STR1&&t<=T.STR5,schliesstAn=t=>istStr(t)||t===T.WEG||t===T.BRUECKE;
+const STR_W=.3,strCache=new Map(),istStr=t=>t>=T.STR1&&t<=T.STR5||t===T.WARTE,schliesstAn=t=>istStr(t)||t===T.WEG||t===T.BRUECKE||t===T.ARENA_BAU;
+// B0b Wartestraße (wie bei RCT): eigene Straße, Belag wie Kies, an den offenen Seiten ein rotes Seil mit Pfosten; schließt an Wartestraße, Weg und Arena an.
+// Normale Straßen öffnen sich zur Wartestraße nur am Ende der Schlange (die Wartestraße selbst entscheidet über ihre Arme).
 // T2: Brücken auf Bodenhöhe (welt-bruecke.js, W.brueckeAnschluss) öffnen den Randstein wie ein Weg
-const anB=(k,n)=>!!window.WeltKarte?.brueckeAnschluss?.(k,n),an=(k,n)=>schliesstAn(feld[n])||anB(k,n);
+const anB=(k,n)=>!!window.WeltKarte?.brueckeAnschluss?.(k,n),an=(k,n)=>{const f=window.WeltKarte?.anschluss?.(k,n);if(f!=null)return f;if(feld[n]===T.ARENA_BAU)return false;return schliesstAn(feld[n])||anB(k,n);};// B0b: W.anschluss (welt-arena.js) entscheidet bei Wartestraße und Arena-Türen
 function strMaske(tx,ty){let m=0;const k=ix(tx,ty);if(tx+1<N&&an(k,k+1))m|=1;if(tx>0&&an(k,k-1))m|=2;if(ty+1<N&&an(k,k+N))m|=4;if(ty>0&&an(k,k-N))m|=8;return m;}
 function strBild(t,m){const key=t*16+m;let c=strCache.get(key);if(c)return c;const [cv,g]=mkCanvas(TW,TH+1),img=g.createImageData(TW,TH+1),d=img.data,P=PAL[t];
  const innen=(ux,uy,w)=>{const dx=ux-.5,dy=uy-.5,ax=Math.abs(dx),ay=Math.abs(dy);return (ax<=w&&ay<=w)||(ay<=w&&((m&1)&&dx>0||(m&2)&&dx<0))||(ax<=w&&((m&4)&&dy>0||(m&8)&&dy<0));};
@@ -356,9 +360,11 @@ function strBild(t,m){const key=t*16+m;let c=strCache.get(key);if(c)return c;con
   else if(innen(ux,uy,STR_W)){
    if(!innen(ux,uy,STR_W-.045))col=t===T.STR5?[150,140,124]:[Math.round(P[2][0]*.62),Math.round(P[2][1]*.62),Math.round(P[2][2]*.62)];// Randstein
    else if(t===T.STR2)col=P[(h2(x,y,t)*4)|0];
+   else if(t===T.WARTE)col=P[n<.45?0:n<.8?1:2];
    else if(t===T.STR3){const cx=(ux*6)%1,cy=((uy*6)+(((ux*6)|0)&1)*.5)%1;col=cx<.2||cy<.2?P[3]:P[n<.6?0:n<.85?1:2];}
    else if(t===T.STR4){const cx=((ux+.25)*2)%1,cy=((uy+.25)*2)%1;col=cx<.07||cy<.07?P[3]:P[n<.7?0:n<.9?1:2];}
    else col=!innen(ux,uy,STR_W-.11)?P[3]:Math.abs(ux-.5)+Math.abs(uy-.5)<.09?[215,178,74]:P[n<.7?0:n<.92?1:2];}
+  if(t===T.WARTE&&col&&!innen(ux,uy,STR_W-.035))col=(h2(x>>1,y>>1,7)>.86)?[58,40,26]:P[3];// Seil am Rand, ab und zu ein Pfosten
   if(!col)continue;const o=(y*TW+x)*4;d[o]=col[0];d[o+1]=col[1];d[o+2]=col[2];d[o+3]=255;}
  g.putImageData(img,0,0);strCache.set(key,cv);return cv;}
 // Schräge Felder: das flache Bild auf die vier Eckhöhen verziehen, zwei Dreiecke mit eigener Helligkeit (Licht von links oben).
@@ -471,7 +477,8 @@ function chunk(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;let ch=chun
  const unten=GROSS?Math.ceil(((HMAX+1)*HZ+150)/(TH/2)):NB?10:0,oben=GROSS?Math.ceil((-BASIS()+1)*HZ/(TH/2))+1:0;
  const u0=Math.floor((x0-OX)/(TW/2))-3,u1=Math.ceil((x0+S+2*lod-OX)/(TW/2))+3,v0=Math.max(0,Math.floor((y0-OY)/(TH/2))-2-oben),v1=Math.min(2*N-2,Math.ceil((y0+S+2*lod-OY)/(TH/2))+1+unten);
  for(let v=v0;v<=v1;v++){const u00=u0+((u0+v)&1);
-  for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;maleFeld(g,sp,tx,ty,(tx-ty)*TW/2+OX-TW/2,v*TH/2+OY);}
+  for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;maleFeld(g,sp,tx,ty,(tx-ty)*TW/2+OX-TW/2,v*TH/2+OY);
+   if(deko[ix(tx,ty)]&&H.bodenFeld)try{H.bodenFeld(g,tx,ty,lod);}catch(e){}}// B0b: flacher Boden der Module (Sand, Pflaster) einmal ins Bodenbild gebacken
   if(NB&&GROSS&&lod===1)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty);if(kz[k])kleinMalen(g,tx,ty,k,y0,y0+S);}// T3: Kleinzeug, nur in der nahen Ansicht
   if(NB)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty),o=obj[k];if(!o)continue;const b=NB.bild(o,ovar(tx,ty)),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY+TH/2,z=objHz(tx,ty);
    if(b.flach||lod>1||!eben[k])g.drawImage(b.img,x-b.ax,y-z-b.ay);else if(x>=x0&&x<x0+S&&y>=y0&&y<y0+S)stehen.push({x,y,oz:z,img:b.img,ax:b.ax,ay:b.ay});}
@@ -654,7 +661,7 @@ function ecken(k){const x=k%N,y=(k/N)|0,P=[iso(x,y),iso(x+1,y),iso(x+1,y+1),iso(
 function gelaendeTyp(k){obj[k]=0;kz[k]=0;const t=feld[k];if(!BODEN_NATUR.has(t))return;const m=Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3]);if(m<WL)feld[k]=T.FLUSS;else if(t===T.FLUSS)feld[k]=grund[k];}
 function ebnen(ks,L){for(const k of ks){hc.fill(L,k*4,k*4+4);gelaendeTyp(k);}if(L>HMAX)HMAX=L;if(L<HMIN)HMIN=L;}
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
-window.WeltKarte={KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
+window.WeltKarte={deko,neuMalen:rebake,KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
  ANORD,fest,arenaPlatz,zaunA,zaunB,TORE,imAnord,inR,ber,BER,bfrei,// A3b natürlich: Bereiche mit geschwungenen Rändern
 // A3: Dorf, Platz, Park (Lagen relativ zu O), feste Felder, Grenzen, Tore

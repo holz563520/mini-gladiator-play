@@ -3,7 +3,7 @@
 // VORPLATZ (welt-vorplatz.js) · Arena Theory 2.0, Schritt B0b (Thomas 13.11.2026, AT2_FAHRPLAN.md). Fester Vorplatz der Herausforderer.
 // · Liegt fest im Westen vor dem Kämpfertor (W.ANORD.vorplatz in welt-raster.js, Felder T.LUDUS und fest: Gladiatoren dürfen drauf, Besucher nicht,
 //   weil dort kein Weg ist). Vom Vorplatz führt der umzäunte Kämpfergang zur Arena; seine Länge hängt von der Ausbaustufe ab (welt-arena.js, felder()).
-// · Gepflastert (eigenes Bodenbild über dem festgetretenen Boden), Pfahlzaun rundherum, Schilder „Vorplatz“ und „Kämpfergang“.
+// · Gepflastert mit Steinrand, alles im Bodenbild der Karte (WeltHook.bodenFeld, B0b-Nacharbeit: keine Zäune), Schilder „Vorplatz“ und „Kämpfergang“.
 // · 3 feste Testgruppen (bis B1, dann zufällige Teams mit Kampfwert und Analyse): echte Figuren wie die NPCs (M.renderForgeActors),
 //   dazu 3 Käfige mit echten Tieren aus 1.0: Löwe Rex Vetus (M.drawRex, lion.js), Kampfhund (DOG), Kampfhahn (CF, wie im Beastrium).
 //   Käfigtüren sind Fallgitter wie das Arenator (M.weltVorplatz.kaefig(i, auf) für B4), bleiben bis dahin zu.
@@ -21,43 +21,30 @@ const px=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,
 const hz=(tx,ty)=>W.hz?W.hz(tx,ty):0;
 const sicht=(o,v)=>o.x1>v.x0&&o.x0<v.x1&&o.y1>v.y0&&o.y0<v.y1;
 
-// ---------- Pflaster: ein Bild für eine Menge Felder (Steine, Fugen, ein paar Blutflecken) ----------
-function pflaster(felder){if(!felder.length)return null;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;const E=[];
- for(const [tx,ty] of felder){const z=hz(tx+.5,ty+.5),e=[W.iso(tx,ty),W.iso(tx+1,ty),W.iso(tx+1,ty+1),W.iso(tx,ty+1)].map(p=>({x:p.x,y:p.y-z}));E.push([tx,ty,e]);for(const p of e){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}}
- const ox=Math.floor(x0)-1,oy=Math.floor(y0)-1,[c,g]=mk(x1-ox+2,y1-oy+2);let s=31;const z=()=>{s=(s*16807)%2147483647;return s/2147483647;};
- for(const [tx,ty,e] of E){g.beginPath();e.forEach((p,i)=>i?g.lineTo(p.x-ox,p.y-oy):g.moveTo(p.x-ox,p.y-oy));g.closePath();g.fillStyle=(tx+ty)%2?'#8c7c62':'#857559';g.fill();
-  g.save();g.clip();const cx=(e[0].x+e[2].x)/2-ox,cy=(e[0].y+e[2].y)/2-oy;
-  for(let i=0;i<7;i++){const x=cx+(z()-.5)*44,y=cy+(z()-.5)*20;px(g,x,y,5+((z()*5)|0),3,['#9a8a6c','#7a6a50','#a39276'][(z()*3)|0]);px(g,x,y+3,6,1,'#5a4c38');}// Steine mit Fuge
-  if(z()<.12){g.fillStyle='#6e2418';g.beginPath();g.ellipse(cx+(z()-.5)*20,cy+(z()-.5)*8,4+z()*5,2+z()*2,0,0,TAU);g.fill();}// Blut, das keiner wegwischt
-  g.restore();g.strokeStyle='rgba(58,44,30,.6)';g.lineWidth=1;g.beginPath();g.moveTo(e[3].x-ox,e[3].y-oy);g.lineTo(e[0].x-ox,e[0].y-oy);g.lineTo(e[1].x-ox,e[1].y-oy);g.stroke();}
- return {c,x:ox,y:oy,x0:ox,y0:oy,x1:ox+c.width,y1:oy+c.height};}
-
-// ---------- Pfahlzaun: ein Stück je Feldkante, nach Tiefe einsortiert ----------
-function zaunStueck(xa,ya,xb,yb){const a=W.iso(xa,ya),b=W.iso(xb,yb),za=hz(xa,ya),zb=hz(xb,yb),ay=a.y-za,by=b.y-zb;
- return {y:Math.max(a.y,b.y)+.02,x0:Math.min(a.x,b.x)-3,x1:Math.max(a.x,b.x)+3,y0:Math.min(ay,by)-16,y1:Math.max(ay,by)+2,draw(ctx){
-  const n=Math.max(4,Math.ceil(Math.abs(b.x-a.x)));for(const h of [5,11]){ctx.fillStyle='#6b4a2c';for(let i=0;i<=n;i++){const u=i/n;ctx.fillRect(Math.round(a.x+(b.x-a.x)*u),Math.round(ay+(by-ay)*u-h),1,2);}}
-  for(const u of [0,.5]){const x=Math.round(a.x+(b.x-a.x)*u),y=Math.round(ay+(by-ay)*u);ctx.fillStyle='#4a3826';ctx.fillRect(x-1,y-14,3,14);ctx.fillStyle='#7a5a39';ctx.fillRect(x,y-16,1,2);}}};}// Pfähle mit Spitze
-function zaunLinie(x0,y0,x1,y1,ohne){const L=[];const n=Math.round(Math.abs(x1-x0)+Math.abs(y1-y0));for(let i=0;i<n;i++){const u=i/n,v=(i+1)/n,xa=x0+(x1-x0)*u,ya=y0+(y1-y0)*u;if(ohne&&ohne(xa,ya))continue;L.push(zaunStueck(xa,ya,x0+(x1-x0)*v,y0+(y1-y0)*v));}return L;}
-const TOR_S=[VX+3,VX+5];// Tor im Süden (für die Kämpfer ab B3), bis dahin zu
-const VP_PFL=pflaster(Array.from({length:VW*VH},(_,i)=>[VX+O+i%VW,VY+O+((i/VW)|0)]));
-const VP_ZAUN=[...zaunLinie(VX+O,VY+O,VX+VW+O,VY+O),...zaunLinie(VX+O,VY+O,VX+O,VY+VH+O),
- ...zaunLinie(VX+VW+O,VY+O,VX+VW+O,VY+VH+O,(x,y)=>y>=11+O&&y<13+O),...zaunLinie(VX+O,VY+VH+O,VX+VW+O,VY+VH+O,(x,y)=>x>=TOR_S[0]+O&&x<TOR_S[1]+O)];
-// Tor im Süden: zwei Bretterflügel, zu
-const TOR_ITEM=(()=>{const a=W.iso(TOR_S[0]+O,VY+VH+O),b=W.iso(TOR_S[1]+O,VY+VH+O),z=hz(TOR_S[0]+O,VY+VH+O);return {y:Math.max(a.y,b.y)+.03,x0:Math.min(a.x,b.x)-4,x1:Math.max(a.x,b.x)+4,y0:Math.min(a.y,b.y)-z-24,y1:Math.max(a.y,b.y)-z+2,draw(ctx){
- const ay=a.y-z,by=b.y-z,n=Math.ceil(Math.abs(b.x-a.x));for(let i=0;i<=n;i++){const u=i/n,x=Math.round(a.x+(b.x-a.x)*u),y=Math.round(ay+(by-ay)*u);ctx.fillStyle=i%4?'#7a5a39':'#5a4029';ctx.fillRect(x,y-16,1,16);}
- for(const [p,q] of [[a,ay],[b,by]]){ctx.fillStyle='#3a2a1c';ctx.fillRect(Math.round(p.x)-1,Math.round(q)-20,3,20);}
- const m={x:(a.x+b.x)/2,y:(ay+by)/2};ctx.fillStyle='#e8dcc0';ctx.fillRect(Math.round(m.x)-2,Math.round(m.y)-13,4,3);ctx.fillStyle='#1a0e06';ctx.fillRect(Math.round(m.x)-1,Math.round(m.y)-12,1,1);ctx.fillRect(Math.round(m.x)+1,Math.round(m.y)-12,1,1);}};})();// Schädel am Tor
-
-// Kämpfergang: Felder und Zaun je Stufe (aus welt-arena.js)
-let GANG_PFL=null,GANG_ZAUN=[],GANG_SCHILD=null;
-function gang(){const T=W.T,F=[];for(const [k,ty] of A.felder())if(ty===T.LUDUS){const x=k%W.N,y=(k/W.N)|0;if(x-O>=VX+VW)F.push([x,y]);}
- GANG_PFL=pflaster(F);GANG_ZAUN=[];if(!F.length)return;const xe=Math.max(...F.map(f=>f[0]))+1,ya=Math.min(...F.map(f=>f[1])),yb=Math.max(...F.map(f=>f[1]))+1,xa=VX+VW+O;
- GANG_ZAUN=[...zaunLinie(xa,ya,xe,ya),...zaunLinie(xa,yb,xe,yb)];}
-gang();A.beiStufe(()=>gang());
-
+// ---------- Pflaster mit Steinrand: liegt im Bodenbild der Karte (B0b-Nacharbeit, Thomas 14.11.2026: keine einzeln gezeichneten Zäune) ----------
+// Die Felder von Vorplatz und Kämpfergang werden in W.deko markiert; WeltHook.bodenFeld malt jedes Feld einmal beim Backen der Kachel. Kosten je Bild: 0.
+const istVP=k=>{const x=k%W.N-O,y=((k/W.N)|0)-O;return x>=VX&&x<VX+VW&&y>=VY&&y<VY+VH;};
+let FELDER=new Set();
+function felder(){const T=W.T,F=new Set();for(let y=VY;y<VY+VH;y++)for(let x=VX;x<VX+VW;x++)F.add((y+O)*W.N+x+O);
+ for(const [k,ty] of A.felder())if(ty===T.LUDUS&&k%W.N-O>=VX+VW)F.add(k);
+ const D=W.deko,alt=FELDER;if(D){for(const k of alt)if(!F.has(k))D[k]=0;for(const k of F)D[k]=1;}FELDER=F;return [...alt,...F];}
+const rnd=(k,i)=>{let h=(k*2654435761+i*40503)>>>0;h^=h>>>15;h=Math.imul(h,2246822507)>>>0;return (h>>>8)/16777216;};
+const bf0=H.bodenFeld;H.bodenFeld=(g,tx,ty,lod)=>{const k=ty*W.N+tx;if(!FELDER.has(k)||W.feld[k]!==W.T.LUDUS)return bf0?.(g,tx,ty,lod);
+ const z=hz(tx+.5,ty+.5),e=[W.iso(tx,ty),W.iso(tx+1,ty),W.iso(tx+1,ty+1),W.iso(tx,ty+1)].map(p=>({x:p.x,y:p.y-z}));
+ g.save();g.beginPath();e.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.closePath();g.fillStyle=(tx+ty)%2?'#8c7c62':'#857559';g.fill();g.clip();
+ const cx=(e[0].x+e[2].x)/2,cy=(e[0].y+e[2].y)/2;
+ for(let i=0;i<7;i++){const x=Math.round(cx+(rnd(k,i)-.5)*44),y=Math.round(cy+(rnd(k,i+9)-.5)*20);g.fillStyle=['#9a8a6c','#7a6a50','#a39276'][(rnd(k,i+20)*3)|0];g.fillRect(x,y,5+((rnd(k,i+30)*5)|0),3);g.fillStyle='#5a4c38';g.fillRect(x,y+3,6,1);}// Steine mit Fuge
+ if(rnd(k,50)<.12){g.fillStyle='#6e2418';g.beginPath();g.ellipse(cx+(rnd(k,51)-.5)*20,cy+(rnd(k,52)-.5)*8,4+rnd(k,53)*5,2+rnd(k,54)*2,0,0,TAU);g.fill();}// Blut, das keiner wegwischt
+ // Steinrand an Seiten ohne Nachbarn aus Pflaster: Kante e[i]→e[i+1]; oben rechts (ty−1), unten rechts (tx+1), unten links (ty+1), oben links (tx−1)
+ const nb=[k-W.N,k+1,k+W.N,k-1];g.lineWidth=3;
+ for(let i=0;i<4;i++){if(FELDER.has(nb[i])&&W.feld[nb[i]]===W.T.LUDUS)continue;const a=e[i],b=e[(i+1)%4];g.strokeStyle='#5a4a36';g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();
+  g.strokeStyle='#b0a084';g.lineWidth=1;g.beginPath();g.moveTo(a.x,a.y-1);g.lineTo(b.x,b.y-1);g.stroke();g.lineWidth=3;}
+ g.restore();};
+felder();let erst=true;
+A.beiStufe(()=>W.neuMalen?.(felder()));
 // ---------- Schilder ----------
 const SCHILD_VP=A.schild?.(VX+5.6+O,VY+VH+.35+O,()=>[t('vor.name'),t('vor.zeile')]);
-GANG_SCHILD=A.schild?.(VX+VW+.6+O,13.35+O,()=>[t('vor.gang'),t('vor.gangZeile')]);
+const GANG_SCHILD=A.schild?.(VX+VW+.6+O,13.35+O,()=>[t('vor.gang'),t('vor.gangZeile')]);
 const SCHILD_KF=A.schild?.(VX+.9+O,VY+2.6+O,()=>[t('vor.schildKaefig'),'']);
 
 // ---------- Testgruppen (bis B1) ----------
@@ -75,13 +62,14 @@ const GRUPPEN=[
 const FIG=[];for(const G of GRUPPEN)G.pos.forEach(([x,y],i)=>FIG.push({G,i,tx:x+O,ty:y+O,ph:Math.random()*9,g:null}));
 // Wie die NPCs (welt-npc.js): 4 Bilder je Figur im Ludus-Maßstab vorgezeichnet, verkleinert auf den Kartenmaßstab (W.KW), dann nur noch Bilder zeichnen
 const KW=W.KW,NB=4,TAKT=.5,SW=80,SH=100,AX=40,AY=92;
-function bilder(f){if(f.L)return f.L;const G=f.G;f.g??=figur('welt-vor-'+G.id+'-'+f.i,G.namen[f.i],...G.gross[f.i]);f.L=[];
+function bilder(f){if(f.L)return f.L;if(f.fehler>3)return null;try{return bilder_(f);}catch(e){f.fehler=(f.fehler||0)+1;console.warn('Vorplatz-Figur',e);return null;}}
+function bilder_(f){const G=f.G;f.g??=figur('welt-vor-'+G.id+'-'+f.i,G.namen[f.i],...G.gross[f.i]);const L=[];
  for(let i=0;i<NB;i++){const [c,g]=mk(SW,SH);g.fillStyle='rgba(15,20,10,.3)';g.fillRect(AX-9,AY-1,18,3);forge(g,f.g,AX,AY,i*TAKT+.3+f.ph,G.a);try{REQ[G.req](g,G.a?AX-24:AX,AY);}catch(e){}
   const w=Math.max(1,Math.round(SW*KW)),h=Math.max(1,Math.round(SH*KW)),k=document.createElement('canvas');k.width=w;k.height=h;const kg=k.getContext('2d',{willReadFrequently:true});kg.imageSmoothingEnabled=true;kg.imageSmoothingQuality='high';kg.drawImage(c,0,0,w,h);
-  const im=kg.getImageData(0,0,w,h),d=im.data;for(let j=3;j<d.length;j+=4)d[j]=d[j]>96?255:0;kg.putImageData(im,0,0);const k2=document.createElement('canvas');k2.width=w;k2.height=h;k2.getContext('2d').drawImage(k,0,0);f.L.push({c,k:k2});}
- return f.L;}
+  const im=kg.getImageData(0,0,w,h),d=im.data;for(let j=3;j<d.length;j+=4)d[j]=d[j]>96?255:0;kg.putImageData(im,0,0);const k2=document.createElement('canvas');k2.width=w;k2.height=h;k2.getContext('2d').drawImage(k,0,0);L.push({c,k:k2});}
+ return f.L=L;}
 const figItems=FIG.map(f=>{const q=W.iso(f.tx,f.ty),z=hz(f.tx,f.ty);return {f,y:q.y,x0:q.x-AX*KW,x1:q.x+(SW-AX)*KW,y0:q.y-z-AY*KW,y1:q.y-z+8*KW,draw(ctx){
- const L=bilder(f),b=L[Math.floor(((W.clock||performance.now()/1000)+f.ph)/TAKT)%NB],x=Math.round(q.x),y=Math.round(q.y-z);
+ const L=bilder(f);if(!L)return;const b=L[((Math.floor(((W.clock||performance.now()/1000)+f.ph)/TAKT)%NB)+NB)%NB],x=Math.round(q.x),y=Math.round(q.y-z);
  if(W.detail){ctx.imageSmoothingEnabled=true;ctx.drawImage(b.c,x-AX*KW,y-AY*KW,SW*KW,SH*KW);ctx.imageSmoothingEnabled=false;}else ctx.drawImage(b.k,Math.round(x-AX*KW),Math.round(y-AY*KW));}};});
 
 // ---------- Käfige mit echten Tieren aus 1.0 ----------
@@ -107,30 +95,34 @@ function hahnMalen(ctx,R,x,y,face,tt){const CU=window.RoosterCloseup,CF=window.C
 // Käfig: Boden aus Brettern, hinten Gitter, Tier, vorne Fallgitter (hebt sich mit auf), Dach. Breite 1,8 × Tiefe 1 Feld.
 const KW_=1.8,KT=1,KH=30;
 function gitter(ctx,a,b,z,h,lift,col){const n=8;ctx.fillStyle=col;for(let i=0;i<=n;i++){const u=i/n,x=Math.round(a.x+(b.x-a.x)*u),y=Math.round(a.y+(b.y-a.y)*u-z);ctx.fillRect(x,y-h,1,h-lift);}}
-const kaefigItems=KAEFIG.map((K,i)=>{const P0=W.iso(K.tx,K.ty),z=hz(K.tx,K.ty),E=[W.iso(K.tx,K.ty),W.iso(K.tx+KW_,K.ty),W.iso(K.tx+KW_,K.ty+KT),W.iso(K.tx,K.ty+KT)];
- const xs=E.map(e=>e.x),ys=E.map(e=>e.y);return {K,i,y:Math.max(...ys)+.02,x0:Math.min(...xs)-4,x1:Math.max(...xs)+4,y0:Math.min(...ys)-z-KH-8,y1:Math.max(...ys)-z+2,E,draw(ctx){
-  const tt=(W.clock||performance.now()/1000)+K.ph,Z=e=>({x:e.x,y:e.y-z});const [a,b,c,d]=E.map(Z);
-  ctx.fillStyle='#4a3826';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.lineTo(d.x,d.y);ctx.closePath();ctx.fill();// Boden
+// B0b-Nacharbeit: je Käfig 3 vorgezeichnete Bilder (hinten: Boden und Gitter; Tier: alle 0,25 s neu; vorne: Gitter und Dach). Je Bild nur 3 drawImage.
+const kaefigItems=KAEFIG.map((K,i)=>{const z=hz(K.tx,K.ty),E=[W.iso(K.tx,K.ty),W.iso(K.tx+KW_,K.ty),W.iso(K.tx+KW_,K.ty+KT),W.iso(K.tx,K.ty+KT)].map(e=>({x:e.x,y:e.y-z}));
+ const xs=E.map(e=>e.x),ys=E.map(e=>e.y),bx=Math.floor(Math.min(...xs))-4,by=Math.floor(Math.min(...ys))-KH-8,bw=Math.ceil(Math.max(...xs))+4-bx,bh=Math.ceil(Math.max(...ys))+2-by;
+ const [a,b,c,d]=E,m={x:(a.x+c.x)/2,y:(a.y+c.y)/2+2};
+ const ebene=f=>{const [cv,g]=mk(bw,bh);g.translate(-bx,-by);f(g);return cv;};
+ const hinten=ebene(ctx=>{ctx.fillStyle='#4a3826';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.lineTo(d.x,d.y);ctx.closePath();ctx.fill();// Boden
   ctx.fillStyle='#5e4632';for(let j=1;j<4;j++){const u=j/4;ctx.fillRect(Math.round(a.x+(d.x-a.x)*u),Math.round(a.y+(d.y-a.y)*u),Math.round((b.x-a.x)),1);}
-  gitter(ctx,a,b,0,KH,0,'#3a3a36');gitter(ctx,a,d,0,KH,0,'#3a3a36');// hinten
-  const m={x:(a.x+c.x)/2,y:(a.y+c.y)/2+2},T_=tiere();
-  try{if(K.art==='loewe'){const bc=loeweBild(tt);if(bc){ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(bc,Math.round(m.x-27),Math.round(m.y-32),54,36);ctx.restore();}
-    px(ctx,m.x+8,m.y-2,6,2,'#e8dcc0');px(ctx,m.x+7,m.y-3,2,1,'#e8dcc0');px(ctx,m.x+13,m.y-3,2,1,'#e8dcc0');}// abgenagter Knochen
-   else if(K.art==='hund'&&T_.hund)window.DOG?.portrait?.(ctx,T_.hund,{x:m.x,y:m.y,w:24+(T_.hund.height||70)*.1,mood:['focus','idle','proud','focus'][Math.floor(tt/4)%4],face:-1,t:tt});
-   else if(K.art==='hahn')hahnMalen(ctx,T_.hahn,m.x,m.y,Math.floor(tt/4)%4===3?1:-1,tt);}catch(e){}
-  const lift=Math.round(K.auf*(KH-3));gitter(ctx,d,c,0,KH,lift,'#6a6a62');gitter(ctx,b,c,0,KH,0,'#55554f');// vorne: Fallgitter, rechts fest
+  gitter(ctx,a,b,0,KH,0,'#3a3a36');gitter(ctx,a,d,0,KH,0,'#3a3a36');
+  if(K.art==='loewe'){px(ctx,m.x+8,m.y-2,6,2,'#e8dcc0');px(ctx,m.x+7,m.y-3,2,1,'#e8dcc0');px(ctx,m.x+13,m.y-3,2,1,'#e8dcc0');}});// abgenagter Knochen
+ const vorne=lift=>{const f=ctx=>{gitter(ctx,d,c,0,KH,lift,'#6a6a62');gitter(ctx,b,c,0,KH,0,'#55554f');// vorne: Fallgitter, rechts fest
   ctx.fillStyle='#8a7a5a';for(const [p,q] of [[d,c],[b,c]]){ctx.fillRect(Math.round(Math.min(p.x,q.x)),Math.round(Math.min(p.y,q.y)-KH),Math.round(Math.abs(q.x-p.x))+1,1);}
   ctx.fillStyle='#6b4a2c';ctx.beginPath();ctx.moveTo(a.x,a.y-KH-2);ctx.lineTo(b.x,b.y-KH-2);ctx.lineTo(c.x,c.y-KH-2);ctx.lineTo(d.x,d.y-KH-2);ctx.closePath();ctx.fill();// Dach
   ctx.fillStyle='#4a3020';ctx.fillRect(Math.round(d.x),Math.round(d.y-KH-2),Math.round(c.x-d.x),2);
-  if(K.art==='loewe'){ctx.fillStyle='#6e2418';ctx.fillRect(Math.round(c.x-12),Math.round(c.y-6),2,6);}}};});// Blut am Gitter
+  if(K.art==='loewe'){ctx.fillStyle='#6e2418';ctx.fillRect(Math.round(c.x-12),Math.round(c.y-6),2,6);}};return f;};// Blut am Gitter
+ const VZ=ebene(vorne(0)),[TC,TG]=mk(bw,bh);TG.translate(-bx,-by);let tLast=-9;
+ const tier=tt=>{if(tt-tLast<.25&&tt>=tLast)return;tLast=tt;TG.clearRect(bx,by,bw,bh);const T_=tiere();
+  try{if(K.art==='loewe'){const bc=loeweBild(tt);if(bc){TG.imageSmoothingEnabled=false;TG.drawImage(bc,Math.round(m.x-27),Math.round(m.y-32),54,36);}}
+   else if(K.art==='hund'&&T_.hund)window.DOG?.portrait?.(TG,T_.hund,{x:m.x,y:m.y,w:24+(T_.hund.height||70)*.1,mood:['focus','idle','proud','focus'][Math.floor(tt/4)%4],face:-1,t:tt});
+   else if(K.art==='hahn')hahnMalen(TG,T_.hahn,m.x,m.y,Math.floor(tt/4)%4===3?1:-1,tt);}catch(e){}};
+ return {K,i,y:Math.max(...ys)+z+.02,x0:bx,x1:bx+bw,y0:by,y1:by+bh,E,draw(ctx){const tt=(W.clock||performance.now()/1000)+K.ph;tier(tt);
+  ctx.drawImage(hinten,bx,by);ctx.drawImage(TC,bx,by);if(K.auf>0)vorne(Math.round(K.auf*(KH-3)))(ctx);else ctx.drawImage(VZ,bx,by);}};});
 
 // ---------- Zeichnen ----------
-const g0=H.ground;H.ground=(ctx,view)=>{g0?.(ctx,view);if(W.mini)return;for(const P of [VP_PFL,GANG_PFL])if(P&&sicht(P,view))ctx.drawImage(P.c,P.x,P.y);};
+// Zeichnen: nur Figuren, Käfige und Schilder (Pflaster und Rand liegen im Bodenbild)
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);if(W.mini)return;
- for(const z of VP_ZAUN)if(sicht(z,view))items.push(z);for(const z of GANG_ZAUN)if(sicht(z,view))items.push(z);if(sicht(TOR_ITEM,view))items.push(TOR_ITEM);
  for(const s of [SCHILD_VP,GANG_SCHILD,SCHILD_KF])if(s&&sicht(s,view))items.push(s);
  for(const f of figItems)if(sicht(f,view))items.push(f);for(const k of kaefigItems)if(sicht(k,view))items.push(k);};
-const tick0=H.tick;H.tick=dt=>{tick0?.(dt);if(!(dt>0))return;for(const K of KAEFIG)if(K.auf!==K.soll)K.auf=K.soll>K.auf?Math.min(1,K.auf+dt/1.8):Math.max(0,K.auf-dt/1.8);};
+const tick0=H.tick;H.tick=dt=>{tick0?.(dt);if(erst){erst=false;W.neuMalen?.([...FELDER]);}if(!(dt>0))return;for(const K of KAEFIG)if(K.auf!==K.soll)K.auf=K.soll>K.auf?Math.min(1,K.auf+dt/1.8):Math.max(0,K.auf-dt/1.8);};
 
 // ---------- Fenster „Herausforderer“ (Rattenpergament) ----------
 const st=document.createElement('style');st.textContent=
@@ -162,5 +154,5 @@ const tap0=H.tap;H.tap=(p,w)=>{if(w||M.weltBau?.mode||W.mini)return tap0?tap0(p,
  return tap0?tap0(p,w):false;};
 
 M.weltVorplatz={gruppen:()=>GRUPPEN,kaefige:()=>KAEFIG,kaefig:(i,auf)=>{const K=KAEFIG[i];if(K)K.soll=auf?1:0;},oeffnen:auf,schliessen:zu,offen:()=>!el.hidden,inhalt:()=>offen,
- figuren:()=>FIG,gangFelder:()=>GANG_PFL?1:0,lage:VP};
+ figuren:()=>FIG,felder:()=>FELDER,lage:VP};
 })();

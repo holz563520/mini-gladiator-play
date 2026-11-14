@@ -127,4 +127,9 @@ AT2Sprache.dazu('de',{
  'vor.schildKaefig':'Nicht füttern. Nicht hineinfassen. Wirklich nicht.',
  'vor.g1.n':'Brutus Schienbein, Decimus Kiefer, Otho Knackser','vor.g2.n':'Aelia und Aemilia','vor.g3.n':'Gaius',
  'vor.spruch':'Sagt:','vor.tierArt':'Tier im Käfig',
+ // B0b-Nacharbeit: Wartestraße, Eingang und Ausgang
+ 'bau.gruppe.attraktionen':'Attraktionen','bau.tuer.hier':'Hier hin.','bau.tuer.nein':'Nur direkt außen am Rand der Arena.','bau.tuer.hilfe':'Feld direkt außen am Rand der Arena antippen.',
+ 'bau.warte.hilfe':'Wartestraße ziehen: vom Feld vor dem Eingang bis an einen Weg. Wer wartet, wartet hier. Wer drängelt, wartet länger.',
+ 'arena.schild.anschluss':'Kein Anschluss. Bitte draußen sterben.','arena.zu.schlange':'Die Arena hat keine Wartestraße vom Eingang bis zu einem Weg. Die Leute stehen ratlos herum, das ist noch keine Unterhaltung.',
+ 'arena.zu.ausgang':'Der Ausgang der Arena führt nirgendwohin. Wer drin ist, bleibt drin. Für immer, sagt der Berater, und lächelt.','arena.wieder':'Die Arena ist wieder angeschlossen. Das Volk darf rein, und vor allem wieder raus.',
 });
