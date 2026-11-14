@@ -673,7 +673,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  H.world?.(ctx,view,dt);
  ctx.setTransform(1,0,0,1,0,0);
  const ms=performance.now()-t0;perfWin.push(ms);if(perfWin.length>30)perfWin.shift();perfAvg=perfWin.reduce((a,b)=>a+b,0)/perfWin.length;
- hudT+=dt;if(hudT>1){hudT=0;$('wCount').textContent=`${workers.length} Leute · ${shown.length} im Bild`;$('wClock').textContent=`Zoom ${cam.s.toFixed(2)}×${miniV?' · Miniaturansicht':detailV?' · Nahansicht':''}`;
+ hudT+=dt;if(hudT>1){hudT=0;$('wCount').textContent=`${workers.length} Leute · ${shown.length} im Bild`;$('wClock').textContent=`Zoom ${(cam.s<.01?cam.s.toFixed(4):cam.s.toFixed(2))}×${miniV?' · Miniaturansicht':detailV?' · Nahansicht':''}`;
   const bar=$('wPerfBar');bar.style.width=Math.round(clamp(perfAvg/16.7,0,1)*100)+'%';bar.style.background=perfAvg<8?'#6fae5a':perfAvg<13?'#d7b24a':'#c9483e';$('wPerf').textContent=perfAvg.toFixed(1)+' ms je Bild';}}
 
 // ---------- Start ----------
