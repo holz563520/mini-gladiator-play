@@ -40,7 +40,7 @@ function bild(e){const key=e?String(e.id):'leer';let b=BILD.get(key);if(b)return
 function grabZeichnen(ctx){const e=this.e,b=bild(e),q=W.iso(this.x,this.y),x=Math.round(q.x),y=Math.round(q.y);
  if(W.mini){ctx.fillStyle=e?'#77796f':'#1a1d1e';ctx.fillRect(x-4,y-(e?6:2),8,e?6:3);return;}
  if(W.detail){ctx.imageSmoothingEnabled=true;ctx.drawImage(b.c,x-b.AX*KW,y-b.AY*KW,b.SW*KW,b.SH*KW);ctx.imageSmoothingEnabled=false;}else ctx.drawImage(b.k,Math.round(x-b.AX*KW),Math.round(y-b.AY*KW));
- if(e?.tomb===5){const t=performance.now()/1000;for(let i=0;i<4;i++){const k=(t*.5+i/4)%1;ctx.globalAlpha=.8*(1-k);ctx.fillStyle='#f4d37a';ctx.fillRect(Math.round(x+(-14+i*9+Math.sin(t+i)*2)*KW),Math.round(y-(30+k*40)*KW),1,1);}ctx.globalAlpha=1;}}// Funken über der Legende
+ if(!window.AT2&&e?.tomb===5){const t=performance.now()/1000;for(let i=0;i<4;i++){const k=(t*.5+i/4)%1;ctx.globalAlpha=.8*(1-k);ctx.fillStyle='#f4d37a';ctx.fillRect(Math.round(x+(-14+i*9+Math.sin(t+i)*2)*KW),Math.round(y-(30+k*40)*KW),1,1);}ctx.globalAlpha=1;}}// Funken über der Legende
 const graeber=[...Array(ZAHL)].map((_,i)=>({...slot(i),i,e:null,draw:grabZeichnen}));
 let neuT=0;
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=performance.now();if(now-neuT>1000){neuT=now;const A=aussen();graeber.forEach((g,i)=>g.e=A[i]);}

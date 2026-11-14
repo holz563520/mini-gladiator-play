@@ -7,14 +7,14 @@
 // · Versionsnummer V in jedem Stand. Unlesbare oder fremde Stände werden nicht geladen und nicht überschrieben (nur Löschen).
 // · Inhalt: was das Spiel ohnehin in seinen Zwischenspeicher schreibt (MGSave-Ersatz aus weltkarte-boot.js, fertige Texte),
 //   der abgeschirmte localStorage der Seite, Uhrzeit, Tempo und die Karte nur als Unterschiede (Felder, die seit dem Start
-//   über W.rebake verändert wurden: Feldart, Grund, Objekt, bauAuf, 4 Eckhöhen). Die Karte selbst entsteht immer gleich.
+//   über W.rebake verändert wurden: Feldart, Grund, Objekt, bauAuf, 4 Eckhöhen). Die Karte entsteht aus dem gespeicherten Welt-Seed; alte V5-Stände behalten Seed 0.
 // · Kein Speichern oder Laden von Hand (Wunsch Thomas: nichts zurückholen können). Gespeichert wird höchstens alle ABSTAND ms
 //   in einer Leerlaufpause, sofort beim Tageswechsel, beim Verlassen der Seite und beim Knopf „Platz n“ (zurück zum Startbild).
 // · Texte aus der Sprachdatei (welt-sprache.js, S1): Startbild mit Sprachwahl, Leiste mit Knopf 🇩🇪/🇬🇧 zum Umschalten im Spiel.
 // · Leistung: Speichern misst sich selbst (M.at2Spielstand.ms, Zeit auf dem Hauptfaden; mit dem Spielstand des Spiels ~6 ms wie in 1.0, sonst < 2 ms). Test: tests/welt-spielstand-browser.cjs.
 // =====================================================================================================================
 (()=>{
-const DB='arena-theory-2',ABL='plaetze',V=5,// V5: Biome dicht, neue Böden, Kleinzeug (T3); V2: neue Karte (A3, Dorf/Platz/Park); V3: Dorf und Park größer (A3b); V4: Flächen natürlich gewachsen (A3b). Stände mit älterer Version gehören zur alten Karte
+const DB='arena-theory-2',ABL='plaetze',V=6,// V6: gespeicherter Welt-Seed, V5 weiter lesbar; V5: Biome dicht, neue Böden, Kleinzeug (T3); V2: neue Karte (A3, Dorf/Platz/Park); V3: Dorf und Park größer (A3b); V4: Flächen natürlich gewachsen (A3b). Stände mit älterer Version gehören zur alten Karte
  PLAETZE=[1,2,3],ABSTAND=10000;
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // ---------- IndexedDB ----------
@@ -26,7 +26,8 @@ const lies=keys=>tx('readonly',(s,out)=>keys.forEach((k,i)=>{const r=s.get(k);r.
 const schreib=(n,stand)=>tx('readwrite',s=>{s.put(stand,n);s.put(stand.kopf,'k'+n);});
 const loesch=n=>tx('readwrite',s=>{s.delete(n);s.delete('k'+n);});
 // Stand prüfen: Version, Aufbau, und der Spielstand des Spiels muss sich lesen lassen (data.js verlangt version 2)
-function lesbar(r){if(!r||r.v!==V||!r.kopf||!Array.isArray(r.cache)||!Array.isArray(r.mem)||!r.welt||typeof r.welt.stunde!=='number')return false;
+function lesbar(r){if(!r||(r.v!==V&&r.v!==5)||!r.kopf||!Array.isArray(r.cache)||!Array.isArray(r.mem)||!r.welt||typeof r.welt.stunde!=='number')return false;
+ if(!window.AT2WeltSeed.valid(r.welt)||(r.v===V&&r.welt.seed===undefined))return false;
  if(!r.cache.every(e=>Array.isArray(e)&&typeof e[0]==='string'&&typeof e[1]==='string'))return false;
  const k=r.welt.schluessel,e=r.cache.find(x=>x[0]===k);if(!e)return false;try{return JSON.parse(e[1])?.version===2;}catch{return false;}}
 
@@ -53,7 +54,7 @@ function start(ctx){return new Promise(fertig=>{
  let koepfe=[],kaputt=new Set(),frage=null,ohneSpeicher=false;
  const zeige=()=>{const sp=L?L.sprache:'de';el.innerHTML=`<div class="s-box"><div class="s-sprache" title="${esc(t('sprache.titel'))}">${(L?L.SPRACHEN:[]).map(l=>`<button data-sprache="${l}" class="${l===sp?'an':''}">${l==='de'?'🇩🇪':'🇬🇧'} ${esc(t('sprache.'+l))}</button>`).join('')}</div><h1>ARENA THEORY 2.0</h1><p class="s-sub">${esc(t('start.sub'))}</p>
   ${ohneSpeicher?`<p class="s-warn">${esc(t('start.keinSpeicher'))}</p>`:''}
-  ${PLAETZE.map((n,i)=>{const k=koepfe[i],bad=kaputt.has(n),alt=!!k&&k.v!==V;let info,kn;
+  ${PLAETZE.map((n,i)=>{const k=koepfe[i],bad=kaputt.has(n),alt=!!k&&(k.v!==V&&k.v!==5);let info,kn;
    if(alt&&!bad){info=`<b>${esc(k.name||t('start.ludus'))}</b><small class="kaputt">${esc(t('start.alt'))}</small>`;kn=`<button class="weg" data-loesch="${n}">${esc(t('start.loeschen'))}</button>`;}
    else if(bad){info=`<b>${esc(t('start.platz',{n}))}</b><small class="kaputt">${esc(t('start.kaputt'))}</small>`;kn=`<button class="weg" data-loesch="${n}">${esc(t('start.loeschen'))}</button>`;}
    else if(k){info=`<b>${esc(k.name||t('start.ludus'))}</b><small>${esc(t('start.info',{tag:k.tag,gold:Math.floor(k.gold||0),zeit:tag(k.zeit)}))}</small>`;kn=`<button data-weiter="${n}">${esc(t('start.fortsetzen'))}</button><button class="weg" data-neu="${n}">${esc(t('start.neu'))}</button><button class="weg" data-loesch="${n}">${esc(t('start.loeschen'))}</button>`;}
@@ -61,7 +62,7 @@ function start(ctx){return new Promise(fertig=>{
    const f=frage&&frage.n===n?`<div class="s-frage">${esc(t(frage.art==='loesch'?'start.frageLoeschen':'start.frageNeu'))}<div><button data-ja="${n}">${esc(t(frage.art==='loesch'?'start.jaLoeschen':'start.jaNeu'))}</button><button class="weg" data-nein>${esc(t('start.nein'))}</button></div></div>`:'';
    return `<div class="s-platz"><span class="s-nr">${['I','II','III'][i]}</span><div class="s-info">${info}${f}</div><div class="s-knoepfe">${kn}</div></div>`;}).join('')}
   <p class="s-fuss"><a href="index.html">${esc(t('start.hauptspiel'))}</a></p></div>`;};
- const los=(n,r)=>{window.AT2_PLATZ=ohneSpeicher?0:n;if(r){for(const [k,v] of r.cache)ctx.cache.set(k,v);for(const [k,v] of r.mem)ctx.mem.set(k,v);}
+ const los=(n,r)=>{window.AT2_WORLD_SEED=window.AT2WeltSeed.forSave(r,crypto);window.AT2_PLATZ=ohneSpeicher?0:n;if(r){for(const [k,v] of r.cache)ctx.cache.set(k,v);for(const [k,v] of r.mem)ctx.mem.set(k,v);}
   geladen={n:window.AT2_PLATZ,r:r||null};el.remove();fertig();};
  el.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.sprache){L?.setze(d.sprache);zeige();return;}
@@ -104,7 +105,7 @@ function anschliessen(ctx){const M=window.MG,W=window.WeltKarte,H=window.WeltHoo
   const ks=Int32Array.from(geaendert),m=ks.length,feld=new Uint8Array(m),grund=new Uint8Array(m),obj=new Uint8Array(m),klein=new Uint8Array(m),bauAuf=new Int8Array(m),hc=new Int8Array(m*4);
   for(let i=0;i<m;i++){const k=ks[i];feld[i]=W.feld[k];grund[i]=W.grund[k];obj[i]=W.obj[k];klein[i]=W.klein?W.klein[k]:0;bauAuf[i]=W.bauAuf[k];for(let c=0;c<4;c++)hc[i*4+c]=W.hc[k*4+c];}
   const stand={v:V,build:window.BUILD||'',kopf:{v:V,name:S.schoolName,tag:S.day,gold:S.gold,zeit:Date.now()},cache:[...ctx.cache],mem:[...ctx.mem],
-   welt:{gel:1,schluessel,stunde:T.stunde,tempo:T.st.tempo||1,pause:!!T.st.pause,ks,feld,grund,obj,klein,bauAuf,hc,bruecken:M.weltBruecke?.daten?.()||[],arenaStufe:M.weltArena?.stufe||1,arenaTueren:M.weltArena?.tueren?.()}};
+   welt:{seed:window.AT2_WORLD_SEED>>>0,grossVersion:1,gel:1,schluessel,stunde:T.stunde,tempo:T.st.tempo||1,pause:!!T.st.pause,ks,feld,grund,obj,klein,bauAuf,hc,bruecken:M.weltBruecke?.daten?.()||[],arenaStufe:M.weltArena?.stufe||1,arenaTueren:M.weltArena?.tueren?.()}};
   dirty=false;letzt=performance.now();
   laeuft=schreib(n,stand).then(()=>{A.fehler='';return true;}).catch(e=>{A.fehler=String(e?.message||e);dirty=true;return false;}).finally(()=>{laeuft=null;});
   A.ms=performance.now()-t0;A.mitS=mitS;A.mal++;return laeuft;}

@@ -2,7 +2,7 @@
 // WELTKARTE · EIGENSTÄNDIGE TESTVERSION (wie die Aufstellungs-Testversion): lädt das unveränderte Spiel, aber ohne Zugriff
 // auf echte Spielstände. Das Spiel schreibt nur in den Arbeitsspeicher dieser Seite; nichts wird dauerhaft gespeichert.
 // Ausnahme Arena Theory 2.0 (window.AT2): eigener Spielstand in eigener Datenbank über welt-spielstand.js, nie die von 1.0.
-var BUILD='3cef362d';
+var BUILD='9ccbe517';
 (()=>{
  let real=null;try{real=window.localStorage;}catch{}
  window.WELT_STORE={get(k){try{return real?real.getItem(k):null;}catch{return null;}},set(k,v){try{real&&real.setItem(k,v);return true;}catch{return false;}},del(k){try{real&&real.removeItem(k);}catch{}}};
@@ -29,7 +29,7 @@ var BUILD='3cef362d';
  // Arena Theory 2.0 (A2): zuerst das Startbild mit den 3 Spielständen (welt-spielstand.js), es füllt Zwischenspeicher und
  // abgeschirmten localStorage mit dem gewählten Stand; erst danach wird das Spiel geladen. Andere Kartenseiten speichern nichts.
  // S1: davor der Sprachkern mit den Sprachdateien (welt-sprache.js, welt-text-de.js, welt-text-en.js).
- if(window.AT2){const vorab=['welt-sprache','welt-text-de','welt-text-en','welt-spielstand'];let n=0;
+ if(window.AT2){const vorab=['welt-sprache','welt-text-de','welt-text-en','welt-seed','welt-spielstand'];let n=0;
   for(const name of vorab){const s=document.createElement('script');s.async=false;s.src=name+'.js?v='+BUILD;s.onload=()=>{if(++n===vorab.length)window.AT2Spielstand.start(ctx).then(laden);};s.onerror=()=>fail(name+' konnte nicht geladen werden.');document.body.appendChild(s);}}
  else laden();
  window.addEventListener('error',e=>{if(!window.WELT_READY)fail(e.message);});

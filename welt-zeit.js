@@ -65,7 +65,7 @@ let L=[255,255,255,0];
 H.light=(ctx,VW,VH)=>{L=st.licht?licht(hour()):[255,255,255,0];if(L[0]>253&&L[1]>253&&L[2]>253)return;
  ctx.globalCompositeOperation='multiply';ctx.fillStyle=`rgb(${L[0]|0},${L[1]|0},${L[2]|0})`;ctx.fillRect(0,0,VW,VH);ctx.globalCompositeOperation='source-over';};
 const worldHooks=[];
-H.world=(ctx,view,dt)=>{if(L[3]>.02){const sp=glowSprite(),t=performance.now()/1000;ctx.globalCompositeOperation='lighter';let i=0;
+H.world=(ctx,view,dt)=>{if(!window.AT2&&L[3]>.02){const sp=glowSprite(),t=performance.now()/1000;ctx.globalCompositeOperation='lighter';let i=0;
   for(const l of lamps()){i++;if(l.x+l.r<view.x0||l.x-l.r>view.x1||l.y+l.r<view.y0||l.y-l.r>view.y1)continue;ctx.globalAlpha=L[3]*(.5+.08*Math.sin(t*7+i*1.7)+.05*Math.sin(t*13+i));ctx.drawImage(sp,l.x-l.r,l.y-l.r,l.r*2,l.r*2);}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';}
  for(const fn of worldHooks)fn(ctx,view,dt);};
@@ -112,3 +112,4 @@ M.weltTag={aktiv:true,st,get stunde(){return hour();},get phase(){return phase(h
  feier,beiWechsel(fn){listeners.push(fn);},welt(fn){worldHooks.push(fn);}};
 wirk();paintDial(true);
 })();
+

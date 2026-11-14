@@ -30,7 +30,7 @@ const GROSS=!!window.AT2,N=GROSS?960:96,O=GROSS?432:0,TW=64,TH=32,OX=N*TW/2,OY=G
 const iso=(tx,ty)=>({x:(tx-ty)*TW/2+OX,y:(tx+ty)*TH/2+OY});// obere Ecke des Feldes; Mitte: iso(tx+.5,ty+.5)
 const tileAt=(x,y)=>{const a=(x-OX)/(TW/2),b=(y-OY)/(TH/2);return {tx:(a+b)/2,ty:(b-a)/2};};
 function hash(n){n=Math.imul(n^0x9e3779b9,0x85ebca6b);n^=n>>>13;n=Math.imul(n,0xc2b2ae35);n^=n>>>16;return (n>>>0)/4294967296;}
-const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695);
+const h2=(x,y,s=0)=>hash(x*374761393+y*668265263+s*1442695+(GROSS?(window.AT2_WORLD_SEED|0):0));
 const T={WIESE:0,WALD:1,WEG:2,FLUSS:3,BRUECKE:4,LUDUS:5,BAU:6,PLATZ:7,ARENA:8,TRIB:9,STR1:10,STR2:11,STR3:12,STR4:13,STR5:14,UNTERKUNFT:15,UNT_S:16,UNT_K:17,SCHM_S:18,SCHMIEDE:19,SCHM_K:20,SAND:21,DSCH:22,SUMPF:23,MOOR:24,FELS:25,SCHNEE:26,BST_S:27,BEAST:28,BST_K:29,KAS_S:30,KASERNE:31,KAS_K:32,MEDICUS:33,KRANK:34,MARKT:35,HALLE:36,GRAB:37,ERDE:38,KIES:39,SCHLAMM:40,GEROELL:41,TROCKEN:42,NADEL:43,VERWALTUNG:44,ARENA_BAU:45,WARTE:46},NAMEN=['Wiese','Wald','Weg','Fluss','Brücke','Ludus','Gebäude','Übungsplatz','Kampffläche','Tribüne','Trampelpfad','Kiesweg','Pflasterweg','Steinstraße','Prachtstraße','Mannschaftsstube','Rattenloch','Fürstengemächer','Rostgrube','Waffenschmiede','Kaiserliche Waffenschmiede','Sand','Dschungelboden','Sumpf','Moorwasser','Fels','Schnee','Knochengrube','Beastrium','Kaiserliche Menagerie','Bretterbude','Kaserne','Prätorianerkaserne','Medicus','Krankenhaus','Sklavenmarkt','Halle der Toten','Gräberplatz','Erde','Kies','Schlamm','Geröll','Trockengras','Nadelstreu','Verwaltung','Arena','Wartestraße'];
 const feld=new Uint8Array(N*N),bauAuf=new Int8Array(N*N).fill(-1),ix=(tx,ty)=>ty*N+tx,inMap=(tx,ty)=>tx>=0&&ty>=0&&tx<N&&ty<N;
 // Ludus in der Mitte: 18 × 16 Felder, ein Feld = 50 Bildpunkte des alten Ludus (900 × 760)
@@ -439,12 +439,12 @@ function ovMalen(x0,y0,x1,y1,R){const im=new ImageData(R.w,R.h),px=new Uint32Arr
   if(X0>=X1)continue;for(let Y=Y0;Y<Y1;Y++)px.fill(col,Y*R.w+X0,Y*R.w+X1);for(let Y=Math.max(0,Y1);Y<Yw;Y++)px.fill(wc,Y*R.w+X0,Y*R.w+X1);
   const o=obj[k];if(o&&NB&&!NB.ARTEN[o].flach){const c=objFarbe(o,ovar(tx,ty)),X=Math.round(cx/OV)-R.x,Y=Math.round((top-6)/OV)-R.y;if(c&&X>=0&&X<R.w&&Y>=0&&Y<R.h){px[Y*R.w+X]=c;if(Y+1<R.h)px[(Y+1)*R.w+X]=c;}}}
  overview.getContext('2d').putImageData(im,R.x,R.y);}
-function bake(){const [c,g]=mkCanvas(Math.ceil(WW/OV),Math.ceil(WH/OV));overview=c;chunks.clear();hangCache.clear();saumCache.clear();
+function bake(){bodenJob=null;const [c,g]=mkCanvas(Math.ceil(WW/OV),Math.ceil(WH/OV));overview=c;chunks.clear();hangCache.clear();saumCache.clear();
  if(GROSS){ovMalen(0,0,N-1,N-1,{x:0,y:0,w:c.width,h:c.height});return;}
  g.imageSmoothingEnabled=true;g.fillStyle='#1c2416';g.fillRect(0,0,c.width,c.height);g.scale(1/OV,1/OV);const sp=sprites[raster?1:0];
  for(let ty=0;ty<N;ty++)for(let tx=0;tx<N;tx++){const p=iso(tx,ty);maleFeld(g,sp,tx,ty,p.x-TW/2,p.y);}
  objekteMalen(g,0,0,N-1,N-1);}
-function rebake(ks){if(!ks||!ks.length||!overview){bake();return;}let x0=N,y0=N,x1=0,y1=0;
+function rebake(ks){bodenJob=null;if(!ks||!ks.length||!overview){bake();return;}let x0=N,y0=N,x1=0,y1=0;
  for(const k of ks){const x=k%N,y=(k/N)|0;if(!BODEN_NATUR.has(feld[k])){obj[k]=0;kz[k]=0;}if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
  x0=Math.max(0,x0-1);y0=Math.max(0,y0-1);x1=Math.min(N-1,x1+1);y1=Math.min(N-1,y1+1);
  const hoch=GROSS?(HMAX+1)*HZ:0,tief=GROSS?(-BASIS()+1)*HZ:0,rx0=iso(x0,y1+1).x-2,rx1=iso(x1+1,y0).x+2,ry0=iso(x0,y0).y-140-hoch,ry1=iso(x1+1,y1+1).y+2+tief,sp=sprites[raster?1:0];
@@ -472,21 +472,42 @@ function zaunBild(art,dir){const key=art*2+dir;let b=zaunBilder.get(key);if(b)re
   for(let i=0;i<9;i++){const p=pt((i+.5)/9),x=Math.round(p.x)-2,y=Math.round(p.y),h=H-(i%3===1?2:0);
    g.fillStyle='#4a3420';g.fillRect(x,y-h,4,h);g.fillStyle=i%2?'#7a5a39':'#8a6a42';g.fillRect(x,y-h,3,h-1);g.fillStyle='#a07e52';g.fillRect(x+1,y-h-2,1,2);g.fillStyle='#5e4229';g.fillRect(x,y-Math.round(h*.4),4,1);}}
  b={img:c,ax:W2/2,ay};zaunBilder.set(key,b);return b;}
-function chunk(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;let ch=chunks.get(key);if(ch)return ch;saumAn=GROSS&&lod===1;const [c,g]=mkCanvas(CH+2,CH+2),x0=cx*S,y0=cy*S,sp=sprites[raster?1:0],stehen=[];
+function* chunkSchritte(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;let ch=chunks.get(key);if(ch)return ch;saumAn=GROSS&&lod===1;const [c,g]=mkCanvas(CH+2,CH+2),x0=cx*S,y0=cy*S,sp=sprites[raster?1:0],stehen=[];
  g.fillStyle='#1c2416';g.fillRect(0,0,CH+2,CH+2);g.imageSmoothingEnabled=lod>1;g.scale(1/lod,1/lod);g.translate(-x0,-y0);
  const unten=GROSS?Math.ceil(((HMAX+1)*HZ+150)/(TH/2)):NB?10:0,oben=GROSS?Math.ceil((-BASIS()+1)*HZ/(TH/2))+1:0;
  const u0=Math.floor((x0-OX)/(TW/2))-3,u1=Math.ceil((x0+S+2*lod-OX)/(TW/2))+3,v0=Math.max(0,Math.floor((y0-OY)/(TH/2))-2-oben),v1=Math.min(2*N-2,Math.ceil((y0+S+2*lod-OY)/(TH/2))+1+unten);
- for(let v=v0;v<=v1;v++){const u00=u0+((u0+v)&1);
-  for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;maleFeld(g,sp,tx,ty,(tx-ty)*TW/2+OX-TW/2,v*TH/2+OY);
-   if(deko[ix(tx,ty)]&&H.bodenFeld)try{H.bodenFeld(g,tx,ty,lod);}catch(e){}}// B0b: flacher Boden der Module (Sand, Pflaster) einmal ins Bodenbild gebacken
-  if(NB&&GROSS&&lod===1)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty);if(kz[k])kleinMalen(g,tx,ty,k,y0,y0+S);}// T3: Kleinzeug, nur in der nahen Ansicht
+ for(let v=v0;v<=v1;v++){saumAn=GROSS&&lod===1;const u00=u0+((u0+v)&1);
+  for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;saumAn=GROSS&&lod===1;maleFeld(g,sp,tx,ty,(tx-ty)*TW/2+OX-TW/2,v*TH/2+OY);
+   if(deko[ix(tx,ty)]&&H.bodenFeld)try{H.bodenFeld(g,tx,ty,lod);}catch(e){}yield;}// B0b: flacher Boden der Module (Sand, Pflaster) einmal ins Bodenbild gebacken
+  if(NB&&GROSS&&lod===1)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty);if(kz[k])kleinMalen(g,tx,ty,k,y0,y0+S);yield;}// T3: Kleinzeug, nur in der nahen Ansicht
   if(NB)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty),o=obj[k];if(!o)continue;const b=NB.bild(o,ovar(tx,ty)),x=(tx-ty)*TW/2+OX,y=v*TH/2+OY+TH/2,z=objHz(tx,ty);
-   if(b.flach||lod>1||!eben[k])g.drawImage(b.img,x-b.ax,y-z-b.ay);else if(x>=x0&&x<x0+S&&y>=y0&&y<y0+S)stehen.push({x,y,oz:z,img:b.img,ax:b.ax,ay:b.ay});}
+   if(b.flach||lod>1||!eben[k])g.drawImage(b.img,x-b.ax,y-z-b.ay);else if(x>=x0&&x<x0+S&&y>=y0&&y<y0+S)stehen.push({x,y,oz:z,img:b.img,ax:b.ax,ay:b.ay});yield;}
   // A3: Zaun und Palisade; Mitte der Kante als Fußpunkt, damit Figuren davor und dahinter richtig stehen
   if(ANORD)for(let u=u00;u<=u1;u+=2){const tx=(u+v)>>1,ty=(v-u)>>1;if(tx<0||ty<0||tx>=N||ty>=N)continue;const k=ix(tx,ty);
    for(const [arr,dir] of [[zaunA,0],[zaunB,1]]){const art=arr[k];if(!art)continue;const b=zaunBild(art,dir),m=dir?iso(tx,ty+.5):iso(tx+.5,ty),z=hz(tx,ty);
-    if(lod>1)g.drawImage(b.img,m.x-b.ax,m.y-z-b.ay);else if(m.x>=x0&&m.x<x0+S&&m.y>=y0&&m.y<y0+S)stehen.push({x:m.x,y:m.y,oz:z,img:b.img,ax:b.ax,ay:b.ay});}}}
+    if(lod>1)g.drawImage(b.img,m.x-b.ax,m.y-z-b.ay);else if(m.x>=x0&&m.x<x0+S&&m.y>=y0&&m.y<y0+S)stehen.push({x:m.x,y:m.y,oz:z,img:b.img,ax:b.ax,ay:b.ay});}}yield;}
  ch={c,stehen,used:frameNo,x0,y0,S};chunks.set(key,ch);return ch;}
+
+// Vorbereiten in kleinen Schritten; Zeichnen liest nur fertige Stücke. Der Editor behält den synchronen Weg.
+function chunk(cx,cy,lod=1){const it=chunkSchritte(cx,cy,lod);let r;do{r=it.next();}while(!r.done);return r.value;}
+let bodenJob=null;
+const bodenArbeit={ms:0,schritte:0,fertig:0};
+function bodenVorbereiten(view,lod){
+ const start=performance.now(),ende=start+2;bodenArbeit.schritte=0;bodenArbeit.fertig=0;
+ if(!lod){bodenJob=null;bodenArbeit.ms=0;return;}
+ const S=CH*lod,anfragen=[],cx0=Math.max(0,Math.floor(view.x0/S)-1),cx1=Math.min(Math.ceil(WW/S)-1,Math.floor(view.x1/S)+1),
+  cy0=Math.max(0,Math.floor(view.y0/S)-1),cy1=Math.min(Math.ceil(WH/S)-1,Math.floor((view.y1+130)/S)+1);
+ for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){
+  const key=(lod*1000+cy)*1000+cx,nah=cx*S<view.x1&&(cx+1)*S>view.x0&&cy*S<view.y1+130&&(cy+1)*S>view.y0;
+  const ch=chunks.get(key);if(ch){ch.used=frameNo;continue;}
+  anfragen.push({cx,cy,key,prio:(nah?0:1e12)+(cx*S+S/2-cam.x)**2+(cy*S+S/2-cam.y)**2});}
+ anfragen.sort((a,b)=>a.prio-b.prio);
+ if(bodenJob&&!anfragen.some(q=>q.key===bodenJob.key))bodenJob=null;
+ while(performance.now()<ende&&bodenArbeit.fertig<2){
+  if(!bodenJob){const q=anfragen.find(q=>!chunks.has(q.key));if(!q)break;bodenJob={key:q.key,it:chunkSchritte(q.cx,q.cy,lod)};}
+  const r=bodenJob.it.next();bodenArbeit.schritte++;if(r.done){bodenJob=null;bodenArbeit.fertig++;}}
+ bodenArbeit.ms=performance.now()-start;
+}
 
 // ---------- Gebäude als Skizze ----------
 function shade(hex,k){const n=parseInt(hex.slice(1),16);return 'rgb('+[n>>16,(n>>8)&255,n&255].map(v=>Math.round(clamp(v*k,0,255))).join(',')+')';}
@@ -583,8 +604,8 @@ function place(g,x,y){const w=workers.find(w=>w.g.id===g.id);if(!w)return;w.pfad
 const cv=$('weltCanvas'),ctx=cv.getContext('2d');let VW=1,VH=1,DPR=1;
 const L0=ANORD?iso(O+ANORD.platz[0]+ANORD.platz[2]/2,O+ANORD.platz[1]+ANORD.platz[3]/2):iso(LUD.tx+LUD.w/2,LUD.ty+LUD.h/2),cam={x:L0.x,y:L0.y,s:1};// 2.0: Start mit Blick auf den Platz
 function resize(){DPR=Math.min(2,window.devicePixelRatio||1);VW=cv.clientWidth||innerWidth;VH=cv.clientHeight||innerHeight;cv.width=Math.round(VW*DPR);cv.height=Math.round(VH*DPR);clampCam();}
-const minScale=()=>Math.min(VW/WW,VH/WH)*.95,maxScale=()=>4.5;
-function clampCam(){cam.s=clamp(cam.s,minScale(),maxScale());cam.x=clamp(cam.x,0,WW);cam.y=clamp(cam.y,0,WH);}
+const minScale=()=>Math.min(VW/(WW*(GROSS?10:1)),VH/(GROSS?N*TH*10:WH))*.95,maxScale=()=>4.5;
+function clampCam(){cam.s=clamp(cam.s,minScale(),maxScale());cam.x=clamp(cam.x,GROSS?-WW*4.5:0,GROSS?WW*5.5:WW);cam.y=clamp(cam.y,GROSS?OY-N*TH*4.5:0,GROSS?OY+N*TH*5.5:WH);}
 const toWorld=(sx,sy)=>({x:cam.x+(sx-VW/2)/cam.s,y:cam.y+(sy-VH/2)/cam.s});
 function zoomAt(sx,sy,f){const a=toWorld(sx,sy);cam.s=clamp(cam.s*f,minScale(),maxScale());const b=toWorld(sx,sy);cam.x+=a.x-b.x;cam.y+=a.y-b.y;clampCam();}
 let fly=null;function flyTo(x,y,s){fly={x0:cam.x,y0:cam.y,s0:cam.s,x,y,s:s??Math.max(cam.s,1.2),t:0};}
@@ -624,13 +645,16 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));
  const items=[];miniV=cam.s<MINI;detailV=cam.s>=DETAIL;
  const lod=cam.s>=NAH?1:cam.s>=FERN?(cam.s>=.3?2:4):0;
+ if(window.AT2){bodenVorbereiten(view,lod);H.prepare?.(view,performance.now()+1.5);}
+ if(GROSS){window.WeltGross?.draw(ctx,view);ctx.save();ctx.beginPath();for(const [i,p] of [iso(0,0),iso(N,0),iso(N,N),iso(0,N)].entries()){if(i)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);}ctx.closePath();ctx.clip();}
  if(lod!==1){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,0,0,overview.width*OV,overview.height*OV);ctx.imageSmoothingEnabled=false;}
- if(lod){// Boden aus vorgezeichneten Stücken; weit draußen höchstens zwei neue Stücke je Bild, darunter liegt die Übersicht
+ if(lod){// 2.0: nur vorbereitete Stücke, fehlende Bereiche zeigen vorübergehend die Übersicht; Editor wie bisher
   const S=CH*lod,cx0=Math.max(0,Math.floor(view.x0/S)),cx1=Math.min(Math.ceil(WW/S)-1,Math.floor(view.x1/S)),cy0=Math.max(0,Math.floor(view.y0/S)),cy1=Math.min(Math.ceil(WH/S)-1,Math.floor((view.y1+130)/S));let neu=lod>1?2:999;
-  for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){let ch=chunks.get((lod*1000+cy)*1000+cx);if(!ch){if(neu<=0)continue;neu--;ch=chunk(cx,cy,lod);}ch.used=frameNo;
+  for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){let ch=chunks.get((lod*1000+cy)*1000+cx);if(!ch){if(window.AT2){if(lod===1){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,cx*S/OV,cy*S/OV,S/OV,S/OV,cx*S,cy*S,S,S);ctx.imageSmoothingEnabled=false;}continue;}if(neu<=0)continue;neu--;ch=chunk(cx,cy,lod);}ch.used=frameNo;
    if(lod===1)ctx.drawImage(ch.c,cx*S,cy*S);else{ctx.imageSmoothingEnabled=true;ctx.drawImage(ch.c,cx*S,cy*S,(CH+2)*lod,(CH+2)*lod);ctx.imageSmoothingEnabled=false;}
    for(const t of ch.stehen)if(t.x>view.x0-50&&t.x<view.x1+50&&t.y>view.y0-10&&t.y<view.y1+130)items.push(t);}
   frameNo++;if(chunks.size>48)for(const [k,ch] of chunks)if(ch.used<frameNo-120){chunks.delete(k);if(chunks.size<=36)break;}}
+ if(GROSS)ctx.restore();
  H.ground?.(ctx,view);
  for(const b of SKIZZE)items.push({y:b.key,bau:b});H.items?.(items,view);
  // Figuren; wer vor einem Gebäude steht, wird nach ihm gezeichnet
@@ -647,7 +671,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  H.world?.(ctx,view,dt);
  ctx.setTransform(1,0,0,1,0,0);
  const ms=performance.now()-t0;perfWin.push(ms);if(perfWin.length>30)perfWin.shift();perfAvg=perfWin.reduce((a,b)=>a+b,0)/perfWin.length;
- hudT+=dt;if(hudT>1){hudT=0;$('wCount').textContent=`${workers.length} Leute · ${shown.length} im Bild`;$('wClock').textContent=`Zoom ${cam.s.toFixed(2)}×${miniV?' · Miniaturansicht':detailV?' · Nahansicht':''}`;
+ hudT+=dt;if(hudT>1){hudT=0;$('wCount').textContent=`${workers.length} Leute · ${shown.length} im Bild`;$('wClock').textContent=`Zoom ${(cam.s<.01?cam.s.toFixed(4):cam.s.toFixed(2))}×${miniV?' · Miniaturansicht':detailV?' · Nahansicht':''}`;
   const bar=$('wPerfBar');bar.style.width=Math.round(clamp(perfAvg/16.7,0,1)*100)+'%';bar.style.background=perfAvg<8?'#6fae5a':perfAvg<13?'#d7b24a':'#c9483e';$('wPerf').textContent=perfAvg.toFixed(1)+' ms je Bild';}}
 
 // ---------- Start ----------
@@ -661,7 +685,7 @@ function ecken(k){const x=k%N,y=(k/N)|0,P=[iso(x,y),iso(x+1,y),iso(x+1,y+1),iso(
 function gelaendeTyp(k){obj[k]=0;kz[k]=0;const t=feld[k];if(!BODEN_NATUR.has(t))return;const m=Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3]);if(m<WL)feld[k]=T.FLUSS;else if(t===T.FLUSS)feld[k]=grund[k];}
 function ebnen(ks,L){for(const k of ks){hc.fill(L,k*4,k*4+4);gelaendeTyp(k);}if(L>HMAX)HMAX=L;if(L<HMIN)HMIN=L;}
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
-window.WeltKarte={deko,neuMalen:rebake,KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
+window.WeltKarte={grossTerrain:GROSS?{sprites:sprites[0],palette:PAL}:null,get bodenArbeit(){return {...bodenArbeit};},deko,neuMalen:rebake,KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
  ANORD,fest,arenaPlatz,zaunA,zaunB,TORE,imAnord,inR,ber,BER,bfrei,// A3b natürlich: Bereiche mit geschwungenen Rändern
 // A3: Dorf, Platz, Park (Lagen relativ zu O), feste Felder, Grenzen, Tore
@@ -670,3 +694,4 @@ window.WeltKarte={deko,neuMalen:rebake,KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,d
  chunkZeit(tx,ty,n=4){const q=iso(tx,ty),cx=Math.floor(q.x/CH),cy=Math.floor(q.y/CH);let t=0,m=0;for(let j=0;j<n;j++)for(let i=0;i<n;i++){const key=(1000+cy+j)*1000+cx+i;chunks.delete(key);const a=performance.now();chunk(cx+i,cy+j,1);t+=performance.now()-a;m++;}return t/m;}};
 window.WELT_READY=true;
 })();
+

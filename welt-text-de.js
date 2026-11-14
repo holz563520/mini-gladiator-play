@@ -133,3 +133,5 @@ AT2Sprache.dazu('de',{
  'arena.schild.anschluss':'Kein Anschluss. Bitte draußen sterben.','arena.zu.schlange':'Die Arena hat keine Wartestraße vom Eingang bis zu einem Weg. Die Leute stehen ratlos herum, das ist noch keine Unterhaltung.',
  'arena.zu.ausgang':'Der Ausgang der Arena führt nirgendwohin. Wer drin ist, bleibt drin. Für immer, sagt der Berater, und lächelt.','arena.wieder':'Die Arena ist wieder angeschlossen. Das Volk darf rein, und vor allem wieder raus.',
 });
+
+AT2Sprache.dazu("de",{"gross.title": "Weltkarte · 9.600 × 9.600", "gross.note": "Ziehen oder mit zwei Fingern zoomen. Auf die Übersicht tippen, um die Welt zu erkunden.", "gross.limit": "Die Außenlandschaft ist erkundbar. Bauen und Personen bleiben vorerst im Stadtbereich.", "gross.home": "Arena-City", "gross.fit": "Ganze Welt", "gross.random": "Erkunden", "gross.zoom": "Heranzoomen", "gross.seed": "Welt", "gross.loading": "Landschaft wird vorbereitet", "gross.ready": "Landschaft bereit"});

@@ -133,3 +133,5 @@ AT2Sprache.dazu('en',{
  'arena.schild.anschluss':'Not connected. Please die outside.','arena.zu.schlange':'The arena has no queue path from the entrance to a path. People are standing around baffled, which is not entertainment yet.',
  'arena.zu.ausgang':'The arena exit leads nowhere. Whoever is inside stays inside. Forever, says the advisor, smiling.','arena.wieder':'The arena is connected again. The crowd may enter, and more importantly, leave.',
 });
+
+AT2Sprache.dazu("en",{"gross.title": "World map · 9,600 × 9,600", "gross.note": "Drag or pinch to zoom. Tap the overview to explore the world.", "gross.limit": "Explore the outer landscape. Building and people remain in the central city for now.", "gross.home": "Arena-City", "gross.fit": "Whole world", "gross.random": "Explore", "gross.zoom": "Zoom in", "gross.seed": "World", "gross.loading": "Preparing terrain", "gross.ready": "Terrain ready"});

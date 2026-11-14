@@ -41,7 +41,8 @@
 // · Dach: nur nah herangezoomt (Zoom ab 1,5) wird es durchsichtig: Haus in der Bildmitte, unter der Maus oder angetippt.
 //   Zoomt man weiter weg, sind alle Dächer von selbst wieder zu (Thomas 12.11.). Offen sind die vorderen Wände kniehoch.
 // · Leistung: Jedes Haus wird zweimal vorgezeichnet (geschlossen, offen) und nur neu gemalt, wenn sich sein Grundriss ändert.
-//   Lebendig sind nur Rauch, Ratten und Fliegen (ein paar Rechtecke je Bild).
+//   2.0: Vorbereitung feldweise vor der Ausgabe; Schilder als Bilder. Kein Qualm, Glutflackern oder Funkenflug.
+//   Der alte Tageslauf-Editor behält seine Effekte. Ratten und Fliegen nur bei geöffnetem Dach.
 // · Test: im ersten Beastrium ein echter Hahn und ein echter Hund (Schild am Käfig); Antippen öffnet ihre Großaufnahme.
 // · Noch keine Spielwirkung: Schlafplätze, Ambosse und Käfige zählen nur.
 // =====================================================================================================================
@@ -221,7 +222,7 @@ function kram(g,x,y,seed,st,h){const a=S.lanista?.appearance||{};
  else if(seed<.5){for(const [dx,dy] of [[.4,.4],[.6,.42],[.5,.6]])kiste(g,x+dx-.015,y+dy-.015,x+dx+.015,y+dy+.015,0,9,BRONZE);oval(g,x+.5,y+.5,9,8,4,sh(BRONZE,1.1));oval(g,x+.5,y+.5,10,6,3,'#2a1c12');oval(g,x+.5,y+.5,11.5,4,3.4,'#ff9030');oval(g,x+.5,y+.5,13.5,2.2,3,'#ffe070');}// Feuerschale
  else if(seed<.66){kiste(g,x+.3,y+.34,x+.7,y+.66,0,8,GOLD,.92);kiste(g,x+.3,y+.48,x+.71,y+.52,0,8.3,BRONZE);kiste(g,x+.29,y+.33,x+.71,y+.67,8,9.6,GOLD);const p=pt(x+.71,y+.5,5);g.fillStyle='#20140c';g.fillRect(p[0]-1,p[1]-1.5,2,3);}// goldene Truhe
  else if(seed<.86){kiste(g,x+.46,y+.46,x+.54,y+.54,0,7,MARMOR);oval(g,x+.5,y+.5,7.5,10,5,sh(MARMOR,1.02));oval(g,x+.5,y+.5,9,5,2.5,sh(GOLD,1));for(const [dx,dy,c] of [[-.05,0,[170,40,50]],[.03,-.03,[120,150,60]],[.02,.04,[210,140,50]]])oval(g,x+.5+dx,y+.5+dy,10.5,2,2,sh(c,1));kiste(g,x+.62,y+.38,x+.67,y+.43,7.5,14,[170,96,60]);}}// Tisch mit Obst und Wein
-function male(h,offen){const bst=h.art==='beast',kas=h.art==='kaserne',med=h.art==='medicus',krk=h.art==='krankenhaus',hal=h.art==='halle',kf=h.kaefig,innen=hal?(M.weltHalle?.innen?.()||[]):null;let gi=0;const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-(WAND+STEIG*KAPPE+30),bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top),st=h.st;
+function* maleSchritte(h,offen){const bst=h.art==='beast',kas=h.art==='kaserne',med=h.art==='medicus',krk=h.art==='krankenhaus',hal=h.art==='halle',kf=h.kaefig,innen=hal?(M.weltHalle?.innen?.()||[]):null;let gi=0;const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-(WAND+STEIG*KAPPE+30),bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top),st=h.st;
  const c=document.createElement('canvas');c.width=Math.ceil(p1.x-p0.x+m);c.height=Math.ceil(bot-top);const g=c.getContext('2d');g.translate(-ox,-oy);const has=h.has,bed=new Set(h.beds),po=new Map(h.poster.map(p=>[p.k+p.side,p]));if(offen){h.mist=[];h.gang=[];}
  for(const k of h.tiles){const x=k%N,y=(k/N)|0,s=W.h2(x,y,51),dr=h.door.k===k;
   // hintere Wände (Innenseite), mit Bild des Lanista oder Schmuck
@@ -238,9 +239,9 @@ function male(h,offen){const bst=h.art==='beast',kas=h.art==='kaserne',med=h.art
   // vordere Wände (Außenseite): geschlossen volle Höhe mit Fenster, Tür oder Bild; offen nur kniehoch mit Türlücke
   const front=(x0,y0,x1,y1,hell,istTuer,salt)=>{if(!offen)wand(g,x0,y0,x1,y1,WAND,hell,st,istTuer?(med?tuerMed(hell):hal?tuerHalle(hell):tuer(st,hell)):hal||(h.art==='verwaltung'&&(x+y)%2===0)?saeule(hell):(x+y)%2===0?(bst?gitterfenster(st,hell,W.h2(x,y,salt+3)):fenster(st,hell)):W.h2(x,y,salt)<.6?bild(st,hell):null,h.art);
    else if(!istTuer)wand(g,x0,y0,x1,y1,STUMPF,hell,st,null,h.art);else{const a=W.iso(x0,y0),b=W.iso(x1,y1),c0=st===0?LEHM:st===1?PUTZ:MARMOR,L=(u0,u1)=>{g.save();g.transform(b.x-a.x,b.y-a.y,0,-1,a.x,a.y);g.fillStyle=sh(c0,hell);g.fillRect(u0,0,u1-u0,STUMPF);g.fillStyle=sh(st===0?[88,74,54]:st===1?SOCKEL:MARMOR,hell*.9);g.fillRect(u0,0,u1-u0,4);g.fillStyle=sh(st===2?GOLD:BALKEN,hell);g.fillRect(u0?u0:u1-.05,0,.05,STUMPF+2);g.restore();};L(0,.24);L(.76,1);}};
-  if(!has(x,y+1))front(x,y+1,x+1,y+1,.74,dr&&h.door.side==='y',57);if(!has(x+1,y))front(x+1,y+1,x+1,y,.94,dr&&h.door.side==='x',58);}
+  if(!has(x,y+1))front(x,y+1,x+1,y+1,.74,dr&&h.door.side==='y',57);if(!has(x+1,y))front(x+1,y+1,x+1,y,.94,dr&&h.door.side==='x',58);yield;}
  if(!offen){// Dach: je Feld eine Fläche, die Ecken steigen vom Rand zur Mitte an
-  const hoch=dachMalen(g,h,h.tiles,has);
+  const hoch=yield* dachMalenSchritte(g,h,h.tiles,has);
   if(hal){h.rauch=null;if(hoch)dachSchaedel(g,hoch);}
   else if(bst||kas){h.rauch=null;if(hoch){// Dachfigur ans hintere Ende des Firsts, damit das Namensschild sie nicht verdeckt
    const zs=k=>{const x=k%N,y=(k/N)|0;return h.eck(x,y)+h.eck(x+1,y)+h.eck(x+1,y+1)+h.eck(x,y+1);},zm=Math.max(...h.tiles.map(zs)),cx=(h.bx0+h.bx1)/2,cy=(h.by0+h.by1)/2;let e=null,ed=-1;
@@ -249,7 +250,7 @@ function male(h,offen){const bst=h.art==='beast',kas=h.art==='kaserne',med=h.art
  return {c,ox,oy};}
 
 // Dach über den Feldern tiles; has sagt, wo das Dach endet (Traufe)
-function dachMalen(g,h,tiles,has){const st=h.st;
+function* dachMalenSchritte(g,h,tiles,has){const st=h.st;
   const bst=h.art==='beast',farbe=st===0?[170,144,84]:st===1?(bst?[100,64,38]:h.art==='medicus'?[105,119,111]:h.art==='halle'?[58,62,60]:ZIEGEL):[166,62,44];let hoch=null;
   for(const k of tiles){const x=k%N,y=(k/N)|0,zA=WAND+h.eck(x,y),zB=WAND+h.eck(x+1,y),zC=WAND+h.eck(x+1,y+1),zD=WAND+h.eck(x,y+1),A=pt(x,y,zA),Bp=pt(x+1,y,zB),C=pt(x+1,y+1,zC),Dp=pt(x,y+1,zD),s=W.h2(x,y,54);
    const hell=clamp(.86+.016*((zA+zD)-(zB+zC))+.007*((zA+zB)-(zC+zD))+(s-.5)*(st===0?.16:.06),.56,1.14),L=(P,Q,t)=>[P[0]+(Q[0]-P[0])*t,P[1]+(Q[1]-P[1])*t];
@@ -265,7 +266,7 @@ function dachMalen(g,h,tiles,has){const st=h.st;
     if(bst&&st===1){g.strokeStyle='rgba(40,24,12,.45)';for(let r=0;r<5;r++)for(let i=0;i<5;i++){const u=(i+.5+(r%2)*.5)/5.5,a=L(L(A,Bp,u),L(Dp,C,u),r*.2),b=L(L(A,Bp,u),L(Dp,C,u),r*.2+.16);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}}// Holzschindeln
     if(st===2){if(zA===zD&&zB===zC&&zA!==zB){}g.fillStyle=sh(GOLD,1.05);if(!has(x,y+1)&&!has(x+1,y)){g.beginPath();g.moveTo(C[0]-4,C[1]);g.lineTo(C[0]+4,C[1]);g.lineTo(C[0],C[1]-11);g.fill();}if(!has(x,y+1)&&!has(x-1,y)){g.beginPath();g.moveTo(Dp[0]-4,Dp[1]);g.lineTo(Dp[0]+4,Dp[1]);g.lineTo(Dp[0],Dp[1]-11);g.fill();}if(!has(x+1,y)&&!has(x,y-1)){g.beginPath();g.moveTo(Bp[0]-4,Bp[1]);g.lineTo(Bp[0]+4,Bp[1]);g.lineTo(Bp[0],Bp[1]-11);g.fill();}}}
    const z=zA+zB+zC+zD,dm=Math.abs(x-(h.bx0+h.bx1)/2)+Math.abs(y-(h.by0+h.by1)/2);if(!hoch||z>hoch.z||(z===hoch.z&&dm<hoch.d))hoch={z,x,y,d:dm};
-   if(st===2&&z>=4*(WAND+STEIG)&&(x+y)%2===0){const p=pt(x+.5,y+.5,z/4);g.fillStyle=sh(GOLD,1.1);g.fillRect(p[0]-2,p[1]-3,4,4);g.fillStyle=sh(GOLD,.8);g.fillRect(p[0]-1,p[1]-6,2,3);}}// goldene Firstzier
+   if(st===2&&z>=4*(WAND+STEIG)&&(x+y)%2===0){const p=pt(x+.5,y+.5,z/4);g.fillStyle=sh(GOLD,1.1);g.fillRect(p[0]-2,p[1]-3,4,4);g.fillStyle=sh(GOLD,.8);g.fillRect(p[0]-1,p[1]-6,2,3);}yield;}// goldene Firstzier
  return hoch;}
 
 // ---------- Schmiede ----------
@@ -319,7 +320,7 @@ function station(g,k,r,st,h,offen){const x=k%N,y=(k/N)|0,s=W.h2(x,y,70),ei=EISEN
 function kleinkram(g,x,y,st,s){if(s>.3)return;if(st===0){g.fillStyle='#6e5a48';for(let i=0;i<4;i++){const p=pt(x+.3+W.h2(i,x,76)*.4,y+.3+W.h2(i,y,77)*.4);g.fillRect(p[0],p[1]-1,3,1);}return;}
  if(st===1){kiste(g,x+.42,y+.42,x+.58,y+.58,0,6,[96,84,70]);flach(g,x+.44,y+.44,x+.56,y+.56,6.1,'#3a5468');return;}// Eimer
  kiste(g,x+.46,y+.46,x+.54,y+.54,0,2,BRONZE);oval(g,x+.5,y+.5,6,3.4,6,sh([178,104,62],1));oval(g,x+.5,y+.5,12,1.6,1,sh([120,66,38],1));}// Amphore
-function maleSchmiede(h,offen){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-(WAND+STEIG*KAPPE+40),bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top),st=h.st;
+function* maleSchmiedeSchritte(h,offen){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-(WAND+STEIG*KAPPE+40),bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top),st=h.st;
  const c=document.createElement('canvas');c.width=Math.ceil(p1.x-p0.x+m);c.height=Math.ceil(bot-top);const g=c.getContext('2d');g.translate(-ox,-oy);const has=h.has,hasD=h.hasD,po=new Map(h.poster.map(p=>[p.k+p.side,p]));
  if(offen){h.mist=[];h.gang=[];}const C=h.tiles.filter(k=>h.dach.has(k)),Y=h.tiles.filter(k=>!h.dach.has(k));
  // 1. überdachter Teil: Rückwände mit Werkzeug oder Bild, Einrichtung, nach außen gehende Vorderwände; zum Hof hin offen
@@ -327,18 +328,18 @@ function maleSchmiede(h,offen){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1
   if(!has(x,y-1))wand(g,x,y,x+1,y,WAND,.98,st,po.has(k+'a')?bild(st,.98):werkzeug(st,W.h2(x,y,55)));if(!has(x-1,y))wand(g,x,y+1,x,y,WAND,.8,st,po.has(k+'d')?bild(st,.8):werkzeug(st,W.h2(x,y,56)));
   const r=h.stat.get(k);if(r)station(g,k,r,st,h,offen);else kleinkram(g,x,y,st,W.h2(x,y,51));
   const front=(x0,y0,x1,y1,hell,salt)=>offen?wand(g,x0,y0,x1,y1,STUMPF,hell,st):wand(g,x0,y0,x1,y1,WAND,hell,st,(x+y)%2===0?fenster(st,hell):W.h2(x,y,salt)<.6?bild(st,hell):werkzeug(st,W.h2(x,y,salt+1)));
-  if(!has(x,y+1))front(x,y+1,x+1,y+1,.74,57);if(!has(x+1,y))front(x+1,y+1,x+1,y,.94,58);}
+  if(!has(x,y+1))front(x,y+1,x+1,y+1,.74,57);if(!has(x+1,y))front(x+1,y+1,x+1,y,.94,58);yield;}
  // Pfosten an der offenen Seite zum Hof
  const pf=new Set();for(const k of C){const x=k%N,y=(k/N)|0;if(has(x,y+1)&&!hasD(x,y+1)){pf.add(x+','+(y+1));pf.add((x+1)+','+(y+1));}if(has(x+1,y)&&!hasD(x+1,y)){pf.add((x+1)+','+y);pf.add((x+1)+','+(y+1));}}
  const pc=st===0?[104,74,46]:st===1?[150,144,132]:MARMOR;for(const q of [...pf].map(v=>v.split(',').map(Number)).sort((a,b)=>a[0]+a[1]-b[0]-b[1])){const [px,py]=q;kiste(g,px-.06,py-.06,px+.06,py+.06,0,offen?STUMPF+3:WAND,pc);if(st===2&&!offen)kiste(g,px-.08,py-.08,px+.08,py+.08,WAND-3,WAND,GOLD);}
  // 2. Dach über der überdachten Hälfte, Schornsteine der Essen
  h.essenZu=[];h.essenAuf=[];for(const [k,r] of h.stat)if(r==='esse'){const x=k%N,y=(k/N)|0,p=pt(x+.47,y+.32,offen?WAND-6:WAND+h.eck(x+1,y+1)/2+12);(offen?h.essenAuf:h.essenZu).push({x:p[0],y:p[1]});}
- if(!offen){dachMalen(g,h,C,hasD);for(const [k,r] of h.stat)if(r==='esse'){const x=k%N,y=(k/N)|0,z=WAND+h.eck(x+1,y+1)/2;kiste(g,x+.3,y+.18,x+.64,y+.46,z-6,z+12,st===0?[130,96,68]:st===1?[140,74,54]:MARMOR);kiste(g,x+.28,y+.16,x+.66,y+.48,z+12,z+14,st===2?GOLD:[90,84,78]);}}
+ if(!offen){yield* dachMalenSchritte(g,h,C,hasD);for(const [k,r] of h.stat)if(r==='esse'){const x=k%N,y=(k/N)|0,z=WAND+h.eck(x+1,y+1)/2;kiste(g,x+.3,y+.18,x+.64,y+.46,z-6,z+12,st===0?[130,96,68]:st===1?[140,74,54]:MARMOR);kiste(g,x+.28,y+.16,x+.66,y+.48,z+12,z+14,st===2?GOLD:[90,84,78]);}}
  // 3. Hof: Zaun mit Tor, Einrichtung, freie Felder
  for(const k of Y){const x=k%N,y=(k/N)|0,dr=h.door.k===k;
   if(!has(x,y-1))zaun(g,x,y,x+1,y,.98,st,false);if(!has(x-1,y))zaun(g,x,y+1,x,y,.82,st,false);
   const r=h.stat.get(k);if(r)station(g,k,r,st,h,offen);else{kleinkram(g,x,y,st,W.h2(x,y,51));if(offen&&!dr)h.gang.push(k);}
-  if(!has(x,y+1))zaun(g,x,y+1,x+1,y+1,.74,st,dr&&h.door.side==='y');if(!has(x+1,y))zaun(g,x+1,y+1,x+1,y,.94,st,dr&&h.door.side==='x');}
+  if(!has(x,y+1))zaun(g,x,y+1,x+1,y+1,.74,st,dr&&h.door.side==='y');if(!has(x+1,y))zaun(g,x+1,y+1,x+1,y,.94,st,dr&&h.door.side==='x');yield;}
  return {c,ox,oy};}
 
 // ---------- Beastrium ----------
@@ -539,18 +540,18 @@ const tuerMed=hell=>(R,h)=>{tuer(1,hell)(R,h);if(h<20)return;const v=WAND*.74+3;
 // ---------- Sklavenmarkt (fest, offener Stand wie im Spiel, ludus.js) ----------
 // Hintere Reihe: Tische mit Kisten, Amphoren und Körben unter gestreiften Markisen auf Pfosten. Vordere Reihe: Theke mit dem Schild
 // „KEIN UMTAUSCH“, zwei Kettenpfähle, Wassertrog. Die Ware (Kandidaten des Händlers) und der Händler stehen davor (welt-npc.js).
-function maleMarkt(h){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-60,bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top);
+function* maleMarktSchritte(h){const m=64,p0=W.iso(h.bx0,h.by1+1),p1=W.iso(h.bx1+1,h.by0),top=W.iso(h.bx0,h.by0).y-60,bot=W.iso(h.bx1+1,h.by1+1).y+6,ox=Math.floor(p0.x-m/2),oy=Math.floor(top);
  const c=document.createElement('canvas');c.width=Math.ceil(p1.x-p0.x+m);c.height=Math.ceil(bot-top);const g=c.getContext('2d');g.translate(-ox,-oy);
  const X0=h.bx0,X1=h.bx1+1,Y0=h.by0,YM=h.by0+1,Y1=h.by1+1,HO='#635034',A=[[138,90,67],[195,177,127]];
  // Waren auf Tischen in der hinteren Reihe
  for(let x=X0;x<X1;x++){kiste(g,x+.1,Y0+.2,x+.9,Y0+.7,6,8,[160,128,86]);for(const [dx,dy] of [[.15,.25],[.8,.25],[.15,.62],[.8,.62]])kiste(g,x+dx,Y0+dy,x+dx+.05,Y0+dy+.05,0,6,[94,74,50]);
   const s=W.h2(x,Y0,120);if(s<.35){kiste(g,x+.2,Y0+.28,x+.45,Y0+.55,8,15,[120,92,58]);kiste(g,x+.5,Y0+.3,x+.72,Y0+.52,8,13,[134,102,64]);}
   else if(s<.7){for(const [dx,cc] of [[.3,[178,104,62]],[.5,[150,92,58]],[.68,[178,104,62]]]){const p=pt(x+dx,Y0+.45,8);g.fillStyle=sh(cc,1);g.beginPath();g.ellipse(p[0],p[1]-5,3,5,0,0,TAU);g.fill();g.fillStyle=sh(cc,.7);g.fillRect(Math.round(p[0])-1,Math.round(p[1])-11,2,2);}}
-  else{oval(g,x+.4,Y0+.45,8,6,3,'#8a6a3a');oval(g,x+.4,Y0+.45,10,4.6,2,'#c9a85a');oval(g,x+.66,Y0+.42,8,4,2,'#7a5a32');}}
+  else{oval(g,x+.4,Y0+.45,8,6,3,'#8a6a3a');oval(g,x+.4,Y0+.45,10,4.6,2,'#c9a85a');oval(g,x+.66,Y0+.42,8,4,2,'#7a5a32');}yield;}
  // Pfosten und gestreifte Markisen mit Zackenrand
  for(const x of [X0,X0+Math.floor((X1-X0)/2),X1])kiste(g,x-.04,YM-.04,x+.04,YM+.04,0,22,[99,80,52]);for(const x of [X0,X1])kiste(g,x-.04,Y0-.04,x+.04,Y0+.04,0,27,[99,80,52]);
  for(let x=X0;x<X1;x++){const a=A[(x-X0)%2];for(let i=0;i<4;i++){const u0=x+i*.25,u1=u0+.25,k=i%2?.86:1;quad(g,[pt(u0,Y0,27),pt(u1,Y0,27),pt(u1,YM+.15,20),pt(u0,YM+.15,20)],sh(a,k*1.05));}
-  quad(g,[pt(x,YM+.15,20),pt(x+1,YM+.15,20),pt(x+1,YM+.15,15),pt(x,YM+.15,15)],sh(a,.72));for(let i=0;i<6;i++){const u=x+i/6+.02;quad(g,[pt(u,YM+.15,15),pt(u+.14,YM+.15,15),pt(u+.07,YM+.15,12)],sh(a,.72));}}
+  quad(g,[pt(x,YM+.15,20),pt(x+1,YM+.15,20),pt(x+1,YM+.15,15),pt(x,YM+.15,15)],sh(a,.72));for(let i=0;i<6;i++){const u=x+i/6+.02;quad(g,[pt(u,YM+.15,15),pt(u+.14,YM+.15,15),pt(u+.07,YM+.15,12)],sh(a,.72));}yield;}
  // Theke in der vorderen Reihe mit Schild
  kiste(g,X0+.6,YM+.25,X1-.6,YM+.5,0,10,[122,97,65]);flach(g,X0+.6,YM+.25,X1-.6,YM+.5,10.1,sh([160,132,89],1));
  const sm=pt((X0+X1)/2,YM+.5,6);g.fillStyle='#5a4532';g.fillRect(Math.round(sm[0])-24,Math.round(sm[1])-6,48,11);g.fillStyle='#9d7f52';g.fillRect(Math.round(sm[0])-23,Math.round(sm[1])-5,46,9);
@@ -628,19 +629,39 @@ let haeuser=[];const alt=new Map(),fest=new Set();
 function neu(){const seen=new Set(),out=[];let erstes=true;for(let k=0;k<N*N;k++){if(!STUFE.has(W.feld[k])||seen.has(k))continue;const t=gebiet(k);for(const q of t)seen.add(q);const h=plan(t),o=alt.get(h.id);h.sig=h.art+h.st+':'+h.tiles.join(',');h.offen=o?o.offen:0;h.mist=[];h.gang=[];if(o&&o.sig===h.sig){h.zu=o.zu;h.auf=o.auf;h.rauch=o.rauch;h.mist=o.mist;h.gang=o.gang;h.essenZu=o.essenZu;h.essenAuf=o.essenAuf;if(o.slots?.length){h.slots.forEach((sl,i)=>{const q=o.slots[i];if(q){sl.voll=q.voll;sl.ziel=q.ziel;}});h.trager=o.trager.map(tr=>({...tr,slot:tr.slot?h.slots[o.slots.indexOf(tr.slot)]:null}));h.zahl=o.zahl;}h.poster.forEach((p,i)=>p.text=o.poster[i]?.text||'');}if(h.poster.some(p=>!p.text))wuerfeln(h);out.push(h);}
  alt.clear();for(const h of out)alt.set(h.id,h);for(const id of fest)if(!alt.has(id))fest.delete(id);haeuser=out;belegen();}
 const hausAt=(tx,ty)=>haeuser.find(h=>tx>=h.bx0&&tx<=h.bx1&&ty>=h.by0&&ty<=h.by1&&h.has(tx,ty));
+// 2.0: Ansichten vor der Ausgabe feldweise vorbereiten (weiches Budget 1,5 ms).
+// Ein einzelnes Feld/Canvas-Anlegen ist nicht unterbrechbar; keine ganzen Häuser im draw-Aufruf.
+function fertigMalen(it){let r;do{r=it.next();}while(!r.done);return r.value;}
+function male(h,offen){return fertigMalen(maleSchritte(h,offen));}
+function maleSchmiede(h,offen){return fertigMalen(maleSchmiedeSchritte(h,offen));}
+function maleMarkt(h){return fertigMalen(maleMarktSchritte(h));}
+let hausJob=null;
+const bildArbeit={ms:0,schritte:0,fertig:0};
+const prepare0=H.prepare;H.prepare=(view,ende)=>{prepare0?.(view,ende);if(!window.AT2)return;
+ const start=performance.now();bildArbeit.schritte=0;bildArbeit.fertig=0;
+ const nahe=haeuser.filter(h=>W.iso(h.bx1+1,h.by0).x>view.x0-200&&W.iso(h.bx0,h.by1+1).x<view.x1+200&&h.key>view.y0-200&&W.iso(h.bx0,h.by0).y-90<view.y1+200);
+ if(hausJob&&(!nahe.includes(hausJob.h)||hausJob.gen!==(hausJob.h.bildGen||0)))hausJob=null;
+ while(performance.now()<ende){
+  if(!hausJob){const h=nahe.find(h=>!h.zu)||(W.cam.s>=1.2&&nahe.find(h=>h.art!=='markt'&&!h.auf));if(!h)break;
+   const offen=!!h.zu,copy={...h,mist:[],gang:[]},fn=h.art==='schmiede'?maleSchmiedeSchritte:h.art==='markt'?maleMarktSchritte:maleSchritte;
+   hausJob={h,copy,offen,gen:h.bildGen||0,it:fn(copy,offen)};}
+  const j=hausJob,r=j.it.next();bildArbeit.schritte++;
+  if(r.done){j.h[j.offen?'auf':'zu']=r.value;if(j.offen){j.h.mist=j.copy.mist;j.h.gang=j.copy.gang;}hausJob=null;bildArbeit.fertig++;}}
+ bildArbeit.ms=performance.now()-start;
+};
 // Maus über dem Haus öffnet das Dach
 let maus=null;W.canvas.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'){maus=null;return;}const r=W.canvas.getBoundingClientRect();maus={sx:e.clientX-r.left,sy:e.clientY-r.top};});W.canvas.addEventListener('pointerleave',()=>{maus=null;});
 let last=performance.now(),spruch=null;const OFFEN_AB=1.5;
-function zeichne(ctx){const h=this.h;if(h.art==='kaserne'){const n=performance.now(),dt=Math.min(.1,(n-(h.tT||n))/1000)*(W.tempo??1);h.tT=n;tragen(h,dt);}const mal=h.art==='schmiede'?maleSchmiede:h.art==='markt'?maleMarkt:male;if(!h.zu)h.zu=mal(h,false);const a=h.offen,t=performance.now()/1000;
+function zeichne(ctx){const h=this.h;if(h.art==='kaserne'){const n=performance.now(),dt=Math.min(.1,(n-(h.tT||n))/1000)*(W.tempo??1);h.tT=n;tragen(h,dt);}const mal=h.art==='schmiede'?maleSchmiede:h.art==='markt'?maleMarkt:male;if(!h.zu){if(window.AT2)return;h.zu=mal(h,false);}const a=window.AT2&&!h.auf?0:h.offen,t=performance.now()/1000;
  if(a>.01){if(!h.auf)h.auf=mal(h,true);ctx.drawImage(h.auf.c,h.auf.ox,h.auf.oy);if(h.art==='beast'&&a>.3&&!W.mini)tiereMalen(ctx,h,a,t);if(h.art==='kaserne'&&a>.3&&!W.mini)lagerMalen(ctx,h,a);
   if((h.st===0||h.art==='beast')&&a>.5&&!W.mini){// Ratten huschen durch die Gänge, Fliegen kreisen über Haufen, Eimer und Blut
    const G=h.gang;if(h.st===0&&G.length>1)for(let i=0;i<Math.min(6,1+(h.n>>3));i++){const k0=G[(i*7)%G.length],k1=G[(i*13+3)%G.length],u=(Math.sin(t*(.5+i*.13)+i*2)+1)/2,x=k0%N+.5+((k1%N)-(k0%N))*u,y=((k0/N)|0)+.5+(((k1/N)|0)-((k0/N)|0))*u,p=W.iso(x,y),d=Math.cos(t*(.5+i*.13)+i*2)>0?1:-1;
     ctx.fillStyle='#2e2822';ctx.fillRect(Math.round(p.x)-2,Math.round(p.y)-2,5,2);ctx.fillRect(Math.round(p.x)+(d>0?2:-3),Math.round(p.y)-3,2,2);ctx.fillStyle='#8a6a60';ctx.fillRect(Math.round(p.x)+(d>0?-5:3),Math.round(p.y)-1,3,1);}
    ctx.fillStyle='#14100c';for(const [mx,my] of h.mist){const p=W.iso(mx,my);for(let i=0;i<3;i++)ctx.fillRect(Math.round(p.x+Math.cos(t*5+i*2.1)*6),Math.round(p.y-9-i*3+Math.sin(t*7+i)*3),1,1);}}}
  if(a<.99){ctx.globalAlpha=1-a;ctx.drawImage(h.zu.c,h.zu.ox,h.zu.oy);
-  if(h.rauch&&!W.mini){for(let i=0;i<4;i++){const u=((t*.22+i/4+h.id*.13)%1),r=2+u*5;ctx.globalAlpha=(1-a)*(1-u)*.5;ctx.fillStyle='#d8d4cc';ctx.fillRect(Math.round(h.rauch.x+Math.sin(u*5+i)*3+u*6-r/2),Math.round(h.rauch.y-4-u*26-r/2),Math.round(r),Math.round(r));}}
+  if(!window.AT2&&h.rauch&&!W.mini){for(let i=0;i<4;i++){const u=((t*.22+i/4+h.id*.13)%1),r=2+u*5;ctx.globalAlpha=(1-a)*(1-u)*.5;ctx.fillStyle='#d8d4cc';ctx.fillRect(Math.round(h.rauch.x+Math.sin(u*5+i)*3+u*6-r/2),Math.round(h.rauch.y-4-u*26-r/2),Math.round(r),Math.round(r));}}
   ctx.globalAlpha=1;}
- if(h.art==='schmiede'&&!W.mini)funken(ctx,h,a,t);}
+ if(!window.AT2&&h.art==='schmiede'&&!W.mini)funken(ctx,h,a,t);}
 // Leben in der Schmiede: Glut in den Essen, Funken an Amboss und Schleifstein, Rauch aus den Schornsteinen
 function funken(ctx,h,a,t){ctx.globalCompositeOperation='lighter';
  for(const [k,r] of h.stat){const inC=h.dach.has(k),vis=inC?a:1;if(vis<.3)continue;const x=k%N,y=(k/N)|0;
@@ -657,13 +678,21 @@ const items0=H.items;H.items=(items,view)=>{items0?.(items,view);const now=perfo
  // Dach offen nur nah herangezoomt (ab OFFEN_AB): Haus in der Bildmitte, unter der Maus oder angetippt. Weiter weg sind alle Dächer zu.
  const nah=W.cam.s>=OFFEN_AB;if(!nah&&fest.size)fest.clear();
  for(const h of haeuser){const ziel=h.art!=='markt'&&nah&&(fest.has(h.id)||h===hm||h===hc)?1:0;// der Markt ist offen, kein Dachif(ziel&&h.offen===0)wuerfeln(h);// bei jedem Öffnen hängen andere Sprüche
-  h.offen+=clamp(ziel-h.offen,-dt*4,dt*4);
+  h.offen+=clamp((window.AT2&&!h.auf?0:ziel)-h.offen,-dt*4,dt*4);
   const p0=W.iso(h.bx0,h.by1+1).x,p1=W.iso(h.bx1+1,h.by0).x;if(p1<view.x0-40||p0>view.x1+40||h.key<view.y0-10||W.iso(h.bx0,h.by0).y-90>view.y1)continue;
   if(!h.item)h.item={y:h.key,h,draw:zeichne,oz:W.hz?W.hz(h.bx0+.5,h.by0+.5):0};items.push(h.item);}};
 // Figuren vor oder hinter dem Haus: Wer südöstlich eines Hausfeldes steht, wird nach dem Haus gezeichnet
 H.vorne=(tx,ty,y)=>{for(const h of haeuser){if(y>h.key||tx<h.bx0-2||ty<h.by0-2||tx>h.bx1+3||ty>h.by1+3)continue;const fx=Math.floor(tx),fy=Math.floor(ty);if(fx>h.bx1||fy>h.sufY[Math.max(0,fx-h.bx0)])return h.key+.01;}return y;};
 // Schild über dem Haus und Spruch am Bild
-function schild(ctx,s,x,y,z,hell){const w=ctx.measureText(s).width+8*z;ctx.fillStyle=hell?'rgba(244,236,214,.96)':'rgba(18,12,9,.8)';ctx.fillRect(Math.round(x-w/2),Math.round(y-8*z),Math.round(w),Math.round(16*z));ctx.fillStyle=hell?'#2a1c12':'#f4d37a';ctx.fillText(s,Math.round(x),Math.round(y)+1);}
+const schildBilder=new Map();
+function schild(ctx,s,x,y,z,hell){const font=window.AT2_STIL?AT2_STIL.font(22):'bold 22px ui-monospace,Menlo,Consolas,monospace',key=font+'|'+!!hell+'|'+s;
+ let b=schildBilder.get(key);if(!b){const c=document.createElement('canvas'),g=c.getContext('2d');g.font=font;const w=Math.ceil(g.measureText(s).width+16);c.width=w+4;c.height=36;
+  g.font=font;g.textAlign='center';g.textBaseline='middle';g.fillStyle=hell?'rgba(244,236,214,.96)':'rgba(18,12,9,.8)';g.fillRect(2,2,w,32);g.fillStyle=hell?'#2a1c12':'#f4d37a';g.fillText(s,c.width/2,20);
+  b={c};schildBilder.set(key,b);if(schildBilder.size>256)schildBilder.delete(schildBilder.keys().next().value);}
+ const k=z/2;ctx.drawImage(b.c,Math.round(x-b.c.width*k/2),Math.round(y-b.c.height*k/2),b.c.width*k,b.c.height*k);}
+document.fonts?.ready.then(()=>schildBilder.clear());
+document.fonts?.addEventListener?.('loadingdone',()=>schildBilder.clear());
+
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(W.mini)return;const z=clamp(1/W.cam.s,.5,3);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=(window.AT2_STIL?AT2_STIL.font(11*z):'bold '+Math.round(11*z)+'px ui-monospace,Menlo,Consolas,monospace');
  for(const h of haeuser){const p=W.iso((h.bx0+h.bx1+1)/2,(h.by0+h.by1+1)/2),y=p.y-(h.item?.oz||0)-(h.offen>.5?WAND+10:WAND+STEIG*2+16+(h.art==='beast'?40:0));if(p.x<view.x0-150||p.x>view.x1+150||y<view.y0-30||y>view.y1+30)continue;schild(ctx,h.titel+' · '+h.zahl+' '+h.wort[h.zahl===1?0:1],p.x,y,z);}
  // Spruch nur am angetippten Bild (Thomas 12.11.: keine Tafeln von selbst, auch nicht beim Darüberfahren)
@@ -684,6 +713,7 @@ const tap0=H.tap;H.tap=(p,w)=>{if(B.mode||w)return tap0?tap0(p,w):false;const t=
  if(fest.has(h.id))fest.delete(h.id);else fest.add(h.id);return true;};
 B.beiAenderung(neu);neu();
 // Gebäude einer Art neu zeichnen lassen (z. B. Halle der Toten, wenn sich die Gräber drinnen ändern)
-function frisch(art){for(const h of haeuser)if(!art||h.art===art){h.zu=null;h.auf=null;if(art==='halle'){h.zahl=M.weltHalle?.liste?.().length??h.zahl;}}}
-M.weltGebaeude={WAND,frisch,einrichtung(art,o){EINR[art]=o;for(const h of haeuser)if(h.art===art)alt.delete(h.id);neu();},dachAuf(h,an){if(an)fest.add(h.id);else fest.delete(h.id);},dachFest:h=>fest.has(h.id),hausAt:(tx,ty)=>hausAt(tx,ty),NAME,NAME_S,NAME_B,SPRUECHE,SPR_S,SPR_B,kaefige:()=>haeuser.reduce((s,h)=>s+h.kaefige,0),plaetze:()=>haeuser.reduce((s,h)=>s+h.plaetze,0),SPR_M,NAME_K,SPR_K,ding,tragen,haeuser:()=>haeuser,betten:()=>haeuser.reduce((s,h)=>s+h.betten,0),ambosse:()=>haeuser.reduce((s,h)=>s+h.ambosse,0),testTiere,tierOeffnen,hundZu,bei(k){if(!STUFE.has(W.feld[k]))return null;const h=plan(gebiet(k));return {n:h.n,art:h.art,ambosse:h.ambosse,betten:h.betten,kaefige:h.kaefige,plaetze:h.plaetze,tuer:h.door,st:h.st,bilder:h.poster.length};},oeffne(id,an=true){if(an)fest.add(id);else fest.delete(id);},get spruch(){return spruch?.p.text||null;},male};
+function frisch(art){for(const h of haeuser)if(!art||h.art===art){h.bildGen=(h.bildGen||0)+1;h.zu=null;h.auf=null;if(art==='halle'){h.zahl=M.weltHalle?.liste?.().length??h.zahl;}}}
+M.weltGebaeude={get bildArbeit(){return {...bildArbeit};},WAND,frisch,einrichtung(art,o){EINR[art]=o;for(const h of haeuser)if(h.art===art)alt.delete(h.id);neu();},dachAuf(h,an){if(an)fest.add(h.id);else fest.delete(h.id);},dachFest:h=>fest.has(h.id),hausAt:(tx,ty)=>hausAt(tx,ty),NAME,NAME_S,NAME_B,SPRUECHE,SPR_S,SPR_B,kaefige:()=>haeuser.reduce((s,h)=>s+h.kaefige,0),plaetze:()=>haeuser.reduce((s,h)=>s+h.plaetze,0),SPR_M,NAME_K,SPR_K,ding,tragen,haeuser:()=>haeuser,betten:()=>haeuser.reduce((s,h)=>s+h.betten,0),ambosse:()=>haeuser.reduce((s,h)=>s+h.ambosse,0),testTiere,tierOeffnen,hundZu,bei(k){if(!STUFE.has(W.feld[k]))return null;const h=plan(gebiet(k));return {n:h.n,art:h.art,ambosse:h.ambosse,betten:h.betten,kaefige:h.kaefige,plaetze:h.plaetze,tuer:h.door,st:h.st,bilder:h.poster.length};},oeffne(id,an=true){if(an)fest.add(id);else fest.delete(id);},get spruch(){return spruch?.p.text||null;},male};
 })();
+
