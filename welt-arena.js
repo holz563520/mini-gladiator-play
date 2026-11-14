@@ -218,8 +218,30 @@ function schlangeRechnen(still){const T=W.T,F=W.feld,alt=ENDE,altOffen=OFFEN;let
  if(!still&&altOffen!==OFFEN){try{M.ui?.notify?.(t(OFFEN?'arena.wieder':'arena.zu.'+GRUND));}catch(e){}}}
 function schilder_(){const m=ZIEL_Q||(X_EIN>=0?mitteF(X_EIN):kachel(R_AUS+1,EIN_A)),e=X_EIN>=0?mitteF(X_EIN):kachel(R_AUS+1,EIN_A),px_=-Math.sin(EIN_A),py_=Math.cos(EIN_A),qa=-Math.sin(AUS_A),qb=Math.cos(AUS_A);
  SCHILDER=[schildItem(m.tx-.9,m.ty-.3,()=>[t(SD.name)+' · '+t('arena.plaetze',{n:SITZE.length+1}),schildText()]),
-  schildItem(e.tx-px_*.8,e.ty-py_*.8,()=>[t('arena.eingang'),t('arena.eingangZeile')]),
-  Object.assign(schildItem(T_AUS.tx+qa*.8,T_AUS.ty+qb*.8,()=>[t('arena.ausgang'),t('arena.ausgangZeile')]),{extra(ctx,x,y){ctx.fillStyle='#4a3826';ctx.fillRect(x+10,y-7,7,7);ctx.fillStyle='#6a5438';ctx.fillRect(x+10,y-8,7,1);ctx.fillStyle='#7a5a20';ctx.fillRect(x+11,y-7,5,2);}})];}// Eimer
+];HUETTEN=[X_EIN>=0?huette(X_EIN,'ein'):null,X_AUS>=0?huette(X_AUS,'aus'):null].filter(Boolean);}
+// Eingangs- und Ausgangshäuschen wie bei RollerCoaster Tycoon (Wunsch Thomas 14.11.2026): je ein Feld direkt am Gebäude, ein vorgezeichnetes Bild.
+// Eingang: Holzhäuschen mit rotem Dach, Goldkante und Totenkopf (später Ticketschalter, C3). Ausgang: verwitterte graue Bretter, Eimer daneben.
+// Die Wartestraße endet am Eingangshäuschen, das Ausgangshäuschen steht auf dem Weg. Wer durchgeht, verschwindet kurz dahinter.
+let HUETTEN=[];const huettenBild=new Map();
+function huette(k,art){const tx=k%W.N,ty=(k/W.N)|0,z=W.hz?W.hz(tx+.5,ty+.5):0,i=.12,P_=(x,y)=>{const q=W.iso(x,y);return {x:q.x,y:q.y-z};};
+ const A=P_(tx+i,ty+i),B=P_(tx+1-i,ty+i),C=P_(tx+1-i,ty+1-i),D=P_(tx+i,ty+1-i),H_=22,R=13,text=t(art==='ein'?'arena.eingang':'arena.ausgang'),key=k+'|'+art+'|'+text;
+ let b=huettenBild.get(key);if(!b){const x0=Math.floor(D.x)-6,y0=Math.floor(A.y)-H_-R-12,w=Math.ceil(B.x)+16-x0,h=Math.ceil(C.y)+4-y0,[c,g]=mk(w,h),Q=p=>({x:p.x-x0,y:p.y-y0}),U=(p,dz)=>({x:p.x-x0,y:p.y-y0-dz});
+  const ein=art==='ein',wand=ein?['#7a5a39','#5e4429']:['#7a766c','#5c5850'],dach=ein?['#a32f2a','#7e1f18']:['#4a3826','#3a2c1e'],fuge=ein?'#3a2a1c':'#3e3a34';
+  const poly=(pts,col)=>{g.beginPath();pts.forEach((p,j)=>j?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.closePath();g.fillStyle=col;g.fill();};
+  // Wände: links (D→C) und rechts (C→B), mit Brettfugen und Durchgang
+  poly([U(D,0),U(C,0),U(C,H_),U(D,H_)],wand[0]);poly([U(C,0),U(B,0),U(B,H_),U(C,H_)],wand[1]);
+  for(const [p,q] of [[D,C],[C,B]])for(let j=1;j<4;j++){const u=j/4,a=U({x:p.x+(q.x-p.x)*u,y:p.y+(q.y-p.y)*u},0),e=U({x:p.x+(q.x-p.x)*u,y:p.y+(q.y-p.y)*u},H_);g.fillStyle=fuge;g.fillRect(Math.round(a.x),Math.round(e.y),1,Math.round(a.y-e.y));}
+  for(const [p,q] of [[D,C],[C,B]]){const m0={x:p.x+(q.x-p.x)*.3,y:p.y+(q.y-p.y)*.3},m1={x:p.x+(q.x-p.x)*.7,y:p.y+(q.y-p.y)*.7};poly([U(m0,0),U(m1,0),U(m1,15),U(m0,15)],'#140e0a');}// Durchgang
+  // Dach: Pyramide, vorne zwei Flächen sichtbar, Goldkante beim Eingang
+  const S=U({x:(A.x+C.x)/2,y:(A.y+C.y)/2},H_+R);poly([U(A,H_),U(B,H_),S],dach[1]);poly([U(A,H_),U(D,H_),S],dach[1]);poly([U(D,H_),U(C,H_),S],dach[0]);poly([U(C,H_),U(B,H_),S],dach[1]);
+  g.strokeStyle=ein?'#c9a040':'#2a2018';g.lineWidth=1;g.beginPath();g.moveTo(U(D,H_).x,U(D,H_).y);g.lineTo(U(C,H_).x,U(C,H_).y);g.lineTo(U(B,H_).x,U(B,H_).y);g.stroke();
+  if(ein){px(g,S.x-2,S.y-4,4,3,'#e8dcc0');px(g,S.x-1,S.y-3,1,1,'#1a0e06');px(g,S.x+1,S.y-3,1,1,'#1a0e06');}// Totenkopf auf der Spitze
+  else{const e=U(B,0);px(g,e.x+2,e.y-7,7,7,'#4a3826');px(g,e.x+2,e.y-8,7,1,'#6a5438');px(g,e.x+3,e.y-7,5,2,'#7a5a20');}// Eimer für Zartbesaitete
+  // Schild über dem linken Durchgang
+  g.font=font(7);const tw=Math.ceil(g.measureText(text).width)+6,m=U({x:(D.x+C.x)/2,y:(D.y+C.y)/2},H_-1);px(g,m.x-tw/2,m.y-5,tw,9,'#3a2617');px(g,m.x-tw/2+1,m.y-4,tw-2,7,'#c9b27a');
+  g.fillStyle=ein?'#7e140a':'#2a1a0e';g.textAlign='center';g.textBaseline='middle';g.fillText(text,Math.round(m.x),Math.round(m.y));
+  hart(c,g);b={c,x0,y0};huettenBild.set(key,b);if(huettenBild.size>12)huettenBild.delete(huettenBild.keys().next().value);}
+ return {art,k,y:C.y+z+.03,x0:b.x0,x1:b.x0+b.c.width,y0:b.y0,y1:b.y0+b.c.height,draw(ctx){ctx.drawImage(b.c,b.x0,b.y0);}};}
 // Anschluss für die Wege-Bilder (welt-raster.js): Wartestraße und Ausgang öffnen sich zur Tür, normale Wege zur Wartestraße nur am Ende der Schlange
 W.anschluss=(k,n)=>{const T=W.T,a=W.feld[k],b=W.feld[n];
  if(b===T.ARENA_BAU)return (k===X_EIN&&a===T.WARTE&&n===arenaNachbar(k))||(k===X_AUS&&a!==T.WARTE&&n===arenaNachbar(k));
@@ -274,7 +296,7 @@ const zeitText=h=>window.WeltZeit?WeltZeit.zeitText(h):String(Math.floor(h));
 function schildText(){const ph=phase();if(ph==='zu')return t('arena.schild.zu');if(ph==='einlass')return t('arena.schild.einlass',{zeit:zeitText(((AR.termin%24)+6)%24)});if(ph==='laeuft')return t('arena.schild.laeuft');return t('arena.schild.aus');}
 function schildItem(tx,ty,fn){const q=W.iso(tx,ty),z=W.hz?W.hz(tx,ty):0,o={y:q.y,x0:q.x-90,x1:q.x+90,y0:q.y-z-60,y1:q.y-z+2,draw(ctx){const [ti,ze]=fn(),s=schild(ti,ze),x=Math.round(q.x),y=Math.round(q.y-z);
  ctx.fillStyle='#5e4229';ctx.fillRect(x-1,y-14,2,14);ctx.drawImage(s.c,Math.round(x-s.w/2),y-14-s.h);o.extra?.(ctx,x,y);}};return o;}
-bauen();sandDeko0();
+bauen();sandDeko0();L?.beiWechsel?.(()=>schilder_());// Häuschen tragen die Aufschrift in der gewählten Sprache
 function tueren2(){schlangeRechnen(false);}
 function sandDeko0(){const D=W.deko;if(!D)return;const r=RS+.9;for(let y=Math.floor(CY-r);y<=Math.ceil(CY+r);y++)for(let x=Math.floor(CX-r);x<=Math.ceil(CX+r);x++)if(Math.hypot(x+.5-CX,y+.5-CY)<r){const k=W.ix(x,y);D[k]=1;DEKO.push(k);}}
 let dekoErst=true;
@@ -361,7 +383,7 @@ const bf0=H.bodenFeld;H.bodenFeld=(g,tx,ty,lod)=>{if(Math.hypot(tx+.5-CX,ty+.5-C
 const items0=H.items;H.items=(items,view)=>{items0?.(items,view);
  if(W.mini){const G=gesamt();if(sicht({x0:G.x,x1:G.x1,y0:G.y,y1:G.y1},view))items.push(G.item);return;}
  for(const k of SEKTOREN)if(sicht(k,view))items.push(k.item);for(const o of OBEN)if(sicht(o,view))items.push(o.item);if(TOR.auf<1&&sicht(TOR_K,view))items.push(TOR_K);if(STATUE&&sicht(STATUE,view))items.push(STATUE);
- for(const s of SCHILDER)if(sicht(s,view))items.push(s);};
+ for(const h of HUETTEN)if(sicht(h,view))items.push(h);for(const s of SCHILDER)if(sicht(s,view))items.push(s);};
 const world0=H.world;H.world=(ctx,view,dt)=>{world0?.(ctx,view,dt);if(!AR.blasen.length||W.mini)return;const z=Math.min(3,Math.max(.4,.8/W.cam.s));ctx.font=font(10*z);ctx.textAlign='center';ctx.textBaseline='middle';
  for(const b of AR.blasen){const v=b.v;if(v.unsichtbar)continue;const x=v.dx,y=v.dy-(v.sitzt?14:W.HOEHE)-8*z-(v.oz||0);if(x<view.x0-200||x>view.x1+200||y<view.y0-30||y>view.y1+30)continue;const w=ctx.measureText(b.text).width+8*z;
   ctx.globalAlpha=Math.min(1,b.t*2);ctx.fillStyle='rgba(18,12,9,.86)';ctx.fillRect(Math.round(x-w/2),Math.round(y-7*z),Math.round(w),Math.round(14*z));ctx.fillStyle='#f0e2c0';ctx.fillText(b.text,Math.round(x),Math.round(y)+1);}ctx.globalAlpha=1;};
@@ -382,7 +404,7 @@ if(bar){const b=document.createElement('button');b.id='wAusbau';b.className='w-b
  b.onclick=()=>{const n=STUFE%STUFEN.length+1;if(!stufe(n)){try{M.ui?.notify?.(t('arena.ausbauNein'));}catch(e){}return;}
   try{M.ui?.notify?.(t(n>1?'arena.ausbauFertig':'arena.ausbauZurueck',{name:t(SD.name),n:SITZE.length+1}));}catch(e){}};bar.appendChild(b);}
 
-M.weltArena={termin,phase,einlass,anstellen,vergiss,tuerMoeglich,setzeTuer,get offen(){return OFFEN;},get grund(){return GRUND;},get eingangFeld(){return X_EIN;},get ausgangFeld(){return X_AUS;},get schlangeLaenge(){return QP.length-1;},
+M.weltArena={termin,phase,einlass,anstellen,vergiss,tuerMoeglich,setzeTuer,huetten:()=>HUETTEN,get offen(){return OFFEN;},get grund(){return GRUND;},get eingangFeld(){return X_EIN;},get ausgangFeld(){return X_AUS;},get schlangeLaenge(){return QP.length-1;},
  tueren:()=>({ein:Math.round(EIN_A/DEG*10)/10,aus:Math.round(AUS_A/DEG*10)/10}),tuerenLaden(o){if(!o)return;EIN_A=o.ein*DEG;AUS_A=o.aus*DEG;neuTuer();tueren();},schild:schildItem,setzeStufe:n=>stufe(n),stufeLaden:n=>stufe(n,true),beiStufe:f=>beiStufe.push(f),stufen:STUFEN.length,
  tor,get torAuf(){return TOR.auf;},get stufe(){return STUFE;},felder:n=>felderVon(n||STUFE),get umbauMs(){return AR.ms;},torPunkt:()=>({...kachel(R_AUS+.6,TOR_A)}),
  get id(){return AR.id;},get quote(){return AR.quote;},get terminStunde(){return AR.termin;},
