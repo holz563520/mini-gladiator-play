@@ -2,8 +2,35 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1,
+ "typMax": 31,
  "objekte": [
+  {
+   "id": "baum-apfel",
+   "version": 1,
+   "typ": 11,
+   "kat": "baum",
+   "name": "Apple Tree",
+   "status": "skizze",
+   "datei": "obj/baum-apfel.json"
+  },
+  {
+   "id": "baum-birke",
+   "version": 1,
+   "typ": 9,
+   "kat": "baum",
+   "name": "Birch",
+   "status": "skizze",
+   "datei": "obj/baum-birke.json"
+  },
+  {
+   "id": "baum-buche",
+   "version": 1,
+   "typ": 10,
+   "kat": "baum",
+   "name": "Beech",
+   "status": "skizze",
+   "datei": "obj/baum-buche.json"
+  },
   {
    "id": "baum-eiche-skizze",
    "version": 3,
@@ -12,6 +39,249 @@
    "name": "Old Oak",
    "status": "skizze",
    "datei": "obj/baum-eiche-skizze.json"
+  },
+  {
+   "id": "baum-pappel",
+   "version": 1,
+   "typ": 12,
+   "kat": "baum",
+   "name": "Poplar",
+   "status": "skizze",
+   "datei": "obj/baum-pappel.json"
+  },
+  {
+   "id": "baum-tanne",
+   "version": 1,
+   "typ": 8,
+   "kat": "baum",
+   "name": "Fir",
+   "status": "skizze",
+   "datei": "obj/baum-tanne.json"
+  },
+  {
+   "id": "bett-stroh",
+   "version": 1,
+   "typ": 26,
+   "kat": "einrichtung",
+   "name": "Straw Bed",
+   "status": "skizze",
+   "datei": "obj/bett-stroh.json"
+  },
+  {
+   "id": "blume-distel",
+   "version": 1,
+   "typ": 18,
+   "kat": "blume",
+   "name": "Thistle",
+   "status": "skizze",
+   "datei": "obj/blume-distel.json"
+  },
+  {
+   "id": "blume-schilf",
+   "version": 1,
+   "typ": 19,
+   "kat": "blume",
+   "name": "Reeds",
+   "status": "skizze",
+   "datei": "obj/blume-schilf.json"
+  },
+  {
+   "id": "blume-wiese",
+   "version": 1,
+   "typ": 14,
+   "kat": "blume",
+   "name": "Wildflowers",
+   "status": "skizze",
+   "datei": "obj/blume-wiese.json"
+  },
+  {
+   "id": "boden-erde",
+   "version": 1,
+   "typ": 3,
+   "kat": "boden",
+   "name": "Bare Earth",
+   "status": "skizze",
+   "datei": "obj/boden-erde.json"
+  },
+  {
+   "id": "boden-fels",
+   "version": 1,
+   "typ": 5,
+   "kat": "boden",
+   "name": "Bedrock",
+   "status": "skizze",
+   "datei": "obj/boden-fels.json"
+  },
+  {
+   "id": "boden-gras",
+   "version": 1,
+   "typ": 2,
+   "kat": "boden",
+   "name": "Grass",
+   "status": "skizze",
+   "datei": "obj/boden-gras.json"
+  },
+  {
+   "id": "boden-sand",
+   "version": 1,
+   "typ": 4,
+   "kat": "boden",
+   "name": "Sand",
+   "status": "skizze",
+   "datei": "obj/boden-sand.json"
+  },
+  {
+   "id": "boden-wasser",
+   "version": 1,
+   "typ": 7,
+   "kat": "boden",
+   "name": "Waterhole",
+   "status": "skizze",
+   "datei": "obj/boden-wasser.json"
+  },
+  {
+   "id": "boden-weg",
+   "version": 1,
+   "typ": 6,
+   "kat": "boden",
+   "name": "Dirt Road",
+   "status": "skizze",
+   "datei": "obj/boden-weg.json"
+  },
+  {
+   "id": "busch-bluete",
+   "version": 1,
+   "typ": 16,
+   "kat": "blume",
+   "name": "Flowering Bush",
+   "status": "skizze",
+   "datei": "obj/busch-bluete.json"
+  },
+  {
+   "id": "busch-gruen",
+   "version": 1,
+   "typ": 15,
+   "kat": "blume",
+   "name": "Bush",
+   "status": "skizze",
+   "datei": "obj/busch-gruen.json"
+  },
+  {
+   "id": "busch-hasel",
+   "version": 1,
+   "typ": 17,
+   "kat": "blume",
+   "name": "Hazel",
+   "status": "skizze",
+   "datei": "obj/busch-hasel.json"
+  },
+  {
+   "id": "dach-ziegel",
+   "version": 1,
+   "typ": 23,
+   "kat": "dach",
+   "name": "Tiled Roof",
+   "status": "skizze",
+   "datei": "obj/dach-ziegel.json"
+  },
+  {
+   "id": "fels-block",
+   "version": 1,
+   "typ": 13,
+   "kat": "baum",
+   "name": "Boulder",
+   "status": "skizze",
+   "datei": "obj/fels-block.json"
+  },
+  {
+   "id": "figur-arbeiter",
+   "version": 1,
+   "typ": 30,
+   "kat": "figur",
+   "name": "Worker",
+   "status": "skizze",
+   "datei": "obj/figur-arbeiter.json"
+  },
+  {
+   "id": "karren-ochse",
+   "version": 1,
+   "typ": 31,
+   "kat": "karren",
+   "name": "Ox Cart",
+   "status": "skizze",
+   "datei": "obj/karren-ochse.json"
+  },
+  {
+   "id": "lager-platz",
+   "version": 1,
+   "typ": 24,
+   "kat": "einrichtung",
+   "name": "Storage Spot",
+   "status": "skizze",
+   "datei": "obj/lager-platz.json"
+  },
+  {
+   "id": "wand-stein",
+   "version": 1,
+   "typ": 20,
+   "kat": "wand",
+   "name": "Stone Wall",
+   "status": "uebernommen",
+   "datei": "obj/wand-stein.json"
+  },
+  {
+   "id": "wand-tor",
+   "version": 1,
+   "typ": 22,
+   "kat": "wand",
+   "name": "Gate",
+   "status": "skizze",
+   "datei": "obj/wand-tor.json"
+  },
+  {
+   "id": "wand-tuer",
+   "version": 1,
+   "typ": 21,
+   "kat": "wand",
+   "name": "Door",
+   "status": "skizze",
+   "datei": "obj/wand-tuer.json"
+  },
+  {
+   "id": "ware-bretter",
+   "version": 1,
+   "typ": 28,
+   "kat": "ware",
+   "name": "Planks",
+   "status": "skizze",
+   "datei": "obj/ware-bretter.json"
+  },
+  {
+   "id": "ware-fleisch",
+   "version": 1,
+   "typ": 29,
+   "kat": "ware",
+   "name": "Meat",
+   "status": "skizze",
+   "datei": "obj/ware-fleisch.json"
+  },
+  {
+   "id": "ware-stamm",
+   "version": 1,
+   "typ": 27,
+   "kat": "ware",
+   "name": "Logs",
+   "status": "skizze",
+   "datei": "obj/ware-stamm.json"
+  },
+  {
+   "id": "werk-bank",
+   "version": 1,
+   "typ": 25,
+   "kat": "einrichtung",
+   "name": "Workbench",
+   "status": "skizze",
+   "datei": "obj/werk-bank.json"
   }
  ]
 }

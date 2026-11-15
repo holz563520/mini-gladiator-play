@@ -37,8 +37,9 @@ var GROESSEN={
  baum:  {w:64,h:128,text:'Baum, Fels (1 Feld, bis 4 Geschosse hoch)'},
  wand:  {w:32,h:56, text:'Wandstück an einer Feldkante, 1 Geschoss, mit Oberkante'},
  dach:  {w:64,h:64, text:'Dachstück je Feld'},
+ einrichtung:{w:64,h:64, text:'Einrichtung, Arbeitsplatz, Lagerstelle (1 Feld)'},
  ware:  {w:32,h:32, text:'Ware, Stapel'},
- figur: {w:16,h:32, text:'Figur auf der Karte (Höhe nach Wahl: 16, 24 oder 32), hinter Wänden als Umriss sichtbar'},
+ figur: {w:16,h:32, text:'Figur auf der Karte, so groß wie in 2.0 (rund 22 Bildpunkte hoch, Thomas 15.11.2026), hinter Wänden als Umriss sichtbar'},
  tier:  {w:32,h:32, text:'Tier auf der Karte'},
  karren:{w:48,h:40, text:'Karren, Fahrzeug'}
 };
@@ -95,7 +96,7 @@ function bytes(b){return b&&b.z?b.w*b.h:0}
 // Kartenrichtungen je Art (Thomas 15.11.2026: Natur 4 wie Gebäude). Richtung 1 = o.bild, Richtungen 2… in o.richtungen.
 // Ein Eintrag ist ein eigenes Bild oder ein Verweis {von:0, spiegel:true}: kostet keinen Speicher, wird beim Laden einmal aufgelöst.
 // First Person: o.fp = {nah: Bild oder {von:0} (= Kartenbild Richtung 1), fern: Bild, fernAuto: true (aus nah verkleinert)}.
-var RICHTUNGEN={boden:1,blume:4,baum:4,wand:1,dach:4,ware:1,figur:4,tier:4,karren:4};
+var RICHTUNGEN={boden:1,blume:4,baum:4,wand:1,dach:4,einrichtung:4,ware:1,figur:4,tier:4,karren:4};
 function spiegelBild(b){return{kat:b.kat,w:b.w,h:b.h,ax:Math.max(0,b.w-1-b.ax),ay:b.ay,z:b.z.map(function(r){return r.split('').reverse().join('')})}}
 // Halbe Größe, nur Palettenfarben: je 2 × 2 Bildpunkte die häufigste Farbe; weniger als 2 gefüllte Punkte = durchsichtig. Einmal im Editor, nie im Spiel.
 function halbBild(b){var w=Math.ceil(b.w/2),h=Math.ceil(b.h/2),z=[];

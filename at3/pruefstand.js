@@ -30,6 +30,8 @@ function ampel(o){var s=S(),sig=s.signatur(o);if(!o.messung)return{ampel:'keine'
 function aufbauen(el){
  P.el=el;
  el.innerHTML='<h2>Prüfstand</h2><p class="leise">Erst wiegen, dann einlassen. Was über dem Budget liegt, bleibt draußen, egal wie hübsch es ist.</p>'+
+  '<div class="wZeile"><button class="knopf klein haupt" id="pAlle">Alle messen &amp; übernehmen</button><button class="knopf klein" id="pAlleKop">Alle Messungen für den Chat kopieren</button></div>'+
+  '<p id="pAlleMeld" class="leise"></p><textarea id="pAlleText" hidden readonly rows="4" style="width:100%"></textarea>'+
   '<div id="pListe" class="pListe"></div>'+
   '<div id="pObj" hidden><h3 id="pName"></h3><p id="pInfo" class="leise"></p>'+
   '<div class="wZeile"><button class="knopf klein" id="pPruef">Prüfen</button><button class="knopf klein" id="pMess">Messen (4× gedrosselt)</button>'+
@@ -40,6 +42,7 @@ function aufbauen(el){
   '<div class="wZeile"><button class="knopf klein" id="pExpO">Objekt-Datei</button><button class="knopf klein" id="pExpK">Kartei-Datei</button><button class="knopf klein" id="pKop">Für den Chat kopieren</button></div></div>'+
   '<details class="pBudget"><summary>Budgetliste</summary><div id="pBudget"></div></details>';
  $('#pPruef').onclick=pruefen;$('#pMess').onclick=function(){messen(false)};$('#pGer').onclick=function(){messen(true)};$('#pUeb').onclick=uebernehmen;
+ $('#pAlle').onclick=alle;$('#pAlleKop').onclick=alleKopieren;
  $('#pExpO').onclick=function(){exportiere('objekt')};$('#pExpK').onclick=function(){exportiere('kartei')};$('#pKop').onclick=kopieren;
  var k=AT3ED.kartei()||{objekte:[]};
  return Promise.all([AT3ED.lade('pruefen','kartei/budgets.json'),AT3ED.lade('pruefen','kartei/text-en.json')].concat((k.objekte||[]).map(function(e){
@@ -139,12 +142,30 @@ function messen(geraet){if(P.laeuft)return;var o=P.o,s=S(),g=s.budgetGruppe(P.B,
   var fpS=p[0]==='fp';cv.width=fpS?FW:KW;cv.height=fpS?FH:KH;cv.classList.toggle('fp',fpS);
   return stufe(cv,fpS?malFp:malKarte,fpS?szeneFp(V,p[1],11+p[2]):szeneKarte(V,p[1],7+p[2]),faktor).then(function(r){erg[p[0]].push(r)})})});
  if(geraet)kette=kette.then(function(){meld('Zähle die Kerne und lasse einen Hintergrundkern schwitzen …');return kerne().then(function(k){erg.kerne=k})});
- kette.then(function(){P.laeuft=false;var b=s.bewerte(erg,P.B,o.kat);erg.ampel=b.ampel;
+ return kette.then(function(){P.laeuft=false;var b=s.bewerte(erg,P.B,o.kat);erg.ampel=b.ampel;
   if(geraet)o.geraet=erg;else o.messung=erg;speichern();
   if(geraet&&b.ampel==='rot'&&o.status==='uebernommen'){o.status='geprueft';speichern()}
   zeigen();liste();meld((b.ampel==='rot'?'Über Budget. ':b.ampel==='gelb'?'Knapp im Budget. ':'Im Budget. ')+'Gemessen in '+((performance.now()-t0)/1000).toFixed(1).replace('.',',')+' s.'+
    (b.ampel==='rot'?' '+b.gruende.join('; ')+'.':''),b.ampel==='rot')}).catch(function(e){P.laeuft=false;zeigen();meld('Messung abgebrochen: '+e.message,1)}).then(function(){
   [].forEach.call(P.el.querySelectorAll('#pObj button'),function(b){b.disabled=false});if(P.o)$('#pUeb').disabled=P.o.status==='uebernommen'})}
+
+// ---------- Alle auf einmal (M9, für das Messen am Handy) ----------
+// Geht alle noch nicht übernommenen Objekte der Reihe nach durch, genau wie von Hand: Prüfen → Messen (4× gedrosselt) → Übernehmen, wenn nicht rot.
+// Jede Messung läuft wie bisher Bild für Bild (kein Dauerblock). Noch einmal antippen bricht nach dem laufenden Objekt ab.
+function alle(){if(P.alle){P.alle=2;return}if(P.laeuft)return;var L=ids().filter(function(id){return objekt(id).status!=='uebernommen'}),n=0,ok=0,rot=0,m=$('#pAlleMeld');
+ if(!L.length){m.textContent='Alles schon übernommen. Nichts zu tun, ein seltener Zustand.';return}
+ P.alle=1;$('#pAlle').textContent='Abbrechen';
+ function ende(t){P.alle=0;$('#pAlle').textContent='Alle messen & übernehmen';liste();m.textContent=t+' Übernommen: '+ok+', über Budget: '+rot+', von '+L.length+'. Jetzt „Alle Messungen für den Chat kopieren“.'}
+ function naechstes(){if(P.alle===2)return ende('Abgebrochen.');if(n>=L.length)return ende('Fertig.');var id=L[n++];m.textContent='Objekt '+n+' von '+L.length+': '+id+' …';
+  waehlen(id);pruefen();if(P.o.status==='skizze')return naechstes();
+  var w=messen(false);if(!w||!w.then)return naechstes();
+  w.then(function(){if(ampel(P.o).ampel==='rot')rot++;else{uebernehmen();if(P.o.status==='uebernommen')ok++}setTimeout(naechstes,30)})}
+ naechstes()}
+// Status und Messungen aller Objekte (ohne Bilder) als kurzer Text für den Chat. Die Bildsignatur stellt sicher, dass die Messung zum Bild im Repository gehört.
+function alleKopieren(){var s=S(),aus={format:'at3-messungen',objekte:ids().map(function(id){var o=objekt(id),e={id:id,sig:s.signatur(o),status:o.status};if(o.messung)e.messung=o.messung;if(o.geraet)e.geraet=o.geraet;return e})},
+  t=JSON.stringify(aus),m=$('#pAlleMeld'),ta=$('#pAlleText');
+ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ta.hidden=true;m.textContent='Messungen von '+aus.objekte.length+' Objekten kopiert. In den Chat einfügen, Claude trägt sie ins Repository ein.'},
+  function(){ta.hidden=false;ta.value=t;ta.focus();ta.select();m.textContent='Kopieren nicht erlaubt. Den Text im Feld von Hand kopieren und in den Chat einfügen.'})}
 
 // ---------- Speichern, Export ----------
 function speichern(){var d=lies(OBJ);d.objekte=d.objekte||{};P.o=S().ordne(P.o);d.objekte[P.o.id]=P.o;if(!schreib(OBJ,d)){meld('Browser lässt nicht speichern (privates Fenster?). Gleich exportieren.',1);return false}return true}
@@ -160,5 +181,5 @@ function exportiere(was){if(!speichern())return;
 function kopieren(){if(!speichern())return;var t=JSON.stringify(P.o);
  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){meld('Objekt „'+P.o.id+'“ mit Status und Messung kopiert. In den Chat einfügen, dann legt Claude es ins Repository.')},function(){meld('Kopieren nicht erlaubt. Bitte „Objekt-Datei“ nehmen.',1)})}
 
-return{aufbauen:aufbauen,zustand:function(){return P},waehlen:waehlen,messen:messen,kartei:kartei,ampel:ampel};
+return{aufbauen:aufbauen,zustand:function(){return P},waehlen:waehlen,messen:messen,kartei:kartei,ampel:ampel,alle:alle};
 })();

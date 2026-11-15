@@ -5,7 +5,7 @@
 'use strict';
 // Gruppen der Kartei. Die Art (kat, aus at3-64.js) bestimmt Bildgröße, die Gruppe bestimmt später Verhalten im Spiel.
 var GRUPPEN={natur:'Natur',boden:'Boden',bau:'Bau',einrichtung:'Einrichtung',ware:'Ware',person:'Person',tier:'Tier',fahrzeug:'Fahrzeug',zeichen:'Zeichen'};
-var GRUPPE_VON={boden:'boden',blume:'natur',baum:'natur',wand:'bau',dach:'bau',ware:'ware',figur:'person',tier:'tier',karren:'fahrzeug'};
+var GRUPPE_VON={boden:'boden',blume:'natur',baum:'natur',wand:'bau',dach:'bau',einrichtung:'einrichtung',ware:'ware',figur:'person',tier:'tier',karren:'fahrzeug'};
 // Kollision je Feld. Wird festgelegt, nie aus Bildpunkten geraten.
 var KOLL={f:'frei',p:'nur zu Fuß',x:'gesperrt'};
 // Gesperrte Feldkanten (Wände, Zäune) als Bitmaske je Feld, ein Hexzeichen. Draufsicht: i nach rechts, j nach unten.

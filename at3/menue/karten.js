@@ -25,8 +25,8 @@ function aufbauen(el){
   '<p><button class="knopf klein" id="kRiese">Riesenwelt-Probe<small>1.000.000 Stück, Antippen messen</small></button></p><p class="leise" id="kRieseErg"></p>';
  var k=AT3ED.kartei()||{objekte:[]};
  return AT3ED.lade('grafik','kartei/text-en.json').then(function(t){Z.texte=(t&&t.texte)||{}},function(){Z.texte={}}).then(function(){
-  // Für die Szene höchstens 12 Objekte aus dem Repository laden; mehr braucht die Probe nicht.
-  return Promise.all((k.objekte||[]).slice(0,12).map(function(r){return AT3ED.lade('grafik','kartei/'+r.datei).then(function(o){Z.repo[o.id]=o},function(){})}));
+  // Für die Szene höchstens 36 Objekte aus dem Repository laden (so viele Felder hat sie; seit M9 hat die Kartei 31).
+  return Promise.all((k.objekte||[]).slice(0,36).map(function(r){return AT3ED.lade('grafik','kartei/'+r.datei).then(function(o){Z.repo[o.id]=o},function(){})}));
  }).then(function(){
   $('#kListe').onchange=function(){var v=this.value;this.value='';if(v)oeffne(v)};
   $('#kNeuSzene').onclick=function(){Z.saat=(Z.saat||1)+1;szene()};
