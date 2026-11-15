@@ -2,7 +2,7 @@
 // eigene Startlast messen und anzeigen (Dateien, Bytes, Zeit, Fremddateien aus 1.0/2.0). Bedienung deutsch. Lädt nichts außerhalb von at3/.
 (function(){
 'use strict';
-var V='c14a143b', T0=performance.now();
+var V='f7e34468', T0=performance.now();
 // Reihenfolge und Inhalt nach AT3_PLAN 9.2. „kommt“ = Schritt, mit dem der Inhalt kommt.
 var MENUES=[
  {id:'grafik',  name:'Grafik',          kurz:'Boden, Natur, Gebäude, Figuren …', kommt:'M2, M3, M9'},
@@ -13,7 +13,7 @@ var MENUES=[
  {id:'ton',     name:'Ton & Sprache',   kurz:'Voice Lab English, Geräusche',      kommt:'M8, V1'},
  {id:'alt',     name:'Altbestand',      kurz:'Figurenlabore, Galerien, Tests',    kommt:'M8'}
 ];
-var geladen={}, laedt={}, offen=null, menueLast={};
+var geladen={}, laedt={}, offen=null, menueLast={}, dateien={};
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');           // …/at3/
 
@@ -29,6 +29,7 @@ function summe(L){var s={n:L.length,b:0,d:0,fremd:[]};L.forEach(function(e){s.b+
 
 var start=null;
 function lastZeigen(){
+ if(!start)return;
  var s=start, h='<b>Startlast:</b> '+s.n+' Dateien · '+bytes(s.b)+' übertragen ('+bytes(s.d)+' entpackt) · bereit nach '+Math.round(s.ms)+' ms · '+
   '<span class="'+(s.fremd.length?'schlecht':'gut')+'">Fremddateien: '+s.fremd.length+'</span>';
  var m=Object.keys(menueLast);
@@ -83,6 +84,18 @@ function karteiLaden(){
 window.AT3ED={
  MENUES:MENUES,
  menue:function(id,fn){geladen[id]=fn},
+ // Weitere Datei für ein Menü nachladen (Skript oder JSON), Last wird dem Menü zugerechnet. Jede Datei nur einmal.
+ lade:function(id,url){
+  if(dateien[url])return dateien[url];
+  var vor=performance.getEntriesByType('resource').length,t=performance.now(),u=url+(url.indexOf('?')<0?'?v='+V:'');
+  var p=/\.json$/.test(url)?fetch(u).then(function(r){if(!r.ok)throw new Error(url+' '+r.status);return r.json()}):new Promise(function(ok,nein){
+   var s=document.createElement('script');s.src=u;s.onload=function(){ok()};s.onerror=function(){nein(new Error(url+' nicht geladen'))};document.head.appendChild(s)});
+  dateien[url]=p.then(function(x){
+   var neu=summe(performance.getEntriesByType('resource').slice(vor).map(function(e){return{url:e.name,b:e.encodedBodySize||0,d:e.decodedBodySize||0}}));
+   var m=menueLast[id]||(menueLast[id]={n:0,b:0,d:0,fremd:[],ms:0});m.n+=neu.n;m.b+=neu.b;m.d+=neu.d;m.ms+=performance.now()-t;m.fremd=m.fremd.concat(neu.fremd);lastZeigen();return x;
+  },function(e){delete dateien[url];throw e});
+  return dateien[url];
+ },
  oeffnen:oeffnen, schliessen:schliessen,
  geladen:function(){return Object.keys(geladen)},
  kartei:function(){return kartei},

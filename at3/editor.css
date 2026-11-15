@@ -12,7 +12,7 @@ h1{font-size:30px}h2{font-size:24px}
 .unter{margin:2px 0 0;color:var(--tinte2)}
 main{flex:1;display:flex;flex-direction:column;gap:8px}
 #menues{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.knopf{font:inherit;font-size:20px;color:var(--tinte);background:var(--knopf);border:0;border-radius:0;padding:12px 10px;min-height:48px;cursor:pointer;touch-action:manipulation;
+.knopf{font:inherit;display:block;font-size:20px;color:var(--tinte);background:var(--knopf);border:0;border-radius:0;padding:12px 10px;min-height:48px;cursor:pointer;touch-action:manipulation;
  box-shadow:inset -3px -3px 0 rgba(58,26,8,.45),inset 3px 3px 0 rgba(255,246,220,.5),0 2px 0 #000;text-align:left}
 .knopf:active,.knopf.an{background:var(--knopf-an)}
 .knopf small{display:block;font-size:15px;color:var(--tinte2)}
@@ -26,3 +26,14 @@ main{flex:1;display:flex;flex-direction:column;gap:8px}
 #last{font-size:16px;color:var(--tinte2)}
 #last b{color:var(--tinte);font-weight:normal}
 #last .gut{color:var(--gut)}#last .schlecht{color:var(--blut)}
+/* M2: Grafikstandard */
+.pixel{image-rendering:pixelated;image-rendering:crisp-edges}
+.palette{border-top:3px solid var(--rand);margin-top:10px;padding-top:6px}
+.farben{display:flex;flex-direction:column;gap:2px;margin:6px 0}
+.reihe{display:flex;align-items:center;gap:2px;font-size:15px}.reihe span{width:64px;color:var(--tinte2)}
+.reihe i{display:inline-block;width:28px;height:18px;border:1px solid var(--rand)}
+.blatt canvas{width:min(100%,512px);height:auto;display:block;background:var(--nacht);border:3px solid var(--rand)}
+.figuren{display:flex;gap:16px;align-items:flex-end;margin:6px 0}.figuren div{display:flex;flex-direction:column;align-items:center}
+.tabelle{border-collapse:collapse;font-size:16px;width:100%}.tabelle td,.tabelle th{border-bottom:1px solid var(--papier2);padding:2px 4px;text-align:left;font-weight:normal;vertical-align:top}
+.tabelle th{color:var(--blut)}
+#gStd{width:100%}
