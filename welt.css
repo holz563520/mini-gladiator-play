@@ -2,6 +2,8 @@
 body.welt-page{margin:0;overflow:hidden;background:#120c09;overscroll-behavior:none}
 /* Das Spiel läuft unsichtbar darunter weiter (der Ludus zeichnet sich in #ludusCanvas, die Karte übernimmt das Bild) */
 body.welt-page #app{position:fixed;inset:0;opacity:0;pointer-events:none;z-index:0;overflow:auto}
+/* 2.0 (Thomas 15.11.2026): unsichtbare 1.0-Oberfläche ganz ausblenden, sonst malt der alte Ludus hinter der Karte 30-mal je Sekunde weiter */
+body.welt-page.at2-stil:not(.w-admin) #app{display:none}
 body.welt-page.w-admin #app{opacity:1;pointer-events:auto;z-index:40;background:#120c09}
 body.welt-page #modal{z-index:60}body.welt-page #notice{z-index:70}
 #welt{position:fixed;inset:0;z-index:10;font-family:ui-monospace,Menlo,Consolas,monospace;color:#f1dfb4}

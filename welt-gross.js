@@ -45,23 +45,31 @@
    if(pts.every(p=>p.tx<C.MIN)||pts.every(p=>p.ty<C.MIN)||pts.every(p=>p.tx>C.MAX)||pts.every(p=>p.ty>C.MAX))continue;
    list.push({key:`${lod}:${x}:${y}`,x,y,lod,d:(x*s+s/2-W.cam.x)**2+(y*s+s/2-W.cam.y)**2});
   }return list.sort((a,b)=>a.d-b.d);}
- function draw(g,view,frameDeadline=performance.now()+2){
+ // Thomas 15.11.2026: eigener Anteil (frameDeadline, vom Kartenkern), beim Zoomen nichts Neues anfangen (zoomt) und einen
+ // angefangenen Auftrag nicht wegwerfen; fehlende Stücke zeigen Übersicht und vorhandene Stücke der Nachbarstufe.
+ function draw(g,view,frameDeadline=performance.now()+2,zoomt=false){
   // A convex city diamond contains the viewport iff all four corners are inside.
   const cityOnly=[[view.x0,view.y0],[view.x1,view.y0],[view.x0,view.y1],[view.x1,view.y1]].every(([x,y])=>{const p=W.tileAt(x,y);return p.tx>2&&p.ty>2&&p.tx<W.N-2&&p.ty<W.N-2;});
-  if(cityOnly&&!panel.open){if(job){job.it.return();job=null;}queue=[];prepMS=0;return;}
-  const start=performance.now(),deadline=Math.min(start+2,frameDeadline);let lod=W.cam.s<.04?0:Math.min(512,Math.max(1,2**Math.ceil(Math.log2(.65/W.cam.s))));
+  if(cityOnly&&!panel.open){if(job&&!zoomt){job.it.return();job=null;}queue=[];prepMS=0;return;}
+  const start=performance.now(),deadline=frameDeadline;let lod=W.cam.s<.04?0:Math.min(512,Math.max(1,2**Math.ceil(Math.log2(.65/W.cam.s))));
   queue=lod&&!cityOnly?visibleJobs(view,lod):[];
   // Keep the complete visible working set within the fixed memory cap.
   while(queue.length>Math.floor(cache.limit/(CH*CH*4))&&lod<512){lod*=2;queue=visibleJobs(view,lod);}
-  wanted=new Set(queue.map(q=>q.key));if(job&&!wanted.has(job.key)){job.it.return();job=null;}
-  // One resumable job and a fixed 2 ms soft budget, including the world overview.
-  while(performance.now()<deadline){if(!overviewDone){overviewJob.next();continue;}if(!job){const q=queue.find(q=>!cache.map.has(q.key));if(!q)break;job={...q,it:buildChunk(q.x,q.y,q.lod)};jobCount++;}
+  wanted=new Set(queue.map(q=>q.key));if(job&&!zoomt&&!wanted.has(job.key)){job.it.return();job=null;}
+  // One resumable job and a soft budget, including the world overview. While zooming: only finish the job in hand.
+  while(performance.now()<deadline){if(!overviewDone){overviewJob.next();continue;}if(!job){if(zoomt)break;const q=queue.find(q=>!cache.map.has(q.key));if(!q)break;job={...q,it:buildChunk(q.x,q.y,q.lod)};jobCount++;}
    const r=job.it.next();if(r.done){cache.put(job.key,r.value);completed++;job=null;break;}}
   prepMS=performance.now()-start;
   if(!cityOnly){g.save();polygonClip(g,[[C.MIN,C.MIN],[C.MAX,C.MIN],[C.MAX,C.MAX],[C.MIN,C.MAX]]);
-  g.imageSmoothingEnabled=false;const bx=Math.max(left,view.x0),by=Math.max(top,view.y0),bw=Math.min(left+width,view.x1)-bx,bh=Math.min(top+height,view.y1)-by;
-  if(bw>0&&bh>0)g.drawImage(overview,(bx-left)/width*1024,(by-top)/height*512,bw/width*1024,bh/height*512,bx,by,bw,bh);
-  for(const q of queue){const c=cache.get(q.key);if(c)g.drawImage(c,q.x*CH*lod,q.y*CH*lod,CH*lod,CH*lod);}
+  g.imageSmoothingEnabled=false;
+  const ueber=(x,y,w,h)=>{const bx=Math.max(left,x,view.x0),by=Math.max(top,y,view.y0),bw=Math.min(left+width,x+w,view.x1)-bx,bh=Math.min(top+height,y+h,view.y1)-by;
+   if(bw>0&&bh>0)g.drawImage(overview,(bx-left)/width*1024,(by-top)/height*512,bw/width*1024,bh/height*512,bx,by,bw,bh);};
+  if(!lod)ueber(view.x0,view.y0,view.x1-view.x0,view.y1-view.y0);
+  for(const q of queue){const S=CH*lod,c=cache.get(q.key);if(c){g.drawImage(c,q.x*S,q.y*S,S,S);continue;}
+   ueber(q.x*S,q.y*S,S,S);// Ersatz: Übersicht, darüber vorhandene Stücke der Nachbarstufen
+   for(const l of [lod/2,lod*2]){if(l<1||l>512)continue;const L=CH*l;for(let y=Math.floor(q.y*S/L);y*L<(q.y+1)*S;y++)for(let x=Math.floor(q.x*S/L);x*L<(q.x+1)*S;x++){const e=cache.map.get(`${l}:${x}:${y}`);if(!e)continue;
+    const ax=Math.max(q.x*S,x*L,view.x0),ay=Math.max(q.y*S,y*L,view.y0),bx=Math.min((q.x+1)*S,(x+1)*L,view.x1),by=Math.min((q.y+1)*S,(y+1)*L,view.y1);if(bx<=ax||by<=ay)continue;
+    g.drawImage(e.image,(ax-x*L)/l,(ay-y*L)/l,(bx-ax)/l,(by-ay)/l,ax,ay,bx-ax,by-ay);}}}
   g.restore();}
   if(performance.now()-lastHUD>400){lastHUD=performance.now();const p=W.tileAt(W.cam.x,W.cam.y);stats.textContent=`${texts.seed}: ${world.seed} · X ${Math.round(p.tx-C.MIN)} / Y ${Math.round(p.ty-C.MIN)} · ${cache.map.size} Bilder / ${(cache.bytes/1048576).toFixed(1)} MiB · ${prepMS.toFixed(1)} ms · ${overviewDone?(queue.some(q=>!cache.map.has(q.key))?texts.loading:texts.ready):texts.loading+' '+Math.round(overviewRows/320*100)+'%'}`;
    if(panel.open){mg.clearRect(0,0,320,160);mg.drawImage(overview,0,0,320,160);const a=W.iso(0,0),b=W.iso(W.N,0),c=W.iso(W.N,W.N),d=W.iso(0,W.N);mg.strokeStyle='#ffe1a1';mg.beginPath();[a,b,c,d,a].forEach((p,i)=>{const x=(p.x-left)/width*320,y=(p.y-top)/height*160;i?mg.lineTo(x,y):mg.moveTo(x,y)});mg.stroke();mg.strokeStyle='#fff';mg.strokeRect((view.x0-left)/width*320,(view.y0-top)/height*160,Math.max(3,(view.x1-view.x0)/width*320),Math.max(3,(view.y1-view.y0)/height*160));}}

@@ -637,12 +637,18 @@ function maleSchmiede(h,offen){return fertigMalen(maleSchmiedeSchritte(h,offen))
 function maleMarkt(h){return fertigMalen(maleMarktSchritte(h));}
 let hausJob=null;
 const bildArbeit={ms:0,schritte:0,fertig:0};
-const prepare0=H.prepare;H.prepare=(view,ende)=>{prepare0?.(view,ende);if(!window.AT2)return;
+// Thomas 15.11.2026: Gebäude haben ohne fertiges Bild nichts zum Zeigen, deshalb kommen sie zuerst und bekommen mehr Zeit,
+// solange ein Haus im Bild noch fehlt (4 ms statt 1,2 ms). Nächstes zur Bildmitte zuerst. Innenansichten nur in Ruhe (nicht beim Zoomen).
+const HAUS_MS={sichtbar:4};
+const prepare0=H.prepare;H.prepare=(view,ende,zoomt)=>{prepare0?.(view,ende,zoomt);if(!window.AT2)return;
  const start=performance.now();bildArbeit.schritte=0;bildArbeit.fertig=0;
+ const imBild=h=>W.iso(h.bx1+1,h.by0).x>view.x0&&W.iso(h.bx0,h.by1+1).x<view.x1&&h.key>view.y0&&W.iso(h.bx0,h.by0).y-90<view.y1;
  const nahe=haeuser.filter(h=>W.iso(h.bx1+1,h.by0).x>view.x0-200&&W.iso(h.bx0,h.by1+1).x<view.x1+200&&h.key>view.y0-200&&W.iso(h.bx0,h.by0).y-90<view.y1+200);
+ const d=h=>{const p=W.iso((h.bx0+h.bx1+1)/2,(h.by0+h.by1+1)/2);return (p.x-W.cam.x)**2+(p.y-W.cam.y)**2+(imBild(h)?0:1e12);};nahe.sort((a,b)=>d(a)-d(b));
+ const fehlt=nahe.some(h=>!h.zu&&imBild(h));bildArbeit.fehlt=fehlt;if(fehlt)ende=Math.max(ende,start+HAUS_MS.sichtbar);
  if(hausJob&&(!nahe.includes(hausJob.h)||hausJob.gen!==(hausJob.h.bildGen||0)))hausJob=null;
  while(performance.now()<ende){
-  if(!hausJob){const h=nahe.find(h=>!h.zu)||(W.cam.s>=1.2&&nahe.find(h=>h.art!=='markt'&&!h.auf));if(!h)break;
+  if(!hausJob){const h=nahe.find(h=>!h.zu)||(!zoomt&&W.cam.s>=1.2&&nahe.find(h=>h.art!=='markt'&&!h.auf));if(!h)break;
    const offen=!!h.zu,copy={...h,mist:[],gang:[]},fn=h.art==='schmiede'?maleSchmiedeSchritte:h.art==='markt'?maleMarktSchritte:maleSchritte;
    hausJob={h,copy,offen,gen:h.bildGen||0,it:fn(copy,offen)};}
   const j=hausJob,r=j.it.next();bildArbeit.schritte++;

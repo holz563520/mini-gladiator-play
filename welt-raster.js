@@ -492,22 +492,40 @@ function* chunkSchritte(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;le
 function chunk(cx,cy,lod=1){const it=chunkSchritte(cx,cy,lod);let r;do{r=it.next();}while(!r.done);return r.value;}
 let bodenJob=null;
 const bodenArbeit={ms:0,schritte:0,fertig:0};
-function bodenVorbereiten(view,lod,deadline=performance.now()+2){
- const start=performance.now(),ende=Math.min(start+2,deadline);bodenArbeit.schritte=0;bodenArbeit.fertig=0;
- if(!lod){bodenJob=null;bodenArbeit.ms=0;return;}
- const S=CH*lod,anfragen=[],cx0=Math.max(0,Math.floor(view.x0/S)-1),cx1=Math.min(Math.ceil(WW/S)-1,Math.floor(view.x1/S)+1),
-  cy0=Math.max(0,Math.floor(view.y0/S)-1),cy1=Math.min(Math.ceil(WH/S)-1,Math.floor((view.y1+130)/S)+1);
+// Zeichenarbeit (Regel 3, Thomas 15.11.2026): eigener Anteil je Bild statt eines Topfs, den sich Boden, Gebäude und
+// Außenwelt teilen (der Boden fraß ihn auf, Gebäude blieben unsichtbar). Sichtbares zuerst; fehlt Sichtbares, etwas mehr Zeit.
+// Während gezoomt wird, fängt der Boden nichts Neues an (zoomt): erst wenn die Hand ruht. In Ruhe wird die nächste Zoomstufe
+// (nachbar) vorbereitet, damit beim nächsten Rein- oder Rauszoomen schon Bilder da sind.
+const BODEN_MS={zoom:.7,sichtbar:3,rand:1.5},VORRAT=40;
+function bodenAnfragen(view,lod,rand,out,vorrat){const S=CH*lod,cx0=Math.max(0,Math.floor(view.x0/S)-rand),cx1=Math.min(Math.ceil(WW/S)-1,Math.floor(view.x1/S)+rand),
+  cy0=Math.max(0,Math.floor(view.y0/S)-rand),cy1=Math.min(Math.ceil(WH/S)-1,Math.floor((view.y1+130)/S)+rand);
  for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){
   const key=(lod*1000+cy)*1000+cx,nah=cx*S<view.x1&&(cx+1)*S>view.x0&&cy*S<view.y1+130&&(cy+1)*S>view.y0;
   const ch=chunks.get(key);if(ch){ch.used=frameNo;continue;}
-  anfragen.push({cx,cy,key,prio:(nah?0:1e12)+(cx*S+S/2-cam.x)**2+(cy*S+S/2-cam.y)**2});}
- anfragen.sort((a,b)=>a.prio-b.prio);
- if(bodenJob&&!anfragen.some(q=>q.key===bodenJob.key))bodenJob=null;
+  out.push({cx,cy,lod,key,nah:nah&&!vorrat,prio:(vorrat?2e12:nah?0:1e12)+(cx*S+S/2-cam.x)**2+(cy*S+S/2-cam.y)**2});}}
+function bodenVorbereiten(view,lod,opt={}){
+ const start=performance.now();bodenArbeit.schritte=0;bodenArbeit.fertig=0;
+ if(!lod){bodenJob=null;bodenArbeit.ms=0;bodenArbeit.offen=0;return;}
+ const anfragen=[];bodenAnfragen(view,lod,opt.zoomt?0:1,anfragen,false);
+ if(opt.zoomt)for(let i=anfragen.length-1;i>=0;i--)if(!anfragen[i].nah)anfragen.splice(i,1);
+ if(!anfragen.length&&!opt.zoomt&&opt.nachbar&&chunks.size<VORRAT){const w=(view.x1-view.x0)*(opt.nachbar>lod?.15:0),h=(view.y1-view.y0)*(opt.nachbar>lod?.15:0);
+  bodenAnfragen({x0:view.x0-w,x1:view.x1+w,y0:view.y0-h,y1:view.y1+h},opt.nachbar,0,anfragen,true);}
+ anfragen.sort((a,b)=>a.prio-b.prio);bodenArbeit.offen=anfragen.length;
+ const sichtbar=anfragen.some(q=>q.nah),ende=start+(opt.zoomt?BODEN_MS.zoom:sichtbar?BODEN_MS.sichtbar:BODEN_MS.rand);
+ if(bodenJob&&!opt.zoomt&&!anfragen.some(q=>q.key===bodenJob.key))bodenJob=null;
  while(performance.now()<ende&&bodenArbeit.fertig<2){
-  if(!bodenJob){const q=anfragen.find(q=>!chunks.has(q.key));if(!q)break;bodenJob={key:q.key,it:chunkSchritte(q.cx,q.cy,lod)};}
-  const r=bodenJob.it.next();bodenArbeit.schritte++;if(r.done){bodenJob=null;bodenArbeit.fertig++;}}
+  if(!bodenJob){if(opt.zoomt&&!sichtbar)break;const q=anfragen.find(q=>!chunks.has(q.key));if(!q)break;bodenJob={key:q.key,it:chunkSchritte(q.cx,q.cy,q.lod)};}
+  const r=bodenJob.it.next();bodenArbeit.schritte++;if(r.done){r.value.used=frameNo;bodenJob=null;bodenArbeit.fertig++;}}
  bodenArbeit.ms=performance.now()-start;
 }
+// Fehlendes Bodenstück: kurz die Übersicht, darüber vorhandene Stücke der Nachbarstufe (schärfer als die Übersicht).
+// So bleibt beim Wechsel der Zoomstufe nichts leer und es muss nichts sofort neu gezeichnet werden.
+function ersatzMalen(cx,cy,lod,view){const S=CH*lod,x0=cx*S,y0=cy*S;ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,x0/OV,y0/OV,S/OV,S/OV,x0,y0,S,S);
+ for(const l of [lod/2,lod*2]){if(l!==1&&l!==2&&l!==4)continue;const L=CH*l;
+  for(let y=Math.floor(y0/L);y*L<y0+S;y++)for(let x=Math.floor(x0/L);x*L<x0+S;x++){const ch=chunks.get((l*1000+y)*1000+x);if(!ch)continue;ch.used=frameNo;
+   const ax=Math.max(x0,x*L,view.x0),ay=Math.max(y0,y*L,view.y0-10),bx=Math.min(x0+S,(x+1)*L,view.x1),by=Math.min(y0+S,(y+1)*L,view.y1+130);if(bx<=ax||by<=ay)continue;
+   ctx.drawImage(ch.c,(ax-x*L)/l,(ay-y*L)/l,(bx-ax)/l,(by-ay)/l,ax,ay,bx-ax,by-ay);}}// stehende Objekte der feineren Stufe nicht mitnehmen: Hunderte Einzelbilder, die gröbere Stufe hat sie eingebacken
+ ctx.imageSmoothingEnabled=false;}
 
 // ---------- Gebäude als Skizze ----------
 function shade(hex,k){const n=parseInt(hex.slice(1),16);return 'rgb('+[n>>16,(n>>8)&255,n&255].map(v=>Math.round(clamp(v*k,0,255))).join(',')+')';}
@@ -519,6 +537,11 @@ function drawBau(g,b){const A=iso(b.tx,b.ty),B=iso(b.tx+b.w,b.ty),C=iso(b.tx+b.w
  g.font=window.AT2_STIL?AT2_STIL.font(12):'bold 12px ui-monospace,Menlo,Consolas,monospace';g.textAlign='center';g.textBaseline='middle';const w=g.measureText(b.name).width+10;
  g.fillStyle='rgba(18,12,9,.8)';g.fillRect(Math.round(mid.x-w/2),Math.round(mid.y-9),Math.round(w),18);g.fillStyle='#f4d37a';g.fillText(b.name,Math.round(mid.x),Math.round(mid.y)+1);}
 for(const b of BAU){const C=iso(b.tx+b.w,b.ty+b.h);b.key=b.flach?iso(b.tx,b.ty).y:C.y;}
+// 2.0: Skizze einmal als Bild (Schrift und Name im Schlüssel), danach nur noch kopieren
+const bauBilder=new Map();
+function bauBild(b){const font=window.AT2_STIL?AT2_STIL.font(12):'bold 12px ui-monospace,Menlo,Consolas,monospace',key=b.i+'|'+font+'|'+b.name;let e=bauBilder.get(b);if(e&&e.key===key)return e;
+ const P=[iso(b.tx,b.ty),iso(b.tx+b.w,b.ty),iso(b.tx+b.w,b.ty+b.h),iso(b.tx,b.ty+b.h)],x0=Math.floor(Math.min(...P.map(p=>p.x))-80),x1=Math.ceil(Math.max(...P.map(p=>p.x))+80),y0=Math.floor(Math.min(...P.map(p=>p.y))-(b.hoch||0)-20),y1=Math.ceil(Math.max(...P.map(p=>p.y))+6);
+ const [c,g]=mkCanvas(x1-x0,y1-y0);g.translate(-x0,-y0);drawBau(g,b);e={key,c,x:x0,y:y0};bauBilder.set(b,e);return e;}
 // Reihenfolge der Gebäude untereinander: Wer ganz hinter einem anderen liegt, wird vor ihm gezeichnet
 for(let pass=0;pass<BAU.length;pass++)for(const b of BAU)for(const a of BAU)if(a!==b&&!a.flach&&!b.flach&&(a.tx+a.w<=b.tx||a.ty+a.h<=b.ty)&&!(b.tx+b.w<=a.tx||b.ty+b.h<=a.ty)&&b.key<=a.key)b.key=a.key+.02;
 
@@ -531,23 +554,32 @@ for(let pass=0;pass<BAU.length;pass++)for(const b of BAU)for(const a of BAU)if(a
 // T2-Rückmeldung (Thomas 13.11.2026): in 2.0 Figuren ein Stück kleiner (KW .46 → .40, einfache Figur 16 × 28 → 14 × 24); Schrittlänge
 // im gleichen Maß kürzer (15 → 13 Bildpunkte je Schrittzyklus), damit die Füße nicht rutschen. Tempo unverändert.
 const KW=GROSS?.40:.46,SPEED=15,FW=56,FH=72,FX=28,FY=62,WALK=8,DETAIL=2,HOEHE=GROSS?18:21,SCHRITT=GROSS?13:15,figs=new Map();let spriteBudget=0,workers=[];
-function spriteOf(g){let s=figs.get(g.id);if(s)return s;if(spriteBudget<=0)return null;spriteBudget--;
- const [c,ctx]=mkCanvas(FW*(WALK+1),FH*2);const base={g,team:0,ammo:0,a:0,energy:100,index:0,baseX:0,baseY:0};
- try{ctx.fillStyle='rgba(15,20,10,.3)';for(let dir=0;dir<2;dir++)for(let f=0;f<=WALK;f++)ctx.fillRect(f*FW+FX-9,dir*FH+FY-1,18,3);
-  for(let dir=0;dir<2;dir++){for(let f=0;f<WALK;f++){ctx.save();ctx.translate(f*FW,dir*FH);M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:'move',moveSpeed:40,phase:f/WALK*TAU}]);ctx.restore();}
-   ctx.save();ctx.translate(WALK*FW,dir*FH);M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:'idle',moveSpeed:0,phase:0}]);ctx.restore();}}catch(e){console.warn(e);}
- s={c};figs.set(g.id,s);return s;}
+let figEnde=0;// 2.0 (Thomas 15.11.2026): Figurenbilder Pose für Pose vorbereiten, nur solange im Bild Zeit ist (figEnde).
+// Vorher entstand eine volle Figur (18 Posen) in einem Rutsch: beim Heranzoomen mehrere davon in einem Bild = Ruckler.
+// Bis eine Figur fertig ist, wird die einfache Figur gezeigt. 1.0-Karten (ohne AT2) zeichnen wie bisher sofort.
+function spritePose(ctx,base,i){const dir=i>=WALK+1?1:0,f=i%(WALK+1);ctx.save();ctx.translate(f*FW,dir*FH);
+ M.renderLudusActors(ctx,[{...base,x:FX,y:FY,a:dir?Math.PI:0,state:f<WALK?'move':'idle',moveSpeed:f<WALK?40:0,phase:f<WALK?f/WALK*TAU:0}]);ctx.restore();}
+function spriteOf(g){let s=figs.get(g.id);if(s&&!s.n)return s;
+ if(!window.AT2){if(spriteBudget<=0)return null;spriteBudget--;}else if(!s&&(spriteBudget<=0||performance.now()>figEnde))return null;
+ if(!s){const [c,ctx]=mkCanvas(FW*(WALK+1),FH*2),base={g,team:0,ammo:0,a:0,energy:100,index:0,baseX:0,baseY:0};
+  ctx.fillStyle='rgba(15,20,10,.3)';for(let dir=0;dir<2;dir++)for(let f=0;f<=WALK;f++)ctx.fillRect(f*FW+FX-9,dir*FH+FY-1,18,3);
+  s={c,ctx,base,n:1};figs.set(g.id,s);if(window.AT2)spriteBudget--;}
+ const ende=window.AT2?figEnde:Infinity;
+ try{while(performance.now()<ende){spritePose(s.ctx,s.base,s.n-1);s.n++;if(s.n>2*(WALK+1)){s.n=0;s.ctx=s.base=null;return s;}}}catch(e){console.warn(e);s.n=0;s.ctx=s.base=null;return s;}
+ return null;}
 // Einfache Figuren: groß gemalt (NW × NH), dann auf ein Drittel verkleinert (PW × PH) in gemeinsame Bildseiten gelegt.
 // Je Figur eine Zeile: WALK Gehbilder und ein Standbild nach rechts, dann dasselbe nach links.
 const NW=48,NH=84,NAX=24,NAY=78,PW=GROSS?14:16,PH=GROSS?24:28,PAX=GROSS?7:8,PAY=GROSS?22:26,PROW=240,pages=[],pof=new Map(),[scratch,sg]=mkCanvas(NW,NH),[klein,kg]=mkCanvas(PW,PH);let pBudget=0,pNext=0;
-function simpleOf(g){let r=pof.get(g.id);if(r)return r;if(pBudget<=0||!M.renderSimpleFigure)return null;pBudget--;
- const page=(pNext/PROW)|0,row=pNext%PROW;pNext++;if(!pages[page])pages[page]=mkCanvas(PW*(WALK+1)*2,PH*PROW);const [pc,pg]=pages[page];
- for(let dir=0;dir<2;dir++)for(let f=0;f<=WALK;f++){sg.setTransform(1,0,0,1,0,0);sg.clearRect(0,0,NW,NH);
+function simpleOf(g){let r=pof.get(g.id);if(r&&!r.n)return r;if(!M.renderSimpleFigure)return null;
+ if(!r){if(pBudget<=0)return null;pBudget=window.AT2&&performance.now()>figEnde?0:pBudget-1;const page=(pNext/PROW)|0,row=pNext%PROW;pNext++;if(!pages[page])pages[page]=mkCanvas(PW*(WALK+1)*2,PH*PROW);r={c:pages[page][0],pg:pages[page][1],y:row*PH,row,n:1};pof.set(g.id,r);}
+ const ende=window.AT2?figEnde:Infinity;
+ while(performance.now()<ende){const i=r.n-1,dir=i>=WALK+1?1:0,f=i%(WALK+1);sg.setTransform(1,0,0,1,0,0);sg.clearRect(0,0,NW,NH);
   try{M.renderSimpleFigure(sg,{g,team:0,ownCloth:true,x:NAX,y:NAY,z:0,a:dir?Math.PI:0,state:f<WALK?'move':'idle',moveSpeed:f<WALK?60:0,phase:f<WALK?f/WALK*TAU:0,energy:100,ammo:0,index:0,baseX:0,baseY:0});}catch(e){if(!simpleOf.warned){simpleOf.warned=true;console.warn('einfache Figur',e);}}
-  const x=(dir*(WALK+1)+f)*PW,y=row*PH;// weich verkleinern, dann jeden Bildpunkt ganz deckend oder ganz leer machen: saubere grobe Pixel ohne Ausfälle
+  const x=(dir*(WALK+1)+f)*PW,y=r.row*PH;// weich verkleinern, dann jeden Bildpunkt ganz deckend oder ganz leer machen: saubere grobe Pixel ohne Ausfälle
   kg.clearRect(0,0,PW,PH);kg.imageSmoothingEnabled=true;kg.imageSmoothingQuality='high';kg.drawImage(scratch,0,0,NW,NH,0,0,PW,PH);const im=kg.getImageData(0,0,PW,PH),d=im.data;
-  for(let i=3;i<d.length;i+=4)d[i]=d[i]>96?255:0;for(let px=PAX-4;px<PAX+4;px++){const o=(PAY*PW+px)*4;if(!d[o+3]){d[o]=15;d[o+1]=20;d[o+2]=10;d[o+3]=77;}}pg.putImageData(im,x,y);}
- r={c:pc,y:row*PH};pof.set(g.id,r);return r;}
+  for(let i=3;i<d.length;i+=4)d[i]=d[i]>96?255:0;for(let px=PAX-4;px<PAX+4;px++){const o=(PAY*PW+px)*4;if(!d[o+3]){d[o]=15;d[o+1]=20;d[o+2]=10;d[o+3]=77;}}r.pg.putImageData(im,x,y);
+  r.n++;if(r.n>2*(WALK+1)){r.n=0;r.pg=null;return r;}}
+ return null;}
 // Eine Figur zeichnen. f: 0…WALK−1 gehen, WALK stehen. Wählt selbst zwischen einfacher und voller Figur.
 function drawFig(ctx,g,x,y,f,dir){if(detailV){const sp=spriteOf(g);if(sp){ctx.imageSmoothingEnabled=true;ctx.drawImage(sp.c,f*FW,dir*FH,FW,FH,x-FX*KW,y-FY*KW,FW*KW,FH*KW);ctx.imageSmoothingEnabled=false;return;}}
  const r=simpleOf(g);if(r)ctx.drawImage(r.c,(dir*(WALK+1)+f)*PW,r.y,PW,PH,x-PAX,y-PAY,PW,PH);else drawMini(ctx,g,x,y);}
@@ -636,8 +668,13 @@ setInterval(()=>{const page=M.ui.getPage?.(),modal=$('modal')&&!$('modal').hidde
 
 // ---------- Zeichnen ----------
 // unter NAH: Boden in größeren Stücken (lod 2/4), unter FERN: nur die Übersicht
-const MINI=.6,NAH=.6,FERN=OV>2?.12:.6;let tempo=1,clock=0,last=performance.now(),perfAvg=4,perfWin=[],hudT=0,miniV=false,detailV=false;
+const MINI=.6,NAH=.6,FERN=OV>2?.12:.6,ZOOM_RUHE=180;let lodA=null,zoomS=0,zoomT=-1e9,tempo=1,clock=0,last=performance.now(),perfAvg=4,perfWin=[],hudT=0,miniV=false,detailV=false;
 const bildArbeit={};
+// Zoomstufe des Bodens mit Hysterese: an einer Grenze erst 8 % dahinter umschalten, damit kein Hin und Her beim Zoomen
+function lodWahl(s,alt){const neu=s>=NAH?1:s>=FERN?(s>=.3?2:4):0;if(alt==null||neu===alt)return neu;
+ for(const [g,a,b] of [[NAH,1,2],[.3,2,4],[FERN,4,0]])if(((alt===a&&neu===b)||(alt===b&&neu===a))&&Math.abs(s/g-1)<.08)return alt;return neu;}
+// Nächste Stufe, die beim Weiterzoomen gebraucht wird (nur wenn die Grenze nah ist): wird in Ruhe vorbereitet
+function lodNachbar(s,lod){if(lod===1)return s<NAH*1.6?2:0;if(lod===2)return s>NAH/1.6?1:s<.3*1.6?4:0;if(lod===4)return s>.3/1.6?2:0;return 0;}
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)/1000);last=now;if(document.hidden||document.body.classList.contains('w-admin'))return;
  const t0=performance.now(),sd=dt*tempo;clock+=sd;H.tick?.(sd);for(const w of workers)wander(w,sd);// sd: Bildzeit im Spieltempo (A2), bei 3× größere Schritte, nicht mehr Rechnung
  if(fly){fly.t=Math.min(1,fly.t+dt*2.2);const e=1-Math.pow(1-fly.t,3);cam.x=fly.x0+(fly.x-fly.x0)*e;cam.y=fly.y0+(fly.y-fly.y0)*e;cam.s=fly.s0+(fly.s-fly.s0)*e;clampCam();if(fly.t>=1)fly=null;}
@@ -645,16 +682,18 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  const view={x0:cam.x-VW/2/cam.s,y0:cam.y-VH/2/cam.s,x1:cam.x+VW/2/cam.s,y1:cam.y+VH/2/cam.s};
  ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));
  const items=[];miniV=cam.s<MINI;detailV=cam.s>=DETAIL;
- const lod=cam.s>=NAH?1:cam.s>=FERN?(cam.s>=.3?2:4):0;
- const prepStart=performance.now(),prepDeadline=prepStart+2;
- bildArbeit.simulationMS=prepStart-t0;
- if(window.AT2){bodenVorbereiten(view,lod,prepDeadline);H.prepare?.(view,prepDeadline);}
- if(GROSS){window.WeltGross?.draw(ctx,view,prepDeadline);ctx.save();ctx.beginPath();for(const [i,p] of [iso(0,0),iso(N,0),iso(N,N),iso(0,N)].entries()){if(i)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);}ctx.closePath();ctx.clip();}
+ if(Math.abs(cam.s-zoomS)>cam.s*.001){zoomS=cam.s;zoomT=t0;}const zoomt=t0-zoomT<ZOOM_RUHE;
+ const lod=window.AT2?(lodA=lodWahl(cam.s,lodA)):cam.s>=NAH?1:cam.s>=FERN?(cam.s>=.3?2:4):0;
+ const prepStart=performance.now();
+ bildArbeit.simulationMS=prepStart-t0;bildArbeit.zoomt=zoomt;
+ // Reihenfolge: Gebäude (ohne Bild sind sie unsichtbar), dann Boden (hat die Übersicht als Ersatz), dann Außenwelt; je eigener Anteil
+ if(window.AT2){H.prepare?.(view,performance.now()+1.2,zoomt);bodenVorbereiten(view,lod,{zoomt,nachbar:lodNachbar(cam.s,lod)});}
+ if(GROSS){window.WeltGross?.draw(ctx,view,performance.now()+1.5,zoomt);ctx.save();ctx.beginPath();for(const [i,p] of [iso(0,0),iso(N,0),iso(N,N),iso(0,N)].entries()){if(i)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);}ctx.closePath();ctx.clip();}
  bildArbeit.vorbereitungMS=performance.now()-prepStart;const drawStart=performance.now();
- if(lod!==1){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,0,0,overview.width*OV,overview.height*OV);ctx.imageSmoothingEnabled=false;}
+ if(lod!==1&&(!window.AT2||!lod)){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,0,0,overview.width*OV,overview.height*OV);ctx.imageSmoothingEnabled=false;}// 2.0: Übersicht nur noch ganz weit draußen, sonst nur unter fehlenden Stücken
  if(lod){// 2.0: nur vorbereitete Stücke, fehlende Bereiche zeigen vorübergehend die Übersicht; Editor wie bisher
   const S=CH*lod,cx0=Math.max(0,Math.floor(view.x0/S)),cx1=Math.min(Math.ceil(WW/S)-1,Math.floor(view.x1/S)),cy0=Math.max(0,Math.floor(view.y0/S)),cy1=Math.min(Math.ceil(WH/S)-1,Math.floor((view.y1+130)/S));let neu=lod>1?2:999;
-  for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){let ch=chunks.get((lod*1000+cy)*1000+cx);if(!ch){if(window.AT2){if(lod===1){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,cx*S/OV,cy*S/OV,S/OV,S/OV,cx*S,cy*S,S,S);ctx.imageSmoothingEnabled=false;}continue;}if(neu<=0)continue;neu--;ch=chunk(cx,cy,lod);}ch.used=frameNo;
+  for(let cy=cy0;cy<=cy1;cy++)for(let cx=cx0;cx<=cx1;cx++){let ch=chunks.get((lod*1000+cy)*1000+cx);if(!ch){if(window.AT2){ersatzMalen(cx,cy,lod,view);continue;}if(neu<=0)continue;neu--;ch=chunk(cx,cy,lod);}ch.used=frameNo;
    if(lod===1)ctx.drawImage(ch.c,cx*S,cy*S);else{ctx.imageSmoothingEnabled=true;ctx.drawImage(ch.c,cx*S,cy*S,(CH+2)*lod,(CH+2)*lod);ctx.imageSmoothingEnabled=false;}
    for(const t of ch.stehen)if(t.x>view.x0-50&&t.x<view.x1+50&&t.y>view.y0-10&&t.y<view.y1+130)items.push(t);}
   frameNo++;if(chunks.size>48)for(const [k,ch] of chunks)if(ch.used<frameNo-120){chunks.delete(k);if(chunks.size<=36)break;}}
@@ -662,15 +701,17 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  H.ground?.(ctx,view);
  for(const b of SKIZZE)items.push({y:b.key,bau:b});H.items?.(items,view);
  // Figuren; wer vor einem Gebäude steht, wird nach ihm gezeichnet
- shown=[];spriteBudget=Math.max(2,Math.round(12-perfAvg));pBudget=Math.max(3,Math.round(14-perfAvg));
+ shown=[];spriteBudget=Math.max(2,Math.round(12-perfAvg));pBudget=Math.max(3,Math.round(14-perfAvg));if(window.AT2){figEnde=performance.now()+1.5;spriteBudget=1;}
  for(const w of workers){const ps=pose(w);if(ps.x==null||ps.x<view.x0-40||ps.x>view.x1+40||ps.y<view.y0-20||ps.y>view.y1+80)continue;let y=ps.y;const c=tileAt(ps.x,ps.y);
   for(const b of SKIZZE)if(!b.flach&&y<=b.key&&(c.tx>=b.tx+b.w||c.ty>=b.ty+b.h)&&c.tx>b.tx-2&&c.ty>b.ty-2)y=b.key+.01;if(H.vorne)y=H.vorne(c.tx,c.ty,y);items.push({y,w,ps,oz:ozW(w,c)});}
  vorDran(items);items.sort((a,b)=>a.y-b.y);
- for(const it of items){const z=it.oz||0;if(it.img){ctx.drawImage(it.img,it.x-it.ax,it.y-z-it.ay);continue;}if(it.bau){drawBau(ctx,it.bau);continue;}
+ for(const it of items){const z=it.oz||0;if(it.img){ctx.drawImage(it.img,it.x-it.ax,it.y-z-it.ay);continue;}if(it.bau){if(window.AT2){const e=bauBild(it.bau);ctx.drawImage(e.c,e.x,e.y);}else drawBau(ctx,it.bau);continue;}
   if(it.draw){if(z){ctx.save();ctx.translate(0,-z);it.draw(ctx);ctx.restore();}else it.draw(ctx);continue;}// oz: angehoben (Höhe des Bodens)
   const {w,ps}=it,x=Math.round(ps.x),y=Math.round(ps.y-z);
   if(miniV)drawMini(ctx,w.g,x,y);else drawFig(ctx,w.g,x,y,!ps.top?gehBild(w.dist):WALK,(ps.dx??1)<0?1:0);
   shown.push({w,x,y});}
+ // 2.0: kurz vor der Nahansicht die vollen Figuren in Ruhe vorbereiten (eine je Bild, nur mit freier Zeit)
+ if(window.AT2&&!detailV&&!zoomt&&cam.s>=DETAIL*.7&&performance.now()<figEnde){const s=shown.find(s=>{const f=figs.get(s.w.g.id);return !f||f.n;});if(s)spriteOf(s.w.g);}
  if(H.light){ctx.setTransform(DPR,0,0,DPR,0,0);H.light(ctx,VW,VH);ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));}
  H.world?.(ctx,view,dt);
  ctx.setTransform(1,0,0,1,0,0);
