@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<!-- ARENA THEORY 3.0 · EIGENER EINSTIEG (Schritt G1): englisch, lädt nur Dateien aus at3/ und nur übernommene Objekte, misst die eigene Startlast. Liest und schreibt keine Spielstände aus 1.0/2.0. -->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Arena Theory III</title>
+<link rel="stylesheet" href="spiel.css?v=aa902957">
+</head>
+<body>
+<header class="papier">
+ <h1 id="titel">Arena Theory III</h1>
+ <p class="unter" id="unter"></p>
+</header>
+<main>
+ <section class="papier" id="feld">
+  <h2 id="bodenTitel"></h2>
+  <p class="leise" id="bodenInfo"></p>
+  <canvas id="boden" class="pixel" width="384" height="240" aria-label="Prototype ground"></canvas>
+  <p id="zaehler" class="leise"></p>
+  <p id="karte" class="karte" aria-live="polite"></p>
+ </section>
+ <section class="papier" id="mess" hidden>
+  <div class="kopf"><h2 id="messTitel"></h2><button id="messZu" class="knopf klein"></button></div>
+  <div id="messInhalt"></div>
+  <button id="messKopie" class="knopf"></button>
+ </section>
+</main>
+<footer class="papier" id="status" aria-live="polite">Sharpening the pixels …</footer>
+<button id="messAuf" class="knopf"></button>
+<script src="at3-64.js?v=aa902957"></script>
+<script src="spiel.js?v=aa902957"></script>
+</body></html>
