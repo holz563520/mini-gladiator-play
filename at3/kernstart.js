@@ -4,7 +4,7 @@
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='415d608d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='130029f9', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -18,6 +18,8 @@ function starten(opt){opt=opt||{};
   befehl:function(art,wert){if(!welt)return -1;welt.postMessage({art:'befehl',nr:nr,befehl:art,wert:wert});return nr++},
   abdruck:function(){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'abdruck',id:id})})},
   lauf:function(seed,befehle,bis){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'lauf',id:id,seed:seed,befehle:befehle,bis:bis})})},
+  // Riesenwelt-Probe (MK1): Spielstandgröße und Speicher beim Weltkern erfragen
+  rwStand:function(){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'rwStand',id:id})})},
   testAusfall:function(wo){var w=wo==='helfer'?hs[0]:welt;if(w)w.postMessage({art:'testAusfall'})},
   ende:function(){tot=true;Z.laeuft=false;aufraeumen()}};
  if(typeof Worker==='undefined'||typeof MessageChannel==='undefined'){setTimeout(function(){ausfall('no background cores')},0);return H}
@@ -35,7 +37,8 @@ function starten(opt){opt=opt||{};
     if(welt)welt.postMessage({art:'puffer',buf:b},[b.buffer])}
    else if(d.art==='bereit'){Z.laeuft=true;Z.helfer=d.helfer;if(opt.beiBereit)opt.beiBereit(Z)}
    else if(d.art==='abgelehnt'){Z.abgelehnt++}
-   else if(d.art==='abdruck'||d.art==='laufFertig'){var ok=wartend[d.id];delete wartend[d.id];if(ok)ok(d)}};
+   else if(d.art==='rw'){if(opt.beiRw)try{opt.beiRw(d)}catch(x){}if(d.bild&&welt)welt.postMessage({art:'rwBild',buf:d.bild},[d.bild.buffer])}
+   else if(d.art==='abdruck'||d.art==='laufFertig'||d.art==='rwStand'){var ok=wartend[d.id];delete wartend[d.id];if(ok)ok(d)}};
   welt.postMessage({art:'start',seed:(opt.seed==null?1:opt.seed)>>>0,ports:ports},ports);
   document.addEventListener('visibilitychange',sicht);sicht();
  }catch(e){setTimeout(function(){ausfall('no background cores')},0)}
