@@ -37,3 +37,16 @@ main{flex:1;display:flex;flex-direction:column;gap:8px}
 .tabelle{border-collapse:collapse;font-size:16px;width:100%}.tabelle td,.tabelle th{border-bottom:1px solid var(--papier2);padding:2px 4px;text-align:left;font-weight:normal;vertical-align:top}
 .tabelle th{color:var(--blut)}
 #gStd{width:100%}
+/* M3: Skizzen-Werkstatt */
+.knopf.klein{font-size:17px;padding:8px 10px;min-height:42px;display:inline-block;text-align:center}
+.knopf.haupt{background:#8a1a10;color:var(--papier)}
+.wZeile{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;align-items:center}
+.wZeile select{font:inherit;font-size:17px;min-height:42px;background:var(--knopf-an);color:var(--tinte);border:2px solid var(--rand);flex:1;min-width:160px}
+.wForm{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin:6px 0}
+.wForm label{display:flex;flex-direction:column;font-size:16px;color:var(--tinte2)}
+.wForm input,.wForm select{font:inherit;font-size:18px;background:var(--knopf-an);color:var(--tinte);border:2px solid var(--rand);padding:4px;min-height:40px}
+.wPal{display:flex;flex-direction:column;gap:3px;margin:6px 0}.wReihe{display:flex;gap:3px;flex-wrap:wrap}
+.wF{width:30px;height:30px;border:2px solid var(--rand);padding:0;cursor:pointer;touch-action:manipulation}
+.wF.an{outline:3px solid var(--blut);outline-offset:1px;border-color:#fff}
+.wFlaeche{overflow:auto;max-height:70vh;border:3px solid var(--rand);background:var(--papier2)}
+#wCv{display:block;touch-action:none;cursor:crosshair}

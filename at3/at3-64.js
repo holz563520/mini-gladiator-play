@@ -76,9 +76,20 @@ function zuCanvas(b,palette){
  for(var y=0;y<b.h;y++){var r=b.z[y];for(var x=0;x<b.w;x++){var n=ZEICHEN.indexOf(r[x]);if(n<0)continue;var o=(y*b.w+x)*4,q=rgb[n];d[o]=q[0];d[o+1]=q[1];d[o+2]=q[2];d[o+3]=255}}
  x2.putImageData(im,0,0);if(cache){if(!k){k={};cache.set(b,k)}k[pal.name]=c}return c;
 }
+// Nächste Palettenfarbe (gewichteter Abstand, Grün zählt am meisten). Nur zum einmaligen Umrechnen vorhandener Bilder im Editor, nie im Spiel.
+function naechste(r,g,b,palette){var f=(PALETTEN[palette]||palette).farben,best=0,bd=1e9;
+ for(var i=0;i<f.length;i++){var c=farbe(f[i]),dr=r-c[0],dg=g-c[1],db=b-c[2],rm=(r+c[0])/2,d=(2+rm/256)*dr*dr+4*dg*dg+(2+(255-rm)/256)*db*db;if(d<bd){bd=d;best=i}}return best}
+// Objekt der Kartei: {format:'at3-objekt', id, version, kat, name, status, herkunft, bild}. Kennung: a–z, 0–9, Bindestrich.
+var STATUS=['skizze','geprueft','uebernommen'];
+function pruefeObjekt(o){var f=[];if(!o||o.format!=='at3-objekt')return ['kein AT3-Objekt'];
+ if(!/^[a-z0-9][a-z0-9-]{1,39}$/.test(o.id||''))f.push('Kennung ungültig (a–z, 0–9, Bindestrich, 2–40 Zeichen)');
+ if(!(o.version>=1&&o.version%1===0))f.push('Version ungültig');if(!o.name)f.push('Name fehlt');if(STATUS.indexOf(o.status)<0)f.push('Status ungültig');
+ if(o.bild&&o.bild.kat!==o.kat)f.push('Art von Objekt und Bild verschieden');
+ return f.concat(pruefe(o.bild).map(function(x){return'Bild: '+x}))}
 // Speicherbedarf als Farbnummern (1 Byte je Bildpunkt) für Messungen.
 function bytes(b){return b.w*b.h}
-var AT3_64={ZEICHEN:ZEICHEN,LEER:LEER,REIHEN:REIHEN,PALETTEN:PALETTEN,FELD:FELD,HOEHE:HOEHE,GESCHOSS:GESCHOSS,GROESSEN:GROESSEN,
+var PALETTE='A';   // Entscheidung Thomas 15.11.2026 (E5)
+var AT3_64={PALETTE:PALETTE,STATUS:STATUS,naechste:naechste,pruefeObjekt:pruefeObjekt,ZEICHEN:ZEICHEN,LEER:LEER,REIHEN:REIHEN,PALETTEN:PALETTEN,FELD:FELD,HOEHE:HOEHE,GESCHOSS:GESCHOSS,GROESSEN:GROESSEN,
  START:START,nummer:function(reihe,stufe){return START[reihe]+stufe},
  dunkler:function(n){for(var r=REIHEN.length-1;r>=0;r--)if(n>=START[r])return n>START[r]?n-1:n;return n},farbe:farbe,pruefe:pruefe,pruefePunkte:pruefePunkte,zuCanvas:zuCanvas,bytes:bytes};
 if(typeof module!=='undefined'&&module.exports)module.exports=AT3_64;else G.AT3_64=AT3_64;

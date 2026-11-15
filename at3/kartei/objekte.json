@@ -1,1 +1,15 @@
-{"format":"at3-kartei","version":1,"objekte":[]}
+{
+ "format": "at3-kartei",
+ "version": 1,
+ "palette": "A",
+ "objekte": [
+  {
+   "id": "baum-eiche-skizze",
+   "version": 1,
+   "kat": "baum",
+   "name": "Old Oak",
+   "status": "skizze",
+   "datei": "obj/baum-eiche-skizze.json"
+  }
+ ]
+}
