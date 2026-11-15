@@ -2,7 +2,7 @@
 // eigene Startlast messen und anzeigen (Dateien, Bytes, Zeit, Fremddateien aus 1.0/2.0). Bedienung deutsch. Lädt nichts außerhalb von at3/.
 (function(){
 'use strict';
-var V='c2476e68', T0=performance.now();
+var V='52edf09f', T0=performance.now();
 // Reihenfolge und Inhalt nach AT3_PLAN 9.2. „kommt“ = Schritt, mit dem der Inhalt kommt.
 var MENUES=[
  {id:'grafik',  name:'Grafik',          kurz:'Boden, Natur, Gebäude, Figuren …', kommt:'M2, M3, M9'},
@@ -95,6 +95,15 @@ window.AT3ED={
    var m=menueLast[id]||(menueLast[id]={n:0,b:0,d:0,fremd:[],ms:0});m.n+=neu.n;m.b+=neu.b;m.d+=neu.d;m.ms+=performance.now()-t;m.fremd=m.fremd.concat(neu.fremd);lastZeigen();return x;
   },function(e){delete dateien[url];throw e});
   return dateien[url];
+ },
+ // M8: Liste vorhandener Seiten aus 1.0/2.0 (unverändert). Nur Links, nichts wird vorgeladen; Öffnen im neuen Tab, Editor bleibt offen.
+ // gruppen = [{titel, seiten:[[datei, name, beschreibung, gross?]]}]
+ liste:function(el,gruppen){
+  var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')};
+  el.insertAdjacentHTML('beforeend',gruppen.map(function(g){
+   return '<h3 class="aTitel">'+esc(g.titel)+'</h3><ul class="aListe">'+g.seiten.map(function(s){
+    return '<li><a class="aLink" data-seite="'+esc(s[0])+'" href="../'+esc(s[0])+'" target="_blank" rel="noopener">'+esc(s[1])+'</a>'+
+     (s[3]?' <span class="aGross">groß, lädt lange</span>':'')+'<small>'+esc(s[2])+'</small></li>'}).join('')+'</ul>'}).join(''));
  },
  oeffnen:oeffnen, schliessen:schliessen,
  geladen:function(){return Object.keys(geladen)},

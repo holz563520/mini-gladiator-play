@@ -69,3 +69,10 @@ main{flex:1;display:flex;flex-direction:column;gap:8px}
 #pObj h3{margin:8px 0 2px;font-size:22px;color:var(--blut);font-weight:normal}
 .knopf:disabled{opacity:.5;cursor:default}
 .pBudget{margin-top:8px}.pBudget summary{cursor:pointer;color:var(--blut);font-size:20px}
+/* M8 Altbestand: Linklisten (Finger-tauglich, Rattenpergament) */
+.aTitel{font-size:20px;margin:14px 0 4px;color:var(--blut)}
+#fInhalt ul.aListe{list-style:none;padding:0;margin:0}
+#fInhalt .aListe li{margin:0 0 6px;padding:6px 8px;background:var(--papier2);border:2px solid var(--rand)}
+.aLink{color:var(--tinte);font-weight:bold;text-decoration:underline;display:inline-block;min-height:28px;line-height:28px}
+.aListe small{display:block;color:var(--tinte2);font-size:15px}
+.aGross{color:var(--blut);font-size:14px}
