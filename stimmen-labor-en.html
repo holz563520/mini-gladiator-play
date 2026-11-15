@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Voice Lab · Stimmeditor Englisch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="brand.css">
+<style>
+/* Layout: Spiel-Testseite des englischen Stimmeditors. Kopf; links Auswahl der Stimme, rechts Bühne mit Melodiekurve. Farben und Schrift wie manager.css des Spiels. */
+:root{color-scheme:dark;--bg:#151d20;--surface:#1d282b;--raised:#243136;--line:#394b4d;--gold:#dfb66d;--cream:#eae4cd;--muted:#97aaa8;--green:#88baa6;--red:#d57668;--ink:#101719;
+ --mono:'Courier Prime',ui-monospace,'Cascadia Mono','Courier New',monospace}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--cream);font-family:var(--mono);font-size:14px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-block:18px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.eyebrow{font-size:11px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin:0}
+h1{font-size:clamp(26px,5vw,38px);color:var(--gold);letter-spacing:3px;margin:4px 0 6px;text-transform:uppercase;text-wrap:balance}
+h2{font-size:13px;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;margin:0}
+.sub{color:var(--muted);font-size:13px;margin:0;max-width:72ch}
+.tabs{display:flex;gap:6px;margin:18px 0 14px;flex-wrap:wrap}
+.tab{background:var(--raised);border:1px solid var(--line);border-bottom:3px solid #2b393c;padding:10px 16px;font-weight:700;letter-spacing:.06em;font-size:12px}
+.tab[aria-selected="true"]{color:var(--gold);border-color:#8f7748;background:#30382d}
+.btn{background:#293639;border:1px solid #52625b;border-bottom:3px solid #394640;padding:9px 14px;font-weight:700;font-size:12px;min-height:40px}
+.btn:hover{filter:brightness(1.15)}.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--gold);color:#29271f;border-color:#efd194;border-bottom-color:#8f7043}
+.btn.alt{background:#2e2a26;border-color:#6d5a44;color:#e3c9a3}
+.grid{display:grid;grid-template-columns:240px minmax(0,1fr);gap:14px;align-items:start}
+.grid>*{min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);padding:16px;display:grid;gap:12px}
+.list{display:grid;gap:2px;background:var(--surface);border:1px solid var(--line);padding:6px}
+.voice{display:flex;justify-content:space-between;gap:8px;text-align:left;background:none;border:0;border-left:3px solid transparent;padding:8px 10px;font-size:13px}
+.voice small{color:var(--muted);font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.voice:hover{background:var(--raised)}.voice[aria-pressed="true"]{background:#2c3c41;border-left-color:var(--gold);color:var(--gold)}
+textarea,select,input[type=number]{background:var(--ink);border:1px solid var(--line);color:var(--cream);padding:8px}
+textarea{width:100%;min-height:76px;resize:vertical;font-size:15px;line-height:1.45}
+select{max-width:100%;font-size:12px}
+#lines{width:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctl{display:grid;gap:4px;font-size:11px;color:var(--muted);letter-spacing:.04em}
+.ctl select{min-width:0}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px}
+.sl{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:11px;color:var(--muted)}
+.sl input{grid-column:1/-1;width:100%;accent-color:var(--gold)}
+.sl b{color:var(--cream);font-weight:400;font-variant-numeric:tabular-nums}
+.hint{font-size:12px;color:var(--muted);margin:0}
+.hint kbd{font-family:var(--mono);background:var(--ink);border:1px solid var(--line);padding:0 4px;color:var(--cream)}
+/* Betonungsanzeige */
+.prosody{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:baseline;min-height:30px;background:var(--ink);border:1px solid var(--line);padding:10px;font-size:15px}
+.w{color:var(--cream)}.w.fn{color:#7c8e8b}.w.a1{color:var(--gold)}.w.a2{color:var(--gold);font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.w.on{background:#3a3a2a}
+.br{font-size:11px;color:var(--green);letter-spacing:.04em;padding:0 4px;border:1px solid #3e5a50}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11px;color:var(--muted)}
+.legend span b{color:var(--gold)}
+.phon{font-size:12px;color:var(--muted);background:var(--ink);border:1px solid var(--line);padding:8px;overflow-x:auto;white-space:nowrap}
+canvas.melody{width:100%;height:150px;display:block;background:var(--ink);border:1px solid var(--line)}
+/* Schreie */
+.figs{display:flex;flex-wrap:wrap;gap:6px}
+.fig{background:var(--raised);border:1px solid var(--line);padding:8px 12px;font-size:12px}
+.fig[aria-pressed="true"]{color:var(--gold);border-color:#8f7748;background:#30382d}
+.cat{display:grid;gap:8px}
+.cathead{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.card{text-align:left;background:var(--raised);border:1px solid var(--line);border-bottom:3px solid #2b393c;padding:10px 12px;display:grid;gap:3px;min-height:68px}
+.card b{font-size:13px;color:var(--cream)}.card span{font-size:11px;color:var(--muted);line-height:1.35}
+.card:hover{border-color:#6f7f64}.card.on{border-color:var(--gold);background:#30382d}.card.on b{color:var(--gold)}
+.now{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}
+.now b{color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--raised);border:1px solid var(--line);padding:7px 10px;font-size:12px;display:inline-flex;gap:8px;align-items:baseline;min-height:36px}
+.chip small{color:var(--muted);font-size:11px}.chip:hover{border-color:#8f7748}.chip.own,.chip[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:#30382d}
+.chk{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}.chk input{accent-color:var(--gold);width:18px;height:18px}
+textarea.mono{font-family:var(--mono);font-size:13px;min-height:96px}
+.lexmsg{font-size:12px;margin:0;min-height:18px}.lexmsg.err{color:var(--red)}.lexmsg.ok{color:var(--green)}
+.vg{display:grid;gap:8px}.vg h3{margin:0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:400}
+.sl.chg b{color:var(--gold)}
+.tagst{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--green);padding:1px 5px}
+details{border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;color:var(--gold);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.how{font-size:12.5px;color:var(--muted);display:grid;gap:6px;max-width:80ch;margin:10px 0 0;padding-left:18px}
+.how b{color:var(--cream);font-weight:700}
+@media (max-width:820px){.grid{grid-template-columns:1fr}.list{display:flex;overflow-x:auto}.voice{flex:none;border-left:0;border-bottom:3px solid transparent}.voice[aria-pressed="true"]{border-bottom-color:var(--gold)}.voice small{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+<div class="wrap">
+ <p class="eyebrow">Mini Gladiator · Stimmeditor Englisch</p>
+ <h1>Voice Lab</h1>
+ <p class="sub">Die englische Sprachausgabe für die englische Fassung des Spiels. Hier stellst du die Stimmen der Figuren ein, wählst den Akzent und hörst jede Sprechweise: Arena-Ansage, Brüllen, Schreien, Angst, Lachen. Alles wird im Browser gerechnet, ohne Tondateien. Die Schreie sind sprachunabhängig und bleiben im deutschen <a href="stimmen-labor.html" style="color:var(--gold)">Stimmlabor</a>.</p>
+ <section id="speak" style="margin-top:18px">
+  <div class="grid">
+   <nav class="list" id="voices" aria-label="Stimme"></nav>
+   <div class="panel">
+    <select id="lines" aria-label="Beispielsatz"></select>
+    <textarea id="text" aria-label="Englischer Text zum Sprechen" lang="en" spellcheck="false"></textarea>
+    <h2>Sprechweise</h2>
+    <div class="chips" id="styles" role="group" aria-label="Sprechweise"></div>
+    <div class="row">
+     <label class="chk"><input type="checkbox" id="auto" checked> Satzzeichen deuten wie im Spiel („!“ = Nachdruck, GROSS oder „!!“ = Brüllen)</label>
+    </div>
+    <div class="row">
+     <button class="btn primary" id="say">▶ Sprechen</button>
+     <button class="btn" id="stop">■ Stopp</button>
+     <button class="btn alt" id="sayAll">▶ Alle Sprechweisen</button>
+     <button class="btn alt" id="sayBoth">▶ Beide Akzente nacheinander</button>
+     <button class="btn" id="wav">⬇ Aufnahme (WAV)</button>
+    </div>
+    <div class="row">
+     <label class="ctl">Akzent im Spiel<select id="accent"><option value="us">Amerikanisch</option><option value="uk">Britisch (Römerfilm)</option></select></label>
+     <label class="ctl">Klang<select id="tone"><option value="clear">Klar</option><option value="retro">16-Bit</option></select></label>
+     <label class="ctl">Raum<select id="room"><option value="voice">wie die Stimme</option><option value="0">trocken</option><option value=".15">Raum</option><option value=".4">Arena</option></select></label>
+     <label class="ctl">Tempo im Spiel<select id="gtempo"><option value="1">Labor (1,00)</option><option value="1.15" selected>wie im Spiel (1,15)</option></select></label>
+    </div>
+    <p class="lexmsg" id="accMsg" role="status"></p>
+    <p class="hint">Regie im Text: <kbd>[roars]</kbd> <kbd>[screams]</kbd> <kbd>[shouts]</kbd> <kbd>[whispers]</kbd> <kbd>[scared]</kbd> <kbd>[laughs]</kbd> <kbd>[angry]</kbd> <kbd>[threatens]</kbd> <kbd>[begs]</kbd> <kbd>[cheers]</kbd> <kbd>[mocks]</kbd> <kbd>[sad]</kbd> <kbd>[drunk]</kbd> <kbd>[normal]</kbd> gilt bis zur nächsten Anweisung (die deutschen wie <kbd>[brüllt]</kbd> gehen auch). <kbd>Hahaha</kbd>, <kbd>Hehe</kbd>, <kbd>Hihihi</kbd>, <kbd>Hoho</kbd>, <kbd>Mwahaha</kbd> werden gelacht statt vorgelesen. <kbd>*word*</kbd> = betont.</p>
+    <h2>Betonung</h2>
+    <div class="prosody" id="prosody" aria-live="polite" lang="en"></div>
+    <div class="legend"><span><b style="text-decoration:underline">Fett unterstrichen</b> Hauptakzent</span><span><b>Gold</b> Nebenakzent</span><span style="color:#7c8e8b">Grau: unbetont</span><span>↘ Aussage · ↗ Frage · → geht weiter</span></div>
+    <canvas class="melody" id="melody" width="1100" height="150" aria-label="Satzmelodie: Tonhöhe über die Zeit"></canvas>
+    <div class="phon" id="phon" title="Lautschrift (IPA): ˈ betonte Silbe, ˈˈ Hauptakzent, ‖ Satzende"></div>
+    <p class="hint" id="perf"></p>
+
+    <details id="voicePanel" open><summary>Stimme einstellen: <span id="vname"></span></summary>
+     <div style="display:grid;gap:12px;margin-top:10px">
+      <p class="hint">Jeder Regler ändert nur diese Figur und nur die englische Stimme; die deutschen Stimmen bleiben, wie sie sind. Loslassen spricht den Text neu. „Für das Spiel speichern“ legt die Werte in diesem Browser ab; die englische Fassung nimmt sie beim Laden.</p>
+      <div id="vgroups" style="display:grid;gap:14px"></div>
+      <div class="row">
+       <label class="ctl" style="max-width:260px">Übliche Sprechweise dieser Figur<select id="vstyle"></select></label>
+       <label class="ctl" style="max-width:260px">Akzent dieser Figur<select id="vaccent"><option value="">wie oben eingestellt</option><option value="us">immer amerikanisch</option><option value="uk">immer britisch</option></select></label>
+      </div>
+      <div class="row">
+       <button class="btn primary" id="vSave">Für das Spiel speichern</button>
+       <button class="btn" id="vReset">Diese Stimme zurücksetzen</button>
+       <button class="btn" id="vResetAll">Alle zurücksetzen</button>
+       <button class="btn" id="vCopy">Werte kopieren</button>
+      </div>
+      <p class="lexmsg" id="vMsg" role="status"></p>
+     </div>
+    </details>
+
+    <details id="lexPanel"><summary>Aussprache anpassen</summary>
+     <div style="display:grid;gap:10px;margin-top:10px">
+      <p class="hint">Unter jedem Wort deines Textes steht, wie es gesprochen wird. Klick auf ein Wort legt eine Zeile zum Ändern an. Schreibweise: <kbd>lanista = l@n'Ist@</kbd> (ein Zeichen je Laut, Apostroph vor dem betonten Vokal) oder nur eine Zahl für die betonte Silbe (<kbd>word = 1</kbd>, 0 = erste). Die Einträge werden im Browser gespeichert und gelten für beide Akzente.</p>
+      <div class="chips" id="lexChips" aria-label="Wörter des Textes mit Lautschrift"></div>
+      <textarea class="mono" id="lexText" spellcheck="false" aria-label="Eigenes Aussprache-Wörterbuch" placeholder="lanista = l@n'Ist@"></textarea>
+      <div class="row"><button class="btn primary" id="lexApply">Übernehmen und sprechen</button><button class="btn" id="lexReset">Alle eigenen Einträge löschen</button></div>
+      <p class="lexmsg" id="lexMsg" role="status"></p>
+      <ul class="how">
+       <li><b>Vokale:</b> i (see) · I (sit) · E (bed) · a (cat) · A (father, car) · Q (hot) · O (law, more) · U (book) · u (moon) · V (cup) · @ (a in „about“) · 3 (bird) · 6 (er in „water“)</li>
+       <li><b>Doppellaute:</b> e (day) · Y (my) · W (now) · X (boy) · o (go)</li>
+       <li><b>Mitlaute:</b> p b t d k g f v s z h m n l r w · j (yes) · T (thin) · D (this) · S (ship) · Z (vision) · C (church) · J (judge) · N (sing)</li>
+       <li><b>r nach Vokal</b> immer mitschreiben (car = kAr, more = mOr): der britische Akzent lässt es von selbst weg.</li>
+      </ul>
+     </div>
+    </details>
+
+    <details><summary>Was diese Stimme kann (Stand 15.11.2026)</summary>
+     <ul class="how">
+      <li><b>Aussprache:</b> Wörterbuch für die 25.000 häufigsten englischen Wörter (gespeichert sind nur die rund 7.500, bei denen die Regeln danebenliegen), Wortbildung (-s, -ed, -ing, 's, n't …) und Regeln für alles andere, auch lateinische Namen.</li>
+      <li><b>Zwei Akzente:</b> amerikanisch (mit r, weiches t in „water“) und britisch (ohne r nach Vokal, „master“ mit langem a, „new“ mit j). Derselbe Text, dieselbe Lautschrift.</li>
+      <li><b>Englische Laute:</b> th, w, englisches r, helles und dunkles l, behauchtes p/t/k, kurzer Vokal vor stimmlosem Auslaut (bet/bed).</li>
+      <li><b>Satz:</b> schwache Formen (a, the, to, of, and …), Hauptakzent auf dem letzten Inhaltswort, Frage steigt, Zahlen werden ausgeschrieben („3rd“ = third).</li>
+      <li><b>Klang und Sprechweisen:</b> derselbe Kern wie die deutsche Stimme, dieselben Figuren und Sprechweisen.</li>
+     </ul>
+    </details>
+   </div>
+  </div>
+ </section>
+</div>
+<script src="stimme-en-lex.js?v=ed30df39"></script>
+<script src="stimme-en.js?v=ed30df39"></script>
+<script>'use strict';
+// Oberfläche des englischen Stimmeditors (Voice Lab): Stimmen, Akzent, Sprechweisen, Betonungsanzeige, eigenes Wörterbuch.
+(()=>{
+const St=window.StimmeEN,$=id=>document.getElementById(id);
+const LINES=[
+ ['moderator','Citizens of Rome! Today a recruit fights the beast. Who will win?','feierlich'],
+ ['moderator','From distant Germania: the terrible Brutus! And his opponent: Marcellus, darling of the arena!','feierlich'],
+ ['moderator','Enough talk. [roars] Let them bleed!','feierlich'],
+ ['moderator','May the better man win. Or at least the more entertaining one. Hahaha!','feierlich'],
+ ['moderator','The medicus has already washed his hands. Begin!','feierlich'],
+ ['schmied','[roars] Get out of my forge! Now!','normal'],
+ ['schmied','You call that a sword? It would not even cut butter.','lachend'],
+ ['schmied','Is he gone? Good. That man forges swords like an ox writing love letters.','normal'],
+ ['schmied','One more jug of wine, and I will forge you anything.','betrunken'],
+ ['rekrut','[screams] For Rome! Attack!','normal'],
+ ['rekrut',"No! Please don't! I surrender!",'angst'],
+ ['rekrut','I am ready! [scared] I think. Which way is the front?','normal'],
+ ['rekrut','We won! I am still alive!','jubel'],
+ ['rekrut','I did not *say* I would win. I said I would *fight*.','normal'],
+ ['rabies','Hehehe. Rabies. That is Latin for madness.','normal'],
+ ['rabies','Harmless. He only licked my thumb once. After that it was gone. The thumb.','normal'],
+ ['orontes','Hihihi! Bows, crossbows, arrows, bolts, and advice nobody wants to hear!','normal'],
+ ['krassus','You owe me money. And money never forgets.','drohen'],
+ ['krassus','Mwahaha! Pay by tomorrow, or I will take your best man.','normal'],
+ ['medicus','Hold still. This only hurts if you are still alive.','normal'],
+ ['frau','One more step, and you can count your teeth one by one.','wut'],
+ ['frau','[screams] Run! The guards are coming!','normal'],
+ ['erzaehler','The troop has returned. What happened on the road, only the wind remembers.','normal'],
+ ['erzaehler','In the evening they buried him behind the stable.','traurig']];
+let ctx=null,out=null,playing=[],cur='moderator',last=null;
+function audio(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();out=ctx.createGain();out.gain.value=.9;out.connect(ctx.destination);}if(ctx.state==='suspended')ctx.resume();return ctx;}
+function stop(){for(const p of playing){try{p.source.stop();}catch{}}playing=[];}
+const fmt=x=>x.toFixed(2).replace('.',',');
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const RETRO={rate:14332,bits:12,echo:.15};
+const ACC={us:'Amerikanisch',uk:'Britisch'};
+
+// ---------- Sprechen ----------
+let curStyle='feierlich',seq=0;
+const accOf=()=>St.PRESETS[cur].accent||St.accent;
+function voices(){$('voices').innerHTML=St.ORDER.map(k=>`<button class="voice" data-k="${k}" aria-pressed="${k===cur}">${esc(St.PRESETS[k].name)}<small>${Math.round(St.PRESETS[k].pitch)} Hz</small></button>`).join('');}
+$('lines').innerHTML='<option value="">Beispielsatz wählen …</option>'+LINES.map(([k,t,s],i)=>`<option value="${i}">${esc(St.PRESETS[k].name)} (${esc(St.STYLES[s].name)}): ${esc(t.length>50?t.slice(0,48)+'…':t)}</option>`).join('');
+function styles(){$('styles').innerHTML=Object.entries(St.STYLES).map(([k,s])=>`<button class="chip" data-k="${k}" aria-pressed="${k===curStyle}">${esc(s.name)}</button>`).join('');}
+function pick(i){const [k,t,s]=LINES[i];cur=k;curStyle=s;$('text').value=t;voices();styles();vpanel();analyse();}
+function params(st){const room=$('room').value;return {style:st||curStyle,auto:$('auto').checked,speed:+$('gtempo').value,retro:$('tone').value==='retro'?RETRO:null,room:room==='voice'?undefined:+room};}
+// Betonungsanzeige: Wörter mit Akzentstufe, Phrasengrenzen mit Melodierichtung, Wechsel der Sprechweise als Marke
+const ARROW={'.':'↘','?w':'↘','!':'↘!','?':'↗',',':'→','-':'·'};
+function showProsody(words,phrases){let h='',lp=-1,ls=null;words.forEach((w,i)=>{if(w.phrase!==lp){if(lp>=0)h+=`<span class="br">${ARROW[phrases[lp].type]||'|'}</span>`;const st=phrases[w.phrase]?.style;if(st&&st!==ls){if(ls!==null||st!==St.STYLES[curStyle]?.name)h+=`<span class="tagst">${esc(st)}</span>`;ls=st;}}lp=w.phrase;h+=`<span class="w ${w.fn?'fn':''} ${w.acc?'a'+w.acc:''}" data-i="${i}">${esc(w.txt)}</span>`;});
+ if(lp>=0)h+=`<span class="br">${ARROW[phrases[lp].type]||'|'}</span>`;$('prosody').innerHTML=h;}
+function analyse(){const parts=St.segment($('text').value,curStyle,$('auto').checked),words=[],phr=[];
+ for(const p of parts){const name=St.STYLES[p.style]?.name||'Normal';if(p.laugh){words.push({txt:'(laughs)',acc:0,fn:false,phrase:phr.length});phr.push({type:'-',style:name});continue;}
+  const P=St.analyse(p.text,accOf()),b=phr.length;P.forEach((q,pi)=>{q.words.forEach(w=>words.push({txt:w.txt,acc:w.acc,fn:w.fn,phrase:b+pi}));phr.push({type:q.type,style:name});});}
+ showProsody(words,phr);lexChips();}
+function render(st,o){const t0=performance.now(),R=St.render($('text').value,cur,{...params(st),...(o||{})});$('perf').textContent=R.data.length?`Gerechnet in ${Math.round(performance.now()-t0)} ms für ${fmt(R.dur)} s Sprache · Akzent: ${ACC[R.accent]} · Wörterbuch: ${St.dictSize().toLocaleString('de-DE')} Ausnahmen geladen`:'';return R;}
+function show(R,name,label){last={...St.playData(audio(),out,R),R,info:R.info,name};playing.push(last);$('phon').textContent=(label?label+': ':'')+R.phon;showProsody(R.info.words,R.info.phrases);return last;}
+function say(st){seq++;stop();const R=render(typeof st==='string'?st:null);if(!R.data.length)return null;return show(R,cur+'-'+(typeof st==='string'?st:curStyle)+'-'+R.accent);}
+const plain=t=>t.replace(/\[[^\]\n]{2,24}\]/g,' ');
+// Alle Sprechweisen nacheinander mit demselben Text (jede wird erst gerechnet, wenn die vorige ausklingt)
+async function sayAll(){const me=++seq;stop();const keep=curStyle;for(const k of Object.keys(St.STYLES)){if(seq!==me)return;curStyle=k;styles();await new Promise(r=>setTimeout(r,30));if(seq!==me)break;
+  stop();const R=render(k,{auto:false});show(R,cur+'-'+k,St.STYLES[k].name);await new Promise(r=>setTimeout(r,R.dur*1000+250));}
+ if(seq===me){curStyle=keep;styles();}}
+// Derselbe Satz erst amerikanisch, dann britisch
+async function sayBoth(){const me=++seq;stop();for(const a of ['us','uk']){if(seq!==me)return;stop();const R=render(null,{accent:a});if(!R.data.length)return;show(R,cur+'-'+curStyle+'-'+a,ACC[a]);await new Promise(r=>setTimeout(r,R.dur*1000+350));}}
+function wav(){const d=last?.R?.data;if(!d){vmsg('Erst etwas sprechen lassen.','err');return;}const sr=last.R.sr||St.SR,n=d.length,b=new DataView(new ArrayBuffer(44+n*2)),W=(o,t)=>{for(let i=0;i<t.length;i++)b.setUint8(o+i,t.charCodeAt(i));};
+ W(0,'RIFF');b.setUint32(4,36+n*2,true);W(8,'WAVEfmt ');b.setUint32(16,16,true);b.setUint16(20,1,true);b.setUint16(22,1,true);b.setUint32(24,sr,true);b.setUint32(28,sr*2,true);b.setUint16(32,2,true);b.setUint16(34,16,true);W(36,'data');b.setUint32(40,n*2,true);
+ for(let i=0;i<n;i++)b.setInt16(44+i*2,Math.max(-32768,Math.min(32767,Math.round(d[i]*32767))),true);
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([b],{type:'audio/wav'}));a.download='voice-'+(last.name||'recording')+'.wav';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);}
+
+// ---------- Akzent ----------
+$('accent').value=St.accent;
+$('accent').addEventListener('change',e=>{St.setAccent(e.target.value,true);$('accMsg').textContent='Akzent gespeichert: '+ACC[St.accent]+'. Die englische Fassung nimmt ihn beim Laden.';$('accMsg').className='lexmsg ok';analyse();say();});
+
+// ---------- Stimme einstellen (Werte je Figur, gespeichert für das Spiel) ----------
+const VG=[['Tonlage und Melodie',[['pitch','Tonhöhe',60,260,1,' Hz'],['range','Melodieumfang',2,18,.5],['lively','Lebendigkeit der Akzente',.6,1.7,.05],['wild','Sprunghaft',0,1,.05],['speed','Tempo',.7,1.4,.02],['tvar','Tempo schwankt',0,.3,.02]]],
+ ['Körper und Klang',[['size','Körpergröße',.8,1.3,.01],['tilt','Helligkeit',.3,1,.02],['oq','Stimmdruck (links gepresst, rechts weich)',.3,.75,.01],['fx1','Klangfarbe (links dunkel, rechts hell)',.9,1.1,.01],['nasal','Nasal',0,.8,.05],['presence','Präsenz',0,1,.05],['comp','Durchsetzungskraft',0,1,.05]]],
+ ['Rauheit',[['breath','Hauch',0,.6,.02],['rough','Rauheit',0,.5,.02],['creak','Knarren am Satzende',0,1,.05],['growl','Knurren auf Akzenten',0,.7,.05],['shake','Zittern',0,.8,.05],['air','Luft in der Stimme',0,.2,.01]]],
+ ['Aussprache und Raum',[['slur','Nuscheln',0,.6,.02],['room','Hall',0,.5,.02]]]];
+const VDEF={lively:1,wild:0,tvar:0,nasal:0,presence:.5,comp:.6,growl:0,air:.05,slur:.12,shake:0,room:0};
+const vget=(V,f)=>f==='fx1'?(V.fx?.[1]??1):(V[f]??VDEF[f]??0);
+const vset=(V,f,v)=>{if(f==='fx1'){V.fx=(V.fx||[1,1,1]).slice();V.fx[1]=v;}else V[f]=v;};
+const fmtV=(v,step,unit)=>(step>=1?String(Math.round(v)):fmt(v))+(unit||'');
+function vmsg(t,cls){$('vMsg').textContent=t;$('vMsg').className='lexmsg '+(cls||'');}
+function vpanel(){const V=St.PRESETS[cur],D=St.DEFAULTS[cur];$('vname').textContent=V.name;
+ $('vgroups').innerHTML=VG.map(([name,list])=>`<div class="vg"><h3>${name}</h3><div class="sliders">`+list.map(([f,label,lo,hi,step,unit])=>{const v=vget(V,f),d=vget(D,f);
+  return `<label class="sl ${Math.abs(v-d)>1e-6?'chg':''}">${label} <b>${fmtV(v,step,unit)}</b><input type="range" data-f="${f}" data-step="${step}" data-unit="${unit||''}" min="${lo}" max="${hi}" step="${step}" value="${v}"></label>`;}).join('')+'</div></div>').join('');
+ $('vstyle').innerHTML=Object.entries(St.STYLES).map(([k,s])=>`<option value="${k}">${esc(s.name)}</option>`).join('');$('vstyle').value=V.style||'normal';$('vaccent').value=V.accent||'';}
+// nur was von der Werkseinstellung abweicht
+function vdiff(){const o={};for(const k of St.ORDER){const V=St.PRESETS[k],D=St.DEFAULTS[k],d={};for(const [,list] of VG)for(const [f] of list){const v=vget(V,f);if(Math.abs(v-vget(D,f))>1e-6){if(f==='fx1')d.fx=V.fx.slice();else d[f]=v;}}if((V.style||'normal')!==(D.style||'normal'))d.style=V.style||'normal';if(V.accent)d.accent=V.accent;if(Object.keys(d).length)o[k]=d;}return o;}
+function vsave(){try{const d=vdiff();if(Object.keys(d).length)localStorage.setItem(St.VOICEKEY,JSON.stringify(d));else localStorage.removeItem(St.VOICEKEY);vmsg('Gespeichert. Die englische Fassung nimmt die Werte beim Laden.','ok');}catch{vmsg('Speichern ist in diesem Browser nicht möglich.','err');}}
+$('vgroups').addEventListener('input',e=>{const el=e.target;if(!el.dataset?.f)return;const v=+el.value;vset(St.PRESETS[cur],el.dataset.f,v);const lab=el.closest('.sl');lab.querySelector('b').textContent=fmtV(v,+el.dataset.step,el.dataset.unit);lab.classList.toggle('chg',Math.abs(v-vget(St.DEFAULTS[cur],el.dataset.f))>1e-6);vmsg('Geändert, noch nicht gespeichert.','');if(el.dataset.f==='pitch')voices();});
+$('vgroups').addEventListener('change',e=>{if(e.target.dataset?.f)say();});
+$('vstyle').addEventListener('change',e=>{if(e.target.value==='normal')delete St.PRESETS[cur].style;else St.PRESETS[cur].style=e.target.value;curStyle=e.target.value;styles();vmsg('Geändert, noch nicht gespeichert.','');say();});
+$('vaccent').addEventListener('change',e=>{if(e.target.value)St.PRESETS[cur].accent=e.target.value;else delete St.PRESETS[cur].accent;vmsg('Geändert, noch nicht gespeichert.','');analyse();say();});
+$('vSave').onclick=vsave;
+$('vReset').onclick=()=>{const d=vdiff();delete d[cur];St.setVoices(d);vpanel();voices();vsave();vmsg('„'+St.PRESETS[cur].name+'“ ist wieder auf Werkseinstellung.','ok');say();};
+$('vResetAll').onclick=()=>{if(!confirm('Wirklich alle englischen Stimmen auf Werkseinstellung zurücksetzen?'))return;St.setVoices({});vpanel();voices();vsave();vmsg('Alle Stimmen sind wieder auf Werkseinstellung.','ok');};
+$('vCopy').onclick=async()=>{const t=JSON.stringify(vdiff(),null,1);try{await navigator.clipboard.writeText(t);vmsg('Kopiert: nur die geänderten Werte ('+Object.keys(vdiff()).length+' Stimmen).','ok');}catch{prompt('Werte zum Kopieren:',t);}};
+
+// ---------- Aussprache anpassen (eigenes Wörterbuch, gilt auch im Spiel) ----------
+const LEXT=$('lexText'),OKPH=new Set(St.PHONES);
+const lexMsg=(t,cls)=>{$('lexMsg').textContent=t;$('lexMsg').className='lexmsg '+(cls||'');};
+function normPh(src){const t=src.replace(/\s+/g,'');if(!t)return {err:'leer'};for(const c of t)if(c!=="'"&&!OKPH.has(c))return {err:'unbekanntes Zeichen „'+c+'“'};if(![...t].some(c=>'iIeEaAQOoUuV@36YWX'.includes(c)))return {err:'kein Vokal'};return {ph:t};}
+function readLex(){const obj={},errs=[];LEXT.value.split('\n').forEach((line,n)=>{line=line.trim();if(!line)return;const m=/^([A-Za-z][A-Za-z'’-]*)\s*[=:]\s*(.+)$/.exec(line);if(!m){errs.push('Zeile '+(n+1)+': „word = Lautschrift“ erwartet');return;}
+  const w=m[1].toLowerCase().replace(/’/g,"'"),v=m[2].trim();if(/^\d+$/.test(v)){obj[w]=+v;return;}const r=normPh(v);if(r.err)errs.push('Zeile '+(n+1)+' ('+w+'): '+r.err);else obj[w]=r.ph;});return {obj,errs};}
+function lexChips(){const own=St.getLexicon(),a=accOf(),ws=plain($('text').value).replace(/’/g,"'").match(/[A-Za-z]+(?:'[A-Za-z]+)*/g)||[];const seen=new Set();
+ $('lexChips').innerHTML=ws.filter(w=>{const l=w.toLowerCase();if(l.length<2||seen.has(l))return false;seen.add(l);return true;}).map(w=>`<button class="chip ${own[w.toLowerCase()]!==undefined?'own':''}" data-w="${esc(w)}" title="Zum Ändern antippen">${esc(w)}<small>${esc(St.wordIPA(w,a))}</small></button>`).join('');}
+$('lexChips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const w=b.dataset.w.toLowerCase(),has=LEXT.value.split('\n').some(l=>l.trim().toLowerCase().split(/[\s=:]/)[0]===w);
+ if(!has)LEXT.value=(LEXT.value.trim()?LEXT.value.replace(/\s+$/,'')+'\n':'')+w+' = '+St.lexString(w);LEXT.focus();lexMsg('Zeile ändern, dann „Übernehmen und sprechen“.','');});
+$('lexApply').onclick=()=>{const {obj,errs}=readLex();if(errs.length){lexMsg(errs.join(' · '),'err');return;}St.setLexicon(obj);St.saveLexicon();const n=Object.keys(obj).length;lexMsg(n?n+(n===1?' Eintrag':' Einträge')+' gespeichert. Die englische Fassung nimmt sie beim Laden.':'Keine eigenen Einträge.','ok');analyse();say();};
+$('lexReset').onclick=()=>{if(!confirm('Alle eigenen Aussprache-Einträge löschen?'))return;LEXT.value='';St.setLexicon({});St.saveLexicon();lexMsg('Eigene Einträge gelöscht.','ok');analyse();};
+LEXT.value=Object.entries(St.getLexicon()).map(([k,v])=>k+' = '+v).join('\n');
+// Melodiekurve: Tonhöhe (Halbton-Skala), Wellenform, Wortmarken, Abspielmarke
+function drawMelody(cv,L,now){const g=cv.getContext('2d'),W=cv.width,H=cv.height;g.fillStyle='#101719';g.fillRect(0,0,W,H);if(!L||!L.info){return;}
+ const info=L.info,dur=Math.max(.5,L.dur),X=t=>8+(W-16)*t/dur,f0=info.f0,step=info.f0step,vals=f0.filter(x=>x>0);
+ if(L.R?.data){const d=L.R.data,n=W-16,per=Math.max(1,Math.floor(d.length/n));g.fillStyle='#2a3a3c';for(let x=0;x<n;x++){let m=0;for(let i=x*per;i<Math.min(d.length,(x+1)*per);i+=4)m=Math.max(m,Math.abs(d[i]));const h=m*(H*.42);g.fillRect(8+x,H/2-h,1,h*2);}}
+ if(vals.length){let lo=Infinity,hi=0;for(const v of vals){if(v<lo)lo=v;if(v>hi)hi=v;}lo=Math.max(40,lo/1.15);hi=hi*1.12;const Y=f=>H-10-(H-26)*Math.log(f/lo)/Math.log(hi/lo);
+  g.strokeStyle='#394b4d';g.lineWidth=1;g.fillStyle='#97aaa8';g.font='11px Courier Prime, monospace';
+  for(const f of [80,100,150,200,300,400,600,800]){if(f<lo||f>hi)continue;g.beginPath();g.moveTo(8,Y(f));g.lineTo(W-8,Y(f));g.stroke();g.fillText(f+' Hz',W-58,Y(f)-3);}
+  if(info.words){g.font='12px Courier Prime, monospace';for(const w of info.words){g.fillStyle=w.acc===2?'#dfb66d':w.acc?'#c9a866':w.fn?'#61716f':'#c9c3ad';g.fillText(w.txt,X(w.t0),14);}}
+  g.strokeStyle='#dfb66d';g.lineWidth=2.2;g.beginPath();let pen=false;for(let i=0;i<f0.length;i++){const t=i*step,f=f0[i];if(f>0){const x=X(t),y=Y(f);if(pen)g.lineTo(x,y);else g.moveTo(x,y);pen=true;}else pen=false;}g.stroke();}
+ if(now!=null&&now>=0&&now<=dur){g.fillStyle='#eae4cd';g.fillRect(X(now),0,1.5,H);}}
+// gezeichnet wird nur, solange etwas läuft (und einmal danach): die Seite kostet im Leerlauf nichts
+let drawn=null,idle=true;
+function loop(){const now=ctx?.currentTime||0,t=last?now-last.start:0,run=!!last&&t<=last.dur+.1;
+ if(run||drawn!==last||!idle){drawMelody($('melody'),last,run?t:null);drawn=last;idle=!run;
+  if(last?.info?.words){const i=run?last.info.words.findIndex(w=>t>=w.t0&&t<w.t1):-1;document.querySelectorAll('#prosody .w').forEach(el=>el.classList.toggle('on',+el.dataset.i===i));}}
+ requestAnimationFrame(loop);}
+$('voices').addEventListener('click',e=>{const b=e.target.closest('.voice');if(!b)return;cur=b.dataset.k;curStyle=St.PRESETS[cur].style||'normal';voices();styles();vpanel();analyse();say();});
+$('lines').addEventListener('change',e=>{if(e.target.value!==''){pick(+e.target.value);say();}e.target.value='';});
+$('styles').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;curStyle=b.dataset.k;styles();analyse();say();});
+let anT=0;$('text').addEventListener('input',()=>{clearTimeout(anT);anT=setTimeout(analyse,120);});$('auto').addEventListener('change',()=>{analyse();say();});
+$('say').onclick=()=>say();$('sayAll').onclick=sayAll;$('sayBoth').onclick=sayBoth;$('stop').onclick=()=>{seq++;stop();};$('wav').onclick=wav;
+for(const id of ['tone','room','gtempo'])$(id).addEventListener('change',()=>say());
+voices();styles();pick(0);loop();
+window.LAB={say,sayBoth};
+})();
+
+</script>
+</body></html>
