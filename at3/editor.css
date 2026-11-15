@@ -1,0 +1,28 @@
+/* AT3 MASTER-EDITOR · Stil „Rattenpergament“ für Arena Theory 3.0 (eigene Kopie, unabhängig von welt-stil.css aus 2.0).
+   Farben VORLÄUFIG: werden in Schritt M2 durch die gewählte AT3-32-Palette ersetzt. Nur die Variablen unten benutzen. */
+@font-face{font-family:'AT3 Text';src:url(fonts/at3-text-vt323.woff) format('woff');font-display:swap}
+:root{--papier:#e2cc9a;--papier2:#d4ba82;--tinte:#2a1608;--tinte2:#5a3a22;--blut:#6a0c06;--rand:#3a1a08;--knopf:#c9ad78;--knopf-an:#e9d6a6;--nacht:#120c09;--gut:#3c5a1e;
+ --schrift:'AT3 Text',ui-monospace,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--nacht);color:var(--tinte);font:18px/1.25 var(--schrift);-webkit-font-smoothing:none;-webkit-text-size-adjust:100%}
+body{min-height:100vh;display:flex;flex-direction:column;gap:8px;padding:8px max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+h1,h2{font-family:var(--schrift);font-weight:normal;color:var(--blut);margin:0}
+h1{font-size:30px}h2{font-size:24px}
+.papier{background:var(--papier);border:3px solid var(--rand);box-shadow:inset 0 0 0 3px var(--papier2),0 3px 0 #000;padding:10px 12px;image-rendering:pixelated}
+.unter{margin:2px 0 0;color:var(--tinte2)}
+main{flex:1;display:flex;flex-direction:column;gap:8px}
+#menues{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.knopf{font:inherit;font-size:20px;color:var(--tinte);background:var(--knopf);border:0;border-radius:0;padding:12px 10px;min-height:48px;cursor:pointer;touch-action:manipulation;
+ box-shadow:inset -3px -3px 0 rgba(58,26,8,.45),inset 3px 3px 0 rgba(255,246,220,.5),0 2px 0 #000;text-align:left}
+.knopf:active,.knopf.an{background:var(--knopf-an)}
+.knopf small{display:block;font-size:15px;color:var(--tinte2)}
+#fZu{padding:6px 12px;min-height:40px;text-align:center}
+.fkopf{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+#fInhalt p{margin:6px 0}
+#fInhalt ul{margin:6px 0;padding-left:20px}
+#fInhalt li{margin:3px 0}
+.leise{color:var(--tinte2)}
+.witz{color:var(--blut)}
+#last{font-size:16px;color:var(--tinte2)}
+#last b{color:var(--tinte);font-weight:normal}
+#last .gut{color:var(--gut)}#last .schlecht{color:var(--blut)}
