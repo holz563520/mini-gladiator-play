@@ -28,3 +28,11 @@ th{color:var(--tinte2)}
 #status{font-size:16px;color:var(--tinte2)}
 #stimmeKnopf{margin-top:8px}
 #stimmeKnopf[aria-pressed=true]{background:var(--knopf-an)}
+/* G2: Uhr-Leiste */
+#uhr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+#uhrZeit{font-size:24px;color:var(--blut);min-width:9.5em}
+.uhrKnoepfe{display:flex;gap:6px}
+.uhrKnoepfe .knopf{min-width:52px}
+.uhrKnoepfe .knopf[aria-pressed=true]{background:var(--knopf-an)}
+.knopf:disabled{opacity:.5;cursor:default}
+#uhrInfo{flex-basis:100%;margin:0;min-height:1.25em}

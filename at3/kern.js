@@ -1,0 +1,109 @@
+// WAS DIE DATEI TUT: Spielkern von Arena Theory 3.0 (Schritt G2). Reine Rechnung ohne Bildschirm: Zustand, Befehle, Uhr (20 feste Ticks je Sekunde),
+// Zufall in vier getrennten Strömen, Fingerabdruck des Zustands, Verteiler für Helferaufträge. Läuft unverändert im Weltkern (weltkern.js),
+// in den Helfern (helfer.js), im Master-Editor (Kernprobe) und in Node-Tests.
+// Kerne: diese Datei wird nur in Hintergrundkernen geladen, nie auf dem Hauptkern des Spiels (Regel 13).
+// Gleichheit: Die Spiellogik rechnet nur mit ganzen Zahlen (keine Winkel-, Wurzel- oder Kommarechnung), damit gleicher Seed und gleiche Befehle
+// auf jedem Gerät denselben Zustand ergeben. Helferergebnisse werden an einem festen Tick in Reihenfolge der Auftragsnummer übernommen,
+// darum ist das Ergebnis gleich, egal wie viele Helfer rechnen und wie schnell sie sind.
+// Probelast: Platzhalter-Einheiten und Probeaufträge sind nur Messlast für G2/MK1, kein Spielinhalt. Sie fallen weg, sobald echte Systeme da sind.
+// Wiederverwendet: Seed-Zufall nach dem Muster rnd() aus fpwelt.js (xorshift), hier mit dem Stand im Zustand und in getrennten Strömen.
+(function(root){
+'use strict';
+var TICKS=20;                         // Ticks je Spielsekunde bei 1×
+var STROEME=['welt','wirtschaft','kampf','kosmetik'];
+var MAX_LAST=1000000, MAX_WARTE=256;  // Obergrenzen: Probe-Einheiten (1 Mio. nur als Anschlag in der Kernprobe), wartende Befehle
+var FELD=256, RAND=64*FELD;           // Probefläche 64 × 64 Felder, Lage in 1/256 Feld
+var TEMPO_V=40, DENK=8;               // Schritt je Tick, Denk-Runden je Einheit (Messlast)
+var FERN=64, JE_TICK=4, FRIST=4;      // Probe-Fernregionen, Aufträge je Tick, Ticks bis zur Übernahme
+var MAX_SCHLANGE=64;                  // Verteiler: höchstens so viele wartende Aufträge
+
+function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
+function dreh(z){z^=z<<13;z>>>=0;z^=z>>>17;z^=z<<5;return z>>>0}
+
+// ── Zustand ──
+function neu(seed,version){var z={};setze(z,seed,version||1);return z}
+function setze(z,seed,version){seed=seed>>>0;
+ z.seed=seed;z.version=version;z.tick=0;z.tempo=1;z.last=0;z.auftragNr=0;z.angewandt=0;
+ z.zufall=new Uint32Array(STROEME.length);for(var i=0;i<STROEME.length;i++)z.zufall[i]=mix(seed+Math.imul(i+1,0x9e3779b9))||1;
+ z.e=new Int32Array(0);               // Probe-Einheiten: je 5 Zahlen x, y, Zielx, Ziely, Sinn
+ z.fern=new Int32Array(FERN);for(var r=0;r<FERN;r++)z.fern[r]=mix(seed^Math.imul(r+1,0x85ebca6b))|0;
+ z.offen=[];z.warte=[];return z}
+
+// ── Zufall: getrennte Ströme, Stand liegt im Zustand ──
+function zufall(z,strom){var v=dreh(z.zufall[strom]);z.zufall[strom]=v;return v}
+function zufallBis(z,strom,n){return zufall(z,strom)%n}
+
+// ── Befehle: Laufnummer, Ziel-Tick, Art, Wert. Geprüft beim Annehmen, angewendet nur an Tickgrenzen in Reihenfolge der Laufnummer ──
+var ARTEN={
+ tempo:function(w){return w===0||w===1||w===2||w===3},
+ last:function(w){return w===(w|0)&&w>=0&&w<=MAX_LAST},
+ neu:function(w){return typeof w==='number'&&w>=0&&w<=4294967295&&w===Math.floor(w)}
+};
+function befehl(z,b){
+ if(!b||!ARTEN[b.art])return'unbekannter Befehl';
+ if(!ARTEN[b.art](b.wert))return'ungültiger Wert';
+ if(!(b.nr===(b.nr|0)&&b.nr>=0))return'keine Laufnummer';
+ if(z.warte.length>=MAX_WARTE)return'zu viele wartende Befehle';
+ var t=b.tick==null?z.tick:b.tick;if(!(t===Math.floor(t)&&t>=0))return'ungültiger Tick';
+ z.warte.push({nr:b.nr,tick:t<z.tick?z.tick:t,art:b.art,wert:b.wert});return null}
+function anwenden(z){if(!z.warte.length)return 0;
+ var jetzt=[],rest=[],i;for(i=0;i<z.warte.length;i++)(z.warte[i].tick<=z.tick?jetzt:rest).push(z.warte[i]);
+ if(!jetzt.length)return 0;jetzt.sort(function(a,b){return a.nr-b.nr});z.warte=rest;
+ for(i=0;i<jetzt.length;i++){var b=jetzt[i];
+  if(b.art==='tempo')z.tempo=b.wert;
+  else if(b.art==='last')lastSetzen(z,b.wert);
+  else if(b.art==='neu'){var w=z.warte,a=z.angewandt;setze(z,b.wert,z.version+1);z.warte=w;z.angewandt=a;for(var k=0;k<w.length;k++)w[k].tick=0}
+  z.angewandt++}
+ return jetzt.length}
+function lastSetzen(z,n){var alt=z.e,vor=alt.length/5,e=new Int32Array(n*5);e.set(n<vor?alt.subarray(0,n*5):alt);
+ for(var i=vor;i<n;i++){var p=i*5;e[p]=zufallBis(z,0,RAND);e[p+1]=zufallBis(z,0,RAND);e[p+2]=zufallBis(z,0,RAND);e[p+3]=zufallBis(z,0,RAND);e[p+4]=zufall(z,0)|0}
+ z.e=e;z.last=n}
+
+// ── Helferaufträge ──
+// Fällige Aufträge dieses Ticks (Nummern). Der Weltkern rechnet den Tick erst, wenn alle Ergebnisse da sind.
+function faellig(z){var L=[];for(var i=0;i<z.offen.length;i++){if(z.offen[i].faellig>z.tick)break;L.push(z.offen[i].nr)}return L}
+// Rechnung eines Auftrags (läuft im Helfer oder, ohne Helfer, im Weltkern). Nur ganze Zahlen.
+function auftragRechnen(a){var v=(a.ein^0x5bd1e995)>>>0||1;for(var i=0;i<a.runden;i++)v=dreh(v);return v|0}
+
+// ── Ein Tick. holen(nr) liefert das Ergebnis eines fälligen Auftrags. Gibt die neu vergebenen Aufträge zurück. ──
+function schritt(z,holen){
+ anwenden(z);
+ var i,o=z.offen,n=0;
+ while(n<o.length&&o[n].faellig<=z.tick){z.fern[o[n].region]=holen(o[n].nr)|0;n++}     // feste Reihenfolge: Auftragsnummer
+ if(n)o.splice(0,n);
+ var e=z.e,N=z.last,p,x,y,d,s,r;
+ for(i=0;i<N;i++){p=i*5;x=e[p];y=e[p+1];
+  d=e[p+2]-x;x+=d>TEMPO_V?TEMPO_V:d<-TEMPO_V?-TEMPO_V:d;d=e[p+3]-y;y+=d>TEMPO_V?TEMPO_V:d<-TEMPO_V?-TEMPO_V:d;
+  if(x===e[p+2]&&y===e[p+3]){e[p+2]=zufallBis(z,0,RAND);e[p+3]=zufallBis(z,0,RAND)}
+  s=e[p+4];for(r=0;r<DENK;r++){s^=s<<13;s^=s>>>17;s^=s<<5}
+  e[p]=x;e[p+1]=y;e[p+4]=s^x^(y<<3)}
+ var neuL=[],runden=4000+(N>>1);
+ for(i=0;i<JE_TICK;i++){var nr=z.auftragNr++,reg=nr%FERN,a={nr:nr,version:z.version,vorrang:0,art:'probe',region:reg,ein:z.fern[reg]^nr,runden:runden,faellig:z.tick+FRIST};
+  o.push({nr:nr,region:reg,faellig:a.faellig});neuL.push(a)}
+ z.tick++;return neuL}
+
+// ── Fingerabdruck: Prüfsumme über den ganzen Zustand ──
+function abdruck(z){var h=0x811c9dc5,i;function f(v){h=Math.imul(h^(v&255),0x01000193);h=Math.imul(h^((v>>>8)&255),0x01000193);h=Math.imul(h^((v>>>16)&255),0x01000193);h=Math.imul(h^(v>>>24),0x01000193)}
+ f(z.seed);f(z.tick);f(z.tempo);f(z.last);f(z.auftragNr);
+ for(i=0;i<z.zufall.length;i++)f(z.zufall[i]);for(i=0;i<z.fern.length;i++)f(z.fern[i]);
+ var e=z.e,n=z.last*5;for(i=0;i<n;i++)f(e[i]);
+ return('0000000'+(h>>>0).toString(16)).slice(-8)}
+
+// ── Verteiler: wartende Aufträge (nach Vorrang, dann Nummer), Ergebnisse je Nummer, Veraltetes wird verworfen. Begrenzt. ──
+function verteiler(max){max=max||MAX_SCHLANGE;var schlange=[],fertig={},version=1,nFertig=0;
+ return{
+  auf:function(a){if(a.version!==version)return false;if(schlange.length>=max)return false;
+   var i=schlange.length;while(i>0&&(schlange[i-1].vorrang<a.vorrang||(schlange[i-1].vorrang===a.vorrang&&schlange[i-1].nr>a.nr)))i--;schlange.splice(i,0,a);return true},
+  naechster:function(){return schlange.length?schlange.shift():null},
+  ergebnis:function(nr,v,wert){if(v!==version||fertig[nr]!==undefined)return false;fertig[nr]=wert;nFertig++;return true},
+  hat:function(nr){return fertig[nr]!==undefined},
+  nimm:function(nr){var w=fertig[nr];delete fertig[nr];nFertig--;return w},
+  wartet:function(nr){for(var i=0;i<schlange.length;i++)if(schlange[i].nr===nr)return schlange.splice(i,1)[0];return null},
+  verwerfen:function(neueVersion){version=neueVersion;schlange=[];fertig={};nFertig=0},
+  version:function(){return version},laenge:function(){return schlange.length},fertige:function(){return nFertig},max:max}}
+
+var K={TICKS:TICKS,STROEME:STROEME,MAX_LAST:MAX_LAST,MAX_WARTE:MAX_WARTE,FELD:FELD,RAND:RAND,FERN:FERN,JE_TICK:JE_TICK,FRIST:FRIST,MAX_SCHLANGE:MAX_SCHLANGE,
+ neu:neu,zufall:zufall,zufallBis:zufallBis,befehl:befehl,anwenden:anwenden,faellig:faellig,auftragRechnen:auftragRechnen,schritt:schritt,abdruck:abdruck,
+ verteiler:verteiler};
+if(typeof module!=='undefined'&&module.exports)module.exports=K;else root.AT3KERN=K;
+})(typeof self!=='undefined'?self:this);

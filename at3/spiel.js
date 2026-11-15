@@ -4,9 +4,11 @@
 // Kerne: G1 hat noch keine Spielwelt; alles hier ist Laden und ein einziges Zeichnen auf dem Hauptkern (Welt-Hintergrundkern kommt mit G2).
 // V1: Knopf „Voice“. Erst beim Einschalten wird at3/stimme.js geladen, die den vorhandenen englischen Sprachgenerator im Hintergrundkern startet
 // (../sprech-worker-en.js, ../stimme-en.js, ../stimme-en-lex.js: die einzigen Dateien außerhalb von at3/, eine Quelle mit dem Voice Lab). Ein/Aus wird nicht gespeichert (Spielstände ab G3).
+// G2: Uhr-Leiste (Pause, 1×, 2×, 3×). Nach dem ersten Bild wird kernstart.js geladen; die Welt rechnet im Weltkern (weltkern.js) und in den Helferkernen (helfer.js),
+// der Hauptkern schickt nur Befehle und zeigt die Uhr. Fällt ein Kern aus oder gibt es keine Hintergrundkerne, hält das Spiel mit Meldung an. Fester Seed 1 bis G3.
 (function(){
 'use strict';
-var V='c19ca89e', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='159e211c', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -75,6 +77,23 @@ function stimmeUmschalten(){
  stimmeLaden().then(function(S){if(!S.ein(tonCtx))return;return S.sag(t('stimme.gruss')).then(function(ok){if(ok||!S.zustand().fehler)$('status').textContent=t('spiel.bereit');dateienZaehlen();stimmeKnopf()})})
  .catch(function(e){$('status').innerHTML='<span class="schlecht">'+esc(t('stimme.fehlt',{e:e.message}))+'</span>'})}
 
+// ── Spielkern (G2): Welt im Hintergrundkern, hier nur Uhr-Leiste und Befehle ──
+var KERN=null, kernAbdruck=null, uhrSek=-1, uhrTempo=-1, uhrLage='';
+function zeitText(sek){var h=Math.floor(sek/3600),m=Math.floor(sek/60)%60,s=sek%60;return h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s}
+function uhrKnoepfe(){return document.querySelectorAll('#uhr [data-tempo]')}
+function uhrZeigen(Z){var sek=Math.floor(Z.tick/20);if(sek!==uhrSek){uhrSek=sek;$('uhrZeit').textContent=t('uhr.zeit',{t:zeitText(sek)})}
+ if(Z.tempo!==uhrTempo){uhrTempo=Z.tempo;[].forEach.call(uhrKnoepfe(),function(k){k.setAttribute('aria-pressed',+k.dataset.tempo===Z.tempo?'true':'false')})}
+ var lage=Z.tempo===0?'uhr.pausiert':Z.ueber?'uhr.ueberlast':'';if(lage!==uhrLage){uhrLage=lage;$('uhrInfo').textContent=lage?t(lage):''}}
+function kernAusfall(g){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=true});$('uhrInfo').innerHTML='<span class="schlecht">'+esc(t('uhr.ausfall',{e:g}))+'</span>';uhrLage='aus';window.AT3SPIEL_KERN_AUS=g;if(!$('mess').hidden)messZeigen()}
+function kernStarten(){$('uhrInfo').textContent=t('uhr.wartet');uhrLage='wartet';
+ var s=document.createElement('script');s.src='kernstart.js?v='+V;s.onerror=function(){kernAusfall('kernstart.js')};
+ s.onload=function(){KERN=window.AT3KERNE.starten({seed:1,beiBild:uhrZeigen,beiAusfall:kernAusfall,
+  beiBereit:function(){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=false;k.onclick=function(){KERN.befehl('tempo',+k.dataset.tempo)}});window.AT3SPIEL_KERN=true}})};
+ document.head.appendChild(s)}
+function kernText(){var Z=KERN&&KERN.zustand;if(!Z||!Z.laeuft)return t('mess.kernAus')+(Z&&Z.fehler?' ('+Z.fehler+')':'');
+ return t('mess.kern',{h:Z.helfer,m:(Z.mittelUs/1000).toFixed(2)+' ms',p:(Z.p95Us/1000).toFixed(2)+' ms',n:Z.gesamt,v:Z.verloren,f:kernAbdruck||'-'})}
+function kernAbdruckHolen(){if(!KERN||!KERN.zustand.laeuft)return;KERN.abdruck().then(function(d){if(!d)return;kernAbdruck=d.wert+' at tick '+d.tick;if(!$('mess').hidden)messZeigen()})}
+
 function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
 
 // ── Messung: Dateien, Bildintervall 3 s, Budgetliste ──
@@ -87,7 +106,7 @@ function quantil(L,q){if(!L.length)return null;var s=L.slice().sort(function(a,b
 function bilderMessen(){var L=[],letzt=null,ende=performance.now()+3000;
  return new Promise(function(ok){function f(ts){if(letzt!=null)L.push(ts-letzt);letzt=ts;if(ts<ende)requestAnimationFrame(f);else ok(L)}requestAnimationFrame(f)})
   .then(function(L){mess.p95=quantil(L,.95);mess.p99=quantil(L,.99);mess.bildzahl=L.length})}
-function istWert(id){return{download:mess.download,erstesBild:mess.erstesBildMs,bildPc:mess.p95,bildHandy:mess.p95,bild99:mess.p99,lang:mess.langGemeldet?(mess.langMs||0):undefined,
+function istWert(id){return{download:mess.download,erstesBild:mess.erstesBildMs,bildPc:mess.p95,bildHandy:mess.p95,bild99:mess.p99,lang:mess.langGemeldet?(mess.langMs||0):undefined,weltTick:KERN&&KERN.zustand.laeuft&&KERN.zustand.gesamt>=20?KERN.zustand.p95Us/1000:null,
  speicher:performance.memory?performance.memory.usedJSHeapSize:undefined,bilder:mess.bilder}[id]}
 function zahl(v,e){if(e==='B')return v<1048576?(v/1024).toFixed(1)+' KB':(v/1048576).toFixed(1)+' MB';return(v<100?v.toFixed(1):Math.round(v))+' ms'}
 function budgetListe(){if(!BUDGETS)return[];return BUDGETS.budgets.map(function(b){var v=istWert(b.id),st;
@@ -97,14 +116,14 @@ function messZeigen(){var L=budgetListe(),h='<table><tr><th>'+t('mess.spalteWas'
   h+='<tr data-budget="'+r.id+'"><td>'+esc(r.was)+'</td><td>'+r.ziel+'</td><td class="'+(r.st==='gut'?'gut':r.st==='schlecht'?'schlecht':'grau')+'">'+esc(ist)+'</td></tr>'});
  h+='</table><p class="'+(mess.fremd.length?'schlecht':'gut')+'">'+esc(t('mess.fremd',{n:mess.fremd.length}))+'</p>'+
   '<p class="'+(mess.geschrieben?'schlecht':'gut')+'">'+esc(t('mess.schreibt',{n:mess.geschrieben}))+'</p>'+
-  '<p class="leise">'+esc(t('mess.kerne',{n:mess.kerne||'?'}))+' · '+mess.dateien+' files</p>'+'<p class="leise" id="messStimme">'+esc(stimmeText())+'</p>'+(mess.fertig?'':'<p class="leise">'+esc(t('mess.laeuft'))+'</p>');
+  '<p class="leise">'+esc(t('mess.kerne',{n:mess.kerne||'?'}))+' · '+mess.dateien+' files</p>'+'<p class="leise" id="messKern">'+esc(kernText())+'</p>'+'<p class="leise" id="messStimme">'+esc(stimmeText())+'</p>'+(mess.fertig?'':'<p class="leise">'+esc(t('mess.laeuft'))+'</p>');
  $('messInhalt').innerHTML=h}
 function ms(v){return v==null?'-':Math.round(v)+' ms'}
 function stimmeText(){var z=STIMME&&STIMME.zustand();if(!z||!z.geladen)return t('mess.stimmeAus');
  return t('mess.stimme',{lade:ms(z.ladeMs),rechen:ms(z.rechenMs),dauer:z.dauerS==null?'-':z.dauerS.toFixed(1)+' s',n:z.saetze,c:z.ausCache,a:z.akzent})}
-function messText(){var L=budgetListe(),z=['AT3 G1 '+V+' · '+navigator.userAgent,'cores '+(mess.kerne||'?')+' · files '+mess.dateien+' · foreign '+mess.fremd.length+' · saves written '+mess.geschrieben,
+function messText(){var L=budgetListe(),z=['AT3 '+V+' · '+navigator.userAgent,'cores '+(mess.kerne||'?')+' · files '+mess.dateien+' · foreign '+mess.fremd.length+' · saves written '+mess.geschrieben,
  'objects approved '+Object.keys(geladen.objekte).length+' · stand-ins '+zaehlErsatz()+' · frames '+(mess.bildzahl||0)];
- L.forEach(function(r){z.push(r.id+': '+(r.ist||'-')+' / '+r.ziel+' '+r.st)});z.push('voice: '+stimmeText());return z.join('\n')}
+ L.forEach(function(r){z.push(r.id+': '+(r.ist||'-')+' / '+r.ziel+' '+r.st)});z.push('core: '+kernText());z.push('voice: '+stimmeText());return z.join('\n')}
 function zaehlErsatz(){var s={};gezeichnet.forEach(function(g){if(g.ersatz)s[g.id]=1});return Object.keys(s).length}
 function kopieren(){var x=messText(),ok=function(){$('messKopie').textContent=t('mess.kopiert')};
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(x).then(ok,alt);else alt();
@@ -114,8 +133,8 @@ function kopieren(){var x=messText(),ok=function(){$('messKopie').textContent=t(
 function texteSetzen(){document.title=t('spiel.titel');$('titel').textContent=t('spiel.titel');$('unter').textContent=t('spiel.unter');
  $('bodenTitel').textContent=t('spiel.boden');$('bodenInfo').textContent=t('spiel.bodenInfo');$('karte').textContent=t('spiel.tippen');
  $('messTitel').textContent=t('mess.titel');$('messZu').textContent=t('mess.schliessen');$('messKopie').textContent=t('mess.kopieren');$('messAuf').textContent=t('mess.oeffnen');$('stimmeKnopf').textContent=t('stimme.aus');
- $('status').textContent=t('spiel.laedt')}
-window.AT3SPIEL={stimme:function(){return STIMME},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
+ $('status').textContent=t('spiel.laedt');uhrKnoepfe()[0].textContent=t('uhr.pause');$('uhrZeit').textContent=t('uhr.zeit',{t:'–'})}
+window.AT3SPIEL={stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
 
 Promise.all([holeJson('sprache/en.json'),holeJson('kartei/text-en.json'),holeJson('kartei/objekte.json'),holeJson('kartei/budgets.json'),holeJson('spiel-budgets.json')])
 .then(function(d){TXT=d[0].texte;OBJTXT=d[1].texte;kartei=d[2];B=d[3];BUDGETS=d[4];mess.datenMs=performance.now();texteSetzen();
@@ -127,13 +146,13 @@ Promise.all([holeJson('sprache/en.json'),holeJson('kartei/text-en.json'),holeJso
  $('zaehler').textContent=t('spiel.objekte',{n:Object.keys(geladen.objekte).length})+' · '+t('spiel.ersatz',{n:zaehlErsatz()})+' · '+t('spiel.abgelehnt',{n:geladen.abgelehnt.filter(function(a){return !/nicht übernommen/.test(a.gruende[0])}).length});
  return new Promise(function(r){requestAnimationFrame(function(){requestAnimationFrame(r)})})})
 .then(function(){mess.erstesBildMs=performance.now();dateienZaehlen();$('status').textContent=t('spiel.bereit');window.AT3SPIEL_BEREIT=true;
- $('boden').addEventListener('pointerup',karteZeigen);if(!$('mess').hidden)messZeigen();
+ $('boden').addEventListener('pointerup',karteZeigen);if(!$('mess').hidden)messZeigen();kernStarten();
  return bilderMessen()})
 .then(function(){var nach=speicherBild(),n=0,k;for(k in nach)if(SPEICHER_VOR[k]!==nach[k])n++;for(k in SPEICHER_VOR)if(!(k in nach))n++;mess.geschrieben=n;
- dateienZaehlen();mess.fertig=true;if(!$('mess').hidden)messZeigen();window.AT3SPIEL_GEMESSEN=true})
+ dateienZaehlen();mess.fertig=true;if(!$('mess').hidden)messZeigen();kernAbdruckHolen();window.AT3SPIEL_GEMESSEN=true})
 .catch(function(e){$('status').innerHTML='<span class="schlecht">'+esc('The gods dropped something: '+e.message)+'</span>';window.AT3SPIEL_FEHLER=e.message});
 
-$('messAuf').onclick=function(){$('mess').hidden=false;messZeigen();$('mess').scrollIntoView({block:'start'})};
+$('messAuf').onclick=function(){$('mess').hidden=false;kernAbdruckHolen();messZeigen();$('mess').scrollIntoView({block:'start'})};
 $('messZu').onclick=function(){$('mess').hidden=true};
 $('messKopie').onclick=kopieren;
 $('stimmeKnopf').onclick=stimmeUmschalten;

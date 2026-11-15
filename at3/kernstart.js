@@ -1,0 +1,45 @@
+// WAS DIE DATEI TUT: Anschluss des Hauptkerns an den Spielkern von Arena Theory 3.0 (Schritt G2). Startet den Weltkern (weltkern.js) und die
+// Helferkerne (helfer.js), verbindet beide über direkte Leitungen und reicht danach nur noch Befehle hin und Zahlenfelder zurück.
+// Kerne: Der Hauptkern rechnet hier nichts. Ohne Hintergrundkerne oder bei Ausfall eines Kerns hält das Spiel kontrolliert an (beiAusfall),
+// es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
+(function(){
+'use strict';
+var V='159e211c', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+// Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
+function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
+
+function starten(opt){opt=opt||{};
+ var Z={laeuft:false,fehler:null,helfer:0,tick:0,tempo:1,einheiten:0,verloren:0,wartet:false,version:0,offen:0,gesamt:0,ueber:false,selbst:0,fremd:0,
+  tickUs:0,p95Us:0,mittelUs:0,bilder:0,abgelehnt:0}, welt=null, hs=[], nr=0, frage=0, wartend={}, tot=false;
+ function ausfall(g){if(tot)return;tot=true;Z.laeuft=false;Z.fehler=g;aufraeumen();if(opt.beiAusfall)opt.beiAusfall(g)}
+ function aufraeumen(){document.removeEventListener('visibilitychange',sicht);try{welt&&welt.terminate()}catch(e){}hs.forEach(function(h){try{h.terminate()}catch(e){}});welt=null;hs=[]}
+ function sicht(){if(welt)welt.postMessage({art:'sichtbar',an:document.visibilityState!=='hidden'})}
+ var H={zustand:Z,
+  befehl:function(art,wert){if(!welt)return -1;welt.postMessage({art:'befehl',nr:nr,befehl:art,wert:wert});return nr++},
+  abdruck:function(){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'abdruck',id:id})})},
+  lauf:function(seed,befehle,bis){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'lauf',id:id,seed:seed,befehle:befehle,bis:bis})})},
+  testAusfall:function(wo){var w=wo==='helfer'?hs[0]:welt;if(w)w.postMessage({art:'testAusfall'})},
+  ende:function(){tot=true;Z.laeuft=false;aufraeumen()}};
+ if(typeof Worker==='undefined'||typeof MessageChannel==='undefined'){setTimeout(function(){ausfall('no background cores')},0);return H}
+ try{
+  var n=opt.helfer==null?helferZahl(navigator.hardwareConcurrency||1):opt.helfer, ports=[];
+  welt=new Worker(BASIS+'weltkern.js?v='+V);
+  welt.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ausfall('world core failed')};
+  for(var i=0;i<n;i++){var h=new Worker(BASIS+'helfer.js?v='+V),k=new MessageChannel();
+   h.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ausfall('helper core failed')};
+   h.postMessage({art:'port',port:k.port2},[k.port2]);ports.push(k.port1);hs.push(h)}
+  welt.onmessage=function(e){var d=e.data;
+   if(d.art==='bild'){var b=d.buf;Z.tick=b[0];Z.tempo=b[1];Z.tickUs=b[2];Z.einheiten=b[3];Z.helfer=b[4];Z.verloren=b[5];Z.wartet=!!b[6];Z.version=b[7];Z.offen=b[9];
+    Z.gesamt=b[10];Z.ueber=!!b[11];Z.selbst=b[12];Z.fremd=b[13];Z.p95Us=b[14];Z.mittelUs=b[15];Z.bilder++;
+    if(opt.beiBild)try{opt.beiBild(Z,b,KOPF,b[8])}catch(x){}
+    if(welt)welt.postMessage({art:'puffer',buf:b},[b.buffer])}
+   else if(d.art==='bereit'){Z.laeuft=true;Z.helfer=d.helfer;if(opt.beiBereit)opt.beiBereit(Z)}
+   else if(d.art==='abgelehnt'){Z.abgelehnt++}
+   else if(d.art==='abdruck'||d.art==='laufFertig'){var ok=wartend[d.id];delete wartend[d.id];if(ok)ok(d)}};
+  welt.postMessage({art:'start',seed:(opt.seed==null?1:opt.seed)>>>0,ports:ports},ports);
+  document.addEventListener('visibilitychange',sicht);sicht();
+ }catch(e){setTimeout(function(){ausfall('no background cores')},0)}
+ return H}
+
+window.AT3KERNE={starten:starten,helferZahl:helferZahl,TICKS:20};
+})();
