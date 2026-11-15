@@ -492,8 +492,8 @@ function* chunkSchritte(cx,cy,lod=1){const S=CH*lod,key=(lod*1000+cy)*1000+cx;le
 function chunk(cx,cy,lod=1){const it=chunkSchritte(cx,cy,lod);let r;do{r=it.next();}while(!r.done);return r.value;}
 let bodenJob=null;
 const bodenArbeit={ms:0,schritte:0,fertig:0};
-function bodenVorbereiten(view,lod){
- const start=performance.now(),ende=start+2;bodenArbeit.schritte=0;bodenArbeit.fertig=0;
+function bodenVorbereiten(view,lod,deadline=performance.now()+2){
+ const start=performance.now(),ende=Math.min(start+2,deadline);bodenArbeit.schritte=0;bodenArbeit.fertig=0;
  if(!lod){bodenJob=null;bodenArbeit.ms=0;return;}
  const S=CH*lod,anfragen=[],cx0=Math.max(0,Math.floor(view.x0/S)-1),cx1=Math.min(Math.ceil(WW/S)-1,Math.floor(view.x1/S)+1),
   cy0=Math.max(0,Math.floor(view.y0/S)-1),cy1=Math.min(Math.ceil(WH/S)-1,Math.floor((view.y1+130)/S)+1);
@@ -637,6 +637,7 @@ setInterval(()=>{const page=M.ui.getPage?.(),modal=$('modal')&&!$('modal').hidde
 // ---------- Zeichnen ----------
 // unter NAH: Boden in größeren Stücken (lod 2/4), unter FERN: nur die Übersicht
 const MINI=.6,NAH=.6,FERN=OV>2?.12:.6;let tempo=1,clock=0,last=performance.now(),perfAvg=4,perfWin=[],hudT=0,miniV=false,detailV=false;
+const bildArbeit={};
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)/1000);last=now;if(document.hidden||document.body.classList.contains('w-admin'))return;
  const t0=performance.now(),sd=dt*tempo;clock+=sd;H.tick?.(sd);for(const w of workers)wander(w,sd);// sd: Bildzeit im Spieltempo (A2), bei 3× größere Schritte, nicht mehr Rechnung
  if(fly){fly.t=Math.min(1,fly.t+dt*2.2);const e=1-Math.pow(1-fly.t,3);cam.x=fly.x0+(fly.x-fly.x0)*e;cam.y=fly.y0+(fly.y-fly.y0)*e;cam.s=fly.s0+(fly.s-fly.s0)*e;clampCam();if(fly.t>=1)fly=null;}
@@ -645,8 +646,11 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));
  const items=[];miniV=cam.s<MINI;detailV=cam.s>=DETAIL;
  const lod=cam.s>=NAH?1:cam.s>=FERN?(cam.s>=.3?2:4):0;
- if(window.AT2){bodenVorbereiten(view,lod);H.prepare?.(view,performance.now()+1.5);}
- if(GROSS){window.WeltGross?.draw(ctx,view);ctx.save();ctx.beginPath();for(const [i,p] of [iso(0,0),iso(N,0),iso(N,N),iso(0,N)].entries()){if(i)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);}ctx.closePath();ctx.clip();}
+ const prepStart=performance.now(),prepDeadline=prepStart+2;
+ bildArbeit.simulationMS=prepStart-t0;
+ if(window.AT2){bodenVorbereiten(view,lod,prepDeadline);H.prepare?.(view,prepDeadline);}
+ if(GROSS){window.WeltGross?.draw(ctx,view,prepDeadline);ctx.save();ctx.beginPath();for(const [i,p] of [iso(0,0),iso(N,0),iso(N,N),iso(0,N)].entries()){if(i)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);}ctx.closePath();ctx.clip();}
+ bildArbeit.vorbereitungMS=performance.now()-prepStart;const drawStart=performance.now();
  if(lod!==1){ctx.imageSmoothingEnabled=true;ctx.drawImage(overview,0,0,overview.width*OV,overview.height*OV);ctx.imageSmoothingEnabled=false;}
  if(lod){// 2.0: nur vorbereitete Stücke, fehlende Bereiche zeigen vorübergehend die Übersicht; Editor wie bisher
   const S=CH*lod,cx0=Math.max(0,Math.floor(view.x0/S)),cx1=Math.min(Math.ceil(WW/S)-1,Math.floor(view.x1/S)),cy0=Math.max(0,Math.floor(view.y0/S)),cy1=Math.min(Math.ceil(WH/S)-1,Math.floor((view.y1+130)/S));let neu=lod>1?2:999;
@@ -670,7 +674,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.1,(now-last)
  if(H.light){ctx.setTransform(DPR,0,0,DPR,0,0);H.light(ctx,VW,VH);ctx.setTransform(DPR*cam.s,0,0,DPR*cam.s,DPR*(VW/2-cam.x*cam.s),DPR*(VH/2-cam.y*cam.s));}
  H.world?.(ctx,view,dt);
  ctx.setTransform(1,0,0,1,0,0);
- const ms=performance.now()-t0;perfWin.push(ms);if(perfWin.length>30)perfWin.shift();perfAvg=perfWin.reduce((a,b)=>a+b,0)/perfWin.length;
+ const ms=performance.now()-t0;bildArbeit.zeichnenMS=performance.now()-drawStart;bildArbeit.gesamtMS=ms;perfWin.push(ms);if(perfWin.length>30)perfWin.shift();perfAvg=perfWin.reduce((a,b)=>a+b,0)/perfWin.length;
  hudT+=dt;if(hudT>1){hudT=0;$('wCount').textContent=`${workers.length} Leute · ${shown.length} im Bild`;$('wClock').textContent=`Zoom ${(cam.s<.01?cam.s.toFixed(4):cam.s.toFixed(2))}×${miniV?' · Miniaturansicht':detailV?' · Nahansicht':''}`;
   const bar=$('wPerfBar');bar.style.width=Math.round(clamp(perfAvg/16.7,0,1)*100)+'%';bar.style.background=perfAvg<8?'#6fae5a':perfAvg<13?'#d7b24a':'#c9483e';$('wPerf').textContent=perfAvg.toFixed(1)+' ms je Bild';}}
 
@@ -685,7 +689,7 @@ function ecken(k){const x=k%N,y=(k/N)|0,P=[iso(x,y),iso(x+1,y),iso(x+1,y+1),iso(
 function gelaendeTyp(k){obj[k]=0;kz[k]=0;const t=feld[k];if(!BODEN_NATUR.has(t))return;const m=Math.min(hc[k*4],hc[k*4+1],hc[k*4+2],hc[k*4+3]);if(m<WL)feld[k]=T.FLUSS;else if(t===T.FLUSS)feld[k]=grund[k];}
 function ebnen(ks,L){for(const k of ks){hc.fill(L,k*4,k*4+4);gelaendeTyp(k);}if(L>HMAX)HMAX=L;if(L<HMIN)HMIN=L;}
 const lamps=BAU.filter(b=>!b.flach).map(b=>{const p=iso(b.tx+b.w/2,b.ty+b.h+.3);return {x:p.x,y:p.y,r:120};});
-window.WeltKarte={grossTerrain:GROSS?{sprites:sprites[0],palette:PAL}:null,get bodenArbeit(){return {...bodenArbeit};},deko,neuMalen:rebake,KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
+window.WeltKarte={get bildArbeit(){return {...bildArbeit};},grossTerrain:GROSS?{sprites:sprites[0],palette:PAL}:null,get bodenArbeit(){return {...bodenArbeit};},deko,neuMalen:rebake,KW,HOEHE,DETAIL,SCHRITT,gehBild,drawFig,drawSit,drawMini,einfach:pof,cam,sprites:figs,get detail(){return detailV;},workers:()=>workers,shown:()=>shown,flyTo,pose,pose0,place,toWorld,spriteOf,FW,FH,FX,FY,WALK,SPEED,WW,WH,canvas:cv,lamps,
  N,TW,TH,T,NAMEN,feld,bauAuf,BAU,LUD,iso,tileAt,vonLudus,makeRoster,closeInfo(){},
  ANORD,fest,arenaPlatz,zaunA,zaunB,TORE,imAnord,inR,ber,BER,bfrei,// A3b natürlich: Bereiche mit geschwungenen Rändern
 // A3: Dorf, Platz, Park (Lagen relativ zu O), feste Felder, Grenzen, Tore

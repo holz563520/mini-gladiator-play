@@ -14,7 +14,7 @@
  const home={x:W.cam.x,y:W.cam.y,s:W.cam.s};let job=null,queue=[],wanted=new Set(),overviewDone=false,overviewRows=0,prepMS=0,completed=0,lastHUD=0,jobCount=0;
  const colors=W.grossTerrain.palette.map(p=>`rgb(${p[0].join(',')})`);
  function polygon(g,points,color){g.fillStyle=color;g.beginPath();g.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)g.lineTo(points[i].x,points[i].y);g.closePath();g.fill();}
- function* overviewSteps(){const step=C.SIZE/320;for(let y=C.MIN;y<C.MAX;y+=step){for(let x=C.MIN;x<C.MAX;x+=step){const t=world.sample(x+step/2,y+step/2);polygon(og,[[x,y],[x+step,y],[x+step,y+step],[x,y+step]].map(([a,b])=>{const p=W.iso(a,b);return{x:(p.x-left)/width*1024,y:(p.y-top)/height*512};}),colors[t.type]);}overviewRows++;yield;}overviewDone=true;}
+ function* overviewSteps(){const step=C.SIZE/320;for(let y=C.MIN;y<C.MAX;y+=step){for(let x=C.MIN;x<C.MAX;x+=step){const t=world.sample(x+step/2,y+step/2);polygon(og,[[x,y],[x+step,y],[x+step,y+step],[x,y+step]].map(([a,b])=>{const p=W.iso(a,b);return{x:(p.x-left)/width*1024,y:(p.y-top)/height*512};}),colors[t.type]);yield;}overviewRows++;}overviewDone=true;}
  const overviewJob=overviewSteps();
  // Blend the exterior boundary to the existing terrain; no changes to the central game's arrays.
  function elevation(x,y){const raw=Math.max(-.6,world.height(x,y)),cx=clamp(x,0,W.N-1),cy=clamp(y,0,W.N-1),d=Math.max(Math.abs(x-cx),Math.abs(y-cy));if(d>=24)return raw;return W.hoehe(cx,cy)*(1-d/24)+raw*(d/24);}
@@ -45,18 +45,24 @@
    if(pts.every(p=>p.tx<C.MIN)||pts.every(p=>p.ty<C.MIN)||pts.every(p=>p.tx>C.MAX)||pts.every(p=>p.ty>C.MAX))continue;
    list.push({key:`${lod}:${x}:${y}`,x,y,lod,d:(x*s+s/2-W.cam.x)**2+(y*s+s/2-W.cam.y)**2});
   }return list.sort((a,b)=>a.d-b.d);}
- function draw(g,view){
-  const start=performance.now(),deadline=start+2,lod=W.cam.s<.04?0:Math.min(512,Math.max(1,2**Math.ceil(Math.log2(.65/W.cam.s))));
-  queue=lod?visibleJobs(view,lod):[];wanted=new Set(queue.map(q=>q.key));if(job&&!wanted.has(job.key)){job.it.return();job=null;}
+ function draw(g,view,frameDeadline=performance.now()+2){
+  // A convex city diamond contains the viewport iff all four corners are inside.
+  const cityOnly=[[view.x0,view.y0],[view.x1,view.y0],[view.x0,view.y1],[view.x1,view.y1]].every(([x,y])=>{const p=W.tileAt(x,y);return p.tx>2&&p.ty>2&&p.tx<W.N-2&&p.ty<W.N-2;});
+  if(cityOnly&&!panel.open){if(job){job.it.return();job=null;}queue=[];prepMS=0;return;}
+  const start=performance.now(),deadline=Math.min(start+2,frameDeadline);let lod=W.cam.s<.04?0:Math.min(512,Math.max(1,2**Math.ceil(Math.log2(.65/W.cam.s))));
+  queue=lod&&!cityOnly?visibleJobs(view,lod):[];
+  // Keep the complete visible working set within the fixed memory cap.
+  while(queue.length>Math.floor(cache.limit/(CH*CH*4))&&lod<512){lod*=2;queue=visibleJobs(view,lod);}
+  wanted=new Set(queue.map(q=>q.key));if(job&&!wanted.has(job.key)){job.it.return();job=null;}
   // One resumable job and a fixed 2 ms soft budget, including the world overview.
   while(performance.now()<deadline){if(!overviewDone){overviewJob.next();continue;}if(!job){const q=queue.find(q=>!cache.map.has(q.key));if(!q)break;job={...q,it:buildChunk(q.x,q.y,q.lod)};jobCount++;}
    const r=job.it.next();if(r.done){cache.put(job.key,r.value);completed++;job=null;break;}}
   prepMS=performance.now()-start;
-  g.save();polygonClip(g,[[C.MIN,C.MIN],[C.MAX,C.MIN],[C.MAX,C.MAX],[C.MIN,C.MAX]]);
+  if(!cityOnly){g.save();polygonClip(g,[[C.MIN,C.MIN],[C.MAX,C.MIN],[C.MAX,C.MAX],[C.MIN,C.MAX]]);
   g.imageSmoothingEnabled=false;const bx=Math.max(left,view.x0),by=Math.max(top,view.y0),bw=Math.min(left+width,view.x1)-bx,bh=Math.min(top+height,view.y1)-by;
   if(bw>0&&bh>0)g.drawImage(overview,(bx-left)/width*1024,(by-top)/height*512,bw/width*1024,bh/height*512,bx,by,bw,bh);
   for(const q of queue){const c=cache.get(q.key);if(c)g.drawImage(c,q.x*CH*lod,q.y*CH*lod,CH*lod,CH*lod);}
-  g.restore();
+  g.restore();}
   if(performance.now()-lastHUD>400){lastHUD=performance.now();const p=W.tileAt(W.cam.x,W.cam.y);stats.textContent=`${texts.seed}: ${world.seed} · X ${Math.round(p.tx-C.MIN)} / Y ${Math.round(p.ty-C.MIN)} · ${cache.map.size} Bilder / ${(cache.bytes/1048576).toFixed(1)} MiB · ${prepMS.toFixed(1)} ms · ${overviewDone?(queue.some(q=>!cache.map.has(q.key))?texts.loading:texts.ready):texts.loading+' '+Math.round(overviewRows/320*100)+'%'}`;
    if(panel.open){mg.clearRect(0,0,320,160);mg.drawImage(overview,0,0,320,160);const a=W.iso(0,0),b=W.iso(W.N,0),c=W.iso(W.N,W.N),d=W.iso(0,W.N);mg.strokeStyle='#ffe1a1';mg.beginPath();[a,b,c,d,a].forEach((p,i)=>{const x=(p.x-left)/width*320,y=(p.y-top)/height*160;i?mg.lineTo(x,y):mg.moveTo(x,y)});mg.stroke();mg.strokeStyle='#fff';mg.strokeRect((view.x0-left)/width*320,(view.y0-top)/height*160,Math.max(3,(view.x1-view.x0)/width*320),Math.max(3,(view.y1-view.y0)/height*160));}}
  }
