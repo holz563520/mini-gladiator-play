@@ -1,5 +1,6 @@
 // WAS DIE DATEI TUT: Grafikstandard AT3-64 (Schritt M2, Wunsch Thomas 15.11.2026: 64 statt 32 Farben): Feldmaß 64 × 32, Höhenstufen, Größentabelle, Paletten (64 Farben in 11 Farbreihen),
 // M5: Kartenrichtungen je Art, Verweise (gespiegelt), First-Person-Bilder nah und fern, Prüfer pruefeAnsichten.
+// M6: Bildsignatur, Bewertung einer Messung gegen die Budgetliste, Statuswechsel nach Änderungen, Ladesperre (nur „übernommen“ mit gültiger Messung).
 // Speicherformat mit Farbnummern („.“ = ganz durchsichtig, 0–9 A–Z a–z + * = Farbe 0–63), Prüfer für Bilddaten und fertige Bildpunkte, Umwandlung in ein Canvas.
 // Gemeinsam für Master-Editor und (ab G1) Spiel. Läuft im Browser und in Node (Tests).
 (function(G){
@@ -135,10 +136,51 @@ function pruefeAnsichten(o){var f=[],R=RICHTUNGEN[o.kat]||1,n=(o.richtungen||[])
 // Speicher aller Ansichten eines Objekts (Verweise zählen 0).
 function ansichtenBytes(o){var k=bytes(o.bild),fp=0;(o.richtungen||[]).forEach(function(e){if(!istVerweis(e))k+=bytes(e)});
  if(o.fp){['nah','fern'].forEach(function(w){var e=o.fp[w];if(e&&!istVerweis(e))fp+=bytes(e)})}return{karte:k,fp:fp,summe:k+fp}}
+
+// ── M6: Prüfstand und Übernahme ────────────────────────────────────────────────────────────────────
+// Feldreihenfolge der Objekt-Datei. messung = gedrosselte Messung, geraet = Messung auf einem echten Gerät (beide mit Bildsignatur).
+var FELDER=['format','id','version','typ','kat','name','status','herkunft','karte','bild','richtungen','fp','messung','geraet'];
+function ordne(o){var n={};FELDER.forEach(function(k){if(o[k]!==undefined)n[k]=o[k]});return n}
+// Signatur über alles, was gezeichnet wird (Art und alle Ansichten). Ändert sich ein Bildpunkt, ist jede alte Messung ungültig.
+function signatur(o){var t=JSON.stringify([o.kat,o.bild||null,o.richtungen||null,o.fp||null]),h=0x811c9dc5;
+ for(var i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return('0000000'+h.toString(16)).slice(-8)+'-'+t.length.toString(36)}
+// Dateigröße wie exportiert, ohne die Messberichte (die gehören nicht zum Bild).
+function dateiBytes(o){var n={};FELDER.forEach(function(k){if(o[k]!==undefined&&k!=='messung'&&k!=='geraet')n[k]=o[k]});return JSON.stringify(n).length+1}
+// Status nach einer Änderung (Entscheidung Thomas 15.11.2026): neues Bild → zurück auf Skizze, Messung verworfen.
+// Nur Karte, Name oder Typnummer geändert → zurück auf Skizze, Messung bleibt gültig (nur neu prüfen und übernehmen). Sonst bleibt alles.
+function nachAenderung(alt,neu){if(!alt)return neu;
+ if(signatur(alt)!==signatur(neu)){neu.status='skizze';delete neu.messung;delete neu.geraet;return neu}
+ if(alt.messung)neu.messung=alt.messung;if(alt.geraet)neu.geraet=alt.geraet;
+ neu.status=JSON.stringify([alt.karte,alt.name,alt.typ])===JSON.stringify([neu.karte,neu.name,neu.typ])?(alt.status||'skizze'):'skizze';return neu}
+function budgetGruppe(B,kat){if(!B||!B.gruppen)return null;for(var k in B.gruppen)if(B.gruppen[k].kats.indexOf(kat)>=0){var g=B.gruppen[k];g.id=k;return g}return null}
+// Messung gegen Budget: rot = über Budget (keine Übernahme), gelb = über 75 % des Budgets, grün = darunter.
+// m = {datei, bildspeicher, karte:[{n,p95}], fp:[{n,p95}]}; bewertet wird die größte Stufe. Budgets wirken auch auf alte Messungen.
+function bewerte(m,B,kat){var g=budgetGruppe(B,kat),r=[],gelb=[];
+ if(!g)return{ampel:'rot',gruende:['keine Budgetgruppe für Art „'+kat+'“']};
+ if(!m)return{ampel:'keine',gruende:['noch nicht gemessen']};
+ if(m.datei>g.datei)r.push('Datei '+m.datei+' B über '+g.datei+' B');else if(m.datei>.75*g.datei)gelb.push('Datei knapp');
+ if(m.bildspeicher>B.bildspeicher)r.push('Bildspeicher '+m.bildspeicher+' B über '+B.bildspeicher+' B');
+ ['karte','fp'].forEach(function(a){var b=g[a];if(!b)return;var L=m[a]||[],s=L[L.length-1],nm=a==='karte'?'Karte':'First Person';
+  if(!s||s.n<b.stufen[b.stufen.length-1]){r.push(nm+': Messung mit '+b.stufen[b.stufen.length-1]+' Stück fehlt');return}
+  if(s.p95>b.ms)r.push(nm+' '+s.n+' Stück: '+s.p95.toFixed(1)+' ms über '+b.ms+' ms');else if(s.p95>.75*b.ms)gelb.push(nm+' knapp ('+s.p95.toFixed(1)+' von '+b.ms+' ms)')});
+ return r.length?{ampel:'rot',gruende:r}:{ampel:gelb.length?'gelb':'gruen',gruende:gelb}}
+// Ladesperre: Gründe, warum das Spiel ein Objekt NICHT laden darf (leer = ladbar). Bildfehler, Ansichten, Status, veraltete oder rote Messung.
+function ladbar(o,B){var f=pruefeObjekt(o);if(!o||o.format!=='at3-objekt')return f;var sig=signatur(o);
+ if(o.status!=='uebernommen')f.push('Status ist „'+o.status+'“, nicht „übernommen“');
+ if(!o.messung)f.push('keine Messung');else if(o.messung.sig!==sig)f.push('Messung veraltet (Bild geändert)');
+ else if(B){var b=bewerte(o.messung,B,o.kat);if(b.ampel==='rot')f=f.concat(b.gruende);if(dateiBytes(o)>(budgetGruppe(B,o.kat)||{datei:0}).datei)f.push('Datei über Budget')}
+ if(o.geraet&&o.geraet.sig===sig&&B&&bewerte(o.geraet,B,o.kat).ampel==='rot')f.push('auf dem Gerät über Budget');
+ return f}
+// Lader fürs Spiel (ab G1): holt nur Kartei-Einträge mit Status „übernommen“ und prüft jedes Objekt noch einmal mit ladbar.
+// holen(datei) → Promise mit dem Objekt. Ergebnis {objekte:{id:o}, abgelehnt:[{id,gruende}]}.
+function ladeUebernommene(kartei,holen,B){var aus={objekte:{},abgelehnt:[]},L=(kartei&&kartei.objekte)||[];
+ return Promise.all(L.map(function(e){if(e.status!=='uebernommen'){aus.abgelehnt.push({id:e.id,gruende:['in der Kartei nicht übernommen']});return null}
+  return Promise.resolve(holen(e.datei)).then(function(o){var f=ladbar(o,B);if(o&&o.id!==e.id)f.push('Kennung passt nicht zur Kartei');
+   if(f.length)aus.abgelehnt.push({id:e.id,gruende:f});else aus.objekte[o.id]=o},function(){aus.abgelehnt.push({id:e.id,gruende:['Datei nicht lesbar']})})})).then(function(){return aus})}
 var PALETTE='A';   // Entscheidung Thomas 15.11.2026 (E5)
 var AT3_64={PALETTE:PALETTE,STATUS:STATUS,naechste:naechste,pruefeObjekt:pruefeObjekt,ZEICHEN:ZEICHEN,LEER:LEER,REIHEN:REIHEN,PALETTEN:PALETTEN,FELD:FELD,HOEHE:HOEHE,GESCHOSS:GESCHOSS,GROESSEN:GROESSEN,
  START:START,nummer:function(reihe,stufe){return START[reihe]+stufe},
  dunkler:function(n){for(var r=REIHEN.length-1;r>=0;r--)if(n>=START[r])return n>START[r]?n-1:n;return n},farbe:farbe,pruefe:pruefe,pruefePunkte:pruefePunkte,zuCanvas:zuCanvas,bytes:bytes,
- RICHTUNGEN:RICHTUNGEN,spiegelBild:spiegelBild,halbBild:halbBild,istVerweis:istVerweis,richtungsBild:richtungsBild,fpBild:fpBild,ansichtenErgaenzen:ansichtenErgaenzen,pruefeAnsichten:pruefeAnsichten,ansichtenBytes:ansichtenBytes};
+ RICHTUNGEN:RICHTUNGEN,FELDER:FELDER,ordne:ordne,signatur:signatur,dateiBytes:dateiBytes,nachAenderung:nachAenderung,budgetGruppe:budgetGruppe,bewerte:bewerte,ladbar:ladbar,ladeUebernommene:ladeUebernommene,spiegelBild:spiegelBild,halbBild:halbBild,istVerweis:istVerweis,richtungsBild:richtungsBild,fpBild:fpBild,ansichtenErgaenzen:ansichtenErgaenzen,pruefeAnsichten:pruefeAnsichten,ansichtenBytes:ansichtenBytes};
 if(typeof module!=='undefined'&&module.exports)module.exports=AT3_64;else G.AT3_64=AT3_64;
 })(typeof window!=='undefined'?window:globalThis);

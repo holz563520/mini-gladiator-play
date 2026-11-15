@@ -132,9 +132,10 @@ function objekt(){var id=$('#wId').value.trim().toLowerCase(),d=lies(),alt=d.obj
  if(alt){if(alt.typ)o.typ=alt.typ;if(alt.karte)o.karte=alt.karte;   // M4: Typnummer und Karte bleiben beim Neuzeichnen erhalten
   o.version=alt.version;var gleich=JSON.stringify([alt.bild,alt.richtungen,alt.fp])===JSON.stringify([o.bild,o.richtungen,o.fp])&&alt.name===o.name&&alt.kat===o.kat;
   if(!gleich){var r=W.repo[id];o.version=r&&alt.version<=r.version?r.version+1:alt.version}
-  if(alt.herkunft&&W.herkunft!=='umgerechnet')o.herkunft=alt.herkunft}
+  if(alt.herkunft&&W.herkunft!=='umgerechnet')o.herkunft=alt.herkunft;
+  S.nachAenderung(alt,o)}   // M6: unverändert gespeichert → Status und Messung bleiben, neues Bild → Skizze
  else if(W.repo[id])o.version=W.repo[id].version+1;
- return o}
+ return S.ordne(o)}
 function speichern(){var o=objekt(),f=S.pruefeObjekt(o);if(f.length)return meld('Abgelehnt: '+f.join('; ')+'.',1);
  var d=lies();d.objekte[o.id]=o;if(!schreib(d))return meld('Browser lässt nicht speichern (privates Fenster?). Gleich exportieren.',1);
  W.obj=o;liste();meld('Gespeichert: „'+o.id+'“ Version '+o.version+' als Entwurf in diesem Browser. Für das Spiel: Objekt-Datei und Kartei-Datei exportieren.');return o}

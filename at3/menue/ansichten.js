@@ -90,7 +90,8 @@ function zeigen(){var s=S(),o=A.o,f=s.pruefeObjekt(o),by=s.ansichtenBytes(o),R=s
 function fertig(){var o=kopie(A.o),r=A.repo[o.id],d=lies().objekte||{},alt=d[o.id]||r;
  var sig=function(x){return JSON.stringify([x.bild,x.richtungen,x.fp])};
  if(alt&&sig(alt)!==sig(o))o.version=r&&alt.version<=r.version?r.version+1:alt.version;
- var n={};['format','id','version','typ','kat','name','status','herkunft','karte','bild','richtungen','fp'].forEach(function(k){if(o[k]!==undefined)n[k]=o[k]});return n}
+ S().nachAenderung(alt,o);   // M6: neues Bild → zurück auf Skizze, Messung verworfen
+ return S().ordne(o)}
 function speichern(){if(!A.o)return null;var f=S().pruefeObjekt(A.o);if(f.length){meld('Abgelehnt: '+f.join('; ')+'.',1);return null}
  var o=fertig(),d=lies();d.objekte=d.objekte||{};d.objekte[o.id]=o;if(!schreib(d)){meld('Browser lässt nicht speichern (privates Fenster?). Gleich exportieren.',1);return null}
  A.o=kopie(o);liste();$('#aListe').value=o.id;meld('Gespeichert: „'+o.id+'“ Version '+o.version+' als Entwurf. Fürs Repository: Objekt-Datei exportieren (Kartei-Datei in der Werkstatt).');return o}

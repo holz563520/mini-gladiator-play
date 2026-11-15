@@ -60,3 +60,12 @@ main{flex:1;display:flex;flex-direction:column;gap:8px}
 .kFlaeche canvas{display:block;touch-action:manipulation;cursor:pointer;max-width:100%}
 /* M5: Zwei Ansichten nebeneinander (auf schmalen Handys untereinander) */
 .aPaar{display:flex;flex-wrap:wrap;gap:8px}.aPaar>div{flex:1 1 300px;min-width:0}
+/* M6: Prüfstand */
+.pListe{display:flex;flex-direction:column;gap:4px;margin:6px 0}
+.pZeile{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;font-size:18px;padding:8px 10px}.pZeile small{flex-basis:100%;font-size:15px}
+.amp{display:inline-block;width:16px;height:16px;border:2px solid var(--rand);margin-right:6px;vertical-align:-2px;background:#8a8070}
+.amp.gruen{background:#4a7a1e}.amp.gelb{background:#e0b030}.amp.rot{background:#a81c10}.amp.alt{background:#5c5650}
+#pCv{display:block;width:100%;max-width:640px;margin:0 auto;height:auto}#pCv.fp{max-width:640px}
+#pObj h3{margin:8px 0 2px;font-size:22px;color:var(--blut);font-weight:normal}
+.knopf:disabled{opacity:.5;cursor:default}
+.pBudget{margin-top:8px}.pBudget summary{cursor:pointer;color:var(--blut);font-size:20px}

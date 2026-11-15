@@ -149,7 +149,8 @@ function fertig(){
  var sig=function(x){return JSON.stringify([x.name,x.kat,x.typ,x.karte,x.bild,x.richtungen,x.fp])};
  if(alt&&sig(alt)!==sig(o))o.version=r&&alt.version<=r.version?r.version+1:alt.version;
  // Reihenfolge der Felder wie in der Repository-Datei
- var n={};['format','id','version','typ','kat','name','status','herkunft','karte','bild','richtungen','fp'].forEach(function(k){if(o[k]!==undefined)n[k]=o[k]});return n}
+ S.nachAenderung(alt,o);   // M6: Karte, Name oder Typ geändert → wieder Skizze (Messung bleibt gültig)
+ return S.ordne(o)}
 function texteMit(o){var t=alleTexte(),s=K.schluessel(o.id);t[s.name]=Z.T.name;t[s.info]=Z.T.info;return t}
 function pruefen(){if(!Z.E)return[];var o=fertig(),f=S.pruefeObjekt(o).concat(K.pruefeKarte(o,texteMit(o)));
  var s=K.saetze(Z.T.info);$('#kZahl').textContent=Z.T.info.length+' / '+K.INFO_MAX+' Zeichen · '+s+(s===1?' Satz':' Sätze');
