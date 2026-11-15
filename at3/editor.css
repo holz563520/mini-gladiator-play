@@ -58,3 +58,5 @@ main{flex:1;display:flex;flex-direction:column;gap:8px}
 .kInfo{display:block;margin:6px 0}
 .kInfo textarea{display:block;width:100%;font:inherit;background:var(--knopf-an);color:var(--tinte);border:2px solid var(--rand);padding:4px}
 .kFlaeche canvas{display:block;touch-action:manipulation;cursor:pointer;max-width:100%}
+/* M5: Zwei Ansichten nebeneinander (auf schmalen Handys untereinander) */
+.aPaar{display:flex;flex-wrap:wrap;gap:8px}.aPaar>div{flex:1 1 300px;min-width:0}

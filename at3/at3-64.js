@@ -1,4 +1,5 @@
 // WAS DIE DATEI TUT: Grafikstandard AT3-64 (Schritt M2, Wunsch Thomas 15.11.2026: 64 statt 32 Farben): Feldmaß 64 × 32, Höhenstufen, Größentabelle, Paletten (64 Farben in 11 Farbreihen),
+// M5: Kartenrichtungen je Art, Verweise (gespiegelt), First-Person-Bilder nah und fern, Prüfer pruefeAnsichten.
 // Speicherformat mit Farbnummern („.“ = ganz durchsichtig, 0–9 A–Z a–z + * = Farbe 0–63), Prüfer für Bilddaten und fertige Bildpunkte, Umwandlung in ein Canvas.
 // Gemeinsam für Master-Editor und (ab G1) Spiel. Läuft im Browser und in Node (Tests).
 (function(G){
@@ -85,12 +86,59 @@ function pruefeObjekt(o){var f=[];if(!o||o.format!=='at3-objekt')return ['kein A
  if(!/^[a-z0-9][a-z0-9-]{1,39}$/.test(o.id||''))f.push('Kennung ungültig (a–z, 0–9, Bindestrich, 2–40 Zeichen)');
  if(!(o.version>=1&&o.version%1===0))f.push('Version ungültig');if(!o.name)f.push('Name fehlt');if(STATUS.indexOf(o.status)<0)f.push('Status ungültig');
  if(o.bild&&o.bild.kat!==o.kat)f.push('Art von Objekt und Bild verschieden');
- return f.concat(pruefe(o.bild).map(function(x){return'Bild: '+x}))}
+ return f.concat(pruefe(o.bild).map(function(x){return'Bild: '+x}),o.bild?pruefeAnsichten(o):[])}
 // Speicherbedarf als Farbnummern (1 Byte je Bildpunkt) für Messungen.
-function bytes(b){return b.w*b.h}
+function bytes(b){return b&&b.z?b.w*b.h:0}
+
+// ── M5: Zwei Ansichten ─────────────────────────────────────────────────────────────────────────────
+// Kartenrichtungen je Art (Thomas 15.11.2026: Natur 4 wie Gebäude). Richtung 1 = o.bild, Richtungen 2… in o.richtungen.
+// Ein Eintrag ist ein eigenes Bild oder ein Verweis {von:0, spiegel:true}: kostet keinen Speicher, wird beim Laden einmal aufgelöst.
+// First Person: o.fp = {nah: Bild oder {von:0} (= Kartenbild Richtung 1), fern: Bild, fernAuto: true (aus nah verkleinert)}.
+var RICHTUNGEN={boden:1,blume:4,baum:4,wand:1,dach:4,ware:1,figur:4,tier:4,karren:4};
+function spiegelBild(b){return{kat:b.kat,w:b.w,h:b.h,ax:Math.max(0,b.w-1-b.ax),ay:b.ay,z:b.z.map(function(r){return r.split('').reverse().join('')})}}
+// Halbe Größe, nur Palettenfarben: je 2 × 2 Bildpunkte die häufigste Farbe; weniger als 2 gefüllte Punkte = durchsichtig. Einmal im Editor, nie im Spiel.
+function halbBild(b){var w=Math.ceil(b.w/2),h=Math.ceil(b.h/2),z=[];
+ for(var y=0;y<h;y++){var r='';for(var x=0;x<w;x++){var n={},voll=0,best=LEER,bn=0;
+  for(var dy=0;dy<2;dy++)for(var dx=0;dx<2;dx++){var zz=b.z[2*y+dy],c=zz&&zz[2*x+dx];if(!c||c===LEER)continue;voll++;n[c]=(n[c]||0)+1;if(n[c]>bn){bn=n[c];best=c}}
+  r+=voll>=2?best:LEER}z.push(r)}
+ return{kat:b.kat,w:w,h:h,ax:Math.floor(b.ax/2),ay:Math.floor(b.ay/2),z:z}}
+function istVerweis(e){return !!e&&!e.z&&typeof e.von==='number'}
+// Bild der Kartenrichtung r (0-basiert) mit aufgelösten Verweisen. Verweise zeigen nur auf Richtung 1 (keine Ketten).
+function richtungsBild(o,r){if(!r)return o.bild;var e=o.richtungen&&o.richtungen[r-1];if(!e)return null;
+ if(!istVerweis(e))return e;var b=e.von===0?o.bild:null;return b?(e.spiegel?spiegelBild(b):b):null}
+function fpBild(o,was){var f=o.fp;if(!f)return null;var e=f[was];if(!e)return null;if(istVerweis(e))return e.von===0?o.bild:null;return e}
+function haeufigste(b){var n={},best=0,bn=-1;b.z.forEach(function(r){for(var i=0;i<r.length;i++){var c=r[i];if(c===LEER)continue;n[c]=(n[c]||0)+1;if(n[c]>bn){bn=n[c];best=ZEICHEN.indexOf(c)}}});return best}
+// Fehlende Ansichten mit sparsamen Startfassungen füllen (Thomas: nah aus Kartenbild, fern automatisch). Ändert nur Fehlendes.
+function ansichtenErgaenzen(o){var R=RICHTUNGEN[o.kat]||1,neu=0;o.richtungen=o.richtungen||[];
+ for(var r=1;r<R;r++)if(!o.richtungen[r-1]){o.richtungen[r-1]={von:0,spiegel:r%2===1};neu++}
+ o.richtungen.length=R-1;if(!o.richtungen.length)delete o.richtungen;
+ o.fp=o.fp||{};
+ if(o.kat==='boden'){if(!(o.fp.farbe>=0)){o.fp={farbe:haeufigste(o.bild)};neu++}return neu}   // Boden in First Person = Farbfläche (AT3_PLAN 9.5)
+ if(!o.fp.nah){o.fp.nah={von:0};neu++}
+ if(!o.fp.fern||o.fp.fernAuto){var alt=JSON.stringify(o.fp.fern||null);o.fp.fern=halbBild(fpBild(o,'nah'));o.fp.fernAuto=true;if(alt!==JSON.stringify(o.fp.fern))neu++}
+ return neu}
+// Prüfer M5: alle Kartenrichtungen und beide First-Person-Bilder vorhanden und gültig. Ohne beide Ansichten keine Übernahme (Regel 7).
+function pruefeAnsichten(o){var f=[],R=RICHTUNGEN[o.kat]||1,n=(o.richtungen||[]).length;
+ if(n!==R-1)f.push('Kartenansicht braucht '+R+' Richtung'+(R>1?'en':'')+', vorhanden '+(o.bild?n+1:0));
+ for(var r=1;r<R;r++){var e=o.richtungen&&o.richtungen[r-1];if(!e)continue;
+  if(istVerweis(e)){if(e.von!==0)f.push('Richtung '+(r+1)+': Verweis nur auf Richtung 1 erlaubt')}
+  else pruefe(e).forEach(function(x){f.push('Richtung '+(r+1)+': '+x)});
+  var b=richtungsBild(o,r);if(b&&b.kat!==o.kat)f.push('Richtung '+(r+1)+': falsche Art')}
+ if(o.kat==='boden'){if(!o.fp||!(o.fp.farbe>=0&&o.fp.farbe<64&&o.fp.farbe%1===0))f.push('First Person: Bodenfarbe (Farbnummer 0–63) fehlt');return f}
+ if(!o.fp)f.push('First-Person-Ansicht fehlt');
+ else ['nah','fern'].forEach(function(w){var e=o.fp[w];if(!e){f.push('First Person '+w+' fehlt');return}
+  if(istVerweis(e)){if(e.von!==0)f.push('First Person '+w+': Verweis nur auf Richtung 1 erlaubt');return}
+  pruefe(e).forEach(function(x){f.push('First Person '+w+': '+x)});if(e.kat!==o.kat)f.push('First Person '+w+': falsche Art')});
+ var nah=fpBild(o,'nah'),fern=fpBild(o,'fern');
+ if(nah&&fern&&fern.z&&(fern.w>Math.ceil(nah.w/2)+1||fern.h>Math.ceil(nah.h/2)+1))f.push('First Person fern muss etwa halb so groß wie nah sein');
+ return f}
+// Speicher aller Ansichten eines Objekts (Verweise zählen 0).
+function ansichtenBytes(o){var k=bytes(o.bild),fp=0;(o.richtungen||[]).forEach(function(e){if(!istVerweis(e))k+=bytes(e)});
+ if(o.fp){['nah','fern'].forEach(function(w){var e=o.fp[w];if(e&&!istVerweis(e))fp+=bytes(e)})}return{karte:k,fp:fp,summe:k+fp}}
 var PALETTE='A';   // Entscheidung Thomas 15.11.2026 (E5)
 var AT3_64={PALETTE:PALETTE,STATUS:STATUS,naechste:naechste,pruefeObjekt:pruefeObjekt,ZEICHEN:ZEICHEN,LEER:LEER,REIHEN:REIHEN,PALETTEN:PALETTEN,FELD:FELD,HOEHE:HOEHE,GESCHOSS:GESCHOSS,GROESSEN:GROESSEN,
  START:START,nummer:function(reihe,stufe){return START[reihe]+stufe},
- dunkler:function(n){for(var r=REIHEN.length-1;r>=0;r--)if(n>=START[r])return n>START[r]?n-1:n;return n},farbe:farbe,pruefe:pruefe,pruefePunkte:pruefePunkte,zuCanvas:zuCanvas,bytes:bytes};
+ dunkler:function(n){for(var r=REIHEN.length-1;r>=0;r--)if(n>=START[r])return n>START[r]?n-1:n;return n},farbe:farbe,pruefe:pruefe,pruefePunkte:pruefePunkte,zuCanvas:zuCanvas,bytes:bytes,
+ RICHTUNGEN:RICHTUNGEN,spiegelBild:spiegelBild,halbBild:halbBild,istVerweis:istVerweis,richtungsBild:richtungsBild,fpBild:fpBild,ansichtenErgaenzen:ansichtenErgaenzen,pruefeAnsichten:pruefeAnsichten,ansichtenBytes:ansichtenBytes};
 if(typeof module!=='undefined'&&module.exports)module.exports=AT3_64;else G.AT3_64=AT3_64;
 })(typeof window!=='undefined'?window:globalThis);

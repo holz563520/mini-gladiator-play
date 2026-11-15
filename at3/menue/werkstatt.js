@@ -1,4 +1,4 @@
-// WAS DIE DATEI TUT: Skizzen-Werkstatt des AT3-Master-Editors (Schritt M3, im Menü Grafik, erst beim Antippen geladen).
+// WAS DIE DATEI TUT: Skizzen-Werkstatt des AT3-Master-Editors (Schritt M3, im Menü Grafik, erst beim Antippen geladen). M5: Auswahl „Ansicht“ (Kartenrichtungen, First Person nah), übrige Ansichten bleiben erhalten, „fern“ automatisch.
 // Skizze zeichnen oder ändern (nur Palettenfarben, Raster, Spiegeln, Grundformen, Rückgängig), vorhandenes Bild einmalig auf die Palette umrechnen,
 // als Objekt mit Kennung und Version ablegen (Entwürfe im Browser), Prüfer vor dem Speichern, Export als Datei fürs Repository (dist/at3/kartei/).
 (function(){
@@ -30,7 +30,7 @@ function aufbauen(el){
   '<div class="wForm"><label>Kennung <input id="wId" placeholder="z. B. baum-eiche" autocapitalize="off" spellcheck="false"></label>'+
   '<label>Name (englisch) <input id="wName" placeholder="Old Oak"></label><label>Art <select id="wKat">'+kats+'</select></label>'+
   '<label>Breite <input id="wW" type="number" min="1" inputmode="numeric"></label><label>Höhe <input id="wH" type="number" min="1" inputmode="numeric"></label>'+
-  '<span class="leise" id="wInfo"></span></div>'+
+  '<label>Ansicht <select id="wSlot"></select></label><span class="leise" id="wInfo"></span></div>'+
   '<div class="wZeile" id="wWz">'+wz.map(function(t){return'<button class="knopf klein" data-wz="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>'+
   '<div class="wZeile"><button class="knopf klein" id="wZur">Rückgängig</button><button class="knopf klein" id="wSpiegel">Spiegeln</button>'+
   '<button class="knopf klein" id="wKlein">Zoom −</button><button class="knopf klein" id="wGross">Zoom +</button><button class="knopf klein" id="wRaster">Raster</button></div>'+
@@ -46,7 +46,8 @@ function aufbauen(el){
  $('#wKlein').onclick=function(){W.zoom=Math.max(1,W.zoom-1);malen()};$('#wGross').onclick=function(){W.zoom=Math.min(24,W.zoom+1);malen()};
  $('#wRaster').onclick=function(){W.raster=!W.raster;malen();knopfZustand()};
  $('#wW').onchange=$('#wH').onchange=function(){groesse(+$('#wW').value,+$('#wH').value)};
- $('#wKat').onchange=function(){var g=S.GROESSEN[$('#wKat').value];if(W.w>g.w||W.h>g.h)groesse(Math.min(W.w,g.w),Math.min(W.h,g.h));masse()};
+ $('#wKat').onchange=function(){var g=S.GROESSEN[$('#wKat').value];if(W.w>g.w||W.h>g.h)groesse(Math.min(W.w,g.w),Math.min(W.h,g.h));slotListe(W.obj);masse()};
+ $('#wSlot').onchange=function(){slotWechsel(this.value)};
  $('#wListe').onchange=function(){var v=this.value;if(v)oeffnen(v);this.value=''};
  $('#wDatei').onchange=function(){if(this.files[0])umrechnen(this.files[0]);this.value=''};
  $('#wSpeich').onclick=speichern;$('#wExObj').onclick=function(){exportiere('objekt')};$('#wExKar').onclick=function(){exportiere('kartei')};
@@ -64,9 +65,16 @@ function waehle(t){W.werkzeug=t;knopfZustand()}
 function liste(){var sel=$('#wListe'),d=lies(),ids={};Object.keys(W.repo).forEach(function(i){ids[i]='Repo'});Object.keys(d.objekte).forEach(function(i){ids[i]=ids[i]?'Repo + Entwurf':'Entwurf'});
  sel.innerHTML='<option value="">Objekt öffnen … ('+Object.keys(ids).length+')</option>'+Object.keys(ids).sort().map(function(i){return'<option value="'+esc(i)+'">'+esc(i)+' · '+ids[i]+'</option>'}).join('')}
 function masse(){$('#wW').value=W.w;$('#wH').value=W.h;var g=S.GROESSEN[$('#wKat').value];$('#wInfo').textContent='Anker '+W.ax+', '+W.ay+' · erlaubt bis '+g.w+' × '+g.h+' · '+S.bytes({w:W.w,h:W.h})+' Byte'}
-function neu(){var k='baum',g=S.GROESSEN[k];W.obj=null;$('#wKat').value=k;$('#wId').value='';$('#wName').value='';W.w=48;W.h=80;W.g=leer(W.w,W.h);W.ax=24;W.ay=79;W.rueck=[];W.herkunft='skizze';
+function neu(){var k='baum',g=S.GROESSEN[k];W.obj=null;W.slot='k0';slotListe(null);$('#wKat').value=k;$('#wId').value='';$('#wName').value='';W.w=48;W.h=80;W.g=leer(W.w,W.h);W.ax=24;W.ay=79;W.rueck=[];W.herkunft='skizze';
  masse();waehle('stift');passend();malen();meld('Leeres Blatt. Wie ein frisch gekaufter Rekrut: alles noch möglich.')}
-function laden(o){W.obj=o;$('#wId').value=o.id;$('#wName').value=o.name||'';$('#wKat').value=o.kat;W.g=ausBild(o.bild);W.w=o.bild.w;W.h=o.bild.h;W.ax=o.bild.ax;W.ay=o.bild.ay;W.rueck=[];W.herkunft=o.herkunft||'skizze';masse();passend();malen()}
+// M5: Welche Ansicht wird gezeichnet? k0 = Karte Richtung 1 (o.bild), k1… = weitere Richtungen, nah = First Person nah. „fern“ entsteht automatisch.
+function slots(o){var R=S.RICHTUNGEN[o?o.kat:$('#wKat').value]||1,l=[];for(var r=0;r<R;r++)l.push(['k'+r,'Karte, Richtung '+(r+1)]);l.push(['nah','First Person nah']);return l}
+function slotListe(o){var sel=$('#wSlot');sel.innerHTML=slots(o).map(function(x){return'<option value="'+x[0]+'">'+x[1]+'</option>'}).join('');sel.value=W.slot||'k0';if(sel.value!==W.slot)W.slot='k0';sel.value=W.slot}
+function slotBild(o,sl){if(!o)return null;if(sl==='nah'){S.ansichtenErgaenzen(o);return S.fpBild(o,'nah')}var r=+sl.slice(1);if(r)S.ansichtenErgaenzen(o);return S.richtungsBild(o,r)}
+function slotWechsel(sl){var o=W.obj?objekt():null;if(o&&W.obj){W.obj=o}W.slot=sl;if(!W.obj){meld('Erst ein Objekt öffnen oder speichern, dann weitere Ansichten zeichnen.',1);W.slot='k0';$('#wSlot').value='k0';return}
+ var b=slotBild(W.obj,sl);W.g=ausBild(b);W.w=b.w;W.h=b.h;W.ax=b.ax;W.ay=b.ay;W.rueck=[];masse();passend();malen();
+ meld(sl==='k0'?'Kartenbild Richtung 1.':sl==='nah'?'First Person nah. Startet als Kopie des Kartenbilds; „fern“ wird beim Speichern daraus verkleinert.':'Richtung '+(+sl.slice(1)+1)+'. Startet gespiegelt bzw. kopiert aus Richtung 1, gespeichert wird sie als eigenes Bild.')}
+function laden(o){W.obj=o;W.slot='k0';slotListe(o);$('#wId').value=o.id;$('#wName').value=o.name||'';$('#wKat').value=o.kat;W.g=ausBild(o.bild);W.w=o.bild.w;W.h=o.bild.h;W.ax=o.bild.ax;W.ay=o.bild.ay;W.rueck=[];W.herkunft=o.herkunft||'skizze';masse();passend();malen()}
 function oeffnen(id){var d=lies();if(d.objekte[id]){laden(d.objekte[id]);return meld('Entwurf „'+id+'“ geöffnet, Version '+d.objekte[id].version+'.')}
  var r=W.repo[id];if(!r)return;AT3ED.lade('grafik','kartei/'+r.datei).then(function(o){laden(o);meld('„'+id+'“ aus dem Repository geöffnet, Version '+o.version+'.')},function(e){meld('Konnte „'+id+'“ nicht laden: '+e.message,1)})}
 function groesse(w,h){var g=S.GROESSEN[$('#wKat').value];w=Math.max(1,Math.min(g.w,w|0));h=Math.max(1,Math.min(g.h,h|0));if(w===W.w&&h===W.h)return masse();
@@ -116,9 +124,13 @@ function umrechnen(datei){var url=URL.createObjectURL(datei),im=new Image();
 
 // ---------- Speichern, Kartei, Export ----------
 function objekt(){var id=$('#wId').value.trim().toLowerCase(),d=lies(),alt=d.objekte[id]||(W.obj&&W.obj.id===id?W.obj:null),b=zuBild();
- var o={format:'at3-objekt',id:id,version:1,kat:b.kat,name:$('#wName').value.trim(),status:'skizze',herkunft:W.herkunft||'skizze',bild:b};
+ var sl=W.slot||'k0',o={format:'at3-objekt',id:id,version:1,kat:b.kat,name:$('#wName').value.trim(),status:'skizze',herkunft:W.herkunft||'skizze',bild:b};
+ if(sl!=='k0'&&alt){o.bild=alt.bild;if(alt.richtungen)o.richtungen=JSON.parse(JSON.stringify(alt.richtungen));if(alt.fp)o.fp=JSON.parse(JSON.stringify(alt.fp));S.ansichtenErgaenzen(o);
+  if(sl==='nah')o.fp.nah=b;else o.richtungen[+sl.slice(1)-1]=b}
+ else if(alt){if(alt.richtungen)o.richtungen=JSON.parse(JSON.stringify(alt.richtungen));if(alt.fp)o.fp=JSON.parse(JSON.stringify(alt.fp))}
+ S.ansichtenErgaenzen(o);   // M5: fehlende Ansichten als Startfassung, fern neu verkleinert
  if(alt){if(alt.typ)o.typ=alt.typ;if(alt.karte)o.karte=alt.karte;   // M4: Typnummer und Karte bleiben beim Neuzeichnen erhalten
-  o.version=alt.version;var gleich=JSON.stringify(alt.bild)===JSON.stringify(b)&&alt.name===o.name&&alt.kat===o.kat;
+  o.version=alt.version;var gleich=JSON.stringify([alt.bild,alt.richtungen,alt.fp])===JSON.stringify([o.bild,o.richtungen,o.fp])&&alt.name===o.name&&alt.kat===o.kat;
   if(!gleich){var r=W.repo[id];o.version=r&&alt.version<=r.version?r.version+1:alt.version}
   if(alt.herkunft&&W.herkunft!=='umgerechnet')o.herkunft=alt.herkunft}
  else if(W.repo[id])o.version=W.repo[id].version+1;
