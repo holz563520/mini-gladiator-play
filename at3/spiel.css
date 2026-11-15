@@ -36,3 +36,18 @@ th{color:var(--tinte2)}
 .uhrKnoepfe .knopf[aria-pressed=true]{background:var(--knopf-an)}
 .knopf:disabled{opacity:.5;cursor:default}
 #uhrInfo{flex-basis:100%;margin:0;min-height:1.25em}
+/* G3 Startbild mit drei Spielständen (spielstand.js). Nur Palettenfarben über die Variablen. */
+#at3Start{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:max(12px,env(safe-area-inset-top)) 8px 24px;background:var(--nacht)}
+#at3Start .s-box{width:min(520px,100%)}
+#at3Start .s-platz{display:flex;align-items:flex-start;gap:10px;margin:10px 0;padding:10px;background:var(--papier2);border:3px solid var(--rand)}
+#at3Start .s-nr{flex:0 0 44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--papier);background:var(--blut);border:3px solid var(--rand)}
+#at3Start .s-info{flex:1;min-width:0}#at3Start .s-info b{display:block;font-weight:normal;font-size:22px;color:var(--blut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#at3Start .s-info small{display:block;font-size:17px;color:var(--tinte2)}#at3Start .s-info small.schlecht{color:var(--blut)}
+#at3Start .s-knoepfe{display:flex;flex-direction:column;gap:6px}#at3Start .s-knoepfe.quer{flex-direction:row;flex-wrap:wrap;margin-top:8px}
+#at3Start .knopf.weg{background:var(--papier);font-size:18px}
+#at3Start .s-frage{margin-top:8px;padding:8px;background:var(--papier);border:3px solid var(--blut)}#at3Start .s-frage div{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+#at3Start .s-neu{margin-top:8px}#at3Start label{display:block;margin:8px 0 2px}
+#at3Start input{display:block;width:100%;margin-top:4px;font:inherit;font-size:20px;color:var(--tinte);background:var(--knopf-an);border:3px solid var(--rand);border-radius:0;padding:6px 8px}
+#at3Start .s-wahl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}#at3Start .s-wahl span{width:100%}
+#at3Start .s-wahl .knopf[aria-checked=true]{background:var(--knopf-an);box-shadow:inset 3px 3px 0 var(--tinte2)}
+#speicherKnopf{margin-left:8px}

@@ -1,6 +1,7 @@
 // WAS DIE DATEI TUT: Weltkern von Arena Theory 3.0 (Schritt G2). Ein eigener Hintergrundkern, dem der Spielzustand allein gehört. Taktet sich selbst
 // (20 Ticks je Sekunde mal Tempo), nimmt Befehle an, verteilt Aufträge an die Helferkerne und schickt dem Hauptkern je Tick ein kleines Zahlenfeld.
 // Kerne: läuft nur als Hintergrundkern (Worker), gestartet von kernstart.js. Lädt nur kern.js (Riesenwelt-Probe und Weltgenerator erst bei Bedarf). Der Hauptkern rechnet nichts davon.
+// G3: Nachricht stand liefert den Zustand für den Spielstand (kern.js stand), start mit stand setzt ihn exakt wieder ein und vergibt offene Aufträge neu.
 // Regeln: kein stilles Vorspulen (bei Überlast läuft die Uhr langsamer und meldet es), Seite im Hintergrund = Welt pausiert,
 // Ergebnisse der Helfer werden an festen Ticks übernommen (fehlt eines, wartet die Welt), ohne Helfer rechnet der Weltkern die Aufträge selbst
 // in kleinen Scheiben. Zahlenfelder werden übergeben statt kopiert und wiederverwendet. Warteschlangen sind begrenzt.
@@ -79,13 +80,15 @@ function vonHelfer(h){return function(e){var d=e.data;h.frei=true;fremd++;if(rwU
 
 self.onmessage=function(e){var d=e.data;
  if(d.art==='start'){(d.ports||[]).forEach(function(p){var h={port:p,frei:true};p.onmessage=vonHelfer(h);helfer.push(h)});
-  z=K.neu(d.seed>>>0,V.version()+1);version();rwNull();selbst=fremd=verloren=gesamt=0;schuld=0;laeuft=true;modus='takt';letzt=performance.now();neuesBild=true;
+  var ausS=null;if(d.stand){ausS=K.ausStand(d.stand,V.version()+1);if(ausS.fehler){self.postMessage({art:'standFehler',grund:ausS.fehler});return}}   // G3: aus Spielstand
+  z=ausS?ausS.z:K.neu(d.seed>>>0,V.version()+1);version();if(ausS)for(var j=0;j<ausS.auftraege.length;j++)V.auf(ausS.auftraege[j]);rwNull();selbst=fremd=verloren=gesamt=0;schuld=0;laeuft=true;modus='takt';letzt=performance.now();neuesBild=true;
   self.postMessage({art:'bereit',helfer:helfer.length});plane(0)}
  else if(d.art==='befehl'){if(K.RW_ARTEN[d.befehl])rwLaden();if(K.WS_ARTEN[d.befehl]){wsLaden();if(d.befehl==='weltseed')wsNull()}var f=K.befehl(z,{nr:d.nr,art:d.befehl,wert:d.wert});
   if(f){self.postMessage({art:'abgelehnt',nr:d.nr,grund:f});return}
   if(modus==='takt'&&(z.tempo===0||!sichtbar)){anw();version();neuesBild=true;letzt=performance.now();senden();if(z.tempo>0&&sichtbar)plane(0)}}
  else if(d.art==='puffer'){if(puffer.length<3)puffer.push(d.buf);if(neuesBild&&modus==='takt')senden()}
  else if(d.art==='sichtbar'){sichtbar=!!d.an;letzt=performance.now();schuld=0;if(sichtbar&&modus==='takt')plane(0)}
+ else if(d.art==='stand'){var t1=performance.now(),st=K.stand(z);self.postMessage({art:'stand',id:d.id,stand:st,tick:z.tick,abdruck:K.abdruck(z),ms:performance.now()-t1})}   // G3: an einer Tickgrenze (Nachrichten kommen nur zwischen Ticks an)
  else if(d.art==='abdruck'){self.postMessage({art:'abdruck',id:d.id,wert:K.abdruck(z),tick:z.tick,version:z.version})}
  else if(d.art==='rwBild'){bild=d.buf}
  else if(d.art==='wsAn'){wsAn=!!d.an;wsErdGen=-1;if(wsAn&&z.wg){z.wg.frisch=Array.from(z.wg.stuecke.keys())}}

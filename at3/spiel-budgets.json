@@ -1,7 +1,7 @@
 {
  "format": "at3-spiel-budgets",
  "version": 1,
- "stand": "15.11.2026, G1; G2: Welt-Tick dazu. Startvorschläge aus AT3_PLAN 11.1, keine gemessenen Leistungen. Nie still erhöhen.",
+ "stand": "15.11.2026, G1; G2: Welt-Tick dazu. G3: Spielstandgröße (Ziel ≤ 5 MiB, AT3_PLAN 11.1). Startvorschläge aus AT3_PLAN 11.1, keine gemessenen Leistungen. Nie still erhöhen.",
  "budgets": [
   {"id": "download",   "text": "budget.download",   "einheit": "B",  "ziel": 5242880},
   {"id": "erstesBild", "text": "budget.erstesBild", "einheit": "ms", "ziel": 5000},
@@ -11,6 +11,7 @@
   {"id": "weltTick",   "text": "budget.weltTick",   "einheit": "ms", "ziel": 10},
   {"id": "lang",       "text": "budget.lang",       "einheit": "ms", "ziel": 50},
   {"id": "speicher",   "text": "budget.speicher",   "einheit": "B",  "ziel": 134217728},
-  {"id": "bilder",     "text": "budget.bilder",     "einheit": "B",  "ziel": 67108864}
+  {"id": "bilder",     "text": "budget.bilder",     "einheit": "B",  "ziel": 67108864},
+  {"id": "spielstand", "text": "budget.spielstand", "einheit": "B",  "ziel": 5242880}
  ]
 }

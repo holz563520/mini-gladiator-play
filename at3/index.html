@@ -1,22 +1,24 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<!-- ARENA THEORY 3.0 · EIGENER EINSTIEG (Schritt G1): englisch, lädt nur Dateien aus at3/ und nur übernommene Objekte, misst die eigene Startlast. V1: Knopf „Voice“ lädt die englische Stimme erst beim Einschalten. G2: Uhr-Leiste; Weltkern und Helferkerne (kernstart.js) starten erst nach dem ersten Bild. Liest und schreibt keine Spielstände aus 1.0/2.0. -->
+<!-- ARENA THEORY 3.0 · EIGENER EINSTIEG (Schritt G1): englisch, lädt nur Dateien aus at3/ und nur übernommene Objekte, misst die eigene Startlast. G3: Startbild mit drei Spielständen (spielstand.js). V1: Knopf „Voice“ lädt die englische Stimme erst beim Einschalten. G2: Uhr-Leiste; Weltkern und Helferkerne (kernstart.js) starten erst nach dem ersten Bild. Liest und schreibt keine Spielstände aus 1.0/2.0. -->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Arena Theory III</title>
-<link rel="stylesheet" href="spiel.css?v=a85a148d">
+<link rel="stylesheet" href="spiel.css?v=94cf0b6e">
 </head>
 <body>
 <header class="papier">
  <h1 id="titel">Arena Theory III</h1>
  <p class="unter" id="unter"></p>
  <button id="stimmeKnopf" class="knopf klein" aria-pressed="false">Voice: off</button>
+ <button id="speicherKnopf" class="knopf klein" hidden>Save &amp; quit</button>
 </header>
 <main>
  <section class="papier" id="uhr" aria-label="World clock">
   <span id="uhrZeit" aria-live="off">World time –</span>
   <span class="uhrKnoepfe"><button class="knopf klein" data-tempo="0" aria-pressed="false" disabled>Pause</button><button class="knopf klein" data-tempo="1" aria-pressed="false" disabled>1×</button><button class="knopf klein" data-tempo="2" aria-pressed="false" disabled>2×</button><button class="knopf klein" data-tempo="3" aria-pressed="false" disabled>3×</button></span>
   <p id="uhrInfo" class="leise"></p>
+  <p id="speicherInfo" class="leise" aria-live="polite"></p>
  </section>
  <section class="papier" id="feld">
   <h2 id="bodenTitel"></h2>
@@ -33,6 +35,7 @@
 </main>
 <footer class="papier" id="status" aria-live="polite">Sharpening the pixels …</footer>
 <button id="messAuf" class="knopf"></button>
-<script src="at3-64.js?v=a85a148d"></script>
-<script src="spiel.js?v=a85a148d"></script>
+<script src="at3-64.js?v=94cf0b6e"></script>
+<script src="spielstand.js?v=94cf0b6e"></script>
+<script src="spiel.js?v=94cf0b6e"></script>
 </body></html>

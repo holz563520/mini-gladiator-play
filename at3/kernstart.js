@@ -1,10 +1,11 @@
 // WAS DIE DATEI TUT: Anschluss des Hauptkerns an den Spielkern von Arena Theory 3.0 (Schritt G2). Startet den Weltkern (weltkern.js) und die
 // Helferkerne (helfer.js), verbindet beide über direkte Leitungen und reicht danach nur noch Befehle hin und Zahlenfelder zurück.
+// G3: opt.stand startet die Welt aus einem Spielstand, H.stand() holt den Zustand zum Speichern.
 // Kerne: Der Hauptkern rechnet hier nichts. Ohne Hintergrundkerne oder bei Ausfall eines Kerns hält das Spiel kontrolliert an (beiAusfall),
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='a85a148d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='94cf0b6e', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -16,6 +17,8 @@ function starten(opt){opt=opt||{};
  function sicht(){if(welt)welt.postMessage({art:'sichtbar',an:document.visibilityState!=='hidden'})}
  var H={zustand:Z,
   befehl:function(art,wert){if(!welt)return -1;welt.postMessage({art:'befehl',nr:nr,befehl:art,wert:wert});return nr++},
+  // G3: Zustand für den Spielstand an einer Tickgrenze holen ({stand, tick, abdruck, ms})
+  stand:function(){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'stand',id:id})})},
   abdruck:function(){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'abdruck',id:id})})},
   lauf:function(seed,befehle,bis){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'lauf',id:id,seed:seed,befehle:befehle,bis:bis})})},
   // Riesenwelt-Probe (MK1): Spielstandgröße und Speicher beim Weltkern erfragen
@@ -42,8 +45,9 @@ function starten(opt){opt=opt||{};
    else if(d.art==='abgelehnt'){Z.abgelehnt++}
    else if(d.art==='rw'){if(opt.beiRw)try{opt.beiRw(d)}catch(x){}if(d.bild&&welt)welt.postMessage({art:'rwBild',buf:d.bild},[d.bild.buffer])}
    else if(d.art==='ws'||d.art==='wsErde'||d.art==='wsStueck'){if(opt.beiWs)try{opt.beiWs(d)}catch(x){}}
-   else if(d.art==='abdruck'||d.art==='laufFertig'||d.art==='rwStand'){var ok=wartend[d.id];delete wartend[d.id];if(ok)ok(d)}};
-  welt.postMessage({art:'start',seed:(opt.seed==null?1:opt.seed)>>>0,ports:ports},ports);
+   else if(d.art==='standFehler'){ausfall('save not readable: '+d.grund)}
+   else if(d.art==='abdruck'||d.art==='laufFertig'||d.art==='rwStand'||d.art==='stand'){var ok=wartend[d.id];delete wartend[d.id];if(ok)ok(d)}};
+  welt.postMessage({art:'start',seed:(opt.seed==null?1:opt.seed)>>>0,stand:opt.stand||null,ports:ports},ports);
   document.addEventListener('visibilitychange',sicht);sicht();
  }catch(e){setTimeout(function(){ausfall('no background cores')},0)}
  return H}

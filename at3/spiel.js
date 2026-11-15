@@ -5,10 +5,12 @@
 // V1: Knopf „Voice“. Erst beim Einschalten wird at3/stimme.js geladen, die den vorhandenen englischen Sprachgenerator im Hintergrundkern startet
 // (../sprech-worker-en.js, ../stimme-en.js, ../stimme-en-lex.js: die einzigen Dateien außerhalb von at3/, eine Quelle mit dem Voice Lab). Ein/Aus wird nicht gespeichert (Spielstände ab G3).
 // G2: Uhr-Leiste (Pause, 1×, 2×, 3×). Nach dem ersten Bild wird kernstart.js geladen; die Welt rechnet im Weltkern (weltkern.js) und in den Helferkernen (helfer.js),
-// der Hauptkern schickt nur Befehle und zeigt die Uhr. Fällt ein Kern aus oder gibt es keine Hintergrundkerne, hält das Spiel mit Meldung an. Fester Seed 1 bis G3.
+// der Hauptkern schickt nur Befehle und zeigt die Uhr. Fällt ein Kern aus oder gibt es keine Hintergrundkerne, hält das Spiel mit Meldung an.
+// G3: Startbild mit drei Spielständen (spielstand.js). Der Kern startet erst nach der Wahl, mit Seed und Zustand aus dem Spielstand; automatisch gespeichert,
+// Knopf „Save & quit“. Ein/Aus der Stimme steht im Spielstand. ?nosave = ohne Spielstand (Seed 1).
 (function(){
 'use strict';
-var V='a85a148d', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='94cf0b6e', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -61,7 +63,7 @@ function karteZeigen(e){var cv=$('boden'),r=cv.getBoundingClientRect(),x=(e.clie
  window.AT3SPIEL.angetippt=hit.id;
  if(hit.ersatz){sprich(t('spiel.ersatzName')+': '+name+'.'+(ersatzGesagt?'':' '+t('spiel.ersatzInfo')));ersatzGesagt=true}else sprich(name+'. '+info)}
 // ── Stimme (V1): erst beim Einschalten laden, Rechnen im Hintergrundkern, hier nur Knopf und Anzeige ──
-var STIMME=null, stimmeLaedt=null, tonCtx=null, ersatzGesagt=false;
+var STIMME=null, stimmeLaedt=null, tonCtx=null, ersatzGesagt=false, stimmeGewuenscht=false;
 function sprich(x){if(STIMME&&STIMME.istAn())STIMME.sag(x)}
 function stimmeKnopf(){var z=STIMME&&STIMME.zustand(),an=!!(STIMME&&STIMME.istAn()),k=$('stimmeKnopf');k.textContent=t(an?'stimme.an':'stimme.aus');k.setAttribute('aria-pressed',an?'true':'false');
  if(z&&z.fehler)$('status').innerHTML='<span class="schlecht">'+esc(t('stimme.fehlt',{e:z.fehler}))+'</span>';
@@ -69,10 +71,10 @@ function stimmeKnopf(){var z=STIMME&&STIMME.zustand(),an=!!(STIMME&&STIMME.istAn
 function stimmeLaden(){if(stimmeLaedt)return stimmeLaedt;stimmeLaedt=new Promise(function(ja,nein){var s=document.createElement('script');s.src='stimme.js?v='+V;
   s.onload=function(){STIMME=window.AT3STIMME;STIMME.beiAenderung(stimmeKnopf);ja(STIMME)};s.onerror=function(){stimmeLaedt=null;nein(new Error('stimme.js'))};document.head.appendChild(s)});return stimmeLaedt}
 function stimmeUmschalten(){
- if(STIMME&&STIMME.istAn()){STIMME.aus();$('status').textContent=t('spiel.bereit');return}
+ if(STIMME&&STIMME.istAn()){STIMME.aus();stimmeGewuenscht=false;$('status').textContent=t('spiel.bereit');return}
  // Tonausgang direkt im Antippen erzeugen (Handy erlaubt Ton nur nach einem Tippen)
  if(!tonCtx){var AC=window.AudioContext||window.webkitAudioContext;if(!AC){$('status').innerHTML='<span class="schlecht">'+esc(t('stimme.fehlt',{e:'no audio output'}))+'</span>';return}tonCtx=new AC()}
- if(tonCtx.state==='suspended')tonCtx.resume();
+ if(tonCtx.state==='suspended')tonCtx.resume();stimmeGewuenscht=true;
  var erstes=!STIMME||!STIMME.zustand().geladen;if(erstes)$('status').textContent=t('stimme.laedt');
  stimmeLaden().then(function(S){if(!S.ein(tonCtx))return;return S.sag(t('stimme.gruss')).then(function(ok){if(ok||!S.zustand().fehler)$('status').textContent=t('spiel.bereit');dateienZaehlen();stimmeKnopf()})})
  .catch(function(e){$('status').innerHTML='<span class="schlecht">'+esc(t('stimme.fehlt',{e:e.message}))+'</span>'})}
@@ -85,10 +87,19 @@ function uhrZeigen(Z){var sek=Math.floor(Z.tick/20);if(sek!==uhrSek){uhrSek=sek;
  if(Z.tempo!==uhrTempo){uhrTempo=Z.tempo;[].forEach.call(uhrKnoepfe(),function(k){k.setAttribute('aria-pressed',+k.dataset.tempo===Z.tempo?'true':'false')})}
  var lage=Z.tempo===0?'uhr.pausiert':Z.ueber?'uhr.ueberlast':'';if(lage!==uhrLage){uhrLage=lage;$('uhrInfo').textContent=lage?t(lage):''}}
 function kernAusfall(g){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=true});$('uhrInfo').innerHTML='<span class="schlecht">'+esc(t('uhr.ausfall',{e:g}))+'</span>';uhrLage='aus';window.AT3SPIEL_KERN_AUS=g;if(!$('mess').hidden)messZeigen()}
-function kernStarten(){$('uhrInfo').textContent=t('uhr.wartet');uhrLage='wartet';
+// ── Spielstände (G3): Wahl im Startbild, danach Kern mit Seed und Zustand, automatisch speichern ──
+var WAHL=null, SPIELSTAND=null, platzP=null;
+function speicherAnzeige(x,schlecht){var e=$('speicherInfo');e.textContent=x;e.className=schlecht?'schlecht':'leise'}
+function platzWaehlen(){platzP=window.AT3SPIELSTAND.start({t:t,imAntippen:function(k){if(k&&k.stimme&&!(STIMME&&STIMME.istAn()))stimmeUmschalten()}})
+ .then(function(w){WAHL=w;var k=$('speicherKnopf');k.hidden=!w.platz;k.textContent=t('speicher.knopf');k.onclick=function(){k.disabled=true;k.textContent=t('speicher.beendet');SPIELSTAND.beenden().then(function(ok){if(!ok){k.disabled=false;k.textContent=t('speicher.knopf')}})};
+  if(w.platz)$('unter').textContent=t('spiel.platz',{n:w.name,s:w.seed,d:t('dichte.'+['thin','medium','dense'][w.dichte])})+(w.wieder?' '+t('spiel.wieder'):'');return w});return platzP}
+function kernStarten(){$('uhrInfo').textContent=t('uhr.wartet');uhrLage='wartet';platzP.then(kernLos)}
+function kernLos(w){
  var s=document.createElement('script');s.src='kernstart.js?v='+V;s.onerror=function(){kernAusfall('kernstart.js')};
- s.onload=function(){KERN=window.AT3KERNE.starten({seed:1,beiBild:uhrZeigen,beiAusfall:kernAusfall,
-  beiBereit:function(){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=false;k.onclick=function(){KERN.befehl('tempo',+k.dataset.tempo)}});window.AT3SPIEL_KERN=true}})};
+ s.onload=function(){KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,
+  beiBereit:function(){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=false;k.onclick=function(){KERN.befehl('tempo',+k.dataset.tempo)}});
+   SPIELSTAND=window.AT3SPIELSTAND.anschliessen(w,KERN,function(){return{stimme:stimmeGewuenscht}},speicherAnzeige);if(w.platz&&!w.daten)SPIELSTAND.speichern();
+   window.AT3SPIEL_KERN=true}})};
  document.head.appendChild(s)}
 function kernText(){var Z=KERN&&KERN.zustand;if(!Z||!Z.laeuft)return t('mess.kernAus')+(Z&&Z.fehler?' ('+Z.fehler+')':'');
  return t('mess.kern',{h:Z.helfer,m:(Z.mittelUs/1000).toFixed(2)+' ms',p:(Z.p95Us/1000).toFixed(2)+' ms',n:Z.gesamt,v:Z.verloren,f:kernAbdruck||'-'})}
@@ -106,7 +117,7 @@ function quantil(L,q){if(!L.length)return null;var s=L.slice().sort(function(a,b
 function bilderMessen(){var L=[],letzt=null,ende=performance.now()+3000;
  return new Promise(function(ok){function f(ts){if(letzt!=null)L.push(ts-letzt);letzt=ts;if(ts<ende)requestAnimationFrame(f);else ok(L)}requestAnimationFrame(f)})
   .then(function(L){mess.p95=quantil(L,.95);mess.p99=quantil(L,.99);mess.bildzahl=L.length})}
-function istWert(id){return{download:mess.download,erstesBild:mess.erstesBildMs,bildPc:mess.p95,bildHandy:mess.p95,bild99:mess.p99,lang:mess.langGemeldet?(mess.langMs||0):undefined,weltTick:KERN&&KERN.zustand.laeuft&&KERN.zustand.gesamt>=20?KERN.zustand.p95Us/1000:null,
+function istWert(id){return{download:mess.download,erstesBild:mess.erstesBildMs,bildPc:mess.p95,bildHandy:mess.p95,bild99:mess.p99,lang:mess.langGemeldet?(mess.langMs||0):undefined,weltTick:KERN&&KERN.zustand.laeuft&&KERN.zustand.gesamt>=20?KERN.zustand.p95Us/1000:null,spielstand:SPIELSTAND&&SPIELSTAND.mal?SPIELSTAND.bytes:null,
  speicher:performance.memory?performance.memory.usedJSHeapSize:undefined,bilder:mess.bilder}[id]}
 function zahl(v,e){if(e==='B')return v<1048576?(v/1024).toFixed(1)+' KB':(v/1048576).toFixed(1)+' MB';return(v<100?v.toFixed(1):Math.round(v))+' ms'}
 function budgetListe(){if(!BUDGETS)return[];return BUDGETS.budgets.map(function(b){var v=istWert(b.id),st;
@@ -116,14 +127,15 @@ function messZeigen(){var L=budgetListe(),h='<table><tr><th>'+t('mess.spalteWas'
   h+='<tr data-budget="'+r.id+'"><td>'+esc(r.was)+'</td><td>'+r.ziel+'</td><td class="'+(r.st==='gut'?'gut':r.st==='schlecht'?'schlecht':'grau')+'">'+esc(ist)+'</td></tr>'});
  h+='</table><p class="'+(mess.fremd.length?'schlecht':'gut')+'">'+esc(t('mess.fremd',{n:mess.fremd.length}))+'</p>'+
   '<p class="'+(mess.geschrieben?'schlecht':'gut')+'">'+esc(t('mess.schreibt',{n:mess.geschrieben}))+'</p>'+
-  '<p class="leise">'+esc(t('mess.kerne',{n:mess.kerne||'?'}))+' · '+mess.dateien+' files</p>'+'<p class="leise" id="messKern">'+esc(kernText())+'</p>'+'<p class="leise" id="messStimme">'+esc(stimmeText())+'</p>'+(mess.fertig?'':'<p class="leise">'+esc(t('mess.laeuft'))+'</p>');
+  '<p class="leise">'+esc(t('mess.kerne',{n:mess.kerne||'?'}))+' · '+mess.dateien+' files</p>'+'<p class="leise" id="messKern">'+esc(kernText())+'</p>'+'<p class="leise" id="messSpeicher">'+esc(speicherText())+'</p>'+'<p class="leise" id="messStimme">'+esc(stimmeText())+'</p>'+(mess.fertig?'':'<p class="leise">'+esc(t('mess.laeuft'))+'</p>');
  $('messInhalt').innerHTML=h}
+function speicherText(){var S=SPIELSTAND;if(!S||!S.platz)return t('mess.speicherAus');return t('mess.speicher',{n:S.platz,m:S.mal,b:(S.bytes/1024).toFixed(1)+' KB',h:S.ms.toFixed(1)+' ms',k:S.kernMs.toFixed(1)+' ms',g:S.ganz?'exact':'partial',f:S.fehler||'none'})}
 function ms(v){return v==null?'-':Math.round(v)+' ms'}
 function stimmeText(){var z=STIMME&&STIMME.zustand();if(!z||!z.geladen)return t('mess.stimmeAus');
  return t('mess.stimme',{lade:ms(z.ladeMs),rechen:ms(z.rechenMs),dauer:z.dauerS==null?'-':z.dauerS.toFixed(1)+' s',n:z.saetze,c:z.ausCache,a:z.akzent})}
 function messText(){var L=budgetListe(),z=['AT3 '+V+' · '+navigator.userAgent,'cores '+(mess.kerne||'?')+' · files '+mess.dateien+' · foreign '+mess.fremd.length+' · saves written '+mess.geschrieben,
  'objects approved '+Object.keys(geladen.objekte).length+' · stand-ins '+zaehlErsatz()+' · frames '+(mess.bildzahl||0)];
- L.forEach(function(r){z.push(r.id+': '+(r.ist||'-')+' / '+r.ziel+' '+r.st)});if(mess.fremd.length)z.push('foreign files: '+mess.fremd.slice(0,8).join(' , '));z.push('core: '+kernText());z.push('voice: '+stimmeText());return z.join('\n')}
+ L.forEach(function(r){z.push(r.id+': '+(r.ist||'-')+' / '+r.ziel+' '+r.st)});if(mess.fremd.length)z.push('foreign files: '+mess.fremd.slice(0,8).join(' , '));z.push('core: '+kernText());z.push('save: '+speicherText());z.push('voice: '+stimmeText());return z.join('\n')}
 function zaehlErsatz(){var s={};gezeichnet.forEach(function(g){if(g.ersatz)s[g.id]=1});return Object.keys(s).length}
 function kopieren(){var x=messText(),ok=function(){$('messKopie').textContent=t('mess.kopiert')};
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(x).then(ok,alt);else alt();
@@ -134,10 +146,10 @@ function texteSetzen(){document.title=t('spiel.titel');$('titel').textContent=t(
  $('bodenTitel').textContent=t('spiel.boden');$('bodenInfo').textContent=t('spiel.bodenInfo');$('karte').textContent=t('spiel.tippen');
  $('messTitel').textContent=t('mess.titel');$('messZu').textContent=t('mess.schliessen');$('messKopie').textContent=t('mess.kopieren');$('messAuf').textContent=t('mess.oeffnen');$('stimmeKnopf').textContent=t('stimme.aus');
  $('status').textContent=t('spiel.laedt');uhrKnoepfe()[0].textContent=t('uhr.pause');$('uhrZeit').textContent=t('uhr.zeit',{t:'–'})}
-window.AT3SPIEL={stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
+window.AT3SPIEL={spielstand:function(){return SPIELSTAND},wahl:function(){return WAHL},stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
 
 Promise.all([holeJson('sprache/en.json'),holeJson('kartei/text-en.json'),holeJson('kartei/objekte.json'),holeJson('kartei/budgets.json'),holeJson('spiel-budgets.json')])
-.then(function(d){TXT=d[0].texte;OBJTXT=d[1].texte;kartei=d[2];B=d[3];BUDGETS=d[4];mess.datenMs=performance.now();texteSetzen();
+.then(function(d){TXT=d[0].texte;OBJTXT=d[1].texte;kartei=d[2];B=d[3];BUDGETS=d[4];mess.datenMs=performance.now();texteSetzen();platzWaehlen();
  return S.ladeUebernommene(kartei,function(datei){return holeJson('kartei/'+datei)},B)})
 .then(function(g){geladen=g;mess.objekteMs=performance.now();
  var f=document.fonts&&document.fonts.load?document.fonts.load('18px "AT3 Text"').catch(function(){}):Promise.resolve();
