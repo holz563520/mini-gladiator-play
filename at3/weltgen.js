@@ -5,7 +5,8 @@
 //    Senken auffüllen mit Fließrichtung, Flüsse (Wassermenge sammeln), Klima und Biome. Bleibend 7 Byte je Zelle = 630 KB, egal wo man ist.
 // 2) Kartenstück: entsteht erst bei Bedarf aus Seed und einem kleinen Ausschnitt des Erdrasters (5 × 5 Zellen, 300 Byte), den der Auftrag mitbringt.
 //    Höhe = geglättete Erdhöhe + feines Rauschen über Weltkoordinaten (Ränder passen von selbst), Flusslauf über gemeinsame Punkte auf den Zellkanten,
-//    Küste, Strand und Biome aus der endgültigen Höhe. Format je Stück 12 KB: Höhe 16 Bit (1/16 Feld, Meeresspiegel = 2048), Biom 8 Bit.
+//    Küste und Strand aus der endgültigen Höhe. Biome gemischt (W1a+, unten): jede Gegend hat alle Land-Biome als Flecken, das Großklima verschiebt
+//    nur leicht; Hochland hebt Hügel mit Fels und Schneekuppen, Sumpf senkt, Teiche im Land. Format je Stück 12 KB: Höhe 16 Bit (1/16 Feld, Meeresspiegel = 2048), Biom 8 Bit.
 // Kerne: rechnen(a) läuft in den Helferkernen (ohne Helfer im Weltkern in freien Scheiben), nie auf dem Hauptkern (Regel 13). Helfer haben keinen Zustand.
 // Riesenwelt (Regel 14): Ein Kartenstück kostet überall gleich viel; das Erdraster ist ein fester Betrag. Orte, Straßen, Häfen, Seewege: Schritt W1b.
 // Wiederverwendet: Ganzzahl-Rauschen (gitter/stufe) und mix aus riesenwelt.js und kern.js (MK1, G2); zustandslose Landschaft nach dem Vorbild von
@@ -20,7 +21,7 @@ var GEL_BYTES=ST_BYTES+AUS*2;                 // Auftragspuffer eines Kartenstü
 var ERD_FEST=7*N, ERD_BYTES=16*N;             // Erdraster: bleibend 7 Byte je Zelle, beim Entstehen 16
 var BAND=4, TEILE=BAND+4;                     // Teilaufträge der Erde
 var TEIL_NAME=['Rauschen 1','Rauschen 2','Rauschen 3','Rauschen 4','Ozean und Seen','Senken','Flüsse','Klima'];
-var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Gebirge','Schnee','Fluss','See'];
+var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Fels','Schnee','Fluss','See'];
 var DX=[1,0,-1,0], DY=[0,1,0,-1];             // Richtungen: 0 Ost, 1 Süd, 2 West, 3 Nord; 4 = keine
 var LAND_AB=1400, RAND=32, FLUSS_AB=48;       // Meeresanteil, Breite des Randozeans in Zellen, Wassermenge für einen Fluss
 
@@ -86,7 +87,7 @@ function teilKlima(A){var E=A.E,bio=A.bio,dir=A.dir,flu=A.flu,feu=A.feu,tmp=A.tm
  for(y=0;y<GE;y++){var warm=255-Math.abs((((y*510)/(GE-1))|0)-255);
   for(x=0;x<GE;x++){i=y*GE+x;var e=E[i],t=warm-(e>0?e>>6:0)+((feu[i]&15)-8),f=((feu[i]*3)>>2)+(meer[i]<16?(16-meer[i])<<2:0)+(flu[i]?24:0);
    t=t<0?0:t>255?255:t;f=f>255?255:f;tmp[i]=t;feu[i]=f;
-   if(bio[i]===1)bio[i]=e<-600?0:1;else if(bio[i]!==11)bio[i]=biomVon(e,t,f)}}
+   if(bio[i]===1)bio[i]=e<-600?0:1;else if(bio[i]!==11)bio[i]=herrscht(e,t,f)}}
  for(y=0;y<GE;y++)for(x=0;x<GE;x++){i=y*GE+x;var see=bio[i]===11?1:bio[i]<2?0:1;                     // Bit 7: Wasser hier ist Binnenwasser (See), sonst Meer
   if(see&&bio[i]!==11)for(var dy=-1;dy<=1&&see;dy++)for(var dx=-1;dx<=1;dx++){var nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=GE||ny>=GE||bio[ny*GE+nx]<2){see=0;break}}
   dir[i]=(dir[i]&7)|(see?128:0)}}
@@ -118,7 +119,7 @@ function stufe(seed,o,ld,gew,gx0,gy0,ziel,setzen){var S=1<<ld,c=ld>=6?1:ST>>ld,l
    if(setzen)ziel[p+x]=w*gew;else ziel[p+x]+=w*gew}}}
 var O_FEIN=[[9,72],[8,56],[7,44],[6,34],[5,24],[4,16],[3,10]];                                       // Summe 256
 var wx=new Int32Array(ST*3), wy=new Int32Array(ST*3), zeile=new Int32Array(ST*3), kanal=[new Int32Array(FELDER),new Int32Array(FELDER),new Int32Array(FELDER),new Int32Array(FELDER)];
-var HW=[0,1,2,3,5,7], UFER=6;                                                                        // halbe Flussbreite je Klasse, Uferzone in Feldern
+var HW=[0,1,2,3,5,7], UFER=6, SUMPF_W=14;                                                                        // halbe Flussbreite je Klasse, Uferzone in Feldern
 var segs=new Int32Array(5*5*8*5), nSeg=0, teiche=new Int32Array(5*3), nTeich=0;
 var wurzel=(function(){var t=new Uint8Array(1024);for(var i=0;i<1024;i++){var r=0;while((r+1)*(r+1)<=i)r++;t[i]=r}return t})();
 
@@ -157,28 +158,83 @@ function gelaende(a){var d=a.daten,buf=d.buffer,H=new Uint16Array(buf,0,FELDER),
  nSeg=0;nTeich=0;zelleFluss(X,seed,zx,zy,0,0,cx,cy);
  if((cx&15)===0)zelleFluss(X,seed,zx,zy,-1,0,cx,cy);if((cx&15)===15)zelleFluss(X,seed,zx,zy,1,0,cx,cy);
  if((cy&15)===0)zelleFluss(X,seed,zx,zy,0,-1,cx,cy);if((cy&15)===15)zelleFluss(X,seed,zx,zy,0,1,cx,cy);
- var KE=kanal[0],KF=kanal[1],KT=kanal[2],KS=kanal[3];
- for(y=0;y<ST;y++)for(x=0;x<ST;x++){i=y*ST+x;var b=KE[i],amp=b>0?48+((b*3)>>3):48+((-b)>>3),h=b+(((hoch[i]-32640)*amp)>>15),fl=0;
-  if(nSeg){var best=1<<30;
+ var KE=kanal[0],KF=kanal[1],KT=kanal[2],KS=kanal[3],PI=FK,gi,gj;
+ // W1a+: Kanalwerte auf dem groben Raster (alle 8 Felder), Fransen
+ for(gj=0;gj<GN;gj++)for(gi=0;gi<GN;gi++)punkt(seed,gx0+gi*GRB,gy0+gj*GRB,GP,(gj*GN+gi)*KP);
+ for(y=0;y<ST;y++)for(x=0;x<ST;x++){i=y*ST+x;var b=KE[i],amp=b>0?48+((b*3)>>3):48+((-b)>>3),h=b+(((hoch[i]-32640)*amp)>>15),fl=0,best=255;
+  if(nSeg){best=1<<30;
    for(k=0;k<nSeg;k++){var p=k*5,x1=segs[p],y1=segs[p+1],vx=segs[p+2]-x1,vy=segs[p+3]-y1,wxx=x-x1,wyy=y-y1,t=wxx*vx+wyy*vy,vv=vx*vx+vy*vy,d2=wxx*wxx+wyy*wyy;
     if(t>0){if(t>=vv){wxx=x-segs[p+2];wyy=y-segs[p+3];d2=wxx*wxx+wyy*wyy}else d2-=Math.floor(t*t/vv)}
-    var hw=HW[segs[p+4]],gr=(hw+UFER)*(hw+UFER);if(d2<gr){var ab=wurzel[d2]-hw;if(ab<best)best=ab}}
-   if(best<UFER&&h>0){var ob=b-24;if(ob>h-8)ob=h-8;if(ob<4)ob=4;                                      // Wasserspiegel: glatte Erdhöhe, nie über dem Gelände
-    if(best<=0){h=ob;fl=1}else{var ufer=ob+best*20;if(ufer<h)h=((h*best+ufer*(UFER-best))/UFER)|0}}}
+    var hw=HW[segs[p+4]],gr=(hw+UFER+SUMPF_W)*(hw+UFER+SUMPF_W);if(d2<gr){var ab=wurzel[d2]-hw;if(ab<best)best=ab}}
+   if(best>255)best=255}
+  // Biom aus den Kanälen (weich zwischen den Rasterpunkten), Großklima, Fransen, Ufer
+  var fx=x&7,fy=y&7,q=((y>>3)*GN+(x>>3))*KP,w00=(8-fx)*(8-fy),w10=fx*(8-fy),w01=(8-fx)*fy,w11=fx*fy,q2=q+GN*KP;
+  for(k=0;k<KP;k++)PI[k]=(GP[q+k]*w00+GP[q+KP+k]*w10+GP[q2+k]*w01+GP[q2+KP+k]*w11)>>6;
+  neigung(KT[i],KF[i],b,VN);
+  var bk=klasse(PI,0,VN,(fein[i]-32640)>>6,(hoch[i]-32640)>>6,best<UFER+SUMPF_W?(UFER+SUMPF_W-best)*48:0);
+  // Gelände folgt dem Biom: Hochland hebt zu Hügeln und Gipfeln, Sumpf senkt zu Senken; an der Küste ausgeblendet
+  if(b>0){var fk=b>=320?256:(b<<8)/320|0,hu=KL.d>-M_HUEGEL?KL.d+M_HUEGEL:0,se=KL.s>-M_SENKE?KL.s+M_SENKE:0,auf=(hu*hu)>>13,ab2=(se*se)>>14;
+   if(ab2>h-48)ab2=h-48;if(ab2<0)ab2=0;h+=((auf-ab2)*fk)>>8}
+  if(best<UFER&&h>0){var ob=b-24;if(ob>h-8)ob=h-8;if(ob<4)ob=4;                                       // Wasserspiegel: glatte Erdhöhe, nie über dem Gelände
+   if(best<=0){h=ob;fl=1}else{var ufer=ob+best*20;if(ufer<h)h=((h*best+ufer*(UFER-best))/UFER)|0}}
   for(k=0;k<nTeich;k++){var tx=x-teiche[k*3],ty=y-teiche[k*3+1],tr=teiche[k*3+2];if(tx*tx+ty*ty<tr*tr&&h>-8){h=-8;fl=0}}   // Mündung: der Fluss endet sichtbar im Wasser
   var bi;
   if(fl)bi=10;
   else if(h<0)bi=KS[i]>127?11:h<-600?0:1;
   else if(h<24&&KS[i]<=127)bi=2;
-  else{var z=(fein[i]>>11)-16;bi=biomVon(h,KT[i]+z,KF[i]+z)}
+  else{bi=bk;if(bi===11)h-=16}                                                                        // Teich: Spiegel ein Feld tiefer
   h+=MEER;H[i]=h<0?0:h>65535?65535:h;B[i]=bi}
  return d}
+
+// ── W1a+ Biome gemischt: jede Gegend enthält alle Land-Biome als Flecken, das Großklima verschiebt die Anteile nur leicht ──
+// Sechs Kanäle (Wüste, Steppe, Wald, Sumpf, Tundra, Hochland) aus Rauschen in vier Größen (rund 30 bis 600 Felder), jede Stufe um einen eigenen
+// Winkel gedreht und das Ganze verzerrt (keine Gitter, keine Kacheln, nichts wiederholt sich). Gewinner je Feld = Biom; Hochland trägt Fels,
+// im Kern Schnee, und hebt das Gelände zu Hügeln und kleinen Gipfeln; Sumpf senkt es zu Senken und liebt Flussufer; ein siebter Kanal legt
+// Teiche und Seen ins Land. Gerechnet auf einem groben Raster alle 4 Felder (17 × 17 Punkte über Weltkoordinaten, darum nahtlos), dazwischen
+// weich verbunden, die Ränder mit feinem Rauschen ausgefranst.
+var KAN=[3,4,5,6,7,8], KN=6, KP=KN+1, GRB=8, GN=ST/GRB+1;
+var ROT=[[1024,0],[857,560],[-327,970],[594,-834],[-998,229],[202,-1004],[-740,-708]];             // Drehung je Rauschstufe (× 1024)
+var M_OKT=[[587,0],[241,32],[113,128],[47,96]], H_OKT=[[587,0],[241,0],[113,104],[47,152]];   // Hochland: mehr kleine Hügel, gleichmäßiger verteilt                                                      // Gitterabstand in Feldern, Gewicht (Summe 256)
+var M_SCHNEE=1700, H_GRUND=800, M_HUEGEL=900, M_SENKE=700, M_TEICH=11900;                                          // Schwellen (Rauscheinheit = 64)
+function wn(seed,o,x,y,S){var r=ROT[o%7],X=(r[0]*x-r[1]*y)>>10,Y=(r[1]*x+r[0]*y)>>10,fx=X%S,fy=Y%S;if(fx<0)fx+=S;if(fy<0)fy+=S;
+ var lx=(X-fx)/S,ly=(Y-fy)/S,ux=glatt(((fx<<8)/S)|0),uy=glatt(((fy<<8)/S)|0);
+ var a=gitter(seed,o,lx,ly),b=gitter(seed,o,lx+1,ly),c=gitter(seed,o,lx,ly+1),d=gitter(seed,o,lx+1,ly+1);
+ return((a*(256-ux)+b*ux)*(256-uy)+(c*(256-ux)+d*ux)*uy)>>8}                                       // 0..65280
+// Kanalwerte an einem Weltpunkt (Feld x, y) nach P[p..p+6]: 6 Biome und Teiche, je 0..16320
+function punkt(seed,x,y,P,p){var c,k,s;
+ var X=x+(((wn(seed,50,x,y,389)-32640)*96)>>15)+(((wn(seed,51,x,y,97)-32640)*30)>>15),
+     Y=y+(((wn(seed,52,x,y,389)-32640)*96)>>15)+(((wn(seed,53,x,y,97)-32640)*30)>>15);
+ for(c=0;c<KN;c++){var O=c===5?H_OKT:M_OKT;s=0;for(k=0;k<4;k++)if(O[k][1])s+=wn(seed,60+c*4+k,X,Y,O[k][0])*O[k][1];P[p+c]=s>>10}
+ P[p+KN]=(wn(seed,90,X,Y,173)*150+wn(seed,91,X,Y,61)*106)>>10}
+// Großklima → leichte Verschiebung je Kanal (höchstens ±4 Rauscheinheiten). t Wärme, f Feuchte 0..255, e Erdhöhe in 1/16 Feld.
+function kl(v){return v<-280?-280:v>280?280:v|0}
+function neigung(t,f,e,V){V[0]=kl((t-140)*2+(110-f)*2);V[1]=kl(60-Math.abs(f-110)*3-Math.abs(t-150)*2);V[2]=kl((f-110)*4-Math.abs(t-140)*2+80);
+ V[3]=kl((f-140)*2+(e<800?60:-((e-800)>>3)));V[4]=kl((100-t)*3);V[5]=H_GRUND+(e>3800?120:0)}
+// vorherrschendes Biom für die Weltkarte (nur Neigung, ohne Flecken)
+var VN=new Int32Array(KN);
+function herrscht(e,t,f){neigung(t,f,e,VN);VN[5]-=H_GRUND;var b=0;for(var c=1;c<KN;c++)if(VN[c]>VN[b])b=c;return b===5?(t<60||e>6000?9:8):KAN[b]}
+var GP=new Int32Array(GN*GN*KP), FK=new Int32Array(FELDER*2);
+// Anteile der Biome in einem Erdfeld schätzen (Weltansicht beim Antippen): 24 × 24 Stichproben, gleiche Regel wie im Kartenstück ohne Flüsse und Fransen
+function anteile(seed,A,zx,zy){var Z=new Int32Array(12),P=new Int32Array(KP),V=new Int32Array(KN),i=zy*GE+zx,n=0;
+ if(A.bio[i]<2||A.bio[i]===11){Z[A.bio[i]]=1;return Z}
+ neigung(A.tmp[i],A.feu[i],A.E[i],V);
+ for(var y=0;y<24;y++)for(var x=0;x<24;x++){punkt(seed>>>0,zx*ZF+x*42+21,zy*ZF+y*42+21,P,0);Z[klasse(P,0,V,0,0,0)]++;n++}
+ return Z}
+// Klasse aus Kanalwerten (dazu Großklima V, Fransen j1/j2, Uferbonus für Sumpf). Setzt KL.d (Vorsprung Hochland) und KL.s (Vorsprung Sumpf).
+var KL={d:0,s:0}, KV=new Int32Array(KN), JA=[2,1,-1,-2,-1,1], JB=[0,2,2,0,-2,-2];                  // Fransen in sechs Richtungen: jede Grenze franst aus
+function klasse(P,p,V,j1,j2,ufer){var c,b=0,v,oh=-1e9,os=-1e9;
+ for(c=0;c<KN;c++){v=P[p+c]+V[c]+(c===3?ufer:0);if(c!==5&&v>oh)oh=v;if(c!==3&&v>os)os=v;KV[c]=v+((JA[c]*j1+JB[c]*j2)>>1);if(KV[c]>KV[b])b=c}   // Vorsprünge ohne Fransen: Hügel und Schnee bleiben glatt
+ KV[5]=P[p+5]+V[5];KV[3]=P[p+3]+V[3]+ufer;
+ KL.d=KV[5]-oh;KL.s=KV[3]-os;
+ if(b===5)return KL.d>M_SCHNEE?9:8;                                                                      // Schnee auf den Kuppen
+ if(P[p+KN]+j1-(KL.d>-M_HUEGEL?KL.d+M_HUEGEL:0)+(KL.s>0?KL.s>>2:0)>M_TEICH)return 11;               // Teiche und Seen, nie am Hang, gern im Sumpf
+ return KAN[b]}
 
 function rechnen(a){return a.art==='erde'?erdTeil(a):gelaende(a)}
 // Ein Kartenstück in einem Stück (Tests und Werkzeuge): A = ansicht(erde(seed).buffer)
 function stueck(seed,A,cx,cy,daten){daten=daten||new Uint8Array(GEL_BYTES);ausschnitt(A,cx,cy,daten);return gelaende({seed:seed,cx:cx,cy:cy,daten:daten})}
 
 var WG={ST:ST,FELDER:FELDER,SEITE:SEITE,GE:GE,N:N,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
- TEIL_NAME:TEIL_NAME,BIOM:BIOM,DX:DX,DY:DY,HW:HW,mix:mix,ansicht:ansicht,erdTeil:erdTeil,erde:erde,ausschnitt:ausschnitt,gelaende:gelaende,stueck:stueck,rechnen:rechnen,kante:kante,biomVon:biomVon};
+ TEIL_NAME:TEIL_NAME,BIOM:BIOM,DX:DX,DY:DY,HW:HW,mix:mix,ansicht:ansicht,erdTeil:erdTeil,erde:erde,ausschnitt:ausschnitt,gelaende:gelaende,stueck:stueck,rechnen:rechnen,kante:kante,biomVon:biomVon,herrscht:herrscht,anteile:anteile,punkt:punkt,neigung:neigung,klasse:klasse,KAN:KAN};
 if(typeof module!=='undefined'&&module.exports)module.exports=WG;else root.AT3WG=WG;
 })(typeof self!=='undefined'?self:this);

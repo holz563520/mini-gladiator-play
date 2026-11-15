@@ -1,6 +1,7 @@
 // WAS DIE DATEI TUT: „Weltansicht“ im AT3-Master-Editor (Menü Welt & Bau, Schritt W1a; wird erst beim Antippen geladen, zusammen mit kernstart.js und at3-64.js).
 // Zeigt die Welt aus dem Weltgenerator (weltgen.js): Seed eingeben, Zoom in vier festen Stufen (Erde → Region → 7 × 7 Kartenstücke → ein Stück),
-// Einfärbung nach Biom oder Höhe, Flüsse sichtbar, Antippen zeigt Biom und Höhe und verschiebt den Blick. Dazu Messung auf diesem Gerät.
+// Einfärbung nach Biom oder Höhe, Flüsse sichtbar, Antippen zeigt Biom und Höhe und verschiebt den Blick. W1a+: Die Erde zeigt je Zelle das vom
+// Klima begünstigte Biom; jede Gegend mischt alle Land-Biome, Antippen einer Zelle zeigt die Anteile. Dazu Messung auf diesem Gerät.
 // Kerne: Erde und Kartenstücke rechnen in den Helferkernen, Übernahme im Weltkern (kernstart.js, derselbe Anschluss wie im Spiel). Der Hauptkern rechnet
 // keine Welt: Er färbt das Erdbild einmal ein (300 × 300 Punkte) und je Bild höchstens ein neu angekommenes Kartenstück (64 × 64 Punkte).
 // Zeichenarbeit (Regel 20): Zoomen skaliert nur fertige Bilder; fehlt ein Stück, steht dort der Ausschnitt des Erdbilds als Ersatz; gezeichnet wird nur bei Änderung.
@@ -8,13 +9,13 @@
 // Wiederverwendet: kernstart.js (G2), Messart, Ampel und Kopierknopf aus der Kernprobe und der Riesenwelt-Probe, Palette aus at3-64.js (M2).
 (function(){
 'use strict';
-var SEED=563520, BIS=300, SOLL='d4669255';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
+var SEED=563520, BIS=300, SOLL='0cf5890e';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
 function B(cx,cy){return cx*8192+cy}
 var SKRIPT=[{tick:0,art:'weltseed',wert:563520},{tick:0,art:'blick',wert:B(2400,2400)},{tick:70,art:'blick',wert:B(2403,2398)},{tick:100,art:'blick',wert:B(0,0)},
  {tick:130,art:'last',wert:300},{tick:150,art:'blick',wert:B(4799,4799)},{tick:170,art:'weltseed',wert:77},{tick:171,art:'weltseed',wert:4242},{tick:230,art:'blick',wert:B(1144,256)},
  {tick:260,art:'tempo',wert:3},{tick:270,art:'blick',wert:B(1146,256)}];
 var GE=300, N=GE*GE, ST=64, FELDER=ST*ST, SEITE=4800, ZP=16, MEER=2048, HALB=3, S=448, MIB=1048576;   // Maße wie in weltgen.js (läuft nur in Hintergrundkernen)
-var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Gebirge','Schnee','Fluss','See'];
+var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Fels','Schnee','Fluss','See'];
 var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41];                                // Farbnummern der AT3-Palette (Mitte); dunkler = −1, heller = +1 in derselben Reihe
 var RAMPE=[14,15,16,17,18,60,61,62,24,23,22,3,4,5,6], TIEFE=[38,39,40,41];    // Höhenfarben Land (tief → hoch) und Wasser (tief → flach)
 var ZOOM=['Erde','Region','Kartenstücke','Stück'], REGION=30;
@@ -80,12 +81,21 @@ function hoehe(h){return h<0?'Tiefe '+kom(-h/16,1)+' Felder (rund '+Math.round(-
 function zelleText(i){var b=erd.flu[i]?BIOM[erd.bio[i]]+' mit Fluss (Breite '+erd.flu[i]+' von 5)':BIOM[erd.bio[i]];return b+' · '+hoehe(erd.E[i])+' · Wärme '+erd.tmp[i]+' · Feuchte '+erd.feu[i]}
 function tipp(e){if(!erd)return;var r=cv.getBoundingClientRect(),fx=Math.max(0,Math.min(.9999,(e.clientX-r.left)/r.width)),fy=Math.max(0,Math.min(.9999,(e.clientY-r.top)/r.height)),info=q('#waInfo'),zx,zy;
  if(zoom<2){if(zoom===0){zx=(fx*GE)|0;zy=(fy*GE)|0}else{var ec=regionEcke();zx=ec[0]+((fx*REGION)|0);zy=ec[1]+((fy*REGION)|0)}
-  info.textContent='Zelle '+zx+' / '+zy+': '+zelleText(zy*GE+zx);blick(zx*ZP+8,zy*ZP+8);return}
+  info.textContent='Zelle '+zx+' / '+zy+': '+zelleText(zy*GE+zx);anteileZeigen(zx,zy);blick(zx*ZP+8,zy*ZP+8);return}
  var n=zoom===2?7:1,a=zoom===2?HALB:0,px=fx*n,py=fy*n,cxx=kx+(px|0)-a,cyy=ky+(py|0)-a,ka=kacheln.get(B(cxx,cyy)),x=((px%1)*ST)|0,y=((py%1)*ST)|0;
  if(ka){var Hh=new Uint16Array(ka.buf.buffer,0,FELDER),Bb=new Uint8Array(ka.buf.buffer,FELDER*2,FELDER),i=y*ST+x;
   info.textContent='Feld '+tsd(cxx*ST+x)+' / '+tsd(cyy*ST+y)+': '+BIOM[Bb[i]]+' · '+hoehe(Hh[i]-MEER)}
  else info.textContent='Dieses Stück wird noch aus dem Seed gekratzt.';
  if(zoom===2)blick(cxx,cyy)}
+// W1a+: Anteile der Biome in der angetippten Zelle (Stichprobe 24 × 24 mit derselben Regel wie die Kartenstücke). Der Generator wird dafür beim
+// ersten Antippen einmal auf den Hauptkern geladen; eine Stichprobe kostet rund 1 ms, nur auf Antippen, nie je Bild.
+var WGh=null;
+function anteileZeigen(zx,zy){var info=q('#waInfo'),seed=+q('#waSeed').value||0,i=zy*GE+zx,vorher=info.textContent;if(!erd||erd.bio[i]<2||erd.bio[i]===11)return;
+ (WGh?Promise.resolve():window.AT3ED.lade('welt','weltgen.js').then(function(){WGh=window.AT3WG})).then(function(){
+  if(info.textContent!==vorher)return;var A={E:erd.E,bio:erd.bio,tmp:erd.tmp,feu:erd.feu},Z=WGh.anteile(seed,A,zx,zy),n=0,L=[];
+  for(var k=0;k<12;k++)n+=Z[k];
+  for(k=3;k<12;k++)if(Z[k]&&k!==10)L.push([k,Z[k]]);L.sort(function(a,b){return b[1]-a[1]});
+  info.textContent=vorher+' · Anteile: '+L.map(function(e){return BIOM[e[0]]+' '+Math.round(e[1]*100/n)+' %'}).join(', ')},function(){})}
 function schritt(dx,dy){var s=zoom===0?ZP*20:zoom===1?ZP*5:zoom===2?3:1;blick(kx+dx*s,ky+dy*s)}
 function setZoom(z){zoom=z;[].forEach.call(el.querySelectorAll('[data-zoom]'),function(b){b.classList.toggle('an',+b.dataset.zoom===z)});neuZeichnen=true}
 function setFarbe(f){farbe=f;[].forEach.call(el.querySelectorAll('[data-farbe]'),function(b){b.classList.toggle('an',+b.dataset.farbe===f)});erdBild();kacheln.forEach(function(k,key){if(warte.indexOf(key)<0)warte.push(key)})}
@@ -143,7 +153,7 @@ function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElemen
   '<button class="knopf klein" data-geh="-1,0" aria-label="nach Westen">◀</button><button class="knopf klein" data-geh="0,-1" aria-label="nach Norden">▲</button>'+
   '<button class="knopf klein" data-geh="0,1" aria-label="nach Süden">▼</button><button class="knopf klein" data-geh="1,0" aria-label="nach Osten">▶</button></div>'+
   '<canvas id="waCv" class="pixel" width="'+S+'" height="'+S+'" style="display:block;width:100%;max-width:'+S+'px;aspect-ratio:1;background:#5c5650;border:3px solid var(--rand);touch-action:manipulation"></canvas>'+
-  '<p class="leise" id="waOrt"></p><p id="waInfo">Antippen zeigt, was dort liegt, und verschiebt den Blick.</p>'+
+  '<p class="leise" id="waOrt"></p><p id="waInfo">Antippen zeigt, was dort liegt (auf der Erde mit den Anteilen der Biome), und verschiebt den Blick.</p>'+
   '<p class="leise">Farben: '+BIOM.map(function(n,i){return '<i class="amp" style="background:'+window.AT3_64.PALETTEN.A.farben[BFARBE[i]]+'"></i>'+n}).join(' ')+'</p>'+
   '<p class="leise" id="waLive">Noch keine Welt.</p>'+
   '<p><button class="knopf haupt" id="waMessen">Auf diesem Gerät messen<small>gleiche Welt bei 0, 1, 2, 4 Helfern · Erde · Kartenstücke in Mitte und Ecken · Speicher · Bild · rund 20 Sekunden</small></button></p><div id="waErg"></div>'+
