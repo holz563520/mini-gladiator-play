@@ -8,7 +8,7 @@
 // der Hauptkern schickt nur Befehle und zeigt die Uhr. Fällt ein Kern aus oder gibt es keine Hintergrundkerne, hält das Spiel mit Meldung an. Fester Seed 1 bis G3.
 (function(){
 'use strict';
-var V='7610db5c', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='a85a148d', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};

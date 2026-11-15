@@ -27,7 +27,7 @@ var RW_ARTEN={nationen:1,anteil:1,welt:1,reise:1};
 // Weltgenerator-Teil (W1a): gleiches Muster. weltstrom.js = Befehle, Vergabe, Übernahme (nur Weltkern); weltgen.js = Rechnung (Helferkerne).
 function WS(){return root.AT3WS||(typeof module!=='undefined'&&module.exports?require('./weltstrom.js'):null)}
 function WG(){return root.AT3WG||(typeof module!=='undefined'&&module.exports?require('./weltgen.js'):null)}
-var WS_ARTEN={weltseed:1,blick:1}, WG_AUFTRAG={erde:1,gelaende:1};
+var WS_ARTEN={weltseed:1,weltdichte:1,blick:1}, WG_AUFTRAG={erde:1,gelaende:1};
 
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
 function dreh(z){z^=z<<13;z>>>=0;z^=z>>>17;z^=z<<5;return z>>>0}
