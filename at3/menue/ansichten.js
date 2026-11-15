@@ -1,12 +1,20 @@
 // WAS DIE DATEI TUT: Menü „Ansichten“ des AT3-Master-Editors (wird erst beim Öffnen geladen). M5: je Objekt alle Kartenrichtungen und das First-Person-Bild
 // (nah und fern) nebeneinander, Prüfer verlangt beide Ansichten, fehlende Ansichten als sparsame Startfassung ergänzen (Richtungen gespiegelt/kopiert als Verweis,
-// nah = Kartenbild, fern automatisch halb so groß), Speicher je Ansicht, Entwurf speichern und Objekt-Datei exportieren. M7 (begehbare Probe) folgt.
+// nah = Kartenbild, fern automatisch halb so groß), Speicher je Ansicht, Entwurf speichern und Objekt-Datei exportieren. M7: Knopf „Begehbare Probe“ lädt fpwelt.js und menue/probe.js erst beim Antippen.
 // Zeichnet nur auf Knopfdruck durch Kopieren fertiger Bilder, keine Dauerschleife.
 AT3ED.menue('ansichten',function(el,c){
  el.innerHTML='<p>Jedes Objekt braucht zwei Gesichter: eins für die Karte, eins für die Augenhöhe. Wie ein guter Lanista.</p>'+
   '<p><button class="knopf" id="aAuf">Kartenansicht und First Person<small>alle Richtungen · nah und fern · Prüfer · Speicher</small></button></p>'+
   '<div id="aInhalt"></div>'+
-  '<ul><li>Begehbare First-Person-Probe <span class="leise">(M7: man schlüpft in eine Figur, wie bei Dungeon Keeper)</span></li></ul>';
+  '<p><button class="knopf" id="aProbe">Begehbare Probe<small>M7 · in einen Gladiator schlüpfen · Berge, Wald, See, Hof · Messung je Bild</small></button></p>'+
+  '<div id="aProbeInhalt"></div>';
+ el.querySelector('#aProbe').onclick=function(){var z=el.querySelector('#aProbeInhalt'),A=function(u){return AT3ED.lade('ansichten',u)};
+  if(z.childNodes.length&&window.PROBE&&PROBE.zustand().el===z)return;z.innerHTML='<p class="leise">Gladiator wird geweckt …</p>';
+  A('at3-64.js').then(function(){return A('fp.js')}).then(function(){return A('fpwelt.js')}).then(function(){return A('menue/probe.js')})
+   .then(function(){return PROBE.aufbauen(z,c,function(){return Promise.all([A('kartei/obj/baum-eiche-skizze.json'),A('standard/musterblatt.json'),A('kartei/text-en.json')]).then(function(d){
+    var s=AT3_64;function mk(id,b){var o={id:id,version:1,kat:b.kat,name:b.name,bild:{kat:b.kat,w:b.w,h:b.h,ax:b.ax,ay:b.ay,z:b.z}};s.ansichtenErgaenzen(o);return o}
+    return{arten:{eiche:d[0],baum:mk('muster-baum',d[1].bilder.baum),blume:mk('muster-blume',d[1].bilder.blume)},texte:d[2].texte}})})})
+   .catch(function(e){z.innerHTML='<p class="witz">Gladiator verweigert den Dienst: '+e.message+'</p>'})};
  el.querySelector('#aAuf').onclick=function(){var z=el.querySelector('#aInhalt');z.innerHTML='<p class="leise">Spiegel werden geputzt …</p>';
   AT3ED.lade('ansichten','at3-64.js').then(function(){return AT3ED.lade('ansichten','fp.js')}).then(function(){return ANS.aufbauen(z,c)}).catch(function(e){z.innerHTML='<p class="witz">Spiegel zerbrochen: '+e.message+'</p>'})};
 });
