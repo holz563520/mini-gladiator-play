@@ -8,12 +8,12 @@ AT3ED.menue('ansichten',function(el,c){
   '<div id="aInhalt"></div>'+
   '<ul><li>Begehbare First-Person-Probe <span class="leise">(M7: man schlüpft in eine Figur, wie bei Dungeon Keeper)</span></li></ul>';
  el.querySelector('#aAuf').onclick=function(){var z=el.querySelector('#aInhalt');z.innerHTML='<p class="leise">Spiegel werden geputzt …</p>';
-  AT3ED.lade('ansichten','at3-64.js').then(function(){return ANS.aufbauen(z,c)}).catch(function(e){z.innerHTML='<p class="witz">Spiegel zerbrochen: '+e.message+'</p>'})};
+  AT3ED.lade('ansichten','at3-64.js').then(function(){return AT3ED.lade('ansichten','fp.js')}).then(function(){return ANS.aufbauen(z,c)}).catch(function(e){z.innerHTML='<p class="witz">Spiegel zerbrochen: '+e.message+'</p>'})};
 });
 var ANS=(function(){
 'use strict';
 var OBJ='at3-werkstatt-v1',FPW=320,FPH=180,HORIZONT=96;
-var A={el:null,repo:{},o:null,S:null};
+var A={el:null,repo:{},o:null,S:null,r:0};
 function S(){return window.AT3_64}
 function $(s){return A.el.querySelector(s)}
 function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -30,7 +30,9 @@ function aufbauen(el,c){
   '<div class="wZeile"><select id="aListe"><option value="">Objekt wählen …</option></select></div>'+
   '<div id="aObj" hidden>'+
   '<div class="aPaar"><div><b>Kartenansicht</b><div class="kSzene"><canvas id="aKarte" class="pixel"></canvas></div></div>'+
-  '<div><b>First Person</b><div class="kSzene"><canvas id="aFp" class="pixel" width="'+FPW+'" height="'+FPH+'"></canvas></div></div></div>'+
+  '<div><b>First Person</b><div class="kSzene"><canvas id="aFp" class="pixel" width="'+FPW+'" height="'+FPH+'"></canvas></div>'+
+  '<div class="wZeile"><button class="knopf klein" id="aLinks">◀ herumgehen</button><span class="leise" id="aSeite"></span><button class="knopf klein" id="aRechts">herumgehen ▶</button></div>'+
+  '<p class="leise" id="aZeit"></p></div></div>'+
   '<p class="leise" id="aInfo"></p><p id="aPruef"></p>'+
   '<div class="wZeile"><button class="knopf klein" id="aErg">Fehlende Ansichten ergänzen</button><button class="knopf klein" id="aFern">Fern neu verkleinern</button></div>'+
   '<div class="wZeile"><button class="knopf klein haupt" id="aSpeich">Prüfen &amp; speichern</button><button class="knopf klein" id="aEx">Objekt-Datei</button></div>'+
@@ -40,8 +42,9 @@ function aufbauen(el,c){
  return Promise.all((k.objekte||[]).slice(0,40).map(function(r){return AT3ED.lade('ansichten','kartei/'+r.datei).then(function(o){A.repo[o.id]=o},function(){})})).then(function(){
   liste();
   $('#aListe').onchange=function(){if(this.value)waehle(this.value)};
-  $('#aErg').onclick=function(){if(!A.o)return;var n=S().ansichtenErgaenzen(A.o);zeigen();meld(n?n+' Ansicht'+(n===1?'':'en')+' ergänzt. Noch nicht gespeichert.':'Nichts zu ergänzen. Das Objekt ist schon vollständig angezogen.')};
-  $('#aFern').onclick=function(){if(!A.o)return;A.o.fp=A.o.fp||{};A.o.fp.fernAuto=true;S().ansichtenErgaenzen(A.o);zeigen();meld('Fern-Bild neu verkleinert. Noch nicht gespeichert.')};
+  $('#aErg').onclick=function(){if(!A.o)return;var n=S().ansichtenErgaenzen(A.o);AT3_FP.leeren(A.o);zeigen();meld(n?n+' Ansicht'+(n===1?'':'en')+' ergänzt. Noch nicht gespeichert.':'Nichts zu ergänzen. Das Objekt ist schon vollständig angezogen.')};
+  $('#aFern').onclick=function(){if(!A.o)return;A.o.fp=A.o.fp||{};A.o.fp.fernAuto=true;S().ansichtenErgaenzen(A.o);AT3_FP.leeren(A.o);zeigen();meld('Fern-Bild neu verkleinert. Noch nicht gespeichert.')};
+  $('#aLinks').onclick=function(){A.r=(A.r+3)%4;fp()};$('#aRechts').onclick=function(){A.r=(A.r+1)%4;fp()};
   $('#aSpeich').onclick=speichern;$('#aEx').onclick=exportiere;
   var ids=Object.keys(alle());if(ids.length===1)waehle(ids[0]);
  });
@@ -49,7 +52,7 @@ function aufbauen(el,c){
 function alle(){var m={},d=lies().objekte||{};Object.keys(A.repo).forEach(function(i){m[i]=A.repo[i]});Object.keys(d).forEach(function(i){m[i]=d[i]});return m}
 function liste(){var m=alle(),d=lies().objekte||{};$('#aListe').innerHTML='<option value="">Objekt wählen …</option>'+Object.keys(m).sort().map(function(i){
  var f=S().pruefeAnsichten(m[i]).length;return'<option value="'+esc(i)+'">'+(f?'✗ ':'✓ ')+esc(m[i].name||i)+' ('+esc(i)+(d[i]?', Entwurf':'')+')</option>'}).join('')}
-function waehle(id){var o=alle()[id];if(!o)return;A.o=kopie(o);$('#aObj').hidden=false;$('#aListe').value=id;zeigen();meld('')}
+function waehle(id){var o=alle()[id];if(!o)return;A.o=kopie(o);A.r=0;$('#aObj').hidden=false;$('#aListe').value=id;zeigen();meld('')}
 
 // Kartenansicht: jede Richtung auf eigenem Grasfeld, nebeneinander.
 function grasFeld(x,ox,oy){var hell=rgb(S().nummer(2,4)),dunkel=rgb(S().nummer(2,2));
@@ -61,15 +64,17 @@ function karte(){var s=S(),o=A.o,R=s.RICHTUNGEN[o.kat]||1,bs=[],hoch=0;
  bs.forEach(function(b,r){var ox=r*W+4;grasFeld(x,ox,top-16);
   if(b)x.drawImage(bild(b),ox+32-b.ax,top-b.ay);else{x.fillStyle=rgb(s.nummer(5,3));x.fillRect(ox+26,top-24,12,12)}});
  groesse(cv,2)}
-// First Person: festes Bild 320 × 180 (Vorschlag AT3_PLAN 9.6), Himmel und Boden als Farbflächen, Objekt nah und fern, nur Kopieren fertiger Bilder.
-function fp(){var s=S(),o=A.o,cv=$('#aFp'),x=cv.getContext('2d');x.imageSmoothingEnabled=false;
- x.fillStyle=rgb(s.nummer(6,5));x.fillRect(0,0,FPW,HORIZONT);x.fillStyle=rgb(s.nummer(6,4));x.fillRect(0,HORIZONT-12,FPW,12);
- x.fillStyle=rgb(s.nummer(2,2));x.fillRect(0,HORIZONT,FPW,FPH-HORIZONT);x.fillStyle=rgb(s.nummer(2,3));x.fillRect(0,HORIZONT,FPW,8);
- if(o.kat==='boden'){var bf=o.fp&&o.fp.farbe>=0;x.fillStyle=bf?rgb(o.fp.farbe):rgb(s.nummer(5,3));x.fillRect(0,HORIZONT,FPW,FPH-HORIZONT);groesse(cv,1);return}
- var fern=s.fpBild(o,'fern'),nah=s.fpBild(o,'nah');
- if(fern)x.drawImage(bild(fern),236-fern.ax,HORIZONT+14-fern.ay);
- if(nah)x.drawImage(bild(nah),96-nah.ax,FPH-6-nah.ay);
- if(!nah||!fern){x.fillStyle=rgb(s.nummer(5,3));x.fillRect(150,80,20,20)}
+// First Person mit dem gemeinsamen Zeichner (fp.js): vorbereiteter Hintergrund, Objekt nah mit Schatten, zwei Stück in der Ferne im Dunst.
+// Blickrichtung per Pfeil (4 Seiten aus den Kartenrichtungen). Gemessen wird die Zeit für ein ganzes Bild (Mittel aus 30, nach dem Vorbereiten).
+var SEITEN=['von vorn','von rechts','von hinten','von links'];
+function fp(){var s=S(),F=window.AT3_FP,o=A.o,cv=$('#aFp'),x=cv.getContext('2d'),H=F.HORIZONT,
+  szene=[{o:o,r:A.r,x:112,y:F.H-8},{o:o,r:(A.r+1)%4,x:226,y:H+38,fern:true},{o:o,r:(A.r+3)%4,x:286,y:H+33,fern:true}];
+ if(o.kat==='boden'){var bf=o.fp&&o.fp.farbe>=0;F.zeichne(x,[]);x.fillStyle=bf?rgb(o.fp.farbe):rgb(s.nummer(5,3));x.fillRect(0,H+40,FPW,FPH-H-40);groesse(cv,1);
+  $('#aSeite').textContent='';$('#aZeit').textContent='Boden: in First Person nur Farbfläche.';return}
+ var v=performance.now();F.zeichne(x,szene);var vor=performance.now()-v,t=performance.now();for(var i=0;i<30;i++)F.zeichne(x,szene);var ms=(performance.now()-t)/30;
+ if(!s.fpBild(o,'nah')||!s.fpBild(o,'fern')){x.fillStyle=rgb(s.nummer(5,3));x.fillRect(150,80,20,20)}
+ $('#aSeite').textContent=SEITEN[A.r];
+ $('#aZeit').textContent='Ein Bild: '+ms.toFixed(2).replace('.',',')+' ms (erstes mit Vorbereiten '+Math.round(vor)+' ms). Budget je Bild bei 60 fps: 16 ms.';
  groesse(cv,1)}
 function groesse(cv,min){var b=(cv.parentNode.clientWidth||cv.width)-4,f=Math.max(min,Math.floor(b/cv.width))||1;if(cv.width*f>b&&f>1)f--;cv.style.width=cv.width*f+'px';cv.style.height=cv.height*f+'px'}
 
