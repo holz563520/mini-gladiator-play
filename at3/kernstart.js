@@ -4,7 +4,7 @@
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='130029f9', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='121859e1', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -20,6 +20,9 @@ function starten(opt){opt=opt||{};
   lauf:function(seed,befehle,bis){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'lauf',id:id,seed:seed,befehle:befehle,bis:bis})})},
   // Riesenwelt-Probe (MK1): Spielstandgröße und Speicher beim Weltkern erfragen
   rwStand:function(){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'rwStand',id:id})})},
+  // Weltgenerator (W1a): Bilddaten für die Weltansicht im Master-Editor an- und abschalten, Stückpuffer nach dem Zeichnen zurückgeben
+  wsAn:function(an){if(welt)welt.postMessage({art:'wsAn',an:!!an})},
+  wsZurueck:function(buf){if(welt&&buf&&buf.buffer.byteLength)welt.postMessage({art:'wsPuffer',buf:buf},[buf.buffer])},
   testAusfall:function(wo){var w=wo==='helfer'?hs[0]:welt;if(w)w.postMessage({art:'testAusfall'})},
   ende:function(){tot=true;Z.laeuft=false;aufraeumen()}};
  if(typeof Worker==='undefined'||typeof MessageChannel==='undefined'){setTimeout(function(){ausfall('no background cores')},0);return H}
@@ -38,6 +41,7 @@ function starten(opt){opt=opt||{};
    else if(d.art==='bereit'){Z.laeuft=true;Z.helfer=d.helfer;if(opt.beiBereit)opt.beiBereit(Z)}
    else if(d.art==='abgelehnt'){Z.abgelehnt++}
    else if(d.art==='rw'){if(opt.beiRw)try{opt.beiRw(d)}catch(x){}if(d.bild&&welt)welt.postMessage({art:'rwBild',buf:d.bild},[d.bild.buffer])}
+   else if(d.art==='ws'||d.art==='wsErde'||d.art==='wsStueck'){if(opt.beiWs)try{opt.beiWs(d)}catch(x){}}
    else if(d.art==='abdruck'||d.art==='laufFertig'||d.art==='rwStand'){var ok=wartend[d.id];delete wartend[d.id];if(ok)ok(d)}};
   welt.postMessage({art:'start',seed:(opt.seed==null?1:opt.seed)>>>0,ports:ports},ports);
   document.addEventListener('visibilitychange',sicht);sicht();
