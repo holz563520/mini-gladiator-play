@@ -2,10 +2,12 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
+ "typMax": 1,
  "objekte": [
   {
    "id": "baum-eiche-skizze",
-   "version": 1,
+   "version": 2,
+   "typ": 1,
    "kat": "baum",
    "name": "Old Oak",
    "status": "skizze",

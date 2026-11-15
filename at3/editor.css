@@ -50,3 +50,11 @@ main{flex:1;display:flex;flex-direction:column;gap:8px}
 .wF.an{outline:3px solid var(--blut);outline-offset:1px;border-color:#fff}
 .wFlaeche{overflow:auto;max-height:70vh;border:3px solid var(--rand);background:var(--papier2)}
 #wCv{display:block;touch-action:none;cursor:crosshair}
+.kSzene{overflow:hidden;margin:6px 0;background:var(--nacht);border:2px solid var(--rand);text-align:center}
+#kCv{display:block;margin:0 auto;touch-action:manipulation;cursor:pointer}
+.kKarte{border:2px solid var(--rand);padding:8px;margin:6px 0}
+.kKopf{display:flex;gap:10px;align-items:flex-end}
+.kKopf h3{margin:0;font-size:24px}
+.kInfo{display:block;margin:6px 0}
+.kInfo textarea{display:block;width:100%;font:inherit;background:var(--knopf-an);color:var(--tinte);border:2px solid var(--rand);padding:4px}
+.kFlaeche canvas{display:block;touch-action:manipulation;cursor:pointer;max-width:100%}

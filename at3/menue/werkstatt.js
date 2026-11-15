@@ -117,7 +117,8 @@ function umrechnen(datei){var url=URL.createObjectURL(datei),im=new Image();
 // ---------- Speichern, Kartei, Export ----------
 function objekt(){var id=$('#wId').value.trim().toLowerCase(),d=lies(),alt=d.objekte[id]||(W.obj&&W.obj.id===id?W.obj:null),b=zuBild();
  var o={format:'at3-objekt',id:id,version:1,kat:b.kat,name:$('#wName').value.trim(),status:'skizze',herkunft:W.herkunft||'skizze',bild:b};
- if(alt){o.version=alt.version;var gleich=JSON.stringify(alt.bild)===JSON.stringify(b)&&alt.name===o.name&&alt.kat===o.kat;
+ if(alt){if(alt.typ)o.typ=alt.typ;if(alt.karte)o.karte=alt.karte;   // M4: Typnummer und Karte bleiben beim Neuzeichnen erhalten
+  o.version=alt.version;var gleich=JSON.stringify(alt.bild)===JSON.stringify(b)&&alt.name===o.name&&alt.kat===o.kat;
   if(!gleich){var r=W.repo[id];o.version=r&&alt.version<=r.version?r.version+1:alt.version}
   if(alt.herkunft&&W.herkunft!=='umgerechnet')o.herkunft=alt.herkunft}
  else if(W.repo[id])o.version=W.repo[id].version+1;
@@ -126,8 +127,9 @@ function speichern(){var o=objekt(),f=S.pruefeObjekt(o);if(f.length)return meld(
  var d=lies();d.objekte[o.id]=o;if(!schreib(d))return meld('Browser lässt nicht speichern (privates Fenster?). Gleich exportieren.',1);
  W.obj=o;liste();meld('Gespeichert: „'+o.id+'“ Version '+o.version+' als Entwurf in diesem Browser. Für das Spiel: Objekt-Datei und Kartei-Datei exportieren.');return o}
 function kartei(){var k=AT3ED.kartei()||{format:'at3-kartei',version:1,objekte:[]},m={},d=lies();
- (k.objekte||[]).forEach(function(o){m[o.id]=o});Object.keys(d.objekte).forEach(function(id){var o=d.objekte[id];m[id]={id:id,version:o.version,kat:o.kat,name:o.name,status:o.status,datei:'obj/'+id+'.json'}});
- return{format:'at3-kartei',version:1,palette:PAL,objekte:Object.keys(m).sort().map(function(id){return m[id]})}}
+ (k.objekte||[]).forEach(function(o){m[o.id]=o});Object.keys(d.objekte).forEach(function(id){var o=d.objekte[id];m[id]={id:id,version:o.version,typ:o.typ,kat:o.kat,name:o.name,status:o.status,datei:'obj/'+id+'.json'};if(!o.typ)delete m[id].typ});
+ var tm=k.typMax|0;Object.keys(m).forEach(function(id){if(m[id].typ>tm)tm=m[id].typ});
+ return{format:'at3-kartei',version:1,palette:PAL,typMax:tm,objekte:Object.keys(m).sort().map(function(id){return m[id]})}}
 function datei(name,text){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();
  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
 function exportiere(was){var o=speichern();if(!o)return;
