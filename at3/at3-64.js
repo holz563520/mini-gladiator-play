@@ -1,21 +1,30 @@
-// WAS DIE DATEI TUT: Grafikstandard AT3-32 (Schritt M2): Feldmaß 64 × 32, Höhenstufen, Größentabelle, Paletten (32 Farben in 8 Reihen à 4 Stufen),
-// Speicherformat mit Farbnummern („.“ = ganz durchsichtig, 0–9 A–V = Farbe 0–31), Prüfer für Bilddaten und fertige Bildpunkte, Umwandlung in ein Canvas.
+// WAS DIE DATEI TUT: Grafikstandard AT3-64 (Schritt M2, Wunsch Thomas 15.11.2026: 64 statt 32 Farben): Feldmaß 64 × 32, Höhenstufen, Größentabelle, Paletten (64 Farben in 11 Farbreihen),
+// Speicherformat mit Farbnummern („.“ = ganz durchsichtig, 0–9 A–Z a–z + * = Farbe 0–63), Prüfer für Bilddaten und fertige Bildpunkte, Umwandlung in ein Canvas.
 // Gemeinsam für Master-Editor und (ab G1) Spiel. Läuft im Browser und in Node (Tests).
 (function(G){
 'use strict';
-var ZEICHEN='0123456789ABCDEFGHIJKLMNOPQRSTUV', LEER='.';
-// Feste Farbreihen: Nummer = Reihe*4 + Stufe (0 dunkel … 3 hell). Gleiche Nummer = gleiche Bedeutung in jeder Palette.
-var REIHEN=['Stein','Erde','Grün','Holz','Haut','Blut','Wasser','Sand'];
+var ZEICHEN='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+*', LEER='.';
+// Feste Farbreihen unterschiedlicher Länge (dunkel → hell), zusammen 64 Farben. Gleiche Nummer = gleiche Bedeutung in jeder Palette.
+var REIHEN=[{name:'Stein',n:7},{name:'Erde',n:6},{name:'Grün',n:8},{name:'Holz',n:6},{name:'Haut',n:6},{name:'Blut',n:5},{name:'Wasser',n:6},{name:'Sand',n:5},
+ {name:'Bronze',n:5},{name:'Purpur',n:5},{name:'Ocker',n:5}];
+var START=[];(function(){var o=0;REIHEN.forEach(function(r){START.push(o);o+=r.n})})();
+// Jede Reihe aus drei festen Farben (dunkel, Mitte, hell) als gleichmäßige Kurve berechnet. Ergebnis ist fest und wird getestet.
+var STUETZEN={
+ A:['#0e0c0b #5c5650 #d2cbbe','#24140a #6e4a2c #c09a6c','#0c1606 #46621e #b4cc6c','#2a180a #7a5024 #d8ac64','#3e2016 #a8704c #f4c8a0','#2a0604 #8c1a10 #e05a34',
+    '#0c1a24 #2e5a74 #8ec0cc','#5a4a30 #b49c6c #f6ecd0','#3a2408 #9c6a20 #f0c868','#1e0a1a #5e2250 #b46aa0','#3a2a08 #9a7a28 #e8cc70'],
+ B:['#080808 #6a6a74 #ececf2','#2c1606 #8a5428 #e0aa6c','#062002 #3a8a18 #b8f070','#2c1806 #94601c #f0c060','#4a2414 #c47c50 #ffdcb4','#400404 #c41810 #ff7a50',
+    '#081e4c #2a6cc4 #a0dcff','#786440 #d4bc88 #fffaea','#4a2c04 #c08820 #ffe680','#2a0830 #8a2a90 #e88ae0','#4a3404 #c09a24 #fff07a'],
+ C:['#060609 #464658 #b4b4cc','#140c08 #4e3a28 #a08868','#060c08 #2a4430 #849c78','#160e08 #5a4026 #b0905c','#2a1812 #84584a #d8b098','#1a0406 #6e1418 #c0504a',
+    '#060c1c #2a4468 #84a0c4','#3a3428 #8a7e64 #e0d6bc','#201408 #7a5a2a #c8a868','#12081a #4a2a5c #9a78b0','#201a08 #7a6630 #c8b478']
+};
+function hex(n){return('0'+Math.max(0,Math.min(255,Math.round(n))).toString(16)).slice(-2)}
+function reihe(def,n){var p=def.split(' ').map(function(h){return[1,3,5].map(function(i){return parseInt(h.substr(i,2),16)})}),D=p[0],M=p[1],L=p[2],out=[];
+ for(var i=0;i<n;i++){var t=i/(n-1),c=[0,1,2].map(function(k){var C=2*M[k]-(D[k]+L[k])/2;return(1-t)*(1-t)*D[k]+2*t*(1-t)*C+t*t*L[k]});out.push('#'+c.map(hex).join(''))}return out}
+function palette(k){var f=[];STUETZEN[k].forEach(function(d,r){f=f.concat(reihe(d,REIHEN[r].n))});return f}
 var PALETTEN={
- A:{name:'Rattenpergament',text:'warm, erdig, gedämpft (Vorschlag)',farben:[
-  '#1a1412','#3e3631','#6b625a','#a39a8c', '#2e1a0e','#553420','#7d5434','#a87c52', '#1f2a12','#3a4a1c','#5d6e2a','#8c9a48', '#3a2410','#6a4420','#96682e','#c49650',
-  '#4a2a1c','#7e4a32','#b07a56','#dcae84', '#2e0806','#6a0c06','#9a1e10','#c8482a', '#142028','#24404e','#3e6a78','#6e9ea6', '#6e5a3a','#a88c5c','#d8c08a','#f0e2bc']},
- B:{name:'Sonnenarena',text:'heller und bunter, nah an RollerCoaster Tycoon',farben:[
-  '#101010','#4a4a52','#8a8a94','#cfcfd6', '#3c200c','#6e3e18','#a0602a','#cc8a48', '#18400c','#2e7018','#4ea02a','#86d048', '#4a2c0c','#7c4c14','#b07428','#e0a848',
-  '#5a3020','#985a3a','#d08c60','#f8c498', '#400404','#880c08','#c8201a','#f05a3a', '#0c2a5a','#1a4e9a','#3482d0','#78c0f0', '#8a7040','#c8a868','#ecd496','#fff6dc']},
- C:{name:'Abenddämmerung',text:'dunkler und kühler, düster',farben:[
-  '#0a0a10','#2a2a36','#4e4e5e','#82829a', '#1e140e','#3a281c','#5a402c','#7e6046', '#0e1a14','#1e3226','#34503a','#587858', '#24180e','#463018','#6a4a28','#927040',
-  '#3a2420','#644034','#92664e','#c09478', '#200408','#4e0a10','#7e1a1c','#ac3a30', '#0a1428','#182c4a','#2c4c70','#5c7ea0', '#4a4234','#7a6c52','#ac9c78','#d6cab0']}
+ A:{name:'Rattenpergament',text:'warm, erdig, gedämpft (Vorschlag)',farben:palette('A')},
+ B:{name:'Sonnenarena',text:'heller und bunter, nah an RollerCoaster Tycoon',farben:palette('B')},
+ C:{name:'Abenddämmerung',text:'dunkler und kühler, düster',farben:palette('C')}
 };
 // Maße wie RollerCoaster Tycoon Classic. Höhenstufe 8 px, ein Geschoss = 4 Stufen = 32 px.
 var FELD={w:64,h:32}, HOEHE=8, GESCHOSS=32;
@@ -24,10 +33,10 @@ var GROESSEN={
  boden: {w:64,h:32, text:'Bodenfeld, genau eine Raute 64 × 32'},
  blume: {w:32,h:32, text:'Blume, Busch, Kleinkram (1 Feld)'},
  baum:  {w:64,h:128,text:'Baum, Fels (1 Feld, bis 4 Geschosse hoch)'},
- wand:  {w:32,h:48, text:'Wandstück an einer Feldkante, 1 Geschoss'},
+ wand:  {w:32,h:56, text:'Wandstück an einer Feldkante, 1 Geschoss, mit Oberkante'},
  dach:  {w:64,h:64, text:'Dachstück je Feld'},
  ware:  {w:32,h:32, text:'Ware, Stapel'},
- figur: {w:16,h:32, text:'Figur auf der Karte (Höhe nach Wahl: 16, 24 oder 32)'},
+ figur: {w:16,h:32, text:'Figur auf der Karte (Höhe nach Wahl: 16, 24 oder 32), hinter Wänden als Umriss sichtbar'},
  tier:  {w:32,h:32, text:'Tier auf der Karte'},
  karren:{w:48,h:40, text:'Karren, Fahrzeug'}
 };
@@ -69,7 +78,8 @@ function zuCanvas(b,palette){
 }
 // Speicherbedarf als Farbnummern (1 Byte je Bildpunkt) für Messungen.
 function bytes(b){return b.w*b.h}
-var AT3_32={ZEICHEN:ZEICHEN,LEER:LEER,REIHEN:REIHEN,PALETTEN:PALETTEN,FELD:FELD,HOEHE:HOEHE,GESCHOSS:GESCHOSS,GROESSEN:GROESSEN,
- nummer:function(reihe,stufe){return reihe*4+stufe},farbe:farbe,pruefe:pruefe,pruefePunkte:pruefePunkte,zuCanvas:zuCanvas,bytes:bytes};
-if(typeof module!=='undefined'&&module.exports)module.exports=AT3_32;else G.AT3_32=AT3_32;
+var AT3_64={ZEICHEN:ZEICHEN,LEER:LEER,REIHEN:REIHEN,PALETTEN:PALETTEN,FELD:FELD,HOEHE:HOEHE,GESCHOSS:GESCHOSS,GROESSEN:GROESSEN,
+ START:START,nummer:function(reihe,stufe){return START[reihe]+stufe},
+ dunkler:function(n){for(var r=REIHEN.length-1;r>=0;r--)if(n>=START[r])return n>START[r]?n-1:n;return n},farbe:farbe,pruefe:pruefe,pruefePunkte:pruefePunkte,zuCanvas:zuCanvas,bytes:bytes};
+if(typeof module!=='undefined'&&module.exports)module.exports=AT3_64;else G.AT3_64=AT3_64;
 })(typeof window!=='undefined'?window:globalThis);

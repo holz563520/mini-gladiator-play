@@ -32,7 +32,7 @@ main{flex:1;display:flex;flex-direction:column;gap:8px}
 .farben{display:flex;flex-direction:column;gap:2px;margin:6px 0}
 .reihe{display:flex;align-items:center;gap:2px;font-size:15px}.reihe span{width:64px;color:var(--tinte2)}
 .reihe i{display:inline-block;width:28px;height:18px;border:1px solid var(--rand)}
-.blatt canvas{width:min(100%,512px);height:auto;display:block;background:var(--nacht);border:3px solid var(--rand)}
+.blatt canvas{display:block;cursor:zoom-in;background:var(--nacht);border:3px solid var(--rand)}
 .figuren{display:flex;gap:16px;align-items:flex-end;margin:6px 0}.figuren div{display:flex;flex-direction:column;align-items:center}
 .tabelle{border-collapse:collapse;font-size:16px;width:100%}.tabelle td,.tabelle th{border-bottom:1px solid var(--papier2);padding:2px 4px;text-align:left;font-weight:normal;vertical-align:top}
 .tabelle th{color:var(--blut)}
