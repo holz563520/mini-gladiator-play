@@ -68,12 +68,12 @@ function masse(){$('#wW').value=W.w;$('#wH').value=W.h;var g=S.GROESSEN[$('#wKat
 function neu(){var k='baum',g=S.GROESSEN[k];W.obj=null;W.slot='k0';slotListe(null);$('#wKat').value=k;$('#wId').value='';$('#wName').value='';W.w=48;W.h=80;W.g=leer(W.w,W.h);W.ax=24;W.ay=79;W.rueck=[];W.herkunft='skizze';
  masse();waehle('stift');passend();malen();meld('Leeres Blatt. Wie ein frisch gekaufter Rekrut: alles noch möglich.')}
 // M5: Welche Ansicht wird gezeichnet? k0 = Karte Richtung 1 (o.bild), k1… = weitere Richtungen, nah = First Person nah. „fern“ entsteht automatisch.
-function slots(o){var R=S.RICHTUNGEN[o?o.kat:$('#wKat').value]||1,l=[];for(var r=0;r<R;r++)l.push(['k'+r,'Karte, Richtung '+(r+1)]);l.push(['nah','First Person nah']);return l}
+function slots(o){var R=S.RICHTUNGEN[o?o.kat:$('#wKat').value]||1,l=[];for(var r=0;r<R;r++)l.push(['k'+r,'Karte, Richtung '+(r+1)]);l.push(['nah','First Person nah']);if(R>1)for(var i=0;i<4;i++)l.push(['z'+i,'First Person schräg '+(i+1)+' (zwischen Richtung '+(i+1)+' und '+(i%4+2>4?1:i+2)+')']);return l}
 function slotListe(o){var sel=$('#wSlot');sel.innerHTML=slots(o).map(function(x){return'<option value="'+x[0]+'">'+x[1]+'</option>'}).join('');sel.value=W.slot||'k0';if(sel.value!==W.slot)W.slot='k0';sel.value=W.slot}
-function slotBild(o,sl){if(!o)return null;if(sl==='nah'){S.ansichtenErgaenzen(o);return S.fpBild(o,'nah')}var r=+sl.slice(1);if(r)S.ansichtenErgaenzen(o);return S.richtungsBild(o,r)}
+function slotBild(o,sl){if(!o)return null;if(sl[0]==='z'){S.ansichtenErgaenzen(o);var i=+sl.slice(1);return S.zwischenBild(o,i)||S.richtungsBild(o,i)}if(sl==='nah'){S.ansichtenErgaenzen(o);return S.fpBild(o,'nah')}var r=+sl.slice(1);if(r)S.ansichtenErgaenzen(o);return S.richtungsBild(o,r)}
 function slotWechsel(sl){var o=W.obj?objekt():null;if(o&&W.obj){W.obj=o}W.slot=sl;if(!W.obj){meld('Erst ein Objekt öffnen oder speichern, dann weitere Ansichten zeichnen.',1);W.slot='k0';$('#wSlot').value='k0';return}
  var b=slotBild(W.obj,sl);W.g=ausBild(b);W.w=b.w;W.h=b.h;W.ax=b.ax;W.ay=b.ay;W.rueck=[];masse();passend();malen();
- meld(sl==='k0'?'Kartenbild Richtung 1.':sl==='nah'?'First Person nah. Startet als Kopie des Kartenbilds; „fern“ wird beim Speichern daraus verkleinert.':'Richtung '+(+sl.slice(1)+1)+'. Startet gespiegelt bzw. kopiert aus Richtung 1, gespeichert wird sie als eigenes Bild.')}
+ meld(sl==='k0'?'Kartenbild Richtung 1.':sl[0]==='z'?'First Person schräg. Startet als Kopie der linken Nachbarrichtung (bis dahin automatisch, 0 Byte), gespeichert als eigenes Bild.':sl==='nah'?'First Person nah. Startet als Kopie des Kartenbilds; „fern“ wird beim Speichern daraus verkleinert.':'Richtung '+(+sl.slice(1)+1)+'. Startet gespiegelt bzw. kopiert aus Richtung 1, gespeichert wird sie als eigenes Bild.')}
 function laden(o){W.obj=o;W.slot='k0';slotListe(o);$('#wId').value=o.id;$('#wName').value=o.name||'';$('#wKat').value=o.kat;W.g=ausBild(o.bild);W.w=o.bild.w;W.h=o.bild.h;W.ax=o.bild.ax;W.ay=o.bild.ay;W.rueck=[];W.herkunft=o.herkunft||'skizze';masse();passend();malen()}
 function oeffnen(id){var d=lies();if(d.objekte[id]){laden(d.objekte[id]);return meld('Entwurf „'+id+'“ geöffnet, Version '+d.objekte[id].version+'.')}
  var r=W.repo[id];if(!r)return;AT3ED.lade('grafik','kartei/'+r.datei).then(function(o){laden(o);meld('„'+id+'“ aus dem Repository geöffnet, Version '+o.version+'.')},function(e){meld('Konnte „'+id+'“ nicht laden: '+e.message,1)})}
@@ -126,7 +126,7 @@ function umrechnen(datei){var url=URL.createObjectURL(datei),im=new Image();
 function objekt(){var id=$('#wId').value.trim().toLowerCase(),d=lies(),alt=d.objekte[id]||(W.obj&&W.obj.id===id?W.obj:null),b=zuBild();
  var sl=W.slot||'k0',o={format:'at3-objekt',id:id,version:1,kat:b.kat,name:$('#wName').value.trim(),status:'skizze',herkunft:W.herkunft||'skizze',bild:b};
  if(sl!=='k0'&&alt){o.bild=alt.bild;if(alt.richtungen)o.richtungen=JSON.parse(JSON.stringify(alt.richtungen));if(alt.fp)o.fp=JSON.parse(JSON.stringify(alt.fp));S.ansichtenErgaenzen(o);
-  if(sl==='nah')o.fp.nah=b;else o.richtungen[+sl.slice(1)-1]=b}
+  if(sl==='nah')o.fp.nah=b;else if(sl[0]==='z'){o.fp.zwischen=o.fp.zwischen||[];var zi=+sl.slice(1);while(o.fp.zwischen.length<zi)o.fp.zwischen.push(null);o.fp.zwischen[zi]=b}else o.richtungen[+sl.slice(1)-1]=b}
  else if(alt){if(alt.richtungen)o.richtungen=JSON.parse(JSON.stringify(alt.richtungen));if(alt.fp)o.fp=JSON.parse(JSON.stringify(alt.fp))}
  S.ansichtenErgaenzen(o);   // M5: fehlende Ansichten als Startfassung, fern neu verkleinert
  if(alt){if(alt.typ)o.typ=alt.typ;if(alt.karte)o.karte=alt.karte;   // M4: Typnummer und Karte bleiben beim Neuzeichnen erhalten

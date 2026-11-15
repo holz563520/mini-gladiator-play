@@ -107,6 +107,12 @@ function istVerweis(e){return !!e&&!e.z&&typeof e.von==='number'}
 // Bild der Kartenrichtung r (0-basiert) mit aufgelösten Verweisen. Verweise zeigen nur auf Richtung 1 (keine Ketten).
 function richtungsBild(o,r){if(!r)return o.bild;var e=o.richtungen&&o.richtungen[r-1];if(!e)return null;
  if(!istVerweis(e))return e;var b=e.von===0?o.bild:null;return b?(e.spiegel?spiegelBild(b):b):null}
+// First Person in 8 Seiten (Thomas 15.11.2026, wie Doom/Dungeon Keeper): gerade Seiten 0,2,4,6 = Kartenrichtungen 1–4,
+// schräge Seiten 1,3,5,7 = o.fp.zwischen[0–3]. Fehlt ein Eintrag (Standard), zeigt die Seite automatisch das Bild der linken Nachbarrichtung: 0 Byte, keine Datenänderung.
+// Arten mit nur 1 Kartenrichtung (Boden, Wand, Ware) haben 1 Seite.
+var FP_SEITEN=8;
+function fpSeiten(o){return (RICHTUNGEN[o.kat]||1)>1?FP_SEITEN:1}
+function zwischenBild(o,i){var e=o.fp&&o.fp.zwischen&&o.fp.zwischen[i];return e&&e.z?e:null}
 function fpBild(o,was){var f=o.fp;if(!f)return null;var e=f[was];if(!e)return null;if(istVerweis(e))return e.von===0?o.bild:null;return e}
 function haeufigste(b){var n={},best=0,bn=-1;b.z.forEach(function(r){for(var i=0;i<r.length;i++){var c=r[i];if(c===LEER)continue;n[c]=(n[c]||0)+1;if(n[c]>bn){bn=n[c];best=ZEICHEN.indexOf(c)}}});return best}
 // Fehlende Ansichten mit sparsamen Startfassungen füllen (Thomas: nah aus Kartenbild, fern automatisch). Ändert nur Fehlendes.
@@ -130,12 +136,15 @@ function pruefeAnsichten(o){var f=[],R=RICHTUNGEN[o.kat]||1,n=(o.richtungen||[])
  else ['nah','fern'].forEach(function(w){var e=o.fp[w];if(!e){f.push('First Person '+w+' fehlt');return}
   if(istVerweis(e)){if(e.von!==0)f.push('First Person '+w+': Verweis nur auf Richtung 1 erlaubt');return}
   pruefe(e).forEach(function(x){f.push('First Person '+w+': '+x)});if(e.kat!==o.kat)f.push('First Person '+w+': falsche Art')});
+ if(o.fp&&o.fp.zwischen){var zw=o.fp.zwischen;if(fpSeiten(o)<8||!Array.isArray(zw)||zw.length>4)f.push('First Person schräg: höchstens 4 Bilder, nur bei Arten mit 4 Kartenrichtungen');
+  else zw.forEach(function(e,i){if(!e)return;if(!e.z){f.push('First Person schräg '+(i+1)+': nur eigenes Bild oder leer (= automatisch)');return}
+   pruefe(e).forEach(function(x){f.push('First Person schräg '+(i+1)+': '+x)});if(e.kat!==o.kat)f.push('First Person schräg '+(i+1)+': falsche Art')})}
  var nah=fpBild(o,'nah'),fern=fpBild(o,'fern');
  if(nah&&fern&&fern.z&&(fern.w>Math.ceil(nah.w/2)+1||fern.h>Math.ceil(nah.h/2)+1))f.push('First Person fern muss etwa halb so groß wie nah sein');
  return f}
 // Speicher aller Ansichten eines Objekts (Verweise zählen 0).
 function ansichtenBytes(o){var k=bytes(o.bild),fp=0;(o.richtungen||[]).forEach(function(e){if(!istVerweis(e))k+=bytes(e)});
- if(o.fp){['nah','fern'].forEach(function(w){var e=o.fp[w];if(e&&!istVerweis(e))fp+=bytes(e)})}return{karte:k,fp:fp,summe:k+fp}}
+ if(o.fp){['nah','fern'].forEach(function(w){var e=o.fp[w];if(e&&!istVerweis(e))fp+=bytes(e)});(o.fp.zwischen||[]).forEach(function(e){if(e&&e.z)fp+=bytes(e)})}return{karte:k,fp:fp,summe:k+fp}}
 
 // ── M6: Prüfstand und Übernahme ────────────────────────────────────────────────────────────────────
 // Feldreihenfolge der Objekt-Datei. messung = gedrosselte Messung, geraet = Messung auf einem echten Gerät (beide mit Bildsignatur).
@@ -181,6 +190,6 @@ var PALETTE='A';   // Entscheidung Thomas 15.11.2026 (E5)
 var AT3_64={PALETTE:PALETTE,STATUS:STATUS,naechste:naechste,pruefeObjekt:pruefeObjekt,ZEICHEN:ZEICHEN,LEER:LEER,REIHEN:REIHEN,PALETTEN:PALETTEN,FELD:FELD,HOEHE:HOEHE,GESCHOSS:GESCHOSS,GROESSEN:GROESSEN,
  START:START,nummer:function(reihe,stufe){return START[reihe]+stufe},
  dunkler:function(n){for(var r=REIHEN.length-1;r>=0;r--)if(n>=START[r])return n>START[r]?n-1:n;return n},farbe:farbe,pruefe:pruefe,pruefePunkte:pruefePunkte,zuCanvas:zuCanvas,bytes:bytes,
- RICHTUNGEN:RICHTUNGEN,FELDER:FELDER,ordne:ordne,signatur:signatur,dateiBytes:dateiBytes,nachAenderung:nachAenderung,budgetGruppe:budgetGruppe,bewerte:bewerte,ladbar:ladbar,ladeUebernommene:ladeUebernommene,spiegelBild:spiegelBild,halbBild:halbBild,istVerweis:istVerweis,richtungsBild:richtungsBild,fpBild:fpBild,ansichtenErgaenzen:ansichtenErgaenzen,pruefeAnsichten:pruefeAnsichten,ansichtenBytes:ansichtenBytes};
+ RICHTUNGEN:RICHTUNGEN,FELDER:FELDER,ordne:ordne,signatur:signatur,dateiBytes:dateiBytes,nachAenderung:nachAenderung,budgetGruppe:budgetGruppe,bewerte:bewerte,ladbar:ladbar,ladeUebernommene:ladeUebernommene,spiegelBild:spiegelBild,halbBild:halbBild,istVerweis:istVerweis,richtungsBild:richtungsBild,fpBild:fpBild,FP_SEITEN:FP_SEITEN,fpSeiten:fpSeiten,zwischenBild:zwischenBild,ansichtenErgaenzen:ansichtenErgaenzen,pruefeAnsichten:pruefeAnsichten,ansichtenBytes:ansichtenBytes};
 if(typeof module!=='undefined'&&module.exports)module.exports=AT3_64;else G.AT3_64=AT3_64;
 })(typeof window!=='undefined'?window:globalThis);

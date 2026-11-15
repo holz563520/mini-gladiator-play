@@ -44,7 +44,7 @@ function aufbauen(el,c){
   $('#aListe').onchange=function(){if(this.value)waehle(this.value)};
   $('#aErg').onclick=function(){if(!A.o)return;var n=S().ansichtenErgaenzen(A.o);AT3_FP.leeren(A.o);zeigen();meld(n?n+' Ansicht'+(n===1?'':'en')+' ergänzt. Noch nicht gespeichert.':'Nichts zu ergänzen. Das Objekt ist schon vollständig angezogen.')};
   $('#aFern').onclick=function(){if(!A.o)return;A.o.fp=A.o.fp||{};A.o.fp.fernAuto=true;S().ansichtenErgaenzen(A.o);AT3_FP.leeren(A.o);zeigen();meld('Fern-Bild neu verkleinert. Noch nicht gespeichert.')};
-  $('#aLinks').onclick=function(){A.r=(A.r+3)%4;fp()};$('#aRechts').onclick=function(){A.r=(A.r+1)%4;fp()};
+  $('#aLinks').onclick=function(){A.r=(A.r+7)%8;fp()};$('#aRechts').onclick=function(){A.r=(A.r+1)%8;fp()};
   $('#aSpeich').onclick=speichern;$('#aEx').onclick=exportiere;
   var ids=Object.keys(alle());if(ids.length===1)waehle(ids[0]);
  });
@@ -65,15 +65,15 @@ function karte(){var s=S(),o=A.o,R=s.RICHTUNGEN[o.kat]||1,bs=[],hoch=0;
   if(b)x.drawImage(bild(b),ox+32-b.ax,top-b.ay);else{x.fillStyle=rgb(s.nummer(5,3));x.fillRect(ox+26,top-24,12,12)}});
  groesse(cv,2)}
 // First Person mit dem gemeinsamen Zeichner (fp.js): vorbereiteter Hintergrund, Objekt nah mit Schatten, zwei Stück in der Ferne im Dunst.
-// Blickrichtung per Pfeil (4 Seiten aus den Kartenrichtungen). Gemessen wird die Zeit für ein ganzes Bild (Mittel aus 30, nach dem Vorbereiten).
-var SEITEN=['von vorn','von rechts','von hinten','von links'];
+// Blickrichtung per Pfeil (8 Seiten: 4 Kartenrichtungen, 4 schräge automatisch). Gemessen wird die Zeit für ein ganzes Bild (Mittel aus 30, nach dem Vorbereiten).
+var SEITEN=['von vorn','schräg vorn rechts','von rechts','schräg hinten rechts','von hinten','schräg hinten links','von links','schräg vorn links'];
 function fp(){var s=S(),F=window.AT3_FP,o=A.o,cv=$('#aFp'),x=cv.getContext('2d'),H=F.HORIZONT,
-  szene=[{o:o,r:A.r,x:112,y:F.H-8},{o:o,r:(A.r+1)%4,x:226,y:H+38,fern:true},{o:o,r:(A.r+3)%4,x:286,y:H+33,fern:true}];
+  szene=[{o:o,r:A.r,x:112,y:F.H-8},{o:o,r:(A.r+2)%8,x:226,y:H+38,fern:true},{o:o,r:(A.r+6)%8,x:286,y:H+33,fern:true}];
  if(o.kat==='boden'){var bf=o.fp&&o.fp.farbe>=0;F.zeichne(x,[]);x.fillStyle=bf?rgb(o.fp.farbe):rgb(s.nummer(5,3));x.fillRect(0,H+40,FPW,FPH-H-40);groesse(cv,1);
   $('#aSeite').textContent='';$('#aZeit').textContent='Boden: in First Person nur Farbfläche.';return}
  var v=performance.now();F.zeichne(x,szene);var vor=performance.now()-v,t=performance.now();for(var i=0;i<30;i++)F.zeichne(x,szene);var ms=(performance.now()-t)/30;
  if(!s.fpBild(o,'nah')||!s.fpBild(o,'fern')){x.fillStyle=rgb(s.nummer(5,3));x.fillRect(150,80,20,20)}
- $('#aSeite').textContent=SEITEN[A.r];
+ var n8=s.fpSeiten(o)>1;$('#aSeite').textContent=(n8?SEITEN[A.r]:'eine Seite für alle Blickrichtungen')+(n8&&A.r&1?(s.zwischenBild(o,A.r>>1)?' (eigenes Bild)':' (automatisch)'):'');
  $('#aZeit').textContent='Ein Bild: '+ms.toFixed(2).replace('.',',')+' ms (erstes mit Vorbereiten '+Math.round(vor)+' ms). Budget je Bild bei 60 fps: 16 ms.';
  groesse(cv,1)}
 function groesse(cv,min){var b=(cv.parentNode.clientWidth||cv.width)-4,f=Math.max(min,Math.floor(b/cv.width))||1;if(cv.width*f>b&&f>1)f--;cv.style.width=cv.width*f+'px';cv.style.height=cv.height*f+'px'}

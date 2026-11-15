@@ -1,7 +1,7 @@
 // WAS DIE DATEI TUT: First-Person-Zeichner für AT3 (M5-Nachbesserung, Wunsch Thomas 15.11.2026: „First Person direkt so, dass es gut aussieht“).
 // Gemeinsam für Master-Editor und (ab FP1) Spiel. Festes Bild 320 × 180, nur Palettenfarben, keine Durchsichtigkeit:
 // Himmel als geraster Farbverlauf, Sonne, zwei Hügelketten im Dunst, Wiese mit Tiefe und Grasbüscheln (alles EINMAL als Hintergrund vorbereitet),
-// Objekte nach Blickrichtung (4 Seiten aus den Kartenrichtungen), Schatten, Dunst für ferne Objekte über eine Farbtabelle der Palette.
+// Objekte nach Blickrichtung (8 Seiten: 4 aus den Kartenrichtungen, 4 schräge automatisch oder eigens gezeichnet), Schatten, Dunst für ferne Objekte über eine Farbtabelle der Palette.
 // Je Bild nur Kopieren fertiger Bilder; Vorbereitetes wird zwischengespeichert. Läuft im Browser (Canvas); die Bildfunktionen auch in Node (Tests).
 (function(G){
 'use strict';
@@ -9,11 +9,17 @@ var W=320,H=180,HORIZONT=96;
 var BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];   // 4 × 4 Raster für Farbverläufe ohne Zwischenfarben
 function S(){return G.AT3_64}
 
-// Bild des Objekts in First Person „nah“ für Blickrichtung r (0–3). Verweis aufs Kartenbild → folgt der Kartenrichtung.
-function nahBild(o,r){var s=S(),f=o.fp;if(!f||!f.nah)return null;if(!s.istVerweis(f.nah))return f.nah;var R=s.RICHTUNGEN[o.kat]||1;return s.richtungsBild(o,R>1?r%R:0)}
+// Blickseite d (0–7, 45°-Schritte). Gerade Seiten = Kartenrichtung d/2; schräge = eigenes Zwischenbild oder automatisch die linke Nachbarrichtung.
+function kartenR(o,d){var R=S().RICHTUNGEN[o.kat]||1;return R>1?((d>>1)%R):0}
+// Bild des Objekts in First Person „nah“ für Seite d. Verweis aufs Kartenbild → folgt der Kartenrichtung.
+function nahBild(o,d){var s=S(),f=o.fp;if(!f||!f.nah)return null;d=((d|0)%8+8)%8;
+ if(d&1){var z=s.zwischenBild(o,d>>1);if(z)return z}
+ if(!s.istVerweis(f.nah))return f.nah;return s.richtungsBild(o,kartenR(o,d))}
 // „fern“: gespeichertes Bild für Richtung 1; andere Richtungen folgen dem Verweis (gespiegelt) oder werden beim Laden einmal verkleinert.
 var fernCache={};
-function fernBild(o,r){var s=S(),f=o.fp;if(!f||!f.fern)return null;var R=s.RICHTUNGEN[o.kat]||1;r=R>1?r%R:0;
+function fernBild(o,d){var s=S(),f=o.fp;if(!f||!f.fern)return null;d=((d|0)%8+8)%8;
+ if(d&1){var z=s.zwischenBild(o,d>>1);if(z){var kz=o.id+'@'+o.version+'#z'+(d>>1);return fernCache[kz]||(fernCache[kz]=s.halbBild(z))}}
+ var r=kartenR(o,d);
  if(!f.fernAuto||!s.istVerweis(f.nah)||!r)return f.fern;
  var e=o.richtungen&&o.richtungen[r-1];if(!e)return f.fern;if(s.istVerweis(e))return e.spiegel?s.spiegelBild(f.fern):f.fern;
  var k=o.id+'@'+o.version+'#'+r;return fernCache[k]||(fernCache[k]=s.halbBild(e))}
@@ -62,7 +68,7 @@ function bild(k,mach){if(!cache[k]){cache[k]=mach();cacheN++}return cache[k]}
 function schatten(w){var s=S(),c=document.createElement('canvas'),b=Math.max(6,Math.round(w*.7)),h=Math.max(3,Math.round(b/5));c.width=b;c.height=h;var x=c.getContext('2d');
  x.fillStyle=s.PALETTEN[s.PALETTE].farben[s.nummer(2,1)];for(var y=0;y<h;y++){var t=(y+.5)/h*2-1,hw=Math.round(b/2*Math.sqrt(1-t*t));x.fillRect(b/2-hw,y,2*hw,1)}return c}
 
-// Ein Bild zeichnen. szene = [{o, r (Blickrichtung 0–3), x (Fußpunkt), y (Fußpunkt), fern:bool}] wird von hinten nach vorn gezeichnet.
+// Ein Bild zeichnen. szene = [{o, r (Blickseite 0–7, 45°-Schritte), x (Fußpunkt), y (Fußpunkt), fern:bool}] wird von hinten nach vorn gezeichnet.
 function zeichne(ctx,szene,pal){var s=S();pal=pal||s.PALETTE;ctx.imageSmoothingEnabled=false;
  ctx.drawImage(bild('bg:'+pal,function(){return nummernZuCanvas(hintergrundNummern(pal),pal)}),0,0);
  szene.slice().sort(function(a,b){return a.y-b.y}).forEach(function(e){var o=e.o;
