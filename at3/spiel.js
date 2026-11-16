@@ -9,9 +9,11 @@
 // G4a: Kartenansicht (weltkarte.js): startet mit dem Kern, schickt weltdichte/weltseed (neue Welt) bzw. übernimmt die Welt aus dem Spielstand; Kameraort im Spielstand.
 // G3: Startbild mit drei Spielständen (spielstand.js). Der Kern startet erst nach der Wahl, mit Seed und Zustand aus dem Spielstand; automatisch gespeichert,
 // Knopf „Save & quit“. Ein/Aus der Stimme steht im Spielstand. ?nosave = ohne Spielstand (Seed 1).
+// G4c: Neue Welt (oder Spielstand ohne Kameraort): Startplatz-Wahl (startwahl.js, erst dann geladen); die Uhr steht so lange, danach Kamera an den Platz,
+// Platz im Spielstand (spiel.start) und sofort gespeichert. Continue startet am gespeicherten Kameraort. ?nosave startet wie bisher am ersten Dorf.
 (function(){
 'use strict';
-var V='f41febb8', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='b6cd6958', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -91,7 +93,7 @@ function uhrZeigen(Z){var sek=Math.floor(Z.tick/20);if(sek!==uhrSek){uhrSek=sek;
  var lage=Z.tempo===0?'uhr.pausiert':Z.ueber?'uhr.ueberlast':'';if(lage!==uhrLage){uhrLage=lage;$('uhrInfo').textContent=lage?t(lage):''}}
 function kernAusfall(g){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=true});$('uhrInfo').innerHTML='<span class="schlecht">'+esc(t('uhr.ausfall',{e:g}))+'</span>';uhrLage='aus';window.AT3SPIEL_KERN_AUS=g;if(!$('mess').hidden)messZeigen()}
 // ── Spielstände (G3): Wahl im Startbild, danach Kern mit Seed und Zustand, automatisch speichern ──
-var WAHL=null, SPIELSTAND=null, platzP=null;
+var WAHL=null, SPIELSTAND=null, platzP=null, START=null;
 function speicherAnzeige(x,schlecht){var e=$('speicherInfo');e.textContent=x;e.className=schlecht?'schlecht':'leise'}
 function platzWaehlen(){platzP=window.AT3SPIELSTAND.start({t:t,imAntippen:function(k){if(k&&k.stimme&&!(STIMME&&STIMME.istAn()))stimmeUmschalten()}})
  .then(function(w){WAHL=w;var k=$('speicherKnopf');k.hidden=!w.platz;k.textContent=t('speicher.knopf');k.onclick=function(){k.disabled=true;k.textContent=t('speicher.beendet');SPIELSTAND.beenden().then(function(ok){if(!ok){k.disabled=false;k.textContent=t('speicher.knopf')}})};
@@ -101,13 +103,14 @@ function kernLos(w){
  var s=document.createElement('script'),s2=document.createElement('script'),da=0;s.src='kernstart.js?v='+V;s2.src='weltkarte.js?v='+V;s.onerror=function(){kernAusfall('kernstart.js')};s2.onerror=function(){kernAusfall('weltkarte.js')};
  s.onload=s2.onload=function(){if(++da<2)return;KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,beiWs:function(d){if(KARTE)KARTE.beiWs(d)},
   beiBereit:function(){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=false;k.onclick=function(){KERN.befehl('tempo',+k.dataset.tempo)}});
-   SPIELSTAND=window.AT3SPIELSTAND.anschliessen(w,KERN,function(){return{stimme:stimmeGewuenscht,kam:KARTE?KARTE.kam():null}},speicherAnzeige);if(w.platz&&!w.daten)SPIELSTAND.speichern();
+   SPIELSTAND=window.AT3SPIELSTAND.anschliessen(w,KERN,function(){return{stimme:stimmeGewuenscht,kam:KARTE?KARTE.kam():null,start:START}},speicherAnzeige);if(w.platz&&!w.daten)SPIELSTAND.speichern();
    karteStarten(w);
    window.AT3SPIEL_KERN=true}})};
  document.head.appendChild(s);document.head.appendChild(s2)}
 // ── Karte (G4a): Bilder kommen aus dem Bildkern, hier nur Anschluss, Zoomknöpfe und die Auskunft beim Antippen ──
-function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&&w.daten.kern.welt;$('weltInfo').textContent=t('welt.wartet');
- KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,
+function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&&w.daten.kern.welt,waehlen=!/[?&]nosave\b/.test(location.search)&&!(sp&&sp.kam);$('weltInfo').textContent=t('welt.wartet');
+ if(sp&&sp.start)START=sp.start;
+ KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,waehlen:waehlen,beiErde:startWaehlen,
   beiAusfall:function(g){if(g)$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:g}))+'</span>'},
   beiZoom:function(l){$('weltInfo').textContent=t('welt.zoom',{z:['1×','½','¼','⅛'][l]})},
   beiFeld:function(f){window.AT3SPIEL.feld=f;if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
@@ -116,6 +119,13 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true}},250)}
+// ── Startplatz (G4c): Uhr anhalten, Wahl zeigen, dann Kamera hin, Platz merken, sofort speichern ──
+var wahlLaeuft=false;
+function startWaehlen(){if(wahlLaeuft)return;wahlLaeuft=true;var tempo=KERN.zustand.tempo;if(tempo)KERN.befehl('tempo',0);$('weltInfo').textContent=t('welt.wahl');
+ new Promise(function(ok,no){if(window.AT3STARTWAHL)return ok();var s=document.createElement('script');s.src='startwahl.js?v='+V;s.onload=ok;s.onerror=function(){no(new Error('startwahl.js'))};document.head.appendChild(s)})
+ .then(function(){return window.AT3STARTWAHL.zeigen({t:t,karte:KARTE,name:WAHL&&WAHL.name})})
+ .then(function(p){START=[p.x,p.y];KARTE.geh(p.x+.5,p.y+.5,0);if(tempo)KERN.befehl('tempo',tempo);window.AT3SPIEL_START=START;if(SPIELSTAND&&SPIELSTAND.platz)SPIELSTAND.speichern()})
+ .catch(function(e){$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:e.message}))+'</span>'})}
 function karteText(){var m0=KARTE&&KARTE.mess;return karteText0()+(m0?' · nature '+m0.naturArten+' kinds, '+m0.naturErsatz+' grey, '+m0.natur+' baked':'')}
 function karteText0(){var m=KARTE&&KARTE.mess;if(!m)return t('mess.karteAus');var u=function(v){return(v/1000).toFixed(2)+' ms'};
  return t('mess.karte',{s:m.stuecke,n:m.bilder,b:zahl(m.bytes,'B'),g:m.gerechnet,a:u(m.gerechnet?m.rechenUs/m.gerechnet:0),m:u(m.maxRechenUs),z:(m.zeichnen?m.zeichenMs/m.zeichnen:0).toFixed(2)+' ms',x:m.maxZeichenMs.toFixed(2)+' ms',e:m.ersatz})}

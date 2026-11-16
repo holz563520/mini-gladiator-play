@@ -8,10 +8,11 @@
 // die Spielwelt, an den Bildkern für die Ansicht).
 // Höhe: Die Kamera folgt weich der Geländehöhe unter der Bildmitte; „was ist im Bild“ rechnet mit kleinster und größter Stufe je Block (Auskunft des Bildkerns).
 // G4b: Natur steckt schon in den Bodenbildern (vom Bildkern gebacken); hier nur die größeren Bildränder beim „was ist im Bild“ und das Weiterreichen der Bilder.
+// G4c: neue Welt ohne Kameraort → statt automatischem Start ruft die Karte o.beiErde() (Startplatz-Wahl, startwahl.js); frage() reicht deren Fragen an den Bildkern.
 // Wiederverwendet: Vorgehen von welt-raster.js/welt-gross.js aus 2.0 (Bodenkacheln mit Zeitanteil, Nachbarstufe, begrenzter Bildcache), Palette aus at3-64.js.
 (function(){
 'use strict';
-var V='f41febb8', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='b6cd6958', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SEITE=4800, WELT=ST*SEITE, HALB=3, TEIL=8, STUFEN=4, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var RO=112, RS=16;   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -19,7 +20,7 @@ var RO=112, RS=16;   // G4b: größte Überstände der Naturbilder über ihr Fel
 function starten(o){
  var cv=o.cv, g=cv.getContext('2d'), S=o.S, kern=o.kern, bk=null, tot=false;
  var cam={x:WELT/2,y:WELT/2,z:0,lod:0}, hatKam=false, zFest=false, gen=-1, seed=0, blickK=-1;
- var NV=0, bekannt=new Map(), bilder=new Map(), offen=new Map(), fehlt=new Set(), bytes=0, bildNr=0, geplant=false, zoomZeit=0, feldNr=0, feldOk={};
+ var fragen={}, frageNr=0, NV=0, bekannt=new Map(), bilder=new Map(), offen=new Map(), fehlt=new Set(), bytes=0, bildNr=0, geplant=false, zoomZeit=0, feldNr=0, feldOk={};
  var M={bilder:0,bytes:0,maxBytes:0,gerechnet:0,rechenUs:0,maxRechenUs:0,zeichnen:0,zeichenMs:0,maxZeichenMs:0,sichtbar:0,ersatz:0,fertig:false,stuecke:0,anfragen:0,verdraengt:0,bmp:null,natur:0,rechenL:[],rechenN:0,naturArten:0,naturErsatz:0};
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WELT&&o.kam[1]>=0&&o.kam[1]<WELT){cam.x=o.kam[0];cam.y=o.kam[1];cam.lod=Math.max(0,Math.min(STUFEN-1,o.kam[2]|0));hatKam=true}
 
@@ -34,12 +35,13 @@ function starten(o){
  // ── Vom Weltkern (über kernstart.js beiWs): Erde und Kartenstücke weiterreichen ──
  function beiWs(d){if(tot||!bk)return;
   if(d.art==='wsErde'){gen=d.gen;seed=d.seed;bekannt.clear();bilderWeg();fehlt.clear();offen.clear();blickK=-1;M.stuecke=0;
-   bk.postMessage({art:'welt',gen:gen,seed:seed,buf:d.buf},[d.buf.buffer]);if(!hatKam)bk.postMessage({art:'start'});else blick();plan()}
+   bk.postMessage({art:'welt',gen:gen,seed:seed,buf:d.buf},[d.buf.buffer]);if(hatKam)blick();else if(o.waehlen){if(o.beiErde)o.beiErde()}else bk.postMessage({art:'start'});plan()}
   else if(d.art==='wsStueck')kern.wsZurueck(d.buf)}
  function bilderWeg(){bilder.forEach(function(b){if(b.bmp&&b.bmp.close)b.bmp.close()});bilder.clear();bytes=0}
 
  function vomBildkern(e){var d=e.data;
   if(d.art==='arten'){NARTEN=d.liste;naturSenden();return}
+  if(d.art==='antwort'){var a=fragen[d.id];delete fragen[d.id];if(a)a(d);return}
   if(d.art==='feld'){var f=feldOk[d.id];delete feldOk[d.id];if(f)f(d.feld);return}
   if(d.gen!==gen){if(d.bmp&&d.bmp.close)d.bmp.close();return}
   if(d.art==='kunde'){var mn=32767,mx=0;for(var i=0;i<128;i+=2){if(d.mm[i]<mn)mn=d.mm[i];if(d.mm[i+1]>mx)mx=d.mm[i+1]}
@@ -126,7 +128,8 @@ function starten(o){
    liste.push({w:b.w,h:b.h,ax:b.ax,ay:b.ay,px:px});tr.push(px.buffer)});
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
- return{beiWs:beiWs,mess:M,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,
+ function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
+ return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,
   kam:function(){return hatKam?[Math.floor(cam.x),Math.floor(cam.y),cam.lod]:null},
   kamera:function(){return{x:cam.x,y:cam.y,z:cam.z,lod:cam.lod,gesetzt:hatKam}},
   geh:function(x,y,lod){cam.x=x;cam.y=y;if(lod!=null)cam.lod=lod;hatKam=true;zFest=false;blick();plan()},

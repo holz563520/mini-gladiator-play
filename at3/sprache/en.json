@@ -113,6 +113,22 @@
   "speicher.fehler": "Saving failed ({e}). Your last save is still intact. The world keeps trying.",
   "mess.speicher": "Save: slot {n} · {m} saves · {b} · main thread {h} · core {k} · {g} · error {f}",
   "mess.speicherAus": "Save: none (test mode or no storage).",
-  "budget.spielstand": "Save size"
+  "budget.spielstand": "Save size",
+  "wahl.titel": "Choose your start",
+  "wahl.unterErde": "The whole world, as the gods drew it. Tap a spot to look closer.",
+  "wahl.unterRegion": "Tap where your ludus should stand. Dry land only; the arena floor gets wet enough later.",
+  "wahl.malt": "Painting the world …",
+  "wahl.maltRegion": "Painting the region …",
+  "wahl.fehlt": "The map painter is not ready. Try again in a moment.",
+  "wahl.los": "Start here",
+  "wahl.zufall": "Surprise me",
+  "wahl.zurueck": "Back to the world",
+  "wahl.platz": "{b}. Nearest settlement: {n} ({a}), {d} fields away.",
+  "wahl.platzLeer": "{b}. No settlement nearby. Peace and quiet, for now.",
+  "wahl.verschoben": "Moved to the nearest dry ground.",
+  "wahl.nass": "Water. Gladiators sink. Pick dry land.",
+  "wahl.keinLand": "The gods found no land at all. Suspicious.",
+  "wahl.art.1": "village", "wahl.art.2": "town", "wahl.art.3": "harbour village", "wahl.art.4": "harbour town",
+  "welt.wahl": "Choose where your ludus stands."
  }
 }
