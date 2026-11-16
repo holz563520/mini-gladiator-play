@@ -11,7 +11,7 @@
 // Knopf „Save & quit“. Ein/Aus der Stimme steht im Spielstand. ?nosave = ohne Spielstand (Seed 1).
 (function(){
 'use strict';
-var V='79919262', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='f41febb8', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -59,10 +59,12 @@ function karteZeigen(e){var cv=$('boden'),r=cv.getBoundingClientRect(),x=(e.clie
  for(var i=gezeichnet.length-1;i>=0;i--){var g=gezeichnet[i];if(x>=g.x&&x<g.x+g.w&&y>=g.y&&y<g.y+g.h){
   if(g.boden){var dx=Math.abs(x-(g.x+FW/2))/(FW/2),dy=Math.abs(y-(g.y+FH/2))/(FH/2);if(dx+dy>1)continue}hit=g;break}}
  var k=$('karte');if(!hit){k.textContent=t('spiel.tippen');window.AT3SPIEL.angetippt=null;return}
- var name=OBJTXT[hit.id+'.name']||hit.id,info=OBJTXT[hit.id+'.info']||'';
- k.innerHTML=hit.ersatz?'<b>'+esc(t('spiel.ersatzName'))+': '+esc(name)+'</b><br>'+esc(t('spiel.ersatzInfo')):'<b>'+esc(name)+'</b><br>'+esc(info);
- window.AT3SPIEL.angetippt=hit.id;
- if(hit.ersatz){sprich(t('spiel.ersatzName')+': '+name+'.'+(ersatzGesagt?'':' '+t('spiel.ersatzInfo')));ersatzGesagt=true}else sprich(name+'. '+info)}
+ objektKarte(hit.id,hit.ersatz)}
+// Objektkarte zeigen und vorlesen (G1; seit G4b auch für Naturobjekte auf der Weltkarte)
+function objektKarte(id,ersatz){var k=$('karte'),name=OBJTXT[id+'.name']||id,info=OBJTXT[id+'.info']||'';
+ k.innerHTML=ersatz?'<b>'+esc(t('spiel.ersatzName'))+': '+esc(name)+'</b><br>'+esc(t('spiel.ersatzInfo')):'<b>'+esc(name)+'</b><br>'+esc(info);
+ window.AT3SPIEL.angetippt=id;
+ if(ersatz){sprich(t('spiel.ersatzName')+': '+name+'.'+(ersatzGesagt?'':' '+t('spiel.ersatzInfo')));ersatzGesagt=true}else sprich(name+'. '+info)}
 // ── Stimme (V1): erst beim Einschalten laden, Rechnen im Hintergrundkern, hier nur Knopf und Anzeige ──
 var STIMME=null, stimmeLaedt=null, tonCtx=null, ersatzGesagt=false, stimmeGewuenscht=false;
 function sprich(x){if(STIMME&&STIMME.istAn())STIMME.sag(x)}
@@ -108,11 +110,14 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,
   beiAusfall:function(g){if(g)$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:g}))+'</span>'},
   beiZoom:function(l){$('weltInfo').textContent=t('welt.zoom',{z:['1×','½','¼','⅛'][l]})},
-  beiFeld:function(f){window.AT3SPIEL.feld=f;$('weltInfo').textContent=f?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
+  beiFeld:function(f){window.AT3SPIEL.feld=f;if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
+   $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
+ if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
  $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true}},250)}
-function karteText(){var m=KARTE&&KARTE.mess;if(!m)return t('mess.karteAus');var u=function(v){return(v/1000).toFixed(2)+' ms'};
+function karteText(){var m0=KARTE&&KARTE.mess;return karteText0()+(m0?' · nature '+m0.naturArten+' kinds, '+m0.naturErsatz+' grey, '+m0.natur+' baked':'')}
+function karteText0(){var m=KARTE&&KARTE.mess;if(!m)return t('mess.karteAus');var u=function(v){return(v/1000).toFixed(2)+' ms'};
  return t('mess.karte',{s:m.stuecke,n:m.bilder,b:zahl(m.bytes,'B'),g:m.gerechnet,a:u(m.gerechnet?m.rechenUs/m.gerechnet:0),m:u(m.maxRechenUs),z:(m.zeichnen?m.zeichenMs/m.zeichnen:0).toFixed(2)+' ms',x:m.maxZeichenMs.toFixed(2)+' ms',e:m.ersatz})}
 function kernText(){var Z=KERN&&KERN.zustand;if(!Z||!Z.laeuft)return t('mess.kernAus')+(Z&&Z.fehler?' ('+Z.fehler+')':'');
  return t('mess.kern',{h:Z.helfer,m:(Z.mittelUs/1000).toFixed(2)+' ms',p:(Z.p95Us/1000).toFixed(2)+' ms',n:Z.gesamt,v:Z.verloren,f:kernAbdruck||'-'})}
@@ -131,7 +136,7 @@ function bilderMessen(){var L=[],letzt=null,ende=performance.now()+3000;
  return new Promise(function(ok){function f(ts){if(letzt!=null)L.push(ts-letzt);letzt=ts;if(ts<ende)requestAnimationFrame(f);else ok(L)}requestAnimationFrame(f)})
   .then(function(L){mess.p95=quantil(L,.95);mess.p99=quantil(L,.99);mess.bildzahl=L.length})}
 function istWert(id){return{download:mess.download,erstesBild:mess.erstesBildMs,bildPc:mess.p95,bildHandy:mess.p95,bild99:mess.p99,lang:mess.langGemeldet?(mess.langMs||0):undefined,weltTick:KERN&&KERN.zustand.laeuft&&KERN.zustand.gesamt>=20?KERN.zustand.p95Us/1000:null,spielstand:SPIELSTAND&&SPIELSTAND.mal?SPIELSTAND.bytes:null,
- speicher:performance.memory?performance.memory.usedJSHeapSize:undefined,bilder:mess.bilder+(KARTE?KARTE.mess.maxBytes:0)}[id]}
+ speicher:performance.memory?performance.memory.usedJSHeapSize:undefined,bilder:mess.bilder+(KARTE?KARTE.mess.maxBytes:0),backzeit:KARTE&&KARTE.mess.rechenN>=10?quantil(KARTE.mess.rechenL,.95)/1000:null}[id]}
 function zahl(v,e){if(e==='B')return v<1048576?(v/1024).toFixed(1)+' KB':(v/1048576).toFixed(1)+' MB';return(v<100?v.toFixed(1):Math.round(v))+' ms'}
 function budgetListe(){if(!BUDGETS)return[];return BUDGETS.budgets.map(function(b){var v=istWert(b.id),st;
  if(v===undefined)st='grau';else if(v===null)st='offen';else st=v<=b.ziel?'gut':'schlecht';return{id:b.id,was:t(b.text),ziel:zahl(b.ziel,b.einheit),ist:v==null?null:zahl(v,b.einheit),st:st,v:v,zielWert:b.ziel}})}
@@ -164,7 +169,7 @@ window.AT3SPIEL={karte:function(){return KARTE},spielstand:function(){return SPI
 Promise.all([holeJson('sprache/en.json'),holeJson('kartei/text-en.json'),holeJson('kartei/objekte.json'),holeJson('kartei/budgets.json'),holeJson('spiel-budgets.json')])
 .then(function(d){TXT=d[0].texte;OBJTXT=d[1].texte;kartei=d[2];B=d[3];BUDGETS=d[4];mess.datenMs=performance.now();texteSetzen();platzWaehlen();
  return S.ladeUebernommene(kartei,function(datei){return holeJson('kartei/'+datei)},B)})
-.then(function(g){geladen=g;mess.objekteMs=performance.now();
+.then(function(g){geladen=g;mess.objekteMs=performance.now();if(KARTE)KARTE.natur(g.objekte);
  var f=document.fonts&&document.fonts.load?document.fonts.load('18px "AT3 Text"').catch(function(){}):Promise.resolve();
  return Promise.race([f,new Promise(function(r){setTimeout(r,3000)})])})
 .then(function(){zeichnen();

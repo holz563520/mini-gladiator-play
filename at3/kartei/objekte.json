@@ -10,7 +10,7 @@
    "typ": 11,
    "kat": "baum",
    "name": "Apple Tree",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/baum-apfel.json"
   },
   {
@@ -19,7 +19,7 @@
    "typ": 9,
    "kat": "baum",
    "name": "Birch",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/baum-birke.json"
   },
   {
@@ -28,7 +28,7 @@
    "typ": 10,
    "kat": "baum",
    "name": "Beech",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/baum-buche.json"
   },
   {
@@ -37,7 +37,7 @@
    "typ": 1,
    "kat": "baum",
    "name": "Old Oak",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/baum-eiche-skizze.json"
   },
   {
@@ -46,7 +46,7 @@
    "typ": 12,
    "kat": "baum",
    "name": "Poplar",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/baum-pappel.json"
   },
   {
@@ -55,7 +55,7 @@
    "typ": 8,
    "kat": "baum",
    "name": "Fir",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/baum-tanne.json"
   },
   {
@@ -64,7 +64,7 @@
    "typ": 26,
    "kat": "einrichtung",
    "name": "Straw Bed",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/bett-stroh.json"
   },
   {
@@ -73,7 +73,7 @@
    "typ": 18,
    "kat": "blume",
    "name": "Thistle",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/blume-distel.json"
   },
   {
@@ -82,7 +82,7 @@
    "typ": 19,
    "kat": "blume",
    "name": "Reeds",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/blume-schilf.json"
   },
   {
@@ -91,7 +91,7 @@
    "typ": 14,
    "kat": "blume",
    "name": "Wildflowers",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/blume-wiese.json"
   },
   {
@@ -100,7 +100,7 @@
    "typ": 3,
    "kat": "boden",
    "name": "Bare Earth",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/boden-erde.json"
   },
   {
@@ -109,7 +109,7 @@
    "typ": 5,
    "kat": "boden",
    "name": "Bedrock",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/boden-fels.json"
   },
   {
@@ -118,7 +118,7 @@
    "typ": 2,
    "kat": "boden",
    "name": "Grass",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/boden-gras.json"
   },
   {
@@ -127,7 +127,7 @@
    "typ": 4,
    "kat": "boden",
    "name": "Sand",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/boden-sand.json"
   },
   {
@@ -136,7 +136,7 @@
    "typ": 7,
    "kat": "boden",
    "name": "Waterhole",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/boden-wasser.json"
   },
   {
@@ -145,7 +145,7 @@
    "typ": 6,
    "kat": "boden",
    "name": "Dirt Road",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/boden-weg.json"
   },
   {
@@ -154,7 +154,7 @@
    "typ": 16,
    "kat": "blume",
    "name": "Flowering Bush",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/busch-bluete.json"
   },
   {
@@ -163,7 +163,7 @@
    "typ": 15,
    "kat": "blume",
    "name": "Bush",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/busch-gruen.json"
   },
   {
@@ -172,7 +172,7 @@
    "typ": 17,
    "kat": "blume",
    "name": "Hazel",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/busch-hasel.json"
   },
   {
@@ -181,7 +181,7 @@
    "typ": 23,
    "kat": "dach",
    "name": "Tiled Roof",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/dach-ziegel.json"
   },
   {
@@ -190,7 +190,7 @@
    "typ": 13,
    "kat": "baum",
    "name": "Boulder",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/fels-block.json"
   },
   {
@@ -199,7 +199,7 @@
    "typ": 30,
    "kat": "figur",
    "name": "Worker",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/figur-arbeiter.json"
   },
   {
@@ -208,7 +208,7 @@
    "typ": 31,
    "kat": "karren",
    "name": "Ox Cart",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/karren-ochse.json"
   },
   {
@@ -217,7 +217,7 @@
    "typ": 24,
    "kat": "einrichtung",
    "name": "Storage Spot",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/lager-platz.json"
   },
   {
@@ -235,7 +235,7 @@
    "typ": 22,
    "kat": "wand",
    "name": "Gate",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/wand-tor.json"
   },
   {
@@ -244,7 +244,7 @@
    "typ": 21,
    "kat": "wand",
    "name": "Door",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/wand-tuer.json"
   },
   {
@@ -253,7 +253,7 @@
    "typ": 28,
    "kat": "ware",
    "name": "Planks",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/ware-bretter.json"
   },
   {
@@ -262,7 +262,7 @@
    "typ": 29,
    "kat": "ware",
    "name": "Meat",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/ware-fleisch.json"
   },
   {
@@ -271,7 +271,7 @@
    "typ": 27,
    "kat": "ware",
    "name": "Logs",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/ware-stamm.json"
   },
   {
@@ -280,7 +280,7 @@
    "typ": 25,
    "kat": "einrichtung",
    "name": "Workbench",
-   "status": "skizze",
+   "status": "geprueft",
    "datei": "obj/werk-bank.json"
   }
  ]

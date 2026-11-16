@@ -7,18 +7,20 @@
 // Riesenwelt (Regel 14): Kosten hängen nur vom Bildausschnitt ab; bekannt sind immer nur die 7 × 7 Kartenstücke um den Blick (Befehl blick an den Weltkern für
 // die Spielwelt, an den Bildkern für die Ansicht).
 // Höhe: Die Kamera folgt weich der Geländehöhe unter der Bildmitte; „was ist im Bild“ rechnet mit kleinster und größter Stufe je Block (Auskunft des Bildkerns).
+// G4b: Natur steckt schon in den Bodenbildern (vom Bildkern gebacken); hier nur die größeren Bildränder beim „was ist im Bild“ und das Weiterreichen der Bilder.
 // Wiederverwendet: Vorgehen von welt-raster.js/welt-gross.js aus 2.0 (Bodenkacheln mit Zeitanteil, Nachbarstufe, begrenzter Bildcache), Palette aus at3-64.js.
 (function(){
 'use strict';
-var V='79919262', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='f41febb8', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SEITE=4800, WELT=ST*SEITE, HALB=3, TEIL=8, STUFEN=4, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
+var RO=112, RS=16;   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
 
 function starten(o){
  var cv=o.cv, g=cv.getContext('2d'), S=o.S, kern=o.kern, bk=null, tot=false;
  var cam={x:WELT/2,y:WELT/2,z:0,lod:0}, hatKam=false, zFest=false, gen=-1, seed=0, blickK=-1;
- var bekannt=new Map(), bilder=new Map(), offen=new Map(), fehlt=new Set(), bytes=0, bildNr=0, geplant=false, zoomZeit=0, feldNr=0, feldOk={};
- var M={bilder:0,bytes:0,maxBytes:0,gerechnet:0,rechenUs:0,maxRechenUs:0,zeichnen:0,zeichenMs:0,maxZeichenMs:0,sichtbar:0,ersatz:0,fertig:false,stuecke:0,anfragen:0,verdraengt:0,bmp:null};
+ var NV=0, bekannt=new Map(), bilder=new Map(), offen=new Map(), fehlt=new Set(), bytes=0, bildNr=0, geplant=false, zoomZeit=0, feldNr=0, feldOk={};
+ var M={bilder:0,bytes:0,maxBytes:0,gerechnet:0,rechenUs:0,maxRechenUs:0,zeichnen:0,zeichenMs:0,maxZeichenMs:0,sichtbar:0,ersatz:0,fertig:false,stuecke:0,anfragen:0,verdraengt:0,bmp:null,natur:0,rechenL:[],rechenN:0,naturArten:0,naturErsatz:0};
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WELT&&o.kam[1]>=0&&o.kam[1]<WELT){cam.x=o.kam[0];cam.y=o.kam[1];cam.lod=Math.max(0,Math.min(STUFEN-1,o.kam[2]|0));hatKam=true}
 
  function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(o.beiAusfall)o.beiAusfall(g2)}
@@ -37,17 +39,18 @@ function starten(o){
  function bilderWeg(){bilder.forEach(function(b){if(b.bmp&&b.bmp.close)b.bmp.close()});bilder.clear();bytes=0}
 
  function vomBildkern(e){var d=e.data;
+  if(d.art==='arten'){NARTEN=d.liste;naturSenden();return}
   if(d.art==='feld'){var f=feldOk[d.id];delete feldOk[d.id];if(f)f(d.feld);return}
   if(d.gen!==gen){if(d.bmp&&d.bmp.close)d.bmp.close();return}
   if(d.art==='kunde'){var mn=32767,mx=0;for(var i=0;i<128;i+=2){if(d.mm[i]<mn)mn=d.mm[i];if(d.mm[i+1]>mx)mx=d.mm[i+1]}
    if(Math.abs(d.cx-(cam.x>>6))>HALB||Math.abs(d.cy-(cam.y>>6))>HALB)return;
    bekannt.set(d.cx*8192+d.cy,{cx:d.cx,cy:d.cy,mm:d.mm,hg:d.hg,mn:mn,mx:mx});M.stuecke=bekannt.size;M.stueckUs=d.stUs;fehlt.clear();plan()}
   else if(d.art==='start'){if(d.platz&&!hatKam){cam.x=d.platz.x+.5;cam.y=d.platz.y+.5;hatKam=true;M.startOrt=d.platz.ort;blick();plan()}}
-  else if(d.art==='bild'){offen.delete(d.key);
+  else if(d.art==='bild'){offen.delete(d.key);if(d.nv!==NV){if(d.bmp&&d.bmp.close)d.bmp.close();plan();return}
    if(d.fehlt){fehlt.add(d.key);plan();return}
    var b={bmp:d.bmp||null,w:d.w,h:d.h,ox:d.ox,oy:d.oy,lod:d.lod,x0:d.x0,y0:d.y0,nr:bildNr,bytes:d.w*d.h*4};
    if(!b.bmp){var c=document.createElement('canvas');c.width=d.w;c.height=d.h;c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(d.buf.buffer),d.w,d.h),0,0);b.bmp=c}
-   M.bmp=!!d.bmp;var alt=bilder.get(d.key);if(alt){bytes-=alt.bytes;if(alt.bmp.close)alt.bmp.close()}
+   M.bmp=!!d.bmp;M.natur+=d.natur||0;M.rechenL[M.rechenN++%200]=d.us;var alt=bilder.get(d.key);if(alt){bytes-=alt.bytes;if(alt.bmp.close)alt.bmp.close()}
    bilder.set(d.key,b);bytes+=b.bytes;M.gerechnet++;M.rechenUs+=d.us;if(d.us>M.maxRechenUs)M.maxRechenUs=d.us;verdraengen();plan()}}
  function verdraengen(){if(bytes<=SPEICHER)return;var L=[];bilder.forEach(function(b,k){if(b.nr<bildNr-1)L.push([b.nr,k])});L.sort(function(a,b){return a[0]-b[0]});
   for(var i=0;i<L.length&&bytes>SPEICHER*.8;i++){var b=bilder.get(L[i][1]);bytes-=b.bytes;if(b.bmp.close)b.bmp.close();bilder.delete(L[i][1]);M.verdraengt++}}
@@ -61,14 +64,14 @@ function starten(o){
  // ── Was ist im Bild? Bodenbilder der Stufe lod, deren Rahmen (mit kleinster/größter Stufe) den Ausschnitt schneidet ──
  function sicht(lod,CX,CY,hb,hh,aus){var n=TEIL<<lod,q=1<<lod;aus.length=0;
   bekannt.forEach(function(p){var X=(p.cx-p.cy)*ST*32,Y=(p.cx+p.cy)*ST*16;
-   if(X+ST*32<CX-hb||X-ST*32>CX+hb||Y+ST*32-p.mn*8<CY-hh||Y-p.mx*8>CY+hh)return;
+   if(X+ST*32+RS<CX-hb||X-ST*32-RS>CX+hb||Y+ST*32-p.mn*8<CY-hh||Y-p.mx*8-RO>CY+hh)return;
    for(var by=0;by<8;by+=q)for(var bx=0;bx<8;bx+=q){var mn=32767,mx=0,m=p.mm;
     for(var j=by;j<by+q;j++)for(var i=bx;i<bx+q;i++){var e=(j*8+i)*2;if(m[e]<mn)mn=m[e];if(m[e+1]>mx)mx=m[e+1]}
     var x0=p.cx*ST+bx*8,y0=p.cy*ST+by*8,x=(x0-y0)*32,y=(x0+y0)*16;
-    if(x+n*32<CX-hb||x-n*32>CX+hb||y+n*32-mn*8<CY-hh||y-mx*8>CY+hh)continue;
+    if(x+n*32+RS<CX-hb||x-n*32-RS>CX+hb||y+n*32-mn*8<CY-hh||y-mx*8-RO>CY+hh)continue;
     aus.push({x0:x0,y0:y0,X:x,Y:y,key:lod+':'+x0+':'+y0,mn:mn,ab:Math.abs(x-CX)+2*Math.abs(y+n*16-((mn+mx)*4)-CY)})}});return aus}
  function anfragen(L,lod,max){L.sort(function(a,b){return a.ab-b.ab});for(var i=0;i<L.length&&offen.size<max;i++){var c=L[i];if(bilder.has(c.key)||offen.has(c.key)||fehlt.has(c.key))continue;
-   offen.set(c.key,1);M.anfragen++;bk.postMessage({art:'bild',gen:gen,key:c.key,x0:c.x0,y0:c.y0,lod:lod})}}
+   offen.set(c.key,1);M.anfragen++;bk.postMessage({art:'bild',gen:gen,nv:NV,key:c.key,x0:c.x0,y0:c.y0,lod:lod})}}
 
  var LISTE=[],NEBEN=[],gemalt=new Set();
  function mal(b,CX,CY,Z,W,H){var s=b.lod===cam.lod?1:Math.pow(2,b.lod-cam.lod),x=((b.x0-b.y0)*32-CX)/Z+W/2-b.ox*s,y=((b.x0+b.y0)*16-CY)/Z+H/2-b.oy*s;
@@ -114,7 +117,16 @@ function starten(o){
  function tipp(cx,cy){feldBei(cx,cy).then(function(fd){if(o.beiFeld)o.beiFeld(fd)})}
  if(window.ResizeObserver)new ResizeObserver(plan).observe(cv);else addEventListener('resize',plan);
  plan();
- return{beiWs:beiWs,mess:M,zoom:zoom,plan:plan,feldBei:feldBei,
+ // ── Natur (G4b): Bilder der übernommenen Naturobjekte einmal an den Bildkern; danach alle Bodenbilder neu (mit Natur). Rest = graues Ersatzbild. ──
+ var NOBJ=null, NARTEN=null;
+ function natur(objekte){NOBJ=objekte||{};naturSenden()}
+ function naturSenden(){if(!bk||!NOBJ||!NARTEN)return;var objekte=NOBJ,arten=NARTEN,liste=[],tr=[],ers=0;NOBJ=null;
+  arten.forEach(function(id){var ob=objekte&&objekte[id];if(!ob||!ob.bild){liste.push(null);ers++;return}var b=ob.bild,px=new Uint8Array(b.w*b.h).fill(255);
+   for(var y=0;y<b.h;y++){var r=b.z[y];for(var x=0;x<b.w;x++){var c=S.ZEICHEN.indexOf(r[x]);if(c>=0)px[y*b.w+x]=c}}
+   liste.push({w:b.w,h:b.h,ax:b.ax,ay:b.ay,px:px});tr.push(px.buffer)});
+  var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,grau:grau,rand:S.dunkler(grau)},tr);
+  M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
+ return{beiWs:beiWs,mess:M,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,
   kam:function(){return hatKam?[Math.floor(cam.x),Math.floor(cam.y),cam.lod]:null},
   kamera:function(){return{x:cam.x,y:cam.y,z:cam.z,lod:cam.lod,gesetzt:hatKam}},
   geh:function(x,y,lod){cam.x=x;cam.y=y;if(lod!=null)cam.lod=lod;hatKam=true;zFest=false;blick();plan()},

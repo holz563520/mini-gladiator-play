@@ -170,7 +170,8 @@ function bewerte(m,B,kat){var g=budgetGruppe(B,kat),r=[],gelb=[];
  if(!m)return{ampel:'keine',gruende:['noch nicht gemessen']};
  if(m.datei>g.datei)r.push('Datei '+m.datei+' B über '+g.datei+' B');else if(m.datei>.75*g.datei)gelb.push('Datei knapp');
  if(m.bildspeicher>B.bildspeicher)r.push('Bildspeicher '+m.bildspeicher+' B über '+B.bildspeicher+' B');
- ['karte','fp'].forEach(function(a){var b=g[a];if(!b)return;var L=m[a]||[],s=L[L.length-1],nm=a==='karte'?'Karte':'First Person';
+ ['karte','fp'].forEach(function(a){var b=g[a];if(!b||b.gilt)return;   // gilt: Wert zählt anderswo (backzeit = Bildkern im Spiel, „ab FP1“ = erst mit First Person im Spiel; Thomas 16.11.2026)
+ var L=m[a]||[],s=L[L.length-1],nm=a==='karte'?'Karte':'First Person';
   if(!s||s.n<b.stufen[b.stufen.length-1]){r.push(nm+': Messung mit '+b.stufen[b.stufen.length-1]+' Stück fehlt');return}
   if(s.p95>b.ms)r.push(nm+' '+s.n+' Stück: '+s.p95.toFixed(1)+' ms über '+b.ms+' ms');else if(s.p95>.75*b.ms)gelb.push(nm+' knapp ('+s.p95.toFixed(1)+' von '+b.ms+' ms)')});
  return r.length?{ampel:'rot',gruende:r}:{ampel:gelb.length?'gelb':'gruen',gruende:gelb}}
