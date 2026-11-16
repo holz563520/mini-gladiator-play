@@ -1,6 +1,6 @@
 // WAS DIE DATEI TUT: Bauen im Weltkern von Arena Theory 3.0 (Schritt G5a). Reine Rechnung ohne Bildschirm, nur ganze Zahlen: Gebäudefelder (Lager, Werkstatt,
 // Unterkunft), Räume (orthogonal zusammenhängende Felder gleicher Art), Wände, Türen und Tore auf Feldkanten, Dach je Feld, Baustellen mit Bauzuständen, Gold.
-// Hängt sich in kern.js ein (Befehle bauBoden, bauEntfernen, bauWand, bauTuer, bauDach, bauHuelle, bauPause, bauAbbruch). Gezeichnet wird hier nichts:
+// Hängt sich in kern.js ein (Befehle bauBoden, bauEntfernen, bauWand, bauTuer, bauDach, bauHuelle, bauPause, bauAbbruch; G5c: bauWaende, bauTuerWechsel). Gezeichnet wird hier nichts:
 // G5b zeichnet nur, was hier steht (keine zweite Kollisionswahrheit), G5c ruft pruefen() für die Vorschau und sackgasse() vor dem Wändeziehen.
 // Kerne: nur Weltkern (und Node-Tests), nie auf dem Hauptkern (Regel 13). Wird erst mit dem ersten Bau-Befehl oder einem Spielstand mit Bau geladen;
 // ohne Bau bleibt z.bau leer und der Fingerabdruck des Kerns unverändert.
@@ -22,7 +22,7 @@ function NAT(){return root.AT3NATUR||(typeof module!=='undefined'&&module.export
 var ST=64, FELDER=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, MEER=2048, LS=6;
 var START_GOLD=10000, PREIS=1;                          // Thomas 16.11.2026: gutes Startkapital zum Testen, alles kostet 1 (Preise setzt er später)
 var FELD_TICKS=40, KANTE_TICKS=20;                      // Bauzeit: 2 s je Feld (Thomas), 1 s je Wand/Tür (Vorschlag)
-var MAX_AUSWAHL=1024, MAX_RAUM=4096, MAX_BAUSTELLEN=256, JE_TICK=64, WEG_SUCHE=16, MAX_MELD=256, MAX_ZIELE=16384;
+var MAX_AUSWAHL=1024, MAX_RAUM=4096, MAX_BAUSTELLEN=256, JE_TICK=64, WEG_SUCHE=16, MAX_MELD=256, MAX_ZIELE=16384, MAX_LINIE=256;   // G5c: Wandlinie höchstens 256 Kanten (Vorschlag)
 var ART_NAME=['','lager','werkstatt','unterkunft'], ART={lager:1,werkstatt:2,unterkunft:3};
 // Kante (ein Byte): Bits 0–1 Typ, Bits 2–3 Herkunft, Bits 4–5 Bauzustand. Typ 0 mit Herkunft „entfernt“ = von Hand geöffnet, wächst nicht nach.
 var K_WAND=1, K_TUER=2, K_TOR=3, H_AUTO=1, H_HAND=2, H_WEG=3;
@@ -179,6 +179,7 @@ function bauWand(z,w,bnr){var b=z.bau,k=kanteVon(w);if(!k)return melden(b,bnr,'e
  var v=kGet(b,k[0],k[1],k[2]),ox=um(w.x+DX[w.seite]),oy=w.y+DY[w.seite],bebaut=artAt(b,w.x,w.y)||(oy>=0&&oy<WY&&artAt(b,ox,oy));
  if(!w.an){if(!(v&3))return melden(b,bnr,'nothing');kanteWeg(b,k,bebaut?H_WEG<<2:0);leerRaeumen(b,k[1],k[2]);b.zaehler++;return melden(b,bnr,null)}
  if((v&3)===K_WAND)return melden(b,bnr,'nothing');
+ if(bebaut&&zumauern(z,b,[k]))return melden(b,bnr,'dead_end');               // G5c: einziger Zugang wird nicht zugemauert
  if(!bebaut){var C=new Map(),g=boden(z,w.x,w.y,C);if(typeof g==='string'){var g2=oy>=0&&oy<WY-1?boden(z,ox,oy,C):'edge';if(typeof g2==='string')return melden(b,bnr,g==='too_far'||g2==='too_far'?'too_far':g)}}
  var neuZiel=!(v&3)||((v>>4)&3)!==Z_PLAN;
  if(neuZiel){if(b.gold<PREIS)return melden(b,bnr,'no_gold',{kosten:PREIS});if(b.auf.length>=MAX_BAUSTELLEN)return melden(b,bnr,'too_many_sites');b.gold-=PREIS}
@@ -193,6 +194,8 @@ function bauTuer(z,w,bnr){var b=z.bau,k=kanteVon(w);if(!k)return melden(b,bnr,'e
  return melden(b,bnr,null,neuZiel?{kosten:PREIS,baustelle:baustelle(b,0,[k[0],k[1],k[2]])}:{kosten:0})}
 // Dach öffnen oder schließen (abgeleitet je Feld, kostet nichts)
 function bauDach(z,w,bnr){var b=z.bau,n=0;if(w.y+w.h>WY)return melden(b,bnr,'edge');
+ if(w.zu===2){var zu=-1;for(var j0=0;j0<w.h&&zu<0;j0++)for(var i0=0;i0<w.w;i0++){var X0=um(w.x+i0),Y0=w.y+j0;if(artAt(b,X0,Y0)){zu=flagAt(b,X0,Y0)&F_DACH?0:1;break}}   // G5c: erstes Feld entscheidet
+  if(zu<0)return melden(b,bnr,'nothing');w={x:w.x,y:w.y,w:w.w,h:w.h,zu:zu}}
  for(var j=0;j<w.h;j++)for(var i=0;i<w.w;i++){var X=um(w.x+i),Y=w.y+j,s=stk(b,X,Y);if(!s)continue;var q=qi(X,Y);if(!s.art[q]||!!(s.flag[q]&F_DACH)===!!w.zu)continue;s.flag[q]^=F_DACH;merk(b,X,Y);n++}
  if(!n)return melden(b,bnr,'nothing');b.zaehler++;return melden(b,bnr,null,{felder:n})}
 // Hülle neu erzeugen: alle offenen Außenkanten des Raums bekommen eine Wand (auch von Hand geöffnete), innen liegende automatische Wände fallen weg, ohne Tür kommt eine dazu.
@@ -211,6 +214,38 @@ function bauHuelle(z,w,bnr){var b=z.bau,r=b.raeume.get(w.raum);if(!r)return meld
  var ziele=[];for(i=0;i<wand.length;i++){var k2=wand[i];kSet(b,k2[0],k2[1],k2[2],(t>=0&&K[t].w===i?K_TUER:K_WAND)|(H_AUTO<<2)|(Z_PLAN<<4));ziele.push(k2[0],k2[1],k2[2])}
  b.gold-=wand.length*PREIS;b.zaehler++;
  return melden(b,bnr,null,{kosten:wand.length*PREIS,baustelle:wand.length?baustelle(b,r.id,ziele):0,raum:r.id})}
+
+// ── G5c: Wandlinie, Tür wechseln, Sackgassen-Schutz für mehrere Wände zusammen ──
+// Felder zu beiden Seiten einer gespeicherten Kante [Kantenart, X, Y]
+function seiten(k){return k[0]===N_?[k[1],k[2],k[1],k[2]-1]:[k[1],k[2],um(k[1]-1),k[2]]}
+// true, wenn diese Kanten (sollen Wand werden) zusammen einem Raum den einzigen Zugang nehmen; jeder betroffene Raum wird einmal geprüft
+function zumauern(z,b,K){var R=new Set(),L=[],i;for(i=0;i<K.length;i++){var f=seiten(K[i]);L.push([K[i][0],K[i][1],K[i][2]]);
+  if(f[1]>=0&&f[1]<WY){var r1=raumAt(b,f[0],f[1]);if(r1)R.add(r1)}if(f[3]>=0&&f[3]<WY){var r2=raumAt(b,f[2],f[3]);if(r2)R.add(r2)}}
+ var hit=false;R.forEach(function(r){if(!hit&&sackgasse(z,r,L))hit=true});return hit}
+// Linie auf dem Feldraster: r 0 = waagerecht (Nordkanten der Felder x … x+n−1 in Zeile y), r 1 = senkrecht (Westkanten der Felder y … y+n−1 in Spalte x)
+function linie(w){var L=[];for(var i=0;i<w.n;i++)L.push(w.r===0?[N_,um(w.x+i),w.y]:[W_,w.x,w.y+i]);return L}
+// Plan einer Wandlinie (ändert nichts): an = bauen, sonst abreißen; Türen und Tore bleiben in beiden Fällen
+function planWaende(z,w){var b=z.bau||LEER,L=linie(w),neuK=[],C=new Map(),i;
+ if(w.an===2){var luecke=0;for(i=0;i<L.length&&!luecke;i++)if(!(kGet(b,L[i][0],L[i][1],L[i][2])&3))luecke=1;w={r:w.r,x:w.x,y:w.y,n:w.n,an:luecke}}   // 2 = von selbst: Lücken werden zugemauert, eine schon ganz geschlossene Linie wird abgerissen
+ for(i=0;i<L.length;i++){var k=L[i],v=kGet(b,k[0],k[1],k[2]);
+  if(!w.an){if((v&3)===K_WAND)neuK.push(k);continue}                          // Türen und Tore bleiben (die ändert das Tür-Werkzeug)
+  if(v&3)continue;var f=seiten(k),bebaut=artAt(b,f[0],f[1])||(f[3]>=0&&f[3]<WY&&artAt(b,f[2],f[3]));
+  if(!bebaut){var g=boden(z,f[0],f[1],C);if(typeof g==='string'){var g2=f[3]>=0&&f[3]<WY-1?boden(z,f[2],f[3],C):'edge';if(typeof g2==='string')return{fehler:g==='too_far'||g2==='too_far'?'too_far':g,x:f[0],y:f[1]}}}
+  neuK.push(k)}
+ if(!neuK.length)return{fehler:'nothing'};
+ if(w.an){if(zumauern(z,b,neuK))return{fehler:'dead_end'};if(neuK.length*PREIS>b.gold)return{fehler:'no_gold',kosten:neuK.length*PREIS};if(b.auf.length>=MAX_BAUSTELLEN)return{fehler:'too_many_sites'}}
+ return{kanten:neuK,kosten:w.an?neuK.length*PREIS:0,an:w.an}}
+function pruefenWaende(z,w){if(!ARTEN.bauWaende(w))return{ok:false,grund:'invalid'};var p=planWaende(z,w);
+ if(p.fehler)return{ok:false,grund:p.fehler,kosten:p.kosten||0,x:p.x,y:p.y};return{ok:true,grund:'',kosten:p.kosten,waende:p.kanten.length,an:p.an}}
+function bauWaende(z,w,bnr){var b=z.bau,p=planWaende(z,w),K=p.kanten,i;if(p.fehler)return melden(b,bnr,p.fehler,{kosten:p.kosten||0});
+ if(!p.an){for(i=0;i<K.length;i++){var f=seiten(K[i]),beb=artAt(b,f[0],f[1])||(f[3]>=0&&f[3]<WY&&artAt(b,f[2],f[3]));kanteWeg(b,K[i],beb?H_WEG<<2:0);leerRaeumen(b,K[i][1],K[i][2])}
+  b.zaehler++;return melden(b,bnr,null,{waende:K.length,kosten:0})}
+ var ziele=[];for(i=0;i<K.length;i++){kSet(b,K[i][0],K[i][1],K[i][2],K_WAND|(H_HAND<<2)|(Z_PLAN<<4));ziele.push(K[i][0],K[i][1],K[i][2])}
+ b.gold-=p.kosten;b.zaehler++;return melden(b,bnr,null,{waende:K.length,kosten:p.kosten,baustelle:baustelle(b,0,ziele)})}
+// Antippen mit dem Tür-Werkzeug: Wand → Tür → Tor → Wand (zurück zur Wand mit Sackgassen-Schutz)
+function bauTuerWechsel(z,w,bnr){var b=z.bau,k=kanteVon(w);if(!k)return melden(b,bnr,'edge');var t=kGet(b,k[0],k[1],k[2])&3;
+ if(!t)return melden(b,bnr,'no_wall');var e=t===K_WAND?bauTuer(z,{x:w.x,y:w.y,seite:w.seite,typ:'tuer'},bnr):t===K_TUER?bauTuer(z,{x:w.x,y:w.y,seite:w.seite,typ:'tor'},bnr):bauWand(z,{x:w.x,y:w.y,seite:w.seite,an:1},bnr);
+ var m=b.meld[b.meld.length-1];if(m&&m.nr===bnr&&m.ok)m.typ=t===K_WAND?'tuer':t===K_TUER?'tor':'wand';return e}   // typ: was jetzt dort steht
 
 // ── Baustellen: pausieren, abbrechen, je Tick fortschreiben ──
 function finde(b,nr){for(var i=0;i<b.auf.length;i++)if(b.auf[i].nr===nr)return i;return -1}
@@ -263,11 +298,13 @@ var ARTEN={
  bauEntfernen:rechteck,
  bauWand:function(w){return kantenwert(w)&&(w.an===0||w.an===1)},
  bauTuer:function(w){return kantenwert(w)&&(w.typ==='tuer'||w.typ==='tor')},
- bauDach:function(w){return rechteck(w)&&(w.zu===0||w.zu===1)},
+ bauDach:function(w){return rechteck(w)&&(w.zu===0||w.zu===1||w.zu===2)},                // 2 = umschalten nach dem ersten bebauten Feld (G5c)
+ bauWaende:function(w){return w&&typeof w==='object'&&G(w.x,0,WX-1)&&G(w.y,0,WY-1)&&(w.r===0||w.r===1)&&G(w.n,1,MAX_LINIE)&&(w.an===0||w.an===1||w.an===2)&&(w.r===0||w.y+w.n<=WY)},
+ bauTuerWechsel:kantenwert,
  bauHuelle:function(w){return w&&typeof w==='object'&&G(w.raum,1,4294967295)},
  bauPause:function(w){return w&&typeof w==='object'&&(w.an===0||w.an===1)&&(G(w.nr,1,2147483647)||G(w.raum,1,4294967295))},
  bauAbbruch:function(w){return w&&typeof w==='object'&&G(w.nr,1,2147483647)}};
-var TUN={bauBoden:bauBoden,bauEntfernen:bauEntfernen,bauWand:bauWand,bauTuer:bauTuer,bauDach:bauDach,bauHuelle:bauHuelle,bauPause:bauPause,bauAbbruch:bauAbbruch};
+var TUN={bauBoden:bauBoden,bauEntfernen:bauEntfernen,bauWand:bauWand,bauTuer:bauTuer,bauDach:bauDach,bauHuelle:bauHuelle,bauPause:bauPause,bauAbbruch:bauAbbruch,bauWaende:bauWaende,bauTuerWechsel:bauTuerWechsel};
 function befehl(z,art,wert,nr){if(!z.bau)z.bau=neu();return TUN[art](z,wert,nr)}
 
 // ── Fingerabdruck und Spielstand ──
@@ -310,7 +347,7 @@ function geaendert(b){var L=[];b.neu.forEach(function(k){L.push(k)});b.neu.clear
 
 var B={START_GOLD:START_GOLD,PREIS:PREIS,FELD_TICKS:FELD_TICKS,KANTE_TICKS:KANTE_TICKS,MAX_AUSWAHL:MAX_AUSWAHL,MAX_RAUM:MAX_RAUM,MAX_BAUSTELLEN:MAX_BAUSTELLEN,JE_TICK:JE_TICK,
  ART:ART,ART_NAME:ART_NAME,K_WAND:K_WAND,K_TUER:K_TUER,K_TOR:K_TOR,H_AUTO:H_AUTO,H_HAND:H_HAND,H_WEG:H_WEG,Z_PLAN:Z_PLAN,Z_ARBEIT:Z_ARBEIT,Z_FERTIG:Z_FERTIG,B_LAEUFT:B_LAEUFT,B_PAUSE:B_PAUSE,B_BLOCK:B_BLOCK,
- ARTEN:ARTEN,befehl:befehl,schritt:schritt,abdruck:abdruck,stand:stand,ausStand:ausStand,pruefen:pruefen,sackgasse:sackgasse,boden:function(z,X,Y){return boden(z,X,Y,new Map())},
+ ARTEN:ARTEN,befehl:befehl,schritt:schritt,abdruck:abdruck,stand:stand,ausStand:ausStand,pruefen:pruefen,pruefenWaende:pruefenWaende,sackgasse:sackgasse,boden:function(z,X,Y){return boden(z,X,Y,new Map())},
  feld:feld,kante:kanteAn,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,haken:function(f){beiEntfernen=f}};
 if(typeof module!=='undefined'&&module.exports)module.exports=B;else root.AT3BAU=B;
 })(typeof self!=='undefined'?self:this);

@@ -28,7 +28,7 @@
 // Wiederverwendet: Vorgehen von welt-raster.js/welt-gross.js aus 2.0 (Bodenkacheln mit Zeitanteil, Nachbarstufe, begrenzter Bildcache), Palette aus at3-64.js.
 (function(){
 'use strict';
-var V='2d998a2b', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='4afe4bb1', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -194,10 +194,18 @@ var t0=performance.now();
  // Bau-Werkzeug: Bildschirmpunkt → Feld auf Höhe der Kamera (wie feldBei, ohne Bildkern; die Vorschau des Weltkerns prüft genau)
  function feldFlach(cx,cy){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),Z=1<<cam.lod,PX=(cam.x-cam.y)*32+((cx-r.left)*f-cv.width/2)*Z,PY=(cam.x+cam.y)*16+((cy-r.top)*f-cv.height/2)*Z;   // Boden auf Kamerahöhe
   return{x:Math.floor(umX((PX/32+PY/16)/2)),y:Math.max(0,Math.min(WY-1,Math.floor((PY/16-PX/32)/2)))}}
+ // G5c: Eckpunkt des Feldrasters unter dem Finger (für Wandlinien)
+ function eckeFlach(cx,cy){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),Z=1<<cam.lod,PX=(cam.x-cam.y)*32+((cx-r.left)*f-cv.width/2)*Z,PY=(cam.x+cam.y)*16+((cy-r.top)*f-cv.height/2)*Z;
+  return{x:Math.round((PX/32+PY/16)/2),y:Math.max(0,Math.min(WY-1,Math.round((PY/16-PX/32)/2)))}}
+ // Linie von Eckpunkt a nach b, gerade nach der längeren Richtung: r 0 = waagerecht (Nordkanten), r 1 = senkrecht (Westkanten); null, solange sie keine Kante lang ist
+ function wzLinie(a,b){var dx=b.x-a.x;if(dx>WX/2)dx-=WX;else if(dx<-WX/2)dx+=WX;var dy=b.y-a.y;
+  if(Math.abs(dx)>=Math.abs(dy)){if(!dx)return null;return{r:0,x:umX(dx<0?a.x+dx:a.x),y:a.y,n:Math.abs(dx)}}
+  return{r:1,x:umX(a.x),y:dy<0?b.y:a.y,n:Math.abs(dy)}}
  function rahmenMalen(CX,CY,Z,W,H){var a=wzRahmen,xu=a.x+Math.round((cam.x-a.x)/WX)*WX,hz=cam.z*8,P=function(x,y){return[((x-y)*32-CX)/Z+W/2,((x+y)*16-hz-CY)/Z+H/2]};
   var p=[P(xu,a.y),P(xu+a.w,a.y),P(xu+a.w,a.y+a.h),P(xu,a.y+a.h)];g.lineWidth=Math.max(1,2/Z*2);
   g.fillStyle=a.ok?'rgba(70,98,30,.35)':a.ok===false?'rgba(140,26,16,.35)':'rgba(240,200,104,.25)';g.strokeStyle=a.ok?'#b4cc6c':a.ok===false?'#e05a34':'#f0c868';
-  g.beginPath();g.moveTo(p[0][0],p[0][1]);for(var i=1;i<4;i++)g.lineTo(p[i][0],p[i][1]);g.closePath();g.fill();g.stroke();
+  if(a.n!=null){var e=a.r===0?P(xu+a.n,a.y):P(xu,a.y+a.n);g.lineWidth=Math.max(3,6/Z);g.lineCap='round';g.beginPath();g.moveTo(p[0][0],p[0][1]);g.lineTo(e[0],e[1]);g.stroke();g.lineCap='butt'}   // G5c: Wandlinie
+  else{g.beginPath();g.moveTo(p[0][0],p[0][1]);for(var i=1;i<4;i++)g.lineTo(p[i][0],p[i][1]);g.closePath();g.fill();g.stroke()}
   if(a.fx!=null){var q=P(a.fx+Math.round((cam.x-a.fx)/WX)*WX+.5,a.fy+.5);kreuz(q[0],q[1])}}
 
  // ── Eingabe: Wischen, Zwei-Finger-Zoom, Mausrad, Antippen ──
@@ -210,7 +218,8 @@ var t0=performance.now();
   l=Math.max(0,l);if(l===cam.lod)return;var war=cam.lod;cam.lod=l;zoomZeit=performance.now();if(war>=STUFEN&&l<STUFEN){blickK=-1;zFest=false;blick()}plan();setTimeout(plan,RUHE_MS+20);melden()}
  function abstand(){var p=Array.from(zeiger.values());return Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}
  var wzA=null;                                                                   // G5b: Startfeld des Rechtecks (Bau-Werkzeug)
- function wzAn(){return WZ&&WZ.aktiv()&&!glob&&!wahl&&cam.lod<STUFEN}
+ function wzAn(){return WZ&&WZ.aktiv()&&!glob&&!wahl&&cam.lod<STUFEN&&wzForm()!=='tipp'}    // G5c: Tipp-Werkzeuge (Tür, Hülle) lassen die Karte verschieben
+ function wzForm(){return WZ&&WZ.form?WZ.form():'rechteck'}
  function wzRechteck(a,b){return{x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),w:Math.abs(a.x-b.x)+1,h:Math.abs(a.y-b.y)+1}}
  cv.addEventListener('pointerdown',function(e){zeiger.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY});try{cv.setPointerCapture(e.pointerId)}catch(x){}
   if(zeiger.size===1){zieht=false;wzA=null}else if(zeiger.size===2){kneifAb=abstand();zieht=true;if(wzA){wzA=null;wzRahmen=null;if(WZ)WZ.weg();plan()}}});
@@ -218,7 +227,10 @@ var t0=performance.now();
   if(!p){if(e.pointerType==='mouse'&&!zeiger.size&&cam.lod===0&&BAUM.size&&!glob){var w=feldFlach(e.clientX,e.clientY),r=raumBei(w.x,w.y);if(r!==hoverR){hoverR=r;plan()}}return}   // Dach unter der Maus (wie 2.0)
   var dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
   if(zeiger.size===1){if(!zieht&&Math.abs(p.x-p.x0)+Math.abs(p.y-p.y0)<8){p.x-=dx;p.y-=dy;return}zieht=true;
-   if(wzAn()){if(!wzA)wzA=feldFlach(p.x0,p.y0);var b=feldFlach(e.clientX,e.clientY),R=wzRechteck(wzA,b);if(!wzRahmen||wzRahmen.x!==R.x||wzRahmen.y!==R.y||wzRahmen.w!==R.w||wzRahmen.h!==R.h){wzRahmen=R;WZ.zieht(R)}plan();return}
+   if(wzAn()){var lin=wzForm()==='linie';if(!wzA)wzA=lin?eckeFlach(p.x0,p.y0):feldFlach(p.x0,p.y0);
+    if(lin){var L=wzLinie(wzA,eckeFlach(e.clientX,e.clientY));if(!L){if(wzRahmen){wzRahmen=null;WZ.weg()}plan();return}
+     if(!wzRahmen||wzRahmen.r!==L.r||wzRahmen.x!==L.x||wzRahmen.y!==L.y||wzRahmen.n!==L.n){wzRahmen=L;WZ.zieht(L)}plan();return}
+    var b=feldFlach(e.clientX,e.clientY),R=wzRechteck(wzA,b);if(!wzRahmen||wzRahmen.x!==R.x||wzRahmen.y!==R.y||wzRahmen.w!==R.w||wzRahmen.h!==R.h){wzRahmen=R;WZ.zieht(R)}plan();return}
    schieben(dx,dy)}
   else if(zeiger.size===2&&kneifAb>0){if(wzAn())schieben(dx/2,dy/2);var a=abstand();if(a>kneifAb*1.45){zoom(-1);kneifAb=a}else if(a<kneifAb/1.45){zoom(1);kneifAb=a}zoomZeit=performance.now()}});
  cv.addEventListener('pointerleave',function(e){if(e.pointerType==='mouse'&&hoverR){hoverR=0;plan()}});
@@ -253,8 +265,8 @@ var t0=performance.now();
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
  return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,
-  // G5b: Bau-Werkzeug anschließen: {aktiv() → bool, zieht(R), fertig(R), weg()}; rahmen(R|null, ok, fx, fy) zeigt die Vorschau
-  werkzeug:function(w){WZ=w},rahmen:function(R,ok,fx,fy){wzRahmen=R?{x:R.x,y:R.y,w:R.w,h:R.h,ok:ok,fx:fx,fy:fy}:null;plan()},
+  // G5b: Bau-Werkzeug anschließen: {aktiv() → bool, zieht(R), fertig(R), weg(), form() → 'rechteck'|'linie'|'tipp' (G5c)}; Linie R = {r, x, y, n}; rahmen(R|null, ok, fx, fy) zeigt die Vorschau
+  werkzeug:function(w){WZ=w},rahmen:function(R,ok,fx,fy){wzRahmen=R?{x:R.x,y:R.y,w:R.w,h:R.h,r:R.r,n:R.n,ok:ok,fx:fx,fy:fy}:null;plan()},
   dach:function(){return{offen:OFFEN.slice(),fest:Array.from(fest)}},dachUm:function(r){if(fest.has(r))fest.delete(r);else fest.add(r);plan()},raumBei:raumBei,
   kam:function(){return hatKam&&!wahl?[Math.floor(cam.x),Math.floor(cam.y),cam.lod]:null},
   kamera:function(){return{x:cam.x,y:cam.y,z:cam.z,lod:cam.lod,gesetzt:hatKam,globus:glob?{g:glob.g,lon:glob.lon,lat:glob.lat,n:globStufen(cv.width,cv.height).length}:null}},

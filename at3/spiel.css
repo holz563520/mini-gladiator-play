@@ -64,5 +64,7 @@ th{color:var(--tinte2)}
 #fpStick{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border:2px solid var(--knopf-an);border-radius:50%;pointer-events:none;opacity:.7}
 
 /* G5b: Bau-Werkzeug (wie 2.0: Art wählen, Rechteck ziehen) */
-#bauLeiste .bauWahl{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}#bauLeiste .knopf[aria-pressed=true]{background:var(--knopf-an);box-shadow:inset 3px 3px 0 var(--tinte2)}#bauLeiste .knopf.weg{background:var(--papier)}
+#bauLeiste .bauGruppen{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:stretch}#bauLeiste .bauGruppe{display:flex;flex-direction:column;gap:3px;padding:2px 5px 5px;border:1px solid var(--tinte2)}#bauLeiste .bauGruppe>b{font-size:10px;letter-spacing:.12em;text-align:center;text-transform:uppercase}#bauLeiste .bauGruppe>div{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}#bauLeiste .knopf i{font-style:normal}#bauLeiste .knopf small{opacity:.7}#bauLeiste .bauFertig{align-self:center}
+@media (max-width:700px){#bauLeiste .bauGruppen{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:3px}#bauLeiste .bauGruppe{flex:0 0 auto;border:none;padding:0}#bauLeiste .bauGruppe>b{display:none}#bauLeiste .bauGruppe>div{flex-wrap:nowrap}#bauLeiste .bauFertig{flex:0 0 auto}}
+#bauLeiste .knopf[aria-pressed=true]{background:var(--knopf-an);box-shadow:inset 3px 3px 0 var(--tinte2)}#bauLeiste .knopf.weg{background:var(--papier)}
 #bauKnopf[aria-pressed=true]{background:var(--knopf-an)}

@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Arena Theory III</title>
-<link rel="stylesheet" href="spiel.css?v=2d998a2b">
+<link rel="stylesheet" href="spiel.css?v=4afe4bb1">
 </head>
 <body>
 <header class="papier">
@@ -25,7 +25,7 @@
   <canvas id="weltCv" class="pixel" aria-label="World map"></canvas>
   <div id="fpRahmen" hidden><canvas id="fpCv" class="pixel" width="320" height="180" aria-label="First person view"></canvas><div id="fpStick" hidden></div></div>
   <p id="weltInfo" class="karte" aria-live="polite"></p>
-  <div id="bauLeiste" hidden><div class="bauWahl"><button class="knopf klein" data-bau="lager" aria-pressed="false">Storage</button><button class="knopf klein" data-bau="werkstatt" aria-pressed="false">Workshop</button><button class="knopf klein" data-bau="unterkunft" aria-pressed="false">Lodging</button><button class="knopf klein" data-bau="abriss" aria-pressed="false">Demolish</button><button class="knopf klein weg" id="bauZu">Done</button></div><p id="bauInfo" class="karte" aria-live="polite"></p><p id="bauGold" class="leise"></p></div>
+  <div id="bauLeiste" hidden><div id="bauWerkzeuge"></div><p id="bauInfo" class="karte" aria-live="polite"></p><p id="bauGold" class="leise"></p></div>
  </section>
  <section class="papier" id="feld">
   <h2 id="bodenTitel"></h2>
@@ -42,7 +42,7 @@
 </main>
 <footer class="papier" id="status" aria-live="polite">Sharpening the pixels …</footer>
 <button id="messAuf" class="knopf"></button>
-<script src="at3-64.js?v=2d998a2b"></script>
-<script src="spielstand.js?v=2d998a2b"></script>
-<script src="spiel.js?v=2d998a2b"></script>
+<script src="at3-64.js?v=4afe4bb1"></script>
+<script src="spielstand.js?v=4afe4bb1"></script>
+<script src="spiel.js?v=4afe4bb1"></script>
 </body></html>

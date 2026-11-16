@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='2d998a2b', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='4afe4bb1', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -118,37 +118,57 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,waehlen:waehlen,beiErde:startWaehlen,
   beiAusfall:function(g){if(g)$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:g}))+'</span>'},
   beiZoom:function(l,z){$('weltInfo').textContent=l<0?t('welt.globus'):t('welt.zoom',{z:z})},
-  beiFeld:function(f){window.AT3SPIEL.feld=f;if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
+  beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
  bauAnschliessen();
  $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};$('fpKnopf').onclick=fpUmschalten;$('fpKnopf').disabled=fpWahl;
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true}},250)}
-// ── Bauen (G5b): Werkzeug wie 2.0, Ergebnis kommt mit der Nachricht „bau“ vom Weltkern ──
-var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3}, MAXA=1024;
-function bauAnschliessen(){var k=$('bauKnopf');k.disabled=false;k.textContent=t('bau.knopf');$('bauZu').textContent=t('bau.zu');
- [].forEach.call(document.querySelectorAll('#bauLeiste [data-bau]'),function(b){b.textContent=t('bau.art.'+b.dataset.bau);b.onclick=function(){bauWahl(BAUW===b.dataset.bau?null:b.dataset.bau)}});
+// ── Bauen (G5b/G5c): Bauleiste wie 2.0 (welt-bau.js, T2: Gruppen mit Bild und Preis), Ergebnis kommt mit der Nachricht „bau“ vom Weltkern ──
+// Formen: rechteck = mit einem Finger ziehen, linie = Wand an den Feldkanten ziehen, tipp = antippen (die Karte bleibt dabei verschiebbar).
+var BAUWZ={lager:{gr:'haus',bild:'📦',form:'rechteck',preis:1},werkstatt:{gr:'haus',bild:'⚒',form:'rechteck',preis:1},unterkunft:{gr:'haus',bild:'🛏',form:'rechteck',preis:1},
+ wand:{gr:'wand',bild:'🧱',form:'linie',preis:1},tuer:{gr:'wand',bild:'🚪',form:'tipp',preis:1},dach:{gr:'wand',bild:'🏠',form:'rechteck',preis:0},huelle:{gr:'wand',bild:'↺',form:'tipp',preis:1},
+ abriss:{gr:'werkzeug',bild:'💥',form:'rechteck',preis:0}};
+var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3}, MAXA=1024, MAXL=256;
+function bauAnschliessen(){var k=$('bauKnopf');k.disabled=false;k.textContent=t('bau.knopf');
+ var G={},h='<div class="bauGruppen">';Object.keys(BAUWZ).forEach(function(id){var w=BAUWZ[id];(G[w.gr]=G[w.gr]||[]).push(id)});
+ ['haus','wand','werkzeug'].forEach(function(g){h+='<div class="bauGruppe"><b>'+esc(t('bau.gruppe.'+g))+'</b><div>'+G[g].map(function(id){var w=BAUWZ[id];
+   return '<button class="knopf klein" data-bau="'+id+'" aria-pressed="false"><i>'+w.bild+'</i> '+esc(t('bau.art.'+id))+(w.preis?' <small>'+w.preis+' G</small>':'')+'</button>'}).join('')+'</div></div>'});
+ h+='<button class="knopf klein weg bauFertig" id="bauZu">'+esc(t('bau.zu'))+'</button></div>';$('bauWerkzeuge').innerHTML=h;
+ [].forEach.call(document.querySelectorAll('#bauLeiste [data-bau]'),function(b){b.onclick=function(){bauWahl(BAUW===b.dataset.bau?null:b.dataset.bau)}});
  k.onclick=function(){bauOffen(!!$('bauLeiste').hidden)};$('bauZu').onclick=function(){bauOffen(false)};
- KARTE.werkzeug({aktiv:function(){return !!BAUW&&!fpAn},zieht:bauZieht,fertig:bauFertig,weg:function(){KARTE.rahmen(null);bauHilfe()}})}
+ addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('bauLeiste').hidden){if(BAUW)bauWahl(null);else bauOffen(false)}});   // wie 2.0
+ KARTE.werkzeug({aktiv:function(){return !!BAUW&&!fpAn},form:function(){return BAUW?BAUWZ[BAUW].form:'rechteck'},zieht:bauZieht,fertig:bauFertig,weg:function(){KARTE.rahmen(null);bauHilfe()}})}
 function bauOffen(an){$('bauLeiste').hidden=!an;$('bauKnopf').setAttribute('aria-pressed',an?'true':'false');if(!an)bauWahl(null);else{bauWahl(null);bauGoldZeigen();try{$('bauLeiste').scrollIntoView({block:'nearest'})}catch(x){}}}
-function bauWahl(a){BAUW=a;[].forEach.call(document.querySelectorAll('#bauLeiste [data-bau]'),function(b){b.setAttribute('aria-pressed',b.dataset.bau===a?'true':'false')});KARTE.rahmen(null);bauHilfe()}
+function bauWahl(a){BAUW=a;[].forEach.call(document.querySelectorAll('#bauLeiste [data-bau]'),function(b){b.setAttribute('aria-pressed',b.dataset.bau===a?'true':'false')});KARTE.rahmen(null);bauVor=null;bauHilfe()}
 function bauHilfe(){$('bauInfo').textContent=t(BAUW?'bau.hilfe.'+BAUW:'bau.wahl')}
 function bauGoldZeigen(){$('bauGold').textContent=bauStand.gold==null?'':t('bau.gold',{g:bauStand.gold.toLocaleString('en'),s:bauStand.s})}
 function grundText(g){var k='bau.grund.'+g;return TXT[k]!=null?t(k):t('bau.grund.sonst',{g:g})}
-// Vorschau beim Ziehen: immer nur eine Frage unterwegs, die neueste gewinnt
-function bauZieht(R){bauVor=R;if(R.w*R.h>MAXA){KARTE.rahmen(R,false);$('bauInfo').textContent=t('bau.zuGross',{n:MAXA});return}
+// Vorschau beim Ziehen: Boden und Wände fragt der Weltkern (ändert nichts), immer nur eine Frage zugleich; Abriss und Dach brauchen keine Frage
+function bauZieht(R){bauVor=R;if(R.n!=null){if(R.n>MAXL){KARTE.rahmen(R,false);$('bauInfo').textContent=t('bau.zuLang',{n:MAXL});return}}
+ else if(R.w*R.h>MAXA){KARTE.rahmen(R,false);$('bauInfo').textContent=t('bau.zuGross',{n:MAXA});return}
  if(BAUW==='abriss'){KARTE.rahmen(R,null);$('bauInfo').textContent=t('bau.vorschauAb',{n:R.w,m:R.h});return}
+ if(BAUW==='dach'){KARTE.rahmen(R,null);$('bauInfo').textContent=t('bau.vorschauDach',{n:R.w,m:R.h});return}
  KARTE.rahmen(R,null);if(!bauVorLaeuft)bauFrage()}
-function bauFrage(){var R=bauVor;if(!R||!BAUW||BAUW==='abriss'||R.w*R.h>MAXA)return;bauVorLaeuft=true;
- KERN.bauPruefen({art:BAUW,x:R.x,y:R.y,w:R.w,h:R.h}).then(function(p){bauVorLaeuft=false;if(!p||bauVor!==R||!BAUW){if(bauVor&&bauVor!==R)bauFrage();return}
-  KARTE.rahmen(R,!!p.ok,p.x,p.y);$('bauInfo').textContent=p.ok?t('bau.vorschau',{n:p.felder,g:p.kosten}):grundText(p.grund)})}
-function bauFertig(R){bauVor=null;if(!BAUW)return;if(R.w*R.h>MAXA){KARTE.rahmen(null);$('bauInfo').textContent=t('bau.zuGross',{n:MAXA});return}
- var nr=BAUW==='abriss'?KERN.befehl('bauEntfernen',{x:R.x,y:R.y,w:R.w,h:R.h}):KERN.befehl('bauBoden',{art:BAUW,x:R.x,y:R.y,w:R.w,h:R.h});bauNr[nr]=BAUW;
- KARTE.rahmen(R,null);window.AT3SPIEL.bauBefehl=nr}
+function bauFrage(){var R=bauVor,W=BAUW;if(!R||!W||(W!=='wand'&&!ART_NR[W]))return;var lin=R.n!=null;if(lin!==(W==='wand'))return;bauVorLaeuft=true;
+ KERN.bauPruefen(lin?{r:R.r,x:R.x,y:R.y,n:R.n,an:2}:{art:W,x:R.x,y:R.y,w:R.w,h:R.h}).then(function(p){bauVorLaeuft=false;if(!p||bauVor!==R||BAUW!==W){if(bauVor&&bauVor!==R)bauFrage();return}
+  KARTE.rahmen(R,!!p.ok,p.x,p.y);
+  $('bauInfo').textContent=!p.ok?grundText(p.grund):lin?(p.an?t('bau.vorschauWand',{n:p.waende,g:p.kosten}):t('bau.vorschauWandAb',{n:p.waende})):t('bau.vorschau',{n:p.felder,g:p.kosten})})}
+function bauFertig(R){bauVor=null;var W=BAUW;if(!W)return;
+ if(R.n!=null?R.n>MAXL:R.w*R.h>MAXA){KARTE.rahmen(null);$('bauInfo').textContent=R.n!=null?t('bau.zuLang',{n:MAXL}):t('bau.zuGross',{n:MAXA});return}
+ var nr=W==='abriss'?KERN.befehl('bauEntfernen',{x:R.x,y:R.y,w:R.w,h:R.h}):W==='dach'?KERN.befehl('bauDach',{x:R.x,y:R.y,w:R.w,h:R.h,zu:2}):
+  W==='wand'?KERN.befehl('bauWaende',{r:R.r,x:R.x,y:R.y,n:R.n,an:2}):KERN.befehl('bauBoden',{art:W,x:R.x,y:R.y,w:R.w,h:R.h});
+ bauNr[nr]=W;KARTE.rahmen(R,null);window.AT3SPIEL.bauBefehl=nr}
+// G5c: Antippen mit Tür- oder Hüllen-Werkzeug (die Karte meldet das angetippte Feld mit dem vordersten Bauteil)
+function bauTipp(f){var o=f&&f.obj,raum=(o&&o.raum)||(f&&f.bau&&f.bau.raum),nr;
+ if(BAUW==='tuer'){if(!o||o.teil!=='wand'){$('bauInfo').textContent=t('bau.tippWand');return}nr=KERN.befehl('bauTuerWechsel',{x:o.x,y:o.y,seite:o.seite})}
+ else{if(!raum){$('bauInfo').textContent=t('bau.tippHaus');return}nr=KERN.befehl('bauHuelle',{raum:raum})}
+ bauNr[nr]=BAUW;window.AT3SPIEL.bauBefehl=nr}
 function beiBau(d){if(KARTE)KARTE.beiBau(d);bauStand.gold=d.gold;bauStand.s=d.baustellen;if(!$('bauLeiste').hidden)bauGoldZeigen();
  (d.meld||[]).forEach(function(m){var a=bauNr[m.nr];if(!a)return;delete bauNr[m.nr];KARTE.rahmen(null);window.AT3SPIEL.bauMeld=m;
-  $('bauInfo').textContent=!m.ok?grundText(m.grund):a==='abriss'?t('bau.okAb'):t('bau.ok',{g:(m.kosten||0)})})}
+  $('bauInfo').textContent=!m.ok?grundText(m.grund):a==='abriss'?t('bau.okAb'):a==='dach'?t('bau.okDach',{n:m.felder||0}):a==='wand'?(m.kosten?t('bau.okWand',{n:m.waende,g:m.kosten}):t('bau.okWandAb',{n:m.waende})):
+   a==='tuer'?t('bau.okTuer.'+(m.typ||'tuer')):a==='huelle'?(m.kosten?t('bau.okHuelle',{g:m.kosten}):t('bau.okHuelleLeer')):t('bau.ok',{g:(m.kosten||0)})})}
 // Gebäude angetippt: vorderstes Teil (Wand, Tür, Tor, Dach) oder Boden, dazu Art und Bauzustand; Dach auf/zu meldet die Karte
 function bauFeld(f){var b=f.bau,o=f.obj,art=b&&b.art?t('bau.art.'+['','lager','werkstatt','unterkunft'][b.art]):t('bau.ohneArt'),zu=t('bau.zustand.'+((o&&o.zustand)||b.zustand||3));
  var d=f.dachOffen===true?t('bau.dachOffen'):f.dachOffen===false&&KARTE.kamera().lod===0?t('bau.dachZu'):'';
