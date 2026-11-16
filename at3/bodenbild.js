@@ -3,10 +3,11 @@
 // (8 Bildpunkte), Felder dazwischen sind flach oder schräg, Hänge nach Lichtseite heller oder dunkler. Farben nur aus der AT3-Palette.
 // Ein Bild = TEIL × TEIL Felder in der Zoomstufe 0 (Feld 64 × 32), je Stufe weiter draußen doppelt so viele Felder im selben Bild (½, ¼, ⅛): immer 512 Bildpunkte breit.
 // Kerne: läuft im Bildkern (bildkern.js, Hintergrundkern), nie auf dem Hauptkern (Regel 13). Kosten je Bild fest, unabhängig vom Ort und von der Weltgröße (Regel 14).
+// W1c Runde Welt: In x läuft die Welt um (Feld WX liegt neben Feld 0): Nachbarfelder und Nachbarstücke hinter der Naht werden umgerechnet; in y endet sie am Pol.
 // Wiederverwendet: Biom- und Wegfarben aus der Weltansicht (menue/weltansicht.js), Stückformat und Meeresspiegel aus weltgen.js, Feldmaß und Höhenstufe aus at3-64.js.
 (function(root){
 'use strict';
-var ST=64, FELDER=ST*ST, SEITE=4800, WELT=ST*SEITE, MEER=2048, TEIL=8, STUFEN=4, LS=6;   // LS: Höhe → Stufe (64 Höheneinheiten je Stufe; Vorschlagswert: so sind Nachbarfelder meist gleich hoch oder eine Stufe versetzt)
+var ST=64, FELDER=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, MEER=2048, TEIL=8, STUFEN=4, LS=6;   // LS: Höhe → Stufe (64 Höheneinheiten je Stufe; Vorschlagswert: so sind Nachbarfelder meist gleich hoch oder eine Stufe versetzt)
 var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41], WFARBE=[0,47,48,31,43,12,47,6];          // wie Weltansicht: Biome 0..11, Wegschicht 1..7 (Ortsplatz hier in Straßenfarbe statt Rot)
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
 function sicht(p){return p._s||(p._s={H:new Uint16Array(p.buffer,p.byteOffset,FELDER),B:new Uint8Array(p.buffer,p.byteOffset+FELDER*2,FELDER),W:new Uint8Array(p.buffer,p.byteOffset+FELDER*3,FELDER)})}
@@ -15,8 +16,8 @@ var ECK=new Int16Array(65*65), NLISTE=[];
 
 // Stufen der Feldecken (n+1) × (n+1) ab Feld x0,y0. Ecke = Höhe des Feldes dort. false, wenn ein Nachbarstück noch fehlt.
 function ecken(hole,x0,y0,n){var m=n+1,p=null,pk=-1,H=null;
- for(var j=0;j<m;j++){var Y=y0+j;if(Y>=WELT)Y=WELT-1;
-  for(var i=0;i<m;i++){var X=x0+i;if(X>=WELT)X=WELT-1;var k=(X>>6)*8192+(Y>>6);
+ for(var j=0;j<m;j++){var Y=y0+j;if(Y>=WY)Y=WY-1;
+  for(var i=0;i<m;i++){var X=x0+i;if(X>=WX)X-=WX;var k=(X>>6)*8192+(Y>>6);
    if(k!==pk){p=hole(X>>6,Y>>6);if(!p)return false;pk=k;H=sicht(p).H}
    ECK[j*m+i]=stufe(H[((Y&63)<<6)|(X&63)])}}
  return true}
@@ -62,11 +63,12 @@ function kunde(p){var H=sicht(p).H,mm=new Int16Array(128),hg=new Int16Array(81),
  return{mm:mm,hg:hg}}
 
 // Welches Feld liegt unter einem Bildpunkt? PX,PY = Bildpunkte der Zoomstufe 0 ab Weltursprung (x−y)·32, (x+y)·16 − Stufe·8. Vorderstes Feld gewinnt.
+// x = Feld auf der Welt (0..WX−1), xu = dasselbe Feld in der Lage der Kamera (kann über die Naht hinausreichen; für die Natur darüber).
 function feld(hole,PX,PY){var u=(PX/32+PY/16)/2,v=(PY/16-PX/32)/2;
- for(var t=48;t>=0;t-=.25){var x=Math.floor(u+t),y=Math.floor(v+t);if(x<0||y<0||x>=WELT||y>=WELT)continue;var p=hole(x>>6,y>>6);if(!p)continue;
-  var s=sicht(p),q=((y&63)<<6)|(x&63),l=stufe(s.H[q]);if(l>=4*t)return{x:x,y:y,bio:s.B[q],weg:s.W[q],hoehe:s.H[q]-MEER}}
+ for(var t=48;t>=0;t-=.25){var xu=Math.floor(u+t),y=Math.floor(v+t),x=((xu%WX)+WX)%WX;if(y<0||y>=WY)continue;var p=hole(x>>6,y>>6);if(!p)continue;
+  var s=sicht(p),q=((y&63)<<6)|(x&63),l=stufe(s.H[q]);if(l>=4*t)return{x:x,xu:xu,y:y,bio:s.B[q],weg:s.W[q],hoehe:s.H[q]-MEER}}
  return null}
 
-var BB={sicht:sicht,ECK:ECK,TEIL:TEIL,STUFEN:STUFEN,LS:LS,ST:ST,WELT:WELT,MEER:MEER,BFARBE:BFARBE,WFARBE:WFARBE,bild:bild,kunde:kunde,feld:feld,stufe:stufe};
+var BB={sicht:sicht,ECK:ECK,TEIL:TEIL,STUFEN:STUFEN,LS:LS,ST:ST,SX:SX,SY:SY,WX:WX,WY:WY,MEER:MEER,BFARBE:BFARBE,WFARBE:WFARBE,bild:bild,kunde:kunde,feld:feld,stufe:stufe};
 if(typeof module!=='undefined'&&module.exports)module.exports=BB;else root.AT3BB=BB;
 })(typeof self!=='undefined'?self:this);

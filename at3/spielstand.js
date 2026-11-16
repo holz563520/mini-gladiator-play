@@ -11,8 +11,9 @@
 // Wiederverwendet aus welt-spielstand.js (AT2): drei Plätze, Startbild mit Nachfrage, Leerlauf-Speichern, Speichern beim Verlassen, Versionsschutz.
 (function(){
 'use strict';
-var DB='arena-theory-3', ABL='plaetze', SCHEMA=1, PLAETZE=[1,2,3], ABSTAND=10000, ROEM=['I','II','III'], DICHTEN=['thin','medium','dense'];
-var V='b6cd6958', T=function(k,w){return k}, esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var DB='arena-theory-3', ABL='plaetze', SCHEMA=2;   // Schema 2 seit W1c (runde Welt): Stände mit Schema 1 stammen aus der flachen Welt, sie werden nicht geladen (nur löschen)
+var PLAETZE=[1,2,3], ABSTAND=10000, ROEM=['I','II','III'], DICHTEN=['thin','medium','dense'];
+var V='bc44683f', T=function(k,w){return k}, esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
 
 // ── Prüfsumme (FNV-1a über den gespeicherten Text) ──
 function pruefsumme(s){var h=0x811c9dc5;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)}return('0000000'+(h>>>0).toString(16)).slice(-8)}
@@ -40,7 +41,7 @@ function schreiben(n,kopfNeu,text){var fehler=null;
   s.put(text,'d'+n+gen);s.put(kopfNeu,'k'+n)}}).catch(function(e){throw fehler?new Error(fehler):e})}
 
 // Laden: Kopf prüfen, aktuelle Fassung prüfen, sonst die vorige. Ergebnis {daten, kopf, wieder} oder {fehler}
-function laden(n){return lies(['k'+n,'d'+n+'a','d'+n+'b']).then(function(o){var k=o['k'+n];if(!k)return{fehler:'empty'};if(k.schema>SCHEMA)return{fehler:'newer'};
+function laden(n){return lies(['k'+n,'d'+n+'a','d'+n+'b']).then(function(o){var k=o['k'+n];if(!k)return{fehler:'empty'};if(k.schema>SCHEMA)return{fehler:'newer'};if(k.schema<SCHEMA)return{fehler:'older'};
  function probe(f){if(!f)return null;var s=o['d'+n+f.gen];if(typeof s!=='string'||s.length!==f.bytes||pruefsumme(s)!==f.pruef)return null;
   try{var d=JSON.parse(s);return d&&d.schema===SCHEMA&&d.kern&&d.welt?d:null}catch(e){return null}}
  var d=probe(k.akt);if(d)return{daten:d,kopf:k,wieder:false};d=probe(k.alt);if(d)return{daten:d,kopf:k,wieder:true};return{fehler:'broken'}})}
@@ -65,7 +66,7 @@ function start(opt){T=opt.t||T;
    if(ohne)h+='<p class="schlecht">'+esc(T('start.keinSpeicher'))+'</p><button class="knopf" data-ohne>'+esc(T('start.ohne'))+'</button>';
    else if(!bereit)h+='<p class="leise">'+esc(T('start.liest'))+'</p>';
    else PLAETZE.forEach(function(n,i){var x=k[i],info,kn='';
-    if(x&&x.schema>SCHEMA){info='<b>'+esc(x.name||T('start.ludus'))+'</b><small class="schlecht">'+esc(T('start.neuer'))+'</small>';kn='<button class="knopf klein weg" data-loesch="'+n+'">'+esc(T('start.loeschen'))+'</button>'}
+    if(x&&x.schema!==SCHEMA){info='<b>'+esc(x.name||T('start.ludus'))+'</b><small class="schlecht">'+esc(T(x.schema>SCHEMA?'start.neuer':'start.alt'))+'</small>';kn='<button class="knopf klein weg" data-loesch="'+n+'">'+esc(T('start.loeschen'))+'</button>'}
     else if(x&&frei[n]){info='<b>'+esc(x.name||T('start.ludus'))+'</b><small class="schlecht">'+esc(T('start.andererTab'))+'</small>'}
     else if(x){info='<b>'+esc(x.name||T('start.ludus'))+'</b><small>'+esc(T('start.info',{t:zeitText(Math.floor((x.tick||0)/20)),d:T('dichte.'+DICHTEN[x.dichte]),s:x.seed,z:datum(x.zeit)}))+'</small>';
      kn='<button class="knopf klein" data-weiter="'+n+'">'+esc(T('start.weiter'))+'</button><button class="knopf klein weg" data-neu="'+n+'">'+esc(T('start.neu'))+'</button><button class="knopf klein weg" data-loesch="'+n+'">'+esc(T('start.loeschen'))+'</button>'}
@@ -99,7 +100,7 @@ function start(opt){T=opt.t||T;
     // Ton darf das Handy nur direkt im Antippen starten: Wunsch weiterreichen, spiel.js schaltet die Stimme im selben Antippen ein
     if(opt.imAntippen)opt.imAntippen(k[q-1]);
     sperren(q).then(function(ok){if(!ok){frei[q]=1;meldung[q]='';zeige();return}return laden(q).then(function(r){
-     if(r.fehler){meldung[q]=T(r.fehler==='newer'?'start.neuer':'start.kaputt');zeige();return}
+     if(r.fehler){meldung[q]=T(r.fehler==='newer'?'start.neuer':r.fehler==='older'?'start.alt':'start.kaputt');zeige();return}
      los(q,{platz:q,seed:r.daten.welt.seed,dichte:r.daten.welt.dichte,name:r.kopf.name,daten:r.daten,wieder:r.wieder})})}).catch(function(x){meldung[q]=T('start.fehler',{e:x.message});zeige()});return}});
   el.addEventListener('keydown',function(e){if(e.key==='Enter'&&neu&&e.target.tagName==='INPUT'){var b=el.querySelector('[data-los]');if(b)b.click()}});
   zeige();

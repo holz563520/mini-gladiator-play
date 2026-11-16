@@ -1,7 +1,12 @@
-// WAS DIE DATEI TUT: Menü „Kampf“ des AT3-Master-Editors (wird erst beim Öffnen geladen). M8: vorhandene Kampf-Editoren und -Labore aus 1.0, unverändert verlinkt. Anschluss kommt mit G9.
+// WAS DIE DATEI TUT: Menü „Kampf“ des AT3-Master-Editors (wird erst beim Öffnen geladen). M8: vorhandene Kampf-Editoren und -Labore aus 1.0, unverändert verlinkt.
+// G9b: Knopf „Kampf-Labor (AT3)“ lädt kampfanschluss.js und menue/kampflabor.js erst beim Antippen; gerechnet wird im Kampfkern (kampfkern.js).
 AT3ED.menue('kampf',function(el){
  el.innerHTML='<p>Die Kampfmechanik aus Arena Theory 1.0 zieht hier ein. Blut wird mitgeliefert.</p>'+
+  '<p><button class="knopf" id="kLabor">Kampf-Labor (AT3)<small>Mensch, Hund, Löwe · Seed · Kampf rechnen · Nochmal gleich · Ladezeit</small></button></p><div id="kInhalt"></div>'+
   '<p class="leise">Alte Labore aus 1.0, unverändert. Öffnen sich in einem neuen Tab, der Editor bleibt offen.</p>';
+ el.querySelector('#kLabor').onclick=function(){var z=el.querySelector('#kInhalt');z.innerHTML='<p class="leise">Der Sand wird geharkt … die Reste vom letzten Mal liegen noch drin.</p>';
+  AT3ED.lade('kampf','kampfanschluss.js').then(function(){return AT3ED.lade('kampf','menue/kampflabor.js')})
+   .then(function(){return AT3_KAMPFLABOR.aufbauen(z)}).catch(function(e){z.innerHTML='<p class="witz">Labor eingestürzt: '+String(e.message).replace(/</g,'&lt;')+'</p>'})};
  AT3ED.liste(el,[
   {titel:'Bewegung und Treffer',seiten:[
    ['block-editor.html','Block-Editor','Blocken und Paraden im echten 1-gegen-1-Kampf'],
@@ -18,5 +23,5 @@ AT3ED.menue('kampf',function(el){
    ['kampf-labor.html','Kampf-Labor','Teams gegeneinander, Kampfparameter, Verteilungen'],
    ['grafik-benchmark.html','Grafik-Benchmark','Hängt der Kampf an der Grafik oder an der Rechnung?']]}
  ]);
- el.insertAdjacentHTML('beforeend','<ul><li>Kampfmechanik über den AT3-Anschluss <span class="leise">(G9)</span></li></ul>');
+ el.insertAdjacentHTML('beforeend','<ul><li>Kampf im Spiel über den AT3-Anschluss <span class="leise">(G9d)</span></li></ul>');
 });

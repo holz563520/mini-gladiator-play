@@ -13,7 +13,7 @@
 // Platz im Spielstand (spiel.start) und sofort gespeichert. Continue startet am gespeicherten Kameraort. ?nosave startet wie bisher am ersten Dorf.
 (function(){
 'use strict';
-var V='b6cd6958', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='bc44683f', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};

@@ -3,7 +3,7 @@
 // Einfärbung nach Biom oder Höhe, Flüsse sichtbar, Antippen zeigt Biom und Höhe und verschiebt den Blick. W1a+: Die Erde zeigt je Zelle das vom
 // Klima begünstigte Biom; jede Gegend mischt alle Land-Biome, Antippen einer Zelle zeigt die Anteile. Dazu Messung auf diesem Gerät.
 // Kerne: Erde und Kartenstücke rechnen in den Helferkernen, Übernahme im Weltkern (kernstart.js, derselbe Anschluss wie im Spiel). Der Hauptkern rechnet
-// keine Welt: Er färbt das Erdbild einmal ein (300 × 300 Punkte) und je Bild höchstens ein neu angekommenes Kartenstück (64 × 64 Punkte).
+// keine Welt: Er färbt das Erdbild einmal ein (600 × 300 Punkte) und je Bild höchstens ein neu angekommenes Kartenstück (64 × 64 Punkte).
 // Zeichenarbeit (Regel 20): Zoomen skaliert nur fertige Bilder; fehlt ein Stück, steht dort der Ausschnitt des Erdbilds als Ersatz; gezeichnet wird nur bei Änderung.
 // W1b: Einfärbung „Straßen & Seewege“ (Erde: ein Punkt je Zelle; Region: die echten Straßenläufe als Linien, Orte als Punkte, Seewege und Fähren
 // gestrichelt; Kartenstücke: die Wegschicht je Feld), Ortsdichte dünn/mittel/dicht neben dem Seed, Antippen zeigt Ort mit Namen, Straße, Pass, Fähre
@@ -12,21 +12,25 @@
 // Wiederverwendet: kernstart.js (G2), Messart, Ampel und Kopierknopf aus der Kernprobe und der Riesenwelt-Probe, Palette aus at3-64.js (M2).
 (function(){
 'use strict';
-var SEED=563520, BIS=300, SOLL='22fdd152';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
+var SEED=563520, BIS=300, SOLL='690c69d1';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
 function B(cx,cy){return cx*8192+cy}
-var SKRIPT=[{tick:0,art:'weltseed',wert:563520},{tick:0,art:'blick',wert:B(2400,2400)},{tick:70,art:'blick',wert:B(2403,2398)},{tick:100,art:'blick',wert:B(0,0)},
- {tick:130,art:'last',wert:300},{tick:150,art:'blick',wert:B(4799,4799)},{tick:170,art:'weltseed',wert:77},{tick:171,art:'weltseed',wert:4242},{tick:172,art:'weltdichte',wert:2},{tick:230,art:'blick',wert:B(1144,256)},
- {tick:260,art:'tempo',wert:3},{tick:270,art:'blick',wert:B(1146,256)}];
-var GE=300, N=GE*GE, ST=64, FELDER=ST*ST, SEITE=4800, ZP=16, MEER=2048, HALB=3, S=448, MIB=1048576;   // Maße wie in weltgen.js (läuft nur in Hintergrundkernen)
-var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Fels','Schnee','Fluss','See'];
-var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41];                                // Farbnummern der AT3-Palette (Mitte); dunkler = −1, heller = +1 in derselben Reihe
+var SKRIPT=[{tick:0,art:'weltseed',wert:563520},{tick:0,art:'blick',wert:B(2400,2400)},{tick:70,art:'blick',wert:B(2403,2398)},{tick:100,art:'blick',wert:B(0,0)},{tick:115,art:'blick',wert:B(9599,2400)},
+ {tick:130,art:'last',wert:300},{tick:150,art:'blick',wert:B(4799,4799)},{tick:170,art:'weltseed',wert:77},{tick:171,art:'weltseed',wert:4242},{tick:172,art:'weltdichte',wert:2},{tick:230,art:'blick',wert:B(9598,256)},
+ {tick:260,art:'tempo',wert:3},{tick:270,art:'blick',wert:B(1,257)}];
+var GW=600, GH=300, GE=GW, N=GW*GH, ST=64, FELDER=ST*ST, SX=9600, SY=4800, ZP=16, MEER=2048, HALB=3, S=448, MIB=1048576;   // Maße wie in weltgen.js (läuft nur in Hintergrundkernen); GE = Zellen je Zeile
+// W1c Runde Welt: Erde 600 × 300 (im quadratischen Bild als Band in der Mitte), Region und Kartenstücke laufen in x über die Naht, in y enden sie am Pol.
+function umZ(z){z%=GW;return z<0?z+GW:z}
+function umS(c){c%=SX;return c<0?c+SX:c}
+function abS(a,b){var d=Math.abs(a-b);return d>SX-d?SX-d:d}
+var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Fels','Schnee','Fluss','See','Eis (Polkappe, gesperrt)'];
+var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6];                               // Farbnummern der AT3-Palette (Mitte); dunkler = −1, heller = +1 in derselben Reihe
 var RAMPE=[14,15,16,17,18,60,61,62,24,23,22,3,4,5,6], TIEFE=[38,39,40,41];    // Höhenfarben Land (tief → hoch) und Wasser (tief → flach)
 var ZOOM=['Erde','Region','Kartenstücke','Stück'], REGION=30, ZF=1024;
 var ORTN=['','Dorf','Stadt','Hafendorf','Hafenstadt'], WEGN=['','Pfad','Straße','Brücke','Furt','Steg','Ortsplatz','Fähre'], DICHTEN=['dünn','mittel','dicht'];
 var WFARBE=[0,47,48,31,43,12,36,6], OFARBE=[0,53,37,48,32], F_PFAD=12, F_STRASSE=47, F_SEE=43, F_FAEHRE=48;   // Farbnummern der AT3-Palette für Wegschicht, Orte und Netz
 var netzCv=null, dichte=1, hilfe=null, WGh=null, ONh=null;
 var E={erde:null,stueck:null,bild:null,speicher:null,gleich:null,geraet:null}, el=null, H=null, pal=null, erd=null, erdCv=null, erdGen=0, kacheln=new Map(), warte=[], lager=[];
-var zoom=0, farbe=0, kx=SEITE>>1, ky=SEITE>>1, neuZeichnen=true, ws=null, laeuft=false, beschaeftigt=false, bilder=null, letztBild=0, cv=null, cx2=null, tmpBild=null, tmp32=null;
+var zoom=0, farbe=0, kx=SX>>1, ky=SY>>1, neuZeichnen=true, ws=null, laeuft=false, beschaeftigt=false, bilder=null, letztBild=0, cv=null, cx2=null, tmpBild=null, tmp32=null;
 
 function q(s){return el.querySelector(s)}
 function kom(v,n){return v==null||isNaN(v)?'-':v.toFixed(n==null?1:n).replace('.',',')}
@@ -40,14 +44,15 @@ function palette(){var f=window.AT3_64.PALETTEN.A.farben,t=new Uint32Array(64);f
 
 // ── Einfärben (Hauptkern, kleine feste Arbeit) ──
 function farbeVon(bio,h,dh){                                                   // h relativ zum Meeresspiegel in 1/16 Feld, dh = Gefälle für die Schattierung
+ if(bio===12)return pal[BFARBE[12]];
  if(farbe===1){if(bio<2||bio===11||h<0){var t=h<-1200?0:h<-500?1:h<-120?2:3;return pal[TIEFE[t]]}if(bio===10)return pal[42];
   var r=h<60?0:h<160?1:h<320?2:h<560?3:h<900?4:h<1400?5:h<2000?6:h<2800?7:h<3800?8:h<4800?9:h<5800?10:h<6800?11:h<7800?12:h<8800?13:14;return pal[RAMPE[r]]}
  var c=BFARBE[bio];if(bio>1&&bio<10)c+=dh>0?1:dh<0?-1:0;return pal[c]}
-function erdBild(){if(!erd)return;var g=erdCv.getContext('2d'),im=g.createImageData(GE,GE),d=new Uint32Array(im.data.buffer),Eh=erd.E,bio=erd.bio,flu=erd.flu;
- for(var i=0;i<N;i++){var b=flu[i]>1?10:bio[i],j=i>GE?i-GE-1:i,dh=Eh[i]-Eh[j];d[i]=farbeVon(b,Eh[i],dh>120?1:dh<-120?-1:0)}
+function erdBild(){if(!erd)return;var g=erdCv.getContext('2d'),im=g.createImageData(GW,GH),d=new Uint32Array(im.data.buffer),Eh=erd.E,bio=erd.bio,flu=erd.flu;
+ for(var i=0;i<N;i++){var b=flu[i]>1&&bio[i]<12?10:bio[i],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];d[i]=farbeVon(b,Eh[i],dh>120?1:dh<-120?-1:0)}
  g.putImageData(im,0,0);netzBild();neuZeichnen=true}
 // W1b: Netz der Erde als eigenes durchsichtiges Bild (ein Punkt je Zelle), einmal je Welt; liegt in der Erdansicht über dem Erdbild
-function netzBild(){if(!erd||!erd.ort)return;var g=netzCv.getContext('2d'),im=g.createImageData(GE,GE),d=new Uint32Array(im.data.buffer),ort=erd.ort,weg=erd.weg,bio=erd.bio;
+function netzBild(){if(!erd||!erd.ort)return;var g=netzCv.getContext('2d'),im=g.createImageData(GW,GH),d=new Uint32Array(im.data.buffer),ort=erd.ort,weg=erd.weg,bio=erd.bio;
  for(var i=0;i<N;i++){var o=ort[i]&15,w=weg[i];
   if(o)d[i]=pal[OFARBE[o]];else if(w&15)d[i]=pal[w&64?F_FAEHRE:(w>>4&3)>1?F_STRASSE:F_PFAD];else if(ort[i]>>4&&bio[i]<2&&((i%GE+((i/GE)|0))&1))d[i]=pal[F_SEE]}
  g.putImageData(im,0,0)}
@@ -56,7 +61,7 @@ function kachelBild(k){var Hh=new Uint16Array(k.buf.buffer,0,FELDER),Bb=new Uint
  k.cv.getContext('2d').putImageData(tmpBild,0,0);k.fertig=true;neuZeichnen=true}
 
 function kachelWeg(key){var k=kacheln.get(key);if(!k)return;kacheln.delete(key);if(H)H.wsZurueck(k.buf);if(lager.length<49)lager.push(k.cv)}
-function fensterRaeumen(){kacheln.forEach(function(k,key){if(Math.abs(k.cx-kx)>HALB||Math.abs(k.cy-ky)>HALB)kachelWeg(key)});warte=warte.filter(function(key){return kacheln.has(key)})}
+function fensterRaeumen(){kacheln.forEach(function(k,key){if(abS(k.cx,kx)>HALB||Math.abs(k.cy-ky)>HALB)kachelWeg(key)});warte=warte.filter(function(key){return kacheln.has(key)})}
 function allesWeg(){kacheln.forEach(function(k,key){kachelWeg(key)});warte=[]}
 
 function beiWs(d){
@@ -64,22 +69,24 @@ function beiWs(d){
  if(d.art==='wsErde'){var b=d.buf.buffer;erd={E:new Int16Array(b,0,N),bio:new Uint8Array(b,2*N,N),flu:new Uint8Array(b,3*N,N),dir:new Uint8Array(b,4*N,N),feu:new Uint8Array(b,5*N,N),tmp:new Uint8Array(b,6*N,N),
    ort:new Uint8Array(b,7*N,N),weg:new Uint8Array(b,8*N,N),kopf:new Uint32Array(b,9*N,4),seed:d.seed};
   erdGen=d.gen;allesWeg();erdBild();return}
- if(d.art==='wsStueck'){if(d.gen!==erdGen||Math.abs(d.cx-kx)>HALB||Math.abs(d.cy-ky)>HALB){if(H)H.wsZurueck(d.buf);return}
+ if(d.art==='wsStueck'){if(d.gen!==erdGen||abS(d.cx,kx)>HALB||Math.abs(d.cy-ky)>HALB){if(H)H.wsZurueck(d.buf);return}
   var key=B(d.cx,d.cy);kachelWeg(key);var c=lager.pop();if(!c){c=document.createElement('canvas');c.width=c.height=ST}
   kacheln.set(key,{cx:d.cx,cy:d.cy,buf:d.buf,cv:c,fertig:false});warte.push(key)}}
 
 // ── Zeichnen: nur bei Änderung, je Bild höchstens ein neues Kartenstück einfärben ──
-function regionEcke(){var zx=kx>>4,zy=ky>>4,h=REGION>>1;return[Math.max(0,Math.min(GE-REGION,zx-h)),Math.max(0,Math.min(GE-REGION,zy-h))]}
+function regionEcke(){var zx=kx>>4,zy=ky>>4,h=REGION>>1;return[zx-h,Math.max(0,Math.min(GH-REGION,zy-h))]}                 // x darf über die Naht reichen
+// Ausschnitt 30 × 30 Zellen aus einem Erdbild aufs ganze Bild, über die Naht in zwei Teilen
+function regionMalen(g,bildQ,rx,ry){var x0=umZ(rx),w1=Math.min(REGION,GW-x0),f=S/REGION;g.drawImage(bildQ,x0,ry,w1,REGION,0,0,w1*f,S);if(w1<REGION)g.drawImage(bildQ,0,ry,REGION-w1,REGION,w1*f,0,(REGION-w1)*f,S)}
 function bild(t){if(!laeuft)return;if(!el.isConnected){ende();return}
  if(bilder&&letztBild)bilder.push(t-letztBild);letztBild=t;
  if(warte.length){var k=kacheln.get(warte.shift());if(k)kachelBild(k)}
  if(neuZeichnen){neuZeichnen=false;var g=cx2,i,j;g.imageSmoothingEnabled=false;
   if(!erd){g.fillStyle='#5c5650';g.fillRect(0,0,S,S)}
-  else if(zoom===0){g.drawImage(erdCv,0,0,GE,GE,0,0,S,S);if(farbe===2)g.drawImage(netzCv,0,0,GE,GE,0,0,S,S);marke(g,(kx>>4)*S/GE,(ky>>4)*S/GE,Math.max(4,S/GE))}
-  else if(zoom===1){var r=regionEcke(),f=S/REGION;g.drawImage(erdCv,r[0],r[1],REGION,REGION,0,0,S,S);if(farbe===2)netzRegion(g,r[0],r[1],f);marke(g,(kx/ZP-r[0])*f-f*7/32,(ky/ZP-r[1])*f-f*7/32,f*7/16)}
+  else if(zoom===0){g.fillStyle='#0e0c0b';g.fillRect(0,0,S,S);g.drawImage(erdCv,0,0,GW,GH,0,S/4,S,S/2);if(farbe===2)g.drawImage(netzCv,0,0,GW,GH,0,S/4,S,S/2);marke(g,(kx>>4)*S/GW-2,S/4+(ky>>4)*S/GW-2,5)}
+  else if(zoom===1){var r=regionEcke(),f=S/REGION;regionMalen(g,erdCv,r[0],r[1]);if(farbe===2)netzRegion(g,r[0],r[1],f);marke(g,(kx/ZP-umZ(r[0])+GW)%GW*f-f*7/32,(ky/ZP-r[1])*f-f*7/32,f*7/16)}
   else{var n=zoom===2?7:1,gr=S/n,a=zoom===2?HALB:0;
-   for(j=-a;j<=a;j++)for(i=-a;i<=a;i++){var cxx=kx+i,cyy=ky+j,x=(i+a)*gr,y=(j+a)*gr,ka=kacheln.get(B(cxx,cyy));
-    if(cxx<0||cyy<0||cxx>=SEITE||cyy>=SEITE){g.fillStyle='#0e0c0b';g.fillRect(x,y,gr,gr)}
+   for(j=-a;j<=a;j++)for(i=-a;i<=a;i++){var cxx=umS(kx+i),cyy=ky+j,x=(i+a)*gr,y=(j+a)*gr,ka=kacheln.get(B(cxx,cyy));
+    if(cyy<0||cyy>=SY){g.fillStyle='#0e0c0b';g.fillRect(x,y,gr,gr)}
     else if(ka&&ka.fertig)g.drawImage(ka.cv,0,0,ST,ST,x,y,gr,gr);
     else g.drawImage(erdCv,cxx/ZP,cyy/ZP,1/ZP,1/ZP,x,y,gr,gr)}                                        // Ersatzbild: Ausschnitt der Erde, bis das Stück da ist
    if(zoom===2)marke(g,a*gr,a*gr,gr)}}
@@ -87,23 +94,23 @@ function bild(t){if(!laeuft)return;if(!el.isConnected){ende();return}
 // W1b: Netz der Region als Linien (echter Lauf jeder Straße aus dem Generator, 13 Punkte je Ausgang). Nur beim Neuzeichnen; solange der Generator
 // auf dem Hauptkern noch lädt, steht dort das grobe Netzbild als Ersatz.
 function helfer(){return hilfe||(hilfe=window.AT3ED.lade('welt','weltgen.js').then(function(){return window.AT3ED.lade('welt','ortsnamen.js')}).then(function(){WGh=window.AT3WG;ONh=window.AT3ORTSNAMEN;neuZeichnen=true}))}
-function netzRegion(g,rx,ry,f){if(!erd.ort)return;if(!WGh){g.drawImage(netzCv,rx,ry,REGION,REGION,0,0,S,S);helfer().catch(function(){});return}
+function netzRegion(g,rx,ry,f){if(!erd.ort)return;if(!WGh){regionMalen(g,netzCv,rx,ry);helfer().catch(function(){});return}
  var fx=f/ZF,x,y,i,k,L,l,o,r,F=window.AT3_64.PALETTEN.A.farben;g.lineJoin='round';
- for(y=ry;y<ry+REGION;y++)for(x=rx;x<rx+REGION;x++){i=y*GE+x;o=erd.ort[i];
+ for(y=ry;y<ry+REGION;y++)for(x=rx;x<rx+REGION;x++){i=y*GE+umZ(x);o=erd.ort[i];var v0=(x-umZ(x)-rx)*ZF;                     // Weltfelder der Zelle in die Lage der Region
   if(erd.bio[i]<2){if(o>>4){g.strokeStyle=F[F_SEE];g.lineWidth=1.5;g.setLineDash([3,4]);g.beginPath();var mx=(x-rx+.5)*f,my=(y-ry+.5)*f;
     var aus=[];for(r=0;r<4;r++)if(o>>4>>r&1)aus.push(mx+(r===0?f/2:r===2?-f/2:0),my+(r===1?f/2:r===3?-f/2:0));
     if(aus.length===4){g.moveTo(aus[0],aus[1]);g.quadraticCurveTo(mx,my,aus[2],aus[3])}else for(r=0;r<aus.length;r+=2){g.moveTo(mx,my);g.lineTo(aus[r],aus[r+1])}   // zwei Ausgänge: weicher Bogen statt Ecke
     g.stroke();g.setLineDash([])}continue}
-  if(!(erd.weg[i]&15)&&!(o&15))continue;L=WGh.wegLinien(erd.seed,erd,x,y);
+  if(!(erd.weg[i]&15)&&!(o&15))continue;L=WGh.wegLinien(erd.seed,erd,umZ(x),y);
   for(k=0;k<L.length;k++){l=L[k];g.strokeStyle=F[l.see?F_SEE:l.faehre?F_FAEHRE:l.kl>1?F_STRASSE:F_PFAD];g.lineWidth=l.kl>1&&!l.see?2.5:1.5;if(l.see||l.faehre)g.setLineDash([3,4]);
-   g.beginPath();g.moveTo((l.x[0]-rx*ZF)*fx,(l.y[0]-ry*ZF)*fx);for(var q2=1;q2<13;q2++)g.lineTo((l.x[q2]-rx*ZF)*fx,(l.y[q2]-ry*ZF)*fx);g.stroke();g.setLineDash([])}}
- for(y=ry;y<ry+REGION;y++)for(x=rx;x<rx+REGION;x++){o=erd.ort[y*GE+x]&15;if(!o)continue;var P=WGh.ortPunkt(erd.seed,erd,x,y),gr=o===2||o===4?7:5,px=(P[0]-rx*ZF)*fx,py=(P[1]-ry*ZF)*fx;
+   g.beginPath();g.moveTo((l.x[0]+v0)*fx,(l.y[0]-ry*ZF)*fx);for(var q2=1;q2<13;q2++)g.lineTo((l.x[q2]+v0)*fx,(l.y[q2]-ry*ZF)*fx);g.stroke();g.setLineDash([])}}
+ for(y=ry;y<ry+REGION;y++)for(x=rx;x<rx+REGION;x++){o=erd.ort[y*GE+umZ(x)]&15;if(!o)continue;var P=WGh.ortPunkt(erd.seed,erd,umZ(x),y),gr=o===2||o===4?7:5,px=(P[0]+(x-umZ(x)-rx)*ZF)*fx,py=(P[1]-ry*ZF)*fx;
   g.fillStyle='#0e0c0b';g.fillRect(Math.round(px-gr/2)-1,Math.round(py-gr/2)-1,gr+2,gr+2);g.fillStyle=F[OFARBE[o]];g.fillRect(Math.round(px-gr/2),Math.round(py-gr/2),gr,gr)}}
 function marke(g,x,y,w){g.strokeStyle='#f4c8a0';g.lineWidth=2;g.strokeRect(Math.round(x)+1,Math.round(y)+1,Math.round(w)-2,Math.round(w)-2);g.strokeStyle='#2a0604';g.lineWidth=1;g.strokeRect(Math.round(x)-.5,Math.round(y)-.5,Math.round(w)+1,Math.round(w)+1)}
 
 // ── Bedienung ──
-function blick(nx,ny){nx=Math.max(0,Math.min(SEITE-1,nx|0));ny=Math.max(0,Math.min(SEITE-1,ny|0));if(nx===kx&&ny===ky)return;kx=nx;ky=ny;fensterRaeumen();if(H)H.befehl('blick',B(kx,ky));neuZeichnen=true;ort()}
-function ort(){var o=q('#waOrt');if(o)o.textContent='Blick: Kartenstück '+tsd(kx)+' / '+tsd(ky)+' von '+tsd(SEITE)+' · Zelle '+(kx>>4)+' / '+(ky>>4)}
+function blick(nx,ny){nx=umS(nx|0);ny=Math.max(0,Math.min(SY-1,ny|0));if(nx===kx&&ny===ky)return;kx=nx;ky=ny;fensterRaeumen();if(H)H.befehl('blick',B(kx,ky));neuZeichnen=true;ort()}
+function ort(){var o=q('#waOrt');if(o)o.textContent='Blick: Kartenstück '+tsd(kx)+' / '+tsd(ky)+' von '+tsd(SX)+' × '+tsd(SY)+' · Zelle '+(kx>>4)+' / '+(ky>>4)}
 function hoehe(h){return h<0?'Tiefe '+kom(-h/16,1)+' Felder (rund '+Math.round(-h*3/16)+' m)':'Höhe '+kom(h/16,1)+' Felder (rund '+Math.round(h*3/16)+' m)'}
 function zelleText(i){var b=erd.flu[i]?BIOM[erd.bio[i]]+' mit Fluss (Breite '+erd.flu[i]+' von 5)':BIOM[erd.bio[i]];return netzText(i)+b+' · '+hoehe(erd.E[i])+' · Wärme '+erd.tmp[i]+' · Feuchte '+erd.feu[i]}
 // W1b: Ort (Name, sobald die Namensliste geladen ist), Straße, Pass, Fähre, Seeweg einer Zelle
@@ -112,9 +119,9 @@ function netzText(i){if(!erd.ort)return '';var o=erd.ort[i]&15,w=erd.weg[i],t=''
  if(w&15)t+=(w&64?'Fähre':((w>>4&3)>1?'Straße':'Pfad')+(erd.bio[i]===8||erd.bio[i]===9?' über einen Pass':''))+' · ';
  if(erd.ort[i]>>4&&erd.bio[i]<2)t+='Seeweg · ';return t}
 function tipp(e){if(!erd)return;var r=cv.getBoundingClientRect(),fx=Math.max(0,Math.min(.9999,(e.clientX-r.left)/r.width)),fy=Math.max(0,Math.min(.9999,(e.clientY-r.top)/r.height)),info=q('#waInfo'),zx,zy;
- if(zoom<2){if(zoom===0){zx=(fx*GE)|0;zy=(fy*GE)|0}else{var ec=regionEcke();zx=ec[0]+((fx*REGION)|0);zy=ec[1]+((fy*REGION)|0)}
+ if(zoom<2){if(zoom===0){if(fy<.25||fy>=.75)return;zx=(fx*GW)|0;zy=((fy-.25)*2*GH)|0}else{var ec=regionEcke();zx=umZ(ec[0]+((fx*REGION)|0));zy=ec[1]+((fy*REGION)|0)}
   info.textContent='Zelle '+zx+' / '+zy+': '+zelleText(zy*GE+zx);anteileZeigen(zx,zy);blick(zx*ZP+8,zy*ZP+8);return}
- var n=zoom===2?7:1,a=zoom===2?HALB:0,px=fx*n,py=fy*n,cxx=kx+(px|0)-a,cyy=ky+(py|0)-a,ka=kacheln.get(B(cxx,cyy)),x=((px%1)*ST)|0,y=((py%1)*ST)|0;
+ var n=zoom===2?7:1,a=zoom===2?HALB:0,px=fx*n,py=fy*n,cxx=umS(kx+(px|0)-a),cyy=ky+(py|0)-a,ka=kacheln.get(B(cxx,cyy)),x=((px%1)*ST)|0,y=((py%1)*ST)|0;
  if(ka){var Hh=new Uint16Array(ka.buf.buffer,0,FELDER),Bb=new Uint8Array(ka.buf.buffer,FELDER*2,FELDER),i=y*ST+x;
   var wf=ka.buf[FELDER*3+i];info.textContent='Feld '+tsd(cxx*ST+x)+' / '+tsd(cyy*ST+y)+': '+(wf?WEGN[wf]+' · ':'')+BIOM[Bb[i]]+' · '+hoehe(Hh[i]-MEER)}
  else info.textContent='Dieses Stück wird noch aus dem Seed gekratzt.';
@@ -175,11 +182,11 @@ function kopieren(){var t=text(),b=q('#waKopie');function ok(){b.firstChild.text
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,function(){window.prompt('Text kopieren:',t)});else window.prompt('Text kopieren:',t)}
 
 function ende(){laeuft=false;if(H){H.ende();H=null}kacheln=new Map();warte=[];erd=null;ws=null}
-function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElement('canvas');erdCv.width=erdCv.height=GE;netzCv=document.createElement('canvas');netzCv.width=netzCv.height=GE;dichte=1;
+function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElement('canvas');erdCv.width=GW;erdCv.height=GH;netzCv=document.createElement('canvas');netzCv.width=GW;netzCv.height=GH;dichte=1;
  var tc=document.createElement('canvas');tc.width=tc.height=ST;tmpBild=tc.getContext('2d').createImageData(ST,ST);tmp32=new Uint32Array(tmpBild.data.buffer);
  var k=kerne(),h=window.AT3KERNE.helferZahl(k);
  el.innerHTML='<p>Eine Welt aus einer einzigen Zahl. Wer mit ihr unzufrieden ist, würfelt neu. So einfach hatten es die Götter nie.</p>'+
-  '<p class="leise">307.200 × 307.200 Felder (4.800 × 4.800 Kartenstücke). Gerechnet wird nur, was zu sehen ist: ein grobes Erdraster (300 × 300 Zellen, mit allen Orten, Straßen und Seewegen) und höchstens 49 Kartenstücke. Dieses Gerät meldet '+k+' Kerne: 1 Hauptkern (Bild), 1 Weltkern, '+h+' Helfer.</p>'+
+  '<p class="leise">614.400 × 307.200 Felder (9.600 × 4.800 Kartenstücke). Die Welt ist rund: Ost- und Westkante sind zusammengenäht, oben und unten liegt Eis. Gerechnet wird nur, was zu sehen ist: ein grobes Erdraster (600 × 300 Zellen, mit allen Orten, Straßen und Seewegen) und höchstens 49 Kartenstücke. Dieses Gerät meldet '+k+' Kerne: 1 Hauptkern (Bild), 1 Weltkern, '+h+' Helfer.</p>'+
   '<div class="wZeile"><label for="waSeed">Seed</label><input id="waSeed" type="number" min="0" max="4294967295" value="'+SEED+'" style="font:inherit;font-size:17px;min-height:42px;width:150px"> '+
   '<button class="knopf klein" id="waNeu">Welt erzeugen</button> <button class="knopf klein" id="waWuerfel">Würfeln</button></div>'+
   '<div class="wZeile"><label for="waDichte">Orte</label><select id="waDichte" style="font:inherit;font-size:17px;min-height:42px">'+DICHTEN.map(function(n,i){return '<option value="'+i+'"'+(i===1?' selected':'')+'>'+n+'</option>'}).join('')+'</select> '+
@@ -206,7 +213,7 @@ function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElemen
  q('#waKopie').onclick=kopieren;
  q('#waMessen').onclick=function(){if(beschaeftigt)return;beschaeftigt=true;var b=q('#waMessen');b.disabled=true;q('#waErg').innerHTML='<p class="leise">Es wird gewogen. Die Welt hält kurz die Luft an.</p>';
   messe().catch(function(e){q('#waErg').innerHTML='<p class="witz">Messung gescheitert: '+String(e&&e.message||e).replace(/</g,'&lt;')+'</p>'}).then(function(){beschaeftigt=false;b.disabled=false})};
- zoom=0;farbe=0;kx=ky=SEITE>>1;ort();
+ zoom=0;farbe=0;kx=SX>>1;ky=SY>>1;ort();
  return new Promise(function(ok,nein){
   H=window.AT3KERNE.starten({seed:1,beiWs:beiWs,beiAusfall:function(g){laeuft=false;var o=q('#waLive');if(o)o.innerHTML='<span class="witz">Kerne ausgefallen ('+g+'). Die Welt bleibt heute flach.</span>'},
    beiBereit:function(){H.wsAn(true);H.befehl('tempo',3);neueWelt(SEED);ok()}});
@@ -216,5 +223,5 @@ window.AT3_WELTANSICHT={aufbauen:aufbauen,ergebnis:E,text:text,messe:messe,ende:
  zustand:function(){return{zoom:zoom,farbe:farbe,kx:kx,ky:ky,dichte:dichte,orte:erd&&erd.kopf?erd.kopf[0]:0,verbindungen:erd&&erd.kopf?erd.kopf[1]:0,generator:!!WGh,erde:!!erd,kacheln:kacheln.size,fertig:Array.from(kacheln.values()).filter(function(k){return k.fertig}).length,ws:ws}},
  setZoom:setZoom,setFarbe:setFarbe,blick:blick,neueWelt:neueWelt,
  // für Tests: Lage eines Orts im Regionsbild als Anteil der Bildbreite und -höhe
- ortInRegion:function(){if(!erd||!erd.ort)return null;var r=regionEcke();for(var y=r[1]+2;y<r[1]+REGION-2;y++)for(var x=r[0]+2;x<r[0]+REGION-2;x++)if(erd.ort[y*GE+x]&15)return[(x-r[0]+.5)/REGION,(y-r[1]+.5)/REGION];return null}};
+ ortInRegion:function(){if(!erd||!erd.ort)return null;var r=regionEcke();for(var y=r[1]+2;y<r[1]+REGION-2;y++)for(var x=r[0]+2;x<r[0]+REGION-2;x++)if(erd.ort[y*GE+umZ(x)]&15)return[(x-r[0]+.5)/REGION,(y-r[1]+.5)/REGION];return null}};
 })();
