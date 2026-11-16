@@ -6,13 +6,17 @@
 // Kerne: Den Ausschnitt (96 × 96 Felder) baut der Bildkern aus seinen Kartenstücken (fpausschnitt.js); läuft der Gladiator mehr als 20 Felder von der Mitte weg,
 // kommt der nächste Ausschnitt, ohne anzuhalten. Der Hauptkern nimmt nur Eingaben an und zeichnet das kleine Bild (fpwelt.zeichne, Kosten fest, unabhängig von der Weltgröße).
 // FP2a: Gebäude sind begehbar (durch Türen und Tore), Wände verdecken, Antippen einer Wand zeigt ihre Objektkarte; beim Bauen kommt der Ausschnitt neu (bauNeu).
+// FP2b: Walmdach über fertigen Häusern, innen Decke und eine Stufe dunkler, Hof hell; Dach/Decke antippen zeigt die Objektkarte dach-ziegel.
 // Gezeichnet wird nur, wenn sich etwas bewegt hat, und nur solange die Ansicht offen und sichtbar ist.
 var AT3FP=(function(){
 'use strict';
 var AUGE=0.58,TEMPO=1.2,RENNEN=2.2,DREH=1.9,N=96,MITTE=48,NACHLADEN=20,OPT={W:320,H:180,sicht:24,muster:true};
 var P={an:false,o:null,w:null,cam:null,arten:null,holt:false,lauf:false,neu:true,zeiten:[],tasten:{},stick:null,letzt:null,ts:0,
  ausschnitte:0,ausschnittMs:[],stueckeNeu:0,buf:null,img:null,d32:null,P32:null,ctx:null,eing:false,drossel:1};
-var WX=614400,WAENDE=['wand-stein','wand-tuer','wand-tor'];
+var WX=614400,WAENDE=['wand-stein','wand-tuer','wand-tor'],DACH='dach-ziegel';
+// FP2b: Tiefe von Dach/Decke, wenn der Bildpunkt Dach oder Decke zeigt (sonst 0)
+function dachVor(X,Y){var r=P.letzt&&P.letzt.dach;if(!r||!r.an)return 0;Y=Math.floor(Y);if(X<0||Y<0||X>=OPT.W||Y>=OPT.H)return 0;var p=Y*r.W+X;
+ return r.zs[p]===r.zf&&r.zk[p]===1?r.zb[p]:0}
 function S(){return window.AT3_64}
 function el(id){return document.getElementById(id)}
 
@@ -69,6 +73,8 @@ function eingaben(cv){P.eing=true;
  cv.addEventListener('pointerup',ende);cv.addEventListener('pointercancel',ende)}
 function antippen(e){var cv=P.o.cv,r=cv.getBoundingClientRect(),sx=(e.clientX-r.left)/r.width*OPT.W,sy=(e.clientY-r.top)/r.height*OPT.H,best=null;
  (P.letzt&&P.letzt.treffer||[]).forEach(function(t){if(sx>=t.x0&&sx<t.x1&&sy>=t.y0&&sy<t.y1&&(!best||t.d<best.d))best=t});
+ // FP2b: Dach (außen) oder Decke (innen) unter dem Finger: der Bildpunkt zeigt genau, was vorn ist (Stempel des Zeichners)
+ var X0=Math.floor(sx),dd=dachVor(X0,sy);if(dd){var wd=P.o.objekte[DACH];if(P.o.beiObjekt)P.o.beiObjekt(DACH,!wd,dd*3);return}
  // FP2a: Wand, Tür oder Tor unter dem Finger, wenn sie näher ist als das Objekt
  var wa=P.letzt&&P.letzt.wand,X=Math.floor(sx);
  if(wa&&X>=0&&X<OPT.W&&wa.d[X]<1e8&&sy>=wa.y0[X]&&sy<wa.y1[X]&&(!best||wa.d[X]<best.d)){var id=WAENDE[wa.typ[X]-1],wo=P.o.objekte[id];

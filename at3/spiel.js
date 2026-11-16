@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='c5c3bf94', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='723b0062', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -124,7 +124,16 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  bauAnschliessen();
  $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};$('fpKnopf').onclick=fpUmschalten;$('fpKnopf').disabled=fpWahl;
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
- KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true}},250)}
+ KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true;
+  var bp=/[?&]nosave\b/.test(location.search)&&/[?&]bauprobe(?:=(\d+))?/.exec(location.search);if(bp)bauprobe(Math.min(200,+(bp[1]||50)))}},250)}
+// FP2b: Messprobe „viele Häuser“ (Entscheidung Thomas 16.11.2026): nur mit ?nosave&bauprobe[=n] (n Häuser 4 × 3, Standard 50, höchstens 200). Baut rund um den Kartenort
+// Lager, Werkstatt und Unterkunft im Wechsel mit 2 Feldern Abstand (wo der Weltkern es erlaubt), Tempo 3×; danach First person und „Load & budgets“ → Copy measurements.
+function bauprobe(n){var k=KARTE.kam();if(!k)return;var L=[],r,gx,gy,i=0,gebaut=0,ARTN=['lager','werkstatt','unterkunft'];
+ for(r=0;r<16;r++)for(gy=-r;gy<=r;gy++)for(gx=-r;gx<=r;gx++)if(Math.max(Math.abs(gx),Math.abs(gy))===r)L.push([k[0]+gx*6-2,k[1]+gy*5-1]);
+ KERN.befehl('tempo',3);window.AT3SPIEL.bauprobe={soll:n,gebaut:0,fertig:false};
+ (function weiter(){var bp=window.AT3SPIEL.bauprobe;if(gebaut>=n||i>=L.length){bp.fertig=true;$('weltInfo').textContent=t('probe.fertig',{n:gebaut});return}
+  var p=L[i++],w={art:ARTN[gebaut%3],x:p[0],y:p[1],w:4,h:3};
+  KERN.bauPruefen(w).then(function(e){if(e&&e.ok){KERN.befehl('bauBoden',w);gebaut++;bp.gebaut=gebaut}$('weltInfo').textContent=t('probe.bau',{n:gebaut,m:n});weiter()})})()}
 // ── Bauen (G5b/G5c): Bauleiste wie 2.0 (welt-bau.js, T2: Gruppen mit Bild und Preis), Ergebnis kommt mit der Nachricht „bau“ vom Weltkern ──
 // Formen: rechteck = mit einem Finger ziehen, linie = Wand an den Feldkanten ziehen, tipp = antippen (die Karte bleibt dabei verschiebbar).
 var BAUWZ={lager:{gr:'haus',bild:'📦',form:'rechteck',preis:1},werkstatt:{gr:'haus',bild:'⚒',form:'rechteck',preis:1},unterkunft:{gr:'haus',bild:'🛏',form:'rechteck',preis:1},

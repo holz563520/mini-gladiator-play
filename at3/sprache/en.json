@@ -8,6 +8,8 @@
   "spiel.bereit": "Ready. Nothing to do yet, which is the most honest job in the empire.",
   "welt.titel": "The world",
   "welt.wartet": "The world is being hammered into shape …",
+  "probe.bau": "Build probe: {n} of {m} houses ordered. The builders were not consulted.",
+  "probe.fertig": "Build probe: {n} houses on order. Let them finish, switch to First person, walk about, then Load & budgets.",
   "welt.tippen": "Drag to wander, pinch or use + and − to zoom, tap the ground to ask what it is.",
   "welt.feld": "{b}{w} · height {h} · field {x}, {y}",
   "welt.leer": "Nothing there yet. The gods are still drawing.",

@@ -14,6 +14,7 @@ var VON_WEG=[-1,6,6,7,1,7,8,0];                    // Wegschicht 1..7: Pfad, Str
 
 // PF: {he, du} Farbtabellen des Bildkerns (eine Stufe heller/dunkler). hole(cx,cy) → Kartenstück (Uint8Array) oder null. ox,oy: linke obere Ecke auf der Welt (ox darf beliebig sein, läuft um). sperr: Uint8Array je Naturart (1 = sperrt).
 // FP2a: BA = {hole(cx,cy) → Bau-Kartenstück (gepackt wie bau.stueck) oder null, BODEN, PUNKT} oder null: Wände, Türen, Tore auf die Kanten, Gebäudeböden in die Farben.
+// FP2b: BA.DACHF = [Ziegel, Fuge] (Palettennummern aus dem Startset dach-ziegel): Walmdach über fertigen Feldern mit Dach (w.innen, w.dachR, w.dachC).
 var BF=4096,Z_PLAN=1;
 function bauen(BB,NAT,hole,seed,ox,oy,sperr,PF,frei,BA){                // G5b: frei(X,Y) = false auf Gebautem/Gerodetem (keine Natur)
 var WX=BB.WX,WY=BB.WY,F=N+2,t0=Date.now();
@@ -40,9 +41,9 @@ var WX=BB.WX,WY=BB.WY,F=N+2,t0=Date.now();
  for(j=0;j<N;j++)for(i=0;i<N;i++){var e1=j*F+i,X2=(ox+i)%WX,Y2=oy+j,mn=Math.min(ES[e1],ES[e1+1],ES[e1+F],ES[e1+F+1]),mx=Math.max(ES[e1],ES[e1+1],ES[e1+F],ES[e1+F+1]);
   var t=NAT.art(seed,X2,Y2,EB[e1],EW[e1],mx-mn);if(t<0||(frei&&!frei(X2,Y2)))continue;var v=NAT.versatz(seed,X2,Y2),du=(v[0]/32+v[1]/16)/2,dv=(v[1]/16-v[0]/32)/2;
   ox2.push(i+.5+du);oy2.push(j+.5+dv);oa.push(t);if(sperr&&sperr[t])sperre[j*N+i]=1}
- var n=oa.length,wandX=new Uint8Array((N+1)*N),wandY=new Uint8Array(N*(N+1)),kanten=BA?gebaeude(BA,ox,oy,WX,WY,wandX,wandY,farbe,PF):0;
+ var n=oa.length,wandX=new Uint8Array((N+1)*N),wandY=new Uint8Array(N*(N+1)),kanten=BA?gebaeude(BA,ox,oy,WX,WY,wandX,wandY,farbe,PF):0,dach=BA?walm(BA,ox,oy,WX,WY,farbe,PF):null;
  return{format:'at3-fpwelt',ausschnitt:true,N:N,U:U,M:M,WL:WL,WANDH:1,ox:ox,oy:oy,h:h,biom:biom,farbe:farbe,kanten:kanten,
-  wandX:wandX,wandY:wandY,sperre:sperre,objX:new Float32Array(ox2),objY:new Float32Array(oy2),objArt:new Uint8Array(oa),objN:n,fehlt:fehlt,ms:Date.now()-t0}}
+  wandX:wandX,wandY:wandY,sperre:sperre,innen:dach&&dach.innen,dachR:dach&&dach.R,dachC:dach&&dach.C,dachN:dach?dach.n:0,objX:new Float32Array(ox2),objY:new Float32Array(oy2),objArt:new Uint8Array(oa),objN:n,fehlt:fehlt,ms:Date.now()-t0}}
 // FP2a: Gebautes aus dem Bau-Kartenstück (bau.js, eine Wahrheit) in den Ausschnitt. Kante: Typ und Bauzustand (ohne Herkunft) wie fpwelt.js sie liest.
 // Nordkante eines Felds → wandY, Westkante → wandX; die Ost- und Südkante des Ausschnitts kommt vom Feld dahinter (eine Spalte/Zeile mehr gelesen).
 // Geplante Kanten: Punktlinie am Boden. Boden der Gebäudefelder wie auf der Karte (Lager Sand, Werkstatt Erde, Unterkunft Holz), geplant als Punktmuster,
@@ -57,12 +58,44 @@ function gebaeude(BA,ox,oy,WX,WY,wandX,wandY,farbe,PF){var n=0,BOD=BA.BODEN,PK=B
      if(plan){if(ii&jj&1)farbe[p]=PK;continue}
      t=ii===0||jj===0||(art===3&&(jj&1)===0&&jj<U)?du[c]:c;farbe[p]=t}}}}
  return n}
+// FP2b: Walmdach (Entscheidung Thomas 16.11.2026) über allen fertigen Feldern mit Dach (wie die Karte: Dach erst, wenn das Feld fertig ist; Hof = Dach offen bleibt frei).
+// Höhe über der Traufe = Anstieg je Feld × Abstand zum Rand der Dachfläche (Schachbrett-Abstand, so entstehen Grate und Kehlen bei L-, U-Formen und um Höfe von selbst),
+// höchstens DMAX, darüber flach. Gerechnet auf dem Höhenpunkt-Raster (4 je Feld) mit RAND Feldern Rand, damit Häuser am Ausschnittrand richtig enden.
+// Innen (w.innen je Feld = 1): Boden eine Stufe dunkler. w.dachR je Höhenpunkt: Höhe über der Traufe in 1/32 Geschoss; w.dachC: Ziegelfarbe mit Licht von Nordwesten.
+// Kosten: nur wo Bau-Kartenstücke liegen, Abstandsrechnung nur im Rechteck um die Dachfelder. Ohne Dach: nichts (null).
+var SL=.5,DMAX=1.5,RAND=3;                          // Vorschlagswerte: 0,5 Geschoss Anstieg je Feld, First höchstens 1,5 Geschosse über der Traufe
+function walm(BA,ox,oy,WX,WY,farbe,PF){var NE=N+2*RAND,mk=new Uint8Array(NE*NE),n=0,i0=NE,i1=-1,j0=NE,j1=-1,i,j;
+ for(j=0;j<NE;j++){var Y=oy+j-RAND;if(Y<0||Y>=WY)continue;
+  for(i=0;i<NE;i++){var X=((ox+i-RAND)%WX+WX)%WX,a=BA.hole(X>>6,Y>>6);if(!a)continue;var q=((Y&63)<<6)|(X&63),fl=a[3*BF+q];
+   if(a[q]&&(fl&1)&&((fl>>4)&3)===3){mk[j*NE+i]=1;n++;if(i<i0)i0=i;if(i>i1)i1=i;if(j<j0)j0=j;if(j>j1)j1=j}}}
+ if(!n)return null;
+ var innen=new Uint8Array(N*N),R=new Uint8Array(M*M),C=new Uint8Array(M*M),du=PF.du,he=PF.he,DF=BA.DACHF||[du[du[46]],du[du[du[46]]]],ni=0;
+ for(j=0;j<N;j++)for(i=0;i<N;i++)if(mk[(j+RAND)*NE+i+RAND]){innen[j*N+i]=1;ni++}
+ if(!ni)return null;
+ // Innenboden eine Stufe dunkler (Licht kommt nur durch Tür und Tor); Punkt dunkel, wenn alle angrenzenden Felder innen sind
+ for(j=0;j<M;j++)for(i=0;i<M;i++){var f0=i%U?(i/U)|0:i/U-1,f1=Math.min(N-1,(i/U)|0),g0=j%U?(j/U)|0:j/U-1,g1=Math.min(N-1,(j/U)|0);if(f0<0)f0=0;if(g0<0)g0=0;
+  if(innen[g0*N+f0]&innen[g0*N+f1]&innen[g1*N+f0]&innen[g1*N+f1]){var p=j*M+i;farbe[p]=du[farbe[p]]}}
+ // Abstand zum Rand der Dachfläche im Rechteck um die Dachfelder (Punkte ±1 Feld), Punkt „innen“ = alle angrenzenden Felder haben Dach
+ var a0=Math.max(0,i0-1)*U,b0=Math.max(0,j0-1)*U,PW=(Math.min(NE,i1+2)*U)-a0+1,PH=(Math.min(NE,j1+2)*U)-b0+1,d=new Uint16Array(PW*PH),GR=60000,x,y;
+ function fe(pi,pj){var fx0=pi%U?(pi/U)|0:pi/U-1,fx1=(pi/U)|0,fy0=pj%U?(pj/U)|0:pj/U-1,fy1=(pj/U)|0;
+  if(fx0<0||fy0<0||fx1>=NE||fy1>=NE)return 0;return mk[fy0*NE+fx0]&mk[fy0*NE+fx1]&mk[fy1*NE+fx0]&mk[fy1*NE+fx1]}
+ for(y=0;y<PH;y++)for(x=0;x<PW;x++)d[y*PW+x]=fe(a0+x,b0+y)?GR:0;
+ for(y=0;y<PH;y++)for(x=0;x<PW;x++){var k=y*PW+x,v=d[k];if(!v)continue;if(x>0)v=Math.min(v,d[k-1]+1);if(y>0){v=Math.min(v,d[k-PW]+1);if(x>0)v=Math.min(v,d[k-PW-1]+1);if(x<PW-1)v=Math.min(v,d[k-PW+1]+1)}d[k]=v}
+ for(y=PH-1;y>=0;y--)for(x=PW-1;x>=0;x--){k=y*PW+x;v=d[k];if(!v)continue;if(x<PW-1)v=Math.min(v,d[k+1]+1);if(y<PH-1){v=Math.min(v,d[k+PW]+1);if(x<PW-1)v=Math.min(v,d[k+PW+1]+1);if(x>0)v=Math.min(v,d[k+PW-1]+1)}d[k]=v}
+ var off=RAND*U,TOP=Math.round(DMAX*U/SL);
+ function dv(px,py){px-=a0;py-=b0;if(px<0)px=0;if(py<0)py=0;if(px>=PW)px=PW-1;if(py>=PH)py=PH-1;return Math.min(TOP,d[py*PW+px])}
+ for(j=0;j<M;j++){var pj=j+off;if(pj<b0-U||pj>=b0+PH+U)continue;
+  for(i=0;i<M;i++){var pi=i+off;if(pi<a0-U||pi>=a0+PW+U)continue;var e=dv(pi,pj);R[j*M+i]=Math.round(e*SL/U*32);
+   var l=(dv(pi+1,pj)-dv(pi-1,pj))+(dv(pi,pj+1)-dv(pi,pj-1)),c=DF[0];   // steigt nach Südosten = Fläche schaut nach Nordwesten = heller
+   C[j*M+i]=l>0?he[c]:l<0?du[c]:c}}
+ return{innen:innen,R:R,C:C,n:ni}}
 // Felder (Puffer), die beim Verschicken ohne Kopie übergeben werden
-function puffer(w){return[w.h.buffer,w.biom.buffer,w.farbe.buffer,w.wandX.buffer,w.wandY.buffer,w.sperre.buffer,w.objX.buffer,w.objY.buffer,w.objArt.buffer]}
+function puffer(w){var L=[w.h.buffer,w.biom.buffer,w.farbe.buffer,w.wandX.buffer,w.wandY.buffer,w.sperre.buffer,w.objX.buffer,w.objY.buffer,w.objArt.buffer];
+ if(w.innen)L.push(w.innen.buffer,w.dachR.buffer,w.dachC.buffer);return L}
 // Kartenstücke, die ein Ausschnitt braucht (für den Bildkern: vorher rechnen)
 function stuecke(BB,ox,oy){var WX=BB.WX,WY=BB.WY,F=N+2,L=[],x0,y0;oy=Math.max(0,Math.min(WY-F,oy|0));ox=((ox|0)%WX+WX)%WX;
  for(y0=oy>>6;y0<=(oy+F-1)>>6;y0++)for(x0=ox>>6;x0<=(ox+F-1)>>6;x0++)L.push([x0%BB.SX,y0]);return L}
 
-var FA={N:N,U:U,M:M,WL:WL,bauen:bauen,puffer:puffer,stuecke:stuecke,VON_BIOM:VON_BIOM,VON_WEG:VON_WEG};
+var FA={N:N,U:U,M:M,WL:WL,SL:SL,DMAX:DMAX,bauen:bauen,walm:walm,puffer:puffer,stuecke:stuecke,VON_BIOM:VON_BIOM,VON_WEG:VON_WEG};
 if(typeof module!=='undefined'&&module.exports)module.exports=FA;else root.AT3FPA=FA;
 })(typeof self!=='undefined'?self:this);
