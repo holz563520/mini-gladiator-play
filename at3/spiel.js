@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='f4d7158f', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='b31bc7f5', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -118,6 +118,7 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,waehlen:waehlen,beiErde:startWaehlen,
   beiAusfall:function(g){if(g)$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:g}))+'</span>'},
   beiZoom:function(l,z){$('weltInfo').textContent=l<0?t('welt.globus'):t('welt.zoom',{z:z})},
+  beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
   beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.bweg?', '+t('welt.bweg.'+f.bweg[0])+(f.bweg[1]<3?' ('+t('bau.zustand.'+f.bweg[1])+')':''):f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
@@ -125,7 +126,35 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};$('fpKnopf').onclick=fpUmschalten;$('fpKnopf').disabled=fpWahl;
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true;
-  var bp=/[?&]nosave\b/.test(location.search)&&/[?&]bauprobe(?:=(\d+))?/.exec(location.search);if(bp)bauprobe(Math.min(200,+(bp[1]||50)))}},250)}
+  var bp=/[?&]nosave\b/.test(location.search)&&/[?&]bauprobe(?:=(\d+))?/.exec(location.search);if(bp)bauprobe(Math.min(200,+(bp[1]||50)));
+  if(/[?&]nosave\b/.test(location.search)&&/[?&]karrenprobe\b/.test(location.search))karrenprobe()}},250)}
+// G6c2: Karren antippen → Karte mit Zustand, Grund und Wartezeit (englisch); die Stimme liest sie vor
+function karrenKarte(k){var z=t('karren.zust.'+k.zust),g=k.grund&&TXT['karren.grund.'+k.grund]!=null?t('karren.grund.'+k.grund):'',s=Math.floor((k.warte||0)/20),name=t('karren.name',{n:k.id});
+ $('karte').innerHTML='<b>'+esc(name)+'</b><br>'+esc(z)+(g?'<br>'+esc(g):'')+(s>=3?'<br>'+esc(t('karren.warte',{s:s})):'');window.AT3SPIEL.angetippt='karren:'+k.id;window.AT3SPIEL.karrenKarte=k;
+ sprich(name+'. '+(g||z))}
+// G6c2 Karrenprobe (nur mit ?nosave&karrenprobe): sucht nahe beim Kartenort ein Feld der Weltstraße oder des Ortsplatzes, baut davon weg eine 1 Feld breite Gasse (Kiesweg), dahinter
+// einen Platz 2 Felder tief und 4 Lager mit Tor zum Platz; alle Karren müssen durch die Gasse (Gegenverkehr, Tore, Ausweichen). Tempo 3×.
+function karrenprobe(){var k=KARTE.kam();if(!k)return;var LN=6,NL=4,U=[[0,-1],[1,0],[0,1],[-1,0]],SEITE={'0,-1':0,'-1,0':1,'0,1':2,'1,0':3},P=window.AT3SPIEL.karrenprobe={fertig:false,teile:0,gruende:{},strassen:0};
+ function rect(L){var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(var i=0;i<L.length;i++){x0=Math.min(x0,L[i][0]);y0=Math.min(y0,L[i][1]);x1=Math.max(x1,L[i][0]);y1=Math.max(y1,L[i][1])}return{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1}}
+ function plan(R,u){var v=[-u[1],u[0]],at=function(kk,vv){return[R[0]+u[0]*kk+v[0]*vv,R[1]+u[1]*kk+v[1]*vv]},L=[],i,j,gaps=[];
+  var gasse=[];for(i=1;i<=LN;i++)gasse.push(at(i,0));var platz=[];for(i=LN+1;i<=LN+2;i++)for(j=-8;j<=6;j++)platz.push(at(i,j));
+  var lager=[],tore=[];for(var n=0;n<NL;n++){var v0=-8+n*4,c=[];for(i=LN+3;i<=LN+5;i++)for(j=v0;j<=v0+2;j++)c.push(at(i,j));lager.push(rect(c));var tt=at(LN+3,v0+1);tore.push({x:tt[0],y:tt[1],seite:SEITE[(-u[0])+','+(-u[1])],typ:'tor'})}
+  return{gasse:rect(gasse),platz:rect(platz),lager:lager,tore:tore,mitte:at(LN+2,-1)}}
+ function pruefe(p){var L=[{art:'kiesweg',x:p.gasse.x,y:p.gasse.y,w:p.gasse.w,h:p.gasse.h},{art:'kiesweg',x:p.platz.x,y:p.platz.y,w:p.platz.w,h:p.platz.h}];
+  p.lager.forEach(function(r){L.push({art:'lager',x:r.x,y:r.y,w:r.w,h:r.h})});return Promise.all(L.map(function(w){return KERN.bauPruefen(w)})).then(function(E){var ok=true;E.forEach(function(e){if(!(e&&e.ok)){ok=false;var g=e?e.grund:'?';P.gruende[g]=(P.gruende[g]||0)+1}});return ok})}
+ // Weltstraße in der Nähe: Ringe um den Kartenort, je Ring alle Fragen auf einmal
+ var R=[],ring=0;$('weltInfo').textContent=t('probe.karrenSucht');
+ (function suche(){if(ring>40){$('weltInfo').textContent=t('probe.karrenKeinPlatz');P.fertig=true;P.fehler='kein_platz';return}var F=[];
+  for(var dy=-ring;dy<=ring;dy+=2)for(var dx=-ring;dx<=ring;dx+=2)if(Math.max(Math.abs(dx),Math.abs(dy))===ring)F.push([k[0]+dx,k[1]+dy]);
+  ring+=2;Promise.all(F.map(function(q){return KARTE.feldAn(q[0]+.5,q[1]+.5)})).then(function(E){for(var i=0;i<E.length;i++){var f=E[i];if(f&&(f.weg===2||f.weg===6)&&!f.bau&&f.x!=null)R.push([f.x,f.y])}
+   P.strassen=R.length;if(R.length<6&&ring<=40)return suche();versuch(0,0)})})();
+ function versuch(i,d){if(i>=R.length){$('weltInfo').textContent=t('probe.karrenKeinPlatz');P.fertig=true;P.fehler='kein_platz';return}
+  var p=plan(R[i],U[d]);pruefe(p).then(function(ok){if(ok)bauen(p);else if(d<3)versuch(i,d+1);else versuch(i+1,0)})}
+ function bauen(p){KERN.befehl('tempo',3);P.plan=p;p.lager.forEach(function(r){KERN.befehl('bauBoden',{art:'lager',x:r.x,y:r.y,w:r.w,h:r.h})});P.teile=NL;
+  KARTE.geh(p.mitte[0],p.mitte[1],0);$('weltInfo').textContent=t('probe.karren',{n:P.teile,m:NL*2+2});
+  var w=setInterval(function(){if(KERN.zustand.baustellen>0)return;clearInterval(w);
+   p.tore.forEach(function(q){KERN.befehl('bauTuer',q)});KERN.befehl('bauWeg',{art:'kiesweg',x:p.gasse.x,y:p.gasse.y,w:p.gasse.w,h:p.gasse.h});
+   KERN.befehl('bauWeg',{art:'kiesweg',x:p.platz.x,y:p.platz.y,w:p.platz.w,h:p.platz.h});P.teile=NL*2+2;P.fertig=true;$('weltInfo').textContent=t('probe.karrenFertig',{l:NL})},500)}}
 // FP2b: Messprobe „viele Häuser“ (Entscheidung Thomas 16.11.2026): nur mit ?nosave&bauprobe[=n] (n Häuser 4 × 3, Standard 50, höchstens 200). Baut rund um den Kartenort
 // Lager, Werkstatt und Unterkunft im Wechsel mit 2 Feldern Abstand (wo der Weltkern es erlaubt), Tempo 3×; danach First person und „Load & budgets“ → Copy measurements.
 function bauprobe(n){var k=KARTE.kam();if(!k)return;var L=[],r,gx,gy,i=0,gebaut=0,ARTN=['lager','werkstatt','unterkunft'];

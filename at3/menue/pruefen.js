@@ -13,6 +13,7 @@ AT3ED.menue('pruefen',function(el){
   '<p><button class="knopf" id="pRiesen">Riesenwelt-Probe<small>10 bis 10.000 Nationen · Welt 307.200² · Helferkerne · 30 Minuten Dauerlauf</small></button></p>'+
   '<p><a class="knopf" href="index.html?nosave&amp;bauprobe=50" target="_blank" rel="noopener">Bauprobe First Person · 50 Häuser<small>Spiel ohne Spielstand, Teststadt um den Startort · dann First person und „Load &amp; budgets“</small></a> '+
   '<a class="knopf" href="index.html?nosave&amp;bauprobe=200" target="_blank" rel="noopener">Bauprobe · 200 Häuser<small>dasselbe mit voller Stadt · Budget: Bild p95 ≤ 33,3 ms</small></a></p>'+
+  '<p><a class="knopf" href="index.html?nosave&amp;karrenprobe" target="_blank" rel="noopener">Karrenprobe (G6c2)<small>Spiel ohne Spielstand · baut an der nächsten Weltstraße eine 1 Feld breite Gasse, einen Platz und 4 Lager mit Tor · Gegenverkehr, Warten vor Engstellen, Ausweichen · Karren antippen zeigt Zustand und Grund</small></a></p>'+
   '<p><a class="knopf" href="index.html?nosave" target="_blank" rel="noopener">Wegprobe (G6b)<small>Spiel ohne Spielstand · Build → Tools → Path (feet) oder Path (cart): Start und Ziel antippen · zeigt Weg, Rechenzeit, Felder und Helferkerne</small></a></p>'+
   '<div id="pInhalt"></div>';
  el.querySelector('#pAuf').onclick=function(){var z=el.querySelector('#pInhalt');z.innerHTML='<p class="leise">Die Waage wird geeicht … mit einer toten Ratte als Gegengewicht.</p>';
