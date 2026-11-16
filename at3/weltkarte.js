@@ -31,7 +31,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='b31bc7f5', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='08044236', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -190,12 +190,23 @@ var t0=performance.now();
  function karrenBei(cx,cy){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),px=(cx-r.left)*f,py=(cy-r.top)*f,best=null,bd=40*f*f*40;
   KAR.forEach(function(e,id){if(e.sx==null||e.sx<-1e8)return;var dx=e.sx-px,dy=e.sy-8*f/(1<<cam.lod)-py,d=dx*dx+dy*dy;if(d<bd){bd=d;best={id:id,zust:e.zust,grund:e.grund,warte:e.warte||0}}});return best}
  function karBilder(objekte){var ob=objekte&&objekte['karren-ochse'];KBILD=null;if(!ob||!ob.bild)return;KBILD=[];
-  for(var r=0;r<4;r++){var b=S.richtungsBild(ob,r)||ob.bild;KBILD.push({c:S.zuCanvas(b,S.PALETTE),w:b.w,h:b.h,ax:b.ax,ay:b.ay})}}
- function karrenMalen(CX,CY,Z,W,H){var t=performance.now(),n=0,fahrt=false;
+  for(var r=0;r<4;r++){var b=S.richtungsBild(ob,r)||ob.bild,c=S.zuCanvas(b,S.PALETTE);KBILD.push({c:c,p:punktBild(c),w:b.w,h:b.h,ax:b.ax,ay:b.ay})}}
+ // Nachbesserung G6c2 (Thomas): Punktmuster des Karrens (jeder zweite Bildpunkt im Schachbrett), einmal je Richtung vorgezeichnet; gezeigt, wenn ein Gebäude davor steht
+ function punktBild(c){try{var d=document.createElement('canvas');d.width=c.width;d.height=c.height;var q=d.getContext('2d');q.drawImage(c,0,0);var im=q.getImageData(0,0,d.width,d.height),a=im.data;
+  for(var y=0;y<d.height;y++)for(var x=0;x<d.width;x++)if((x+y)&1)a[(y*d.width+x)*4+3]=0;q.putImageData(im,0,0);return d}catch(err){return c}}
+ // Verdeckt ein Gebäude mit geschlossenem Dach den Karren? Jedes Gebäudefeld ist ein Klotz: Raute 64 × 32 bis Wandhöhe (GESCHOSS, Bildpunkte bei 1×) hoch.
+ // Geprüft wird die Mitte des Karrens (halbe Bildhöhe über seinem Standpunkt, Lage auch zwischen zwei Feldern) gegen die Klötze der Felder um ihn und davor.
+ // Leistungsarm: höchstens 16 Nachschläge in der Raumkarte je sichtbarem Karren, nur Rechnen, kein Bild neu. Dachfirst und Ränder nicht pixelgenau.
+ function verdeckt(x,y,hc){var X0=Math.floor(x),Y0=Math.floor(y),WH=(S.GESCHOSS||32),py=-hc/2;
+  for(var dy=-1;dy<=2;dy++)for(var dx=-1;dx<=2;dx++){var X=X0+dx,Y=Y0+dy,r=raumBei(umX(X),Y);if(!r||OFFEN.indexOf(r)>=0)continue;
+   var ex=X+.5-x,ey=Y+.5-y,cx=(ex-ey)*32,cy=(ex+ey)*16,a=Math.abs(cx)/32;if(a>=1)continue;var rest=16*(1-a);
+   if(py<=cy+rest&&py>=cy-WH-rest&&(cy>=0||py>=cy-rest))return true}
+  return false}
+ function karrenMalen(CX,CY,Z,W,H){var t=performance.now(),n=0,fahrt=false;M.karrenVerdeckt=0;
   KAR.forEach(function(e){var L=karLage(e,t),x=L[0],y=L[1];x+=Math.round((cam.x-x)/WX)*WX;var h=hoeheBei(umX(Math.floor(x)),Math.floor(y));if(h==null)h=cam.z;
    var sx=((x-y)*32-CX)/Z+W/2,sy=((x+y)*16-h*8-CY)/Z+H/2;e.sx=-1e9;if(sx<-64||sy<-64||sx>W+64||sy>H+64)return;n++;if(L[2])fahrt=true;e.sx=sx;e.sy=sy;
-   var B=KBILD&&KBILD[e.dir&3];
-   if(B)g.drawImage(B.c,Math.round(sx-B.ax/Z),Math.round(sy-B.ay/Z),Math.max(1,Math.round(B.w/Z)),Math.max(1,Math.round(B.h/Z)));
+   var B=KBILD&&KBILD[e.dir&3],vd=verdeckt(x,y,B?B.ay:20);e.verdeckt=vd;M.karrenVerdeckt=(M.karrenVerdeckt||0)+(vd?1:0);
+   if(B)g.drawImage(vd?B.p:B.c,Math.round(sx-B.ax/Z),Math.round(sy-B.ay/Z),Math.max(1,Math.round(B.w/Z)),Math.max(1,Math.round(B.h/Z)));
    else{var r=Math.max(2,14/Z);g.fillStyle=ERSATZ;g.beginPath();g.moveTo(sx,sy-r);g.lineTo(sx+r*2,sy);g.lineTo(sx,sy+r);g.lineTo(sx-r*2,sy);g.closePath();g.fill()}
    if(e.grund>=10&&e.grund<=12&&e.zust===1){var Mk=stauZeichen(),hb=B?B.ay/Z:Math.max(2,14/Z);g.drawImage(Mk,Math.round(sx-Mk.width/2),Math.round(sy-hb-Mk.height-2))}});   // Ersatzbild: graue Raute; G6c2: Stau-Zeichen
   M.karrenSichtbar=n;karFaehrt=fahrt}
@@ -307,7 +318,7 @@ var t0=performance.now();
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
  return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,
-  karrenListe:function(){var t=performance.now(),L=[];KAR.forEach(function(e,id){var p=karLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,grund:e.grund,warte:e.warte||0,bild:!!KBILD,sx:e.sx,sy:e.sy})});return L},
+  karrenListe:function(){var t=performance.now(),L=[];KAR.forEach(function(e,id){var p=karLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,grund:e.grund,warte:e.warte||0,bild:!!KBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},
   stauZeichen:function(){return !!STAU},
   // G6c2: Feld an einer Weltlage abfragen (wie Antippen, ohne Bildschirm)
   feldAn:function(x,y){return new Promise(function(ok){if(!bk)return ok(null);var h=hoeheBei(umX(Math.floor(x)),Math.floor(y));if(h==null)h=cam.z;var id=++feldNr;feldOk[id]=ok;
