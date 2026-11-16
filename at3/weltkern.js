@@ -41,6 +41,14 @@ var karGesendet=false;
 function karLaden(){if(self.AT3KARREN)return;var q=self.location.search,L=[];if(!self.AT3BEGEH)L.push('begehbar.js'+q);if(!self.AT3WEG)L.push('wegsuche.js'+q);if(!self.AT3WEGSTROM)L.push('wegstrom.js'+q);L.push('karren.js'+q);importScripts.apply(self,L)}
 function karSenden(){var g=z.kar;if(!g||!g.k.length){if(karGesendet){karGesendet=false;self.postMessage({art:'karren',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}return}
  var a=self.AT3KARREN.meld(g);karGesendet=true;self.postMessage({art:'karren',tick:z.tick,tempo:z.tempo,buf:a},[a.buffer])}
+// Waren und Arbeiter (G7): waren.js und personen.js mit dem Befehl wirtschaft oder einem Spielstand damit. An den Hauptkern gehen die Personen nach jedem Takt
+// (je Person 10 Zahlen) und die Waren nur bei einer Änderung (Bestände, Aufträge, Gründe stehender Baustellen).
+var warLetzt=-1, warTick=-99, perGesendet=false;
+function warLaden(){wsLaden();bauLaden();if(!self.AT3WAREN)importScripts('waren.js'+self.location.search,'personen.js'+self.location.search)}
+function warSenden(){var g=z.war;if(!g){if(warLetzt!==-1){warLetzt=-1;self.postMessage({art:'waren',an:0})}if(perGesendet){perGesendet=false;self.postMessage({art:'personen',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}return}
+ if(z.per){var a=self.AT3PERS.meld(z);perGesendet=true;self.postMessage({art:'personen',tick:z.tick,tempo:z.tempo,buf:a},[a.buffer])}
+ var dt=Math.abs(z.tick-warTick);if(warLetzt!==-1&&dt<5)return;if(g.zaehler===warLetzt&&!(z.bau&&z.bau.auf.length&&dt>=20))return;      // höchstens 4× je Sekunde; mit Baustellen mindestens 1× je Sekunde (Gründe)
+ warLetzt=g.zaehler;warTick=z.tick;self.postMessage({art:'waren',meld:self.AT3WAREN.meld(z)})}
 // Wegsuche (G6b): begehbar.js, wegsuche.js und wegstrom.js erst mit dem ersten Befehl wegProbe oder einem Spielstand mit Wegsuche. An den Hauptkern geht
 // nur bei einem neuen Ergebnis eine kleine Nachricht (Feldliste, Orte, Rechenzeit); Rechenzeit je Auftrag nur für die Anzeige, nicht im Zustand.
 var wegUs={};
@@ -80,13 +88,13 @@ function senden(){if(!neuesBild||!puffer.length)return;neuesBild=false;var b=puf
 
 function takt(){if(modus==='lauf'){laufen();return}
  var jetzt=performance.now(),dt=jetzt-letzt;letzt=jetzt;
- if(!laeuft||!sichtbar||z.tempo===0){schuld=0;ueber=false;senden();wsSenden();bauSenden();wegSenden();karSenden();return}       // Pause: kein Zeitgeber, weiter erst nach Befehl
+ if(!laeuft||!sichtbar||z.tempo===0){schuld=0;ueber=false;senden();wsSenden();bauSenden();wegSenden();karSenden();warSenden();return}       // Pause: kein Zeitgeber, weiter erst nach Befehl
  schuld+=dt*z.tempo*K.TICKS/1000;
  if(schuld>MAXNACH){verloren+=Math.floor(schuld-MAXNACH);schuld=MAXNACH;ueber=true}
  var ende=jetzt+SCHEIBE;
  while(schuld>=1){if(!einTick())break;schuld-=1;if(performance.now()>ende)break}
  if(schuld<1)ueber=false;
- senden();rwSenden();wsSenden();bauSenden();wegSenden();karSenden();
+ senden();rwSenden();wsSenden();bauSenden();wegSenden();karSenden();warSenden();
  if(wartet)return;                                                              // ein Helferergebnis weckt den Takt
  if(!helfer.length&&schuld<1){var a=V.naechster();if(a)selbstRechnen(a)}        // ohne Helfer: Aufträge in freien Scheiben vorrechnen
  plane(schuld>=1?0:Math.max(1,(1-schuld)*1000/(z.tempo*K.TICKS)))}
@@ -106,18 +114,21 @@ function vonHelfer(h){return function(e){var d=e.data;h.frei=true;fremd++;if(d.a
 self.onmessage=function(e){var d=e.data;
  if(d.art==='start'){(d.ports||[]).forEach(function(p){var h={port:p,frei:true};p.onmessage=vonHelfer(h);helfer.push(h)});
   var ausS=null;if(d.stand&&(d.stand.bau||(Array.isArray(d.stand.warte)&&d.stand.warte.some(function(b){return b&&K.BAU_ARTEN[b[2]]}))))bauLaden();
+  if(d.stand&&(d.stand.war||d.stand.per||(Array.isArray(d.stand.warte)&&d.stand.warte.some(function(b){return b&&K.WAR_ARTEN[b[2]]}))))warLaden();
   if(d.stand&&(d.stand.weg||(Array.isArray(d.stand.warte)&&d.stand.warte.some(function(b){return b&&K.WEG_ARTEN[b[2]]}))))wegLaden();bauLetzt=-1;
   if(d.stand){ausS=K.ausStand(d.stand,V.version()+1);if(ausS.fehler){self.postMessage({art:'standFehler',grund:ausS.fehler});return}}   // G3: aus Spielstand
   z=ausS?ausS.z:K.neu(d.seed>>>0,V.version()+1);
   version();
   if(ausS&&ausS.welt){wsLaden();wsNull();var wa=self.AT3WS.ausStand(ausS.welt,z);if(!wa){self.postMessage({art:'standFehler',grund:'Welt'});return}for(var q=0;q<wa.length;q++)ausS.auftraege.push(wa[q])}
   if(ausS&&ausS.weg){var wq=self.AT3WEGSTROM.ausStand(ausS.weg,z);if(!wq){self.postMessage({art:'standFehler',grund:'Weg'});return}for(var q2=0;q2<wq.length;q2++)ausS.auftraege.push(wq[q2])}
-  if(ausS&&ausS.kar){karLaden();var kq=self.AT3KARREN.ausStand(ausS.kar,z);if(!kq){self.postMessage({art:'standFehler',grund:'Karren'});return}for(var q3=0;q3<kq.length;q3++)ausS.auftraege.push(kq[q3])}   // G6c   // G6b   // G4a: Welt aus dem Spielstand, Erde und Stücke neu aus dem Seed
+  if(ausS&&ausS.kar){karLaden();var kq=self.AT3KARREN.ausStand(ausS.kar,z);if(!kq){self.postMessage({art:'standFehler',grund:'Karren'});return}for(var q3=0;q3<kq.length;q3++)ausS.auftraege.push(kq[q3])}
+  if(ausS&&ausS.per){var pq=self.AT3PERS.ausStand(ausS.per,z);if(!pq){self.postMessage({art:'standFehler',grund:'Personen'});return}for(var q4=0;q4<pq.length;q4++)ausS.auftraege.push(pq[q4])}   // G7
+  warLetzt=-1;   // G6c   // G6b   // G4a: Welt aus dem Spielstand, Erde und Stücke neu aus dem Seed
   if(ausS)for(var j=0;j<ausS.auftraege.length;j++)V.auf(ausS.auftraege[j]);rwNull();selbst=fremd=verloren=gesamt=0;schuld=0;laeuft=true;modus='takt';letzt=performance.now();neuesBild=true;
   self.postMessage({art:'bereit',helfer:helfer.length});plane(0)}
- else if(d.art==='befehl'){if(K.RW_ARTEN[d.befehl])rwLaden();if(K.WS_ARTEN[d.befehl]){wsLaden();if(d.befehl==='weltseed')wsNull()}if(K.BAU_ARTEN[d.befehl])bauLaden();if(K.WEG_ARTEN[d.befehl])wegLaden();var f=K.befehl(z,{nr:d.nr,art:d.befehl,wert:d.wert});
+ else if(d.art==='befehl'){if(K.RW_ARTEN[d.befehl])rwLaden();if(K.WS_ARTEN[d.befehl]){wsLaden();if(d.befehl==='weltseed')wsNull()}if(K.BAU_ARTEN[d.befehl])bauLaden();if(K.WEG_ARTEN[d.befehl])wegLaden();if(K.WAR_ARTEN[d.befehl])warLaden();var f=K.befehl(z,{nr:d.nr,art:d.befehl,wert:d.wert});
   if(f){self.postMessage({art:'abgelehnt',nr:d.nr,grund:f});return}
-  if(modus==='takt'&&(z.tempo===0||!sichtbar)){anw();version();neuesBild=true;letzt=performance.now();senden();bauSenden();if(z.tempo>0&&sichtbar)plane(0)}}
+  if(modus==='takt'&&(z.tempo===0||!sichtbar)){anw();version();neuesBild=true;letzt=performance.now();senden();bauSenden();warSenden();if(z.tempo>0&&sichtbar)plane(0)}}
  else if(d.art==='puffer'){if(puffer.length<3)puffer.push(d.buf);if(neuesBild&&modus==='takt')senden()}
  else if(d.art==='sichtbar'){sichtbar=!!d.an;letzt=performance.now();schuld=0;if(sichtbar&&modus==='takt')plane(0)}
  else if(d.art==='stand'){var t1=performance.now(),st=K.stand(z);self.postMessage({art:'stand',id:d.id,stand:st,tick:z.tick,abdruck:K.abdruck(z),ms:performance.now()-t1})}   // G3: an einer Tickgrenze (Nachrichten kommen nur zwischen Ticks an)
@@ -127,6 +138,6 @@ self.onmessage=function(e){var d=e.data;
  else if(d.art==='wsAn'){wsAn=!!d.an;wsNurErde=!!d.nurErde;wsErdGen=-1;if(wsAn&&z.wg){z.wg.frisch=Array.from(z.wg.stuecke.keys());wsSenden()}}   // G4a: nurErde = Spielkarte (rechnet ihre Stücke im Bildkern selbst)
  else if(d.art==='wsPuffer'){if(wsPool.length<8)wsPool.push(d.buf)}
  else if(d.art==='rwStand'){var t0=performance.now(),st=z.rw?self.AT3RW.stand(z.rw):null;self.postMessage({art:'rwStand',id:d.id,stand:st,ms:performance.now()-t0,bytes:z.rw?self.AT3RW.bytes(z.rw)+z.e.byteLength:z.e.byteLength})}
- else if(d.art==='lauf'){if(d.befehle.some(function(b){return K.RW_ARTEN[b.art]}))rwLaden();if(d.befehle.some(function(b){return K.WS_ARTEN[b.art]})){wsLaden();wsNull()}if(d.befehle.some(function(b){return K.BAU_ARTEN[b.art]}))bauLaden();rwNull();if(timer!=null){clearTimeout(timer);timer=null}z=K.neu(d.seed>>>0,V.version()+1);version();selbst=fremd=0;wartet=false;
+ else if(d.art==='lauf'){if(d.befehle.some(function(b){return K.RW_ARTEN[b.art]}))rwLaden();if(d.befehle.some(function(b){return K.WS_ARTEN[b.art]})){wsLaden();wsNull()}if(d.befehle.some(function(b){return K.BAU_ARTEN[b.art]}))bauLaden();if(d.befehle.some(function(b){return K.WAR_ARTEN[b.art]}))warLaden();rwNull();if(timer!=null){clearTimeout(timer);timer=null}z=K.neu(d.seed>>>0,V.version()+1);version();selbst=fremd=0;wartet=false;
   lauf={id:d.id,befehle:d.befehle.slice().sort(function(a,b){return a.tick-b.tick}),bis:d.bis,i:0,s:0,nr:0,t0:performance.now()};modus='lauf';laufen()}
  else if(d.art==='testAusfall'){throw new Error('Probe-Ausfall im Weltkern')}};

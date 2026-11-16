@@ -68,3 +68,7 @@ th{color:var(--tinte2)}
 @media (max-width:700px){#bauLeiste .bauGruppen{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:3px}#bauLeiste .bauGruppe{flex:0 0 auto;border:none;padding:0}#bauLeiste .bauGruppe>b{display:none}#bauLeiste .bauGruppe>div{flex-wrap:nowrap}#bauLeiste .bauFertig{flex:0 0 auto}}
 #bauLeiste .knopf[aria-pressed=true]{background:var(--knopf-an);box-shadow:inset 3px 3px 0 var(--tinte2)}#bauLeiste .knopf.weg{background:var(--papier)}
 #bauKnopf[aria-pressed=true]{background:var(--knopf-an)}
+/* G7 Warenliste (Knopf Goods): Rattenpergament, schmal fürs Handy */
+#warenLeiste{margin-top:6px}#warenLeiste table{border-collapse:collapse;width:100%;max-width:420px;font-size:13px}#warenLeiste th,#warenLeiste td{border-bottom:1px solid var(--tinte2);padding:2px 6px;text-align:right}
+#warenLeiste th:first-child,#warenLeiste td:first-child{text-align:left}#warenLeiste th{font-size:10px;letter-spacing:.08em;text-transform:uppercase}#warenLeiste p{margin:4px 0}#warenLeiste a{color:inherit}
+#warenKnopf[aria-pressed=true],#karte .knopf[aria-pressed=true]{background:var(--knopf-an);box-shadow:inset 3px 3px 0 var(--tinte2)}

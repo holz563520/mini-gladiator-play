@@ -6,7 +6,7 @@
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='08044236', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='10345f32', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -47,6 +47,8 @@ function starten(opt){opt=opt||{};
    else if(d.art==='bereit'){Z.laeuft=true;Z.helfer=d.helfer;if(opt.beiBereit)opt.beiBereit(Z)}
    else if(d.art==='abgelehnt'){Z.abgelehnt++;if(opt.beiAbgelehnt)try{opt.beiAbgelehnt(d)}catch(x){}}
    else if(d.art==='karren'){if(opt.beiKarren)try{opt.beiKarren(d)}catch(x){}}   // G6c: Karren nach jedem Takt (solange es welche gibt)
+   else if(d.art==='personen'){if(opt.beiPersonen)try{opt.beiPersonen(d)}catch(x){}}   // G7: Arbeiter nach jedem Takt
+   else if(d.art==='waren'){if(opt.beiWaren)try{opt.beiWaren(d)}catch(x){}}   // G7: Bestände und Aufträge, nur bei Änderung
    else if(d.art==='weg'){if(opt.beiWeg)try{opt.beiWeg(d)}catch(x){}}   // G6b: Ergebnisse der Wegsuche (Feldliste, Orte, Rechenzeit)
    else if(d.art==='bau'){Z.bauZaehler=d.zaehler;Z.gold=d.gold;Z.baustellen=d.baustellen;if(opt.beiBau)try{opt.beiBau(d)}catch(x){}}   // G5a: nur bei Änderung, mit den Ergebnissen der Bau-Befehle (meld)
    else if(d.art==='rw'){if(opt.beiRw)try{opt.beiRw(d)}catch(x){}if(d.bild&&welt)welt.postMessage({art:'rwBild',buf:d.bild},[d.bild.buffer])}

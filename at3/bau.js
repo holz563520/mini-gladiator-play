@@ -21,6 +21,7 @@
 // (Flutfüllung) aus 2.0 welt-gebaeude.js; Ebenen-Regel und Stückformat aus bodenbild.js; Naturregel aus natur.js; Einhäng-Muster aus weltstrom.js.
 (function(root){
 'use strict';
+function WAR(){return root.AT3WAREN||(typeof module!=='undefined'&&module.exports?require('./waren.js'):null)}   // G7: Material und Bauarbeiter (nur wenn die Wirtschaft läuft)
 function NAT(){return root.AT3NATUR||(typeof module!=='undefined'&&module.exports?require('./natur.js'):null)}
 var ST=64, FELDER=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, MEER=2048, LS=6;
 var START_GOLD=10000, PREIS=1;                          // Thomas 16.11.2026: gutes Startkapital zum Testen, alles kostet 1 (Preise setzt er später)
@@ -305,14 +306,16 @@ function bauAbbruch(z,w,bnr){var b=z.bau,p=finde(b,w.nr);if(p<0)return melden(b,
 function zielZu(b,t,X,Y){if(t===3){var v=wegAt(b,X,Y);return v?(v>>4)&3:0}return t===0?(artAt(b,X,Y)?(flagAt(b,X,Y)>>4)&3:0):((kGet(b,t,X,Y)&3)?(kGet(b,t,X,Y)>>4)&3:0)}
 function zielSetzen(b,t,X,Y,zu){var s=stk(b,X,Y),q=qi(X,Y);merk(b,X,Y);if(t===3)s.weg[q]=(s.weg[q]&0xCF)|(zu<<4);else if(t===0)s.flag[q]=(s.flag[q]&0xCF)|(zu<<4);else{var A=t===N_?s.kn:s.kw;A[q]=(A[q]&0xCF)|(zu<<4)}}
 // Ein Tick: höchstens JE_TICK laufende Baustellen kommen einen Schritt weiter (Reihenfolge = Baustellennummer). Entferntes oder Geändertes wird übersprungen.
-function schritt(z){var b=z.bau,A=b.auf;b.tk=z.tick;wtAlt(b,z.tick);if(!A.length)return;var n=0,fertig=false;
+function schritt(z){var b=z.bau,A=b.auf;b.tk=z.tick;wtAlt(b,z.tick);if(!A.length)return;var n=0,fertig=false,H=z.war?WAR():null;
  for(var i=0;i<A.length&&n<JE_TICK;i++){var a=A[i],Z=a.ziele;if(a.zu!==B_LAEUFT)continue;n++;
   if(!a.rest){var spr=0;
    while(a.i*3<Z.length&&spr<64&&zielZu(b,Z[a.i*3],Z[a.i*3+1],Z[a.i*3+2])!==Z_PLAN){a.i++;spr++}
    if(a.i*3>=Z.length){a.zu=-1;fertig=true;continue}
    if(spr>=64)continue;
+   if(H&&!H.bauStart(z,a,Z[a.i*3],Z[a.i*3+1],Z[a.i*3+2]))continue;      // G7: ohne Bauarbeiter vor Ort oder ohne Material beginnt kein Ziel
    zielSetzen(b,Z[a.i*3],Z[a.i*3+1],Z[a.i*3+2],Z_ARBEIT);a.rest=Z[a.i*3]===0?FELD_TICKS:Z[a.i*3]===3?WEG_TICKS:KANTE_TICKS;b.zaehler++}
-  if(--a.rest===0){var p=a.i*3;if(zielZu(b,Z[p],Z[p+1],Z[p+2])===Z_ARBEIT){zielSetzen(b,Z[p],Z[p+1],Z[p+2],Z_FERTIG);b.zaehler++}
+  var takt=H?H.bauTakt(z,a):1;if(!takt)continue;a.rest=a.rest>takt?a.rest-takt:0;      // G7: Fortschritt nur mit Bauarbeiter (geübte bauen schneller)
+  if(a.rest===0){var p=a.i*3;if(zielZu(b,Z[p],Z[p+1],Z[p+2])===Z_ARBEIT){zielSetzen(b,Z[p],Z[p+1],Z[p+2],Z_FERTIG);b.zaehler++;if(H)H.bauFertig(z,a)}
    a.i++;if(a.i*3>=Z.length){a.zu=-1;fertig=true}}}
  if(fertig){b.auf=A.filter(function(a){return a.zu>=0});b.zaehler++}}
 
@@ -394,6 +397,6 @@ function geaendert(b){var L=[];b.neu.forEach(function(k){L.push(k)});b.neu.clear
 var B={START_GOLD:START_GOLD,PREIS:PREIS,FELD_TICKS:FELD_TICKS,KANTE_TICKS:KANTE_TICKS,MAX_AUSWAHL:MAX_AUSWAHL,MAX_RAUM:MAX_RAUM,MAX_BAUSTELLEN:MAX_BAUSTELLEN,JE_TICK:JE_TICK,WEG:WEG,WEG_NAME:WEG_NAME,WEG_TICKS:WEG_TICKS,pruefenWeg:pruefenWeg,weg:wegAn,
  ART:ART,ART_NAME:ART_NAME,K_WAND:K_WAND,K_TUER:K_TUER,K_TOR:K_TOR,H_AUTO:H_AUTO,H_HAND:H_HAND,H_WEG:H_WEG,Z_PLAN:Z_PLAN,Z_ARBEIT:Z_ARBEIT,Z_FERTIG:Z_FERTIG,B_LAEUFT:B_LAEUFT,B_PAUSE:B_PAUSE,B_BLOCK:B_BLOCK,
  ARTEN:ARTEN,befehl:befehl,schritt:schritt,abdruck:abdruck,stand:stand,ausStand:ausStand,pruefen:pruefen,pruefenWaende:pruefenWaende,sackgasse:sackgasse,boden:function(z,X,Y){return boden(z,X,Y,new Map())},
- feld:feld,kante:kanteAn,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,haken:function(f){beiEntfernen=f}};
+ feld:feld,kante:kanteAn,ziel:zielZu,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,haken:function(f){beiEntfernen=f}};
 if(typeof module!=='undefined'&&module.exports)module.exports=B;else root.AT3BAU=B;
 })(typeof self!=='undefined'?self:this);

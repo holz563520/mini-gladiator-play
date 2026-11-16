@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='08044236', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='10345f32', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -106,7 +106,7 @@ function platzWaehlen(){platzP=window.AT3SPIELSTAND.start({t:t,imAntippen:functi
 function kernStarten(){$('uhrInfo').textContent=t('uhr.wartet');uhrLage='wartet';platzP.then(kernLos)}
 function kernLos(w){
  var s=document.createElement('script'),s2=document.createElement('script'),da=0;s.src='kernstart.js?v='+V;s2.src='weltkarte.js?v='+V;s.onerror=function(){kernAusfall('kernstart.js')};s2.onerror=function(){kernAusfall('weltkarte.js')};
- s.onload=s2.onload=function(){if(++da<2)return;KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,beiWs:function(d){if(KARTE)KARTE.beiWs(d)},beiBau:beiBau,beiWeg:beiWeg,beiKarren:function(d){if(KARTE)KARTE.karren(d)},
+ s.onload=s2.onload=function(){if(++da<2)return;KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,beiWs:function(d){if(KARTE)KARTE.beiWs(d)},beiBau:beiBau,beiWeg:beiWeg,beiKarren:function(d){if(KARTE)KARTE.karren(d)},beiPersonen:function(d){if(KARTE)KARTE.personen(d)},beiWaren:beiWaren,
   beiBereit:function(){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=false;k.onclick=function(){KERN.befehl('tempo',+k.dataset.tempo)}});
    SPIELSTAND=window.AT3SPIELSTAND.anschliessen(w,KERN,function(){return{stimme:stimmeGewuenscht,kam:KARTE?KARTE.kam():null,start:START}},speicherAnzeige);if(w.platz&&!w.daten)SPIELSTAND.speichern();
    karteStarten(w);
@@ -119,17 +119,21 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
   beiAusfall:function(g){if(g)$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:g}))+'</span>'},
   beiZoom:function(l,z){$('weltInfo').textContent=l<0?t('welt.globus'):t('welt.zoom',{z:z})},
   beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
+  beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
   beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.bweg?', '+t('welt.bweg.'+f.bweg[0])+(f.bweg[1]<3?' ('+t('bau.zustand.'+f.bweg[1])+')':''):f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
- bauAnschliessen();
+ bauAnschliessen();warenAnschliessen();
+ if(sp&&sp.start&&!(w.daten.kern&&w.daten.kern.war))KERN.befehl('wirtschaft',{x:sp.start[0],y:sp.start[1]});      // G7: Spielstand von vor G7 → Wirtschaft am Startplatz einschalten
  $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};$('fpKnopf').onclick=fpUmschalten;$('fpKnopf').disabled=fpWahl;
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true;
   var bp=/[?&]nosave\b/.test(location.search)&&/[?&]bauprobe(?:=(\d+))?/.exec(location.search);if(bp)bauprobe(Math.min(200,+(bp[1]||50)));
-  if(/[?&]nosave\b/.test(location.search)&&/[?&]karrenprobe\b/.test(location.search))karrenprobe()}},250)}
+  if(/[?&]nosave\b/.test(location.search)&&/[?&]karrenprobe\b/.test(location.search))karrenprobe();
+  if(/[?&]nosave\b/.test(location.search)&&/[?&]warenprobe\b/.test(location.search))warenprobe()}},250)}
 // G6c2: Karren antippen → Karte mit Zustand, Grund und Wartezeit (englisch); die Stimme liest sie vor
 function karrenKarte(k){var z=t('karren.zust.'+k.zust),g=k.grund&&TXT['karren.grund.'+k.grund]!=null?t('karren.grund.'+k.grund):'',s=Math.floor((k.warte||0)/20),name=t('karren.name',{n:k.id});
+ var fr=null;if(WAREN)WAREN.karren.forEach(function(e){if(e[0]===k.id)fr=e});if(WAREN&&WAREN.an)z=fr?t('karren.fracht',{m:fr[2],w:t('ware.'+fr[1])}):k.zust===2?t('karren.leer'):z;      // G7: Ladung statt „leer, aber stolz“
  $('karte').innerHTML='<b>'+esc(name)+'</b><br>'+esc(z)+(g?'<br>'+esc(g):'')+(s>=3?'<br>'+esc(t('karren.warte',{s:s})):'');window.AT3SPIEL.angetippt='karren:'+k.id;window.AT3SPIEL.karrenKarte=k;
  sprich(name+'. '+(g||z))}
 // G6c2 Karrenprobe (nur mit ?nosave&karrenprobe): sucht nahe beim Kartenort ein Feld der Weltstraße oder des Ortsplatzes, baut davon weg eine 1 Feld breite Gasse (Kiesweg), dahinter
@@ -172,6 +176,39 @@ var BAUWZ={lager:{gr:'haus',bild:'📦',form:'rechteck',preis:1},werkstatt:{gr:'
 // Thomas 16.11.2026: wie 2.0 nur Boden ziehen, Wände, Dach und Tür kommen von selbst; von Hand nur Türen. Wandlinie, Dach und „Wände neu“ bleiben im Weltkern
 // (bauWaende, bauDach, bauHuelle) und in der Karte (Form „linie“), haben aber keinen Knopf.
 var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3}, WEG_NR={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4}, MAXA=1024, MAXL=256;
+// ── G7 Waren und Arbeiter: Knopf „Goods“ (Bestände, Aufträge, stehende Baustellen mit Grund), Arbeiter antippen (Aufgabe, Last, Fähigkeiten, Rollen von Hand).
+// Alles kommt als fertige Zahlen vom Weltkern (Nachricht waren nur bei Änderung), der Hauptkern füllt nur die Liste, und nur wenn sie offen ist. ──
+var WAREN=null, PERSON=null;
+function personName(id){var N=t('person.namen').split('|');return N[(id-1)%N.length]+(id>N.length?' '+(Math.floor((id-1)/N.length)+1):'')}
+function beiWaren(d){WAREN=d.meld||null;window.AT3SPIEL.waren=WAREN;var k=$('warenKnopf');k.disabled=!(WAREN&&WAREN.an);if(k.disabled)$('warenLeiste').hidden=true;if(!$('warenLeiste').hidden)warenZeigen()}
+function warenAnschliessen(){var k=$('warenKnopf');k.textContent=t('waren.knopf');k.onclick=function(){var an=!!$('warenLeiste').hidden;$('warenLeiste').hidden=!an;k.setAttribute('aria-pressed',an?'true':'false');if(an){warenZeigen();try{$('warenLeiste').scrollIntoView({block:'nearest'})}catch(x){}}}}
+function warenZeigen(){var W=WAREN,e=$('warenLeiste');if(!W||!W.an){e.textContent='';return}var h='',i,w;
+ if(!W.start)h+='<p class="karte">'+esc(t('waren.leer'))+'</p>';
+ else{h+='<table><tr><th></th><th>'+esc(t('waren.da'))+'</th><th>'+esc(t('waren.res'))+'</th><th>'+esc(t('waren.unterwegs'))+'</th></tr>';
+  for(w=0;w<4;w++)h+='<tr><td>'+esc(t('ware.'+w))+'</td><td>'+W.summe[0][w]+'</td><td>'+W.summe[1][w]+'</td><td>'+W.summe[2][w]+'</td></tr>';h+='</table>';
+  h+='<p class="leise">'+esc(t('waren.zahl',{l:W.lager.length,s:W.stapel.length,a:W.auf,g:W.gel,v:W.verbr}))+'</p>';
+  for(i=0;i<W.lager.length&&i<6;i++){var L=W.lager[i];h+='<p class="leise"><a href="#" data-geh="'+L[1]+','+L[2]+'">'+esc(t('waren.lager',{n:L[0]}))+'</a> '+esc(t('waren.inhalt',{a:L[4],b:L[5],c:L[6],d:L[7],k:L[3]}))+'</p>'}
+  for(i=0;i<W.stapel.length&&i<4;i++){var S2=W.stapel[i];h+='<p class="leise"><a href="#" data-geh="'+S2[1]+','+S2[2]+'">'+esc(t('waren.stapel'))+'</a> '+esc(t('waren.inhalt0',{a:S2[3],b:S2[4],c:S2[5],d:S2[6]}))+'</p>'}}
+ for(i=0;i<W.block.length&&i<6;i++){var b=W.block[i];h+='<p class="karte"><a href="#" data-geh="'+b[2]+','+b[3]+'">'+esc(t('waren.baustelle',{n:b[0]}))+'</a> '+esc(t('waren.block.'+b[1]))+'</p>'}
+ e.innerHTML=h;[].forEach.call(e.querySelectorAll('[data-geh]'),function(a){a.onclick=function(ev){ev.preventDefault();var q=a.dataset.geh.split(',');KARTE.geh(+q[0]+.5,+q[1]+.5,0)}})}
+// Arbeiter antippen: Name, Aufgabe, Last, Fähigkeiten; zwei Schalter für die Rollen (Eingreifen von Hand, sonst Automatik)
+function personKarte(k){PERSON=k;var name=personName(k.id),auf=t('person.auf.'+(k.zust===4?'w':k.zust===0?0:k.auf)),last=k.last?t('person.last',{m:k.last>>4,w:t('ware.'+((k.last&15)-1))}):'';
+ $('karte').innerHTML='<b>'+esc(name)+'</b><br>'+esc(auf)+(last?'<br>'+esc(last):'')+'<br>'+esc(t('person.faehig',{a:k.f0,b:k.f1}))+
+  '<br><button class="knopf klein" id="pRolle1" aria-pressed="'+(k.darf&1?'true':'false')+'">'+esc(t('person.rolle.1'))+'</button> <button class="knopf klein" id="pRolle2" aria-pressed="'+(k.darf&2?'true':'false')+'">'+esc(t('person.rolle.2'))+'</button>';
+ [1,2].forEach(function(bit){$('pRolle'+bit).onclick=function(){k.darf^=bit;KERN.befehl('personRolle',{id:k.id,darf:k.darf});personKarte(k)}});
+ window.AT3SPIEL.angetippt='person:'+k.id;window.AT3SPIEL.personKarte=k;if(!personKarte.still)sprich(name+'. '+auf);personKarte.still=false}
+// Warenprobe (nur mit ?nosave&warenprobe): schaltet die Wirtschaft ein, sucht nahe beim Kartenort Platz, baut ein Lager (ohne Material), danach eine Werkstatt und
+// ein zweites Lager (mit Material aus dem Startvorrat), Tore und einen Kiesweg dazwischen; Arbeiter tragen und bauen, die Karren gleichen aus. Tempo 3×.
+function warenprobe(){var k=KARTE.kam();if(!k)return;var P=window.AT3SPIEL.warenprobe={fertig:false,stufe:0},L=[],r,gx,gy,i=0;
+ for(r=0;r<14;r++)for(gy=-r;gy<=r;gy++)for(gx=-r;gx<=r;gx++)if(Math.max(Math.abs(gx),Math.abs(gy))===r)L.push([Math.floor(k[0])+gx*3,Math.floor(k[1])+gy*3]);
+ $('weltInfo').textContent=t('probe.warenSucht');
+ (function suche(){if(i>=L.length){$('weltInfo').textContent=t('probe.warenKeinPlatz');P.fertig=true;P.fehler='kein_platz';return}var q=L[i++],x=q[0],y=q[1];
+  var T=[{art:'lager',x:x,y:y,w:3,h:3},{art:'werkstatt',x:x+5,y:y,w:4,h:3},{art:'lager',x:x+11,y:y,w:3,h:3},{art:'kiesweg',x:x+1,y:y+3,w:12,h:2}];
+  Promise.all(T.map(function(w){return KERN.bauPruefen(w)})).then(function(E){if(!E.every(function(e){return e&&e.ok}))return suche();
+   P.plan={x:x,y:y};KERN.befehl('wirtschaft',{x:x-1,y:y+4});KERN.befehl('tempo',3);KERN.befehl('bauBoden',T[0]);KARTE.geh(x+7,y+2,0);P.stufe=1;$('weltInfo').textContent=t('probe.waren1');
+   var w=setInterval(function(){if(P.stufe===1&&WAREN&&WAREN.start){P.stufe=2;KERN.befehl('bauBoden',T[1]);KERN.befehl('bauBoden',T[2]);$('weltInfo').textContent=t('probe.waren2')}
+    else if(P.stufe===2&&WAREN&&WAREN.lager.length>=2&&KERN.zustand.baustellen===0){P.stufe=3;clearInterval(w);KERN.befehl('bauTuer',{x:x+1,y:y+2,seite:2,typ:'tor'});KERN.befehl('bauTuer',{x:x+12,y:y+2,seite:2,typ:'tor'});KERN.befehl('bauWeg',T[3]);
+     P.fertig=true;$('weltInfo').textContent=t('probe.waren3')}},500)})})()}
 function bauAnschliessen(){var k=$('bauKnopf');k.disabled=false;k.textContent=t('bau.knopf');
  var G={},h='<div class="bauGruppen">';Object.keys(BAUWZ).forEach(function(id){var w=BAUWZ[id];(G[w.gr]=G[w.gr]||[]).push(id)});
  ['haus','weg','werkzeug'].forEach(function(g){h+='<div class="bauGruppe"><b>'+esc(t('bau.gruppe.'+g))+'</b><div>'+G[g].map(function(id){var w=BAUWZ[id];
@@ -231,7 +268,7 @@ var wahlLaeuft=false;
 function startWaehlen(){if(wahlLaeuft)return;wahlLaeuft=true;fpWahl=true;$('fpKnopf').disabled=true;var tempo=KERN.zustand.tempo;if(tempo)KERN.befehl('tempo',0);$('weltInfo').textContent=t('welt.wahl');
  new Promise(function(ok,no){if(window.AT3STARTWAHL)return ok();var s=document.createElement('script');s.src='startwahl.js?v='+V;s.onload=ok;s.onerror=function(){no(new Error('startwahl.js'))};document.head.appendChild(s)})
  .then(function(){return window.AT3STARTWAHL.zeigen({t:t,karte:KARTE,name:WAHL&&WAHL.name})})
- .then(function(p){fpWahl=false;$('fpKnopf').disabled=false;START=[p.x,p.y];KARTE.geh(p.x+.5,p.y+.5,0);$('weltInfo').textContent=t('welt.tippen');if(tempo)KERN.befehl('tempo',tempo);window.AT3SPIEL_START=START;if(SPIELSTAND&&SPIELSTAND.platz)SPIELSTAND.speichern()})
+ .then(function(p){fpWahl=false;$('fpKnopf').disabled=false;START=[p.x,p.y];KERN.befehl('wirtschaft',{x:p.x,y:p.y});KARTE.geh(p.x+.5,p.y+.5,0);$('weltInfo').textContent=t('welt.tippen');if(tempo)KERN.befehl('tempo',tempo);window.AT3SPIEL_START=START;if(SPIELSTAND&&SPIELSTAND.platz)SPIELSTAND.speichern()})
  .catch(function(e){$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:e.message}))+'</span>'})}
 function karteText(){var m0=KARTE&&KARTE.mess;return karteText0()+(m0?' · nature '+m0.naturArten+' kinds, '+m0.naturErsatz+' grey, '+m0.natur+' baked':'')}
 function karteText0(){var m=KARTE&&KARTE.mess;if(!m)return t('mess.karteAus');var u=function(v){return(v/1000).toFixed(2)+' ms'};

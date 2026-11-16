@@ -41,6 +41,12 @@ var WEG_ARTEN={wegProbe:1};
 // Karren (G6c): karren.js hängt sich an den Bau (Pendel-Automatik: jedes Lager mit fertigem Tor bekommt einen Karren). Auftragsart „kweg“ = Wegsuche eines Karrens
 // (rechnet wie „weg“ in wegsuche.js). Ohne Lager mit Tor bleibt z.kar leer und der Fingerabdruck derselbe wie bisher.
 function KAR(){return root.AT3KARREN||(typeof module!=='undefined'&&module.exports?require('./karren.js'):null)}
+// Waren und Arbeiter (G7): waren.js = Bestände, Lieferaufträge, Material für Baustellen; personen.js = Arbeiter (Laufen, Aufgaben, Fähigkeiten). Beide nur im
+// Weltkern, eingeschaltet mit dem Befehl „wirtschaft“. Auftragsart „pweg“ = Wegsuche einer Person (rechnet wie „weg“). Ohne den Befehl bleiben z.war und z.per
+// leer, Bauen und Karren laufen wie bisher und der Fingerabdruck ist derselbe.
+function WAR(){return root.AT3WAREN||(typeof module!=='undefined'&&module.exports?require('./waren.js'):null)}
+function PERS(){return root.AT3PERS||(typeof module!=='undefined'&&module.exports?require('./personen.js'):null)}
+var WAR_ARTEN={wirtschaft:1,lieferung:1,personRolle:1};
 var BAU_ARTEN={bauBoden:1,bauEntfernen:1,bauWand:1,bauTuer:1,bauDach:1,bauHuelle:1,bauPause:1,bauAbbruch:1,bauWaende:1,bauTuerWechsel:1,bauWeg:1};   // G6a: bauWeg
 
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
@@ -58,6 +64,7 @@ function setze(z,seed,version){seed=seed>>>0;
  z.bau=null;                          // Bauen (G5a), entsteht erst mit dem ersten Bau-Befehl
  z.weg=null;                          // Wegsuche (G6b), entsteht erst mit dem ersten Befehl wegProbe
  z.kar=null;                          // Karren (G6c), entsteht erst mit dem ersten Lager mit fertigem Tor
+ z.war=null;z.per=null;                // Waren und Arbeiter (G7), entstehen erst mit dem Befehl wirtschaft
  z.offen=[];z.warte=[];return z}
 
 // ── Zufall: getrennte Ströme, Stand liegt im Zustand ──
@@ -71,7 +78,7 @@ var ARTEN={
  neu:function(w){return typeof w==='number'&&w>=0&&w<=4294967295&&w===Math.floor(w)}
 };
 function befehl(z,b){
- var pruef=b&&(ARTEN[b.art]||(RW_ARTEN[b.art]&&RW()&&RW().ARTEN[b.art])||(WS_ARTEN[b.art]&&WS()&&WS().ARTEN[b.art])||(BAU_ARTEN[b.art]&&BAU()&&BAU().ARTEN[b.art])||(WEG_ARTEN[b.art]&&WEG()&&WEG().ARTEN[b.art]));
+ var pruef=b&&(ARTEN[b.art]||(RW_ARTEN[b.art]&&RW()&&RW().ARTEN[b.art])||(WS_ARTEN[b.art]&&WS()&&WS().ARTEN[b.art])||(BAU_ARTEN[b.art]&&BAU()&&BAU().ARTEN[b.art])||(WEG_ARTEN[b.art]&&WEG()&&WEG().ARTEN[b.art])||(WAR_ARTEN[b.art]&&WAR()&&WAR().ARTEN[b.art]));
  if(!pruef)return'unbekannter Befehl';
  if(!pruef(b.wert))return'ungültiger Wert';
  if(!(b.nr===(b.nr|0)&&b.nr>=0))return'keine Laufnummer';
@@ -85,9 +92,10 @@ function anwenden(z){if(!z.warte.length)return 0;
   if(b.art==='tempo')z.tempo=b.wert;
   else if(b.art==='last')lastSetzen(z,b.wert);
   else if(b.art==='neu'){var w=z.warte,a=z.angewandt;setze(z,b.wert,z.version+1);z.warte=w;z.angewandt=a;for(var k=0;k<w.length;k++)w[k].tick=0}
-  else if(WS_ARTEN[b.art]){var g0=z.wg?z.wg.gen:0;WS().befehl(z,b.art,b.wert);if(z.wg.gen!==g0){z.bau=null;z.weg=null;z.kar=null}}   // neue Welt = Gebautes weg
+  else if(WS_ARTEN[b.art]){var g0=z.wg?z.wg.gen:0;WS().befehl(z,b.art,b.wert);if(z.wg.gen!==g0){z.bau=null;z.weg=null;z.kar=null;z.war=null;z.per=null}}   // neue Welt = Gebautes weg
   else if(BAU_ARTEN[b.art])BAU().befehl(z,b.art,b.wert,b.nr);
   else if(WEG_ARTEN[b.art])WEG().befehl(z,b.art,b.wert,b.nr);
+  else if(WAR_ARTEN[b.art])WAR().befehl(z,b.art,b.wert);
   else RW().befehl(z,b.art,b.wert);
   z.angewandt++}
  return jetzt.length}
@@ -100,7 +108,7 @@ function lastSetzen(z,n){var alt=z.e,vor=alt.length/5,e=new Int32Array(n*5);e.se
 // G6b: Aufträge haben verschiedene Fristen (Weg 20 Ticks, sonst 4), darum wird die ganze (kurze, begrenzte) Liste angesehen, nicht nur der Anfang.
 function faellig(z){var L=[];for(var i=0;i<z.offen.length;i++)if(z.offen[i].faellig<=z.tick)L.push(z.offen[i].nr);return L}
 // Rechnung eines Auftrags (läuft im Helfer oder, ohne Helfer, im Weltkern). Nur ganze Zahlen.
-function auftragRechnen(a){if(WG_AUFTRAG[a.art])return WG().rechnen(a);if(a.art==='weg'||a.art==='kweg')return SUCHE().rechnen(a);if(a.art!=='probe')return RW().rechnen(a);var v=(a.ein^0x5bd1e995)>>>0||1;for(var i=0;i<a.runden;i++)v=dreh(v);return v|0}
+function auftragRechnen(a){if(WG_AUFTRAG[a.art])return WG().rechnen(a);if(a.art==='weg'||a.art==='kweg'||a.art==='pweg')return SUCHE().rechnen(a);if(a.art!=='probe')return RW().rechnen(a);var v=(a.ein^0x5bd1e995)>>>0||1;for(var i=0;i<a.runden;i++)v=dreh(v);return v|0}
 
 // ── Ein Tick. holen(nr) liefert das Ergebnis eines fälligen Auftrags. Gibt die neu vergebenen Aufträge zurück. ──
 function schritt(z,holen){
@@ -108,7 +116,7 @@ function schritt(z,holen){
  var i,o=z.offen,n=0,F=[];
  for(i=0;i<o.length;i++)if(o[i].faellig<=z.tick)F.push(o[i]);
  if(F.length){F.sort(function(a,b){return a.nr-b.nr});z.offen=o=o.filter(function(q){return q.faellig>z.tick})}
- for(n=0;n<F.length;n++){var q=F[n];if(WG_AUFTRAG[q.art])WS().uebernehmen(z,q,holen(q.nr));else if(q.art==='weg')WEG().uebernehmen(z,q,holen(q.nr));else if(q.art==='kweg'){if(KAR())KAR().uebernehmen(z,q,holen(q.nr))}else if(q.art)RW().uebernehmen(z,q,holen(q.nr));else z.fern[q.region]=holen(q.nr)|0}     // feste Reihenfolge: Auftragsnummer
+ for(n=0;n<F.length;n++){var q=F[n];if(WG_AUFTRAG[q.art])WS().uebernehmen(z,q,holen(q.nr));else if(q.art==='weg')WEG().uebernehmen(z,q,holen(q.nr));else if(q.art==='kweg'){if(KAR())KAR().uebernehmen(z,q,holen(q.nr))}else if(q.art==='pweg'){if(PERS())PERS().uebernehmen(z,q,holen(q.nr))}else if(q.art)RW().uebernehmen(z,q,holen(q.nr));else z.fern[q.region]=holen(q.nr)|0}     // feste Reihenfolge: Auftragsnummer
  var e=z.e,N=z.last,p,x,y,d,s,r;
  for(i=0;i<N;i++){p=i*5;x=e[p];y=e[p+1];
   d=e[p+2]-x;x+=d>TEMPO_V?TEMPO_V:d<-TEMPO_V?-TEMPO_V:d;d=e[p+3]-y;y+=d>TEMPO_V?TEMPO_V:d<-TEMPO_V?-TEMPO_V:d;
@@ -121,6 +129,7 @@ function schritt(z,holen){
  if(z.rw)RW().ausgeben(z,neuL);
  if(z.wg)WS().ausgeben(z,neuL);
  if(z.bau)BAU().schritt(z);
+ if(z.war){WAR().schritt(z);PERS().schritt(z,neuL)}      // G7: nach dem Bau (sehen fertige Lager und Baustellen dieses Ticks), vor den Karren
  if(z.bau&&KAR())KAR().schritt(z,neuL);              // G6c: Karren nach dem Bau (sehen die Änderungen dieses Ticks)
  if(z.weg)WEG().ausgeben(z,neuL);                    // G6b: nach dem Bau, damit das Paket alle Änderungen dieses Ticks sieht
  z.tick++;return neuL}
@@ -135,6 +144,8 @@ function abdruck(z){var h=0x811c9dc5,i;function f(v){h=Math.imul(h^(v&255),0x010
  if(z.bau)BAU().abdruck(z.bau,f);
  if(z.weg)WEG().abdruck(z.weg,f);
  if(z.kar)KAR().abdruck(z.kar,f);
+ if(z.war)WAR().abdruck(z.war,f);
+ if(z.per)PERS().abdruck(z.per,f);
  return('0000000'+(h>>>0).toString(16)).slice(-8)}
 
 // ── Spielstand (G3): Zustand an einer Tickgrenze als einfache Zahlenlisten (JSON-tauglich) und zurück ──
@@ -144,12 +155,12 @@ function abdruck(z){var h=0x811c9dc5,i;function f(v){h=Math.imul(h^(v&255),0x010
 // Erde und Kartenstücke entstehen beim Laden neu aus dem Seed. stand.ganz=false meldet, dass etwas davon nicht exakt gesichert ist.
 var STAND=1;
 function stand(z){var off=[],ganz=!z.rw,i;
- for(i=0;i<z.offen.length;i++){var o=z.offen[i];if(o.art){if(!((o.art==='gelaende'&&z.wg)||(o.art==='weg'&&z.weg)||(o.art==='kweg'&&z.kar)))ganz=false;continue}off.push([o.nr,o.region,o.faellig,o.ein|0,o.runden|0])}
+ for(i=0;i<z.offen.length;i++){var o=z.offen[i];if(o.art){if(!((o.art==='gelaende'&&z.wg)||(o.art==='weg'&&z.weg)||(o.art==='kweg'&&z.kar)||(o.art==='pweg'&&z.per)))ganz=false;continue}off.push([o.nr,o.region,o.faellig,o.ein|0,o.runden|0])}
  if(z.wg&&!WS().exakt(z.wg))ganz=false;
  return{format:STAND,ganz:ganz,seed:z.seed>>>0,tick:z.tick,tempo:z.tempo,last:z.last,auftragNr:z.auftragNr,angewandt:z.angewandt,
   zufall:Array.from(z.zufall),fern:Array.from(z.fern),e:Array.from(z.e),offen:off,
   warte:z.warte.map(function(b){return[b.nr,b.tick,b.art,b.wert]}),
-  welt:z.wg?WS().stand(z.wg,z):null,bau:z.bau?BAU().stand(z.bau):null,weg:z.weg?WEG().stand(z.weg,z):null,kar:z.kar?KAR().stand(z.kar,z):null}}
+  welt:z.wg?WS().stand(z.wg,z):null,bau:z.bau?BAU().stand(z.bau):null,weg:z.weg?WEG().stand(z.weg,z):null,kar:z.kar?KAR().stand(z.kar,z):null,war:z.war?WAR().stand(z.war):null,per:z.per?PERS().stand(z.per,z):null}}
 // Prüft streng (fremde oder kaputte Stände werden abgelehnt, nicht halb geladen). Gibt {z, auftraege} oder {fehler} zurück.
 function ausStand(d,version){
  function ganzZ(v,min,max){return typeof v==='number'&&v===Math.floor(v)&&v>=min&&v<=max}
@@ -159,16 +170,17 @@ function ausStand(d,version){
  if(!U32(d.seed)||!ganzZ(d.tick,0,MAXT)||!ARTEN.tempo(d.tempo)||!ARTEN.last(d.last)||!ganzZ(d.auftragNr,0,MAXT)||!ganzZ(d.angewandt,0,MAXT))return{fehler:'Kopfwerte'};
  if(!liste(d.zufall,STROEME.length,function(v){return U32(v)&&v>0})||!liste(d.fern,FERN,I32)||!liste(d.e,d.last*5,I32))return{fehler:'Zahlenfelder'};
  if(!liste(d.offen,-1,function(o){return Array.isArray(o)&&o.length===5&&ganzZ(o[0],0,d.auftragNr-1)&&ganzZ(o[1],0,FERN-1)&&ganzZ(o[2],0,MAXT)&&I32(o[3])&&ganzZ(o[4],0,MAXT)})||d.offen.length>MAX_SCHLANGE)return{fehler:'offene Aufträge'};
- if(!liste(d.warte,-1,function(b){return Array.isArray(b)&&b.length===4&&((ARTEN[b[2]]&&ARTEN[b[2]](b[3]))||(BAU_ARTEN[b[2]]&&BAU()&&BAU().ARTEN[b[2]](b[3]))||(WEG_ARTEN[b[2]]&&WEG()&&WEG().ARTEN[b[2]](b[3])))&&ganzZ(b[0],0,MAXT)&&ganzZ(b[1],0,MAXT)})||d.warte.length>MAX_WARTE)return{fehler:'wartende Befehle'};
+ if(!liste(d.warte,-1,function(b){return Array.isArray(b)&&b.length===4&&((ARTEN[b[2]]&&ARTEN[b[2]](b[3]))||(BAU_ARTEN[b[2]]&&BAU()&&BAU().ARTEN[b[2]](b[3]))||(WEG_ARTEN[b[2]]&&WEG()&&WEG().ARTEN[b[2]](b[3]))||(WAR_ARTEN[b[2]]&&WAR()&&WAR().ARTEN[b[2]](b[3])))&&ganzZ(b[0],0,MAXT)&&ganzZ(b[1],0,MAXT)})||d.warte.length>MAX_WARTE)return{fehler:'wartende Befehle'};
  var z=neu(d.seed,version);
  z.tick=d.tick;z.tempo=d.tempo;z.last=d.last;z.auftragNr=d.auftragNr;z.angewandt=d.angewandt;
  z.zufall=Uint32Array.from(d.zufall);z.fern=Int32Array.from(d.fern);z.e=Int32Array.from(d.e);
  z.warte=d.warte.map(function(b){return{nr:b[0],tick:b[1],art:b[2],wert:b[3]}});
  if(d.bau){z.bau=BAU()&&BAU().ausStand(d.bau);if(!z.bau)return{fehler:'Bau'}}
+ if(d.war){z.war=WAR()&&WAR().ausStand(d.war);if(!z.war)return{fehler:'Waren'}}      // G7: Personen (per) kommen nach der Welt (personen.js ausStand)
  var auftraege=[];z.offen=d.offen.map(function(o){
   auftraege.push({nr:o[0],version:z.version,vorrang:0,art:'probe',region:o[1],ein:o[3],runden:o[4],faellig:o[2]});
   return{nr:o[0],region:o[1],faellig:o[2],ein:o[3],runden:o[4]}});
- return{z:z,auftraege:auftraege,welt:d.welt||null,weg:d.weg||null,kar:d.kar||null}}
+ return{z:z,auftraege:auftraege,welt:d.welt||null,weg:d.weg||null,kar:d.kar||null,per:d.per||null}}
 
 // ── Verteiler: wartende Aufträge (nach Vorrang, dann Nummer), Ergebnisse je Nummer, Veraltetes wird verworfen. Begrenzt. ──
 function verteiler(max){max=max||MAX_SCHLANGE;var schlange=[],fertig={},version=1,nFertig=0;
@@ -183,7 +195,7 @@ function verteiler(max){max=max||MAX_SCHLANGE;var schlange=[],fertig={},version=
   verwerfen:function(neueVersion){version=neueVersion;schlange=[];fertig={};nFertig=0},
   version:function(){return version},laenge:function(){return schlange.length},fertige:function(){return nFertig},max:max}}
 
-var K={BAU_ARTEN:BAU_ARTEN,WEG_ARTEN:WEG_ARTEN,RW_ARTEN:RW_ARTEN,WS_ARTEN:WS_ARTEN,WG_AUFTRAG:WG_AUFTRAG,TICKS:TICKS,STROEME:STROEME,MAX_LAST:MAX_LAST,MAX_WARTE:MAX_WARTE,FELD:FELD,RAND:RAND,FERN:FERN,JE_TICK:JE_TICK,FRIST:FRIST,MAX_SCHLANGE:MAX_SCHLANGE,
+var K={WAR_ARTEN:WAR_ARTEN,BAU_ARTEN:BAU_ARTEN,WEG_ARTEN:WEG_ARTEN,RW_ARTEN:RW_ARTEN,WS_ARTEN:WS_ARTEN,WG_AUFTRAG:WG_AUFTRAG,TICKS:TICKS,STROEME:STROEME,MAX_LAST:MAX_LAST,MAX_WARTE:MAX_WARTE,FELD:FELD,RAND:RAND,FERN:FERN,JE_TICK:JE_TICK,FRIST:FRIST,MAX_SCHLANGE:MAX_SCHLANGE,
  neu:neu,zufall:zufall,zufallBis:zufallBis,befehl:befehl,anwenden:anwenden,faellig:faellig,auftragRechnen:auftragRechnen,schritt:schritt,abdruck:abdruck,
  verteiler:verteiler,stand:stand,ausStand:ausStand,STAND:STAND};
 if(typeof module!=='undefined'&&module.exports)module.exports=K;else root.AT3KERN=K;

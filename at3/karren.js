@@ -27,7 +27,8 @@ function SU(){return root.AT3WEG||(typeof module!=='undefined'&&module.exports?r
 function WE(){return root.AT3WEGSTROM||(typeof module!=='undefined'&&module.exports?require('./wegstrom.js'):null)}
 function BG(){return root.AT3BEGEH||(typeof module!=='undefined'&&module.exports?require('./begehbar.js'):null)}
 function BAU(){return root.AT3BAU||(typeof module!=='undefined'&&module.exports?require('./bau.js'):null)}
-var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, STAND=2;
+function WAR(){return root.AT3WAREN||(typeof module!=='undefined'&&module.exports?require('./waren.js'):null)}
+var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, STAND=2, STAND3=3;   // G7: Form 3 (nur wenn die Wirtschaft läuft) = dazu Fracht und Ziel-Lager je Karren; Form 1 und 2 werden weiter gelesen
 var MAX_K=64, JE_TICK=2, FRIST=20, PRUEF=20, HALT_LADE=60, HALT_STR=20, WIEDER=200, MAX_VERSUCH=4, WARTE_GRUND=60, ALT=100;   // Vorschlagswerte (Ticks: 20 = 1 s); ALT = Vorrang nach 5 s (Thomas)
 var LEN_O=256000, LEN_D=362039, VF=128;      // Feldlänge gerade/schräg in 1/1000 von 1/256 Feld; je Tick Tempo × 128 → Tempo 100 = 1 Feld/s
 var Z_SUCHT=0, Z_FAEHRT=1, Z_HAELT=2, Z_STEHT=3, ZUST=['seeks','drives','halts','stuck'];
@@ -61,9 +62,9 @@ function abgleich(z){var b=z.bau,L=[],g=z.kar,i;
  var M=new Map();for(i=0;i<L.length;i++)M.set(L[i].raum,L[i]);
  for(i=g.k.length-1;i>=0;i--){var c=g.k[i],e=M.get(c.raum);if(!e){loesen(g,c);g.k.splice(i,1);continue}c.lx=e.lx;c.ly=e.ly;M.delete(c.raum)}
  for(i=0;i<L.length&&g.k.length<MAX_K;i++){var e2=L[i];if(!M.has(e2.raum))continue;var k=fk(e2.lx,e2.ly);if(g.bel.has(k))continue;
-  var c2=karren(g.nr++,e2.raum,e2.lx,e2.ly);g.k.push(c2);g.bel.set(k,c2.id)}}
+  var c2=karren(g.nr++,e2.raum,e2.lx,e2.ly);if(z.war){c2.zust=Z_HAELT;c2.ziel=1;c2.t=z.tick+20}g.k.push(c2);g.bel.set(k,c2.id)}}
 function karren(id,raum,lx,ly){return{id:id,raum:raum,lx:lx,ly:ly,x:lx,y:ly,nx:-1,ny:-1,sub:0,len:0,ziel:0,zust:Z_SUCHT,t:0,i:0,ab:0,job:-1,versuch:0,grund:0,warte:0,dir:0,
- voll:0,ende:0,sx:-1,sy:-1,pf:null,tp:null,keys:[],rs:[],alt:0,eng:null}}
+ voll:0,ende:0,sx:-1,sy:-1,pf:null,tp:null,keys:[],rs:[],alt:0,eng:null,fracht:0,zx:-1,zy:-1}}
 function loesen(g,c){if(g.bel.get(fk(c.x,c.y))===c.id)g.bel.delete(fk(c.x,c.y));if(c.nx>=0&&g.bel.get(fk(c.nx,c.ny))===c.id)g.bel.delete(fk(c.nx,c.ny));frei(g,c,-1)}
 
 // ── G6c2 Reservierungen: c.rs = [Feld, Code, …], g.res = Feld → [Karren, Code, …] ──
@@ -160,7 +161,7 @@ function schluessel(pf){var S=new Set(),n=pf.length>>1;for(var i=0;i<n;i++){var 
  return Array.from(S)}
 function veraltet(z,c){var wt=z.bau.wt;for(var i=0;i<c.keys.length;i++){var t=wt.get(c.keys[i]);if(t!==undefined&&t>c.ab)return true}return false}
 // Rest des Wegs ab Feld i im jetzigen Zustand noch befahrbar? Wie wegstrom.gilt (Kopie für eine Feldliste). Fehlt ein Kartenstück: nein.
-function gilt(z,pf,i0){var w=z.wg,B=BG(),M=new Map(),seed=w.seed>>>0,n=pf.length>>1,p=1;
+function gilt(z,pf,i0,pp){var w=z.wg,B=BG(),M=new Map(),seed=w.seed>>>0,n=pf.length>>1,p=pp===0?0:1;   // G7: pp = 0 prüft für Fußgänger (personen.js)
  function hole(cx,cy){return w.stuecke.get(umS(cx)*8192+cy)||null}
  function holeB(cx,cy){var k=umS(cx)*8192+cy;if(!M.has(k))M.set(k,BAU().stueck(z.bau,k));return M.get(k)}
  function sch(X,Y,s){return B.schritt(hole,holeB,seed,X,Y,s,p)>0}
@@ -177,11 +178,39 @@ function umdrehen(g,c){var n=c.pf.length>>1,p=new Int32Array(n*2),t=new Uint8Arr
   if(m>=2&&p[(m-2)*2]===X&&p[(m-2)*2+1]===Y){m--;continue}p[m*2]=X;p[m*2+1]=Y;t[m]=c.tp[n-1-i];m++}
  c.pf=m===n?p:p.slice(0,m*2);c.tp=m===n?t:t.slice(0,m);c.keys=schluessel(c.pf);c.i=0;c.nx=-1;c.sub=0;c.zust=Z_FAEHRT;c.eng=null;frei(g,c,fk(c.x,c.y))}
 function suchen(g,c){c.zust=Z_SUCHT;c.alt=0;c.job=-1;c.pf=null;c.tp=null;c.keys=[];c.i=0;c.versuch=0;c.eng=null;frei(g,c,fk(c.x,c.y))}
-function stehen(z,c,grund){c.zust=Z_STEHT;c.alt=0;c.grund=grund;c.t=z.tick+WIEDER;c.pf=null;c.tp=null;c.keys=[];c.job=-1;c.eng=null;frei(z.kar,c,fk(c.x,c.y))}
+function stehen(z,c,grund){if(z.war&&c.ziel===2)frachtAuf(z,c);c.zust=Z_STEHT;c.alt=0;c.grund=grund;c.t=z.tick+WIEDER;c.pf=null;c.tp=null;c.keys=[];c.job=-1;c.eng=null;frei(z.kar,c,fk(c.x,c.y))}
 function ankunft(z,c){c.zust=Z_HAELT;c.warte=0;c.alt=0;
  if(c.ziel===0){c.sx=c.x;c.sy=c.y;c.t=z.tick+HALT_STR}
  else c.t=z.tick+HALT_LADE}
+// ── G7 Fracht (nur wenn die Wirtschaft läuft, z.war): Karren pendeln nicht mehr leer. Zu Hause an der Ladestelle nimmt der Karren den ältesten Karren-Auftrag
+// seines Lagers (waren.js fuerKarren), lädt sofort, fährt zum Besucherplatz des Ziel-Lagers (ziel 2: zx, zy), hält dort wie an der Ladestelle (3 s), liefert ab
+// und fährt den umgedrehten Weg heim. Ohne Auftrag wartet er zu Hause und schaut jede Sekunde nach. Kein Weg oder Ziel weg: Auftrag endet, die Ware kommt
+// zurück ins eigene Lager. ──
+// Besucherplatz eines Lagers mit fertigem Tor: ein Lagerfeld neben oder hinter dem Feld am Tor, das nicht die Ladestelle des eigenen Karrens ist; sonst das Feld am Tor
+function besuch(z,r){if(!r||r.art!==1)return null;var e=einfahrt(z,r);if(!e)return null;var B=BAU(),id=r.id,Q=[r.hx,r.hy],ges=new Set([fk(r.hx,r.hy)]),i,s;
+ for(i=0;i<Q.length;i+=2){var X=Q[i],Y=Q[i+1];
+  for(s=0;s<4;s++){var nx=umX(X+DX[s]),ny=Y+DY[s];if(ny<0||ny>=WY)continue;
+   if(imRaum(z,nx,ny,id)){var k=fk(nx,ny);if(!ges.has(k)&&ges.size<B.MAX_RAUM){ges.add(k);Q.push(nx,ny)}continue}
+   var t=B.kante(z,X,Y,s);if(!t||t.typ!==B.K_TOR||t.zustand!==B.Z_FERTIG)continue;
+   var sw=s===0||s===2?[1,3]:[0,2],L=[[X+DX[sw[0]],Y+DY[sw[0]]],[X+DX[sw[1]],Y+DY[sw[1]]],[X+DX[(s+2)&3],Y+DY[(s+2)&3]],[X,Y]];
+   for(var j=0;j<L.length;j++){var bx=umX(L[j][0]),by=L[j][1];if(by>=0&&by<WY&&imRaum(z,bx,by,id)&&!(bx===e.lx&&by===e.ly))return{raum:id,bx:bx,by:by}}
+   return null}}
+ return null}
+function frachtAuf(z,c){var W=WAR(),o=c.fracht?W.finde(z.war,c.fracht):null;if(o&&o.tt===W.T_KARREN&&o.ti===c.id)W.abbrechen(z,o);c.fracht=0;c.ziel=1;c.zx=-1;c.zy=-1}
+function frachtWeiter(z,c){var W=WAR(),g=z.kar,o;
+ if(c.ziel===2){o=c.fracht?W.finde(z.war,c.fracht):null;
+  if(o&&o.tt===W.T_KARREN&&o.ti===c.id){if(c.x===c.zx&&c.y===c.zy)W.abliefern(z,o);else W.abbrechen(z,o)}
+  c.fracht=0;c.ziel=1;c.zx=-1;c.zy=-1;
+  if(c.pf&&c.pf.length>=4&&c.pf[0]===c.lx&&c.pf[1]===c.ly)umdrehen(g,c);else suchen(g,c);return}
+ if(!(c.x===c.lx&&c.y===c.ly)){c.ziel=1;suchen(g,c);return}
+ W.heimAb(z,c.id,c.raum);c.fracht=0;c.ziel=1;
+ o=W.fuerKarren(z,c.raum);
+ if(o){var P=besuch(z,z.bau.raeume.get(o.ni));
+  if(P&&W.aufnehmen(z,o,W.T_KARREN,c.id,c.lx,c.ly)){c.fracht=o.nr;c.ziel=2;c.zx=P.bx;c.zy=P.by;suchen(g,c);return}
+  W.abbrechen(z,o)}
+ c.zust=Z_HAELT;c.t=z.tick+20}
 function weiter(z,c){                     // nach dem Halten: umgedrehter Weg, wenn er Ladestelle und Straße verbindet; sonst neu suchen
+ if(z.war){frachtWeiter(z,c);return}
  var g=z.kar,amZiel=c.ziel===1&&!(c.x===c.lx&&c.y===c.ly);
  if(amZiel){suchen(g,c);return}            // Ladestelle verlegt oder Halt woanders: erst zur Ladestelle
  c.ziel=c.ziel===0?1:0;
@@ -217,7 +246,7 @@ function bewegen(z,g,c){
  if(c.sub>=c.len){if(g.bel.get(fk(c.x,c.y))===c.id)g.bel.delete(fk(c.x,c.y));gib(g,c,fk(c.x,c.y));c.x=c.nx;c.y=c.ny;c.nx=-1;c.ny=-1;c.sub=0;c.i++}}
 
 // Wegauftrag: Fenster um das jetzige Feld, Ziel Straße (Anschluss) oder Ladestelle (naher Weg), Tempo je Feld zurück
-function auftrag(z,c,nr,faellig,ab,versuch){var w=z.wg,b=z.bau,x1=c.ziel===0?c.x:c.lx,y1=c.ziel===0?c.y:c.ly,e={x0:c.x,y0:c.y,x1:x1,y1:y1},f=WE().fenster(e);
+function auftrag(z,c,nr,faellig,ab,versuch){var w=z.wg,b=z.bau,x1=c.ziel===0?c.x:c.ziel===2?c.zx:c.lx,y1=c.ziel===0?c.y:c.ziel===2?c.zy:c.ly,e={x0:c.x,y0:c.y,x1:x1,y1:y1},f=WE().fenster(e);
  var pk=SU().paket(f.cx0,f.cy0,function(k){return w.stuecke.get(k)||null},function(k){return BAU().stueck(b,k)},w.ans);
  var o={nr:nr,art:'kweg',kid:c.id,x0:c.x,y0:c.y,x1:x1,y1:y1,ziel:c.ziel,faellig:faellig,ab:ab,versuch:versuch,gen:w.gen,keys:f.keys};
  var a={nr:nr,version:z.version,vorrang:0,art:'kweg',faellig:faellig,p:1,x0:c.x,y0:c.y,x1:x1,y1:y1,cx0:f.cx0,cy0:f.cy0,seed:w.seed>>>0,gen:w.gen,fern:false,
@@ -226,6 +255,7 @@ function auftrag(z,c,nr,faellig,ab,versuch){var w=z.wg,b=z.bau,x1=c.ziel===0?c.x
 function ausgeben(z,g,neuL){var w=z.wg,n=0;if(!w||!w.ans)return;
  for(var i=0;i<g.k.length&&n<JE_TICK;i++){var c=g.k[i];if(c.zust!==Z_SUCHT||c.job>=0)continue;
   if(c.ziel===1&&!WE().nah({x0:c.x,y0:c.y,x1:c.lx,y1:c.ly})){stehen(z,c,2);continue}
+  if(c.ziel===2&&!WE().nah({x0:c.x,y0:c.y,x1:c.zx,y1:c.zy})){stehen(z,c,2);continue}
   var j=auftrag(z,c,z.auftragNr++,z.tick+FRIST,z.tick,c.versuch);c.job=j.o.nr;z.offen.push(j.o);neuL.push(j.a);n++}}
 
 // Übernahme an der Tickgrenze (kern.js, Reihenfolge der Auftragsnummer)
@@ -240,8 +270,9 @@ function uebernehmen(z,o,r){var g=z.kar;if(!g||!z.wg||o.gen!==z.wg.gen)return;va
  var wt=z.bau.wt,alt=false;for(i=0;i<o.keys.length;i++){var t=wt.get(o.keys[i]);if(t!==undefined&&t>o.ab){alt=true;break}}
  if(alt&&!gilt(z,pf,0)){c.versuch++;if(c.versuch>MAX_VERSUCH)stehen(z,c,8);return}
  c.versuch=0;if(c.ziel===0)c.ende=r[7]===2?1:0;
- c.voll=c.ziel===0?(pf[0]===c.lx&&pf[1]===c.ly?1:0):(pf[0]===c.sx&&pf[1]===c.sy&&pf[nF*2-2]===c.lx&&pf[nF*2-1]===c.ly?1:0);
+ c.voll=c.ziel===2?0:c.ziel===0?(pf[0]===c.lx&&pf[1]===c.ly?1:0):(pf[0]===c.sx&&pf[1]===c.sy&&pf[nF*2-2]===c.lx&&pf[nF*2-1]===c.ly?1:0);
  if(c.ziel===1&&(pf[nF*2-2]!==c.lx||pf[nF*2-1]!==c.ly)){stehen(z,c,1);return}
+ if(c.ziel===2&&(pf[nF*2-2]!==c.zx||pf[nF*2-1]!==c.zy)){stehen(z,c,1);return}
  setzePfad(g,c,pf,tp,alt?z.tick:o.ab);if(nF===1)ankunft(z,c)}
 
 // ── Fingerabdruck, Nachricht an den Hauptkern ──
@@ -249,7 +280,8 @@ function pruef(a){var h=0x811c9dc5;for(var i=0;i<a.length;i++){h=Math.imul(h^(a[
 var FELDER=['id','raum','lx','ly','x','y','nx','ny','sub','len','ziel','zust','t','i','ab','job','versuch','grund','warte','dir','voll','ende','sx','sy'];
 function abdruck(g,f){f(g.nr);f(g.k.length);for(var i=0;i<g.k.length;i++){var c=g.k[i];for(var j=0;j<FELDER.length;j++)f(c[FELDER[j]]);
  f(c.pf?c.pf.length:0);if(c.pf){f(pruef(c.pf));f(pruef(c.tp))}
- f(c.alt);if(c.rs.length){f(c.rs.length);for(j=0;j<c.rs.length;j+=2){f(Math.floor(c.rs[j]/WY));f(c.rs[j]%WY);f(c.rs[j+1])}}}}
+ f(c.alt);if(c.rs.length){f(c.rs.length);for(j=0;j<c.rs.length;j+=2){f(Math.floor(c.rs[j]/WY));f(c.rs[j]%WY);f(c.rs[j+1])}}
+  if(c.fracht||c.zx>=0){f(c.fracht);f(c.zx);f(c.zy)}}}   // G7: Fracht nur, wenn es eine gibt (sonst Fingerabdruck wie bisher)
 // Je Karren 7 Zahlen: Nummer, Lage x und y in 1/256 Feld (Mitte des Felds = +128), Richtung, Zustand, Grund, Wartezeit in Ticks. Zwischenlage nach dem Fortschritt.
 var MELD=7;
 function meld(g){var n=g.k.length,a=new Int32Array(1+n*MELD);a[0]=n;
@@ -260,15 +292,16 @@ function meld(g){var n=g.k.length,a=new Int32Array(1+n*MELD);a[0]=n;
 
 // ── Spielstand: Karren mit Weg und laufende Wegaufträge (werden nach dem Laden mit gleicher Nummer und Fälligkeit neu gepackt); bel wird abgeleitet ──
 function stand(g,z){var lauf=[];for(var i=0;i<z.offen.length;i++){var o=z.offen[i];if(o.art==='kweg'&&z.wg&&o.gen===z.wg.gen)lauf.push([o.nr,o.kid,o.faellig,o.ab,o.versuch])}
- return{format:STAND,nr:g.nr,k:g.k.map(function(c){var a=FELDER.map(function(f){return c[f]});a.push(c.pf?Array.from(c.pf):null,c.tp?Array.from(c.tp):null,c.rs.slice(),c.alt);return a}),lauf:lauf}}
+ var v3=!!z.war;return{format:v3?STAND3:STAND,nr:g.nr,k:g.k.map(function(c){var a=FELDER.map(function(f){return c[f]});a.push(c.pf?Array.from(c.pf):null,c.tp?Array.from(c.tp):null,c.rs.slice(),c.alt);if(v3)a.push(c.fracht,c.zx,c.zy);return a}),lauf:lauf}}
 function G(v,min,max){return typeof v==='number'&&v===Math.floor(v)&&v>=min&&v<=max}
 // Nach dem Laden der Welt (weltstrom.ausStand) aufrufen. Gibt die neu zu vergebenden Aufträge zurück oder null (ungültig).
 function ausStand(d,z){var M=2147483647,i,j;
- if(!d||(d.format!==STAND&&d.format!==1)||!G(d.nr,1,M)||!Array.isArray(d.k)||d.k.length>MAX_K||!Array.isArray(d.lauf)||d.lauf.length>MAX_K)return null;
+ if(!d||(d.format!==STAND3&&d.format!==STAND&&d.format!==1)||!G(d.nr,1,M)||!Array.isArray(d.k)||d.k.length>MAX_K||!Array.isArray(d.lauf)||d.lauf.length>MAX_K)return null;
  var g=neu(),N=FELDER.length;g.nr=d.nr;
- var GR={id:[1,d.nr-1],raum:[0,M],lx:[0,WX-1],ly:[0,WY-1],x:[0,WX-1],y:[0,WY-1],nx:[-1,WX-1],ny:[-1,WY-1],sub:[0,LEN_D+VF*255],len:[0,LEN_D],ziel:[0,1],zust:[0,3],t:[0,M],i:[0,1<<20],
+ var GR={id:[1,d.nr-1],raum:[0,M],lx:[0,WX-1],ly:[0,WY-1],x:[0,WX-1],y:[0,WY-1],nx:[-1,WX-1],ny:[-1,WY-1],sub:[0,LEN_D+VF*255],len:[0,LEN_D],ziel:[0,2],zust:[0,3],t:[0,M],i:[0,1<<20],
   ab:[0,M],job:[-1,M],versuch:[0,MAX_VERSUCH+1],grund:[0,GRUND.length-1],warte:[0,M],dir:[0,3],voll:[0,1],ende:[0,1],sx:[-1,WX-1],sy:[-1,WY-1]};
- for(i=0;i<d.k.length;i++){var a=d.k[i];var v2=d.format===2;if(!Array.isArray(a)||a.length!==N+(v2?4:2))return null;var c={rs:[],alt:0,eng:null};
+ for(i=0;i<d.k.length;i++){var a=d.k[i];var v2=d.format>=2,v3=d.format===3;if(!Array.isArray(a)||a.length!==N+(v3?7:v2?4:2))return null;var c={rs:[],alt:0,eng:null,fracht:0,zx:-1,zy:-1};
+  if(v3){if(!G(a[N+4],0,M)||!G(a[N+5],-1,WX-1)||!G(a[N+6],-1,WY-1))return null;c.fracht=a[N+4];c.zx=a[N+5];c.zy=a[N+6]}
   for(j=0;j<N;j++){var gr=GR[FELDER[j]];if(!G(a[j],gr[0],gr[1]))return null;c[FELDER[j]]=a[j]}
   var pf=a[N],tp=a[N+1];
   if(pf===null){if(tp!==null||c.zust===Z_FAEHRT)return null;c.pf=null;c.tp=null;c.keys=[]}
@@ -291,6 +324,6 @@ function ausStand(d,z){var M=2147483647,i,j;
 
 var KA={MAX_K:MAX_K,ALT:ALT,MELD:MELD,WARTE_GRUND:WARTE_GRUND,JE_TICK:JE_TICK,FRIST:FRIST,PRUEF:PRUEF,HALT_LADE:HALT_LADE,HALT_STR:HALT_STR,WIEDER:WIEDER,LEN_O:LEN_O,LEN_D:LEN_D,VF:VF,ZUST:ZUST,GRUND:GRUND,
  Z_SUCHT:Z_SUCHT,Z_FAEHRT:Z_FAEHRT,Z_HAELT:Z_HAELT,Z_STEHT:Z_STEHT,
- engstellen:engstellen,schritt:schritt,uebernehmen:uebernehmen,abdruck:abdruck,meld:meld,stand:stand,ausStand:ausStand,einfahrt:einfahrt,gilt:gilt};
+ engstellen:engstellen,schritt:schritt,uebernehmen:uebernehmen,abdruck:abdruck,meld:meld,stand:stand,ausStand:ausStand,einfahrt:einfahrt,gilt:gilt,besuch:besuch,schluessel:schluessel};
 if(typeof module!=='undefined'&&module.exports)module.exports=KA;else root.AT3KARREN=KA;
 })(typeof self!=='undefined'?self:this);
