@@ -6,6 +6,7 @@
 //    Ferne über Dunst-Farbtabellen der Palette, dahinter der vorbereitete Hintergrund aus fp.js (Himmel, Hügel als Horizontband).
 //    Kosten je Bild: Breite × Schritte (feste Obergrenze über die Sichtweite) + sichtbare Objekte (Obergrenze). Unabhängig von der Weltgröße.
 // 3) bewegen(...): Laufen wie eine Figur (Augenhöhe, Tempo, Wände, Wasser, zu steile Hänge, Bäume sperren ihr Feld).
+// FP1: zeichne/bewegen laufen unverändert auch auf einem Ausschnitt der echten Welt (fpausschnitt.js, gleiches Format, Farben fertig in w.farbe).
 // Einheiten: 1 Feld ≈ 3 m, Höhe in Feldern (1 Feld = 1 Geschoss = 32 Bildpunkte im AT3-64-Bild).
 (function(G){
 'use strict';
@@ -75,7 +76,8 @@ function hoehe(w,x,y){return hoeheIn(w.h,x,y)}
 
 // ---------- Farben (einmal je Welt, Palette und Muster) ----------
 // Farbe je Höhenpunkt als Palettennummer: Biom, Licht von Nordwesten (Hangneigung), mit Muster zusätzlich leichte Streuung je Punkt.
-function farben(w,S,muster){var f=new Uint8Array(M*M),N_=S.nummer,h=w.h,z=12345;
+function farben(w,S,muster){if(w.farbe)return w.farbe;   // FP1: Ausschnitt der echten Welt bringt die Farben fertig aus dem Bildkern mit (fpausschnitt.js)
+var f=new Uint8Array(M*M),N_=S.nummer,h=w.h,z=12345;
  var R={0:[6,3,0,5],1:[7,3,0,4],2:[2,4,1,7],3:[2,3,1,6],4:[0,4,2,6],5:[0,6,5,6],6:[1,3,1,5],7:[3,3,1,5],8:[1,4,2,5]};   // Reihe, Grundstufe, min, max
  for(var j=0;j<M;j++)for(var i=0;i<M;i++){var k=j*M+i,b=w.biom[k],d=R[b];
   var l=((i>0?h[k-1]:h[k])-(i<M-1?h[k+1]:h[k])+(j>0?h[k-M]:h[k])-(j<M-1?h[k+M]:h[k]))*U*.6,st=d[1]+(b===0?0:Math.max(-2,Math.min(2,Math.round(l))));
@@ -153,7 +155,7 @@ function frei(w,x0,y0,x1,y1){if(x1<1||y1<1||x1>N-1||y1>N-1)return false;
  if(ga!==fa&&wandAn(w.wandX,Math.max(ga,fa)+fb*(N+1)))return false;
  if(gb!==fb&&wandAn(w.wandY,fa+Math.max(gb,fb)*N))return false;
  if(w.sperre[Math.floor(sy)*N+Math.floor(sx)])return false;
- var k=Math.round(sy*U)*M+Math.round(sx*U);if(w.h[k]<WL&&w.biom[k]!==BIOM.steg)return false;
+ var k=Math.round(sy*U)*M+Math.round(sx*U);if((w.h[k]<WL||w.biom[k]===BIOM.wasser)&&w.biom[k]!==BIOM.steg)return false;   // FP1: Bergseen liegen über WL, zählen über das Biom
  var dh=hoehe(w,x1,y1)-hoehe(w,x0,y0),dist=Math.hypot(x1-x0,y1-y0)||1e-6;return dh/dist<=STEIL}
 function bewegen(w,cam,vor,seit,dt,auge){var ca=Math.cos(cam.a),sa=Math.sin(cam.a),mx=(vor*ca-seit*sa)*dt,my=(vor*sa+seit*ca)*dt,x=cam.x,y=cam.y;
  if(mx||my){if(frei(w,x,y,x+mx,y))x+=mx;if(frei(w,x,y,x,y+my))y+=my;cam.x=x;cam.y=y}

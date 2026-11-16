@@ -7,6 +7,7 @@
 // G4b: backt die Natur aus dem Startset (natur.js) mit ins Bodenbild und findet beim Antippen das vorderste Naturobjekt unter dem Finger.
 // W1c Runde Welt: Das Fenster der Stücke läuft in x über die Naht (hole rechnet die Stückspalte um), in y endet es am Pol.
 // G4d: Fernbilder der Stufen ⅟16 bis ⅟4096 (fernbild.js, nur aus dem Erdraster, ohne Kartenstücke) und der Globus (Frage „globus“, aus dem Erdbild der Startplatz-Wahl).
+// FP1: Frage „fp“: Ausschnitt der echten Welt für die First-Person-Ansicht (fpausschnitt.js).
 // Kerne: läuft nur als Hintergrundkern (Worker), gestartet von weltkarte.js, nie auf dem Hauptkern (Regel 13). Kein Zufall, kein Tick, keine Wirkung aufs Spiel.
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search);
@@ -27,6 +28,7 @@ function weiter(){if(!laeuft){laeuft=true;setTimeout(arbeit,0)}}
 function dunkelste(p){var b=0,bl=1e9;for(var i=0;i<p.length;i++){var c=p[i],l=(c&255)*3+((c>>8)&255)*6+((c>>16)&255);if(l<bl){bl=l;b=i}}return b}
 // G4c: Fragen der Startplatz-Wahl. Bilder gehen als Zahlenfeld zurück (klein, einmalig), der Hauptkern malt sie nur.
 function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.fehlt=true;self.postMessage(m);return}var t=performance.now();
+ if(d.frage==='fp'){fp(d,m,t);return}
  if(d.frage==='globus'){if(!TEX){TEX=SP.erdBild(A,F);TEXD=FB.dunkler(TEX,F)}var gl=FB.globus(TEX,TEXD,d.W,d.H,d.R,d.lon,d.lat,d.s,F.pal[F.dunkel]);m.w=gl.w;m.h=gl.h;m.buf=gl.px;tr.push(gl.px.buffer)}
  else if(d.frage==='erdbild'){var e=SP.erdBild(A,F);m.w=SP.GW;m.h=SP.GH;m.buf=e;tr.push(e.buffer)}
  else if(d.frage==='region'){var rx=SP.eckeX(d.zx),ry=SP.eckeY(d.zy),r=SP.regionBild(G,seed,A,rx,ry,F);m.rx=rx;m.ry=ry;m.w=m.h=SP.RP;m.rs=SP.RS;m.buf=r;tr.push(r.buffer)}
@@ -34,6 +36,15 @@ function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.f
   var x=d.x,y=d.y;if(d.frage==='zufall'){var z=SP.zufall(G,seed,A,d.r1,d.r2);if(!z){m.platz={ok:false};self.postMessage(m);return}x=z.x;y=z.y}
   PBUF=PBUF||new Uint8Array(G.GEL_BYTES);m.platz=SP.platz(G,ON,seed,A,x,y,PBUF)}
  m.us=(performance.now()-t)*1000;self.postMessage(m,tr)}
+// FP1: Ausschnitt 96 × 96 Felder um den Gladiator (fpausschnitt.js, erst beim ersten Mal geladen). Das Fenster der Stücke rückt zum Ausschnitt,
+// fehlende Stücke werden sofort gerechnet (höchstens 9), dann geht der Ausschnitt ohne Kopie an den Hauptkern.
+var FPA=null;
+function fp(d,m,t){if(!FPA){importScripts('fpausschnitt.js'+self.location.search);FPA=self.AT3FPA}
+ var L=FPA.stuecke(BB,d.ox,d.oy),mx=L[0][0]+((L[L.length-1][0]-L[0][0]+SX)%SX>>1),my=(L[0][1]+L[L.length-1][1])>>1,neu=0;kx=um(mx);ky=my;
+ st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});
+ L.forEach(function(c){var k=um(c[0])*8192+c[1];if(st.has(k))return;var b=G.ausschnitt(A,c[0],c[1],lager.pop()||new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:c[0],cy:c[1],daten:b});b._s=null;st.set(k,b);neu++});
+ var sp=new Uint8Array(NAT.ARTEN.length);(d.sperr||[]).forEach(function(id){var i=NAT.ARTEN.indexOf(id);if(i>=0)sp[i]=1});
+ var w=FPA.bauen(BB,NAT,hole,seed,d.ox,d.oy,sp,F);m.welt=w;m.arten=NAT.ARTEN;m.neu=neu;m.us=(performance.now()-t)*1000;self.postMessage(m,FPA.puffer(w));weiter()}
 function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  for(var r=0;r<MY;r++)for(var dy=-r;dy<=r;dy++)for(var dx=-r;dx<=r;dx+=(Math.abs(dy)===r?1:2*r||1)){var x=MX+dx,y=MY+dy,i=y*G.GW+x;
   if(A.ort[i]&15){var p=G.ortPunkt(seed,A,x,y);return{x:p[0],y:p[1],ort:A.ort[i]&15}}

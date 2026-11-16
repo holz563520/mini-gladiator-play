@@ -8,6 +8,7 @@
 // die Spielwelt, an den Bildkern für die Ansicht).
 // Höhe: Die Kamera folgt weich der Geländehöhe unter der Bildmitte; „was ist im Bild“ rechnet mit kleinster und größter Stufe je Block (Auskunft des Bildkerns).
 // G4b: Natur steckt schon in den Bodenbildern (vom Bildkern gebacken); hier nur die größeren Bildränder beim „was ist im Bild“ und das Weiterreichen der Bilder.
+// FP1: Solange First Person läuft (Karte versteckt), wird nichts gezeichnet und nichts angefragt; frage('fp') holt den Ausschnitt beim Bildkern.
 // G4c: neue Welt ohne Kameraort → statt automatischem Start ruft die Karte o.beiErde() (Startplatz-Wahl, startwahl.js); frage() reicht deren Fragen an den Bildkern.
 // W1c Runde Welt: Die Kamera läuft in x um (cam.x immer 0..WX−1). Gezeichnet wird jedes Kartenstück in der Lage relativ zur Kamera (Stückspalte um ganze
 // Weltbreiten verschoben), darum springt beim Wischen über die Naht nichts. Bildschlüssel und Anfragen bleiben auf die Welt bezogen (ein Bild je Ort, nichts
@@ -22,7 +23,7 @@
 // Wiederverwendet: Vorgehen von welt-raster.js/welt-gross.js aus 2.0 (Bodenkacheln mit Zeitanteil, Nachbarstufe, begrenzter Bildcache), Palette aus at3-64.js.
 (function(){
 'use strict';
-var V='6c8ab7a9', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='a542169a', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -102,7 +103,8 @@ function starten(o){
  var LISTE=[],NEBEN=[],GRUND=[],gemalt=new Set();
  function mal(b,xu,CX,CY,Z,W,H){var s=b.lod===cam.lod?1:Math.pow(2,b.lod-cam.lod),x=((xu-b.y0)*32-CX)/Z+W/2-b.ox*s,y=((xu+b.y0)*16-CY)/Z+H/2-b.oy*s;   // xu: linke Ecke des Bildes in der Lage der Kamera
   g.drawImage(b.bmp,Math.round(x),Math.round(y),b.w*s,b.h*s);b.nr=bildNr}
- function zeichnen(){geplant=false;if(tot)return;var t0=performance.now();
+ function zeichnen(){geplant=false;if(tot||cv.hidden)return;     // FP1: während First Person ist die Karte versteckt und zeichnet nichts
+var t0=performance.now();
   var cw=cv.clientWidth||320,ch=cv.clientHeight||240,f=Math.max(1,Math.ceil(Math.max(cw/MAXB,ch/MAXH))),W=Math.round(cw/f),H=Math.round(ch/f);
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
   g.imageSmoothingEnabled=false;g.fillStyle=NACHT;g.fillRect(0,0,W,H);bildNr++;

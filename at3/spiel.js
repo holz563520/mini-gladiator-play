@@ -11,9 +11,11 @@
 // Knopf „Save & quit“. Ein/Aus der Stimme steht im Spielstand. ?nosave = ohne Spielstand (Seed 1).
 // G4c: Neue Welt (oder Spielstand ohne Kameraort): Startplatz-Wahl (startwahl.js, erst dann geladen); die Uhr steht so lange, danach Kamera an den Platz,
 // Platz im Spielstand (spiel.start) und sofort gespeichert. Continue startet am gespeicherten Kameraort. ?nosave startet wie bisher am ersten Dorf.
+// FP1: Knopf „First person“ in der Karte. Erst beim ersten Antippen werden fp.js, fpwelt.js und fpspiel.js geladen; der Gladiator steht dort, wo die Karte hinschaut,
+// Antippen zeigt und spricht die Objektkarte, „Map“ führt zurück, die Karte steht dann beim Gladiator. Den Ausschnitt baut der Bildkern (fpausschnitt.js).
 (function(){
 'use strict';
-var V='6c8ab7a9', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='a542169a', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -116,15 +118,15 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
   beiFeld:function(f){window.AT3SPIEL.feld=f;if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
- $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};
+ $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};$('fpKnopf').onclick=fpUmschalten;$('fpKnopf').disabled=fpWahl;
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true}},250)}
 // ── Startplatz (G4c): Uhr anhalten, Wahl zeigen, dann Kamera hin, Platz merken, sofort speichern ──
 var wahlLaeuft=false;
-function startWaehlen(){if(wahlLaeuft)return;wahlLaeuft=true;var tempo=KERN.zustand.tempo;if(tempo)KERN.befehl('tempo',0);$('weltInfo').textContent=t('welt.wahl');
+function startWaehlen(){if(wahlLaeuft)return;wahlLaeuft=true;fpWahl=true;$('fpKnopf').disabled=true;var tempo=KERN.zustand.tempo;if(tempo)KERN.befehl('tempo',0);$('weltInfo').textContent=t('welt.wahl');
  new Promise(function(ok,no){if(window.AT3STARTWAHL)return ok();var s=document.createElement('script');s.src='startwahl.js?v='+V;s.onload=ok;s.onerror=function(){no(new Error('startwahl.js'))};document.head.appendChild(s)})
  .then(function(){return window.AT3STARTWAHL.zeigen({t:t,karte:KARTE,name:WAHL&&WAHL.name})})
- .then(function(p){START=[p.x,p.y];KARTE.geh(p.x+.5,p.y+.5,0);$('weltInfo').textContent=t('welt.tippen');if(tempo)KERN.befehl('tempo',tempo);window.AT3SPIEL_START=START;if(SPIELSTAND&&SPIELSTAND.platz)SPIELSTAND.speichern()})
+ .then(function(p){fpWahl=false;$('fpKnopf').disabled=false;START=[p.x,p.y];KARTE.geh(p.x+.5,p.y+.5,0);$('weltInfo').textContent=t('welt.tippen');if(tempo)KERN.befehl('tempo',tempo);window.AT3SPIEL_START=START;if(SPIELSTAND&&SPIELSTAND.platz)SPIELSTAND.speichern()})
  .catch(function(e){$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:e.message}))+'</span>'})}
 function karteText(){var m0=KARTE&&KARTE.mess;return karteText0()+(m0?' · nature '+m0.naturArten+' kinds, '+m0.naturErsatz+' grey, '+m0.natur+' baked':'')}
 function karteText0(){var m=KARTE&&KARTE.mess;if(!m)return t('mess.karteAus');var u=function(v){return(v/1000).toFixed(2)+' ms'};
@@ -146,7 +148,7 @@ function bilderMessen(){var L=[],letzt=null,ende=performance.now()+3000;
  return new Promise(function(ok){function f(ts){if(letzt!=null)L.push(ts-letzt);letzt=ts;if(ts<ende)requestAnimationFrame(f);else ok(L)}requestAnimationFrame(f)})
   .then(function(L){mess.p95=quantil(L,.95);mess.p99=quantil(L,.99);mess.bildzahl=L.length})}
 function istWert(id){return{download:mess.download,erstesBild:mess.erstesBildMs,bildPc:mess.p95,bildHandy:mess.p95,bild99:mess.p99,lang:mess.langGemeldet?(mess.langMs||0):undefined,weltTick:KERN&&KERN.zustand.laeuft&&KERN.zustand.gesamt>=20?KERN.zustand.p95Us/1000:null,spielstand:SPIELSTAND&&SPIELSTAND.mal?SPIELSTAND.bytes:null,
- speicher:performance.memory?performance.memory.usedJSHeapSize:undefined,bilder:mess.bilder+(KARTE?KARTE.mess.maxBytes:0),backzeit:KARTE&&KARTE.mess.rechenN>=10?quantil(KARTE.mess.rechenL,.95)/1000:null}[id]}
+ speicher:performance.memory?performance.memory.usedJSHeapSize:undefined,bilder:mess.bilder+(KARTE?KARTE.mess.maxBytes:0),backzeit:KARTE&&KARTE.mess.rechenN>=10?quantil(KARTE.mess.rechenL,.95)/1000:null,fpBild:window.AT3FP&&window.AT3FP.mess().bilder>=10?window.AT3FP.mess().p95:null}[id]}
 function zahl(v,e){if(e==='B')return v<1048576?(v/1024).toFixed(1)+' KB':(v/1048576).toFixed(1)+' MB';return(v<100?v.toFixed(1):Math.round(v))+' ms'}
 function budgetListe(){if(!BUDGETS)return[];return BUDGETS.budgets.map(function(b){var v=istWert(b.id),st;
  if(v===undefined)st='grau';else if(v===null)st='offen';else st=v<=b.ziel?'gut':'schlecht';return{id:b.id,was:t(b.text),ziel:zahl(b.ziel,b.einheit),ist:v==null?null:zahl(v,b.einheit),st:st,v:v,zielWert:b.ziel}})}
@@ -155,7 +157,7 @@ function messZeigen(){var L=budgetListe(),h='<table><tr><th>'+t('mess.spalteWas'
   h+='<tr data-budget="'+r.id+'"><td>'+esc(r.was)+'</td><td>'+r.ziel+'</td><td class="'+(r.st==='gut'?'gut':r.st==='schlecht'?'schlecht':'grau')+'">'+esc(ist)+'</td></tr>'});
  h+='</table><p class="'+(mess.fremd.length?'schlecht':'gut')+'">'+esc(t('mess.fremd',{n:mess.fremd.length}))+'</p>'+
   '<p class="'+(mess.geschrieben?'schlecht':'gut')+'">'+esc(t('mess.schreibt',{n:mess.geschrieben}))+'</p>'+
-  '<p class="leise">'+esc(t('mess.kerne',{n:mess.kerne||'?'}))+' · '+mess.dateien+' files</p>'+'<p class="leise" id="messKern">'+esc(kernText())+'</p>'+'<p class="leise" id="messKarte">'+esc(karteText())+'</p>'+'<p class="leise" id="messSpeicher">'+esc(speicherText())+'</p>'+'<p class="leise" id="messStimme">'+esc(stimmeText())+'</p>'+(mess.fertig?'':'<p class="leise">'+esc(t('mess.laeuft'))+'</p>');
+  '<p class="leise">'+esc(t('mess.kerne',{n:mess.kerne||'?'}))+' · '+mess.dateien+' files</p>'+'<p class="leise" id="messKern">'+esc(kernText())+'</p>'+'<p class="leise" id="messKarte">'+esc(karteText())+'</p>'+'<p class="leise" id="messFp">'+esc(fpText())+'</p>'+'<p class="leise" id="messSpeicher">'+esc(speicherText())+'</p>'+'<p class="leise" id="messStimme">'+esc(stimmeText())+'</p>'+(mess.fertig?'':'<p class="leise">'+esc(t('mess.laeuft'))+'</p>');
  $('messInhalt').innerHTML=h}
 function speicherText(){var S=SPIELSTAND;if(!S||!S.platz)return t('mess.speicherAus');return t('mess.speicher',{n:S.platz,m:S.mal,b:(S.bytes/1024).toFixed(1)+' KB',h:S.ms.toFixed(1)+' ms',k:S.kernMs.toFixed(1)+' ms',g:S.ganz?'exact':'partial',f:S.fehler||'none'})}
 function ms(v){return v==null?'-':Math.round(v)+' ms'}
@@ -163,18 +165,33 @@ function stimmeText(){var z=STIMME&&STIMME.zustand();if(!z||!z.geladen)return t(
  return t('mess.stimme',{lade:ms(z.ladeMs),rechen:ms(z.rechenMs),dauer:z.dauerS==null?'-':z.dauerS.toFixed(1)+' s',n:z.saetze,c:z.ausCache,a:z.akzent})}
 function messText(){var L=budgetListe(),z=['AT3 '+V+' · '+navigator.userAgent,'cores '+(mess.kerne||'?')+' · files '+mess.dateien+' · foreign '+mess.fremd.length+' · saves written '+mess.geschrieben,
  'objects approved '+Object.keys(geladen.objekte).length+' · stand-ins '+zaehlErsatz()+' · frames '+(mess.bildzahl||0)];
- L.forEach(function(r){z.push(r.id+': '+(r.ist||'-')+' / '+r.ziel+' '+r.st)});if(mess.fremd.length)z.push('foreign files: '+mess.fremd.slice(0,8).join(' , '));z.push('core: '+kernText());z.push(karteText());z.push('save: '+speicherText());z.push('voice: '+stimmeText());return z.join('\n')}
+ L.forEach(function(r){z.push(r.id+': '+(r.ist||'-')+' / '+r.ziel+' '+r.st)});if(mess.fremd.length)z.push('foreign files: '+mess.fremd.slice(0,8).join(' , '));z.push('core: '+kernText());z.push(karteText());z.push(fpText());z.push('save: '+speicherText());z.push('voice: '+stimmeText());return z.join('\n')}
 function zaehlErsatz(){var s={};gezeichnet.forEach(function(g){if(g.ersatz)s[g.id]=1});return Object.keys(s).length}
 function kopieren(){var x=messText(),ok=function(){$('messKopie').textContent=t('mess.kopiert')};
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(x).then(ok,alt);else alt();
  function alt(){var a=document.createElement('textarea');a.value=x;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){}a.remove()}}
 
 // ── Start ──
+// ── First Person (FP1): Dateien erst beim ersten Mal laden, dann nur umschalten ──
+var fpLaedt=null, fpAn=false, fpBusy=false, fpWahl=false;
+function fpLaden(){if(fpLaedt)return fpLaedt;fpLaedt=['fp.js','fpwelt.js','fpspiel.js'].reduce(function(p,d){return p.then(function(){return new Promise(function(ok,no){
+  var s=document.createElement('script');s.src=d+'?v='+V;s.onload=ok;s.onerror=function(){fpLaedt=null;no(new Error(d))};document.head.appendChild(s)})})},Promise.resolve());return fpLaedt}
+function fpUmschalten(){if(fpBusy||!KARTE)return;var k=$('fpKnopf');
+ if(fpAn){var p=window.AT3FP.aus();fpAn=false;$('fpRahmen').hidden=true;$('weltCv').hidden=false;$('zoomRein').disabled=$('zoomRaus').disabled=false;
+  k.textContent=t('fp.knopf');k.setAttribute('aria-pressed','false');if(p)KARTE.geh(p.x,p.y);$('weltInfo').textContent=t('welt.tippen');return}
+ fpBusy=true;k.disabled=true;$('weltInfo').textContent=t('fp.laedt');
+ fpLaden().then(function(){return window.AT3FP.an({karte:KARTE,objekte:geladen.objekte,cv:$('fpCv'),rahmen:$('fpRahmen'),stick:$('fpStick'),beiObjekt:fpObjekt})})
+ .then(function(){fpAn=true;$('weltCv').hidden=true;$('fpRahmen').hidden=false;try{$('fpRahmen').scrollIntoView({block:'nearest'})}catch(x){}$('zoomRein').disabled=$('zoomRaus').disabled=true;k.textContent=t('fp.zurueck');k.setAttribute('aria-pressed','true');$('weltInfo').textContent=t('fp.tippen')})
+ .catch(function(e){var m=e&&e.message;$('weltInfo').textContent=m==='globe'?t('fp.globus'):m==='no ground'?t('fp.keinBoden'):t('fp.fehler',{e:m})})
+ .then(function(){fpBusy=false;k.disabled=fpWahl})}
+function fpObjekt(id,ersatz,m){if(!id){$('weltInfo').textContent=t('fp.nichts');return}objektKarte(id,ersatz);$('weltInfo').innerHTML=$('karte').innerHTML+' <span class="leise">· '+esc(t('fp.entfernt',{m:Math.round(m)}))+'</span>'}
+function fpText(){var f=window.AT3FP&&window.AT3FP.mess();if(!f||!f.bilder)return t('mess.fpAus');var u=function(v){return v==null?'-':v.toFixed(1)+' ms'};
+ return t('mess.fp',{w:f.opt.W,h:f.opt.H,s:f.opt.sicht,n:f.bilder,m:u(f.mittel),p:u(f.p95),o:f.objekte,a:u(f.ausschnittP95),k:f.ausschnitte,c:f.stueckeNeu})}
 function texteSetzen(){document.title=t('spiel.titel');$('titel').textContent=t('spiel.titel');$('unter').textContent=t('spiel.unter');
  $('weltTitel').textContent=t('welt.titel');$('bodenTitel').textContent=t('spiel.boden');$('bodenInfo').textContent=t('spiel.bodenInfo');$('karte').textContent=t('spiel.tippen');
- $('messTitel').textContent=t('mess.titel');$('messZu').textContent=t('mess.schliessen');$('messKopie').textContent=t('mess.kopieren');$('messAuf').textContent=t('mess.oeffnen');$('stimmeKnopf').textContent=t('stimme.aus');
+ $('messTitel').textContent=t('mess.titel');$('messZu').textContent=t('mess.schliessen');$('messKopie').textContent=t('mess.kopieren');$('messAuf').textContent=t('mess.oeffnen');$('stimmeKnopf').textContent=t('stimme.aus');$('fpKnopf').textContent=t('fp.knopf');
  $('status').textContent=t('spiel.laedt');uhrKnoepfe()[0].textContent=t('uhr.pause');$('uhrZeit').textContent=t('uhr.zeit',{t:'–'})}
-window.AT3SPIEL={karte:function(){return KARTE},spielstand:function(){return SPIELSTAND},wahl:function(){return WAHL},stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
+window.AT3SPIEL={fp:function(){return fpAn},fpUmschalten:fpUmschalten,karte:function(){return KARTE},spielstand:function(){return SPIELSTAND},wahl:function(){return WAHL},stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
 
 Promise.all([holeJson('sprache/en.json'),holeJson('kartei/text-en.json'),holeJson('kartei/objekte.json'),holeJson('kartei/budgets.json'),holeJson('spiel-budgets.json')])
 .then(function(d){TXT=d[0].texte;OBJTXT=d[1].texte;kartei=d[2];B=d[3];BUDGETS=d[4];mess.datenMs=performance.now();texteSetzen();platzWaehlen();
