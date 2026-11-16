@@ -7,7 +7,7 @@ importScripts('kern.js'+self.location.search);
 self.onmessage=function(e){var d=e.data;
  if(d.art==='port'){var p=d.port;p.onmessage=function(v){var a=v.data;
   if(self.AT3KERN.WG_AUFTRAG[a.art]){if(!self.AT3WG)importScripts('weltgen.js'+self.location.search)}
-  else if(a.art==='weg'){var q=self.location.search;if(!self.AT3WEG){var L=[];if(!self.AT3WG)L.push('weltgen.js'+q);if(!self.AT3NATUR)L.push('natur.js'+q);L.push('begehbar.js'+q,'wegsuche.js'+q);importScripts.apply(self,L)}if(a.netz){self.AT3WEG.netzSetzen(a.netz);a.netz=null}}   // G6b: Wegsuche, Netz einmal je Welt       // Weltgenerator (W1a) erst beim ersten solchen Auftrag
+  else if(a.art==='weg'||a.art==='kweg'){var q=self.location.search;if(!self.AT3WEG){var L=[];if(!self.AT3WG)L.push('weltgen.js'+q);if(!self.AT3NATUR)L.push('natur.js'+q);L.push('begehbar.js'+q,'wegsuche.js'+q);importScripts.apply(self,L)}if(a.netz){self.AT3WEG.netzSetzen(a.netz);a.netz=null}}   // G6b: Wegsuche, Netz einmal je Welt       // Weltgenerator (W1a) erst beim ersten solchen Auftrag
   else if(a.art!=='probe'&&!self.AT3RW)importScripts('riesenwelt.js'+self.location.search);      // Riesenwelt-Teil (MK1) erst beim ersten solchen Auftrag
   var t=performance.now(),w=self.AT3KERN.auftragRechnen(a);
   p.postMessage({nr:a.nr,version:a.version,art:a.art,teil:a.teil,us:(performance.now()-t)*1000,wert:w},w&&w.buffer?[w.buffer]:[])}}

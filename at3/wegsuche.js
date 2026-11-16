@@ -10,13 +10,16 @@
 // kein Abschneiden von Wandecken).
 // Ergebnis (Int32Array): [Code, Modus (0 nah, 1 fern), Felder, Kosten, Orte, Knoten, Netzkosten, Teilweg (1 = endet am Fensterrand), X0, Y0, X1, Y1, …, Ort-Nummern …].
 // Codes: 0 ok, 1 no_path, 2 no_map, 3 start_blocked, 4 goal_blocked, 5 no_road, 6 no_town.
+// G6c (Karren): a.anschl = Weg zur nächsten Weltstraße, die das Profil benutzen darf (Dijkstra im Fenster, Modus 2); gibt es keine, endet der Weg am weitesten
+// erreichbaren fertigen gebauten Weg dieses Profils (Kopf[7] = 2), sonst no_road. a.startFrei = Startfeld darf gesperrt sein. a.temp = hinter den Orten je Feld das Tempo (für die Fahrt ohne Kartenstücke).
+// Bisherige Aufträge (ohne anschl/temp) rechnen und antworten genau wie in G6b.
 (function(root){
 'use strict';
 function BG(){return root.AT3BEGEH||(typeof module!=='undefined'&&module.exports?require('./begehbar.js'):null)}
 function WG(){return root.AT3WG||(typeof module!=='undefined'&&module.exports?require('./weltgen.js'):null)}
 var ST=64, F=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, FEN=5, HALB=2, FS=FEN*ST, NN=FS*FS, TERR=F*4, BAUB=F*9, KOPF=8;
 var CODE=['ok','no_path','no_map','start_blocked','goal_blocked','no_road','no_town'];
-var K_O=1000000, K_D=1414214, MAXT=115, H_O=(K_O/MAXT)|0, H_D=(K_D/MAXT)|0;   // Kosten je Schritt = K / Tempo; Schätzung mit dem besten Tempo
+var GW=F*8, K_O=1000000, K_D=1414214, MAXT=115, H_O=(K_O/MAXT)|0, H_D=(K_D/MAXT)|0;   // Kosten je Schritt = K / Tempo; Schätzung mit dem besten Tempo
 var DX=[0,-1,0,1], DY=[-1,0,1,0], SCHR=[[0,1],[1,2],[2,3],[3,0]];
 // Netzstraße als Anschluss (Wegschicht des Weltgenerators: 1 Pfad, 2 Straße, 3 Brücke, 4 Furt, 5 Steg, 6 Ortsplatz, 7 Fähre)
 var ANSCHLUSS=[[0,1,1,1,1,1,1,0],[0,0,1,1,0,0,1,0]];
@@ -71,34 +74,39 @@ function rechnen(a){speicher();var G=WG(),B=BG(),d=a.daten,tab=a.tab,T=new Array
  function tp(u){if(temS[u]===stamp)return tem[u];temS[u]=stamp;var X=umX(OX+u%FS),Y=OY+((u/FS)|0),v=B.tempo(hole,holeB,seed,X,Y,p);v=v>0?v:0;tem[u]=v;return v}
  function schritt(u,s){var lx=u%FS,ly=(u/FS)|0,nx=lx+DX[s],ny=ly+DY[s];if(nx<0||ny<0||nx>=FS||ny>=FS)return -1;
   if(!B.kante(holeB,umX(OX+lx),OY+ly,s,p))return -1;var v=ny*FS+nx;return tp(v)>0?v:-1}
- var s0=lokal(a.x0,a.y0),z0=a.fern?-1:lokal(a.x1,a.y1),zx=z0%FS,zy=(z0/FS)|0;
- function aus(code,modus,L,kosten,knoten,orte,nk){var nF=L?L.length:0,nO=orte?orte.length:0,r=new Int32Array(KOPF+nF*2+nO);
+ var s0=lokal(a.x0,a.y0),z0=a.fern||AS?-1:lokal(a.x1,a.y1),zx=z0%FS,zy=(z0/FS)|0;
+ var AS=!!a.anschl,TP=!!a.temp;
+ function aus(code,modus,L,kosten,knoten,orte,nk){var nF=L?L.length:0,nO=orte?orte.length:0,r=new Int32Array(KOPF+nF*2+nO+(TP?nF:0));
   r[0]=code;r[1]=modus;r[2]=nF;r[3]=kosten|0;r[4]=nO;r[5]=knoten|0;r[6]=nk|0;
-  for(var j=0;j<nF;j++){r[KOPF+j*2]=umX(OX+L[j]%FS);r[KOPF+j*2+1]=OY+((L[j]/FS)|0)}for(j=0;j<nO;j++)r[KOPF+nF*2+j]=orte[j];return r}
- var modus=a.fern?1:0;
- if(s0<0||(!a.fern&&z0<0)||!hole(a.x0>>6,a.y0>>6))return aus(2,modus);
- if(!tp(s0))return aus(3,modus);
- if(!a.fern&&!tp(z0))return aus(4,modus);
+  for(var j=0;j<nF;j++){r[KOPF+j*2]=umX(OX+L[j]%FS);r[KOPF+j*2+1]=OY+((L[j]/FS)|0)}for(j=0;j<nO;j++)r[KOPF+nF*2+j]=orte[j];if(TP)for(j=0;j<nF;j++)r[KOPF+nF*2+nO+j]=tem[L[j]];return r}
+ var modus=a.fern?1:AS?2:0;
+ if(s0<0||(!a.fern&&!AS&&z0<0)||!hole(a.x0>>6,a.y0>>6))return aus(2,modus);
+ if(!tp(s0)){if(!a.startFrei)return aus(3,modus);tem[s0]=1}      // G6c: ein Karren auf einem gesperrten Feld (Weg darunter abgerissen) darf noch wegfahren
+ if(!a.fern&&!AS&&!tp(z0))return aus(4,modus);
  // Fernweg: Ziel ist jedes Feld mit Netzstraße, das das Profil benutzen darf, oder der nächste Ort; geschätzt wird zum nächsten Ort hin.
  // Liegt beides nicht im Fenster, endet der nahe Weg am Feld, das dem Ort am nächsten kommt (Teilweg, Kopf[7] = 1; der Karren holt in G6c das nächste Fenster).
  var AN=ANSCHLUSS[p],oA=-1,TX=a.x1,TY=a.y1;
  if(a.fern){if(!NETZ||NETZ.gen!==a.gen||!NETZ.nO)return aus(6,1);oA=naechster(a.x0,a.y0);TX=NETZ.pkt[oA*2];TY=NETZ.pkt[oA*2+1]}
  var zO=a.fern?lokal(TX,TY):-1;
  function rand(u){var lx=u%FS,ly=(u/FS)|0;return lx===0||ly===0||lx===FS-1||ly===FS-1}
- function istZiel(u){if(!a.fern)return u===z0;if(u===zO||(zO<0&&rand(u)))return true;var X=umX(OX+u%FS),Y=OY+((u/FS)|0),t=hole(X>>6,Y>>6);return !!t&&AN[t[3*F+(((Y&63)<<6)|(X&63))]]===1}
- function h(u){var dx,dy;if(a.fern){dx=Math.abs(umX(OX+u%FS)-TX);if(dx>WX-dx)dx=WX-dx;dy=Math.abs(OY+((u/FS)|0)-TY)}else{dx=u%FS-zx;dy=((u/FS)|0)-zy;if(dx<0)dx=-dx;if(dy<0)dy=-dy}
+ function gebaut(u){var X=umX(OX+u%FS),Y=OY+((u/FS)|0),b=holeB(X>>6,Y>>6);if(!b)return false;var g=b[GW+(((Y&63)<<6)|(X&63))];return ((g>>4)&3)===3&&B.GEBAUT[p][g&7]>0}
+ function istZiel(u){if(AS){var X0=umX(OX+u%FS),Y0=OY+((u/FS)|0),t0=hole(X0>>6,Y0>>6);return !!t0&&AN[t0[3*F+(((Y0&63)<<6)|(X0&63))]]===1}if(!a.fern)return u===z0;if(u===zO||(zO<0&&rand(u)))return true;var X=umX(OX+u%FS),Y=OY+((u/FS)|0),t=hole(X>>6,Y>>6);return !!t&&AN[t[3*F+(((Y&63)<<6)|(X&63))]]===1}
+ function h(u){if(AS)return 0;var dx,dy;if(a.fern){dx=Math.abs(umX(OX+u%FS)-TX);if(dx>WX-dx)dx=WX-dx;dy=Math.abs(OY+((u/FS)|0)-TY)}else{dx=u%FS-zx;dy=((u/FS)|0)-zy;if(dx<0)dx=-dx;if(dy<0)dy=-dy}
   return dx>dy?H_O*(dx-dy)+H_D*dy:H_O*(dy-dx)+H_D*dx}
  function rel(u,v,k){var g=gS[u]+((k/tem[v])|0);if(stp[v]===stamp&&g>=gS[v])return;stp[v]=stamp;gS[v]=g;par[v]=u;hPush(v,g+h(v))}
- hLen=0;stp[s0]=stamp;gS[s0]=0;par[s0]=-1;hPush(s0,h(s0));var gef=-1,knoten=0,u,s,v,best=s0,bestH=h(s0);
+ hLen=0;stp[s0]=stamp;gS[s0]=0;par[s0]=-1;hPush(s0,h(s0));var gef=-1,knoten=0,u,s,v,best=s0,bestH=h(s0),endB=-1;
  while(hLen){u=hPop();if(zu[u]===stamp)continue;zu[u]=stamp;knoten++;
   if(istZiel(u)){gef=u;break}
   if(a.fern){var hu=h(u);if(hu<bestH){bestH=hu;best=u}}
+  if(AS&&u!==s0&&(endB<0||gS[u]>gS[endB])&&gebaut(u))endB=u;
   for(s=0;s<4;s++){v=schritt(u,s);if(v>=0&&zu[v]!==stamp)rel(u,v,K_O)}
   for(s=0;s<4;s++){var s1=SCHR[s][0],s2=SCHR[s][1],ax=schritt(u,s1);if(ax<0)continue;var ay=schritt(u,s2);if(ay<0)continue;
    var d1=schritt(ax,s2);if(d1<0||d1!==schritt(ay,s1)||zu[d1]===stamp)continue;rel(u,d1,K_D)}}
- var teil=0;if(gef<0){if(!a.fern||best===s0)return aus(a.fern?5:1,modus,null,0,knoten);gef=best}
+ var teil=0;if(gef<0&&AS){if(endB<0)return aus(5,2,null,0,knoten);gef=endB;teil=2}
+ if(gef<0){if(!a.fern||best===s0)return aus(a.fern?5:1,modus,null,0,knoten);gef=best}
  if(a.fern&&gef!==zO){var X=umX(OX+gef%FS),Y=OY+((gef/FS)|0),tt=hole(X>>6,Y>>6);if(!tt||AN[tt[3*F+(((Y&63)<<6)|(X&63))]]!==1)teil=1}
  var L=[];for(u=gef;u!==-1;u=par[u])L.push(u);L.reverse();
+ if(AS){var ra=aus(0,2,L,gS[gef],knoten);ra[7]=teil;return ra}
  if(!a.fern)return aus(0,0,L,gS[gef],knoten);
  // Netzstufe: nächster Ort am Start → nächster Ort am Ziel, Suche im Graphen (niedrigste Kosten zuerst)
  var R=netzRoute(p,oA,a.x1,a.y1),r;

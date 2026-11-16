@@ -28,7 +28,10 @@
 // Wiederverwendet: Vorgehen von welt-raster.js/welt-gross.js aus 2.0 (Bodenkacheln mit Zeitanteil, Nachbarstufe, begrenzter Bildcache), Palette aus at3-64.js.
 (function(){
 'use strict';
-var V='3ea54785', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+// G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
+// nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
+// ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
+var V='f4d7158f', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -133,6 +136,7 @@ var t0=performance.now();
   if(bk&&gen>=0&&ruht){if(ersatz||veraltet)anfragen(LISTE,lod,ANFRAGEN);
    else if(!offen.size&&bytes<SPEICHER*.6){if(lod<MAXL)anfragen(sichtX(lod+1,CX,CY,hb,hh,NEBEN),lod+1,2);if(lod>0&&!offen.size)anfragen(sichtX(lod-1,CX,CY,hb/2,hh/2,NEBEN),lod-1,2)}}
   else if((ersatz||veraltet)&&!ruht){setTimeout(plan,RUHE_MS)}
+  karFaehrt=false;if(KAR.size&&lod<STUFEN){var tk=performance.now();karrenMalen(CX,CY,Z,W,H);M.karrenMs=performance.now()-tk;if(karFaehrt)weiter=true}
   if(wzRahmen&&lod<STUFEN)rahmenMalen(CX,CY,Z,W,H);
   if(wzPfad&&lod<STUFEN)pfadMalen(CX,CY,Z,W,H);
   if(marke){var mx=marke.x+Math.round((cam.x-marke.x)/WX)*WX,mh=lod<STUFEN?hoeheBei(marke.x,marke.y):0;kreuz(((mx-marke.y)*32-CX)/Z+W/2,((mx+marke.y)*16-(mh==null?cam.z:mh)*8-CY)/Z+H/2)}
@@ -169,6 +173,24 @@ var t0=performance.now();
 
  // ── G5b Gebäude: Bau-Kartenstücke, Räume je Bild, Dach offen ──
  function stk(x,y){return(x>>6)*8192+(y>>6)}
+ // ── G6c Karren: Lage gleitet von der vorigen zur neuen Nachricht (Zeit zwischen zwei Nachrichten gemessen), Bild je Richtung einmal vorgezeichnet ──
+ var KAR=new Map(), karT=0, karDt=50, KBILD=null, karFaehrt=false;
+ function karLage(e,t){var f=karDt>0?(t-karT)/karDt:1;if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*128)dx+=WX*256;
+  return[(e.px0+dx*f)/256,(e.py0+(e.py-e.py0)*f)/256,f<1&&(dx||e.py!==e.py0)]}
+ function karren(d){if(tot)return;var t=performance.now(),a=d.buf,n=a[0]|0,neuM=new Map();if(karT){var dt=t-karT;if(dt>5&&dt<400)karDt=karDt*.7+dt*.3}
+  for(var i=0;i<n;i++){var o2=1+i*6,id=a[o2],e=KAR.get(id),px=a[o2+1],py=a[o2+2];
+   if(e){var L=karLage(e,t);e.px0=L[0]*256;e.py0=L[1]*256}else e={px0:px,py0:py};
+   e.px=px;e.py=py;e.dir=a[o2+3];e.zust=a[o2+4];e.grund=a[o2+5];neuM.set(id,e)}
+  KAR=neuM;karT=t;M.karren=n;if(cam.lod<STUFEN&&!glob)plan()}
+ function karBilder(objekte){var ob=objekte&&objekte['karren-ochse'];KBILD=null;if(!ob||!ob.bild)return;KBILD=[];
+  for(var r=0;r<4;r++){var b=S.richtungsBild(ob,r)||ob.bild;KBILD.push({c:S.zuCanvas(b,S.PALETTE),w:b.w,h:b.h,ax:b.ax,ay:b.ay})}}
+ function karrenMalen(CX,CY,Z,W,H){var t=performance.now(),n=0,fahrt=false;
+  KAR.forEach(function(e){var L=karLage(e,t),x=L[0],y=L[1];x+=Math.round((cam.x-x)/WX)*WX;var h=hoeheBei(umX(Math.floor(x)),Math.floor(y));if(h==null)h=cam.z;
+   var sx=((x-y)*32-CX)/Z+W/2,sy=((x+y)*16-h*8-CY)/Z+H/2;if(sx<-64||sy<-64||sx>W+64||sy>H+64)return;n++;if(L[2])fahrt=true;
+   var B=KBILD&&KBILD[e.dir&3];
+   if(B)g.drawImage(B.c,Math.round(sx-B.ax/Z),Math.round(sy-B.ay/Z),Math.max(1,Math.round(B.w/Z)),Math.max(1,Math.round(B.h/Z)));
+   else{var r=Math.max(2,14/Z);g.fillStyle=ERSATZ;g.beginPath();g.moveTo(sx,sy-r);g.lineTo(sx+r*2,sy);g.lineTo(sx,sy+r);g.lineTo(sx-r*2,sy);g.closePath();g.fill()}});   // Ersatzbild: graue Raute
+  M.karrenSichtbar=n;karFaehrt=fahrt}
  function raumBei(X,Y){if(Y<0||Y>=WY)return 0;X=umX(X);var r=BAUM.get(stk(X,Y));return r?r[((Y&63)<<6)|(X&63)]:0}
  // Räume, die ein Bild der Stufe 1× berühren (Felder darin und die Nachbarn nördlich/westlich, deren Vorderwände in diesem Bild stehen); je Kartenstück 64 Listen.
  function raeume(k){var R=BAUM.get(k);if(!R){TR.delete(k);return}var cx=(k/8192)|0,cy=k%8192,RN=cy>0?BAUM.get(cx*8192+cy-1):null,RW=BAUM.get(modu(cx-1,SX)*8192+cy),L=[];
@@ -265,7 +287,7 @@ var t0=performance.now();
  plan();
  // ── Natur (G4b): Bilder der übernommenen Naturobjekte einmal an den Bildkern; danach alle Bodenbilder neu (mit Natur). Rest = graues Ersatzbild. ──
  var NOBJ=null, NARTEN=null, BARTEN=[];
- function natur(objekte){NOBJ=objekte||{};naturSenden()}
+ function natur(objekte){NOBJ=objekte||{};karBilder(NOBJ);naturSenden()}
  function naturSenden(){if(!bk||!NOBJ||!NARTEN)return;var objekte=NOBJ,arten=NARTEN,liste=[],tr=[],ers=0;NOBJ=null;
   function bild(id){var ob=objekte&&objekte[id];if(!ob||!ob.bild)return null;var b=ob.bild,px=new Uint8Array(b.w*b.h).fill(255);
    for(var y=0;y<b.h;y++){var r=b.z[y];for(var x=0;x<b.w;x++){var c=S.ZEICHEN.indexOf(r[x]);if(c>=0)px[y*b.w+x]=c}}
@@ -275,7 +297,8 @@ var t0=performance.now();
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,bau:bau,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
- return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,
+ return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,
+  karrenListe:function(){var t=performance.now(),L=[];KAR.forEach(function(e,id){var p=karLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,grund:e.grund,bild:!!KBILD})});return L},
   // G5b: Bau-Werkzeug anschließen: {aktiv() → bool, zieht(R), fertig(R), weg(), form() → 'rechteck'|'linie'|'tipp' (G5c)}; Linie R = {r, x, y, n}; rahmen(R|null, ok, fx, fy) zeigt die Vorschau
   werkzeug:function(w){WZ=w},pfad:function(P){wzPfad=P||null;plan()},rahmen:function(R,ok,fx,fy){wzRahmen=R?{x:R.x,y:R.y,w:R.w,h:R.h,r:R.r,n:R.n,ok:ok,fx:fx,fy:fy}:null;plan()},
   dach:function(){return{offen:OFFEN.slice(),fest:Array.from(fest)}},dachUm:function(r){if(fest.has(r))fest.delete(r);else fest.add(r);plan()},raumBei:raumBei,

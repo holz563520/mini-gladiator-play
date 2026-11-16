@@ -34,7 +34,13 @@ function wsSenden(){var w=z.wg;if(!w)return;if(!wsAn){w.frisch.length=0;return}
 // eine kleine Nachricht (Bau-Zähler, Gold, Zahl der Baustellen, Ergebnisse der Befehle), nichts je Tick.
 // G5b: dazu die geänderten Kartenstücke (je ein Puffer, null = leer), damit die Karte sie zeichnen kann; nach neuer Welt oder Spielstand einmal „leer“.
 var bauLetzt=-1, bauGesendet=false, bauVon=null;
-function bauLaden(){if(!self.AT3BAU)importScripts('natur.js'+self.location.search,'bau.js'+self.location.search)}
+function bauLaden(){if(!self.AT3BAU)importScripts('natur.js'+self.location.search,'bau.js'+self.location.search);karLaden()}
+// Karren (G6c): begehbar.js, wegsuche.js, wegstrom.js und karren.js mit dem Bau, weil jedes Lager mit Tor von selbst einen Karren bekommt. An den Hauptkern geht,
+// solange es Karren gibt, nach jedem Takt eine kleine Zahlenliste (je Karren 6 Zahlen), danach einmal eine leere.
+var karGesendet=false;
+function karLaden(){if(self.AT3KARREN)return;var q=self.location.search,L=[];if(!self.AT3BEGEH)L.push('begehbar.js'+q);if(!self.AT3WEG)L.push('wegsuche.js'+q);if(!self.AT3WEGSTROM)L.push('wegstrom.js'+q);L.push('karren.js'+q);importScripts.apply(self,L)}
+function karSenden(){var g=z.kar;if(!g||!g.k.length){if(karGesendet){karGesendet=false;self.postMessage({art:'karren',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}return}
+ var a=self.AT3KARREN.meld(g);karGesendet=true;self.postMessage({art:'karren',tick:z.tick,tempo:z.tempo,buf:a},[a.buffer])}
 // Wegsuche (G6b): begehbar.js, wegsuche.js und wegstrom.js erst mit dem ersten Befehl wegProbe oder einem Spielstand mit Wegsuche. An den Hauptkern geht
 // nur bei einem neuen Ergebnis eine kleine Nachricht (Feldliste, Orte, Rechenzeit); Rechenzeit je Auftrag nur für die Anzeige, nicht im Zustand.
 var wegUs={};
@@ -74,13 +80,13 @@ function senden(){if(!neuesBild||!puffer.length)return;neuesBild=false;var b=puf
 
 function takt(){if(modus==='lauf'){laufen();return}
  var jetzt=performance.now(),dt=jetzt-letzt;letzt=jetzt;
- if(!laeuft||!sichtbar||z.tempo===0){schuld=0;ueber=false;senden();wsSenden();bauSenden();wegSenden();return}       // Pause: kein Zeitgeber, weiter erst nach Befehl
+ if(!laeuft||!sichtbar||z.tempo===0){schuld=0;ueber=false;senden();wsSenden();bauSenden();wegSenden();karSenden();return}       // Pause: kein Zeitgeber, weiter erst nach Befehl
  schuld+=dt*z.tempo*K.TICKS/1000;
  if(schuld>MAXNACH){verloren+=Math.floor(schuld-MAXNACH);schuld=MAXNACH;ueber=true}
  var ende=jetzt+SCHEIBE;
  while(schuld>=1){if(!einTick())break;schuld-=1;if(performance.now()>ende)break}
  if(schuld<1)ueber=false;
- senden();rwSenden();wsSenden();bauSenden();wegSenden();
+ senden();rwSenden();wsSenden();bauSenden();wegSenden();karSenden();
  if(wartet)return;                                                              // ein Helferergebnis weckt den Takt
  if(!helfer.length&&schuld<1){var a=V.naechster();if(a)selbstRechnen(a)}        // ohne Helfer: Aufträge in freien Scheiben vorrechnen
  plane(schuld>=1?0:Math.max(1,(1-schuld)*1000/(z.tempo*K.TICKS)))}
@@ -105,7 +111,8 @@ self.onmessage=function(e){var d=e.data;
   z=ausS?ausS.z:K.neu(d.seed>>>0,V.version()+1);
   version();
   if(ausS&&ausS.welt){wsLaden();wsNull();var wa=self.AT3WS.ausStand(ausS.welt,z);if(!wa){self.postMessage({art:'standFehler',grund:'Welt'});return}for(var q=0;q<wa.length;q++)ausS.auftraege.push(wa[q])}
-  if(ausS&&ausS.weg){var wq=self.AT3WEGSTROM.ausStand(ausS.weg,z);if(!wq){self.postMessage({art:'standFehler',grund:'Weg'});return}for(var q2=0;q2<wq.length;q2++)ausS.auftraege.push(wq[q2])}   // G6b   // G4a: Welt aus dem Spielstand, Erde und Stücke neu aus dem Seed
+  if(ausS&&ausS.weg){var wq=self.AT3WEGSTROM.ausStand(ausS.weg,z);if(!wq){self.postMessage({art:'standFehler',grund:'Weg'});return}for(var q2=0;q2<wq.length;q2++)ausS.auftraege.push(wq[q2])}
+  if(ausS&&ausS.kar){karLaden();var kq=self.AT3KARREN.ausStand(ausS.kar,z);if(!kq){self.postMessage({art:'standFehler',grund:'Karren'});return}for(var q3=0;q3<kq.length;q3++)ausS.auftraege.push(kq[q3])}   // G6c   // G6b   // G4a: Welt aus dem Spielstand, Erde und Stücke neu aus dem Seed
   if(ausS)for(var j=0;j<ausS.auftraege.length;j++)V.auf(ausS.auftraege[j]);rwNull();selbst=fremd=verloren=gesamt=0;schuld=0;laeuft=true;modus='takt';letzt=performance.now();neuesBild=true;
   self.postMessage({art:'bereit',helfer:helfer.length});plane(0)}
  else if(d.art==='befehl'){if(K.RW_ARTEN[d.befehl])rwLaden();if(K.WS_ARTEN[d.befehl]){wsLaden();if(d.befehl==='weltseed')wsNull()}if(K.BAU_ARTEN[d.befehl])bauLaden();if(K.WEG_ARTEN[d.befehl])wegLaden();var f=K.befehl(z,{nr:d.nr,art:d.befehl,wert:d.wert});
