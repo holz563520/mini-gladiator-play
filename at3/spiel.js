@@ -15,7 +15,7 @@
 // Antippen zeigt und spricht die Objektkarte, „Map“ führt zurück, die Karte steht dann beim Gladiator. Den Ausschnitt baut der Bildkern (fpausschnitt.js).
 (function(){
 'use strict';
-var V='1c1e5520', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='0c014b94', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};

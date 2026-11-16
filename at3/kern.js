@@ -10,6 +10,8 @@
 // Ohne solchen Befehl bleibt z.rw leer, riesenwelt.js wird nicht geladen und der Fingerabdruck ist derselbe wie in G2.
 // Weltgenerator (W1a): Befehle weltseed/blick liegen in weltstrom.js, die Auftragsarten erde/gelaende rechnet weltgen.js; beide hängen sich hier ein.
 // Ohne solchen Befehl bleibt z.wg leer, die Dateien werden nicht geladen und der Fingerabdruck ist derselbe wie in G2.
+// Bauen (G5a): Befehle bauBoden, bauEntfernen, bauWand, bauTuer, bauDach, bauHuelle, bauPause, bauAbbruch liegen in bau.js und hängen sich hier ein.
+// Ohne solchen Befehl bleibt z.bau leer, bau.js wird nicht geladen und der Fingerabdruck ist derselbe wie bisher. Im Spielstand steckt der Bau exakt (bau:).
 // Spielstand (G3): stand(z) und ausStand(d) sichern den Zustand an einer Tickgrenze und stellen ihn exakt wieder her (gleicher Fingerabdruck).
 // Wiederverwendet: Seed-Zufall nach dem Muster rnd() aus fpwelt.js (xorshift), hier mit dem Stand im Zustand und in getrennten Strömen.
 (function(root){
@@ -29,6 +31,9 @@ var RW_ARTEN={nationen:1,anteil:1,welt:1,reise:1};
 function WS(){return root.AT3WS||(typeof module!=='undefined'&&module.exports?require('./weltstrom.js'):null)}
 function WG(){return root.AT3WG||(typeof module!=='undefined'&&module.exports?require('./weltgen.js'):null)}
 var WS_ARTEN={weltseed:1,weltdichte:1,blick:1}, WG_AUFTRAG={erde:1,gelaende:1};
+// Bauen (G5a): gleiches Muster. bau.js = Gebäudefelder, Räume, Wände, Baustellen, Gold (nur Weltkern). Ohne Bau-Befehl bleibt z.bau leer und der Fingerabdruck wie bisher.
+function BAU(){return root.AT3BAU||(typeof module!=='undefined'&&module.exports?require('./bau.js'):null)}
+var BAU_ARTEN={bauBoden:1,bauEntfernen:1,bauWand:1,bauTuer:1,bauDach:1,bauHuelle:1,bauPause:1,bauAbbruch:1};
 
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
 function dreh(z){z^=z<<13;z>>>=0;z^=z>>>17;z^=z<<5;return z>>>0}
@@ -42,6 +47,7 @@ function setze(z,seed,version){seed=seed>>>0;
  z.fern=new Int32Array(FERN);for(var r=0;r<FERN;r++)z.fern[r]=mix(seed^Math.imul(r+1,0x85ebca6b))|0;
  z.rw=null;                           // Riesenwelt-Probe (MK1), entsteht erst mit dem ersten Riesenwelt-Befehl
  z.wg=null;                           // Weltgenerator (W1a), entsteht erst mit dem ersten Befehl weltseed oder blick
+ z.bau=null;                          // Bauen (G5a), entsteht erst mit dem ersten Bau-Befehl
  z.offen=[];z.warte=[];return z}
 
 // ── Zufall: getrennte Ströme, Stand liegt im Zustand ──
@@ -55,7 +61,7 @@ var ARTEN={
  neu:function(w){return typeof w==='number'&&w>=0&&w<=4294967295&&w===Math.floor(w)}
 };
 function befehl(z,b){
- var pruef=b&&(ARTEN[b.art]||(RW_ARTEN[b.art]&&RW()&&RW().ARTEN[b.art])||(WS_ARTEN[b.art]&&WS()&&WS().ARTEN[b.art]));
+ var pruef=b&&(ARTEN[b.art]||(RW_ARTEN[b.art]&&RW()&&RW().ARTEN[b.art])||(WS_ARTEN[b.art]&&WS()&&WS().ARTEN[b.art])||(BAU_ARTEN[b.art]&&BAU()&&BAU().ARTEN[b.art]));
  if(!pruef)return'unbekannter Befehl';
  if(!pruef(b.wert))return'ungültiger Wert';
  if(!(b.nr===(b.nr|0)&&b.nr>=0))return'keine Laufnummer';
@@ -69,7 +75,8 @@ function anwenden(z){if(!z.warte.length)return 0;
   if(b.art==='tempo')z.tempo=b.wert;
   else if(b.art==='last')lastSetzen(z,b.wert);
   else if(b.art==='neu'){var w=z.warte,a=z.angewandt;setze(z,b.wert,z.version+1);z.warte=w;z.angewandt=a;for(var k=0;k<w.length;k++)w[k].tick=0}
-  else if(WS_ARTEN[b.art])WS().befehl(z,b.art,b.wert);
+  else if(WS_ARTEN[b.art]){var g0=z.wg?z.wg.gen:0;WS().befehl(z,b.art,b.wert);if(z.bau&&z.wg.gen!==g0)z.bau=null}   // neue Welt = Gebautes weg
+  else if(BAU_ARTEN[b.art])BAU().befehl(z,b.art,b.wert,b.nr);
   else RW().befehl(z,b.art,b.wert);
   z.angewandt++}
  return jetzt.length}
@@ -100,6 +107,7 @@ function schritt(z,holen){
   o.push({nr:nr,region:reg,faellig:a.faellig,ein:a.ein,runden:runden});neuL.push(a)}
  if(z.rw)RW().ausgeben(z,neuL);
  if(z.wg)WS().ausgeben(z,neuL);
+ if(z.bau)BAU().schritt(z);
  z.tick++;return neuL}
 
 // ── Fingerabdruck: Prüfsumme über den ganzen Zustand ──
@@ -109,6 +117,7 @@ function abdruck(z){var h=0x811c9dc5,i;function f(v){h=Math.imul(h^(v&255),0x010
  var e=z.e,n=z.last*5;for(i=0;i<n;i++)f(e[i]);
  if(z.rw)RW().abdruck(z.rw,f);
  if(z.wg)WS().abdruck(z.wg,f);
+ if(z.bau)BAU().abdruck(z.bau,f);
  return('0000000'+(h>>>0).toString(16)).slice(-8)}
 
 // ── Spielstand (G3): Zustand an einer Tickgrenze als einfache Zahlenlisten (JSON-tauglich) und zurück ──
@@ -123,7 +132,7 @@ function stand(z){var off=[],ganz=!z.rw,i;
  return{format:STAND,ganz:ganz,seed:z.seed>>>0,tick:z.tick,tempo:z.tempo,last:z.last,auftragNr:z.auftragNr,angewandt:z.angewandt,
   zufall:Array.from(z.zufall),fern:Array.from(z.fern),e:Array.from(z.e),offen:off,
   warte:z.warte.map(function(b){return[b.nr,b.tick,b.art,b.wert]}),
-  welt:z.wg?WS().stand(z.wg,z):null}}
+  welt:z.wg?WS().stand(z.wg,z):null,bau:z.bau?BAU().stand(z.bau):null}}
 // Prüft streng (fremde oder kaputte Stände werden abgelehnt, nicht halb geladen). Gibt {z, auftraege} oder {fehler} zurück.
 function ausStand(d,version){
  function ganzZ(v,min,max){return typeof v==='number'&&v===Math.floor(v)&&v>=min&&v<=max}
@@ -133,11 +142,12 @@ function ausStand(d,version){
  if(!U32(d.seed)||!ganzZ(d.tick,0,MAXT)||!ARTEN.tempo(d.tempo)||!ARTEN.last(d.last)||!ganzZ(d.auftragNr,0,MAXT)||!ganzZ(d.angewandt,0,MAXT))return{fehler:'Kopfwerte'};
  if(!liste(d.zufall,STROEME.length,function(v){return U32(v)&&v>0})||!liste(d.fern,FERN,I32)||!liste(d.e,d.last*5,I32))return{fehler:'Zahlenfelder'};
  if(!liste(d.offen,-1,function(o){return Array.isArray(o)&&o.length===5&&ganzZ(o[0],0,d.auftragNr-1)&&ganzZ(o[1],0,FERN-1)&&ganzZ(o[2],0,MAXT)&&I32(o[3])&&ganzZ(o[4],0,MAXT)})||d.offen.length>MAX_SCHLANGE)return{fehler:'offene Aufträge'};
- if(!liste(d.warte,-1,function(b){return Array.isArray(b)&&b.length===4&&ARTEN[b[2]]&&ARTEN[b[2]](b[3])&&ganzZ(b[0],0,MAXT)&&ganzZ(b[1],0,MAXT)})||d.warte.length>MAX_WARTE)return{fehler:'wartende Befehle'};
+ if(!liste(d.warte,-1,function(b){return Array.isArray(b)&&b.length===4&&((ARTEN[b[2]]&&ARTEN[b[2]](b[3]))||(BAU_ARTEN[b[2]]&&BAU()&&BAU().ARTEN[b[2]](b[3])))&&ganzZ(b[0],0,MAXT)&&ganzZ(b[1],0,MAXT)})||d.warte.length>MAX_WARTE)return{fehler:'wartende Befehle'};
  var z=neu(d.seed,version);
  z.tick=d.tick;z.tempo=d.tempo;z.last=d.last;z.auftragNr=d.auftragNr;z.angewandt=d.angewandt;
  z.zufall=Uint32Array.from(d.zufall);z.fern=Int32Array.from(d.fern);z.e=Int32Array.from(d.e);
  z.warte=d.warte.map(function(b){return{nr:b[0],tick:b[1],art:b[2],wert:b[3]}});
+ if(d.bau){z.bau=BAU()&&BAU().ausStand(d.bau);if(!z.bau)return{fehler:'Bau'}}
  var auftraege=[];z.offen=d.offen.map(function(o){
   auftraege.push({nr:o[0],version:z.version,vorrang:0,art:'probe',region:o[1],ein:o[3],runden:o[4],faellig:o[2]});
   return{nr:o[0],region:o[1],faellig:o[2],ein:o[3],runden:o[4]}});
@@ -156,7 +166,7 @@ function verteiler(max){max=max||MAX_SCHLANGE;var schlange=[],fertig={},version=
   verwerfen:function(neueVersion){version=neueVersion;schlange=[];fertig={};nFertig=0},
   version:function(){return version},laenge:function(){return schlange.length},fertige:function(){return nFertig},max:max}}
 
-var K={RW_ARTEN:RW_ARTEN,WS_ARTEN:WS_ARTEN,WG_AUFTRAG:WG_AUFTRAG,TICKS:TICKS,STROEME:STROEME,MAX_LAST:MAX_LAST,MAX_WARTE:MAX_WARTE,FELD:FELD,RAND:RAND,FERN:FERN,JE_TICK:JE_TICK,FRIST:FRIST,MAX_SCHLANGE:MAX_SCHLANGE,
+var K={BAU_ARTEN:BAU_ARTEN,RW_ARTEN:RW_ARTEN,WS_ARTEN:WS_ARTEN,WG_AUFTRAG:WG_AUFTRAG,TICKS:TICKS,STROEME:STROEME,MAX_LAST:MAX_LAST,MAX_WARTE:MAX_WARTE,FELD:FELD,RAND:RAND,FERN:FERN,JE_TICK:JE_TICK,FRIST:FRIST,MAX_SCHLANGE:MAX_SCHLANGE,
  neu:neu,zufall:zufall,zufallBis:zufallBis,befehl:befehl,anwenden:anwenden,faellig:faellig,auftragRechnen:auftragRechnen,schritt:schritt,abdruck:abdruck,
  verteiler:verteiler,stand:stand,ausStand:ausStand,STAND:STAND};
 if(typeof module!=='undefined'&&module.exports)module.exports=K;else root.AT3KERN=K;

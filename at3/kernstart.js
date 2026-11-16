@@ -1,17 +1,18 @@
 // WAS DIE DATEI TUT: Anschluss des Hauptkerns an den Spielkern von Arena Theory 3.0 (Schritt G2). Startet den Weltkern (weltkern.js) und die
 // Helferkerne (helfer.js), verbindet beide über direkte Leitungen und reicht danach nur noch Befehle hin und Zahlenfelder zurück.
+// G5a: Bau-Befehle gehen wie alle Befehle über H.befehl; opt.beiBau meldet Bau-Zähler, Gold und Ergebnisse (nur bei Änderung).
 // G3: opt.stand startet die Welt aus einem Spielstand, H.stand() holt den Zustand zum Speichern.
 // Kerne: Der Hauptkern rechnet hier nichts. Ohne Hintergrundkerne oder bei Ausfall eines Kerns hält das Spiel kontrolliert an (beiAusfall),
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='1c1e5520', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='0c014b94', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
 function starten(opt){opt=opt||{};
  var Z={laeuft:false,fehler:null,helfer:0,tick:0,tempo:1,einheiten:0,verloren:0,wartet:false,version:0,offen:0,gesamt:0,ueber:false,selbst:0,fremd:0,
-  tickUs:0,p95Us:0,mittelUs:0,bilder:0,abgelehnt:0}, welt=null, hs=[], nr=0, frage=0, wartend={}, tot=false;
+  tickUs:0,p95Us:0,mittelUs:0,bilder:0,abgelehnt:0,bauZaehler:0,gold:0,baustellen:0}, welt=null, hs=[], nr=0, frage=0, wartend={}, tot=false;
  function ausfall(g){if(tot)return;tot=true;Z.laeuft=false;Z.fehler=g;aufraeumen();if(opt.beiAusfall)opt.beiAusfall(g)}
  function aufraeumen(){document.removeEventListener('visibilitychange',sicht);try{welt&&welt.terminate()}catch(e){}hs.forEach(function(h){try{h.terminate()}catch(e){}});welt=null;hs=[]}
  function sicht(){if(welt)welt.postMessage({art:'sichtbar',an:document.visibilityState!=='hidden'})}
@@ -42,7 +43,8 @@ function starten(opt){opt=opt||{};
     if(opt.beiBild)try{opt.beiBild(Z,b,KOPF,b[8])}catch(x){}
     if(welt)welt.postMessage({art:'puffer',buf:b},[b.buffer])}
    else if(d.art==='bereit'){Z.laeuft=true;Z.helfer=d.helfer;if(opt.beiBereit)opt.beiBereit(Z)}
-   else if(d.art==='abgelehnt'){Z.abgelehnt++}
+   else if(d.art==='abgelehnt'){Z.abgelehnt++;if(opt.beiAbgelehnt)try{opt.beiAbgelehnt(d)}catch(x){}}
+   else if(d.art==='bau'){Z.bauZaehler=d.zaehler;Z.gold=d.gold;Z.baustellen=d.baustellen;if(opt.beiBau)try{opt.beiBau(d)}catch(x){}}   // G5a: nur bei Änderung, mit den Ergebnissen der Bau-Befehle (meld)
    else if(d.art==='rw'){if(opt.beiRw)try{opt.beiRw(d)}catch(x){}if(d.bild&&welt)welt.postMessage({art:'rwBild',buf:d.bild},[d.bild.buffer])}
    else if(d.art==='ws'||d.art==='wsErde'||d.art==='wsStueck'){if(opt.beiWs)try{opt.beiWs(d)}catch(x){}}
    else if(d.art==='standFehler'){ausfall('save not readable: '+d.grund)}
