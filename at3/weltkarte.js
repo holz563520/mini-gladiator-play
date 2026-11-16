@@ -28,7 +28,7 @@
 // Wiederverwendet: Vorgehen von welt-raster.js/welt-gross.js aus 2.0 (Bodenkacheln mit Zeitanteil, Nachbarstufe, begrenzter Bildcache), Palette aus at3-64.js.
 (function(){
 'use strict';
-var V='39d392e4', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='3ea54785', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -134,6 +134,7 @@ var t0=performance.now();
    else if(!offen.size&&bytes<SPEICHER*.6){if(lod<MAXL)anfragen(sichtX(lod+1,CX,CY,hb,hh,NEBEN),lod+1,2);if(lod>0&&!offen.size)anfragen(sichtX(lod-1,CX,CY,hb/2,hh/2,NEBEN),lod-1,2)}}
   else if((ersatz||veraltet)&&!ruht){setTimeout(plan,RUHE_MS)}
   if(wzRahmen&&lod<STUFEN)rahmenMalen(CX,CY,Z,W,H);
+  if(wzPfad&&lod<STUFEN)pfadMalen(CX,CY,Z,W,H);
   if(marke){var mx=marke.x+Math.round((cam.x-marke.x)/WX)*WX,mh=lod<STUFEN?hoeheBei(marke.x,marke.y):0;kreuz(((mx-marke.y)*32-CX)/Z+W/2,((mx+marke.y)*16-(mh==null?cam.z:mh)*8-CY)/Z+H/2)}
   M.sichtbar=LISTE.length;M.ersatz=ersatz;M.veraltet=veraltet;M.offen=OFFEN.slice();M.rand=randN;M.bilder=bilder.size;M.bytes=bytes;if(bytes>M.maxBytes)M.maxBytes=bytes;M.fertig=gen>=0&&hatKam&&LISTE.length>0&&!ersatz&&!veraltet&&!weiter;
   var ms=performance.now()-t0;M.zeichnen++;M.zeichenMs+=ms;if(ms>M.maxZeichenMs)M.maxZeichenMs=ms;
@@ -201,6 +202,16 @@ var t0=performance.now();
  function wzLinie(a,b){var dx=b.x-a.x;if(dx>WX/2)dx-=WX;else if(dx<-WX/2)dx+=WX;var dy=b.y-a.y;
   if(Math.abs(dx)>=Math.abs(dy)){if(!dx)return null;return{r:0,x:umX(dx<0?a.x+dx:a.x),y:a.y,n:Math.abs(dx)}}
   return{r:1,x:umX(a.x),y:dy<0?b.y:a.y,n:Math.abs(dy)}}
+ // G6b: Wegprobe. wzPfad = {punkte: Int32Array X,Y …, orte: Int32Array X,Y … (Straßennetz, gestrichelt), a: [X,Y] Startpunkt, ok}. Nur eine Linie, kein Bodenbild.
+ var wzPfad=null;
+ function pfadMalen(CX,CY,Z,W,H){var a=wzPfad,hz=cam.z*8,P=function(x,y){x+=Math.round((cam.x-x)/WX)*WX;return[((x-y)*32-CX)/Z+W/2,((x+y)*16-hz-CY)/Z+H/2]},i,q;
+  g.lineCap='round';g.lineJoin='round';
+  if(a.orte&&a.orte.length>=2){g.setLineDash([8,6]);g.lineWidth=Math.max(2,3/Z);g.strokeStyle='#f0c868';g.beginPath();q=P(a.orte[0]+.5,a.orte[1]+.5);g.moveTo(q[0],q[1]);
+   for(i=2;i<a.orte.length;i+=2){q=P(a.orte[i]+.5,a.orte[i+1]+.5);g.lineTo(q[0],q[1])}g.stroke();g.setLineDash([])}
+  var L=a.punkte;if(L&&L.length>=2){g.lineWidth=Math.max(2,5/Z);g.strokeStyle=a.ok?'#b4cc6c':'#e05a34';g.beginPath();q=P(L[0]+.5,L[1]+.5);g.moveTo(q[0],q[1]);
+   for(i=2;i<L.length;i+=2){q=P(L[i]+.5,L[i+1]+.5);g.lineTo(q[0],q[1])}g.stroke()}
+  if(a.a){q=P(a.a[0]+.5,a.a[1]+.5);kreuz(q[0],q[1])}if(L&&L.length>=2){q=P(L[L.length-2]+.5,L[L.length-1]+.5);kreuz(q[0],q[1])}
+  g.lineCap='butt';g.lineJoin='miter'}
  function rahmenMalen(CX,CY,Z,W,H){var a=wzRahmen,xu=a.x+Math.round((cam.x-a.x)/WX)*WX,hz=cam.z*8,P=function(x,y){return[((x-y)*32-CX)/Z+W/2,((x+y)*16-hz-CY)/Z+H/2]};
   var p=[P(xu,a.y),P(xu+a.w,a.y),P(xu+a.w,a.y+a.h),P(xu,a.y+a.h)];g.lineWidth=Math.max(1,2/Z*2);
   g.fillStyle=a.ok?'rgba(70,98,30,.35)':a.ok===false?'rgba(140,26,16,.35)':'rgba(240,200,104,.25)';g.strokeStyle=a.ok?'#b4cc6c':a.ok===false?'#e05a34':'#f0c868';
@@ -266,7 +277,7 @@ var t0=performance.now();
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
  return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,
   // G5b: Bau-Werkzeug anschließen: {aktiv() → bool, zieht(R), fertig(R), weg(), form() → 'rechteck'|'linie'|'tipp' (G5c)}; Linie R = {r, x, y, n}; rahmen(R|null, ok, fx, fy) zeigt die Vorschau
-  werkzeug:function(w){WZ=w},rahmen:function(R,ok,fx,fy){wzRahmen=R?{x:R.x,y:R.y,w:R.w,h:R.h,r:R.r,n:R.n,ok:ok,fx:fx,fy:fy}:null;plan()},
+  werkzeug:function(w){WZ=w},pfad:function(P){wzPfad=P||null;plan()},rahmen:function(R,ok,fx,fy){wzRahmen=R?{x:R.x,y:R.y,w:R.w,h:R.h,r:R.r,n:R.n,ok:ok,fx:fx,fy:fy}:null;plan()},
   dach:function(){return{offen:OFFEN.slice(),fest:Array.from(fest)}},dachUm:function(r){if(fest.has(r))fest.delete(r);else fest.add(r);plan()},raumBei:raumBei,
   kam:function(){return hatKam&&!wahl?[Math.floor(cam.x),Math.floor(cam.y),cam.lod]:null},
   kamera:function(){return{x:cam.x,y:cam.y,z:cam.z,lod:cam.lod,gesetzt:hatKam,globus:glob?{g:glob.g,lon:glob.lon,lat:glob.lat,n:globStufen(cv.width,cv.height).length}:null}},

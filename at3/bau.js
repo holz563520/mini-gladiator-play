@@ -42,9 +42,13 @@ var DX=[0,-1,0,1], DY=[-1,0,1,0];                        // Seiten 0 Nord, 1 Wes
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
 function fk(X,Y){return Y*WX+X}                          // Feldschlüssel (passt in eine ganze Zahl)
 function qi(X,Y){return((Y&63)<<6)|(X&63)}
-function neu(){return{gold:START_GOLD,id:1,nr:1,zaehler:0,st:new Map(),raeume:new Map(),auf:[],meld:[],neu:new Set()}}
+function neu(){return{gold:START_GOLD,id:1,nr:1,zaehler:0,st:new Map(),raeume:new Map(),auf:[],meld:[],neu:new Set(),wt:new Map(),tk:0}}
 // G5b: geänderte Kartenstücke merken (nicht im Spielstand, nicht im Fingerabdruck); der Weltkern schickt sie der Karte (stueck()).
-function merk(b,X,Y){if(b.neu)b.neu.add((X>>6)*8192+(Y>>6))}
+// G6b: dazu die Wegversion je Kartenstück (wt: Tick der letzten Änderung). Gehört nicht in den Fingerabdruck, steht aber im Spielstand, damit eine
+// laufende Wegsuche nach dem Laden genauso als veraltet erkannt wird. Einträge älter als WT_ALT Ticks werden verworfen (Wege leben nur FRIST Ticks).
+var WT_ALT=200, WT_MAX=4096;
+function merk(b,X,Y){var k=(X>>6)*8192+(Y>>6);if(b.neu)b.neu.add(k);if(b.wt)b.wt.set(k,b.tk)}
+function wtAlt(b,tick){if(b.wt.size<=WT_MAX)return;b.wt.forEach(function(t,k){if(t<tick-WT_ALT)b.wt.delete(k)})}
 var LEER=neu();
 
 // ── Speicher je Kartenstück (dünn) ──
@@ -301,7 +305,7 @@ function bauAbbruch(z,w,bnr){var b=z.bau,p=finde(b,w.nr);if(p<0)return melden(b,
 function zielZu(b,t,X,Y){if(t===3){var v=wegAt(b,X,Y);return v?(v>>4)&3:0}return t===0?(artAt(b,X,Y)?(flagAt(b,X,Y)>>4)&3:0):((kGet(b,t,X,Y)&3)?(kGet(b,t,X,Y)>>4)&3:0)}
 function zielSetzen(b,t,X,Y,zu){var s=stk(b,X,Y),q=qi(X,Y);merk(b,X,Y);if(t===3)s.weg[q]=(s.weg[q]&0xCF)|(zu<<4);else if(t===0)s.flag[q]=(s.flag[q]&0xCF)|(zu<<4);else{var A=t===N_?s.kn:s.kw;A[q]=(A[q]&0xCF)|(zu<<4)}}
 // Ein Tick: höchstens JE_TICK laufende Baustellen kommen einen Schritt weiter (Reihenfolge = Baustellennummer). Entferntes oder Geändertes wird übersprungen.
-function schritt(z){var b=z.bau,A=b.auf;if(!A.length)return;var n=0,fertig=false;
+function schritt(z){var b=z.bau,A=b.auf;b.tk=z.tick;wtAlt(b,z.tick);if(!A.length)return;var n=0,fertig=false;
  for(var i=0;i<A.length&&n<JE_TICK;i++){var a=A[i],Z=a.ziele;if(a.zu!==B_LAEUFT)continue;n++;
   if(!a.rest){var spr=0;
    while(a.i*3<Z.length&&spr<64&&zielZu(b,Z[a.i*3],Z[a.i*3+1],Z[a.i*3+2])!==Z_PLAN){a.i++;spr++}
@@ -343,7 +347,7 @@ var ARTEN={
  bauPause:function(w){return w&&typeof w==='object'&&(w.an===0||w.an===1)&&(G(w.nr,1,2147483647)||G(w.raum,1,4294967295))},
  bauAbbruch:function(w){return w&&typeof w==='object'&&G(w.nr,1,2147483647)}};
 var TUN={bauBoden:bauBoden,bauEntfernen:bauEntfernen,bauWand:bauWand,bauTuer:bauTuer,bauDach:bauDach,bauHuelle:bauHuelle,bauPause:bauPause,bauAbbruch:bauAbbruch,bauWaende:bauWaende,bauTuerWechsel:bauTuerWechsel,bauWeg:bauWeg};
-function befehl(z,art,wert,nr){if(!z.bau)z.bau=neu();return TUN[art](z,wert,nr)}
+function befehl(z,art,wert,nr){if(!z.bau)z.bau=neu();z.bau.tk=z.tick;return TUN[art](z,wert,nr)}
 
 // ── Fingerabdruck und Spielstand ──
 function schluessel(M){var L=[];M.forEach(function(v,k){L.push(k)});L.sort(function(a,b){return a-b});return L}
@@ -356,7 +360,8 @@ function stand(b){
  return{format:STAND,gold:b.gold,id:b.id,nr:b.nr,zaehler:b.zaehler,
   st:schluessel(b.st).map(function(k){var s=b.st.get(k),L=[];for(var i=0;i<FELDER;i++)if(s.art[i]||s.kn[i]||s.kw[i]||s.flag[i]||s.weg[i])L.push(i,s.art[i],s.raum[i],s.kn[i],s.kw[i],s.flag[i],s.weg[i]);return[k,L]}).filter(function(e){return e[1].length}),
   raeume:schluessel(b.raeume).map(function(k){var r=b.raeume.get(k);return[r.id,r.art,r.felder,r.hx,r.hy]}),
-  auf:b.auf.map(function(a){return[a.nr,a.raum,a.zu,a.i,a.rest,a.ziele.slice()]})}}
+  auf:b.auf.map(function(a){return[a.nr,a.raum,a.zu,a.i,a.rest,a.ziele.slice()]}),
+  wt:schluessel(b.wt).map(function(k){return[k,b.wt.get(k)]})}}
 // Prüft streng; null = Stand ungültig.
 function ausStand(d){var i,j;
  var FW=d&&d.format===1?6:7;
@@ -372,6 +377,7 @@ function ausStand(d){var i,j;
  var vor=0;for(i=0;i<d.auf.length;i++){var a=d.auf[i];if(!Array.isArray(a)||a.length!==6||!G(a[0],vor+1,d.nr-1)||!G(a[1],0,4294967295)||!G(a[2],0,2)||!Array.isArray(a[5])||a[5].length%3||!a[5].length||a[5].length>MAX_ZIELE*3||!G(a[3],0,a[5].length/3-1)||!G(a[4],0,FELD_TICKS))return null;
   for(j=0;j<a[5].length;j+=3)if(!G(a[5][j],0,3)||!G(a[5][j+1],0,WX-1)||!G(a[5][j+2],0,WY-1))return null;
   vor=a[0];b.auf.push({nr:a[0],raum:a[1],zu:a[2],i:a[3],rest:a[4],ziele:a[5].slice()})}
+ if(d.wt!==undefined){if(!Array.isArray(d.wt)||d.wt.length>WT_MAX*2)return null;for(i=0;i<d.wt.length;i++){var w=d.wt[i];if(!Array.isArray(w)||w.length!==2||!G(w[0],0,SX*8192)||!G(w[1],0,2147483647))return null;b.wt.set(w[0],w[1])}}   // G6b, fehlt in älteren Ständen
  return b}
 
 // ── Auskunft (für Tests, G5b und G5c) ──
