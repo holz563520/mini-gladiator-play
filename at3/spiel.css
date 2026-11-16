@@ -38,8 +38,8 @@ th{color:var(--tinte2)}
 .knopf:disabled{opacity:.5;cursor:default}
 #uhrInfo{flex-basis:100%;margin:0;min-height:1.25em}
 /* G3 Startbild mit drei Spielständen (spielstand.js). Nur Palettenfarben über die Variablen. */
-#at3Start,#at3Wahl{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:max(12px,env(safe-area-inset-top)) 8px 24px;background:var(--nacht)}
-#at3Start .s-box,#at3Wahl .s-box{width:min(520px,100%)}
+#at3Start{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:max(12px,env(safe-area-inset-top)) 8px 24px;background:var(--nacht)}
+#at3Start .s-box{width:min(520px,100%)}
 #at3Start .s-platz{display:flex;align-items:flex-start;gap:10px;margin:10px 0;padding:10px;background:var(--papier2);border:3px solid var(--rand)}
 #at3Start .s-nr{flex:0 0 44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--papier);background:var(--blut);border:3px solid var(--rand)}
 #at3Start .s-info{flex:1;min-width:0}#at3Start .s-info b{display:block;font-weight:normal;font-size:22px;color:var(--blut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -53,8 +53,8 @@ th{color:var(--tinte2)}
 #at3Start .s-wahl .knopf[aria-checked=true]{background:var(--knopf-an);box-shadow:inset 3px 3px 0 var(--tinte2)}
 #speicherKnopf{margin-left:8px}
 
-/* G4c: Startplatz-Wahl (startwahl.js) */
-#at3Wahl .w-bild{position:relative;border:3px solid var(--rand);background:var(--nacht);line-height:0}
-#at3Wahl canvas{display:block;width:100%;height:auto;image-rendering:pixelated;touch-action:manipulation;cursor:crosshair}
-#at3Wahl .w-laedt{position:absolute;left:0;right:0;top:40%;text-align:center;line-height:1.3;color:var(--papier)}
-#at3Wahl .w-info{min-height:2.6em;margin:8px 0}
+/* G4c/G4d: Startplatz-Wahl (startwahl.js): schmale Leiste unten, die Karte darüber bleibt frei zum Zoomen */
+#at3Wahl{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:center;padding:0 6px max(6px,env(safe-area-inset-bottom));pointer-events:none}
+#at3Wahl .w-leiste{width:min(520px,100%);pointer-events:auto;padding:8px 10px;font-size:14px;line-height:1.3}
+#at3Wahl .w-laedt{margin:4px 0 0}#at3Wahl .w-info{min-height:2.6em;margin:6px 0}
+#at3Wahl .w-knoepfe{display:flex;gap:6px;flex-wrap:wrap}#at3Wahl .knopf.weg{background:var(--papier);font-size:18px}
