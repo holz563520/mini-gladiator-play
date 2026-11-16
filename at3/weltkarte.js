@@ -12,23 +12,30 @@
 // W1c Runde Welt: Die Kamera läuft in x um (cam.x immer 0..WX−1). Gezeichnet wird jedes Kartenstück in der Lage relativ zur Kamera (Stückspalte um ganze
 // Weltbreiten verschoben), darum springt beim Wischen über die Naht nichts. Bildschlüssel und Anfragen bleiben auf die Welt bezogen (ein Bild je Ort, nichts
 // doppelt im Bildspeicher). In y hält die Kamera POL Felder vor dem Polrand an: man sieht nie über den Weltrand hinaus.
+// G4d Zoom bis zum Globus: nach ⅛ weitere Fernstufen ⅟16 … ⅟4096 (lod 4 bis MAXL = 12), gemalt vom Bildkern nur aus dem Erdraster (fernbild.js, nie aus
+// Kartenstücken), gleiche Bildschlüssel, gleicher Bildspeicher, gleiches Ersatzbild aus der Nachbarstufe. In den Fernstufen ruht das Fenster der Kartenstücke
+// (kein blick an Welt- und Bildkern, die Kamera sinkt weich auf Meereshöhe); zurück in ⅛ zeigt das Fernbild ⅟16 als Untergrund, bis die Stücke da sind.
+// Nach ⅟4096 der Globus (Norden oben): Stufen mit halbem Halbmesser bis die ganze Kugel passt; Wischen dreht, Kneifen/Knöpfe zoomen zurück in die Karte (⅟4096 an
+// der Mitte der Kugel), Antippen springt in ⅛ an die Stelle. Der Globus wird im Bildkern gerechnet (halbe Auflösung), hier nur das letzte Bild kopiert.
 // Wiederverwendet: Vorgehen von welt-raster.js/welt-gross.js aus 2.0 (Bodenkacheln mit Zeitanteil, Nachbarstufe, begrenzter Bildcache), Palette aus at3-64.js.
 (function(){
 'use strict';
-var V='bc44683f', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
-var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220;
+var V='39558e57', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
-var RO=112, RS=16;   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
+var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
 
 function starten(o){
  var cv=o.cv, g=cv.getContext('2d'), S=o.S, kern=o.kern, bk=null, tot=false;
  function umX(x){x%=WX;return x<0?x+WX:x}
  function halteY(y){return Math.max(POL,Math.min(WY-POL-.01,y))}
  function ab(a,b){var d=Math.abs(a-b);return d>SX-d?SX-d:d}                     // Abstand zweier Stückspalten über die Naht
+ function modu(a,m){a%=m;return a<0?a+m:a}
+ var glob=null, gimg=null, gimgKey='', globOffen=false;   // G4d: Globus {g Stufe, lon, lat} (null = Karte), letztes Bild
  var cam={x:WX/2,y:WY/2,z:0,lod:0}, hatKam=false, zFest=false, gen=-1, seed=0, blickK=-1;
  var fragen={}, frageNr=0, NV=0, bekannt=new Map(), bilder=new Map(), offen=new Map(), fehlt=new Set(), bytes=0, bildNr=0, geplant=false, zoomZeit=0, feldNr=0, feldOk={};
- var M={bilder:0,bytes:0,maxBytes:0,gerechnet:0,rechenUs:0,maxRechenUs:0,zeichnen:0,zeichenMs:0,maxZeichenMs:0,sichtbar:0,ersatz:0,fertig:false,stuecke:0,anfragen:0,verdraengt:0,bmp:null,natur:0,rechenL:[],rechenN:0,naturArten:0,naturErsatz:0};
- if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(STUFEN-1,o.kam[2]|0));hatKam=true}
+ var M={globus:-1,globusUs:0,globusN:0,bilder:0,bytes:0,maxBytes:0,gerechnet:0,rechenUs:0,maxRechenUs:0,zeichnen:0,zeichenMs:0,maxZeichenMs:0,sichtbar:0,ersatz:0,fertig:false,stuecke:0,anfragen:0,verdraengt:0,bmp:null,natur:0,rechenL:[],rechenN:0,naturArten:0,naturErsatz:0};
+ if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(MAXL,o.kam[2]|0));hatKam=true}
 
  function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(o.beiAusfall)o.beiAusfall(g2)}
  try{bk=new Worker(BASIS+'bildkern.js?v='+V)}catch(e){setTimeout(function(){ende('no picture core')},0)}
@@ -64,7 +71,7 @@ function starten(o){
   for(var i=0;i<L.length&&bytes>SPEICHER*.8;i++){var b=bilder.get(L[i][1]);bytes-=b.bytes;if(b.bmp.close)b.bmp.close();bilder.delete(L[i][1]);M.verdraengt++}}
 
  // ── Blick: mittleres Kartenstück an den Weltkern, Stücke außerhalb des Fensters vergessen ──
- function blick(){var kx=cam.x>>6,ky=cam.y>>6,k=kx*8192+ky;if(k===blickK||gen<0)return;blickK=k;kern.befehl('blick',k);if(bk)bk.postMessage({art:'blick',kx:kx,ky:ky});
+ function blick(){if(glob||cam.lod>=STUFEN)return;var kx=cam.x>>6,ky=cam.y>>6,k=kx*8192+ky;if(k===blickK||gen<0)return;blickK=k;kern.befehl('blick',k);if(bk)bk.postMessage({art:'blick',kx:kx,ky:ky});
   bekannt.forEach(function(p,q){if(ab(p.cx,kx)>HALB||Math.abs(p.cy-ky)>HALB)bekannt.delete(q)});M.stuecke=bekannt.size;fehlt.clear()}
  function hoeheUnter(){var p=bekannt.get((cam.x>>6)*8192+(cam.y>>6));if(!p)return null;var u=(cam.x%ST)/8,v=(cam.y%ST)/8,i=Math.min(7,u|0),j=Math.min(7,v|0),a=u-i,b=v-j,h=p.hg;
   return(h[j*9+i]*(1-a)+h[j*9+i+1]*a)*(1-b)+(h[j*9+9+i]*(1-a)+h[j*9+10+i]*a)*b}
@@ -79,39 +86,68 @@ function starten(o){
     var x0=p.cx*ST+bx*8,xu=cu*ST+bx*8,y0=p.cy*ST+by*8,x=(xu-y0)*32,y=(xu+y0)*16;
     if(x+n*32+RS<CX-hb||x-n*32-RS>CX+hb||y+n*32-mn*8<CY-hh||y-mx*8-RO>CY+hh)continue;
     aus.push({x0:x0,xu:xu,y0:y0,X:x,Y:y,key:lod+':'+x0+':'+y0,mn:mn,ab:Math.abs(x-CX)+2*Math.abs(y+n*16-((mn+mx)*4)-CY)})}});return aus}
+ // G4d: Fernbilder der Stufe lod (≥ STUFEN), die den Ausschnitt schneiden: Raster aus (8 << lod)² Feldern in der Lage der Kamera, Schlüssel mit der Weltspalte
+ function sichtFern(lod,CX,CY,hb,hh,aus){var n=TEIL<<lod;aus.length=0;
+  var uA=Math.floor(((CX-hb)/64+(CY-hh)/32)/n)-1,uE=Math.floor(((CX+hb)/64+(CY+hh)/32)/n)+1,vA=Math.floor(((CY-hh)/32-(CX+hb)/64)/n)-1,vE=Math.floor(((CY+hh)/32-(CX-hb)/64)/n)+1;
+  for(var tv=vA;tv<=vE;tv++){var y0=tv*n;if(y0<0||y0>=WY)continue;
+   for(var tu=uA;tu<=uE;tu++){var xu=tu*n,X=(xu-y0)*32,Y=(xu+y0)*16;if(X+n*32<CX-hb||X-n*32>CX+hb||Y+n*32<CY-hh||Y>CY+hh)continue;var x0=umX(xu);
+    aus.push({x0:x0,xu:xu,y0:y0,X:X,Y:Y,key:lod+':'+x0+':'+y0,mn:0,ab:Math.abs(X-CX)+2*Math.abs(Y+n*16-CY)})}}return aus}
+ function sichtX(lod,CX,CY,hb,hh,aus){return lod>=STUFEN?sichtFern(lod,CX,CY,hb,hh,aus):sicht(lod,CX,CY,hb,hh,aus)}
  function anfragen(L,lod,max){L.sort(function(a,b){return a.ab-b.ab});for(var i=0;i<L.length&&offen.size<max;i++){var c=L[i];if(bilder.has(c.key)||offen.has(c.key)||fehlt.has(c.key))continue;
    offen.set(c.key,1);M.anfragen++;bk.postMessage({art:'bild',gen:gen,nv:NV,key:c.key,x0:c.x0,y0:c.y0,lod:lod})}}
 
- var LISTE=[],NEBEN=[],gemalt=new Set();
+ var LISTE=[],NEBEN=[],GRUND=[],gemalt=new Set();
  function mal(b,xu,CX,CY,Z,W,H){var s=b.lod===cam.lod?1:Math.pow(2,b.lod-cam.lod),x=((xu-b.y0)*32-CX)/Z+W/2-b.ox*s,y=((xu+b.y0)*16-CY)/Z+H/2-b.oy*s;   // xu: linke Ecke des Bildes in der Lage der Kamera
   g.drawImage(b.bmp,Math.round(x),Math.round(y),b.w*s,b.h*s);b.nr=bildNr}
  function zeichnen(){geplant=false;if(tot)return;var t0=performance.now();
   var cw=cv.clientWidth||320,ch=cv.clientHeight||240,f=Math.max(1,Math.ceil(Math.max(cw/MAXB,ch/MAXH))),W=Math.round(cw/f),H=Math.round(ch/f);
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
   g.imageSmoothingEnabled=false;g.fillStyle=NACHT;g.fillRect(0,0,W,H);bildNr++;
-  var ziel=hoeheUnter(),weiter=false;if(ziel!=null){if(!zFest){cam.z=ziel;zFest=true}else{var dz=ziel-cam.z;if(Math.abs(dz)<.05)cam.z=ziel;else{cam.z+=dz*.25;weiter=true}}}
+  if(glob){globusZeichnen(W,H,t0);return}
+  var ziel=cam.lod>=STUFEN?0:hoeheUnter(),weiter=false;if(ziel!=null){if(!zFest){cam.z=ziel;zFest=true}else{var dz=ziel-cam.z;if(Math.abs(dz)<.05)cam.z=ziel;else{cam.z+=dz*.25;weiter=true}}}
   var lod=cam.lod,Z=1<<lod,CX=(cam.x-cam.y)*32,CY=(cam.x+cam.y)*16-cam.z*8,hb=W/2*Z,hh=H/2*Z,n=TEIL<<lod,i,c,b,ersatz=0;
-  sicht(lod,CX,CY,hb,hh,LISTE).sort(function(a,b2){return(a.x0+a.y0)-(b2.x0+b2.y0)||a.x0-b2.x0});gemalt.clear();
+  // G4d: in den Kartenstufen das Fernbild ⅟16 als Untergrund, solange Kartenstücke oder Bilder fehlen (nach einem Sprung vom Globus, nach dem Hereinzoomen)
+  var grund=false;if(lod<STUFEN&&(bekannt.size<49||M.ersatz)){sichtFern(STUFEN,CX,CY,hb,hh,GRUND);for(i=0;i<GRUND.length;i++){c=GRUND[i];b=bilder.get(c.key);if(b){mal(b,c.xu,CX,CY,Z,W,H);grund=true}}}
+  sichtX(lod,CX,CY,hb,hh,LISTE).sort(function(a,b2){return(a.x0+a.y0)-(b2.x0+b2.y0)||a.x0-b2.x0});gemalt.clear();
   for(i=0;i<LISTE.length;i++){c=LISTE[i];b=bilder.get(c.key);if(b){mal(b,c.xu,CX,CY,Z,W,H);continue}ersatz++;
    // Ersatzbild: gröbere Stufe vergrößert, sonst feinere verkleinert, sonst graue Raute
    var da=false,L,m,k;
-   for(L=lod+1;L<STUFEN&&!da;L++){m=TEIL<<L;k=L+':'+(c.x0-c.x0%m)+':'+(c.y0-c.y0%m);b=bilder.get(k);if(b){da=true;if(!gemalt.has(k)){gemalt.add(k);mal(b,c.xu-c.x0%m,CX,CY,Z,W,H)}}}
-   if(!da&&lod>0){m=n>>1;for(k=0;k<4;k++){b=bilder.get((lod-1)+':'+(c.x0+(k&1)*m)+':'+(c.y0+(k>>1)*m));if(b){mal(b,c.xu+(k&1)*m,CX,CY,Z,W,H);da=true}}}
-   if(!da){var x=(c.X-CX)/Z+W/2,y=(c.Y-c.mn*8-CY)/Z+H/2,r=n*32/Z;g.fillStyle=ERSATZ;g.beginPath();g.moveTo(x,y);g.lineTo(x+r,y+r/2);g.lineTo(x,y+r);g.lineTo(x-r,y+r/2);g.closePath();g.fill()}}
+   for(L=lod+1;L<=MAXL&&!da;L++){m=TEIL<<L;var xs=c.xu-modu(c.xu,m);k=L+':'+umX(xs)+':'+(c.y0-c.y0%m);b=bilder.get(k);if(b){da=true;if(!gemalt.has(k)){gemalt.add(k);mal(b,xs,CX,CY,Z,W,H)}}}
+   if(!da&&lod>0){m=n>>1;for(k=0;k<4;k++){b=bilder.get((lod-1)+':'+umX(c.xu+(k&1)*m)+':'+(c.y0+(k>>1)*m));if(b){mal(b,c.xu+(k&1)*m,CX,CY,Z,W,H);da=true}}}
+   if(!da&&!grund){var x=(c.X-CX)/Z+W/2,y=(c.Y-c.mn*8-CY)/Z+H/2,r=n*32/Z;g.fillStyle=ERSATZ;g.beginPath();g.moveTo(x,y);g.lineTo(x+r,y+r/2);g.lineTo(x,y+r);g.lineTo(x-r,y+r/2);g.closePath();g.fill()}}
   // Anfragen: nur wenn die Hand ruht. Erst Sichtbares, danach die Nachbarstufen (gröber, dann feiner um die Mitte) auf Vorrat.
   var ruht=performance.now()-zoomZeit>RUHE_MS&&zeiger.size<2;
   if(bk&&gen>=0&&ruht){if(ersatz)anfragen(LISTE,lod,ANFRAGEN);
-   else if(!offen.size&&bytes<SPEICHER*.6){if(lod<STUFEN-1)anfragen(sicht(lod+1,CX,CY,hb,hh,NEBEN),lod+1,2);if(lod>0&&!offen.size)anfragen(sicht(lod-1,CX,CY,hb/2,hh/2,NEBEN),lod-1,2)}}
+   else if(!offen.size&&bytes<SPEICHER*.6){if(lod<MAXL)anfragen(sichtX(lod+1,CX,CY,hb,hh,NEBEN),lod+1,2);if(lod>0&&!offen.size)anfragen(sichtX(lod-1,CX,CY,hb/2,hh/2,NEBEN),lod-1,2)}}
   else if(ersatz&&!ruht){setTimeout(plan,RUHE_MS)}
   M.sichtbar=LISTE.length;M.ersatz=ersatz;M.bilder=bilder.size;M.bytes=bytes;if(bytes>M.maxBytes)M.maxBytes=bytes;M.fertig=gen>=0&&hatKam&&LISTE.length>0&&!ersatz&&!weiter;
   var ms=performance.now()-t0;M.zeichnen++;M.zeichenMs+=ms;if(ms>M.maxZeichenMs)M.maxZeichenMs=ms;
   if(weiter)plan()}
+ // ── G4d Globus: Stufen (Halbmesser halbiert bis die Kugel passt), Bild aus dem Bildkern, das letzte Bild bleibt stehen, bis das neue da ist ──
+ function globStufen(W,H){var R=RG0,fit=.45*Math.min(W,H),L=[];while(R>fit*1.05){L.push(R);R/=2}L.push(fit);return L}
+ function globR(){var L=globStufen(cv.width,cv.height);return L[Math.min(glob.g,L.length-1)]}
+ function globusZeichnen(W,H,t0){var L=globStufen(W,H);if(glob.g>=L.length)glob.g=L.length-1;var R=L[glob.g],s=Math.max(2,Math.ceil(Math.sqrt(W*H/200000)));
+  if(gimg){var k=R/gimg.R,w=gimg.w*gimg.s*k,h=gimg.h*gimg.s*k;g.drawImage(gimg.c,Math.round(W/2-w/2),Math.round(H/2-h/2),Math.round(w),Math.round(h))}
+  var key=W+','+H+','+R.toFixed(2)+','+glob.lon.toFixed(5)+','+glob.lat.toFixed(5);
+  if(key!==gimgKey&&!globOffen&&bk&&gen>=0){globOffen=true;frage('globus',{W:W,H:H,R:R,lon:glob.lon,lat:glob.lat,s:s}).then(function(a){globOffen=false;
+    if(!a.fehlt&&glob){var c=document.createElement('canvas');c.width=a.w;c.height=a.h;c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(a.buf.buffer),a.w,a.h),0,0);
+     gimg={c:c,w:a.w,h:a.h,s:s,R:R};gimgKey=key;M.globusUs=a.us;M.globusN++}plan()})}
+  M.globus=glob.g;M.sichtbar=1;M.ersatz=key===gimgKey?0:1;M.fertig=gen>=0&&key===gimgKey;
+  var ms=performance.now()-t0;M.zeichnen++;M.zeichenMs+=ms;if(ms>M.maxZeichenMs)M.maxZeichenMs=ms}
+ function zText(l){return l===0?'1×':l<STUFEN?['','½','¼','⅛'][l]:'1/'+(1<<l)}
+ function melden(){M.globus=glob?glob.g:-1;if(o.beiZoom)o.beiZoom(glob?-1:cam.lod,glob?'globe':zText(cam.lod))}
+ function zurKarte(x,y,lod){glob=null;gimg=null;gimgKey='';cam.x=umX(x);cam.y=halteY(y);cam.lod=lod;zFest=false;blickK=-1;blick();zoomZeit=performance.now();plan();setTimeout(plan,RUHE_MS+20);melden()}
+ function globNach(){return{x:modu(glob.lon/ZP,1)*WX,y:(.5-glob.lat/Math.PI)*WY}}
  function plan(){if(!geplant&&!tot){geplant=true;requestAnimationFrame(zeichnen)}}
 
  // ── Eingabe: Wischen, Zwei-Finger-Zoom, Mausrad, Antippen ──
  var zeiger=new Map(), zieht=false, kneifAb=0;
- function schieben(dx,dy){var f=cv.width/(cv.clientWidth||1)*(1<<cam.lod),X=-dx*f/32,Y=-dy*f/16;cam.x=umX(cam.x+(X+Y)/2);cam.y=halteY(cam.y+(Y-X)/2);blick();plan()}
- function zoom(d){var l=Math.max(0,Math.min(STUFEN-1,cam.lod+d));if(l===cam.lod)return;cam.lod=l;zoomZeit=performance.now();plan();setTimeout(plan,RUHE_MS+20);if(o.beiZoom)o.beiZoom(l)}
+ function schieben(dx,dy){if(glob){var fg=cv.width/(cv.clientWidth||1),R=globR();glob.lon=modu(glob.lon-dx*fg/R,ZP);glob.lat=Math.max(-1.35,Math.min(1.35,glob.lat+dy*fg/R));plan();return}
+  var f=cv.width/(cv.clientWidth||1)*(1<<cam.lod),X=-dx*f/32,Y=-dy*f/16;cam.x=umX(cam.x+(X+Y)/2);cam.y=halteY(cam.y+(Y-X)/2);blick();plan()}
+ function zoom(d){
+  if(glob){var g2=glob.g+d,n=globStufen(cv.width,cv.height).length;if(g2<0){var p=globNach();zurKarte(p.x,p.y,MAXL);return}if(g2>=n)return;glob.g=g2;plan();melden();return}
+  var l=cam.lod+d;if(l>MAXL){if(!hatKam||gen<0)return;glob={g:0,lon:cam.x/WX*ZP,lat:(.5-cam.y/WY)*Math.PI};plan();melden();return}
+  l=Math.max(0,l);if(l===cam.lod)return;var war=cam.lod;cam.lod=l;zoomZeit=performance.now();if(war>=STUFEN&&l<STUFEN){blickK=-1;zFest=false;blick()}plan();setTimeout(plan,RUHE_MS+20);melden()}
  function abstand(){var p=Array.from(zeiger.values());return Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}
  cv.addEventListener('pointerdown',function(e){zeiger.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY});try{cv.setPointerCapture(e.pointerId)}catch(x){}
   if(zeiger.size===1)zieht=false;else if(zeiger.size===2){kneifAb=abstand();zieht=true}});
@@ -123,7 +159,10 @@ function starten(o){
  var radZeit=0;cv.addEventListener('wheel',function(e){e.preventDefault();var t=performance.now();if(t-radZeit<160)return;radZeit=t;zoom(e.deltaY>0?1:-1)},{passive:false});
  function feldBei(cx,cy){return new Promise(function(ok){if(!bk)return ok(null);var r=cv.getBoundingClientRect(),Z=1<<cam.lod,f=cv.width/(r.width||1),id=++feldNr;feldOk[id]=ok;
   bk.postMessage({art:'feld',id:id,px:(cam.x-cam.y)*32+((cx-r.left)*f-cv.width/2)*Z,py:(cam.x+cam.y)*16-cam.z*8+((cy-r.top)*f-cv.height/2)*Z})})}
- function tipp(cx,cy){feldBei(cx,cy).then(function(fd){if(o.beiFeld)o.beiFeld(fd)})}
+ function tipp(cx,cy){if(glob){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),R=globR(),x=((cx-r.left)*f-cv.width/2)/R,y=-((cy-r.top)*f-cv.height/2)/R,q=x*x+y*y;if(q>=1)return;
+   var z=Math.sqrt(1-q),cl=Math.cos(glob.lat),sl=Math.sin(glob.lat),la=Math.asin(y*cl+z*sl),lo=glob.lon+Math.atan2(x,z*cl-y*sl);zurKarte(modu(lo/ZP,1)*WX,(.5-la/Math.PI)*WY,3);return}
+  if(cam.lod>=STUFEN){if(o.beiFeld)o.beiFeld(null);return}
+  feldBei(cx,cy).then(function(fd){if(o.beiFeld)o.beiFeld(fd)})}
  if(window.ResizeObserver)new ResizeObserver(plan).observe(cv);else addEventListener('resize',plan);
  plan();
  // ── Natur (G4b): Bilder der übernommenen Naturobjekte einmal an den Bildkern; danach alle Bodenbilder neu (mit Natur). Rest = graues Ersatzbild. ──
@@ -138,9 +177,9 @@ function starten(o){
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
  return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,
   kam:function(){return hatKam?[Math.floor(cam.x),Math.floor(cam.y),cam.lod]:null},
-  kamera:function(){return{x:cam.x,y:cam.y,z:cam.z,lod:cam.lod,gesetzt:hatKam}},
-  geh:function(x,y,lod){cam.x=umX(x);cam.y=halteY(y);if(lod!=null)cam.lod=lod;hatKam=true;zFest=false;blick();plan()},
+  kamera:function(){return{x:cam.x,y:cam.y,z:cam.z,lod:cam.lod,gesetzt:hatKam,globus:glob?{g:glob.g,lon:glob.lon,lat:glob.lat,n:globStufen(cv.width,cv.height).length}:null}},
+  geh:function(x,y,lod){glob=null;cam.x=umX(x);cam.y=halteY(y);if(lod!=null)cam.lod=lod;hatKam=true;zFest=false;blickK=-1;blick();plan()},
   schieben:schieben,ende:function(){ende(null)}}}
 
-window.AT3KARTE={starten:starten,STUFEN:STUFEN,SPEICHER:SPEICHER,WX:WX,WY:WY,POL:POL};
+window.AT3KARTE={starten:starten,STUFEN:STUFEN,MAXL:MAXL,SPEICHER:SPEICHER,WX:WX,WY:WY,POL:POL};
 })();
