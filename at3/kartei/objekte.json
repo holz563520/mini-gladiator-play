@@ -181,7 +181,7 @@
    "typ": 23,
    "kat": "dach",
    "name": "Tiled Roof",
-   "status": "geprueft",
+   "status": "uebernommen",
    "datei": "obj/dach-ziegel.json"
   },
   {
@@ -235,7 +235,7 @@
    "typ": 22,
    "kat": "wand",
    "name": "Gate",
-   "status": "geprueft",
+   "status": "uebernommen",
    "datei": "obj/wand-tor.json"
   },
   {
@@ -244,7 +244,7 @@
    "typ": 21,
    "kat": "wand",
    "name": "Door",
-   "status": "geprueft",
+   "status": "uebernommen",
    "datei": "obj/wand-tuer.json"
   },
   {

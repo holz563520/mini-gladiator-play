@@ -32,10 +32,13 @@ function wsSenden(){var w=z.wg;if(!w)return;if(!wsAn){w.frisch.length=0;return}
   erdUs:wsErdUs.slice(),gelP95:n?s[Math.min(n-1,Math.floor(n*.95))]:0,gelMittel:n?t/n:0,gelMax:wsMax,gelJobs:wsN,erdSumme:w.erdSumme,summe:w.summe,helfer:helfer.length,offen:w.bestellt.size,sucht:w.suche})}
 // Bauen (G5a): natur.js und bau.js werden erst mit dem ersten Bau-Befehl oder einem Spielstand mit Bau geladen. An den Hauptkern geht nur bei einer Änderung
 // eine kleine Nachricht (Bau-Zähler, Gold, Zahl der Baustellen, Ergebnisse der Befehle), nichts je Tick.
-var bauLetzt=-1;
+// G5b: dazu die geänderten Kartenstücke (je ein Puffer, null = leer), damit die Karte sie zeichnen kann; nach neuer Welt oder Spielstand einmal „leer“.
+var bauLetzt=-1, bauGesendet=false, bauVon=null;
 function bauLaden(){if(!self.AT3BAU)importScripts('natur.js'+self.location.search,'bau.js'+self.location.search)}
-function bauSenden(){var b=z.bau;if(!b){bauLetzt=-1;return}if(!b.meld.length&&b.zaehler===bauLetzt)return;bauLetzt=b.zaehler;
- self.postMessage({art:'bau',zaehler:b.zaehler,gold:b.gold,baustellen:b.auf.length,meld:b.meld.splice(0)})}
+function bauSenden(){var b=z.bau;if(b!==bauVon){bauVon=b;if(bauGesendet){self.postMessage({art:'bau',leer:true,zaehler:0,gold:0,baustellen:0,meld:[]});bauGesendet=false}}
+ if(!b){bauLetzt=-1;return}if(!b.meld.length&&b.zaehler===bauLetzt&&!b.neu.size)return;bauLetzt=b.zaehler;
+ var L=self.AT3BAU.geaendert(b),st=[],tr=[];for(var i=0;i<L.length;i++){var a=self.AT3BAU.stueck(b,L[i]);st.push([L[i],a]);if(a)tr.push(a.buffer)}bauGesendet=true;
+ self.postMessage({art:'bau',zaehler:b.zaehler,gold:b.gold,baustellen:b.auf.length,meld:b.meld.splice(0),stuecke:st},tr)}
 function anw(){var t=performance.now();if(K.anwenden(z)){var d=performance.now()-t;if(d>setzMs)setzMs=d}}
 function rwNull(){rwLetzt=-99;rwUs={nation:0,stueck:0};rwJobs={nation:0,stueck:0};warteMs=warteMal=0;setzMs=0}
 function rwSenden(){var r=z.rw;if(!r||(z.tick-rwLetzt<5&&z.tick>=rwLetzt))return;rwLetzt=z.tick;
@@ -100,6 +103,7 @@ self.onmessage=function(e){var d=e.data;
  else if(d.art==='puffer'){if(puffer.length<3)puffer.push(d.buf);if(neuesBild&&modus==='takt')senden()}
  else if(d.art==='sichtbar'){sichtbar=!!d.an;letzt=performance.now();schuld=0;if(sichtbar&&modus==='takt')plane(0)}
  else if(d.art==='stand'){var t1=performance.now(),st=K.stand(z);self.postMessage({art:'stand',id:d.id,stand:st,tick:z.tick,abdruck:K.abdruck(z),ms:performance.now()-t1})}   // G3: an einer Tickgrenze (Nachrichten kommen nur zwischen Ticks an)
+ else if(d.art==='bauPruefen'){bauLaden();var pr=self.AT3BAU.ARTEN.bauBoden(d.wert)||self.AT3BAU.ARTEN.bauEntfernen(d.wert)?(d.wert.art?self.AT3BAU.pruefen(z,d.wert):{ok:true}):{ok:false,grund:'invalid'};self.postMessage({art:'bauPruefen',id:d.id,erg:pr})}   // G5b: Vorschau beim Ziehen (nichts ändert sich)
  else if(d.art==='abdruck'){self.postMessage({art:'abdruck',id:d.id,wert:K.abdruck(z),tick:z.tick,version:z.version})}
  else if(d.art==='rwBild'){bild=d.buf}
  else if(d.art==='wsAn'){wsAn=!!d.an;wsNurErde=!!d.nurErde;wsErdGen=-1;if(wsAn&&z.wg){z.wg.frisch=Array.from(z.wg.stuecke.keys());wsSenden()}}   // G4a: nurErde = Spielkarte (rechnet ihre Stücke im Bildkern selbst)

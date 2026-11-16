@@ -13,7 +13,8 @@ var VON_BIOM=[0,0,1,1,2,3,2,2,4,5,0,0,5];          // weltgen-Biome 0..12 → Co
 var VON_WEG=[-1,6,6,7,1,7,8,0];                    // Wegschicht 1..7: Pfad, Straße, Brücke, Furt (begehbar, sieht nass aus), Steg, Ortsplatz, Fähre (Wasser)
 
 // PF: {he, du} Farbtabellen des Bildkerns (eine Stufe heller/dunkler). hole(cx,cy) → Kartenstück (Uint8Array) oder null. ox,oy: linke obere Ecke auf der Welt (ox darf beliebig sein, läuft um). sperr: Uint8Array je Naturart (1 = sperrt).
-function bauen(BB,NAT,hole,seed,ox,oy,sperr,PF){var WX=BB.WX,WY=BB.WY,F=N+2,t0=Date.now();
+function bauen(BB,NAT,hole,seed,ox,oy,sperr,PF,frei){                // G5b: frei(X,Y) = false auf Gebautem/Gerodetem (keine Natur)
+var WX=BB.WX,WY=BB.WY,F=N+2,t0=Date.now();
  oy=Math.max(0,Math.min(WY-F,oy|0));ox=((ox|0)%WX+WX)%WX;
  var EH=new Float32Array(F*F),EB=new Uint8Array(F*F),EW=new Uint8Array(F*F),ES=new Uint8Array(F*F),fehlt=0;
  for(var j=0;j<F;j++)for(var i=0;i<F;i++){var X=(ox+i)%WX,Y=oy+j,p=hole(X>>6,Y>>6),e=j*F+i;
@@ -35,7 +36,7 @@ function bauen(BB,NAT,hole,seed,ox,oy,sperr,PF){var WX=BB.WX,WY=BB.WY,F=N+2,t0=D
  // Natur wie auf der Karte: Art je Feld, Versatz im Feld (Bildpunkte der Karte → Felder), Sperren nach Kollision der Kartei
  var ox2=[],oy2=[],oa=[],sperre=new Uint8Array(N*N);
  for(j=0;j<N;j++)for(i=0;i<N;i++){var e1=j*F+i,X2=(ox+i)%WX,Y2=oy+j,mn=Math.min(ES[e1],ES[e1+1],ES[e1+F],ES[e1+F+1]),mx=Math.max(ES[e1],ES[e1+1],ES[e1+F],ES[e1+F+1]);
-  var t=NAT.art(seed,X2,Y2,EB[e1],EW[e1],mx-mn);if(t<0)continue;var v=NAT.versatz(seed,X2,Y2),du=(v[0]/32+v[1]/16)/2,dv=(v[1]/16-v[0]/32)/2;
+  var t=NAT.art(seed,X2,Y2,EB[e1],EW[e1],mx-mn);if(t<0||(frei&&!frei(X2,Y2)))continue;var v=NAT.versatz(seed,X2,Y2),du=(v[0]/32+v[1]/16)/2,dv=(v[1]/16-v[0]/32)/2;
   ox2.push(i+.5+du);oy2.push(j+.5+dv);oa.push(t);if(sperr&&sperr[t])sperre[j*N+i]=1}
  var n=oa.length;
  return{format:'at3-fpwelt',ausschnitt:true,N:N,U:U,M:M,WL:WL,WANDH:1,ox:ox,oy:oy,h:h,biom:biom,farbe:farbe,

@@ -46,19 +46,21 @@ function vorbereiten(liste,grau,rand){var aus=[];
 
 // Liste der Naturobjekte eines Bodenbilds (Felder x0..x0+n−1, y0..), schon in Zeichenreihenfolge (hinten zuerst). ECK = Eckstufen (n+1)², B/W Biom und Weg.
 // Je Eintrag: Art, Feld i/j, Ankerpunkt relativ zur oberen Ecke des Feldes 0/0 auf Stufe 0 (Bildpunkte der Zoomstufe).
-function sammeln(seed,x0,y0,n,lod,ECK,B,W,aus){var m=n+1,hw=32>>lod,hh=16>>lod,st=8>>lod;aus.length=0;
+// G5b: ok(X,Y) (frei) = false auf bebauten und gerodeten Feldern (baubild.frei) → dort keine Natur.
+function sammeln(seed,x0,y0,n,lod,ECK,B,W,aus,ok){var m=n+1,hw=32>>lod,hh=16>>lod,st=8>>lod;aus.length=0;
  for(var j=0;j<n;j++)for(var i=0;i<n;i++){var X=x0+i,Y=y0+j,q=((Y&63)<<6)|(X&63),e=j*m+i,a=ECK[e],b=ECK[e+1],c=ECK[e+m],d=ECK[e+m+1];
-  var mn=Math.min(a,b,c,d),mx=Math.max(a,b,c,d),t=art(seed,X,Y,B[q],W[q],mx-mn);if(t<0)continue;
+  var mn=Math.min(a,b,c,d),mx=Math.max(a,b,c,d),t=art(seed,X,Y,B[q],W[q],mx-mn);if(t<0||(ok&&!ok(X,Y)))continue;
   var v=versatz(seed,X,Y);aus.push({t:t,tief:i+j,i:i,x:(i-j)*hw+(v[0]>>lod),y:(i+j)*hh+hh+(v[1]>>lod)-(((a+b+c+d)*st+2)>>2)})}
  aus.sort(function(p,q2){return p.tief-q2.tief||p.i-q2.i});return aus}
 
 // Objekt unter dem Finger. PX,PY wie bodenbild.feld (Stufe 1×); gesucht wird ab dem Feld unter dem Finger nach vorn (Bäume ragen über Felder dahinter). hole(cx,cy) → Kartenstück. Vorderstes deckendes Bild gewinnt (genauer Bildpunkt, nicht Rahmen).
 // W1c: fx darf über die Naht hinausreichen (Lage der Kamera); gerechnet wird die Lage mit XU, das Feld selbst (Art, Versatz, Kartenstück) mit X auf der Welt.
-function treffer(hole,PX,PY,seed,BILD,sicht,fx,fy){var u=fx!=null?fx:Math.floor((PX/32+PY/16)/2),v=fy!=null?fy:Math.floor((PY/16-PX/32)/2),best=null,bt=-1e9;   // fx,fy: Feld unter dem Finger (bodenbild.feld), sonst ohne Höhe geschätzt
+// G5b: ok(X,Y) wie bei sammeln (keine Natur auf Gebautem/Gerodetem).
+function treffer(hole,PX,PY,seed,BILD,sicht,fx,fy,frei){var u=fx!=null?fx:Math.floor((PX/32+PY/16)/2),v=fy!=null?fy:Math.floor((PY/16-PX/32)/2),best=null,bt=-1e9;   // fx,fy: Feld unter dem Finger (bodenbild.feld), sonst ohne Höhe geschätzt
  for(var dy=-3;dy<=8;dy++)for(var dx=-3;dx<=8;dx++){var XU=u+dx,Y=v+dy,X=((XU%WX)+WX)%WX;if(Y<0||Y>=WY-1)continue;
   var H=[0,0,0,0],ok=true;for(var k=0;k<4&&ok;k++){var x=X+(k&1),y=Y+(k>>1);if(x>=WX)x-=WX;var p=hole(x>>6,y>>6);if(!p){ok=false;break}H[k]=stufe(sicht(p).H[((y&63)<<6)|(x&63)])}
   if(!ok)continue;var p0=sicht(hole(X>>6,Y>>6)),q=((Y&63)<<6)|(X&63),mn=Math.min(H[0],H[1],H[2],H[3]),mx=Math.max(H[0],H[1],H[2],H[3]);
-  var t=art(seed,X,Y,p0.B[q],p0.W[q],mx-mn);if(t<0||XU+Y<=bt)continue;
+  var t=art(seed,X,Y,p0.B[q],p0.W[q],mx-mn);if(t<0||XU+Y<=bt||(frei&&!frei(X,Y)))continue;
   var vs=versatz(seed,X,Y),s=BILD[t].L[0],ax=(XU-Y)*32+vs[0],ay=(XU+Y)*16+16+vs[1]-(((H[0]+H[1]+H[2]+H[3])*8+2)>>2),lx=Math.floor(PX-ax+s.ax),ly=Math.floor(PY-ay+s.ay);
   if(lx<0||ly<0||lx>=s.w||ly>=s.h||s.px[ly*s.w+lx]===255)continue;bt=XU+Y;best={id:BILD[t].id,ersatz:BILD[t].ersatz,x:X,y:Y}}
  return best}

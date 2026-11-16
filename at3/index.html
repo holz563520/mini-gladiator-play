@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Arena Theory III</title>
-<link rel="stylesheet" href="spiel.css?v=0c014b94">
+<link rel="stylesheet" href="spiel.css?v=2d998a2b">
 </head>
 <body>
 <header class="papier">
@@ -21,10 +21,11 @@
   <p id="speicherInfo" class="leise" aria-live="polite"></p>
  </section>
  <section class="papier" id="welt">
-  <div class="kopf"><h2 id="weltTitel"></h2><span class="uhrKnoepfe"><button id="fpKnopf" class="knopf klein" aria-pressed="false" disabled>First person</button><button id="zoomRaus" class="knopf klein" aria-label="Zoom out">−</button><button id="zoomRein" class="knopf klein" aria-label="Zoom in">+</button></span></div>
+  <div class="kopf"><h2 id="weltTitel"></h2><span class="uhrKnoepfe"><button id="bauKnopf" class="knopf klein" aria-pressed="false" disabled>Build</button><button id="fpKnopf" class="knopf klein" aria-pressed="false" disabled>First person</button><button id="zoomRaus" class="knopf klein" aria-label="Zoom out">−</button><button id="zoomRein" class="knopf klein" aria-label="Zoom in">+</button></span></div>
   <canvas id="weltCv" class="pixel" aria-label="World map"></canvas>
   <div id="fpRahmen" hidden><canvas id="fpCv" class="pixel" width="320" height="180" aria-label="First person view"></canvas><div id="fpStick" hidden></div></div>
   <p id="weltInfo" class="karte" aria-live="polite"></p>
+  <div id="bauLeiste" hidden><div class="bauWahl"><button class="knopf klein" data-bau="lager" aria-pressed="false">Storage</button><button class="knopf klein" data-bau="werkstatt" aria-pressed="false">Workshop</button><button class="knopf klein" data-bau="unterkunft" aria-pressed="false">Lodging</button><button class="knopf klein" data-bau="abriss" aria-pressed="false">Demolish</button><button class="knopf klein weg" id="bauZu">Done</button></div><p id="bauInfo" class="karte" aria-live="polite"></p><p id="bauGold" class="leise"></p></div>
  </section>
  <section class="papier" id="feld">
   <h2 id="bodenTitel"></h2>
@@ -41,7 +42,7 @@
 </main>
 <footer class="papier" id="status" aria-live="polite">Sharpening the pixels …</footer>
 <button id="messAuf" class="knopf"></button>
-<script src="at3-64.js?v=0c014b94"></script>
-<script src="spielstand.js?v=0c014b94"></script>
-<script src="spiel.js?v=0c014b94"></script>
+<script src="at3-64.js?v=2d998a2b"></script>
+<script src="spielstand.js?v=2d998a2b"></script>
+<script src="spiel.js?v=2d998a2b"></script>
 </body></html>

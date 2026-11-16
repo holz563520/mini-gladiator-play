@@ -24,14 +24,19 @@ function ecken(hole,x0,y0,n){var m=n+1,p=null,pk=-1,H=null;
 
 // Ein Bodenbild. F = {pal: Uint32Array(64) ABGR, du: dunkler, he: heller (Farbnummer → Farbnummer)}. Gibt {w,h,ox,oy,px} oder null (Nachbar fehlt).
 // NT (G4b, frei): {N: natur.js, seed, BILD: N.vorbereiten(…)} → Natur wird mit ins Bild gebacken; das Bild wird dann um ihre Überstände größer (sonst immer 512 breit).
+// BA (G5b, frei): {M: baubild.js, hole(cx,cy) → Bau-Puffer, BILD, offen} → Gebäude (Boden, Wände, Dach) mit der Natur in einer Reihenfolge; Natur nicht auf Gebautem/Gerodetem.
 // ox,oy = Bildpunkt der Ecke x0,y0 auf Stufe 0.
-function bild(hole,x0,y0,lod,F,NT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,st=8>>lod,m=n+1,i,j,y;
+var BOD=new Int16Array(64*64);
+function bild(hole,x0,y0,lod,F,NT,BA){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,st=8>>lod,m=n+1,i,j,y;
  if(!ecken(hole,x0,y0,n))return null;
  var top=1e9,bot=-1e9;for(j=0;j<m;j++)for(i=0;i<m;i++){y=(i+j)*hh-ECK[j*m+i]*st;if(y<top)top=y;if(y>bot)bot=y}
  var w=2*n*hw,h=bot-top+2,ox=n*hw,oy=-top,s=sicht(hole(x0>>6,y0>>6)),B=s.B,W=s.W,pal=F.pal,du=F.du,he=F.he,d2=2*hw,o2,sp;
  // Natur (G4b): erst sammeln, dann das Bild um ihre Überstände vergrößern (oben Baumkronen, seitlich wenige Bildpunkte)
- var NL=NT?NT.N.sammeln(NT.seed,x0,y0,n,lod,ECK,B,W,NLISTE):null;
- if(NL&&NL.length){var l0=0,r0=w,t0=0,b0=h;for(i=0;i<NL.length;i++){o2=NL[i];sp=NT.BILD[o2.t].L[lod];var X1=ox+o2.x-sp.ax,Y1=oy+o2.y-sp.ay;
+ var bz=-1,ab=BA&&BA.hole(x0>>6,y0>>6)?function(X,Y){return BA.M.frei(BA.hole,X,Y)}:null;
+ var NL=NT?NT.N.sammeln(NT.seed,x0,y0,n,lod,ECK,B,W,NLISTE,ab):null;
+ if(NL)for(i=0;i<NL.length;i++){NL[i].sp=NT.BILD[NL[i].t].L[lod];NL[i].o=1;NL[i].m=0}
+ if(BA){if(!NL){NLISTE.length=0;NL=NLISTE}bz=BA.M.sammeln(BA,x0,y0,n,lod,ECK,NL,BOD);if(bz>0)NL.sort(function(p,q2){return p.tief-q2.tief||p.i-q2.i||p.o-q2.o})}
+ if(NL&&NL.length){var l0=0,r0=w,t0=0,b0=h;for(i=0;i<NL.length;i++){o2=NL[i];sp=o2.sp;var X1=ox+o2.x-sp.ax,Y1=oy+o2.y-sp.ay;
    if(X1<l0)l0=X1;if(X1+sp.w>r0)r0=X1+sp.w;if(Y1<t0)t0=Y1;if(Y1+sp.h>b0)b0=Y1+sp.h}
   ox-=l0;oy-=t0;w=r0-l0;h=b0-t0}
  var px=new Uint32Array(w*h);
@@ -50,9 +55,10 @@ function bild(hole,x0,y0,lod,F,NT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,st=8>>l
    t=yN+Math.floor(b1*f/d2);u=yS+Math.floor(b2*f/d2)+1;x=xc+k;
    if(u>=h)u=h-1;if(t<0)t=0;o=t*w+x;
    if(korn)for(;t<=u;t++,o+=w){v=Math.imul(r^Math.imul(k*67+977+t-yN,0x9e3779b1),0x85ebca6b)>>>28;px[o]=v===0?cL:v===1?cD:col}else for(;t<=u;t++,o+=w)px[o]=col}}
- if(NL)for(i=0;i<NL.length;i++){o2=NL[i];sp=NT.BILD[o2.t].L[lod];var sx=ox+o2.x-sp.ax,sy=oy+o2.y-sp.ay,spx=sp.px,sw=sp.w;   // hinten zuerst, Bildpunkt für Bildpunkt
+ if(bz>=0)BA.M.boden(px,w,h,ox,oy,n,lod,ECK,BOD,pal,he,du);                                 // G5b: Boden der Gebäudefelder (unter allen Bildern)
+ if(NL)for(i=0;i<NL.length;i++){o2=NL[i];sp=o2.sp;if(o2.m||o2.o!==1){BA.M.malen(px,w,ox,oy,pal,o2,lod);continue}var sx=ox+o2.x-sp.ax,sy=oy+o2.y-sp.ay,spx=sp.px,sw=sp.w;   // hinten zuerst, Bildpunkt für Bildpunkt
   for(j=0;j<sp.h;j++){var zo=(sy+j)*w+sx,zs=j*sw;for(var k2=0;k2<sw;k2++){var c2=spx[zs+k2];if(c2!==255)px[zo+k2]=pal[c2]}}}
- return{w:w,h:h,ox:ox,oy:oy,px:px,natur:NL?NL.length:0}}
+ return{w:w,h:h,ox:ox,oy:oy,px:px,natur:NL?NL.length-(bz>0?bz:0):0,bau:bz>0?bz:0}}
 
 // Kurzauskunft je Kartenstück für den Hauptkern: kleinste und größte Stufe je Block 8 × 8 Felder (für „was ist im Bild“) und ein Höhenraster 9 × 9 (Kamerahöhe).
 function kunde(p){var H=sicht(p).H,mm=new Int16Array(128),hg=new Int16Array(81),bx,by,x,y;

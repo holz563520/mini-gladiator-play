@@ -141,6 +141,19 @@
 "wahl.eis": "Ice. Nothing grows here except regret. Pick somewhere warmer.",
   "wahl.keinLand": "The gods found no land at all. Suspicious.",
   "wahl.art.1": "village", "wahl.art.2": "town", "wahl.art.3": "harbour village", "wahl.art.4": "harbour town",
-  "welt.wahl": "Choose where your ludus stands."
+  "welt.wahl": "Choose where your ludus stands.",
+  "bau.knopf": "Build", "bau.zu": "Done", "bau.art.lager": "Storage",
+  "bau.art.werkstatt": "Workshop", "bau.art.unterkunft": "Lodging", "bau.art.abriss": "Demolish",
+  "bau.wahl": "Pick what to build. Until then the map moves freely, so you can pretend there is a plan.", "bau.hilfe.lager": "Storage: drag a floor with one finger. Walls, roof and a door come by themselves. Two fingers move and zoom.", "bau.hilfe.werkstatt": "Workshop: drag a floor with one finger. Walls, roof and a door come by themselves. Splinters are free.",
+  "bau.hilfe.unterkunft": "Lodging: drag a floor with one finger. Walls, roof and a door come by themselves. Comfort is extra and not available.", "bau.hilfe.abriss": "Demolish: drag over what you built. Nothing comes back, except what was never started.", "bau.vorschau": "{n} tiles · {g} gold · release to build",
+  "bau.vorschauAb": "{n} × {m} tiles · release to tear down", "bau.zuGross": "Too big. At most {n} tiles at once; the architects faint easily.", "bau.ok": "Planned for {g} gold. The builders are on their way, at their own pace.",
+  "bau.okAb": "Torn down. The rubble thanks you.", "bau.gold": "Gold {g} · building sites {s}", "bau.grund.not_flat": "Not flat here. Levelling comes later; until then, find a flatter patch.",
+  "bau.grund.water": "Water. The fish refuse to move out.", "bau.grund.road": "A road runs here. Traders get upset when you wall them in.", "bau.grund.nature": "Trees or rocks in the way. They were here first.",
+  "bau.grund.occupied": "Something else is already built here.", "bau.grund.edge": "The world ends here. Build somewhere less final.", "bau.grund.too_far": "Too far from where you are looking. Move closer.",
+  "bau.grund.no_gold": "Not enough gold. Even slaves ask for bricks.", "bau.grund.too_many_sites": "Too many building sites at once. Let the builders finish something first.", "bau.grund.room_too_big": "That room would be too big. Split it up.",
+  "bau.grund.nothing": "Nothing to do here.", "bau.grund.no_world": "The world is not ready yet.", "bau.grund.invalid": "That does not work.",
+  "bau.grund.sonst": "That does not work ({g}).", "bau.zustand.1": "planned", "bau.zustand.2": "under construction",
+  "bau.zustand.3": "finished", "bau.feld": "{a} · {z}{d}", "bau.dachOffen": " · roof open (tap again to close)",
+  "bau.dachZu": " · tap to look inside", "bau.ohneArt": "Wall"
  }
 }

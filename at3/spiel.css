@@ -62,3 +62,7 @@ th{color:var(--tinte2)}
 #fpRahmen{position:relative;margin:6px 0;border:3px solid var(--rand);background:var(--nacht);touch-action:none;user-select:none;-webkit-user-select:none}
 #fpCv{display:block;width:100%;aspect-ratio:16/9;max-height:62vh;object-fit:contain;touch-action:none;cursor:grab}
 #fpStick{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border:2px solid var(--knopf-an);border-radius:50%;pointer-events:none;opacity:.7}
+
+/* G5b: Bau-Werkzeug (wie 2.0: Art wählen, Rechteck ziehen) */
+#bauLeiste .bauWahl{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}#bauLeiste .knopf[aria-pressed=true]{background:var(--knopf-an);box-shadow:inset 3px 3px 0 var(--tinte2)}#bauLeiste .knopf.weg{background:var(--papier)}
+#bauKnopf[aria-pressed=true]{background:var(--knopf-an)}

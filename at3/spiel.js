@@ -13,9 +13,12 @@
 // Platz im Spielstand (spiel.start) und sofort gespeichert. Continue startet am gespeicherten Kameraort. ?nosave startet wie bisher am ersten Dorf.
 // FP1: Knopf „First person“ in der Karte. Erst beim ersten Antippen werden fp.js, fpwelt.js und fpspiel.js geladen; der Gladiator steht dort, wo die Karte hinschaut,
 // Antippen zeigt und spricht die Objektkarte, „Map“ führt zurück, die Karte steht dann beim Gladiator. Den Ausschnitt baut der Bildkern (fpausschnitt.js).
+// G5b: Knopf „Build“ (wie 2.0 welt-bau.js): Art wählen (Storage, Workshop, Lodging, Demolish), mit einem Finger ein Rechteck ziehen, die Vorschau fragt den Weltkern
+// (bauPruefen, ändert nichts), loslassen schickt bauBoden/bauEntfernen. Bis eine Art gewählt ist, lässt sich die Karte frei verschieben. Gebäude antippen zeigt Teil,
+// Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='0c014b94', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='2d998a2b', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -103,7 +106,7 @@ function platzWaehlen(){platzP=window.AT3SPIELSTAND.start({t:t,imAntippen:functi
 function kernStarten(){$('uhrInfo').textContent=t('uhr.wartet');uhrLage='wartet';platzP.then(kernLos)}
 function kernLos(w){
  var s=document.createElement('script'),s2=document.createElement('script'),da=0;s.src='kernstart.js?v='+V;s2.src='weltkarte.js?v='+V;s.onerror=function(){kernAusfall('kernstart.js')};s2.onerror=function(){kernAusfall('weltkarte.js')};
- s.onload=s2.onload=function(){if(++da<2)return;KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,beiWs:function(d){if(KARTE)KARTE.beiWs(d)},
+ s.onload=s2.onload=function(){if(++da<2)return;KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,beiWs:function(d){if(KARTE)KARTE.beiWs(d)},beiBau:beiBau,
   beiBereit:function(){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=false;k.onclick=function(){KERN.befehl('tempo',+k.dataset.tempo)}});
    SPIELSTAND=window.AT3SPIELSTAND.anschliessen(w,KERN,function(){return{stimme:stimmeGewuenscht,kam:KARTE?KARTE.kam():null,start:START}},speicherAnzeige);if(w.platz&&!w.daten)SPIELSTAND.speichern();
    karteStarten(w);
@@ -115,12 +118,42 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,waehlen:waehlen,beiErde:startWaehlen,
   beiAusfall:function(g){if(g)$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:g}))+'</span>'},
   beiZoom:function(l,z){$('weltInfo').textContent=l<0?t('welt.globus'):t('welt.zoom',{z:z})},
-  beiFeld:function(f){window.AT3SPIEL.feld=f;if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
+  beiFeld:function(f){window.AT3SPIEL.feld=f;if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
+ bauAnschliessen();
  $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};$('fpKnopf').onclick=fpUmschalten;$('fpKnopf').disabled=fpWahl;
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true}},250)}
+// ── Bauen (G5b): Werkzeug wie 2.0, Ergebnis kommt mit der Nachricht „bau“ vom Weltkern ──
+var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3}, MAXA=1024;
+function bauAnschliessen(){var k=$('bauKnopf');k.disabled=false;k.textContent=t('bau.knopf');$('bauZu').textContent=t('bau.zu');
+ [].forEach.call(document.querySelectorAll('#bauLeiste [data-bau]'),function(b){b.textContent=t('bau.art.'+b.dataset.bau);b.onclick=function(){bauWahl(BAUW===b.dataset.bau?null:b.dataset.bau)}});
+ k.onclick=function(){bauOffen(!!$('bauLeiste').hidden)};$('bauZu').onclick=function(){bauOffen(false)};
+ KARTE.werkzeug({aktiv:function(){return !!BAUW&&!fpAn},zieht:bauZieht,fertig:bauFertig,weg:function(){KARTE.rahmen(null);bauHilfe()}})}
+function bauOffen(an){$('bauLeiste').hidden=!an;$('bauKnopf').setAttribute('aria-pressed',an?'true':'false');if(!an)bauWahl(null);else{bauWahl(null);bauGoldZeigen();try{$('bauLeiste').scrollIntoView({block:'nearest'})}catch(x){}}}
+function bauWahl(a){BAUW=a;[].forEach.call(document.querySelectorAll('#bauLeiste [data-bau]'),function(b){b.setAttribute('aria-pressed',b.dataset.bau===a?'true':'false')});KARTE.rahmen(null);bauHilfe()}
+function bauHilfe(){$('bauInfo').textContent=t(BAUW?'bau.hilfe.'+BAUW:'bau.wahl')}
+function bauGoldZeigen(){$('bauGold').textContent=bauStand.gold==null?'':t('bau.gold',{g:bauStand.gold.toLocaleString('en'),s:bauStand.s})}
+function grundText(g){var k='bau.grund.'+g;return TXT[k]!=null?t(k):t('bau.grund.sonst',{g:g})}
+// Vorschau beim Ziehen: immer nur eine Frage unterwegs, die neueste gewinnt
+function bauZieht(R){bauVor=R;if(R.w*R.h>MAXA){KARTE.rahmen(R,false);$('bauInfo').textContent=t('bau.zuGross',{n:MAXA});return}
+ if(BAUW==='abriss'){KARTE.rahmen(R,null);$('bauInfo').textContent=t('bau.vorschauAb',{n:R.w,m:R.h});return}
+ KARTE.rahmen(R,null);if(!bauVorLaeuft)bauFrage()}
+function bauFrage(){var R=bauVor;if(!R||!BAUW||BAUW==='abriss'||R.w*R.h>MAXA)return;bauVorLaeuft=true;
+ KERN.bauPruefen({art:BAUW,x:R.x,y:R.y,w:R.w,h:R.h}).then(function(p){bauVorLaeuft=false;if(!p||bauVor!==R||!BAUW){if(bauVor&&bauVor!==R)bauFrage();return}
+  KARTE.rahmen(R,!!p.ok,p.x,p.y);$('bauInfo').textContent=p.ok?t('bau.vorschau',{n:p.felder,g:p.kosten}):grundText(p.grund)})}
+function bauFertig(R){bauVor=null;if(!BAUW)return;if(R.w*R.h>MAXA){KARTE.rahmen(null);$('bauInfo').textContent=t('bau.zuGross',{n:MAXA});return}
+ var nr=BAUW==='abriss'?KERN.befehl('bauEntfernen',{x:R.x,y:R.y,w:R.w,h:R.h}):KERN.befehl('bauBoden',{art:BAUW,x:R.x,y:R.y,w:R.w,h:R.h});bauNr[nr]=BAUW;
+ KARTE.rahmen(R,null);window.AT3SPIEL.bauBefehl=nr}
+function beiBau(d){if(KARTE)KARTE.beiBau(d);bauStand.gold=d.gold;bauStand.s=d.baustellen;if(!$('bauLeiste').hidden)bauGoldZeigen();
+ (d.meld||[]).forEach(function(m){var a=bauNr[m.nr];if(!a)return;delete bauNr[m.nr];KARTE.rahmen(null);window.AT3SPIEL.bauMeld=m;
+  $('bauInfo').textContent=!m.ok?grundText(m.grund):a==='abriss'?t('bau.okAb'):t('bau.ok',{g:(m.kosten||0)})})}
+// Gebäude angetippt: vorderstes Teil (Wand, Tür, Tor, Dach) oder Boden, dazu Art und Bauzustand; Dach auf/zu meldet die Karte
+function bauFeld(f){var b=f.bau,o=f.obj,art=b&&b.art?t('bau.art.'+['','lager','werkstatt','unterkunft'][b.art]):t('bau.ohneArt'),zu=t('bau.zustand.'+((o&&o.zustand)||b.zustand||3));
+ var d=f.dachOffen===true?t('bau.dachOffen'):f.dachOffen===false&&KARTE.kamera().lod===0?t('bau.dachZu'):'';
+ if(o&&o.id){objektKarte(o.id,o.ersatz)}else{window.AT3SPIEL.angetippt=null}
+ $('weltInfo').textContent=t('bau.feld',{a:(o&&o.id?(OBJTXT[o.id+'.name']||o.id)+' · ':'')+art,z:zu,d:d})}
 // ── Startplatz (G4c): Uhr anhalten, Wahl zeigen, dann Kamera hin, Platz merken, sofort speichern ──
 var wahlLaeuft=false;
 function startWaehlen(){if(wahlLaeuft)return;wahlLaeuft=true;fpWahl=true;$('fpKnopf').disabled=true;var tempo=KERN.zustand.tempo;if(tempo)KERN.befehl('tempo',0);$('weltInfo').textContent=t('welt.wahl');
