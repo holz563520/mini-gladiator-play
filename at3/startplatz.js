@@ -19,10 +19,12 @@ function land(b){return b>1&&b<10}
 function sicher(A,i){if(!land(A.bio[i]))return false;if(A.E[i]>=128)return true;var x=i%GW,y=(i/GW)|0;
  return y>0&&y<GH-1&&land(A.bio[y*GW+um(x-1)])&&land(A.bio[y*GW+um(x+1)])&&land(A.bio[i-GW])&&land(A.bio[i+GW])}
 // ── Erdbild: Biom je Zelle mit Hangschatten, Fluss, dazu Orte, Straßen und Seewege als Punkte (wie Weltansicht Erde + Netz) ──
-function erdBild(A,F){var d=new Uint32Array(N),pal=F.pal;
- for(var i=0;i<N;i++){var b=A.flu[i]>1&&A.bio[i]<12?10:A.bio[i],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=A.E[i]-A.E[j],c=BFARBE[b];if(land(b))c+=dh>120?1:dh<-120?-1:0;d[i]=pal[c];
+// U (16.11.2026, freiwillig): Übersichtsbiome je Zelle (fernbild.uebersicht) mit den Übersichtsfarben UF statt des Großklima-Bioms (Globus);
+// dann nur große Flüsse und keine Pfade (Straßen, Fähren, Seewege und Orte bleiben), damit die Biome von oben zu sehen sind.
+function erdBild(A,F,U,UF){var d=new Uint32Array(N),pal=F.pal,FA=U?UF:BFARBE;
+ for(var i=0;i<N;i++){var b0=U?U[i]:A.bio[i],b=A.flu[i]>(U?3:1)&&A.bio[i]<12?10:b0,j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=A.E[i]-A.E[j],c=FA[b];if(land(b))c+=dh>120?(U&&b===9?0:1):dh<-120?-1:0;d[i]=pal[c];
   var o=A.ort?A.ort[i]&15:0,w=A.weg?A.weg[i]:0;
-  if(o)d[i]=pal[OFARBE[o]];else if(w&15)d[i]=pal[w&64?F_FAEHRE:(w>>4&3)>1?F_STRASSE:F_PFAD];else if(A.ort&&A.ort[i]>>4&&A.bio[i]<2&&((i%GW+((i/GW)|0))&1))d[i]=pal[F_SEE]}
+  if(o)d[i]=pal[OFARBE[o]];else if(w&15&&!(U&&(w>>4&3)<2&&!(w&64)))d[i]=pal[w&64?F_FAEHRE:(w>>4&3)>1?F_STRASSE:F_PFAD];else if(A.ort&&A.ort[i]>>4&&A.bio[i]<2&&((i%GW+((i/GW)|0))&1))d[i]=pal[F_SEE]}
  return d}
 
 // ── Regionsbild ──

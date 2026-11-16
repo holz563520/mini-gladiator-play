@@ -366,7 +366,7 @@ function teilNetz(A,seed,see){var E=A.E,bio=A.bio,flu=A.flu,dir=A.dir,ort=A.ort,
    if(b!==65535){kandidat(a,b,d+dst[j]+10,i,r);continue}                                                // Gebiete berühren sich: mögliche Verbindung
    if(see)c=10+((pn(sR,0,nx,ny,G_NETZ)*12)>>16)+(E[j]>-100?6:0);                                             // Kosten nur einmal je Zelle (beim ersten Erreichen)
    else if(bj===11)c=70;
-   else{c=Math.abs(E[j]-E[i])>>5;c=10+(c>120?120:c)+B_WEG[bj]+((pn(sR,0,nx,ny,G_NETZ)*24)>>16)+(mix(sR^j)&7)+(vor[i]===(r^2)?12:0);   // geradeaus kostet extra: lieber im Zickzack als als Schneise
+   else{c=Math.abs(E[j]-E[i])>>5;c=10+(c>120?120:c)+B_WEG[bj]+((pn(sR,0,nx,ny,G_NETZ)*24)>>16)+(mix(sR^j)&7)+(vor[i]===(r^2)?6:0);   // geradeaus kostet etwas extra (keine Schneisen); 16.11.2026 von 12 auf 6 gesenkt: weniger unnötiges Zickzack
     if(flu[j]&&(dir[j]&7)<4&&(dir[j]&3)!==r&&(dir[j]&3)!==(r^2))c+=6*flu[j]}
    bes[j]=a;vor[j]=r^2;t=d+c;if(t>65000)t=65000;dst[j]=t;rein(j,t)}}
  // Verbindungen wählen: billigste zuerst (Länge × 65536 + Platz in der Tabelle), erst das verbindende Netz, dann Querverbindungen
@@ -412,19 +412,25 @@ function fein2(seed,x0,y0,x1,y1,gx0,gy0,kl,W){var dx=x1-x0,dy=y1-y0,len=Math.max
 // Grober Lauf eines Ausgangs: 13 Punkte in Feldern der Zelle (0..1024) von der Kantenquerung in einem Bogen zum Mittelpunkt, dazwischen seitlich versetzt
 var GX=new Int32Array(13), GY=new Int32Array(13);
 function grob(seed,Zx,Zy,q,jx,jy){var P=kanteW(seed,Zx,Zy,q),x0=P[0],y0=P[1],hs=mix(seed^Math.imul(um(Zx),0x3d4d51cb)^Math.imul(Zy,0x1f83d9ab)^Math.imul(q+1,0x9e3779b1));
- var mx=((x0+jx)>>1)+(hs%361)-180,my=((y0+jy)>>1)+((hs>>>10)%361)-180;
+ var mx=((x0+jx)>>1)+(hs%141)-70,my=((y0+jy)>>1)+((hs>>>10)%141)-70;                 // 16.11.2026: Bogen ±70 statt ±180 Felder (weniger Umwege)
  mx=mx<48?48:mx>ZF-48?ZF-48:mx;my=my<48?48:my>ZF-48?ZF-48:my;GX[0]=x0;GY[0]=y0;
  for(var i=1;i<=12;i++){var a=(12-i)*(12-i),b=2*i*(12-i),c=i*i,qx=((a*x0+b*mx+c*jx)/144)|0,qy=((a*y0+b*my+c*jy)/144)|0;
-  if(i<12){var t=i<12-i?i:12-i,hh=mix(hs+Math.imul(i,0x632be5ab));if(t>3)t=3;qx+=((((hh%73)-36)*t)/3)|0;qy+=(((((hh>>>8)%73)-36)*t)/3)|0;
+  if(i<12){var t=i<12-i?i:12-i,hh=mix(hs+Math.imul(i,0x632be5ab));if(t>3)t=3;qx+=((((hh%33)-16)*t)/3)|0;qy+=(((((hh>>>8)%33)-16)*t)/3)|0;
    qx=qx<8?8:qx>ZF-8?ZF-8:qx;qy=qy<8?8:qy>ZF-8?ZF-8:qy}
   GX[i]=qx;GY[i]=qy}}
+// 16.11.2026 (Wunsch Thomas: Wege nicht unnötig stark im Zickzack): Zelle ohne Ort mit genau zwei Ausgängen führt die Straße nicht über den
+// zufälligen Knoten, sondern nah an der Sehne zwischen den beiden Kantenquerungen vorbei (Knoten zu einem Viertel). Geradeaus bleibt fast gerade,
+// eine Biegung schneidet die Ecke ab: Treppen im Erdraster werden zu schrägen Wegen. Orte, Kreuzungen und Häfen behalten ihren Knoten.
+var ZWEI=[0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,0];
+function knoten(seed,Zx,Zy,ex,typ){if(typ||!ZWEI[ex&15])return;var a=-1,b=-1;for(var q=0;q<4;q++)if(ex>>q&1){if(a<0)a=q;else b=q}
+ var P=kanteW(seed,Zx,Zy,a),Q=kanteW(seed,Zx,Zy,b),mx=(P[0]+Q[0])>>1,my=(P[1]+Q[1])>>1;JP[0]=mx+((JP[0]-mx)>>2);JP[1]=my+((JP[1]-my)>>2)}
 function lauf(seed,Zx,Zy,q,jx,jy,kl,cx,cy,W){var ox=Zx*ZF-cx*ST,oy=Zy*ZF-cy*ST,g=V_WEIT+V_NAH+14;grob(seed,Zx,Zy,q,jx,jy);
  for(var i=1;i<=12;i++){var ax=GX[i-1]+ox,ay=GY[i-1]+oy,bx=GX[i]+ox,by=GY[i]+oy;
   if(!((ax<-g&&bx<-g)||(ay<-g&&by<-g)||(ax>ST+g&&bx>ST+g)||(ay>ST+g&&by>ST+g)))fein2(seed,Zx*ZF+GX[i-1],Zy*ZF+GY[i-1],Zx*ZF+GX[i],Zy*ZF+GY[i],cx*ST,cy*ST,kl,W)}}
 // Läufe einer Zelle für die Weltansicht (Hauptkern, nur beim Neuzeichnen der Region): je Ausgang 13 Punkte in Weltfeldern, mit der weiten Verschiebung.
 // Liefert [{x:[..],y:[..],kl,see}], see = Ausfahrt eines Hafens. A = ansicht der fertigen Erde.
 function wegLinien(seed,A,zx,zy){var i=zy*GW+zx,wg=A.weg[i],og=A.ort[i],ex=wg&15,typ=og&15,sea=typ>=3?(og>>4)&15:0,L=[];seed=seed>>>0;if(!ex&&!sea)return L;
- jeFuell(A.E,zx,zy);jWahl(seed,zx,zy);var jx=JP[0],jy=JP[1];
+ jeFuell(A.E,zx,zy);jWahl(seed,zx,zy);knoten(seed,zx,zy,ex,typ);var jx=JP[0],jy=JP[1];
  for(var q=0;q<4;q++){if(!((ex|sea)>>q&1))continue;grob(seed,zx,zy,q,jx,jy);var X=[],Y=[];
   for(var k=0;k<=12;k++){var x=zx*ZF+GX[k],y=zy*ZF+GY[k];versch(seed,x,y);X.push(x+VS[0]);Y.push(y+VS[1])}
   L.push({x:X,y:Y,kl:ex>>q&1?(wg>>4)&3||1:typ===4?2:1,see:!(ex>>q&1),faehre:!!(wg&64)})}
@@ -433,7 +439,7 @@ function wegLinien(seed,A,zx,zy){var i=zy*GW+zx,wg=A.weg[i],og=A.ort[i],ex=wg&15
 function wegZelle(X,seed,zx,zy,dx,dy,cx,cy,W){var wg=X6(X,dx,dy,6),og=X6(X,dx,dy,7),ex=wg&15,typ=og&15,sea=typ>=3?(og>>4)&15:0,p=0,q;
  if(!ex&&!typ)return;
  for(var ey=-1;ey<=1;ey++)for(var ex2=-1;ex2<=1;ex2++)JE[p++]=X6(X,dx+ex2,dy+ey,0);
- var Zx=zx+dx,Zy=zy+dy;jWahl(seed,Zx,Zy);var jx=JP[0],jy=JP[1],kl=(wg>>4)&3||1;
+ var Zx=zx+dx,Zy=zy+dy;jWahl(seed,Zx,Zy);knoten(seed,Zx,Zy,ex,typ);var jx=JP[0],jy=JP[1],kl=(wg>>4)&3||1;
  for(q=0;q<4;q++){if(ex>>q&1)lauf(seed,Zx,Zy,q,jx,jy,kl,cx,cy,W);else if(sea>>q&1)lauf(seed,Zx,Zy,q,jx,jy,typ===4?2:1,cx,cy,W)}
  if(!dx&&!dy&&typ){var R=PLATZ[typ]+4;versch(seed,Zx*ZF+jx,Zy*ZF+jy);pX=Zx*ZF+jx-cx*ST+VS[0];pY=Zy*ZF+jy-cy*ST+VS[1];
   if(pX>=-R&&pY>=-R&&pX<ST+R&&pY<ST+R)pTyp=typ}}
