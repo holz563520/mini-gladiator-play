@@ -91,6 +91,6 @@ function treffer(holeB,holeG,sicht,PX,PY,BILD,offen,fx,fy){var u=fx!=null?fx:Mat
 // Gebäudefeld unter dem Finger (Boden), für die Auskunft: {raum, art, zustand, dach} oder null
 function feld(holeB,X,Y){var a=holeB(X>>6,Y>>6);if(!a)return null;var q=((Y&63)<<6)|(X&63);if(!a[q])return null;var fl=a[3*F+q];return{raum:raumIn(a,q),art:a[q],zustand:(fl>>4)&3,dach:!!(fl&F_DACH)}}
 
-var BB_={ARTEN:ARTEN,LIFT:LIFT,KNIE:KNIE,BODEN:BODEN,vorbereiten:vorbereiten,sammeln:sammeln,frei:frei,boden:boden,malen:malen,treffer:treffer,feld:feld,raumIn:raumIn};
+var BB_={ARTEN:ARTEN,LIFT:LIFT,KNIE:KNIE,BODEN:BODEN,PUNKT:PUNKT,vorbereiten:vorbereiten,sammeln:sammeln,frei:frei,boden:boden,malen:malen,treffer:treffer,feld:feld,raumIn:raumIn};
 if(typeof module!=='undefined'&&module.exports)module.exports=BB_;else root.AT3BAUBILD=BB_;
 })(typeof self!=='undefined'?self:this);

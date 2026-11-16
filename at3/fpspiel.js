@@ -5,13 +5,14 @@
 // Wasser sperrt wie in M7 (Brücken, Stege und Furten tragen), Objekte mit Kollision „gesperrt“ sperren ihr Feld.
 // Kerne: Den Ausschnitt (96 × 96 Felder) baut der Bildkern aus seinen Kartenstücken (fpausschnitt.js); läuft der Gladiator mehr als 20 Felder von der Mitte weg,
 // kommt der nächste Ausschnitt, ohne anzuhalten. Der Hauptkern nimmt nur Eingaben an und zeichnet das kleine Bild (fpwelt.zeichne, Kosten fest, unabhängig von der Weltgröße).
+// FP2a: Gebäude sind begehbar (durch Türen und Tore), Wände verdecken, Antippen einer Wand zeigt ihre Objektkarte; beim Bauen kommt der Ausschnitt neu (bauNeu).
 // Gezeichnet wird nur, wenn sich etwas bewegt hat, und nur solange die Ansicht offen und sichtbar ist.
 var AT3FP=(function(){
 'use strict';
 var AUGE=0.58,TEMPO=1.2,RENNEN=2.2,DREH=1.9,N=96,MITTE=48,NACHLADEN=20,OPT={W:320,H:180,sicht:24,muster:true};
 var P={an:false,o:null,w:null,cam:null,arten:null,holt:false,lauf:false,neu:true,zeiten:[],tasten:{},stick:null,letzt:null,ts:0,
  ausschnitte:0,ausschnittMs:[],stueckeNeu:0,buf:null,img:null,d32:null,P32:null,ctx:null,eing:false,drossel:1};
-var WX=614400;
+var WX=614400,WAENDE=['wand-stein','wand-tuer','wand-tor'];
 function S(){return window.AT3_64}
 function el(id){return document.getElementById(id)}
 
@@ -68,6 +69,10 @@ function eingaben(cv){P.eing=true;
  cv.addEventListener('pointerup',ende);cv.addEventListener('pointercancel',ende)}
 function antippen(e){var cv=P.o.cv,r=cv.getBoundingClientRect(),sx=(e.clientX-r.left)/r.width*OPT.W,sy=(e.clientY-r.top)/r.height*OPT.H,best=null;
  (P.letzt&&P.letzt.treffer||[]).forEach(function(t){if(sx>=t.x0&&sx<t.x1&&sy>=t.y0&&sy<t.y1&&(!best||t.d<best.d))best=t});
+ // FP2a: Wand, Tür oder Tor unter dem Finger, wenn sie näher ist als das Objekt
+ var wa=P.letzt&&P.letzt.wand,X=Math.floor(sx);
+ if(wa&&X>=0&&X<OPT.W&&wa.d[X]<1e8&&sy>=wa.y0[X]&&sy<wa.y1[X]&&(!best||wa.d[X]<best.d)){var id=WAENDE[wa.typ[X]-1],wo=P.o.objekte[id];
+  if(P.o.beiObjekt)P.o.beiObjekt(id,!wo,wa.d[X]*3);return}
  var ob=best&&P.arten[best.o.art];if(P.o.beiObjekt)P.o.beiObjekt(ob?ob.id:null,ob?!!ob.ersatz:false,best?best.d*3:0)}
 
 // ---------- Schleife ----------
@@ -91,8 +96,15 @@ function nachladen(){if(P.holt||!P.w)return;var c=P.cam;if(Math.abs(c.x-MITTE)<=
  holen(ox,oy).then(function(r){var w=annehmen(r);P.holt=false;if(P.w!==alt)return;var dx=w.ox-alt.ox;if(dx>WX/2)dx-=WX;if(dx<-WX/2)dx+=WX;
   P.cam.x-=dx;P.cam.y-=w.oy-alt.oy;P.w=w;P.neu=true;starten()},function(){P.holt=false})}
 
+// FP2a: Der Weltkern hat gebaut (Baustelle weiter, Tür gesetzt, Abriss): denselben Ausschnitt neu holen, höchstens alle 0,5 s, man läuft dabei weiter.
+var bauT=0,bauWart=false;
+function bauNeu(){if(!P.an||!P.w)return;if(P.holt||performance.now()-bauT<500){if(!bauWart){bauWart=true;setTimeout(function(){bauWart=false;bauNeu()},500)}return}
+ bauT=performance.now();var alt=P.w;P.holt=true;
+ holen(alt.ox,alt.oy).then(function(r){var w=annehmen(r);P.holt=false;if(P.w!==alt)return;
+  if(!window.AT3_FPW.frei(w,P.cam.x,P.cam.y,P.cam.x+.01,P.cam.y)){var p=platz(w,P.cam.x,P.cam.y);if(p){P.cam.x=p.x;P.cam.y=p.y}}   // eingemauert: zum nächsten freien Platz
+  P.w=w;P.neu=true;starten()},function(){P.holt=false})}
 function p95(a){var s=a.slice().sort(function(x,y){return x-y});return s.length?s[Math.min(s.length-1,Math.floor(s.length*.95))]:null}
 function mess(){var z=P.zeiten;return{an:P.an,bilder:z.length,mittel:z.length?z.reduce(function(a,b){return a+b},0)/z.length:null,p95:p95(z),objekte:P.letzt?P.letzt.objekte:0,
  ausschnitte:P.ausschnitte,ausschnittP95:p95(P.ausschnittMs),stueckeNeu:P.stueckeNeu,opt:OPT,drossel:P.drossel}}
-return{an:an,aus:aus,position:position,mess:mess,zustand:function(){return P},OPT:OPT,AUGE:AUGE};
+return{an:an,aus:aus,position:position,mess:mess,bauNeu:bauNeu,zustand:function(){return P},OPT:OPT,AUGE:AUGE};
 })();

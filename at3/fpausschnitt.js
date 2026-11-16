@@ -13,7 +13,9 @@ var VON_BIOM=[0,0,1,1,2,3,2,2,4,5,0,0,5];          // weltgen-Biome 0..12 → Co
 var VON_WEG=[-1,6,6,7,1,7,8,0];                    // Wegschicht 1..7: Pfad, Straße, Brücke, Furt (begehbar, sieht nass aus), Steg, Ortsplatz, Fähre (Wasser)
 
 // PF: {he, du} Farbtabellen des Bildkerns (eine Stufe heller/dunkler). hole(cx,cy) → Kartenstück (Uint8Array) oder null. ox,oy: linke obere Ecke auf der Welt (ox darf beliebig sein, läuft um). sperr: Uint8Array je Naturart (1 = sperrt).
-function bauen(BB,NAT,hole,seed,ox,oy,sperr,PF,frei){                // G5b: frei(X,Y) = false auf Gebautem/Gerodetem (keine Natur)
+// FP2a: BA = {hole(cx,cy) → Bau-Kartenstück (gepackt wie bau.stueck) oder null, BODEN, PUNKT} oder null: Wände, Türen, Tore auf die Kanten, Gebäudeböden in die Farben.
+var BF=4096,Z_PLAN=1;
+function bauen(BB,NAT,hole,seed,ox,oy,sperr,PF,frei,BA){                // G5b: frei(X,Y) = false auf Gebautem/Gerodetem (keine Natur)
 var WX=BB.WX,WY=BB.WY,F=N+2,t0=Date.now();
  oy=Math.max(0,Math.min(WY-F,oy|0));ox=((ox|0)%WX+WX)%WX;
  var EH=new Float32Array(F*F),EB=new Uint8Array(F*F),EW=new Uint8Array(F*F),ES=new Uint8Array(F*F),fehlt=0;
@@ -38,9 +40,23 @@ var WX=BB.WX,WY=BB.WY,F=N+2,t0=Date.now();
  for(j=0;j<N;j++)for(i=0;i<N;i++){var e1=j*F+i,X2=(ox+i)%WX,Y2=oy+j,mn=Math.min(ES[e1],ES[e1+1],ES[e1+F],ES[e1+F+1]),mx=Math.max(ES[e1],ES[e1+1],ES[e1+F],ES[e1+F+1]);
   var t=NAT.art(seed,X2,Y2,EB[e1],EW[e1],mx-mn);if(t<0||(frei&&!frei(X2,Y2)))continue;var v=NAT.versatz(seed,X2,Y2),du=(v[0]/32+v[1]/16)/2,dv=(v[1]/16-v[0]/32)/2;
   ox2.push(i+.5+du);oy2.push(j+.5+dv);oa.push(t);if(sperr&&sperr[t])sperre[j*N+i]=1}
- var n=oa.length;
- return{format:'at3-fpwelt',ausschnitt:true,N:N,U:U,M:M,WL:WL,WANDH:1,ox:ox,oy:oy,h:h,biom:biom,farbe:farbe,
-  wandX:new Uint8Array((N+1)*N),wandY:new Uint8Array(N*(N+1)),sperre:sperre,objX:new Float32Array(ox2),objY:new Float32Array(oy2),objArt:new Uint8Array(oa),objN:n,fehlt:fehlt,ms:Date.now()-t0}}
+ var n=oa.length,wandX=new Uint8Array((N+1)*N),wandY=new Uint8Array(N*(N+1)),kanten=BA?gebaeude(BA,ox,oy,WX,WY,wandX,wandY,farbe,PF):0;
+ return{format:'at3-fpwelt',ausschnitt:true,N:N,U:U,M:M,WL:WL,WANDH:1,ox:ox,oy:oy,h:h,biom:biom,farbe:farbe,kanten:kanten,
+  wandX:wandX,wandY:wandY,sperre:sperre,objX:new Float32Array(ox2),objY:new Float32Array(oy2),objArt:new Uint8Array(oa),objN:n,fehlt:fehlt,ms:Date.now()-t0}}
+// FP2a: Gebautes aus dem Bau-Kartenstück (bau.js, eine Wahrheit) in den Ausschnitt. Kante: Typ und Bauzustand (ohne Herkunft) wie fpwelt.js sie liest.
+// Nordkante eines Felds → wandY, Westkante → wandX; die Ost- und Südkante des Ausschnitts kommt vom Feld dahinter (eine Spalte/Zeile mehr gelesen).
+// Geplante Kanten: Punktlinie am Boden. Boden der Gebäudefelder wie auf der Karte (Lager Sand, Werkstatt Erde, Unterkunft Holz), geplant als Punktmuster,
+// mit Fugen am Feldrand (Holz zusätzlich Dielen). Kosten fest: (N+1)² Felder, nur Lesen wo gebaut ist.
+function gebaeude(BA,ox,oy,WX,WY,wandX,wandY,farbe,PF){var n=0,BOD=BA.BODEN,PK=BA.PUNKT,du=PF.du;
+ for(var j=0;j<=N;j++){var Y=oy+j;if(Y>=WY)break;
+  for(var i=0;i<=N;i++){var X=(ox+i)%WX,a=BA.hole(X>>6,Y>>6);if(!a)continue;var q=((Y&63)<<6)|(X&63),kn=a[BF+q]&0x33,kw=a[2*BF+q]&0x33,art=a[q],k,t;
+   if(i<N&&(kn&3)){wandY[i+j*N]=kn;n++;if(((kn>>4)&3)===Z_PLAN)for(k=0;k<=U;k+=2)farbe[j*U*M+i*U+k]=PK}
+   if(j<N&&(kw&3)){wandX[i+j*(N+1)]=kw;n++;if(((kw>>4)&3)===Z_PLAN)for(k=0;k<=U;k+=2)farbe[(j*U+k)*M+i*U]=PK}
+   if(i<N&&j<N&&art){var c=BOD[art],plan=((a[3*BF+q]>>4)&3)===Z_PLAN;
+    for(var jj=0;jj<=U;jj++)for(var ii=0;ii<=U;ii++){var p=(j*U+jj)*M+i*U+ii;
+     if(plan){if(ii&jj&1)farbe[p]=PK;continue}
+     t=ii===0||jj===0||(art===3&&(jj&1)===0&&jj<U)?du[c]:c;farbe[p]=t}}}}
+ return n}
 // Felder (Puffer), die beim Verschicken ohne Kopie übergeben werden
 function puffer(w){return[w.h.buffer,w.biom.buffer,w.farbe.buffer,w.wandX.buffer,w.wandY.buffer,w.sperre.buffer,w.objX.buffer,w.objY.buffer,w.objArt.buffer]}
 // Kartenstücke, die ein Ausschnitt braucht (für den Bildkern: vorher rechnen)

@@ -6,6 +6,7 @@
 //    Ferne über Dunst-Farbtabellen der Palette, dahinter der vorbereitete Hintergrund aus fp.js (Himmel, Hügel als Horizontband).
 //    Kosten je Bild: Breite × Schritte (feste Obergrenze über die Sichtweite) + sichtbare Objekte (Obergrenze). Unabhängig von der Weltgröße.
 // 3) bewegen(...): Laufen wie eine Figur (Augenhöhe, Tempo, Wände, Wasser, zu steile Hänge, Bäume sperren ihr Feld).
+// FP2a: Kanten tragen Typ und Bauzustand (Wand, Tür, Tor; geplant, halb, fertig), Türen und Tore mit Öffnung, Sturz und Holzrahmen; Antippen der vordersten Kante je Spalte.
 // FP1: zeichne/bewegen laufen unverändert auch auf einem Ausschnitt der echten Welt (fpausschnitt.js, gleiches Format, Farben fertig in w.farbe).
 // Einheiten: 1 Feld ≈ 3 m, Höhe in Feldern (1 Feld = 1 Geschoss = 32 Bildpunkte im AT3-64-Bild).
 (function(G){
@@ -96,8 +97,18 @@ function vorbereiten(w,W,H,pal,muster,S,FP){var k=W+'x'+H+':'+pal;if(!merk.bg||m
  var fk=pal+':'+(muster?1:0);if(merk.fw!==w||merk.fk!==fk){merk.farbe=farben(w,S,muster);merk.fw=w;merk.fk=fk}
  if(merk.wf!==W){var fov=75*Math.PI/180,f=(W/2)/Math.tan(fov/2),off=new Float32Array(W),co=new Float32Array(W);
   for(var x=0;x<W;x++){off[x]=Math.atan((x+.5-W/2)/f);co[x]=Math.cos(off[x])}merk.off=off;merk.co=co;merk.f=f;merk.wf=W}
- var S2=S;merk.stein=[S2.nummer(0,2),S2.nummer(0,3),S2.nummer(0,4),S2.nummer(0,5)];
+ var S2=S;merk.stein=[S2.nummer(0,2),S2.nummer(0,3),S2.nummer(0,4),S2.nummer(0,5)];merk.holz=[S2.nummer(3,3),S2.nummer(3,1)];
+ if(!merk.tw||merk.tw.length!==W){merk.tw=new Float32Array(W);merk.ty0=new Int16Array(W);merk.ty1=new Int16Array(W);merk.tt=new Uint8Array(W);
+  merk.ov=new Float32Array(W*4*8);merk.zb=new Float32Array(W*H);merk.zs=new Uint16Array(W*H);merk.zfr=0}
+ if(merk.zs.length!==W*H){merk.zb=new Float32Array(W*H);merk.zs=new Uint16Array(W*H)}
  return merk}
+// FP2a: Kantenwert (ein Byte wie bau.js, ohne Herkunft): Bits 0–1 Typ (1 Wand, 2 Tür, 3 Tor), Bits 4–5 Bauzustand
+// (0 = fertig wie in der Probe M7, 1 geplant: nicht zu sehen, sperrt nicht, 2 in Arbeit: halbe Höhe, 3 fertig).
+// Tür und Tor: Öffnung von–bis entlang der Kante (Anteil des Felds) und Höhe in Geschossen (Vorschlagswerte), darüber der Sturz, an den Seiten ein Holzrahmen.
+var OEFF=[null,null,[.3,.7,.72],[.12,.88,.85]],RAHMEN=.05,MAXOV=4;
+function kv(a,i){return i>=0&&i<a.length?a[i]:0}
+function sichtbar(v){return (v&3)!==0&&((v>>4)&3)!==1}
+function sperrt(v,u){var t=v&3,z=(v>>4)&3;if(!t||z===1)return false;if(t===1)return true;var o=OEFF[t],fr=u-Math.floor(u);return fr<o[0]||fr>o[1]}
 // Höhe der Verdeckung (oberste schon belegte Zeile) in Spalte x für Tiefe d.
 function oberkante(m,x,d,H){var n=m.pc[x],b=x*MAXS,lo=0,hi=n-1,r=-1;while(lo<=hi){var mi=(lo+hi)>>1;if(m.pd[b+mi]<=d){r=mi;lo=mi+1}else hi=mi-1}return r<0?H:m.py[b+r]}
 // Objektbild als Farbnummern (255 = durchsichtig), einmal je Bild.
@@ -109,51 +120,65 @@ function nummernBild(b,S){var v=bildMerk.get(b);if(v)return v;var px=new Uint8Ar
 // cam {x,y,z,a}; opt {W,H,sicht,muster,pal}; arten {eiche:o, baum:o, blume:o}. Gibt Zählwerte und die getroffenen Flächen fürs Antippen zurück.
 function zeichne(buf,w,cam,opt,arten,S,FP){var W=opt.W,H=opt.H,sicht=opt.sicht,pal=opt.pal||S.PALETTE,m=vorbereiten(w,W,H,pal,!!opt.muster,S,FP);
  buf.set(m.bg);var hz=Math.round(H*FP.HORIZONT/FP.H),f=m.f,fa=m.farbe,nb=m.nebel,NL=NEBEL.length,h=w.h,schritte=0,stein=m.stein,cz=cam.z;
- var ca=Math.cos(cam.a),sa=Math.sin(cam.a);
- for(var x=0;x<W;x++){var an=cam.a+m.off[x],dx=Math.cos(an),dy=Math.sin(an),co=m.co[x],yb=H,t=.12,dt=.04,pfx=Math.floor(cam.x),pfy=Math.floor(cam.y),n=0,b=x*MAXS;
+ var ca=Math.cos(cam.a),sa=Math.sin(cam.a),holz=m.holz,tw=m.tw,ty0=m.ty0,ty1=m.ty1,tt=m.tt,ov=m.ov,nov=0;
+ // Stein der Wand an Bildzeile yy (Tiefe d, Fuß hb, Lage u entlang der Kante): Fugen, Seite heller/dunkler, Mauerkrone oben
+ function steinC(yy,d,hb,u,seite,hoch){var wz=cz-(yy-hz)*d/f-hb,lage=wz*5,reihe=Math.floor(lage),fr=lage-reihe,fu=u*2.5+(reihe&1)*.5,ju=fu-Math.floor(fu);
+  var c=fr<.14||ju<.07?stein[0]:(seite?stein[1]:stein[2]);if(reihe>=4&&fr>.6||wz>hoch-.07)c=stein[3];return c}
+ for(var x=0;x<W;x++){var an=cam.a+m.off[x],dx=Math.cos(an),dy=Math.sin(an),co=m.co[x],yb=H,t=.12,dt=.04,pfx=Math.floor(cam.x),pfy=Math.floor(cam.y),n=0,b=x*MAXS,novx=0;tw[x]=1e9;
   while(t<sicht&&n<MAXS-2){var px=cam.x+dx*t,py=cam.y+dy*t;if(px<0||py<0||px>=N||py>=N)break;
    var fx=Math.floor(px),fy=Math.floor(py);
-   if(fx!==pfx||fy!==pfy){var k1=1e9,k2=1e9,u1=0,u2=0,e1=-1,e2=-1;
-    if(fx!==pfx){var ex=Math.max(fx,pfx),tc=(ex-cam.x)/dx,yc=cam.y+dy*tc;if(wandAn(w.wandX,ex+Math.floor(yc)*(N+1))){k1=tc;u1=yc;e1=0}}
-    if(fy!==pfy){var ey=Math.max(fy,pfy),tc2=(ey-cam.y)/dy,xc=cam.x+dx*tc2;if(wandAn(w.wandY,Math.floor(xc)+ey*N)){k2=tc2;u2=xc;e2=1}}
-    if(k2<k1){var tk=k1,tu=u1,te=e1;k1=k2;u1=u2;e1=e2;k2=tk;u2=tu;e2=te}
-    if(e1>=0){yb=wand(k1,u1,e1);m.pd[b+n]=k1*co;m.py[b+n]=yb;n++}
-    if(e2>=0&&yb>0){yb=wand(k2,u2,e2);m.pd[b+n]=k2*co;m.py[b+n]=yb;n++}
+   if(fx!==pfx||fy!==pfy){var k1=1e9,k2=1e9,u1=0,u2=0,e1=-1,e2=-1,v1=0,v2=0;
+    if(fx!==pfx){var ex=Math.max(fx,pfx),tc=(ex-cam.x)/dx,yc=cam.y+dy*tc,va=kv(w.wandX,ex+Math.floor(yc)*(N+1));if(sichtbar(va)){k1=tc;u1=yc;e1=0;v1=va}}
+    if(fy!==pfy){var ey=Math.max(fy,pfy),tc2=(ey-cam.y)/dy,xc=cam.x+dx*tc2,vb=kv(w.wandY,Math.floor(xc)+ey*N);if(sichtbar(vb)){k2=tc2;u2=xc;e2=1;v2=vb}}
+    if(k2<k1){var tk=k1,tu=u1,te=e1,tv=v1;k1=k2;u1=u2;e1=e2;v1=v2;k2=tk;u2=tu;e2=te;v2=tv}
+    if(e1>=0){yb=wand(k1,u1,e1,v1);m.pd[b+n]=k1*co;m.py[b+n]=yb;n++}
+    if(e2>=0&&yb>0){yb=wand(k2,u2,e2,v2);m.pd[b+n]=k2*co;m.py[b+n]=yb;n++}
     pfx=fx;pfy=fy;if(yb<=0)break}
    var d=t*co,hh=hoeheIn(h,px,py),y=hz+((cz-hh)*f/d)|0;
    if(y<yb){var gi=(Math.round(py*U)*M+Math.round(px*U)),lv=Math.min(NL-1,(d/sicht*NL)|0),c=nb[lv*64+fa[gi]];if(y<0)y=0;
     for(var yy=y;yy<yb;yy++)buf[yy*W+x]=c;yb=y;m.pd[b+n]=d;m.py[b+n]=yb;n++;if(yb<=0)break}
    t+=dt;dt=.035+t*.011;schritte++}
   m.pc[x]=n;
-  function wand(tc,u,seite){var d=tc*co;if(d<.05)return yb;var hb=hoeheIn(h,cam.x+dx*tc,cam.y+dy*tc),top=hb+WANDH,
-    y0=Math.max(0,Math.ceil(hz+(cz-top)*f/d)),y1=Math.min(yb,Math.floor(hz+(cz-hb)*f/d)+1),lv=Math.min(NL-1,(d/sicht*NL)|0);
+  // Wand, Tür oder Tor auf einer Feldkante. Volle Wand und Pfosten verdecken alles dahinter (yb sinkt). In der Öffnung läuft der Strahl weiter;
+  // der Sturz darüber wird gemerkt und erst nach den Objekten gemalt (er liegt vor allem, was später in dieser Spalte kommt).
+  function wand(tc,u,seite,v){var d=tc*co;if(d<.05)return yb;var hb=hoeheIn(h,cam.x+dx*tc,cam.y+dy*tc),typ=v&3,zu=(v>>4)&3,hoch=zu===2?WANDH*.5:WANDH,
+    y0=Math.max(0,Math.ceil(hz+(cz-hb-hoch)*f/d)),y1=Math.min(yb,Math.floor(hz+(cz-hb)*f/d)+1),lv=Math.min(NL-1,(d/sicht*NL)|0);
    if(y0>=y1)return yb;
-   for(var yy=y0;yy<y1;yy++){var wz=cz-(yy-hz)*d/f-hb,lage=wz*5,reihe=Math.floor(lage),fr=lage-reihe,fu=u*2.5+(reihe&1)*.5,ju=fu-Math.floor(fu);
-    var c=fr<.14||ju<.07?stein[0]:(seite?stein[1]:stein[2]);if(reihe>=4&&fr>.6)c=stein[3];buf[yy*W+x]=nb[lv*64+c]}
+   if(tw[x]>d){tw[x]=d;ty0[x]=y0;ty1[x]=y1;tt[x]=typ}
+   var oe=OEFF[typ],fr=u-Math.floor(u);
+   if(oe&&fr>oe[0]&&fr<oe[1]){if(zu===2)return yb;
+    var yl=Math.min(y1,Math.floor(hz+(cz-hb-oe[2]*WANDH)*f/d)+1);
+    if(y0<yl&&novx<MAXOV){var o=nov*8;ov[o]=x;ov[o+1]=y0;ov[o+2]=yl;ov[o+3]=d;ov[o+4]=hb;ov[o+5]=u;ov[o+6]=seite;ov[o+7]=lv;nov++;novx++}
+    return yb}
+   var rahmen=oe&&(fr>oe[0]-RAHMEN&&fr<=oe[0]||fr>=oe[1]&&fr<oe[1]+RAHMEN),hc=holz[seite];
+   for(var yy=y0;yy<y1;yy++)buf[yy*W+x]=nb[lv*64+(rahmen?hc:steinC(yy,d,hb,u,seite,hoch))];
    return Math.min(yb,y0)}}
  // Objekte: in Sichtweite und vor der Kamera, nah zuerst ausgewählt (Obergrenze), dann von hinten nach vorn gezeichnet
  var liste=[];for(var i=0;i<w.obj.length;i++){var o=w.obj[i],rx=o.x-cam.x,ry=o.y-cam.y,de=rx*ca+ry*sa;if(de<.25||de>sicht)continue;
   var si=-rx*sa+ry*ca;if(Math.abs(si)>de*1.1+1)continue;liste.push({o:o,d:de,sx:W/2+si*f/de})}
  liste.sort(function(a,b){return a.d-b.d});if(liste.length>MAXOBJ)liste.length=MAXOBJ;
- var treffer=[],FPW=FP;
+ var treffer=[],FPW=FP,zb=m.zb,zs=m.zs,zf=m.zfr=(m.zfr+1)&0xffff||1;
  for(var q=liste.length-1;q>=0;q--){var e=liste[q],oo=e.o,ob=arten[oo.art];if(!ob)continue;
   var seite=((Math.round((Math.atan2(cam.y-oo.y,cam.x-oo.x)-cam.a*0)/(Math.PI/4))+oo.r)%8+8)%8,k=f/(32*e.d),fern=k<.5,bi=fern?FPW.fernBild(ob,seite):FPW.nahBild(ob,seite);
   if(!bi){bi=FPW.nahBild(ob,seite);fern=false}if(!bi)continue;if(fern)k*=2;
   var nbz=nummernBild(bi,S),fy2=hz+(cz-oo.z)*f/e.d,x0=e.sx-nbz.ax*k,y0=fy2-nbz.ay*k,sw=nbz.w*k,sh=nbz.h*k,lv2=Math.min(NL-1,(e.d/sicht*NL)|0),ix0=Math.max(0,Math.ceil(x0)),ix1=Math.min(W,Math.ceil(x0+sw));
   if(ix0>=ix1||y0>=H)continue;var gezeigt=false;
   for(var X=ix0;X<ix1;X++){var ix=Math.min(nbz.w-1,((X-x0)/k)|0),clip=Math.min(H,oberkante(m,X,e.d,H),Math.ceil(y0+sh));
-   for(var Y=Math.max(0,Math.ceil(y0));Y<clip;Y++){var iy=Math.min(nbz.h-1,((Y-y0)/k)|0),c2=nbz.px[iy*nbz.w+ix];if(c2!==255){buf[Y*W+X]=nb[lv2*64+c2];gezeigt=true}}}
+   for(var Y=Math.max(0,Math.ceil(y0));Y<clip;Y++){var iy=Math.min(nbz.h-1,((Y-y0)/k)|0),c2=nbz.px[iy*nbz.w+ix];if(c2!==255){var pz=Y*W+X;buf[pz]=nb[lv2*64+c2];zb[pz]=e.d;zs[pz]=zf;gezeigt=true}}}
   if(gezeigt)treffer.push({o:oo,x0:x0,y0:y0,x1:x0+sw,y1:y0+sh,d:e.d})}
- return{schritte:schritte,objekte:treffer.length,kandidaten:liste.length,treffer:treffer}}
-function wandAn(a,i){return i>=0&&i<a.length&&a[i]===1}
+ // FP2a: Stürze über Tür und Tor, außer wo ein näheres Objekt davor steht; die untersten zwei Zeilen sind der Holzbalken
+ for(var g=0;g<nov;g++){var o8=g*8,gx=ov[o8],ga=ov[o8+1],gb=ov[o8+2],gd=ov[o8+3],gh=ov[o8+4],gu=ov[o8+5],gs=ov[o8+6],gl=ov[o8+7]*64;
+  for(var gy=ga;gy<gb;gy++){var pg=gy*W+gx;if(zs[pg]===zf&&zb[pg]<gd)continue;buf[pg]=nb[gl+(gy>=gb-2?holz[gs]:steinC(gy,gd,gh,gu,gs,WANDH))]}}
+ return{schritte:schritte,objekte:treffer.length,kandidaten:liste.length,treffer:treffer,stuerze:nov,
+  wand:{d:tw,y0:ty0,y1:ty1,typ:tt}}}
 
 // ---------- Laufen ----------
 // Wie eine Figur: Wände auf Kanten, Wasser (außer Steg), Bäume sperren ihr Feld, Hänge steiler als 50° nicht begehbar. Gleiten an Hindernissen.
 var KOERPER=.22,STEIL=1.2;
 function frei(w,x0,y0,x1,y1){if(x1<1||y1<1||x1>N-1||y1>N-1)return false;
  var sx=x1+Math.sign(x1-x0)*KOERPER,sy=y1+Math.sign(y1-y0)*KOERPER,fa=Math.floor(x0),fb=Math.floor(y0),ga=Math.floor(sx),gb=Math.floor(sy);
- if(ga!==fa&&wandAn(w.wandX,Math.max(ga,fa)+fb*(N+1)))return false;
- if(gb!==fb&&wandAn(w.wandY,fa+Math.max(gb,fb)*N))return false;
+ if(ga!==fa&&sperrt(kv(w.wandX,Math.max(ga,fa)+fb*(N+1)),y0))return false;   // FP2a: Tür/Tor nur in der Öffnung, geplante Wände sperren nicht, halbe schon
+ if(gb!==fb&&sperrt(kv(w.wandY,fa+Math.max(gb,fb)*N),x0))return false;
  if(w.sperre[Math.floor(sy)*N+Math.floor(sx)])return false;
  var k=Math.round(sy*U)*M+Math.round(sx*U);if((w.h[k]<WL||w.biom[k]===BIOM.wasser)&&w.biom[k]!==BIOM.steg)return false;   // FP1: Bergseen liegen über WL, zählen über das Biom
  var dh=hoehe(w,x1,y1)-hoehe(w,x0,y0),dist=Math.hypot(x1-x0,y1-y0)||1e-6;return dh/dist<=STEIL}
@@ -161,7 +186,7 @@ function bewegen(w,cam,vor,seit,dt,auge){var ca=Math.cos(cam.a),sa=Math.sin(cam.
  if(mx||my){if(frei(w,x,y,x+mx,y))x+=mx;if(frei(w,x,y,x,y+my))y+=my;cam.x=x;cam.y=y}
  var ziel=hoehe(w,cam.x,cam.y)+auge;cam.z=cam.z==null?ziel:cam.z+(ziel-cam.z)*Math.min(1,dt*12);return cam}
 
-var FPW={N:N,U:U,M:M,WL:WL,WANDH:WANDH,BIOM:BIOM,MAXOBJ:MAXOBJ,welt:welt,hoehe:hoehe,farben:farben,zeichne:zeichne,bewegen:bewegen,frei:frei};
+var FPW={N:N,U:U,M:M,WL:WL,WANDH:WANDH,BIOM:BIOM,MAXOBJ:MAXOBJ,OEFF:OEFF,sperrt:sperrt,welt:welt,hoehe:hoehe,farben:farben,zeichne:zeichne,bewegen:bewegen,frei:frei};
 // Hintergrundkern: im Worker erzeugt der Kern die Welt und schickt die Felder ohne Kopie zurück.
 if(typeof window==='undefined'&&typeof importScripts==='function'&&typeof self!=='undefined'){
  self.onmessage=function(e){var w=welt(e.data.seed);self.postMessage(w,[w.h.buffer,w.biom.buffer,w.wandX.buffer,w.wandY.buffer,w.sperre.buffer])};return}

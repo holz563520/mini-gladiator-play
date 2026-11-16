@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='c2eb591e', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='c5c3bf94', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -166,7 +166,7 @@ function bauTipp(f){var o=f&&f.obj,raum=(o&&o.raum)||(f&&f.bau&&f.bau.raum),nr;
  if(BAUW==='tuer'){if(!o||o.teil!=='wand'){$('bauInfo').textContent=t('bau.tippWand');return}nr=KERN.befehl('bauTuerWechsel',{x:o.x,y:o.y,seite:o.seite})}
  else{if(!raum){$('bauInfo').textContent=t('bau.tippHaus');return}nr=KERN.befehl('bauHuelle',{raum:raum})}
  bauNr[nr]=BAUW;window.AT3SPIEL.bauBefehl=nr}
-function beiBau(d){if(KARTE)KARTE.beiBau(d);bauStand.gold=d.gold;bauStand.s=d.baustellen;if(!$('bauLeiste').hidden)bauGoldZeigen();
+function beiBau(d){if(KARTE)KARTE.beiBau(d);if(fpAn&&d.stuecke&&d.stuecke.length&&window.AT3FP)window.AT3FP.bauNeu();bauStand.gold=d.gold;bauStand.s=d.baustellen;if(!$('bauLeiste').hidden)bauGoldZeigen();
  (d.meld||[]).forEach(function(m){var a=bauNr[m.nr];if(!a)return;delete bauNr[m.nr];KARTE.rahmen(null);window.AT3SPIEL.bauMeld=m;
   $('bauInfo').textContent=!m.ok?grundText(m.grund):a==='abriss'?t('bau.okAb'):a==='dach'?t('bau.okDach',{n:m.felder||0}):a==='wand'?(m.kosten?t('bau.okWand',{n:m.waende,g:m.kosten}):t('bau.okWandAb',{n:m.waende})):
    a==='tuer'?t('bau.okTuer.'+(m.typ||'tuer')):a==='huelle'?(m.kosten?t('bau.okHuelle',{g:m.kosten}):t('bau.okHuelleLeer')):t('bau.ok',{g:(m.kosten||0)})})}

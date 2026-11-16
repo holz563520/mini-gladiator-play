@@ -7,7 +7,7 @@
 // G4b: backt die Natur aus dem Startset (natur.js) mit ins Bodenbild und findet beim Antippen das vorderste Naturobjekt unter dem Finger.
 // W1c Runde Welt: Das Fenster der Stücke läuft in x über die Naht (hole rechnet die Stückspalte um), in y endet es am Pol.
 // G4d: Fernbilder der Stufen ⅟16 bis ⅟4096 (fernbild.js, nur aus dem Erdraster, ohne Kartenstücke) und der Globus (Frage „globus“, aus dem Erdbild der Startplatz-Wahl).
-// FP1: Frage „fp“: Ausschnitt der echten Welt für die First-Person-Ansicht (fpausschnitt.js).
+// FP1: Frage „fp“: Ausschnitt der echten Welt für die First-Person-Ansicht (fpausschnitt.js). FP2a: mit Wänden, Türen, Toren und Gebäudeböden.
 // G5b: Gebäude (baubild.js). Der Hauptkern reicht die geänderten Bau-Kartenstücke vom Weltkern weiter (Nachricht „bau“, dünn: nur wo gebaut ist) und die Bilder
 // aus dem Startset („bauBilder“). Bodenbilder bekommen Boden, Wände und Dach mit; auf Gebautem und Gerodetem keine Natur (auch nicht in First Person).
 // Anfrage „bild“ mit „offen“ (Räume ohne Dach, nur Stufe 1×). Antippen findet das vorderste Bauteil oder die Natur davor und meldet das Gebäudefeld.
@@ -52,7 +52,7 @@ function fp(d,m,t){if(!FPA){importScripts('fpausschnitt.js'+self.location.search
  st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});
  L.forEach(function(c){var k=um(c[0])*8192+c[1];if(st.has(k))return;var b=G.ausschnitt(A,c[0],c[1],lager.pop()||new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:c[0],cy:c[1],daten:b});b._s=null;st.set(k,b);neu++});
  var sp=new Uint8Array(NAT.ARTEN.length);(d.sperr||[]).forEach(function(id){var i=NAT.ARTEN.indexOf(id);if(i>=0)sp[i]=1});
- var w=FPA.bauen(BB,NAT,hole,seed,d.ox,d.oy,sp,F,BAU.size?bauFrei:null);m.welt=w;m.arten=NAT.ARTEN;m.neu=neu;m.us=(performance.now()-t)*1000;self.postMessage(m,FPA.puffer(w));weiter()}
+ var w=FPA.bauen(BB,NAT,hole,seed,d.ox,d.oy,sp,F,BAU.size?bauFrei:null,BAU.size?{hole:holeBau,BODEN:BAUB.BODEN,PUNKT:BAUB.PUNKT}:null);m.welt=w;m.arten=NAT.ARTEN;m.neu=neu;m.us=(performance.now()-t)*1000;self.postMessage(m,FPA.puffer(w));weiter()}
 function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  for(var r=0;r<MY;r++)for(var dy=-r;dy<=r;dy++)for(var dx=-r;dx<=r;dx+=(Math.abs(dy)===r?1:2*r||1)){var x=MX+dx,y=MY+dy,i=y*G.GW+x;
   if(A.ort[i]&15){var p=G.ortPunkt(seed,A,x,y);return{x:p[0],y:p[1],ort:A.ort[i]&15}}
