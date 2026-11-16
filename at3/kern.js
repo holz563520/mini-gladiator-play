@@ -114,16 +114,16 @@ function abdruck(z){var h=0x811c9dc5,i;function f(v){h=Math.imul(h^(v&255),0x010
 // ── Spielstand (G3): Zustand an einer Tickgrenze als einfache Zahlenlisten (JSON-tauglich) und zurück ──
 // Gesichert wird alles, was der Fingerabdruck sieht, dazu wartende Befehle und offene Probeaufträge (die werden nach dem Laden neu vergeben,
 // gleiche Nummer, gleicher Eingang, gleicher Fälligkeits-Tick: darum ist der Fingerabdruck nach dem Laden exakt gleich).
-// Riesenwelt-Probe (rw) und Weltgenerator (wg) gehören noch nicht zum Spiel: von wg werden nur Seed, Dichte und Blick gesichert,
-// die Welt entsteht ab G4 beim Laden aus dem Seed neu. stand.ganz=false meldet, dass etwas davon nicht exakt gesichert ist.
+// Riesenwelt-Probe (rw) gehört nicht zum Spiel. Weltgenerator (wg, seit G4a im Spiel): gesichert werden Seed, Dichte, Blick und die Zählwerte (weltstrom.js stand),
+// Erde und Kartenstücke entstehen beim Laden neu aus dem Seed. stand.ganz=false meldet, dass etwas davon nicht exakt gesichert ist.
 var STAND=1;
 function stand(z){var off=[],ganz=!z.rw,i;
- for(i=0;i<z.offen.length;i++){var o=z.offen[i];if(o.art){ganz=false;continue}off.push([o.nr,o.region,o.faellig,o.ein|0,o.runden|0])}
- if(z.wg&&z.wg.an)ganz=false;
+ for(i=0;i<z.offen.length;i++){var o=z.offen[i];if(o.art){if(o.art!=='gelaende'||!z.wg)ganz=false;continue}off.push([o.nr,o.region,o.faellig,o.ein|0,o.runden|0])}
+ if(z.wg&&!WS().exakt(z.wg))ganz=false;
  return{format:STAND,ganz:ganz,seed:z.seed>>>0,tick:z.tick,tempo:z.tempo,last:z.last,auftragNr:z.auftragNr,angewandt:z.angewandt,
   zufall:Array.from(z.zufall),fern:Array.from(z.fern),e:Array.from(z.e),offen:off,
   warte:z.warte.map(function(b){return[b.nr,b.tick,b.art,b.wert]}),
-  welt:z.wg?{seed:z.wg.seed>>>0,dichte:z.wg.dichte,kx:z.wg.kx,ky:z.wg.ky}:null}}
+  welt:z.wg?WS().stand(z.wg,z):null}}
 // Prüft streng (fremde oder kaputte Stände werden abgelehnt, nicht halb geladen). Gibt {z, auftraege} oder {fehler} zurück.
 function ausStand(d,version){
  function ganzZ(v,min,max){return typeof v==='number'&&v===Math.floor(v)&&v>=min&&v<=max}

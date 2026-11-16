@@ -4,7 +4,10 @@
 // Kerne: Vergeben und Übernehmen an festen Ticks im Weltkern, Rechnen in den Helferkernen (weltgen.js), nichts auf dem Hauptkern (Regel 13).
 // Riesenwelt (Regel 14): Erdraster mit Netz einmal je Welt (rund 850 KB bis 1 MB), Kartenstücke nur im Fenster 7 × 7 um den Blick, höchstens 2 neue je Tick, nächste zuerst,
 // Puffer werden wiederverwendet. Unberührtes Land = nur Seed. Es wird nichts gespeichert (Spielstände kommen in G3).
-// Wird nur geladen, wenn ein solcher Befehl kommt: das Spiel lädt diese Datei noch nicht (G4). Ohne Befehl bleibt z.wg leer und der Fingerabdruck wie in G2.
+// G4a: Das Spiel nutzt den Generator (Karte). Spielstand: stand() sichert Seed, Dichte, Blick, die Zählwerte des Fingerabdrucks, die vorhandenen Stücke und die
+// offenen Stückaufträge. ausStand() rechnet beim Laden Erde und Stücke einmal direkt im Weltkern neu (Ladezeit, nicht im Spiel) und vergibt offene Aufträge mit
+// derselben Nummer neu: der Fingerabdruck ist nach dem Laden exakt gleich und läuft gleich weiter. Nur während die Erde entsteht (erste Sekunden) ist der Stand nicht exakt.
+// Wird nur geladen, wenn ein solcher Befehl kommt oder ein Spielstand eine Welt enthält. Ohne Befehl bleibt z.wg leer und der Fingerabdruck wie in G2.
 // Wiederverwendet: Fenster, Reihenfolge „nächste zuerst“ und Pufferumlauf aus riesenwelt.js (MK1); Verteiler und Tickübernahme aus kern.js (G2).
 (function(root){
 'use strict';
@@ -55,6 +58,25 @@ function uebernehmen(z,o,d){var w=z.wg,G=WG(),s,i;if(!w||!d||o.gen!==w.gen)retur
 function abdruck(w,f){f(w.an?1:0);f(w.seed);f(w.dichte);f(w.teil);f(w.kx);f(w.ky);f(w.fertig);f(w.summe);f(w.erdSumme)}
 function bytes(w){var G=WG();return(w.erde?w.erde.byteLength:w.unterwegs?G.ERD_BYTES:0)+(w.stuecke.size+w.lager.length)*G.GEL_BYTES}
 
-var WS={FENSTER:FENSTER,HALB:HALB,ST_JE_TICK:ST_JE_TICK,SEITE:SEITE,ARTEN:ARTEN,befehl:befehl,ausgeben:ausgeben,uebernehmen:uebernehmen,abdruck:abdruck,bytes:bytes};
+// ── Spielstand (G4a) ──
+function exakt(w){return !w.an||(w.teil>=WG().TEILE&&!w.unterwegs)}
+function stand(w,z){var da=[],auf=[];w.stuecke.forEach(function(b,k){da.push(k)});da.sort(function(a,b){return a-b});
+ for(var i=0;i<z.offen.length;i++){var o=z.offen[i];if(o.art==='gelaende'&&o.gen===w.gen&&w.bestellt.get(o.key)===o.nr)auf.push([o.nr,o.key,o.faellig])}
+ return{an:w.an?1:0,seed:w.seed>>>0,dichte:w.dichte,kx:w.kx,ky:w.ky,teil:w.teil,fertig:w.fertig,summe:w.summe>>>0,erdSumme:w.erdSumme>>>0,suche:w.suche?1:0,da:da,auf:auf}}
+// d = gesicherte Welt, z = geladener Kernzustand. Gibt die neu zu vergebenden Aufträge zurück (null = Stand ungültig).
+function ausStand(d,z){var G=WG(),U=function(v,max){return typeof v==='number'&&v===Math.floor(v)&&v>=0&&v<=max},i;
+ if(!d||!U(d.seed,4294967295)||!ARTEN.weltdichte(d.dichte)||!U(d.kx,SEITE-1)||!U(d.ky,SEITE-1))return null;
+ var w=neu();w.seed=d.seed;w.dichte=d.dichte;w.kx=d.kx;w.ky=d.ky;z.wg=w;if(!d.an)return[];
+ if(!U(d.teil,G.TEILE)||!U(d.fertig,2147483647)||!U(d.summe,4294967295)||!U(d.erdSumme,4294967295)||!Array.isArray(d.da)||d.da.length>FENSTER*FENSTER||!Array.isArray(d.auf)||d.auf.length>FENSTER*FENSTER)return null;
+ for(i=0;i<d.da.length;i++)if(!ARTEN.blick(d.da[i]))return null;
+ for(i=0;i<d.auf.length;i++){var a=d.auf[i];if(!Array.isArray(a)||a.length!==3||!U(a[0],z.auftragNr-1)||!ARTEN.blick(a[1])||!U(a[2],2147483647))return null}
+ beginn(w);if(d.teil<G.TEILE)return[];                                            // Erde war noch im Bau: neu anfangen (Stand war als nicht exakt gemeldet)
+ w.erde=G.fest(G.erde(w.seed,w.dichte));w.ans=G.ansicht(w.erde.buffer);w.teil=G.TEILE;w.fertig=d.fertig;w.summe=d.summe;w.erdSumme=d.erdSumme;w.suche=!!d.suche;
+ for(i=0;i<d.da.length;i++){var k=d.da[i],cx=(k/8192)|0,cy=k%8192,b=G.ausschnitt(w.ans,cx,cy,new Uint8Array(G.GEL_BYTES));G.gelaende({seed:w.seed,cx:cx,cy:cy,daten:b});w.stuecke.set(k,b)}
+ var neuL=[];for(i=0;i<d.auf.length;i++){var q=d.auf[i],x=(q[1]/8192)|0,y=q[1]%8192;w.bestellt.set(q[1],q[0]);
+  z.offen.push({nr:q[0],art:'gelaende',key:q[1],gen:w.gen,faellig:q[2]});
+  neuL.push({nr:q[0],version:z.version,vorrang:1,art:'gelaende',seed:w.seed,cx:x,cy:y,daten:G.ausschnitt(w.ans,x,y,new Uint8Array(G.GEL_BYTES)),faellig:q[2]})}
+ z.offen.sort(function(a,b){return a.nr-b.nr});return neuL}
+var WS={exakt:exakt,stand:stand,ausStand:ausStand,FENSTER:FENSTER,HALB:HALB,ST_JE_TICK:ST_JE_TICK,SEITE:SEITE,ARTEN:ARTEN,befehl:befehl,ausgeben:ausgeben,uebernehmen:uebernehmen,abdruck:abdruck,bytes:bytes};
 if(typeof module!=='undefined'&&module.exports)module.exports=WS;else root.AT3WS=WS;
 })(typeof self!=='undefined'?self:this);

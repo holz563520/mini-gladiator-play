@@ -5,7 +5,7 @@
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='94cf0b6e', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='79919262', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -24,7 +24,7 @@ function starten(opt){opt=opt||{};
   // Riesenwelt-Probe (MK1): Spielstandgröße und Speicher beim Weltkern erfragen
   rwStand:function(){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=ok;welt.postMessage({art:'rwStand',id:id})})},
   // Weltgenerator (W1a): Bilddaten für die Weltansicht im Master-Editor an- und abschalten, Stückpuffer nach dem Zeichnen zurückgeben
-  wsAn:function(an){if(welt)welt.postMessage({art:'wsAn',an:!!an})},
+  wsAn:function(an,nurErde){if(welt)welt.postMessage({art:'wsAn',an:!!an,nurErde:!!nurErde})},   // G4a: nurErde für die Spielkarte
   wsZurueck:function(buf){if(welt&&buf&&buf.buffer.byteLength)welt.postMessage({art:'wsPuffer',buf:buf},[buf.buffer])},
   testAusfall:function(wo){var w=wo==='helfer'?hs[0]:welt;if(w)w.postMessage({art:'testAusfall'})},
   ende:function(){tot=true;Z.laeuft=false;aufraeumen()}};

@@ -17,12 +17,13 @@ var rwLetzt=-99, rwUs={nation:0,stueck:0}, rwJobs={nation:0,stueck:0}, warteAb=0
 function rwLaden(){if(!self.AT3RW)importScripts('riesenwelt.js'+self.location.search)}
 // Weltgenerator (W1a): weltgen.js und weltstrom.js werden erst mit dem ersten Befehl weltseed/blick geladen. Messwerte und Bilddaten nur für die
 // Weltansicht im Master-Editor (wsAn): Erdraster einmal als Kopie, jedes neu angekommene Kartenstück als Kopie in einem Umlaufpuffer.
-var wsAn=false, wsErdGen=-1, wsLetzt=-99, wsErdUs=[], wsRing=new Float32Array(128), wsN=0, wsMax=0, wsPool=[];
+var wsAn=false, wsNurErde=false, wsErdGen=-1, wsLetzt=-99, wsErdUs=[], wsRing=new Float32Array(128), wsN=0, wsMax=0, wsPool=[];
 function wsLaden(){if(!self.AT3WS)importScripts('weltgen.js'+self.location.search,'weltstrom.js'+self.location.search)}
 function wsNull(){wsErdUs=[];wsN=0;wsMax=0;wsLetzt=-99}
 function wsZeit(art,teil,us){if(art==='erde')wsErdUs[teil]=us;else if(art==='gelaende'){wsRing[wsN++&127]=us;if(us>wsMax)wsMax=us}}
 function wsSenden(){var w=z.wg;if(!w)return;if(!wsAn){w.frisch.length=0;return}
  if(w.ans&&wsErdGen!==w.gen){wsErdGen=w.gen;var k=new Uint8Array(w.erde);self.postMessage({art:'wsErde',gen:w.gen,seed:w.seed,buf:k},[k.buffer])}
+ if(wsNurErde)w.frisch.length=0;
  while(w.frisch.length){var key=w.frisch.shift(),b=w.stuecke.get(key);if(!b)continue;var G=self.AT3WG,c=wsPool.pop()||new Uint8Array(G.ST_BYTES);c.set(b.subarray(0,G.ST_BYTES));
   self.postMessage({art:'wsStueck',gen:w.gen,cx:(key/8192)|0,cy:key%8192,buf:c},[c.buffer])}
  if(z.tick-wsLetzt<5&&z.tick>=wsLetzt)return;wsLetzt=z.tick;
@@ -55,7 +56,7 @@ function senden(){if(!neuesBild||!puffer.length)return;neuesBild=false;var b=puf
 
 function takt(){if(modus==='lauf'){laufen();return}
  var jetzt=performance.now(),dt=jetzt-letzt;letzt=jetzt;
- if(!laeuft||!sichtbar||z.tempo===0){schuld=0;ueber=false;senden();return}       // Pause: kein Zeitgeber, weiter erst nach Befehl
+ if(!laeuft||!sichtbar||z.tempo===0){schuld=0;ueber=false;senden();wsSenden();return}       // Pause: kein Zeitgeber, weiter erst nach Befehl
  schuld+=dt*z.tempo*K.TICKS/1000;
  if(schuld>MAXNACH){verloren+=Math.floor(schuld-MAXNACH);schuld=MAXNACH;ueber=true}
  var ende=jetzt+SCHEIBE;
@@ -81,7 +82,10 @@ function vonHelfer(h){return function(e){var d=e.data;h.frei=true;fremd++;if(rwU
 self.onmessage=function(e){var d=e.data;
  if(d.art==='start'){(d.ports||[]).forEach(function(p){var h={port:p,frei:true};p.onmessage=vonHelfer(h);helfer.push(h)});
   var ausS=null;if(d.stand){ausS=K.ausStand(d.stand,V.version()+1);if(ausS.fehler){self.postMessage({art:'standFehler',grund:ausS.fehler});return}}   // G3: aus Spielstand
-  z=ausS?ausS.z:K.neu(d.seed>>>0,V.version()+1);version();if(ausS)for(var j=0;j<ausS.auftraege.length;j++)V.auf(ausS.auftraege[j]);rwNull();selbst=fremd=verloren=gesamt=0;schuld=0;laeuft=true;modus='takt';letzt=performance.now();neuesBild=true;
+  z=ausS?ausS.z:K.neu(d.seed>>>0,V.version()+1);
+  version();
+  if(ausS&&ausS.welt){wsLaden();wsNull();var wa=self.AT3WS.ausStand(ausS.welt,z);if(!wa){self.postMessage({art:'standFehler',grund:'Welt'});return}for(var q=0;q<wa.length;q++)ausS.auftraege.push(wa[q])}   // G4a: Welt aus dem Spielstand, Erde und Stücke neu aus dem Seed
+  if(ausS)for(var j=0;j<ausS.auftraege.length;j++)V.auf(ausS.auftraege[j]);rwNull();selbst=fremd=verloren=gesamt=0;schuld=0;laeuft=true;modus='takt';letzt=performance.now();neuesBild=true;
   self.postMessage({art:'bereit',helfer:helfer.length});plane(0)}
  else if(d.art==='befehl'){if(K.RW_ARTEN[d.befehl])rwLaden();if(K.WS_ARTEN[d.befehl]){wsLaden();if(d.befehl==='weltseed')wsNull()}var f=K.befehl(z,{nr:d.nr,art:d.befehl,wert:d.wert});
   if(f){self.postMessage({art:'abgelehnt',nr:d.nr,grund:f});return}
@@ -91,7 +95,7 @@ self.onmessage=function(e){var d=e.data;
  else if(d.art==='stand'){var t1=performance.now(),st=K.stand(z);self.postMessage({art:'stand',id:d.id,stand:st,tick:z.tick,abdruck:K.abdruck(z),ms:performance.now()-t1})}   // G3: an einer Tickgrenze (Nachrichten kommen nur zwischen Ticks an)
  else if(d.art==='abdruck'){self.postMessage({art:'abdruck',id:d.id,wert:K.abdruck(z),tick:z.tick,version:z.version})}
  else if(d.art==='rwBild'){bild=d.buf}
- else if(d.art==='wsAn'){wsAn=!!d.an;wsErdGen=-1;if(wsAn&&z.wg){z.wg.frisch=Array.from(z.wg.stuecke.keys())}}
+ else if(d.art==='wsAn'){wsAn=!!d.an;wsNurErde=!!d.nurErde;wsErdGen=-1;if(wsAn&&z.wg){z.wg.frisch=Array.from(z.wg.stuecke.keys());wsSenden()}}   // G4a: nurErde = Spielkarte (rechnet ihre Stücke im Bildkern selbst)
  else if(d.art==='wsPuffer'){if(wsPool.length<8)wsPool.push(d.buf)}
  else if(d.art==='rwStand'){var t0=performance.now(),st=z.rw?self.AT3RW.stand(z.rw):null;self.postMessage({art:'rwStand',id:d.id,stand:st,ms:performance.now()-t0,bytes:z.rw?self.AT3RW.bytes(z.rw)+z.e.byteLength:z.e.byteLength})}
  else if(d.art==='lauf'){if(d.befehle.some(function(b){return K.RW_ARTEN[b.art]}))rwLaden();if(d.befehle.some(function(b){return K.WS_ARTEN[b.art]})){wsLaden();wsNull()}rwNull();if(timer!=null){clearTimeout(timer);timer=null}z=K.neu(d.seed>>>0,V.version()+1);version();selbst=fremd=0;wartet=false;

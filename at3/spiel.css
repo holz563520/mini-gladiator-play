@@ -12,6 +12,7 @@ h1{font-size:30px}h2{font-size:24px}
 .leise{color:var(--tinte2);margin:4px 0}
 main{flex:1;display:flex;flex-direction:column;gap:8px}
 .pixel{image-rendering:pixelated;image-rendering:crisp-edges}
+#weltCv{display:block;width:100%;height:62vh;min-height:260px;background:var(--nacht);border:3px solid var(--rand);margin:6px 0;touch-action:none;cursor:grab}
 #boden{display:block;width:100%;max-width:768px;height:auto;background:var(--nacht);border:3px solid var(--rand);margin:6px 0;touch-action:manipulation}
 .karte{min-height:2.6em;margin:4px 0;color:var(--tinte)}
 .karte b{color:var(--blut);font-weight:normal}
