@@ -76,6 +76,7 @@ self.onmessage=function(e){var d=e.data;
  else if(d.art==='feld'){var fd=BB.feld(hole,d.px,d.py),ob=NBILD&&A?NAT.treffer(hole,d.px,d.py,seed,NBILD,BB.sicht,fd&&fd.xu,fd&&fd.y,BAU.size?bauFrei:null):null;
   if(BAU.size&&BBILD&&A){var bt=BAUB.treffer(holeBau,hole,BB.sicht,d.px,d.py,BBILD,d.offen&&d.offen.length?new Set(d.offen):null,fd&&fd.xu,fd&&fd.y);   // G5b: Bauteil vor oder hinter der Natur?
    if(bt&&(!ob||bt.tief>=(ob.x+ob.y)*4+1))ob=bt;var bf=fd&&fd.x!=null?BAUB.feld(holeBau,fd.x,fd.y):null;if(bf){fd.bau=bf}else if(bt&&bt.raum&&fd)fd.bau=BAUB.feld(holeBau,bt.x,bt.y)||{raum:bt.raum,art:0,zustand:bt.zustand}}
+  if(BAU.size&&fd&&fd.x!=null&&!fd.bau){var ga=holeBau(fd.x>>6,fd.y>>6),gv=ga&&ga.length>32768?ga[32768+(((fd.y&63)<<6)|(fd.x&63))]:0;if(gv)fd.bweg=[gv&7,(gv>>4)&3]}   // G6a: gebauter Weg
   if(fd&&ob)fd.obj=ob;else if(ob)fd={obj:ob};
   self.postMessage({art:'feld',id:d.id,feld:fd})}
  else if(d.art==='wahl')wahl(d);

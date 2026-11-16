@@ -14,6 +14,9 @@
 // erstattet), nur auf ebenem Boden, Büsche und Blumen werden gerodet, Bäume und Fels sperren, Bauzeit 2 s je Feld. Vorschlag: Wand/Tür 1 s.
 // Bis G7 (Arbeiter, Material): feste Bauzeit, je Baustelle ein Ziel nach dem anderen; die Zustände „Material reserviert/geliefert“ und „blockiert“ sind
 // vorgesehen (Nummern unten), werden aber noch nicht benutzt.
+// G6a Wege (Thomas 16.11.2026): vier Wegarten wie 2.0 welt-bau.js (Trampelpfad, Kiesweg, Pflasterweg, Steinstraße), alles kostet 1, Rechteck ziehen.
+// Wege liegen je Feld in einer eigenen Schicht (Bits 0–2 Art, Bits 4–5 Bauzustand), nie auf Gebäudefeldern, nur auf Land, Hang höchstens eine Stufe
+// (Vorschlag, wie RollerCoaster Tycoon), Bäume und Fels sperren, Büsche und Blumen werden gerodet. Bauzeit 1 s je Feld (Vorschlag). Andere Art darüber = umbauen.
 // Wiederverwendet: Rechteck-Auswahl, Preis je Feld und „Abriss gibt nichts zurück“ aus 2.0 welt-bau.js; „gleiche Art nebeneinander wächst zusammen“
 // (Flutfüllung) aus 2.0 welt-gebaeude.js; Ebenen-Regel und Stückformat aus bodenbild.js; Naturregel aus natur.js; Einhäng-Muster aus weltstrom.js.
 (function(root){
@@ -24,6 +27,7 @@ var START_GOLD=10000, PREIS=1;                          // Thomas 16.11.2026: gu
 var FELD_TICKS=40, KANTE_TICKS=20;                      // Bauzeit: 2 s je Feld (Thomas), 1 s je Wand/Tür (Vorschlag)
 var MAX_AUSWAHL=1024, MAX_RAUM=4096, MAX_BAUSTELLEN=256, JE_TICK=64, WEG_SUCHE=16, MAX_MELD=256, MAX_ZIELE=16384, MAX_LINIE=256;   // G5c: Wandlinie höchstens 256 Kanten (Vorschlag)
 var ART_NAME=['','lager','werkstatt','unterkunft'], ART={lager:1,werkstatt:2,unterkunft:3};
+var WEG_NAME=['','trampelpfad','kiesweg','pflaster','steinstrasse'], WEG={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4}, WEG_TICKS=20;   // G6a: 1 s je Wegfeld (Vorschlag)
 // Kante (ein Byte): Bits 0–1 Typ, Bits 2–3 Herkunft, Bits 4–5 Bauzustand. Typ 0 mit Herkunft „entfernt“ = von Hand geöffnet, wächst nicht nach.
 var K_WAND=1, K_TUER=2, K_TOR=3, H_AUTO=1, H_HAND=2, H_WEG=3;
 // Bauzustand von Feld und Kante. 4/5 (Material reserviert/geliefert) kommen mit G7 zwischen „geplant“ und „in Arbeit“ in die Baustelle.
@@ -45,7 +49,9 @@ var LEER=neu();
 
 // ── Speicher je Kartenstück (dünn) ──
 function stk(b,X,Y,anlegen){var k=(X>>6)*8192+(Y>>6),s=b.st.get(k);
- if(!s&&anlegen){s={art:new Uint8Array(FELDER),raum:new Uint32Array(FELDER),kn:new Uint8Array(FELDER),kw:new Uint8Array(FELDER),flag:new Uint8Array(FELDER)};b.st.set(k,s)}return s}
+ if(!s&&anlegen){s=leerStk();b.st.set(k,s)}return s}
+function leerStk(){return{art:new Uint8Array(FELDER),raum:new Uint32Array(FELDER),kn:new Uint8Array(FELDER),kw:new Uint8Array(FELDER),flag:new Uint8Array(FELDER),weg:new Uint8Array(FELDER)}}
+function wegAt(b,X,Y){var s=stk(b,X,Y);return s?s.weg[qi(X,Y)]:0}
 function artAt(b,X,Y){var s=stk(b,X,Y);return s?s.art[qi(X,Y)]:0}
 function raumAt(b,X,Y){var s=stk(b,X,Y);return s?s.raum[qi(X,Y)]:0}
 function flagAt(b,X,Y){var s=stk(b,X,Y);return s?s.flag[qi(X,Y)]:0}
@@ -54,7 +60,7 @@ function kSet(b,t,X,Y,v){var s=stk(b,X,Y,v!==0);merk(b,X,Y);if(s)(t===N_?s.kn:s.
 // Kante an Seite s des Felds X,Y → [Kantenart, X, Y] des Speicherorts. Null, wenn es die Kante nicht gibt (hinter dem Pol).
 function kante(X,Y,s){if(s===0)return[N_,X,Y];if(s===1)return[W_,X,Y];if(s===2)return Y+1<WY?[N_,X,Y+1]:null;return[W_,um(X+1),Y]}
 function leerRaeumen(b,X,Y){var k=(X>>6)*8192+(Y>>6),s=b.st.get(k);if(!s)return;
- for(var i=0;i<FELDER;i++)if(s.art[i]||s.kn[i]||s.kw[i]||s.flag[i])return;b.st.delete(k);if(b.neu)b.neu.add(k)}
+ for(var i=0;i<FELDER;i++)if(s.art[i]||s.kn[i]||s.kw[i]||s.flag[i]||s.weg[i])return;b.st.delete(k);if(b.neu)b.neu.add(k)}
 function melden(b,nr,grund,mehr){var m=mehr||{};m.nr=nr;m.ok=grund?0:1;m.grund=grund||'';if(b.meld.length>=MAX_MELD)b.meld.shift();b.meld.push(m);return grund||null}
 
 // ── Boden prüfen: eben (alle vier Ecken auf derselben Höhenstufe), kein Wasser, kein Weg, kein Baum oder Fels ──
@@ -67,7 +73,7 @@ function boden(z,X,Y,C){if(Y<0||Y>=WY-1)return'edge';
  var s=sicht(z,X>>6,Y>>6,C);if(!s)return'too_far';
  var q=qi(X,Y),h0=stufe(s.H[q]);
  for(var k=1;k<4;k++){var x=um(X+(k&1)),y=Y+(k>>1),t=sicht(z,x>>6,y>>6,C);if(!t)return'too_far';if(stufe(t.H[qi(x,y)])!==h0)return'not_flat'}
- var bio=s.B[q];if(bio<2||bio>9)return'water';if(s.W[q])return'road';
+ var bio=s.B[q];if(bio<2||bio>9)return'water';if(s.W[q]||(z.bau&&wegAt(z.bau,X,Y)))return'road';
  var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;return n<=5||n===12?'nature':1}      // natur.js: 0–5 Bäume, 12 Fels sperren; Büsche und Blumen werden gerodet
 
 // ── Flutfüllung eines Raums ab einem Feld. Gibt die Felder als flache Liste [X,Y,…] zurück (höchstens MAX_RAUM+1 Felder). ──
@@ -80,7 +86,7 @@ function fluten(b,X,Y,id,gesehen){var L=[X,Y],i=0;gesehen.add(fk(X,Y));
 // K = Kandidaten {i,j,s} (Feld in Auswahl-Koordinaten, Seite). Gibt den Index in K zurück oder −1.
 function tuerWahl(z,w,K,C){if(!K.length)return -1;var best=-1,bd=1e9,tx=0,ty=0,i,j,d;
  if((w.w+2*WEG_SUCHE)*(w.h+2*WEG_SUCHE)<=65536)for(j=-WEG_SUCHE;j<w.h+WEG_SUCHE;j++){var Y=w.y+j;if(Y<0||Y>=WY)continue;
-  for(i=-WEG_SUCHE;i<w.w+WEG_SUCHE;i++){var X=um(w.x+i),s=sicht(z,X>>6,Y>>6,C);if(!s||!s.W[qi(X,Y)])continue;
+  for(i=-WEG_SUCHE;i<w.w+WEG_SUCHE;i++){var X=um(w.x+i),s=sicht(z,X>>6,Y>>6,C);if(!s||!(s.W[qi(X,Y)]||(z.bau&&wegAt(z.bau,X,Y))))continue;
    d=(i<0?-i:i>=w.w?i-w.w+1:0)+(j<0?-j:j>=w.h?j-w.h+1:0);if(d<bd){bd=d;tx=i;ty=j}}}
  if(bd<1e9){bd=1e9;for(i=0;i<K.length;i++){d=Math.abs(K[i].i+DX[K[i].s]-tx)+Math.abs(K[i].j+DY[K[i].s]-ty);if(d<bd){bd=d;best=i}}return best}
  var mj=-1;for(i=0;i<K.length;i++)if(K[i].s===2&&K[i].j>mj)mj=K[i].j;if(mj<0)return 0;
@@ -164,7 +170,7 @@ function entfernen(z,L){var b=z.bau,betroffen=[],i,s,X,Y;
  b.zaehler++}
 
 function bauEntfernen(z,w,bnr){var b=z.bau,L=[],i,j,n=0;if(w.y+w.h>WY)return melden(b,bnr,'edge');
- for(j=0;j<w.h;j++)for(i=0;i<w.w;i++){var X=um(w.x+i),Y=w.y+j;if(artAt(b,X,Y))L.push(X,Y)}
+ for(j=0;j<w.h;j++)for(i=0;i<w.w;i++){var X=um(w.x+i),Y=w.y+j;if(artAt(b,X,Y))L.push(X,Y);if(wegAt(b,X,Y)){wegWeg(b,X,Y);n++}}
  if(L.length)entfernen(z,L);
  // frei stehende Wände in der Auswahl (beide Seiten unbebaut) gehen mit weg
  for(j=0;j<w.h;j++)for(i=0;i<w.w;i++){var x=um(w.x+i),y=w.y+j;
@@ -172,6 +178,37 @@ function bauEntfernen(z,w,bnr){var b=z.bau,L=[],i,j,n=0;if(w.y+w.h>WY)return mel
   leerRaeumen(b,x,y)}
  if(!L.length&&!n)return melden(b,bnr,'nothing');
  b.zaehler++;return melden(b,bnr,null,{felder:L.length>>1})}
+
+// ── G6a Wege: Feld prüfen (Land, Hang höchstens eine Stufe, kein Gebäude, kein Baum/Fels), planen, bauen, entfernen ──
+function bodenWeg(z,X,Y,C){if(Y<0||Y>=WY-1)return'edge';
+ var s=sicht(z,X>>6,Y>>6,C);if(!s)return'too_far';
+ var q=qi(X,Y),mn=stufe(s.H[q]),mx=mn;
+ for(var k=1;k<4;k++){var x=um(X+(k&1)),y=Y+(k>>1),t=sicht(z,x>>6,y>>6,C);if(!t)return'too_far';var h=stufe(t.H[qi(x,y)]);if(h<mn)mn=h;if(h>mx)mx=h}
+ if(mx-mn>1)return'too_steep';
+ var bio=s.B[q];if(bio<2||bio>9)return'water';
+ if(s.W[q])return 0;                                                                     // Weltstraße: darf überbaut werden, Natur gibt es dort nicht
+ var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;return n<=5||n===12?'nature':1}
+function planWeg(z,w){var b=z.bau||LEER,C=new Map(),art=WEG[w.art],L=[],i,j,X,Y;
+ if(!z.wg||!z.wg.ans)return{fehler:'no_world'};if(w.y+w.h>WY-1)return{fehler:'edge'};
+ for(j=0;j<w.h;j++)for(i=0;i<w.w;i++){X=um(w.x+i);Y=w.y+j;
+  if(artAt(b,X,Y))return{fehler:'occupied',x:X,y:Y};
+  var v=wegAt(b,X,Y);if((v&7)===art)continue;
+  var g=bodenWeg(z,X,Y,C);if(typeof g==='string')return{fehler:g,x:X,y:Y};L.push(X,Y,g)}
+ if(!L.length)return{fehler:'nothing'};
+ return{art:art,felder:L,kosten:(L.length/3)*PREIS}}
+function pruefenWeg(z,w){if(!ARTEN.bauWeg(w))return{ok:false,grund:'invalid'};var p=planWeg(z,w);if(p.fehler)return{ok:false,grund:p.fehler,x:p.x,y:p.y};
+ var gold=(z.bau||LEER).gold;return{ok:p.kosten<=gold,grund:p.kosten<=gold?'':'no_gold',kosten:p.kosten,felder:p.felder.length/3}}
+function wegWeg(b,X,Y){var s=stk(b,X,Y),q=qi(X,Y);if(!s||!s.weg[q])return;if(((s.weg[q]>>4)&3)===Z_PLAN)b.gold+=PREIS;merk(b,X,Y);s.weg[q]=0;leerRaeumen(b,X,Y)}
+function bauWeg(z,w,bnr){var b=z.bau,p=planWeg(z,w),i;
+ if(p.fehler)return melden(b,bnr,p.fehler,{x:p.x,y:p.y});
+ if(p.kosten>b.gold)return melden(b,bnr,'no_gold',{kosten:p.kosten});
+ if(b.auf.length>=MAX_BAUSTELLEN)return melden(b,bnr,'too_many_sites');
+ var ziele=[],L=p.felder;
+ for(i=0;i<L.length;i+=3){var X=L[i],Y=L[i+1],s=stk(b,X,Y,true),q=qi(X,Y);
+  if(s.weg[q]&&((s.weg[q]>>4)&3)===Z_PLAN)b.gold+=PREIS;                                  // geplante andere Art wird ersetzt und erstattet
+  merk(b,X,Y);s.weg[q]=p.art|(Z_PLAN<<4);if(L[i+2])s.flag[q]|=F_ROD;ziele.push(3,X,Y)}
+ b.gold-=p.kosten;b.zaehler++;
+ return melden(b,bnr,null,{kosten:p.kosten,felder:L.length/3,baustelle:baustelle(b,0,ziele)})}
 
 // ── Wand, Tür, Tor von Hand ──
 function kanteVon(w){return w.seite===2&&w.y+1>=WY?null:kante(w.x,w.y,w.seite)}
@@ -261,8 +298,8 @@ function bauAbbruch(z,w,bnr){var b=z.bau,p=finde(b,w.nr);if(p<0)return melden(b,
  for(i=a.i*3;i<Z.length;i+=3)leerRaeumen(b,Z[i+1],Z[i+2]);
  b.zaehler++;return melden(b,bnr,null,{felder:L.length>>1})}
 
-function zielZu(b,t,X,Y){return t===0?(artAt(b,X,Y)?(flagAt(b,X,Y)>>4)&3:0):((kGet(b,t,X,Y)&3)?(kGet(b,t,X,Y)>>4)&3:0)}
-function zielSetzen(b,t,X,Y,zu){var s=stk(b,X,Y),q=qi(X,Y);merk(b,X,Y);if(t===0)s.flag[q]=(s.flag[q]&0xCF)|(zu<<4);else{var A=t===N_?s.kn:s.kw;A[q]=(A[q]&0xCF)|(zu<<4)}}
+function zielZu(b,t,X,Y){if(t===3){var v=wegAt(b,X,Y);return v?(v>>4)&3:0}return t===0?(artAt(b,X,Y)?(flagAt(b,X,Y)>>4)&3:0):((kGet(b,t,X,Y)&3)?(kGet(b,t,X,Y)>>4)&3:0)}
+function zielSetzen(b,t,X,Y,zu){var s=stk(b,X,Y),q=qi(X,Y);merk(b,X,Y);if(t===3)s.weg[q]=(s.weg[q]&0xCF)|(zu<<4);else if(t===0)s.flag[q]=(s.flag[q]&0xCF)|(zu<<4);else{var A=t===N_?s.kn:s.kw;A[q]=(A[q]&0xCF)|(zu<<4)}}
 // Ein Tick: höchstens JE_TICK laufende Baustellen kommen einen Schritt weiter (Reihenfolge = Baustellennummer). Entferntes oder Geändertes wird übersprungen.
 function schritt(z){var b=z.bau,A=b.auf;if(!A.length)return;var n=0,fertig=false;
  for(var i=0;i<A.length&&n<JE_TICK;i++){var a=A[i],Z=a.ziele;if(a.zu!==B_LAEUFT)continue;n++;
@@ -270,7 +307,7 @@ function schritt(z){var b=z.bau,A=b.auf;if(!A.length)return;var n=0,fertig=false
    while(a.i*3<Z.length&&spr<64&&zielZu(b,Z[a.i*3],Z[a.i*3+1],Z[a.i*3+2])!==Z_PLAN){a.i++;spr++}
    if(a.i*3>=Z.length){a.zu=-1;fertig=true;continue}
    if(spr>=64)continue;
-   zielSetzen(b,Z[a.i*3],Z[a.i*3+1],Z[a.i*3+2],Z_ARBEIT);a.rest=Z[a.i*3]===0?FELD_TICKS:KANTE_TICKS;b.zaehler++}
+   zielSetzen(b,Z[a.i*3],Z[a.i*3+1],Z[a.i*3+2],Z_ARBEIT);a.rest=Z[a.i*3]===0?FELD_TICKS:Z[a.i*3]===3?WEG_TICKS:KANTE_TICKS;b.zaehler++}
   if(--a.rest===0){var p=a.i*3;if(zielZu(b,Z[p],Z[p+1],Z[p+2])===Z_ARBEIT){zielSetzen(b,Z[p],Z[p+1],Z[p+2],Z_FERTIG);b.zaehler++}
    a.i++;if(a.i*3>=Z.length){a.zu=-1;fertig=true}}}
  if(fertig){b.auf=A.filter(function(a){return a.zu>=0});b.zaehler++}}
@@ -301,51 +338,54 @@ var ARTEN={
  bauDach:function(w){return rechteck(w)&&(w.zu===0||w.zu===1||w.zu===2)},                // 2 = umschalten nach dem ersten bebauten Feld (G5c)
  bauWaende:function(w){return w&&typeof w==='object'&&G(w.x,0,WX-1)&&G(w.y,0,WY-1)&&(w.r===0||w.r===1)&&G(w.n,1,MAX_LINIE)&&(w.an===0||w.an===1||w.an===2)&&(w.r===0||w.y+w.n<=WY)},
  bauTuerWechsel:kantenwert,
+ bauWeg:function(w){return rechteck(w)&&WEG[w.art]>0},
  bauHuelle:function(w){return w&&typeof w==='object'&&G(w.raum,1,4294967295)},
  bauPause:function(w){return w&&typeof w==='object'&&(w.an===0||w.an===1)&&(G(w.nr,1,2147483647)||G(w.raum,1,4294967295))},
  bauAbbruch:function(w){return w&&typeof w==='object'&&G(w.nr,1,2147483647)}};
-var TUN={bauBoden:bauBoden,bauEntfernen:bauEntfernen,bauWand:bauWand,bauTuer:bauTuer,bauDach:bauDach,bauHuelle:bauHuelle,bauPause:bauPause,bauAbbruch:bauAbbruch,bauWaende:bauWaende,bauTuerWechsel:bauTuerWechsel};
+var TUN={bauBoden:bauBoden,bauEntfernen:bauEntfernen,bauWand:bauWand,bauTuer:bauTuer,bauDach:bauDach,bauHuelle:bauHuelle,bauPause:bauPause,bauAbbruch:bauAbbruch,bauWaende:bauWaende,bauTuerWechsel:bauTuerWechsel,bauWeg:bauWeg};
 function befehl(z,art,wert,nr){if(!z.bau)z.bau=neu();return TUN[art](z,wert,nr)}
 
 // ── Fingerabdruck und Spielstand ──
 function schluessel(M){var L=[];M.forEach(function(v,k){L.push(k)});L.sort(function(a,b){return a-b});return L}
 function abdruck(b,f){f(b.gold);f(b.id);f(b.nr);f(b.zaehler);
- schluessel(b.st).forEach(function(k){var s=b.st.get(k),da=false;for(var i=0;i<FELDER;i++)if(s.art[i]||s.kn[i]||s.kw[i]||s.flag[i]){if(!da){da=true;f(k)}f(i);f(s.art[i]|(s.flag[i]<<8)|(s.kn[i]<<16)|(s.kw[i]<<24));f(s.raum[i])}});
+ schluessel(b.st).forEach(function(k){var s=b.st.get(k),da=false;for(var i=0;i<FELDER;i++)if(s.art[i]||s.kn[i]||s.kw[i]||s.flag[i]||s.weg[i]){if(!da){da=true;f(k)}f(i);f(s.art[i]|(s.flag[i]<<8)|(s.kn[i]<<16)|(s.kw[i]<<24));f(s.raum[i]);if(s.weg[i])f(s.weg[i]|1<<30)}});   // G6a: ohne Wege wie bisher
  schluessel(b.raeume).forEach(function(k){var r=b.raeume.get(k);f(r.id);f(r.art);f(r.felder);f(r.hx);f(r.hy)});
  for(var i=0;i<b.auf.length;i++){var a=b.auf[i];f(a.nr);f(a.raum);f(a.zu);f(a.i);f(a.rest);f(a.ziele.length);for(var j=0;j<a.ziele.length;j++)f(a.ziele[j])}}
-var STAND=1;
+var STAND=2;                                             // G6a: 2 = je Feld sieben Werte (mit Weg); Stände der Form 1 (sechs Werte) werden weiter gelesen
 function stand(b){
  return{format:STAND,gold:b.gold,id:b.id,nr:b.nr,zaehler:b.zaehler,
-  st:schluessel(b.st).map(function(k){var s=b.st.get(k),L=[];for(var i=0;i<FELDER;i++)if(s.art[i]||s.kn[i]||s.kw[i]||s.flag[i])L.push(i,s.art[i],s.raum[i],s.kn[i],s.kw[i],s.flag[i]);return[k,L]}).filter(function(e){return e[1].length}),
+  st:schluessel(b.st).map(function(k){var s=b.st.get(k),L=[];for(var i=0;i<FELDER;i++)if(s.art[i]||s.kn[i]||s.kw[i]||s.flag[i]||s.weg[i])L.push(i,s.art[i],s.raum[i],s.kn[i],s.kw[i],s.flag[i],s.weg[i]);return[k,L]}).filter(function(e){return e[1].length}),
   raeume:schluessel(b.raeume).map(function(k){var r=b.raeume.get(k);return[r.id,r.art,r.felder,r.hx,r.hy]}),
   auf:b.auf.map(function(a){return[a.nr,a.raum,a.zu,a.i,a.rest,a.ziele.slice()]})}}
 // Prüft streng; null = Stand ungültig.
 function ausStand(d){var i,j;
- if(!d||d.format!==STAND||!G(d.gold,0,2147483647)||!G(d.id,1,4294967295)||!G(d.nr,1,2147483647)||!G(d.zaehler,0,2147483647)||!Array.isArray(d.st)||!Array.isArray(d.raeume)||!Array.isArray(d.auf)||d.auf.length>MAX_BAUSTELLEN)return null;
+ var FW=d&&d.format===1?6:7;
+ if(!d||(d.format!==STAND&&d.format!==1)||!G(d.gold,0,2147483647)||!G(d.id,1,4294967295)||!G(d.nr,1,2147483647)||!G(d.zaehler,0,2147483647)||!Array.isArray(d.st)||!Array.isArray(d.raeume)||!Array.isArray(d.auf)||d.auf.length>MAX_BAUSTELLEN)return null;
  var b=neu();b.gold=d.gold;b.id=d.id;b.nr=d.nr;b.zaehler=d.zaehler;
- for(i=0;i<d.st.length;i++){var e=d.st[i];if(!Array.isArray(e)||e.length!==2||!G(e[0],0,SX*8192)||((e[0]/8192)|0)>=SX||e[0]%8192>=SY||b.st.has(e[0])||!Array.isArray(e[1])||e[1].length%6||!e[1].length)return null;
-  var s={art:new Uint8Array(FELDER),raum:new Uint32Array(FELDER),kn:new Uint8Array(FELDER),kw:new Uint8Array(FELDER),flag:new Uint8Array(FELDER)},L=e[1];
-  for(j=0;j<L.length;j+=6){var q=L[j];if(!G(q,0,FELDER-1)||!G(L[j+1],0,3)||!G(L[j+2],0,4294967295)||!G(L[j+3],0,63)||!G(L[j+4],0,63)||!G(L[j+5],0,63)||(!L[j+1])!==(!L[j+2]))return null;
+ for(i=0;i<d.st.length;i++){var e=d.st[i];if(!Array.isArray(e)||e.length!==2||!G(e[0],0,SX*8192)||((e[0]/8192)|0)>=SX||e[0]%8192>=SY||b.st.has(e[0])||!Array.isArray(e[1])||e[1].length%FW||!e[1].length)return null;
+  var s=leerStk(),L=e[1];
+  for(j=0;j<L.length;j+=FW){var wv=FW===7?L[j+6]:0;if(!G(wv,0,52)||(wv&&(!(wv&7)||(wv&7)>4||!((wv>>4)&3)||(wv&8)||L[j+1])))return null;s.weg[L[j]]=wv;var q=L[j];if(!G(q,0,FELDER-1)||!G(L[j+1],0,3)||!G(L[j+2],0,4294967295)||!G(L[j+3],0,63)||!G(L[j+4],0,63)||!G(L[j+5],0,63)||(!L[j+1])!==(!L[j+2]))return null;
    s.art[q]=L[j+1];s.raum[q]=L[j+2];s.kn[q]=L[j+3];s.kw[q]=L[j+4];s.flag[q]=L[j+5]}
   b.st.set(e[0],s);b.neu.add(e[0])}
  for(i=0;i<d.raeume.length;i++){var r=d.raeume[i];if(!Array.isArray(r)||r.length!==5||!G(r[0],1,d.id-1)||!G(r[1],1,3)||!G(r[2],1,MAX_RAUM)||!G(r[3],0,WX-1)||!G(r[4],0,WY-1)||b.raeume.has(r[0])||raumAt(b,r[3],r[4])!==r[0])return null;
   b.raeume.set(r[0],{id:r[0],art:r[1],felder:r[2],hx:r[3],hy:r[4]})}
  var vor=0;for(i=0;i<d.auf.length;i++){var a=d.auf[i];if(!Array.isArray(a)||a.length!==6||!G(a[0],vor+1,d.nr-1)||!G(a[1],0,4294967295)||!G(a[2],0,2)||!Array.isArray(a[5])||a[5].length%3||!a[5].length||a[5].length>MAX_ZIELE*3||!G(a[3],0,a[5].length/3-1)||!G(a[4],0,FELD_TICKS))return null;
-  for(j=0;j<a[5].length;j+=3)if(!G(a[5][j],0,2)||!G(a[5][j+1],0,WX-1)||!G(a[5][j+2],0,WY-1))return null;
+  for(j=0;j<a[5].length;j+=3)if(!G(a[5][j],0,3)||!G(a[5][j+1],0,WX-1)||!G(a[5][j+2],0,WY-1))return null;
   vor=a[0];b.auf.push({nr:a[0],raum:a[1],zu:a[2],i:a[3],rest:a[4],ziele:a[5].slice()})}
  return b}
 
 // ── Auskunft (für Tests, G5b und G5c) ──
 function feld(z,X,Y){var b=z.bau||LEER,s=stk(b,X,Y),q=qi(X,Y);if(!s||!s.art[q])return null;return{art:ART_NAME[s.art[q]],raum:s.raum[q],zustand:(s.flag[q]>>4)&3,dach:!!(s.flag[q]&F_DACH),gerodet:!!(s.flag[q]&F_ROD),getrennt:!!(s.flag[q]&F_GETRENNT)}}
 function kanteAn(z,X,Y,seite){var b=z.bau||LEER,k=kante(X,Y,seite);if(!k)return null;var v=kGet(b,k[0],k[1],k[2]);return{typ:v&3,herkunft:(v>>2)&3,zustand:(v>>4)&3}}
-function bytes(b){return b.st.size*FELDER*8}
-// G5b: Bau eines Kartenstücks für die Karte (Bildkern) als ein Puffer: art, kn, kw, flag je 4.096 Byte, danach raum (4.096 × 4 Byte). null = nichts gebaut.
-var PACK=FELDER*8;
+function wegAn(z,X,Y){var v=wegAt(z.bau||LEER,X,Y);return v?{art:WEG_NAME[v&7],nr:v&7,zustand:(v>>4)&3}:null}
+function bytes(b){return b.st.size*FELDER*9}
+// G5b: Bau eines Kartenstücks für die Karte (Bildkern) als ein Puffer: art, kn, kw, flag je 4.096 Byte, danach raum (4.096 × 4 Byte), G6a: danach weg (4.096 Byte).
+var PACK=FELDER*9;
 function stueck(b,k){var s=b.st.get(k);if(!s)return null;var a=new Uint8Array(PACK);a.set(s.art,0);a.set(s.kn,FELDER);a.set(s.kw,FELDER*2);a.set(s.flag,FELDER*3);
- new Uint32Array(a.buffer,FELDER*4,FELDER).set(s.raum);return a}
+ new Uint32Array(a.buffer,FELDER*4,FELDER).set(s.raum);a.set(s.weg,FELDER*8);return a}
 function geaendert(b){var L=[];b.neu.forEach(function(k){L.push(k)});b.neu.clear();return L}
 
-var B={START_GOLD:START_GOLD,PREIS:PREIS,FELD_TICKS:FELD_TICKS,KANTE_TICKS:KANTE_TICKS,MAX_AUSWAHL:MAX_AUSWAHL,MAX_RAUM:MAX_RAUM,MAX_BAUSTELLEN:MAX_BAUSTELLEN,JE_TICK:JE_TICK,
+var B={START_GOLD:START_GOLD,PREIS:PREIS,FELD_TICKS:FELD_TICKS,KANTE_TICKS:KANTE_TICKS,MAX_AUSWAHL:MAX_AUSWAHL,MAX_RAUM:MAX_RAUM,MAX_BAUSTELLEN:MAX_BAUSTELLEN,JE_TICK:JE_TICK,WEG:WEG,WEG_NAME:WEG_NAME,WEG_TICKS:WEG_TICKS,pruefenWeg:pruefenWeg,weg:wegAn,
  ART:ART,ART_NAME:ART_NAME,K_WAND:K_WAND,K_TUER:K_TUER,K_TOR:K_TOR,H_AUTO:H_AUTO,H_HAND:H_HAND,H_WEG:H_WEG,Z_PLAN:Z_PLAN,Z_ARBEIT:Z_ARBEIT,Z_FERTIG:Z_FERTIG,B_LAEUFT:B_LAEUFT,B_PAUSE:B_PAUSE,B_BLOCK:B_BLOCK,
  ARTEN:ARTEN,befehl:befehl,schritt:schritt,abdruck:abdruck,stand:stand,ausStand:ausStand,pruefen:pruefen,pruefenWaende:pruefenWaende,sackgasse:sackgasse,boden:function(z,X,Y){return boden(z,X,Y,new Map())},
  feld:feld,kante:kanteAn,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,haken:function(f){beiEntfernen=f}};

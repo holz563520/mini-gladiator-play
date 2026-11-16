@@ -33,7 +33,7 @@ function WG(){return root.AT3WG||(typeof module!=='undefined'&&module.exports?re
 var WS_ARTEN={weltseed:1,weltdichte:1,blick:1}, WG_AUFTRAG={erde:1,gelaende:1};
 // Bauen (G5a): gleiches Muster. bau.js = Gebäudefelder, Räume, Wände, Baustellen, Gold (nur Weltkern). Ohne Bau-Befehl bleibt z.bau leer und der Fingerabdruck wie bisher.
 function BAU(){return root.AT3BAU||(typeof module!=='undefined'&&module.exports?require('./bau.js'):null)}
-var BAU_ARTEN={bauBoden:1,bauEntfernen:1,bauWand:1,bauTuer:1,bauDach:1,bauHuelle:1,bauPause:1,bauAbbruch:1,bauWaende:1,bauTuerWechsel:1};
+var BAU_ARTEN={bauBoden:1,bauEntfernen:1,bauWand:1,bauTuer:1,bauDach:1,bauHuelle:1,bauPause:1,bauAbbruch:1,bauWaende:1,bauTuerWechsel:1,bauWeg:1};   // G6a: bauWeg
 
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
 function dreh(z){z^=z<<13;z>>>=0;z^=z>>>17;z^=z<<5;return z>>>0}

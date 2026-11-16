@@ -103,7 +103,7 @@ self.onmessage=function(e){var d=e.data;
  else if(d.art==='puffer'){if(puffer.length<3)puffer.push(d.buf);if(neuesBild&&modus==='takt')senden()}
  else if(d.art==='sichtbar'){sichtbar=!!d.an;letzt=performance.now();schuld=0;if(sichtbar&&modus==='takt')plane(0)}
  else if(d.art==='stand'){var t1=performance.now(),st=K.stand(z);self.postMessage({art:'stand',id:d.id,stand:st,tick:z.tick,abdruck:K.abdruck(z),ms:performance.now()-t1})}   // G3: an einer Tickgrenze (Nachrichten kommen nur zwischen Ticks an)
- else if(d.art==='bauPruefen'){bauLaden();var pr=self.AT3BAU.ARTEN.bauWaende(d.wert)?self.AT3BAU.pruefenWaende(z,d.wert):self.AT3BAU.ARTEN.bauBoden(d.wert)||self.AT3BAU.ARTEN.bauEntfernen(d.wert)?(d.wert.art?self.AT3BAU.pruefen(z,d.wert):{ok:true}):{ok:false,grund:'invalid'};self.postMessage({art:'bauPruefen',id:d.id,erg:pr})}   // G5b: Vorschau beim Ziehen (nichts ändert sich)
+ else if(d.art==='bauPruefen'){bauLaden();var pr=self.AT3BAU.ARTEN.bauWeg(d.wert)?self.AT3BAU.pruefenWeg(z,d.wert):self.AT3BAU.ARTEN.bauWaende(d.wert)?self.AT3BAU.pruefenWaende(z,d.wert):self.AT3BAU.ARTEN.bauBoden(d.wert)||self.AT3BAU.ARTEN.bauEntfernen(d.wert)?(d.wert.art?self.AT3BAU.pruefen(z,d.wert):{ok:true}):{ok:false,grund:'invalid'};self.postMessage({art:'bauPruefen',id:d.id,erg:pr})}   // G5b: Vorschau beim Ziehen (nichts ändert sich)
  else if(d.art==='abdruck'){self.postMessage({art:'abdruck',id:d.id,wert:K.abdruck(z),tick:z.tick,version:z.version})}
  else if(d.art==='rwBild'){bild=d.buf}
  else if(d.art==='wsAn'){wsAn=!!d.an;wsNurErde=!!d.nurErde;wsErdGen=-1;if(wsAn&&z.wg){z.wg.frisch=Array.from(z.wg.stuecke.keys());wsSenden()}}   // G4a: nurErde = Spielkarte (rechnet ihre Stücke im Bildkern selbst)
