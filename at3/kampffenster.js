@@ -10,7 +10,7 @@
 // wieder her und startet den Kampf über denselben Knopf (fight() aus 1.0: Prämie, Gelübde, Gunst, Anführer, Kampfbericht). Gegner bekommen ihre Herkunft aus
 // benannten Orten der Welt (leichte aus der Nähe, 4–5 Totenköpfe aus fernen Städten). Ergebnis mit Prämie und Aufstellung genau einmal an AT3.
 // Sprache (G9d4): Texte und Stimme werden beim Laden englisch (kampf-en.js, Wörterbücher in sprache/kampf-en/), 1.0 bleibt unverändert. Was noch nicht übersetzt ist, bleibt deutsch.
-var BUILD='c543babe';
+var BUILD='59acd163';
 (()=>{
  const V=(location.search.match(/[?&]v=([^&]*)/)||[])[1]||BUILD;
  const eltern=window.parent!==window?window.parent:null;
@@ -59,7 +59,7 @@ var BUILD='c543babe';
   try{M.trader.state.intro='done';}catch(e){}
   if(S.hall)S.hall.tut='done';else S.hall={tut:'done',recruit:null,tag:{}};
   S.lion={stage:'done',recruits:[],base:[]};S.medic=Object.assign(S.medic||{},{stage:'skip'});S.archerPlot={seen:0,asked:true,state:'declined'};S.wanderers={version:1,next:(S.day||1)+99999,group:null,known:[]};
-  M.leaderArena=false;
+  // G9d4c (Thomas 17.11.2026): Anführer wie in 1.0 aktiv (ab 5 eigenen Kämpfern), Texte englisch über arena-leader-ui/outside-leader.json
   // Kampfbericht von 1.0 abwarten: manager.js zeigt nach jedem Kampf die gewohnte Berichtsseite (M.onFinish → page 'report')
   const fin=M.onFinish;M.onFinish=function(report){const r=fin?fin.apply(this,arguments):undefined;if(report&&bid&&report.id===bid)setTimeout(zurueckKnopf,0);return r;};
   window.AT3_KF_BEREIT=true;melde({art:'bereit'});}
@@ -90,7 +90,7 @@ var BUILD='c543babe';
  function herkunft(o,orte){const N=(orte&&orte.nah)||[],F=(orte&&orte.fern)||[],sk=o.skulls|0;
   let L=sk<=2?N.slice(0,3):sk===3?N.slice(3):sk===4?F.slice(0,Math.ceil(F.length/2)):F.slice(Math.floor(F.length/2));if(!L.length)L=sk>=4&&F.length?F:N;if(!L.length)return;
   let h=2166136261;for(const c of String(o.id))h=Math.imul(h^c.charCodeAt(0),16777619);const ort=L[(h>>>0)%L.length];
-  o.at3Ort={name:ort.name,art:ort.art,ortId:ort.ortId};o.label=o.label+' · aus '+ort.name;
+  o.at3Ort={name:ort.name,art:ort.art,ortId:ort.ortId};o.label=o.label+' · from '+ort.name;  // G9d4c: Herkunft englisch
   for(const u of o.enemy||[])if(u.g)u.g.at3Herkunft={art:ort.art,ortId:ort.ortId,name:ort.name};}
  function hinweis(t){let h=document.getElementById('kfHinweis');if(!h){h=document.createElement('div');h.id='kfHinweis';document.body.appendChild(h);}h.textContent=t;clearTimeout(hinweis.z);hinweis.z=setTimeout(()=>h.remove(),9000);}
  function arena(a){
@@ -110,10 +110,10 @@ var BUILD='c543babe';
      AN.listeners.push(o=>{aus=o;setTimeout(zurueckKnopf,1800);});document.getElementById('kfHinweis')?.remove();melde({art:'laeuft'});}return b;};
    document.getElementById('kfBoot')?.remove();
    UI.open();
-   if(modus==='wahl'){hinweis('Pick your men and an opponent. KAMPF! books the fight for tomorrow at noon; your men stop working in time and walk to the arena.');return;}
+   if(modus==='wahl'){hinweis('Pick your men and an opponent. FIGHT! books the fight for tomorrow at noon; your men stop working in time and walk to the arena.');return;}
    const klick=q=>{const el=document.querySelector('#auf '+q);if(el)el.click();return !!el;};
    klick('[data-act="ready"]');klick('[data-offer="0"]');klick('[data-act="fight"]');
-   if(!gestartet)hinweis('Someone in the group is not fit to fight. Change the group, choose the opponent again and press KAMPF!.');
+   if(!gestartet)hinweis('Someone in the group is not fit to fight. Change the group, choose the opponent again and press FIGHT!.');
   }catch(e){console.error(e);fehler(e&&e.message||e);}}
  // Knöpfe der 1.0-Aufstellung: Probe ×10, Menü, Reparieren, Ausrüsten, Nächster Tag, Bericht gibt es hier nicht (gehören zum 1.0-Ludus); ◀ schließt das Fenster;
  // „KAMPF!“ setzt im Modus „wahl“ den Termin; nach dem Kampf führt „Nochmal“ zurück in die Welt

@@ -1,0 +1,31 @@
+{
+"t": {
+"Einordnung: alle": "Rating: all",
+"👑 Supertalent": "👑 Super talent",
+"💎 Talent": "💎 Talent",
+"🗑 Müll": "🗑 Junk",
+"nicht eingeordnet": "not rated",
+"Wuchs: alle": "Build: all",
+"Normalwuchs": "Normal build",
+"▼ Kleinwuchs (Zwerg)": "▼ Short (dwarf)",
+"▲ Riesenwuchs": "▲ Giant",
+"● Sumo": "● Sumo",
+"Talent: alle": "Talent: all",
+"Talent ab 50": "Talent 50+",
+"Talent ab 57": "Talent 57+",
+"Talent ab 63": "Talent 63+",
+"Talent ab 69": "Talent 69+",
+"Talent ab 75": "Talent 75+",
+"Talent ab 81": "Talent 81+",
+"Talent ab 88": "Talent 88+",
+"Talent ↓ (beste zuerst)": "Talent ↓ (best first)",
+"Talent ↑ (schwächste zuerst)": "Talent ↑ (weakest first)",
+"Kampfwert ↓": "Combat power ↓",
+"Kampfwert ↑": "Combat power ↑",
+"Name A–Z": "Name A–Z",
+" von ": " of ",
+"\"><span class=\"kf-t\">FILTER</span>": null,
+"\">✕ zurücksetzen</button>": "\">✕ reset</button>"
+},
+"code": []
+}
