@@ -44,8 +44,11 @@ function karSenden(){var g=z.kar;if(!g||!g.k.length){if(karGesendet){karGesendet
 // Waren und Arbeiter (G7): waren.js und personen.js mit dem Befehl wirtschaft oder einem Spielstand damit. An den Hauptkern gehen die Personen nach jedem Takt
 // (je Person 10 Zahlen) und die Waren nur bei einer Änderung (Bestände, Aufträge, Gründe stehender Baustellen).
 var warLetzt=-1, warTick=-99, perGesendet=false;
-function warLaden(){wsLaden();bauLaden();if(!self.AT3WAREN)importScripts('waren.js'+self.location.search,'personen.js'+self.location.search,'ketten.js'+self.location.search)}      // G8: ketten.js gleich mit
+function warLaden(){wsLaden();bauLaden();if(!self.AT3WAREN)importScripts('waren.js'+self.location.search,'personen.js'+self.location.search,'ketten.js'+self.location.search,'gladiatoren.js'+self.location.search,'ortsnamen.js'+self.location.search)}      // G8: ketten.js gleich mit; G9c1: gladiatoren.js, ortsnamen.js
 var tierGesendet=false;
+// G9c1: Gladiatoren und Sklavenmarkt (gladiatoren.js meld) nur bei einer Änderung oder einem neuen Spieltag; volle 1.0-Daten nur auf Nachfrage (glaDaten)
+var glaLetzt='';function glaSenden(){var a=z.gla;if(!a){if(glaLetzt){glaLetzt='';self.postMessage({art:'gladiatoren',meld:null})}return}var k=a.zaehler+':'+Math.floor(z.tick/12000)+':'+(z.per?z.per.p.length:0);if(k===glaLetzt)return;glaLetzt=k;
+ self.postMessage({art:'gladiatoren',meld:self.AT3GLAD.meld(z)})}
 function warSenden(){var g=z.war;if(!g){if(warLetzt!==-1){warLetzt=-1;self.postMessage({art:'waren',an:0})}if(tierGesendet){tierGesendet=false;self.postMessage({art:'tiere',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}if(perGesendet){perGesendet=false;self.postMessage({art:'personen',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}return}
  if(z.per){var a=self.AT3PERS.meld(z);perGesendet=true;self.postMessage({art:'personen',tick:z.tick,tempo:z.tempo,buf:a},[a.buffer])}
  if(z.ket&&(z.ket.reh.length||tierGesendet)){var ti=self.AT3KETTEN.tiere(z);tierGesendet=z.ket.reh.length>0;self.postMessage({art:'tiere',tick:z.tick,tempo:z.tempo,buf:ti},[ti.buffer])}      // G8: Rehe je Takt (je Reh 5 Zahlen)
@@ -90,13 +93,13 @@ function senden(){if(!neuesBild||!puffer.length)return;neuesBild=false;var b=puf
 
 function takt(){if(modus==='lauf'){laufen();return}
  var jetzt=performance.now(),dt=jetzt-letzt;letzt=jetzt;
- if(!laeuft||!sichtbar||z.tempo===0){schuld=0;ueber=false;senden();wsSenden();bauSenden();wegSenden();karSenden();warSenden();return}       // Pause: kein Zeitgeber, weiter erst nach Befehl
+ if(!laeuft||!sichtbar||z.tempo===0){schuld=0;ueber=false;senden();wsSenden();bauSenden();wegSenden();karSenden();warSenden();glaSenden();return}       // Pause: kein Zeitgeber, weiter erst nach Befehl
  schuld+=dt*z.tempo*K.TICKS/1000;
  if(schuld>MAXNACH){verloren+=Math.floor(schuld-MAXNACH);schuld=MAXNACH;ueber=true}
  var ende=jetzt+SCHEIBE;
  while(schuld>=1){if(!einTick())break;schuld-=1;if(performance.now()>ende)break}
  if(schuld<1)ueber=false;
- senden();rwSenden();wsSenden();bauSenden();wegSenden();karSenden();warSenden();
+ senden();rwSenden();wsSenden();bauSenden();wegSenden();karSenden();warSenden();glaSenden();
  if(wartet)return;                                                              // ein Helferergebnis weckt den Takt
  if(!helfer.length&&schuld<1){var a=V.naechster();if(a)selbstRechnen(a)}        // ohne Helfer: Aufträge in freien Scheiben vorrechnen
  plane(schuld>=1?0:Math.max(1,(1-schuld)*1000/(z.tempo*K.TICKS)))}
@@ -128,9 +131,10 @@ self.onmessage=function(e){var d=e.data;
   warLetzt=-1;   // G6c   // G6b   // G4a: Welt aus dem Spielstand, Erde und Stücke neu aus dem Seed
   if(ausS)for(var j=0;j<ausS.auftraege.length;j++)V.auf(ausS.auftraege[j]);rwNull();selbst=fremd=verloren=gesamt=0;schuld=0;laeuft=true;modus='takt';letzt=performance.now();neuesBild=true;
   self.postMessage({art:'bereit',helfer:helfer.length});plane(0)}
+ else if(d.art==='glaDaten'){self.postMessage({art:'glaDaten',id:d.id,daten:self.AT3GLAD&&z.gla?self.AT3GLAD.daten(z,d.wo||{}):null})}      // G9c1: volle 1.0-Daten (Karte G9c2, Kampf G9d)
  else if(d.art==='befehl'){if(K.RW_ARTEN[d.befehl])rwLaden();if(K.WS_ARTEN[d.befehl]){wsLaden();if(d.befehl==='weltseed')wsNull()}if(K.BAU_ARTEN[d.befehl])bauLaden();if(K.WEG_ARTEN[d.befehl])wegLaden();if(K.WAR_ARTEN[d.befehl])warLaden();var f=K.befehl(z,{nr:d.nr,art:d.befehl,wert:d.wert});
   if(f){self.postMessage({art:'abgelehnt',nr:d.nr,grund:f});return}
-  if(modus==='takt'&&(z.tempo===0||!sichtbar)){anw();version();neuesBild=true;letzt=performance.now();senden();bauSenden();warSenden();if(z.tempo>0&&sichtbar)plane(0)}}
+  if(modus==='takt'&&(z.tempo===0||!sichtbar)){anw();version();neuesBild=true;letzt=performance.now();senden();bauSenden();warSenden();glaSenden();if(z.tempo>0&&sichtbar)plane(0)}}
  else if(d.art==='puffer'){if(puffer.length<3)puffer.push(d.buf);if(neuesBild&&modus==='takt')senden()}
  else if(d.art==='sichtbar'){sichtbar=!!d.an;letzt=performance.now();schuld=0;if(sichtbar&&modus==='takt')plane(0)}
  else if(d.art==='stand'){var t1=performance.now(),st=K.stand(z);self.postMessage({art:'stand',id:d.id,stand:st,tick:z.tick,abdruck:K.abdruck(z),ms:performance.now()-t1})}   // G3: an einer Tickgrenze (Nachrichten kommen nur zwischen Ticks an)

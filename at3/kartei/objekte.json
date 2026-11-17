@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 33,
+ "typMax": 34,
  "objekte": [
   {
    "id": "baum-apfel",
@@ -219,6 +219,15 @@
    "name": "Storage Spot",
    "status": "geprueft",
    "datei": "obj/lager-platz.json"
+  },
+  {
+   "id": "markt-stand",
+   "version": 1,
+   "typ": 34,
+   "kat": "einrichtung",
+   "name": "Slave Market",
+   "status": "uebernommen",
+   "datei": "obj/markt-stand.json"
   },
   {
    "id": "natur-stumpf",

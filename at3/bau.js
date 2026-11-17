@@ -400,7 +400,7 @@ function stueck(b,k){var s=b.st.get(k);if(!s)return null;var a=new Uint8Array(PA
  new Uint32Array(a.buffer,FELDER*4,FELDER).set(s.raum);a.set(s.weg,FELDER*8);return a}
 function geaendert(b){var L=[];b.neu.forEach(function(k){L.push(k)});b.neu.clear();return L}
 
-var B={START_GOLD:START_GOLD,PREIS:PREIS,FELD_TICKS:FELD_TICKS,KANTE_TICKS:KANTE_TICKS,MAX_AUSWAHL:MAX_AUSWAHL,MAX_RAUM:MAX_RAUM,MAX_BAUSTELLEN:MAX_BAUSTELLEN,JE_TICK:JE_TICK,WEG:WEG,WEG_NAME:WEG_NAME,WEG_TICKS:WEG_TICKS,pruefenWeg:pruefenWeg,weg:wegAn,
+var B={neu:neu,START_GOLD:START_GOLD,PREIS:PREIS,FELD_TICKS:FELD_TICKS,KANTE_TICKS:KANTE_TICKS,MAX_AUSWAHL:MAX_AUSWAHL,MAX_RAUM:MAX_RAUM,MAX_BAUSTELLEN:MAX_BAUSTELLEN,JE_TICK:JE_TICK,WEG:WEG,WEG_NAME:WEG_NAME,WEG_TICKS:WEG_TICKS,pruefenWeg:pruefenWeg,weg:wegAn,
  ART:ART,ART_NAME:ART_NAME,K_WAND:K_WAND,K_TUER:K_TUER,K_TOR:K_TOR,H_AUTO:H_AUTO,H_HAND:H_HAND,H_WEG:H_WEG,Z_PLAN:Z_PLAN,Z_ARBEIT:Z_ARBEIT,Z_FERTIG:Z_FERTIG,B_LAEUFT:B_LAEUFT,B_PAUSE:B_PAUSE,B_BLOCK:B_BLOCK,
  ARTEN:ARTEN,befehl:befehl,schritt:schritt,abdruck:abdruck,stand:stand,ausStand:ausStand,pruefen:pruefen,pruefenWaende:pruefenWaende,sackgasse:sackgasse,boden:function(z,X,Y){return boden(z,X,Y,new Map())},
  feld:feld,kante:kanteAn,ziel:zielZu,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,F_STUMPF:F_STUMPF,stumpf:stumpf,stumpfAn:stumpfAn,baumFrei:baumFrei,haken:function(f){beiEntfernen=f}};

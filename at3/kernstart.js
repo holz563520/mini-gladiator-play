@@ -6,7 +6,7 @@
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='67fb899d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='c4d11dae', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -28,6 +28,7 @@ function starten(opt){opt=opt||{};
   wsAn:function(an,nurErde){if(welt)welt.postMessage({art:'wsAn',an:!!an,nurErde:!!nurErde})},   // G4a: nurErde für die Spielkarte
   wsZurueck:function(buf){if(welt&&buf&&buf.buffer.byteLength)welt.postMessage({art:'wsPuffer',buf:buf},[buf.buffer])},
   // G5b: Bauvorschau (bau.js pruefen im Weltkern, ändert nichts): {ok, grund, kosten, felder, …}
+  glaDaten:function(wo){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=function(d){ok(d.daten)};welt.postMessage({art:'glaDaten',id:id,wo:wo})})},      // G9c1
   bauPruefen:function(w){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=function(d){ok(d.erg)};welt.postMessage({art:'bauPruefen',id:id,wert:w})})},
   testAusfall:function(wo){var w=wo==='helfer'?hs[0]:welt;if(w)w.postMessage({art:'testAusfall'})},
   ende:function(){tot=true;Z.laeuft=false;aufraeumen()}};
@@ -50,12 +51,13 @@ function starten(opt){opt=opt||{};
    else if(d.art==='personen'){if(opt.beiPersonen)try{opt.beiPersonen(d)}catch(x){}}   // G7: Arbeiter nach jedem Takt
    else if(d.art==='tiere'){if(opt.beiTiere)try{opt.beiTiere(d)}catch(x){}}   // G8: Rehe nach jedem Takt (solange es welche gibt)
    else if(d.art==='waren'){if(opt.beiWaren)try{opt.beiWaren(d)}catch(x){}}   // G7: Bestände und Aufträge, nur bei Änderung
+   else if(d.art==='gladiatoren'){if(opt.beiGladiatoren)try{opt.beiGladiatoren(d)}catch(x){}}   // G9c1: Gladiatoren und Sklavenmarkt, nur bei Änderung
    else if(d.art==='weg'){if(opt.beiWeg)try{opt.beiWeg(d)}catch(x){}}   // G6b: Ergebnisse der Wegsuche (Feldliste, Orte, Rechenzeit)
    else if(d.art==='bau'){Z.bauZaehler=d.zaehler;Z.gold=d.gold;Z.baustellen=d.baustellen;if(opt.beiBau)try{opt.beiBau(d)}catch(x){}}   // G5a: nur bei Änderung, mit den Ergebnissen der Bau-Befehle (meld)
    else if(d.art==='rw'){if(opt.beiRw)try{opt.beiRw(d)}catch(x){}if(d.bild&&welt)welt.postMessage({art:'rwBild',buf:d.bild},[d.bild.buffer])}
    else if(d.art==='ws'||d.art==='wsErde'||d.art==='wsStueck'){if(opt.beiWs)try{opt.beiWs(d)}catch(x){}}
    else if(d.art==='standFehler'){ausfall('save not readable: '+d.grund)}
-   else if(d.art==='abdruck'||d.art==='laufFertig'||d.art==='rwStand'||d.art==='stand'||d.art==='bauPruefen'){var ok=wartend[d.id];delete wartend[d.id];if(ok)ok(d)}};
+   else if(d.art==='abdruck'||d.art==='laufFertig'||d.art==='rwStand'||d.art==='stand'||d.art==='bauPruefen'||d.art==='glaDaten'){var ok=wartend[d.id];delete wartend[d.id];if(ok)ok(d)}};
   welt.postMessage({art:'start',seed:(opt.seed==null?1:opt.seed)>>>0,stand:opt.stand||null,ports:ports},ports);
   document.addEventListener('visibilitychange',sicht);sicht();
  }catch(e){setTimeout(function(){ausfall('no background cores')},0)}

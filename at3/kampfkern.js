@@ -83,8 +83,18 @@ function erzeugeTeams(w,M,CH,DOG,P,r,cl,pick){
   out[seite]=L;});
  return out;};
 
+// ---------- G9c1: Sklavenmarkt (Thomas 17.11.2026: genau so ausgewürfelt wie in 1.0) ----------
+// Wie trader.js stock() in 1.0: je Kandidat makeGladiator(0), danach special.roll (besondere.js: ab und zu Klein-/Riesenwuchs). 1.0 bleibt unverändert;
+// besondere.js wird erst beim ersten Würfeln geladen und ändert an der Kampfrechnung nichts. MG.s.rng kommt aus dem Wunsch (Weltseed und Spieltag),
+// Math.random (besondere.js, Kennungen) bleibt wie in 1.0 frei. wunsch: {seed, n:1–64}. Ergebnis: Liste fertiger 1.0-Gladiatoren (Kopien).
+KK.ZUSATZ_MARKT='besondere';
+KK.wuerfle=function(w){vorbereiten();if(!G.MG.special&&imWorker)importScripts('../'+KK.ZUSATZ_MARKT+'.js?v='+v);
+ var M=G.MG,n=Math.max(0,Math.min(64,w.n|0)),out=[];M.s.rng=(w.seed>>>0)||1;
+ for(var i=0;i<n;i++){var g=M.makeGladiator(0);out.push(JSON.parse(JSON.stringify(M.special?M.special.roll(g):g)));}
+ return out;};
+
 if(imWorker){
- G.onmessage=function(e){var d=e.data,f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:null;if(!f)return;
+ G.onmessage=function(e){var d=e.data,f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:d.art==='wuerfle'?function(){return KK.wuerfle(d.wunsch);}:null;if(!f)return;
   try{G.postMessage({nr:d.nr,ergebnis:f()});}catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}};
  // G9b: Ladezeit und geladene Dateien des Kampfkerns melden (eigene Zeitleiste des Kerns)
  var res=[];try{res=G.performance.getEntriesByType('resource');}catch(e){}

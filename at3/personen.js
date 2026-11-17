@@ -38,6 +38,8 @@ function dx1(a,b){var d=b-a;return d>1?d-WX:d<-1?d+WX:d}
 function neu(){return{nr:1,p:[],bau:new Map()}}
 function person(id,x,y){return{id:id,x:x,y:y,nx:-1,ny:-1,sub:0,len:0,zust:Z_FREI,t:0,i:0,ab:0,job:-1,versuch:0,grund:0,dir:1,auf:0,o:0,site:0,zx:-1,zy:-1,darf:ALLE,f0:0,f1:0,e0:0,e1:0,leer:0,f2:0,f3:0,f4:0,f5:0,f6:0,e2:0,e3:0,e4:0,e5:0,e6:0,n0:0,n1:0,n2:0,n3:0,n4:0,n5:0,n6:0,kx:-1,ky:-1,kr:0,kt:0,em:0,ew:0,et:0,hu:0,pf:null,tp:null,keys:[]}}
 function start(z,x,y){if(z.per)return;var g=z.per=neu();for(var i=0;i<N_START;i++)g.p.push(person(g.nr++,x,y))}
+// G9c1: neue Person (Kauf am Sklavenmarkt) an einem Feld; mit den Ketten (G8) bekommt sie ihre Essenszeiten wie die Startpersonen. 0 = voll.
+function dazu(z,x,y){var g=z.per;if(!g||g.p.length>=MAX_P)return 0;var c=person(g.nr++,x,y);var K=z.ket&&KET();if(K){c.em=z.tick+K.ESS_MAHL;c.ew=z.tick+K.ESS_WASSER}g.p.push(c);return c.id}
 function finde(g,id){for(var i=0;i<g.p.length;i++)if(g.p[i].id===id)return g.p[i];return null}
 function rolle(z,id,darf){var c=z.per&&finde(z.per,id);if(c)c.darf=darf}
 function bauVon(z,nr){var A=z.bau?z.bau.auf:[];for(var i=0;i<A.length;i++)if(A[i].nr===nr)return A[i];return null}
@@ -178,6 +180,6 @@ function ausStand(d,z){var i,j;
 
 var P={N_START:N_START,MELD:MELD,JE_TICK:JE_TICK,FRIST:FRIST,WIEDER:WIEDER,NAH:NAH,LEERLAUF:LEERLAUF,ZUST:ZUST,Z_FREI:Z_FREI,Z_SUCHT:Z_SUCHT,Z_GEHT:Z_GEHT,Z_ARBEITET:Z_ARBEITET,Z_WARTET:Z_WARTET,
  A_HOLEN:A_HOLEN,A_BRINGEN:A_BRINGEN,A_BAUEN:A_BAUEN,A_RUECK:A_RUECK,start:start,rolle:rolle,schritt:schritt,uebernehmen:uebernehmen,abdruck:abdruck,meld:meld,stand:stand,ausStand:ausStand,
- amBau:amBau,hatBauer:hatBauer,inReichweite:inReichweite,gebaut:gebaut,finde:finde,los:los,geh:geh,zurueck:zurueck,gangbar:gangbar,ALLE:ALLE};
+ amBau:amBau,hatBauer:hatBauer,inReichweite:inReichweite,gebaut:gebaut,finde:finde,los:los,geh:geh,zurueck:zurueck,gangbar:gangbar,dazu:dazu,MAX_P:MAX_P,ALLE:ALLE};
 if(typeof module!=='undefined'&&module.exports)module.exports=P;else root.AT3PERS=P;
 })(typeof self!=='undefined'?self:this);

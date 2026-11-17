@@ -275,6 +275,16 @@
   "tier.reh": "Roe deer",
   "tier.zust.0": "Grazing. Unaware of the menu.",
   "tier.zust.1": "Wandering about, looking for better grass.",
-  "tier.zust.2": "Frozen still. Something is creeping up on it."
+  "tier.zust.2": "Frozen still. Something is creeping up on it.",
+  "glad.kurz": "{a} years, {h} cm", "glad.talent": "talent {t}", "glad.werte": "Strength {s} · Stamina {a} · Agility {g} · Dexterity {d}",
+  "glad.her1": "From {o} ({a}), born there too.", "glad.her2": "From {o} ({a}), born in {b}.",
+  "glad.ort.dorf": "village", "glad.ort.stadt": "town", "glad.ort.hafen": "port", "glad.ort.schule": "school", "glad.ort.burg": "castle", "glad.ort.wildnis": "wilderness", "glad.ort.labor": "test pit",
+  "glad.wuchs.dwarf": "▼ DWARFISM", "glad.wuchs.giant": "▲ GIGANTISM", "glad.wuchs.sumo": "● SUMO",
+  "markt.titel": "Slave Market", "markt.kopf": "Day {tag} · {p} gold each · you have {g} gold", "markt.kaufen": "Buy for {p} gold",
+  "markt.unterwegs": "The trader is on his way with today's goods. The chains rattle before you see him.",
+  "markt.leer": "Sold out. The trader brings five new ones tomorrow; the road never runs dry.",
+  "markt.zu": "The market stall is still being set up.", "markt.sprich": "{n} men for sale today.",
+  "markt.gekauft": "{n} is yours now. He looks thrilled, in the way a man in chains can look thrilled.",
+  "markt.nein.gone": "Too late. That one is gone.", "markt.nein.no_gold": "Not enough gold. The trader laughs and keeps the chain.", "markt.nein.full": "No room for more men."
  }
 }

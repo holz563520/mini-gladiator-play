@@ -31,7 +31,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='67fb899d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='c4d11dae', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -137,6 +137,7 @@ var t0=performance.now();
    else if(!offen.size&&bytes<SPEICHER*.6){if(lod<MAXL)anfragen(sichtX(lod+1,CX,CY,hb,hh,NEBEN),lod+1,2);if(lod>0&&!offen.size)anfragen(sichtX(lod-1,CX,CY,hb/2,hh/2,NEBEN),lod-1,2)}}
   else if((ersatz||veraltet)&&!ruht){setTimeout(plan,RUHE_MS)}
   karFaehrt=false;if(KAR.size&&lod<STUFEN){var tk=performance.now();karrenMalen(CX,CY,Z,W,H);M.karrenMs=performance.now()-tk;if(karFaehrt)weiter=true}
+  if(FEST.length&&lod<STUFEN)festMalen(CX,CY,Z,W,H);      // G9c1: Marktstand (vor den Personen, die davor stehen)
   perGeht=false;if(PER.size&&lod<STUFEN){var tp=performance.now();personenMalen(CX,CY,Z,W,H);M.personenMs=performance.now()-tp;if(perGeht)weiter=true}      // G7: Arbeiter
   tierGeht=false;if(TIER.size&&lod<STUFEN){tiereMalen(CX,CY,Z,W,H);if(tierGeht)weiter=true}      // G8: Rehe
   if(wzRahmen&&lod<STUFEN)rahmenMalen(CX,CY,Z,W,H);
@@ -257,6 +258,18 @@ var t0=performance.now();
    if(B)g.drawImage(vd?B.p:B.c,Math.round(sx-B.ax/Z),Math.round(sy-B.ay/Z),Math.max(1,Math.round(B.w/Z)),Math.max(1,Math.round(B.h/Z)));
    else{g.fillStyle=ERSATZ;g.fillRect(Math.round(sx-6/Z),Math.round(sy-10/Z),Math.max(2,Math.round(12/Z)),Math.max(2,Math.round(10/Z)))}});
   M.tiereSichtbar=n;tierGeht=geht}
+ // ── G9c1 feste Einzelobjekte (heute nur der Marktstand am Startplatz): Liste vom Spiel, Bild aus der Kartei einmal vorgezeichnet (Ersatzbild grauer Block),
+ // gezeichnet nur, wenn im Bild; Antippen wie bei den Personen. Keine eigene Rechenarbeit je Bild außer Lage und Kopieren. ──
+ var FEST=[], FBILD={}, FOBJ=null;
+ function festSetzen(L){FEST=(L||[]).map(function(e){return{art:e.art,x:e.x,y:e.y,info:e.info||null}});if(cam&&cam.lod<STUFEN&&!glob)plan()}
+ function festBild(art){if(art in FBILD)return FBILD[art];var ob=FOBJ&&FOBJ[art],r=null;if(ob&&ob.bild){var b=S.richtungsBild(ob,0)||ob.bild,c=S.zuCanvas(b,S.PALETTE);r={c:c,w:b.w,h:b.h,ax:b.ax,ay:b.ay}}
+  if(FOBJ)FBILD[art]=r;return r}
+ function festMalen(CX,CY,Z,W,H){FEST.forEach(function(e){var x=e.x+.5,y=e.y+.5;x+=Math.round((cam.x-x)/WX)*WX;var h=hoeheBei(umX(Math.floor(x)),Math.floor(y));if(h==null)h=cam.z;
+  var sx=((x-y)*32-CX)/Z+W/2,sy=((x+y)*16-h*8-CY)/Z+H/2;e.sx=-1e9;if(sx<-64||sy<-64||sx>W+64||sy>H+80)return;e.sx=sx;e.sy=sy;var B=festBild(e.art);
+  if(B)g.drawImage(B.c,Math.round(sx-B.ax/Z),Math.round(sy-B.ay/Z),Math.max(1,Math.round(B.w/Z)),Math.max(1,Math.round(B.h/Z)));
+  else{g.fillStyle=ERSATZ;g.fillRect(Math.round(sx-16/Z),Math.round(sy-24/Z),Math.max(3,Math.round(32/Z)),Math.max(3,Math.round(24/Z)))}})}
+ function festBei(cx,cy){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),px=(cx-r.left)*f,py=(cy-r.top)*f,best=null,bd=28*f*f*28;
+  FEST.forEach(function(e){if(e.sx==null||e.sx<-1e8)return;var dx=e.sx-px,dy=e.sy-14*f/(1<<cam.lod)-py,d=dx*dx+dy*dy;if(d<bd){bd=d;best=e}});return best}
  // FP3: Lage aller Arbeiter und Karren jetzt (gleitend wie auf der Karte) für die First-Person-Ansicht; Karte = Infos wie beim Antippen. Nur Rechnen, kein Bild.
  function bewegte(){var t=performance.now(),L=[];
   PER.forEach(function(e,id){var p=perLage(e,t);L.push({art:'figur-arbeiter',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,fa:e.fa,fb:e.fb},typ:'person'})});
@@ -354,6 +367,7 @@ var t0=performance.now();
   if(o.beiPerson&&!WZ_AKTIV()){var pp=personBei(cx,cy);if(pp&&o.beiPerson(pp)!==false)return}      // G7: Arbeiter zuerst (stehen vor dem Karren)
   if(o.beiKarren&&!WZ_AKTIV()){var kk=karrenBei(cx,cy);if(kk&&o.beiKarren(kk)!==false)return}
   if(o.beiTier&&!WZ_AKTIV()){var tt=tierBei(cx,cy);if(tt&&o.beiTier(tt)!==false)return}      // G8
+  if(o.beiFest&&!WZ_AKTIV()){var fe=festBei(cx,cy);if(fe&&o.beiFest(fe)!==false)return}      // G9c1: Marktstand
   feldBei(cx,cy).then(function(fd){var r=fd&&fd.bau&&fd.bau.raum;                              // G5b: Gebäude antippen schaltet in 1× sein Dach auf/zu (wie 2.0)
    if(r&&cam.lod===0&&!WZ_AKTIV()){if(fest.has(r))fest.delete(r);else fest.add(r);if(fd)fd.dachOffen=fest.has(r);plan()}
    if(o.beiFeld)o.beiFeld(fd)})}
@@ -362,7 +376,7 @@ var t0=performance.now();
  plan();
  // ── Natur (G4b): Bilder der übernommenen Naturobjekte einmal an den Bildkern; danach alle Bodenbilder neu (mit Natur). Rest = graues Ersatzbild. ──
  var NOBJ=null, NARTEN=null, BARTEN=[];
- function natur(objekte){NOBJ=objekte||{};karBilder(NOBJ);perBilder(NOBJ);tierBilder(NOBJ);naturSenden()}
+ function natur(objekte){NOBJ=objekte||{};FOBJ=NOBJ;FBILD={};karBilder(NOBJ);perBilder(NOBJ);tierBilder(NOBJ);naturSenden()}
  function naturSenden(){if(!bk||!NOBJ||!NARTEN)return;var objekte=NOBJ,arten=NARTEN,liste=[],tr=[],ers=0;NOBJ=null;
   function bild(id){var ob=objekte&&objekte[id];if(!ob||!ob.bild)return null;var b=ob.bild,px=new Uint8Array(b.w*b.h).fill(255);
    for(var y=0;y<b.h;y++){var r=b.z[y];for(var x=0;x<b.w;x++){var c=S.ZEICHEN.indexOf(r[x]);if(c>=0)px[y*b.w+x]=c}}
@@ -372,7 +386,8 @@ var t0=performance.now();
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,bau:bau,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
- return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,tiere:tiere,bewegte:bewegte,
+ return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,tiere:tiere,bewegte:bewegte,fest:festSetzen,
+  festListe:function(){return FEST.map(function(e){return{art:e.art,x:e.x,y:e.y,sx:e.sx,sy:e.sy,bild:!!FBILD[e.art]}})},
   tiereListe:function(){var t=performance.now(),L=[];TIER.forEach(function(e,id){var p=tierLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,bild:!!TBILD,sx:e.sx,sy:e.sy})});return L},
   personenListe:function(){var t=performance.now(),L=[];PER.forEach(function(e,id){var p=perLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,fa:e.fa,fb:e.fb,bild:!!PBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},
   karrenListe:function(){var t=performance.now(),L=[];KAR.forEach(function(e,id){var p=karLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,grund:e.grund,warte:e.warte||0,bild:!!KBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},
