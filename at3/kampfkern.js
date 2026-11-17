@@ -93,8 +93,31 @@ KK.wuerfle=function(w){vorbereiten();if(!G.MG.special&&imWorker)importScripts('.
  for(var i=0;i<n;i++){var g=M.makeGladiator(0);out.push(JSON.parse(JSON.stringify(M.special?M.special.roll(g):g)));}
  return out;};
 
+// ---------- G9c2: Kandidatenkarte (Thomas 17.11.2026: wie 1.0) ----------
+// Liest die Gladiatoren nur mit den unveränderten 1.0-Teilen: barracks.js info/analysis (Kampfwert, Talentstufe, Klassen, Plus/Minus), buy-odds.js
+// (Seltenheit, erst beim ersten Aufruf geladen) und das Porträt aus arena.js renderPortrait auf einer OffscreenCanvas (ohne OffscreenCanvas, z. B. in Node:
+// kein Bild). Verbraucht keinen Spielzufall und schreibt nichts. Texte bleiben deutsch (1.0), das Spiel übersetzt sie mit sprache/handel-en.json.
+// wunsch: {lot:[g|null …]}. Ergebnis: {karten:[…|null], bilder:[ImageBitmap|null …]}
+KK.ZUSATZ_KARTE='buy-odds';
+var LOWKEYS=['tactics','strength','stamina','condition','agility','dexterity','reflex','precision','block','balance','toughness','pain','will','aggression','teamwork','experience'];
+KK.karten=function(w){vorbereiten();var M=G.MG,B=M.barracks,rng=M.s.rng;try{return karten(w,M,B);}finally{M.s.rng=rng;}};      // 1.0 würfelt beim Lesen teils mit MG.s.rng: danach zurücksetzen
+function karten(w,M,B){
+ if(!M.buyOdds&&imWorker){try{importScripts('../'+KK.ZUSATZ_KARTE+'.js?v='+v);}catch(e){}}
+ var karten=[],bilder=[];
+ (w.lot||[]).forEach(function(g){if(!g){karten.push(null);bilder.push(null);return;}
+  var d=B.info(g),an=B.analysis(g,d),o=M.buyOdds?M.buyOdds.human(g):null,klein=function(x){return {g:x.group,m:x.m,text:x.text};};
+  var tief=Object.keys(g.stats||{}).filter(function(k){return LOWKEYS.indexOf(k)>=0;}).sort(function(a,b){return g.stats[a]-g.stats[b];}).slice(0,2);
+  karten.push({id:g.id,name:g.name,alter:g.age|0,groesse:g.height|0,gewicht:g.weight|0,wuchs:g.stature||'',traits:(g.traits||[]).slice(),
+   talent:d.talent,stufe:d.tier.level,stufeName:d.tier.name,kw:d.kw,best:d.best,
+   klassen:M.roles.map(function(r){var c=d.classes[r];return {rolle:r,ist:Math.round(c.ist),pot:Math.round(c.pot),waffe:(M.weaponDefs.find(function(x){return x.id===c.weapon;})||{}).name||c.weapon,wpot:Math.round(c.weaponPot)};}),
+   plus:an.plus.slice(0,3).map(klein),minus:an.minus.slice(0,2).map(klein),tief:tief,
+   odds:o?{atLeast:o.atLeast,better:o.better}:null});
+  var bild=null;if(typeof G.OffscreenCanvas==='function'){try{var c=new G.OffscreenCanvas(80,100);M.renderPortrait(c,g,{unarmored:true});bild=c.transferToImageBitmap?c.transferToImageBitmap():null;}catch(e){bild=null;}}
+  bilder.push(bild);});
+ return {karten:karten,bilder:bilder};};
+
 if(imWorker){
- G.onmessage=function(e){var d=e.data,f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:d.art==='wuerfle'?function(){return KK.wuerfle(d.wunsch);}:null;if(!f)return;
+ G.onmessage=function(e){var d=e.data,f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:d.art==='wuerfle'?function(){return KK.wuerfle(d.wunsch);}:d.art==='karten'?function(){return KK.karten(d.wunsch);}:null;if(!f)return;
   try{G.postMessage({nr:d.nr,ergebnis:f()});}catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}};
  // G9b: Ladezeit und geladene Dateien des Kampfkerns melden (eigene Zeitleiste des Kerns)
  var res=[];try{res=G.performance.getEntriesByType('resource');}catch(e){}

@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='c4d11dae', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='6a6eb1f2', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -234,17 +234,76 @@ function beiGladiatoren(d){GLAD=d.meld||null;window.AT3SPIEL.glad=GLAD;
  var b=GLAD&&GLAD.braucht;if(b){var key=b.tag+':'+b.lot+':'+b.start;if(glaWarte!==key){glaWarte=key;
   anschluss().then(function(KA){return KA.wuerfle({seed:((WSEED>>>0)^Math.imul(b.tag+1,0x9e3779b1))>>>0,n:b.lot+b.start},'',V)}).then(function(L){
    KERN.befehl('glaLot',{tag:b.tag,lot:L.slice(0,b.lot),start:L.slice(b.lot)})},function(e){glaWarte='';console.warn('Sklavenmarkt:',e)})}}
- var M=GLAD&&GLAD.meld,m=M&&M[M.length-1];if(m&&m.tick!==beiGladiatoren.letzt){beiGladiatoren.letzt=m.tick;if(window.AT3SPIEL.angetippt==='markt'){$('weltInfo').textContent=m.ok?t('markt.gekauft',{n:m.name}):t('markt.nein.'+m.grund);if(m.ok)sprich(t('markt.gekauft',{n:m.name}))}}
+ var M=GLAD&&GLAD.meld,m=M&&M[M.length-1];if(m&&m.tick!==beiGladiatoren.letzt){beiGladiatoren.letzt=m.tick;if(window.AT3SPIEL.angetippt==='markt'){$('weltInfo').textContent=m.ok?t('markt.gekauft',{n:m.name}):t('markt.nein.'+m.grund);
+   if(m.ok)aufdecken(m);else if(m.grund==='no_gold'&&HANDEL){MK.quote=zieh('broke');sprich(MK.quote)}}}
  if(window.AT3SPIEL.angetippt==='markt')marktKarte(true);
  if(PERSON&&window.AT3SPIEL.angetippt==='person:'+PERSON.id){personKarte.still=true;personKarte(PERSON)}}
-function marktKarte(still){var G2=GLAD,e=$('karte'),info=OBJTXT['markt-stand.info']||'';if(!G2){e.textContent=t('markt.zu');return}
- var h='<b>'+esc(t('markt.titel'))+'</b> <span class="leise">'+esc(t('markt.kopf',{p:G2.preis,g:G2.gold,tag:G2.heute+1}))+'</span>'+(info&&!still?'<br><span class="leise">'+esc(info)+'</span>':''),n=0;
- (G2.lot||[]).forEach(function(c,i){if(!c)return;n++;var w=c.werte||{};
-  h+='<p class="karte"><b>'+esc(c.name)+'</b>'+(c.wuchs?' <span class="gut">'+esc(t('glad.wuchs.'+c.wuchs))+'</span>':'')+'<br>'+esc(t('glad.kurz',{a:c.alter,h:c.groesse}))+' · '+esc(t('glad.talent',{t:c.talent}))+
-   '<br>'+esc(t('glad.werte',{s:w.str,a:w.sta,g:w.agi,d:w.dex}))+'<br><span class="leise">'+esc(herkunftText(c))+'</span><br><button class="knopf klein" data-kauf="'+i+'"'+(G2.gold<G2.preis?' disabled':'')+'>'+esc(t('markt.kaufen',{p:G2.preis}))+'</button></p>'});
- if(!n)h+='<p class="leise">'+esc(t(G2.lot&&G2.lot.length?'markt.leer':'markt.unterwegs'))+'</p>';
- e.innerHTML=h;[].forEach.call(e.querySelectorAll('[data-kauf]'),function(b){b.onclick=function(){b.disabled=true;KERN.befehl('glaKauf',{i:+b.dataset.kauf,tag:G2.tag})}});
- window.AT3SPIEL.angetippt='markt';if(!still)sprich(t('markt.titel')+'. '+(n?t('markt.sprich',{n:n}):t('markt.unterwegs')))}
+// ── G9c2 Kandidatenkarte wie in 1.0 (Thomas 17.11.2026): Reiter I–V, Porträt aus 1.0, vor dem Kauf verdeckt (Kampfwert, Talent, Klassen, Eigenschaften „?“),
+// nach dem Kauf Aufdeckkarte mit Kampfwert, Talentstufe, Klassen, Eigenschaften, Plus/Minus und Seltenheit (Fortuna); dazu die Händlersprüche aus 1.0, englisch.
+// Rechnen im Kampfkern (KA.karten: barracks info/analysis, buy-odds, Porträt auf OffscreenCanvas), volle Daten nur auf Nachfrage vom Weltkern (glaDaten).
+// Texte: sprache/handel-en.json, erst beim ersten Öffnen geladen. Einmal je Spieltag gerechnet und gemerkt; Hauptkern zeichnet nur die fertigen Bilder.
+var HANDEL=null, HANDEL_L=null, MK={i:-1,tag:-1,karten:null,bilder:null,laedt:'',kauf:null,rev:null,quote:''};
+var ROLLE_ICON={Soldat:'🛡',Assassine:'🗡',Fernkämpfer:'🏹'};
+function handel(){if(HANDEL)return Promise.resolve(HANDEL);if(!HANDEL_L)HANDEL_L=holeJson('sprache/handel-en.json').then(function(d){HANDEL=d;return d},function(e){HANDEL_L=null;throw e});return HANDEL_L}
+function hw(w){return (HANDEL&&HANDEL.woerter[w])||w}
+function hm(k,w){var s=HANDEL.muster[k];for(var n in w)s=s.replace('{'+n+'}',w[n]);return s}
+function analyseText(x){var s=x.text,r;if(HANDEL.woerter[s])return HANDEL.woerter[s];
+ if((r=/^(.+) · (Kraft|Beweglichkeit)$/.exec(s)))return hm('teil',{t:hw(r[1]),w:hw(r[2])});
+ if((r=/^(enormes|gutes) (.+)-Potenzial$/.exec(s)))return hm(r[1]==='enormes'?'potenzial2':'potenzial1',{w:hw(r[2])});
+ if((r=/^(außergewöhnliche|starke|sehr schlechte|schlechte) (.+)-Eignung$/.exec(s)))return hm({'außergewöhnliche':'eignung2','starke':'eignung1','sehr schlechte':'eignung-2','schlechte':'eignung-1'}[r[1]],{k:hw(r[2])});
+ return s}
+var hashId=function(id){var n=7,s=String(id);for(var i=0;i<s.length;i++)n=(n*31+s.charCodeAt(i))>>>0;return n};
+var ziehT={};function zieh(k){var L=HANDEL.haendler[k],b=ziehT[k];if(!b||!b.length){b=ziehT[k]=L.map(function(_,i){return i}).sort(function(){return Math.random()-.5})}return L[b.pop()]}
+// Wie trader.js claims(g)[0]: was der Händler über genau diesen Kandidaten behauptet (fest je Person; „schwächster“ zählt unter den noch Verfügbaren)
+function anpreisen(k){var H=HANDEL.haendler,h=hashId(k.id),out=[],sp=[],pu=function(L){if(L)sp.push.apply(sp,L)};
+ if(k.stufe>=8)out=H.jewel.slice();else if(k.stufe>=6)out=H.gem.slice();
+ k.tief.forEach(function(s){pu(H.low[s])});var bmi=k.gewicht/Math.pow(k.groesse/100,2);if(bmi<21.5)pu(H.thin);if(bmi>26.5)pu(H.fat);if(k.groesse<170)pu(H.small);if(k.groesse>191)pu(H.tall);if(k.alter>=32)pu(H.old);if(k.alter<=19)pu(H.young);
+ k.traits.forEach(function(x){pu(H.trait[x])});
+ var r=(MK.karten||[]).filter(function(x,i){return x&&GLAD&&GLAD.lot&&GLAD.lot[i]}).map(function(x){return x.kw}).sort(function(a,b){return a-b});if(r.length>1&&k.kw<=r[0])pu(H.weak);
+ var spec=H.special[k.wuchs]||[];if(spec.length)out.unshift(spec[h%spec.length]);
+ if(sp.length)out.push(sp[h%sp.length]);if(!out.length)out.push(H.pitch[h%H.pitch.length]);return out[0]}
+function sterne(n){var v=Math.round(n/2);return '★★★★★'.slice(0,v)+'☆☆☆☆☆'.slice(0,5-v)}
+function oddsText(o){var O=HANDEL.odds,n=1/o.atLeast,f=function(v,d){return v.toLocaleString('en-US',{minimumFractionDigits:d||0,maximumFractionDigits:d||0})},r=function(v){var e=Math.pow(10,Math.floor(Math.log10(v))-1);return Math.round(v/e)*e};
+ var ein=n<1.05?O.jeder:n<10?O.von.replace('{n}',f(n,1)):n<1000?O.von.replace('{n}',f(Math.round(n))):n<1e6?O.von.replace('{n}',f(r(n))):n<1e9?O.mio.replace('{n}',f(r(n)/1e6,1).replace(/\.0$/,'')):O.mrd.replace('{n}',f(r(n)/1e9,1).replace(/\.0$/,''));
+ var p=o.better*100,pc=p>=99.5?O.fast100:p>=10?f(Math.round(p)):p>=1?f(p,1):p>=.01?f(p,2):O.unter;
+ var b=n<1.25?0:n<2?1:n<5?2:n<20?3:n<100?4:n<1000?5:n<10000?6:7;return {band:b,name:O.namen[b],ein:ein,besser:pc}}
+function kopfHtml(k,c,offen){var K=HANDEL.karte,ber=c?herkunftText(c):'',ba=k.wuchs&&HANDEL.badge[k.wuchs];
+ return '<div class="mk-kopf"><canvas class="mk-bild" width="80" height="100" data-bild="'+MK.zeige+'"></canvas><div><b class="mk-name">'+esc(k.name)+'</b><br><span class="leise">'+esc(K.jahre.replace('{a}',k.alter))+' · '+k.groesse+' cm · '+k.gewicht+' kg</span>'+
+  (ba?'<br><span class="mk-badge">'+esc(ba)+'</span>':'')+(ber?'<br><span class="leise">'+esc(ber)+'</span>':'')+
+  '<br>'+esc(K.kw)+' <b>'+(offen?k.kw:'?')+'</b><br><span class="mk-sterne">'+(offen?sterne(k.stufe):'?????')+'</span> <b>'+(offen?esc(hw(k.stufeName).toUpperCase()):'???')+'</b> · '+esc(K.talent)+' '+(offen?k.talent:'?')+'</div></div>'+
+  '<div class="mk-klassen">'+k.klassen.map(function(x){return '<div class="mk-klasse'+(offen&&k.best===x.rolle?' best':'')+'"><span>'+(ROLLE_ICON[x.rolle]||'')+' '+esc(hw(x.rolle).toUpperCase())+'</span><span>'+(offen?x.ist+' → <b>'+x.pot+'</b>':'? → <b>?</b>')+'</span><small>'+(offen?esc(hw(x.waffe))+' ★'+x.wpot:esc(K.waffe)+' ? ★?')+'</small></div>'}).join('')+'</div>'}
+function zeichneBild(e){[].forEach.call(e.querySelectorAll('canvas[data-bild]'),function(c){var b=MK.bilder&&MK.bilder[+c.dataset.bild];var x=c.getContext('2d');x.fillStyle='#202d2f';x.fillRect(0,0,80,100);if(b)x.drawImage(b,0,0)})}
+// Karten des heutigen Angebots holen (einmal je Spieltag): volle 1.0-Daten vom Weltkern, Karten und Porträts aus dem Kampfkern
+function kartenHolen(){var G2=GLAD;if(!G2||!G2.lot||!G2.lot.length)return;var key=G2.tag+':'+G2.heute;if(MK.tag===key&&(MK.karten||MK.laedt))return;MK.tag=key;MK.karten=null;MK.bilder=null;MK.laedt=key;
+ Promise.all([handel(),Promise.all(G2.lot.map(function(c,i){return KERN.glaDaten({i:i})}))]).then(function(r){var gs=r[1].map(function(d){return d&&d.g||null});
+  return anschluss().then(function(KA){return KA.karten({lot:gs},'',V)})}).then(function(e){if(MK.laedt!==key)return;MK.laedt='';MK.karten=e.karten;MK.bilder=e.bilder;if(window.AT3SPIEL.angetippt==='markt')marktKarte(true,true)},
+  function(e){if(MK.laedt===key){MK.laedt='';MK.tag=-1}console.warn('Kandidatenkarte:',e)})}
+function aufdecken(m){var k=MK.kauf&&MK.karten&&MK.karten[MK.kauf.i];sprich(HANDEL?zieh('sold'):'');if(!k||!HANDEL){MK.kauf=null;return}
+ var L=HANDEL.haendler.reveal[k.stufe]||HANDEL.haendler.reveal[5],z=L[Math.floor(Math.random()*L.length)].split('{N}').join(k.name.split(' ')[0]),o=k.odds?oddsText(k.odds):null;
+ MK.rev={i:MK.kauf.i,k:k,c:MK.kauf.c,quote:z,o:o,fort:o?HANDEL.odds.human[o.band][Math.floor(Math.random()*HANDEL.odds.human[o.band].length)]:''};MK.kauf=null;sprich(z)}
+function marktKarte(still,neuBild){var G2=GLAD,e=$('karte'),info=OBJTXT['markt-stand.info']||'';window.AT3SPIEL.angetippt='markt';if(!G2){e.textContent=t('markt.zu');return}
+ kartenHolen();if(!HANDEL){if(!still)handel().then(function(){if(window.AT3SPIEL.angetippt==='markt')marktKarte(true)},function(){});}
+ var K=HANDEL&&HANDEL.karte,H=HANDEL&&HANDEL.haendler,rv=MK.rev,h,lot=G2.lot||[],n=lot.filter(Boolean).length;
+ if(rv&&K){if(still&&!neuBild&&e.querySelector('.mk-rev'))return;MK.zeige=rv.i;var k=rv.k;
+  h='<div class="mk-karte mk-rev"><b>'+esc(K.gekauft.replace('{n}',k.name.toUpperCase()))+'</b><p class="mk-quote"><b>'+esc(H.name)+':</b> “'+esc(rv.quote)+'”</p>'+
+   (rv.o?'<div class="mk-odds mk-b'+rv.o.band+'"><b>'+esc(HANDEL.odds.kopf.replace('{name}',rv.o.name).replace('{t}',k.talent).replace('{n}',rv.o.ein))+'</b><br><span class="leise">'+esc(HANDEL.odds.besser.replace('{p}',rv.o.besser))+'</span><br><i>'+esc(HANDEL.odds.fortuna)+': “'+esc(rv.fort)+'”</i></div>':'')+
+   kopfHtml(k,rv.c,true)+'<p class="mk-traits">'+([].concat(k.traits.map(function(x){return '<span>'+esc(hw(x))+'</span>'}),k.plus.map(function(x){return '<span class="gut">＋ '+esc(analyseText(x))+'</span>'}),k.minus.map(function(x){return '<span class="schlecht">− '+esc(analyseText(x))+'</span>'})).join('')||'<span>'+esc(K.nichts)+'</span>')+'</p>'+
+   '<button class="knopf klein" data-weiter="1">'+esc(K.weiter)+'</button></div>';
+  e.innerHTML=h;zeichneBild(e);e.querySelector('[data-weiter]').onclick=function(){MK.rev=null;MK.quote=n?'':zieh('empty');if(MK.quote)sprich(MK.quote);marktKarte(true,true)};return}
+ h='<b>'+esc(t('markt.titel'))+'</b> <span class="leise">'+esc(t('markt.kopf',{p:G2.preis,g:G2.gold,tag:G2.heute+1}))+'</span>'+(info&&!still?'<br><span class="leise">'+esc(info)+'</span>':'');
+ if(!n){e.innerHTML=h+(MK.quote&&H?'<p class="mk-quote"><b>'+esc(H.name)+':</b> “'+esc(MK.quote)+'”</p>':'')+'<p class="leise">'+esc(t(lot.length?'markt.leer':'markt.unterwegs'))+'</p>';if(!still)sprich(t('markt.titel')+'. '+t('markt.unterwegs'));return}
+ if(MK.i<0||!lot[MK.i])MK.i=lot.findIndex(Boolean);var i=MK.i,c=lot[i],k=MK.karten&&MK.karten[i];
+ if(!k||!K){e.innerHTML=h+'<p class="leise">'+esc(K?K.laedt:'…')+'</p>';return}
+ if(still&&!neuBild&&e.dataset.mk===G2.tag+':'+i+':'+n+':'+G2.gold+':'+MK.quote)return;e.dataset.mk=G2.tag+':'+i+':'+n+':'+G2.gold+':'+MK.quote;MK.zeige=i;
+ var spruch=MK.quote||anpreisen(k);
+ h+='<div class="mk-karte"><b class="leise">'+esc(K.kopf.replace('{n}',n).replace('{m}',lot.length))+'</b><p class="mk-quote"><b>'+esc(H.name)+':</b> “'+esc(spruch)+'”</p>'+
+  '<div class="mk-reiter">'+lot.map(function(x,j){var r=['I','II','III','IV','V'][j]||String(j+1);return x?'<button class="knopf klein" data-zeig="'+j+'" aria-pressed="'+(j===i)+'">'+r+'</button>':'<span class="mk-weg" title="'+esc(K.verkauft)+'">'+r+'</span>'}).join('')+'</div>'+
+  kopfHtml(k,c,false)+'<p class="mk-traits"><span>'+esc(K.eigenschaften)+': ?</span></p><p class="leise">'+esc(K.verdeckt)+'</p>'+
+  '<div class="mk-kauf"><span class="leise">'+esc(K.preis.replace('{p}',G2.preis).replace('{g}',G2.gold))+'</span><button class="knopf klein" data-kauf="'+i+'"'+(G2.gold<G2.preis?' disabled':'')+'>'+esc(K.kaufen.replace('{p}',G2.preis))+'</button></div></div>';
+ e.innerHTML=h;zeichneBild(e);
+ [].forEach.call(e.querySelectorAll('[data-zeig]'),function(b){b.onclick=function(){MK.i=+b.dataset.zeig;MK.quote='';marktKarte(true,true);var k2=MK.karten&&MK.karten[MK.i];if(k2)sprich(anpreisen(k2))}});
+ [].forEach.call(e.querySelectorAll('[data-kauf]'),function(b){b.onclick=function(){b.disabled=true;MK.quote='';MK.kauf={i:+b.dataset.kauf,c:lot[+b.dataset.kauf]};KERN.befehl('glaKauf',{i:+b.dataset.kauf,tag:G2.tag})}});
+ if(!still)sprich(t('markt.titel')+'. '+spruch)}
 // G8: mit &ketten zusätzlich Küche und Jägerhütte und die ersten Ketten (Befehl ketten), damit Holz, Wasser, Rehe und Mahlzeiten zu sehen sind.
 // Warenprobe (nur mit ?nosave&warenprobe): schaltet die Wirtschaft ein, sucht nahe beim Kartenort Platz, baut ein Lager (ohne Material), danach eine Werkstatt und
 // ein zweites Lager (mit Material aus dem Startvorrat), Tore und einen Kiesweg dazwischen; Arbeiter tragen und bauen, die Karren gleichen aus. Tempo 3×.

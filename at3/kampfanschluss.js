@@ -55,6 +55,8 @@ KA.rechne=function(auftrag,basis,v){return frage('kampf','auftrag',auftrag,basis
 KA.erzeuge=function(wunsch,basis,v){return frage('erzeuge','wunsch',wunsch,basis,v);};
 // G9c1: Kandidaten des Sklavenmarkts im Kampfkern würfeln (1.0 unverändert, wie trader.js stock). wunsch {seed, n}
 KA.wuerfle=function(wunsch,basis,v){return frage('wuerfle','wunsch',wunsch,basis,v);};
+// G9c2: Kandidatenkarten (1.0 barracks info/analysis, buy-odds, Porträt). wunsch {lot:[g|null …]} → {karten, bilder}
+KA.karten=function(wunsch,basis,v){return frage('karten','wunsch',wunsch,basis,v);};
 // G9b: Fingerabdruck eines Ergebnisses für die Gleichheitsprobe (Sieger, Zeit, je Kämpfer Zustand, Verletzungen und Daten nach dem Kampf)
 KA.abdruck=function(e){var s=JSON.stringify([e.sieger,e.zeit,e.einheiten.map(function(u){return [u.key,u.tot,u.unten,u.leben,u.kills,u.verletzungen,u.ursache,u.g];})]),h=0x811c9dc5;
  for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193);}return ('0000000'+(h>>>0).toString(16)).slice(-8);};

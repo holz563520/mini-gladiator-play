@@ -72,3 +72,17 @@ th{color:var(--tinte2)}
 #warenLeiste{margin-top:6px}#warenLeiste table{border-collapse:collapse;width:100%;max-width:420px;font-size:13px}#warenLeiste th,#warenLeiste td{border-bottom:1px solid var(--tinte2);padding:2px 6px;text-align:right}
 #warenLeiste th:first-child,#warenLeiste td:first-child{text-align:left}#warenLeiste th{font-size:10px;letter-spacing:.08em;text-transform:uppercase}#warenLeiste p{margin:4px 0}#warenLeiste a{color:inherit}
 #warenKnopf[aria-pressed=true],#karte .knopf[aria-pressed=true]{background:var(--knopf-an);box-shadow:inset 3px 3px 0 var(--tinte2)}
+/* G9c2 Kandidatenkarte (Sklavenmarkt wie 1.0): Porträt aus 1.0 (volle Farben wie die Kampfansicht, E7), Rest in Palette A */
+.mk-karte{margin:6px 0;padding:6px 8px;border:2px solid var(--rand);background:var(--papier)}
+.mk-quote{margin:4px 0;font-style:italic;color:var(--tinte2)}.mk-quote b{font-style:normal;color:var(--blut);font-weight:normal}
+.mk-reiter{display:flex;gap:4px;margin:4px 0}.mk-reiter .knopf{min-width:44px}.mk-reiter .knopf[aria-pressed=true]{background:var(--knopf-an);box-shadow:inset 3px 3px 0 var(--tinte2)}
+.mk-weg{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:40px;color:var(--tinte2);text-decoration:line-through;opacity:.6}
+.mk-kopf{display:flex;gap:10px;align-items:flex-start;margin:6px 0}.mk-kopf>div{line-height:1.2}
+.mk-bild{width:120px;height:150px;flex:none;image-rendering:pixelated;border:2px solid var(--rand);background:var(--nacht)}
+.mk-name{font-size:22px;color:var(--blut);font-weight:normal}.mk-badge{color:var(--blut)}.mk-sterne{color:var(--tinte2);letter-spacing:.05em}
+.mk-klassen{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:4px 0}
+.mk-klasse{display:flex;flex-direction:column;padding:3px 5px;border:1px solid var(--tinte2);font-size:15px}.mk-klasse.best{background:var(--knopf-an);border-color:var(--blut)}.mk-klasse small{font-size:14px;color:var(--tinte2)}
+.mk-traits{display:flex;flex-wrap:wrap;gap:4px 10px;margin:4px 0;font-size:16px}
+.mk-kauf{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.mk-odds{margin:4px 0;padding:4px 7px;border:2px solid var(--tinte2);font-size:16px}.mk-odds i{color:var(--tinte2)}
+.mk-b5,.mk-b6,.mk-b7{border-color:var(--blut);background:var(--knopf-an)}
