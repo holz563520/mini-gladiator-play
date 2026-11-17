@@ -31,7 +31,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='10345f32', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='a1109e4d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -235,6 +235,11 @@ var t0=performance.now();
    if(B)g.drawImage(vd?B.p:B.c,Math.round(sx-B.ax/Z),Math.round(sy-B.ay/Z),Math.max(1,Math.round(B.w/Z)),Math.max(1,Math.round(B.h/Z)));
    else{g.fillStyle=ERSATZ;g.fillRect(Math.round(sx-3/Z),Math.round(sy-20/Z),Math.max(2,Math.round(6/Z)),Math.max(3,Math.round(20/Z)))}});
   M.personenSichtbar=n;perGeht=geht}
+ // FP3: Lage aller Arbeiter und Karren jetzt (gleitend wie auf der Karte) für die First-Person-Ansicht; Karte = Infos wie beim Antippen. Nur Rechnen, kein Bild.
+ function bewegte(){var t=performance.now(),L=[];
+  PER.forEach(function(e,id){var p=perLage(e,t);L.push({art:'figur-arbeiter',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1},typ:'person'})});
+  KAR.forEach(function(e,id){var p=karLage(e,t);L.push({art:'karren-ochse',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust,grund:e.grund,warte:e.warte||0},typ:'karren'})});
+  return L}
  function raumBei(X,Y){if(Y<0||Y>=WY)return 0;X=umX(X);var r=BAUM.get(stk(X,Y));return r?r[((Y&63)<<6)|(X&63)]:0}
  // Räume, die ein Bild der Stufe 1× berühren (Felder darin und die Nachbarn nördlich/westlich, deren Vorderwände in diesem Bild stehen); je Kartenstück 64 Listen.
  function raeume(k){var R=BAUM.get(k);if(!R){TR.delete(k);return}var cx=(k/8192)|0,cy=k%8192,RN=cy>0?BAUM.get(cx*8192+cy-1):null,RW=BAUM.get(modu(cx-1,SX)*8192+cy),L=[];
@@ -343,7 +348,7 @@ var t0=performance.now();
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,bau:bau,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
- return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,
+ return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,bewegte:bewegte,
   personenListe:function(){var t=performance.now(),L=[];PER.forEach(function(e,id){var p=perLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,bild:!!PBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},
   karrenListe:function(){var t=performance.now(),L=[];KAR.forEach(function(e,id){var p=karLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,grund:e.grund,warte:e.warte||0,bild:!!KBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},
   stauZeichen:function(){return !!STAU},

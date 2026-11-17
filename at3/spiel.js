@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='10345f32', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='a1109e4d', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -130,7 +130,14 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true;
   var bp=/[?&]nosave\b/.test(location.search)&&/[?&]bauprobe(?:=(\d+))?/.exec(location.search);if(bp)bauprobe(Math.min(200,+(bp[1]||50)));
   if(/[?&]nosave\b/.test(location.search)&&/[?&]karrenprobe\b/.test(location.search))karrenprobe();
-  if(/[?&]nosave\b/.test(location.search)&&/[?&]warenprobe\b/.test(location.search))warenprobe()}},250)}
+  if(/[?&]nosave\b/.test(location.search)&&/[?&]warenprobe\b/.test(location.search))warenprobe();
+  if(/[?&]nosave\b/.test(location.search)&&/[?&]fpprobe\b/.test(location.search))fpprobe()}},250)}
+// FP3-Probe (nur mit ?nosave&fpprobe): First person einschalten, dann 0, 20 und 100 gedachte Arbeiter und Karren je 3 s um den Gladiator laufen lassen
+// (Kamera dreht sich langsam, jedes Bild neu) und die Bildzeit p95 je Stufe zeigen. Budget wie in der Kartei: Figuren in First Person (budgets.json „figuren“).
+function fpprobe(){var P=window.AT3SPIEL.fpprobe={fertig:false,stufen:null};$('weltInfo').textContent=t('probe.fpLaeuft');
+ var warte=setInterval(function(){if(fpBusy)return;if(!fpAn){fpUmschalten();return}clearInterval(warte);$('weltInfo').textContent=t('probe.fpLaeuft');
+  window.AT3FP.probe([0,20,100]).then(function(e){P.stufen=e;P.fertig=true;var u=function(v){return v==null?'-':v.toFixed(1)+' ms'},b0=e[0].p95||0;
+   $('weltInfo').textContent=t('probe.fpFertig',{a:u(e[0].p95),b:u(e[1].p95),c:u(e[2].p95),d:u(Math.max(0,(e[2].p95||0)-b0))})},function(x){P.fertig=true;P.fehler=String(x&&x.message||x)})},300)}
 // G6c2: Karren antippen → Karte mit Zustand, Grund und Wartezeit (englisch); die Stimme liest sie vor
 function karrenKarte(k){var z=t('karren.zust.'+k.zust),g=k.grund&&TXT['karren.grund.'+k.grund]!=null?t('karren.grund.'+k.grund):'',s=Math.floor((k.warte||0)/20),name=t('karren.name',{n:k.id});
  var fr=null;if(WAREN)WAREN.karren.forEach(function(e){if(e[0]===k.id)fr=e});if(WAREN&&WAREN.an)z=fr?t('karren.fracht',{m:fr[2],w:t('ware.'+fr[1])}):k.zust===2?t('karren.leer'):z;      // G7: Ladung statt „leer, aber stolz“
@@ -322,10 +329,13 @@ function fpUmschalten(){if(fpBusy||!KARTE)return;var k=$('fpKnopf');
  if(fpAn){var p=window.AT3FP.aus();fpAn=false;$('fpRahmen').hidden=true;$('weltCv').hidden=false;$('zoomRein').disabled=$('zoomRaus').disabled=false;
   k.textContent=t('fp.knopf');k.setAttribute('aria-pressed','false');if(p)KARTE.geh(p.x,p.y);$('weltInfo').textContent=t('welt.tippen');return}
  fpBusy=true;k.disabled=true;$('weltInfo').textContent=t('fp.laedt');
- fpLaden().then(function(){return window.AT3FP.an({karte:KARTE,objekte:geladen.objekte,cv:$('fpCv'),rahmen:$('fpRahmen'),stick:$('fpStick'),beiObjekt:fpObjekt})})
+ fpLaden().then(function(){return window.AT3FP.an({karte:KARTE,objekte:geladen.objekte,cv:$('fpCv'),rahmen:$('fpRahmen'),stick:$('fpStick'),beiObjekt:fpObjekt,beiBewegt:fpBewegt})})
  .then(function(){fpAn=true;$('weltCv').hidden=true;$('fpRahmen').hidden=false;try{$('fpRahmen').scrollIntoView({block:'nearest'})}catch(x){}$('zoomRein').disabled=$('zoomRaus').disabled=true;k.textContent=t('fp.zurueck');k.setAttribute('aria-pressed','true');$('weltInfo').textContent=t('fp.tippen')})
  .catch(function(e){var m=e&&e.message;$('weltInfo').textContent=m==='globe'?t('fp.globus'):m==='no ground'?t('fp.keinBoden'):t('fp.fehler',{e:m})})
  .then(function(){fpBusy=false;k.disabled=fpWahl})}
+// FP3: Arbeiter oder Karren in First Person angetippt: dieselbe Karte wie auf der Karte (mit Schaltern unten), oben kurz ohne Schalter mit Entfernung
+function fpBewegt(typ,k,m){if(typ==='person')personKarte(k);else karrenKarte(k);var c=$('karte').cloneNode(true);c.querySelectorAll('button').forEach(function(b){b.remove()});
+ $('weltInfo').innerHTML=c.innerHTML.replace(/(<br>\s*)+$/,'')+' <span class="leise">· '+esc(t('fp.entfernt',{m:Math.round(m)}))+'</span>'}
 function fpObjekt(id,ersatz,m){if(!id){$('weltInfo').textContent=t('fp.nichts');return}objektKarte(id,ersatz);$('weltInfo').innerHTML=$('karte').innerHTML+' <span class="leise">· '+esc(t('fp.entfernt',{m:Math.round(m)}))+'</span>'}
 function fpText(){var f=window.AT3FP&&window.AT3FP.mess();if(!f||!f.bilder)return t('mess.fpAus');var u=function(v){return v==null?'-':v.toFixed(1)+' ms'};
  return t('mess.fp',{w:f.opt.W,h:f.opt.H,s:f.opt.sicht,n:f.bilder,m:u(f.mittel),p:u(f.p95),o:f.objekte,a:u(f.ausschnittP95),k:f.ausschnitte,c:f.stueckeNeu})}

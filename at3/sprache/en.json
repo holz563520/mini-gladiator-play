@@ -10,6 +10,8 @@
   "welt.wartet": "The world is being hammered into shape …",
   "probe.bau": "Build probe: {n} of {m} houses ordered. The builders were not consulted.",
   "probe.fertig": "Build probe: {n} houses on order. Let them finish, switch to First person, walk about, then Load & budgets.",
+  "probe.fpLaeuft": "First person probe: climbing into a gladiator and herding imaginary workers around him …",
+  "probe.fpFertig": "First person probe: frame p95 alone {a}, with 20 walkers {b}, with 100 walkers {c} (walkers cost {d}). None of them exist, they just look busy.",
   "probe.karrenSucht": "Cart probe: looking for a road. The oxen are already sceptical.",
   "probe.karrenKeinPlatz": "Cart probe: no road with free space nearby. Scroll somewhere else and reload.",
   "probe.karren": "Cart probe: {n} of {m} parts ordered.",

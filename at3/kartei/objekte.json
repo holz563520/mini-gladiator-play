@@ -195,7 +195,7 @@
   },
   {
    "id": "figur-arbeiter",
-   "version": 1,
+   "version": 2,
    "typ": 30,
    "kat": "figur",
    "name": "Worker",
@@ -204,7 +204,7 @@
   },
   {
    "id": "karren-ochse",
-   "version": 1,
+   "version": 2,
    "typ": 31,
    "kat": "karren",
    "name": "Ox Cart",

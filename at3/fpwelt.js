@@ -177,13 +177,16 @@ function zeichne(buf,w,cam,opt,arten,S,FP){var W=opt.W,H=opt.H,sicht=opt.sicht,p
    for(var yy=y0;yy<y1;yy++){if(dk&&zs[yy*W+x]===zf)continue;buf[yy*W+x]=nb[lv*64+(rahmen?hc:steinC(yy,d,hb,u,seite,hoch,st))]}
    return Math.min(yb,y0)}}
  // Objekte: in Sichtweite und vor der Kamera, nah zuerst ausgewählt (Obergrenze), dann von hinten nach vorn gezeichnet
- var liste=[];for(var i=0;i<w.obj.length;i++){var o=w.obj[i],rx=o.x-cam.x,ry=o.y-cam.y,de=rx*ca+ry*sa;if(de<.25||de>sicht)continue;
+ // FP3: bewegte Objekte (w.bew, je Bild vom Spiel gesetzt: Arbeiter, Karren, später Tiere) gehen denselben Weg wie die Natur
+ var liste=[],BW=w.bew||[],nO=w.obj.length;for(var i=0;i<nO+BW.length;i++){var o=i<nO?w.obj[i]:BW[i-nO],rx=o.x-cam.x,ry=o.y-cam.y,de=rx*ca+ry*sa;if(de<.25||de>sicht)continue;
   var si=-rx*sa+ry*ca;if(Math.abs(si)>de*1.1+1)continue;liste.push({o:o,d:de,sx:W/2+si*f/de})}
  liste.sort(function(a,b){return a.d-b.d});if(liste.length>MAXOBJ)liste.length=MAXOBJ;
  var treffer=[],FPW=FP;
  for(var q=liste.length-1;q>=0;q--){var e=liste[q],oo=e.o,ob=arten[oo.art];if(!ob)continue;
-  var seite=((Math.round((Math.atan2(cam.y-oo.y,cam.x-oo.x)-cam.a*0)/(Math.PI/4))+oo.r)%8+8)%8,k=f/(32*e.d),fern=k<.5,bi=fern?FPW.fernBild(ob,seite):FPW.nahBild(ob,seite);
-  if(!bi){bi=FPW.nahBild(ob,seite);fern=false}if(!bi)continue;if(fern)k*=2;
+  var k=f/(32*e.d),fern=k<.5,bi;
+  if(oo.bew){var lx=(cam.x-oo.x)/e.d,ly=(cam.y-oo.y)/e.d,zu=oo.hx*lx+oo.hy*ly,re=-oo.hx*sa+oo.hy*ca;bi=FPW.bewegtBild(ob,oo.pose,zu,re,fern);if(!bi){bi=FPW.bewegtBild(ob,oo.pose,zu,re,false);fern=false}}
+  else{var seite=((Math.round((Math.atan2(cam.y-oo.y,cam.x-oo.x)-cam.a*0)/(Math.PI/4))+oo.r)%8+8)%8;bi=fern?FPW.fernBild(ob,seite):FPW.nahBild(ob,seite);if(!bi){bi=FPW.nahBild(ob,seite);fern=false}}
+  if(!bi)continue;if(fern)k*=2;
   var nbz=nummernBild(bi,S),fy2=hz+(cz-oo.z)*f/e.d,x0=e.sx-nbz.ax*k,y0=fy2-nbz.ay*k,sw=nbz.w*k,sh=nbz.h*k,lv2=Math.min(NL-1,(e.d/sicht*NL)|0),ix0=Math.max(0,Math.ceil(x0)),ix1=Math.min(W,Math.ceil(x0+sw));
   if(ix0>=ix1||y0>=H)continue;var gezeigt=false;
   for(var X=ix0;X<ix1;X++){var ix=Math.min(nbz.w-1,((X-x0)/k)|0),clip=Math.min(H,oberkante(m,X,e.d,H),Math.ceil(y0+sh));
@@ -192,7 +195,7 @@ function zeichne(buf,w,cam,opt,arten,S,FP){var W=opt.W,H=opt.H,sicht=opt.sicht,p
  // FP2a: Stürze über Tür und Tor, außer wo ein näheres Objekt davor steht; die untersten zwei Zeilen sind der Holzbalken
  for(var g=0;g<nov;g++){var o8=g*OVS,gx=ov[o8],ga=ov[o8+1],gb=ov[o8+2],gd=ov[o8+3],gh=ov[o8+4],gu=ov[o8+5],gs=ov[o8+6],gl=ov[o8+7]*64,gi=ov[o8+8],gst=gi?m.steinD:stein,gho=gi?m.holzD:holz;
   for(var gy=ga;gy<gb;gy++){var pg=gy*W+gx;if(zs[pg]===zf&&zb[pg]<gd)continue;buf[pg]=nb[gl+(gy>=gb-2?gho[gs]:steinC(gy,gd,gh,gu,gs,WANDH,gst))];zk[pg]=0}}
- return{schritte:schritte,objekte:treffer.length,kandidaten:liste.length,treffer:treffer,stuerze:nov,dachPx:dachPx,
+ return{schritte:schritte,objekte:treffer.length,bewegte:BW.length,kandidaten:liste.length,treffer:treffer,stuerze:nov,dachPx:dachPx,
   dach:{zk:zk,zb:zb,zs:zs,zf:zf,W:W,an:!!IN},   // FP2b: Antippen: Bildpunkt mit zs = zf und zk 1 = Dach/Decke (Tiefe zb)
   wand:{d:tw,y0:ty0,y1:ty1,typ:tt}}}
 

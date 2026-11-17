@@ -140,12 +140,31 @@ function pruefeAnsichten(o){var f=[],R=RICHTUNGEN[o.kat]||1,n=(o.richtungen||[])
  if(o.fp&&o.fp.zwischen){var zw=o.fp.zwischen;if(fpSeiten(o)<8||!Array.isArray(zw)||zw.length>4)f.push('First Person schräg: höchstens 4 Bilder, nur bei Arten mit 4 Kartenrichtungen');
   else zw.forEach(function(e,i){if(!e)return;if(!e.z){f.push('First Person schräg '+(i+1)+': nur eigenes Bild oder leer (= automatisch)');return}
    pruefe(e).forEach(function(x){f.push('First Person schräg '+(i+1)+': '+x)});if(e.kat!==o.kat)f.push('First Person schräg '+(i+1)+': falsche Art')})}
+ pruefeBewegt(o,f);
  var nah=fpBild(o,'nah'),fern=fpBild(o,'fern');
  if(nah&&fern&&fern.z&&(fern.w>Math.ceil(nah.w/2)+1||fern.h>Math.ceil(nah.h/2)+1))f.push('First Person fern muss etwa halb so groß wie nah sein');
  return f}
+// FP3 (Thomas 17.11.2026): bewegte Objekte (Figur, Tier, Karren) in First Person. Wenige Richtungen und Posen (AT3_PLAN 9.4):
+//  · Figur/Tier: vorn (schaut zur Kamera) oder hinten, Bild nach rechts gewandt, nach links gespiegelt. Pose 0 = Stehen (Kartenbild Richtung 1 und 3),
+//    Posen 1… = o.fp.posen[i] {vorn, hinten} (Laufbilder). Tiere bekommen später dieselbe Form.
+//  · Karren: Seite = Kartenbild (nach rechts, links gespiegelt), dazu o.fp.vorn / o.fp.hinten für „kommt auf mich zu“ / „fährt weg“.
+var BEWEGT={figur:1,tier:1,karren:1};
+function istBewegt(o){return !!(o&&BEWEGT[o.kat])}
+// Welches Bild? zu: Anteil der Blickrichtung zur Kamera hin, re: Anteil nach rechts (Bildschirm). Ergebnis {b, spiegel} oder null.
+function bewegtWahl(o,pose,zu,re){var sp=re<0,f=o.fp||{};
+ if(o.kat==='karren'){var l=Math.hypot(zu,re)||1;if(zu/l>.7071&&f.vorn&&f.vorn.z)return{b:f.vorn,spiegel:false};if(-zu/l>.7071&&f.hinten&&f.hinten.z)return{b:f.hinten,spiegel:false};return{b:o.bild,spiegel:sp}}
+ var vorn=zu>=0,P=pose>0&&f.posen&&f.posen[pose-1];if(P){var e=vorn?P.vorn:P.hinten;if(e&&e.z)return{b:e,spiegel:sp}}
+ var b=vorn?o.bild:(richtungsBild(o,2)||o.bild);return{b:b,spiegel:sp}}
+function posenZahl(o){return 1+((o&&o.fp&&o.fp.posen)||[]).length}
+function pruefeBewegt(o,f){var p=o.fp;if(!p)return;
+ if(p.posen){if(!istBewegt(o)||o.kat==='karren'||!Array.isArray(p.posen)||p.posen.length>4)f.push('First Person Posen: höchstens 4, nur bei Figuren und Tieren');
+  else p.posen.forEach(function(e,i){['vorn','hinten'].forEach(function(w){var b=e&&e[w];if(!b||!b.z){f.push('First Person Pose '+(i+1)+' '+w+' fehlt');return}
+   pruefe(b).forEach(function(x){f.push('First Person Pose '+(i+1)+' '+w+': '+x)});if(b.kat!==o.kat)f.push('First Person Pose '+(i+1)+' '+w+': falsche Art')})})}
+ ['vorn','hinten'].forEach(function(w){var b=p[w];if(!b)return;if(o.kat!=='karren'||!b.z){f.push('First Person '+w+': nur eigenes Bild, nur bei Karren');return}
+  pruefe(b).forEach(function(x){f.push('First Person '+w+': '+x)});if(b.kat!==o.kat)f.push('First Person '+w+': falsche Art')})}
 // Speicher aller Ansichten eines Objekts (Verweise zählen 0).
 function ansichtenBytes(o){var k=bytes(o.bild),fp=0;(o.richtungen||[]).forEach(function(e){if(!istVerweis(e))k+=bytes(e)});
- if(o.fp){['nah','fern'].forEach(function(w){var e=o.fp[w];if(e&&!istVerweis(e))fp+=bytes(e)});(o.fp.zwischen||[]).forEach(function(e){if(e&&e.z)fp+=bytes(e)})}return{karte:k,fp:fp,summe:k+fp}}
+ if(o.fp){['nah','fern'].forEach(function(w){var e=o.fp[w];if(e&&!istVerweis(e))fp+=bytes(e)});(o.fp.zwischen||[]).forEach(function(e){if(e&&e.z)fp+=bytes(e)});(o.fp.posen||[]).forEach(function(e){fp+=bytes(e&&e.vorn)+bytes(e&&e.hinten)});fp+=bytes(o.fp.vorn)+bytes(o.fp.hinten)}return{karte:k,fp:fp,summe:k+fp}}
 
 // ── M6: Prüfstand und Übernahme ────────────────────────────────────────────────────────────────────
 // Feldreihenfolge der Objekt-Datei. messung = gedrosselte Messung, geraet = Messung auf einem echten Gerät (beide mit Bildsignatur).
@@ -192,6 +211,6 @@ var PALETTE='A';   // Entscheidung Thomas 15.11.2026 (E5)
 var AT3_64={PALETTE:PALETTE,STATUS:STATUS,naechste:naechste,pruefeObjekt:pruefeObjekt,ZEICHEN:ZEICHEN,LEER:LEER,REIHEN:REIHEN,PALETTEN:PALETTEN,FELD:FELD,HOEHE:HOEHE,GESCHOSS:GESCHOSS,GROESSEN:GROESSEN,
  START:START,nummer:function(reihe,stufe){return START[reihe]+stufe},
  dunkler:function(n){for(var r=REIHEN.length-1;r>=0;r--)if(n>=START[r])return n>START[r]?n-1:n;return n},farbe:farbe,pruefe:pruefe,pruefePunkte:pruefePunkte,zuCanvas:zuCanvas,bytes:bytes,
- RICHTUNGEN:RICHTUNGEN,FELDER:FELDER,ordne:ordne,signatur:signatur,dateiBytes:dateiBytes,nachAenderung:nachAenderung,budgetGruppe:budgetGruppe,bewerte:bewerte,ladbar:ladbar,ladeUebernommene:ladeUebernommene,spiegelBild:spiegelBild,halbBild:halbBild,istVerweis:istVerweis,richtungsBild:richtungsBild,fpBild:fpBild,FP_SEITEN:FP_SEITEN,fpSeiten:fpSeiten,zwischenBild:zwischenBild,ansichtenErgaenzen:ansichtenErgaenzen,pruefeAnsichten:pruefeAnsichten,ansichtenBytes:ansichtenBytes};
+ RICHTUNGEN:RICHTUNGEN,FELDER:FELDER,ordne:ordne,signatur:signatur,dateiBytes:dateiBytes,nachAenderung:nachAenderung,budgetGruppe:budgetGruppe,bewerte:bewerte,ladbar:ladbar,ladeUebernommene:ladeUebernommene,spiegelBild:spiegelBild,istBewegt:istBewegt,bewegtWahl:bewegtWahl,posenZahl:posenZahl,halbBild:halbBild,istVerweis:istVerweis,richtungsBild:richtungsBild,fpBild:fpBild,FP_SEITEN:FP_SEITEN,fpSeiten:fpSeiten,zwischenBild:zwischenBild,ansichtenErgaenzen:ansichtenErgaenzen,pruefeAnsichten:pruefeAnsichten,ansichtenBytes:ansichtenBytes};
 if(typeof module!=='undefined'&&module.exports)module.exports=AT3_64;else G.AT3_64=AT3_64;
 })(typeof window!=='undefined'?window:globalThis);

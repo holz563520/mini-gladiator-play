@@ -80,7 +80,13 @@ function zeichne(ctx,szene,pal){var s=S();pal=pal||s.PALETTE;ctx.imageSmoothingE
   ctx.drawImage(sch,Math.round(e.x-sch.width/2),Math.round(e.y-sch.height/2));
   ctx.drawImage(cv,Math.round(e.x-b.ax),Math.round(e.y-b.ay))});}
 function leeren(o){if(o){objCache.delete(o);Object.keys(fernCache).forEach(function(k){if(k.indexOf(o.id+'@')===0)delete fernCache[k]});return}cache={};cacheN=0;fernCache={};objCache=new WeakMap()}
-var FP={W:W,H:H,HORIZONT:HORIZONT,nahBild:nahBild,fernBild:fernBild,dunstTabelle:dunstTabelle,umfaerben:umfaerben,hintergrundNummern:hintergrundNummern,zeichne:zeichne,leeren:leeren,
+// FP3: Bild eines bewegten Objekts (Figur, Tier, Karren) für Pose und Lage zur Kamera (zu: Richtung zur Kamera hin, re: nach rechts). Gespiegelte und
+// verkleinerte Fassungen entstehen einmal je Bild und bleiben gemerkt (kein neues Bild je Bild). Objekte ohne Bewegungsbilder (Ersatzbild): wie Natur.
+var bewMerk=typeof WeakMap!=='undefined'?new WeakMap():null;
+function bewegtBild(o,pose,zu,re,fern){var s=S();if(!s.istBewegt(o)||!o.bild)return fern?null:nahBild(o,0);
+ var w=s.bewegtWahl(o,pose,zu,re);if(!w||!w.b)return null;var m=bewMerk.get(w.b);if(!m){m={};bewMerk.set(w.b,m)}var k=(fern?'f':'n')+(w.spiegel?'s':'');
+ if(!m[k]){var b=w.spiegel?(m.ns||(m.ns=s.spiegelBild(w.b))):w.b;m[k]=fern?s.halbBild(b):b}return m[k]}
+var FP={W:W,H:H,HORIZONT:HORIZONT,nahBild:nahBild,fernBild:fernBild,bewegtBild:bewegtBild,dunstTabelle:dunstTabelle,umfaerben:umfaerben,hintergrundNummern:hintergrundNummern,zeichne:zeichne,leeren:leeren,
  vorbereitet:function(){return cacheN}};
 if(typeof module!=='undefined'&&module.exports)module.exports=FP;else G.AT3_FP=FP;
 })(typeof window!=='undefined'?window:globalThis);

@@ -3,6 +3,7 @@
 // MK1: Knopf „Riesenwelt-Probe“ lädt kernstart.js und menue/riesenwelt.js erst beim Antippen (Laststufen 10 bis 10.000 Nationen, Weltgröße, Helferkerne, Dauerlauf).
 // G6b: Link „Wegprobe“ öffnet das Spiel ohne Spielstand (Werkzeug Path in der Bauleiste).
 // FP2b: Links „Bauprobe First Person“ öffnen das Spiel mit ?nosave&bauprobe=50/200 im neuen Tab (Messung Bauteile First Person mit vielen Häusern).
+// FP3: Link „First-Person-Probe“ öffnet das Spiel mit ?nosave&fpprobe (0/20/100 gedachte Arbeiter und Karren in First Person, Bildzeit p95 je Stufe).
 // M6: Knopf öffnet den Prüfstand (pruefstand.js mit at3-64.js und karte.js, erst beim Antippen geladen): Ampel, Status, Lastszene, Messung, Übernahme.
 AT3ED.menue('pruefen',function(el){
  var L=AT3ED.last(),s=L.start;
@@ -13,6 +14,7 @@ AT3ED.menue('pruefen',function(el){
   '<p><button class="knopf" id="pRiesen">Riesenwelt-Probe<small>10 bis 10.000 Nationen · Welt 307.200² · Helferkerne · 30 Minuten Dauerlauf</small></button></p>'+
   '<p><a class="knopf" href="index.html?nosave&amp;bauprobe=50" target="_blank" rel="noopener">Bauprobe First Person · 50 Häuser<small>Spiel ohne Spielstand, Teststadt um den Startort · dann First person und „Load &amp; budgets“</small></a> '+
   '<a class="knopf" href="index.html?nosave&amp;bauprobe=200" target="_blank" rel="noopener">Bauprobe · 200 Häuser<small>dasselbe mit voller Stadt · Budget: Bild p95 ≤ 33,3 ms</small></a></p>'+
+  '<p><a class="knopf" href="index.html?nosave&amp;fpprobe" target="_blank" rel="noopener">First-Person-Probe (FP3)<small>Spiel ohne Spielstand · schaltet First person ein, 0, 20 und 100 gedachte Arbeiter und Karren laufen je 3 s um den Gladiator · Bildzeit p95 je Stufe · Budget Figuren First Person: 100 Stück ≤ 8 ms</small></a></p>'+
   '<p><a class="knopf" href="index.html?nosave&amp;warenprobe" target="_blank" rel="noopener">Warenprobe (G7)<small>Spiel ohne Spielstand · 5 Arbeiter bauen ein Lager, dann Werkstatt und zweites Lager mit Material aus dem Startvorrat · Goods öffnen, Arbeiter antippen</small></a></p>'+
   '<p><a class="knopf" href="index.html?nosave&amp;karrenprobe" target="_blank" rel="noopener">Karrenprobe (G6c2)<small>Spiel ohne Spielstand · baut an der nächsten Weltstraße eine 1 Feld breite Gasse, einen Platz und 4 Lager mit Tor · Gegenverkehr, Warten vor Engstellen, Ausweichen · Karren antippen zeigt Zustand und Grund</small></a></p>'+
   '<p><a class="knopf" href="index.html?nosave" target="_blank" rel="noopener">Wegprobe (G6b)<small>Spiel ohne Spielstand · Build → Tools → Path (feet) oder Path (cart): Start und Ziel antippen · zeigt Weg, Rechenzeit, Felder und Helferkerne</small></a></p>'+
