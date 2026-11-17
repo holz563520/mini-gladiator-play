@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='8476683d', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='74bf30b4', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -121,7 +121,7 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
   beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
   beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
   beiTier:function(k){if(BAUW&&!fpAn)return false;tierKarte(k);return true},      // G8: Reh antippen
-  beiFest:function(e){if(BAUW&&!fpAn)return false;if(e.art==='markt-stand'){marktKarte();return true}if(e.art==='arena-sand'){arenaKarte();return true}return false},      // G9c1: Marktstand antippen, G9d2: Arena
+  beiFest:function(e){if(BAUW&&!fpAn)return false;if(e.art==='markt-stand'){marktKarte();return true}if(e.art==='arena-sand'){arenaKarte();return true}if(e.art==='leiche'&&e.info){leicheKarte(e.info);return true}return false},      // G9d3: Leiche      // G9c1: Marktstand antippen, G9d2: Arena
   beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.bweg?', '+t('welt.bweg.'+f.bweg[0])+(f.bweg[1]<3?' ('+t('bau.zustand.'+f.bweg[1])+')':''):f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
@@ -218,19 +218,26 @@ function warenZeigen(){var W=WAREN,e=$('warenLeiste');if(!W||!W.an){e.textConten
 // G8: Fähigkeiten f2–f6 und hungrig/durstig kommen gepackt (fa, fb) aus dem Weltkern
 function personKarte(k){PERSON=k;var name=personName(k.id),auf=t('person.auf.'+(k.zust===4?'w':k.zust===0?0:k.auf)),fa=k.fa|0,fb=k.fb|0,hu=fb>>7,last=k.last?t('person.last',{m:k.last>>4,w:t('ware.'+((k.last&15)-1))}):'';
  var gl=GLAD&&GLAD.per&&GLAD.per[k.id],her=gl?herkunftText(gl):'';
- $('karte').innerHTML='<b>'+esc(name)+'</b>'+(gl?' <span class="leise">'+esc(t('glad.kurz',{a:gl.alter,h:gl.groesse}))+'</span>':'')+(her?'<br><span class="leise">'+esc(her)+'</span>':'')+'<br>'+esc(auf)+(last?'<br>'+esc(last):'')+(hu?'<br><span class="schlecht">'+esc(t('person.hunger.'+hu))+'</span>':'')+'<br>'+esc(t('person.faehig',{a:k.f0,b:k.f1,c:fa&127,d:(fa>>7)&127,e:(fa>>14)&127,f:(fa>>21)&127,g:fb&127}))+'<br>'+
+ $('karte').innerHTML='<b>'+esc(name)+'</b>'+(gl?' <span class="leise">'+esc(t('glad.kurz',{a:gl.alter,h:gl.groesse}))+'</span>':'')+(her?'<br><span class="leise">'+esc(her)+'</span>':'')+'<br>'+esc(auf)+(last?'<br>'+esc(last):'')+(hu?'<br><span class="schlecht">'+esc(t('person.hunger.'+hu))+'</span>':'')+(gl&&gl.ruht?'<br><span class="schlecht">'+esc(t('person.ruht'))+'</span>':gl&&gl.hp<100?'<br><span class="schlecht">'+esc(t('person.gesund',{h:gl.hp,v:Math.max(50,gl.hp)}))+'</span>':'')+'<br>'+esc(t('person.faehig',{a:k.f0,b:k.f1,c:fa&127,d:(fa>>7)&127,e:(fa>>14)&127,f:(fa>>21)&127,g:fb&127}))+'<br>'+
   [1,2,4,8,16,32,64].map(function(bit,i){return '<button class="knopf klein" id="pRolle'+bit+'" aria-pressed="'+(k.darf&bit?'true':'false')+'">'+esc(t('person.rolle.'+(i+1)))+'</button>'}).join(' ');
  [1,2,4,8,16,32,64].forEach(function(bit){$('pRolle'+bit).onclick=function(){k.darf^=bit;KERN.befehl('personRolle',{id:k.id,darf:k.darf});personKarte(k)}});
  window.AT3SPIEL.angetippt='person:'+k.id;window.AT3SPIEL.personKarte=k;if(!personKarte.still)sprich(name+'. '+auf);personKarte.still=false}
 // ── G9c1 Gladiatoren und Sklavenmarkt: Übersicht vom Weltkern (gladiatoren.js meld, nur bei Änderung). Braucht der Markt Kandidaten (neuer Spieltag) oder
 // haben Personen noch keine Gladiatordaten, würfelt der Kampfkern (kampfkern.js, unverändertes 1.0, wie trader.js stock) und das Ergebnis geht mit glaLot zurück.
 // Würfeln läuft im Kampfkern (eigener Hintergrundkern), hier nur Laden des Anschlusses, Befehl und Liste. Gewürfelt wird je Spieltag nur einmal. ──
-var GLAD=null, glaWarte='', KAL=null, WSEED=1;
+var GLAD=null, glaWarte='', heilWarte=-1, KAL=null, WSEED=1;
 function anschluss(){if(KAL)return KAL;KAL=new Promise(function(ok,no){if(window.AT3Kampf)return ok(window.AT3Kampf);var s=document.createElement('script');s.src='kampfanschluss.js?v='+V;
  s.onload=function(){ok(window.AT3Kampf)};s.onerror=function(){KAL=null;no(new Error('kampfanschluss.js'))};document.head.appendChild(s)});return KAL}
 function herkunftText(g){var h=g.her,b=g.geb;if(!h)return '';var a=t('glad.ort.'+h.art);return b&&b.ortId!==h.ortId?t('glad.her2',{o:h.name,a:a,b:b.name}):t('glad.her1',{o:h.name,a:a})}
 function beiGladiatoren(d){GLAD=d.meld||null;window.AT3SPIEL.glad=GLAD;
- var AR=GLAD&&GLAD.arena;if(KARTE)KARTE.fest(GLAD&&GLAD.platz?[{art:'markt-stand',x:GLAD.markt[0],y:GLAD.markt[1]}].concat(AR&&AR.platz?[{art:'arena-sand',x:AR.x,y:AR.y}]:[]):[]);      // G9d2: feste Arena
+ var AR=GLAD&&GLAD.arena;if(KARTE)KARTE.fest(GLAD&&GLAD.platz?[{art:'markt-stand',x:GLAD.markt[0],y:GLAD.markt[1]}].concat(AR&&AR.platz?[{art:'arena-sand',x:AR.x,y:AR.y}]:[])
+  .concat(AR&&AR.leichen?AR.leichen.map(function(l){return{art:'leiche',x:l.x,y:l.y,info:l}}):[]):[]);      // G9d2: feste Arena; G9d3: Leichen einen Spieltag
+ // G9d3 Heilung wie 1.0: neuer Spieltag → alle Lebenden im Kampfkern heilen (KA.heile, Tageswechsel aus data.js), Ergebnis mit glaHeil zurück. Einmal je Spieltag.
+ var h=GLAD&&GLAD.heil;if(h&&heilWarte!==h.tag){heilWarte=h.tag;
+  Promise.all([anschluss(),KERN.glaDaten({heil:1})]).then(function(r){var KA=r[0],D=r[1];if(!D||D.tag!==h.tag||!D.liste.length){if(D&&D.tag===h.tag)KERN.befehl('glaHeil',{tag:h.tag,liste:[]});return null}
+   return KA.heile({tag:h.tag,tage:h.tage,gs:D.liste.map(function(e){return e.g})},'',V).then(function(H){var nach={};H.forEach(function(x){if(x&&x.g)nach[String(x.g.id)]=x});
+    KERN.befehl('glaHeil',{tag:h.tag,liste:D.liste.map(function(e){var x=nach[String(e.g.id)];return x?{pid:e.pid,gv:e.gv,g:x.g,hp:x.hp,ruht:x.ruht}:null}).filter(Boolean)})})})
+   .catch(function(e){heilWarte=-1;console.warn('Heilung:',e)})}
  var b=GLAD&&GLAD.braucht;if(b){var key=b.tag+':'+b.lot+':'+b.start;if(glaWarte!==key){glaWarte=key;
   anschluss().then(function(KA){return KA.wuerfle({seed:((WSEED>>>0)^Math.imul(b.tag+1,0x9e3779b1))>>>0,n:b.lot+b.start},'',V)}).then(function(L){
    KERN.befehl('glaLot',{tag:b.tag,lot:L.slice(0,b.lot),start:L.slice(b.lot)})},function(e){glaWarte='';console.warn('Sklavenmarkt:',e)})}}
@@ -248,18 +255,20 @@ function arenaPause(){arenaTempo=KERN.zustand.tempo;if(arenaTempo)KERN.befehl('t
 function arenaWeiter(){if(arenaTempo)KERN.befehl('tempo',arenaTempo);arenaTempo=0}
 function arenaMeld(){var A=GLAD&&GLAD.arena,T=A&&A.termin,M=GLAD&&GLAD.meld,m=M&&M[M.length-1];
  if(m&&m.arena&&m.tick!==arenaMeld.letzt){arenaMeld.letzt=m.tick;if(!m.ok)$('weltInfo').textContent=t('arena.nein.'+m.grund)}
- if(T&&T.zu===2&&!ARENA_OFFEN&&arenaAuto!==T.id){arenaAuto=T.id;arenaFenster('kampf')}
- if(window.AT3SPIEL.angetippt==='arena')arenaKarte(true)}
-function arenaLetzt(L){var w={s:'☠'.repeat(L.skulls|0),l:L.label,g:L.praemie|0};return t(L.abgesagt?'arena.letzt.ab':L.gewonnen?'arena.letzt.sieg':'arena.letzt.niederlage',w)}
+ if(T&&T.zu===2&&!ARENA_OFFEN&&arenaAuto!==T.id){arenaAuto=T.id;arenaFrage()}      // G9d3: ansehen oder nur Ergebnis
+ if(window.AT3SPIEL.angetippt==='arena')arenaKarte(true);if(BERICHT&&window.AT3SPIEL.angetippt==='bericht')arenaBericht()}
+function arenaLetzt(L){var w={s:'☠'.repeat(L.skulls|0),l:L.label,g:L.praemie|0};return t(L.abgesagt?'arena.letzt.ab':L.gewonnen?'arena.letzt.sieg':'arena.letzt.niederlage',w)+
+ (L.abgesagt?'':(L.zuschauer!=null?' '+t('arena.tickets',{z:L.zuschauer,t:L.tickets|0}):'')+(L.tote&&L.tote.length?' '+t('arena.letzt.tote',{n:L.tote.join(', ')}):''))}      // G9d3: Tickets, Gefallene
 function arenaKarte(still){var A=GLAD&&GLAD.arena,e=$('karte'),info=OBJTXT['arena-sand.info']||'',T=A&&A.termin,h;window.AT3SPIEL.angetippt='arena';
  if(!A||!A.platz){e.textContent=t('arena.zu');return}
  h='<b>'+esc(t('arena.titel'))+'</b>'+(info&&!still?'<br><span class="leise">'+esc(info)+'</span>':'');
  if(T)h+='<br>'+esc(t('arena.termin',{tag:T.tag+1,s:'☠'.repeat(T.skulls),l:T.label}))+'<br><span class="leise">'+esc(t('arena.kaempfer',{n:T.ids.map(personName).join(', ')}))+'</span><br><span class="leise">'+
-  esc(t('arena.zu'+T.zu,{da:A.da|0,n:T.ids.length}))+'</span><br>'+(T.zu===2?'<button class="knopf klein" data-arena="kampf">'+esc(t('arena.betreten'))+'</button> ':'')+'<button class="knopf klein" data-arena="absage">'+esc(t('arena.absage'))+'</button>';
+  esc(t('arena.zu'+T.zu,{da:A.da|0,n:T.ids.length}))+'</span><br>'+(T.zu===2?'<button class="knopf klein" data-arena="kampf">'+esc(t('arena.ansehen'))+'</button> <button class="knopf klein" data-arena="ergebnis">'+esc(t('arena.nurerg'))+'</button> ':'')+'<button class="knopf klein" data-arena="absage">'+esc(t('arena.absage'))+'</button>';
  else h+='<br><span class="leise">'+esc(A.letzt?arenaLetzt(A.letzt):t('arena.frei'))+'</span><br><button class="knopf klein" data-arena="wahl">'+esc(t('arena.planen'))+'</button>';
- e.innerHTML=h;[].forEach.call(e.querySelectorAll('[data-arena]'),function(b){b.disabled=ARENA_OFFEN;b.onclick=function(){var w=b.dataset.arena;if(w==='absage'){KERN.befehl('arenaAbsage',{id:T.id});return}arenaFenster(w)}});
+ if(A.gefallen)h+='<br><span class="leise">'+esc(t('arena.gefallen.zahl',{n:A.gefallen}))+'</span>';
+ e.innerHTML=h;[].forEach.call(e.querySelectorAll('[data-arena]'),function(b){b.disabled=ARENA_OFFEN;b.onclick=function(){var w=b.dataset.arena;if(w==='absage'){KERN.befehl('arenaAbsage',{id:T.id});return}if(w==='ergebnis'){arenaNurErgebnis();return}arenaFenster(w)}});
  if(!still)sprich(t('arena.titel')+'. '+(T?t('arena.termin.kurz',{tag:T.tag+1}):t('arena.frei')))}
-function arenaFenster(modus){if(ARENA_OFFEN)return;ARENA_OFFEN=true;$('weltInfo').textContent=t('arena.laedt');var D=null;
+function arenaFenster(modus){if(ARENA_OFFEN)return;var q=$('arenaFrage');if(q){q.remove();arenaWeiter()}ARENA_OFFEN=true;$('weltInfo').textContent=t('arena.laedt');var D=null;
  function fin(){ARENA_OFFEN=false;if(window.AT3SPIEL.angetippt==='arena')arenaKarte(true)}
  Promise.all([anschluss(),KERN.glaDaten({arena:1})]).then(function(r){var KA=r[0];D=r[1];if(!D||(modus==='kampf'&&!D.termin))throw new Error('no data');
   var a={id:modus==='kampf'?'arena-'+D.termin.id:'arena-wahl-'+Date.now(),modus:modus,kader:D.kader.map(function(k){return{g:k.g}}),auf:D.auf,orte:D.orte,heute:D.heute,gold:D.gold,
@@ -270,10 +279,41 @@ function arenaFenster(modus){if(ARENA_OFFEN)return;ARENA_OFFEN=true;$('weltInfo'
    KERN.befehl('arenaTermin',{ids:ids,offer:T.offer,auf:T.auf||null,seed:crypto.getRandomValues(new Uint32Array(1))[0]>>>0,label:String(T.label||'').slice(0,200),skulls:Math.min(5,Math.max(1,T.skulls|0)),ort:T.ort||null});
    $('weltInfo').textContent=t('arena.gebucht',{tag:D.heute+2});sprich(t('arena.termin.kurz',{tag:D.heute+2}))}
   else if(modus==='kampf'&&erg&&erg.arena){
-   KERN.befehl('arenaErgebnis',{id:D.termin.id,praemie:Math.max(0,erg.praemie|0),gewonnen:erg.gewonnen?1:0,auf:erg.auf||null,einheiten:erg.einheiten.map(function(u){return{key:u.key,g:u.g||null,tot:u.tot,unten:u.unten,
-    leben:u.leben,verletzt:u.verletzt,schwer:u.schwer,verletzungen:u.verletzungen,ursache:u.ursache}})});
-   var txt=t(erg.gewonnen?'arena.sieg':'arena.niederlage',{g:erg.praemie|0});$('weltInfo').textContent=txt;sprich(txt)}
+   arenaSenden(D,erg);var txt=t(erg.gewonnen?'arena.sieg':'arena.niederlage',{g:erg.praemie|0});$('weltInfo').textContent=txt;sprich(txt)}
   fin()},function(e){fin();var x=e&&e.message||'';if(x!=='abgebrochen'&&x!=='closed'){console.warn('Arena:',e);$('weltInfo').textContent=t('arena.fehler',{e:x})}})}
+// ── G9d3 Ergebnis und Folgen (Thomas 17.11.2026). Ergebnis genau einmal mit arenaErgebnis in den Weltkern, dazu Spektakel (×100) und Ruhmfaktor (×1000) aus 1.0 für die
+// Tickets (arena.js). Ist der Kampf fällig, fragt das Spiel: ansehen (Kampffenster wie G9d2) oder nur Ergebnis (KA.arena im Kampfkern, ohne Fenster, die Weltuhr läuft
+// weiter, danach kurzer Ergebnisbericht). Solange die Frage offen ist, steht die Weltuhr. ──
+function arenaSenden(D,erg){KERN.befehl('arenaErgebnis',{id:D.termin.id,praemie:Math.max(0,erg.praemie|0),gewonnen:erg.gewonnen?1:0,auf:erg.auf||null,
+  spekt:Math.max(0,Math.min(100000,Math.round((+erg.spekt||1)*100))),ruhm:Math.max(0,Math.min(10000,Math.round((+erg.ruhmMul||1)*1000))),angesehen:erg.angesehen===false?0:1,
+  einheiten:erg.einheiten.map(function(u){return{key:u.key,g:u.g||null,tot:u.tot,unten:u.unten,leben:u.leben,verletzt:u.verletzt,schwer:u.schwer,verletzungen:u.verletzungen,ursache:u.ursache}})})}
+function arenaFrage(){var A=GLAD&&GLAD.arena,T=A&&A.termin;if(!T||ARENA_OFFEN||$('arenaFrage'))return;arenaPause();
+ var d=document.createElement('div');d.id='arenaFrage';d.className='arena-frage';
+ d.innerHTML='<div class="arena-frage-box"><b>'+esc(t('arena.frage'))+'</b><br><span class="leise">'+esc(t('arena.termin',{tag:T.tag+1,s:'☠'.repeat(T.skulls),l:T.label}))+'</span><br><span class="leise">'+esc(t('arena.frage.leise'))+'</span><br>'+
+  '<button class="knopf" data-wahl="kampf">'+esc(t('arena.ansehen'))+'</button> <button class="knopf" data-wahl="ergebnis">'+esc(t('arena.nurerg'))+'</button></div>';
+ document.body.appendChild(d);sprich(t('arena.frage')+' '+t('arena.frage.leise'));
+ [].forEach.call(d.querySelectorAll('[data-wahl]'),function(b){b.onclick=function(){d.remove();arenaWeiter();if(b.dataset.wahl==='kampf')arenaFenster('kampf');else arenaNurErgebnis()}})}
+function arenaNurErgebnis(){if(ARENA_OFFEN)return;var q=$('arenaFrage');if(q){q.remove();arenaWeiter()}ARENA_OFFEN=true;$('weltInfo').textContent=t('arena.rechnet');var D=null;
+ function fin(){ARENA_OFFEN=false;if(window.AT3SPIEL.angetippt==='arena')arenaKarte(true)}
+ Promise.all([anschluss(),KERN.glaDaten({arena:1})]).then(function(r){var KA=r[0];D=r[1];if(!D||!D.termin)throw new Error('no data');
+  return KA.arena({id:'arena-'+D.termin.id,seed:D.termin.seed,kader:D.kader.map(function(k){return k.g}),auf:D.termin.auf||D.auf,offer:D.termin.offer,heute:D.heute},'',V)}).then(function(erg){fin();
+  if(!erg)return;if(erg.fehler){$('weltInfo').textContent=erg.fehler==='unfit'?t('arena.unfit',{n:erg.name}):t('arena.nein.nobody2');arenaAuto='';return}
+  arenaSenden(D,erg);BERICHT={erg:erg,id:D.termin.id,label:D.termin.label,skulls:D.termin.skulls};arenaBericht();
+  var txt=t(erg.gewonnen?'arena.sieg':'arena.niederlage',{g:erg.praemie|0});$('weltInfo').textContent=txt;sprich(txt)},
+  function(e){fin();arenaAuto='';console.warn('Arena:',e);$('weltInfo').textContent=t('arena.fehler',{e:e&&e.message||''})})}
+// Kurzer englischer Ergebnisbericht nach „Result only“: Sieg/Niederlage, Prämie und Tickets (sobald der Weltkern sie gebucht hat), je Kämpfer Zustand und Kills
+var BERICHT=null;
+function arenaBericht(){var B=BERICHT;if(!B)return;var e=$('karte'),erg=B.erg,A=GLAD&&GLAD.arena,L=A&&A.letzt&&A.letzt.id===B.id?A.letzt:null;window.AT3SPIEL.angetippt='bericht';
+ var h='<b>'+esc(t(erg.gewonnen?'arena.bericht.sieg':'arena.bericht.niederlage',{s:'☠'.repeat(B.skulls|0),l:B.label}))+'</b>';
+ if(L)h+='<br>'+esc(t('arena.bericht.geld',{g:L.praemie|0,z:L.zuschauer|0,t:L.tickets|0}));
+ erg.einheiten.filter(function(u){return u.team===0}).forEach(function(u){var z=u.tot?(u.ursache?t('arena.bericht.tot',{u:u.ursache}):t('arena.bericht.tot0')):u.schwer?t('arena.bericht.schwer'):u.verletzt?t('arena.bericht.leicht'):t('arena.bericht.heil');
+  h+='<br><span class="'+(u.tot||u.schwer?'schlecht':'leise')+'">'+esc(u.name+': '+z+(u.kills?' · '+t('arena.bericht.kills',{k:u.kills}):''))+'</span>'});
+ if(L&&L.tote&&L.tote.length)h+='<br><span class="leise">'+esc(t('arena.gefallen',{n:L.tote.join(', ')}))+'</span>';
+ h+='<br><button class="knopf klein" id="berichtZu">'+esc(t('arena.bericht.weiter'))+'</button>';e.innerHTML=h;$('berichtZu').onclick=function(){BERICHT=null;e.textContent='';window.AT3SPIEL.angetippt=''}}
+// Leiche antippen (liegt einen Spieltag neben der Arena)
+function leicheKarte(l){var e=$('karte');window.AT3SPIEL.angetippt='leiche';
+ e.innerHTML='<b>'+esc(t('leiche.titel',{n:l.name}))+'</b>'+(l.her?'<br><span class="leise">'+esc(t('leiche.her',{o:l.her}))+'</span>':'')+(l.ursache?'<br>'+esc(t('leiche.ursache',{u:l.ursache})):'')+'<br><span class="leise">'+esc(t('leiche.info'))+'</span>';
+ sprich(t('leiche.titel',{n:l.name}))}
 // ── G9c2 Kandidatenkarte wie in 1.0 (Thomas 17.11.2026): Reiter I–V, Porträt aus 1.0, vor dem Kauf verdeckt (Kampfwert, Talent, Klassen, Eigenschaften „?“),
 // nach dem Kauf Aufdeckkarte mit Kampfwert, Talentstufe, Klassen, Eigenschaften, Plus/Minus und Seltenheit (Fortuna); dazu die Händlersprüche aus 1.0, englisch.
 // Rechnen im Kampfkern (KA.karten: barracks info/analysis, buy-odds, Porträt auf OffscreenCanvas), volle Daten nur auf Nachfrage vom Weltkern (glaDaten).
@@ -482,7 +522,8 @@ function texteSetzen(){document.title=t('spiel.titel');$('titel').textContent=t(
  $('weltTitel').textContent=t('welt.titel');$('bodenTitel').textContent=t('spiel.boden');$('bodenInfo').textContent=t('spiel.bodenInfo');$('karte').textContent=t('spiel.tippen');
  $('messTitel').textContent=t('mess.titel');$('messZu').textContent=t('mess.schliessen');$('messKopie').textContent=t('mess.kopieren');$('messAuf').textContent=t('mess.oeffnen');$('stimmeKnopf').textContent=t('stimme.aus');$('fpKnopf').textContent=t('fp.knopf');
  $('status').textContent=t('spiel.laedt');uhrKnoepfe()[0].textContent=t('uhr.pause');$('uhrZeit').textContent=t('uhr.zeit',{t:'–'})}
-window.AT3SPIEL={fp:function(){return fpAn},arena:function(m){arenaFenster(m)},tempo:function(){return KERN&&KERN.zustand?KERN.zustand.tempo:null},fpUmschalten:fpUmschalten,karte:function(){return KARTE},spielstand:function(){return SPIELSTAND},wahl:function(){return WAHL},stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
+window.AT3SPIEL={fp:function(){return fpAn},arena:function(m){arenaFenster(m)},arenaFrage:function(){arenaFrage()},      // G9d3: Prüfhaken
+ tempo:function(){return KERN&&KERN.zustand?KERN.zustand.tempo:null},fpUmschalten:fpUmschalten,karte:function(){return KARTE},spielstand:function(){return SPIELSTAND},wahl:function(){return WAHL},stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
 
 Promise.all([holeJson('sprache/en.json'),holeJson('kartei/text-en.json'),holeJson('kartei/objekte.json'),holeJson('kartei/budgets.json'),holeJson('spiel-budgets.json')])
 .then(function(d){TXT=d[0].texte;OBJTXT=d[1].texte;kartei=d[2];B=d[3];BUDGETS=d[4];mess.datenMs=performance.now();texteSetzen();platzWaehlen();

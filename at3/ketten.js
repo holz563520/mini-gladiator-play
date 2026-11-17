@@ -156,7 +156,7 @@ function ankunft(z,c){var k=z.ket,Wn=W(),Pn=P(),g=z.per;
   if(weit(c.x,c.y,x,y)<=REH_NAH){d.halt=1;c.zust=Pn.Z_ARBEITET;c.kt=JAGD_T*200;return}      // nah genug: das Reh hält still (es ahnt nichts), anpirschen und erlegen
   if(++c.leer>JAGD_VERSUCH){d.j=0;Pn.los(g,c);return}Pn.geh(z,c,x,y);return}      // das Reh ist weitergezogen: hinterher
  Pn.los(g,c)}
-function werk(z,c){var k=z.ket,Wn=W(),Pn=P(),g=z.per,i,d;if(c.hu&&(z.tick&1))return;var tempo=200+c['f'+(c.auf-3)];
+function werk(z,c){var k=z.ket,Wn=W(),Pn=P(),g=z.per,i,d;if(c.hu&&(z.tick&1))return;if(Pn.langsam(z,c))return;/* G9d3: Verletzte arbeiten langsamer */var tempo=200+c['f'+(c.auf-3)];
  if(c.auf===A_SAEGEN||c.auf===A_KOCHEN){i=Wn.hole(z.war,Wn.T_WERK,c.kr);var art=c.auf===A_SAEGEN?2:4;if(!i||Wn.werkArt(z,i.id)!==art){Pn.los(g,c);return}
   var aus=art===2?Wn.BRETT:Wn.MAHL,m=art===2?SAEG_M:KOCH_M;
   if(c.kt>0){c.kt-=tempo;if(c.kt<=0){c.kt=0;Wn.erzeugen(z,i,aus,m);xp(c,c.auf-3)}return}

@@ -295,6 +295,17 @@
   "arena.sieg": "Victory. {g} gold for the purse, and the crowd goes home happy.", "arena.niederlage": "Defeat. {g} gold anyway; the crowd paid to watch, not to win.",
   "arena.letzt.sieg": "Last fight: {s} {l}, won, {g} gold.", "arena.letzt.niederlage": "Last fight: {s} {l}, lost, {g} gold.", "arena.letzt.ab": "Last fight: {s} {l}, called off. The crowd threw vegetables at nobody.",
   "arena.nein.busy": "There is already a fight booked.", "arena.nein.nobody": "Nobody left to fight.", "arena.nein.no_arena": "The arena is still being raked.",
-  "arena.fehler": "The arena would not open: {e}"
+  "arena.fehler": "The arena would not open: {e}",
+  "person.auf.12": "Laid up. He groans professionally and heals at the house's expense.",
+  "person.gesund": "Health {h}%. Works at {v}% speed.", "person.ruht": "Badly hurt. No work until he can stand without help.",
+  "arena.frage": "The crowd is seated and the men are on the sand.", "arena.frage.leise": "Watch the fight, or let the clerk bring you the result?",
+  "arena.ansehen": "Watch", "arena.nurerg": "Result only", "arena.rechnet": "The fight is on. The clerk takes notes …",
+  "arena.unfit": "{n} is not fit to fight. Watch the fight to change the group.", "arena.nein.nobody2": "Nobody of the group is left to fight.",
+  "arena.bericht.sieg": "Victory: {s} {l}", "arena.bericht.niederlage": "Defeat: {s} {l}",
+  "arena.bericht.geld": "Purse {g} gold · {z} spectators paid {t} gold for tickets.", "arena.bericht.weiter": "Back to the world",
+  "arena.bericht.tot": "dead ({u})", "arena.bericht.tot0": "dead", "arena.bericht.schwer": "badly hurt", "arena.bericht.leicht": "hurt", "arena.bericht.heil": "unhurt", "arena.bericht.kills": "{k} kills",
+  "arena.tickets": "{z} spectators, {t} gold in tickets.", "arena.gefallen": "{n} fell. The undertaker sends his regards and his bill.",
+  "arena.letzt.tote": "Fallen: {n}.", "arena.gefallen.zahl": "Fallen in this arena so far: {n}.",
+  "leiche.titel": "The late {n}", "leiche.her": "From {o}.", "leiche.ursache": "Cause: {u}.", "leiche.info": "He will lie here until tomorrow, so everyone can see what the purse costs. Then the cart comes."
  }
 }

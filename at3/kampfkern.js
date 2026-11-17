@@ -1,4 +1,4 @@
-// WAS DIE DATEI TUT: Kampfkern von Arena Theory 3.0 (Schritt G9a, G9b: erzeugt auch die Laborkämpfer Mensch, Hund, Löwe). Eigener Hintergrundkern, der die UNVERÄNDERTEN Kampfdateien aus 1.0 lädt
+// WAS DIE DATEI TUT: Kampfkern von Arena Theory 3.0 (Schritt G9a, G9b: erzeugt auch die Laborkämpfer Mensch, Hund, Löwe; G9d3: Arenakampf „nur Ergebnis“, tägliche Heilung wie 1.0). Eigener Hintergrundkern, der die UNVERÄNDERTEN Kampfdateien aus 1.0 lädt
 // (wie der Spionage-Worker arena-spy-worker.js) und Kampfaufträge aus kampfanschluss.js rechnet: gleicher Seed + gleiche Kämpfer = gleicher Kampf.
 // Kerne: läuft nur als Worker, getrennt vom Weltkern; wird erst gestartet, wenn ein Kampf gebraucht wird. Ein Kampf zur Zeit.
 // Gleichheit: 1.0 rechnet mit Kommazahlen. Auf demselben Gerät ist das Ergebnis immer gleich; die Welt übernimmt nur das fertige Ergebnis
@@ -13,7 +13,10 @@ var KK={DATEIEN:DATEIEN,bereit:false};G.AT3Kampfkern=KK;
 // mit 540 Gladiatoren (rund 10 s), die AT3 nie braucht: AT3-Kämpfer kommen aus der AT3-Welt. Die Kampfrechnung selbst bleibt unverändert.
 KK.lade=function(laufe){DATEIEN.forEach(function(n){if(n==='world'){var S=G.MG.s;
   S.world={version:1,schools:[{id:'at3-leer',name:'',roster:[],teams:[],history:[],strength:1,rankPoints:0,fame:0,wins:0,losses:0}],people:{},teams:{},weapons:{},names:{},lastDay:S.day,log:[],spyReports:[]};}
- laufe(n);});};
+ laufe(n);
+ // G9d3: der Tageswechsel aus data.js, bevor andere 1.0-Teile ihn umhüllen (Welt, Händler, Haushalt …). Er enthält die Heilung von 1.0 (Erschöpfung, Blut,
+ // Körperteile, Brüche, innere Verletzungen, Behandlung, Moral, Alter). AT3 nutzt ihn unverändert für die tägliche Heilung (KK.heile).
+ if(n==='data')KK.tagRoh=G.MG.advanceDay;});};
 var v='';if(imWorker){G.window=G;v=(G.location.search.match(/[?&]v=([^&]*)/)||[])[1]||'';KK.lade(function(n){importScripts('../'+n+'.js?v='+v);});}
 // G9b: Erzeugung der Laborkämpfer braucht zusätzlich arena-challenges.js aus 1.0 (Bausteine der Herausforderungen: Gladiator mit Ausrüstung nach
 // Stufe, Löwe nach Stärke, Kampfwert). Erst bei der ersten Erzeugung geladen; ändert an der Kampfrechnung nichts. In Node lädt der Test die Datei vorher.
@@ -116,8 +119,67 @@ function karten(w,M,B){
   bilder.push(bild);});
  return {karten:karten,bilder:bilder};};
 
+// ---------- G9d3: Arenakampf „nur Ergebnis“ (Thomas 17.11.2026) ----------
+// Genau wie der angesehene Kampf im Kampffenster (aufstellung-ui.js fight() im Spielmodus), nur ohne Bildschirm: dieselbe Gruppe, dasselbe Angebot, derselbe Seed,
+// Aufstellung mit A.place, Anführer ab 5 Kämpfern (outside-leader.js attachArena), Messung mit A.tracker (Gelübde, Held, Ruhm), Bewertung A.judge, danach dasselbe
+// wie settle() der Aufstellung (Ruhm, Gefallene, Kampfbuch). Gerechnet wird mit der unveränderten 1.0-Engine wie im Aufstellungs-Worker (aufstellung-worker.js).
+// Die zusätzlichen 1.0-Dateien werden erst beim ersten Arenakampf geladen und ändern an den anderen Kämpfen nichts (der Anführer greift nur, wenn er angehängt ist).
+// wunsch: {id, seed, kader:[g …], auf (Aufstellung, Format S.aufstellung), offer, heute}. Ergebnis wie die Nachricht „ergebnis“ des Kampffensters (Modus kampf),
+// dazu spekt (Spektakel) und ruhmMul (Ruhmfaktor) aus A.judge für die Tickets, kills/ursache je Einheit für den Ergebnisbericht.
+KK.ZUSATZ_ARENA=['arena-calibration','arena-challenges','aufstellung-core','outside-leader'];
+function zusatzArena(){if(imWorker){if(!G.ARENA_CALIBRATION)importScripts('../arena-calibration.js?v='+v);zusatz();if(!G.Aufstellung)importScripts('../aufstellung-core.js?v='+v);
+  if(!(G.MG&&G.MG.outsideLeader))importScripts('../outside-leader.js?v='+v);}
+ if(!G.Aufstellung)throw new Error('aufstellung-core.js fehlt');}
+KK.arena=function(w){
+ vorbereiten();zusatzArena();
+ var M=G.MG,S=M.s,A=G.Aufstellung,AN=G.AN,altZufall=Math.random,z=(w.seed>>>0)^0x9e3779b9,altRoster=S.roster;
+ var st=JSON.parse(JSON.stringify(w.auf||{}));['lineup','vows','fallen','log'].forEach(function(k){if(!Array.isArray(st[k]))st[k]=[];});if(typeof st.fame!=='number')st.fame=0;if(st.hero===undefined)st.hero=null;
+ S.roster=(w.kader||[]).map(function(g){g=JSON.parse(JSON.stringify(g));g.enemy=false;return g;});S.day=(w.heute|0)+1;S.rng=(w.seed>>>0)||1;S.battle=null;
+ var GG=function(id){return S.roster.find(function(g){return g.id===id;});};
+ var fit=function(g){try{return M.lineupEligibility?M.lineupEligibility(g):M.army&&M.army.eligibility?M.army.eligibility(g):{ok:!g.dead,causes:[]};}catch(e){return {ok:!g.dead,causes:[]};}};
+ try{
+  var L=st.lineup.filter(function(x){return GG(x.id);}).map(function(x){var g=GG(x.id);return {id:g.id,g:g,kw:A.kw(g),role:g.role,slot:{row:x.row,lane:x.lane}};});
+  if(!L.length)return {auftrag:w.id,arena:1,fehler:'nobody'};
+  var bad=L.filter(function(x){return !fit(x.g).ok;});if(bad.length)return {auftrag:w.id,arena:1,fehler:'unfit',name:bad[0].g.name};
+  var o=JSON.parse(JSON.stringify(w.offer)),kwBefore={};L.forEach(function(x){kwBefore[x.id]={kw:x.kw,role:x.role};});
+  Math.random=function(){z=(z+0x6D2B79F5)|0;var t=Math.imul(z^z>>>15,1|z);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+  M.stains=[];M.limbs=[];M.swings=[];M.floaters=[];M.shake=0;
+  var b=AN.build(A.spec(L,o,false));b.league=0;A.place(b,L);S.battle=b;var bid=KK.letzteKennung;KK.letzteKennung=null;KK.letzteSpec=null;
+  b.aufForm=true;try{var LD=M.outsideLeader;if(LD&&LD.attachArena){b.neu=false;try{LD.attachArena(b,{leaderId:S.arenaLeaderId});}finally{b.neu=true;}}}catch(e){}
+  var T=A.tracker(b,L,o,{vows:st.vows,hero:st.hero,fame:st.fame}),out=null;AN.listeners.push(function(x){out=x;});
+  var dt=1/60,limit=Math.ceil((AN.TMAX+60)/dt)+5400,n=0;while(S.battle&&!out&&n<limit){M.fixedStep(dt);n++;T.tick();}
+  if(!out){out=AN.outcome(b,-1);out.stuck=true;}
+  var r=T.done(out);S.battle=null;S.records=[];S.inventory=[];
+  // wie settle() in aufstellung-ui.js
+  st.fame=Math.max(-50,Math.min(150,st.fame+r.fameDelta));
+  r.units.filter(function(u){return u.team===0;}).forEach(function(u){var g=GG(u.key);
+   if(g){g.auf=g.auf||{};g.auf.fights=(g.auf.fights||0)+1;g.auf.kills=(g.auf.kills||0)+(u.kills||0);}
+   if(u.dead||(g&&g.dead)){st.fallen.push({name:u.name,kw:(kwBefore[u.key]||{}).kw||0,role:(kwBefore[u.key]||{}).role||'',day:S.day||1,cause:u.cause});if(st.hero===u.key)st.hero=null;}});
+  st.lineup=st.lineup.filter(function(x){return GG(x.id)&&!GG(x.id).dead;});st.log.push({day:S.day||1,label:o.label,skulls:o.skulls,won:r.won,gold:r.gold});if(st.log.length>60)st.log.shift();
+  var ersetze=function(x){if(!x)return null;var t=JSON.stringify(x);return JSON.parse(bid?t.split(JSON.stringify(bid)).join(JSON.stringify('at3:'+w.id)):t);};
+  return {auftrag:w.id,arena:1,praemie:Math.max(0,Math.round(+r.gold||0)),gewonnen:r.won?1:0,auf:st,angesehen:false,spekt:+r.spect||0,ruhmMul:+r.fameMul||1,
+   sieger:out.winner,zeit:out.time,einheiten:out.units.map(function(u){return {key:String(u.key),art:u.kind,name:u.name,team:u.team,tot:!!u.dead,unten:!!u.down,leben:u.health,verletzt:!!u.injured,schwer:!!u.severe,
+    verletzungen:u.injuries||[],kills:u.kills||0,ursache:u.cause||'',toeter:u.killer||'',g:u.team===0?ersetze(GG(u.key)):null};})};
+ }finally{Math.random=altZufall;S.battle=null;S.roster=altRoster;}};
+
+// ---------- G9d3: tägliche Heilung wie 1.0 (Thomas 17.11.2026: „Heilen wie 1.0“) ----------
+// Ruft den unveränderten Tageswechsel aus data.js (KK.tagRoh, siehe KK.lade) für die übergebenen Gladiatoren auf. Was der Tageswechsel sonst noch anfasst
+// (Markt, Sponsor, Verkäufe, Haushalt), ist für diese Dauer abgeschaltet und wird danach zurückgesetzt. Kein Spital, keine Behandlung (gibt es in AT3 noch nicht).
+// wunsch {tag (AT3-Spieltag), tage (1–30), gs:[g …]} → [{g, hp (Gesundheit 0–100 wie 1.0 health), ruht (schwer verletzt nach den Kasernenregeln aus 1.0)}]
+// Schwer verletzt = 1.0 M.army.eligibility meldet eine Verletzungsursache (Körperteil, Gesundheit, Schwere, Blutung, Bruch); Erschöpfung, Reserve usw. zählen nicht.
+var NICHT_VERLETZT=/Erschöpfung|Reserve|geschont|Schmiedelehre|nicht aktiv/;
+KK.verletzt=function(g){var M=G.MG;try{var e=M.army&&M.army.eligibility?M.army.eligibility(g):{ok:true,causes:[]};return (e.causes||[]).some(function(c){return !NICHT_VERLETZT.test(c);});}catch(e){return false;}};
+KK.heile=function(w){
+ vorbereiten();if(!KK.tagRoh)throw new Error('Tageswechsel aus data.js fehlt');
+ var M=G.MG,S=M.s,tage=Math.max(1,Math.min(30,w.tage|0)),alt={roster:S.roster,day:S.day,lastMarket:S.lastMarket,sponsor:S.sponsor,battle:S.battle,rng:S.rng},cs=M.chargeSold,hd=M.householdDay;
+ try{M.chargeSold=null;M.householdDay=null;S.battle=null;S.sponsor=null;S.day=Math.max(0,(w.tag|0)-tage);S.lastMarket=S.day+1e9;
+  S.roster=(w.gs||[]).map(function(g){return JSON.parse(JSON.stringify(g));});KK.tagRoh(tage);
+  return S.roster.map(function(g){return {g:g,hp:Math.max(0,Math.min(100,Math.round(M.health(g)))),ruht:g.dead?0:KK.verletzt(g)?1:0};});}
+ finally{M.chargeSold=cs;M.householdDay=hd;S.roster=alt.roster;S.day=alt.day;S.lastMarket=alt.lastMarket;S.sponsor=alt.sponsor;S.battle=alt.battle;S.rng=alt.rng;}};
+
 if(imWorker){
- G.onmessage=function(e){var d=e.data,f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:d.art==='wuerfle'?function(){return KK.wuerfle(d.wunsch);}:d.art==='karten'?function(){return KK.karten(d.wunsch);}:null;if(!f)return;
+ G.onmessage=function(e){var d=e.data,f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:d.art==='wuerfle'?function(){return KK.wuerfle(d.wunsch);}:d.art==='karten'?function(){return KK.karten(d.wunsch);}:
+  d.art==='arena'?function(){return KK.arena(d.wunsch);}:d.art==='heile'?function(){return KK.heile(d.wunsch);}:null;if(!f)return;
   try{G.postMessage({nr:d.nr,ergebnis:f()});}catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}};
  // G9b: Ladezeit und geladene Dateien des Kampfkerns melden (eigene Zeitleiste des Kerns)
  var res=[];try{res=G.performance.getEntriesByType('resource');}catch(e){}

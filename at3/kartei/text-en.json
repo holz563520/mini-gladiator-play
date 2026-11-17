@@ -52,6 +52,8 @@
   "karren-ochse.name": "Ox Cart",
   "lager-platz.info": "A pallet with crates and a sack. Everything here belongs to somebody, and that somebody is not the man carrying it.",
   "lager-platz.name": "Storage Spot",
+  "leiche.info": "A fallen gladiator in a dark puddle. He lies here for a day so the next ones know what the purse costs; then the cart takes him.",
+  "leiche.name": "Corpse",
   "markt-stand.info": "The slave trader's stall. Every morning he brings five new men in chains; whoever is left at dusk goes back on the road with him. No refunds.",
   "markt-stand.name": "Slave Market",
   "natur-stumpf.info": "What is left of a tree after the woodcutter has been by. Give it a few days and it will try again; trees never learn.",

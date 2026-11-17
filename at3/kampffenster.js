@@ -10,7 +10,7 @@
 // wieder her und startet den Kampf über denselben Knopf (fight() aus 1.0: Prämie, Gelübde, Gunst, Anführer, Kampfbericht). Gegner bekommen ihre Herkunft aus
 // benannten Orten der Welt (leichte aus der Nähe, 4–5 Totenköpfe aus fernen Städten). Ergebnis mit Prämie und Aufstellung genau einmal an AT3.
 // Sprache: Der Kampf ist wie 1.0 deutsch (Entscheidung Thomas 17.11.2026, Übersetzung später als eigener Schritt). Nur Lade- und Zurück-Knopf sind englisch.
-var BUILD='8476683d';
+var BUILD='74bf30b4';
 (()=>{
  const V=(location.search.match(/[?&]v=([^&]*)/)||[])[1]||BUILD;
  const eltern=window.parent!==window?window.parent:null;
@@ -74,7 +74,7 @@ var BUILD='8476683d';
 
 
  // ---------- G9d2: Arena mit der Aufstellung aus 1.0 ----------
- let modus='',praemie=0,gewonnen=0,offersZuletzt=[],festOffer=null,arenaBid=null,gestartet=false;
+ let modus='',praemie=0,gewonnen=0,bewertung=null,offersZuletzt=[],festOffer=null,arenaBid=null,gestartet=false;
  // Herkunft der Gegner (Thomas 17.11.2026): ☠–☠☠ aus den drei nächsten Orten, ☠☠☠ aus den übrigen nahen Orten, ☠☠☠☠ aus der näheren, ☠☠☠☠☠ aus der ferneren Hälfte der fernen Städte
  function herkunft(o,orte){const N=(orte&&orte.nah)||[],F=(orte&&orte.fern)||[],sk=o.skulls|0;
   let L=sk<=2?N.slice(0,3):sk===3?N.slice(3):sk===4?F.slice(0,Math.ceil(F.length/2)):F.slice(Math.floor(F.length/2));if(!L.length)L=sk>=4&&F.length?F:N;if(!L.length)return;
@@ -93,6 +93,8 @@ var BUILD='8476683d';
    festOffer=modus==='kampf'?JSON.parse(JSON.stringify(a.termin.offer)):null;
    const orig=A.offers;A.offers=function(){if(festOffer)return [festOffer];const o=orig.apply(this,arguments);o.forEach(x=>herkunft(x,a.orte));offersZuletzt=o;return o;};
    const C=window.ArenaCareer;C.settle=g=>{praemie=Math.max(0,Math.round(+g||0));};C.record=w=>{gewonnen=w?1:0;};
+   // G9d3: Bewertung des Kampfs (A.judge: Spektakel, Ruhmfaktor) für die Tickets abgreifen; 1.0 bleibt unverändert, nur umhüllt
+   const tr0=A.tracker;A.tracker=function(){const T=tr0.apply(this,arguments),d0=T.done;T.done=function(){const r=d0.apply(this,arguments);if(modus==='kampf')bewertung=r;return r;};return T;};
    const b0=AN.build;AN.build=function(){const b=b0.apply(this,arguments);if(modus==='kampf'&&!arenaBid){arenaBid=b.id;gestartet=true;t0=performance.now();
      AN.listeners.push(o=>{aus=o;setTimeout(zurueckKnopf,1800);});document.getElementById('kfHinweis')?.remove();melde({art:'laeuft'});}return b;};
    document.getElementById('kfBoot')?.remove();
@@ -115,7 +117,7 @@ var BUILD='8476683d';
  function sendeArena(){if(gesendet||!aus)return;gesendet=true;const k=document.getElementById('kfZurueck');if(k){k.disabled=true;k.textContent='…';}
   const S=window.MG.s,ersetze=x=>{if(!x)return null;const t=JSON.stringify(x);return JSON.parse(arenaBid?t.split(JSON.stringify(arenaBid)).join(JSON.stringify('at3:'+auftrag.id)):t);};
   const G=id=>S.roster.find(g=>String(g.id)===String(id));
-  melde({art:'ergebnis',ergebnis:{auftrag:auftrag.id,arena:1,praemie,gewonnen,auf:JSON.parse(JSON.stringify(S.aufstellung||{})),angesehen:true,dauerMs:Math.round(performance.now()-t0),
+  melde({art:'ergebnis',ergebnis:{auftrag:auftrag.id,arena:1,praemie,gewonnen,spekt:bewertung?+bewertung.spect||1:1,ruhmMul:bewertung?+bewertung.fameMul||1:1,auf:JSON.parse(JSON.stringify(S.aufstellung||{})),angesehen:true,dauerMs:Math.round(performance.now()-t0),
    sieger:aus.winner,zeit:aus.time,einheiten:aus.units.map(u=>({key:String(u.key),art:u.kind,name:u.name,team:u.team,tot:!!u.dead,unten:!!u.down,leben:u.health,verletzt:!!u.injured,schwer:!!u.severe,
     verletzungen:u.injuries||[],kills:u.kills||0,ursache:u.cause||'',toeter:u.killer||'',g:u.team===0?ersetze(G(u.key)):null}))}});}
  function zurueckKnopf(){if(document.getElementById('kfZurueck'))return;const k=document.createElement('button');k.id='kfZurueck';k.type='button';

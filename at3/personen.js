@@ -16,6 +16,10 @@
 // Bestände und Aufträge aus waren.js.
 // G8 (ketten.js, nur wenn die Ketten laufen): Aufgaben 5 fällen, 6 sägen, 7 kochen, 8 jagen, 9 Wasser schöpfen, 10 essen und trinken; Rollen-Bits 2–6;
 // Fähigkeiten f2–f6 und Zähler der Arbeitsgänge n0–n6 je Tätigkeit; hungrig oder durstig (hu) = halb so schnell. Spielstand Form 2 (Form 1 wird gelesen).
+// G9d3 (Thomas 17.11.2026, „Heilen wie 1.0, schonen“): Gesundheit und Ruhen stehen beim Gladiator (gladiatoren.js, z.gla.per[id].hp/.ruht). Leicht Verletzte
+// gehen und arbeiten langsamer: Tempo = Gesundheit in %, mindestens TEMPO_MIN % (Vorschlag; langsam()). Schwer Verletzte (ruht) arbeiten nicht: sie legen ab,
+// was sie tragen, und gehen zur nächsten Unterkunft (Aufgabe 12 ruhen, ohne Unterkunft bleiben sie liegen, wo sie sind). Wer zur Arena gerufen ist, geht trotzdem.
+// Tote nimmt weg() aus der Welt (Ware ablegen, Aufträge freigeben).
 (function(root){
 'use strict';
 function SU(){return root.AT3WEG||(typeof module!=='undefined'&&module.exports?require('./wegsuche.js'):null)}
@@ -29,7 +33,7 @@ var ST=64, SX=9600, WX=ST*SX, WY=ST*4800, STAND=2, M31=2147483647, ALLE=127;
 var N_START=5, MAX_P=512, JE_TICK=2, FRIST=20, WIEDER=200, MAX_VERSUCH=3, NAH=3, LEERLAUF=40, XP_TRAG=2, XP_BAU=4, ALT=1200;   // Vorschlagswerte (Ticks: 20 = 1 s)
 var LEN_O=256000, LEN_D=362039, VF=128;      // wie karren.js: Tempo 100 = 1 Feld/s
 var Z_FREI=0, Z_SUCHT=1, Z_GEHT=2, Z_ARBEITET=3, Z_WARTET=4, ZUST=['idle','seeks','walks','works','waits'];
-var A_HOLEN=1, A_BRINGEN=2, A_BAUEN=3, A_RUECK=4, A_ARENA=11;      // G9d2: 11 zur Arena (arena.js)
+var A_HOLEN=1, A_BRINGEN=2, A_BAUEN=3, A_RUECK=4, A_ARENA=11, A_RUHEN=12, TEMPO_MIN=50;      // G9d2: 11 zur Arena (arena.js); G9d3: 12 ruhen
 // Gründe: 1–6 wie wegsuche.js, 7 too_far, 8 changed
 var DX=[0,-1,0,1], DY=[-1,0,1,0];
 function umX(X){return X<0?X+WX:X>=WX?X-WX:X}
@@ -66,12 +70,13 @@ function geh(z,c,x,y){c.zx=x;c.zy=y;c.pf=null;c.tp=null;c.keys=[];c.i=0;c.job=-1
 function warten(z,c,code){los(z.per,c);c.zust=Z_WARTET;c.t=z.tick+WIEDER;c.grund=code}
 // Kein Weg: Lieferauftrag freigeben (nach 3 Fehlversuchen abbrechen), getragene Ware ablegen, Baustelle freigeben; die Person wartet 10 s
 function scheitern(z,c,code){var Wn=W(),g=z.war,o;
+ if(c.auf===A_RUHEN){c.pf=null;c.tp=null;c.keys=[];c.i=0;c.job=-1;c.nx=-1;c.ny=-1;c.sub=0;c.zust=Z_ARBEITET;return}      // G9d3: kein Weg zur Unterkunft: liegt, wo er ist
  if(c.auf===A_HOLEN){o=Wn.finde(g,c.o);if(o&&o.tt===Wn.T_PERSON&&o.ti===c.id&&o.zu===Wn.A_RES){o.tt=0;o.ti=0;o.grund=1;o.sperr=z.tick+WIEDER;if(++o.versuch>=MAX_VERSUCH)Wn.abbrechen(z,o)}}
  else if(c.auf===A_BRINGEN||c.auf===A_RUECK){o=Wn.finde(g,c.o);if(o&&o.tt===Wn.T_PERSON&&o.ti===c.id)Wn.abbrechen(z,o);Wn.ablegen(z,Wn.T_PERSON,c.id,c.x,c.y)}
  else if(c.auf>=5&&c.auf<A_ARENA&&z.ket)KET().gescheitert(z,c);
  warten(z,c,code)}
 function ankunft(z,c){var Wn=W(),g=z.war,o,P;c.pf=null;c.tp=null;c.keys=[];c.i=0;c.nx=-1;c.ny=-1;c.sub=0;
- if(c.auf===A_ARENA){c.zust=Z_ARBEITET;return}      // G9d2: an der Arena warten, bis der Kampf beginnt
+ if(c.auf===A_ARENA||c.auf===A_RUHEN){c.zust=Z_ARBEITET;return}      // G9d2: an der Arena warten, bis der Kampf beginnt; G9d3: in der Unterkunft liegen
  if(c.auf>=5){if(z.ket)KET().ankunft(z,c);else los(z.per,c);return}      // G8
  if(c.auf===A_HOLEN){o=Wn.finde(g,c.o);
   if(!o||o.tt!==Wn.T_PERSON||o.ti!==c.id||!Wn.aufnehmen(z,o,Wn.T_PERSON,c.id,c.x,c.y)){if(o&&o.tt===Wn.T_PERSON&&o.ti===c.id){o.tt=0;o.ti=0}los(z.per,c);return}
@@ -90,7 +95,7 @@ function richtung(dx,dy){return dx>0?0:dx<0?3:dy>0?1:2}
 function traegt(c){return c.auf===A_BRINGEN||c.auf===A_RUECK}
 function bewegen(z,g,c){var Wn=W(),o;
  if(c.zust===Z_WARTET){if(z.tick>=c.t){c.zust=Z_FREI;c.grund=0}return}
- if(c.zust===Z_ARBEITET&&c.auf===A_ARENA)return;      // G9d2
+ if(c.zust===Z_ARBEITET&&(c.auf===A_ARENA||c.auf===A_RUHEN))return;      // G9d2, G9d3
  if(c.zust===Z_ARBEITET&&c.auf>=5){if(z.ket)KET().werk(z,c);else los(g,c);return}      // G8: Arbeit der Ketten
  if(c.zust===Z_ARBEITET){var a=bauVon(z,c.site);if(!a||a.zu!==BAU().B_LAEUFT){los(g,c);return}
   if(z.ket&&!a.rest&&KET().essPause(z,c)){los(g,c);return}      // G8: erst essen und trinken
@@ -104,7 +109,7 @@ function bewegen(z,g,c){var Wn=W(),o;
   if(veraltet(z,c)){if(z.wg&&KAR().gilt(z,c.pf,c.i,0))c.ab=z.tick;else{c.zust=Z_SUCHT;c.pf=null;c.tp=null;c.keys=[];c.i=0;c.job=-1;return}}
   var n=c.pf.length>>1;if(c.i>=n-1){ankunft(z,c);return}
   var X=c.pf[c.i*2+2],Y=c.pf[c.i*2+3],dx=dx1(c.x,X),dy=Y-c.y;c.nx=X;c.ny=Y;c.len=dx&&dy?LEN_D:LEN_O;c.sub=0;c.dir=richtung(dx,dy)}
- var v=(c.tp[c.i+1]||1)*VF;if(traegt(c))v=Math.floor(v*(200+c.f0)/200);if(c.hu)v>>=1;c.sub+=v;
+ var v=(c.tp[c.i+1]||1)*VF;if(traegt(c))v=Math.floor(v*(200+c.f0)/200);if(c.hu)v>>=1;var hp=gesund(z,c.id);if(hp<100)v=Math.floor(v*Math.max(TEMPO_MIN,hp)/100);c.sub+=v;      // G9d3: Verletzte langsamer
  if(c.sub>=c.len){c.x=c.nx;c.y=c.ny;c.nx=-1;c.ny=-1;c.sub=0;c.i++}}
 function zuteilen(z,g){var Wn=W(),war=z.war,b=z.bau,F=[],i,n=0,q;if(!b)return;
  var AR=z.gla&&z.gla.ar&&z.gla.ar.termin&&z.gla.ar.termin.zu>=1?root.AT3ARENA||require('./arena.js'):null;      // G9d2: zur Arena Gerufene bekommen keine Arbeit
@@ -129,7 +134,26 @@ function ausgeben(z,g,neuL){var w=z.wg,n=0;if(!w||!w.ans)return;
  for(var i=0;i<g.p.length&&n<JE_TICK;i++){var c=g.p[i];if(c.zust!==Z_SUCHT||c.job>=0)continue;
   if(!WE().nah({x0:c.x,y0:c.y,x1:c.zx,y1:c.zy})){scheitern(z,c,7);continue}
   var j=auftrag(z,c,z.auftragNr++,z.tick+FRIST,z.tick);c.job=j.o.nr;z.offen.push(j.o);neuL.push(j.a);n++}}
-function schritt(z,neuL){var g=z.per;if(!g)return;for(var i=0;i<g.p.length;i++)bewegen(z,g,g.p[i]);zuteilen(z,g);ausgeben(z,g,neuL)}
+// ── G9d3 Verletzte und Tote ──
+function gesund(z,id){var r=z.gla&&z.gla.per[id];return r&&r.hp!=null?r.hp:100}
+// Diesen Tick auslassen? Arbeit (Bauen, Ketten) läuft mit Gesundheit in %, mindestens TEMPO_MIN %; fest nach dem Tick, ohne Zufall
+function langsam(z,c){var hp=gesund(z,c.id);return hp<100&&(z.tick%100)>=Math.max(TEMPO_MIN,hp)}
+function soll(z,c){var r=z.gla&&z.gla.per[c.id];if(!r||!r.ruht)return false;var AR=z.gla.ar&&z.gla.ar.termin?root.AT3ARENA||require('./arena.js'):null;return !(AR&&AR.ruft(z,c.id))}
+// Laufendes abbrechen wie scheitern (Ware ablegen, Aufträge freigeben), ohne zu warten
+function aufhoeren(z,c){var Wn=W(),o;
+ if(c.auf===A_HOLEN){o=Wn.finde(z.war,c.o);if(o&&o.tt===Wn.T_PERSON&&o.ti===c.id){o.tt=0;o.ti=0}}
+ else if(c.auf===A_BRINGEN||c.auf===A_RUECK){o=Wn.finde(z.war,c.o);if(o&&o.tt===Wn.T_PERSON&&o.ti===c.id)Wn.abbrechen(z,o)}
+ else if(c.auf>=5&&c.auf<A_ARENA&&z.ket)KET().gescheitert(z,c);
+ if(z.war&&Wn.hole(z.war,Wn.T_PERSON,c.id))Wn.ablegen(z,Wn.T_PERSON,c.id,c.x,c.y);
+ los(z.per,c)}
+// Nächste Unterkunft (Raumart 3, Feld hx/hy), sonst null
+function unterkunft(z,c){var b=z.bau,best=null,bd=0;if(!b)return null;b.raeume.forEach(function(r){if(r.art!==3||r.felder<=0)return;var d=W().weit(c.x,c.y,r.hx,r.hy);if(!best||d<bd){best=r;bd=d}});return best?[best.hx,best.hy]:null}
+function ruhen(z,g,c){var s=soll(z,c);
+ if(c.auf===A_RUHEN){if(!s)los(g,c);return}
+ if(!s||c.auf===A_ARENA)return;aufhoeren(z,c);c.auf=A_RUHEN;var U=unterkunft(z,c);if(U)geh(z,c,U[0],U[1]);else c.zust=Z_ARBEITET}
+// Tote Person aus der Welt nehmen
+function weg(z,id){var g=z.per;if(!g)return false;for(var i=0;i<g.p.length;i++)if(g.p[i].id===id){var c=g.p[i];aufhoeren(z,c);g.p.splice(i,1);return true}return false}
+function schritt(z,neuL){var g=z.per;if(!g)return;var gl=z.gla&&z.gla.per;for(var i=0;i<g.p.length;i++){var c=g.p[i];if(gl&&(c.auf===A_RUHEN||(gl[c.id]&&gl[c.id].ruht)))ruhen(z,g,c);bewegen(z,g,c)}zuteilen(z,g);ausgeben(z,g,neuL)}
 // Übernahme an der Tickgrenze (kern.js, Reihenfolge der Auftragsnummer)
 function uebernehmen(z,o,r){var g=z.per;if(!g||!z.wg||o.gen!==z.wg.gen)return;var c=finde(g,o.pid);if(!c||c.job!==o.nr)return;c.job=-1;
  if(c.zust!==Z_SUCHT||c.x!==o.x0||c.y!==o.y0||c.zx!==o.x1||c.zy!==o.y1)return;      // Lage oder Ziel änderte sich: neu suchen
@@ -162,7 +186,7 @@ function ausStand(d,z){var i,j;
  if(!d||(d.format!==STAND&&d.format!==1)||!G(d.nr,1,M31)||!Array.isArray(d.p)||d.p.length>MAX_P||!Array.isArray(d.lauf)||d.lauf.length>MAX_P)return null;
  var g=neu(),N=d.format===1?N_ALT:FELDER.length;g.nr=d.nr;      // Form 1 (G7): ohne die Felder der Ketten, alle neuen Rollen erlaubt
  var GR={id:[1,d.nr-1],x:[0,WX-1],y:[0,WY-1],nx:[-1,WX-1],ny:[-1,WY-1],sub:[0,LEN_D+VF*400],len:[0,LEN_D],zust:[0,4],t:[0,M31],i:[0,1<<20],ab:[0,M31],job:[-1,M31],versuch:[0,MAX_VERSUCH+1],grund:[0,16],dir:[0,3],
-  auf:[0,11],o:[0,M31],site:[0,M31],zx:[-1,WX-1],zy:[-1,WY-1],darf:[0,ALLE],f0:[0,100],f1:[0,100],e0:[0,M31],e1:[0,M31],leer:[0,M31],
+  auf:[0,12],o:[0,M31],site:[0,M31],zx:[-1,WX-1],zy:[-1,WY-1],darf:[0,ALLE],f0:[0,100],f1:[0,100],e0:[0,M31],e1:[0,M31],leer:[0,M31],
   f2:[0,100],f3:[0,100],f4:[0,100],f5:[0,100],f6:[0,100],e2:[0,M31],e3:[0,M31],e4:[0,M31],e5:[0,M31],e6:[0,M31],n0:[0,M31],n1:[0,M31],n2:[0,M31],n3:[0,M31],n4:[0,M31],n5:[0,M31],n6:[0,M31],
   kx:[-1,WX-1],ky:[-1,WY-1],kr:[0,4294967295],kt:[0,M31],em:[0,M31],ew:[0,M31],et:[0,M31],hu:[0,3]};
  for(i=0;i<d.p.length;i++){var a=d.p[i];if(!Array.isArray(a)||a.length!==N+2)return null;var c=person(1,0,0);
@@ -183,6 +207,6 @@ function ausStand(d,z){var i,j;
 
 var P={N_START:N_START,MELD:MELD,JE_TICK:JE_TICK,FRIST:FRIST,WIEDER:WIEDER,NAH:NAH,LEERLAUF:LEERLAUF,ZUST:ZUST,Z_FREI:Z_FREI,Z_SUCHT:Z_SUCHT,Z_GEHT:Z_GEHT,Z_ARBEITET:Z_ARBEITET,Z_WARTET:Z_WARTET,
  A_HOLEN:A_HOLEN,A_BRINGEN:A_BRINGEN,A_BAUEN:A_BAUEN,A_RUECK:A_RUECK,start:start,rolle:rolle,schritt:schritt,uebernehmen:uebernehmen,abdruck:abdruck,meld:meld,stand:stand,ausStand:ausStand,
- amBau:amBau,hatBauer:hatBauer,inReichweite:inReichweite,gebaut:gebaut,finde:finde,los:los,geh:geh,zurueck:zurueck,gangbar:gangbar,dazu:dazu,MAX_P:MAX_P,ALLE:ALLE};
+ A_RUHEN:A_RUHEN,TEMPO_MIN:TEMPO_MIN,langsam:langsam,gesund:gesund,weg:weg,amBau:amBau,hatBauer:hatBauer,inReichweite:inReichweite,gebaut:gebaut,finde:finde,los:los,geh:geh,zurueck:zurueck,gangbar:gangbar,dazu:dazu,MAX_P:MAX_P,ALLE:ALLE};
 if(typeof module!=='undefined'&&module.exports)module.exports=P;else root.AT3PERS=P;
 })(typeof self!=='undefined'?self:this);

@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 35,
+ "typMax": 36,
  "objekte": [
   {
    "id": "arena-sand",
@@ -228,6 +228,15 @@
    "name": "Storage Spot",
    "status": "geprueft",
    "datei": "obj/lager-platz.json"
+  },
+  {
+   "id": "leiche",
+   "version": 1,
+   "typ": 36,
+   "kat": "einrichtung",
+   "name": "Corpse",
+   "status": "uebernommen",
+   "datei": "obj/leiche.json"
   },
   {
    "id": "markt-stand",
