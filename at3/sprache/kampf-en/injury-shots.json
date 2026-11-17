@@ -46,7 +46,44 @@
 "Kopf": null,
 "Hals": null,
 "Bauch": null,
-"Kampfunfähig": "Out of the fight"
+"Kampfunfähig": "Out of the fight",
+"{V} verliert {acc}. Fundsachen bitte beim Medicus abholen!": "{V} loses {acc}. Lost and found is at the medicus!",
+"{A} nimmt {V} {acc} ab. Ganz ohne Quittung.": "{A} takes {acc} off {V}. No receipt.",
+"Und weg ist {nom}! {V} wird ab heute anders winken.": "And there goes {nom}! {V} will be waving differently from now on.",
+"{Nom} von {V} fliegt in die dritte Reihe. Wer fängt, darf behalten!": "{Nom} of {V} flies into row three. You catch it, you keep it!",
+"{V} ist tot. Der Totengräber reibt sich schon die Hände.": "{V} is dead. The gravedigger is already rubbing his hands.",
+"Und das war es für {V}. {A} spart dem Ludus die Verpflegung.": "And that\\'s it for {V}. {A} just saved the ludus a meal.",
+"Ruhe in Frieden, {V}. Oder in Stücken, je nachdem.": "Rest in peace, {V}. Or in pieces, whichever.",
+"{V} verlässt die Arena. Waagerecht.": "{V} leaves the arena. Horizontally.",
+"Man hört den Knochen bis in die letzte Reihe. Herrlich!": "You can hear that bone in the back row. Beautiful!",
+"Knack! {Nom} von {V} hat jetzt ein Gelenk mehr.": "Crack! {Nom} of {V} now has one extra joint.",
+"{V} sammelt Pfeile. Leider mit dem Körper.": "{V} collects arrows. Unfortunately with his body.",
+"Volltreffer! {V} ist jetzt offiziell eine Zielscheibe.": "Bullseye! {V} is now officially a target.",
+"{Nom} von {V} sieht jetzt aus wie Hackfleisch vom Markt.": "{Nom} of {V} now looks like ground beef from the market.",
+"Das gibt eine schöne Narbe, {V}. Falls du lange genug lebst.": "That\\'ll make a nice scar, {V}. If you live long enough.",
+"{A} verteilt Geschenke. {V} bekommt eine Wunde, die bleibt.": "{A} is handing out gifts. {V} gets a wound that lasts.",
+"{V} ist tot. Die Krähen bedanken sich für das Abendessen.": "{V} is dead. The crows say thanks for dinner.",
+"Das war es für {V}. Wer erbt die Stiefel?": "That\\'s it for {V}. Who gets the boots?",
+"{V} bleibt hier liegen. Ruhiges Plätzchen, viel Grün, keine Nachbarn.": "{V} stays right here. Quiet spot, lots of green, no neighbors.",
+"{A} schickt {V} zu den Ahnen. Ohne Rückfahrkarte.": "{A} sends {V} to meet the ancestors. One-way ticket.",
+"{V} ist tot. Wenigstens muss er nicht mehr laufen.": "{V} is dead. At least he doesn\\'t have to walk anymore.",
+"{V} liegt im Dreck. Passt farblich.": "{V} is lying in the dirt. The colors match.",
+"{V} geht zu Boden. Die Ameisen freuen sich über Besuch.": "{V} goes down. The ants are thrilled to have company.",
+"{V} hält ein Nickerchen. Mitten im Gemetzel.": "{V} is taking a nap. In the middle of a massacre.",
+"{A} hat {V} flachgelegt. Der Boden ist weich, zum Glück.": "{A} laid {V} out flat. Luckily the ground is soft.",
+"{V} ist kampfunfähig. Er nennt es taktisches Liegen.": "{V} is out of the fight. He calls it tactical lying down.",
+"{V} macht ein Nickerchen. Mitten im Kampf. Respekt.": "{V} takes a nap. Mid-fight. Respect.",
+"{V} liegt. {A} sucht schon den nächsten Kunden.": "{V} is down. {A} is already looking for the next customer.",
+"{V} ist kampfunfähig. Der Sand hat gewonnen.": "{V} can\\'t fight anymore. The sand wins.",
+"Und {V} küsst den Sand. Hoffentlich schmeckt er.": "And {V} kisses the sand. Hope it tastes good.",
+"{V} geht zu Boden. Wer wettet, dass er liegen bleibt?": "{V} goes down. Who\\'s betting he stays there?",
+"{A} hat {V} schlafen gelegt. Gute Nacht!": "{A} put {V} to sleep. Good night!",
+"Der Gegner": "The enemy"
 },
-"code": []
+"code": [
+[
+"function partWords(id){const n=M.partName?.(id)||'Körperteil',masc=/^(Linker|Rechter)\\b/.test(n)||['Kopf','Hals','Bauch'].includes(n),adj=/^(Linke|Linker|Rechte|Rechter)\\b/.test(n);\n if(!adj)return {nom:(masc?'der ':'die ')+n,acc:(masc?'den ':'die ')+n};const [a,...rest]=n.split(' '),base=a.toLowerCase().replace(/r$/,''),noun=rest.join(' ');\n return masc?{nom:'der '+base+' '+noun,acc:'den '+base+'n '+noun}:{nom:'die '+base+' '+noun,acc:'die '+base+' '+noun};}",
+"function partWords(id){const P={head:'head',neck:'neck',chest:'chest',belly:'belly',ls:'left shoulder',rs:'right shoulder',lua:'left upper arm',rua:'right upper arm',lfa:'left forearm',rfa:'right forearm',lh:'left hand',rh:'right hand',lt:'left thigh',rt:'right thigh',lsh:'left shin',rsh:'right shin',lf:'left foot',rf:'right foot'},n=P[id]||'body part';return {nom:'the '+n,acc:'his '+n};}"
+]
+]
 }
