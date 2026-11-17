@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='a1109e4d', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='67fb899d', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -106,7 +106,7 @@ function platzWaehlen(){platzP=window.AT3SPIELSTAND.start({t:t,imAntippen:functi
 function kernStarten(){$('uhrInfo').textContent=t('uhr.wartet');uhrLage='wartet';platzP.then(kernLos)}
 function kernLos(w){
  var s=document.createElement('script'),s2=document.createElement('script'),da=0;s.src='kernstart.js?v='+V;s2.src='weltkarte.js?v='+V;s.onerror=function(){kernAusfall('kernstart.js')};s2.onerror=function(){kernAusfall('weltkarte.js')};
- s.onload=s2.onload=function(){if(++da<2)return;KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,beiWs:function(d){if(KARTE)KARTE.beiWs(d)},beiBau:beiBau,beiWeg:beiWeg,beiKarren:function(d){if(KARTE)KARTE.karren(d)},beiPersonen:function(d){if(KARTE)KARTE.personen(d)},beiWaren:beiWaren,
+ s.onload=s2.onload=function(){if(++da<2)return;KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,beiWs:function(d){if(KARTE)KARTE.beiWs(d)},beiBau:beiBau,beiWeg:beiWeg,beiKarren:function(d){if(KARTE)KARTE.karren(d)},beiPersonen:function(d){if(KARTE)KARTE.personen(d)},beiTiere:function(d){if(KARTE)KARTE.tiere(d)},beiWaren:beiWaren,
   beiBereit:function(){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=false;k.onclick=function(){KERN.befehl('tempo',+k.dataset.tempo)}});
    SPIELSTAND=window.AT3SPIELSTAND.anschliessen(w,KERN,function(){return{stimme:stimmeGewuenscht,kam:KARTE?KARTE.kam():null,start:START}},speicherAnzeige);if(w.platz&&!w.daten)SPIELSTAND.speichern();
    karteStarten(w);
@@ -120,11 +120,13 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
   beiZoom:function(l,z){$('weltInfo').textContent=l<0?t('welt.globus'):t('welt.zoom',{z:z})},
   beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
   beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
+  beiTier:function(k){if(BAUW&&!fpAn)return false;tierKarte(k);return true},      // G8: Reh antippen
   beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.bweg?', '+t('welt.bweg.'+f.bweg[0])+(f.bweg[1]<3?' ('+t('bau.zustand.'+f.bweg[1])+')':''):f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
  bauAnschliessen();warenAnschliessen();
  if(sp&&sp.start&&!(w.daten.kern&&w.daten.kern.war))KERN.befehl('wirtschaft',{x:sp.start[0],y:sp.start[1]});      // G7: Spielstand von vor G7 → Wirtschaft am Startplatz einschalten
+ if(sp&&sp.start&&!(w.daten.kern&&w.daten.kern.ket))KERN.befehl('ketten',{an:1});      // G8: Stand von vor G8 → erste Ketten einschalten (ohne Wirtschaft tut der Befehl nichts)
  $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};$('fpKnopf').onclick=fpUmschalten;$('fpKnopf').disabled=fpWahl;
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true;
@@ -176,34 +178,47 @@ function bauprobe(n){var k=KARTE.kam();if(!k)return;var L=[],r,gx,gy,i=0,gebaut=
   KERN.bauPruefen(w).then(function(e){if(e&&e.ok){KERN.befehl('bauBoden',w);gebaut++;bp.gebaut=gebaut}$('weltInfo').textContent=t('probe.bau',{n:gebaut,m:n});weiter()})})()}
 // ── Bauen (G5b/G5c): Bauleiste wie 2.0 (welt-bau.js, T2: Gruppen mit Bild und Preis), Ergebnis kommt mit der Nachricht „bau“ vom Weltkern ──
 // Formen: rechteck = mit einem Finger ziehen, linie = Wand an den Feldkanten ziehen, tipp = antippen (die Karte bleibt dabei verschiebbar).
-var BAUWZ={lager:{gr:'haus',bild:'📦',form:'rechteck',preis:1},werkstatt:{gr:'haus',bild:'⚒',form:'rechteck',preis:1},unterkunft:{gr:'haus',bild:'🛏',form:'rechteck',preis:1},
+var BAUWZ={lager:{gr:'haus',bild:'📦',form:'rechteck',preis:1},werkstatt:{gr:'haus',bild:'🪚',form:'rechteck',preis:1},unterkunft:{gr:'haus',bild:'🛏',form:'rechteck',preis:1},
+ kueche:{gr:'haus',bild:'🍲',form:'rechteck',preis:1},jagdhuette:{gr:'haus',bild:'🏹',form:'rechteck',preis:1},      // G8: Werkstatt = Sägewerkstatt, neu Küche und Jägerhütte
  trampelpfad:{gr:'weg',bild:'👣',form:'rechteck',preis:1},kiesweg:{gr:'weg',bild:'∴',form:'rechteck',preis:1},pflaster:{gr:'weg',bild:'▦',form:'rechteck',preis:1},
  steinstrasse:{gr:'weg',bild:'▣',form:'rechteck',preis:1},                                    // G6a: vier Wegarten wie 2.0 (Thomas 16.11.2026)
  tuer:{gr:'werkzeug',bild:'🚪',form:'tipp',preis:1},pfadFuss:{gr:'werkzeug',bild:'🚶',form:'tipp',preis:0},pfadKarren:{gr:'werkzeug',bild:'🐂',form:'tipp',preis:0},abriss:{gr:'werkzeug',bild:'💥',form:'rechteck',preis:0}};   // G6b: Wegprobe (pfadFuss, pfadKarren)
 // Thomas 16.11.2026: wie 2.0 nur Boden ziehen, Wände, Dach und Tür kommen von selbst; von Hand nur Türen. Wandlinie, Dach und „Wände neu“ bleiben im Weltkern
 // (bauWaende, bauDach, bauHuelle) und in der Karte (Form „linie“), haben aber keinen Knopf.
-var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3}, WEG_NR={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4}, MAXA=1024, MAXL=256;
+var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5}, WEG_NR={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4}, MAXA=1024, MAXL=256;
 // ── G7 Waren und Arbeiter: Knopf „Goods“ (Bestände, Aufträge, stehende Baustellen mit Grund), Arbeiter antippen (Aufgabe, Last, Fähigkeiten, Rollen von Hand).
 // Alles kommt als fertige Zahlen vom Weltkern (Nachricht waren nur bei Änderung), der Hauptkern füllt nur die Liste, und nur wenn sie offen ist. ──
 var WAREN=null, PERSON=null;
 function personName(id){var N=t('person.namen').split('|');return N[(id-1)%N.length]+(id>N.length?' '+(Math.floor((id-1)/N.length)+1):'')}
 function beiWaren(d){WAREN=d.meld||null;window.AT3SPIEL.waren=WAREN;var k=$('warenKnopf');k.disabled=!(WAREN&&WAREN.an);if(k.disabled)$('warenLeiste').hidden=true;if(!$('warenLeiste').hidden)warenZeigen()}
 function warenAnschliessen(){var k=$('warenKnopf');k.textContent=t('waren.knopf');k.onclick=function(){var an=!!$('warenLeiste').hidden;$('warenLeiste').hidden=!an;k.setAttribute('aria-pressed',an?'true':'false');if(an){warenZeigen();try{$('warenLeiste').scrollIntoView({block:'nearest'})}catch(x){}}}}
-function warenZeigen(){var W=WAREN,e=$('warenLeiste');if(!W||!W.an){e.textContent='';return}var h='',i,w;
+// G8: Warenliste aus den Zahlen ab Stelle o (nw Waren), Nullen von Stamm und Fleisch weggelassen
+function warenListe(a,o,nw){var L=[];for(var w=0;w<nw;w++){var v=a[o+w];if(v||w<4)L.push(t('ware.'+w)+' '+v)}return L.join(' · ')}
+function warenListeVoll(a,o,nw){var L=[];for(var w=0;w<nw;w++)if(a[o+w])L.push(t('ware.'+w)+' '+a[o+w]);return L.length?L.join(' · '):t('ketten.leer')}
+// G8: Reh antippen (Name, Zustand, Beschreibung aus der Kartei)
+function tierKarte(k){var name=t('tier.reh'),z=t('tier.zust.'+(k.zust|0)),info=OBJTXT['tier-reh.info']||'';$('karte').innerHTML='<b>'+esc(name)+'</b><br>'+esc(z)+(info?'<br><span class="leise">'+esc(info)+'</span>':'');
+ window.AT3SPIEL.angetippt='tier:'+k.id;window.AT3SPIEL.tierKarte=k;sprich(name+'. '+z)}
+function warenZeigen(){var W=WAREN,e=$('warenLeiste');if(!W||!W.an){e.textContent='';return}var h='',i,w,NW=W.nw||4;
  if(!W.start)h+='<p class="karte">'+esc(t('waren.leer'))+'</p>';
  else{h+='<table><tr><th></th><th>'+esc(t('waren.da'))+'</th><th>'+esc(t('waren.res'))+'</th><th>'+esc(t('waren.unterwegs'))+'</th></tr>';
-  for(w=0;w<4;w++)h+='<tr><td>'+esc(t('ware.'+w))+'</td><td>'+W.summe[0][w]+'</td><td>'+W.summe[1][w]+'</td><td>'+W.summe[2][w]+'</td></tr>';h+='</table>';
+  for(w=0;w<NW;w++)h+='<tr><td>'+esc(t('ware.'+w))+'</td><td>'+W.summe[0][w]+'</td><td>'+W.summe[1][w]+'</td><td>'+W.summe[2][w]+'</td></tr>';h+='</table>';
   h+='<p class="leise">'+esc(t('waren.zahl',{l:W.lager.length,s:W.stapel.length,a:W.auf,g:W.gel,v:W.verbr}))+'</p>';
-  for(i=0;i<W.lager.length&&i<6;i++){var L=W.lager[i];h+='<p class="leise"><a href="#" data-geh="'+L[1]+','+L[2]+'">'+esc(t('waren.lager',{n:L[0]}))+'</a> '+esc(t('waren.inhalt',{a:L[4],b:L[5],c:L[6],d:L[7],k:L[3]}))+'</p>'}
-  for(i=0;i<W.stapel.length&&i<4;i++){var S2=W.stapel[i];h+='<p class="leise"><a href="#" data-geh="'+S2[1]+','+S2[2]+'">'+esc(t('waren.stapel'))+'</a> '+esc(t('waren.inhalt0',{a:S2[3],b:S2[4],c:S2[5],d:S2[6]}))+'</p>'}}
+  for(i=0;i<W.lager.length&&i<6;i++){var L=W.lager[i];h+='<p class="leise"><a href="#" data-geh="'+L[1]+','+L[2]+'">'+esc(t('waren.lager',{n:L[0]}))+'</a> '+esc(t('waren.inhalt',{liste:warenListe(L,4,NW),k:L[3]}))+'</p>'}
+  for(i=0;i<W.stapel.length&&i<4;i++){var S2=W.stapel[i];h+='<p class="leise"><a href="#" data-geh="'+S2[1]+','+S2[2]+'">'+esc(t('waren.stapel'))+'</a> '+esc(t('waren.inhalt0',{liste:warenListe(S2,3,NW)}))+'</p>'}
+  var KT=W.ket;if(KT){var AN=['','','werkstatt','','kueche','jagdhuette'];h+='<p class="leise">'+esc(t('ketten.tag',{n:KT.tag}))+' · '+esc(t('ketten.ziel',{a:KT.soll[0],c:KT.soll[2],d:KT.soll[3],e:KT.soll[4],f:KT.soll[5]}))+'</p>';
+   for(i=0;i<KT.werk.length&&i<6;i++){var Wk=KT.werk[i];h+='<p class="leise"><a href="#" data-geh="'+Wk[2]+','+Wk[3]+'">'+esc(t('ketten.werk',{name:t('bau.art.'+AN[Wk[1]]),n:Wk[0]}))+'</a> '+esc(warenListeVoll(Wk,4,NW))+'</p>'}
+   var ez=[];for(w=0;w<NW;w++)if(W.erz[w])ez.push(t('ware.'+w)+' '+W.erz[w]);if(ez.length)h+='<p class="leise">'+esc(t('ketten.erz',{liste:ez.join(' · ')}))+'</p>';
+   for(var bit=1;bit<=128;bit*=2)if(KT.hin&bit)h+='<p class="karte">'+esc(t('ketten.hin.'+bit))+'</p>'}}
  for(i=0;i<W.block.length&&i<6;i++){var b=W.block[i];h+='<p class="karte"><a href="#" data-geh="'+b[2]+','+b[3]+'">'+esc(t('waren.baustelle',{n:b[0]}))+'</a> '+esc(t('waren.block.'+b[1]))+'</p>'}
  e.innerHTML=h;[].forEach.call(e.querySelectorAll('[data-geh]'),function(a){a.onclick=function(ev){ev.preventDefault();var q=a.dataset.geh.split(',');KARTE.geh(+q[0]+.5,+q[1]+.5,0)}})}
 // Arbeiter antippen: Name, Aufgabe, Last, Fähigkeiten; zwei Schalter für die Rollen (Eingreifen von Hand, sonst Automatik)
-function personKarte(k){PERSON=k;var name=personName(k.id),auf=t('person.auf.'+(k.zust===4?'w':k.zust===0?0:k.auf)),last=k.last?t('person.last',{m:k.last>>4,w:t('ware.'+((k.last&15)-1))}):'';
- $('karte').innerHTML='<b>'+esc(name)+'</b><br>'+esc(auf)+(last?'<br>'+esc(last):'')+'<br>'+esc(t('person.faehig',{a:k.f0,b:k.f1}))+
-  '<br><button class="knopf klein" id="pRolle1" aria-pressed="'+(k.darf&1?'true':'false')+'">'+esc(t('person.rolle.1'))+'</button> <button class="knopf klein" id="pRolle2" aria-pressed="'+(k.darf&2?'true':'false')+'">'+esc(t('person.rolle.2'))+'</button>';
- [1,2].forEach(function(bit){$('pRolle'+bit).onclick=function(){k.darf^=bit;KERN.befehl('personRolle',{id:k.id,darf:k.darf});personKarte(k)}});
+// G8: Fähigkeiten f2–f6 und hungrig/durstig kommen gepackt (fa, fb) aus dem Weltkern
+function personKarte(k){PERSON=k;var name=personName(k.id),auf=t('person.auf.'+(k.zust===4?'w':k.zust===0?0:k.auf)),fa=k.fa|0,fb=k.fb|0,hu=fb>>7,last=k.last?t('person.last',{m:k.last>>4,w:t('ware.'+((k.last&15)-1))}):'';
+ $('karte').innerHTML='<b>'+esc(name)+'</b><br>'+esc(auf)+(last?'<br>'+esc(last):'')+(hu?'<br><span class="schlecht">'+esc(t('person.hunger.'+hu))+'</span>':'')+'<br>'+esc(t('person.faehig',{a:k.f0,b:k.f1,c:fa&127,d:(fa>>7)&127,e:(fa>>14)&127,f:(fa>>21)&127,g:fb&127}))+'<br>'+
+  [1,2,4,8,16,32,64].map(function(bit,i){return '<button class="knopf klein" id="pRolle'+bit+'" aria-pressed="'+(k.darf&bit?'true':'false')+'">'+esc(t('person.rolle.'+(i+1)))+'</button>'}).join(' ');
+ [1,2,4,8,16,32,64].forEach(function(bit){$('pRolle'+bit).onclick=function(){k.darf^=bit;KERN.befehl('personRolle',{id:k.id,darf:k.darf});personKarte(k)}});
  window.AT3SPIEL.angetippt='person:'+k.id;window.AT3SPIEL.personKarte=k;if(!personKarte.still)sprich(name+'. '+auf);personKarte.still=false}
+// G8: mit &ketten zusätzlich Küche und Jägerhütte und die ersten Ketten (Befehl ketten), damit Holz, Wasser, Rehe und Mahlzeiten zu sehen sind.
 // Warenprobe (nur mit ?nosave&warenprobe): schaltet die Wirtschaft ein, sucht nahe beim Kartenort Platz, baut ein Lager (ohne Material), danach eine Werkstatt und
 // ein zweites Lager (mit Material aus dem Startvorrat), Tore und einen Kiesweg dazwischen; Arbeiter tragen und bauen, die Karren gleichen aus. Tempo 3×.
 function warenprobe(){var k=KARTE.kam();if(!k)return;var P=window.AT3SPIEL.warenprobe={fertig:false,stufe:0},L=[],r,gx,gy,i=0;
@@ -211,10 +226,12 @@ function warenprobe(){var k=KARTE.kam();if(!k)return;var P=window.AT3SPIEL.waren
  $('weltInfo').textContent=t('probe.warenSucht');
  (function suche(){if(i>=L.length){$('weltInfo').textContent=t('probe.warenKeinPlatz');P.fertig=true;P.fehler='kein_platz';return}var q=L[i++],x=q[0],y=q[1];
   var T=[{art:'lager',x:x,y:y,w:3,h:3},{art:'werkstatt',x:x+5,y:y,w:4,h:3},{art:'lager',x:x+11,y:y,w:3,h:3},{art:'kiesweg',x:x+1,y:y+3,w:12,h:2}];
+  var KT=/[?&]ketten\b/.test(location.search);if(KT)T.push({art:'kueche',x:x,y:y+6,w:3,h:3},{art:'jagdhuette',x:x+5,y:y+6,w:3,h:3});
   Promise.all(T.map(function(w){return KERN.bauPruefen(w)})).then(function(E){if(!E.every(function(e){return e&&e.ok}))return suche();
    P.plan={x:x,y:y};KERN.befehl('wirtschaft',{x:x-1,y:y+4});KERN.befehl('tempo',3);KERN.befehl('bauBoden',T[0]);KARTE.geh(x+7,y+2,0);P.stufe=1;$('weltInfo').textContent=t('probe.waren1');
    var w=setInterval(function(){if(P.stufe===1&&WAREN&&WAREN.start){P.stufe=2;KERN.befehl('bauBoden',T[1]);KERN.befehl('bauBoden',T[2]);$('weltInfo').textContent=t('probe.waren2')}
     else if(P.stufe===2&&WAREN&&WAREN.lager.length>=2&&KERN.zustand.baustellen===0){P.stufe=3;clearInterval(w);KERN.befehl('bauTuer',{x:x+1,y:y+2,seite:2,typ:'tor'});KERN.befehl('bauTuer',{x:x+12,y:y+2,seite:2,typ:'tor'});KERN.befehl('bauWeg',T[3]);
+     if(KT){KERN.befehl('ketten',{an:1});KERN.befehl('bauBoden',T[4]);KERN.befehl('bauBoden',T[5])}
      P.fertig=true;$('weltInfo').textContent=t('probe.waren3')}},500)})})()}
 function bauAnschliessen(){var k=$('bauKnopf');k.disabled=false;k.textContent=t('bau.knopf');
  var G={},h='<div class="bauGruppen">';Object.keys(BAUWZ).forEach(function(id){var w=BAUWZ[id];(G[w.gr]=G[w.gr]||[]).push(id)});
@@ -266,7 +283,7 @@ function beiBau(d){if(KARTE)KARTE.beiBau(d);if(fpAn&&d.stuecke&&d.stuecke.length
   $('bauInfo').textContent=!m.ok?grundText(m.grund):a==='abriss'?t('bau.okAb'):a==='dach'?t('bau.okDach',{n:m.felder||0}):a==='wand'?(m.kosten?t('bau.okWand',{n:m.waende,g:m.kosten}):t('bau.okWandAb',{n:m.waende})):
    a==='tuer'?t('bau.okTuer.'+(m.typ||'tuer')):WEG_NR[a]?t('bau.okWeg',{n:m.felder||0,g:m.kosten||0}):a==='huelle'?(m.kosten?t('bau.okHuelle',{g:m.kosten}):t('bau.okHuelleLeer')):t('bau.ok',{g:(m.kosten||0)})})}
 // Gebäude angetippt: vorderstes Teil (Wand, Tür, Tor, Dach) oder Boden, dazu Art und Bauzustand; Dach auf/zu meldet die Karte
-function bauFeld(f){var b=f.bau,o=f.obj,art=b&&b.art?t('bau.art.'+['','lager','werkstatt','unterkunft'][b.art]):t('bau.ohneArt'),zu=t('bau.zustand.'+((o&&o.zustand)||b.zustand||3));
+function bauFeld(f){var b=f.bau,o=f.obj,art=b&&b.art?t('bau.art.'+['','lager','werkstatt','unterkunft','kueche','jagdhuette'][b.art]):t('bau.ohneArt'),zu=t('bau.zustand.'+((o&&o.zustand)||b.zustand||3));
  var d=f.dachOffen===true?t('bau.dachOffen'):f.dachOffen===false&&KARTE.kamera().lod===0?t('bau.dachZu'):'';
  if(o&&o.id){objektKarte(o.id,o.ersatz)}else{window.AT3SPIEL.angetippt=null}
  $('weltInfo').textContent=t('bau.feld',{a:(o&&o.id?(OBJTXT[o.id+'.name']||o.id)+' · ':'')+art,z:zu,d:d})}
@@ -275,7 +292,7 @@ var wahlLaeuft=false;
 function startWaehlen(){if(wahlLaeuft)return;wahlLaeuft=true;fpWahl=true;$('fpKnopf').disabled=true;var tempo=KERN.zustand.tempo;if(tempo)KERN.befehl('tempo',0);$('weltInfo').textContent=t('welt.wahl');
  new Promise(function(ok,no){if(window.AT3STARTWAHL)return ok();var s=document.createElement('script');s.src='startwahl.js?v='+V;s.onload=ok;s.onerror=function(){no(new Error('startwahl.js'))};document.head.appendChild(s)})
  .then(function(){return window.AT3STARTWAHL.zeigen({t:t,karte:KARTE,name:WAHL&&WAHL.name})})
- .then(function(p){fpWahl=false;$('fpKnopf').disabled=false;START=[p.x,p.y];KERN.befehl('wirtschaft',{x:p.x,y:p.y});KARTE.geh(p.x+.5,p.y+.5,0);$('weltInfo').textContent=t('welt.tippen');if(tempo)KERN.befehl('tempo',tempo);window.AT3SPIEL_START=START;if(SPIELSTAND&&SPIELSTAND.platz)SPIELSTAND.speichern()})
+ .then(function(p){fpWahl=false;$('fpKnopf').disabled=false;START=[p.x,p.y];KERN.befehl('wirtschaft',{x:p.x,y:p.y});KERN.befehl('ketten',{an:1});KARTE.geh(p.x+.5,p.y+.5,0);$('weltInfo').textContent=t('welt.tippen');if(tempo)KERN.befehl('tempo',tempo);window.AT3SPIEL_START=START;if(SPIELSTAND&&SPIELSTAND.platz)SPIELSTAND.speichern()})
  .catch(function(e){$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:e.message}))+'</span>'})}
 function karteText(){var m0=KARTE&&KARTE.mess;return karteText0()+(m0?' · nature '+m0.naturArten+' kinds, '+m0.naturErsatz+' grey, '+m0.natur+' baked':'')}
 function karteText0(){var m=KARTE&&KARTE.mess;if(!m)return t('mess.karteAus');var u=function(v){return(v/1000).toFixed(2)+' ms'};
@@ -334,7 +351,7 @@ function fpUmschalten(){if(fpBusy||!KARTE)return;var k=$('fpKnopf');
  .catch(function(e){var m=e&&e.message;$('weltInfo').textContent=m==='globe'?t('fp.globus'):m==='no ground'?t('fp.keinBoden'):t('fp.fehler',{e:m})})
  .then(function(){fpBusy=false;k.disabled=fpWahl})}
 // FP3: Arbeiter oder Karren in First Person angetippt: dieselbe Karte wie auf der Karte (mit Schaltern unten), oben kurz ohne Schalter mit Entfernung
-function fpBewegt(typ,k,m){if(typ==='person')personKarte(k);else karrenKarte(k);var c=$('karte').cloneNode(true);c.querySelectorAll('button').forEach(function(b){b.remove()});
+function fpBewegt(typ,k,m){if(typ==='person')personKarte(k);else if(typ==='tier')tierKarte(k);else karrenKarte(k);var c=$('karte').cloneNode(true);c.querySelectorAll('button').forEach(function(b){b.remove()});
  $('weltInfo').innerHTML=c.innerHTML.replace(/(<br>\s*)+$/,'')+' <span class="leise">· '+esc(t('fp.entfernt',{m:Math.round(m)}))+'</span>'}
 function fpObjekt(id,ersatz,m){if(!id){$('weltInfo').textContent=t('fp.nichts');return}objektKarte(id,ersatz);$('weltInfo').innerHTML=$('karte').innerHTML+' <span class="leise">· '+esc(t('fp.entfernt',{m:Math.round(m)}))+'</span>'}
 function fpText(){var f=window.AT3FP&&window.AT3FP.mess();if(!f||!f.bilder)return t('mess.fpAus');var u=function(v){return v==null?'-':v.toFixed(1)+' ms'};

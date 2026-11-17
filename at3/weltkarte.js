@@ -31,7 +31,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='a1109e4d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='67fb899d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -138,6 +138,7 @@ var t0=performance.now();
   else if((ersatz||veraltet)&&!ruht){setTimeout(plan,RUHE_MS)}
   karFaehrt=false;if(KAR.size&&lod<STUFEN){var tk=performance.now();karrenMalen(CX,CY,Z,W,H);M.karrenMs=performance.now()-tk;if(karFaehrt)weiter=true}
   perGeht=false;if(PER.size&&lod<STUFEN){var tp=performance.now();personenMalen(CX,CY,Z,W,H);M.personenMs=performance.now()-tp;if(perGeht)weiter=true}      // G7: Arbeiter
+  tierGeht=false;if(TIER.size&&lod<STUFEN){tiereMalen(CX,CY,Z,W,H);if(tierGeht)weiter=true}      // G8: Rehe
   if(wzRahmen&&lod<STUFEN)rahmenMalen(CX,CY,Z,W,H);
   if(wzPfad&&lod<STUFEN)pfadMalen(CX,CY,Z,W,H);
   if(marke){var mx=marke.x+Math.round((cam.x-marke.x)/WX)*WX,mh=lod<STUFEN?hoeheBei(marke.x,marke.y):0;kreuz(((mx-marke.y)*32-CX)/Z+W/2,((mx+marke.y)*16-(mh==null?cam.z:mh)*8-CY)/Z+H/2)}
@@ -219,15 +220,15 @@ var t0=performance.now();
  function perLage(e,t){var f=perDt>0?(t-perT)/perDt:1;if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*128)dx+=WX*256;
   return[(e.px0+dx*f)/256,(e.py0+(e.py-e.py0)*f)/256,f<1&&(dx||e.py!==e.py0)]}
  function personen(d){if(tot)return;var t=performance.now(),a=d.buf,n=a[0]|0,neuM=new Map(),neuB=false;if(perT){var dt=t-perT;if(dt>5&&dt<400)perDt=perDt*.7+dt*.3}
-  for(var i=0;i<n;i++){var o2=1+i*10,id=a[o2],e=PER.get(id),px=a[o2+1],py=a[o2+2];
+  for(var i=0;i<n;i++){var o2=1+i*13,id=a[o2],e=PER.get(id),px=a[o2+1],py=a[o2+2];      // G8: 13 Zahlen je Person
    if(e){var L=perLage(e,t);e.px0=L[0]*256;e.py0=L[1]*256}else{e={px0:px,py0:py};neuB=true}
    if(e.px!==px||e.py!==py||e.dir!==a[o2+3])neuB=true;
-   e.px=px;e.py=py;e.dir=a[o2+3];e.zust=a[o2+4];e.auf=a[o2+5]&15;e.darf=a[o2+5]>>4;e.grund=a[o2+6];e.last=a[o2+7];e.f0=a[o2+8];e.f1=a[o2+9];neuM.set(id,e)}
+   e.px=px;e.py=py;e.dir=a[o2+3];e.zust=a[o2+4];e.auf=a[o2+5]&15;e.darf=a[o2+5]>>4;e.grund=a[o2+6];e.last=a[o2+7];e.f0=a[o2+8];e.f1=a[o2+9];e.fa=a[o2+10];e.fb=a[o2+11];neuM.set(id,e)}
   if(neuM.size!==PER.size)neuB=true;PER=neuM;perT=t;M.personen=n;if(neuB&&cam.lod<STUFEN&&!glob)plan()}
  function perBilder(objekte){var ob=objekte&&objekte['figur-arbeiter'];PBILD=null;if(!ob||!ob.bild)return;PBILD=[];
   for(var r=0;r<4;r++){var b=S.richtungsBild(ob,r)||ob.bild,c=S.zuCanvas(b,S.PALETTE);PBILD.push({c:c,p:punktBild(c),w:b.w,h:b.h,ax:b.ax,ay:b.ay})}}
  function personBei(cx,cy){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),px=(cx-r.left)*f,py=(cy-r.top)*f,best=null,bd=24*f*f*24;
-  PER.forEach(function(e,id){if(e.sx==null||e.sx<-1e8)return;var dx=e.sx-px,dy=e.sy-10*f/(1<<cam.lod)-py,d=dx*dx+dy*dy;if(d<bd){bd=d;best={id:id,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1}}});return best}
+  PER.forEach(function(e,id){if(e.sx==null||e.sx<-1e8)return;var dx=e.sx-px,dy=e.sy-10*f/(1<<cam.lod)-py,d=dx*dx+dy*dy;if(d<bd){bd=d;best={id:id,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,fa:e.fa,fb:e.fb}}});return best}
  function personenMalen(CX,CY,Z,W,H){var t=performance.now(),n=0,geht=false;
   PER.forEach(function(e){var L=perLage(e,t),x=L[0],y=L[1];x+=Math.round((cam.x-x)/WX)*WX;var h=hoeheBei(umX(Math.floor(x)),Math.floor(y));if(h==null)h=cam.z;
    var sx=((x-y)*32-CX)/Z+W/2,sy=((x+y)*16-h*8-CY)/Z+H/2;e.sx=-1e9;if(sx<-32||sy<-32||sx>W+32||sy>H+48)return;n++;if(L[2])geht=true;e.sx=sx;e.sy=sy;
@@ -235,9 +236,31 @@ var t0=performance.now();
    if(B)g.drawImage(vd?B.p:B.c,Math.round(sx-B.ax/Z),Math.round(sy-B.ay/Z),Math.max(1,Math.round(B.w/Z)),Math.max(1,Math.round(B.h/Z)));
    else{g.fillStyle=ERSATZ;g.fillRect(Math.round(sx-3/Z),Math.round(sy-20/Z),Math.max(2,Math.round(6/Z)),Math.max(3,Math.round(20/Z)))}});
   M.personenSichtbar=n;perGeht=geht}
+ // ── G8 Rehe: wie die Arbeiter. tiere(d) bekommt nach jedem Takt je Reh 5 Zahlen (ketten.js tiere); Bild tier-reh je Richtung einmal vorgezeichnet
+ // (Ersatzbild grauer Fleck), gezeichnet wird nur, was im Bild ist; ein neues Bild gibt es nur, wenn sich ein Reh bewegt. ──
+ var TIER=new Map(), tierT=0, tierDt=50, TBILD=null, tierGeht=false;
+ function tierLage(e,t){var f=tierDt>0?(t-tierT)/tierDt:1;if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*128)dx+=WX*256;
+  return[(e.px0+dx*f)/256,(e.py0+(e.py-e.py0)*f)/256,f<1&&(dx||e.py!==e.py0)]}
+ function tiere(d){if(tot)return;var t=performance.now(),a=d.buf,n=a[0]|0,neuM=new Map(),neuB=false;if(tierT){var dt=t-tierT;if(dt>5&&dt<400)tierDt=tierDt*.7+dt*.3}
+  for(var i=0;i<n;i++){var o2=1+i*5,id=a[o2],e=TIER.get(id),px=a[o2+1],py=a[o2+2];
+   if(e){var L=tierLage(e,t);e.px0=L[0]*256;e.py0=L[1]*256}else{e={px0:px,py0:py};neuB=true}
+   if(e.px!==px||e.py!==py||e.dir!==a[o2+3])neuB=true;e.px=px;e.py=py;e.dir=a[o2+3];e.zust=a[o2+4];neuM.set(id,e)}
+  if(neuM.size!==TIER.size)neuB=true;TIER=neuM;tierT=t;M.tiere=n;if(neuB&&cam.lod<STUFEN&&!glob)plan()}
+ function tierBilder(objekte){var ob=objekte&&objekte['tier-reh'];TBILD=null;if(!ob||!ob.bild)return;TBILD=[];
+  for(var r=0;r<4;r++){var b=S.richtungsBild(ob,r)||ob.bild,c=S.zuCanvas(b,S.PALETTE);TBILD.push({c:c,p:punktBild(c),w:b.w,h:b.h,ax:b.ax,ay:b.ay})}}
+ function tierBei(cx,cy){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),px=(cx-r.left)*f,py=(cy-r.top)*f,best=null,bd=22*f*f*22;
+  TIER.forEach(function(e,id){if(e.sx==null||e.sx<-1e8)return;var dx=e.sx-px,dy=e.sy-8*f/(1<<cam.lod)-py,d=dx*dx+dy*dy;if(d<bd){bd=d;best={id:id,zust:e.zust}}});return best}
+ function tiereMalen(CX,CY,Z,W,H){var t=performance.now(),n=0,geht=false;
+  TIER.forEach(function(e){var L=tierLage(e,t),x=L[0],y=L[1];x+=Math.round((cam.x-x)/WX)*WX;var h=hoeheBei(umX(Math.floor(x)),Math.floor(y));if(h==null)h=cam.z;
+   var sx=((x-y)*32-CX)/Z+W/2,sy=((x+y)*16-h*8-CY)/Z+H/2;e.sx=-1e9;if(sx<-32||sy<-32||sx>W+32||sy>H+48)return;n++;if(L[2])geht=true;e.sx=sx;e.sy=sy;
+   var B=TBILD&&TBILD[e.dir&3],vd=verdeckt(x,y,B?B.ay:14);
+   if(B)g.drawImage(vd?B.p:B.c,Math.round(sx-B.ax/Z),Math.round(sy-B.ay/Z),Math.max(1,Math.round(B.w/Z)),Math.max(1,Math.round(B.h/Z)));
+   else{g.fillStyle=ERSATZ;g.fillRect(Math.round(sx-6/Z),Math.round(sy-10/Z),Math.max(2,Math.round(12/Z)),Math.max(2,Math.round(10/Z)))}});
+  M.tiereSichtbar=n;tierGeht=geht}
  // FP3: Lage aller Arbeiter und Karren jetzt (gleitend wie auf der Karte) für die First-Person-Ansicht; Karte = Infos wie beim Antippen. Nur Rechnen, kein Bild.
  function bewegte(){var t=performance.now(),L=[];
-  PER.forEach(function(e,id){var p=perLage(e,t);L.push({art:'figur-arbeiter',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1},typ:'person'})});
+  PER.forEach(function(e,id){var p=perLage(e,t);L.push({art:'figur-arbeiter',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,fa:e.fa,fb:e.fb},typ:'person'})});
+  TIER.forEach(function(e,id){var p=tierLage(e,t);L.push({art:'tier-reh',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust},typ:'tier'})});      // G8
   KAR.forEach(function(e,id){var p=karLage(e,t);L.push({art:'karren-ochse',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust,grund:e.grund,warte:e.warte||0},typ:'karren'})});
   return L}
  function raumBei(X,Y){if(Y<0||Y>=WY)return 0;X=umX(X);var r=BAUM.get(stk(X,Y));return r?r[((Y&63)<<6)|(X&63)]:0}
@@ -330,6 +353,7 @@ var t0=performance.now();
   if(cam.lod>=STUFEN){if(o.beiFeld)o.beiFeld(null);return}
   if(o.beiPerson&&!WZ_AKTIV()){var pp=personBei(cx,cy);if(pp&&o.beiPerson(pp)!==false)return}      // G7: Arbeiter zuerst (stehen vor dem Karren)
   if(o.beiKarren&&!WZ_AKTIV()){var kk=karrenBei(cx,cy);if(kk&&o.beiKarren(kk)!==false)return}
+  if(o.beiTier&&!WZ_AKTIV()){var tt=tierBei(cx,cy);if(tt&&o.beiTier(tt)!==false)return}      // G8
   feldBei(cx,cy).then(function(fd){var r=fd&&fd.bau&&fd.bau.raum;                              // G5b: Gebäude antippen schaltet in 1× sein Dach auf/zu (wie 2.0)
    if(r&&cam.lod===0&&!WZ_AKTIV()){if(fest.has(r))fest.delete(r);else fest.add(r);if(fd)fd.dachOffen=fest.has(r);plan()}
    if(o.beiFeld)o.beiFeld(fd)})}
@@ -338,7 +362,7 @@ var t0=performance.now();
  plan();
  // ── Natur (G4b): Bilder der übernommenen Naturobjekte einmal an den Bildkern; danach alle Bodenbilder neu (mit Natur). Rest = graues Ersatzbild. ──
  var NOBJ=null, NARTEN=null, BARTEN=[];
- function natur(objekte){NOBJ=objekte||{};karBilder(NOBJ);perBilder(NOBJ);naturSenden()}
+ function natur(objekte){NOBJ=objekte||{};karBilder(NOBJ);perBilder(NOBJ);tierBilder(NOBJ);naturSenden()}
  function naturSenden(){if(!bk||!NOBJ||!NARTEN)return;var objekte=NOBJ,arten=NARTEN,liste=[],tr=[],ers=0;NOBJ=null;
   function bild(id){var ob=objekte&&objekte[id];if(!ob||!ob.bild)return null;var b=ob.bild,px=new Uint8Array(b.w*b.h).fill(255);
    for(var y=0;y<b.h;y++){var r=b.z[y];for(var x=0;x<b.w;x++){var c=S.ZEICHEN.indexOf(r[x]);if(c>=0)px[y*b.w+x]=c}}
@@ -348,8 +372,9 @@ var t0=performance.now();
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,bau:bau,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
- return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,bewegte:bewegte,
-  personenListe:function(){var t=performance.now(),L=[];PER.forEach(function(e,id){var p=perLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,bild:!!PBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},
+ return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,tiere:tiere,bewegte:bewegte,
+  tiereListe:function(){var t=performance.now(),L=[];TIER.forEach(function(e,id){var p=tierLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,bild:!!TBILD,sx:e.sx,sy:e.sy})});return L},
+  personenListe:function(){var t=performance.now(),L=[];PER.forEach(function(e,id){var p=perLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,fa:e.fa,fb:e.fb,bild:!!PBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},
   karrenListe:function(){var t=performance.now(),L=[];KAR.forEach(function(e,id){var p=karLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,grund:e.grund,warte:e.warte||0,bild:!!KBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},
   stauZeichen:function(){return !!STAU},
   // G6c2: Feld an einer Weltlage abfragen (wie Antippen, ohne Bildschirm)

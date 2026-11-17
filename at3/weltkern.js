@@ -44,10 +44,12 @@ function karSenden(){var g=z.kar;if(!g||!g.k.length){if(karGesendet){karGesendet
 // Waren und Arbeiter (G7): waren.js und personen.js mit dem Befehl wirtschaft oder einem Spielstand damit. An den Hauptkern gehen die Personen nach jedem Takt
 // (je Person 10 Zahlen) und die Waren nur bei einer Änderung (Bestände, Aufträge, Gründe stehender Baustellen).
 var warLetzt=-1, warTick=-99, perGesendet=false;
-function warLaden(){wsLaden();bauLaden();if(!self.AT3WAREN)importScripts('waren.js'+self.location.search,'personen.js'+self.location.search)}
-function warSenden(){var g=z.war;if(!g){if(warLetzt!==-1){warLetzt=-1;self.postMessage({art:'waren',an:0})}if(perGesendet){perGesendet=false;self.postMessage({art:'personen',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}return}
+function warLaden(){wsLaden();bauLaden();if(!self.AT3WAREN)importScripts('waren.js'+self.location.search,'personen.js'+self.location.search,'ketten.js'+self.location.search)}      // G8: ketten.js gleich mit
+var tierGesendet=false;
+function warSenden(){var g=z.war;if(!g){if(warLetzt!==-1){warLetzt=-1;self.postMessage({art:'waren',an:0})}if(tierGesendet){tierGesendet=false;self.postMessage({art:'tiere',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}if(perGesendet){perGesendet=false;self.postMessage({art:'personen',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}return}
  if(z.per){var a=self.AT3PERS.meld(z);perGesendet=true;self.postMessage({art:'personen',tick:z.tick,tempo:z.tempo,buf:a},[a.buffer])}
- var dt=Math.abs(z.tick-warTick);if(warLetzt!==-1&&dt<5)return;if(g.zaehler===warLetzt&&!(z.bau&&z.bau.auf.length&&dt>=20))return;      // höchstens 4× je Sekunde; mit Baustellen mindestens 1× je Sekunde (Gründe)
+ if(z.ket&&(z.ket.reh.length||tierGesendet)){var ti=self.AT3KETTEN.tiere(z);tierGesendet=z.ket.reh.length>0;self.postMessage({art:'tiere',tick:z.tick,tempo:z.tempo,buf:ti},[ti.buffer])}      // G8: Rehe je Takt (je Reh 5 Zahlen)
+ var dt=Math.abs(z.tick-warTick);if(warLetzt!==-1&&dt<5)return;if(g.zaehler===warLetzt&&!(z.bau&&z.bau.auf.length&&dt>=20)&&!(z.ket&&dt>=40))return;      // höchstens 4× je Sekunde; mit Baustellen mindestens 1× je Sekunde (Gründe)
  warLetzt=g.zaehler;warTick=z.tick;self.postMessage({art:'waren',meld:self.AT3WAREN.meld(z)})}
 // Wegsuche (G6b): begehbar.js, wegsuche.js und wegstrom.js erst mit dem ersten Befehl wegProbe oder einem Spielstand mit Wegsuche. An den Hauptkern geht
 // nur bei einem neuen Ergebnis eine kleine Nachricht (Feldliste, Orte, Rechenzeit); Rechenzeit je Auftrag nur für die Anzeige, nicht im Zustand.

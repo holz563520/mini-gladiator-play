@@ -7,6 +7,7 @@
 // Wiederverwendet aus 2.0 welt-begehbar.js (Thomas 13.11.2026, als Kopie angepasst): Tempo je Boden (Steinstraße 1,15 · Pflaster 1,1 · Kies/Straße/Brücke 1,0 ·
 // Trampelpfad 0,95 · Wiese, Erde, Sand 0,85 · Wald, Nadelstreu 0,75 · Fels, Schnee 0,6 · Sumpf 0,45 · Wasser gesperrt), Karren nur auf Kiesweg und besser
 // (dazu Weltstraße, Ortsplatz, Brücke und Lagerboden für Ladestellen), große Bäume und Fels sperren, Türen nur zu Fuß, Tore für alle.
+// G8: ein gefällter Baum (Stumpf, Feld-Merker Bit 3 aus bau.js) sperrt nicht mehr.
 // Vorschlagswerte (G6a, noch nicht von Thomas bestätigt): Hang mit einer Stufe zu Fuß ×0,9, Karren ×0,85; Hang mit zwei und mehr Stufen zu Fuß ×0,7, Karren gesperrt;
 // Furt zu Fuß 0,6, Karren gesperrt; Fähre vorerst gesperrt; Gebäudeboden zu Fuß 0,85; geplante Wände sperren nicht, begonnene und fertige schon (wie FP2a).
 (function(root){
@@ -36,7 +37,7 @@ function tempo(hole,holeB,seed,X,Y,p){if(Y<0||Y>=WY)return 0;X=um(X);
   if(g&&((g>>4)&3)===Z_FERTIG)t=GEBAUT[p][g&7];
   else if(wv)t=WELT[p][wv];
   else{t=p===FUSS?BIOM[b]:0;
-   if(t&&!(a&&(a[3*F+q]&F_ROD))){var n=NAT().art(seed,X,Y,b,0,steil);if(n>=0&&(n<=5||n===12))t=0}}}   // natur.js 0–5 Bäume, 12 Fels
+   if(t&&!(a&&(a[3*F+q]&(F_ROD|8)))){var n=NAT().art(seed,X,Y,b,0,steil);if(n>=0&&(n<=5||n===12))t=0}}}   // natur.js 0–5 Bäume, 12 Fels
  if(!t)return 0;
  if(steil>=2){if(p===KARREN)return 0;t=(t*70/100)|0}else if(steil===1)t=(t*(p===KARREN?85:90)/100)|0;
  return t}

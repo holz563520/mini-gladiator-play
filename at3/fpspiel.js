@@ -33,7 +33,7 @@ function holen(ox,oy){var o=P.o,sperr=[];for(var id in o.objekte){var k=o.objekt
  return new Promise(function(ok,no){var n=0;(function frag(){o.karte.frage('fp',{ox:ox,oy:oy,sperr:sperr}).then(function(r){
    if(r.fehlt||!r.welt){if(++n>40)return no(new Error('picture core not ready'));return setTimeout(frag,250)}ok(r)})})()})}
 function annehmen(r){var w=r.welt,F=window.AT3_FPW,L=[],ids=r.arten;
- if(!P.arten){P.arten={};ids.forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)});['figur-arbeiter','karren-ochse'].forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)})}
+ if(!P.arten){P.arten={};ids.forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)});['figur-arbeiter','karren-ochse','tier-reh'].forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)})}
  w.obj=L;for(var i=0;i<w.objN;i++){var o={art:ids[w.objArt[i]],x:w.objX[i],y:w.objY[i],r:0,z:0};o.z=F.hoehe(w,o.x,o.y);L.push(o)}
  P.ausschnitte++;P.ausschnittMs.push(r.us/1000);if(P.ausschnittMs.length>20)P.ausschnittMs.shift();P.stueckeNeu+=r.neu||0;return w}
 
@@ -95,7 +95,7 @@ function bewegte(){var w=P.w,K=P.o.karte;if(!w||!K||!K.bewegte){if(w)w.bew=[];re
   var key=e.typ+e.id,a=BEW[key],R=RICHT[e.dir&3]||RICHT[0];
   if(!a)a={hx:R[0],hy:R[1],x:x,y:y,weg:0};else{var dx=x-a.x,dy=y-a.y,l=Math.hypot(dx,dy);if(l>1e-4&&l<2){a.hx=dx/l;a.hy=dy/l;a.weg+=l}else if(!e.geht){a.hx=a.hx*.8+R[0]*.2;a.hy=a.hy*.8+R[1]*.2;var n=Math.hypot(a.hx,a.hy)||1;a.hx/=n;a.hy/=n}}
   a.x=x;a.y=y;neu[key]=a;var nah=(x-c.x)*(x-c.x)+(y-c.y)*(y-c.y)<r2;if(nah&&(e.geht||a.pose))geht=true;
-  var pose=e.typ==='person'&&e.geht?FOLGE[Math.floor(a.weg/SCHRITT)&3]:0;if(nah&&pose!==a.pose)geht=true;a.pose=pose;
+  var pose=(e.typ==='person'||e.typ==='tier')&&e.geht?FOLGE[Math.floor(a.weg/SCHRITT)&3]:0;if(nah&&pose!==a.pose)geht=true;a.pose=pose;
   aus.push({art:e.art,x:x,y:y,z:F.hoehe(w,x,y),r:0,bew:true,hx:a.hx,hy:a.hy,pose:pose,typ:e.typ,karte:e.karte})}
  BEW=neu;if(P.probe&&P.probe.n){probeDazu(aus,w,F);geht=true}w.bew=aus;return geht}
 // FP3-Probe (nur mit ?nosave&fpprobe): n gedachte Arbeiter und Karren (jeder fünfte ein Karren) laufen im Kreis um den Startpunkt, nur zum Messen der Zeichenzeit.

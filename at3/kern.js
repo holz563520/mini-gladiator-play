@@ -46,7 +46,10 @@ function KAR(){return root.AT3KARREN||(typeof module!=='undefined'&&module.expor
 // leer, Bauen und Karren laufen wie bisher und der Fingerabdruck ist derselbe.
 function WAR(){return root.AT3WAREN||(typeof module!=='undefined'&&module.exports?require('./waren.js'):null)}
 function PERS(){return root.AT3PERS||(typeof module!=='undefined'&&module.exports?require('./personen.js'):null)}
-var WAR_ARTEN={wirtschaft:1,lieferung:1,personRolle:1};
+// Erste Ketten (G8): ketten.js = Holz, Nahrung, Wasser, Essen, Rehe, Stümpfe, Automatik mit Sollbeständen. Nur im Weltkern, eingeschaltet mit dem Befehl
+// „ketten“ (nach „wirtschaft“). Ohne den Befehl bleibt z.ket leer und alles läuft wie in G7.
+function KET(){return root.AT3KETTEN||(typeof module!=='undefined'&&module.exports?require('./ketten.js'):null)}
+var WAR_ARTEN={wirtschaft:1,lieferung:1,personRolle:1,ketten:1};
 var BAU_ARTEN={bauBoden:1,bauEntfernen:1,bauWand:1,bauTuer:1,bauDach:1,bauHuelle:1,bauPause:1,bauAbbruch:1,bauWaende:1,bauTuerWechsel:1,bauWeg:1};   // G6a: bauWeg
 
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
@@ -65,6 +68,7 @@ function setze(z,seed,version){seed=seed>>>0;
  z.weg=null;                          // Wegsuche (G6b), entsteht erst mit dem ersten Befehl wegProbe
  z.kar=null;                          // Karren (G6c), entsteht erst mit dem ersten Lager mit fertigem Tor
  z.war=null;z.per=null;                // Waren und Arbeiter (G7), entstehen erst mit dem Befehl wirtschaft
+ z.ket=null;                          // Erste Ketten (G8), entstehen erst mit dem Befehl ketten
  z.offen=[];z.warte=[];return z}
 
 // ── Zufall: getrennte Ströme, Stand liegt im Zustand ──
@@ -92,7 +96,7 @@ function anwenden(z){if(!z.warte.length)return 0;
   if(b.art==='tempo')z.tempo=b.wert;
   else if(b.art==='last')lastSetzen(z,b.wert);
   else if(b.art==='neu'){var w=z.warte,a=z.angewandt;setze(z,b.wert,z.version+1);z.warte=w;z.angewandt=a;for(var k=0;k<w.length;k++)w[k].tick=0}
-  else if(WS_ARTEN[b.art]){var g0=z.wg?z.wg.gen:0;WS().befehl(z,b.art,b.wert);if(z.wg.gen!==g0){z.bau=null;z.weg=null;z.kar=null;z.war=null;z.per=null}}   // neue Welt = Gebautes weg
+  else if(WS_ARTEN[b.art]){var g0=z.wg?z.wg.gen:0;WS().befehl(z,b.art,b.wert);if(z.wg.gen!==g0){z.bau=null;z.weg=null;z.kar=null;z.war=null;z.per=null;z.ket=null}}   // neue Welt = Gebautes weg
   else if(BAU_ARTEN[b.art])BAU().befehl(z,b.art,b.wert,b.nr);
   else if(WEG_ARTEN[b.art])WEG().befehl(z,b.art,b.wert,b.nr);
   else if(WAR_ARTEN[b.art])WAR().befehl(z,b.art,b.wert);
@@ -129,7 +133,7 @@ function schritt(z,holen){
  if(z.rw)RW().ausgeben(z,neuL);
  if(z.wg)WS().ausgeben(z,neuL);
  if(z.bau)BAU().schritt(z);
- if(z.war){WAR().schritt(z);PERS().schritt(z,neuL)}      // G7: nach dem Bau (sehen fertige Lager und Baustellen dieses Ticks), vor den Karren
+ if(z.war){WAR().schritt(z);if(z.ket)KET().schritt(z);PERS().schritt(z,neuL)}      // G7: nach dem Bau (sehen fertige Lager und Baustellen dieses Ticks), vor den Karren
  if(z.bau&&KAR())KAR().schritt(z,neuL);              // G6c: Karren nach dem Bau (sehen die Änderungen dieses Ticks)
  if(z.weg)WEG().ausgeben(z,neuL);                    // G6b: nach dem Bau, damit das Paket alle Änderungen dieses Ticks sieht
  z.tick++;return neuL}
@@ -146,6 +150,7 @@ function abdruck(z){var h=0x811c9dc5,i;function f(v){h=Math.imul(h^(v&255),0x010
  if(z.kar)KAR().abdruck(z.kar,f);
  if(z.war)WAR().abdruck(z.war,f);
  if(z.per)PERS().abdruck(z.per,f);
+ if(z.ket)KET().abdruck(z.ket,f);
  return('0000000'+(h>>>0).toString(16)).slice(-8)}
 
 // ── Spielstand (G3): Zustand an einer Tickgrenze als einfache Zahlenlisten (JSON-tauglich) und zurück ──
@@ -160,7 +165,7 @@ function stand(z){var off=[],ganz=!z.rw,i;
  return{format:STAND,ganz:ganz,seed:z.seed>>>0,tick:z.tick,tempo:z.tempo,last:z.last,auftragNr:z.auftragNr,angewandt:z.angewandt,
   zufall:Array.from(z.zufall),fern:Array.from(z.fern),e:Array.from(z.e),offen:off,
   warte:z.warte.map(function(b){return[b.nr,b.tick,b.art,b.wert]}),
-  welt:z.wg?WS().stand(z.wg,z):null,bau:z.bau?BAU().stand(z.bau):null,weg:z.weg?WEG().stand(z.weg,z):null,kar:z.kar?KAR().stand(z.kar,z):null,war:z.war?WAR().stand(z.war):null,per:z.per?PERS().stand(z.per,z):null}}
+  welt:z.wg?WS().stand(z.wg,z):null,bau:z.bau?BAU().stand(z.bau):null,weg:z.weg?WEG().stand(z.weg,z):null,kar:z.kar?KAR().stand(z.kar,z):null,war:z.war?WAR().stand(z.war):null,per:z.per?PERS().stand(z.per,z):null,ket:z.ket?KET().stand(z.ket):null}}
 // Prüft streng (fremde oder kaputte Stände werden abgelehnt, nicht halb geladen). Gibt {z, auftraege} oder {fehler} zurück.
 function ausStand(d,version){
  function ganzZ(v,min,max){return typeof v==='number'&&v===Math.floor(v)&&v>=min&&v<=max}
@@ -176,7 +181,8 @@ function ausStand(d,version){
  z.zufall=Uint32Array.from(d.zufall);z.fern=Int32Array.from(d.fern);z.e=Int32Array.from(d.e);
  z.warte=d.warte.map(function(b){return{nr:b[0],tick:b[1],art:b[2],wert:b[3]}});
  if(d.bau){z.bau=BAU()&&BAU().ausStand(d.bau);if(!z.bau)return{fehler:'Bau'}}
- if(d.war){z.war=WAR()&&WAR().ausStand(d.war);if(!z.war)return{fehler:'Waren'}}      // G7: Personen (per) kommen nach der Welt (personen.js ausStand)
+ if(d.war){z.war=WAR()&&WAR().ausStand(d.war);if(!z.war)return{fehler:'Waren'}}
+ if(d.ket){z.ket=d.war&&KET()?KET().ausStand(d.ket):null;if(!z.ket)return{fehler:'Ketten'}}      // G7: Personen (per) kommen nach der Welt (personen.js ausStand)
  var auftraege=[];z.offen=d.offen.map(function(o){
   auftraege.push({nr:o[0],version:z.version,vorrang:0,art:'probe',region:o[1],ein:o[3],runden:o[4],faellig:o[2]});
   return{nr:o[0],region:o[1],faellig:o[2],ein:o[3],runden:o[4]}});

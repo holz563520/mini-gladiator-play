@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 31,
+ "typMax": 33,
  "objekte": [
   {
    "id": "baum-apfel",
@@ -219,6 +219,24 @@
    "name": "Storage Spot",
    "status": "geprueft",
    "datei": "obj/lager-platz.json"
+  },
+  {
+   "id": "natur-stumpf",
+   "version": 1,
+   "typ": 32,
+   "kat": "blume",
+   "name": "Tree Stump",
+   "status": "uebernommen",
+   "datei": "obj/natur-stumpf.json"
+  },
+  {
+   "id": "tier-reh",
+   "version": 1,
+   "typ": 33,
+   "kat": "tier",
+   "name": "Roe Deer",
+   "status": "uebernommen",
+   "datei": "obj/tier-reh.json"
   },
   {
    "id": "wand-stein",

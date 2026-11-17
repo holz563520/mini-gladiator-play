@@ -27,14 +27,14 @@ var ST=64, FELDER=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, MEER=2048, LS=6;
 var START_GOLD=10000, PREIS=1;                          // Thomas 16.11.2026: gutes Startkapital zum Testen, alles kostet 1 (Preise setzt er später)
 var FELD_TICKS=40, KANTE_TICKS=20;                      // Bauzeit: 2 s je Feld (Thomas), 1 s je Wand/Tür (Vorschlag)
 var MAX_AUSWAHL=1024, MAX_RAUM=4096, MAX_BAUSTELLEN=256, JE_TICK=64, WEG_SUCHE=16, MAX_MELD=256, MAX_ZIELE=16384, MAX_LINIE=256;   // G5c: Wandlinie höchstens 256 Kanten (Vorschlag)
-var ART_NAME=['','lager','werkstatt','unterkunft'], ART={lager:1,werkstatt:2,unterkunft:3};
+var ART_NAME=['','lager','werkstatt','unterkunft','kueche','jagdhuette'], ART={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5};   // G8: Werkstatt = Sägewerkstatt, neu Küche und Jägerhütte
 var WEG_NAME=['','trampelpfad','kiesweg','pflaster','steinstrasse'], WEG={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4}, WEG_TICKS=20;   // G6a: 1 s je Wegfeld (Vorschlag)
 // Kante (ein Byte): Bits 0–1 Typ, Bits 2–3 Herkunft, Bits 4–5 Bauzustand. Typ 0 mit Herkunft „entfernt“ = von Hand geöffnet, wächst nicht nach.
 var K_WAND=1, K_TUER=2, K_TOR=3, H_AUTO=1, H_HAND=2, H_WEG=3;
 // Bauzustand von Feld und Kante. 4/5 (Material reserviert/geliefert) kommen mit G7 zwischen „geplant“ und „in Arbeit“ in die Baustelle.
 var Z_PLAN=1, Z_ARBEIT=2, Z_FERTIG=3;
 // Feld-Merker (ein Byte): Bit 0 Dach, Bit 1 gerodet (Busch/Blume entfernt, bleibt auch nach Abriss), Bit 2 getrennt halten, Bits 4–5 Bauzustand
-var F_DACH=1, F_ROD=2, F_GETRENNT=4;
+var F_DACH=1, F_ROD=2, F_GETRENNT=4, F_STUMPF=8;      // G8: Bit 3 = Baum gefällt (Stumpf, Feld frei; wächst nach, ketten.js)
 // Baustelle: 0 läuft, 1 pausiert, 2 blockiert (ab G7), 3 abgebrochen (wird sofort entfernt)
 var B_LAEUFT=0, B_PAUSE=1, B_BLOCK=2;
 var N_=1, W_=2;                                          // Kantenart im Speicher: Nordkante, Westkante eines Felds (Süd/Ost = Nord/West des Nachbarn)
@@ -79,7 +79,7 @@ function boden(z,X,Y,C){if(Y<0||Y>=WY-1)return'edge';
  var q=qi(X,Y),h0=stufe(s.H[q]);
  for(var k=1;k<4;k++){var x=um(X+(k&1)),y=Y+(k>>1),t=sicht(z,x>>6,y>>6,C);if(!t)return'too_far';if(stufe(t.H[qi(x,y)])!==h0)return'not_flat'}
  var bio=s.B[q];if(bio<2||bio>9)return'water';if(s.W[q]||(z.bau&&wegAt(z.bau,X,Y)))return'road';
- var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;return n<=5||n===12?'nature':1}      // natur.js: 0–5 Bäume, 12 Fels sperren; Büsche und Blumen werden gerodet
+ var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;if(n<=5&&z.bau&&(flagAt(z.bau,X,Y)&F_STUMPF))return 1;return n<=5||n===12?'nature':1}      // natur.js: 0–5 Bäume, 12 Fels sperren; Büsche und Blumen werden gerodet; G8: ein Stumpf wird gerodet
 
 // ── Flutfüllung eines Raums ab einem Feld. Gibt die Felder als flache Liste [X,Y,…] zurück (höchstens MAX_RAUM+1 Felder). ──
 function fluten(b,X,Y,id,gesehen){var L=[X,Y],i=0;gesehen.add(fk(X,Y));
@@ -192,7 +192,7 @@ function bodenWeg(z,X,Y,C){if(Y<0||Y>=WY-1)return'edge';
  if(mx-mn>1)return'too_steep';
  var bio=s.B[q];if(bio<2||bio>9)return'water';
  if(s.W[q])return 0;                                                                     // Weltstraße: darf überbaut werden, Natur gibt es dort nicht
- var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;return n<=5||n===12?'nature':1}
+ var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;if(n<=5&&z.bau&&(flagAt(z.bau,X,Y)&F_STUMPF))return 1;return n<=5||n===12?'nature':1}
 function planWeg(z,w){var b=z.bau||LEER,C=new Map(),art=WEG[w.art],L=[],i,j,X,Y;
  if(!z.wg||!z.wg.ans)return{fehler:'no_world'};if(w.y+w.h>WY-1)return{fehler:'edge'};
  for(j=0;j<w.h;j++)for(i=0;i<w.w;i++){X=um(w.x+i);Y=w.y+j;
@@ -372,10 +372,10 @@ function ausStand(d){var i,j;
  var b=neu();b.gold=d.gold;b.id=d.id;b.nr=d.nr;b.zaehler=d.zaehler;
  for(i=0;i<d.st.length;i++){var e=d.st[i];if(!Array.isArray(e)||e.length!==2||!G(e[0],0,SX*8192)||((e[0]/8192)|0)>=SX||e[0]%8192>=SY||b.st.has(e[0])||!Array.isArray(e[1])||e[1].length%FW||!e[1].length)return null;
   var s=leerStk(),L=e[1];
-  for(j=0;j<L.length;j+=FW){var wv=FW===7?L[j+6]:0;if(!G(wv,0,52)||(wv&&(!(wv&7)||(wv&7)>4||!((wv>>4)&3)||(wv&8)||L[j+1])))return null;s.weg[L[j]]=wv;var q=L[j];if(!G(q,0,FELDER-1)||!G(L[j+1],0,3)||!G(L[j+2],0,4294967295)||!G(L[j+3],0,63)||!G(L[j+4],0,63)||!G(L[j+5],0,63)||(!L[j+1])!==(!L[j+2]))return null;
+  for(j=0;j<L.length;j+=FW){var wv=FW===7?L[j+6]:0;if(!G(wv,0,52)||(wv&&(!(wv&7)||(wv&7)>4||!((wv>>4)&3)||(wv&8)||L[j+1])))return null;s.weg[L[j]]=wv;var q=L[j];if(!G(q,0,FELDER-1)||!G(L[j+1],0,5)||!G(L[j+2],0,4294967295)||!G(L[j+3],0,63)||!G(L[j+4],0,63)||!G(L[j+5],0,63)||(!L[j+1])!==(!L[j+2]))return null;
    s.art[q]=L[j+1];s.raum[q]=L[j+2];s.kn[q]=L[j+3];s.kw[q]=L[j+4];s.flag[q]=L[j+5]}
   b.st.set(e[0],s);b.neu.add(e[0])}
- for(i=0;i<d.raeume.length;i++){var r=d.raeume[i];if(!Array.isArray(r)||r.length!==5||!G(r[0],1,d.id-1)||!G(r[1],1,3)||!G(r[2],1,MAX_RAUM)||!G(r[3],0,WX-1)||!G(r[4],0,WY-1)||b.raeume.has(r[0])||raumAt(b,r[3],r[4])!==r[0])return null;
+ for(i=0;i<d.raeume.length;i++){var r=d.raeume[i];if(!Array.isArray(r)||r.length!==5||!G(r[0],1,d.id-1)||!G(r[1],1,5)||!G(r[2],1,MAX_RAUM)||!G(r[3],0,WX-1)||!G(r[4],0,WY-1)||b.raeume.has(r[0])||raumAt(b,r[3],r[4])!==r[0])return null;
   b.raeume.set(r[0],{id:r[0],art:r[1],felder:r[2],hx:r[3],hy:r[4]})}
  var vor=0;for(i=0;i<d.auf.length;i++){var a=d.auf[i];if(!Array.isArray(a)||a.length!==6||!G(a[0],vor+1,d.nr-1)||!G(a[1],0,4294967295)||!G(a[2],0,2)||!Array.isArray(a[5])||a[5].length%3||!a[5].length||a[5].length>MAX_ZIELE*3||!G(a[3],0,a[5].length/3-1)||!G(a[4],0,FELD_TICKS))return null;
   for(j=0;j<a[5].length;j+=3)if(!G(a[5][j],0,3)||!G(a[5][j+1],0,WX-1)||!G(a[5][j+2],0,WY-1))return null;
@@ -386,6 +386,12 @@ function ausStand(d){var i,j;
 // ── Auskunft (für Tests, G5b und G5c) ──
 function feld(z,X,Y){var b=z.bau||LEER,s=stk(b,X,Y),q=qi(X,Y);if(!s||!s.art[q])return null;return{art:ART_NAME[s.art[q]],raum:s.raum[q],zustand:(s.flag[q]>>4)&3,dach:!!(s.flag[q]&F_DACH),gerodet:!!(s.flag[q]&F_ROD),getrennt:!!(s.flag[q]&F_GETRENNT)}}
 function kanteAn(z,X,Y,seite){var b=z.bau||LEER,k=kante(X,Y,seite);if(!k)return null;var v=kGet(b,k[0],k[1],k[2]);return{typ:v&3,herkunft:(v>>2)&3,zustand:(v>>4)&3}}
+// G8: Stumpf setzen (Baum gefällt) oder wegnehmen (Baum wächst nach). Ändert nur den Merker; Karte, Begehbarkeit und Wegversion erfahren es wie jede Bauänderung.
+function stumpf(z,X,Y,an){var b=z.bau;if(!b)return false;var s=stk(b,X,Y,!!an);if(!s)return false;var q=qi(X,Y),v=s.flag[q],n=an?v|F_STUMPF:v&~F_STUMPF;if(n===v)return false;
+ b.tk=z.tick;merk(b,X,Y);s.flag[q]=n;if(!an)leerRaeumen(b,X,Y);b.zaehler++;return true}
+function stumpfAn(z,X,Y){return !!(z.bau&&(flagAt(z.bau,X,Y)&F_STUMPF))}
+// Ist das Feld für einen nachwachsenden Baum frei (nichts gebaut, kein Weg, nicht gerodet)?
+function baumFrei(z,X,Y){var b=z.bau;if(!b)return true;return !artAt(b,X,Y)&&!wegAt(b,X,Y)&&!(flagAt(b,X,Y)&F_ROD)}
 function wegAn(z,X,Y){var v=wegAt(z.bau||LEER,X,Y);return v?{art:WEG_NAME[v&7],nr:v&7,zustand:(v>>4)&3}:null}
 function bytes(b){return b.st.size*FELDER*9}
 // G5b: Bau eines Kartenstücks für die Karte (Bildkern) als ein Puffer: art, kn, kw, flag je 4.096 Byte, danach raum (4.096 × 4 Byte), G6a: danach weg (4.096 Byte).
@@ -397,6 +403,6 @@ function geaendert(b){var L=[];b.neu.forEach(function(k){L.push(k)});b.neu.clear
 var B={START_GOLD:START_GOLD,PREIS:PREIS,FELD_TICKS:FELD_TICKS,KANTE_TICKS:KANTE_TICKS,MAX_AUSWAHL:MAX_AUSWAHL,MAX_RAUM:MAX_RAUM,MAX_BAUSTELLEN:MAX_BAUSTELLEN,JE_TICK:JE_TICK,WEG:WEG,WEG_NAME:WEG_NAME,WEG_TICKS:WEG_TICKS,pruefenWeg:pruefenWeg,weg:wegAn,
  ART:ART,ART_NAME:ART_NAME,K_WAND:K_WAND,K_TUER:K_TUER,K_TOR:K_TOR,H_AUTO:H_AUTO,H_HAND:H_HAND,H_WEG:H_WEG,Z_PLAN:Z_PLAN,Z_ARBEIT:Z_ARBEIT,Z_FERTIG:Z_FERTIG,B_LAEUFT:B_LAEUFT,B_PAUSE:B_PAUSE,B_BLOCK:B_BLOCK,
  ARTEN:ARTEN,befehl:befehl,schritt:schritt,abdruck:abdruck,stand:stand,ausStand:ausStand,pruefen:pruefen,pruefenWaende:pruefenWaende,sackgasse:sackgasse,boden:function(z,X,Y){return boden(z,X,Y,new Map())},
- feld:feld,kante:kanteAn,ziel:zielZu,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,haken:function(f){beiEntfernen=f}};
+ feld:feld,kante:kanteAn,ziel:zielZu,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,F_STUMPF:F_STUMPF,stumpf:stumpf,stumpfAn:stumpfAn,baumFrei:baumFrei,haken:function(f){beiEntfernen=f}};
 if(typeof module!=='undefined'&&module.exports)module.exports=B;else root.AT3BAU=B;
 })(typeof self!=='undefined'?self:this);
