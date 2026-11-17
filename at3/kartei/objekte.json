@@ -2,8 +2,17 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 34,
+ "typMax": 35,
  "objekte": [
+  {
+   "id": "arena-sand",
+   "version": 2,
+   "typ": 35,
+   "kat": "einrichtung",
+   "name": "Arena",
+   "status": "uebernommen",
+   "datei": "obj/arena-sand.json"
+  },
   {
    "id": "baum-apfel",
    "version": 1,

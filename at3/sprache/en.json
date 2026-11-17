@@ -285,6 +285,16 @@
   "markt.leer": "Sold out. The trader brings five new ones tomorrow; the road never runs dry.",
   "markt.zu": "The market stall is still being set up.", "markt.sprich": "{n} men for sale today.",
   "markt.gekauft": "{n} is yours now. He looks thrilled, in the way a man in chains can look thrilled.",
-  "markt.nein.gone": "Too late. That one is gone.", "markt.nein.no_gold": "Not enough gold. The trader laughs and keeps the chain.", "markt.nein.full": "No room for more men."
+  "markt.nein.gone": "Too late. That one is gone.", "markt.nein.no_gold": "Not enough gold. The trader laughs and keeps the chain.", "markt.nein.full": "No room for more men.",
+  "person.auf.11": "Off to the arena. He walks like a man who has read the program.",
+  "arena.titel": "Arena", "arena.zu": "The arena is still being raked.", "arena.frei": "No fight booked. The sand is waiting, and it is patient.",
+  "arena.planen": "Plan a fight", "arena.betreten": "Enter the arena", "arena.absage": "Call it off", "arena.laedt": "The arena opens its gates …",
+  "arena.termin": "Day {tag}, noon: {s} {l}", "arena.termin.kurz": "Fight booked for day {tag} at noon.", "arena.kaempfer": "Fighting: {n}",
+  "arena.zu0": "They work until mid-morning, then walk over.", "arena.zu1": "They are on their way. {da} of {n} at the gate.", "arena.zu2": "The crowd is seated. {da} of {n} at the gate.",
+  "arena.gebucht": "Fight booked for day {tag} at noon. The undertaker has been told, just in case.",
+  "arena.sieg": "Victory. {g} gold for the purse, and the crowd goes home happy.", "arena.niederlage": "Defeat. {g} gold anyway; the crowd paid to watch, not to win.",
+  "arena.letzt.sieg": "Last fight: {s} {l}, won, {g} gold.", "arena.letzt.niederlage": "Last fight: {s} {l}, lost, {g} gold.", "arena.letzt.ab": "Last fight: {s} {l}, called off. The crowd threw vegetables at nobody.",
+  "arena.nein.busy": "There is already a fight booked.", "arena.nein.nobody": "Nobody left to fight.", "arena.nein.no_arena": "The arena is still being raked.",
+  "arena.fehler": "The arena would not open: {e}"
  }
 }

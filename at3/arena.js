@@ -1,0 +1,102 @@
+// WAS DIE DATEI TUT: Arena im Weltkern von Arena Theory 3.0 (Schritt G9d2): feste Arena am Startplatz, Kampftermin am nächsten Spieltag, Kämpfer hören
+// rechtzeitig mit der Arbeit auf und gehen zur Arena, Ergebnis des Kampfs genau einmal in den Spielstand (Daten aus 1.0, Prämie in die Kasse).
+// Entscheidungen Thomas (17.11.2026): Aufstellung 1:1 aus 1.0 (3×3-Raster, ★-Held, fünf Gegner mit 1–5 Totenköpfen, Prämie wie 1.0 in die AT3-Kasse), im Kampffenster
+// (kampffenster.js) gerechnet und gezeigt; feste Arena auf der Karte (Skizze nach der 2.0-Sandgrube); Termin am nächsten Spieltag; Gegner kommen aus benannten Orten
+// der Welt: leichte aus der Nähe, 4–5 Totenköpfe aus fernen Städten (Auswahl im Kampffenster aus den Listen nah/fern, die hier entstehen).
+// Ablauf: Befehl arenaTermin (aus dem Kampffenster: Aufstellung, gewähltes Angebot, Kämpfer) → Termin am Tag danach. Ab RUF (3/8 des Tags) gehen die Kämpfer zur
+// Arena: freie sofort, Bauarbeiter und Säger/Köche am Ende ihres Arbeitsgangs, Träger erst nach dem Abliefern (nichts geht verloren); sie bekommen keine neuen
+// Aufgaben mehr. Ab KAMPF (Mittag) ist der Termin fällig, sobald alle an der Arena sind (spätestens SPAET = 1 Minute bei 1× danach): das Spiel öffnet das Kampffenster (Weltuhr steht). Befehl arenaErgebnis schreibt über
+// kampfanschluss.js KA.zurueckschreiben genau einmal zurück (Buch), bucht die Prämie und gibt die Kämpfer frei. arenaAbsage gibt sie ebenfalls frei.
+// Verletzte und Tote wirken in der Welt erst mit G9d3; heute stehen Zustand und 1.0-Daten nur im Datensatz des Gladiators.
+// Kerne: nur Weltkern, Kosten je Tick ein Vergleich, alles andere einmal je Sekunde oder bei einem Befehl. Hängt nicht von der Weltgröße ab (Regel 14).
+// Wiederverwendet: Orte und Herkunft aus gladiatoren.js (G9c1), Laufen und Aufgaben aus personen.js (G7), Zurückschreiben aus kampfanschluss.js (G9a).
+(function(root){
+'use strict';
+function PERS(){return root.AT3PERS||(typeof module!=='undefined'&&module.exports?require('./personen.js'):null)}
+function BAU(){return root.AT3BAU||(typeof module!=='undefined'&&module.exports?require('./bau.js'):null)}
+function KA(){return root.AT3Kampf||(typeof module!=='undefined'&&module.exports?require('./kampfanschluss.js'):null)}
+var STAND=1, TAG=12000, RUF=4500, KAMPF=6000, SPAET=1200, A_ARENA=11, BUCH=32, FERN_R=8, ORTE=8, MAX_IDS=64, MAX_GOLD=100000000, WX=64*9600;   // RUF/KAMPF: Ticks ab Tagesbeginn (Vorschlag)
+var ART=['','dorf','stadt','hafen','hafen'];
+function um(X){return X<0?X+WX:X>=WX?X-WX:X}
+function tag(z){return Math.floor(z.tick/TAG)}
+function neu(){return{ax:0,ay:0,platz:false,versuche:0,fern:[],n:1,termin:null,buch:{erledigt:{}},auf:null,letzt:null,da:0}}
+
+// ── Platz: erstes begehbares Feld ab 3 Felder südöstlich des Startplatzes (Spirale bis 6), nicht auf dem Marktstand ──
+function feld(z,a,x,y){var P=PERS();for(var r=0;r<=6;r++)for(var dy=-r;dy<=r;dy++)for(var dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+  var X=um(x+3+dx),Y=y+3+dy;if(X===a.mx&&Y===a.my)continue;if(P&&P.gangbar(z,X,Y))return[X,Y]}
+ return null}
+// Ferne Städte (Gegner mit 4–5 Totenköpfen): Städte und Hafenstädte im Umkreis von FERN_R Erdzellen, ohne die nahen Orte, die nächsten ORTE davon
+function ferne(z,a){var GL=root.AT3GLAD||require('./gladiatoren.js'),nah={};a.orte.forEach(function(o){nah[o[0]]=1});
+ return GL.orteUm(z,a.sx,a.sy,FERN_R,ORTE*4).filter(function(o){return !nah[o[0]]&&(o[1]===2||o[1]===4)}).slice(0,ORTE)}
+function platz(z,a,r){if(r.platz||!a.platz||z.tick%20)return;var f=feld(z,a,a.sx,a.sy);if(!f&&++r.versuche<10)return;f=f||[a.sx,a.sy+1];
+ r.ax=f[0];r.ay=f[1];r.fern=ferne(z,a);r.platz=true;a.zaehler++}
+
+// ── Kämpfer rufen und freigeben ──
+function ruft(z,id){var r=z.gla&&z.gla.ar,t=r&&r.termin;return !!t&&t.zu>=1&&t.ids.indexOf(id)>=0}
+function frei(z,ids){var P=PERS(),g=z.per;if(!g)return;for(var i=0;i<ids.length;i++){var c=P.finde(g,ids[i]);if(c&&c.auf===A_ARENA)P.los(g,c)}}
+function rufen(z,r,t){var P=PERS(),g=z.per;if(!g)return;var da=0;
+ for(var i=0;i<t.ids.length;i++){var c=P.finde(g,t.ids[i]);if(!c)continue;
+  if(c.auf===A_ARENA){if(c.zust===P.Z_ARBEITET)da++;continue}
+  var Z=c.zust,los=Z===P.Z_FREI||Z===P.Z_WARTET||(Z===P.Z_ARBEITET&&(c.auf===P.A_BAUEN||((c.auf===6||c.auf===7)&&!c.kt)));   // 6 sägen, 7 kochen: am Ende eines Arbeitsgangs
+  if(!los)continue;P.los(g,c);c.auf=A_ARENA;P.geh(z,c,r.ax,r.ay)}
+ if(da!==r.da){r.da=da;z.gla.zaehler++}}
+
+function schritt(z){var a=z.gla;if(!a)return;var r=a.ar||(a.ar=neu());platz(z,a,r);var t=r.termin;if(!t||z.tick%20)return;
+ var p=z.tick-t.tag*TAG;
+ if(t.zu<1&&p>=RUF){t.zu=1;a.zaehler++}
+ if(t.zu<2&&p>=KAMPF&&(r.da>=t.ids.length||p>=KAMPF+SPAET)){t.zu=2;a.zaehler++}      // fällig: ab Mittag, sobald alle an der Arena sind, spätestens SPAET danach
+ if(t.zu>=1){var da=z.per?t.ids.filter(function(id){return !!PERS().finde(z.per,id)}):[];if(!da.length){r.termin=null;r.letzt={id:t.id,label:t.label,skulls:t.skulls,ort:t.ort,abgesagt:1,tag:tag(z)};a.zaehler++;return}
+  rufen(z,r,t)}}
+
+// ── Befehle ──
+function istG(g){return !!g&&typeof g==='object'&&!Array.isArray(g)&&typeof g.name==='string'&&!!g.stats&&typeof g.stats==='object'}
+function ganz(v,a,b){return typeof v==='number'&&v===Math.floor(v)&&v>=a&&v<=b}
+function istOrt(o){return o===null||(!!o&&typeof o==='object'&&typeof o.name==='string'&&o.name.length<=80)}
+var ARTEN={
+ arenaTermin:function(w){return !!w&&Array.isArray(w.ids)&&w.ids.length>=1&&w.ids.length<=MAX_IDS&&w.ids.every(function(i){return ganz(i,1,2147483647)})&&
+  !!w.offer&&typeof w.offer==='object'&&Array.isArray(w.offer.enemy)&&w.offer.enemy.length>=1&&w.offer.enemy.length<=40&&w.offer.enemy.every(function(u){return !!u&&istG(u.g)})&&
+  (w.auf===null||(!!w.auf&&typeof w.auf==='object'&&!Array.isArray(w.auf)))&&ganz(w.seed,0,4294967295)&&typeof w.label==='string'&&w.label.length<=200&&ganz(w.skulls,1,5)&&istOrt(w.ort)},
+ arenaAbsage:function(w){return !!w&&typeof w.id==='string'&&w.id.length<=40},
+ arenaErgebnis:function(w){return !!w&&typeof w.id==='string'&&w.id.length<=40&&ganz(w.praemie,0,MAX_GOLD)&&ganz(w.gewonnen,0,2)&&
+  (w.auf===null||(!!w.auf&&typeof w.auf==='object'&&!Array.isArray(w.auf)))&&Array.isArray(w.einheiten)&&w.einheiten.length<=128&&
+  w.einheiten.every(function(e){return !!e&&typeof e.key==='string'&&(e.g===null||istG(e.g))})}};
+function melde(a,m){a.meld.push(m);if(a.meld.length>8)a.meld.shift();a.zaehler++}
+function befehl(z,art,w){var a=z.gla;if(!a||!a.platz)return;var r=a.ar||(a.ar=neu()),t=r.termin,d=tag(z);
+ if(art==='arenaTermin'){
+  if(!r.platz){melde(a,{tick:z.tick,arena:1,ok:0,grund:'no_arena'});return}
+  if(t){melde(a,{tick:z.tick,arena:1,ok:0,grund:'busy'});return}
+  var ids=[];w.ids.forEach(function(id){if(a.per[id]&&ids.indexOf(id)<0&&z.per&&PERS().finde(z.per,id))ids.push(id)});
+  if(!ids.length){melde(a,{tick:z.tick,arena:1,ok:0,grund:'nobody'});return}
+  r.termin={id:'a'+(r.n++),tag:d+1,ids:ids,offer:JSON.parse(JSON.stringify(w.offer)),auf:w.auf?JSON.parse(JSON.stringify(w.auf)):null,seed:w.seed>>>0,label:w.label,skulls:w.skulls,ort:w.ort?{name:w.ort.name,art:w.ort.art||'',ortId:ganz(w.ort.ortId,0,1e9)?w.ort.ortId:null}:null,zu:0};
+  if(w.auf)r.auf=JSON.parse(JSON.stringify(w.auf));
+  r.da=0;melde(a,{tick:z.tick,arena:1,ok:1,id:r.termin.id,tag:r.termin.tag});return}
+ if(art==='arenaAbsage'){if(!t||t.id!==w.id)return;frei(z,t.ids);r.termin=null;r.letzt={id:t.id,label:t.label,skulls:t.skulls,ort:t.ort,abgesagt:1,tag:d};a.zaehler++;return}
+ if(art==='arenaErgebnis'){if(!t||t.id!==w.id)return;
+  var k={};t.ids.forEach(function(id){var p=a.per[id];if(p&&p.g&&p.g.id!=null)k[String(p.g.id)]=p});
+  var erg={auftrag:t.id,sieger:w.gewonnen,zeit:0,einheiten:w.einheiten.map(function(e){return{key:e.key,g:e.g,tot:!!e.tot,unten:!!e.unten,leben:+e.leben||0,verletzt:!!e.verletzt,schwer:!!e.schwer,
+   verletzungen:Array.isArray(e.verletzungen)?e.verletzungen:[],ursache:typeof e.ursache==='string'?e.ursache:''}})};
+  if(!KA().zurueckschreiben(r.buch,{id:t.id},erg,k))return;
+  var ks=Object.keys(r.buch.erledigt);if(ks.length>BUCH)ks.slice(0,ks.length-BUCH).forEach(function(x){delete r.buch.erledigt[x]});
+  if(!z.bau)z.bau=BAU().neu();z.bau.gold+=w.praemie;z.bau.zaehler++;
+  if(w.auf)r.auf=JSON.parse(JSON.stringify(w.auf));
+  frei(z,t.ids);r.termin=null;r.letzt={id:t.id,label:t.label,skulls:t.skulls,ort:t.ort,gewonnen:w.gewonnen,praemie:w.praemie,tag:d};melde(a,{tick:z.tick,arena:1,ok:1,ende:t.id});return}}
+
+// ── An das Spiel ──
+function kurz(z){var a=z.gla,r=a&&a.ar;if(!r)return null;var t=r.termin;
+ return{platz:r.platz,x:r.ax,y:r.ay,letzt:r.letzt,da:r.da,termin:t?{id:t.id,tag:t.tag,ruf:t.tag*TAG+RUF,kampf:t.tag*TAG+KAMPF,ids:t.ids.slice(),label:t.label,skulls:t.skulls,ort:t.ort,zu:t.zu,n:t.offer.enemy.length}:null}}
+function ortO(o){return{art:ART[o[1]],ortId:o[0],name:o[4],x:o[2],y:o[3]}}
+// Volle Daten fürs Kampffenster (nur auf Nachfrage): Kader (alle lebenden Gladiatoren mit 1.0-Daten), gespeicherte Aufstellung, Orte nah/fern, Termin mit Angebot
+function daten(z){var a=z.gla,r=a&&a.ar;if(!r||!z.per)return null;var P=PERS(),K=[];
+ for(var i=0;i<z.per.p.length;i++){var id=z.per.p[i].id,p=a.per[id];if(!p||!p.g||(p.zustand&&p.zustand.tot)||p.g.dead)continue;K.push({pid:id,g:p.g,her:p.her,geb:p.geb})}
+ return JSON.parse(JSON.stringify({kader:K,auf:r.auf,orte:{nah:a.orte.map(ortO),fern:r.fern.map(ortO)},termin:r.termin,heute:tag(z),gold:z.bau?z.bau.gold:BAU().START_GOLD}))}
+
+function abdruck(r,f){if(!r){f(-1);return}f(r.platz?1:0);f(r.ax);f(r.ay);f(r.n);f(r.da);f(r.fern.length);var t=r.termin;f(t?t.tag:-1);f(t?t.zu:-1);f(t?t.ids.length:0);if(t)t.ids.forEach(f);
+ f(Object.keys(r.buch.erledigt).length)}
+function stand(r){return r?JSON.parse(JSON.stringify({format:STAND,ax:r.ax,ay:r.ay,platz:r.platz,versuche:r.versuche,fern:r.fern,n:r.n,termin:r.termin,buch:r.buch,auf:r.auf,letzt:r.letzt,da:r.da})):null}
+function ausStand(d){if(d==null)return null;if(typeof d!=='object'||d.format!==STAND||!ganz(d.ax,0,WX-1)||!ganz(d.ay,0,1e9)||!Array.isArray(d.fern)||!ganz(d.n,1,2147483647)||!d.buch||typeof d.buch.erledigt!=='object')return false;
+ var t=d.termin;if(t!==null&&(!t||typeof t.id!=='string'||!ganz(t.tag,0,1e9)||!Array.isArray(t.ids)||!t.ids.every(function(i){return ganz(i,1,2147483647)})||!ganz(t.zu,0,2)||!t.offer||!Array.isArray(t.offer.enemy)||!t.offer.enemy.every(function(u){return u&&istG(u.g)})))return false;
+ var r=JSON.parse(JSON.stringify(d));delete r.format;r.platz=!!r.platz;r.versuche=r.versuche|0;r.da=r.da|0;r.auf=r.auf||null;r.letzt=r.letzt||null;return r}
+
+var AR={STAND:STAND,TAG:TAG,RUF:RUF,KAMPF:KAMPF,SPAET:SPAET,A_ARENA:A_ARENA,ARTEN:ARTEN,neu:neu,schritt:schritt,befehl:befehl,ruft:ruft,kurz:kurz,daten:daten,abdruck:abdruck,stand:stand,ausStand:ausStand};
+if(typeof module!=='undefined'&&module.exports)module.exports=AR;else root.AT3ARENA=AR;
+})(typeof self!=='undefined'?self:this);

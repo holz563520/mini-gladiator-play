@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='1426653a', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='8476683d', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -121,7 +121,7 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
   beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
   beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
   beiTier:function(k){if(BAUW&&!fpAn)return false;tierKarte(k);return true},      // G8: Reh antippen
-  beiFest:function(e){if(BAUW&&!fpAn)return false;if(e.art==='markt-stand'){marktKarte();return true}return false},      // G9c1: Marktstand antippen
+  beiFest:function(e){if(BAUW&&!fpAn)return false;if(e.art==='markt-stand'){marktKarte();return true}if(e.art==='arena-sand'){arenaKarte();return true}return false},      // G9c1: Marktstand antippen, G9d2: Arena
   beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.bweg?', '+t('welt.bweg.'+f.bweg[0])+(f.bweg[1]<3?' ('+t('bau.zustand.'+f.bweg[1])+')':''):f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
@@ -230,14 +230,50 @@ function anschluss(){if(KAL)return KAL;KAL=new Promise(function(ok,no){if(window
  s.onload=function(){ok(window.AT3Kampf)};s.onerror=function(){KAL=null;no(new Error('kampfanschluss.js'))};document.head.appendChild(s)});return KAL}
 function herkunftText(g){var h=g.her,b=g.geb;if(!h)return '';var a=t('glad.ort.'+h.art);return b&&b.ortId!==h.ortId?t('glad.her2',{o:h.name,a:a,b:b.name}):t('glad.her1',{o:h.name,a:a})}
 function beiGladiatoren(d){GLAD=d.meld||null;window.AT3SPIEL.glad=GLAD;
- if(KARTE)KARTE.fest(GLAD&&GLAD.platz?[{art:'markt-stand',x:GLAD.markt[0],y:GLAD.markt[1]}]:[]);
+ var AR=GLAD&&GLAD.arena;if(KARTE)KARTE.fest(GLAD&&GLAD.platz?[{art:'markt-stand',x:GLAD.markt[0],y:GLAD.markt[1]}].concat(AR&&AR.platz?[{art:'arena-sand',x:AR.x,y:AR.y}]:[]):[]);      // G9d2: feste Arena
  var b=GLAD&&GLAD.braucht;if(b){var key=b.tag+':'+b.lot+':'+b.start;if(glaWarte!==key){glaWarte=key;
   anschluss().then(function(KA){return KA.wuerfle({seed:((WSEED>>>0)^Math.imul(b.tag+1,0x9e3779b1))>>>0,n:b.lot+b.start},'',V)}).then(function(L){
    KERN.befehl('glaLot',{tag:b.tag,lot:L.slice(0,b.lot),start:L.slice(b.lot)})},function(e){glaWarte='';console.warn('Sklavenmarkt:',e)})}}
  var M=GLAD&&GLAD.meld,m=M&&M[M.length-1];if(m&&m.tick!==beiGladiatoren.letzt){beiGladiatoren.letzt=m.tick;if(window.AT3SPIEL.angetippt==='markt'){$('weltInfo').textContent=m.ok?t('markt.gekauft',{n:m.name}):t('markt.nein.'+m.grund);
    if(m.ok)aufdecken(m);else if(m.grund==='no_gold'&&HANDEL){MK.quote=zieh('broke');sprich(MK.quote)}}}
  if(window.AT3SPIEL.angetippt==='markt')marktKarte(true);
- if(PERSON&&window.AT3SPIEL.angetippt==='person:'+PERSON.id){personKarte.still=true;personKarte(PERSON)}}
+ if(PERSON&&window.AT3SPIEL.angetippt==='person:'+PERSON.id){personKarte.still=true;personKarte(PERSON)}
+ arenaMeld()}
+// ── G9d2 Arena (Thomas 17.11.2026): feste Arena am Startplatz (Weltkern arena.js). Antippen zeigt Termin oder „Plan a fight“. Planen öffnet das Kampffenster mit der
+// Aufstellung 1:1 aus 1.0 (kampffenster.js, Modus wahl); „KAMPF!“ dort bucht den Termin am nächsten Spieltag (Befehl arenaTermin). Ist er fällig (alle an der Arena
+// oder spät genug), öffnet das Spiel das Kampffenster von selbst (Modus kampf); das Ergebnis geht genau einmal mit arenaErgebnis in den Weltkern. Die Weltuhr steht,
+// solange das Kampffenster offen ist. Kerne: hier nur Anzeige und Befehle; gerechnet wird im Weltkern und im Kampffenster (1.0). ──
+var ARENA_OFFEN=false, arenaAuto='', arenaTempo=0;
+function arenaPause(){arenaTempo=KERN.zustand.tempo;if(arenaTempo)KERN.befehl('tempo',0)}
+function arenaWeiter(){if(arenaTempo)KERN.befehl('tempo',arenaTempo);arenaTempo=0}
+function arenaMeld(){var A=GLAD&&GLAD.arena,T=A&&A.termin,M=GLAD&&GLAD.meld,m=M&&M[M.length-1];
+ if(m&&m.arena&&m.tick!==arenaMeld.letzt){arenaMeld.letzt=m.tick;if(!m.ok)$('weltInfo').textContent=t('arena.nein.'+m.grund)}
+ if(T&&T.zu===2&&!ARENA_OFFEN&&arenaAuto!==T.id){arenaAuto=T.id;arenaFenster('kampf')}
+ if(window.AT3SPIEL.angetippt==='arena')arenaKarte(true)}
+function arenaLetzt(L){var w={s:'☠'.repeat(L.skulls|0),l:L.label,g:L.praemie|0};return t(L.abgesagt?'arena.letzt.ab':L.gewonnen?'arena.letzt.sieg':'arena.letzt.niederlage',w)}
+function arenaKarte(still){var A=GLAD&&GLAD.arena,e=$('karte'),info=OBJTXT['arena-sand.info']||'',T=A&&A.termin,h;window.AT3SPIEL.angetippt='arena';
+ if(!A||!A.platz){e.textContent=t('arena.zu');return}
+ h='<b>'+esc(t('arena.titel'))+'</b>'+(info&&!still?'<br><span class="leise">'+esc(info)+'</span>':'');
+ if(T)h+='<br>'+esc(t('arena.termin',{tag:T.tag+1,s:'☠'.repeat(T.skulls),l:T.label}))+'<br><span class="leise">'+esc(t('arena.kaempfer',{n:T.ids.map(personName).join(', ')}))+'</span><br><span class="leise">'+
+  esc(t('arena.zu'+T.zu,{da:A.da|0,n:T.ids.length}))+'</span><br>'+(T.zu===2?'<button class="knopf klein" data-arena="kampf">'+esc(t('arena.betreten'))+'</button> ':'')+'<button class="knopf klein" data-arena="absage">'+esc(t('arena.absage'))+'</button>';
+ else h+='<br><span class="leise">'+esc(A.letzt?arenaLetzt(A.letzt):t('arena.frei'))+'</span><br><button class="knopf klein" data-arena="wahl">'+esc(t('arena.planen'))+'</button>';
+ e.innerHTML=h;[].forEach.call(e.querySelectorAll('[data-arena]'),function(b){b.disabled=ARENA_OFFEN;b.onclick=function(){var w=b.dataset.arena;if(w==='absage'){KERN.befehl('arenaAbsage',{id:T.id});return}arenaFenster(w)}});
+ if(!still)sprich(t('arena.titel')+'. '+(T?t('arena.termin.kurz',{tag:T.tag+1}):t('arena.frei')))}
+function arenaFenster(modus){if(ARENA_OFFEN)return;ARENA_OFFEN=true;$('weltInfo').textContent=t('arena.laedt');var D=null;
+ function fin(){ARENA_OFFEN=false;if(window.AT3SPIEL.angetippt==='arena')arenaKarte(true)}
+ Promise.all([anschluss(),KERN.glaDaten({arena:1})]).then(function(r){var KA=r[0];D=r[1];if(!D||(modus==='kampf'&&!D.termin))throw new Error('no data');
+  var a={id:modus==='kampf'?'arena-'+D.termin.id:'arena-wahl-'+Date.now(),modus:modus,kader:D.kader.map(function(k){return{g:k.g}}),auf:D.auf,orte:D.orte,heute:D.heute,gold:D.gold,
+   seed:modus==='kampf'?D.termin.seed:1,termin:D.termin};
+  return KA.fenster(a,{basis:'',v:V,pause:arenaPause,weiter:arenaWeiter})}).then(function(erg){
+  if(modus==='wahl'&&erg&&erg.termin){var T=erg.termin,P={};D.kader.forEach(function(k){P[String(k.g.id)]=k.pid});
+   var ids=(T.gids||[]).map(function(g){return P[g]}).filter(Boolean);if(!ids.length)return;
+   KERN.befehl('arenaTermin',{ids:ids,offer:T.offer,auf:T.auf||null,seed:crypto.getRandomValues(new Uint32Array(1))[0]>>>0,label:String(T.label||'').slice(0,200),skulls:Math.min(5,Math.max(1,T.skulls|0)),ort:T.ort||null});
+   $('weltInfo').textContent=t('arena.gebucht',{tag:D.heute+2});sprich(t('arena.termin.kurz',{tag:D.heute+2}))}
+  else if(modus==='kampf'&&erg&&erg.arena){
+   KERN.befehl('arenaErgebnis',{id:D.termin.id,praemie:Math.max(0,erg.praemie|0),gewonnen:erg.gewonnen?1:0,auf:erg.auf||null,einheiten:erg.einheiten.map(function(u){return{key:u.key,g:u.g||null,tot:u.tot,unten:u.unten,
+    leben:u.leben,verletzt:u.verletzt,schwer:u.schwer,verletzungen:u.verletzungen,ursache:u.ursache}})});
+   var txt=t(erg.gewonnen?'arena.sieg':'arena.niederlage',{g:erg.praemie|0});$('weltInfo').textContent=txt;sprich(txt)}
+  fin()},function(e){fin();var x=e&&e.message||'';if(x!=='abgebrochen'&&x!=='closed'){console.warn('Arena:',e);$('weltInfo').textContent=t('arena.fehler',{e:x})}})}
 // ── G9c2 Kandidatenkarte wie in 1.0 (Thomas 17.11.2026): Reiter I–V, Porträt aus 1.0, vor dem Kauf verdeckt (Kampfwert, Talent, Klassen, Eigenschaften „?“),
 // nach dem Kauf Aufdeckkarte mit Kampfwert, Talentstufe, Klassen, Eigenschaften, Plus/Minus und Seltenheit (Fortuna); dazu die Händlersprüche aus 1.0, englisch.
 // Rechnen im Kampfkern (KA.karten: barracks info/analysis, buy-odds, Porträt auf OffscreenCanvas), volle Daten nur auf Nachfrage vom Weltkern (glaDaten).
@@ -446,7 +482,7 @@ function texteSetzen(){document.title=t('spiel.titel');$('titel').textContent=t(
  $('weltTitel').textContent=t('welt.titel');$('bodenTitel').textContent=t('spiel.boden');$('bodenInfo').textContent=t('spiel.bodenInfo');$('karte').textContent=t('spiel.tippen');
  $('messTitel').textContent=t('mess.titel');$('messZu').textContent=t('mess.schliessen');$('messKopie').textContent=t('mess.kopieren');$('messAuf').textContent=t('mess.oeffnen');$('stimmeKnopf').textContent=t('stimme.aus');$('fpKnopf').textContent=t('fp.knopf');
  $('status').textContent=t('spiel.laedt');uhrKnoepfe()[0].textContent=t('uhr.pause');$('uhrZeit').textContent=t('uhr.zeit',{t:'–'})}
-window.AT3SPIEL={fp:function(){return fpAn},fpUmschalten:fpUmschalten,karte:function(){return KARTE},spielstand:function(){return SPIELSTAND},wahl:function(){return WAHL},stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
+window.AT3SPIEL={fp:function(){return fpAn},arena:function(m){arenaFenster(m)},tempo:function(){return KERN&&KERN.zustand?KERN.zustand.tempo:null},fpUmschalten:fpUmschalten,karte:function(){return KARTE},spielstand:function(){return SPIELSTAND},wahl:function(){return WAHL},stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
 
 Promise.all([holeJson('sprache/en.json'),holeJson('kartei/text-en.json'),holeJson('kartei/objekte.json'),holeJson('kartei/budgets.json'),holeJson('spiel-budgets.json')])
 .then(function(d){TXT=d[0].texte;OBJTXT=d[1].texte;kartei=d[2];B=d[3];BUDGETS=d[4];mess.datenMs=performance.now();texteSetzen();platzWaehlen();

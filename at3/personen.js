@@ -29,7 +29,7 @@ var ST=64, SX=9600, WX=ST*SX, WY=ST*4800, STAND=2, M31=2147483647, ALLE=127;
 var N_START=5, MAX_P=512, JE_TICK=2, FRIST=20, WIEDER=200, MAX_VERSUCH=3, NAH=3, LEERLAUF=40, XP_TRAG=2, XP_BAU=4, ALT=1200;   // Vorschlagswerte (Ticks: 20 = 1 s)
 var LEN_O=256000, LEN_D=362039, VF=128;      // wie karren.js: Tempo 100 = 1 Feld/s
 var Z_FREI=0, Z_SUCHT=1, Z_GEHT=2, Z_ARBEITET=3, Z_WARTET=4, ZUST=['idle','seeks','walks','works','waits'];
-var A_HOLEN=1, A_BRINGEN=2, A_BAUEN=3, A_RUECK=4;
+var A_HOLEN=1, A_BRINGEN=2, A_BAUEN=3, A_RUECK=4, A_ARENA=11;      // G9d2: 11 zur Arena (arena.js)
 // Gründe: 1–6 wie wegsuche.js, 7 too_far, 8 changed
 var DX=[0,-1,0,1], DY=[-1,0,1,0];
 function umX(X){return X<0?X+WX:X>=WX?X-WX:X}
@@ -68,9 +68,10 @@ function warten(z,c,code){los(z.per,c);c.zust=Z_WARTET;c.t=z.tick+WIEDER;c.grund
 function scheitern(z,c,code){var Wn=W(),g=z.war,o;
  if(c.auf===A_HOLEN){o=Wn.finde(g,c.o);if(o&&o.tt===Wn.T_PERSON&&o.ti===c.id&&o.zu===Wn.A_RES){o.tt=0;o.ti=0;o.grund=1;o.sperr=z.tick+WIEDER;if(++o.versuch>=MAX_VERSUCH)Wn.abbrechen(z,o)}}
  else if(c.auf===A_BRINGEN||c.auf===A_RUECK){o=Wn.finde(g,c.o);if(o&&o.tt===Wn.T_PERSON&&o.ti===c.id)Wn.abbrechen(z,o);Wn.ablegen(z,Wn.T_PERSON,c.id,c.x,c.y)}
- else if(c.auf>=5&&z.ket)KET().gescheitert(z,c);
+ else if(c.auf>=5&&c.auf<A_ARENA&&z.ket)KET().gescheitert(z,c);
  warten(z,c,code)}
 function ankunft(z,c){var Wn=W(),g=z.war,o,P;c.pf=null;c.tp=null;c.keys=[];c.i=0;c.nx=-1;c.ny=-1;c.sub=0;
+ if(c.auf===A_ARENA){c.zust=Z_ARBEITET;return}      // G9d2: an der Arena warten, bis der Kampf beginnt
  if(c.auf>=5){if(z.ket)KET().ankunft(z,c);else los(z.per,c);return}      // G8
  if(c.auf===A_HOLEN){o=Wn.finde(g,c.o);
   if(!o||o.tt!==Wn.T_PERSON||o.ti!==c.id||!Wn.aufnehmen(z,o,Wn.T_PERSON,c.id,c.x,c.y)){if(o&&o.tt===Wn.T_PERSON&&o.ti===c.id){o.tt=0;o.ti=0}los(z.per,c);return}
@@ -89,6 +90,7 @@ function richtung(dx,dy){return dx>0?0:dx<0?3:dy>0?1:2}
 function traegt(c){return c.auf===A_BRINGEN||c.auf===A_RUECK}
 function bewegen(z,g,c){var Wn=W(),o;
  if(c.zust===Z_WARTET){if(z.tick>=c.t){c.zust=Z_FREI;c.grund=0}return}
+ if(c.zust===Z_ARBEITET&&c.auf===A_ARENA)return;      // G9d2
  if(c.zust===Z_ARBEITET&&c.auf>=5){if(z.ket)KET().werk(z,c);else los(g,c);return}      // G8: Arbeit der Ketten
  if(c.zust===Z_ARBEITET){var a=bauVon(z,c.site);if(!a||a.zu!==BAU().B_LAEUFT){los(g,c);return}
   if(z.ket&&!a.rest&&KET().essPause(z,c)){los(g,c);return}      // G8: erst essen und trinken
@@ -105,7 +107,8 @@ function bewegen(z,g,c){var Wn=W(),o;
  var v=(c.tp[c.i+1]||1)*VF;if(traegt(c))v=Math.floor(v*(200+c.f0)/200);if(c.hu)v>>=1;c.sub+=v;
  if(c.sub>=c.len){c.x=c.nx;c.y=c.ny;c.nx=-1;c.ny=-1;c.sub=0;c.i++}}
 function zuteilen(z,g){var Wn=W(),war=z.war,b=z.bau,F=[],i,n=0,q;if(!b)return;
- for(i=0;i<g.p.length;i++)if(g.p[i].zust===Z_FREI)F.push(g.p[i]);if(!F.length)return;
+ var AR=z.gla&&z.gla.ar&&z.gla.ar.termin&&z.gla.ar.termin.zu>=1?root.AT3ARENA||require('./arena.js'):null;      // G9d2: zur Arena Gerufene bekommen keine Arbeit
+ for(i=0;i<g.p.length;i++)if(g.p[i].zust===Z_FREI&&!(AR&&AR.ruft(z,g.p[i].id)))F.push(g.p[i]);if(!F.length)return;
  if(z.ket)KET().essen(z,g,F);      // G8: Versorgung vor Arbeit
  function beste(x,y,bit,fk){var best=-1,bw=0;for(var j=0;j<F.length;j++){var c=F[j];if(!c||!(c.darf&bit)||!WE().nah({x0:c.x,y0:c.y,x1:x,y1:y}))continue;var d=Wn.weit(c.x,c.y,x,y),w=(fk?c[fk]*8:0)-(d>4096?4096:d);if(best<0||w>bw){best=j;bw=w}}return best}
  // Lieferaufträge: zuerst Material für Baustellen und alles, was schon länger als ALT wartet (nichts verhungert), dann der Rest nach Alter
@@ -159,7 +162,7 @@ function ausStand(d,z){var i,j;
  if(!d||(d.format!==STAND&&d.format!==1)||!G(d.nr,1,M31)||!Array.isArray(d.p)||d.p.length>MAX_P||!Array.isArray(d.lauf)||d.lauf.length>MAX_P)return null;
  var g=neu(),N=d.format===1?N_ALT:FELDER.length;g.nr=d.nr;      // Form 1 (G7): ohne die Felder der Ketten, alle neuen Rollen erlaubt
  var GR={id:[1,d.nr-1],x:[0,WX-1],y:[0,WY-1],nx:[-1,WX-1],ny:[-1,WY-1],sub:[0,LEN_D+VF*400],len:[0,LEN_D],zust:[0,4],t:[0,M31],i:[0,1<<20],ab:[0,M31],job:[-1,M31],versuch:[0,MAX_VERSUCH+1],grund:[0,16],dir:[0,3],
-  auf:[0,10],o:[0,M31],site:[0,M31],zx:[-1,WX-1],zy:[-1,WY-1],darf:[0,ALLE],f0:[0,100],f1:[0,100],e0:[0,M31],e1:[0,M31],leer:[0,M31],
+  auf:[0,11],o:[0,M31],site:[0,M31],zx:[-1,WX-1],zy:[-1,WY-1],darf:[0,ALLE],f0:[0,100],f1:[0,100],e0:[0,M31],e1:[0,M31],leer:[0,M31],
   f2:[0,100],f3:[0,100],f4:[0,100],f5:[0,100],f6:[0,100],e2:[0,M31],e3:[0,M31],e4:[0,M31],e5:[0,M31],e6:[0,M31],n0:[0,M31],n1:[0,M31],n2:[0,M31],n3:[0,M31],n4:[0,M31],n5:[0,M31],n6:[0,M31],
   kx:[-1,WX-1],ky:[-1,WY-1],kr:[0,4294967295],kt:[0,M31],em:[0,M31],ew:[0,M31],et:[0,M31],hu:[0,3]};
  for(i=0;i<d.p.length;i++){var a=d.p[i];if(!Array.isArray(a)||a.length!==N+2)return null;var c=person(1,0,0);

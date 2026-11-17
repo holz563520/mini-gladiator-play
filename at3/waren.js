@@ -158,12 +158,13 @@ var ARTEN={
  ketten:function(w){return !!w&&G(w.an,1,1)},
  lieferung:function(w){return !!w&&G(w.von,1,4294967295)&&G(w.nach,1,4294967295)&&w.von!==w.nach&&G(w.ware,0,NW-1)&&G(w.menge,1,MAX_MENGE)},
  personRolle:function(w){return !!w&&G(w.id,1,M31)&&G(w.darf,0,127)},
- gladiatoren:function(w){return GLA().ARTEN.gladiatoren(w)},glaLot:function(w){return GLA().ARTEN.glaLot(w)},glaKauf:function(w){return GLA().ARTEN.glaKauf(w)}};      // G9c1
+ gladiatoren:function(w){return GLA().ARTEN.gladiatoren(w)},glaLot:function(w){return GLA().ARTEN.glaLot(w)},glaKauf:function(w){return GLA().ARTEN.glaKauf(w)},
+ arenaTermin:function(w){return GLA().ARTEN.arenaTermin(w)},arenaAbsage:function(w){return GLA().ARTEN.arenaAbsage(w)},arenaErgebnis:function(w){return GLA().ARTEN.arenaErgebnis(w)}};      // G9d2      // G9c1
 function befehl(z,art,w){
  if(art==='wirtschaft'){if(z.war)return;z.war=neu(w.x,w.y);var P=PERS();if(P)P.start(z,w.x,w.y);return}
  if(!z.war)return;
  if(art==='ketten'){var Kt=KET();if(Kt&&!z.ket)Kt.start(z);return}
- if(art==='gladiatoren'||art==='glaLot'||art==='glaKauf'){GLA().befehl(z,art,w);return}      // G9c1: Gladiatoren und Sklavenmarkt
+ if(art==='gladiatoren'||art==='glaLot'||art==='glaKauf'||art==='arenaTermin'||art==='arenaAbsage'||art==='arenaErgebnis'){GLA().befehl(z,art,w);return}      // G9c1: Gladiatoren und Sklavenmarkt
  if(art==='personRolle'){var P2=PERS();if(P2)P2.rolle(z,w.id,w.darf);return}
  var g=z.war,v=hole(g,T_LAGER,w.von),n=hole(g,T_LAGER,w.nach);if(!v||!n)return;
  var kar=karreVon(z,w.von)&&!!KAR().besuch(z,z.bau.raeume.get(w.nach)),je=kar?KARREN_KAP:TRAG,rest=w.menge;

@@ -44,7 +44,7 @@ function karSenden(){var g=z.kar;if(!g||!g.k.length){if(karGesendet){karGesendet
 // Waren und Arbeiter (G7): waren.js und personen.js mit dem Befehl wirtschaft oder einem Spielstand damit. An den Hauptkern gehen die Personen nach jedem Takt
 // (je Person 10 Zahlen) und die Waren nur bei einer Änderung (Bestände, Aufträge, Gründe stehender Baustellen).
 var warLetzt=-1, warTick=-99, perGesendet=false;
-function warLaden(){wsLaden();bauLaden();if(!self.AT3WAREN)importScripts('waren.js'+self.location.search,'personen.js'+self.location.search,'ketten.js'+self.location.search,'gladiatoren.js'+self.location.search,'ortsnamen.js'+self.location.search)}      // G8: ketten.js gleich mit; G9c1: gladiatoren.js, ortsnamen.js
+function warLaden(){wsLaden();bauLaden();if(!self.AT3WAREN)importScripts('waren.js'+self.location.search,'personen.js'+self.location.search,'ketten.js'+self.location.search,'gladiatoren.js'+self.location.search,'ortsnamen.js'+self.location.search,'arena.js'+self.location.search,'kampfanschluss.js'+self.location.search)}      // G9d2: arena.js, Zurückschreiben aus kampfanschluss.js      // G8: ketten.js gleich mit; G9c1: gladiatoren.js, ortsnamen.js
 var tierGesendet=false;
 // G9c1: Gladiatoren und Sklavenmarkt (gladiatoren.js meld) nur bei einer Änderung oder einem neuen Spieltag; volle 1.0-Daten nur auf Nachfrage (glaDaten)
 var glaLetzt='';function glaSenden(){var a=z.gla;if(!a){if(glaLetzt){glaLetzt='';self.postMessage({art:'gladiatoren',meld:null})}return}var k=a.zaehler+':'+Math.floor(z.tick/12000)+':'+(z.per?z.per.p.length:0);if(k===glaLetzt)return;glaLetzt=k;

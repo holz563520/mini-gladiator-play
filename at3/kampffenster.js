@@ -5,8 +5,12 @@
 // AN.build, S.battle, Kampfansicht, Synchronisation, Minibilder, Nahaufnahmen, Urteil, Kampfbericht mit Lernfortschritt) → „Back to the world“ →
 // Ergebnis im Format von kampfkern.js KK.rechne genau einmal an AT3 zurück. Der Rahmen wird danach entladen (Speicher am Handy).
 // Kerne: 1.0 zeichnet und rechnet hier wie im Hauptspiel. AT3 hält seine Weltuhr während des Kampfs an (Entscheidung Thomas 17.11.2026).
+// G9d2 Arena: Modus „wahl“ zeigt die Aufstellung 1:1 aus 1.0 (aufstellung-ui.js im Spielmodus: 3×3-Raster, ★-Held, fünf Gegner mit 1–5 Totenköpfen, Gelübde)
+// mit den AT3-Gladiatoren als Kader; „KAMPF!“ setzt nur den Termin (Nachricht „termin“). Modus „kampf“ stellt am Termin dieselbe Gruppe und dasselbe Angebot
+// wieder her und startet den Kampf über denselben Knopf (fight() aus 1.0: Prämie, Gelübde, Gunst, Anführer, Kampfbericht). Gegner bekommen ihre Herkunft aus
+// benannten Orten der Welt (leichte aus der Nähe, 4–5 Totenköpfe aus fernen Städten). Ergebnis mit Prämie und Aufstellung genau einmal an AT3.
 // Sprache: Der Kampf ist wie 1.0 deutsch (Entscheidung Thomas 17.11.2026, Übersetzung später als eigener Schritt). Nur Lade- und Zurück-Knopf sind englisch.
-var BUILD='1426653a';
+var BUILD='8476683d';
 (()=>{
  const V=(location.search.match(/[?&]v=([^&]*)/)||[])[1]||BUILD;
  const eltern=window.parent!==window?window.parent:null;
@@ -48,7 +52,7 @@ var BUILD='1426653a';
   // Kampfbericht von 1.0 abwarten: manager.js zeigt nach jedem Kampf die gewohnte Berichtsseite (M.onFinish → page 'report')
   const fin=M.onFinish;M.onFinish=function(report){const r=fin?fin.apply(this,arguments):undefined;if(report&&bid&&report.id===bid)setTimeout(zurueckKnopf,0);return r;};
   window.AT3_KF_BEREIT=true;melde({art:'bereit'});}
- window.addEventListener('message',e=>{if(e.source!==eltern||e.origin!==location.origin)return;const d=e.data||{};if(d.kf&&d.art==='auftrag'&&!auftrag)starte(d.auftrag);});
+ window.addEventListener('message',e=>{if(e.source!==eltern||e.origin!==location.origin)return;const d=e.data||{};if(d.kf&&d.art==='auftrag'&&!auftrag){if(d.auftrag&&d.auftrag.modus)arena(d.auftrag);else starte(d.auftrag);}});
 
  // ---------- Kampf genau wie arena-ui.js fight() (Kampfansicht des Spiels) ----------
  function starte(a){
@@ -68,11 +72,57 @@ var BUILD='1426653a';
    M.ui.render();melde({art:'laeuft'});
   }catch(e){console.error(e);fehler(e&&e.message||e);}}
 
+
+ // ---------- G9d2: Arena mit der Aufstellung aus 1.0 ----------
+ let modus='',praemie=0,gewonnen=0,offersZuletzt=[],festOffer=null,arenaBid=null,gestartet=false;
+ // Herkunft der Gegner (Thomas 17.11.2026): ☠–☠☠ aus den drei nächsten Orten, ☠☠☠ aus den übrigen nahen Orten, ☠☠☠☠ aus der näheren, ☠☠☠☠☠ aus der ferneren Hälfte der fernen Städte
+ function herkunft(o,orte){const N=(orte&&orte.nah)||[],F=(orte&&orte.fern)||[],sk=o.skulls|0;
+  let L=sk<=2?N.slice(0,3):sk===3?N.slice(3):sk===4?F.slice(0,Math.ceil(F.length/2)):F.slice(Math.floor(F.length/2));if(!L.length)L=sk>=4&&F.length?F:N;if(!L.length)return;
+  let h=2166136261;for(const c of String(o.id))h=Math.imul(h^c.charCodeAt(0),16777619);const ort=L[(h>>>0)%L.length];
+  o.at3Ort={name:ort.name,art:ort.art,ortId:ort.ortId};o.label=o.label+' · aus '+ort.name;
+  for(const u of o.enemy||[])if(u.g)u.g.at3Herkunft={art:ort.art,ortId:ort.ortId,name:ort.name};}
+ function hinweis(t){let h=document.getElementById('kfHinweis');if(!h){h=document.createElement('div');h.id='kfHinweis';document.body.appendChild(h);}h.textContent=t;clearTimeout(hinweis.z);hinweis.z=setTimeout(()=>h.remove(),9000);}
+ function arena(a){
+  const M=window.MG,S=M.s,A=window.Aufstellung,UI=window.AufstellungUI,AN=window.AN;auftrag=a;modus=a.modus==='kampf'?'kampf':'wahl';
+  try{
+   if(!A||!UI)throw Error('Aufstellung aus 1.0 fehlt');
+   const l=document.createElement('link');l.rel='stylesheet';l.href='../aufstellung.css?v='+V;document.head.appendChild(l);document.body.classList.add('at3-arena');
+   S.roster=(a.kader||[]).map(k=>{k.g.enemy=false;return k.g;});
+   S.aufstellung=JSON.parse(JSON.stringify((modus==='kampf'?a.termin&&a.termin.auf:a.auf)||{}));
+   S.gold=a.gold|0;S.day=(a.heute|0)+1;S.rng=(a.seed>>>0)||1;S.battle=null;
+   festOffer=modus==='kampf'?JSON.parse(JSON.stringify(a.termin.offer)):null;
+   const orig=A.offers;A.offers=function(){if(festOffer)return [festOffer];const o=orig.apply(this,arguments);o.forEach(x=>herkunft(x,a.orte));offersZuletzt=o;return o;};
+   const C=window.ArenaCareer;C.settle=g=>{praemie=Math.max(0,Math.round(+g||0));};C.record=w=>{gewonnen=w?1:0;};
+   const b0=AN.build;AN.build=function(){const b=b0.apply(this,arguments);if(modus==='kampf'&&!arenaBid){arenaBid=b.id;gestartet=true;t0=performance.now();
+     AN.listeners.push(o=>{aus=o;setTimeout(zurueckKnopf,1800);});document.getElementById('kfHinweis')?.remove();melde({art:'laeuft'});}return b;};
+   document.getElementById('kfBoot')?.remove();
+   UI.open();
+   if(modus==='wahl'){hinweis('Pick your men and an opponent. KAMPF! books the fight for tomorrow at noon; your men stop working in time and walk to the arena.');return;}
+   const klick=q=>{const el=document.querySelector('#auf '+q);if(el)el.click();return !!el;};
+   klick('[data-act="ready"]');klick('[data-offer="0"]');klick('[data-act="fight"]');
+   if(!gestartet)hinweis('Someone in the group is not fit to fight. Change the group, choose the opponent again and press KAMPF!.');
+  }catch(e){console.error(e);fehler(e&&e.message||e);}}
+ // Knöpfe der 1.0-Aufstellung: Probe ×10, Menü, Reparieren, Ausrüsten, Nächster Tag, Bericht gibt es hier nicht (gehören zum 1.0-Ludus); ◀ schließt das Fenster;
+ // „KAMPF!“ setzt im Modus „wahl“ den Termin; nach dem Kampf führt „Nochmal“ zurück in die Welt
+ document.addEventListener('click',e=>{if(!modus)return;const el=e.target.closest&&e.target.closest('#auf [data-act]');if(!el)return;const act=el.dataset.act;
+  const halt=()=>{e.preventDefault();e.stopPropagation();};
+  if(['probe','menu','classic','report','repair','equip','nextday'].includes(act)){halt();return;}
+  if(act==='exit'){halt();if(!gestartet)melde({art:'abbruch',text:'closed'});else sende();return;}
+  if(act==='again'&&modus==='kampf'){halt();sende();return;}
+  if(act==='fight'&&modus==='wahl'){halt();const s=document.querySelector('#auf .a-offer.a-sel'),o=s?offersZuletzt[+s.dataset.offer]:null;if(!o)return;
+   const st=JSON.parse(JSON.stringify(window.AufstellungUI.state||{}));
+   melde({art:'termin',termin:{gids:(st.lineup||[]).map(x=>String(x.id)),offer:JSON.parse(JSON.stringify(o)),auf:st,label:o.label,skulls:o.skulls|0,ort:o.at3Ort||null}});}},true);
+ function sendeArena(){if(gesendet||!aus)return;gesendet=true;const k=document.getElementById('kfZurueck');if(k){k.disabled=true;k.textContent='…';}
+  const S=window.MG.s,ersetze=x=>{if(!x)return null;const t=JSON.stringify(x);return JSON.parse(arenaBid?t.split(JSON.stringify(arenaBid)).join(JSON.stringify('at3:'+auftrag.id)):t);};
+  const G=id=>S.roster.find(g=>String(g.id)===String(id));
+  melde({art:'ergebnis',ergebnis:{auftrag:auftrag.id,arena:1,praemie,gewonnen,auf:JSON.parse(JSON.stringify(S.aufstellung||{})),angesehen:true,dauerMs:Math.round(performance.now()-t0),
+   sieger:aus.winner,zeit:aus.time,einheiten:aus.units.map(u=>({key:String(u.key),art:u.kind,name:u.name,team:u.team,tot:!!u.dead,unten:!!u.down,leben:u.health,verletzt:!!u.injured,schwer:!!u.severe,
+    verletzungen:u.injuries||[],kills:u.kills||0,ursache:u.cause||'',toeter:u.killer||'',g:u.team===0?ersetze(G(u.key)):null}))}});}
  function zurueckKnopf(){if(document.getElementById('kfZurueck'))return;const k=document.createElement('button');k.id='kfZurueck';k.type='button';
   k.innerHTML='Back to the world ▸<small>Survivors carry their lessons home. The rest carry nothing.</small>';k.onclick=sende;document.body.appendChild(k);}
 
  // ---------- Ergebnis wie kampfkern.js KK.rechne, genau einmal ----------
- function sende(){if(gesendet||!auftrag)return;const o=aus||window.AN.last;if(!o){return;}gesendet=true;
+ function sende(){if(modus){sendeArena();return;}if(gesendet||!auftrag)return;const o=aus||window.AN.last;if(!o){return;}gesendet=true;
   const k=document.getElementById('kfZurueck');if(k){k.disabled=true;k.textContent='…';}
   // 1.0 schreibt seine Kampfkennung (Uhrzeit + Zufall) in Wunden und Narben: durch die Auftragskennung ersetzen (wie der Kampfkern)
   const ersetze=x=>{if(!x)return null;const t=JSON.stringify(x);return JSON.parse(bid?t.split(JSON.stringify(bid)).join(JSON.stringify('at3:'+auftrag.id)):t);};

@@ -66,12 +66,13 @@ KA.beende=function(){if(KA.kern){KA.kern.w.terminate();KA.kern=null;}for(var n i
 // Öffnet kampffenster.html als Vollbild-Rahmen über der Seite, schickt den Auftrag, zeigt den Kampf 1:1 wie 1.0 und liefert das Ergebnis
 // im Format von KA.rechne (dazu angesehen:true, dauerMs). Der Rahmen wird danach entladen (Entscheidung Thomas 17.11.2026: Speicher am Handy).
 // opt: {basis:'' (Pfad zu dist/at3/), v, pause(), weiter()} – pause/weiter halten die Weltuhr an (Entscheidung Thomas: Uhr steht während des Kampfs).
+// G9d2: Auftrag mit modus 'wahl' (Aufstellung, Ergebnis {termin}) oder 'kampf' (Termin ansehen, Ergebnis mit arena:1, praemie, gewonnen, auf).
 // Ein Auftrag zur Zeit. Das Versprechen erfüllt sich genau einmal; zurückgeschrieben wird weiter nur über KA.zurueckschreiben (Buch).
 KA.fenster=function(auftrag,opt){
  opt=opt||{};var D=G.document;
  if(!D)return Promise.reject(new Error('Kampffenster braucht einen Browser'));
  if(KA.offen)return Promise.reject(new Error('Es läuft schon ein Kampf'));
- if(!auftrag||!auftrag.id||!auftrag.spec)return Promise.reject(new Error('Kampffenster ohne gültigen Auftrag'));
+ if(!auftrag||!auftrag.id||(!auftrag.spec&&!auftrag.modus))return Promise.reject(new Error('Kampffenster ohne gültigen Auftrag'));
  return new Promise(function(ok,nein){
   var huelle=D.createElement('div'),rahmen=D.createElement('iframe'),zu=false,laeuft=false;
   huelle.id='at3Kampffenster';huelle.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#120c09';
@@ -86,11 +87,12 @@ KA.fenster=function(auftrag,opt){
    if(d.art==='bereit')rahmen.contentWindow.postMessage({kf:1,art:'auftrag',auftrag:auftrag},G.location.origin);
    else if(d.art==='laeuft'){laeuft=true;ab.remove();}
    else if(d.art==='ergebnis'){if(!d.ergebnis||d.ergebnis.auftrag!==auftrag.id)return;ende(ok,d.ergebnis);}
+   else if(d.art==='termin'){if(!laeuft&&d.termin)ende(ok,{termin:d.termin});}      // G9d2: Aufstellung gewählt → Termin (kein Kampf)
    else if(d.art==='abbruch')ende(nein,new Error(d.text||'abgebrochen'));
    else if(d.art==='fehler'&&!laeuft){/* Rahmen zeigt die Meldung mit Zurück-Knopf; ✕ bleibt */}}
   G.addEventListener('message',hoer);
   try{opt.pause&&opt.pause();}catch(e){}
-  huelle.appendChild(rahmen);huelle.appendChild(ab);D.body.appendChild(huelle);KA.offen={auftrag:auftrag.id,rahmen:rahmen};});};
+  huelle.appendChild(rahmen);if(!auftrag.modus)huelle.appendChild(ab);/* G9d2: die Arena hat den ◀-Knopf der 1.0-Aufstellung, kein ✕ darüber */D.body.appendChild(huelle);KA.offen={auftrag:auftrag.id,rahmen:rahmen};});};
 
 // ---------- Zurückschreiben: genau einmal ----------
 // buch: {erledigt:{auftragId:…}} – liegt später im Spielstand. kaempfer: {id: Kämpfer}. Gibt true zurück, wenn geschrieben wurde.
