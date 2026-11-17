@@ -62,6 +62,36 @@ KA.abdruck=function(e){var s=JSON.stringify([e.sieger,e.zeit,e.einheiten.map(fun
  for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193);}return ('0000000'+(h>>>0).toString(16)).slice(-8);};
 KA.beende=function(){if(KA.kern){KA.kern.w.terminate();KA.kern=null;}for(var n in KA.warte){KA.warte[n].nein(new Error('Kampfkern beendet'));}KA.warte={};};
 
+// ---------- G9d1: Kampf ansehen im Kampffenster (unverändertes 1.0 im abgeschotteten Rahmen) ----------
+// Öffnet kampffenster.html als Vollbild-Rahmen über der Seite, schickt den Auftrag, zeigt den Kampf 1:1 wie 1.0 und liefert das Ergebnis
+// im Format von KA.rechne (dazu angesehen:true, dauerMs). Der Rahmen wird danach entladen (Entscheidung Thomas 17.11.2026: Speicher am Handy).
+// opt: {basis:'' (Pfad zu dist/at3/), v, pause(), weiter()} – pause/weiter halten die Weltuhr an (Entscheidung Thomas: Uhr steht während des Kampfs).
+// Ein Auftrag zur Zeit. Das Versprechen erfüllt sich genau einmal; zurückgeschrieben wird weiter nur über KA.zurueckschreiben (Buch).
+KA.fenster=function(auftrag,opt){
+ opt=opt||{};var D=G.document;
+ if(!D)return Promise.reject(new Error('Kampffenster braucht einen Browser'));
+ if(KA.offen)return Promise.reject(new Error('Es läuft schon ein Kampf'));
+ if(!auftrag||!auftrag.id||!auftrag.spec)return Promise.reject(new Error('Kampffenster ohne gültigen Auftrag'));
+ return new Promise(function(ok,nein){
+  var huelle=D.createElement('div'),rahmen=D.createElement('iframe'),zu=false,laeuft=false;
+  huelle.id='at3Kampffenster';huelle.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#120c09';
+  rahmen.title='Arena';rahmen.allow='autoplay';rahmen.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:0;display:block';
+  rahmen.src=(opt.basis||'')+'kampffenster.html?v='+encodeURIComponent(opt.v||'')+'&preload=off';
+  var ab=D.createElement('button');ab.type='button';ab.textContent='✕';ab.title='Cancel';ab.setAttribute('aria-label','Cancel');
+  ab.style.cssText='position:absolute;top:max(8px,env(safe-area-inset-top));right:8px;z-index:2;font:bold 18px monospace;padding:6px 12px;border:2px solid #6b5537;background:#2a1d14;color:#e8d9b5';
+  function ende(f,wert){if(zu)return;zu=true;G.removeEventListener('message',hoer);try{rahmen.src='about:blank';}catch(e){}huelle.remove();KA.offen=null;
+   try{opt.weiter&&opt.weiter();}catch(e){}f(wert);}
+  ab.onclick=function(){if(!laeuft)ende(nein,new Error('abgebrochen'));};
+  function hoer(e){if(e.source!==rahmen.contentWindow)return;var d=e.data||{};if(!d.kf)return;
+   if(d.art==='bereit')rahmen.contentWindow.postMessage({kf:1,art:'auftrag',auftrag:auftrag},G.location.origin);
+   else if(d.art==='laeuft'){laeuft=true;ab.remove();}
+   else if(d.art==='ergebnis'){if(!d.ergebnis||d.ergebnis.auftrag!==auftrag.id)return;ende(ok,d.ergebnis);}
+   else if(d.art==='abbruch')ende(nein,new Error(d.text||'abgebrochen'));
+   else if(d.art==='fehler'&&!laeuft){/* Rahmen zeigt die Meldung mit Zurück-Knopf; ✕ bleibt */}}
+  G.addEventListener('message',hoer);
+  try{opt.pause&&opt.pause();}catch(e){}
+  huelle.appendChild(rahmen);huelle.appendChild(ab);D.body.appendChild(huelle);KA.offen={auftrag:auftrag.id,rahmen:rahmen};});};
+
 // ---------- Zurückschreiben: genau einmal ----------
 // buch: {erledigt:{auftragId:…}} – liegt später im Spielstand. kaempfer: {id: Kämpfer}. Gibt true zurück, wenn geschrieben wurde.
 // Übernommen werden die kompletten Kämpferdaten so, wie 1.0 sie nach dem Kampf hinterlässt (Körper, Blut, Erschöpfung, Narben, Tod,
