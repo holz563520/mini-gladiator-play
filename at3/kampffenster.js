@@ -9,8 +9,8 @@
 // mit den AT3-Gladiatoren als Kader; „KAMPF!“ setzt nur den Termin (Nachricht „termin“). Modus „kampf“ stellt am Termin dieselbe Gruppe und dasselbe Angebot
 // wieder her und startet den Kampf über denselben Knopf (fight() aus 1.0: Prämie, Gelübde, Gunst, Anführer, Kampfbericht). Gegner bekommen ihre Herkunft aus
 // benannten Orten der Welt (leichte aus der Nähe, 4–5 Totenköpfe aus fernen Städten). Ergebnis mit Prämie und Aufstellung genau einmal an AT3.
-// Sprache: Der Kampf ist wie 1.0 deutsch (Entscheidung Thomas 17.11.2026, Übersetzung später als eigener Schritt). Nur Lade- und Zurück-Knopf sind englisch.
-var BUILD='74bf30b4';
+// Sprache (G9d4): Texte und Stimme werden beim Laden englisch (kampf-en.js, Wörterbücher in sprache/kampf-en/), 1.0 bleibt unverändert. Was noch nicht übersetzt ist, bleibt deutsch.
+var BUILD='fd20b92a';
 (()=>{
  const V=(location.search.match(/[?&]v=([^&]*)/)||[])[1]||BUILD;
  const eltern=window.parent!==window?window.parent:null;
@@ -36,8 +36,19 @@ var BUILD='74bf30b4';
  window.AT3_KAMPFFENSTER={DATEIEN,AUSSER};
  let fertig=0;const balken=()=>{const i=document.querySelector('#kfBoot i');if(i)i.style.width=Math.round(fertig/DATEIEN.length*100)+'%';};
  window.addEventListener('error',e=>{if(!window.AT3_KF_BEREIT)fehler(e.message);});
- DATEIEN.forEach((n,i)=>{const s=document.createElement('script');s.async=false;s.src='../'+n+'.js?v='+V;
-  s.onload=()=>{fertig++;balken();if(i===DATEIEN.length-1)setTimeout(bereit,0);};s.onerror=()=>fehler(n+' konnte nicht geladen werden');document.body.appendChild(s);});
+ // ---------- G9d4: Englisch beim Laden (kampf-en.js). Dateien aus sprache/kampf-en/index.json werden geholt, übersetzt und als Blob geladen. ----------
+ // 1.0 bleibt unverändert. Fehlt etwas oder geht etwas schief, lädt die Datei einfach deutsch. ?de=1 schaltet die Übersetzung ab (zum Vergleichen).
+ const EN=window.AT3_KF_EN={an:!/[?&]de=1/.test(location.search),dateien:0,ersetzt:0,code:0,ms:0,fehler:[]},blob={};
+ async function englisch(){const KE=window.AT3KampfEN,t0=performance.now();if(!EN.an||!KE)return;
+  try{const idx=await (await fetch('sprache/kampf-en/index.json?v='+V)).json();
+   await Promise.all((idx.dateien||[]).filter(d=>DATEIEN.includes(d)).map(async d=>{try{
+    const [src,w]=await Promise.all([fetch('../'+d+'.js?v='+V).then(r=>{if(!r.ok)throw Error(r.status);return r.text();}),fetch('sprache/kampf-en/'+d+'.json?v='+V).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})]);
+    const r=KE.uebersetze(src,w);blob[d]=URL.createObjectURL(new Blob([r.src+'\n//# sourceURL=en/'+d+'.js'],{type:'text/javascript'}));EN.dateien++;EN.ersetzt+=r.ersetzt;EN.code+=r.code;
+   }catch(e){EN.fehler.push(d+': '+e.message);}}));
+  }catch(e){EN.fehler.push('index: '+e.message);}
+  EN.ms=Math.round(performance.now()-t0);}
+ englisch().then(()=>DATEIEN.forEach((n,i)=>{const s=document.createElement('script');s.async=false;s.src=blob[n]||'../'+n+'.js?v='+V;
+  s.onload=()=>{fertig++;balken();if(blob[n])URL.revokeObjectURL(blob[n]);if(i===DATEIEN.length-1)setTimeout(bereit,0);};s.onerror=()=>fehler(n+' konnte nicht geladen werden');document.body.appendChild(s);}));
 
  // ---------- Nach dem Laden: Ludus wie die Testversionen (aufstellung-ui.js, Testteil), dann „bereit“ ----------
  let auftrag=null,bid=null,spec=null,aus=null,gesendet=false,t0=0;

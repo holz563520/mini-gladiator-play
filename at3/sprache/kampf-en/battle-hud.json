@@ -1,0 +1,159 @@
+{
+"t": {
+"Kratzer": "Scratch",
+"Leicht": "Light",
+"Mittel": "Moderate",
+"Schwer": "Severe",
+"Kritisch": "Critical",
+"Verloren": "Lost",
+"Schleicht um die Beute": "Circles its prey",
+"Duckt sich zum Sprung": "Crouches to pounce",
+"Springt": "Pounces",
+"Schlägt mit der Pranke": "Swipes with a paw",
+"Schleift sein Opfer durch den Sand": "Drags its victim through the sand",
+"Zerfleischt sein Opfer": "Mauls its victim",
+"Brüllt": "Roars",
+"Droht": "Threatens",
+"Faucht": "Snarls",
+"Rennt": "Sprints",
+"Weicht aus": "Dodges",
+"Zuckt zurück": "Recoils",
+"Sammelt sich": "Gathers itself",
+"Gefallen": "Fallen",
+"Aufgabe": "Surrendered",
+"Am Boden": "Down",
+"Auf den Knien": "On their knees",
+"Im Netz": "Netted",
+"Taumelt": "Staggering",
+"Lädt": "Reloading",
+"Blutet stark": "Bleeding badly",
+"Erschöpft": "Exhausted",
+"Greift an": "Attacking",
+"Lauert": "Lurking",
+"Kampfunfähig": "Out of the fight",
+"Hat aufgegeben": "Has given up",
+"Spannt die Armbrust": "Cocks the crossbow",
+"Steht wieder auf": "Gets back up",
+"Ist gestürzt": "Has fallen over",
+"Ist auf die Knie gegangen": "Has dropped to his knees",
+"Reibt sich Sand aus den Augen": "Rubs sand from his eyes",
+"Sieht kaum etwas": "Can barely see",
+"Packt": "Grabs",
+" den Gegner": " the enemy",
+" von hinten": " from behind",
+"Wird festgehalten": "Is being held",
+"Hängt im Netz": "Tangled in the net",
+"Schildstoß gegen": "Shield-bashes",
+"Tritt nach": "Kicks at",
+" dem Gegner": " the enemy",
+"Springt zurück": "Leaps back",
+"Umgeht": "Flanks",
+" von der Seite": " from the side",
+"Stürmt auf": "Charges at",
+" zu": "",
+"Greift": "Attacks",
+" an": "",
+"Blockt": "Blocks",
+"Versorgt eine Wunde": "Tends a wound",
+"Ist in Bewegung": "On the move",
+"Belauert": "Stalks",
+"Wartet ab": "Biding his time",
+"siegessicher": "sure of victory",
+"entschlossen": "determined",
+"unsicher": "uneasy",
+"verängstigt": "terrified",
+"gebrochen": "broken",
+"TESTTEAM": "TEST TEAM",
+"GEGNER": "ENEMY",
+"Pranken und Gebiss": "Claws and fangs",
+"Team Rot": "Team Red",
+"Team Blau": "Team Blue",
+" · Anführer": " · Leader",
+"Gesundheit ": "Health ",
+"Blut ": "Blood ",
+"Ausdauer ": "Stamina ",
+"Fäuste": "Fists",
+" · blutet": " · bleeding",
+"Abgetrennt": "Severed",
+"Verletzt": "Injured",
+"verloren": "lost",
+"Grad ": "Grade ",
+" · Bruch": " · fracture",
+" · Dauerschaden": " · lasting damage",
+"<h5>LETZTE EREIGNISSE</h5>": "<h5>LATEST EVENTS</h5>",
+"<p>Der Kampf beginnt.</p>": "<p>The fight begins.</p>",
+"AUSGEGLICHEN": "EVEN",
+"BLAU": "BLUE",
+"ROT": "RED",
+" FÜHRT · ": " LEADS · ",
+"KAMERA: ": "CAMERA: ",
+"FOLGT DEN KÄMPFERN": "FOLLOWS THE FIGHTERS",
+"GANZES FELD": "WHOLE ARENA",
+"FIGUREN: ": "FIGURES: ",
+"EINFACH (VIELE KÄMPFER)": "SIMPLE (MANY FIGHTERS)",
+"EINFACH": "SIMPLE",
+"VOLL": "FULL",
+"EINBLENDEN: ": "CLOSE-UPS: ",
+"AUS": "OFF",
+"NUR SCHWERE": "SEVERE ONLY",
+"JEDE VERLETZUNG": "EVERY INJURY",
+"BEI: ": "FOR: ",
+"ALLEN": "EVERYONE",
+"EIGENEN": "OWN",
+"WICHTIGEN": "KEY FIGHTERS",
+"<li class=\"g0\"><b>Unverletzt</b><span>Keine Wunde.</span><i></i></li>": "<li class=\"g0\"><b>Unhurt</b><span>Not a scratch.</span><i></i></li>",
+"ANGST / RÜCKZUG": null,
+"ERSCHÖPFT": null,
+" stehen": " standing"
+},
+"code": [
+[
+"'Flieht'+(to?' vor'+to:'')",
+"'Flees'+(to?' from'+to:'')"
+],
+[
+"return to?'Rückt auf'+to+' vor'",
+"return to?'Closes in on'+to+''"
+],
+[
+"<b>BLAU · ${",
+"<b>BLUE · ${"
+],
+[
+"'GEGNER')} · ROT</b>",
+"'GEGNER')} · RED</b>"
+],
+[
+"<p><span>Tut gerade</span><b>",
+"<p><span>Doing</span><b>"
+],
+[
+"<p><span>Stimmung</span><b>",
+"<p><span>Mood</span><b>"
+],
+[
+"} (Moral ${",
+"} (morale ${"
+],
+[
+"<p class=\"bh-line\">Waffe: <b>",
+"<p class=\"bh-line\">Weapon: <b>"
+],
+[
+"</b> · Schaden ausgeteilt ",
+"</b> · damage dealt "
+],
+[
+"M.expressionLabel(M.expression(a))",
+"(({KAMPFSCHREI:'BATTLE CRY',GEFALLEN:'FALLEN',BEWUSSTLOS:'UNCONSCIOUS',SCHMERZEN:'IN PAIN','ANGST / RÜCKZUG':'FEAR / RETREAT',JUBEL:'CHEERING',ANGRIFFSLUSTIG:'AGGRESSIVE',KONZENTRIERT:'FOCUSED','ERSCHÖPFT':'EXHAUSTED',ZUVERSICHTLICH:'CONFIDENT'})[M.expressionLabel(M.expression(a))]||M.expressionLabel(M.expression(a)))"
+],
+[
+"} · erlitten ${",
+"} · taken ${"
+],
+[
+"‹ ALLE</button>",
+"‹ ALL</button>"
+]
+]
+}

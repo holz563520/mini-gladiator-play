@@ -1,0 +1,13 @@
+{
+"t": {},
+"code": [
+[
+"new Worker('sprech-worker.js?v='",
+"new Worker('../sprech-worker-en.js?v='"
+],
+[
+"lex:window.Stimme?.getLexicon?.()});",
+"lex:null,accent:'us'});"
+]
+]
+}
