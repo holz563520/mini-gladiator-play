@@ -154,6 +154,8 @@
   "ware-fleisch.name": "Meat",
   "ware-stamm.info": "Three trimmed logs, stacked. Heavy, splintery and always needed somewhere uphill.",
   "ware-stamm.name": "Logs",
+  "ware-water.info": "A bucket of river water, clear enough if you ignore the rat. The rat stopped complaining days ago.",
+  "ware-water.name": "Water",
   "werk-bank.info": "A sturdy bench with an anvil and a hammer. Planks, tools and the occasional fingertip are made here.",
   "werk-bank.name": "Workbench"
  }

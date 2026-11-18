@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 77,
+ "typMax": 78,
  "objekte": [
   {
    "id": "arena-sand",
@@ -687,6 +687,15 @@
    "name": "Logs",
    "status": "geprueft",
    "datei": "obj/ware-stamm.json"
+  },
+  {
+   "id": "ware-water",
+   "version": 1,
+   "typ": 78,
+   "kat": "ware",
+   "name": "Water",
+   "status": "skizze",
+   "datei": "obj/ware-water.json"
   },
   {
    "id": "werk-bank",
