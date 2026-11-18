@@ -151,5 +151,8 @@ function exportiere(was){var o=speichern();if(!o)return;
 function kopieren(){var o=speichern();if(!o)return;var t=JSON.stringify(o);
  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){meld('Objekt „'+o.id+'“ kopiert. In den Chat einfügen, dann legt Claude es ins Repository.')},function(){meld('Kopieren nicht erlaubt. Bitte „Objekt-Datei“ nehmen.',1)})}
 
-window.AT3_WERKSTATT={aufbauen:aufbauen,zustand:function(){return W},bild:zuBild,kartei:kartei,objekt:objekt};
+// W2a3: Grafik-Arbeitsliste öffnet hier das nächste Objekt (vorhanden: aus Repository oder Entwurf; fehlt: leeres Blatt mit Kennung, Name und Art).
+function neuMit(id,name,kat){neu();if(kat&&S.GROESSEN[kat]){$('#wKat').value=kat;var g=S.GROESSEN[kat];groesse(Math.min(W.w,g.w),Math.min(W.h,g.h));slotListe(null)}
+ $('#wId').value=id;$('#wName').value=name||'';meld('Neues Blatt für „'+id+'“ aus der Grafik-Arbeitsliste. Zeichnen, dann „Prüfen & speichern“.')}
+window.AT3_WERKSTATT={aufbauen:aufbauen,zustand:function(){return W},bild:zuBild,kartei:kartei,objekt:objekt,oeffne:oeffnen,neuMit:neuMit};
 })();

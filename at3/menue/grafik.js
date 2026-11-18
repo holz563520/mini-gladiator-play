@@ -1,4 +1,4 @@
-// WAS DIE DATEI TUT: Menü „Grafik“ des AT3-Master-Editors (wird erst beim Öffnen geladen). F1a: Figuren wie 2.0 (menue/figuren.js, Musterblatt voll/AT3-64). M4: Objektkarten & Antippen (menue/karten.js). W2a2: Gebäudebaukasten (menue/baukasten.js, baukasten.js). M3: Skizzen-Werkstatt (menue/werkstatt.js). M2: Grafikstandard AT3-64 mit drei Paletten am selben
+// WAS DIE DATEI TUT: Menü „Grafik“ des AT3-Master-Editors (wird erst beim Öffnen geladen). F1a: Figuren wie 2.0 (menue/figuren.js, Musterblatt voll/AT3-64). M4: Objektkarten & Antippen (menue/karten.js). W2a2: Gebäudebaukasten (menue/baukasten.js, baukasten.js). W2a3: Grafik-Arbeitsliste (menue/arbeitsliste.js, arbeitsliste.js). M3: Skizzen-Werkstatt (menue/werkstatt.js). M2: Grafikstandard AT3-64 mit drei Paletten am selben
 // Musterblatt (Stil RollerCoaster Tycoon Classic), Figurengrößen, Durchscheinen verdeckter Figuren, Größentabelle und Prüfer.
 // at3-64.js und das Musterblatt werden erst beim Antippen von „Grafikstandard“ geholt.
 AT3ED.menue('grafik',function(el,c){
@@ -15,6 +15,8 @@ AT3ED.menue('grafik',function(el,c){
   '<div id="gFigInhalt"></div>'+
   '<p><button class="knopf" id="gBau">Gebäudebaukasten (W2a2)<small>Gebäude aus Teilen · 9 Grundformen × 3 Bauklassen · Karte und First Person · Kultur-Schalter</small></button></p>'+
   '<div id="gBauInhalt"></div>'+
+  '<p><button class="knopf" id="gListe">Grafik-Arbeitsliste (W2a3)<small>jedes Bild zum Abarbeiten · Stand · Wichtigkeit · Zeichenhinweis · Nächstes Objekt · Export</small></button></p>'+
+  '<div id="gListeInhalt"></div>'+
   '<ul>'+
   '<li>Boden, Natur, Gebäude und Wände, Einrichtung, Waren, Figuren, Tiere, Fahrzeuge, Zeichen <span class="leise">(Startset M9, danach jeder Inhaltsschritt)</span></li></ul>';
  el.querySelector('#gFig').onclick=function(){var z=el.querySelector('#gFigInhalt');z.innerHTML='<p class="leise">Die Figuren werden aus 2.0 herübergetrieben …</p>';
@@ -22,6 +24,8 @@ AT3ED.menue('grafik',function(el,c){
    .then(function(){return AT3_FIGUREN.aufbauen(z)}).catch(function(e){z.innerHTML='<p class="witz">Figuren entlaufen: '+String(e.message).replace(/</g,'&lt;')+'</p>'})};
  el.querySelector('#gBau').onclick=function(){var z=el.querySelector('#gBauInhalt');z.innerHTML='<p class="leise">Ziegel werden gebrannt …</p>';
   AT3ED.lade('grafik','menue/baukasten.js').then(function(){return AT3_BAUKASTEN_MENUE.aufbauen(z)}).catch(function(e){z.innerHTML='<p class="witz">Baukasten eingestürzt: '+String(e.message).replace(/</g,'&lt;')+'</p>'})};
+ el.querySelector('#gListe').onclick=function(){var z=el.querySelector('#gListeInhalt');z.innerHTML='<p class="leise">Die Liste wird aufgerollt …</p>';
+  AT3ED.lade('grafik','menue/arbeitsliste.js').then(function(){return AT3_ARBEITSLISTE_MENUE.aufbauen(z)}).catch(function(e){z.innerHTML='<p class="witz">Liste zerrissen: '+String(e.message).replace(/</g,'&lt;')+'</p>'})};
  el.querySelector('#gStd').onclick=function(){standard(el.querySelector('#gStdInhalt'))};
  el.querySelector('#gKarten').onclick=function(){var z=el.querySelector('#gKartenInhalt');z.innerHTML='<p class="leise">Die Karteikarten werden abgestaubt …</p>';
   AT3ED.lade('grafik','at3-64.js').then(function(){return AT3ED.lade('grafik','karte.js')}).then(function(){return AT3ED.lade('grafik','menue/karten.js')})
