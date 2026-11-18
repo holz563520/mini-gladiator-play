@@ -221,19 +221,41 @@ function setzen(L,hole,dachform,ohneWiese){
   if(o){var m=MALMERK&&MALMERK.get(o),k2=(gesp?'m':'')+(r|0);if(!m&&MALMERK){m={};MALMERK.set(o,m)}b=m&&m[k2];                     // Malbild je Teil nur einmal umrechnen
    if(!b){b=(r&&S().richtungsBild(o,r))||o.bild;b=b?malbild(b):null;if(b&&gesp)b=spiegel(b);if(m&&b)m[k2]=b}}if(!b)fehlt[id]=1;return(gemerkt[key]=b)}
  function teil(t){return kennung(K.id,t,L.kultur||'')}
+ // Varianten (Thomas, 18.11.2026): Gibt es zu einem Teil Fassungen „<Kennung>-a … -f“, wählt jedes Feld nach seiner Lage eine von bis zu sieben (gleiches Fugenraster, gleiche Maße),
+ // damit große Flächen nie aus derselben Platte bestehen. Ohne Varianten bleibt alles wie bisher; Kosten: ein Nachschlagen je Teil, einmal gemerkt.
+ var vorh={},SLOT='0000aaabbbcccdef';   // 16 Plätze: 4× Grundfassung, 3× a, b, c (gewöhnlich), je 1× d, e, f (selten, auffällig)
+ function wahl(id,i,j){if(id.indexOf('bk-')!==0)return id;var h=1,k;for(k=0;k<id.length;k++)h=(Math.imul(h,31)+id.charCodeAt(k))>>>0;
+  h=(h^Math.imul(i|0,73856093)^Math.imul(j|0,19349663))>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;var n=SLOT.charAt((h>>>16)%16);if(n==='0')return id;
+  var v=id+'-'+n;if(vorh[v]===undefined)vorh[v]=!!hole(v);return vorh[v]?v:id}
+ // Dachrand (Thomas, 18.11.2026): Am Dachrand nimmt das Feld, wenn vorhanden, ein ausgefranstes Randteil statt der Innenplatte: Kennung + „-“ + Hangkante (r = Traufe, k = First/Kamm)
+ // + Giebelkante (s = Ende in Richtung +, n = Ende in Richtung −), z. B. „-r“, „-ks“, „-rn“. Es hängt über die Wand bzw. den First und liegt über der Innenplatte.
+ var UEBER=8,KAMM=5,SEITE=[6,3],FIRST={'dach-ab-j':[0,-1],'dach-auf-j':[0,1],'dach-ab-i':[-1,0],'dach-auf-i':[1,0]};
+ function vorhanden(id){if(vorh[id]===undefined)vorh[id]=!!hole(id);return vorh[id]}
+ function rand(D,i,j,form){var id=teil(D.t),R={id:id,x:0,y:0};if(D.t==='dach-flach'||!FIRST[D.t])return R;
+  var f=FIRST[D.t],hang=D.d===0?'r':'',nb=zelle(L,i+f[0],j+f[1]);
+  if(!hang&&nb==='b'&&dachFeld(L,form,i+f[0],j+f[1]).t!==D.t)hang='k';
+  var ai=L.achse==='i',side=form==='sattel'?(zelle(L,i+(ai?1:0),j+(ai?0:1))!=='b'?'s':zelle(L,i-(ai?1:0),j-(ai?0:1))!=='b'?'n':''):'';
+  var tries=[hang+side,hang,side],k,t;
+  for(k=0;k<3;k++){t=tries[k];if(t&&vorhanden(id+'-'+t)){R.id=id+'-'+t;
+   R.y=(t.charAt(0)==='r'?UEBER:t.charAt(0)==='k'?-KAMM:0);
+   var sd=t.charAt(t.length-1);if(sd==='s'){R.x=SEITE[0];R.y+=SEITE[1]}else if(sd==='n'){R.x=-SEITE[0];R.y-=SEITE[1]}
+   break}}
+  return R}
  function dazu(s,x,y,tief,m){if(s)stueck.push({sp:s,x:x,y:y,tief:tief,n:seq++,m:m|0})}
  var BODEN={g:'boden-gras',b:teil('boden'),o:teil('boden'),f:'bk-feld',r:teil('rang'),s:'boden-sand'};
- for(j=0;j<L.h;j++)for(i=0;i<L.w;i++){if(ohneWiese&&zelle(L,i,j)==='g')continue;var s0=sp(BODEN[zelle(L,i,j)]);if(s0)bod.push({sp:s0,x:(i-j)*32,y:(i+j)*16+16,m:0})}
+ for(j=0;j<L.h;j++)for(i=0;i<L.w;i++){if(ohneWiese&&zelle(L,i,j)==='g')continue;var s0=sp(wahl(BODEN[zelle(L,i,j)],i,j));if(s0)bod.push({sp:s0,x:(i-j)*32,y:(i+j)*16+16,m:0})}
  var um=function(c){return c==='b'||c==='r'||c==='s'},tuer={};L.tueren.forEach(function(e){tuer[e.join(',')]=1});
  // Kante zwischen Zelle (i, j) und (i+di, j+dj): gehört der Nord- bzw. Westkante der Zelle mit dem größeren Index
- function kante(i,j,di,dj,id,hub,vorn){var oi=di>0?i+1:i,oj=dj>0?j+1:j,m=vorn&&L.offen?3:0;
+ function kante(i,j,di,dj,id,hub,vorn){var oi=di>0?i+1:i,oj=dj>0?j+1:j,m=vorn&&L.offen?3:0;id=wahl(id,oi,oj+(di?1009:0));
   if(di)dazu(sp(id),(oi-oj-1)*32,(oi+oj+1)*16-hub,oi+oj,m);else dazu(sp(id,true),(oi+1-oj)*32,(oi+oj+1)*16-hub,oi+oj,m)}
  var R=[[-1,0],[1,0],[0,-1],[0,1]];
  for(j=0;j<L.h;j++)for(i=0;i<L.w;i++){if(!um(zelle(L,i,j)))continue;
   R.forEach(function(d){if(um(zelle(L,i+d[0],j+d[1])))return;kante(i,j,d[0],d[1],teil(tuer[[i,j,d[0],d[1]].join(',')]?'tuer':'wand'),0,d[0]>0||d[1]>0)})}
  L.spina.forEach(function(e){kante(e[0],e[1],e[2],e[3],teil('wand'),0,false)});
  if(form)for(j=0;j<L.h;j++)for(i=0;i<L.w;i++){if(zelle(L,i,j)!=='b')continue;var D=dachFeld(L,form,i,j);
-  dazu(sp(teil(D.t)),(i-j)*32,(i+j)*16-(TRAUFE+D.d*STEP),i+j+1.5);
+  var rd=rand(D,i,j,form),rid=wahl(rd.id,i,j),ox=(i-j)*32,oy=(i+j)*16-(TRAUFE+D.d*STEP);
+  if(rd.id!==teil(D.t))dazu(sp(wahl(teil(D.t),i,j)),ox,oy,i+j+1.5);   // darunter die Innenplatte, damit der Überhang keine Lücke lässt
+  dazu(sp(rid),ox+rd.x,oy+rd.y,i+j+1.5);
   if(form!=='sattel')continue;
   var quer=L.achse==='i'?[[-1,0],[1,0]]:[[0,-1],[0,1]],spitze=D.t==='dach-auf-j'||D.t==='dach-auf-i'?'giebel-auf':D.t==='dach-flach'?null:'giebel-ab';
   quer.forEach(function(d){if(zelle(L,i+d[0],j+d[1])==='b')return;kante(i,j,d[0],d[1],teil('giebel'),TRAUFE-STEP+2);for(var k=0;k<D.d;k++)kante(i,j,d[0],d[1],teil('giebel'),TRAUFE+k*STEP);

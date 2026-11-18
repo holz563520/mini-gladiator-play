@@ -60,7 +60,7 @@ function groesseText(g){var L=groessen(g);if(!L.length)return'Größe frei';var 
 function formFuer(g,gr){var f=g.form;if(f==='halle→gross'){gr=gr||groessen(g)[0];f=gr&&Math.min(gr.w,gr.h)>=14?'gross':'halle'}return f}
 function teileVon(BK,g,S){if(g.form==='frei'||g.form==='fest')return null;var L=groessen(g);if(!L.length)return null;
  if(!LEERTEIL)LEERTEIL={kat:'einrichtung',bild:{kat:'einrichtung',w:1,h:1,ax:0,ay:0,z:[S.LEER]}};
- var n={},ok=0;L.forEach(function(gr){try{BK.setzen(BK.bilde(formFuer(g,gr),gr.w,gr.h,'clay-wood'),function(id){n[id.replace(/^bk-lehm-/,'bk-*-')]=1;return LEERTEIL});ok++}catch(e){}});
+ var n={},ok=0;L.forEach(function(gr){try{BK.setzen(BK.bilde(formFuer(g,gr),gr.w,gr.h,'clay-wood'),function(id){if(/-([rk]?[sn]|[rk]|[a-f])$/.test(id))return null;n[id.replace(/^bk-lehm-/,'bk-*-')]=1;return LEERTEIL});ok++}catch(e){}});
  return ok?Object.keys(n).sort():null}
 
 // Zeichenhinweis-Vorschlag (deutsch), nur aus dem Eintrag selbst gerechnet; gespeichert wird ein Hinweis nur, wenn er von Hand geschrieben ist.
