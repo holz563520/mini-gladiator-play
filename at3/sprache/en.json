@@ -306,6 +306,11 @@
   "arena.bericht.tot": "dead ({u})", "arena.bericht.tot0": "dead", "arena.bericht.schwer": "badly hurt", "arena.bericht.leicht": "hurt", "arena.bericht.heil": "unhurt", "arena.bericht.kills": "{k} kills",
   "arena.tickets": "{z} spectators, {t} gold in tickets.", "arena.gefallen": "{n} fell. The undertaker sends his regards and his bill.",
   "arena.letzt.tote": "Fallen: {n}.", "arena.gefallen.zahl": "Fallen in this arena so far: {n}.",
-  "leiche.titel": "The late {n}", "leiche.her": "From {o}.", "leiche.ursache": "Cause: {u}.", "leiche.info": "He will lie here until tomorrow, so everyone can see what the purse costs. Then the cart comes."
+  "leiche.titel": "The late {n}", "leiche.her": "From {o}.", "leiche.ursache": "Cause: {u}.", "leiche.info": "He will lie here until tomorrow, so everyone can see what the purse costs. Then the cart comes.",
+  "med.titel": "Medicus", "med.zu": "The medicus is still unpacking his saws.", "med.gold": "Purse: {g} gold.", "med.keiner": "Nobody needs stitching. Enjoy it; it never lasts.",
+  "med.laedt": "The medicus is looking them over…", "med.hp": "Health {h}%", "med.ruht": "badly hurt", "med.laeuft": "{s}: {d} more days", "med.tier.1": "Medicus", "med.tier.2": "Premium", "med.tier.3": "Special care",
+  "med.knopf": "{s} · {k} g", "med.ok": "{n} has been treated ({s}, {k} gold). The healing goes faster for the next four days.", "med.nein.no_gold": "Not enough gold. The medicus does not do charity, only amputations.",
+  "med.nein.gone": "That patient has changed since the medicus looked; tap again.", "med.fehler": "The medicus dropped his instruments. Try again.", "med.hin": "To the medicus",
+  "med.hilfe": "Each treatment speeds up healing for four days, like in the old ludus. The price grows with the wounds."
  }
 }

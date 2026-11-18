@@ -56,6 +56,8 @@
   "leiche.name": "Corpse",
   "markt-stand.info": "The slave trader's stall. Every morning he brings five new men in chains; whoever is left at dusk goes back on the road with him. No refunds.",
   "markt-stand.name": "Slave Market",
+  "medicus.info": "A small house with a slate roof and the staff of Asclepius over the door. The medicus sews, sets and saws for gold; the cheaper the treatment, the longer the scream.",
+  "medicus.name": "Medicus",
   "natur-stumpf.info": "What is left of a tree after the woodcutter has been by. Give it a few days and it will try again; trees never learn.",
   "natur-stumpf.name": "Tree Stump",
   "tier-reh.info": "A roe deer, all eyes and nerves. It grazes, it listens, and it has no idea there is a kitchen in its future.",

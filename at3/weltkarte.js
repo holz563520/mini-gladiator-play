@@ -31,7 +31,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='e80acb2b', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='7e5acf39', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -307,6 +307,7 @@ var t0=performance.now();
   PER.forEach(function(e,id){var p=perLage(e,t);L.push({art:'figur-arbeiter',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,fa:e.fa,fb:e.fb},typ:'person'})});
   TIER.forEach(function(e,id){var p=tierLage(e,t);L.push({art:'tier-reh',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust},typ:'tier'})});      // G8
   KAR.forEach(function(e,id){var p=karLage(e,t);L.push({art:'karren-ochse',id:id,x:p[0],y:p[1],dir:e.dir,geht:p[2],karte:{id:id,zust:e.zust,grund:e.grund,warte:e.warte||0},typ:'karren'})});
+  FEST.forEach(function(e,i){L.push({art:e.art,id:'f'+i+e.art,x:e.x+.5,y:e.y+.5,dir:0,geht:false,karte:e,typ:'fest'})});      // K0: feste Objekte (Markt, Arena, Medicus, Leiche) auch in First Person
   return L}
  function raumBei(X,Y){if(Y<0||Y>=WY)return 0;X=umX(X);var r=BAUM.get(stk(X,Y));return r?r[((Y&63)<<6)|(X&63)]:0}
  // Räume, die ein Bild der Stufe 1× berühren (Felder darin und die Nachbarn nördlich/westlich, deren Vorderwände in diesem Bild stehen); je Kartenstück 64 Listen.

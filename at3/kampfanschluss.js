@@ -60,6 +60,8 @@ KA.karten=function(wunsch,basis,v){return frage('karten','wunsch',wunsch,basis,v
 // G9d3: Arenakampf „nur Ergebnis“ ohne Fenster (kampfkern.js KK.arena, wie der angesehene Kampf) und tägliche Heilung wie 1.0 (KK.heile)
 KA.arena=function(wunsch,basis,v){return frage('arena','wunsch',wunsch,basis,v);};
 KA.heile=function(wunsch,basis,v){return frage('heile','wunsch',wunsch,basis,v);};
+// K0: Medicus wie 1.0 (kampfkern.js KK.behandle: Kosten je Stufe oder eine Behandlung)
+KA.behandle=function(wunsch,basis,v){return frage('behandle','wunsch',wunsch,basis,v);};
 // F1a: Kartenfiguren wie 2.0 (Posenblätter, voll und AT3-64) im Kampfkern zeichnen lassen. wunsch {seed, n, besucher, palette}
 KA.figuren=function(wunsch,basis,v){return frage('figuren','wunsch',wunsch,basis,v);};
 // F1b: Kartenblätter der Personen fürs Spiel (AT3-64) im Kampfkern zeichnen lassen. wunsch {gs:[{pid,g}], lasten, palette}

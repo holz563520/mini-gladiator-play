@@ -13,6 +13,9 @@
 // lässt den Kampfkern die 1.0-Heilung rechnen (KK.heile: unveränderter Tageswechsel aus data.js) und schickt glaHeil {tag, liste:[{pid, gv, g, hp, ruht}]}. Übernommen
 // wird nur, wenn gv (Datenstand des Gladiators, wächst bei jedem Kampf und jeder Heilung) noch passt. hp (Gesundheit 0–100) macht leicht Verletzte langsamer,
 // ruht = schwer verletzt: keine Arbeit, liegt in der Unterkunft (personen.js).
+// K0 Medicus (Thomas 18.11.2026: „Medicus als Gebäude“, Stufen und Kosten wie 1.0, keine Automatik): fester Platz md (erstes begehbares Feld ab 3 Felder
+// westlich des Startplatzes, nicht auf Marktstand oder Arena). Befehl glaBehandle {pid, gv, tier 1–3, kosten, g, hp, ruht}: Das Spiel lässt den Kampfkern
+// die Behandlung wie 1.0 rechnen (KK.behandle: unverändertes treat() aus data.js, Kosten medicalCost) und schickt das Ergebnis; hier nur Gold, Datenstand, Übernahme.
 // Kerne: nur Weltkern; Kosten je Tick ein Vergleich, alles andere nur bei einem Befehl oder einmal je Spieltag. Hängt nicht von der Weltgröße ab.
 (function(root){
 'use strict';
@@ -22,7 +25,7 @@ function KET(){return root.AT3KETTEN||(typeof module!=='undefined'&&module.expor
 function WG(){return root.AT3WG||(typeof module!=='undefined'&&module.exports?require('./weltgen.js'):null)}
 function AR(){return root.AT3ARENA||(typeof module!=='undefined'&&module.exports?require('./arena.js'):null)}
 function ON(){return root.AT3ORTSNAMEN||(typeof module!=='undefined'&&module.exports?require('./ortsnamen.js'):null)}
-var STAND=1, HEIL_MAX=30, PREIS=100, LOT=5, ORTE=8, GLEICH=70, TAG=12000, MAX_G=4096, WX=64*9600;   // PREIS, LOT wie trader.js (1.0); GLEICH: % Geburtsort = Herkunftsort (Vorschlag)
+var MED_MAX=1e6, STAND=1, HEIL_MAX=30, PREIS=100, LOT=5, ORTE=8, GLEICH=70, TAG=12000, MAX_G=4096, WX=64*9600;   // PREIS, LOT wie trader.js (1.0); GLEICH: % Geburtsort = Herkunftsort (Vorschlag)
 var ART=['','dorf','stadt','hafen','hafen'];   // Ortsart im Weltnetz: 1 Dorf, 2 Stadt, 3 Hafendorf, 4 Hafenstadt
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
 function wuerfel(z){var v=z.zufall[1];v^=v<<13;v>>>=0;v^=v>>>17;v^=v<<5;v>>>=0;z.zufall[1]=v||1;return v}      // Strom „wirtschaft“ (wie ketten.js)
@@ -52,7 +55,12 @@ function platz(z,a){if(a.platz)return;if(z.tick%20)return;var s=standFeld(z,a.sx
 function schritt(z){var a=z.gla;if(!a)return;platz(z,a);if(!a.platz)return;var d=tag(z);
  if(a.tag!==d&&a.frage!==d){a.frage=d;a.zaehler++}
  if(a.hl<0){a.hl=d;a.zaehler++}else if(a.hl<d&&a.hf!==d){a.hf=d;a.zaehler++}      // G9d3: Heilung fällig (einmal melden)
- AR().schritt(z)}      // G9d2: Arena und Kampftermin
+ AR().schritt(z);medPlatz(z,a)}      // G9d2: Arena und Kampftermin; K0: Medicus
+// K0: Platz des Medicus, sobald Marktstand und Arena stehen (einmal je Sekunde versuchen, nach 10 s neben den Startplatz)
+function medPlatz(z,a){if(a.md||!a.ar||!a.ar.platz||z.tick%20)return;var P=PERS(),r=a.ar,f=null;
+ for(var q=0;q<=6&&!f;q++)for(var dy=-q;dy<=q&&!f;dy++)for(var dx=-q;dx<=q;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==q)continue;
+  var X=um(a.sx-3+dx),Y=a.sy+dy;if((X===a.mx&&Y===a.my)||(X===r.ax&&Y===r.ay))continue;if(P&&P.gangbar(z,X,Y)){f=[X,Y];break}}
+ if(!f&&(a.mdv=(a.mdv|0)+1)<10)return;a.md=f||[um(a.sx-1),a.sy];a.zaehler++}
 // Startpersonen ohne Gladiatordaten (die Spielstartfünf, Stände von vor G9c)
 function ohne(z){var g=z.per,L=[];if(!g)return L;for(var i=0;i<g.p.length;i++)if(!z.gla.per[g.p[i].id])L.push(g.p[i].id);return L}
 // G9d3: Heilung fällig? {tag, tage}
@@ -64,6 +72,8 @@ var ARTEN={
  gladiatoren:function(w){return !!w&&w.an===1},
  glaLot:function(w){return !!w&&w.tag===Math.floor(w.tag)&&w.tag>=0&&Array.isArray(w.lot)&&(w.lot.length===0||w.lot.length===LOT)&&w.lot.every(istG)&&
   Array.isArray(w.start)&&w.start.length<=64&&w.start.every(istG)},
+ glaBehandle:function(w){return !!w&&w.pid===Math.floor(w.pid)&&w.pid>=1&&w.gv===Math.floor(w.gv)&&w.gv>=0&&(w.tier===1||w.tier===2||w.tier===3)&&
+  w.kosten===Math.floor(w.kosten)&&w.kosten>=0&&w.kosten<=MED_MAX&&istG(w.g)&&w.hp===Math.floor(w.hp)&&w.hp>=0&&w.hp<=100&&(w.ruht===0||w.ruht===1)},      // K0
  glaKauf:function(w){return !!w&&w.i===Math.floor(w.i)&&w.i>=0&&w.i<LOT&&w.tag===Math.floor(w.tag)},
  glaHeil:function(w){return !!w&&w.tag===Math.floor(w.tag)&&w.tag>=0&&Array.isArray(w.liste)&&w.liste.length<=MAX_G&&w.liste.every(function(e){return !!e&&e.pid===Math.floor(e.pid)&&e.pid>=1&&
   e.gv===Math.floor(e.gv)&&e.gv>=0&&istG(e.g)&&e.hp===Math.floor(e.hp)&&e.hp>=0&&e.hp<=100&&(e.ruht===0||e.ruht===1)})},
@@ -80,6 +90,11 @@ function befehl(z,art,w){
   a.zaehler++;return}
  if(art==='glaHeil'){if(w.tag!==d||a.hl>=d)return;      // G9d3: veraltete Heilung (anderer Tag) fällt weg
   w.liste.forEach(function(e){var p=a.per[e.pid];if(!p||(p.gv|0)!==e.gv)return;p.g=JSON.parse(JSON.stringify(e.g));p.hp=e.hp;p.ruht=e.ruht;p.gv=e.gv+1});a.hl=d;a.zaehler++;return}
+ if(art==='glaBehandle'){var p=a.per[w.pid];      // K0: Medicus
+  if(!a.md||!p||!p.g||p.g.dead||(p.gv|0)!==w.gv){melde(a,{tick:z.tick,med:1,ok:0,grund:'gone',id:w.pid});return}
+  if(!z.bau)z.bau=BAU().neu();if(z.bau.gold<w.kosten){melde(a,{tick:z.tick,med:1,ok:0,grund:'no_gold',id:w.pid,kosten:w.kosten});return}
+  z.bau.gold-=w.kosten;z.bau.zaehler++;p.g=JSON.parse(JSON.stringify(w.g));p.hp=w.hp;p.ruht=w.ruht;p.gv=w.gv+1;
+  melde(a,{tick:z.tick,med:1,ok:1,id:w.pid,name:p.g.name,tier:w.tier,kosten:w.kosten});return}
  if(art==='glaKauf'){var k=a.lot[w.i];
   if(w.tag!==a.tag||a.tag!==d||!k){melde(a,{tick:z.tick,ok:0,grund:'gone'});return}
   if(!z.bau)z.bau=BAU().neu();if(z.bau.gold<PREIS){melde(a,{tick:z.tick,ok:0,grund:'no_gold'});return}
@@ -92,7 +107,7 @@ function aufraeumen(z){var a=z.gla,g=z.per;if(!a||!g)return;var da={};for(var i=
 function kurz(r){var g=r.g,s=g.stats||{},w=function(x){return x==null?null:Math.round(x)};return{name:g.name,alter:g.age|0,groesse:g.height|0,gewicht:g.weight|0,
  talent:w(g.potential),wuchs:g.stature||'',her:r.her,geb:r.geb,hp:r.hp==null?100:r.hp,ruht:r.ruht|0,gv:r.gv|0,werte:{str:w(s.strength),sta:w(s.stamina),agi:w(s.agility),dex:w(s.dexterity)}}}
 function meld(z){var a=z.gla;if(!a)return null;aufraeumen(z);var per={};for(var id in a.per)per[id]=kurz(a.per[id]);
- return{zaehler:a.zaehler,platz:a.platz,markt:[a.mx,a.my],tag:a.tag,heute:tag(z),preis:PREIS,gold:z.bau?z.bau.gold:BAU().START_GOLD,
+ return{zaehler:a.zaehler,platz:a.platz,markt:[a.mx,a.my],medicus:a.md?a.md.slice():null,tag:a.tag,heute:tag(z),preis:PREIS,gold:z.bau?z.bau.gold:BAU().START_GOLD,
   lot:a.tag===tag(z)?a.lot.map(function(r){return r?kurz(r):null}):[],braucht:braucht(z),heil:heil(z),per:per,meld:a.meld.slice(),orte:a.orte.map(function(o){return{ortId:o[0],art:ART[o[1]],name:o[4]}}),arena:AR().kurz(z)}}
 // Volle 1.0-Daten einer Person oder eines Kandidaten (G9c2 Karte, G9d Kampf); nur auf Nachfrage
 function daten(z,wo){var a=z.gla;if(!a)return null;if(wo.arena)return AR().daten(z);      // G9d2: Kampffenster
@@ -102,16 +117,17 @@ function daten(z,wo){var a=z.gla;if(!a)return null;if(wo.arena)return AR().daten
 
 function abdruck(a,f){f(a.platz?1:0);f(a.mx);f(a.my);f(a.tag);f(a.frage);f(a.verkauft);f(a.orte.length);
  var ids=Object.keys(a.per).map(Number).sort(function(x,y){return x-y});f(ids.length);ids.forEach(function(id){f(id);var r=a.per[id];f(r.her?r.her.ortId:-1);f(r.geb?r.geb.ortId:-1);f(r.gv|0);f(r.hp==null?100:r.hp);f(r.ruht|0)});f(a.hl)
- a.lot.forEach(function(r){f(r?(r.her?r.her.ortId:-1)+1:0)});AR().abdruck(a.ar,f)}
+ a.lot.forEach(function(r){f(r?(r.her?r.her.ortId:-1)+1:0)});AR().abdruck(a.ar,f);if(a.md){f(a.md[0]);f(a.md[1])}}      // K0: Medicus
 function stand(a){return{format:STAND,zaehler:a.zaehler,mx:a.mx,my:a.my,orte:a.orte.map(function(o){return o.slice()}),tag:a.tag,frage:a.frage,lot:a.lot.slice(),per:Object.assign({},a.per),verkauft:a.verkauft,
- sx:a.sx,sy:a.sy,platz:a.platz,versuche:a.versuche|0,hl:a.hl,hf:a.hf|0,ar:AR().stand(a.ar)}}
+ sx:a.sx,sy:a.sy,platz:a.platz,versuche:a.versuche|0,hl:a.hl,hf:a.hf|0,ar:AR().stand(a.ar),md:a.md?a.md.slice():null,mdv:a.mdv|0}}
 function ausStand(d){if(!d||d.format!==STAND||!Array.isArray(d.orte)||!Array.isArray(d.lot)||!d.per||typeof d.per!=='object')return null;
  var okR=function(r){return r===null||(r&&istG(r.g))};if(!d.lot.every(okR))return null;for(var id in d.per)if(!okR(d.per[id])||d.per[id]===null)return null;
  var ar=d.ar==null?null:AR().ausStand(d.ar);if(ar===false)return null;      // G9d2: Stände von vor G9d2 haben keine Arena (entsteht von selbst)
  return{ar:ar,zaehler:d.zaehler|0,mx:d.mx|0,my:d.my|0,orte:d.orte.map(function(o){return o.slice()}),tag:d.tag|0,frage:d.frage|0,lot:d.lot.slice(),per:Object.assign({},d.per),verkauft:d.verkauft|0,meld:[],
-  sx:d.sx|0,sy:d.sy|0,platz:!!d.platz,versuche:d.versuche|0,hl:typeof d.hl==='number'&&d.hl===Math.floor(d.hl)&&d.hl>=-1?d.hl:-1,hf:d.hf|0}}      // G9d3: ohne hl = ab dem nächsten Tag
+  sx:d.sx|0,sy:d.sy|0,platz:!!d.platz,versuche:d.versuche|0,hl:typeof d.hl==='number'&&d.hl===Math.floor(d.hl)&&d.hl>=-1?d.hl:-1,hf:d.hf|0,
+  md:Array.isArray(d.md)&&d.md.length===2&&d.md.every(function(v){return v===Math.floor(v)&&v>=0})?d.md.slice():null,mdv:d.mdv|0}}      // K0: ohne md = Medicus entsteht von selbst      // G9d3: ohne hl = ab dem nächsten Tag
 
-var GL={STAND:STAND,HEIL_MAX:HEIL_MAX,heil:heil,PREIS:PREIS,LOT:LOT,ORTE:ORTE,GLEICH:GLEICH,ARTEN:ARTEN,start:start,schritt:schritt,befehl:befehl,braucht:braucht,meld:meld,daten:daten,
+var GL={MED_MAX:MED_MAX,STAND:STAND,HEIL_MAX:HEIL_MAX,heil:heil,PREIS:PREIS,LOT:LOT,ORTE:ORTE,GLEICH:GLEICH,ARTEN:ARTEN,start:start,schritt:schritt,befehl:befehl,braucht:braucht,meld:meld,daten:daten,
  abdruck:abdruck,stand:stand,ausStand:ausStand,orteUm:orteUm,MAX_G:MAX_G};
 if(typeof module!=='undefined'&&module.exports)module.exports=GL;else root.AT3GLAD=GL;
 })(typeof self!=='undefined'?self:this);

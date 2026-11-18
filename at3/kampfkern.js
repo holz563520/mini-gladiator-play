@@ -136,6 +136,7 @@ KK.arena=function(w){
  var st=JSON.parse(JSON.stringify(w.auf||{}));['lineup','vows','fallen','log'].forEach(function(k){if(!Array.isArray(st[k]))st[k]=[];});if(typeof st.fame!=='number')st.fame=0;if(st.hero===undefined)st.hero=null;
  S.roster=(w.kader||[]).map(function(g){g=JSON.parse(JSON.stringify(g));g.enemy=false;return g;});S.day=(w.heute|0)+1;S.rng=(w.seed>>>0)||1;S.battle=null;
  var GG=function(id){return S.roster.find(function(g){return g.id===id;});};
+ var VOR={};S.roster.forEach(function(g){VOR[g.id]=g;});var GV=function(id){return GG(id)||VOR[id]||null;};      // K0: 1.0 nimmt Tote nach dem Kampf aus dem Kader; ihre Daten kommen aus VOR
  var fit=function(g){try{return M.lineupEligibility?M.lineupEligibility(g):M.army&&M.army.eligibility?M.army.eligibility(g):{ok:!g.dead,causes:[]};}catch(e){return {ok:!g.dead,causes:[]};}};
  try{
   var L=st.lineup.filter(function(x){return GG(x.id);}).map(function(x){var g=GG(x.id);return {id:g.id,g:g,kw:A.kw(g),role:g.role,slot:{row:x.row,lane:x.lane}};});
@@ -152,14 +153,14 @@ KK.arena=function(w){
   var r=T.done(out);S.battle=null;S.records=[];S.inventory=[];
   // wie settle() in aufstellung-ui.js
   st.fame=Math.max(-50,Math.min(150,st.fame+r.fameDelta));
-  r.units.filter(function(u){return u.team===0;}).forEach(function(u){var g=GG(u.key);
+  r.units.filter(function(u){return u.team===0;}).forEach(function(u){var g=GV(u.key);
    if(g){g.auf=g.auf||{};g.auf.fights=(g.auf.fights||0)+1;g.auf.kills=(g.auf.kills||0)+(u.kills||0);}
    if(u.dead||(g&&g.dead)){st.fallen.push({name:u.name,kw:(kwBefore[u.key]||{}).kw||0,role:(kwBefore[u.key]||{}).role||'',day:S.day||1,cause:u.cause});if(st.hero===u.key)st.hero=null;}});
   st.lineup=st.lineup.filter(function(x){return GG(x.id)&&!GG(x.id).dead;});st.log.push({day:S.day||1,label:o.label,skulls:o.skulls,won:r.won,gold:r.gold});if(st.log.length>60)st.log.shift();
   var ersetze=function(x){if(!x)return null;var t=JSON.stringify(x);return JSON.parse(bid?t.split(JSON.stringify(bid)).join(JSON.stringify('at3:'+w.id)):t);};
   return {auftrag:w.id,arena:1,praemie:Math.max(0,Math.round(+r.gold||0)),gewonnen:r.won?1:0,auf:st,angesehen:false,spekt:+r.spect||0,ruhmMul:+r.fameMul||1,
    sieger:out.winner,zeit:out.time,einheiten:out.units.map(function(u){return {key:String(u.key),art:u.kind,name:u.name,team:u.team,tot:!!u.dead,unten:!!u.down,leben:u.health,verletzt:!!u.injured,schwer:!!u.severe,
-    verletzungen:u.injuries||[],kills:u.kills||0,ursache:u.cause||'',toeter:u.killer||'',g:u.team===0?ersetze(GG(u.key)):null};})};
+    verletzungen:u.injuries||[],kills:u.kills||0,ursache:u.cause||'',toeter:u.killer||'',g:u.team===0?ersetze(GV(u.key)):null};})};
  }finally{Math.random=altZufall;S.battle=null;S.roster=altRoster;}};
 
 // ---------- G9d3: tägliche Heilung wie 1.0 (Thomas 17.11.2026: „Heilen wie 1.0“) ----------
@@ -176,6 +177,22 @@ KK.heile=function(w){
   S.roster=(w.gs||[]).map(function(g){return JSON.parse(JSON.stringify(g));});KK.tagRoh(tage);
   return S.roster.map(function(g){return {g:g,hp:Math.max(0,Math.min(100,Math.round(M.health(g)))),ruht:g.dead?0:KK.verletzt(g)?1:0};});}
  finally{M.chargeSold=cs;M.householdDay=hd;S.roster=alt.roster;S.day=alt.day;S.lastMarket=alt.lastMarket;S.sponsor=alt.sponsor;S.battle=alt.battle;S.rng=alt.rng;}};
+
+// ---------- K0: Medicus wie 1.0 (Thomas 18.11.2026: Stufen und Kosten wie 1.0, Gebäude am festen Platz, keine Automatik) ----------
+// Unverändertes treat() und medicalCost() aus data.js: Stufe 1 „Medicus“, 2 „Premium“, 3 „Special care“ (medic.js TIER), danach heilt der Tageswechsel (KK.heile)
+// vier Tage schneller wie in 1.0. Ohne Spital und ohne Medicus-Ausbau (buildings.hospital/medic = 0). Gold und Speichern von 1.0 sind dabei abgeschaltet.
+// wunsch {gs:[g …]} → [{id, kosten:[k1,k2,k3], hp, ruht, laeuft (Stufe der laufenden Behandlung, 0 = keine), tage (Resttage)}]
+// wunsch {gs:[g], tier 1–3} → {g, kosten, hp, ruht}
+KK.behandle=function(w){
+ vorbereiten();var M=G.MG,S=M.s,alt={roster:S.roster,gold:S.gold,stats:S.stats,batch:M.batchSaving,hosp:S.buildings.hospital,med:S.buildings.medic};
+ try{M.batchSaving=true;S.buildings.hospital=0;S.buildings.medic=0;
+  var gs=(w.gs||[]).map(function(g){return JSON.parse(JSON.stringify(g));});S.roster=gs;
+  if(!w.tier)return gs.map(function(g){return {id:String(g.id),kosten:[1,2,3].map(function(t){return M.medicalCost(g,t);}),hp:Math.max(0,Math.min(100,Math.round(M.health(g)))),
+   ruht:KK.verletzt(g)?1:0,laeuft:g.healing&&g.healing.days>0?g.healing.tier|0:0,tage:g.healing?g.healing.days|0:0};});
+  var g=gs[0],t=w.tier|0;if(!g||t<1||t>3)throw new Error('Behandlung: Gladiator oder Stufe fehlt');
+  var k=M.medicalCost(g,t);S.gold=k+1;S.stats={spent:0};M.treat(g.id,t);
+  return {g:g,kosten:k,hp:Math.max(0,Math.min(100,Math.round(M.health(g)))),ruht:KK.verletzt(g)?1:0};}
+ finally{S.roster=alt.roster;S.gold=alt.gold;S.stats=alt.stats;M.batchSaving=alt.batch;S.buildings.hospital=alt.hosp;S.buildings.medic=alt.med;}};
 
 // F1a (Thomas 18.11.2026): Kartenfiguren wie 2.0 für das Musterblatt im Master-Editor. figurbild.js und at3-64.js erst beim ersten Auftrag laden.
 // wunsch {seed, n, besucher, palette} → siehe figurbild.js. Verbraucht keinen Spielzufall (MG.s.rng wird zurückgesetzt).
@@ -196,7 +213,7 @@ if(imWorker){
   if(d.art==='figuren'){try{var r=KK.figuren(d.wunsch),tr=[];r.figuren.forEach(function(x){tr.push(x.voll.buffer,x.p64.buffer);});G.postMessage({nr:d.nr,ergebnis:r},tr);}
    catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}return;}
   var f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:d.art==='wuerfle'?function(){return KK.wuerfle(d.wunsch);}:d.art==='karten'?function(){return KK.karten(d.wunsch);}:
-  d.art==='arena'?function(){return KK.arena(d.wunsch);}:d.art==='heile'?function(){return KK.heile(d.wunsch);}:null;if(!f)return;
+  d.art==='arena'?function(){return KK.arena(d.wunsch);}:d.art==='heile'?function(){return KK.heile(d.wunsch);}:d.art==='behandle'?function(){return KK.behandle(d.wunsch);}:null;if(!f)return;
   try{G.postMessage({nr:d.nr,ergebnis:f()});}catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}};
  // G9b: Ladezeit und geladene Dateien des Kampfkerns melden (eigene Zeitleiste des Kerns)
  var res=[];try{res=G.performance.getEntriesByType('resource');}catch(e){}

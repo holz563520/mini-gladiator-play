@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='e80acb2b', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='7e5acf39', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -122,7 +122,7 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
   beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
   beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
   beiTier:function(k){if(BAUW&&!fpAn)return false;tierKarte(k);return true},      // G8: Reh antippen
-  beiFest:function(e){if(BAUW&&!fpAn)return false;if(e.art==='markt-stand'){marktKarte();return true}if(e.art==='arena-sand'){arenaKarte();return true}if(e.art==='leiche'&&e.info){leicheKarte(e.info);return true}return false},      // G9d3: Leiche      // G9c1: Marktstand antippen, G9d2: Arena
+  beiFest:function(e){if(BAUW&&!fpAn)return false;return festKarte(e)},      // G9d3: Leiche      // G9c1: Marktstand antippen, G9d2: Arena
   beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.bweg?', '+t('welt.bweg.'+f.bweg[0])+(f.bweg[1]<3?' ('+t('bau.zustand.'+f.bweg[1])+')':''):f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
@@ -220,8 +220,10 @@ function warenZeigen(){var W=WAREN,e=$('warenLeiste');if(!W||!W.an){e.textConten
 function personKarte(k){PERSON=k;var name=personName(k.id),auf=t('person.auf.'+(k.zust===4?'w':k.zust===0?0:k.auf)),fa=k.fa|0,fb=k.fb|0,hu=fb>>7,last=k.last?t('person.last',{m:k.last>>4,w:t('ware.'+((k.last&15)-1))}):'';
  var gl=GLAD&&GLAD.per&&GLAD.per[k.id],her=gl?herkunftText(gl):'';
  $('karte').innerHTML='<b>'+esc(name)+'</b>'+(gl?' <span class="leise">'+esc(t('glad.kurz',{a:gl.alter,h:gl.groesse}))+'</span>':'')+(her?'<br><span class="leise">'+esc(her)+'</span>':'')+'<br>'+esc(auf)+(last?'<br>'+esc(last):'')+(hu?'<br><span class="schlecht">'+esc(t('person.hunger.'+hu))+'</span>':'')+(gl&&gl.ruht?'<br><span class="schlecht">'+esc(t('person.ruht'))+'</span>':gl&&gl.hp<100?'<br><span class="schlecht">'+esc(t('person.gesund',{h:gl.hp,v:Math.max(50,gl.hp)}))+'</span>':'')+'<br>'+esc(t('person.faehig',{a:k.f0,b:k.f1,c:fa&127,d:(fa>>7)&127,e:(fa>>14)&127,f:(fa>>21)&127,g:fb&127}))+'<br>'+
-  [1,2,4,8,16,32,64].map(function(bit,i){return '<button class="knopf klein" id="pRolle'+bit+'" aria-pressed="'+(k.darf&bit?'true':'false')+'">'+esc(t('person.rolle.'+(i+1)))+'</button>'}).join(' ');
+  [1,2,4,8,16,32,64].map(function(bit,i){return '<button class="knopf klein" id="pRolle'+bit+'" aria-pressed="'+(k.darf&bit?'true':'false')+'">'+esc(t('person.rolle.'+(i+1)))+'</button>'}).join(' ')+
+  (gl&&gl.hp<100&&GLAD&&GLAD.medicus?' <button class="knopf klein" id="pMedicus">'+esc(t('med.hin'))+'</button>':'');      // K0: zum Medicus
  [1,2,4,8,16,32,64].forEach(function(bit){$('pRolle'+bit).onclick=function(){k.darf^=bit;KERN.befehl('personRolle',{id:k.id,darf:k.darf});personKarte(k)}});
+ if($('pMedicus'))$('pMedicus').onclick=function(){medicusKarte()};
  window.AT3SPIEL.angetippt='person:'+k.id;window.AT3SPIEL.personKarte=k;if(!personKarte.still)sprich(name+'. '+auf);personKarte.still=false}
 // ── G9c1 Gladiatoren und Sklavenmarkt: Übersicht vom Weltkern (gladiatoren.js meld, nur bei Änderung). Braucht der Markt Kandidaten (neuer Spieltag) oder
 // haben Personen noch keine Gladiatordaten, würfelt der Kampfkern (kampfkern.js, unverändertes 1.0, wie trader.js stock) und das Ergebnis geht mit glaLot zurück.
@@ -231,7 +233,7 @@ function anschluss(){if(KAL)return KAL;KAL=new Promise(function(ok,no){if(window
  s.onload=function(){ok(window.AT3Kampf)};s.onerror=function(){KAL=null;no(new Error('kampfanschluss.js'))};document.head.appendChild(s)});return KAL}
 function herkunftText(g){var h=g.her,b=g.geb;if(!h)return '';var a=t('glad.ort.'+h.art);return b&&b.ortId!==h.ortId?t('glad.her2',{o:h.name,a:a,b:b.name}):t('glad.her1',{o:h.name,a:a})}
 function beiGladiatoren(d){GLAD=d.meld||null;window.AT3SPIEL.glad=GLAD;
- var AR=GLAD&&GLAD.arena;if(KARTE)KARTE.fest(GLAD&&GLAD.platz?[{art:'markt-stand',x:GLAD.markt[0],y:GLAD.markt[1]}].concat(AR&&AR.platz?[{art:'arena-sand',x:AR.x,y:AR.y}]:[])
+ var AR=GLAD&&GLAD.arena;if(KARTE)KARTE.fest(GLAD&&GLAD.platz?[{art:'markt-stand',x:GLAD.markt[0],y:GLAD.markt[1]}].concat(AR&&AR.platz?[{art:'arena-sand',x:AR.x,y:AR.y}]:[]).concat(GLAD.medicus?[{art:'medicus',x:GLAD.medicus[0],y:GLAD.medicus[1]}]:[])
   .concat(AR&&AR.leichen?AR.leichen.map(function(l){return{art:'leiche',x:l.x,y:l.y,info:l}}):[]):[]);      // G9d2: feste Arena; G9d3: Leichen einen Spieltag
  // G9d3 Heilung wie 1.0: neuer Spieltag → alle Lebenden im Kampfkern heilen (KA.heile, Tageswechsel aus data.js), Ergebnis mit glaHeil zurück. Einmal je Spieltag.
  var h=GLAD&&GLAD.heil;if(h&&heilWarte!==h.tag){heilWarte=h.tag;
@@ -242,9 +244,10 @@ function beiGladiatoren(d){GLAD=d.meld||null;window.AT3SPIEL.glad=GLAD;
  var b=GLAD&&GLAD.braucht;if(b){var key=b.tag+':'+b.lot+':'+b.start;if(glaWarte!==key){glaWarte=key;
   anschluss().then(function(KA){return KA.wuerfle({seed:((WSEED>>>0)^Math.imul(b.tag+1,0x9e3779b1))>>>0,n:b.lot+b.start},'',V)}).then(function(L){
    KERN.befehl('glaLot',{tag:b.tag,lot:L.slice(0,b.lot),start:L.slice(b.lot)})},function(e){glaWarte='';console.warn('Sklavenmarkt:',e)})}}
- var M=GLAD&&GLAD.meld,m=M&&M[M.length-1];if(m&&m.tick!==beiGladiatoren.letzt){beiGladiatoren.letzt=m.tick;if(window.AT3SPIEL.angetippt==='markt'){$('weltInfo').textContent=m.ok?t('markt.gekauft',{n:m.name}):t('markt.nein.'+m.grund);
+ var M=GLAD&&GLAD.meld,m=M&&M[M.length-1];if(m&&m.tick!==beiGladiatoren.letzt){beiGladiatoren.letzt=m.tick;if(m.med){MED.warte=0;$('weltInfo').textContent=m.ok?t('med.ok',{n:m.name,s:t('med.tier.'+m.tier),k:m.kosten}):t('med.nein.'+m.grund)}else if(window.AT3SPIEL.angetippt==='markt'){$('weltInfo').textContent=m.ok?t('markt.gekauft',{n:m.name}):t('markt.nein.'+m.grund);
    if(m.ok)aufdecken(m);else if(m.grund==='no_gold'&&HANDEL){MK.quote=zieh('broke');sprich(MK.quote)}}}
  if(window.AT3SPIEL.angetippt==='markt')marktKarte(true);
+ if(window.AT3SPIEL.angetippt==='medicus')medicusKarte(true);
  if(PERSON&&window.AT3SPIEL.angetippt==='person:'+PERSON.id){personKarte.still=true;personKarte(PERSON)}
  arenaMeld();figurenPflegen()}
 // ── F1b Kartenfiguren wie 2.0 (Thomas 18.11.2026): fehlt einer Person ihr Posenblatt (neu oder Datenstand gv geändert), holt das Spiel ihr Aussehen vom Weltkern
@@ -330,6 +333,33 @@ function arenaBericht(){var B=BERICHT;if(!B)return;var e=$('karte'),erg=B.erg,A=
  if(L&&L.tote&&L.tote.length)h+='<br><span class="leise">'+esc(t('arena.gefallen',{n:L.tote.join(', ')}))+'</span>';
  h+='<br><button class="knopf klein" id="berichtZu">'+esc(t('arena.bericht.weiter'))+'</button>';e.innerHTML=h;$('berichtZu').onclick=function(){BERICHT=null;e.textContent='';window.AT3SPIEL.angetippt=''}}
 // Leiche antippen (liegt einen Spieltag neben der Arena)
+// ── K0 Medicus (Thomas 18.11.2026: Gebäude am festen Platz, Stufen und Kosten wie 1.0, keine Automatik). Antippen zeigt alle Verletzten mit Gesundheit und den drei
+// Stufen aus 1.0 (Medicus, Premium, Special care) samt Preis. Preis und Behandlung rechnet der Kampfkern (KA.behandle, unverändertes treat()/medicalCost() aus data.js),
+// das Gold bucht der Weltkern (glaBehandle, nur wenn Datenstand gv und Kasse passen). Preise einmal je Datenstand gerechnet und gemerkt. ──
+var MED={key:'',liste:null,laeuft:false,warte:0};
+function medGold(){return bauStand&&bauStand.gold!=null?bauStand.gold|0:GLAD&&GLAD.gold|0}      // Kasse: neuester Stand (Bau meldet öfter als der Markt)
+function medicusKarte(still){var e=$('karte'),info=OBJTXT['medicus.info']||'';window.AT3SPIEL.angetippt='medicus';
+ if(!GLAD||!GLAD.medicus){e.textContent=t('med.zu');return}
+ var per=GLAD.per||{},ids=Object.keys(per).filter(function(id){var g=per[id];return g&&(g.hp<100||g.ruht)}).sort(function(a,b){return per[a].hp-per[b].hp||a-b}),
+  key=ids.map(function(id){return id+':'+per[id].gv}).join(','),h='<b>'+esc(t('med.titel'))+'</b>'+(info&&!still?'<br><span class="leise">'+esc(info)+'</span>':'')+'<br>'+esc(t('med.gold',{g:medGold()}));
+ if(!ids.length){e.innerHTML=h+'<br><span class="leise">'+esc(t('med.keiner'))+'</span>';if(!still)sprich(t('med.titel')+'. '+t('med.keiner'));return}
+ if(key!==MED.key&&!MED.laeuft){MED.laeuft=true;var k0=key;
+  Promise.all([anschluss(),KERN.glaDaten({figur:ids.map(Number)})]).then(function(r){return r[0].behandle({gs:r[1].map(function(x){return x.g})},'',V).then(function(L){
+   var nach={};L.forEach(function(x){nach[x.id]=x});MED.liste=r[1].map(function(x){var c=nach[String(x.g.id)];return c?{pid:x.pid,gv:x.gv,kosten:c.kosten,laeuft:c.laeuft,tage:c.tage}:null}).filter(Boolean);MED.key=k0})})
+   .catch(function(err){console.warn('Medicus:',err);$('weltInfo').textContent=t('med.fehler')}).then(function(){MED.laeuft=false;if(window.AT3SPIEL.angetippt==='medicus')medicusKarte(true)})}
+ if(key!==MED.key){e.innerHTML=h+'<br><span class="leise">'+esc(t('med.laedt'))+'</span>';return}
+ var preis={};MED.liste.forEach(function(x){preis[x.pid]=x});
+ h+='<br><span class="leise">'+esc(t('med.hilfe'))+'</span>';
+ ids.forEach(function(id){var g=per[id],p=preis[id];if(!p)return;
+  h+='<br><b>'+esc(personName(+id))+'</b> <span class="schlecht">'+esc(t('med.hp',{h:g.hp}))+(g.ruht?' · '+esc(t('med.ruht')):'')+'</span>'+(p.laeuft?' <span class="leise">'+esc(t('med.laeuft',{s:t('med.tier.'+p.laeuft),d:p.tage}))+'</span>':'')+'<br>'+
+   [1,2,3].map(function(s){return '<button class="knopf klein" data-med="'+id+':'+s+'"'+(medGold()<p.kosten[s-1]||MED.warte?' disabled':'')+'>'+esc(t('med.knopf',{s:t('med.tier.'+s),k:p.kosten[s-1]}))+'</button>'}).join(' ')});
+ e.innerHTML=h;[].forEach.call(e.querySelectorAll('[data-med]'),function(b){b.onclick=function(){var q=b.dataset.med.split(':');medBehandle(+q[0],+q[1])}});
+ if(!still)sprich(t('med.titel')+'. '+t('med.hilfe'))}
+function medBehandle(pid,tier){if(MED.warte)return;MED.warte=1;medicusKarte(true);
+ Promise.all([anschluss(),KERN.glaDaten({figur:[pid]})]).then(function(r){var x=r[1]&&r[1][0];if(!x)throw new Error('gone');
+  return r[0].behandle({gs:[x.g],tier:tier},'',V).then(function(B){setTimeout(function(){if(MED.warte){MED.warte=0;if(window.AT3SPIEL.angetippt==='medicus')medicusKarte(true)}},5000);KERN.befehl('glaBehandle',{pid:pid,gv:x.gv,tier:tier,kosten:B.kosten,g:B.g,hp:B.hp,ruht:B.ruht})})})
+  .catch(function(err){console.warn('Medicus:',err);MED.warte=0;$('weltInfo').textContent=t('med.fehler');if(window.AT3SPIEL.angetippt==='medicus')medicusKarte(true)})}
+function festKarte(e){if(e.art==='markt-stand'){marktKarte();return true}if(e.art==='arena-sand'){arenaKarte();return true}if(e.art==='medicus'){medicusKarte();return true}if(e.art==='leiche'&&e.info){leicheKarte(e.info);return true}return false}      // K0: Karte und First Person
 function leicheKarte(l){var e=$('karte');window.AT3SPIEL.angetippt='leiche';
  e.innerHTML='<b>'+esc(t('leiche.titel',{n:l.name}))+'</b>'+(l.her?'<br><span class="leise">'+esc(t('leiche.her',{o:l.her}))+'</span>':'')+(l.ursache?'<br>'+esc(t('leiche.ursache',{u:l.ursache})):'')+'<br><span class="leise">'+esc(t('leiche.info'))+'</span>';
  sprich(t('leiche.titel',{n:l.name}))}
@@ -532,7 +562,7 @@ function fpUmschalten(){if(fpBusy||!KARTE)return;var k=$('fpKnopf');
  .catch(function(e){var m=e&&e.message;$('weltInfo').textContent=m==='globe'?t('fp.globus'):m==='no ground'?t('fp.keinBoden'):t('fp.fehler',{e:m})})
  .then(function(){fpBusy=false;k.disabled=fpWahl})}
 // FP3: Arbeiter oder Karren in First Person angetippt: dieselbe Karte wie auf der Karte (mit Schaltern unten), oben kurz ohne Schalter mit Entfernung
-function fpBewegt(typ,k,m){if(typ==='person')personKarte(k);else if(typ==='tier')tierKarte(k);else karrenKarte(k);var c=$('karte').cloneNode(true);c.querySelectorAll('button').forEach(function(b){b.remove()});
+function fpBewegt(typ,k,m){if(typ==='person')personKarte(k);else if(typ==='tier')tierKarte(k);else if(typ==='fest')festKarte(k);else karrenKarte(k);var c=$('karte').cloneNode(true);c.querySelectorAll('button').forEach(function(b){b.remove()});
  $('weltInfo').innerHTML=c.innerHTML.replace(/(<br>\s*)+$/,'')+' <span class="leise">· '+esc(t('fp.entfernt',{m:Math.round(m)}))+'</span>'}
 function fpObjekt(id,ersatz,m){if(!id){$('weltInfo').textContent=t('fp.nichts');return}objektKarte(id,ersatz);$('weltInfo').innerHTML=$('karte').innerHTML+' <span class="leise">· '+esc(t('fp.entfernt',{m:Math.round(m)}))+'</span>'}
 function fpText(){var f=window.AT3FP&&window.AT3FP.mess();if(!f||!f.bilder)return t('mess.fpAus');var u=function(v){return v==null?'-':v.toFixed(1)+' ms'};
@@ -541,7 +571,8 @@ function texteSetzen(){document.title=t('spiel.titel');$('titel').textContent=t(
  $('weltTitel').textContent=t('welt.titel');$('bodenTitel').textContent=t('spiel.boden');$('bodenInfo').textContent=t('spiel.bodenInfo');$('karte').textContent=t('spiel.tippen');
  $('messTitel').textContent=t('mess.titel');$('messZu').textContent=t('mess.schliessen');$('messKopie').textContent=t('mess.kopieren');$('messAuf').textContent=t('mess.oeffnen');$('stimmeKnopf').textContent=t('stimme.aus');$('fpKnopf').textContent=t('fp.knopf');
  $('status').textContent=t('spiel.laedt');uhrKnoepfe()[0].textContent=t('uhr.pause');$('uhrZeit').textContent=t('uhr.zeit',{t:'–'})}
-window.AT3SPIEL={fp:function(){return fpAn},arena:function(m){arenaFenster(m)},arenaFrage:function(){arenaFrage()},      // G9d3: Prüfhaken
+window.AT3SPIEL={medicus:function(){return{key:MED.key,liste:MED.liste,warte:MED.warte}},zeigePerson:function(k){personKarte(k)},fp:function(){return fpAn},      // K0: Prüfhaken Medicus
+ arena:function(m){arenaFenster(m)},arenaFrage:function(){arenaFrage()},      // G9d3: Prüfhaken
  tempo:function(){return KERN&&KERN.zustand?KERN.zustand.tempo:null},fpUmschalten:fpUmschalten,karte:function(){return KARTE},spielstand:function(){return SPIELSTAND},wahl:function(){return WAHL},stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
 
 Promise.all([holeJson('sprache/en.json'),holeJson('kartei/text-en.json'),holeJson('kartei/objekte.json'),holeJson('kartei/budgets.json'),holeJson('spiel-budgets.json')])

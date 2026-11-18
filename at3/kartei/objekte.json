@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 36,
+ "typMax": 37,
  "objekte": [
   {
    "id": "arena-sand",
@@ -246,6 +246,15 @@
    "name": "Slave Market",
    "status": "uebernommen",
    "datei": "obj/markt-stand.json"
+  },
+  {
+   "id": "medicus",
+   "version": 1,
+   "typ": 37,
+   "kat": "einrichtung",
+   "name": "Medicus",
+   "status": "uebernommen",
+   "datei": "obj/medicus.json"
   },
   {
    "id": "natur-stumpf",

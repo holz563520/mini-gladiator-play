@@ -24,7 +24,7 @@
 function WAR(){return root.AT3WAREN||(typeof module!=='undefined'&&module.exports?require('./waren.js'):null)}   // G7: Material und Bauarbeiter (nur wenn die Wirtschaft läuft)
 function NAT(){return root.AT3NATUR||(typeof module!=='undefined'&&module.exports?require('./natur.js'):null)}
 var ST=64, FELDER=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, MEER=2048, LS=6;
-var START_GOLD=10000, PREIS=1;                          // Thomas 16.11.2026: gutes Startkapital zum Testen, alles kostet 1 (Preise setzt er später)
+var START_GOLD=2000, PREIS=1;                           // K0 (Thomas 18.11.2026): Startgold wie 1.0 (data.js gold:2000) statt 10.000 Testgold; Bauen kostet bis Phase B weiter 1
 var FELD_TICKS=40, KANTE_TICKS=20;                      // Bauzeit: 2 s je Feld (Thomas), 1 s je Wand/Tür (Vorschlag)
 var MAX_AUSWAHL=1024, MAX_RAUM=4096, MAX_BAUSTELLEN=256, JE_TICK=64, WEG_SUCHE=16, MAX_MELD=256, MAX_ZIELE=16384, MAX_LINIE=256;   // G5c: Wandlinie höchstens 256 Kanten (Vorschlag)
 var ART_NAME=['','lager','werkstatt','unterkunft','kueche','jagdhuette'], ART={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5};   // G8: Werkstatt = Sägewerkstatt, neu Küche und Jägerhütte

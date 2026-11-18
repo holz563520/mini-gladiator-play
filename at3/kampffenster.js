@@ -10,7 +10,7 @@
 // wieder her und startet den Kampf über denselben Knopf (fight() aus 1.0: Prämie, Gelübde, Gunst, Anführer, Kampfbericht). Gegner bekommen ihre Herkunft aus
 // benannten Orten der Welt (leichte aus der Nähe, 4–5 Totenköpfe aus fernen Städten). Ergebnis mit Prämie und Aufstellung genau einmal an AT3.
 // Sprache (G9d4): Texte und Stimme werden beim Laden englisch (kampf-en.js, Wörterbücher in sprache/kampf-en/), 1.0 bleibt unverändert. Was noch nicht übersetzt ist, bleibt deutsch.
-var BUILD='e80acb2b';
+var BUILD='7e5acf39';
 (()=>{
  const V=(location.search.match(/[?&]v=([^&]*)/)||[])[1]||BUILD;
  const eltern=window.parent!==window?window.parent:null;
@@ -101,7 +101,7 @@ var BUILD='e80acb2b';
 
 
  // ---------- G9d2: Arena mit der Aufstellung aus 1.0 ----------
- let modus='',praemie=0,gewonnen=0,bewertung=null,offersZuletzt=[],festOffer=null,arenaBid=null,gestartet=false;
+ let modus='',praemie=0,gewonnen=0,bewertung=null,offersZuletzt=[],festOffer=null,arenaBid=null,gestartet=false,vorKampf=null;
  // Herkunft der Gegner (Thomas 17.11.2026): ☠–☠☠ aus den drei nächsten Orten, ☠☠☠ aus den übrigen nahen Orten, ☠☠☠☠ aus der näheren, ☠☠☠☠☠ aus der ferneren Hälfte der fernen Städte
  function herkunft(o,orte){const N=(orte&&orte.nah)||[],F=(orte&&orte.fern)||[],sk=o.skulls|0;
   let L=sk<=2?N.slice(0,3):sk===3?N.slice(3):sk===4?F.slice(0,Math.ceil(F.length/2)):F.slice(Math.floor(F.length/2));if(!L.length)L=sk>=4&&F.length?F:N;if(!L.length)return;
@@ -115,6 +115,7 @@ var BUILD='e80acb2b';
    if(!A||!UI)throw Error('Aufstellung aus 1.0 fehlt');
    const l=document.createElement('link');l.rel='stylesheet';l.href='../aufstellung.css?v='+V;document.head.appendChild(l);document.body.classList.add('at3-arena');
    S.roster=(a.kader||[]).map(k=>{k.g.enemy=false;return k.g;});
+   vorKampf=new Map(S.roster.map(g=>[String(g.id),g]));      // K0: 1.0 nimmt Tote nach dem Kampf aus dem Kader; ihre Daten (dead) kommen von hier
    S.aufstellung=JSON.parse(JSON.stringify((modus==='kampf'?a.termin&&a.termin.auf:a.auf)||{}));
    S.gold=a.gold|0;S.day=(a.heute|0)+1;S.rng=(a.seed>>>0)||1;S.battle=null;
    festOffer=modus==='kampf'?JSON.parse(JSON.stringify(a.termin.offer)):null;
@@ -143,7 +144,7 @@ var BUILD='e80acb2b';
    melde({art:'termin',termin:{gids:(st.lineup||[]).map(x=>String(x.id)),offer:JSON.parse(JSON.stringify(o)),auf:st,label:o.label,skulls:o.skulls|0,ort:o.at3Ort||null}});}},true);
  function sendeArena(){if(gesendet||!aus)return;gesendet=true;const k=document.getElementById('kfZurueck');if(k){k.disabled=true;k.textContent='…';}
   const S=window.MG.s,ersetze=x=>{if(!x)return null;const t=JSON.stringify(x);return JSON.parse(arenaBid?t.split(JSON.stringify(arenaBid)).join(JSON.stringify('at3:'+auftrag.id)):t);};
-  const G=id=>S.roster.find(g=>String(g.id)===String(id));
+  const G=id=>S.roster.find(g=>String(g.id)===String(id))||(vorKampf&&vorKampf.get(String(id)))||null;      // K0: Tote aus dem gemerkten Kader
   melde({art:'ergebnis',ergebnis:{auftrag:auftrag.id,arena:1,praemie,gewonnen,spekt:bewertung?+bewertung.spect||1:1,ruhmMul:bewertung?+bewertung.fameMul||1:1,auf:JSON.parse(JSON.stringify(S.aufstellung||{})),angesehen:true,dauerMs:Math.round(performance.now()-t0),
    sieger:aus.winner,zeit:aus.time,einheiten:aus.units.map(u=>({key:String(u.key),art:u.kind,name:u.name,team:u.team,tot:!!u.dead,unten:!!u.down,leben:u.health,verletzt:!!u.injured,schwer:!!u.severe,
     verletzungen:u.injuries||[],kills:u.kills||0,ursache:u.cause||'',toeter:u.killer||'',g:u.team===0?ersetze(G(u.key)):null}))}});}

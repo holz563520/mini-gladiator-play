@@ -148,12 +148,16 @@ function aufhoeren(z,c){var Wn=W(),o;
  los(z.per,c)}
 // Nächste Unterkunft (Raumart 3, Feld hx/hy), sonst null
 function unterkunft(z,c){var b=z.bau,best=null,bd=0;if(!b)return null;b.raeume.forEach(function(r){if(r.art!==3||r.felder<=0)return;var d=W().weit(c.x,c.y,r.hx,r.hy);if(!best||d<bd){best=r;bd=d}});return best?[best.hx,best.hy]:null}
-function ruhen(z,g,c){var s=soll(z,c);
- if(c.auf===A_RUHEN){if(!s)los(g,c);return}
- if(!s||c.auf===A_ARENA)return;aufhoeren(z,c);c.auf=A_RUHEN;var U=unterkunft(z,c);if(U)geh(z,c,U[0],U[1]);else c.zust=Z_ARBEITET}
+// K0 (Thomas 18.11.2026: „Ruhende essen trotzdem“): Wer ruht und liegt, steht zur Essens- oder Trinkzeit auf, holt sich im Lager Mahlzeit und Wasser (ketten.js essen)
+// und geht danach wieder ins Bett. Ohne Vorrat bleibt er liegen und versucht es später wieder (wie alle anderen).
+function ruhen(z,g,c){var s=soll(z,c),KE=z.ket?KET():null;
+ if(c.auf===A_RUHEN){if(!s){los(g,c);return}
+  if(KE&&c.zust===Z_ARBEITET&&KE.essPause(z,c)){los(g,c);var F=[c];KE.essen(z,g,F);if(F[0]){c.auf=A_RUHEN;c.zust=Z_ARBEITET}}return}
+ if(!s||c.auf===A_ARENA)return;if(KE&&c.auf===KE.A_ESSEN)return;aufhoeren(z,c);c.auf=A_RUHEN;var U=unterkunft(z,c);if(U)geh(z,c,U[0],U[1]);else c.zust=Z_ARBEITET}      // K0: beim Essen nicht unterbrechen
 // Tote Person aus der Welt nehmen
 function weg(z,id){var g=z.per;if(!g)return false;for(var i=0;i<g.p.length;i++)if(g.p[i].id===id){var c=g.p[i];aufhoeren(z,c);g.p.splice(i,1);return true}return false}
-function schritt(z,neuL){var g=z.per;if(!g)return;var gl=z.gla&&z.gla.per;for(var i=0;i<g.p.length;i++){var c=g.p[i];if(gl&&(c.auf===A_RUHEN||(gl[c.id]&&gl[c.id].ruht)))ruhen(z,g,c);bewegen(z,g,c)}zuteilen(z,g);ausgeben(z,g,neuL)}
+function schritt(z,neuL){var g=z.per;if(!g)return;var gl=z.gla&&z.gla.per;for(var i=0;i<g.p.length;i++){var c=g.p[i];if(gl&&(c.auf===A_RUHEN||(gl[c.id]&&gl[c.id].ruht)))ruhen(z,g,c);bewegen(z,g,c);
+  if(gl&&c.zust===Z_FREI&&gl[c.id]&&gl[c.id].ruht)ruhen(z,g,c)}zuteilen(z,g);ausgeben(z,g,neuL)}      // K0: nach dem Essen gleich zurück ins Bett, bevor die Zuteilung Arbeit gibt
 // Übernahme an der Tickgrenze (kern.js, Reihenfolge der Auftragsnummer)
 function uebernehmen(z,o,r){var g=z.per;if(!g||!z.wg||o.gen!==z.wg.gen)return;var c=finde(g,o.pid);if(!c||c.job!==o.nr)return;c.job=-1;
  if(c.zust!==Z_SUCHT||c.x!==o.x0||c.y!==o.y0||c.zx!==o.x1||c.zy!==o.y1)return;      // Lage oder Ziel änderte sich: neu suchen
