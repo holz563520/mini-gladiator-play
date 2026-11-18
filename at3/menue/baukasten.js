@@ -6,10 +6,10 @@
 // Alles auf Knopfdruck auf dem Hauptkern (ein Gebäude setzt sich in wenigen ms zusammen); nichts davon lädt das Spiel.
 var AT3_BAUKASTEN_MENUE=(function(){
 'use strict';
-var S,BK,FP,E={wahl:{form:'werkstatt',klasse:'brick'},seite:1,kult:null};
+var S,BK,FP,E={wahl:{form:'werkstatt',klasse:'brick'},seite:1,kult:null,stufe:1};
 var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')};
 var FORM_DE={winzig:'winzig',klein:'klein',werkstatt:'Werkstatt',halle:'Halle',hof:'Hof mit Feldern',lang:'lang',gross:'groß',rund:'rund',bahn:'Bahn'};
-var DINGE=['boden-gras','boden-sand','werk-bank','lager-platz','markt-stand','ware-bretter','ware-stamm','ware-fleisch'];
+var DINGE=['figur-arbeiter','boden-gras','boden-sand','werk-bank','lager-platz','markt-stand','ware-bretter','ware-stamm','ware-fleisch'];
 function lade(f){return AT3ED.lade('grafik',f)}
 function aufbauen(el){
  el.innerHTML='<p class="leise">Ziegel werden gebrannt …</p>';
@@ -27,7 +27,9 @@ function zeigen(el){
  h+='<h3>Musterbeispiele <span class="leise">(je Grundform und Bauklasse eins)</span></h3><div class="bkKnoepfe" id="bkFormen">'+BK.MUSTER.map(function(m){return '<button class="knopf klein" data-form="'+m.form+'">'+FORM_DE[m.form]+'<small>'+m.w+' × '+m.h+'</small></button>'}).join('')+'</div>';
  h+='<div class="bkKnoepfe" id="bkKlassen">'+BK.KLASSEN.map(function(k){return '<button class="knopf klein" data-klasse="'+k.id+'">'+k.de+'</button>'}).join('')+'</div>';
  h+='<p id="bkInfo" class="leise"></p><div class="bkAnsichten"><div class="bkKarte" id="bkKarte"></div><div class="bkFp"><canvas id="bkFp" width="'+FP.W+'" height="'+FP.H+'" class="pixel"></canvas>'+
-  '<p><button class="knopf klein" id="bkLinks">◀</button> <span id="bkSeite"></span> <button class="knopf klein" id="bkRechts">▶</button></p></div></div>';
+  '<p><button class="knopf klein" id="bkLinks">◀</button> <span id="bkSeite"></span> <button class="knopf klein" id="bkRechts">▶</button></p>'+
+  '<p>Abstand: <button class="knopf klein" data-stufe="0">nah 1×</button> <button class="knopf klein" data-stufe="1">½</button> <button class="knopf klein" data-stufe="2">weit ¼</button></p>'+
+  '<p class="leise">Gebäude und Arbeiter im selben Maßstab: Eine Hütte bleibt klein, eine Rennbahn sprengt das Bild. Noch nicht begehbar.</p></div></div>';
  h+='<p><button class="knopf" id="bkAlle">Alle 27 Muster messen<small>Zusammensetzen ins Bodenbild, gedrosselt ×'+E.budgets.drossel+'</small></button></p><div id="bkTabelle"></div>';
  h+='<h3>Werkzeug</h3><div class="bkForm">'+
   '<label>Grundform <select id="wfForm">'+E.masse.formen.filter(function(f){return FORM_DE[f.id]}).map(function(f){return '<option value="'+f.id+'">'+FORM_DE[f.id]+'</option>'}).join('')+'</select></label>'+
@@ -42,6 +44,7 @@ function zeigen(el){
  [].forEach.call(el.querySelectorAll('[data-form]'),function(b){b.onclick=function(){E.wahl={form:b.dataset.form,klasse:E.wahl.klasse};E.kult=null;muster()}});
  [].forEach.call(el.querySelectorAll('[data-klasse]'),function(b){b.onclick=function(){E.wahl.klasse=b.dataset.klasse;if(!E.wahl.form)E.wahl.form='werkstatt';E.kult=null;muster()}});
  $('#bkLinks').onclick=function(){E.seite=(E.seite+7)%8;fp()};$('#bkRechts').onclick=function(){E.seite=(E.seite+1)%8;fp()};
+ [].forEach.call(el.querySelectorAll('[data-stufe]'),function(b){b.onclick=function(){E.stufe=+b.dataset.stufe;fpBau()}});
  $('#bkAlle').onclick=alleMessen;$('#wfForm').onchange=grenze;$('#wfZeig').onclick=werkzeug;$('#wfKartei').onclick=inKartei;
  grenze();muster()}
 function $(q){return E.el.querySelector(q)}
@@ -67,11 +70,14 @@ function zeigeGebaeude(form,w,h,klasse,dach){
   ' · '+AMPEL[a.farbe]+' '+a.je.toFixed(1)+' ms je 500 Teile'+(r.fehlt.length?' · <span class="witz">fehlt: '+esc(r.fehlt.join(', '))+'</span>':'');
  var z=$('#bkKarte');z.innerHTML='';var cv=leinwand(r);z.appendChild(cv);var box=z.clientWidth||360;cv.style.width=Math.min(r.w,box)+'px';
  cv.title='Antippen: Originalgröße';cv.onclick=function(){cv.style.width=cv.style.width===r.w+'px'?Math.min(r.w,box)+'px':r.w+'px';z.style.overflowX='auto'};
- // First Person: vier Kartenrichtungen (gedrehte Grundform), verkleinert, bis das Gebäude ins Bild passt; schräge Seiten aus der Nachbarrichtung
- var bilder=[0,1,2,3].map(function(d){var L=BK.bilde(form,w,h,klasse);if(E.kult)L.kultur=E.kult.kuerzel;for(var i=0;i<d;i++)L=BK.drehe(L);var b=BK.zuBild(BK.setzen(L,hole,dach,true));
-  while(b.w>FP.W-40||b.h>FP.H-40)b=S.halbBild(b);return b});
- E.fpObj={id:'bk-vorschau-'+Date.now(),kat:'einrichtung',bild:bilder[0],richtungen:bilder.slice(1)};S.ansichtenErgaenzen(E.fpObj);fp()}
-function fp(){if(!E.fpObj)return;var x=$('#bkFp').getContext('2d');FP.zeichne(x,[{o:E.fpObj,r:E.seite,x:FP.W>>1,y:FP.H-24}]);
+ // First Person: vier Kartenrichtungen (gedrehte Grundform, ohne Wiese) in echtem Maßstab zum Arbeiter; Abstand verkleinert beide gleich (½, ¼)
+ E.fpRoh=[0,1,2,3].map(function(d){var L=BK.bilde(form,w,h,klasse);if(E.kult)L.kultur=E.kult.kuerzel;for(var i=0;i<d;i++)L=BK.drehe(L);return BK.zuBild(BK.setzen(L,hole,dach,true))});fpBau()}
+function klein(b,n){for(var i=0;i<n;i++)b=S.halbBild(b);return b}
+function fpBau(){if(!E.fpRoh)return;var n=E.stufe,bilder=E.fpRoh.map(function(b){return klein(b,n)}),fig=E.obj['figur-arbeiter'];
+ [].forEach.call(E.el.querySelectorAll('[data-stufe]'),function(b){b.classList.toggle('an',+b.dataset.stufe===n)});
+ E.fpObj={id:'bk-vorschau',kat:'einrichtung',bild:bilder[0],richtungen:bilder.slice(1)};S.ansichtenErgaenzen(E.fpObj);
+ E.fpFig=fig?{id:'bk-vorschau-figur',kat:'einrichtung',bild:Object.assign(klein(fig.bild,n),{kat:'einrichtung'})}:null;if(E.fpFig)S.ansichtenErgaenzen(E.fpFig);fp()}
+function fp(){if(!E.fpObj)return;var x=$('#bkFp').getContext('2d');var sz=[{o:E.fpObj,r:E.seite,x:FP.W>>1,y:FP.H-24}];if(E.fpFig)sz.push({o:E.fpFig,r:0,x:(FP.W>>1)-Math.min(120,(E.fpObj.bild.w>>1)+12),y:FP.H-22});FP.zeichne(x,sz);
  $('#bkSeite').textContent='Seite '+(E.seite+1)+' von 8'}
 function muster(){var m=BK.MUSTER.filter(function(x){return x.form===E.wahl.form})[0];
  [].forEach.call(E.el.querySelectorAll('[data-form]'),function(b){b.classList.toggle('an',b.dataset.form===m.form)});
