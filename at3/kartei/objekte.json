@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 116,
+ "typMax": 128,
  "objekte": [
   {
    "id": "arena-sand",
@@ -465,12 +465,120 @@
   },
   {
    "id": "bk-lehm-dach-auf-j",
-   "version": 1,
+   "version": 2,
    "typ": 44,
    "kat": "dach",
    "name": "Thatched Roof Slope, Rear",
    "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-auf-j.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-a",
+   "version": 1,
+   "typ": 117,
+   "kat": "dach",
+   "name": "Thatch Rear A",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-a.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-b",
+   "version": 1,
+   "typ": 118,
+   "kat": "dach",
+   "name": "Thatch Rear B",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-b.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-c",
+   "version": 1,
+   "typ": 119,
+   "kat": "dach",
+   "name": "Thatch Rear C",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-c.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-d",
+   "version": 1,
+   "typ": 120,
+   "kat": "dach",
+   "name": "Thatch Rear D",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-d.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-k",
+   "version": 1,
+   "typ": 122,
+   "kat": "dach",
+   "name": "Thatch Rear K",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-k.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-kn",
+   "version": 1,
+   "typ": 128,
+   "kat": "dach",
+   "name": "Thatch Rear KN",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-kn.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-ks",
+   "version": 1,
+   "typ": 127,
+   "kat": "dach",
+   "name": "Thatch Rear KS",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-ks.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-n",
+   "version": 1,
+   "typ": 124,
+   "kat": "dach",
+   "name": "Thatch Rear N",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-n.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-r",
+   "version": 1,
+   "typ": 121,
+   "kat": "dach",
+   "name": "Thatch Rear R",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-r.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-rn",
+   "version": 1,
+   "typ": 126,
+   "kat": "dach",
+   "name": "Thatch Rear RN",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-rn.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-rs",
+   "version": 1,
+   "typ": 125,
+   "kat": "dach",
+   "name": "Thatch Rear RS",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-rs.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j-s",
+   "version": 1,
+   "typ": 123,
+   "kat": "dach",
+   "name": "Thatch Rear S",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j-s.json"
   },
   {
    "id": "bk-lehm-dach-flach",
