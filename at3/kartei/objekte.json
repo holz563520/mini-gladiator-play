@@ -118,7 +118,7 @@
    "typ": 79,
    "kat": "dach",
    "name": "Thatch Front A",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-a.json"
   },
   {
@@ -127,7 +127,7 @@
    "typ": 80,
    "kat": "dach",
    "name": "Thatch Front B",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-b.json"
   },
   {
@@ -136,7 +136,7 @@
    "typ": 81,
    "kat": "dach",
    "name": "Thatch Front C",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-c.json"
   },
   {
@@ -145,7 +145,7 @@
    "typ": 82,
    "kat": "dach",
    "name": "Thatch Front D",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-d.json"
   },
   {
@@ -154,7 +154,7 @@
    "typ": 83,
    "kat": "dach",
    "name": "Thatch Front E",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-e.json"
   },
   {
@@ -163,7 +163,7 @@
    "typ": 84,
    "kat": "dach",
    "name": "Thatch Front F",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-f.json"
   },
   {
@@ -172,7 +172,7 @@
    "typ": 101,
    "kat": "dach",
    "name": "Thatch Front Ridge",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-k.json"
   },
   {
@@ -181,7 +181,7 @@
    "typ": 102,
    "kat": "dach",
    "name": "Thatch Front Ridge A",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-k-a.json"
   },
   {
@@ -190,7 +190,7 @@
    "typ": 103,
    "kat": "dach",
    "name": "Thatch Front Ridge B",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-k-b.json"
   },
   {
@@ -199,7 +199,7 @@
    "typ": 104,
    "kat": "dach",
    "name": "Thatch Front Ridge C",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-k-c.json"
   },
   {
@@ -208,7 +208,7 @@
    "typ": 113,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable L",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-kn.json"
   },
   {
@@ -217,7 +217,7 @@
    "typ": 114,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable L A",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-kn-a.json"
   },
   {
@@ -226,7 +226,7 @@
    "typ": 115,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable L B",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-kn-b.json"
   },
   {
@@ -235,7 +235,7 @@
    "typ": 116,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable L C",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-kn-c.json"
   },
   {
@@ -244,7 +244,7 @@
    "typ": 109,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable R",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-ks.json"
   },
   {
@@ -253,7 +253,7 @@
    "typ": 110,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable R A",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-ks-a.json"
   },
   {
@@ -262,7 +262,7 @@
    "typ": 111,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable R B",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-ks-b.json"
   },
   {
@@ -271,7 +271,7 @@
    "typ": 112,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable R C",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-ks-c.json"
   },
   {
@@ -280,7 +280,7 @@
    "typ": 97,
    "kat": "dach",
    "name": "Thatch Front Gable L",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-n.json"
   },
   {
@@ -289,7 +289,7 @@
    "typ": 98,
    "kat": "dach",
    "name": "Thatch Front Gable L A",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-n-a.json"
   },
   {
@@ -298,7 +298,7 @@
    "typ": 99,
    "kat": "dach",
    "name": "Thatch Front Gable L B",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-n-b.json"
   },
   {
@@ -307,7 +307,7 @@
    "typ": 100,
    "kat": "dach",
    "name": "Thatch Front Gable L C",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-n-c.json"
   },
   {
@@ -316,7 +316,7 @@
    "typ": 85,
    "kat": "dach",
    "name": "Thatch Front Eave",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-r.json"
   },
   {
@@ -325,7 +325,7 @@
    "typ": 86,
    "kat": "dach",
    "name": "Thatch Front Eave A",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-r-a.json"
   },
   {
@@ -334,7 +334,7 @@
    "typ": 87,
    "kat": "dach",
    "name": "Thatch Front Eave B",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-r-b.json"
   },
   {
@@ -343,7 +343,7 @@
    "typ": 88,
    "kat": "dach",
    "name": "Thatch Front Eave C",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-r-c.json"
   },
   {
@@ -352,7 +352,7 @@
    "typ": 105,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable L",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-rn.json"
   },
   {
@@ -361,7 +361,7 @@
    "typ": 106,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable L A",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-rn-a.json"
   },
   {
@@ -370,7 +370,7 @@
    "typ": 107,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable L B",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-rn-b.json"
   },
   {
@@ -379,7 +379,7 @@
    "typ": 108,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable L C",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-rn-c.json"
   },
   {
@@ -388,7 +388,7 @@
    "typ": 93,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable R",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-rs.json"
   },
   {
@@ -397,7 +397,7 @@
    "typ": 94,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable R A",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-rs-a.json"
   },
   {
@@ -406,7 +406,7 @@
    "typ": 95,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable R B",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-rs-b.json"
   },
   {
@@ -415,7 +415,7 @@
    "typ": 96,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable R C",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-rs-c.json"
   },
   {
@@ -424,7 +424,7 @@
    "typ": 89,
    "kat": "dach",
    "name": "Thatch Front Gable R",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-s.json"
   },
   {
@@ -433,7 +433,7 @@
    "typ": 90,
    "kat": "dach",
    "name": "Thatch Front Gable R A",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-s-a.json"
   },
   {
@@ -442,7 +442,7 @@
    "typ": 91,
    "kat": "dach",
    "name": "Thatch Front Gable R B",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-s-b.json"
   },
   {
@@ -451,7 +451,7 @@
    "typ": 92,
    "kat": "dach",
    "name": "Thatch Front Gable R C",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/bk-lehm-dach-ab-j-s-c.json"
   },
   {

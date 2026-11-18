@@ -92,7 +92,7 @@ function alleMessen(){var l=BK.muster(),zeilen=[],alt=E.kult;E.kult=null;
 function tauschWahl(){var d=$('#wfDF').value,w=$('#wfWF').value;return d===''&&w===''?null:{dach:d===''?null:+d,wand:w===''?null:+w}}
 function kuerzel(){return($('#wfKu').value||'').trim().toLowerCase()}
 // Kultur: Teile mit Farbtausch im Speicher erzeugen (nur für Vorschau und Export, nicht in die Kartei des Browsers)
-function kultur(klasse){var ku=kuerzel(),ta=tauschWahl();if(!ku&&!ta)return null;if(!/^[a-z0-9]{1,6}$/.test(ku))throw new Error('Für Farbtausch ein Kultur-Kürzel angeben (a–z, 0–9, höchstens 6 Zeichen).');
+function kultur(klasse){var ku=kuerzel(),ta=tauschWahl();if(!ku&&!ta)return null;if(!/^[a-z0-9]{1,6}$/.test(ku))throw new Error('Für Farbtausch ein Kultur-Kürzel angeben (a–z, 0–9, höchstens 6 Zeichen).');if(/^(?:[a-f]|[rk]?[sn]|[rk])$/.test(ku))throw new Error('Dieses Kultur-Kürzel ist für Lage-Varianten und Randteile reserviert (a–f, r, k, s, n, rs, rn, ks, kn), bitte ein anderes wählen.');
  var o={};BK.teile(klasse,ku,ta).forEach(function(t){var x={format:'at3-objekt',id:t.id,version:1,typ:1,kat:t.kat,name:t.name,status:'skizze',herkunft:'baukasten',karte:t.karte,bild:t.bild};S.ansichtenErgaenzen(x);o[t.id]=x;o[t.id]._roh=t});
  return{kuerzel:ku,tausch:ta,obj:o}}
 function meld(t,f){$('#wfMeld').innerHTML=f?'<span class="witz">'+esc(t)+'</span>':esc(t)}

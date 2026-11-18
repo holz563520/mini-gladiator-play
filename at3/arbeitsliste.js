@@ -53,6 +53,10 @@ function messKurz(S,B,o){var m=o.messung,g=S.budgetGruppe(B,o.kat),r={budget:g?g
 // Welche Teile setzt ein Gebäude zusammen? Baukasten mit einem leeren 1 × 1-Bild für jedes Teil: setzen() fragt jede Kennung ab, gemalt wird fast nichts.
 // Baukastenteile werden ohne Bauklasse notiert (bk-*-wand), jede Bauklasse nutzt dieselben.
 var LEERTEIL=null;
+// Lage-Varianten und Randteile (baukasten.js: wahl, rand), z. B. bk-lehm-dach-ab-j-c, -r, -ks, -k-a: nur wenn der Rest ein echtes Teil ist und die Kennung selbst keins.
+var LAGE=/^(bk-.+?)-(?:[rk]?[sn]|[rk]|[a-f])(?:-[a-f])?$/;
+function echtesTeil(id){return id==='bk-feld'||!!TEIL_DE[id.replace(/^bk-[a-z]+-/,'')]}
+function lageVariante(id){var m=LAGE.exec(id);return!!(m&&echtesTeil(m[1])&&!echtesTeil(id))}
 // Größen eines Gebäudes: fest {w,h}, rund {d} oder in Stufen {stufen:[{w,h}]} (Friedhof, Rennbahn)
 function groessen(g){var G=g.groesse,eins=function(x){return x.d?{w:x.d,h:x.d}:x.w&&x.h?{w:x.w,h:x.h}:null};if(!G)return[];
  return(G.stufen||[G]).map(eins).filter(Boolean)}
@@ -60,7 +64,7 @@ function groesseText(g){var L=groessen(g);if(!L.length)return'Größe frei';var 
 function formFuer(g,gr){var f=g.form;if(f==='halle→gross'){gr=gr||groessen(g)[0];f=gr&&Math.min(gr.w,gr.h)>=14?'gross':'halle'}return f}
 function teileVon(BK,g,S){if(g.form==='frei'||g.form==='fest')return null;var L=groessen(g);if(!L.length)return null;
  if(!LEERTEIL)LEERTEIL={kat:'einrichtung',bild:{kat:'einrichtung',w:1,h:1,ax:0,ay:0,z:[S.LEER]}};
- var n={},ok=0;L.forEach(function(gr){try{BK.setzen(BK.bilde(formFuer(g,gr),gr.w,gr.h,'clay-wood'),function(id){if(/-([rk]?[sn]|[rk]|[a-f])$/.test(id))return null;n[id.replace(/^bk-lehm-/,'bk-*-')]=1;return LEERTEIL});ok++}catch(e){}});
+ var n={},ok=0;L.forEach(function(gr){try{BK.setzen(BK.bilde(formFuer(g,gr),gr.w,gr.h,'clay-wood'),function(id){if(lageVariante(id))return null;n[id.replace(/^bk-lehm-/,'bk-*-')]=1;return LEERTEIL});ok++}catch(e){}});
  return ok?Object.keys(n).sort():null}
 
 // Zeichenhinweis-Vorschlag (deutsch), nur aus dem Eintrag selbst gerechnet; gespeichert wird ein Hinweis nur, wenn er von Hand geschrieben ist.
@@ -70,6 +74,7 @@ function vorschlag(e){var i=e.info||{},id=e.id,m=/^bk-(lehm|ziegel|marmor)-(.+)$
    'Eigenes Bild nötig (Grundform '+i.form+', nicht aus dem Baukasten)'+(i.plan?': „'+i.plan+'“':'')+'. ';
   return t+(i.text?'Schwarzer Humor im Bild, passend zu: „'+i.text+'“':'')}
  if(e.quelle==='ware')return 'Ware „'+i.name+'“ ('+i.warengruppe+'): kleines Bild für Lager, Karren und Last auf der Schulter, auf einen Blick erkennbar. '+(i.text?'Weg in die Arena: '+i.text:'');
+ if(e.grundbild&&m&&lageVariante(id))return 'Lage-Variante bzw. Randteil von '+e.grundbild+' (Grafik-Auftrag Regeln 16–17): gleiche Maße, Fugen und Licht wie das Grundbild, wird mit ihm gezeichnet, gemessen und übernommen.';
  if(e.grundbild&&m)return 'Kultur-Variante von '+e.grundbild+': gleiche Form und Kanten wie das Grundbild, nur Farben und Dach der Kultur. Wird das Grundbild besser, hier nachziehen.';
  if(m){var kl=KLASSE_DE[m[1]];
   return 'Baukastenteil „'+(TEIL_DE[m[2]]||m[2])+'“ der Bauklasse '+kl[0]+'. Stimmung: '+kl[1]+'. Muss nahtlos an die Nachbarteile anschließen (Feld 64 × 32, Kanten und Höhe wie die Skizze), '+
