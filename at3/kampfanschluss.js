@@ -64,6 +64,8 @@ KA.heile=function(wunsch,basis,v){return frage('heile','wunsch',wunsch,basis,v);
 KA.figuren=function(wunsch,basis,v){return frage('figuren','wunsch',wunsch,basis,v);};
 // F1b: Kartenblätter der Personen fürs Spiel (AT3-64) im Kampfkern zeichnen lassen. wunsch {gs:[{pid,g}], lasten, palette}
 KA.kfiguren=function(wunsch,basis,v){return frage('kfiguren','wunsch',wunsch,basis,v);};
+// F1c: Nahblätter (volle 1.0-Figur, AT3-64) für die Zoomstufe 2×. wunsch wie kfiguren
+KA.knah=function(wunsch,basis,v){return frage('knah','wunsch',wunsch,basis,v);};
 // G9b: Fingerabdruck eines Ergebnisses für die Gleichheitsprobe (Sieger, Zeit, je Kämpfer Zustand, Verletzungen und Daten nach dem Kampf)
 KA.abdruck=function(e){var s=JSON.stringify([e.sieger,e.zeit,e.einheiten.map(function(u){return [u.key,u.tot,u.unten,u.leben,u.kills,u.verletzungen,u.ursache,u.g];})]),h=0x811c9dc5;
  for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193);}return ('0000000'+(h>>>0).toString(16)).slice(-8);};

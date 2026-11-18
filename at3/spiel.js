@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='353077d3', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='e80acb2b', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -117,6 +117,7 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  if(sp&&sp.start)START=sp.start;
  KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,waehlen:waehlen,beiErde:startWaehlen,
   beiAusfall:function(g){if(g)$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:g}))+'</span>'},
+  beiNahFehlt:function(){figurenNahPflegen()},
   beiZoom:function(l,z){$('weltInfo').textContent=l<0?t('welt.globus'):t('welt.zoom',{z:z})},
   beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
   beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
@@ -256,6 +257,14 @@ function figurenPflegen(){if(F1AUS||FIGW||!KARTE||!KARTE.figurHat||!GLAD||!GLAD.
  Promise.all([anschluss(),KERN.glaDaten({figur:teil})]).then(function(r){var KA=r[0],D=r[1];if(!D||!D.length){mehr=false;return null}
   return KA.kfiguren({gs:D.map(function(e){return{pid:e.pid,g:e.g}}),lasten:true},'',V).then(function(R){R.blaetter.forEach(function(b,i){b.gv=D[i].gv});if(KARTE)KARTE.figurBlaetter(R)})})
   .catch(function(e){mehr=false;console.warn('Kartenfiguren:',e)}).then(function(){FIGW=false;if(mehr)setTimeout(figurenPflegen,50)})}
+// ── F1c Nahansicht (Thomas 18.11.2026): meldet die Karte auf 1× oder 2× Personen im Bild ohne Nahblatt, holt das Spiel ihr Aussehen (glaDaten figur) und lässt
+// den Kampfkern die volle 1.0-Figur in AT3-64 zeichnen (KA.knah). Stück für Stück: höchstens 2 je Auftrag, ein Auftrag unterwegs. Notausschalter: ?f1c=0 (Karte) ──
+var NAHW=false;
+function figurenNahPflegen(){if(F1AUS||NAHW||!KARTE||!KARTE.nahSichtbar||!GLAD||!GLAD.per)return;var fehlt=KARTE.nahSichtbar().filter(function(id){var p=GLAD.per[id];return p&&!KARTE.nahHat(id,p.gv|0)});
+ if(!fehlt.length)return;NAHW=true;var teil=fehlt.slice(0,2);
+ Promise.all([anschluss(),KERN.glaDaten({figur:teil})]).then(function(r){var KA=r[0],D=r[1];if(!D||!D.length)return null;
+  return KA.knah({gs:D.map(function(e){return{pid:e.pid,g:e.g}}),lasten:!(KARTE.nahTest&&KARTE.mess.nah)},'',V).then(function(R){R.blaetter.forEach(function(b,i){b.gv=D[i].gv});if(KARTE)KARTE.figurBlaetter(R)})})
+  .catch(function(e){console.warn('Nahfiguren:',e)}).then(function(){NAHW=false;if(KARTE)KARTE.plan()})}
 // ── G9d2 Arena (Thomas 17.11.2026): feste Arena am Startplatz (Weltkern arena.js). Antippen zeigt Termin oder „Plan a fight“. Planen öffnet das Kampffenster mit der
 // Aufstellung 1:1 aus 1.0 (kampffenster.js, Modus wahl); „KAMPF!“ dort bucht den Termin am nächsten Spieltag (Befehl arenaTermin). Ist er fällig (alle an der Arena
 // oder spät genug), öffnet das Spiel das Kampffenster von selbst (Modus kampf); das Ergebnis geht genau einmal mit arenaErgebnis in den Weltkern. Die Weltuhr steht,
