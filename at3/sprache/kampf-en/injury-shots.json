@@ -78,12 +78,32 @@
 "Und {V} küsst den Sand. Hoffentlich schmeckt er.": "And {V} kisses the sand. Hope it tastes good.",
 "{V} geht zu Boden. Wer wettet, dass er liegen bleibt?": "{V} goes down. Who\\'s betting he stays there?",
 "{A} hat {V} schlafen gelegt. Gute Nacht!": "{A} put {V} to sleep. Good night!",
-"Der Gegner": "The enemy"
+"Der Gegner": "The enemy",
+"Frischer Bruch": "Fresh fracture",
+"Notversorgung: Blutung stillen, Splitter entfernen": "Emergency care: stop the bleeding, pick out the splinters",
+"Kopfverband": "Head bandage",
+"Bettruhe, Verband wird täglich gewechselt": "Bed rest, bandage changed daily",
+"Wundauflage": "Wound dressing",
+"Wunde wird genäht und abgedeckt": "Wound stitched and covered",
+"Wundschorf mit Fäden": "Scab with stitches",
+"Verband ab, Knochen wächst langsam zusammen": "Bandage off, bone slowly knitting",
+"Vernarbung": "Scarring",
+"Haut schließt sich, Knochen festigt sich": "Skin closing, bone hardening",
+"Ausgeheilt – Metallplatte": "Healed – metal plate",
+"Schädel mit Metallplatte versorgt, dauerhaft sichtbar": "Skull patched with a metal plate, visible for life"
 },
 "code": [
 [
 "function partWords(id){const n=M.partName?.(id)||'Körperteil',masc=/^(Linker|Rechter)\\b/.test(n)||['Kopf','Hals','Bauch'].includes(n),adj=/^(Linke|Linker|Rechte|Rechter)\\b/.test(n);\n if(!adj)return {nom:(masc?'der ':'die ')+n,acc:(masc?'den ':'die ')+n};const [a,...rest]=n.split(' '),base=a.toLowerCase().replace(/r$/,''),noun=rest.join(' ');\n return masc?{nom:'der '+base+' '+noun,acc:'den '+base+'n '+noun}:{nom:'die '+base+' '+noun,acc:'die '+base+' '+noun};}",
 "function partWords(id){const P={head:'head',neck:'neck',chest:'chest',belly:'belly',ls:'left shoulder',rs:'right shoulder',lua:'left upper arm',rua:'right upper arm',lfa:'left forearm',rfa:'right forearm',lh:'left hand',rh:'right hand',lt:'left thigh',rt:'right thigh',lsh:'left shin',rsh:'right shin',lf:'left foot',rf:'right foot'},n=P[id]||'body part';return {nom:'the '+n,acc:'his '+n};}"
+],
+[
+"side=sd%2?'links':'rechts'",
+"side=sd%2?'left':'right'"
+],
+[
+" return {ribs:`${n}. Rippe ${side} gebrochen · Costa ${ROMN[n]} ${lat}`,ribseries:`${n}. bis ${n+2}. Rippe ${side} gebrochen · Costae ${ROMN[n]}–${ROMN[n+2]} ${lat}`,sternum:'Brustbein quer gebrochen · Corpus sterni',lung:`Lunge ${side} angestochen, fällt zusammen · Pneumothorax`,heart:'Herz durchstochen · Ventriculus sinister cordis',\n  liver:'Leber eingerissen · Ruptura hepatis',spleen:'Milz geplatzt · Ruptura lienis',kidney:`Niere ${side} durchstochen · Ren ${sd%2?'sinister':'dexter'}`,gutted:'Bauchdecke aufgeschlitzt, Darm tritt aus · Prolapsus intestini',pelvis:'Becken gebrochen · Fractura ossis ilii',\n  neckbreak:`${3+sd%3}. Halswirbel gebrochen (C${3+sd%3}) · Vertebra cervicalis ${ROMN[3+sd%3]}`,larynx:'Kehlkopf zertrümmert · Cartilago thyroidea',collarbone:`Schlüsselbein ${part==='ls'?'links':'rechts'} gebrochen · Clavicula ${part==='ls'?'sinistra':'dextra'}`}[kind]||null;}",
+" return {ribs:`Rib ${n} broken, ${side} side · Costa ${ROMN[n]} ${lat}`,ribseries:`Ribs ${n} to ${n+2} broken, ${side} side · Costae ${ROMN[n]}–${ROMN[n+2]} ${lat}`,sternum:'Breastbone snapped clean across · Corpus sterni',lung:`${side==='left'?'Left':'Right'} lung punctured, collapsing · Pneumothorax`,heart:'Heart run through · Ventriculus sinister cordis',\n  liver:'Liver torn open · Ruptura hepatis',spleen:'Spleen burst · Ruptura lienis',kidney:`${side==='left'?'Left':'Right'} kidney run through · Ren ${sd%2?'sinister':'dexter'}`,gutted:'Belly slit open, bowels spilling out · Prolapsus intestini',pelvis:'Pelvis broken · Fractura ossis ilii',\n  neckbreak:`Vertebra C${3+sd%3} broken · Vertebra cervicalis ${ROMN[3+sd%3]}`,larynx:'Larynx crushed · Cartilago thyroidea',collarbone:`${part==='ls'?'Left':'Right'} collarbone broken · Clavicula ${part==='ls'?'sinistra':'dextra'}`}[kind]||null;}"
 ]
 ]
 }

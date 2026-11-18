@@ -56,7 +56,8 @@
 "Hört auf mich, dann lebt ihr länger.": "Listen to me and you’ll live longer.",
 "Na gut. Dann eben ich.": "Fine. Guess it’s me, then.",
 "</b> <small>Führung ": "</b> <small>Leadership ",
-"</small></span><button class=\"btn\" data-al=\"swap\">Wechseln</button><button class=\"btn primary\" data-al=\"skip\">Weiter ▶</button>": "</small></span><button class=\"btn\" data-al=\"swap\">Switch</button><button class=\"btn primary\" data-al=\"skip\">Continue ▶</button>"
+"</small></span><button class=\"btn\" data-al=\"swap\">Wechseln</button><button class=\"btn primary\" data-al=\"skip\">Weiter ▶</button>": "</small></span><button class=\"btn\" data-al=\"swap\">Switch</button><button class=\"btn primary\" data-al=\"skip\">Continue ▶</button>",
+" gegen ": " vs "
 },
 "code": []
 }

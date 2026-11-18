@@ -30,7 +30,7 @@ function los(){var nb=+q('#kpB').value,nr=+q('#kpR').value,seed=(+q('#kpSeed').v
    k[id]={id:id,name:g.name,art:'human',herkunft:KA.laborHerkunft(),g:g};
    (blau?teams.blau:teams.rot).push({kaempfer:k[id],reihe:g.role==='Fernkämpfer'?'back':'front'});});
   var vorher={};for(var id in k)vorher[id]=JSON.parse(JSON.stringify(k[id].g));
-  var a=KA.auftrag('probe-'+seed+'-'+Date.now().toString(36),seed,teams,'Probekampf');
+  var a=KA.auftrag('probe-'+seed+'-'+Date.now().toString(36),seed,teams,'Practice Bout');
   z.innerHTML='<p class="leise">Die Tore öffnen sich …</p>';
   return KA.fenster(a,{basis:'',v:V}).then(function(erg){
    E.ergebnis=erg;var buch={};

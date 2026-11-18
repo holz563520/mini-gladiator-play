@@ -47,6 +47,17 @@ function uebersetze(src,w){
  for(const st of stuecke(s)){const en=t[st.roh];if(en==null||en===st.roh)continue;teile.push(s.slice(pos,st.a),en);pos=st.e;ersetzt++;}
  teile.push(s.slice(pos));
  return {src:teile.join(''),ersetzt,code};}
-const KE={stuecke,deutsch,uebersetze};
+// G9d4d Begriffe: Schlüsseltexte aus 1.0-Daten (Verletzungen, Ursachen, Körperteile, Werte, Rollen, Talentstufen, Waffen …) bleiben im Code
+// deutsch und werden erst bei der Anzeige übersetzt. b = begriffe.json ({gruppen:{Name:{deutsch:englisch}}}). Ganze Wörter, längste zuerst,
+// Großschreibung ab 5 Zeichen mit. Gibt eine Funktion text→text zurück (mit Zwischenspeicher, damit Wiederholtes nichts kostet).
+function begriffe(b){
+ const m=new Map();for(const g of Object.values((b&&b.gruppen)||{}))for(const [de,en] of Object.entries(g)){if(en==null||en===de)continue;m.set(de,en);
+  if(de.length>=5){const U=de.toUpperCase();if(U!==de&&!m.has(U))m.set(U,en.toUpperCase());}}
+ if(!m.size)return s=>s;
+ const re=new RegExp('(?<![\\p{L}\\d])(?:'+[...m.keys()].sort((a,b)=>b.length-a.length).map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(?![\\p{L}\\d])','gu');
+ const cache=new Map();
+ const tr=s=>{if(typeof s!=='string'||s.length<3)return s;let r=cache.get(s);if(r!==undefined)return r;re.lastIndex=0;r=s.replace(re,x=>m.get(x));if(cache.size>5000)cache.clear();cache.set(s,r);return r;};
+ tr.zahl=m.size;return tr;}
+const KE={stuecke,deutsch,uebersetze,begriffe};
 if(typeof module!=='undefined'&&module.exports)module.exports=KE;else G.AT3KampfEN=KE;
 })(typeof window!=='undefined'?window:globalThis);

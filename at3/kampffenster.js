@@ -10,7 +10,7 @@
 // wieder her und startet den Kampf über denselben Knopf (fight() aus 1.0: Prämie, Gelübde, Gunst, Anführer, Kampfbericht). Gegner bekommen ihre Herkunft aus
 // benannten Orten der Welt (leichte aus der Nähe, 4–5 Totenköpfe aus fernen Städten). Ergebnis mit Prämie und Aufstellung genau einmal an AT3.
 // Sprache (G9d4): Texte und Stimme werden beim Laden englisch (kampf-en.js, Wörterbücher in sprache/kampf-en/), 1.0 bleibt unverändert. Was noch nicht übersetzt ist, bleibt deutsch.
-var BUILD='59acd163';
+var BUILD='9ae9cd2a';
 (()=>{
  const V=(location.search.match(/[?&]v=([^&]*)/)||[])[1]||BUILD;
  const eltern=window.parent!==window?window.parent:null;
@@ -39,14 +39,28 @@ var BUILD='59acd163';
  // ---------- G9d4: Englisch beim Laden (kampf-en.js). Dateien aus sprache/kampf-en/index.json werden geholt, übersetzt und als Blob geladen. ----------
  // 1.0 bleibt unverändert. Fehlt etwas oder geht etwas schief, lädt die Datei einfach deutsch. ?de=1 schaltet die Übersetzung ab (zum Vergleichen).
  const EN=window.AT3_KF_EN={an:!/[?&]de=1/.test(location.search),dateien:0,ersetzt:0,code:0,ms:0,fehler:[]},blob={};
+ // G9d4d Begriffe: Schlüsseltexte aus 1.0-Daten erst bei der Anzeige englisch (Seitentext, title, Canvas-Schrift, Stimme). Der Code rechnet weiter deutsch.
+ // Kosten: nur geänderte Textstücke, jedes Wort einmal (Zwischenspeicher); gemessen in AT3_KF_EN.begriffeMs.
+ let BG=null;
+ function begriffeAn(tr){if(!tr||!tr.zahl)return;BG=tr;EN.begriffe=tr.zahl;EN.begriffeMs=0;
+  const tx=n=>{const v=n.nodeValue,r=tr(v);if(r!==v)n.nodeValue=r;};
+  const ti=e=>{const v=e.getAttribute&&e.getAttribute('title');if(v){const r=tr(v);if(r!==v)e.setAttribute('title',r);}};
+  const lauf=root=>{if(root.nodeType===3){tx(root);return;}if(root.nodeType!==1||root.tagName==='SCRIPT'||root.tagName==='STYLE')return;ti(root);
+   const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);let n;while((n=w.nextNode())){if(n.nodeType===3){const p=n.parentNode;if(p&&p.tagName!=='SCRIPT'&&p.tagName!=='STYLE')tx(n);}else ti(n);}};
+  new MutationObserver(ms=>{const t0=performance.now();for(const m of ms){if(m.type==='characterData')tx(m.target);else if(m.type==='attributes')ti(m.target);else for(const n of m.addedNodes)lauf(n);}EN.begriffeMs+=performance.now()-t0;})
+   .observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['title']});
+  lauf(document.body);
+  const P=window.CanvasRenderingContext2D&&CanvasRenderingContext2D.prototype;
+  if(P)for(const k of ['fillText','strokeText','measureText']){const o=P[k];P[k]=function(t){if(typeof t==='string'){const r=tr(t);if(r!==t){const a=[...arguments];a[0]=r;return o.apply(this,a);}}return o.apply(this,arguments);};}}
  async function englisch(){const KE=window.AT3KampfEN,t0=performance.now();if(!EN.an||!KE)return;
+  const bgP=fetch('sprache/kampf-en/begriffe.json?v='+V).then(r=>r.json()).then(b=>{if(KE.begriffe)begriffeAn(KE.begriffe(b));}).catch(e=>EN.fehler.push('begriffe: '+e.message));
   try{const idx=await (await fetch('sprache/kampf-en/index.json?v='+V)).json();
    await Promise.all((idx.dateien||[]).filter(d=>DATEIEN.includes(d)).map(async d=>{try{
     const [src,w]=await Promise.all([fetch('../'+d+'.js?v='+V).then(r=>{if(!r.ok)throw Error(r.status);return r.text();}),fetch('sprache/kampf-en/'+d+'.json?v='+V).then(r=>{if(!r.ok)throw Error(r.status);return r.json();})]);
     const r=KE.uebersetze(src,w);blob[d]=URL.createObjectURL(new Blob([r.src+'\n//# sourceURL=en/'+d+'.js'],{type:'text/javascript'}));EN.dateien++;EN.ersetzt+=r.ersetzt;EN.code+=r.code;
    }catch(e){EN.fehler.push(d+': '+e.message);}}));
   }catch(e){EN.fehler.push('index: '+e.message);}
-  EN.ms=Math.round(performance.now()-t0);}
+  await bgP;EN.ms=Math.round(performance.now()-t0);}
  englisch().then(()=>DATEIEN.forEach((n,i)=>{const s=document.createElement('script');s.async=false;s.src=blob[n]||'../'+n+'.js?v='+V;
   s.onload=()=>{fertig++;balken();if(blob[n])URL.revokeObjectURL(blob[n]);if(i===DATEIEN.length-1)setTimeout(bereit,0);};s.onerror=()=>fehler(n+' konnte nicht geladen werden');document.body.appendChild(s);}));
 
@@ -62,6 +76,8 @@ var BUILD='59acd163';
   // G9d4c (Thomas 17.11.2026): Anführer wie in 1.0 aktiv (ab 5 eigenen Kämpfern), Texte englisch über arena-leader-ui/outside-leader.json
   // Kampfbericht von 1.0 abwarten: manager.js zeigt nach jedem Kampf die gewohnte Berichtsseite (M.onFinish → page 'report')
   const fin=M.onFinish;M.onFinish=function(report){const r=fin?fin.apply(this,arguments):undefined;if(report&&bid&&report.id===bid)setTimeout(zurueckKnopf,0);return r;};
+  // G9d4d: Gesprochenes ebenfalls mit englischen Begriffen (Moderator-Sätze mit Verletzungen, Körperteilen aus 1.0-Daten)
+  if(BG&&typeof M.speakLine==='function'){const sp=M.speakLine;M.speakLine=function(t){if(typeof t==='string'){const a=[...arguments];a[0]=BG(t);return sp.apply(this,a);}return sp.apply(this,arguments);};}
   window.AT3_KF_BEREIT=true;melde({art:'bereit'});}
  window.addEventListener('message',e=>{if(e.source!==eltern||e.origin!==location.origin)return;const d=e.data||{};if(d.kf&&d.art==='auftrag'&&!auftrag){if(d.auftrag&&d.auftrag.modus)arena(d.auftrag);else starte(d.auftrag);}});
 

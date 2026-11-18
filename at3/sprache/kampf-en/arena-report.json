@@ -1,0 +1,30 @@
+{
+"t": {
+"SOLL ": "TARGET ",
+"kampfunfähig · überlebt": "out of the fight · survived",
+"überlebt": "survived",
+"gefallen": "fallen",
+" · LERNFORTSCHRITT ×": " · LEARNING BOOST ×",
+"Schaden": "Damage",
+"Erlitten": "Taken",
+"Kills": null,
+"Krit.": "Crits",
+"Blocks": null,
+"Ausgew.": "Dodged",
+" weitere gelernte Werte</summary><ul>": " more values learned</summary><ul>",
+"<p>Keine messbare Verbesserung in diesem Kampf.</p>": "<p>No measurable improvement in this fight. Pain, at least, was had.</p>",
+"<h3>Kampfbericht · was deine Gladiatoren gelernt haben</h3>": "<h3>Fight Report · what your gladiators learned</h3>",
+"<p class=\"arp-recipe\">⚒ Schmiederezept erlernt: <b>": "<p class=\"arp-recipe\">⚒ Forge recipe learned: <b>",
+"<div class=\"arp-foot\"><button type=\"button\" class=\"arp-full\">VOLLER KAMPFBERICHT ▸</button></div>": "<div class=\"arp-foot\"><button type=\"button\" class=\"arp-full\">FULL FIGHT REPORT ▸</button></div>"
+},
+"code": [
+[
+"toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})",
+"toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})"
+],
+[
+"String(a.xpMultiplier).replace('.',',')",
+"String(a.xpMultiplier)"
+]
+]
+}
