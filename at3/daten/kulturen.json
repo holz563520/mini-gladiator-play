@@ -1,0 +1,19 @@
+{
+ "format": 1,
+ "hinweis": "Bausteine der Kulturen (AT3_WIRTSCHAFT.md 5.5). Die Völker selbst entstehen ab W2h aus dem Seed; hier stehen nur die Merkmale, aus denen eine Kultur gewürfelt wird. Je Kultur ändern sich nur Farben und Dachformen derselben Grundformen (13.5).",
+ "werte": [
+  {"id":"greed","de":"Gier"},
+  {"id":"piety","de":"Frömmigkeit"},
+  {"id":"honour","de":"Ehre"},
+  {"id":"cruelty","de":"Grausamkeit"},
+  {"id":"arena-love","de":"Arenaliebe"}
+ ],
+ "baustile": [
+  {"id":"clay","de":"Lehm"},
+  {"id":"wood","de":"Holz"},
+  {"id":"stone","de":"Stein"},
+  {"id":"marble","de":"Marmor"}
+ ],
+ "merkmale": ["Biom der Heimat","Lieblingswaren","Werte","Götter","Baustil","Namensklang (ortsnamen.js)","Lieblingskämpfe in der Arena"],
+ "voelker": "ein Volk je rund 250 Orte, mindestens 2 auf jeder Landmasse mit ≥ 200 Orten, 1 auf jeder mit ≥ 20 (Q19)"
+}

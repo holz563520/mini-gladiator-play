@@ -2,7 +2,7 @@
 // eigene Startlast messen und anzeigen (Dateien, Bytes, Zeit, Fremddateien aus 1.0/2.0). Bedienung deutsch. Lädt nichts außerhalb von at3/.
 (function(){
 'use strict';
-var V='7e5acf39', T0=performance.now();
+var V='41ce3195', T0=performance.now();
 // Reihenfolge und Inhalt nach AT3_PLAN 9.2. „kommt“ = Schritt, mit dem der Inhalt kommt.
 var MENUES=[
  {id:'grafik',  name:'Grafik',          kurz:'Boden, Natur, Gebäude, Figuren …', kommt:'M2, M3, M9'},
@@ -10,6 +10,7 @@ var MENUES=[
  {id:'pruefen', name:'Prüfen & Kosten', kurz:'Prüfer, Lastszene, Übernahme',      kommt:'M6, MK1'},
  {id:'welt',    name:'Welt & Bau',      kurz:'Gelände, Bauvorschau, Kollision',   kommt:'G4, G5'},
  {id:'taetigkeiten',name:'Tätigkeiten', kurz:'Arbeit, Fähigkeiten, Training',   kommt:'G8 (Regel 19)'},
+ {id:'wirtschaft',name:'Wirtschaft',     kurz:'Gebäude, Waren, Ketten, Prüfer',    kommt:'W2a'},
  {id:'kampf',   name:'Kampf',           kurz:'Kampfmechanik und alte Labore',     kommt:'M8, G9'},
  {id:'ton',     name:'Ton & Sprache',   kurz:'Voice Lab English, Geräusche',      kommt:'M8, V1'},
  {id:'alt',     name:'Altbestand',      kurz:'Figurenlabore, Galerien, Tests',    kommt:'M8'}

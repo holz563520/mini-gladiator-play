@@ -1,0 +1,44 @@
+{
+ "format": 1,
+ "hinweis": "Maßtabelle (AT3_WIRTSCHAFT.md Regel 4, 13.5, gemessen 13.9). Jedes Gebäude muss in eine Form passen; der Prüfer im Reiter „Wirtschaft“ meldet alles andere. Formen nach 13.5, Grenzen so gezogen, dass der Katalog hineinpasst (Vorschlag).",
+ "feld_m": 1.6,
+ "sitzplatz_feld": 0.75,
+ "figur": "eine Figur steht auf einem Feld (Kartenfigur 14 × 24 Bildpunkte, Feld 64 × 32)",
+ "formen": [
+  {"id":"winzig","name":"winzig","kurz":[1,2],"lang":[1,2],"bsp":"Brunnen, Schrein, kleine Buden, Mast"},
+  {"id":"klein","name":"klein","kurz":[3,5],"lang":[3,6],"bsp":"Hütte 3 × 3, Haus 4 × 4, kleine Werkstatt bis 5 × 6"},
+  {"id":"werkstatt","name":"Werkstatt","kurz":[6,7],"lang":[6,8],"bsp":"Werkstatt 6 × 6, Taverne 7 × 7, Tenement 6 × 8"},
+  {"id":"halle","name":"Halle","kurz":[8,10],"lang":[8,14],"bsp":"Halle 8 × 8 bis 10 × 10, Tempel 10 × 14"},
+  {"id":"hof","name":"Hof mit Feldern","hof":true,"kurz":[8,16],"lang":[8,16],"bsp":"Garten 8 × 8 bis Hof 16 × 16; Felder gehören fest dazu"},
+  {"id":"lang","name":"lang","kurz":[2,3],"lang":[6,16],"bsp":"Seilerbahn 3 × 16, Aquäduktbogen 2 × 6"},
+  {"id":"gross","name":"groß","kurz":[8,32],"lang":[12,32],"bsp":"Markt 12 × 12 bis 16 × 16, Villa 14 × 14, Forum 24 × 24, Palast 32 × 32"},
+  {"id":"bahn","name":"Bahn","kurz":[12,28],"lang":[36,96],"nurFuer":["racetrack"],"bsp":"Rennbahn 12 × 36 → 20 × 64 → 28 × 96"},
+  {"id":"rund","name":"rund","rund":[17,48],"bsp":"Arena Ø 17, 24, 32, 48 (wie 2.0), Theater Ø 26"},
+  {"id":"frei","name":"frei","frei":true,"bsp":"Lager, Waffenkammer, Beastrium, Unterkunft, Tribünen, Kampfgrube, Trainingsplatz, Gehege, Wartestraße (Regel 5)"},
+  {"id":"fest","name":"fest (vorhanden)","fest":true,"bsp":"aus früheren Schritten übernommen (K0, G8, G9c, 2.0)"}
+ ],
+ "beispiele": [
+  {"was":"Hütte","felder":"3 × 3","meter":"≈ 5 m"},
+  {"was":"Haus","felder":"4 × 4","meter":"≈ 6,5 m"},
+  {"was":"Werkstatt","felder":"6 × 6","meter":"≈ 10 m"},
+  {"was":"Hof mit Feldern","felder":"10 × 10 bis 16 × 16","meter":"16–26 m"},
+  {"was":"Marktplatz","felder":"8 × 8 bis 16 × 16","meter":"13–26 m"},
+  {"was":"Tempel","felder":"10 × 14","meter":"16 × 22 m"},
+  {"was":"Forum","felder":"24 × 24","meter":"≈ 38 m"},
+  {"was":"Palast","felder":"32 × 32","meter":"≈ 51 m"},
+  {"was":"Arena","felder":"Ø 17 / 24 / 32 / 48","meter":"Ø 27 / 38 / 51 / 77 m (Kolosseum 188 m: gestaucht)"}
+ ],
+ "arenaStufen": [
+  {"d":17,"name":"Sand Pit","plaetze":120},
+  {"d":24,"name":"Bone Mill","plaetze":330},
+  {"d":32,"name":"Blood Ring","plaetze":700},
+  {"d":48,"name":"Great Amphitheatre","plaetze":1600,"vorschlag":true}
+ ],
+ "arenaGelaende": {"w":128,"h":128,"hinweis":"Start auf dem Arena-Gelände (Q6), Endausbau braucht 116–124 Felder Seitenlänge (13.9)"},
+ "bauklassen": [
+  {"id":"clay-wood","de":"Lehm/Holz"},
+  {"id":"brick","de":"Ziegel"},
+  {"id":"marble","de":"Marmor"}
+ ],
+ "frei": ["lager","waffenkammer","beastrium","unterkunft","stands","fighting-pit","training-yard","menagerie","queue"]
+}

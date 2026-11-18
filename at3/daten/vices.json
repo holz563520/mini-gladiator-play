@@ -1,0 +1,14 @@
+{
+ "format": 1,
+ "hinweis": "Erfundene Rauschmittel (AT3_WIRTSCHAFT.md 2 Regel 11 und 6.2): erfundene Namen, rein abstrakte Wirkung als Spielwert, keine echten Stoffe, Pflanzen oder Herstellungswege. Wirkung je Einheit: laune und tempo in Prozentpunkten, abhaengigkeit 1 leicht · 2 mittel · 3 stark. Zahlen sind Vorschläge.",
+ "vices": [
+  {"ware":"selenes-creeper","anbau":"creeper-bower","verarbeitung":"vine-drier","wirkung":"dreamy, lazy","laune":6,"tempo":-4,"abhaengigkeit":1},
+  {"ware":"gorgon-dust","anbau":"gorgon-quarry","verarbeitung":"dust-grinder","wirkung":"fearless, irritable","laune":3,"tempo":2,"abhaengigkeit":3},
+  {"ware":"lethe-water","anbau":"lethe-spring","verarbeitung":"bottler","wirkung":"forgetful, content","laune":8,"tempo":-3,"abhaengigkeit":2,"selten":"nur an wenigen Quellen der Welt"},
+  {"ware":"bacchants-tears","anbau":"bacchant-grove","verarbeitung":"tear-press","wirkung":"boisterous, loud","laune":7,"tempo":-2,"abhaengigkeit":2},
+  {"ware":"hydra-smoke","anbau":"hydra-reedbed","verarbeitung":"smoke-curer","wirkung":"calm, sleepy","laune":4,"tempo":-5,"abhaengigkeit":1},
+  {"ware":"cerberus-root","fern":true,"wirkung":"strong, wild","laune":2,"tempo":4,"abhaengigkeit":3}
+ ],
+ "entzug": "ohne Nachschub sinken Laune und Arbeit im Ort, bis jemand liefert (6.2 Punkt 4)",
+ "ab": "Elendsviertel ab Marktflecken (G4), in Dörfern nur ein einzelnes Tenement (Q14)"
+}

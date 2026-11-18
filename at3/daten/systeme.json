@@ -1,0 +1,53 @@
+{
+ "format": 1,
+ "hinweis": "Politische Systeme, Siedlungsgrößen, Ämter und Truppen (AT3_WIRTSCHAFT.md 5.1–5.3 und 7). Erzeugt am 18.11.2026 von tools/at3-wirtschaft.cjs, danach gepflegt im Master-Editor. Einwohnerzahlen sind Vorschläge. Gebraucht ab W2g (Orte), Phase P (Personen), Phase A (Truppen).",
+ "siedlungen": [
+  {"id":"G0","name":"Homestead","de":"Gehöft","einwohner":[5,20],"hoechsteStufe":2,"typisch":"1 farm, 1–3 shacks","herr":"Farmer","markt":"trading-spot"},
+  {"id":"G1","name":"Outpost","de":"Außenposten","einwohner":[10,60],"hoechsteStufe":2,"typisch":"mine, timber yard, fishing huts, fort, toll station, horse change, temple farm","herr":"Bailiff","markt":"trading-spot"},
+  {"id":"G2","name":"Hamlet","de":"Weiler","einwohner":[30,150],"hoechsteStufe":2,"typisch":"well, shrine, farms","herr":"Village Headman","markt":"market"},
+  {"id":"G3","name":"Village","de":"Dorf","einwohner":[150,600],"hoechsteStufe":3,"typisch":"market, tavern, workshops, fighting pit","herr":"Village Headman, Squire","markt":"market"},
+  {"id":"G4","name":"Market Town","de":"Marktflecken","einwohner":[600,3000],"hoechsteStufe":4,"typisch":"market, bathhouse, temple, small arena","herr":"Magistrate","markt":"market"},
+  {"id":"G5","name":"City","de":"Stadt","einwohner":[3000,20000],"hoechsteStufe":5,"typisch":"forum, theatre, arena, harbour, guilds","herr":"City Council, Governor","markt":"forum"},
+  {"id":"G6","name":"Great City","de":"Großstadt","einwohner":[20000,150000],"hoechsteStufe":6,"typisch":"colosseum, palaces, senate","herr":"Prince or Consuls","markt":"forum"},
+  {"id":"G7","name":"Capital","de":"Hauptstadt","einwohner":[150000,1000000],"hoechsteStufe":6,"typisch":"royal or imperial palace, giant colosseum, triumphal arch","herr":"King, Emperor","markt":"forum"}
+ ],
+ "handelsplatz": {"name":"Trading Spot","groesse":{"w":4,"h":4},"hinweis":"Außenposten und Gehöfte (5.1)"},
+ "aussenposten": [
+  {"id":"mining-camp","name":"Mining Camp","hinweis":"Erz, Salz, Marmor"},
+  {"id":"logging-camp","name":"Logging Camp","hinweis":""},
+  {"id":"fishing-hamlet","name":"Fishing Hamlet","hinweis":""},
+  {"id":"frontier-fort","name":"Frontier Fort","hinweis":""},
+  {"id":"toll-station","name":"Toll Station","hinweis":""},
+  {"id":"waystation","name":"Waystation","hinweis":"Pferdewechsel, Herberge"},
+  {"id":"monastery-farm","name":"Monastery Farm","hinweis":"Tempelland"},
+  {"id":"smugglers-cove","name":"Smugglers' Cove","hinweis":"nur Handel, keine Fragen"},
+  {"id":"quarantine-camp","name":"Quarantine Camp","hinweis":"„Everyone's welcome. Nobody leaves.“"},
+  {"id":"rival-ludus","name":"Rival Ludus","hinweis":"fremde Gladiatorenschule"}
+ ],
+ "systeme": [
+  {"id":"empire","name":"Empire","de":"Kaiserreich","herrscher":"Emperor","unter":["King","Governor","Senate"],"bedeutung":"riesig, viele Ämter, sehr viele Spiele, Brot und Spiele = Arena-Nachfrage hoch","truppen":"legion"},
+  {"id":"kingdom","name":"Kingdom","de":"Königreich","herrscher":"King or Queen","unter":["Duke","Count","Mayor"],"bedeutung":"Erbfolge, Hof mit Günstlingen, Heirat als Intrige","truppen":"levy"},
+  {"id":"principality","name":"Principality","de":"Fürstentum","herrscher":"Prince","unter":["Count","Mayor"],"bedeutung":"klein, ehrgeizig, wechselt gern den Herrn","truppen":"levy"},
+  {"id":"republic","name":"Republic","de":"Stadtrepublik","herrscher":"Senate + 2 Consuls (elected yearly)","unter":["Magistrate","Guild"],"bedeutung":"Stimmen kaufen, Wahlen, Patrizierfamilien","truppen":"company"},
+  {"id":"merchant-league","name":"Merchant League","de":"Händlerbund","herrscher":"Council of the richest families","unter":["Guild Master","Factor"],"bedeutung":"alles hat einen Preis, Preisangriffe, Kredite","truppen":"company"},
+  {"id":"theocracy","name":"Theocracy","de":"Tempelstaat","herrscher":"High Priest","unter":["Priest","Temple Steward"],"bedeutung":"Segen, Opfer, Pilger; Spiele als Gottesdienst","truppen":"temple-guard"},
+  {"id":"tribal-lands","name":"Tribal Lands","de":"Stammesgebiet","herrscher":"Chieftain + Elders","unter":["Clan Head"],"bedeutung":"Geschenke, Ehre, Zweikämpfe, Tiere als Währung","truppen":"warband"},
+  {"id":"robber-barony","name":"Robber Barony","de":"Räuberbaronie","herrscher":"Baron","unter":["Captain"],"bedeutung":"Wegezoll, Söldner, Sklavenhandel; nur fremde NPCs werden überfallen, der Spieler nie","truppen":"gang"}
+ ],
+ "aemter": [
+  {"kette":"Reich","stufen":["Emperor","King","Governor / Duke","Count / Prefect","Mayor / Magistrate","Village Headman","Bailiff"]},
+  {"kette":"Rat","stufen":["Senate / Council","Patrician Family","Guild Master","Factor"]},
+  {"kette":"Tempel","stufen":["High Priest","Priest","Temple Steward"]},
+  {"kette":"Außerhalb","stufen":["Lanista","Bandit Captain","Chieftain","Elder","Rookery King"]}
+ ],
+ "verteilung": "je Welt 1–3 Kaiserreiche, je Kaiserreich 2–6 Königreiche als Vasallen, dazu freie Königreiche, Republiken, Bünde, Stämme (Vorschlag)",
+ "truppen": [
+  {"id":"legion","name":"Legions","fuer":["empire"],"rang":["Legionary","Squad Leader","Centurion","Senior Centurion","Tribune","Legate","General","Emperor"]},
+  {"id":"levy","name":"Levies and Knights","fuer":["kingdom","principality"],"rang":["Levy","Sergeant","Captain","Knight","Marshal","King"]},
+  {"id":"company","name":"Mercenary Companies","fuer":["republic","merchant-league"],"rang":["Sellsword","Corporal","Company Captain","Condottiere","Council"]},
+  {"id":"temple-guard","name":"Temple Guard","fuer":["theocracy"],"rang":["Acolyte Guard","Warden","Templar Captain","High Priest"]},
+  {"id":"warband","name":"Warbands","fuer":["tribal-lands"],"rang":["Warrior","Champion","War Chief","Chieftain"]},
+  {"id":"gang","name":"Gangs","fuer":["robber-barony","rookery"],"rang":["Thug","Enforcer","Captain","Baron / Rookery King"]}
+ ],
+ "armeeBedarf": ["gladius","spear","shields","helmets","salted-rations","posca","cloth","carts","oxen"]
+}

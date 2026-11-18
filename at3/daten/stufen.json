@@ -1,0 +1,13 @@
+{
+ "format": 1,
+ "hinweis": "Bevölkerungsstufen (AT3_WIRTSCHAFT.md 4), erzeugt am 18.11.2026. grund/zusatz: w = Ware, oder = eine der Waren, g = Gebäude in der Nähe, gruppe = irgendeine Ware der Gruppe, frei = noch ohne Gebäude. Steuern und Mengen folgen in W2c. Bondsmen (Q5) sind ein Stand ohne eigene Wohnhausstufe.",
+ "stufen": [
+  {"id":1,"key":"wretches","name":"Wretches","de":"Tagelöhner","haus":"shack","arbeitet":"Rohstoffe, Träger","grund":[{"w":"water"},{"w":"puls"},{"w":"firewood"}],"zusatz":[{"w":"posca"},{"w":"rough-tunic"}],"arena":"cheap standing room, Grilled Fish, Rotten Fruit to throw"},
+  {"id":2,"key":"plebs","name":"Plebs","de":"Bauern, Arbeiter","haus":"cottage","arbeitet":"Höfe, einfache Werkstätten","grund":[{"w":"bread"},{"oder":["grilled-fish","fish","sausages"]},{"w":"rough-tunic"},{"g":"shrine"}],"zusatz":[{"w":"beer"},{"w":"sandals"},{"g":"tavern"}],"arena":"benches, Sausages, Beer, bets in copper"},
+  {"id":3,"key":"craftsfolk","name":"Craftsfolk","de":"Handwerker","haus":"townhouse","arbeitet":"Verarbeitung, Schmieden, Töpfer","grund":[{"w":"cheese"},{"w":"wine"},{"w":"sandals"},{"w":"oil-lamps"},{"g":"bathhouse"}],"zusatz":[{"w":"soap"},{"w":"pottery"},{"w":"arena-programmes"}],"arena":"seats, Wine, souvenirs, join-in stalls"},
+  {"id":4,"key":"citizens","name":"Citizens","de":"Bürger, Kaufleute","haus":"domus","arbeitet":"Handel, Kontore, Ämter, feine Werkstätten","grund":[{"w":"garum"},{"w":"olive-oil"},{"w":"toga"},{"w":"furniture"},{"g":"temple"}],"zusatz":[{"w":"glassware"},{"w":"writing-tablets"},{"g":"theatre"}],"arena":"good seats, Fine Wine, massage, bets in silver"},
+  {"id":5,"key":"patricians","name":"Patricians","de":"Patrizier","haus":"villa","arbeitet":"Verwaltung, Senat, besitzen Betriebe","grund":[{"w":"fine-wine"},{"w":"honey-cakes"},{"w":"purple-toga"},{"w":"jewellery"},{"w":"perfume"}],"zusatz":[{"gruppe":"exotic"},{"w":"polished-mirrors"},{"frei":"Private Bath"}],"arena":"boxes, Exotic Dishes, bath and massage, buying a fight"},
+  {"id":6,"key":"nobles","name":"Nobles","de":"Edle","haus":"palazzo","arbeitet":"herrschen, besitzen Land","wieStufe":5,"grund":[{"w":"silk-robes"},{"w":"spiced-wine"},{"w":"peacocks"},{"w":"gold-bars"}],"zusatz":[{"w":"chariots"},{"w":"statues","text":"Statue of Themselves"},{"g":"menagerie"}],"arena":"imperial box, beast hunts, mass battles, gifts"}
+ ],
+ "bondsmen": {"name":"Bondsmen","arbeitet":["quarry","iron-mine","copper-mine","tin-mine","silver-mine","gorgon-quarry"],"wohnt":"unterkunft","grund":[{"w":"water"},{"w":"puls"}],"hinweis":"zahlen nichts, Rekruten für den Sklavenmarkt (Q5)"}
+}

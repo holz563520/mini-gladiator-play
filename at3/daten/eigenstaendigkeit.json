@@ -1,0 +1,18 @@
+{
+ "format": 1,
+ "hinweis": "Eigenständigkeit statt Kopie (AT3_WIRTSCHAFT.md 2 Regel 10). Sperrliste: Wörter und Namen, die erkennbar aus einem anderen Spiel stammen und darum nicht vorkommen dürfen; der Prüfer sucht sie in Gebäude- und Warennamen und Beschreibungen. Prüfliste: je Etappe von Hand abhaken, nachdem Namen, Texte, Bilder und Ketten durchgesehen wurden. Die Sperrliste ist anfangs leer und wird im Master-Editor gefüllt.",
+ "frage": "Ist ein Name, Text, Bild oder eine Kette erkennbar aus einem anderen Spiel? → umbauen",
+ "sperrliste": [],
+ "pruefliste": [
+  {"etappe":"W2a","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""},
+  {"etappe":"W2b","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""},
+  {"etappe":"W2c","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""},
+  {"etappe":"W2d","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""},
+  {"etappe":"W2e","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""},
+  {"etappe":"W2f","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""},
+  {"etappe":"W2g","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""},
+  {"etappe":"W2h","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""},
+  {"etappe":"W2i","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""},
+  {"etappe":"W2j","frage":"Namen, Texte, Bilder und Ketten dieser Etappe auf Eigenständigkeit durchgesehen","geprueft":false,"wer":"","wann":""}
+ ]
+}
