@@ -11,7 +11,7 @@
 // eine von Hand entfernte Wand wächst nicht nach (Herkunft je Kante); Hof ohne Wände und Wand ohne Raum sind gültig; beim Zusammenlegen bleibt die kleinste
 // Raum-Nummer, beim Teilen behält der Teil mit dem Hauptfeld die Nummer.
 // Entscheidungen Thomas (16.11.2026): alles kostet 1 (Feld, Wand, Tür/Tor), Startkapital 10.000, Abriss gibt nichts zurück (nur noch nicht Begonnenes wird
-// erstattet), nur auf ebenem Boden, Büsche und Blumen werden gerodet, Bäume und Fels sperren, Bauzeit 2 s je Feld. Vorschlag: Wand/Tür 1 s.
+// erstattet), nur auf ebenem Boden, Bäume, Büsche und Blumen werden beim Gebäudebau gerodet, Fels sperrt, Bauzeit 2 s je Feld. Vorschlag: Wand/Tür 1 s.
 // Bis G7 (Arbeiter, Material): feste Bauzeit, je Baustelle ein Ziel nach dem anderen; die Zustände „Material reserviert/geliefert“ und „blockiert“ sind
 // vorgesehen (Nummern unten), werden aber noch nicht benutzt.
 // G6a Wege (Thomas 16.11.2026): vier Wegarten wie 2.0 welt-bau.js (Trampelpfad, Kiesweg, Pflasterweg, Steinstraße), alles kostet 1, Rechteck ziehen.
@@ -33,7 +33,7 @@ var WEG_NAME=['','trampelpfad','kiesweg','pflaster','steinstrasse'], WEG={trampe
 var K_WAND=1, K_TUER=2, K_TOR=3, H_AUTO=1, H_HAND=2, H_WEG=3;
 // Bauzustand von Feld und Kante. 4/5 (Material reserviert/geliefert) kommen mit G7 zwischen „geplant“ und „in Arbeit“ in die Baustelle.
 var Z_PLAN=1, Z_ARBEIT=2, Z_FERTIG=3;
-// Feld-Merker (ein Byte): Bit 0 Dach, Bit 1 gerodet (Busch/Blume entfernt, bleibt auch nach Abriss), Bit 2 getrennt halten, Bits 4–5 Bauzustand
+// Feld-Merker (ein Byte): Bit 0 Dach, Bit 1 gerodet (Baum/Busch/Blume entfernt, bleibt auch nach Abriss), Bit 2 getrennt halten, Bits 4–5 Bauzustand
 var F_DACH=1, F_ROD=2, F_GETRENNT=4, F_STUMPF=8;      // G8: Bit 3 = Baum gefällt (Stumpf, Feld frei; wächst nach, ketten.js)
 // Baustelle: 0 läuft, 1 pausiert, 2 blockiert (ab G7), 3 abgebrochen (wird sofort entfernt)
 var B_LAEUFT=0, B_PAUSE=1, B_BLOCK=2;
@@ -68,18 +68,18 @@ function leerRaeumen(b,X,Y){var k=(X>>6)*8192+(Y>>6),s=b.st.get(k);if(!s)return;
  for(var i=0;i<FELDER;i++)if(s.art[i]||s.kn[i]||s.kw[i]||s.flag[i]||s.weg[i])return;b.st.delete(k);if(b.neu)b.neu.add(k)}
 function melden(b,nr,grund,mehr){var m=mehr||{};m.nr=nr;m.ok=grund?0:1;m.grund=grund||'';if(b.meld.length>=MAX_MELD)b.meld.shift();b.meld.push(m);return grund||null}
 
-// ── Boden prüfen: eben (alle vier Ecken auf derselben Höhenstufe), kein Wasser, kein Weg, kein Baum oder Fels ──
-// Liefert 0 (frei), 1 (frei, Busch/Blume wird gerodet) oder einen Ablehnungsgrund. Kartenstücke kommen aus dem Fenster des Weltgenerators (7 × 7 um den Blick).
+// ── Boden prüfen: eben (alle vier Ecken auf derselben Höhenstufe), kein Wasser/Weg/Fels; Gebäudebau darf Bäume roden ──
+// Liefert 0 (frei), 1 (Natur wird gerodet) oder einen Ablehnungsgrund. Ohne baeumeRoden sperren stehende Bäume weiterhin (Wandwerkzeuge).
 function sicht(z,cx,cy,C){var k=cx*8192+cy,v=C.get(k);if(v!==undefined)return v;
  var p=z.wg&&z.wg.ans?z.wg.stuecke.get(k):null;
  v=p?{H:new Uint16Array(p.buffer,p.byteOffset,FELDER),B:new Uint8Array(p.buffer,p.byteOffset+FELDER*2,FELDER),W:new Uint8Array(p.buffer,p.byteOffset+FELDER*3,FELDER)}:null;C.set(k,v);return v}
 function stufe(h){h=(h-MEER)>>LS;return h<0?0:h}
-function boden(z,X,Y,C){if(Y<0||Y>=WY-1)return'edge';
+function boden(z,X,Y,C,baeumeRoden){if(Y<0||Y>=WY-1)return'edge';
  var s=sicht(z,X>>6,Y>>6,C);if(!s)return'too_far';
  var q=qi(X,Y),h0=stufe(s.H[q]);
  for(var k=1;k<4;k++){var x=um(X+(k&1)),y=Y+(k>>1),t=sicht(z,x>>6,y>>6,C);if(!t)return'too_far';if(stufe(t.H[qi(x,y)])!==h0)return'not_flat'}
  var bio=s.B[q];if(bio<2||bio>9)return'water';if(s.W[q]||(z.bau&&wegAt(z.bau,X,Y)))return'road';
- var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;if(n<=5&&z.bau&&(flagAt(z.bau,X,Y)&F_STUMPF))return 1;return n<=5||n===12?'nature':1}      // natur.js: 0–5 Bäume, 12 Fels sperren; Büsche und Blumen werden gerodet; G8: ein Stumpf wird gerodet
+ var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;if(n<=5&&(baeumeRoden||(z.bau&&(flagAt(z.bau,X,Y)&F_STUMPF))))return 1;return n<=5||n===12?'nature':1}      // Gebäudebau rodet auch Bäume; sonst natur.js: 0–5 Bäume, 12 Fels sperren; Büsche und Blumen werden gerodet; G8: ein Stumpf wird gerodet
 
 // ── Flutfüllung eines Raums ab einem Feld. Gibt die Felder als flache Liste [X,Y,…] zurück (höchstens MAX_RAUM+1 Felder). ──
 function fluten(b,X,Y,id,gesehen){var L=[X,Y],i=0;gesehen.add(fk(X,Y));
@@ -103,7 +103,7 @@ function planBoden(z,w){var b=z.bau||LEER,C=new Map(),art=ART[w.art],getr=w.getr
  if(w.y+w.h>WY-1)return{fehler:'edge'};
  for(j=0;j<w.h;j++)for(i=0;i<w.w;i++){X=um(w.x+i);Y=w.y+j;var a=artAt(b,X,Y);
   if(a){if(a!==art)return{fehler:'occupied',x:X,y:Y};continue}
-  var g=boden(z,X,Y,C);if(typeof g==='string')return{fehler:g,x:X,y:Y};
+  var g=boden(z,X,Y,C,true);if(typeof g==='string')return{fehler:g,x:X,y:Y};
   nm.set(fk(X,Y),neuL.length);neuL.push({X:X,Y:Y,i:i,j:j,rod:g,g:-1})}
  if(!neuL.length)return{fehler:'nothing'};
  // Gruppen: neue Felder untereinander, dazu angrenzende Räume gleicher Art (außer „getrennt halten“)
@@ -406,3 +406,4 @@ var B={neu:neu,START_GOLD:START_GOLD,PREIS:PREIS,FELD_TICKS:FELD_TICKS,KANTE_TIC
  feld:feld,kante:kanteAn,ziel:zielZu,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,F_STUMPF:F_STUMPF,stumpf:stumpf,stumpfAn:stumpfAn,baumFrei:baumFrei,haken:function(f){beiEntfernen=f}};
 if(typeof module!=='undefined'&&module.exports)module.exports=B;else root.AT3BAU=B;
 })(typeof self!=='undefined'?self:this);
+

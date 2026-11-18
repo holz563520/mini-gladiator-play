@@ -55,7 +55,7 @@ function biom(z,X,Y){var p=stueck(z,X,Y);return p?p[FF*2+(((Y&63)<<6)|(X&63))]:-
 function natur(z,X,Y){var p=stueck(z,X,Y);if(!p||Y<0||Y>=WY-1)return -1;var q=((Y&63)<<6)|(X&63),h0=hoehe(z,X,Y),mn=h0,mx=h0;
  for(var k=1;k<4;k++){var h=hoehe(z,umX(X+(k&1)),Y+(k>>1));if(h<0)return -1;if(h<mn)mn=h;if(h>mx)mx=h}
  return NAT().art(z.wg.seed>>>0,X,Y,p[FF*2+q],p[FF*3+q],mx-mn)}
-function istBaum(z,X,Y){var n=natur(z,X,Y);return n>=0&&n<=5&&!BAU().stumpfAn(z,X,Y)}
+function istBaum(z,X,Y){if(!BAU().baumFrei(z,X,Y)||BAU().stumpfAn(z,X,Y))return false;var n=natur(z,X,Y);return n>=0&&n<=5}
 function istWasser(z,X,Y){var b=biom(z,X,Y);return b===10||b===11}
 // Freies, begehbares Feld neben X,Y (das der Person nächste) oder null
 function standFeld(z,X,Y,px,py){var best=null,bd=0;for(var s=0;s<4;s++){var x=umX(X+DX[s]),y=Y+DY[s];if(y<0||y>=WY||!P().gangbar(z,x,y))continue;var d=weit(x,y,px,py);if(!best||d<bd){best=[x,y];bd=d}}return best}
@@ -218,3 +218,4 @@ var K={TAG:TAG,SOLL:SOLL,AKT:AKT,FAELL_R:FAELL_R,FAELL_T:FAELL_T,FAELL_M:FAELL_M
  istBaum:istBaum,istWasser:istWasser,lage:lage};
 if(typeof module!=='undefined'&&module.exports)module.exports=K;else root.AT3KETTEN=K;
 })(typeof self!=='undefined'?self:this);
+
