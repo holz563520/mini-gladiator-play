@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 37,
+ "typMax": 77,
  "objekte": [
   {
    "id": "arena-sand",
@@ -75,6 +75,366 @@
    "name": "Straw Bed",
    "status": "geprueft",
    "datei": "obj/bett-stroh.json"
+  },
+  {
+   "id": "bk-feld",
+   "version": 1,
+   "typ": 77,
+   "kat": "boden",
+   "name": "Ploughed Field",
+   "status": "skizze",
+   "datei": "obj/bk-feld.json"
+  },
+  {
+   "id": "bk-lehm-boden",
+   "version": 1,
+   "typ": 48,
+   "kat": "boden",
+   "name": "Mud-and-Timber Floor",
+   "status": "skizze",
+   "datei": "obj/bk-lehm-boden.json"
+  },
+  {
+   "id": "bk-lehm-dach-ab-i",
+   "version": 1,
+   "typ": 47,
+   "kat": "dach",
+   "name": "Thatched Roof Slope, Right",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-ab-i.json"
+  },
+  {
+   "id": "bk-lehm-dach-ab-j",
+   "version": 1,
+   "typ": 45,
+   "kat": "dach",
+   "name": "Thatched Roof Slope, Front",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-ab-j.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-i",
+   "version": 1,
+   "typ": 46,
+   "kat": "dach",
+   "name": "Thatched Roof Slope, Left",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-i.json"
+  },
+  {
+   "id": "bk-lehm-dach-auf-j",
+   "version": 1,
+   "typ": 44,
+   "kat": "dach",
+   "name": "Thatched Roof Slope, Rear",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-auf-j.json"
+  },
+  {
+   "id": "bk-lehm-dach-flach",
+   "version": 1,
+   "typ": 43,
+   "kat": "dach",
+   "name": "Thatched Roof, Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-dach-flach.json"
+  },
+  {
+   "id": "bk-lehm-giebel",
+   "version": 1,
+   "typ": 40,
+   "kat": "wand",
+   "name": "Mud-and-Timber Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-giebel.json"
+  },
+  {
+   "id": "bk-lehm-giebel-ab",
+   "version": 1,
+   "typ": 42,
+   "kat": "wand",
+   "name": "Mud-and-Timber Gable Peak (down)",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-giebel-ab.json"
+  },
+  {
+   "id": "bk-lehm-giebel-auf",
+   "version": 1,
+   "typ": 41,
+   "kat": "wand",
+   "name": "Mud-and-Timber Gable Peak (up)",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-giebel-auf.json"
+  },
+  {
+   "id": "bk-lehm-rang",
+   "version": 1,
+   "typ": 49,
+   "kat": "boden",
+   "name": "Mud-and-Timber Tiers",
+   "status": "skizze",
+   "datei": "obj/bk-lehm-rang.json"
+  },
+  {
+   "id": "bk-lehm-schild",
+   "version": 1,
+   "typ": 50,
+   "kat": "einrichtung",
+   "name": "Mud-and-Timber Sign",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-schild.json"
+  },
+  {
+   "id": "bk-lehm-tuer",
+   "version": 1,
+   "typ": 39,
+   "kat": "wand",
+   "name": "Mud-and-Timber Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-tuer.json"
+  },
+  {
+   "id": "bk-lehm-wand",
+   "version": 1,
+   "typ": 38,
+   "kat": "wand",
+   "name": "Mud-and-Timber Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-wand.json"
+  },
+  {
+   "id": "bk-marmor-boden",
+   "version": 1,
+   "typ": 74,
+   "kat": "boden",
+   "name": "Marble Floor",
+   "status": "skizze",
+   "datei": "obj/bk-marmor-boden.json"
+  },
+  {
+   "id": "bk-marmor-dach-ab-i",
+   "version": 1,
+   "typ": 73,
+   "kat": "dach",
+   "name": "Marble-Slab Roof Slope, Right",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-dach-ab-i.json"
+  },
+  {
+   "id": "bk-marmor-dach-ab-j",
+   "version": 1,
+   "typ": 71,
+   "kat": "dach",
+   "name": "Marble-Slab Roof Slope, Front",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-dach-ab-j.json"
+  },
+  {
+   "id": "bk-marmor-dach-auf-i",
+   "version": 1,
+   "typ": 72,
+   "kat": "dach",
+   "name": "Marble-Slab Roof Slope, Left",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-dach-auf-i.json"
+  },
+  {
+   "id": "bk-marmor-dach-auf-j",
+   "version": 1,
+   "typ": 70,
+   "kat": "dach",
+   "name": "Marble-Slab Roof Slope, Rear",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-dach-auf-j.json"
+  },
+  {
+   "id": "bk-marmor-dach-flach",
+   "version": 1,
+   "typ": 69,
+   "kat": "dach",
+   "name": "Marble-Slab Roof, Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-dach-flach.json"
+  },
+  {
+   "id": "bk-marmor-giebel",
+   "version": 1,
+   "typ": 66,
+   "kat": "wand",
+   "name": "Marble Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-giebel.json"
+  },
+  {
+   "id": "bk-marmor-giebel-ab",
+   "version": 1,
+   "typ": 68,
+   "kat": "wand",
+   "name": "Marble Gable Peak (down)",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-giebel-ab.json"
+  },
+  {
+   "id": "bk-marmor-giebel-auf",
+   "version": 1,
+   "typ": 67,
+   "kat": "wand",
+   "name": "Marble Gable Peak (up)",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-giebel-auf.json"
+  },
+  {
+   "id": "bk-marmor-rang",
+   "version": 1,
+   "typ": 75,
+   "kat": "boden",
+   "name": "Marble Tiers",
+   "status": "skizze",
+   "datei": "obj/bk-marmor-rang.json"
+  },
+  {
+   "id": "bk-marmor-schild",
+   "version": 1,
+   "typ": 76,
+   "kat": "einrichtung",
+   "name": "Marble Sign",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-schild.json"
+  },
+  {
+   "id": "bk-marmor-tuer",
+   "version": 1,
+   "typ": 65,
+   "kat": "wand",
+   "name": "Marble Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-tuer.json"
+  },
+  {
+   "id": "bk-marmor-wand",
+   "version": 1,
+   "typ": 64,
+   "kat": "wand",
+   "name": "Marble Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-marmor-wand.json"
+  },
+  {
+   "id": "bk-ziegel-boden",
+   "version": 1,
+   "typ": 61,
+   "kat": "boden",
+   "name": "Brick Floor",
+   "status": "skizze",
+   "datei": "obj/bk-ziegel-boden.json"
+  },
+  {
+   "id": "bk-ziegel-dach-ab-i",
+   "version": 1,
+   "typ": 60,
+   "kat": "dach",
+   "name": "Tiled Roof Slope, Right",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-dach-ab-i.json"
+  },
+  {
+   "id": "bk-ziegel-dach-ab-j",
+   "version": 1,
+   "typ": 58,
+   "kat": "dach",
+   "name": "Tiled Roof Slope, Front",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-dach-ab-j.json"
+  },
+  {
+   "id": "bk-ziegel-dach-auf-i",
+   "version": 1,
+   "typ": 59,
+   "kat": "dach",
+   "name": "Tiled Roof Slope, Left",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-dach-auf-i.json"
+  },
+  {
+   "id": "bk-ziegel-dach-auf-j",
+   "version": 1,
+   "typ": 57,
+   "kat": "dach",
+   "name": "Tiled Roof Slope, Rear",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-dach-auf-j.json"
+  },
+  {
+   "id": "bk-ziegel-dach-flach",
+   "version": 1,
+   "typ": 56,
+   "kat": "dach",
+   "name": "Tiled Roof, Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-dach-flach.json"
+  },
+  {
+   "id": "bk-ziegel-giebel",
+   "version": 1,
+   "typ": 53,
+   "kat": "wand",
+   "name": "Brick Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-giebel.json"
+  },
+  {
+   "id": "bk-ziegel-giebel-ab",
+   "version": 1,
+   "typ": 55,
+   "kat": "wand",
+   "name": "Brick Gable Peak (down)",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-giebel-ab.json"
+  },
+  {
+   "id": "bk-ziegel-giebel-auf",
+   "version": 1,
+   "typ": 54,
+   "kat": "wand",
+   "name": "Brick Gable Peak (up)",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-giebel-auf.json"
+  },
+  {
+   "id": "bk-ziegel-rang",
+   "version": 1,
+   "typ": 62,
+   "kat": "boden",
+   "name": "Brick Tiers",
+   "status": "skizze",
+   "datei": "obj/bk-ziegel-rang.json"
+  },
+  {
+   "id": "bk-ziegel-schild",
+   "version": 1,
+   "typ": 63,
+   "kat": "einrichtung",
+   "name": "Brick Sign",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-schild.json"
+  },
+  {
+   "id": "bk-ziegel-tuer",
+   "version": 1,
+   "typ": 52,
+   "kat": "wand",
+   "name": "Brick Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-tuer.json"
+  },
+  {
+   "id": "bk-ziegel-wand",
+   "version": 1,
+   "typ": 51,
+   "kat": "wand",
+   "name": "Brick Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-ziegel-wand.json"
   },
   {
    "id": "blume-distel",
