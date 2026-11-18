@@ -182,8 +182,14 @@ KK.heile=function(w){
 KK.figuren=function(w){vorbereiten();if(imWorker){if(!G.AT3_64)importScripts('at3-64.js?v='+v);if(!G.AT3Figurbild)importScripts('figurbild.js?v='+v);}
  return G.AT3Figurbild.figuren(G.MG,G.AT3_64,w||{});};
 
+// F1b (Thomas 18.11.2026): Kartenblätter der Personen fürs Spiel (AT3-64). wunsch {gs:[{pid,g}], lasten, palette} → siehe figurbild.js karte
+KK.kfiguren=function(w){vorbereiten();if(imWorker){if(!G.AT3_64)importScripts('at3-64.js?v='+v);if(!G.AT3Figurbild)importScripts('figurbild.js?v='+v);}
+ return G.AT3Figurbild.karte(G.MG,G.AT3_64,w||{});};
+
 if(imWorker){
- G.onmessage=function(e){var d=e.data;if(d.art==='figuren'){try{var r=KK.figuren(d.wunsch),tr=[];r.figuren.forEach(function(x){tr.push(x.voll.buffer,x.p64.buffer);});G.postMessage({nr:d.nr,ergebnis:r},tr);}
+ G.onmessage=function(e){var d=e.data;if(d.art==='kfiguren'){try{var r=KK.kfiguren(d.wunsch),tr=[];r.blaetter.forEach(function(x){tr.push(x.p64.buffer);});if(r.lasten)tr.push(r.lasten.p64.buffer);G.postMessage({nr:d.nr,ergebnis:r},tr);}
+   catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}return;}
+  if(d.art==='figuren'){try{var r=KK.figuren(d.wunsch),tr=[];r.figuren.forEach(function(x){tr.push(x.voll.buffer,x.p64.buffer);});G.postMessage({nr:d.nr,ergebnis:r},tr);}
    catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}return;}
   var f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:d.art==='wuerfle'?function(){return KK.wuerfle(d.wunsch);}:d.art==='karten'?function(){return KK.karten(d.wunsch);}:
   d.art==='arena'?function(){return KK.arena(d.wunsch);}:d.art==='heile'?function(){return KK.heile(d.wunsch);}:null;if(!f)return;

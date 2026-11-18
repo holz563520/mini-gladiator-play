@@ -90,13 +90,14 @@ function aufraeumen(z){var a=z.gla,g=z.per;if(!a||!g)return;var da={};for(var i=
 
 // ── An das Spiel: kleine Übersicht (keine vollen 1.0-Daten), nur bei einer Änderung (zaehler) ──
 function kurz(r){var g=r.g,s=g.stats||{},w=function(x){return x==null?null:Math.round(x)};return{name:g.name,alter:g.age|0,groesse:g.height|0,gewicht:g.weight|0,
- talent:w(g.potential),wuchs:g.stature||'',her:r.her,geb:r.geb,hp:r.hp==null?100:r.hp,ruht:r.ruht|0,werte:{str:w(s.strength),sta:w(s.stamina),agi:w(s.agility),dex:w(s.dexterity)}}}
+ talent:w(g.potential),wuchs:g.stature||'',her:r.her,geb:r.geb,hp:r.hp==null?100:r.hp,ruht:r.ruht|0,gv:r.gv|0,werte:{str:w(s.strength),sta:w(s.stamina),agi:w(s.agility),dex:w(s.dexterity)}}}
 function meld(z){var a=z.gla;if(!a)return null;aufraeumen(z);var per={};for(var id in a.per)per[id]=kurz(a.per[id]);
  return{zaehler:a.zaehler,platz:a.platz,markt:[a.mx,a.my],tag:a.tag,heute:tag(z),preis:PREIS,gold:z.bau?z.bau.gold:BAU().START_GOLD,
   lot:a.tag===tag(z)?a.lot.map(function(r){return r?kurz(r):null}):[],braucht:braucht(z),heil:heil(z),per:per,meld:a.meld.slice(),orte:a.orte.map(function(o){return{ortId:o[0],art:ART[o[1]],name:o[4]}}),arena:AR().kurz(z)}}
 // Volle 1.0-Daten einer Person oder eines Kandidaten (G9c2 Karte, G9d Kampf); nur auf Nachfrage
 function daten(z,wo){var a=z.gla;if(!a)return null;if(wo.arena)return AR().daten(z);      // G9d2: Kampffenster
  if(wo.heil){var L=[];for(var id in a.per){var q=a.per[id];if(q&&q.g&&!q.g.dead)L.push({pid:+id,gv:q.gv|0,g:q.g})}return JSON.parse(JSON.stringify({tag:tag(z),liste:L}))}      // G9d3: alle Lebenden zur Heilung
+ if(wo.figur){var F=[];wo.figur.forEach(function(id){var q=a.per[id];if(q&&q.g)F.push({pid:+id,gv:q.gv|0,g:q.g})});return JSON.parse(JSON.stringify(F))}      // F1b: Aussehen für die Kartenblätter
  var r=wo.person!=null?a.per[wo.person]:a.tag===tag(z)?a.lot[wo.i]:null;return r?JSON.parse(JSON.stringify(r)):null}
 
 function abdruck(a,f){f(a.platz?1:0);f(a.mx);f(a.my);f(a.tag);f(a.frage);f(a.verkauft);f(a.orte.length);

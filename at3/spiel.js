@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='46b1054f', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='353077d3', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -245,7 +245,17 @@ function beiGladiatoren(d){GLAD=d.meld||null;window.AT3SPIEL.glad=GLAD;
    if(m.ok)aufdecken(m);else if(m.grund==='no_gold'&&HANDEL){MK.quote=zieh('broke');sprich(MK.quote)}}}
  if(window.AT3SPIEL.angetippt==='markt')marktKarte(true);
  if(PERSON&&window.AT3SPIEL.angetippt==='person:'+PERSON.id){personKarte.still=true;personKarte(PERSON)}
- arenaMeld()}
+ arenaMeld();figurenPflegen()}
+// ── F1b Kartenfiguren wie 2.0 (Thomas 18.11.2026): fehlt einer Person ihr Posenblatt (neu oder Datenstand gv geändert), holt das Spiel ihr Aussehen vom Weltkern
+// (glaDaten figur) und lässt den Kampfkern das Blatt in AT3-64 zeichnen (KA.kfiguren). Höchstens 8 je Auftrag, immer nur ein Auftrag unterwegs; bis dahin Ersatzbild.
+// Kerne: Hauptkern nur Nachfrage und einmal ins Canvas legen, gezeichnet wird im Kampfkern. Notausschalter: ?f1=0 ──
+var FIGW=false, F1AUS=/[?&]f1=0/.test(location.search);
+function figurenPflegen(){if(F1AUS||FIGW||!KARTE||!KARTE.figurHat||!GLAD||!GLAD.per)return;var da={},fehlt=[];
+ for(var id in GLAD.per){da[id]=1;if(!KARTE.figurHat(+id,GLAD.per[id].gv|0))fehlt.push(+id)}KARTE.figurVergessen(da);if(!fehlt.length)return;
+ FIGW=true;var teil=fehlt.slice(0,8),mehr=fehlt.length>8;
+ Promise.all([anschluss(),KERN.glaDaten({figur:teil})]).then(function(r){var KA=r[0],D=r[1];if(!D||!D.length){mehr=false;return null}
+  return KA.kfiguren({gs:D.map(function(e){return{pid:e.pid,g:e.g}}),lasten:true},'',V).then(function(R){R.blaetter.forEach(function(b,i){b.gv=D[i].gv});if(KARTE)KARTE.figurBlaetter(R)})})
+  .catch(function(e){mehr=false;console.warn('Kartenfiguren:',e)}).then(function(){FIGW=false;if(mehr)setTimeout(figurenPflegen,50)})}
 // ── G9d2 Arena (Thomas 17.11.2026): feste Arena am Startplatz (Weltkern arena.js). Antippen zeigt Termin oder „Plan a fight“. Planen öffnet das Kampffenster mit der
 // Aufstellung 1:1 aus 1.0 (kampffenster.js, Modus wahl); „KAMPF!“ dort bucht den Termin am nächsten Spieltag (Befehl arenaTermin). Ist er fällig (alle an der Arena
 // oder spät genug), öffnet das Spiel das Kampffenster von selbst (Modus kampf); das Ergebnis geht genau einmal mit arenaErgebnis in den Weltkern. Die Weltuhr steht,
