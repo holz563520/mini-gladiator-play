@@ -177,8 +177,15 @@ KK.heile=function(w){
   return S.roster.map(function(g){return {g:g,hp:Math.max(0,Math.min(100,Math.round(M.health(g)))),ruht:g.dead?0:KK.verletzt(g)?1:0};});}
  finally{M.chargeSold=cs;M.householdDay=hd;S.roster=alt.roster;S.day=alt.day;S.lastMarket=alt.lastMarket;S.sponsor=alt.sponsor;S.battle=alt.battle;S.rng=alt.rng;}};
 
+// F1a (Thomas 18.11.2026): Kartenfiguren wie 2.0 für das Musterblatt im Master-Editor. figurbild.js und at3-64.js erst beim ersten Auftrag laden.
+// wunsch {seed, n, besucher, palette} → siehe figurbild.js. Verbraucht keinen Spielzufall (MG.s.rng wird zurückgesetzt).
+KK.figuren=function(w){vorbereiten();if(imWorker){if(!G.AT3_64)importScripts('at3-64.js?v='+v);if(!G.AT3Figurbild)importScripts('figurbild.js?v='+v);}
+ return G.AT3Figurbild.figuren(G.MG,G.AT3_64,w||{});};
+
 if(imWorker){
- G.onmessage=function(e){var d=e.data,f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:d.art==='wuerfle'?function(){return KK.wuerfle(d.wunsch);}:d.art==='karten'?function(){return KK.karten(d.wunsch);}:
+ G.onmessage=function(e){var d=e.data;if(d.art==='figuren'){try{var r=KK.figuren(d.wunsch),tr=[];r.figuren.forEach(function(x){tr.push(x.voll.buffer,x.p64.buffer);});G.postMessage({nr:d.nr,ergebnis:r},tr);}
+   catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}return;}
+  var f=d.art==='kampf'?function(){return KK.rechne(d.auftrag);}:d.art==='erzeuge'?function(){return KK.erzeuge(d.wunsch);}:d.art==='wuerfle'?function(){return KK.wuerfle(d.wunsch);}:d.art==='karten'?function(){return KK.karten(d.wunsch);}:
   d.art==='arena'?function(){return KK.arena(d.wunsch);}:d.art==='heile'?function(){return KK.heile(d.wunsch);}:null;if(!f)return;
   try{G.postMessage({nr:d.nr,ergebnis:f()});}catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}};
  // G9b: Ladezeit und geladene Dateien des Kampfkerns melden (eigene Zeitleiste des Kerns)

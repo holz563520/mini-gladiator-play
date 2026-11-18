@@ -60,6 +60,8 @@ KA.karten=function(wunsch,basis,v){return frage('karten','wunsch',wunsch,basis,v
 // G9d3: Arenakampf „nur Ergebnis“ ohne Fenster (kampfkern.js KK.arena, wie der angesehene Kampf) und tägliche Heilung wie 1.0 (KK.heile)
 KA.arena=function(wunsch,basis,v){return frage('arena','wunsch',wunsch,basis,v);};
 KA.heile=function(wunsch,basis,v){return frage('heile','wunsch',wunsch,basis,v);};
+// F1a: Kartenfiguren wie 2.0 (Posenblätter, voll und AT3-64) im Kampfkern zeichnen lassen. wunsch {seed, n, besucher, palette}
+KA.figuren=function(wunsch,basis,v){return frage('figuren','wunsch',wunsch,basis,v);};
 // G9b: Fingerabdruck eines Ergebnisses für die Gleichheitsprobe (Sieger, Zeit, je Kämpfer Zustand, Verletzungen und Daten nach dem Kampf)
 KA.abdruck=function(e){var s=JSON.stringify([e.sieger,e.zeit,e.einheiten.map(function(u){return [u.key,u.tot,u.unten,u.leben,u.kills,u.verletzungen,u.ursache,u.g];})]),h=0x811c9dc5;
  for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193);}return ('0000000'+(h>>>0).toString(16)).slice(-8);};
