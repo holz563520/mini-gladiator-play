@@ -223,10 +223,12 @@ function setzen(L,hole,dachform,ohneWiese){
  function teil(t){return kennung(K.id,t,L.kultur||'')}
  // Varianten (Thomas, 18.11.2026): Gibt es zu einem Teil Fassungen „<Kennung>-a … -f“, wählt jedes Feld nach seiner Lage eine von bis zu sieben (gleiches Fugenraster, gleiche Maße),
  // damit große Flächen nie aus derselben Platte bestehen. Ohne Varianten bleibt alles wie bisher; Kosten: ein Nachschlagen je Teil, einmal gemerkt.
+ var giebelSchaedelGesetzt=false; // Makabres Einzelmotiv: höchstens einmal pro Gebäude.
  var vorh={},SLOT='0000aaabbbcccdef';   // 16 Plätze: 4× Grundfassung, 3× a, b, c (gewöhnlich), je 1× d, e, f (selten, auffällig)
  function wahl(id,i,j){if(id.indexOf('bk-')!==0)return id;var h=1,k;for(k=0;k<id.length;k++)h=(Math.imul(h,31)+id.charCodeAt(k))>>>0;
   h=(h^Math.imul(i|0,73856093)^Math.imul(j|0,19349663))>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;var n=SLOT.charAt((h>>>16)%16);if(n==='0')return id;
-  var v=id+'-'+n;if(vorh[v]===undefined)vorh[v]=!!hole(v);return vorh[v]?v:id}
+  var einzel=id==='bk-lehm-giebel'&&n==='c';if(einzel&&giebelSchaedelGesetzt)return id;
+  var v=id+'-'+n;if(vorh[v]===undefined)vorh[v]=!!hole(v);if(einzel&&vorh[v])giebelSchaedelGesetzt=true;return vorh[v]?v:id}
  // Dachrand (Thomas, 18.11.2026): Am Dachrand nimmt das Feld, wenn vorhanden, ein ausgefranstes Randteil statt der Innenplatte: Kennung + „-“ + Hangkante (r = Traufe, k = First/Kamm)
  // + Giebelkante (s = Ende in Richtung +, n = Ende in Richtung −), z. B. „-r“, „-ks“, „-rn“. Es hängt über die Wand bzw. den First und liegt über der Innenplatte.
  var UEBER=8,KAMM=5,SEITE=[6,3],FIRST={'dach-ab-j':[0,-1],'dach-auf-j':[0,1],'dach-ab-i':[-1,0],'dach-auf-i':[1,0]};

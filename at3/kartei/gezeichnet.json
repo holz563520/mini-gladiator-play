@@ -1,1 +1,26 @@
-{"hinweis":"Von Hand gezeichnete Baukastenteile: tools/at3-baukasten.cjs überschreibt sie nicht aus dem Code.","ids":["bk-lehm-boden","bk-lehm-dach-ab-j","bk-lehm-dach-auf-j","bk-lehm-dach-auf-j-a","bk-lehm-dach-auf-j-b","bk-lehm-dach-auf-j-c","bk-lehm-dach-auf-j-d","bk-lehm-dach-auf-j-r","bk-lehm-dach-auf-j-k","bk-lehm-dach-auf-j-s","bk-lehm-dach-auf-j-n","bk-lehm-dach-auf-j-rs","bk-lehm-dach-auf-j-rn","bk-lehm-dach-auf-j-ks","bk-lehm-dach-auf-j-kn"]}
+{
+ "hinweis": "Von Hand gezeichnete Baukastenteile: tools/at3-baukasten.cjs überschreibt sie nicht aus dem Code.",
+ "ids": [
+  "bk-lehm-boden",
+  "bk-lehm-dach-ab-j",
+  "bk-lehm-dach-auf-j",
+  "bk-lehm-dach-auf-j-a",
+  "bk-lehm-dach-auf-j-b",
+  "bk-lehm-dach-auf-j-c",
+  "bk-lehm-dach-auf-j-d",
+  "bk-lehm-dach-auf-j-r",
+  "bk-lehm-dach-auf-j-k",
+  "bk-lehm-dach-auf-j-s",
+  "bk-lehm-dach-auf-j-n",
+  "bk-lehm-dach-auf-j-rs",
+  "bk-lehm-dach-auf-j-rn",
+  "bk-lehm-dach-auf-j-ks",
+  "bk-lehm-dach-auf-j-kn",
+  "bk-lehm-giebel",
+  "bk-lehm-giebel-a",
+  "bk-lehm-giebel-b",
+  "bk-lehm-giebel-c",
+  "bk-lehm-giebel-auf",
+  "bk-lehm-giebel-ab"
+ ]
+}
