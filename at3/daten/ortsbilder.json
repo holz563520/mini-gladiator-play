@@ -1,6 +1,6 @@
 {
  "format": 1,
- "hinweis": "Bilder der Welt außerhalb des Arena-Geländes (AT3_NEUAUSRICHTUNG.md 5–6, Schritt N1). Grundlage der Grafik-Arbeitsliste (arbeitsliste.js) und später von N5–N8. Namen englisch fürs Spiel, Beschreibungen deutsch für den Zeichner. Baustile und Hauptstädte sind Platzhalter bis N4a (Kulturen). werkzeug: welche Werkzeuge schon gebaut sind; Einträge mit „wartet“ schlägt „nächste Grafik“ erst vor, wenn das Werkzeug da ist.",
+ "hinweis": "Bilder der Welt außerhalb des Arena-Geländes (AT3_NEUAUSRICHTUNG.md 5–6, Schritt N1). Grundlage der Grafik-Arbeitsliste (arbeitsliste.js) und später von N5–N8. Namen englisch fürs Spiel, Beschreibungen deutsch für den Zeichner. Baustile und Hauptstädte gehören seit N4a zu den Kulturkreisen (kulturen.json). werkzeug: welche Werkzeuge schon gebaut sind; Einträge mit „wartet“ schlägt „nächste Grafik“ erst vor, wenn das Werkzeug da ist.",
  "werkzeug": {"N6a": false},
  "biome": [
   {"id": "mediterranean", "de": "Mittelmeer-Buschland", "en": "Mediterranean Scrub", "bauweise": "weiß verputzte Häuser, rote Ziegel, Säulen, Weinberge und Olivenhaine am Hang"},
@@ -31,20 +31,20 @@
   {"id": "mud", "de": "Schlamm", "en": "Mud Season", "bild": "Pfützen, Schlamm in den Gassen, Bretter über den Löchern, nasse Wäsche"}
  ],
  "baustile": [
-  {"id": "mudbrick", "de": "Lehmziegel (Platzhalter bis N4a)"},
-  {"id": "palisade", "de": "Holz mit Palisade (Platzhalter bis N4a)"},
-  {"id": "fieldstone", "de": "Feldstein (Platzhalter bis N4a)"},
-  {"id": "marble", "de": "Marmor mit Säulen (Platzhalter bis N4a)"},
-  {"id": "pagoda", "de": "Pagodendächer (Platzhalter bis N4a)"},
-  {"id": "step-pyramid", "de": "Stufenpyramiden (Platzhalter bis N4a)"},
-  {"id": "tents", "de": "Zelte (Platzhalter bis N4a)"},
-  {"id": "stilts", "de": "Pfahlbauten (Platzhalter bis N4a)"},
-  {"id": "style-09", "de": "Baustil 9 (offen, kommt mit N4a)"},
-  {"id": "style-10", "de": "Baustil 10 (offen, kommt mit N4a)"},
-  {"id": "style-11", "de": "Baustil 11 (offen, kommt mit N4a)"},
-  {"id": "style-12", "de": "Baustil 12 (offen, kommt mit N4a)"}
+  {"id": "mudbrick", "de": "Lehmziegel, flache Dächer, Innenhöfe", "en": "Mudbrick", "kulturen": ["ammerash"]},
+  {"id": "palisade", "de": "Holz und Fachwerk hinter Palisade", "en": "Timber and Palisade", "kulturen": ["brennock", "wendel", "gorrow"]},
+  {"id": "fieldstone", "de": "Feldsteinhäuser mit Stroh- und Schindeldach", "en": "Fieldstone", "kulturen": ["haldmere"]},
+  {"id": "marble", "de": "Marmor mit Säulen, Tempelgiebel, Ziegeldächer", "en": "Marble and Columns", "kulturen": ["velarian", "sophron"]},
+  {"id": "pagoda", "de": "gestufte, geschwungene Dächer auf Stein, Klosterhöfe am Hang", "en": "Pagoda Roofs", "kulturen": ["hesk"]},
+  {"id": "step-pyramid", "de": "Stufenbauten, Tempel oben, Lehm und Stein", "en": "Step Pyramids", "kulturen": ["nehet", "oloth"]},
+  {"id": "tents", "de": "Filz- und Tuchzelte, Pferche, bewegliche Lager", "en": "Tents", "kulturen": ["zerreth", "karvan", "ulmor", "icemark"]},
+  {"id": "stilts", "de": "Pfahlbauten über Wasser, Stege, Schilfdächer", "en": "Stilts", "kulturen": ["pellucar", "fenwallow", "calloo"]},
+  {"id": "style-09", "de": "Langhäuser aus Stämmen, steile Dächer, Rauchlöcher", "en": "Longhouse", "kulturen": ["skarn", "vostrel", "ilvar"]},
+  {"id": "style-10", "de": "weiß verputzt, flache Kuppeln, Arkaden am Hafen", "en": "Whitewash and Domes", "kulturen": ["thalassine"]},
+  {"id": "style-11", "de": "Rundhütten mit Strohkegeldach im Dornenzaun", "en": "Thorn Kraal", "kulturen": ["sarrow", "tamarel"]},
+  {"id": "style-12", "de": "in den Fels gehauene Terrassenhäuser, Treppen, Stollen", "en": "Terraced Rock", "kulturen": ["durrak"]}
  ],
- "hauptstaedte": {"zahl": 20, "groesse": "G7", "felder": 24, "bild": "eigenes Bild je Kulturkreis mit Wahrzeichen des Reichs; Kulturkreis und Name kommen mit N4a"},
+ "hauptstaedte": {"zahl": 20, "groesse": "G7", "felder": 24, "bild": "eigenes Bild je Kulturkreis mit Wahrzeichen des Reichs", "liste": [{"kultur": "velarian", "en": "Capital of the Velarian Imperium"}, {"kultur": "thalassine", "en": "Capital of the Thalassine League"}, {"kultur": "sophron", "en": "Capital of the Academies of Sophron"}, {"kultur": "zerreth", "en": "Capital of the Caravan Compact of Zerreth"}, {"kultur": "ammerash", "en": "Capital of the Oasis Hierarchy of Ammerash"}, {"kultur": "nehet", "en": "Capital of the River Crowns of Nehet"}, {"kultur": "ulmor", "en": "Capital of the Banner Princes of Ulmor"}, {"kultur": "haldmere", "en": "Capital of the Barley Crown of Haldmere"}, {"kultur": "brennock", "en": "Capital of the Cattle Moots of Brennock"}, {"kultur": "wendel", "en": "Capital of the Oakbound Duchies of Wendel"}, {"kultur": "skarn", "en": "Capital of the Pinewall Holds of Skarn"}, {"kultur": "vostrel", "en": "Capital of the Fur Syndicate of Vostrel"}, {"kultur": "ilvar", "en": "Capital of the Frostbitten Senate of Ilvar"}, {"kultur": "sarrow", "en": "Capital of the Thornfence Kingdoms of Sarrow"}, {"kultur": "tamarel", "en": "Capital of the Herdlords of Tamarel"}, {"kultur": "oloth", "en": "Capital of the Verdant Ziggurats of Oloth"}, {"kultur": "pellucar", "en": "Capital of the Dyewood Guilds of Pellucar"}, {"kultur": "calloo", "en": "Capital of the Rootwalker Free Ports of Calloo"}, {"kultur": "durrak", "en": "Capital of the Quarry Thanes of Durrak"}, {"kultur": "hesk", "en": "Capital of the Cloudspire Cloisters of Hesk"}]},
  "zusatzteile": [
   {"id": "harbour", "de": "Hafen", "en": "Harbour", "wichtig": 4, "bild": "Kais, Kräne, Lagerhäuser, Schiffe; Größe nach Umschlag"},
   {"id": "wall", "de": "Stadtmauer", "en": "Town Wall", "wichtig": 4, "bild": "Mauerring passend zur Größe, Zinnen, Flickstellen"},

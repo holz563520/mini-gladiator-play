@@ -162,8 +162,8 @@ function ortsEintraege(O,gruppen){var R=[],W=O.werkzeug||{},bi=(O.biome||[]).fil
   {name:s.en+' ('+b.en+')',art:s.de,biom:b.de,groesse:fl(s.felder)+' ('+s.groesse+')',bild:s.bild,bauweise:b.bauweise},null,'N6a')})});
  (O.auflagen||[]).forEach(function(a){(O.siedlungen||[]).forEach(function(s){neu('ort-auflage-'+a.id+'-'+s.id,'Ortsbild','N6c',2,
   {name:s.en+', '+a.en,art:'Auflage „'+a.de+'“ für '+s.de,groesse:fl(s.felder)+' ('+s.groesse+')',bild:a.bild},null,'N6a')})});
- (O.baustile||[]).forEach(function(b){neu('ort-stil-'+b.id,'Ortsbild','N6d',2,{name:'Building style: '+b.id,art:'Baustil einer Kultur',bild:b.de},null,'N6a')});
- var H=O.hauptstaedte;if(H)for(var i=1;i<=H.zahl;i++)neu('ort-capital-'+(i<10?'0':'')+i,'Ortsbild','N6f',1,{name:'Capital '+i+' (placeholder)',art:'Hauptstadt eines Kulturkreises (Platzhalter bis N4a)',groesse:fl(H.felder)+' ('+H.groesse+')',bild:H.bild},null,'N6a');
+ (O.baustile||[]).forEach(function(b){neu('ort-stil-'+b.id,'Ortsbild','N6d',2,{name:'Building style: '+(b.en||b.id),art:'Baustil einer Kultur'+(b.kulturen&&b.kulturen.length?' ('+b.kulturen.join(', ')+')':''),bild:b.de},null,'N6a')});
+ var H=O.hauptstaedte;if(H)for(var i=1;i<=H.zahl;i++)neu('ort-capital-'+(i<10?'0':'')+i,'Ortsbild','N6f',1,{name:H.liste&&H.liste[i-1]?H.liste[i-1].en:'Capital '+i+' (placeholder)',art:'Hauptstadt eines Kulturkreises'+(H.liste&&H.liste[i-1]?' ('+H.liste[i-1].kultur+')':''),groesse:fl(H.felder)+' ('+H.groesse+')',bild:H.bild},null,'N6a');
  (O.zusatzteile||[]).forEach(function(z){neu('ort-teil-'+z.id,'Stadtteil','N6e',z.wichtig,{name:z.en,art:'Zusatzteil „'+z.de+'“ für Ortsbilder',bild:z.bild},null,'N6a')});
  (O.aussenposten||[]).forEach(function(a){neu('posten-'+a.id,'Außenposten',a.etappe,a.wichtig,{name:a.en,art:'Außenposten „'+a.de+'“',groesse:fl(a.felder),wo:a.wo,bild:a.bild})});
  (O.strassen||[]).forEach(function(w){neu('weg-'+w.id,'Straße',w.art==='amweg'?'N7e':'N7d',w.wichtig,{name:w.en,art:{belag:'Straßenbelag',bauweise:'Straßenbauweise',bruecke:'Brücke',amweg:'am Weg'}[w.art]+' „'+w.de+'“',bild:w.bild},w.art==='belag'||w.art==='bauweise'?'boden':'einrichtung')});
