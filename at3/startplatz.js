@@ -1,6 +1,6 @@
 // WAS DIE DATEI TUT: Rechnung für die Startplatz-Wahl von Arena Theory 3.0 (Schritt G4c): Erdbild (600 × 300, ein Punkt je Erdzelle, mit Orten und Straßen),
 // Regionsbild (30 × 30 Erdzellen als 240 × 240 Punkte, ein Punkt = 128 Felder, Biom echt gemischt wie im Kartenstück, Straßen als Linien, Orte als Quadrate),
-// trockenes Feld nahe einem angetippten Punkt (aus dem echten Kartenstück), nächster Ort mit Name und ein zufälliger Platz an Land.
+// trockenes Feld nahe einem angetippten Punkt (aus dem echten Kartenstück), die 5 nächsten Orte mit Name, Richtung und Anschluss (N3), Klimazone und ein zufälliger Platz an Land.
 // Kerne: läuft nur im Bildkern (bildkern.js, Hintergrundkern), nie auf dem Hauptkern (Regel 13). Kein Spielzufall: „Surprise me“ bekommt seine Zahl vom Hauptkern.
 // W1c Runde Welt: Die Region läuft in x über die Naht (rx darf negativ sein oder über den Rand reichen), Platzsuche und nächster Ort ebenso; auf dem Eis der
 // Pole gibt es keinen Platz (Erd-Biom 12), „Surprise me“ wählt nie Eis.
@@ -12,6 +12,7 @@
 var GW=600, GH=300, N=GW*GH, ZF=1024, WF=GW*ZF, HF=GH*ZF, SX=9600, ST=64, FELDER=ST*ST, REGION=30, RP=240, RS=ZF*REGION/RP;      // RS = Felder je Regionspunkt (128)
 var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6,18,61,45,14,16];                                             // 12 Eis: hellste Stufe der Schneereihe
 function um(z){z%=GW;return z<0?z+GW:z}                                               // wie Weltansicht: Biom → Farbnummer (Mitte der Reihe)
+var ORTE=5;                                                                           // N3: so viele Orte nennt die Auskunft (Entscheidung Thomas)
 var OFARBE=[0,53,37,48,32], F_PFAD=12, F_STRASSE=47, F_SEE=43, F_FAEHRE=48;
 
 function land(b){return b>1&&b<10||b>=13}                                   // N2c: 13–17 neue Land-Biome
@@ -68,10 +69,16 @@ function trocken(G,seed,A,x,y,buf){var cx0=x>>6,cy0=y>>6,best=null,bd=1e18;
    var fx=cu*ST+(j&63),fy=cy*ST+(j>>6),e=(fx-x)*(fx-x)+(fy-y)*(fy-y);if(e<bd){bd=e;best={x:cx*ST+(j&63),y:fy,bio:b,weg:w}}}}
  return best}
 // Nächster Ort (Zellen im Umkreis 3) mit Name, Art und Abstand in Feldern
-function naechsterOrt(G,ON,seed,A,x,y){var zx=x>>10,zy=y>>10,best=null,bd=1e18;
+function naechsterOrt(G,ON,seed,A,x,y){return naechsteOrte(G,ON,seed,A,x,y,1)[0]||null}
+// N3: die n nächsten Orte im Umkreis von 7 × 7 Erdzellen (fest 49 Zellen, egal wie groß die Welt), je Ort Name, Art, Entfernung in Feldern, Himmelsrichtung
+// vom Platz aus (ri 0 = Norden, im Uhrzeigersinn in Achteln) und Anschluss ans Netz der Ortszelle (netz 0 keiner, 1 Pfad, 2 Straße, 3 Fähre).
+function naechsteOrte(G,ON,seed,A,x,y,n){var zx=x>>10,zy=y>>10,L=[];
  for(var v=-3;v<=3;v++)for(var u=-3;u<=3;u++){var X=um(zx+u),Y=zy+v;if(Y<0||Y>=GH)continue;var i=Y*GW+X,a=A.ort[i]&15;if(!a)continue;
-  var p=G.ortPunkt(seed>>>0,A,X,Y),ox=p[0]+(zx+u-X)*ZF,e=(ox-x)*(ox-x)+(p[1]-y)*(p[1]-y);if(e<bd){bd=e;best={name:ON?ON.name(seed>>>0,i,a):'',art:a,weit:Math.round(Math.sqrt(e)),x:p[0],y:p[1]}}}
- return best}
+  var p=G.ortPunkt(seed>>>0,A,X,Y),dx=p[0]+(zx+u-X)*ZF-x,dy=p[1]-y,w=A.weg?A.weg[i]:0;
+  L.push({e:dx*dx+dy*dy,i:i,art:a,weit:Math.round(Math.sqrt(dx*dx+dy*dy)),x:p[0],y:p[1],ri:(Math.round(Math.atan2(dx,-dy)/(Math.PI/4))+8)%8,
+   netz:w&64?3:!(w&15)?0:((w>>4)&3)>1?2:1})}
+ L.sort(function(a,b){return a.e-b.e||a.i-b.i});L.length=Math.min(L.length,n);
+ return L.map(function(o){return{name:ON?ON.name(seed>>>0,o.i,o.art):'',art:o.art,weit:o.weit,x:o.x,y:o.y,ri:o.ri,netz:o.netz}})}
 // Platz zum angetippten Punkt: erst trockenes Feld in der Nähe; findet sich keins (flache Küste), dann zum nächsten Punkt einer sicheren Zelle im Umkreis 2,
 // aber nur, wenn an der Stelle überhaupt Land ist (angetippte Zelle oder ein direkter Nachbar). Mitten im Meer: kein Platz.
 function platz(G,ON,seed,A,x,y,buf){x=(((x|0)%WF)+WF)%WF;y=Math.max(0,Math.min(HF-1,y|0));var zx=x>>10,zy=y>>10;
@@ -82,13 +89,14 @@ function platz(G,ON,seed,A,x,y,buf){x=(((x|0)%WF)+WF)%WF;y=Math.max(0,Math.min(H
     var px=Math.max(X*ZF+96,Math.min(X*ZF+ZF-97,x)),py=Math.max(Y*ZF+96,Math.min(Y*ZF+ZF-97,y)),e=(px-x)*(px-x)+(py-y)*(py-y);if(e<bd){bd=e;bx=px;by=py;bX=X;bY=Y}}
    if(bx>=0){t=trocken(G,seed,A,bx,by,buf);
     if(!t){var P=G.ortPunkt(seed>>>0,A,um(bX),bY);t=trocken(G,seed,A,P[0]+(bX-um(bX))*ZF,P[1],buf)}}}}        // W1c: Zelle am steilen Polarmeer: der trockenste Punkt der Zelle (dort läge ihr Ort)
- if(!t)return{ok:false,weit:-1};var dx=Math.abs(t.x-x);if(dx>WF-dx)dx=WF-dx;t.ok=true;t.weit=Math.round(Math.hypot(dx,t.y-y));t.ort=naechsterOrt(G,ON,seed,A,t.x,t.y);return t}
+ if(!t)return{ok:false,weit:-1};var dx=Math.abs(t.x-x);if(dx>WF-dx)dx=WF-dx;t.ok=true;t.weit=Math.round(Math.hypot(dx,t.y-y));t.orte=naechsteOrte(G,ON,seed,A,t.x,t.y,ORTE);t.ort=t.orte[0]||null;
+ var zi=(t.y>>10)*GW+(t.x>>10);t.zone=A.zon?A.zon[zi]:-1;t.zoneAnders=t.zone>=2&&!!G.Z_BIOM&&G.Z_BIOM[t.zone]!==t.bio;return t}   // N3: Klimazone der Erdzelle, anders als das Biom am Platz?
 // Zufälliger Platz an Land: r1 wählt die Zelle (erste sichere Landzelle ab r1 mod N), r2 den Punkt darin. Zahlen kommen vom Hauptkern (kein Spielzufall).
 // W1c: der Punkt liegt nahe dem trockensten Punkt der Zelle (dort läge ihr Ort), höchstens 80 Felder daneben: auch Zellen am steilen Polarmeer geben so einen Platz.
 function zufall(G,seed,A,r1,r2){for(var k=0;k<N;k++){var i=((r1>>>0)+k)%N;if(!sicher(A,i))continue;var zx=i%GW,zy=(i/GW)|0,P=G.ortPunkt(seed>>>0,A,zx,zy);
   return{zx:zx,zy:zy,x:Math.max(zx*ZF+64,Math.min(zx*ZF+ZF-65,P[0]+(r2>>>0)%161-80)),y:Math.max(zy*ZF+64,Math.min(zy*ZF+ZF-65,P[1]+((r2>>>0)>>>10)%161-80))}}
  return null}
 
-var SP={GW:GW,GH:GH,WF:WF,HF:HF,REGION:REGION,RP:RP,RS:RS,ZF:ZF,land:land,sicher:sicher,erdBild:erdBild,regionBild:regionBild,eckeX:eckeX,eckeY:eckeY,trocken:trocken,naechsterOrt:naechsterOrt,platz:platz,zufall:zufall};
+var SP={GW:GW,GH:GH,WF:WF,HF:HF,REGION:REGION,RP:RP,RS:RS,ZF:ZF,land:land,sicher:sicher,erdBild:erdBild,regionBild:regionBild,eckeX:eckeX,eckeY:eckeY,trocken:trocken,naechsterOrt:naechsterOrt,naechsteOrte:naechsteOrte,ORTE:ORTE,platz:platz,zufall:zufall};
 if(typeof module!=='undefined'&&module.exports)module.exports=SP;else root.AT3STARTPLATZ=SP;
 })(typeof self!=='undefined'?self:this);
