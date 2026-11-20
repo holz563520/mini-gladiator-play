@@ -6,7 +6,7 @@
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='f96d18d6', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='fd44dfab', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -35,9 +35,9 @@ function starten(opt){opt=opt||{};
  if(typeof Worker==='undefined'||typeof MessageChannel==='undefined'){setTimeout(function(){ausfall('no background cores')},0);return H}
  try{
   var n=opt.helfer==null?helferZahl(navigator.hardwareConcurrency||1):opt.helfer, ports=[];
-  welt=new Worker(BASIS+'weltkern.js?v='+V);
+  welt=new Worker(BASIS+'weltkern.js?v='+V+(/[?&]n2b=0/.test(location.search)?'&n2b=0':''));   // N2b: Notausschalter ?n2b=0 an die Kerne
   welt.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ausfall('world core failed')};
-  for(var i=0;i<n;i++){var h=new Worker(BASIS+'helfer.js?v='+V),k=new MessageChannel();
+  for(var i=0;i<n;i++){var h=new Worker(BASIS+'helfer.js?v='+V+(/[?&]n2b=0/.test(location.search)?'&n2b=0':'')),k=new MessageChannel();
    h.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ausfall('helper core failed')};
    h.postMessage({art:'port',port:k.port2},[k.port2]);ports.push(k.port1);hs.push(h)}
   welt.onmessage=function(e){var d=e.data;

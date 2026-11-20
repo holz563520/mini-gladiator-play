@@ -37,20 +37,21 @@ function weich(A,art,fx,fy){var zx=fx>>10,zy=fy>>10,u=fx&1023,v=fy&1023,s=0,j,i;
 // ── Fernbild ──
 // Raster der Stichproben mit Rand M (für Mehrheit und Hangschatten): Höhe, Seeflag, Feuchte, Wärme, Biom
 var M=2, GS=S+2*M, HS=new Int32Array(GS*GS), KS=new Uint8Array(GS*GS), FA=new Int32Array(GS*GS), TT=new Int32Array(GS*GS), BI=new Uint8Array(GS*GS), BQ=new Uint8Array(GS*GS),
-    ZB=new Int32Array(13), COL=new Uint8Array(S*S), P=new Int32Array(7), V=new Int32Array(6);
+    ZB=new Int32Array(13), COL=new Uint8Array(S*S), P=new Int32Array(8), V=new Int32Array(8);
 function binnen(b){return b>=3&&b<=9}
 // Übersichtsbiom je Erdzelle (600 × 300). Zwei Stichproben je Landzelle mit der Biomregel des Kartenstücks, Summen über die Gegend als Kastenfilter
 // in x (über die Naht) und y, geteilt durch den Weltanteil. Kosten fest: rund 110.000 Stichproben, einmal je Welt im Bildkern (Regel 14).
-function uebersicht(G,A,seed){seed=seed>>>0;var N=GW*GH,C=new Uint16Array(N*7),T=new Uint16Array(N*7),tot=new Float64Array(7),U=new Uint8Array(N),P=new Int32Array(7),V=new Int32Array(6),i,k,x,y,s;
- for(i=0;i<N;i++){var b=A.bio[i];if(b<3||b>9)continue;x=i%GW;y=(i/GW)|0;G.neigung(A.tmp[i],A.feu[i],A.E[i],V);
-  for(s=0;s<2;s++){G.punkt(seed,x*ZF+256+s*512,y*ZF+256+s*512,P,0);k=G.klasse(P,0,V,0,0,0);if(k>=3&&k<=9){C[i*7+k-3]++;tot[k-3]++}}}
- var sum=0;for(k=0;k<7;k++)sum+=tot[k];var w=new Float64Array(7);for(k=0;k<7;k++)w[k]=sum/7/Math.max(1,tot[k]);
+function uebersicht(G,A,seed){seed=seed>>>0;var N=GW*GH,C=new Uint16Array(N*7),T=new Uint16Array(N*7),tot=new Float64Array(7),U=new Uint8Array(N),P=new Int32Array(8),V=new Int32Array(8),i,k,x,y,s;
+ var zg=G.N2B&&A.zon,UR=zg?2:U_R;   // N2b: Zuschlag der Klimazonen wie im Kartenstück, einfache Mehrheit über 5 × 5 Zellen (die Zonen machen die Gegend schon eindeutig)
+ for(i=0;i<N;i++){var b=A.bio[i];if(b<3||b>9)continue;x=i%GW;y=(i/GW)|0;if(!zg)G.neigung(A.tmp[i],A.feu[i],A.E[i],V);
+  for(s=0;s<2;s++){var fx=x*ZF+256+s*512,fy=y*ZF+256+s*512;if(zg)G.zonenV(A,seed,fx,fy,V);G.punkt(seed,fx,fy,P,0);k=G.klasse(P,0,V,0,0,0);if(k>=3&&k<=9){C[i*7+k-3]++;tot[k-3]++}}}
+ var sum=0;for(k=0;k<7;k++)sum+=tot[k];var w=new Float64Array(7);for(k=0;k<7;k++)w[k]=zg?1:sum/7/Math.max(1,tot[k]);
  var Z=new Int32Array(7);
- for(y=0;y<GH;y++){var o=y*GW;for(k=0;k<7;k++)Z[k]=0;for(x=-U_R;x<=U_R;x++){var j=o+(x<0?x+GW:x);for(k=0;k<7;k++)Z[k]+=C[j*7+k]}   // in x über die Naht
-  for(x=0;x<GW;x++){for(k=0;k<7;k++)T[(o+x)*7+k]=Z[k];var aus=o+(x-U_R<0?x-U_R+GW:x-U_R),rein=o+(x+U_R+1>=GW?x+U_R+1-GW:x+U_R+1);for(k=0;k<7;k++)Z[k]+=C[rein*7+k]-C[aus*7+k]}}
- for(x=0;x<GW;x++){for(k=0;k<7;k++)Z[k]=0;for(y=0;y<=U_R&&y<GH;y++)for(k=0;k<7;k++)Z[k]+=T[(y*GW+x)*7+k];                                  // in y, am Pol abgeschnitten
+ for(y=0;y<GH;y++){var o=y*GW;for(k=0;k<7;k++)Z[k]=0;for(x=-UR;x<=UR;x++){var j=o+(x<0?x+GW:x);for(k=0;k<7;k++)Z[k]+=C[j*7+k]}   // in x über die Naht
+  for(x=0;x<GW;x++){for(k=0;k<7;k++)T[(o+x)*7+k]=Z[k];var aus=o+(x-UR<0?x-UR+GW:x-UR),rein=o+(x+UR+1>=GW?x+UR+1-GW:x+UR+1);for(k=0;k<7;k++)Z[k]+=C[rein*7+k]-C[aus*7+k]}}
+ for(x=0;x<GW;x++){for(k=0;k<7;k++)Z[k]=0;for(y=0;y<=UR&&y<GH;y++)for(k=0;k<7;k++)Z[k]+=T[(y*GW+x)*7+k];                                  // in y, am Pol abgeschnitten
   for(y=0;y<GH;y++){i=y*GW+x;var b2=A.bio[i];if(b2<3||b2>9)U[i]=b2;else{var m=0;for(k=1;k<7;k++)if(Z[k]*w[k]>Z[m]*w[m])m=k;U[i]=Z[m]?m+3:b2}
-   if(y+U_R+1<GH)for(k=0;k<7;k++)Z[k]+=T[((y+U_R+1)*GW+x)*7+k];if(y-U_R>=0)for(k=0;k<7;k++)Z[k]-=T[((y-U_R)*GW+x)*7+k]}}
+   if(y+UR+1<GH)for(k=0;k<7;k++)Z[k]+=T[((y+UR+1)*GW+x)*7+k];if(y-UR>=0)for(k=0;k<7;k++)Z[k]-=T[((y-UR)*GW+x)*7+k]}}
  return U}
 // G = weltgen.js, A = Erdraster (ansicht), F = {pal, du, he, dunkel}. x0 darf beliebig sein (wird umgerechnet), y0 im Raster der Stufe. Gibt {w,h,ox,oy,px}.
 function kachel(G,A,seed,x0,y0,lod,F,U){seed=seed>>>0;var ueb=U&&lod>=U_AB;x0=umF(x0);var n=8<<lod,st=n/S,sI=G.eisSeed(seed),i,j,k,q,fx,fy;
@@ -61,7 +62,7 @@ function kachel(G,A,seed,x0,y0,lod,F,U){seed=seed>>>0;var ueb=U&&lod>=U_AB;x0=um
    else if(h<24&&ks<=127)b=2;
    else if(ueb){var hz=G.mix(seed^Math.imul(fx>>7,0x2c9277b5)^Math.imul(fy>>7,0x5bd1e995)),ux=umF(fx+(hz&511)-256)>>10,uy=(fy+((hz>>>9)&511)-256)>>10;   // Grenzen leicht ausgefranst
     uy=uy<0?0:uy>=GH?GH-1:uy;b=U[uy*GW+ux];if(!binnen(b))b=U[zy*GW+(fx>>10)];if(!binnen(b))b=5}
-   else{G.neigung(tt,fa,h,V);G.punkt(seed,fx,fy,P,0);b=G.klasse(P,0,V,0,0,0)}
+   else{if(G.N2B&&A.zon)G.zonenV(A,seed,fx,fy,V);else G.neigung(tt,fa,h,V);G.punkt(seed,fx,fy,P,0);b=G.klasse(P,0,V,0,0,0)}
    BI[q]=b}}
  // Weit draußen deckt eine Stichprobe viele Felder, die Flecken sind kleiner: Mehrheit je 3 × 3 (⅟256, ⅟512 einmal, ab ⅟1024 zweimal), wie die Region der Startplatz-Wahl
  var pass=ueb?0:lod>=10?2:lod>=8?1:0;

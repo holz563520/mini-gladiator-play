@@ -35,7 +35,7 @@ function linie(d,x0,y0,x1,y1,c,r,strich,z){var n=Math.max(1,Math.ceil(Math.hypot
  for(var k=0;k<=n;k++){z.n++;if(strich&&(z.n%8)>4)continue;punkt(d,x0+(x1-x0)*k/n-(r>>1),y0+(y1-y0)*k/n-(r>>1),c,r)}}
 function regionBild(G,seed,A,rx,ry,F){seed=seed>>>0;var d=new Uint32Array(RP*RP),M=new Uint8Array(RP*RP),Z=new Int32Array(12),pal=F.pal,P=new Int32Array(64),V=new Int32Array(8),vz=-1,x,y,i,k;
  for(y=0;y<RP;y++)for(x=0;x<RP;x++){var X=rx*ZF+x*RS+(RS>>1),Y=ry*ZF+y*RS+(RS>>1),z=(Y>>10)*GW+um(X>>10),b=A.bio[z];
-  if(land(b)){if(z!==vz){G.neigung(A.tmp[z],A.feu[z],A.E[z],V);vz=z}G.punkt(seed,X,Y,P,0);b=G.klasse(P,0,V,0,0,0)}
+  if(land(b)){if(G.N2B&&A.zon)G.zonenV(A,seed>>>0,X,Y,V);else if(z!==vz){G.neigung(A.tmp[z],A.feu[z],A.E[z],V);vz=z}G.punkt(seed,X,Y,P,0);b=G.klasse(P,0,V,0,0,0)}
   M[y*RP+x]=b}
  // Mehrheit je 3 × 3 (zweimal): ein Punkt deckt 128 Felder, die Flecken sind oft kleiner; ohne Glätten wirkt die Region wie Rauschen. Wasser der Erdzelle bleibt.
  for(var dg=0;dg<2;dg++){var Q=M.slice();for(y=1;y<RP-1;y++)for(x=1;x<RP-1;x++){i=y*RP+x;if(!land(Q[i]))continue;for(k=0;k<12;k++)Z[k]=0;var mb=Q[i],mz=0;

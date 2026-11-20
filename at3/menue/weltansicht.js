@@ -124,7 +124,7 @@ function marke(g,x,y,w){g.strokeStyle='#f4c8a0';g.lineWidth=2;g.strokeRect(Math.
 function blick(nx,ny){nx=umS(nx|0);ny=Math.max(0,Math.min(SY-1,ny|0));if(nx===kx&&ny===ky)return;kx=nx;ky=ny;fensterRaeumen();if(H)H.befehl('blick',B(kx,ky));neuZeichnen=true;ort()}
 function ort(){var o=q('#waOrt');if(o)o.textContent='Blick: Kartenstück '+tsd(kx)+' / '+tsd(ky)+' von '+tsd(SX)+' × '+tsd(SY)+' · Zelle '+(kx>>4)+' / '+(ky>>4)}
 function hoehe(h){return h<0?'Tiefe '+kom(-h/16,1)+' Felder (rund '+Math.round(-h*3/16)+' m)':'Höhe '+kom(h/16,1)+' Felder (rund '+Math.round(h*3/16)+' m)'}
-function zelleText(i){if(farbe===3)return zoneText(i)+'Kartenstücke bis N2b: '+zelleText0(i);return zelleText0(i)}
+function zelleText(i){if(farbe===3)return zoneText(i)+'Grobes Biom (Orte und Straßen): '+zelleText0(i);return zelleText0(i)}
 function zelleText0(i){var b=erd.flu[i]?BIOM[erd.bio[i]]+' mit Fluss (Breite '+erd.flu[i]+' von 5)':BIOM[erd.bio[i]];return netzText(i)+b+' · '+hoehe(erd.E[i])+' · Wärme '+erd.tmp[i]+' · Feuchte '+erd.feu[i]}
 // W1b: Ort (Name, sobald die Namensliste geladen ist), Straße, Pass, Fähre, Seeweg einer Zelle
 function netzText(i){if(!erd.ort)return '';var o=erd.ort[i]&15,w=erd.weg[i],t='';
@@ -162,7 +162,7 @@ function tipp(e){if(!erd)return;var r=cv.getBoundingClientRect(),fx=Math.max(0,M
 function anteileZeigen(zx,zy){var info=q('#waInfo'),seed=erd?erd.seed:0,i=zy*GE+zx,vorher=info.textContent;if(!erd)return;
  helfer().then(function(){
   if(info.textContent!==vorher)return;if(erd.ort&&erd.ort[i]&15)vorher=info.textContent='Zelle '+zx+' / '+zy+': '+zelleText(i);                       // jetzt mit Namen
-  if(erd.bio[i]<2||erd.bio[i]===11)return;var A={E:erd.E,bio:erd.bio,tmp:erd.tmp,feu:erd.feu},Z=WGh.anteile(seed,A,zx,zy),n=0,L=[];
+  if(erd.bio[i]<2||erd.bio[i]===11)return;var A={E:erd.E,bio:erd.bio,tmp:erd.tmp,feu:erd.feu,zon:erd.zon},Z=WGh.anteile(seed,A,zx,zy),n=0,L=[];
   for(var k=0;k<12;k++)n+=Z[k];
   for(k=3;k<12;k++)if(Z[k]&&k!==10)L.push([k,Z[k]]);L.sort(function(a,b){return b[1]-a[1]});
   info.textContent=vorher+' · Anteile: '+L.map(function(e){return BIOM[e[0]]+' '+Math.round(e[1]*100/n)+' %'}).join(', ')},function(){})}
