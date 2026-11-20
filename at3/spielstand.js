@@ -13,7 +13,7 @@
 'use strict';
 var DB='arena-theory-3', ABL='plaetze', SCHEMA=2;   // Schema 2 seit W1c (runde Welt): Stände mit Schema 1 stammen aus der flachen Welt, sie werden nicht geladen (nur löschen)
 var PLAETZE=[1,2,3], ABSTAND=10000, ROEM=['I','II','III'], DICHTEN=['thin','medium','dense'];
-var V='f23544ee', T=function(k,w){return k}, esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var V='a2a6e1a1', T=function(k,w){return k}, esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
 
 // ── Prüfsumme (FNV-1a über den gespeicherten Text) ──
 function pruefsumme(s){var h=0x811c9dc5;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)}return('0000000'+(h>>>0).toString(16)).slice(-8)}

@@ -4,11 +4,19 @@
 // beim Zeichnen und Zoomen nichts mehr (Regel 20; Entscheidung Thomas 16.11.2026: auf der Karte zählt die Backzeit im Bildkern).
 // Kerne: läuft im Bildkern (bildkern.js, Hintergrundkern), nie auf dem Hauptkern (Regel 13). Kosten je Feld fest, unabhängig von Ort und Weltgröße (Regel 14).
 // Dichte je Biom: Vorschlag, von Thomas am 16.11.2026 so freigegeben (Wald etwa jedes 3. Feld ein Baum, Wüste nur Disteln und Fels, Strand und Schnee fast leer).
+// N2d (20.11.2026): die neuen Biome 13–17 bekommen eigene Natur (Palmen, Akazie, Affenbrotbaum, Olive, Zypresse, Mangrove, Lianenbaum, Farn, Banane, Tamariske, hohes Gras).
 // Wiederverwendet: Objekte und Bilder aus der Objektkartei (Startset M9), Mischfunktion und Feldmaß aus bodenbild.js, Idee „Hohes als vorgezeichnete Bilder“ aus 2.0.
 (function(root){
 'use strict';
-var ARTEN=['baum-eiche-skizze','baum-buche','baum-birke','baum-tanne','baum-pappel','baum-apfel','busch-gruen','busch-hasel','busch-bluete','blume-wiese','blume-distel','blume-schilf','fels-block'];
-var EI=0,BU=1,BI=2,TA=3,PA=4,AP=5,BG=6,BH=7,BB_=8,WI=9,DI=10,SC=11,FE=12;
+var ARTEN=['baum-eiche-skizze','baum-buche','baum-birke','baum-tanne','baum-pappel','baum-apfel','busch-gruen','busch-hasel','busch-bluete','blume-wiese','blume-distel','blume-schilf','fels-block',
+ // N2d (20.11.2026): Natur der neuen Biome. Nur hinten anhängen: die Nummern stehen in DICHTE und in BAUM.
+ 'baum-kokospalme','baum-dattelpalme','baum-akazie','baum-lianen','baum-mangrove','baum-olive','baum-zypresse','baum-baobab','busch-tamariske','busch-banane','baum-farn','blume-hohes-gras'];
+var EI=0,BU=1,BI=2,TA=3,PA=4,AP=5,BG=6,BH=7,BB_=8,WI=9,DI=10,SC=11,FE=12,KO=13,DA=14,AK=15,LI=16,MA=17,OL=18,ZY=19,BA=20,TM=21,BN=22,FA=23,HG=24;
+// Bäume (sperren den Weg, Holzfäller fällt sie, Gebäudebau rodet sie) und was sonst den Weg sperrt (Bäume und Fels). Alles andere ist Busch oder Blume: begehbar, wird beim Bauen gerodet.
+// Vorher fest „0–5 Bäume, 12 Fels“ in begehbar.js, bau.js, ketten.js; jetzt hier an einer Stelle (N2d).
+var BAUM=new Uint8Array(ARTEN.length);[EI,BU,BI,TA,PA,AP,KO,DA,AK,LI,MA,OL,ZY,BA].forEach(function(i){BAUM[i]=1});
+function baum(n){return n>=0&&BAUM[n]===1}
+function sperrt(n){return n===FE||baum(n)}
 // Biome (weltgen.js): 0 tiefes Meer, 1 Meer, 2 Strand, 3 Wüste, 4 Steppe, 5 Wald, 6 Sumpf, 7 Tundra, 8 Fels, 9 Schnee, 10 Fluss, 11 See, 12 Eis, N2c: 13 Grasland, 14 Savanne, 15 Mittelmeer, 16 Regenwald, 17 Mangroven. Werte: Promille der Felder.
 var DICHTE=[null,null,
  [[FE,4],[DI,6]],
@@ -20,12 +28,24 @@ var DICHTE=[null,null,
  [[FE,120],[BG,10],[TA,10]],
  [[FE,5]],null,null,
  null,                                                                                   // 12 Eis (nur Erdraster)
- // N2c Platzhalter bis N2d (freigegeben von Thomas 20.11.2026): vorhandene Objekte stehen für Akazie, Olive, Palme usw.
+ null,null,null,null,null];                                                                // 13–17 neue Biome: siehe N2D unten
+// N2c-Platzhalter (freigegeben von Thomas 20.11.2026): vorhandene Objekte stehen für Akazie, Olive, Palme usw. Gilt nur noch mit Notausschalter ?n2d=0.
+var N2C_PLATZ=[
  [[WI,90],[BG,12],[BH,8],[BB_,10],[EI,3]],                                                  // 13 Grasland: viel Wiese, einzelne Büsche
  [[WI,70],[AP,4],[DI,6],[BG,4]],                                                            // 14 Savanne: hohes Gras, sehr selten ein Baum (Akazie)
  [[BG,45],[BH,30],[AP,25],[DI,20],[FE,25],[WI,10]],                                        // 15 Mittelmeer-Buschland: Büsche, Oliven, Disteln, Fels
  [[BU,170],[PA,110],[BG,90],[EI,40],[BB_,20]],                                              // 16 Regenwald: sehr dicht
  [[SC,180],[BG,60],[BI,40]]];                                                               // 17 Mangroven: Schilf, Busch, Birke
+// N2d: eigene Natur der neuen Biome. Vorschlag Claude 20.11.2026 (Abnahme Thomas). Promille der Felder wie oben.
+var N2D_NATUR=[
+ [[HG,55],[WI,60],[BG,10],[BB_,8],[BH,6],[EI,3],[PA,2]],                                   // 13 Grasland: Wiese und hohes Gras, einzelne Büsche, sehr selten ein Baum
+ [[HG,110],[AK,12],[TM,6],[DI,5],[FE,4],[BA,3]],                                            // 14 Savanne: viel hohes Gras, verstreute Akazien, selten ein Affenbrotbaum
+ [[OL,35],[ZY,18],[BG,30],[TM,15],[DI,15],[FE,20],[HG,10],[WI,8]],                          // 15 Mittelmeer-Buschland: Oliven, Zypressen, Buschwerk, Fels
+ [[LI,120],[FA,70],[BN,60],[KO,50],[BG,50],[BB_,40],[BU,20]],                               // 16 Regenwald: sehr dicht, Lianenbäume, Farne, Bananen, Palmen
+ [[MA,200],[SC,120],[KO,20],[BG,20]]];                                                      // 17 Mangroven: Mangroven im Schlick, Schilf, ab und zu eine Palme
+// Notausschalter ?n2d=0: Natur der neuen Biome wie N2c (Platzhalter). Wird an Bild-, Welt- und Helferkern durchgereicht.
+var N2D=!(root.location&&/[?&]n2d=0/.test(root.location.search||''));
+(N2D?N2D_NATUR:N2C_PLATZ).forEach(function(L,i){DICHTE[13+i]=L});
 var TAB=DICHTE.map(function(L){if(!L)return null;var a=new Int16Array(1000).fill(-1),p=0;L.forEach(function(e){for(var k=0;k<e[1];k++)a[p++]=e[0]});return a});
 var MEER=2048, LS=6, WX=614400, WY=307200, RAND_OBEN=112, RAND_SEITE=16;    // RAND_*: größte Überstände eines Naturbilds über sein Feld (Stufe 1×), für „was ist im Bild“
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
@@ -72,6 +92,6 @@ function treffer(hole,PX,PY,seed,BILD,sicht,fx,fy,frei){var u=fx!=null?fx:Math.f
   if(lx<0||ly<0||lx>=s.w||ly>=s.h||s.px[ly*s.w+lx]===255)continue;bt=XU+Y;best={id:BILD[t].id,ersatz:BILD[t].ersatz,x:X,y:Y}}
  return best}
 
-var N={ARTEN:ARTEN,DICHTE:DICHTE,RAND_OBEN:RAND_OBEN,RAND_SEITE:RAND_SEITE,art:art,versatz:versatz,vorbereiten:vorbereiten,sammeln:sammeln,treffer:treffer};
+var N={ARTEN:ARTEN,DICHTE:DICHTE,N2D:N2D,N2D_NATUR:N2D_NATUR,N2C_PLATZ:N2C_PLATZ,BAUM:BAUM,baum:baum,sperrt:sperrt,RAND_OBEN:RAND_OBEN,RAND_SEITE:RAND_SEITE,art:art,versatz:versatz,vorbereiten:vorbereiten,sammeln:sammeln,treffer:treffer};
 if(typeof module!=='undefined'&&module.exports)module.exports=N;else root.AT3NATUR=N;
 })(typeof self!=='undefined'?self:this);

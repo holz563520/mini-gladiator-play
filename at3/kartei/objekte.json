@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 131,
+ "typMax": 143,
  "objekte": [
   {
    "id": "arena-sand",
@@ -14,6 +14,15 @@
    "datei": "obj/arena-sand.json"
   },
   {
+   "id": "baum-akazie",
+   "version": 1,
+   "typ": 134,
+   "kat": "baum",
+   "name": "Acacia",
+   "status": "uebernommen",
+   "datei": "obj/baum-akazie.json"
+  },
+  {
    "id": "baum-apfel",
    "version": 1,
    "typ": 11,
@@ -21,6 +30,15 @@
    "name": "Apple Tree",
    "status": "uebernommen",
    "datei": "obj/baum-apfel.json"
+  },
+  {
+   "id": "baum-baobab",
+   "version": 2,
+   "typ": 142,
+   "kat": "baum",
+   "name": "Baobab",
+   "status": "uebernommen",
+   "datei": "obj/baum-baobab.json"
   },
   {
    "id": "baum-birke",
@@ -41,6 +59,15 @@
    "datei": "obj/baum-buche.json"
   },
   {
+   "id": "baum-dattelpalme",
+   "version": 1,
+   "typ": 133,
+   "kat": "baum",
+   "name": "Date Palm",
+   "status": "uebernommen",
+   "datei": "obj/baum-dattelpalme.json"
+  },
+  {
    "id": "baum-eiche-skizze",
    "version": 3,
    "typ": 1,
@@ -48,6 +75,51 @@
    "name": "Old Oak",
    "status": "uebernommen",
    "datei": "obj/baum-eiche-skizze.json"
+  },
+  {
+   "id": "baum-farn",
+   "version": 1,
+   "typ": 139,
+   "kat": "baum",
+   "name": "Tree Fern",
+   "status": "uebernommen",
+   "datei": "obj/baum-farn.json"
+  },
+  {
+   "id": "baum-kokospalme",
+   "version": 1,
+   "typ": 132,
+   "kat": "baum",
+   "name": "Coconut Palm",
+   "status": "uebernommen",
+   "datei": "obj/baum-kokospalme.json"
+  },
+  {
+   "id": "baum-lianen",
+   "version": 1,
+   "typ": 135,
+   "kat": "baum",
+   "name": "Liana Tree",
+   "status": "uebernommen",
+   "datei": "obj/baum-lianen.json"
+  },
+  {
+   "id": "baum-mangrove",
+   "version": 1,
+   "typ": 136,
+   "kat": "baum",
+   "name": "Mangrove",
+   "status": "uebernommen",
+   "datei": "obj/baum-mangrove.json"
+  },
+  {
+   "id": "baum-olive",
+   "version": 1,
+   "typ": 140,
+   "kat": "baum",
+   "name": "Olive Tree",
+   "status": "uebernommen",
+   "datei": "obj/baum-olive.json"
   },
   {
    "id": "baum-pappel",
@@ -66,6 +138,15 @@
    "name": "Fir",
    "status": "uebernommen",
    "datei": "obj/baum-tanne.json"
+  },
+  {
+   "id": "baum-zypresse",
+   "version": 2,
+   "typ": 141,
+   "kat": "baum",
+   "name": "Cypress",
+   "status": "uebernommen",
+   "datei": "obj/baum-zypresse.json"
   },
   {
    "id": "bett-stroh",
@@ -923,6 +1004,15 @@
    "datei": "obj/blume-distel.json"
   },
   {
+   "id": "blume-hohes-gras",
+   "version": 1,
+   "typ": 143,
+   "kat": "blume",
+   "name": "Tall Grass",
+   "status": "uebernommen",
+   "datei": "obj/blume-hohes-gras.json"
+  },
+  {
    "id": "blume-schilf",
    "version": 1,
    "typ": 19,
@@ -995,6 +1085,15 @@
    "datei": "obj/boden-weg.json"
   },
   {
+   "id": "busch-banane",
+   "version": 1,
+   "typ": 138,
+   "kat": "baum",
+   "name": "Banana Plant",
+   "status": "uebernommen",
+   "datei": "obj/busch-banane.json"
+  },
+  {
    "id": "busch-bluete",
    "version": 1,
    "typ": 16,
@@ -1020,6 +1119,15 @@
    "name": "Hazel",
    "status": "uebernommen",
    "datei": "obj/busch-hasel.json"
+  },
+  {
+   "id": "busch-tamariske",
+   "version": 1,
+   "typ": 137,
+   "kat": "baum",
+   "name": "Tamarisk",
+   "status": "uebernommen",
+   "datei": "obj/busch-tamariske.json"
   },
   {
    "id": "dach-ziegel",
