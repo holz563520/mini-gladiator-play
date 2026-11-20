@@ -1,6 +1,6 @@
 // WAS DIE DATEI TUT: Reiter „Wirtschaft“ des AT3-Master-Editors (Schritt W2a1). Zeigt und ändert die Wirtschaftsdaten aus daten/ (Gebäude, Waren, Rezepte,
 // Stufen, Maßtabelle, Systeme, Kulturen, Vices, Eigenständigkeit): Listen mit Filter, Gebäude- und Warenkarte mit „Made by / Used for“, Ketten-Ansicht bis in
-// die Arena, Maßtabelle, Prüfer (Arena-Ende, Maße, Eigenständigkeit, unbekannte Waren und Tätigkeiten) und „Als Datei speichern“ fürs Repository
+// die Arena, Biome (N5a: Gebäude und Waren je Klimazone, Biom und Zweig je Gebäude bearbeitbar), Maßtabelle, Prüfer (Arena-Ende, Maße, Eigenständigkeit, unbekannte Waren und Tätigkeiten) und „Als Datei speichern“ fürs Repository
 // (dist/at3/daten/<datei> ersetzen). Rechnung in wirtschaft.js. Bedienung deutsch, Inhalte englisch (Spieltexte). Nichts wird im Browser dauerhaft gespeichert.
 AT3ED.menue('wirtschaft',function(el){
  el.innerHTML='<p class="leise">Wird geholt … der Kämmerer zählt noch die Säcke.</p>';
@@ -8,7 +8,7 @@ AT3ED.menue('wirtschaft',function(el){
   taetigkeiten:'taetigkeiten.json',systeme:'systeme.json',kulturen:'kulturen.json',vices:'vices.json'};
  var keys=Object.keys(DATEIEN);
  Promise.all([AT3ED.lade('wirtschaft','wirtschaft.js')].concat(keys.map(function(k){return AT3ED.lade('wirtschaft','daten/'+DATEIEN[k])}))).then(function(r){
-  var X=window.AT3WIRT,D0={},D={},geaendert={},tab='pruefer',wahl=null,filter={gruppe:'',bereich:'',suche:'',wgruppe:'',wsuche:''},kette='sausages',P=null;
+  var X=window.AT3WIRT,D0={},D={},geaendert={},tab='pruefer',wahl=null,filter={gruppe:'',bereich:'',biom:'',suche:'',wgruppe:'',wsuche:''},kette='sausages',P=null;
   keys.forEach(function(k,i){D0[k]=JSON.stringify(r[i+1]);D[k]=JSON.parse(D0[k])});
   if(!document.getElementById('wiStil')){var st=document.createElement('style');st.id='wiStil';st.textContent=
    '.wiTabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.wiTabs .knopf{flex:1 1 auto}'+
@@ -18,7 +18,7 @@ AT3ED.menue('wirtschaft',function(el){
    '.wiKarte textarea{width:100%;box-sizing:border-box;font:inherit;font-size:17px;min-height:4em;background:var(--knopf-an);border:2px solid var(--rand)}'+
    '.wiLink{background:none;border:0;padding:0;font:inherit;color:var(--blut);text-decoration:underline;cursor:pointer}'+
    '.wiBaum{margin:0;padding-left:1.1em}.wiBaum li{margin:2px 0}.wiOk{color:var(--gut)}.wiNein{color:var(--blut)}'+
-   '.wiFehler li{margin:3px 0}.wiTab{overflow-x:auto}';document.head.appendChild(st)}
+   '.wiBiom{display:inline-block;margin:2px 10px 2px 0;font-size:16px}.wiFehler li{margin:3px 0}.wiTab{overflow-x:auto}';document.head.appendChild(st)}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
   function pruefe(){P=X.pruefen({gebaeude:D.gebaeude,waren:D.waren,rezepte:D.rezepte,stufen:D.stufen,masse:D.masse,eigen:D.eigen,taetigkeiten:D.taetigkeiten});return P}
   function I(){return P.index}
@@ -36,10 +36,10 @@ AT3ED.menue('wirtschaft',function(el){
   function markiere(k){geaendert[k]=true}
   function zeichne(){
    pruefe();
-   var tabs=[['pruefer','Prüfer'],['gebaeude','Gebäude'],['waren','Waren'],['ketten','Ketten'],['masse','Maßtabelle'],['stufen','Stufen & Welt'],['speichern','Speichern']];
+   var tabs=[['pruefer','Prüfer'],['gebaeude','Gebäude'],['waren','Waren'],['ketten','Ketten'],['masse','Maßtabelle'],['biome','Biome'],['stufen','Stufen & Welt'],['speichern','Speichern']];
    var h='<div class="wiTabs">'+tabs.map(function(t){return '<button class="knopf klein'+(tab===t[0]?' an':'')+'" data-tab="'+t[0]+'">'+t[1]+
     (t[0]==='pruefer'&&P.fehler.length?' ('+P.fehler.length+')':'')+(t[0]==='speichern'&&Object.keys(geaendert).length?' •':'')+'</button>'}).join('')+'</div>';
-   h+='<div id="wiInhalt">'+({pruefer:vPruefer,gebaeude:vGebaeude,waren:vWaren,ketten:vKetten,masse:vMasse,stufen:vStufen,speichern:vSpeichern}[tab])()+'</div>';
+   h+='<div id="wiInhalt">'+({pruefer:vPruefer,gebaeude:vGebaeude,waren:vWaren,ketten:vKetten,biome:vBiome,masse:vMasse,stufen:vStufen,speichern:vSpeichern}[tab])()+'</div>';
    el.innerHTML=h;binde();
   }
   // ── Prüfer ──
@@ -69,14 +69,15 @@ AT3ED.menue('wirtschaft',function(el){
   function vGebaeude(){
    var G=D.gebaeude,h='<div class="wForm"><label>Gruppe<select id="wiFG"><option value="">alle</option>'+G.gruppen.map(function(g){return '<option value="'+g.id+'"'+(filter.gruppe===g.id?' selected':'')+'>'+esc(g.de)+'</option>'}).join('')+'</select></label>'+
     '<label>Bereich<select id="wiFB"><option value="">alle</option><option value="dorf"'+(filter.bereich==='dorf'?' selected':'')+'>Dorf und Orte</option><option value="arena"'+(filter.bereich==='arena'?' selected':'')+'>Arena-Gelände</option></select></label>'+
+    '<label>Biom<select id="wiFBi"><option value="">alle</option>'+(G.biome||[]).map(function(b){return '<option value="'+b.id+'"'+(filter.biom===b.id?' selected':'')+'>'+esc(b.de)+'</option>'}).join('')+'</select></label>'+
     '<label>Suche<input id="wiFS" value="'+esc(filter.suche)+'" placeholder="Name, Kennung, Beruf"></label></div>';
-   var q=filter.suche.toLowerCase(),L=G.gebaeude.filter(function(g){return(!filter.gruppe||g.gruppe===filter.gruppe)&&(!filter.bereich||g.bereich===filter.bereich)&&
+   var q=filter.suche.toLowerCase(),L=G.gebaeude.filter(function(g){return(!filter.gruppe||g.gruppe===filter.gruppe)&&(!filter.bereich||g.bereich===filter.bereich)&&(!filter.biom||(g.biom||[]).indexOf(filter.biom)>=0)&&
     (!q||(g.name+' '+g.id+' '+(g.beruf||'')).toLowerCase().indexOf(q)>=0)});
    h+='<p class="leise">'+L.length+' von '+G.gebaeude.length+' Gebäuden</p>';
    if(wahl&&wahl.geb)h+=karteGeb(I().geb[wahl.geb]);
    h+=L.map(function(g){var pl=(g.arbeit||[]).map(function(a){return a.n+' × '+a.t}).join(', ')||g.rolle||'–';
     return '<button class="wiZeile'+(wahl&&wahl.geb===g.id?' an':'')+'" data-geb="'+g.id+'">'+esc(g.name)+'<small>'+esc(g.id)+' · '+esc(X.groesseText(g.groesse))+(g.hof?' mit Feldern':'')+' · '+esc(g.form||'?')+
-     ' · '+esc(pl)+(g.stufe?' · Stufe '+g.stufe:'')+(g.kunden?' · Kunden '+g.kunden.join('–'):'')+(g.beruf?' · '+esc(g.beruf):'')+(g.vorhanden?' · vorhanden ('+esc(g.vorhanden)+')':'')+'</small></button>'}).join('');
+     ' · '+esc(pl)+' · '+esc(biomText(g))+(g.stufe?' · Stufe '+g.stufe:'')+(g.kunden?' · Kunden '+g.kunden.join('–'):'')+(g.beruf?' · '+esc(g.beruf):'')+(g.vorhanden?' · vorhanden ('+esc(g.vorhanden)+')':'')+'</small></button>'}).join('');
    return h;
   }
   function karteGeb(g){if(!g)return '';
@@ -89,6 +90,9 @@ AT3ED.menue('wirtschaft',function(el){
    if(mass.w&&!mass.stufen)h+='<label>Breite (Felder)<input type="number" min="1" max="96" data-gf="w" value="'+mass.w+'"></label><label>Tiefe (Felder)<input type="number" min="1" max="96" data-gf="h" value="'+mass.h+'"></label>';
    if(g.bereich!=='arena')h+='<label>Stufe<select data-gf="stufe">'+[1,2,3,4,5,6].map(function(s){return '<option'+(g.stufe===s?' selected':'')+'>'+s+'</option>'}).join('')+'</select></label>';
    h+='<label>Beruf (englisch)<input data-gf="beruf" value="'+esc(g.beruf||'')+'"></label></div>';
+   h+='<div class="wForm"><label>Zweig (Stadtansicht)<select data-gf="zweig">'+zweigOptionen(g.zweig)+'</select></label></div>';
+   h+='<p><b>Biom</b> <span class="leise">(wo das Gebäude in Orten vorkommen kann; „alle“ schließt die anderen aus, Küste und Fluss sind Lagen in jeder Klimazone)</span><br>'+
+    [{id:X.BIOM_ALLE,de:'alle'}].concat(D.gebaeude.biome||[]).map(function(b){return '<label class="wiBiom"><input type="checkbox" data-biom="'+b.id+'"'+((g.biom||[]).indexOf(b.id)>=0?' checked':'')+'> '+esc(b.de)+'</label>'}).join(' ')+'</p>';
    h+='<label>Beschreibung (englisch)<textarea data-gf="text">'+esc(g.text||'')+'</textarea></label>';
    if(g.planText)h+='<p class="leise">Plan: '+esc(g.planText)+'</p>';
    h+='<p class="leise">Im Plan: '+esc(g.plan||'–')+'</p>';
@@ -158,6 +162,21 @@ AT3ED.menue('wirtschaft',function(el){
    h+='<p class="leise">Arena-Gelände '+M.arenaGelaende.w+' × '+M.arenaGelaende.h+' Felder: '+esc(M.arenaGelaende.hinweis)+'. Bauklassen: '+M.bauklassen.map(function(b){return esc(b.de)}).join(', ')+'.</p>';
    return h;
   }
+  function biomText(g){var L=g.biom||[];if(L.indexOf(X.BIOM_ALLE)>=0)return 'alle Biome';if(!L.length)return 'kein Biom!';
+   return L.map(function(id){var b=(D.gebaeude.biome||[]).filter(function(x){return x.id===id})[0];return b?b.de:id}).join(', ')}
+  function zweigOptionen(akt){var o=akt?'':'<option value="" selected>–</option>';
+   (D.gebaeude.zweige||[]).forEach(function(z){var L=(z.unter||[]).length?z.unter.map(function(u){return[z.id+'/'+u.id,z.name+' › '+u.name]}):[[z.id,z.name+(z.jeReligion?' › je Religion':z.jeStufe?' › je Stufe':'')]];
+    L.forEach(function(x){o+='<option value="'+x[0]+'"'+(akt===x[0]?' selected':'')+'>'+esc(x[1])+'</option>'})});return o}
+  // ── Biome (N5a, Plan 4.3) ──
+  function vBiome(){
+   var T=X.biomTafel({gebaeude:D.gebaeude,waren:D.waren,rezepte:D.rezepte}),alle=T.length?T[0].alle.length:0;
+   var h='<p class="leise">Welche Gebäude in welchem Biom vorkommen können (Plan 4.3). Dazu kommen überall '+alle+' Gebäude mit „alle“. „Ohne Handel“ zählt die Waren, die dort entstehen, wenn jede Zutat vor Ort wächst; der Rest muss gekauft werden. Ändern in der Gebäudekarte.</p>';
+   h+=T.map(function(r){
+    return '<div class="wiKarte"><h3>'+esc(r.de)+' <span class="leise">· '+esc(r.name)+(r.lage?' · Lage':' · Zone '+r.zone)+'</span></h3><p class="leise">Typisch: '+esc(r.typisch||'–')+'</p>'+
+     '<p><b>Nur hier'+(r.lage?'':' (dazu alle mit „alle“)')+':</b> '+(r.eigen.length?r.eigen.map(gl).join(', '):'<span class="wiNein">keine</span>')+'</p>'+
+     (r.lage?'':'<details><summary>Ohne Handel: '+r.waren.length+' Waren · muss kaufen: '+r.fehlt.length+'</summary><p>'+r.waren.map(wl).join(', ')+'</p><p class="leise">Muss kaufen: '+r.fehlt.map(wl).join(', ')+'</p></details>')+'</div>'}).join('');
+   return h;
+  }
   // ── Stufen & Welt ──
   function bedarfText(L){return(L||[]).map(function(b){if(b.w)return wl(b.w)+(b.text?' <span class="leise">('+esc(b.text)+')</span>':'');if(b.oder)return b.oder.map(wl).join(' oder ');
    if(b.g)return gl(b.g);if(b.gruppe)return 'jede Ware aus „'+esc(gruppeDe(b.gruppe))+'“';return '<i>'+esc(b.frei)+'</i> <span class="leise">(noch ohne Gebäude)</span>'}).join(', ')}
@@ -190,13 +209,17 @@ AT3ED.menue('wirtschaft',function(el){
    var q;
    if((q=el.querySelector('#wiFG')))q.onchange=function(){filter.gruppe=q.value;zeichne()};
    if((q=el.querySelector('#wiFB'))){var fb=q;fb.onchange=function(){filter.bereich=fb.value;zeichne()}}
+   if((q=el.querySelector('#wiFBi'))){var fbi=q;fbi.onchange=function(){filter.biom=fbi.value;zeichne()}}
+   alle('[data-biom]',function(x){x.onchange=function(){var g=I().geb[wahl.geb],id=x.dataset.biom,L=(g.biom||[]).filter(function(b){return b!==id&&b!==X.BIOM_ALLE});
+    if(x.checked)L=id===X.BIOM_ALLE?[X.BIOM_ALLE]:L.concat([id]);
+    var ord=[X.BIOM_ALLE].concat((D.gebaeude.biome||[]).map(function(b){return b.id}));g.biom=L.sort(function(a,b){return ord.indexOf(a)-ord.indexOf(b)});markiere('gebaeude');zeichne()}});
    if((q=el.querySelector('#wiFS'))){var fs=q;fs.oninput=function(){filter.suche=fs.value;var p=fs.selectionStart;zeichne();var n=el.querySelector('#wiFS');n.focus();n.setSelectionRange(p,p)}}
    if((q=el.querySelector('#wiWG'))){var wg=q;wg.onchange=function(){filter.wgruppe=wg.value;zeichne()}}
    if((q=el.querySelector('#wiWS'))){var ws=q;ws.oninput=function(){filter.wsuche=ws.value;var p=ws.selectionStart;zeichne();var n=el.querySelector('#wiWS');n.focus();n.setSelectionRange(p,p)}}
    if((q=el.querySelector('#wiKW'))){var kw=q;kw.onchange=function(){kette=kw.value;zeichne()}}
    alle('[data-gf]',function(x){x.onchange=function(){var g=I().geb[wahl.geb],f=x.dataset.gf,v=x.value;
     if(f==='w'||f==='h'){v=Math.max(1,Math.min(96,Math.round(+v||1)));g.groesse[f]=v;var fm=X.formFuer(D.masse,g);if(fm)g.form=fm}
-    else if(f==='stufe')g.stufe=+v;else g[f]=v.trim();markiere('gebaeude');zeichne()}});
+    else if(f==='stufe')g.stufe=+v;else if(f==='zweig')g.zweig=v;else g[f]=v.trim();markiere('gebaeude');zeichne()}});
    alle('[data-wf]',function(x){x.onchange=function(){var w=I().ware[wahl.ware],f=x.dataset.wf;
     if(x.type==='checkbox'){if(x.checked)w[f]=true;else delete w[f]}
     else if(f==='haltbar'||f==='preis'){w[f]=x.value===''?null:Math.max(0,Math.round(+x.value||0))}

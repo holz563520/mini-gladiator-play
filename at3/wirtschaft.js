@@ -157,11 +157,57 @@ function pruefen(d){
   d.gebaeude.gebaeude.forEach(function(g){if(re.test(g.name)||re.test(g.text||''))f('eigen',g.id,'„'+s.wort+'“ steht auf der Sperrliste'+(s.warum?' ('+s.warum+')':''))});
   d.waren.waren.forEach(function(w){if(re.test(w.name))f('eigen',w.id,'„'+s.wort+'“ steht auf der Sperrliste'+(s.warum?' ('+s.warum+')':''))})});
  (E.pruefliste||[]).forEach(function(p){if(!p.geprueft)h('eigen',p.etappe,'Prüffrage noch nicht abgehakt: '+p.frage)});
+ // Biom und Zweig (N5a): jedes Gebäude braucht mindestens ein bekanntes Biom (oder „alle“) und einen bekannten Zweig/Unterzweig
+ var BI={},ZW={},zon={};(d.gebaeude.biome||[]).forEach(function(b){if(BI[b.id])f('biom',b.id,'Biom-Kennung doppelt');BI[b.id]=b;
+  if(!b.lage){if(!(b.zone>=0))f('biom',b.id,'Biom ohne Klimazone');else if(zon[b.zone])f('biom',b.id,'Klimazone '+b.zone+' auch bei '+zon[b.zone]);zon[b.zone]=b.id}});
+ (d.gebaeude.zweige||[]).forEach(function(z){ZW[z.id]={};(z.unter||[]).forEach(function(u){ZW[z.id][u.id]=1})});
+ if(!d.gebaeude.biome)f('biom','gebaeude','Tabelle „biome“ fehlt in gebaeude.json');
+ if(!d.gebaeude.zweige)f('zweig','gebaeude','Tabelle „zweige“ fehlt in gebaeude.json');
+ d.gebaeude.gebaeude.forEach(function(g){
+  var b=g.biom;
+  if(!Array.isArray(b)||!b.length)f('biom',g.id,'kein Biom: kommt in keinem Biom vor');
+  else if(b.indexOf(BIOM_ALLE)>=0&&b.length>1)f('biom',g.id,'„alle“ zusammen mit einzelnen Biomen');
+  else b.forEach(function(x){if(x!==BIOM_ALLE&&!BI[x])f('biom',g.id,'Biom „'+x+'“ unbekannt')});
+  var z=String(g.zweig||'').split('/');
+  if(!g.zweig)f('zweig',g.id,'kein Zweig');
+  else if(!ZW[z[0]])f('zweig',g.id,'Zweig „'+z[0]+'“ unbekannt');
+  else if(z[1]&&!ZW[z[0]][z[1]])f('zweig',g.id,'Unterzweig „'+z[1]+'“ gibt es im Zweig „'+z[0]+'“ nicht');
+  else if(!z[1]&&Object.keys(ZW[z[0]]).length)f('zweig',g.id,'Unterzweig fehlt (Zweig „'+z[0]+'“ hat Unterzweige)');
+ });
+ if(d.gebaeude.biome&&!F.some(function(x){return x.art==='biom'})){var BT=biomTafel(d);
+  BT.forEach(function(r){if(r.lage)return;
+   if(!r.eigen.length)h('biom',r.id,'kein Gebäude nur für '+r.de+' (nur „alle“)');
+   if(!r.fehlt.length)h('biom',r.id,r.de+' kann alles selbst herstellen (kein Handel nötig)')})}
  var zahlen={gebaeude:d.gebaeude.gebaeude.length,waren:d.waren.waren.length,rezepte:I.rez.length,
   arenaArt:{verkauf:0,verbrauch:0,bau:0,transport:0,bedarf:0,kette:0}};
  Object.keys(weg).forEach(function(w){var x=weg[w];zahlen.arenaArt[x.n?'kette':x.art]++});
  return{fehler:F,hinweise:H,weg:weg,index:I,zahlen:zahlen};
 }
+// Biom-Tafel (N5a, Plan 4.3): je Biom die Gebäude nur für dieses Biom („eigen“), die Waren, die dort ohne Handel entstehen können (Rezepte von
+// Gebäuden mit diesem Biom oder „alle“, ohne Arena-Gelände und ohne Verkauf an Buden, nur wenn alle Pflicht-Eingänge vor Ort entstehen), und die
+// hergestellten Waren, die dort fehlen („fehlt“, also Handel). Lagen (Küste, Fluss) zählen nur ihre eigenen Gebäude. Reine Rechnung, einmal je Aufruf; gebraucht vom Prüfer, dem Editor und später N5b.
+var BIOM_ALLE='alle';
+function biomTafel(d){
+ var I=index(d),G=d.gebaeude.gebaeude.filter(function(g){return g.bereich!==BEREICH_ARENA}),je={};
+ I.rez.forEach(function(r){(je[r.geb]||(je[r.geb]=[])).push(r)});
+ var alleWaren={};I.rez.forEach(function(r){var g=I.geb[r.geb];if(!g||g.bereich===BEREICH_ARENA)return;(r.aus||[]).forEach(function(a){if(!a.verkauf)alleWaren[a.w]=1})});
+ return(d.gebaeude.biome||[]).map(function(b){
+  var eigen=[],alle=[],w={};
+  G.forEach(function(g){var L=g.biom||[],hier=L.indexOf(b.id)>=0,ueberall=L.indexOf(BIOM_ALLE)>=0&&!b.lage;
+   if(!hier&&!ueberall)return;(hier?eigen:alle).push(g.id)});
+  // Waren ohne Handel: Rezepte so lange durchgehen, bis nichts Neues entsteht; ein Rezept läuft, wenn jeder Pflicht-Eingang schon da ist
+  var R=[];eigen.concat(alle).forEach(function(gid){(je[gid]||[]).forEach(function(r){R.push(r)})});
+  for(var neu=true,runde=0;neu&&runde<50;runde++){neu=false;R.forEach(function(r){
+   if(!(r.ein||[]).every(function(e){return e.opt||einWaren(e).some(function(x){return w[x]})}))return;
+   (r.aus||[]).forEach(function(a){if(!a.verkauf&&!w[a.w]){w[a.w]=1;neu=true}})})}
+  return{id:b.id,de:b.de,name:b.name,lage:!!b.lage,zone:b.zone,typisch:b.typisch,eigen:eigen,alle:alle,waren:Object.keys(w),
+   fehlt:b.lage?[]:Object.keys(alleWaren).filter(function(x){return !w[x]})};
+ });
+}
+// Zweig eines Gebäudes als Namen ({zweig, unter}), für Editor und Stadtansicht.
+function zweigName(d,g){var z=String(g&&g.zweig||'').split('/'),Z=(d.gebaeude.zweige||[]).filter(function(x){return x.id===z[0]})[0];if(!Z)return null;
+ var U=(Z.unter||[]).filter(function(u){return u.id===z[1]})[0];return{zweig:Z.name,unter:U?U.name:Z.jeReligion?'(per religion)':Z.jeStufe?'(per class)':'',de:Z.de}}
+
 function groesseText(gr){
  if(!gr)return '?';if(gr.frei)return 'frei';if(gr.fest)return 'fest ('+gr.fest+')';
  return fassungen(gr).map(function(f){return f.d?'Ø '+f.d:f.w+'×'+f.h}).join(' → ');
@@ -196,7 +242,7 @@ function alsText(d){
 }
 
 var API={alsText:alsText,index:index,direkt:direkt,arenaWege:arenaWege,wegListe:wegListe,arenaText:arenaText,fassungen:fassungen,formFuer:formFuer,pruefen:pruefen,
- groesseText:groesseText,ertragstabelle:ertragstabelle,einWaren:einWaren};
+ groesseText:groesseText,ertragstabelle:ertragstabelle,einWaren:einWaren,biomTafel:biomTafel,zweigName:zweigName,BIOM_ALLE:BIOM_ALLE};
 root.AT3WIRT=API;
 if(typeof module!=='undefined'&&module.exports)module.exports=API;
 })(typeof self!=='undefined'?self:this);
