@@ -13,12 +13,12 @@
 // Anfrage „bild“ mit „offen“ (Räume ohne Dach, nur Stufe 1×). Antippen findet das vorderste Bauteil oder die Natur davor und meldet das Gebäudefeld.
 // Kerne: läuft nur als Hintergrundkern (Worker), gestartet von weltkarte.js, nie auf dem Hauptkern (Regel 13). Kein Zufall, kein Tick, keine Wirkung aufs Spiel.
 // N4c1: Reiche in Fernbildern und Globus (herrschaften.js; Tafel Reich je Erdzelle einmal je Welt, Nachricht „reiche“ schaltet um), Frage „reich“: Kette
-// „Answers to“ an einem Weltfeld mit Ortsnamen der Sitze.
+// „Answers to“ an einem Weltfeld mit Ortsnamen der Sitze. N5b: dazu der nächste Ort (orte.js, erst beim ersten Antippen geladen; Notausschalter ?n5b=0).
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
 var HR=self.AT3HERRSCHAFT, REI=true, RE=null;   // N4c1: Reiche in den Fernbildern (Knopf „Realms“), Tafeln einmal je Welt
 var BAUB=self.AT3BAUBILD, BAU=new Map(), BBILD=null, SP=self.AT3STARTPLATZ, FB=self.AT3FERN, ON=null, PBUF=null, TEX=null, TEXD=null, UEB=null;
-var BB=self.AT3BB, G=self.AT3WG, NAT=self.AT3NATUR, NBILD=null, F=null, st=new Map(), lager=[], gen=-1, HALB=3, A=null, seed=0, kx=-1, ky=-1, laeuft=false;
+var OR=null, BB=self.AT3BB, G=self.AT3WG, NAT=self.AT3NATUR, NBILD=null, F=null, st=new Map(), lager=[], gen=-1, HALB=3, A=null, seed=0, kx=-1, ky=-1, laeuft=false;
 var BMP=typeof createImageBitmap==='function'&&typeof ImageData!=='undefined', stUs=0, stN=0;
 var ORDNUNG=(function(){var L=[];for(var y=-HALB;y<=HALB;y++)for(var x=-HALB;x<=HALB;x++)L.push([x,y,x*x+y*y]);L.sort(function(a,b){return a[2]-b[2]||a[1]-b[1]||a[0]-b[0]});return L})();
 var SX=G.SEITE_X, SY=G.SEITE_Y;
@@ -51,7 +51,11 @@ function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.f
   var x=d.x,y=d.y;if(d.frage==='zufall'){var z=SP.zufall(G,seed,A,d.r1,d.r2);if(!z){m.platz={ok:false};self.postMessage(m);return}x=z.x;y=z.y}
   PBUF=PBUF||new Uint8Array(G.GEL_BYTES);m.platz=SP.platz(G,ON,seed,A,x,y,PBUF)}
  else if(d.frage==='reich'){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}   // N4c1: Kette „Answers to“ an einem Weltfeld
-  var zx=((d.x%G.WF+G.WF)%G.WF)>>10,zy=Math.max(0,Math.min(G.GH-1,d.y>>10)),u=A.hs?A.hs.zel[zy*G.GW+zx]:0;m.hat=!!A.hs;m.reich=u?HR.info(A.hs,A.vk,A.orte,u-1,seed,ON):null}
+  var zx=((d.x%G.WF+G.WF)%G.WF)>>10,zy=Math.max(0,Math.min(G.GH-1,d.y>>10)),u=A.hs?A.hs.zel[zy*G.GW+zx]:0;m.hat=!!A.hs;m.reich=u?HR.info(A.hs,A.vk,A.orte,u-1,seed,ON):null;
+  if(!OR&&OR!==false){try{importScripts('orte.js'+self.location.search);OR=self.AT3ORTE.AUS?false:self.AT3ORTE}catch(x){OR=false}}   // N5b: nächster Ort im Umkreis von 3 × 3 Zellen (Rohdaten, Name)
+  if(OR&&A.ort){var bo=-1,be=1.6*G.ZF*G.ZF*1.6,x0=(d.x%G.WF+G.WF)%G.WF,du,dv;for(dv=-1;dv<=1;dv++)for(du=-1;du<=1;du++){var Y=zy+dv,X=(zx+du+G.GW)%G.GW;if(Y<0||Y>=G.GH||!(A.ort[Y*G.GW+X]&15))continue;
+   var pp=G.ortPunkt(seed,A,X,Y),ex=pp[0]-x0,ey=pp[1]-d.y;if(ex>G.WF/2)ex-=G.WF;else if(ex<-G.WF/2)ex+=G.WF;var ee=ex*ex+ey*ey;if(ee<be){be=ee;bo=Y*G.GW+X}}
+   if(bo>=0){var kk=OR.ortNr(A,bo);if(kk!=null)m.ort=OR.roh(seed,A,kk,ON)}}}
  m.us=(performance.now()-t)*1000;self.postMessage(m,tr)}
 // FP1: Ausschnitt 96 × 96 Felder um den Gladiator (fpausschnitt.js, erst beim ersten Mal geladen). Das Fenster der Stücke rückt zum Ausschnitt,
 // fehlende Stücke werden sofort gerechnet (höchstens 9), dann geht der Ausschnitt ohne Kopie an den Hauptkern.

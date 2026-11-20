@@ -21,7 +21,7 @@ function tafel(hs){var n=hs.zahl[0],R=new Uint16Array(n),u;for(u=0;u<n;u++){var 
 // Farbnummer der Palette A je Reich (+1 = Vasall heller), −1 = niemand
 function farbe(hs,r){if(r<0)return -1;return FARBE[hs.tab[r*4+3]>>4&15]}
 // Anzeige-Daten der Kette ab Einheit u, Sitze mit Ortsnamen (ON = ortsnamen.js)
-function info(hs,vk,orte,u,seed,ON){return kette(hs,u).map(function(v){var e=einheit(hs,vk,v),c=orte[e.sitz];e.sitzName=ON&&c!=null?ON.name(seed,c&0xffffff,c>>>24):'';return e})}
+function info(hs,vk,orte,u,seed,ON){return kette(hs,u).map(function(v){var e=einheit(hs,vk,v),c=orte[e.sitz];e.sitzName=ON&&c!=null?ON.name(seed,c&0xffffff,c>>>24,vk):'';return e})}
 // Name mit t(schlüssel, werte) aus der Sprachdatei
 function name(e,t){var s=e.stufe===0&&e.kulturname?t('reich.kultur.'+e.kultur):t('reich.name.'+e.sys+'.'+e.stufe,{sitz:e.sitzName});if(e.stufe===0&&e.bei)s+=' '+t('reich.bei.'+e.bei);return s}
 function titel(e,t){return t('reich.titel.'+e.sys+'.'+e.stufe)}

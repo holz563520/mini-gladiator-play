@@ -34,7 +34,7 @@ function tag(z){return Math.floor(z.tick/TAG)}
 // ── Orte: die ORTE nächsten benannten Orte (Erdzellen im Umkreis 3, wie startplatz.js naechsterOrt) ──
 function orteUm(z,x,y,R,ANZ){R=R||3;ANZ=ANZ||ORTE;var w=z.wg,G=WG(),N=ON();if(!w||!w.ans||!w.ans.ort||!G)return[];var A=w.ans,GW=G.GW,GH=G.GH,ZF=G.ZF,zx=Math.floor(x/ZF),zy=Math.floor(y/ZF),L=[];
  for(var v=-R;v<=R;v++)for(var u=-R;u<=R;u++){var X=((zx+u)%GW+GW)%GW,Y=zy+v;if(Y<0||Y>=GH)continue;var i=Y*GW+X,a=A.ort[i]&15;if(!a||a>4)continue;
-  var p=G.ortPunkt(w.seed>>>0,A,X,Y),ox=p[0]+(zx+u-X)*ZF,e=(ox-x)*(ox-x)+(p[1]-y)*(p[1]-y);L.push([i,a,um(p[0]),p[1],e,N?N.name(w.seed>>>0,i,a):'']);}
+  var p=G.ortPunkt(w.seed>>>0,A,X,Y),ox=p[0]+(zx+u-X)*ZF,e=(ox-x)*(ox-x)+(p[1]-y)*(p[1]-y);L.push([i,a,um(p[0]),p[1],e,N?N.name(w.seed>>>0,i,a,A.vk):'']);}
  L.sort(function(a,b){return a[4]-b[4]||a[0]-b[0]});return L.slice(0,ANZ).map(function(o){return[o[0],o[1],o[2],o[3],o[5]]})}
 function ort(o){return{art:ART[o[1]],ortId:o[0],name:o[4],x:o[2],y:o[3]}}
 // Herkunft: Ort k mit Gewicht ORTE-k (der nächste 8×, der fernste 1×); Geburtsort GLEICH % derselbe, sonst ein anderer der Liste

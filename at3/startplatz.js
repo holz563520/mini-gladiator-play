@@ -78,7 +78,7 @@ function naechsteOrte(G,ON,seed,A,x,y,n){var zx=x>>10,zy=y>>10,L=[];
   L.push({e:dx*dx+dy*dy,i:i,art:a,weit:Math.round(Math.sqrt(dx*dx+dy*dy)),x:p[0],y:p[1],ri:(Math.round(Math.atan2(dx,-dy)/(Math.PI/4))+8)%8,
    netz:w&64?3:!(w&15)?0:((w>>4)&3)>1?2:1})}
  L.sort(function(a,b){return a.e-b.e||a.i-b.i});L.length=Math.min(L.length,n);
- return L.map(function(o){return{name:ON?ON.name(seed>>>0,o.i,o.art):'',art:o.art,weit:o.weit,x:o.x,y:o.y,ri:o.ri,netz:o.netz}})}
+ return L.map(function(o){return{name:ON?ON.name(seed>>>0,o.i,o.art,A.vk):'',art:o.art,weit:o.weit,x:o.x,y:o.y,ri:o.ri,netz:o.netz}})}
 // Platz zum angetippten Punkt: erst trockenes Feld in der Nähe; findet sich keins (flache Küste), dann zum nächsten Punkt einer sicheren Zelle im Umkreis 2,
 // aber nur, wenn an der Stelle überhaupt Land ist (angetippte Zelle oder ein direkter Nachbar). Mitten im Meer: kein Platz.
 function platz(G,ON,seed,A,x,y,buf){x=(((x|0)%WF)+WF)%WF;y=Math.max(0,Math.min(HF-1,y|0));var zx=x>>10,zy=y>>10;

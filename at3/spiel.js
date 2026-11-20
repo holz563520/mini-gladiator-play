@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='9dd8133a', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='6767cf8e', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -115,17 +115,26 @@ function kernLos(w){WSEED=w.seed>>>0;
 // ── Karte (G4a): Bilder kommen aus dem Bildkern, hier nur Anschluss, Zoomknöpfe und die Auskunft beim Antippen ──
 // N4c1: Reiche in den Fernstufen (Knopf „Realms“, Grundstellung an, gemerkt im Browser) und Antippen dort: „Answers to: County › Duchy › Kingdom“.
 // Namen baut herrschaften.js (erst beim ersten Antippen geladen) aus den Daten des Bildkerns und der Sprachdatei. N4c2: dazu herrscher.js (Herrscher, Vorgeschichte).
-var REICHE=true, HRL=null;
+var REICHE=true, HRL=null, ORL=null, ORT_HTML='', REICH_HTML='';   // N5b: Ortskarte (orte.js und Daten erst beim ersten Antippen eines Orts)
 function reicheAnschliessen(){try{REICHE=localStorage.getItem('at3.reiche')!=='0'}catch(x){}var k=$('reicheKnopf');k.textContent=t('reich.knopf');k.setAttribute('aria-pressed',REICHE?'true':'false');
  if(!REICHE)KARTE.reiche(false);
  k.onclick=function(){REICHE=!REICHE;k.setAttribute('aria-pressed',REICHE?'true':'false');try{localStorage.setItem('at3.reiche',REICHE?'1':'0')}catch(x){}KARTE.reiche(REICHE)}}
-function reichTipp(L,hat){if(!hat){$('weltInfo').textContent=t('welt.leer');return}if(!L||!L.length){$('weltInfo').textContent=t('reich.niemand');return}
+// N5b: Ort neben dem angetippten Punkt: voller Name, Größe, Einwohner, Leitgebäude (Notausschalter ?n5b=0: der Bildkern schickt keinen Ort)
+function infoZeigen(){$('weltInfo').innerHTML=REICH_HTML+ORT_HTML}
+function ortTipp(r){ORT_HTML='';if(!r)return;var tip=r;
+ (ORL||(ORL=new Promise(function(ok,no){if(window.AT3ORTE)return ok();var s=document.createElement('script');s.src='orte.js?v='+V;s.onload=ok;s.onerror=function(){ORL=null;no(new Error('orte.js'))};document.head.appendChild(s)})
+  .then(function(){return Promise.all(['daten/gebaeude.json','daten/rezepte.json','daten/kulturen.json'].map(holeJson))}).then(function(d){return window.AT3ORTE.daten(d[0],d[1],d[2])}).catch(function(e){ORL=null;throw e})))
+ .then(function(D){if(tip!==ORT_LETZT)return;var O=window.AT3ORTE,b=O.bilanz(WSEED,r,D);window.AT3SPIEL.ort={name:O.voll(b,t),g:r.g,einwohner:b.einwohner,leit:b.leit.map(function(l){return l.id})};
+  ORT_HTML='<br><b>'+esc(O.zeile(b,t))+'</b>';infoZeigen()},function(){})}
+var ORT_LETZT=null;
+function reichTipp(L,hat,ort){ORT_LETZT=ort||null;ORT_HTML='';ortTipp(ort);
+ if(!hat){REICH_HTML=esc(t('welt.leer'));infoZeigen();return}if(!L||!L.length){REICH_HTML=esc(t('reich.niemand'));infoZeigen();return}
  (HRL||(HRL=Promise.all([['herrschaften.js','AT3HERRSCHAFT'],['herrscher.js','AT3HERRSCHER']].map(function(q){return new Promise(function(ok,no){if(window[q[1]])return ok();var s=document.createElement('script');s.src=q[0]+'?v='+V;s.onload=ok;s.onerror=function(){HRL=null;no(new Error(q[0]))};document.head.appendChild(s)})}))))
- .then(function(){var H=window.AT3HERRSCHAFT,P=window.AT3HERRSCHER,el=$('weltInfo');window.AT3SPIEL.reich=L;el.textContent=t('reich.antwortet',{kette:H.ketteText(L,t)});
+ .then(function(){var H=window.AT3HERRSCHAFT,P=window.AT3HERRSCHER,el=$('weltInfo');window.AT3SPIEL.reich=L;REICH_HTML=esc(t('reich.antwortet',{kette:H.ketteText(L,t)}));infoZeigen();
   if(!P||P.AUS)return;var ri=0;while(ri<L.length-1&&L[ri].stufe)ri++;   // N4c2: Herrscher der untersten Stufe und des Reichs, Vorgeschichte des Reichs (Notausschalter ?n4c2=0)
   var wer=(ri?[L[0],L[ri]]:[L[0]]).map(function(e){return P.titelName(P.herrscher(WSEED,e),t)}).join(' › '),ch=P.chronik(WSEED,L.slice(ri),t,H.name);
   window.AT3SPIEL.herrscher={wer:wer,chronik:ch};
-  el.innerHTML=esc(el.textContent)+'<br><span class="leise">'+esc(t('person.herrscht',{wer:wer}))+'</span>'+(ch?'<br><span class="leise">'+esc(ch)+'</span>':'')},function(){})}
+  REICH_HTML=esc(t('reich.antwortet',{kette:H.ketteText(L,t)}))+'<br><span class="leise">'+esc(t('person.herrscht',{wer:wer}))+'</span>'+(ch?'<br><span class="leise">'+esc(ch)+'</span>':'');infoZeigen()},function(){})}
 function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&&w.daten.kern.welt,waehlen=!/[?&]nosave\b/.test(location.search)&&!(sp&&sp.kam);$('weltInfo').textContent=t('welt.wartet');
  if(sp&&sp.start)START=sp.start;
  KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,waehlen:waehlen,beiErde:startWaehlen,
