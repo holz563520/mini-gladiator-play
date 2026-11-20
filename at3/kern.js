@@ -50,7 +50,7 @@ function PERS(){return root.AT3PERS||(typeof module!=='undefined'&&module.export
 // „ketten“ (nach „wirtschaft“). Ohne den Befehl bleibt z.ket leer und alles läuft wie in G7.
 function GLA(){return root.AT3GLAD||(typeof module!=='undefined'&&module.exports?require('./gladiatoren.js'):null)}
 function KET(){return root.AT3KETTEN||(typeof module!=='undefined'&&module.exports?require('./ketten.js'):null)}
-var WAR_ARTEN={wirtschaft:1,lieferung:1,personRolle:1,ketten:1,gladiatoren:1,glaLot:1,glaKauf:1,arenaTermin:1,arenaAbsage:1,arenaErgebnis:1,glaHeil:1,glaBehandle:1};      // G9d3: Heilung      // G9d2: Arena      // G9c1: gladiatoren, glaLot, glaKauf (gladiatoren.js über waren.js)
+var WAR_ARTEN={wirtschaft:1,lieferung:1,personRolle:1,ketten:1,gladiatoren:1,glaLot:1,glaKauf:1,arenaTermin:1,arenaAbsage:1,arenaErgebnis:1,arenaSetzen:1,arenaHaus:1,glaHeil:1,glaBehandle:1};      // G9d3: Heilung      // G9d2: Arena      // G9c1: gladiatoren, glaLot, glaKauf (gladiatoren.js über waren.js)
 var BAU_ARTEN={bauBoden:1,bauEntfernen:1,bauWand:1,bauTuer:1,bauDach:1,bauHuelle:1,bauPause:1,bauAbbruch:1,bauWaende:1,bauTuerWechsel:1,bauWeg:1};   // G6a: bauWeg
 
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}

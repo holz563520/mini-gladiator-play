@@ -11,7 +11,7 @@ var ST=64, FELDER=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, MEER=2048, TEIL=8
 var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6,18,61,45,14,16], WFARBE=[0,47,48,31,43,12,47,6];   // wie Weltansicht: Biome 0..17 (N2c: 13 Grasland, 14 Savanne, 15 Mittelmeer, 16 Regenwald, 17 Mangroven), Wegschicht 1..7 (Ortsplatz hier in Straßenfarbe statt Rot)
 // G6a gebaute Wege (bau.js, Schicht ab Byte 8 × 4.096 im Bau-Puffer): Trampelpfad, Kiesweg, Pflaster, Steinstraße; Fugen bei Pflaster und Stein. Baustelle:
 // geplant = Boden mit Punktmuster, in Arbeit = Weg mit Bodenkörnern, fertig = Weg. Weit draußen (¼, ⅛) nur die Farbe.
-var GFARBE=[0,46,5,45,4], GFUGE=[0,45,4,44,3], GKORN=[0,47,6,46,5], GPUNKT=61;
+var GFARBE=[0,46,5,45,4,5], GFUGE=[0,45,4,44,3,4], GKORN=[0,47,6,46,5,6], GPUNKT=61;      // AR1b: 5 Queue Path vorerst wie Kiesweg (eigenes Bild mit AR1c)
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
 function sicht(p){return p._s||(p._s={H:new Uint16Array(p.buffer,p.byteOffset,FELDER),B:new Uint8Array(p.buffer,p.byteOffset+FELDER*2,FELDER),W:new Uint8Array(p.buffer,p.byteOffset+FELDER*3,FELDER)})}
 function stufe(h){h=(h-MEER)>>LS;return h<0?0:h}

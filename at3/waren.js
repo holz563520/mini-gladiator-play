@@ -159,12 +159,12 @@ var ARTEN={
  lieferung:function(w){return !!w&&G(w.von,1,4294967295)&&G(w.nach,1,4294967295)&&w.von!==w.nach&&G(w.ware,0,NW-1)&&G(w.menge,1,MAX_MENGE)},
  personRolle:function(w){return !!w&&G(w.id,1,M31)&&G(w.darf,0,127)},
  gladiatoren:function(w){return GLA().ARTEN.gladiatoren(w)},glaLot:function(w){return GLA().ARTEN.glaLot(w)},glaKauf:function(w){return GLA().ARTEN.glaKauf(w)},
- arenaTermin:function(w){return GLA().ARTEN.arenaTermin(w)},arenaAbsage:function(w){return GLA().ARTEN.arenaAbsage(w)},arenaErgebnis:function(w){return GLA().ARTEN.arenaErgebnis(w)},glaBehandle:function(w){return GLA().ARTEN.glaBehandle(w)},glaHeil:function(w){return GLA().ARTEN.glaHeil(w)}};      // G9d2, G9d3      // G9c1
+ arenaTermin:function(w){return GLA().ARTEN.arenaTermin(w)},arenaSetzen:function(w){return GLA().ARTEN.arenaSetzen(w)},arenaHaus:function(w){return GLA().ARTEN.arenaHaus(w)},arenaAbsage:function(w){return GLA().ARTEN.arenaAbsage(w)},arenaErgebnis:function(w){return GLA().ARTEN.arenaErgebnis(w)},glaBehandle:function(w){return GLA().ARTEN.glaBehandle(w)},glaHeil:function(w){return GLA().ARTEN.glaHeil(w)}};      // G9d2, G9d3      // G9c1
 function befehl(z,art,w){
  if(art==='wirtschaft'){if(z.war)return;z.war=neu(w.x,w.y);var P=PERS();if(P)P.start(z,w.x,w.y);return}
  if(!z.war)return;
  if(art==='ketten'){var Kt=KET();if(Kt&&!z.ket)Kt.start(z);return}
- if(art==='gladiatoren'||art==='glaLot'||art==='glaKauf'||art==='arenaTermin'||art==='arenaAbsage'||art==='arenaErgebnis'||art==='glaHeil'||art==='glaBehandle'){GLA().befehl(z,art,w);return}      // G9c1: Gladiatoren und Sklavenmarkt
+ if(art==='gladiatoren'||art==='glaLot'||art==='glaKauf'||art==='arenaTermin'||art==='arenaAbsage'||art==='arenaErgebnis'||art==='arenaSetzen'||art==='arenaHaus'||art==='glaHeil'||art==='glaBehandle'){GLA().befehl(z,art,w);return}      // G9c1: Gladiatoren und Sklavenmarkt
  if(art==='personRolle'){var P2=PERS();if(P2)P2.rolle(z,w.id,w.darf);return}
  var g=z.war,v=hole(g,T_LAGER,w.von),n=hole(g,T_LAGER,w.nach);if(!v||!n)return;
  var kar=karreVon(z,w.von)&&!!KAR().besuch(z,z.bau.raeume.get(w.nach)),je=kar?KARREN_KAP:TRAG,rest=w.menge;

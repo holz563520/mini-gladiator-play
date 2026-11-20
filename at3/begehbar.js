@@ -21,7 +21,7 @@ var BIOM=[0,0,85,85,85,75,45,75,60,60,0,0,60,85,85,80,60,40];
 // Weltstraße (weltgen W1b: 1 Pfad, 2 Straße, 3 Brücke, 4 Furt, 5 Steg, 6 Ortsplatz, 7 Fähre) je Profil
 var WELT=[[0,95,100,100,60,100,100,0],[0,0,100,100,0,0,100,0]];
 // Gebauter Weg (bau.js: 1 Trampelpfad, 2 Kiesweg, 3 Pflaster, 4 Steinstraße) je Profil, nur wenn fertig
-var GEBAUT=[[0,95,100,110,115],[0,0,100,110,115]];
+var GEBAUT=[[0,95,100,110,115,100],[0,0,100,110,115,0]];   // AR1b: 5 Queue Path nur zu Fuß (Besucher führt später AR2)
 var DX=[0,-1,0,1], DY=[-1,0,1,0];
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
 function stufe(h){h=(h-MEER)>>LS;return h<0?0:h}
@@ -33,7 +33,7 @@ function tempo(hole,holeB,seed,X,Y,p){if(Y<0||Y>=WY)return 0;X=um(X);
  var w=hole(X>>6,Y>>6);if(!w)return -1;var s=sicht(w),q=((Y&63)<<6)|(X&63),a=holeB?holeB(X>>6,Y>>6):null;
  var h0=stufe(s.H[q]),mn=h0,mx=h0;for(var k=1;k<4;k++){var h=hoehe(hole,um(X+(k&1)),Y+(k>>1));if(h<0)return -1;if(h<mn)mn=h;if(h>mx)mx=h}
  var steil=mx-mn,b=s.B[q],wv=s.W[q],t;
- if(a&&a[q]){t=p===FUSS?85:a[q]===1?100:0}                                                    // Gebäudeboden; Karren nur ins Lager (Ladestelle)
+ if(a&&a[q]){var ga=a[q];t=ga===6?0:ga===7?(p===FUSS?100:0):p===FUSS?85:ga===1?100:0}            // Gebäudeboden; Karren nur ins Lager (Ladestelle); AR1b: Anlage gesperrt, Häuschen zu Fuß
  else{var g=a&&a.length>GW?a[GW+q]:0;
   if(g&&((g>>4)&3)===Z_FERTIG)t=GEBAUT[p][g&7];
   else if(wv)t=WELT[p][wv];

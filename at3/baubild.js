@@ -13,7 +13,7 @@ var ARTEN=['wand-stein','wand-tuer','wand-tor','dach-ziegel','natur-stumpf'], DA
 var ST=64, F=ST*ST, WX=ST*9600, WY=ST*4800, MEER=2048, LS=6;
 var F_DACH=1, F_ROD=2, F_STUMPF=8, Z_PLAN=1, Z_ARBEIT=2, Z_FERTIG=3;
 var LIFT=25, KNIE=10;                      // Dach so hoch, dass die Traufe auf der Wandkrone sitzt (Bildpunkte bei 1×); offene Vorderwand kniehoch
-var BODEN=[0,46,9,23,23,9], PUNKT=61;      // Boden je Art (Lager Sand, Werkstatt Erde, Unterkunft Holz; G8: Küche Holz, Jägerhütte Erde), Punktmuster der Baustelle (Ocker)
+var BODEN=[0,46,9,23,23,9,46,23], PUNKT=61;      // AR1b: Anlage Sand, Häuschen Holz (Platzhalter bis AR1c die großen Bilder zeichnet)      // Boden je Art (Lager Sand, Werkstatt Erde, Unterkunft Holz; G8: Küche Holz, Jägerhütte Erde), Punktmuster der Baustelle (Ocker)
 function stufe(h){h=(h-MEER)>>LS;return h<0?0:h}
 
 // Bilder je Art und Zoomstufe (wie natur.vorbereiten), Wände zusätzlich gespiegelt (Nordkante). unten[x]: unterste deckende Zeile je Spalte (für halbe und kniehohe Wände).

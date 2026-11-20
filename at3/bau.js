@@ -27,8 +27,11 @@ var ST=64, FELDER=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, MEER=2048, LS=6;
 var START_GOLD=2000, PREIS=1;                           // K0 (Thomas 18.11.2026): Startgold wie 1.0 (data.js gold:2000) statt 10.000 Testgold; Bauen kostet bis Phase B weiter 1
 var FELD_TICKS=40, KANTE_TICKS=20;                      // Bauzeit: 2 s je Feld (Thomas), 1 s je Wand/Tür (Vorschlag)
 var MAX_AUSWAHL=1024, MAX_RAUM=4096, MAX_BAUSTELLEN=256, JE_TICK=64, WEG_SUCHE=16, MAX_MELD=256, MAX_ZIELE=16384, MAX_LINIE=256;   // G5c: Wandlinie höchstens 256 Kanten (Vorschlag)
-var ART_NAME=['','lager','werkstatt','unterkunft','kueche','jagdhuette'], ART={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5};   // G8: Werkstatt = Sägewerkstatt, neu Küche und Jägerhütte
-var WEG_NAME=['','trampelpfad','kiesweg','pflaster','steinstrasse'], WEG={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4}, WEG_TICKS=20;   // G6a: 1 s je Wegfeld (Vorschlag)
+var ART_NAME=['','lager','werkstatt','unterkunft','kueche','jagdhuette','anlage','haeuschen'], ART={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5};
+// AR1b: Art 6 = Fußabdruck einer großen Anlage (Arena, gesperrt), Art 7 = Ein- oder Ausgangshäuschen (zu Fuß). Gesetzt nur über attraktion.js, nicht über bauBoden;
+// Raum-Nummer = RAUM_ANL | Nummer der Anlage (kollidiert nie mit Raum-Nummern). Abriss-, Dach- und Wandwerkzeuge lassen beide in Ruhe.
+var A_ANLAGE=6, A_HAUS=7, RAUM_ANL=0x80000000;   // G8: Werkstatt = Sägewerkstatt, neu Küche und Jägerhütte
+var WEG_NAME=['','trampelpfad','kiesweg','pflaster','steinstrasse','warteweg'], WEG={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4,warteweg:5}, WEG_TICKS=20;   // AR1b: 5 = Queue Path (nur zu Fuß, Warteschlange)   // G6a: 1 s je Wegfeld (Vorschlag)
 // Kante (ein Byte): Bits 0–1 Typ, Bits 2–3 Herkunft, Bits 4–5 Bauzustand. Typ 0 mit Herkunft „entfernt“ = von Hand geöffnet, wächst nicht nach.
 var K_WAND=1, K_TUER=2, K_TOR=3, H_AUTO=1, H_HAND=2, H_WEG=3;
 // Bauzustand von Feld und Kante. 4/5 (Material reserviert/geliefert) kommen mit G7 zwischen „geplant“ und „in Arbeit“ in die Baustelle.
@@ -175,7 +178,7 @@ function entfernen(z,L){var b=z.bau,betroffen=[],i,s,X,Y;
  b.zaehler++}
 
 function bauEntfernen(z,w,bnr){var b=z.bau,L=[],i,j,n=0;if(w.y+w.h>WY)return melden(b,bnr,'edge');
- for(j=0;j<w.h;j++)for(i=0;i<w.w;i++){var X=um(w.x+i),Y=w.y+j;if(artAt(b,X,Y))L.push(X,Y);if(wegAt(b,X,Y)){wegWeg(b,X,Y);n++}}
+ for(j=0;j<w.h;j++)for(i=0;i<w.w;i++){var X=um(w.x+i),Y=w.y+j,aa=artAt(b,X,Y);if(aa&&aa<A_ANLAGE)L.push(X,Y);if(wegAt(b,X,Y)){wegWeg(b,X,Y);n++}}      // AR1b: Anlage und Häuschen nicht
  if(L.length)entfernen(z,L);
  // frei stehende Wände in der Auswahl (beide Seiten unbebaut) gehen mit weg
  for(j=0;j<w.h;j++)for(i=0;i<w.w;i++){var x=um(w.x+i),y=w.y+j;
@@ -219,6 +222,7 @@ function bauWeg(z,w,bnr){var b=z.bau,p=planWeg(z,w),i;
 function kanteVon(w){return w.seite===2&&w.y+1>=WY?null:kante(w.x,w.y,w.seite)}
 function bauWand(z,w,bnr){var b=z.bau,k=kanteVon(w);if(!k)return melden(b,bnr,'edge');
  var v=kGet(b,k[0],k[1],k[2]),ox=um(w.x+DX[w.seite]),oy=w.y+DY[w.seite],bebaut=artAt(b,w.x,w.y)||(oy>=0&&oy<WY&&artAt(b,ox,oy));
+ if(anl(b,w.x,w.y)||(oy>=0&&oy<WY&&anl(b,ox,oy)))return melden(b,bnr,'occupied');                     // AR1b: keine Wände an Anlagen
  if(!w.an){if(!(v&3))return melden(b,bnr,'nothing');kanteWeg(b,k,bebaut?H_WEG<<2:0);leerRaeumen(b,k[1],k[2]);b.zaehler++;return melden(b,bnr,null)}
  if((v&3)===K_WAND)return melden(b,bnr,'nothing');
  if(bebaut&&zumauern(z,b,[k]))return melden(b,bnr,'dead_end');               // G5c: einziger Zugang wird nicht zugemauert
@@ -236,9 +240,9 @@ function bauTuer(z,w,bnr){var b=z.bau,k=kanteVon(w);if(!k)return melden(b,bnr,'e
  return melden(b,bnr,null,neuZiel?{kosten:PREIS,baustelle:baustelle(b,0,[k[0],k[1],k[2]])}:{kosten:0})}
 // Dach öffnen oder schließen (abgeleitet je Feld, kostet nichts)
 function bauDach(z,w,bnr){var b=z.bau,n=0;if(w.y+w.h>WY)return melden(b,bnr,'edge');
- if(w.zu===2){var zu=-1;for(var j0=0;j0<w.h&&zu<0;j0++)for(var i0=0;i0<w.w;i0++){var X0=um(w.x+i0),Y0=w.y+j0;if(artAt(b,X0,Y0)){zu=flagAt(b,X0,Y0)&F_DACH?0:1;break}}   // G5c: erstes Feld entscheidet
+ if(w.zu===2){var zu=-1;for(var j0=0;j0<w.h&&zu<0;j0++)for(var i0=0;i0<w.w;i0++){var X0=um(w.x+i0),Y0=w.y+j0,a0=artAt(b,X0,Y0);if(a0&&a0<A_ANLAGE){zu=flagAt(b,X0,Y0)&F_DACH?0:1;break}}   // G5c: erstes Feld entscheidet
   if(zu<0)return melden(b,bnr,'nothing');w={x:w.x,y:w.y,w:w.w,h:w.h,zu:zu}}
- for(var j=0;j<w.h;j++)for(var i=0;i<w.w;i++){var X=um(w.x+i),Y=w.y+j,s=stk(b,X,Y);if(!s)continue;var q=qi(X,Y);if(!s.art[q]||!!(s.flag[q]&F_DACH)===!!w.zu)continue;s.flag[q]^=F_DACH;merk(b,X,Y);n++}
+ for(var j=0;j<w.h;j++)for(var i=0;i<w.w;i++){var X=um(w.x+i),Y=w.y+j,s=stk(b,X,Y);if(!s)continue;var q=qi(X,Y);if(!s.art[q]||s.art[q]>=A_ANLAGE||!!(s.flag[q]&F_DACH)===!!w.zu)continue;s.flag[q]^=F_DACH;merk(b,X,Y);n++}
  if(!n)return melden(b,bnr,'nothing');b.zaehler++;return melden(b,bnr,null,{felder:n})}
 // Hülle neu erzeugen: alle offenen Außenkanten des Raums bekommen eine Wand (auch von Hand geöffnete), innen liegende automatische Wände fallen weg, ohne Tür kommt eine dazu.
 function bauHuelle(z,w,bnr){var b=z.bau,r=b.raeume.get(w.raum);if(!r)return melden(b,bnr,'no_room');
@@ -271,7 +275,7 @@ function planWaende(z,w){var b=z.bau||LEER,L=linie(w),neuK=[],C=new Map(),i;
  if(w.an===2){var luecke=0;for(i=0;i<L.length&&!luecke;i++)if(!(kGet(b,L[i][0],L[i][1],L[i][2])&3))luecke=1;w={r:w.r,x:w.x,y:w.y,n:w.n,an:luecke}}   // 2 = von selbst: Lücken werden zugemauert, eine schon ganz geschlossene Linie wird abgerissen
  for(i=0;i<L.length;i++){var k=L[i],v=kGet(b,k[0],k[1],k[2]);
   if(!w.an){if((v&3)===K_WAND)neuK.push(k);continue}                          // Türen und Tore bleiben (die ändert das Tür-Werkzeug)
-  if(v&3)continue;var f=seiten(k),bebaut=artAt(b,f[0],f[1])||(f[3]>=0&&f[3]<WY&&artAt(b,f[2],f[3]));
+  if(v&3)continue;var f=seiten(k);if(anl(b,f[0],f[1])||(f[3]>=0&&f[3]<WY&&anl(b,f[2],f[3])))return{fehler:'occupied',x:f[0],y:f[1]};var bebaut=artAt(b,f[0],f[1])||(f[3]>=0&&f[3]<WY&&artAt(b,f[2],f[3]));
   if(!bebaut){var g=boden(z,f[0],f[1],C);if(typeof g==='string'){var g2=f[3]>=0&&f[3]<WY-1?boden(z,f[2],f[3],C):'edge';if(typeof g2==='string')return{fehler:g==='too_far'||g2==='too_far'?'too_far':g,x:f[0],y:f[1]}}}
   neuK.push(k)}
  if(!neuK.length)return{fehler:'nothing'};
@@ -372,7 +376,7 @@ function ausStand(d){var i,j;
  var b=neu();b.gold=d.gold;b.id=d.id;b.nr=d.nr;b.zaehler=d.zaehler;
  for(i=0;i<d.st.length;i++){var e=d.st[i];if(!Array.isArray(e)||e.length!==2||!G(e[0],0,SX*8192)||((e[0]/8192)|0)>=SX||e[0]%8192>=SY||b.st.has(e[0])||!Array.isArray(e[1])||e[1].length%FW||!e[1].length)return null;
   var s=leerStk(),L=e[1];
-  for(j=0;j<L.length;j+=FW){var wv=FW===7?L[j+6]:0;if(!G(wv,0,52)||(wv&&(!(wv&7)||(wv&7)>4||!((wv>>4)&3)||(wv&8)||L[j+1])))return null;s.weg[L[j]]=wv;var q=L[j];if(!G(q,0,FELDER-1)||!G(L[j+1],0,5)||!G(L[j+2],0,4294967295)||!G(L[j+3],0,63)||!G(L[j+4],0,63)||!G(L[j+5],0,63)||(!L[j+1])!==(!L[j+2]))return null;
+  for(j=0;j<L.length;j+=FW){var wv=FW===7?L[j+6]:0;if(!G(wv,0,53)||(wv&&(!(wv&7)||(wv&7)>5||!((wv>>4)&3)||(wv&8)||L[j+1])))return null;s.weg[L[j]]=wv;var q=L[j];if(!G(q,0,FELDER-1)||!G(L[j+1],0,7)||!G(L[j+2],0,4294967295)||!G(L[j+3],0,63)||!G(L[j+4],0,63)||!G(L[j+5],0,63)||(!L[j+1])!==(!L[j+2]))return null;
    s.art[q]=L[j+1];s.raum[q]=L[j+2];s.kn[q]=L[j+3];s.kw[q]=L[j+4];s.flag[q]=L[j+5]}
   b.st.set(e[0],s);b.neu.add(e[0])}
  for(i=0;i<d.raeume.length;i++){var r=d.raeume[i];if(!Array.isArray(r)||r.length!==5||!G(r[0],1,d.id-1)||!G(r[1],1,5)||!G(r[2],1,MAX_RAUM)||!G(r[3],0,WX-1)||!G(r[4],0,WY-1)||b.raeume.has(r[0])||raumAt(b,r[3],r[4])!==r[0])return null;
@@ -394,6 +398,28 @@ function stumpfAn(z,X,Y){return !!(z.bau&&(flagAt(z.bau,X,Y)&F_STUMPF))}
 function baumFrei(z,X,Y){var b=z.bau;if(!b)return true;return !artAt(b,X,Y)&&!wegAt(b,X,Y)&&!(flagAt(b,X,Y)&F_ROD)}
 function wegAn(z,X,Y){var v=wegAt(z.bau||LEER,X,Y);return v?{art:WEG_NAME[v&7],nr:v&7,zustand:(v>>4)&3}:null}
 function bytes(b){return b.st.size*FELDER*9}
+// ── AR1b: große Anlagen (attraktion.js) ──
+function anl(b,X,Y){return artAt(b,X,Y)>=A_ANLAGE}
+// Feld für den Fußabdruck oder ein Häuschen prüfen: Land, keine Weltstraße, kein gebauter Weg, nichts Gebautes (außer Feldern derselben Anlage, raum),
+// kein Fels; Bäume, Büsche und Blumen werden gerodet. Gibt einen Ablehnungsgrund oder [niedrigste, höchste Höhenstufe der vier Ecken, rodet 0/1] zurück.
+function anlageBoden(z,X,Y,C,raum){if(Y<0||Y>=WY-1)return'edge';var s=sicht(z,X>>6,Y>>6,C);if(!s)return'too_far';
+ var q=qi(X,Y),mn=1e9,mx=-1;
+ for(var k=0;k<4;k++){var x=um(X+(k&1)),y=Y+(k>>1),t=sicht(z,x>>6,y>>6,C);if(!t)return'too_far';var h=stufe(t.H[qi(x,y)]);if(h<mn)mn=h;if(h>mx)mx=h}
+ var bio=s.B[q];if(bio<2||bio===10||bio===11)return'water';if(s.W[q])return'road';
+ var b=z.bau;if(b){var a=artAt(b,X,Y);if(a&&!(raum&&a>=A_ANLAGE&&raumAt(b,X,Y)===raum))return'occupied';if(wegAt(b,X,Y))return'road'}
+ var N_=NAT(),n=N_.art(z.wg.seed,X,Y,bio,0,0),rod=0;if(n>=0){if(N_.sperrt(n)&&!N_.baum(n))return'nature';rod=1}
+ return[mn,mx,rod]}
+// Felder [X,Y,…] als Anlage (art 6) oder Häuschen (art 7) eintragen: fertig, gerodet, ohne Dach, ohne Stumpf. Kostet nichts (Thomas 20.11.2026).
+function anlageSchreiben(z,L,art,raum){if(!z.bau)z.bau=neu();var b=z.bau;
+ for(var i=0;i<L.length;i+=2){var X=L[i],Y=L[i+1],s=stk(b,X,Y,true),q=qi(X,Y);if(s.weg[q])wegWeg(b,X,Y);s=stk(b,X,Y,true);s.art[q]=art;s.raum[q]=raum;s.flag[q]=F_ROD|(Z_FERTIG<<4);merk(b,X,Y)}
+ b.zaehler++}
+// Felder einer Anlage wieder frei geben (beim Versetzen). Gerodet bleibt gerodet.
+function anlageLoeschen(z,L,raum){var b=z.bau;if(!b)return;
+ for(var i=0;i<L.length;i+=2){var X=L[i],Y=L[i+1],s=stk(b,X,Y),q=qi(X,Y);if(!s||s.art[q]<A_ANLAGE||s.raum[q]!==raum)continue;s.art[q]=0;s.raum[q]=0;s.flag[q]&=F_ROD;merk(b,X,Y);leerRaeumen(b,X,Y)}
+ b.zaehler++}
+// Weg auf einem Feld für die Warteschlange: 1–5 gebauter Weg (fertig, 5 = Queue Path), 10 + Art der Weltstraße (ohne Fähre), sonst 0.
+function wegTyp(z,X,Y,C){var v=wegAt(z.bau||LEER,X,Y);if(v)return((v>>4)&3)===Z_FERTIG?v&7:0;if(Y<0||Y>=WY)return 0;
+ var s=sicht(z,X>>6,Y>>6,C||new Map());if(!s)return 0;var w=s.W[qi(X,Y)];return w&&w!==7?10+w:0}
 // G5b: Bau eines Kartenstücks für die Karte (Bildkern) als ein Puffer: art, kn, kw, flag je 4.096 Byte, danach raum (4.096 × 4 Byte), G6a: danach weg (4.096 Byte).
 var PACK=FELDER*9;
 function stueck(b,k){var s=b.st.get(k);if(!s)return null;var a=new Uint8Array(PACK);a.set(s.art,0);a.set(s.kn,FELDER);a.set(s.kw,FELDER*2);a.set(s.flag,FELDER*3);
@@ -403,7 +429,7 @@ function geaendert(b){var L=[];b.neu.forEach(function(k){L.push(k)});b.neu.clear
 var B={neu:neu,START_GOLD:START_GOLD,PREIS:PREIS,FELD_TICKS:FELD_TICKS,KANTE_TICKS:KANTE_TICKS,MAX_AUSWAHL:MAX_AUSWAHL,MAX_RAUM:MAX_RAUM,MAX_BAUSTELLEN:MAX_BAUSTELLEN,JE_TICK:JE_TICK,WEG:WEG,WEG_NAME:WEG_NAME,WEG_TICKS:WEG_TICKS,pruefenWeg:pruefenWeg,weg:wegAn,
  ART:ART,ART_NAME:ART_NAME,K_WAND:K_WAND,K_TUER:K_TUER,K_TOR:K_TOR,H_AUTO:H_AUTO,H_HAND:H_HAND,H_WEG:H_WEG,Z_PLAN:Z_PLAN,Z_ARBEIT:Z_ARBEIT,Z_FERTIG:Z_FERTIG,B_LAEUFT:B_LAEUFT,B_PAUSE:B_PAUSE,B_BLOCK:B_BLOCK,
  ARTEN:ARTEN,befehl:befehl,schritt:schritt,abdruck:abdruck,stand:stand,ausStand:ausStand,pruefen:pruefen,pruefenWaende:pruefenWaende,sackgasse:sackgasse,boden:function(z,X,Y){return boden(z,X,Y,new Map())},
- feld:feld,kante:kanteAn,ziel:zielZu,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,F_STUMPF:F_STUMPF,stumpf:stumpf,stumpfAn:stumpfAn,baumFrei:baumFrei,haken:function(f){beiEntfernen=f}};
+ feld:feld,kante:kanteAn,A_ANLAGE:A_ANLAGE,A_HAUS:A_HAUS,RAUM_ANL:RAUM_ANL,anlageBoden:anlageBoden,anlageSchreiben:anlageSchreiben,anlageLoeschen:anlageLoeschen,wegTyp:wegTyp,anl:function(z,X,Y){return !!z.bau&&anl(z.bau,X,Y)},ziel:zielZu,bytes:bytes,stueck:stueck,geaendert:geaendert,PACK:PACK,F_DACH:F_DACH,F_ROD:F_ROD,F_STUMPF:F_STUMPF,stumpf:stumpf,stumpfAn:stumpfAn,baumFrei:baumFrei,haken:function(f){beiEntfernen=f}};
 if(typeof module!=='undefined'&&module.exports)module.exports=B;else root.AT3BAU=B;
 })(typeof self!=='undefined'?self:this);
 

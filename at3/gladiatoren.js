@@ -77,12 +77,12 @@ var ARTEN={
  glaKauf:function(w){return !!w&&w.i===Math.floor(w.i)&&w.i>=0&&w.i<LOT&&w.tag===Math.floor(w.tag)},
  glaHeil:function(w){return !!w&&w.tag===Math.floor(w.tag)&&w.tag>=0&&Array.isArray(w.liste)&&w.liste.length<=MAX_G&&w.liste.every(function(e){return !!e&&e.pid===Math.floor(e.pid)&&e.pid>=1&&
   e.gv===Math.floor(e.gv)&&e.gv>=0&&istG(e.g)&&e.hp===Math.floor(e.hp)&&e.hp>=0&&e.hp<=100&&(e.ruht===0||e.ruht===1)})},
- arenaTermin:function(w){return AR().ARTEN.arenaTermin(w)},arenaAbsage:function(w){return AR().ARTEN.arenaAbsage(w)},arenaErgebnis:function(w){return AR().ARTEN.arenaErgebnis(w)}};      // G9d2
+ arenaTermin:function(w){return AR().ARTEN.arenaTermin(w)},arenaSetzen:function(w){return AR().ARTEN.arenaSetzen(w)},arenaHaus:function(w){return AR().ARTEN.arenaHaus(w)},arenaAbsage:function(w){return AR().ARTEN.arenaAbsage(w)},arenaErgebnis:function(w){return AR().ARTEN.arenaErgebnis(w)}};      // G9d2
 function rec(z,a,g){var h=herkunft(z,a);return{g:JSON.parse(JSON.stringify(g)),her:h?h.her:null,geb:h?h.geb:null}}
 function melde(a,m){a.meld.push(m);if(a.meld.length>8)a.meld.shift();a.zaehler++}
 function befehl(z,art,w){
  if(art==='gladiatoren'){start(z);return}
- if(art==='arenaTermin'||art==='arenaAbsage'||art==='arenaErgebnis'){AR().befehl(z,art,w);return}      // G9d2
+ if(art==='arenaTermin'||art==='arenaAbsage'||art==='arenaErgebnis'||art==='arenaSetzen'||art==='arenaHaus'){AR().befehl(z,art,w);return}      // AR1b: arenaSetzen, arenaHaus      // G9d2
  var a=z.gla;if(!a||!a.platz)return;var d=tag(z),i;
  if(art==='glaLot'){
   if(w.lot.length&&w.tag===d&&a.tag!==d){a.lot=w.lot.map(function(g){return rec(z,a,g)});a.tag=d;a.verkauft=0}      // veraltete Lieferungen (anderer Tag) fallen weg
