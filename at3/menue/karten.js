@@ -87,8 +87,8 @@ function oeffne(id){
   '<p class="leise">'+esc(o.id)+' · Version '+o.version+' · Typ-Nr. '+typ+'<br>Art '+esc(o.kat)+' · Status '+esc(o.status)+' · Herkunft '+esc(o.herkunft||'skizze')+'</p></div></div>'+
   '<div class="wForm"><label>Name (englisch) <input id="kName" maxlength="'+K.NAME_MAX+'"></label><label>Gruppe <select id="kGruppe">'+gr+'</select></label></div>'+
   '<label class="kInfo">Beschreibung (englisch, 1–3 Sätze) <textarea id="kInfo" rows="3" maxlength="'+K.INFO_MAX+'"></textarea></label><p class="leise" id="kZahl"></p>'+
-  '<div class="wForm"><label>Breite (Felder) <input id="kW" type="number" min="1" max="'+K.MAX_FLAECHE+'" inputmode="numeric" value="'+kt.flaeche.w+'"></label>'+
-  '<label>Tiefe (Felder) <input id="kH" type="number" min="1" max="'+K.MAX_FLAECHE+'" inputmode="numeric" value="'+kt.flaeche.h+'"></label></div>'+
+  '<div class="wForm"><label>Breite (Felder) <input id="kW" type="number" min="1" max="'+K.maxFlaeche(Z.E.kat)+'" inputmode="numeric" value="'+kt.flaeche.w+'"></label>'+
+  '<label>Tiefe (Felder) <input id="kH" type="number" min="1" max="'+K.maxFlaeche(Z.E.kat)+'" inputmode="numeric" value="'+kt.flaeche.h+'"></label></div>'+
   '<div class="wZeile"><button class="knopf klein" data-km="koll">Kollision</button><button class="knopf klein" data-km="kante">Kanten</button><button class="knopf klein" data-km="anker">Anker</button>'+
   '<select id="kAnkerArt">'+an+'</select></div>'+
   '<p class="leise" id="kHilfe"></p><div class="kFlaeche"><canvas id="kFl"></canvas></div><p class="leise" id="kAnkerListe"></p>'+
@@ -117,7 +117,7 @@ function modusZeigen(){[].forEach.call(Z.el.querySelectorAll('[data-km]'),functi
  $('#kHilfe').textContent=Z.modus==='koll'?'Feld antippen: frei → nur zu Fuß → gesperrt. Karren fahren nur über freie Felder.':
   Z.modus==='kante'?'Nahe an einer Feldkante antippen: Kante sperren oder öffnen (Wand, Zaun).':'Anker „'+K.ANKER[Z.ankerArt]+'“: auf einen Punkt tippen (halbe Felder). Auf einen vorhandenen Anker tippen: weg damit.';
  flaecheMalen();pruefen()}
-function flaeche(w,h){var k=Z.E.karte,ow=k.flaeche.w,oh=k.flaeche.h;w=Math.max(1,Math.min(K.MAX_FLAECHE,w|0));h=Math.max(1,Math.min(K.MAX_FLAECHE,h|0));
+function flaeche(w,h){var k=Z.E.karte,ow=k.flaeche.w,oh=k.flaeche.h;var mx=K.maxFlaeche(Z.E.kat);w=Math.max(1,Math.min(mx,w|0));h=Math.max(1,Math.min(mx,h|0));
  var feld='',kan='';for(var j=0;j<h;j++)for(var i=0;i<w;i++){var alt=i<ow&&j<oh;feld+=alt?k.feld[j*ow+i]:'x';kan+=alt?k.kanten[j*ow+i]:'0'}
  k.flaeche={w:w,h:h};k.feld=feld;k.kanten=kan;k.anker=k.anker.filter(function(a){return a.fx<=w&&a.fy<=h});$('#kW').value=w;$('#kH').value=h;flaecheMalen();pruefen()}
 // Feldgröße der Draufsicht: groß genug zum Antippen der Kanten, die ganze Fläche passt auf den Bildschirm.

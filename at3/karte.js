@@ -4,15 +4,16 @@
 (function(G){
 'use strict';
 // Gruppen der Kartei. Die Art (kat, aus at3-64.js) bestimmt Bildgröße, die Gruppe bestimmt später Verhalten im Spiel.
-var GRUPPEN={natur:'Natur',boden:'Boden',bau:'Bau',einrichtung:'Einrichtung',ware:'Ware',person:'Person',tier:'Tier',fahrzeug:'Fahrzeug',zeichen:'Zeichen'};
-var GRUPPE_VON={boden:'boden',blume:'natur',baum:'natur',wand:'bau',dach:'bau',einrichtung:'einrichtung',ware:'ware',figur:'person',tier:'tier',karren:'fahrzeug'};
+var GRUPPEN={natur:'Natur',boden:'Boden',bau:'Bau',einrichtung:'Einrichtung',ware:'Ware',person:'Person',tier:'Tier',fahrzeug:'Fahrzeug',zeichen:'Zeichen',anlage:'Große Anlage'};
+var GRUPPE_VON={boden:'boden',blume:'natur',baum:'natur',wand:'bau',dach:'bau',einrichtung:'einrichtung',ware:'ware',figur:'person',tier:'tier',karren:'fahrzeug',anlage:'anlage'};
 // Kollision je Feld. Wird festgelegt, nie aus Bildpunkten geraten.
 var KOLL={f:'frei',p:'nur zu Fuß',x:'gesperrt'};
 // Gesperrte Feldkanten (Wände, Zäune) als Bitmaske je Feld, ein Hexzeichen. Draufsicht: i nach rechts, j nach unten.
 var KANTE={links:1,oben:2,rechts:4,unten:8};
 // Anker in Feldeinheiten (0 … Breite, 0 … Tiefe, in halben Schritten). Der Fußpunkt ist der Bildanker (bild.ax/ay).
 var ANKER={tuer:'Tür',laden:'Ladepunkt',arbeit:'Arbeitsplatz',sitz:'Sitzplatz'};
-var MAX_FLAECHE=8, TYP_MAX=65535, NAME_MAX=32, INFO_MAX=300;
+var MAX_FLAECHE=8, MAX_ANLAGE=96,   // AR1a: große Anlagen (Arena bis Ø 48, Rennbahn bis 28 × 96)
+    TYP_MAX=65535, NAME_MAX=32, INFO_MAX=300;
 
 // ---- Riesenwelt (Vorbereitung, Vorschlag) ----
 // Ein Stück in der Welt speichert nie Name oder Beschreibung, nur:
@@ -37,8 +38,8 @@ function pruefeKarte(o,texte){
  if(!(o.typ>=1&&o.typ<=TYP_MAX&&o.typ%1===0))f.push('Typnummer fehlt oder ungültig (1–'+TYP_MAX+')');
  var k=o.karte;if(!k||typeof k!=='object')return f.concat('Karte fehlt');
  if(!GRUPPEN[k.gruppe])f.push('Gruppe ungültig');
- var w=k.flaeche&&k.flaeche.w,h=k.flaeche&&k.flaeche.h,n=w*h;
- if(!(w>=1&&h>=1&&w<=MAX_FLAECHE&&h<=MAX_FLAECHE&&w%1===0&&h%1===0))f.push('Fläche ungültig (1–'+MAX_FLAECHE+' Felder je Seite)');
+ var w=k.flaeche&&k.flaeche.w,h=k.flaeche&&k.flaeche.h,n=w*h,mx=o.kat==='anlage'?MAX_ANLAGE:MAX_FLAECHE;
+ if(!(w>=1&&h>=1&&w<=mx&&h<=mx&&w%1===0&&h%1===0))f.push('Fläche ungültig (1–'+mx+' Felder je Seite)');
  else{
   if(o.kat==='boden'&&(w!==1||h!==1))f.push('Boden belegt genau ein Feld');
   if(typeof k.feld!=='string'||k.feld.length!==n||/[^fpx]/.test(k.feld))f.push('Kollision fehlt: je Feld f, p oder x');
@@ -74,7 +75,8 @@ Raster.prototype.setze=function(typ,i,j){
  var s=this.n++,f=j*this.w+i;this.typ[s]=typ;this.feld[s]=f;this.naechst[s]=this.kopf[f];this.kopf[f]=s;return s;
 };
 // Größte Ausdehnung eines Bildes um seinen Anker (für die Suchfenster). Aus der Größentabelle, nicht aus den vorhandenen Bildern.
-function reichweite(groessen){var w=0,h=0;Object.keys(groessen).forEach(function(k){if(groessen[k].w>w)w=groessen[k].w;if(groessen[k].h>h)h=groessen[k].h});return{w:w,h:h}}
+// AR1a: große Anlagen zählen nicht (sie liegen nicht im Raster, sondern werden als eigenes Bild gezeichnet und angetippt), sonst wüchse das Suchfenster auf Tausende Felder
+function reichweite(groessen){var w=0,h=0;Object.keys(groessen).forEach(function(k){if(k==='anlage')return;if(groessen[k].w>w)w=groessen[k].w;if(groessen[k].h>h)h=groessen[k].h});return{w:w,h:h}}
 // px, py: Weltbildpunkt. bild(typ) liefert das Kartenbild {w,h,ax,ay,z}. Ergebnis: {stueck, typ, i, j, felder} oder null; vorderstes Stück gewinnt.
 Raster.prototype.treffer=function(px,py,bild,rw){
  var uMin=Math.floor((py-16-rw.h)/16)-1,uMax=Math.ceil((py-16+rw.h)/16)+1,vMin=Math.floor((px-32-rw.w)/32)-1,vMax=Math.ceil((px-32+rw.w)/32)+1,best=null,felder=0;
@@ -91,7 +93,7 @@ Raster.prototype.treffer=function(px,py,bild,rw){
  if(best)best.felder=felder;return best||{stueck:-1,felder:felder};
 };
 
-var AT3_KARTE={GRUPPEN:GRUPPEN,GRUPPE_VON:GRUPPE_VON,KOLL:KOLL,KANTE:KANTE,ANKER:ANKER,MAX_FLAECHE:MAX_FLAECHE,TYP_MAX:TYP_MAX,NAME_MAX:NAME_MAX,INFO_MAX:INFO_MAX,
+var AT3_KARTE={GRUPPEN:GRUPPEN,GRUPPE_VON:GRUPPE_VON,KOLL:KOLL,KANTE:KANTE,ANKER:ANKER,MAX_FLAECHE:MAX_FLAECHE,MAX_ANLAGE:MAX_ANLAGE,maxFlaeche:function(kat){return kat==='anlage'?MAX_ANLAGE:MAX_FLAECHE},TYP_MAX:TYP_MAX,NAME_MAX:NAME_MAX,INFO_MAX:INFO_MAX,
  STUECK_BYTES:STUECK_BYTES,ROLLEN:ROLLEN,BESITZER_ARTEN:BESITZER_ARTEN,
  schluessel:schluessel,text:text,saetze:saetze,neueKarte:neueKarte,typMax:typMax,pruefeKarte:pruefeKarte,kollision:kollision,kanten:kanten,Raster:Raster,reichweite:reichweite};
 if(typeof module!=='undefined'&&module.exports)module.exports=AT3_KARTE;else G.AT3_KARTE=AT3_KARTE;

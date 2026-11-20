@@ -41,7 +41,8 @@ var GROESSEN={
  ware:  {w:32,h:32, text:'Ware, Stapel'},
  figur: {w:16,h:32, text:'Figur auf der Karte, so groß wie in 2.0 (rund 22 Bildpunkte hoch, Thomas 15.11.2026), hinter Wänden als Umriss sichtbar'},
  tier:  {w:32,h:32, text:'Tier auf der Karte'},
- karren:{w:48,h:40, text:'Karren, Fahrzeug'}
+ karren:{w:48,h:40, text:'Karren, Fahrzeug'},
+ anlage:{w:1280,h:768,text:'Große Anlage (Arena, Rennbahn): ein großes vorgezeichnetes Bild je Ausbaustufe, Anker = Mitte des Mittelfelds (AR1a)'}
 };
 
 function farbe(hex){return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)]}
@@ -96,7 +97,7 @@ function bytes(b){return b&&b.z?b.w*b.h:0}
 // Kartenrichtungen je Art (Thomas 15.11.2026: Natur 4 wie Gebäude). Richtung 1 = o.bild, Richtungen 2… in o.richtungen.
 // Ein Eintrag ist ein eigenes Bild oder ein Verweis {von:0, spiegel:true}: kostet keinen Speicher, wird beim Laden einmal aufgelöst.
 // First Person: o.fp = {nah: Bild oder {von:0} (= Kartenbild Richtung 1), fern: Bild, fernAuto: true (aus nah verkleinert)}.
-var RICHTUNGEN={boden:1,blume:4,baum:4,wand:1,dach:4,einrichtung:4,ware:1,figur:4,tier:4,karren:4};
+var RICHTUNGEN={boden:1,blume:4,baum:4,wand:1,dach:4,einrichtung:4,ware:1,figur:4,tier:4,karren:4,anlage:1};   // AR1a: große Anlagen nur eine Richtung (rund bzw. fest ausgerichtet)
 function spiegelBild(b){return{kat:b.kat,w:b.w,h:b.h,ax:Math.max(0,b.w-1-b.ax),ay:b.ay,z:b.z.map(function(r){return r.split('').reverse().join('')})}}
 // Halbe Größe, nur Palettenfarben: je 2 × 2 Bildpunkte die häufigste Farbe; weniger als 2 gefüllte Punkte = durchsichtig. Einmal im Editor, nie im Spiel.
 function halbBild(b){var w=Math.ceil(b.w/2),h=Math.ceil(b.h/2),z=[];
@@ -188,7 +189,8 @@ function bewerte(m,B,kat){var g=budgetGruppe(B,kat),r=[],gelb=[];
  if(!g)return{ampel:'rot',gruende:['keine Budgetgruppe für Art „'+kat+'“']};
  if(!m)return{ampel:'keine',gruende:['noch nicht gemessen']};
  if(m.datei>g.datei)r.push('Datei '+m.datei+' B über '+g.datei+' B');else if(m.datei>.75*g.datei)gelb.push('Datei knapp');
- if(m.bildspeicher>B.bildspeicher)r.push('Bildspeicher '+m.bildspeicher+' B über '+B.bildspeicher+' B');
+ var bs=g.bildspeicher||B.bildspeicher;   // AR1a: Gruppe darf eigenen Bildspeicher haben (große Anlagen)
+ if(m.bildspeicher>bs)r.push('Bildspeicher '+m.bildspeicher+' B über '+bs+' B');
  ['karte','fp'].forEach(function(a){var b=g[a];if(!b||b.gilt)return;   // gilt: Wert zählt anderswo (backzeit = Bildkern im Spiel, „ab FP1“ = erst mit First Person im Spiel; Thomas 16.11.2026)
  var L=m[a]||[],s=L[L.length-1],nm=a==='karte'?'Karte':'First Person';
   if(!s||s.n<b.stufen[b.stufen.length-1]){r.push(nm+': Messung mit '+b.stufen[b.stufen.length-1]+' Stück fehlt');return}
