@@ -22,7 +22,7 @@ function zeigen(){
   '.alBilder{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}.alBilder figure{margin:0;text-align:center}.alBilder figcaption{font-size:.8em}.alKarte textarea{width:100%;min-height:5em;box-sizing:border-box}'+
   '.alKarte select{max-width:100%}.alAns{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.9em}.alAns label{display:flex;gap:4px;align-items:center}</style>'+
   '<p>Jedes Bild, das es gibt oder geben soll, als Liste zum Abarbeiten: zuerst verbessern, was man am häufigsten sieht. Eine neue Fassung ersetzt die alte unter derselben Kennung und muss im Prüfstand neu gemessen werden. '+
-  'Gebäude aus Teilen werden über ihre Teile besser.</p>'+
+  'Gebäude aus Teilen werden über ihre Teile besser. Gebäude, die nur in Städten stehen, brauchen kein Bild (Neuausrichtung N1); Ortsbilder warten auf den Reiter „Stadtbilder“ (N6a).</p>'+
   '<p class="leise">'+E.L.length+' Einträge · '+AL.STAND.map(function(s){return AL.STAND_DE[s]+' '+(st[s]||0)}).join(' · ')+' · geladen in '+Math.round(E.ms)+' ms</p>'+
   '<p><button class="knopf" id="alNext">Nächstes Objekt<small>das wichtigste noch nicht fertige, Karte und First Person nebeneinander</small></button></p><div id="alDetail"></div><div id="alWerk"></div>'+
   '<div class="alFilter"><label>Stand<select id="alStand">'+opt(AL.STAND.map(function(s){return[s,AL.STAND_DE[s]]}),'alle')+'</select></label>'+
@@ -49,7 +49,7 @@ function karte(id,ausNaechstem){var e=finde(id),i=e.info||{},m=i.messung,ap=AL.v
  var h='<div class="alKarte"><h3>'+esc(i.name)+' <small class="leise">'+esc(e.id)+'</small></h3>';
  if(ausNaechstem)h+='<p class="leise">Wichtigstes noch nicht fertiges Objekt. <button class="knopf klein" id="alUeber">überspringen</button></p>';
  h+='<div class="alBilder" id="alBilder">'+(e.quelle==='kartei'||e.grundbild?'<span class="leise">Bilder werden geholt …</span>':'<span class="leise">Noch kein Bild'+(e.stand==='teile'?' (entsteht aus Teilen)':'')+'.</span>')+'</div>';
- h+='<p>Gruppe '+esc(e.gruppe)+' · Quelle '+({kartei:'Kartei',gebaeude:'geplantes Gebäude',ware:'geplante Ware'})[e.quelle]+(i.kat?' · Art '+esc(i.kat):'')+(i.status?' · Kartei-Status '+esc(i.status)+', Version '+i.version:'')+'</p>';
+ h+='<p>Gruppe '+esc(e.gruppe)+' · Quelle '+({kartei:'Kartei',gebaeude:'geplantes Gebäude',ware:'geplante Ware',ort:'Welt außerhalb des Arena-Geländes (daten/ortsbilder.json)'})[e.quelle]+(e.wartet?' · <b>wartet auf '+esc(e.wartet)+'</b> (Werkzeug fehlt noch)':'')+(i.kat?' · Art '+esc(i.kat):'')+(i.status?' · Kartei-Status '+esc(i.status)+', Version '+i.version:'')+'</p>';
  if(i.w)h+='<p>Maße '+i.w+' × '+i.h+' Bildpunkte · Anker '+i.anker.join(', ')+(i.flaeche?' · Fläche '+i.flaeche.join(' × ')+' Felder':'')+' · '+esc(i.kollision)+'</p>';
  if(i.groesse)h+='<p>Größe '+esc(i.groesse)+' · Grundform '+esc(i.form)+(i.stufe?' · Stufe '+i.stufe:'')+(i.plan?' · '+esc(i.plan):'')+'</p>';
  if(i.genutzt)h+='<p class="leise">In '+i.genutzt+' geplanten Gebäuden verbaut.</p>';
@@ -59,7 +59,7 @@ function karte(id,ausNaechstem){var e=finde(id),i=e.info||{},m=i.messung,ap=AL.v
  if(e.grundbild)h+='<p>Grundbild: <a href="#" data-geh="'+esc(e.grundbild)+'">'+esc(e.grundbild)+'</a></p>';
  if(e.varianten)h+='<p>Varianten: '+e.varianten.map(function(v){return '<a href="#" data-geh="'+esc(v)+'">'+esc(v)+'</a>'}).join(', ')+'</p>';
  if(e.teile)h+='<p>Teile: '+e.teile.map(function(t){var k=t.replace('bk-*-','bk-lehm-');return '<a href="#" data-geh="'+esc(k)+'">'+esc(t)+'</a>'}).join(', ')+'</p>';
- h+='<div class="alFilter"><label>Stand<select id="alS">'+AL.STAND.map(function(s){return '<option value="'+s+'"'+(s===e.stand?' selected':'')+(s==='fehlt'||s==='teile'?' disabled':'')+'>'+AL.STAND_DE[s]+'</option>'}).join('')+'</select></label>'+
+ h+='<div class="alFilter"><label>Stand<select id="alS">'+AL.STAND.map(function(s){return '<option value="'+s+'"'+(s===e.stand?' selected':'')+(s==='fehlt'||s==='teile'||s==='keinbild'?' disabled':'')+'>'+AL.STAND_DE[s]+'</option>'}).join('')+'</select></label>'+
   '<label>Etappe<select id="alE">'+AL.ETAPPEN.map(function(s){return '<option'+(s===AL.etappe(e)?' selected':'')+'>'+s+'</option>'}).join('')+'</select></label>'+
   '<label>Wichtigkeit<select id="alW"><option value="">geschätzt: '+e.wichtigAuto+'</option>'+[1,2,3,4,5].map(function(n){return '<option value="'+n+'"'+(n===e.wichtigHand?' selected':'')+'>'+n+' (von Hand)</option>'}).join('')+'</select></label></div>';
  if(e.ansichten)h+='<p>Ansichten:</p><div class="alAns">'+Object.keys(e.ansichten).map(function(k){return '<label>'+esc(AL.ansichtName(k))+' <select data-ans="'+k+'">'+AL.ANSICHT_STAND.map(function(s){return '<option value="'+s+'"'+(s===e.ansichten[k]?' selected':'')+'>'+({auto:'automatisch',skizze:'Skizze',ueberarbeitet:'überarbeitet',fertig:'fertig'})[s]+'</option>'}).join('')+'</select></label>'}).join('')+'</div>';
