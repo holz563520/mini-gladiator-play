@@ -2,7 +2,7 @@
 // eigene Startlast messen und anzeigen (Dateien, Bytes, Zeit, Fremddateien aus 1.0/2.0). Bedienung deutsch. Lädt nichts außerhalb von at3/.
 (function(){
 'use strict';
-var V='a2a6e1a1', T0=performance.now();
+var V='4e438b7b', T0=performance.now();
 // Reihenfolge und Inhalt nach AT3_PLAN 9.2. „kommt“ = Schritt, mit dem der Inhalt kommt.
 var MENUES=[
  {id:'grafik',  name:'Grafik',          kurz:'Boden, Natur, Gebäude, Figuren …', kommt:'M2, M3, M9'},

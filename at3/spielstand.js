@@ -11,9 +11,12 @@
 // Wiederverwendet aus welt-spielstand.js (AT2): drei Plätze, Startbild mit Nachfrage, Leerlauf-Speichern, Speichern beim Verlassen, Versionsschutz.
 (function(){
 'use strict';
-var DB='arena-theory-3', ABL='plaetze', SCHEMA=2;   // Schema 2 seit W1c (runde Welt): Stände mit Schema 1 stammen aus der flachen Welt, sie werden nicht geladen (nur löschen)
+var DB='arena-theory-3', ABL='plaetze', SCHEMA=3;   // Schema 2 seit W1c (runde Welt): Stände mit Schema 1 stammen aus der flachen Welt, sie werden nicht geladen (nur löschen)
+// N2e (Thomas 20.11.2026: nur neue Welten): Schema 3 = Klimazonen-Welt (N2a–N2d, Weltfassung 2 in welt.fassung). Stände mit Schema 2 liegen auf der Welt von vor N2
+// (andere Biome, Orte, Straßen): nicht laden, nur löschen, eigene Meldung. WELT steigt, wenn derselbe Seed wieder eine andere Welt ergibt.
+var WELT=2;
 var PLAETZE=[1,2,3], ABSTAND=10000, ROEM=['I','II','III'], DICHTEN=['thin','medium','dense'];
-var V='a2a6e1a1', T=function(k,w){return k}, esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var V='4e438b7b', T=function(k,w){return k}, esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
 
 // ── Prüfsumme (FNV-1a über den gespeicherten Text) ──
 function pruefsumme(s){var h=0x811c9dc5;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)}return('0000000'+(h>>>0).toString(16)).slice(-8)}
@@ -41,7 +44,7 @@ function schreiben(n,kopfNeu,text){var fehler=null;
   s.put(text,'d'+n+gen);s.put(kopfNeu,'k'+n)}}).catch(function(e){throw fehler?new Error(fehler):e})}
 
 // Laden: Kopf prüfen, aktuelle Fassung prüfen, sonst die vorige. Ergebnis {daten, kopf, wieder} oder {fehler}
-function laden(n){return lies(['k'+n,'d'+n+'a','d'+n+'b']).then(function(o){var k=o['k'+n];if(!k)return{fehler:'empty'};if(k.schema>SCHEMA)return{fehler:'newer'};if(k.schema<SCHEMA)return{fehler:'older'};
+function laden(n){return lies(['k'+n,'d'+n+'a','d'+n+'b']).then(function(o){var k=o['k'+n];if(!k)return{fehler:'empty'};if(k.schema>SCHEMA)return{fehler:'newer'};if(!(k.schema>=SCHEMA))return{fehler:'older',schema:k.schema};
  function probe(f){if(!f)return null;var s=o['d'+n+f.gen];if(typeof s!=='string'||s.length!==f.bytes||pruefsumme(s)!==f.pruef)return null;
   try{var d=JSON.parse(s);return d&&d.schema===SCHEMA&&d.kern&&d.welt?d:null}catch(e){return null}}
  var d=probe(k.akt);if(d)return{daten:d,kopf:k,wieder:false};d=probe(k.alt);if(d)return{daten:d,kopf:k,wieder:true};return{fehler:'broken'}})}
@@ -55,6 +58,7 @@ function sperren(n){if(meine[n])return Promise.resolve(true);if(LOCKS)return new
  return belegte().then(function(b){if(b[n])return false;meine[n]=1;return true})}
 
 // ── Startbild ──
+function altText(schema){return schema===2?'start.altKlima':'start.alt'}   // N2e: Schema 2 = runde Welt ohne Klimazonen, darunter flache Welt
 function zeitText(sek){var h=Math.floor(sek/3600),m=Math.floor(sek/60)%60;return h+'h '+(m<10?'0':'')+m+'m'}
 function datum(ms){try{return new Date(ms).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
 function start(opt){T=opt.t||T;
@@ -66,7 +70,7 @@ function start(opt){T=opt.t||T;
    if(ohne)h+='<p class="schlecht">'+esc(T('start.keinSpeicher'))+'</p><button class="knopf" data-ohne>'+esc(T('start.ohne'))+'</button>';
    else if(!bereit)h+='<p class="leise">'+esc(T('start.liest'))+'</p>';
    else PLAETZE.forEach(function(n,i){var x=k[i],info,kn='';
-    if(x&&x.schema!==SCHEMA){info='<b>'+esc(x.name||T('start.ludus'))+'</b><small class="schlecht">'+esc(T(x.schema>SCHEMA?'start.neuer':'start.alt'))+'</small>';kn='<button class="knopf klein weg" data-loesch="'+n+'">'+esc(T('start.loeschen'))+'</button>'}
+    if(x&&x.schema!==SCHEMA){info='<b>'+esc(x.name||T('start.ludus'))+'</b><small class="schlecht">'+esc(T(x.schema>SCHEMA?'start.neuer':altText(x.schema)))+'</small>';kn='<button class="knopf klein weg" data-loesch="'+n+'">'+esc(T('start.loeschen'))+'</button>'}
     else if(x&&frei[n]){info='<b>'+esc(x.name||T('start.ludus'))+'</b><small class="schlecht">'+esc(T('start.andererTab'))+'</small>'}
     else if(x){info='<b>'+esc(x.name||T('start.ludus'))+'</b><small>'+esc(T('start.info',{t:zeitText(Math.floor((x.tick||0)/20)),d:T('dichte.'+DICHTEN[x.dichte]),s:x.seed,z:datum(x.zeit)}))+'</small>';
      kn='<button class="knopf klein" data-weiter="'+n+'">'+esc(T('start.weiter'))+'</button><button class="knopf klein weg" data-neu="'+n+'">'+esc(T('start.neu'))+'</button><button class="knopf klein weg" data-loesch="'+n+'">'+esc(T('start.loeschen'))+'</button>'}
@@ -100,7 +104,7 @@ function start(opt){T=opt.t||T;
     // Ton darf das Handy nur direkt im Antippen starten: Wunsch weiterreichen, spiel.js schaltet die Stimme im selben Antippen ein
     if(opt.imAntippen)opt.imAntippen(k[q-1]);
     sperren(q).then(function(ok){if(!ok){frei[q]=1;meldung[q]='';zeige();return}return laden(q).then(function(r){
-     if(r.fehler){meldung[q]=T(r.fehler==='newer'?'start.neuer':r.fehler==='older'?'start.alt':'start.kaputt');zeige();return}
+     if(r.fehler){meldung[q]=T(r.fehler==='newer'?'start.neuer':r.fehler==='older'?altText(r.schema):'start.kaputt');zeige();return}
      los(q,{platz:q,seed:r.daten.welt.seed,dichte:r.daten.welt.dichte,name:r.kopf.name,daten:r.daten,wieder:r.wieder})})}).catch(function(x){meldung[q]=T('start.fehler',{e:x.message});zeige()});return}});
   el.addEventListener('keydown',function(e){if(e.key==='Enter'&&neu&&e.target.tagName==='INPUT'){var b=el.querySelector('[data-los]');if(b)b.click()}});
   zeige();
@@ -114,8 +118,8 @@ function anschliessen(a,kern,extra,anzeigen){
  var gesichertTick=-1, extraAlt='', versuch=Date.now();
  function speichern(){if(S.laeuft)return S.laeuft.then(speichern);versuch=Date.now();
   S.laeuft=kern.stand().then(function(r){if(!r)throw new Error('world core not running');
-   var t0=performance.now(),ex=extra(),d={schema:SCHEMA,build:V,platz:a.platz,zeit:Date.now(),welt:{seed:a.seed>>>0,dichte:a.dichte},kern:r.stand,spiel:ex},
-    text=JSON.stringify(d),kopf={schema:SCHEMA,build:V,platz:a.platz,name:a.name,seed:a.seed>>>0,dichte:a.dichte,tick:r.tick,zeit:d.zeit,stimme:!!ex.stimme};
+   var t0=performance.now(),ex=extra(),d={schema:SCHEMA,build:V,platz:a.platz,zeit:Date.now(),welt:{seed:a.seed>>>0,dichte:a.dichte,fassung:WELT},kern:r.stand,spiel:ex},
+    text=JSON.stringify(d),kopf={schema:SCHEMA,build:V,platz:a.platz,name:a.name,seed:a.seed>>>0,dichte:a.dichte,fassung:WELT,tick:r.tick,zeit:d.zeit,stimme:!!ex.stimme};
    S.ms=performance.now()-t0;S.kernMs=r.ms;S.bytes=text.length;S.ganz=r.stand.ganz;
    return schreiben(a.platz,kopf,text).then(function(){gesichertTick=r.tick;extraAlt=JSON.stringify(ex);S.mal++;S.zuletzt=Date.now();S.tick=r.tick;S.fehler='';
     anzeigen(T('speicher.ok',{b:(S.bytes/1024).toFixed(1)}),false)})})
@@ -129,5 +133,5 @@ function anschliessen(a,kern,extra,anzeigen){
  S.beenden=function(){return(noetig()||!S.mal?speichern():Promise.resolve()).then(function(){if(S.fehler)return false;location.href=location.pathname;return true})};
  return S}
 
-window.AT3SPIELSTAND={start:start,anschliessen:anschliessen,laden:laden,schreiben:schreiben,loeschen:loeschen,koepfe:koepfe,belegte:belegte,seedAus:seedAus,pruefsumme:pruefsumme,SCHEMA:SCHEMA,DB:DB};
+window.AT3SPIELSTAND={start:start,anschliessen:anschliessen,laden:laden,schreiben:schreiben,loeschen:loeschen,koepfe:koepfe,belegte:belegte,seedAus:seedAus,pruefsumme:pruefsumme,SCHEMA:SCHEMA,WELT:WELT,DB:DB};
 })();

@@ -125,6 +125,7 @@
   "start.nein": "Cancel",
   "start.neuer": "Made by a newer version of the game. It is not loaded and will not be overwritten. Reload the page to get the new version.",
 "start.alt": "From the days when the world was flat. It has since been bent into a globe and this save no longer fits. Delete it and start a new world.",
+"start.altKlima": "From before the climate arrived. Deserts, jungles and towns have all moved since, and your ludus would now stand somewhere else entirely, probably underwater. Delete it and start a new world.",
   "start.kaputt": "This save is damaged and cannot be read. It was not changed. You can delete it.",
   "start.andererTab": "Open in another tab. One world, one lanista: close the other tab first.",
   "start.fehler": "The archive refused: {e}",
