@@ -14,7 +14,7 @@
 // Wiederverwendet: kernstart.js (G2), Messart, Ampel und Kopierknopf aus der Kernprobe und der Riesenwelt-Probe, Palette aus at3-64.js (M2).
 (function(){
 'use strict';
-var SEED=563520, BIS=300, SOLL='03138b61';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
+var SEED=563520, BIS=300, SOLL='46871f88';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
 function B(cx,cy){return cx*8192+cy}
 var SKRIPT=[{tick:0,art:'weltseed',wert:563520},{tick:0,art:'blick',wert:B(2400,2400)},{tick:70,art:'blick',wert:B(2403,2398)},{tick:100,art:'blick',wert:B(0,0)},{tick:115,art:'blick',wert:B(9599,2400)},
  {tick:130,art:'last',wert:300},{tick:150,art:'blick',wert:B(4799,4799)},{tick:170,art:'weltseed',wert:77},{tick:171,art:'weltseed',wert:4242},{tick:172,art:'weltdichte',wert:2},{tick:230,art:'blick',wert:B(9598,256)},
@@ -25,7 +25,7 @@ function umZ(z){z%=GW;return z<0?z+GW:z}
 function umS(c){c%=SX;return c<0?c+SX:c}
 function abS(a,b){var d=Math.abs(a-b);return d>SX-d?SX-d:d}
 var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Fels','Schnee','Fluss','See','Eis (Polkappe, gesperrt)'];
-var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6];                               // Farbnummern der AT3-Palette (Mitte); dunkler = −1, heller = +1 in derselben Reihe
+var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6,18,61,45,14,16];                               // Farbnummern der AT3-Palette (Mitte); dunkler = −1, heller = +1 in derselben Reihe
 var RAMPE=[14,15,16,17,18,60,61,62,24,23,22,3,4,5,6], TIEFE=[38,39,40,41];    // Höhenfarben Land (tief → hoch) und Wasser (tief → flach)
 var ZOOM=['Erde','Region','Kartenstücke','Stück'], REGION=30, ZF=1024;
 var ORTN=['','Dorf','Stadt','Hafendorf','Hafenstadt'], WEGN=['','Pfad','Straße','Brücke','Furt','Steg','Ortsplatz','Fähre'], DICHTEN=['dünn','mittel','dicht'];
@@ -56,11 +56,11 @@ function farbeVon(bio,h,dh){                                                   /
  if(bio===12)return pal[BFARBE[12]];
  if(farbe===1){if(bio<2||bio===11||h<0){var t=h<-1200?0:h<-500?1:h<-120?2:3;return pal[TIEFE[t]]}if(bio===10)return pal[42];
   var r=h<60?0:h<160?1:h<320?2:h<560?3:h<900?4:h<1400?5:h<2000?6:h<2800?7:h<3800?8:h<4800?9:h<5800?10:h<6800?11:h<7800?12:h<8800?13:14;return pal[RAMPE[r]]}
- var c=BFARBE[bio];if(bio>1&&bio<10)c+=dh>0?1:dh<0?-1:0;return pal[c]}
+ var c=BFARBE[bio];if(bio>1&&bio<10||bio>=13)c+=dh>0?1:dh<0?-1:0;return pal[c]}
 function erdBild(){if(!erd)return;var g=erdCv.getContext('2d'),im=g.createImageData(GW,GH),d=new Uint32Array(im.data.buffer),Eh=erd.E,bio=erd.bio,flu=erd.flu;
  if(farbe===3){var Z=zBereit?zZ:erd.zon;for(var i=0;i<N;i++){var z=Z[i],c=ZFARBE[z],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];if(z>1&&dh>120)c++;else if(z>1&&dh<-120)c--;d[i]=pal[c]}   // N2a: Klimazonen, Hänge schattiert
   g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
- for(var i=0;i<N;i++){var b=flu[i]>1&&bio[i]<12?10:bio[i],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];d[i]=farbeVon(b,Eh[i],dh>120?1:dh<-120?-1:0)}
+ for(var i=0;i<N;i++){var b=flu[i]>1&&bio[i]!==12?10:bio[i],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];d[i]=farbeVon(b,Eh[i],dh>120?1:dh<-120?-1:0)}
  g.putImageData(im,0,0);netzBild();neuZeichnen=true}
 // W1b: Netz der Erde als eigenes durchsichtiges Bild (ein Punkt je Zelle), einmal je Welt; liegt in der Erdansicht über dem Erdbild
 function netzBild(){if(!erd||!erd.ort)return;var g=netzCv.getContext('2d'),im=g.createImageData(GW,GH),d=new Uint32Array(im.data.buffer),ort=erd.ort,weg=erd.weg,bio=erd.bio;
@@ -162,9 +162,9 @@ function tipp(e){if(!erd)return;var r=cv.getBoundingClientRect(),fx=Math.max(0,M
 function anteileZeigen(zx,zy){var info=q('#waInfo'),seed=erd?erd.seed:0,i=zy*GE+zx,vorher=info.textContent;if(!erd)return;
  helfer().then(function(){
   if(info.textContent!==vorher)return;if(erd.ort&&erd.ort[i]&15)vorher=info.textContent='Zelle '+zx+' / '+zy+': '+zelleText(i);                       // jetzt mit Namen
-  if(erd.bio[i]<2||erd.bio[i]===11)return;var A={E:erd.E,bio:erd.bio,tmp:erd.tmp,feu:erd.feu,zon:erd.zon},Z=WGh.anteile(seed,A,zx,zy),n=0,L=[];
-  for(var k=0;k<12;k++)n+=Z[k];
-  for(k=3;k<12;k++)if(Z[k]&&k!==10)L.push([k,Z[k]]);L.sort(function(a,b){return b[1]-a[1]});
+  if(erd.bio[i]<2||erd.bio[i]===11||erd.bio[i]===12)return;var A={E:erd.E,bio:erd.bio,tmp:erd.tmp,feu:erd.feu,zon:erd.zon},Z=WGh.anteile(seed,A,zx,zy),n=0,L=[];
+  for(var k=0;k<Z.length;k++)n+=Z[k];
+  for(k=3;k<Z.length;k++)if(Z[k]&&k!==10&&k!==12)L.push([k,Z[k]]);L.sort(function(a,b){return b[1]-a[1]});
   info.textContent=vorher+' · Anteile: '+L.map(function(e){return BIOM[e[0]]+' '+Math.round(e[1]*100/n)+' %'}).join(', ')},function(){})}
 function schritt(dx,dy){var s=zoom===0?ZP*20:zoom===1?ZP*5:zoom===2?3:1;blick(kx+dx*s,ky+dy*s)}
 function setZoom(z){zoom=z;[].forEach.call(el.querySelectorAll('[data-zoom]'),function(b){b.classList.toggle('an',+b.dataset.zoom===z)});neuZeichnen=true}

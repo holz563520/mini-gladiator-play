@@ -10,11 +10,11 @@
 (function(root){
 'use strict';
 var GW=600, GH=300, N=GW*GH, ZF=1024, WF=GW*ZF, HF=GH*ZF, SX=9600, ST=64, FELDER=ST*ST, REGION=30, RP=240, RS=ZF*REGION/RP;      // RS = Felder je Regionspunkt (128)
-var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6];                                             // 12 Eis: hellste Stufe der Schneereihe
+var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6,18,61,45,14,16];                                             // 12 Eis: hellste Stufe der Schneereihe
 function um(z){z%=GW;return z<0?z+GW:z}                                               // wie Weltansicht: Biom → Farbnummer (Mitte der Reihe)
 var OFARBE=[0,53,37,48,32], F_PFAD=12, F_STRASSE=47, F_SEE=43, F_FAEHRE=48;
 
-function land(b){return b>1&&b<10}
+function land(b){return b>1&&b<10||b>=13}                                   // N2c: 13–17 neue Land-Biome
 // Sichere Landzelle: hoch genug oder ganz von Land umgeben. Flache Küstenzellen sind im echten Kartenstück oft Meer (Messung G4c: bis gut die Hälfte).
 function sicher(A,i){if(!land(A.bio[i]))return false;if(A.E[i]>=128)return true;var x=i%GW,y=(i/GW)|0;
  return y>0&&y<GH-1&&land(A.bio[y*GW+um(x-1)])&&land(A.bio[y*GW+um(x+1)])&&land(A.bio[i-GW])&&land(A.bio[i+GW])}
@@ -22,7 +22,7 @@ function sicher(A,i){if(!land(A.bio[i]))return false;if(A.E[i]>=128)return true;
 // U (16.11.2026, freiwillig): Übersichtsbiome je Zelle (fernbild.uebersicht) mit den Übersichtsfarben UF statt des Großklima-Bioms (Globus);
 // dann nur große Flüsse und keine Pfade (Straßen, Fähren, Seewege und Orte bleiben), damit die Biome von oben zu sehen sind.
 function erdBild(A,F,U,UF){var d=new Uint32Array(N),pal=F.pal,FA=U?UF:BFARBE;
- for(var i=0;i<N;i++){var b0=U?U[i]:A.bio[i],b=A.flu[i]>(U?3:1)&&A.bio[i]<12?10:b0,j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=A.E[i]-A.E[j],c=FA[b];if(land(b))c+=dh>120?(U&&b===9?0:1):dh<-120?-1:0;d[i]=pal[c];
+ for(var i=0;i<N;i++){var b0=U?U[i]:A.bio[i],b=A.flu[i]>(U?3:1)&&A.bio[i]!==12?10:b0,j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=A.E[i]-A.E[j],c=FA[b];if(land(b))c+=dh>120?(U&&b===9?0:1):dh<-120?-1:0;d[i]=pal[c];
   var o=A.ort?A.ort[i]&15:0,w=A.weg?A.weg[i]:0;
   if(o)d[i]=pal[OFARBE[o]];else if(w&15&&!(U&&(w>>4&3)<2&&!(w&64)))d[i]=pal[w&64?F_FAEHRE:(w>>4&3)>1?F_STRASSE:F_PFAD];else if(A.ort&&A.ort[i]>>4&&A.bio[i]<2&&((i%GW+((i/GW)|0))&1))d[i]=pal[F_SEE]}
  return d}
@@ -33,12 +33,12 @@ function eckeY(z){return Math.max(0,Math.min(GH-REGION,z-(REGION>>1)))}
 function punkt(d,x,y,c,r){x=Math.round(x);y=Math.round(y);for(var v=0;v<r;v++)for(var u=0;u<r;u++){var X=x+u,Y=y+v;if(X>=0&&Y>=0&&X<RP&&Y<RP)d[Y*RP+X]=c}}
 function linie(d,x0,y0,x1,y1,c,r,strich,z){var n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)*2));
  for(var k=0;k<=n;k++){z.n++;if(strich&&(z.n%8)>4)continue;punkt(d,x0+(x1-x0)*k/n-(r>>1),y0+(y1-y0)*k/n-(r>>1),c,r)}}
-function regionBild(G,seed,A,rx,ry,F){seed=seed>>>0;var d=new Uint32Array(RP*RP),M=new Uint8Array(RP*RP),Z=new Int32Array(12),pal=F.pal,P=new Int32Array(64),V=new Int32Array(8),vz=-1,x,y,i,k;
+function regionBild(G,seed,A,rx,ry,F){seed=seed>>>0;var d=new Uint32Array(RP*RP),M=new Uint8Array(RP*RP),Z=new Int32Array(18),pal=F.pal,P=new Int32Array(64),V=new Int32Array(8),vz=-1,x,y,i,k;
  for(y=0;y<RP;y++)for(x=0;x<RP;x++){var X=rx*ZF+x*RS+(RS>>1),Y=ry*ZF+y*RS+(RS>>1),z=(Y>>10)*GW+um(X>>10),b=A.bio[z];
   if(land(b)){if(G.N2B&&A.zon)G.zonenV(A,seed>>>0,X,Y,V);else if(z!==vz){G.neigung(A.tmp[z],A.feu[z],A.E[z],V);vz=z}G.punkt(seed,X,Y,P,0);b=G.klasse(P,0,V,0,0,0)}
   M[y*RP+x]=b}
  // Mehrheit je 3 × 3 (zweimal): ein Punkt deckt 128 Felder, die Flecken sind oft kleiner; ohne Glätten wirkt die Region wie Rauschen. Wasser der Erdzelle bleibt.
- for(var dg=0;dg<2;dg++){var Q=M.slice();for(y=1;y<RP-1;y++)for(x=1;x<RP-1;x++){i=y*RP+x;if(!land(Q[i]))continue;for(k=0;k<12;k++)Z[k]=0;var mb=Q[i],mz=0;
+ for(var dg=0;dg<2;dg++){var Q=M.slice();for(y=1;y<RP-1;y++)for(x=1;x<RP-1;x++){i=y*RP+x;if(!land(Q[i]))continue;for(k=0;k<18;k++)Z[k]=0;var mb=Q[i],mz=0;
   for(var v=-1;v<=1;v++)for(var u=-1;u<=1;u++){var q2=Q[i+v*RP+u];if(q2===10||q2<2)continue;if(++Z[q2]>mz){mz=Z[q2];mb=q2}}if(Z[Q[i]]<mz)M[i]=mb}}
  for(i=0;i<RP*RP;i++)d[i]=pal[BFARBE[M[i]]];
  var zi=function(x,y){return y*GW+um(x)},vx=function(x){return(x-um(x))*ZF};                              // Zelle über die Naht; Verschiebung ihrer Weltfelder in die Lage der Region

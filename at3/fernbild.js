@@ -12,11 +12,11 @@
 (function(root){
 'use strict';
 var GW=600, GH=300, ZF=1024, WF=GW*ZF, HF=GH*ZF, S=128, IW=512, IH=256, ZONE=58, WEGE_BIS=8, MAX=12;
-var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6], OFARBE=[0,53,37,48,32], F_PFAD=12, F_STRASSE=47, F_SEE=43, F_FAEHRE=48;
+var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6,18,61,45,14,16], OFARBE=[0,53,37,48,32], F_PFAD=12, F_STRASSE=47, F_SEE=43, F_FAEHRE=48;
 // Biom-Übersicht (16.11.2026, Wunsch Thomas): auf dem Globus und in den fernsten Stufen (ab ⅟1024) zeigt jede Erdzelle das Biom, das in ihrer
 // Gegend (17 × 17 Erdzellen) im Verhältnis zum Weltdurchschnitt am stärksten vertreten ist, in klaren Übersichtsfarben: Wüste gelb, Steppe hellgrün,
 // Wald grün, Sumpf oliv, Tundra hellgrau, Fels grau, Schnee und Eis weiß. Die Karte selbst bleibt unverändert (nur Farben der Fernansicht).
-var UFARBE=[39,40,46,62,19,16,45,5,3,6,42,41,6], U_R=8, U_AB=10;   // U_R: Halbmesser der Gegend in Erdzellen; U_AB: ab dieser Stufe (⅟1024) Übersicht
+var UFARBE=[39,40,46,62,19,16,45,5,3,6,42,41,6,18,60,24,14,9], U_R=8, U_AB=10;   // U_R: Halbmesser der Gegend in Erdzellen; U_AB: ab dieser Stufe (⅟1024) Übersicht
 var T1=3, T2=8;            // Hangschatten: Steigung der weichen Höhe in 1/16 Feld je Feld (Vorschlagswerte)
 function um(z){z%=GW;return z<0?z+GW:z}
 function umF(x){x%=WF;return x<0?x+WF:x}
@@ -37,21 +37,23 @@ function weich(A,art,fx,fy){var zx=fx>>10,zy=fy>>10,u=fx&1023,v=fy&1023,s=0,j,i;
 // ── Fernbild ──
 // Raster der Stichproben mit Rand M (für Mehrheit und Hangschatten): Höhe, Seeflag, Feuchte, Wärme, Biom
 var M=2, GS=S+2*M, HS=new Int32Array(GS*GS), KS=new Uint8Array(GS*GS), FA=new Int32Array(GS*GS), TT=new Int32Array(GS*GS), BI=new Uint8Array(GS*GS), BQ=new Uint8Array(GS*GS),
-    ZB=new Int32Array(13), COL=new Uint8Array(S*S), P=new Int32Array(8), V=new Int32Array(8);
-function binnen(b){return b>=3&&b<=9}
+    ZB=new Int32Array(18), COL=new Uint8Array(S*S), P=new Int32Array(8), V=new Int32Array(8);
+function binnen(b){return b>=3&&b<=9||b>=13}                                   // N2c: 13–17 neue Land-Biome
+// Übersicht zählt je Land-Biom (Wüste … Schnee, dazu N2c Grasland … Mangroven): Biom → Platz 0..11 und zurück
+var U_LAND=[3,4,5,6,7,8,9,13,14,15,16,17], U_PL=new Int8Array(18).fill(-1), UK=U_LAND.length;U_LAND.forEach(function(b,k){U_PL[b]=k});
 // Übersichtsbiom je Erdzelle (600 × 300). Zwei Stichproben je Landzelle mit der Biomregel des Kartenstücks, Summen über die Gegend als Kastenfilter
 // in x (über die Naht) und y, geteilt durch den Weltanteil. Kosten fest: rund 110.000 Stichproben, einmal je Welt im Bildkern (Regel 14).
-function uebersicht(G,A,seed){seed=seed>>>0;var N=GW*GH,C=new Uint16Array(N*7),T=new Uint16Array(N*7),tot=new Float64Array(7),U=new Uint8Array(N),P=new Int32Array(8),V=new Int32Array(8),i,k,x,y,s;
+function uebersicht(G,A,seed){seed=seed>>>0;var N=GW*GH,C=new Uint16Array(N*UK),T=new Uint16Array(N*UK),tot=new Float64Array(UK),U=new Uint8Array(N),P=new Int32Array(8),V=new Int32Array(8),i,k,x,y,s;
  var zg=G.N2B&&A.zon,UR=zg?2:U_R;   // N2b: Zuschlag der Klimazonen wie im Kartenstück, einfache Mehrheit über 5 × 5 Zellen (die Zonen machen die Gegend schon eindeutig)
- for(i=0;i<N;i++){var b=A.bio[i];if(b<3||b>9)continue;x=i%GW;y=(i/GW)|0;if(!zg)G.neigung(A.tmp[i],A.feu[i],A.E[i],V);
-  for(s=0;s<2;s++){var fx=x*ZF+256+s*512,fy=y*ZF+256+s*512;if(zg)G.zonenV(A,seed,fx,fy,V);G.punkt(seed,fx,fy,P,0);k=G.klasse(P,0,V,0,0,0);if(k>=3&&k<=9){C[i*7+k-3]++;tot[k-3]++}}}
- var sum=0;for(k=0;k<7;k++)sum+=tot[k];var w=new Float64Array(7);for(k=0;k<7;k++)w[k]=zg?1:sum/7/Math.max(1,tot[k]);
- var Z=new Int32Array(7);
- for(y=0;y<GH;y++){var o=y*GW;for(k=0;k<7;k++)Z[k]=0;for(x=-UR;x<=UR;x++){var j=o+(x<0?x+GW:x);for(k=0;k<7;k++)Z[k]+=C[j*7+k]}   // in x über die Naht
-  for(x=0;x<GW;x++){for(k=0;k<7;k++)T[(o+x)*7+k]=Z[k];var aus=o+(x-UR<0?x-UR+GW:x-UR),rein=o+(x+UR+1>=GW?x+UR+1-GW:x+UR+1);for(k=0;k<7;k++)Z[k]+=C[rein*7+k]-C[aus*7+k]}}
- for(x=0;x<GW;x++){for(k=0;k<7;k++)Z[k]=0;for(y=0;y<=UR&&y<GH;y++)for(k=0;k<7;k++)Z[k]+=T[(y*GW+x)*7+k];                                  // in y, am Pol abgeschnitten
-  for(y=0;y<GH;y++){i=y*GW+x;var b2=A.bio[i];if(b2<3||b2>9)U[i]=b2;else{var m=0;for(k=1;k<7;k++)if(Z[k]*w[k]>Z[m]*w[m])m=k;U[i]=Z[m]?m+3:b2}
-   if(y+UR+1<GH)for(k=0;k<7;k++)Z[k]+=T[((y+UR+1)*GW+x)*7+k];if(y-UR>=0)for(k=0;k<7;k++)Z[k]-=T[((y-UR)*GW+x)*7+k]}}
+ for(i=0;i<N;i++){var b=A.bio[i];if(!binnen(b))continue;x=i%GW;y=(i/GW)|0;if(!zg)G.neigung(A.tmp[i],A.feu[i],A.E[i],V);
+  for(s=0;s<2;s++){var fx=x*ZF+256+s*512,fy=y*ZF+256+s*512;if(zg)G.zonenV(A,seed,fx,fy,V);G.punkt(seed,fx,fy,P,0);k=U_PL[G.klasse(P,0,V,0,0,0)];if(k>=0){C[i*UK+k]++;tot[k]++}}}
+ var sum=0;for(k=0;k<UK;k++)sum+=tot[k];var w=new Float64Array(UK);for(k=0;k<UK;k++)w[k]=zg?1:tot[k]?sum/7/tot[k]:0;   // ohne Zonen: nur die 7 alten Biome kommen vor
+ var Z=new Int32Array(UK);
+ for(y=0;y<GH;y++){var o=y*GW;for(k=0;k<UK;k++)Z[k]=0;for(x=-UR;x<=UR;x++){var j=o+(x<0?x+GW:x);for(k=0;k<UK;k++)Z[k]+=C[j*UK+k]}   // in x über die Naht
+  for(x=0;x<GW;x++){for(k=0;k<UK;k++)T[(o+x)*UK+k]=Z[k];var aus=o+(x-UR<0?x-UR+GW:x-UR),rein=o+(x+UR+1>=GW?x+UR+1-GW:x+UR+1);for(k=0;k<UK;k++)Z[k]+=C[rein*UK+k]-C[aus*UK+k]}}
+ for(x=0;x<GW;x++){for(k=0;k<UK;k++)Z[k]=0;for(y=0;y<=UR&&y<GH;y++)for(k=0;k<UK;k++)Z[k]+=T[(y*GW+x)*UK+k];                                  // in y, am Pol abgeschnitten
+  for(y=0;y<GH;y++){i=y*GW+x;var b2=A.bio[i];if(!binnen(b2))U[i]=b2;else{var m=0;for(k=1;k<UK;k++)if(Z[k]*w[k]>Z[m]*w[m])m=k;U[i]=Z[m]?U_LAND[m]:b2}
+   if(y+UR+1<GH)for(k=0;k<UK;k++)Z[k]+=T[((y+UR+1)*GW+x)*UK+k];if(y-UR>=0)for(k=0;k<UK;k++)Z[k]-=T[((y-UR)*GW+x)*UK+k]}}
  return U}
 // G = weltgen.js, A = Erdraster (ansicht), F = {pal, du, he, dunkel}. x0 darf beliebig sein (wird umgerechnet), y0 im Raster der Stufe. Gibt {w,h,ox,oy,px}.
 function kachel(G,A,seed,x0,y0,lod,F,U){seed=seed>>>0;var ueb=U&&lod>=U_AB;x0=umF(x0);var n=8<<lod,st=n/S,sI=G.eisSeed(seed),i,j,k,q,fx,fy;
@@ -66,11 +68,11 @@ function kachel(G,A,seed,x0,y0,lod,F,U){seed=seed>>>0;var ueb=U&&lod>=U_AB;x0=um
    BI[q]=b}}
  // Weit draußen deckt eine Stichprobe viele Felder, die Flecken sind kleiner: Mehrheit je 3 × 3 (⅟256, ⅟512 einmal, ab ⅟1024 zweimal), wie die Region der Startplatz-Wahl
  var pass=ueb?0:lod>=10?2:lod>=8?1:0;
- for(var d=0;d<pass;d++){BQ.set(BI);for(j=1;j<GS-1;j++)for(i=1;i<GS-1;i++){q=j*GS+i;if(!binnen(BQ[q]))continue;for(k=0;k<13;k++)ZB[k]=0;var mb=BQ[q],mz=0;
+ for(var d=0;d<pass;d++){BQ.set(BI);for(j=1;j<GS-1;j++)for(i=1;i<GS-1;i++){q=j*GS+i;if(!binnen(BQ[q]))continue;for(k=0;k<18;k++)ZB[k]=0;var mb=BQ[q],mz=0;
   for(var v=-1;v<=1;v++)for(var u=-1;u<=1;u++){var b2=BQ[q+v*GS+u];if(!binnen(b2))continue;if(++ZB[b2]>mz){mz=ZB[b2];mb=b2}}if(ZB[BQ[q]]<mz)BI[q]=mb}}
  var pal=F.pal,du=F.du,he=F.he;
  for(j=0;j<S;j++)for(i=0;i<S;i++){q=(j+M)*GS+i+M;var b=BI[q],c=ueb?UFARBE[b]:BFARBE[b];
-  if(b>=2&&b<=9){var gx=(HS[q+1]-HS[q-1])/(2*st),gy=(HS[q+GS]-HS[q-GS])/(2*st),sh=gx>T2?2:gx>T1?1:gx<-T2?-2:gx<-T1?-1:0;   // Licht von Westen wie im Bodenbild
+  if(b>=2&&b<=9||b>=13){var gx=(HS[q+1]-HS[q-1])/(2*st),gy=(HS[q+GS]-HS[q-GS])/(2*st),sh=gx>T2?2:gx>T1?1:gx<-T2?-2:gx<-T1?-1:0;   // Licht von Westen wie im Bodenbild
    if(gy>T2)sh--;while(sh>0){c=he[c];sh--}while(sh<0){c=du[c];sh++}}
   COL[j*S+i]=c}
  var px=new Uint32Array(IW*IH);for(k=0;k<IW*IH;k++){var t=TAB[k];if(t>=0)px[k]=pal[COL[t]]}
@@ -87,7 +89,7 @@ function netz(G,A,seed,x0,y0,lod,n,F,px){var pal=F.pal,zn={n:0};
  var za=Math.floor((x0-ZF)/ZF),ze=Math.floor((x0+n+ZF)/ZF),ya=Math.max(0,Math.floor((y0-ZF)/ZF)),ye=Math.min(GH-1,Math.floor((y0+n+ZF)/ZF)),x,y,i,k,v;
  var breit=lod<=6?2:1,fw=pal[BFARBE[10]];
  // Flüsse: Zellmitte → Mitte der Abflusszelle
- for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){i=y*GW+um(x);if(A.flu[i]<2||A.bio[i]<2||A.bio[i]>9)continue;var r0=A.dir[i]&7;if(r0>3)continue;
+ for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){i=y*GW+um(x);if(A.flu[i]<2||A.bio[i]<2||A.bio[i]===11||A.bio[i]===12)continue;var r0=A.dir[i]&7;if(r0>3)continue;
   lin(x*ZF+512,y*ZF+512,(x+G.DX[r0])*ZF+512,(y+G.DY[r0])*ZF+512,fw,A.flu[i]>3?breit:1,false)}
  // Seewege (gestrichelt, von der Mitte der Meereszelle zu ihren Ausgängen)
  for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){i=y*GW+um(x);var o=A.ort[i];if(A.bio[i]>=2||!(o>>4))continue;

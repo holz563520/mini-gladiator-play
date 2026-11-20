@@ -9,7 +9,7 @@
 'use strict';
 var N=96,U=4,M=N*U+1,WL=0.8,MEER=2048;
 // fpwelt-Codes: 0 Wasser, 1 Sand, 2 Gras, 3 Wald, 4 Fels, 5 Schnee, 6 Weg, 7 Steg/Brücke, 8 Platz (Hof)
-var VON_BIOM=[0,0,1,1,2,3,2,2,4,5,0,0,5];          // weltgen-Biome 0..12 → Code (Wüste wie Sand, Steppe/Sumpf/Tundra wie Gras fürs Muster)
+var VON_BIOM=[0,0,1,1,2,3,2,2,4,5,0,0,5,2,1,2,3,2];  // weltgen-Biome 0..17 → Code (Wüste wie Sand, Steppe/Sumpf/Tundra wie Gras fürs Muster; N2c: Savanne wie Sand, Regenwald wie Wald, übrige wie Gras)
 var VON_WEG=[-1,6,6,7,1,7,8,0];                    // Wegschicht 1..7: Pfad, Straße, Brücke, Furt (begehbar, sieht nass aus), Steg, Ortsplatz, Fähre (Wasser)
 
 // PF: {he, du} Farbtabellen des Bildkerns (eine Stufe heller/dunkler). hole(cx,cy) → Kartenstück (Uint8Array) oder null. ox,oy: linke obere Ecke auf der Welt (ox darf beliebig sein, läuft um). sperr: Uint8Array je Naturart (1 = sperrt).

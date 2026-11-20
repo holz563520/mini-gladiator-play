@@ -78,7 +78,7 @@ function boden(z,X,Y,C,baeumeRoden){if(Y<0||Y>=WY-1)return'edge';
  var s=sicht(z,X>>6,Y>>6,C);if(!s)return'too_far';
  var q=qi(X,Y),h0=stufe(s.H[q]);
  for(var k=1;k<4;k++){var x=um(X+(k&1)),y=Y+(k>>1),t=sicht(z,x>>6,y>>6,C);if(!t)return'too_far';if(stufe(t.H[qi(x,y)])!==h0)return'not_flat'}
- var bio=s.B[q];if(bio<2||bio>9)return'water';if(s.W[q]||(z.bau&&wegAt(z.bau,X,Y)))return'road';
+ var bio=s.B[q];if(bio<2||bio===10||bio===11)return'water';if(s.W[q]||(z.bau&&wegAt(z.bau,X,Y)))return'road';
  var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;if(n<=5&&(baeumeRoden||(z.bau&&(flagAt(z.bau,X,Y)&F_STUMPF))))return 1;return n<=5||n===12?'nature':1}      // Gebäudebau rodet auch Bäume; sonst natur.js: 0–5 Bäume, 12 Fels sperren; Büsche und Blumen werden gerodet; G8: ein Stumpf wird gerodet
 
 // ── Flutfüllung eines Raums ab einem Feld. Gibt die Felder als flache Liste [X,Y,…] zurück (höchstens MAX_RAUM+1 Felder). ──
@@ -190,7 +190,7 @@ function bodenWeg(z,X,Y,C){if(Y<0||Y>=WY-1)return'edge';
  var q=qi(X,Y),mn=stufe(s.H[q]),mx=mn;
  for(var k=1;k<4;k++){var x=um(X+(k&1)),y=Y+(k>>1),t=sicht(z,x>>6,y>>6,C);if(!t)return'too_far';var h=stufe(t.H[qi(x,y)]);if(h<mn)mn=h;if(h>mx)mx=h}
  if(mx-mn>1)return'too_steep';
- var bio=s.B[q];if(bio<2||bio>9)return'water';
+ var bio=s.B[q];if(bio<2||bio===10||bio===11)return'water';
  if(s.W[q])return 0;                                                                     // Weltstraße: darf überbaut werden, Natur gibt es dort nicht
  var n=NAT().art(z.wg.seed,X,Y,bio,0,0);if(n<0)return 0;if(n<=5&&z.bau&&(flagAt(z.bau,X,Y)&F_STUMPF))return 1;return n<=5||n===12?'nature':1}
 function planWeg(z,w){var b=z.bau||LEER,C=new Map(),art=WEG[w.art],L=[],i,j,X,Y;

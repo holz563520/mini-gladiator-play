@@ -15,8 +15,9 @@
 function NAT(){return root.AT3NATUR||(typeof module!=='undefined'&&module.exports?require('./natur.js'):null)}
 var ST=64, F=ST*ST, WX=ST*9600, WY=ST*4800, MEER=2048, LS=6, GW=F*8, F_ROD=2, Z_PLAN=1, Z_FERTIG=3;
 var FUSS=0, KARREN=1, PROFIL=['fuss','karren'];
-// Tempo je Biom (0 tiefes Meer, 1 Meer, 2 Strand, 3 Wüste, 4 Steppe, 5 Wald, 6 Sumpf, 7 Tundra, 8 Fels, 9 Schnee, 10 Fluss, 11 See)
-var BIOM=[0,0,85,85,85,75,45,75,60,60,0,0];
+// Tempo je Biom (0 tiefes Meer, 1 Meer, 2 Strand, 3 Wüste, 4 Steppe, 5 Wald, 6 Sumpf, 7 Tundra, 8 Fels, 9 Schnee, 10 Fluss, 11 See, 12 Eis;
+// N2c, freigegeben von Thomas 20.11.2026: 13 Grasland 0,85, 14 Savanne 0,85, 15 Mittelmeer-Buschland 0,8, 16 Regenwald 0,6, 17 Mangroven 0,4)
+var BIOM=[0,0,85,85,85,75,45,75,60,60,0,0,60,85,85,80,60,40];
 // Weltstraße (weltgen W1b: 1 Pfad, 2 Straße, 3 Brücke, 4 Furt, 5 Steg, 6 Ortsplatz, 7 Fähre) je Profil
 var WELT=[[0,95,100,100,60,100,100,0],[0,0,100,100,0,0,100,0]];
 // Gebauter Weg (bau.js: 1 Trampelpfad, 2 Kiesweg, 3 Pflaster, 4 Steinstraße) je Profil, nur wenn fertig

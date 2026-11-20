@@ -50,6 +50,7 @@
   "mess.fpAus": "first person not used yet",
   "welt.bio.0": "Deep sea", "welt.bio.1": "Sea", "welt.bio.2": "Beach", "welt.bio.3": "Desert", "welt.bio.4": "Steppe", "welt.bio.5": "Forest",
   "welt.bio.6": "Swamp", "welt.bio.7": "Tundra", "welt.bio.8": "Rock", "welt.bio.9": "Snow", "welt.bio.10": "River", "welt.bio.11": "Lake",
+  "welt.bio.12": "Ice", "welt.bio.13": "Grassland", "welt.bio.14": "Savanna", "welt.bio.15": "Mediterranean scrub", "welt.bio.16": "Rainforest", "welt.bio.17": "Mangroves",
   "welt.weg.1": "path", "welt.weg.2": "road", "welt.weg.3": "bridge", "welt.weg.4": "ford", "welt.weg.5": "jetty", "welt.weg.6": "village square", "welt.weg.7": "ferry",
   "mess.karte": "Map: {s} pieces known · {n} ground images ({b}) · {g} drawn in the picture core, avg {a}, max {m} · frame draw avg {z}, max {x} · {e} stand-ins in view",
   "mess.karteAus": "Map: not running.",

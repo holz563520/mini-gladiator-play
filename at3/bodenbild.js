@@ -8,7 +8,7 @@
 (function(root){
 'use strict';
 var ST=64, FELDER=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, MEER=2048, TEIL=8, STUFEN=4, LS=6;   // LS: Höhe → Stufe (64 Höheneinheiten je Stufe; Vorschlagswert: so sind Nachbarfelder meist gleich hoch oder eine Stufe versetzt)
-var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41], WFARBE=[0,47,48,31,43,12,47,6];          // wie Weltansicht: Biome 0..11, Wegschicht 1..7 (Ortsplatz hier in Straßenfarbe statt Rot)
+var BFARBE=[39,40,46,62,19,15,8,11,23,5,42,41,6,18,61,45,14,16], WFARBE=[0,47,48,31,43,12,47,6];   // wie Weltansicht: Biome 0..17 (N2c: 13 Grasland, 14 Savanne, 15 Mittelmeer, 16 Regenwald, 17 Mangroven), Wegschicht 1..7 (Ortsplatz hier in Straßenfarbe statt Rot)
 // G6a gebaute Wege (bau.js, Schicht ab Byte 8 × 4.096 im Bau-Puffer): Trampelpfad, Kiesweg, Pflaster, Steinstraße; Fugen bei Pflaster und Stein. Baustelle:
 // geplant = Boden mit Punktmuster, in Arbeit = Weg mit Bodenkörnern, fertig = Weg. Weit draußen (¼, ⅛) nur die Farbe.
 var GFARBE=[0,46,5,45,4], GFUGE=[0,45,4,44,3], GKORN=[0,47,6,46,5], GPUNKT=61;
@@ -51,7 +51,7 @@ function bild(hole,x0,y0,lod,F,NT,BA){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,st=8
   ox-=l0;oy-=t0;w=r0-l0;h=b0-t0}
  var px=new Uint32Array(w*h);
  for(j=0;j<n;j++)for(i=0;i<n;i++){var X=x0+i,Y=y0+j,q=((Y&63)<<6)|(X&63),b=B[q],wv=W[q],e=j*m+i,lN=ECK[e],lE=ECK[e+1],lW=ECK[e+m],lS=ECK[e+m+1];
-  var c=BFARBE[b],wasser=b<2||b>9,r=mix(Math.imul(X,73856093)^Math.imul(Y,19349663)),gw=gb?gb[GW+q]:0,ga=gw&7,gz=(gw>>4)&3;
+  var c=BFARBE[b],wasser=b<2||b===10||b===11,r=mix(Math.imul(X,73856093)^Math.imul(Y,19349663)),gw=gb?gb[GW+q]:0,ga=gw&7,gz=(gw>>4)&3;
   if(ga&&gz>1){c=GFARBE[ga];wasser=false;wv=-1}
   else if(wv===7){if((X+Y)&1)c=WFARBE[7]}else if(wv){c=WFARBE[wv];wasser=false}
   if(!wasser){var d=lE-lW,sh=d>1?2:d>0?1:d<-1?-2:d<0?-1:0;if(lS-lN>1)sh--;                // Licht von links: Hang nach Westen heller, nach Osten dunkler

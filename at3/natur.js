@@ -9,7 +9,7 @@
 'use strict';
 var ARTEN=['baum-eiche-skizze','baum-buche','baum-birke','baum-tanne','baum-pappel','baum-apfel','busch-gruen','busch-hasel','busch-bluete','blume-wiese','blume-distel','blume-schilf','fels-block'];
 var EI=0,BU=1,BI=2,TA=3,PA=4,AP=5,BG=6,BH=7,BB_=8,WI=9,DI=10,SC=11,FE=12;
-// Biome (weltgen.js): 0 tiefes Meer, 1 Meer, 2 Strand, 3 Wüste, 4 Steppe, 5 Wald, 6 Sumpf, 7 Tundra, 8 Fels, 9 Schnee, 10 Fluss, 11 See. Werte: Promille der Felder.
+// Biome (weltgen.js): 0 tiefes Meer, 1 Meer, 2 Strand, 3 Wüste, 4 Steppe, 5 Wald, 6 Sumpf, 7 Tundra, 8 Fels, 9 Schnee, 10 Fluss, 11 See, 12 Eis, N2c: 13 Grasland, 14 Savanne, 15 Mittelmeer, 16 Regenwald, 17 Mangroven. Werte: Promille der Felder.
 var DICHTE=[null,null,
  [[FE,4],[DI,6]],
  [[DI,25],[FE,15]],
@@ -18,7 +18,14 @@ var DICHTE=[null,null,
  [[SC,200],[BI,50],[BG,20]],
  [[TA,40],[FE,20],[BG,10]],
  [[FE,120],[BG,10],[TA,10]],
- [[FE,5]],null,null];
+ [[FE,5]],null,null,
+ null,                                                                                   // 12 Eis (nur Erdraster)
+ // N2c Platzhalter bis N2d (freigegeben von Thomas 20.11.2026): vorhandene Objekte stehen für Akazie, Olive, Palme usw.
+ [[WI,90],[BG,12],[BH,8],[BB_,10],[EI,3]],                                                  // 13 Grasland: viel Wiese, einzelne Büsche
+ [[WI,70],[AP,4],[DI,6],[BG,4]],                                                            // 14 Savanne: hohes Gras, sehr selten ein Baum (Akazie)
+ [[BG,45],[BH,30],[AP,25],[DI,20],[FE,25],[WI,10]],                                        // 15 Mittelmeer-Buschland: Büsche, Oliven, Disteln, Fels
+ [[BU,170],[PA,110],[BG,90],[EI,40],[BB_,20]],                                              // 16 Regenwald: sehr dicht
+ [[SC,180],[BG,60],[BI,40]]];                                                               // 17 Mangroven: Schilf, Busch, Birke
 var TAB=DICHTE.map(function(L){if(!L)return null;var a=new Int16Array(1000).fill(-1),p=0;L.forEach(function(e){for(var k=0;k<e[1];k++)a[p++]=e[0]});return a});
 var MEER=2048, LS=6, WX=614400, WY=307200, RAND_OBEN=112, RAND_SEITE=16;    // RAND_*: größte Überstände eines Naturbilds über sein Feld (Stufe 1×), für „was ist im Bild“
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
