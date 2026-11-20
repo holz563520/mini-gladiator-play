@@ -10,6 +10,8 @@
 // G4b: Natur steckt schon in den Bodenbildern (vom Bildkern gebacken); hier nur die größeren Bildränder beim „was ist im Bild“ und das Weiterreichen der Bilder.
 // FP1: Solange First Person läuft (Karte versteckt), wird nichts gezeichnet und nichts angefragt; frage('fp') holt den Ausschnitt beim Bildkern.
 // G4c: neue Welt ohne Kameraort → statt automatischem Start ruft die Karte o.beiErde() (Startplatz-Wahl, startwahl.js); frage() reicht deren Fragen an den Bildkern.
+// N4c1: reiche(an) schaltet die Reiche in den Fernbildern um (nur Fernbilder und Globus werden neu gemalt); Antippen in der Fernansicht fragt den Bildkern,
+// wem das Land gehört, und meldet es an o.beiReich.
 // W1c Runde Welt: Die Kamera läuft in x um (cam.x immer 0..WX−1). Gezeichnet wird jedes Kartenstück in der Lage relativ zur Kamera (Stückspalte um ganze
 // Weltbreiten verschoben), darum springt beim Wischen über die Naht nichts. Bildschlüssel und Anfragen bleiben auf die Welt bezogen (ein Bild je Ort, nichts
 // doppelt im Bildspeicher). In y hält die Kamera POL Felder vor dem Polrand an: man sieht nie über den Weltrand hinaus.
@@ -31,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='1c056954', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='7a4df57d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -62,6 +64,8 @@ function starten(o){
   if(d.art==='wsErde'){gen=d.gen;seed=d.seed;bekannt.clear();bilderWeg();fehlt.clear();offen.clear();blickK=-1;M.stuecke=0;
    bk.postMessage({art:'welt',gen:gen,seed:seed,buf:d.buf},[d.buf.buffer]);if(hatKam)blick();else if(o.waehlen){if(o.beiErde)o.beiErde()}else bk.postMessage({art:'start'});plan()}
   else if(d.art==='wsStueck')kern.wsZurueck(d.buf)}
+ // N4c1: Knopf „Realms“: Bildkern umschalten, Fernbilder und Globus verwerfen (unterwegs mit alter NV fliegen weg), Nahbilder bleiben
+ function reiche(an){if(!bk)return;bk.postMessage({art:'reiche',an:!!an});NV++;bilder.forEach(function(b,k){if(b.lod>=STUFEN){if(b.bmp&&b.bmp.close)b.bmp.close();bytes-=b.bytes;bilder.delete(k);altB.delete(k)}});fehlt.clear();gimg=null;gimgKey='';plan()}
  function bilderWeg(){bilder.forEach(function(b){if(b.bmp&&b.bmp.close)b.bmp.close()});bilder.clear();altB.clear();bytes=0}
 
  function vomBildkern(e){var d=e.data;
@@ -399,7 +403,7 @@ var t0=performance.now();
  function tipp(cx,cy){if(wahl){if(cam.lod<STUFEN&&!glob)feldBei(cx,cy).then(function(fd){var w=fd&&fd.x!=null?fd:weltBei(cx,cy);if(w&&wahl)wahl.beiTipp(w.x,w.y)});else{var w=weltBei(cx,cy);if(w)wahl.beiTipp(w.x,w.y)}return}
   if(glob){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),R=globR(),x=((cx-r.left)*f-cv.width/2)/R,y=-((cy-r.top)*f-cv.height/2)/R,q=x*x+y*y;if(q>=1)return;
    var z=Math.sqrt(1-q),cl=Math.cos(glob.lat),sl=Math.sin(glob.lat),la=Math.asin(y*cl+z*sl),lo=glob.lon+Math.atan2(x,z*cl-y*sl);zurKarte(modu(lo/ZP,1)*WX,(.5-la/Math.PI)*WY,3);return}
-  if(cam.lod>=STUFEN){if(o.beiFeld)o.beiFeld(null);return}
+  if(cam.lod>=STUFEN){var wr=o.beiReich?weltBei(cx,cy):null;if(wr){frage('reich',{x:wr.x,y:wr.y}).then(function(a){if(a&&!a.fehlt)o.beiReich(a.reich,a.hat)});return}if(o.beiFeld)o.beiFeld(null);return}   // N4c1: Fernansicht: wem gehört das Land
   if(o.beiPerson&&!WZ_AKTIV()){var pp=personBei(cx,cy);if(pp&&o.beiPerson(pp)!==false)return}      // G7: Arbeiter zuerst (stehen vor dem Karren)
   if(o.beiKarren&&!WZ_AKTIV()){var kk=karrenBei(cx,cy);if(kk&&o.beiKarren(kk)!==false)return}
   if(o.beiTier&&!WZ_AKTIV()){var tt=tierBei(cx,cy);if(tt&&o.beiTier(tt)!==false)return}      // G8
@@ -422,7 +426,7 @@ var t0=performance.now();
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,bau:bau,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
- return{beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,figurBlaetter:figurBlaetter,figurVergessen:figurVergessen,figurTest:function(){var L=[];FIG.forEach(function(f){L.push(f.c)});if(FLAST)L.push(FLAST.c);return L},figurHat:function(id,gv){var f=FIG.get(id);GV[id]=gv;return !!f&&(gv==null||f.gv===gv)},nahHat:function(id,gv){var f=FN.get(id);return !!f&&(gv==null||f.gv===gv)},nahSichtbar:function(){var L=[];PER.forEach(function(e,id){if(e.sx!=null&&e.sx>-1e8)L.push(id)});return L},nahTest:function(){var L=[];FN.forEach(function(f){L.push(f.c)});if(FNLAST)L.push(FNLAST.c);return L},tiere:tiere,bewegte:bewegte,fest:festSetzen,
+ return{reiche:reiche,beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,figurBlaetter:figurBlaetter,figurVergessen:figurVergessen,figurTest:function(){var L=[];FIG.forEach(function(f){L.push(f.c)});if(FLAST)L.push(FLAST.c);return L},figurHat:function(id,gv){var f=FIG.get(id);GV[id]=gv;return !!f&&(gv==null||f.gv===gv)},nahHat:function(id,gv){var f=FN.get(id);return !!f&&(gv==null||f.gv===gv)},nahSichtbar:function(){var L=[];PER.forEach(function(e,id){if(e.sx!=null&&e.sx>-1e8)L.push(id)});return L},nahTest:function(){var L=[];FN.forEach(function(f){L.push(f.c)});if(FNLAST)L.push(FNLAST.c);return L},tiere:tiere,bewegte:bewegte,fest:festSetzen,
   festListe:function(){return FEST.map(function(e){return{art:e.art,x:e.x,y:e.y,sx:e.sx,sy:e.sy,bild:!!FBILD[e.art]}})},
   tiereListe:function(){var t=performance.now(),L=[];TIER.forEach(function(e,id){var p=tierLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,bild:!!TBILD,sx:e.sx,sy:e.sy})});return L},
   personenListe:function(){var t=performance.now(),L=[];PER.forEach(function(e,id){var p=perLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,fa:e.fa,fb:e.fb,bild:!!PBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},

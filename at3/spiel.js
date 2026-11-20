@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='1c056954', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='7a4df57d', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -113,12 +113,22 @@ function kernLos(w){WSEED=w.seed>>>0;
    window.AT3SPIEL_KERN=true}})};
  document.head.appendChild(s);document.head.appendChild(s2)}
 // ── Karte (G4a): Bilder kommen aus dem Bildkern, hier nur Anschluss, Zoomknöpfe und die Auskunft beim Antippen ──
+// N4c1: Reiche in den Fernstufen (Knopf „Realms“, Grundstellung an, gemerkt im Browser) und Antippen dort: „Answers to: County › Duchy › Kingdom“.
+// Namen baut herrschaften.js (erst beim ersten Antippen geladen) aus den Daten des Bildkerns und der Sprachdatei.
+var REICHE=true, HRL=null;
+function reicheAnschliessen(){try{REICHE=localStorage.getItem('at3.reiche')!=='0'}catch(x){}var k=$('reicheKnopf');k.textContent=t('reich.knopf');k.setAttribute('aria-pressed',REICHE?'true':'false');
+ if(!REICHE)KARTE.reiche(false);
+ k.onclick=function(){REICHE=!REICHE;k.setAttribute('aria-pressed',REICHE?'true':'false');try{localStorage.setItem('at3.reiche',REICHE?'1':'0')}catch(x){}KARTE.reiche(REICHE)}}
+function reichTipp(L,hat){if(!hat){$('weltInfo').textContent=t('welt.leer');return}if(!L||!L.length){$('weltInfo').textContent=t('reich.niemand');return}
+ (HRL||(HRL=new Promise(function(ok,no){if(window.AT3HERRSCHAFT)return ok();var s=document.createElement('script');s.src='herrschaften.js?v='+V;s.onload=ok;s.onerror=function(){HRL=null;no(new Error('herrschaften.js'))};document.head.appendChild(s)})))
+ .then(function(){window.AT3SPIEL.reich=L;$('weltInfo').textContent=t('reich.antwortet',{kette:window.AT3HERRSCHAFT.ketteText(L,t)})},function(){})}
 function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&&w.daten.kern.welt,waehlen=!/[?&]nosave\b/.test(location.search)&&!(sp&&sp.kam);$('weltInfo').textContent=t('welt.wartet');
  if(sp&&sp.start)START=sp.start;
  KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,waehlen:waehlen,beiErde:startWaehlen,
   beiAusfall:function(g){if(g)$('weltInfo').innerHTML='<span class="schlecht">'+esc(t('welt.ausfall',{e:g}))+'</span>'},
   beiNahFehlt:function(){figurenNahPflegen()},
-  beiZoom:function(l,z){$('weltInfo').textContent=l<0?t('welt.globus'):t('welt.zoom',{z:z})},
+  beiZoom:function(l,z){$('weltInfo').textContent=l<0?t('welt.globus'):t('welt.zoom',{z:z});$('reicheKnopf').hidden=!(l<0||l>=4)},   // N4c1: Knopf „Realms“ nur in den Fernstufen und am Globus
+  beiReich:reichTipp,
   beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
   beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
   beiTier:function(k){if(BAUW&&!fpAn)return false;tierKarte(k);return true},      // G8: Reh antippen
@@ -130,7 +140,7 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
  if(sp&&sp.start&&!(w.daten.kern&&w.daten.kern.war))KERN.befehl('wirtschaft',{x:sp.start[0],y:sp.start[1]});      // G7: Spielstand von vor G7 → Wirtschaft am Startplatz einschalten
  if(sp&&sp.start&&!(w.daten.kern&&w.daten.kern.ket))KERN.befehl('ketten',{an:1});
  if(sp&&sp.start&&!(w.daten.kern&&w.daten.kern.gla))KERN.befehl('gladiatoren',{an:1});      // G9c1: Stand von vor G9c1 → Gladiatoren und Marktstand      // G8: Stand von vor G8 → erste Ketten einschalten (ohne Wirtschaft tut der Befehl nichts)
- $('zoomRein').onclick=function(){KARTE.zoom(-1)};$('zoomRaus').onclick=function(){KARTE.zoom(1)};$('fpKnopf').onclick=fpUmschalten;$('fpKnopf').disabled=fpWahl;
+ $('zoomRein').onclick=function(){KARTE.zoom(-1)};reicheAnschliessen();$('zoomRaus').onclick=function(){KARTE.zoom(1)};$('fpKnopf').onclick=fpUmschalten;$('fpKnopf').disabled=fpWahl;
  if(!(kw&&kw.an)){KERN.befehl('weltdichte',w.dichte==null?1:w.dichte);KERN.befehl('weltseed',w.seed>>>0)}      // neue Welt (oder Stand von vor G4a): aus dem Seed anlegen
  KERN.wsAn(true,true);var warte=setInterval(function(){if(KARTE.mess.fertig){clearInterval(warte);$('weltInfo').textContent=t('welt.tippen');window.AT3SPIEL_KARTE=true;
   var bp=/[?&]nosave\b/.test(location.search)&&/[?&]bauprobe(?:=(\d+))?/.exec(location.search);if(bp)bauprobe(Math.min(200,+(bp[1]||50)));

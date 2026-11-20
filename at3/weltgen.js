@@ -19,6 +19,8 @@
 //    Pfad, Straße, Brücke, Furt, Steg, Ortsplatz, Fähre. Stücke ohne Straße kosten nichts zusätzlich.
 // 4) N4b Völker (unten): zwei weitere Erd-Teile. 24 Kulturen (mindestens je eine, dazu Ableger) breiten sich aus ihren Kernländern aus; 1 Byte je Zelle
 //    (Volk), je Ort bis zu 3 Religionen mit Prozent, hinten an der fertigen Erde. Orte, Straßen und Klima bleiben Byte für Byte gleich (Notausschalter ?n4b=0).
+// 5) N4c1 Herrschaften (unten): ein weiterer Erd-Teil. Reiche aus den Völkern mit dem System ihrer Kultur, Kaiser mit Vasallen, Stufen bis zum Ort;
+//    je Einheit 8 Byte, je Zelle und je Ort 2 Byte, hinten an der fertigen Erde. Alles davor bleibt Byte für Byte gleich (Notausschalter ?n4c=0).
 // Wiederverwendet: Ganzzahl-Rauschen (gitter/stufe) und mix aus riesenwelt.js und kern.js (MK1, G2); zustandslose Landschaft nach dem Vorbild von
 // welt-gross-core.js (2.0); Höheneinheit wie fpwelt.js (M7: 1 Feld = 1 Geschoss).
 (function(root){
@@ -32,10 +34,12 @@ var GEL_BYTES=ST_BYTES+AUS*2;                 // Auftragspuffer eines Kartenstü
 var ORT_MAX=32768, KANTE_MAX=65535, NETZ_KOPF=16, NETZ_MAX=NETZ_KOPF+ORT_MAX*4+KANTE_MAX*8;   // W1b: Obergrenzen des Netzes (Orte, Verbindungen)
 var VOLK_MAX=64, VK_KOPF=4+VOLK_MAX*4, VK_MAX=VK_KOPF+N+ORT_MAX*6;   // N4b: Völker (Zahl, Tafel Volk → Kernzelle | Kultur << 24), Volk je Zelle, je Ort bis zu 3 Religionen mit Prozent
 var ERD_ZELLEN=10*N, ERD_FEST=ERD_ZELLEN+NETZ_MAX+VK_MAX;   // Erdraster: bleibend 10 Byte je Zelle (N2a: + Klimazone) + Netz (höchstens; übernommen wird nur der belegte Teil)
-var TAB=131072, SC=ERD_FEST, VK0=SC+11*N+TAB*12, ERD_BYTES=VK0+VK_MAX;   // N4b: Völker beim Entstehen hinter den Arbeitsfeldern   // beim Entstehen zusätzlich Arbeitsfelder der Wegsuche
+var HS_MAX=16384, HS_KOPF=4, HS_BYTES=HS_KOPF+HS_MAX*8+N*2+ORT_MAX*2;   // N4c1: Herrschaften (Zahl, je Einheit 8 Byte, je Zelle und je Ort 2 Byte)
+var TAB=131072, SC=ERD_FEST, VK0=SC+11*N+TAB*12, HS0=VK0+VK_MAX, ERD_BYTES=HS0+HS_BYTES;   // N4b: Völker beim Entstehen hinter den Arbeitsfeldern   // beim Entstehen zusätzlich Arbeitsfelder der Wegsuche
 var N4B=!(root.location&&/[?&](n2b|n2c|n4b)=0/.test(root.location.search||''));   // N4b Notausschalter ?n4b=0 (auch mit ?n2b=0, ?n2c=0): kein Teil „Völker“, Erde Byte für Byte wie N4a
-var BAND=8, TEILE=BAND+(N4B?10:8);                     // Teilaufträge der Erde
-var TEIL_NAME=['Rauschen 1','Rauschen 2','Rauschen 3','Rauschen 4','Rauschen 5','Rauschen 6','Rauschen 7','Rauschen 8','Ozean und Seen','Senken','Flüsse','Klima','Klimazonen','Orte und Häfen','Straßen','Seewege','Völker: Kernländer','Völker: Ausbreitung und Glaube'];
+var N4C=N4B&&!(root.location&&/[?&]n4c=0/.test(root.location.search||''));   // N4c1 Notausschalter ?n4c=0 (auch mit ?n4b=0): kein Teil „Herrschaften“, Erde Byte für Byte wie N4b
+var BAND=8, TEILE=BAND+(N4C?11:N4B?10:8);                     // Teilaufträge der Erde
+var TEIL_NAME=['Rauschen 1','Rauschen 2','Rauschen 3','Rauschen 4','Rauschen 5','Rauschen 6','Rauschen 7','Rauschen 8','Ozean und Seen','Senken','Flüsse','Klima','Klimazonen','Orte und Häfen','Straßen','Seewege','Völker: Kernländer','Völker: Ausbreitung und Glaube','Herrschaften'];
 var ORT_ART=['','Dorf','Stadt','Hafendorf','Hafenstadt'], WEG_ART=['','Pfad','Straße','Brücke','Furt','Steg','Ortsplatz','Fähre'];
 var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Fels','Schnee','Fluss','See','Eis','Grasland','Savanne','Mittelmeer-Buschland','Regenwald','Mangroven'];   // 12 Eis: nur im Erdraster (Polkappe, gesperrt); im Kartenstück ist Eis Schnee (9). 13–17 seit N2c
 // Land-Biom? (N2c: 2–9 und 13–17; Wasser 0, 1, 10, 11; Eis 12)
@@ -59,10 +63,12 @@ function ansicht(buf){var a={E:new Int16Array(buf,0,N),bio:new Uint8Array(buf,2*
   a.lm=new Uint16Array(buf,SC,N);a.bes=new Uint16Array(buf,SC+2*N,N);a.dst=new Uint16Array(buf,SC+4*N,N);a.vor=new Uint8Array(buf,SC+6*N,N);a.hp=new Uint32Array(buf,SC+7*N,N);
   a.tk=new Uint32Array(buf,SC+11*N,TAB);a.tv=new Uint32Array(buf,SC+11*N+TAB*4,TAB);a.tc=new Uint32Array(buf,SC+11*N+TAB*8,TAB)}
  else if(a.kopf){a.orte=new Uint32Array(buf,ERD_ZELLEN+NETZ_KOPF,a.kopf[0]);a.kanten=new Uint16Array(buf,ERD_ZELLEN+NETZ_KOPF+a.kopf[0]*4,a.kopf[1]*4)}   // übernommen: nur der belegte Teil
- if(buf.byteLength>=ERD_BYTES)a.vk=vkSicht(buf,VK0,ORT_MAX);
- else if(a.kopf){var o=ERD_ZELLEN+NETZ_KOPF+a.kopf[0]*4+a.kopf[1]*8;if(buf.byteLength>=o+VK_KOPF+N+a.kopf[0]*6)a.vk=vkSicht(buf,o,a.kopf[0])}   // N4b: nur wenn die Erde Völker trägt
+ if(buf.byteLength>=ERD_BYTES){a.vk=vkSicht(buf,VK0,ORT_MAX);a.hs=hsSicht(buf,HS0,HS_MAX,ORT_MAX)}
+ else if(a.kopf){var o=ERD_ZELLEN+NETZ_KOPF+a.kopf[0]*4+a.kopf[1]*8;if(buf.byteLength>=o+VK_KOPF+N+a.kopf[0]*6){a.vk=vkSicht(buf,o,a.kopf[0]);   // N4b: nur wenn die Erde Völker trägt
+  var o2=o+VK_KOPF+N+a.kopf[0]*6;if(buf.byteLength>=o2+HS_KOPF){var nH=new Uint16Array(buf,o2,1)[0];if(buf.byteLength>=o2+HS_KOPF+nH*8+N*2+a.kopf[0]*2)a.hs=hsSicht(buf,o2,nH,a.kopf[0])}}}   // N4c1: nur wenn die Erde Herrschaften trägt   // N4b: nur wenn die Erde Völker trägt
  if(a.vk)a.vol=a.vk.vol;
  return a}
+function hsSicht(buf,o,nH,n){return{zahl:new Uint16Array(buf,o,2),tab:new Uint16Array(buf,o+HS_KOPF,nH*4),zel:new Uint16Array(buf,o+HS_KOPF+nH*8,N),ort:new Uint16Array(buf,o+HS_KOPF+nH*8+N*2,n)}}
 function vkSicht(buf,o,n){return{zahl:new Uint32Array(buf,o,1),tab:new Uint32Array(buf,o+4,VOLK_MAX),vol:new Uint8Array(buf,o+VK_KOPF,N),rel:new Uint8Array(buf,o+VK_KOPF+N,n*6)}}
 
 // ── Ebene Erde ──
@@ -226,14 +232,17 @@ function erdTeil(a){var A=ansicht(a.daten.buffer),t=a.teil;
  if(t<BAND)teilRauschen(A,a.seed>>>0,t);else if(t===BAND)teilOzean(A);
  else if(t===BAND+1)teilSenken(A);else if(t===BAND+2)teilFluesse(A);
  else if(t===BAND+3)teilKlima(A);else if(t===BAND+4)zonen(A,a.seed>>>0,ZK);                         // N2a: Klimazonen als eigener Teil (kurze Aufträge)
- else if(t===BAND+5)teilOrte(A,a.seed>>>0,a.dichte==null?1:a.dichte);else if(t>=BAND+8)teilVoelker(A,a.seed>>>0,t-BAND-8);else teilNetz(A,a.seed>>>0,t===BAND+7?1:0);
+ else if(t===BAND+5)teilOrte(A,a.seed>>>0,a.dichte==null?1:a.dichte);else if(t===BAND+10)teilHerrschaften(A,a.seed>>>0);else if(t>=BAND+8)teilVoelker(A,a.seed>>>0,t-BAND-8);else teilNetz(A,a.seed>>>0,t===BAND+7?1:0);
  return a.daten}
 // Bleibender Teil der fertigen Erde: 10 Byte je Zelle, Kopf, belegte Orte, belegte Verbindungen (dicht hintereinander)
 // N4b: dahinter die Völker (Zahl, Tafel, Volk je Zelle, Religionen je Ort), nur wenn der Teil „Völker“ gelaufen ist
 function fest(d){var k=new Uint32Array(d.buffer,ERD_ZELLEN,4),nO=k[0],nK=k[1],mitV=N4B&&d.byteLength>=ERD_BYTES&&new Uint32Array(d.buffer,VK0,1)[0]>0,nV=mitV?VK_KOPF+N+nO*6:0,
- p=ERD_ZELLEN+NETZ_KOPF,aus=new Uint8Array(p+nO*4+nK*8+nV);
+ mitH=mitV&&N4C&&new Uint16Array(d.buffer,HS0,1)[0]>0,nH=mitH?new Uint16Array(d.buffer,HS0,1)[0]:0,nHB=mitH?HS_KOPF+nH*8+N*2+nO*2:0,
+ p=ERD_ZELLEN+NETZ_KOPF,aus=new Uint8Array(p+nO*4+nK*8+nV+nHB);
  aus.set(d.subarray(0,p+nO*4));aus.set(d.subarray(ERD_ZELLEN+NETZ_KOPF+ORT_MAX*4,ERD_ZELLEN+NETZ_KOPF+ORT_MAX*4+nK*8),p+nO*4);
- if(mitV)aus.set(d.subarray(VK0,VK0+nV),p+nO*4+nK*8);return aus}
+ if(mitV)aus.set(d.subarray(VK0,VK0+nV),p+nO*4+nK*8);
+ if(mitH){var q=p+nO*4+nK*8+nV,z0=HS0+HS_KOPF+HS_MAX*8;aus.set(d.subarray(HS0,HS0+HS_KOPF+nH*8),q);q+=HS_KOPF+nH*8;aus.set(d.subarray(z0,z0+N*2),q);q+=N*2;aus.set(d.subarray(z0+N*2,z0+N*2+nO*2),q)}   // N4c1
+ return aus}
 // Ganze Erde in einem Stück (Tests und Werkzeuge). Liefert den bleibenden Teil.
 function erde(seed,dichte){var d=new Uint8Array(ERD_BYTES);for(var t=0;t<TEILE;t++)erdTeil({seed:seed,teil:t,dichte:dichte,daten:d});return fest(d)}
 
@@ -627,6 +636,104 @@ function vkAusbreiten(A,sV){var V=A.vk,vol=V.vol,tab=V.tab,rel=V.rel,bio=A.bio,z
   for(q=0;q<3;q++){var rr=R[q];if(!rr)continue;var pr=Math.round(-W[rr]*100/sum);if(pr<3)continue;rel[k*6+q*2]=rr;rel[k*6+q*2+1]=pr}}
  }
 
+// ── N4c1 Herrschaften (ein Teil nach den Völkern, Helferkern, fester Betrag je Welt) ──
+// Jedes Volk bildet ein Reich mit dem System seiner Kultur (HS_SYS, Reihenfolge wie systeme.json: 0 Empire, 1 Kingdom, 2 Principality, 3 Republic,
+// 4 Merchant League, 5 Theocracy, 6 Tribal Lands, 7 Robber Barony). Große Völker (mehr als HS_TEIL Orte) zerfallen in mehrere Reiche zu rund HS_REICH Orten,
+// Kaiserreiche nie. Kaiserreiche sind die höchstens HS_KAISER größten Völker der Velarier (weitere velarische Völker werden Königreiche); jedes nimmt
+// 2–6 angrenzende Völker als Vasallen auf (längste Grenze zuerst; Größe egal, die Velarier sind oft kleiner als ihre Nachbarn) (alle Reiche des Volks, ihr System bleibt). Darunter Stufen je System (HS_G: Orte je Einheit):
+// Empire Province ~30 → Prefecture ~6, Kingdom Duchy ~30 → County ~6, Principality County ~6, Republic District ~8, League Factorate ~8,
+// Theocracy Diocese ~8, Tribal Lands Clanhold ~6, Robber Barony keine. Sitz jeder Einheit ist ein Ort, bevorzugt eine Stadt, mit Abstand zu den anderen
+// Sitzen; der Sitz des Oberherrn ist auch Sitz einer seiner Einheiten. Zellen gehören zum Sitz, der sie zuerst erreicht (Wegsuche von allen Sitzen zugleich
+// innerhalb des Elternteils, Rauschen je Zelle franst die Grenzen aus; Inseln ohne Landweg: nächster Sitz), Orte zur Einheit ihrer Zelle.
+// Größtes Reich jeder Kultur trägt den Kulturnamen (Bit 9), jedes vierte andere Reich einen Beinamen (1–12), Reichsfarben 0–11 so, dass Nachbarn sich
+// unterscheiden (Vasallen in der Farbe ihres Kaisers, heller gezeigt). Namen und Texte macht erst die Anzeige (herrschaften.js, Sprachdatei).
+// Je Einheit 4 × 16 Bit: [Oberherr + 1, Sitz (Ortsnummer), System·4+Stufe | Volk << 8, Beiname | Farbe << 4 | Vasall << 8 | Kulturname << 9].
+// Je Zelle und je Ort 16 Bit: unterste Einheit + 1 (0 = keine). Orte, Straßen, Klima und Völker bleiben Byte für Byte gleich (Notausschalter ?n4c=0).
+var HS_SYS=[0,4,3,4,5,1,6,2,1,3,2,7,1,4,3,6,1,6,5,4,7,3,1,5];   // System je Kultur, muss zu kulturen.json passen (tests/at3-n4c.cjs)
+var HS_G=[[30,6],[30,6],[6],[8],[8],[8],[6],[]], HS_TEIL=240, HS_REICH=160, HS_KAISER=3, HS_BEI=12, HS_FARBEN=12;
+function teilHerrschaften(A,seed){var V=A.vk,H=A.hs,vol=V.vol,tab=V.tab,nV=V.zahl[0],orte=A.orte,nO=A.kopf[0],T=H.tab,Z=H.zel,OU=H.ort,K=A.bes,sH=mix(seed^0x4e4c3c1),i,j,k,u,v,p,x,y;
+ for(i=0;i<N;i++){Z[i]=0;K[i]=0}for(k=0;k<nO;k++)OU[k]=0;for(i=0;i<T.length;i++)T[i]=0;var nH=0;
+ if(!nV){H.zahl[0]=0;return}
+ var vo=new Int32Array(nV+1),vc=new Int32Array(nV+1),sys=new Int32Array(nV+1);
+ for(i=0;i<N;i++)if(vol[i])vc[vol[i]]++;
+ for(k=0;k<nO;k++){v=vol[orte[k]&0xffffff];if(v)vo[v]++}
+ function kul(v){return(tab[v-1]>>>24)-1}
+ for(v=1;v<=nV;v++)sys[v]=HS_SYS[kul(v)];
+ var vel=[];for(v=1;v<=nV;v++)if(sys[v]===0&&vo[v])vel.push(v);vel.sort(function(a,b){return vo[b]-vo[a]||a-b});for(j=HS_KAISER;j<vel.length;j++)sys[vel[j]]=1;
+ function wert(k){var t=orte[k]>>>24;return t===2||t===4?2:t===3?1:0}
+ var HX=new Uint32Array(nO);for(k=0;k<nO;k++)HX[k]=mix(sH^Math.imul((orte[k]&0xffffff)+1,0x9e3779b1));
+ function hx(k){return HX[k]}
+ // Eine Stufe: Eltern (Völker oder Einheiten) in Kinder teilen. P[q] = {nr: Schlüssel in K, o: Orte, c: Zellen, k: Zahl der Kinder, sitz: Ort des Elternsitzes oder −1,
+ // art, volk}. Danach steht in K für jede Zelle eines geteilten Elternteils die Kindeinheit + 1.
+ var SX=new Int32Array(nO+1),SY=new Int32Array(nO+1),SU=new Int32Array(nO+1),NEU=new Uint16Array(N),DS=A.dst,hp=A.hp,RS=A.vor;
+ for(i=0;i<N;i++)RS[i]=mix(sH^Math.imul(i+1,0x2545f491))&7;                                          // Rauschen je Zelle für die Grenzen
+ function stufe(P,map){var s0=new Int32Array(P.length+1),nS=0,q,m;
+  for(q=0;q<P.length;q++){var E=P[q],L=E.o.slice(),kk=Math.max(1,Math.min(E.k,L.length,HS_MAX-nH-(P.length-q-1)));s0[q]=nS;
+   L.sort(function(a,b){return(b===E.sitz)-(a===E.sitz)||wert(b)-wert(a)||(hx(a)-hx(b))});
+   var D2=Math.floor(E.c*2/(5*kk)),n0=nS,gew=new Uint8Array(L.length);
+   for(var pass=0;pass<2&&nS-n0<kk;pass++)for(m=0;m<L.length&&nS-n0<kk;m++){if(gew[m])continue;var c=orte[L[m]]&0xffffff;x=c%GW;y=(c/GW)|0;
+    if(!pass){var ok=true;for(j=n0;j<nS;j++){var dx=Math.abs(x-SX[j]);if(dx>GW-dx)dx=GW-dx;var dy=y-SY[j];if(dx*dx+dy*dy<D2){ok=false;break}}if(!ok)continue}
+    gew[m]=1;SX[nS]=x;SY[nS]=y;u=nH++;SU[nS]=u;T[u*4]=E.ober;T[u*4+1]=L[m];T[u*4+2]=E.art|E.volk<<8;nS++}}
+  s0[P.length]=nS;
+  // Zellen: Wegsuche von allen Sitzen zugleich (256 Eimer wie die Völker), nur innerhalb des eigenen Elternteils; Schritt 8 + Rauschen je Zelle (0–7),
+  // damit die Grenzen ausfransen. Was so nicht erreichbar ist (Inseln desselben Elternteils), bekommt den nächsten Sitz nach Abstand.
+  var eimer=EIMER,jetzt=0,n=0,c,r,dd;for(i=0;i<256;i++)eimer[i]=0;
+  function rein(j,t){hp[j]=eimer[t&255];eimer[t&255]=j+1;n++}
+  for(i=0;i<N;i++)NEU[i]=0;
+  for(q=0;q<P.length;q++)for(j=s0[q];j<s0[q+1];j++){c=SY[j]*GW+SX[j];if(NEU[c])continue;NEU[c]=SU[j]+1;DS[c]=0;rein(c,0)}
+  while(n){while(!eimer[jetzt&255])jetzt++;c=eimer[jetzt&255]-1;eimer[jetzt&255]=hp[c];n--;var pc=K[c],d0=DS[c];
+   for(r=0;r<4;r++){j=nb(c,r);if(j<0||NEU[j]||K[j]!==pc)continue;dd=d0+8+RS[j];if(dd>65000)continue;NEU[j]=NEU[c];DS[j]=dd;rein(j,dd)}}
+  for(i=0;i<N;i++){var kp=K[i];if(!kp)continue;q=map[kp];if(q<0)continue;if(NEU[i]){K[i]=NEU[i];continue}var a0=s0[q],a1=s0[q+1],b1=a0,d1=2e9;x=i%GW;y=(i/GW)|0;
+   for(j=a0;j<a1;j++){var ex=Math.abs(x-SX[j]);if(ex>GW-ex)ex=GW-ex;var ey=y-SY[j];dd=ex*ex+ey*ey;if(dd<d1){d1=dd;b1=j}}
+   K[i]=SU[b1]+1}}
+ // 1) Reiche aus Völkern
+ var P=[],map=new Int32Array(Math.max(nV,HS_MAX)+1),oL=[];for(v=0;v<=nV;v++)oL.push([]);
+ for(k=0;k<nO;k++){v=vol[orte[k]&0xffffff];if(v)oL[v].push(k)}
+ for(i=0;i<map.length;i++)map[i]=-1;
+ for(v=1;v<=nV;v++){if(!vo[v])continue;var kr=sys[v]===0||vo[v]<=HS_TEIL?1:Math.ceil(vo[v]/HS_REICH);map[v]=P.length;P.push({o:oL[v],c:vc[v],k:kr,sitz:-1,ober:0,art:sys[v]*4,volk:v})}
+ for(i=0;i<N;i++)K[i]=vol[i]&&vo[vol[i]]?vol[i]:0;
+ stufe(P,map);var nR=nH;
+ // Orte und Zellen je Reich
+ var ro=new Int32Array(nR),rc=new Int32Array(nR);for(i=0;i<N;i++)if(K[i])rc[K[i]-1]++;for(k=0;k<nO;k++){u=K[orte[k]&0xffffff];if(u)ro[u-1]++}
+ // Kulturname: größtes Reich jeder Kultur
+ var best=new Int32Array(24).fill(-1);for(u=0;u<nR;u++){var cu=kul(T[u*4+2]>>8);if(best[cu]<0||ro[u]>ro[best[cu]])best[cu]=u}
+ for(j=0;j<24;j++)if(best[j]>=0)T[best[j]*4+3]|=512;
+ // Nachbarschaft der Völker und der Reiche (Kanten nach Osten und Süden, über die Naht)
+ var VN=new Int32Array((nV+1)*(nV+1)),RN=new Int32Array(nR*nR);                     // Grenzlänge je Paar (nV ≤ 64, Reiche rund ein bis zwei je Volk)
+ for(i=0;i<N;i++){var a=K[i];if(!a)continue;for(var r=0;r<2;r++){j=nb(i,r);if(j<0)continue;var b=K[j];if(!b||b===a)continue;
+  RN[(a-1)*nR+b-1]++;RN[(b-1)*nR+a-1]++;var va=vol[i],vb=vol[j];if(va!==vb){VN[va*(nV+1)+vb]++;VN[vb*(nV+1)+va]++}}}
+ // 2) Kaiser nehmen Vasallen: angrenzende Völker, längste Grenze zuerst, 2–6 je Kaiser
+ var vasVon=new Int32Array(nV+1);
+ for(var e=0;e<vel.length&&e<HS_KAISER;e++){var ev=vel[e],ru=-1;for(u=0;u<nR;u++)if((T[u*4+2]>>8)===ev){ru=u;break}if(ru<0)continue;
+  var kand=[];for(var o=1;o<=nV;o++){var gn=VN[ev*(nV+1)+o];if(gn&&o!==ev&&sys[o]!==0&&!vasVon[o]&&vo[o])kand.push([o,gn])}
+  kand.sort(function(a,b){return b[1]-a[1]||a[0]-b[0]});var mz=2+mix(sH^Math.imul(ev,0x2545f491))%5;
+  for(j=0;j<kand.length&&j<mz;j++){var ov=kand[j][0];vasVon[ov]=ev;for(u=0;u<nR;u++)if((T[u*4+2]>>8)===ov){T[u*4]=ru+1;T[u*4+3]|=256}}}
+ // Beinamen
+ for(u=0;u<nR;u++){if(T[u*4+3]&512)continue;var hb=mix(sH^Math.imul(u+1,0x632be5ab)^T[u*4+1]);if(!(hb&3))T[u*4+3]|=1+(hb>>>2)%HS_BEI}
+ // Farben: Kaiser, dann die übrigen Reiche nach Größe; Vasallen in der Farbe ihres Kaisers
+ var nachb=[];for(u=0;u<nR;u++){var nl=[];for(j=0;j<nR;j++)if(RN[u*nR+j])nl.push(j);nachb.push(nl)}
+ var fa=new Int32Array(nR).fill(-1),ord=[];for(u=0;u<nR;u++)ord.push(u);
+ ord.sort(function(a,b){var ka=(T[a*4+2]&255)>>2===0?0:1,kb=(T[b*4+2]&255)>>2===0?0:1;return ka-kb||ro[b]-ro[a]||a-b});
+ function wirk(u){return T[u*4+3]&256?fa[T[u*4]-1]:fa[u]}
+ for(var oi=0;oi<ord.length;oi++){u=ord[oi];if(T[u*4+3]&256)continue;var frei=new Uint8Array(HS_FARBEN);
+  for(j=0;j<nachb[u].length;j++){var f2=wirk(nachb[u][j]);if(f2>=0)frei[f2]=1}
+  var fw=-1;for(j=0;j<HS_FARBEN;j++)if(!frei[j]){fw=j;break}if(fw<0)fw=mix(sH^u)%HS_FARBEN;fa[u]=fw}
+ for(u=0;u<nR;u++){var f3=wirk(u);T[u*4+3]|=(f3<0?0:f3)<<4}
+ // 3) Stufen darunter
+ for(var st=1;st<=2;st++){var P2=[];for(i=0;i<map.length;i++)map[i]=-1;var cn=new Int32Array(nH),lo=[];
+  for(i=0;i<N;i++)if(K[i])cn[K[i]-1]++;
+  for(u=0;u<nH;u++){var art=T[u*4+2]&255,sy=art>>2;if((art&3)!==st-1||HS_G[sy].length<st){lo.push(null);continue}lo.push([])}
+  for(k=0;k<nO;k++){u=K[orte[k]&0xffffff];if(u&&lo[u-1])lo[u-1].push(k)}
+  for(u=0;u<nH;u++){if(!lo[u]||!lo[u].length)continue;var sy2=(T[u*4+2]&255)>>2;map[u+1]=P2.length;
+   P2.push({o:lo[u],c:cn[u],k:Math.max(1,Math.round(lo[u].length/HS_G[sy2][st-1])),sitz:T[u*4+1],ober:u+1,art:sy2*4+st,volk:T[u*4+2]>>8})}
+  if(P2.length)stufe(P2,map)}
+ for(i=0;i<N;i++)Z[i]=K[i];for(k=0;k<nO;k++)OU[k]=K[orte[k]&0xffffff];
+ H.zahl[0]=nH}
+// Kette einer Einheit nach oben (unterste zuerst), z. B. für eine Zelle: kette(A, A.hs.zel[i] − 1)
+function hsKette(A,u){var T=A.hs.tab,L=[];while(u>=0&&L.length<8){L.push(u);u=T[u*4]-1}return L}
+// Oberstes Reich einer Einheit, Vasallen enden bei ihrem eigenen Reich (Stufe 0), nicht beim Kaiser
+function hsReich(A,u){var T=A.hs.tab,n=0;while(u>=0&&(T[u*4+2]&3)&&n++<8)u=T[u*4]-1;return u}
+
 // ── W1b im Kartenstück: Straßenlauf wie der Flusslauf (feste Querungspunkte auf den Zellkanten, Bögen zum Mittelpunkt der Zelle), dazu grob und fein
 // seitlich verschoben, damit sich die Straße windet. Gezeichnet als dünne Linie (Pfad 1 Feld, Straße 2 Felder) nur dort, wo die Straße das Stück
 // berührt: Stücke ohne Straße kosten nichts. Wegschicht je Feld: 1 Pfad, 2 Straße, 3 Brücke, 4 Furt, 5 Steg (flaches Wasser), 6 Ortsplatz, 7 Fähre.
@@ -698,7 +805,7 @@ function rechnen(a){return a.art==='erde'?erdTeil(a):gelaende(a)}
 function stueck(seed,A,cx,cy,daten){   // A muss ort und weg tragen (ansicht der fertigen Erde)
  daten=daten||new Uint8Array(GEL_BYTES);ausschnitt(A,cx,cy,daten);return gelaende({seed:seed,cx:cx,cy:cy,daten:daten})}
 
-var WG={N4B:N4B,VK_KUL:VK_KUL,VOLK_MAX:VOLK_MAX,VK_KOPF:VK_KOPF,VK_JE:VK_JE,teilVoelker:teilVoelker,ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,N2B:N2B,ZV:ZV,zonenV:zonenV,zfuell:zfuell,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
+var WG={N4C:N4C,HS_SYS:HS_SYS,HS_G:HS_G,HS_MAX:HS_MAX,HS_FARBEN:HS_FARBEN,HS_BEI:HS_BEI,teilHerrschaften:teilHerrschaften,hsKette:hsKette,hsReich:hsReich,N4B:N4B,VK_KUL:VK_KUL,VOLK_MAX:VOLK_MAX,VK_KOPF:VK_KOPF,VK_JE:VK_JE,teilVoelker:teilVoelker,ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,N2B:N2B,ZV:ZV,zonenV:zonenV,zfuell:zfuell,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
  TEIL_NAME:TEIL_NAME,BIOM:BIOM,DX:DX,DY:DY,HW:HW,mix:mix,ansicht:ansicht,erdTeil:erdTeil,erde:erde,ausschnitt:ausschnitt,gelaende:gelaende,stueck:stueck,rechnen:rechnen,kante:kante,biomVon:biomVon,herrscht:herrscht,ZONE:ZONE,ZONE_EN:ZONE_EN,N2C:N2C,Z_UNTER:Z_UNTER,Z_BIOM:Z_BIOM,zbio:zbio,istLand:istLand,unter:unter,ZK:ZK,zonen:zonen,zonenRegen:zonenRegen,zonenKlasse:zonenKlasse,zonenSpeicher:zonenSpeicher,waerme:waerme,zBreite:zBreite,anteile:anteile,punkt:punkt,neigung:neigung,klasse:klasse,KAN:KAN};
 if(typeof module!=='undefined'&&module.exports)module.exports=WG;else root.AT3WG=WG;
 })(typeof self!=='undefined'?self:this);

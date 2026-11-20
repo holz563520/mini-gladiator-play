@@ -12,8 +12,11 @@
 // aus dem Startset („bauBilder“). Bodenbilder bekommen Boden, Wände und Dach mit; auf Gebautem und Gerodetem keine Natur (auch nicht in First Person).
 // Anfrage „bild“ mit „offen“ (Räume ohne Dach, nur Stufe 1×). Antippen findet das vorderste Bauteil oder die Natur davor und meldet das Gebäudefeld.
 // Kerne: läuft nur als Hintergrundkern (Worker), gestartet von weltkarte.js, nie auf dem Hauptkern (Regel 13). Kein Zufall, kein Tick, keine Wirkung aufs Spiel.
+// N4c1: Reiche in Fernbildern und Globus (herrschaften.js; Tafel Reich je Erdzelle einmal je Welt, Nachricht „reiche“ schaltet um), Frage „reich“: Kette
+// „Answers to“ an einem Weltfeld mit Ortsnamen der Sitze.
 'use strict';
-importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search);
+importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
+var HR=self.AT3HERRSCHAFT, REI=true, RE=null;   // N4c1: Reiche in den Fernbildern (Knopf „Realms“), Tafeln einmal je Welt
 var BAUB=self.AT3BAUBILD, BAU=new Map(), BBILD=null, SP=self.AT3STARTPLATZ, FB=self.AT3FERN, ON=null, PBUF=null, TEX=null, TEXD=null, UEB=null;
 var BB=self.AT3BB, G=self.AT3WG, NAT=self.AT3NATUR, NBILD=null, F=null, st=new Map(), lager=[], gen=-1, HALB=3, A=null, seed=0, kx=-1, ky=-1, laeuft=false;
 var BMP=typeof createImageBitmap==='function'&&typeof ImageData!=='undefined', stUs=0, stN=0;
@@ -33,16 +36,22 @@ function arbeit(){laeuft=false;if(!A||kx<0)return;
 function weiter(){if(!laeuft){laeuft=true;setTimeout(arbeit,0)}}
 // Übersichtsbiome (Globus, Fernstufen ab ⅟1024): einmal je Welt, beim ersten Bedarf
 function ueb(){if(!UEB)UEB=FB.uebersicht(G,A,seed);return UEB}
+// N4c1: Reich + 1 je Erdzelle und Farbnummer je Reich (Vasallen eine Stufe heller), nur wenn die Erde Herrschaften trägt und der Knopf an ist
+function reiche(){if(!REI||!A||!A.hs||!F)return null;if(RE)return RE;var hs=A.hs,T=HR.tafel(hs),z=new Uint16Array(G.N),f=new Uint8Array(hs.zahl[0]),i,u;
+ for(i=0;i<G.N;i++){u=hs.zel[i];z[i]=u?T[u-1]&16383:0}
+ for(u=0;u<hs.zahl[0];u++){var c=HR.farbe(hs,u);f[u]=hs.tab[u*4+3]&256?F.he[c]:c}return RE={z:z,f:f}}
 function dunkelste(p){var b=0,bl=1e9;for(var i=0;i<p.length;i++){var c=p[i],l=(c&255)*3+((c>>8)&255)*6+((c>>16)&255);if(l<bl){bl=l;b=i}}return b}
 // G4c: Fragen der Startplatz-Wahl. Bilder gehen als Zahlenfeld zurück (klein, einmalig), der Hauptkern malt sie nur.
 function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.fehlt=true;self.postMessage(m);return}var t=performance.now();
  if(d.frage==='fp'){fp(d,m,t);return}
- if(d.frage==='globus'){if(!TEX){TEX=SP.erdBild(A,F,ueb(),FB.UFARBE);TEXD=FB.dunkler(TEX,F)}var gl=FB.globus(TEX,TEXD,d.W,d.H,d.R,d.lon,d.lat,d.s,F.pal[F.dunkel]);m.w=gl.w;m.h=gl.h;m.buf=gl.px;tr.push(gl.px.buffer)}
+ if(d.frage==='globus'){if(!TEX){TEX=SP.erdBild(A,F,ueb(),FB.UFARBE);if(reiche())FB.reicheErde(TEX,RE,F);TEXD=FB.dunkler(TEX,F)}var gl=FB.globus(TEX,TEXD,d.W,d.H,d.R,d.lon,d.lat,d.s,F.pal[F.dunkel]);m.w=gl.w;m.h=gl.h;m.buf=gl.px;tr.push(gl.px.buffer)}
  else if(d.frage==='erdbild'){var e=SP.erdBild(A,F);m.w=SP.GW;m.h=SP.GH;m.buf=e;tr.push(e.buffer)}
  else if(d.frage==='region'){var rx=SP.eckeX(d.zx),ry=SP.eckeY(d.zy),r=SP.regionBild(G,seed,A,rx,ry,F);m.rx=rx;m.ry=ry;m.w=m.h=SP.RP;m.rs=SP.RS;m.buf=r;tr.push(r.buffer)}
  else if(d.frage==='platz'||d.frage==='zufall'){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}
   var x=d.x,y=d.y;if(d.frage==='zufall'){var z=SP.zufall(G,seed,A,d.r1,d.r2);if(!z){m.platz={ok:false};self.postMessage(m);return}x=z.x;y=z.y}
   PBUF=PBUF||new Uint8Array(G.GEL_BYTES);m.platz=SP.platz(G,ON,seed,A,x,y,PBUF)}
+ else if(d.frage==='reich'){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}   // N4c1: Kette „Answers to“ an einem Weltfeld
+  var zx=((d.x%G.WF+G.WF)%G.WF)>>10,zy=Math.max(0,Math.min(G.GH-1,d.y>>10)),u=A.hs?A.hs.zel[zy*G.GW+zx]:0;m.hat=!!A.hs;m.reich=u?HR.info(A.hs,A.vk,A.orte,u-1,seed,ON):null}
  m.us=(performance.now()-t)*1000;self.postMessage(m,tr)}
 // FP1: Ausschnitt 96 × 96 Felder um den Gladiator (fpausschnitt.js, erst beim ersten Mal geladen). Das Fenster der Stücke rückt zum Ausschnitt,
 // fehlende Stücke werden sofort gerechnet (höchstens 9), dann geht der Ausschnitt ohne Kopie an den Hauptkern.
@@ -64,11 +73,11 @@ function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  return land<0?{x:BB.WX>>1,y:BB.WY>>1,ort:0}:{x:(land%G.GW)*G.ZF+(G.ZF>>1),y:((land/G.GW)|0)*G.ZF+(G.ZF>>1),ort:0}}
 self.onmessage=function(e){var d=e.data;
  if(d.art==='init'){F={pal:d.pal,du:d.du,he:d.he,dunkel:dunkelste(d.pal)};self.postMessage({art:'arten',liste:NAT.ARTEN,bau:BAUB.ARTEN})}
- else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=null;st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();weiter()}
+ else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();weiter()}
  else if(d.art==='blick'){kx=d.kx;ky=d.ky;st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});weiter()}
  else if(d.art==='natur'){NBILD=NAT.vorbereiten(d.liste,d.grau,d.rand);if(d.bau)BBILD=BAUB.vorbereiten(d.bau,d.grau,d.rand)}   // G4b: Bilder der Naturobjekte (nur übernommene, Rest grau); G5b: Bauteile
  else if(d.art==='bau'){if(d.leer)BAU.clear();(d.stuecke||[]).forEach(function(e){if(e[1])BAU.set(e[0],e[1]);else BAU.delete(e[0])})}           // G5b: Bau-Kartenstücke (dünn)
- else if(d.art==='bild'){var t=performance.now(),r=d.gen!==gen||!F?null:d.lod>=BB.STUFEN?(A?FB.kachel(G,A,seed,d.x0,d.y0,d.lod,F,d.lod>=FB.U_AB?ueb():null):null):BB.bild(hole,d.x0,d.y0,d.lod,F,NBILD?{N:NAT,seed:seed,BILD:NBILD}:null,BA(d.offen)),m={art:'bild',gen:d.gen,nv:d.nv,key:d.key,x0:d.x0,y0:d.y0,lod:d.lod};
+ else if(d.art==='bild'){var t=performance.now(),r=d.gen!==gen||!F?null:d.lod>=BB.STUFEN?(A?FB.kachel(G,A,seed,d.x0,d.y0,d.lod,F,d.lod>=FB.U_AB?ueb():null,reiche()):null):BB.bild(hole,d.x0,d.y0,d.lod,F,NBILD?{N:NAT,seed:seed,BILD:NBILD}:null,BA(d.offen)),m={art:'bild',gen:d.gen,nv:d.nv,key:d.key,x0:d.x0,y0:d.y0,lod:d.lod};
   if(!r){m.fehlt=true;self.postMessage(m);return}
   m.w=r.w;m.h=r.h;m.ox=r.ox;m.oy=r.oy;m.natur=r.natur;m.bau=r.bau||0;m.us=(performance.now()-t)*1000;
   if(BMP)createImageBitmap(new ImageData(new Uint8ClampedArray(r.px.buffer),r.w,r.h)).then(function(b){m.bmp=b;self.postMessage(m,[b])},function(){BMP=false;m.buf=r.px;self.postMessage(m,[r.px.buffer])});
@@ -80,4 +89,5 @@ self.onmessage=function(e){var d=e.data;
   if(fd&&ob)fd.obj=ob;else if(ob)fd={obj:ob};
   self.postMessage({art:'feld',id:d.id,feld:fd})}
  else if(d.art==='wahl')wahl(d);
+ else if(d.art==='reiche'){REI=!!d.an;RE=null;TEX=TEXD=null}   // N4c1: Knopf „Realms“; die Karte verwirft ihre Fernbilder selbst
  else if(d.art==='start'){self.postMessage({art:'start',gen:gen,platz:A?startplatz():null})}};

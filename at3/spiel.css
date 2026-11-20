@@ -32,7 +32,7 @@ th{color:var(--tinte2)}
 /* G2: Uhr-Leiste */
 #uhr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
 #uhrZeit{font-size:24px;color:var(--blut);min-width:9.5em}
-.uhrKnoepfe{display:flex;gap:6px}
+.uhrKnoepfe{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}   /* N4c1: mit „Realms“ darf die Leiste umbrechen */
 .uhrKnoepfe .knopf{min-width:52px}
 .uhrKnoepfe .knopf[aria-pressed=true]{background:var(--knopf-an)}
 .knopf:disabled{opacity:.5;cursor:default}

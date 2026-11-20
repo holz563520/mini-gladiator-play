@@ -9,6 +9,8 @@
 // nicht ganz, an der Naht überlappen sich darum zwei Bilder, beide zeigen dort dieselbe Welt.
 // Wiederverwendet: Biomfarben, Netzfarben und Linien der Startplatz-Wahl (startplatz.js, G4c), Biomregel und Glättung des Kartenstücks (weltgen.js punkt/neigung/klasse/herrscht,
 // W1a+), Eiskante (W1c), Ortspunkte und Straßenläufe (W1b), Palette AT3-64 mit heller/dunkler (at3-64.js).
+// N4c1: Reiche (Knopf „Realms“): Grenzlinie in der dunkleren Reichsfarbe, jede achte Landstichprobe in der Reichsfarbe; auf dem Globus je Erdzelle.
+//    Kosten: eine Nachschau je Stichprobe in einer Tafel, nichts je Bildpunkt.
 (function(root){
 'use strict';
 var GW=600, GH=300, ZF=1024, WF=GW*ZF, HF=GH*ZF, S=128, IW=512, IH=256, ZONE=58, WEGE_BIS=8, MAX=12;
@@ -37,7 +39,7 @@ function weich(A,art,fx,fy){var zx=fx>>10,zy=fy>>10,u=fx&1023,v=fy&1023,s=0,j,i;
 // ── Fernbild ──
 // Raster der Stichproben mit Rand M (für Mehrheit und Hangschatten): Höhe, Seeflag, Feuchte, Wärme, Biom
 var M=2, GS=S+2*M, HS=new Int32Array(GS*GS), KS=new Uint8Array(GS*GS), FA=new Int32Array(GS*GS), TT=new Int32Array(GS*GS), BI=new Uint8Array(GS*GS), BQ=new Uint8Array(GS*GS),
-    ZB=new Int32Array(18), COL=new Uint8Array(S*S), P=new Int32Array(8), V=new Int32Array(8);
+    ZB=new Int32Array(18), COL=new Uint8Array(S*S), P=new Int32Array(8), V=new Int32Array(8), RQ=new Uint16Array(GS*GS);   // N4c1: Reich je Stichprobe
 function binnen(b){return b>=3&&b<=9||b>=13}                                   // N2c: 13–17 neue Land-Biome
 // Übersicht zählt je Land-Biom (Wüste … Schnee, dazu N2c Grasland … Mangroven): Biom → Platz 0..11 und zurück
 var U_LAND=[3,4,5,6,7,8,9,13,14,15,16,17], U_PL=new Int8Array(18).fill(-1), UK=U_LAND.length;U_LAND.forEach(function(b,k){U_PL[b]=k});
@@ -56,7 +58,9 @@ function uebersicht(G,A,seed){seed=seed>>>0;var N=GW*GH,C=new Uint16Array(N*UK),
    if(y+UR+1<GH)for(k=0;k<UK;k++)Z[k]+=T[((y+UR+1)*GW+x)*UK+k];if(y-UR>=0)for(k=0;k<UK;k++)Z[k]-=T[((y-UR)*GW+x)*UK+k]}}
  return U}
 // G = weltgen.js, A = Erdraster (ansicht), F = {pal, du, he, dunkel}. x0 darf beliebig sein (wird umgerechnet), y0 im Raster der Stufe. Gibt {w,h,ox,oy,px}.
-function kachel(G,A,seed,x0,y0,lod,F,U){seed=seed>>>0;var ueb=U&&lod>=U_AB;x0=umF(x0);var n=8<<lod,st=n/S,sI=G.eisSeed(seed),i,j,k,q,fx,fy;
+// N4c1: RE = {z: Reich + 1 je Erdzelle, f: Farbnummer je Reich} oder null (Knopf „Realms“ aus, Erde ohne Herrschaften). Grenzen leicht ausgefranst
+// (Versatz je Block von 128 Feldern wie die Übersicht), Grenzlinie in der dunkleren Reichsfarbe, Land jede achte Stichprobe (versetzt) in der Reichsfarbe.
+function kachel(G,A,seed,x0,y0,lod,F,U,RE){seed=seed>>>0;var ueb=U&&lod>=U_AB;x0=umF(x0);var n=8<<lod,st=n/S,sI=G.eisSeed(seed),i,j,k,q,fx,fy;
  for(j=0;j<GS;j++){fy=Math.floor(y0+(j-M+.5)*st);if(fy<0)fy=0;else if(fy>=HF)fy=HF-1;var zy=fy>>10,pol=zy<ZONE||zy>=GH-ZONE;
   for(i=0;i<GS;i++){fx=umF(Math.floor(x0+(i-M+.5)*st));q=j*GS+i;var h=HS[q]=weich(A,0,fx,fy),ks=KS[q]=weich(A,3,fx,fy),fa=FA[q]=weich(A,1,fx,fy),tt=TT[q]=weich(A,2,fx,fy),b;
    if(pol&&G.eis(sI,fx&~7,fy&~7,true)>0)b=12;
@@ -65,6 +69,7 @@ function kachel(G,A,seed,x0,y0,lod,F,U){seed=seed>>>0;var ueb=U&&lod>=U_AB;x0=um
    else if(ueb){var hz=G.mix(seed^Math.imul(fx>>7,0x2c9277b5)^Math.imul(fy>>7,0x5bd1e995)),ux=umF(fx+(hz&511)-256)>>10,uy=(fy+((hz>>>9)&511)-256)>>10;   // Grenzen leicht ausgefranst
     uy=uy<0?0:uy>=GH?GH-1:uy;b=U[uy*GW+ux];if(!binnen(b))b=U[zy*GW+(fx>>10)];if(!binnen(b))b=5}
    else{if(G.N2B&&A.zon)G.zonenV(A,seed,fx,fy,V);else G.neigung(tt,fa,h,V);G.punkt(seed,fx,fy,P,0);b=G.klasse(P,0,V,0,0,0)}
+   if(RE){var hr=G.mix(seed^0x7e1c5a3^Math.imul(fx>>7,0x2c9277b5)^Math.imul(fy>>7,0x5bd1e995)),rx=umF(fx+(hr&511)-256)>>10,ry=(fy+((hr>>>9)&511)-256)>>10;ry=ry<0?0:ry>=GH?GH-1:ry;RQ[q]=RE.z[ry*GW+rx]}
    BI[q]=b}}
  // Weit draußen deckt eine Stichprobe viele Felder, die Flecken sind kleiner: Mehrheit je 3 × 3 (⅟256, ⅟512 einmal, ab ⅟1024 zweimal), wie die Region der Startplatz-Wahl
  var pass=ueb?0:lod>=10?2:lod>=8?1:0;
@@ -73,7 +78,8 @@ function kachel(G,A,seed,x0,y0,lod,F,U){seed=seed>>>0;var ueb=U&&lod>=U_AB;x0=um
  var pal=F.pal,du=F.du,he=F.he;
  for(j=0;j<S;j++)for(i=0;i<S;i++){q=(j+M)*GS+i+M;var b=BI[q],c=ueb?UFARBE[b]:BFARBE[b];
   if(b>=2&&b<=9||b>=13){var gx=(HS[q+1]-HS[q-1])/(2*st),gy=(HS[q+GS]-HS[q-GS])/(2*st),sh=gx>T2?2:gx>T1?1:gx<-T2?-2:gx<-T1?-1:0;   // Licht von Westen wie im Bodenbild
-   if(gy>T2)sh--;while(sh>0){c=he[c];sh--}while(sh<0){c=du[c];sh++}}
+   if(gy>T2)sh--;while(sh>0){c=he[c];sh--}while(sh<0){c=du[c];sh++}
+   if(RE){var rr=RQ[q];if(rr){var rc=RE.f[rr-1];if((RQ[q+1]&&RQ[q+1]!==rr)||(RQ[q+GS]&&RQ[q+GS]!==rr))c=du[rc];else if(((i&3)===0&&(j&3)===0)||((i&3)===2&&(j&3)===2))c=rc}}}
   COL[j*S+i]=c}
  var px=new Uint32Array(IW*IH);for(k=0;k<IW*IH;k++){var t=TAB[k];if(t>=0)px[k]=pal[COL[t]]}
  netz(G,A,seed,x0,y0,lod,n,F,px);
@@ -121,6 +127,9 @@ function aufGlobus(x,y,R,lon0,lat0){x/=R;y=-y/R;var r2=x*x+y*y;if(r2>=1)return n
 function dunkler(tex,F){var inv=new Map(),d=new Uint32Array(tex.length);for(var i=0;i<64;i++)inv.set(F.pal[i],i);
  for(i=0;i<tex.length;i++){var c=inv.get(tex[i]);d[i]=c==null?tex[i]:F.pal[F.du[c]]}return d}
 
-var FB={S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
+// N4c1: Reiche auf dem Erdbild des Globus (600 × 300 Farben): Grenze dunkel, jede vierte Zelle in der Reichsfarbe
+function reicheErde(tex,RE,F){for(var i=0;i<GW*GH;i++){var r=RE.z[i];if(!r)continue;var x=i%GW,y=(i/GW)|0,e=RE.z[x+1<GW?i+1:i+1-GW],s=y+1<GH?RE.z[i+GW]:0,rc=RE.f[r-1];
+  if((e&&e!==r)||(s&&s!==r))tex[i]=F.pal[F.du[rc]];else if(!(x&1)&&!(y&1))tex[i]=F.pal[rc]}return tex}
+var FB={reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
 if(typeof module!=='undefined'&&module.exports)module.exports=FB;else root.AT3FERN=FB;
 })(typeof self!=='undefined'?self:this);

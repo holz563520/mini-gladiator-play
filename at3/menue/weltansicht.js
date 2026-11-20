@@ -13,11 +13,14 @@
 // N4b: Einfärbungen „Kulturen“ und „Religionen“ (Völker aus dem Erdteil „Völker“, Grenzen dunkel, Orte eine Stufe dunkler, Kernland hell), Antippen
 // zeigt Volk, Kultur, Religion und die Glaubensanteile des Orts, darunter eine Liste mit Orten je Kultur und je Religion. Namen aus daten/kulturen.json
 // und daten/religionen.json (erst beim ersten Umschalten geladen). Einfärben einmal je Welt und Umschalten (600 × 300 Punkte), nie je Bild.
+// N4c1: Einfärbung „Herrschaften“ (Reiche in ihrer Farbe, Vasallen heller, Reichsgrenzen schwarz, Grenzen der Stufen darunter eine Stufe dunkler, Sitze der Reiche
+// hell), Antippen zeigt die Kette „Answers to“ mit Titeln, darunter die Liste der Reiche. Namen aus herrschaften.js, ortsnamen.js und sprache/en.json
+// (erst beim ersten Umschalten geladen). Einfärben einmal je Welt und Umschalten, nie je Bild.
 // Das Spiel lädt diese Datei und den Generator nicht (G4).
 // Wiederverwendet: kernstart.js (G2), Messart, Ampel und Kopierknopf aus der Kernprobe und der Riesenwelt-Probe, Palette aus at3-64.js (M2).
 (function(){
 'use strict';
-var SEED=563520, BIS=300, SOLL='450d3898';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
+var SEED=563520, BIS=300, SOLL='6c836d2f';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
 function B(cx,cy){return cx*8192+cy}
 var SKRIPT=[{tick:0,art:'weltseed',wert:563520},{tick:0,art:'blick',wert:B(2400,2400)},{tick:70,art:'blick',wert:B(2403,2398)},{tick:100,art:'blick',wert:B(0,0)},{tick:115,art:'blick',wert:B(9599,2400)},
  {tick:130,art:'last',wert:300},{tick:150,art:'blick',wert:B(4799,4799)},{tick:170,art:'weltseed',wert:77},{tick:171,art:'weltseed',wert:4242},{tick:172,art:'weltdichte',wert:2},{tick:230,art:'blick',wert:B(9598,256)},
@@ -37,6 +40,7 @@ var ZONEN=['Wasser','Eis','Schnee','Tundra','Nadelwald','Laubwald','Grasland','S
 var ZFARBE=[40,6,5,11,14,17,19,61,30,63,52,15,8,42,4];                        // Farbnummern der AT3-Palette je Klimazone
 var KFARBE=[57,20,6,53,30,62,25,36,19,47,16,9,50,35,31,5,51,60,14,58,45,37,3,55];   // N4b: Farbnummer je Kultur (Nummer 1–24 wie kulturen.json)
 var RFARBE=[56,62,37,53,25,11,17,58,3,47,45,6];                                 // N4b: Farbnummer je Religion (Reihenfolge wie religionen.json)
+var HD=null, hdLaden=null;                                                     // N4c1: {H: herrschaften.js, ON: ortsnamen.js, TX: Texte der Sprachdatei}
 var VD=null, vdLaden=null;                                                     // N4b: {K: Kulturen, R: Religionen, kr: Religion je Kultur (Nummer ab 1)}
 var ZREG=[['T_AEQ','Wärme am Äquator (Zehntel Grad)',150,350,5],['T_POL','Kälter zum Pol hin (Zehntel Grad)',300,800,10],['T_HOEHE','Abkühlung mit der Höhe',0,60,1],
  ['REGEN','Regen insgesamt (256 = normal)',64,512,8],['R_LAND','Regen fällt früh (kleiner = reicht weiter ins Land)',6,96,2],['R_BERG','Regenschatten hinter Gebirgen',0,768,16],
@@ -65,11 +69,19 @@ function farbeVon(bio,h,dh){                                                   /
  var c=BFARBE[bio];if(bio>1&&bio<10||bio>=13)c+=dh>0?1:dh<0?-1:0;return pal[c]}
 function erdBild(){if(!erd)return;var g=erdCv.getContext('2d'),im=g.createImageData(GW,GH),d=new Uint32Array(im.data.buffer),Eh=erd.E,bio=erd.bio,flu=erd.flu;
  if((farbe===4||farbe===5)&&erd.vk&&VD){voelkerBild(d);g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
+ if(farbe===6&&erd.hs&&HD){herrschaftBild(d);g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
  if(farbe===3){var Z=zBereit?zZ:erd.zon;for(var i=0;i<N;i++){var z=Z[i],c=ZFARBE[z],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];if(z>1&&dh>120)c++;else if(z>1&&dh<-120)c--;d[i]=pal[c]}   // N2a: Klimazonen, Hänge schattiert
   g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
  for(var i=0;i<N;i++){var b=flu[i]>1&&bio[i]!==12?10:bio[i],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];d[i]=farbeVon(b,Eh[i],dh>120?1:dh<-120?-1:0)}
  g.putImageData(im,0,0);netzBild();neuZeichnen=true}
 // N4b: Kulturen (farbe 4) oder Religion der Kultur (farbe 5) je Landzelle; Grenze zwischen Völkern dunkel, Orte eine Stufe dunkler, Kernland hell
+// N4c1: Reiche je Landzelle (Vasallen eine Stufe heller), Reichsgrenze schwarz, Grenze der untersten Einheiten eine Stufe dunkler, Reichssitze hell
+function herrschaftBild(d){var hs=erd.hs,Z=hs.zel,bio=erd.bio,i,u,x;if(!erd.hsR)erd.hsR=HD.H.tafel(hs);var R=erd.hsR;
+ function rv(u){return u?R[u-1]:0}
+ for(i=0;i<N;i++){u=Z[i];if(!u){var b=erd.flu[i]>1&&bio[i]!==12?10:bio[i];d[i]=farbeVon(b,erd.E[i],0);continue}x=i%GW;var r=rv(u),w=Z[x+1<GW?i+1:i+1-GW],un=i+GW<N?Z[i+GW]:u;
+  var c=HD.H.FARBE[hs.tab[((r&16383)-1)*4+3]>>4&15]+(r&16384?1:0);
+  if((w&&(rv(w)&16383)!==(r&16383))||(un&&(rv(un)&16383)!==(r&16383)))d[i]=pal[1];else if((w&&w!==u)||(un&&un!==u))d[i]=pal[c-1];else d[i]=pal[c]}
+ for(u=0;u<hs.zahl[0];u++)if(!(hs.tab[u*4+2]&3))d[erd.orte[hs.tab[u*4+1]]&0xffffff]=pal[48]}
 function voelkerFarbe(v){var c=erd.vk.tab[v-1]>>>24;return farbe===4?KFARBE[c-1]:RFARBE[VD.kr[c-1]-1]}
 function voelkerBild(d){var vk=erd.vk,vol=vk.vol,bio=erd.bio,ort=erd.ort,i,v,w,x;
  for(i=0;i<N;i++){v=vol[i];if(!v){var b=erd.flu[i]>1&&bio[i]!==12?10:bio[i];d[i]=farbeVon(b,erd.E[i],0);continue}x=i%GW;
@@ -95,6 +107,7 @@ function beiWs(d){
    ort:new Uint8Array(b,7*N,N),weg:new Uint8Array(b,8*N,N),zon:new Uint8Array(b,9*N,N),kopf:new Uint32Array(b,10*N,4),seed:d.seed};   // N2a: 10 Byte je Zelle
   var nO=erd.kopf[0],nK=erd.kopf[1],o=10*N+16+nO*4+nK*8;erd.orte=new Uint32Array(b,10*N+16,nO);
   if(b.byteLength>=o+260+N+nO*6)erd.vk={zahl:new Uint32Array(b,o,1)[0],tab:new Uint32Array(b,o+4,64),vol:new Uint8Array(b,o+260,N),rel:new Uint8Array(b,o+260+N,nO*6),ortNr:null};   // N4b: wie weltgen.js vkSicht
+  var o2=o+260+N+nO*6;if(erd.vk&&b.byteLength>=o2+4){var nH=new Uint16Array(b,o2,1)[0];if(b.byteLength>=o2+4+nH*8+N*2+nO*2)erd.hs={zahl:new Uint16Array(b,o2,2),tab:new Uint16Array(b,o2+4,nH*4),zel:new Uint16Array(b,o2+4+nH*8,N),ort:new Uint16Array(b,o2+4+nH*8+N*2,nO)}}   // N4c1: wie weltgen.js hsSicht
   erdGen=d.gen;allesWeg();zBereit=false;zJob=null;erdBild();if(farbe===3)zonenRechnen();vListe();return}
  if(d.art==='wsStueck'){if(d.gen!==erdGen||abS(d.cx,kx)>HALB||Math.abs(d.cy-ky)>HALB){if(H)H.wsZurueck(d.buf);return}
   var key=B(d.cx,d.cy);kachelWeg(key);var c=lager.pop();if(!c){c=document.createElement('canvas');c.width=c.height=ST}
@@ -140,7 +153,7 @@ function marke(g,x,y,w){g.strokeStyle='#f4c8a0';g.lineWidth=2;g.strokeRect(Math.
 function blick(nx,ny){nx=umS(nx|0);ny=Math.max(0,Math.min(SY-1,ny|0));if(nx===kx&&ny===ky)return;kx=nx;ky=ny;fensterRaeumen();if(H)H.befehl('blick',B(kx,ky));neuZeichnen=true;ort()}
 function ort(){var o=q('#waOrt');if(o)o.textContent='Blick: Kartenstück '+tsd(kx)+' / '+tsd(ky)+' von '+tsd(SX)+' × '+tsd(SY)+' · Zelle '+(kx>>4)+' / '+(ky>>4)}
 function hoehe(h){return h<0?'Tiefe '+kom(-h/16,1)+' Felder (rund '+Math.round(-h*3/16)+' m)':'Höhe '+kom(h/16,1)+' Felder (rund '+Math.round(h*3/16)+' m)'}
-function zelleText(i){if(farbe===3)return zoneText(i)+'Grobes Biom (Orte und Straßen): '+zelleText0(i);if(farbe===4||farbe===5)return volkText(i)+zelleText0(i);return zelleText0(i)}
+function zelleText(i){if(farbe===3)return zoneText(i)+'Grobes Biom (Orte und Straßen): '+zelleText0(i);if(farbe===4||farbe===5)return volkText(i)+zelleText0(i);if(farbe===6)return reichText(i)+zelleText0(i);return zelleText0(i)}
 // N4b: Volk, Kultur, Religion der Zelle und Glaubensanteile des Orts
 function ortNr(i){var vk=erd.vk;if(!vk.ortNr){vk.ortNr=new Map();for(var k=0;k<erd.orte.length;k++)vk.ortNr.set(erd.orte[k]&0xffffff,k)}return vk.ortNr.get(i)}
 function volkText(i){var vk=erd&&erd.vk;if(!vk)return 'Diese Welt hat keine Völker (Notausschalter ?n4b=0). · ';if(!VD)return '';var v=vk.vol[i];if(!v)return 'Niemandsland · ';
@@ -149,10 +162,27 @@ function volkText(i){var vk=erd&&erd.vk;if(!vk)return 'Diese Welt hat keine Völ
  var k=ortNr(i);if(k!=null){var r=vk.rel,L=[],s=0;for(var q2=0;q2<3;q2++)if(r[k*6+q2*2]){L.push(VD.R[r[k*6+q2*2]-1].en+' '+r[k*6+q2*2+1]+' %');s+=r[k*6+q2*2+1]}
   t+='Glaube im Ort: '+L.join(', ')+(s<100?', verstreute Sekten '+(100-s)+' %':'')+' · '}
  return t}
+// N4c1: Kette „Answers to“ der Zelle mit Titeln, Sitz und System
+function tx(k,w){var s=HD.TX[k];if(s==null)return k;for(var x in w||{})s=s.split('{'+x+'}').join(w[x]);return s}
+function reichText(i){var hs=erd&&erd.hs;if(!hs)return 'Diese Welt hat keine Herrschaften (Notausschalter ?n4c=0). · ';if(!HD)return '';var u=hs.zel[i];if(!u)return tx('reich.niemand')+' · ';
+ var L=HD.H.info(hs,erd.vk,erd.orte,u-1,erd.seed>>>0,HD.ON);
+ return 'Answers to: '+L.map(function(e){return HD.H.name(e,tx)+' ('+HD.H.titel(e,tx)+(e.vasall?', Vasall':'')+')'}).join(' › ')+' · System '+HD.H.SYS[L[L.length-1].sys]+' · '}
+function herrschaftLaden(){return hdLaden||(hdLaden=Promise.all([window.AT3ED.lade('welt','herrschaften.js'),helfer(),window.AT3ED.lade('welt','sprache/en.json')]).then(function(r){
+  HD={H:window.AT3HERRSCHAFT,ON:window.AT3ORTSNAMEN,TX:r[2].texte};vListe();erdBild()}))}
+// N4c1: Liste der Reiche (Farbe, Name, System, Orte, Vasallen) und Zahl der Einheiten je Stufe
+function rListe(o){var hs=erd&&erd.hs,F=window.AT3_64.PALETTEN.A.farben;
+ if(!hs){o.innerHTML='<p class="leise">'+(erd?'Diese Welt hat keine Herrschaften (Notausschalter ?n4c=0).':'Noch keine Welt.')+'</p>';return}if(!HD){o.innerHTML='<p class="leise">Die Herrscher werden gekrönt …</p>';return}
+ var nH=hs.zahl[0],st=[0,0,0],oR=new Int32Array(nH),va=new Int32Array(nH),R=erd.hsR||(erd.hsR=HD.H.tafel(hs)),u,k,L=[];
+ for(u=0;u<nH;u++){st[hs.tab[u*4+2]&3]++;if(!(hs.tab[u*4+2]&3)&&hs.tab[u*4+3]&256)va[hs.tab[u*4]-1]++}
+ for(k=0;k<erd.orte.length;k++){u=hs.ort[k];if(u)oR[(R[u-1]&16383)-1]++}
+ for(u=0;u<nH;u++)if(!(hs.tab[u*4+2]&3))L.push(u);L.sort(function(a,b){return oR[b]-oR[a]||a-b});
+ var h='<p><b>'+st[0]+' Reiche</b>, darunter '+tsd(st[1])+' Einheiten der zweiten und '+tsd(st[2])+' der dritten Stufe. Schwarze Linien: Reichsgrenzen, dunklere Linien: unterste Einheiten, helle Punkte: Sitze der Reiche, hellere Fläche: Vasallen.</p><p class="leise">';
+ h+=L.map(function(u){var e=HD.H.info(hs,erd.vk,erd.orte,u,erd.seed>>>0,HD.ON);return '<i class="amp" style="background:'+F[HD.H.FARBE[e[0].farbe]+(e[0].vasall?1:0)]+'"></i>'+HD.H.ketteText(e,tx)+' ('+HD.H.SYS[e[0].sys]+', '+tsd(oR[u])+' Orte'+(va[u]?', '+va[u]+' Vasallen':'')+')'}).join(' · ');
+ o.innerHTML=h+'</p><p class="leise">Jede Grenze wurde mit Blut gezogen. Die meisten mit fremdem.</p>'}
 function voelkerLaden(){return vdLaden||(vdLaden=Promise.all([window.AT3ED.lade('welt','daten/kulturen.json'),window.AT3ED.lade('welt','daten/religionen.json')]).then(function(r){
   var K=r[0].kulturkreise,R=r[1].religionen,ids=R.map(function(x){return x.id});VD={K:K,R:R,kr:K.map(function(k){return ids.indexOf(k.religion)+1})};vListe();erdBild()}))}
 // N4b: Liste unter der Karte: Orte je Kultur (mit Zahl der Völker) oder je Hauptreligion (mit Anteil an allen Gläubigen)
-function vListe(){var o=q('#waVoelker');if(!o)return;o.hidden=farbe!==4&&farbe!==5;if(o.hidden)return;var vk=erd&&erd.vk,F=window.AT3_64.PALETTEN.A.farben;
+function vListe(){var o=q('#waVoelker');if(!o)return;o.hidden=farbe!==4&&farbe!==5&&farbe!==6;if(o.hidden)return;if(farbe===6){rListe(o);return}var vk=erd&&erd.vk,F=window.AT3_64.PALETTEN.A.farben;
  if(!vk){o.innerHTML='<p class="leise">'+(erd?'Diese Welt hat keine Völker (Notausschalter ?n4b=0).':'Noch keine Welt.')+'</p>';return}if(!VD){o.innerHTML='<p class="leise">Die Völker werden gezählt …</p>';return}
  var inst=new Array(25).fill(0),oK=new Array(25).fill(0),oR=new Array(13).fill(0),pR=new Array(13).fill(0),nO=erd.orte.length,k,v;
  for(v=0;v<vk.zahl;v++)inst[vk.tab[v]>>>24]++;
@@ -204,7 +234,7 @@ function anteileZeigen(zx,zy){var info=q('#waInfo'),seed=erd?erd.seed:0,i=zy*GE+
   info.textContent=vorher+' · Anteile: '+L.map(function(e){return BIOM[e[0]]+' '+Math.round(e[1]*100/n)+' %'}).join(', ')},function(){})}
 function schritt(dx,dy){var s=zoom===0?ZP*20:zoom===1?ZP*5:zoom===2?3:1;blick(kx+dx*s,ky+dy*s)}
 function setZoom(z){zoom=z;[].forEach.call(el.querySelectorAll('[data-zoom]'),function(b){b.classList.toggle('an',+b.dataset.zoom===z)});neuZeichnen=true}
-function setFarbe(f){farbe=f;if(f===2)helfer().catch(function(){});klimaPanel();vListe();if((f===4||f===5)&&!VD)voelkerLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Völker sind nicht zum Zählen erschienen (Daten fehlen).</p>'});if(f===3&&!zBereit&&!zJob)zonenRechnen();[].forEach.call(el.querySelectorAll('[data-farbe]'),function(b){b.classList.toggle('an',+b.dataset.farbe===f)});erdBild();kacheln.forEach(function(k,key){if(warte.indexOf(key)<0)warte.push(key)})}
+function setFarbe(f){farbe=f;if(f===2)helfer().catch(function(){});klimaPanel();vListe();if((f===4||f===5)&&!VD)voelkerLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Völker sind nicht zum Zählen erschienen (Daten fehlen).</p>'});if(f===6&&!HD)herrschaftLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Herrscher sind nicht zur Krönung erschienen (Daten fehlen).</p>'});if(f===3&&!zBereit&&!zJob)zonenRechnen();[].forEach.call(el.querySelectorAll('[data-farbe]'),function(b){b.classList.toggle('an',+b.dataset.farbe===f)});erdBild();kacheln.forEach(function(k,key){if(warte.indexOf(key)<0)warte.push(key)})}
 function neueWelt(seed,d){seed=Math.max(0,Math.min(4294967295,Math.floor(+seed||0)));q('#waSeed').value=seed;if(d!=null){dichte=d===0||d===2?d:1;q('#waDichte').value=dichte}
  erd=null;ws=null;allesWeg();neuZeichnen=true;
  H.befehl('weltdichte',dichte);H.befehl('weltseed',seed);H.befehl('blick',B(kx,ky));q('#waInfo').textContent='Die Erde wird geknetet. Sieben Tage wären übertrieben.';return seed}
@@ -259,7 +289,7 @@ function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElemen
   '<div class="wZeile"><label for="waDichte">Orte</label><select id="waDichte" style="font:inherit;font-size:17px;min-height:42px">'+DICHTEN.map(function(n,i){return '<option value="'+i+'"'+(i===1?' selected':'')+'>'+n+'</option>'}).join('')+'</select> '+
   '<span class="leise">Dichte der Besiedlung. Gehört zur Welt wie der Seed.</span></div>'+
   '<div class="wZeile">'+ZOOM.map(function(n,i){return '<button class="knopf klein'+(i===0?' an':'')+'" data-zoom="'+i+'">'+n+'</button>'}).join('')+'</div>'+
-  '<div class="wZeile"><button class="knopf klein an" data-farbe="0">Biome</button><button class="knopf klein" data-farbe="1">Höhe</button><button class="knopf klein" data-farbe="2">Straßen &amp; Seewege</button><button class="knopf klein" data-farbe="3">Klimazonen</button><button class="knopf klein" data-farbe="4">Kulturen</button><button class="knopf klein" data-farbe="5">Religionen</button></div><div class="wZeile">'+
+  '<div class="wZeile"><button class="knopf klein an" data-farbe="0">Biome</button><button class="knopf klein" data-farbe="1">Höhe</button><button class="knopf klein" data-farbe="2">Straßen &amp; Seewege</button><button class="knopf klein" data-farbe="3">Klimazonen</button><button class="knopf klein" data-farbe="4">Kulturen</button><button class="knopf klein" data-farbe="5">Religionen</button><button class="knopf klein" data-farbe="6">Herrschaften</button></div><div class="wZeile">'+
   '<button class="knopf klein" data-geh="-1,0" aria-label="nach Westen">◀</button><button class="knopf klein" data-geh="0,-1" aria-label="nach Norden">▲</button>'+
   '<button class="knopf klein" data-geh="0,1" aria-label="nach Süden">▼</button><button class="knopf klein" data-geh="1,0" aria-label="nach Osten">▶</button></div>'+
   '<canvas id="waCv" class="pixel" width="'+S+'" height="'+S+'" style="display:block;width:100%;max-width:'+S+'px;aspect-ratio:1;background:#5c5650;border:3px solid var(--rand);touch-action:manipulation"></canvas>'+
@@ -298,6 +328,8 @@ window.AT3_WELTANSICHT={aufbauen:aufbauen,ergebnis:E,text:text,messe:messe,ende:
  zustand:function(){return{zoom:zoom,farbe:farbe,kx:kx,ky:ky,dichte:dichte,orte:erd&&erd.kopf?erd.kopf[0]:0,verbindungen:erd&&erd.kopf?erd.kopf[1]:0,generator:!!WGh,erde:!!erd,kacheln:kacheln.size,fertig:Array.from(kacheln.values()).filter(function(k){return k.fertig}).length,ws:ws}},
  // N4b: für Tests: Völker der Welt und Text einer Zelle
  voelker:function(){var vk=erd&&erd.vk;return vk?{zahl:vk.zahl,daten:!!VD,tab:Array.from(vk.tab.subarray(0,vk.zahl)),orte:erd.orte.length}:null},zelle:function(i){return erd?zelleText(i):''},
+ // N4c1: für Tests: Herrschaften der Welt
+ herrschaften:function(){var hs=erd&&erd.hs;return hs?{zahl:hs.zahl[0],daten:!!HD,tab:Array.from(hs.tab),zel:Array.from(hs.zel.subarray(0,2000))}:null},
  bildPunkt:function(i){if(!erdCv)return null;var d=erdCv.getContext('2d').getImageData(i%GW,(i/GW)|0,1,1).data;return[d[0],d[1],d[2]]},
  setZoom:setZoom,setFarbe:setFarbe,blick:blick,neueWelt:neueWelt,setRegler:setRegler,ZONEN:ZONEN,
  klima:function(){return{bereit:zBereit,laeuft:!!zJob,gleich:zGleich,anteil:zAnteil?Array.from(zAnteil.Z):null,land:zAnteil?zAnteil.land:0,werte:zK?Object.assign({},zK):null,text:zK?zkText():''}},
