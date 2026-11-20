@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='7a4df57d', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='4a668cea', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -114,14 +114,18 @@ function kernLos(w){WSEED=w.seed>>>0;
  document.head.appendChild(s);document.head.appendChild(s2)}
 // ── Karte (G4a): Bilder kommen aus dem Bildkern, hier nur Anschluss, Zoomknöpfe und die Auskunft beim Antippen ──
 // N4c1: Reiche in den Fernstufen (Knopf „Realms“, Grundstellung an, gemerkt im Browser) und Antippen dort: „Answers to: County › Duchy › Kingdom“.
-// Namen baut herrschaften.js (erst beim ersten Antippen geladen) aus den Daten des Bildkerns und der Sprachdatei.
+// Namen baut herrschaften.js (erst beim ersten Antippen geladen) aus den Daten des Bildkerns und der Sprachdatei. N4c2: dazu herrscher.js (Herrscher, Vorgeschichte).
 var REICHE=true, HRL=null;
 function reicheAnschliessen(){try{REICHE=localStorage.getItem('at3.reiche')!=='0'}catch(x){}var k=$('reicheKnopf');k.textContent=t('reich.knopf');k.setAttribute('aria-pressed',REICHE?'true':'false');
  if(!REICHE)KARTE.reiche(false);
  k.onclick=function(){REICHE=!REICHE;k.setAttribute('aria-pressed',REICHE?'true':'false');try{localStorage.setItem('at3.reiche',REICHE?'1':'0')}catch(x){}KARTE.reiche(REICHE)}}
 function reichTipp(L,hat){if(!hat){$('weltInfo').textContent=t('welt.leer');return}if(!L||!L.length){$('weltInfo').textContent=t('reich.niemand');return}
- (HRL||(HRL=new Promise(function(ok,no){if(window.AT3HERRSCHAFT)return ok();var s=document.createElement('script');s.src='herrschaften.js?v='+V;s.onload=ok;s.onerror=function(){HRL=null;no(new Error('herrschaften.js'))};document.head.appendChild(s)})))
- .then(function(){window.AT3SPIEL.reich=L;$('weltInfo').textContent=t('reich.antwortet',{kette:window.AT3HERRSCHAFT.ketteText(L,t)})},function(){})}
+ (HRL||(HRL=Promise.all([['herrschaften.js','AT3HERRSCHAFT'],['herrscher.js','AT3HERRSCHER']].map(function(q){return new Promise(function(ok,no){if(window[q[1]])return ok();var s=document.createElement('script');s.src=q[0]+'?v='+V;s.onload=ok;s.onerror=function(){HRL=null;no(new Error(q[0]))};document.head.appendChild(s)})}))))
+ .then(function(){var H=window.AT3HERRSCHAFT,P=window.AT3HERRSCHER,el=$('weltInfo');window.AT3SPIEL.reich=L;el.textContent=t('reich.antwortet',{kette:H.ketteText(L,t)});
+  if(!P||P.AUS)return;var ri=0;while(ri<L.length-1&&L[ri].stufe)ri++;   // N4c2: Herrscher der untersten Stufe und des Reichs, Vorgeschichte des Reichs (Notausschalter ?n4c2=0)
+  var wer=(ri?[L[0],L[ri]]:[L[0]]).map(function(e){return P.titelName(P.herrscher(WSEED,e),t)}).join(' › '),ch=P.chronik(WSEED,L.slice(ri),t,H.name);
+  window.AT3SPIEL.herrscher={wer:wer,chronik:ch};
+  el.innerHTML=esc(el.textContent)+'<br><span class="leise">'+esc(t('person.herrscht',{wer:wer}))+'</span>'+(ch?'<br><span class="leise">'+esc(ch)+'</span>':'')},function(){})}
 function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&&w.daten.kern.welt,waehlen=!/[?&]nosave\b/.test(location.search)&&!(sp&&sp.kam);$('weltInfo').textContent=t('welt.wartet');
  if(sp&&sp.start)START=sp.start;
  KARTE=window.AT3KARTE.starten({cv:$('weltCv'),S:S,kern:KERN,kam:sp&&sp.kam,waehlen:waehlen,beiErde:startWaehlen,

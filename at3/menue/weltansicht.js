@@ -163,12 +163,17 @@ function volkText(i){var vk=erd&&erd.vk;if(!vk)return 'Diese Welt hat keine Völ
   t+='Glaube im Ort: '+L.join(', ')+(s<100?', verstreute Sekten '+(100-s)+' %':'')+' · '}
  return t}
 // N4c1: Kette „Answers to“ der Zelle mit Titeln, Sitz und System
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
 function tx(k,w){var s=HD.TX[k];if(s==null)return k;for(var x in w||{})s=s.split('{'+x+'}').join(w[x]);return s}
 function reichText(i){var hs=erd&&erd.hs;if(!hs)return 'Diese Welt hat keine Herrschaften (Notausschalter ?n4c=0). · ';if(!HD)return '';var u=hs.zel[i];if(!u)return tx('reich.niemand')+' · ';
  var L=HD.H.info(hs,erd.vk,erd.orte,u-1,erd.seed>>>0,HD.ON);
- return 'Answers to: '+L.map(function(e){return HD.H.name(e,tx)+' ('+HD.H.titel(e,tx)+(e.vasall?', Vasall':'')+')'}).join(' › ')+' · System '+HD.H.SYS[L[L.length-1].sys]+' · '}
-function herrschaftLaden(){return hdLaden||(hdLaden=Promise.all([window.AT3ED.lade('welt','herrschaften.js'),helfer(),window.AT3ED.lade('welt','sprache/en.json')]).then(function(r){
-  HD={H:window.AT3HERRSCHAFT,ON:window.AT3ORTSNAMEN,TX:r[2].texte};vListe();erdBild()}))}
+ return 'Answers to: '+L.map(function(e){return HD.H.name(e,tx)+' ('+HD.H.titel(e,tx)+(e.vasall?', Vasall':'')+')'}).join(' › ')+' · System '+HD.H.SYS[L[L.length-1].sys]+' · '+personText(i,L)}
+// N4c2: Herrscher jeder Stufe der Kette und Vorsteher des Orts (aus Seed und Nummer, herrscher.js)
+function personText(i,L){var P=HD.P;if(!P)return '';var sd=erd.seed>>>0,t='Herrscher: '+L.map(function(e){return P.steckbrief(P.herrscher(sd,e),tx)}).join(' › ')+' · ',o=erd.ort[i]&15,k;
+ if(o&&(k=ortNr(i))!=null&&erd.hs.ort[k]){var e=HD.H.einheit(erd.hs,erd.vk,erd.hs.ort[k]-1),p=P.vorsteher(sd,k,o,e);if(p)t+='Vorsteher: '+P.steckbrief(p,tx)+' („'+P.arenaSatz(p,tx)+'“) · '}
+ return t}
+function herrschaftLaden(){return hdLaden||(hdLaden=Promise.all([window.AT3ED.lade('welt','herrschaften.js'),helfer(),window.AT3ED.lade('welt','sprache/en.json'),window.AT3ED.lade('welt','herrscher.js')]).then(function(r){
+  HD={H:window.AT3HERRSCHAFT,ON:window.AT3ORTSNAMEN,TX:r[2].texte,P:window.AT3HERRSCHER&&!window.AT3HERRSCHER.AUS?window.AT3HERRSCHER:null};vListe();erdBild()}))}   // N4c2: herrscher.js (Notausschalter ?n4c2=0)
 // N4c1: Liste der Reiche (Farbe, Name, System, Orte, Vasallen) und Zahl der Einheiten je Stufe
 function rListe(o){var hs=erd&&erd.hs,F=window.AT3_64.PALETTEN.A.farben;
  if(!hs){o.innerHTML='<p class="leise">'+(erd?'Diese Welt hat keine Herrschaften (Notausschalter ?n4c=0).':'Noch keine Welt.')+'</p>';return}if(!HD){o.innerHTML='<p class="leise">Die Herrscher werden gekrönt …</p>';return}
@@ -177,8 +182,11 @@ function rListe(o){var hs=erd&&erd.hs,F=window.AT3_64.PALETTEN.A.farben;
  for(k=0;k<erd.orte.length;k++){u=hs.ort[k];if(u)oR[(R[u-1]&16383)-1]++}
  for(u=0;u<nH;u++)if(!(hs.tab[u*4+2]&3))L.push(u);L.sort(function(a,b){return oR[b]-oR[a]||a-b});
  var h='<p><b>'+st[0]+' Reiche</b>, darunter '+tsd(st[1])+' Einheiten der zweiten und '+tsd(st[2])+' der dritten Stufe. Schwarze Linien: Reichsgrenzen, dunklere Linien: unterste Einheiten, helle Punkte: Sitze der Reiche, hellere Fläche: Vasallen.</p><p class="leise">';
- h+=L.map(function(u){var e=HD.H.info(hs,erd.vk,erd.orte,u,erd.seed>>>0,HD.ON);return '<i class="amp" style="background:'+F[HD.H.FARBE[e[0].farbe]+(e[0].vasall?1:0)]+'"></i>'+HD.H.ketteText(e,tx)+' ('+HD.H.SYS[e[0].sys]+', '+tsd(oR[u])+' Orte'+(va[u]?', '+va[u]+' Vasallen':'')+')'}).join(' · ');
- o.innerHTML=h+'</p><p class="leise">Jede Grenze wurde mit Blut gezogen. Die meisten mit fremdem.</p>'}
+ var P=HD.P,sd=erd.seed>>>0;   // N4c2: je Reich aufklappbar Herrscher und Vorgeschichte
+ h+='</p>'+L.map(function(u){var e=HD.H.info(hs,erd.vk,erd.orte,u,sd,HD.ON),k='<i class="amp" style="background:'+F[HD.H.FARBE[e[0].farbe]+(e[0].vasall?1:0)]+'"></i>'+esc(HD.H.ketteText(e,tx))+' ('+HD.H.SYS[e[0].sys]+', '+tsd(oR[u])+' Orte'+(va[u]?', '+va[u]+' Vasallen':'')+')';
+  if(!P)return '<p class="leise">'+k+'</p>';var p=P.herrscher(sd,e[0]);
+  return '<details class="leise"><summary>'+k+'</summary><p>'+esc(P.steckbrief(p,tx))+' – „'+esc(P.arenaSatz(p,tx))+'“</p><p>'+esc(P.chronik(sd,e,tx,HD.H.name))+'</p></details>'}).join('');
+ o.innerHTML=h+'<p class="leise">Jede Grenze wurde mit Blut gezogen. Die meisten mit fremdem.</p>'}
 function voelkerLaden(){return vdLaden||(vdLaden=Promise.all([window.AT3ED.lade('welt','daten/kulturen.json'),window.AT3ED.lade('welt','daten/religionen.json')]).then(function(r){
   var K=r[0].kulturkreise,R=r[1].religionen,ids=R.map(function(x){return x.id});VD={K:K,R:R,kr:K.map(function(k){return ids.indexOf(k.religion)+1})};vListe();erdBild()}))}
 // N4b: Liste unter der Karte: Orte je Kultur (mit Zahl der Völker) oder je Hauptreligion (mit Anteil an allen Gläubigen)
