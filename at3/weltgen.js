@@ -2,7 +2,7 @@
 // auf jedem Gerät. Welt 614.400 × 307.200 Felder (9.600 × 4.800 Kartenstücke zu 64 × 64 Feldern), ohne Weltarrays.
 // W1c Runde Welt: Rechteck 2 : 1, Ost- und Westkante zusammengenäht (wer nach Osten fährt, kommt von Westen wieder an), oben und unten Eispole mit
 //    ausgefranster Kante (Buchten, Zungen, Eisinseln, Packeis). Alles Rauschen passt an der Naht von selbst (pn, unten), ohne Mehrkosten an der Naht.
-// 1) Ebene Erde: grobes Raster 600 × 300 Zellen (eine Zelle = 16 × 16 Kartenstücke = 1.024 Felder), einmal je Welt in 15 kleinen Teilaufträgen:
+// 1) Ebene Erde: grobes Raster 600 × 300 Zellen (eine Zelle = 16 × 16 Kartenstücke = 1.024 Felder), einmal je Welt in 16 kleinen Teilaufträgen (N2a: Klimazonen eigener Teil):
 //    8 Bänder Rauschen (Kontinente, Gebirgszüge, Feuchte, Eis der Pole), Ozean und Seen (Ozean = größtes zusammenhängendes eisfreies Wasser),
 //    Senken auffüllen mit Fließrichtung, Flüsse (Wassermenge sammeln), Klima und Biome; seit W1b drei weitere Teile (siehe 3). Bleibend 9 Byte je Zelle (1,6 MB).
 // 2) Kartenstück: entsteht erst bei Bedarf aus Seed und einem kleinen Ausschnitt des Erdrasters (5 × 5 Zellen, 400 Byte), den der Auftrag mitbringt.
@@ -27,10 +27,10 @@ var MEER=2048;                                // Meeresspiegel im Stück (Höhe 
 var ST_BYTES=FELDER*4, AUS=200;               // Stück: Höhe (2 Byte) + Biom (1 Byte) + Weg (1 Byte, W1b); Ausschnitt 5 × 5 Zellen × 8 Zahlen
 var GEL_BYTES=ST_BYTES+AUS*2;                 // Auftragspuffer eines Kartenstücks
 var ORT_MAX=32768, KANTE_MAX=65535, NETZ_KOPF=16, NETZ_MAX=NETZ_KOPF+ORT_MAX*4+KANTE_MAX*8;   // W1b: Obergrenzen des Netzes (Orte, Verbindungen)
-var ERD_ZELLEN=9*N, ERD_FEST=ERD_ZELLEN+NETZ_MAX;   // Erdraster: bleibend 9 Byte je Zelle + Netz (höchstens; übernommen wird nur der belegte Teil)
+var ERD_ZELLEN=10*N, ERD_FEST=ERD_ZELLEN+NETZ_MAX;   // Erdraster: bleibend 10 Byte je Zelle (N2a: + Klimazone) + Netz (höchstens; übernommen wird nur der belegte Teil)
 var TAB=131072, SC=ERD_FEST, ERD_BYTES=SC+11*N+TAB*12;   // beim Entstehen zusätzlich Arbeitsfelder der Wegsuche
-var BAND=8, TEILE=BAND+7;                     // Teilaufträge der Erde
-var TEIL_NAME=['Rauschen 1','Rauschen 2','Rauschen 3','Rauschen 4','Rauschen 5','Rauschen 6','Rauschen 7','Rauschen 8','Ozean und Seen','Senken','Flüsse','Klima','Orte und Häfen','Straßen','Seewege'];
+var BAND=8, TEILE=BAND+8;                     // Teilaufträge der Erde
+var TEIL_NAME=['Rauschen 1','Rauschen 2','Rauschen 3','Rauschen 4','Rauschen 5','Rauschen 6','Rauschen 7','Rauschen 8','Ozean und Seen','Senken','Flüsse','Klima','Klimazonen','Orte und Häfen','Straßen','Seewege'];
 var ORT_ART=['','Dorf','Stadt','Hafendorf','Hafenstadt'], WEG_ART=['','Pfad','Straße','Brücke','Furt','Steg','Ortsplatz','Fähre'];
 var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Fels','Schnee','Fluss','See','Eis'];   // 12 Eis: nur im Erdraster (Polkappe, gesperrt); im Kartenstück ist Eis Schnee (9)
 var DX=[1,0,-1,0], DY=[0,1,0,-1];             // Richtungen: 0 Ost, 1 Süd, 2 West, 3 Nord; 4 = keine
@@ -45,12 +45,13 @@ function gitter(seed,o,lx,ly){return mix(seed^Math.imul(lx,0x27d4eb2d)^Math.imul
 // Sichten auf den Erdpuffer (bleibend: Höhe, Biom, Fluss, Richtung, Feuchte, Wärme; nur beim Entstehen: Meeresnähe, Reihenfolge, Wassermenge)
 function ansicht(buf){var a={E:new Int16Array(buf,0,N),bio:new Uint8Array(buf,2*N,N),flu:new Uint8Array(buf,3*N,N),dir:new Uint8Array(buf,4*N,N),
   feu:new Uint8Array(buf,5*N,N),tmp:new Uint8Array(buf,6*N,N)};
- if(buf.byteLength>=ERD_ZELLEN+NETZ_KOPF){a.ort=new Uint8Array(buf,7*N,N);a.weg=new Uint8Array(buf,8*N,N);a.kopf=new Uint32Array(buf,9*N,4)}   // W1b
+ if(buf.byteLength>=ERD_ZELLEN){a.zon=new Uint8Array(buf,9*N,N)}                                                  // N2a: Klimazone je Zelle (ZONE)
+ if(buf.byteLength>=ERD_ZELLEN+NETZ_KOPF){a.ort=new Uint8Array(buf,7*N,N);a.weg=new Uint8Array(buf,8*N,N);a.kopf=new Uint32Array(buf,ERD_ZELLEN,4)}   // W1b
  if(buf.byteLength>=ERD_BYTES){a.meer=new Uint8Array(buf,7*N,N);a.ord=new Uint32Array(buf,8*N,N);a.acc=new Uint32Array(buf,12*N,N);  // nur beim Entstehen (Teile 0 bis 7 nutzen den Platz von ort, weg und Netz als Arbeitsfeld)
-  a.orte=new Uint32Array(buf,9*N+NETZ_KOPF,ORT_MAX);a.kanten=new Uint16Array(buf,9*N+NETZ_KOPF+ORT_MAX*4,KANTE_MAX*4);
+  a.orte=new Uint32Array(buf,ERD_ZELLEN+NETZ_KOPF,ORT_MAX);a.kanten=new Uint16Array(buf,ERD_ZELLEN+NETZ_KOPF+ORT_MAX*4,KANTE_MAX*4);
   a.lm=new Uint16Array(buf,SC,N);a.bes=new Uint16Array(buf,SC+2*N,N);a.dst=new Uint16Array(buf,SC+4*N,N);a.vor=new Uint8Array(buf,SC+6*N,N);a.hp=new Uint32Array(buf,SC+7*N,N);
   a.tk=new Uint32Array(buf,SC+11*N,TAB);a.tv=new Uint32Array(buf,SC+11*N+TAB*4,TAB);a.tc=new Uint32Array(buf,SC+11*N+TAB*8,TAB)}
- else if(a.kopf){a.orte=new Uint32Array(buf,9*N+NETZ_KOPF,a.kopf[0]);a.kanten=new Uint16Array(buf,9*N+NETZ_KOPF+a.kopf[0]*4,a.kopf[1]*4)}   // übernommen: nur der belegte Teil
+ else if(a.kopf){a.orte=new Uint32Array(buf,ERD_ZELLEN+NETZ_KOPF,a.kopf[0]);a.kanten=new Uint16Array(buf,ERD_ZELLEN+NETZ_KOPF+a.kopf[0]*4,a.kopf[1]*4)}   // übernommen: nur der belegte Teil
  return a}
 
 // ── Ebene Erde ──
@@ -136,14 +137,88 @@ function teilKlima(A){var E=A.E,bio=A.bio,dir=A.dir,flu=A.flu,feu=A.feu,tmp=A.tm
   if(see&&bio[i]!==11)for(var dy=-1;dy<=1&&see;dy++)for(var dx=-1;dx<=1;dx++){var ny=y+dy;if(ny<0||ny>=GH)continue;if(bio[ny*GW+um(x+dx)]<2){see=0;break}}
   dir[i]=(dir[i]&7)|(see?128:0)}}
 
+// ── N2a Großklima: Klimazonen wie auf der Erde (eigene Schicht zon, 1 Byte je Zelle; Kartenstücke, Orte und Straßen bleiben bis N2b unverändert) ──
+// Wärme nach Breite und Höhe. Regen kommt mit dem Wind vom Meer: je Zellreihe zwei Läufe rund um die Welt (Wind von Westen und von Osten), Gewicht je
+// Breite wie die Windgürtel der Erde (Passat von Osten in den Tropen, Westwind in den mittleren Breiten, Ostwind am Pol, Monsun an subtropischen
+// Ostküsten). Über dem Meer saugt sich die Luft voll (warmes Meer mehr), über Land regnet sie ab, am Hang stark (Stauregen), dahinter Regenschatten.
+// Dazu nasse und trockene Gürtel (Äquator nass, Wendekreise trocken, Sturmbahn der mittleren Breiten nass). Daraus je Zelle eine von 14 Zonen.
+// Nur ganze Zahlen. Kosten fest (180.000 Zellen, im Teil „Klima“ im Helferkern), unabhängig von allem anderen. Der Master-Editor rechnet dieselbe
+// Regel zeilenweise mit eigenen Reglern (zonenRegen, zonenKlasse), damit nie ein Bild hängt.
+var ZONE=['Wasser','Eis','Schnee','Tundra','Nadelwald','Laubwald','Grasland','Steppe','Mittelmeer-Buschland','Wüste','Savanne','Regenwald','Sumpf','Mangroven','Gebirge'];
+var ZONE_EN=['Water','Ice','Snow','Tundra','Taiga','Broadleaf Forest','Grassland','Steppe','Mediterranean Scrub','Desert','Savanna','Rainforest','Swamp','Mangroves','Mountains'];
+// Stellschrauben (Vorschlagswerte, Weltansicht → Klimazonen hat Regler dafür). Wärme in Zehntel Grad, Höhe E in Erdeinheiten (1/16 Feld), Regen in eigenen Einheiten.
+var ZK={T_AEQ:270,      // Wärme am Äquator auf Meereshöhe (27 °C)
+ T_POL:560,             // so viel kälter am Pol (quadratisch über die Breite)
+ T_HOEHE:27,            // Abkühlung je 1.024 Erdeinheiten Höhe
+ REGEN:256,             // Regen insgesamt (256 = 1×)
+ R_LAND:24,             // Anteil der Feuchte, der je Zelle über Land abregnet (von 1.024): kleiner = Regen reicht weiter ins Land
+ R_BERG:256,            // Stauregen am Hang: Stärke des Regenschattens hinter Gebirgen
+ TROCKEN:40,            // darunter Wüste
+ STEPPE:80,             // darunter Steppe
+ WALD:130,              // ab hier Wald
+ REGENWALD:230,         // ab hier Regenwald (in den Tropen)
+ G_FELS:3800,           // ab dieser Höhe Gebirge
+ G_SCHNEE:7000};        // ab dieser Höhe Schnee (früher bei Kälte)
+var Z_MEER=1000, Z_MEERW=9, Z_AUF=96, Z_LEE=150, Z_RUECK=160, Z_WAERME=96, Z_TR=25, Z_RR=40;   // Meeresfeuchte (Grund, je Zehntel Grad), Aufnahme über Meer, Lee, Rückverdunstung, Mehrbedarf an Wärme, Rauschen Wärme und Regen
+// Gürtel je Breite (b = 0 Äquator … 256 Pol; 30° ≈ 85, 60° ≈ 171): Grundregen ohne Wind (Gewitter am Äquator, Fronten der mittleren Breiten), Regenfaktor, Gewicht Wind von Westen, Gewicht Wind von Osten (je von 256)
+var Z_B=[0,32,64,85,110,140,171,210,256], Z_G=[200,150,20,5,45,90,70,25,10], Z_F=[420,330,140,110,220,280,230,150,90], Z_WW=[40,40,60,150,220,256,230,120,100], Z_WO=[256,256,230,140,110,50,60,180,200];
+var G_ZT=gz(5,15), G_ZR=gz(3,-3), G_ZT2=gz(18,24), G_ZR2=gz(10,30), Z_TR2=45, Z_RR2=70;   // dazu weite Wellen (rund 30 Zellen), damit die Zonengrenzen nicht wie mit dem Lineal gezogen sind
+function zIp(T,b){for(var k=1;k<Z_B.length;k++)if(b<=Z_B[k])return T[k-1]+(((T[k]-T[k-1])*(b-Z_B[k-1]))/(Z_B[k]-Z_B[k-1])|0);return T[T.length-1]}
+function zBreite(y){var d=2*y-(GH-1);return((d<0?-d:d)*256/(GH-1))|0}                                  // 0 am Äquator, 256 am Pol
+// Wärme einer Zelle in Zehntel Grad (e = Erdhöhe, nz = Rauschen schon eingerechnet, wenn seed gegeben)
+function waerme(K,y,e,x,seed){var b=zBreite(y),t=K.T_AEQ-((b*b*K.T_POL)>>16)-(e>0?(e*K.T_HOEHE)>>10:0);
+ if(seed!=null){var sT=mix(seed^0x7a3e5c11);t+=(((pn(sT,0,x,y,G_ZT)-32640)*Z_TR)>>15)+(((pn(sT,1,x,y,G_ZT2)-32640)*Z_TR2)>>15)}return t}
+var zR=null, zW=null, zA=new Int32Array(GW), zB2=new Int32Array(GW);
+function zonenSpeicher(){if(!zR){zR=new Uint16Array(N);zW=new Uint8Array(N)}return{R:zR,W:zW}}
+// Ein Lauf entlang einer Zellreihe in Windrichtung d (+1: Wind von Westen). Regen je Zelle nach O.
+function zLauf(A,K,y,d,O){var E=A.E,bio=A.bio,flu=A.flu,r0=y*GW,x0=-1,k,x,i,W,eV=0,t0=waerme(K,y,0),wo=Z_MEER+(t0>0?t0*Z_MEERW:0);
+ for(k=0;k<GW;k++){x=d>0?GW-1-k:k;if(bio[r0+x]<2){x0=x;break}}                                       // letztes Meer gegen den Wind: dort beginnt die Luft
+ var runden=x0<0?2:1;if(x0<0)x0=0;W=x0<0?Z_MEER>>1:wo;
+ for(var rd=0;rd<runden;rd++)for(k=0;k<GW;k++){x=x0+d*k;x=x<0?x+GW:x>=GW?x-GW:x;i=r0+x;var b=bio[i];
+  if(b<2){W+=((wo-W)*Z_AUF)>>8;eV=0;O[x]=0;continue}
+  if(b===12){W-=(W*64)>>8;eV=0;O[x]=0;continue}
+  if(b===11){if(W<wo>>1)W+=(((wo>>1)-W)*64)>>8;eV=0;O[x]=0;continue}
+  var e=E[i]>0?E[i]:0,steig=e-eV,r=(W*K.R_LAND)>>10;
+  if(steig>0)r+=((W>>4)*steig*K.R_BERG)>>16;else if(steig<0)r=(r*Z_LEE)>>8;
+  if(r>(W*3)>>2)r=(W*3)>>2;
+  W+=-r+((r*Z_RUECK)>>8)+(flu[i]<<3);eV=e;O[x]=r}}
+// Regen der Reihen y0..y1−1 nach R (ungeglättet) und Westanteil nach WA (0..255)
+function zonenRegen(A,seed,K,y0,y1,R,WA){var sR=mix(seed^0x51a7e3d9),bio=A.bio;
+ for(var y=y0;y<y1;y++){var b=zBreite(y),f=zIp(Z_F,b),g=zIp(Z_G,b),ww=zIp(Z_WW,b),wo=zIp(Z_WO,b);zLauf(A,K,y,1,zA);zLauf(A,K,y,-1,zB2);
+  for(var x=0;x<GW;x++){var i=y*GW+x,a=zA[x]*ww,c=zB2[x]*wo,s=((((a+c)>>8)*f)>>8)+(bio[i]>1?g:0);
+   s=(s*K.REGEN)>>8;s=(s*(256+(((pn(sR,0,x,y,G_ZR)-32640)*Z_RR)>>15)+(((pn(sR,1,x,y,G_ZR2)-32640)*Z_RR2)>>15)))>>8;R[i]=s>65535?65535:s<0?0:s;WA[i]=a+c>0?((a*255)/(a+c))|0:128}}}
+// Zone der Reihen y0..y1−1 nach Z (R 3 × 3 geglättet, über die Naht; braucht R der Nachbarreihen)
+function zonenKlasse(A,seed,K,y0,y1,R,WA,Z){var E=A.E,bio=A.bio,flu=A.flu;
+ for(var y=y0;y<y1;y++){var ya=y>0?y-1:y,yb=y<GH-1?y+1:y,b=zBreite(y);
+  for(var x=0;x<GW;x++){var i=y*GW+x,bi=bio[i];
+   if(bi<2||bi===11){Z[i]=0;continue}if(bi===12){Z[i]=1;continue}
+   var xl=x?x-1:GW-1,xr=x<GW-1?x+1:0,s=(R[ya*GW+xl]+2*R[ya*GW+x]+R[ya*GW+xr]+2*R[y*GW+xl]+4*R[i]+2*R[y*GW+xr]+R[yb*GW+xl]+2*R[yb*GW+x]+R[yb*GW+xr])>>4;
+   var e=E[i]>0?E[i]:0,t=waerme(K,y,e,x,seed),m=s-(t>0?(t*Z_WAERME)>>8:0)+(Z_WAERME*100>>8),z;   // m: Feuchte nach Abzug der Verdunstung (bei 10 °C = Regen)
+   if(e>K.G_SCHNEE||(e>K.G_FELS&&t<-40))z=2;
+   else if(e>K.G_FELS)z=14;
+   else if(t<-160)z=2;
+   else if(t<-60)z=3;
+   else{var kueste=bio[ya*GW+x]<2||bio[yb*GW+x]<2||bio[y*GW+xl]<2||bio[y*GW+xr]<2;
+    if(t>=220&&kueste&&e<150&&m>=K.WALD)z=13;
+    else if(e<500&&flu[i]>=3&&m>=K.WALD&&t>=0)z=12;
+    else if(t<40)z=m<K.STEPPE?(t<-20?3:7):4;
+    else if(m<K.TROCKEN)z=9;
+    else if(m<K.STEPPE)z=7;
+    else if(t>=200)z=m>=K.REGENWALD?11:10;
+    else if(m>=K.WALD)z=t<60?4:5;
+    else z=t>=130&&b>=55&&b<=135&&WA[i]>=150?8:6}
+   Z[i]=z}}}
+// Ganze Erde (Generator, Tests): Zonen mit den Werten K (sonst ZK) nach A.zon
+function zonen(A,seed,K){var S=zonenSpeicher();K=K||ZK;zonenRegen(A,seed,K,0,GH,S.R,S.W);zonenKlasse(A,seed,K,0,GH,S.R,S.W,A.zon);return S}
+
 function erdTeil(a){var A=ansicht(a.daten.buffer),t=a.teil;
  if(t<BAND)teilRauschen(A,a.seed>>>0,t);else if(t===BAND)teilOzean(A);
  else if(t===BAND+1)teilSenken(A);else if(t===BAND+2)teilFluesse(A);
- else if(t===BAND+3)teilKlima(A);
- else if(t===BAND+4)teilOrte(A,a.seed>>>0,a.dichte==null?1:a.dichte);else teilNetz(A,a.seed>>>0,t===BAND+6?1:0);
+ else if(t===BAND+3)teilKlima(A);else if(t===BAND+4)zonen(A,a.seed>>>0,ZK);                         // N2a: Klimazonen als eigener Teil (kurze Aufträge)
+ else if(t===BAND+5)teilOrte(A,a.seed>>>0,a.dichte==null?1:a.dichte);else teilNetz(A,a.seed>>>0,t===BAND+7?1:0);
  return a.daten}
-// Bleibender Teil der fertigen Erde: 9 Byte je Zelle, Kopf, belegte Orte, belegte Verbindungen (dicht hintereinander)
-function fest(d){var k=new Uint32Array(d.buffer,9*N,4),nO=k[0],nK=k[1],aus=new Uint8Array(ERD_ZELLEN+NETZ_KOPF+nO*4+nK*8),p=ERD_ZELLEN+NETZ_KOPF;
+// Bleibender Teil der fertigen Erde: 10 Byte je Zelle, Kopf, belegte Orte, belegte Verbindungen (dicht hintereinander)
+function fest(d){var k=new Uint32Array(d.buffer,ERD_ZELLEN,4),nO=k[0],nK=k[1],aus=new Uint8Array(ERD_ZELLEN+NETZ_KOPF+nO*4+nK*8),p=ERD_ZELLEN+NETZ_KOPF;
  aus.set(d.subarray(0,p+nO*4));aus.set(d.subarray(ERD_ZELLEN+NETZ_KOPF+ORT_MAX*4,ERD_ZELLEN+NETZ_KOPF+ORT_MAX*4+nK*8),p+nO*4);return aus}
 // Ganze Erde in einem Stück (Tests und Werkzeuge). Liefert den bleibenden Teil.
 function erde(seed,dichte){var d=new Uint8Array(ERD_BYTES);for(var t=0;t<TEILE;t++)erdTeil({seed:seed,teil:t,dichte:dichte,daten:d});return fest(d)}
@@ -459,6 +534,6 @@ function stueck(seed,A,cx,cy,daten){   // A muss ort und weg tragen (ansicht der
  daten=daten||new Uint8Array(GEL_BYTES);ausschnitt(A,cx,cy,daten);return gelaende({seed:seed,cx:cx,cy:cy,daten:daten})}
 
 var WG={ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
- TEIL_NAME:TEIL_NAME,BIOM:BIOM,DX:DX,DY:DY,HW:HW,mix:mix,ansicht:ansicht,erdTeil:erdTeil,erde:erde,ausschnitt:ausschnitt,gelaende:gelaende,stueck:stueck,rechnen:rechnen,kante:kante,biomVon:biomVon,herrscht:herrscht,anteile:anteile,punkt:punkt,neigung:neigung,klasse:klasse,KAN:KAN};
+ TEIL_NAME:TEIL_NAME,BIOM:BIOM,DX:DX,DY:DY,HW:HW,mix:mix,ansicht:ansicht,erdTeil:erdTeil,erde:erde,ausschnitt:ausschnitt,gelaende:gelaende,stueck:stueck,rechnen:rechnen,kante:kante,biomVon:biomVon,herrscht:herrscht,ZONE:ZONE,ZONE_EN:ZONE_EN,ZK:ZK,zonen:zonen,zonenRegen:zonenRegen,zonenKlasse:zonenKlasse,zonenSpeicher:zonenSpeicher,waerme:waerme,zBreite:zBreite,anteile:anteile,punkt:punkt,neigung:neigung,klasse:klasse,KAN:KAN};
 if(typeof module!=='undefined'&&module.exports)module.exports=WG;else root.AT3WG=WG;
 })(typeof self!=='undefined'?self:this);

@@ -7,7 +7,7 @@
 // Zwischenspeicher: höchstens 12 Sätze und 6 MB Ton, ältester fliegt zuerst raus.
 (function(){
 'use strict';
-var V='bdcc5fc7', ERZAEHLER='erzaehler';
+var V='f96d18d6', ERZAEHLER='erzaehler';
 var worker=null, tot=false, seq=0, wartet={}, ctx=null, quelle=null, an=false, wunsch=0;
 var cache=[], CACHE_N=12, CACHE_B=6*1048576;
 var Z={geladen:false, ladeMs:null, saetze:0, gesprochen:0, ausCache:0, rechenMs:null, dauerS:null, letzter:'', akzent:'us', fehler:null, spricht:false, hintergrund:true};

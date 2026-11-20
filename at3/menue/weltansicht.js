@@ -8,11 +8,13 @@
 // W1b: Einfärbung „Straßen & Seewege“ (Erde: ein Punkt je Zelle; Region: die echten Straßenläufe als Linien, Orte als Punkte, Seewege und Fähren
 // gestrichelt; Kartenstücke: die Wegschicht je Feld), Ortsdichte dünn/mittel/dicht neben dem Seed, Antippen zeigt Ort mit Namen, Straße, Pass, Fähre
 // oder Seeweg. Die Linien der Region rechnet der Hauptkern nur beim Neuzeichnen (höchstens 900 Zellen, rund 2 ms), nie je Bild.
+// N2a: Einfärbung „Klimazonen“ (14 Zonen aus Wärme, Regen mit dem Wind und Regenschatten) mit Reglern. Der Hauptkern rechnet die Zonen mit den
+// Reglerwerten selbst nach, aber nur in Scheiben von höchstens 4 ms je Bild (Regel 13); ohne Änderung zeigt er die Schicht aus dem Weltkern.
 // Das Spiel lädt diese Datei und den Generator nicht (G4).
 // Wiederverwendet: kernstart.js (G2), Messart, Ampel und Kopierknopf aus der Kernprobe und der Riesenwelt-Probe, Palette aus at3-64.js (M2).
 (function(){
 'use strict';
-var SEED=563520, BIS=300, SOLL='690c69d1';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
+var SEED=563520, BIS=300, SOLL='03138b61';   // SOLL = Fingerabdruck aus tests/at3-weltgen.cjs; muss auf jedem Gerät gleich herauskommen
 function B(cx,cy){return cx*8192+cy}
 var SKRIPT=[{tick:0,art:'weltseed',wert:563520},{tick:0,art:'blick',wert:B(2400,2400)},{tick:70,art:'blick',wert:B(2403,2398)},{tick:100,art:'blick',wert:B(0,0)},{tick:115,art:'blick',wert:B(9599,2400)},
  {tick:130,art:'last',wert:300},{tick:150,art:'blick',wert:B(4799,4799)},{tick:170,art:'weltseed',wert:77},{tick:171,art:'weltseed',wert:4242},{tick:172,art:'weltdichte',wert:2},{tick:230,art:'blick',wert:B(9598,256)},
@@ -28,6 +30,13 @@ var RAMPE=[14,15,16,17,18,60,61,62,24,23,22,3,4,5,6], TIEFE=[38,39,40,41];    //
 var ZOOM=['Erde','Region','Kartenstücke','Stück'], REGION=30, ZF=1024;
 var ORTN=['','Dorf','Stadt','Hafendorf','Hafenstadt'], WEGN=['','Pfad','Straße','Brücke','Furt','Steg','Ortsplatz','Fähre'], DICHTEN=['dünn','mittel','dicht'];
 var WFARBE=[0,47,48,31,43,12,36,6], OFARBE=[0,53,37,48,32], F_PFAD=12, F_STRASSE=47, F_SEE=43, F_FAEHRE=48;   // Farbnummern der AT3-Palette für Wegschicht, Orte und Netz
+var ZONEN=['Wasser','Eis','Schnee','Tundra','Nadelwald','Laubwald','Grasland','Steppe','Mittelmeer-Buschland','Wüste','Savanne','Regenwald','Sumpf','Mangroven','Gebirge'];   // wie weltgen.js ZONE
+var ZFARBE=[40,6,5,11,14,17,19,61,30,63,52,15,8,42,4];                        // Farbnummern der AT3-Palette je Klimazone
+var ZREG=[['T_AEQ','Wärme am Äquator (Zehntel Grad)',150,350,5],['T_POL','Kälter zum Pol hin (Zehntel Grad)',300,800,10],['T_HOEHE','Abkühlung mit der Höhe',0,60,1],
+ ['REGEN','Regen insgesamt (256 = normal)',64,512,8],['R_LAND','Regen fällt früh (kleiner = reicht weiter ins Land)',6,96,2],['R_BERG','Regenschatten hinter Gebirgen',0,768,16],
+ ['TROCKEN','Wüste unter dieser Feuchte',0,200,5],['STEPPE','Steppe unter dieser Feuchte',0,300,5],['WALD','Wald ab dieser Feuchte',50,400,5],['REGENWALD','Regenwald ab dieser Feuchte',100,600,10],
+ ['G_FELS','Gebirge ab Höhe',1500,9000,100],['G_SCHNEE','Schnee ab Höhe',2000,9600,100]];
+var zK=null, zZ=null, zR=null, zW=null, zJob=null, zBereit=false, zAnteil=null, zGleich=null;   // N2a: Reglerwerte, eigene Zonen, Regen, Westanteil, laufende Scheibenrechnung
 var netzCv=null, dichte=1, hilfe=null, WGh=null, ONh=null;
 var E={erde:null,stueck:null,bild:null,speicher:null,gleich:null,geraet:null}, el=null, H=null, pal=null, erd=null, erdCv=null, erdGen=0, kacheln=new Map(), warte=[], lager=[];
 var zoom=0, farbe=0, kx=SX>>1, ky=SY>>1, neuZeichnen=true, ws=null, laeuft=false, beschaeftigt=false, bilder=null, letztBild=0, cv=null, cx2=null, tmpBild=null, tmp32=null;
@@ -49,6 +58,8 @@ function farbeVon(bio,h,dh){                                                   /
   var r=h<60?0:h<160?1:h<320?2:h<560?3:h<900?4:h<1400?5:h<2000?6:h<2800?7:h<3800?8:h<4800?9:h<5800?10:h<6800?11:h<7800?12:h<8800?13:14;return pal[RAMPE[r]]}
  var c=BFARBE[bio];if(bio>1&&bio<10)c+=dh>0?1:dh<0?-1:0;return pal[c]}
 function erdBild(){if(!erd)return;var g=erdCv.getContext('2d'),im=g.createImageData(GW,GH),d=new Uint32Array(im.data.buffer),Eh=erd.E,bio=erd.bio,flu=erd.flu;
+ if(farbe===3){var Z=zBereit?zZ:erd.zon;for(var i=0;i<N;i++){var z=Z[i],c=ZFARBE[z],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];if(z>1&&dh>120)c++;else if(z>1&&dh<-120)c--;d[i]=pal[c]}   // N2a: Klimazonen, Hänge schattiert
+  g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
  for(var i=0;i<N;i++){var b=flu[i]>1&&bio[i]<12?10:bio[i],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];d[i]=farbeVon(b,Eh[i],dh>120?1:dh<-120?-1:0)}
  g.putImageData(im,0,0);netzBild();neuZeichnen=true}
 // W1b: Netz der Erde als eigenes durchsichtiges Bild (ein Punkt je Zelle), einmal je Welt; liegt in der Erdansicht über dem Erdbild
@@ -67,8 +78,8 @@ function allesWeg(){kacheln.forEach(function(k,key){kachelWeg(key)});warte=[]}
 function beiWs(d){
  if(d.art==='ws'){ws=d;live();return}
  if(d.art==='wsErde'){var b=d.buf.buffer;erd={E:new Int16Array(b,0,N),bio:new Uint8Array(b,2*N,N),flu:new Uint8Array(b,3*N,N),dir:new Uint8Array(b,4*N,N),feu:new Uint8Array(b,5*N,N),tmp:new Uint8Array(b,6*N,N),
-   ort:new Uint8Array(b,7*N,N),weg:new Uint8Array(b,8*N,N),kopf:new Uint32Array(b,9*N,4),seed:d.seed};
-  erdGen=d.gen;allesWeg();erdBild();return}
+   ort:new Uint8Array(b,7*N,N),weg:new Uint8Array(b,8*N,N),zon:new Uint8Array(b,9*N,N),kopf:new Uint32Array(b,10*N,4),seed:d.seed};   // N2a: 10 Byte je Zelle
+  erdGen=d.gen;allesWeg();zBereit=false;zJob=null;erdBild();if(farbe===3)zonenRechnen();return}
  if(d.art==='wsStueck'){if(d.gen!==erdGen||abS(d.cx,kx)>HALB||Math.abs(d.cy-ky)>HALB){if(H)H.wsZurueck(d.buf);return}
   var key=B(d.cx,d.cy);kachelWeg(key);var c=lager.pop();if(!c){c=document.createElement('canvas');c.width=c.height=ST}
   kacheln.set(key,{cx:d.cx,cy:d.cy,buf:d.buf,cv:c,fertig:false});warte.push(key)}}
@@ -80,6 +91,7 @@ function regionMalen(g,bildQ,rx,ry){var x0=umZ(rx),w1=Math.min(REGION,GW-x0),f=S
 function bild(t){if(!laeuft)return;if(!el.isConnected){ende();return}
  if(bilder&&letztBild)bilder.push(t-letztBild);letztBild=t;
  if(warte.length){var k=kacheln.get(warte.shift());if(k)kachelBild(k)}
+ if(zJob)zonenScheibe();
  if(neuZeichnen){neuZeichnen=false;var g=cx2,i,j;g.imageSmoothingEnabled=false;
   if(!erd){g.fillStyle='#5c5650';g.fillRect(0,0,S,S)}
   else if(zoom===0){g.fillStyle='#0e0c0b';g.fillRect(0,0,S,S);g.drawImage(erdCv,0,0,GW,GH,0,S/4,S,S/2);if(farbe===2)g.drawImage(netzCv,0,0,GW,GH,0,S/4,S,S/2);marke(g,(kx>>4)*S/GW-2,S/4+(ky>>4)*S/GW-2,5)}
@@ -112,12 +124,31 @@ function marke(g,x,y,w){g.strokeStyle='#f4c8a0';g.lineWidth=2;g.strokeRect(Math.
 function blick(nx,ny){nx=umS(nx|0);ny=Math.max(0,Math.min(SY-1,ny|0));if(nx===kx&&ny===ky)return;kx=nx;ky=ny;fensterRaeumen();if(H)H.befehl('blick',B(kx,ky));neuZeichnen=true;ort()}
 function ort(){var o=q('#waOrt');if(o)o.textContent='Blick: Kartenstück '+tsd(kx)+' / '+tsd(ky)+' von '+tsd(SX)+' × '+tsd(SY)+' · Zelle '+(kx>>4)+' / '+(ky>>4)}
 function hoehe(h){return h<0?'Tiefe '+kom(-h/16,1)+' Felder (rund '+Math.round(-h*3/16)+' m)':'Höhe '+kom(h/16,1)+' Felder (rund '+Math.round(h*3/16)+' m)'}
-function zelleText(i){var b=erd.flu[i]?BIOM[erd.bio[i]]+' mit Fluss (Breite '+erd.flu[i]+' von 5)':BIOM[erd.bio[i]];return netzText(i)+b+' · '+hoehe(erd.E[i])+' · Wärme '+erd.tmp[i]+' · Feuchte '+erd.feu[i]}
+function zelleText(i){if(farbe===3)return zoneText(i)+'Kartenstücke bis N2b: '+zelleText0(i);return zelleText0(i)}
+function zelleText0(i){var b=erd.flu[i]?BIOM[erd.bio[i]]+' mit Fluss (Breite '+erd.flu[i]+' von 5)':BIOM[erd.bio[i]];return netzText(i)+b+' · '+hoehe(erd.E[i])+' · Wärme '+erd.tmp[i]+' · Feuchte '+erd.feu[i]}
 // W1b: Ort (Name, sobald die Namensliste geladen ist), Straße, Pass, Fähre, Seeweg einer Zelle
 function netzText(i){if(!erd.ort)return '';var o=erd.ort[i]&15,w=erd.weg[i],t='';
  if(o)t+=(ONh?ONh.name(erd.seed,i,o):'…')+' ('+ORTN[o]+') · ';
  if(w&15)t+=(w&64?'Fähre':((w>>4&3)>1?'Straße':'Pfad')+(erd.bio[i]===8||erd.bio[i]===9?' über einen Pass':''))+' · ';
  if(erd.ort[i]>>4&&erd.bio[i]<2)t+='Seeweg · ';return t}
+// ── N2a Klimazonen: Rechnung mit den Reglerwerten in Scheiben (je Bild höchstens rund 4 ms), Anteile, Werte zum Übernehmen ──
+function zonenRechnen(){if(!erd)return;var gen=erdGen;helfer().then(function(){if(gen!==erdGen||!erd)return;if(!zK)zK=Object.assign({},WGh.ZK);
+  if(!zZ){zZ=new Uint8Array(N);zR=new Uint16Array(N);zW=new Uint8Array(N)}zJob={phase:0,y:0,t:performance.now(),ms:0};zBereit=false;kInfo('Das Wetter wird neu verteilt …')},function(){})}
+function zonenScheibe(){var j=zJob,t0=performance.now(),A={E:erd.E,bio:erd.bio,flu:erd.flu};
+ while(performance.now()-t0<4&&j.phase<2){var y1=Math.min(GH,j.y+10);if(j.phase===0)WGh.zonenRegen(A,erd.seed>>>0,zK,j.y,y1,zR,zW);else WGh.zonenKlasse(A,erd.seed>>>0,zK,j.y,y1,zR,zW,zZ);j.y=y1;if(j.y>=GH){j.phase++;j.y=0}}
+ j.ms+=performance.now()-t0;if(j.phase<2)return;zJob=null;zBereit=true;
+ var Z=new Int32Array(ZONEN.length),land=0,gl=true;for(var i=0;i<N;i++){Z[zZ[i]]++;if(zZ[i]!==erd.zon[i])gl=false}for(var k=2;k<Z.length;k++)land+=Z[k];zAnteil={Z:Z,land:land};
+ zGleich=gl;erdBild();kInfo('Gerechnet in '+kom(j.ms,0)+' ms Rechenzeit, verteilt auf mehrere Bilder (Wartezeit '+kom((performance.now()-j.t)/1000,1)+' s).'+(gl?' Gleich der Schicht im Weltkern.':' Weicht von der gespeicherten Schicht ab (andere Regler).'));kWerte()}
+function kInfo(t){var o=q('#waKInfo');if(o)o.textContent=t}
+function zkText(){return 'var ZK={'+ZREG.map(function(r){return r[0]+':'+zK[r[0]]}).join(', ')+'};'}
+function kWerte(){var o=q('#waKAnt');if(o&&zAnteil)o.innerHTML='Anteile am Land: '+ZONEN.map(function(n,k){return k<2||!zAnteil.Z[k]?'':'<i class="amp" style="background:'+window.AT3_64.PALETTEN.A.farben[ZFARBE[k]]+'"></i>'+n+' '+kom(zAnteil.Z[k]*100/zAnteil.land,1)+' %'}).filter(Boolean).join(' ');
+ var w=q('#waKZk');if(w&&zK)w.textContent=zkText()}
+function kRegler(){var o=q('#waKRegler');if(!o||!zK)return;o.innerHTML=ZREG.map(function(r){return '<div class="wZeile"><label for="waK_'+r[0]+'" style="min-width:15em">'+r[1]+'</label><input type="range" id="waK_'+r[0]+'" data-k="'+r[0]+'" min="'+r[2]+'" max="'+r[3]+'" step="'+r[4]+'" value="'+zK[r[0]]+'" style="min-height:42px;flex:1"> <b id="waKw_'+r[0]+'">'+zK[r[0]]+'</b></div>'}).join('');
+ [].forEach.call(o.querySelectorAll('input'),function(i){i.oninput=function(){q('#waKw_'+i.dataset.k).textContent=i.value};i.onchange=function(){zK[i.dataset.k]=+i.value;kWerte();zonenRechnen()}})}
+function setRegler(werte){if(!WGh)return;zK=Object.assign({},WGh.ZK,werte||{});kRegler();kWerte();zonenRechnen()}
+function klimaPanel(){var o=q('#waKlima');if(!o)return;o.hidden=farbe!==3;if(farbe!==3)return;helfer().then(function(){if(!zK){zK=Object.assign({},WGh.ZK)}kRegler();kWerte()},function(){})}
+function zoneText(i){if(!erd||!erd.zon)return '';var x=i%GE,y=(i/GE)|0,z=zBereit?zZ[i]:erd.zon[i],t=ZONEN[z];
+ if(z>1&&WGh&&zK){t+=' · Wärme '+kom(WGh.waerme(zK,y,erd.E[i]>0?erd.E[i]:0,x,erd.seed>>>0)/10,1)+' °C';if(zBereit)t+=' · Regen '+zR[i]+' ('+Math.round(zW[i]*100/255)+' % mit Westwind)'}return 'Klimazone '+t+' · '}
 function tipp(e){if(!erd)return;var r=cv.getBoundingClientRect(),fx=Math.max(0,Math.min(.9999,(e.clientX-r.left)/r.width)),fy=Math.max(0,Math.min(.9999,(e.clientY-r.top)/r.height)),info=q('#waInfo'),zx,zy;
  if(zoom<2){if(zoom===0){if(fy<.25||fy>=.75)return;zx=(fx*GW)|0;zy=((fy-.25)*2*GH)|0}else{var ec=regionEcke();zx=umZ(ec[0]+((fx*REGION)|0));zy=ec[1]+((fy*REGION)|0)}
   info.textContent='Zelle '+zx+' / '+zy+': '+zelleText(zy*GE+zx);anteileZeigen(zx,zy);blick(zx*ZP+8,zy*ZP+8);return}
@@ -137,7 +168,7 @@ function anteileZeigen(zx,zy){var info=q('#waInfo'),seed=erd?erd.seed:0,i=zy*GE+
   info.textContent=vorher+' · Anteile: '+L.map(function(e){return BIOM[e[0]]+' '+Math.round(e[1]*100/n)+' %'}).join(', ')},function(){})}
 function schritt(dx,dy){var s=zoom===0?ZP*20:zoom===1?ZP*5:zoom===2?3:1;blick(kx+dx*s,ky+dy*s)}
 function setZoom(z){zoom=z;[].forEach.call(el.querySelectorAll('[data-zoom]'),function(b){b.classList.toggle('an',+b.dataset.zoom===z)});neuZeichnen=true}
-function setFarbe(f){farbe=f;if(f===2)helfer().catch(function(){});[].forEach.call(el.querySelectorAll('[data-farbe]'),function(b){b.classList.toggle('an',+b.dataset.farbe===f)});erdBild();kacheln.forEach(function(k,key){if(warte.indexOf(key)<0)warte.push(key)})}
+function setFarbe(f){farbe=f;if(f===2)helfer().catch(function(){});klimaPanel();if(f===3&&!zBereit&&!zJob)zonenRechnen();[].forEach.call(el.querySelectorAll('[data-farbe]'),function(b){b.classList.toggle('an',+b.dataset.farbe===f)});erdBild();kacheln.forEach(function(k,key){if(warte.indexOf(key)<0)warte.push(key)})}
 function neueWelt(seed,d){seed=Math.max(0,Math.min(4294967295,Math.floor(+seed||0)));q('#waSeed').value=seed;if(d!=null){dichte=d===0||d===2?d:1;q('#waDichte').value=dichte}
  erd=null;ws=null;allesWeg();neuZeichnen=true;
  H.befehl('weltdichte',dichte);H.befehl('weltseed',seed);H.befehl('blick',B(kx,ky));q('#waInfo').textContent='Die Erde wird geknetet. Sieben Tage wären übertrieben.';return seed}
@@ -181,7 +212,7 @@ function text(){var L=['AT3 W1b Weltansicht · '+new Date().toISOString().slice(
 function kopieren(){var t=text(),b=q('#waKopie');function ok(){b.firstChild.textContent='Kopiert. In den Chat einfügen.'}
  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,function(){window.prompt('Text kopieren:',t)});else window.prompt('Text kopieren:',t)}
 
-function ende(){laeuft=false;if(H){H.ende();H=null}kacheln=new Map();warte=[];erd=null;ws=null}
+function ende(){laeuft=false;if(H){H.ende();H=null}kacheln=new Map();warte=[];erd=null;ws=null;zJob=null;zBereit=false;zAnteil=null}
 function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElement('canvas');erdCv.width=GW;erdCv.height=GH;netzCv=document.createElement('canvas');netzCv.width=GW;netzCv.height=GH;dichte=1;
  var tc=document.createElement('canvas');tc.width=tc.height=ST;tmpBild=tc.getContext('2d').createImageData(ST,ST);tmp32=new Uint32Array(tmpBild.data.buffer);
  var k=kerne(),h=window.AT3KERNE.helferZahl(k);
@@ -192,13 +223,18 @@ function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElemen
   '<div class="wZeile"><label for="waDichte">Orte</label><select id="waDichte" style="font:inherit;font-size:17px;min-height:42px">'+DICHTEN.map(function(n,i){return '<option value="'+i+'"'+(i===1?' selected':'')+'>'+n+'</option>'}).join('')+'</select> '+
   '<span class="leise">Dichte der Besiedlung. Gehört zur Welt wie der Seed.</span></div>'+
   '<div class="wZeile">'+ZOOM.map(function(n,i){return '<button class="knopf klein'+(i===0?' an':'')+'" data-zoom="'+i+'">'+n+'</button>'}).join('')+'</div>'+
-  '<div class="wZeile"><button class="knopf klein an" data-farbe="0">Biome</button><button class="knopf klein" data-farbe="1">Höhe</button><button class="knopf klein" data-farbe="2">Straßen &amp; Seewege</button></div><div class="wZeile">'+
+  '<div class="wZeile"><button class="knopf klein an" data-farbe="0">Biome</button><button class="knopf klein" data-farbe="1">Höhe</button><button class="knopf klein" data-farbe="2">Straßen &amp; Seewege</button><button class="knopf klein" data-farbe="3">Klimazonen</button></div><div class="wZeile">'+
   '<button class="knopf klein" data-geh="-1,0" aria-label="nach Westen">◀</button><button class="knopf klein" data-geh="0,-1" aria-label="nach Norden">▲</button>'+
   '<button class="knopf klein" data-geh="0,1" aria-label="nach Süden">▼</button><button class="knopf klein" data-geh="1,0" aria-label="nach Osten">▶</button></div>'+
   '<canvas id="waCv" class="pixel" width="'+S+'" height="'+S+'" style="display:block;width:100%;max-width:'+S+'px;aspect-ratio:1;background:#5c5650;border:3px solid var(--rand);touch-action:manipulation"></canvas>'+
   '<p class="leise" id="waOrt"></p><p id="waInfo">Antippen zeigt, was dort liegt (auf der Erde mit den Anteilen der Biome), und verschiebt den Blick.</p>'+
   '<p class="leise">Farben: '+BIOM.map(function(n,i){return '<i class="amp" style="background:'+window.AT3_64.PALETTEN.A.farben[BFARBE[i]]+'"></i>'+n}).join(' ')+'</p>'+
   '<p class="leise">Netz: '+[[OFARBE[1],'Dorf'],[OFARBE[2],'Stadt'],[OFARBE[3],'Hafendorf'],[OFARBE[4],'Hafenstadt'],[F_PFAD,'Pfad'],[F_STRASSE,'Straße'],[WFARBE[3],'Brücke'],[WFARBE[4],'Furt'],[WFARBE[6],'Ortsplatz'],[F_SEE,'Seeweg'],[F_FAEHRE,'Fähre']].map(function(e){return '<i class="amp" style="background:'+window.AT3_64.PALETTEN.A.farben[e[0]]+'"></i>'+e[1]}).join(' ')+'</p>'+
+  '<div id="waKlima" hidden><p><b>Klimazonen (N2a)</b> Wärme nach Breite und Höhe, Regen kommt mit dem Wind vom Meer (Passat von Osten, Westwind in den mittleren Breiten) und bleibt am Gebirge hängen. Dahinter wird es trocken. Die Kartenstücke folgen den Zonen erst ab N2b.</p>'+
+  '<p class="leise">Zonen: '+ZONEN.map(function(n,i){return '<i class="amp" style="background:'+window.AT3_64.PALETTEN.A.farben[ZFARBE[i]]+'"></i>'+n}).join(' ')+'</p>'+
+  '<div id="waKRegler"></div><p class="leise" id="waKInfo"></p><p class="leise" id="waKAnt"></p>'+
+  '<p><button class="knopf klein" id="waKZurueck">Vorschlagswerte</button> <button class="knopf klein" id="waKKopie">Werte für den Chat kopieren</button></p><pre class="leise" id="waKZk" style="white-space:pre-wrap"></pre>'+
+  '<p class="leise">Mehr Regen macht die Wüste nicht freundlicher, nur matschiger.</p></div>'+
   '<p class="leise" id="waLive">Noch keine Welt.</p>'+
   '<p><button class="knopf haupt" id="waMessen">Auf diesem Gerät messen<small>gleiche Welt bei 0, 1, 2, 4 Helfern · Erde mit Orten, Straßen, Seewegen · Kartenstücke in Mitte und Ecken · Speicher · Bild · rund 20 Sekunden</small></button></p><div id="waErg"></div>'+
   '<p><button class="knopf" id="waKopie">Werte für den Chat kopieren<small>die Messung dieser Seite als kurzer Text</small></button></p>'+
@@ -211,6 +247,8 @@ function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElemen
  q('#waDichte').onchange=function(){neueWelt(q('#waSeed').value,+q('#waDichte').value)};
  q('#waWuerfel').onclick=function(){neueWelt((Math.random()*4294967296)>>>0)};
  q('#waKopie').onclick=kopieren;
+ q('#waKZurueck').onclick=function(){setRegler(null)};
+ q('#waKKopie').onclick=function(){var t=zK?zkText():'';if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){kInfo('Kopiert. In den Chat einfügen.')},function(){window.prompt('Text kopieren:',t)});else window.prompt('Text kopieren:',t)};
  q('#waMessen').onclick=function(){if(beschaeftigt)return;beschaeftigt=true;var b=q('#waMessen');b.disabled=true;q('#waErg').innerHTML='<p class="leise">Es wird gewogen. Die Welt hält kurz die Luft an.</p>';
   messe().catch(function(e){q('#waErg').innerHTML='<p class="witz">Messung gescheitert: '+String(e&&e.message||e).replace(/</g,'&lt;')+'</p>'}).then(function(){beschaeftigt=false;b.disabled=false})};
  zoom=0;farbe=0;kx=SX>>1;ky=SY>>1;ort();
@@ -221,7 +259,8 @@ function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElemen
 
 window.AT3_WELTANSICHT={aufbauen:aufbauen,ergebnis:E,text:text,messe:messe,ende:ende,SOLL:SOLL,
  zustand:function(){return{zoom:zoom,farbe:farbe,kx:kx,ky:ky,dichte:dichte,orte:erd&&erd.kopf?erd.kopf[0]:0,verbindungen:erd&&erd.kopf?erd.kopf[1]:0,generator:!!WGh,erde:!!erd,kacheln:kacheln.size,fertig:Array.from(kacheln.values()).filter(function(k){return k.fertig}).length,ws:ws}},
- setZoom:setZoom,setFarbe:setFarbe,blick:blick,neueWelt:neueWelt,
+ setZoom:setZoom,setFarbe:setFarbe,blick:blick,neueWelt:neueWelt,setRegler:setRegler,ZONEN:ZONEN,
+ klima:function(){return{bereit:zBereit,laeuft:!!zJob,gleich:zGleich,anteil:zAnteil?Array.from(zAnteil.Z):null,land:zAnteil?zAnteil.land:0,werte:zK?Object.assign({},zK):null,text:zK?zkText():''}},
  // für Tests: Lage eines Orts im Regionsbild als Anteil der Bildbreite und -höhe
  ortInRegion:function(){if(!erd||!erd.ort)return null;var r=regionEcke();for(var y=r[1]+2;y<r[1]+REGION-2;y++)for(var x=r[0]+2;x<r[0]+REGION-2;x++)if(erd.ort[y*GE+umZ(x)]&15)return[(x-r[0]+.5)/REGION,(y-r[1]+.5)/REGION];return null}};
 })();
