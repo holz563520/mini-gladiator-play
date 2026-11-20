@@ -17,6 +17,8 @@
 //    erst ein Netz, das jeden Ort erreicht, dann Querverbindungen; Seewege ebenso über den zusammenhängenden Ozean. Bleibend 2 Byte je Zelle mehr
 //    (9 Byte je Zelle) und das Netz als Graph (Orte, Verbindungen mit Länge und Art). Im Kartenstück eine vierte Schicht (1 Byte je Feld):
 //    Pfad, Straße, Brücke, Furt, Steg, Ortsplatz, Fähre. Stücke ohne Straße kosten nichts zusätzlich.
+// 4) N4b Völker (unten): zwei weitere Erd-Teile. 24 Kulturen (mindestens je eine, dazu Ableger) breiten sich aus ihren Kernländern aus; 1 Byte je Zelle
+//    (Volk), je Ort bis zu 3 Religionen mit Prozent, hinten an der fertigen Erde. Orte, Straßen und Klima bleiben Byte für Byte gleich (Notausschalter ?n4b=0).
 // Wiederverwendet: Ganzzahl-Rauschen (gitter/stufe) und mix aus riesenwelt.js und kern.js (MK1, G2); zustandslose Landschaft nach dem Vorbild von
 // welt-gross-core.js (2.0); Höheneinheit wie fpwelt.js (M7: 1 Feld = 1 Geschoss).
 (function(root){
@@ -28,10 +30,12 @@ var MEER=2048;                                // Meeresspiegel im Stück (Höhe 
 var ST_BYTES=FELDER*4, AUS=225;               // Stück: Höhe (2 Byte) + Biom (1 Byte) + Weg (1 Byte, W1b); Ausschnitt 5 × 5 Zellen × 9 Zahlen (N2b: + Klimazone)
 var GEL_BYTES=ST_BYTES+AUS*2;                 // Auftragspuffer eines Kartenstücks
 var ORT_MAX=32768, KANTE_MAX=65535, NETZ_KOPF=16, NETZ_MAX=NETZ_KOPF+ORT_MAX*4+KANTE_MAX*8;   // W1b: Obergrenzen des Netzes (Orte, Verbindungen)
-var ERD_ZELLEN=10*N, ERD_FEST=ERD_ZELLEN+NETZ_MAX;   // Erdraster: bleibend 10 Byte je Zelle (N2a: + Klimazone) + Netz (höchstens; übernommen wird nur der belegte Teil)
-var TAB=131072, SC=ERD_FEST, ERD_BYTES=SC+11*N+TAB*12;   // beim Entstehen zusätzlich Arbeitsfelder der Wegsuche
-var BAND=8, TEILE=BAND+8;                     // Teilaufträge der Erde
-var TEIL_NAME=['Rauschen 1','Rauschen 2','Rauschen 3','Rauschen 4','Rauschen 5','Rauschen 6','Rauschen 7','Rauschen 8','Ozean und Seen','Senken','Flüsse','Klima','Klimazonen','Orte und Häfen','Straßen','Seewege'];
+var VOLK_MAX=64, VK_KOPF=4+VOLK_MAX*4, VK_MAX=VK_KOPF+N+ORT_MAX*6;   // N4b: Völker (Zahl, Tafel Volk → Kernzelle | Kultur << 24), Volk je Zelle, je Ort bis zu 3 Religionen mit Prozent
+var ERD_ZELLEN=10*N, ERD_FEST=ERD_ZELLEN+NETZ_MAX+VK_MAX;   // Erdraster: bleibend 10 Byte je Zelle (N2a: + Klimazone) + Netz (höchstens; übernommen wird nur der belegte Teil)
+var TAB=131072, SC=ERD_FEST, VK0=SC+11*N+TAB*12, ERD_BYTES=VK0+VK_MAX;   // N4b: Völker beim Entstehen hinter den Arbeitsfeldern   // beim Entstehen zusätzlich Arbeitsfelder der Wegsuche
+var N4B=!(root.location&&/[?&](n2b|n2c|n4b)=0/.test(root.location.search||''));   // N4b Notausschalter ?n4b=0 (auch mit ?n2b=0, ?n2c=0): kein Teil „Völker“, Erde Byte für Byte wie N4a
+var BAND=8, TEILE=BAND+(N4B?10:8);                     // Teilaufträge der Erde
+var TEIL_NAME=['Rauschen 1','Rauschen 2','Rauschen 3','Rauschen 4','Rauschen 5','Rauschen 6','Rauschen 7','Rauschen 8','Ozean und Seen','Senken','Flüsse','Klima','Klimazonen','Orte und Häfen','Straßen','Seewege','Völker: Kernländer','Völker: Ausbreitung und Glaube'];
 var ORT_ART=['','Dorf','Stadt','Hafendorf','Hafenstadt'], WEG_ART=['','Pfad','Straße','Brücke','Furt','Steg','Ortsplatz','Fähre'];
 var BIOM=['tiefes Meer','Meer','Strand','Wüste','Steppe','Wald','Sumpf','Tundra','Fels','Schnee','Fluss','See','Eis','Grasland','Savanne','Mittelmeer-Buschland','Regenwald','Mangroven'];   // 12 Eis: nur im Erdraster (Polkappe, gesperrt); im Kartenstück ist Eis Schnee (9). 13–17 seit N2c
 // Land-Biom? (N2c: 2–9 und 13–17; Wasser 0, 1, 10, 11; Eis 12)
@@ -55,7 +59,11 @@ function ansicht(buf){var a={E:new Int16Array(buf,0,N),bio:new Uint8Array(buf,2*
   a.lm=new Uint16Array(buf,SC,N);a.bes=new Uint16Array(buf,SC+2*N,N);a.dst=new Uint16Array(buf,SC+4*N,N);a.vor=new Uint8Array(buf,SC+6*N,N);a.hp=new Uint32Array(buf,SC+7*N,N);
   a.tk=new Uint32Array(buf,SC+11*N,TAB);a.tv=new Uint32Array(buf,SC+11*N+TAB*4,TAB);a.tc=new Uint32Array(buf,SC+11*N+TAB*8,TAB)}
  else if(a.kopf){a.orte=new Uint32Array(buf,ERD_ZELLEN+NETZ_KOPF,a.kopf[0]);a.kanten=new Uint16Array(buf,ERD_ZELLEN+NETZ_KOPF+a.kopf[0]*4,a.kopf[1]*4)}   // übernommen: nur der belegte Teil
+ if(buf.byteLength>=ERD_BYTES)a.vk=vkSicht(buf,VK0,ORT_MAX);
+ else if(a.kopf){var o=ERD_ZELLEN+NETZ_KOPF+a.kopf[0]*4+a.kopf[1]*8;if(buf.byteLength>=o+VK_KOPF+N+a.kopf[0]*6)a.vk=vkSicht(buf,o,a.kopf[0])}   // N4b: nur wenn die Erde Völker trägt
+ if(a.vk)a.vol=a.vk.vol;
  return a}
+function vkSicht(buf,o,n){return{zahl:new Uint32Array(buf,o,1),tab:new Uint32Array(buf,o+4,VOLK_MAX),vol:new Uint8Array(buf,o+VK_KOPF,N),rel:new Uint8Array(buf,o+VK_KOPF+N,n*6)}}
 
 // ── Ebene Erde ──
 function glatt(u){return(u*u*(768-2*u))>>16}                                                     // 0..256 → 0..256, weich
@@ -218,11 +226,14 @@ function erdTeil(a){var A=ansicht(a.daten.buffer),t=a.teil;
  if(t<BAND)teilRauschen(A,a.seed>>>0,t);else if(t===BAND)teilOzean(A);
  else if(t===BAND+1)teilSenken(A);else if(t===BAND+2)teilFluesse(A);
  else if(t===BAND+3)teilKlima(A);else if(t===BAND+4)zonen(A,a.seed>>>0,ZK);                         // N2a: Klimazonen als eigener Teil (kurze Aufträge)
- else if(t===BAND+5)teilOrte(A,a.seed>>>0,a.dichte==null?1:a.dichte);else teilNetz(A,a.seed>>>0,t===BAND+7?1:0);
+ else if(t===BAND+5)teilOrte(A,a.seed>>>0,a.dichte==null?1:a.dichte);else if(t>=BAND+8)teilVoelker(A,a.seed>>>0,t-BAND-8);else teilNetz(A,a.seed>>>0,t===BAND+7?1:0);
  return a.daten}
 // Bleibender Teil der fertigen Erde: 10 Byte je Zelle, Kopf, belegte Orte, belegte Verbindungen (dicht hintereinander)
-function fest(d){var k=new Uint32Array(d.buffer,ERD_ZELLEN,4),nO=k[0],nK=k[1],aus=new Uint8Array(ERD_ZELLEN+NETZ_KOPF+nO*4+nK*8),p=ERD_ZELLEN+NETZ_KOPF;
- aus.set(d.subarray(0,p+nO*4));aus.set(d.subarray(ERD_ZELLEN+NETZ_KOPF+ORT_MAX*4,ERD_ZELLEN+NETZ_KOPF+ORT_MAX*4+nK*8),p+nO*4);return aus}
+// N4b: dahinter die Völker (Zahl, Tafel, Volk je Zelle, Religionen je Ort), nur wenn der Teil „Völker“ gelaufen ist
+function fest(d){var k=new Uint32Array(d.buffer,ERD_ZELLEN,4),nO=k[0],nK=k[1],mitV=N4B&&d.byteLength>=ERD_BYTES&&new Uint32Array(d.buffer,VK0,1)[0]>0,nV=mitV?VK_KOPF+N+nO*6:0,
+ p=ERD_ZELLEN+NETZ_KOPF,aus=new Uint8Array(p+nO*4+nK*8+nV);
+ aus.set(d.subarray(0,p+nO*4));aus.set(d.subarray(ERD_ZELLEN+NETZ_KOPF+ORT_MAX*4,ERD_ZELLEN+NETZ_KOPF+ORT_MAX*4+nK*8),p+nO*4);
+ if(mitV)aus.set(d.subarray(VK0,VK0+nV),p+nO*4+nK*8);return aus}
 // Ganze Erde in einem Stück (Tests und Werkzeuge). Liefert den bleibenden Teil.
 function erde(seed,dichte){var d=new Uint8Array(ERD_BYTES);for(var t=0;t<TEILE;t++)erdTeil({seed:seed,teil:t,dichte:dichte,daten:d});return fest(d)}
 
@@ -540,6 +551,82 @@ function teilNetz(A,seed,see){var E=A.E,bio=A.bio,flu=A.flu,dir=A.dir,ort=A.ort,
   kanten[nK*4]=a;kanten[nK*4+1]=b;kanten[nK*4+2]=tc[h]>65535?65535:tc[h];kanten[nK*4+3]=see?8:kl|(faehre?4:0);nK++}
  kopf[1]=nK}
 
+// ── N4b Völker: Kulturen und Religionen in der Welt (Entscheidungen Thomas 20.11.2026) ──
+// Zwei Teile „Völker“ nach den Seewegen (Helferkern, fester Betrag je Welt; Teil 0: Kernländer, Teil 1: Ausbreitung und Glaube). Jede der 24 Kulturen aus daten/kulturen.json kommt mindestens einmal vor; liegt
+// ihre Heimatzone noch auf einem anderen Kontinent, bekommt sie dort einen Ableger (zusammen rund ein Volk je VK_JE Orte, höchstens VOLK_MAX). Ein Volk
+// beginnt in einem Kernland seiner Zone (Zonengebiet = zusammenhängendes Land derselben Klimazone), dort an der Stelle, die zu seiner Lage passt (Küste,
+// Fluss, Hang, Oase), möglichst an einem Ort und weit weg von anderen Völkern im selben Gebiet. Dann breiten sich alle Völker zugleich aus (Wegsuche wie
+// die Straßen in W1b): fremdes Klima, Gebirge und Meer bremsen, Seefahrer kommen leichter übers Wasser. Wer eine Zelle zuerst erreicht, dem gehört sie.
+// Religionen je Ort (bis zu 3, Prozent vom Ganzen, unter 3 % entfällt): die der eigenen Kultur, die der Nachbarvölker im Umkreis von 4 Zellen nach Nähe,
+// in Häfen dazu der Tide Ledger, in Städten Zuwanderer eines zufälligen Volks. Der Rest sind verstreute Sekten (nicht gespeichert).
+// VK_KUL je Kultur (Reihenfolge und Nummer wie kulturen.json): [Heimatzonen als Bitmaske der Zonen aus ZONE, Lage 0 überall 1 Küste 2 Fluss 3 Hang 4 Oase,
+// Religion als Nummer in religionen.json ab 1]. Muss zu den Daten passen (geprüft in tests/at3-n4b.cjs).
+var VK_KUL=[[256,0,1],[256,1,10],[256,0,8],[512,0,4],[512,4,4],[576,2,2],[128,0,6],[128,2,6],[64,2,5],[64,0,5],[32,0,7],[32,0,7],[16,1,12],[16,2,3],[8,1,12],[4,0,12],
+ [1024,0,5],[1024,2,6],[2048,2,3],[2048,1,7],[4096,0,11],[8192,1,10],[16384,3,9],[16384,3,9]];
+var VK_JE=150, VK_MIN=40*64, VK_FREMD=22, VK_BERG=20, VK_MEER=30, VK_KMEER=14, VK_TIDE=10, VK_R=4;   // Vorschlagswerte (Kosten je Zelle beim Ausbreiten)
+function vkLand(b){return b>=2&&b!==11&&b!==12}
+function teilVoelker(A,seed,teil){var V=A.vk,vol=V.vol,tab=V.tab,rel=V.rel,E=A.E,bio=A.bio,flu=A.flu,zon=A.zon,orte=A.orte,nO=A.kopf[0],kom=A.bes,dst=A.dst,hp=A.hp;
+ var sV=mix(seed^0x7a11e5),i,j,k,r,x,y,c,n,q,K=0,nV=0;
+ if(teil===1){vkAusbreiten(A,sV);return}
+ for(i=0;i<N;i++){kom[i]=65535;vol[i]=0}for(i=0;i<VOLK_MAX;i++)tab[i]=0;for(i=0;i<rel.length;i++)rel[i]=0;
+ // 1) Zonengebiete (über die Naht), Zone, Größe und Orte je Gebiet, Zellen je Gebiet hintereinander
+ var cz=[];for(i=0;i<N;i++){if(!vkLand(bio[i])||kom[i]!==65535)continue;if(K>=65534)break;n=0;k=0;hp[n++]=i;kom[i]=K;
+  while(k<n){c=hp[k++];for(r=0;r<4;r++){j=nb(c,r);if(j>=0&&kom[j]===65535&&vkLand(bio[j])&&zon[j]===zon[i]){kom[j]=K;hp[n++]=j}}}cz.push(zon[i]);K++}
+ var cN=new Int32Array(K+1),cO=new Int32Array(K),cS=new Int32Array(K),cW=new Float64Array(K),inst=new Int32Array(24),VX=[],VY=[],VK=[],da=[];
+ for(c=0;c<24;c++)da.push({});                                                                  // da[Kultur][Landmasse]: dort gibt es sie schon
+ for(i=0;i<N;i++)if(kom[i]<K)cN[kom[i]+1]++;for(k=0;k<K;k++)cN[k+1]+=cN[k];
+ var pos=cN.slice(0,K);for(i=0;i<N;i++)if(kom[i]<K)hp[pos[kom[i]]++]=i;                                      // Zellen von Gebiet k: hp[cN[k] .. cN[k+1]-1]
+ for(k=0;k<nO;k++){i=orte[k]&0xffffff;if(kom[i]<K)cO[kom[i]]++}
+ for(k=0;k<K;k++)cW[k]=cO[k]*64+cN[k+1]-cN[k];
+ function passt(c,z){return(VK_KUL[c][0]>>z)&1}
+ function kueste(i){for(var r=0;r<4;r++){var j=nb(i,r);if(j>=0&&bio[j]<2)return true}return false}
+ function lage(c,i){var L=VK_KUL[c][1],s=0,r,j;if(L===1)s=kueste(i)?220:0;else if(L===2)s=flu[i]>=2?100+flu[i]*30:0;
+  else if(L===3){s=zon[i]===14?120:0;for(r=0;r<4;r++){j=nb(i,r);if(j>=0&&zon[j]===14&&zon[i]!==14)s=200}}
+  else if(L===4){s=flu[i]?220:0;for(r=0;r<4;r++){j=nb(i,r);if(j>=0&&bio[j]===11)s=220}}
+  var o=A.ort[i]&15;return s+(o?150+(o===2||o===4?60:0):0)}
+ function setzen(c,k){var best=-1,bs=-1e9,m,a=cN[k],b=cN[k+1];
+  for(m=a;m<b;m++){i=hp[m];x=i%GW;y=(i/GW)|0;var s=lage(c,i)+(mix(sV^Math.imul(i+1,0x9e3779b1)^Math.imul(c+1,0x85ebca6b))&127);
+   if(cS[k]){var dmin=1e9;for(var v=0;v<nV;v++){if(VK[v]!==k)continue;var dx=Math.abs(x-VX[v]);if(dx>GW-dx)dx=GW-dx;var d=Math.max(dx,Math.abs(y-VY[v]));if(d<dmin)dmin=d}s+=(dmin>60?60:dmin)*8}
+   if(s>bs){bs=s;best=i}}
+  tab[nV]=(best|(c+1)<<24)>>>0;VX.push(best%GW);VY.push((best/GW)|0);VK.push(k);nV++;cS[k]++;inst[c]++;da[c][A.lm[best]]=1}
+ // 2) Kernländer: erst jede Kultur einmal (Reihenfolge aus dem Seed), dann Ableger in den größten Gebieten mit den wenigsten Völkern, bevorzugt auf
+ //    Landmassen, wo es die Kultur noch nicht gibt (sonst nur ein Drittel so wichtig)
+ var reihe=[];for(c=0;c<24;c++)reihe.push(c);for(c=23;c>0;c--){j=mix(sV^Math.imul(c,0x27d4eb2d))%(c+1);var w=reihe[c];reihe[c]=reihe[j];reihe[j]=w}
+ for(q=0;q<24&&K;q++){c=reihe[q];var bk=-1,bw=-1,fb=-1,fw=-1;
+  for(k=0;k<K;k++){var s=cW[k]/(1+cS[k])*(192+(mix(sV^Math.imul(k+1,0x632be5ab)^Math.imul(c+1,0x7ed55d16))&127));if(passt(c,cz[k])){if(s>bw){bw=s;bk=k}}else if(s>fw){fw=s;fb=k}}
+  setzen(c,bk>=0?bk:fb)}                                                                                 // ohne passende Zone in dieser Welt: das größte freie Gebiet
+ var ziel=Math.max(24,Math.min(VOLK_MAX,Math.round(nO/VK_JE)));
+ while(nV<ziel){var bk2=-1,bc=-1,bw2=0;
+  for(k=0;k<K;k++){var s2=cW[k]/(1+cS[k]);if(s2<VK_MIN)continue;var L2=A.lm[hp[cN[k]]];
+   for(c=0;c<24;c++){if(!passt(c,cz[k]))continue;var s3=da[c][L2]?s2/3:s2;
+    if(s3>bw2||s3===bw2&&bk2>=0&&(inst[c]<inst[bc]||inst[c]===inst[bc]&&(mix(sV^Math.imul(c+1,k+1))&1))){bw2=s3;bk2=k;bc=c}}}
+  if(bk2<0)break;setzen(bc,bk2)}
+ V.zahl[0]=nV}
+function vkAusbreiten(A,sV){var V=A.vk,vol=V.vol,tab=V.tab,rel=V.rel,bio=A.bio,zon=A.zon,orte=A.orte,nO=A.kopf[0],dst=A.dst,hp=A.hp,nV=V.zahl[0],i,j,k,r,x,y,n,q;
+ // 3) Ausbreiten: alle Völker zugleich, niedrigste Kosten zuerst (256 Eimer wie teilNetz), wer zuerst kommt, dem gehört die Zelle
+ var eimer=EIMER,jetzt=0;n=0;for(i=0;i<256;i++)eimer[i]=0;
+ function rein(j,t){hp[j]=eimer[t&255];eimer[t&255]=j+1;n++}
+ for(var v2=0;v2<nV;v2++){i=tab[v2]&0xffffff;vol[i]=v2+1;dst[i]=0;rein(i,0)}
+ while(n){while(!eimer[jetzt&255])jetzt++;i=eimer[jetzt&255]-1;eimer[jetzt&255]=hp[i];n--;var d0=dst[i],a=vol[i],K0=VK_KUL[(tab[a-1]>>>24)-1];
+  for(r=0;r<4;r++){j=nb(i,r);if(j<0||vol[j])continue;var bj=bio[j],t;if(bj===12)continue;
+   if(bj<2||bj===11)t=K0[1]===1?VK_KMEER:VK_MEER;
+   else{x=j%GW;y=(j/GW)|0;t=10+(B_WEG[bj]>>1)+((K0[0]>>zon[j])&1?0:VK_FREMD)+(zon[j]===14&&K0[1]!==3?VK_BERG:0)+((pn(sV,0,x,y,G_NETZ)*10)>>16)}
+   if(d0+t>65000)continue;vol[j]=a;dst[j]=d0+t;rein(j,d0+t)}}
+ for(i=0;i<N;i++)if(!vkLand(bio[i]))vol[i]=0;                                                            // Wasser und Eis gehören niemandem
+ // 4) Religionen je Ort
+ var W=new Int32Array(13),R=new Int32Array(3);
+ for(k=0;k<nO;k++){i=orte[k]&0xffffff;var typ=orte[k]>>>24,a2=vol[i];if(!a2)continue;var own=VK_KUL[(tab[a2-1]>>>24)-1][2],sum=0;W.fill(0);W[own]=100;
+  x=i%GW;y=(i/GW)|0;
+  for(var dy=-VK_R;dy<=VK_R;dy++){var Y=y+dy;if(Y<0||Y>=GH)continue;for(var dx=-VK_R;dx<=VK_R;dx++){if(!dx&&!dy)continue;var b=vol[Y*GW+um(x+dx)];if(!b)continue;
+   var dd=Math.max(dx<0?-dx:dx,dy<0?-dy:dy);W[b===a2?own:VK_KUL[(tab[b-1]>>>24)-1][2]]+=VK_R+1-dd}}
+  var h=mix(sV^Math.imul(i+1,0x2545f491));
+  if(typ>=3)W[VK_TIDE]+=12+(h&7);
+  if(typ===2||typ===4){var zu=(tab[((h>>>8)%nV)]>>>24)-1;W[VK_KUL[zu][2]]+=8+((h>>>4)&7)}
+  for(j=1;j<13;j++)sum+=W[j];
+  for(q=0;q<3;q++){var bj2=0;for(j=1;j<13;j++)if(W[j]>W[bj2])bj2=j;R[q]=bj2;if(bj2)W[bj2]=-W[bj2]}            // die drei stärksten (bei Gleichstand die kleinere Nummer)
+  for(q=0;q<3;q++){var rr=R[q];if(!rr)continue;var pr=Math.round(-W[rr]*100/sum);if(pr<3)continue;rel[k*6+q*2]=rr;rel[k*6+q*2+1]=pr}}
+ }
+
 // ── W1b im Kartenstück: Straßenlauf wie der Flusslauf (feste Querungspunkte auf den Zellkanten, Bögen zum Mittelpunkt der Zelle), dazu grob und fein
 // seitlich verschoben, damit sich die Straße windet. Gezeichnet als dünne Linie (Pfad 1 Feld, Straße 2 Felder) nur dort, wo die Straße das Stück
 // berührt: Stücke ohne Straße kosten nichts. Wegschicht je Feld: 1 Pfad, 2 Straße, 3 Brücke, 4 Furt, 5 Steg (flaches Wasser), 6 Ortsplatz, 7 Fähre.
@@ -611,7 +698,7 @@ function rechnen(a){return a.art==='erde'?erdTeil(a):gelaende(a)}
 function stueck(seed,A,cx,cy,daten){   // A muss ort und weg tragen (ansicht der fertigen Erde)
  daten=daten||new Uint8Array(GEL_BYTES);ausschnitt(A,cx,cy,daten);return gelaende({seed:seed,cx:cx,cy:cy,daten:daten})}
 
-var WG={ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,N2B:N2B,ZV:ZV,zonenV:zonenV,zfuell:zfuell,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
+var WG={N4B:N4B,VK_KUL:VK_KUL,VOLK_MAX:VOLK_MAX,VK_KOPF:VK_KOPF,VK_JE:VK_JE,teilVoelker:teilVoelker,ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,N2B:N2B,ZV:ZV,zonenV:zonenV,zfuell:zfuell,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
  TEIL_NAME:TEIL_NAME,BIOM:BIOM,DX:DX,DY:DY,HW:HW,mix:mix,ansicht:ansicht,erdTeil:erdTeil,erde:erde,ausschnitt:ausschnitt,gelaende:gelaende,stueck:stueck,rechnen:rechnen,kante:kante,biomVon:biomVon,herrscht:herrscht,ZONE:ZONE,ZONE_EN:ZONE_EN,N2C:N2C,Z_UNTER:Z_UNTER,Z_BIOM:Z_BIOM,zbio:zbio,istLand:istLand,unter:unter,ZK:ZK,zonen:zonen,zonenRegen:zonenRegen,zonenKlasse:zonenKlasse,zonenSpeicher:zonenSpeicher,waerme:waerme,zBreite:zBreite,anteile:anteile,punkt:punkt,neigung:neigung,klasse:klasse,KAN:KAN};
 if(typeof module!=='undefined'&&module.exports)module.exports=WG;else root.AT3WG=WG;
 })(typeof self!=='undefined'?self:this);
