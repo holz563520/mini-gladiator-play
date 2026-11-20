@@ -33,7 +33,7 @@ function holen(ox,oy){var o=P.o,sperr=[];for(var id in o.objekte){var k=o.objekt
  return new Promise(function(ok,no){var n=0;(function frag(){o.karte.frage('fp',{ox:ox,oy:oy,sperr:sperr}).then(function(r){
    if(r.fehlt||!r.welt){if(++n>40)return no(new Error('picture core not ready'));return setTimeout(frag,250)}ok(r)})})()})}
 function annehmen(r){var w=r.welt,F=window.AT3_FPW,L=[],ids=r.arten;
- if(!P.arten){P.arten={};ids.forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)});['figur-arbeiter','karren-ochse','tier-reh','markt-stand','arena-sand','medicus','leiche'].forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)})}
+ if(!P.arten){P.arten={};ids.forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)});['figur-arbeiter','karren-ochse','tier-reh','markt-stand','arena-sand','arena-eingang','arena-ausgang','schild-closed','medicus','leiche'].forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)})}
  w.obj=L;for(var i=0;i<w.objN;i++){var o={art:ids[w.objArt[i]],x:w.objX[i],y:w.objY[i],r:0,z:0};o.z=F.hoehe(w,o.x,o.y);L.push(o)}
  P.ausschnitte++;P.ausschnittMs.push(r.us/1000);if(P.ausschnittMs.length>20)P.ausschnittMs.shift();P.stueckeNeu+=r.neu||0;return w}
 

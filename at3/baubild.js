@@ -13,7 +13,7 @@ var ARTEN=['wand-stein','wand-tuer','wand-tor','dach-ziegel','natur-stumpf'], DA
 var ST=64, F=ST*ST, WX=ST*9600, WY=ST*4800, MEER=2048, LS=6;
 var F_DACH=1, F_ROD=2, F_STUMPF=8, Z_PLAN=1, Z_ARBEIT=2, Z_FERTIG=3;
 var LIFT=25, KNIE=10;                      // Dach so hoch, dass die Traufe auf der Wandkrone sitzt (Bildpunkte bei 1×); offene Vorderwand kniehoch
-var BODEN=[0,46,9,23,23,9,46,23], PUNKT=61;      // AR1b: Anlage Sand, Häuschen Holz (Platzhalter bis AR1c die großen Bilder zeichnet)      // Boden je Art (Lager Sand, Werkstatt Erde, Unterkunft Holz; G8: Küche Holz, Jägerhütte Erde), Punktmuster der Baustelle (Ocker)
+var BODEN=[0,46,9,23,23,9,46,23], PUNKT=61;      // AR1b: Anlage Sand (seit AR1c1 nur noch First Person bis AR1c2), Häuschen Holz      // Boden je Art (Lager Sand, Werkstatt Erde, Unterkunft Holz; G8: Küche Holz, Jägerhütte Erde), Punktmuster der Baustelle (Ocker)
 function stufe(h){h=(h-MEER)>>LS;return h<0?0:h}
 
 // Bilder je Art und Zoomstufe (wie natur.vorbereiten), Wände zusätzlich gespiegelt (Nordkante). unten[x]: unterste deckende Zeile je Spalte (für halbe und kniehohe Wände).
@@ -44,7 +44,7 @@ function sammeln(BA,x0,y0,n,lod,ECK,aus,BOD){var a=BA.hole(x0>>6,y0>>6);if(!a)re
  var m=n+1,hw=32>>lod,hh=16>>lod,st=8>>lod,B=BA.BILD,off=BA.offen,lift=Math.round(LIFT/(1<<lod)),nN=null,nW=null,z=0;
  if(off&&off.size){if(!(y0&63)&&y0>0)nN=BA.hole(x0>>6,(y0>>6)-1);if(!(x0&63))nW=BA.hole(umX(x0-1)>>6,y0>>6)}
  for(var j=0;j<n;j++)for(var i=0;i<n;i++){var X=x0+i,Y=y0+j,q=((Y&63)<<6)|(X&63),art=a[q],kn=a[F+q],kw=a[2*F+q],fl=a[3*F+q],e=j*m+i;
-  BOD[j*n+i]=art?(((fl>>4)&3)<<6)|BODEN[art]:0;
+  BOD[j*n+i]=art&&art!==6?(((fl>>4)&3)<<6)|BODEN[art]:0;      // AR1c1: unter einer großen Anlage (6) bleibt der Naturboden, das Bild liegt darüber (kein Sandrand)
   if(kn&3){var typ=(kn&3)-1,zN=(kn>>4)&3,kN=off&&off.size&&off.has(Y&63?raumIn(a,q-64):raumIn(nN,q+63*64))?3:0,sp=B[typ].M[lod];
    aus.push({tief:i+j,i:i,o:0,sp:sp,x:(i+1-j)*hw,y:(i+j+1)*hh-ECK[e+1]*st,m:kN||(zN===Z_FERTIG?0:zN===Z_ARBEIT?2:1),id:B[typ].id,ersatz:B[typ].ersatz});z++}
   if(kw&3){var typ2=(kw&3)-1,zW=(kw>>4)&3,kW=off&&off.size&&off.has(X&63?raumIn(a,q-1):raumIn(nW,q+63))?3:0,sp2=B[typ2].L[lod];

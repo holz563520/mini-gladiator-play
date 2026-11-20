@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 146,
+ "typMax": 147,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -1236,6 +1236,15 @@
    "name": "Tree Stump",
    "status": "uebernommen",
    "datei": "obj/natur-stumpf.json"
+  },
+  {
+   "id": "schild-closed",
+   "version": 2,
+   "typ": 147,
+   "kat": "einrichtung",
+   "name": "Closed Sign",
+   "status": "uebernommen",
+   "datei": "obj/schild-closed.json"
   },
   {
    "id": "tier-reh",

@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='07820475', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='ead32b9a', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -146,7 +146,7 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
   beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
   beiTier:function(k){if(BAUW&&!fpAn)return false;tierKarte(k);return true},      // G8: Reh antippen
   beiFest:function(e){if(BAUW&&!fpAn)return false;return festKarte(e)},      // G9d3: Leiche      // G9c1: Marktstand antippen, G9d2: Arena
-  beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
+  beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else if(ATT_WZ[BAUW])attTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.bweg?', '+t('welt.bweg.'+f.bweg[0])+(f.bweg[1]<3?' ('+t('bau.zustand.'+f.bweg[1])+')':''):f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
  bauAnschliessen();warenAnschliessen();
@@ -208,10 +208,12 @@ var BAUWZ={lager:{gr:'haus',bild:'📦',form:'rechteck',preis:1},werkstatt:{gr:'
  kueche:{gr:'haus',bild:'🍲',form:'rechteck',preis:1},jagdhuette:{gr:'haus',bild:'🏹',form:'rechteck',preis:1},      // G8: Werkstatt = Sägewerkstatt, neu Küche und Jägerhütte
  trampelpfad:{gr:'weg',bild:'👣',form:'rechteck',preis:1},kiesweg:{gr:'weg',bild:'∴',form:'rechteck',preis:1},pflaster:{gr:'weg',bild:'▦',form:'rechteck',preis:1},
  steinstrasse:{gr:'weg',bild:'▣',form:'rechteck',preis:1},                                    // G6a: vier Wegarten wie 2.0 (Thomas 16.11.2026)
+ warteweg:{gr:'weg',bild:'⋯',form:'rechteck',preis:1},      // AR1c1: Queue Path (nur zu Fuß, Schlange vor dem Eingang)
+ arena:{gr:'attraktion',bild:'🏟',form:'tipp',preis:0},eingang:{gr:'attraktion',bild:'🎟',form:'tipp',preis:0},ausgang:{gr:'attraktion',bild:'🚶',form:'tipp',preis:0},      // AR1c1: Attraktionen (Regel 20), kostenlos
  tuer:{gr:'werkzeug',bild:'🚪',form:'tipp',preis:1},pfadFuss:{gr:'werkzeug',bild:'🚶',form:'tipp',preis:0},pfadKarren:{gr:'werkzeug',bild:'🐂',form:'tipp',preis:0},abriss:{gr:'werkzeug',bild:'💥',form:'rechteck',preis:0}};   // G6b: Wegprobe (pfadFuss, pfadKarren)
 // Thomas 16.11.2026: wie 2.0 nur Boden ziehen, Wände, Dach und Tür kommen von selbst; von Hand nur Türen. Wandlinie, Dach und „Wände neu“ bleiben im Weltkern
 // (bauWaende, bauDach, bauHuelle) und in der Karte (Form „linie“), haben aber keinen Knopf.
-var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5}, WEG_NR={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4}, MAXA=1024, MAXL=256;
+var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5}, WEG_NR={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4,warteweg:5}, ATT_WZ={arena:1,eingang:1,ausgang:1}, MAXA=1024, MAXL=256;
 // ── G7 Waren und Arbeiter: Knopf „Goods“ (Bestände, Aufträge, stehende Baustellen mit Grund), Arbeiter antippen (Aufgabe, Last, Fähigkeiten, Rollen von Hand).
 // Alles kommt als fertige Zahlen vom Weltkern (Nachricht waren nur bei Änderung), der Hauptkern füllt nur die Liste, und nur wenn sie offen ist. ──
 var WAREN=null, PERSON=null;
@@ -256,7 +258,7 @@ function anschluss(){if(KAL)return KAL;KAL=new Promise(function(ok,no){if(window
  s.onload=function(){ok(window.AT3Kampf)};s.onerror=function(){KAL=null;no(new Error('kampfanschluss.js'))};document.head.appendChild(s)});return KAL}
 function herkunftText(g){var h=g.her,b=g.geb;if(!h)return '';var a=t('glad.ort.'+h.art);return b&&b.ortId!==h.ortId?t('glad.her2',{o:h.name,a:a,b:b.name}):t('glad.her1',{o:h.name,a:a})}
 function beiGladiatoren(d){GLAD=d.meld||null;window.AT3SPIEL.glad=GLAD;
- var AR=GLAD&&GLAD.arena;if(KARTE)KARTE.fest(GLAD&&GLAD.platz?[{art:'markt-stand',x:GLAD.markt[0],y:GLAD.markt[1]}].concat(AR&&AR.platz?[{art:'arena-sand',x:AR.x,y:AR.y}]:[]).concat(GLAD.medicus?[{art:'medicus',x:GLAD.medicus[0],y:GLAD.medicus[1]}]:[])
+ var AR=GLAD&&GLAD.arena;if(KARTE)KARTE.fest(GLAD&&GLAD.platz?[{art:'markt-stand',x:GLAD.markt[0],y:GLAD.markt[1]}].concat(AR&&AR.platz?(AR.gross?anlageFest(AR.anlage):[{art:'arena-sand',x:AR.x,y:AR.y}]):[]).concat(GLAD.medicus?[{art:'medicus',x:GLAD.medicus[0],y:GLAD.medicus[1]}]:[])
   .concat(AR&&AR.leichen?AR.leichen.map(function(l){return{art:'leiche',x:l.x,y:l.y,info:l}}):[]):[]);      // G9d2: feste Arena; G9d3: Leichen einen Spieltag
  // G9d3 Heilung wie 1.0: neuer Spieltag → alle Lebenden im Kampfkern heilen (KA.heile, Tageswechsel aus data.js), Ergebnis mit glaHeil zurück. Einmal je Spieltag.
  var h=GLAD&&GLAD.heil;if(h&&heilWarte!==h.tag){heilWarte=h.tag;
@@ -296,17 +298,38 @@ function figurenNahPflegen(){if(F1AUS||NAHW||!KARTE||!KARTE.nahSichtbar||!GLAD||
 // oder spät genug), öffnet das Spiel das Kampffenster von selbst (Modus kampf); das Ergebnis geht genau einmal mit arenaErgebnis in den Weltkern. Die Weltuhr steht,
 // solange das Kampffenster offen ist. Kerne: hier nur Anzeige und Befehle; gerechnet wird im Weltkern und im Kampffenster (1.0). ──
 var ARENA_OFFEN=false, arenaAuto='', arenaTempo=0;
+// ── AR1c1 Arena als große Anlage (Thomas 20.11.2026): Bild aus der Kartei (arena-sandgrube, Anker Mitte), Häuschen je ein Feld (Richtung nach der Seite zur Anlage:
+// Anlage nördlich/südlich → Bild wie gezeichnet, westlich/östlich → gespiegelt), Schild „closed“ auf dem Feld vor dem Eingangshäuschen (ohne Häuschen am Südrand).
+// Werkzeuge in der Gruppe „Attractions“: antippen setzt die Arena (Mitte) oder ein Häuschen; Antwort kommt als Meldung vom Weltkern (arenaMeld). Neue Spiele starten
+// ohne Arena, ein Hinweis zeigt den Weg ins Baumenü. Alles nur Liste und Text im Hauptkern, gerechnet wird im Weltkern (attraktion.js). ──
+var DXS=[0,-1,0,1], DYS=[-1,0,1,0], attHinweis=false;
+function anlageFest(A){if(!A||A.x<0)return[];var L=[{art:A.id,x:A.x+(A.w>>1),y:A.y+(A.h>>1),anl:1}];
+ if(A.ein)L.push({art:'arena-eingang',x:A.ein[0],y:A.ein[1],r:A.ein[2]&1});if(A.aus)L.push({art:'arena-ausgang',x:A.aus[0],y:A.aus[1],r:A.aus[2]&1});
+ if(!A.offen){var e=A.ein,sx=e?e[0]-DXS[e[2]]:A.x+(A.w>>1),sy=e?e[1]-DYS[e[2]]:A.y+A.h;L.push({art:'schild-closed',x:sx,y:sy})}
+ return L}
+function attTipp(f){if(!f||f.x==null){$('bauInfo').textContent=t('weg.tippLand');return}var AR=GLAD&&GLAD.arena;
+ if(!AR){$('bauInfo').textContent=t('att.grund.no_world');return}
+ if(BAUW==='arena'){var A=AR.anlage,w=A?A.w:17,h=A?A.h:17;KARTE.rahmen({x:f.x-(w>>1),y:f.y-(h>>1),w:w,h:h},null);KERN.befehl('arenaSetzen',{x:f.x,y:f.y})}
+ else KERN.befehl('arenaHaus',{art:BAUW==='eingang'?'ein':'aus',x:f.x,y:f.y});
+ $('bauInfo').textContent=t('att.wartet');window.AT3SPIEL.attBefehl={art:BAUW,x:f.x,y:f.y}}
+function attText(g){var k='att.grund.'+g;return TXT[k]!=null?t(k):grundText(g)}
+function attZustand(A){return A.offen?t('att.offen',{n:A.schlange}):t('att.zu.'+A.grund)}
 function arenaPause(){arenaTempo=KERN.zustand.tempo;if(arenaTempo)KERN.befehl('tempo',0)}
 function arenaWeiter(){if(arenaTempo)KERN.befehl('tempo',arenaTempo);arenaTempo=0}
 function arenaMeld(){var A=GLAD&&GLAD.arena,T=A&&A.termin,M=GLAD&&GLAD.meld,m=M&&M[M.length-1];
- if(m&&m.arena&&m.tick!==arenaMeld.letzt){arenaMeld.letzt=m.tick;if(!m.ok)$('weltInfo').textContent=t('arena.nein.'+m.grund)}
+ if(m&&m.arena&&m.tick!==arenaMeld.letzt){arenaMeld.letzt=m.tick;
+  if(m.art){KARTE.rahmen(null);window.AT3SPIEL.attMeld=m;$('bauInfo').textContent=m.ok?(m.haus?t('att.ok.'+m.haus)+' ':t('att.ok.arena')+' ')+(A&&A.anlage?attZustand(A.anlage):''):attText(m.grund)}      // AR1c1
+  else if(!m.ok)$('weltInfo').textContent=t('arena.nein.'+m.grund)}
+ if(A&&A.gross&&!A.platz&&GLAD.platz&&!attHinweis){attHinweis=true;$('weltInfo').textContent=t('att.hinweis')}      // AR1c1: neues Spiel ohne Arena
+ if(A&&A.platz&&attHinweis===true){attHinweis=2;if($('weltInfo').textContent===t('att.hinweis'))$('weltInfo').textContent=''}
  if(T&&T.zu===2&&!ARENA_OFFEN&&arenaAuto!==T.id){arenaAuto=T.id;arenaFrage()}      // G9d3: ansehen oder nur Ergebnis
  if(window.AT3SPIEL.angetippt==='arena')arenaKarte(true);if(BERICHT&&window.AT3SPIEL.angetippt==='bericht')arenaBericht()}
 function arenaLetzt(L){var w={s:'☠'.repeat(L.skulls|0),l:L.label,g:L.praemie|0};return t(L.abgesagt?'arena.letzt.ab':L.gewonnen?'arena.letzt.sieg':'arena.letzt.niederlage',w)+
  (L.abgesagt?'':(L.zuschauer!=null?' '+t('arena.tickets',{z:L.zuschauer,t:L.tickets|0}):'')+(L.tote&&L.tote.length?' '+t('arena.letzt.tote',{n:L.tote.join(', ')}):''))}      // G9d3: Tickets, Gefallene
 function arenaKarte(still){var A=GLAD&&GLAD.arena,e=$('karte'),info=OBJTXT['arena-sand.info']||'',T=A&&A.termin,h;window.AT3SPIEL.angetippt='arena';
  if(!A||!A.platz){e.textContent=t('arena.zu');return}
- h='<b>'+esc(t('arena.titel'))+'</b>'+(info&&!still?'<br><span class="leise">'+esc(info)+'</span>':'');
+ if(A.gross&&A.anlage)info=OBJTXT[A.anlage.id+'.info']||info;
+ h='<b>'+esc(t('arena.titel'))+'</b>'+(info&&!still?'<br><span class="leise">'+esc(info)+'</span>':'')+(A.gross&&A.anlage?'<br><span class="'+(A.anlage.offen?'leise':'schlecht')+'">'+esc(attZustand(A.anlage))+'</span>':'');      // AR1c1: offen/zu
  if(T)h+='<br>'+esc(t('arena.termin',{tag:T.tag+1,s:'☠'.repeat(T.skulls),l:T.label}))+'<br><span class="leise">'+esc(t('arena.kaempfer',{n:T.ids.map(personName).join(', ')}))+'</span><br><span class="leise">'+
   esc(t('arena.zu'+T.zu,{da:A.da|0,n:T.ids.length}))+'</span><br>'+(T.zu===2?'<button class="knopf klein" data-arena="kampf">'+esc(t('arena.ansehen'))+'</button> <button class="knopf klein" data-arena="ergebnis">'+esc(t('arena.nurerg'))+'</button> ':'')+'<button class="knopf klein" data-arena="absage">'+esc(t('arena.absage'))+'</button>';
  else h+='<br><span class="leise">'+esc(A.letzt?arenaLetzt(A.letzt):t('arena.frei'))+'</span><br><button class="knopf klein" data-arena="wahl">'+esc(t('arena.planen'))+'</button>';
@@ -382,7 +405,7 @@ function medBehandle(pid,tier){if(MED.warte)return;MED.warte=1;medicusKarte(true
  Promise.all([anschluss(),KERN.glaDaten({figur:[pid]})]).then(function(r){var x=r[1]&&r[1][0];if(!x)throw new Error('gone');
   return r[0].behandle({gs:[x.g],tier:tier},'',V).then(function(B){setTimeout(function(){if(MED.warte){MED.warte=0;if(window.AT3SPIEL.angetippt==='medicus')medicusKarte(true)}},5000);KERN.befehl('glaBehandle',{pid:pid,gv:x.gv,tier:tier,kosten:B.kosten,g:B.g,hp:B.hp,ruht:B.ruht})})})
   .catch(function(err){console.warn('Medicus:',err);MED.warte=0;$('weltInfo').textContent=t('med.fehler');if(window.AT3SPIEL.angetippt==='medicus')medicusKarte(true)})}
-function festKarte(e){if(e.art==='markt-stand'){marktKarte();return true}if(e.art==='arena-sand'){arenaKarte();return true}if(e.art==='medicus'){medicusKarte();return true}if(e.art==='leiche'&&e.info){leicheKarte(e.info);return true}return false}      // K0: Karte und First Person
+function festKarte(e){if(e.art==='markt-stand'){marktKarte();return true}if(e.art==='arena-sand'||e.anl||e.art==='arena-eingang'||e.art==='arena-ausgang'||e.art==='schild-closed'){arenaKarte();return true}if(e.art==='medicus'){medicusKarte();return true}if(e.art==='leiche'&&e.info){leicheKarte(e.info);return true}return false}      // K0: Karte und First Person
 function leicheKarte(l){var e=$('karte');window.AT3SPIEL.angetippt='leiche';
  e.innerHTML='<b>'+esc(t('leiche.titel',{n:l.name}))+'</b>'+(l.her?'<br><span class="leise">'+esc(t('leiche.her',{o:l.her}))+'</span>':'')+(l.ursache?'<br>'+esc(t('leiche.ursache',{u:l.ursache})):'')+'<br><span class="leise">'+esc(t('leiche.info'))+'</span>';
  sprich(t('leiche.titel',{n:l.name}))}
@@ -469,7 +492,7 @@ function warenprobe(){var k=KARTE.kam();if(!k)return;var P=window.AT3SPIEL.waren
      P.fertig=true;$('weltInfo').textContent=t('probe.waren3')}},500)})})()}
 function bauAnschliessen(){var k=$('bauKnopf');k.disabled=false;k.textContent=t('bau.knopf');
  var G={},h='<div class="bauGruppen">';Object.keys(BAUWZ).forEach(function(id){var w=BAUWZ[id];(G[w.gr]=G[w.gr]||[]).push(id)});
- ['haus','weg','werkzeug'].forEach(function(g){h+='<div class="bauGruppe"><b>'+esc(t('bau.gruppe.'+g))+'</b><div>'+G[g].map(function(id){var w=BAUWZ[id];
+ ['haus','weg','attraktion','werkzeug'].forEach(function(g){h+='<div class="bauGruppe"><b>'+esc(t('bau.gruppe.'+g))+'</b><div>'+G[g].map(function(id){var w=BAUWZ[id];
    return '<button class="knopf klein" data-bau="'+id+'" aria-pressed="false"><i>'+w.bild+'</i> '+esc(t('bau.art.'+id))+(w.preis?' <small>'+w.preis+' G</small>':'')+'</button>'}).join('')+'</div></div>'});
  h+='<button class="knopf klein weg bauFertig" id="bauZu">'+esc(t('bau.zu'))+'</button></div>';$('bauWerkzeuge').innerHTML=h;
  [].forEach.call(document.querySelectorAll('#bauLeiste [data-bau]'),function(b){b.onclick=function(){bauWahl(BAUW===b.dataset.bau?null:b.dataset.bau)}});

@@ -173,6 +173,9 @@ function pruefen(d){
   else if(!ZW[z[0]])f('zweig',g.id,'Zweig „'+z[0]+'“ unbekannt');
   else if(z[1]&&!ZW[z[0]][z[1]])f('zweig',g.id,'Unterzweig „'+z[1]+'“ gibt es im Zweig „'+z[0]+'“ nicht');
   else if(!z[1]&&Object.keys(ZW[z[0]]).length)f('zweig',g.id,'Unterzweig fehlt (Zweig „'+z[0]+'“ hat Unterzweige)');
+  // AR1c1 (Fahrplan Regel 20): Zugang attraktion (Ein- und Ausgangshäuschen, Schlange), bude (Theke am Weg), tuer (eine Tür), teil (Teil einer Anlage, kein eigener Zugang)
+  if(ZUGANG.indexOf(g.zugang)<0)f('zugang',g.id,'Zugang „'+g.zugang+'“ unbekannt (erlaubt: '+ZUGANG.join(', ')+')');
+  else if(g.zugang!=='tuer'&&g.bereich!=='arena')f('zugang',g.id,'Zugang „'+g.zugang+'“ nur auf dem Arena-Gelände');
  });
  if(d.gebaeude.biome&&!F.some(function(x){return x.art==='biom'})){var BT=biomTafel(d);
   BT.forEach(function(r){if(r.lage)return;
@@ -187,6 +190,7 @@ function pruefen(d){
 // Gebäuden mit diesem Biom oder „alle“, ohne Arena-Gelände und ohne Verkauf an Buden, nur wenn alle Pflicht-Eingänge vor Ort entstehen), und die
 // hergestellten Waren, die dort fehlen („fehlt“, also Handel). Lagen (Küste, Fluss) zählen nur ihre eigenen Gebäude. Reine Rechnung, einmal je Aufruf; gebraucht vom Prüfer, dem Editor und später N5b.
 var BIOM_ALLE='alle';
+var ZUGANG=['attraktion','bude','tuer','teil'];
 function biomTafel(d){
  var I=index(d),G=d.gebaeude.gebaeude.filter(function(g){return g.bereich!==BEREICH_ARENA}),je={};
  I.rez.forEach(function(r){(je[r.geb]||(je[r.geb]=[])).push(r)});

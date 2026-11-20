@@ -16,14 +16,14 @@
 // AR1b (Thomas 20.11.2026): große Arena (Sandgrube 17 × 17 aus attraktion.js) setzt der Spieler selbst (Befehl arenaSetzen, Mitte x,y; kostenlos, sofort fertig;
 // versetzen nur ohne offenen Termin, Häuschen danach neu), Häuschen mit arenaHaus (art ein/aus, Feld x,y, kostenlos versetzbar). Nur neue Spiele (r.gross = 1,
 // Spielstand Format 2); alte Stände (Format 1) behalten die kleine Arena. „closed“ ist bis AR2 nur Anzeige: Kämpfe und Tickets wie bisher. Sammelpunkt der
-// Kämpfer (ax, ay) ist das Eingangshäuschen, ohne Häuschen das erste begehbare Feld am Rand. Bis AR1c nur mit Schalter ?ar1b=1 (sonst kleine Arena wie bisher).
+// Kämpfer (ax, ay) ist das Eingangshäuschen, ohne Häuschen das erste begehbare Feld am Rand. Seit AR1c1 Standard für neue Spiele (Notausschalter ?ar1b=0: kleine Arena wie bisher).
 (function(root){
 'use strict';
 function PERS(){return root.AT3PERS||(typeof module!=='undefined'&&module.exports?require('./personen.js'):null)}
 function BAU(){return root.AT3BAU||(typeof module!=='undefined'&&module.exports?require('./bau.js'):null)}
 function KA(){return root.AT3Kampf||(typeof module!=='undefined'&&module.exports?require('./kampfanschluss.js'):null)}
 function ATT(){return root.AT3ATT||(typeof module!=='undefined'&&module.exports?require('./attraktion.js'):null)}
-var AN=!!(root.location&&/[?&]ar1b=1/.test(root.location.search||''));      // AR1b-Schalter bis AR1c (Tests: AR.gross(true))
+var AN=!!(root.location&&!/[?&]ar1b=0/.test(root.location.search||''));      // AR1c1: neue Spiele bekommen die große Arena; Notausschalter ?ar1b=0 (Node-Tests: klein, AR.gross(true))
 var STAND=1, STAND_G=2, ZUSCHAUER=40, TICKET=1, MAX_LEICHEN=64, MAX_GEF=60, TAG=12000, RUF=4500, KAMPF=6000, SPAET=1200, A_ARENA=11, BUCH=32, FERN_R=8, ORTE=8, MAX_IDS=64, MAX_GOLD=100000000, WX=64*9600;   // RUF/KAMPF: Ticks ab Tagesbeginn (Vorschlag)
 var ART=['','dorf','stadt','hafen','hafen'];
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
