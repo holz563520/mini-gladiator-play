@@ -6,7 +6,7 @@
  "objekte": [
   {
    "id": "arena-ausgang",
-   "version": 1,
+   "version": 2,
    "typ": 146,
    "kat": "einrichtung",
    "name": "Arena Exit",
@@ -15,7 +15,7 @@
   },
   {
    "id": "arena-eingang",
-   "version": 1,
+   "version": 2,
    "typ": 145,
    "kat": "einrichtung",
    "name": "Arena Entrance",
@@ -33,7 +33,7 @@
   },
   {
    "id": "arena-sandgrube",
-   "version": 2,
+   "version": 3,
    "typ": 144,
    "kat": "anlage",
    "name": "Sand Pit",
