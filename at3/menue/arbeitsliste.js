@@ -51,7 +51,7 @@ function karte(id,ausNaechstem){var e=finde(id),i=e.info||{},m=i.messung,ap=AL.v
  h+='<div class="alBilder" id="alBilder">'+(e.quelle==='kartei'||e.grundbild?'<span class="leise">Bilder werden geholt …</span>':'<span class="leise">Noch kein Bild'+(e.stand==='teile'?' (entsteht aus Teilen)':'')+'.</span>')+'</div>';
  h+='<p>Gruppe '+esc(e.gruppe)+' · Quelle '+({kartei:'Kartei',gebaeude:'geplantes Gebäude',ware:'geplante Ware',ort:'Welt außerhalb des Arena-Geländes (daten/ortsbilder.json)'})[e.quelle]+(e.wartet?' · <b>wartet auf '+esc(e.wartet)+'</b> (Werkzeug fehlt noch)':'')+(i.kat?' · Art '+esc(i.kat):'')+(i.status?' · Kartei-Status '+esc(i.status)+', Version '+i.version:'')+'</p>';
  if(i.w)h+='<p>Maße '+i.w+' × '+i.h+' Bildpunkte · Anker '+i.anker.join(', ')+(i.flaeche?' · Fläche '+i.flaeche.join(' × ')+' Felder':'')+' · '+esc(i.kollision)+'</p>';
- if(i.groesse)h+='<p>Größe '+esc(i.groesse)+' · Grundform '+esc(i.form)+(i.stufe?' · Stufe '+i.stufe:'')+(i.plan?' · '+esc(i.plan):'')+'</p>';
+ if(i.groesse)h+='<p>Größe '+esc(i.groesse)+(i.form?' · Grundform '+esc(i.form):'')+(i.wo?' · steht an: '+esc(i.wo):'')+(i.stufe?' · Stufe '+i.stufe:'')+(i.plan?' · '+esc(i.plan):'')+'</p>';
  if(i.genutzt)h+='<p class="leise">In '+i.genutzt+' geplanten Gebäuden verbaut.</p>';
  if(m)h+='<p>Letzte Messung: '+(AMPEL[m.ampel]||'')+' '+esc(m.ampel)+(m.datum?' ('+esc(m.datum)+')':'')+(m.datei?' · Datei '+m.datei+' B':'')+(m.karte?' · Karte '+m.karte.n+' Stück '+m.karte.ms+' ms':'')+(m.fp?' · First Person '+m.fp.n+' Stück '+m.fp.ms+' ms':'')+
   (m.soll?' · Budget „'+esc(m.budget)+'“: Datei '+m.soll.datei+' B'+(m.soll.karte?', Karte '+m.soll.karte+' ms':'')+(m.soll.fp?', First Person '+m.soll.fp+' ms':''):'')+'</p>';
