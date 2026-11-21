@@ -4,7 +4,7 @@
 // Zwei Teile: roh() braucht nur die Erde (Bildkern beim Antippen, Master-Editor), bilanz() dazu die Daten (gebaeude, rezepte, kulturen; vorbereitet mit daten()).
 // Entscheidungen Thomas (20.11.2026): Größe nach Herrschaft (Reichssitz G7, Sitz mittlerer Stufe und Vasallenreich G6, Sitz unterster Stufe G5, sonstige
 // Städte G4, Dörfer G2/G3 je zur Hälfte, Häfen eine Stufe mehr bis G5), Namen ganz im Klang der Kultur (ortsnamen.js), jeder 4. Ort mit satirischem
-// Zusatz (Texte im Chat freigegeben, sprache/en.json ort.zusatz.*), Anzeige im Editor und im Spiel. Einwohner nach AT3_WIRTSCHAFT 5.1 (Vorschlag),
+// Zusatz (Texte im Chat freigegeben, sprache/en.json ort.zusatz.*), Anzeige im Editor und im Spiel. Einwohner seit N6b2a 20 bis 20.000 (Thomas 21.11.2026), Leitgebäude-Menge nach Einwohnern,
 // Anteile je Stufe, Zahl der Leitgebäude und ihre Anzahl sind Vorschläge (Regel 11).
 // Kerne: reine Rechnung ohne Bildschirm. roh() rund 2 µs je Ort (25 Zellen), Sitztafel einmal je Welt (alle Einheiten), bilanz() rund 20 µs je Ort.
 // Notausschalter ?n5b=0: keine Ortskarte im Spiel, Editor ohne Einfärbung „Ortsgrößen“, Namen wie W1b.
@@ -13,11 +13,12 @@
 var AUS=!!(root.location&&/[?&]n5b=0/.test(root.location.search||''));
 var GW=600, GH=300, N=GW*GH, UM=2;                    // Umkreis der Zonenmischung: 5 × 5 Erdzellen um den Ort
 var GNAME=['','','hamlet','village','market-town','city','great-city','capital'];
-// Einwohner je Größe (AT3_WIRTSCHAFT 5.1), höchste Stufe je Größe, Anteile je Stufe 1–6 (Wretches … Nobles) in Promille, Vorschlag
-var EINW=[null,null,[30,150],[150,600],[600,3000],[3000,20000],[20000,150000],[150000,1000000]];
+// Einwohner je Größe (N6b2a, Thomas 21.11.2026: höchstens 20.000; vorher AT3_WIRTSCHAFT 5.1 bis 1.000.000), höchste Stufe je Größe, Anteile je Stufe 1–6 (Wretches … Nobles) in Promille
+var EINW=[null,null,[20,60],[60,250],[250,1000],[1000,3000],[3000,10000],[10000,20000]];
 var HOCH=[0,0,2,3,4,5,6,6], ANTEIL=[200,450,200,100,40,10];
-// Leitgebäude je Größe (Zahl), Grundmenge des ersten, höchste Gebäudestufe je Größe
-var LEIT=[0,0,2,3,4,5,6,6], MENGE=[0,0,2,4,8,16,32,60], STUFE=[0,0,2,3,4,5,6,6];
+// Leitgebäude je Größe (Zahl), höchste Gebäudestufe je Größe. Menge nach Einwohnern (N6b2a, Thomas 21.11.2026): rund ARBEIT = 10 % der Einwohner arbeiten
+// in den Leitgebäuden (Arbeitsplätze je Gebäude aus gebaeude.json), das erste am häufigsten, jedes weitere 14 % weniger, Zufall ±40 % aus dem Seed
+var LEIT=[0,0,2,3,4,5,6,6], STUFE=[0,0,2,3,4,5,6,6], ARBEIT=.1;
 // Zusätze: Zahl der Texte je Gruppe (sprache/en.json ort.zusatz.<gruppe>.<n>, muss passen, tests/at3-n5b.cjs)
 var ZUS={kueste:3,fluss:2,gebirge:2,wueste:2,sumpf:2,schnee:2,wald:2,gras:2,mittelmeer:2,regenwald:2,
  wein:2,erz:2,gold:2,fisch:2,salz:2,holz:2,vieh:2,gerberei:2,oel:2,stein:2,tempel:2,handel:2,arena:2,getreide:2,jagd:2,
@@ -65,7 +66,7 @@ function daten(geb,rez,kul){var G=geb.gebaeude,zon={},bz={},aus={},K=[];
  var kand=[];G.forEach(function(g,nr){var L=g.biom||[];if(!/^economy\//.test(g.zweig||'')||L.indexOf('alle')>=0||!L.length)return;
   var m=0;L.forEach(function(id){if(bz[id]!=null)m|=1<<bz[id]});
   var nz=0;for(var q=m;q;q&=q-1)nz++;
-  kand.push({nr:nr,id:g.id,name:g.name,stufe:g.stufe||1,zonen:m,eigen:Math.sqrt(2/(1+nz)),kueste:L.indexOf('coast')>=0,fluss:L.indexOf('river')>=0,aus:aus[g.id]||{}})});
+  kand.push({nr:nr,id:g.id,name:g.name,stufe:g.stufe||1,zonen:m,eigen:Math.sqrt(2/(1+nz)),kueste:L.indexOf('coast')>=0,fluss:L.indexOf('river')>=0,aus:aus[g.id]||{},leute:Math.max(1,(g.arbeit||[]).reduce(function(a,x){return a+(x.n||0)},0))})});
  ((kul&&kul.kulturkreise)||[]).forEach(function(c){K[c.nr]={id:c.id,waren:c.waren||[],werte:c.werte||{},system:c.system}});
  return{G:G,kand:kand,zon:zon,K:K}}
 
@@ -82,7 +83,8 @@ function bilanz(seed,r,D){var g=r.g,z=r.zelle,K=D.K[r.kultur]||null,an={},s;
   if(b.id==='harbour'&&r.art>=3)s+=10;
   C.push({b:b,s:s*(.55+.9*u01(zz(seed,z,100+b.nr)))})});
  C.sort(function(a,b){return b.s-a.s||a.b.nr-b.b.nr});C.length=Math.min(C.length,LEIT[g]);
- var leit=C.map(function(c,j){var n=Math.max(1,Math.round(MENGE[g]*(1-j*.14)*(.6+.8*u01(zz(seed,z,200+j)))));return{nr:c.b.nr,id:c.b.id,name:c.b.name,n:n}});
+ var w=0;C.forEach(function(c,j){w+=(1-j*.14)*c.b.leute});var basis=ges*ARBEIT/w;   // Grundmenge des ersten, damit im Mittel ARBEIT der Einwohner dort arbeiten
+ var leit=C.map(function(c,j){var n=Math.max(1,Math.round(basis*(1-j*.14)*(.6+.8*u01(zz(seed,z,200+j)))));return{nr:c.b.nr,id:c.b.id,name:c.b.name,n:n}});
  leit.sort(function(a,b){return b.n-a.n||a.nr-b.nr});
  return{roh:r,einwohner:ges,stufen:je,leit:leit,zusatz:zusatz(seed,r,leit,K,D)}}
 // Satirischer Zusatz: jeder 4. Ort; Wirtschaft (Leitgebäude, sonst Kultur) 5 von 10, Lage 3 von 10, Herrschaft und Geschichte 2 von 10; fehlt eine Gruppe, die nächste
@@ -122,7 +124,7 @@ function entpack(a,D){var v=new DataView(a.buffer,a.byteOffset,a.byteLength),lei
  var po=[];for(i=0;i<Math.min(8,a[128]);i++){var pn=v.getUint16(129+i*4,true)-1,pg=D&&D.G[pn],q=a[131+i*4];po.push({nr:pn,id:pg?pg.id:'',dx:(q&15)-2,dy:(q>>4)-2,hof:a[132+i*4]===1})}
  return{posten:po,format:a[0],g:a[1],kultur:a[2],art:a[3],zelle:v.getUint32(4,true),einheit:v.getUint16(8,true),zusatz:a[10]?{gruppe:GRUPPEN[a[10]-1],n:a[11]}:null,leit:leit,stufen:st,einwohner:e}}
 
-var P={AUS:AUS,GNAME:GNAME,EINW:EINW,HOCH:HOCH,ANTEIL:ANTEIL,LEIT:LEIT,MENGE:MENGE,ZUS:ZUS,GEB_ZUS:GEB_ZUS,BYTES:BYTES,
+var P={AUS:AUS,GNAME:GNAME,EINW:EINW,HOCH:HOCH,ANTEIL:ANTEIL,LEIT:LEIT,ARBEIT:ARBEIT,ZUS:ZUS,GEB_ZUS:GEB_ZUS,BYTES:BYTES,
  sitze:sitze,groesse:groesse,ortNr:ortNr,roh:roh,daten:daten,bilanz:bilanz,voll:voll,groesseName:groesseName,zeile:zeile,stufenText:stufenText,zahl:zahl,pack:pack,entpack:entpack};
 if(typeof module!=='undefined'&&module.exports)module.exports=P;else root.AT3ORTE=P;
 })(typeof self!=='undefined'?self:this);
