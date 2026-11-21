@@ -75,8 +75,33 @@ function lastWare(c,ware,x,y0,dir){var x0=x+(dir?3:-3)-12,r=function(f,a,b,w,h){
 function kleinP64(k,c,pal,nah,W,ox,oy,ziel){k.clearRect(0,0,PW,PH);k.imageSmoothingEnabled=true;k.imageSmoothingQuality='high';k.drawImage(c.canvas,0,0,NW,NH,0,0,PW,PH);
  var d=k.getImageData(0,0,PW,PH).data;for(var y=0;y<PH;y++)for(var x=0;x<PW;x++){var i=(y*PW+x)*4;if(d[i+3]<=96)continue;
   var key=(d[i]<<16)|(d[i+1]<<8)|d[i+2],n=nah[key];if(n===undefined)n=nah[key]=pal(d[i],d[i+1],d[i+2]);ziel[(oy+y)*W+ox+x]=n}}
+// ── AR2c1 (Thomas 21.11.2026): Zuschauer von vorn und von hinten für First Person. Die Kartenblätter haben nur Seitenansichten (wie 2.0); hier kommen je Typ
+// 8 kleine Bilder dazu, gezeichnet wie die Zuschauer auf den Rängen von 1.0 (arena.js personSprite, dort unverändert, hier als Kopie): 
+// von hinten Haare statt Gesicht; Maße schlank wie die Seitenansicht (Thomas sah sonst beim Umdrehen eine breitere Figur). Farben aus dem Aussehen des Besuchertyps (Haut, Haar, Kleid wie auf der Karte), Kopfbedeckung
+// nach Stand. Bilder: 0 vorn stehen, 1–2 vorn gehen (Bein abwechselnd angehoben), 3 vorn sitzen, 4–7 dasselbe von hinten. Je Bild PW × PH, Fuß bzw. Sitz bei PAX, PAY.
+var VH=8,VH_DUNKEL=['#4a3f33','#3b4447','#5a4a3a','#2f3330'];
+function vhStil(g,i){var a=g.appearance||{},st=g.stand||'';if(st==='Noble')return i%2?3:5;if((a.beard|0)>=6)return 4;return[0,1,2,5][(a.style|0)%4]}
+// Maße schlank wie die Seitenansicht (Rumpf 7, Kopf 5 breit, Fuß bis Scheitel 22), sonst wie 1.0: Schatten rechts und am Gürtel, Kopfbedeckung nach Stil
+function vhBild(c,T,hinten,art,fuss){var Q=function(x,y,w,h,f){c.fillStyle=f;c.fillRect(x,y,w,h)},steh=art!=='sitz',dark='rgba(0,0,0,.25)',o=steh?-3:0;
+ c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,PW,PH);c.translate(PAX,PAY);
+ if(steh){Q(-3,-5+(fuss===1?-1:0),2,5+(fuss===1?0:0),T.cloth2);Q(1,-5+(fuss===2?-1:0),2,5,T.cloth2)}else Q(-3,-2,7,2,T.cloth2);      // Beine bzw. Oberschenkel auf der Bank
+ Q(-3,-11+o,7,9,T.cloth);Q(3,-11+o,1,9,dark);Q(-3,-4+o,7,1,dark);
+ var arme=function(){if(steh){Q(-4,-10+o,1,6,T.cloth);Q(4,-10+o,1,6,T.cloth);Q(-4,-4+o,1,2,T.skin);Q(4,-4+o,1,2,T.skin)}
+  else{Q(-4,-10,1,5,T.cloth);Q(4,-10,1,5,T.cloth);Q(-3,-4,2,1,T.skin);Q(2,-4,2,1,T.skin)}};
+ var hy=-17+o;arme();
+ if(hinten){Q(-2,hy,5,6,T.style===4?T.skin:T.hair);Q(-1,hy+5,3,1,T.skin);if(T.style===2)Q(-3,hy-1,7,4,T.cloth2);if(T.style===3)Q(-3,hy,7,1,'#6f8a44');if(T.style===5)Q(-3,hy-1,7,2,'#7a6a52')}
+ else{Q(-2,hy,5,6,T.skin);if(T.style!==4)Q(-2,hy-1,5,2,T.hair);if(T.style===1){Q(-3,hy,1,5,T.hair);Q(3,hy,1,5,T.hair)}if(T.style===2){Q(-3,hy-1,7,2,T.cloth2);Q(-3,hy,1,5,T.cloth2);Q(3,hy,1,5,T.cloth2)}
+  if(T.style===3)Q(-3,hy,7,1,'#6f8a44');if(T.style===4)Q(-1,hy+4,3,2,T.hair);if(T.style===5)Q(-3,hy-1,7,2,'#7a6a52');
+  Q(-1,hy+2,1,1,'#2a211b');Q(1,hy+2,1,1,'#2a211b');if(T.style!==4)Q(0,hy+4,1,1,'#6e3b30')}
+ c.setTransform(1,0,0,1,0,0)}
+// Ein Typ → {w: PW × VH, h: PH, p64}; jeder Bildpunkt ganz deckend oder leer (Halbdeckendes über Leerem fällt weg, wie kleinP64)
+function vornHinten(g,i,c,pal,nah){var a=g.appearance||{},T={skin:a.skin||'#d9ac82',hair:a.hair||'#443025',cloth:a.cloth||'#8a6f4a',cloth2:VH_DUNKEL[i%4],style:vhStil(g,i)},
+  W=PW*VH,p64=new Uint8Array(W*PH).fill(255),ARTEN=[['steh',0],['steh',1],['steh',2],['sitz',0]];
+ for(var b=0;b<VH;b++){var A=ARTEN[b&3];vhBild(c,T,b>=4,A[0],A[1]);var d=c.getImageData(0,0,PW,PH).data;
+  for(var y=0;y<PH;y++)for(var x=0;x<PW;x++){var q=(y*PW+x)*4;if(d[q+3]<=96)continue;var key=(d[q]<<16)|(d[q+1]<<8)|d[q+2],n=nah[key];if(n===undefined)n=nah[key]=pal(d[q],d[q+1],d[q+2]);p64[y*W+b*PW+x]=n}}
+ return{w:W,h:PH,p64:p64}}
 function oben(c){var d=c.getImageData(0,0,NW,NH).data;for(var y=0;y<NH;y++)for(var i=0;i<NW;i++)if(d[(y*NW+i)*4+3]>96)return y;return NH}
-// Auftrag {gs:[{pid, g}] oder btypen:[Typ 0–59], bseed (AR2b Zuschauer, pid = Typ), ohneArbeit, lasten:true|false, palette:'A'} → {fw,fh,ax,ay,posen,n,blaetter:[{pid,w,h,p64,dy(Int8, je Bild und Richtung),ms}],lasten:{w,h,p64}|null,ms}
+// Auftrag {gs:[{pid, g}] oder btypen:[Typ 0–59], bseed (AR2b Zuschauer, pid = Typ), ohneArbeit, vh (AR2c1: dazu vorn/hinten, blaetter[i].vh {w,h,p64}), lasten:true|false, palette:'A'} → {fw,fh,ax,ay,posen,n,blaetter:[{pid,w,h,p64,dy(Int8, je Bild und Richtung),ms}],lasten:{w,h,p64}|null,ms}
 function karte(M,S64,w){if(typeof G.OffscreenCanvas!=='function')throw new Error('OffscreenCanvas fehlt');if(!M.renderSimpleFigure)throw new Error('renderSimpleFigure fehlt (arena.js)');
  var t0=G.performance.now(),rng=M.s.rng,nah={},palName=w.palette||S64.PALETTE,pal=function(r,g,b){return S64.naechste(r,g,b,palName)},aus=[],L=null,
   c=new G.OffscreenCanvas(NW,NH).getContext('2d',{willReadFrequently:true}),k=new G.OffscreenCanvas(PW,PH).getContext('2d',{willReadFrequently:true});
@@ -87,11 +112,12 @@ function karte(M,S64,w){if(typeof G.OffscreenCanvas!=='function')throw new Error
    for(var dir=0;dir<2;dir++)KPOSEN.forEach(function(p){if(w.ohneArbeit&&p.id==='arbeiten')return;for(var f=0;f<p.n;f++){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,NW,NH);var ga=g;if(p.id==='arbeiten'){if(!axt)axt=mitAxt(M,g);ga=axt}      // AR2b: ohneArbeit (Zuschauer arbeiten nicht, Bilder bleiben leer)
     try{M.renderSimpleFigure(c,akteur(ga,dir,p.id,f))}catch(x){if(!karte.warn){karte.warn=1;console.warn('einfache Figur',x)}}
     var tp=oben(c);dy[dir*KN+p.ab+f]=tp>=NH?0:Math.round((tp-REF)*PH/NH);kleinP64(k,c,pal,nah,W,(p.ab+f)*PW,dir*PH,p64)}});
-   aus.push({pid:e.pid,w:W,h:H,p64:p64,dy:dy,ms:G.performance.now()-t})})
+   var vh=w.vh?vornHinten(g,e.pid|0,k,pal,nah):null;      // AR2c1: von vorn und hinten (First Person)
+   aus.push({pid:e.pid,w:W,h:H,p64:p64,dy:dy,vh:vh,ms:G.performance.now()-t})})
   if(w.lasten){var LW=PW*WAREN.length,LH=PH*2,lp=new Uint8Array(LW*LH).fill(255);
    for(var dir=0;dir<2;dir++)WAREN.forEach(function(wa,i){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,NW,NH);lastWare(c,wa,NAX,REF+9,dir);kleinP64(k,c,pal,nah,LW,i*PW,dir*PH,lp)});
    L={w:LW,h:LH,p64:lp,waren:WAREN}}}finally{M.s.rng=rng}
- return {fw:PW,fh:PH,ax:PAX,ay:PAY,posen:KPOSEN.map(function(p){return {id:p.id,ab:p.ab,n:p.n}}),n:KN,palette:palName,blaetter:aus,lasten:L,ms:G.performance.now()-t0}}
+ return {fw:PW,fh:PH,ax:PAX,ay:PAY,vhN:VH,posen:KPOSEN.map(function(p){return {id:p.id,ab:p.ab,n:p.n}}),n:KN,palette:palName,blaetter:aus,lasten:L,ms:G.performance.now()-t0}}
 // ── F1c Nahansicht (Thomas 18.11.2026): beim Heranzoomen auf 2× die volle Figur von 1.0 wie in 2.0 (welt-raster.js spriteOf: M.renderLudusActors, 56 × 72 je Pose,
 // gezeigt mit 0,8 = KW .40 × Zoom 2). Hier einmal auf 45 × 58 verkleinert und auf AT3-64 umgerechnet (Thomas: AT3-64), Posen wie auf der Karte (Gehen 8, Stehen 1,
 // Arbeiten 4 mit Axt, Lasten je Ware darüber). Ein Blatt-Bildpunkt = ein Bildschirmpunkt bei 2×. Kern: Kampfkern; Auftrag klein halten (nur Figuren im Bild).
@@ -120,6 +146,6 @@ function nahKarte(M,S64,w){if(typeof G.OffscreenCanvas!=='function')throw new Er
     c.setTransform(1,0,0,1,0,0);kleinQ(k,c,pal,nah,LW,i*QW,dir*QH,lp)});
    L={w:LW,h:LH,p64:lp,waren:WAREN}}}finally{M.s.rng=rng}
  return {nah:true,fw:QW,fh:QH,ax:QAX,ay:QAY,posen:KPOSEN.map(function(p){return {id:p.id,ab:p.ab,n:p.n}}),n:KN,palette:palName,blaetter:aus,lasten:L,ms:G.performance.now()-t0}}
-var FB={NW:NW,NH:NH,PW:PW,PH:PH,PAX:PAX,PAY:PAY,POSEN:POSEN,N:N,STAND:STAND,TYPEN:TYPEN,figuren:figuren,besucher:besucher,karte:karte,nahKarte:nahKarte,KPOSEN:KPOSEN,KN:KN,WAREN:WAREN,QW:QW,QH:QH};
+var FB={NW:NW,NH:NH,PW:PW,PH:PH,PAX:PAX,PAY:PAY,POSEN:POSEN,N:N,STAND:STAND,TYPEN:TYPEN,figuren:figuren,besucher:besucher,karte:karte,nahKarte:nahKarte,KPOSEN:KPOSEN,KN:KN,WAREN:WAREN,QW:QW,QH:QH,VH:VH,vornHinten:vornHinten};
 if(typeof module!=='undefined'&&module.exports)module.exports=FB;else G.AT3Figurbild=FB;
 })(typeof self!=='undefined'?self:globalThis);

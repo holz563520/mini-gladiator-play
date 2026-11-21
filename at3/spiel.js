@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='aedabefc', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='c179ba26', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -282,12 +282,14 @@ function beiGladiatoren(d){GLAD=d.meld||null;window.AT3SPIEL.glad=GLAD;
 // nur für Typen, die gerade im Bild fehlen, höchstens 8 je Auftrag, ein Auftrag unterwegs. Antippen: Name im Klang der Kultur des Herkunftsorts (herrscher.js
 // Namenstafel, fest aus Termin und Nummer), Stand, Herkunft, Zustand. Kerne: hier nur Nachfrage und Text. Notausschalter ?ar2b=0 (auch im Weltkern) ──
 var BESL=null, BESW=false, AR2B_AUS=/[?&]ar2b=0/.test(location.search);
+// AR2c1: die Blätter kommen gleich mit den Bildern von vorn und hinten (für First Person, figurbild.js vornHinten). Notausschalter ?ar2c=0
+var AR2C_AUS=/[?&]ar2c=0/.test(location.search);
 function skript(src,glob){return new Promise(function(ok,no){if(window[glob])return ok();var s=document.createElement('script');s.src=src+'?v='+V;s.onload=ok;s.onerror=function(){no(new Error(src))};document.head.appendChild(s)})}
 function besArenaPflegen(){if(AR2B_AUS||!KARTE||!KARTE.besucherArena)return;var A=GLAD&&GLAD.arena,B=A&&A.gross&&A.anlage&&A.bes;if(!B){if(besArenaPflegen.an){besArenaPflegen.an=false;KARTE.besucherArena(null)}return}
  if(!window.AT3SITZE||!window.AT3HERRSCHER){if(!BESL)BESL=Promise.all([skript('arena-sitze.js','AT3SITZE'),skript('herrscher.js','AT3HERRSCHER')]).then(besArenaPflegen,function(e){BESL=null;console.warn('Zuschauer:',e)});return}
  besArenaPflegen.an=true;KARTE.besucherArena(A.anlage,window.AT3SITZE)}
 function besucherPflegen(){if(AR2B_AUS||BESW||!KARTE||!KARTE.besucherFehlt)return;var fehlt=KARTE.besucherFehlt();if(!fehlt.length)return;BESW=true;var mehr=fehlt.length>8;
- anschluss().then(function(KA){return KA.kfiguren({btypen:fehlt.slice(0,8),bseed:WSEED>>>0,ohneArbeit:true},'',V)}).then(function(R){if(KARTE)KARTE.besucherBlaetter(R)})
+ anschluss().then(function(KA){return KA.kfiguren({btypen:fehlt.slice(0,8),bseed:WSEED>>>0,ohneArbeit:true,vh:!AR2C_AUS},'',V)}).then(function(R){if(KARTE)KARTE.besucherBlaetter(R)})
   .catch(function(e){mehr=false;console.warn('Zuschauerfiguren:',e)}).then(function(){BESW=false;if(mehr)setTimeout(besucherPflegen,50)})}
 function besHash(s,n){var h=0x811c9dc5;s=String(s)+'#'+n;for(var i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h>>>0}
 var BES_STAND=[0,0,0,0,0,1,1,1,2,2,3,3,3,4,4,5,5,6,6,6];      // wie figurbild.js STAND (Typ % 20 → Stand)

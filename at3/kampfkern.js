@@ -208,7 +208,7 @@ KK.knah=function(w){vorbereiten();if(imWorker){if(!G.AT3_64)importScripts('at3-6
  return G.AT3Figurbild.nahKarte(G.MG,G.AT3_64,w||{});};
 
 if(imWorker){
- G.onmessage=function(e){var d=e.data;if(d.art==='kfiguren'||d.art==='knah'){try{var r=d.art==='knah'?KK.knah(d.wunsch):KK.kfiguren(d.wunsch),tr=[];r.blaetter.forEach(function(x){tr.push(x.p64.buffer);});if(r.lasten)tr.push(r.lasten.p64.buffer);G.postMessage({nr:d.nr,ergebnis:r},tr);}
+ G.onmessage=function(e){var d=e.data;if(d.art==='kfiguren'||d.art==='knah'){try{var r=d.art==='knah'?KK.knah(d.wunsch):KK.kfiguren(d.wunsch),tr=[];r.blaetter.forEach(function(x){tr.push(x.p64.buffer);if(x.vh)tr.push(x.vh.p64.buffer);});if(r.lasten)tr.push(r.lasten.p64.buffer);G.postMessage({nr:d.nr,ergebnis:r},tr);}
    catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}return;}
   if(d.art==='figuren'){try{var r=KK.figuren(d.wunsch),tr=[];r.figuren.forEach(function(x){tr.push(x.voll.buffer,x.p64.buffer);});G.postMessage({nr:d.nr,ergebnis:r},tr);}
    catch(err){G.postMessage({nr:d.nr,fehler:String(err&&err.stack||err)});}return;}
