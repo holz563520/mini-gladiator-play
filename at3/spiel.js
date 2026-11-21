@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='9c8a0707', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='c20af28c', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -120,12 +120,15 @@ function reicheAnschliessen(){try{REICHE=localStorage.getItem('at3.reiche')!=='0
  if(!REICHE)KARTE.reiche(false);
  k.onclick=function(){REICHE=!REICHE;k.setAttribute('aria-pressed',REICHE?'true':'false');try{localStorage.setItem('at3.reiche',REICHE?'1':'0')}catch(x){}KARTE.reiche(REICHE)}}
 // N5b: Ort neben dem angetippten Punkt: voller Name, Größe, Einwohner, Leitgebäude (Notausschalter ?n5b=0: der Bildkern schickt keinen Ort)
+// N5c: dazu seine Außenposten und Gehöfte aus der Umgebung, die der Bildkern mitschickt (aussenposten.js; Notausschalter ?n5c=0)
 function infoZeigen(){$('weltInfo').innerHTML=REICH_HTML+ORT_HTML}
 function ortTipp(r){ORT_HTML='';if(!r)return;var tip=r;
  (ORL||(ORL=new Promise(function(ok,no){if(window.AT3ORTE)return ok();var s=document.createElement('script');s.src='orte.js?v='+V;s.onload=ok;s.onerror=function(){ORL=null;no(new Error('orte.js'))};document.head.appendChild(s)})
+  .then(function(){return window.AT3POSTEN?null:new Promise(function(ok){var s=document.createElement('script');s.src='aussenposten.js?v='+V;s.onload=s.onerror=ok;document.head.appendChild(s)})})   // N5c: Außenposten (fehlt die Datei, bleibt die Ortskarte wie N5b)
   .then(function(){return Promise.all(['daten/gebaeude.json','daten/rezepte.json','daten/kulturen.json'].map(holeJson))}).then(function(d){return window.AT3ORTE.daten(d[0],d[1],d[2])}).catch(function(e){ORL=null;throw e})))
- .then(function(D){if(tip!==ORT_LETZT)return;var O=window.AT3ORTE,b=O.bilanz(WSEED,r,D);window.AT3SPIEL.ort={name:O.voll(b,t),g:r.g,einwohner:b.einwohner,leit:b.leit.map(function(l){return l.id})};
-  ORT_HTML='<br><b>'+esc(O.zeile(b,t))+'</b>';infoZeigen()},function(){})}
+ .then(function(D){if(tip!==ORT_LETZT)return;var O=window.AT3ORTE,b=O.bilanz(WSEED,r,D),AP=window.AT3POSTEN,PO=AP&&!AP.AUS&&r.umg?AP.posten(WSEED,b,r.umg,D,r.punkt):null;b.posten=PO||[];
+  window.AT3SPIEL.ort={name:O.voll(b,t),g:r.g,einwohner:b.einwohner,leit:b.leit.map(function(l){return l.id}),posten:PO?PO.map(function(p){return p.id}):null};
+  ORT_HTML='<br><b>'+esc(O.zeile(b,t))+'</b>'+(PO?'<br>'+esc(AP.kurzListe(PO,t)):'');infoZeigen()},function(){})}
 var ORT_LETZT=null;
 function reichTipp(L,hat,ort){ORT_LETZT=ort||null;ORT_HTML='';ortTipp(ort);
  if(!hat){REICH_HTML=esc(t('welt.leer'));infoZeigen();return}if(!L||!L.length){REICH_HTML=esc(t('reich.niemand'));infoZeigen();return}

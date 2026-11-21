@@ -107,17 +107,20 @@ function stufenText(b,t){var L=[];for(var i=b.stufen.length-1;i>=0;i--)if(b.stuf
 //  0 Format 1 · 1 Größe · 2 Kultur · 3 Ortsart · 4–7 Zelle · 8–9 Herrschaft (unterste Einheit + 1) · 10 Zusatz-Gruppe + 1 · 11 Zusatz-Nummer
 // 12–35 Leitgebäude 6 × (Gebäude-Nummer + 1, Anzahl, je 2 Byte) · 36–59 Einwohner je Stufe 6 × 4 Byte
 // frei für spätere Schritte (jetzt 0): 60–107 Vorräte 12 Warengruppen × 4 Byte · 108–111 Kasse · 112–113 Elendsviertel · 114–121 Abhängigkeit je Vice
-// 122–125 Truppenstärke · 126 Kontrollstufe des Spielers · 127 Zufriedenheit · 128–255 Reserve
+// 122–125 Truppenstärke · 126 Kontrollstufe des Spielers · 127 Zufriedenheit · 128 Zahl der Außenposten (N5c, b.posten aus aussenposten.js)
+// 129–160 Außenposten 8 × (Gebäude-Nummer + 1 je 2 Byte, Lage dx + 2 | dy + 2 << 4, 1 = Gehöft) · 161–255 Reserve. Alte Bilanzen haben hier 0 = keine Posten.
 var BYTES=256, GRUPPEN=Object.keys(ZUS);
 function pack(b){var a=new Uint8Array(BYTES),v=new DataView(a.buffer),r=b.roh,i;
  a[0]=1;a[1]=r.g;a[2]=r.kultur;a[3]=r.art;v.setUint32(4,r.zelle,true);v.setUint16(8,r.einheit||0,true);
  if(b.zusatz){a[10]=GRUPPEN.indexOf(b.zusatz.gruppe)+1;a[11]=b.zusatz.n}
  for(i=0;i<b.leit.length&&i<6;i++){v.setUint16(12+i*4,b.leit[i].nr+1,true);v.setUint16(14+i*4,Math.min(65535,b.leit[i].n),true)}
- for(i=0;i<6;i++)v.setUint32(36+i*4,b.stufen[i]>>>0,true);return a}
+ for(i=0;i<6;i++)v.setUint32(36+i*4,b.stufen[i]>>>0,true);
+ var P=b.posten||[];a[128]=Math.min(8,P.length);for(i=0;i<a[128];i++){v.setUint16(129+i*4,P[i].nr+1,true);a[131+i*4]=(P[i].dx+2)|(P[i].dy+2)<<4;a[132+i*4]=P[i].hof?1:0}return a}
 function entpack(a,D){var v=new DataView(a.buffer,a.byteOffset,a.byteLength),leit=[],st=[],i,e=0;
  for(i=0;i<6;i++){var nr=v.getUint16(12+i*4,true);if(nr){var g=D&&D.G[nr-1];leit.push({nr:nr-1,id:g?g.id:'',name:g?g.name:'',n:v.getUint16(14+i*4,true)})}}
  for(i=0;i<6;i++){st.push(v.getUint32(36+i*4,true));e+=st[i]}
- return{format:a[0],g:a[1],kultur:a[2],art:a[3],zelle:v.getUint32(4,true),einheit:v.getUint16(8,true),zusatz:a[10]?{gruppe:GRUPPEN[a[10]-1],n:a[11]}:null,leit:leit,stufen:st,einwohner:e}}
+ var po=[];for(i=0;i<Math.min(8,a[128]);i++){var pn=v.getUint16(129+i*4,true)-1,pg=D&&D.G[pn],q=a[131+i*4];po.push({nr:pn,id:pg?pg.id:'',dx:(q&15)-2,dy:(q>>4)-2,hof:a[132+i*4]===1})}
+ return{posten:po,format:a[0],g:a[1],kultur:a[2],art:a[3],zelle:v.getUint32(4,true),einheit:v.getUint16(8,true),zusatz:a[10]?{gruppe:GRUPPEN[a[10]-1],n:a[11]}:null,leit:leit,stufen:st,einwohner:e}}
 
 var P={AUS:AUS,GNAME:GNAME,EINW:EINW,HOCH:HOCH,ANTEIL:ANTEIL,LEIT:LEIT,MENGE:MENGE,ZUS:ZUS,GEB_ZUS:GEB_ZUS,BYTES:BYTES,
  sitze:sitze,groesse:groesse,ortNr:ortNr,roh:roh,daten:daten,bilanz:bilanz,voll:voll,groesseName:groesseName,zeile:zeile,stufenText:stufenText,zahl:zahl,pack:pack,entpack:entpack};

@@ -19,6 +19,8 @@
 // N5b: Einfärbung „Ortsgrößen“ (Orte nach Größe G2–G7, Städte als Kreuz), Antippen zeigt Ortskarte (voller Name, Größe, Einwohner je Stufe, Leitgebäude,
 // Zonenmischung), darunter Zahlen je Größe, häufigste Spezialisierungen und die größten Orte. orte.js und die Daten erst beim ersten Umschalten;
 // alle Orte werden in Scheiben zu höchstens rund 4 ms gerechnet (nie je Bild).
+// N5c: Einfärbung „Außenposten“ (Posten je Gruppe als Punkt neben ihrem Ort, Gehöfte hell), Antippen eines Orts oder Postens zeigt die Posten,
+// darunter Zahlen je Art und Gruppe und je Ortsgröße. aussenposten.js mit den Ortsdaten geladen (Notausschalter ?n5c=0: keine Posten).
 // Das Spiel lädt diese Datei und den Generator nicht (G4).
 // Wiederverwendet: kernstart.js (G2), Messart, Ampel und Kopierknopf aus der Kernprobe und der Riesenwelt-Probe, Palette aus at3-64.js (M2).
 (function(){
@@ -75,6 +77,7 @@ function erdBild(){if(!erd)return;var g=erdCv.getContext('2d'),im=g.createImageD
  if((farbe===4||farbe===5)&&erd.vk&&VD){voelkerBild(d);g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
  if(farbe===6&&erd.hs&&HD){herrschaftBild(d);g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
  if(farbe===7&&erd.orte&&OD){ortBild(d);g.putImageData(im,0,0);neuZeichnen=true;return}
+ if(farbe===8&&erd.orte&&OD){postenBild(d);g.putImageData(im,0,0);neuZeichnen=true;return}
  if(farbe===3){var Z=zBereit?zZ:erd.zon;for(var i=0;i<N;i++){var z=Z[i],c=ZFARBE[z],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];if(z>1&&dh>120)c++;else if(z>1&&dh<-120)c--;d[i]=pal[c]}   // N2a: Klimazonen, Hänge schattiert
   g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
  for(var i=0;i<N;i++){var b=flu[i]>1&&bio[i]!==12?10:bio[i],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];d[i]=farbeVon(b,Eh[i],dh>120?1:dh<-120?-1:0)}
@@ -100,20 +103,43 @@ function ortBild(d){var bio=erd.bio,i,k,O=OD.O;
  function px(x,y,c){if(y<0||y>=GH)return;d[y*GW+((x%GW)+GW)%GW]=pal[c]}
  for(k=0;k<erd.orte.length;k++){var z=erd.orte[k]&0xffffff,x=z%GW,y=(z/GW)|0,g=O.groesse(erd.seed>>>0,erd,k),c=GFARBE[g];
   if(g===7){for(var a=-2;a<=2;a++){px(x+a,y,1);px(x,y+a,1)}}if(g>=5){px(x-1,y,c);px(x+1,y,c);px(x,y-1,c);px(x,y+1,c)}px(x,y,c)}}
-function ortLaden(){return odLaden||(odLaden=Promise.all([window.AT3ED.lade('welt','orte.js'),helfer(),window.AT3ED.lade('welt','daten/gebaeude.json'),window.AT3ED.lade('welt','daten/rezepte.json'),
+// N5c: Orte dunkel, Posten je Gruppe als Punkt (erst wenn alle Orte gerechnet sind, sonst nur die Orte und die Rechnung startet)
+var PFARBE={mine:48,stein:52,holz:5,nass:35,jagd:37,hof:3};
+function postenBild(d){var bio=erd.bio,i,k;for(i=0;i<N;i++){var b=erd.flu[i]>1&&bio[i]!==12?10:bio[i];d[i]=farbeVon(b,erd.E[i],0)}
+ for(k=0;k<erd.orte.length;k++)d[erd.orte[k]&0xffffff]=pal[1];
+ if(!OB||OB.erd!==erd){ortAlle();return}OB.B.forEach(function(b){b.posten.forEach(function(p){d[p.zelle]=pal[PFARBE[p.gruppe]]})})}
+function ortLaden(){return odLaden||(odLaden=Promise.all([window.AT3ED.lade('welt','orte.js'),helfer(),window.AT3ED.lade('welt','aussenposten.js').catch(function(){}),window.AT3ED.lade('welt','daten/gebaeude.json'),window.AT3ED.lade('welt','daten/rezepte.json'),
   window.AT3ED.lade('welt','daten/kulturen.json'),window.AT3ED.lade('welt','sprache/en.json')]).then(function(r){var O=window.AT3ORTE;if(O.AUS)throw new Error('aus');
-  OD={O:O,D:O.daten(r[2],r[3],r[4]),TX:r[5].texte};vListe();erdBild()}))}
+  var AP=window.AT3POSTEN;OD={O:O,D:O.daten(r[3],r[4],r[5]),TX:r[6].texte,AP:AP&&!AP.AUS?AP:null};vListe();erdBild()}))}
 function otx(k,w){var s=OD.TX[k];if(s==null)return k;for(var x in w||{})s=s.split('{'+x+'}').join(w[x]);return s}
-function ortBilanz(k){var sd=erd.seed>>>0;return OD.O.bilanz(sd,OD.O.roh(sd,erd,k,ONh),OD.D)}
+function ortBilanz(k){var sd=erd.seed>>>0,b=OD.O.bilanz(sd,OD.O.roh(sd,erd,k,ONh),OD.D),z=b.roh.zelle;      // N5c: mit Außenposten
+ b.posten=OD.AP?OD.AP.posten(sd,b,OD.AP.umgebung(sd,erd,k),OD.D,WGh&&WGh.ortPunkt?WGh.ortPunkt(sd,erd,z%GW,(z/GW)|0):null):[];return b}
 function ortText(i){if(!erd||!erd.orte)return '';if(OD&&OD.O.AUS)return 'Ortskarten aus (Notausschalter ?n5b=0). · ';if(!OD)return 'Die Orte werden gezählt … · ';if(!(erd.ort[i]&15))return '';
  var k=ortNr0(i);if(k==null)return '';var b=ortBilanz(k),r=b.roh,O=OD.O;
  return 'Ort: '+O.voll(b,otx)+' · G'+r.g+' '+O.groesseName(r.g,otx)+(r.sitz?' (Sitz)':'')+' · '+O.zahl(b.einwohner)+' Einwohner ('+O.stufenText(b,otx)+') · Leitgebäude: '+
-  b.leit.map(function(l){return l.name+' ×'+l.n}).join(', ')+' · Umgebung: '+r.zonen.map(function(e){return ZONEN[e[0]]+' '+e[1]+' %'}).join(', ')+(r.kueste?', Küste':'')+(r.fluss?', Fluss':'')+' · '}
+  b.leit.map(function(l){return l.name+' ×'+l.n}).join(', ')+' · Umgebung: '+r.zonen.map(function(e){return ZONEN[e[0]]+' '+e[1]+' %'}).join(', ')+(r.kueste?', Küste':'')+(r.fluss?', Fluss':'')+' · '+postenText(b)}
+function postenText(b){if(!OD.AP)return farbe===8?'Außenposten aus (Notausschalter ?n5c=0). · ':'';var r=b.roh,nm=r.name;
+ return b.posten.length?'Außenposten: '+b.posten.map(function(p){return OD.AP.zeile(p,nm,otx)+' (Zelle '+(p.dx>0?'+':'')+p.dx+' / '+(p.dy>0?'+':'')+p.dy+')'}).join(' · ')+' · ':'Keine Außenposten. · '}
+// N5c: Posten in der angetippten Zelle (erst wenn alle Orte gerechnet sind)
+function postenZelle(i){if(!OB||OB.erd!==erd||!OD.AP)return '';if(!OB.pz){OB.pz=new Map();OB.B.forEach(function(b){b.posten.forEach(function(p){OB.pz.set(p.zelle,[p,b])})})}
+ var e=OB.pz.get(i);return e?'Außenposten von '+OD.O.voll(e[1],otx)+': '+OD.AP.zeile(e[0],e[1].roh.name,otx)+' · '+e[0].vor+' Vorarbeiter, '+e[0].arb+(e[0].hof?' Hofleute':' Arbeiter')+' · Gebäude '+e[0].id+' · ':''}
 function ortNr0(i){if(!erd.ortNr0){erd.ortNr0=new Map();for(var k=0;k<erd.orte.length;k++)erd.ortNr0.set(erd.orte[k]&0xffffff,k)}return erd.ortNr0.get(i)}
 // Alle Orte in Scheiben (höchstens rund 4 ms je Scheibe), danach die Liste
 function ortAlle(){if(OB&&OB.erd===erd||obJob&&obJob.erd===erd)return;var j=obJob={erd:erd,k:0,B:[]};
  (function scheibe(){if(obJob!==j||erd!==j.erd)return;var t0=performance.now();while(j.k<erd.orte.length&&performance.now()-t0<4)j.B.push(ortBilanz(j.k++));
-  if(j.k<erd.orte.length){setTimeout(scheibe,0);return}OB={erd:erd,B:j.B};obJob=null;vListe()})()}
+  if(j.k<erd.orte.length){setTimeout(scheibe,0);return}OB={erd:erd,B:j.B};obJob=null;vListe();if(farbe===8)erdBild()})()}
+// N5c: Liste der Außenposten: Zahl je Art und Gruppe, je Ortsgröße, Beispiele mit Spitznamen
+function pListe(o){if(!erd||!erd.orte){o.innerHTML='<p class="leise">Noch keine Welt.</p>';return}if(!OD){o.innerHTML='<p class="leise">Die Orte werden gezählt …</p>';return}
+ if(!OD.AP){o.innerHTML='<p class="leise">Außenposten aus (Notausschalter ?n5c=0).</p>';return}
+ if(!OB||OB.erd!==erd){ortAlle();o.innerHTML='<p class="leise">Die Orte werden gezählt … ('+(obJob?OD.O.zahl(obJob.k):0)+' von '+OD.O.zahl(erd.orte.length)+')</p>';return}
+ var B=OB.B,O=OD.O,F=window.AT3_64.PALETTEN.A.farben,art={},gr={},nG=[0,0,0,0,0,0,0,0],pG=[0,0,0,0,0,0,0,0],n=0,h=0,leer=0,leute=0,bsp=[];
+ B.forEach(function(b){nG[b.roh.g]++;pG[b.roh.g]+=b.posten.length;if(!b.posten.length)leer++;b.posten.forEach(function(p){n++;if(p.hof)h++;leute+=p.vor+p.arb;art[p.name]=(art[p.name]||0)+1;gr[p.gruppe]=(gr[p.gruppe]||0)+1;if(p.spitz>=0&&bsp.length<30)bsp.push(OD.AP.zeile(p,b.roh.name,otx))})});
+ var GN={mine:'Minen',stein:'Steinbrüche',holz:'Holz',nass:'Wasser & Sumpf',jagd:'Jagd',hof:'Gehöfte'};
+ var t='<p><b>'+O.zahl(n)+' Außenposten</b> ('+O.zahl(n-h)+' Posten G1, '+O.zahl(h)+' Gehöfte G0) mit '+O.zahl(leute)+' Leuten; '+O.zahl(leer)+' Orte ohne Posten. '+Object.keys(GN).map(function(g){return '<i class="amp" style="background:'+F[PFARBE[g]]+'"></i>'+GN[g]+' '+O.zahl(gr[g]||0)}).join(' · ')+'</p>';
+ t+='<p class="leise">Je Ort im Schnitt: '+[2,3,4,5,6,7].map(function(q){return 'G'+q+' '+(nG[q]?(pG[q]/nG[q]).toFixed(1).replace('.',','):'-')}).join(' · ')+'</p>';
+ t+='<p class="leise">Je Art: '+Object.keys(art).sort(function(a,b){return art[b]-art[a]}).map(function(a){return a+' '+O.zahl(art[a])}).join(' · ')+'</p>';
+ t+='<details class="leise"><summary>Spitznamen (Auswahl)</summary>'+bsp.map(function(x){return '<p>'+esc(x)+'</p>'}).join('')+'</details>';
+ o.innerHTML=t+'<p class="leise">Draußen wohnt, wer drinnen keinen Platz bekam. Die Erzadern stört das nicht.</p>'}
 function oListe(o){if(!erd||!erd.orte){o.innerHTML='<p class="leise">Noch keine Welt.</p>';return}if(!OD){o.innerHTML='<p class="leise">Die Orte werden gezählt …</p>';return}
  if(!OB||OB.erd!==erd){ortAlle();o.innerHTML='<p class="leise">Die Orte werden gezählt … ('+(obJob?OD.O.zahl(obJob.k):0)+' von '+OD.O.zahl(erd.orte.length)+')</p>';return}
  var B=OB.B,O=OD.O,F=window.AT3_64.PALETTEN.A.farben,g=[0,0,0,0,0,0,0,0],e=[0,0,0,0,0,0,0,0],sp={},zu=0;
@@ -190,7 +216,7 @@ function marke(g,x,y,w){g.strokeStyle='#f4c8a0';g.lineWidth=2;g.strokeRect(Math.
 function blick(nx,ny){nx=umS(nx|0);ny=Math.max(0,Math.min(SY-1,ny|0));if(nx===kx&&ny===ky)return;kx=nx;ky=ny;fensterRaeumen();if(H)H.befehl('blick',B(kx,ky));neuZeichnen=true;ort()}
 function ort(){var o=q('#waOrt');if(o)o.textContent='Blick: Kartenstück '+tsd(kx)+' / '+tsd(ky)+' von '+tsd(SX)+' × '+tsd(SY)+' · Zelle '+(kx>>4)+' / '+(ky>>4)}
 function hoehe(h){return h<0?'Tiefe '+kom(-h/16,1)+' Felder (rund '+Math.round(-h*3/16)+' m)':'Höhe '+kom(h/16,1)+' Felder (rund '+Math.round(h*3/16)+' m)'}
-function zelleText(i){if(farbe===7)return ortText(i)+zelleText0(i);if(farbe===3)return zoneText(i)+'Grobes Biom (Orte und Straßen): '+zelleText0(i);if(farbe===4||farbe===5)return volkText(i)+zelleText0(i);if(farbe===6)return reichText(i)+zelleText0(i);return zelleText0(i)}
+function zelleText(i){if(farbe===7)return ortText(i)+zelleText0(i);if(farbe===8)return (OD?ortText(i)+postenZelle(i):'')+zelleText0(i);if(farbe===3)return zoneText(i)+'Grobes Biom (Orte und Straßen): '+zelleText0(i);if(farbe===4||farbe===5)return volkText(i)+zelleText0(i);if(farbe===6)return reichText(i)+zelleText0(i);return zelleText0(i)}
 // N4b: Volk, Kultur, Religion der Zelle und Glaubensanteile des Orts
 function ortNr(i){var vk=erd.vk;if(!vk.ortNr){vk.ortNr=new Map();for(var k=0;k<erd.orte.length;k++)vk.ortNr.set(erd.orte[k]&0xffffff,k)}return vk.ortNr.get(i)}
 function volkText(i){var vk=erd&&erd.vk;if(!vk)return 'Diese Welt hat keine Völker (Notausschalter ?n4b=0). · ';if(!VD)return '';var v=vk.vol[i];if(!v)return 'Niemandsland · ';
@@ -227,7 +253,7 @@ function rListe(o){var hs=erd&&erd.hs,F=window.AT3_64.PALETTEN.A.farben;
 function voelkerLaden(){return vdLaden||(vdLaden=Promise.all([window.AT3ED.lade('welt','daten/kulturen.json'),window.AT3ED.lade('welt','daten/religionen.json')]).then(function(r){
   var K=r[0].kulturkreise,R=r[1].religionen,ids=R.map(function(x){return x.id});VD={K:K,R:R,kr:K.map(function(k){return ids.indexOf(k.religion)+1})};vListe();erdBild()}))}
 // N4b: Liste unter der Karte: Orte je Kultur (mit Zahl der Völker) oder je Hauptreligion (mit Anteil an allen Gläubigen)
-function vListe(){var o=q('#waVoelker');if(!o)return;o.hidden=farbe!==4&&farbe!==5&&farbe!==6&&farbe!==7;if(o.hidden)return;if(farbe===6){rListe(o);return}if(farbe===7){oListe(o);return}var vk=erd&&erd.vk,F=window.AT3_64.PALETTEN.A.farben;
+function vListe(){var o=q('#waVoelker');if(!o)return;o.hidden=farbe!==4&&farbe!==5&&farbe!==6&&farbe!==7&&farbe!==8;if(o.hidden)return;if(farbe===6){rListe(o);return}if(farbe===7){oListe(o);return}if(farbe===8){pListe(o);return}var vk=erd&&erd.vk,F=window.AT3_64.PALETTEN.A.farben;
  if(!vk){o.innerHTML='<p class="leise">'+(erd?'Diese Welt hat keine Völker (Notausschalter ?n4b=0).':'Noch keine Welt.')+'</p>';return}if(!VD){o.innerHTML='<p class="leise">Die Völker werden gezählt …</p>';return}
  var inst=new Array(25).fill(0),oK=new Array(25).fill(0),oR=new Array(13).fill(0),pR=new Array(13).fill(0),nO=erd.orte.length,k,v;
  for(v=0;v<vk.zahl;v++)inst[vk.tab[v]>>>24]++;
@@ -279,7 +305,7 @@ function anteileZeigen(zx,zy){var info=q('#waInfo'),seed=erd?erd.seed:0,i=zy*GE+
   info.textContent=vorher+' · Anteile: '+L.map(function(e){return BIOM[e[0]]+' '+Math.round(e[1]*100/n)+' %'}).join(', ')},function(){})}
 function schritt(dx,dy){var s=zoom===0?ZP*20:zoom===1?ZP*5:zoom===2?3:1;blick(kx+dx*s,ky+dy*s)}
 function setZoom(z){zoom=z;[].forEach.call(el.querySelectorAll('[data-zoom]'),function(b){b.classList.toggle('an',+b.dataset.zoom===z)});neuZeichnen=true}
-function setFarbe(f){farbe=f;if(f===2)helfer().catch(function(){});klimaPanel();vListe();if((f===4||f===5)&&!VD)voelkerLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Völker sind nicht zum Zählen erschienen (Daten fehlen).</p>'});if(f===6&&!HD)herrschaftLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Herrscher sind nicht zur Krönung erschienen (Daten fehlen).</p>'});if(f===7&&!OD)ortLaden().catch(function(e){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">'+(e&&e.message==='aus'?'Ortskarten aus (Notausschalter ?n5b=0).':'Die Orte sind nicht zur Zählung erschienen (Daten fehlen).')+'</p>'});if(f===3&&!zBereit&&!zJob)zonenRechnen();[].forEach.call(el.querySelectorAll('[data-farbe]'),function(b){b.classList.toggle('an',+b.dataset.farbe===f)});erdBild();kacheln.forEach(function(k,key){if(warte.indexOf(key)<0)warte.push(key)})}
+function setFarbe(f){farbe=f;if(f===2)helfer().catch(function(){});klimaPanel();vListe();if((f===4||f===5)&&!VD)voelkerLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Völker sind nicht zum Zählen erschienen (Daten fehlen).</p>'});if(f===6&&!HD)herrschaftLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Herrscher sind nicht zur Krönung erschienen (Daten fehlen).</p>'});if((f===7||f===8)&&!OD)ortLaden().catch(function(e){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">'+(e&&e.message==='aus'?'Ortskarten aus (Notausschalter ?n5b=0).':'Die Orte sind nicht zur Zählung erschienen (Daten fehlen).')+'</p>'});if(f===3&&!zBereit&&!zJob)zonenRechnen();[].forEach.call(el.querySelectorAll('[data-farbe]'),function(b){b.classList.toggle('an',+b.dataset.farbe===f)});erdBild();kacheln.forEach(function(k,key){if(warte.indexOf(key)<0)warte.push(key)})}
 function neueWelt(seed,d){seed=Math.max(0,Math.min(4294967295,Math.floor(+seed||0)));q('#waSeed').value=seed;if(d!=null){dichte=d===0||d===2?d:1;q('#waDichte').value=dichte}
  erd=null;ws=null;allesWeg();neuZeichnen=true;
  H.befehl('weltdichte',dichte);H.befehl('weltseed',seed);H.befehl('blick',B(kx,ky));q('#waInfo').textContent='Die Erde wird geknetet. Sieben Tage wären übertrieben.';return seed}
@@ -334,7 +360,7 @@ function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElemen
   '<div class="wZeile"><label for="waDichte">Orte</label><select id="waDichte" style="font:inherit;font-size:17px;min-height:42px">'+DICHTEN.map(function(n,i){return '<option value="'+i+'"'+(i===1?' selected':'')+'>'+n+'</option>'}).join('')+'</select> '+
   '<span class="leise">Dichte der Besiedlung. Gehört zur Welt wie der Seed.</span></div>'+
   '<div class="wZeile">'+ZOOM.map(function(n,i){return '<button class="knopf klein'+(i===0?' an':'')+'" data-zoom="'+i+'">'+n+'</button>'}).join('')+'</div>'+
-  '<div class="wZeile"><button class="knopf klein an" data-farbe="0">Biome</button><button class="knopf klein" data-farbe="1">Höhe</button><button class="knopf klein" data-farbe="2">Straßen &amp; Seewege</button><button class="knopf klein" data-farbe="3">Klimazonen</button><button class="knopf klein" data-farbe="4">Kulturen</button><button class="knopf klein" data-farbe="5">Religionen</button><button class="knopf klein" data-farbe="6">Herrschaften</button><button class="knopf klein" data-farbe="7">Ortsgrößen</button></div><div class="wZeile">'+
+  '<div class="wZeile"><button class="knopf klein an" data-farbe="0">Biome</button><button class="knopf klein" data-farbe="1">Höhe</button><button class="knopf klein" data-farbe="2">Straßen &amp; Seewege</button><button class="knopf klein" data-farbe="3">Klimazonen</button><button class="knopf klein" data-farbe="4">Kulturen</button><button class="knopf klein" data-farbe="5">Religionen</button><button class="knopf klein" data-farbe="6">Herrschaften</button><button class="knopf klein" data-farbe="7">Ortsgrößen</button><button class="knopf klein" data-farbe="8">Außenposten</button></div><div class="wZeile">'+
   '<button class="knopf klein" data-geh="-1,0" aria-label="nach Westen">◀</button><button class="knopf klein" data-geh="0,-1" aria-label="nach Norden">▲</button>'+
   '<button class="knopf klein" data-geh="0,1" aria-label="nach Süden">▼</button><button class="knopf klein" data-geh="1,0" aria-label="nach Osten">▶</button></div>'+
   '<canvas id="waCv" class="pixel" width="'+S+'" height="'+S+'" style="display:block;width:100%;max-width:'+S+'px;aspect-ratio:1;background:#5c5650;border:3px solid var(--rand);touch-action:manipulation"></canvas>'+
@@ -377,6 +403,7 @@ window.AT3_WELTANSICHT={aufbauen:aufbauen,ergebnis:E,text:text,messe:messe,ende:
  herrschaften:function(){var hs=erd&&erd.hs;return hs?{zahl:hs.zahl[0],daten:!!HD,tab:Array.from(hs.tab),zel:Array.from(hs.zel.subarray(0,2000))}:null},
  // N5b: für Tests: Orte fertig gezählt? Bilanz eines Orts
  orte:function(){return{daten:!!OD,fertig:!!(OB&&OB.erd===erd),zahl:OB&&OB.erd===erd?OB.B.length:0}},ortBilanz:function(k){if(!OD||!erd)return null;var b=ortBilanz(k);return{voll:OD.O.voll(b,otx),g:b.roh.g,einwohner:b.einwohner,leit:b.leit.map(function(l){return l.id+':'+l.n})}},
+ posten:function(k){if(!OD||!erd)return null;return ortBilanz(k).posten.map(function(p){return p.id+':'+p.zelle+':'+p.x+','+p.y+':'+(p.vor+p.arb)})},      // N5c
  bildPunkt:function(i){if(!erdCv)return null;var d=erdCv.getContext('2d').getImageData(i%GW,(i/GW)|0,1,1).data;return[d[0],d[1],d[2]]},
  setZoom:setZoom,setFarbe:setFarbe,blick:blick,neueWelt:neueWelt,setRegler:setRegler,ZONEN:ZONEN,
  klima:function(){return{bereit:zBereit,laeuft:!!zJob,gleich:zGleich,anteil:zAnteil?Array.from(zAnteil.Z):null,land:zAnteil?zAnteil.land:0,werte:zK?Object.assign({},zK):null,text:zK?zkText():''}},
