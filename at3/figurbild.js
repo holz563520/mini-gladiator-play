@@ -102,11 +102,13 @@ function vornHinten(g,i,c,pal,nah){var a=g.appearance||{},T={skin:a.skin||'#d9ac
  return{w:W,h:PH,p64:p64}}
 function oben(c){var d=c.getImageData(0,0,NW,NH).data;for(var y=0;y<NH;y++)for(var i=0;i<NW;i++)if(d[(y*NW+i)*4+3]>96)return y;return NH}
 // Auftrag {gs:[{pid, g}] oder btypen:[Typ 0–59], bseed (AR2b Zuschauer, pid = Typ), ohneArbeit, vh (AR2c1: dazu vorn/hinten, blaetter[i].vh {w,h,p64}), lasten:true|false, palette:'A'} → {fw,fh,ax,ay,posen,n,blaetter:[{pid,w,h,p64,dy(Int8, je Bild und Richtung),ms}],lasten:{w,h,p64}|null,ms}
+// AR2b/Z4b: Auftrag btypen → gs (pid = Typ); die 60 Typen werden einmal je Seed gebaut (für Karte und Nahblätter gemeinsam)
+function btypenGs(M,w){var T=karte.bt&&karte.bt.seed===(w.bseed>>>0)?karte.bt.g:null;if(!T){T=besucher(M,w.bseed>>>0);karte.bt={seed:w.bseed>>>0,g:T}}
+ return w.btypen.filter(function(i){return i>=0&&i<TYPEN}).map(function(i){return{pid:i,g:w.nah?(T[i].nahG||(T[i].nahG=Object.assign({},T[i],{enemyGear:{},nahG:null}))):T[i]}})}
 function karte(M,S64,w){if(typeof G.OffscreenCanvas!=='function')throw new Error('OffscreenCanvas fehlt');if(!M.renderSimpleFigure)throw new Error('renderSimpleFigure fehlt (arena.js)');
  var t0=G.performance.now(),rng=M.s.rng,nah={},palName=w.palette||S64.PALETTE,pal=function(r,g,b){return S64.naechste(r,g,b,palName)},aus=[],L=null,
   c=new G.OffscreenCanvas(NW,NH).getContext('2d',{willReadFrequently:true}),k=new G.OffscreenCanvas(PW,PH).getContext('2d',{willReadFrequently:true});
- try{if(w.btypen){var T=karte.bt&&karte.bt.seed===(w.bseed>>>0)?karte.bt.g:null;if(!T){T=besucher(M,w.bseed>>>0);karte.bt={seed:w.bseed>>>0,g:T}}      // AR2b: Zuschauer = die 60 Besuchertypen (einmal je Seed gebaut)
-   w.gs=w.btypen.filter(function(i){return i>=0&&i<TYPEN}).map(function(i){return{pid:i,g:T[i]}})}
+ try{if(w.btypen)w.gs=btypenGs(M,w);      // AR2b: Zuschauer = die 60 Besuchertypen (einmal je Seed gebaut)
   (w.gs||[]).forEach(function(e){var t=G.performance.now(),g=e.g,W=PW*KN,H=PH*2,p64=new Uint8Array(W*H).fill(255),dy=new Int8Array(KN*2),axt=null;
    if(!g.appearance)try{M.ensureIdentity&&M.ensureIdentity(g)}catch(x){}
    for(var dir=0;dir<2;dir++)KPOSEN.forEach(function(p){if(w.ohneArbeit&&p.id==='arbeiten')return;for(var f=0;f<p.n;f++){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,NW,NH);var ga=g;if(p.id==='arbeiten'){if(!axt)axt=mitAxt(M,g);ga=axt}      // AR2b: ohneArbeit (Zuschauer arbeiten nicht, Bilder bleiben leer)
@@ -121,31 +123,36 @@ function karte(M,S64,w){if(typeof G.OffscreenCanvas!=='function')throw new Error
 // ── F1c Nahansicht (Thomas 18.11.2026): beim Heranzoomen auf 2× die volle Figur von 1.0 wie in 2.0 (welt-raster.js spriteOf: M.renderLudusActors, 56 × 72 je Pose,
 // gezeigt mit 0,8 = KW .40 × Zoom 2). Hier einmal auf 45 × 58 verkleinert und auf AT3-64 umgerechnet (Thomas: AT3-64), Posen wie auf der Karte (Gehen 8, Stehen 1,
 // Arbeiten 4 mit Axt, Lasten je Ware darüber). Ein Blatt-Bildpunkt = ein Bildschirmpunkt bei 2×. Kern: Kampfkern; Auftrag klein halten (nur Figuren im Bild).
+// Z4a Detailstufe 4× (Thomas 21.11.2026): Auftrag stufe:4 zeichnet dieselbe Figur doppelt so fein (1.0 zeichnet mit Pfaden, also echte Details statt größerer Punkte):
+// gerendert auf 112 × 144 (Maßstab 2), verkleinert auf 90 × 115 = 1,6 (ein Blatt-Bildpunkt = ein Bildschirmpunkt bei 4×). Stufe 2 bleibt Byte für Byte wie F1c.
 var FW=56,FH=72,FX=28,FY=62,NK=.8,QW=Math.round(FW*NK),QH=Math.round(FH*NK),QAX=Math.round(FX*NK),QAY=Math.round(FY*NK),LK=(PH/NH*2)/NK,REFN=16;
+function nahMass(stufe){var sc=stufe===4?2:1,k=NK*sc;return {sc:sc,k:k,rw:FW*sc,rh:FH*sc,qw:Math.round(FW*k),qh:Math.round(FH*k),ax:Math.round(FX*k),ay:Math.round(FY*k)}}
 function nahAkteur(g,dir,pose,f){var a={g:g,team:0,ammo:0,energy:100,index:0,baseX:0,baseY:0,x:FX,y:FY,a:dir?Math.PI:0,state:'idle',moveSpeed:0,phase:0};
  if(pose==='gehen'){a.state='move';a.moveSpeed=40;a.phase=f/WALK*TAU}
  else if(pose==='arbeiten'){a.state='attack';a.swingKind='overhead';a.swingMax=.44;a.swing=.44*(1-f/4)+.01}
  return a}
-function kleinQ(k,c,pal,nah,W,ox,oy,ziel){k.clearRect(0,0,QW,QH);k.imageSmoothingEnabled=true;k.imageSmoothingQuality='high';k.drawImage(c.canvas,0,0,FW,FH,0,0,QW,QH);
- var d=k.getImageData(0,0,QW,QH).data;for(var y=0;y<QH;y++)for(var x=0;x<QW;x++){var i=(y*QW+x)*4;if(d[i+3]<=96)continue;
+function kleinQ(k,c,pal,nah,W,ox,oy,ziel,m){k.clearRect(0,0,m.qw,m.qh);k.imageSmoothingEnabled=true;k.imageSmoothingQuality='high';k.drawImage(c.canvas,0,0,m.rw,m.rh,0,0,m.qw,m.qh);
+ var d=k.getImageData(0,0,m.qw,m.qh).data;for(var y=0;y<m.qh;y++)for(var x=0;x<m.qw;x++){var i=(y*m.qw+x)*4;if(d[i+3]<=96)continue;
   var key=(d[i]<<16)|(d[i+1]<<8)|d[i+2],n=nah[key];if(n===undefined)n=nah[key]=pal(d[i],d[i+1],d[i+2]);ziel[(oy+y)*W+ox+x]=n}}
-function obenF(c){var d=c.getImageData(0,0,FW,FH).data;for(var y=0;y<FH;y++)for(var i=0;i<FW;i++)if(d[(y*FW+i)*4+3]>96)return y;return FH}
-// Auftrag {gs:[{pid, g}], lasten:true|false, palette:'A'} → {nah:true,fw,fh,ax,ay,posen,n,blaetter:[{pid,w,h,p64,dy}],lasten:{w,h,p64}|null,ms}
+function obenF(c,m){var d=c.getImageData(0,0,m.rw,m.rh).data;for(var y=0;y<m.rh;y++)for(var i=0;i<m.rw;i++)if(d[(y*m.rw+i)*4+3]>96)return y;return m.rh}
+// Auftrag {gs:[{pid, g}] oder btypen:[Typ 0–59], bseed, ohneArbeit (Z4b Zuschauer), lasten:true|false, palette:'A', stufe:2|4} → {nah:true,stufe,fw,fh,ax,ay,posen,n,blaetter:[{pid,w,h,p64,dy}],lasten:{w,h,p64}|null,ms}
 function nahKarte(M,S64,w){if(typeof G.OffscreenCanvas!=='function')throw new Error('OffscreenCanvas fehlt');if(!M.renderLudusActors)throw new Error('renderLudusActors fehlt (1.0)');
- var t0=G.performance.now(),rng=M.s.rng,nah={},palName=w.palette||S64.PALETTE,pal=function(r,g,b){return S64.naechste(r,g,b,palName)},aus=[],L=null,
-  c=new G.OffscreenCanvas(FW,FH).getContext('2d',{willReadFrequently:true}),k=new G.OffscreenCanvas(QW,QH).getContext('2d',{willReadFrequently:true});
- try{(w.gs||[]).forEach(function(e){var t=G.performance.now(),g=e.g,W=QW*KN,H=QH*2,p64=new Uint8Array(W*H).fill(255),dy=new Int8Array(KN*2),axt=null;
+ var t0=G.performance.now(),rng=M.s.rng,nah={},palName=w.palette||S64.PALETTE,pal=function(r,g,b){return S64.naechste(r,g,b,palName)},aus=[],L=null,stufe=w.stufe===4?4:2,m=nahMass(stufe),SC=m.sc,
+  c=new G.OffscreenCanvas(m.rw,m.rh).getContext('2d',{willReadFrequently:true}),k=new G.OffscreenCanvas(m.qw,m.qh).getContext('2d',{willReadFrequently:true});
+ try{if(w.btypen){w.nah=true;w.gs=btypenGs(M,w)}      // Z4b: Zuschauer (Besuchertypen) ohne Waffen und Rüstung, ohne Arbeit (ohneArbeit), ohne Lasten
+  var SP=w.ohneArbeit?KPOSEN[2].ab:KN;      // Z4b: ohne Arbeit nur Gehen und Stehen im Blatt (9 statt 13 Spalten, spart Speicher)
+  (w.gs||[]).forEach(function(e){var t=G.performance.now(),g=e.g,W=m.qw*SP,H=m.qh*2,p64=new Uint8Array(W*H).fill(255),dy=new Int8Array(KN*2),axt=null;
    if(!g.appearance)try{M.ensureIdentity&&M.ensureIdentity(g)}catch(x){}
-   for(var dir=0;dir<2;dir++)KPOSEN.forEach(function(p){for(var f=0;f<p.n;f++){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,FW,FH);var ga=g;if(p.id==='arbeiten'){if(!axt)axt=mitAxt(M,g);ga=axt}
+   for(var dir=0;dir<2;dir++)KPOSEN.forEach(function(p){if(w.ohneArbeit&&p.id==='arbeiten')return;for(var f=0;f<p.n;f++){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,m.rw,m.rh);c.setTransform(SC,0,0,SC,0,0);var ga=g;if(p.id==='arbeiten'){if(!axt)axt=mitAxt(M,g);ga=axt}
     try{M.renderLudusActors(c,[nahAkteur(ga,dir,p.id,f)])}catch(x){if(!nahKarte.warn){nahKarte.warn=1;console.warn('volle Figur',x)}}
-    c.setTransform(1,0,0,1,0,0);var tp=obenF(c);dy[dir*KN+p.ab+f]=tp>=FH?0:Math.round((tp-REFN)*NK);kleinQ(k,c,pal,nah,W,(p.ab+f)*QW,dir*QH,p64)}});
+    c.setTransform(1,0,0,1,0,0);var tp=obenF(c,m);dy[dir*KN+p.ab+f]=tp>=m.rh?0:Math.round((tp/SC-REFN)*m.k);kleinQ(k,c,pal,nah,W,(p.ab+f)*m.qw,dir*m.qh,p64,m)}});
    aus.push({pid:e.pid,w:W,h:H,p64:p64,dy:dy,ms:G.performance.now()-t})});
-  // Lasten in der Größe der Karte (×2), Schulter auf der Bezugslinie REFN der großen Figur; dy schiebt sie je Bild mit dem Kopf
-  if(w.lasten){var LW=QW*WAREN.length,LH=QH*2,lp=new Uint8Array(LW*LH).fill(255);
-   for(var dir=0;dir<2;dir++)WAREN.forEach(function(wa,i){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,FW,FH);c.setTransform(LK,0,0,LK,FX-NAX*LK,REFN-REF*LK);lastWare(c,wa,NAX,REF+9,dir);
-    c.setTransform(1,0,0,1,0,0);kleinQ(k,c,pal,nah,LW,i*QW,dir*QH,lp)});
+  // Lasten in der Größe der Karte (×2 bzw. ×4), Schulter auf der Bezugslinie REFN der großen Figur; dy schiebt sie je Bild mit dem Kopf
+  if(w.lasten){var LW=m.qw*WAREN.length,LH=m.qh*2,lp=new Uint8Array(LW*LH).fill(255);
+   for(var dir=0;dir<2;dir++)WAREN.forEach(function(wa,i){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,m.rw,m.rh);c.setTransform(LK*SC,0,0,LK*SC,(FX-NAX*LK)*SC,(REFN-REF*LK)*SC);lastWare(c,wa,NAX,REF+9,dir);
+    c.setTransform(1,0,0,1,0,0);kleinQ(k,c,pal,nah,LW,i*m.qw,dir*m.qh,lp,m)});
    L={w:LW,h:LH,p64:lp,waren:WAREN}}}finally{M.s.rng=rng}
- return {nah:true,fw:QW,fh:QH,ax:QAX,ay:QAY,posen:KPOSEN.map(function(p){return {id:p.id,ab:p.ab,n:p.n}}),n:KN,palette:palName,blaetter:aus,lasten:L,ms:G.performance.now()-t0}}
+ return {nah:true,stufe:stufe,fw:m.qw,fh:m.qh,ax:m.ax,ay:m.ay,posen:KPOSEN.map(function(p){return {id:p.id,ab:p.ab,n:p.n}}),n:KN,spalten:SP,palette:palName,blaetter:aus,lasten:L,ms:G.performance.now()-t0}}
 var FB={NW:NW,NH:NH,PW:PW,PH:PH,PAX:PAX,PAY:PAY,POSEN:POSEN,N:N,STAND:STAND,TYPEN:TYPEN,figuren:figuren,besucher:besucher,karte:karte,nahKarte:nahKarte,KPOSEN:KPOSEN,KN:KN,WAREN:WAREN,QW:QW,QH:QH,VH:VH,vornHinten:vornHinten};
 if(typeof module!=='undefined'&&module.exports)module.exports=FB;else G.AT3Figurbild=FB;
 })(typeof self!=='undefined'?self:globalThis);

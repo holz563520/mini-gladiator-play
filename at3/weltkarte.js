@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='c179ba26', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='bbb9c40e', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -123,7 +123,7 @@ var t0=performance.now();
   g.imageSmoothingEnabled=false;g.fillStyle=NACHT;g.fillRect(0,0,W,H);bildNr++;
   if(glob){globusZeichnen(W,H,t0);return}
   var ziel=cam.lod>=STUFEN?0:hoeheUnter(),weiter=false;if(ziel!=null){if(!zFest){cam.z=ziel;zFest=true}else{var dz=ziel-cam.z;if(Math.abs(dz)<.05)cam.z=ziel;else{cam.z+=dz*.25;weiter=true}}}
-  var lod=cam.lod,Z=cam.nah?.5:1<<lod,CX=(cam.x-cam.y)*32,CY=(cam.x+cam.y)*16-cam.z*8,hb=W/2*Z,hh=H/2*Z,n=TEIL<<lod,i,c,b,ersatz=0;
+  var lod=cam.lod,Z=zf(),CX=(cam.x-cam.y)*32,CY=(cam.x+cam.y)*16-cam.z*8,hb=W/2*Z,hh=H/2*Z,n=TEIL<<lod,i,c,b,ersatz=0;
   // G4d: in den Kartenstufen das Fernbild ⅟16 als Untergrund, solange Kartenstücke oder Bilder fehlen (nach einem Sprung vom Globus, nach dem Hereinzoomen)
   var grund=false;if(lod<STUFEN&&(bekannt.size<49||M.ersatz)){sichtFern(STUFEN,CX,CY,hb,hh,GRUND);for(i=0;i<GRUND.length;i++){c=GRUND[i];b=bilder.get(c.key);if(b){mal(b,c.xu,CX,CY,Z,W,H);grund=true}}}
   offenSetzen();sichtX(lod,CX,CY,hb,hh,LISTE).sort(function(a,b2){return(a.x0+a.y0)-(b2.x0+b2.y0)||a.x0-b2.x0});gemaltB.clear();
@@ -143,6 +143,7 @@ var t0=performance.now();
   karFaehrt=false;if(KAR.size&&lod<STUFEN){var tk=performance.now();karrenMalen(CX,CY,Z,W,H);M.karrenMs=performance.now()-tk;if(karFaehrt)weiter=true}
   if(FEST.length&&lod<STUFEN){var tf=performance.now();festMalen(CX,CY,Z,W,H);M.festMs=performance.now()-tf;if(M.festMs>M.maxFestMs)M.maxFestMs=M.festMs}      // G9c1: Marktstand (vor den Personen, die davor stehen)
   perGeht=false;if(PER.size&&lod<STUFEN){var tp=performance.now();personenMalen(CX,CY,Z,W,H);M.personenMs=performance.now()-tp;if(perGeht)weiter=true}      // G7: Arbeiter
+  if(BN[4].size&&!(cam.nah===2&&lod===0)){BN[4].clear();M.besNah4=0}      // Z4b: 4×-Zuschauerblätter nur auf 4× im Speicher
   besGeht=false;if(BESU.size&&lod<STUFEN){var tb=performance.now();besucherMalen(CX,CY,Z,W,H);M.besucherMs=performance.now()-tb;if(M.besucherMs>(M.maxBesucherMs||0))M.maxBesucherMs=M.besucherMs;if(besGeht)weiter=true}      // AR2b: Zuschauer
   tierGeht=false;if(TIER.size&&lod<STUFEN){tiereMalen(CX,CY,Z,W,H);if(tierGeht)weiter=true}      // G8: Rehe
   if(wzRahmen&&lod<STUFEN)rahmenMalen(CX,CY,Z,W,H);
@@ -173,8 +174,8 @@ var t0=performance.now();
    return{x:Math.floor(modu(lo/ZP,1)*WX),y:Math.max(0,Math.min(WY-1,Math.floor((.5-la/Math.PI)*WY)))}}
   var Z=zf(),PX=(cam.x-cam.y)*32+sx*Z,PY=(cam.x+cam.y)*16+sy*Z,u=(PX/32+PY/16)/2,v=(PY/16-PX/32)/2;
   return{x:Math.floor(umX(u)),y:Math.max(0,Math.min(WY-1,Math.floor(v)))}}
- function zf(){return cam.nah?.5:1<<cam.lod}
- function zText(l){return cam.nah&&l===0?'2×':l===0?'1×':l<STUFEN?['','½','¼','⅛'][l]:'1/'+(1<<l)}
+ function zf(){return cam.nah===2?.25:cam.nah?.5:1<<cam.lod}
+ function zText(l){return cam.nah===2&&l===0?'4×':cam.nah&&l===0?'2×':l===0?'1×':l<STUFEN?['','½','¼','⅛'][l]:'1/'+(1<<l)}
  function melden(){M.globus=glob?glob.g:-1;if(o.beiZoom)o.beiZoom(glob?-1:cam.lod,glob?'globe':zText(cam.lod))}
  function zurKarte(x,y,lod){glob=null;cam.nah=false;gimg=null;gimgKey='';cam.x=umX(x);cam.y=halteY(y);cam.lod=lod;zFest=false;blickK=-1;blick();zoomZeit=performance.now();plan();setTimeout(plan,RUHE_MS+20);melden()}
  function globNach(){return{x:modu(glob.lon/ZP,1)*WX,y:(.5-glob.lat/Math.PI)*WY}}
@@ -248,7 +249,16 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
  // Nur für Personen im Bild, Stück für Stück: auf 1× (in Ruhe) und 2× meldet die Karte fehlende Blätter (o.beiNahFehlt), das Spiel lässt höchstens 2 je Auftrag zeichnen.
  // Bis dahin wird das Kartenblatt doppelt groß gezeigt (Ersatz statt Lücke). Höchstens NAHMAX Blätter, ferne fliegen zuerst raus. Notausschalter: ?f1c=0
  var FN=new Map(), FNLAST=null, FNK={n:13,gehen:0,stehen:8,arbeiten:9,w:45,h:58,ax:22,ay:50}, NAHMAX=40, nahFehlt=0, nahMeldT=0, F1CAUS=/[?&]f1c=0/.test(location.search);
- function nahBlaetter(r){var rgb=f1Rgb(),t=performance.now();if(r.posen)r.posen.forEach(function(p){FNK[p.id]=p.ab});FNK.n=r.n||FNK.n;FNK.w=r.fw;FNK.h=r.fh;FNK.ax=r.ax;FNK.ay=r.ay;
+ // Z4a Detailstufe 4× (Thomas 21.11.2026): eine Stufe vor 2×, Karte Stufe 0 viermal groß. Personen im Bild bekommen ein Blatt doppelt so fein (figurbild.js nahKarte stufe 4,
+ // 90 × 115, AT3-64), bis dahin das 2×-Blatt doppelt groß (Ersatz statt Lücke). Höchstens NAH4MAX Blätter, ferne fliegen zuerst raus. Notausschalter: ?z4=0
+ var FN4=new Map(), FN4LAST=null, FN4K={n:13,gehen:0,stehen:8,arbeiten:9,w:90,h:115,ax:45,ay:99}, NAH4MAX=16, Z4AUS=/[?&]z4=0/.test(location.search);
+ function nahStufe(){return cam.nah===2&&!Z4AUS?4:2}
+ function nah4Blaetter(r){var rgb=f1Rgb(),t=performance.now();if(r.posen)r.posen.forEach(function(p){FN4K[p.id]=p.ab});FN4K.n=r.n||FN4K.n;FN4K.w=r.fw;FN4K.h=r.fh;FN4K.ax=r.ax;FN4K.ay=r.ay;
+  (r.blaetter||[]).forEach(function(b){var c=f1Canvas(b.w,b.h,b.p64,rgb);FN4.set(b.pid,{c:c,p:punktBild(c),dy:b.dy,gv:b.gv,t:t})});
+  if(r.lasten){var c=f1Canvas(r.lasten.w,r.lasten.h,r.lasten.p64,rgb);FN4LAST={c:c,p:punktBild(c)}}
+  if(FN4.size>NAH4MAX){var L=[];FN4.forEach(function(v,id){var e=PER.get(id);L.push([e&&e.sx>-1e8?1:0,v.t,id])});L.sort(function(a,b){return a[0]-b[0]||a[1]-b[1]});for(var i=0;FN4.size>NAH4MAX&&i<L.length;i++)FN4.delete(L[i][2])}
+  M.nah4Ms=(M.nah4Ms||0)+performance.now()-t;M.nah4=FN4.size;plan()}
+ function nahBlaetter(r){if(r.stufe===4)return nah4Blaetter(r);var rgb=f1Rgb(),t=performance.now();if(r.posen)r.posen.forEach(function(p){FNK[p.id]=p.ab});FNK.n=r.n||FNK.n;FNK.w=r.fw;FNK.h=r.fh;FNK.ax=r.ax;FNK.ay=r.ay;
   (r.blaetter||[]).forEach(function(b){var c=f1Canvas(b.w,b.h,b.p64,rgb);FN.set(b.pid,{c:c,p:punktBild(c),dy:b.dy,gv:b.gv,t:t})});
   if(r.lasten){var c=f1Canvas(r.lasten.w,r.lasten.h,r.lasten.p64,rgb);FNLAST={c:c,p:punktBild(c)}}
   if(FN.size>NAHMAX){var L=[];FN.forEach(function(v,id){var e=PER.get(id);L.push([e&&e.sx>-1e8?1:0,v.t,id])});L.sort(function(a,b){return a[0]-b[0]||a[1]-b[1]});for(var i=0;FN.size>NAHMAX&&i<L.length;i++)FN.delete(L[i][2])}
@@ -256,15 +266,16 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
  function figurBlaetter(r){if(!r)return;if(r.nah)return nahBlaetter(r);var rgb=f1Rgb(),t=performance.now();if(r.posen)r.posen.forEach(function(p){FK[p.id]=p.ab});if(r.n)FK.n=r.n;if(r.fw){FK.w=r.fw;FK.h=r.fh;FK.ax=r.ax;FK.ay=r.ay}
   (r.blaetter||[]).forEach(function(b){var c=f1Canvas(b.w,b.h,b.p64,rgb);FIG.set(b.pid,{c:c,p:punktBild(c),dy:b.dy,gv:b.gv})});
   if(r.lasten){var c=f1Canvas(r.lasten.w,r.lasten.h,r.lasten.p64,rgb);FLAST={c:c,p:punktBild(c)}}M.figurenMs=(M.figurenMs||0)+performance.now()-t;M.figuren=FIG.size;plan()}
- function figurVergessen(da){FIG.forEach(function(v,id){if(!da[id])FIG.delete(id)});FN.forEach(function(v,id){if(!da[id])FN.delete(id)});M.figuren=FIG.size}
+ function figurVergessen(da){FIG.forEach(function(v,id){if(!da[id])FIG.delete(id)});FN.forEach(function(v,id){if(!da[id])FN.delete(id)});FN4.forEach(function(v,id){if(!da[id])FN4.delete(id)});M.figuren=FIG.size}
  function personenMalen(CX,CY,Z,W,H){var t=performance.now(),n=0,geht=false,nah=cam.nah&&!F1CAUS,fehlt=0,ruht=t-zoomZeit>RUHE_MS;
   PER.forEach(function(e,id){var L=perLage(e,t),x=L[0],y=L[1];x+=Math.round((cam.x-x)/WX)*WX;var h=hoeheBei(umX(Math.floor(x)),Math.floor(y));if(h==null)h=cam.z;
-   var sx=((x-y)*32-CX)/Z+W/2,sy=((x+y)*16-h*8-CY)/Z+H/2;e.sx=-1e9;if(sx<-32||sy<-32||sx>W+32||sy>H+48)return;n++;if(L[2])geht=true;e.sx=sx;e.sy=sy;
-   var Q=nah?FN.get(id):null;if(!F1CAUS&&cam.lod===0&&ruht&&(!Q||(GV[id]!=null&&Q.gv!==GV[id])))fehlt++;
-   if(Q){var vq=verdeckt(x,y,FNK.ay>>1);e.verdeckt=vq;var rq=(e.dir&3)===0||(e.dir&3)===2?0:1,aq=e.zust===3&&(e.auf===3||(e.auf>=5&&e.auf!==11&&e.auf!==12)),
-     fq=L[2]?FNK.gehen+(Math.floor(t/110)%8):aq?FNK.arbeiten+(Math.floor(t/170)%4):FNK.stehen;if(aq)geht=true;var qx=Math.round(sx-FNK.ax),qy=Math.round(sy-FNK.ay);
-     g.drawImage(vq?Q.p:Q.c,fq*FNK.w,rq*FNK.h,FNK.w,FNK.h,qx,qy,FNK.w,FNK.h);
-     var wq=(e.last&15)-1;if(wq>=0&&!aq&&FNLAST){var kq=Q.dy?Q.dy[rq*FNK.n+fq]|0:0;g.drawImage(vq?FNLAST.p:FNLAST.c,wq*FNK.w,rq*FNK.h,FNK.w,FNK.h,qx,qy+kq,FNK.w,FNK.h)}return}
+   var sx=((x-y)*32-CX)/Z+W/2,sy=((x+y)*16-h*8-CY)/Z+H/2;e.sx=-1e9;var rm=Z<.5?2:1;if(sx<-32*rm||sy<-32*rm||sx>W+32*rm||sy>H+50*rm)return;n++;if(L[2])geht=true;e.sx=sx;e.sy=sy;
+   var Q=null,QK=FNK,QL=FNLAST,qs=1,vier=nah&&cam.nah===2&&!Z4AUS;if(nah){if(vier){Q=FN4.get(id);if(Q){QK=FN4K;QL=FN4LAST}else{Q=FN.get(id);qs=2}}else Q=FN.get(id)}   // Z4a: 4× eigenes Blatt, sonst 2×-Blatt doppelt
+   var QW=!F1CAUS&&cam.lod===0&&ruht?(vier?FN4.get(id):nah?Q:FN.get(id)):null;if(!F1CAUS&&cam.lod===0&&ruht&&(!QW||(GV[id]!=null&&QW.gv!==GV[id])))fehlt++;
+   if(Q){var vq=verdeckt(x,y,Math.round(QK.ay*qs*Z));e.verdeckt=vq;var rq=(e.dir&3)===0||(e.dir&3)===2?0:1,aq=e.zust===3&&(e.auf===3||(e.auf>=5&&e.auf!==11&&e.auf!==12)),
+     fq=L[2]?QK.gehen+(Math.floor(t/110)%8):aq?QK.arbeiten+(Math.floor(t/170)%4):QK.stehen;if(aq)geht=true;var qx=Math.round(sx-QK.ax*qs),qy=Math.round(sy-QK.ay*qs);
+     g.drawImage(vq?Q.p:Q.c,fq*QK.w,rq*QK.h,QK.w,QK.h,qx,qy,QK.w*qs,QK.h*qs);
+     var wq=(e.last&15)-1;if(wq>=0&&!aq&&QL){var kq=Q.dy?Q.dy[rq*QK.n+fq]|0:0;g.drawImage(vq?QL.p:QL.c,wq*QK.w,rq*QK.h,QK.w,QK.h,qx,qy+kq*qs,QK.w*qs,QK.h*qs)}return}
    var F=FIG.get(id);if(F){var vd=verdeckt(x,y,FK.ay);e.verdeckt=vd;var re=(e.dir&3)===0||(e.dir&3)===2?0:1,ar=e.zust===3&&(e.auf===3||(e.auf>=5&&e.auf!==11&&e.auf!==12)),
      fr=L[2]?FK.gehen+(Math.floor(t/110)%8):ar?FK.arbeiten+(Math.floor(t/170)%4):FK.stehen;if(ar)geht=true;
      var dw=Math.max(1,Math.round(FK.w/Z)),dh=Math.max(1,Math.round(FK.h/Z)),ox=Math.round(sx-FK.ax/Z),oy=Math.round(sy-FK.ay/Z);
@@ -303,6 +314,17 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
  // fehlt eins für einen Sichtbaren, meldet die Karte es (o.beiBesFehlt), bis dahin Ersatzbild. Auf 2× das Kartenblatt doppelt (Thomas). Nur Rechnen, kein Bild neu.
  var BESU=new Map(), besT=0, besDt=50, BFIG=new Map(), besGeht=false, BINFO=null, besFehltL=[], besMeldT=0, B_SITZT=4, B_HINEIN=3, B_HINAUS=5;
  var AR2B_AUS=/[?&]ar2b=0/.test(location.search);
+ // Z4b (Thomas 21.11.2026): auf 2× und 4× eigene Nahblätter je Besuchertyp (volle 1.0-Figur ohne Waffen, figurbild.js nahKarte btypen, nur Gehen und Stehen).
+ // Nur für Typen im Bild, in Ruhe gemeldet (o.beiBesFehlt), bis dahin auf 4× das 2×-Blatt doppelt, sonst das Kartenblatt. Lager je Stufe: bis 20 (2×) bzw. 8 (4×),
+ // Typen aus dem Bild zuerst raus; sind mehr Typen im Bild, wächst es bis 30 bzw. 12, darüber bleibt das Ersatzblatt. Speicher (Thomas 21.11.2026): außerhalb von 4×
+ // wird das 4×-Lager geleert (bis ~9 MB), beim nächsten Heranzoomen neu gezeichnet. Notausschalter ?z4b=0 (wie AR2b).
+ var BN={2:new Map(),4:new Map()}, BNK={2:{gehen:0,stehen:8,w:45,h:58,ax:22,ay:50},4:{gehen:0,stehen:8,w:90,h:115,ax:45,ay:99}}, BNMAX={2:20,4:8}, BNHART={2:30,4:12},
+  BSEEN=new Map(), besNahFehltL=[], besNahStufe=0, Z4B_AUS=/[?&]z4b=0/.test(location.search);
+ function besucherNahBlaetter(r){if(!r||!r.nah)return;var s=r.stufe===4?4:2,K=BNK[s],Mp=BN[s],rgb=f1Rgb(),t=performance.now();if(r.posen)r.posen.forEach(function(p){K[p.id]=p.ab});K.w=r.fw;K.h=r.fh;K.ax=r.ax;K.ay=r.ay;
+  (r.blaetter||[]).forEach(function(b){Mp.set(b.pid,{c:f1Canvas(b.w,b.h,b.p64,rgb),t:t})});
+  if(Mp.size>BNMAX[s]){var L=[];Mp.forEach(function(v,typ){L.push([BSEEN.get(typ)||0,v.t,typ])});L.sort(function(a,b){return a[0]-b[0]||a[1]-b[1]});
+   for(var i=0;Mp.size>BNMAX[s]&&i<L.length;i++){if(t-L[i][0]<1000)break;Mp.delete(L[i][2])}}      // nur Typen, die seit 1 s nicht mehr im Bild waren
+  M['besNah'+s]=Mp.size;M.besNahMs=(M.besNahMs||0)+performance.now()-t;plan()}
  function besucher(d){if(tot||AR2B_AUS)return;var t=performance.now(),a=d.buf,n=a[0]|0,neuM=new Map(),neuB=false;if(besT){var dt=t-besT;if(dt>5&&dt<400)besDt=besDt*.7+dt*.3}
   for(var i=0;i<n;i++){var o2=1+i*9,id=a[o2],e=BESU.get(id),px=a[o2+1],py=a[o2+2],st=a[o2+3],pr=a[o2+6];
    if(e&&e.st===st){var L=perLage(e,t,besT,besDt);e.px0=L[0]*256;e.py0=L[1]*256;e.pr0=e.pr0+(e.pr-e.pr0)*Math.min(1,Math.max(0,(t-besT)/besDt))}else{e={px0:px,py0:py,pr0:pr};neuB=true}
@@ -321,7 +343,8 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
   if(q<L1){var a=ah+da*(L1?q/L1:1);return[B.cx+Math.cos(a)*Ru,B.cy+Math.sin(a)*Ru,1,Hu]}
   var g=L2?Math.min(1,(q-L1)/L2):1,r=Ru+(Rr-Ru)*g;return[B.cx+Math.cos(as)*r,B.cy+Math.sin(as)*r,1,Hu+(Hs-Hu)*g]}
  function innenDauer(h,s){var B=BINFO,P=B.S.plaetze[s],x0=h[0]-B.x;x0-=Math.round(x0/WX)*WX;var hx=x0*16+8,hy=(h[1]-B.y)*16+8,dx=Math.abs(P[0]-hx),dy=Math.abs(P[1]-hy),d=Math.max(dx,dy)+(Math.min(dx,dy)>>1);return TREPPE+Math.floor(d*25/16)}
- function besucherMalen(CX,CY,Z,W,H){var t=performance.now(),n=0,hinten=0,geht=false,fehlt={},fl=[],B=BINFO,AN=null,ruht=t-zoomZeit>RUHE_MS;
+ function besucherMalen(CX,CY,Z,W,H){var t=performance.now(),n=0,hinten=0,geht=false,fehlt={},fl=[],B=BINFO,AN=null,ruht=t-zoomZeit>RUHE_MS,
+   nS=cam.nah&&cam.lod===0&&!Z4B_AUS?(cam.nah===2&&!Z4AUS?4:2):0,nf={},nfl=[];      // Z4b: Nahstufe der Zuschauer
   FEST.forEach(function(e){if(e.anl&&e.B&&e.sx>-1e8)AN=e});
   var hc=B?hoeheBei(umX(Math.floor(B.cx)),Math.floor(B.cy)):null;if(hc==null)hc=cam.z;
   BESU.forEach(function(e,id){var x,y,zp,sitzt=false,innen=false,re,f=Math.min(1,Math.max(0,besDt>0?(t-besT)/besDt:1)),pr=e.pr0+(e.pr-e.pr0)*f;
@@ -336,13 +359,19 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
    if(!innen&&AN){var cxw=AN.x+.5,cyw=AN.y+.5;cxw+=Math.round((x-cxw)/WX)*WX;if(x+y<cxw+cyw){var Bb=AN.B,u=(sx-AN.sx)*AN.Z/(Bb.w/2),v=(sy-(AN.sy-(Bb.ay-Bb.h/2)/AN.Z))*AN.Z/(Bb.h/2);if(u*u+v*v<=1){hinten++;return}}}      // hinter dem Ring
    n++;e.sx=sx;e.sy=sy;e.sitzt=sitzt;var F=BFIG.get(e.typ);if(!F&&!fehlt[e.typ]){fehlt[e.typ]=1;fl.push(e.typ)}
    var lauf=!sitzt&&(innen||e.geht),fr=lauf?FK.gehen+((Math.floor(t/110)+id)%8):FK.stehen;
+   if(nS){BSEEN.set(e.typ,t);var Mp=BN[nS],Q=Mp.get(e.typ),QK=BNK[nS],qs=1;if(!Q&&nS===4){Q=BN[2].get(e.typ);QK=BNK[2];qs=2}
+    if(!Mp.has(e.typ)&&F&&ruht&&!nf[e.typ]&&Mp.size+nfl.length<BNHART[nS]){nf[e.typ]=1;nfl.push(e.typ)}      // erst Kartenblatt, dann Nahblatt
+    if(Q){var qf=lauf?QK.gehen+((Math.floor(t/110)+id)%8):QK.stehen,qx=Math.round(sx-QK.ax*qs);
+     if(sitzt){var qk=QK.ay-Math.round(7/Z/qs);g.drawImage(Q.c,qf*QK.w,re*QK.h,QK.w,qk,qx,Math.round(sy-qk*qs),QK.w*qs,qk*qs)}      // Oberkörper über der Bank (wie unten)
+     else g.drawImage(Q.c,qf*QK.w,re*QK.h,QK.w,QK.h,qx,Math.round(sy-QK.ay*qs),QK.w*qs,QK.h*qs);return}}
    if(F){var dw=Math.max(1,Math.round(FK.w/Z)),ox=Math.round(sx-FK.ax/Z);
     if(sitzt){var keep=FK.ay-7,dk=Math.max(1,Math.round(keep/Z));g.drawImage(F.c,fr*FK.w,re*FK.h,FK.w,keep,ox,Math.round(sy-dk),dw,dk)}      // Oberkörper über der Bank
     else{var dh=Math.max(1,Math.round(FK.h/Z));g.drawImage(F.c,fr*FK.w,re*FK.h,FK.w,FK.h,ox,Math.round(sy-FK.ay/Z),dw,dh)}return}
    var PB=PBILD&&PBILD[e.dir&3];
    if(PB&&!sitzt)g.drawImage(PB.c,Math.round(sx-PB.ax/Z),Math.round(sy-PB.ay/Z),Math.max(1,Math.round(PB.w/Z)),Math.max(1,Math.round(PB.h/Z)));
    else{g.fillStyle=ERSATZ;var eh=sitzt?12:20;g.fillRect(Math.round(sx-3/Z),Math.round(sy-eh/Z),Math.max(2,Math.round(6/Z)),Math.max(2,Math.round(eh/Z)))}});
-  M.besucherSichtbar=n;M.besucherHinten=hinten;besGeht=geht;besFehltL=fl;M.besFehlt=fl.length;if(fl.length&&ruht&&o.beiBesFehlt&&t-besMeldT>250){besMeldT=t;setTimeout(o.beiBesFehlt,0)}}
+  M.besucherSichtbar=n;M.besucherHinten=hinten;besGeht=geht;besFehltL=fl;M.besFehlt=fl.length;besNahFehltL=nfl;besNahStufe=nS;M.besNahFehlt=nfl.length;
+  if((fl.length||nfl.length)&&ruht&&o.beiBesFehlt&&t-besMeldT>250){besMeldT=t;setTimeout(o.beiBesFehlt,0)}}
  function BESU_Q(e){e.sx=-1e9}
  function besucherBei(cx,cy){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),px=(cx-r.left)*f,py=(cy-r.top)*f,best=null,bd=20*f*f*20;
   BESU.forEach(function(e,id){if(e.sx==null||e.sx<-1e8)return;var dx=e.sx-px,dy=e.sy-(e.sitzt?6:10)*f/(zf())-py,d=dx*dx+dy*dy;if(d<bd){bd=d;best={id:id,typ:e.typ,st:e.st,sp:e.sp,sitz:e.sitz}}});return best}
@@ -425,8 +454,8 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
  function zoom(d){
   if(glob){var n=globStufen(cv.width,cv.height).length;if(glob.g>=n)glob.g=n-1;var g2=glob.g+d;if(g2<0){var p=globNach();zurKarte(p.x,p.y,MAXL);return}if(g2>=n)return;glob.g=g2;plan();melden();return}
   // F1c: Stufe 2× (cam.nah) vor 1×: Karte bleibt Stufe 0, nur doppelt groß; Figuren im Bild bekommen die volle Figur
-  if(d<0&&cam.lod===0){if(!cam.nah){cam.nah=true;zoomZeit=performance.now();plan();setTimeout(plan,RUHE_MS+20);melden()}return}
-  if(d>0&&cam.nah){cam.nah=false;zoomZeit=performance.now();plan();melden();return}
+  if(d<0&&cam.lod===0){if((cam.nah|0)<(Z4AUS?1:2)){cam.nah=(cam.nah|0)+1;zoomZeit=performance.now();plan();setTimeout(plan,RUHE_MS+20);melden()}return}
+  if(d>0&&cam.nah){cam.nah=cam.nah===2?1:false;zoomZeit=performance.now();plan();melden();return}
   var l=cam.lod+d;if(l>MAXL){if(!hatKam||gen<0)return;glob={g:0,lon:cam.x/WX*ZP,lat:(.5-cam.y/WY)*Math.PI};plan();melden();return}
   l=Math.max(0,l);if(l===cam.lod)return;var war=cam.lod;cam.lod=l;zoomZeit=performance.now();if(war>=STUFEN&&l<STUFEN){blickK=-1;zFest=false;blick()}plan();setTimeout(plan,RUHE_MS+20);melden()}
  function abstand(){var p=Array.from(zeiger.values());return Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)}
@@ -483,8 +512,10 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
  return{reiche:reiche,beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,besucher:besucher,besucherArena:besucherArena,besucherBlaetter:besucherBlaetter,besucherFehlt:function(){return besFehltL.filter(function(i){return !BFIG.has(i)})},besucherHat:function(i){return BFIG.has(i)},
+  besucherNahFehlt:function(){return besNahFehltL.length?{stufe:besNahStufe,typen:besNahFehltL.slice()}:null},besucherNahBlaetter:besucherNahBlaetter,      // Z4b
+  besucherNahTest:function(s){var L=[];BN[s===4?4:2].forEach(function(v,typ){L.push({typ:typ,c:v.c})});return L},
   besucherBild:function(t){var F=BFIG.get(t);return F?{w:F.w,h:F.h,p64:F.p64,vh:F.vh,fw:FK.w,fh:FK.h,ax:FK.ax,ay:FK.ay,vhN:FK.vhN||0}:null},      // AR2c1: für First Person (AR2c2)
-  besucherListe:function(){var L=[];BESU.forEach(function(e,id){L.push({id:id,st:e.st,typ:e.typ,sitz:e.sitz,pr:e.pr,sp:e.sp,sx:e.sx,sy:e.sy,sitzt:!!e.sitzt,bild:BFIG.has(e.typ)})});return L},figurBlaetter:figurBlaetter,figurVergessen:figurVergessen,figurTest:function(){var L=[];FIG.forEach(function(f){L.push(f.c)});if(FLAST)L.push(FLAST.c);return L},figurHat:function(id,gv){var f=FIG.get(id);GV[id]=gv;return !!f&&(gv==null||f.gv===gv)},nahHat:function(id,gv){var f=FN.get(id);return !!f&&(gv==null||f.gv===gv)},nahSichtbar:function(){var L=[];PER.forEach(function(e,id){if(e.sx!=null&&e.sx>-1e8)L.push(id)});return L},nahTest:function(){var L=[];FN.forEach(function(f){L.push(f.c)});if(FNLAST)L.push(FNLAST.c);return L},tiere:tiere,bewegte:bewegte,fest:festSetzen,
+  besucherListe:function(){var L=[];BESU.forEach(function(e,id){L.push({id:id,st:e.st,typ:e.typ,sitz:e.sitz,pr:e.pr,sp:e.sp,sx:e.sx,sy:e.sy,sitzt:!!e.sitzt,bild:BFIG.has(e.typ)})});return L},figurBlaetter:figurBlaetter,figurVergessen:figurVergessen,figurTest:function(){var L=[];FIG.forEach(function(f){L.push(f.c)});if(FLAST)L.push(FLAST.c);return L},figurHat:function(id,gv){var f=FIG.get(id);GV[id]=gv;return !!f&&(gv==null||f.gv===gv)},nahStufe:nahStufe,nahLastFehlt:function(st){return st===4?!FN4LAST:!FNLAST},nah4Test:function(){var L=[];FN4.forEach(function(f){L.push(f.c)});if(FN4LAST)L.push(FN4LAST.c);return L},nahHat:function(id,gv){var f=(nahStufe()===4?FN4:FN).get(id);return !!f&&(gv==null||f.gv===gv)},nahSichtbar:function(){var L=[];PER.forEach(function(e,id){if(e.sx!=null&&e.sx>-1e8)L.push(id)});return L},nahTest:function(){var L=[];FN.forEach(function(f){L.push(f.c)});if(FNLAST)L.push(FNLAST.c);return L},tiere:tiere,bewegte:bewegte,fest:festSetzen,
   festListe:function(){return FEST.map(function(e){return{art:e.art,x:e.x,y:e.y,r:e.r,anl:e.anl,sx:e.sx,sy:e.sy,bild:!!FBILD[e.art+':'+(e.r|0)]}})},
   tiereListe:function(){var t=performance.now(),L=[];TIER.forEach(function(e,id){var p=tierLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,bild:!!TBILD,sx:e.sx,sy:e.sy})});return L},
   personenListe:function(){var t=performance.now(),L=[];PER.forEach(function(e,id){var p=perLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,fa:e.fa,fb:e.fb,bild:!!PBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},

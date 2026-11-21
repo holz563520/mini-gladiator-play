@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='c179ba26', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='bbb9c40e', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -288,7 +288,11 @@ function skript(src,glob){return new Promise(function(ok,no){if(window[glob])ret
 function besArenaPflegen(){if(AR2B_AUS||!KARTE||!KARTE.besucherArena)return;var A=GLAD&&GLAD.arena,B=A&&A.gross&&A.anlage&&A.bes;if(!B){if(besArenaPflegen.an){besArenaPflegen.an=false;KARTE.besucherArena(null)}return}
  if(!window.AT3SITZE||!window.AT3HERRSCHER){if(!BESL)BESL=Promise.all([skript('arena-sitze.js','AT3SITZE'),skript('herrscher.js','AT3HERRSCHER')]).then(besArenaPflegen,function(e){BESL=null;console.warn('Zuschauer:',e)});return}
  besArenaPflegen.an=true;KARTE.besucherArena(A.anlage,window.AT3SITZE)}
-function besucherPflegen(){if(AR2B_AUS||BESW||!KARTE||!KARTE.besucherFehlt)return;var fehlt=KARTE.besucherFehlt();if(!fehlt.length)return;BESW=true;var mehr=fehlt.length>8;
+// Z4b: danach die Nahblätter für 2× und 4× (KA.knah btypen, volle 1.0-Figur ohne Waffen), auf 2× höchstens 4 je Auftrag, auf 4× einer; gezeichnet im Kampfkern
+function besucherNahPflegen(){var N=KARTE.besucherNahFehlt&&KARTE.besucherNahFehlt();if(!N)return;BESW=true;var teil=N.typen.slice(0,N.stufe===4?1:4);
+ anschluss().then(function(KA){return KA.knah({btypen:teil,bseed:WSEED>>>0,ohneArbeit:true,stufe:N.stufe,lasten:false},'',V)}).then(function(R){if(KARTE)KARTE.besucherNahBlaetter(R)})
+  .catch(function(e){console.warn('Zuschauer nah:',e)}).then(function(){BESW=false;if(KARTE)KARTE.plan()})}
+function besucherPflegen(){if(AR2B_AUS||BESW||!KARTE||!KARTE.besucherFehlt)return;var fehlt=KARTE.besucherFehlt();if(!fehlt.length)return besucherNahPflegen();BESW=true;var mehr=fehlt.length>8;
  anschluss().then(function(KA){return KA.kfiguren({btypen:fehlt.slice(0,8),bseed:WSEED>>>0,ohneArbeit:true,vh:!AR2C_AUS},'',V)}).then(function(R){if(KARTE)KARTE.besucherBlaetter(R)})
   .catch(function(e){mehr=false;console.warn('Zuschauerfiguren:',e)}).then(function(){BESW=false;if(mehr)setTimeout(besucherPflegen,50)})}
 function besHash(s,n){var h=0x811c9dc5;s=String(s)+'#'+n;for(var i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h>>>0}
@@ -312,9 +316,10 @@ function figurenPflegen(){if(F1AUS||FIGW||!KARTE||!KARTE.figurHat||!GLAD||!GLAD.
 // den Kampfkern die volle 1.0-Figur in AT3-64 zeichnen (KA.knah). Stück für Stück: höchstens 2 je Auftrag, ein Auftrag unterwegs. Notausschalter: ?f1c=0 (Karte) ──
 var NAHW=false;
 function figurenNahPflegen(){if(F1AUS||NAHW||!KARTE||!KARTE.nahSichtbar||!GLAD||!GLAD.per)return;var fehlt=KARTE.nahSichtbar().filter(function(id){var p=GLAD.per[id];return p&&!KARTE.nahHat(id,p.gv|0)});
- if(!fehlt.length)return;NAHW=true;var teil=fehlt.slice(0,2);
+ if(!fehlt.length)return;NAHW=true;var teil=fehlt.slice(0,KARTE.nahStufe&&KARTE.nahStufe()===4?1:2);   // Z4a: 4×-Blätter einzeln (4-mal so groß)
  Promise.all([anschluss(),KERN.glaDaten({figur:teil})]).then(function(r){var KA=r[0],D=r[1];if(!D||!D.length)return null;
-  return KA.knah({gs:D.map(function(e){return{pid:e.pid,g:e.g}}),lasten:!(KARTE.nahTest&&KARTE.mess.nah)},'',V).then(function(R){R.blaetter.forEach(function(b,i){b.gv=D[i].gv});if(KARTE)KARTE.figurBlaetter(R)})})
+  var st=KARTE.nahStufe?KARTE.nahStufe():2;   // Z4a: Stufe 4 = Detailblatt für 4×
+  return KA.knah({gs:D.map(function(e){return{pid:e.pid,g:e.g}}),stufe:st,lasten:KARTE.nahLastFehlt?KARTE.nahLastFehlt(st):!(KARTE.nahTest&&KARTE.mess.nah)},'',V).then(function(R){R.blaetter.forEach(function(b,i){b.gv=D[i].gv});if(KARTE)KARTE.figurBlaetter(R)})})
   .catch(function(e){console.warn('Nahfiguren:',e)}).then(function(){NAHW=false;if(KARTE)KARTE.plan()})}
 // ── G9d2 Arena (Thomas 17.11.2026): feste Arena am Startplatz (Weltkern arena.js). Antippen zeigt Termin oder „Plan a fight“. Planen öffnet das Kampffenster mit der
 // Aufstellung 1:1 aus 1.0 (kampffenster.js, Modus wahl); „KAMPF!“ dort bucht den Termin am nächsten Spieltag (Befehl arenaTermin). Ist er fällig (alle an der Arena
