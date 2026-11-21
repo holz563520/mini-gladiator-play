@@ -6,7 +6,7 @@
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='a1318cd1', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='aedabefc', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -49,6 +49,7 @@ function starten(opt){opt=opt||{};
    else if(d.art==='abgelehnt'){Z.abgelehnt++;if(opt.beiAbgelehnt)try{opt.beiAbgelehnt(d)}catch(x){}}
    else if(d.art==='karren'){if(opt.beiKarren)try{opt.beiKarren(d)}catch(x){}}   // G6c: Karren nach jedem Takt (solange es welche gibt)
    else if(d.art==='personen'){if(opt.beiPersonen)try{opt.beiPersonen(d)}catch(x){}}   // G7: Arbeiter nach jedem Takt
+   else if(d.art==='besucher'){if(opt.beiBesucher)try{opt.beiBesucher(d)}catch(x){}}   // AR2b: Zuschauer der großen Arena nach jedem Takt (solange es welche gibt)
    else if(d.art==='tiere'){if(opt.beiTiere)try{opt.beiTiere(d)}catch(x){}}   // G8: Rehe nach jedem Takt (solange es welche gibt)
    else if(d.art==='waren'){if(opt.beiWaren)try{opt.beiWaren(d)}catch(x){}}   // G7: Bestände und Aufträge, nur bei Änderung
    else if(d.art==='gladiatoren'){if(opt.beiGladiatoren)try{opt.beiGladiatoren(d)}catch(x){}}   // G9c1: Gladiatoren und Sklavenmarkt, nur bei Änderung

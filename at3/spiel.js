@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='a1318cd1', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='aedabefc', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -106,7 +106,7 @@ function platzWaehlen(){platzP=window.AT3SPIELSTAND.start({t:t,imAntippen:functi
 function kernStarten(){$('uhrInfo').textContent=t('uhr.wartet');uhrLage='wartet';platzP.then(kernLos)}
 function kernLos(w){WSEED=w.seed>>>0;
  var s=document.createElement('script'),s2=document.createElement('script'),da=0;s.src='kernstart.js?v='+V;s2.src='weltkarte.js?v='+V;s.onerror=function(){kernAusfall('kernstart.js')};s2.onerror=function(){kernAusfall('weltkarte.js')};
- s.onload=s2.onload=function(){if(++da<2)return;KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,beiWs:function(d){if(KARTE)KARTE.beiWs(d)},beiBau:beiBau,beiWeg:beiWeg,beiKarren:function(d){if(KARTE)KARTE.karren(d)},beiPersonen:function(d){if(KARTE)KARTE.personen(d)},beiTiere:function(d){if(KARTE)KARTE.tiere(d)},beiWaren:beiWaren,beiGladiatoren:beiGladiatoren,
+ s.onload=s2.onload=function(){if(++da<2)return;KERN=window.AT3KERNE.starten({seed:w.seed,stand:w.daten&&w.daten.kern,beiBild:uhrZeigen,beiAusfall:kernAusfall,beiWs:function(d){if(KARTE)KARTE.beiWs(d)},beiBau:beiBau,beiWeg:beiWeg,beiKarren:function(d){if(KARTE)KARTE.karren(d)},beiPersonen:function(d){if(KARTE)KARTE.personen(d)},beiTiere:function(d){if(KARTE)KARTE.tiere(d)},beiBesucher:function(d){if(KARTE&&KARTE.besucher)KARTE.besucher(d)},beiWaren:beiWaren,beiGladiatoren:beiGladiatoren,
   beiBereit:function(){[].forEach.call(uhrKnoepfe(),function(k){k.disabled=false;k.onclick=function(){KERN.befehl('tempo',+k.dataset.tempo)}});
    SPIELSTAND=window.AT3SPIELSTAND.anschliessen(w,KERN,function(){return{stimme:stimmeGewuenscht,kam:KARTE?KARTE.kam():null,start:START}},speicherAnzeige);if(w.platz&&!w.daten)SPIELSTAND.speichern();
    karteStarten(w);
@@ -145,6 +145,8 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
   beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
   beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
   beiTier:function(k){if(BAUW&&!fpAn)return false;tierKarte(k);return true},      // G8: Reh antippen
+  beiBesucher:function(k){if(BAUW&&!fpAn)return false;besucherKarte(k);return true},      // AR2b: Zuschauer antippen
+  beiBesFehlt:function(){besucherPflegen()},
   beiFest:function(e){if(BAUW&&!fpAn)return false;return festKarte(e)},      // G9d3: Leiche      // G9c1: Marktstand antippen, G9d2: Arena
   beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else if(ATT_WZ[BAUW])attTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.bweg?', '+t('welt.bweg.'+f.bweg[0])+(f.bweg[1]<3?' ('+t('bau.zustand.'+f.bweg[1])+')':''):f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
@@ -274,7 +276,26 @@ function beiGladiatoren(d){GLAD=d.meld||null;window.AT3SPIEL.glad=GLAD;
  if(window.AT3SPIEL.angetippt==='markt')marktKarte(true);
  if(window.AT3SPIEL.angetippt==='medicus')medicusKarte(true);
  if(PERSON&&window.AT3SPIEL.angetippt==='person:'+PERSON.id){personKarte.still=true;personKarte(PERSON)}
- arenaMeld();figurenPflegen()}
+ arenaMeld();figurenPflegen();besArenaPflegen()}
+// ── AR2b Zuschauer auf der Karte (Thomas 21.11.2026): Lage kommt je Takt vom Weltkern (beiBesucher → KARTE.besucher). Für die Wege drinnen braucht die Karte
+// Arena und Sitzplätze (arena-sitze.js, erst beim ersten Zuschauer geladen); Blätter der 60 Besuchertypen zeichnet der Kampfkern (KA.kfiguren btypen),
+// nur für Typen, die gerade im Bild fehlen, höchstens 8 je Auftrag, ein Auftrag unterwegs. Antippen: Name im Klang der Kultur des Herkunftsorts (herrscher.js
+// Namenstafel, fest aus Termin und Nummer), Stand, Herkunft, Zustand. Kerne: hier nur Nachfrage und Text. Notausschalter ?ar2b=0 (auch im Weltkern) ──
+var BESL=null, BESW=false, AR2B_AUS=/[?&]ar2b=0/.test(location.search);
+function skript(src,glob){return new Promise(function(ok,no){if(window[glob])return ok();var s=document.createElement('script');s.src=src+'?v='+V;s.onload=ok;s.onerror=function(){no(new Error(src))};document.head.appendChild(s)})}
+function besArenaPflegen(){if(AR2B_AUS||!KARTE||!KARTE.besucherArena)return;var A=GLAD&&GLAD.arena,B=A&&A.gross&&A.anlage&&A.bes;if(!B){if(besArenaPflegen.an){besArenaPflegen.an=false;KARTE.besucherArena(null)}return}
+ if(!window.AT3SITZE||!window.AT3HERRSCHER){if(!BESL)BESL=Promise.all([skript('arena-sitze.js','AT3SITZE'),skript('herrscher.js','AT3HERRSCHER')]).then(besArenaPflegen,function(e){BESL=null;console.warn('Zuschauer:',e)});return}
+ besArenaPflegen.an=true;KARTE.besucherArena(A.anlage,window.AT3SITZE)}
+function besucherPflegen(){if(AR2B_AUS||BESW||!KARTE||!KARTE.besucherFehlt)return;var fehlt=KARTE.besucherFehlt();if(!fehlt.length)return;BESW=true;var mehr=fehlt.length>8;
+ anschluss().then(function(KA){return KA.kfiguren({btypen:fehlt.slice(0,8),bseed:WSEED>>>0,ohneArbeit:true},'',V)}).then(function(R){if(KARTE)KARTE.besucherBlaetter(R)})
+  .catch(function(e){mehr=false;console.warn('Zuschauerfiguren:',e)}).then(function(){BESW=false;if(mehr)setTimeout(besucherPflegen,50)})}
+function besHash(s,n){var h=0x811c9dc5;s=String(s)+'#'+n;for(var i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return h>>>0}
+var BES_STAND=[0,0,0,0,0,1,1,1,2,2,3,3,3,4,4,5,5,6,6,6];      // wie figurbild.js STAND (Typ % 20 → Stand)
+function besucherInfo(k){var B=GLAD&&GLAD.arena&&GLAD.arena.bes,her=B&&B.her&&B.her[k.sp]||[0,''],ku=her[0]>=1&&her[0]<=24?her[0]:0,P=window.AT3HERRSCHER,h=besHash(B?B.id:'',k.id),name;
+ if(P&&ku)name=P.name({kultur:ku,vor:h%8,fam:(h>>>3)%6});else{var N=t('person.namen').split('|');name=N[h%N.length]}
+ var st=t('bes.stand.'+BES_STAND[k.typ%20]);return{name:name,stand:st,ort:her[1],zeile:her[1]?t('bes.zeile',{stand:st,ort:her[1]}):t('bes.zeileOhne',{stand:st}),zust:t('bes.zust.'+k.st)}}
+function besucherKarte(k){var I=besucherInfo(k);$('karte').innerHTML='<b>'+esc(I.name)+'</b><br>'+esc(I.zeile)+'<br><span class="leise">'+esc(I.zust)+'</span>';
+ window.AT3SPIEL.angetippt='besucher:'+k.id;window.AT3SPIEL.besucherKarte=Object.assign({},k,I);sprich(I.name+'. '+I.zeile+'. '+I.zust)}
 // ── F1b Kartenfiguren wie 2.0 (Thomas 18.11.2026): fehlt einer Person ihr Posenblatt (neu oder Datenstand gv geändert), holt das Spiel ihr Aussehen vom Weltkern
 // (glaDaten figur) und lässt den Kampfkern das Blatt in AT3-64 zeichnen (KA.kfiguren). Höchstens 8 je Auftrag, immer nur ein Auftrag unterwegs; bis dahin Ersatzbild.
 // Kerne: Hauptkern nur Nachfrage und einmal ins Canvas legen, gezeichnet wird im Kampfkern. Notausschalter: ?f1=0 ──
@@ -621,7 +642,8 @@ function texteSetzen(){document.title=t('spiel.titel');$('titel').textContent=t(
  $('weltTitel').textContent=t('welt.titel');$('bodenTitel').textContent=t('spiel.boden');$('bodenInfo').textContent=t('spiel.bodenInfo');$('karte').textContent=t('spiel.tippen');
  $('messTitel').textContent=t('mess.titel');$('messZu').textContent=t('mess.schliessen');$('messKopie').textContent=t('mess.kopieren');$('messAuf').textContent=t('mess.oeffnen');$('stimmeKnopf').textContent=t('stimme.aus');$('fpKnopf').textContent=t('fp.knopf');
  $('status').textContent=t('spiel.laedt');uhrKnoepfe()[0].textContent=t('uhr.pause');$('uhrZeit').textContent=t('uhr.zeit',{t:'–'})}
-window.AT3SPIEL={medicus:function(){return{key:MED.key,liste:MED.liste,warte:MED.warte}},zeigePerson:function(k){personKarte(k)},fp:function(){return fpAn},      // K0: Prüfhaken Medicus
+window.AT3SPIEL={medicus:function(){return{key:MED.key,liste:MED.liste,warte:MED.warte}},zeigePerson:function(k){personKarte(k)},besucherInfo:besucherInfo,ladeSitze:function(){return Promise.all([skript('arena-sitze.js','AT3SITZE'),skript('herrscher.js','AT3HERRSCHER')])},      // AR2b: Prüfhaken
+ fp:function(){return fpAn},      // K0: Prüfhaken Medicus
  arena:function(m){arenaFenster(m)},arenaFrage:function(){arenaFrage()},      // G9d3: Prüfhaken
  tempo:function(){return KERN&&KERN.zustand?KERN.zustand.tempo:null},fpUmschalten:fpUmschalten,karte:function(){return KARTE},spielstand:function(){return SPIELSTAND},wahl:function(){return WAHL},stimme:function(){return STIMME},kern:function(){return KERN},mess:mess,budgetListe:budgetListe,messText:messText,geladen:function(){return geladen},gezeichnet:function(){return gezeichnet},angetippt:null};
 

@@ -46,10 +46,15 @@ function karSenden(){var g=z.kar;if(!g||!g.k.length){if(karGesendet){karGesendet
 var warLetzt=-1, warTick=-99, perGesendet=false;
 function warLaden(){wsLaden();bauLaden();if(!self.AT3WAREN)importScripts('waren.js'+self.location.search,'personen.js'+self.location.search,'ketten.js'+self.location.search,'gladiatoren.js'+self.location.search,'ortsnamen.js'+self.location.search,'attraktion.js'+self.location.search,'arena-sitze.js'+self.location.search,'besucher.js'+self.location.search,'arena.js'+self.location.search,'kampfanschluss.js'+self.location.search)}      // G9d2: arena.js, Zurückschreiben aus kampfanschluss.js      // G8: ketten.js gleich mit; G9c1: gladiatoren.js, ortsnamen.js
 var tierGesendet=false;
+// AR2b: Zuschauer der großen Arena je Takt an den Hauptkern (besucher.js meld, je Zuschauer 9 Zahlen), solange es welche gibt; danach einmal leer. Notausschalter ?ar2b=0
+var besGesendet=false, BES_AUS=/[?&]ar2b=0/.test(self.location.search);
+function besSenden(){var b=!BES_AUS&&z.gla&&z.gla.ar&&z.gla.ar.bes,a=b&&b.v.length&&self.AT3BES?self.AT3BES.meld(z):null;if(!a&&!besGesendet)return;if(!a)a=new Int32Array(1);besGesendet=a[0]>0;
+ self.postMessage({art:'besucher',tick:z.tick,tempo:z.tempo,buf:a},[a.buffer])}
 // G9c1: Gladiatoren und Sklavenmarkt (gladiatoren.js meld) nur bei einer Änderung oder einem neuen Spieltag; volle 1.0-Daten nur auf Nachfrage (glaDaten)
 var glaLetzt='';function glaSenden(){var a=z.gla;if(!a){if(glaLetzt){glaLetzt='';self.postMessage({art:'gladiatoren',meld:null})}return}var k=a.zaehler+':'+Math.floor(z.tick/12000)+':'+(z.per?z.per.p.length:0);if(k===glaLetzt)return;glaLetzt=k;
  self.postMessage({art:'gladiatoren',meld:self.AT3GLAD.meld(z)})}
 function warSenden(){var g=z.war;if(!g){if(warLetzt!==-1){warLetzt=-1;self.postMessage({art:'waren',an:0})}if(tierGesendet){tierGesendet=false;self.postMessage({art:'tiere',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}if(perGesendet){perGesendet=false;self.postMessage({art:'personen',tick:z.tick,tempo:z.tempo,buf:new Int32Array(1)})}return}
+ besSenden();
  if(z.per){var a=self.AT3PERS.meld(z);perGesendet=true;self.postMessage({art:'personen',tick:z.tick,tempo:z.tempo,buf:a},[a.buffer])}
  if(z.ket&&(z.ket.reh.length||tierGesendet)){var ti=self.AT3KETTEN.tiere(z);tierGesendet=z.ket.reh.length>0;self.postMessage({art:'tiere',tick:z.tick,tempo:z.tempo,buf:ti},[ti.buffer])}      // G8: Rehe je Takt (je Reh 5 Zahlen)
  var dt=Math.abs(z.tick-warTick);if(warLetzt!==-1&&dt<5)return;if(g.zaehler===warLetzt&&!(z.bau&&z.bau.auf.length&&dt>=20)&&!(z.ket&&dt>=40))return;      // höchstens 4× je Sekunde; mit Baustellen mindestens 1× je Sekunde (Gründe)

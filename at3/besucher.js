@@ -25,7 +25,7 @@ function BAU(){return root.AT3BAU||(typeof module!=='undefined'&&module.exports?
 function ATT(){return root.AT3ATT||(typeof module!=='undefined'&&module.exports?require('./attraktion.js'):null)}
 function PERS(){return root.AT3PERS||(typeof module!=='undefined'&&module.exports?require('./personen.js'):null)}
 function SITZE(){return root.AT3SITZE||(typeof module!=='undefined'&&module.exports?require('./arena-sitze.js'):null)}
-var ST=64, WX=ST*9600, WY=ST*4800, M31=2147483647, STAND=1, MELD=8, TYPEN=60;
+var ST=64, WX=ST*9600, WY=ST*4800, M31=2147483647, STAND=1, MELD=9, TYPEN=60;
 // Vorschlagswerte (Ticks: 20 = 1 s)
 var ZUSCHAUER=40, TICKET=1, SPAWN=400, EIN=5, ABSTAND=128, SCHRITT_Q=13, WEIT=30, ORTE_MAX=3, GEHEN=400, MAX_V=512, MAX_PF=4096;
 var LEN_O=256000, LEN_D=362039, VF=128;      // wie personen.js: Tempo 100 = 1 Feld/s
@@ -123,11 +123,15 @@ function schritt(z,a,r){var t=r.termin,b=r.bes,anl=r.anl;
 // ── An das Spiel ──
 function zaehlen(b){var c={hin:0,schlange:0,drin:0,sitzen:0,gehen:0};if(!b)return c;
  b.v.forEach(function(v){if(v.st===B_HIN)c.hin++;else if(v.st===B_SCHLANGE)c.schlange++;else if(v.st===B_HINEIN)c.drin++;else if(v.st===B_SITZT)c.sitzen++;else c.gehen++});return c}
-function kurzK(b){var c=zaehlen(b);return[b.soll,b.n,c.hin,c.schlange,c.drin,c.sitzen,c.gehen,b.tk,b.ende,b.ohne].join(',')}
-function kurz(r){var b=r&&r.bes;if(!b)return null;var c=zaehlen(b);return{id:b.id,soll:b.soll,kommen:b.n,hin:c.hin,schlange:c.schlange,drin:c.drin+c.sitzen,sitzen:c.sitzen,gehen:c.gehen,
- tickets:b.tk,ende:b.ende,ohne:b.ohne,plaetze:b.sitz.length,frei:frei(b)}}
+function kurzK(b){var c=zaehlen(b);return[b.sp.length,b.soll,b.n,c.hin,c.schlange,c.drin,c.sitzen,c.gehen,b.tk,b.ende,b.ohne].join(',')}
+// AR2b: Herkunft je Ankunftspunkt [Kultur 1–24 (0 unbekannt), Ortsname] für die Karte (Name im Klang der Kultur, Herkunft). Gewicht ORTE_MAX−k = Ort k der Liste,
+// der Ersatzpunkt am Ende der Schlange (ohne Weg) gilt als der nächste Ort. Höchstens ORTE_MAX + 1 Nachschläge, nur wenn sich die Zählung ändert (gladiatoren.js meld).
+function herkunft(z,b){var a=z&&z.gla,O=a&&a.orte||[],A=z&&z.wg&&z.wg.ans,vk=A&&A.vk;
+ return b.sp.map(function(s){var k=s[3]<0?0:ORTE_MAX-s[2],o=O[k];if(!o)return[0,''];var ku=vk&&vk.vol&&vk.vol[o[0]]?vk.tab[vk.vol[o[0]]-1]>>>24:0;return[ku,o[4]||'']})}
+function kurz(r,z){var b=r&&r.bes;if(!b)return null;var c=zaehlen(b);return{id:b.id,soll:b.soll,kommen:b.n,hin:c.hin,schlange:c.schlange,drin:c.drin+c.sitzen,sitzen:c.sitzen,gehen:c.gehen,
+ tickets:b.tk,ende:b.ende,ohne:b.ohne,plaetze:b.sitz.length,frei:frei(b),her:herkunft(z,b)}}
 // Je Zuschauer MELD Zahlen: Nummer, Lage x und y in 1/256 Feld (draußen und in der Schlange; drinnen das Häuschen bzw. der Platz), Zustand, Typ (0–59),
-// Platz (−1 keiner), Fortschritt drinnen 0–256 (zum Platz bzw. zum Ausgang), Richtung
+// Platz (−1 keiner), Fortschritt drinnen 0–256 (zum Platz bzw. zum Ausgang), Richtung, Ankunftspunkt (AR2b: Herkunft über kurz().her)
 function meld(z){var r=z.gla&&z.gla.ar,b=r&&r.bes;if(!b)return new Int32Array(1);var n=b.v.length,A=new Int32Array(1+n*MELD),S=SITZE().plaetze,anl=r.anl,K=b.K;A[0]=n;
  for(var i=0;i<n;i++){var v=b.v[i],o=1+i*MELD,px=v.x*256+128,py=v.y*256+128,pr=0,dir=v.dir;
   if(v.st===B_SCHLANGE||v.st===B_RAUS){if(K){var j=v.q>>8,fr=v.q&255,m=(K.length>>1)-1;if(j>m){j=m;fr=0}px=K[j*2]*256+128;py=K[j*2+1]*256+128;
@@ -136,7 +140,7 @@ function meld(z){var r=z.gla&&z.gla.ar,b=r&&r.bes;if(!b)return new Int32Array(1)
   else if(v.st===B_SITZT&&v.sitz>=0){px=(b.ax*16+S[v.sitz][0])*16;py=(b.ay*16+S[v.sitz][1])*16;pr=256}
   else if(v.nx>=0&&v.len){var f=Math.floor(v.sub*256/v.len);if(f>256)f=256;px+=dx1(v.x,v.nx)*f;py+=(v.ny-v.y)*f}
   if(px<0)px+=WX*256;else if(px>=WX*256)px-=WX*256;
-  A[o]=v.id;A[o+1]=px;A[o+2]=py;A[o+3]=v.st;A[o+4]=v.typ;A[o+5]=v.sitz;A[o+6]=pr;A[o+7]=dir}
+  A[o]=v.id;A[o+1]=px;A[o+2]=py;A[o+3]=v.st;A[o+4]=v.typ;A[o+5]=v.sitz;A[o+6]=pr;A[o+7]=dir;A[o+8]=v.sp}
  return A}
 
 // ── Fingerabdruck und Spielstand ──

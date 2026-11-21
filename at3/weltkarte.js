@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='a1318cd1', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='aedabefc', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -143,6 +143,7 @@ var t0=performance.now();
   karFaehrt=false;if(KAR.size&&lod<STUFEN){var tk=performance.now();karrenMalen(CX,CY,Z,W,H);M.karrenMs=performance.now()-tk;if(karFaehrt)weiter=true}
   if(FEST.length&&lod<STUFEN){var tf=performance.now();festMalen(CX,CY,Z,W,H);M.festMs=performance.now()-tf;if(M.festMs>M.maxFestMs)M.maxFestMs=M.festMs}      // G9c1: Marktstand (vor den Personen, die davor stehen)
   perGeht=false;if(PER.size&&lod<STUFEN){var tp=performance.now();personenMalen(CX,CY,Z,W,H);M.personenMs=performance.now()-tp;if(perGeht)weiter=true}      // G7: Arbeiter
+  besGeht=false;if(BESU.size&&lod<STUFEN){var tb=performance.now();besucherMalen(CX,CY,Z,W,H);M.besucherMs=performance.now()-tb;if(M.besucherMs>(M.maxBesucherMs||0))M.maxBesucherMs=M.besucherMs;if(besGeht)weiter=true}      // AR2b: Zuschauer
   tierGeht=false;if(TIER.size&&lod<STUFEN){tiereMalen(CX,CY,Z,W,H);if(tierGeht)weiter=true}      // G8: Rehe
   if(wzRahmen&&lod<STUFEN)rahmenMalen(CX,CY,Z,W,H);
   if(wzPfad&&lod<STUFEN)pfadMalen(CX,CY,Z,W,H);
@@ -223,7 +224,8 @@ var t0=performance.now();
  // Nachrichten, Bild figur-arbeiter je Richtung einmal vorgezeichnet (Ersatzbild grauer Balken), Punktmuster hinter Gebäuden, gezeichnet wird nur, wer im Bild ist;
  // ein neues Bild gibt es nur, wenn sich jemand bewegt oder ändert. ──
  var PER=new Map(), perT=0, perDt=50, PBILD=null, perGeht=false;
- function perLage(e,t){var f=perDt>0?(t-perT)/perDt:1;if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*128)dx+=WX*256;
+ function perLage(e,t,T,D){if(T==null){T=perT;D=perDt}var f=D>0?(t-T)/D:1;      // AR2b: auch für die Zuschauer (eigene Zeit)
+if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*128)dx+=WX*256;
   return[(e.px0+dx*f)/256,(e.py0+(e.py-e.py0)*f)/256,f<1&&(dx||e.py!==e.py0)]}
  function personen(d){if(tot)return;var t=performance.now(),a=d.buf,n=a[0]|0,neuM=new Map(),neuB=false;if(perT){var dt=t-perT;if(dt>5&&dt<400)perDt=perDt*.7+dt*.3}
   for(var i=0;i<n;i++){var o2=1+i*13,id=a[o2],e=PER.get(id),px=a[o2+1],py=a[o2+2];      // G8: 13 Zahlen je Person
@@ -294,6 +296,56 @@ var t0=performance.now();
    if(B)g.drawImage(vd?B.p:B.c,Math.round(sx-B.ax/Z),Math.round(sy-B.ay/Z),Math.max(1,Math.round(B.w/Z)),Math.max(1,Math.round(B.h/Z)));
    else{g.fillStyle=ERSATZ;g.fillRect(Math.round(sx-6/Z),Math.round(sy-10/Z),Math.max(2,Math.round(12/Z)),Math.max(2,Math.round(10/Z)))}});
   M.tiereSichtbar=n;tierGeht=geht}
+ // ── AR2b Zuschauer der großen Arena (Thomas 21.11.2026): besucher(d) bekommt nach jedem Takt je Zuschauer 9 Zahlen (besucher.js meld). Draußen wie die Arbeiter
+ // (Lage gleitet, Gehen 8, Stehen 1), drinnen rechnet die Karte den Weg aus dem Fortschritt nach: vom Häuschen die Treppe hinauf auf den Umgang, den Umgang
+ // entlang, den Rang hinunter zum Platz (wie 2.0 welt-arena.js innen); Sitzende zeigen nur den Oberkörper (wie 2.0 drawSit), Blick zur Mitte. Draußen hinter
+ // dem Arena-Bild (weiter hinten als ihre Mitte und im Bild) wird niemand gezeichnet. Blatt je Besuchertyp (60, Kampfkern, figurbild.js karte btypen);
+ // fehlt eins für einen Sichtbaren, meldet die Karte es (o.beiBesFehlt), bis dahin Ersatzbild. Auf 2× das Kartenblatt doppelt (Thomas). Nur Rechnen, kein Bild neu.
+ var BESU=new Map(), besT=0, besDt=50, BFIG=new Map(), besGeht=false, BINFO=null, besFehltL=[], besMeldT=0, B_SITZT=4, B_HINEIN=3, B_HINAUS=5;
+ var AR2B_AUS=/[?&]ar2b=0/.test(location.search);
+ function besucher(d){if(tot||AR2B_AUS)return;var t=performance.now(),a=d.buf,n=a[0]|0,neuM=new Map(),neuB=false;if(besT){var dt=t-besT;if(dt>5&&dt<400)besDt=besDt*.7+dt*.3}
+  for(var i=0;i<n;i++){var o2=1+i*9,id=a[o2],e=BESU.get(id),px=a[o2+1],py=a[o2+2],st=a[o2+3],pr=a[o2+6];
+   if(e&&e.st===st){var L=perLage(e,t,besT,besDt);e.px0=L[0]*256;e.py0=L[1]*256;e.pr0=e.pr0+(e.pr-e.pr0)*Math.min(1,Math.max(0,(t-besT)/besDt))}else{e={px0:px,py0:py,pr0:pr};neuB=true}
+   if(e.px!==px||e.py!==py||e.pr!==pr)neuB=true;e.px=px;e.py=py;e.st=st;e.typ=a[o2+4];e.sitz=a[o2+5];e.pr=pr;e.dir=a[o2+7];e.sp=a[o2+8];neuM.set(id,e)}
+  if(neuM.size!==BESU.size)neuB=true;BESU=neuM;besT=t;M.besucher=n;if(neuB&&cam.lod<STUFEN&&!glob)plan()}
+ // Arena für die Innenwege: {x,y (linke obere Ecke), w,h, ein,aus ([x,y,seite] oder null)} und die Sitzdaten (arena-sitze.js)
+ function besucherArena(A,SZ){BINFO=A&&SZ&&A.x>=0?{x:A.x,y:A.y,cx:A.x+A.w/2,cy:A.y+A.h/2,ein:A.ein,aus:A.aus,S:SZ}:null}
+ function besucherBlaetter(r){if(!r)return;var rgb=f1Rgb(),t=performance.now();if(r.posen)r.posen.forEach(function(p){FK[p.id]=p.ab});if(r.n)FK.n=r.n;if(r.fw){FK.w=r.fw;FK.h=r.fh;FK.ax=r.ax;FK.ay=r.ay}
+  (r.blaetter||[]).forEach(function(b){var c=f1Canvas(b.w,b.h,b.p64,rgb);BFIG.set(b.pid,{c:c})});M.besFigurenMs=(M.besFigurenMs||0)+performance.now()-t;M.besFiguren=BFIG.size;plan()}
+ // Weg drinnen bei Anteil f (0 = am Häuschen, 1 = auf dem Platz): [x, y, Höhe in Bildpunkten über dem Boden der Arena-Mitte, oder null = Boden des Häuschens]
+ var TREPPE=40;
+ function innenLage(h,s,tt,T){var B=BINFO,S=B.S,P=S.plaetze[s],hx=h[0]+.5,hy=h[1]+.5,dx=hx-B.cx,dy=hy-B.cy;dx-=Math.round(dx/WX)*WX;var ah=Math.atan2(dy,dx),
+   Ru=S.umgang/16,Rr=S.rang[P[3]]/16,as=P[2]*Math.PI/1800,da=as-ah;da-=Math.round(da/(2*Math.PI))*2*Math.PI;var Hu=S.hoehe.umgang,Hs=P[4]-4;
+  if(tt<TREPPE){var f=tt/TREPPE,ux=B.cx+Math.cos(ah)*Ru,uy=B.cy+Math.sin(ah)*Ru;return[hx+(ux-hx)*f,hy+(uy-hy)*f,f,Hu]}      // Treppe: Höhe vom Häuschen zum Umgang (f)
+  var L1=Math.abs(da)*Ru,L2=Math.max(0,Ru-Rr),q=(tt-TREPPE)/Math.max(1,T-TREPPE)*(L1+L2);
+  if(q<L1){var a=ah+da*(L1?q/L1:1);return[B.cx+Math.cos(a)*Ru,B.cy+Math.sin(a)*Ru,1,Hu]}
+  var g=L2?Math.min(1,(q-L1)/L2):1,r=Ru+(Rr-Ru)*g;return[B.cx+Math.cos(as)*r,B.cy+Math.sin(as)*r,1,Hu+(Hs-Hu)*g]}
+ function innenDauer(h,s){var B=BINFO,P=B.S.plaetze[s],x0=h[0]-B.x;x0-=Math.round(x0/WX)*WX;var hx=x0*16+8,hy=(h[1]-B.y)*16+8,dx=Math.abs(P[0]-hx),dy=Math.abs(P[1]-hy),d=Math.max(dx,dy)+(Math.min(dx,dy)>>1);return TREPPE+Math.floor(d*25/16)}
+ function besucherMalen(CX,CY,Z,W,H){var t=performance.now(),n=0,hinten=0,geht=false,fehlt={},fl=[],B=BINFO,AN=null,ruht=t-zoomZeit>RUHE_MS;
+  FEST.forEach(function(e){if(e.anl&&e.B&&e.sx>-1e8)AN=e});
+  var hc=B?hoeheBei(umX(Math.floor(B.cx)),Math.floor(B.cy)):null;if(hc==null)hc=cam.z;
+  BESU.forEach(function(e,id){var x,y,zp,sitzt=false,innen=false,re,f=Math.min(1,Math.max(0,besDt>0?(t-besT)/besDt:1)),pr=e.pr0+(e.pr-e.pr0)*f;
+   if((e.st===B_HINEIN||e.st===B_HINAUS||e.st===B_SITZT)&&B&&e.sitz>=0&&e.sitz<B.S.plaetze.length){innen=true;
+    if(e.st===B_SITZT){var P=B.S.plaetze[e.sitz];x=B.x+P[0]/16;y=B.y+P[1]/16;zp=hc*8+P[4]-4;sitzt=true;var cdx=(B.cx-x)-(B.cy-y);re=cdx>=0?0:1}
+    else{var h=e.st===B_HINEIN?B.ein:B.aus;if(!h){BESU_Q(e);return}var T=innenDauer(h,e.sitz),tt=pr/256*T;if(e.st===B_HINAUS)tt=T-tt;
+     var p=innenLage(h,e.sitz,tt,T),p2=innenLage(h,e.sitz,Math.min(T,Math.max(0,tt+(e.st===B_HINAUS?-4:4))),T),hh=hoeheBei(umX(h[0]),h[1]);if(hh==null)hh=hc;
+     x=p[0];y=p[1];zp=hh*8+(hc*8+p[3]-hh*8)*p[2];var sd=((p2[0]-p2[1])-(p[0]-p[1]));re=sd>=0?0:1;geht=true}}
+   else{var L=perLage(e,t,besT,besDt);x=L[0];y=L[1];if(L[2])geht=true;e.geht=L[2];var hb=hoeheBei(umX(Math.floor(x)),Math.floor(y));zp=(hb==null?cam.z:hb)*8;re=(e.dir&3)===0||(e.dir&3)===2?0:1}
+   x+=Math.round((cam.x-x)/WX)*WX;
+   var sx=((x-y)*32-CX)/Z+W/2,sy=((x+y)*16-zp-CY)/Z+H/2;e.sx=-1e9;if(sx<-32||sy<-32||sx>W+32||sy>H+48)return;
+   if(!innen&&AN){var cxw=AN.x+.5,cyw=AN.y+.5;cxw+=Math.round((x-cxw)/WX)*WX;if(x+y<cxw+cyw){var Bb=AN.B,u=(sx-AN.sx)*AN.Z/(Bb.w/2),v=(sy-(AN.sy-(Bb.ay-Bb.h/2)/AN.Z))*AN.Z/(Bb.h/2);if(u*u+v*v<=1){hinten++;return}}}      // hinter dem Ring
+   n++;e.sx=sx;e.sy=sy;e.sitzt=sitzt;var F=BFIG.get(e.typ);if(!F&&!fehlt[e.typ]){fehlt[e.typ]=1;fl.push(e.typ)}
+   var lauf=!sitzt&&(innen||e.geht),fr=lauf?FK.gehen+((Math.floor(t/110)+id)%8):FK.stehen;
+   if(F){var dw=Math.max(1,Math.round(FK.w/Z)),ox=Math.round(sx-FK.ax/Z);
+    if(sitzt){var keep=FK.ay-7,dk=Math.max(1,Math.round(keep/Z));g.drawImage(F.c,fr*FK.w,re*FK.h,FK.w,keep,ox,Math.round(sy-dk),dw,dk)}      // Oberkörper über der Bank
+    else{var dh=Math.max(1,Math.round(FK.h/Z));g.drawImage(F.c,fr*FK.w,re*FK.h,FK.w,FK.h,ox,Math.round(sy-FK.ay/Z),dw,dh)}return}
+   var PB=PBILD&&PBILD[e.dir&3];
+   if(PB&&!sitzt)g.drawImage(PB.c,Math.round(sx-PB.ax/Z),Math.round(sy-PB.ay/Z),Math.max(1,Math.round(PB.w/Z)),Math.max(1,Math.round(PB.h/Z)));
+   else{g.fillStyle=ERSATZ;var eh=sitzt?12:20;g.fillRect(Math.round(sx-3/Z),Math.round(sy-eh/Z),Math.max(2,Math.round(6/Z)),Math.max(2,Math.round(eh/Z)))}});
+  M.besucherSichtbar=n;M.besucherHinten=hinten;besGeht=geht;besFehltL=fl;M.besFehlt=fl.length;if(fl.length&&ruht&&o.beiBesFehlt&&t-besMeldT>250){besMeldT=t;setTimeout(o.beiBesFehlt,0)}}
+ function BESU_Q(e){e.sx=-1e9}
+ function besucherBei(cx,cy){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),px=(cx-r.left)*f,py=(cy-r.top)*f,best=null,bd=20*f*f*20;
+  BESU.forEach(function(e,id){if(e.sx==null||e.sx<-1e8)return;var dx=e.sx-px,dy=e.sy-(e.sitzt?6:10)*f/(zf())-py,d=dx*dx+dy*dy;if(d<bd){bd=d;best={id:id,typ:e.typ,st:e.st,sp:e.sp,sitz:e.sitz}}});return best}
  // ── G9c1 feste Einzelobjekte (heute nur der Marktstand am Startplatz): Liste vom Spiel, Bild aus der Kartei einmal vorgezeichnet (Ersatzbild grauer Block),
  // gezeichnet nur, wenn im Bild; Antippen wie bei den Personen. Keine eigene Rechenarbeit je Bild außer Lage und Kopieren. ──
  var FEST=[], FBILD={}, FOBJ=null;
@@ -408,6 +460,7 @@ var t0=performance.now();
    var z=Math.sqrt(1-q),cl=Math.cos(glob.lat),sl=Math.sin(glob.lat),la=Math.asin(y*cl+z*sl),lo=glob.lon+Math.atan2(x,z*cl-y*sl);zurKarte(modu(lo/ZP,1)*WX,(.5-la/Math.PI)*WY,3);return}
   if(cam.lod>=STUFEN){var wr=o.beiReich?weltBei(cx,cy):null;if(wr){frage('reich',{x:wr.x,y:wr.y}).then(function(a){if(a&&!a.fehlt)o.beiReich(a.reich,a.hat,a.ort)});return}if(o.beiFeld)o.beiFeld(null);return}   // N4c1: Fernansicht: wem gehört das Land
   if(o.beiPerson&&!WZ_AKTIV()){var pp=personBei(cx,cy);if(pp&&o.beiPerson(pp)!==false)return}      // G7: Arbeiter zuerst (stehen vor dem Karren)
+  if(o.beiBesucher&&!WZ_AKTIV()){var bb=besucherBei(cx,cy);if(bb&&o.beiBesucher(bb)!==false)return}      // AR2b: Zuschauer
   if(o.beiKarren&&!WZ_AKTIV()){var kk=karrenBei(cx,cy);if(kk&&o.beiKarren(kk)!==false)return}
   if(o.beiTier&&!WZ_AKTIV()){var tt=tierBei(cx,cy);if(tt&&o.beiTier(tt)!==false)return}      // G8
   if(o.beiFest&&!WZ_AKTIV()){var fe=festBei(cx,cy);if(fe&&o.beiFest(fe)!==false)return}      // G9c1: Marktstand
@@ -429,7 +482,8 @@ var t0=performance.now();
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,bau:bau,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
- return{reiche:reiche,beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,figurBlaetter:figurBlaetter,figurVergessen:figurVergessen,figurTest:function(){var L=[];FIG.forEach(function(f){L.push(f.c)});if(FLAST)L.push(FLAST.c);return L},figurHat:function(id,gv){var f=FIG.get(id);GV[id]=gv;return !!f&&(gv==null||f.gv===gv)},nahHat:function(id,gv){var f=FN.get(id);return !!f&&(gv==null||f.gv===gv)},nahSichtbar:function(){var L=[];PER.forEach(function(e,id){if(e.sx!=null&&e.sx>-1e8)L.push(id)});return L},nahTest:function(){var L=[];FN.forEach(function(f){L.push(f.c)});if(FNLAST)L.push(FNLAST.c);return L},tiere:tiere,bewegte:bewegte,fest:festSetzen,
+ return{reiche:reiche,beiWs:beiWs,mess:M,frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,besucher:besucher,besucherArena:besucherArena,besucherBlaetter:besucherBlaetter,besucherFehlt:function(){return besFehltL.filter(function(i){return !BFIG.has(i)})},besucherHat:function(i){return BFIG.has(i)},
+  besucherListe:function(){var L=[];BESU.forEach(function(e,id){L.push({id:id,st:e.st,typ:e.typ,sitz:e.sitz,pr:e.pr,sp:e.sp,sx:e.sx,sy:e.sy,sitzt:!!e.sitzt,bild:BFIG.has(e.typ)})});return L},figurBlaetter:figurBlaetter,figurVergessen:figurVergessen,figurTest:function(){var L=[];FIG.forEach(function(f){L.push(f.c)});if(FLAST)L.push(FLAST.c);return L},figurHat:function(id,gv){var f=FIG.get(id);GV[id]=gv;return !!f&&(gv==null||f.gv===gv)},nahHat:function(id,gv){var f=FN.get(id);return !!f&&(gv==null||f.gv===gv)},nahSichtbar:function(){var L=[];PER.forEach(function(e,id){if(e.sx!=null&&e.sx>-1e8)L.push(id)});return L},nahTest:function(){var L=[];FN.forEach(function(f){L.push(f.c)});if(FNLAST)L.push(FNLAST.c);return L},tiere:tiere,bewegte:bewegte,fest:festSetzen,
   festListe:function(){return FEST.map(function(e){return{art:e.art,x:e.x,y:e.y,r:e.r,anl:e.anl,sx:e.sx,sy:e.sy,bild:!!FBILD[e.art+':'+(e.r|0)]}})},
   tiereListe:function(){var t=performance.now(),L=[];TIER.forEach(function(e,id){var p=tierLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,bild:!!TBILD,sx:e.sx,sy:e.sy})});return L},
   personenListe:function(){var t=performance.now(),L=[];PER.forEach(function(e,id){var p=perLage(e,t);L.push({id:id,x:p[0],y:p[1],dir:e.dir,zust:e.zust,auf:e.auf,darf:e.darf,grund:e.grund,last:e.last,f0:e.f0,f1:e.f1,fa:e.fa,fb:e.fb,bild:!!PBILD,sx:e.sx,sy:e.sy,verdeckt:!!e.verdeckt})});return L},

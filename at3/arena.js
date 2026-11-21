@@ -141,7 +141,7 @@ function folgen(z,a,r,t,w){var tote=[],P=PERS();
 
 // ── An das Spiel ──
 function kurz(z){var a=z.gla,r=a&&a.ar;if(!r)return null;var t=r.termin;
- return{platz:r.platz,x:r.ax,y:r.ay,gross:r.gross|0,anlage:r.anl?ATT().kurz(r.anl):null,bes:r.gross&&r.bes?BES().kurz(r):null,letzt:r.letzt,da:r.da,leichen:r.leichen.map(function(l){return{id:l.id,x:l.x,y:l.y,name:l.name,ursache:l.ursache,her:l.her}}),gefallen:r.gef.length,termin:t?{id:t.id,tag:t.tag,ruf:t.tag*TAG+RUF,kampf:t.tag*TAG+KAMPF,ids:t.ids.slice(),label:t.label,skulls:t.skulls,ort:t.ort,zu:t.zu,n:t.offer.enemy.length}:null}}
+ return{platz:r.platz,x:r.ax,y:r.ay,gross:r.gross|0,anlage:r.anl?ATT().kurz(r.anl):null,bes:r.gross&&r.bes?BES().kurz(r,z):null,letzt:r.letzt,da:r.da,leichen:r.leichen.map(function(l){return{id:l.id,x:l.x,y:l.y,name:l.name,ursache:l.ursache,her:l.her}}),gefallen:r.gef.length,termin:t?{id:t.id,tag:t.tag,ruf:t.tag*TAG+RUF,kampf:t.tag*TAG+KAMPF,ids:t.ids.slice(),label:t.label,skulls:t.skulls,ort:t.ort,zu:t.zu,n:t.offer.enemy.length}:null}}
 function ortO(o){return{art:ART[o[1]],ortId:o[0],name:o[4],x:o[2],y:o[3]}}
 // Volle Daten fürs Kampffenster (nur auf Nachfrage): Kader (alle lebenden Gladiatoren mit 1.0-Daten), gespeicherte Aufstellung, Orte nah/fern, Termin mit Angebot
 function daten(z){var a=z.gla,r=a&&a.ar;if(!r||!z.per)return null;var P=PERS(),K=[];

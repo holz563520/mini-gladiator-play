@@ -76,13 +76,15 @@ function kleinP64(k,c,pal,nah,W,ox,oy,ziel){k.clearRect(0,0,PW,PH);k.imageSmooth
  var d=k.getImageData(0,0,PW,PH).data;for(var y=0;y<PH;y++)for(var x=0;x<PW;x++){var i=(y*PW+x)*4;if(d[i+3]<=96)continue;
   var key=(d[i]<<16)|(d[i+1]<<8)|d[i+2],n=nah[key];if(n===undefined)n=nah[key]=pal(d[i],d[i+1],d[i+2]);ziel[(oy+y)*W+ox+x]=n}}
 function oben(c){var d=c.getImageData(0,0,NW,NH).data;for(var y=0;y<NH;y++)for(var i=0;i<NW;i++)if(d[(y*NW+i)*4+3]>96)return y;return NH}
-// Auftrag {gs:[{pid, g}], lasten:true|false, palette:'A'} → {fw,fh,ax,ay,posen,n,blaetter:[{pid,w,h,p64,dy(Int8, je Bild und Richtung),ms}],lasten:{w,h,p64}|null,ms}
+// Auftrag {gs:[{pid, g}] oder btypen:[Typ 0–59], bseed (AR2b Zuschauer, pid = Typ), ohneArbeit, lasten:true|false, palette:'A'} → {fw,fh,ax,ay,posen,n,blaetter:[{pid,w,h,p64,dy(Int8, je Bild und Richtung),ms}],lasten:{w,h,p64}|null,ms}
 function karte(M,S64,w){if(typeof G.OffscreenCanvas!=='function')throw new Error('OffscreenCanvas fehlt');if(!M.renderSimpleFigure)throw new Error('renderSimpleFigure fehlt (arena.js)');
  var t0=G.performance.now(),rng=M.s.rng,nah={},palName=w.palette||S64.PALETTE,pal=function(r,g,b){return S64.naechste(r,g,b,palName)},aus=[],L=null,
   c=new G.OffscreenCanvas(NW,NH).getContext('2d',{willReadFrequently:true}),k=new G.OffscreenCanvas(PW,PH).getContext('2d',{willReadFrequently:true});
- try{(w.gs||[]).forEach(function(e){var t=G.performance.now(),g=e.g,W=PW*KN,H=PH*2,p64=new Uint8Array(W*H).fill(255),dy=new Int8Array(KN*2),axt=null;
+ try{if(w.btypen){var T=karte.bt&&karte.bt.seed===(w.bseed>>>0)?karte.bt.g:null;if(!T){T=besucher(M,w.bseed>>>0);karte.bt={seed:w.bseed>>>0,g:T}}      // AR2b: Zuschauer = die 60 Besuchertypen (einmal je Seed gebaut)
+   w.gs=w.btypen.filter(function(i){return i>=0&&i<TYPEN}).map(function(i){return{pid:i,g:T[i]}})}
+  (w.gs||[]).forEach(function(e){var t=G.performance.now(),g=e.g,W=PW*KN,H=PH*2,p64=new Uint8Array(W*H).fill(255),dy=new Int8Array(KN*2),axt=null;
    if(!g.appearance)try{M.ensureIdentity&&M.ensureIdentity(g)}catch(x){}
-   for(var dir=0;dir<2;dir++)KPOSEN.forEach(function(p){for(var f=0;f<p.n;f++){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,NW,NH);var ga=g;if(p.id==='arbeiten'){if(!axt)axt=mitAxt(M,g);ga=axt}
+   for(var dir=0;dir<2;dir++)KPOSEN.forEach(function(p){if(w.ohneArbeit&&p.id==='arbeiten')return;for(var f=0;f<p.n;f++){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,NW,NH);var ga=g;if(p.id==='arbeiten'){if(!axt)axt=mitAxt(M,g);ga=axt}      // AR2b: ohneArbeit (Zuschauer arbeiten nicht, Bilder bleiben leer)
     try{M.renderSimpleFigure(c,akteur(ga,dir,p.id,f))}catch(x){if(!karte.warn){karte.warn=1;console.warn('einfache Figur',x)}}
     var tp=oben(c);dy[dir*KN+p.ab+f]=tp>=NH?0:Math.round((tp-REF)*PH/NH);kleinP64(k,c,pal,nah,W,(p.ab+f)*PW,dir*PH,p64)}});
    aus.push({pid:e.pid,w:W,h:H,p64:p64,dy:dy,ms:G.performance.now()-t})})
