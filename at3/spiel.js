@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='c20af28c', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='0ebe8eb3', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -121,7 +121,13 @@ function reicheAnschliessen(){try{REICHE=localStorage.getItem('at3.reiche')!=='0
  k.onclick=function(){REICHE=!REICHE;k.setAttribute('aria-pressed',REICHE?'true':'false');try{localStorage.setItem('at3.reiche',REICHE?'1':'0')}catch(x){}KARTE.reiche(REICHE)}}
 // N5b: Ort neben dem angetippten Punkt: voller Name, Größe, Einwohner, Leitgebäude (Notausschalter ?n5b=0: der Bildkern schickt keinen Ort)
 // N5c: dazu seine Außenposten und Gehöfte aus der Umgebung, die der Bildkern mitschickt (aussenposten.js; Notausschalter ?n5c=0)
-function infoZeigen(){$('weltInfo').innerHTML=REICH_HTML+ORT_HTML}
+function infoZeigen(){$('weltInfo').innerHTML=REICH_HTML+STR_HTML+ORT_HTML}
+// N5d: Straße unter dem Finger: Rang, beide Orte, Bauweise, Haltepunkt mit Spruch, Zoll an die unterste Herrschaft (Notausschalter ?n5d=0: der Bildkern schickt keine)
+var STR_HTML='';
+function strasseHtml(s,L){if(!s)return '';window.AT3SPIEL.strasse={rang:s.rang,a:s.an,b:s.bn,bau:s.bau,halt:s.halt,zelle:s.zelle};
+ var h='<br><b>'+esc(t('strasse.zeile',{rang:t('strasse.rang.'+s.rang),a:s.an,b:s.bn,bau:t('strasse.bau.'+s.bau)}))+'</b>';
+ if(s.halt)h+='<br><span class="leise">'+esc(t('strasse.halt.'+s.halt))+'</span>';
+ var H=window.AT3HERRSCHAFT;if(H&&L&&L.length&&s.einheit)h+='<br><span class="leise">'+esc(t('strasse.besitz',{herr:H.name(L[0],t)}))+'</span>';return h}
 function ortTipp(r){ORT_HTML='';if(!r)return;var tip=r;
  (ORL||(ORL=new Promise(function(ok,no){if(window.AT3ORTE)return ok();var s=document.createElement('script');s.src='orte.js?v='+V;s.onload=ok;s.onerror=function(){ORL=null;no(new Error('orte.js'))};document.head.appendChild(s)})
   .then(function(){return window.AT3POSTEN?null:new Promise(function(ok){var s=document.createElement('script');s.src='aussenposten.js?v='+V;s.onload=s.onerror=ok;document.head.appendChild(s)})})   // N5c: Außenposten (fehlt die Datei, bleibt die Ortskarte wie N5b)
@@ -130,10 +136,10 @@ function ortTipp(r){ORT_HTML='';if(!r)return;var tip=r;
   window.AT3SPIEL.ort={name:O.voll(b,t),g:r.g,einwohner:b.einwohner,leit:b.leit.map(function(l){return l.id}),posten:PO?PO.map(function(p){return p.id}):null};
   ORT_HTML='<br><b>'+esc(O.zeile(b,t))+'</b>'+(PO?'<br>'+esc(AP.kurzListe(PO,t)):'');infoZeigen()},function(){})}
 var ORT_LETZT=null;
-function reichTipp(L,hat,ort){ORT_LETZT=ort||null;ORT_HTML='';ortTipp(ort);
+function reichTipp(L,hat,ort,str){ORT_LETZT=ort||null;ORT_HTML='';STR_HTML=strasseHtml(str,null);if(!str)window.AT3SPIEL.strasse=null;ortTipp(ort);
  if(!hat){REICH_HTML=esc(t('welt.leer'));infoZeigen();return}if(!L||!L.length){REICH_HTML=esc(t('reich.niemand'));infoZeigen();return}
  (HRL||(HRL=Promise.all([['herrschaften.js','AT3HERRSCHAFT'],['herrscher.js','AT3HERRSCHER']].map(function(q){return new Promise(function(ok,no){if(window[q[1]])return ok();var s=document.createElement('script');s.src=q[0]+'?v='+V;s.onload=ok;s.onerror=function(){HRL=null;no(new Error(q[0]))};document.head.appendChild(s)})}))))
- .then(function(){var H=window.AT3HERRSCHAFT,P=window.AT3HERRSCHER,el=$('weltInfo');window.AT3SPIEL.reich=L;REICH_HTML=esc(t('reich.antwortet',{kette:H.ketteText(L,t)}));infoZeigen();
+ .then(function(){var H=window.AT3HERRSCHAFT,P=window.AT3HERRSCHER,el=$('weltInfo');window.AT3SPIEL.reich=L;STR_HTML=strasseHtml(str,L);REICH_HTML=esc(t('reich.antwortet',{kette:H.ketteText(L,t)}));infoZeigen();
   if(!P||P.AUS)return;var ri=0;while(ri<L.length-1&&L[ri].stufe)ri++;   // N4c2: Herrscher der untersten Stufe und des Reichs, Vorgeschichte des Reichs (Notausschalter ?n4c2=0)
   var wer=(ri?[L[0],L[ri]]:[L[0]]).map(function(e){return P.titelName(P.herrscher(WSEED,e),t)}).join(' › '),ch=P.chronik(WSEED,L.slice(ri),t,H.name);
   window.AT3SPIEL.herrscher={wer:wer,chronik:ch};

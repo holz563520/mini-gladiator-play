@@ -15,11 +15,12 @@
 // N4c1: Reiche in Fernbildern und Globus (herrschaften.js; Tafel Reich je Erdzelle einmal je Welt, Nachricht „reiche“ schaltet um), Frage „reich“: Kette
 // „Answers to“ an einem Weltfeld mit Ortsnamen der Sitze. N5b: dazu der nächste Ort (orte.js, erst beim ersten Antippen geladen; Notausschalter ?n5b=0).
 // N5c: dazu die Umgebung des Orts und sein Ortspunkt für die Außenposten (aussenposten.js, erst beim ersten Antippen geladen; Notausschalter ?n5c=0).
+// N5d: dazu die Straße unter dem Finger mit Rang, Bauweise, Haltepunkt und beiden Orten (strassen.js, Netz einmal je Welt beim ersten Antippen; Notausschalter ?n5d=0).
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
 var HR=self.AT3HERRSCHAFT, REI=true, RE=null;   // N4c1: Reiche in den Fernbildern (Knopf „Realms“), Tafeln einmal je Welt
 var BAUB=self.AT3BAUBILD, BAU=new Map(), BBILD=null, SP=self.AT3STARTPLATZ, FB=self.AT3FERN, ON=null, PBUF=null, TEX=null, TEXD=null, UEB=null;
-var OR=null, AP=null, BB=self.AT3BB, G=self.AT3WG, NAT=self.AT3NATUR, NBILD=null, F=null, st=new Map(), lager=[], gen=-1, HALB=3, A=null, seed=0, kx=-1, ky=-1, laeuft=false;
+var OR=null, AP=null, SN=null, BB=self.AT3BB, G=self.AT3WG, NAT=self.AT3NATUR, NBILD=null, F=null, st=new Map(), lager=[], gen=-1, HALB=3, A=null, seed=0, kx=-1, ky=-1, laeuft=false;
 var BMP=typeof createImageBitmap==='function'&&typeof ImageData!=='undefined', stUs=0, stN=0;
 var ORDNUNG=(function(){var L=[];for(var y=-HALB;y<=HALB;y++)for(var x=-HALB;x<=HALB;x++)L.push([x,y,x*x+y*y]);L.sort(function(a,b){return a[2]-b[2]||a[1]-b[1]||a[0]-b[0]});return L})();
 var SX=G.SEITE_X, SY=G.SEITE_Y;
@@ -58,7 +59,11 @@ function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.f
    var pp=G.ortPunkt(seed,A,X,Y),ex=pp[0]-x0,ey=pp[1]-d.y;if(ex>G.WF/2)ex-=G.WF;else if(ex<-G.WF/2)ex+=G.WF;var ee=ex*ex+ey*ey;if(ee<be){be=ee;bo=Y*G.GW+X;bp=pp}}
    if(bo>=0){var kk=OR.ortNr(A,bo);if(kk!=null){m.ort=OR.roh(seed,A,kk,ON);
     if(AP==null){try{importScripts('aussenposten.js'+self.location.search);AP=self.AT3POSTEN.AUS?false:self.AT3POSTEN}catch(x){AP=false}}   // N5c: Umgebung für die Außenposten (Notausschalter ?n5c=0)
-    if(AP){m.ort.umg=AP.umgebung(seed,A,kk);m.ort.punkt=[bp[0],bp[1]]}}}}}
+    if(AP){m.ort.umg=AP.umgebung(seed,A,kk);m.ort.punkt=[bp[0],bp[1]]}}}}
+  if(OR&&A.kanten){if(SN==null){try{importScripts('strassen.js'+self.location.search);SN=self.AT3STRASSEN.AUS?false:self.AT3STRASSEN}catch(x){SN=false}}   // N5d: Straße unter dem Finger (Notausschalter ?n5d=0)
+   if(SN){var t5=performance.now(),neu5=!A._n5d,J5=SN.netz(seed,A,OR,HR),zi=SN.naechste(J5,(d.x%G.WF+G.WF)%G.WF,d.y),sz=zi>=0?SN.zelle(J5,zi):null;
+    if(sz){sz.an=ON?ON.name(seed,A.orte[sz.a]&0xffffff,A.orte[sz.a]>>>24,A.vk):'';sz.bn=ON?ON.name(seed,A.orte[sz.b]&0xffffff,A.orte[sz.b]>>>24,A.vk):'';sz.zelle=zi;sz.einheit=A.hs?A.hs.zel[zi]:0;m.strasse=sz}
+    if(neu5)m.n5dMs=performance.now()-t5}}}
  m.us=(performance.now()-t)*1000;self.postMessage(m,tr)}
 // FP1: Ausschnitt 96 × 96 Felder um den Gladiator (fpausschnitt.js, erst beim ersten Mal geladen). Das Fenster der Stücke rückt zum Ausschnitt,
 // fehlende Stücke werden sofort gerechnet (höchstens 9), dann geht der Ausschnitt ohne Kopie an den Hauptkern.

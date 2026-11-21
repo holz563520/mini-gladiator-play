@@ -21,6 +21,9 @@
 // alle Orte werden in Scheiben zu höchstens rund 4 ms gerechnet (nie je Bild).
 // N5c: Einfärbung „Außenposten“ (Posten je Gruppe als Punkt neben ihrem Ort, Gehöfte hell), Antippen eines Orts oder Postens zeigt die Posten,
 // darunter Zahlen je Art und Gruppe und je Ortsgröße. aussenposten.js mit den Ortsdaten geladen (Notausschalter ?n5c=0: keine Posten).
+// N5d: Einfärbung „Straßenränge“ (Straßenzellen nach Rang Trail … Imperial Road, Caravan Route, Haltepunkte als Punkte; Region: Linienbreite nach Rang,
+// Karawanenrouten gestrichelt), Antippen zeigt Rang, beide Orte, Bauweise und Haltepunkt, darunter Zahlen je Rang und Haltepunkt. strassen.js mit orte.js
+// und herrschaften.js erst beim ersten Umschalten, das Netz in Scheiben zu höchstens rund 4 ms (nie je Bild). Notausschalter ?n5d=0.
 // Das Spiel lädt diese Datei und den Generator nicht (G4).
 // Wiederverwendet: kernstart.js (G2), Messart, Ampel und Kopierknopf aus der Kernprobe und der Riesenwelt-Probe, Palette aus at3-64.js (M2).
 (function(){
@@ -46,6 +49,7 @@ var ZFARBE=[40,6,5,11,14,17,19,61,30,63,52,15,8,42,4];                        //
 var KFARBE=[57,20,6,53,30,62,25,36,19,47,16,9,50,35,31,5,51,60,14,58,45,37,3,55];   // N4b: Farbnummer je Kultur (Nummer 1–24 wie kulturen.json)
 var RFARBE=[56,62,37,53,25,11,17,58,3,47,45,6];                                 // N4b: Farbnummer je Religion (Reihenfolge wie religionen.json)
 var HD=null, hdLaden=null;                                                     // N4c1: {H: herrschaften.js, ON: ortsnamen.js, TX: Texte der Sprachdatei}
+var SD=null, sdLaden=null, sdJob=null;   // N5d: {S: strassen.js, TX: Texte, J: fertiges Netz, erd: zu welcher Welt}
 var OD=null, odLaden=null, OB=null, obJob=null;   // N5b: {O: orte.js, D: Daten, TX: Texte}; OB = Bilanz je Ort (in Scheiben)
 var VD=null, vdLaden=null;                                                     // N4b: {K: Kulturen, R: Religionen, kr: Religion je Kultur (Nummer ab 1)}
 var ZREG=[['T_AEQ','Wärme am Äquator (Zehntel Grad)',150,350,5],['T_POL','Kälter zum Pol hin (Zehntel Grad)',300,800,10],['T_HOEHE','Abkühlung mit der Höhe',0,60,1],
@@ -78,6 +82,7 @@ function erdBild(){if(!erd)return;var g=erdCv.getContext('2d'),im=g.createImageD
  if(farbe===6&&erd.hs&&HD){herrschaftBild(d);g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
  if(farbe===7&&erd.orte&&OD){ortBild(d);g.putImageData(im,0,0);neuZeichnen=true;return}
  if(farbe===8&&erd.orte&&OD){postenBild(d);g.putImageData(im,0,0);neuZeichnen=true;return}
+ if(farbe===9&&erd.kanten&&SD){strBild(d);g.putImageData(im,0,0);neuZeichnen=true;return}
  if(farbe===3){var Z=zBereit?zZ:erd.zon;for(var i=0;i<N;i++){var z=Z[i],c=ZFARBE[z],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];if(z>1&&dh>120)c++;else if(z>1&&dh<-120)c--;d[i]=pal[c]}   // N2a: Klimazonen, Hänge schattiert
   g.putImageData(im,0,0);netzBild();neuZeichnen=true;return}
  for(var i=0;i<N;i++){var b=flu[i]>1&&bio[i]!==12?10:bio[i],j=i>=GW?i-GW-(i%GW?1:1-GW):i,dh=Eh[i]-Eh[j];d[i]=farbeVon(b,Eh[i],dh>120?1:dh<-120?-1:0)}
@@ -108,6 +113,31 @@ var PFARBE={mine:48,stein:52,holz:5,nass:35,jagd:37,hof:3};
 function postenBild(d){var bio=erd.bio,i,k;for(i=0;i<N;i++){var b=erd.flu[i]>1&&bio[i]!==12?10:bio[i];d[i]=farbeVon(b,erd.E[i],0)}
  for(k=0;k<erd.orte.length;k++)d[erd.orte[k]&0xffffff]=pal[1];
  if(!OB||OB.erd!==erd){ortAlle();return}OB.B.forEach(function(b){b.posten.forEach(function(p){d[p.zelle]=pal[PFARBE[p.gruppe]]})})}
+// N5d: Biome gedämpft, Orte schwarz, Straßenzellen nach Rang, Haltepunkte rot (erst wenn das Netz fertig ist, sonst startet die Rechnung)
+var SRFARBE=[0,5,52,37,48,30,43], SRBREITE=[0,1,1.5,2.5,3.5,2,1.5], SRDE=['','Trampelpfad','Landstraße','Fernstraße','Kaiserstraße','Karawanenroute','Seeweg'],
+ SHDE={rest:'Raststation',toll:'Zoll',well:'Brunnen',caravanserai:'Karawanserei',inn:'Herberge',fort:'Grenzfort',watchtower:'Wachturm',signpost:'Wegweiser'},
+ SBDE={ferry:'Fähre',bridge:'Steinbrücke',ford:'Furt',plank:'Bohlenweg',serpentine:'Serpentinen',sand:'Sandpiste',cairns:'Steinmänner',corduroy:'Knüppeldamm',paved:'gepflastert',gravel:'Kies',dirt:'Erde'};
+function strBild(d){var bio=erd.bio,i,k;for(i=0;i<N;i++){var b=erd.flu[i]>1&&bio[i]!==12?10:bio[i];d[i]=farbeVon(b,erd.E[i],0)}
+ var J=strNetz();if(J){for(i=0;i<N;i++){if(J.halt[i])d[i]=pal[35];else if(J.zk[i])d[i]=pal[SRFARBE[SD.S.idx(J.zr[i])]]}}
+ for(k=0;k<erd.orte.length;k++)d[erd.orte[k]&0xffffff]=pal[1]}
+function strLaden(){return sdLaden||(sdLaden=Promise.all([window.AT3ED.lade('welt','orte.js'),window.AT3ED.lade('welt','herrschaften.js'),window.AT3ED.lade('welt','strassen.js'),helfer(),
+  window.AT3ED.lade('welt','sprache/en.json')]).then(function(r){var S=window.AT3STRASSEN;if(!S||S.AUS)throw new Error('aus');SD={S:S,TX:r[4].texte,J:null,erd:null};vListe();erdBild()}))}
+// Netz der Welt (null, solange es in Scheiben gerechnet wird)
+function strNetz(){if(!SD||!erd||!erd.kanten)return null;if(SD.erd===erd&&SD.J)return SD.J;if(sdJob&&sdJob.erd===erd)return null;
+ var j=sdJob={erd:erd,J:SD.S.start(erd.seed>>>0,erd,window.AT3ORTE,window.AT3HERRSCHAFT)};
+ (function scheibe(){if(sdJob!==j||erd!==j.erd)return;if(!SD.S.weiter(j.J,4)){setTimeout(scheibe,0);return}SD.J=j.J;SD.erd=j.erd;sdJob=null;vListe();if(farbe===9)erdBild()})();return null}
+function strText(i){if(!SD)return 'Die Straßen werden vermessen … · ';var J=strNetz();if(!J)return 'Die Straßen werden vermessen … · ';var z=SD.S.zelle(J,i);if(!z)return '';
+ var A=erd,na=ONh?ONh.name(A.seed,A.orte[z.a]&0xffffff,A.orte[z.a]>>>24,A.vk):'Ort '+z.a,nb=ONh?ONh.name(A.seed,A.orte[z.b]&0xffffff,A.orte[z.b]>>>24,A.vk):'Ort '+z.b;
+ var ix=SD.S.idx(J.zr[i]);return 'Straße: '+SRDE[ix]+' ('+stx('strasse.rang.'+z.rang)+') · '+na+' (G'+z.ga+') – '+nb+' (G'+z.gb+') · '+z.zellen+' Zellen'+(z.grund?', Grundnetz':'')+
+  ' · Bauweise: '+SBDE[z.bau]+(z.halt?' · Haltepunkt: '+SHDE[z.halt]+' – „'+stx('strasse.halt.'+z.halt)+'“':'')+' · '}
+function stx(k){var s=SD&&SD.TX[k];return s==null?k:s}
+// N5d: Liste: Verbindungen und Zellen je Rang, Haltepunkte je Art, Rechenzeit
+function sListe(o){if(!erd||!erd.kanten){o.innerHTML='<p class="leise">Noch keine Welt.</p>';return}if(!SD){o.innerHTML='<p class="leise">Die Straßen werden vermessen …</p>';return}
+ var J=strNetz();if(!J){o.innerHTML='<p class="leise">Die Straßen werden vermessen … ('+tsd(sdJob?sdJob.J.k:0)+' von '+tsd(erd.kanten.length/4)+' Verbindungen)</p>';return}
+ var F=window.AT3_64.PALETTEN.A.farben,Z=J.zahl,h='<p><b>Straßen nach Rang</b> ('+tsd(J.nK)+' Verbindungen, gerechnet in '+kom(J.ms,0)+' ms): ';
+ h+=[1,2,3,4,5,6].map(function(x){return '<i class="amp" style="background:'+F[SRFARBE[x]]+'"></i>'+SRDE[x]+' '+tsd(Z.rang[x])+(x<6?' ('+tsd(Z.zellen[x])+' Zellen)':'')}).join(' · ')+'</p>';
+ h+='<p><b>Am Weg</b>: '+SD.S.HALT.slice(1).map(function(n,x){return '<i class="amp" style="background:'+F[35]+'"></i>'+SHDE[n]+' '+tsd(Z.halt[x+1])}).join(' · ')+'</p>';
+ o.innerHTML=h+'<p class="leise">Alle Wege führen nach Rom. Die meisten davon sind Trampelpfade, und an jedem steht einer, der Zoll will.</p>'}
 function ortLaden(){return odLaden||(odLaden=Promise.all([window.AT3ED.lade('welt','orte.js'),helfer(),window.AT3ED.lade('welt','aussenposten.js').catch(function(){}),window.AT3ED.lade('welt','daten/gebaeude.json'),window.AT3ED.lade('welt','daten/rezepte.json'),
   window.AT3ED.lade('welt','daten/kulturen.json'),window.AT3ED.lade('welt','sprache/en.json')]).then(function(r){var O=window.AT3ORTE;if(O.AUS)throw new Error('aus');
   var AP=window.AT3POSTEN;OD={O:O,D:O.daten(r[3],r[4],r[5]),TX:r[6].texte,AP:AP&&!AP.AUS?AP:null};vListe();erdBild()}))}
@@ -168,7 +198,8 @@ function beiWs(d){
  if(d.art==='ws'){ws=d;live();return}
  if(d.art==='wsErde'){var b=d.buf.buffer;erd={E:new Int16Array(b,0,N),bio:new Uint8Array(b,2*N,N),flu:new Uint8Array(b,3*N,N),dir:new Uint8Array(b,4*N,N),feu:new Uint8Array(b,5*N,N),tmp:new Uint8Array(b,6*N,N),
    ort:new Uint8Array(b,7*N,N),weg:new Uint8Array(b,8*N,N),zon:new Uint8Array(b,9*N,N),kopf:new Uint32Array(b,10*N,4),seed:d.seed};   // N2a: 10 Byte je Zelle
-  var nO=erd.kopf[0],nK=erd.kopf[1],o=10*N+16+nO*4+nK*8;erd.orte=new Uint32Array(b,10*N+16,nO);
+  var nO=erd.kopf[0],nK=erd.kopf[1],o=10*N+16+nO*4+nK*8;erd.orte=new Uint32Array(b,10*N+16,nO);erd.kanten=new Uint16Array(b,10*N+16+nO*4,nK*4);   // N5d: Verbindungen (wie weltgen.js ansicht)
+ 
   if(b.byteLength>=o+260+N+nO*6)erd.vk={zahl:new Uint32Array(b,o,1)[0],tab:new Uint32Array(b,o+4,64),vol:new Uint8Array(b,o+260,N),rel:new Uint8Array(b,o+260+N,nO*6),ortNr:null};   // N4b: wie weltgen.js vkSicht
   var o2=o+260+N+nO*6;if(erd.vk&&b.byteLength>=o2+4){var nH=new Uint16Array(b,o2,1)[0];if(b.byteLength>=o2+4+nH*8+N*2+nO*2)erd.hs={zahl:new Uint16Array(b,o2,2),tab:new Uint16Array(b,o2+4,nH*4),zel:new Uint16Array(b,o2+4+nH*8,N),ort:new Uint16Array(b,o2+4+nH*8+N*2,nO)}}   // N4c1: wie weltgen.js hsSicht
   erdGen=d.gen;allesWeg();zBereit=false;zJob=null;erdBild();if(farbe===3)zonenRechnen();vListe();return}
@@ -187,7 +218,7 @@ function bild(t){if(!laeuft)return;if(!el.isConnected){ende();return}
  if(neuZeichnen){neuZeichnen=false;var g=cx2,i,j;g.imageSmoothingEnabled=false;
   if(!erd){g.fillStyle='#5c5650';g.fillRect(0,0,S,S)}
   else if(zoom===0){g.fillStyle='#0e0c0b';g.fillRect(0,0,S,S);g.drawImage(erdCv,0,0,GW,GH,0,S/4,S,S/2);if(farbe===2)g.drawImage(netzCv,0,0,GW,GH,0,S/4,S,S/2);marke(g,(kx>>4)*S/GW-2,S/4+(ky>>4)*S/GW-2,5)}
-  else if(zoom===1){var r=regionEcke(),f=S/REGION;regionMalen(g,erdCv,r[0],r[1]);if(farbe===2)netzRegion(g,r[0],r[1],f);marke(g,(kx/ZP-umZ(r[0])+GW)%GW*f-f*7/32,(ky/ZP-r[1])*f-f*7/32,f*7/16)}
+  else if(zoom===1){var r=regionEcke(),f=S/REGION;regionMalen(g,erdCv,r[0],r[1]);if(farbe===2||farbe===9&&SD&&strNetz())netzRegion(g,r[0],r[1],f);marke(g,(kx/ZP-umZ(r[0])+GW)%GW*f-f*7/32,(ky/ZP-r[1])*f-f*7/32,f*7/16)}
   else{var n=zoom===2?7:1,gr=S/n,a=zoom===2?HALB:0;
    for(j=-a;j<=a;j++)for(i=-a;i<=a;i++){var cxx=umS(kx+i),cyy=ky+j,x=(i+a)*gr,y=(j+a)*gr,ka=kacheln.get(B(cxx,cyy));
     if(cyy<0||cyy>=SY){g.fillStyle='#0e0c0b';g.fillRect(x,y,gr,gr)}
@@ -206,17 +237,20 @@ function netzRegion(g,rx,ry,f){if(!erd.ort)return;if(!WGh){regionMalen(g,netzCv,
     if(aus.length===4){g.moveTo(aus[0],aus[1]);g.quadraticCurveTo(mx,my,aus[2],aus[3])}else for(r=0;r<aus.length;r+=2){g.moveTo(mx,my);g.lineTo(aus[r],aus[r+1])}   // zwei Ausgänge: weicher Bogen statt Ecke
     g.stroke();g.setLineDash([])}continue}
   if(!(erd.weg[i]&15)&&!(o&15))continue;L=WGh.wegLinien(erd.seed,erd,umZ(x),y);
-  for(k=0;k<L.length;k++){l=L[k];g.strokeStyle=F[l.see?F_SEE:l.faehre?F_FAEHRE:l.kl>1?F_STRASSE:F_PFAD];g.lineWidth=l.kl>1&&!l.see?2.5:1.5;if(l.see||l.faehre)g.setLineDash([3,4]);
+  var rj=farbe===9&&SD&&SD.J&&SD.erd===erd&&SD.J.zk[i]?SD.S.idx(SD.J.zr[i]):0;   // N5d: Farbe und Breite nach Rang, Karawanenroute gestrichelt
+  for(k=0;k<L.length;k++){l=L[k];g.strokeStyle=F[rj&&!l.see?SRFARBE[rj]:l.see?F_SEE:l.faehre?F_FAEHRE:l.kl>1?F_STRASSE:F_PFAD];g.lineWidth=rj&&!l.see?SRBREITE[rj]:l.kl>1&&!l.see?2.5:1.5;if(l.see||l.faehre||rj===5)g.setLineDash([3,4]);
    g.beginPath();g.moveTo((l.x[0]+v0)*fx,(l.y[0]-ry*ZF)*fx);for(var q2=1;q2<13;q2++)g.lineTo((l.x[q2]+v0)*fx,(l.y[q2]-ry*ZF)*fx);g.stroke();g.setLineDash([])}}
  for(y=ry;y<ry+REGION;y++)for(x=rx;x<rx+REGION;x++){o=erd.ort[y*GE+umZ(x)]&15;if(!o)continue;var P=WGh.ortPunkt(erd.seed,erd,umZ(x),y),gr=o===2||o===4?7:5,px=(P[0]+(x-umZ(x)-rx)*ZF)*fx,py=(P[1]-ry*ZF)*fx;
-  g.fillStyle='#0e0c0b';g.fillRect(Math.round(px-gr/2)-1,Math.round(py-gr/2)-1,gr+2,gr+2);g.fillStyle=F[OFARBE[o]];g.fillRect(Math.round(px-gr/2),Math.round(py-gr/2),gr,gr)}}
+  g.fillStyle='#0e0c0b';g.fillRect(Math.round(px-gr/2)-1,Math.round(py-gr/2)-1,gr+2,gr+2);g.fillStyle=F[OFARBE[o]];g.fillRect(Math.round(px-gr/2),Math.round(py-gr/2),gr,gr)}
+ if(farbe===9&&SD&&SD.J&&SD.erd===erd)for(y=ry;y<ry+REGION;y++)for(x=rx;x<rx+REGION;x++){i=y*GE+umZ(x);if(!SD.J.halt[i])continue;var hx=Math.round((x-rx+.5)*f),hy=Math.round((y-ry+.5)*f);   // N5d: Haltepunkte
+  g.fillStyle='#0e0c0b';g.fillRect(hx-3,hy-3,6,6);g.fillStyle=F[35];g.fillRect(hx-2,hy-2,4,4)}}
 function marke(g,x,y,w){g.strokeStyle='#f4c8a0';g.lineWidth=2;g.strokeRect(Math.round(x)+1,Math.round(y)+1,Math.round(w)-2,Math.round(w)-2);g.strokeStyle='#2a0604';g.lineWidth=1;g.strokeRect(Math.round(x)-.5,Math.round(y)-.5,Math.round(w)+1,Math.round(w)+1)}
 
 // ── Bedienung ──
 function blick(nx,ny){nx=umS(nx|0);ny=Math.max(0,Math.min(SY-1,ny|0));if(nx===kx&&ny===ky)return;kx=nx;ky=ny;fensterRaeumen();if(H)H.befehl('blick',B(kx,ky));neuZeichnen=true;ort()}
 function ort(){var o=q('#waOrt');if(o)o.textContent='Blick: Kartenstück '+tsd(kx)+' / '+tsd(ky)+' von '+tsd(SX)+' × '+tsd(SY)+' · Zelle '+(kx>>4)+' / '+(ky>>4)}
 function hoehe(h){return h<0?'Tiefe '+kom(-h/16,1)+' Felder (rund '+Math.round(-h*3/16)+' m)':'Höhe '+kom(h/16,1)+' Felder (rund '+Math.round(h*3/16)+' m)'}
-function zelleText(i){if(farbe===7)return ortText(i)+zelleText0(i);if(farbe===8)return (OD?ortText(i)+postenZelle(i):'')+zelleText0(i);if(farbe===3)return zoneText(i)+'Grobes Biom (Orte und Straßen): '+zelleText0(i);if(farbe===4||farbe===5)return volkText(i)+zelleText0(i);if(farbe===6)return reichText(i)+zelleText0(i);return zelleText0(i)}
+function zelleText(i){if(farbe===9)return strText(i)+zelleText0(i);if(farbe===7)return ortText(i)+zelleText0(i);if(farbe===8)return (OD?ortText(i)+postenZelle(i):'')+zelleText0(i);if(farbe===3)return zoneText(i)+'Grobes Biom (Orte und Straßen): '+zelleText0(i);if(farbe===4||farbe===5)return volkText(i)+zelleText0(i);if(farbe===6)return reichText(i)+zelleText0(i);return zelleText0(i)}
 // N4b: Volk, Kultur, Religion der Zelle und Glaubensanteile des Orts
 function ortNr(i){var vk=erd.vk;if(!vk.ortNr){vk.ortNr=new Map();for(var k=0;k<erd.orte.length;k++)vk.ortNr.set(erd.orte[k]&0xffffff,k)}return vk.ortNr.get(i)}
 function volkText(i){var vk=erd&&erd.vk;if(!vk)return 'Diese Welt hat keine Völker (Notausschalter ?n4b=0). · ';if(!VD)return '';var v=vk.vol[i];if(!v)return 'Niemandsland · ';
@@ -253,7 +287,7 @@ function rListe(o){var hs=erd&&erd.hs,F=window.AT3_64.PALETTEN.A.farben;
 function voelkerLaden(){return vdLaden||(vdLaden=Promise.all([window.AT3ED.lade('welt','daten/kulturen.json'),window.AT3ED.lade('welt','daten/religionen.json')]).then(function(r){
   var K=r[0].kulturkreise,R=r[1].religionen,ids=R.map(function(x){return x.id});VD={K:K,R:R,kr:K.map(function(k){return ids.indexOf(k.religion)+1})};vListe();erdBild()}))}
 // N4b: Liste unter der Karte: Orte je Kultur (mit Zahl der Völker) oder je Hauptreligion (mit Anteil an allen Gläubigen)
-function vListe(){var o=q('#waVoelker');if(!o)return;o.hidden=farbe!==4&&farbe!==5&&farbe!==6&&farbe!==7&&farbe!==8;if(o.hidden)return;if(farbe===6){rListe(o);return}if(farbe===7){oListe(o);return}if(farbe===8){pListe(o);return}var vk=erd&&erd.vk,F=window.AT3_64.PALETTEN.A.farben;
+function vListe(){var o=q('#waVoelker');if(!o)return;o.hidden=farbe!==4&&farbe!==5&&farbe!==6&&farbe!==7&&farbe!==8&&farbe!==9;if(o.hidden)return;if(farbe===9){sListe(o);return}if(farbe===6){rListe(o);return}if(farbe===7){oListe(o);return}if(farbe===8){pListe(o);return}var vk=erd&&erd.vk,F=window.AT3_64.PALETTEN.A.farben;
  if(!vk){o.innerHTML='<p class="leise">'+(erd?'Diese Welt hat keine Völker (Notausschalter ?n4b=0).':'Noch keine Welt.')+'</p>';return}if(!VD){o.innerHTML='<p class="leise">Die Völker werden gezählt …</p>';return}
  var inst=new Array(25).fill(0),oK=new Array(25).fill(0),oR=new Array(13).fill(0),pR=new Array(13).fill(0),nO=erd.orte.length,k,v;
  for(v=0;v<vk.zahl;v++)inst[vk.tab[v]>>>24]++;
@@ -305,7 +339,7 @@ function anteileZeigen(zx,zy){var info=q('#waInfo'),seed=erd?erd.seed:0,i=zy*GE+
   info.textContent=vorher+' · Anteile: '+L.map(function(e){return BIOM[e[0]]+' '+Math.round(e[1]*100/n)+' %'}).join(', ')},function(){})}
 function schritt(dx,dy){var s=zoom===0?ZP*20:zoom===1?ZP*5:zoom===2?3:1;blick(kx+dx*s,ky+dy*s)}
 function setZoom(z){zoom=z;[].forEach.call(el.querySelectorAll('[data-zoom]'),function(b){b.classList.toggle('an',+b.dataset.zoom===z)});neuZeichnen=true}
-function setFarbe(f){farbe=f;if(f===2)helfer().catch(function(){});klimaPanel();vListe();if((f===4||f===5)&&!VD)voelkerLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Völker sind nicht zum Zählen erschienen (Daten fehlen).</p>'});if(f===6&&!HD)herrschaftLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Herrscher sind nicht zur Krönung erschienen (Daten fehlen).</p>'});if((f===7||f===8)&&!OD)ortLaden().catch(function(e){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">'+(e&&e.message==='aus'?'Ortskarten aus (Notausschalter ?n5b=0).':'Die Orte sind nicht zur Zählung erschienen (Daten fehlen).')+'</p>'});if(f===3&&!zBereit&&!zJob)zonenRechnen();[].forEach.call(el.querySelectorAll('[data-farbe]'),function(b){b.classList.toggle('an',+b.dataset.farbe===f)});erdBild();kacheln.forEach(function(k,key){if(warte.indexOf(key)<0)warte.push(key)})}
+function setFarbe(f){farbe=f;if(f===2)helfer().catch(function(){});klimaPanel();vListe();if((f===4||f===5)&&!VD)voelkerLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Völker sind nicht zum Zählen erschienen (Daten fehlen).</p>'});if(f===6&&!HD)herrschaftLaden().catch(function(){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">Die Herrscher sind nicht zur Krönung erschienen (Daten fehlen).</p>'});if((f===7||f===8)&&!OD)ortLaden().catch(function(e){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">'+(e&&e.message==='aus'?'Ortskarten aus (Notausschalter ?n5b=0).':'Die Orte sind nicht zur Zählung erschienen (Daten fehlen).')+'</p>'});if(f===9&&!SD)strLaden().catch(function(e){var o=q('#waVoelker');if(o)o.innerHTML='<p class="witz">'+(e&&e.message==='aus'?'Straßenränge aus (Notausschalter ?n5d=0).':'Die Straßen sind nicht zur Vermessung erschienen (Daten fehlen).')+'</p>'});if(f===3&&!zBereit&&!zJob)zonenRechnen();[].forEach.call(el.querySelectorAll('[data-farbe]'),function(b){b.classList.toggle('an',+b.dataset.farbe===f)});erdBild();kacheln.forEach(function(k,key){if(warte.indexOf(key)<0)warte.push(key)})}
 function neueWelt(seed,d){seed=Math.max(0,Math.min(4294967295,Math.floor(+seed||0)));q('#waSeed').value=seed;if(d!=null){dichte=d===0||d===2?d:1;q('#waDichte').value=dichte}
  erd=null;ws=null;allesWeg();neuZeichnen=true;
  H.befehl('weltdichte',dichte);H.befehl('weltseed',seed);H.befehl('blick',B(kx,ky));q('#waInfo').textContent='Die Erde wird geknetet. Sieben Tage wären übertrieben.';return seed}
@@ -360,7 +394,7 @@ function aufbauen(ziel){ende();el=ziel;pal=palette();erdCv=document.createElemen
   '<div class="wZeile"><label for="waDichte">Orte</label><select id="waDichte" style="font:inherit;font-size:17px;min-height:42px">'+DICHTEN.map(function(n,i){return '<option value="'+i+'"'+(i===1?' selected':'')+'>'+n+'</option>'}).join('')+'</select> '+
   '<span class="leise">Dichte der Besiedlung. Gehört zur Welt wie der Seed.</span></div>'+
   '<div class="wZeile">'+ZOOM.map(function(n,i){return '<button class="knopf klein'+(i===0?' an':'')+'" data-zoom="'+i+'">'+n+'</button>'}).join('')+'</div>'+
-  '<div class="wZeile"><button class="knopf klein an" data-farbe="0">Biome</button><button class="knopf klein" data-farbe="1">Höhe</button><button class="knopf klein" data-farbe="2">Straßen &amp; Seewege</button><button class="knopf klein" data-farbe="3">Klimazonen</button><button class="knopf klein" data-farbe="4">Kulturen</button><button class="knopf klein" data-farbe="5">Religionen</button><button class="knopf klein" data-farbe="6">Herrschaften</button><button class="knopf klein" data-farbe="7">Ortsgrößen</button><button class="knopf klein" data-farbe="8">Außenposten</button></div><div class="wZeile">'+
+  '<div class="wZeile"><button class="knopf klein an" data-farbe="0">Biome</button><button class="knopf klein" data-farbe="1">Höhe</button><button class="knopf klein" data-farbe="2">Straßen &amp; Seewege</button><button class="knopf klein" data-farbe="3">Klimazonen</button><button class="knopf klein" data-farbe="4">Kulturen</button><button class="knopf klein" data-farbe="5">Religionen</button><button class="knopf klein" data-farbe="6">Herrschaften</button><button class="knopf klein" data-farbe="7">Ortsgrößen</button><button class="knopf klein" data-farbe="8">Außenposten</button><button class="knopf klein" data-farbe="9">Straßenränge</button></div><div class="wZeile">'+
   '<button class="knopf klein" data-geh="-1,0" aria-label="nach Westen">◀</button><button class="knopf klein" data-geh="0,-1" aria-label="nach Norden">▲</button>'+
   '<button class="knopf klein" data-geh="0,1" aria-label="nach Süden">▼</button><button class="knopf klein" data-geh="1,0" aria-label="nach Osten">▶</button></div>'+
   '<canvas id="waCv" class="pixel" width="'+S+'" height="'+S+'" style="display:block;width:100%;max-width:'+S+'px;aspect-ratio:1;background:#5c5650;border:3px solid var(--rand);touch-action:manipulation"></canvas>'+
@@ -403,6 +437,7 @@ window.AT3_WELTANSICHT={aufbauen:aufbauen,ergebnis:E,text:text,messe:messe,ende:
  herrschaften:function(){var hs=erd&&erd.hs;return hs?{zahl:hs.zahl[0],daten:!!HD,tab:Array.from(hs.tab),zel:Array.from(hs.zel.subarray(0,2000))}:null},
  // N5b: für Tests: Orte fertig gezählt? Bilanz eines Orts
  orte:function(){return{daten:!!OD,fertig:!!(OB&&OB.erd===erd),zahl:OB&&OB.erd===erd?OB.B.length:0}},ortBilanz:function(k){if(!OD||!erd)return null;var b=ortBilanz(k);return{voll:OD.O.voll(b,otx),g:b.roh.g,einwohner:b.einwohner,leit:b.leit.map(function(l){return l.id+':'+l.n})}},
+ strassen:function(){var J=SD&&SD.erd===erd?SD.J:null;return{daten:!!SD,fertig:!!J,zahl:J?J.zahl:null,ms:J?J.ms:0}},      // N5d
  posten:function(k){if(!OD||!erd)return null;return ortBilanz(k).posten.map(function(p){return p.id+':'+p.zelle+':'+p.x+','+p.y+':'+(p.vor+p.arb)})},      // N5c
  bildPunkt:function(i){if(!erdCv)return null;var d=erdCv.getContext('2d').getImageData(i%GW,(i/GW)|0,1,1).data;return[d[0],d[1],d[2]]},
  setZoom:setZoom,setFarbe:setFarbe,blick:blick,neueWelt:neueWelt,setRegler:setRegler,ZONEN:ZONEN,

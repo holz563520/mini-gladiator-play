@@ -11,7 +11,7 @@
 // FP1: Solange First Person läuft (Karte versteckt), wird nichts gezeichnet und nichts angefragt; frage('fp') holt den Ausschnitt beim Bildkern.
 // G4c: neue Welt ohne Kameraort → statt automatischem Start ruft die Karte o.beiErde() (Startplatz-Wahl, startwahl.js); frage() reicht deren Fragen an den Bildkern.
 // N4c1: reiche(an) schaltet die Reiche in den Fernbildern um (nur Fernbilder und Globus werden neu gemalt); Antippen in der Fernansicht fragt den Bildkern,
-// wem das Land gehört, und meldet es an o.beiReich.
+// wem das Land gehört, und meldet es an o.beiReich (N5d: mit der Straße unter dem Finger).
 // W1c Runde Welt: Die Kamera läuft in x um (cam.x immer 0..WX−1). Gezeichnet wird jedes Kartenstück in der Lage relativ zur Kamera (Stückspalte um ganze
 // Weltbreiten verschoben), darum springt beim Wischen über die Naht nichts. Bildschlüssel und Anfragen bleiben auf die Welt bezogen (ein Bild je Ort, nichts
 // doppelt im Bildspeicher). In y hält die Kamera POL Felder vor dem Polrand an: man sieht nie über den Weltrand hinaus.
@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='c20af28c', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='0ebe8eb3', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -52,7 +52,7 @@ function starten(o){
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(MAXL,o.kam[2]|0));hatKam=true}
 
  function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(o.beiAusfall)o.beiAusfall(g2)}
- try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
+ try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
  if(bk){bk.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ende('picture core failed')};bk.onmessage=vomBildkern;
   var F=S.PALETTEN[S.PALETTE].farben,pal=new Uint32Array(64),du=new Uint8Array(64),he=new Uint8Array(64);
   for(var i=0;i<64;i++){var c=S.farbe(F[i]);pal[i]=(255<<24|c[2]<<16|c[1]<<8|c[0])>>>0;du[i]=S.dunkler(i);he[i]=i}
@@ -494,7 +494,7 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
  function tipp(cx,cy){if(wahl){if(cam.lod<STUFEN&&!glob)feldBei(cx,cy).then(function(fd){var w=fd&&fd.x!=null?fd:weltBei(cx,cy);if(w&&wahl)wahl.beiTipp(w.x,w.y)});else{var w=weltBei(cx,cy);if(w)wahl.beiTipp(w.x,w.y)}return}
   if(glob){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),R=globR(),x=((cx-r.left)*f-cv.width/2)/R,y=-((cy-r.top)*f-cv.height/2)/R,q=x*x+y*y;if(q>=1)return;
    var z=Math.sqrt(1-q),cl=Math.cos(glob.lat),sl=Math.sin(glob.lat),la=Math.asin(y*cl+z*sl),lo=glob.lon+Math.atan2(x,z*cl-y*sl);zurKarte(modu(lo/ZP,1)*WX,(.5-la/Math.PI)*WY,3);return}
-  if(cam.lod>=STUFEN){var wr=o.beiReich?weltBei(cx,cy):null;if(wr){frage('reich',{x:wr.x,y:wr.y}).then(function(a){if(a&&!a.fehlt)o.beiReich(a.reich,a.hat,a.ort)});return}if(o.beiFeld)o.beiFeld(null);return}   // N4c1: Fernansicht: wem gehört das Land
+  if(cam.lod>=STUFEN){var wr=o.beiReich?weltBei(cx,cy):null;if(wr){frage('reich',{x:wr.x,y:wr.y}).then(function(a){if(a&&!a.fehlt)o.beiReich(a.reich,a.hat,a.ort,a.strasse)});return}if(o.beiFeld)o.beiFeld(null);return}   // N4c1: Fernansicht: wem gehört das Land
   if(o.beiPerson&&!WZ_AKTIV()){var pp=personBei(cx,cy);if(pp&&o.beiPerson(pp)!==false)return}      // G7: Arbeiter zuerst (stehen vor dem Karren)
   if(o.beiBesucher&&!WZ_AKTIV()){var bb=besucherBei(cx,cy);if(bb&&o.beiBesucher(bb)!==false)return}      // AR2b: Zuschauer
   if(o.beiKarren&&!WZ_AKTIV()){var kk=karrenBei(cx,cy);if(kk&&o.beiKarren(kk)!==false)return}
