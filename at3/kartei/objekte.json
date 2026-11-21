@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 239,
+ "typMax": 248,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -195,7 +195,7 @@
   },
   {
    "id": "bk-lehm-boden",
-   "version": 4,
+   "version": 5,
    "typ": 48,
    "kat": "boden",
    "name": "Mud-and-Timber Floor",
@@ -204,7 +204,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-i",
-   "version": 1,
+   "version": 2,
    "typ": 47,
    "kat": "dach",
    "name": "Thatched Roof Slope, Right",
@@ -213,7 +213,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j",
-   "version": 9,
+   "version": 10,
    "typ": 45,
    "kat": "dach",
    "name": "Thatched Roof Slope, Front",
@@ -222,7 +222,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-a",
-   "version": 1,
+   "version": 2,
    "typ": 79,
    "kat": "dach",
    "name": "Thatch Front A",
@@ -231,7 +231,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-b",
-   "version": 1,
+   "version": 2,
    "typ": 80,
    "kat": "dach",
    "name": "Thatch Front B",
@@ -240,7 +240,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-c",
-   "version": 1,
+   "version": 2,
    "typ": 81,
    "kat": "dach",
    "name": "Thatch Front C",
@@ -249,7 +249,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-d",
-   "version": 1,
+   "version": 2,
    "typ": 82,
    "kat": "dach",
    "name": "Thatch Front D",
@@ -258,7 +258,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-e",
-   "version": 1,
+   "version": 2,
    "typ": 83,
    "kat": "dach",
    "name": "Thatch Front E",
@@ -267,7 +267,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-f",
-   "version": 1,
+   "version": 2,
    "typ": 84,
    "kat": "dach",
    "name": "Thatch Front F",
@@ -276,7 +276,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-k",
-   "version": 9,
+   "version": 10,
    "typ": 101,
    "kat": "dach",
    "name": "Thatch Front Ridge",
@@ -285,7 +285,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-k-a",
-   "version": 1,
+   "version": 2,
    "typ": 102,
    "kat": "dach",
    "name": "Thatch Front Ridge A",
@@ -294,7 +294,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-k-b",
-   "version": 1,
+   "version": 2,
    "typ": 103,
    "kat": "dach",
    "name": "Thatch Front Ridge B",
@@ -303,7 +303,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-k-c",
-   "version": 1,
+   "version": 2,
    "typ": 104,
    "kat": "dach",
    "name": "Thatch Front Ridge C",
@@ -312,7 +312,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-kn",
-   "version": 9,
+   "version": 10,
    "typ": 113,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable L",
@@ -321,7 +321,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-kn-a",
-   "version": 1,
+   "version": 2,
    "typ": 114,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable L A",
@@ -330,7 +330,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-kn-b",
-   "version": 1,
+   "version": 2,
    "typ": 115,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable L B",
@@ -339,7 +339,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-kn-c",
-   "version": 1,
+   "version": 2,
    "typ": 116,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable L C",
@@ -348,7 +348,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-ks",
-   "version": 9,
+   "version": 10,
    "typ": 109,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable R",
@@ -357,7 +357,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-ks-a",
-   "version": 1,
+   "version": 2,
    "typ": 110,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable R A",
@@ -366,7 +366,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-ks-b",
-   "version": 1,
+   "version": 2,
    "typ": 111,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable R B",
@@ -375,7 +375,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-ks-c",
-   "version": 1,
+   "version": 2,
    "typ": 112,
    "kat": "dach",
    "name": "Thatch Front Ridge+Gable R C",
@@ -384,7 +384,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-n",
-   "version": 9,
+   "version": 10,
    "typ": 97,
    "kat": "dach",
    "name": "Thatch Front Gable L",
@@ -393,7 +393,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-n-a",
-   "version": 1,
+   "version": 2,
    "typ": 98,
    "kat": "dach",
    "name": "Thatch Front Gable L A",
@@ -402,7 +402,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-n-b",
-   "version": 1,
+   "version": 2,
    "typ": 99,
    "kat": "dach",
    "name": "Thatch Front Gable L B",
@@ -411,7 +411,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-n-c",
-   "version": 1,
+   "version": 2,
    "typ": 100,
    "kat": "dach",
    "name": "Thatch Front Gable L C",
@@ -420,7 +420,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-r",
-   "version": 6,
+   "version": 7,
    "typ": 85,
    "kat": "dach",
    "name": "Thatch Front Eave",
@@ -429,7 +429,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-r-a",
-   "version": 1,
+   "version": 2,
    "typ": 86,
    "kat": "dach",
    "name": "Thatch Front Eave A",
@@ -438,7 +438,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-r-b",
-   "version": 1,
+   "version": 2,
    "typ": 87,
    "kat": "dach",
    "name": "Thatch Front Eave B",
@@ -447,7 +447,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-r-c",
-   "version": 1,
+   "version": 2,
    "typ": 88,
    "kat": "dach",
    "name": "Thatch Front Eave C",
@@ -456,7 +456,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-rn",
-   "version": 9,
+   "version": 10,
    "typ": 105,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable L",
@@ -465,7 +465,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-rn-a",
-   "version": 1,
+   "version": 2,
    "typ": 106,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable L A",
@@ -474,7 +474,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-rn-b",
-   "version": 1,
+   "version": 2,
    "typ": 107,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable L B",
@@ -483,7 +483,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-rn-c",
-   "version": 1,
+   "version": 2,
    "typ": 108,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable L C",
@@ -492,7 +492,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-rs",
-   "version": 8,
+   "version": 9,
    "typ": 93,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable R",
@@ -501,7 +501,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-rs-a",
-   "version": 1,
+   "version": 2,
    "typ": 94,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable R A",
@@ -510,7 +510,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-rs-b",
-   "version": 1,
+   "version": 2,
    "typ": 95,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable R B",
@@ -519,7 +519,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-rs-c",
-   "version": 1,
+   "version": 2,
    "typ": 96,
    "kat": "dach",
    "name": "Thatch Front Eave+Gable R C",
@@ -528,7 +528,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-s",
-   "version": 8,
+   "version": 9,
    "typ": 89,
    "kat": "dach",
    "name": "Thatch Front Gable R",
@@ -537,7 +537,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-s-a",
-   "version": 1,
+   "version": 2,
    "typ": 90,
    "kat": "dach",
    "name": "Thatch Front Gable R A",
@@ -546,7 +546,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-s-b",
-   "version": 1,
+   "version": 2,
    "typ": 91,
    "kat": "dach",
    "name": "Thatch Front Gable R B",
@@ -555,7 +555,7 @@
   },
   {
    "id": "bk-lehm-dach-ab-j-s-c",
-   "version": 1,
+   "version": 2,
    "typ": 92,
    "kat": "dach",
    "name": "Thatch Front Gable R C",
@@ -564,7 +564,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-i",
-   "version": 1,
+   "version": 2,
    "typ": 46,
    "kat": "dach",
    "name": "Thatched Roof Slope, Left",
@@ -573,7 +573,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j",
-   "version": 2,
+   "version": 3,
    "typ": 44,
    "kat": "dach",
    "name": "Thatched Roof Slope, Rear",
@@ -582,7 +582,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-a",
-   "version": 1,
+   "version": 2,
    "typ": 117,
    "kat": "dach",
    "name": "Thatch Rear A",
@@ -591,7 +591,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-b",
-   "version": 1,
+   "version": 2,
    "typ": 118,
    "kat": "dach",
    "name": "Thatch Rear B",
@@ -600,7 +600,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-c",
-   "version": 1,
+   "version": 2,
    "typ": 119,
    "kat": "dach",
    "name": "Thatch Rear C",
@@ -609,7 +609,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-d",
-   "version": 1,
+   "version": 2,
    "typ": 120,
    "kat": "dach",
    "name": "Thatch Rear D",
@@ -618,7 +618,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-k",
-   "version": 1,
+   "version": 2,
    "typ": 122,
    "kat": "dach",
    "name": "Thatch Rear K",
@@ -627,7 +627,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-kn",
-   "version": 1,
+   "version": 2,
    "typ": 128,
    "kat": "dach",
    "name": "Thatch Rear KN",
@@ -636,7 +636,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-ks",
-   "version": 1,
+   "version": 2,
    "typ": 127,
    "kat": "dach",
    "name": "Thatch Rear KS",
@@ -645,7 +645,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-n",
-   "version": 1,
+   "version": 2,
    "typ": 124,
    "kat": "dach",
    "name": "Thatch Rear N",
@@ -654,7 +654,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-r",
-   "version": 1,
+   "version": 2,
    "typ": 121,
    "kat": "dach",
    "name": "Thatch Rear R",
@@ -663,7 +663,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-rn",
-   "version": 1,
+   "version": 2,
    "typ": 126,
    "kat": "dach",
    "name": "Thatch Rear RN",
@@ -672,7 +672,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-rs",
-   "version": 1,
+   "version": 2,
    "typ": 125,
    "kat": "dach",
    "name": "Thatch Rear RS",
@@ -681,7 +681,7 @@
   },
   {
    "id": "bk-lehm-dach-auf-j-s",
-   "version": 1,
+   "version": 2,
    "typ": 123,
    "kat": "dach",
    "name": "Thatch Rear S",
@@ -690,7 +690,7 @@
   },
   {
    "id": "bk-lehm-dach-flach",
-   "version": 1,
+   "version": 2,
    "typ": 43,
    "kat": "dach",
    "name": "Thatched Roof, Flat",
@@ -698,8 +698,44 @@
    "datei": "obj/bk-lehm-dach-flach.json"
   },
   {
+   "id": "bk-lehm-fenster",
+   "version": 1,
+   "typ": 243,
+   "kat": "wand",
+   "name": "Mud-and-Timber Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-fenster.json"
+  },
+  {
+   "id": "bk-lehm-fenster-a",
+   "version": 1,
+   "typ": 244,
+   "kat": "wand",
+   "name": "Mud-and-Timber Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-fenster-a.json"
+  },
+  {
+   "id": "bk-lehm-fenster-b",
+   "version": 1,
+   "typ": 245,
+   "kat": "wand",
+   "name": "Mud-and-Timber Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-fenster-b.json"
+  },
+  {
+   "id": "bk-lehm-fenster-d",
+   "version": 1,
+   "typ": 248,
+   "kat": "wand",
+   "name": "Mud-and-Timber Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-fenster-d.json"
+  },
+  {
    "id": "bk-lehm-giebel",
-   "version": 2,
+   "version": 3,
    "typ": 40,
    "kat": "wand",
    "name": "Mud-and-Timber Gable",
@@ -708,7 +744,7 @@
   },
   {
    "id": "bk-lehm-giebel-a",
-   "version": 1,
+   "version": 2,
    "typ": 129,
    "kat": "wand",
    "name": "Mud-and-Timber Gable A",
@@ -717,7 +753,7 @@
   },
   {
    "id": "bk-lehm-giebel-ab",
-   "version": 2,
+   "version": 3,
    "typ": 42,
    "kat": "wand",
    "name": "Mud-and-Timber Gable Peak (down)",
@@ -726,7 +762,7 @@
   },
   {
    "id": "bk-lehm-giebel-auf",
-   "version": 2,
+   "version": 3,
    "typ": 41,
    "kat": "wand",
    "name": "Mud-and-Timber Gable Peak (up)",
@@ -735,7 +771,7 @@
   },
   {
    "id": "bk-lehm-giebel-b",
-   "version": 1,
+   "version": 2,
    "typ": 130,
    "kat": "wand",
    "name": "Mud-and-Timber Gable B",
@@ -744,7 +780,7 @@
   },
   {
    "id": "bk-lehm-giebel-c",
-   "version": 1,
+   "version": 2,
    "typ": 131,
    "kat": "wand",
    "name": "Mud-and-Timber Gable C",
@@ -753,7 +789,7 @@
   },
   {
    "id": "bk-lehm-rang",
-   "version": 1,
+   "version": 2,
    "typ": 49,
    "kat": "boden",
    "name": "Mud-and-Timber Tiers",
@@ -762,7 +798,7 @@
   },
   {
    "id": "bk-lehm-schild",
-   "version": 1,
+   "version": 2,
    "typ": 50,
    "kat": "einrichtung",
    "name": "Mud-and-Timber Sign",
@@ -771,7 +807,7 @@
   },
   {
    "id": "bk-lehm-tuer",
-   "version": 1,
+   "version": 2,
    "typ": 39,
    "kat": "wand",
    "name": "Mud-and-Timber Door",
@@ -780,12 +816,57 @@
   },
   {
    "id": "bk-lehm-wand",
-   "version": 1,
+   "version": 2,
    "typ": 38,
    "kat": "wand",
    "name": "Mud-and-Timber Wall",
    "status": "uebernommen",
    "datei": "obj/bk-lehm-wand.json"
+  },
+  {
+   "id": "bk-lehm-wand-a",
+   "version": 1,
+   "typ": 240,
+   "kat": "wand",
+   "name": "Mud-and-Timber Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-wand-a.json"
+  },
+  {
+   "id": "bk-lehm-wand-b",
+   "version": 1,
+   "typ": 241,
+   "kat": "wand",
+   "name": "Mud-and-Timber Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-wand-b.json"
+  },
+  {
+   "id": "bk-lehm-wand-d",
+   "version": 1,
+   "typ": 242,
+   "kat": "wand",
+   "name": "Mud-and-Timber Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-wand-d.json"
+  },
+  {
+   "id": "bk-lehm-wand-oben",
+   "version": 1,
+   "typ": 246,
+   "kat": "wand",
+   "name": "Mud-and-Timber Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-wand-oben.json"
+  },
+  {
+   "id": "bk-lehm-wand-oben-a",
+   "version": 1,
+   "typ": 247,
+   "kat": "wand",
+   "name": "Mud-and-Timber Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-lehm-wand-oben-a.json"
   },
   {
    "id": "bk-marmor-boden",
