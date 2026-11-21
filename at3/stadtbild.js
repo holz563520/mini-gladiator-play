@@ -8,6 +8,8 @@
 //    Rundbauten aus dessen Grundform „rund“, Dinge aus der Kartei; alles nach Tiefe sortiert ins Bild. Bauer in kleinen Schritten (Regel 20): schritt(ms) arbeitet,
 //    bis der Zeitanteil um ist. Kosten hängen nur an der Fläche des Orts, nie an der Welt. Bis N6b sind alle Teile Skizzen aus dem Baukasten.
 // 3) kacheln(): fertiges Bild in Kacheln (256 × 256) für den Bildkern; leere Kacheln fallen weg.
+// 4) kachelBauer() (N6b2-0): baut und hält nur die sichtbaren Kacheln plus einen Ring Vorrat (höchstens 32 ≈ 2 MB), der Rest wird verworfen; jede Kachel
+//    ist Bildpunkt für Bildpunkt gleich dem Ausschnitt aus malen(). Pflicht für große Städte (10.000er in 1,5× = 41 MB am Stück). opt.probeW in plan(): Probestadt.
 // Kerne: im Editor auf Knopfdruck auf dem Hauptkern (in Schritten), im Spiel ab N7a im Bildkern, einmal je sichtbarem Ort, danach nur Kopieren.
 (function(G){
 'use strict';
@@ -68,7 +70,7 @@ function rausch(i,j,s){var h=(Math.imul(i|0,374761393)+Math.imul(j|0,668265263)+
 function plan(opt){
  var A=ARTEN[opt.art];if(!A)throw new Error('Unbekannte Siedlungsart: '+opt.art);var B=BIOME[opt.biom];if(!B)throw new Error('Unbekanntes Biom: '+opt.biom);
  var ST=opt.stil?STILE[opt.stil]:null;if(opt.stil&&!ST)throw new Error('Unbekannter Baustil: '+opt.stil);
- var W=A.W,seed=opt.seed>>>0,r=rng(hashT([seed,opt.art,opt.biom,opt.stil||''].join('|'))),zus={};
+ var W=opt.probeW>A.W?opt.probeW|0:A.W,seed=opt.seed>>>0,r=rng(hashT([seed,opt.art,opt.biom,opt.stil||''].join('|'))),zus={};
  (opt.zusatz||A.std).forEach(function(z){if(ZUSATZ.indexOf(z)>=0)zus[z]=1});
  if(zus.gate&&!zus.wall)delete zus.gate;if(W<9){delete zus.wall;delete zus.gate}
  var basis={klasse:(ST||B).klasse,dach:(ST||B).dach,wand:(ST||B).wand,dachR:(ST||B).dachR};
@@ -189,44 +191,154 @@ function holer(hole){var bk=BK(),cache=(HOLER&&HOLER.get(hole))||{};if(HOLER)HOL
   var key=id+'|'+paar.join(',');if(!cache[key])cache[key]={id:o.id,kat:o.kat,bild:bk.umfaerben(o.bild,paar)};return cache[key]}}
 var BODEN_ID={s:null,o:null,m:'bk-marmor-boden',f:null,w:'boden-wasser',e:'boden-erde',p:'boden-gras',x:'boden-fels'};
 var KURZ={'clay-wood':'lehm',brick:'ziegel',marble:'marmor'};
-// Bauer: P = Plan, hole(id) → Kartei-Objekt, opt {umland: Felder Landschaft ringsum (Nachbarschaftsbild)}. schritt(ms) → true, wenn fertig; bild() → {w,h,ax,ay,px,…}
-function bauer(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Math.max(0,opt.umland|0),WT=W+2*U,TOP=176,dt=hole,teil=holer(hole),fehlt={};
- var Zb={w:WT*64+64,h:WT*32+TOP+8,px:null},OX=WT*32+32-U*0,OY=TOP;Zb.px=new Uint8Array(Zb.w*Zb.h).fill(LEER);
+// Zeichenreihenfolge für Grundflächen ohne Überlappung (Thomas 21.11.2026: Sortieren nach der Mitte i + j ließ bei langen Häusern Wände über das Dach des
+// Nachbarn malen). A kommt vor B, wenn A ganz bei kleinerem i (bzw. j) liegt und sich die Bildrahmen beider überlagern; sonst Mitte i + j (Kahn-Sortierung).
+// Paare nur aus gemeinsamen Bildfächern (128 × 128) mit mindestens einer großen Grundfläche; in Schritten (Regel 20), Kosten nach Zahl der Elemente.
+function ordner(el){var n=el.length,RI=new Int32Array(n),RJ=new Int32Array(n),RW=new Int32Array(n),RH=new Int32Array(n),X0=new Int32Array(n),X1=new Int32Array(n),Y0=new Int32Array(n),Y1=new Int32Array(n),
+  F=new Map(),FS=128,ein=new Int32Array(n),kopf=new Int32Array(n).fill(-1),nxt=[],zu=[],heap=[],liste=[],phase=0,k=0,c=0;
+ var vor=function(a,b){return el[a].t-el[b].t||el[a].n-el[b].n};
+ function rein(v){heap.push(v);var c2=heap.length-1;while(c2>0){var p=(c2-1)>>1;if(vor(heap[c2],heap[p])<0){var t=heap[c2];heap[c2]=heap[p];heap[p]=t;c2=p}else break}}
+ function raus(){var top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;var c2=0;for(;;){var l=2*c2+1,r=l+1,m=c2;if(l<heap.length&&vor(heap[l],heap[m])<0)m=l;if(r<heap.length&&vor(heap[r],heap[m])<0)m=r;if(m===c2)break;var t=heap[c2];heap[c2]=heap[m];heap[m]=t;c2=m}}return top}
+ function kante(a,b){zu.push(b);nxt.push(kopf[a]);kopf[a]=zu.length-1;ein[b]++}
+ function paar(a,b){
+  if(RI[a]+RW[a]<=RI[b]&&!(RJ[b]+RH[b]<=RJ[a]))kante(a,b);else if(RI[b]+RW[b]<=RI[a]&&!(RJ[a]+RH[a]<=RJ[b]))kante(b,a);
+  else if(RJ[a]+RH[a]<=RJ[b]&&!(RI[b]+RW[b]<=RI[a]))kante(a,b);else if(RJ[b]+RH[b]<=RJ[a]&&!(RI[a]+RW[a]<=RI[b]))kante(b,a)}
+ var fach=function(fx,fy){return(fx+32768)*65536+fy+32768},gr=function(q){return RW[q]>1||RH[q]>1};
+ // weiter(aus): arbeitet, bis aus() einen vollen Zeitanteil meldet (→ false) oder alles fertig ist (→ true, Ergebnis in .liste)
+ var O={liste:null,weiter:function(aus){for(;;){
+  if(phase===0){for(;k<n;k++){var e=el[k],b=e.b,i,j,w,h;if(!b){i=e.d.i;j=e.d.j;w=1;h=1}else if(b.rund){i=b.i-1;j=b.j-1;w=b.w+2;h=b.w+2}else{i=b.i;j=b.j;w=b.w;h=b.h}
+     RI[k]=i;RJ[k]=j;RW[k]=w;RH[k]=h;X0[k]=(i-j-h)*32;X1[k]=(i+w-j)*32;Y0[k]=(i+j)*16-96;Y1[k]=(i+w+j+h)*16;
+     if(w>1||h>1){for(var fy=Math.floor(Y0[k]/FS);fy<=Math.floor((Y1[k]-1)/FS);fy++)for(var fx=Math.floor(X0[k]/FS);fx<=Math.floor((X1[k]-1)/FS);fx++){var L=F.get(fach(fx,fy));if(!L)F.set(fach(fx,fy),L=[]);L.push(k)}}
+     if((++c&127)===0&&aus&&aus()){k++;return false}}phase=1;k=0}
+  else if(phase===1){for(;k<n;k++){var ga=gr(k),fy0=Math.floor(Y0[k]/FS),fx0=Math.floor(X0[k]/FS);
+     for(var fy2=fy0;fy2<=Math.floor((Y1[k]-1)/FS);fy2++)for(var fx2=fx0;fx2<=Math.floor((X1[k]-1)/FS);fx2++){var L2=F.get(fach(fx2,fy2));if(!L2)continue;
+      for(var q=0;q<L2.length;q++){var o=L2[q];if(o===k||(ga&&o<k))continue;                 // Paar groß–groß nur einmal
+       if(X1[k]<=X0[o]||X1[o]<=X0[k]||Y1[k]<=Y0[o]||Y1[o]<=Y0[k])continue;
+       if(Math.max(fy0,Math.floor(Y0[o]/FS))!==fy2||Math.max(fx0,Math.floor(X0[o]/FS))!==fx2)continue;paar(k,o)}}   // nur im ersten gemeinsamen Fach
+     if((++c&31)===0&&aus&&aus()){k++;return false}}phase=2;k=0;for(var z=0;z<n;z++)if(!ein[z])rein(z)}
+  else if(phase===2){while(heap.length){var v=raus();liste.push(el[v]);for(var x=kopf[v];x>=0;x=nxt[x])if(!--ein[zu[x]])rein(zu[x]);if((++c&127)===0&&aus&&aus())return false}phase=3}
+  else{if(liste.length<n){var da={};liste.forEach(function(e2){da[e2.n]=1});el.filter(function(e2){return!da[e2.n]}).sort(function(a2,b2){return a2.t-b2.t||a2.n-b2.n}).forEach(function(e2){liste.push(e2)})}
+   O.liste=liste;return true}}}};
+ return O}
+function ordnen(el){var O=ordner(el);O.weiter(null);return O.liste}
+// Elementliste (N6b2-0), gemeinsam für bauer() und kachelBauer(): P = Plan, hole(id) → Kartei-Objekt, opt {umland: Felder Landschaft ringsum}.
+// Reihenfolge wie bisher: Boden je Feld (hinten zuerst), dann Häuser, Mauerstücke, Rundbauten, Dinge, Umland-Bäume nach Tiefe. Rohbild w × h mit Anker (ax, ay) = obere Ecke von Feld (0, 0).
+function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Math.max(0,opt.umland|0),WT=W+2*U,TOP=176,teil=holer(hole);
+ var Zw=WT*64+64,Zh=WT*32+TOP+8,OX=WT*32+32,OY=TOP;
  // Bildlage eines Felds (i, j) im Plan (Umland hat negative bzw. zu große Zahlen): Ecke oben = ((i−j)·32, (i+j)·16)
  var bx=function(i,j){return OX+(i-j)*32},by=function(i,j){return OY+(i+U+j+U)*16};
  var weg=P.basis&&KURZ[P.basis.klasse]?'bk-'+KURZ[P.basis.klasse]+'-boden':'boden-weg';
  var bodenId=function(i,j){var innen=i>=0&&j>=0&&i<W&&j<W,c=innen?P.zellen.charAt(j*W+i):'g';
   if(c==='g'){var l=B.boden;return l[Math.floor(rausch(i,j,P.seed+1)*l.length*(l.length>1?.75:1))%l.length]}
   if(c==='s')return B.weg;if(c==='o')return weg;if(c==='f')return P.feld||'bk-feld';return BODEN_ID[c]||'boden-gras'};
- var auftraege=[],n=0,teile=0,el=[];
- // 1) Boden je Feld (hinten zuerst)
- for(var s=-U;s<=2*(W-1)+U;s++)for(var i=-U;i<W+U;i++){var j=s-i;if(j<-U||j>=W+U)continue;(function(i,j){auftraege.push(function(){var o=hole(bodenId(i,j)),sp=malbild(o);
-   if(!sp){fehlt[bodenId(i,j)]=1;return}blit(Zb,sp,bx(i,j)+0,by(i,j)+16);teile++})})(i,j)}
- // 2) Häuser, Mauerstücke, Rundbauten, Dinge, Umland-Bäume: nach Tiefe (Mitte i + j) sortiert
- P.bauten.forEach(function(b){el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});
- P.dinge.forEach(function(d){el.push({t:d.i+d.j+1.02,n:n++,d:d})});
- if(U)for(var uj=-U;uj<W+U;uj++)for(var ui=-U;ui<W+U;ui++){if(ui>=0&&uj>=0&&ui<W&&uj<W)continue;var rd=Math.min(Math.abs(ui<0?ui:ui-W+1),Math.abs(uj<0?uj:uj-W+1));
-  if(rausch(ui,uj,P.seed+21)<B.dichte*(1+.15*Math.max(ui<0?-ui:ui-W+1,uj<0?-uj:uj-W+1)))el.push({t:ui+uj+1.02,n:n++,d:{id:B.baeume[Math.floor(rausch(ui,uj,P.seed+22)*B.baeume.length)],i:ui,j:uj}})}
- el.sort(function(a,b){return a.t-b.t||a.n-b.n});
- el.forEach(function(e){auftraege.push(function(){
-  if(e.d){var o=hole(e.d.id),sp=malbild(o);if(!sp){fehlt[e.d.id]=1;return}blit(Zb,sp,bx(e.d.i,e.d.j),by(e.d.i,e.d.j)+16);teile++;return}
-  var b=e.b,L;
-  if(b.rund){L=bk.bilde('rund',b.w,b.w,b.klasse);L.dinge=[];L.tueren=[];var ox=b.i-1,oy=b.j-1}
-  else{L={w:b.w,h:b.h,c:new Array(b.w*b.h).fill('b'),klasse:b.klasse,achse:b.achse,dach:b.dach||'sattel',offen:false,tueren:b.tuer?[[b.tuer[0]-b.i,b.tuer[1]-b.j,b.tuer[2],b.tuer[3]]]:[],spina:[],dinge:[]};ox=b.i;oy=b.j}
-  var vs=b.satz?'bk-'+KURZ[b.klasse]+'-':null;   // N6b: Teile des Biom-Satzes (bk-putz-…) vor den Klassenteilen, fehlt eins, gilt das Klassenteil
-  var r=bk.setzen(L,function(id){if(vs&&id.indexOf(vs)===0){var o=hole('bk-'+b.satz+'-'+id.slice(vs.length));if(o)return o}return teil(id,b.klasse,b.wand,b.dachR)},b.dach||'',true);r.fehlt.forEach(function(f){fehlt[f]=1});teile+=r.teile;
-  blit(Zb,{w:r.w,h:r.h,ax:r.ax,ay:r.ay,px:r.px},bx(ox,oy),by(ox,oy))})});
- var k=0,ms=0,maxMs=0,schritte=0;
- var jetzt=typeof performance!=='undefined'?function(){return performance.now()}:function(){var t=process.hrtime();return t[0]*1e3+t[1]/1e6};
- return{auftraege:auftraege.length,
-  schritt:function(budget){var t0=jetzt();if(k>=auftraege.length)return true;do{auftraege[k++]()}while(k<auftraege.length&&jetzt()-t0<(budget||4));var d=jetzt()-t0;ms+=d;if(d>maxMs)maxMs=d;schritte++;return k>=auftraege.length},
-  fertig:function(){return k>=auftraege.length},
+ var O3=null,L=[],el=[],n=0,stufe=0,qs=-U,qi=-U,qk=0,uj=-U,ui=-U;
+ // Liste füllen, auf Wunsch in Schritten: aus() → true, wenn der Zeitanteil um ist (Kachelbauer); bauer() füllt am Stück wie bisher
+ var fuellen=function(aus){var c=0;while(stufe<5){
+   if(stufe===0){for(;qs<=2*(W-1)+U;qs++,qi=-U){for(;qi<W+U;qi++){var j=qs-qi;if(j<-U||j>=W+U)continue;L.push({k:0,id:bodenId(qi,j),X:bx(qi,j),Y:by(qi,j)+16});
+      if((++c&255)===0&&aus&&aus()){qi++;return false}}}stufe=1}
+   else if(stufe===1){P.bauten.forEach(function(b){el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});P.dinge.forEach(function(d){el.push({t:d.i+d.j+1.02,n:n++,d:d})});stufe=U?2:3;if(aus&&aus())return false}
+   else if(stufe===2){for(;uj<W+U;uj++,ui=-U){for(;ui<W+U;ui++){if(ui>=0&&uj>=0&&ui<W&&uj<W)continue;
+      if(rausch(ui,uj,P.seed+21)<B.dichte*(1+.15*Math.max(ui<0?-ui:ui-W+1,uj<0?-uj:uj-W+1)))el.push({t:ui+uj+1.02,n:n++,d:{id:B.baeume[Math.floor(rausch(ui,uj,P.seed+22)*B.baeume.length)],i:ui,j:uj}})}}stufe=3}
+   else if(stufe===3){if(!O3)O3=ordner(el);if(!O3.weiter(aus))return false;el=O3.liste;O3=null;stufe=4;if(aus&&aus())return false}
+   else{for(;qk<el.length;qk++){var e=el[qk];if(e.d)L.push({k:1,id:e.d.id,X:bx(e.d.i,e.d.j),Y:by(e.d.i,e.d.j)+16});
+      else{var b=e.b,ox=b.rund?b.i-1:b.i,oy=b.rund?b.j-1:b.j,fw=b.w,fh=b.h;if(b.rund){var R=bk.bilde('rund',b.w,b.w,b.klasse);fw=R.w;fh=R.h}L.push({k:2,b:b,X:bx(ox,oy),Y:by(ox,oy),fw:fw,fh:fh})}
+      if((++c&255)===0&&aus&&aus()){qk++;return false}}el=null;stufe=5}}return true};
+ if(!opt.inSchritten)fuellen(null);
+ // Gebäude zusammensetzen (Baukasten); N6b: Teile des Biom-Satzes (bk-putz-…) vor den Klassenteilen, fehlt eins, gilt das Klassenteil
+ var bauBild=function(e){var b=e.b,R;
+  if(b.rund){R=bk.bilde('rund',b.w,b.w,b.klasse);R.dinge=[];R.tueren=[]}
+  else R={w:b.w,h:b.h,c:new Array(b.w*b.h).fill('b'),klasse:b.klasse,achse:b.achse,dach:b.dach||'sattel',offen:false,tueren:b.tuer?[[b.tuer[0]-b.i,b.tuer[1]-b.j,b.tuer[2],b.tuer[3]]]:[],spina:[],dinge:[]};
+  var vs=b.satz?'bk-'+KURZ[b.klasse]+'-':null;
+  var r=bk.setzen(R,function(id){if(vs&&id.indexOf(vs)===0){var o=hole('bk-'+b.satz+'-'+id.slice(vs.length));if(o)return o}return teil(id,b.klasse,b.wand,b.dachR)},b.dach||'',true);
+  return{sp:{w:r.w,h:r.h,ax:r.ax,ay:r.ay,px:r.px},X:e.X,Y:e.Y,fehlt:r.fehlt,teile:r.teile}};
+ return{w:Zw,h:Zh,ax:bx(0,0),ay:by(0,0),bx:bx,by:by,W:W,U:U,L:L,hole:hole,bauBild:bauBild,fuellen:fuellen,voll:function(){return stufe===5}}}
+// Nach Tiefe sortieren wie sort(t, dann n), aber linear: alle Tiefen sind Vielfache von 1/50 (i + j + (w + h)/2 bzw. + 1,02), Zählsortierung ist stabil (n steigt schon)
+// tiefenSort: frühere Reihenfolge nach der Mitte (seit 21.11.2026 ersetzt durch ordnen(), lange Häuser malten sonst Wände über Nachbardächer)
+function tiefenSort(el){var N=el.length,key=new Int32Array(N),lo=2147483647,hi=-2147483648,i;for(i=0;i<N;i++){var k=Math.round(el[i].t*50);key[i]=k;if(k<lo)lo=k;if(k>hi)hi=k}
+ if(!N)return el;var z=new Int32Array(hi-lo+2);for(i=0;i<N;i++)z[key[i]-lo+1]++;for(i=1;i<z.length;i++)z[i]+=z[i-1];var r=new Array(N);for(i=0;i<N;i++)r[z[key[i]-lo]++]=el[i];return r}
+// Ein Element ins Ziel Z zeichnen, Ziel liegt bei (dx, dy) im Rohbild; bau(e) liefert ein gemerktes Gebäudebild (Kachelbauer), sonst neu zusammengesetzt
+function zeichne(E,e,Z,dx,dy,fehlt,bau){if(e.k<2){var sp=malbild(E.hole(e.id));if(!sp){fehlt[e.id]=1;return 0}blit(Z,sp,e.X-dx,e.Y-dy);return 1}
+ var r=bau?bau(e):E.bauBild(e);r.fehlt.forEach(function(f){fehlt[f]=1});blit(Z,r.sp,r.X-dx,r.Y-dy);return r.teile}
+var jetzt=typeof performance!=='undefined'?function(){return performance.now()}:function(){var t=process.hrtime();return t[0]*1e3+t[1]/1e6};
+// Bauer: ganzes Bild am Stück in Schritten. schritt(ms) → true, wenn fertig; bild() → {w,h,ax,ay,px,…}. Für große Orte kachelBauer() nehmen (Speicher!).
+function bauer(P,hole,opt){var E=elemente(P,hole,opt),Zb={w:E.w,h:E.h,px:new Uint8Array(E.w*E.h).fill(LEER)},fehlt={},teile=0,k=0,ms=0,maxMs=0,schritte=0,L=E.L;
+ return{auftraege:L.length,
+  schritt:function(budget){var t0=jetzt();if(k>=L.length)return true;do{teile+=zeichne(E,L[k++],Zb,0,0,fehlt)}while(k<L.length&&jetzt()-t0<(budget||4));var d=jetzt()-t0;ms+=d;if(d>maxMs)maxMs=d;schritte++;return k>=L.length},
+  fertig:function(){return k>=L.length},
   bild:function(){var x0=Zb.w,x1=-1,y0=Zb.h,y1=-1,x,y;for(y=0;y<Zb.h;y++){var o=y*Zb.w;for(x=0;x<Zb.w;x++)if(Zb.px[o+x]!==LEER){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
    if(x1<0)return{w:0,h:0,ax:0,ay:0,px:new Uint8Array(0),teile:0,fehlt:Object.keys(fehlt),ms:ms,maxMs:maxMs,schritte:schritte};
    var w=x1-x0+1,h=y1-y0+1,px=new Uint8Array(w*h);for(y=0;y<h;y++)px.set(Zb.px.subarray((y+y0)*Zb.w+x0,(y+y0)*Zb.w+x0+w),y*w);
-   // Anker: obere Ecke des Felds (0, 0) im Plan; tor: Bildpunkt vor dem Tor (Ziel der Straßen, N7a)
-   var T=P.tor;return{w:w,h:h,ax:bx(0,0)-x0,ay:by(0,0)-y0,px:px,teile:teile,fehlt:Object.keys(fehlt),ms:ms,maxMs:maxMs,schritte:schritte,
-    tor:{x:bx(T.i,T.j)-x0,y:by(T.i,T.j)+32-y0},W:W,umland:U}}}}
+   // Anker: obere Ecke des Felds (0, 0) im Plan; tor: Bildpunkt vor dem Tor (Ziel der Straßen, N7a); x0/y0: Lage des Ausschnitts im Rohbild (= Kachelbauer)
+   var T=P.tor;return{w:w,h:h,ax:E.ax-x0,ay:E.ay-y0,px:px,teile:teile,fehlt:Object.keys(fehlt),ms:ms,maxMs:maxMs,schritte:schritte,
+    tor:{x:E.bx(T.i,T.j)-x0,y:E.by(T.i,T.j)+32-y0},W:E.W,umland:E.U,x0:x0,y0:y0}}}}
+// Kachelbauer (N6b2-0, Thomas 21.11.2026): baut und hält nur die Kacheln (K × K, Standard 256), die im Bild sind, plus einen Ring Vorrat; der Rest wird verworfen.
+// Speicher: höchstens opt.grenze Kacheln (Standard 32 ≈ 2 MB) und opt.hausSpeicher Bytes gemerkte Gebäudebilder (Standard 1 MB), unabhängig von der Stadtgröße.
+// Aufbau der Fächer (welches Element in welche Kachel) und das Zeichnen laufen in Schritten mit Zeitanteil (Regel 20). Koordinaten = Rohbild (w × h) wie elemente().
+// sicht(x,y,w,h) setzt den Bildausschnitt; schritt(ms) → true, wenn alles Gewünschte fertig ist; sichtbare() → Kacheln im Bild (fertige mit px); umrisse() → Ersatzbild.
+// Gebäuderahmen werden vorab geschätzt (ohne Bild): links h·32+16, rechts w·32+16, oben HOCH, unten (w+h)·16+16; ueber zählt Gebäude, die größer sind (Test: 0).
+var HOCH=96;
+function kachelBauer(P,hole,opt){opt=opt||{};var E=elemente(P,hole,{umland:opt.umland,inSchritten:true}),K=opt.kachel||256,GRENZE=opt.grenze||32,RAND=opt.rand==null?1:opt.rand,HAUS=opt.hausSpeicher||1048576;
+ var NX=Math.ceil(E.w/K),NY=Math.ceil(E.h/K),NK=NX*NY,L=E.L,N=0,box=null,hat=null,fehlt={};
+ var anz=null,start=null,fach=null,pos=null,phase=-1,pk=0,aufbauMs=0,bauIdx=[],farben=null;
+ var kach=new Map(),wunsch=[],imBild=[],sx=0,sy=0,sw=0,sh=0,hatSicht=false;
+ var haus=new Map(),hausB=0,st={gebaut:0,verworfen:0,ms:0,maxMs:0,schritte:0,ueber:0,haeuserGebaut:0};
+ var t0x=function(i){return Math.max(0,Math.floor(box[i*4]/K))},t1x=function(i){return Math.min(NX-1,Math.floor((box[i*4+2]-1)/K))},
+     t0y=function(i){return Math.max(0,Math.floor(box[i*4+1]/K))},t1y=function(i){return Math.min(NY-1,Math.floor((box[i*4+3]-1)/K))};
+ var innen=function(i){return box[i*4+2]>0&&box[i*4+3]>0&&box[i*4]<E.w&&box[i*4+1]<E.h};
+ // Aufbau: 0 Rahmen je Element, 1 Zählen je Kachel, 2 Einsortieren (Reihenfolge bleibt), 3 fertig
+ var aufbau=function(t0,budget){var aus=function(){return jetzt()-t0>budget};while(phase<3){
+   if(phase===-1){if(!E.fuellen(aus))return false;N=L.length;box=new Int32Array(N*4);hat=new Uint8Array(N);anz=new Int32Array(NK+1);
+    for(var q0=0;q0<N;q0++)if(L[q0].k===2){L[q0].q=q0;bauIdx.push(q0)}phase=0;pk=0;if(aus())return false}
+   else if(phase===0){for(;pk<N;pk++){if((pk&31)===0&&aus())return false;var e=L[pk],q=pk*4;
+     if(e.k<2){var sp=malbild(hole(e.id));if(!sp){fehlt[e.id]=1;continue}box[q]=e.X-sp.ax;box[q+1]=e.Y-sp.ay;box[q+2]=box[q]+sp.w;box[q+3]=box[q+1]+sp.h}
+     else{box[q]=e.X-e.fh*32-16;box[q+1]=e.Y-HOCH;box[q+2]=e.X+e.fw*32+16;box[q+3]=e.Y+(e.fw+e.fh)*16+16}
+     hat[pk]=innen(pk)?1:0}phase=1;pk=0}
+   else if(phase===1){for(;pk<N;pk++){if((pk&255)===0&&jetzt()-t0>budget)return false;if(!hat[pk])continue;
+     for(var ty=t0y(pk),y1=t1y(pk);ty<=y1;ty++)for(var tx=t0x(pk),x1=t1x(pk);tx<=x1;tx++)anz[ty*NX+tx+1]++}
+    start=new Int32Array(NK+1);for(var a=0;a<NK;a++)start[a+1]=start[a]+anz[a+1];fach=new Int32Array(start[NK]);pos=start.slice(0,NK);anz=null;phase=2;pk=0}
+   else{for(;pk<N;pk++){if((pk&255)===0&&jetzt()-t0>budget)return false;if(!hat[pk])continue;
+     for(var ty2=t0y(pk),y2=t1y(pk);ty2<=y2;ty2++)for(var tx2=t0x(pk),x2=t1x(pk);tx2<=x2;tx2++)fach[pos[ty2*NX+tx2]++]=pk}
+    pos=null;phase=3;if(hatSicht)planen()}}return true};
+ // Gebäudebild gemerkt (über mehrere Kacheln), älteste fallen zuerst heraus
+ var bau=function(e){var key=e,r=haus.get(key);if(r){haus.delete(key);haus.set(key,r);return r}
+  r=E.bauBild(e);st.haeuserGebaut++;var q=e.q*4;
+  if(r.X-r.sp.ax<box[q]||r.Y-r.sp.ay<box[q+1]||r.X-r.sp.ax+r.sp.w>box[q+2]||r.Y-r.sp.ay+r.sp.h>box[q+3])st.ueber++;
+  haus.set(key,r);hausB+=r.sp.px.length;while(hausB>HAUS&&haus.size>1){var alt=haus.keys().next().value;hausB-=haus.get(alt).sp.px.length;haus.delete(alt)}return r};
+ // Gewünscht: Kacheln im Bild (Mitte zuerst), danach der Ring Vorrat; höchstens GRENZE. Alles andere wird verworfen.
+ var planen=function(){if(!hatSicht)return;var ax0=Math.max(0,Math.floor(sx/K)),ax1=Math.min(NX-1,Math.floor((sx+sw-1)/K)),ay0=Math.max(0,Math.floor(sy/K)),ay1=Math.min(NY-1,Math.floor((sy+sh-1)/K));
+  var mx=(sx+sw/2)/K,my=(sy+sh/2)/K,a=[],b=[],tx,ty;
+  for(ty=ay0-RAND;ty<=ay1+RAND;ty++)for(tx=ax0-RAND;tx<=ax1+RAND;tx++){if(tx<0||ty<0||tx>=NX||ty>=NY)continue;var d=(tx+.5-mx)*(tx+.5-mx)+(ty+.5-my)*(ty+.5-my),t=ty*NX+tx;
+   (tx>=ax0&&tx<=ax1&&ty>=ay0&&ty<=ay1?a:b).push([d,t])}
+  var nach=function(u,v){return u[0]-v[0]||u[1]-v[1]};a.sort(nach);b.sort(nach);imBild=a.map(function(x){return x[1]});
+  wunsch=a.concat(b).slice(0,GRENZE).map(function(x){return x[1]});var soll={};wunsch.forEach(function(t){soll[t]=1});
+  kach.forEach(function(k,t){if(!soll[t]){kach.delete(t);st.verworfen++}})};
+ var leerTest=function(px){for(var i=0;i<px.length;i++)if(px[i]!==LEER)return false;return true};
+ return{w:E.w,h:E.h,ax:E.ax,ay:E.ay,K:K,NX:NX,NY:NY,grenze:GRENZE,
+  sicht:function(x,y,w,h){sx=x|0;sy=y|0;sw=Math.max(1,w|0);sh=Math.max(1,h|0);hatSicht=true;if(phase===3)planen()},
+  schritt:function(budget){budget=budget||4;var t0=jetzt();
+   if(phase<3){var a0=jetzt(),ok=aufbau(t0,budget);aufbauMs+=jetzt()-a0;if(!ok){var d0=jetzt()-t0;st.ms+=d0;if(d0>st.maxMs)st.maxMs=d0;st.schritte++;return false}}
+   var fertig=true;
+   for(var w=0;w<wunsch.length;w++){var t=wunsch[w],k=kach.get(t);
+    if(!k){var tx=t%NX,ty=(t/NX)|0,x=tx*K,y=ty*K;k={t:t,tx:tx,ty:ty,x:x,y:y,w:Math.min(K,E.w-x),h:Math.min(K,E.h-y),px:null,i:start[t],ende:start[t+1],fertig:false};
+     if(k.i>=k.ende)k.fertig=true;kach.set(t,k)}
+    if(k.fertig)continue;if(jetzt()-t0>=budget){fertig=false;break}
+    if(!k.px)k.px=new Uint8Array(k.w*k.h).fill(LEER);var Z={w:k.w,h:k.h,px:k.px};
+    do{zeichne(E,L[fach[k.i++]],Z,k.x,k.y,fehlt,bau)}while(k.i<k.ende&&jetzt()-t0<budget);
+    if(k.i>=k.ende){k.fertig=true;st.gebaut++;if(leerTest(k.px))k.px=null}else{fertig=false;break}}
+   var d=jetzt()-t0;st.ms+=d;if(d>st.maxMs)st.maxMs=d;st.schritte++;return fertig&&phase===3},
+  kachel:function(tx,ty){return kach.get(ty*NX+tx)||null},
+  sichtbare:function(){return imBild.map(function(t){var k=kach.get(t),tx=t%NX,ty=(t/NX)|0;return k||{t:t,tx:tx,ty:ty,x:tx*K,y:ty*K,w:Math.min(K,E.w-tx*K),h:Math.min(K,E.h-ty*K),px:null,fertig:false}})},
+  // Ersatzbild (Regel 20): Fläche des Orts als Raute und Gebäude als Klötze aus dem Plan (Lage im Rohbild), nach Tiefe sortiert, im Rechteck (x, y, w, h)
+  umrisse:function(x,y,w,h){var r=[],W=E.W+2*E.U,c=function(i,j){return[E.bx(i,j),E.by(i,j)]},U=E.U;
+   for(var bi=0;phase===3&&bi<bauIdx.length;bi++){var i=bauIdx[bi],e=L[i];if(!hat[i])continue;var q=i*4;if(box[q+2]<x||box[q]>x+w||box[q+3]<y||box[q+1]>y+h)continue;r.push({X:e.X,Y:e.Y,fw:e.fw,fh:e.fh,rolle:e.b.rolle})}
+   if(!farben){var B=BIOME[P.biom],vs='bk-'+(B.satz||KURZ[P.basis.klasse]||'ziegel'),dom=function(id,sonst){var sp=malbild(hole(id));if(!sp)return sonst;var z=new Int32Array(256),m=-1,mi=sonst;
+     for(var a=0;a<sp.px.length;a++)if(sp.px[a]!==LEER&&++z[sp.px[a]]>m){m=z[sp.px[a]];mi=sp.px[a]}return mi},bo=dom(B.boden[0],0);
+    farben={boden:bo,weg:dom(B.weg,bo),wand:dom(vs+'-wand',bo),dach:dom(vs+'-dach-flach',dom(vs+'-dach-ab-i',bo))}}
+   return{flaeche:[c(-U,-U),c(W-U,-U),c(W-U,W-U),c(-U,W-U)].map(function(p,n){return[p[0],p[1]+16]}),bauten:r,farben:farben}},
+  stand:function(){var gehalten=0,bytes=0;kach.forEach(function(k){if(k.px){gehalten++;bytes+=k.px.length}});
+   return{aufgebaut:phase===3,aufbauMs:aufbauMs,elemente:N,fachBytes:(fach?fach.length*4:0)+(box?box.length*4:0)+N+(start?start.length*4:0),kacheln:NK,
+    imBild:imBild.length,gewuenscht:wunsch.length,gehalten:gehalten,bytes:bytes,haeuser:haus.size,hausBytes:hausB,
+    gebaut:st.gebaut,verworfen:st.verworfen,haeuserGebaut:st.haeuserGebaut,ueber:st.ueber,ms:st.ms,maxMs:st.maxMs,schritte:st.schritte,fehlt:Object.keys(fehlt)}}}}
 // Am Stück (Tests, Werkzeug): baut mit großem Zeitanteil
 function malen(P,hole,opt){var b=bauer(P,hole,opt);while(!b.schritt(1e9));return b.bild()}
 function kacheln(r,K){K=K||256;var L=[],ty,tx,y;for(ty=0;ty<r.h;ty+=K)for(tx=0;tx<r.w;tx+=K){var w=Math.min(K,r.w-tx),h=Math.min(K,r.h-ty),px=new Uint8Array(w*h),voll=false;
@@ -238,6 +350,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden']).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,ZUSATZ:ZUSATZ,plan:plan,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,ZUSATZ:ZUSATZ,plan:plan,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
