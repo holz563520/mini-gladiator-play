@@ -11,7 +11,17 @@ var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 var FORM_DE={winzig:'winzig',klein:'klein',werkstatt:'Werkstatt',halle:'Halle',hof:'Hof mit Feldern',lang:'lang',gross:'groß',rund:'rund',bahn:'Bahn'};
 var DINGE=['figur-arbeiter','boden-gras','boden-sand','werk-bank','lager-platz','markt-stand','ware-bretter','ware-stamm','ware-fleisch'];
 function lade(f){return AT3ED.lade('grafik',f)}
+// Reiter (N6a, 21.11.2026): „Gebäude“ (alles wie bisher) und „Stadtbilder“ (menue/stadtbilder.js, erst beim ersten Antippen geladen)
 function aufbauen(el){
+ el.innerHTML='<div class="bkKnoepfe" id="bkReiter"><button class="knopf klein an" data-reiter="geb">Gebäude</button><button class="knopf klein" data-reiter="stadt">Stadtbilder (N6a)<small>Orte aus Bauplan und Teilen</small></button></div>'+
+  '<div id="bkReiterGeb"></div><div id="bkReiterStadt" hidden></div>';
+ var geb=el.querySelector('#bkReiterGeb'),st=el.querySelector('#bkReiterStadt'),offen=false;
+ [].forEach.call(el.querySelectorAll('[data-reiter]'),function(b){b.onclick=function(){var s=b.dataset.reiter==='stadt';
+  [].forEach.call(el.querySelectorAll('[data-reiter]'),function(x){x.classList.toggle('an',x===b)});geb.hidden=s;st.hidden=!s;
+  if(s&&!offen){offen=true;st.innerHTML='<p class="leise">Die Stadtväter werden aus dem Bett geklopft …</p>';
+   lade('menue/stadtbilder.js').then(function(){return AT3_STADTBILDER_MENUE.aufbauen(st)}).catch(function(e){offen=false;st.innerHTML='<p class="witz">Stadt abgebrannt: '+esc(e.message)+'</p>'})}}});
+ return gebaeude(geb)}
+function gebaeude(el){
  el.innerHTML='<p class="leise">Ziegel werden gebrannt …</p>';
  return Promise.all(['at3-64.js','baubild.js','fp.js'].map(lade)).then(function(){return lade('baukasten.js')}).then(function(){
   S=window.AT3_64;BK=window.AT3_BAUKASTEN;FP=window.AT3_FP;

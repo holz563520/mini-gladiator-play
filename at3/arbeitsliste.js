@@ -5,7 +5,7 @@
 // 77+ Objektdateien auskommt. Gespeichert in kartei/arbeitsliste.json; erzeugt und abgeglichen von tools/at3-arbeitsliste.cjs, gezeigt im Master-Editor
 // (Grafik → Grafik-Arbeitsliste, menue/arbeitsliste.js). Reine Rechnung ohne Bildschirm, nur im Editor und im Werkzeug; das Spiel lädt nichts davon.
 // N1 (Neuausrichtung, AT3_NEUAUSRICHTUNG.md 3, 5, 6): Gebäude, die nur in Städten stehen, brauchen kein Bild (Stand „kein Bild nötig“); neu sind Ortsbilder,
-// Stadt-Zusatzteile, Außenposten, Straßen und Marktstände aus daten/ortsbilder.json. Ortsbilder und Zusatzteile warten auf das Werkzeug N6a.
+// Stadt-Zusatzteile, Außenposten, Straßen und Marktstände aus daten/ortsbilder.json. Ortsbilder und Zusatzteile warten auf N6b.
 (function(root){
 'use strict';
 var STAND=['fehlt','teile','skizze','ueberarbeitet','fertig','keinbild'];
@@ -77,7 +77,7 @@ function vorschlag(e){var i=e.info||{},id=e.id,m=/^bk-(lehm|ziegel|marmor)-(.+)$
   if(i.wo)t+='Steht an: '+i.wo+'. ';
   if(e.gruppe==='Ortsbild'||e.gruppe==='Stadtteil')t+='Rauch, Wäsche, Tiere und Boote ins Bild malen, nichts animieren; geht weich in die Landschaft über; Varianten gegen Wiederholung benachbarter Orte. ';
   if(e.gruppe==='Straße')t+='Wird ins Bodenbild gebacken: ausgefranste Ränder, saubere Kreuzungen und Kurven, kein Raster-Look (5.5). ';
-  return t+(e.wartet?'Wird erst mit dem Werkzeug '+e.wartet+' (Reiter „Stadtbilder“) zusammengesetzt.':'Abnahme durch Thomas nach AT3_GRAFIK_AUFTRAG.md.')}
+  return t+(e.wartet?'Wartet auf Schritt '+e.wartet+': Ortsbilder entstehen aus Bauplan und Teilen (Reiter „Stadtbilder“); erst werden die Teile je Biom gezeichnet und von Thomas freigegeben.':'Abnahme durch Thomas nach AT3_GRAFIK_AUFTRAG.md.')}
  if(e.quelle==='gebaeude'){t='„'+i.name+'“ ('+(i.bereich==='arena'?'Arena-Gelände':'Stadt')+', '+i.groesse+(i.stufe?', Stufe '+i.stufe:'')+'). ';
   t+=e.teile?'Entsteht aus Baukastenteilen (Grundform '+i.form+', alle drei Bauklassen). Zu zeichnen bleibt, was den Zweck zeigt: Schild und Einrichtung'+(i.plan?' für „'+i.plan+'“':'')+'. ':
    'Eigenes Bild nötig (Grundform '+i.form+', nicht aus dem Baukasten)'+(i.plan?': „'+i.plan+'“':'')+'. ';
@@ -153,18 +153,18 @@ function ableiten(ctx){
  return sortiere(L)}
 
 // Bilder der Welt außerhalb des Arena-Geländes (daten/ortsbilder.json): Kennung, Gruppe, Etappe, Wichtigkeit, Ansichten wie Einrichtung (Boden bei Straßenbelägen).
-// Liegt ein Bild mit derselben Kennung schon in der Kartei, gilt der Kartei-Eintrag. „wartet“ = Werkzeug fehlt noch, „nächste Grafik“ überspringt es.
+// Liegt ein Bild mit derselben Kennung schon in der Kartei, gilt der Kartei-Eintrag. „wartet“ = Schritt fehlt noch, „nächste Grafik“ überspringt es. Seit N6a (Thomas 21.11.2026) warten Ortsbilder und Stadtteile auf N6b (Teile je Biom, Freigabe Stil).
 function ortsEintraege(O,gruppen){var R=[],W=O.werkzeug||{},bi=(O.biome||[]).filter(function(b){return!b.nurAussenposten});
  var neu=function(id,gruppe,etappe,w,info,kat,wartet){var e={id:id,quelle:'ort',gruppe:gruppe,etappe:etappe,stand:'fehlt',kat:kat||'einrichtung',wichtigAuto:klemm(w),info:info};
   if(wartet&&!W[wartet])e.wartet=wartet;R.push(e)};
  var fl=function(n){return n+' × '+n+' Felder'};
  (O.siedlungen||[]).forEach(function(s){bi.forEach(function(b){neu('ort-'+s.id+'-'+b.id,'Ortsbild',b.id==='mediterranean'?'N6b':'N6c',s.wichtig,
-  {name:s.en+' ('+b.en+')',art:s.de,biom:b.de,groesse:fl(s.felder)+' ('+s.groesse+')',bild:s.bild,bauweise:b.bauweise},null,'N6a')})});
+  {name:s.en+' ('+b.en+')',art:s.de,biom:b.de,groesse:fl(s.felder)+' ('+s.groesse+')',bild:s.bild,bauweise:b.bauweise},null,'N6b')})});
  (O.auflagen||[]).forEach(function(a){(O.siedlungen||[]).forEach(function(s){neu('ort-auflage-'+a.id+'-'+s.id,'Ortsbild','N6c',2,
-  {name:s.en+', '+a.en,art:'Auflage „'+a.de+'“ für '+s.de,groesse:fl(s.felder)+' ('+s.groesse+')',bild:a.bild},null,'N6a')})});
- (O.baustile||[]).forEach(function(b){neu('ort-stil-'+b.id,'Ortsbild','N6d',2,{name:'Building style: '+(b.en||b.id),art:'Baustil einer Kultur'+(b.kulturen&&b.kulturen.length?' ('+b.kulturen.join(', ')+')':''),bild:b.de},null,'N6a')});
- var H=O.hauptstaedte;if(H)for(var i=1;i<=H.zahl;i++)neu('ort-capital-'+(i<10?'0':'')+i,'Ortsbild','N6f',1,{name:H.liste&&H.liste[i-1]?H.liste[i-1].en:'Capital '+i+' (placeholder)',art:'Hauptstadt eines Kulturkreises'+(H.liste&&H.liste[i-1]?' ('+H.liste[i-1].kultur+')':''),groesse:fl(H.felder)+' ('+H.groesse+')',bild:H.bild},null,'N6a');
- (O.zusatzteile||[]).forEach(function(z){neu('ort-teil-'+z.id,'Stadtteil','N6e',z.wichtig,{name:z.en,art:'Zusatzteil „'+z.de+'“ für Ortsbilder',bild:z.bild},null,'N6a')});
+  {name:s.en+', '+a.en,art:'Auflage „'+a.de+'“ für '+s.de,groesse:fl(s.felder)+' ('+s.groesse+')',bild:a.bild},null,'N6b')})});
+ (O.baustile||[]).forEach(function(b){neu('ort-stil-'+b.id,'Ortsbild','N6d',2,{name:'Building style: '+(b.en||b.id),art:'Baustil einer Kultur'+(b.kulturen&&b.kulturen.length?' ('+b.kulturen.join(', ')+')':''),bild:b.de},null,'N6b')});
+ var H=O.hauptstaedte;if(H)for(var i=1;i<=H.zahl;i++)neu('ort-capital-'+(i<10?'0':'')+i,'Ortsbild','N6f',1,{name:H.liste&&H.liste[i-1]?H.liste[i-1].en:'Capital '+i+' (placeholder)',art:'Hauptstadt eines Kulturkreises'+(H.liste&&H.liste[i-1]?' ('+H.liste[i-1].kultur+')':''),groesse:fl(H.felder)+' ('+H.groesse+')',bild:H.bild},null,'N6b');
+ (O.zusatzteile||[]).forEach(function(z){neu('ort-teil-'+z.id,'Stadtteil','N6e',z.wichtig,{name:z.en,art:'Zusatzteil „'+z.de+'“ für Ortsbilder',bild:z.bild},null,'N6b')});
  (O.aussenposten||[]).forEach(function(a){neu('posten-'+a.id,'Außenposten',a.etappe,a.wichtig,{name:a.en,art:'Außenposten „'+a.de+'“',groesse:fl(a.felder),wo:a.wo,bild:a.bild})});
  (O.strassen||[]).forEach(function(w){neu('weg-'+w.id,'Straße',w.art==='amweg'?'N7e':'N7d',w.wichtig,{name:w.en,art:{belag:'Straßenbelag',bauweise:'Straßenbauweise',bruecke:'Brücke',amweg:'am Weg'}[w.art]+' „'+w.de+'“',bild:w.bild},w.art==='belag'||w.art==='bauweise'?'boden':'einrichtung')});
  var M=O.marktstaende;if(M)(gruppen||[]).forEach(function(g){neu('marktstand-'+g.id,'Marktstand','N7f',M.wichtig,{name:'Market Stall: '+(g.name||g.id),art:'Marktstand „'+(g.de||g.id)+'“',bild:M.bild})});
