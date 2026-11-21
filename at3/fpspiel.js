@@ -29,12 +29,19 @@ function ersatz(id){var s=S(),g=s.naechste(132,128,122,s.PALETTE),r=s.dunkler(g)
  return{id:id,version:0,ersatz:true,fp:{nah:{w:12,h:40,ax:6,ay:39,z:z}}}}
 
 // Ausschnitt beim Bildkern holen; ist der noch nicht bereit, kurz warten und nochmal fragen
+// AR1c2: Arena in voller Größe (Höhenfeld daten/arena-fp.json, einmal geladen; Notausschalter ?ar1c2=0: wie AR1c1, nur Häuschen und Schild)
+var ANL_AUS=/[?&]ar1c2=0/.test(location.search),ANFP=null,ANFP_L=null;
+function anlFp(){if(ANL_AUS||!P.o.anlage)return Promise.resolve(null);if(ANFP_L)return ANFP_L;
+ ANFP_L=(P.o.json?P.o.json('daten/arena-fp.json'):fetch('daten/arena-fp.json').then(function(r){return r.ok?r.json():null})).then(function(j){ANFP=j&&j.format==='at3-arena-fp'?j:null;return ANFP}).catch(function(){return null});return ANFP_L}
+function anlDaten(){if(!ANFP||!P.o.anlage)return null;var A=P.o.anlage();if(!A||A.x<0)return null;var H=[];if(A.ein)H.push([A.ein[0],A.ein[1]]);if(A.aus)H.push([A.aus[0],A.aus[1]]);
+ return{x:A.x,y:A.y,w:A.w,h:A.h,haus:H,fp:ANFP}}
 function holen(ox,oy){var o=P.o,sperr=[];for(var id in o.objekte){var k=o.objekte[id].karte;if(k&&k.feld==='x')sperr.push(id)}
- return new Promise(function(ok,no){var n=0;(function frag(){o.karte.frage('fp',{ox:ox,oy:oy,sperr:sperr}).then(function(r){
+ return new Promise(function(ok,no){var n=0;(function frag(){o.karte.frage('fp',{ox:ox,oy:oy,sperr:sperr,anl:anlDaten()}).then(function(r){
    if(r.fehlt||!r.welt){if(++n>40)return no(new Error('picture core not ready'));return setTimeout(frag,250)}ok(r)})})()})}
 function annehmen(r){var w=r.welt,F=window.AT3_FPW,L=[],ids=r.arten;
  if(!P.arten){P.arten={};ids.forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)});['figur-arbeiter','karren-ochse','tier-reh','markt-stand','arena-sand','arena-eingang','arena-ausgang','schild-closed','medicus','leiche'].forEach(function(id){P.arten[id]=P.o.objekte[id]||ersatz(id)})}
  w.obj=L;for(var i=0;i<w.objN;i++){var o={art:ids[w.objArt[i]],x:w.objX[i],y:w.objY[i],r:0,z:0};o.z=F.hoehe(w,o.x,o.y);L.push(o)}
+ if(w.anl&&!P.arten[w.anl.id||'arena-sandgrube'])P.arten['arena-sandgrube']=P.o.objekte['arena-sandgrube']||ersatz('arena-sandgrube');
  P.ausschnitte++;P.ausschnittMs.push(r.us/1000);if(P.ausschnittMs.length>20)P.ausschnittMs.shift();P.stueckeNeu+=r.neu||0;return w}
 
 // Begehbaren Platz nahe der Mitte suchen (Kartenmitte kann im Wasser oder in einem Baum liegen)
@@ -46,7 +53,7 @@ function platz(w,x,y){var F=window.AT3_FPW;for(var r=0;r<30;r++)for(var dy=-r;dy
 function an(o){P.o=o;var k=o.karte.kamera();
  if(!k||k.globus)return Promise.reject(new Error('globe'));
  var ox=Math.floor(k.x)-MITTE,oy=Math.floor(k.y)-MITTE;P.holt=true;
- return holen(ox,oy).then(function(r){var w=annehmen(r),lx=k.x-w.ox,ly=k.y-w.oy;if(lx<0)lx+=WX;var p=platz(w,lx,ly);P.holt=false;
+ return anlFp().then(function(){return holen(ox,oy)}).then(function(r){var w=annehmen(r),lx=k.x-w.ox,ly=k.y-w.oy;if(lx<0)lx+=WX;var p=platz(w,lx,ly);P.holt=false;
   if(!p)throw new Error('no ground');
   P.w=w;P.cam={x:p.x,y:p.y,a:-Math.PI/2,z:null};window.AT3_FPW.bewegen(w,P.cam,0,0,1,AUGE);
   groesse();if(!P.eing)eingaben(o.cv);P.an=true;P.neu=true;P.zeiten=[];BEW={};weckerAn();starten();return position()})
@@ -82,6 +89,8 @@ function antippen(e){var cv=P.o.cv,r=cv.getBoundingClientRect(),sx=(e.clientX-r.
  var wa=P.letzt&&P.letzt.wand,X=Math.floor(sx);
  if(wa&&X>=0&&X<OPT.W&&wa.d[X]<1e8&&sy>=wa.y0[X]&&sy<wa.y1[X]&&(!best||wa.d[X]<best.d)){var id=WAENDE[wa.typ[X]-1],wo=P.o.objekte[id];
   if(P.o.beiObjekt)P.o.beiObjekt(id,!wo,wa.d[X]*3);return}
+ // AR1c2: Arena (Ring, Ränge, Sand) unter dem Finger, wenn sie näher ist als das Objekt: Arena-Karte wie auf der Karte
+ var an=P.letzt&&P.letzt.anl;if(an&&X>=0&&X<OPT.W&&an.d[X]<1e8&&sy>=an.y0[X]&&sy<an.y1[X]&&(!best||an.d[X]<best.d)&&P.o.beiBewegt){P.o.beiBewegt('fest',{art:'arena-sandgrube',anl:1},an.d[X]*3);return}
  if(best&&best.o.bew&&P.o.beiBewegt){P.o.beiBewegt(best.o.typ,best.o.karte,best.d*3);return}   // FP3: Arbeiter, Karren
  var ob=best&&P.arten[best.o.art];if(P.o.beiObjekt)P.o.beiObjekt(ob?ob.id:null,ob?!!ob.ersatz:false,best?best.d*3:0)}
 

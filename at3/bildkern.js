@@ -59,7 +59,7 @@ function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.f
  m.us=(performance.now()-t)*1000;self.postMessage(m,tr)}
 // FP1: Ausschnitt 96 × 96 Felder um den Gladiator (fpausschnitt.js, erst beim ersten Mal geladen). Das Fenster der Stücke rückt zum Ausschnitt,
 // fehlende Stücke werden sofort gerechnet (höchstens 9), dann geht der Ausschnitt ohne Kopie an den Hauptkern.
-var FPA=null,DACHF=null;
+var FPA=null,DACHF=null,ANF=null;
 // FP2b: Ziegelfarbe fürs Dach in First Person = häufigste Farbe im Kartenbild von dach-ziegel (Startset; nicht übernommen = graues Ersatzbild), Fuge eine Stufe dunkler
 function dachF(){if(DACHF&&DACHF.b===BBILD)return DACHF;var b=BBILD&&BBILD[BAUB.ARTEN.indexOf('dach-ziegel')],z=new Uint32Array(256),c=46;
  if(b){var px=b.L[0].px;for(var i=0;i<px.length;i++)z[px[i]]++;z[255]=0;for(var k=0,m=0;k<64;k++)if(z[k]>m){m=z[k];c=k}}
@@ -69,7 +69,9 @@ function fp(d,m,t){if(!FPA){importScripts('fpausschnitt.js'+self.location.search
  st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});
  L.forEach(function(c){var k=um(c[0])*8192+c[1];if(st.has(k))return;var b=G.ausschnitt(A,c[0],c[1],lager.pop()||new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:c[0],cy:c[1],daten:b});b._s=null;st.set(k,b);neu++});
  var sp=new Uint8Array(NAT.ARTEN.length);(d.sperr||[]).forEach(function(id){var i=NAT.ARTEN.indexOf(id);if(i>=0)sp[i]=1});
- var w=FPA.bauen(BB,NAT,hole,seed,d.ox,d.oy,sp,F,BAU.size?bauFrei:null,BAU.size?{hole:holeBau,BODEN:BAUB.BODEN,PUNKT:BAUB.PUNKT,DACHF:dachF()}:null);m.welt=w;m.arten=NAT.ARTEN;m.neu=neu;m.us=(performance.now()-t)*1000;self.postMessage(m,FPA.puffer(w));weiter()}
+ var w=FPA.bauen(BB,NAT,hole,seed,d.ox,d.oy,sp,F,BAU.size?bauFrei:null,BAU.size?{hole:holeBau,BODEN:BAUB.BODEN,PUNKT:BAUB.PUNKT,DACHF:dachF()}:null,anl(d.anl));m.welt=w;m.arten=NAT.ARTEN;m.neu=neu;m.us=(performance.now()-t)*1000;self.postMessage(m,FPA.puffer(w));weiter()}
+// AR1c2: Arena in First Person: Höhenfeld aus daten/arena-fp.json (vom Hauptkern mitgeschickt, hier einmal entpackt) und Lage der Anlage mit Häuschen
+function anl(a){if(!a||!a.fp)return null;if(!ANF||ANF.h!==a.fp.h){ANF={h:a.fp.h,d:FPA.entpacken(a.fp)}}return{d:ANF.d,x:a.x,y:a.y,w:a.w,h:a.h,haus:a.haus||[]}}
 function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  for(var r=0;r<MY;r++)for(var dy=-r;dy<=r;dy++)for(var dx=-r;dx<=r;dx+=(Math.abs(dy)===r?1:2*r||1)){var x=MX+dx,y=MY+dy,i=y*G.GW+x;
   if(A.ort[i]&15){var p=G.ortPunkt(seed,A,x,y);return{x:p[0],y:p[1],ort:A.ort[i]&15}}

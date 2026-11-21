@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='ead32b9a', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='f6f22d2d', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -603,7 +603,7 @@ function fpUmschalten(){if(fpBusy||!KARTE)return;var k=$('fpKnopf');
  if(fpAn){var p=window.AT3FP.aus();fpAn=false;$('fpRahmen').hidden=true;$('weltCv').hidden=false;$('zoomRein').disabled=$('zoomRaus').disabled=false;
   k.textContent=t('fp.knopf');k.setAttribute('aria-pressed','false');if(p)KARTE.geh(p.x,p.y);$('weltInfo').textContent=t('welt.tippen');return}
  fpBusy=true;k.disabled=true;$('weltInfo').textContent=t('fp.laedt');
- fpLaden().then(function(){return window.AT3FP.an({karte:KARTE,objekte:geladen.objekte,cv:$('fpCv'),rahmen:$('fpRahmen'),stick:$('fpStick'),beiObjekt:fpObjekt,beiBewegt:fpBewegt})})
+ fpLaden().then(function(){return window.AT3FP.an({karte:KARTE,objekte:geladen.objekte,cv:$('fpCv'),rahmen:$('fpRahmen'),stick:$('fpStick'),beiObjekt:fpObjekt,beiBewegt:fpBewegt,json:holeJson,anlage:function(){var AR=GLAD&&GLAD.arena;return AR&&AR.gross&&AR.anlage&&AR.anlage.x>=0?AR.anlage:null}})})
  .then(function(){fpAn=true;$('weltCv').hidden=true;$('fpRahmen').hidden=false;try{$('fpRahmen').scrollIntoView({block:'nearest'})}catch(x){}$('zoomRein').disabled=$('zoomRaus').disabled=true;k.textContent=t('fp.zurueck');k.setAttribute('aria-pressed','true');$('weltInfo').textContent=t('fp.tippen')})
  .catch(function(e){var m=e&&e.message;$('weltInfo').textContent=m==='globe'?t('fp.globus'):m==='no ground'?t('fp.keinBoden'):t('fp.fehler',{e:m})})
  .then(function(){fpBusy=false;k.disabled=fpWahl})}

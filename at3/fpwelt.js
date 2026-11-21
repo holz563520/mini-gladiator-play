@@ -9,6 +9,8 @@
 // FP2a: Kanten tragen Typ und Bauzustand (Wand, Tür, Tor; geplant, halb, fertig), Türen und Tore mit Öffnung, Sturz und Holzrahmen; Antippen der vordersten Kante je Spalte.
 // FP2b: Walmdach über fertigen Feldern mit Dach (w.innen, w.dachR, w.dachC aus fpausschnitt.js) als Platte zwischen Decke und Dachfläche im selben Strahl:
 //    von außen Ziegel, von innen die Decke (eine Stufe dunkler, Wände innen auch), Hof ohne Dach bleibt hell; Verdeckung je Bildpunkt (Stempel), Antippen meldet Dach/Decke.
+// AR1c2: w.anl (fpausschnitt.js): Arena als Höhenfeld; Wandseiten (Stufen, Podium, Außenwand) in eigener Farbe je Höhenband, in der Arena kein Hinunterspringen,
+//    je Spalte Lage der Arena fürs Antippen. Ohne w.anl alles wie vorher.
 // FP1: zeichne/bewegen laufen unverändert auch auf einem Ausschnitt der echten Welt (fpausschnitt.js, gleiches Format, Farben fertig in w.farbe).
 // Einheiten: 1 Feld ≈ 3 m, Höhe in Feldern (1 Feld = 1 Geschoss = 32 Bildpunkte im AT3-64-Bild).
 (function(G){
@@ -125,6 +127,7 @@ function nummernBild(b,S){var v=bildMerk.get(b);if(v)return v;var px=new Uint8Ar
 function zeichne(buf,w,cam,opt,arten,S,FP){var W=opt.W,H=opt.H,sicht=opt.sicht,pal=opt.pal||S.PALETTE,m=vorbereiten(w,W,H,pal,!!opt.muster,S,FP);
  buf.set(m.bg);var hz=Math.round(H*FP.HORIZONT/FP.H),f=m.f,fa=m.farbe,nb=m.nebel,NL=NEBEL.length,h=w.h,schritte=0,stein=m.stein,cz=cam.z;
  var ca=Math.cos(cam.a),sa=Math.sin(cam.a),holz=m.holz,tw=m.tw,ty0=m.ty0,ty1=m.ty1,tt=m.tt,ov=m.ov,nov=0;
+ var AN=w.anl||null,anY0=m.anY0||(m.anY0=new Float32Array(W)),anY1=m.anY1||(m.anY1=new Float32Array(W)),anD=m.anD||(m.anD=new Float32Array(W));if(anY0.length!==W){anY0=m.anY0=new Float32Array(W);anY1=m.anY1=new Float32Array(W);anD=m.anD=new Float32Array(W)}
  var IN=w.innen,DR=w.dachR,DC=w.dachC,zb=m.zb,zs=m.zs,zk=m.zk,zf=m.zfr=(m.zfr+1)&0xffff||1,du=m.du,deck0=m.decke,dachPx=0,sl=-1,sc=0,dk=false,ytop=0;
  // Stein der Wand an Bildzeile yy (Tiefe d, Fuß hb, Lage u entlang der Kante): Fugen, Seite heller/dunkler, Mauerkrone oben
  function steinC(yy,d,hb,u,seite,hoch,st){var wz=cz-(yy-hz)*d/f-hb,lage=wz*5,reihe=Math.floor(lage),fr=lage-reihe,fu=u*2.5+(reihe&1)*.5,ju=fu-Math.floor(fu);
@@ -138,7 +141,7 @@ function zeichne(buf,w,cam,opt,arten,S,FP){var W=opt.W,H=opt.H,sicht=opt.sicht,p
    else{var lage=(cz-(yy-hz)*d/f-cc)*10,reihe=Math.floor(lage),fr=lage-reihe,ju=fu+(reihe&1)*.5;ju-=Math.floor(ju);c=fr<.2||ju<.1?du[ba]:ba}
    buf[p]=nb[L+c];zs[p]=zf;zb[p]=d;zk[p]=1;dachPx++}
   dk=true}
- for(var x=0;x<W;x++){var an=cam.a+m.off[x],dx=Math.cos(an),dy=Math.sin(an),co=m.co[x],yb=H,t=.12,dt=.04,pfx=Math.floor(cam.x),pfy=Math.floor(cam.y),n=0,b=x*MAXS,novx=0,dvor=.12*co;tw[x]=1e9;sl=-1;dk=false;ytop=0;
+ for(var x=0;x<W;x++){var an=cam.a+m.off[x],dx=Math.cos(an),dy=Math.sin(an),co=m.co[x],yb=H,t=.12,dt=.04,pfx=Math.floor(cam.x),pfy=Math.floor(cam.y),n=0,b=x*MAXS,novx=0,dvor=.12*co;tw[x]=1e9;sl=-1;dk=false;ytop=0;var hp=hoeheIn(h,cam.x,cam.y);anY0[x]=1e9;anY1[x]=-1;anD[x]=1e9;
   while(t<sicht&&n<MAXS-2){var px=cam.x+dx*t,py=cam.y+dy*t;if(px<0||py<0||px>=N||py>=N)break;
    var fx=Math.floor(px),fy=Math.floor(py);
    if(fx!==pfx||fy!==pfy){var k1=1e9,k2=1e9,u1=0,u2=0,e1=-1,e2=-1,v1=0,v2=0;
@@ -149,8 +152,14 @@ function zeichne(buf,w,cam,opt,arten,S,FP){var W=opt.W,H=opt.H,sicht=opt.sicht,p
     if(e2>=0&&yb>0){yb=wand(k2,u2,e2,v2);m.pd[b+n]=k2*co;m.py[b+n]=yb;n++}
     pfx=fx;pfy=fy;if(yb<=0)break}
    var d=t*co,hh=hoeheIn(h,px,py),y=hz+((cz-hh)*f/d)|0;
-   if(y<yb){var gi=(Math.round(py*U)*M+Math.round(px*U)),lv=Math.min(NL-1,(d/sicht*NL)|0),c=nb[lv*64+fa[gi]];if(y<0)y=0;
-    if(dk){for(var yy=y;yy<yb;yy++)if(zs[yy*W+x]!==zf)buf[yy*W+x]=c}else for(var yy=y;yy<yb;yy++)buf[yy*W+x]=c;yb=y;m.pd[b+n]=d;m.py[b+n]=yb;n++;if(yb<=0)break}
+   if(y<yb){var gi=(Math.round(py*U)*M+Math.round(px*U)),lv=Math.min(NL-1,(d/sicht*NL)|0),c=nb[lv*64+fa[gi]];if(y<0)y=0;var y0t=y;
+    if(AN){var ai=(gi%M)-AN.i0,aj=((gi/M)|0)-AN.j0;   // AR1c2: Arena-Punkt: Wandseite (Zeilen zwischen voriger und neuer Höhe) in ihrer Farbe je Höhenband, Antippen merken
+     if(ai>=0&&aj>=0&&ai<AN.n&&aj<AN.n&&AN.h[aj*AN.n+ai]!==255){if(anY0[x]>y)anY0[x]=y;if(anY1[x]<yb)anY1[x]=yb;if(anD[x]>d)anD[x]=d;var tf=AN.fi[aj*AN.n+ai];
+      if(tf&&hh>hp+.01){var yf=Math.min(yb,(hz+((cz-hp)*f/d))|0),to=(tf-1)*AN.nb,lvl=lv*64;
+       for(var ya=y;ya<yf;ya++){if(dk&&zs[ya*W+x]===zf)continue;var bd=((cz-(ya-hz)*d/f-AN.base)*AN.bpg)|0,fc=bd>=0&&bd<AN.nb?AN.tab[to+bd]:255;buf[ya*W+x]=fc===255?c:nb[lvl+fc]}
+       if(yf>y)y=yf}}}
+    if(dk){for(var yy=y;yy<yb;yy++)if(zs[yy*W+x]!==zf)buf[yy*W+x]=c}else for(var yy=y;yy<yb;yy++)buf[yy*W+x]=c;yb=y0t;m.pd[b+n]=d;m.py[b+n]=yb;n++;if(yb<=0)break}
+   hp=hh;
    // FP2b: Dach über diesem Feld (fertig, Dach zu): Platte zwischen Decke (Traufe) und Dachfläche
    if(IN&&IN[fy*N+fx]){var gq=Math.round(py*U)*M+Math.round(px*U),cc=hh+WANDH,yr=Math.ceil(hz+(cz-cc-DR[gq]/32)*f/d),lv3=Math.min(NL-1,(d/sicht*NL)|0);
     if(cz<cc){var yc=Math.floor(hz+(cz-cc)*f/d)+1,top=Math.max(0,sl>=0?Math.min(sl,yr):yr),bot=Math.min(yb,yc);
@@ -197,7 +206,8 @@ function zeichne(buf,w,cam,opt,arten,S,FP){var W=opt.W,H=opt.H,sicht=opt.sicht,p
   for(var gy=ga;gy<gb;gy++){var pg=gy*W+gx;if(zs[pg]===zf&&zb[pg]<gd)continue;buf[pg]=nb[gl+(gy>=gb-2?gho[gs]:steinC(gy,gd,gh,gu,gs,WANDH,gst))];zk[pg]=0}}
  return{schritte:schritte,objekte:treffer.length,bewegte:BW.length,kandidaten:liste.length,treffer:treffer,stuerze:nov,dachPx:dachPx,
   dach:{zk:zk,zb:zb,zs:zs,zf:zf,W:W,an:!!IN},   // FP2b: Antippen: Bildpunkt mit zs = zf und zk 1 = Dach/Decke (Tiefe zb)
-  wand:{d:tw,y0:ty0,y1:ty1,typ:tt}}}
+  wand:{d:tw,y0:ty0,y1:ty1,typ:tt},
+  anl:AN?{y0:anY0,y1:anY1,d:anD}:null}}   // AR1c2: je Spalte Zeilen und Tiefe der Arena (Antippen)
 
 // ---------- Laufen ----------
 // Wie eine Figur: Wände auf Kanten, Wasser (außer Steg), Bäume sperren ihr Feld, Hänge steiler als 50° nicht begehbar. Gleiten an Hindernissen.
@@ -208,7 +218,9 @@ function frei(w,x0,y0,x1,y1){if(x1<1||y1<1||x1>N-1||y1>N-1)return false;
  if(gb!==fb&&sperrt(kv(w.wandY,fa+Math.max(gb,fb)*N),x0))return false;
  if(w.sperre[Math.floor(sy)*N+Math.floor(sx)])return false;
  var k=Math.round(sy*U)*M+Math.round(sx*U);if((w.h[k]<WL||w.biom[k]===BIOM.wasser)&&w.biom[k]!==BIOM.steg)return false;   // FP1: Bergseen liegen über WL, zählen über das Biom
- var dh=hoehe(w,x1,y1)-hoehe(w,x0,y0),dist=Math.hypot(x1-x0,y1-y0)||1e-6;return dh/dist<=STEIL}
+ var dh=hoehe(w,x1,y1)-hoehe(w,x0,y0),dist=Math.hypot(x1-x0,y1-y0)||1e-6,A=w.anl;
+ if(A){var ai=Math.round(x1*U)-A.i0,aj=Math.round(y1*U)-A.j0;if(ai>=0&&aj>=0&&ai<A.n&&aj<A.n&&A.h[aj*A.n+ai]!==255)dh=Math.abs(dh)}   // AR1c2: in der Arena auch nicht hinunterspringen (Podium sperrt den Sand in beide Richtungen)
+ return dh/dist<=STEIL}
 function bewegen(w,cam,vor,seit,dt,auge){var ca=Math.cos(cam.a),sa=Math.sin(cam.a),mx=(vor*ca-seit*sa)*dt,my=(vor*sa+seit*ca)*dt,x=cam.x,y=cam.y;
  if(mx||my){if(frei(w,x,y,x+mx,y))x+=mx;if(frei(w,x,y,x,y+my))y+=my;cam.x=x;cam.y=y}
  var ziel=hoehe(w,cam.x,cam.y)+auge;cam.z=cam.z==null?ziel:cam.z+(ziel-cam.z)*Math.min(1,dt*12);return cam}
