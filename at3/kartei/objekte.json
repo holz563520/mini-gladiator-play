@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 229,
+ "typMax": 239,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -906,7 +906,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i",
-   "version": 1,
+   "version": 2,
    "typ": 148,
    "kat": "dach",
    "name": "Pantile Right",
@@ -915,7 +915,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-a",
-   "version": 1,
+   "version": 2,
    "typ": 149,
    "kat": "dach",
    "name": "Pantile Right A",
@@ -924,7 +924,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-b",
-   "version": 1,
+   "version": 2,
    "typ": 150,
    "kat": "dach",
    "name": "Pantile Right B",
@@ -933,7 +933,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-c",
-   "version": 1,
+   "version": 2,
    "typ": 151,
    "kat": "dach",
    "name": "Pantile Right C",
@@ -942,7 +942,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-d",
-   "version": 1,
+   "version": 2,
    "typ": 152,
    "kat": "dach",
    "name": "Pantile Right D",
@@ -951,7 +951,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-e",
-   "version": 1,
+   "version": 2,
    "typ": 153,
    "kat": "dach",
    "name": "Pantile Right E",
@@ -960,7 +960,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-f",
-   "version": 1,
+   "version": 2,
    "typ": 154,
    "kat": "dach",
    "name": "Pantile Right F",
@@ -969,7 +969,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-k",
-   "version": 1,
+   "version": 2,
    "typ": 155,
    "kat": "dach",
    "name": "Pantile Right Ridge",
@@ -978,7 +978,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-kn",
-   "version": 1,
+   "version": 2,
    "typ": 156,
    "kat": "dach",
    "name": "Pantile Right Ridge+Gable L",
@@ -987,7 +987,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-ks",
-   "version": 1,
+   "version": 2,
    "typ": 157,
    "kat": "dach",
    "name": "Pantile Right Ridge+Gable R",
@@ -996,7 +996,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-n",
-   "version": 1,
+   "version": 2,
    "typ": 158,
    "kat": "dach",
    "name": "Pantile Right Gable L",
@@ -1005,7 +1005,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-r",
-   "version": 1,
+   "version": 2,
    "typ": 159,
    "kat": "dach",
    "name": "Pantile Right Eave",
@@ -1014,7 +1014,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-rn",
-   "version": 1,
+   "version": 2,
    "typ": 160,
    "kat": "dach",
    "name": "Pantile Right Eave+Gable L",
@@ -1023,7 +1023,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-rs",
-   "version": 1,
+   "version": 2,
    "typ": 161,
    "kat": "dach",
    "name": "Pantile Right Eave+Gable R",
@@ -1032,7 +1032,7 @@
   },
   {
    "id": "bk-putz-dach-ab-i-s",
-   "version": 1,
+   "version": 2,
    "typ": 162,
    "kat": "dach",
    "name": "Pantile Right Gable R",
@@ -1041,7 +1041,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j",
-   "version": 1,
+   "version": 2,
    "typ": 163,
    "kat": "dach",
    "name": "Pantile Front",
@@ -1050,7 +1050,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-a",
-   "version": 1,
+   "version": 2,
    "typ": 164,
    "kat": "dach",
    "name": "Pantile Front A",
@@ -1059,7 +1059,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-b",
-   "version": 1,
+   "version": 2,
    "typ": 165,
    "kat": "dach",
    "name": "Pantile Front B",
@@ -1068,7 +1068,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-c",
-   "version": 1,
+   "version": 2,
    "typ": 166,
    "kat": "dach",
    "name": "Pantile Front C",
@@ -1077,7 +1077,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-d",
-   "version": 1,
+   "version": 2,
    "typ": 167,
    "kat": "dach",
    "name": "Pantile Front D",
@@ -1086,7 +1086,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-e",
-   "version": 1,
+   "version": 2,
    "typ": 168,
    "kat": "dach",
    "name": "Pantile Front E",
@@ -1095,7 +1095,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-f",
-   "version": 1,
+   "version": 2,
    "typ": 169,
    "kat": "dach",
    "name": "Pantile Front F",
@@ -1104,7 +1104,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-k",
-   "version": 1,
+   "version": 2,
    "typ": 170,
    "kat": "dach",
    "name": "Pantile Front Ridge",
@@ -1113,7 +1113,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-kn",
-   "version": 1,
+   "version": 2,
    "typ": 171,
    "kat": "dach",
    "name": "Pantile Front Ridge+Gable L",
@@ -1122,7 +1122,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-ks",
-   "version": 1,
+   "version": 2,
    "typ": 172,
    "kat": "dach",
    "name": "Pantile Front Ridge+Gable R",
@@ -1131,7 +1131,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-n",
-   "version": 1,
+   "version": 2,
    "typ": 173,
    "kat": "dach",
    "name": "Pantile Front Gable L",
@@ -1140,7 +1140,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-r",
-   "version": 1,
+   "version": 2,
    "typ": 174,
    "kat": "dach",
    "name": "Pantile Front Eave",
@@ -1149,7 +1149,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-rn",
-   "version": 1,
+   "version": 2,
    "typ": 175,
    "kat": "dach",
    "name": "Pantile Front Eave+Gable L",
@@ -1158,7 +1158,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-rs",
-   "version": 1,
+   "version": 2,
    "typ": 176,
    "kat": "dach",
    "name": "Pantile Front Eave+Gable R",
@@ -1167,7 +1167,7 @@
   },
   {
    "id": "bk-putz-dach-ab-j-s",
-   "version": 1,
+   "version": 2,
    "typ": 177,
    "kat": "dach",
    "name": "Pantile Front Gable R",
@@ -1176,7 +1176,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i",
-   "version": 1,
+   "version": 2,
    "typ": 178,
    "kat": "dach",
    "name": "Pantile Left",
@@ -1185,7 +1185,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-a",
-   "version": 1,
+   "version": 2,
    "typ": 179,
    "kat": "dach",
    "name": "Pantile Left A",
@@ -1194,7 +1194,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-b",
-   "version": 1,
+   "version": 2,
    "typ": 180,
    "kat": "dach",
    "name": "Pantile Left B",
@@ -1203,7 +1203,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-c",
-   "version": 1,
+   "version": 2,
    "typ": 181,
    "kat": "dach",
    "name": "Pantile Left C",
@@ -1212,7 +1212,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-d",
-   "version": 1,
+   "version": 2,
    "typ": 182,
    "kat": "dach",
    "name": "Pantile Left D",
@@ -1221,7 +1221,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-e",
-   "version": 1,
+   "version": 2,
    "typ": 183,
    "kat": "dach",
    "name": "Pantile Left E",
@@ -1230,7 +1230,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-f",
-   "version": 1,
+   "version": 2,
    "typ": 184,
    "kat": "dach",
    "name": "Pantile Left F",
@@ -1239,7 +1239,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-k",
-   "version": 1,
+   "version": 2,
    "typ": 185,
    "kat": "dach",
    "name": "Pantile Left Ridge",
@@ -1248,7 +1248,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-kn",
-   "version": 1,
+   "version": 2,
    "typ": 186,
    "kat": "dach",
    "name": "Pantile Left Ridge+Gable L",
@@ -1257,7 +1257,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-ks",
-   "version": 1,
+   "version": 2,
    "typ": 187,
    "kat": "dach",
    "name": "Pantile Left Ridge+Gable R",
@@ -1266,7 +1266,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-n",
-   "version": 1,
+   "version": 2,
    "typ": 188,
    "kat": "dach",
    "name": "Pantile Left Gable L",
@@ -1275,7 +1275,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-r",
-   "version": 1,
+   "version": 2,
    "typ": 189,
    "kat": "dach",
    "name": "Pantile Left Eave",
@@ -1284,7 +1284,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-rn",
-   "version": 1,
+   "version": 2,
    "typ": 190,
    "kat": "dach",
    "name": "Pantile Left Eave+Gable L",
@@ -1293,7 +1293,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-rs",
-   "version": 1,
+   "version": 2,
    "typ": 191,
    "kat": "dach",
    "name": "Pantile Left Eave+Gable R",
@@ -1302,7 +1302,7 @@
   },
   {
    "id": "bk-putz-dach-auf-i-s",
-   "version": 1,
+   "version": 2,
    "typ": 192,
    "kat": "dach",
    "name": "Pantile Left Gable R",
@@ -1311,7 +1311,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j",
-   "version": 1,
+   "version": 2,
    "typ": 193,
    "kat": "dach",
    "name": "Pantile Rear",
@@ -1320,7 +1320,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-a",
-   "version": 1,
+   "version": 2,
    "typ": 194,
    "kat": "dach",
    "name": "Pantile Rear A",
@@ -1329,7 +1329,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-b",
-   "version": 1,
+   "version": 2,
    "typ": 195,
    "kat": "dach",
    "name": "Pantile Rear B",
@@ -1338,7 +1338,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-c",
-   "version": 1,
+   "version": 2,
    "typ": 196,
    "kat": "dach",
    "name": "Pantile Rear C",
@@ -1347,7 +1347,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-d",
-   "version": 1,
+   "version": 2,
    "typ": 197,
    "kat": "dach",
    "name": "Pantile Rear D",
@@ -1356,7 +1356,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-e",
-   "version": 1,
+   "version": 2,
    "typ": 198,
    "kat": "dach",
    "name": "Pantile Rear E",
@@ -1365,7 +1365,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-f",
-   "version": 1,
+   "version": 2,
    "typ": 199,
    "kat": "dach",
    "name": "Pantile Rear F",
@@ -1374,7 +1374,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-k",
-   "version": 1,
+   "version": 2,
    "typ": 200,
    "kat": "dach",
    "name": "Pantile Rear Ridge",
@@ -1383,7 +1383,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-kn",
-   "version": 1,
+   "version": 2,
    "typ": 201,
    "kat": "dach",
    "name": "Pantile Rear Ridge+Gable L",
@@ -1392,7 +1392,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-ks",
-   "version": 1,
+   "version": 2,
    "typ": 202,
    "kat": "dach",
    "name": "Pantile Rear Ridge+Gable R",
@@ -1401,7 +1401,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-n",
-   "version": 1,
+   "version": 2,
    "typ": 203,
    "kat": "dach",
    "name": "Pantile Rear Gable L",
@@ -1410,7 +1410,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-r",
-   "version": 1,
+   "version": 2,
    "typ": 204,
    "kat": "dach",
    "name": "Pantile Rear Eave",
@@ -1419,7 +1419,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-rn",
-   "version": 1,
+   "version": 2,
    "typ": 205,
    "kat": "dach",
    "name": "Pantile Rear Eave+Gable L",
@@ -1428,7 +1428,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-rs",
-   "version": 1,
+   "version": 2,
    "typ": 206,
    "kat": "dach",
    "name": "Pantile Rear Eave+Gable R",
@@ -1437,7 +1437,7 @@
   },
   {
    "id": "bk-putz-dach-auf-j-s",
-   "version": 1,
+   "version": 2,
    "typ": 207,
    "kat": "dach",
    "name": "Pantile Rear Gable R",
@@ -1446,7 +1446,7 @@
   },
   {
    "id": "bk-putz-dach-flach",
-   "version": 1,
+   "version": 2,
    "typ": 208,
    "kat": "dach",
    "name": "Pantile Flat",
@@ -1455,7 +1455,7 @@
   },
   {
    "id": "bk-putz-dach-flach-a",
-   "version": 1,
+   "version": 2,
    "typ": 209,
    "kat": "dach",
    "name": "Pantile Flat A",
@@ -1464,7 +1464,7 @@
   },
   {
    "id": "bk-putz-dach-flach-b",
-   "version": 1,
+   "version": 2,
    "typ": 210,
    "kat": "dach",
    "name": "Pantile Flat B",
@@ -1473,7 +1473,7 @@
   },
   {
    "id": "bk-putz-dach-flach-c",
-   "version": 1,
+   "version": 2,
    "typ": 211,
    "kat": "dach",
    "name": "Pantile Flat C",
@@ -1482,7 +1482,7 @@
   },
   {
    "id": "bk-putz-dach-flach-d",
-   "version": 1,
+   "version": 2,
    "typ": 212,
    "kat": "dach",
    "name": "Pantile Flat D",
@@ -1491,7 +1491,7 @@
   },
   {
    "id": "bk-putz-dach-flach-e",
-   "version": 1,
+   "version": 2,
    "typ": 213,
    "kat": "dach",
    "name": "Pantile Flat E",
@@ -1500,7 +1500,7 @@
   },
   {
    "id": "bk-putz-dach-flach-f",
-   "version": 1,
+   "version": 2,
    "typ": 214,
    "kat": "dach",
    "name": "Pantile Flat F",
@@ -1508,8 +1508,62 @@
    "datei": "obj/bk-putz-dach-flach-f.json"
   },
   {
-   "id": "bk-putz-giebel",
+   "id": "bk-putz-fenster",
    "version": 1,
+   "typ": 230,
+   "kat": "wand",
+   "name": "Whitewash Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-fenster.json"
+  },
+  {
+   "id": "bk-putz-fenster-a",
+   "version": 1,
+   "typ": 231,
+   "kat": "wand",
+   "name": "Whitewash Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-fenster-a.json"
+  },
+  {
+   "id": "bk-putz-fenster-b",
+   "version": 1,
+   "typ": 232,
+   "kat": "wand",
+   "name": "Whitewash Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-fenster-b.json"
+  },
+  {
+   "id": "bk-putz-fenster-c",
+   "version": 1,
+   "typ": 233,
+   "kat": "wand",
+   "name": "Whitewash Window C",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-fenster-c.json"
+  },
+  {
+   "id": "bk-putz-fenster-d",
+   "version": 1,
+   "typ": 234,
+   "kat": "wand",
+   "name": "Whitewash Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-fenster-d.json"
+  },
+  {
+   "id": "bk-putz-fenster-e",
+   "version": 1,
+   "typ": 235,
+   "kat": "wand",
+   "name": "Whitewash Window E",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-fenster-e.json"
+  },
+  {
+   "id": "bk-putz-giebel",
+   "version": 2,
    "typ": 215,
    "kat": "wand",
    "name": "Whitewash Gable",
@@ -1518,7 +1572,7 @@
   },
   {
    "id": "bk-putz-giebel-a",
-   "version": 1,
+   "version": 2,
    "typ": 216,
    "kat": "wand",
    "name": "Whitewash Gable A",
@@ -1527,7 +1581,7 @@
   },
   {
    "id": "bk-putz-giebel-ab",
-   "version": 1,
+   "version": 2,
    "typ": 217,
    "kat": "wand",
    "name": "Whitewash Gable Peak (down)",
@@ -1536,7 +1590,7 @@
   },
   {
    "id": "bk-putz-giebel-auf",
-   "version": 1,
+   "version": 2,
    "typ": 218,
    "kat": "wand",
    "name": "Whitewash Gable Peak (up)",
@@ -1545,7 +1599,7 @@
   },
   {
    "id": "bk-putz-giebel-b",
-   "version": 1,
+   "version": 2,
    "typ": 219,
    "kat": "wand",
    "name": "Whitewash Gable B",
@@ -1554,7 +1608,7 @@
   },
   {
    "id": "bk-putz-tuer",
-   "version": 1,
+   "version": 2,
    "typ": 220,
    "kat": "wand",
    "name": "Whitewash Door",
@@ -1563,7 +1617,7 @@
   },
   {
    "id": "bk-putz-tuer-a",
-   "version": 1,
+   "version": 2,
    "typ": 221,
    "kat": "wand",
    "name": "Whitewash Door A",
@@ -1572,7 +1626,7 @@
   },
   {
    "id": "bk-putz-tuer-b",
-   "version": 1,
+   "version": 2,
    "typ": 222,
    "kat": "wand",
    "name": "Whitewash Door B",
@@ -1581,7 +1635,7 @@
   },
   {
    "id": "bk-putz-wand",
-   "version": 1,
+   "version": 2,
    "typ": 223,
    "kat": "wand",
    "name": "Whitewash Wall",
@@ -1590,7 +1644,7 @@
   },
   {
    "id": "bk-putz-wand-a",
-   "version": 1,
+   "version": 2,
    "typ": 224,
    "kat": "wand",
    "name": "Whitewash Wall A",
@@ -1599,7 +1653,7 @@
   },
   {
    "id": "bk-putz-wand-b",
-   "version": 1,
+   "version": 2,
    "typ": 225,
    "kat": "wand",
    "name": "Whitewash Wall B",
@@ -1608,7 +1662,7 @@
   },
   {
    "id": "bk-putz-wand-c",
-   "version": 1,
+   "version": 2,
    "typ": 226,
    "kat": "wand",
    "name": "Whitewash Wall C",
@@ -1617,7 +1671,7 @@
   },
   {
    "id": "bk-putz-wand-d",
-   "version": 1,
+   "version": 2,
    "typ": 227,
    "kat": "wand",
    "name": "Whitewash Wall D",
@@ -1626,7 +1680,7 @@
   },
   {
    "id": "bk-putz-wand-e",
-   "version": 1,
+   "version": 2,
    "typ": 228,
    "kat": "wand",
    "name": "Whitewash Wall E",
@@ -1635,12 +1689,48 @@
   },
   {
    "id": "bk-putz-wand-f",
-   "version": 1,
+   "version": 2,
    "typ": 229,
    "kat": "wand",
    "name": "Whitewash Wall F",
    "status": "uebernommen",
    "datei": "obj/bk-putz-wand-f.json"
+  },
+  {
+   "id": "bk-putz-wand-oben",
+   "version": 1,
+   "typ": 236,
+   "kat": "wand",
+   "name": "Whitewash Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-wand-oben.json"
+  },
+  {
+   "id": "bk-putz-wand-oben-a",
+   "version": 1,
+   "typ": 237,
+   "kat": "wand",
+   "name": "Whitewash Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-wand-oben-a.json"
+  },
+  {
+   "id": "bk-putz-wand-oben-b",
+   "version": 1,
+   "typ": 238,
+   "kat": "wand",
+   "name": "Whitewash Upper Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-wand-oben-b.json"
+  },
+  {
+   "id": "bk-putz-wand-oben-c",
+   "version": 1,
+   "typ": 239,
+   "kat": "wand",
+   "name": "Whitewash Upper Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-putz-wand-oben-c.json"
   },
   {
    "id": "bk-ziegel-boden",
