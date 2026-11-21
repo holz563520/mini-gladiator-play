@@ -11,6 +11,7 @@
 // wie dort, nur Rechnen im Hauptkern, kein neuer Kern-Verkehr), Blickrichtung aus der Bewegung, Arbeiter mit Laufbildern (Stehen, Lauf 1, Stehen, Lauf 2).
 // Antippen zeigt dieselbe Karte wie auf der Karte. Läuft jemand in Sichtweite, wird weiter gezeichnet; sonst schaut ein kleiner Wecker alle 0,25 s nach.
 // Gezeichnet wird nur, wenn sich etwas bewegt hat, und nur solange die Ansicht offen und sichtbar ist.
+// AR2c2: Zuschauer kommen mit (KARTE.bewegte, Lage wie auf der Karte), Bild je nach Blick von vorn, hinten oder der Seite; fehlende Blätter bestellt die Karte nach. Notausschalter ?ar2c2=0.
 var AT3FP=(function(){
 'use strict';
 var AUGE=0.58,TEMPO=1.2,RENNEN=2.2,DREH=1.9,N=96,MITTE=48,NACHLADEN=20,OPT={W:320,H:180,sicht:24,muster:true};
@@ -104,9 +105,26 @@ function bewegte(){var w=P.w,K=P.o.karte;if(!w||!K||!K.bewegte){if(w)w.bew=[];re
   var key=e.typ+e.id,a=BEW[key],R=RICHT[e.dir&3]||RICHT[0];
   if(!a)a={hx:R[0],hy:R[1],x:x,y:y,weg:0};else{var dx=x-a.x,dy=y-a.y,l=Math.hypot(dx,dy);if(l>1e-4&&l<2){a.hx=dx/l;a.hy=dy/l;a.weg+=l}else if(!e.geht){a.hx=a.hx*.8+R[0]*.2;a.hy=a.hy*.8+R[1]*.2;var n=Math.hypot(a.hx,a.hy)||1;a.hx/=n;a.hy/=n}}
   a.x=x;a.y=y;neu[key]=a;var nah=(x-c.x)*(x-c.x)+(y-c.y)*(y-c.y)<r2;if(nah&&(e.geht||a.pose))geht=true;
+  if(e.typ==='besucher'){if(e.sitzt){a.hx=e.hx;a.hy=e.hy}aus.push({art:'besucher',x:x,y:y,z:F.hoehe(w,x,y),r:0,bew:true,hx:a.hx,hy:a.hy,nb:besBild(e,a,x,y,c),typ:'besucher',karte:e.karte});continue}      // AR2c2
   var pose=(e.typ==='person'||e.typ==='tier')&&e.geht?FOLGE[Math.floor(a.weg/SCHRITT)&3]:0;if(nah&&pose!==a.pose)geht=true;a.pose=pose;
   aus.push({art:e.art,x:x,y:y,z:F.hoehe(w,x,y),r:0,bew:true,hx:a.hx,hy:a.hy,pose:pose,typ:e.typ,karte:e.karte})}
- BEW=neu;if(P.probe&&P.probe.n){probeDazu(aus,w,F);geht=true}w.bew=aus;return geht}
+ BEW=neu;besWunsch();if(P.probe&&P.probe.n){probeDazu(aus,w,F);geht=true}w.bew=aus;return geht}
+// AR2c2: Zuschauer. Bild je nach Blick: schaut er zur Kamera oder von ihr weg (mehr als 45°), das Bild von vorn bzw. hinten (AR2c1, Stehen, Gehen 1/2, Sitzen),
+// sonst die Seitenansicht aus dem Kartenblatt (Reihe 0 schaut nach rechts, 1 nach links; Gehen 8 Bilder, Stehen; Sitzende nur Oberkörper wie auf der Karte).
+// Die Bilder liegen schon als Farbnummern vor: Ausschnitt einmal je Typ und Bild gemerkt, nichts Neues je Bild. Fehlt das Blatt: Ersatzbild, Typ wird nachbestellt.
+var VB=new Map(),BFEHLT={},bwT=0,bwN=0,ERS=null;
+function besNr(typ,B,art,i){var c=VB.get(typ);if(!c||c.B.p64!==B.p64){c={B:B};VB.set(typ,c)}var k=art+i;if(c[k])return c[k];
+ var w=B.fw,h=B.fh,hh=h,ay=B.ay,src,sw,x0,y0;if(art==='v'){src=B.vh.p64;sw=B.vh.w;x0=i*w;y0=0}else{src=B.p64;sw=B.w;x0=(i&15)*w;y0=(i>>4)*h;if(art==='k'){hh=B.ay-7;ay=hh}}
+ var px=new Uint8Array(w*hh);for(var y=0;y<hh;y++)for(var x=0;x<w;x++)px[y*w+x]=src[(y0+y)*sw+x0+x];return c[k]={w:w,h:hh,ax:B.ax,ay:ay,px:px,k:k}}
+function ersatz2(){if(!ERS){var s=S(),n=s.naechste(62,57,52,s.PALETTE),px=new Uint8Array(4*14).fill(n);ERS={w:4,h:14,ax:2,ay:13,px:px,k:'e'}}return ERS}
+function besBild(e,a,x,y,c){var K=P.o.karte,B=K.besucherBild?K.besucherBild(e.btyp):null;if(!B){BFEHLT[e.btyp]=1;return ersatz2()}
+ var dx=c.x-x,dy=c.y-y,d=Math.hypot(dx,dy)||1,zu=(a.hx*dx+a.hy*dy)/d,re=-a.hx*Math.sin(c.a)+a.hy*Math.cos(c.a),l=Math.hypot(zu,re)||1,lauf=e.geht&&!e.sitzt;
+ if(B.vh&&Math.abs(zu)/l>.7071)return besNr(e.btyp,B,'v',(zu<0?4:0)+(e.sitzt?3:lauf?FOLGE[Math.floor(a.weg/SCHRITT)&3]:0));
+ var row=re>=0?0:1;if(e.sitzt)return besNr(e.btyp,B,'k',row*16+B.stehen);
+ return besNr(e.btyp,B,'s',row*16+(lauf?B.gehen+((Math.floor(a.weg*2/SCHRITT)+(e.id|0))%8):B.stehen))}
+// fehlende Blätter höchstens alle 0,3 s an die Karte melden (die bestellt beim Kampfkern wie für die Karte)
+function besWunsch(){var L=Object.keys(BFEHLT).map(Number),t=performance.now();BFEHLT={};if(!L.length&&!bwN)return;if(L.length&&t-bwT<300)return;bwT=t;bwN=L.length;
+ if(P.o.karte.besucherWunsch)P.o.karte.besucherWunsch(L)}
 // FP3-Probe (nur mit ?nosave&fpprobe): n gedachte Arbeiter und Karren (jeder fünfte ein Karren) laufen im Kreis um den Startpunkt, nur zum Messen der Zeichenzeit.
 // Nichts davon gelangt in den Weltkern oder den Spielstand.
 function probeDazu(aus,w,F){var p=P.probe,t=(performance.now()-p.t0)/1000;

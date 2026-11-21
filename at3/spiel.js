@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='bbb9c40e', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='9c8a0707', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -640,7 +640,7 @@ function fpUmschalten(){if(fpBusy||!KARTE)return;var k=$('fpKnopf');
  .catch(function(e){var m=e&&e.message;$('weltInfo').textContent=m==='globe'?t('fp.globus'):m==='no ground'?t('fp.keinBoden'):t('fp.fehler',{e:m})})
  .then(function(){fpBusy=false;k.disabled=fpWahl})}
 // FP3: Arbeiter oder Karren in First Person angetippt: dieselbe Karte wie auf der Karte (mit Schaltern unten), oben kurz ohne Schalter mit Entfernung
-function fpBewegt(typ,k,m){if(typ==='person')personKarte(k);else if(typ==='tier')tierKarte(k);else if(typ==='fest')festKarte(k);else karrenKarte(k);var c=$('karte').cloneNode(true);c.querySelectorAll('button').forEach(function(b){b.remove()});
+function fpBewegt(typ,k,m){if(typ==='besucher')besucherKarte(k);else if(typ==='person')personKarte(k);else if(typ==='tier')tierKarte(k);else if(typ==='fest')festKarte(k);else karrenKarte(k);var c=$('karte').cloneNode(true);c.querySelectorAll('button').forEach(function(b){b.remove()});
  $('weltInfo').innerHTML=c.innerHTML.replace(/(<br>\s*)+$/,'')+' <span class="leise">· '+esc(t('fp.entfernt',{m:Math.round(m)}))+'</span>'}
 function fpObjekt(id,ersatz,m){if(!id){$('weltInfo').textContent=t('fp.nichts');return}objektKarte(id,ersatz);$('weltInfo').innerHTML=$('karte').innerHTML+' <span class="leise">· '+esc(t('fp.entfernt',{m:Math.round(m)}))+'</span>'}
 function fpText(){var f=window.AT3FP&&window.AT3FP.mess();if(!f||!f.bilder)return t('mess.fpAus');var u=function(v){return v==null?'-':v.toFixed(1)+' ms'};

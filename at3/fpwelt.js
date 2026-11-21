@@ -191,12 +191,13 @@ function zeichne(buf,w,cam,opt,arten,S,FP){var W=opt.W,H=opt.H,sicht=opt.sicht,p
   var si=-rx*sa+ry*ca;if(Math.abs(si)>de*1.1+1)continue;liste.push({o:o,d:de,sx:W/2+si*f/de})}
  liste.sort(function(a,b){return a.d-b.d});if(liste.length>MAXOBJ)liste.length=MAXOBJ;
  var treffer=[],FPW=FP;
- for(var q=liste.length-1;q>=0;q--){var e=liste[q],oo=e.o,ob=arten[oo.art];if(!ob)continue;
+ for(var q=liste.length-1;q>=0;q--){var e=liste[q],oo=e.o,ob=arten[oo.art];if(!ob&&!oo.nb)continue;
   var k=f/(32*e.d),fern=k<.5,bi;
-  if(oo.bew){var lx=(cam.x-oo.x)/e.d,ly=(cam.y-oo.y)/e.d,zu=oo.hx*lx+oo.hy*ly,re=-oo.hx*sa+oo.hy*ca;bi=FPW.bewegtBild(ob,oo.pose,zu,re,fern);if(!bi){bi=FPW.bewegtBild(ob,oo.pose,zu,re,false);fern=false}}
+  if(oo.nb){bi=oo.nb;fern=false}      // AR2c2: Zuschauer bringen ihr Bild fertig als Farbnummern mit
+  else if(oo.bew){var lx=(cam.x-oo.x)/e.d,ly=(cam.y-oo.y)/e.d,zu=oo.hx*lx+oo.hy*ly,re=-oo.hx*sa+oo.hy*ca;bi=FPW.bewegtBild(ob,oo.pose,zu,re,fern);if(!bi){bi=FPW.bewegtBild(ob,oo.pose,zu,re,false);fern=false}}
   else{var seite=((Math.round((Math.atan2(cam.y-oo.y,cam.x-oo.x)-cam.a*0)/(Math.PI/4))+oo.r)%8+8)%8;bi=fern?FPW.fernBild(ob,seite):FPW.nahBild(ob,seite);if(!bi){bi=FPW.nahBild(ob,seite);fern=false}}
   if(!bi)continue;if(fern)k*=2;
-  var nbz=nummernBild(bi,S),fy2=hz+(cz-oo.z)*f/e.d,x0=e.sx-nbz.ax*k,y0=fy2-nbz.ay*k,sw=nbz.w*k,sh=nbz.h*k,lv2=Math.min(NL-1,(e.d/sicht*NL)|0),ix0=Math.max(0,Math.ceil(x0)),ix1=Math.min(W,Math.ceil(x0+sw));
+  var nbz=oo.nb?bi:nummernBild(bi,S),fy2=hz+(cz-oo.z)*f/e.d,x0=e.sx-nbz.ax*k,y0=fy2-nbz.ay*k,sw=nbz.w*k,sh=nbz.h*k,lv2=Math.min(NL-1,(e.d/sicht*NL)|0),ix0=Math.max(0,Math.ceil(x0)),ix1=Math.min(W,Math.ceil(x0+sw));
   if(ix0>=ix1||y0>=H)continue;var gezeigt=false;
   for(var X=ix0;X<ix1;X++){var ix=Math.min(nbz.w-1,((X-x0)/k)|0),clip=Math.min(H,oberkante(m,X,e.d,H),Math.ceil(y0+sh));
    for(var Y=Math.max(0,Math.ceil(y0));Y<clip;Y++){var iy=Math.min(nbz.h-1,((Y-y0)/k)|0),c2=nbz.px[iy*nbz.w+ix];if(c2!==255){var pz=Y*W+X;if(zs[pz]===zf&&zb[pz]<e.d)continue;buf[pz]=nb[lv2*64+c2];zb[pz]=e.d;zs[pz]=zf;zk[pz]=2;gezeigt=true}}}
