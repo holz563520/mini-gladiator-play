@@ -35,7 +35,7 @@ var GROESSEN={
  boden: {w:64,h:32, text:'Bodenfeld, genau eine Raute 64 × 32'},
  blume: {w:32,h:32, text:'Blume, Busch, Kleinkram (1 Feld)'},
  baum:  {w:64,h:128,text:'Baum, Fels (1 Feld, bis 4 Geschosse hoch)'},
- wand:  {w:32,h:56, text:'Wandstück an einer Feldkante, 1 Geschoss, mit Oberkante'},
+ wand:  {w:32,h:96, text:'Wandstück an einer Feldkante, 1 Geschoss, mit Oberkante (Baukasten seit N6b2b1: 51 hoch, Maßstab 1,5×)'},
  dach:  {w:64,h:64, text:'Dachstück je Feld'},
  einrichtung:{w:64,h:64, text:'Einrichtung, Arbeitsplatz, Lagerstelle (1 Feld)'},
  ware:  {w:32,h:32, text:'Ware, Stapel'},

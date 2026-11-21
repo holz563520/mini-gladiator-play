@@ -34,7 +34,7 @@ function zeigen(){var el=E.el,O=E.orte,biome=O.biome||[],stile=O.baustile||[];
   '<p>Ein Ort ist auf der Karte ein großes Bild. Es entsteht aus einem <b>Bauplan</b> (Seed, Siedlungsart, Biom, Baustil, Zusatzteile) und den <b>Teilen</b> des Baukastens. Gespeichert wird nur der Plan, gebaut wird das Bild im Bildkern, wenn der Ort ins Bild kommt. So kostet ein Weiler weniger als eine Hauptstadt und keine Stadt mehr als ihr Abriss.</p>'+
   '<p class="leise">Bis N6b sind alle Teile Skizzen: Bauklassen-Teile mit Farbtausch je Biom und Baustil. Die schöne Bauweise je Biom kommt mit N6b und N6c, die Baustile mit N6d, weitere Zusatzteile mit N6e.</p>';
  h+='<div class="sbForm">'+
-  '<label>Siedlungsart <select id="sbArt">'+Object.keys(SB.ARTEN).map(function(a){return '<option value="'+a+'"'+(a==='village'?' selected':'')+'>'+ART_DE[a]+' · '+SB.ARTEN[a].W+' × '+SB.ARTEN[a].W+'</option>'}).join('')+'</select></label>'+
+  '<label>Siedlungsart <select id="sbArt">'+Object.keys(SB.ARTEN).map(function(a){return '<option value="'+a+'"'+(a==='village'?' selected':'')+'>'+ART_DE[a]+' · '+BK.feld(SB.ARTEN[a].W)+' × '+BK.feld(SB.ARTEN[a].W)+'</option>'}).join('')+'</select></label>'+
   '<label>Biom <select id="sbBiom">'+biome.map(function(b){return '<option value="'+b.id+'">'+esc(b.de)+(b.nurAussenposten?' (nur Außenposten)':'')+'</option>'}).join('')+'</select></label>'+
   '<label>Baustil <select id="sbStil"><option value="">nach Biom</option>'+stile.map(function(s){return '<option value="'+s.id+'">'+esc(s.en)+'</option>'}).join('')+'</select></label>'+
   '<label>Seed <input id="sbSeed" type="number" min="0" max="4294967295" value="7"></label>'+

@@ -6,7 +6,7 @@
 // Alles auf Knopfdruck auf dem Hauptkern (ein Gebäude setzt sich in wenigen ms zusammen); nichts davon lädt das Spiel.
 var AT3_BAUKASTEN_MENUE=(function(){
 'use strict';
-var S,BK,FP,E={wahl:{form:'werkstatt',klasse:'brick'},seite:1,kult:null,stufe:1};
+var S,BK,FP,E={wahl:{form:'werkstatt',klasse:'brick'},seite:1,kult:null,stufe:1,geschosse:1};
 var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')};
 var FORM_DE={winzig:'winzig',klein:'klein',werkstatt:'Werkstatt',halle:'Halle',hof:'Hof mit Feldern',lang:'lang',gross:'groß',rund:'rund',bahn:'Bahn'};
 var DINGE=['figur-arbeiter','boden-gras','boden-sand','werk-bank','lager-platz','markt-stand','ware-bretter','ware-stamm','ware-fleisch'];
@@ -34,8 +34,10 @@ function zeigen(el){
   '.bkFp canvas{width:320px;max-width:100%}.bkForm{display:flex;flex-wrap:wrap;gap:6px 12px}.bkForm label{display:flex;flex-direction:column;font-size:.9em}.bkForm input{width:6em}'+
   '.bkTeile{display:flex;flex-wrap:wrap;gap:8px}.bkTeil{display:flex;flex-direction:column;align-items:center;max-width:140px}.bkTeil small{font-size:.75em;word-break:break-all;text-align:center}</style>'+
   '<p>Gebäude entstehen aus wenigen Teilen je Bauklasse (Wand, Tür, Giebel, Dachplatten, Boden, Ränge, Schild). Jedes Teil ist ein eigenes Objekt der Kartei mit beiden Ansichten; ein Gebäude jeder Größe wird daraus ins Bodenbild gesetzt. Kein Palast braucht ein eigenes Riesenbild, nur sehr viele Sklaven.</p>';
- h+='<h3>Musterbeispiele <span class="leise">(je Grundform und Bauklasse eins)</span></h3><div class="bkKnoepfe" id="bkFormen">'+BK.MUSTER.map(function(m){return '<button class="knopf klein" data-form="'+m.form+'">'+FORM_DE[m.form]+'<small>'+m.w+' × '+m.h+'</small></button>'}).join('')+'</div>';
+ h+='<h3>Musterbeispiele <span class="leise">(je Grundform und Bauklasse eins)</span></h3><div class="bkKnoepfe" id="bkFormen">'+BK.MUSTER.map(function(m){return '<button class="knopf klein" data-form="'+m.form+'">'+FORM_DE[m.form]+'<small>'+BK.feld(m.w)+' × '+BK.feld(m.h)+'</small></button>'}).join('')+'</div>';
  h+='<div class="bkKnoepfe" id="bkKlassen">'+BK.KLASSEN.map(function(k){return '<button class="knopf klein" data-klasse="'+k.id+'">'+k.de+'</button>'}).join('')+'</div>';
+ h+='<div class="bkKnoepfe" id="bkGeschosse">Geschosse: '+[1,2,3,4].map(function(g){return '<button class="knopf klein" data-gesch="'+g+'">'+g+'</button>'}).join('')+
+  ' <span class="leise">Maßstab 1,5× (N6b2b1): Planfelder der Maßtabelle × 1,5 = Bildfelder, ein Geschoss 51 Bildpunkte, Tür etwas größer als die Figur. Rundbauten und Bahnen bleiben eingeschossig.</span></div>';
  h+='<p id="bkInfo" class="leise"></p><div class="bkAnsichten"><div class="bkKarte" id="bkKarte"></div><div class="bkFp"><canvas id="bkFp" width="'+FP.W+'" height="'+FP.H+'" class="pixel"></canvas>'+
   '<p><button class="knopf klein" id="bkLinks">◀</button> <span id="bkSeite"></span> <button class="knopf klein" id="bkRechts">▶</button></p>'+
   '<p>Abstand: <button class="knopf klein" data-stufe="0">nah 1×</button> <button class="knopf klein" data-stufe="1">½</button> <button class="knopf klein" data-stufe="2">weit ¼</button></p>'+
@@ -43,7 +45,7 @@ function zeigen(el){
  h+='<p><button class="knopf" id="bkAlle">Alle 27 Muster messen<small>Zusammensetzen ins Bodenbild, gedrosselt ×'+E.budgets.drossel+'</small></button></p><div id="bkTabelle"></div>';
  h+='<h3>Werkzeug</h3><div class="bkForm">'+
   '<label>Grundform <select id="wfForm">'+E.masse.formen.filter(function(f){return FORM_DE[f.id]}).map(function(f){return '<option value="'+f.id+'">'+FORM_DE[f.id]+'</option>'}).join('')+'</select></label>'+
-  '<label>Breite <input id="wfW" type="number" min="1" max="96" value="6"></label><label>Tiefe <input id="wfH" type="number" min="1" max="96" value="6"></label>'+
+  '<label>Breite <small>(Planfelder)</small> <input id="wfW" type="number" min="1" max="96" value="6"></label><label>Tiefe <input id="wfH" type="number" min="1" max="96" value="6"></label>'+
   '<label>Bauklasse <select id="wfKl">'+BK.KLASSEN.map(function(k){return '<option value="'+k.id+'">'+k.de+'</option>'}).join('')+'</select></label>'+
   '<label>Dachform <select id="wfDach"><option value="">wie die Grundform</option>'+BK.DACHFORMEN.map(function(d){return '<option value="'+d.id+'">'+d.de+'</option>'}).join('')+'</select></label>'+
   '<label>Dachfarbe <select id="wfDF">'+reihen()+'</select></label><label>Wandfarbe <select id="wfWF">'+reihen()+'</select></label>'+
@@ -55,6 +57,7 @@ function zeigen(el){
  [].forEach.call(el.querySelectorAll('[data-klasse]'),function(b){b.onclick=function(){E.wahl.klasse=b.dataset.klasse;if(!E.wahl.form)E.wahl.form='werkstatt';E.kult=null;muster()}});
  $('#bkLinks').onclick=function(){E.seite=(E.seite+7)%8;fp()};$('#bkRechts').onclick=function(){E.seite=(E.seite+1)%8;fp()};
  [].forEach.call(el.querySelectorAll('[data-stufe]'),function(b){b.onclick=function(){E.stufe=+b.dataset.stufe;fpBau()}});
+ [].forEach.call(el.querySelectorAll('[data-gesch]'),function(b){b.onclick=function(){E.geschosse=+b.dataset.gesch;if(E.akt)zeigeGebaeude(E.akt.form,E.akt.w,E.akt.h,E.akt.klasse,E.akt.dach)}});
  $('#bkAlle').onclick=alleMessen;$('#wfForm').onchange=grenze;$('#wfZeig').onclick=werkzeug;$('#wfKartei').onclick=inKartei;
  grenze();muster()}
 function $(q){return E.el.querySelector(q)}
@@ -67,7 +70,10 @@ function grenze(){var f=formDef($('#wfForm').value),t;
 function passt(f,w,h){if(f.rund)return w>=f.rund[0]&&w<=f.rund[1];var a=Math.min(w,h),b=Math.max(w,h);return a>=f.kurz[0]&&a<=f.kurz[1]&&b>=f.lang[0]&&b<=f.lang[1]}
 function hole(id){return(E.kult&&E.kult.obj[id])||E.obj[id]||null}
 // Ein Gebäude setzen: Grundform, Drehung (0–3), Dachform. Zeit = gedrosselt (×drossel wiederholt).
-function setze(form,w,h,klasse,dreh,dach){var L=BK.bilde(form,w,h,klasse);if(E.kult)L.kultur=E.kult.kuerzel;for(var i=0;i<dreh;i++)L=BK.drehe(L);
+// w, h in Planfeldern (Maßtabelle); gebaut wird in Bildfeldern (× 1,5) mit der gewählten Zahl Geschosse
+function bauL(form,w,h,klasse,g){var L=BK.bilde(form,BK.feld(w),BK.feld(h),klasse);L.geschosse=g==null?E.geschosse:g;return L}
+function setze(form,w,h,klasse,dreh,dach,g){var L=bauL(form,w,h,klasse,g);if(E.kult)L.kultur=E.kult.kuerzel;for(var i=0;i<dreh;i++)L=BK.drehe(L);
+ BK.setzen(L,hole,dach);   // einmal vorweg: Strecken und Ableiten der Teile (einmal je Teil, im Spiel im Bildkern vorgewärmt) zählt nicht zum Zusammensetzen
  var n=E.budgets.drossel||4,t=performance.now(),r;for(var k=0;k<n;k++)r=BK.setzen(L,hole,dach);r.ms=performance.now()-t;return r}
 function leinwand(r){var c=document.createElement('canvas');c.width=r.w;c.height=r.h;var x=c.getContext('2d'),d=x.createImageData(r.w,r.h),P=S.PALETTEN[S.PALETTE].farben.map(S.farbe);
  for(var i=0;i<r.px.length;i++){var n=r.px[i];if(n===255)continue;var c3=P[n],o=i*4;d.data[o]=c3[0];d.data[o+1]=c3[1];d.data[o+2]=c3[2];d.data[o+3]=255}x.putImageData(d,0,0);c.className='pixel';return c}
@@ -76,12 +82,13 @@ function ampel(r){var g=E.budgets.gruppen.bau.karte,je=r.ms/r.teile*g.stufen[1];
 var AMPEL={gruen:'🟢',gelb:'🟡',rot:'🔴'};
 function zeigeGebaeude(form,w,h,klasse,dach){
  var r=setze(form,w,h,klasse,0,dach),a=ampel(r),K=BK.klasse(klasse);E.akt={form:form,w:w,h:h,klasse:klasse,dach:dach};
- $('#bkInfo').innerHTML='<b>'+FORM_DE[form]+' '+w+' × '+h+' · '+K.de+'</b>'+(E.kult?' · Kultur „'+esc(E.kult.kuerzel)+'“':'')+' · Bild '+r.w+' × '+r.h+' · '+r.teile+' Teile · '+r.ms.toFixed(1)+' ms gedrosselt'+
+ [].forEach.call(E.el.querySelectorAll('[data-gesch]'),function(b){b.classList.toggle('an',+b.dataset.gesch===E.geschosse)});
+ $('#bkInfo').innerHTML='<b>'+FORM_DE[form]+' '+w+' × '+h+' Planfelder = '+BK.feld(w)+' × '+BK.feld(h)+' Bildfelder · '+K.de+' · '+E.geschosse+' Geschoss'+(E.geschosse>1?'e':'')+'</b>'+(E.kult?' · Kultur „'+esc(E.kult.kuerzel)+'“':'')+' · Bild '+r.w+' × '+r.h+' · '+r.teile+' Teile · '+r.ms.toFixed(1)+' ms gedrosselt'+
   ' · '+AMPEL[a.farbe]+' '+a.je.toFixed(1)+' ms je 500 Teile'+(r.fehlt.length?' · <span class="witz">fehlt: '+esc(r.fehlt.join(', '))+'</span>':'');
  var z=$('#bkKarte');z.innerHTML='';var cv=leinwand(r);z.appendChild(cv);var box=z.clientWidth||360;cv.style.width=Math.min(r.w,box)+'px';
  cv.title='Antippen: Originalgröße';cv.onclick=function(){cv.style.width=cv.style.width===r.w+'px'?Math.min(r.w,box)+'px':r.w+'px';z.style.overflowX='auto'};
  // First Person: vier Kartenrichtungen (gedrehte Grundform, ohne Wiese) in echtem Maßstab zum Arbeiter; Abstand verkleinert beide gleich (½, ¼)
- E.fpRoh=[0,1,2,3].map(function(d){var L=BK.bilde(form,w,h,klasse);if(E.kult)L.kultur=E.kult.kuerzel;for(var i=0;i<d;i++)L=BK.drehe(L);return BK.zuBild(BK.setzen(L,hole,dach,true))});fpBau()}
+ E.fpRoh=[0,1,2,3].map(function(d){var L=bauL(form,w,h,klasse);if(E.kult)L.kultur=E.kult.kuerzel;for(var i=0;i<d;i++)L=BK.drehe(L);return BK.zuBild(BK.setzen(L,hole,dach,true))});fpBau()}
 function klein(b,n){for(var i=0;i<n;i++)b=S.halbBild(b);return b}
 function fpBau(){if(!E.fpRoh)return;var n=E.stufe,bilder=E.fpRoh.map(function(b){return klein(b,n)}),fig=E.obj['figur-arbeiter'];
  [].forEach.call(E.el.querySelectorAll('[data-stufe]'),function(b){b.classList.toggle('an',+b.dataset.stufe===n)});
@@ -94,11 +101,11 @@ function muster(){var m=BK.MUSTER.filter(function(x){return x.form===E.wahl.form
  [].forEach.call(E.el.querySelectorAll('[data-klasse]'),function(b){b.classList.toggle('an',b.dataset.klasse===E.wahl.klasse)});
  zeigeGebaeude(m.form,m.w,m.h,E.wahl.klasse,'');teile(E.wahl.klasse)}
 function alleMessen(){var l=BK.muster(),zeilen=[],alt=E.kult;E.kult=null;
- l.forEach(function(m){var r=setze(m.form,m.w,m.h,m.klasse,0,''),a=ampel(r);zeilen.push({id:m.id,form:m.form,klasse:m.klasse,w:m.w,h:m.h,bild:r.w+' × '+r.h,teile:r.teile,ms:r.ms,je:a.je,farbe:a.farbe,fehlt:r.fehlt.length})});
+ l.forEach(function(m){var r=setze(m.form,m.w,m.h,m.klasse,0,'',m.form==='rund'||m.form==='bahn'?1:4),a=ampel(r);zeilen.push({id:m.id,form:m.form,klasse:m.klasse,w:m.w,h:m.h,bild:r.w+' × '+r.h,teile:r.teile,ms:r.ms,je:a.je,farbe:a.farbe,fehlt:r.fehlt.length})});
  E.kult=alt;E.messung=zeilen;
  $('#bkTabelle').innerHTML='<table class="tabelle"><tr><th>Muster</th><th>Felder</th><th>Bild</th><th>Teile</th><th>ms ×'+E.budgets.drossel+'</th><th>je 500</th></tr>'+zeilen.map(function(z){
-  return '<tr><td>'+FORM_DE[z.form]+' · '+BK.klasse(z.klasse).de+'</td><td>'+z.w+' × '+z.h+'</td><td>'+z.bild+'</td><td>'+z.teile+'</td><td>'+z.ms.toFixed(1)+'</td><td>'+AMPEL[z.farbe]+' '+z.je.toFixed(1)+'</td></tr>'}).join('')+'</table>'+
-  '<p class="leise">Gemessen wird das einmalige Zusammensetzen ins Bodenbild (Regel 20). Im Spiel geschieht das ab W2c im Bildkern, Kartenstück für Kartenstück; danach wird nur noch kopiert.</p>'}
+  return '<tr><td>'+FORM_DE[z.form]+' · '+BK.klasse(z.klasse).de+'</td><td>'+BK.feld(z.w)+' × '+BK.feld(z.h)+'</td><td>'+z.bild+'</td><td>'+z.teile+'</td><td>'+z.ms.toFixed(1)+'</td><td>'+AMPEL[z.farbe]+' '+z.je.toFixed(1)+'</td></tr>'}).join('')+'</table>'+
+  '<p class="leise">Gemessen mit 4 Geschossen (schwerster Fall), Rundbau und Bahn eingeschossig. Gemessen wird das einmalige Zusammensetzen ins Bodenbild (Regel 20). Im Spiel geschieht das ab W2c im Bildkern, Kartenstück für Kartenstück; danach wird nur noch kopiert.</p>'}
 function tauschWahl(){var d=$('#wfDF').value,w=$('#wfWF').value;return d===''&&w===''?null:{dach:d===''?null:+d,wand:w===''?null:+w}}
 function kuerzel(){return($('#wfKu').value||'').trim().toLowerCase()}
 // Kultur: Teile mit Farbtausch im Speicher erzeugen (nur für Vorschau und Export, nicht in die Kartei des Browsers)
@@ -117,10 +124,13 @@ function inKartei(){var kl=$('#wfKl').value,k;try{k=kultur(kl)}catch(e){return m
  var name='baukasten-'+BK.klasse(kl).kurz+'-'+k.kuerzel+'.json',text=JSON.stringify({format:'at3-baukasten-teile',klasse:kl,kultur:k.kuerzel,tausch:k.tausch,teile:teile});
  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500);
  E.export={name:name,n:teile.length};meld(teile.length+' Teile als „'+name+'“ ausgegeben. Ins Repository: node tools/at3-baukasten.cjs --aus '+name+' · danach im Prüfstand messen und übernehmen.')}
-function teile(klasse){var K=BK.klasse(klasse),ST={skizze:'Skizze',geprueft:'geprüft',uebernommen:'übernommen'},h='<div class="bkTeile">';
+function teile(klasse){var K=BK.klasse(klasse),ST={skizze:'Skizze',geprueft:'geprüft',uebernommen:'übernommen'},h='<div class="bkTeile">',mh=BK.massHoler(hole,K.id);
+ BK.OBEN.concat(['wand','tuer']).forEach(function(t){var id=BK.kennung(K.id,t,E.kult?E.kult.kuerzel:''),o=mh(id);if(!o||!(o.abgeleitet||o.gestreckt))return;
+  h+='<div class="bkTeil" data-mass="'+id+'"><canvas></canvas><small>'+esc(id)+'<br>'+o.bild.w+' × '+o.bild.h+' · '+(o.abgeleitet?'aus der Wand abgeleitet':'gestreckt (Übergang)')+'</small></div>'});
  BK.TEILE.map(function(t){return BK.kennung(K.id,t,E.kult?E.kult.kuerzel:'')}).concat(['bk-feld']).forEach(function(id){var o=hole(id);if(!o)return h+='<div class="bkTeil witz">'+id+' fehlt</div>';
   h+='<div class="bkTeil" data-teil="'+id+'"><canvas></canvas><small>'+esc(id)+'<br>'+o.bild.w+' × '+o.bild.h+' · '+(E.kult&&E.kult.obj[id]?'nur Vorschau':ST[o.status]||o.status)+'</small></div>'});
  $('#bkTeile').innerHTML=h+'</div>';
+ [].forEach.call(E.el.querySelectorAll('[data-mass]'),function(d){var o=mh(d.dataset.mass),c=S.zuCanvas(o.bild,S.PALETTE),cv=d.querySelector('canvas');cv.width=c.width;cv.height=c.height;cv.getContext('2d').drawImage(c,0,0);cv.className='pixel';cv.style.width=c.width*2+'px'});
  [].forEach.call(E.el.querySelectorAll('[data-teil]'),function(d){var o=hole(d.dataset.teil),c=S.zuCanvas(o.bild,S.PALETTE),cv=d.querySelector('canvas');cv.width=c.width;cv.height=c.height;cv.getContext('2d').drawImage(c,0,0);cv.className='pixel';cv.style.width=c.width*2+'px'})}
 return{aufbauen:aufbauen,E:E};
 })();

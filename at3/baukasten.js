@@ -16,7 +16,15 @@
 function S(){return G.AT3_64}
 function BB(){return G.AT3BAUBILD||(typeof require!=='undefined'?require('./baubild.js'):null)}
 var STEIN=0,ERDE=1,GRUEN=2,HOLZ=3,BLUT=5,SAND=7,BRONZE=8,PURPUR=9,OCKER=10;
-var LEER=255, STEP=8, TRAUFE=32, WANDH=34, DMAX=6;
+var LEER=255, STEP=8, WANDH=34, DMAX=6;
+// Maßstab 1,5× (N6b2b1, Thomas 21.11.2026, E31): Die Tür ist etwas größer als eine Spielfigur. Feld bleibt 64 × 32 (AT3-64), Grundflächen wachsen um MASS
+// (Planfelder → Bildfelder mit feld()), ein Geschoss ist GH = 51 Bildpunkte hoch (vorher 34), die Tür rund 32–38 × 18, die Dachneigung bleibt (STEP je Feld,
+// weil Breite und Höhe gleich wachsen). Die Teile der Kartei sind noch 34 hoch (Rohteile); setzen() streckt sie beim Laden einmal auf 51 (Übergang, Thomas:
+// „alte Teile strecken“), bis sie in N6b2b2/b3 neu gezeichnet sind (dann ist ein Wandteil mindestens HNEU hoch und wird unverändert genommen).
+// Geschosse (L.geschosse, 1–4): Wände je Geschoss gestapelt, Tür nur unten, oben „fenster“ (Obergeschoss mit Fenster) und „wand-oben“ (ohne Fenster), Dach oben.
+// Fehlen diese Teile in der Kartei, entstehen sie aus der (gestreckten) Wand: Sockel durch Wandfläche ersetzt, Fenster aufgemalt.
+var MASS=1.5, GH=51, TRAUFE=48, HNEU=70, GMAX=4;
+function feld(n){return Math.max(1,Math.round(n*MASS))}
 var KLASSEN=[
  {id:'clay-wood',kurz:'lehm',de:'Lehm/Holz',en:'Mud-and-Timber',dachEn:'Thatched',wandReihe:ERDE,dachReihe:OCKER},
  {id:'brick',kurz:'ziegel',de:'Ziegel',en:'Brick',dachEn:'Tiled',wandReihe:SAND,dachReihe:BLUT},
@@ -49,6 +57,37 @@ function kopiere(px,w,ox,oy,it){var sp=it.sp,L=sp.lauf,sx=ox+it.x-sp.ax,sy=oy+it
  for(var k=0;k<L.length;k+=3){var y=L[k],o=y*sp.w;px.set(sp.px.subarray(o+L[k+1],o+L[k+2]),(sy+y)*w+sx+L[k+1])}}
 function spiegel(s){var px=new Uint8Array(s.w*s.h),u=new Int16Array(s.w);for(var y=0;y<s.h;y++)for(var x=0;x<s.w;x++)px[y*s.w+x]=s.px[y*s.w+s.w-1-x];
  for(var k=0;k<s.w;k++)u[k]=s.unten[s.w-1-k];var m={w:s.w,h:s.h,ax:s.w-s.ax,ay:s.ay,px:px,unten:u};laeufe(m);return m}
+
+// ---------- Maßstab: Rohteile strecken, Obergeschosse ableiten (N6b2b1) ----------
+// Wandbild (Speicherformat, Anker an der Westecke unten) senkrecht um MASS strecken: Bildpunkt (x, z über der Kante) kommt aus (x, ⌊z / MASS⌋).
+// Türen auch waagrecht um die Mitte: Tür x 10–21 → 7–24, die Wand links und rechts davon etwas gestaucht (Feldbreite bleibt 32).
+function tuerX(x){return x<7?Math.round(x*10/7):x<25?10+Math.floor((x-7)*12/18):22+Math.round((x-25)*10/7)}
+function strecke(b,tuer){var ay=b.ay,AY=Math.ceil(ay*MASS)+1,H=AY+9,g=raster(b.w,H),Z=S().ZEICHEN,L=S().LEER,x,y;tuer=tuer&&b.w===32;
+ for(x=0;x<b.w;x++){var xo=tuer?tuerX(x):x;for(y=0;y<H;y++){var z=AY-(x>>1)-y,yo=ay-(xo>>1)-Math.floor(z/MASS);if(yo<0||yo>=b.h)continue;
+  var c=b.z[yo].charAt(xo);if(c!==L)g.px[y*b.w+x]=Z.indexOf(c)}}
+ return alsBild(b.kat,g,b.ax,AY,false)}
+// Sockelhöhe je Bauklasse nach dem Strecken (Lehm 3, Ziegel/Putz 7, Marmor 6 Rohzeilen × 1,5)
+var SOCKEL={'clay-wood':5,brick:11,marble:9};
+// Obergeschoss aus einer gestreckten Wand: Sockelzeilen aus der Wandfläche darüber, mit Fenster (Rahmen, dunkle Öffnung, Läden außer bei Marmor) oder ohne
+function obergeschoss(b,K,fenster){var s=SOCKEL[K]||9,Z=S().ZEICHEN,L=S().LEER,g=raster(b.w,b.h),x,z;
+ var hol=function(x,z){var y=b.ay-(x>>1)-z;if(y<0||y>=b.h)return LEER;var c=b.z[y].charAt(x);return c===L?LEER:Z.indexOf(c)};
+ var put=function(x,z,n){setz(g,x,b.ay-(x>>1)-z,n)};
+ for(x=0;x<b.w;x++)for(z=-16;z<b.ay+1;z++){var n=z>=0&&z<s?hol(x,z+s):hol(x,z);if(n!==LEER)put(x,z,n)}
+ if(fenster&&b.w===32){var rahmen=K==='clay-wood'?T(HOLZ,.22):T(STEIN,K==='marble'?.98:.55),loch=T(HOLZ,0),laden=K==='clay-wood'?T(HOLZ,.5):T(GRUEN,.35);
+  for(x=11;x<=20;x++)for(z=14;z<=37;z++){var rand=x===11||x===20||z===14||z===37;put(x,z,rand?rahmen:(z===15&&x>11&&x<20)?T(HOLZ,.12):loch)}
+  for(x=12;x<=19;x++)put(x,13,rahmen);                                                                // Fensterbank
+  if(K!=='marble')for(z=15;z<=36;z++){put(8,z,laden);put(9,z,z%4===0?T(HOLZ,.2):laden);put(10,z,laden);put(21,z,laden);put(22,z,z%4===0?T(HOLZ,.2):laden);put(23,z,laden)}}
+ return alsBild(b.kat,g,b.ax,b.ay,false)}
+var ART_OBEN=/-(fenster|wand-oben)(?=-|$)/, ART_WAND=/-(wand|tuer)(?=-|$)/;
+// Holer mit Maßstab: alte Wand- und Türteile gestreckt, fehlende Obergeschoss-Teile aus der Wand derselben Kennung (Kultur, Variante) abgeleitet. Einmal je Objekt gemerkt.
+var STRECK=typeof WeakMap!=='undefined'?new WeakMap():null;
+function massHoler(hole,K){var merk={};return function(id){if(merk[id]!==undefined)return merk[id];var o=hole(id),r=o;
+ if(o&&ART_WAND.test(id)&&o.bild&&o.bild.h<HNEU)r=gestreckt(o,/-tuer(?=-|$)/.test(id));
+ else if(!o&&ART_OBEN.test(id)){var w=hole(id.replace(ART_OBEN,'-wand'));if(w){var gw=w.bild.h<HNEU?gestreckt(w,false):w,m=STRECK&&STRECK.get(gw),fe=/-fenster(?=-|$)/.test(id);
+   if(!m){m={};if(STRECK)STRECK.set(gw,m)}r=m[fe?'f':'o']||(m[fe?'f':'o']={id:id,kat:'wand',abgeleitet:true,bild:obergeschoss(gw.bild,K,fe)})}}
+ return(merk[id]=r||null)}}
+function gestreckt(o,tuer){var m=STRECK&&STRECK.get(o);if(m&&m.s)return m.s;var s={id:o.id,kat:o.kat,gestreckt:true,bild:strecke(o.bild,tuer)};
+ if(STRECK){if(!m){m={};STRECK.set(o,m)}m.s=s}return s}
 
 // ---------- Teile zeichnen ----------
 // Wandfläche: x 0–31 entlang der Kante (Westkante, links = Westecke), z Höhe über der Kante in Bildpunkten.
@@ -216,7 +255,8 @@ function dachFeld(L,form,i,j){if(form==='flach')return{d:0,t:'dach-flach'};
 // L: Grundform (bilde/drehe), hole(id) → Speicherbild oder null, dachform: 'sattel'|'walm'|'flach' (leer = wie die Grundform), ohneWiese: Wiesenfelder weglassen
 // (für First Person, das Gebäude steht dort auf der eigenen Wiese). Ergebnis: {w,h,ax,ay,px,teile,fehlt}
 function setzen(L,hole,dachform,ohneWiese){
- var K=klasse(L.klasse),gemerkt={},fehlt={},stueck=[],bod=[],seq=0,i,j,form=L.dach?(dachform||L.dach):null;
+ var K=klasse(L.klasse),NG=L.offen||!L.dach?1:Math.max(1,Math.min(GMAX,L.geschosse|0||1)),TR=TRAUFE+(NG-1)*GH;hole=massHoler(hole,K.id);
+ var gemerkt={},fehlt={},stueck=[],bod=[],seq=0,i,j,form=L.dach?(dachform||L.dach):null;
  function sp(id,gesp,r){var key=id+(gesp?'|m':'')+(r?'|'+r:'');if(gemerkt[key]!==undefined)return gemerkt[key];var o=hole(id),b=null;
   if(o){var m=MALMERK&&MALMERK.get(o),k2=(gesp?'m':'')+(r|0);if(!m&&MALMERK){m={};MALMERK.set(o,m)}b=m&&m[k2];                     // Malbild je Teil nur einmal umrechnen
    if(!b){b=(r&&S().richtungsBild(o,r))||o.bild;b=b?malbild(b):null;if(b&&gesp)b=spiegel(b);if(m&&b)m[k2]=b}}if(!b)fehlt[id]=1;return(gemerkt[key]=b)}
@@ -252,16 +292,17 @@ function setzen(L,hole,dachform,ohneWiese){
   if(di)dazu(sp(id),(oi-oj-1)*32,(oi+oj+1)*16-hub,oi+oj,m);else dazu(sp(id,true),(oi+1-oj)*32,(oi+oj+1)*16-hub,oi+oj,m)}
  var R=[[-1,0],[1,0],[0,-1],[0,1]];
  for(j=0;j<L.h;j++)for(i=0;i<L.w;i++){if(!um(zelle(L,i,j)))continue;
-  R.forEach(function(d){if(um(zelle(L,i+d[0],j+d[1])))return;kante(i,j,d[0],d[1],teil(tuer[[i,j,d[0],d[1]].join(',')]?'tuer':'wand'),0,d[0]>0||d[1]>0)})}
+  R.forEach(function(d){if(um(zelle(L,i+d[0],j+d[1])))return;var vorn=d[0]>0||d[1]>0;kante(i,j,d[0],d[1],teil(tuer[[i,j,d[0],d[1]].join(',')]?'tuer':'wand'),0,vorn);
+   for(var g=1;g<NG;g++)kante(i,j,d[0],d[1],teil(rausch(i*3+d[0]+7,j*3+d[1]+7,90+g)<.8?'fenster':'wand-oben'),g*GH,vorn)})}   // Obergeschosse: meist mit Fenster
  L.spina.forEach(function(e){kante(e[0],e[1],e[2],e[3],teil('wand'),0,false)});
  if(form)for(j=0;j<L.h;j++)for(i=0;i<L.w;i++){if(zelle(L,i,j)!=='b')continue;var D=dachFeld(L,form,i,j);
-  var rd=rand(D,i,j,form),rid=wahl(rd.id,i,j),ox=(i-j)*32,oy=(i+j)*16-(TRAUFE+D.d*STEP);
+  var rd=rand(D,i,j,form),rid=wahl(rd.id,i,j),ox=(i-j)*32,oy=(i+j)*16-(TR+D.d*STEP);
   if(rd.id!==teil(D.t))dazu(sp(wahl(teil(D.t),i,j)),ox,oy,i+j+1.5);   // darunter die Innenplatte, damit der Überhang keine Lücke lässt
   dazu(sp(rid),ox+rd.x,oy+rd.y,i+j+1.5);
   if(form!=='sattel')continue;
   var quer=L.achse==='i'?[[-1,0],[1,0]]:[[0,-1],[0,1]],spitze=D.t==='dach-auf-j'||D.t==='dach-auf-i'?'giebel-auf':D.t==='dach-flach'?null:'giebel-ab';
-  quer.forEach(function(d){if(zelle(L,i+d[0],j+d[1])==='b')return;kante(i,j,d[0],d[1],teil('giebel'),TRAUFE-STEP+2);for(var k=0;k<D.d;k++)kante(i,j,d[0],d[1],teil('giebel'),TRAUFE+k*STEP);
-   if(spitze)kante(i,j,d[0],d[1],teil(spitze),TRAUFE+D.d*STEP)})}
+  quer.forEach(function(d){if(zelle(L,i+d[0],j+d[1])==='b')return;kante(i,j,d[0],d[1],teil('giebel'),TR-STEP+3);for(var k=0;k<D.d;k++)kante(i,j,d[0],d[1],teil('giebel'),TR+k*STEP);
+   if(spitze)kante(i,j,d[0],d[1],teil(spitze),TR+D.d*STEP)})}
  L.dinge.forEach(function(d){dazu(sp(d.id,false,d.r),(d.i-d.j)*32,(d.i+d.j)*16+16,d.i+d.j+.9)});
  stueck.sort(function(a,b){return a.tief-b.tief||a.n-b.n});
  var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;bod.concat(stueck).forEach(function(e){var a=e.x-e.sp.ax,b=e.y-e.sp.ay;if(a<x0)x0=a;if(b<y0)y0=b;if(a+e.sp.w>x1)x1=a+e.sp.w;if(b+e.sp.h>y1)y1=b+e.sp.h});
@@ -273,7 +314,8 @@ var ID=(function(){var a=[];for(var i=0;i<256;i++)a.push(i);return a})();
 // Fertiges Bild → Speicherformat (für First Person, Prüfer), Anker unten in der Mitte
 function zuBild(r,kat){var g={w:r.w,h:r.h,px:r.px};return alsBild(kat||'einrichtung',g,r.w>>1,r.h-1,false)}
 
-var BK={KLASSEN:KLASSEN,DACHFORMEN:DACHFORMEN,TEILE:TEILE,PLATTEN:PLATTEN,MUSTER:MUSTER,STEP:STEP,TRAUFE:TRAUFE,DMAX:DMAX,
+var BK={KLASSEN:KLASSEN,DACHFORMEN:DACHFORMEN,TEILE:TEILE,OBEN:['fenster','wand-oben'],PLATTEN:PLATTEN,MUSTER:MUSTER,STEP:STEP,TRAUFE:TRAUFE,DMAX:DMAX,
+ MASS:MASS,GESCHOSS:GH,GMAX:GMAX,HNEU:HNEU,feld:feld,strecke:strecke,obergeschoss:obergeschoss,massHoler:massHoler,
  klasse:klasse,kennung:kennung,teile:teile,feldObjekt:feldObjekt,umfaerben:umfaerben,bilde:bilde,drehe:drehe,muster:muster,setzen:setzen,zuBild:zuBild,dachFeld:dachFeld,zelle:zelle};
 if(typeof module!=='undefined'&&module.exports)module.exports=BK;else G.AT3_BAUKASTEN=BK;
 })(typeof window!=='undefined'?window:globalThis);
