@@ -17,13 +17,16 @@
 // versetzen nur ohne offenen Termin, Häuschen danach neu), Häuschen mit arenaHaus (art ein/aus, Feld x,y, kostenlos versetzbar). Nur neue Spiele (r.gross = 1,
 // Spielstand Format 2); alte Stände (Format 1) behalten die kleine Arena. „closed“ ist bis AR2 nur Anzeige: Kämpfe und Tickets wie bisher. Sammelpunkt der
 // Kämpfer (ax, ay) ist das Eingangshäuschen, ohne Häuschen das erste begehbare Feld am Rand. Seit AR1c1 Standard für neue Spiele (Notausschalter ?ar1b=0: kleine Arena wie bisher).
+// AR2a (Thomas 21.11.2026): große Arena mit echten Zuschauern (besucher.js, r.bes): Tickets zahlen sie beim Einlass, nach dem Ergebnis kommt der Spektakel-Bonus je
+// Sitzendem dazu (bonus); zum Ruf geschlossen = Kampf ohne Publikum. Kleine Arena und Notausschalter ?ar2=0: Tickets nach der Formel wie bisher.
 (function(root){
 'use strict';
 function PERS(){return root.AT3PERS||(typeof module!=='undefined'&&module.exports?require('./personen.js'):null)}
 function BAU(){return root.AT3BAU||(typeof module!=='undefined'&&module.exports?require('./bau.js'):null)}
 function KA(){return root.AT3Kampf||(typeof module!=='undefined'&&module.exports?require('./kampfanschluss.js'):null)}
 function ATT(){return root.AT3ATT||(typeof module!=='undefined'&&module.exports?require('./attraktion.js'):null)}
-var AN=!!(root.location&&!/[?&]ar1b=0/.test(root.location.search||''));      // AR1c1: neue Spiele bekommen die große Arena; Notausschalter ?ar1b=0 (Node-Tests: klein, AR.gross(true))
+function BES(){return root.AT3BES||(typeof module!=='undefined'&&module.exports?require('./besucher.js'):null)}
+var AN=!!(root.location&&!/[?&]ar1b=0/.test(root.location.search||'')),AN2=!(root.location&&/[?&]ar2=0/.test(root.location.search||''));      // AR2a: Zuschauer (besucher.js); Notausschalter ?ar2=0      // AR1c1: neue Spiele bekommen die große Arena; Notausschalter ?ar1b=0 (Node-Tests: klein, AR.gross(true))
 var STAND=1, STAND_G=2, ZUSCHAUER=40, TICKET=1, MAX_LEICHEN=64, MAX_GEF=60, TAG=12000, RUF=4500, KAMPF=6000, SPAET=1200, A_ARENA=11, BUCH=32, FERN_R=8, ORTE=8, MAX_IDS=64, MAX_GOLD=100000000, WX=64*9600;   // RUF/KAMPF: Ticks ab Tagesbeginn (Vorschlag)
 var ART=['','dorf','stadt','hafen','hafen'];
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
@@ -53,6 +56,7 @@ function rufen(z,r,t){var P=PERS(),g=z.per;if(!g)return;var da=0;
 
 function schritt(z){var a=z.gla;if(!a)return;var r=a.ar||(a.ar=neu());platz(z,a,r);
  if(r.anl&&!(z.tick%20)&&ATT().zustand(z,r.anl))a.zaehler++;      // AR1b: offen/zu nur nach Bauänderungen
+ if(r.gross&&AN2&&r.anl&&(r.bes||r.termin))BES().schritt(z,a,r);      // AR2a: Zuschauer, jeden Tick
  if(!(z.tick%20)&&r.leichen.length&&r.leichen[0].bis<=z.tick){r.leichen=r.leichen.filter(function(l){return l.bis>z.tick});a.zaehler++}      // G9d3: nach einem Spieltag weggeräumt
  var t=r.termin;if(!t||z.tick%20)return;
  var p=z.tick-t.tag*TAG;
@@ -87,18 +91,19 @@ function befehl(z,art,w){var a=z.gla;if(!a||!a.platz)return;var r=a.ar||(a.ar=ne
   if(w.auf)r.auf=JSON.parse(JSON.stringify(w.auf));
   r.da=0;melde(a,{tick:z.tick,arena:1,ok:1,id:r.termin.id,tag:r.termin.tag});return}
  if(art==='arenaSetzen'||art==='arenaHaus'){grosse(z,a,r,art,w);return}
- if(art==='arenaAbsage'){if(!t||t.id!==w.id)return;frei(z,t.ids);r.termin=null;r.letzt={id:t.id,label:t.label,skulls:t.skulls,ort:t.ort,abgesagt:1,tag:d};a.zaehler++;return}
+ if(art==='arenaAbsage'){if(!t||t.id!==w.id)return;frei(z,t.ids);if(r.bes)BES().ende(z,r);r.termin=null;r.letzt={id:t.id,label:t.label,skulls:t.skulls,ort:t.ort,abgesagt:1,tag:d};a.zaehler++;return}
  if(art==='arenaErgebnis'){if(!t||t.id!==w.id)return;
   var k={};t.ids.forEach(function(id){var p=a.per[id];if(p&&p.g&&p.g.id!=null)k[String(p.g.id)]=p});
   var erg={auftrag:t.id,sieger:w.gewonnen,zeit:0,einheiten:w.einheiten.map(function(e){return{key:e.key,g:e.g,tot:!!e.tot,unten:!!e.unten,leben:+e.leben||0,verletzt:!!e.verletzt,schwer:!!e.schwer,
    verletzungen:Array.isArray(e.verletzungen)?e.verletzungen:[],ursache:typeof e.ursache==='string'?e.ursache:''}})};
   if(!KA().zurueckschreiben(r.buch,{id:t.id},erg,k))return;
   var ks=Object.keys(r.buch.erledigt);if(ks.length>BUCH)ks.slice(0,ks.length-BUCH).forEach(function(x){delete r.buch.erledigt[x]});
-  var zu=zuschauer(t.skulls,w.spekt,w.ruhm),tk=zu*TICKET;
-  if(!z.bau)z.bau=BAU().neu();z.bau.gold+=w.praemie+tk;z.bau.zaehler++;
+  var zu=zuschauer(t.skulls,w.spekt,w.ruhm),tk=zu*TICKET,bo=-1,ohne=0;
+  if(r.gross&&AN2){var B=r.bes&&r.bes.id===t.id?r.bes:null;zu=B?BES().ende(z,r):0;bo=bonus(zu,w.spekt,w.ruhm);ohne=!B||B.ohne?1:0;tk=B?B.tk:0}      // AR2a: Tickets schon beim Einlass gezahlt, dazu der Bonus
+  if(!z.bau)z.bau=BAU().neu();z.bau.gold+=w.praemie+(bo>=0?bo:tk);z.bau.zaehler++;
   if(w.auf)r.auf=JSON.parse(JSON.stringify(w.auf));
   frei(z,t.ids);var tote=folgen(z,a,r,t,w);
-  r.termin=null;r.letzt={id:t.id,label:t.label,skulls:t.skulls,ort:t.ort,gewonnen:w.gewonnen,praemie:w.praemie,zuschauer:zu,tickets:tk,tote:tote,angesehen:w.angesehen===0?0:1,tag:d};melde(a,{tick:z.tick,arena:1,ok:1,ende:t.id});return}}
+  r.termin=null;r.letzt={id:t.id,label:t.label,skulls:t.skulls,ort:t.ort,gewonnen:w.gewonnen,praemie:w.praemie,zuschauer:zu,tickets:tk,tote:tote,angesehen:w.angesehen===0?0:1,tag:d};if(bo>=0){r.letzt.bonus=bo;r.letzt.ohne=ohne}melde(a,{tick:z.tick,arena:1,ok:1,ende:t.id});return}}
 // ── AR1b: große Arena setzen und Häuschen ──
 function grosse(z,a,r,art,w){var m={tick:z.tick,arena:1,art:art};
  if(!r.gross){m.ok=0;m.grund='small_arena';melde(a,m);return}
@@ -117,6 +122,8 @@ function sammel(z,r){var e=r.anl.ein;if(e){r.ax=e[0];r.ay=e[1];return}var rec=r.
  r.ax=um(rec.x+mx);r.ay=rec.y+A.h}
 // ── G9d3 Folgen ──
 // Zuschauer aus Totenköpfen, Spektakel (×100) und Ruhmfaktor (×1000) wie A.judge in 1.0; ohne Angabe Spektakel 1 und Ruhm 1
+// AR2a (Thomas 21.11.2026): Spektakel-Bonus je Sitzendem: was die alte Formel je Zuschauer brachte (Spektakel × Ruhm Gold) über dem schon bezahlten Ticket, nie weniger als 0 (Vorschlag)
+function bonus(n,sp,ru){sp=sp===undefined?100:sp;ru=ru===undefined?1000:ru;var x=sp*ru-100000*TICKET;return x>0?Math.floor(n*x/100000):0}
 function zuschauer(sk,sp,ru){sp=sp===undefined?100:sp;ru=ru===undefined?1000:ru;return Math.floor(ZUSCHAUER*(sk|0)*sp*ru/100000)}
 // Leichenplatz: Nachbarfelder der Arena (Spirale bis 3), begehbar, nicht Arena, Marktstand oder schon belegt
 function leichenFeld(z,a,r){var P=PERS();for(var k=1;k<=3;k++)for(var dy=-k;dy<=k;dy++)for(var dx=-k;dx<=k;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==k)continue;
@@ -134,7 +141,7 @@ function folgen(z,a,r,t,w){var tote=[],P=PERS();
 
 // ── An das Spiel ──
 function kurz(z){var a=z.gla,r=a&&a.ar;if(!r)return null;var t=r.termin;
- return{platz:r.platz,x:r.ax,y:r.ay,gross:r.gross|0,anlage:r.anl?ATT().kurz(r.anl):null,letzt:r.letzt,da:r.da,leichen:r.leichen.map(function(l){return{id:l.id,x:l.x,y:l.y,name:l.name,ursache:l.ursache,her:l.her}}),gefallen:r.gef.length,termin:t?{id:t.id,tag:t.tag,ruf:t.tag*TAG+RUF,kampf:t.tag*TAG+KAMPF,ids:t.ids.slice(),label:t.label,skulls:t.skulls,ort:t.ort,zu:t.zu,n:t.offer.enemy.length}:null}}
+ return{platz:r.platz,x:r.ax,y:r.ay,gross:r.gross|0,anlage:r.anl?ATT().kurz(r.anl):null,bes:r.gross&&r.bes?BES().kurz(r):null,letzt:r.letzt,da:r.da,leichen:r.leichen.map(function(l){return{id:l.id,x:l.x,y:l.y,name:l.name,ursache:l.ursache,her:l.her}}),gefallen:r.gef.length,termin:t?{id:t.id,tag:t.tag,ruf:t.tag*TAG+RUF,kampf:t.tag*TAG+KAMPF,ids:t.ids.slice(),label:t.label,skulls:t.skulls,ort:t.ort,zu:t.zu,n:t.offer.enemy.length}:null}}
 function ortO(o){return{art:ART[o[1]],ortId:o[0],name:o[4],x:o[2],y:o[3]}}
 // Volle Daten fürs Kampffenster (nur auf Nachfrage): Kader (alle lebenden Gladiatoren mit 1.0-Daten), gespeicherte Aufstellung, Orte nah/fern, Termin mit Angebot
 function daten(z){var a=z.gla,r=a&&a.ar;if(!r||!z.per)return null;var P=PERS(),K=[];
@@ -143,16 +150,17 @@ function daten(z){var a=z.gla,r=a&&a.ar;if(!r||!z.per)return null;var P=PERS(),K
 
 function abdruck(r,f){if(!r){f(-1);return}f(r.platz?1:0);f(r.ax);f(r.ay);f(r.n);f(r.da);f(r.fern.length);var t=r.termin;f(t?t.tag:-1);f(t?t.zu:-1);f(t?t.ids.length:0);if(t)t.ids.forEach(f);
  f(Object.keys(r.buch.erledigt).length);f(r.leichen.length);r.leichen.forEach(function(l){f(l.id);f(l.x);f(l.y);f(l.bis)});f(r.gef.length);
- if(r.gross){f(STAND_G);ATT().abdruck(r.anl,f)}}      // AR1b: nur große Arena (alte Fingerabdrücke unverändert)
-function stand(r){if(r&&r.gross){var o=standK(r);o.format=STAND_G;o.gross=1;o.anl=ATT().stand(r.anl);return o}return r?standK(r):null}
+ if(r.gross){f(STAND_G);ATT().abdruck(r.anl,f);if(r.bes)BES().abdruck(r.bes,f)}}      // AR2a: Zuschauer nur, wenn welche da sind      // AR1b: nur große Arena (alte Fingerabdrücke unverändert)
+function stand(r){if(r&&r.gross){var o=standK(r);o.format=STAND_G;o.gross=1;o.anl=ATT().stand(r.anl);if(r.bes)o.bes=BES().stand(r.bes);return o}return r?standK(r):null}
 function standK(r){return JSON.parse(JSON.stringify({format:STAND,ax:r.ax,ay:r.ay,platz:r.platz,versuche:r.versuche,fern:r.fern,n:r.n,termin:r.termin,buch:r.buch,auf:r.auf,letzt:r.letzt,da:r.da,leichen:r.leichen,gef:r.gef}))}
 function ausStand(d){if(d==null)return null;if(typeof d!=='object'||(d.format!==STAND&&d.format!==STAND_G)||!ganz(d.ax,0,WX-1)||!ganz(d.ay,0,1e9)||!Array.isArray(d.fern)||!ganz(d.n,1,2147483647)||!d.buch||typeof d.buch.erledigt!=='object')return false;
  var t=d.termin;if(t!==null&&(!t||typeof t.id!=='string'||!ganz(t.tag,0,1e9)||!Array.isArray(t.ids)||!t.ids.every(function(i){return ganz(i,1,2147483647)})||!ganz(t.zu,0,2)||!t.offer||!Array.isArray(t.offer.enemy)||!t.offer.enemy.every(function(u){return u&&istG(u.g)})))return false;
  if(d.leichen!==undefined&&(!Array.isArray(d.leichen)||d.leichen.length>MAX_LEICHEN||!d.leichen.every(function(l){return !!l&&ganz(l.id,1,2147483647)&&ganz(l.x,0,WX-1)&&ganz(l.y,0,1e9)&&ganz(l.bis,0,1e12)&&typeof l.name==='string'})))return false;
  if(d.gef!==undefined&&(!Array.isArray(d.gef)||d.gef.length>MAX_GEF))return false;
- var an=null;if(d.format===STAND_G){if(d.gross!==1)return false;if(d.anl!=null){an=ATT().ausStand(d.anl);if(!an)return false}if(!!d.platz!==!!(an&&an.x>=0))return false}
- var r=JSON.parse(JSON.stringify(d));delete r.format;r.gross=d.format===STAND_G?1:0;r.anl=an;r.platz=!!r.platz;r.versuche=r.versuche|0;r.da=r.da|0;r.auf=r.auf||null;r.letzt=r.letzt||null;r.leichen=r.leichen||[];r.gef=r.gef||[];return r}      // G9d3: ältere Stände ohne Leichen/Gefallene
+ var an=null,bs=null;if(d.format===STAND_G){if(d.gross!==1)return false;if(d.anl!=null){an=ATT().ausStand(d.anl);if(!an)return false}if(!!d.platz!==!!(an&&an.x>=0))return false;
+  if(d.bes!=null){if(!an)return false;bs=BES().ausStand(d.bes);if(!bs)return false}}      // AR2a
+ var r=JSON.parse(JSON.stringify(d));delete r.format;r.gross=d.format===STAND_G?1:0;r.anl=an;r.platz=!!r.platz;r.versuche=r.versuche|0;r.da=r.da|0;r.auf=r.auf||null;r.letzt=r.letzt||null;r.leichen=r.leichen||[];r.gef=r.gef||[];delete r.bes;if(bs)r.bes=bs;return r}      // G9d3: ältere Stände ohne Leichen/Gefallene
 
-var AR={STAND:STAND,STAND_G:STAND_G,gross:function(v){AN=!!v},ZUSCHAUER:ZUSCHAUER,TICKET:TICKET,zuschauer:zuschauer,TAG:TAG,RUF:RUF,KAMPF:KAMPF,SPAET:SPAET,A_ARENA:A_ARENA,ARTEN:ARTEN,neu:neu,schritt:schritt,befehl:befehl,ruft:ruft,kurz:kurz,daten:daten,abdruck:abdruck,stand:stand,ausStand:ausStand};
+var AR={STAND:STAND,STAND_G:STAND_G,gross:function(v){AN=!!v},zuschauerAn:function(v){AN2=!!v},bonus:bonus,ZUSCHAUER:ZUSCHAUER,TICKET:TICKET,zuschauer:zuschauer,TAG:TAG,RUF:RUF,KAMPF:KAMPF,SPAET:SPAET,A_ARENA:A_ARENA,ARTEN:ARTEN,neu:neu,schritt:schritt,befehl:befehl,ruft:ruft,kurz:kurz,daten:daten,abdruck:abdruck,stand:stand,ausStand:ausStand};
 if(typeof module!=='undefined'&&module.exports)module.exports=AR;else root.AT3ARENA=AR;
 })(typeof self!=='undefined'?self:this);

@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='f6f22d2d', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='a1318cd1', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -324,15 +324,19 @@ function arenaMeld(){var A=GLAD&&GLAD.arena,T=A&&A.termin,M=GLAD&&GLAD.meld,m=M&
  if(A&&A.platz&&attHinweis===true){attHinweis=2;if($('weltInfo').textContent===t('att.hinweis'))$('weltInfo').textContent=''}
  if(T&&T.zu===2&&!ARENA_OFFEN&&arenaAuto!==T.id){arenaAuto=T.id;arenaFrage()}      // G9d3: ansehen oder nur Ergebnis
  if(window.AT3SPIEL.angetippt==='arena')arenaKarte(true);if(BERICHT&&window.AT3SPIEL.angetippt==='bericht')arenaBericht()}
+function arenaGeld(L){return L.bonus==null?t('arena.tickets',{z:L.zuschauer,t:L.tickets|0}):L.ohne?t('arena.ohne'):t('arena.tickets2',{z:L.zuschauer|0,t:L.tickets|0,b:L.bonus|0})}      // AR2a: echte Zuschauer mit Bonus
+// AR2a: Zuschauer während des Termins (Weltkern besucher.js kurz)
+function arenaZuschauer(B){if(!B)return'';if(B.ohne)return t('arena.bes.ohne');if(B.ende)return B.kommen?t('arena.bes.geht',{n:B.drin+B.schlange+B.hin+B.gehen}):'';
+ return t('arena.bes',{s:B.sitzen,i:B.drin-B.sitzen,q:B.schlange,h:B.hin+Math.max(0,B.soll-B.kommen),t:B.tickets,p:B.plaetze})}
 function arenaLetzt(L){var w={s:'☠'.repeat(L.skulls|0),l:L.label,g:L.praemie|0};return t(L.abgesagt?'arena.letzt.ab':L.gewonnen?'arena.letzt.sieg':'arena.letzt.niederlage',w)+
- (L.abgesagt?'':(L.zuschauer!=null?' '+t('arena.tickets',{z:L.zuschauer,t:L.tickets|0}):'')+(L.tote&&L.tote.length?' '+t('arena.letzt.tote',{n:L.tote.join(', ')}):''))}      // G9d3: Tickets, Gefallene
+ (L.abgesagt?'':(L.zuschauer!=null?' '+arenaGeld(L):'')+(L.tote&&L.tote.length?' '+t('arena.letzt.tote',{n:L.tote.join(', ')}):''))}      // G9d3: Tickets, Gefallene
 function arenaKarte(still){var A=GLAD&&GLAD.arena,e=$('karte'),info=OBJTXT['arena-sand.info']||'',T=A&&A.termin,h;window.AT3SPIEL.angetippt='arena';
  if(!A||!A.platz){e.textContent=t('arena.zu');return}
  if(A.gross&&A.anlage)info=OBJTXT[A.anlage.id+'.info']||info;
  h='<b>'+esc(t('arena.titel'))+'</b>'+(info&&!still?'<br><span class="leise">'+esc(info)+'</span>':'')+(A.gross&&A.anlage?'<br><span class="'+(A.anlage.offen?'leise':'schlecht')+'">'+esc(attZustand(A.anlage))+'</span>':'');      // AR1c1: offen/zu
  if(T)h+='<br>'+esc(t('arena.termin',{tag:T.tag+1,s:'☠'.repeat(T.skulls),l:T.label}))+'<br><span class="leise">'+esc(t('arena.kaempfer',{n:T.ids.map(personName).join(', ')}))+'</span><br><span class="leise">'+
-  esc(t('arena.zu'+T.zu,{da:A.da|0,n:T.ids.length}))+'</span><br>'+(T.zu===2?'<button class="knopf klein" data-arena="kampf">'+esc(t('arena.ansehen'))+'</button> <button class="knopf klein" data-arena="ergebnis">'+esc(t('arena.nurerg'))+'</button> ':'')+'<button class="knopf klein" data-arena="absage">'+esc(t('arena.absage'))+'</button>';
- else h+='<br><span class="leise">'+esc(A.letzt?arenaLetzt(A.letzt):t('arena.frei'))+'</span><br><button class="knopf klein" data-arena="wahl">'+esc(t('arena.planen'))+'</button>';
+  esc(t('arena.zu'+T.zu,{da:A.da|0,n:T.ids.length}))+'</span>'+(A.bes?'<br><span class="'+(A.bes.ohne?'schlecht':'leise')+'">'+esc(arenaZuschauer(A.bes))+'</span>':'')+'<br>'+(T.zu===2?'<button class="knopf klein" data-arena="kampf">'+esc(t('arena.ansehen'))+'</button> <button class="knopf klein" data-arena="ergebnis">'+esc(t('arena.nurerg'))+'</button> ':'')+'<button class="knopf klein" data-arena="absage">'+esc(t('arena.absage'))+'</button>';
+ else h+='<br><span class="leise">'+esc(A.letzt?arenaLetzt(A.letzt):t('arena.frei'))+'</span>'+(A.bes&&A.bes.ende&&arenaZuschauer(A.bes)?'<br><span class="leise">'+esc(arenaZuschauer(A.bes))+'</span>':'')+'<br><button class="knopf klein" data-arena="wahl">'+esc(t('arena.planen'))+'</button>';
  if(A.gefallen)h+='<br><span class="leise">'+esc(t('arena.gefallen.zahl',{n:A.gefallen}))+'</span>';
  e.innerHTML=h;[].forEach.call(e.querySelectorAll('[data-arena]'),function(b){b.disabled=ARENA_OFFEN;b.onclick=function(){var w=b.dataset.arena;if(w==='absage'){KERN.befehl('arenaAbsage',{id:T.id});return}if(w==='ergebnis'){arenaNurErgebnis();return}arenaFenster(w)}});
  if(!still)sprich(t('arena.titel')+'. '+(T?t('arena.termin.kurz',{tag:T.tag+1}):t('arena.frei')))}
@@ -373,7 +377,7 @@ function arenaNurErgebnis(){if(ARENA_OFFEN)return;var q=$('arenaFrage');if(q){q.
 var BERICHT=null;
 function arenaBericht(){var B=BERICHT;if(!B)return;var e=$('karte'),erg=B.erg,A=GLAD&&GLAD.arena,L=A&&A.letzt&&A.letzt.id===B.id?A.letzt:null;window.AT3SPIEL.angetippt='bericht';
  var h='<b>'+esc(t(erg.gewonnen?'arena.bericht.sieg':'arena.bericht.niederlage',{s:'☠'.repeat(B.skulls|0),l:B.label}))+'</b>';
- if(L)h+='<br>'+esc(t('arena.bericht.geld',{g:L.praemie|0,z:L.zuschauer|0,t:L.tickets|0}));
+ if(L)h+='<br>'+esc(L.bonus==null?t('arena.bericht.geld',{g:L.praemie|0,z:L.zuschauer|0,t:L.tickets|0}):t('arena.bericht.geld2',{g:L.praemie|0,z:L.zuschauer|0,t:L.tickets|0,b:L.bonus|0})+(L.ohne?' '+t('arena.ohne'):''));
  erg.einheiten.filter(function(u){return u.team===0}).forEach(function(u){var z=u.tot?(u.ursache?t('arena.bericht.tot',{u:u.ursache}):t('arena.bericht.tot0')):u.schwer?t('arena.bericht.schwer'):u.verletzt?t('arena.bericht.leicht'):t('arena.bericht.heil');
   h+='<br><span class="'+(u.tot||u.schwer?'schlecht':'leise')+'">'+esc(u.name+': '+z+(u.kills?' · '+t('arena.bericht.kills',{k:u.kills}):''))+'</span>'});
  if(L&&L.tote&&L.tote.length)h+='<br><span class="leise">'+esc(t('arena.gefallen',{n:L.tote.join(', ')}))+'</span>';

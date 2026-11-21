@@ -75,6 +75,15 @@ function schlange(z,rec,C){var e=rec.ein;if(!e)return null;var Q=[],d=new Map(),
    if(BAU().wegTyp(z,nx,ny,C)===WEG_Q){d.set(nk,dist+1);Q.push(nx,ny)}}}
  for(i=0;i<Q.length;i+=2){var dd=d.get(Q[i+1]*WX+Q[i]);if(dd>best&&amWeg(z,rec,Q[i],Q[i+1],-1,C)){best=dd;ende=[Q[i],Q[i+1]]}}
  return{n:Q.length>>1,ende:ende}}
+// AR2a: Schlange als Feldliste vom Feld am Eingangshäuschen (vorn) bis zum Ende am Weg, für die Zuschauer. Gleiche Kette wie schlange(): kürzester Weg
+// über Queue Path vom Ende zurück zum Eingang. Gibt [X,Y,…] zurück oder null (keine Schlange mit Anschluss). Kosten höchstens MAX_SCHLANGE Felder.
+function kette(z,rec){var e=rec.ein,en=rec.ende;if(!e||!en)return null;var C=new Map(),d=new Map(),Q=[],i,s;
+ for(s=0;s<4;s++){if(s===e[2])continue;var X=um(e[0]+DX[s]),Y=e[1]+DY[s];if(Y<0||Y>=WY)continue;var k=Y*WX+X;if(!d.has(k)&&BAU().wegTyp(z,X,Y,C)===WEG_Q){d.set(k,1);Q.push(X,Y)}}
+ for(i=0;i<Q.length&&Q.length<2*MAX_SCHLANGE;i+=2){var x=Q[i],y=Q[i+1],dist=d.get(y*WX+x);
+  for(s=0;s<4;s++){var nx=um(x+DX[s]),ny=y+DY[s];if(ny<0||ny>=WY)continue;var nk=ny*WX+nx;if(d.has(nk))continue;if(BAU().wegTyp(z,nx,ny,C)===WEG_Q){d.set(nk,dist+1);Q.push(nx,ny)}}}
+ var L=[en[0],en[1]],cx=en[0],cy=en[1],cd=d.get(cy*WX+cx);if(!cd)return null;
+ while(cd>1){var ok=false;for(s=0;s<4;s++){var px=um(cx+DX[s]),py=cy+DY[s];if(d.get(py*WX+px)===cd-1){cx=px;cy=py;cd--;L.push(cx,cy);ok=true;break}}if(!ok)return null}
+ var R=[];for(i=L.length-2;i>=0;i-=2)R.push(L[i],L[i+1]);return R}
 function zustand(z,rec){if(rec.x<0)return false;var v=z.bau?z.bau.zaehler:0;if(v===rec.v)return false;rec.v=v;
  var C=new Map(),q=schlange(z,rec,C),aus=rec.aus&&amWeg(z,rec,rec.aus[0],rec.aus[1],rec.aus[2],C),g;
  g=!rec.ein?'no_entrance':!rec.aus?'no_exit':!(q&&q.ende)?'no_queue':!aus?'exit_blocked':'';
@@ -83,17 +92,23 @@ function zustand(z,rec){if(rec.x<0)return false;var v=z.bau?z.bau.zaehler:0;if(v
 
 // ── Spielstand und Fingerabdruck ──
 function G(v,a,b){return typeof v==='number'&&v===Math.floor(v)&&v>=a&&v<=b}
-function stand(rec){return rec?{typ:rec.typ,id:rec.id,x:rec.x,y:rec.y,hs:rec.hs,ein:rec.ein?rec.ein.slice():null,aus:rec.aus?rec.aus.slice():null}:null}
+// AR2a: Zustand mit Version (z.bau.zaehler) gesichert, damit er nach dem Laden sofort gilt (vorher erst nach dem nächsten Nachrechnen; die Zuschauer brauchen ihn)
+function stand(rec){return rec?{typ:rec.typ,id:rec.id,x:rec.x,y:rec.y,hs:rec.hs,ein:rec.ein?rec.ein.slice():null,aus:rec.aus?rec.aus.slice():null,
+ zu:[rec.v,rec.offen,rec.grund,rec.schlange,rec.ende?rec.ende[0]:-1,rec.ende?rec.ende[1]:-1]}:null}
 function hausOk(h){return h===null||(Array.isArray(h)&&h.length===3&&G(h[0],0,WX-1)&&G(h[1],0,WY-1)&&G(h[2],0,3))}
 function ausStand(d){if(!d||typeof d!=='object'||!ANLAGEN[d.typ]||!G(d.id,1,0x7fffffff)||!(d.x===-1||G(d.x,0,WX-1))||!(d.y===-1||G(d.y,0,WY-1))||!G(d.hs,0,1000)||!hausOk(d.ein)||!hausOk(d.aus))return null;
  if(d.x<0&&(d.ein||d.aus))return null;
- var r=neu(d.typ,d.id);r.x=d.x;r.y=d.y;r.hs=d.hs;r.ein=d.ein?d.ein.slice():null;r.aus=d.aus?d.aus.slice():null;return r}      // Zustand wird nach dem Laden neu gerechnet (v = −1)
+ var r=neu(d.typ,d.id);r.x=d.x;r.y=d.y;r.hs=d.hs;r.ein=d.ein?d.ein.slice():null;r.aus=d.aus?d.aus.slice():null;
+ var u=d.zu;if(Array.isArray(u)&&u.length===6&&G(u[0],-1,2147483647)&&G(u[1],0,1)&&GRUENDE.indexOf(u[2])>=0&&G(u[3],0,MAX_SCHLANGE*2)&&(u[4]===-1?u[5]===-1:G(u[4],0,WX-1)&&G(u[5],0,WY-1))){
+  r.v=u[0];r.offen=u[1];r.grund=u[2];r.schlange=u[3];r.ende=u[4]<0?null:[u[4],u[5]]}
+ return r}      // ohne zu (AR1-Stände): Zustand wird nach dem Laden neu gerechnet (v = −1)
+var GRUENDE=['','unplaced','no_entrance','no_exit','no_queue','exit_blocked'];
 function abdruck(rec,f){if(!rec){f(-1);return}f(rec.id);f(rec.x);f(rec.y);f(rec.hs);HAUS.forEach(function(h){var e=rec[h];f(e?e[0]:-1);f(e?e[1]:-1);f(e?e[2]:-1)});f(rec.offen);f(rec.schlange)}
 // Für das Spiel (AR1c): Lage, Häuschen, Zustand
 function kurz(rec){if(!rec)return null;var A=ANLAGEN[rec.typ];return{typ:rec.typ,id:A.id,x:rec.x,y:rec.y,w:A.w,h:A.h,hs:rec.hs,ein:rec.ein?rec.ein.slice():null,aus:rec.aus?rec.aus.slice():null,
  offen:rec.offen,grund:rec.grund,schlange:rec.schlange,ende:rec.ende?rec.ende.slice():null}}
 
 var AT={ANLAGEN:ANLAGEN,MAX_SCHLANGE:MAX_SCHLANGE,WEG_Q:WEG_Q,neu:neu,felder:felder,innen:innen,seite:seite,pruefen:pruefen,setzen:setzen,hausPruefen:hausPruefen,hausSetzen:hausSetzen,
- zustand:zustand,stand:stand,ausStand:ausStand,abdruck:abdruck,kurz:kurz};
+ zustand:zustand,kette:kette,stand:stand,ausStand:ausStand,abdruck:abdruck,kurz:kurz};
 if(typeof module!=='undefined'&&module.exports)module.exports=AT;else root.AT3ATT=AT;
 })(typeof self!=='undefined'?self:this);
