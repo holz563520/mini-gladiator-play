@@ -1294,8 +1294,8 @@ function mauerwerk(P,opt){opt=opt||{};var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=i
  // N6b2e2g1: nur Fenster, an denen innen eine Erdgeschosstür möglich ist (Gasse, Gras oder Tordurchfahrt neben einer Seite); an inneren Mauerecken liegt die
  // Gasse sonst nur über Eck
  var bauT=new Uint8Array(WW);P.bauten.forEach(function(b){if(b.rolle==='mauer')return;for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)bauT[y*W+x]=1});
- kand=kand.filter(function(c){for(var q2=0;q2<12;q2++){var s3=q2/3|0,r3=q2%3,x=s3===0?c[0]+r3:s3===1?c[0]+r3:s3===2?c[0]-1:c[0]+3,y=s3===0?c[1]-1:s3===1?c[1]+3:c[1]+r3;
-   if(x<0||y<0||x>=W||y>=W)continue;var kk=y*W+x;if(!MK[kk])continue;if(A[kk]===2||(!A[kk]&&!bauT[kk]&&/[somqg]/.test(Z.charAt(kk))))return true}return false});
+ var tuerOk=function(c){for(var q2=0;q2<12;q2++){var s3=q2/3|0,r3=q2%3,x=s3===0?c[0]+r3:s3===1?c[0]+r3:s3===2?c[0]-1:c[0]+3,y=s3===0?c[1]-1:s3===1?c[1]+3:c[1]+r3;
+   if(x<0||y<0||x>=W||y>=W)continue;var kk=y*W+x;if(!MK[kk])continue;if(A[kk]===2||(!A[kk]&&!bauT[kk]&&/[somqg]/.test(Z.charAt(kk))))return true}return false};kand=kand.filter(tuerOk);
  var tuerme=[],belegtT=new Uint8Array(WW);
  var frei=function(c){for(var q2=0;q2<9;q2++){var y=c[1]+(q2/3|0),x=c[0]+q2%3;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var x2=x+dx,y2=y+dy;if(x2>=0&&y2>=0&&x2<W&&y2<W&&belegtT[y2*W+x2])return false}}return true};
  var setzT=function(c){tuerme.push([c[0],c[1],0]);for(var q2=0;q2<9;q2++)belegtT[(c[1]+(q2/3|0))*W+c[0]+q2%3]=1};
@@ -1311,6 +1311,21 @@ function mauerwerk(P,opt){opt=opt||{};var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=i
  // dann reihum (nach Winkel um die Mitte) etwa alle TURM_AB Felder (Thomas 22.11.2026: 36 statt 12, zu viele Türme; die Torpaare bleiben)
  kand.sort(function(a,b){return Math.atan2(a[1]+1-cy,a[0]+1-cx)-Math.atan2(b[1]+1-cy,b[0]+1-cx)||a[1]-b[1]||a[0]-b[0]});
  kand.forEach(function(c){if(!frei(c))return;for(var t=0;t<tuerme.length;t++)if(ab(c,tuerme[t])<TURM_AB)return;setzT(c)});
+ // N6b2e2b2 Türme auf Schrägen (Thomas 22.11.2026: „Turm springt vor“): wo auf Schrägen kein 3 × 3 ganz aus Mauer passt, darf ein Turm quer über der Mauer
+ // sitzen und mit seiner äußeren Ecke vorspringen. Fenster mit mindestens 5 Mauerfeldern, die übrigen Felder draußen auf freiem Boden (Gras, Fels; kein
+ // Gebäude, Ding, Weg, Wasser, Tor); innen muss die Erdgeschosstür möglich sein wie bei allen Türmen. Dann reihum wie oben, gleicher Abstand TURM_AB.
+ // Die vorspringenden Felder werden Mauer und Innenfläche. Notausschalter opt.turmVor:false.
+ var vor=0;if(opt.turmVor!==false){var DGv=new Uint8Array(WW);P.dinge.forEach(function(o){if(o.i>=0&&o.j>=0&&o.i<W&&o.j<W)DGv[o.j*W+o.i]=1});var vk=[];
+  for(j=0;j+2<W;j++)for(i=0;i+2<W;i++){var mz=0,fe=[],gut=true;for(q=0;q<9&&gut;q++){var kq=(j+(q/3|0))*W+i+q%3;if(A[kq]===1)mz++;
+    else if(!A[kq]&&!MK[kq]&&!bauT[kq]&&!DGv[kq]&&'gx'.indexOf(Z.charAt(kq))>=0)fe.push(kq);else gut=false}
+   if(gut&&mz>=5&&fe.length&&tuerOk([i,j]))vk.push([i,j,fe])}
+  vk.sort(function(a,b){return Math.atan2(a[1]+1-cy,a[0]+1-cx)-Math.atan2(b[1]+1-cy,b[0]+1-cx)||a[2].length-b[2].length||a[1]-b[1]||a[0]-b[0]});
+  var m1=null;P.bauten.some(function(b){if(b.rolle==='mauer'){m1=b;return true}return false});
+  vk.forEach(function(c){if(!frei(c))return;for(var t=0;t<tuerme.length;t++)if(ab(c,tuerme[t])<TURM_AB)return;
+   c[2].forEach(function(kq){var x=kq%W,y=(kq/W)|0;A[kq]=1;wand[kq]=1;nw++;MK[kq]=1;L[kq]=lv(x,y)+WEHR_H;
+    var o2={rolle:'mauer',i:x,j:y,w:1,h:1,klasse:m1.klasse,dach:m1.dach,achse:'i',wand:m1.wand,dachR:m1.dachR};if(H)o2.hz=lv(x,y);P.bauten.push(o2)});
+   setzT([c[0],c[1]]);vor++});
+  if(vor){var zl=[];for(j=0;j<W;j++){i=0;while(i<W){if(!MK[j*W+i]){i++;continue}var i1=i;while(i1+1<W&&MK[j*W+i1+1])i1++;zl.push(j,i,i1);i=i1+1}}P.umriss.bild=zl}}
  // Turm: Geschoss (Ganghöhe im Turm) = höchste Ganghöhe darunter und rings um den Turm, Plattform TURM_H Stufen darüber; danach wieder glätten (bis alles passt).
  // N6b2e2t (Thomas 22.11.2026): keine Rampen mehr. Der Gang führt auf Geschosshöhe durch Türen in den Turm und auf der anderen Seite wieder hinaus,
  // die Gangfelder rings um den Turm liegen genau auf Geschosshöhe; keine Brücke zwischen zwei Türmen.
@@ -1412,7 +1427,7 @@ function mauerwerk(P,opt){opt=opt||{};var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=i
   if(A[k]>=6){if(!drin(i3,j3))z=1}   // Halbfeld: Bit 1 = Zinnen auf der Schräge (außen)
   else if(A[k]!==4&&A[k]!==5)WRK.forEach(function(d){var x=i3+WRI[d][0],y=j3+WRI[d][1],a=x>=0&&y>=0&&x<W&&y<W?A[y*W+x]:0;if(A[k]===3?a!==3:(!a&&!drin(x,y)))z|=ZBIT[d]});
   KL.push(k);FS+=ART.charAt(A[k])+String.fromCharCode(48+L[k])+stufe[k]+z.toString(16)}
- P.wehr={W:W,k:KL,f:FS,tuerme:tuerme,treppen:treppen,tore:tore.length,felder:nw,halb:halb,zwischen:zw,hoehe:WEHR_H,turmHoehe:TURM_H}}
+ P.wehr={W:W,k:KL,f:FS,tuerme:tuerme,treppen:treppen,tore:tore.length,felder:nw,halb:halb,zwischen:zw,vor:vor,hoehe:WEHR_H,turmHoehe:TURM_H}}
 // Lesen der Wehr-Ablage: art(k) '.'/m/t/T/r, gang(k) Stufe oder −1, stufe(k), zinne(k) Bits; einmal je Ablage ein Verzeichnis Feld → Stelle
 var WEHR_LS=typeof WeakMap!=='undefined'?new WeakMap():null;
 function wehrLese(w){var x=WEHR_LS&&WEHR_LS.get(w);if(x)return x;var m=new Map(),f=w.f;for(var p=0;p<w.k.length;p++)m.set(w.k[p],p*4);
