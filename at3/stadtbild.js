@@ -697,7 +697,7 @@ function plan(opt){
  if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false&&opt.wasserOffen!==false)wassertoreGerade(P,opt);   // N6b2e2g2 Mauer endet am Fluss mit Türmen an beiden Ufern (opt.wasserOffen:false = wie vorher)
- if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
+ if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P,opt);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
  delete P.mauertor;delete P.uferAuf;   // nur zum Rechnen der Tore
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
  return P}
@@ -1257,18 +1257,23 @@ function wassertoreGerade(P,opt){var W=P.W,WW=W*W,Z=P.zellen.split(''),k,i,j,d;i
  var HZ=P.hoehe,hat=new Uint8Array(WW);P.bauten=P.bauten.filter(function(b){if(b.rolle!=='mauer')return true;if(b.w===1&&b.h===1&&wand[b.j*W+b.i]){hat[b.j*W+b.i]=1;return true}return false});
  for(k=0;k<WW;k++)if(wand[k]&&!hat[k]){var o2={rolle:'mauer',i:k%W,j:(k/W)|0,w:1,h:1,klasse:m0.klasse,dach:m0.dach,achse:'i',wand:m0.wand,dachR:m0.dachR};if(HZ)o2.hz=HZ.charCodeAt(k)-48;P.bauten.push(o2)}
  var zl=[];for(j=0;j<W;j++){i=0;while(i<W){if(aus[j*W+i]){i++;continue}var i1=i;while(i1+1<W&&!aus[j*W+i1+1])i1++;zl.push(j,i,i1);i=i1+1}}P.umriss.bild=zl}
+// N6b2e2b1 2:1-Zwischenstücke: Form a–p (Ecke N E S W · 4 + steil · 2 + Viertel). Schrägwand nur, wo die Schräge zum Betrachter zeigt (N flach und steil, E flach,
+// W steil); Wand ruhig 3 : Riss 1; Zinnen vorn wie die Zinnen 8 : 3 (: 1 Pfeil und Blutspur an den N-Formen).
+var ZW_SICHT='abcdefop',ZW_ZV={a:'00000000aaab',b:'00000000aaab',c:'00000000aaab',d:'00000000aaab',e:'00000000aaa',f:'00000000aaa',o:'00000000aaa',p:'00000000aaa'};
+function ZW_IDS(){var r=[];for(var b=0;b<16;b++){var f=String.fromCharCode(97+b);r.push('mauer-zw-'+f,'mauer-zw-zinne-'+f);if(ZW_SICHT.indexOf(f)>=0)r.push('mauer-zw-wand-'+f,'mauer-zw-wand-'+f+'-a');
+  var zv=ZW_ZV[f]||'';if(zv.indexOf('a')>=0)r.push('mauer-zw-zinne-'+f+'-a');if(zv.indexOf('b')>=0)r.push('mauer-zw-zinne-'+f+'-b')}return r}
 var WEHR_IDS=['mauer-kante-i','mauer-kante-j','turm-kante-i','turm-kante-j','turm-scharte-i','turm-scharte-j','tor-sturz-i','tor-sturz-j','mauer-gang',
  'mauer-zinne-n','mauer-zinne-s','mauer-zinne-o','mauer-zinne-w','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w',
  'mauer-rampe-s','mauer-rampe-n','mauer-rampe-o','mauer-rampe-w','turm-tuer-i','turm-tuer-j','turm-eingang-i','turm-eingang-j',
  'mauer-zinne-n-a','mauer-zinne-s-a','mauer-zinne-o-a','mauer-zinne-w-a','mauer-zinne-n-b','mauer-zinne-s-b','mauer-zinne-o-b','mauer-zinne-w-b',
  'mauer-halb-ob','mauer-halb-re','mauer-halb-un','mauer-halb-li','mauer-halb-zinne-ob','mauer-halb-zinne-ob-a','mauer-halb-zinne-ob-b','mauer-halb-zinne-re',
- 'mauer-halb-zinne-un','mauer-halb-zinne-li','mauer-halb-wand','mauer-halb-wand-a','mauer-halb-wand-b','mauer-halb-wand-c','mauer-halb-wand-d'];
+ 'mauer-halb-zinne-un','mauer-halb-zinne-li','mauer-halb-wand','mauer-halb-wand-a','mauer-halb-wand-b','mauer-halb-wand-c','mauer-halb-wand-d'].concat(ZW_IDS());
 // Zinnen-Varianten nach Lage (N6b2e1, gegen Wiederholung auf langen Mauern): 12 Plätze, Grundbild 8×, -a ausgebrochen 3×, -b Pfeil und Blutspur 1×
 var ZINNE_VAR='00000000aaab';function zinneWahl(d,i,j,seed){var c=ZINNE_VAR.charAt(Math.floor(rausch(i,j,seed+131)*ZINNE_VAR.length));return 'mauer-zinne-'+d+(c==='0'?'':'-'+c)}   // N6b2e2t: Gangtür und Erdgeschosstür am Turm (turm-tuer-*, turm-eingang-*)
 // N6b2e2a Halbfelder: Raster-Ecke → Bildlage (N oben, E rechts, S unten, W links); vordere Zinnen wie die Zinnen 8 : 3 : 1, Schrägwand 3 ruhige Fassungen (je 3) + Riss 2 + Flickstein 1
 var HALB={N:'ob',E:'re',S:'un',W:'li'},WAND_VAR='000cccdddaab';function halbWahl(id,i,j,seed,v){v=v||ZINNE_VAR;var c=v.charAt(Math.floor(rausch(i,j,seed+137)*v.length));return c==='0'?id:id+'-'+c}
 var WEHR_H=4,TURM_H=2,TURM_AB=36,TREPPE_AB=20,WRI={s:[0,1],o:[1,0],n:[0,-1],w:[-1,0]},WRK=['s','o','n','w'],ZBIT={s:1,o:2,n:4,w:8};
-function mauerwerk(P){var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wand=new Uint8Array(WW),k,i,j,q;
+function mauerwerk(P,opt){opt=opt||{};var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wand=new Uint8Array(WW),k,i,j,q;
  P.bauten.forEach(function(b){if(b.rolle!=='mauer')return;for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)wand[y*W+x]=1});
  var nw=0;for(k=0;k<WW;k++)nw+=wand[k];if(!nw)return;
  var lv=function(i,j){return H&&i>=0&&j>=0&&i<W&&j<W?H.charCodeAt(j*W+i)-48:0},drin=function(i,j){return i>=0&&j>=0&&i<W&&j<W&&MK[j*W+i]===1};
@@ -1390,13 +1395,24 @@ function mauerwerk(P){var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wan
   if(nw4!==2)continue;var form=w4[2]&&w4[3]?'N':w4[0]&&w4[3]?'E':w4[0]&&w4[1]?'S':w4[2]&&w4[1]?'W':null;if(!form)continue;
   var na=w4[0]?k+1:k-1,nb2=w4[1]?k+W:k-W;if(L[na]!==L[nb2]||stufe[na]!=='.'||stufe[nb2]!=='.')continue;
   A[k]=6;L[k]=L[na];stufe[k]=form;halb++}
+ // N6b2e2b1 2:1-Zwischenstücke (flache und steile Mauerstücke): an einer 2 Felder breiten Stufe läuft die Kante von Außenecke zu Außenecke durch zwei
+ // freie Felder. Das Feld an der Mauer (bisher 45°-Halbfeld) wird Dreiviertel-Stück, das Feld davor Viertel-Stück (Art q, nicht begehbar, Höhe der Nachbarn,
+ // außen Zinnen). Nur hinzufügen, nie Mauerfelder anschneiden. Form = Buchstabe a–p: Ecke (N E S W) · 4 + steil · 2 + Viertel. Notausschalter opt.zwischen:false.
+ var zw=0;if(opt.zwischen!==false){var ZW_E=[[-1,-1],[1,-1],[1,1],[-1,1]],ok1=function(x,y){return x>=0&&y>=0&&x<W&&y<W},am=function(x,y){return ok1(x,y)&&A[y*W+x]===1},
+   frei2=function(x,y){var kk=y*W+x;return ok1(x,y)&&!A[kk]&&!bau[kk]&&!DG[kk]&&!RES[kk]&&'wy'.indexOf(Z.charAt(kk))<0},neu=[];
+  for(k=0;k<WW;k++){if(A[k]!==6)continue;var ci='NESW'.indexOf(stufe[k]),si=ZW_E[ci][0],sj=ZW_E[ci][1],x0=k%W,y0=(k/W)|0,treffer=[];
+   for(var ax=0;ax<2;ax++){var o=function(dx,dy){return ax?[x0+dy*si,y0+dx*sj]:[x0+dx*si,y0+dy*sj]},v=o(-1,0),c=o(-1,1),n1=o(-2,0),n2=o(-1,-1),n3=o(-2,1),a1=o(1,0);
+    if(!frei2(v[0],v[1])||!am(c[0],c[1])||L[c[1]*W+c[0]]!==L[a1[1]*W+a1[0]]||stufe[c[1]*W+c[0]]!=='.')continue;
+    if(am(n1[0],n1[1])||am(n2[0],n2[1])||am(n3[0],n3[1])||(ok1(n1[0],n1[1])&&A[n1[1]*W+n1[0]]))continue;treffer.push([ax,v[1]*W+v[0]])}
+   if(treffer.length===1)neu.push([k,ci,treffer[0][0],treffer[0][1]])}
+  neu.forEach(function(t){if(A[t[3]])return;var b=t[1]*4+t[2]*2;A[t[0]]=7;stufe[t[0]]=String.fromCharCode(97+b);A[t[3]]=7;L[t[3]]=L[t[0]];stufe[t[3]]=String.fromCharCode(98+b);halb--;zw+=2})}
  // Zinnen: Mauer und Tor an jeder Außenkante, Turm ringsum
  // Ablage nur der Mauerfelder (Kosten nach Mauerlänge, nicht nach Fläche): k = Feldnummern j·W + i (aufsteigend), f = je Feld 4 Zeichen Art, Ganghöhe, Stufe, Zinnen
- var KL=[],FS='',ART='.mtTrnd';for(k=0;k<WW;k++){if(!A[k])continue;var z=0,i3=k%W,j3=(k/W)|0;
-  if(A[k]===6){if(!drin(i3,j3))z=1}   // Halbfeld: Bit 1 = Zinnen auf der Schräge (außen)
+ var KL=[],FS='',ART='.mtTrndq';for(k=0;k<WW;k++){if(!A[k])continue;var z=0,i3=k%W,j3=(k/W)|0;
+  if(A[k]>=6){if(!drin(i3,j3))z=1}   // Halbfeld: Bit 1 = Zinnen auf der Schräge (außen)
   else if(A[k]!==4&&A[k]!==5)WRK.forEach(function(d){var x=i3+WRI[d][0],y=j3+WRI[d][1],a=x>=0&&y>=0&&x<W&&y<W?A[y*W+x]:0;if(A[k]===3?a!==3:(!a&&!drin(x,y)))z|=ZBIT[d]});
   KL.push(k);FS+=ART.charAt(A[k])+String.fromCharCode(48+L[k])+stufe[k]+z.toString(16)}
- P.wehr={W:W,k:KL,f:FS,tuerme:tuerme,treppen:treppen,tore:tore.length,felder:nw,halb:halb,hoehe:WEHR_H,turmHoehe:TURM_H}}
+ P.wehr={W:W,k:KL,f:FS,tuerme:tuerme,treppen:treppen,tore:tore.length,felder:nw,halb:halb,zwischen:zw,hoehe:WEHR_H,turmHoehe:TURM_H}}
 // Lesen der Wehr-Ablage: art(k) '.'/m/t/T/r, gang(k) Stufe oder −1, stufe(k), zinne(k) Bits; einmal je Ablage ein Verzeichnis Feld → Stelle
 var WEHR_LS=typeof WeakMap!=='undefined'?new WeakMap():null;
 function wehrLese(w){var x=WEHR_LS&&WEHR_LS.get(w);if(x)return x;var m=new Map(),f=w.f;for(var p=0;p<w.k.length;p++)m.set(w.k[p],p*4);
@@ -1418,7 +1434,7 @@ function wehrIndex(P){var x=WEHR_IX&&WEHR_IX.get(P);if(x)return x;var W=P.W,w=P.
  x={bau:bau,fuss:fuss,gas:gas,nis:nis,turm:turm,tg:tg,mitte:mitte};if(WEHR_IX)WEHR_IX.set(P,x);return x}
 // N6b2e1: Turmplattformen sind Wehrgang (2 Stufen höher, Rampen davor), kein eigener Belag mehr; Nischen vor dem Treppenfuß sind Boden.
 function wehrNachbarn(P,i,j,e){var W=P.W,w=P.wehr,X=wehrIndex(P),k=j*W+i,r=[],H=P.hoehe,Z=P.zellen;
- var lv=function(x,y){return H?H.charCodeAt(y*W+x)-48:0},R=w?wehrLese(w):null,gl=function(kk){var a=R?R.art(kk):'.';return R&&a!=='n'&&a!=='d'?R.gang(kk):-1};
+ var lv=function(x,y){return H?H.charCodeAt(y*W+x)-48:0},R=w?wehrLese(w):null,gl=function(kk){var a=R?R.art(kk):'.';return R&&a!=='n'&&a!=='d'&&a!=='q'?R.gang(kk):-1};
  WRK.forEach(function(d){var x=i+WRI[d][0],y=j+WRI[d][1];if(x<0||y<0||x>=W||y>=W)return;var q=y*W+x;
   if(e==='boden'){if(((!X.bau[q]&&/[somqy]/.test(Z.charAt(q)))||X.nis[q])&&Math.abs(lv(x,y)-lv(i,j))<=1)r.push({i:x,j:y,e:'boden'})}
   else if(e==='gang'){if(gl(k)>=0&&gl(q)>=0&&Math.abs(gl(q)-gl(k))<=1)r.push({i:x,j:y,e:'gang'})}
@@ -1465,9 +1481,11 @@ function drehen(P){var W=P.W,z=new Array(W*W),zh=P.hoehe?new Array(W*W):null,zt=
  if(P.wehr)N.wehr=wehrDrehen(P.wehr,W);return N}
 // Wehr (N6b2d) mitdrehen: Zeichenketten wie die Zellen, Richtungen (di, dj) → (−dj, di): s → w, o → s, n → o, w → n
 var DREH={s:'w',o:'s',n:'o',w:'n','.':'.',N:'E',E:'S',S:'W',W:'N'};   // N6b2e2a: Halbfeld-Ecken drehen mit
+// N6b2e2b1: 2:1-Form drehen: Ecke wie die Halbfelder (N → E → S → W), flach ↔ steil, Teil bleibt
+function zwDreh(f){var b=f.charCodeAt(0)-97;return String.fromCharCode(97+(((b>>2)+1)&3)*4+(((b>>1)&1)^1)*2+(b&1))}
 function wehrDrehen(w,W){var r=JSON.parse(JSON.stringify(w)),L=[];
- w.k.forEach(function(k,p){var i=k%W,j=(k/W)|0,b=parseInt(w.f.charAt(p*4+3),16),n=0;if(w.f.charAt(p*4)==='d')n=b;else WRK.forEach(function(d){if(b&ZBIT[d])n|=ZBIT[DREH[d]]});
-  L.push([i*W+(W-1-j),w.f.charAt(p*4)+w.f.charAt(p*4+1)+DREH[w.f.charAt(p*4+2)]+n.toString(16)])});
+ w.k.forEach(function(k,p){var i=k%W,j=(k/W)|0,b=parseInt(w.f.charAt(p*4+3),16),n=0;var a0=w.f.charAt(p*4);if(a0==='d'||a0==='q')n=b;else WRK.forEach(function(d){if(b&ZBIT[d])n|=ZBIT[DREH[d]]});
+  L.push([i*W+(W-1-j),a0+w.f.charAt(p*4+1)+(a0==='q'?zwDreh(w.f.charAt(p*4+2)):DREH[w.f.charAt(p*4+2)])+n.toString(16)])});
  L.sort(function(a,b){return a[0]-b[0]});r.k=L.map(function(x){return x[0]});r.f=L.map(function(x){return x[1]}).join('');
  var p=function(a){return[W-1-a[1],a[0]]},p4=function(f){return p([f[0],f[1]]).concat(p([f[2],f[3]]))};   // N6b2e2t: Türen drehen mit
  r.tuerme=w.tuerme.map(function(t){var o=[W-t[1]-3,t[0],t[2]];if(t[3])o.push({tuer:t[3].tuer?p4(t[3].tuer):null,gang:t[3].gang.map(p4)});return o});
@@ -1553,6 +1571,8 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
    if(a==='n'){var gs=NG[k];dz(gs?bodenId(gs[0],gs[1]):B.weg,g0);return}   // Nische vor dem Treppenfuß: Boden der Gasse daneben
    if(a==='d'){var fo=HALB[R.stufe(k)];if(fo==='ob')for(s=g0+1;s<=top;s++)dz(halbWahl('mauer-halb-wand',i,j+s*7,P.seed,WAND_VAR),s);   // N6b2e2a: nur die Schräge der oberen Hälfte zeigt zum Betrachter
     dz('mauer-halb-'+fo,top);if(R.zinne(k))dz(fo==='ob'?halbWahl('mauer-halb-zinne-ob',i,j,P.seed):'mauer-halb-zinne-'+fo,top);return}
+   if(a==='q'){var fq=R.stufe(k);if(ZW_SICHT.indexOf(fq)>=0)for(s=g0+1;s<=top;s++)dz(halbWahl('mauer-zw-wand-'+fq,i,j+s*7,P.seed,'000a'),s);   // N6b2e2b1
+    dz('mauer-zw-'+fq,top);if(R.zinne(k))dz(ZW_ZV[fq]?halbWahl('mauer-zw-zinne-'+fq,i,j,P.seed,ZW_ZV[fq]):'mauer-zw-zinne-'+fq,top);return}
    [['o','i'],['s','j']].forEach(function(q){var x=i+WRI[q[0]][0],y=j+WRI[q[0]][1],nb=oben(x,y),na=gA(x,y);
     if(a==='t'){if(nb<L0)dz('tor-sturz-'+q[1],L0);return}
     if((na==='m'||na==='t')&&R.stufe(y*W+x)===GEG[q[0]]&&nb===top-1)return;   // Rampe davor steigt bis an die Kante

@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 344,
+ "typMax": 404,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -3099,6 +3099,546 @@
    "name": "Tower Guard Door",
    "status": "uebernommen",
    "datei": "obj/turm-eingang-j.json"
+  },
+  {
+   "id": "mauer-zw-a",
+   "version": 1,
+   "typ": 345,
+   "kat": "einrichtung",
+   "name": "Wall Crown N Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-a",
+   "version": 1,
+   "typ": 346,
+   "kat": "einrichtung",
+   "name": "Battlements N Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-a.json"
+  },
+  {
+   "id": "mauer-zw-wand-a",
+   "version": 1,
+   "typ": 347,
+   "kat": "einrichtung",
+   "name": "Slanted Wall N Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-a.json"
+  },
+  {
+   "id": "mauer-zw-wand-a-a",
+   "version": 1,
+   "typ": 348,
+   "kat": "einrichtung",
+   "name": "Slanted Wall N Flat 3/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-a-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-a-a",
+   "version": 1,
+   "typ": 349,
+   "kat": "einrichtung",
+   "name": "Battlements N Flat 3/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-a-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-a-b",
+   "version": 1,
+   "typ": 350,
+   "kat": "einrichtung",
+   "name": "Battlements N Flat 3/4 B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-a-b.json"
+  },
+  {
+   "id": "mauer-zw-b",
+   "version": 1,
+   "typ": 351,
+   "kat": "einrichtung",
+   "name": "Wall Crown N Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-b.json"
+  },
+  {
+   "id": "mauer-zw-zinne-b",
+   "version": 1,
+   "typ": 352,
+   "kat": "einrichtung",
+   "name": "Battlements N Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-b.json"
+  },
+  {
+   "id": "mauer-zw-wand-b",
+   "version": 1,
+   "typ": 353,
+   "kat": "einrichtung",
+   "name": "Slanted Wall N Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-b.json"
+  },
+  {
+   "id": "mauer-zw-wand-b-a",
+   "version": 1,
+   "typ": 354,
+   "kat": "einrichtung",
+   "name": "Slanted Wall N Flat 1/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-b-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-b-a",
+   "version": 1,
+   "typ": 355,
+   "kat": "einrichtung",
+   "name": "Battlements N Flat 1/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-b-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-b-b",
+   "version": 1,
+   "typ": 356,
+   "kat": "einrichtung",
+   "name": "Battlements N Flat 1/4 B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-b-b.json"
+  },
+  {
+   "id": "mauer-zw-c",
+   "version": 1,
+   "typ": 357,
+   "kat": "einrichtung",
+   "name": "Wall Crown N Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-c.json"
+  },
+  {
+   "id": "mauer-zw-zinne-c",
+   "version": 1,
+   "typ": 358,
+   "kat": "einrichtung",
+   "name": "Battlements N Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-c.json"
+  },
+  {
+   "id": "mauer-zw-wand-c",
+   "version": 1,
+   "typ": 359,
+   "kat": "einrichtung",
+   "name": "Slanted Wall N Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-c.json"
+  },
+  {
+   "id": "mauer-zw-wand-c-a",
+   "version": 1,
+   "typ": 360,
+   "kat": "einrichtung",
+   "name": "Slanted Wall N Steep 3/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-c-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-c-a",
+   "version": 1,
+   "typ": 361,
+   "kat": "einrichtung",
+   "name": "Battlements N Steep 3/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-c-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-c-b",
+   "version": 1,
+   "typ": 362,
+   "kat": "einrichtung",
+   "name": "Battlements N Steep 3/4 B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-c-b.json"
+  },
+  {
+   "id": "mauer-zw-d",
+   "version": 1,
+   "typ": 363,
+   "kat": "einrichtung",
+   "name": "Wall Crown N Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-d.json"
+  },
+  {
+   "id": "mauer-zw-zinne-d",
+   "version": 1,
+   "typ": 364,
+   "kat": "einrichtung",
+   "name": "Battlements N Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-d.json"
+  },
+  {
+   "id": "mauer-zw-wand-d",
+   "version": 1,
+   "typ": 365,
+   "kat": "einrichtung",
+   "name": "Slanted Wall N Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-d.json"
+  },
+  {
+   "id": "mauer-zw-wand-d-a",
+   "version": 1,
+   "typ": 366,
+   "kat": "einrichtung",
+   "name": "Slanted Wall N Steep 1/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-d-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-d-a",
+   "version": 1,
+   "typ": 367,
+   "kat": "einrichtung",
+   "name": "Battlements N Steep 1/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-d-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-d-b",
+   "version": 1,
+   "typ": 368,
+   "kat": "einrichtung",
+   "name": "Battlements N Steep 1/4 B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-d-b.json"
+  },
+  {
+   "id": "mauer-zw-e",
+   "version": 1,
+   "typ": 369,
+   "kat": "einrichtung",
+   "name": "Wall Crown E Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-e.json"
+  },
+  {
+   "id": "mauer-zw-zinne-e",
+   "version": 1,
+   "typ": 370,
+   "kat": "einrichtung",
+   "name": "Battlements E Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-e.json"
+  },
+  {
+   "id": "mauer-zw-wand-e",
+   "version": 1,
+   "typ": 371,
+   "kat": "einrichtung",
+   "name": "Slanted Wall E Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-e.json"
+  },
+  {
+   "id": "mauer-zw-wand-e-a",
+   "version": 1,
+   "typ": 372,
+   "kat": "einrichtung",
+   "name": "Slanted Wall E Flat 3/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-e-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-e-a",
+   "version": 1,
+   "typ": 373,
+   "kat": "einrichtung",
+   "name": "Battlements E Flat 3/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-e-a.json"
+  },
+  {
+   "id": "mauer-zw-f",
+   "version": 1,
+   "typ": 374,
+   "kat": "einrichtung",
+   "name": "Wall Crown E Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-f.json"
+  },
+  {
+   "id": "mauer-zw-zinne-f",
+   "version": 1,
+   "typ": 375,
+   "kat": "einrichtung",
+   "name": "Battlements E Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-f.json"
+  },
+  {
+   "id": "mauer-zw-wand-f",
+   "version": 1,
+   "typ": 376,
+   "kat": "einrichtung",
+   "name": "Slanted Wall E Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-f.json"
+  },
+  {
+   "id": "mauer-zw-wand-f-a",
+   "version": 1,
+   "typ": 377,
+   "kat": "einrichtung",
+   "name": "Slanted Wall E Flat 1/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-f-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-f-a",
+   "version": 1,
+   "typ": 378,
+   "kat": "einrichtung",
+   "name": "Battlements E Flat 1/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-f-a.json"
+  },
+  {
+   "id": "mauer-zw-g",
+   "version": 1,
+   "typ": 379,
+   "kat": "einrichtung",
+   "name": "Wall Crown E Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-g.json"
+  },
+  {
+   "id": "mauer-zw-zinne-g",
+   "version": 1,
+   "typ": 380,
+   "kat": "einrichtung",
+   "name": "Battlements E Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-g.json"
+  },
+  {
+   "id": "mauer-zw-h",
+   "version": 1,
+   "typ": 381,
+   "kat": "einrichtung",
+   "name": "Wall Crown E Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-h.json"
+  },
+  {
+   "id": "mauer-zw-zinne-h",
+   "version": 1,
+   "typ": 382,
+   "kat": "einrichtung",
+   "name": "Battlements E Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-h.json"
+  },
+  {
+   "id": "mauer-zw-i",
+   "version": 1,
+   "typ": 383,
+   "kat": "einrichtung",
+   "name": "Wall Crown S Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-i.json"
+  },
+  {
+   "id": "mauer-zw-zinne-i",
+   "version": 1,
+   "typ": 384,
+   "kat": "einrichtung",
+   "name": "Battlements S Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-i.json"
+  },
+  {
+   "id": "mauer-zw-j",
+   "version": 1,
+   "typ": 385,
+   "kat": "einrichtung",
+   "name": "Wall Crown S Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-j.json"
+  },
+  {
+   "id": "mauer-zw-zinne-j",
+   "version": 1,
+   "typ": 386,
+   "kat": "einrichtung",
+   "name": "Battlements S Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-j.json"
+  },
+  {
+   "id": "mauer-zw-k",
+   "version": 1,
+   "typ": 387,
+   "kat": "einrichtung",
+   "name": "Wall Crown S Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-k.json"
+  },
+  {
+   "id": "mauer-zw-zinne-k",
+   "version": 1,
+   "typ": 388,
+   "kat": "einrichtung",
+   "name": "Battlements S Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-k.json"
+  },
+  {
+   "id": "mauer-zw-l",
+   "version": 1,
+   "typ": 389,
+   "kat": "einrichtung",
+   "name": "Wall Crown S Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-l.json"
+  },
+  {
+   "id": "mauer-zw-zinne-l",
+   "version": 1,
+   "typ": 390,
+   "kat": "einrichtung",
+   "name": "Battlements S Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-l.json"
+  },
+  {
+   "id": "mauer-zw-m",
+   "version": 1,
+   "typ": 391,
+   "kat": "einrichtung",
+   "name": "Wall Crown W Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-m.json"
+  },
+  {
+   "id": "mauer-zw-zinne-m",
+   "version": 1,
+   "typ": 392,
+   "kat": "einrichtung",
+   "name": "Battlements W Flat 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-m.json"
+  },
+  {
+   "id": "mauer-zw-n",
+   "version": 1,
+   "typ": 393,
+   "kat": "einrichtung",
+   "name": "Wall Crown W Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-n.json"
+  },
+  {
+   "id": "mauer-zw-zinne-n",
+   "version": 1,
+   "typ": 394,
+   "kat": "einrichtung",
+   "name": "Battlements W Flat 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-n.json"
+  },
+  {
+   "id": "mauer-zw-o",
+   "version": 1,
+   "typ": 395,
+   "kat": "einrichtung",
+   "name": "Wall Crown W Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-o.json"
+  },
+  {
+   "id": "mauer-zw-zinne-o",
+   "version": 1,
+   "typ": 396,
+   "kat": "einrichtung",
+   "name": "Battlements W Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-o.json"
+  },
+  {
+   "id": "mauer-zw-wand-o",
+   "version": 1,
+   "typ": 397,
+   "kat": "einrichtung",
+   "name": "Slanted Wall W Steep 3/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-o.json"
+  },
+  {
+   "id": "mauer-zw-wand-o-a",
+   "version": 1,
+   "typ": 398,
+   "kat": "einrichtung",
+   "name": "Slanted Wall W Steep 3/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-o-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-o-a",
+   "version": 1,
+   "typ": 399,
+   "kat": "einrichtung",
+   "name": "Battlements W Steep 3/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-o-a.json"
+  },
+  {
+   "id": "mauer-zw-p",
+   "version": 1,
+   "typ": 400,
+   "kat": "einrichtung",
+   "name": "Wall Crown W Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-p.json"
+  },
+  {
+   "id": "mauer-zw-zinne-p",
+   "version": 1,
+   "typ": 401,
+   "kat": "einrichtung",
+   "name": "Battlements W Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-p.json"
+  },
+  {
+   "id": "mauer-zw-wand-p",
+   "version": 1,
+   "typ": 402,
+   "kat": "einrichtung",
+   "name": "Slanted Wall W Steep 1/4",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-p.json"
+  },
+  {
+   "id": "mauer-zw-wand-p-a",
+   "version": 1,
+   "typ": 403,
+   "kat": "einrichtung",
+   "name": "Slanted Wall W Steep 1/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-wand-p-a.json"
+  },
+  {
+   "id": "mauer-zw-zinne-p-a",
+   "version": 1,
+   "typ": 404,
+   "kat": "einrichtung",
+   "name": "Battlements W Steep 1/4 A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zw-zinne-p-a.json"
   }
  ]
 }
