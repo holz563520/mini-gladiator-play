@@ -687,7 +687,7 @@ function plan(opt){
  if(spW)P=spiegeln(P);
  if(P.kueste)hochstege(P);
  if(P.hoehe)huegelFertig(P);
- if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
+ if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
  if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
  delete P.mauertor;   // nur zum Rechnen der Tore
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
@@ -738,29 +738,52 @@ function huegelFertig(P){var W=P.W,H=P.hoehe.split('').map(Number),lv=function(i
 // N6b2e2a (Thomas 22.11.2026, „neu rechnen“): Mauerlinie direkt in Bildfeldern aus dem Umriss statt aus dem vergrößerten Plan (gleichmäßige 45°-Stufen statt
 // 1-2-1-Zacken). Band = innen und höchstens MAUER_BILD Schritte (4 Richtungen) bis draußen. Häuser, Dinge, Wasser und Gassen außerhalb des alten Bands bleiben
 // unangetastet (dort bleibt die alte Mauer), Tore laufen längs ihrer Straße durch das neue Band.
-var MAUER_BILD=3;
-function mauerRund(P,UM,R,Wc,sp){var W=P.W,WW=W*W,F=P.mass||1,Z=P.zellen.split(''),k,i,j,d;
+var MAUER_BILD=3,TOR_GERADE=3;
+function mauerRund(P,UM,R,Wc,sp,gerade){   // Thomas 22.11.2026: Tore in geraden Stücken; wird die Mauer an einem Tor dadurch undicht, bleibt dieses Tor wie vorher
+ var ohne={alle:gerade===false,n:0};if(mauerRund0(P,UM,R,Wc,sp,ohne)!==false||ohne.alle)return;
+ for(var g=0;g<ohne.n;g++){ohne[g]=1;if(mauerRund0(P,UM,R,Wc,sp,ohne)!==false)return}}
+function mauerRund0(P,UM,R,Wc,sp,ohne){var W=P.W,WW=W*W,F=P.mass||1,Z=P.zellen.split(''),k,i,j,d;
  var MI=new Uint8Array(WW);for(j=0;j<W;j++)for(i=0;i<W;i++){var a=sp?j:i,b=sp?i:j;MI[j*W+i]=UM.innen(((a+.5)/F-R)/Wc*2-1,((b+.5)/F-R)/Wc*2-1)?1:0}
  var N4=function(k){var x=k%W,y=(k/W)|0;return[x<W-1?k+1:-1,y<W-1?k+W:-1,x>0?k-1:-1,y>0?k-W:-1]};
- var D=new Int32Array(WW).fill(1e9),q=[],h=0;for(k=0;k<WW;k++){if(!MI[k])continue;var n0=N4(k);if(n0.some(function(x){return x<0||!MI[x]})){D[k]=1;q.push(k)}}
- while(h<q.length){var a2=q[h++],nn=N4(a2);for(d=0;d<4;d++){var b2=nn[d];if(b2>=0&&MI[b2]&&D[b2]>D[a2]+1){D[b2]=D[a2]+1;q.push(b2)}}}
- var alt=new Uint8Array(WW),bau=new Uint8Array(WW),ding=new Uint8Array(WW),MT=P.mauertor,MO=innenMaske(P),B=BIOME[P.biom],baum={};(B&&B.baeume||[]).forEach(function(x){baum[x]=1});
+ var alt=new Uint8Array(WW),bau=new Uint8Array(WW),ding=new Uint8Array(WW),MO=innenMaske(P),B=BIOME[P.biom],baum={};(B&&B.baeume||[]).forEach(function(x){baum[x]=1});
  P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)(b.rolle==='mauer'?alt:bau)[y*W+x]=1});
  P.dinge.forEach(function(o){if(o.i>=0&&o.j>=0&&o.i<W&&o.j<W)ding[o.j*W+o.i]=baum[o.id]?1:2});
- var band=function(k){return MI[k]&&D[k]<=MAUER_BILD},torAlt=function(k){return MT&&MT.charCodeAt(k)===49};
- // Tore: zusammenhängende alte Torfelder; Achse = Richtung, in der die Straße (oder der Fluss) auf beiden Seiten weitergeht; längs der Achse durch das neue Band
- var tor=new Uint8Array(WW),seen=new Uint8Array(WW),SW=/[sw]/;
+ // Tore: zusammenhängende alte Torfelder; Achse = Richtung, in der die Straße (oder der Fluss) auf beiden Seiten weitergeht
+ var MT=P.mauertor,torAlt=function(k){return MT&&MT.charCodeAt(k)===49},SW=/[sw]/,gruppen=[],seen=new Uint8Array(WW);
  for(k=0;k<WW;k++){if(!torAlt(k)||seen[k])continue;var T=[],st=[k];seen[k]=1;while(st.length){var c=st.pop();T.push(c);N4(c).forEach(function(x){if(x>=0&&torAlt(x)&&!seen[x]){seen[x]=1;st.push(x)}})}
   var inT={};T.forEach(function(x){inT[x]=1});var zahl=[0,0];T.forEach(function(x){var n=N4(x);[0,1].forEach(function(ax){[n[ax],n[ax+2]].forEach(function(y){if(y>=0&&!inT[y]&&SW.test(Z[y]))zahl[ax]++})})});
-  var ax=zahl[1]>=zahl[0]?1:0,step=ax?W:1;
-  T.forEach(function(x){if(band(x))tor[x]=1;[step,-step].forEach(function(sv){var y=x+sv;while(y>=0&&y<WW&&Math.abs((y%W)-(x%W))<=(ax?0:W)&&band(y)&&SW.test(Z[y])&&!bau[y]){tor[y]=1;y+=sv}})})}
+  gruppen.push({T:T,ax:zahl[1]>=zahl[0]?1:0})}
+ // Thomas 22.11.2026: Tore nur in geraden Mauerstücken (später Torhäuser). Quer zur Straße über Tor + je TOR_GERADE Felder wird der Umriss gerade
+ // (Grenze auf der Höhe der Tormitte), an beiden Enden springt er mit einem Absatz zurück auf die Schräge.
+ var fenster=new Uint8Array(WW),FREI=/[gxfp]/;   // im Torfenster darf die gerade Mauer auch über Acker und Weide laufen
+ ohne.n=gruppen.length;gruppen.forEach(function(G,gi){if(ohne.alle||ohne[gi])return;var ax=G.ax,L=function(x){return ax?x%W:(x/W)|0},A=function(x){return ax?(x/W)|0:x%W},
+   id=function(l,a){return ax?a*W+l:l*W+a},l0=1e9,l1=-1,as=0;G.T.forEach(function(x){l0=Math.min(l0,L(x));l1=Math.max(l1,L(x));as+=A(x)});var a0=Math.round(as/G.T.length),lm=(l0+l1)>>1;
+  var mi=function(l,a){return l>=0&&a>=0&&l<W&&a<W?MI[id(l,a)]:0},dir=mi(lm,a0-8)&&!mi(lm,a0+8)?1:!mi(lm,a0-8)&&mi(lm,a0+8)?-1:0;if(!dir)return;
+  var grenze=function(l){var best=-1,bd=1e9;for(var a=a0-14;a<=a0+14;a++)if(mi(l,a)&&!mi(l,a+dir)&&Math.abs(a-a0)<bd){bd=Math.abs(a-a0);best=a}return best},bz=grenze(lm);if(bz<0)return;
+  // Lage der Geraden: zwischen der innersten und äußersten Grenze im Fenster die, auf der am wenigsten Belegtes liegt (Ringgasse innen, Acker, Höfe
+  // und Buden außen), bei Gleichstand die nächste an der Tormitte
+  var lA=Math.max(0,l0-TOR_GERADE),lB=Math.min(W-1,l1+TOR_GERADE),bs=[],bmin=bz,bmax=bz;for(var l=lA;l<=lB;l++){bs[l]=grenze(l);if(bs[l]>=0){bmin=Math.min(bmin,bs[l]);bmax=Math.max(bmax,bs[l])}}
+  for(l=lA;l<=lB;l++)for(var a1=Math.max(0,a0-14);a1<=Math.min(W-1,a0+14);a1++)fenster[id(l,a1)]=1;
+  var frei=function(x){return alt[x]||(!bau[x]&&ding[x]!==2&&FREI.test(Z[x]))},beste=bz,bk=1e9;
+  for(var c=bmin;c<=bmax;c++){var kost=0;for(l=lA;l<=lB;l++){if(l>=l0&&l<=l1)continue;for(var t=0;t<MAUER_BILD;t++){var a2=c-t*dir;if(a2<0||a2>=W||!frei(id(l,a2)))kost++}}
+   if(kost<bk||(kost===bk&&Math.abs(c-bz)<Math.abs(beste-bz))){bk=kost;beste=c}}
+  bz=beste;G.gerade={lA:lA,lB:lB,bz:bz,dir:dir,id:id};
+  for(l=lA;l<=lB;l++){var b=bs[l];if(b<0)continue;
+   for(var a=Math.min(b,bz)-1;a<=Math.max(b,bz)+1;a++)if(a>=0&&a<W)MI[id(l,a)]=(a-bz)*dir<=0?1:0}});
+ var D=new Int32Array(WW).fill(1e9),q=[],h=0;for(k=0;k<WW;k++){if(!MI[k])continue;var n0=N4(k);if(n0.some(function(x){return x<0||!MI[x]})){D[k]=1;q.push(k)}}
+ while(h<q.length){var a2=q[h++],nn=N4(a2);for(d=0;d<4;d++){var b2=nn[d];if(b2>=0&&MI[b2]&&D[b2]>D[a2]+1){D[b2]=D[a2]+1;q.push(b2)}}}
+ var band=function(k){return MI[k]&&D[k]<=MAUER_BILD};
+ // Tore längs der Achse durch das neue Band (auch wenn das gerade Stück vor oder hinter den alten Torfeldern liegt: der Straße bis 12 Felder folgen)
+ var tor=new Uint8Array(WW);
+ gruppen.forEach(function(G){var T=G.T,ax=G.ax,step=ax?W:1;
+  T.forEach(function(x){if(band(x))tor[x]=1;[step,-step].forEach(function(sv){var y=x+sv,z2=0;while(y>=0&&y<WW&&(ax||((y/W)|0)===((x/W)|0))&&z2++<12&&(torAlt(y)||SW.test(Z[y]))&&!bau[y]){if(band(y))tor[y]=1;y+=sv}})})});
  for(k=0;k<WW;k++)if(band(k)&&Z[k]==='w')tor[k]=1;
  // neue Mauer: Band nur auf alter Mauer oder freiem Boden (Gras, Fels, Feld mit Baum); Gassen, Straßen, Häuser, Dinge und Wasser bleiben, wo sie sind.
  // Ist ein Bandfeld außerhalb der alten Mauer belegt (Hof, Elendsbude, Straße), bleibt dort im Umkreis von 2 Feldern die alte Mauer (keine Lücke, nichts
  // Belegtes landet innen). Innen belegte Bandfelder (Ringgasse, Haus) bleiben frei, die Mauer ist dort schmaler.
  var neu=new Uint8Array(WW),zu=new Uint8Array(WW),n=0;for(k=0;k<WW;k++){if(!band(k)||tor[k])continue;var c2=Z[k];
-  if(alt[k]||(!bau[k]&&ding[k]!==2&&(c2==='g'||c2==='x'))){neu[k]=1;n++}else if(!MO[k])zu[k]=1}
- if(!n)return;
+  if(alt[k]||(!bau[k]&&ding[k]!==2&&(c2==='g'||c2==='x'||(fenster[k]&&(c2==='f'||c2==='p'))))){neu[k]=1;n++}else if(!MO[k])zu[k]=1}
+ if(!n)return true;
  var R2=2;for(k=0;k<WW;k++){if(!zu[k])continue;var zi=k%W,zj=(k/W)|0;
   for(var dy=-R2-1;dy<=R2+1;dy++)for(var dx=-R2-1;dx<=R2+1;dx++){var x=zi+dx,y=zj+dy;if(x<0||y<0||x>=W||y>=W)continue;var kk=y*W+x,nahe=Math.max(Math.abs(dx),Math.abs(dy))<=R2;
    if(nahe&&neu[kk]&&!alt[kk]&&!MO[kk])neu[kk]=0;if(alt[kk]&&!tor[kk])neu[kk]=1}}
@@ -773,11 +796,26 @@ function mauerRund(P,UM,R,Wc,sp){var W=P.W,WW=W*W,F=P.mass||1,Z=P.zellen.split('
    if(wahl>=0){neu[wahl]=1;neuDa=true;continue}
    for(var dy2=-2;dy2<=3;dy2++)for(var dx2=-2;dx2<=3;dx2++){var x2=i+dx2,y2=j+dy2;if(x2>=0&&y2>=0&&x2<W&&y2<W&&alt[y2*W+x2]&&!tor[y2*W+x2]&&!neu[y2*W+x2]){neu[y2*W+x2]=1;neuDa=true}}}
   if(!neuDa)break}
+ // Im Torfenster nur das gerade Band: übrige alte Mauer daneben fällt weg, wenn das gerade Band in dieser Spalte ganz steht
+ gruppen.forEach(function(G){var g=G.gerade;if(!g)return;for(var l=g.lA;l<=g.lB;l++){var ganz=true,t;for(t=0;t<MAUER_BILD;t++){var a=g.bz-t*g.dir;if(a<0||a>=W||!neu[g.id(l,a)]){ganz=false;break}}
+   if(!ganz)continue;for(var d2=-14;d2<=14;d2++){var a2=g.bz+d2,off=d2*g.dir;if(a2<0||a2>=W||(off<=0&&off>-MAUER_BILD))continue;var k3=g.id(l,a2);if(neu[k3]&&!band(k3)&&Math.abs(off)<=MAUER_BILD+2)neu[k3]=0}}});
+ // Tor genau so tief wie die Mauer daneben (wo das Band auf Acker, Hof oder Straße trifft, bleibt die alte Mauer, das Tor rückt mit)
+ gruppen.forEach(function(G){var ax=G.ax,L=function(x){return ax?x%W:(x/W)|0},A=function(x){return ax?(x/W)|0:x%W},id=function(l,a){return ax?a*W+l:l*W+a},
+   l0=1e9,l1=-1,as=0;G.T.forEach(function(x){l0=Math.min(l0,L(x));l1=Math.max(l1,L(x));as+=A(x)});var a0=Math.round(as/G.T.length),lo=1e9,hi=-1,alle=[],seiten=[];
+  for(var l=l0;l<=l1;l++)for(var a=a0-14;a<=a0+14;a++)if(a>=0&&a<W&&tor[id(l,a)])alle.push(id(l,a));if(!alle.length)return;
+  var am=0;alle.forEach(function(x){am+=A(x)});am=Math.round(am/alle.length);
+  [l0-1,l1+1].forEach(function(l){if(l<0||l>=W)return;var best=-1,bd=1e9;for(var a=a0-14;a<=a0+14;a++)if(a>=0&&a<W&&neu[id(l,a)]&&Math.abs(a-am)<bd){bd=Math.abs(a-am);best=a}if(best<0)return;
+   var x0=best,x1=best;while(x0-1>=0&&neu[id(l,x0-1)])x0--;while(x1+1<W&&neu[id(l,x1+1)])x1++;seiten.push([x0,x1])});if(!seiten.length)return;
+  // Tiefe: wo beide Seiten Mauer haben (Schnitt), sonst beide zusammen
+  lo=Math.max.apply(null,seiten.map(function(x){return x[0]}));hi=Math.min.apply(null,seiten.map(function(x){return x[1]}));
+  if(lo>hi){lo=Math.min.apply(null,seiten.map(function(x){return x[0]}));hi=Math.max.apply(null,seiten.map(function(x){return x[1]}))}
+  var spalte={},vorher={};alle.forEach(function(x){spalte[L(x)]=1;vorher[x]=1;tor[x]=0});
+  for(l=l0;l<=l1;l++)if(spalte[l])for(a=lo;a<=hi;a++){var k2=id(l,a);if(!neu[k2]&&!bau[k2]&&(vorher[k2]||SW.test(Z[k2])))tor[k2]=1}});
  // Innenfläche = was die Mauer samt Toren einschließt (Flut vom Bildrand über alles andere)
  var aus=new Uint8Array(WW),fl=[];for(k=0;k<WW;k++){var fi=k%W,fj=(k/W)|0;if((fi===0||fj===0||fi===W-1||fj===W-1)&&!neu[k]&&!tor[k]){aus[k]=1;fl.push(k)}}
  while(fl.length){var a3=fl.pop(),n3=N4(a3);for(d=0;d<4;d++){var b3=n3[d];if(b3>=0&&!aus[b3]&&!neu[b3]&&!tor[b3]){aus[b3]=1;fl.push(b3)}}}
  var MN=new Uint8Array(WW),nin=0,nmo=0;for(k=0;k<WW;k++){if(!aus[k]){MN[k]=1;nin++}if(MO[k])nmo++}
- if(nin<nmo*.8)return;   // Mauer nicht dicht (sollte nicht vorkommen): alles bleibt wie vorher
+ if(nin<nmo*.8)return false;   // Mauer nicht dicht (sollte nicht vorkommen): alles bleibt wie vorher
  for(k=0;k<WW;k++){if(neu[k]){Z[k]='g';continue}if(alt[k])Z[k]=MN[k]?'s':'g';if(tor[k]&&!SW.test(Z[k]))Z[k]='s'}
  // Bäume weichen auf der Mauer und direkt davor (freies Schussfeld; dort liegen die Halbfelder der Schrägen)
  var frei=function(x,y){if(x<0||y<0||x>=W||y>=W)return false;var kk=y*W+x;if(neu[kk])return true;if(MN[kk])return false;var nz=N4(kk);for(var q2=0;q2<4;q2++)if(nz[q2]>=0&&neu[nz[q2]])return true;return false};

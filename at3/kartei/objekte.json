@@ -2571,7 +2571,7 @@
   },
   {
    "id": "mauer-zinne-n",
-   "version": 2,
+   "version": 3,
    "typ": 312,
    "kat": "einrichtung",
    "name": "Battlements",
@@ -2580,7 +2580,7 @@
   },
   {
    "id": "mauer-zinne-o",
-   "version": 2,
+   "version": 3,
    "typ": 314,
    "kat": "einrichtung",
    "name": "Battlements",
@@ -2589,7 +2589,7 @@
   },
   {
    "id": "mauer-zinne-s",
-   "version": 2,
+   "version": 3,
    "typ": 313,
    "kat": "einrichtung",
    "name": "Battlements",
@@ -2598,7 +2598,7 @@
   },
   {
    "id": "mauer-zinne-w",
-   "version": 2,
+   "version": 3,
    "typ": 315,
    "kat": "einrichtung",
    "name": "Battlements",
@@ -2877,7 +2877,7 @@
   },
   {
    "id": "mauer-zinne-n-a",
-   "version": 1,
+   "version": 2,
    "typ": 320,
    "kat": "einrichtung",
    "name": "Battlements A",
@@ -2886,7 +2886,7 @@
   },
   {
    "id": "mauer-zinne-n-b",
-   "version": 1,
+   "version": 2,
    "typ": 321,
    "kat": "einrichtung",
    "name": "Battlements B",
@@ -2895,7 +2895,7 @@
   },
   {
    "id": "mauer-zinne-s-a",
-   "version": 1,
+   "version": 2,
    "typ": 322,
    "kat": "einrichtung",
    "name": "Battlements A",
@@ -2904,7 +2904,7 @@
   },
   {
    "id": "mauer-zinne-s-b",
-   "version": 1,
+   "version": 2,
    "typ": 323,
    "kat": "einrichtung",
    "name": "Battlements B",
@@ -2913,7 +2913,7 @@
   },
   {
    "id": "mauer-zinne-o-a",
-   "version": 1,
+   "version": 2,
    "typ": 324,
    "kat": "einrichtung",
    "name": "Battlements A",
@@ -2922,7 +2922,7 @@
   },
   {
    "id": "mauer-zinne-o-b",
-   "version": 1,
+   "version": 2,
    "typ": 325,
    "kat": "einrichtung",
    "name": "Battlements B",
@@ -2931,7 +2931,7 @@
   },
   {
    "id": "mauer-zinne-w-a",
-   "version": 1,
+   "version": 2,
    "typ": 326,
    "kat": "einrichtung",
    "name": "Battlements A",
@@ -2940,7 +2940,7 @@
   },
   {
    "id": "mauer-zinne-w-b",
-   "version": 1,
+   "version": 2,
    "typ": 327,
    "kat": "einrichtung",
    "name": "Battlements B",
@@ -3012,7 +3012,7 @@
   },
   {
    "id": "mauer-halb-zinne-ob",
-   "version": 1,
+   "version": 2,
    "typ": 335,
    "kat": "einrichtung",
    "name": "Slanted Battlements",
@@ -3021,7 +3021,7 @@
   },
   {
    "id": "mauer-halb-zinne-ob-a",
-   "version": 1,
+   "version": 2,
    "typ": 336,
    "kat": "einrichtung",
    "name": "Slanted Battlements A",
@@ -3030,7 +3030,7 @@
   },
   {
    "id": "mauer-halb-zinne-ob-b",
-   "version": 1,
+   "version": 2,
    "typ": 337,
    "kat": "einrichtung",
    "name": "Slanted Battlements B",
@@ -3039,7 +3039,7 @@
   },
   {
    "id": "mauer-halb-zinne-un",
-   "version": 1,
+   "version": 2,
    "typ": 338,
    "kat": "einrichtung",
    "name": "Slanted Battlements Back",
@@ -3048,7 +3048,7 @@
   },
   {
    "id": "mauer-halb-zinne-re",
-   "version": 1,
+   "version": 2,
    "typ": 339,
    "kat": "einrichtung",
    "name": "Slanted Battlements E",
@@ -3057,7 +3057,7 @@
   },
   {
    "id": "mauer-halb-zinne-li",
-   "version": 1,
+   "version": 2,
    "typ": 340,
    "kat": "einrichtung",
    "name": "Slanted Battlements W",
