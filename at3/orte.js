@@ -59,6 +59,12 @@ function roh(seed,A,k,ON){var c=A.orte[k],z=c&0xffffff,art=c>>>24,x=z%GW,y=(z/GW
  return{k:k,zelle:z,art:art,g:groesse(seed,A,k),sitz:sitze(A)[k],kultur:kultur,zonen:zonen,kueste:kue,fluss:!!flu,einheit:A.hs?A.hs.ort[k]:0,
   name:ON?ON.name(seed,z,art,A.vk):''}}
 
+// N6b2c4c1 (Thomas 22.11.2026): Richtung des Flusses am Ort für den Stadtplan ('ns' | 'ow', null = kein Fluss). Aus den Flusszellen (A.flu ≥ 2) rund um
+// den Ort: mehr oben/unten = Nord–Süd, mehr links/rechts = Ost–West, nur schräg = Seed. Reine Rechnung, 9 Zellen, Erde unverändert.
+function flussAchse(seed,A,k){if(!A.flu)return null;var z=A.orte[k]&0xffffff,x=z%GW,y=(z/GW)|0,f=function(dx,dy){var Y=y+dy;if(Y<0||Y>=GH)return 0;return A.flu[Y*GW+(x+dx+GW)%GW]>=2?1:0};
+ var v=f(0,-1)+f(0,1),h=f(-1,0)+f(1,0),d=f(-1,-1)+f(1,1)+f(1,-1)+f(-1,1);if(!v&&!h&&!d&&!(A.flu[z]>0))return null;
+ if(v!==h)return v>h?'ns':'ow';return ((Math.imul(seed^z,2654435761)>>>16)&1)?'ns':'ow'}
+
 // Daten vorbereiten (einmal): Kandidaten für Leitgebäude (Wirtschaft, Biom nicht „alle“), Zonen, Lieblingswaren je Kultur
 function daten(geb,rez,kul){var G=geb.gebaeude,zon={},bz={},aus={},K=[];
  (geb.biome||[]).forEach(function(b){if(b.zone!=null){zon[b.zone]=b.id;bz[b.id]=b.zone}});
@@ -125,6 +131,6 @@ function entpack(a,D){var v=new DataView(a.buffer,a.byteOffset,a.byteLength),lei
  return{posten:po,format:a[0],g:a[1],kultur:a[2],art:a[3],zelle:v.getUint32(4,true),einheit:v.getUint16(8,true),zusatz:a[10]?{gruppe:GRUPPEN[a[10]-1],n:a[11]}:null,leit:leit,stufen:st,einwohner:e}}
 
 var P={AUS:AUS,GNAME:GNAME,EINW:EINW,HOCH:HOCH,ANTEIL:ANTEIL,LEIT:LEIT,ARBEIT:ARBEIT,ZUS:ZUS,GEB_ZUS:GEB_ZUS,BYTES:BYTES,
- sitze:sitze,groesse:groesse,ortNr:ortNr,roh:roh,daten:daten,bilanz:bilanz,voll:voll,groesseName:groesseName,zeile:zeile,stufenText:stufenText,zahl:zahl,pack:pack,entpack:entpack};
+ sitze:sitze,groesse:groesse,ortNr:ortNr,roh:roh,flussAchse:flussAchse,daten:daten,bilanz:bilanz,voll:voll,groesseName:groesseName,zeile:zeile,stufenText:stufenText,zahl:zahl,pack:pack,entpack:entpack};
 if(typeof module!=='undefined'&&module.exports)module.exports=P;else root.AT3ORTE=P;
 })(typeof self!=='undefined'?self:this);

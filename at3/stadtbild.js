@@ -30,6 +30,9 @@ var AVE=2,MAUER=2,MAUER_AB=4,PROBE_EINW=20000;
 var MARMOR={temple:1,senate:1,governor:1,'royal-palace':1,bathhouse:1,theatre:1,aqueduct:1};
 var PLATZ={market:'o',forum:'m'},DING={well:'ware-water'};
 var EDEL={domus:1,villa:1,palazzo:1};
+// N6b2c4c1 Fluss (Thomas 22.11.2026): ab Marktflecken mitten durch die Stadt (Breite in Planfeldern je Größe, Ufergasse auf beiden Seiten, Brücken an der
+// Hauptstraße und 1–2 Gassen, Flusstore in der Mauer); Weiler und Dörfer: Fluss vor dem Ort, Furt, wo ein Weg hinausführt. Gebäude, die Wasser brauchen, ans Ufer.
+var FLUSS_B=[0,0,2,2,2,2,3,3],UFER={fisher:1,mill:1,'gold-wash':1,'clay-pit':1,tannery:1,dyer:1,fuller:1};
 // Zonen von innen nach außen wie die Skizze: Verwaltung, Glaube, Adel, Handel und Gewerbe, Militär, Mietshäuser, Gasthöfe, Unterwelt, Buden
 var ORD={administration:0,faith:1,economy:2,households:3,military:4,underworld:5};
 function rang(it){if(EDEL[it.id])return 0.5;if(it.id==='tenement'||it.id==='cottage')return 6;if(it.id==='townhouse')return 5.5;
@@ -117,6 +120,8 @@ function plan(opt){
  var einw=opt.liste?opt.liste.einw:opt.einw!=null?Math.max(1,Math.min(20000,opt.einw|0)):opt.probeW?PROBE_EINW:A?A.einw:150;
  var Li=opt.liste||(elend?null:SL().probe(einw,opt.biom,seed,daten(opt),opt.leit)),g=elend?3:Li.g;if(!art)art=ART_G[g];
  var basis={klasse:(ST||B).klasse,dach:(ST||B).dach,wand:(ST||B).wand,dachR:(ST||B).dachR};
+ // Fluss (N6b2c4c1): opt.fluss 'ns' | 'ow' (aus der Welt, orte.js flussAchse) oder true (Richtung aus dem Seed); nicht in Elendssiedlungen
+ var FL=elend||!opt.fluss?null:opt.fluss==='ns'||opt.fluss==='ow'?opt.fluss:(rng(hashT([seed,einw,'flussachse'].join('|')))()<.5?'ns':'ow');
  // Gebäude einzeln
  var items=[];if(elend){for(var e0=Math.ceil(einw/6);e0>0;e0--)items.push({id:'shack',w:1,h:1,haupt:'households',stufe:1})}
  else Li.gebaeude.forEach(function(x){if(x.lage!=='innen')return;for(var k=0;k<x.n;k++)items.push({id:x.id,w:x.w,h:x.h,haupt:x.haupt,stufe:x.stufe})});
@@ -157,7 +162,13 @@ function plan(opt){
   var lok=function(t,x,y){return t.s===0?[y-Wi,x-t.c]:t.s===1?[-1-y,x-t.c]:t.s===2?[x-Wi,y-t.c]:[-1-x,y-t.c]};
   var OFF=4096,key=function(x,y){return (x+OFF)*8192+(y+OFF)},occ=new Set();
   var aufStr=function(x,y){for(var k=0;k<TO.length;k++){var L=lok(TO[k],x,y);if((L[1]===0||L[1]===1)&&L[0]>=TO[k].u0)return true}return false};
-  var frei=function(x,y){if(occ.has(key(x,y))||aufStr(x,y))return false;if(x>=0&&y>=0&&x<Wi&&y<Wi){var kk=y*Wi+x;return !MK[kk]&&E.Z[kk]!=='s'}return true};
+  // Fluss (N6b2c4c1): Stadt = Wasserspalten des Plans laufen bis zum Bildrand weiter; Weiler und Dörfer = Band vor einer Seite mit Ausgang (Furt am Weg)
+  var FE=E.fluss?JSON.parse(JSON.stringify(E.fluss)):null,fd=null;
+  if(FL&&!FE&&g<MAUER_AB){var rd=rng(hashT([seed,art,einw,'flussdorf'].join('|'))),sd=TO[Math.floor(rd()*TO.length)].s;fd={s:sd,u1:2+Math.floor(rd()*3),b:2};
+   FE={achse:sd<2?'ow':'ns',breite:2,bruecken:0,furten:TO.filter(function(t){return t.s===sd}).length,tore:0}}
+  var wasser=function(x,y){if(fd){var u=fd.s===0?y-Wi:fd.s===1?-1-y:fd.s===2?x-Wi:-1-x;return u>=fd.u1&&u<fd.u1+fd.b}
+   if(!FE)return false;if(x>=0&&y>=0&&x<Wi&&y<Wi)return E.Z[y*Wi+x]==='w';return x>=FE.x0&&x<FE.x0+FE.breite&&(y<0||y>=Wi)};
+  var frei=function(x,y){if(occ.has(key(x,y))||aufStr(x,y)||wasser(x,y))return false;if(x>=0&&y>=0&&x<Wi&&y<Wi){var kk=y*Wi+x;return !MK[kk]&&E.Z[kk]!=='s'}return true};
   // Seite eines Punkts vom Mittelpunkt aus (wie die Tests); −1 = zu nah an der Diagonale
   var seiteVon=function(x,y){var dx=x-Wi/2,dy=y-Wi/2;if(Math.abs(Math.abs(dx)-Math.abs(dy))<1.5)return -1;return Math.abs(dx)>Math.abs(dy)?(dx>0?2:3):(dy>0?0:1)};
   var rechteck=function(t,u0,du,l0,dl){var a=glob(t,u0,l0),b=glob(t,u0+du-1,l0+dl-1);return{i:Math.min(a[0],b[0]),j:Math.min(a[1],b[1]),w:Math.abs(a[0]-b[0])+1,h:Math.abs(a[1]-b[1])+1}};
@@ -197,6 +208,7 @@ function plan(opt){
    for(var zi=0;zi<Zs.length&&!gelegt;zi++)gelegt=leg(Zs[zi],h0.w,h0.h,1,{art:'hof',h:h0},false);if(!gelegt)return null}
   // Ringbreite: alles Gelegte plus 2 Felder Rand
   var ext=0;occ.forEach(function(v){var x=Math.floor(v/8192)-OFF,y=v%8192-OFF,e2=Math.max(-x,-y,x-Wi+1,y-Wi+1);if(e2>ext)ext=e2});
+  if(fd&&fd.u1+fd.b>ext)ext=fd.u1+fd.b;
   var R=Math.max(4,ext+2);if(opt.zeilen)opt.zeilen.push(cur.slice());
   var W=Wi+2*R,Z=new Array(W*W).fill('g'),belegt=new Uint8Array(W*W),at=function(i,j){return j*W+i},keinBaum=new Uint8Array(W*W),neu=new Uint8Array(W*W);
   for(var j=0;j<Wi;j++)for(var i=0;i<Wi;i++)Z[at(i+R,j+R)]=E.Z[j*Wi+i];
@@ -247,10 +259,14 @@ function plan(opt){
    reg.forEach(function(k6){if(belegt[k6]||tuerRes[k6])return;var i6=k6%W,j6=(k6/W)|0;if(rausch(i6,j6,seed+43)<.1)dinge.push({id:rausch(i6,j6,seed+44)<.15?'leiche':'lager-platz',i:i6,j:j6})})}
   // Bäume und Kram aus dem Plan innen weichen allem, was hier zwischen Mauer und Rand gebaut wurde
   dinge=dinge.filter(function(d,ix){return ix>=nE||!neu[at(d.i,d.j)]});
+  // Fluss im Ring: Wasser, wo ein Weg kreuzt bleibt der Weg (Furt bzw. Brücke); Lage für die Spiegelung umrechnen
+  if(FE){for(var jw=0;jw<W;jw++)for(var iw=0;iw<W;iw++){var xw=iw-R,yw=jw-R;if(xw>=0&&yw>=0&&xw<Wi&&yw<Wi&&!fd)continue;if(!wasser(xw,yw))continue;var kw=at(iw,jw);
+    if(Z[kw]==='s')continue;Z[kw]='w';keinBaum[kw]=1}
+   if(FE.x0!=null)FE.x0+=R;if(fd)FE.u1=fd.u1}
   // Landschaft im Ring: Bäume des Bioms wie in den Höfen innen
   for(var q7=0;q7<W*W;q7++){if(keinBaum[q7]||belegt[q7]||Z[q7]!=='g')continue;var i7=q7%W,j7=(q7/W)|0;if(rausch(i7,j7,seed+41)<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i7,j7,seed+42)*B.baeume.length)],i:i7,j:j7})}
   var tp=TO.filter(function(t){return t.s===0})[0]||TO.filter(function(t){return t.s===2})[0]||TO[0],te=glob(tp,R-1,0);
-  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:te[0]+R,j:te[1]+R},nb:E.nb,gesetzt:gesetzt,vielfalt:E.vielfalt,tore:TO,maske:MK,rand:R,
+  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:te[0]+R,j:te[1]+R},nb:E.nb,fluss:FE,gesetzt:gesetzt,vielfalt:E.vielfalt,tore:TO,maske:MK,rand:R,
    aussen:{ring:R,innenW:Wi,stinktor:SEITE[TO[stinkK].s],graebertor:SEITE[TO[grabK].s],tore:TO.map(function(t){return SEITE[t.s]}),buden:buden,graeber:graeber,hoefe:hoefe.length,hoefeExtra:nx>0?hoefe.filter(function(h){return !h.liste}).length:0,elend:Ue}};}
  function anlegen(nb){
   var r=rng(hashT([seed,art,opt.biom,opt.stil||'',einw,nb].join('|'))),a,b,k;
@@ -258,13 +274,20 @@ function plan(opt){
   // opt.vielfalt === false = festes Raster wie N6b2c2. Weiler und Dörfer folgen mit N6b2c4b.
   var viel=g>=MAUER_AB&&!elend&&opt.vielfalt!==false,rv=rng(hashT([seed,art,einw,nb,'vielfalt'].join('|')));
   var cw=[],rh=[],hx=nb>>1,hy=nb>>1;for(a=0;a<nb;a++){cw.push(Bm);rh.push(Bm)}
+  // Fluss (N6b2c4c1): im Plan immer Nord–Süd zwischen Spalte fk−1 und fk (Ost–West durch Spiegeln am Schluss); Lücke = Ufergasse + RW Wasser + Ufergasse
+  var mitFluss=viel&&!!FL,rf=rng(hashT([seed,art,einw,nb,'fluss'].join('|'))),RW=mitFluss?FLUSS_B[g]+(g>=5&&rf()<.5?1:0):0,RX=mitFluss?RW+1:0,fk=-1,BR={};
   if(viel){var lo=Math.max(3,Bm-2),hi=Bm+2,zuf=function(){return lo+Math.floor(rv()*(hi-lo+1))};
    for(a=0;a<nb;a++){cw[a]=zuf();rh[a]=zuf()}
-   var su=function(L){var s=0;L.forEach(function(v){s+=v});return s},sc=su(cw),sr=su(rh);   // gleiche Summe: der Plan bleibt quadratisch
+   var su=function(L){var s=0;L.forEach(function(v){s+=v});return s},sc=su(cw)+RX,sr=su(rh);   // gleiche Summe (samt Fluss): der Plan bleibt quadratisch
    for(var sw=0;sc!==sr&&sw<4000;sw++){var kl=sc<sr?cw:rh,gr=sc<sr?rh:cw,q=Math.floor(rv()*nb);if(kl[q]<hi){kl[q]++;if(sc<sr)sc++;else sr++}else if(gr[q]>lo){gr[q]--;if(sc>sr)sc--;else sr--}}
+   if(sc!==sr)return null;
    var wahl=[];for(a=Math.max(1,Math.round(nb*.3));a<=Math.min(nb-1,Math.round(nb*.7));a++)if(a*2!==nb)wahl.push(a);
-   if(wahl.length){hx=wahl[Math.floor(rv()*wahl.length)];hy=wahl[Math.floor(rv()*wahl.length)]}}
-  var X0=[],Y0=[],p=off;for(a=0;a<nb;a++){if(a===hx)p++;X0.push(p);p+=cw[a]+1}p=off;for(b=0;b<nb;b++){if(b===hy)p++;Y0.push(p);p+=rh[b]+1}
+   if(wahl.length){hx=wahl[Math.floor(rv()*wahl.length)];hy=wahl[Math.floor(rv()*wahl.length)]}
+   if(mitFluss){var fw=[];for(a=Math.max(1,Math.round(nb*.2));a<=Math.min(nb-1,Math.round(nb*.8));a++)if(a!==hx)fw.push(a);if(!fw.length)return null;fk=fw[Math.floor(rf()*fw.length)];
+    // Brücken an 1–2 geraden Gassen (dazu immer die Hauptstraße), möglichst weit von ihr weg
+    var bw0=[];for(a=0;a<nb-1;a++)if(a+1!==hy)bw0.push(a);for(var nbr=1+(rf()<.5?1:0);nbr>0&&bw0.length;nbr--){var bi=Math.floor(rf()*bw0.length),bk0=bw0[bi];BR[bk0]=1;
+     bw0=bw0.filter(function(x){return Math.abs(x-bk0)>1})}}}
+  var X0=[],Y0=[],p=off;for(a=0;a<nb;a++){if(a===hx)p++;if(a===fk)p+=RX;X0.push(p);p+=cw[a]+1}p=off;for(b=0;b<nb;b++){if(b===hy)p++;Y0.push(p);p+=rh[b]+1}
   var W=p-1+off,cA=X0[hx]-2,cB=Y0[hy]-2;
   var Z=new Array(W*W).fill('g'),belegt=new Uint8Array(W*W),bauten=[],dinge=[],gesetzt={};
   var at=function(i,j){return j*W+i};
@@ -292,6 +315,10 @@ function plan(opt){
      if(M[k]){if(p0>mx)mx=p0;if(p0<mn)mn=p0}}}
    tore.push({s:s,c:c,u0:s===0||s===2?mx+1-W:-mn,haupt:haupt})}
   arme.forEach(function(s){oeffne(s,s<2?cA:cB,true)});
+  // Fluss Teil 1: Wasser von Bildrand zu Bildrand, die Mauer bleibt dort offen (Flusstor)
+  var fx0=mitFluss?X0[fk-1]+cw[fk-1]+1:-1,ftore=0,vorM=false;
+  if(mitFluss)for(j=0;j<W;j++){var warM=false;for(i=fx0;i<fx0+RW;i++){k1=at(i,j);if(wallC[k1]){wallC[k1]=0;warM=true}Z[k1]='w';belegt[k1]=1;nutz[k1]=0;ring[k1]=0}
+   if(warM&&!vorM)ftore++;vorM=warM}
   for(k1=0;k1<WW;k1++)if(wallC[k1])bauten.push({rolle:'mauer',i:k1%W,j:(k1/W)|0,w:1,h:1,klasse:basis.klasse==='clay-wood'&&g>=5?'brick':basis.klasse,dach:'flach',achse:'i',wand:basis.wand,dachR:STEIN});
   var cx=W/2,cy=W/2,bl=[];
   if(viel){var sx=0,sy=0,sn=0;for(k1=0;k1<WW;k1++)if(nutz[k1]){sx+=k1%W+.5;sy+=((k1/W)|0)+.5;sn++}if(sn){cx=sx/sn;cy=sy/sn}}
@@ -303,7 +330,7 @@ function plan(opt){
   var passt=function(it,gw,gh){return it.w<=gw&&it.h<=gh||it.h<=gw&&it.w<=gh};
   for(var m=0;m<mono.length;m++){var it=mono[m],k0=grpK(it),best=null,bd=1e9,bk=0;
    for(var q=0;q<bl.length;q++){var s=bl[q],kk=0;
-    for(k=k0;k<=k0+(viel?1:0)&&!kk;k++){if(s.a+k>nb||s.b+k>nb)continue;if((s.a<hx)!==(s.a+k-1<hx)||(s.b<hy)!==(s.b+k-1<hy))continue;if(passt(it,bw(s.a,k),bh(s.b,k)))kk=k}
+    for(k=k0;k<=k0+(viel?1:0)&&!kk;k++){if(s.a+k>nb||s.b+k>nb)continue;if((s.a<hx)!==(s.a+k-1<hx)||(s.b<hy)!==(s.b+k-1<hy)||(s.a<fk)!==(s.a+k-1<fk))continue;if(passt(it,bw(s.a,k),bh(s.b,k)))kk=k}
     if(!kk)continue;var frei=true;for(var u=0;u<kk&&frei;u++)for(var v=0;v<kk&&frei;v++)if(benutzt[(s.a+u)*nb+s.b+v])frei=false;
     if(frei&&viel){var gw1=bw(s.a,kk),gh1=bh(s.b,kk);for(var y9=0;y9<gh1&&frei;y9++)for(var x9=0;x9<gw1&&frei;x9++)if(!frei0(at(s.x+x9,s.y+y9)))frei=false}if(!frei)continue;
     var dd=Math.hypot(s.x+bw(s.a,kk)/2-cx,s.y+bh(s.b,kk)/2-cy)+r()*P1;if(dd<bd){bd=dd;best=s;bk=kk}}
@@ -313,22 +340,22 @@ function plan(opt){
   // Krumme und schräge Gassen: Verschiebung je Gasse und Block (Zeilengassen zuerst). Höchstens ±1 je Schritt, Blöcke bleiben mind. 3 breit,
   // an Monumenten gerade, an Kreuzungen nie gleichzeitig mit der Quergasse versetzt (sonst nur noch eine Ecke als Durchgang).
   var SC={},TR={};
-  var sCol=function(k2,b2){return k2<0||k2>=nb-1||k2+1===hx?0:(SC[k2]?SC[k2][b2]:0)},tRow=function(k2,a2){return k2<0||k2>=nb-1||k2+1===hy?0:(TR[k2]?TR[k2][a2]:0)};
+  var sCol=function(k2,b2){return k2<0||k2>=nb-1||k2+1===hx||k2+1===fk?0:(SC[k2]?SC[k2][b2]:0)},tRow=function(k2,a2){return k2<0||k2>=nb-1||k2+1===hy?0:(TR[k2]?TR[k2][a2]:0)};
   var profil=function(L,lang,cap,frei2,fix){if(cap<1||rv()>=.32)return null;   // .32: dünne Blöcke bleiben gerade, so wird es insgesamt etwa jede 4. Gasse
    for(var vers=0;vers<6;vers++){var dir=rv()<.5?-1:1,schraeg=rv()<.5,ziel=1+Math.floor(rv()*Math.max(1,lang-1)),v=0,P=[],t2,bad=false,nz=false;
     for(t2=0;t2<lang&&!bad;t2++){if(t2>0&&frei2(t2-1)){if(schraeg?t2>=ziel&&Math.abs(v)<cap:t2===ziel)v+=dir}P.push(v);if(v)nz=true;if(fix(t2)&&v!==0)bad=true}
     if(!bad&&nz)return P}return null};
   if(viel){
-   for(k=0;k<nb-1;k++){if(k+1===hy)continue;var capR=Math.min(2,Math.floor((Math.min(rh[k],rh[k+1])-3)/2));
+   for(k=0;k<nb-1;k++){if(k+1===hy||BR[k])continue;var capR=Math.min(2,Math.floor((Math.min(rh[k],rh[k+1])-3)/2));
     TR[k]=profil(TR,nb,capR,function(){return true},function(a3){return fest['r'+k+'_'+a3]})}
-   for(k=0;k<nb-1;k++){if(k+1===hx)continue;var capC=Math.min(2,Math.floor((Math.min(cw[k],cw[k+1])-3)/2));
+   for(k=0;k<nb-1;k++){if(k+1===hx||k+1===fk)continue;var capC=Math.min(2,Math.floor((Math.min(cw[k],cw[k+1])-3)/2));
     SC[k]=profil(SC,nb,capC,function(b3){return tRow(b3,k)===tRow(b3,k+1)},function(b3){return fest['c'+k+'_'+b3]})}}
   bl.forEach(function(s){s.x=X0[s.a]+sCol(s.a-1,s.b);s.w=X0[s.a]+cw[s.a]+sCol(s.a,s.b)-s.x;s.y=Y0[s.b]+tRow(s.b-1,s.a);s.h=Y0[s.b]+rh[s.b]+tRow(s.b,s.a)-s.y;s.rest=s.w*s.h});
   if(viel){
    // Zusätzliche Tore ab 5 (Thomas: eigene Straße 2 breit vom Tor bis zur nächsten Hauptstraße): eine gerade Gasse auf einem Arm wird breiter,
    // die Blöcke an einer Seite werden dafür 1 Feld schmaler (nur Blöcke ohne Monument, danach mindestens 3 breit). Je Seite höchstens ein Zusatztor.
    var extra=UM.tore-arme.length,seiten=[0,1,2,3],z1,z2,tz;for(z1=3;z1>0;z1--){z2=Math.floor(rt()*(z1+1));tz=seiten[z1];seiten[z1]=seiten[z2];seiten[z2]=tz}
-   for(var si=0;si<4&&extra>0;si++){var s3=seiten[si],sp=s3<2,hm=sp?hx:hy,Ks=[];for(k=0;k<nb-1;k++)if(k!==hm-1&&!(sp?SC[k]:TR[k]))Ks.push(k);
+   for(var si=0;si<4&&extra>0;si++){var s3=seiten[si],sp=s3<2,hm=sp?hx:hy,Ks=[];for(k=0;k<nb-1;k++)if(k!==hm-1&&!(sp&&k===fk-1)&&!(sp?SC[k]:TR[k]))Ks.push(k);
     for(z1=Ks.length-1;z1>0;z1--){z2=Math.floor(rt()*(z1+1));tz=Ks[z1];Ks[z1]=Ks[z2];Ks[z2]=tz}
     var hq=sp?hy:hx,R2=[];for(var bb=0;bb<nb;bb++)if(s3===0||s3===2?bb>=hq:bb<hq)R2.push(bb);
     var gefunden=false;
@@ -355,6 +382,13 @@ function plan(opt){
     for(yy=0;yy<h0;yy++)for(xx=0;xx<w0;xx++){kk2=at(x0+xx,y0+yy);if(!frei0(kk2))continue;
      if(s.weg)Z[kk2]='g';else if(x0+xx<s.x||x0+xx>=s.x+s.w||y0+yy<s.y||y0+yy>=s.y+s.h)Z[kk2]='o'}
     s.rest=s.weg?0:s.w*s.h})}
+  // Fluss Teil 2: Brücken an der Hauptstraße, an Straßen zu Zusatztoren und an den gewählten Gassen, nur wo beide Ufer Gasse sind
+  var fbr=0,fbrZ=[];
+  if(mitFluss){var brY={};brY[cB]=brY[cB+1]=1;Object.keys(BR).forEach(function(x){brY[Y0[+x+1]-1]=1});
+   var ufer=function(i2,j2){var k2=at(i2,j2);return M[k2]&&!wallC[k2]&&(Z[k2]==='s'||Z[k2]==='o')};
+   for(j=0;j<W;j++){var wg=false;for(i=fx0;i<fx0+RW;i++)if(weg[at(i,j)])wg=true;
+    if((brY[j]||wg)&&ufer(fx0-1,j)&&ufer(fx0+RW,j)){for(i=fx0;i<fx0+RW;i++){k1=at(i,j);Z[k1]='s';belegt[k1]=0}fbrZ.push(j)}}
+   fbrZ.forEach(function(y,ix){if(ix===0||fbrZ[ix-1]!==y-1)fbr++})}
   if(viel)gruppen.forEach(platzieren);
   function platzieren(grp){offen(grp);var it=grp.it,gw2=grp.w,gh2=grp.h,rot=r()<.5;if(!(rot?it.h<=gw2&&it.w<=gh2:it.w<=gw2&&it.h<=gh2))rot=!rot;
    var mw=rot?it.h:it.w,mh=rot?it.w:it.h,px=grp.x+((gw2-mw)>>1),py=grp.y+((gh2-mh)>>1);
@@ -368,7 +402,8 @@ function plan(opt){
   var vorn=0,summe=0,platzAll=0;rest.forEach(function(it){summe+=it.w*it.h});bloecke.forEach(function(s){s.voll=0;platzAll+=s.rest});var anteil=Math.min(1,summe/Math.max(1,platzAll)*1.1+.05);
   for(var n=0;n<rest.length;n++){var it2=rest[n],ok=false,dreh=r()<.5;
    while(vorn<bloecke.length&&bloecke[vorn].rest<=0)vorn++;
-   for(var gang=0;gang<2&&!ok;gang++)for(var q2=vorn;q2<bloecke.length&&!ok;q2++){var s2=bloecke[q2],fa=it2.w*it2.h;if(s2.rest<fa)continue;
+   var LB=mitFluss&&UFER[it2.id]?bloecke.filter(function(s){return !s.mono&&(s.a===fk-1||s.a===fk)&&s.rest>0}).concat(bloecke.slice(vorn)):null;   // ans Ufer, wenn Platz ist
+   for(var gang=0;gang<2&&!ok;gang++)for(var q2=LB?0:vorn;q2<(LB||bloecke).length&&!ok;q2++){var s2=(LB||bloecke)[q2],fa=it2.w*it2.h;if(s2.rest<fa)continue;
     if(gang===0&&s2.voll>0&&s2.voll+fa>anteil*(s2.voll+s2.rest))continue;
     for(var t=0;t<2&&!ok;t++){var w=(t===0)!==dreh?it2.w:it2.h,h=(t===0)!==dreh?it2.h:it2.w;if(w>s2.w||h>s2.h)continue;var p=randStelle(s2,w,h);
      if(p){for(var y3=0;y3<h;y3++)for(var x3=0;x3<w;x3++){s2.frei[(p.y+y3)*s2.w+p.x+x3]=0;if(Z[at(s2.x+p.x+x3,s2.y+p.y+y3)]==='o')s2.rest--}if(!s2.mono)s2.rest-=w*h;s2.voll+=w*h;
@@ -388,7 +423,7 @@ function plan(opt){
    for(k1=0;k1<WW;k1++)if(!er2[k1]&&/[seom]/.test(Z[k1]))return null}
   var tp=tore.filter(function(t){return t.s===0})[0]||tore.filter(function(t){return t.s===2})[0]||tore[0];
   return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:tp.s===0?{i:tp.c,j:W-1}:tp.s===2?{i:W-1,j:tp.c}:tp.s===1?{i:tp.c,j:0}:{i:0,j:tp.c},achse:{i:cA,j:cB},nb:nb,gesetzt:gesetzt,
-   tore:tore,maske:M,
+   tore:tore,maske:M,fluss:mitFluss?{achse:'ns',x0:fx0,breite:RW,bruecken:fbr,tore:ftore}:null,
    vielfalt:viel?{spalten:cw,zeilen:rh,kreuzung:[hx,hy],gassen:2*(nb-2),krumm:Object.keys(SC).filter(function(x){return SC[x]}).length+Object.keys(TR).filter(function(x){return TR[x]}).length}:null};
   // Randstück im Block: x==0, y==0 oder an der rechten/unteren Kante, alle Zellen frei; Tür mittig an der Blockkante (Reihenfolge aus dem Seed)
   function randStelle(s,w,h){var L=[],x,y;for(x=0;x+w<=s.w;x++){L.push([x,0,0,-1]);L.push([x,s.h-h,0,1])}for(y=1;y+h<s.h;y++){L.push([0,y,-1,0]);L.push([s.w-w,y,1,0])}
@@ -554,13 +589,14 @@ function plan(opt){
   E.tor=tp.s===0?{i:tp.c,j:W-1}:tp.s===2?{i:W-1,j:tp.c}:tp.s===1?{i:tp.c,j:0}:{i:0,j:tp.c};
   return E}
  var E2=ergebnis,P={format:'at3-stadtplan',art:art,g:g,einw:einw,biom:opt.biom,stil:opt.stil||'',seed:seed,W:E2.W,block:Bm,nb:E2.nb,zellen:E2.Z.join(''),bauten:E2.bauten,dinge:E2.dinge,
-  tor:E2.tor,gesetzt:E2.gesetzt,vielfalt:E2.vielfalt||null,gespiegelt:false,basis:basis,feld:B.feld,aussen:E2.aussen||null};
+  tor:E2.tor,gesetzt:E2.gesetzt,vielfalt:E2.vielfalt||null,gespiegelt:false,basis:basis,feld:B.feld,aussen:E2.aussen||null,fluss:E2.fluss||null};
  // Umriss (N6b2c4a2): Art, Ecken, Tore und die Innenfläche je Zeile [j, i0, i1, …] in Planfeldern (innenMaske() rechnet Maßstab und Spiegeln um)
  if(!elend){var MK=E2.maske,Wm=Math.round(Math.sqrt(MK.length)),Rm=E2.rand||0,zl=[];
   for(var jm=0;jm<Wm;jm++){var im=0;while(im<Wm){if(!MK[jm*Wm+im]){im++;continue}var i1=im;while(i1+1<Wm&&MK[jm*Wm+i1+1])i1++;zl.push(jm+Rm,im+Rm,i1+Rm);im=i1+1}}
   P.umriss={dorf:E2.vielfalt&&E2.vielfalt.dorf||null,art:UM?UM.art:g>=MAUER_AB?'quadrat':'offen',ecken:UM?UM.ecken:4,beulen:UM?UM.beulen:0,tore:E2.tore.map(function(t){return SEITE[t.s]}),zeilen:zl,planW:E2.W}}
  if(F!==1)P=skalieren(P,F);
- if(rng(hashT([seed,art,einw,'sp'].join('|')))()<.5)P=spiegeln(P);
+ var spW=rng(hashT([seed,art,einw,'sp'].join('|')))()<.5;if(P.fluss)spW=P.fluss.achse!==FL;   // mit Fluss: Spiegeln so, dass er wie in der Welt fließt
+ if(spW)P=spiegeln(P);
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
  return P}
 // Fassungen loser Dinge (Thomas 22.11.2026): Lagerplatz in 6 Fassungen, nach Lage gewürfelt. 16 Plätze: Grundbild 4×, ruhige a/b/c je 3×, schwarzhumorige d 2×, e 1×.
@@ -590,7 +626,7 @@ function spiegeln(P){var W=P.W,z='',i,j;for(j=0;j<W;j++)for(i=0;i<W;i++)z+=P.zel
  N.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b));o.i=b.j;o.j=b.i;o.w=b.h;o.h=b.w;o.achse=b.achse==='i'?'j':'i';if(b.tuer)o.tuer=[b.tuer[1],b.tuer[0],b.tuer[3],b.tuer[2]];return o});
  N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=d.j;o.j=d.i;return o});N.tor={i:P.tor.j,j:P.tor.i};
  if(N.aussen){N.aussen.stinktor=SPIEGEL[N.aussen.stinktor];N.aussen.graebertor=SPIEGEL[N.aussen.graebertor];if(N.aussen.tore)N.aussen.tore=N.aussen.tore.map(function(x){return SPIEGEL[x]})}
- if(N.umriss)N.umriss.tore=N.umriss.tore.map(function(x){return SPIEGEL[x]});return N}
+ if(N.umriss)N.umriss.tore=N.umriss.tore.map(function(x){return SPIEGEL[x]});if(N.fluss)N.fluss.achse=N.fluss.achse==='ns'?'ow':'ns';return N}
 // Drehen um 90° (Blick von der nächsten Seite, für First Person): Zelle (i, j) → (W−1−j, i), Richtung (di, dj) → (−dj, di)
 function drehen(P){var W=P.W,z=new Array(W*W),i,j;for(j=0;j<W;j++)for(i=0;i<W;i++)z[i*W+(W-1-j)]=P.zellen[j*W+i];
  var N=JSON.parse(JSON.stringify(P));N.zellen=z.join('');
