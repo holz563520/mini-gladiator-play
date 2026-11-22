@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 288,
+ "typMax": 294,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2514,6 +2514,60 @@
    "name": "Closed Sign",
    "status": "uebernommen",
    "datei": "obj/schild-closed.json"
+  },
+  {
+   "id": "steg-deck-i",
+   "version": 1,
+   "typ": 289,
+   "kat": "einrichtung",
+   "name": "Wooden Jetty",
+   "status": "skizze",
+   "datei": "obj/steg-deck-i.json"
+  },
+  {
+   "id": "steg-deck-j",
+   "version": 1,
+   "typ": 290,
+   "kat": "einrichtung",
+   "name": "Wooden Jetty",
+   "status": "skizze",
+   "datei": "obj/steg-deck-j.json"
+  },
+  {
+   "id": "steg-rampe-n",
+   "version": 1,
+   "typ": 292,
+   "kat": "einrichtung",
+   "name": "Jetty Ramp",
+   "status": "skizze",
+   "datei": "obj/steg-rampe-n.json"
+  },
+  {
+   "id": "steg-rampe-o",
+   "version": 1,
+   "typ": 293,
+   "kat": "einrichtung",
+   "name": "Jetty Ramp",
+   "status": "skizze",
+   "datei": "obj/steg-rampe-o.json"
+  },
+  {
+   "id": "steg-rampe-s",
+   "version": 1,
+   "typ": 291,
+   "kat": "einrichtung",
+   "name": "Jetty Ramp",
+   "status": "skizze",
+   "datei": "obj/steg-rampe-s.json"
+  },
+  {
+   "id": "steg-rampe-w",
+   "version": 1,
+   "typ": 294,
+   "kat": "einrichtung",
+   "name": "Jetty Ramp",
+   "status": "skizze",
+   "datei": "obj/steg-rampe-w.json"
   },
   {
    "id": "tier-reh",
