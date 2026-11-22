@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 278,
+ "typMax": 283,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2379,6 +2379,51 @@
    "name": "Storage Spot",
    "status": "geprueft",
    "datei": "obj/lager-platz.json"
+  },
+  {
+   "id": "lager-platz-a",
+   "version": 1,
+   "typ": 279,
+   "kat": "einrichtung",
+   "name": "Storage Spot A",
+   "status": "uebernommen",
+   "datei": "obj/lager-platz-a.json"
+  },
+  {
+   "id": "lager-platz-b",
+   "version": 1,
+   "typ": 280,
+   "kat": "einrichtung",
+   "name": "Storage Spot B",
+   "status": "uebernommen",
+   "datei": "obj/lager-platz-b.json"
+  },
+  {
+   "id": "lager-platz-c",
+   "version": 1,
+   "typ": 281,
+   "kat": "einrichtung",
+   "name": "Storage Spot C",
+   "status": "uebernommen",
+   "datei": "obj/lager-platz-c.json"
+  },
+  {
+   "id": "lager-platz-d",
+   "version": 1,
+   "typ": 282,
+   "kat": "einrichtung",
+   "name": "Storage Spot D",
+   "status": "uebernommen",
+   "datei": "obj/lager-platz-d.json"
+  },
+  {
+   "id": "lager-platz-e",
+   "version": 1,
+   "typ": 283,
+   "kat": "einrichtung",
+   "name": "Storage Spot E",
+   "status": "uebernommen",
+   "datei": "obj/lager-platz-e.json"
   },
   {
    "id": "leiche",

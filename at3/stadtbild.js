@@ -561,7 +561,11 @@ function plan(opt){
   P.umriss={dorf:E2.vielfalt&&E2.vielfalt.dorf||null,art:UM?UM.art:g>=MAUER_AB?'quadrat':'offen',ecken:UM?UM.ecken:4,beulen:UM?UM.beulen:0,tore:E2.tore.map(function(t){return SEITE[t.s]}),zeilen:zl,planW:E2.W}}
  if(F!==1)P=skalieren(P,F);
  if(rng(hashT([seed,art,einw,'sp'].join('|')))()<.5)P=spiegeln(P);
+ P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
  return P}
+// Fassungen loser Dinge (Thomas 22.11.2026): Lagerplatz in 6 Fassungen, nach Lage gewürfelt. 16 Plätze: Grundbild 4×, ruhige a/b/c je 3×, schwarzhumorige d 2×, e 1×.
+var DING_VAR={'lager-platz':'0000aaabbbcccdde'};
+function dingWahl(id,i,j){var v=DING_VAR[id];if(!v)return id;var c=v.charAt(Math.floor(rausch(i,j,hashT(id))*v.length));return c==='0'?id:id+'-'+c}
 var WOHN={townhouse:1,domus:1,villa:1,palazzo:1,tenement:1,cottage:1};
 // N6b2c3 (Thomas 22.11.2026): Stinktor (stinkendes Gewerbe, Elendsbuden als wilder Haufen an der Mauer) und Gräberstraße wie die Via Appia (Bestatter, Grabhäuschen
 // an der Straße, Friedhof mit Grabhäuschen) an zwei verschiedenen Toren aus dem Seed; Gehöfte an den Ausfallstraßen. Vorschläge: 1 Grabhäuschen je GRAB_JE Einwohner
