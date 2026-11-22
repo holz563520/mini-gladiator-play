@@ -110,7 +110,7 @@ function plan(opt){
  // Vor den Toren und Umland (N6b2c3): Außenring um den Plan innen; opt.aussen === false = nur innen (Tests N6b2c2)
  if(opt.aussen!==false&&!elend){var ea=null;for(var zug=0;zug<12&&!ea;zug++)ea=aussen(ergebnis,zug);if(!ea)throw new Error('Außenring passt nicht');ergebnis=ea}
  function aussen(E,zug){
-  var Wi=E.W,c0=E.tor.i,ra=rng(hashT([seed,art,opt.biom,einw,'aussen'].join('|'))),D=daten(opt),gST=SL().STUFE[g]||1,mit=g>=MAUER_AB;
+  var Wi=E.W,cX=E.achse?E.achse.i:E.tor.i,cY=E.achse?E.achse.j:E.tor.i,ra=rng(hashT([seed,art,opt.biom,einw,'aussen'].join('|'))),D=daten(opt),gST=SL().STUFE[g]||1,mit=g>=MAUER_AB;
   var stink=Math.floor(ra()*4),grab=(stink+1+Math.floor(ra()*3))%4;
   var gewerbe=[],tote=[],friedhof=[],buden=0,hoefe=[];
   Li.gebaeude.forEach(function(x){for(var k=0;k<x.n;k++){
@@ -126,7 +126,7 @@ function plan(opt){
   var cur=[0,0,0,0,0,0,0,0],teile=[];
   var leg=function(s,sei,du,dl,gap,was){var z=s*2+sei,u0=cur[z];teile.push({s:s,sei:sei,u0:u0,du:du,dl:dl,was:was});cur[z]=u0+du+gap};
   var minZ=function(s){return cur[s*2]<=cur[s*2+1]?0:1};
-  var lin=-c0,rec=Wi-1-c0,regL=[lin,-5],regR=[6,rec],regW=Math.max(0,regL[1]-regL[0]+1)+Math.max(0,regR[1]-regR[0]+1),Ue=0;
+  var cS=stink<2?cX:cY,lin=-cS,rec=Wi-1-cS,regL=[lin,-5],regR=[6,rec],regW=Math.max(0,regL[1]-regL[0]+1)+Math.max(0,regR[1]-regR[0]+1),Ue=0;
   if(buden){if(!regW)return null;Ue=Math.max(2,Math.ceil(buden*2.6/regW))+zug;cur[stink*2]=cur[stink*2+1]=1}
   gewerbe.forEach(function(x){var s0=minZ(stink);leg(stink,s0,Math.max(x.w,x.h),Math.min(x.w,x.h),1,{art:'gewerbe',x:x})});
   tote.forEach(function(x){leg(grab,minZ(grab),Math.max(x.w,x.h),Math.min(x.w,x.h),1,{art:'gewerbe',x:x})});
@@ -142,7 +142,7 @@ function plan(opt){
   for(var q0=0;q0<bauten.length;q0++){var b0=bauten[q0];for(var y0=b0.j;y0<b0.j+b0.h;y0++)for(var x0=b0.i;x0<b0.i+b0.w;x0++)belegt[at(x0,y0)]=1}
   for(var y1=R;y1<R+Wi;y1++)for(var x1=R;x1<R+Wi;x1++)keinBaum[at(x1,y1)]=1;
   // Seite s: Feld (u, l) → (i, j); Richtungen nach außen und quer
-  var zelle=function(s,u,l){var L=R+c0+l;return s===0?[L,R+Wi+u]:s===1?[L,R-1-u]:s===2?[R+Wi+u,L]:[R-1-u,L]};
+  var zelle=function(s,u,l){var L=R+(s<2?cX:cY)+l;return s===0?[L,R+Wi+u]:s===1?[L,R-1-u]:s===2?[R+Wi+u,L]:[R-1-u,L]};
   var quer=function(s){return s<2?[1,0]:[0,1]};
   var rechteck=function(s,u0,du,l0,dl){var a=zelle(s,u0,l0),b=zelle(s,u0+du-1,l0+dl-1);return{i:Math.min(a[0],b[0]),j:Math.min(a[1],b[1]),w:Math.abs(a[0]-b[0])+1,h:Math.abs(a[1]-b[1])+1}};
   var hin=function(o,r,c){for(var y=r.j;y<r.j+r.h;y++)for(var x=r.i;x<r.i+r.w;x++){Z[at(x,y)]=c;keinBaum[at(x,y)]=1}};
@@ -188,32 +188,64 @@ function plan(opt){
   // Landschaft im Ring: Bäume des Bioms wie in den Höfen innen
   for(var q7=0;q7<W*W;q7++){if(keinBaum[q7]||belegt[q7]||Z[q7]!=='g')continue;var i7=q7%W,j7=(q7/W)|0;if(rausch(i7,j7,seed+41)<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i7,j7,seed+42)*B.baeume.length)],i:i7,j:j7})}
   var tor=zelle(0,R-1,0);
-  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:tor[0],j:tor[1]},nb:E.nb,gesetzt:gesetzt,
+  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:tor[0],j:tor[1]},nb:E.nb,gesetzt:gesetzt,vielfalt:E.vielfalt,
    aussen:{ring:R,innenW:Wi,stinktor:SEITE[stink],graebertor:SEITE[grab],buden:buden,graeber:graeber,hoefe:hoefe.length,hoefeExtra:nx>0?hoefe.filter(function(h){return !h.liste}).length:0,elend:Ue}};}
  function anlegen(nb){
-  var r=rng(hashT([seed,art,opt.biom,opt.stil||'',einw,nb].join('|'))),W=2*off+nb*P1,h2=nb>>1,c0=off+h2*P1-1;
+  var r=rng(hashT([seed,art,opt.biom,opt.stil||'',einw,nb].join('|'))),a,b,k;
+  // N6b2c4a1 (Thomas 22.11.2026, ab Marktflecken): Blockmaß je Spalte und Zeile ±2 (mind. 3), Kreuzung außermittig, etwa jede 4. Gasse krumm oder schräg.
+  // opt.vielfalt === false = festes Raster wie N6b2c2. Weiler und Dörfer folgen mit N6b2c4b.
+  var viel=g>=MAUER_AB&&!elend&&opt.vielfalt!==false,rv=rng(hashT([seed,art,einw,nb,'vielfalt'].join('|')));
+  var cw=[],rh=[],hx=nb>>1,hy=nb>>1;for(a=0;a<nb;a++){cw.push(Bm);rh.push(Bm)}
+  if(viel){var lo=Math.max(3,Bm-2),hi=Bm+2,zuf=function(){return lo+Math.floor(rv()*(hi-lo+1))};
+   for(a=0;a<nb;a++){cw[a]=zuf();rh[a]=zuf()}
+   var su=function(L){var s=0;L.forEach(function(v){s+=v});return s},sc=su(cw),sr=su(rh);   // gleiche Summe: der Plan bleibt quadratisch
+   for(var sw=0;sc!==sr&&sw<4000;sw++){var kl=sc<sr?cw:rh,gr=sc<sr?rh:cw,q=Math.floor(rv()*nb);if(kl[q]<hi){kl[q]++;if(sc<sr)sc++;else sr++}else if(gr[q]>lo){gr[q]--;if(sc>sr)sc--;else sr--}}
+   var wahl=[];for(a=Math.max(1,Math.round(nb*.3));a<=Math.min(nb-1,Math.round(nb*.7));a++)if(a*2!==nb)wahl.push(a);
+   if(wahl.length){hx=wahl[Math.floor(rv()*wahl.length)];hy=wahl[Math.floor(rv()*wahl.length)]}}
+  var X0=[],Y0=[],p=off;for(a=0;a<nb;a++){if(a===hx)p++;X0.push(p);p+=cw[a]+1}p=off;for(b=0;b<nb;b++){if(b===hy)p++;Y0.push(p);p+=rh[b]+1}
+  var W=p-1+off,cA=X0[hx]-2,cB=Y0[hy]-2;
   var Z=new Array(W*W).fill('g'),belegt=new Uint8Array(W*W),bauten=[],dinge=[],gesetzt={};
   var at=function(i,j){return j*W+i};
   // Gassen überall innen, Blöcke darüber als Hof; Ring an der Mauer; Mauer 2 breit mit 4 Toren in der Achse der Hauptstraßen
-  for(var j=0;j<W;j++)for(var i=0;i<W;i++){var d=Math.min(i,j,W-1-i,W-1-j);if(d<wall){var tor=(i===c0||i===c0+1)||(j===c0||j===c0+1);Z[at(i,j)]=tor?'s':'g';belegt[at(i,j)]=1;
+  for(var j=0;j<W;j++)for(var i=0;i<W;i++){var d=Math.min(i,j,W-1-i,W-1-j);if(d<wall){var tor=(i===cA||i===cA+1)||(j===cB||j===cB+1);Z[at(i,j)]=tor?'s':'g';belegt[at(i,j)]=1;
     if(!tor)bauten.push({rolle:'mauer',i:i,j:j,w:1,h:1,klasse:basis.klasse==='clay-wood'&&g>=5?'brick':basis.klasse,dach:'flach',achse:'i',wand:basis.wand,dachR:STEIN})}
    else Z[at(i,j)]=elend?'e':'s'}
-  var bx=function(a){return off+a*P1+(a>=h2?1:0)},bl=[],cx=W/2,cy=W/2;
-  for(var a=0;a<nb;a++)for(var b=0;b<nb;b++){var x=bx(a),y=bx(b);bl.push({a:a,b:b,x:x,y:y,w:Bm,h:Bm,d:Math.hypot(x+Bm/2-cx,y+Bm/2-cy)+r()*P1*.6,frei:null,rest:Bm*Bm})}
+  var cx=W/2,cy=W/2,bl=[];
+  var bw=function(a0,k){return X0[a0+k-1]+cw[a0+k-1]-X0[a0]},bh=function(b0,k){return Y0[b0+k-1]+rh[b0+k-1]-Y0[b0]};
+  for(a=0;a<nb;a++)for(b=0;b<nb;b++)bl.push({a:a,b:b,x:X0[a],y:Y0[b],w:cw[a],h:rh[b],d:Math.hypot(X0[a]+cw[a]/2-cx,Y0[b]+rh[b]/2-cy)+r()*P1*.6,frei:null,rest:cw[a]*rh[b]});
   var offen=function(q){q.frei=new Uint8Array(q.w*q.h).fill(1);for(var y=0;y<q.h;y++)for(var x=0;x<q.w;x++)Z[at(q.x+x,q.y+y)]=elend?'e':'g'};
-  // Monumente in Gruppen aus k × k Blöcken (nicht über die Hauptstraße), nahe der Mitte
-  var gruppen=[],benutzt={};
-  for(var m=0;m<mono.length;m++){var it=mono[m],k=grpK(it),best=null,bd=1e9;
-   for(var q=0;q<bl.length;q++){var s=bl[q];if(s.a+k>nb||s.b+k>nb)continue;if((s.a<h2)!==(s.a+k-1<h2)||(s.b<h2)!==(s.b+k-1<h2))continue;
-    var frei=true;for(var u=0;u<k&&frei;u++)for(var v=0;v<k&&frei;v++)if(benutzt[(s.a+u)*nb+s.b+v])frei=false;if(!frei)continue;
-    var gw=(k-1)*P1+Bm,dd=Math.hypot(s.x+gw/2-cx,s.y+gw/2-cy)+r()*P1;if(dd<bd){bd=dd;best=s}}
-   if(!best)return null;for(var u2=0;u2<k;u2++)for(var v2=0;v2<k;v2++)benutzt[(best.a+u2)*nb+best.b+v2]=1;
-   var gw2=(k-1)*P1+Bm,grp={x:best.x,y:best.y,w:gw2,h:gw2,d:bd,rest:0,mono:true};offen(grp);
-   var rot=r()<.5,mw=rot?it.h:it.w,mh=rot?it.w:it.h,px=grp.x+((gw2-mw)>>1),py=grp.y+((gw2-mh)>>1);
-   for(var y1=0;y1<gw2;y1++)for(var x1=0;x1<gw2;x1++){var X=grp.x+x1,Y=grp.y+y1,inM=X>=px&&X<px+mw&&Y>=py&&Y<py+mh,
-     mitte=(x1===(gw2>>1)||x1===((gw2-1)>>1)||y1===(gw2>>1)||y1===((gw2-1)>>1));
+  // Monumente in Gruppen aus k × k Blöcken (nicht über die Hauptstraße), nahe der Mitte; mit ungleichen Blöcken notfalls eine Gruppe größer
+  var gruppen=[],benutzt={},fest={};
+  var passt=function(it,gw,gh){return it.w<=gw&&it.h<=gh||it.h<=gw&&it.w<=gh};
+  for(var m=0;m<mono.length;m++){var it=mono[m],k0=grpK(it),best=null,bd=1e9,bk=0;
+   for(var q=0;q<bl.length;q++){var s=bl[q],kk=0;
+    for(k=k0;k<=k0+(viel?1:0)&&!kk;k++){if(s.a+k>nb||s.b+k>nb)continue;if((s.a<hx)!==(s.a+k-1<hx)||(s.b<hy)!==(s.b+k-1<hy))continue;if(passt(it,bw(s.a,k),bh(s.b,k)))kk=k}
+    if(!kk)continue;var frei=true;for(var u=0;u<kk&&frei;u++)for(var v=0;v<kk&&frei;v++)if(benutzt[(s.a+u)*nb+s.b+v])frei=false;if(!frei)continue;
+    var dd=Math.hypot(s.x+bw(s.a,kk)/2-cx,s.y+bh(s.b,kk)/2-cy)+r()*P1;if(dd<bd){bd=dd;best=s;bk=kk}}
+   if(!best)return null;for(var u2=0;u2<bk;u2++)for(var v2=0;v2<bk;v2++)benutzt[(best.a+u2)*nb+best.b+v2]=1;
+   for(var f2=0;f2<bk;f2++){fest['c'+(best.a-1)+'_'+(best.b+f2)]=1;fest['c'+(best.a+bk-1)+'_'+(best.b+f2)]=1;fest['r'+(best.b-1)+'_'+(best.a+f2)]=1;fest['r'+(best.b+bk-1)+'_'+(best.a+f2)]=1}
+   var gw2=bw(best.a,bk),gh2=bh(best.b,bk),grp={x:best.x,y:best.y,w:gw2,h:gh2,d:bd,rest:0,mono:true,it:it};gruppen.push(grp);if(!viel)platzieren(grp)}
+  // Krumme und schräge Gassen: Verschiebung je Gasse und Block (Zeilengassen zuerst). Höchstens ±1 je Schritt, Blöcke bleiben mind. 3 breit,
+  // an Monumenten gerade, an Kreuzungen nie gleichzeitig mit der Quergasse versetzt (sonst nur noch eine Ecke als Durchgang).
+  var SC={},TR={};
+  var sCol=function(k2,b2){return k2<0||k2>=nb-1||k2+1===hx?0:(SC[k2]?SC[k2][b2]:0)},tRow=function(k2,a2){return k2<0||k2>=nb-1||k2+1===hy?0:(TR[k2]?TR[k2][a2]:0)};
+  var profil=function(L,lang,cap,frei2,fix){if(cap<1||rv()>=.32)return null;   // .32: dünne Blöcke bleiben gerade, so wird es insgesamt etwa jede 4. Gasse
+   for(var vers=0;vers<6;vers++){var dir=rv()<.5?-1:1,schraeg=rv()<.5,ziel=1+Math.floor(rv()*Math.max(1,lang-1)),v=0,P=[],t2,bad=false,nz=false;
+    for(t2=0;t2<lang&&!bad;t2++){if(t2>0&&frei2(t2-1)){if(schraeg?t2>=ziel&&Math.abs(v)<cap:t2===ziel)v+=dir}P.push(v);if(v)nz=true;if(fix(t2)&&v!==0)bad=true}
+    if(!bad&&nz)return P}return null};
+  if(viel){
+   for(k=0;k<nb-1;k++){if(k+1===hy)continue;var capR=Math.min(2,Math.floor((Math.min(rh[k],rh[k+1])-3)/2));
+    TR[k]=profil(TR,nb,capR,function(){return true},function(a3){return fest['r'+k+'_'+a3]})}
+   for(k=0;k<nb-1;k++){if(k+1===hx)continue;var capC=Math.min(2,Math.floor((Math.min(cw[k],cw[k+1])-3)/2));
+    SC[k]=profil(SC,nb,capC,function(b3){return tRow(b3,k)===tRow(b3,k+1)},function(b3){return fest['c'+k+'_'+b3]})}}
+  bl.forEach(function(s){s.x=X0[s.a]+sCol(s.a-1,s.b);s.w=X0[s.a]+cw[s.a]+sCol(s.a,s.b)-s.x;s.y=Y0[s.b]+tRow(s.b-1,s.a);s.h=Y0[s.b]+rh[s.b]+tRow(s.b,s.a)-s.y;s.rest=s.w*s.h});
+  if(viel)gruppen.forEach(platzieren);
+  function platzieren(grp){offen(grp);var it=grp.it,gw2=grp.w,gh2=grp.h,rot=r()<.5;if(!(rot?it.h<=gw2&&it.w<=gh2:it.w<=gw2&&it.h<=gh2))rot=!rot;
+   var mw=rot?it.h:it.w,mh=rot?it.w:it.h,px=grp.x+((gw2-mw)>>1),py=grp.y+((gh2-mh)>>1);
+   for(var y1=0;y1<gh2;y1++)for(var x1=0;x1<gw2;x1++){var X=grp.x+x1,Y=grp.y+y1,inM=X>=px&&X<px+mw&&Y>=py&&Y<py+mh,
+     mitte=(x1===(gw2>>1)||x1===((gw2-1)>>1)||y1===(gh2>>1)||y1===((gh2-1)>>1));
     if(inM||mitte){grp.frei[y1*gw2+x1]=0;if(!inM)Z[at(X,Y)]='o'}else{Z[at(X,Y)]='o';grp.rest++}}
-   setzen(it,px,py,mw,mh,null);gruppen.push(grp)}
+   setzen(it,px,py,mw,mh,null)}
   var bloecke=bl.filter(function(s){return !benutzt[s.a*nb+s.b]});bloecke.forEach(offen);bloecke=bloecke.concat(gruppen);bloecke.sort(function(p,q){return p.d-q.d});
   // Übrige Gebäude: erstes freies Randstück im innersten Block (Zonen); Tür zur Gasse an der Seite, die am Blockrand liegt
   // Gleichmäßig füllen: zuerst nur bis zum Anteil je Block (alle Blöcke behalten einen Hof), dann frei; Reihenfolge der Blöcke nach Abstand = Zonen
@@ -233,7 +265,8 @@ function plan(opt){
   for(var q5=0;q5<W*W;q5++){if(belegt[q5])continue;var z5=Z[q5],i5=q5%W,j5=(q5/W)|0;if(z5==='o'&&!erreicht[q5]){Z[q5]='g';z5='g'}
    if(z5==='g'&&!elend){var u5=rausch(i5,j5,seed+7);if(u5<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i5,j5,seed+8)*B.baeume.length)],i:i5,j:j5});else if(u5>.97)dinge.push({id:'lager-platz',i:i5,j:j5})}
    else if(z5==='e'&&rausch(i5,j5,seed+9)<.15&&!/[s]/.test(Z[q5]))dinge.push({id:rausch(i5,j5,seed+10)<.15?'leiche':'lager-platz',i:i5,j:j5})}
-  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:c0,j:W-1},nb:nb,gesetzt:gesetzt};
+  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:cA,j:W-1},achse:{i:cA,j:cB},nb:nb,gesetzt:gesetzt,
+   vielfalt:viel?{spalten:cw,zeilen:rh,kreuzung:[hx,hy],gassen:2*(nb-2),krumm:Object.keys(SC).filter(function(x){return SC[x]}).length+Object.keys(TR).filter(function(x){return TR[x]}).length}:null};
   // Randstück im Block: x==0, y==0 oder an der rechten/unteren Kante, alle Zellen frei; Tür mittig an der Blockkante (Reihenfolge aus dem Seed)
   function randStelle(s,w,h){var L=[],x,y;for(x=0;x+w<=s.w;x++){L.push([x,0,0,-1]);L.push([x,s.h-h,0,1])}for(y=1;y+h<s.h;y++){L.push([0,y,-1,0]);L.push([s.w-w,y,1,0])}
    for(var k=0;k<L.length;k++){var c=L[k],fr=true;for(var yy=0;yy<h&&fr;yy++)for(var xx=0;xx<w&&fr;xx++)if(!s.frei[(c[1]+yy)*s.w+c[0]+xx])fr=false;
@@ -251,7 +284,7 @@ function plan(opt){
     achse:w>h?'i':h>w?'j':(u<.5?'i':'j'),wand:kl===basis.klasse&&!sh&&!satz?basis.wand:null,dachR:sh?HOLZ:kl===basis.klasse&&!satz?basis.dachR:null,tuer:tuer,satz:satz})}
  }
  var E2=ergebnis,P={format:'at3-stadtplan',art:art,g:g,einw:einw,biom:opt.biom,stil:opt.stil||'',seed:seed,W:E2.W,block:Bm,nb:E2.nb,zellen:E2.Z.join(''),bauten:E2.bauten,dinge:E2.dinge,
-  tor:E2.tor,gesetzt:E2.gesetzt,gespiegelt:false,basis:basis,feld:B.feld,aussen:E2.aussen||null};
+  tor:E2.tor,gesetzt:E2.gesetzt,vielfalt:E2.vielfalt||null,gespiegelt:false,basis:basis,feld:B.feld,aussen:E2.aussen||null};
  if(F!==1)P=skalieren(P,F);
  if(rng(hashT([seed,art,einw,'sp'].join('|')))()<.5)P=spiegeln(P);
  return P}
