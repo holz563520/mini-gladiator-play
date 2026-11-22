@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 342,
+ "typMax": 344,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2751,20 +2751,20 @@
   },
   {
    "id": "turm-tuer-i",
-   "version": 1,
+   "version": 2,
    "typ": 307,
    "kat": "einrichtung",
    "name": "Tower Door",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/turm-tuer-i.json"
   },
   {
    "id": "turm-tuer-j",
-   "version": 1,
+   "version": 2,
    "typ": 308,
    "kat": "einrichtung",
    "name": "Tower Door",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/turm-tuer-j.json"
   },
   {
@@ -3081,6 +3081,24 @@
    "name": "Slanted Wall D",
    "status": "uebernommen",
    "datei": "obj/mauer-halb-wand-d.json"
+  },
+  {
+   "id": "turm-eingang-i",
+   "version": 1,
+   "typ": 343,
+   "kat": "einrichtung",
+   "name": "Tower Guard Door",
+   "status": "uebernommen",
+   "datei": "obj/turm-eingang-i.json"
+  },
+  {
+   "id": "turm-eingang-j",
+   "version": 1,
+   "typ": 344,
+   "kat": "einrichtung",
+   "name": "Tower Guard Door",
+   "status": "uebernommen",
+   "datei": "obj/turm-eingang-j.json"
   }
  ]
 }
