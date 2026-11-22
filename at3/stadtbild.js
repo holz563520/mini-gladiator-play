@@ -86,6 +86,30 @@ function rausch(i,j,s){var h=(Math.imul(i|0,374761393)+Math.imul(j|0,668265263)+
 // Monumente (Fläche ≥ 30 oder breiter als ein Block) liegen mittig in Doppelblöcken; der Rest der Gruppe ist Platz mit Zugängen von allen 4 Seiten.
 // Zonen von innen nach außen (rang). Varianten aus dem Seed: Lage der Monumente, Reihenfolge der Blöcke, Drehung, Spiegeln. Gleicher Seed = gleicher Plan.
 // opt: {seed, biom, stil?, einw? (1–20.000), art? (Probe-Einwohner der Art), liste? (stadtliste-Ergebnis), leit?, daten?, probeW? (Probestadt = 20.000 Einwohner), mass?}
+// N6b2c4a2 (Thomas 22.11.2026, ab Marktflecken): Umriss aus dem Seed, Mauer folgt. Rund, oval, unregelmäßig je 30 %, Quadrat/Rechteck je 5 %.
+// Vieleck (Thomas): lange gerade Stücke längs der Achsen, Ecken als kurze Treppe (Steigung 1, bei 12 Ecken zusätzlich 1:2 und 2:1).
+// Unregelmäßig = rund mit Beulen: jede Seite und jede Ecke anders, dazu 1–2 Ausbuchtungen (angebaute Viertel). Koordinaten u, v in −1 … 1 (v > 0 = Süden).
+// Tore nach Größe: Marktflecken 2–3, Stadt 3–4, Großstadt/Hauptstadt 4–6.
+function umrissWahl(r,g){var x=r(),art=x<.3?'rund':x<.6?'oval':x<.9?'unregelmaessig':x<.95?'quadrat':'rechteck';
+ var e=[1,1,1,1],c=[0,0,0,0],zw=false,d=0,beulen=[],k,a;   // e: Süd, Nord, Ost, West; c: Eckschnitt je Viertel SO, SW, NO, NW
+ if(art==='rund'){a=.45+r()*.15;c=[a,a,a,a]}
+ else if(art==='oval'){a=.7+r()*.12;if(r()<.5)e[0]=e[1]=a;else e[2]=e[3]=a;var cc=.3+r()*.15;c=[cc,cc,cc,cc]}
+ else if(art==='unregelmaessig'){for(k=0;k<4;k++)e[k]=.8+r()*.15;for(k=0;k<4;k++)c[k]=.35+r()*.25;
+  for(var nbu=1+(r()<.5?1:0),b=0;b<nbu;b++){var s=Math.floor(r()*4),t=(r()-.5)*.9,gr=Math.min(.3,(1-e[s])/.7);if(gr<.1)continue;
+   beulen.push(s===0?{u:t,v:e[0]-.3*gr,s:gr}:s===1?{u:t,v:-(e[1]-.3*gr),s:gr}:s===2?{u:e[2]-.3*gr,v:t,s:gr}:{u:-(e[3]-.3*gr),v:t,s:gr})}}
+ else if(art==='rechteck'){a=.7+r()*.15;if(r()<.5)e[0]=e[1]=a;else e[2]=e[3]=a}
+ if(art==='rund'||art==='oval'||art==='unregelmaessig'){zw=r()<.5;d=.12+r()*.08;for(k=0;k<4;k++)if(c[k]-.05<d)d=Math.max(0,c[k]-.05)}
+ var koerper=function(u,v){if(v>e[0]||v<-e[1]||u>e[2]||u<-e[3])return false;var q=(v>=0?0:2)+(u>=0?0:1),eu=u>=0?e[2]:e[3],ev=v>=0?e[0]:e[1],au=Math.abs(u),av=Math.abs(v);
+  if(c[q]>0&&au+av>eu+ev-c[q])return false;if(zw&&d>0&&(2*au+av>2*eu+ev-c[q]-d||au+2*av>eu+2*ev-c[q]-d))return false;return true};
+ var innen=function(u,v){if(koerper(u,v))return true;for(var b=0;b<beulen.length;b++){var B=beulen[b],au=Math.abs(u-B.u),av=Math.abs(v-B.v);if(au<=B.s&&av<=B.s&&au+av<=1.4*B.s)return true}return false};
+ var n=0,N=48;for(var j=0;j<N;j++)for(var i=0;i<N;i++)if(innen((i+.5)/N*2-1,(j+.5)/N*2-1))n++;
+ var tore=g<=4?2+(r()<.5?1:0):g===5?3+(r()<.5?1:0):4+Math.floor(r()*3);
+ return{art:art,ecken:art==='quadrat'||art==='rechteck'?4:zw?12:8,beulen:beulen.length,innen:innen,anteil:n/(N*N),tore:tore}}
+// Innen-Maske eines fertigen Plans (1 = innerhalb der Mauer, Mauer eingeschlossen), auch skaliert und gespiegelt. Ohne Umriss (offene Orte): alles 1.
+function innenMaske(P){var W=P.W,M=new Uint8Array(W*W),U=P.umriss;if(!U||!U.zeilen){M.fill(1);return M}
+ var F=P.mass||1,PW=U.planW,rows={},k,I,J;for(k=0;k<U.zeilen.length;k+=3)(rows[U.zeilen[k]]=rows[U.zeilen[k]]||[]).push(U.zeilen[k+1],U.zeilen[k+2]);
+ for(J=0;J<W;J++)for(I=0;I<W;I++){var a=P.gespiegelt?J:I,b=P.gespiegelt?I:J,pi=Math.min(PW-1,Math.floor(a/F)),r=rows[Math.min(PW-1,Math.floor(b/F))];
+  if(r)for(k=0;k<r.length;k+=2)if(pi>=r[k]&&pi<=r[k+1]){M[J*W+I]=1;break}}return M}
 function plan(opt){
  var art=opt.art||'',A=art?ARTEN[art]:null;if(art&&!A)throw new Error('Unbekannte Siedlungsart: '+art);var B=BIOME[opt.biom];if(!B)throw new Error('Unbekanntes Biom: '+opt.biom);
  var ST=opt.stil?STILE[opt.stil]:null;if(opt.stil&&!ST)throw new Error('Unbekannter Baustil: '+opt.stil);
@@ -103,15 +127,20 @@ function plan(opt){
  rest.sort(function(a,b){return rang(a)-rang(b)||b.w*b.h-a.w*a.h||(a.id<b.id?-1:a.id>b.id?1:0)});
  var grpK=function(it){var m=Math.max(it.w,it.h),k=2;while(k*P1-1<m)k++;return k};
  var fl=0,kmax=0;rest.forEach(function(it){fl+=it.w*it.h});mono.forEach(function(it){var k=grpK(it);fl+=k*k*Bm*Bm;if(k>kmax)kmax=k});
- var nb=Math.max(2,Math.ceil(Math.sqrt(fl/(Bm*Bm))),2*kmax);if(nb%2)nb++;   // erst dicht versuchen, bei Bedarf je 2 Blöcke mehr
+ var viel0=g>=MAUER_AB&&!elend&&opt.vielfalt!==false,UM=viel0?umrissWahl(rng(hashT([seed,art,opt.biom,einw,'umriss'].join('|'))),g):null;
+ var nb=Math.max(2,Math.ceil(Math.sqrt(fl/(Bm*Bm)/(UM?UM.anteil:1))),2*kmax);if(nb%2)nb++;   // erst dicht versuchen, bei Bedarf je 2 Blöcke mehr
  var ergebnis=null;
- for(var versuch=0;versuch<10&&!ergebnis;versuch++,nb+=2)ergebnis=anlegen(nb);
+ // N6b2c4b: Weiler und Dörfer gewachsen (dorf()), opt.vielfalt === false = Raster
+ if(g>=2&&g<=3&&!elend&&opt.vielfalt!==false)for(var vd=0;vd<14&&!ergebnis;vd++)ergebnis=dorf(vd);
+ for(var versuch=0;versuch<14&&!ergebnis;versuch++,nb+=2)ergebnis=anlegen(nb);
  if(!ergebnis)throw new Error('Stadtplan passt nicht ('+items.length+' Gebäude)');
  // Vor den Toren und Umland (N6b2c3): Außenring um den Plan innen; opt.aussen === false = nur innen (Tests N6b2c2)
  if(opt.aussen!==false&&!elend){var ea=null;for(var zug=0;zug<12&&!ea;zug++)ea=aussen(ergebnis,zug);if(!ea)throw new Error('Außenring passt nicht');ergebnis=ea}
  function aussen(E,zug){
-  var Wi=E.W,cX=E.achse?E.achse.i:E.tor.i,cY=E.achse?E.achse.j:E.tor.i,ra=rng(hashT([seed,art,opt.biom,einw,'aussen'].join('|'))),D=daten(opt),gST=SL().STUFE[g]||1,mit=g>=MAUER_AB;
-  var stink=Math.floor(ra()*4),grab=(stink+1+Math.floor(ra()*3))%4;
+  var Wi=E.W,MK=E.maske,TO=E.tore,ra=rng(hashT([seed,art,opt.biom,einw,'aussen'].join('|'))),D=daten(opt),gST=SL().STUFE[g]||1,mit=g>=MAUER_AB;
+  // N6b2c4a2: Stinktor und Gräberstraße an zwei verschiedenen Haupttoren; Zusatztore bekommen nur Gehöfte
+  var HP=[];TO.forEach(function(t,k){if(t.haupt)HP.push(k)});if(HP.length<2)return null;
+  var sI=Math.floor(ra()*HP.length),stinkK=HP[sI],grabK=HP[(sI+1+Math.floor(ra()*(HP.length-1)))%HP.length];
   var gewerbe=[],tote=[],friedhof=[],buden=0,hoefe=[];
   Li.gebaeude.forEach(function(x){for(var k=0;k<x.n;k++){
    if(x.lage==='tor'){if(x.id==='shack')buden++;else if(x.id==='cemetery')friedhof.push(x);else if(TOTE[x.id])tote.push(x);else gewerbe.push(x)}
@@ -122,74 +151,107 @@ function plan(opt){
       VA=D.L.filter(function(x){return passt(x)&&x.gruppe==='vieh'}).map(function(x){return x.id}).sort();
   var nx=Math.floor(einw/HOF_JE);for(var k=0;k<nx;k++){var L2=(k%2&&VA.length)||!FA.length?VA:FA;if(!L2.length)break;var id=L2[Math.floor(ra()*L2.length)],fs=SL().fuss(D.G[id]);hoefe.push({id:id,w:fs[0],h:fs[1],liste:false})}
   var graeber=mit&&(tote.length||friedhof.length)?Math.min(GRAB_MAX,Math.ceil(einw/GRAB_JE)):0;
-  // Zeilen: je Seite (0 Süd, 1 Nord, 2 Ost, 3 West) links und rechts der Ausfallstraße; u = Abstand von der Mauer nach außen, l = quer (Straße l 0 und 1)
-  var cur=[0,0,0,0,0,0,0,0],teile=[];
-  var leg=function(s,sei,du,dl,gap,was){var z=s*2+sei,u0=cur[z];teile.push({s:s,sei:sei,u0:u0,du:du,dl:dl,was:was});cur[z]=u0+du+gap};
-  var minZ=function(s){return cur[s*2]<=cur[s*2+1]?0:1};
-  var cS=stink<2?cX:cY,lin=-cS,rec=Wi-1-cS,regL=[lin,-5],regR=[6,rec],regW=Math.max(0,regL[1]-regL[0]+1)+Math.max(0,regR[1]-regR[0]+1),Ue=0;
-  if(buden){if(!regW)return null;Ue=Math.max(2,Math.ceil(buden*2.6/regW))+zug;cur[stink*2]=cur[stink*2+1]=1}
-  gewerbe.forEach(function(x){var s0=minZ(stink);leg(stink,s0,Math.max(x.w,x.h),Math.min(x.w,x.h),1,{art:'gewerbe',x:x})});
-  tote.forEach(function(x){leg(grab,minZ(grab),Math.max(x.w,x.h),Math.min(x.w,x.h),1,{art:'gewerbe',x:x})});
-  for(var gb=0;gb<graeber;gb++)leg(grab,minZ(grab),1,1,gb%3===2?1:0,{art:'grab'});
-  friedhof.forEach(function(x){leg(grab,minZ(grab),Math.max(x.w,x.h),Math.min(x.w,x.h),1,{art:'friedhof',x:x})});
-  if(buden){var ab=Ue+2;cur[stink*2]=Math.max(cur[stink*2],ab);cur[stink*2+1]=Math.max(cur[stink*2+1],ab)}
-  hoefe.forEach(function(h){var best=0;for(var z=1;z<8;z++)if(cur[z]<cur[best])best=z;leg(best>>1,best&1,h.w,h.h,1,{art:'hof',h:h})});
-  var R=4;cur.forEach(function(c){if(c+2>R)R=c+2});if(opt.zeilen)opt.zeilen.push(cur.slice());if(buden&&Ue+3>R)R=Ue+3;
-  var W=Wi+2*R,Z=new Array(W*W).fill('g'),belegt=new Uint8Array(W*W),at=function(i,j){return j*W+i},keinBaum=new Uint8Array(W*W);
+  // Lage je Tor: u = Abstand vom Rand des Plans innen nach außen (negativ = zwischen Mauer und Rand, dort ist Umland), l = quer (Straße l 0 und 1).
+  // Erst alles in Koordinaten des Plans innen (auch negativ) mit Belegungsprüfung legen, dann die Ringbreite R bestimmen.
+  var glob=function(t,u,l){return t.s===0?[t.c+l,Wi+u]:t.s===1?[t.c+l,-1-u]:t.s===2?[Wi+u,t.c+l]:[-1-u,t.c+l]};
+  var lok=function(t,x,y){return t.s===0?[y-Wi,x-t.c]:t.s===1?[-1-y,x-t.c]:t.s===2?[x-Wi,y-t.c]:[-1-x,y-t.c]};
+  var OFF=4096,key=function(x,y){return (x+OFF)*8192+(y+OFF)},occ=new Set();
+  var aufStr=function(x,y){for(var k=0;k<TO.length;k++){var L=lok(TO[k],x,y);if((L[1]===0||L[1]===1)&&L[0]>=TO[k].u0)return true}return false};
+  var frei=function(x,y){if(occ.has(key(x,y))||aufStr(x,y))return false;if(x>=0&&y>=0&&x<Wi&&y<Wi){var kk=y*Wi+x;return !MK[kk]&&E.Z[kk]!=='s'}return true};
+  // Seite eines Punkts vom Mittelpunkt aus (wie die Tests); −1 = zu nah an der Diagonale
+  var seiteVon=function(x,y){var dx=x-Wi/2,dy=y-Wi/2;if(Math.abs(Math.abs(dx)-Math.abs(dy))<1.5)return -1;return Math.abs(dx)>Math.abs(dy)?(dx>0?2:3):(dy>0?0:1)};
+  var rechteck=function(t,u0,du,l0,dl){var a=glob(t,u0,l0),b=glob(t,u0+du-1,l0+dl-1);return{i:Math.min(a[0],b[0]),j:Math.min(a[1],b[1]),w:Math.abs(a[0]-b[0])+1,h:Math.abs(a[1]-b[1])+1}};
+  var cur=[],teile=[];TO.forEach(function(t){cur.push(t.u0,t.u0)});
+  var leg=function(z,du,dl,gap,was,fest){var t=TO[z>>1],sei=z&1,l0=sei===0?-dl:2;
+   for(var u=cur[z];u<cur[z]+800;u++){var r=rechteck(t,u,du,l0,dl),ok=true,x,y;
+    if(fest&&seiteVon(r.i+r.w/2,r.j+r.h/2)!==t.s)continue;
+    for(y=r.j;y<r.j+r.h&&ok;y++)for(x=r.i;x<r.i+r.w&&ok;x++)if(!frei(x,y))ok=false;
+    if(!ok)continue;for(y=r.j;y<r.j+r.h;y++)for(x=r.i;x<r.i+r.w;x++)occ.add(key(x,y));
+    teile.push({t:z>>1,sei:sei,u0:u,du:du,dl:dl,was:was,r:r});cur[z]=u+du+gap;return true}
+   return false};
+  var minZ=function(k){return cur[k*2]<=cur[k*2+1]?k*2:k*2+1};
+  // Vor dem Tor: zuerst die kürzere Straßenseite, passt es dort nicht (Zusatzstraße daneben), die andere
+  var legT=function(k,du,dl,gap,was){var z=minZ(k);return leg(z,du,dl,gap,was,true)||leg(z^1,du,dl,gap,was,true)};
+  // Elendsbuden als wilder Haufen an der Mauer vor dem Stinktor, der Mauer entlang (auch um Ecken, solange es dieselbe Seite bleibt):
+  // je Spalte eine Schlammgasse direkt vor der Mauer (an Stufen so lang, dass sie zusammenhängt), dahinter Ue Felder Schlamm für die Buden.
+  var tS=TO[stinkK],eG=[],eR=[],Ue=0;
+  if(buden){var uwC={},uw=function(l){if(l in uwC)return uwC[l];var last=null;for(var u=-Wi;u<0;u++){var p=glob(tS,u,l);if(p[0]>=0&&p[1]>=0&&p[0]<Wi&&p[1]<Wi&&MK[p[1]*Wi+p[0]])last=u}return uwC[l]=last===null?null:last+1};
+   var strU=function(l){if(l===0||l===1)return tS.u0;for(var k=0;k<TO.length;k++){var t2=TO[k];if(k!==stinkK&&t2.s===tS.s&&(l+tS.c-t2.c===0||l+tS.c-t2.c===1))return t2.u0}return null};
+   var gut=function(l,u){var p=glob(tS,u,l);return frei(p[0],p[1])&&seiteVon(p[0]+.5,p[1]+.5)===tS.s};
+   var spalten=function(tief){var out=[];[-1,1].forEach(function(dir){var prev=tS.u0;
+     for(var l=dir<0?-1:2;;l+=dir){var su=strU(l);if(su!==null){prev=su;continue}
+      var w=uw(l);if(w===null)break;var nu=strU(l+dir);if(nu===null)nu=uw(l+dir);var end=Math.max(w,prev,nu===null?w:nu),ok=true,u;
+      for(u=w;u<=end&&ok;u++)if(!gut(l,u))ok=false;if(!ok)break;
+      var reg=[];if(l<=-5||l>=6)for(u=end+1;u<=w+tief;u++){if(!gut(l,u))break;reg.push(u)}
+      out.push({l:l,w:w,end:end,reg:reg});prev=w}});return out};
+   var regW=spalten(1).filter(function(c){return c.reg.length}).length;if(!regW)return null;
+   Ue=Math.max(2,Math.ceil(buden*2.6/regW))+zug;
+   spalten(Ue).forEach(function(c){for(var u=c.w;u<=c.end;u++){var p=glob(tS,u,c.l);eG.push(p);occ.add(key(p[0],p[1]))}
+    c.reg.forEach(function(u){var p=glob(tS,u,c.l);eR.push(p);occ.add(key(p[0],p[1]))})})}
+  var i0;
+  for(i0=0;i0<gewerbe.length;i0++){var x0=gewerbe[i0];if(!legT(stinkK,Math.max(x0.w,x0.h),Math.min(x0.w,x0.h),1,{art:'gewerbe',x:x0}))return null}
+  for(i0=0;i0<tote.length;i0++){var x1=tote[i0];if(!legT(grabK,Math.max(x1.w,x1.h),Math.min(x1.w,x1.h),1,{art:'gewerbe',x:x1}))return null}
+  for(var gb=0;gb<graeber;gb++)if(!legT(grabK,1,1,gb%3===2?1:0,{art:'grab'}))return null;
+  for(i0=0;i0<friedhof.length;i0++){var x2=friedhof[i0];if(!legT(grabK,Math.max(x2.w,x2.h),Math.min(x2.w,x2.h),1,{art:'friedhof',x:x2}))return null}
+  for(i0=0;i0<hoefe.length;i0++){var h0=hoefe[i0],Zs=cur.map(function(v,z){return z}).sort(function(a,b){return cur[a]-cur[b]||a-b}),gelegt=false;
+   for(var zi=0;zi<Zs.length&&!gelegt;zi++)gelegt=leg(Zs[zi],h0.w,h0.h,1,{art:'hof',h:h0},false);if(!gelegt)return null}
+  // Ringbreite: alles Gelegte plus 2 Felder Rand
+  var ext=0;occ.forEach(function(v){var x=Math.floor(v/8192)-OFF,y=v%8192-OFF,e2=Math.max(-x,-y,x-Wi+1,y-Wi+1);if(e2>ext)ext=e2});
+  var R=Math.max(4,ext+2);if(opt.zeilen)opt.zeilen.push(cur.slice());
+  var W=Wi+2*R,Z=new Array(W*W).fill('g'),belegt=new Uint8Array(W*W),at=function(i,j){return j*W+i},keinBaum=new Uint8Array(W*W),neu=new Uint8Array(W*W);
   for(var j=0;j<Wi;j++)for(var i=0;i<Wi;i++)Z[at(i+R,j+R)]=E.Z[j*Wi+i];
   var verschieben=function(o){var q=JSON.parse(JSON.stringify(o));q.i+=R;q.j+=R;if(q.tuer){q.tuer[0]+=R;q.tuer[1]+=R}return q};
-  var bauten=E.bauten.map(verschieben),dinge=E.dinge.map(verschieben),gesetzt=JSON.parse(JSON.stringify(E.gesetzt));
-  for(var q0=0;q0<bauten.length;q0++){var b0=bauten[q0];for(var y0=b0.j;y0<b0.j+b0.h;y0++)for(var x0=b0.i;x0<b0.i+b0.w;x0++)belegt[at(x0,y0)]=1}
+  var bauten=E.bauten.map(verschieben),dinge=E.dinge.map(verschieben),nE=dinge.length,gesetzt=JSON.parse(JSON.stringify(E.gesetzt));
+  for(var q0=0;q0<bauten.length;q0++){var b0=bauten[q0];for(var y0=b0.j;y0<b0.j+b0.h;y0++)for(var xb=b0.i;xb<b0.i+b0.w;xb++)belegt[at(xb,y0)]=1}
   for(var y1=R;y1<R+Wi;y1++)for(var x1=R;x1<R+Wi;x1++)keinBaum[at(x1,y1)]=1;
-  // Seite s: Feld (u, l) → (i, j); Richtungen nach außen und quer
-  var zelle=function(s,u,l){var L=R+(s<2?cX:cY)+l;return s===0?[L,R+Wi+u]:s===1?[L,R-1-u]:s===2?[R+Wi+u,L]:[R-1-u,L]};
-  var quer=function(s){return s<2?[1,0]:[0,1]};
-  var rechteck=function(s,u0,du,l0,dl){var a=zelle(s,u0,l0),b=zelle(s,u0+du-1,l0+dl-1);return{i:Math.min(a[0],b[0]),j:Math.min(a[1],b[1]),w:Math.abs(a[0]-b[0])+1,h:Math.abs(a[1]-b[1])+1}};
-  var hin=function(o,r,c){for(var y=r.j;y<r.j+r.h;y++)for(var x=r.i;x<r.i+r.w;x++){Z[at(x,y)]=c;keinBaum[at(x,y)]=1}};
+  var hin=function(r,c){for(var y=r.j;y<r.j+r.h;y++)for(var x=r.i;x<r.i+r.w;x++){Z[at(x,y)]=c;keinBaum[at(x,y)]=1;neu[at(x,y)]=1}};
   var bau=function(id,rolle,r,tuer,kl){var u=rausch(r.i,r.j,seed+31),sh=rolle==='shack',gr=rolle==='grab';kl=kl||(sh?'clay-wood':gr?'marble':basis.klasse);
    var satz=!sh&&!gr&&!ST&&B.satz&&kl===basis.klasse?B.satz:null,schmal=Math.min(r.w,r.h)<2;
-   for(var y=r.j;y<r.j+r.h;y++)for(var x=r.i;x<r.i+r.w;x++){belegt[at(x,y)]=1;keinBaum[at(x,y)]=1;Z[at(x,y)]='g'}
+   for(var y=r.j;y<r.j+r.h;y++)for(var x=r.i;x<r.i+r.w;x++){belegt[at(x,y)]=1;keinBaum[at(x,y)]=1;neu[at(x,y)]=1;Z[at(x,y)]='g'}
    bauten.push({rolle:rolle,id:id,i:r.i,j:r.j,w:r.w,h:r.h,g:sh||gr||rolle==='hof'?1:stock(id,g,u,r.w,r.h),klasse:kl,dach:sh||gr||schmal?'flach':basis.dach,
     achse:r.w>r.h?'i':r.h>r.w?'j':(u<.5?'i':'j'),wand:kl===basis.klasse&&!sh&&!satz?basis.wand:null,dachR:sh?HOLZ:kl===basis.klasse&&!satz?basis.dachR:null,tuer:tuer,satz:satz})};
+  var schieb=function(r){return{i:r.i+R,j:r.j+R,w:r.w,h:r.h}};
+  // Ausfallstraßen vom Plan innen bis zum Bildrand (zwischen Mauer und Rand liegen sie schon im Plan innen)
+  TO.forEach(function(t){for(var u=0;u<R;u++)for(var l=0;l<2;l++){var p=glob(t,u,l),kk=at(p[0]+R,p[1]+R);Z[kk]='s';keinBaum[kk]=1;neu[kk]=1}});
   // Tür eines Stücks an der Straße: links der Straße zur Querrichtung +, rechts −
-  var anStrasse=function(t,du0,dl0,u1){var q=quer(t.s),um=u1!=null?u1:t.u0+(du0>>1);if(t.sei===0){var c=zelle(t.s,um,-1);return[c[0],c[1],q[0],q[1]]}var c2=zelle(t.s,um,2);return[c2[0],c2[1],-q[0],-q[1]]};
-  // Ausfallstraßen bis zum Bildrand
-  for(var s=0;s<4;s++)for(var u=0;u<R;u++)for(var l=0;l<2;l++){var c=zelle(s,u,l);Z[at(c[0],c[1])]='s';keinBaum[at(c[0],c[1])]=1}
-  teile.forEach(function(t){var l0=t.sei===0?-t.dl:2,r=rechteck(t.s,t.u0,t.du,l0,t.dl),w=t.was;
-   if(w.art==='gewerbe'){bau(w.x.id,'bau',r,anStrasse(t,t.du,t.dl));gesetzt[w.x.id]=(gesetzt[w.x.id]|0)+1}
-   else if(w.art==='grab'){bau('grab','grab',r,anStrasse(t,1,1))}
-   else if(w.art==='friedhof'){gesetzt.cemetery=(gesetzt.cemetery|0)+1;hin(null,r,'e');
+  var tuerAn=function(tt,um){var t=TO[tt.t],p=glob(t,um,tt.sei===0?-1:2),q=t.s<2?[1,0]:[0,1];return tt.sei===0?[p[0]+R,p[1]+R,q[0],q[1]]:[p[0]+R,p[1]+R,-q[0],-q[1]]};
+  teile.forEach(function(tt){var t=TO[tt.t],r=schieb(tt.r),w=tt.was;
+   if(w.art==='gewerbe'){bau(w.x.id,'bau',r,tuerAn(tt,tt.u0+(tt.du>>1)));gesetzt[w.x.id]=(gesetzt[w.x.id]|0)+1}
+   else if(w.art==='grab'){bau('grab','grab',r,tuerAn(tt,tt.u0))}
+   else if(w.art==='friedhof'){gesetzt.cemetery=(gesetzt.cemetery|0)+1;hin(r,'e');
     // Grabhäuschen im Raster, Wege dazwischen; Zugang von der Straße über die Reihe am Rand
     for(var y=r.j;y<r.j+r.h;y++)for(var x=r.i;x<r.i+r.w;x++){var dx=x-r.i,dy=y-r.j;if(dx%2===1&&dy%2===1&&dx<r.w-1&&dy<r.h-1)bau('grab','grab',{i:x,j:y,w:1,h:1},[x,y,0,-1])}}
-   else if(w.art==='hof'){var h=w.h,hw=Math.min(2,t.dl),hl=Math.min(2,t.du),hu=t.u0+((t.du-hl)>>1),hl0=t.sei===0?-hw:2,hr=rechteck(t.s,hu,hl,hl0,hw);
-    var D0=D.G[h.id],herde=D0&&D0.gruppe==='vieh',hain=HAIN[h.id];hin(null,r,hain?'g':herde?'p':'f');
+   else if(w.art==='hof'){var h=w.h,hw=Math.min(2,tt.dl),hl=Math.min(2,tt.du),hu=tt.u0+((tt.du-hl)>>1),hr=schieb(rechteck(t,hu,hl,tt.sei===0?-hw:2,hw));
+    var D0=D.G[h.id],herde=D0&&D0.gruppe==='vieh',hain=HAIN[h.id];hin(r,hain?'g':herde?'p':'f');
     if(hain)for(var y2=r.j;y2<r.j+r.h;y2++)for(var x2=r.i;x2<r.i+r.w;x2++)if(((x2+y2)&1)===0)dinge.push({id:hain,i:x2,j:y2,rolle:h.id});
-    bau(h.id,'hof',hr,anStrasse(t,hl,hw,hu+(hl>>1)));if(hain)dinge=dinge.filter(function(d){return !(d.rolle===h.id&&d.i>=hr.i&&d.i<hr.i+hr.w&&d.j>=hr.j&&d.j<hr.j+hr.h)});
+    bau(h.id,'hof',hr,tuerAn(tt,hu+(hl>>1)));if(hain)dinge=dinge.filter(function(d){return !(d.rolle===h.id&&d.i>=hr.i&&d.i<hr.i+hr.w&&d.j>=hr.j&&d.j<hr.j+hr.h)});
     if(h.liste)gesetzt[h.id]=(gesetzt[h.id]|0)+1}});
-  // Elendsbuden als wilder Haufen an der Mauer vor dem Stinktor: Gasse u = 0 an der Mauer, darüber Schlamm; jede Bude hält eine Tür frei, alles bleibt zusammenhängend
-  if(buden){var reg=[],regId=new Int32Array(W*W).fill(-1),frei=[];
-   for(var lx=lin;lx<=rec;lx++){if(lx===0||lx===1)continue;var c1=zelle(stink,0,lx);if(!belegt[at(c1[0],c1[1])]){Z[at(c1[0],c1[1])]='e';keinBaum[at(c1[0],c1[1])]=1}}
-   [regL,regR].forEach(function(g2){for(var l2=g2[0];l2<=g2[1];l2++)for(var u2=1;u2<=Ue;u2++){var c3=zelle(stink,u2,l2),k3=at(c3[0],c3[1]);if(belegt[k3])continue;Z[k3]='e';keinBaum[k3]=1;regId[k3]=reg.length;reg.push(k3)}});
-   var tuerRes=new Uint8Array(W*W),bude=new Uint8Array(W*W),ord=reg.slice();for(var o1=ord.length-1;o1>0;o1--){var o2=Math.floor(ra()*(o1+1)),tt=ord[o1];ord[o1]=ord[o2];ord[o2]=tt}
+  // Elendsbuden: jede Bude hält eine Tür frei, alles bleibt zusammenhängend
+  if(buden){var reg=[],regId=new Int32Array(W*W).fill(-1),frei2=[],seeds=[];
+   eG.forEach(function(p){var kk=at(p[0]+R,p[1]+R);if(!belegt[kk]){Z[kk]='e';keinBaum[kk]=1;neu[kk]=1;seeds.push(kk)}});
+   eR.forEach(function(p){var kk=at(p[0]+R,p[1]+R);if(belegt[kk])return;Z[kk]='e';keinBaum[kk]=1;neu[kk]=1;regId[kk]=reg.length;reg.push(kk)});
+   var tuerRes=new Uint8Array(W*W),bude=new Uint8Array(W*W),ord=reg.slice();for(var o1=ord.length-1;o1>0;o1--){var o2=Math.floor(ra()*(o1+1)),tt2=ord[o1];ord[o1]=ord[o2];ord[o2]=tt2}
    var istE=function(k){return Z[k]==='e'&&!belegt[k]&&!bude[k]},NB=[[1,0],[-1,0],[0,1],[0,-1]];
    var zusammen=function(){var seen=new Uint8Array(W*W),st=[],n=0,soll=0;for(var a=0;a<reg.length;a++)if(istE(reg[a]))soll++;
-    for(var lx2=lin;lx2<=rec;lx2++){if(lx2===0||lx2===1)continue;var c4=zelle(stink,0,lx2),k4=at(c4[0],c4[1]);if(istE(k4)&&!seen[k4]){seen[k4]=1;st.push(k4)}}
-    while(st.length){var q=st.pop();if(regId[q]>=0)n++;var qi=q%W,qj=(q/W)|0;for(var d=0;d<4;d++){var xi=qi+NB[d][0],yj=qj+NB[d][1];if(xi<0||yj<0||xi>=W||yj>=W)continue;var kk=at(xi,yj);if(!seen[kk]&&istE(kk)&&(regId[kk]>=0||Z[kk]==='e')){seen[kk]=1;st.push(kk)}}}
+    seeds.forEach(function(k4){if(istE(k4)&&!seen[k4]){seen[k4]=1;st.push(k4)}});
+    while(st.length){var q=st.pop();if(regId[q]>=0)n++;var qi=q%W,qj=(q/W)|0;for(var d=0;d<4;d++){var xi=qi+NB[d][0],yj=qj+NB[d][1];if(xi<0||yj<0||xi>=W||yj>=W)continue;var kk=at(xi,yj);if(!seen[kk]&&istE(kk)){seen[kk]=1;st.push(kk)}}}
     return n===soll};
    var gesetztB=0;for(var o3=0;o3<ord.length&&gesetztB<buden;o3++){var k5=ord[o3];if(tuerRes[k5]||bude[k5])continue;var i5=k5%W,j5=(k5/W)|0,dd=[];
     for(var d5=0;d5<4;d5++){var xi5=i5+NB[d5][0],yj5=j5+NB[d5][1];if(xi5<0||yj5<0||xi5>=W||yj5>=W)continue;var kn=at(xi5,yj5);if(istE(kn))dd.push([kn,NB[d5]])}
     if(!dd.length)continue;var wahl=dd[Math.floor(ra()*dd.length)],warRes=tuerRes[wahl[0]];bude[k5]=1;tuerRes[wahl[0]]=1;
     if(!zusammen()){bude[k5]=0;tuerRes[wahl[0]]=warRes;continue}
-    frei.push([i5,j5,wahl[1]]);gesetztB++}
+    frei2.push([i5,j5,wahl[1]]);gesetztB++}
    if(gesetztB<buden)return null;
-   frei.forEach(function(f){bude[at(f[0],f[1])]=0;bau('shack','shack',{i:f[0],j:f[1],w:1,h:1},[f[0],f[1],f[2][0],f[2][1]])});
+   frei2.forEach(function(f){bude[at(f[0],f[1])]=0;bau('shack','shack',{i:f[0],j:f[1],w:1,h:1},[f[0],f[1],f[2][0],f[2][1]])});
    gesetzt.shack=(gesetzt.shack|0)+buden;
    reg.forEach(function(k6){if(belegt[k6]||tuerRes[k6])return;var i6=k6%W,j6=(k6/W)|0;if(rausch(i6,j6,seed+43)<.1)dinge.push({id:rausch(i6,j6,seed+44)<.15?'leiche':'lager-platz',i:i6,j:j6})})}
+  // Bäume und Kram aus dem Plan innen weichen allem, was hier zwischen Mauer und Rand gebaut wurde
+  dinge=dinge.filter(function(d,ix){return ix>=nE||!neu[at(d.i,d.j)]});
   // Landschaft im Ring: Bäume des Bioms wie in den Höfen innen
   for(var q7=0;q7<W*W;q7++){if(keinBaum[q7]||belegt[q7]||Z[q7]!=='g')continue;var i7=q7%W,j7=(q7/W)|0;if(rausch(i7,j7,seed+41)<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i7,j7,seed+42)*B.baeume.length)],i:i7,j:j7})}
-  var tor=zelle(0,R-1,0);
-  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:tor[0],j:tor[1]},nb:E.nb,gesetzt:gesetzt,vielfalt:E.vielfalt,
-   aussen:{ring:R,innenW:Wi,stinktor:SEITE[stink],graebertor:SEITE[grab],buden:buden,graeber:graeber,hoefe:hoefe.length,hoefeExtra:nx>0?hoefe.filter(function(h){return !h.liste}).length:0,elend:Ue}};}
+  var tp=TO.filter(function(t){return t.s===0})[0]||TO.filter(function(t){return t.s===2})[0]||TO[0],te=glob(tp,R-1,0);
+  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:te[0]+R,j:te[1]+R},nb:E.nb,gesetzt:gesetzt,vielfalt:E.vielfalt,tore:TO,maske:MK,rand:R,
+   aussen:{ring:R,innenW:Wi,stinktor:SEITE[TO[stinkK].s],graebertor:SEITE[TO[grabK].s],tore:TO.map(function(t){return SEITE[t.s]}),buden:buden,graeber:graeber,hoefe:hoefe.length,hoefeExtra:nx>0?hoefe.filter(function(h){return !h.liste}).length:0,elend:Ue}};}
  function anlegen(nb){
   var r=rng(hashT([seed,art,opt.biom,opt.stil||'',einw,nb].join('|'))),a,b,k;
   // N6b2c4a1 (Thomas 22.11.2026, ab Marktflecken): Blockmaß je Spalte und Zeile ±2 (mind. 3), Kreuzung außermittig, etwa jede 4. Gasse krumm oder schräg.
@@ -206,11 +268,33 @@ function plan(opt){
   var W=p-1+off,cA=X0[hx]-2,cB=Y0[hy]-2;
   var Z=new Array(W*W).fill('g'),belegt=new Uint8Array(W*W),bauten=[],dinge=[],gesetzt={};
   var at=function(i,j){return j*W+i};
-  // Gassen überall innen, Blöcke darüber als Hof; Ring an der Mauer; Mauer 2 breit mit 4 Toren in der Achse der Hauptstraßen
-  for(var j=0;j<W;j++)for(var i=0;i<W;i++){var d=Math.min(i,j,W-1-i,W-1-j);if(d<wall){var tor=(i===cA||i===cA+1)||(j===cB||j===cB+1);Z[at(i,j)]=tor?'s':'g';belegt[at(i,j)]=1;
-    if(!tor)bauten.push({rolle:'mauer',i:i,j:j,w:1,h:1,klasse:basis.klasse==='clay-wood'&&g>=5?'brick':basis.klasse,dach:'flach',achse:'i',wand:basis.wand,dachR:STEIN})}
-   else Z[at(i,j)]=elend?'e':'s'}
+  // Umriss (N6b2c4a2): M = innen samt Mauer; D4 = Schritte bis nach draußen (Bildrand zählt als draußen). Mauer: D4 ≤ wall (für Schritte in 4 Richtungen dicht),
+  // Ringgasse: Nachbarn der Mauer, auch schräg (so hängt sie auch an den Treppen zusammen); nutzbar: der Rest. Ohne Vielfalt: alles innen = Quadrat wie N6b2c2.
+  var WW=W*W,M=new Uint8Array(WW),D4=new Int32Array(WW),wallC=new Uint8Array(WW),ring=new Uint8Array(WW),nutz=new Uint8Array(WW),weg=new Uint8Array(WW),offenM=new Uint8Array(WW),k1,i,j;
+  for(j=0;j<W;j++)for(i=0;i<W;i++)M[at(i,j)]=viel?(UM.innen((i+.5)/W*2-1,(j+.5)/W*2-1)?1:0):1;
+  var qu=[],qh=0;for(j=0;j<W;j++)for(i=0;i<W;i++){k1=at(i,j);if(!M[k1])continue;D4[k1]=1e9;
+   if(i===0||j===0||i===W-1||j===W-1||!M[k1-1]||!M[k1+1]||!M[k1-W]||!M[k1+W]){D4[k1]=1;qu.push(k1)}}
+  while(qh<qu.length){var kq=qu[qh++],iq=kq%W,jq=(kq/W)|0,nq=[iq>0?kq-1:-1,iq<W-1?kq+1:-1,jq>0?kq-W:-1,jq<W-1?kq+W:-1];
+   for(var dq=0;dq<4;dq++){var kn=nq[dq];if(kn>=0&&M[kn]&&D4[kn]>D4[kq]+1){D4[kn]=D4[kq]+1;qu.push(kn)}}}
+  for(k1=0;k1<WW;k1++)if(M[k1]&&D4[k1]<=wall)wallC[k1]=1;
+  for(j=0;j<W;j++)for(i=0;i<W;i++){k1=at(i,j);if(!M[k1]||wallC[k1])continue;var nah=false;
+   for(var dy=-1;dy<=1&&!nah;dy++)for(var dx=-1;dx<=1&&!nah;dx++){var xx=i+dx,yy=j+dy;if(xx>=0&&yy>=0&&xx<W&&yy<W&&wallC[at(xx,yy)])nah=true}
+   if(nah)ring[k1]=1;else nutz[k1]=1}
+  for(k1=0;k1<WW;k1++){if(!M[k1])Z[k1]='g';else if(wallC[k1]){Z[k1]='g';belegt[k1]=1}else Z[k1]=elend?'e':'s'}
+  var frei0=function(k){return nutz[k]&&!weg[k]};
+  // Tore (Thomas: nach Größe). Hauptstraßen-Arme 0 Süd, 1 Nord, 2 Ost, 3 West; 2 Tore = eine durchgehende Straße, 3 Tore = ein Arm endet innen an der Ringgasse.
+  var rt=rng(hashT([seed,art,einw,'tore'].join('|'))),arme=[0,1,2,3],tore=[];
+  if(viel){if(UM.tore<=2)arme=rt()<.5?[0,1]:[2,3];else if(UM.tore===3){var ohne=Math.floor(rt()*4);arme=arme.filter(function(x){return x!==ohne})}}
+  // Straße 2 breit von der Hauptstraße bis zum Bildrand, Mauer dort offen; u0 = erstes Feld hinter der Mauer, gezählt vom Bildrand nach außen (≤ 0)
+  function oeffne(s,c,haupt){var mx=-1,mn=W;
+   for(var l=0;l<2;l++){var cc=c+l,a0=s===0?cB+2:s===1?cB-1:s===2?cA+2:cA-1,da=s===0||s===2?1:-1;
+    for(var p0=a0;p0>=0&&p0<W;p0+=da){var k=s<2?at(cc,p0):at(p0,cc);weg[k]=1;if(wallC[k]){wallC[k]=0;offenM[k]=1;Z[k]='s';belegt[k]=1}else if(!M[k]){Z[k]='s';belegt[k]=1}
+     if(M[k]){if(p0>mx)mx=p0;if(p0<mn)mn=p0}}}
+   tore.push({s:s,c:c,u0:s===0||s===2?mx+1-W:-mn,haupt:haupt})}
+  arme.forEach(function(s){oeffne(s,s<2?cA:cB,true)});
+  for(k1=0;k1<WW;k1++)if(wallC[k1])bauten.push({rolle:'mauer',i:k1%W,j:(k1/W)|0,w:1,h:1,klasse:basis.klasse==='clay-wood'&&g>=5?'brick':basis.klasse,dach:'flach',achse:'i',wand:basis.wand,dachR:STEIN});
   var cx=W/2,cy=W/2,bl=[];
+  if(viel){var sx=0,sy=0,sn=0;for(k1=0;k1<WW;k1++)if(nutz[k1]){sx+=k1%W+.5;sy+=((k1/W)|0)+.5;sn++}if(sn){cx=sx/sn;cy=sy/sn}}
   var bw=function(a0,k){return X0[a0+k-1]+cw[a0+k-1]-X0[a0]},bh=function(b0,k){return Y0[b0+k-1]+rh[b0+k-1]-Y0[b0]};
   for(a=0;a<nb;a++)for(b=0;b<nb;b++)bl.push({a:a,b:b,x:X0[a],y:Y0[b],w:cw[a],h:rh[b],d:Math.hypot(X0[a]+cw[a]/2-cx,Y0[b]+rh[b]/2-cy)+r()*P1*.6,frei:null,rest:cw[a]*rh[b]});
   var offen=function(q){q.frei=new Uint8Array(q.w*q.h).fill(1);for(var y=0;y<q.h;y++)for(var x=0;x<q.w;x++)Z[at(q.x+x,q.y+y)]=elend?'e':'g'};
@@ -220,7 +304,8 @@ function plan(opt){
   for(var m=0;m<mono.length;m++){var it=mono[m],k0=grpK(it),best=null,bd=1e9,bk=0;
    for(var q=0;q<bl.length;q++){var s=bl[q],kk=0;
     for(k=k0;k<=k0+(viel?1:0)&&!kk;k++){if(s.a+k>nb||s.b+k>nb)continue;if((s.a<hx)!==(s.a+k-1<hx)||(s.b<hy)!==(s.b+k-1<hy))continue;if(passt(it,bw(s.a,k),bh(s.b,k)))kk=k}
-    if(!kk)continue;var frei=true;for(var u=0;u<kk&&frei;u++)for(var v=0;v<kk&&frei;v++)if(benutzt[(s.a+u)*nb+s.b+v])frei=false;if(!frei)continue;
+    if(!kk)continue;var frei=true;for(var u=0;u<kk&&frei;u++)for(var v=0;v<kk&&frei;v++)if(benutzt[(s.a+u)*nb+s.b+v])frei=false;
+    if(frei&&viel){var gw1=bw(s.a,kk),gh1=bh(s.b,kk);for(var y9=0;y9<gh1&&frei;y9++)for(var x9=0;x9<gw1&&frei;x9++)if(!frei0(at(s.x+x9,s.y+y9)))frei=false}if(!frei)continue;
     var dd=Math.hypot(s.x+bw(s.a,kk)/2-cx,s.y+bh(s.b,kk)/2-cy)+r()*P1;if(dd<bd){bd=dd;best=s;bk=kk}}
    if(!best)return null;for(var u2=0;u2<bk;u2++)for(var v2=0;v2<bk;v2++)benutzt[(best.a+u2)*nb+best.b+v2]=1;
    for(var f2=0;f2<bk;f2++){fest['c'+(best.a-1)+'_'+(best.b+f2)]=1;fest['c'+(best.a+bk-1)+'_'+(best.b+f2)]=1;fest['r'+(best.b-1)+'_'+(best.a+f2)]=1;fest['r'+(best.b+bk-1)+'_'+(best.a+f2)]=1}
@@ -239,6 +324,37 @@ function plan(opt){
    for(k=0;k<nb-1;k++){if(k+1===hx)continue;var capC=Math.min(2,Math.floor((Math.min(cw[k],cw[k+1])-3)/2));
     SC[k]=profil(SC,nb,capC,function(b3){return tRow(b3,k)===tRow(b3,k+1)},function(b3){return fest['c'+k+'_'+b3]})}}
   bl.forEach(function(s){s.x=X0[s.a]+sCol(s.a-1,s.b);s.w=X0[s.a]+cw[s.a]+sCol(s.a,s.b)-s.x;s.y=Y0[s.b]+tRow(s.b-1,s.a);s.h=Y0[s.b]+rh[s.b]+tRow(s.b,s.a)-s.y;s.rest=s.w*s.h});
+  if(viel){
+   // Zusätzliche Tore ab 5 (Thomas: eigene Straße 2 breit vom Tor bis zur nächsten Hauptstraße): eine gerade Gasse auf einem Arm wird breiter,
+   // die Blöcke an einer Seite werden dafür 1 Feld schmaler (nur Blöcke ohne Monument, danach mindestens 3 breit). Je Seite höchstens ein Zusatztor.
+   var extra=UM.tore-arme.length,seiten=[0,1,2,3],z1,z2,tz;for(z1=3;z1>0;z1--){z2=Math.floor(rt()*(z1+1));tz=seiten[z1];seiten[z1]=seiten[z2];seiten[z2]=tz}
+   for(var si=0;si<4&&extra>0;si++){var s3=seiten[si],sp=s3<2,hm=sp?hx:hy,Ks=[];for(k=0;k<nb-1;k++)if(k!==hm-1&&!(sp?SC[k]:TR[k]))Ks.push(k);
+    for(z1=Ks.length-1;z1>0;z1--){z2=Math.floor(rt()*(z1+1));tz=Ks[z1];Ks[z1]=Ks[z2];Ks[z2]=tz}
+    var hq=sp?hy:hx,R2=[];for(var bb=0;bb<nb;bb++)if(s3===0||s3===2?bb>=hq:bb<hq)R2.push(bb);
+    var gefunden=false;
+    for(var ki=0;ki<Ks.length&&!gefunden;ki++)for(var dir=0;dir<2&&!gefunden;dir++){var kg=Ks[ki],aa=dir===0?kg+1:kg,ok2=true,ri,ix;
+     for(ri=0;ri<R2.length&&ok2;ri++){ix=sp?aa*nb+R2[ri]:R2[ri]*nb+aa;if(benutzt[ix]||(sp?bl[ix].w:bl[ix].h)<4)ok2=false}
+     var gl=(sp?X0[kg+1]:Y0[kg+1])-1,c5=dir===0?gl:gl-1;
+     // Die Straße muss in beiden Spalten durch die Mauer gehen (sonst läge das Tor neben einem Oval ins Leere)
+     // und zwar einmal: erst innen, dann Mauer, dann draußen bis zum Bildrand (nicht außen entlang in eine Beule)
+     for(var l5=0;l5<2&&ok2;l5++){var zst=0,a5=s3===0?cB+2:s3===1?cB-1:s3===2?cA+2:cA-1,d5=s3===0||s3===2?1:-1;
+      var nW=0;for(var p5=a5;p5>=0&&p5<W&&ok2;p5+=d5){var k5=sp?at(c5+l5,p5):at(p5,c5+l5);if(wallC[k5]){if(zst===2||p5===a5||++nW>4)ok2=false;else zst=1}else if(!M[k5]){if(zst===0)ok2=false;else zst=2}else if(zst)ok2=false}
+      if(!zst)ok2=false}   // quer durch die Mauer (höchstens 4 Mauerfelder), nicht längs in ihr
+     if(!ok2)continue;
+     for(ri=0;ri<R2.length;ri++){var bx=bl[sp?aa*nb+R2[ri]:R2[ri]*nb+aa];if(sp){if(dir===0)bx.x++;bx.w--}else{if(dir===0)bx.y++;bx.h--}bx.rest=bx.w*bx.h}
+     oeffne(s3,c5,false);gefunden=true;extra--}}
+   bauten=bauten.filter(function(b){return !(b.rolle==='mauer'&&offenM[at(b.i,b.j)])});
+   // Blöcke am Umriss stutzen: was nicht ganz im nutzbaren Inneren liegt, wird an der schlechtesten Seite kleiner; unter 3 Feldern fällt der Block weg (Garten).
+   // Abgeschnittene Streifen werden kleine Plätze an der Mauer (o), damit jede Tür am Rand einen Weg hat.
+   bl.forEach(function(s){if(benutzt[s.a*nb+s.b])return;var x0=s.x,y0=s.y,w0=s.w,h0=s.h,xx,yy,kk2;
+    for(var it=0;it<80;it++){var sl=0,sr=0,st=0,sb=0,schlecht=0;
+     for(yy=0;yy<s.h;yy++)for(xx=0;xx<s.w;xx++)if(!frei0(at(s.x+xx,s.y+yy))){schlecht++;if(xx===0)sl++;if(xx===s.w-1)sr++;if(yy===0)st++;if(yy===s.h-1)sb++}
+     if(!schlecht)break;var mm=Math.max(sl,sr,st,sb);if(!mm){s.weg=true;break}
+     if(mm===sl){s.x++;s.w--}else if(mm===sr)s.w--;else if(mm===st){s.y++;s.h--}else s.h--;
+     if(s.w<3||s.h<3){s.weg=true;break}}
+    for(yy=0;yy<h0;yy++)for(xx=0;xx<w0;xx++){kk2=at(x0+xx,y0+yy);if(!frei0(kk2))continue;
+     if(s.weg)Z[kk2]='g';else if(x0+xx<s.x||x0+xx>=s.x+s.w||y0+yy<s.y||y0+yy>=s.y+s.h)Z[kk2]='o'}
+    s.rest=s.weg?0:s.w*s.h})}
   if(viel)gruppen.forEach(platzieren);
   function platzieren(grp){offen(grp);var it=grp.it,gw2=grp.w,gh2=grp.h,rot=r()<.5;if(!(rot?it.h<=gw2&&it.w<=gh2:it.w<=gw2&&it.h<=gh2))rot=!rot;
    var mw=rot?it.h:it.w,mh=rot?it.w:it.h,px=grp.x+((gw2-mw)>>1),py=grp.y+((gh2-mh)>>1);
@@ -246,7 +362,7 @@ function plan(opt){
      mitte=(x1===(gw2>>1)||x1===((gw2-1)>>1)||y1===(gh2>>1)||y1===((gh2-1)>>1));
     if(inM||mitte){grp.frei[y1*gw2+x1]=0;if(!inM)Z[at(X,Y)]='o'}else{Z[at(X,Y)]='o';grp.rest++}}
    setzen(it,px,py,mw,mh,null)}
-  var bloecke=bl.filter(function(s){return !benutzt[s.a*nb+s.b]});bloecke.forEach(offen);bloecke=bloecke.concat(gruppen);bloecke.sort(function(p,q){return p.d-q.d});
+  var bloecke=bl.filter(function(s){return !benutzt[s.a*nb+s.b]&&!s.weg});bloecke.forEach(offen);bloecke=bloecke.concat(gruppen);bloecke.sort(function(p,q){return p.d-q.d});
   // Übrige Gebäude: erstes freies Randstück im innersten Block (Zonen); Tür zur Gasse an der Seite, die am Blockrand liegt
   // Gleichmäßig füllen: zuerst nur bis zum Anteil je Block (alle Blöcke behalten einen Hof), dann frei; Reihenfolge der Blöcke nach Abstand = Zonen
   var vorn=0,summe=0,platzAll=0;rest.forEach(function(it){summe+=it.w*it.h});bloecke.forEach(function(s){s.voll=0;platzAll+=s.rest});var anteil=Math.min(1,summe/Math.max(1,platzAll)*1.1+.05);
@@ -265,7 +381,14 @@ function plan(opt){
   for(var q5=0;q5<W*W;q5++){if(belegt[q5])continue;var z5=Z[q5],i5=q5%W,j5=(q5/W)|0;if(z5==='o'&&!erreicht[q5]){Z[q5]='g';z5='g'}
    if(z5==='g'&&!elend){var u5=rausch(i5,j5,seed+7);if(u5<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i5,j5,seed+8)*B.baeume.length)],i:i5,j:j5});else if(u5>.97)dinge.push({id:'lager-platz',i:i5,j:j5})}
    else if(z5==='e'&&rausch(i5,j5,seed+9)<.15&&!/[s]/.test(Z[q5]))dinge.push({id:rausch(i5,j5,seed+10)<.15?'leiche':'lager-platz',i:i5,j:j5})}
-  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:cA,j:W-1},achse:{i:cA,j:cB},nb:nb,gesetzt:gesetzt,
+  // Mit Umriss: jeder Weg muss von der Kreuzung aus erreichbar sein, sonst mit mehr Blöcken neu versuchen
+  if(viel){var er2=new Uint8Array(WW),st2=[at(cA,cB)];er2[st2[0]]=1;
+   while(st2.length){var q6=st2.pop(),i6=q6%W,j6=(q6/W)|0,nn=[i6>0?q6-1:-1,i6<W-1?q6+1:-1,j6>0?q6-W:-1,j6<W-1?q6+W:-1];
+    for(var d6=0;d6<4;d6++){var k6=nn[d6];if(k6>=0&&!er2[k6]&&/[seom]/.test(Z[k6])){er2[k6]=1;st2.push(k6)}}}
+   for(k1=0;k1<WW;k1++)if(!er2[k1]&&/[seom]/.test(Z[k1]))return null}
+  var tp=tore.filter(function(t){return t.s===0})[0]||tore.filter(function(t){return t.s===2})[0]||tore[0];
+  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:tp.s===0?{i:tp.c,j:W-1}:tp.s===2?{i:W-1,j:tp.c}:tp.s===1?{i:tp.c,j:0}:{i:0,j:tp.c},achse:{i:cA,j:cB},nb:nb,gesetzt:gesetzt,
+   tore:tore,maske:M,
    vielfalt:viel?{spalten:cw,zeilen:rh,kreuzung:[hx,hy],gassen:2*(nb-2),krumm:Object.keys(SC).filter(function(x){return SC[x]}).length+Object.keys(TR).filter(function(x){return TR[x]}).length}:null};
   // Randstück im Block: x==0, y==0 oder an der rechten/unteren Kante, alle Zellen frei; Tür mittig an der Blockkante (Reihenfolge aus dem Seed)
   function randStelle(s,w,h){var L=[],x,y;for(x=0;x+w<=s.w;x++){L.push([x,0,0,-1]);L.push([x,s.h-h,0,1])}for(y=1;y+h<s.h;y++){L.push([0,y,-1,0]);L.push([s.w-w,y,1,0])}
@@ -283,8 +406,159 @@ function plan(opt){
    bauten.push({rolle:sh?'shack':(WOHN[id]?'house':'bau'),id:id,i:i,j:j,w:w,h:h,g:stock(id,g,u,w,h),klasse:kl,dach:sh||schmal?'flach':basis.dach,
     achse:w>h?'i':h>w?'j':(u<.5?'i':'j'),wand:kl===basis.klasse&&!sh&&!satz?basis.wand:null,dachR:sh?HOLZ:kl===basis.klasse&&!satz?basis.dachR:null,tuer:tuer,satz:satz})}
  }
+ // N6b2c4b (Thomas 22.11.2026): Weiler und Dörfer gewachsen statt im Raster. Weiler = Haufen um einen Brunnenplatz mit Trampelpfaden zu jeder Tür, ein Weg führt durch;
+ // Dörfer aus dem Seed: Straßendorf 40 % (Häuser beidseits einer leicht krummen Straße, bei Bedarf Seitengassen), Haufendorf um einen Platz 40 % (Markt in der Mitte,
+ // 3–4 Wege hinaus, Pfade zu jeder Tür), Angerdorf 20 % (die Straße gabelt sich um einen Anger mit Brunnen, Markt auf dem Anger). Ausgänge: Weiler 2, Straßendorf 2,
+ // Angerdorf 2–3, Haufendorf 3–4. Hinter jedem Wohnhaus ein Garten (Feldboden, 1–2 tief), Häuser locker mit mindestens 1 Feld Abstand, teils 1 Feld zurückgesetzt.
+ // Gebaut wird stehend (Hauptweg Nord–Süd) und bei Bedarf gekippt. opt.vielfalt === false = Raster wie N6b2c2.
+ function dorf(versuch){
+  var rf=rng(hashT([seed,art,opt.biom,einw,'dorfform'].join('|'))),xf=rf(),form=g<=2?'weiler':xf<.4?'strasse':xf<.8?'haufen':'anger',kipp=rf()<.5;
+  var r=rng(hashT([seed,art,opt.biom,opt.stil||'',einw,'dorf',versuch].join('|')));
+  var spez={market:null,well:null},bauL=[],fl=0;
+  items.forEach(function(it){fl+=it.w*it.h;if((it.id==='market'||it.id==='well')&&!spez[it.id])spez[it.id]=it;else bauL.push(it)});
+  var klasse=function(it){return it.id==='shack'?3:WOHN[it.id]?2:1};
+  bauL.sort(function(a,b){return klasse(a)-klasse(b)||rang(a)-rang(b)||b.w*b.h-a.w*a.h||(a.id<b.id?-1:a.id>b.id?1:0)});
+  var W=Math.max(form==='anger'?26:14,Math.ceil(Math.sqrt(fl*(form==='weiler'?7:5.5))))+2*versuch,WW=W*W,at=function(i,j){return j*W+i};
+  var Z=new Array(WW).fill('g'),belegt=new Uint8Array(WW),res=new Uint8Array(WW),garten=new Uint8Array(WW),anger=new Uint8Array(WW),vor=new Uint8Array(WW),bauten=[],dinge=[],gesetzt={},tore=[],gaerten=0,gassen=0;
+  var cx=(W>>1)+Math.floor(r()*3)-1,cy=(W>>1)+Math.floor(r()*3)-1,pcx=cx+.5,pcy=cy+.5;
+  var istWeg=function(k){return Z[k]==='s'||Z[k]==='o'};
+  var frei=function(i,j){if(i<0||j<0||i>=W||j>=W)return false;var k=at(i,j);return Z[k]==='g'&&!belegt[k]&&!res[k]&&!garten[k]};
+  var weg=function(i,j){if(i>=0&&j>=0&&i<W&&j<W&&Z[at(i,j)]==='g'&&!belegt[at(i,j)]){Z[at(i,j)]='s';res[at(i,j)]=0}};
+  // Weg 2 breit, leicht krumm: Spalte je Zeile (stehend), an den Enden 3 Felder gerade
+  var krumm=function(t0,t1,x0,p){var L=[],v=x0,n=Math.abs(t1-t0)+1;for(var t=0;t<n;t++){if(t>=3&&t<n-3&&r()<p){var nv=v+(r()<.5?-1:1);if(nv>=2&&nv<=W-4)v=nv}L.push(v)}return L};
+  var senkrecht=function(t0,t1,x0,p){var L=krumm(t0,t1,x0,p),d=t1>=t0?1:-1;for(var k=0;k<L.length;k++){weg(L[k],t0+k*d);weg(L[k]+1,t0+k*d)}return L};
+  var waagrecht=function(t0,t1,y0,p){var L=krumm(t0,t1,y0,p),d=t1>=t0?1:-1;for(var k=0;k<L.length;k++){weg(t0+k*d,L[k]);weg(t0+k*d,L[k]+1)}return L};
+  var setzeTor=function(s,c){tore.push({s:s,c:c,u0:0,haupt:true})};
+  var platz=function(it,i,j,w,h){gesetzt[it.id]=(gesetzt[it.id]||0)+1;for(var y=j;y<j+h;y++)for(var x=i;x<i+w;x++){var k=at(x,y);Z[k]=PLATZ[it.id]||'o';res[k]=0;anger[k]=0;
+    if(it.id==='market'&&rausch(x,y,seed)<.4&&x>i&&y>j&&x<i+w-1&&y<j+h-1)dinge.push({id:'markt-stand',i:x,j:y,rolle:it.id})}};
+  var brunnen=function(i,j){var it=spez.well;gesetzt.well=(gesetzt.well||0)+1;Z[at(i,j)]='o';res[at(i,j)]=0;anger[at(i,j)]=0;dinge.push({id:DING.well,i:i,j:j,rolle:'well'})};
+  // Bau eintragen (wie setzen() im Raster)
+  var bau=function(it,i,j,w,h,tuer){var id=it.id;gesetzt[id]=(gesetzt[id]||0)+1;for(var y=j;y<j+h;y++)for(var x=i;x<i+w;x++){belegt[at(x,y)]=1;Z[at(x,y)]='g'}
+   var sh=id==='shack',u=rausch(i,j,seed+31),kl=sh?'clay-wood':MARMOR[id]&&g>=MAUER_AB?'marble':EDEL[id]?STUFE[basis.klasse]:basis.klasse;
+   var satz=!sh&&!ST&&B.satz&&kl===basis.klasse?B.satz:null,schmal=Math.min(w,h)<2;
+   bauten.push({rolle:sh?'shack':(WOHN[id]?'house':'bau'),id:id,i:i,j:j,w:w,h:h,g:stock(id,g,u,w,h),klasse:kl,dach:sh||schmal?'flach':basis.dach,
+    achse:w>h?'i':h>w?'j':(u<.5?'i':'j'),wand:kl===basis.klasse&&!sh&&!satz?basis.wand:null,dachR:sh?HOLZ:kl===basis.klasse&&!satz?basis.dachR:null,tuer:tuer,satz:satz})};
+  // Rechteck frei und mit 1 Feld Abstand zu anderen Bauten (Rand 1 Feld frei)
+  var rechteckFrei=function(i,j,w,h){if(i<1||j<1||i+w>W-1||j+h>W-1)return false;var x,y;for(y=j;y<j+h;y++)for(x=i;x<i+w;x++)if(!frei(x,y))return false;
+   for(y=j-1;y<=j+h;y++)for(x=i-1;x<=i+w;x++)if(belegt[at(x,y)])return false;return true};
+  // Garten hinter dem Haus (gegenüber der Tür), 1–2 tief, nur auf freiem Gras
+  var garteln=function(it,i,j,w,h,di,dj){if(!WOHN[it.id])return;var tief=r()<.7?2:1,n=0,a,b;
+   for(var t=1;t<=tief;t++){var ok=true,L=[];
+    for(a=0;a<(dj?w:h);a++){var x=dj?i+a:(di>0?i-t:i+w-1+t),y=dj?(dj>0?j-t:j+h-1+t):j+a;if(!frei(x,y)||x<1||y<1||x>W-2||y>W-2){ok=false;break}L.push(at(x,y))}
+    if(!ok)break;for(b=0;b<L.length;b++){Z[L[b]]='k';garten[L[b]]=1}n++}if(n)gaerten++};
+  // Abstandsfeld von allen Wegen über freies Gras (Anger nur für Pfade zum Brunnen)
+  var feld=function(mitAnger){var D=new Int32Array(WW).fill(-1),q=[],h=0,k;for(k=0;k<WW;k++)if(istWeg(k)&&!belegt[k]){D[k]=0;q.push(k)}
+   while(h<q.length){var c=q[h++],ci=c%W,cj=(c/W)|0,N=[ci>0?c-1:-1,ci<W-1?c+1:-1,cj>0?c-W:-1,cj<W-1?c+W:-1];
+    for(var d=0;d<4;d++){var n=N[d];if(n<0||D[n]>=0||Z[n]!=='g'||belegt[n]||garten[n]||(res[n]&&!(mitAnger&&anger[n])))continue;D[n]=D[c]+1;q.push(n)}}return D};
+  var pfad=function(k,D){var n=0;while(D[k]>0){Z[k]='s';res[k]=0;n++;var ci=k%W,cj=(k/W)|0,N=[ci>0?k-1:-1,ci<W-1?k+1:-1,cj>0?k-W:-1,cj<W-1?k+W:-1],best=-1;
+    for(var d=0;d<4;d++)if(N[d]>=0&&D[N[d]]===D[k]-1){best=N[d];break}if(best<0)return false;k=best}return true};
+  // Seiten: Tür unten, rechts, links, oben (wie setzen()); Vorfeld vor der Tür
+  var seiten=function(i,j,w,h){return[[i+(w>>1),j+h-1,0,1],[i+w-1,j+(h>>1),1,0],[i,j+(h>>1),-1,0],[i+(w>>1),j,0,-1]]};
+  // Haufen: freie Stelle möglichst nah an der Mitte, Tür zur Seite mit dem kürzesten Pfad, Pfad bis zum nächsten Weg
+  var haufen=function(it){var D=feld(false),C=[],rot,w,h,i,j,best;
+   for(rot=0;rot<2;rot++){if(rot&&it.w===it.h)break;w=rot?it.h:it.w;h=rot?it.w:it.h;
+    for(j=1;j+h<=W-1;j++)for(i=1;i+w<=W-1;i++){if(!rechteckFrei(i,j,w,h))continue;var S=seiten(i,j,w,h),bs=null,bd=1e9;
+     for(var s=0;s<4;s++){var fx=S[s][0]+S[s][2],fy=S[s][1]+S[s][3];if(fx<0||fy<0||fx>=W||fy>=W)continue;var dv=D[at(fx,fy)];if(dv>=0&&dv<bd){bd=dv;bs=S[s]}}
+     if(!bs)continue;C.push({i:i,j:j,w:w,h:h,t:bs,s:Math.hypot(i+w/2-pcx,j+h/2-pcy)+r()*3+bd*.6})}}
+   C.sort(function(a,b){return a.s-b.s});
+   for(var q=0;q<C.length&&q<40;q++){var c=C[q];if(!rechteckFrei(c.i,c.j,c.w,c.h))continue;
+    for(j=c.j;j<c.j+c.h;j++)for(i=c.i;i<c.i+c.w;i++)belegt[at(i,j)]=1;var D2=feld(false),fk=at(c.t[0]+c.t[2],c.t[1]+c.t[3]);
+    for(j=c.j;j<c.j+c.h;j++)for(i=c.i;i<c.i+c.w;i++)belegt[at(i,j)]=0;if(D2[fk]<0)continue;
+    garteln(it,c.i,c.j,c.w,c.h,c.t[2],c.t[3]);bau(it,c.i,c.j,c.w,c.h,c.t.slice());
+    var D3=feld(false);if(D3[fk]<0){garten.fill(0,0,0);return false}pfad(fk,D3);return true}
+   return false};
+  // Straße: Bau mit der Tür direkt am Weg oder 1 Feld zurückgesetzt (das Feld davor wird Pfad), nah an der Mitte
+  var anStrasse=function(it,alsPlatz){var C=[],k,d,DIR=[[0,1],[0,-1],[1,0],[-1,0]];
+   for(k=0;k<WW;k++){if(!istWeg(k)||belegt[k]||vor[k])continue;var x=k%W,y=(k/W)|0;
+    for(d=0;d<4;d++){var dx=DIR[d][0],dy=DIR[d][1];for(var sb=0;sb<(alsPlatz?1:2);sb++)for(var rot=0;rot<2;rot++){if(rot&&it.w===it.h)break;
+     var w=rot?it.h:it.w,h=rot?it.w:it.h,tx=x+dx*(1+sb),ty=y+dy*(1+sb),i,j;
+     if(dy>0){i=tx-(w>>1);j=ty}else if(dy<0){i=tx-(w>>1);j=ty-h+1}else if(dx>0){i=tx;j=ty-(h>>1)}else{i=tx-w+1;j=ty-(h>>1)}
+     if(sb&&!frei(x+dx,y+dy))continue;if(!rechteckFrei(i,j,w,h))continue;
+     C.push({i:i,j:j,w:w,h:h,t:[tx,ty,-dx,-dy],sb:sb?[x+dx,y+dy]:null,s:Math.hypot(i+w/2-pcx,j+h/2-pcy)+r()*3+(sb?0:r()<.3?2:0)})}}}
+   if(!C.length)return false;C.sort(function(a,b){return a.s-b.s});var c=C[0];
+   if(alsPlatz){platz(it,c.i,c.j,c.w,c.h);return true}
+   garteln(it,c.i,c.j,c.w,c.h,c.t[2],c.t[3]);if(c.sb){weg(c.sb[0],c.sb[1]);vor[at(c.sb[0],c.sb[1])]=1}bau(it,c.i,c.j,c.w,c.h,c.t);return true};
+  // Seitengasse 1 breit quer vom Weg hinaus (Straßen- und Angerdorf), mit Abstand zu anderen Wegen
+  var gasse=function(mitte){var SL2=[];for(var k0=0;k0<WW;k0++)if(Z[k0]==='s'&&!belegt[k0]&&!vor[k0])SL2.push(k0);if(!SL2.length)return false;
+   if(mitte)SL2.sort(function(a,b){return Math.hypot(a%W-pcx,((a/W)|0)-pcy)-Math.hypot(b%W-pcx,((b/W)|0)-pcy)});
+   for(var v=0;v<80;v++){var k=SL2[mitte?Math.floor(Math.pow(r(),2)*SL2.length):Math.floor(r()*SL2.length)],x=k%W,y=(k/W)|0,dv=[[1,0],[-1,0],[0,1],[0,-1]][Math.floor(r()*4)],dx=dv[0],dy=dv[1],L=[],n;
+    if(!frei(x+dx,y+dy))continue;var len=5+Math.floor(r()*8);
+    for(n=1;n<=len;n++){var xx=x+dx*n,yy=y+dy*n;if(xx<2||yy<2||xx>W-3||yy>W-3||!frei(xx,yy))break;var ok=true;
+     for(var dd=-2;dd<=2&&ok;dd++){if(!dd)continue;var px=xx+dy*dd,py=yy+dx*dd;if(px<0||py<0||px>=W||py>=W)continue;var kk=at(px,py);if(istWeg(kk)||(Math.abs(dd)===1&&anger[kk]))ok=false}
+     if(!ok)break;L.push([xx,yy])}
+    if(L.length<4)continue;L.forEach(function(p){weg(p[0],p[1])});gassen++;return true}return false};
+  var stehen=function(it){if(form==='weiler'||form==='haufen')return haufen(it);for(var v=0;v<10;v++){if(anStrasse(it,false))return true;if(!gasse())return false}return false};
+  // Hauptwege je Form
+  if(form==='weiler'){var T=senkrecht(0,W-1,cx-1,.12),m=cy;setzeTor(1,T[0]);setzeTor(0,T[W-1]);
+   var sd=r()<.5?1:-1;pcx=T[m]+(sd>0?3.5:-1.5);pcy=m+.5;var bx=Math.floor(pcx),by=m;
+   for(var y0=by-1;y0<=by+1;y0++)for(var x0=bx-1;x0<=bx+1;x0++){if((x0-bx)*(y0-by)&&r()<.5)continue;if(x0>=0&&y0>=0&&x0<W&&y0<W&&!istWeg(at(x0,y0))){Z[at(x0,y0)]='o'}}
+   for(var x1=Math.min(bx,T[m]+2);x1<=Math.max(bx,T[m]-1);x1++)if(!istWeg(at(x1,by)))Z[at(x1,by)]='o';
+   if(spez.well)brunnen(bx,by);if(spez.market&&!anStrasse(spez.market,true))return null}
+  else if(form==='haufen'){var M=spez.market,pw=M?M.w:4,ph=M?M.h:4,pi=cx-(pw>>1),pj=cy-(ph>>1);
+   if(M)platz(M,pi,pj,pw,ph);else for(var y2=pj;y2<pj+ph;y2++)for(var x2=pi;x2<pi+pw;x2++)Z[at(x2,y2)]='o';
+   if(spez.well)brunnen(pi,pj);
+   var S4=[0,1,2,3];if(r()<.5)S4.splice(Math.floor(r()*4),1);
+   S4.forEach(function(s){var a=s<2?pi+Math.floor(r()*Math.max(1,pw-1)):pj+Math.floor(r()*Math.max(1,ph-1)),L;
+    if(s===0){L=senkrecht(pj+ph,W-1,a,.15);setzeTor(0,L[L.length-1])}else if(s===1){L=senkrecht(pj-1,0,a,.15);setzeTor(1,L[L.length-1])}
+    else if(s===2){L=waagrecht(pi+pw,W-1,a,.15);setzeTor(2,L[L.length-1])}else{L=waagrecht(pi-1,0,a,.15);setzeTor(3,L[L.length-1])}})}
+  else{var p0=form==='strasse'?.15:.1;
+   if(form==='strasse'){var T2=senkrecht(0,W-1,cx-1,p0);setzeTor(1,T2[0]);setzeTor(0,T2[W-1]);if(spez.market&&!anStrasse(spez.market,true))return null;
+   }else{
+    // Angerdorf: Stamm, Gabel um den Anger (Linse), wieder zusammen; Anger frei mit Brunnen und Markt
+    var kA=5,LA=Math.max(16,Math.min(W-10,22)),a0=Math.max(4,cy-(LA>>1)),a1=a0+LA,xc=cx-1;if(a1>W-5)return null;
+    for(var t=0;t<W;t++){var dA=t>=a0&&t<=a1?Math.round(kA*Math.sin(Math.PI*(t-a0)/LA)):0;weg(xc-dA,t);weg(xc-dA+1,t);weg(xc+dA,t);weg(xc+dA+1,t);
+     for(var xa=xc-dA+2;xa<=xc+dA-1;xa++){var ka=at(xa,t);if(Z[ka]==='g'){res[ka]=1;anger[ka]=1}}}
+    setzeTor(1,xc);setzeTor(0,xc);
+    if(r()<.5){var ost=r()<.5,ym=a0+(LA>>1);if(ost)setzeTor(2,waagrecht(xc+kA+2,W-1,ym,.12).pop());else setzeTor(3,waagrecht(xc-kA-1,0,ym,.12).pop())}
+    var M2=spez.market;if(M2){var gut=null;
+     for(var tj=a0;tj<=a1&&!gut;tj++)for(var ti=1;ti<W-1&&!gut;ti++)for(var rt=0;rt<2&&!gut;rt++){var mw=rt?M2.h:M2.w,mh=rt?M2.w:M2.h,ok=true,ran=false;
+      for(var yy=tj;yy<tj+mh&&ok;yy++)for(var xx=ti;xx<ti+mw&&ok;xx++){if(yy>=W||xx>=W||!anger[at(xx,yy)]){ok=false;break}if(istWeg(at(xx-1,yy))||istWeg(at(xx+1,yy)))ran=true}
+      if(ok&&ran)gut=[ti,tj,mw,mh]}
+     if(gut)platz(M2,gut[0],gut[1],gut[2],gut[3]);else if(!anStrasse(M2,true))return null}
+    if(spez.well){var bi=xc,bj=a0+(LA>>1),bk=-1;for(var dd2=0;dd2<LA&&bk<0;dd2++)for(var sg=-1;sg<=1&&bk<0;sg+=2){var yb=bj+sg*dd2,xs=[xc,xc+1,xc-1,xc+2];for(var xi=0;xi<4&&bk<0;xi++)if(yb>=0&&yb<W&&anger[at(xs[xi],yb)]&&Z[at(xs[xi],yb)]==='g')bk=at(xs[xi],yb)}
+     if(bk<0)return null;brunnen(bk%W,(bk/W)|0);var Dw=feld(true),nb2=[bk-1,bk+1,bk-W,bk+W],st=-1;for(var e=0;e<4;e++)if(Dw[nb2[e]]>=0&&(st<0||Dw[nb2[e]]<Dw[st]))st=nb2[e];
+     if(st>=0&&Dw[st]>0)pfad(st,Dw)}}
+   if(form==='strasse'&&spez.well&&!gesetzt.well){var wk=-1;for(var q2=0;q2<WW&&wk<0;q2++)if(Z[q2]==='o'){var qi=q2%W,qj=(q2/W)|0;[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(v2){var x3=qi+v2[0],y3=qj+v2[1];if(wk<0&&frei(x3,y3)&&x3>0&&y3>0&&x3<W-1&&y3<W-1)wk=at(x3,y3)})}
+    if(wk<0)return null;brunnen(wk%W,(wk/W)|0)}}
+  // Straßen- und Angerdorf: Seitengassen vorab nach Bedarf (Häuser an der Hauptstraße reichen für etwa 8 Bauten je 10 Felder Straße), nahe der Mitte zuerst
+  if(form==='strasse'||form==='anger'){var vorab=Math.max(0,Math.round(bauL.length/(form==='anger'?7:6))-2);for(var ga=0;ga<vorab;ga++)gasse(true)}
+  for(var n=0;n<bauL.length;n++)if(!stehen(bauL[n]))return null;
+  // Alles Begehbare hängt zusammen (vom ersten Ausgang aus)
+  var t0=tore[0],sk=t0.s===0?at(t0.c,W-1):t0.s===1?at(t0.c,0):t0.s===2?at(W-1,t0.c):at(0,t0.c),er=new Uint8Array(WW),st2=[sk];er[sk]=1;
+  while(st2.length){var c2=st2.pop(),c2i=c2%W,c2j=(c2/W)|0,N2=[c2i>0?c2-1:-1,c2i<W-1?c2+1:-1,c2j>0?c2-W:-1,c2j<W-1?c2+W:-1];for(var d2=0;d2<4;d2++){var k2=N2[d2];if(k2>=0&&!er[k2]&&!belegt[k2]&&istWeg(k2)){er[k2]=1;st2.push(k2)}}}
+  for(var k3=0;k3<WW;k3++)if(istWeg(k3)&&!belegt[k3]&&!er[k3])return null;
+  // Zuschneiden: Quadrat um alles Gebaute (Bauten, Gärten, Plätze, Anger) plus 2 Felder Rand; die Wege hinaus werden am neuen Rand gekappt
+  var bx0=W,by0=W,bx1=-1,by1=-1;for(var k4=0;k4<WW;k4++)if(belegt[k4]||garten[k4]||anger[k4]||Z[k4]==='o'){var i4=k4%W,j4=(k4/W)|0;if(i4<bx0)bx0=i4;if(i4>bx1)bx1=i4;if(j4<by0)by0=j4;if(j4>by1)by1=j4}
+  var SW=Math.max(bx1-bx0,by1-by0)+5;
+  if(SW<W){var ox=Math.max(0,Math.min(W-SW,((bx0+bx1+1)>>1)-(SW>>1))),oy=Math.max(0,Math.min(W-SW,((by0+by1+1)>>1)-(SW>>1))),neuT=[],okT=true;
+   tore.forEach(function(t){var runs=[],e,run=-1,len=0;for(e=0;e<=SW;e++){var x=e<SW?(t.s<2?ox+e:t.s===2?ox+SW-1:ox):0,y=e<SW?(t.s<2?(t.s===0?oy+SW-1:oy):oy+e):0,w2=e<SW&&Z[at(x,y)]==='s';
+     if(w2){if(run<0)run=e;len++}else{if(len>=2)runs.push([run,len]);run=-1;len=0}}
+    var alt=t.s<2?t.c-ox:t.c-oy,best=null;runs.forEach(function(q){if(!best||Math.abs(q[0]-alt)<Math.abs(best[0]-alt))best=q});if(!best||best[1]>3){okT=false;return}neuT.push({s:t.s,c:best[0],u0:0,haupt:true})});
+   if(okT&&new Set(neuT.map(function(t){return t.s})).size===neuT.length){
+    var Z3=new Array(SW*SW),b3=new Uint8Array(SW*SW),a3=new Uint8Array(SW*SW),ve=new Uint8Array(SW*SW);for(var j7=0;j7<SW;j7++)for(var i7=0;i7<SW;i7++){var o7=at(i7+ox,j7+oy);Z3[j7*SW+i7]=Z[o7];b3[j7*SW+i7]=belegt[o7];a3[j7*SW+i7]=anger[o7]}
+    // alles Begehbare hängt im Zuschnitt noch zusammen?
+    var st3=[],ok3=true,t3=neuT[0];st3.push(t3.s===0?(SW-1)*SW+t3.c:t3.s===1?t3.c:t3.s===2?t3.c*SW+SW-1:t3.c*SW);ve[st3[0]]=1;
+    while(st3.length){var c3=st3.pop(),ci3=c3%SW,cj3=(c3/SW)|0,N3=[ci3>0?c3-1:-1,ci3<SW-1?c3+1:-1,cj3>0?c3-SW:-1,cj3<SW-1?c3+SW:-1];for(var d3=0;d3<4;d3++){var n3=N3[d3];if(n3>=0&&!ve[n3]&&!b3[n3]&&/[so]/.test(Z3[n3])){ve[n3]=1;st3.push(n3)}}}
+    for(var q3=0;q3<SW*SW;q3++)if(/[so]/.test(Z3[q3])&&!b3[q3]&&!ve[q3])ok3=false;
+    if(ok3){bauten.forEach(function(b){b.i-=ox;b.j-=oy;if(b.tuer){b.tuer[0]-=ox;b.tuer[1]-=oy}});dinge=dinge.filter(function(d){d.i-=ox;d.j-=oy;return d.i>=0&&d.j>=0&&d.i<SW&&d.j<SW});
+     W=SW;WW=SW*SW;Z=Z3;belegt=b3;anger=a3;tore=neuT;cx-=ox;cy-=oy}}}
+  // Bäume und Kram auf freiem Gras (auf dem Anger seltener, keine in Gärten)
+  for(var q5=0;q5<WW;q5++){if(belegt[q5]||Z[q5]!=='g')continue;var i5=q5%W,j5=(q5/W)|0,u5=rausch(i5,j5,seed+7),pb=(B.dichte*.6+.04)*(anger[q5]?.35:1);
+   if(u5<pb)dinge.push({id:B.baeume[Math.floor(rausch(i5,j5,seed+8)*B.baeume.length)],i:i5,j:j5});else if(u5>.97&&!anger[q5])dinge.push({id:'lager-platz',i:i5,j:j5})}
+  var E={W:W,Z:Z,bauten:bauten,dinge:dinge,nb:1,gesetzt:gesetzt,tore:tore,maske:new Uint8Array(WW).fill(1),achse:{i:cx,j:cy},
+   vielfalt:{dorf:form,ausgaenge:tore.length,gaerten:gaerten,gassen:gassen}};
+  if(kipp){var Z2=new Array(WW);for(var j6=0;j6<W;j6++)for(var i6=0;i6<W;i6++)Z2[at(j6,i6)]=Z[at(i6,j6)];E.Z=Z2;
+   bauten.forEach(function(b){var t=b.i;b.i=b.j;b.j=t;t=b.w;b.w=b.h;b.h=t;if(b.w!==b.h)b.achse=b.w>b.h?'i':'j';if(b.tuer)b.tuer=[b.tuer[1],b.tuer[0],b.tuer[3],b.tuer[2]]});
+   dinge.forEach(function(d){var t=d.i;d.i=d.j;d.j=t});tore.forEach(function(t){t.s=[2,3,0,1][t.s]});E.achse={i:cy,j:cx}}
+  var tp=tore.filter(function(t){return t.s===0})[0]||tore.filter(function(t){return t.s===2})[0]||tore[0];
+  E.tor=tp.s===0?{i:tp.c,j:W-1}:tp.s===2?{i:W-1,j:tp.c}:tp.s===1?{i:tp.c,j:0}:{i:0,j:tp.c};
+  return E}
  var E2=ergebnis,P={format:'at3-stadtplan',art:art,g:g,einw:einw,biom:opt.biom,stil:opt.stil||'',seed:seed,W:E2.W,block:Bm,nb:E2.nb,zellen:E2.Z.join(''),bauten:E2.bauten,dinge:E2.dinge,
   tor:E2.tor,gesetzt:E2.gesetzt,vielfalt:E2.vielfalt||null,gespiegelt:false,basis:basis,feld:B.feld,aussen:E2.aussen||null};
+ // Umriss (N6b2c4a2): Art, Ecken, Tore und die Innenfläche je Zeile [j, i0, i1, …] in Planfeldern (innenMaske() rechnet Maßstab und Spiegeln um)
+ if(!elend){var MK=E2.maske,Wm=Math.round(Math.sqrt(MK.length)),Rm=E2.rand||0,zl=[];
+  for(var jm=0;jm<Wm;jm++){var im=0;while(im<Wm){if(!MK[jm*Wm+im]){im++;continue}var i1=im;while(i1+1<Wm&&MK[jm*Wm+i1+1])i1++;zl.push(jm+Rm,im+Rm,i1+Rm);im=i1+1}}
+  P.umriss={dorf:E2.vielfalt&&E2.vielfalt.dorf||null,art:UM?UM.art:g>=MAUER_AB?'quadrat':'offen',ecken:UM?UM.ecken:4,beulen:UM?UM.beulen:0,tore:E2.tore.map(function(t){return SEITE[t.s]}),zeilen:zl,planW:E2.W}}
  if(F!==1)P=skalieren(P,F);
  if(rng(hashT([seed,art,einw,'sp'].join('|')))()<.5)P=spiegeln(P);
  return P}
@@ -301,14 +575,18 @@ function skalieren(P,F){var r=function(v){return Math.floor(v*F+.5)},W=P.W,N=r(W
  for(J=0;J<N;J++)for(I=0;I<N;I++)z+=P.zellen.charAt(Math.min(W-1,Math.floor(J/F))*W+Math.min(W-1,Math.floor(I/F)));
  var Q=JSON.parse(JSON.stringify(P));Q.W=N;Q.planW=W;Q.mass=F;Q.zellen=z;
  Q.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b)),i=r(b.i),j=r(b.j),w=r(b.i+b.w)-i,h=r(b.j+b.h)-j;if(b.rund){w=h=Math.min(w,h)}
-  o.i=i;o.j=j;o.w=w;o.h=h;if(b.tuer){var di=b.tuer[2],dj=b.tuer[3];o.tuer=dj>0?[i+(w>>1),j+h-1,0,1]:dj<0?[i+(w>>1),j,0,-1]:di>0?[i+w-1,j+(h>>1),1,0]:[i,j+(h>>1),-1,0]}return o});
+  o.i=i;o.j=j;o.w=w;o.h=h;if(b.tuer){var di=b.tuer[2],dj=b.tuer[3];o.tuer=dj>0?[i+(w>>1),j+h-1,0,1]:dj<0?[i+(w>>1),j,0,-1]:di>0?[i+w-1,j+(h>>1),1,0]:[i,j+(h>>1),-1,0];
+   // Führt die mittige Tür im Bild vor ein anderes Planfeld als im Plan (Monument nicht mittig im Platz), sitzt sie vor demselben Planfeld wie im Plan (N6b2c4a2)
+   if(Math.floor((o.tuer[0]+di)/F)!==b.tuer[0]+di||Math.floor((o.tuer[1]+dj)/F)!==b.tuer[1]+dj){if(dj!==0){var a1=r(b.tuer[0]),e1=r(b.tuer[0]+1)-1;o.tuer[0]=Math.max(i,Math.min(i+w-1,(a1+e1)>>1))}
+    else{var a2=r(b.tuer[1]),e2=r(b.tuer[1]+1)-1;o.tuer[1]=Math.max(j,Math.min(j+h-1,(a2+e2)>>1))}}}return o});
  Q.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=r(d.i);o.j=r(d.j);return o});
- Q.tor={i:r(P.tor.i),j:r(P.tor.j+1)-1};return Q}
+ Q.tor=P.tor.i===W-1&&P.tor.j!==W-1?{i:N-1,j:r(P.tor.j)}:{i:r(P.tor.i),j:r(P.tor.j+1)-1};return Q}   // Tor am Süd- oder (N6b2c4a2) Ostrand
 function spiegeln(P){var W=P.W,z='',i,j;for(j=0;j<W;j++)for(i=0;i<W;i++)z+=P.zellen[i*W+j];
  var N=JSON.parse(JSON.stringify(P));N.zellen=z;N.gespiegelt=!P.gespiegelt;
  N.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b));o.i=b.j;o.j=b.i;o.w=b.h;o.h=b.w;o.achse=b.achse==='i'?'j':'i';if(b.tuer)o.tuer=[b.tuer[1],b.tuer[0],b.tuer[3],b.tuer[2]];return o});
  N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=d.j;o.j=d.i;return o});N.tor={i:P.tor.j,j:P.tor.i};
- if(N.aussen){N.aussen.stinktor=SPIEGEL[N.aussen.stinktor];N.aussen.graebertor=SPIEGEL[N.aussen.graebertor]}return N}
+ if(N.aussen){N.aussen.stinktor=SPIEGEL[N.aussen.stinktor];N.aussen.graebertor=SPIEGEL[N.aussen.graebertor];if(N.aussen.tore)N.aussen.tore=N.aussen.tore.map(function(x){return SPIEGEL[x]})}
+ if(N.umriss)N.umriss.tore=N.umriss.tore.map(function(x){return SPIEGEL[x]});return N}
 // Drehen um 90° (Blick von der nächsten Seite, für First Person): Zelle (i, j) → (W−1−j, i), Richtung (di, dj) → (−dj, di)
 function drehen(P){var W=P.W,z=new Array(W*W),i,j;for(j=0;j<W;j++)for(i=0;i<W;i++)z[i*W+(W-1-j)]=P.zellen[j*W+i];
  var N=JSON.parse(JSON.stringify(P));N.zellen=z.join('');
@@ -371,7 +649,7 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
  var weg=P.basis&&KURZ[P.basis.klasse]?'bk-'+KURZ[P.basis.klasse]+'-boden':'boden-weg';
  var bodenId=function(i,j){var innen=i>=0&&j>=0&&i<W&&j<W,c=innen?P.zellen.charAt(j*W+i):'g';
   if(c==='g'){var l=B.boden;return l[Math.floor(rausch(i,j,P.seed+1)*l.length*(l.length>1?.75:1))%l.length]}
-  if(c==='s')return B.weg;if(c==='o')return weg;if(c==='f')return P.feld||'bk-feld';return BODEN_ID[c]||'boden-gras'};
+  if(c==='s')return B.weg;if(c==='o')return weg;if(c==='f'||c==='k')return P.feld||'bk-feld';return BODEN_ID[c]||'boden-gras'};
  var O3=null,L=[],el=[],n=0,stufe=0,qs=-U,qi=-U,qk=0,uj=-U,ui=-U;
  // Liste füllen, auf Wunsch in Schritten: aus() → true, wenn der Zeitanteil um ist (Kachelbauer); bauer() füllt am Stück wie bisher
  var fuellen=function(aus){var c=0;while(stufe<5){
@@ -492,6 +770,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden']).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
