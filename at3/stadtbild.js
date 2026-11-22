@@ -38,6 +38,11 @@ var FLUSS_B=[0,0,2,2,2,2,3,3],UFER={fisher:1,mill:1,'gold-wash':1,'clay-pit':1,t
 // Molen (q, 2 breit) ins Meer, die erste verlängert die Straße vom Hafentor; Holzstege (y, 1 breit) mit einzelnen Anlegern (1 Feld seitlich). Stinktor, Gräberstraße und
 // Gehöfte nie zur See. Fluss quer zur Küste, er mündet ins Meer. Weiler und Dörfer: Strand mit einem Bootssteg an jedem Weg zum Wasser. Schiffe kommen später (eigene Grafik).
 // Vorschläge (Regel 11): Molen je Größe MOLEN, Stege alle 4–7 Felder am Kai, 3–5 lang, je Steg 1–2 Anleger; Meer mindestens SEE Planfelder tief.
+// N6b2c4c3 Burgberg (Thomas 22.11.2026): nur bei Gebirge als Hauptzone (orte.js huegel), ab Marktflecken. Der Hügel liegt am Stadtrand, die Mauer läuft über den Fels.
+// Oben (Kern = Doppelblock des Gipfelbaus mit Platz, höchste Stufe) nach Rang: Palast, sonst Statthalter, sonst Tempel; ab Großstadt ein zweites Monument daneben
+// (Akropolis). Die Blöcke rings um den Gipfel bleiben nackter Fels mit Terrassen (kein Haus); Stufen: Gipfel oben (Großstadt/Hauptstadt 4, sonst 3), Felsring zwei
+// Stufen tiefer werdend, ab Großstadt ein Ring Häuser auf Stufe 1; Ränder leicht ausgefranst; Wasser, Kai, Strand, Stege und Ufergassen bleiben unten. Höhe nur gemalt wie RCT Classic: je Stufe HSTUFE Bildpunkte höher, Felskante unter vorderen Kanten, Felstreppen auf Wegen.
+var GIPFEL1=['royal-palace','governor','temple'],GIPFEL2=['temple','senate','governor','royal-palace'],HSTUFE=16;
 var HAFEN={harbour:1,shipyard:1,'sea-fishery':1},MOLEN=[0,0,0,0,1,2,2,3],SEE=9,SEITE_NR={south:0,north:1,east:2,west:3},QUER=[2,3,0,1];
 // Zonen von innen nach außen wie die Skizze: Verwaltung, Glaube, Adel, Handel und Gewerbe, Militär, Mietshäuser, Gasthöfe, Unterwelt, Buden
 var ORD={administration:0,faith:1,economy:2,households:3,military:4,underworld:5};
@@ -139,13 +144,18 @@ function plan(opt){
  // Küste ab Marktflecken: Hafen, Werft, Seefischerei stehen draußen am Kai statt in der Stadt
  var hafenItems=KSP!=null?items.filter(function(it){return HAFEN[it.id]}):[];if(hafenItems.length)items=items.filter(function(it){return !HAFEN[it.id]});
  var Bm=blockMass(g),P1=Bm+1,wall=g>=MAUER_AB&&!elend?MAUER:0,off=wall+1;
- var istMono=function(it){return Math.max(it.w,it.h)>Bm||it.w*it.h>=30};
+ // Burgberg (N6b2c4c3): Gipfelbau(ten) nach Rang, immer als Monument (eigener Doppelblock mit Platz)
+ var HU=!!opt.huegel&&!elend&&g>=MAUER_AB,HT=g>=6?4:3,gip1=null,gip2=null;
+ if(HU){for(var q0=0;q0<GIPFEL1.length&&!gip1;q0++)gip1=items.filter(function(it){return it.id===GIPFEL1[q0]})[0]||null;
+  if(gip1){gip1.gipfel=1;if(g>=6)for(var q1=0;q1<GIPFEL2.length&&!gip2;q1++)gip2=items.filter(function(it){return it.id===GIPFEL2[q1]&&it!==gip1})[0]||null;if(gip2)gip2.gipfel=2}else HU=false}
+ var istMono=function(it){return !!it.gipfel||Math.max(it.w,it.h)>Bm||it.w*it.h>=30};
  var mono=items.filter(istMono),rest=items.filter(function(it){return !istMono(it)});
- mono.sort(function(a,b){return b.w*b.h-a.w*a.h||(a.id<b.id?-1:a.id>b.id?1:0)});
+ mono.sort(function(a,b){return (b.gipfel?3-b.gipfel:0)-(a.gipfel?3-a.gipfel:0)||b.w*b.h-a.w*a.h||(a.id<b.id?-1:a.id>b.id?1:0)});
  rest.sort(function(a,b){return rang(a)-rang(b)||b.w*b.h-a.w*a.h||(a.id<b.id?-1:a.id>b.id?1:0)});
  var grpK=function(it){var m=Math.max(it.w,it.h),k=2;while(k*P1-1<m)k++;return k};
  var fl=0,kmax=0;rest.forEach(function(it){fl+=it.w*it.h});mono.forEach(function(it){var k=grpK(it);fl+=k*k*Bm*Bm;if(k>kmax)kmax=k});
  var viel0=g>=MAUER_AB&&!elend&&opt.vielfalt!==false,UM=viel0?umrissWahl(rng(hashT([seed,art,opt.biom,einw,'umriss'].join('|'))),g):null;
+ if(HU){var gk=grpK(gip1);fl+=(4*gk+4)*Bm*Bm}   // Burgberg: Felsblöcke rings um den Gipfel
  var nb=Math.max(2,Math.ceil(Math.sqrt(fl/(Bm*Bm)/(UM?UM.anteil:1))),2*kmax);if(nb%2)nb++;   // erst dicht versuchen, bei Bedarf je 2 Blöcke mehr
  var ergebnis=null;
  // N6b2c4b: Weiler und Dörfer gewachsen (dorf()), opt.vielfalt === false = Raster
@@ -389,17 +399,25 @@ function plan(opt){
   for(a=0;a<nb;a++)for(b=0;b<nb;b++)bl.push({a:a,b:b,x:X0[a],y:Y0[b],w:cw[a],h:rh[b],d:Math.hypot(X0[a]+cw[a]/2-cx,Y0[b]+rh[b]/2-cy)+r()*P1*.6,frei:null,rest:cw[a]*rh[b]});
   var offen=function(q){q.frei=new Uint8Array(q.w*q.h).fill(1);for(var y=0;y<q.h;y++)for(var x=0;x<q.w;x++)Z[at(q.x+x,q.y+y)]=elend?'e':'g'};
   // Monumente in Gruppen aus k × k Blöcken (nicht über die Hauptstraße), nahe der Mitte; mit ungleichen Blöcken notfalls eine Gruppe größer
-  var gruppen=[],benutzt={},fest={};
+  var gruppen=[],benutzt={},fest={},g1c=null;
+  // Burgberg: erster Gipfelbau so weit wie möglich vom Mittelpunkt (am Stadtrand), nie zur See und mit Abstand zum Fluss; der zweite so nah wie möglich daneben
+  var gipfelWert=function(it,x,y,w,h){var gx=x+w/2,gy=y+h/2,v=it.gipfel===2&&g1c?Math.hypot(gx-g1c[0],gy-g1c[1]):-Math.hypot(gx-cx,gy-cy),reich=(HT>=4?2:1)*P1+2;
+   if(KSP!=null&&(KSP===0?gy-cy:KSP===1?cy-gy:KSP===2?gx-cx:cx-gx)>0)v+=4*W;
+   if(mitFluss&&x<fx0+RW+reich&&x+w+reich>fx0)v+=2*W;return v};
   var passt=function(it,gw,gh){return it.w<=gw&&it.h<=gh||it.h<=gw&&it.w<=gh};
   for(var m=0;m<mono.length;m++){var it=mono[m],k0=grpK(it),best=null,bd=1e9,bk=0;
    for(var q=0;q<bl.length;q++){var s=bl[q],kk=0;
     for(k=k0;k<=k0+(viel?1:0)&&!kk;k++){if(s.a+k>nb||s.b+k>nb)continue;if((s.a<hx)!==(s.a+k-1<hx)||(s.b<hy)!==(s.b+k-1<hy)||(s.a<fk)!==(s.a+k-1<fk))continue;if(passt(it,bw(s.a,k),bh(s.b,k)))kk=k}
     if(!kk)continue;var frei=true;for(var u=0;u<kk&&frei;u++)for(var v=0;v<kk&&frei;v++)if(benutzt[(s.a+u)*nb+s.b+v])frei=false;
     if(frei&&viel){var gw1=bw(s.a,kk),gh1=bh(s.b,kk);for(var y9=0;y9<gh1&&frei;y9++)for(var x9=0;x9<gw1&&frei;x9++)if(!frei0(at(s.x+x9,s.y+y9)))frei=false}if(!frei)continue;
-    var dd=Math.hypot(s.x+bw(s.a,kk)/2-cx,s.y+bh(s.b,kk)/2-cy)+r()*P1;if(dd<bd){bd=dd;best=s;bk=kk}}
+    var gx0=s.x+bw(s.a,kk)/2,gy0=s.y+bh(s.b,kk)/2,dd=(it.gipfel?gipfelWert(it,s.x,s.y,bw(s.a,kk),bh(s.b,kk)):Math.hypot(gx0-cx,gy0-cy))+r()*P1;if(dd<bd){bd=dd;best=s;bk=kk}}
    if(!best)return null;for(var u2=0;u2<bk;u2++)for(var v2=0;v2<bk;v2++)benutzt[(best.a+u2)*nb+best.b+v2]=1;
+   if(it.gipfel===1)g1c=[best.x+bw(best.a,bk)/2,best.y+bh(best.b,bk)/2];
    for(var f2=0;f2<bk;f2++){fest['c'+(best.a-1)+'_'+(best.b+f2)]=1;fest['c'+(best.a+bk-1)+'_'+(best.b+f2)]=1;fest['r'+(best.b-1)+'_'+(best.a+f2)]=1;fest['r'+(best.b+bk-1)+'_'+(best.a+f2)]=1}
-   var gw2=bw(best.a,bk),gh2=bh(best.b,bk),grp={x:best.x,y:best.y,w:gw2,h:gh2,d:bd,rest:0,mono:true,it:it};gruppen.push(grp);if(!viel)platzieren(grp)}
+   var gw2=bw(best.a,bk),gh2=bh(best.b,bk),grp={x:best.x,y:best.y,w:gw2,h:gh2,d:bd,rest:0,mono:true,it:it,a:best.a,b:best.b,k:bk};gruppen.push(grp);if(!viel)platzieren(grp)}
+  // Burgberg (N6b2c4c3): die Blöcke rings um die Gipfelgruppen (auch schräg) bleiben nackter Fels mit Terrassen (Zelle x), dort steht kein Haus
+  var felsB=[];if(HU)bl.forEach(function(s){if(benutzt[s.a*nb+s.b]||s.weg)return;
+   if(gruppen.some(function(gr){return gr.it.gipfel&&s.a>=gr.a-1&&s.a<=gr.a+gr.k&&s.b>=gr.b-1&&s.b<=gr.b+gr.k})){benutzt[s.a*nb+s.b]=1;felsB.push(s)}});
   // Krumme und schräge Gassen: Verschiebung je Gasse und Block (Zeilengassen zuerst). Höchstens ±1 je Schritt, Blöcke bleiben mind. 3 breit,
   // an Monumenten gerade, an Kreuzungen nie gleichzeitig mit der Quergasse versetzt (sonst nur noch eine Ecke als Durchgang).
   var SC={},TR={};
@@ -457,9 +475,11 @@ function plan(opt){
    var mw=rot?it.h:it.w,mh=rot?it.w:it.h,px=grp.x+((gw2-mw)>>1),py=grp.y+((gh2-mh)>>1);
    for(var y1=0;y1<gh2;y1++)for(var x1=0;x1<gw2;x1++){var X=grp.x+x1,Y=grp.y+y1,inM=X>=px&&X<px+mw&&Y>=py&&Y<py+mh,
      mitte=(x1===(gw2>>1)||x1===((gw2-1)>>1)||y1===(gh2>>1)||y1===((gh2-1)>>1));
-    if(inM||mitte){grp.frei[y1*gw2+x1]=0;if(!inM)Z[at(X,Y)]='o'}else{Z[at(X,Y)]='o';grp.rest++}}
-   setzen(it,px,py,mw,mh,null)}
-  var bloecke=bl.filter(function(s){return !benutzt[s.a*nb+s.b]&&!s.weg});bloecke.forEach(offen);bloecke=bloecke.concat(gruppen);bloecke.sort(function(p,q){return p.d-q.d});
+    if(inM||mitte||it.gipfel){grp.frei[y1*gw2+x1]=0;if(!inM)Z[at(X,Y)]='o'}else{Z[at(X,Y)]='o';grp.rest++}}   // Gipfel: ganzer Platz frei
+   setzen(it,px,py,mw,mh,null);if(it.gipfel){var bg=bauten[bauten.length-1];bg.gipfel=it.gipfel;bg.kern=[grp.x-bg.i,grp.y-bg.j,gw2,gh2]}}
+  var bloecke=bl.filter(function(s){return !benutzt[s.a*nb+s.b]&&!s.weg});bloecke.forEach(offen);
+  // Burgberg: Felsblöcke, ab und zu ein Baum auf den Terrassen
+  felsB.forEach(function(q){for(var y=0;y<q.h;y++)for(var x=0;x<q.w;x++){var kf=at(q.x+x,q.y+y);if(frei0(kf)){Z[kf]='x';belegt[kf]=1;var uf=rausch(q.x+x,q.y+y,seed+95);if(uf<.07)dinge.push({id:B.baeume[Math.floor(uf/.07*B.baeume.length)%B.baeume.length],i:q.x+x,j:q.y+y})}}});bloecke=bloecke.concat(gruppen);bloecke.sort(function(p,q){return p.d-q.d});
   // Übrige Gebäude: erstes freies Randstück im innersten Block (Zonen); Tür zur Gasse an der Seite, die am Blockrand liegt
   // Gleichmäßig füllen: zuerst nur bis zum Anteil je Block (alle Blöcke behalten einen Hof), dann frei; Reihenfolge der Blöcke nach Abstand = Zonen
   var vorn=0,summe=0,platzAll=0;rest.forEach(function(it){summe+=it.w*it.h});bloecke.forEach(function(s){s.voll=0;platzAll+=s.rest});var anteil=Math.min(1,summe/Math.max(1,platzAll)*1.1+.05);
@@ -657,11 +677,13 @@ function plan(opt){
  if(!elend){var MK=E2.maske,Wm=Math.round(Math.sqrt(MK.length)),Rm=E2.rand||0,zl=[];
   for(var jm=0;jm<Wm;jm++){var im=0;while(im<Wm){if(!MK[jm*Wm+im]){im++;continue}var i1=im;while(i1+1<Wm&&MK[jm*Wm+i1+1])i1++;zl.push(jm+Rm,im+Rm,i1+Rm);im=i1+1}}
   P.umriss={dorf:E2.vielfalt&&E2.vielfalt.dorf||null,art:UM?UM.art:g>=MAUER_AB?'quadrat':'offen',ecken:UM?UM.ecken:4,beulen:UM?UM.beulen:0,tore:E2.tore.map(function(t){return SEITE[t.s]}),zeilen:zl,planW:E2.W}}
+ if(HU)huegelPlan(P,HT,seed,P1);
  if(F!==1)P=skalieren(P,F);
  var spW=rng(hashT([seed,art,einw,'sp'].join('|')))()<.5;if(P.fluss)spW=P.fluss.achse!==FL;   // mit Fluss: Spiegeln so, dass er wie in der Welt fließt
  if(P.kueste){spW=P.kueste.spiegel;delete P.kueste.spiegel}   // mit Küste: so, dass das Meer auf der Seite aus der Welt liegt (N6b2c4c2)
  if(spW)P=spiegeln(P);
  if(P.kueste)hochstege(P);
+ if(P.hoehe)huegelFertig(P);
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
  return P}
 // Hochstege (Thomas 22.11.2026, Rückmeldung zu N6b2c4c2): Holzstege eine Stufe über dem Wasser wie die Holzbrücke aus 2.0 (welt-bruecke.js), auf Pfählen;
@@ -673,6 +695,27 @@ function hochstege(P){var W=P.W,Z=P.zellen,d=SEE_DIR[P.kueste.seite],ax=d[0]?'i'
  for(j=0;j<W;j++)for(i=0;i<W;i++){if(Z.charAt(j*W+i)!=='y')continue;var land=c(i-d[0],j-d[1]),see=c(i+d[0],j+d[1]),id;
   if(land!=='y'&&land!=='w')id=RAMPE[P.kueste.seite];else id='steg-deck-'+(land==='y'||see==='y'?ax:quer);
   P.dinge.push({id:id,i:i,j:j,rolle:'steg'})}}
+// Burgberg (N6b2c4c3): Höhenstufe je Feld als Ziffernfolge P.hoehe (gleiche Lage wie P.zellen), vor dem Maßstab im Plan gerechnet. Kern = Doppelblock(s) der
+// Gipfelbauten (Stufe T); Abstand d bis ½ Block T−1, bis 1 Block T−2, ab Großstadt bis 2 Blöcke Stufe 1, sonst 0; Rand mit grobem Rauschen ±0,75 ausgefranst.
+// Wasser, Kai, Strand, Stege und Wege am Wasser (Brücken, Ufergassen) bleiben auf Stufe 0, von dort höchstens 1 Stufe je Feld (kein Weg springt um 2 Stufen).
+function huegelPlan(P,T,seed,P1){var W=P.W,Z=P.zellen,K=[],ids=[],i,j,n=0;
+ P.bauten.forEach(function(b){if(b.gipfel&&b.kern){K.push([b.i+b.kern[0],b.j+b.kern[1],b.kern[2],b.kern[3]]);ids[b.gipfel-1]=b.id}delete b.kern});if(!K.length)return;
+ var c=function(x,y){return x>=0&&y>=0&&x<W&&y<W?Z.charAt(y*W+x):'g'},H=new Array(W*W);
+ for(j=0;j<W;j++)for(i=0;i<W;i++){var z=Z.charAt(j*W+i),d=1e9,l;
+  for(var q=0;q<K.length;q++){var k=K[q],dx=Math.max(k[0]-i,0,i-(k[0]+k[2]-1)),dy=Math.max(k[1]-j,0,j-(k[1]+k[3]-1)),e=(Math.sqrt(dx*dx+dy*dy)+Math.max(dx,dy))/2;if(e<d)d=e}
+  var dr=d+(rausch(i>>1,j>>1,seed+91)-.5)*1.5;l=d===0?T:dr<=P1*.5?T-1:dr<=P1+.5?T-2:T>=4&&dr<=2*P1+1?1:0;if(l<0)l=0;
+  if(/[wquy]/.test(z)||z==='s'&&(c(i+1,j)==='w'||c(i-1,j)==='w'||c(i,j+1)==='w'||c(i,j-1)==='w'))l=0;H[j*W+i]=l}
+ // vom Wasser aus höchstens 1 Stufe je Feld (Abstand in 4 Richtungen), so springt kein Weg um 2 Stufen
+ var D=new Int32Array(W*W).fill(1e9),qu=[],qh=0;for(var k0=0;k0<W*W;k0++){var z0=Z.charAt(k0),i0=k0%W,j0=(k0/W)|0;if(/[wquy]/.test(z0)||z0==='s'&&(c(i0+1,j0)==='w'||c(i0-1,j0)==='w'||c(i0,j0+1)==='w'||c(i0,j0-1)==='w')){D[k0]=0;qu.push(k0)}}
+ while(qh<qu.length){var kq=qu[qh++],iq=kq%W,jq=(kq/W)|0;[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(v){var x=iq+v[0],y=jq+v[1];if(x<0||y<0||x>=W||y>=W)return;var kn=y*W+x;if(D[kn]>D[kq]+1){D[kn]=D[kq]+1;qu.push(kn)}})}
+ for(k0=0;k0<W*W;k0++){if(H[k0]>D[k0])H[k0]=D[k0];if(H[k0])n++}
+ P.hoehe=H.join('');P.huegel={stufen:T,gipfel:ids.filter(Boolean),kern:K,felder:n}}
+// Nach Maßstab und Spiegeln: jedes Gebäude steht ganz auf einer Stufe (der Stufe vor seiner Tür, Gipfelbauten oben, Mauerstücke auf ihrem Feld), lose Dinge auf
+// ihrem Feld. hz = Stufe (Bild: hz · HSTUFE Bildpunkte höher).
+function huegelFertig(P){var W=P.W,H=P.hoehe.split('').map(Number),lv=function(i,j){return i>=0&&j>=0&&i<W&&j<W?H[j*W+i]:0};
+ P.bauten.forEach(function(b){var l=b.gipfel?P.huegel.stufen:b.tuer?lv(b.tuer[0]+b.tuer[2],b.tuer[1]+b.tuer[3]):lv(b.i+(b.w>>1),b.j+(b.h>>1));
+  b.hz=l;for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)H[y*W+x]=l});
+ P.dinge.forEach(function(d){d.hz=lv(d.i,d.j)});P.hoehe=H.join('')}
 // Fassungen loser Dinge (Thomas 22.11.2026): Lagerplatz in 6 Fassungen, nach Lage gewürfelt. 16 Plätze: Grundbild 4×, ruhige a/b/c je 3×, schwarzhumorige d 2×, e 1×.
 var DING_VAR={'lager-platz':'0000aaabbbcccdde'};
 function dingWahl(id,i,j){var v=DING_VAR[id];if(!v)return id;var c=v.charAt(Math.floor(rausch(i,j,hashT(id))*v.length));return c==='0'?id:id+'-'+c}
@@ -686,8 +729,8 @@ var TOTE={cemetery:1,undertaker:1,'coffin-maker':1,'tear-press':1},HAIN={'olive-
 // Maßstab (N6b2b1, E31): Plan in Planfeldern → Bildfelder ×F. Feld (I, J) gehört zu Planfeld (⌊I/F⌋, ⌊J/F⌋), Bau [i, i+w) → [r(i), r(i+w)) mit r = runden(·F);
 // Rundbauten bleiben quadratisch (kleinere Seite), Türen sitzen wieder mittig an derselben Seite, Dinge auf dem ersten Feld ihres Planfelds.
 function skalieren(P,F){var r=function(v){return Math.floor(v*F+.5)},W=P.W,N=r(W),z='',I,J;
- for(J=0;J<N;J++)for(I=0;I<N;I++)z+=P.zellen.charAt(Math.min(W-1,Math.floor(J/F))*W+Math.min(W-1,Math.floor(I/F)));
- var Q=JSON.parse(JSON.stringify(P));Q.W=N;Q.planW=W;Q.mass=F;Q.zellen=z;
+ var zh='';for(J=0;J<N;J++)for(I=0;I<N;I++){var q=Math.min(W-1,Math.floor(J/F))*W+Math.min(W-1,Math.floor(I/F));z+=P.zellen.charAt(q);if(P.hoehe)zh+=P.hoehe.charAt(q)}
+ var Q=JSON.parse(JSON.stringify(P));Q.W=N;Q.planW=W;Q.mass=F;Q.zellen=z;if(P.hoehe)Q.hoehe=zh;
  Q.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b)),i=r(b.i),j=r(b.j),w=r(b.i+b.w)-i,h=r(b.j+b.h)-j;if(b.rund){w=h=Math.min(w,h)}
   o.i=i;o.j=j;o.w=w;o.h=h;if(b.tuer){var di=b.tuer[2],dj=b.tuer[3];o.tuer=dj>0?[i+(w>>1),j+h-1,0,1]:dj<0?[i+(w>>1),j,0,-1]:di>0?[i+w-1,j+(h>>1),1,0]:[i,j+(h>>1),-1,0];
    // Führt die mittige Tür im Bild vor ein anderes Planfeld als im Plan (Monument nicht mittig im Platz), sitzt sie vor demselben Planfeld wie im Plan (N6b2c4a2)
@@ -695,15 +738,15 @@ function skalieren(P,F){var r=function(v){return Math.floor(v*F+.5)},W=P.W,N=r(W
     else{var a2=r(b.tuer[1]),e2=r(b.tuer[1]+1)-1;o.tuer[1]=Math.max(j,Math.min(j+h-1,(a2+e2)>>1))}}}return o});
  Q.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=r(d.i);o.j=r(d.j);return o});
  Q.tor=P.tor.i===W-1&&P.tor.j!==W-1?{i:N-1,j:r(P.tor.j)}:{i:r(P.tor.i),j:r(P.tor.j+1)-1};return Q}   // Tor am Süd- oder (N6b2c4a2) Ostrand
-function spiegeln(P){var W=P.W,z='',i,j;for(j=0;j<W;j++)for(i=0;i<W;i++)z+=P.zellen[i*W+j];
- var N=JSON.parse(JSON.stringify(P));N.zellen=z;N.gespiegelt=!P.gespiegelt;
+function spiegeln(P){var W=P.W,z='',zh='',i,j;for(j=0;j<W;j++)for(i=0;i<W;i++){z+=P.zellen[i*W+j];if(P.hoehe)zh+=P.hoehe[i*W+j]}
+ var N=JSON.parse(JSON.stringify(P));N.zellen=z;if(P.hoehe)N.hoehe=zh;N.gespiegelt=!P.gespiegelt;
  N.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b));o.i=b.j;o.j=b.i;o.w=b.h;o.h=b.w;o.achse=b.achse==='i'?'j':'i';if(b.tuer)o.tuer=[b.tuer[1],b.tuer[0],b.tuer[3],b.tuer[2]];return o});
  N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=d.j;o.j=d.i;return o});N.tor={i:P.tor.j,j:P.tor.i};
  if(N.aussen){N.aussen.stinktor=SPIEGEL[N.aussen.stinktor];N.aussen.graebertor=SPIEGEL[N.aussen.graebertor];if(N.aussen.tore)N.aussen.tore=N.aussen.tore.map(function(x){return SPIEGEL[x]})}
  if(N.umriss)N.umriss.tore=N.umriss.tore.map(function(x){return SPIEGEL[x]});if(N.fluss)N.fluss.achse=N.fluss.achse==='ns'?'ow':'ns';if(N.kueste)N.kueste.seite=SPIEGEL[N.kueste.seite];return N}
 // Drehen um 90° (Blick von der nächsten Seite, für First Person): Zelle (i, j) → (W−1−j, i), Richtung (di, dj) → (−dj, di)
-function drehen(P){var W=P.W,z=new Array(W*W),i,j;for(j=0;j<W;j++)for(i=0;i<W;i++)z[i*W+(W-1-j)]=P.zellen[j*W+i];
- var N=JSON.parse(JSON.stringify(P));N.zellen=z.join('');
+function drehen(P){var W=P.W,z=new Array(W*W),zh=P.hoehe?new Array(W*W):null,i,j;for(j=0;j<W;j++)for(i=0;i<W;i++){z[i*W+(W-1-j)]=P.zellen[j*W+i];if(zh)zh[i*W+(W-1-j)]=P.hoehe[j*W+i]}
+ var N=JSON.parse(JSON.stringify(P));N.zellen=z.join('');if(zh)N.hoehe=zh.join('');
  N.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b));o.i=W-b.j-b.h;o.j=b.i;o.w=b.h;o.h=b.w;o.achse=b.achse==='i'?'j':'i';
   if(b.tuer)o.tuer=[W-1-b.tuer[1],b.tuer[0],-b.tuer[3],b.tuer[2]];return o});
  N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=W-1-d.j;o.j=d.i;return o});N.tor={i:W-1-P.tor.j,j:P.tor.i};return N}
@@ -742,7 +785,7 @@ function ordner(el){var n=el.length,RI=new Int32Array(n),RJ=new Int32Array(n),RW
  // weiter(aus): arbeitet, bis aus() einen vollen Zeitanteil meldet (→ false) oder alles fertig ist (→ true, Ergebnis in .liste)
  var O={liste:null,weiter:function(aus){for(;;){
   if(phase===0){for(;k<n;k++){var e=el[k],b=e.b,i,j,w,h;if(!b){i=e.d.i;j=e.d.j;w=1;h=1}else if(b.rund){i=b.i-1;j=b.j-1;w=b.w+2;h=b.w+2}else{i=b.i;j=b.j;w=b.w;h=b.h}
-     RI[k]=i;RJ[k]=j;RW[k]=w;RH[k]=h;X0[k]=(i-j-h)*32;X1[k]=(i+w-j)*32;Y0[k]=(i+j)*16-hoch(b);Y1[k]=(i+w+j+h)*16;
+     RI[k]=i;RJ[k]=j;RW[k]=w;RH[k]=h;X0[k]=(i-j-h)*32;X1[k]=(i+w-j)*32;Y0[k]=(i+j)*16-hoch(b)-((b||e.d).hz|0)*HSTUFE;Y1[k]=(i+w+j+h)*16;
      if(w>1||h>1){for(var fy=Math.floor(Y0[k]/FS);fy<=Math.floor((Y1[k]-1)/FS);fy++)for(var fx=Math.floor(X0[k]/FS);fx<=Math.floor((X1[k]-1)/FS);fx++){var L=F.get(fach(fx,fy));if(!L)F.set(fach(fx,fy),L=[]);L.push(k)}}
      if((++c&127)===0&&aus&&aus()){k++;return false}}phase=1;k=0}
   else if(phase===1){for(;k<n;k++){var ga=gr(k),fy0=Math.floor(Y0[k]/FS),fx0=Math.floor(X0[k]/FS);
@@ -759,7 +802,7 @@ function ordnen(el){var O=ordner(el);O.weiter(null);return O.liste}
 // Elementliste (N6b2-0), gemeinsam für bauer() und kachelBauer(): P = Plan, hole(id) → Kartei-Objekt, opt {umland: Felder Landschaft ringsum}.
 // Reihenfolge wie bisher: Boden je Feld (hinten zuerst), dann Häuser, Mauerstücke, Rundbauten, Dinge, Umland-Bäume nach Tiefe. Rohbild w × h mit Anker (ax, ay) = obere Ecke von Feld (0, 0).
 function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Math.max(0,opt.umland|0),WT=W+2*U,teil=holer(hole);
- var gmax=1;P.bauten.forEach(function(b){if((b.g|0)>gmax)gmax=b.g|0});var TOP=176+HOCH_PLUS+(gmax-1)*GH;   // Platz oben für Geschosse (N6b2b1)
+ var gmax=1;P.bauten.forEach(function(b){if((b.g|0)>gmax)gmax=b.g|0});var HZ=P.hoehe||null,HMAX=P.huegel?P.huegel.stufen:0,TOP=176+HOCH_PLUS+(gmax-1)*GH+HMAX*HSTUFE;   // Platz oben für Geschosse (N6b2b1) und Burgberg (N6b2c4c3)
  var Zw=WT*64+64,Zh=WT*32+TOP+8,OX=WT*32+32,OY=TOP;
  // Bildlage eines Felds (i, j) im Plan (Umland hat negative bzw. zu große Zahlen): Ecke oben = ((i−j)·32, (i+j)·16)
  var bx=function(i,j){return OX+(i-j)*32},by=function(i,j){return OY+(i+U+j+U)*16};
@@ -767,17 +810,27 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
  var bodenId=function(i,j){var innen=i>=0&&j>=0&&i<W&&j<W,c=innen?P.zellen.charAt(j*W+i):'g';
   if(c==='g'){var l=B.boden;return l[Math.floor(rausch(i,j,P.seed+1)*l.length*(l.length>1?.75:1))%l.length]}
   if(c==='s')return B.weg;if(c==='o')return weg;if(c==='f'||c==='k')return P.feld||'bk-feld';if(c==='w')return flussWahl(i,j,P.seed);if(c==='q')return weg;if(c==='y')return flussWahl(i,j,P.seed);if(c==='u')return 'boden-sand';return BODEN_ID[c]||'boden-gras'};
- var O3=null,L=[],el=[],n=0,stufe=0,qs=-U,qi=-U,qk=0,uj=-U,ui=-U;
+ var O3=null,L=[],el=[],n=0,stufe=0,qs=-U,qi=-U,qk=0,uj=-U,ui=-U,HL=[],UNTER=null;
+ // Burgberg (N6b2c4c3): Felder auf oder neben dem Hügel werden beim Boden gesammelt und als eigene Elemente gehoben gemalt (Felskanten, Boden, Treppen);
+ // unter Gebäuden nur die Felskanten (der Boden läge in der Zeichenreihenfolge sonst über den Wänden)
+ var lv=function(i,j){return HZ&&i>=0&&j>=0&&i<W&&j<W?HZ.charCodeAt(j*W+i)-48:0},GEH=/[somq]/,TR=[[0,1,'s'],[1,0,'o'],[0,-1,'n'],[-1,0,'w']];
+ var huegelEl=function(i,j){var l=lv(i,j),c=P.zellen.charAt(j*W+i),tr=null,s,dz=function(id,z){el.push({t:i+j+.01,n:n++,d:{id:id,i:i,j:j,hz:z}})};
+  if(GEH.test(c))for(var q=0;q<4&&!tr;q++){var x=i+TR[q][0],y=j+TR[q][1];if(x>=0&&y>=0&&x<W&&y<W&&GEH.test(P.zellen.charAt(y*W+x))&&lv(x,y)===l+1)tr='fels-treppe-'+TR[q][2]}
+  if(!l&&!tr)return;
+  for(s=lv(i+1,j)+1;s<=l;s++)dz('fels-kante-i',s);for(s=lv(i,j+1)+1;s<=l;s++)dz('fels-kante-j',s);
+  if(tr)dz(tr,l);else if(!UNTER||!UNTER[j*W+i])dz(c==='g'||c==='x'?(rausch(i>>1,j>>1,P.seed+93)<.6?'boden-fels':B.boden[Math.floor(rausch(i>>1,j>>1,P.seed+1)*B.boden.length)]):bodenId(i,j),l)};
  // Liste füllen, auf Wunsch in Schritten: aus() → true, wenn der Zeitanteil um ist (Kachelbauer); bauer() füllt am Stück wie bisher
  var fuellen=function(aus){var c=0;while(stufe<5){
    if(stufe===0){for(;qs<=2*(W-1)+U;qs++,qi=-U){for(;qi<W+U;qi++){var j=qs-qi;if(j<-U||j>=W+U)continue;L.push({k:0,id:bodenId(qi,j),X:bx(qi,j),Y:by(qi,j)+16});
+      if(HZ&&qi>=0&&j>=0&&qi<W&&j<W&&(lv(qi,j)||lv(qi+1,j)||lv(qi-1,j)||lv(qi,j+1)||lv(qi,j-1)))HL.push(j*W+qi);
       if((++c&255)===0&&aus&&aus()){qi++;return false}}}stufe=1}
-   else if(stufe===1){P.bauten.forEach(function(b){el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});P.dinge.forEach(function(d){el.push({t:d.i+d.j+1.02,n:n++,d:d})});stufe=U?2:3;if(aus&&aus())return false}
+   else if(stufe===1){P.bauten.forEach(function(b){el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});P.dinge.forEach(function(d){el.push({t:d.i+d.j+1.02,n:n++,d:d})});if(HL.length){UNTER=new Uint8Array(W*W);P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)UNTER[y*W+x]=1})}
+   HL.forEach(function(k){huegelEl(k%W,(k/W)|0)});HL=null;stufe=U?2:3;if(aus&&aus())return false}
    else if(stufe===2){for(;uj<W+U;uj++,ui=-U){for(;ui<W+U;ui++){if(ui>=0&&uj>=0&&ui<W&&uj<W)continue;
       if(rausch(ui,uj,P.seed+21)<B.dichte*(1+.15*Math.max(ui<0?-ui:ui-W+1,uj<0?-uj:uj-W+1)))el.push({t:ui+uj+1.02,n:n++,d:{id:B.baeume[Math.floor(rausch(ui,uj,P.seed+22)*B.baeume.length)],i:ui,j:uj}})}}stufe=3}
    else if(stufe===3){if(!O3)O3=ordner(el);if(!O3.weiter(aus))return false;el=O3.liste;O3=null;stufe=4;if(aus&&aus())return false}
-   else{for(;qk<el.length;qk++){var e=el[qk];if(e.d)L.push({k:1,id:e.d.id,X:bx(e.d.i,e.d.j),Y:by(e.d.i,e.d.j)+16});
-      else{var b=e.b,ox=b.rund?b.i-1:b.i,oy=b.rund?b.j-1:b.j,fw=b.w,fh=b.h;if(b.rund){var R=bk.bilde('rund',b.w,b.w,b.klasse);fw=R.w;fh=R.h}L.push({k:2,b:b,X:bx(ox,oy),Y:by(ox,oy),fw:fw,fh:fh})}
+   else{for(;qk<el.length;qk++){var e=el[qk];if(e.d)L.push({k:1,id:e.d.id,X:bx(e.d.i,e.d.j),Y:by(e.d.i,e.d.j)+16-(e.d.hz|0)*HSTUFE});
+      else{var b=e.b,ox=b.rund?b.i-1:b.i,oy=b.rund?b.j-1:b.j,fw=b.w,fh=b.h;if(b.rund){var R=bk.bilde('rund',b.w,b.w,b.klasse);fw=R.w;fh=R.h}L.push({k:2,b:b,X:bx(ox,oy),Y:by(ox,oy)-(b.hz|0)*HSTUFE,fw:fw,fh:fh})}
       if((++c&255)===0&&aus&&aus()){qk++;return false}}el=null;stufe=5}}return true};
  if(!opt.inSchritten)fuellen(null);
  // Gebäude zusammensetzen (Baukasten); N6b: Teile des Biom-Satzes (bk-putz-…) vor den Klassenteilen, fehlt eins, gilt das Klassenteil
@@ -884,9 +937,9 @@ function kacheln(r,K){K=K||256;var L=[],ty,tx,y;for(ty=0;ty<r.h;ty+=K)for(tx=0;t
 // Kennzahlen eines Plans für Anzeige und Tests
 function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.bauten.forEach(function(b){if(b.rolle==='house'||b.rolle==='shack')n.haeuser++;else if(b.rolle==='mauer')n.mauer++;else n.besondere++});return n}
 // Alle Kartei-Kennungen, die ein Plan braucht (Editor lädt nur diese)
-function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
+function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);

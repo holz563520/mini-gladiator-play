@@ -72,6 +72,11 @@ function kuesteSeite(seed,A,k){var z=A.orte[k]&0xffffff,art=A.orte[k]>>>24,x=z%G
   if(n){var b=0;for(var q=1;q<4;q++)if(s[q]>s[b]+1e-9)b=q;return S[b]}if(r===1&&art<3)return null}
  return art>=3?S[(Math.imul(seed^z,2654435761)>>>16)&3]:null}
 
+// N6b2c4c3 (Thomas 22.11.2026): Burgberg im Stadtplan nur, wenn Gebirge die Hauptzone um den Ort ist (Zone BERG = „mountains“ in daten/gebaeude.json).
+// Reine Rechnung aus roh(), Erde unverändert.
+var BERG=14;
+function huegel(seed,A,k){if(!A.zon)return false;var r=roh(seed,A,k);return r.zonen.length>0&&r.zonen[0][0]===BERG}
+
 // Daten vorbereiten (einmal): Kandidaten für Leitgebäude (Wirtschaft, Biom nicht „alle“), Zonen, Lieblingswaren je Kultur
 function daten(geb,rez,kul){var G=geb.gebaeude,zon={},bz={},aus={},K=[];
  (geb.biome||[]).forEach(function(b){if(b.zone!=null){zon[b.zone]=b.id;bz[b.id]=b.zone}});
@@ -138,6 +143,6 @@ function entpack(a,D){var v=new DataView(a.buffer,a.byteOffset,a.byteLength),lei
  return{posten:po,format:a[0],g:a[1],kultur:a[2],art:a[3],zelle:v.getUint32(4,true),einheit:v.getUint16(8,true),zusatz:a[10]?{gruppe:GRUPPEN[a[10]-1],n:a[11]}:null,leit:leit,stufen:st,einwohner:e}}
 
 var P={AUS:AUS,GNAME:GNAME,EINW:EINW,HOCH:HOCH,ANTEIL:ANTEIL,LEIT:LEIT,ARBEIT:ARBEIT,ZUS:ZUS,GEB_ZUS:GEB_ZUS,BYTES:BYTES,
- sitze:sitze,groesse:groesse,ortNr:ortNr,roh:roh,flussAchse:flussAchse,kuesteSeite:kuesteSeite,daten:daten,bilanz:bilanz,voll:voll,groesseName:groesseName,zeile:zeile,stufenText:stufenText,zahl:zahl,pack:pack,entpack:entpack};
+ sitze:sitze,groesse:groesse,ortNr:ortNr,roh:roh,flussAchse:flussAchse,kuesteSeite:kuesteSeite,huegel:huegel,BERG:BERG,daten:daten,bilanz:bilanz,voll:voll,groesseName:groesseName,zeile:zeile,stufenText:stufenText,zahl:zahl,pack:pack,entpack:entpack};
 if(typeof module!=='undefined'&&module.exports)module.exports=P;else root.AT3ORTE=P;
 })(typeof self!=='undefined'?self:this);

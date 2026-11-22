@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 294,
+ "typMax": 300,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2397,6 +2397,60 @@
    "name": "Boulder",
    "status": "uebernommen",
    "datei": "obj/fels-block.json"
+  },
+  {
+   "id": "fels-kante-i",
+   "version": 1,
+   "typ": 295,
+   "kat": "einrichtung",
+   "name": "Rock Terrace",
+   "status": "skizze",
+   "datei": "obj/fels-kante-i.json"
+  },
+  {
+   "id": "fels-kante-j",
+   "version": 1,
+   "typ": 296,
+   "kat": "einrichtung",
+   "name": "Rock Terrace",
+   "status": "skizze",
+   "datei": "obj/fels-kante-j.json"
+  },
+  {
+   "id": "fels-treppe-n",
+   "version": 1,
+   "typ": 298,
+   "kat": "einrichtung",
+   "name": "Rock Stairs",
+   "status": "skizze",
+   "datei": "obj/fels-treppe-n.json"
+  },
+  {
+   "id": "fels-treppe-o",
+   "version": 1,
+   "typ": 299,
+   "kat": "einrichtung",
+   "name": "Rock Stairs",
+   "status": "skizze",
+   "datei": "obj/fels-treppe-o.json"
+  },
+  {
+   "id": "fels-treppe-s",
+   "version": 1,
+   "typ": 297,
+   "kat": "einrichtung",
+   "name": "Rock Stairs",
+   "status": "skizze",
+   "datei": "obj/fels-treppe-s.json"
+  },
+  {
+   "id": "fels-treppe-w",
+   "version": 1,
+   "typ": 300,
+   "kat": "einrichtung",
+   "name": "Rock Stairs",
+   "status": "skizze",
+   "datei": "obj/fels-treppe-w.json"
   },
   {
    "id": "figur-arbeiter",
