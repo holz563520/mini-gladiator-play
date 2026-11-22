@@ -232,7 +232,14 @@ function plan(opt){
       for(u=w;u<=end&&ok;u++)if(!gut(l,u))ok=false;if(!ok)break;
       var reg=[];if(l<=-5||l>=6)for(u=end+1;u<=w+tief;u++){if(!gut(l,u))break;reg.push(u)}
       out.push({l:l,w:w,end:end,reg:reg});prev=w}});return out};
-   var regW=spalten(1).filter(function(c){return c.reg.length}).length;if(!regW)return null;
+   var regW=spalten(1).filter(function(c){return c.reg.length}).length;
+   // N6b2e2g0 Riesenplan (Thomas 22.11.2026): liegt neben dem Stinktor ein Fluss oder eine Mauerschräge, bleiben kaum Spalten, die Buden würden sehr tief
+   // gestapelt (bis 260 Felder) und der ganze Ring wüchse mit. Dann (tiefer als UE_MAX oder gar keine Spalte) das Haupttor mit den meisten Budenspalten;
+   // das Gräbertor tauscht, falls es dasselbe wäre. Sonst bleibt alles wie vorher. Notausschalter opt.stinkEng:false.
+   if(opt.stinkEng!==false&&(!regW||Math.ceil(buden*2.6/regW)>UE_MAX)){var sAlt=stinkK,sBest=stinkK,sN=regW;
+    HP.forEach(function(k){if(k===sAlt)return;stinkK=k;tS=TO[k];uwC={};var n=spalten(1).filter(function(c){return c.reg.length}).length;if(n>sN){sN=n;sBest=k}});
+    stinkK=sBest;tS=TO[sBest];uwC={};regW=sN;if(sBest!==sAlt&&grabK===sBest)grabK=sAlt}
+   if(!regW)return null;
    Ue=Math.max(2,Math.ceil(buden*2.6/regW))+zug;
    spalten(Ue).forEach(function(c){for(var u=c.w;u<=c.end;u++){var p=glob(tS,u,c.l);eG.push(p);occ.add(key(p[0],p[1]))}
     c.reg.forEach(function(u){var p=glob(tS,u,c.l);eR.push(p);occ.add(key(p[0],p[1]))})})}
@@ -688,6 +695,7 @@ function plan(opt){
  if(P.kueste)hochstege(P);
  if(P.hoehe)huegelFertig(P);
  if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
+ if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
  if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
  delete P.mauertor;   // nur zum Rechnen der Tore
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
@@ -827,6 +835,371 @@ function mauerRund0(P,UM,R,Wc,sp,ohne){var W=P.W,WW=W*W,F=P.mass||1,Z=P.zellen.s
   if(HZ)o.hz=HZ.charCodeAt(k)-48;P.bauten.push(o)}
  P.zellen=Z.join('');var mt='';for(k=0;k<WW;k++)mt+=tor[k]&&!neu[k]?'1':'0';P.mauertor=mt;
  var zl=[];for(j=0;j<W;j++){i=0;while(i<W){if(!MN[j*W+i]){i++;continue}var i1=i;while(i1+1<W&&MN[j*W+i1+1])i1++;zl.push(j,i,i1);i=i1+1}}P.umriss.bild=zl}
+// N6b2e2g1 (Thomas 22.11.2026): jedes Straßentor genau TOR_B (3) Felder breit und MAUER_BILD tief in einem geraden Mauerstück (Tor + je TOR_GERADE Felder
+// gleich tief, Platz für die Flanktürme der späteren Torhäuser). Entscheidung Thomas: passt es an der alten Stelle nicht, rückt das Tor ins nächste gerade
+// Stück; das alte Tor wird zugemauert, die Straße außen 3 breit dorthin umgelegt (alter Stummel fällt weg), innen an die nächste Gasse angeschlossen.
+// Kein Notbehelf: jede Stelle wird auf dichte, zusammenhängende Mauer geprüft. Wassertore folgen in N6b2e2g2. Notausschalter opt.torGerade:false.
+var TOR_B=3,VERSUCHE=3,VERSUCHE_B=6,VERSUCHE_PLAN=24,ECKE_MAX=60;   // teure Versuche (mit Wegsuche) je Tor: gerades Stück suchen 3 (gemessen: Erfolg immer im 1. oder 2.; vorher bis 200, in großen Plänen bis 50 s), Schräge begradigen 6, je Plan höchstens 24
+function torFelder(W,T){var x0=1e9,x1=-1,y0=1e9,y1=-1;T.forEach(function(q){var i=q%W,j=(q/W)|0;if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j});return{x0:x0,x1:x1,y0:y0,y1:y1}}
+// gerade(): Tor (Felder T) ist ein Rechteck breit × MAUER_BILD tief, daneben je TOR_GERADE Spalten Mauer genau so tief; breit = TOR_B (Straße) oder beliebig (Wasser)
+function torGeradeOk(W,T,istWand,breit){var b=torFelder(W,T),bw=b.x1-b.x0+1,bh=b.y1-b.y0+1;if(T.length!==bw*bh)return false;
+ var seite=function(h){var lang=h?bw:bh,tief=h?bh:bw;if(tief!==MAUER_BILD||(breit&&lang!==breit))return false;
+  for(var s=-1;s<=1;s+=2)for(var d=1;d<=TOR_GERADE;d++){if(h){var x=s<0?b.x0-d:b.x1+d;for(var j=b.y0;j<=b.y1;j++)if(!istWand(x,j))return false;if(istWand(x,b.y0-1)||istWand(x,b.y1+1))return false}
+   else{var y=s<0?b.y0-d:b.y1+d;for(var i=b.x0;i<=b.x1;i++)if(!istWand(i,y))return false;if(istWand(b.x0-1,y)||istWand(b.x1+1,y))return false}}return true};
+ return seite(true)||seite(false)}
+function toreGerade(P,opt){opt=opt||{};var W=P.W,WW=W*W,Z0=P.zellen,Z=Z0.split(''),k,i,j,d;if(!P.mauertor||!P.umriss||!P.aussen)return;   // ohne Umland (aussen:false) liegt die Mauer am Bildrand: nichts zu verschieben
+ var wand=new Uint8Array(WW),tor=new Uint8Array(WW),bau=new Uint8Array(WW),bauNr=new Int32Array(WW),bude=new Int32Array(WW),dsperr=new Uint8Array(WW),dbaum=new Uint8Array(WW),MN=new Uint8Array(WW),m0=null,B=BIOME[P.biom],baum={};
+ (B&&B.baeume||[]).forEach(function(x){baum[x]=1});
+ P.bauten.forEach(function(b){if(b.rolle==='mauer'){if(!m0)m0=b;for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)wand[y*W+x]=1}});
+ for(k=0;k<WW;k++)if(P.mauertor.charCodeAt(k)===49&&!wand[k])tor[k]=1;
+ // Innenfläche = was Mauer und Tore einschließen (auch wenn mauerRund die runde Linie verworfen hat)
+ var N4=function(k){var x=k%W,y=(k/W)|0;return[x<W-1?k+1:-1,y<W-1?k+W:-1,x>0?k-1:-1,y>0?k-W:-1]},NB=new Int32Array(4),N4b=function(k){var x=k%W,y=(k/W)|0;NB[0]=x<W-1?k+1:-1;NB[1]=y<W-1?k+W:-1;NB[2]=x>0?k-1:-1;NB[3]=y>0?k-W:-1;return NB},   // N4b ohne neues Feld (nur in Schleifen ohne weiteren Aufruf)
+  flut=function(){var a=new Uint8Array(WW),fl=[],k,d;
+  for(k=0;k<WW;k++){var fi=k%W,fj=(k/W)|0;if((fi===0||fj===0||fi===W-1||fj===W-1)&&!wand[k]&&!tor[k]){a[k]=1;fl.push(k)}}
+  while(fl.length){var c=fl.pop(),nn=N4b(c);for(d=0;d<4;d++){var x=nn[d];if(x>=0&&!a[x]&&!wand[x]&&!tor[x]){a[x]=1;fl.push(x)}}}return a};
+ var a0f=flut();for(k=0;k<WW;k++)MN[k]=a0f[k]?0:1;
+ P.bauten.forEach(function(b,bi){if(b.rolle==='mauer')return;
+  for(var y2=Math.max(0,b.j);y2<Math.min(W,b.j+b.h);y2++)for(var x2=Math.max(0,b.i);x2<Math.min(W,b.i+b.w);x2++){if(b.rolle==='shack'&&!MN[y2*W+x2])bude[y2*W+x2]=bi+1;else{bau[y2*W+x2]=1;bauNr[y2*W+x2]=bi+1}}});if(!m0)return;
+ // Elendsbuden draußen dürfen der neuen Straße weichen (AT3_FAHRPLAN N6b2e2g: „Elendsbuden direkt an der Mauer rücken ab“), kosten bei der Wegsuche extra
+ var weg_bude={};
+ // geschützt: Felder vor Türen (Zugang der Häuser und Buden), das Einfahrtsfeld P.tor und der Bildrand bleiben, wie sie sind (kein Stummel-Abriss, keine Mauer)
+ var schutz=new Uint8Array(WW),tuerVon={};P.bauten.forEach(function(b,bi){if(!b.tuer||b.rolle==='mauer')return;var x=b.tuer[0]+b.tuer[2],y=b.tuer[1]+b.tuer[3];if(x>=0&&y>=0&&x<W&&y<W){schutz[y*W+x]=1;(tuerVon[y*W+x]=tuerVon[y*W+x]||[]).push(bi)}});
+ for(k=0;k<WW;k++){var ri=k%W,rj=(k/W)|0;if(ri<=1||rj<=1||ri>=W-2||rj>=W-2)schutz[k]=1}if(P.tor&&P.tor.i>=0&&P.tor.j>=0&&P.tor.i<W&&P.tor.j<W)schutz[P.tor.j*W+P.tor.i]=1;
+ P.dinge.forEach(function(o){if(o.i>=0&&o.j>=0&&o.i<W&&o.j<W)(o.rolle?dsperr:dbaum)[o.j*W+o.i]=1});   // lose Dinge ohne Rolle (Bäume, Büsche, Felsen, Lagerplätze, Leichen) weichen
+ var istWand=function(x,y){return x>=0&&y>=0&&x<W&&y<W&&wand[y*W+x]===1};
+ var ZT=function(z){var o={};z.split('').forEach(function(c){o[c]=1});return o},LAUFZ=ZT('gxfpse'),GEHZ=ZT('some'),BODEN=ZT('gxfpe'),frei=function(k){return !schutz[k]&&!bau[k]&&!bude[k]&&!dsperr[k]&&!wand[k]&&!tor[k]&&BODEN[Z[k]]===1};   // Zeichentabellen statt Regex (N6b2e2g0, gleiches Ergebnis)   // darf Mauer oder Straße werden
+ // Tore als Gruppen; Wasser = mindestens ein Wasserfeld
+ var gid=new Int32Array(WW).fill(-1),G=[];for(k=0;k<WW;k++){if(!tor[k]||gid[k]>=0)continue;var T=[],st=[k];gid[k]=G.length;
+  while(st.length){var c=st.pop();T.push(c);N4(c).forEach(function(x){if(x>=0&&tor[x]&&gid[x]<0){gid[x]=G.length;st.push(x)}})}
+  G.push({T:T,wasser:T.some(function(x){return Z[x]==='w'})})}
+ // leck(): erreicht man von einem Innenfeld (ok(k)) aus über alles außer Mauer und Tor den Bildrand? Gleich wie die Flut vom Rand, aber über die
+ // (kleinere) Innenfläche statt über das ganze Umland (Riesenpläne)
+ var STK=new Int32Array(WW),erS=new Int32Array(WW),erN=0;   // N6b2e2g0: ein fester Stapel für leck, gebiete und die Gassensuche innen (jedes Feld höchstens einmal darauf)
+ var leck=function(ok){var se=new Uint8Array(WW),sp=0,k,c,q;for(k=0;k<WW;k++)if(MN[k]&&!wand[k]&&!tor[k]&&ok(k)){se[k]=1;STK[sp++]=k}
+  while(sp){c=STK[--sp];var cx2=c%W;if(cx2===0||cx2===W-1||c<W||c>=WW-W)return true;
+   q=c+1;if(!se[q]&&!wand[q]&&!tor[q]){se[q]=1;STK[sp++]=q}q=c-1;if(!se[q]&&!wand[q]&&!tor[q]){se[q]=1;STK[sp++]=q}
+   q=c+W;if(!se[q]&&!wand[q]&&!tor[q]){se[q]=1;STK[sp++]=q}q=c-W;if(!se[q]&&!wand[q]&&!tor[q]){se[q]=1;STK[sp++]=q}}return false};
+ var komp=function(){var s=new Uint8Array(WW),n=0;for(var k=0;k<WW;k++){if(!(wand[k]||tor[k])||s[k])continue;n++;var st=[k];s[k]=1;while(st.length){var c=st.pop(),nn=N4b(c);for(var d=0;d<4;d++){var x=nn[d];if(x>=0&&!s[x]&&(wand[x]||tor[x])){s[x]=1;st.push(x)}}}}return n},komp0=komp();
+ // belegt: Fenster fertiger Tore samt 2 Feldern Abstand (kein Torhaus überlappt ein anderes)
+ var belegt=new Int32Array(WW).fill(-1),reserv=function(g,b){for(var y=Math.max(0,b.y0-2);y<=Math.min(W-1,b.y1+2);y++)for(var x=Math.max(0,b.x0-2);x<=Math.min(W-1,b.x1+2);x++)belegt[y*W+x]=g};
+ var fenster=function(T){var b=torFelder(W,T);return{x0:b.x0-TOR_GERADE,x1:b.x1+TOR_GERADE,y0:b.y0-TOR_GERADE,y1:b.y1+TOR_GERADE}};   // Torhaus samt Flanktürmen
+ var schlecht=[];G.forEach(function(g,gi){if(torGeradeOk(W,g.T,istWand,g.wasser?0:TOR_B)||g.wasser)reserv(gi,fenster(g.T));else schlecht.push(gi)});
+ if(!schlecht.length)return;
+ // Straße außen 3 breit: blkG = Mittelfeld, dessen 3 × 3 draußen frei ist (1), mit Elendsbude (4, kostet extra), sonst 0 (je Versuch vorgerechnet)
+ var lauf=function(q){return q>=0&&q<WW&&!MN[q]&&!wand[q]&&!tor[q]&&!bau[q]&&!dsperr[q]&&(bude[q]||LAUFZ[Z[q]]===1)};
+ // N6b2e2g0: nur die Felder, die die Wegsuche anfasst (Stempel blkN je Versuch), statt je Versuch das ganze Bild; gebiete() braucht alles (vorrechnenVoll)
+ var blkG=new Uint8Array(WW),lfG=new Uint8Array(WW),blkS=new Int32Array(WW),lfS=new Int32Array(WW),blkN=0,
+  lfW=function(k){if(lfS[k]!==blkN){lfS[k]=blkN;lfG[k]=lauf(k)?(bude[k]?2:Z[k]==='f'||Z[k]==='p'?3:1):0}return lfG[k]},   // Äcker und Weiden meiden (3)
+  blk=function(k){if(blkS[k]===blkN)return blkG[k];blkS[k]=blkN;var x=k%W,y=(k/W)|0,v=0;
+   if(x>=1&&y>=1&&x<=W-2&&y<=W-2){v=1;for(var dy=-1;dy<=1&&v;dy++)for(var dx=-1;dx<=1;dx++){var l=lfW((y+dy)*W+x+dx);if(!l){v=0;break}if(l===2)v=4;else if(l===3&&v<3)v=3}}return blkG[k]=v},
+  vorrechnen=function(){blkN++},vorrechnenVoll=function(){var k,x,y;for(k=0;k<WW;k++){lfS[k]=blkN;lfG[k]=lauf(k)?(bude[k]?2:Z[k]==='f'||Z[k]==='p'?3:1):0}
+   for(y=0;y<W;y++)for(x=0;x<W;x++){var v=0;if(x>=1&&y>=1&&x<=W-2&&y<=W-2){v=1;for(var dy=-1;dy<=1&&v;dy++)for(var dx=-1;dx<=1;dx++){var l=lfG[(y+dy)*W+x+dx];if(!l){v=0;break}if(l===2)v=4;else if(l===3&&v<3)v=3}}blkS[y*W+x]=blkN;blkG[y*W+x]=v}};
+ var mx=0,my=0,mn=0;for(k=0;k<WW;k++)if(MN[k]){mx+=k%W;my+=(k/W)|0;mn++}mx/=mn;my/=mn;
+ var geh=function(q){return !MN[q]&&!wand[q]&&!tor[q]&&!bau[q]&&!bude[q]&&GEHZ[Z[q]]===1};   // begehbar draußen (Straße, Platz, Markt, Schlamm)
+ var flutGeh=function(start){var se=new Uint8Array(WW),st=[];start.forEach(function(q){if(q>=0&&!se[q]&&geh(q)){se[q]=1;st.push(q)}});
+  while(st.length){var c=st.pop(),nn=N4b(c);for(var d=0;d<4;d++){var x=nn[d];if(x>=0&&!se[x]&&geh(x)){se[x]=1;st.push(x)}}}return se};
+ var KO=new Int32Array(WW*4),VO=new Int32Array(WW*4),HP=new Float64Array(1<<16),hn=0;   // Wegsuche: Kosten, Vorgänger, Heap (je Stadt einmal)
+ var hinein=function(v){if(hn>=HP.length){var N=new Float64Array(HP.length*2);N.set(HP);HP=N}var i=hn++;while(i>0){var p=(i-1)>>1;if(HP[p]<=v)break;HP[i]=HP[p];i=p}HP[i]=v};
+ var heraus=function(){var r=HP[0],v=HP[--hn],i=0;if(hn){for(;;){var a=2*i+1,b=a+1,m=i,mv=v;if(a<hn&&HP[a]<mv){m=a;mv=HP[a]}if(b<hn&&HP[b]<mv){m=b;mv=HP[b]}if(m===i)break;HP[i]=HP[m];i=m}HP[i]=v}return r};
+ var H=1+TOR_GERADE,teuer=0,zuMauern=[];   // teuer: Versuche mit Wegsuche in diesem Plan (höchstens VERSUCHE_PLAN, gegen Riesenpläne)   // halbe Fensterlänge längs der Mauer (Torspalten ±1, daneben TOR_GERADE)
+ schlecht.forEach(function(gi){var g=G[gi],bb=torFelder(W,g.T),cx=(bb.x0+bb.x1)/2,cy=(bb.y0+bb.y1)/2,inG=function(k){return gid[k]===gi};
+  // alte Straße außen: Straßenfelder draußen, die am alten Tor hängen
+  var aus0=[],sAus=new Uint8Array(WW);g.T.forEach(function(x){N4(x).forEach(function(y){if(y>=0&&!tor[y]&&!wand[y]&&!MN[y]&&Z[y]==='s'&&!sAus[y]){sAus[y]=1;aus0.push(y)}})});
+  for(var h0=0;h0<aus0.length;h0++)N4(aus0[h0]).forEach(function(y){if(y>=0&&!sAus[y]&&!tor[y]&&!wand[y]&&!MN[y]&&Z[y]==='s'){sAus[y]=1;aus0.push(y)}});
+  var dist=function(k){return Math.max(Math.abs(k%W-cx),Math.abs(((k/W)|0)-cy))},RJ=10;
+  // kurze alte Straße (kleiner Ort): Ziel ist ihr äußerer Teil
+  var dmax=0;aus0.forEach(function(q){if(dist(q)>dmax)dmax=dist(q)});if(dmax<RJ)RJ=Math.max(1,dmax-1);
+  // Richtung des alten Tors von der Stadtmitte aus; das Tor rückt höchstens um 90° um die Stadt (nie auf die andere Seite)
+  var rx=cx-mx,ry=cy-my;
+  // Kandidaten: (Achse, Spalte c längs, erste Bandreihe a0, Außenseite o)
+  // N6b2e2g0 (Tempo, gleiches Ergebnis): erst nur die billigen Bedingungen (Lage, Abstand dd, Richtung, innen/außen), voll bewertet (kost, Platz vor dem Tor)
+  // wird in der Reihenfolge von dd, bis kein unbewerteter Kandidat (wert ≥ dd) mehr besser sein kann. Reihenfolge wie vorher: wert, ax, l0, a0, o.
+  var leicht=[];for(var ax=0;ax<2;ax++){var id=function(l,a){return ax?a*W+l:l*W+a};
+   var schon=new Uint8Array(WW);   // jedes Band, das ein Mauer- oder Torfeld enthält (auch eine Reihe weiter außen, wo innen die Ringgasse anliegt)
+   var bx0=Math.max(0,Math.floor(cx)-126),bx1=Math.min(W-1,Math.ceil(cx)+126),by0=Math.max(0,Math.floor(cy)-126),by1=Math.min(W-1,Math.ceil(cy)+126);   // nur im Umkreis (dd ≤ 120)
+   for(var yy9=by0;yy9<=by1;yy9++)for(var xx9=bx0;xx9<=bx1;xx9++){var k9=yy9*W+xx9;if(!wand[k9]&&!inG(k9))continue;for(var t9=0;t9<MAUER_BILD;t9++){var l0=ax?k9%W:(k9/W)|0,a0=(ax?(k9/W)|0:k9%W)-t9;if(a0<0)continue;var kk9=id(l0,a0);if(schon[kk9])continue;schon[kk9]=1;
+    for(var o=-1;o<=1;o+=2){var aus=function(t){return o<0?a0-1-t:a0+MAUER_BILD+t},inn=function(t){return o<0?a0+MAUER_BILD+t:a0-1-t};
+     if(l0-H-1<0||l0+H+1>=W||Math.min(aus(2),inn(2))<0||Math.max(aus(2),inn(2))>=W)continue;
+     var mitte=ax?{x:l0,y:a0+1}:{x:a0+1,y:l0},dd=Math.hypot(mitte.x-cx,mitte.y-cy);if(dd>120)continue;
+     var ox=ax?0:o,oy=ax?o:0;if(ox*rx+oy*ry<0)continue;   // Außenseite zeigt nicht vom alten Tor weg (höchstens 90° um die Stadt)
+     if(MN[id(l0,aus(2))]||!MN[id(l0,inn(2))])continue;
+     leicht.push({ax:ax,l0:l0,a0:a0,o:o,dd:dd})}}}}
+  var bewerte=function(c){var ax=c.ax,l0=c.l0,a0=c.a0,o=c.o,id=function(l,a){return ax?a*W+l:l*W+a},aus=function(t){return o<0?a0-1-t:a0+MAUER_BILD+t},inn=function(t){return o<0?a0+MAUER_BILD+t:a0-1-t};
+     var kost=0,geht=true;for(var l=l0-H;l<=l0+H&&geht;l++){var torSp=Math.abs(l-l0)<=1;
+      for(var t=0;t<MAUER_BILD;t++){var q=id(l,a0+t);if(belegt[q]>=0||(tor[q]&&!inG(q))){geht=false;break}
+       if(torSp){if(Z[q]==='w'||bau[q]||bude[q]||dsperr[q]){geht=false;break}if(!inG(q))kost++}
+       else{if(wand[q])continue;if((inG(q)&&!schutz[q])||frei(q))kost+=Z[q]==='f'||Z[q]==='p'?3:1;else{geht=false;break}}}
+      if(!geht)break;
+      // Reihen vor und hinter dem Band: in den Seitenspalten keine Mauer (sonst entfernt), in den Torspalten frei für die Straße
+      for(var s2=0;s2<2&&geht;s2++){var r1=s2?inn(0):aus(0),r2=s2?inn(1):aus(1),q1=id(l,r1),q2=id(l,r2);
+       if(belegt[q1]>=0||(tor[q1]&&!inG(q1))){geht=false;break}var w2=wand[q2]||(inG(q2)&&!schutz[q2]);if(w2&&torSp){geht=false;break}
+       if(torSp){if(bau[q1]||bude[q1]||dsperr[q1]||Z[q1]==='w'||(!wand[q1]&&!inG(q1)&&LAUFZ[Z[q1]]!==1)){geht=false;break}if(wand[q1])kost++}
+       else if(wand[q1]||(inG(q1)&&!schutz[q1])){if(w2&&Math.abs(l-l0)<H){geht=false;break}kost++}}}
+     if(!geht||kost>24)return false;
+     // vor dem Tor außen Platz für 3 × 3 Felder Straße (aus(1) ± 1) und innen für den Anschluss
+     for(var l4=l0-1;l4<=l0+1&&geht;l4++)for(var t4=0;t4<3;t4++){var q4=id(l4,aus(t4));if(t4>0&&(MN[q4]||wand[q4]||tor[q4]||bau[q4]||dsperr[q4]||(!bude[q4]&&LAUFZ[Z[q4]]!==1))){geht=false;break}}
+     if(!geht)return false;c.kost=kost;c.wert=c.dd+3*kost;return true};
+  leicht.sort(function(a,b){return a.dd-b.dd});
+  var kvor=function(a,b){return a.wert-b.wert||a.ax-b.ax||a.l0-b.l0||a.a0-b.a0||a.o-b.o},lp=0,fertigK=[];
+  var naechst=function(){while(lp<leicht.length){var m=null;for(var f=0;f<fertigK.length;f++)if(!m||kvor(fertigK[f],m)<0)m=fertigK[f];if(m&&leicht[lp].dd>m.wert)break;var c=leicht[lp++];if(bewerte(c))fertigK.push(c)}
+   var bi=-1;for(var f2=0;f2<fertigK.length;f2++)if(bi<0||kvor(fertigK[f2],fertigK[bi])<0)bi=f2;return bi<0?null:fertigK.splice(bi,1)[0]};
+  var pre={lab:null,gut:null,voll:false};
+  // Vorprobe: bleibt die Mauer dicht und an einem Stück, wenn vom alten Tor nur die Durchfahrt (bis MAUER_BILD tief) zugemauert wird? Sonst ganz zumauern.
+  (function(){var tief=new Int32Array(WW).fill(-1),tq=[],th=0,alt2=[];g.T.forEach(function(q){if(N4(q).some(function(y){return y>=0&&!MN[y]&&!wand[y]&&!tor[y]})){tief[q]=0;tq.push(q)}});
+   while(th<tq.length){var c7=tq[th++];N4(c7).forEach(function(y){if(y>=0&&inG(y)&&tief[y]<0){tief[y]=tief[c7]+1;tq.push(y)}})}
+   g.T.forEach(function(q){alt2.push([q,tor[q],wand[q]]);tor[q]=0;if(!schutz[q]&&tief[q]>=0&&tief[q]<MAUER_BILD)wand[q]=1});
+   var gut=komp()<=komp0&&!leck(function(k){return !inG(k)});
+   alt2.forEach(function(e){tor[e[0]]=e[1];wand[e[0]]=e[2]});if(!gut)pre.voll=true})();
+  for(var nv=0,K2;nv<VERSUCHE&&(K2=naechst());){if(pre.lab){var a2=K2.o<0?K2.a0-3:K2.a0+MAUER_BILD+2,p2=K2.ax?a2*W+K2.l0:K2.l0*W+a2,lb=pre.lab[p2];if(lb>=0&&!pre.gut[lb])continue}   // Gebiet ohne alte Straße: gar nicht erst umbauen
+   nv++;if(teuer++>=VERSUCHE_PLAN)break;if(versuch(g,gi,K2,aus0,sAus,dist,RJ,pre))return}
+  // kein gerades Stück erreichbar (lange 45°-Schräge, Ausweichstelle hinter Fluss oder Häusern): Schräge am alten Tor begradigen, nur nach außen (Thomas 22.11.2026)
+  if(begradigen(g,gi,bb,aus0,sAus,dist,RJ))return;
+  if(zusammen(g,gi,bb,aus0,sAus,dist,RJ))return;   // zu nah am Nachbartor: Straße dorthin umlegen
+  if(opt.eckeInnen!==false&&begradigenInnen(g,gi,bb,aus0,sAus,dist,RJ))return;   // Ecktor: Ecke innen kurz gerade (Thomas 22.11.2026)
+  P.toreKrumm=(P.toreKrumm||0)+1});   // sollte nicht vorkommen (Test verlangt 0)
+ // gehKomp(): Zahl der zusammenhängenden begehbaren Stücke (Straße, Platz, Markt, Schlamm), innen und außen
+ function gehKomp(){var se=new Uint8Array(WW),n=0,st=[];for(var k=0;k<WW;k++){if(se[k]||wand[k]||tor[k]||bau[k]||GEHZ[Z[k]]!==1)continue;n++;se[k]=1;st.push(k);
+  while(st.length){var c=st.pop(),nn=N4b(c);for(var d=0;d<4;d++){var q=nn[d];if(q>=0&&!se[q]&&!wand[q]&&!tor[q]&&!bau[q]&&GEHZ[Z[q]]===1){se[q]=1;st.push(q)}}}}return n}
+ // dick3() (Thomas 22.11.2026): zugemauerte alte Durchfahrt so dick wie die Mauer daneben. Quer zur Straße liegt vor und hinter dem Tor je ein Mauerstück;
+ // je Reihe dazwischen MAUER_BILD Felder um die gemittelte Mitte (an Schrägen läuft die Mauer so gleichmäßig weiter). Türfelder, Gebäude, Buden, Dinge bleiben.
+ function dick3(T,setz){var b=torFelder(W,T);for(var ax=0;ax<2;ax++){var L0=ax?b.x0:b.y0,L1=ax?b.x1:b.y1,A0=ax?b.y0:b.x0,A1=ax?b.y1:b.x1,id=function(l,a){return ax?a*W+l:l*W+a};
+   if(L1-L0>6)continue;var lauf=function(l){if(l<0||l>=W)return null;var best=null,bd=1e9;for(var a=Math.max(0,A0-6);a<=Math.min(W-1,A1+6);a++){if(!wand[id(l,a)])continue;var e=a;while(e+1<W&&wand[id(l,e+1)])e++;
+     var m=(a+e)/2,dd=Math.abs(m-(A0+A1)/2);if(dd<bd){bd=dd;best=[a,e]}a=e}return best},ra=lauf(L0-1),rb=lauf(L1+1);if(!ra||!rb)continue;
+   var ca=(ra[0]+ra[1])/2,cb=(rb[0]+rb[1])/2;for(var l=L0;l<=L1;l++){var c=Math.round(ca+(cb-ca)*(l-L0+1)/(L1-L0+2));
+    for(var a=c-1;a<=c+1;a++){if(a<0||a>=W)continue;var q=id(l,a);if(wand[q]||schutz[q]||bau[q]||bude[q]||dsperr[q]||(tor[q]&&gid[q]<0)||belegt[q]>=0||!/[sgxoe]/.test(Z[q]))continue;setz(wand,q,1);setz(Z,q,'g');setz(dbaum,q,0)}}
+   return}}
+ // zusammen(): zwei Tore zu nah (Torfenster überlappen): das krumme Tor wird zugemauert, seine Straße draußen ans nächste gerade Tor umgelegt (Thomas 22.11.2026)
+ function zusammen(g,gi,bb,aus0,sAus,dist,RJ){var cx=(bb.x0+bb.x1)/2,cy=(bb.y0+bb.y1)/2,liste=[];
+  // Nachbartore nach dem jetzigen Stand (auch schon verschobene), im Umkreis 24
+  var sah=new Uint8Array(WW),nr=0;for(var y=Math.max(0,Math.floor(cy)-24);y<=Math.min(W-1,Math.ceil(cy)+24);y++)for(var x=Math.max(0,Math.floor(cx)-24);x<=Math.min(W-1,Math.ceil(cx)+24);x++){var k=y*W+x;
+   if(!tor[k]||sah[k]||gid[k]===gi)continue;var T=[],st=[k];sah[k]=1;while(st.length){var c=st.pop();T.push(c);N4(c).forEach(function(q){if(q>=0&&tor[q]&&!sah[q]&&gid[q]!==gi){sah[q]=1;st.push(q)}})}
+   if(T.some(function(q){return Z[q]==='w'})||!torGeradeOk(W,T,istWand,TOR_B))continue;var hb=torFelder(W,T),hx=(hb.x0+hb.x1)/2,hy=(hb.y0+hb.y1)/2,d=Math.max(Math.abs(hx-cx),Math.abs(hy-cy));nr++;
+   // Lage: Straße längs der Achse, deren Nachbar auf einer Seite draußen und auf der anderen innen liegt
+   for(var ax=0;ax<2;ax++){var lm=ax?Math.round(hx):Math.round(hy),a0=ax?hb.y0:hb.x0,id=function(l,a){return ax?a*W+l:l*W+a};if(a0-1<0||a0+MAUER_BILD>=W)continue;
+    var vor=id(lm,a0-1),hin=id(lm,a0+MAUER_BILD);if(wand[vor]||wand[hin]||tor[vor]||tor[hin]||MN[vor]===MN[hin])continue;liste.push({d:d,K:{ax:ax,l0:lm,a0:a0,o:MN[hin]?-1:1,nur:nr}})}}
+  liste.sort(function(a,b){return a.d-b.d||a.K.nur-b.K.nur});
+  for(var i=0;i<liste.length&&i<2;i++){if(teuer++>=VERSUCHE_PLAN)return false;if(versuch(g,gi,liste[i].K,aus0,sAus,dist,RJ,{lab:null,gut:null,voll:g.voll||false})){
+   // ein Tor weniger: Eintrag der Seite aus der Torliste nehmen
+   var rx=cx-mx,ry=cy-my,seite=Math.abs(rx)>Math.abs(ry)?(rx>0?'east':'west'):(ry>0?'south':'north'),ti=P.umriss.tore.indexOf(seite);P.umriss.tore.splice(ti>=0?ti:P.umriss.tore.length-1,1);return true}}return false}
+ // begradigen(): gerades Band (Tor + je TOR_GERADE Felder, MAUER_BILD tief) quer zur alten Straße, so weit draußen, dass die ganze alte Schräge im Fenster
+ // innen oder unter dem Band liegt. Der Keil zwischen Band und alter Schräge wird Innenfläche (alte Mauer dort wird Boden, die Torspalten Gasse), an
+ // beiden Enden schließt ein Absatz MAUER_BILD Reihen das Band an die alte Mauer an. Kein Haus landet draußen; Elendsbuden draußen weichen, Häuser,
+ // Dinge mit Rolle, Wasser und Straßen außen sperren. Danach wie ein gewöhnliches Tor: versuch() baut Tor, Straße und Anschluss und prüft dicht.
+ function begradigen(g,gi,bb,aus0,sAus,dist,RJ){var cx=Math.round((bb.x0+bb.x1)/2),cy=Math.round((bb.y0+bb.y1)/2),inG=function(k){return gid[k]===gi},rx=cx-mx,ry=cy-my,nv=0;
+  for(var ax=0;ax<2;ax++)for(var o=-1;o<=1;o+=2){var ox=ax?0:o,oy=ax?o:0;if(ox*rx+oy*ry<=0)continue;var id=function(l,a){return ax?a*W+l:l*W+a},lc=ax?cx:cy,ac=ax?cy:cx;
+   for(var dl=0;dl<7;dl++){var l0=lc+(dl&1?-1:1)*((dl+1)>>1);if(l0-H-MAUER_BILD-1<0||l0+H+MAUER_BILD+1>=W)continue;
+    // äußerste alte Mauer (oder Torfeld) je Fensterreihe nahe dem Tor
+    var ext=o>0?-1:1e9,ok=true;for(var l=l0-H;l<=l0+H&&ok;l++){var e=o>0?-1:1e9;for(var a=Math.max(0,ac-10);a<=Math.min(W-1,ac+10);a++){var q=id(l,a);if(wand[q]||inG(q))e=o>0?Math.max(e,a):Math.min(e,a)}
+     if(e<0||e>=1e9)ok=false;else ext=o>0?Math.max(ext,e):Math.min(ext,e)}if(!ok)continue;
+    for(var sh=0;sh<6;sh++){var a0=o>0?ext-(MAUER_BILD-1)+sh:ext-sh;if(a0-24<0||a0+MAUER_BILD+24>=W)continue;
+     var r=begradigenVersuch(g,gi,{ax:ax,l0:l0,a0:a0,o:o},id,inG,aus0,sAus,dist,RJ);if(r===true)return true;if(r===false&&++nv>=VERSUCHE_B)return false}}}   // nur teure Versuche (mit Wegsuche) zählen
+  return false}
+ function begradigenVersuch(g,gi,K,id,inG,aus0,sAus,dist,RJ){var l0=K.l0,a0=K.a0,o=K.o,alt=[],l,t,q,s,a,n,HZ=P.hoehe;
+  var setz=function(arr,k,v){alt.push([arr,k,arr[k]]);arr[k]=v},zur=function(){for(var x=alt.length-1;x>=0;x--)alt[x][0][alt[x][1]]=alt[x][2]};
+  var abriss=function(bi){var b=P.bauten[bi];if(weg_bude[bi])return;setz(weg_bude,bi,1);for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W&&bude[y*W+x]===bi+1)setz(bude,y*W+x,0)};
+  var fremd=function(q){return belegt[q]>=0||(tor[q]&&!inG(q))},innen=o>0?-1:1;
+  // 1. Durchgang nur rechnen: Band (b = Torspalte, B = Seite), Keil (k), Absatz (a); Gebäude draußen im Weg (Höfe, Werkstätten) rücken danach ab
+  var zone={},keil={},weg={},nein=false,huerde=function(q){var bi=bauNr[q]-1;if(bi<0)return;var b=P.bauten[bi];if(MN[q]||b.rolle==='grab'||b.rolle==='shack'){nein=true;return}weg[bi]=1};
+  var tuerOk=function(q){if(!schutz[q]||wand[q]||inG(q))return true;var tv=tuerVon[q];if(!tv)return false;tv.forEach(function(bi){var b=P.bauten[bi];if(b.rolle==='shack'||b.rolle==='grab'||MN[(b.j*W+b.i)])nein=true;else weg[bi]=1});return !nein};
+  for(l=l0-H;l<=l0+H&&!nein;l++){var torSp=Math.abs(l-l0)<=1;for(t=0;t<MAUER_BILD&&!nein;t++){q=id(l,a0+t);zone[q]=torSp?'b':'B';
+   if(fremd(q)||dsperr[q]||Z[q]==='w'||!tuerOk(q)){nein=true;break}if(bau[q])huerde(q);else if(!bude[q]&&!wand[q]&&!inG(q)&&!/[gxfpse]/.test(Z[q]))nein=true}}
+  for(l=l0-H;l<=l0+H&&!nein;l++){a=o>0?a0-1:a0+MAUER_BILD;for(n=0;n<24;n++,a+=innen){q=id(l,a);if(MN[q]&&!wand[q]&&!tor[q])break;
+    if(fremd(q)||dsperr[q]||Z[q]==='w'||!tuerOk(q)){nein=true;break}if(bau[q])huerde(q);zone[q]='k';keil[q]=1}if(n>=24)nein=true}
+  for(s=-1;s<=1&&!nein;s+=2)for(t=1;t<=MAUER_BILD&&!nein;t++){l=l0+s*(H+t);a=o>0?a0+MAUER_BILD-1:a0;
+   for(n=0;n<30;n++,a+=innen){q=id(l,a);if(wand[q]||keil[q]||(MN[q]&&!tor[q]))break;if(fremd(q)||tor[q]||dsperr[q]||!tuerOk(q)){nein=true;break}
+    if(bau[q])huerde(q);else if(!bude[q]&&!/[gxfpes]/.test(Z[q])){nein=true;break}zone[q]='a'}if(n>=30)nein=true}   // Straße draußen darf unter den Absatz: sie wird danach per Anschluss herumgeführt (Thomas 22.11.2026)
+  if(nein)return 0;
+  // 2. Gebäude draußen abrücken: gleiche Form nach außen (bis 20 Felder, seitlich bis 6), nur auf freien Boden, Abstand 1 zur Zone, nicht vor dem neuen Tor;
+  //    Tür an derselben Stelle, davor ein begehbares Feld oder ein Trampelpfad (Schlamm) zum nächsten Weg draußen
+  var gang=function(q){return !MN[q]&&!wand[q]&&!tor[q]&&!bau[q]&&!bude[q]&&!dsperr[q]&&/[some]/.test(Z[q])};
+  var vorTor=function(x,y){var l=ax2l(x,y),a=ax2a(x,y);return Math.abs(l-l0)<=2&&(o>0?a>=a0+MAUER_BILD&&a<=a0+MAUER_BILD+12:a<=a0-1&&a>=a0-13)},ax2l=function(x,y){return K.ax?x:y},ax2a=function(x,y){return K.ax?y:x};
+  var nahZone=function(x,y){for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var xx=x+dx,yy=y+dy;if(xx>=0&&yy>=0&&xx<W&&yy<W&&zone[yy*W+xx])return true}return false};
+  var wegListe=Object.keys(weg).map(Number);for(var wi=0;wi<wegListe.length;wi++){var bi=wegListe[wi],b=P.bauten[bi],h0=HZ?HZ.charCodeAt(b.j*W+b.i):0,best=null;
+   var ox2=K.ax?0:o,oy2=K.ax?o:0,qx=K.ax?1:0,qy=K.ax?0:1;
+   for(var d=1;d<=20&&!best;d++)for(var e=0;e<=12&&!best;e++){var sv=(e&1?-1:1)*((e+1)>>1),ni=b.i+ox2*d+qx*sv,nj=b.j+oy2*d+qy*sv,geht=true;
+    if(ni<2||nj<2||ni+b.w>W-2||nj+b.h>W-2)continue;
+    for(var y=nj;y<nj+b.h&&geht;y++)for(var x=ni;x<ni+b.w;x++){var c=y*W+x,eigen=bauNr[c]===bi+1;
+     if(MN[c]||wand[c]||tor[c]||(bau[c]&&!eigen)||bude[c]||dsperr[c]||(schutz[c]&&!eigen)||zone[c]||!/[gxfp]/.test(Z[c])&&!eigen||nahZone(x,y)||vorTor(x,y)||(HZ&&HZ.charCodeAt(c)!==h0)){geht=false;break}}
+    if(!geht)continue;var tu=null,tf=-1;if(b.tuer){tu=[b.tuer[0]+ni-b.i,b.tuer[1]+nj-b.j,b.tuer[2],b.tuer[3]];var fx=tu[0]+tu[2],fy=tu[1]+tu[3];tf=fy*W+fx;
+     if(fx<1||fy<1||fx>=W-1||fy>=W-1||MN[tf]||wand[tf]||tor[tf]||bude[tf]||dsperr[tf]||zone[tf]||(bau[tf]&&bauNr[tf]!==bi+1)||vorTor(fx,fy)||bauNr[tf]===bi+1)continue}
+    best={i:ni,j:nj,tuer:tu,tf:tf}}
+   if(!best){zur();return 0}
+   for(y=b.j;y<b.j+b.h;y++)for(x=b.i;x<b.i+b.w;x++){c=y*W+x;if(bauNr[c]===bi+1){setz(bau,c,0);setz(bauNr,c,0)}}
+   if(b.tuer){var of=(b.tuer[1]+b.tuer[3])*W+b.tuer[0]+b.tuer[2];if(tuerVon[of]&&tuerVon[of].length===1)setz(schutz,of,0)}
+   for(y=best.j;y<best.j+b.h;y++)for(x=best.i;x<best.i+b.w;x++){c=y*W+x;setz(bau,c,1);setz(bauNr,c,bi+1);setz(Z,c,'g');setz(dbaum,c,0)}
+   setz(b,'i',best.i);setz(b,'j',best.j);if(best.tuer){setz(b,'tuer',best.tuer);var f=best.tf;setz(schutz,f,1);setz(dbaum,f,0);
+    if(!gang(f)){setz(Z,f,'e');   // Trampelpfad zum nächsten Weg draußen (über Gras, notfalls Acker), nicht durch die Zone
+     var vv=new Map(),qa=[f],hq=0,end=-1;vv.set(f,-1);while(hq<qa.length&&end<0&&hq<4000){var a1=qa[hq++],n1=N4(a1);for(var d1=0;d1<4;d1++){var b1=n1[d1];if(b1<0||vv.has(b1)||zone[b1])continue;
+       if(gang(b1)){vv.set(b1,a1);end=b1;break}if(!MN[b1]&&!wand[b1]&&!tor[b1]&&!bau[b1]&&!bude[b1]&&!dsperr[b1]&&/[gxfp]/.test(Z[b1])){vv.set(b1,a1);qa.push(b1)}}}
+     if(end<0){zur();return 0}for(var e1=vv.get(end);e1>=0;e1=vv.get(e1)){if(!gang(e1))setz(Z,e1,'e');setz(dbaum,e1,0)}}}}
+  // was draußen an der Zone hängt (Straße, Schlammpfade zu Buden): versuch() schließt es per Trampelpfad an, wenn es abgeschnitten wird
+  var rand=[];for(var zk0 in zone)N4(+zk0).forEach(function(y){if(y>=0&&!zone[y]&&!MN[y]&&!wand[y]&&!tor[y]&&/[some]/.test(Z[y]))rand.push(y)});
+  // 3. umbauen
+  for(var zk in zone){q=+zk;var art=zone[zk],tl=Math.abs((K.ax?q%W:(q/W)|0)-l0)<=1;if(bude[q])abriss(bude[q]-1);
+   if(art==='b'||art==='B'){if(inG(q)){setz(tor,q,0);setz(MN,q,0)}}
+   else if(art==='k'){if(wand[q]){setz(wand,q,0);setz(Z,q,tl?'s':'g')}else if(tor[q]){setz(tor,q,0);setz(Z,q,'s')}else if(tl)setz(Z,q,'s');setz(MN,q,1);setz(dbaum,q,0)}
+   else{setz(wand,q,1);setz(Z,q,'g');setz(dbaum,q,0)}}
+  if(teuer++<VERSUCHE_PLAN&&versuch({T:[],vor:rand},gi,K,aus0,sAus,dist,RJ,{lab:null,gut:null,voll:false}))return true;
+  zur();return false}
+ // begradigenInnen() (N6b2e2g1, Thomas 22.11.2026: „Ecke innen kurz gerade“): nur für ein Tor an einer Ecke, wenn nach außen nichts geht (Höfe direkt an
+ // der Mauer). Das gerade Band (Tor + je TOR_GERADE Felder, MAUER_BILD tief) liegt so weit innen, dass die alte Schräge im Fenster draußen oder unter dem Band
+ // liegt; auf einer Seite läuft es in die vorhandene gerade Mauer (Ecke). Was zwischen Band und alter Schräge lag, wird Außenfläche (alte Mauer Boden, Torspalten
+ // Straße), am anderen Ende schließt ein Absatz MAUER_BILD Spalten das Band an die alte Mauer. Nur freie Innenfelder (Gasse, Platz, Garten, Boden), kein Haus,
+ // keine Tür, kein Ding mit Rolle, höchstens ECKE_MAX Innenfelder; Gassen innen bleiben zusammenhängend. Danach wie ein gewöhnliches Tor: versuch().
+ function begradigenInnen(g,gi,bb,aus0,sAus,dist,RJ){var cx=Math.round((bb.x0+bb.x1)/2),cy=Math.round((bb.y0+bb.y1)/2),inG=function(k){return gid[k]===gi},rx=cx-mx,ry=cy-my;
+  for(var ax=0;ax<2;ax++)for(var o=-1;o<=1;o+=2){var ox=ax?0:o,oy=ax?o:0;if(ox*rx+oy*ry<=0)continue;var id=function(l,a){return ax?a*W+l:l*W+a},lc=ax?cx:cy,ac=ax?cy:cx;
+   for(var dl=0;dl<5;dl++){var l0=lc+(dl&1?-1:1)*((dl+1)>>1);if(l0-H-MAUER_BILD-1<0||l0+H+MAUER_BILD+1>=W)continue;
+    // innerste alte Mauer (oder Torfeld) je Fensterreihe nahe dem Tor
+    var ext=o>0?1e9:-1,ok=true;for(var l=l0-H;l<=l0+H&&ok;l++){var e=o>0?1e9:-1;for(var a=Math.max(0,ac-10);a<=Math.min(W-1,ac+10);a++){var q=id(l,a);if(wand[q]||inG(q))e=o>0?Math.min(e,a):Math.max(e,a)}
+     if(e<0||e>=1e9)ok=false;else ext=o>0?Math.min(ext,e):Math.max(ext,e)}if(!ok)continue;
+    for(var sh=0;sh<3;sh++){var a0=o>0?ext-sh:ext-(MAUER_BILD-1)+sh;if(a0-24<0||a0+MAUER_BILD+24>=W)continue;
+     var r=innenVersuch(g,gi,{ax:ax,l0:l0,a0:a0,o:o},id,inG,aus0,sAus,dist,RJ);if(r===true)return true;if(r===false)return false}}}   // höchstens ein teurer Versuch
+  return false}
+ function innenVersuch(g,gi,K,id,inG,aus0,sAus,dist,RJ){var l0=K.l0,a0=K.a0,o=K.o,alt=[],l,t,q,a,n,s,innenN=0;
+  var setz=function(arr,k,v){alt.push([arr,k,arr[k]]);arr[k]=v},zur=function(){for(var x=alt.length-1;x>=0;x--)alt[x][0][alt[x][1]]=alt[x][2]};
+  var fremd=function(q){return (belegt[q]>=0&&belegt[q]!==gi)||(tor[q]&&!inG(q))};
+  var freiI=function(q){return MN[q]&&!wand[q]&&!bau[q]&&!bude[q]&&!dsperr[q]&&(!schutz[q]||inG(q))&&Z[q]!=='w'&&(GEHZ[Z[q]]===1||BODEN[Z[q]]===1)};
+  var zone={},nein=false,inR=o>0?a0:a0+MAUER_BILD-1,ausR=o>0?a0+MAUER_BILD:a0-1;
+  // Ecke: auf einer Seite liegt neben dem Fenster in allen Bandreihen schon Mauer
+  var ecke=false;for(s=-1;s<=1&&!ecke;s+=2){var alle=true;for(t=0;t<MAUER_BILD;t++)if(!wand[id(l0+s*(H+1),a0+t)])alle=false;if(alle)ecke=true}if(!ecke)return 0;
+  // Band: alte Mauer, altes Tor oder freie Innenfelder
+  for(l=l0-H;l<=l0+H&&!nein;l++)for(t=0;t<MAUER_BILD;t++){q=id(l,a0+t);if(fremd(q)){nein=true;break}if(wand[q]||inG(q)){zone[q]='b';continue}if(!freiI(q)){nein=true;break}zone[q]='b';innenN++}
+  // Keil: vom Band nach außen alles bis zum ersten Außenfeld wird Außenfläche
+  for(l=l0-H;l<=l0+H&&!nein;l++){a=ausR;for(n=0;n<24;n++,a+=o){q=id(l,a);if(!MN[q]&&!wand[q]&&!tor[q])break;if(fremd(q)){nein=true;break}
+    if(!wand[q]&&!inG(q)){if(!freiI(q)){nein=true;break}innenN++}zone[q]='k'}if(n>=24)nein=true}
+  // Absatz an beiden Enden: von der inneren Bandreihe nach außen bis zur alten Mauer
+  for(s=-1;s<=1&&!nein;s+=2)for(t=1;t<=MAUER_BILD&&!nein;t++){l=l0+s*(H+t);a=inR;
+   for(n=0;n<30;n++,a+=o){q=id(l,a);if(wand[q])break;if(!MN[q]||tor[q]||fremd(q)||!freiI(q)){nein=true;break}zone[q]='a';innenN++}if(n>=30)nein=true}
+  if(nein||innenN>ECKE_MAX)return 0;
+  // umbauen
+  g.T.forEach(function(q){setz(tor,q,0);if(!zone[q])setz(Z,q,'s')});
+  for(var zk in zone){q=+zk;var art=zone[zk],tl=Math.abs((K.ax?q%W:(q/W)|0)-l0)<=1;
+   if(art==='k'){if(wand[q]){setz(wand,q,0);setz(Z,q,tl?'s':'g')}else if(inG(q)||tl)setz(Z,q,'s');setz(MN,q,0);setz(dbaum,q,0)}
+   else if(art==='a'){setz(wand,q,1);setz(Z,q,'g');setz(dbaum,q,0)}}
+  // Gassen innen und Wege draußen dürfen nicht zerfallen (Band probeweise als Mauer mit Torspalten)
+  var kz0=gehKomp(),probe=[];for(zk in zone)if(zone[zk]==='b'){q=+zk;probe.push([q,wand[q],tor[q],Z[q]]);if(Math.abs((K.ax?q%W:(q/W)|0)-l0)<=1){wand[q]=0;tor[q]=1}else{wand[q]=1;tor[q]=0}}
+  var kz1=gehKomp();probe.forEach(function(e){wand[e[0]]=e[1];tor[e[0]]=e[2];Z[e[0]]=e[3]});
+  if(kz1>kz0+1){zur();return 0}   // +1: das alte Tor trennt sich ggf. von der Gasse, versuch() schließt das neue an
+  var rand=[];for(zk in zone)if(zone[zk]==='k'){q=+zk;if(GEHZ[Z[q]]===1)rand.push(q);N4(q).forEach(function(y){if(y>=0&&!zone[y]&&!MN[y]&&!wand[y]&&!tor[y]&&GEHZ[Z[y]]===1)rand.push(y)})}
+  if(teuer++<VERSUCHE_PLAN&&versuch({T:[],vor:rand},gi,K,aus0,sAus,dist,RJ,{lab:null,gut:null,voll:false}))return true;
+  zur();return false}
+ // zusammenhängende Gebiete der Mittelfelder (Stand vor dem Versuch) und ob ein Gebiet die alte Straße (ab RJ) bzw. ohne Straße den Rand erreicht
+ function gebiete(pre,aus0,dist,RJ){var lab=new Int32Array(WW).fill(-1),gut=[],z=new Uint8Array(WW),zn=0,k,n=0;aus0.forEach(function(q){if(dist(q)>=RJ){z[q]=1;zn++}});
+  var DXg=[1,-1,0,0],DYg=[0,0,1,-1];
+  for(k=0;k<WW;k++){if(lab[k]>=0)continue;if(!blkG[k])continue;var sp=0,ok=false;STK[sp++]=k;lab[k]=n;
+   while(sp){var c=STK[--sp],cx=c%W,cy=(c/W)|0;if(!ok){if(!zn)ok=cx<=1||cy<=1||cx>=W-2||cy>=W-2;else for(var dy=-1;dy<=1&&!ok;dy++)for(var dx=-1;dx<=1;dx++)if(z[(cy+dy)*W+cx+dx]){ok=true;break}}
+    for(var d=0;d<4;d++){var nx=cx+DXg[d],ny=cy+DYg[d];if(nx<0||ny<0||nx>=W||ny>=W)continue;var nk=ny*W+nx;if(lab[nk]<0&&blkG[nk]){lab[nk]=n;STK[sp++]=nk}}}
+   gut[n++]=ok}
+  pre.lab=lab;pre.gut=gut}
+ function versuch(g,gi,K,aus0,sAus,dist,RJ,pre){var inG=function(k){return gid[k]===gi},ax=K.ax,l0=K.l0,a0=K.a0,o=K.o,id=function(l,a){return ax?a*W+l:l*W+a},alt=[],
+   setz=function(arr,k,v){alt.push([arr,k,arr[k]]);arr[k]=v},zur=function(){for(var q=alt.length-1;q>=0;q--)alt[q][0][alt[q][1]]=alt[q][2]};
+  var aus=function(t){return o<0?a0-1-t:a0+MAUER_BILD+t},inn=function(t){return o<0?a0+MAUER_BILD+t:a0-1-t},neuT={};
+  var abriss=function(bi){var b=P.bauten[bi];if(weg_bude[bi])return;alt.push([weg_bude,bi,undefined]);weg_bude[bi]=1;
+   for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W&&bude[y*W+x]===bi+1)setz(bude,y*W+x,0)};
+  // vorher: alles Begehbare draußen, das am alten Tor hängt (Straße, Schlammpfade zu Buden und Gräbern)
+  var vorTor=g.vor?g.vor.slice():[];g.T.forEach(function(q){N4(q).forEach(function(y){if(y>=0&&!MN[y])vorTor.push(y)})});var A0=flutGeh(vorTor);
+  // altes Tor zumauern; Felder vor Türen (Haus oder Grab neben der Durchfahrt) bleiben offen, außen angeschlossen
+  // nur die Torfelder bis MAUER_BILD tief von draußen (die Durchfahrt), ein Torstreifen längs einer Gasse innen bleibt Gasse
+  var tief=new Int32Array(WW).fill(-1),tq=[],th=0;g.T.forEach(function(q){if(N4(q).some(function(y){return y>=0&&!MN[y]&&!wand[y]&&!tor[y]})){tief[q]=0;tq.push(q)}});
+  while(th<tq.length){var c7=tq[th++];N4(c7).forEach(function(y){if(y>=0&&inG(y)&&tief[y]<0){tief[y]=tief[c7]+1;tq.push(y)}})}
+  // Häuser, deren Tür in die alte Durchfahrt zeigt, bekommen die Tür auf eine andere Seite (begehbares Feld; draußen sonst Gras mit Trampelpfad)
+  var muss=[],voll=pre.voll;g.T.forEach(function(q){if(!schutz[q]||!tuerVon[q])return;var alle=true;
+   tuerVon[q].forEach(function(bi){var b=P.bauten[bi],best=null,bw=1e9;
+    for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++){if(y!==b.j&&y!==b.j+b.h-1&&x!==b.i&&x!==b.i+b.w-1)continue;
+     [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(dv){var fx=x+dv[0],fy=y+dv[1];if(fx<0||fy<0||fx>=W||fy>=W)return;if(fx>=b.i&&fx<b.i+b.w&&fy>=b.j&&fy<b.j+b.h)return;var f=fy*W+fx;
+      if(inG(f)||wand[f]||tor[f]||bau[f]||bude[f]||dsperr[f])return;var gehF=/[some]/.test(Z[f]),wert=gehF?0:MN[f]?1e9:/[gx]/.test(Z[f])?2:1e9;
+      if(wert<bw){bw=wert;best=[x,y,dv[0],dv[1]]}})}
+    if(!best){alle=false;return}var nf=(best[1]+best[3])*W+best[0]+best[2];setz(b,'tuer',best);setz(schutz,nf,1);
+    if(!/[some]/.test(Z[nf])){setz(Z,nf,'e');setz(dbaum,nf,0)}if(!MN[nf])muss.push(nf)});
+   if(alle)setz(schutz,q,0)});
+  g.T.forEach(function(q){setz(tor,q,0);if(!voll&&(tief[q]<0||tief[q]>=MAUER_BILD))return;if(!schutz[q]){setz(wand,q,1);setz(Z,q,'g');return}
+   if(N4(q).some(function(y){return y>=0&&!MN[y]&&!wand[y]&&!tor[y]})){setz(MN,q,0);muss.push(q)}});
+  if(!K.nur)for(var l=l0-H;l<=l0+H;l++){var torSp=Math.abs(l-l0)<=1;
+   for(var t=0;t<MAUER_BILD;t++){var q=id(l,a0+t);if(torSp){setz(wand,q,0);setz(tor,q,1);setz(Z,q,'s');setz(dbaum,q,0);neuT[q]=1}else if(!wand[q]){setz(wand,q,1);setz(Z,q,'g');setz(dbaum,q,0)}}
+   [aus(0),inn(0)].forEach(function(r,ri){var q1=id(l,r);if(torSp){if(wand[q1])setz(wand,q1,0);setz(Z,q1,'s');setz(dbaum,q1,0);setz(MN,q1,ri)}else if(wand[q1]){setz(wand,q1,0);setz(Z,q1,inG(q1)?Z0.charAt(q1):'g');setz(MN,q1,ri)}})}   // altes Torfeld bekommt seinen Boden zurück
+  // dicht? Flut vom Rand über alles außer Mauer und Tor darf kein Innenfeld erreichen; Mauer zerfällt nicht in mehr Stücke
+  var k,c,d,x,warW=new Uint8Array(WW);for(var q8=0;q8<alt.length;q8++)if(alt[q8][0]===wand&&alt[q8][2]===1)warW[alt[q8][1]]=1;   // war vorher Mauer
+  if(leck(function(k){return !warW[k]})){zur();return false}
+  if(komp()>komp0){zur();return false}
+  // Straße außen: 3 breit vom Tor bis zur alten Straße (ab RJ Feldern vom alten Tor) oder zum Bildrand; Abbiegen kostet extra
+  var ziel=new Uint8Array(WW),zn=0;aus0.forEach(function(q){if(dist(q)>=RJ){ziel[q]=1;zn++}});
+  var start=ax?{x:l0,y:aus(1)}:{x:aus(1),y:l0},sd=ax?(o<0?3:1):(o<0?2:0);   // Richtung 0 +x, 1 +y, 2 −x, 3 −y
+  var DX=[1,0,-1,0],DY=[0,1,0,-1],weg=null;
+  if(aus0.length){var kost=KO.fill(1e9),von=VO.fill(-1),sk=(start.y*W+start.x)*4+sd;
+   vorrechnen();if(!blk(start.y*W+start.x)){zur();return false}
+   // Vorprüfung nach einem Fehlschlag: liegt das Feld zwei vor dem Tor in einem Gebiet ohne Ziel, gar nicht erst suchen
+   if(pre.lab){var px=ax?l0:aus(2),py=ax?aus(2):l0,pl=pre.lab[py*W+px];if(pl>=0&&!pre.gut[pl]){zur();return false}}
+   // Dijkstra mit Binärheap (Schlüssel = Kosten · 2^20 + Zustand, Zustand = Feld · 4 + Richtung), Kosten höchstens 800
+   // A*: Schätzung = Abstand (4 Richtungen, ohne Hindernisse) zum nächsten Zielfeld, nie zu hoch
+   // Schätzung = Abstand (4 Richtungen) zum Rechteck um alle Zielfelder bzw. zum Randstreifen, nie zu hoch (billig, kein Durchlauf übers ganze Bild)
+   var zx0=1e9,zx1=-1,zy0=1e9,zy1=-1;if(zn)for(var z9=0;z9<aus0.length;z9++){var zq=aus0[z9];if(!ziel[zq])continue;var zi=zq%W,zj=(zq/W)|0;if(zi<zx0)zx0=zi;if(zi>zx1)zx1=zi;if(zj<zy0)zy0=zj;if(zj>zy1)zy1=zj}
+   var hz=function(c){var x=c%W,y=(c/W)|0,v;if(zn)v=(x<zx0?zx0-x:x>zx1?x-zx1:0)+(y<zy0?zy0-y:y>zy1?y-zy1:0);else v=Math.min(x-1,y-1,W-2-x,W-2-y);v-=1;return v>0?v:0};
+   var zielN=null;if(zn){zielN=new Uint8Array(WW);for(var z8=0;z8<aus0.length;z8++){var zq8=aus0[z8];if(!ziel[zq8])continue;var zi8=zq8%W,zj8=(zq8/W)|0;   // Ziel im 3 × 3 um ein Feld (vorab statt je Schritt)
+    for(var dy8=-1;dy8<=1;dy8++)for(var dx8=-1;dx8<=1;dx8++){var xx8=zi8+dx8,yy8=zj8+dy8;if(xx8>=0&&yy8>=0&&xx8<W&&yy8<W)zielN[yy8*W+xx8]=1}}}
+   kost[sk]=0;hn=0;hinein(hz(sk>>2)*1048576+sk);var fertig=-1,rand=function(x,y){return x<=1||y<=1||x>=W-2||y>=W-2};
+   // N6b2e2g0: hängt das Gebiet um den Start gar nicht am Ziel (wie in gebiete), scheitert die Suche sicher, sonst erst nach 60.000 Schritten.
+   // Vorher billig fluten (Breitensuche, hört beim ersten Zielfeld auf); erreicht die Flut das Ziel, sucht A* wie bisher (gleiches Ergebnis)
+   var erreicht=false;{erN++;var st0=start.y*W+start.x,qh=0,qt=0;erS[st0]=erN;STK[qt++]=st0;
+    while(qh<qt){var c9=STK[qh++],x9=c9%W,y9=(c9/W)|0;if(zn?zielN[c9]:rand(x9,y9)){erreicht=true;break}
+     for(var d9=0;d9<4;d9++){var nx9=x9+DX[d9],ny9=y9+DY[d9];if(nx9<0||ny9<0||nx9>=W||ny9>=W)continue;var n9=ny9*W+nx9;if(erS[n9]===erN||!blk(n9))continue;erS[n9]=erN;STK[qt++]=n9}}}
+   if(!erreicht)hn=0;
+   var pops=0;while(erreicht&&hn&&fertig<0&&pops++<60000){var top=heraus(),fw=Math.floor(top/1048576),s0=top-fw*1048576,cst=kost[s0];if(cst+hz(s0>>2)!==fw||cst>800)continue;var cell=s0>>2,dr=s0&3,x0=cell%W,y0=(cell/W)|0;
+     if(zn?zielN[cell]:rand(x0,y0)){fertig=s0;break}
+     for(var nd=0;nd<4;nd++){if(nd===((dr+2)&3))continue;var nx=x0+DX[nd],ny=y0+DY[nd];if(nx<0||ny<0||nx>=W||ny>=W)continue;var bk=blk(ny*W+nx);if(!bk)continue;var ns=(ny*W+nx)*4+nd,nc=cst+bk+(nd===dr?0:4);
+      if(nc<kost[ns]){kost[ns]=nc;von[ns]=s0;hinein((nc+hz(ns>>2))*1048576+ns)}}}
+   if(fertig<0){if(!pre.lab)vorrechnenVoll();zur();if(!pre.lab)gebiete(pre,aus0,dist,RJ);return false}
+   weg=[];for(var s1=fertig;s1>=0;s1=von[s1])weg.push(s1>>2)}
+  // Straße innen: von der Innenseite des Tors 1 breit bis zur nächsten Gasse
+  if(!K.nur){   // nur bei neuem Tor: innen an die Gasse anschließen (ein vorhandenes Tor ist schon angeschlossen)
+  var vorn=[];for(var l2=l0-1;l2<=l0+1;l2++)vorn.push(id(l2,inn(0)));
+  var innL=function(q){return q>=0&&MN[q]&&!wand[q]&&!tor[q]&&!bau[q]&&!dsperr[q]&&LAUFZ[Z[q]]===1};
+  // Ziel innen: Gassenfeld im größten zusammenhängenden begehbaren Innengebiet (Straße, Platz, Markt, Schlamm), nicht ein abgeschnittenes Reststück
+  var gIn=function(q){return MN[q]&&!wand[q]&&!tor[q]&&!bau[q]&&GEHZ[Z[q]]===1&&!neuT[q]},kl=new Int32Array(WW).fill(-1),gr=[],kn=0;
+  for(k=0;k<WW;k++){if(kl[k]>=0||!gIn(k))continue;var sp6=0,n6=0;STK[sp6++]=k;kl[k]=kn;while(sp6){var c6=STK[--sp6],q6=N4b(c6);n6++;for(var d6=0;d6<4;d6++){var x6=q6[d6];if(x6>=0&&kl[x6]<0&&gIn(x6)){kl[x6]=kn;STK[sp6++]=x6}}}gr[kn++]=n6}
+  var gross=-1,gn=0;for(k=0;k<kn;k++)if(gr[k]>gn){gn=gr[k];gross=k}
+  var gasse=new Uint8Array(WW);for(k=0;k<WW;k++)if(kl[k]===gross&&gross>=0)gasse[k]=1;vorn.forEach(function(q){gasse[q]=0});
+  var vv=new Int32Array(WW).fill(-2),qa=[],hq=0,end=-1;vorn.forEach(function(q){vv[q]=-1;qa.push(q)});
+  while(hq<qa.length&&end<0){var a1=qa[hq++],n1=N4b(a1);for(d=0;d<4;d++){var b1=n1[d];if(b1<0||vv[b1]!==-2)continue;if(gasse[b1]){vv[b1]=a1;end=b1;break}if(innL(b1)){vv[b1]=a1;qa.push(b1)}}}
+  if(end<0){zur();return false}
+  for(var e1=vv[end];e1>=0;e1=vv[e1]){if(Z[e1]!=='s')setz(Z,e1,'s');setz(dbaum,e1,0)}}
+  if(weg){weg.forEach(function(c){var x0=c%W,y0=(c/W)|0;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var q=(y0+dy)*W+x0+dx;if(Z[q]!=='s')setz(Z,q,'s');setz(dbaum,q,0);if(bude[q])abriss(bude[q]-1)}});
+   // alter Stummel: Straßenfelder der alten Straße näher als RJ am alten Tor fallen weg, wenn alles andere am neuen Tor hängen bleibt
+   var auf=new Uint8Array(WW);weg.forEach(function(c){var x0=c%W,y0=(c/W)|0;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++)auf[(y0+dy)*W+x0+dx]=1});
+   // begehbar draußen (Straße, Platz, Markt, Schlamm) vom neuen Tor aus: vorher zählen, nach dem Abbau darf nichts außer dem Stummel fehlen
+   var zaehl=function(){var se=new Uint8Array(WW),st=[],n=0;
+     for(var l3=l0-1;l3<=l0+1;l3++){var q3=id(l3,aus(0));if(!se[q3]){se[q3]=1;st.push(q3);n++}}
+     while(st.length){var c3=st.pop(),n3=N4b(c3);for(var d3=0;d3<4;d3++){var x3=n3[d3];if(x3>=0&&!se[x3]&&geh(x3)){se[x3]=1;st.push(x3);n++}}}return{n:n,se:se}};
+   var vorher=zaehl();
+   var stumm=aus0.filter(function(q){return dist(q)<RJ&&!auf[q]&&!tor[q]&&!wand[q]&&!MN[q]&&!schutz[q]}),vor=alt.length;stumm.forEach(function(q){setz(Z,q,'g')});
+   var seen=new Uint8Array(WW),st=[];for(var l3=l0-1;l3<=l0+1;l3++){var q3=id(l3,aus(0));seen[q3]=1;st.push(q3)}
+   while(st.length){var c3=st.pop(),n3=N4b(c3);for(d=0;d<4;d++){var x3=n3[d];if(x3>=0&&!seen[x3]&&!MN[x3]&&!wand[x3]&&!tor[x3]&&Z[x3]==='s'){seen[x3]=1;st.push(x3)}}}
+   var nachher=zaehl();if(aus0.some(function(q){return Z[q]==='s'&&!seen[q]})||nachher.n+stumm.length<vorher.n){for(var u=alt.length-1;u>=vor;u--)alt[u][0][alt[u][1]]=alt[u][2];alt.length=vor}}
+  // abgeschnittene Flächen (Schlammpfad, Budengasse) mit einem Trampelpfad (Schlamm) über freies Gras an die Straße vor dem neuen Tor anschließen
+  var vorN=[];for(var l5=l0-1;l5<=l0+1;l5++)vorN.push(id(l5,aus(0)));
+  for(var runde=0;runde<12;runde++){var B5=flutGeh(vorN),los=[];for(var k5=0;k5<WW;k5++)if(A0[k5]&&!B5[k5]&&geh(k5))los.push(k5);muss.forEach(function(q){if(!B5[q]&&geh(q)&&los.indexOf(q)<0)los.push(q)});if(!los.length)break;var losS=los.some(function(q){return Z[q]==='s'});   // abgeschnittene Straße: Anschluss als Straße
+   var vt=new Int32Array(WW).fill(-2),qb=[],hb=0,end5=-1;los.forEach(function(q){vt[q]=-1;qb.push(q)});
+   for(var mitAcker=0;mitAcker<2&&end5<0;mitAcker++){vt.fill(-2);qb=[];hb=0;los.forEach(function(q){vt[q]=-1;qb.push(q)});var AK=mitAcker?/[gxfp]/:/[gx]/;
+   var pfad=function(q){return !MN[q]&&!wand[q]&&!tor[q]&&!bau[q]&&!bude[q]&&!dsperr[q]&&(geh(q)||AK.test(Z[q]))};
+   while(hb<qb.length&&end5<0){var a5=qb[hb++],n5=N4(a5);for(var d5=0;d5<4;d5++){var b5=n5[d5];if(b5<0||vt[b5]!==-2||!pfad(b5))continue;vt[b5]=a5;if(B5[b5]){end5=b5;break}qb.push(b5)}}}
+   if(end5<0){zur();return false}
+   for(var e5=vt[end5];e5>=0;e5=vt[e5])if(!geh(e5)||losS){setz(Z,e5,losS?'s':'e');setz(dbaum,e5,0)}}
+  var nb={x0:1e9,x1:-1,y0:1e9,y1:-1};for(var nk in neuT){var ni=nk%W,nj=(nk/W)|0;nb.x0=Math.min(nb.x0,ni);nb.x1=Math.max(nb.x1,ni);nb.y0=Math.min(nb.y0,nj);nb.y1=Math.max(nb.y1,nj)}
+  if(!K.nur)reserv(gi,{x0:nb.x0-TOR_GERADE,x1:nb.x1+TOR_GERADE,y0:nb.y0-TOR_GERADE,y1:nb.y1+TOR_GERADE});
+  // zugemauerte Durchfahrt: am Ende so dick wie die Mauer daneben (dick3)
+  if(g.T.length)zuMauern.push(g.T);
+  return true;
+}
+ // zugemauerte Durchfahrten erst jetzt so dick wie die Mauer daneben (würde sonst die Suche für spätere Tore stören); nur wenn dabei kein Weg zerfällt
+ if(zuMauern.length){var kz=gehKomp();zuMauern.forEach(function(T){var al=[],st=function(a,k,v){al.push([a,k,a[k]]);a[k]=v};dick3(T,st);
+  if(al.length){var kn=gehKomp();if(kn>kz)for(var u=al.length-1;u>=0;u--)al[u][0][al[u][1]]=al[u][2];else kz=kn}})}
+ // zurückschreiben: Zellen, Torfelder, Mauerstücke (1 × 1 wie in mauerRund), Bäume, Innenfläche
+ P.zellen=Z.join('');var mt='';for(k=0;k<WW;k++)mt+=tor[k]?'1':'0';P.mauertor=mt;
+ P.dinge=P.dinge.filter(function(o){if(o.i<0||o.j<0||o.i>=W||o.j>=W)return true;var q=o.j*W+o.i;return o.rolle||!(!dbaum[q]||wand[q]||tor[q]||Z[q]==='s')});
+ var ab=0;P.bauten=P.bauten.filter(function(b,bi){if(weg_bude[bi]){ab++;return false}return true});if(ab&&P.aussen)P.aussen.buden-=ab;
+ var HZ=P.hoehe,hat=new Uint8Array(WW);P.bauten=P.bauten.filter(function(b){if(b.rolle!=='mauer')return true;if(b.w===1&&b.h===1&&wand[b.j*W+b.i]){hat[b.j*W+b.i]=1;return true}return false});
+ for(k=0;k<WW;k++)if(wand[k]&&!hat[k]){var o2={rolle:'mauer',i:k%W,j:(k/W)|0,w:1,h:1,klasse:m0.klasse,dach:m0.dach,achse:'i',wand:m0.wand,dachR:m0.dachR};if(HZ)o2.hz=HZ.charCodeAt(k)-48;P.bauten.push(o2)}
+ var aus2=flut();
+ var zl=[];for(j=0;j<W;j++){i=0;while(i<W){if(aus2[j*W+i]){i++;continue}var i1=i;while(i1+1<W&&!aus2[j*W+i1+1])i1++;zl.push(j,i,i1);i=i1+1}}P.umriss.bild=zl}
 var WEHR_IDS=['mauer-kante-i','mauer-kante-j','turm-kante-i','turm-kante-j','turm-scharte-i','turm-scharte-j','tor-sturz-i','tor-sturz-j','mauer-gang',
  'mauer-zinne-n','mauer-zinne-s','mauer-zinne-o','mauer-zinne-w','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w',
  'mauer-rampe-s','mauer-rampe-n','mauer-rampe-o','mauer-rampe-w','turm-tuer-i','turm-tuer-j','turm-eingang-i','turm-eingang-j',
@@ -837,7 +1210,7 @@ var WEHR_IDS=['mauer-kante-i','mauer-kante-j','turm-kante-i','turm-kante-j','tur
 var ZINNE_VAR='00000000aaab';function zinneWahl(d,i,j,seed){var c=ZINNE_VAR.charAt(Math.floor(rausch(i,j,seed+131)*ZINNE_VAR.length));return 'mauer-zinne-'+d+(c==='0'?'':'-'+c)}   // N6b2e2t: Gangtür und Erdgeschosstür am Turm (turm-tuer-*, turm-eingang-*)
 // N6b2e2a Halbfelder: Raster-Ecke → Bildlage (N oben, E rechts, S unten, W links); vordere Zinnen wie die Zinnen 8 : 3 : 1, Schrägwand 3 ruhige Fassungen (je 3) + Riss 2 + Flickstein 1
 var HALB={N:'ob',E:'re',S:'un',W:'li'},WAND_VAR='000cccdddaab';function halbWahl(id,i,j,seed,v){v=v||ZINNE_VAR;var c=v.charAt(Math.floor(rausch(i,j,seed+137)*v.length));return c==='0'?id:id+'-'+c}
-var WEHR_H=4,TURM_H=2,TURM_AB=12,TREPPE_AB=20,WRI={s:[0,1],o:[1,0],n:[0,-1],w:[-1,0]},WRK=['s','o','n','w'],ZBIT={s:1,o:2,n:4,w:8};
+var WEHR_H=4,TURM_H=2,TURM_AB=36,TREPPE_AB=20,WRI={s:[0,1],o:[1,0],n:[0,-1],w:[-1,0]},WRK=['s','o','n','w'],ZBIT={s:1,o:2,n:4,w:8};
 function mauerwerk(P){var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wand=new Uint8Array(WW),k,i,j,q;
  P.bauten.forEach(function(b){if(b.rolle!=='mauer')return;for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)wand[y*W+x]=1});
  var nw=0;for(k=0;k<WW;k++)nw+=wand[k];if(!nw)return;
@@ -856,6 +1229,11 @@ function mauerwerk(P){var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wan
  var cx=0,cy=0,cn=0;for(k=0;k<WW;k++)if(MK[k]){cx+=k%W;cy+=(k/W)|0;cn++}cx/=cn;cy/=cn;
  // Türme: Fenster 3 × 3 ganz aus Mauerfeldern
  var kand=[];for(j=0;j+2<W;j++)for(i=0;i+2<W;i++){var voll=true;for(q=0;q<9&&voll;q++)if(A[(j+(q/3|0))*W+i+q%3]!==1)voll=false;if(voll)kand.push([i,j])}
+ // N6b2e2g1: nur Fenster, an denen innen eine Erdgeschosstür möglich ist (Gasse, Gras oder Tordurchfahrt neben einer Seite); an inneren Mauerecken liegt die
+ // Gasse sonst nur über Eck
+ var bauT=new Uint8Array(WW);P.bauten.forEach(function(b){if(b.rolle==='mauer')return;for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)bauT[y*W+x]=1});
+ kand=kand.filter(function(c){for(var q2=0;q2<12;q2++){var s3=q2/3|0,r3=q2%3,x=s3===0?c[0]+r3:s3===1?c[0]+r3:s3===2?c[0]-1:c[0]+3,y=s3===0?c[1]-1:s3===1?c[1]+3:c[1]+r3;
+   if(x<0||y<0||x>=W||y>=W)continue;var kk=y*W+x;if(!MK[kk])continue;if(A[kk]===2||(!A[kk]&&!bauT[kk]&&/[somqg]/.test(Z.charAt(kk))))return true}return false});
  var tuerme=[],belegtT=new Uint8Array(WW);
  var frei=function(c){for(var q2=0;q2<9;q2++){var y=c[1]+(q2/3|0),x=c[0]+q2%3;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var x2=x+dx,y2=y+dy;if(x2>=0&&y2>=0&&x2<W&&y2<W&&belegtT[y2*W+x2])return false}}return true};
  var setzT=function(c){tuerme.push([c[0],c[1],0]);for(var q2=0;q2<9;q2++)belegtT[(c[1]+(q2/3|0))*W+c[0]+q2%3]=1};
@@ -866,7 +1244,7 @@ function mauerwerk(P){var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wan
  tore.forEach(function(T){var nah=kand.filter(function(c){for(var q2=0;q2<T.length;q2++){var ti=T[q2]%W,tj=(T[q2]/W)|0;if(ti>=c[0]-2&&ti<=c[0]+4&&tj>=c[1]-2&&tj<=c[1]+4)return true}return false});
   var best=null,bd=-1;for(var a=0;a<nah.length;a++)for(var b=a+1;b<nah.length;b++){var d=ab(nah[a],nah[b]);if(d>bd&&frei(nah[a])&&frei(nah[b])&&Math.abs(nah[a][0]-nah[b][0])+Math.abs(nah[a][1]-nah[b][1])>4){bd=d;best=[nah[a],nah[b]]}}
   if(best){setzT(best[0]);setzT(best[1])}else if(nah.length&&frei(nah[0]))setzT(nah[0])});
- // dann reihum (nach Winkel um die Mitte) etwa alle TURM_AB Felder
+ // dann reihum (nach Winkel um die Mitte) etwa alle TURM_AB Felder (Thomas 22.11.2026: 36 statt 12, zu viele Türme; die Torpaare bleiben)
  kand.sort(function(a,b){return Math.atan2(a[1]+1-cy,a[0]+1-cx)-Math.atan2(b[1]+1-cy,b[0]+1-cx)||a[1]-b[1]||a[0]-b[0]});
  kand.forEach(function(c){if(!frei(c))return;for(var t=0;t<tuerme.length;t++)if(ab(c,tuerme[t])<TURM_AB)return;setzT(c)});
  // Turm: Geschoss (Ganghöhe im Turm) = höchste Ganghöhe darunter und rings um den Turm, Plattform TURM_H Stufen darüber; danach wieder glätten (bis alles passt).
@@ -948,7 +1326,7 @@ function mauerwerk(P){var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wan
  // Außen (außerhalb des Umrisses) mit Zinnen auf der Schräge. Nicht auf Gebäuden, Dingen und Wasser (Bäume vor der Mauer räumt schon mauerRund weg).
  var DG={};P.dinge.forEach(function(o){if(o.i>=0&&o.j>=0&&o.i<W&&o.j<W)DG[o.j*W+o.i]=1});
  var halb=0;
- for(k=0;k<WW;k++){if(A[k]||bau[k]||DG[k]||'wy'.indexOf(Z.charAt(k))>=0)continue;
+ for(k=0;k<WW;k++){if(A[k]||bau[k]||DG[k]||RES[k]||'wy'.indexOf(Z.charAt(k))>=0)continue;   // N6b2e2g1: nie vor einer Turmtür (RES)
   var hi=k%W,hj=(k/W)|0,w4=[hi<W-1&&A[k+1]===1,hj<W-1&&A[k+W]===1,hi>0&&A[k-1]===1,hj>0&&A[k-W]===1],nw4=w4.filter(Boolean).length;
   if(nw4!==2)continue;var form=w4[2]&&w4[3]?'N':w4[0]&&w4[3]?'E':w4[0]&&w4[1]?'S':w4[2]&&w4[1]?'W':null;if(!form)continue;
   var na=w4[0]?k+1:k-1,nb2=w4[1]?k+W:k-W;if(L[na]!==L[nb2]||stufe[na]!=='.'||stufe[nb2]!=='.')continue;
@@ -999,7 +1377,7 @@ var WOHN={townhouse:1,domus:1,villa:1,palazzo:1,tenement:1,cottage:1};
 // an der Straße, Friedhof mit Grabhäuschen) an zwei verschiedenen Toren aus dem Seed; Gehöfte an den Ausfallstraßen. Vorschläge: 1 Grabhäuschen je GRAB_JE Einwohner
 // (höchstens GRAB_MAX), 1 zusätzlicher Hof je HOF_JE Einwohner (Felder und Herden abwechselnd, Arten aus dem Biom). Olivenhain und Obstgarten mit Bäumen, Felder Feldboden,
 // Herden Weide (p); Zäune, Rebstöcke und Tiere mit N6b4.
-var TOTE={cemetery:1,undertaker:1,'coffin-maker':1,'tear-press':1},HAIN={'olive-grove':'baum-olive',orchard:'baum-apfel'},GRAB_JE=400,GRAB_MAX=40,HOF_JE=1000,
+var TOTE={cemetery:1,undertaker:1,'coffin-maker':1,'tear-press':1},HAIN={'olive-grove':'baum-olive',orchard:'baum-apfel'},GRAB_JE=400,GRAB_MAX=40,HOF_JE=1000,UE_MAX=40,
  SEITE=['south','north','east','west'],SPIEGEL={south:'east',east:'south',north:'west',west:'north'};
 // Maßstab (N6b2b1, E31): Plan in Planfeldern → Bildfelder ×F. Feld (I, J) gehört zu Planfeld (⌊I/F⌋, ⌊J/F⌋), Bau [i, i+w) → [r(i), r(i+w)) mit r = runden(·F);
 // Rundbauten bleiben quadratisch (kleinere Seite), Türen sitzen wieder mittig an derselben Seite, Dinge auf dem ersten Feld ihres Planfelds.
@@ -1246,6 +1624,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(P.wehr?WEHR_IDS:[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
