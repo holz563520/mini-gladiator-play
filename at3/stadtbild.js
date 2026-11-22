@@ -1,7 +1,8 @@
 // WAS DIE DATEI TUT: Stadtbilder von Arena Theory 3.0 (Schritt N6a, Entscheidungen Thomas 21.11.2026: Bauplan + Teile, Flächen wie AT3_NEUAUSRICHTUNG 5.2,
 // Bild im Bildkern bauen statt fertige Bilder speichern, 12 Baustile als Achse). Gemeinsam für Master-Editor (Reiter „Stadtbilder“) und später Bildkern (N7a);
 // läuft im Browser und in Node.
-// 1) plan(): aus Siedlungsart × Biom × Baustil × Seed × Zusatzteilen ein Bauplan (Felder): Boden je Feld, Häuser als Rechtecke mit Bauklasse, Dach, Firstachse,
+// 1) plan() (seit N6b2c2 nach Einwohnern, Gebäudeliste aus stadtliste.js; Blöcke mit Innenhof, 4 Tore, Hauptstraßen, Mauer ab Marktflecken; ältere Beschreibung:)
+//    aus Siedlungsart × Biom × Baustil × Seed × Zusatzteilen ein Bauplan (Felder): Boden je Feld, Häuser als Rechtecke mit Bauklasse, Dach, Firstachse,
 //    Tür zur Gasse, Mauer als Feldstücke mit Tor, Plätze, Rundbauten, Dinge (Bäume, Stände, Brunnen …). Varianten aus dem Seed (gespiegelt, Lage von Tempel und
 //    Markt, Gassen versetzt). Gleicher Seed = gleicher Plan. Ein Plan ist klein (Kennzahlen, keine Bildpunkte).
 // 2) Malen: Boden je Feld aus den Kartei-Böden, jedes Haus mit dem Gebäudebaukasten (baukasten.js setzen, Teile je Bauklasse, Farbtausch nach Biom/Baustil),
@@ -17,18 +18,31 @@ function BK(){return G.AT3_BAUKASTEN||(typeof require!=='undefined'?require('./b
 function S(){return G.AT3_64||(typeof require!=='undefined'?require('./at3-64.js'):null)}
 var STEIN=0,ERDE=1,GRUEN=2,HOLZ=3,HAUT=4,BLUT=5,SAND=7,PURPUR=9,OCKER=10,LEER=255;
 
-// Siedlungsarten (Fläche wie 5.2, daten/ortsbilder.json): Dichte der Häuser, Gassenabstand, Mauerringe, Standard-Zusatzteile.
-var ARTEN={
- homestead:{W:2,dichte:0,gasse:0,ringe:0,std:['fields']},
- hamlet:{W:4,dichte:.4,gasse:0,ringe:0,std:['fields','pastures']},
- village:{W:6,dichte:.55,gasse:0,ringe:0,std:['market-square','temple','fields']},
- 'market-town':{W:9,dichte:.75,gasse:4,ringe:1,std:['wall','gate','market-square','temple','bath']},
- city:{W:13,dichte:.85,gasse:4,ringe:1,std:['wall','gate','forum','market-square','temple','theatre','arena','slum-quarter']},
- 'great-city':{W:18,dichte:.88,gasse:4,ringe:2,std:['wall','gate','palace','forum','market-square','temple','theatre','arena','barracks','granary','slum-quarter']},
- slum:{W:6,dichte:.8,gasse:0,ringe:0,std:[]}};
-// Zusatzteile, die das Werkzeug in N6a als Skizze setzen kann (die übrigen aus ortsbilder.json kommen mit N6e).
-var ZUSATZ=['wall','gate','market-square','temple','forum','theatre','arena','palace','bath','granary','barracks','cemetery','harbour','slum-quarter','fields','pastures',
- 'vineyards','olive-grove','ruins'];
+// Siedlungsarten (N6b2c2, Thomas 22.11.2026: Plan nach Einwohnern ersetzt die festen Flächen aus N6a ganz). Größe g wie orte.js, Probe-Einwohner, wenn opt.einw fehlt.
+// Die Fläche ergibt sich aus der Gebäudeliste (stadtliste.js, N6b2c1). slum = Elendssiedlung (nur Bretterbuden, bis N6b5/N6e).
+var ARTEN={homestead:{g:1,einw:10},hamlet:{g:2,einw:40},village:{g:3,einw:150},'market-town':{g:4,einw:500},city:{g:5,einw:2000},'great-city':{g:6,einw:5000},
+ capital:{g:7,einw:10000},slum:{g:3,einw:150,elend:true}};
+var ART_G=['homestead','homestead','hamlet','village','market-town','city','great-city','capital'];
+// Blockmaß in Planfeldern je Größe (Thomas: Weiler/Dorf 4, Marktflecken 5, ab Stadt 7 wie die Skizze); Gasse 1 breit, Hauptstraßen 2, Mauer 2 ab Marktflecken.
+function blockMass(g){return g<=3?4:g===4?5:7}
+var AVE=2,MAUER=2,MAUER_AB=4,PROBE_EINW=20000;
+// Gebäude ohne eigene Teile: Baukasten-Haus in seiner Grundfläche (Thomas). Repräsentatives in Marmor, Markt und Forum sind Plätze mit Ständen, Brunnen ein Ding.
+var MARMOR={temple:1,senate:1,governor:1,'royal-palace':1,bathhouse:1,theatre:1,aqueduct:1};
+var PLATZ={market:'o',forum:'m'},DING={well:'ware-water'};
+var EDEL={domus:1,villa:1,palazzo:1};
+// Zonen von innen nach außen wie die Skizze: Verwaltung, Glaube, Adel, Handel und Gewerbe, Militär, Mietshäuser, Gasthöfe, Unterwelt, Buden
+var ORD={administration:0,faith:1,economy:2,households:3,military:4,underworld:5};
+function rang(it){if(EDEL[it.id])return 0.5;if(it.id==='tenement'||it.id==='cottage')return 6;if(it.id==='townhouse')return 5.5;
+ if(it.id==='inn'||it.id==='cart-yard'||it.id==='trading-post'||it.id==='warehouse'||it.id==='stable'||it.id==='tavern')return 7;
+ if(it.id==='shack')return 9;if(it.haupt==='underworld')return 8;return (ORD[it.haupt]==null?3:ORD[it.haupt])+((it.stufe||1)>=4?0:1.5)}
+// Geschosse (N6b2b1): Hütten, Elend, Dorf 1 · Bürgerhaus 2 · Mietshaus 2–4 · Domus/Villa 1–2 · Palazzo 2 · Gewerbe 1–2 · Monumente 1
+function stock(id,g,u,w,h){if(g<MAUER_AB||Math.min(w,h)<2||id==='shack'||id==='cottage'||MARMOR[id])return 1;if(id==='townhouse')return 2;if(id==='tenement')return 2+Math.floor(u*3);
+ if(id==='domus'||id==='villa')return u<.5?2:1;if(id==='palazzo')return 2;return g===4?2:1+(u<.5?1:0)}
+// Gebäudedaten: in Node aus daten/gebaeude.json, im Browser über setzeDaten() (Editor) bzw. opt.daten
+function SL(){return G.AT3_STADTLISTE||(typeof require!=='undefined'?require('./stadtliste.js'):null)}
+var DAT=null;function setzeDaten(geb){DAT=geb&&geb.G?geb:SL().daten(geb);return DAT}
+function daten(o){if(o&&o.daten)return o.daten.G?o.daten:SL().daten(o.daten);if(!DAT&&typeof require!=='undefined')DAT=SL().daten(require('./daten/gebaeude.json'));
+ if(!DAT)throw new Error('Gebäudedaten fehlen (setzeDaten)');return DAT}
 // Bauweise je Biom (5.3a) als Skizze aus den Baukasten-Teilen: Bauklasse, Dachform, Farbtausch (Wand, Dach), Boden, Gassenbelag, Bäume, Dichte im Umland, Felder.
 var BIOME={
  mediterranean:{klasse:'brick',dach:'sattel',wand:STEIN,satz:'putz',boden:['boden-gras','boden-erde'],weg:'boden-weg',baeume:['baum-olive','baum-zypresse','busch-bluete'],dichte:.16,feld:'bk-feld'},
@@ -67,107 +81,98 @@ function rausch(i,j,s){var h=(Math.imul(i|0,374761393)+Math.imul(j|0,668265263)+
 // ---------- Bauplan ----------
 // opt: {art, biom, stil ('' = nach Biom), seed, zusatz (Liste oder null = Standard der Art)}. Ergebnis: {art,biom,stil,seed,W,zellen,bauten,dinge,tor,zusatz,gespiegelt}
 // Zellen: g Wiese, s Gasse, o Platz (Pflaster der Bauklasse), m Platz aus Marmor, f Feld, w Wasser, e Erde (Elend), p Weide, x Ruine/Fels.
+// Plan nach Einwohnern (N6b2c2): Gebäudeliste (nur Lage „innen“; Tor und Umland kommen mit N6b2c3) → Blöcke mit Innenhof, jedes Gebäude am Blockrand mit Tür zur Gasse,
+// zwei Hauptstraßen (2 breit) kreuzen in der Mitte und enden an 4 Toren, Ringgasse innen an der Mauer (2 breit, ab Marktflecken, Platzhalter bis N6b2d).
+// Monumente (Fläche ≥ 30 oder breiter als ein Block) liegen mittig in Doppelblöcken; der Rest der Gruppe ist Platz mit Zugängen von allen 4 Seiten.
+// Zonen von innen nach außen (rang). Varianten aus dem Seed: Lage der Monumente, Reihenfolge der Blöcke, Drehung, Spiegeln. Gleicher Seed = gleicher Plan.
+// opt: {seed, biom, stil?, einw? (1–20.000), art? (Probe-Einwohner der Art), liste? (stadtliste-Ergebnis), leit?, daten?, probeW? (Probestadt = 20.000 Einwohner), mass?}
 function plan(opt){
- var A=ARTEN[opt.art];if(!A)throw new Error('Unbekannte Siedlungsart: '+opt.art);var B=BIOME[opt.biom];if(!B)throw new Error('Unbekanntes Biom: '+opt.biom);
+ var art=opt.art||'',A=art?ARTEN[art]:null;if(art&&!A)throw new Error('Unbekannte Siedlungsart: '+art);var B=BIOME[opt.biom];if(!B)throw new Error('Unbekanntes Biom: '+opt.biom);
  var ST=opt.stil?STILE[opt.stil]:null;if(opt.stil&&!ST)throw new Error('Unbekannter Baustil: '+opt.stil);
- var F=opt.mass==null?BK().MASS:+opt.mass,pw=opt.probeW?Math.round(opt.probeW/F):0,W=pw>A.W?pw:A.W,seed=opt.seed>>>0,r=rng(hashT([seed,opt.art,opt.biom,opt.stil||''].join('|'))),zus={};
- (opt.zusatz||A.std).forEach(function(z){if(ZUSATZ.indexOf(z)>=0)zus[z]=1});
- if(zus.gate&&!zus.wall)delete zus.gate;if(W<9){delete zus.wall;delete zus.gate}
+ var F=opt.mass==null?BK().MASS:+opt.mass,seed=opt.seed>>>0,elend=!!(A&&A.elend);
+ var einw=opt.liste?opt.liste.einw:opt.einw!=null?Math.max(1,Math.min(20000,opt.einw|0)):opt.probeW?PROBE_EINW:A?A.einw:150;
+ var Li=opt.liste||(elend?null:SL().probe(einw,opt.biom,seed,daten(opt),opt.leit)),g=elend?3:Li.g;if(!art)art=ART_G[g];
  var basis={klasse:(ST||B).klasse,dach:(ST||B).dach,wand:(ST||B).wand,dachR:(ST||B).dachR};
- var Z=new Array(W*W).fill('g'),belegt=new Uint8Array(W*W),bauten=[],dinge=[];
- var at=function(i,j){return i>=0&&j>=0&&i<W&&j<W?j*W+i:-1};
- var setz=function(i,j,c){var k=at(i,j);if(k>=0)Z[k]=c};
- var frei=function(i,j,w,h,rand){for(var y=j;y<j+h;y++)for(var x=i;x<i+w;x++){var k=at(x,y);if(k<0||belegt[k]||(Z[k]!=='g'&&Z[k]!=='e'))return false;
-  if(rand&&(x<rand||y<rand||x>=W-rand||y>=W-rand))return false}return true};
- var nimm=function(i,j,w,h,c){for(var y=j;y<j+h;y++)for(var x=i;x<i+w;x++){var k=at(x,y);belegt[k]=1;if(c)Z[k]=c}};
- var c=W>>1,gi=Math.max(1,Math.min(W-2,c-(r()<.5?1:0))),innen=A.ringe?1:0,tor=null;
- // Hafen: Ostrand wird Wasser (vor der Mauer, dort keine Mauer)
- var hafen=!!zus.harbour&&W>=6,ost=W-(hafen?(W>=13?2:1):0);
- if(hafen)for(var j0=0;j0<W;j0++)for(var i0=ost;i0<W;i0++){setz(i0,j0,'w');belegt[at(i0,j0)]=1}
- // Mauerringe: Feldstücke 1 × 1 mit Flachdach, Tor in der Südkante (zur Straße)
- var mauer=function(k){var a=k,b=Math.min(ost,W)-1-k,bt=W-1-k,i,j,stueck=function(i,j){var q=at(i,j);if(q<0||belegt[q])return;if(i===gi&&j===bt){Z[q]='s';belegt[q]=1;return}
-   belegt[q]=1;Z[q]='g';bauten.push({rolle:'mauer',i:i,j:j,w:1,h:1,klasse:basis.klasse==='clay-wood'&&W>=13?'brick':basis.klasse,dach:'flach',achse:'i',wand:basis.wand,dachR:STEIN})};
-  for(i=a;i<=b;i++){stueck(i,a);stueck(i,bt)}for(j=a+1;j<bt;j++){stueck(a,j);if(!hafen)stueck(b,j)}return {i:gi,j:bt}};
- if(zus.wall){tor=mauer(0);if(A.ringe>1)mauer(Math.floor(W*.22))}
- // Gassen: Hauptgasse vom Tor zur Mitte, Quergasse, bei Märkten und Städten ein versetztes Raster
- var gasse=function(i,j){var q=at(i,j);if(q<0||belegt[q])return;Z[q]='s'};
- if(W>=4){for(var j1=W-1-(zus.wall?0:0);j1>=c-1;j1--)gasse(gi,j1)}
- if(W>=6)for(var i1=innen;i1<ost-innen;i1++)gasse(i1,c);
- if(!tor)tor={i:gi,j:W-1};
- // Besondere Bauten und Plätze: nahe am Wunschort, Lage aus dem Seed
- var suche=function(w,h,wi,wj,rand){var best=null,bd=1e9;for(var j=0;j<=W-h;j++)for(var i=0;i<=W-w;i++){if(!frei(i,j,w,h,rand))continue;
-   var d=Math.abs(i+w/2-wi)+Math.abs(j+h/2-wj)+r()*1.5;if(d<bd){bd=d;best={i:i,j:j}}}return best};
- var ecke=function(){var a=r()*Math.PI*2,rr=W*.22;return[c+Math.cos(a)*rr,c+Math.sin(a)*rr]};
- var groesser=W>=13,riesig=W>=18,mittel=W>=9;
- var bau=function(rolle,w,h,klasse,dach,wo,extra){var p=suche(w,h,wo[0],wo[1],innen);if(!p)return null;nimm(p.i,p.j,w,h,null);
-  var o={rolle:rolle,i:p.i,j:p.j,w:w,h:h,klasse:klasse,dach:dach,achse:w>=h?'i':'j',wand:klasse===basis.klasse?basis.wand:null,dachR:klasse===basis.klasse?basis.dachR:null};
-  for(var k in extra||{})o[k]=extra[k];bauten.push(o);return o};
- var platz=function(rolle,w,h,zelle,wo){var p=suche(w,h,wo[0],wo[1],innen);if(!p)return null;nimm(p.i,p.j,w,h,zelle);return{i:p.i,j:p.j,w:w,h:h,rolle:rolle}};
- var edel=mittel?'marble':basis.klasse;
- if(zus.forum){var fo=platz('forum',3,3,'m',[c+.5,c-1.5]);if(fo)dinge.push({id:'markt-stand',i:fo.i+1,j:fo.j+1})}
- if(zus['market-square']){var mw=groesser?3:mittel?2:2,mh=groesser?3:mittel?3:2,mk=platz('market-square',mw,mh,'o',ecke());
-  if(mk)for(var y2=mk.j;y2<mk.j+mh;y2++)for(var x2=mk.i;x2<mk.i+mw;x2++)if(rausch(x2,y2,seed)<.6)dinge.push({id:'markt-stand',i:x2,j:y2})}
- if(zus.palace)bau('palace',riesig?3:2,riesig?3:2,'marble','walm',[c-W*.2,c-W*.2]);
- if(zus.temple){var tw=W>=18?3:mittel?2:1;bau('temple',tw,mittel?2:1,edel,mittel?'walm':'sattel',ecke())}
- if(zus.theatre&&groesser)bau('theatre',riesig?4:3,riesig?4:3,edel,null,ecke(),{rund:true});
- if(zus.arena&&groesser)bau('arena',riesig?5:4,riesig?5:4,edel,null,ecke(),{rund:true});
- if(zus.bath&&W>=6)bau('bath',2,1,edel,'flach',ecke());
- if(zus.granary&&W>=6)bau('granary',2,2,basis.klasse,'sattel',ecke());
- if(zus.barracks&&W>=9)bau('barracks',3,2,basis.klasse,'sattel',[c,W*.8]);
- if(zus.cemetery&&W>=6){var ce=platz('cemetery',2,2,null,[W*.85,W*.15]);if(ce)for(var y3=ce.j;y3<ce.j+2;y3++)for(var x3=ce.i;x3<ce.i+2;x3++)dinge.push({id:'fels-block',i:x3,j:y3})}
- if(opt.art==='village')bau('tavern',2,2,basis.klasse,basis.dach,[c+1,c+1]);
- if(W<=6&&W>=4){var br=suche(1,1,c-.5+(r()-.5),c-.5,0);if(br){nimm(br.i,br.j,1,1,'s');dinge.push({id:'ware-water',i:br.i,j:br.j,rolle:'well'})}}
- if(zus.ruins){var ru=platz('ruins',2,1,'x',ecke());if(ru)dinge.push({id:'fels-block',i:ru.i,j:ru.j},{id:'fels-block',i:ru.i+1,j:ru.j})}
- // Gassenraster erst nach den großen Bauten (es weicht ihnen aus)
- if(A.gasse){var sh=Math.floor(r()*2);for(var gx=c%A.gasse+sh;gx<ost-innen;gx+=A.gasse)if(Math.abs(gx-gi)>1)for(var y1=innen;y1<W-innen;y1++)gasse(gx,y1);
-  for(var gy=c%A.gasse+sh;gy<W-innen;gy+=A.gasse)if(Math.abs(gy-c)>1)for(var x1=innen;x1<ost-innen;x1++)gasse(x1,gy)}
- // Elendsviertel: Südwestecke (innen an der Mauer) bzw. die ganze Elendssiedlung
- var elend=opt.art==='slum',eck=zus['slum-quarter']&&W>=9?{i0:innen,i1:innen+Math.ceil(W*.3),j0:W-innen-Math.ceil(W*.3),j1:W-innen}:null;
- var imElend=function(i,j){return elend||(eck&&i>=eck.i0&&i<eck.i1&&j>=eck.j0&&j<eck.j1)};
- if(eck)for(var y4=eck.j0;y4<eck.j1;y4++)for(var x4=eck.i0;x4<eck.i1;x4++){var q4=at(x4,y4);if(!belegt[q4]&&Z[q4]==='g')Z[q4]='e'}
- if(elend)for(var q5=0;q5<W*W;q5++)if(Z[q5]==='g'||Z[q5]==='s')Z[q5]='e';
- // Felder, Weiden, Weinberge, Olivenhaine am Rand der offenen Orte (ummauerte Orte haben ihre Felder vor dem Tor, das zeigt N6e)
- var randFeld=function(i,j){return !zus.wall&&W>=2&&(i===0||j===0||i===ost-1||j===W-1)};
- // Häuser: Zellen in zufälliger Reihenfolge, an Gassen und Plätzen (in Weilern und Gehöften frei), Größe nach Art
- var zellen=[];for(var q6=0;q6<W*W;q6++)zellen.push(q6);for(var a6=zellen.length-1;a6>0;a6--){var b6=Math.floor(r()*(a6+1)),t6=zellen[a6];zellen[a6]=zellen[b6];zellen[b6]=t6}
- var anWeg=function(i,j,w,h){for(var y=j-1;y<=j+h;y++)for(var x=i-1;x<=i+w;x++){if(x>=i&&x<i+w&&y>=j&&y<j+h)continue;if((x<i||x>=i+w)&&(y<j||y>=j+h))continue;var k=at(x,y);if(k>=0&&/[som]/.test(Z[k]))return true}return false};
- var tuerVon=function(i,j,w,h){var S2=[[i+(w>>1),j+h-1,0,1,i+(w>>1),j+h],[i+w-1,j+(h>>1),1,0,i+w,j+(h>>1)],[i,j+(h>>1),-1,0,i-1,j+(h>>1)],[i+(w>>1),j,0,-1,i+(w>>1),j-1]];
-  for(var k=0;k<4;k++){var q=at(S2[k][4],S2[k][5]);if(q>=0&&/[somep]/.test(Z[q]))return S2[k].slice(0,4)}return S2[0].slice(0,4)};
- var nurWiese=function(i,j,w,h){for(var y=j;y<j+h;y++)for(var x=i;x<i+w;x++)if(Z[at(x,y)]!=='g')return false;return true};   // Häuser nie ins Elendsviertel
- var haeuser=0,ziel=opt.art==='homestead'?1:opt.art==='hamlet'?3+Math.floor(r()*2):1e9;
- var MIN={homestead:1,hamlet:3,village:3,'market-town':6,city:12,'great-city':20,slum:5}[opt.art]||0;
- for(var pass=0;pass<3;pass++){var voll=pass>0;   // zweiter und dritter Durchgang ohne Dichte-Würfel, bis die Mindestzahl steht
- if(pass&&haeuser>=MIN)break;zellen.forEach(function(q){if(haeuser>=ziel)return;var i=q%W,j=(q/W)|0;if(belegt[q]||!/[ge]/.test(Z[q]))return;if(randFeld(i,j)&&W>=6&&!voll)return;
-  var e=imElend(i,j),dicht=e?.8:A.dichte;if(W>=6&&!voll&&r()>dicht)return;var w=1,h=1,u=r();
-  // Häuser 2 Felder tief, damit Sattel- und Walmdach einen First bekommen (1 Feld tief = flach); lange Häuser im Langhaus-Stil, Hütten im Elend 1 × 1
-  if(!e&&W>=4){var lang=ST&&ST.lang?3:2;if(u<.45){w=2;h=2}else if(u<.75){w=lang;h=2}else{w=2;h=lang}}
-  var tries=[[w,h],[2,2],[2,1],[1,2],[1,1]],ok=false;for(var tz=0;tz<tries.length&&!ok;tz++){if(frei(i,j,tries[tz][0],tries[tz][1],innen)&&(e||nurWiese(i,j,tries[tz][0],tries[tz][1]))&&(W<6||e||anWeg(i,j,tries[tz][0],tries[tz][1]))){w=tries[tz][0];h=tries[tz][1];ok=true}}
-  if(!ok)return;
-  if(e){var nb=0;[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){var k=at(i+d[0],j+d[1]);if(k>=0&&belegt[k]&&/[ge]/.test(Z[k]))nb++});if(nb>1||(nb===1&&r()<.6))return}   // Bretterbuden mit Lücken
-  if(W<6){for(var y=j-1;y<=j+h;y++)for(var x=i-1;x<=i+w;x++){var k=at(x,y);if(k>=0&&belegt[k]&&!(x>=i&&x<i+w&&y>=j&&y<j+h)&&Z[k]==='g')return}}   // Weiler: Hütten mit Abstand
-  nimm(i,j,w,h,null);haeuser++;
-  var zentrum=W>=13&&!ST&&Math.abs(i+w/2-c)+Math.abs(j+h/2-c)<W*.28,kl=e?'clay-wood':zentrum?STUFE[basis.klasse]:basis.klasse;
-  var satz=!e&&!ST&&B.satz&&kl===basis.klasse?B.satz:null;   // N6b: eigener Teilesatz des Bioms (fertig gemalt, kein Farbtausch)
-  var u2=rausch(i,j,seed+31),gs=e||opt.stil==='tents'||W<9?1:opt.art==='market-town'?2:zentrum?1+(u2<.5?1:0):2+Math.floor(u2*3);   // N6b2b1: Bürgerhaus 2, Mietshaus 2–4, Domus 1–2
-  if(Math.min(w,h)<2)gs=Math.min(gs,2);
-  bauten.push({rolle:e?'shack':'house',i:i,j:j,w:w,h:h,g:gs,klasse:kl,dach:e?'flach':basis.dach,achse:w>h?'i':h>w?'j':(r()<.5?'i':'j'),wand:kl===basis.klasse&&!e&&!satz?basis.wand:null,dachR:kl===basis.klasse&&!e&&!satz?basis.dachR:e?HOLZ:null,tuer:tuerVon(i,j,w,h),satz:satz})});
+ // Gebäude einzeln
+ var items=[];if(elend){for(var e0=Math.ceil(einw/6);e0>0;e0--)items.push({id:'shack',w:1,h:1,haupt:'households',stufe:1})}
+ else Li.gebaeude.forEach(function(x){if(x.lage!=='innen')return;for(var k=0;k<x.n;k++)items.push({id:x.id,w:x.w,h:x.h,haupt:x.haupt,stufe:x.stufe})});
+ var Bm=blockMass(g),P1=Bm+1,wall=g>=MAUER_AB&&!elend?MAUER:0,off=wall+1;
+ var istMono=function(it){return Math.max(it.w,it.h)>Bm||it.w*it.h>=30};
+ var mono=items.filter(istMono),rest=items.filter(function(it){return !istMono(it)});
+ mono.sort(function(a,b){return b.w*b.h-a.w*a.h||(a.id<b.id?-1:a.id>b.id?1:0)});
+ rest.sort(function(a,b){return rang(a)-rang(b)||b.w*b.h-a.w*a.h||(a.id<b.id?-1:a.id>b.id?1:0)});
+ var grpK=function(it){var m=Math.max(it.w,it.h),k=2;while(k*P1-1<m)k++;return k};
+ var fl=0,kmax=0;rest.forEach(function(it){fl+=it.w*it.h});mono.forEach(function(it){var k=grpK(it);fl+=k*k*Bm*Bm;if(k>kmax)kmax=k});
+ var nb=Math.max(2,Math.ceil(Math.sqrt(fl/(Bm*Bm))),2*kmax);if(nb%2)nb++;   // erst dicht versuchen, bei Bedarf je 2 Blöcke mehr
+ var ergebnis=null;
+ for(var versuch=0;versuch<10&&!ergebnis;versuch++,nb+=2)ergebnis=anlegen(nb);
+ if(!ergebnis)throw new Error('Stadtplan passt nicht ('+items.length+' Gebäude)');
+ function anlegen(nb){
+  var r=rng(hashT([seed,art,opt.biom,opt.stil||'',einw,nb].join('|'))),W=2*off+nb*P1,h2=nb>>1,c0=off+h2*P1-1;
+  var Z=new Array(W*W).fill('g'),belegt=new Uint8Array(W*W),bauten=[],dinge=[],gesetzt={};
+  var at=function(i,j){return j*W+i};
+  // Gassen überall innen, Blöcke darüber als Hof; Ring an der Mauer; Mauer 2 breit mit 4 Toren in der Achse der Hauptstraßen
+  for(var j=0;j<W;j++)for(var i=0;i<W;i++){var d=Math.min(i,j,W-1-i,W-1-j);if(d<wall){var tor=(i===c0||i===c0+1)||(j===c0||j===c0+1);Z[at(i,j)]=tor?'s':'g';belegt[at(i,j)]=1;
+    if(!tor)bauten.push({rolle:'mauer',i:i,j:j,w:1,h:1,klasse:basis.klasse==='clay-wood'&&g>=5?'brick':basis.klasse,dach:'flach',achse:'i',wand:basis.wand,dachR:STEIN})}
+   else Z[at(i,j)]=elend?'e':'s'}
+  var bx=function(a){return off+a*P1+(a>=h2?1:0)},bl=[],cx=W/2,cy=W/2;
+  for(var a=0;a<nb;a++)for(var b=0;b<nb;b++){var x=bx(a),y=bx(b);bl.push({a:a,b:b,x:x,y:y,w:Bm,h:Bm,d:Math.hypot(x+Bm/2-cx,y+Bm/2-cy)+r()*P1*.6,frei:null,rest:Bm*Bm})}
+  var offen=function(q){q.frei=new Uint8Array(q.w*q.h).fill(1);for(var y=0;y<q.h;y++)for(var x=0;x<q.w;x++)Z[at(q.x+x,q.y+y)]=elend?'e':'g'};
+  // Monumente in Gruppen aus k × k Blöcken (nicht über die Hauptstraße), nahe der Mitte
+  var gruppen=[],benutzt={};
+  for(var m=0;m<mono.length;m++){var it=mono[m],k=grpK(it),best=null,bd=1e9;
+   for(var q=0;q<bl.length;q++){var s=bl[q];if(s.a+k>nb||s.b+k>nb)continue;if((s.a<h2)!==(s.a+k-1<h2)||(s.b<h2)!==(s.b+k-1<h2))continue;
+    var frei=true;for(var u=0;u<k&&frei;u++)for(var v=0;v<k&&frei;v++)if(benutzt[(s.a+u)*nb+s.b+v])frei=false;if(!frei)continue;
+    var gw=(k-1)*P1+Bm,dd=Math.hypot(s.x+gw/2-cx,s.y+gw/2-cy)+r()*P1;if(dd<bd){bd=dd;best=s}}
+   if(!best)return null;for(var u2=0;u2<k;u2++)for(var v2=0;v2<k;v2++)benutzt[(best.a+u2)*nb+best.b+v2]=1;
+   var gw2=(k-1)*P1+Bm,grp={x:best.x,y:best.y,w:gw2,h:gw2,d:bd,rest:0,mono:true};offen(grp);
+   var rot=r()<.5,mw=rot?it.h:it.w,mh=rot?it.w:it.h,px=grp.x+((gw2-mw)>>1),py=grp.y+((gw2-mh)>>1);
+   for(var y1=0;y1<gw2;y1++)for(var x1=0;x1<gw2;x1++){var X=grp.x+x1,Y=grp.y+y1,inM=X>=px&&X<px+mw&&Y>=py&&Y<py+mh,
+     mitte=(x1===(gw2>>1)||x1===((gw2-1)>>1)||y1===(gw2>>1)||y1===((gw2-1)>>1));
+    if(inM||mitte){grp.frei[y1*gw2+x1]=0;if(!inM)Z[at(X,Y)]='o'}else{Z[at(X,Y)]='o';grp.rest++}}
+   setzen(it,px,py,mw,mh,null);gruppen.push(grp)}
+  var bloecke=bl.filter(function(s){return !benutzt[s.a*nb+s.b]});bloecke.forEach(offen);bloecke=bloecke.concat(gruppen);bloecke.sort(function(p,q){return p.d-q.d});
+  // Übrige Gebäude: erstes freies Randstück im innersten Block (Zonen); Tür zur Gasse an der Seite, die am Blockrand liegt
+  // Gleichmäßig füllen: zuerst nur bis zum Anteil je Block (alle Blöcke behalten einen Hof), dann frei; Reihenfolge der Blöcke nach Abstand = Zonen
+  var vorn=0,summe=0,platzAll=0;rest.forEach(function(it){summe+=it.w*it.h});bloecke.forEach(function(s){s.voll=0;platzAll+=s.rest});var anteil=Math.min(1,summe/Math.max(1,platzAll)*1.1+.05);
+  for(var n=0;n<rest.length;n++){var it2=rest[n],ok=false,dreh=r()<.5;
+   while(vorn<bloecke.length&&bloecke[vorn].rest<=0)vorn++;
+   for(var gang=0;gang<2&&!ok;gang++)for(var q2=vorn;q2<bloecke.length&&!ok;q2++){var s2=bloecke[q2],fa=it2.w*it2.h;if(s2.rest<fa)continue;
+    if(gang===0&&s2.voll>0&&s2.voll+fa>anteil*(s2.voll+s2.rest))continue;
+    for(var t=0;t<2&&!ok;t++){var w=(t===0)!==dreh?it2.w:it2.h,h=(t===0)!==dreh?it2.h:it2.w;if(w>s2.w||h>s2.h)continue;var p=randStelle(s2,w,h);
+     if(p){for(var y3=0;y3<h;y3++)for(var x3=0;x3<w;x3++){s2.frei[(p.y+y3)*s2.w+p.x+x3]=0;if(Z[at(s2.x+p.x+x3,s2.y+p.y+y3)]==='o')s2.rest--}if(!s2.mono)s2.rest-=w*h;s2.voll+=w*h;
+      setzen(it2,s2.x+p.x,s2.y+p.y,w,h,p.tuer);ok=true}}}
+   if(!ok)return null}
+  // Plätze ohne Zugang werden Hof; Höfe bekommen Bäume und Kram
+  var erreicht=new Uint8Array(W*W),st=[];for(var q3=0;q3<W*W;q3++)if(!belegt[q3]&&/[se]/.test(Z[q3])){erreicht[q3]=1;st.push(q3)}
+  while(st.length){var q4=st.pop(),i4=q4%W,j4=(q4/W)|0;[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(dv){var x=i4+dv[0],y=j4+dv[1];if(x<0||y<0||x>=W||y>=W)return;var k2=at(x,y);
+    if(!erreicht[k2]&&!belegt[k2]&&/[seom]/.test(Z[k2])){erreicht[k2]=1;st.push(k2)}})}
+  for(var q5=0;q5<W*W;q5++){if(belegt[q5])continue;var z5=Z[q5],i5=q5%W,j5=(q5/W)|0;if(z5==='o'&&!erreicht[q5]){Z[q5]='g';z5='g'}
+   if(z5==='g'&&!elend){var u5=rausch(i5,j5,seed+7);if(u5<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i5,j5,seed+8)*B.baeume.length)],i:i5,j:j5});else if(u5>.97)dinge.push({id:'lager-platz',i:i5,j:j5})}
+   else if(z5==='e'&&rausch(i5,j5,seed+9)<.15&&!/[s]/.test(Z[q5]))dinge.push({id:rausch(i5,j5,seed+10)<.15?'leiche':'lager-platz',i:i5,j:j5})}
+  return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:{i:c0,j:W-1},nb:nb,gesetzt:gesetzt};
+  // Randstück im Block: x==0, y==0 oder an der rechten/unteren Kante, alle Zellen frei; Tür mittig an der Blockkante (Reihenfolge aus dem Seed)
+  function randStelle(s,w,h){var L=[],x,y;for(x=0;x+w<=s.w;x++){L.push([x,0,0,-1]);L.push([x,s.h-h,0,1])}for(y=1;y+h<s.h;y++){L.push([0,y,-1,0]);L.push([s.w-w,y,1,0])}
+   for(var k=0;k<L.length;k++){var c=L[k],fr=true;for(var yy=0;yy<h&&fr;yy++)for(var xx=0;xx<w&&fr;xx++)if(!s.frei[(c[1]+yy)*s.w+c[0]+xx])fr=false;
+    if(fr){var gi=s.x+c[0],gj=s.y+c[1],tu=c[3]>0?[gi+(w>>1),gj+h-1,0,1]:c[3]<0?[gi+(w>>1),gj,0,-1]:c[2]>0?[gi+w-1,gj+(h>>1),1,0]:[gi,gj+(h>>1),-1,0];return{x:c[0],y:c[1],tuer:tu}}}return null}
+  function setzen(it,i,j,w,h,tuer){var id=it.id;gesetzt[id]=(gesetzt[id]||0)+1;
+   for(var y=j;y<j+h;y++)for(var x=i;x<i+w;x++){belegt[at(x,y)]=1;Z[at(x,y)]=elend?'e':'g'}
+   if(PLATZ[id]){for(var y6=j;y6<j+h;y6++)for(var x6=i;x6<i+w;x6++){belegt[at(x6,y6)]=0;Z[at(x6,y6)]=PLATZ[id];
+     if(id==='market'?rausch(x6,y6,seed)<.4&&x6>i&&y6>j&&x6<i+w-1&&y6<j+h-1:(x6===i+(w>>1)&&y6===j+(h>>1)))dinge.push({id:'markt-stand',i:x6,j:y6,rolle:id})}return}
+   if(DING[id]){belegt[at(i,j)]=0;Z[at(i,j)]='o';dinge.push({id:DING[id],i:i,j:j,rolle:id});return}
+   if(!tuer){var T=[[i+(w>>1),j+h-1,0,1,i+(w>>1),j+h],[i+w-1,j+(h>>1),1,0,i+w,j+(h>>1)],[i,j+(h>>1),-1,0,i-1,j+(h>>1)],[i+(w>>1),j,0,-1,i+(w>>1),j-1]];
+    for(var k=0;k<4&&!tuer;k++){var o=T[k][5]*W+T[k][4];if(Z[o]==='o'&&!belegt[o])tuer=T[k].slice(0,4)}if(!tuer)tuer=T[0].slice(0,4)}
+   var sh=id==='shack',u=rausch(i,j,seed+31),kl=sh?'clay-wood':MARMOR[id]&&g>=MAUER_AB?'marble':EDEL[id]?STUFE[basis.klasse]:basis.klasse;
+   var satz=!sh&&!ST&&B.satz&&kl===basis.klasse?B.satz:null,schmal=Math.min(w,h)<2;
+   bauten.push({rolle:sh?'shack':(WOHN[id]?'house':'bau'),id:id,i:i,j:j,w:w,h:h,g:stock(id,g,u,w,h),klasse:kl,dach:sh||schmal?'flach':basis.dach,
+    achse:w>h?'i':h>w?'j':(u<.5?'i':'j'),wand:kl===basis.klasse&&!sh&&!satz?basis.wand:null,dachR:sh?HOLZ:kl===basis.klasse&&!satz?basis.dachR:null,tuer:tuer,satz:satz})}
  }
- // Rest: Felder, Weiden, Bäume, Kram
- for(var q7=0;q7<W*W;q7++){if(belegt[q7])continue;var i7=q7%W,j7=(q7/W)|0,z7=Z[q7];
-  if(z7==='g'&&(randFeld(i7,j7)||opt.art==='homestead')){var u7=rausch(i7,j7,seed+5);
-   if(zus.vineyards&&u7<.3){Z[q7]='f';dinge.push({id:'busch-gruen',i:i7,j:j7})}else if(zus['olive-grove']&&u7<.55){dinge.push({id:'baum-olive',i:i7,j:j7})}
-   else if(zus.pastures&&u7<.75){Z[q7]='p';if(rausch(i7,j7,seed+6)<.5)dinge.push({id:'tier-reh',i:i7,j:j7,rolle:'vieh'})}else if(zus.fields)Z[q7]='f';continue}
-  if(z7==='g'&&rausch(i7,j7,seed+7)<(B.dichte*.6+.04))dinge.push({id:B.baeume[Math.floor(rausch(i7,j7,seed+8)*B.baeume.length)],i:i7,j:j7});
-  else if(z7==='e'&&rausch(i7,j7,seed+9)<.35)dinge.push({id:rausch(i7,j7,seed+10)<.15?'leiche':'lager-platz',i:i7,j:j7});
-  else if(z7==='g'&&rausch(i7,j7,seed+11)<.05)dinge.push({id:'lager-platz',i:i7,j:j7})}
- if(opt.art==='homestead'){var hb=bauten.filter(function(b){return b.rolle==='house'})[0];if(hb)dinge.push({id:'ware-stamm',i:Math.min(W-1,hb.i+1),j:hb.j})}
- if(hafen)for(var j8=1;j8<W-1;j8+=3)dinge.push({id:'lager-platz',i:ost-1,j:j8,rolle:'kai'});
- // Spiegeln (Variante): links ↔ rechts in der Kartenansicht = i ↔ j tauschen; Tor bleibt auf der Vorderseite
- var P={format:'at3-stadtplan',art:opt.art,biom:opt.biom,stil:opt.stil||'',seed:seed,W:W,zellen:Z.join(''),bauten:bauten,dinge:dinge,tor:tor,zusatz:Object.keys(zus),gespiegelt:false,
-  basis:basis,feld:B.feld};
+ var E2=ergebnis,P={format:'at3-stadtplan',art:art,g:g,einw:einw,biom:opt.biom,stil:opt.stil||'',seed:seed,W:E2.W,block:Bm,nb:E2.nb,zellen:E2.Z.join(''),bauten:E2.bauten,dinge:E2.dinge,
+  tor:E2.tor,gesetzt:E2.gesetzt,gespiegelt:false,basis:basis,feld:B.feld};
  if(F!==1)P=skalieren(P,F);
- if(r()<.5)P=spiegeln(P);
+ if(rng(hashT([seed,art,einw,'sp'].join('|')))()<.5)P=spiegeln(P);
  return P}
+var WOHN={townhouse:1,domus:1,villa:1,palazzo:1,tenement:1,cottage:1};
 // Maßstab (N6b2b1, E31): Plan in Planfeldern → Bildfelder ×F. Feld (I, J) gehört zu Planfeld (⌊I/F⌋, ⌊J/F⌋), Bau [i, i+w) → [r(i), r(i+w)) mit r = runden(·F);
 // Rundbauten bleiben quadratisch (kleinere Seite), Türen sitzen wieder mittig an derselben Seite, Dinge auf dem ersten Feld ihres Planfelds.
 function skalieren(P,F){var r=function(v){return Math.floor(v*F+.5)},W=P.W,N=r(W),z='',I,J;
@@ -364,6 +369,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden']).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,ZUSATZ:ZUSATZ,plan:plan,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
