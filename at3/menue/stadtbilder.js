@@ -5,6 +5,7 @@
 //   Zähler gebaut/gehalten/KB/größter Schritt; wahlweise Nachbarschaftsbild mit dem Biom ringsum, Probestadt 200 × 200 zum Messen; vier Varianten nebeneinander.
 // · First Person: der Ort als Kulisse von vier Seiten (Plan gedreht), mit Arbeiter als Maßstab, Abstand ½, ¼, ⅛.
 // · Messung aller Siedlungsarten eines Bioms: Zusammensetzen gedrosselt, größter Einzelschritt, Bildspeicher, Kacheln, Größe des Plans; Ampel nach Budgetgruppe „Große Anlagen“.
+// · Vor den Toren und Umland (N6b2c3): Schalter (Standard an), Info zu Stinktor, Gräberstraße und Gehöften; Messung und Sichtfenster mit Außenring.
 // · Gebäudeliste nach Einwohnern (N6b2c1, stadtliste.js): alle Gebäude des Orts nach Zweigen mit Anzahl, Grundfläche, Lage und Herkunft; erst beim Antippen geladen.
 // Nichts davon lädt das Spiel. Bis N6b sind alle Teile Skizzen aus dem Baukasten (Bauklassen-Teile mit Farbtausch nach Biom und Baustil).
 var AT3_STADTBILDER_MENUE=(function(){
@@ -12,6 +13,7 @@ var AT3_STADTBILDER_MENUE=(function(){
 var S,BK,SB,FP,E={obj:{},seite:0,stufe:2,umland:false,lauf:0};
 var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')};
 var ART_DE={homestead:'Gehöft',hamlet:'Weiler',village:'Dorf','market-town':'Marktflecken',city:'Stadt','great-city':'Großstadt',capital:'Hauptstadt',slum:'Elendssiedlung'};
+var TOR_DE={south:'Süd',north:'Nord',east:'Ost',west:'West'};
 var GANZ_BIS=4;   // ganzes Bild (Varianten, First Person, Messung am Stück) nur bis Marktflecken; größere Orte nur im Sichtfenster (Kacheln)
 var AMPEL={gruen:'🟢',gelb:'🟡',rot:'🔴'};
 function lade(f){return AT3ED.lade('grafik',f)}
@@ -42,7 +44,7 @@ function zeigen(){var el=E.el,O=E.orte,biome=O.biome||[],stile=O.baustile||[];
   '<label>Seed <input id="sbSeed" type="number" min="0" max="4294967295" value="7"></label>'+
   '<label>&nbsp;<button class="knopf klein" id="sbWuerfel">🎲 Würfeln</button></label></div>'+
   '<p class="leise" id="sbBauweise"></p>'+
-  '<p><label><input type="checkbox" id="sbUmland"> Nachbarschaftsbild (4 Felder Biom ringsum)</label> &nbsp; <label title="Größte Stadt (20.000 Einwohner) zum Messen"><input type="checkbox" id="sbProbe"> Probestadt 20.000 Einwohner</label></p>'+
+  '<p><label title="N6b2c3: stinkendes Gewerbe und Elendsbuden am Stinktor, Gräberstraße mit Friedhof, Gehöfte an den Ausfallstraßen"><input type="checkbox" id="sbAussen" checked> Vor den Toren und Umland</label> &nbsp; <label><input type="checkbox" id="sbUmland"> Nachbarschaftsbild (4 Felder Biom ringsum)</label> &nbsp; <label title="Größte Stadt (20.000 Einwohner) zum Messen"><input type="checkbox" id="sbProbe"> Probestadt 20.000 Einwohner</label></p>'+
   '<p id="sbInfo" class="leise"></p><div class="sbKarte" id="sbKarte"></div>'+
   '<h3>Varianten <span class="leise">(gleiche Wahl, vier Seeds; bis Marktflecken)</span></h3><p><button class="knopf" id="sbVarKnopf">Vier Varianten zeigen</button></p><div class="sbVar" id="sbVar"></div>'+
   '<h3>First Person <span class="leise">(der Ort als Kulisse)</span></h3><div class="sbFp"><canvas id="sbFp" width="'+FP.W+'" height="'+FP.H+'" class="pixel"></canvas>'+
@@ -54,7 +56,7 @@ function zeigen(){var el=E.el,O=E.orte,biome=O.biome||[],stile=O.baustile||[];
   '<h3>Messung</h3><p><button class="knopf" id="sbMessen">Alle Siedlungsarten dieses Bioms messen<small>Gehöft bis Marktflecken und Elendssiedlung am Stück, gedrosselt ×'+E.budgets.drossel+' · größter Einzelschritt · Bildspeicher · Kacheln</small></button></p><div id="sbTabelle"></div>'+
   '<p><button class="knopf" id="sbFensterMessen">Sichtfenster der Probestadt messen<small>20.000 Einwohner · Handy-Sicht 360 × 640 · 40-mal wischen · gedrosselt ×'+E.budgets.drossel+'</small></button></p><div id="sbFensterTabelle"></div>';
  el.innerHTML=h;
- $('#sbArt').onchange=function(){var a=$('#sbArt').value;if(a)$('#sbOrtEinw').value=SB.ARTEN[a].einw;neu()};$('#sbOrtEinw').onchange=function(){if($('#sbArt').value!=='slum')$('#sbArt').value='';neu()};['#sbBiom','#sbStil','#sbSeed'].forEach(function(q){$(q).onchange=neu});$('#sbUmland').onchange=function(){E.umland=$('#sbUmland').checked;neu()};$('#sbProbe').onchange=function(){E.probe=$('#sbProbe').checked;neu()};
+ $('#sbArt').onchange=function(){var a=$('#sbArt').value;if(a)$('#sbOrtEinw').value=SB.ARTEN[a].einw;neu()};$('#sbOrtEinw').onchange=function(){if($('#sbArt').value!=='slum')$('#sbArt').value='';neu()};['#sbBiom','#sbStil','#sbSeed'].forEach(function(q){$(q).onchange=neu});$('#sbUmland').onchange=function(){E.umland=$('#sbUmland').checked;neu()};$('#sbAussen').onchange=neu;$('#sbProbe').onchange=function(){E.probe=$('#sbProbe').checked;neu()};
  $('#sbWuerfel').onclick=function(){$('#sbSeed').value=Math.floor(Math.random()*1e6);neu()};
  $('#sbVarKnopf').onclick=varianten;$('#sbListeKnopf').onclick=gebListe;$('#sbEinw').onchange=gebListe;$('#sbMessen').onclick=messen;$('#sbFensterMessen').onclick=fensterMessen;
  $('#sbLinks').onclick=function(){E.seite=(E.seite+7)%8;fp()};$('#sbRechts').onclick=function(){E.seite=(E.seite+1)%8;fp()};
@@ -76,7 +78,7 @@ function gebListe(){var z=$('#sbListe');z.innerHTML='<p class="leise">Der Stadts
  if(E.gebD)return los();
  lade('stadtliste.js').then(function(){return lade('daten/gebaeude.json')}).then(function(d){E.gebD=window.AT3_STADTLISTE.daten(d);los()})
   .catch(function(e){z.innerHTML='<p class="witz">Stadtschreiber verschollen: '+esc(e.message)+'</p>'})}
-function wahl(seed){var w={einw:Math.max(1,Math.min(20000,+$('#sbOrtEinw').value|0)),biom:$('#sbBiom').value,stil:$('#sbStil').value,seed:seed==null?(+$('#sbSeed').value>>>0):seed};
+function wahl(seed){var w={einw:Math.max(1,Math.min(20000,+$('#sbOrtEinw').value|0)),biom:$('#sbBiom').value,stil:$('#sbStil').value,seed:seed==null?(+$('#sbSeed').value>>>0):seed};if($('#sbAussen')&&!$('#sbAussen').checked)w.aussen=false;
  if($('#sbArt').value==='slum')w.art='slum';return w}
 function leinwand(r){var c=document.createElement('canvas');c.width=Math.max(1,r.w);c.height=Math.max(1,r.h);if(!r.w)return c;var x=c.getContext('2d'),d=x.createImageData(r.w,r.h),P=S.PALETTEN[S.PALETTE].farben.map(S.farbe);
  for(var i=0;i<r.px.length;i++){var n=r.px[i];if(n===255)continue;var c3=P[n],o=i*4;d.data[o]=c3[0];d.data[o+1]=c3[1];d.data[o+2]=c3[2];d.data[o+3]=255}x.putImageData(d,0,0);c.className='pixel';return c}
@@ -84,7 +86,7 @@ function neu(){var w;try{w=wahl();if(E.probe){delete w.art;w.einw=SB.PROBE_EINW}
  var B=(E.orte.biome||[]).filter(function(b){return b.id===w.biom})[0],st=(E.orte.baustile||[]).filter(function(s){return s.id===w.stil})[0];
  $('#sbBauweise').innerHTML='Bauweise im Biom: '+esc(B?B.bauweise:'')+(st?' · Baustil: '+esc(st.de)+(st.kulturen?' ('+esc(st.kulturen.join(', '))+')':''):'')+(B&&B.nurAussenposten?' · <span class="witz">Hier wohnen nur Außenposten. Und die nicht gern.</span>':'');
  var n=SB.zaehle(E.plan),P=E.plan,kb=(JSON.stringify(P).length/1024);
- $('#sbInfo').innerHTML='<b>'+(E.probe?'Probestadt ':'')+ART_DE[P.art]+' mit '+P.einw.toLocaleString('de-DE')+' Einwohnern · '+P.W+' × '+P.W+' Felder</b> · Blöcke '+P.nb+' × '+P.nb+' zu '+BK.feld(P.block)+' Feldern · Seed '+P.seed+(E.umland?' · mit Umland':'')+' · '+n.haeuser+' Häuser, '+n.besondere+' besondere Bauten, '+n.mauer+' Mauerstücke, '+n.dinge+' Dinge'+
+ $('#sbInfo').innerHTML='<b>'+(E.probe?'Probestadt ':'')+ART_DE[P.art]+' mit '+P.einw.toLocaleString('de-DE')+' Einwohnern · '+P.W+' × '+P.W+' Felder</b> · Blöcke '+P.nb+' × '+P.nb+' zu '+BK.feld(P.block)+' Feldern · Seed '+P.seed+(E.umland?' · mit Umland':'')+' · '+n.haeuser+' Häuser, '+n.besondere+' besondere Bauten, '+n.mauer+' Mauerstücke, '+n.dinge+' Dinge'+(P.aussen?'<br>Vor den Toren und Umland: Ring '+BK.feld(P.aussen.ring)+' Felder um '+BK.feld(P.aussen.innenW)+' innen · Stinktor '+TOR_DE[P.aussen.stinktor]+' ('+P.aussen.buden+' Elendsbuden) · Gräberstraße '+TOR_DE[P.aussen.graebertor]+' ('+P.aussen.graeber+' Grabhäuschen) · '+P.aussen.hoefe+' Gehöfte (davon '+P.aussen.hoefeExtra+' nach Einwohnern)':' · nur innen')+
   (P.gespiegelt?' · gespiegelt':'')+' · Plan '+kb.toFixed(1)+' KB im Speicher (gespeichert wird nur das Rezept: Einwohner, Biom, Stil, Seed)';
  fenster(P,E.umland);E.fpRoh=null;
  if(E.probe||P.g>GANZ_BIS){E.fpObj=null;$('#sbSeite').textContent='First Person nur bis Marktflecken (größere Orte wären am Stück zu groß; im Spiel nur sichtbare Kacheln).';var c=$('#sbFp');c.getContext('2d').clearRect(0,0,c.width,c.height)}else fpBau()}
