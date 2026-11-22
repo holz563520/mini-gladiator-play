@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 283,
+ "typMax": 288,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2253,6 +2253,51 @@
    "name": "Bedrock",
    "status": "geprueft",
    "datei": "obj/boden-fels.json"
+  },
+  {
+   "id": "boden-fluss",
+   "version": 1,
+   "typ": 284,
+   "kat": "boden",
+   "name": "River",
+   "status": "skizze",
+   "datei": "obj/boden-fluss.json"
+  },
+  {
+   "id": "boden-fluss-a",
+   "version": 1,
+   "typ": 285,
+   "kat": "boden",
+   "name": "River (current)",
+   "status": "skizze",
+   "datei": "obj/boden-fluss-a.json"
+  },
+  {
+   "id": "boden-fluss-b",
+   "version": 1,
+   "typ": 286,
+   "kat": "boden",
+   "name": "River (foam)",
+   "status": "skizze",
+   "datei": "obj/boden-fluss-b.json"
+  },
+  {
+   "id": "boden-fluss-c",
+   "version": 1,
+   "typ": 287,
+   "kat": "boden",
+   "name": "River (drifting barrel)",
+   "status": "skizze",
+   "datei": "obj/boden-fluss-c.json"
+  },
+  {
+   "id": "boden-fluss-d",
+   "version": 1,
+   "typ": 288,
+   "kat": "boden",
+   "name": "River (dead rat)",
+   "status": "skizze",
+   "datei": "obj/boden-fluss-d.json"
   },
   {
    "id": "boden-gras",

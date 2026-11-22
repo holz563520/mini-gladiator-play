@@ -647,7 +647,10 @@ function holer(hole){var bk=BK(),cache=(HOLER&&HOLER.get(hole))||{};if(HOLER)HOL
  return function(id,K,wand,dachR){var o=hole(id);if(!o||(wand==null&&dachR==null)||id.indexOf('bk-')!==0)return o;var k=bk.klasse(K),istDach=id.indexOf('-dach-')>0,
   paar=istDach?(dachR!=null?[k.dachReihe,dachR]:null):/-(wand|tuer|giebel)/.test(id)&&wand!=null?[k.wandReihe,wand]:null;if(!paar)return o;
   var key=id+'|'+paar.join(',');if(!cache[key])cache[key]={id:o.id,kat:o.kat,bild:bk.umfaerben(o.bild,paar)};return cache[key]}}
-var BODEN_ID={s:null,o:null,m:'bk-marmor-boden',f:null,w:'boden-wasser',e:'boden-erde',p:'boden-gras',x:'boden-fels'};
+var BODEN_ID={s:null,o:null,m:'bk-marmor-boden',f:null,w:'boden-fluss',e:'boden-erde',p:'boden-gras',x:'boden-fels'};
+// Offenes Wasser (Thomas 22.11.2026): boden-fluss statt der Wasserstelle, nahtlos; Fassungen nach Lage: ruhig 0/a/b (5:5:4), selten Fass (c) und tote Ratte (d) je 1 von 128
+var FLUSS_VAR=['boden-fluss','boden-fluss-a','boden-fluss-b','boden-fluss-c','boden-fluss-d'];
+function flussWahl(i,j,seed){var u=rausch(i,j,seed+77);if(u<1/128)return FLUSS_VAR[3];if(u<2/128)return FLUSS_VAR[4];u=(u-2/128)/(1-2/128)*14;return FLUSS_VAR[u<5?0:u<10?1:2]}
 var KURZ={'clay-wood':'lehm',brick:'ziegel',marble:'marmor'};
 // Zeichenreihenfolge für Grundflächen ohne Überlappung (Thomas 21.11.2026: Sortieren nach der Mitte i + j ließ bei langen Häusern Wände über das Dach des
 // Nachbarn malen). A kommt vor B, wenn A ganz bei kleinerem i (bzw. j) liegt und sich die Bildrahmen beider überlagern; sonst Mitte i + j (Kahn-Sortierung).
@@ -689,7 +692,7 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
  var weg=P.basis&&KURZ[P.basis.klasse]?'bk-'+KURZ[P.basis.klasse]+'-boden':'boden-weg';
  var bodenId=function(i,j){var innen=i>=0&&j>=0&&i<W&&j<W,c=innen?P.zellen.charAt(j*W+i):'g';
   if(c==='g'){var l=B.boden;return l[Math.floor(rausch(i,j,P.seed+1)*l.length*(l.length>1?.75:1))%l.length]}
-  if(c==='s')return B.weg;if(c==='o')return weg;if(c==='f'||c==='k')return P.feld||'bk-feld';return BODEN_ID[c]||'boden-gras'};
+  if(c==='s')return B.weg;if(c==='o')return weg;if(c==='f'||c==='k')return P.feld||'bk-feld';if(c==='w')return flussWahl(i,j,P.seed);return BODEN_ID[c]||'boden-gras'};
  var O3=null,L=[],el=[],n=0,stufe=0,qs=-U,qi=-U,qk=0,uj=-U,ui=-U;
  // Liste füllen, auf Wunsch in Schritten: aus() → true, wenn der Zeitanteil um ist (Kachelbauer); bauer() füllt am Stück wie bisher
  var fuellen=function(aus){var c=0;while(stufe<5){
@@ -807,7 +810,7 @@ function kacheln(r,K){K=K||256;var L=[],ty,tx,y;for(ty=0;ty<r.h;ty+=K)for(tx=0;t
 // Kennzahlen eines Plans für Anzeige und Tests
 function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.bauten.forEach(function(b){if(b.rolle==='house'||b.rolle==='shack')n.haeuser++;else if(b.rolle==='mauer')n.mauer++;else n.besondere++});return n}
 // Alle Kartei-Kennungen, die ein Plan braucht (Editor lädt nur diese)
-function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden']).forEach(function(i){s[i]=1});
+function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden'].concat(FLUSS_VAR)).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
 var SB={innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
