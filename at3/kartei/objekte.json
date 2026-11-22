@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 300,
+ "typMax": 315,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2543,6 +2543,69 @@
    "datei": "obj/markt-stand.json"
   },
   {
+   "id": "mauer-gang",
+   "version": 1,
+   "typ": 311,
+   "kat": "boden",
+   "name": "Wall Walk",
+   "status": "skizze",
+   "datei": "obj/mauer-gang.json"
+  },
+  {
+   "id": "mauer-kante-i",
+   "version": 1,
+   "typ": 301,
+   "kat": "einrichtung",
+   "name": "Town Wall",
+   "status": "skizze",
+   "datei": "obj/mauer-kante-i.json"
+  },
+  {
+   "id": "mauer-kante-j",
+   "version": 1,
+   "typ": 302,
+   "kat": "einrichtung",
+   "name": "Town Wall",
+   "status": "skizze",
+   "datei": "obj/mauer-kante-j.json"
+  },
+  {
+   "id": "mauer-zinne-n",
+   "version": 1,
+   "typ": 312,
+   "kat": "einrichtung",
+   "name": "Battlements",
+   "status": "skizze",
+   "datei": "obj/mauer-zinne-n.json"
+  },
+  {
+   "id": "mauer-zinne-o",
+   "version": 1,
+   "typ": 314,
+   "kat": "einrichtung",
+   "name": "Battlements",
+   "status": "skizze",
+   "datei": "obj/mauer-zinne-o.json"
+  },
+  {
+   "id": "mauer-zinne-s",
+   "version": 1,
+   "typ": 313,
+   "kat": "einrichtung",
+   "name": "Battlements",
+   "status": "skizze",
+   "datei": "obj/mauer-zinne-s.json"
+  },
+  {
+   "id": "mauer-zinne-w",
+   "version": 1,
+   "typ": 315,
+   "kat": "einrichtung",
+   "name": "Battlements",
+   "status": "skizze",
+   "datei": "obj/mauer-zinne-w.json"
+  },
+  {
    "id": "medicus",
    "version": 1,
    "typ": 37,
@@ -2631,6 +2694,78 @@
    "name": "Roe Deer",
    "status": "uebernommen",
    "datei": "obj/tier-reh.json"
+  },
+  {
+   "id": "tor-sturz-i",
+   "version": 1,
+   "typ": 309,
+   "kat": "einrichtung",
+   "name": "Gate Arch",
+   "status": "skizze",
+   "datei": "obj/tor-sturz-i.json"
+  },
+  {
+   "id": "tor-sturz-j",
+   "version": 1,
+   "typ": 310,
+   "kat": "einrichtung",
+   "name": "Gate Arch",
+   "status": "skizze",
+   "datei": "obj/tor-sturz-j.json"
+  },
+  {
+   "id": "turm-kante-i",
+   "version": 1,
+   "typ": 303,
+   "kat": "einrichtung",
+   "name": "Wall Tower",
+   "status": "skizze",
+   "datei": "obj/turm-kante-i.json"
+  },
+  {
+   "id": "turm-kante-j",
+   "version": 1,
+   "typ": 304,
+   "kat": "einrichtung",
+   "name": "Wall Tower",
+   "status": "skizze",
+   "datei": "obj/turm-kante-j.json"
+  },
+  {
+   "id": "turm-scharte-i",
+   "version": 1,
+   "typ": 305,
+   "kat": "einrichtung",
+   "name": "Arrow Slit",
+   "status": "skizze",
+   "datei": "obj/turm-scharte-i.json"
+  },
+  {
+   "id": "turm-scharte-j",
+   "version": 1,
+   "typ": 306,
+   "kat": "einrichtung",
+   "name": "Arrow Slit",
+   "status": "skizze",
+   "datei": "obj/turm-scharte-j.json"
+  },
+  {
+   "id": "turm-tuer-i",
+   "version": 1,
+   "typ": 307,
+   "kat": "einrichtung",
+   "name": "Tower Door",
+   "status": "skizze",
+   "datei": "obj/turm-tuer-i.json"
+  },
+  {
+   "id": "turm-tuer-j",
+   "version": 1,
+   "typ": 308,
+   "kat": "einrichtung",
+   "name": "Tower Door",
+   "status": "skizze",
+   "datei": "obj/turm-tuer-j.json"
   },
   {
    "id": "wand-stein",
