@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 404,
+ "typMax": 462,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -3639,6 +3639,384 @@
    "name": "Battlements W Steep 1/4 A",
    "status": "uebernommen",
    "datei": "obj/mauer-zw-zinne-p-a.json"
+  },
+  {
+   "id": "torhaus-aussen-i-0u",
+   "version": 3,
+   "typ": 405,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front I 0 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-i-0u.json"
+  },
+  {
+   "id": "torhaus-innen-i-0u",
+   "version": 3,
+   "typ": 406,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back I 0 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-i-0u.json"
+  },
+  {
+   "id": "torhaus-aussen-i-0o",
+   "version": 3,
+   "typ": 409,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front I 0 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-i-0o.json"
+  },
+  {
+   "id": "torhaus-innen-i-0o",
+   "version": 3,
+   "typ": 410,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back I 0 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-i-0o.json"
+  },
+  {
+   "id": "torhaus-aussen-i-1u",
+   "version": 3,
+   "typ": 411,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front I 1 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-i-1u.json"
+  },
+  {
+   "id": "torhaus-innen-i-1u",
+   "version": 3,
+   "typ": 412,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back I 1 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-i-1u.json"
+  },
+  {
+   "id": "torhaus-aussen-i-1o",
+   "version": 3,
+   "typ": 415,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front I 1 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-i-1o.json"
+  },
+  {
+   "id": "torhaus-innen-i-1o",
+   "version": 3,
+   "typ": 416,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back I 1 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-i-1o.json"
+  },
+  {
+   "id": "torhaus-aussen-i-2u",
+   "version": 3,
+   "typ": 417,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front I 2 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-i-2u.json"
+  },
+  {
+   "id": "torhaus-innen-i-2u",
+   "version": 3,
+   "typ": 418,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back I 2 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-i-2u.json"
+  },
+  {
+   "id": "torhaus-aussen-i-2o",
+   "version": 3,
+   "typ": 421,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front I 2 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-i-2o.json"
+  },
+  {
+   "id": "torhaus-innen-i-2o",
+   "version": 3,
+   "typ": 422,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back I 2 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-i-2o.json"
+  },
+  {
+   "id": "torhaus-spiesse-i",
+   "version": 3,
+   "typ": 423,
+   "kat": "einrichtung",
+   "name": "Heads on Spikes I",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-spiesse-i.json"
+  },
+  {
+   "id": "torhaus-spiesse-i-a",
+   "version": 3,
+   "typ": 424,
+   "kat": "einrichtung",
+   "name": "Heads on Spikes I A",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-spiesse-i-a.json"
+  },
+  {
+   "id": "torhaus-aussen-j-0u",
+   "version": 3,
+   "typ": 425,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front J 0 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-j-0u.json"
+  },
+  {
+   "id": "torhaus-innen-j-0u",
+   "version": 3,
+   "typ": 426,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back J 0 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-j-0u.json"
+  },
+  {
+   "id": "torhaus-aussen-j-0o",
+   "version": 3,
+   "typ": 429,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front J 0 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-j-0o.json"
+  },
+  {
+   "id": "torhaus-innen-j-0o",
+   "version": 3,
+   "typ": 430,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back J 0 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-j-0o.json"
+  },
+  {
+   "id": "torhaus-aussen-j-1u",
+   "version": 3,
+   "typ": 431,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front J 1 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-j-1u.json"
+  },
+  {
+   "id": "torhaus-innen-j-1u",
+   "version": 3,
+   "typ": 432,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back J 1 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-j-1u.json"
+  },
+  {
+   "id": "torhaus-aussen-j-1o",
+   "version": 3,
+   "typ": 435,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front J 1 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-j-1o.json"
+  },
+  {
+   "id": "torhaus-innen-j-1o",
+   "version": 3,
+   "typ": 436,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back J 1 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-j-1o.json"
+  },
+  {
+   "id": "torhaus-aussen-j-2u",
+   "version": 3,
+   "typ": 437,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front J 2 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-j-2u.json"
+  },
+  {
+   "id": "torhaus-innen-j-2u",
+   "version": 3,
+   "typ": 438,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back J 2 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-j-2u.json"
+  },
+  {
+   "id": "torhaus-aussen-j-2o",
+   "version": 3,
+   "typ": 441,
+   "kat": "einrichtung",
+   "name": "Gatehouse Front J 2 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-aussen-j-2o.json"
+  },
+  {
+   "id": "torhaus-innen-j-2o",
+   "version": 3,
+   "typ": 442,
+   "kat": "einrichtung",
+   "name": "Gatehouse Back J 2 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-innen-j-2o.json"
+  },
+  {
+   "id": "torhaus-spiesse-j",
+   "version": 3,
+   "typ": 443,
+   "kat": "einrichtung",
+   "name": "Heads on Spikes J",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-spiesse-j.json"
+  },
+  {
+   "id": "torhaus-spiesse-j-a",
+   "version": 3,
+   "typ": 444,
+   "kat": "einrichtung",
+   "name": "Heads on Spikes J A",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-spiesse-j-a.json"
+  },
+  {
+   "id": "torhaus-gitter-zu-i-0u",
+   "version": 2,
+   "typ": 445,
+   "kat": "einrichtung",
+   "name": "Portcullis Shut I 0 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-zu-i-0u.json"
+  },
+  {
+   "id": "torhaus-gitter-i-0",
+   "version": 2,
+   "typ": 447,
+   "kat": "einrichtung",
+   "name": "Portcullis I 0",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-i-0.json"
+  },
+  {
+   "id": "torhaus-gitter-zu-i-1u",
+   "version": 2,
+   "typ": 448,
+   "kat": "einrichtung",
+   "name": "Portcullis Shut I 1 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-zu-i-1u.json"
+  },
+  {
+   "id": "torhaus-gitter-zu-i-1o",
+   "version": 2,
+   "typ": 449,
+   "kat": "einrichtung",
+   "name": "Portcullis Shut I 1 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-zu-i-1o.json"
+  },
+  {
+   "id": "torhaus-gitter-i-1",
+   "version": 2,
+   "typ": 450,
+   "kat": "einrichtung",
+   "name": "Portcullis I 1",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-i-1.json"
+  },
+  {
+   "id": "torhaus-gitter-zu-i-2u",
+   "version": 2,
+   "typ": 451,
+   "kat": "einrichtung",
+   "name": "Portcullis Shut I 2 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-zu-i-2u.json"
+  },
+  {
+   "id": "torhaus-gitter-i-2",
+   "version": 2,
+   "typ": 453,
+   "kat": "einrichtung",
+   "name": "Portcullis I 2",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-i-2.json"
+  },
+  {
+   "id": "torhaus-gitter-zu-j-0u",
+   "version": 2,
+   "typ": 454,
+   "kat": "einrichtung",
+   "name": "Portcullis Shut J 0 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-zu-j-0u.json"
+  },
+  {
+   "id": "torhaus-gitter-j-0",
+   "version": 2,
+   "typ": 456,
+   "kat": "einrichtung",
+   "name": "Portcullis J 0",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-j-0.json"
+  },
+  {
+   "id": "torhaus-gitter-zu-j-1u",
+   "version": 2,
+   "typ": 457,
+   "kat": "einrichtung",
+   "name": "Portcullis Shut J 1 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-zu-j-1u.json"
+  },
+  {
+   "id": "torhaus-gitter-zu-j-1o",
+   "version": 2,
+   "typ": 458,
+   "kat": "einrichtung",
+   "name": "Portcullis Shut J 1 Top",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-zu-j-1o.json"
+  },
+  {
+   "id": "torhaus-gitter-j-1",
+   "version": 2,
+   "typ": 459,
+   "kat": "einrichtung",
+   "name": "Portcullis J 1",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-j-1.json"
+  },
+  {
+   "id": "torhaus-gitter-zu-j-2u",
+   "version": 2,
+   "typ": 460,
+   "kat": "einrichtung",
+   "name": "Portcullis Shut J 2 Low",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-zu-j-2u.json"
+  },
+  {
+   "id": "torhaus-gitter-j-2",
+   "version": 2,
+   "typ": 462,
+   "kat": "einrichtung",
+   "name": "Portcullis J 2",
+   "status": "uebernommen",
+   "datei": "obj/torhaus-gitter-j-2.json"
   }
  ]
 }

@@ -1267,7 +1267,10 @@ var WEHR_IDS=['mauer-kante-i','mauer-kante-j','turm-kante-i','turm-kante-j','tur
  'mauer-rampe-s','mauer-rampe-n','mauer-rampe-o','mauer-rampe-w','turm-tuer-i','turm-tuer-j','turm-eingang-i','turm-eingang-j',
  'mauer-zinne-n-a','mauer-zinne-s-a','mauer-zinne-o-a','mauer-zinne-w-a','mauer-zinne-n-b','mauer-zinne-s-b','mauer-zinne-o-b','mauer-zinne-w-b',
  'mauer-halb-ob','mauer-halb-re','mauer-halb-un','mauer-halb-li','mauer-halb-zinne-ob','mauer-halb-zinne-ob-a','mauer-halb-zinne-ob-b','mauer-halb-zinne-re',
- 'mauer-halb-zinne-un','mauer-halb-zinne-li','mauer-halb-wand','mauer-halb-wand-a','mauer-halb-wand-b','mauer-halb-wand-c','mauer-halb-wand-d'].concat(ZW_IDS());
+ 'mauer-halb-zinne-un','mauer-halb-zinne-li','mauer-halb-wand','mauer-halb-wand-a','mauer-halb-wand-b','mauer-halb-wand-c','mauer-halb-wand-d'].concat(ZW_IDS(),TH_IDS());
+// N6b2e3 Torhaus-Teile: Mauerscheibe außen/innen, Seite i/j, Spalte 0–2 (Bild links → rechts), Teil u/o; Köpfe auf Spießen; Gitter offen (jetzt) und zu (später)
+function TH_IDS(){var r=[];['aussen','innen'].forEach(function(a){'ij'.split('').forEach(function(s){for(var c=0;c<3;c++)'uo'.split('').forEach(function(t){r.push('torhaus-'+a+'-'+s+'-'+c+t)})})});
+ 'ij'.split('').forEach(function(s){r.push('torhaus-spiesse-'+s,'torhaus-spiesse-'+s+'-a');for(var c=0;c<3;c++){r.push('torhaus-gitter-'+s+'-'+c,'torhaus-gitter-zu-'+s+'-'+c+'u');if(c===1)r.push('torhaus-gitter-zu-'+s+'-1o')}});return r}
 // Zinnen-Varianten nach Lage (N6b2e1, gegen Wiederholung auf langen Mauern): 12 Plätze, Grundbild 8×, -a ausgebrochen 3×, -b Pfeil und Blutspur 1×
 var ZINNE_VAR='00000000aaab';function zinneWahl(d,i,j,seed){var c=ZINNE_VAR.charAt(Math.floor(rausch(i,j,seed+131)*ZINNE_VAR.length));return 'mauer-zinne-'+d+(c==='0'?'':'-'+c)}   // N6b2e2t: Gangtür und Erdgeschosstür am Turm (turm-tuer-*, turm-eingang-*)
 // N6b2e2a Halbfelder: Raster-Ecke → Bildlage (N oben, E rechts, S unten, W links); vordere Zinnen wie die Zinnen 8 : 3 : 1, Schrägwand 3 ruhige Fassungen (je 3) + Riss 2 + Flickstein 1
@@ -1305,7 +1308,14 @@ function mauerwerk(P,opt){opt=opt||{};var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=i
   while(st.length){var a=st.pop();T.push(a);N4(a).forEach(function(b){if(b>=0&&A[b]===2&&torId[b]<0){torId[b]=tore.length;st.push(b)}})}tore.push(T)}
  var UA=P.uferAuf,ufer=[];if(UA){var su=new Uint8Array(WW);for(k=0;k<WW;k++){if(UA.charCodeAt(k)!==49||su[k])continue;var st2=[k],T2=[];su[k]=1;   // N6b2e2g2: Türme an beiden Ufern
   while(st2.length){var a2=st2.pop();T2.push(a2);N4(a2).forEach(function(b){if(b>=0&&!su[b]&&UA.charCodeAt(b)===49){su[b]=1;st2.push(b)}})}ufer.push(T2)}}
- tore.concat(ufer).forEach(function(T){var nah=kand.filter(function(c){for(var q2=0;q2<T.length;q2++){var ti=T[q2]%W,tj=(T[q2]/W)|0;if(ti>=c[0]-2&&ti<=c[0]+4&&tj>=c[1]-2&&tj<=c[1]+4)return true}return false});
+ // N6b2e3 Torhäuser (Thomas 22.11.2026): beide Türme direkt am Tor, in denselben Reihen wie das Tor (Turm 3 + Torbau 3 + Turm 3). Geht das nicht,
+ // bleibt die alte Wahl und das Tor ein flacher Sturz. Rückmeldung Thomas: der Weg läuft offen unter dem Tor durch, Gang auf Mauerhöhe, vorn und hinten
+ // eine Mauerscheibe mit runder Öffnung (gemalt), Gitter als eigenes Teil (jetzt hochgezogen). Notausschalter opt.torhaus:false.
+ var TH=[],kandS=new Set();kand.forEach(function(c){kandS.add(c[1]*W+c[0])});
+ tore.concat(ufer).forEach(function(T,ti){if(opt.torhaus!==false&&ti<tore.length&&T.length===9){var b=torFelder(W,T),pa=null;
+   [[[b.x0-3,b.y0],[b.x1+1,b.y0]],[[b.x0,b.y0-3],[b.x0,b.y1+1]]].forEach(function(pp){if(!pa&&pp.every(function(c){return c[0]>=0&&c[1]>=0&&kandS.has(c[1]*W+c[0])&&frei(c)}))pa=pp});
+   if(pa){setzT(pa[0]);setzT(pa[1]);TH.push({t:[tuerme.length-2,tuerme.length-1],i:b.x0,j:b.y0});return}}
+  var nah=kand.filter(function(c){for(var q2=0;q2<T.length;q2++){var ti=T[q2]%W,tj=(T[q2]/W)|0;if(ti>=c[0]-2&&ti<=c[0]+4&&tj>=c[1]-2&&tj<=c[1]+4)return true}return false});
   var best=null,bd=-1;for(var a=0;a<nah.length;a++)for(var b=a+1;b<nah.length;b++){var d=ab(nah[a],nah[b]);if(d>bd&&frei(nah[a])&&frei(nah[b])&&Math.abs(nah[a][0]-nah[b][0])+Math.abs(nah[a][1]-nah[b][1])>4){bd=d;best=[nah[a],nah[b]]}}
   if(best){setzT(best[0]);setzT(best[1])}else if(nah.length&&frei(nah[0]))setzT(nah[0])});
  // dann reihum (nach Winkel um die Mitte) etwa alle TURM_AB Felder (Thomas 22.11.2026: 36 statt 12, zu viele Türme; die Torpaare bleiben)
@@ -1427,7 +1437,7 @@ function mauerwerk(P,opt){opt=opt||{};var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=i
   if(A[k]>=6){if(!drin(i3,j3))z=1}   // Halbfeld: Bit 1 = Zinnen auf der Schräge (außen)
   else if(A[k]!==4&&A[k]!==5)WRK.forEach(function(d){var x=i3+WRI[d][0],y=j3+WRI[d][1],a=x>=0&&y>=0&&x<W&&y<W?A[y*W+x]:0;if(A[k]===3?a!==3:(!a&&!drin(x,y)))z|=ZBIT[d]});
   KL.push(k);FS+=ART.charAt(A[k])+String.fromCharCode(48+L[k])+stufe[k]+z.toString(16)}
- P.wehr={W:W,k:KL,f:FS,tuerme:tuerme,treppen:treppen,tore:tore.length,felder:nw,halb:halb,zwischen:zw,vor:vor,hoehe:WEHR_H,turmHoehe:TURM_H}}
+ P.wehr={W:W,k:KL,f:FS,tuerme:tuerme,torhaus:TH,treppen:treppen,tore:tore.length,felder:nw,halb:halb,zwischen:zw,vor:vor,hoehe:WEHR_H,turmHoehe:TURM_H};if(opt.torhaus===false)delete P.wehr.torhaus}
 // Lesen der Wehr-Ablage: art(k) '.'/m/t/T/r, gang(k) Stufe oder −1, stufe(k), zinne(k) Bits; einmal je Ablage ein Verzeichnis Feld → Stelle
 var WEHR_LS=typeof WeakMap!=='undefined'?new WeakMap():null;
 function wehrLese(w){var x=WEHR_LS&&WEHR_LS.get(w);if(x)return x;var m=new Map(),f=w.f;for(var p=0;p<w.k.length;p++)m.set(w.k[p],p*4);
@@ -1440,7 +1450,8 @@ var WEHR_IX=typeof WeakMap!=='undefined'?new WeakMap():null;
 function wehrIndex(P){var x=WEHR_IX&&WEHR_IX.get(P);if(x)return x;var W=P.W,w=P.wehr,bau=new Uint8Array(W*W),fuss={},gas={},nis={},turm=new Map();
  P.bauten.forEach(function(b){if(b.rolle==='mauer')return;for(var y=b.j;y<b.j+b.h;y++)for(var x2=b.i;x2<b.i+b.w;x2++)if(x2>=0&&y>=0&&x2<W&&y<W)bau[y*W+x2]=1});
  if(w){w.treppen.forEach(function(t){var f=t.felder[0],v=t.nische||t.gasse;fuss[f[1]*W+f[0]]=v;gas[v[1]*W+v[0]]=f;if(t.nische)nis[v[1]*W+v[0]]=1});
-  w.tuerme.forEach(function(t,ix){for(var q=0;q<9;q++)turm.set((t[1]+(q/3|0))*W+t[0]+q%3,ix)})}
+  w.tuerme.forEach(function(t,ix){for(var q=0;q<9;q++)turm.set((t[1]+(q/3|0))*W+t[0]+q%3,ix)});
+}
   // N6b2e2t: Türen des Turms (Gangtür: Gangfeld ↔ Turmfeld, Erdgeschosstür: Gasse ↔ Turmfeld), Mitte des Turms (innere Treppe Geschoss ↔ Plattform)
  var tg=new Map(),add=function(m,a,b){var l=m.get(a);if(!l)m.set(a,l=[]);l.push(b)},mitte={};
  if(w)w.tuerme.forEach(function(t){mitte[(t[1]+1)*W+t[0]+1]=1;var o=t[3];if(!o)return;
@@ -1504,6 +1515,7 @@ function wehrDrehen(w,W){var r=JSON.parse(JSON.stringify(w)),L=[];
  L.sort(function(a,b){return a[0]-b[0]});r.k=L.map(function(x){return x[0]});r.f=L.map(function(x){return x[1]}).join('');
  var p=function(a){return[W-1-a[1],a[0]]},p4=function(f){return p([f[0],f[1]]).concat(p([f[2],f[3]]))};   // N6b2e2t: Türen drehen mit
  r.tuerme=w.tuerme.map(function(t){var o=[W-t[1]-3,t[0],t[2]];if(t[3])o.push({tuer:t[3].tuer?p4(t[3].tuer):null,gang:t[3].gang.map(p4)});return o});
+ if(w.torhaus)r.torhaus=w.torhaus.map(function(h){return{t:h.t.slice(),i:W-h.j-3,j:h.i}});
  r.treppen=w.treppen.map(function(t){var o={felder:t.felder.map(p),s:DREH[t.s]};if(t.nische)o.nische=p(t.nische);o.gasse=p(t.gasse);o.unten=t.unten;o.oben=t.oben;return o});return r}
 
 // ---------- Malen ----------
@@ -1580,23 +1592,30 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
   var NG={};w.treppen.forEach(function(t){if(t.nische)NG[t.nische[1]*W+t.nische[0]]=t.gasse});var TD={};w.tuerme.forEach(function(t){var o=t[3];if(!o)return;var mk=function(f,c){var d=f[2]-f[0]===1?'o':f[3]-f[1]===1?'s':'';if(d)TD[(f[1]*W+f[0])+d]=c};   // N6b2e2t: Türen an den vorderen Turmseiten
    o.gang.forEach(function(f){mk(f,'g')});if(o.tuer)mk(o.tuer,'e')});
   // N6b2e1: Turm = Gang + TURM_H (in der Ablage), Rampen davor; eine Rampe deckt die Wand des höheren Nachbarn, in den sie hinaufführt
+  var THB={},MKe=w.torhaus&&w.torhaus.length?innenMaske(P):null;(w.torhaus||[]).forEach(function(h){for(var q=0;q<9;q++)THB[(h.j+(q/3|0))*W+h.i+q%3]=[h.i,h.j]});
   var oben=function(x,y){var a=gA(x,y);if(a==='.'||a==='t'||a==='n')return lv(x,y);return gL(x,y)},GEG={o:'w',s:'n'};
   w.k.forEach(function(k){var i=k%W,j=(k/W)|0,a=R.art(k),L0=R.gang(k),g0=lv(i,j),top=L0,t0=i+j+.02,s;
    var dz=function(id,z){el.push({t:t0,n:n++,d:{id:id,i:i,j:j,hz:z}})};
+   var spiess=[];
    if(a==='n'){var gs=NG[k];dz(gs?bodenId(gs[0],gs[1]):B.weg,g0);return}   // Nische vor dem Treppenfuß: Boden der Gasse daneben
    if(a==='d'){var fo=HALB[R.stufe(k)];if(fo==='ob')for(s=g0+1;s<=top;s++)dz(halbWahl('mauer-halb-wand',i,j+s*7,P.seed,WAND_VAR),s);   // N6b2e2a: nur die Schräge der oberen Hälfte zeigt zum Betrachter
     dz('mauer-halb-'+fo,top);if(R.zinne(k))dz(fo==='ob'?halbWahl('mauer-halb-zinne-ob',i,j,P.seed):'mauer-halb-zinne-'+fo,top);return}
    if(a==='q'){var fq=R.stufe(k);if(ZW_SICHT.indexOf(fq)>=0)for(s=g0+1;s<=top;s++)dz(halbWahl('mauer-zw-wand-'+fq,i,j+s*7,P.seed,'000a'),s);   // N6b2e2b1
     dz('mauer-zw-'+fq,top);if(R.zinne(k))dz(ZW_ZV[fq]?halbWahl('mauer-zw-zinne-'+fq,i,j,P.seed,ZW_ZV[fq]):'mauer-zw-zinne-'+fq,top);return}
    [['o','i'],['s','j']].forEach(function(q){var x=i+WRI[q[0]][0],y=j+WRI[q[0]][1],nb=oben(x,y),na=gA(x,y);
-    if(a==='t'){if(nb<L0)dz('tor-sturz-'+q[1],L0);return}
+    if(a==='t'){if(nb>=L0)return;var hb=THB[k];if(!hb){dz('tor-sturz-'+q[1],L0);return}
+     // N6b2e3: Mauerscheibe mit runder Öffnung (2 Teile zu je 2 Stufen, oben bündig mit dem Gang), darunter am Burgberg Mauer; Gitter als eigenes Teil
+     var seite=MKe[y*W+x]===1?'innen':'aussen',sp=q[0]==='o'?2-(j-hb[1]):i-hb[0],id='torhaus-'+seite+'-'+q[1]+'-'+sp;
+     for(s=Math.max(nb,g0)+1;s<=L0-4;s++)dz('mauer-kante-'+q[1],s);dz(id+'u',L0-2);dz(id+'o',L0);if(seite==='aussen')dz('torhaus-gitter-'+q[1]+'-'+sp,L0-1);
+     if(seite==='aussen'&&sp===1&&(R.zinne(k)&ZBIT[q[0]]))spiess.push([q[1],L0]);return}
     if((na==='m'||na==='t')&&R.stufe(y*W+x)===GEG[q[0]]&&nb===top-1)return;   // Rampe davor steigt bis an die Kante
     var td=a==='T'?TD[k+q[0]]:'',s0=Math.max(nb,g0)+1;
     if(td==='e'){dz('turm-eingang-'+q[1],s0+1);s0+=2}   // Erdgeschosstür (2 Stufen) ab dem höheren Boden (Gasse oder Turmfuß), darüber Turmwand
     for(s=s0;s<=top;s++){if(td==='g'&&s===top-1){dz('turm-tuer-'+q[1],top);break}   // Gangtür: 2 Stufen über dem Gang bis unter die Plattform
      dz(a==='T'?(s===top?'turm-scharte-':'turm-kante-')+q[1]:'mauer-kante-'+q[1],s)}});
    var st=R.stufe(k);dz(a==='r'?'fels-treppe-'+st:a!=='T'&&st!=='.'?'mauer-rampe-'+st:'mauer-gang',top);
-   var zb=R.zinne(k);if(zb)['n','w','o','s'].forEach(function(d){if(zb&ZBIT[d])dz(zinneWahl(d,i,j,P.seed),top)})})};
+   var zb=R.zinne(k);if(zb)['n','w','o','s'].forEach(function(d){if(zb&ZBIT[d])dz(zinneWahl(d,i,j,P.seed),top)});
+   spiess.forEach(function(sp2){dz('torhaus-spiesse-'+sp2[0]+(rausch(i,j,P.seed+151)<.5?'':'-a'),sp2[1])})})};   // Köpfe auf Spießen über der Mitte der Außenseite
  // Liste füllen, auf Wunsch in Schritten: aus() → true, wenn der Zeitanteil um ist (Kachelbauer); bauer() füllt am Stück wie bisher
  var fuellen=function(aus){var c=0;while(stufe<5){
    if(stufe===0){for(;qs<=2*(W-1)+U;qs++,qi=-U){for(;qi<W+U;qi++){var j=qs-qi;if(j<-U||j>=W+U)continue;L.push({k:0,id:bodenId(qi,j),X:bx(qi,j),Y:by(qi,j)+16});
