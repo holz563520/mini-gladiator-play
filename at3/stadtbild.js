@@ -739,7 +739,7 @@ var WEHR_IDS=['mauer-kante-i','mauer-kante-j','turm-kante-i','turm-kante-j','tur
  'mauer-zinne-n-a','mauer-zinne-s-a','mauer-zinne-o-a','mauer-zinne-w-a','mauer-zinne-n-b','mauer-zinne-s-b','mauer-zinne-o-b','mauer-zinne-w-b'];
 // Zinnen-Varianten nach Lage (N6b2e1, gegen Wiederholung auf langen Mauern): 12 Plätze, Grundbild 8×, -a ausgebrochen 3×, -b Pfeil und Blutspur 1×
 var ZINNE_VAR='00000000aaab';function zinneWahl(d,i,j,seed){var c=ZINNE_VAR.charAt(Math.floor(rausch(i,j,seed+131)*ZINNE_VAR.length));return 'mauer-zinne-'+d+(c==='0'?'':'-'+c)}   // N6b2e1: Turmtür entfällt (Gang führt über Rampen auf die Plattform)
-var WEHR_H=4,TURM_H=2,TURM_AB=10,TREPPE_AB=20,WRI={s:[0,1],o:[1,0],n:[0,-1],w:[-1,0]},WRK=['s','o','n','w'],ZBIT={s:1,o:2,n:4,w:8};
+var WEHR_H=4,TURM_H=2,TURM_AB=12,TREPPE_AB=20,WRI={s:[0,1],o:[1,0],n:[0,-1],w:[-1,0]},WRK=['s','o','n','w'],ZBIT={s:1,o:2,n:4,w:8};
 function mauerwerk(P){var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wand=new Uint8Array(WW),k,i,j,q;
  P.bauten.forEach(function(b){if(b.rolle!=='mauer')return;for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)wand[y*W+x]=1});
  var nw=0;for(k=0;k<WW;k++)nw+=wand[k];if(!nw)return;
@@ -785,6 +785,12 @@ function mauerwerk(P){var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wan
    if(A[kk]!==1||lv(x,y)!==g0||L[kk]!==g0+WEHR_H||!gasse(x+E[0],y+E[1])||lv(x+E[0],y+E[1])!==g0)return null;
    var ox=x-E[0],oy=y-E[1];if(ox<0||oy<0||ox>=W||oy>=W||(A[oy*W+ox]!==1&&A[oy*W+ox]!==3))return null;f.push(kk)}
   var tx=i+D[0]*4,ty=j+D[1]*4;if(tx<0||ty<0||tx>=W||ty>=W)return null;var tk=ty*W+tx;if((A[tk]!==1&&A[tk]!==3)||L[tk]!==g0+WEHR_H)return null;
+  // Rückmeldung Thomas (N6b2e1): oben eine Plattform: das Feld nach der letzten Stufe und die Mauerfelder daneben (quer über die Mauer) flach auf Ganghöhe,
+  // ohne höheren Nachbarn (sonst würden sie Rampe); und keine Treppe stößt an eine andere Treppe oder Nische (auch in der Reihe daneben)
+  if(A[tk]!==1)return null;for(var s2=0;s2<3;s2++){var px=tx-E[0]*s2,py=ty-E[1]*s2;if(px<0||py<0||px>=W||py>=W)return null;var pk=py*W+px;
+   if(s2&&!A[pk])break;if((A[pk]!==1&&A[pk]!==2)||L[pk]!==g0+WEHR_H)return null;var nn2=N4(pk);
+   for(var d2=0;d2<4;d2++){var b2=nn2[d2];if(b2>=0&&A[b2]&&A[b2]!==4&&A[b2]!==5&&L[b2]>g0+WEHR_H)return null}}
+  for(var s3=-3;s3<=6;s3++)for(var e3=0;e3<2;e3++){var rx=i+D[0]*s3-E[0]*e3,ry=j+D[1]*s3-E[1]*e3;if(rx>=0&&ry>=0&&rx<W&&ry<W&&(A[ry*W+rx]===4||A[ry*W+rx]===5))return null}
   // N6b2e1: vor dem Fuß eine Nische (inneres Mauerfeld wird frei, außen läuft die Mauer weiter, seitlich die Gasse): man geht geradeaus auf die Treppe
   var bx=i-D[0],by=j-D[1];if(bx<0||by<0||bx>=W||by>=W)return null;var bk=by*W+bx;if(A[bk]!==1||lv(bx,by)!==g0||!gasse(bx+E[0],by+E[1])||lv(bx+E[0],by+E[1])!==g0)return null;
   var nx=bx-E[0],ny=by-E[1];if(nx<0||ny<0||nx>=W||ny>=W||(A[ny*W+nx]!==1&&A[ny*W+nx]!==3))return null;f.unshift(bk);return f};
