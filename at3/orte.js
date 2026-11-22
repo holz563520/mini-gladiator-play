@@ -64,6 +64,13 @@ function roh(seed,A,k,ON){var c=A.orte[k],z=c&0xffffff,art=c>>>24,x=z%GW,y=(z/GW
 function flussAchse(seed,A,k){if(!A.flu)return null;var z=A.orte[k]&0xffffff,x=z%GW,y=(z/GW)|0,f=function(dx,dy){var Y=y+dy;if(Y<0||Y>=GH)return 0;return A.flu[Y*GW+(x+dx+GW)%GW]>=2?1:0};
  var v=f(0,-1)+f(0,1),h=f(-1,0)+f(1,0),d=f(-1,-1)+f(1,1)+f(1,-1)+f(-1,1);if(!v&&!h&&!d&&!(A.flu[z]>0))return null;
  if(v!==h)return v>h?'ns':'ow';return ((Math.imul(seed^z,2654435761)>>>16)&1)?'ns':'ow'}
+// N6b2c4c2 (Thomas 22.11.2026): Seite des Meers am Ort für den Stadtplan ('south' | 'north' | 'east' | 'west', null = keine Küste). Wasserzellen (Biom < 2) im
+// Umkreis 1, sonst 2, sonst 3; jede zählt nach ihrer Richtung (näher = mehr). Häfen (Art ≥ 3) ohne Wasser in Reichweite: Seite aus dem Seed. Reine Rechnung, Erde unverändert.
+function kuesteSeite(seed,A,k){var z=A.orte[k]&0xffffff,art=A.orte[k]>>>24,x=z%GW,y=(z/GW)|0,S=['south','north','east','west'];
+ for(var r=1;r<=3;r++){var s=[0,0,0,0],n=0;for(var dy=-r;dy<=r;dy++){var Y=y+dy;if(Y<0||Y>=GH)continue;for(var dx=-r;dx<=r;dx++){if(!dx&&!dy)continue;
+   if(A.bio[Y*GW+(x+dx+GW)%GW]>=2)continue;var w=1/(Math.abs(dx)+Math.abs(dy));n++;if(dy>0)s[0]+=w*dy;if(dy<0)s[1]-=w*dy;if(dx>0)s[2]+=w*dx;if(dx<0)s[3]-=w*dx}}
+  if(n){var b=0;for(var q=1;q<4;q++)if(s[q]>s[b]+1e-9)b=q;return S[b]}if(r===1&&art<3)return null}
+ return art>=3?S[(Math.imul(seed^z,2654435761)>>>16)&3]:null}
 
 // Daten vorbereiten (einmal): Kandidaten für Leitgebäude (Wirtschaft, Biom nicht „alle“), Zonen, Lieblingswaren je Kultur
 function daten(geb,rez,kul){var G=geb.gebaeude,zon={},bz={},aus={},K=[];
@@ -131,6 +138,6 @@ function entpack(a,D){var v=new DataView(a.buffer,a.byteOffset,a.byteLength),lei
  return{posten:po,format:a[0],g:a[1],kultur:a[2],art:a[3],zelle:v.getUint32(4,true),einheit:v.getUint16(8,true),zusatz:a[10]?{gruppe:GRUPPEN[a[10]-1],n:a[11]}:null,leit:leit,stufen:st,einwohner:e}}
 
 var P={AUS:AUS,GNAME:GNAME,EINW:EINW,HOCH:HOCH,ANTEIL:ANTEIL,LEIT:LEIT,ARBEIT:ARBEIT,ZUS:ZUS,GEB_ZUS:GEB_ZUS,BYTES:BYTES,
- sitze:sitze,groesse:groesse,ortNr:ortNr,roh:roh,flussAchse:flussAchse,daten:daten,bilanz:bilanz,voll:voll,groesseName:groesseName,zeile:zeile,stufenText:stufenText,zahl:zahl,pack:pack,entpack:entpack};
+ sitze:sitze,groesse:groesse,ortNr:ortNr,roh:roh,flussAchse:flussAchse,kuesteSeite:kuesteSeite,daten:daten,bilanz:bilanz,voll:voll,groesseName:groesseName,zeile:zeile,stufenText:stufenText,zahl:zahl,pack:pack,entpack:entpack};
 if(typeof module!=='undefined'&&module.exports)module.exports=P;else root.AT3ORTE=P;
 })(typeof self!=='undefined'?self:this);
