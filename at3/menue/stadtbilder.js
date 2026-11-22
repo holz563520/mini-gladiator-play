@@ -4,6 +4,7 @@
 //   Zähler gebaut/gehalten/KB/größter Schritt; wahlweise Nachbarschaftsbild mit dem Biom ringsum, Probestadt 200 × 200 zum Messen; vier Varianten nebeneinander.
 // · First Person: der Ort als Kulisse von vier Seiten (Plan gedreht), mit Arbeiter als Maßstab, Abstand ½, ¼, ⅛.
 // · Messung aller Siedlungsarten eines Bioms: Zusammensetzen gedrosselt, größter Einzelschritt, Bildspeicher, Kacheln, Größe des Plans; Ampel nach Budgetgruppe „Große Anlagen“.
+// · Gebäudeliste nach Einwohnern (N6b2c1, stadtliste.js): alle Gebäude des Orts nach Zweigen mit Anzahl, Grundfläche, Lage und Herkunft; erst beim Antippen geladen.
 // Nichts davon lädt das Spiel. Bis N6b sind alle Teile Skizzen aus dem Baukasten (Bauklassen-Teile mit Farbtausch nach Biom und Baustil).
 var AT3_STADTBILDER_MENUE=(function(){
 'use strict';
@@ -49,16 +50,35 @@ function zeigen(){var el=E.el,O=E.orte,biome=O.biome||[],stile=O.baustile||[];
   '<h3>First Person <span class="leise">(der Ort als Kulisse)</span></h3><div class="sbFp"><canvas id="sbFp" width="'+FP.W+'" height="'+FP.H+'" class="pixel"></canvas>'+
   '<p><button class="knopf klein" id="sbLinks">◀</button> <span id="sbSeite"></span> <button class="knopf klein" id="sbRechts">▶</button></p>'+
   '<p>Abstand: <button class="knopf klein" data-sbstufe="1">½</button> <button class="knopf klein" data-sbstufe="2">¼</button> <button class="knopf klein" data-sbstufe="3">⅛</button></p></div>'+
+  '<h3>Gebäudeliste nach Einwohnern <span class="leise">(N6b2c1, Biom und Seed von oben)</span></h3>'+
+  '<p class="leise">Alle Gebäude, die der Ort hat und die später im Bild stehen und in der Stadtübersicht stehen. Versorgung wächst mit den Einwohnern (Vorbild: die freigegebene 10.000er-Skizze), dazu Grundbedarf je Größe und die Leitgebäude der Ortsbilanz. Alle Zahlen sind Vorschläge.</p>'+
+  '<div class="sbForm"><label>Einwohner <input id="sbEinw" type="number" min="1" max="20000" value="10000"></label><label>&nbsp;<button class="knopf klein" id="sbListeKnopf">Liste zeigen</button></label></div><div id="sbListe"></div>'+
   '<h3>Messung</h3><p><button class="knopf" id="sbMessen">Alle Siedlungsarten dieses Bioms messen<small>Zusammensetzen gedrosselt ×'+E.budgets.drossel+' · größter Einzelschritt · Bildspeicher · Kacheln</small></button></p><div id="sbTabelle"></div>'+
   '<p><button class="knopf" id="sbFensterMessen">Sichtfenster der Probestadt messen<small>200 × 200 Felder · Handy-Sicht 360 × 640 · 40-mal wischen · gedrosselt ×'+E.budgets.drossel+'</small></button></p><div id="sbFensterTabelle"></div>';
  el.innerHTML=h;
  $('#sbArt').onchange=function(){standard();neu()};['#sbBiom','#sbStil','#sbSeed'].forEach(function(q){$(q).onchange=neu});$('#sbUmland').onchange=function(){E.umland=$('#sbUmland').checked;neu()};$('#sbProbe').onchange=function(){E.probe=$('#sbProbe').checked;neu()};
  $('#sbWuerfel').onclick=function(){$('#sbSeed').value=Math.floor(Math.random()*1e6);neu()};$('#sbStd').onclick=function(){standard();neu()};
  [].forEach.call(el.querySelectorAll('[data-zus]'),function(c){c.onchange=neu});
- $('#sbVarKnopf').onclick=varianten;$('#sbMessen').onclick=messen;$('#sbFensterMessen').onclick=fensterMessen;
+ $('#sbVarKnopf').onclick=varianten;$('#sbListeKnopf').onclick=gebListe;$('#sbEinw').onchange=gebListe;$('#sbMessen').onclick=messen;$('#sbFensterMessen').onclick=fensterMessen;
  $('#sbLinks').onclick=function(){E.seite=(E.seite+7)%8;fp()};$('#sbRechts').onclick=function(){E.seite=(E.seite+1)%8;fp()};
  [].forEach.call(el.querySelectorAll('[data-sbstufe]'),function(b){b.onclick=function(){E.stufe=+b.dataset.sbstufe;fpBau()}});
  standard();neu()}
+var ZWEIG_DE={households:'Wohnen',administration:'Verwaltung',faith:'Glaube',military:'Militär',economy:'Wirtschaft',underworld:'Unterwelt'};
+var LAGE_DE={innen:'innen',tor:'vor dem Tor',umland:'Umland'},QUELLE_DE={versorgung:'Versorgung',grund:'Grundbedarf',leit:'Leitgebäude',wohnen:'Wohnen'};
+function gebListe(){var z=$('#sbListe');z.innerHTML='<p class="leise">Der Stadtschreiber zählt …</p>';
+ var los=function(){var SL=window.AT3_STADTLISTE,einw=Math.max(1,Math.min(20000,+$('#sbEinw').value|0)),t0=performance.now(),
+   r=SL.probe(einw,$('#sbBiom').value,+$('#sbSeed').value>>>0,E.gebD),ms=performance.now()-t0,s=r.summe,gr={};
+  r.gebaeude.forEach(function(g){(gr[g.haupt]=gr[g.haupt]||[]).push(g)});
+  var h='<p><b>'+(ART_DE[r.art]||'Hauptstadt')+' mit '+einw.toLocaleString('de-DE')+' Einwohnern</b> · '+s.gebaeude+' Gebäude ('+s.innen+' innen, '+s.tor+' vor dem Tor'+(s.umland?', '+s.umland+' Umland':'')+') · Grundfläche innen '+s.flaeche+
+   ' Planfelder (Bild ×1,5: '+Math.round(s.flaeche*2.25)+' Felder), vor dem Tor '+s.flaecheTor+' · gerechnet in '+ms.toFixed(2)+' ms</p>';
+  if(r.wohnen.length)h+='<p class="leise">Wohnen je Stand: '+r.wohnen.map(function(w){return 'Stand '+w.stand+': '+w.leute+' Leute in '+w.n+' × '+w.haus+' (je '+w.je+')'}).join(' · ')+'</p>';
+  h+='<table class="tabelle"><tr><th>Gebäude</th><th>Anzahl</th><th>Fläche</th><th>Lage</th><th>Herkunft</th></tr>';
+  ['households','administration','faith','military','economy','underworld'].forEach(function(k){if(!gr[k])return;var n=gr[k].reduce(function(a,g){return a+g.n},0);
+   h+='<tr><th colspan="5" style="text-align:left">'+ZWEIG_DE[k]+' · '+n+'</th></tr>'+gr[k].map(function(g){return '<tr><td>'+esc(g.name)+' <span class="leise">'+esc(g.zweig)+'</span></td><td>'+g.n+'</td><td>'+g.w+' × '+g.h+'</td><td>'+LAGE_DE[g.lage]+'</td><td>'+QUELLE_DE[g.quelle]+'</td></tr>'}).join('')});
+  z.innerHTML=h+'</table>'};
+ if(E.gebD)return los();
+ lade('stadtliste.js').then(function(){return lade('daten/gebaeude.json')}).then(function(d){E.gebD=window.AT3_STADTLISTE.daten(d);los()})
+  .catch(function(e){z.innerHTML='<p class="witz">Stadtschreiber verschollen: '+esc(e.message)+'</p>'})}
 function standard(){var std=SB.ARTEN[$('#sbArt').value].std;[].forEach.call(E.el.querySelectorAll('[data-zus]'),function(c){c.checked=std.indexOf(c.dataset.zus)>=0})}
 function wahl(seed){var z=[];[].forEach.call(E.el.querySelectorAll('[data-zus]'),function(c){if(c.checked)z.push(c.dataset.zus)});
  return{art:$('#sbArt').value,biom:$('#sbBiom').value,stil:$('#sbStil').value,seed:seed==null?(+$('#sbSeed').value>>>0):seed,zusatz:z}}
