@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 327,
+ "typMax": 342,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2946,6 +2946,141 @@
    "name": "Battlements B",
    "status": "uebernommen",
    "datei": "obj/mauer-zinne-w-b.json"
+  },
+  {
+   "id": "mauer-halb-ob",
+   "version": 1,
+   "typ": 328,
+   "kat": "einrichtung",
+   "name": "Wall Crown Half N",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-ob.json"
+  },
+  {
+   "id": "mauer-halb-re",
+   "version": 1,
+   "typ": 329,
+   "kat": "einrichtung",
+   "name": "Wall Crown Half E",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-re.json"
+  },
+  {
+   "id": "mauer-halb-un",
+   "version": 1,
+   "typ": 330,
+   "kat": "einrichtung",
+   "name": "Wall Crown Half S",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-un.json"
+  },
+  {
+   "id": "mauer-halb-li",
+   "version": 1,
+   "typ": 331,
+   "kat": "einrichtung",
+   "name": "Wall Crown Half W",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-li.json"
+  },
+  {
+   "id": "mauer-halb-wand",
+   "version": 1,
+   "typ": 332,
+   "kat": "einrichtung",
+   "name": "Slanted Wall",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-wand.json"
+  },
+  {
+   "id": "mauer-halb-wand-a",
+   "version": 1,
+   "typ": 333,
+   "kat": "einrichtung",
+   "name": "Slanted Wall A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-wand-a.json"
+  },
+  {
+   "id": "mauer-halb-wand-b",
+   "version": 1,
+   "typ": 334,
+   "kat": "einrichtung",
+   "name": "Slanted Wall B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-wand-b.json"
+  },
+  {
+   "id": "mauer-halb-zinne-ob",
+   "version": 1,
+   "typ": 335,
+   "kat": "einrichtung",
+   "name": "Slanted Battlements",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-zinne-ob.json"
+  },
+  {
+   "id": "mauer-halb-zinne-ob-a",
+   "version": 1,
+   "typ": 336,
+   "kat": "einrichtung",
+   "name": "Slanted Battlements A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-zinne-ob-a.json"
+  },
+  {
+   "id": "mauer-halb-zinne-ob-b",
+   "version": 1,
+   "typ": 337,
+   "kat": "einrichtung",
+   "name": "Slanted Battlements B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-zinne-ob-b.json"
+  },
+  {
+   "id": "mauer-halb-zinne-un",
+   "version": 1,
+   "typ": 338,
+   "kat": "einrichtung",
+   "name": "Slanted Battlements Back",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-zinne-un.json"
+  },
+  {
+   "id": "mauer-halb-zinne-re",
+   "version": 1,
+   "typ": 339,
+   "kat": "einrichtung",
+   "name": "Slanted Battlements E",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-zinne-re.json"
+  },
+  {
+   "id": "mauer-halb-zinne-li",
+   "version": 1,
+   "typ": 340,
+   "kat": "einrichtung",
+   "name": "Slanted Battlements W",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-zinne-li.json"
+  },
+  {
+   "id": "mauer-halb-wand-c",
+   "version": 1,
+   "typ": 341,
+   "kat": "einrichtung",
+   "name": "Slanted Wall C",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-wand-c.json"
+  },
+  {
+   "id": "mauer-halb-wand-d",
+   "version": 1,
+   "typ": 342,
+   "kat": "einrichtung",
+   "name": "Slanted Wall D",
+   "status": "uebernommen",
+   "datei": "obj/mauer-halb-wand-d.json"
   }
  ]
 }
