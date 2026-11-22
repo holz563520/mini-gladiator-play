@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 315,
+ "typMax": 327,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2571,38 +2571,38 @@
   },
   {
    "id": "mauer-zinne-n",
-   "version": 1,
+   "version": 2,
    "typ": 312,
    "kat": "einrichtung",
    "name": "Battlements",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/mauer-zinne-n.json"
   },
   {
    "id": "mauer-zinne-o",
-   "version": 1,
+   "version": 2,
    "typ": 314,
    "kat": "einrichtung",
    "name": "Battlements",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/mauer-zinne-o.json"
   },
   {
    "id": "mauer-zinne-s",
-   "version": 1,
+   "version": 2,
    "typ": 313,
    "kat": "einrichtung",
    "name": "Battlements",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/mauer-zinne-s.json"
   },
   {
    "id": "mauer-zinne-w",
-   "version": 1,
+   "version": 2,
    "typ": 315,
    "kat": "einrichtung",
    "name": "Battlements",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/mauer-zinne-w.json"
   },
   {
@@ -2838,6 +2838,114 @@
    "name": "Workbench",
    "status": "geprueft",
    "datei": "obj/werk-bank.json"
+  },
+  {
+   "id": "mauer-rampe-s",
+   "version": 1,
+   "typ": 316,
+   "kat": "einrichtung",
+   "name": "Wall Ramp",
+   "status": "uebernommen",
+   "datei": "obj/mauer-rampe-s.json"
+  },
+  {
+   "id": "mauer-rampe-n",
+   "version": 1,
+   "typ": 317,
+   "kat": "einrichtung",
+   "name": "Wall Ramp",
+   "status": "uebernommen",
+   "datei": "obj/mauer-rampe-n.json"
+  },
+  {
+   "id": "mauer-rampe-o",
+   "version": 1,
+   "typ": 318,
+   "kat": "einrichtung",
+   "name": "Wall Ramp",
+   "status": "uebernommen",
+   "datei": "obj/mauer-rampe-o.json"
+  },
+  {
+   "id": "mauer-rampe-w",
+   "version": 1,
+   "typ": 319,
+   "kat": "einrichtung",
+   "name": "Wall Ramp",
+   "status": "uebernommen",
+   "datei": "obj/mauer-rampe-w.json"
+  },
+  {
+   "id": "mauer-zinne-n-a",
+   "version": 1,
+   "typ": 320,
+   "kat": "einrichtung",
+   "name": "Battlements A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zinne-n-a.json"
+  },
+  {
+   "id": "mauer-zinne-n-b",
+   "version": 1,
+   "typ": 321,
+   "kat": "einrichtung",
+   "name": "Battlements B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zinne-n-b.json"
+  },
+  {
+   "id": "mauer-zinne-s-a",
+   "version": 1,
+   "typ": 322,
+   "kat": "einrichtung",
+   "name": "Battlements A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zinne-s-a.json"
+  },
+  {
+   "id": "mauer-zinne-s-b",
+   "version": 1,
+   "typ": 323,
+   "kat": "einrichtung",
+   "name": "Battlements B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zinne-s-b.json"
+  },
+  {
+   "id": "mauer-zinne-o-a",
+   "version": 1,
+   "typ": 324,
+   "kat": "einrichtung",
+   "name": "Battlements A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zinne-o-a.json"
+  },
+  {
+   "id": "mauer-zinne-o-b",
+   "version": 1,
+   "typ": 325,
+   "kat": "einrichtung",
+   "name": "Battlements B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zinne-o-b.json"
+  },
+  {
+   "id": "mauer-zinne-w-a",
+   "version": 1,
+   "typ": 326,
+   "kat": "einrichtung",
+   "name": "Battlements A",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zinne-w-a.json"
+  },
+  {
+   "id": "mauer-zinne-w-b",
+   "version": 1,
+   "typ": 327,
+   "kat": "einrichtung",
+   "name": "Battlements B",
+   "status": "uebernommen",
+   "datei": "obj/mauer-zinne-w-b.json"
   }
  ]
 }
