@@ -696,8 +696,9 @@ function plan(opt){
  if(P.hoehe)huegelFertig(P);
  if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
+ if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false&&opt.wasserOffen!==false)wassertoreGerade(P,opt);   // N6b2e2g2 Mauer endet am Fluss mit Türmen an beiden Ufern (opt.wasserOffen:false = wie vorher)
  if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
- delete P.mauertor;   // nur zum Rechnen der Tore
+ delete P.mauertor;delete P.uferAuf;   // nur zum Rechnen der Tore
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
  return P}
 // Hochstege (Thomas 22.11.2026, Rückmeldung zu N6b2c4c2): Holzstege eine Stufe über dem Wasser wie die Holzbrücke aus 2.0 (welt-bruecke.js), auf Pfählen;
@@ -1200,6 +1201,62 @@ function toreGerade(P,opt){opt=opt||{};var W=P.W,WW=W*W,Z0=P.zellen,Z=Z0.split('
  for(k=0;k<WW;k++)if(wand[k]&&!hat[k]){var o2={rolle:'mauer',i:k%W,j:(k/W)|0,w:1,h:1,klasse:m0.klasse,dach:m0.dach,achse:'i',wand:m0.wand,dachR:m0.dachR};if(HZ)o2.hz=HZ.charCodeAt(k)-48;P.bauten.push(o2)}
  var aus2=flut();
  var zl=[];for(j=0;j<W;j++){i=0;while(i<W){if(aus2[j*W+i]){i++;continue}var i1=i;while(i1+1<W&&!aus2[j*W+i1+1])i1++;zl.push(j,i,i1);i=i1+1}}P.umriss.bild=zl}
+// N6b2e2g2 Wassertore (Entscheidung Thomas 22.11.2026: „einfach Türme am Wasserrand und fertig“): wo die Mauer auf den Fluss trifft, gibt es kein
+// Wassertor mehr. Die Mauer endet an beiden Ufern, mauerwerk setzt dort je einen Turm (P.uferAuf), der Wehrgang läuft nicht übers Wasser. Die Felder
+// bleiben Grenze der Innenfläche (die Stadt läuft nicht über den Fluss aus). Ebenso ein krummes Straßentor direkt am Wasser (Brücke, Ufergasse).
+// Notausschalter opt.wasserOffen:false (Wassertore wie vorher).
+var WREST=40;
+function wassertoreGerade(P,opt){var W=P.W,WW=W*W,Z=P.zellen.split(''),k,i,j,d;if(!P.mauertor||!P.fluss||opt.wasserOffen===false)return;
+ var wand=new Uint8Array(WW),tor=new Uint8Array(WW),sperr=new Uint8Array(WW),m0=null;
+ P.bauten.forEach(function(b){var m=b.rolle==='mauer';if(m&&!m0)m0=b;for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)(m?wand:sperr)[y*W+x]=1;
+  if(b.tuer&&!m){var tx=b.tuer[0]+b.tuer[2],ty=b.tuer[1]+b.tuer[3];if(tx>=0&&ty>=0&&tx<W&&ty<W)sperr[ty*W+tx]=1}});if(!m0)return;
+ P.dinge.forEach(function(o){if(o.rolle&&o.i>=0&&o.j>=0&&o.i<W&&o.j<W)sperr[o.j*W+o.i]=1});
+ for(k=0;k<WW;k++)if(P.mauertor.charCodeAt(k)===49&&!wand[k])tor[k]=1;
+ var NB=new Int32Array(4),N4b=function(k){var x=k%W,y=(k/W)|0;NB[0]=x<W-1?k+1:-1;NB[1]=y<W-1?k+W:-1;NB[2]=x>0?k-1:-1;NB[3]=y>0?k-W:-1;return NB};
+ var flut=function(wa,to){var a=new Uint8Array(WW),fl=[],k,d;for(k=0;k<WW;k++){var fi=k%W,fj=(k/W)|0;if((fi===0||fj===0||fi===W-1||fj===W-1)&&!wa[k]&&!to[k]){a[k]=1;fl.push(k)}}
+  while(fl.length){var c=fl.pop(),nn=N4b(c);for(d=0;d<4;d++){var x=nn[d];if(x>=0&&!a[x]&&!wa[x]&&!to[x]){a[x]=1;fl.push(x)}}}return a};
+ var stuecke=function(wa,to){var s=new Uint8Array(WW),n=0,st=[],k,d;for(k=0;k<WW;k++){if(s[k]||!(wa[k]||to[k]))continue;n++;s[k]=1;st.push(k);
+  while(st.length){var c=st.pop(),nn=N4b(c);for(d=0;d<4;d++){var x=nn[d];if(x>=0&&!s[x]&&(wa[x]||to[x])){s[x]=1;st.push(x)}}}}return n};
+ var gruppen=function(to){var s=new Uint8Array(WW),L=[],k,d;for(k=0;k<WW;k++){if(!to[k]||s[k])continue;var T=[k],st=[k];s[k]=1;
+  while(st.length){var c=st.pop(),nn=N4b(c);for(d=0;d<4;d++){var x=nn[d];if(x>=0&&to[x]&&!s[x]){s[x]=1;st.push(x);T.push(x)}}}L.push(T)}return L};
+ var gerade=function(wa,T){return torGeradeOk(W,T,function(x,y){return x>=0&&y>=0&&x<W&&y<W&&wa[y*W+x]===1},0)};
+ var BODEN={g:1,x:1,f:1,p:1,e:1},frei=function(k){return !sperr[k]&&BODEN[Z[k]]===1};
+ var aus=flut(wand,tor),offen=[];
+ gruppen(tor).forEach(function(T){if(T.some(function(x){return Z[x]==='w'}))offen.push(T)});
+ var auf=new Uint8Array(WW);offen.forEach(function(T){T.forEach(function(x){auf[x]=1})});
+ // dasselbe für ein krummes Straßentor am Fluss (aus N6b2e2g1: Brücke oder Ufergasse direkt am Wasser oder an der Unterbrechung): die Mauer endet dort
+ gruppen(tor).forEach(function(T){if(auf[T[0]]||T.some(function(x){return Z[x]==='w'}))return;
+  if(torGeradeOk(W,T,function(x,y){return x>=0&&y>=0&&x<W&&y<W&&wand[y*W+x]===1},TOR_B))return;
+  var nah=T.some(function(x){var xi=x%W,xj=(x/W)|0;for(var u=-2;u<=2;u++)for(var w=-2;w<=2;w++){var y=xj+w,q=xi+u;if(q>=0&&y>=0&&q<W&&y<W&&(auf[y*W+q]||Z[y*W+q]==='w'))return true}return false});
+  if(!nah)return;T.forEach(function(x){auf[x]=1});offen.push(T);if(P.toreKrumm)P.toreKrumm--;if(!P.toreKrumm)delete P.toreKrumm});
+ if(offen.length){P.fluss.offen=offen.length;
+  // Mauerstücke, die sich nur über Eck berühren, bekommen ein Feld dazu (wie in mauerRund); sonst bliebe am Ufer ein Stück Wehrgang ohne Zugang
+  var mw=function(k){return wand[k]||(tor[k]&&!auf[k])},fuell=function(k){if(wand[k]||tor[k]||auf[k]||!frei(k))return false;var xi=k%W,xj=(k/W)|0,gs={},g0;   // Tore daneben bleiben gerade
+   for(var u=-4;u<=4;u++)for(var w=-4;w<=4;w++){var y=xj+w,q=xi+u;if(q>=0&&y>=0&&q<W&&y<W&&torNr[y*W+q])gs[torNr[y*W+q]]=1}
+   for(g0 in gs){var T0=torG[g0-1],b0=gerade(wand,T0);wand[k]=1;var b1=gerade(wand,T0);wand[k]=0;if(b0&&!b1)return false}return true};
+  var torG=gruppen(tor.map(function(v,x){return v&&!auf[x]?1:0})),torNr=new Int32Array(WW);torG.forEach(function(T0,gi){T0.forEach(function(x){torNr[x]=gi+1})});
+  for(var r=0;r<3;r++){var neu=false;for(j=0;j<W-1;j++)for(i=0;i<W-1;i++){var p0=j*W+i,p1=p0+1,p2=p0+W,p3=p2+1,c=null;
+   if(mw(p0)&&mw(p3)&&!mw(p1)&&!mw(p2))c=[p1,p2];else if(mw(p1)&&mw(p2)&&!mw(p0)&&!mw(p3))c=[p0,p3];if(!c)continue;
+   var wahl=fuell(c[0])?c[0]:fuell(c[1])?c[1]:-1;if(wahl>=0){wand[wahl]=1;Z[wahl]='g';neu=true}}if(!neu)break}
+  // kleine Mauerreste (höchstens WREST Felder) zwischen oder an den Unterbrechungen gehören zur Öffnung
+  var ges=new Uint8Array(WW);for(k=0;k<WW;k++){if(!wand[k]||ges[k])continue;var R=[k],st=[k],an=false;ges[k]=1;
+   while(st.length){var q=st.pop(),nn=N4b(q);for(d=0;d<4;d++){var x=nn[d];if(x<0)continue;if(auf[x])an=true;if(!ges[x]&&mw(x)){ges[x]=1;st.push(x);R.push(x)}}}
+   if(an&&R.length<=WREST&&R.every(function(x){return wand[x]}))R.forEach(function(x){wand[x]=0;auf[x]=1})}
+  // Platz für den Turm am Ufer: an jedem Mauerende an der Öffnung ein 3 × 3 ganz aus Mauer; wo die Mauer dünner ist (Ringgasse dahinter), wächst sie
+  // nach außen (nur freier Boden draußen, Tore daneben bleiben gerade)
+  var hatTurm=function(k){var xi=k%W,xj=(k/W)|0;for(var oy=-2;oy<=0;oy++)for(var ox=-2;ox<=0;ox++){var ok3=true;for(var q=0;q<9&&ok3;q++){var x=xi+ox+q%3,y=xj+oy+(q/3|0);if(x<0||y<0||x>=W||y>=W||!wand[y*W+x])ok3=false}if(ok3)return true}return false};
+  for(k=0;k<WW;k++){if(!wand[k])continue;var nn0=N4b(k),amUfer=false;for(d=0;d<4;d++)if(nn0[d]>=0&&auf[nn0[d]])amUfer=true;if(!amUfer)continue;
+   var ki=k%W,kj=(k/W)|0,platz=false;for(var r2=-2;r2<=2&&!platz;r2++)for(var r3=-2;r3<=2&&!platz;r3++){var y0=kj+r2,x0=ki+r3;if(x0>=0&&y0>=0&&x0<W&&y0<W&&wand[y0*W+x0]&&hatTurm(y0*W+x0))platz=true}if(platz)continue;
+   var best=null,bn=99;for(var oy=-2;oy<=0;oy++)for(var ox=-2;ox<=0;ox++){var add=[],gut=true;for(var q=0;q<9&&gut;q++){var x=ki+ox+q%3,y=kj+oy+(q/3|0);if(x<0||y<0||x>=W||y>=W){gut=false;break}var kk=y*W+x;
+     if(wand[kk])continue;if(!aus[kk]||!fuell(kk)){gut=false;break}add.push(kk)}if(gut&&add.length<bn){bn=add.length;best=add}}
+   if(best)best.forEach(function(x){wand[x]=1;Z[x]='g'})}
+  aus=flut(wand,tor)}   // Innenfläche neu (Eckfelder und Turmplatz außen zählen zur Mauer)
+ if(!offen.length)return;
+ P.zellen=Z.join('');var mt='',ua='';for(k=0;k<WW;k++){mt+=tor[k]&&!auf[k]?'1':'0';ua+=auf[k]?'1':'0'}P.mauertor=mt;P.uferAuf=ua;   // uferAuf: nur für die Türme an den Ufern (mauerwerk)
+ P.dinge=P.dinge.filter(function(o){return o.rolle||!(o.i>=0&&o.j>=0&&o.i<W&&o.j<W&&wand[o.j*W+o.i])});
+ var HZ=P.hoehe,hat=new Uint8Array(WW);P.bauten=P.bauten.filter(function(b){if(b.rolle!=='mauer')return true;if(b.w===1&&b.h===1&&wand[b.j*W+b.i]){hat[b.j*W+b.i]=1;return true}return false});
+ for(k=0;k<WW;k++)if(wand[k]&&!hat[k]){var o2={rolle:'mauer',i:k%W,j:(k/W)|0,w:1,h:1,klasse:m0.klasse,dach:m0.dach,achse:'i',wand:m0.wand,dachR:m0.dachR};if(HZ)o2.hz=HZ.charCodeAt(k)-48;P.bauten.push(o2)}
+ var zl=[];for(j=0;j<W;j++){i=0;while(i<W){if(aus[j*W+i]){i++;continue}var i1=i;while(i1+1<W&&!aus[j*W+i1+1])i1++;zl.push(j,i,i1);i=i1+1}}P.umriss.bild=zl}
 var WEHR_IDS=['mauer-kante-i','mauer-kante-j','turm-kante-i','turm-kante-j','turm-scharte-i','turm-scharte-j','tor-sturz-i','tor-sturz-j','mauer-gang',
  'mauer-zinne-n','mauer-zinne-s','mauer-zinne-o','mauer-zinne-w','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w',
  'mauer-rampe-s','mauer-rampe-n','mauer-rampe-o','mauer-rampe-w','turm-tuer-i','turm-tuer-j','turm-eingang-i','turm-eingang-j',
@@ -1241,7 +1298,9 @@ function mauerwerk(P){var W=P.W,WW=W*W,Z=P.zellen,H=P.hoehe,MK=innenMaske(P),wan
  // je Tor (zusammenhängende Torfelder) zwei Türme direkt daneben, möglichst weit auseinander (links und rechts der Durchfahrt)
  var torId=new Int32Array(WW).fill(-1),tore=[];for(k=0;k<WW;k++){if(A[k]!==2||torId[k]>=0)continue;var st=[k],T=[];torId[k]=tore.length;
   while(st.length){var a=st.pop();T.push(a);N4(a).forEach(function(b){if(b>=0&&A[b]===2&&torId[b]<0){torId[b]=tore.length;st.push(b)}})}tore.push(T)}
- tore.forEach(function(T){var nah=kand.filter(function(c){for(var q2=0;q2<T.length;q2++){var ti=T[q2]%W,tj=(T[q2]/W)|0;if(ti>=c[0]-2&&ti<=c[0]+4&&tj>=c[1]-2&&tj<=c[1]+4)return true}return false});
+ var UA=P.uferAuf,ufer=[];if(UA){var su=new Uint8Array(WW);for(k=0;k<WW;k++){if(UA.charCodeAt(k)!==49||su[k])continue;var st2=[k],T2=[];su[k]=1;   // N6b2e2g2: Türme an beiden Ufern
+  while(st2.length){var a2=st2.pop();T2.push(a2);N4(a2).forEach(function(b){if(b>=0&&!su[b]&&UA.charCodeAt(b)===49){su[b]=1;st2.push(b)}})}ufer.push(T2)}}
+ tore.concat(ufer).forEach(function(T){var nah=kand.filter(function(c){for(var q2=0;q2<T.length;q2++){var ti=T[q2]%W,tj=(T[q2]/W)|0;if(ti>=c[0]-2&&ti<=c[0]+4&&tj>=c[1]-2&&tj<=c[1]+4)return true}return false});
   var best=null,bd=-1;for(var a=0;a<nah.length;a++)for(var b=a+1;b<nah.length;b++){var d=ab(nah[a],nah[b]);if(d>bd&&frei(nah[a])&&frei(nah[b])&&Math.abs(nah[a][0]-nah[b][0])+Math.abs(nah[a][1]-nah[b][1])>4){bd=d;best=[nah[a],nah[b]]}}
   if(best){setzT(best[0]);setzT(best[1])}else if(nah.length&&frei(nah[0]))setzT(nah[0])});
  // dann reihum (nach Winkel um die Mitte) etwa alle TURM_AB Felder (Thomas 22.11.2026: 36 statt 12, zu viele Türme; die Torpaare bleiben)
