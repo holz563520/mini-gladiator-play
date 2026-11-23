@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 750,
+ "typMax": 764,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -6609,6 +6609,132 @@
    "name": "Pen Gate E",
    "status": "uebernommen",
    "datei": "obj/pferch-gatter-ost.json"
+  },
+  {
+   "id": "weinpresse-vorn",
+   "version": 1,
+   "typ": 751,
+   "kat": "anlage",
+   "name": "Winepress",
+   "status": "uebernommen",
+   "datei": "obj/weinpresse-vorn.json"
+  },
+  {
+   "id": "weinpresse-hinten",
+   "version": 1,
+   "typ": 752,
+   "kat": "anlage",
+   "name": "Winepress N",
+   "status": "uebernommen",
+   "datei": "obj/weinpresse-hinten.json"
+  },
+  {
+   "id": "weinpresse-vorn-i",
+   "version": 1,
+   "typ": 753,
+   "kat": "anlage",
+   "name": "Winepress E",
+   "status": "uebernommen",
+   "datei": "obj/weinpresse-vorn-i.json"
+  },
+  {
+   "id": "weinpresse-hinten-i",
+   "version": 1,
+   "typ": 754,
+   "kat": "anlage",
+   "name": "Winepress W",
+   "status": "uebernommen",
+   "datei": "obj/weinpresse-hinten-i.json"
+  },
+  {
+   "id": "oelmuehle-vorn",
+   "version": 1,
+   "typ": 755,
+   "kat": "anlage",
+   "name": "Olive Mill",
+   "status": "uebernommen",
+   "datei": "obj/oelmuehle-vorn.json"
+  },
+  {
+   "id": "oelmuehle-hinten",
+   "version": 1,
+   "typ": 756,
+   "kat": "anlage",
+   "name": "Olive Mill N",
+   "status": "uebernommen",
+   "datei": "obj/oelmuehle-hinten.json"
+  },
+  {
+   "id": "oelmuehle-vorn-i",
+   "version": 1,
+   "typ": 757,
+   "kat": "anlage",
+   "name": "Olive Mill E",
+   "status": "uebernommen",
+   "datei": "obj/oelmuehle-vorn-i.json"
+  },
+  {
+   "id": "oelmuehle-hinten-i",
+   "version": 1,
+   "typ": 758,
+   "kat": "anlage",
+   "name": "Olive Mill W",
+   "status": "uebernommen",
+   "datei": "obj/oelmuehle-hinten-i.json"
+  },
+  {
+   "id": "hofpresse-wein-sued",
+   "version": 1,
+   "typ": 759,
+   "kat": "anlage",
+   "name": "Farm Winepress S",
+   "status": "uebernommen",
+   "datei": "obj/hofpresse-wein-sued.json"
+  },
+  {
+   "id": "hofpresse-oel-sued",
+   "version": 1,
+   "typ": 760,
+   "kat": "anlage",
+   "name": "Farm Olive Mill S",
+   "status": "uebernommen",
+   "datei": "obj/hofpresse-oel-sued.json"
+  },
+  {
+   "id": "hofpresse-wein-ost",
+   "version": 1,
+   "typ": 761,
+   "kat": "anlage",
+   "name": "Farm Winepress E",
+   "status": "uebernommen",
+   "datei": "obj/hofpresse-wein-ost.json"
+  },
+  {
+   "id": "hofpresse-oel-ost",
+   "version": 1,
+   "typ": 762,
+   "kat": "anlage",
+   "name": "Farm Olive Mill E",
+   "status": "uebernommen",
+   "datei": "obj/hofpresse-oel-ost.json"
+  },
+  {
+   "id": "hofpresse-wein-west",
+   "version": 1,
+   "typ": 763,
+   "kat": "anlage",
+   "name": "Farm Winepress W",
+   "status": "uebernommen",
+   "datei": "obj/hofpresse-wein-west.json"
+  },
+  {
+   "id": "hofpresse-oel-west",
+   "version": 1,
+   "typ": 764,
+   "kat": "anlage",
+   "name": "Farm Olive Mill W",
+   "status": "uebernommen",
+   "datei": "obj/hofpresse-oel-west.json"
   }
  ]
 }
