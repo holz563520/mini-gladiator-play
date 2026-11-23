@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 597,
+ "typMax": 601,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -5232,6 +5232,42 @@
    "name": "Statue Head: Vacant W",
    "status": "uebernommen",
    "datei": "obj/forum-reiter-kopf-ohne-i0.json"
+  },
+  {
+   "id": "theater-vorn",
+   "version": 1,
+   "typ": 598,
+   "kat": "anlage",
+   "name": "Theatre",
+   "status": "uebernommen",
+   "datei": "obj/theater-vorn.json"
+  },
+  {
+   "id": "theater-hinten",
+   "version": 1,
+   "typ": 599,
+   "kat": "anlage",
+   "name": "Theatre N",
+   "status": "uebernommen",
+   "datei": "obj/theater-hinten.json"
+  },
+  {
+   "id": "theater-vorn-i",
+   "version": 1,
+   "typ": 600,
+   "kat": "anlage",
+   "name": "Theatre E",
+   "status": "uebernommen",
+   "datei": "obj/theater-vorn-i.json"
+  },
+  {
+   "id": "theater-hinten-i",
+   "version": 1,
+   "typ": 601,
+   "kat": "anlage",
+   "name": "Theatre W",
+   "status": "uebernommen",
+   "datei": "obj/theater-hinten-i.json"
   }
  ]
 }
