@@ -43,6 +43,12 @@ var FLUSS_B=[0,0,2,2,2,2,3,3],UFER={fisher:1,mill:1,'gold-wash':1,'clay-pit':1,t
 // (Akropolis). Die Blöcke rings um den Gipfel bleiben nackter Fels mit Terrassen (kein Haus); Stufen: Gipfel oben (Großstadt/Hauptstadt 4, sonst 3), Felsring zwei
 // Stufen tiefer werdend, ab Großstadt ein Ring Häuser auf Stufe 1; Ränder leicht ausgefranst; Wasser, Kai, Strand, Stege und Ufergassen bleiben unten. Höhe nur gemalt wie RCT Classic: je Stufe HSTUFE Bildpunkte höher, Felskante unter vorderen Kanten, Felstreppen auf Wegen.
 var GIPFEL1=['royal-palace','governor','temple'],GIPFEL2=['temple','senate','governor','royal-palace'],HSTUFE=16;
+// N6b3b1 Tempel (Thomas 23.11.2026): genau 6 × 8 Felder, ab Großstadt der erste Tempel groß 10 × 14, Eingang mittig an einer
+// Schmalseite; jeder Tempel trägt die Religion seines Orts (b.rel, austauschbar: tempelUmwidmen), das Ganzbild zeigt sie als Wechselschild (Giebelfeld + Banner).
+// Ohne opt.religion gilt die erste Religion mit diesem Biom als Heimat (daten/religionen.json). hoch = Bildpunkte über der oberen Ecke (Rahmen, Vorschlag).
+var TEMPEL={klein:{s:6,l:8,hoch:150},gross:{s:10,l:14,hoch:230}},TEMPEL_GROSS_AB=6,TEMPEL_PLAN=[4,6],TEMPEL_PLAN_GROSS=[7,10];   // im Plan vor dem Maßstab 1,5: 4 × 6 → immer 6 × 9, 7 × 10 → 10–11 × 15
+var REL_BIOM={mediterranean:'thunderous-pantheon',grassland:'beast-crowned',broadleaf:'whispering-green',desert:'beast-crowned',mountain:'deep-mother',savanna:'long-table',
+ conifer:'undying-flame',coast:'tide-ledger',swamp:'fever-saints',rainforest:'undying-flame',mangrove:'tide-ledger',tundra:'frost-covenant',snow:'frost-covenant'};
 var HAFEN={harbour:1,shipyard:1,'sea-fishery':1},MOLEN=[0,0,0,0,1,2,2,3],SEE=9,SEITE_NR={south:0,north:1,east:2,west:3},QUER=[2,3,0,1];
 // Zonen von innen nach außen wie die Skizze: Verwaltung, Glaube, Adel, Handel und Gewerbe, Militär, Mietshäuser, Gasthöfe, Unterwelt, Buden
 var ORD={administration:0,faith:1,economy:2,households:3,military:4,underworld:5};
@@ -125,7 +131,10 @@ function innenMaske(P){var W=P.W,M=new Uint8Array(W*W),U=P.umriss;if(!U||!U.zeil
  var F=P.mass||1,PW=U.planW,rows={},k,I,J;for(k=0;k<U.zeilen.length;k+=3)(rows[U.zeilen[k]]=rows[U.zeilen[k]]||[]).push(U.zeilen[k+1],U.zeilen[k+2]);
  for(J=0;J<W;J++)for(I=0;I<W;I++){var a=P.gespiegelt?J:I,b=P.gespiegelt?I:J,pi=Math.min(PW-1,Math.floor(a/F)),r=rows[Math.min(PW-1,Math.floor(b/F))];
   if(r)for(k=0;k<r.length;k+=2)if(pi>=r[k]&&pi<=r[k+1]){M[J*W+I]=1;break}}return M}
-function plan(opt){
+// N6b3b1: scheitert ein Plan mit der größeren Tempelfläche (seltene Grenzfälle, z. B. „Außenring passt nicht“), plant er noch einmal mit der alten Fläche;
+// die Tempel werden dann nur zugeschnitten, wo es geht (sonst Baukasten-Bild). Kosten nur im Fehlerfall.
+function plan(opt){if(opt.tempel===false||opt.tempelAlt)return plan0(opt);try{return plan0(opt)}catch(e){return plan0(Object.assign({},opt,{tempelAlt:true}))}}
+function plan0(opt){
  var art=opt.art||'',A=art?ARTEN[art]:null;if(art&&!A)throw new Error('Unbekannte Siedlungsart: '+art);var B=BIOME[opt.biom];if(!B)throw new Error('Unbekanntes Biom: '+opt.biom);
  var ST=opt.stil?STILE[opt.stil]:null;if(opt.stil&&!ST)throw new Error('Unbekannter Baustil: '+opt.stil);
  var F=opt.mass==null?BK().MASS:+opt.mass,seed=opt.seed>>>0,elend=!!(A&&A.elend);
@@ -142,6 +151,8 @@ function plan(opt){
  // Gebäude einzeln
  var items=[];if(elend){for(var e0=Math.ceil(einw/6);e0>0;e0--)items.push({id:'shack',w:1,h:1,haupt:'households',stufe:1})}
  else Li.gebaeude.forEach(function(x){if(x.lage!=='innen')return;for(var k=0;k<x.n;k++)items.push({id:x.id,w:x.w,h:x.h,haupt:x.haupt,stufe:x.stufe})});
+ var TPL=opt.tempel!==false&&F===BK().MASS;   // N6b3b1 nur im echten Maßstab (Ganzbilder in Bildfeldern)
+ if(TPL&&!opt.tempelAlt){var tg=items.filter(function(it){return it.id==='temple'});tg.forEach(function(it,n){var q=n===0&&g>=TEMPEL_GROSS_AB?TEMPEL_PLAN_GROSS:TEMPEL_PLAN;it.w=q[0];it.h=q[1]})}   // N6b3b1: Platz etwas größer, nach dem Maßstab auf genau 6 × 8 bzw. 10 × 14 zugeschnitten
  // Küste ab Marktflecken: Hafen, Werft, Seefischerei stehen draußen am Kai statt in der Stadt
  var hafenItems=KSP!=null?items.filter(function(it){return HAFEN[it.id]}):[];if(hafenItems.length)items=items.filter(function(it){return !HAFEN[it.id]});
  var Bm=blockMass(g),P1=Bm+1,wall=g>=MAUER_AB&&!elend?MAUER:0,off=wall+1;
@@ -695,6 +706,7 @@ function plan(opt){
  if(spW)P=spiegeln(P);
  if(P.kueste)hochstege(P);
  if(P.hoehe)huegelFertig(P);
+ if(!elend&&TPL)tempelFest(P,opt);   // N6b3b1 Tempel genau 6 × 8 bzw. 10 × 14, Eingang an der Schmalseite (opt.tempel:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false&&opt.wasserOffen!==false)wassertoreGerade(P,opt);   // N6b2e2g2 Mauer endet am Fluss mit Türmen an beiden Ufern (opt.wasserOffen:false = wie vorher)
@@ -702,6 +714,49 @@ function plan(opt){
  delete P.mauertor;delete P.uferAuf;   // nur zum Rechnen der Tore
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
  return P}
+// N6b3b1 Tempel auf genaue Größe (nach Maßstab, Spiegeln und Burgberg): je Tempel Lage (bis 2 Felder verschoben), Ausrichtung (Längsachse i oder j) und Eingangsseite
+// (eine der beiden Schmalseiten) so wählen, dass der Grund frei ist (alter Grund oder Wiese; Bäume und Büsche darauf fallen weg) und vor dem Eingang (Feld vor der Tür, besser
+// auch das Nachbarfeld) Gasse oder Platz liegt; kein fremder Eingang wird zugestellt, am Burgberg alles auf einer Stufe. Bewertung: wenig verschieben, alte Eingangsseite und Achse behalten.
+// Freie alte Felder bekommen den Boden der Nachbarn auf gleicher Stufe (am Hang Wiese, wo sonst ein Weg zwei Stufen spränge). Passt nichts, bleibt der Tempel wie er war (P.tempel.fehl, Baukasten-Bild). Rechnung je Tempel ~100 Lagen × Fläche.
+function tempelFest(P,opt){var W=P.W,WW=W*W,Z=P.zellen.split(''),HZ=P.hoehe,B=BIOME[P.biom],rel=opt.religion||REL_BIOM[P.biom]||null,st={n:0,fest:0,fehl:0,gross:0};
+ var tem=P.bauten.filter(function(b){return b.id==='temple'});P.religion=rel;if(!tem.length){P.tempel=st;return}
+ var gross=null;if((P.g|0)>=TEMPEL_GROSS_AB)tem.forEach(function(b){if(!gross||b.w*b.h>gross.w*gross.h)gross=b});
+ var weich={'lager-platz':1};(B.baeume||[]).forEach(function(id){weich[id]=1});
+ var ding={};P.dinge.forEach(function(d,n){ding[d.j*W+d.i]=n});
+ var lv=function(k){return HZ?HZ.charCodeAt(k)-48:0};
+ tem.forEach(function(b){st.n++;var T=b===gross?TEMPEL.gross:TEMPEL.klein,belegt=new Int32Array(WW).fill(-1),vor={};
+  P.bauten.forEach(function(o,n){if(o===b)return;for(var y=Math.max(0,o.j);y<Math.min(W,o.j+o.h);y++)for(var x=Math.max(0,o.i);x<Math.min(W,o.i+o.w);x++)belegt[y*W+x]=n;
+   if(o.tuer){var fx=o.tuer[0]+o.tuer[2],fy=o.tuer[1]+o.tuer[3];if(fx>=0&&fy>=0&&fx<W&&fy<W)vor[fy*W+fx]=1}});
+  var alt=new Uint8Array(WW);for(var y0=b.j;y0<b.j+b.h;y0++)for(var x0=b.i;x0<b.i+b.w;x0++)alt[y0*W+x0]=1;
+  var h0=lv(b.j*W+b.i),cx=b.i+b.w/2,cy=b.j+b.h/2,achse0=b.w>b.h?'i':b.h>b.w?'j':null,d0=b.tuer?[b.tuer[2],b.tuer[3]]:null,best=null;
+  var grund=function(k){if(belegt[k]>=0||vor[k]||lv(k)!==h0)return false;if(alt[k])return true;if(Z[k]!=='g')return false;
+   var dn=ding[k];return dn==null||!!weich[P.dinge[dn].id]};
+  var gehbar=function(k){return belegt[k]<0&&lv(k)===h0&&(Z[k]==='s'||Z[k]==='o'||Z[k]==='m')&&ding[k]==null};
+  ['j','i'].forEach(function(ax){var w=ax==='i'?T.l:T.s,h=ax==='i'?T.s:T.l,bi=Math.round(cx-w/2),bj=Math.round(cy-h/2);
+   for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++){var i0=bi+dx,j0=bj+dy,ok=i0>=0&&j0>=0&&i0+w<=W&&j0+h<=W;
+    for(var y=j0;y<j0+h&&ok;y++)for(var x=i0;x<i0+w&&ok;x++)if(!grund(y*W+x))ok=false;if(!ok)continue;
+    // Schmalseiten: Achse j → Nord (0,−1) und Süd (0,1), Mitte i0 + s/2; Achse i → West und Ost, Mitte j0 + s/2
+    (ax==='j'?[[0,-1],[0,1]]:[[-1,0],[1,0]]).forEach(function(d){var m=ax==='j'?i0+(w>>1):j0+(h>>1),fx,fy,ok2=true,q;
+     var vf=function(q){if(ax==='j'){fx=m+q;fy=d[1]<0?j0-1:j0+h}else{fy=m+q;fx=d[0]<0?i0-1:i0+w}return fx>=0&&fy>=0&&fx<W&&fy<W&&gehbar(fy*W+fx)};
+     if(!vf(0))return;ok2=vf(-1);var v=2*(Math.abs(dx)+Math.abs(dy))+(ok2?0:1)+(d0&&(d0[0]!==d[0]||d0[1]!==d[1])?1:0)+(achse0&&achse0!==ax?3:0);
+     if(!best||v<best.v)best={v:v,i:i0,j:j0,w:w,h:h,d:d,tuer:ax==='j'?[m,d[1]<0?j0:j0+h-1,0,d[1]]:[d[0]<0?i0:i0+w-1,m,d[0],0]}})}});
+  b.rel=rel;if(b===gross)b.gross=1;
+  if(!best){st.fehl++;return}
+  var neu=new Uint8Array(WW),k;for(var y1=best.j;y1<best.j+best.h;y1++)for(var x1=best.i;x1<best.i+best.w;x1++){k=y1*W+x1;neu[k]=1;if(ding[k]!=null)P.dinge[ding[k]]=null}
+  for(k=0;k<WW;k++)if(alt[k]&&!neu[k]){var i=k%W,j=(k/W)|0,z={},bz=null,sprung=0;[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(e){var x=i+e[0],y=j+e[1];if(x<0||y<0||x>=W||y>=W)return;var q=y*W+x;
+    if(alt[q]||neu[q]||belegt[q]>=0)return;var c=Z[q];if(c==='g'||c==='o'||c==='m'||c==='s'){if(c!=='g'&&Math.abs(lv(q)-lv(k))>1)sprung=1;if(lv(q)!==lv(k))return;z[c]=(z[c]||0)+1;if(!bz||z[c]>z[bz])bz=c}});
+   Z[k]=bz&&bz!=='s'&&!sprung?bz:'g'}
+  b.i=best.i;b.j=best.j;b.w=best.w;b.h=best.h;b.tuer=best.tuer;b.achse=best.w>best.h?'i':'j';st.fest++;if(b.gross)st.gross++;
+  P.dinge=P.dinge.filter(function(d){return d});ding={};P.dinge.forEach(function(d,n){ding[d.j*W+d.i]=n})});
+ P.zellen=Z.join('');P.tempel=st}
+// Ganzbild eines Tempels: Zeichnungen für Längsachse j (Eingang vorn = Süd, zum Betrachter; hinten = Nord); Längsachse i = gespiegelt (Eingang Ost bzw. West).
+// null, wenn der Tempel nicht genau passt (dann Baukasten-Bild).
+function tempelGanz(b){if(b.id!=='temple'||!b.tuer)return null;var T=b.gross?TEMPEL.gross:TEMPEL.klein,sp=b.w>b.h;
+ if(sp?b.w!==T.l||b.h!==T.s:b.w!==T.s||b.h!==T.l)return null;var d=sp?b.tuer[2]:b.tuer[3];if(!d||(sp?b.tuer[3]:b.tuer[2]))return null;
+ return{id:'tempel-'+(b.gross?'gross':'klein')+'-'+(d>0?'vorn':'hinten'),spiegel:sp,rel:b.rel||null}}
+// Umwidmen (Wunsch Thomas 23.11.2026): neue Religion für alle Tempel oder nur den n-ten; nur das Wechselschild ändert sich. Danach das Ortsbild neu bauen.
+function tempelUmwidmen(P,rel,n){var c=0;P.bauten.filter(function(b){return b.id==='temple'}).forEach(function(b,k){if(n==null||n===k){if(b.rel!==rel)c++;b.rel=rel}});
+ if(n==null)P.religion=rel;return c}
 // Hochstege (Thomas 22.11.2026, Rückmeldung zu N6b2c4c2): Holzstege eine Stufe über dem Wasser wie die Holzbrücke aus 2.0 (welt-bruecke.js), auf Pfählen;
 // das erste Feld vom Kai bzw. Strand ist eine Rampe hinauf (steigt zur See), Anleger (Planken quer) auf Deckhöhe. Unter dem Steg liegt Wasser. Nach dem Spiegeln
 // gesetzt, damit Richtung und Planken zum fertigen Bild passen. Molen bleiben flaches Pflaster; hohe, breite Flussbrücken für Schiffe kommen später.
@@ -1564,6 +1619,18 @@ function pflasterKarte(P){var B=BIOME[P.biom];if(!B||!B.pflaster||P.pflaster===f
 // Zeichenreihenfolge für Grundflächen ohne Überlappung (Thomas 21.11.2026: Sortieren nach der Mitte i + j ließ bei langen Häusern Wände über das Dach des
 // Nachbarn malen). A kommt vor B, wenn A ganz bei kleinerem i (bzw. j) liegt und sich die Bildrahmen beider überlagern; sonst Mitte i + j (Kahn-Sortierung).
 // Paare nur aus gemeinsamen Bildfächern (128 × 128) mit mindestens einer großen Grundfläche; in Schritten (Regel 20), Kosten nach Zahl der Elemente.
+// N6b3b1 Ganzbild + Wechselschilder: o.schilder = [{teil:'giebel'|'banner', x, y}] (Lage im ungespiegelten Bild, Anker des Schildteils). Schildteil
+// 'tempel-<teil>-<klein|gross>-<Religion>', fehlt es, der Platzhalter '-ohne'. Gespiegelt: Bild und Schilder an der senkrechten Achse durch den Anker. Fehlt das
+// Ganzbild selbst, null (Baukasten). Zusammengesetztes Bild gemerkt je Ganzbild, Spiegelung und Religion (wenige Stück je Ort).
+var GANZ=typeof Map!=='undefined'?new Map():null;
+function spiegelSp(sp){var w=sp.w,px=new Uint8Array(sp.px.length),y,x;for(y=0;y<sp.h;y++)for(x=0;x<w;x++)px[y*w+x]=sp.px[y*w+w-1-x];return{w:w,h:sp.h,ax:w-1-sp.ax,ay:sp.ay,px:px}}
+function ganzBild(b,hole){var g=tempelGanz(b);if(!g)return null;var o=hole(g.id),sp=malbild(o);if(!sp)return null;var gr=b.gross?'gross':'klein';
+ var key=g.id+'|'+(g.spiegel?1:0)+'|'+(g.rel||''),m=GANZ&&GANZ.get(key);if(m&&m.o===o)return{sp:m.sp,fehlt:[],teile:m.teile};
+ var r={w:sp.w,h:sp.h,ax:sp.ax,ay:sp.ay,px:new Uint8Array(sp.px)},teile=1,fehlt=[];
+ (o.schilder||[]).forEach(function(s){var id='tempel-'+s.teil+'-'+gr+'-',t=g.rel?malbild(hole(id+g.rel)):null;if(!t)t=malbild(hole(id+'ohne'));if(!t){fehlt.push(id+'ohne');return}
+  blit(r,t,s.x+r.ax,s.y+r.ay);teile++});
+ // Schilder sitzen in Bildkoordinaten (x, y ab Anker); gespiegelt wird das fertige Bild, so passen sie mit
+ if(g.spiegel)r=spiegelSp(r);if(GANZ){if(GANZ.size>64)GANZ.clear();GANZ.set(key,{o:o,sp:r,teile:teile})}return{sp:r,fehlt:fehlt,teile:teile}}
 function ordner(el){var n=el.length,RI=new Int32Array(n),RJ=new Int32Array(n),RW=new Int32Array(n),RH=new Int32Array(n),X0=new Int32Array(n),X1=new Int32Array(n),Y0=new Int32Array(n),Y1=new Int32Array(n),
   F=new Map(),FS=128,ein=new Int32Array(n),kopf=new Int32Array(n).fill(-1),nxt=[],zu=[],heap=[],liste=[],phase=0,k=0,c=0;
  var vor=function(a,b){return el[a].t-el[b].t||el[a].n-el[b].n};
@@ -1594,8 +1661,8 @@ function ordnen(el){var O=ordner(el);O.weiter(null);return O.liste}
 // Elementliste (N6b2-0), gemeinsam für bauer() und kachelBauer(): P = Plan, hole(id) → Kartei-Objekt, opt {umland: Felder Landschaft ringsum}.
 // Reihenfolge wie bisher: Boden je Feld (hinten zuerst), dann Häuser, Mauerstücke, Rundbauten, Dinge, Umland-Bäume nach Tiefe. Rohbild w × h mit Anker (ax, ay) = obere Ecke von Feld (0, 0).
 function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Math.max(0,opt.umland|0),WT=W+2*U,teil=holer(hole);
- var gmax=1;P.bauten.forEach(function(b){if((b.g|0)>gmax)gmax=b.g|0});var HZ=P.hoehe||null,HMAX=(P.huegel?P.huegel.stufen:0)+(P.wehr?WEHR_H+TURM_H+1:0),TOP=176+HOCH_PLUS+(gmax-1)*GH+HMAX*HSTUFE;   // + Mauer und Türme (N6b2d)   // Platz oben für Geschosse (N6b2b1) und Burgberg (N6b2c4c3)
- var Zw=WT*64+64,Zh=WT*32+TOP+8,OX=WT*32+32,OY=TOP;
+ var gmax=1,hmax=0;P.bauten.forEach(function(b){if((b.g|0)>gmax)gmax=b.g|0;if(b.id==='temple')hmax=Math.max(hmax,hoch(b))});var HZ=P.hoehe||null,HMAX=(P.huegel?P.huegel.stufen:0)+(P.wehr?WEHR_H+TURM_H+1:0),TOP=176+HOCH_PLUS+(gmax-1)*GH+HMAX*HSTUFE;   // + Mauer und Türme (N6b2d)   // Platz oben für Geschosse (N6b2b1) und Burgberg (N6b2c4c3)
+ TOP=Math.max(TOP,hmax+8+HMAX*HSTUFE);var Zw=WT*64+64,Zh=WT*32+TOP+8,OX=WT*32+32,OY=TOP;
  // Bildlage eines Felds (i, j) im Plan (Umland hat negative bzw. zu große Zahlen): Ecke oben = ((i−j)·32, (i+j)·16)
  var bx=function(i,j){return OX+(i-j)*32},by=function(i,j){return OY+(i+U+j+U)*16};
  var weg=P.basis&&KURZ[P.basis.klasse]?'bk-'+KURZ[P.basis.klasse]+'-boden':'boden-weg';
@@ -1658,7 +1725,7 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
       if((++c&255)===0&&aus&&aus()){qk++;return false}}el=null;stufe=5}}return true};
  if(!opt.inSchritten)fuellen(null);
  // Gebäude zusammensetzen (Baukasten); N6b: Teile des Biom-Satzes (bk-putz-…) vor den Klassenteilen, fehlt eins, gilt das Klassenteil
- var bauBild=function(e){var b=e.b,R;
+ var bauBild=function(e){var b=e.b,R,gz=b.id==='temple'?ganzBild(b,hole):null;if(gz){gz.X=e.X;gz.Y=e.Y;return gz}   // N6b3b1 Tempel als Ganzbild mit Wechselschild
   if(b.rund){R=bk.bilde('rund',b.w,b.w,b.klasse);R.dinge=[];R.tueren=[]}
   else R={w:b.w,h:b.h,c:new Array(b.w*b.h).fill('b'),klasse:b.klasse,achse:b.achse,dach:b.dach||'sattel',offen:false,tueren:b.tuer?[[b.tuer[0]-b.i,b.tuer[1]-b.j,b.tuer[2],b.tuer[3]]]:[],spina:[],dinge:[],geschosse:b.g||1};
   var vs=b.satz?'bk-'+KURZ[b.klasse]+'-':null;
@@ -1690,7 +1757,7 @@ function bauer(P,hole,opt){var E=elemente(P,hole,opt),Zb={w:E.w,h:E.h,px:new Uin
 // sicht(x,y,w,h) setzt den Bildausschnitt; schritt(ms) → true, wenn alles Gewünschte fertig ist; sichtbare() → Kacheln im Bild (fertige mit px); umrisse() → Ersatzbild.
 // Gebäuderahmen werden vorab geschätzt (ohne Bild): links h·32+16, rechts w·32+16, oben HOCH, unten (w+h)·16+16; ueber zählt Gebäude, die größer sind (Test: 0).
 var HOCH=96,GH=51,HOCH_PLUS=17;   // N6b2b1: Geschoss 51 statt 34 (+17), je weiteres Geschoss +51
-function hoch(b){return HOCH+HOCH_PLUS+(b&&b.g>1?(b.g-1)*GH:0)}
+function hoch(b){var h=HOCH+HOCH_PLUS+(b&&b.g>1?(b.g-1)*GH:0);if(b&&b.id==='temple'&&tempelGanz(b))h=Math.max(h,(b.gross?TEMPEL.gross:TEMPEL.klein).hoch);return h}   // N6b3b1 Tempel-Ganzbild höher
 function kachelBauer(P,hole,opt){opt=opt||{};var E=elemente(P,hole,{umland:opt.umland,inSchritten:true}),K=opt.kachel||256,GRENZE=opt.grenze||32,RAND=opt.rand==null?1:opt.rand,HAUS=opt.hausSpeicher||1048576;
  var NX=Math.ceil(E.w/K),NY=Math.ceil(E.h/K),NK=NX*NY,L=E.L,N=0,box=null,hat=null,fehlt={};
  var anz=null,start=null,fach=null,pos=null,phase=-1,pk=0,aufbauMs=0,bauIdx=[],farben=null;
@@ -1764,6 +1831,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={TEMPEL:TEMPEL,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
