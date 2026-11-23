@@ -1897,6 +1897,27 @@ function holer(hole){var bk=BK(),cache=(HOLER&&HOLER.get(hole))||{};if(HOLER)HOL
  return function(id,K,wand,dachR){var o=hole(id);if(!o||(wand==null&&dachR==null)||id.indexOf('bk-')!==0)return o;var k=bk.klasse(K),istDach=id.indexOf('-dach-')>0,
   paar=istDach?(dachR!=null?[k.dachReihe,dachR]:null):/-(wand|tuer|giebel)/.test(id)&&wand!=null?[k.wandReihe,wand]:null;if(!paar)return o;
   var key=id+'|'+paar.join(',');if(!cache[key])cache[key]={id:o.id,kat:o.kat,bild:bk.umfaerben(o.bild,paar)};return cache[key]}}
+// N6b4b3 Weiche Bodenübergänge (Saum-Technik aus 2.0, welt-gross-test-raster.js T3; Thomas 23.11.2026: alle Naturböden, Gras > Feld > Erde/Weg > Sand > Fels).
+// Grenzt ein Naturbodenfeld an einen Boden mit höherem Rang (gleiche Höhe), malt es an dieser Kante einen ausgefransten Saum aus dem Nachbarboden darüber.
+// Ein Saumbild je Bodenbild, Kante und Variante (SAUM_VAR), einmal gemalt und am Kartei-Objekt gemerkt; liegt ganz im eigenen Feld (Rahmen der Kacheln bleibt).
+// Kante 0: Nachbar i+1, 1: i−1, 2: j+1, 3: j−1. Pflaster, Marmor, Wasser und Stege haben keinen Rang und bleiben scharf. opt.saum:false = wie vorher.
+var SAUM_SCHMAL=.45,SAUM_WEG=/[hs]/,SAUM_RANG={'boden-gras':12,'bk-feld':8,'boden-erde':4,'boden-weg':3,'boden-sand':2,'boden-fels':0},SAUM_VAR=4,SAUM_NB=[[1,0],[-1,0],[0,1],[0,-1]];
+var SAUM_MERK=typeof WeakMap!=='undefined'?new WeakMap():null;
+function saumRausch(x,y,s){var xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=rausch(xi,yi,s),b=rausch(xi+1,yi,s),c=rausch(xi,yi+1,s),d=rausch(xi+1,yi+1,s);
+ return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+// Maske je Bildgröße, Kante, Variante und Breite (1 = Saum deckt), einmal berechnet; das Saumbild stanzt nur noch das Nachbarbild aus (Bruchteil einer ms)
+var SAUM_MASKE={};
+function saumMaske(bw,bh,kante,v,schmal){var key=bw+'x'+bh+':'+kante+':'+v+':'+(schmal?1:0),M=SAUM_MASKE[key];if(M)return M;M=new Uint8Array(bw*bh);
+ var cx=(bw-1)/2,hw=bw/2,hh=bh/2,sk=schmal?SAUM_SCHMAL:1,y,x;   // Wege (Feldweg, Straße) bekommen einen schmalen Saum, sonst fräße das Gras einen 1 Feld breiten Weg von beiden Seiten auf
+ for(y=0;y<bh;y++)for(x=0;x<bw;x++){var a=(x-cx)/hw,bb=(y-hh)/hh,ux=(a+bb+1)/2,uy=(bb-a+1)/2,e=kante===0?1-ux:kante===1?ux:kante===2?1-uy:uy,
+   w=(.26+(saumRausch((kante&1?uy:ux)*5+(kante>>1?7:0),v*3.1,77+kante)-.5)*.22)*sk;
+   if(!(e>w+.12*sk||(e>w-.06*sk&&rausch(x>>1,y,7919+kante*7+v)>(w+.12*sk-e)/(.18*sk))))M[y*bw+x]=1}
+ return SAUM_MASKE[key]=M}
+function saumObj(o,kante,v,schmal){var b=o&&o.bild;if(!b)return null;var m=SAUM_MERK&&SAUM_MERK.get(o);if(!m){m={};if(SAUM_MERK)SAUM_MERK.set(o,m)}var key=(kante*SAUM_VAR+v)*2+(schmal?1:0);if(m[key])return m[key];
+ var M=saumMaske(b.w,b.h,kante,v,schmal),q=malbild(o),r={id:o.id+'~saum'+kante+v+(schmal?'s':''),kat:o.kat},y,x;
+ if(MERK&&q){var px=new Uint8Array(q.px.length);for(x=0;x<px.length;x++)px[x]=M[x]?q.px[x]:LEER;MERK.set(r,{w:q.w,h:q.h,ax:q.ax,ay:q.ay,px:px});r.bild={w:b.w,h:b.h,ax:b.ax,ay:b.ay}}   // gleich als Palettenbild gemerkt (malbild liest es)
+ else{var z=[];for(y=0;y<b.h;y++){var zl=b.z[y],t='';for(x=0;x<b.w;x++)t+=M[y*b.w+x]?zl.charAt(x):'.';z.push(t)}r.bild={w:b.w,h:b.h,ax:b.ax,ay:b.ay,z:z}}
+ return m[key]=r}
 var BODEN_ID={s:null,o:null,m:'bk-marmor-boden',f:null,w:'boden-fluss',e:'boden-erde',p:'boden-gras',x:'boden-fels',h:'boden-erde'};   // h Feldweg (N6b4b2)
 // Offenes Wasser (Thomas 22.11.2026): boden-fluss statt der Wasserstelle, nahtlos; Fassungen nach Lage: ruhig 0/a/b (5:5:4), selten Fass (c) und tote Ratte (d) je 1 von 128
 var FLUSS_VAR=['boden-fluss','boden-fluss-a','boden-fluss-b','boden-fluss-c','boden-fluss-d'];
@@ -1986,6 +2007,10 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
   if(PK&&innen){var pc=PK[j*W+i];if(pc){if(pc===2)return 'pflaster-basalt-a';if(pc===3)return 'pflaster-basalt-b';return pflasterWahl(pc===1?'basalt':pc===4?'gasse':pc===5?'platz':'marmor',i,j,P.seed|0)}}
   if(c==='g'){var l=B.boden;return l[Math.floor(rausch(i,j,P.seed+1)*l.length*(l.length>1?.75:1))%l.length]}
   if(c==='s')return B.weg;if(c==='o')return weg;if(c==='f'||c==='k')return P.feld||'bk-feld';if(c==='w')return flussWahl(i,j,P.seed);if(c==='q')return weg;if(c==='y')return flussWahl(i,j,P.seed);if(c==='u')return 'boden-sand';return BODEN_ID[c]||'boden-gras'};
+ // N6b4b3 Säume: Rang des eigenen Bodens, höherrangige Nachbarn gleicher Höhe (Burgberg-Felder nicht) hängen ihren Saum an (e.su = [[Nachbarbild, Kante, Variante], …])
+ var SAUM=opt.saum!==false,saeume=function(e0,i,j){var p=SAUM_RANG[e0.id];if(p==null||(HZ&&lv(i,j)))return;var su=null,v=Math.floor(rausch(i,j,P.seed+177)*SAUM_VAR),sm=i>=0&&j>=0&&i<W&&j<W&&SAUM_WEG.test(P.zellen.charAt(j*W+i))?1:0;
+  for(var q=0;q<4;q++){var x=i+SAUM_NB[q][0],y=j+SAUM_NB[q][1];if(x<-U||y<-U||x>=W+U||y>=W+U||(HZ&&lv(x,y)))continue;var nid=bodenId(x,y),np=SAUM_RANG[nid];
+   if(np!=null&&np>p)(su||(su=[])).push([nid,q,v,sm])}if(su)e0.su=su};
  var O3=null,L=[],el=[],n=0,stufe=0,qs=-U,qi=-U,qk=0,uj=-U,ui=-U,HL=[],UNTER=null;
  // Burgberg (N6b2c4c3): Felder auf oder neben dem Hügel werden beim Boden gesammelt und als eigene Elemente gehoben gemalt (Felskanten, Boden, Treppen);
  // unter Gebäuden nur die Felskanten (der Boden läge in der Zeichenreihenfolge sonst über den Wänden)
@@ -2029,7 +2054,7 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
  var forumEls=function(F){for(var y=F.j;y<F.j+F.h;y++)for(var x=F.i;x<F.i+F.w;x++){var id=forumId(F,x,y,P.seed);if(id)el.push({t:x+y+.02,n:n++,d:{id:id,i:x,j:y,hz:F.hz|0}})}};
  // Liste füllen, auf Wunsch in Schritten: aus() → true, wenn der Zeitanteil um ist (Kachelbauer); bauer() füllt am Stück wie bisher
  var fuellen=function(aus){var c=0;while(stufe<5){
-   if(stufe===0){for(;qs<=2*(W-1)+U;qs++,qi=-U){for(;qi<W+U;qi++){var j=qs-qi;if(j<-U||j>=W+U)continue;L.push({k:0,id:bodenId(qi,j),X:bx(qi,j),Y:by(qi,j)+16});
+   if(stufe===0){for(;qs<=2*(W-1)+U;qs++,qi=-U){for(;qi<W+U;qi++){var j=qs-qi;if(j<-U||j>=W+U)continue;var e0={k:0,id:bodenId(qi,j),X:bx(qi,j),Y:by(qi,j)+16};if(SAUM)saeume(e0,qi,j);L.push(e0);
       if(HZ&&qi>=0&&j>=0&&qi<W&&j<W&&(lv(qi,j)||lv(qi+1,j)||lv(qi-1,j)||lv(qi,j+1)||lv(qi,j-1)))HL.push(j*W+qi);
       if((++c&255)===0&&aus&&aus()){qi++;return false}}}stufe=1}
    else if(stufe===1){var WE=P.wehr;P.bauten.forEach(function(b){if(WE&&b.rolle==='mauer')return;el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});if(WE)wehrEls(WE);var FM=P.forum&&opt.forumBild!==false&&opt.forumMitte!==false;if(P.forum&&opt.forumBild!==false)forumEls(P.forum);
@@ -2057,7 +2082,8 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
 function tiefenSort(el){var N=el.length,key=new Int32Array(N),lo=2147483647,hi=-2147483648,i;for(i=0;i<N;i++){var k=Math.round(el[i].t*50);key[i]=k;if(k<lo)lo=k;if(k>hi)hi=k}
  if(!N)return el;var z=new Int32Array(hi-lo+2);for(i=0;i<N;i++)z[key[i]-lo+1]++;for(i=1;i<z.length;i++)z[i]+=z[i-1];var r=new Array(N);for(i=0;i<N;i++)r[z[key[i]-lo]++]=el[i];return r}
 // Ein Element ins Ziel Z zeichnen, Ziel liegt bei (dx, dy) im Rohbild; bau(e) liefert ein gemerktes Gebäudebild (Kachelbauer), sonst neu zusammengesetzt
-function zeichne(E,e,Z,dx,dy,fehlt,bau){if(e.k<2){var sp=malbild(E.hole(e.id));if(!sp){fehlt[e.id]=1;return 0}blit(Z,sp,e.X-dx,e.Y-dy);return 1}
+function zeichne(E,e,Z,dx,dy,fehlt,bau){if(e.k<2){var sp=malbild(E.hole(e.id));if(!sp){fehlt[e.id]=1;return 0}blit(Z,sp,e.X-dx,e.Y-dy);
+  if(e.su)for(var q=0;q<e.su.length;q++){var so=malbild(saumObj(E.hole(e.su[q][0]),e.su[q][1],e.su[q][2],e.su[q][3]));if(so)blit(Z,so,e.X-dx,e.Y-dy)}return 1}   // N6b4b3 Säume über dem eigenen Boden
  var r=bau?bau(e):E.bauBild(e);r.fehlt.forEach(function(f){fehlt[f]=1});blit(Z,r.sp,r.X-dx,r.Y-dy);return r.teile}
 var jetzt=typeof performance!=='undefined'?function(){return performance.now()}:function(){var t=process.hrtime();return t[0]*1e3+t[1]/1e6};
 // Bauer: ganzes Bild am Stück in Schritten. schritt(ms) → true, wenn fertig; bild() → {w,h,ax,ay,px,…}. Für große Orte kachelBauer() nehmen (Speicher!).
@@ -2078,7 +2104,7 @@ function bauer(P,hole,opt){var E=elemente(P,hole,opt),Zb={w:E.w,h:E.h,px:new Uin
 // Gebäuderahmen werden vorab geschätzt (ohne Bild): links h·32+16, rechts w·32+16, oben HOCH, unten (w+h)·16+16; ueber zählt Gebäude, die größer sind (Test: 0).
 var HOCH=96,GH=51,HOCH_PLUS=17;   // N6b2b1: Geschoss 51 statt 34 (+17), je weiteres Geschoss +51
 function hoch(b){if(b&&b.ganz)return FORUM_GANZ[b.art].hoch;var h=HOCH+HOCH_PLUS+(b&&b.g>1?(b.g-1)*GH:0);if(b&&b.id==='temple'&&tempelGanz(b))h=Math.max(h,(b.gross?TEMPEL.gross:TEMPEL.klein).hoch);if(b&&b.id==='theatre'&&theaterGanz(b))h=Math.max(h,THEATER.hoch);if(b&&b.id==='governor'&&statthalterGanz(b))h=Math.max(h,STATTHALTER.hoch);if(b&&b.id==='senate'&&senatGanz(b))h=Math.max(h,SENAT.hoch);if(b&&b.id==='royal-palace'&&koenigspalastGanz(b))h=Math.max(h,KOENIGSPALAST.hoch);return h}   // N6b3b1 Tempel-Ganzbild höher
-function kachelBauer(P,hole,opt){opt=opt||{};var E=elemente(P,hole,{umland:opt.umland,inSchritten:true}),K=opt.kachel||256,GRENZE=opt.grenze||32,RAND=opt.rand==null?1:opt.rand,HAUS=opt.hausSpeicher||1048576;
+function kachelBauer(P,hole,opt){opt=opt||{};var E=elemente(P,hole,{umland:opt.umland,inSchritten:true,saum:opt.saum}),K=opt.kachel||256,GRENZE=opt.grenze||32,RAND=opt.rand==null?1:opt.rand,HAUS=opt.hausSpeicher||1048576;
  var NX=Math.ceil(E.w/K),NY=Math.ceil(E.h/K),NK=NX*NY,L=E.L,N=0,box=null,hat=null,fehlt={};
  var anz=null,start=null,fach=null,pos=null,phase=-1,pk=0,aufbauMs=0,bauIdx=[],farben=null;
  var kach=new Map(),wunsch=[],imBild=[],sx=0,sy=0,sw=0,sh=0,hatSicht=false;
@@ -2151,6 +2177,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.forum?FORUM_IDS().concat(FORUM_GANZ_IDS(P.forum)):[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={setzeLandw:setzeLandw,landwDaten:landwDaten,flurArt:flurArt,flurTempo:flurTempo,FLUR_RASTER:FLUR_RASTER,FLUR_WEIT:FLUR_WEIT,HOF_HAUS:HOF_HAUS,KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={malbild:malbild,saumObj:saumObj,SAUM_RANG:SAUM_RANG,SAUM_SCHMAL:SAUM_SCHMAL,setzeLandw:setzeLandw,landwDaten:landwDaten,flurArt:flurArt,flurTempo:flurTempo,FLUR_RASTER:FLUR_RASTER,FLUR_WEIT:FLUR_WEIT,HOF_HAUS:HOF_HAUS,KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
