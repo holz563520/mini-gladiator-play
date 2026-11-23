@@ -4,6 +4,7 @@
 // Fehlmenge und Überschuss als Summe je Ware (nie je Feld). Ertrag nur nach Biom-Stufe (Entscheidung Thomas 23.11.2026), Fluss hebt eine Stufe.
 // Reine Rechnung ohne Bildschirm: läuft im Master-Editor (menue/landwirtschaft.js), in Node (tests/at3-n6b4a.cjs) und per importScripts in jedem
 // Hintergrundkern (Regel 13). Kosten: daten() einmal je Datenstand (< 1 ms), ort() rund 10–30 µs je Ort, unabhängig von der Weltgröße (Regel 14).
+// N6b4b1: Begehbarkeit je Feldart (begehbar(), Werte in landwirtschaft.json, Anschluss in begehbar.js feldart()).
 // Gespeichert wird nichts; ein Ort rechnet seine Landwirtschaft bei Bedarf aus Bilanz und Daten neu. Alle Zahlen sind Vorschläge (Regel 11).
 (function(root){
 'use strict';
@@ -25,7 +26,8 @@ function daten(LW,geb,waren,rez){
  var tag=(rez.tag_sek)||600,rezGeb={},halb={};
  (rez.rezepte||rez).forEach(function(r){(rezGeb[r.geb]||(rezGeb[r.geb]=[])).push(r);(r.aus||[]).forEach(function(a){if(!a.verkauf&&!halb[a.w])halb[a.w]=r})});
  var zon={};((geb.biome)||[]).forEach(function(b){if(b.zone!=null)zon[b.zone]=b.id});
- return{LW:LW,G:G,W:W,S:S,erz:erz,K:K,kw:kw,tag:tag,rezGeb:rezGeb,halb:halb,biomAlle:biomAlle,zon:zon}}
+ var kid={};K.forEach(function(x){kid[x.id]=x});
+ return{LW:LW,G:G,W:W,S:S,erz:erz,K:K,kid:kid,kw:kw,tag:tag,rezGeb:rezGeb,halb:halb,biomAlle:biomAlle,zon:zon}}
 
 // Stufe eines Orts: Biom-Stufe, am Fluss eine besser (höchstens „reich“). Rückgabe {id, faktor, ertrag je Feld und Spieltag}
 function stufe(D,biom,fluss){var L=D.LW.stufen,id=D.LW.biomStufe[biom]||'nichts',j=0;
@@ -72,6 +74,11 @@ function ausBilanz(D,b){var r=b.roh,z=r.zonen&&r.zonen.length?r.zonen[0][0]:null
 // Hofarten, die in einem Biom vorkommen
 function hofarten(D,biom){return(D.LW.hofarten||[]).filter(function(h){return h.biome.indexOf('alle')>=0?biom!=='snow':h.biome.indexOf(biom)>=0})}
 
+// Begehbarkeit einer Feldart (N6b4b1, Kollision wie M4): {b: 'p' nur zu Fuß | 'x' gesperrt, fuss: Tempo × 100, karren: 0 (Karren nur auf Feldwegen)};
+// null = keine Feldart (unbekannt oder Außenposten). Liest nur die Daten, Kosten fest je Aufruf.
+var BEGEHBAR={p:'nur zu Fuß',x:'gesperrt'};
+function begehbar(D,id){var x=D.kid[id];if(!x||x.k.aussenposten)return null;var b=x.k.begehbar==='p'?'p':'x';return{b:b,fuss:b==='p'?(x.k.fuss|0):0,karren:0}}
+
 // Prüfer: Fehler und Hinweise wie im Reiter „Wirtschaft“ ({art, ziel, text})
 function pruefen(D){var F=[],H=[],LW=D.LW,gr={},ids={},S=D.S;
  (LW.gruppen||[]).forEach(function(g){gr[g.id]=1});
@@ -84,6 +91,9 @@ function pruefen(D){var F=[],H=[],LW=D.LW,gr={},ids={},S=D.S;
   x.waren.forEach(function(w){if(!D.W[w])F.push({art:'ware',ziel:k.id,text:'unbekannte Ware „'+w+'“'})});
   if(k.geb&&x.g)x.waren.forEach(function(w){if((D.erz[w]||[]).indexOf(k.geb)<0)F.push({art:'ware',ziel:k.id,text:'„'+w+'“ kommt in keinem Rezept von '+k.geb+' heraus'})});
   if(!k.geb&&!x.waren.length)H.push({art:'spaeter',ziel:k.id,text:'noch ohne Ware'+(k.kommt?' – kommt mit '+k.kommt:'')});
+  if(!k.aussenposten){if(!BEGEHBAR[k.begehbar])F.push({art:'begehbar',ziel:k.id,text:'Begehbarkeit fehlt oder unbekannt (p = nur zu Fuß, x = gesperrt)'});
+   else if(k.begehbar==='p'&&!(k.fuss>=1&&k.fuss<=100&&k.fuss===Math.round(k.fuss)))F.push({art:'begehbar',ziel:k.id,text:'Tempo zu Fuß muss 1–100 sein'});
+   else if(k.begehbar==='x'&&k.fuss)F.push({art:'begehbar',ziel:k.id,text:'gesperrt, aber Tempo zu Fuß '+k.fuss})}
   (k.partner||[]).forEach(function(p){if(!D.K.some(function(y){return y.id===p}))F.push({art:'partner',ziel:k.id,text:'Fruchtwechsel-Partner „'+p+'“ fehlt im Katalog'})})});
  // Stufe 1: jede Ware der Gruppen crops und animals und jede pflanzliche Vice hat einen Erzeuger; Pflanzen und Vices zusätzlich eine Kultur im Katalog
  var pv=LW.pflanzlicheVice||[];
@@ -112,7 +122,7 @@ function alsText(LW){var keys=Object.keys(LW),L=['{'];
   else L.push(' '+JSON.stringify(k)+': '+JSON.stringify(v)+sep)});
  return L.join('\n')+'\n}\n'}
 
-var API={daten:daten,stufe:stufe,bedarf:bedarf,ort:ort,ausBilanz:ausBilanz,hofarten:hofarten,erzeugerIm:erzeugerIm,pruefen:pruefen,alsText:alsText};
+var API={BEGEHBAR:BEGEHBAR,daten:daten,stufe:stufe,bedarf:bedarf,ort:ort,ausBilanz:ausBilanz,hofarten:hofarten,erzeugerIm:erzeugerIm,begehbar:begehbar,pruefen:pruefen,alsText:alsText};
 root.AT3LANDW=API;
 if(typeof module!=='undefined'&&module.exports)module.exports=API;
 })(typeof self!=='undefined'?self:this);

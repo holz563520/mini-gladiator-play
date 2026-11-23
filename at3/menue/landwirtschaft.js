@@ -43,14 +43,17 @@ AT3ED.menue('landwirtschaft',function(el){
    var L=D.K.filter(function(x){return(!filter.gruppe||x.k.gruppe===filter.gruppe)&&(!filter.biom||x.biome.indexOf(filter.biom)>=0)});
    h+='<p class="leise">'+L.length+' von '+D.K.length+'</p>';
    L.forEach(function(x){var k=x.k;h+='<button class="lwZeile'+(wahl===k.id?' an':'')+'" data-kultur="'+esc(k.id)+'">'+esc(k.name)+
-    '<small>'+esc(gruppeName(k.gruppe))+' · '+(x.waren.length?x.waren.map(wn).join(', '):'<i>Ware folgt</i>')+(k.aussenposten?' · Außenposten':'')+'</small></button>';
+    '<small>'+esc(gruppeName(k.gruppe))+' · '+(x.waren.length?x.waren.map(wn).join(', '):'<i>Ware folgt</i>')+(k.aussenposten?' · Außenposten':' · '+(k.begehbar==='p'?'zu Fuß '+k.fuss:'gesperrt'))+'</small></button>';
     if(wahl===k.id)h+=karte(x)});
    return h}
   function karte(x){var k=x.k,g=x.g;
    return '<div class="lwKarte"><h3>'+esc(k.name)+'</h3>'+(k.text||(g&&g.text)?'<p><i>'+esc(k.text||g.text)+'</i></p>':'')+
     '<p>Gruppe: '+esc(gruppeName(k.gruppe))+'<br>Gebäude: '+(g?esc(g.id)+' ('+g.groesse.w+' × '+g.groesse.h+')':'– (noch keins)')+'<br>Ware: '+(x.waren.length?x.waren.map(wn).join(', '):'folgt'+(k.kommt?' mit '+esc(k.kommt):''))+
     '<br>Biome: '+x.biome.map(biomName).join(', ')+(k.biomeDazu?' <span class="leise">(davon nur Umland: '+k.biomeDazu.map(biomName).join(', ')+')</span>':'')+
-    '<br>Arbeitskräfte: '+k.arbeit+' · Boden: '+esc(k.boden)+' · Saat/Ernte: '+esc(k.saison.join(' / '))+(k.partner?'<br>Fruchtwechsel mit: '+k.partner.map(esc).join(', '):'')+(k.selten?'<br>selten':'')+'</p></div>'}
+    '<br>Arbeitskräfte: '+k.arbeit+' · Boden: '+esc(k.boden)+' · Saat/Ernte: '+esc(k.saison.join(' / '))+(k.partner?'<br>Fruchtwechsel mit: '+k.partner.map(esc).join(', '):'')+(k.selten?'<br>selten':'')+'</p>'+
+    (k.aussenposten?'':'<div class="lwForm"><label>Begehbar (N6b4b1)<select data-beg="'+esc(k.id)+'"><option value="p"'+(k.begehbar==='p'?' selected':'')+'>nur zu Fuß</option><option value="x"'+(k.begehbar==='x'?' selected':'')+'>gesperrt</option></select></label>'+
+     '<label>Tempo zu Fuß (× 100, Wiese 85)<input type="number" min="1" max="100" step="1" data-fuss="'+esc(k.id)+'" value="'+(k.fuss||0)+'"'+(k.begehbar==='x'?' disabled':'')+'></label></div>'+
+     '<p class="leise">Karren fahren nie über Felder, nur auf Feldwegen.</p>')+'</div>'}
   function vHoefe(){return (LW.hofarten||[]).map(function(h){return '<div class="lwKarte"><h3>'+esc(h.name)+' <span class="leise">('+esc(h.de)+')</span></h3><p><i>'+esc(h.text)+'</i></p><p>'+
    (h.herden?'Herden statt Felder':'Felder: '+h.felder[0]+'–'+h.felder[1])+' · Familien: '+h.familien+(h.knechte?' · Knechte: '+h.knechte[0]+'–'+h.knechte[1]:'')+(h.wandert?' · zieht mit der Jahreszeit':'')+
    '<br>Biome: '+(h.biome.indexOf('alle')>=0?'alle außer Schnee':h.biome.map(biomName).join(', '))+'<br>Kulturen: '+h.gruppen.map(gruppeName).join(', ')+'</p></div>'}).join('')}
@@ -87,6 +90,8 @@ AT3ED.menue('landwirtschaft',function(el){
    if(q('lwFH'))zahl(q('lwFH'),function(v){LW.flussHebt=Math.round(v)});
    el.querySelectorAll('[data-faktor]').forEach(function(i){zahl(i,function(v){LW.stufen[+i.dataset.faktor].faktor=v})});
    el.querySelectorAll('[data-korb]').forEach(function(i){zahl(i,function(v){LW.korb[+i.dataset.korb].anteil=v})});
+   el.querySelectorAll('[data-beg]').forEach(function(s){s.onchange=function(){var k=D.kid[s.dataset.beg].k;k.begehbar=s.value;k.fuss=s.value==='x'?0:(k.fuss||70);geaendert=true;zeichne()}});
+   el.querySelectorAll('[data-fuss]').forEach(function(i){zahl(i,function(v){D.kid[i.dataset.fuss].k.fuss=Math.max(1,Math.min(100,Math.round(v)))})});
    el.querySelectorAll('[data-bstufe]').forEach(function(s){s.onchange=function(){LW.biomStufe[s.dataset.bstufe]=s.value;geaendert=true;zeichne()}});
    if(q('lwRB'))q('lwRB').onchange=function(){rech.biom=this.value;zeichne()};
    if(q('lwRE'))q('lwRE').onchange=function(){rech.einw=Math.max(0,parseInt(this.value,10)||0);zeichne()};

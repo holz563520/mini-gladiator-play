@@ -143,7 +143,7 @@ function ortLaden(){return odLaden||(odLaden=Promise.all([window.AT3ED.lade('wel
   var AP=window.AT3POSTEN;OD={O:O,D:O.daten(r[3],r[4],r[5]),TX:r[6].texte,AP:AP&&!AP.AUS?AP:null};vListe();erdBild()}))}
 function otx(k,w){var s=OD.TX[k];if(s==null)return k;for(var x in w||{})s=s.split('{'+x+'}').join(w[x]);return s}
 function ortBilanz(k){var sd=erd.seed>>>0,b=OD.O.bilanz(sd,OD.O.roh(sd,erd,k,ONh),OD.D),z=b.roh.zelle;      // N5c: mit Außenposten
- b.posten=OD.AP?OD.AP.posten(sd,b,OD.AP.umgebung(sd,erd,k),OD.D,WGh&&WGh.ortPunkt?WGh.ortPunkt(sd,erd,z%GW,(z/GW)|0):null):[];return b}
+ var oP=WGh&&WGh.ortPunkt;b.posten=OD.AP?OD.AP.posten(sd,b,OD.AP.umgebung(sd,erd,k),OD.D,oP?oP(sd,erd,z%GW,(z/GW)|0):null,OD.AP.fremde&&oP?OD.AP.fremde(sd,erd,k,oP,OD.O):null):[];return b}   // N6b4b1: Abstand zu fremden Orten
 function ortText(i){if(!erd||!erd.orte)return '';if(OD&&OD.O.AUS)return 'Ortskarten aus (Notausschalter ?n5b=0). · ';if(!OD)return 'Die Orte werden gezählt … · ';if(!(erd.ort[i]&15))return '';
  var k=ortNr0(i);if(k==null)return '';var b=ortBilanz(k),r=b.roh,O=OD.O;
  return 'Ort: '+O.voll(b,otx)+' · G'+r.g+' '+O.groesseName(r.g,otx)+(r.sitz?' (Sitz)':'')+' · '+O.zahl(b.einwohner)+' Einwohner ('+O.stufenText(b,otx)+') · Leitgebäude: '+

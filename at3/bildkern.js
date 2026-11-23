@@ -59,7 +59,7 @@ function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.f
    var pp=G.ortPunkt(seed,A,X,Y),ex=pp[0]-x0,ey=pp[1]-d.y;if(ex>G.WF/2)ex-=G.WF;else if(ex<-G.WF/2)ex+=G.WF;var ee=ex*ex+ey*ey;if(ee<be){be=ee;bo=Y*G.GW+X;bp=pp}}
    if(bo>=0){var kk=OR.ortNr(A,bo);if(kk!=null){m.ort=OR.roh(seed,A,kk,ON);
     if(AP==null){try{importScripts('aussenposten.js'+self.location.search);AP=self.AT3POSTEN.AUS?false:self.AT3POSTEN}catch(x){AP=false}}   // N5c: Umgebung für die Außenposten (Notausschalter ?n5c=0)
-    if(AP){m.ort.umg=AP.umgebung(seed,A,kk);m.ort.punkt=[bp[0],bp[1]]}}}}
+    if(AP){m.ort.umg=AP.umgebung(seed,A,kk);m.ort.punkt=[bp[0],bp[1]];m.ort.fremd=AP.fremde?AP.fremde(seed,A,kk,G.ortPunkt,OR):null}}}}
   if(OR&&A.kanten){if(SN==null){try{importScripts('strassen.js'+self.location.search);SN=self.AT3STRASSEN.AUS?false:self.AT3STRASSEN}catch(x){SN=false}}   // N5d: Straße unter dem Finger (Notausschalter ?n5d=0)
    if(SN){var t5=performance.now(),neu5=!A._n5d,J5=SN.netz(seed,A,OR,HR),zi=SN.naechste(J5,(d.x%G.WF+G.WF)%G.WF,d.y),sz=zi>=0?SN.zelle(J5,zi):null;
     if(sz){sz.an=ON?ON.name(seed,A.orte[sz.a]&0xffffff,A.orte[sz.a]>>>24,A.vk):'';sz.bn=ON?ON.name(seed,A.orte[sz.b]&0xffffff,A.orte[sz.b]>>>24,A.vk):'';sz.zelle=zi;sz.einheit=A.hs?A.hs.zel[zi]:0;m.strasse=sz}

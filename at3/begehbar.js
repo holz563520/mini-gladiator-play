@@ -59,6 +59,11 @@ function karte(hole,holeB,seed,cx,cy,p,aus){var x0=cx*ST,y0=cy*ST,i,j,X,Y,v;
  for(j=0;j<ST;j++)for(i=0;i<ST;i++){var o=0;X=x0+i;Y=y0+j;if(aus.t[(j<<6)|i])for(var s=0;s<4;s++)if(kante(holeB,X,Y,s,p))o|=1<<s;aus.k[(j<<6)|i]=o}
  return true}
 
-var BG={FUSS:FUSS,KARREN:KARREN,PROFIL:PROFIL,BIOM:BIOM,WELT:WELT,GEBAUT:GEBAUT,tempo:tempo,kante:kante,schritt:schritt,karte:karte};
+// N6b4b1: Tempo × 100 auf einer Feldart des Umlands (LD = landwirtschaft.js daten(), id = Kultur). Karren fahren nie über Felder, nur auf Feldwegen;
+// gesperrte Feldarten (Nassfelder, Teiche, Pferche, Schuppen) 0. Die Werte stehen in daten/landwirtschaft.json. Die Wegsuche bekommt Felder mit N7a,
+// wenn die Ortsbilder in die Kartenstücke kommen; bis dahin nutzen Ortsplan und Tests diese Funktion direkt.
+function LWm(){return root.AT3LANDW||(typeof module!=='undefined'&&module.exports?require('./landwirtschaft.js'):null)}
+function feldart(LD,id,p){var L=LWm(),b=L&&LD?L.begehbar(LD,id):null;return !b||p===KARREN?0:b.fuss}
+var BG={FUSS:FUSS,KARREN:KARREN,PROFIL:PROFIL,BIOM:BIOM,WELT:WELT,GEBAUT:GEBAUT,tempo:tempo,kante:kante,schritt:schritt,karte:karte,feldart:feldart};
 if(typeof module!=='undefined'&&module.exports)module.exports=BG;else root.AT3BEGEH=BG;
 })(typeof self!=='undefined'?self:this);
