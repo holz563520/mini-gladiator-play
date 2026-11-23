@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 462,
+ "typMax": 487,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -4017,6 +4017,231 @@
    "name": "Portcullis J 2",
    "status": "uebernommen",
    "datei": "obj/torhaus-gitter-j-2.json"
+  },
+  {
+   "id": "pflaster-basalt",
+   "version": 1,
+   "typ": 463,
+   "kat": "boden",
+   "name": "Basalt Paving",
+   "status": "skizze",
+   "datei": "obj/pflaster-basalt.json"
+  },
+  {
+   "id": "pflaster-basalt-a",
+   "version": 1,
+   "typ": 464,
+   "kat": "boden",
+   "name": "Basalt Paving (ruts)",
+   "status": "skizze",
+   "datei": "obj/pflaster-basalt-a.json"
+  },
+  {
+   "id": "pflaster-basalt-b",
+   "version": 1,
+   "typ": 465,
+   "kat": "boden",
+   "name": "Basalt Paving (ruts)",
+   "status": "skizze",
+   "datei": "obj/pflaster-basalt-b.json"
+  },
+  {
+   "id": "pflaster-basalt-c",
+   "version": 1,
+   "typ": 466,
+   "kat": "boden",
+   "name": "Basalt Paving (dung)",
+   "status": "skizze",
+   "datei": "obj/pflaster-basalt-c.json"
+  },
+  {
+   "id": "pflaster-basalt-d",
+   "version": 1,
+   "typ": 467,
+   "kat": "boden",
+   "name": "Basalt Paving (pothole)",
+   "status": "skizze",
+   "datei": "obj/pflaster-basalt-d.json"
+  },
+  {
+   "id": "pflaster-basalt-e",
+   "version": 1,
+   "typ": 468,
+   "kat": "boden",
+   "name": "Basalt Paving (sandal)",
+   "status": "skizze",
+   "datei": "obj/pflaster-basalt-e.json"
+  },
+  {
+   "id": "pflaster-basalt-f",
+   "version": 1,
+   "typ": 469,
+   "kat": "boden",
+   "name": "Basalt Paving",
+   "status": "skizze",
+   "datei": "obj/pflaster-basalt-f.json"
+  },
+  {
+   "id": "pflaster-basalt-g",
+   "version": 1,
+   "typ": 470,
+   "kat": "boden",
+   "name": "Basalt Paving",
+   "status": "skizze",
+   "datei": "obj/pflaster-basalt-g.json"
+  },
+  {
+   "id": "pflaster-gasse",
+   "version": 1,
+   "typ": 471,
+   "kat": "boden",
+   "name": "Cobbled Alley",
+   "status": "skizze",
+   "datei": "obj/pflaster-gasse.json"
+  },
+  {
+   "id": "pflaster-gasse-a",
+   "version": 1,
+   "typ": 472,
+   "kat": "boden",
+   "name": "Cobbled Alley (rubbish)",
+   "status": "skizze",
+   "datei": "obj/pflaster-gasse-a.json"
+  },
+  {
+   "id": "pflaster-gasse-b",
+   "version": 1,
+   "typ": 473,
+   "kat": "boden",
+   "name": "Cobbled Alley (puddle)",
+   "status": "skizze",
+   "datei": "obj/pflaster-gasse-b.json"
+  },
+  {
+   "id": "pflaster-gasse-c",
+   "version": 1,
+   "typ": 474,
+   "kat": "boden",
+   "name": "Cobbled Alley (gap)",
+   "status": "skizze",
+   "datei": "obj/pflaster-gasse-c.json"
+  },
+  {
+   "id": "pflaster-gasse-d",
+   "version": 1,
+   "typ": 475,
+   "kat": "boden",
+   "name": "Cobbled Alley (rat)",
+   "status": "skizze",
+   "datei": "obj/pflaster-gasse-d.json"
+  },
+  {
+   "id": "pflaster-gasse-e",
+   "version": 1,
+   "typ": 476,
+   "kat": "boden",
+   "name": "Cobbled Alley",
+   "status": "skizze",
+   "datei": "obj/pflaster-gasse-e.json"
+  },
+  {
+   "id": "pflaster-gasse-f",
+   "version": 1,
+   "typ": 477,
+   "kat": "boden",
+   "name": "Cobbled Alley",
+   "status": "skizze",
+   "datei": "obj/pflaster-gasse-f.json"
+  },
+  {
+   "id": "pflaster-platz",
+   "version": 1,
+   "typ": 478,
+   "kat": "boden",
+   "name": "Market Flagstones",
+   "status": "skizze",
+   "datei": "obj/pflaster-platz.json"
+  },
+  {
+   "id": "pflaster-platz-a",
+   "version": 1,
+   "typ": 479,
+   "kat": "boden",
+   "name": "Market Flagstones (crack)",
+   "status": "skizze",
+   "datei": "obj/pflaster-platz-a.json"
+  },
+  {
+   "id": "pflaster-platz-b",
+   "version": 1,
+   "typ": 480,
+   "kat": "boden",
+   "name": "Market Flagstones (chalk)",
+   "status": "skizze",
+   "datei": "obj/pflaster-platz-b.json"
+  },
+  {
+   "id": "pflaster-platz-c",
+   "version": 1,
+   "typ": 481,
+   "kat": "boden",
+   "name": "Market Flagstones (scraps)",
+   "status": "skizze",
+   "datei": "obj/pflaster-platz-c.json"
+  },
+  {
+   "id": "pflaster-platz-d",
+   "version": 1,
+   "typ": 482,
+   "kat": "boden",
+   "name": "Market Flagstones",
+   "status": "skizze",
+   "datei": "obj/pflaster-platz-d.json"
+  },
+  {
+   "id": "pflaster-marmor",
+   "version": 1,
+   "typ": 483,
+   "kat": "boden",
+   "name": "Forum Marble",
+   "status": "skizze",
+   "datei": "obj/pflaster-marmor.json"
+  },
+  {
+   "id": "pflaster-marmor-a",
+   "version": 1,
+   "typ": 484,
+   "kat": "boden",
+   "name": "Forum Marble (mended)",
+   "status": "skizze",
+   "datei": "obj/pflaster-marmor-a.json"
+  },
+  {
+   "id": "pflaster-marmor-b",
+   "version": 1,
+   "typ": 485,
+   "kat": "boden",
+   "name": "Forum Marble (inscription)",
+   "status": "skizze",
+   "datei": "obj/pflaster-marmor-b.json"
+  },
+  {
+   "id": "pflaster-marmor-c",
+   "version": 1,
+   "typ": 486,
+   "kat": "boden",
+   "name": "Forum Marble (pigeons)",
+   "status": "skizze",
+   "datei": "obj/pflaster-marmor-c.json"
+  },
+  {
+   "id": "pflaster-marmor-d",
+   "version": 1,
+   "typ": 487,
+   "kat": "boden",
+   "name": "Forum Marble",
+   "status": "skizze",
+   "datei": "obj/pflaster-marmor-d.json"
   }
  ]
 }

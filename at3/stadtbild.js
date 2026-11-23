@@ -59,7 +59,7 @@ function daten(o){if(o&&o.daten)return o.daten.G?o.daten:SL().daten(o.daten);if(
  if(!DAT)throw new Error('Gebäudedaten fehlen (setzeDaten)');return DAT}
 // Bauweise je Biom (5.3a) als Skizze aus den Baukasten-Teilen: Bauklasse, Dachform, Farbtausch (Wand, Dach), Boden, Gassenbelag, Bäume, Dichte im Umland, Felder.
 var BIOME={
- mediterranean:{klasse:'brick',dach:'sattel',wand:STEIN,satz:'putz',boden:['boden-gras','boden-erde'],weg:'boden-weg',baeume:['baum-olive','baum-zypresse','busch-bluete'],dichte:.16,feld:'bk-feld'},
+ mediterranean:{klasse:'brick',dach:'sattel',wand:STEIN,satz:'putz',pflaster:true,boden:['boden-gras','boden-erde'],weg:'boden-weg',baeume:['baum-olive','baum-zypresse','busch-bluete'],dichte:.16,feld:'bk-feld'},
  grassland:{klasse:'clay-wood',dach:'sattel',boden:['boden-gras'],weg:'boden-weg',baeume:['baum-pappel','busch-hasel'],dichte:.06,feld:'bk-feld'},
  broadleaf:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,boden:['boden-gras'],weg:'boden-erde',baeume:['baum-eiche-skizze','baum-buche','baum-apfel','busch-gruen'],dichte:.3,feld:'bk-feld'},
  desert:{klasse:'clay-wood',dach:'flach',wand:SAND,dachR:SAND,boden:['boden-sand'],weg:'boden-sand',baeume:['baum-dattelpalme','busch-tamariske'],dichte:.03,feld:'boden-erde'},
@@ -683,6 +683,7 @@ function plan(opt){
   return E}
  var E2=ergebnis,P={format:'at3-stadtplan',art:art,g:g,einw:einw,biom:opt.biom,stil:opt.stil||'',seed:seed,W:E2.W,block:Bm,nb:E2.nb,zellen:E2.Z.join(''),bauten:E2.bauten,dinge:E2.dinge,
   tor:E2.tor,mauertor:E2.mauertor||null,gesetzt:E2.gesetzt,vielfalt:E2.vielfalt||null,gespiegelt:false,basis:basis,feld:B.feld,aussen:E2.aussen||null,fluss:E2.fluss||null,kueste:E2.kueste||null};
+ if(opt.pflaster===false)P.pflaster=false;   // N6b3a Notausschalter: Wege und Plätze wie vorher
  // Umriss (N6b2c4a2): Art, Ecken, Tore und die Innenfläche je Zeile [j, i0, i1, …] in Planfeldern (innenMaske() rechnet Maßstab und Spiegeln um)
  if(!elend){var MK=E2.maske,Wm=Math.round(Math.sqrt(MK.length)),Rm=E2.rand||0,zl=[];
   for(var jm=0;jm<Wm;jm++){var im=0;while(im<Wm){if(!MK[jm*Wm+im]){im++;continue}var i1=im;while(i1+1<Wm&&MK[jm*Wm+i1+1])i1++;zl.push(jm+Rm,im+Rm,i1+Rm);im=i1+1}}
@@ -1536,6 +1537,30 @@ var BODEN_ID={s:null,o:null,m:'bk-marmor-boden',f:null,w:'boden-fluss',e:'boden-
 var FLUSS_VAR=['boden-fluss','boden-fluss-a','boden-fluss-b','boden-fluss-c','boden-fluss-d'];
 function flussWahl(i,j,seed){var u=rausch(i,j,seed+77);if(u<1/128)return FLUSS_VAR[3];if(u<2/128)return FLUSS_VAR[4];u=(u-2/128)/(1-2/128)*14;return FLUSS_VAR[u<5?0:u<10?1:2]}
 var KURZ={'clay-wood':'lehm',brick:'ziegel',marble:'marmor'};
+// N6b3a Pflaster nach Rang (Thomas 22.11.2026, nur Biome mit pflaster:true, ab Marktflecken, nur innerhalb der Mauer): Hauptstraße (Feld liegt in einem 3 × 3
+// aus Gassenfeldern; Hauptstraße 2 Planfelder = 3 Bildfelder) Basalt, mittlere Spur mit Karrenrillen längs der Straße; übrige Gassen Kopfstein; Markt (o)
+// Steinplatten; Forum (m) Marmorplatten. Einmal je Ort gerechnet (pflasterKarte), Wahl der Varianten nach Lage wie flussWahl. P.pflaster === false: wie vorher.
+var PFL_IDS=['pflaster-basalt','pflaster-basalt-a','pflaster-basalt-b','pflaster-basalt-c','pflaster-basalt-d','pflaster-basalt-e','pflaster-basalt-f','pflaster-basalt-g',
+ 'pflaster-gasse','pflaster-gasse-a','pflaster-gasse-b','pflaster-gasse-c','pflaster-gasse-d','pflaster-gasse-e','pflaster-gasse-f',
+ 'pflaster-platz','pflaster-platz-a','pflaster-platz-b','pflaster-platz-c','pflaster-platz-d','pflaster-marmor','pflaster-marmor-a','pflaster-marmor-b','pflaster-marmor-c','pflaster-marmor-d'];
+// Varianten je Art: [selten …] mit Anteil, Rest ruhig reihum nach Gewicht
+var PFL_VAR={basalt:{selten:[['e',1/100],['d',1/40],['c',1/14]],ruhig:[['',5],['f',4],['g',3]]},gasse:{selten:[['d',1/90],['b',1/30],['c',1/25],['a',1/12]],ruhig:[['',5],['e',4],['f',3]]},
+ platz:{selten:[['b',1/40],['a',1/20],['c',1/12]],ruhig:[['',3],['d',2]]},marmor:{selten:[['b',1/50],['a',1/25],['c',1/14]],ruhig:[['',3],['d',2]]}};
+function pflasterWahl(art,i,j,seed){var V=PFL_VAR[art],u=rausch(i,j,seed+131),k,s=0,id='pflaster-'+art;
+ for(k=0;k<V.selten.length;k++){s+=V.selten[k][1];if(u<s)return id+'-'+V.selten[k][0]}
+ u=(u-s)/(1-s);var g=0;V.ruhig.forEach(function(r){g+=r[1]});u*=g;for(k=0;k<V.ruhig.length;k++){u-=V.ruhig[k][1];if(u<0)break}var r=V.ruhig[Math.min(k,V.ruhig.length-1)][0];return r?id+'-'+r:id}
+// Codes je Feld: 0 kein Pflaster, 1 Basalt, 2 Basalt mit Rillen längs i, 3 längs j, 4 Kopfstein, 5 Platten, 6 Marmor
+function pflasterKarte(P){var B=BIOME[P.biom];if(!B||!B.pflaster||P.pflaster===false||(P.g|0)<MAUER_AB)return null;
+ var W=P.W,Z=P.zellen,MK=innenMaske(P),S=new Uint8Array(W*W),V=new Uint8Array(W*W),R=new Uint8Array(W*W),i,j,k,a,b;
+ for(k=0;k<W*W;k++)S[k]=Z.charCodeAt(k)===115?1:0;   // 's'
+ for(j=0;j+2<W;j++)for(i=0;i+2<W;i++){var voll=1;for(b=0;b<3&&voll;b++)for(a=0;a<3;a++)if(!S[(j+b)*W+i+a]){voll=0;break}
+  if(voll)for(b=0;b<3;b++)for(a=0;a<3;a++)V[(j+b)*W+i+a]=1}
+ var s=function(x,y){return x>=0&&y>=0&&x<W&&y<W&&S[y*W+x]};
+ for(j=0;j<W;j++)for(i=0;i<W;i++){k=j*W+i;if(!MK[k])continue;var c=Z.charAt(k);
+  if(c==='s'){if(!V[k]){R[k]=4;continue}R[k]=1;
+   if(s(i,j-1)&&s(i,j+1)&&!s(i,j-2)&&!s(i,j+2)&&s(i-1,j)&&s(i+1,j))R[k]=2;else if(s(i-1,j)&&s(i+1,j)&&!s(i-2,j)&&!s(i+2,j)&&s(i,j-1)&&s(i,j+1))R[k]=3}
+  else if(c==='o')R[k]=5;else if(c==='m')R[k]=6}
+ return R}
 // Zeichenreihenfolge für Grundflächen ohne Überlappung (Thomas 21.11.2026: Sortieren nach der Mitte i + j ließ bei langen Häusern Wände über das Dach des
 // Nachbarn malen). A kommt vor B, wenn A ganz bei kleinerem i (bzw. j) liegt und sich die Bildrahmen beider überlagern; sonst Mitte i + j (Kahn-Sortierung).
 // Paare nur aus gemeinsamen Bildfächern (128 × 128) mit mindestens einer großen Grundfläche; in Schritten (Regel 20), Kosten nach Zahl der Elemente.
@@ -1574,7 +1599,9 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
  // Bildlage eines Felds (i, j) im Plan (Umland hat negative bzw. zu große Zahlen): Ecke oben = ((i−j)·32, (i+j)·16)
  var bx=function(i,j){return OX+(i-j)*32},by=function(i,j){return OY+(i+U+j+U)*16};
  var weg=P.basis&&KURZ[P.basis.klasse]?'bk-'+KURZ[P.basis.klasse]+'-boden':'boden-weg';
+ var PK=pflasterKarte(P);   // N6b3a
  var bodenId=function(i,j){var innen=i>=0&&j>=0&&i<W&&j<W,c=innen?P.zellen.charAt(j*W+i):'g';
+  if(PK&&innen){var pc=PK[j*W+i];if(pc){if(pc===2)return 'pflaster-basalt-a';if(pc===3)return 'pflaster-basalt-b';return pflasterWahl(pc===1?'basalt':pc===4?'gasse':pc===5?'platz':'marmor',i,j,P.seed|0)}}
   if(c==='g'){var l=B.boden;return l[Math.floor(rausch(i,j,P.seed+1)*l.length*(l.length>1?.75:1))%l.length]}
   if(c==='s')return B.weg;if(c==='o')return weg;if(c==='f'||c==='k')return P.feld||'bk-feld';if(c==='w')return flussWahl(i,j,P.seed);if(c==='q')return weg;if(c==='y')return flussWahl(i,j,P.seed);if(c==='u')return 'boden-sand';return BODEN_ID[c]||'boden-gras'};
  var O3=null,L=[],el=[],n=0,stufe=0,qs=-U,qi=-U,qk=0,uj=-U,ui=-U,HL=[],UNTER=null;
@@ -1734,9 +1761,9 @@ function kacheln(r,K){K=K||256;var L=[],ty,tx,y;for(ty=0;ty<r.h;ty+=K)for(tx=0;t
 // Kennzahlen eines Plans für Anzeige und Tests
 function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.bauten.forEach(function(b){if(b.rolle==='house'||b.rolle==='shack')n.haeuser++;else if(b.rolle==='mauer')n.mauer++;else n.besondere++});return n}
 // Alle Kartei-Kennungen, die ein Plan braucht (Editor lädt nur diese)
-function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(P.wehr?WEHR_IDS:[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
+function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
