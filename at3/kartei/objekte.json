@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 799,
+ "typMax": 843,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -6747,7 +6747,7 @@
   },
   {
    "id": "posten-huette-2-1-sued",
-   "version": 1,
+   "version": 2,
    "typ": 766,
    "kat": "anlage",
    "name": "Outpost Hut 2 1 S",
@@ -6756,7 +6756,7 @@
   },
   {
    "id": "posten-huette-2-2-sued",
-   "version": 1,
+   "version": 2,
    "typ": 767,
    "kat": "anlage",
    "name": "Outpost Hut 2 2 S",
@@ -6774,7 +6774,7 @@
   },
   {
    "id": "posten-huette-2-1-ost",
-   "version": 1,
+   "version": 2,
    "typ": 769,
    "kat": "anlage",
    "name": "Outpost Hut 2 1 E",
@@ -6783,7 +6783,7 @@
   },
   {
    "id": "posten-huette-2-2-ost",
-   "version": 1,
+   "version": 2,
    "typ": 770,
    "kat": "anlage",
    "name": "Outpost Hut 2 2 E",
@@ -6846,7 +6846,7 @@
   },
   {
    "id": "posten-huette-3-1-sued",
-   "version": 1,
+   "version": 2,
    "typ": 777,
    "kat": "anlage",
    "name": "Outpost Hut 3 1 S",
@@ -6855,7 +6855,7 @@
   },
   {
    "id": "posten-huette-3-2-sued",
-   "version": 1,
+   "version": 2,
    "typ": 778,
    "kat": "anlage",
    "name": "Outpost Hut 3 2 S",
@@ -6873,7 +6873,7 @@
   },
   {
    "id": "posten-huette-3-1-ost",
-   "version": 1,
+   "version": 2,
    "typ": 780,
    "kat": "anlage",
    "name": "Outpost Hut 3 1 E",
@@ -6882,7 +6882,7 @@
   },
   {
    "id": "posten-huette-3-2-ost",
-   "version": 1,
+   "version": 2,
    "typ": 781,
    "kat": "anlage",
    "name": "Outpost Hut 3 2 E",
@@ -6918,7 +6918,7 @@
   },
   {
    "id": "posten-huette-3-1-west",
-   "version": 1,
+   "version": 2,
    "typ": 785,
    "kat": "anlage",
    "name": "Outpost Hut 3 1 W",
@@ -6927,7 +6927,7 @@
   },
   {
    "id": "posten-huette-3-2-west",
-   "version": 1,
+   "version": 2,
    "typ": 786,
    "kat": "anlage",
    "name": "Outpost Hut 3 2 W",
@@ -7050,6 +7050,402 @@
    "name": "Pit Props",
    "status": "uebernommen",
    "datei": "obj/mine-grubenholz.json"
+  },
+  {
+   "id": "posten-zubehoer-bruch-2-sued",
+   "version": 1,
+   "typ": 800,
+   "kat": "anlage",
+   "name": "Hut Gear Bruch 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-bruch-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-holz-2-sued",
+   "version": 1,
+   "typ": 801,
+   "kat": "anlage",
+   "name": "Hut Gear Holz 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-holz-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-koehler-2-sued",
+   "version": 1,
+   "typ": 802,
+   "kat": "anlage",
+   "name": "Hut Gear Koehler 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-koehler-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-bruch-2-ost",
+   "version": 1,
+   "typ": 803,
+   "kat": "anlage",
+   "name": "Hut Gear Bruch 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-bruch-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-holz-2-ost",
+   "version": 1,
+   "typ": 804,
+   "kat": "anlage",
+   "name": "Hut Gear Holz 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-holz-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-koehler-2-ost",
+   "version": 1,
+   "typ": 805,
+   "kat": "anlage",
+   "name": "Hut Gear Koehler 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-koehler-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-bruch-3-sued",
+   "version": 1,
+   "typ": 806,
+   "kat": "anlage",
+   "name": "Hut Gear Bruch 3 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-bruch-3-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-holz-3-sued",
+   "version": 1,
+   "typ": 807,
+   "kat": "anlage",
+   "name": "Hut Gear Holz 3 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-holz-3-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-koehler-3-sued",
+   "version": 1,
+   "typ": 808,
+   "kat": "anlage",
+   "name": "Hut Gear Koehler 3 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-koehler-3-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-bruch-3-ost",
+   "version": 1,
+   "typ": 809,
+   "kat": "anlage",
+   "name": "Hut Gear Bruch 3 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-bruch-3-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-holz-3-ost",
+   "version": 1,
+   "typ": 810,
+   "kat": "anlage",
+   "name": "Hut Gear Holz 3 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-holz-3-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-koehler-3-ost",
+   "version": 1,
+   "typ": 811,
+   "kat": "anlage",
+   "name": "Hut Gear Koehler 3 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-koehler-3-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-holz-3-west",
+   "version": 1,
+   "typ": 812,
+   "kat": "anlage",
+   "name": "Hut Gear Holz 3 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-holz-3-west.json"
+  },
+  {
+   "id": "posten-zubehoer-koehler-3-west",
+   "version": 1,
+   "typ": 813,
+   "kat": "anlage",
+   "name": "Hut Gear Koehler 3 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-koehler-3-west.json"
+  },
+  {
+   "id": "bruch-rohblock",
+   "version": 1,
+   "typ": 814,
+   "kat": "einrichtung",
+   "name": "Rough Block",
+   "status": "uebernommen",
+   "datei": "obj/bruch-rohblock.json"
+  },
+  {
+   "id": "bruch-keilblock",
+   "version": 1,
+   "typ": 815,
+   "kat": "einrichtung",
+   "name": "Wedged Block",
+   "status": "uebernommen",
+   "datei": "obj/bruch-keilblock.json"
+  },
+  {
+   "id": "bruch-quader",
+   "version": 1,
+   "typ": 816,
+   "kat": "einrichtung",
+   "name": "Ashlar Stack",
+   "status": "uebernommen",
+   "datei": "obj/bruch-quader.json"
+  },
+  {
+   "id": "bruch-quader-a",
+   "version": 1,
+   "typ": 817,
+   "kat": "einrichtung",
+   "name": "Ashlars on Sledge",
+   "status": "uebernommen",
+   "datei": "obj/bruch-quader-a.json"
+  },
+  {
+   "id": "bruch-splitt",
+   "version": 1,
+   "typ": 818,
+   "kat": "einrichtung",
+   "name": "Stone Chips",
+   "status": "uebernommen",
+   "datei": "obj/bruch-splitt.json"
+  },
+  {
+   "id": "bruch-hebebaum",
+   "version": 1,
+   "typ": 819,
+   "kat": "einrichtung",
+   "name": "Lifting Tripod",
+   "status": "uebernommen",
+   "datei": "obj/bruch-hebebaum.json"
+  },
+  {
+   "id": "holz-stapel",
+   "version": 1,
+   "typ": 820,
+   "kat": "einrichtung",
+   "name": "Log Pile",
+   "status": "uebernommen",
+   "datei": "obj/holz-stapel.json"
+  },
+  {
+   "id": "holz-stapel-a",
+   "version": 1,
+   "typ": 821,
+   "kat": "einrichtung",
+   "name": "Saw Buck",
+   "status": "uebernommen",
+   "datei": "obj/holz-stapel-a.json"
+  },
+  {
+   "id": "holz-hackklotz",
+   "version": 1,
+   "typ": 822,
+   "kat": "einrichtung",
+   "name": "Chopping Block",
+   "status": "uebernommen",
+   "datei": "obj/holz-hackklotz.json"
+  },
+  {
+   "id": "koehler-meiler",
+   "version": 1,
+   "typ": 823,
+   "kat": "einrichtung",
+   "name": "Charcoal Kiln",
+   "status": "uebernommen",
+   "datei": "obj/koehler-meiler.json"
+  },
+  {
+   "id": "koehler-meiler-a",
+   "version": 1,
+   "typ": 824,
+   "kat": "einrichtung",
+   "name": "Kiln Burnt Through",
+   "status": "uebernommen",
+   "datei": "obj/koehler-meiler-a.json"
+  },
+  {
+   "id": "koehler-meilerbau",
+   "version": 1,
+   "typ": 825,
+   "kat": "einrichtung",
+   "name": "Kiln Being Built",
+   "status": "uebernommen",
+   "datei": "obj/koehler-meilerbau.json"
+  },
+  {
+   "id": "koehler-kohle",
+   "version": 1,
+   "typ": 826,
+   "kat": "einrichtung",
+   "name": "Charcoal Heap",
+   "status": "uebernommen",
+   "datei": "obj/koehler-kohle.json"
+  },
+  {
+   "id": "koehler-loesche",
+   "version": 1,
+   "typ": 827,
+   "kat": "einrichtung",
+   "name": "Turf and Water",
+   "status": "uebernommen",
+   "datei": "obj/koehler-loesche.json"
+  },
+  {
+   "id": "koehler-saecke",
+   "version": 1,
+   "typ": 828,
+   "kat": "einrichtung",
+   "name": "Charcoal Sacks",
+   "status": "uebernommen",
+   "datei": "obj/koehler-saecke.json"
+  },
+  {
+   "id": "bruch-wand-1-sued",
+   "version": 1,
+   "typ": 829,
+   "kat": "einrichtung",
+   "name": "Quarry Face S",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-1-sued.json"
+  },
+  {
+   "id": "bruch-wand-1-ost",
+   "version": 1,
+   "typ": 830,
+   "kat": "einrichtung",
+   "name": "Quarry Face E",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-1-ost.json"
+  },
+  {
+   "id": "bruch-wand-1-nord",
+   "version": 1,
+   "typ": 831,
+   "kat": "einrichtung",
+   "name": "Quarry Face N",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-1-nord.json"
+  },
+  {
+   "id": "bruch-wand-1-west",
+   "version": 1,
+   "typ": 832,
+   "kat": "einrichtung",
+   "name": "Quarry Face W",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-1-west.json"
+  },
+  {
+   "id": "bruch-wand-2-sued",
+   "version": 1,
+   "typ": 833,
+   "kat": "einrichtung",
+   "name": "Quarry Face Pit S",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-2-sued.json"
+  },
+  {
+   "id": "bruch-wand-2-ost",
+   "version": 1,
+   "typ": 834,
+   "kat": "einrichtung",
+   "name": "Quarry Face Pit E",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-2-ost.json"
+  },
+  {
+   "id": "bruch-wand-2-nord",
+   "version": 1,
+   "typ": 835,
+   "kat": "einrichtung",
+   "name": "Quarry Face Pit N",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-2-nord.json"
+  },
+  {
+   "id": "bruch-wand-2-west",
+   "version": 1,
+   "typ": 836,
+   "kat": "einrichtung",
+   "name": "Quarry Face Pit W",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-2-west.json"
+  },
+  {
+   "id": "bruch-wand-3-sued",
+   "version": 1,
+   "typ": 837,
+   "kat": "einrichtung",
+   "name": "Quarry Face Slip S",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-3-sued.json"
+  },
+  {
+   "id": "bruch-wand-3-ost",
+   "version": 1,
+   "typ": 838,
+   "kat": "einrichtung",
+   "name": "Quarry Face Slip E",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-3-ost.json"
+  },
+  {
+   "id": "bruch-wand-3-nord",
+   "version": 1,
+   "typ": 839,
+   "kat": "einrichtung",
+   "name": "Quarry Face Slip N",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-3-nord.json"
+  },
+  {
+   "id": "bruch-wand-3-west",
+   "version": 1,
+   "typ": 840,
+   "kat": "einrichtung",
+   "name": "Quarry Face Slip W",
+   "status": "uebernommen",
+   "datei": "obj/bruch-wand-3-west.json"
+  },
+  {
+   "id": "natur-stumpf-frisch",
+   "version": 1,
+   "typ": 841,
+   "kat": "baum",
+   "name": "Fresh Stump",
+   "status": "uebernommen",
+   "datei": "obj/natur-stumpf-frisch.json"
+  },
+  {
+   "id": "natur-stumpf-alt",
+   "version": 1,
+   "typ": 842,
+   "kat": "baum",
+   "name": "Old Stump",
+   "status": "uebernommen",
+   "datei": "obj/natur-stumpf-alt.json"
+  },
+  {
+   "id": "natur-stumpf-kerbe",
+   "version": 1,
+   "typ": 843,
+   "kat": "baum",
+   "name": "Torn Stump",
+   "status": "uebernommen",
+   "datei": "obj/natur-stumpf-kerbe.json"
   }
  ]
 }
