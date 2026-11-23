@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 843,
+ "typMax": 889,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -6747,7 +6747,7 @@
   },
   {
    "id": "posten-huette-2-1-sued",
-   "version": 2,
+   "version": 3,
    "typ": 766,
    "kat": "anlage",
    "name": "Outpost Hut 2 1 S",
@@ -6756,7 +6756,7 @@
   },
   {
    "id": "posten-huette-2-2-sued",
-   "version": 2,
+   "version": 3,
    "typ": 767,
    "kat": "anlage",
    "name": "Outpost Hut 2 2 S",
@@ -6774,7 +6774,7 @@
   },
   {
    "id": "posten-huette-2-1-ost",
-   "version": 2,
+   "version": 3,
    "typ": 769,
    "kat": "anlage",
    "name": "Outpost Hut 2 1 E",
@@ -6783,7 +6783,7 @@
   },
   {
    "id": "posten-huette-2-2-ost",
-   "version": 2,
+   "version": 3,
    "typ": 770,
    "kat": "anlage",
    "name": "Outpost Hut 2 2 E",
@@ -6801,7 +6801,7 @@
   },
   {
    "id": "posten-huette-2-1-nord",
-   "version": 1,
+   "version": 2,
    "typ": 772,
    "kat": "anlage",
    "name": "Outpost Hut 2 1 N",
@@ -6810,7 +6810,7 @@
   },
   {
    "id": "posten-huette-2-2-nord",
-   "version": 1,
+   "version": 2,
    "typ": 773,
    "kat": "anlage",
    "name": "Outpost Hut 2 2 N",
@@ -6846,7 +6846,7 @@
   },
   {
    "id": "posten-huette-3-1-sued",
-   "version": 2,
+   "version": 3,
    "typ": 777,
    "kat": "anlage",
    "name": "Outpost Hut 3 1 S",
@@ -6855,7 +6855,7 @@
   },
   {
    "id": "posten-huette-3-2-sued",
-   "version": 2,
+   "version": 3,
    "typ": 778,
    "kat": "anlage",
    "name": "Outpost Hut 3 2 S",
@@ -6873,7 +6873,7 @@
   },
   {
    "id": "posten-huette-3-1-ost",
-   "version": 2,
+   "version": 4,
    "typ": 780,
    "kat": "anlage",
    "name": "Outpost Hut 3 1 E",
@@ -6882,7 +6882,7 @@
   },
   {
    "id": "posten-huette-3-2-ost",
-   "version": 2,
+   "version": 4,
    "typ": 781,
    "kat": "anlage",
    "name": "Outpost Hut 3 2 E",
@@ -6900,7 +6900,7 @@
   },
   {
    "id": "posten-huette-3-1-nord",
-   "version": 1,
+   "version": 3,
    "typ": 783,
    "kat": "anlage",
    "name": "Outpost Hut 3 1 N",
@@ -6909,7 +6909,7 @@
   },
   {
    "id": "posten-huette-3-2-nord",
-   "version": 1,
+   "version": 3,
    "typ": 784,
    "kat": "anlage",
    "name": "Outpost Hut 3 2 N",
@@ -6918,7 +6918,7 @@
   },
   {
    "id": "posten-huette-3-1-west",
-   "version": 2,
+   "version": 4,
    "typ": 785,
    "kat": "anlage",
    "name": "Outpost Hut 3 1 W",
@@ -6927,7 +6927,7 @@
   },
   {
    "id": "posten-huette-3-2-west",
-   "version": 2,
+   "version": 4,
    "typ": 786,
    "kat": "anlage",
    "name": "Outpost Hut 3 2 W",
@@ -7446,6 +7446,420 @@
    "name": "Torn Stump",
    "status": "uebernommen",
    "datei": "obj/natur-stumpf-kerbe.json"
+  },
+  {
+   "id": "posten-zubehoer-fischer-2-sued",
+   "version": 1,
+   "typ": 844,
+   "kat": "anlage",
+   "name": "Hut Gear Fischer 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-fischer-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-ufer-2-sued",
+   "version": 1,
+   "typ": 845,
+   "kat": "anlage",
+   "name": "Hut Gear Ufer 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-ufer-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-wasch-2-sued",
+   "version": 1,
+   "typ": 846,
+   "kat": "anlage",
+   "name": "Hut Gear Wasch 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-wasch-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-salz-2-sued",
+   "version": 1,
+   "typ": 847,
+   "kat": "anlage",
+   "name": "Hut Gear Salz 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-salz-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-jagd-2-sued",
+   "version": 2,
+   "typ": 848,
+   "kat": "anlage",
+   "name": "Hut Gear Jagd 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-jagd-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-fischer-2-ost",
+   "version": 1,
+   "typ": 849,
+   "kat": "anlage",
+   "name": "Hut Gear Fischer 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-fischer-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-ufer-2-ost",
+   "version": 1,
+   "typ": 850,
+   "kat": "anlage",
+   "name": "Hut Gear Ufer 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-ufer-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-wasch-2-ost",
+   "version": 1,
+   "typ": 851,
+   "kat": "anlage",
+   "name": "Hut Gear Wasch 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-wasch-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-salz-2-ost",
+   "version": 1,
+   "typ": 852,
+   "kat": "anlage",
+   "name": "Hut Gear Salz 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-salz-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-jagd-2-ost",
+   "version": 1,
+   "typ": 853,
+   "kat": "anlage",
+   "name": "Hut Gear Jagd 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-jagd-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-fischer-2-nord",
+   "version": 1,
+   "typ": 854,
+   "kat": "anlage",
+   "name": "Hut Gear Fischer 2 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-fischer-2-nord.json"
+  },
+  {
+   "id": "posten-zubehoer-ufer-2-nord",
+   "version": 1,
+   "typ": 855,
+   "kat": "anlage",
+   "name": "Hut Gear Ufer 2 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-ufer-2-nord.json"
+  },
+  {
+   "id": "posten-zubehoer-wasch-2-nord",
+   "version": 1,
+   "typ": 856,
+   "kat": "anlage",
+   "name": "Hut Gear Wasch 2 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-wasch-2-nord.json"
+  },
+  {
+   "id": "posten-zubehoer-fischer-3-sued",
+   "version": 1,
+   "typ": 857,
+   "kat": "anlage",
+   "name": "Hut Gear Fischer 3 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-fischer-3-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-ufer-3-sued",
+   "version": 1,
+   "typ": 858,
+   "kat": "anlage",
+   "name": "Hut Gear Ufer 3 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-ufer-3-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-wasch-3-sued",
+   "version": 2,
+   "typ": 859,
+   "kat": "anlage",
+   "name": "Hut Gear Wasch 3 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-wasch-3-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-salz-3-sued",
+   "version": 1,
+   "typ": 860,
+   "kat": "anlage",
+   "name": "Hut Gear Salz 3 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-salz-3-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-jagd-3-sued",
+   "version": 1,
+   "typ": 861,
+   "kat": "anlage",
+   "name": "Hut Gear Jagd 3 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-jagd-3-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-fischer-3-ost",
+   "version": 1,
+   "typ": 862,
+   "kat": "anlage",
+   "name": "Hut Gear Fischer 3 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-fischer-3-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-ufer-3-ost",
+   "version": 1,
+   "typ": 863,
+   "kat": "anlage",
+   "name": "Hut Gear Ufer 3 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-ufer-3-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-wasch-3-ost",
+   "version": 2,
+   "typ": 864,
+   "kat": "anlage",
+   "name": "Hut Gear Wasch 3 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-wasch-3-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-salz-3-ost",
+   "version": 1,
+   "typ": 865,
+   "kat": "anlage",
+   "name": "Hut Gear Salz 3 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-salz-3-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-jagd-3-ost",
+   "version": 1,
+   "typ": 866,
+   "kat": "anlage",
+   "name": "Hut Gear Jagd 3 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-jagd-3-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-fischer-3-nord",
+   "version": 1,
+   "typ": 867,
+   "kat": "anlage",
+   "name": "Hut Gear Fischer 3 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-fischer-3-nord.json"
+  },
+  {
+   "id": "posten-zubehoer-ufer-3-nord",
+   "version": 1,
+   "typ": 868,
+   "kat": "anlage",
+   "name": "Hut Gear Ufer 3 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-ufer-3-nord.json"
+  },
+  {
+   "id": "posten-zubehoer-wasch-3-nord",
+   "version": 2,
+   "typ": 869,
+   "kat": "anlage",
+   "name": "Hut Gear Wasch 3 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-wasch-3-nord.json"
+  },
+  {
+   "id": "posten-zubehoer-fischer-3-west",
+   "version": 1,
+   "typ": 870,
+   "kat": "anlage",
+   "name": "Hut Gear Fischer 3 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-fischer-3-west.json"
+  },
+  {
+   "id": "posten-zubehoer-ufer-3-west",
+   "version": 1,
+   "typ": 871,
+   "kat": "anlage",
+   "name": "Hut Gear Ufer 3 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-ufer-3-west.json"
+  },
+  {
+   "id": "fischer-netze",
+   "version": 1,
+   "typ": 872,
+   "kat": "einrichtung",
+   "name": "Net Rack",
+   "status": "uebernommen",
+   "datei": "obj/fischer-netze.json"
+  },
+  {
+   "id": "fischer-boot",
+   "version": 3,
+   "typ": 873,
+   "kat": "einrichtung",
+   "name": "Upturned Boat",
+   "status": "uebernommen",
+   "datei": "obj/fischer-boot.json"
+  },
+  {
+   "id": "fischer-boot-a",
+   "version": 3,
+   "typ": 874,
+   "kat": "einrichtung",
+   "name": "Patched Boat",
+   "status": "uebernommen",
+   "datei": "obj/fischer-boot-a.json"
+  },
+  {
+   "id": "ufer-schilf",
+   "version": 1,
+   "typ": 875,
+   "kat": "einrichtung",
+   "name": "Reed Stooks",
+   "status": "uebernommen",
+   "datei": "obj/ufer-schilf.json"
+  },
+  {
+   "id": "ufer-schilfbuendel",
+   "version": 1,
+   "typ": 876,
+   "kat": "einrichtung",
+   "name": "Reed Bundles",
+   "status": "uebernommen",
+   "datei": "obj/ufer-schilfbuendel.json"
+  },
+  {
+   "id": "ufer-torf",
+   "version": 3,
+   "typ": 877,
+   "kat": "einrichtung",
+   "name": "Peat Stacks",
+   "status": "uebernommen",
+   "datei": "obj/ufer-torf.json"
+  },
+  {
+   "id": "ufer-torfkarre",
+   "version": 1,
+   "typ": 878,
+   "kat": "einrichtung",
+   "name": "Peat Barrow",
+   "status": "uebernommen",
+   "datei": "obj/ufer-torfkarre.json"
+  },
+  {
+   "id": "wasch-rinne",
+   "version": 1,
+   "typ": 879,
+   "kat": "einrichtung",
+   "name": "Gold Sluice",
+   "status": "uebernommen",
+   "datei": "obj/wasch-rinne.json"
+  },
+  {
+   "id": "wasch-sand",
+   "version": 1,
+   "typ": 880,
+   "kat": "einrichtung",
+   "name": "Washed Gravel",
+   "status": "uebernommen",
+   "datei": "obj/wasch-sand.json"
+  },
+  {
+   "id": "salz-haufen",
+   "version": 1,
+   "typ": 881,
+   "kat": "einrichtung",
+   "name": "Salt Heap",
+   "status": "uebernommen",
+   "datei": "obj/salz-haufen.json"
+  },
+  {
+   "id": "salz-koerbe",
+   "version": 1,
+   "typ": 882,
+   "kat": "einrichtung",
+   "name": "Salt Baskets",
+   "status": "uebernommen",
+   "datei": "obj/salz-koerbe.json"
+  },
+  {
+   "id": "salz-pfanne",
+   "version": 1,
+   "typ": 883,
+   "kat": "einrichtung",
+   "name": "Boiling Pan",
+   "status": "uebernommen",
+   "datei": "obj/salz-pfanne.json"
+  },
+  {
+   "id": "salz-becken-sole",
+   "version": 1,
+   "typ": 884,
+   "kat": "einrichtung",
+   "name": "Brine Pond",
+   "status": "uebernommen",
+   "datei": "obj/salz-becken-sole.json"
+  },
+  {
+   "id": "salz-becken-kruste",
+   "version": 1,
+   "typ": 885,
+   "kat": "einrichtung",
+   "name": "Salt Crust Pond",
+   "status": "uebernommen",
+   "datei": "obj/salz-becken-kruste.json"
+  },
+  {
+   "id": "salz-becken-ernte",
+   "version": 1,
+   "typ": 886,
+   "kat": "einrichtung",
+   "name": "Raked Salt Pond",
+   "status": "uebernommen",
+   "datei": "obj/salz-becken-ernte.json"
+  },
+  {
+   "id": "jagd-raeucher",
+   "version": 1,
+   "typ": 887,
+   "kat": "einrichtung",
+   "name": "Smoking Rack",
+   "status": "uebernommen",
+   "datei": "obj/jagd-raeucher.json"
+  },
+  {
+   "id": "jagd-fellrahmen",
+   "version": 1,
+   "typ": 888,
+   "kat": "einrichtung",
+   "name": "Hide Frame",
+   "status": "uebernommen",
+   "datei": "obj/jagd-fellrahmen.json"
+  },
+  {
+   "id": "jagd-fallen",
+   "version": 1,
+   "typ": 889,
+   "kat": "einrichtung",
+   "name": "Trap Pile",
+   "status": "uebernommen",
+   "datei": "obj/jagd-fallen.json"
   }
  ]
 }
