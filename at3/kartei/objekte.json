@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 487,
+ "typMax": 507,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -4242,6 +4242,186 @@
    "name": "Forum Marble",
    "status": "skizze",
    "datei": "obj/pflaster-marmor-d.json"
+  },
+  {
+   "id": "tempel-klein-vorn",
+   "version": 1,
+   "typ": 488,
+   "kat": "anlage",
+   "name": "Small Temple",
+   "status": "uebernommen",
+   "datei": "obj/tempel-klein-vorn.json"
+  },
+  {
+   "id": "tempel-klein-hinten",
+   "version": 1,
+   "typ": 489,
+   "kat": "anlage",
+   "name": "Small Temple Rear",
+   "status": "uebernommen",
+   "datei": "obj/tempel-klein-hinten.json"
+  },
+  {
+   "id": "tempel-giebel-klein-ohne",
+   "version": 1,
+   "typ": 490,
+   "kat": "anlage",
+   "name": "Pediment Blank",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-klein-ohne.json"
+  },
+  {
+   "id": "tempel-giebel-klein-thunderous",
+   "version": 1,
+   "typ": 491,
+   "kat": "anlage",
+   "name": "Pediment Thunderbolt",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-klein-thunderous.json"
+  },
+  {
+   "id": "tempel-giebel-klein-polite",
+   "version": 1,
+   "typ": 492,
+   "kat": "anlage",
+   "name": "Pediment Question",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-klein-polite.json"
+  },
+  {
+   "id": "tempel-giebel-klein-tide",
+   "version": 1,
+   "typ": 493,
+   "kat": "anlage",
+   "name": "Pediment Anchor",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-klein-tide.json"
+  },
+  {
+   "id": "tempel-banner-klein-ohne",
+   "version": 1,
+   "typ": 494,
+   "kat": "anlage",
+   "name": "Banner Blank",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-klein-ohne.json"
+  },
+  {
+   "id": "tempel-banner-klein-thunderous",
+   "version": 1,
+   "typ": 495,
+   "kat": "anlage",
+   "name": "Banner Thunderbolt",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-klein-thunderous.json"
+  },
+  {
+   "id": "tempel-banner-klein-polite",
+   "version": 1,
+   "typ": 496,
+   "kat": "anlage",
+   "name": "Banner Question",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-klein-polite.json"
+  },
+  {
+   "id": "tempel-banner-klein-tide",
+   "version": 1,
+   "typ": 497,
+   "kat": "anlage",
+   "name": "Banner Anchor",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-klein-tide.json"
+  },
+  {
+   "id": "tempel-klein-vorn-i",
+   "version": 1,
+   "typ": 498,
+   "kat": "anlage",
+   "name": "Small Temple I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-klein-vorn-i.json"
+  },
+  {
+   "id": "tempel-klein-hinten-i",
+   "version": 1,
+   "typ": 499,
+   "kat": "anlage",
+   "name": "Small Temple Rear I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-klein-hinten-i.json"
+  },
+  {
+   "id": "tempel-giebel-klein-ohne-i",
+   "version": 1,
+   "typ": 500,
+   "kat": "anlage",
+   "name": "Pediment Blank I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-klein-ohne-i.json"
+  },
+  {
+   "id": "tempel-giebel-klein-thunderous-i",
+   "version": 1,
+   "typ": 501,
+   "kat": "anlage",
+   "name": "Pediment Thunderbolt I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-klein-thunderous-i.json"
+  },
+  {
+   "id": "tempel-giebel-klein-polite-i",
+   "version": 1,
+   "typ": 502,
+   "kat": "anlage",
+   "name": "Pediment Question I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-klein-polite-i.json"
+  },
+  {
+   "id": "tempel-giebel-klein-tide-i",
+   "version": 1,
+   "typ": 503,
+   "kat": "anlage",
+   "name": "Pediment Anchor I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-klein-tide-i.json"
+  },
+  {
+   "id": "tempel-banner-klein-ohne-i",
+   "version": 1,
+   "typ": 504,
+   "kat": "anlage",
+   "name": "Banner Blank I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-klein-ohne-i.json"
+  },
+  {
+   "id": "tempel-banner-klein-thunderous-i",
+   "version": 1,
+   "typ": 505,
+   "kat": "anlage",
+   "name": "Banner Thunderbolt I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-klein-thunderous-i.json"
+  },
+  {
+   "id": "tempel-banner-klein-polite-i",
+   "version": 1,
+   "typ": 506,
+   "kat": "anlage",
+   "name": "Banner Question I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-klein-polite-i.json"
+  },
+  {
+   "id": "tempel-banner-klein-tide-i",
+   "version": 1,
+   "typ": 507,
+   "kat": "anlage",
+   "name": "Banner Anchor I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-klein-tide-i.json"
   }
  ]
 }

@@ -1622,15 +1622,20 @@ function pflasterKarte(P){var B=BIOME[P.biom];if(!B||!B.pflaster||P.pflaster===f
 // N6b3b1 Ganzbild + Wechselschilder: o.schilder = [{teil:'giebel'|'banner', x, y}] (Lage im ungespiegelten Bild, Anker des Schildteils). Schildteil
 // 'tempel-<teil>-<klein|gross>-<Religion>', fehlt es, der Platzhalter '-ohne'. Gespiegelt: Bild und Schilder an der senkrechten Achse durch den Anker. Fehlt das
 // Ganzbild selbst, null (Baukasten). Zusammengesetztes Bild gemerkt je Ganzbild, Spiegelung und Religion (wenige Stück je Ort).
+// N6b3b2 (Thomas 23.11.2026, „Spiegeln + Licht neu“): gibt es zum Ganzbild eine eigene Fassung für die Längsachse i ('<id>-i', Licht von oben links), nimmt die
+// Längsachse i diese und ihre Schilder '<…>-i' statt zu spiegeln. Religion in der Kennung nur mit ihrem ersten Wort (Kennungen höchstens 40 Zeichen).
 var GANZ=typeof Map!=='undefined'?new Map():null;
+function relKurz(rel){return rel?String(rel).split('-')[0]:null}
 function spiegelSp(sp){var w=sp.w,px=new Uint8Array(sp.px.length),y,x;for(y=0;y<sp.h;y++)for(x=0;x<w;x++)px[y*w+x]=sp.px[y*w+w-1-x];return{w:w,h:sp.h,ax:w-1-sp.ax,ay:sp.ay,px:px}}
-function ganzBild(b,hole){var g=tempelGanz(b);if(!g)return null;var o=hole(g.id),sp=malbild(o);if(!sp)return null;var gr=b.gross?'gross':'klein';
- var key=g.id+'|'+(g.spiegel?1:0)+'|'+(g.rel||''),m=GANZ&&GANZ.get(key);if(m&&m.o===o)return{sp:m.sp,fehlt:[],teile:m.teile};
- var r={w:sp.w,h:sp.h,ax:sp.ax,ay:sp.ay,px:new Uint8Array(sp.px)},teile=1,fehlt=[];
- (o.schilder||[]).forEach(function(s){var id='tempel-'+s.teil+'-'+gr+'-',t=g.rel?malbild(hole(id+g.rel)):null;if(!t)t=malbild(hole(id+'ohne'));if(!t){fehlt.push(id+'ohne');return}
+function ganzBild(b,hole){var g=tempelGanz(b);if(!g)return null;var o=hole(g.id),oi=g.spiegel?hole(g.id+'-i'):null,suf='';if(oi&&malbild(oi)){o=oi;suf='-i'}
+ var sp=malbild(o);if(!sp)return null;var gr=b.gross?'gross':'klein',spiegel=g.spiegel&&!suf,rk=relKurz(g.rel);
+ var key=g.id+'|'+(spiegel?1:0)+suf+'|'+(g.rel||''),m=GANZ&&GANZ.get(key);if(m&&m.o===o)return{sp:m.sp,fehlt:[],teile:m.teile};
+ // Anker der Kartei (Art anlage) = Mitte der Grundfläche; hier gilt die obere Ecke von Feld (0, 0) wie bei allen Gebäuden
+ var F=o.karte&&o.karte.flaeche,r={w:sp.w,h:sp.h,ax:sp.ax-(F?(F.w-F.h)*16:0),ay:sp.ay-(F?(F.w+F.h)*8:0),px:new Uint8Array(sp.px)},teile=1,fehlt=[];
+ (o.schilder||[]).forEach(function(s){var id='tempel-'+s.teil+'-'+gr+'-',t=rk?malbild(hole(id+rk+suf)):null;if(!t)t=malbild(hole(id+'ohne'+suf));if(!t){fehlt.push(id+'ohne'+suf);return}
   blit(r,t,s.x+r.ax,s.y+r.ay);teile++});
  // Schilder sitzen in Bildkoordinaten (x, y ab Anker); gespiegelt wird das fertige Bild, so passen sie mit
- if(g.spiegel)r=spiegelSp(r);if(GANZ){if(GANZ.size>64)GANZ.clear();GANZ.set(key,{o:o,sp:r,teile:teile})}return{sp:r,fehlt:fehlt,teile:teile}}
+ if(spiegel)r=spiegelSp(r);if(GANZ){if(GANZ.size>64)GANZ.clear();GANZ.set(key,{o:o,sp:r,teile:teile})}return{sp:r,fehlt:fehlt,teile:teile}}
 function ordner(el){var n=el.length,RI=new Int32Array(n),RJ=new Int32Array(n),RW=new Int32Array(n),RH=new Int32Array(n),X0=new Int32Array(n),X1=new Int32Array(n),Y0=new Int32Array(n),Y1=new Int32Array(n),
   F=new Map(),FS=128,ein=new Int32Array(n),kopf=new Int32Array(n).fill(-1),nxt=[],zu=[],heap=[],liste=[],phase=0,k=0,c=0;
  var vor=function(a,b){return el[a].t-el[b].t||el[a].n-el[b].n};
@@ -1831,6 +1836,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={TEMPEL:TEMPEL,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={TEMPEL:TEMPEL,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
