@@ -707,6 +707,7 @@ function plan0(opt){
  if(P.kueste)hochstege(P);
  if(P.hoehe)huegelFertig(P);
  if(!elend&&TPL)tempelFest(P,opt);   // N6b3b1 Tempel genau 6 × 8 bzw. 10 × 14, Eingang an der Schmalseite (opt.tempel:false = wie vorher)
+ if(!elend&&TPL&&opt.forum!==false)forumFest(P,opt);   // N6b3c1 Forum genau 14 × 14, Säulenhallen an 3 Seiten (opt.forum:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false&&opt.wasserOffen!==false)wassertoreGerade(P,opt);   // N6b2e2g2 Mauer endet am Fluss mit Türmen an beiden Ufern (opt.wasserOffen:false = wie vorher)
@@ -715,6 +716,70 @@ function plan0(opt){
  delete P.mauertor;delete P.uferAuf;   // nur zum Rechnen der Tore
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
  return P}
+// N6b3c1 Forum (Thomas 23.11.2026): begehbarer Marmorplatz mit Säulenhallen 2 tief an 3 Seiten (außen Läden, gesperrt; innen Säulengang, begehbar), die 4. Seite
+// offen zur Straße (am liebsten zur Hauptstraße), Rednerbühne 4 × 2 mittig vor der hinteren Halle, Reiterstandbild 2 × 2 auf der Achse mitten im freien Platz.
+// Die Hallen bestehen aus Randstücken je Feld (N6b3c2), darum keine feste Größe: je Achse die größte gerade Länge in der alten Forumsfläche (Plan 9 × 9 × 1,5 → 13 oder 14,
+// also 12 oder 14; am Burgberg auch 10, alles auf einer Stufe), damit die Achse mittig zwischen zwei Feldern liegt. Der Stadtplan wächst nicht. Nur Biome mit Pflaster (Mittelmeer), andere Biome später mit ihren Baustilen.
+// Gesperrte Felder (Läden, Bühne, Statue) liegen nie vor einer Tür, die offene Seite hat Weg davor, die Wege der Stadt zerfallen nicht in mehr Stücke als vorher.
+// Abgeschnittene Randfelder bekommen den Boden der Nachbarn (wie tempelFest). Ergebnis P.forum (Rechtecke in Bildfeldern, s. forumArt), Zähler P.forumStat.
+// Bilder: Säulenhallen N6b3c2, Rednerbühne und Statue N6b3c3; bis dahin bleibt alles Marmor, der alte Stand steht auf dem Statuenfeld.
+// Kosten: einmal je Ort im Bildkern, ≤ 16 Lagen × ~200 Felder plus wenige Flutungen der Wegefelder (Abbruch beim ersten Treffer).
+var FORUM={tief:2,rostra:[4,2],statue:[2,2]};
+// Lokale Lage: t = Tiefe ab der hinteren Seite (0 … St−1), u = quer (0 … Su−1); offen = Richtung von der Mitte zur offenen Seite
+function forumMass(F){return F.offen[1]?[F.w,F.h]:[F.h,F.w]}
+function forumLok(F,x,y){var d=F.offen;if(d[1]>0)return[y-F.j,x-F.i];if(d[1]<0)return[F.j+F.h-1-y,F.i+F.w-1-x];if(d[0]>0)return[x-F.i,F.j+F.h-1-y];return[F.i+F.w-1-x,y-F.j]}
+function forumArtLok(Su,St,t,u){if(t<0||u<0||t>=St||u>=Su)return null;if(t<1||u<1||u>Su-2)return 'laden';if(t<2||u<2||u>Su-3)return 'gang';
+ var m=Su>>1,ts=((4+St)>>1)-1;if(t>=2&&t<=3&&u>=m-2&&u<=m+1)return 'rostra';if(t>=ts&&t<=ts+1&&u>=m-1&&u<=m)return 'statue';return 'platz'}
+function forumArtF(F,i,j){if(i<F.i||j<F.j||i>=F.i+F.w||j>=F.j+F.h)return null;var M=forumMass(F),L=forumLok(F,i,j);return forumArtLok(M[0],M[1],L[0],L[1])}
+function forumArt(P,i,j){return P&&P.forum?forumArtF(P.forum,i,j):null}
+// Rechtecke je Art (für Bilder und Spielwege)
+function forumTeile(F){var R={laden:[],gang:[],rostra:[],statue:[]},seen=new Uint8Array(F.w*F.h),x,y;
+ var art=function(x,y){return forumArtF(F,F.i+x,F.j+y)},frei=function(x,y,a){return x<F.w&&y<F.h&&!seen[y*F.w+x]&&art(x,y)===a};
+ for(y=0;y<F.h;y++)for(x=0;x<F.w;x++){var a=art(x,y);if(!R[a]||seen[y*F.w+x])continue;var w=1,h=1;while(frei(x+w,y,a))w++;
+  for(;;){var ok=true;for(var q=0;q<w;q++)if(!frei(x+q,y+h,a)){ok=false;break}if(!ok)break;h++}
+  for(var b=0;b<h;b++)for(var c=0;c<w;c++)seen[(y+b)*F.w+x+c]=1;R[a].push([F.i+x,F.j+y,w,h])}
+ return R}
+function forumFest(P,opt){var B=BIOME[P.biom],st={n:0,fest:0,fehl:0};P.forumStat=st;P.forum=null;if(!B||!B.pflaster)return;
+ var W=P.W,WW=W*W,Z=P.zellen.split(''),HZ=P.hoehe,sn=-1;P.dinge.forEach(function(d,n){if(d.rolle==='forum'&&sn<0)sn=n});if(sn<0)return;
+ var s0=P.dinge[sn],k0=s0.j*W+s0.i;st.n=1;if(Z[k0]!=='m'){st.fehl++;return}
+ var lv=function(k){return HZ?HZ.charCodeAt(k)-48:0};
+ var nb=function(k,d){var x=k%W,y=(k/W)|0;return d===0?(x<W-1?k+1:-1):d===1?(y<W-1?k+W:-1):d===2?(x>0?k-1:-1):(y>0?k-W:-1)};
+ // alte Fläche: zusammenhängende Marmorfelder ab dem Stand
+ var alt=new Uint8Array(WW),q=[k0],h=0,i0=W,i1=-1,j0=W,j1=-1;alt[k0]=1;
+ while(h<q.length){var a=q[h++],ax=a%W,ay=(a/W)|0;if(ax<i0)i0=ax;if(ax>i1)i1=ax;if(ay<j0)j0=ay;if(ay>j1)j1=ay;for(var e=0;e<4;e++){var b=nb(a,e);if(b>=0&&!alt[b]&&Z[b]==='m'){alt[b]=1;q.push(b)}}}
+ var belegt=new Uint8Array(WW),vor=new Uint8Array(WW);
+ P.bauten.forEach(function(o){for(var y=Math.max(0,o.j);y<Math.min(W,o.j+o.h);y++)for(var x=Math.max(0,o.i);x<Math.min(W,o.i+o.w);x++)belegt[y*W+x]=1;
+  if(o.tuer){var fx=o.tuer[0]+o.tuer[2],fy=o.tuer[1]+o.tuer[3];if(fx>=0&&fy>=0&&fx<W&&fy<W)vor[fy*W+fx]=1}});
+ var ding=new Int32Array(WW).fill(-1);P.dinge.forEach(function(d,n){if(n!==sn&&d.i>=0&&d.j>=0&&d.i<W&&d.j<W)ding[d.j*W+d.i]=n});
+ var WEG={s:1,e:1,o:1,m:1},gehbar=function(k,hh){return !belegt[k]&&WEG[Z[k]]&&ding[k]<0&&lv(k)===hh};
+ // Wegestücke zählen (Weg = s, e, o, m ohne Gebäude; Nachbarn höchstens 1 Stufe auseinander); sperr = gesperrte Felder, raus = Felder, die das Forum abgibt (Boden folgt später, zählen als Weg)
+ var stuecke=function(sperr){var v=new Uint8Array(WW),n=0,k,st2=[],weg=function(k){return !belegt[k]&&!sperr[k]&&!!WEG[Z[k]]};
+  for(k=0;k<WW;k++){if(v[k]||!weg(k))continue;n++;v[k]=1;st2.push(k);while(st2.length){var c=st2.pop();for(var d=0;d<4;d++){var m=nb(c,d);if(m>=0&&!v[m]&&weg(m)&&Math.abs(lv(m)-lv(c))<=1){v[m]=1;st2.push(m)}}}}return n};
+ var n0=stuecke(new Uint8Array(WW)),C=[],AW=i1-i0+1,AH=j1-j0+1,D=[[0,1],[1,0],[0,-1],[-1,0]],x,y;
+ // Größen 14, 12, 10 je Achse (höchstens die alte Fläche), am Burgberg alles auf einer Stufe; größere Fläche zuerst
+ for(var FW=Math.min(14,AW&~1);FW>=10;FW-=2)for(var FH=Math.min(14,AH&~1);FH>=10;FH-=2)for(var oy=0;oy<=AH-FH;oy++)for(var ox=0;ox<=AW-FW;ox++){var ri=i0+ox,rj=j0+oy,ok=true,h0=lv(rj*W+ri);
+  for(y=rj;y<rj+FH&&ok;y++)for(x=ri;x<ri+FW&&ok;x++)if(!alt[y*W+x]||belegt[y*W+x]||lv(y*W+x)!==h0)ok=false;if(!ok)continue;
+  D.forEach(function(d){var F={i:ri,j:rj,w:FW,h:FH,offen:d},weg=0,haupt=0,L=d[1]?FW:FH,t,dn=d[0]>0?0:d[1]>0?1:d[0]<0?2:3;
+   for(y=rj;y<rj+FH;y++)for(x=ri;x<ri+FW;x++){var a=forumArtF(F,x,y);if(a!=='platz'&&a!=='gang'&&vor[y*W+x])return}
+   for(t=0;t<L;t++){var px=d[0]>0?ri+FW:d[0]<0?ri-1:ri+t,py=d[1]>0?rj+FH:d[1]<0?rj-1:rj+t;if(px<0||py<0||px>=W||py>=W)continue;var ko=py*W+px;
+    // abgeschnittene Randfelder des alten Forums liegen davor: sie werden Weg, wenn ein Weg anschließt; dann zählt das Feld dahinter
+    if(alt[ko]){ko=nb(ko,dn);if(ko<0)continue}
+    if(gehbar(ko,h0)){weg++;var o2=nb(ko,dn),o3=o2>=0?nb(o2,dn):-1;if(o2>=0&&o3>=0&&gehbar(o2,h0)&&gehbar(o3,h0))haupt++}}
+   if(weg<2)return;
+   C.push({v:20*(196-FW*FH)+2*(L-weg)+(L-haupt)+(ox+oy),F:F,h0:h0})})}
+ C.sort(function(a,b){return a.v-b.v});
+ var best=null,bh=0;for(var c=0;c<C.length&&!best;c++){var F=C[c].F,sp=new Uint8Array(WW);bh=C[c].h0;
+  for(y=F.j;y<F.j+F.h;y++)for(x=F.i;x<F.i+F.w;x++){var a2=forumArtF(F,x,y);if(a2!=='platz'&&a2!=='gang')sp[y*W+x]=1}
+  if(stuecke(sp)<=n0)best=F}
+ if(!best){st.fehl++;return}
+ var h0=bh;
+ // abgeschnittene Felder: Boden der Nachbarn außerhalb des Forums (Weg oder Wiese), sonst Gasse, damit kein Weg abreißt
+ var neu=new Uint8Array(WW),k3;for(y=best.j;y<best.j+best.h;y++)for(x=best.i;x<best.i+best.w;x++)neu[y*W+x]=1;
+ for(k3=0;k3<WW;k3++)if(alt[k3]&&!neu[k3]){var z={},bz=null;for(var e3=0;e3<4;e3++){var q3=nb(k3,e3);if(q3<0||alt[q3]||belegt[q3]||lv(q3)!==lv(k3))continue;var c3=Z[q3];
+   if(c3==='g'||c3==='o'||c3==='s'){z[c3]=(z[c3]||0)+1;if(!bz||z[c3]>z[bz])bz=c3}}Z[k3]=bz||(lv(k3)===h0?'s':'g')}
+ var T=forumTeile(best);best.hz=h0;best.laeden=T.laden;best.gang=T.gang;best.rostra=T.rostra[0];best.statue=T.statue[0];
+ s0.i=best.statue[0];s0.j=best.statue[1];   // bis N6b3c3: der alte Stand steht auf dem Statuenfeld
+ P.zellen=Z.join('');P.forum=best;st.fest++}
 // N6b3b1 Tempel auf genaue Größe (nach Maßstab, Spiegeln und Burgberg): je Tempel Lage (bis 2 Felder verschoben), Ausrichtung (Längsachse i oder j) und Eingangsseite
 // (eine der beiden Schmalseiten) so wählen, dass der Grund frei ist (alter Grund oder Wiese; Bäume und Büsche darauf fallen weg) und vor dem Eingang (Feld vor der Tür, besser
 // auch das Nachbarfeld) Gasse oder Platz liegt; kein fremder Eingang wird zugestellt, am Burgberg alles auf einer Stufe. Bewertung: wenig verschieben, alte Eingangsseite und Achse behalten.
@@ -1591,6 +1656,8 @@ function drehen(P){var W=P.W,z=new Array(W*W),zh=P.hoehe?new Array(W*W):null,zt=
  N.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b));o.i=W-b.j-b.h;o.j=b.i;o.w=b.h;o.h=b.w;o.achse=b.achse==='i'?'j':'i';
   if(b.tuer)o.tuer=[W-1-b.tuer[1],b.tuer[0],-b.tuer[3],b.tuer[2]];return o});
  N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=W-1-d.j;o.j=d.i;if(/^ehrensaeule-/.test(o.id))o.id=/-i$/.test(o.id)?o.id.slice(0,-2):o.id+'-i';return o});N.tor={i:W-1-P.tor.j,j:P.tor.i};   // N6b3b4: Ehrensäulen drehen ihre Achse mit
+ if(P.forum){var R=function(r){return[W-r[1]-r[3],r[0],r[3],r[2]]},F=P.forum,G=N.forum,g0=R([F.i,F.j,F.w,F.h]);G.i=g0[0];G.j=g0[1];G.w=g0[2];G.h=g0[3];   // N6b3c1 Forum dreht mit
+  G.offen=[-F.offen[1],F.offen[0]];G.laeden=F.laeden.map(R);G.gang=F.gang.map(R);G.rostra=R(F.rostra);G.statue=R(F.statue)}
  if(P.wehr)N.wehr=wehrDrehen(P.wehr,W);return N}
 // Wehr (N6b2d) mitdrehen: Zeichenketten wie die Zellen, Richtungen (di, dj) → (−dj, di): s → w, o → s, n → o, w → n
 var DREH={s:'w',o:'s',n:'o',w:'n','.':'.',N:'E',E:'S',S:'W',W:'N'};   // N6b2e2a: Halbfeld-Ecken drehen mit
@@ -1867,6 +1934,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={FORUM:FORUM,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
