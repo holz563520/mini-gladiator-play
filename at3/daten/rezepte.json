@@ -266,6 +266,10 @@
   {"id":"tear-press#1","geb":"tear-press","sek":30,"ein":[{"w":"bacchant-berries","n":3},{"w":"amphorae","n":1}],"aus":[{"w":"bacchants-tears","n":2}]},
   {"id":"hydra-reedbed#1","geb":"hydra-reedbed","sek":120,"quelle":"Sumpf","aus":[{"w":"hydra-reeds","n":4}]},
   {"id":"smoke-curer#1","geb":"smoke-curer","sek":60,"ein":[{"w":"hydra-reeds","n":2},{"oder":["firewood","peat"],"n":1}],"aus":[{"w":"hydra-smoke","n":2}]},
-  {"id":"vice-tent#1","geb":"vice-tent","sek":30,"verkauf":true,"ein":[{"oder":["selenes-creeper","gorgon-dust","lethe-water","bacchants-tears","hydra-smoke","cerberus-root"],"n":1}]}
+  {"id":"vice-tent#1","geb":"vice-tent","sek":30,"verkauf":true,"ein":[{"oder":["selenes-creeper","gorgon-dust","lethe-water","bacchants-tears","hydra-smoke","cerberus-root"],"n":1}]},
+  {"id":"pepper-garden#1","geb":"pepper-garden","sek":120,"aus":[{"w":"pepper","n":1}]},
+  {"id":"mulberry-grove#1","geb":"mulberry-grove","sek":120,"aus":[{"w":"silk","n":1}]},
+  {"id":"papyrus-marsh#1","geb":"papyrus-marsh","sek":120,"quelle":"Sumpf","aus":[{"w":"papyrus","n":3}]},
+  {"id":"cerberus-bed#1","geb":"cerberus-bed","sek":120,"aus":[{"w":"cerberus-root","n":1}]}
  ]
 }
