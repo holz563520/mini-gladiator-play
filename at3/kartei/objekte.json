@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 668,
+ "typMax": 694,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -5871,6 +5871,240 @@
    "name": "Pen (trough)",
    "status": "skizze",
    "datei": "obj/feld-pferch-a.json"
+  },
+  {
+   "id": "feld-hain",
+   "version": 1,
+   "typ": 669,
+   "kat": "boden",
+   "name": "Orchard Floor",
+   "status": "skizze",
+   "datei": "obj/feld-hain.json"
+  },
+  {
+   "id": "feld-hain-a",
+   "version": 1,
+   "typ": 670,
+   "kat": "boden",
+   "name": "Orchard Floor B",
+   "status": "skizze",
+   "datei": "obj/feld-hain-a.json"
+  },
+  {
+   "id": "feld-hain-b",
+   "version": 1,
+   "typ": 671,
+   "kat": "boden",
+   "name": "Orchard Floor (basket)",
+   "status": "skizze",
+   "datei": "obj/feld-hain-b.json"
+  },
+  {
+   "id": "feld-rebe",
+   "version": 1,
+   "typ": 672,
+   "kat": "boden",
+   "name": "Vineyard Soil",
+   "status": "skizze",
+   "datei": "obj/feld-rebe.json"
+  },
+  {
+   "id": "feld-rebe-a",
+   "version": 1,
+   "typ": 673,
+   "kat": "boden",
+   "name": "Vineyard Soil B",
+   "status": "skizze",
+   "datei": "obj/feld-rebe-a.json"
+  },
+  {
+   "id": "feld-rebe-j",
+   "version": 1,
+   "typ": 674,
+   "kat": "boden",
+   "name": "Vineyard Soil J",
+   "status": "skizze",
+   "datei": "obj/feld-rebe-j.json"
+  },
+  {
+   "id": "feld-rebe-j-a",
+   "version": 1,
+   "typ": 675,
+   "kat": "boden",
+   "name": "Vineyard Soil B J",
+   "status": "skizze",
+   "datei": "obj/feld-rebe-j-a.json"
+  },
+  {
+   "id": "feld-bacchant",
+   "version": 1,
+   "typ": 676,
+   "kat": "boden",
+   "name": "Bacchant Ground",
+   "status": "skizze",
+   "datei": "obj/feld-bacchant.json"
+  },
+  {
+   "id": "feld-bacchant-a",
+   "version": 1,
+   "typ": 677,
+   "kat": "boden",
+   "name": "Bacchant Ground (puddle)",
+   "status": "skizze",
+   "datei": "obj/feld-bacchant-a.json"
+  },
+  {
+   "id": "hain-olive",
+   "version": 2,
+   "typ": 678,
+   "kat": "baum",
+   "name": "Grove Olive",
+   "status": "uebernommen",
+   "datei": "obj/hain-olive.json"
+  },
+  {
+   "id": "hain-olive-a",
+   "version": 2,
+   "typ": 679,
+   "kat": "baum",
+   "name": "Grove Olive (crutch)",
+   "status": "uebernommen",
+   "datei": "obj/hain-olive-a.json"
+  },
+  {
+   "id": "hain-olive-b",
+   "version": 2,
+   "typ": 680,
+   "kat": "baum",
+   "name": "Grove Olive (ladder)",
+   "status": "uebernommen",
+   "datei": "obj/hain-olive-b.json"
+  },
+  {
+   "id": "hain-feige",
+   "version": 1,
+   "typ": 681,
+   "kat": "baum",
+   "name": "Grove Fig",
+   "status": "uebernommen",
+   "datei": "obj/hain-feige.json"
+  },
+  {
+   "id": "hain-feige-a",
+   "version": 1,
+   "typ": 682,
+   "kat": "baum",
+   "name": "Grove Fig (broken)",
+   "status": "uebernommen",
+   "datei": "obj/hain-feige-a.json"
+  },
+  {
+   "id": "hain-mandel",
+   "version": 1,
+   "typ": 683,
+   "kat": "baum",
+   "name": "Grove Almond",
+   "status": "uebernommen",
+   "datei": "obj/hain-mandel.json"
+  },
+  {
+   "id": "hain-mandel-a",
+   "version": 1,
+   "typ": 684,
+   "kat": "baum",
+   "name": "Grove Almond (pole)",
+   "status": "uebernommen",
+   "datei": "obj/hain-mandel-a.json"
+  },
+  {
+   "id": "hain-stumpf",
+   "version": 1,
+   "typ": 685,
+   "kat": "baum",
+   "name": "Felled Grove Tree",
+   "status": "uebernommen",
+   "datei": "obj/hain-stumpf.json"
+  },
+  {
+   "id": "rebstock",
+   "version": 1,
+   "typ": 686,
+   "kat": "baum",
+   "name": "Vine Row",
+   "status": "uebernommen",
+   "datei": "obj/rebstock.json"
+  },
+  {
+   "id": "rebstock-a",
+   "version": 1,
+   "typ": 687,
+   "kat": "baum",
+   "name": "Vine Row B",
+   "status": "uebernommen",
+   "datei": "obj/rebstock-a.json"
+  },
+  {
+   "id": "rebstock-b",
+   "version": 1,
+   "typ": 688,
+   "kat": "baum",
+   "name": "Vine Row (broken post)",
+   "status": "uebernommen",
+   "datei": "obj/rebstock-b.json"
+  },
+  {
+   "id": "rebstock-j",
+   "version": 1,
+   "typ": 689,
+   "kat": "baum",
+   "name": "Vine Row J",
+   "status": "uebernommen",
+   "datei": "obj/rebstock-j.json"
+  },
+  {
+   "id": "rebstock-j-a",
+   "version": 1,
+   "typ": 690,
+   "kat": "baum",
+   "name": "Vine Row B J",
+   "status": "uebernommen",
+   "datei": "obj/rebstock-j-a.json"
+  },
+  {
+   "id": "rebstock-j-b",
+   "version": 1,
+   "typ": 691,
+   "kat": "baum",
+   "name": "Vine Row (broken post) J",
+   "status": "uebernommen",
+   "datei": "obj/rebstock-j-b.json"
+  },
+  {
+   "id": "bacchant-ranke",
+   "version": 1,
+   "typ": 692,
+   "kat": "baum",
+   "name": "Bacchant Vine",
+   "status": "uebernommen",
+   "datei": "obj/bacchant-ranke.json"
+  },
+  {
+   "id": "bacchant-ranke-a",
+   "version": 1,
+   "typ": 693,
+   "kat": "baum",
+   "name": "Bacchant Vine (amphora)",
+   "status": "uebernommen",
+   "datei": "obj/bacchant-ranke-a.json"
+  },
+  {
+   "id": "bacchant-ranke-b",
+   "version": 1,
+   "typ": 694,
+   "kat": "baum",
+   "name": "Bacchant Vine (altar)",
+   "status": "uebernommen",
+   "datei": "obj/bacchant-ranke-b.json"
   }
  ]
 }
