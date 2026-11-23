@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 694,
+ "typMax": 750,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -6105,6 +6105,510 @@
    "name": "Bacchant Vine (altar)",
    "status": "uebernommen",
    "datei": "obj/bacchant-ranke-b.json"
+  },
+  {
+   "id": "hof-cottage-1-sued",
+   "version": 1,
+   "typ": 695,
+   "kat": "anlage",
+   "name": "Cottage 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-1-sued.json"
+  },
+  {
+   "id": "hof-cottage-1-ost",
+   "version": 1,
+   "typ": 696,
+   "kat": "anlage",
+   "name": "Cottage 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-1-ost.json"
+  },
+  {
+   "id": "hof-cottage-1-nord",
+   "version": 1,
+   "typ": 697,
+   "kat": "anlage",
+   "name": "Cottage 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-1-nord.json"
+  },
+  {
+   "id": "hof-cottage-1-west",
+   "version": 1,
+   "typ": 698,
+   "kat": "anlage",
+   "name": "Cottage 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-1-west.json"
+  },
+  {
+   "id": "hof-cottage-2-sued",
+   "version": 1,
+   "typ": 699,
+   "kat": "anlage",
+   "name": "Cottage 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-2-sued.json"
+  },
+  {
+   "id": "hof-cottage-2-ost",
+   "version": 1,
+   "typ": 700,
+   "kat": "anlage",
+   "name": "Cottage 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-2-ost.json"
+  },
+  {
+   "id": "hof-cottage-2-nord",
+   "version": 1,
+   "typ": 701,
+   "kat": "anlage",
+   "name": "Cottage 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-2-nord.json"
+  },
+  {
+   "id": "hof-cottage-2-west",
+   "version": 1,
+   "typ": 702,
+   "kat": "anlage",
+   "name": "Cottage 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-2-west.json"
+  },
+  {
+   "id": "hof-cottage-3-sued",
+   "version": 1,
+   "typ": 703,
+   "kat": "anlage",
+   "name": "Cottage 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-3-sued.json"
+  },
+  {
+   "id": "hof-cottage-3-ost",
+   "version": 1,
+   "typ": 704,
+   "kat": "anlage",
+   "name": "Cottage 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-3-ost.json"
+  },
+  {
+   "id": "hof-cottage-3-nord",
+   "version": 1,
+   "typ": 705,
+   "kat": "anlage",
+   "name": "Cottage 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-3-nord.json"
+  },
+  {
+   "id": "hof-cottage-3-west",
+   "version": 1,
+   "typ": 706,
+   "kat": "anlage",
+   "name": "Cottage 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-cottage-3-west.json"
+  },
+  {
+   "id": "hof-farmstead-1-sued",
+   "version": 1,
+   "typ": 707,
+   "kat": "anlage",
+   "name": "Farmstead 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-1-sued.json"
+  },
+  {
+   "id": "hof-farmstead-1-ost",
+   "version": 1,
+   "typ": 708,
+   "kat": "anlage",
+   "name": "Farmstead 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-1-ost.json"
+  },
+  {
+   "id": "hof-farmstead-1-nord",
+   "version": 1,
+   "typ": 709,
+   "kat": "anlage",
+   "name": "Farmstead 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-1-nord.json"
+  },
+  {
+   "id": "hof-farmstead-1-west",
+   "version": 1,
+   "typ": 710,
+   "kat": "anlage",
+   "name": "Farmstead 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-1-west.json"
+  },
+  {
+   "id": "hof-farmstead-2-sued",
+   "version": 1,
+   "typ": 711,
+   "kat": "anlage",
+   "name": "Farmstead 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-2-sued.json"
+  },
+  {
+   "id": "hof-farmstead-2-ost",
+   "version": 1,
+   "typ": 712,
+   "kat": "anlage",
+   "name": "Farmstead 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-2-ost.json"
+  },
+  {
+   "id": "hof-farmstead-2-nord",
+   "version": 1,
+   "typ": 713,
+   "kat": "anlage",
+   "name": "Farmstead 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-2-nord.json"
+  },
+  {
+   "id": "hof-farmstead-2-west",
+   "version": 1,
+   "typ": 714,
+   "kat": "anlage",
+   "name": "Farmstead 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-2-west.json"
+  },
+  {
+   "id": "hof-farmstead-3-sued",
+   "version": 1,
+   "typ": 715,
+   "kat": "anlage",
+   "name": "Farmstead 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-3-sued.json"
+  },
+  {
+   "id": "hof-farmstead-3-ost",
+   "version": 1,
+   "typ": 716,
+   "kat": "anlage",
+   "name": "Farmstead 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-3-ost.json"
+  },
+  {
+   "id": "hof-farmstead-3-nord",
+   "version": 1,
+   "typ": 717,
+   "kat": "anlage",
+   "name": "Farmstead 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-3-nord.json"
+  },
+  {
+   "id": "hof-farmstead-3-west",
+   "version": 1,
+   "typ": 718,
+   "kat": "anlage",
+   "name": "Farmstead 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-farmstead-3-west.json"
+  },
+  {
+   "id": "hof-villa-rustica-1-sued",
+   "version": 1,
+   "typ": 719,
+   "kat": "anlage",
+   "name": "Villa Rustica 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-villa-rustica-1-sued.json"
+  },
+  {
+   "id": "hof-villa-rustica-1-ost",
+   "version": 1,
+   "typ": 720,
+   "kat": "anlage",
+   "name": "Villa Rustica 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-villa-rustica-1-ost.json"
+  },
+  {
+   "id": "hof-villa-rustica-1-nord",
+   "version": 1,
+   "typ": 721,
+   "kat": "anlage",
+   "name": "Villa Rustica 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-villa-rustica-1-nord.json"
+  },
+  {
+   "id": "hof-villa-rustica-1-west",
+   "version": 1,
+   "typ": 722,
+   "kat": "anlage",
+   "name": "Villa Rustica 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-villa-rustica-1-west.json"
+  },
+  {
+   "id": "hof-villa-rustica-2-sued",
+   "version": 1,
+   "typ": 723,
+   "kat": "anlage",
+   "name": "Villa Rustica 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-villa-rustica-2-sued.json"
+  },
+  {
+   "id": "hof-villa-rustica-2-ost",
+   "version": 1,
+   "typ": 724,
+   "kat": "anlage",
+   "name": "Villa Rustica 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-villa-rustica-2-ost.json"
+  },
+  {
+   "id": "hof-villa-rustica-2-nord",
+   "version": 1,
+   "typ": 725,
+   "kat": "anlage",
+   "name": "Villa Rustica 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-villa-rustica-2-nord.json"
+  },
+  {
+   "id": "hof-villa-rustica-2-west",
+   "version": 1,
+   "typ": 726,
+   "kat": "anlage",
+   "name": "Villa Rustica 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-villa-rustica-2-west.json"
+  },
+  {
+   "id": "hof-herders-camp-1-sued",
+   "version": 1,
+   "typ": 727,
+   "kat": "anlage",
+   "name": "Herders Camp 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-herders-camp-1-sued.json"
+  },
+  {
+   "id": "hof-herders-camp-1-ost",
+   "version": 1,
+   "typ": 728,
+   "kat": "anlage",
+   "name": "Herders Camp 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-herders-camp-1-ost.json"
+  },
+  {
+   "id": "hof-herders-camp-1-nord",
+   "version": 1,
+   "typ": 729,
+   "kat": "anlage",
+   "name": "Herders Camp 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-herders-camp-1-nord.json"
+  },
+  {
+   "id": "hof-herders-camp-1-west",
+   "version": 1,
+   "typ": 730,
+   "kat": "anlage",
+   "name": "Herders Camp 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-herders-camp-1-west.json"
+  },
+  {
+   "id": "hof-herders-camp-2-sued",
+   "version": 1,
+   "typ": 731,
+   "kat": "anlage",
+   "name": "Herders Camp 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-herders-camp-2-sued.json"
+  },
+  {
+   "id": "hof-herders-camp-2-ost",
+   "version": 1,
+   "typ": 732,
+   "kat": "anlage",
+   "name": "Herders Camp 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-herders-camp-2-ost.json"
+  },
+  {
+   "id": "hof-herders-camp-2-nord",
+   "version": 1,
+   "typ": 733,
+   "kat": "anlage",
+   "name": "Herders Camp 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-herders-camp-2-nord.json"
+  },
+  {
+   "id": "hof-herders-camp-2-west",
+   "version": 1,
+   "typ": 734,
+   "kat": "anlage",
+   "name": "Herders Camp 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-herders-camp-2-west.json"
+  },
+  {
+   "id": "pferch-zaun-nord",
+   "version": 1,
+   "typ": 735,
+   "kat": "einrichtung",
+   "name": "Pen Fence N",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-nord.json"
+  },
+  {
+   "id": "pferch-zaun-nord-a",
+   "version": 1,
+   "typ": 736,
+   "kat": "einrichtung",
+   "name": "Pen Fence Patched N",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-nord-a.json"
+  },
+  {
+   "id": "pferch-zaun-nord-b",
+   "version": 1,
+   "typ": 737,
+   "kat": "einrichtung",
+   "name": "Pen Fence Broken N",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-nord-b.json"
+  },
+  {
+   "id": "pferch-gatter-nord",
+   "version": 1,
+   "typ": 738,
+   "kat": "einrichtung",
+   "name": "Pen Gate N",
+   "status": "uebernommen",
+   "datei": "obj/pferch-gatter-nord.json"
+  },
+  {
+   "id": "pferch-zaun-west",
+   "version": 1,
+   "typ": 739,
+   "kat": "einrichtung",
+   "name": "Pen Fence W",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-west.json"
+  },
+  {
+   "id": "pferch-zaun-west-a",
+   "version": 1,
+   "typ": 740,
+   "kat": "einrichtung",
+   "name": "Pen Fence Patched W",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-west-a.json"
+  },
+  {
+   "id": "pferch-zaun-west-b",
+   "version": 1,
+   "typ": 741,
+   "kat": "einrichtung",
+   "name": "Pen Fence Broken W",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-west-b.json"
+  },
+  {
+   "id": "pferch-gatter-west",
+   "version": 1,
+   "typ": 742,
+   "kat": "einrichtung",
+   "name": "Pen Gate W",
+   "status": "uebernommen",
+   "datei": "obj/pferch-gatter-west.json"
+  },
+  {
+   "id": "pferch-zaun-sued",
+   "version": 1,
+   "typ": 743,
+   "kat": "einrichtung",
+   "name": "Pen Fence S",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-sued.json"
+  },
+  {
+   "id": "pferch-zaun-sued-a",
+   "version": 1,
+   "typ": 744,
+   "kat": "einrichtung",
+   "name": "Pen Fence Patched S",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-sued-a.json"
+  },
+  {
+   "id": "pferch-zaun-sued-b",
+   "version": 1,
+   "typ": 745,
+   "kat": "einrichtung",
+   "name": "Pen Fence Broken S",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-sued-b.json"
+  },
+  {
+   "id": "pferch-gatter-sued",
+   "version": 1,
+   "typ": 746,
+   "kat": "einrichtung",
+   "name": "Pen Gate S",
+   "status": "uebernommen",
+   "datei": "obj/pferch-gatter-sued.json"
+  },
+  {
+   "id": "pferch-zaun-ost",
+   "version": 1,
+   "typ": 747,
+   "kat": "einrichtung",
+   "name": "Pen Fence E",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-ost.json"
+  },
+  {
+   "id": "pferch-zaun-ost-a",
+   "version": 1,
+   "typ": 748,
+   "kat": "einrichtung",
+   "name": "Pen Fence Patched E",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-ost-a.json"
+  },
+  {
+   "id": "pferch-zaun-ost-b",
+   "version": 1,
+   "typ": 749,
+   "kat": "einrichtung",
+   "name": "Pen Fence Broken E",
+   "status": "uebernommen",
+   "datei": "obj/pferch-zaun-ost-b.json"
+  },
+  {
+   "id": "pferch-gatter-ost",
+   "version": 1,
+   "typ": 750,
+   "kat": "einrichtung",
+   "name": "Pen Gate E",
+   "status": "uebernommen",
+   "datei": "obj/pferch-gatter-ost.json"
   }
  ]
 }
