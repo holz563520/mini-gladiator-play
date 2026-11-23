@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 764,
+ "typMax": 799,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -6735,6 +6735,321 @@
    "name": "Farm Olive Mill W",
    "status": "uebernommen",
    "datei": "obj/hofpresse-oel-west.json"
+  },
+  {
+   "id": "posten-zubehoer-mine-2-sued",
+   "version": 1,
+   "typ": 765,
+   "kat": "anlage",
+   "name": "Hut Gear Mine 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-mine-2-sued.json"
+  },
+  {
+   "id": "posten-huette-2-1-sued",
+   "version": 1,
+   "typ": 766,
+   "kat": "anlage",
+   "name": "Outpost Hut 2 1 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-2-1-sued.json"
+  },
+  {
+   "id": "posten-huette-2-2-sued",
+   "version": 1,
+   "typ": 767,
+   "kat": "anlage",
+   "name": "Outpost Hut 2 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-2-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-mine-2-ost",
+   "version": 1,
+   "typ": 768,
+   "kat": "anlage",
+   "name": "Hut Gear Mine 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-mine-2-ost.json"
+  },
+  {
+   "id": "posten-huette-2-1-ost",
+   "version": 1,
+   "typ": 769,
+   "kat": "anlage",
+   "name": "Outpost Hut 2 1 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-2-1-ost.json"
+  },
+  {
+   "id": "posten-huette-2-2-ost",
+   "version": 1,
+   "typ": 770,
+   "kat": "anlage",
+   "name": "Outpost Hut 2 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-2-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-mine-2-nord",
+   "version": 1,
+   "typ": 771,
+   "kat": "anlage",
+   "name": "Hut Gear Mine 2 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-mine-2-nord.json"
+  },
+  {
+   "id": "posten-huette-2-1-nord",
+   "version": 1,
+   "typ": 772,
+   "kat": "anlage",
+   "name": "Outpost Hut 2 1 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-2-1-nord.json"
+  },
+  {
+   "id": "posten-huette-2-2-nord",
+   "version": 1,
+   "typ": 773,
+   "kat": "anlage",
+   "name": "Outpost Hut 2 2 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-2-2-nord.json"
+  },
+  {
+   "id": "posten-huette-2-1-west",
+   "version": 1,
+   "typ": 774,
+   "kat": "anlage",
+   "name": "Outpost Hut 2 1 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-2-1-west.json"
+  },
+  {
+   "id": "posten-huette-2-2-west",
+   "version": 1,
+   "typ": 775,
+   "kat": "anlage",
+   "name": "Outpost Hut 2 2 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-2-2-west.json"
+  },
+  {
+   "id": "posten-zubehoer-mine-3-sued",
+   "version": 1,
+   "typ": 776,
+   "kat": "anlage",
+   "name": "Hut Gear Mine 3 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-mine-3-sued.json"
+  },
+  {
+   "id": "posten-huette-3-1-sued",
+   "version": 1,
+   "typ": 777,
+   "kat": "anlage",
+   "name": "Outpost Hut 3 1 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-3-1-sued.json"
+  },
+  {
+   "id": "posten-huette-3-2-sued",
+   "version": 1,
+   "typ": 778,
+   "kat": "anlage",
+   "name": "Outpost Hut 3 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-3-2-sued.json"
+  },
+  {
+   "id": "posten-zubehoer-mine-3-ost",
+   "version": 1,
+   "typ": 779,
+   "kat": "anlage",
+   "name": "Hut Gear Mine 3 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-mine-3-ost.json"
+  },
+  {
+   "id": "posten-huette-3-1-ost",
+   "version": 1,
+   "typ": 780,
+   "kat": "anlage",
+   "name": "Outpost Hut 3 1 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-3-1-ost.json"
+  },
+  {
+   "id": "posten-huette-3-2-ost",
+   "version": 1,
+   "typ": 781,
+   "kat": "anlage",
+   "name": "Outpost Hut 3 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-3-2-ost.json"
+  },
+  {
+   "id": "posten-zubehoer-mine-3-nord",
+   "version": 1,
+   "typ": 782,
+   "kat": "anlage",
+   "name": "Hut Gear Mine 3 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-zubehoer-mine-3-nord.json"
+  },
+  {
+   "id": "posten-huette-3-1-nord",
+   "version": 1,
+   "typ": 783,
+   "kat": "anlage",
+   "name": "Outpost Hut 3 1 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-3-1-nord.json"
+  },
+  {
+   "id": "posten-huette-3-2-nord",
+   "version": 1,
+   "typ": 784,
+   "kat": "anlage",
+   "name": "Outpost Hut 3 2 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-3-2-nord.json"
+  },
+  {
+   "id": "posten-huette-3-1-west",
+   "version": 1,
+   "typ": 785,
+   "kat": "anlage",
+   "name": "Outpost Hut 3 1 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-3-1-west.json"
+  },
+  {
+   "id": "posten-huette-3-2-west",
+   "version": 1,
+   "typ": 786,
+   "kat": "anlage",
+   "name": "Outpost Hut 3 2 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-huette-3-2-west.json"
+  },
+  {
+   "id": "posten-stollen-1-sued",
+   "version": 2,
+   "typ": 787,
+   "kat": "anlage",
+   "name": "Mine Adit 1 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-stollen-1-sued.json"
+  },
+  {
+   "id": "posten-stollen-1-ost",
+   "version": 2,
+   "typ": 788,
+   "kat": "anlage",
+   "name": "Mine Adit 1 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-stollen-1-ost.json"
+  },
+  {
+   "id": "posten-stollen-1-nord",
+   "version": 2,
+   "typ": 789,
+   "kat": "anlage",
+   "name": "Mine Adit 1 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-stollen-1-nord.json"
+  },
+  {
+   "id": "posten-stollen-1-west",
+   "version": 2,
+   "typ": 790,
+   "kat": "anlage",
+   "name": "Mine Adit 1 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-stollen-1-west.json"
+  },
+  {
+   "id": "posten-stollen-2-sued",
+   "version": 2,
+   "typ": 791,
+   "kat": "anlage",
+   "name": "Mine Adit 2 S",
+   "status": "uebernommen",
+   "datei": "obj/posten-stollen-2-sued.json"
+  },
+  {
+   "id": "posten-stollen-2-ost",
+   "version": 2,
+   "typ": 792,
+   "kat": "anlage",
+   "name": "Mine Adit 2 E",
+   "status": "uebernommen",
+   "datei": "obj/posten-stollen-2-ost.json"
+  },
+  {
+   "id": "posten-stollen-2-nord",
+   "version": 2,
+   "typ": 793,
+   "kat": "anlage",
+   "name": "Mine Adit 2 N",
+   "status": "uebernommen",
+   "datei": "obj/posten-stollen-2-nord.json"
+  },
+  {
+   "id": "posten-stollen-2-west",
+   "version": 2,
+   "typ": 794,
+   "kat": "anlage",
+   "name": "Mine Adit 2 W",
+   "status": "uebernommen",
+   "datei": "obj/posten-stollen-2-west.json"
+  },
+  {
+   "id": "mine-erzhalde",
+   "version": 1,
+   "typ": 795,
+   "kat": "einrichtung",
+   "name": "Ore Heap",
+   "status": "uebernommen",
+   "datei": "obj/mine-erzhalde.json"
+  },
+  {
+   "id": "mine-erzhalde-a",
+   "version": 1,
+   "typ": 796,
+   "kat": "einrichtung",
+   "name": "Ore Heap Spilled",
+   "status": "uebernommen",
+   "datei": "obj/mine-erzhalde-a.json"
+  },
+  {
+   "id": "mine-erzkoerbe",
+   "version": 1,
+   "typ": 797,
+   "kat": "einrichtung",
+   "name": "Ore Baskets",
+   "status": "uebernommen",
+   "datei": "obj/mine-erzkoerbe.json"
+  },
+  {
+   "id": "mine-scheidebank",
+   "version": 1,
+   "typ": 798,
+   "kat": "einrichtung",
+   "name": "Sorting Bench",
+   "status": "uebernommen",
+   "datei": "obj/mine-scheidebank.json"
+  },
+  {
+   "id": "mine-grubenholz",
+   "version": 1,
+   "typ": 799,
+   "kat": "einrichtung",
+   "name": "Pit Props",
+   "status": "uebernommen",
+   "datei": "obj/mine-grubenholz.json"
   }
  ]
 }
