@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 607,
+ "typMax": 613,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -5322,6 +5322,60 @@
    "name": "Governor Banner Blank I",
    "status": "uebernommen",
    "datei": "obj/statthalter-banner-ohne-i.json"
+  },
+  {
+   "id": "senat-vorn",
+   "version": 1,
+   "typ": 608,
+   "kat": "anlage",
+   "name": "Senate",
+   "status": "uebernommen",
+   "datei": "obj/senat-vorn.json"
+  },
+  {
+   "id": "senat-hinten",
+   "version": 1,
+   "typ": 609,
+   "kat": "anlage",
+   "name": "Senate N",
+   "status": "uebernommen",
+   "datei": "obj/senat-hinten.json"
+  },
+  {
+   "id": "senat-vorn-i",
+   "version": 1,
+   "typ": 610,
+   "kat": "anlage",
+   "name": "Senate E",
+   "status": "uebernommen",
+   "datei": "obj/senat-vorn-i.json"
+  },
+  {
+   "id": "senat-hinten-i",
+   "version": 1,
+   "typ": 611,
+   "kat": "anlage",
+   "name": "Senate W",
+   "status": "uebernommen",
+   "datei": "obj/senat-hinten-i.json"
+  },
+  {
+   "id": "senat-banner-ohne",
+   "version": 1,
+   "typ": 612,
+   "kat": "anlage",
+   "name": "Senate Banner Blank",
+   "status": "uebernommen",
+   "datei": "obj/senat-banner-ohne.json"
+  },
+  {
+   "id": "senat-banner-ohne-i",
+   "version": 1,
+   "typ": 613,
+   "kat": "anlage",
+   "name": "Senate Banner Blank I",
+   "status": "uebernommen",
+   "datei": "obj/senat-banner-ohne-i.json"
   }
  ]
 }
