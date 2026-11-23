@@ -25,7 +25,9 @@ var HOF={'wheat-farm':1,'barley-farm':1,'oat-farm':1,'sheep-farm':1,'cattle-ranc
 var SPITZ={mine:3,stein:3,holz:3,nass:3,jagd:3,hof:3};      // Zahl der Spitznamen je Gruppe (sprache/en.json posten.spitz.<gruppe>.<n>)
 // Anzahl je Ortsgröße G0–G7 (Vorschlag): Außenposten, Gehöfte; höchste Gebäudestufe wie orte.js
 var NV=[0,0,1,1,2,3,4,5], NH=[0,0,1,1,2,2,3,3], STUFE=[0,0,2,3,4,5,6,6], MAXP=8;
-var ABST=300, EIGEN=40, HALB=[0,0,25,54,66,87,129,174], RES=[0,0,8,8,10,12,20,25], FERN=5, VERSUCHE=6;
+// N6b4b2 gemessen (13 Biome × 2 Seeds, mit Fluss und Küste, größte Einwohnerzahl je Größe): halbe Bildbreite mit Flurgürtel bis 35, 42, 112, 114, 162, 228 (Wüste und Tundra brauchen viele Felder);
+// RES dafür angehoben (alt 8, 8, 10, 12, 20, 25). Seed 563520: alle 11.932 Posten unverändert (Abstände reichen).
+var ABST=300, EIGEN=40, HALB=[0,0,25,54,66,87,129,174], RES=[0,0,12,8,52,40,45,66], FERN=5, VERSUCHE=6;
 function halb(g){return(HALB[g]||HALB[7])+(RES[g]||RES[7])}
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
 function zz(seed,zelle,salz){return mix((seed>>>0)^Math.imul(zelle+1,0x27d4eb2f)^Math.imul(salz+1,0x165667b1))}

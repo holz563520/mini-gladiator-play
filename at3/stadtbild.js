@@ -180,6 +180,7 @@ function plan0(opt){
  if(opt.aussen!==false&&!elend){var ea=null;for(var zug=0;zug<12&&!ea;zug++)ea=aussen(ergebnis,zug);if(!ea)throw new Error('Außenring passt nicht');ergebnis=ea}
  function aussen(E,zug){
   var Wi=E.W,MK=E.maske,TO=E.tore,ra=rng(hashT([seed,art,opt.biom,einw,'aussen'].join('|'))),D=daten(opt),gST=SL().STUFE[g]||1,mit=g>=MAUER_AB;
+  var FLUR=flurStart(opt,einw,FL,Li);   // N6b4b2: Felder nach Bedarf statt HOF_JE (opt.flur:false = wie vorher)
   // N6b2c4a2: Stinktor und Gräberstraße an zwei verschiedenen Haupttoren; Zusatztore bekommen nur Gehöfte
   // Küste (N6b2c4c2): Seite im Plan (Weiler und Dörfer: die der zwei möglichen, an der ein Weg hinausführt), uS = Abstand vom Rand des Plans innen zur See hin,
   // lS = Lage längs der Küste. Ab uK: Kai bzw. Strand (2 Felder), ab uK + 2 Meer.
@@ -196,12 +197,12 @@ function plan0(opt){
   var gewerbe=[],tote=[],friedhof=[],buden=0,hoefe=[];
   Li.gebaeude.forEach(function(x){for(var k=0;k<x.n;k++){
    if(x.lage==='tor'){if(x.id==='shack')buden++;else if(x.id==='cemetery')friedhof.push(x);else if(TOTE[x.id])tote.push(x);else gewerbe.push(x)}
-   else if(x.lage==='umland'&&!(stadtK&&HAFEN[x.id]))hoefe.push({id:x.id,w:x.w,h:x.h,liste:true})}});
+   else if(x.lage==='umland'&&!(stadtK&&HAFEN[x.id])){if(FLUR&&FLUR.kulturVon[x.id])FLUR.liste.push({id:x.id,w:x.w,h:x.h});else hoefe.push({id:x.id,w:x.w,h:x.h,liste:true})}}});
   // Zusätzliche Felder und Weiden nach Einwohnern (Vorschlag: 1 Hof je HOF_JE Einwohner), Arten aus dem Biom, abwechselnd Feld und Herde
   var passt=function(x){return x&&x.hof&&(x.gruppe==='felder'||x.gruppe==='vieh')&&(x.biom.indexOf('alle')>=0||x.biom.indexOf(opt.biom)>=0)&&(x.stufe||1)<=gST};
   var FA=D.L.filter(function(x){return passt(x)&&x.gruppe==='felder'&&!HAIN[x.id]}).map(function(x){return x.id}).sort(),
       VA=D.L.filter(function(x){return passt(x)&&x.gruppe==='vieh'}).map(function(x){return x.id}).sort();
-  var nx=Math.floor(einw/HOF_JE);for(var k=0;k<nx;k++){var L2=(k%2&&VA.length)||!FA.length?VA:FA;if(!L2.length)break;var id=L2[Math.floor(ra()*L2.length)],fs=SL().fuss(D.G[id]);hoefe.push({id:id,w:fs[0],h:fs[1],liste:false})}
+  var nx=FLUR?0:Math.floor(einw/HOF_JE);for(var k=0;k<nx;k++){var L2=(k%2&&VA.length)||!FA.length?VA:FA;if(!L2.length)break;var id=L2[Math.floor(ra()*L2.length)],fs=SL().fuss(D.G[id]);hoefe.push({id:id,w:fs[0],h:fs[1],liste:false})}
   var graeber=mit&&(tote.length||friedhof.length)?Math.min(GRAB_MAX,Math.ceil(einw/GRAB_JE)):0;
   // Lage je Tor: u = Abstand vom Rand des Plans innen nach außen (negativ = zwischen Mauer und Rand, dort ist Umland), l = quer (Straße l 0 und 1).
   // Erst alles in Koordinaten des Plans innen (auch negativ) mit Belegungsprüfung legen, dann die Ringbreite R bestimmen.
@@ -280,7 +281,13 @@ function plan0(opt){
   var ext=0;occ.forEach(function(v){var x=Math.floor(v/8192)-OFF,y=v%8192-OFF,e2=Math.max(-x,-y,x-Wi+1,y-Wi+1);if(e2>ext)ext=e2});
   if(fd&&fd.u1+fd.b>ext)ext=fd.u1+fd.b;
   if(ks!=null&&uK+2+(stadtK?SEE:6)>ext)ext=uK+2+(stadtK?SEE:6);   // Meer: Kai bzw. Strand und genug Wasser für Molen und Stege
-  var R=Math.max(4,ext+2);if(opt.zeilen)opt.zeilen.push(cur.slice());
+  var R=Math.max(4,ext+2),flurB=0;if(opt.zeilen)opt.zeilen.push(cur.slice());
+  // N6b4b2 Flurgürtel: so viele Ringe außen dazu, bis genug freie Fläche (in Bildfeldern ×F²) für Felder, Höfe und Feldwege da ist (FLUR_PLATZ × Felder)
+  if(FLUR){var zielN=flurBedarf(FLUR,g)*FLUR_PLATZ*(1+.3*(opt.flurV|0))/(F*F),hab=0,dd;
+   for(dd=R;hab<zielN&&dd<R+FLUR_MAX;dd++){var xx2,yy2;   // Ring im Abstand dd vom Plan innen (Chebyshev), Koordinaten wie frei()
+    for(xx2=-dd;xx2<Wi+dd;xx2++){if(frei(xx2,-dd))hab++;if(frei(xx2,Wi+dd-1))hab++}
+    for(yy2=-dd+1;yy2<Wi+dd-1;yy2++){if(frei(-dd,yy2))hab++;if(frei(Wi+dd-1,yy2))hab++}}
+   flurB=dd-R;flurB+=flurB&1;FLUR.ab=R;R+=flurB}   // gerade Breite: der Maßstab 1,5 rundet den Ort innen dann genau wie ohne Gürtel
   var W=Wi+2*R,Z=new Array(W*W).fill('g'),belegt=new Uint8Array(W*W),at=function(i,j){return j*W+i},keinBaum=new Uint8Array(W*W),neu=new Uint8Array(W*W);
   for(var j=0;j<Wi;j++)for(var i=0;i<Wi;i++)Z[at(i+R,j+R)]=E.Z[j*Wi+i];
   var verschieben=function(o){var q=JSON.parse(JSON.stringify(o));q.i+=R;q.j+=R;if(q.tuer){q.tuer[0]+=R;q.tuer[1]+=R}return q};
@@ -354,13 +361,14 @@ function plan0(opt){
     for(var as=1+Math.floor(rk()*3);as<Wi-1;as+=4+Math.floor(rk()*4)){if(block[as]||istFluss(as)||istFluss(as-1)||istFluss(as+1))continue;steg(as,3+Math.floor(rk()*3));sperr(as,2)}}
    else TO.forEach(function(t){if(t.s!==ks)return;for(var u=uK;u<uK+2;u++)for(var l=0;l<2;l++){var k=zK(u,t.c+l);if(k>=0&&Z[k]==='u')Z[k]='s'}steg(t.c+(rk()<.5?0:1),3+Math.floor(rk()*2))})}
   hafenTeile.forEach(function(h){bau(h.id,'bau',schieb(h.r),[h.tuer[0]+R,h.tuer[1]+R,h.tuer[2],h.tuer[3]]);gesetzt[h.id]=(gesetzt[h.id]|0)+1});
-  // Landschaft im Ring: Bäume des Bioms wie in den Höfen innen
-  for(var q7=0;q7<W*W;q7++){if(keinBaum[q7]||belegt[q7]||Z[q7]!=='g')continue;var i7=q7%W,j7=(q7/W)|0;if(rausch(i7,j7,seed+41)<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i7,j7,seed+42)*B.baeume.length)],i:i7,j:j7})}
+  // Landschaft im Ring: Bäume des Bioms wie in den Höfen innen (Flurgürtel N6b4b2: Bäume erst in flurPlan())
+  for(var q7=0;q7<W*W;q7++){if(keinBaum[q7]||belegt[q7]||Z[q7]!=='g')continue;var i7=q7%W,j7=(q7/W)|0;if(FLUR&&Math.max(R-i7,R-j7,i7-R-Wi+1,j7-R-Wi+1)>=FLUR.ab)continue;if(rausch(i7,j7,seed+41)<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i7,j7,seed+42)*B.baeume.length)],i:i7,j:j7})}
   var TL=TO.filter(function(t){return t.s!==ks});if(!TL.length)TL=TO;   // Ankunft über Land (Küste: nicht die Straße zum Kai)
   var tp=TL.filter(function(t){return t.s===0})[0]||TL.filter(function(t){return t.s===2})[0]||TL[0],te=glob(tp,R-1,0);
   var MTa=null;if(E.mauertor){MTa=new Array(W*W).fill('0');for(var jt=0;jt<Wi;jt++)for(var it=0;it<Wi;it++)MTa[at(it+R,jt+R)]=E.mauertor.charAt(jt*Wi+it);MTa=MTa.join('')}
   return{W:W,Z:Z,bauten:bauten,dinge:dinge,mauertor:MTa,tor:{i:te[0]+R,j:te[1]+R},nb:E.nb,fluss:FE,kueste:KU,gesetzt:gesetzt,vielfalt:E.vielfalt,tore:TO,maske:MK,rand:R,
-   aussen:{ring:R,innenW:Wi,stinktor:SEITE[TO[stinkK].s],graebertor:SEITE[TO[grabK].s],tore:TO.map(function(t){return SEITE[t.s]}),buden:buden,graeber:graeber,hoefe:hoefe.length,hoefeExtra:nx>0?hoefe.filter(function(h){return !h.liste}).length:0,elend:Ue}};}
+   aussen:{ring:R,innenW:Wi,stinktor:SEITE[TO[stinkK].s],graebertor:SEITE[TO[grabK].s],tore:TO.map(function(t){return SEITE[t.s]}),buden:buden,graeber:graeber,hoefe:hoefe.length,hoefeExtra:nx>0?hoefe.filter(function(h){return !h.liste}).length:0,elend:Ue,
+   flur:FLUR?{ab:FLUR.ab,breite:flurB,ring:R,innenW:Wi,liste:FLUR.liste,zeilen:FLUR.zeilen,biomLW:FLUR.biomLW,stufe:FLUR.stufe}:null}};}
  function anlegen(nb){
   var r=rng(hashT([seed,art,opt.biom,opt.stil||'',einw,nb].join('|'))),a,b,k;
   // N6b2c4a1 (Thomas 22.11.2026, ab Marktflecken): Blockmaß je Spalte und Zeile ±2 (mind. 3), Kreuzung außermittig, etwa jede 4. Gasse krumm oder schräg.
@@ -718,8 +726,11 @@ function plan0(opt){
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false&&opt.wasserOffen!==false)wassertoreGerade(P,opt);   // N6b2e2g2 Mauer endet am Fluss mit Türmen an beiden Ufern (opt.wasserOffen:false = wie vorher)
  if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P,opt);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
- if(!elend&&opt.ehrensaeulen!==false)ehrensaeulen(P);   // N6b3b4 Ehrensäulen am Marktplatz (opt.ehrensaeulen:false = wie vorher)
+ if(!elend&&opt.ehrensaeulen!==false)ehrensaeulen(P);
+ if(!elend)flurPlan(P,opt);   // N6b4b2 Flurgürtel mit Höfen, Feldern und Feldwegen in Bildfeldern, ganz zum Schluss (Hofhäuser vorn in P.bauten; opt.flur:false = wie vorher)   // N6b3b4 Ehrensäulen am Marktplatz (opt.ehrensaeulen:false = wie vorher)
  delete P.mauertor;delete P.uferAuf;   // nur zum Rechnen der Tore
+ // N6b4b2: hat der Gürtel nicht für alle Felder gereicht (Wüste: viele kleine Höfe), denselben Ort mit breiterem Gürtel neu planen (höchstens 3-mal)
+ if(P.flur&&P.flur.fehlt>0&&(opt.flurV|0)<3)return plan0(Object.assign({},opt,{flurV:(opt.flurV|0)+1}));
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
  return P}
 // N6b3c1 Forum (Thomas 23.11.2026): begehbarer Marmorplatz mit Säulenhallen 2 tief an 3 Seiten (außen Läden, gesperrt; innen Säulengang, begehbar), die 4. Seite
@@ -809,6 +820,11 @@ function forumFest(P,opt){var B=BIOME[P.biom],st={n:0,fest:0,fehl:0};P.forumStat
  var neu=new Uint8Array(WW),k3;for(y=best.j;y<best.j+best.h;y++)for(x=best.i;x<best.i+best.w;x++)neu[y*W+x]=1;
  for(k3=0;k3<WW;k3++)if(alt[k3]&&!neu[k3]){var z={},bz=null;for(var e3=0;e3<4;e3++){var q3=nb(k3,e3);if(q3<0||alt[q3]||belegt[q3]||lv(q3)!==lv(k3))continue;var c3=Z[q3];
    if(c3==='g'||c3==='o'||c3==='s'){z[c3]=(z[c3]||0)+1;if(!bz||z[c3]>z[bz])bz=c3}}Z[k3]=bz||(lv(k3)===h0?'s':'g')}
+ // N6b4b2: abgeschnittene Felder, die als Gasse nur über gesperrte Forumsfelder (Läden, Bühne, Statue) hingen, werden Wiese (sonst ein abgerissenes Wegstück, at3-n6b3c1)
+ (function(){var sp4=new Uint8Array(WW),x4,y4;for(y4=best.j;y4<best.j+best.h;y4++)for(x4=best.i;x4<best.i+best.w;x4++){var a4=forumArtF(best,x4,y4);if(a4!=='platz'&&a4!=='gang')sp4[y4*W+x4]=1}
+  var seen=new Uint8Array(WW);for(var k4=0;k4<WW;k4++){if(!alt[k4]||neu[k4]||seen[k4]||!WEG[Z[k4]]||belegt[k4])continue;var L4=[k4],h4=0,nurAlt=true;seen[k4]=1;
+   while(h4<L4.length){var c4=L4[h4++];if(!alt[c4]||neu[c4])nurAlt=false;for(var e4=0;e4<4;e4++){var m4=nb(c4,e4);if(m4<0||seen[m4]||sp4[m4]||belegt[m4]||!WEG[Z[m4]]||Math.abs(lv(m4)-lv(c4))>1)continue;seen[m4]=1;L4.push(m4)}}
+   if(nurAlt)L4.forEach(function(c){Z[c]='g'})}})();
  var T=forumTeile(best);best.hz=h0;best.laeden=T.laden;best.gang=T.gang;best.rostra=T.rostra[0];best.statue=T.statue[0];
  s0.i=best.statue[0];s0.j=best.statue[1];   // der alte Stand steht auf dem Statuenfeld; seit N6b3c3 wird er dort nicht mehr gemalt (Reiterstandbild)
  P.zellen=Z.join('');P.forum=best;st.fest++}
@@ -1722,6 +1738,110 @@ var WOHN={townhouse:1,domus:1,villa:1,palazzo:1,tenement:1,cottage:1};
 // Herden Weide (p); Zäune, Rebstöcke und Tiere mit N6b4.
 var TOTE={cemetery:1,undertaker:1,'coffin-maker':1,'tear-press':1},HAIN={'olive-grove':'baum-olive',orchard:'baum-apfel'},GRAB_JE=400,GRAB_MAX=40,HOF_JE=1000,UE_MAX=40,
  SEITE=['south','north','east','west'],SPIEGEL={south:'east',east:'south',north:'west',west:'north'};
+// N6b4b2 Umlandplan (Thomas 23.11.2026, AT3_NEUAUSRICHTUNG 4.3a): Flurgürtel außen um den Ring vor den Toren. Felder nach Bedarf aus landwirtschaft.js
+// (1 Feld = 1 Bildfeld, ersetzt HOF_JE), Höfe nach Hofart (Mischung nach Ortsgröße, Sonderhöfe nach Biom; Nomadenzelte wandern und stehen nicht im Plan),
+// jeder Hof mit bis zu 3 Kulturen, seine Felder höchstens FLUR_WEIT Schritte vom Hof, Feldwege (h) im Raster FLUR_RASTER, angeschlossen an die Straßen.
+// Feld- und Viehgebäude der Stadtübersicht werden Kulturen auf den Höfen (Fläche w × h). Grundflächen der Hofhäuser sind Platzhalter bis N6b4c.
+// Ergebnis P.flur {arten, z (Kulturnummer je Bildfeld wie P.zellen, '.' keine), hoefe, felder, wege, fehlt}; flurArt()/flurTempo() für die Begehbarkeit.
+// Kosten: einmal je Ort im Bildkern, linear in der Fläche des Gürtels (größte Hauptstadt ~0,1 s in Node). opt.flur:false = wie vorher (HOF_JE).
+var FLUR_PLATZ=1.25,FLUR_MAX=240,FLUR_RASTER=13,FLUR_WEIT=16,LW_BIOM={mountain:'mountains',conifer:'taiga',mangrove:'mangroves'},
+ HOF_HAUS={cottage:1,farmstead:2,'villa-rustica':3,'herders-camp':2,plantation:3,'oasis-garden':2},WEIDE={fodder:1,livestock:1};
+var LWDAT=null;
+function LWm(){return G.AT3LANDW||(typeof require!=='undefined'?require('./landwirtschaft.js'):null)}
+function BGm(){return G.AT3BEGEH||(typeof require!=='undefined'?require('./begehbar.js'):null)}
+function setzeLandw(D){LWDAT=D;return D}
+function landwDaten(o){if(o&&o.landw)return o.landw;if(LWDAT)return LWDAT;if(typeof require!=='undefined'){var L=LWm(),J=function(f){return require('./daten/'+f+'.json')};
+  LWDAT=L.daten(J('landwirtschaft'),J('gebaeude'),J('waren'),J('rezepte'))}return LWDAT}
+// Vorbereitung in aussen(): Bedarf je Ware, Kultur je Feld- und Viehgebäude
+function flurStart(opt,einw,fluss,Li){if(opt.flur===false)return null;var LM=LWm(),LD=LM&&landwDaten(opt);if(!LD)return null;
+ var bl=LW_BIOM[opt.biom]||opt.biom,o=LM.ort(LD,{einw:einw,biom:bl,fluss:!!fluss,leit:opt.leit||[]}),kv={};
+ LD.K.forEach(function(x){if(x.k.geb&&!x.k.aussenposten&&!kv[x.k.geb]&&x.biome.indexOf(bl)>=0)kv[x.k.geb]=x.id});
+ return{biomLW:bl,stufe:o.stufe.id,kulturVon:kv,liste:[],zeilen:o.zeilen.filter(function(z){return z.felder>0}).map(function(z){return{ware:z.ware,felder:z.felder,kulturen:z.kulturen}})}}
+// Fläche des Gürtels in Bildfeldern: Felder + Hofhäuser samt freiem Rand (aus den Hofarten-Gewichten der Ortsgröße) + Feldwege (2 von FLUR_RASTER), mal FLUR_PLATZ
+function flurBedarf(FL,g){var n=0;FL.zeilen.forEach(function(z){n+=z.felder});FL.liste.forEach(function(x){n+=x.w*x.h});if(!n)return 0;
+ var LM=LWm(),LD=landwDaten({}),GW=hofGewichte(g),sw=0,sf=0,sh=0;(LD?LM.hofarten(LD,FL.biomLW):[]).forEach(function(h){var w=GW[h.id]||(HOF_HAUS[h.id]?3:0);if(!w||h.wandert)return;
+  var q=(HOF_HAUS[h.id]||2)+1;sw+=w;sf+=w*(h.felder[0]+h.felder[1])/2;sh+=w*q*q});
+ var proHof=sw?sf/sw:4,haus=sw?sh/sw:9;return(n+Math.min(n,n/proHof)*haus)/(1-2/FLUR_RASTER)}
+// Hofarten-Gewichte nach Ortsgröße (Vorschlag, Regel 11)
+function hofGewichte(g){return g<=3?{cottage:6,farmstead:4}:g===4?{cottage:35,farmstead:50,'villa-rustica':15}:g===5?{cottage:20,farmstead:45,'villa-rustica':35}:{cottage:10,farmstead:35,'villa-rustica':55}}
+function flurPlan(P,opt){var A=P.aussen&&P.aussen.flur;if(!A)return;var LM=LWm(),LD=landwDaten(opt);if(!LM||!LD)return;
+ var F=P.mass||1,rr=function(v){return Math.floor(v*F+.5)},W=P.W,WW=W*W,I0=rr(A.ring),I1=rr(A.ring+A.innenW)-1,eA=rr(A.ring)-rr(A.ring-A.ab),seed=P.seed>>>0,B=BIOME[P.biom];
+ var Z=P.zellen.split(''),HZ=P.hoehe||null,ra=rng(hashT([seed,P.art,P.einw,P.biom,'flur'].join('|'))),k,i,j;
+ var ab=function(i,j){return Math.max(I0-i,I0-j,i-I1,j-I1)};
+ var belegt=new Uint8Array(WW);P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)belegt[y*W+x]=1});
+ var frei=new Uint8Array(WW),weg=new Uint8Array(WW);
+ for(j=0;j<W;j++)for(i=0;i<W;i++){k=j*W+i;var d=ab(i,j);if(d<eA||Z[k]!=='g'||belegt[k])continue;frei[k]=1;
+  var dx=i<I0?I0-i:i>I1?i-I1:0,dy=j<I0?I0-j:j>I1?j-I1:0,a=dy>=dx?i:j;   // Feldwege: Ringe im Abstand FLUR_RASTER und Speichen quer dazu
+  if((d-eA)%FLUR_RASTER===0||(((a-I0)%FLUR_RASTER)+FLUR_RASTER)%FLUR_RASTER===0)weg[k]=1}
+ // Nur Feldwege, die über andere Feldwege eine Straße erreichen, bleiben Weg
+ var STR={s:1,o:1,q:1},NB=[1,-1,W,-W],st=[],ok=new Uint8Array(WW),nachbar=function(k,d){var i=k%W;if(d===0&&i===W-1||d===1&&i===0)return -1;var n=k+NB[d];return n<0||n>=WW?-1:n};
+ for(k=0;k<WW;k++)if(weg[k])for(var d0=0;d0<4;d0++){var n0=nachbar(k,d0);if(n0>=0&&STR[Z[n0]]){ok[k]=1;st.push(k);break}}
+ while(st.length){var q=st.pop();for(var d1=0;d1<4;d1++){var n1=nachbar(q,d1);if(n1>=0&&weg[n1]&&!ok[n1]){ok[n1]=1;st.push(n1)}}}
+ var nWeg=0;for(k=0;k<WW;k++)if(weg[k]){if(ok[k]){Z[k]='h';frei[k]=0;nWeg++}else weg[k]=0}
+ // Blöcke zwischen den Feldwegen, innen zuerst
+ var blk=new Int32Array(WW).fill(-1),BL=[];
+ for(k=0;k<WW;k++){if(!frei[k]||blk[k]>=0)continue;var id=BL.length,L=[k],h0=0,mi=1e9;blk[k]=id;
+  while(h0<L.length){var p=L[h0++],e0=ab(p%W,(p/W)|0);if(e0<mi)mi=e0;for(var d2=0;d2<4;d2++){var n2=nachbar(p,d2);if(n2>=0&&frei[n2]&&blk[n2]<0){blk[n2]=id;L.push(n2)}}}
+  BL.push({id:id,L:L,e:mi})}
+ BL.sort(function(a,b){return a.e-b.e||a.L[0]-b.L[0]});
+ // Aufträge: Kultur und Zahl der Felder (Feld- und Viehgebäude der Übersicht zuerst, dann der Bedarf je Ware)
+ var kv={};LD.K.forEach(function(x){if(x.k.geb&&!x.k.aussenposten&&!kv[x.k.geb]&&x.biome.indexOf(A.biomLW)>=0)kv[x.k.geb]=x.id});
+ var JO={},jobs=[],job=function(kid,n,liste){if(!kid||n<=0)return;var J=JO[kid];if(!J){J=JO[kid]={k:kid,n:0,rest:0,gruppe:LD.kid[kid].k.gruppe,liste:{}};jobs.push(J)}J.n+=n;J.rest+=n;if(liste)J.liste[liste]=(J.liste[liste]|0)+1};
+ A.liste.forEach(function(x){job(kv[x.id],x.w*x.h,x.id)});
+ A.zeilen.forEach(function(z){if(z.kulturen.length)job(z.kulturen[Math.floor(ra()*z.kulturen.length)],z.felder)});
+ var arten=jobs.map(function(J){return J.k}),nr={};arten.forEach(function(a,x){nr[a]=x});
+ var HA=LM.hofarten(LD,A.biomLW).filter(function(h){return !h.wandert&&h.felder[1]>0}),GW=hofGewichte(P.g),gw={};
+ HA.forEach(function(h){gw[h.id]=GW[h.id]||0});
+ if(gw.plantation!=null)gw.plantation=Math.max(10,(GW['villa-rustica']||0)*.6);if(gw['oasis-garden']!=null)gw['oasis-garden']=Math.max(10,(GW.farmstead||0)*.6);
+ var mark=new Int32Array(WW),dist=new Uint8Array(WW),stempel=0,FZ=new Array(WW).fill('.'),HB=[],hoefe=[],nFeld=0,rest=0,jp=0,bi=0;jobs.forEach(function(J){rest+=J.rest});
+ var naechster=function(pass){for(var t=0;t<jobs.length;t++){var J=jobs[(jp+t)%jobs.length];if(J.rest>0&&(!pass||pass(J))){jp=(jp+t+1)%jobs.length;return J}}return null};
+ var hofWahl=function(J){var C=HA.filter(function(h){return h.gruppen.indexOf(J.gruppe)>=0}),s=0;if(!C.length)return null;
+  var w=C.map(function(h){var x=h.id==='herders-camp'?(WEIDE[J.gruppe]?(GW.farmstead||4)*.8:0):gw[h.id]||0;s+=x;return x});if(s<=0)return C[0];
+  var u=ra()*s;for(var c=0;c<C.length;c++){u-=w[c];if(u<0)return C[c]}return C[C.length-1]};
+ // Hausplatz im Block: s × s freie Felder, eins davon neben einem Feldweg; Tür zum Weg
+ var platz=function(b,s){var pz=b.pz||(b.pz=[0,0,0,0]);for(var x0=pz[s];x0<b.L.length;x0++){var p=b.L[x0];if(!frei[p]){pz[s]=x0+1;continue}var pi=p%W,pj=(p/W)|0,dw=-1;
+   for(var d3=0;d3<4;d3++){var n3=nachbar(p,d3);if(n3>=0&&Z[n3]==='h'){dw=d3;break}}if(dw<0)continue;
+   for(var oy=0;oy<s;oy++)for(var ox=0;ox<s;ox++){var i0=pi-ox,j0=pj-oy,gut=i0>=0&&j0>=0&&i0+s<=W&&j0+s<=W;
+    for(var yy=j0;yy<j0+s&&gut;yy++)for(var xx=i0;xx<i0+s&&gut;xx++){var kk=yy*W+xx;if(!frei[kk]||blk[kk]!==b.id||(HZ&&HZ.charCodeAt(kk)!==HZ.charCodeAt(p)))gut=false}
+    for(yy=j0-1;yy<=j0+s&&gut;yy++)for(xx=i0-1;xx<=i0+s&&gut;xx++){if(xx<0||yy<0||xx>=W||yy>=W)continue;if(belegt[yy*W+xx])gut=false}   // berührt keinen Bau, auch nicht über Eck
+    if(gut)return{i:i0,j:j0,tuer:[pi,pj,[1,-1,0,0][dw],[0,0,1,-1][dw]]}}}return null};
+ while(rest>0&&bi<BL.length){var b=BL[bi],J0=naechster(null),H=hofWahl(J0);if(!H){J0.rest=0;rest=0;jobs.forEach(function(J){rest+=J.rest});continue}
+  var s=HOF_HAUS[H.id]||2,pl=platz(b,s);if(!pl){bi++;continue}
+  var nF=H.felder[0]+Math.floor(ra()*(H.felder[1]-H.felder[0]+1));nF=Math.max(1,Math.min(nF,rest));
+  // Kulturen des Hofs: der Auftrag und bis zu 2 weitere, die zur Hofart passen
+  var KU=[J0];for(var e1=0;e1<Math.min(2,nF-1);e1++){var Jx=naechster(function(J){return KU.indexOf(J)<0&&H.gruppen.indexOf(J.gruppe)>=0});if(Jx)KU.push(Jx)}
+  for(var y5=pl.j;y5<pl.j+s;y5++)for(var x5=pl.i;x5<pl.i+s;x5++){frei[y5*W+x5]=0;belegt[y5*W+x5]=1}
+  // Felder: Breitensuche vom Haus über freie Felder desselben Blocks, höchstens FLUR_WEIT Schritte
+  stempel++;var Q=[],qh=0,fe=[];for(y5=pl.j;y5<pl.j+s;y5++)for(x5=pl.i;x5<pl.i+s;x5++){mark[y5*W+x5]=stempel;dist[y5*W+x5]=0;Q.push(y5*W+x5)}
+  while(qh<Q.length&&fe.length<nF){var c0=Q[qh++],dc=dist[c0];if(dc>=FLUR_WEIT)continue;for(var d4=0;d4<4;d4++){var n4=nachbar(c0,d4);if(n4<0||mark[n4]===stempel||!frei[n4]||blk[n4]!==b.id)continue;
+    mark[n4]=stempel;dist[n4]=dc+1;Q.push(n4);fe.push(n4);if(fe.length>=nF)break}}
+  if(!fe.length){bi++;continue}   // Block voll: das Haus bleibt Wiese, nächster Block
+  var anteil=[],sum0=0;KU.forEach(function(J,x){var a=Math.max(1,Math.min(J.rest,Math.round(fe.length/KU.length)));anteil.push(a);sum0+=a});
+  var hof={art:H.id,i:pl.i,j:pl.j,kulturen:{},felder:0},f0=0;
+  KU.forEach(function(J,x){var n=x===KU.length-1?fe.length-f0:Math.min(anteil[x],fe.length-f0);n=Math.min(n,J.rest);
+   for(var m=0;m<n;m++){var kf=fe[f0++];frei[kf]=0;FZ[kf]=String.fromCharCode(48+nr[J.k]);var gk=LD.kid[J.k],hain=gk&&HAIN[gk.k.geb];
+    Z[kf]=WEIDE[J.gruppe]?'p':hain?'g':'f';if(hain&&((kf%W+((kf/W)|0))&1)===0)P.dinge.push({id:hain,i:kf%W,j:(kf/W)|0,rolle:J.k})}
+   if(n>0){hof.kulturen[J.k]=(hof.kulturen[J.k]|0)+n;hof.felder+=n;J.rest-=n;rest-=n}});
+  for(;f0<fe.length;f0++){}   // nicht vergebene Plätze bleiben frei (Wiese)
+  nFeld+=hof.felder;hoefe.push(hof);
+  HB.push({rolle:'hof',id:'hof-'+H.id,hofart:H.id,i:pl.i,j:pl.j,w:s,h:s,g:1,klasse:P.basis.klasse,dach:s<2?'flach':P.basis.dach,achse:ra()<.5?'i':'j',
+   wand:P.basis.wand||null,dachR:P.basis.dachR||null,tuer:pl.tuer,satz:null});if(HZ)HB[HB.length-1].hz=HZ.charCodeAt(pl.j*W+pl.i)-48;
+  for(y5=pl.j;y5<pl.j+s;y5++)for(x5=pl.i;x5<pl.i+s;x5++){Z[y5*W+x5]='g';FZ[y5*W+x5]='.'}}
+ P.bauten=HB.concat(P.bauten);   // Hofhäuser vorn: spätere Zusätze (vorspringende Türme) hängen weiter hinten an wie ohne Flur
+ // Übersicht: Feld- und Viehgebäude der Liste gelten als gesetzt, sobald ihre Kultur Felder hat
+ jobs.forEach(function(J){if(J.n>J.rest)for(var id in J.liste)P.gesetzt[id]=(P.gesetzt[id]|0)+J.liste[id]});
+ // Wiese im Gürtel: Bäume des Bioms wie im Ring; nichts bleibt auf Feldern, Wegen oder Höfen stehen
+ for(k=0;k<WW;k++){if(!frei[k])continue;i=k%W;j=(k/W)|0;if(rausch(i,j,seed+41)<B.dichte*.6+.04)P.dinge.push({id:B.baeume[Math.floor(rausch(i,j,seed+42)*B.baeume.length)],i:i,j:j})}
+ var hofFeld=new Uint8Array(WW);hoefe.forEach(function(h){var s=HOF_HAUS[h.art];for(var y=h.j;y<h.j+s;y++)for(var x=h.i;x<h.i+s;x++)hofFeld[y*W+x]=1});
+ P.dinge=P.dinge.filter(function(d){var kk=d.j*W+d.i;if(ab(d.i,d.j)<eA)return true;return !(Z[kk]==='h'||Z[kk]==='f'||Z[kk]==='p'||hofFeld[kk])||(d.rolle&&nr[d.rolle]!=null&&!hofFeld[kk])});
+ if(HZ)P.dinge.forEach(function(d){if(d.hz==null)d.hz=HZ.charCodeAt(d.j*W+d.i)-48});
+ P.aussen.flur={ab:A.ab,breite:A.breite,ring:A.ring,innenW:A.innenW};   // Arbeitsdaten aus aussen() nicht im Plan behalten
+ P.zellen=Z.join('');
+ P.flur={arten:arten,z:FZ.join(''),hoefe:hoefe,felder:nFeld,wege:nWeg,fehlt:rest,eA:eA,raster:FLUR_RASTER,weit:FLUR_WEIT,stufe:A.stufe,biom:A.biomLW,
+  zeilen:A.zeilen.map(function(z){return{ware:z.ware,felder:z.felder}}),versuch:opt.flurV|0}}
+// Kultur (Kennung aus landwirtschaft.json) und Tempo zu Fuß (×100, 0 = gesperrt) eines Bildfelds; null = kein Feld
+function flurArt(P,i,j){var f=P&&P.flur;if(!f||i<0||j<0||i>=P.W||j>=P.W)return null;var c=f.z.charCodeAt(j*P.W+i)-48;return c>=0&&c<f.arten.length?f.arten[c]:null}
+function flurTempo(P,i,j,profil,opt){var id=flurArt(P,i,j);if(!id)return null;var BG=BGm();return BG?BG.feldart(landwDaten(opt),id,profil):null}
 // Maßstab (N6b2b1, E31): Plan in Planfeldern → Bildfelder ×F. Feld (I, J) gehört zu Planfeld (⌊I/F⌋, ⌊J/F⌋), Bau [i, i+w) → [r(i), r(i+w)) mit r = runden(·F);
 // Rundbauten bleiben quadratisch (kleinere Seite), Türen sitzen wieder mittig an derselben Seite, Dinge auf dem ersten Feld ihres Planfelds.
 function skalieren(P,F){var r=function(v){return Math.floor(v*F+.5)},W=P.W,N=r(W),z='',I,J;
@@ -1748,6 +1868,8 @@ function drehen(P){var W=P.W,z=new Array(W*W),zh=P.hoehe?new Array(W*W):null,zt=
  N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=W-1-d.j;o.j=d.i;if(/^ehrensaeule-/.test(o.id))o.id=/-i$/.test(o.id)?o.id.slice(0,-2):o.id+'-i';return o});N.tor={i:W-1-P.tor.j,j:P.tor.i};   // N6b3b4: Ehrensäulen drehen ihre Achse mit
  if(P.forum){var R=function(r){return[W-r[1]-r[3],r[0],r[3],r[2]]},F=P.forum,G=N.forum,g0=R([F.i,F.j,F.w,F.h]);G.i=g0[0];G.j=g0[1];G.w=g0[2];G.h=g0[3];   // N6b3c1 Forum dreht mit
   G.offen=[-F.offen[1],F.offen[0]];G.laeden=F.laeden.map(R);G.gang=F.gang.map(R);G.rostra=R(F.rostra);G.statue=R(F.statue)}
+ if(P.flur){var fz=new Array(W*W);for(j=0;j<W;j++)for(i=0;i<W;i++)fz[i*W+(W-1-j)]=P.flur.z.charAt(j*W+i);N.flur.z=fz.join('');   // N6b4b2 Flur dreht mit
+  N.flur.hoefe=P.flur.hoefe.map(function(h){var o=JSON.parse(JSON.stringify(h)),q=HOF_HAUS[h.art]||1;o.i=W-h.j-q;o.j=h.i;return o})}
  if(P.wehr)N.wehr=wehrDrehen(P.wehr,W);return N}
 // Wehr (N6b2d) mitdrehen: Zeichenketten wie die Zellen, Richtungen (di, dj) → (−dj, di): s → w, o → s, n → o, w → n
 var DREH={s:'w',o:'s',n:'o',w:'n','.':'.',N:'E',E:'S',S:'W',W:'N'};   // N6b2e2a: Halbfeld-Ecken drehen mit
@@ -1775,7 +1897,7 @@ function holer(hole){var bk=BK(),cache=(HOLER&&HOLER.get(hole))||{};if(HOLER)HOL
  return function(id,K,wand,dachR){var o=hole(id);if(!o||(wand==null&&dachR==null)||id.indexOf('bk-')!==0)return o;var k=bk.klasse(K),istDach=id.indexOf('-dach-')>0,
   paar=istDach?(dachR!=null?[k.dachReihe,dachR]:null):/-(wand|tuer|giebel)/.test(id)&&wand!=null?[k.wandReihe,wand]:null;if(!paar)return o;
   var key=id+'|'+paar.join(',');if(!cache[key])cache[key]={id:o.id,kat:o.kat,bild:bk.umfaerben(o.bild,paar)};return cache[key]}}
-var BODEN_ID={s:null,o:null,m:'bk-marmor-boden',f:null,w:'boden-fluss',e:'boden-erde',p:'boden-gras',x:'boden-fels'};
+var BODEN_ID={s:null,o:null,m:'bk-marmor-boden',f:null,w:'boden-fluss',e:'boden-erde',p:'boden-gras',x:'boden-fels',h:'boden-erde'};   // h Feldweg (N6b4b2)
 // Offenes Wasser (Thomas 22.11.2026): boden-fluss statt der Wasserstelle, nahtlos; Fassungen nach Lage: ruhig 0/a/b (5:5:4), selten Fass (c) und tote Ratte (d) je 1 von 128
 var FLUSS_VAR=['boden-fluss','boden-fluss-a','boden-fluss-b','boden-fluss-c','boden-fluss-d'];
 function flussWahl(i,j,seed){var u=rausch(i,j,seed+77);if(u<1/128)return FLUSS_VAR[3];if(u<2/128)return FLUSS_VAR[4];u=(u-2/128)/(1-2/128)*14;return FLUSS_VAR[u<5?0:u<10?1:2]}
@@ -2029,6 +2151,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.forum?FORUM_IDS().concat(FORUM_GANZ_IDS(P.forum)):[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={setzeLandw:setzeLandw,landwDaten:landwDaten,flurArt:flurArt,flurTempo:flurTempo,FLUR_RASTER:FLUR_RASTER,FLUR_WEIT:FLUR_WEIT,HOF_HAUS:HOF_HAUS,KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);

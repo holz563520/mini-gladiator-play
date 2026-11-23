@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='8ccfc643', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='3d30368a', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};
@@ -134,7 +134,21 @@ function ortTipp(r){ORT_HTML='';if(!r)return;var tip=r;
   .then(function(){return Promise.all(['daten/gebaeude.json','daten/rezepte.json','daten/kulturen.json'].map(holeJson))}).then(function(d){return window.AT3ORTE.daten(d[0],d[1],d[2])}).catch(function(e){ORL=null;throw e})))
  .then(function(D){if(tip!==ORT_LETZT)return;var O=window.AT3ORTE,b=O.bilanz(WSEED,r,D),AP=window.AT3POSTEN,PO=AP&&!AP.AUS&&r.umg?AP.posten(WSEED,b,r.umg,D,r.punkt,r.fremd):null;b.posten=PO||[];
   window.AT3SPIEL.ort={name:O.voll(b,t),g:r.g,einwohner:b.einwohner,leit:b.leit.map(function(l){return l.id}),posten:PO?PO.map(function(p){return p.id}):null};
-  ORT_HTML='<br><b>'+esc(O.zeile(b,t))+'</b>'+(PO?'<br>'+esc(AP.kurzListe(PO,t)):'');infoZeigen()},function(){})}
+  ORT_HTML='<br><b>'+esc(O.zeile(b,t))+'</b>'+(PO?'<br>'+esc(AP.kurzListe(PO,t)):'');infoZeigen();
+  // N6b4b2: Ortsbilanz der Landwirtschaft (Bedarf, Ernte, Zukauf, Überschuss je Ware; landwirtschaft.js, 10–30 µs je Ort; Notausschalter ?flur=0)
+  if(!/[?&]flur=0/.test(location.search))landwLaden().then(function(LD){if(tip!==ORT_LETZT)return;var o=window.AT3LANDW.ausBilanz(LD,b);
+   window.AT3SPIEL.ort.flur={felder:o.felder,stufe:o.stufe.id,fehl:o.fehl,ueber:o.ueber,waren:o.zeilen.length};ORT_HTML+=flurHtml(o,LD);infoZeigen()},function(){})},function(){})}
+// N6b4b2: Landwirtschaft nur beim Antippen eines Orts laden (Skript und vier Datendateien, einmal je Sitzung)
+var LWL=null;
+function landwLaden(){return LWL||(LWL=new Promise(function(ok,no){if(window.AT3LANDW)return ok();var s=document.createElement('script');s.src='landwirtschaft.js?v='+V;s.onload=ok;s.onerror=function(){LWL=null;no(new Error('landwirtschaft.js'))};document.head.appendChild(s)})
+ .then(function(){return Promise.all(['daten/landwirtschaft.json','daten/gebaeude.json','daten/waren.json','daten/rezepte.json'].map(holeJson))}).then(function(d){return window.AT3LANDW.daten(d[0],d[1],d[2],d[3])}).catch(function(e){LWL=null;throw e}))}
+function flurZahl(v){return v>=100?String(Math.round(v)):v>=10?v.toFixed(1).replace(/\.0$/,''):v.toFixed(2).replace(/0$/,'').replace(/\.0$/,'')}
+// Aufklappbare Tabelle: Kopfzeile mit Summen, darunter je Ware Bedarf, Ernte, Zukauf, Überschuss pro Spieltag (Zukauf zuerst, dann nach Bedarf)
+function flurHtml(o,LD){var st=LD.S[o.stufe.id],kopf=o.felder?t('flur.zeile',{felder:flurZahl(o.felder),stufe:st?st.name:o.stufe.id,fehl:flurZahl(o.fehl),ueber:flurZahl(o.ueber)}):t('flur.keine',{fehl:flurZahl(o.fehl)});
+ var Z=o.zeilen.slice().sort(function(a,b){return (b.fehl>0)-(a.fehl>0)||b.bedarf-a.bedarf||(a.ware<b.ware?-1:1)}),
+  h='<details class="flur"><summary>'+esc(kopf)+'</summary><table><tr><th>'+esc(t('flur.ware'))+'</th><th>'+esc(t('flur.bedarf'))+'</th><th>'+esc(t('flur.ernte'))+'</th><th>'+esc(t('flur.zukauf'))+'</th><th>'+esc(t('flur.ueber'))+'</th></tr>';
+ Z.forEach(function(z){h+='<tr><td>'+esc(z.name)+(z.felder?' <span class="leise">'+esc(t('flur.felder',{n:z.felder}))+'</span>':'')+'</td><td>'+flurZahl(z.bedarf)+'</td><td>'+(z.ernte?flurZahl(z.ernte):'–')+'</td><td>'+(z.fehl?'<b>'+flurZahl(z.fehl)+'</b>':'–')+'</td><td>'+(z.ueber>1e-9?flurZahl(z.ueber):'–')+'</td></tr>'});
+ return h+'</table><span class="leise">'+esc(t(o.fehl>0?'flur.witz.zukauf':'flur.witz.satt'))+'</span></details>'}
 var ORT_LETZT=null;
 function reichTipp(L,hat,ort,str){ORT_LETZT=ort||null;ORT_HTML='';STR_HTML=strasseHtml(str,null);if(!str)window.AT3SPIEL.strasse=null;ortTipp(ort);
  if(!hat){REICH_HTML=esc(t('welt.leer'));infoZeigen();return}if(!L||!L.length){REICH_HTML=esc(t('reich.niemand'));infoZeigen();return}

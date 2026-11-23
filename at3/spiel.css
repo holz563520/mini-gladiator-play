@@ -25,6 +25,7 @@ main{flex:1;display:flex;flex-direction:column;gap:8px}
 table{border-collapse:collapse;width:100%;font-size:17px}
 td,th{text-align:left;padding:3px 4px;border-bottom:2px solid var(--papier2);font-weight:normal}
 th{color:var(--tinte2)}
+.flur summary{cursor:pointer;color:var(--tinte)}.flur table{font-size:15px;margin:2px 0}.flur td:not(:first-child),.flur th:not(:first-child){text-align:right}
 .gut{color:var(--gut)}.schlecht{color:var(--blut)}.grau{color:var(--tinte2)}
 #status{font-size:16px;color:var(--tinte2)}
 #stimmeKnopf{margin-top:8px}
