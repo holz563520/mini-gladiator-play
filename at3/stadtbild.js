@@ -746,6 +746,18 @@ function forumId(F,x,y,seed){var a=forumArtF(F,x,y);if(a!=='laden'&&a!=='gang')r
 function FORUM_IDS(){var r=[];FORUM_SEITE.forEach(function(s){['','-a','-b','-c'].forEach(function(v){r.push('forum-laden-'+s+v);if(v!=='-c')r.push('forum-gang-'+s+v)});
   FORUM_SEITE.forEach(function(o){if(o[0]!==s[0])['laden','gang'].forEach(function(a){r.push('forum-'+a+'-ende-'+s+o)})})});
  ['i0j0','i0j1','i1j0','i1j1'].forEach(function(e){r.push('forum-laden-ecke-'+e,'forum-gang-ecke-'+e)});return r}
+// N6b3c3 Rednerbühne (4 × 2) und Reiterstandbild (2 × 2) als Ganzbild je Lage (tools/at3-forum-mitte.py), beide blicken zur offenen Seite.
+// Kennung 'forum-rostra-<offen>' bzw. 'forum-reiter-<offen>'; der Kopf des Reiters ist ein Wechselschild 'forum-reiter-kopf-<wer>-<offen>' (F.kopf, Platzhalter 'ohne').
+// hoch = Bildpunkte über der oberen Feldecke (für Rahmen und Sortierung, gemessen 35 bzw. 79).
+var FORUM_GANZ={rostra:{id:'forum-rostra-',hoch:48},statue:{id:'forum-reiter-',hoch:96}};
+function forumGanzEls(F){var of=forumOffen(F);return['rostra','statue'].map(function(a){var r=F[a];
+ return{id:'forum-'+a,ganz:FORUM_GANZ[a].id+of,art:a,kopf:a==='statue'?(F.kopf||'ohne'):null,of:of,i:r[0],j:r[1],w:r[2],h:r[3],hz:F.hz|0,rolle:'forum'}})}
+function forumGanzBild(b,hole){var o=hole(b.ganz),sp=malbild(o);if(!sp)return{sp:null,fehlt:[b.ganz],teile:0};var key=b.ganz+'|'+(b.kopf||''),m=GANZ&&GANZ.get(key);
+ if(m&&m.o===o)return{sp:m.sp,fehlt:[],teile:m.teile};var F=o.karte.flaeche,r={w:sp.w,h:sp.h,ax:sp.ax-(F.w-F.h)*16,ay:sp.ay-(F.w+F.h)*8,px:new Uint8Array(sp.px)},teile=1,fehlt=[];
+ (o.schilder||[]).forEach(function(s){var id='forum-reiter-'+s.teil+'-',t=malbild(hole(id+b.kopf+'-'+b.of))||malbild(hole(id+'ohne-'+b.of));if(!t){fehlt.push(id+'ohne-'+b.of);return}
+  blit(r,t,s.x+r.ax,s.y+r.ay);teile++});
+ if(GANZ){if(GANZ.size>64)GANZ.clear();GANZ.set(key,{o:o,sp:r,teile:teile})}return{sp:r,fehlt:fehlt,teile:teile}}
+function FORUM_GANZ_IDS(F){var of=forumOffen(F);return['forum-rostra-'+of,'forum-reiter-'+of,'forum-reiter-kopf-ohne-'+of].concat(F.kopf&&F.kopf!=='ohne'?['forum-reiter-kopf-'+F.kopf+'-'+of]:[])}
 // Rechtecke je Art (für Bilder und Spielwege)
 function forumTeile(F){var R={laden:[],gang:[],rostra:[],statue:[]},seen=new Uint8Array(F.w*F.h),x,y;
  var art=function(x,y){return forumArtF(F,F.i+x,F.j+y)},frei=function(x,y,a){return x<F.w&&y<F.h&&!seen[y*F.w+x]&&art(x,y)===a};
@@ -792,7 +804,7 @@ function forumFest(P,opt){var B=BIOME[P.biom],st={n:0,fest:0,fehl:0};P.forumStat
  for(k3=0;k3<WW;k3++)if(alt[k3]&&!neu[k3]){var z={},bz=null;for(var e3=0;e3<4;e3++){var q3=nb(k3,e3);if(q3<0||alt[q3]||belegt[q3]||lv(q3)!==lv(k3))continue;var c3=Z[q3];
    if(c3==='g'||c3==='o'||c3==='s'){z[c3]=(z[c3]||0)+1;if(!bz||z[c3]>z[bz])bz=c3}}Z[k3]=bz||(lv(k3)===h0?'s':'g')}
  var T=forumTeile(best);best.hz=h0;best.laeden=T.laden;best.gang=T.gang;best.rostra=T.rostra[0];best.statue=T.statue[0];
- s0.i=best.statue[0];s0.j=best.statue[1];   // bis N6b3c3: der alte Stand steht auf dem Statuenfeld
+ s0.i=best.statue[0];s0.j=best.statue[1];   // der alte Stand steht auf dem Statuenfeld; seit N6b3c3 wird er dort nicht mehr gemalt (Reiterstandbild)
  P.zellen=Z.join('');P.forum=best;st.fest++}
 // N6b3b1 Tempel auf genaue Größe (nach Maßstab, Spiegeln und Burgberg): je Tempel Lage (bis 2 Felder verschoben), Ausrichtung (Längsachse i oder j) und Eingangsseite
 // (eine der beiden Schmalseiten) so wählen, dass der Grund frei ist (alter Grund oder Wiese; Bäume und Büsche darauf fallen weg) und vor dem Eingang (Feld vor der Tür, besser
@@ -1834,7 +1846,9 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
    if(stufe===0){for(;qs<=2*(W-1)+U;qs++,qi=-U){for(;qi<W+U;qi++){var j=qs-qi;if(j<-U||j>=W+U)continue;L.push({k:0,id:bodenId(qi,j),X:bx(qi,j),Y:by(qi,j)+16});
       if(HZ&&qi>=0&&j>=0&&qi<W&&j<W&&(lv(qi,j)||lv(qi+1,j)||lv(qi-1,j)||lv(qi,j+1)||lv(qi,j-1)))HL.push(j*W+qi);
       if((++c&255)===0&&aus&&aus()){qi++;return false}}}stufe=1}
-   else if(stufe===1){var WE=P.wehr;P.bauten.forEach(function(b){if(WE&&b.rolle==='mauer')return;el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});if(WE)wehrEls(WE);if(P.forum&&opt.forumBild!==false)forumEls(P.forum);P.dinge.forEach(function(d){el.push({t:d.i+d.j+1.02,n:n++,d:d})});if(HL.length){UNTER=new Uint8Array(W*W);P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)UNTER[y*W+x]=1})}
+   else if(stufe===1){var WE=P.wehr;P.bauten.forEach(function(b){if(WE&&b.rolle==='mauer')return;el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});if(WE)wehrEls(WE);var FM=P.forum&&opt.forumBild!==false&&opt.forumMitte!==false;if(P.forum&&opt.forumBild!==false)forumEls(P.forum);
+     if(FM)forumGanzEls(P.forum).forEach(function(b){el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});   // N6b3c3 Bühne und Reiter (opt.forumMitte:false = alter Stand)
+     P.dinge.forEach(function(d){if(FM&&d.rolle==='forum')return;el.push({t:d.i+d.j+1.02,n:n++,d:d})});if(HL.length){UNTER=new Uint8Array(W*W);P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)UNTER[y*W+x]=1})}
    HL.forEach(function(k){huegelEl(k%W,(k/W)|0)});HL=null;stufe=U?2:3;if(aus&&aus())return false}
    else if(stufe===2){for(;uj<W+U;uj++,ui=-U){for(;ui<W+U;ui++){if(ui>=0&&uj>=0&&ui<W&&uj<W)continue;
       if(rausch(ui,uj,P.seed+21)<B.dichte*(1+.15*Math.max(ui<0?-ui:ui-W+1,uj<0?-uj:uj-W+1)))el.push({t:ui+uj+1.02,n:n++,d:{id:B.baeume[Math.floor(rausch(ui,uj,P.seed+22)*B.baeume.length)],i:ui,j:uj}})}}stufe=3}
@@ -1844,7 +1858,8 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
       if((++c&255)===0&&aus&&aus()){qk++;return false}}el=null;stufe=5}}return true};
  if(!opt.inSchritten)fuellen(null);
  // Gebäude zusammensetzen (Baukasten); N6b: Teile des Biom-Satzes (bk-putz-…) vor den Klassenteilen, fehlt eins, gilt das Klassenteil
- var bauBild=function(e){var b=e.b,R,gz=b.id==='temple'?ganzBild(b,hole):null;if(gz){gz.X=e.X;gz.Y=e.Y;return gz}   // N6b3b1 Tempel als Ganzbild mit Wechselschild
+ var bauBild=function(e){var b=e.b,R;if(b.ganz){var fg=forumGanzBild(b,hole);if(!fg.sp)return{sp:{w:0,h:0,ax:0,ay:0,px:new Uint8Array(0)},X:e.X,Y:e.Y,fehlt:fg.fehlt,teile:0};fg.X=e.X;fg.Y=e.Y;return fg}
+  var gz=b.id==='temple'?ganzBild(b,hole):null;if(gz){gz.X=e.X;gz.Y=e.Y;return gz}   // N6b3b1 Tempel als Ganzbild mit Wechselschild
   if(b.rund){R=bk.bilde('rund',b.w,b.w,b.klasse);R.dinge=[];R.tueren=[]}
   else R={w:b.w,h:b.h,c:new Array(b.w*b.h).fill('b'),klasse:b.klasse,achse:b.achse,dach:b.dach||'sattel',offen:false,tueren:b.tuer?[[b.tuer[0]-b.i,b.tuer[1]-b.j,b.tuer[2],b.tuer[3]]]:[],spina:[],dinge:[],geschosse:b.g||1};
   var vs=b.satz?'bk-'+KURZ[b.klasse]+'-':null;
@@ -1876,7 +1891,7 @@ function bauer(P,hole,opt){var E=elemente(P,hole,opt),Zb={w:E.w,h:E.h,px:new Uin
 // sicht(x,y,w,h) setzt den Bildausschnitt; schritt(ms) → true, wenn alles Gewünschte fertig ist; sichtbare() → Kacheln im Bild (fertige mit px); umrisse() → Ersatzbild.
 // Gebäuderahmen werden vorab geschätzt (ohne Bild): links h·32+16, rechts w·32+16, oben HOCH, unten (w+h)·16+16; ueber zählt Gebäude, die größer sind (Test: 0).
 var HOCH=96,GH=51,HOCH_PLUS=17;   // N6b2b1: Geschoss 51 statt 34 (+17), je weiteres Geschoss +51
-function hoch(b){var h=HOCH+HOCH_PLUS+(b&&b.g>1?(b.g-1)*GH:0);if(b&&b.id==='temple'&&tempelGanz(b))h=Math.max(h,(b.gross?TEMPEL.gross:TEMPEL.klein).hoch);return h}   // N6b3b1 Tempel-Ganzbild höher
+function hoch(b){if(b&&b.ganz)return FORUM_GANZ[b.art].hoch;var h=HOCH+HOCH_PLUS+(b&&b.g>1?(b.g-1)*GH:0);if(b&&b.id==='temple'&&tempelGanz(b))h=Math.max(h,(b.gross?TEMPEL.gross:TEMPEL.klein).hoch);return h}   // N6b3b1 Tempel-Ganzbild höher
 function kachelBauer(P,hole,opt){opt=opt||{};var E=elemente(P,hole,{umland:opt.umland,inSchritten:true}),K=opt.kachel||256,GRENZE=opt.grenze||32,RAND=opt.rand==null?1:opt.rand,HAUS=opt.hausSpeicher||1048576;
  var NX=Math.ceil(E.w/K),NY=Math.ceil(E.h/K),NK=NX*NY,L=E.L,N=0,box=null,hat=null,fehlt={};
  var anz=null,start=null,fach=null,pos=null,phase=-1,pk=0,aufbauMs=0,bauIdx=[],farben=null;
@@ -1947,9 +1962,9 @@ function kacheln(r,K){K=K||256;var L=[],ty,tx,y;for(ty=0;ty<r.h;ty+=K)for(tx=0;t
 // Kennzahlen eines Plans für Anzeige und Tests
 function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.bauten.forEach(function(b){if(b.rolle==='house'||b.rolle==='shack')n.haeuser++;else if(b.rolle==='mauer')n.mauer++;else n.besondere++});return n}
 // Alle Kartei-Kennungen, die ein Plan braucht (Editor lädt nur diese)
-function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.forum?FORUM_IDS():[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
+function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.forum?FORUM_IDS().concat(FORUM_GANZ_IDS(P.forum)):[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={FORUM:FORUM,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);

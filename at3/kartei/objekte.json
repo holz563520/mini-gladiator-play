@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 585,
+ "typMax": 597,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -5124,6 +5124,114 @@
    "name": "Forum Colonnade End J1I1",
    "status": "uebernommen",
    "datei": "obj/forum-gang-ende-j1i1.json"
+  },
+  {
+   "id": "forum-rostra-j1",
+   "version": 1,
+   "typ": 586,
+   "kat": "anlage",
+   "name": "Speakers' Platform",
+   "status": "uebernommen",
+   "datei": "obj/forum-rostra-j1.json"
+  },
+  {
+   "id": "forum-reiter-j1",
+   "version": 1,
+   "typ": 587,
+   "kat": "anlage",
+   "name": "Equestrian Statue",
+   "status": "uebernommen",
+   "datei": "obj/forum-reiter-j1.json"
+  },
+  {
+   "id": "forum-reiter-kopf-ohne-j1",
+   "version": 1,
+   "typ": 588,
+   "kat": "anlage",
+   "name": "Statue Head: Vacant",
+   "status": "uebernommen",
+   "datei": "obj/forum-reiter-kopf-ohne-j1.json"
+  },
+  {
+   "id": "forum-rostra-j0",
+   "version": 1,
+   "typ": 589,
+   "kat": "anlage",
+   "name": "Speakers' Platform N",
+   "status": "uebernommen",
+   "datei": "obj/forum-rostra-j0.json"
+  },
+  {
+   "id": "forum-reiter-j0",
+   "version": 1,
+   "typ": 590,
+   "kat": "anlage",
+   "name": "Equestrian Statue N",
+   "status": "uebernommen",
+   "datei": "obj/forum-reiter-j0.json"
+  },
+  {
+   "id": "forum-reiter-kopf-ohne-j0",
+   "version": 1,
+   "typ": 591,
+   "kat": "anlage",
+   "name": "Statue Head: Vacant N",
+   "status": "uebernommen",
+   "datei": "obj/forum-reiter-kopf-ohne-j0.json"
+  },
+  {
+   "id": "forum-rostra-i1",
+   "version": 1,
+   "typ": 592,
+   "kat": "anlage",
+   "name": "Speakers' Platform E",
+   "status": "uebernommen",
+   "datei": "obj/forum-rostra-i1.json"
+  },
+  {
+   "id": "forum-reiter-i1",
+   "version": 1,
+   "typ": 593,
+   "kat": "anlage",
+   "name": "Equestrian Statue E",
+   "status": "uebernommen",
+   "datei": "obj/forum-reiter-i1.json"
+  },
+  {
+   "id": "forum-reiter-kopf-ohne-i1",
+   "version": 1,
+   "typ": 594,
+   "kat": "anlage",
+   "name": "Statue Head: Vacant E",
+   "status": "uebernommen",
+   "datei": "obj/forum-reiter-kopf-ohne-i1.json"
+  },
+  {
+   "id": "forum-rostra-i0",
+   "version": 1,
+   "typ": 595,
+   "kat": "anlage",
+   "name": "Speakers' Platform W",
+   "status": "uebernommen",
+   "datei": "obj/forum-rostra-i0.json"
+  },
+  {
+   "id": "forum-reiter-i0",
+   "version": 1,
+   "typ": 596,
+   "kat": "anlage",
+   "name": "Equestrian Statue W",
+   "status": "uebernommen",
+   "datei": "obj/forum-reiter-i0.json"
+  },
+  {
+   "id": "forum-reiter-kopf-ohne-i0",
+   "version": 1,
+   "typ": 597,
+   "kat": "anlage",
+   "name": "Statue Head: Vacant W",
+   "status": "uebernommen",
+   "datei": "obj/forum-reiter-kopf-ohne-i0.json"
   }
  ]
 }
