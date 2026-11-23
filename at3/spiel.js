@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='973eeb6c', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='aa2d9964', T_SKRIPT=performance.now(), S=window.AT3_64;
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
 var TXT={}, OBJTXT={}, kartei=null, B=null, BUDGETS=null, geladen={objekte:{},abgelehnt:[]};

@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 601,
+ "typMax": 607,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -5268,6 +5268,60 @@
    "name": "Theatre W",
    "status": "uebernommen",
    "datei": "obj/theater-hinten-i.json"
+  },
+  {
+   "id": "statthalter-vorn",
+   "version": 1,
+   "typ": 602,
+   "kat": "anlage",
+   "name": "Governor's Palace",
+   "status": "uebernommen",
+   "datei": "obj/statthalter-vorn.json"
+  },
+  {
+   "id": "statthalter-hinten",
+   "version": 1,
+   "typ": 603,
+   "kat": "anlage",
+   "name": "Governor's Palace N",
+   "status": "uebernommen",
+   "datei": "obj/statthalter-hinten.json"
+  },
+  {
+   "id": "statthalter-vorn-i",
+   "version": 1,
+   "typ": 604,
+   "kat": "anlage",
+   "name": "Governor's Palace E",
+   "status": "uebernommen",
+   "datei": "obj/statthalter-vorn-i.json"
+  },
+  {
+   "id": "statthalter-hinten-i",
+   "version": 1,
+   "typ": 605,
+   "kat": "anlage",
+   "name": "Governor's Palace W",
+   "status": "uebernommen",
+   "datei": "obj/statthalter-hinten-i.json"
+  },
+  {
+   "id": "statthalter-banner-ohne",
+   "version": 1,
+   "typ": 606,
+   "kat": "anlage",
+   "name": "Governor Banner Blank",
+   "status": "uebernommen",
+   "datei": "obj/statthalter-banner-ohne.json"
+  },
+  {
+   "id": "statthalter-banner-ohne-i",
+   "version": 1,
+   "typ": 607,
+   "kat": "anlage",
+   "name": "Governor Banner Blank I",
+   "status": "uebernommen",
+   "datei": "obj/statthalter-banner-ohne-i.json"
   }
  ]
 }
