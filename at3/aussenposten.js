@@ -83,11 +83,15 @@ function posten(seed,b,U,D,P,F){if(AUS||!U||!U.length)return[];var r=b.roh,g=r.g
  runde(false,NV[g]+(g===3?zz(seed,z,600)&1:0));runde(true,NH[g]);
  aus.length=Math.min(aus.length,MAXP);return aus}
 
+// N6b4b4 Postenplan: Wahl für stadtbild.js postenPlan() aus einem Posten p, dem Ortspunkt P0 [x, y] und dem Biom (Ortsbilder-Kennung). Ortsseite = Richtung vom Posten
+// zum eigenen Ort (über die Ost-West-Naht gerechnet), Plan-Seed aus Seed, Zelle und Art; Wasserseite kennt erst N7a (bis dahin aus dem Plan-Seed).
+function planOpt(seed,p,P0,biom){var ex=P0[0]-p.x,ey=P0[1]-p.y;if(ex>GW*ZF/2)ex-=GW*ZF;else if(ex<-GW*ZF/2)ex+=GW*ZF;
+ return{art:p.id,biom:biom,seed:zz(seed,p.zelle,700+p.nr),arb:p.vor+p.arb,ortSeite:Math.abs(ex)>=Math.abs(ey)?(ex>=0?'east':'west'):(ey>=0?'south':'north'),weg:p.weg}}
 // Anzeige (t = Übersetzer, ort = voller Ortsname ohne Zusatz)
 function name(p,ort,t){return t('posten.name',{ort:ort,art:p.name})+(p.spitz>=0?t('posten.spitz.'+p.gruppe+'.'+p.spitz):'')}
 function zeile(p,ort,t){return t(p.hof?'posten.zeile.hof':'posten.zeile',{name:name(p,ort,t),leute:p.vor+p.arb,weg:String(p.weg).replace(/\B(?=(\d{3})+(?!\d))/g,",")})}
 function kurzListe(L,t){if(!L.length)return t('posten.keine');return t('posten.liste',{liste:L.map(function(p){return t(p.hof?'posten.kurz.hof':'posten.kurz',{art:p.name,leute:p.vor+p.arb})}).join(', ')})}
 
-var P={AUS:AUS,VORK:VORK,HOF:HOF,SPITZ:SPITZ,NV:NV,NH:NH,MAXP:MAXP,ABST:ABST,EIGEN:EIGEN,HALB:HALB,RES:RES,FERN:FERN,halb:halb,fremde:fremde,abst:abst,umgebung:umgebung,arten:arten,posten:posten,name:name,zeile:zeile,kurzListe:kurzListe};
+var P={AUS:AUS,VORK:VORK,HOF:HOF,SPITZ:SPITZ,NV:NV,NH:NH,MAXP:MAXP,ABST:ABST,EIGEN:EIGEN,HALB:HALB,RES:RES,FERN:FERN,halb:halb,fremde:fremde,abst:abst,umgebung:umgebung,arten:arten,posten:posten,planOpt:planOpt,name:name,zeile:zeile,kurzListe:kurzListe};
 if(typeof module!=='undefined'&&module.exports)module.exports=P;else root.AT3POSTEN=P;
 })(typeof self!=='undefined'?self:this);
