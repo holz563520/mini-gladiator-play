@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 613,
+ "typMax": 619,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -5376,6 +5376,60 @@
    "name": "Senate Banner Blank I",
    "status": "uebernommen",
    "datei": "obj/senat-banner-ohne-i.json"
+  },
+  {
+   "id": "koenigspalast-vorn",
+   "version": 1,
+   "typ": 614,
+   "kat": "anlage",
+   "name": "Royal Palace",
+   "status": "uebernommen",
+   "datei": "obj/koenigspalast-vorn.json"
+  },
+  {
+   "id": "koenigspalast-hinten",
+   "version": 1,
+   "typ": 615,
+   "kat": "anlage",
+   "name": "Royal Palace N",
+   "status": "uebernommen",
+   "datei": "obj/koenigspalast-hinten.json"
+  },
+  {
+   "id": "koenigspalast-vorn-i",
+   "version": 1,
+   "typ": 616,
+   "kat": "anlage",
+   "name": "Royal Palace E",
+   "status": "uebernommen",
+   "datei": "obj/koenigspalast-vorn-i.json"
+  },
+  {
+   "id": "koenigspalast-hinten-i",
+   "version": 1,
+   "typ": 617,
+   "kat": "anlage",
+   "name": "Royal Palace W",
+   "status": "uebernommen",
+   "datei": "obj/koenigspalast-hinten-i.json"
+  },
+  {
+   "id": "koenigspalast-banner-ohne",
+   "version": 1,
+   "typ": 618,
+   "kat": "anlage",
+   "name": "Royal Banner Blank",
+   "status": "uebernommen",
+   "datei": "obj/koenigspalast-banner-ohne.json"
+  },
+  {
+   "id": "koenigspalast-banner-ohne-i",
+   "version": 1,
+   "typ": 619,
+   "kat": "anlage",
+   "name": "Royal Banner Blank I",
+   "status": "uebernommen",
+   "datei": "obj/koenigspalast-banner-ohne-i.json"
   }
  ]
 }

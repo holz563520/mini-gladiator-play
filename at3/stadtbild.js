@@ -713,6 +713,7 @@ function plan0(opt){
  if(!elend&&TPL&&opt.theater!==false)theaterFest(P,opt);   // N6b3d Theater genau 12 × 9, Tor im Bühnenhaus an der Gasse (opt.theater:false = wie vorher)
  if(!elend&&TPL&&opt.statthalter!==false)statthalterFest(P,opt);   // N6b3e1 Statthalterpalast genau 9 × 9, Portal mittig an einer Seite (opt.statthalter:false = wie vorher)
  if(!elend&&TPL&&opt.senat!==false)senatFest(P,opt);   // N6b3e2 Senat genau 8 × 9, Tor mittig an der Schmalseite (opt.senat:false = wie vorher)
+ if(!elend&&TPL&&opt.koenigspalast!==false)koenigspalastFest(P,opt);   // N6b3e3 Königspalast genau 15 × 15, Tor mittig an einer Seite (opt.koenigspalast:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false&&opt.wasserOffen!==false)wassertoreGerade(P,opt);   // N6b2e2g2 Mauer endet am Fluss mit Türmen an beiden Ufern (opt.wasserOffen:false = wie vorher)
@@ -892,6 +893,18 @@ function senatFest(P,opt){var st={n:0,fest:0,fehl:0};P.senat=st;var B=BIOME[P.bi
 function senatGanz(b){if(b.id!=='senate'||!b.tuer||!b.senat)return null;var sp=b.w>b.h;
  if(sp?b.w!==SENAT.l||b.h!==SENAT.s:b.w!==SENAT.s||b.h!==SENAT.l)return null;var d=sp?b.tuer[2]:b.tuer[3];if(!d||(sp?b.tuer[3]:b.tuer[2]))return null;
  return{id:'senat-'+(d>0?'vorn':'hinten'),spiegel:sp,rel:null,schild:'senat-',herr:b.frak||null}}
+// N6b3e3 Königspalast (Thomas 23.11.2026): nur Biome mit Pflaster (Mittelmeer), nur Hauptstädte, genau 15 × 15 Bildfelder (liegt im Plan schon so),
+// Palastanlage mit Kuppel (Mauer, Torbau, Ehrenhof, Thronsaal, Flügel, Garten); Tor mittig an einer Seite mit Weg davor (Zuschnitt festLage).
+// Wechselschild Königsbanner (b.herr, jetzt Platzhalter „ohne“, Herrscherwechsel N9). Budgetgruppe „Prunkbauten“ (1 MB je Datei, Thomas).
+// Passt nichts, bleibt das Baukastenbild (P.koenigspalast.fehl). Notausschalter opt.koenigspalast:false.
+var KOENIGSPALAST={s:15,hoch:150};
+function koenigspalastFest(P,opt){var st={n:0,fest:0,fehl:0};P.koenigspalast=st;var B=BIOME[P.biom];if(!B||!B.pflaster)return;
+ var kp=P.bauten.filter(function(b){return b.id==='royal-palace'});if(!kp.length)return;var Z=P.zellen.split(''),S=KOENIGSPALAST.s;
+ kp.forEach(function(b){st.n++;if(!festLage(P,Z,b,[{ax:'j',w:S,h:S,s:[[0,-1],[0,1]]},{ax:'i',w:S,h:S,s:[[-1,0],[1,0]]}])){st.fehl++;return}b.koenigspalast=1;st.fest++});
+ P.zellen=Z.join('')}
+// Ganzbild: Tor Süd = vorn, Nord = hinten (Zeichnungen längs j); Tor Ost/West eigene Bilder '-i'.
+function koenigspalastGanz(b){if(b.id!=='royal-palace'||!b.tuer||!b.koenigspalast||b.w!==KOENIGSPALAST.s||b.h!==KOENIGSPALAST.s)return null;var sp=b.tuer[2]!==0,d=sp?b.tuer[2]:b.tuer[3];if(!d||(sp&&b.tuer[3]))return null;
+ return{id:'koenigspalast-'+(d>0?'vorn':'hinten'),spiegel:sp,rel:null,schild:'koenigspalast-',herr:b.herr||null}}
 // N6b3b4 Ehrensäulen (Thomas 23.11.2026): nur Biome mit Pflaster (Mittelmeer), ab Marktflecken auf dem Marktplatz, Marktflecken 1, Stadt 2, ab Großstadt 3.
 // Markt = größte zusammenhängende Platzfläche (o) mit einem Marktstand. Stelle: zweite Reihe vom Platzrand (die äußere Reihe bleibt zum Gehen frei),
 // kein Ding darauf, nicht vor oder neben einem Eingang, mindestens EHREN_ABSTAND Felder auseinander; die freien Platzfelder bleiben zusammenhängend.
@@ -1802,7 +1815,7 @@ function pflasterKarte(P){var B=BIOME[P.biom];if(!B||!B.pflaster||P.pflaster===f
 var GANZ=typeof Map!=='undefined'?new Map():null;
 function relKurz(rel){return rel?String(rel).split('-')[0]:null}
 function spiegelSp(sp){var w=sp.w,px=new Uint8Array(sp.px.length),y,x;for(y=0;y<sp.h;y++)for(x=0;x<w;x++)px[y*w+x]=sp.px[y*w+w-1-x];return{w:w,h:sp.h,ax:w-1-sp.ax,ay:sp.ay,px:px}}
-function ganzBild(b,hole){var g=tempelGanz(b)||theaterGanz(b)||statthalterGanz(b)||senatGanz(b);if(!g)return null;var o=hole(g.id),oi=g.spiegel?hole(g.id+'-i'):null,suf='';if(oi&&malbild(oi)){o=oi;suf='-i'}
+function ganzBild(b,hole){var g=tempelGanz(b)||theaterGanz(b)||statthalterGanz(b)||senatGanz(b)||koenigspalastGanz(b);if(!g)return null;var o=hole(g.id),oi=g.spiegel?hole(g.id+'-i'):null,suf='';if(oi&&malbild(oi)){o=oi;suf='-i'}
  var sp=malbild(o);if(!sp)return null;var gr=b.gross?'gross':'klein',spiegel=g.spiegel&&!suf,rk=relKurz(g.rel);
  var key=g.id+'|'+(spiegel?1:0)+suf+'|'+(g.rel||g.herr||''),m=GANZ&&GANZ.get(key);if(m&&m.o===o)return{sp:m.sp,fehlt:[],teile:m.teile};
  // Anker der Kartei (Art anlage) = Mitte der Grundfläche; hier gilt die obere Ecke von Feld (0, 0) wie bei allen Gebäuden
@@ -1910,7 +1923,7 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
  if(!opt.inSchritten)fuellen(null);
  // Gebäude zusammensetzen (Baukasten); N6b: Teile des Biom-Satzes (bk-putz-…) vor den Klassenteilen, fehlt eins, gilt das Klassenteil
  var bauBild=function(e){var b=e.b,R;if(b.ganz){var fg=forumGanzBild(b,hole);if(!fg.sp)return{sp:{w:0,h:0,ax:0,ay:0,px:new Uint8Array(0)},X:e.X,Y:e.Y,fehlt:fg.fehlt,teile:0};fg.X=e.X;fg.Y=e.Y;return fg}
-  var gz=b.id==='temple'||b.id==='theatre'||b.id==='governor'||b.id==='senate'?ganzBild(b,hole):null;if(gz){gz.X=e.X;gz.Y=e.Y;return gz}   // N6b3b1 Tempel als Ganzbild mit Wechselschild, N6b3d Theater
+  var gz=b.id==='temple'||b.id==='theatre'||b.id==='governor'||b.id==='senate'||b.id==='royal-palace'?ganzBild(b,hole):null;if(gz){gz.X=e.X;gz.Y=e.Y;return gz}   // N6b3b1 Tempel als Ganzbild mit Wechselschild, N6b3d Theater
   if(b.rund){R=bk.bilde('rund',b.w,b.w,b.klasse);R.dinge=[];R.tueren=[]}
   else R={w:b.w,h:b.h,c:new Array(b.w*b.h).fill('b'),klasse:b.klasse,achse:b.achse,dach:b.dach||'sattel',offen:false,tueren:b.tuer?[[b.tuer[0]-b.i,b.tuer[1]-b.j,b.tuer[2],b.tuer[3]]]:[],spina:[],dinge:[],geschosse:b.g||1};
   var vs=b.satz?'bk-'+KURZ[b.klasse]+'-':null;
@@ -1942,7 +1955,7 @@ function bauer(P,hole,opt){var E=elemente(P,hole,opt),Zb={w:E.w,h:E.h,px:new Uin
 // sicht(x,y,w,h) setzt den Bildausschnitt; schritt(ms) → true, wenn alles Gewünschte fertig ist; sichtbare() → Kacheln im Bild (fertige mit px); umrisse() → Ersatzbild.
 // Gebäuderahmen werden vorab geschätzt (ohne Bild): links h·32+16, rechts w·32+16, oben HOCH, unten (w+h)·16+16; ueber zählt Gebäude, die größer sind (Test: 0).
 var HOCH=96,GH=51,HOCH_PLUS=17;   // N6b2b1: Geschoss 51 statt 34 (+17), je weiteres Geschoss +51
-function hoch(b){if(b&&b.ganz)return FORUM_GANZ[b.art].hoch;var h=HOCH+HOCH_PLUS+(b&&b.g>1?(b.g-1)*GH:0);if(b&&b.id==='temple'&&tempelGanz(b))h=Math.max(h,(b.gross?TEMPEL.gross:TEMPEL.klein).hoch);if(b&&b.id==='theatre'&&theaterGanz(b))h=Math.max(h,THEATER.hoch);if(b&&b.id==='governor'&&statthalterGanz(b))h=Math.max(h,STATTHALTER.hoch);if(b&&b.id==='senate'&&senatGanz(b))h=Math.max(h,SENAT.hoch);return h}   // N6b3b1 Tempel-Ganzbild höher
+function hoch(b){if(b&&b.ganz)return FORUM_GANZ[b.art].hoch;var h=HOCH+HOCH_PLUS+(b&&b.g>1?(b.g-1)*GH:0);if(b&&b.id==='temple'&&tempelGanz(b))h=Math.max(h,(b.gross?TEMPEL.gross:TEMPEL.klein).hoch);if(b&&b.id==='theatre'&&theaterGanz(b))h=Math.max(h,THEATER.hoch);if(b&&b.id==='governor'&&statthalterGanz(b))h=Math.max(h,STATTHALTER.hoch);if(b&&b.id==='senate'&&senatGanz(b))h=Math.max(h,SENAT.hoch);if(b&&b.id==='royal-palace'&&koenigspalastGanz(b))h=Math.max(h,KOENIGSPALAST.hoch);return h}   // N6b3b1 Tempel-Ganzbild höher
 function kachelBauer(P,hole,opt){opt=opt||{};var E=elemente(P,hole,{umland:opt.umland,inSchritten:true}),K=opt.kachel||256,GRENZE=opt.grenze||32,RAND=opt.rand==null?1:opt.rand,HAUS=opt.hausSpeicher||1048576;
  var NX=Math.ceil(E.w/K),NY=Math.ceil(E.h/K),NK=NX*NY,L=E.L,N=0,box=null,hat=null,fehlt={};
  var anz=null,start=null,fach=null,pos=null,phase=-1,pk=0,aufbauMs=0,bauIdx=[],farben=null;
@@ -2016,6 +2029,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.forum?FORUM_IDS().concat(FORUM_GANZ_IDS(P.forum)):[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);

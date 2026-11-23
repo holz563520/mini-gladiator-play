@@ -23,8 +23,8 @@ var STATUSNAME={skizze:'Skizze',geprueft:'geprüft',uebernommen:'übernommen'},A
 // Ampel eines Objekts: gedrosselte Messung zählt, eine rote Gerätemessung macht rot. Veraltete Messung (Bild geändert) = grau.
 function ampel(o){var s=S(),sig=s.signatur(o);if(!o.messung)return{ampel:'keine',gruende:['noch nicht gemessen']};
  if(o.messung.sig!==sig)return{ampel:'alt',gruende:['Bild geändert, neu messen']};
- var b=s.bewerte(o.messung,P.B,o.kat);
- if(o.geraet&&o.geraet.sig===sig){var g=s.bewerte(o.geraet,P.B,o.kat);if(g.ampel==='rot')return{ampel:'rot',gruende:b.gruende.concat(g.gruende.map(function(x){return'Gerät: '+x}))}}
+ var b=s.bewerte(o.messung,P.B,o.kat,o.id);
+ if(o.geraet&&o.geraet.sig===sig){var g=s.bewerte(o.geraet,P.B,o.kat,o.id);if(g.ampel==='rot')return{ampel:'rot',gruende:b.gruende.concat(g.gruende.map(function(x){return'Gerät: '+x}))}}
  return b}
 
 function aufbauen(el){
@@ -62,15 +62,15 @@ function liste(){var h=ids().map(function(id){var o=objekt(id),a=ampel(o);
 
 function waehlen(id){if(P.laeuft)return;P.o=objekt(id);if(!P.o)return;$('#pObj').hidden=false;liste();zeigen();meld('');
  vorschau()}
-function zeigen(){var s=S(),o=P.o,a=ampel(o),g=s.budgetGruppe(P.B,o.kat);
+function zeigen(){var s=S(),o=P.o,a=ampel(o),g=s.budgetGruppe(P.B,o.kat,o.id);
  $('#pName').innerHTML='<i class="amp '+a.ampel+'"></i>'+esc(o.name||o.id);
  $('#pInfo').textContent=o.id+' · Version '+o.version+' · Art '+o.kat+' · Gruppe '+(g?g.name:'keine')+' · Status '+(STATUSNAME[o.status]||o.status)+' · Datei '+s.dateiBytes(o)+' B'+(g?' von '+g.datei+' B':'');
  $('#pUeb').disabled=o.status==='uebernommen';bericht()}
-function zeile(m,a){var g=S().budgetGruppe(P.B,P.o.kat),b=g&&g[a];if(!m||!m[a]||!b)return a==='fp'&&!b?'<tr><td>First Person</td><td colspan="2" class="leise">kein Budget (Boden, Ware)</td></tr>':'';
+function zeile(m,a){var g=S().budgetGruppe(P.B,P.o.kat,P.o.id),b=g&&g[a];if(!m||!m[a]||!b)return a==='fp'&&!b?'<tr><td>First Person</td><td colspan="2" class="leise">kein Budget (Boden, Ware)</td></tr>':'';
  return m[a].map(function(x){return'<tr><td>'+(a==='karte'?'Karte':'First Person')+' '+x.n+' Stück</td><td class="'+(x.n===b.stufen[b.stufen.length-1]?(x.p95>b.ms?'witz':''):'leise')+'">p95 '+x.p95.toFixed(2)+' ms · max '+x.max.toFixed(2)+' ms</td><td class="leise">Budget '+b.ms+' ms</td></tr>'}).join('')}
 function bericht(){var o=P.o,s=S(),sig=s.signatur(o),h='',a=ampel(o);
  [['messung','Gedrosselt ('+(o.messung&&o.messung.drossel||P.B.drossel)+'×)'],['geraet','Auf dem Gerät']].forEach(function(w){var m=o[w[0]];if(!m)return;
-  var alt=m.sig!==sig,b=alt?{ampel:'alt',gruende:['Bild geändert']}:s.bewerte(m,P.B,o.kat);
+  var alt=m.sig!==sig,b=alt?{ampel:'alt',gruende:['Bild geändert']}:s.bewerte(m,P.B,o.kat,o.id);
   h+='<h3><i class="amp '+b.ampel+'"></i>'+w[1]+'</h3><p class="leise">'+esc(m.datum)+(m.geraet?' · '+esc(m.geraet):'')+(alt?' · veraltet':'')+'</p><table class="tabelle">'+zeile(m,'karte')+zeile(m,'fp')+
    '<tr><td>Vorbereitung</td><td>'+m.vorbereitungMs.toFixed(1)+' ms</td><td class="leise">einmal je Objekt</td></tr><tr><td>Bildspeicher</td><td>'+(m.bildspeicher/1024).toFixed(1)+' KB</td><td class="leise">Budget '+(P.B.bildspeicher/1024)+' KB</td></tr></table>'+
    (m.kerne?'<p>Kerne laut Gerät: '+m.kerne.gemeldet+'. Ein Hintergrundkern schafft '+Math.round(m.kerne.einer*100)+' % des Hauptkerns; '+m.kerne.parallel+' Hintergrundkerne zusammen '+m.kerne.zusammen.toFixed(1).replace('.',',')+'× den Hauptkern.</p>':'')+
@@ -78,7 +78,7 @@ function bericht(){var o=P.o,s=S(),sig=s.signatur(o),h='',a=ampel(o);
  $('#pBericht').innerHTML=h||'<p class="leise">Noch nicht gemessen. '+(a.ampel==='keine'?'Die Waage wartet.':'')+'</p>'}
 
 // ---------- Prüfer ----------
-function pruefer(o){var s=S(),f=s.pruefeObjekt(o).concat(K().pruefeKarte(o,alleTexte()));if(!s.budgetGruppe(P.B,o.kat))f.push('keine Budgetgruppe');return f}
+function pruefer(o){var s=S(),f=s.pruefeObjekt(o).concat(K().pruefeKarte(o,alleTexte()));if(!s.budgetGruppe(P.B,o.kat,o.id))f.push('keine Budgetgruppe');return f}
 function pruefen(){var o=P.o,f=pruefer(o);
  if(f.length){if(o.status!=='skizze'){o.status='skizze';speichern()}zeigen();liste();return meld('Prüfer: '+f.join('; ')+'. Bleibt Skizze.',1)}
  if(o.status==='skizze'){o.status='geprueft';speichern()}zeigen();liste();meld(o.status==='uebernommen'?'Prüfer: alles in Ordnung, bleibt übernommen.':'Geprüft: Bild, beide Ansichten, Karte und Texte in Ordnung. Jetzt messen.')}
@@ -116,7 +116,7 @@ function stufe(cv,mal,L,faktor){var t=[],i=0,x=cv.getContext('2d');
  function eins(){var a=performance.now();for(var k=0;k<faktor;k++)mal(cv,L);x.getImageData(0,0,1,1);var d=performance.now()-a;if(i++>=WARM)t.push(d)}
  function weiter(){if(i>=BILDER+WARM)return Promise.resolve({n:L.length,p95:p95(t),max:Math.max.apply(null,t)});return bild().then(function(){eins();return weiter()})}
  return weiter()}
-function vorschau(){var V=vorbereiten(P.o),g=S().budgetGruppe(P.B,P.o.kat),cv=$('#pCv');if(!g||!V.karte.length)return;cv.width=KW;cv.height=KH;malKarte(cv,szeneKarte(V,g.karte.stufen[0],7))}
+function vorschau(){var V=vorbereiten(P.o),g=S().budgetGruppe(P.B,P.o.kat,P.o.id),cv=$('#pCv');if(!g||!V.karte.length)return;cv.width=KW;cv.height=KH;malKarte(cv,szeneKarte(V,g.karte.stufen[0],7))}
 
 // ---------- Kerne (nur „auf diesem Gerät“) ----------
 var ARBEIT='function arbeit(ms){var t=performance.now(),n=0,x=1;while(performance.now()-t<ms){for(var i=0;i<20000;i++)x=(x*1103515245+12345)|0;n++}return n+(x===7?1:0)}';
@@ -129,7 +129,7 @@ function kerne(){var g=navigator.hardwareConcurrency||1,p=Math.max(1,Math.min(8,
   var L=[];for(var i=0;i<p;i++)L.push(worker(400));return Promise.all(L).then(function(a){var sum=0,ok=0;a.forEach(function(x){if(x){sum+=x;ok++}});
    return{gemeldet:g,einer:e&&h?e/h:0,parallel:ok,zusammen:h?sum/h:0}})})})}
 
-function messen(geraet){if(P.laeuft)return;var o=P.o,s=S(),g=s.budgetGruppe(P.B,o.kat);
+function messen(geraet){if(P.laeuft)return;var o=P.o,s=S(),g=s.budgetGruppe(P.B,o.kat,o.id);
  if(!g)return meld('Keine Budgetgruppe für Art „'+o.kat+'“.',1);
  var f=s.pruefeObjekt(o);if(f.length)return meld('Erst die Prüferfehler beheben: '+f.join('; ')+'.',1);
  var faktor=geraet?1:P.B.drossel,V=vorbereiten(o),cv=$('#pCv'),erg={sig:s.signatur(o),datum:new Date().toISOString().slice(0,16).replace('T',' '),drossel:faktor,
@@ -142,7 +142,7 @@ function messen(geraet){if(P.laeuft)return;var o=P.o,s=S(),g=s.budgetGruppe(P.B,
   var fpS=p[0]==='fp';cv.width=fpS?FW:KW;cv.height=fpS?FH:KH;cv.classList.toggle('fp',fpS);
   return stufe(cv,fpS?malFp:malKarte,fpS?szeneFp(V,p[1],11+p[2]):szeneKarte(V,p[1],7+p[2]),faktor).then(function(r){erg[p[0]].push(r)})})});
  if(geraet)kette=kette.then(function(){meld('Zähle die Kerne und lasse einen Hintergrundkern schwitzen …');return kerne().then(function(k){erg.kerne=k})});
- return kette.then(function(){P.laeuft=false;var b=s.bewerte(erg,P.B,o.kat);erg.ampel=b.ampel;
+ return kette.then(function(){P.laeuft=false;var b=s.bewerte(erg,P.B,o.kat,o.id);erg.ampel=b.ampel;
   if(geraet)o.geraet=erg;else o.messung=erg;speichern();
   if(geraet&&b.ampel==='rot'&&o.status==='uebernommen'){o.status='geprueft';speichern()}
   zeigen();liste();meld((b.ampel==='rot'?'Über Budget. ':b.ampel==='gelb'?'Knapp im Budget. ':'Im Budget. ')+'Gemessen in '+((performance.now()-t0)/1000).toFixed(1).replace('.',',')+' s.'+

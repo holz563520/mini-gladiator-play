@@ -1,7 +1,7 @@
 {
  "format": "at3-budgets",
  "version": 1,
- "stand": "15.11.2026, Startwerte von Thomas freigegeben (M6). Nach M7 und MK1 einmal nachschärfen, nie still erhöhen. 16.11.2026 (Thomas, G4b): Natur wird ins Bodenbild gebacken, auf der Karte zählt die Backzeit im Bildkern (Budget im Spiel), nicht das Einzelzeichnen; First Person der Natur wird erst ab FP1 geprüft. 16.11.2026 (Thomas, G5b): Bauteile (Wand, Tür, Tor, Dach) werden ebenso ins Bodenbild gebacken; Karte zählt die Backzeit, First Person der Bauteile ab FP2. 16.11.2026 (Thomas, FP2b): Bauteile werden in First Person im Strahlenzeichner mitgerechnet; dort zählt die Bildzeit im Spiel (Bild p95 ≤ 33,3 ms bei 4× gedrosselt, Bauprobe mit 50 und 200 Häusern), nicht das Einzelzeichnen. 20.11.2026 (AR1a, Vorschlag zur Freigabe durch Thomas): neue Gruppe „Große Anlagen“ (Arena, Rennbahn): ein großes Bild je Ausbaustufe, wenige Stück im Bild, darum eigene Grenzen für Datei und Bildspeicher.",
+ "stand": "15.11.2026, Startwerte von Thomas freigegeben (M6). Nach M7 und MK1 einmal nachschärfen, nie still erhöhen. 16.11.2026 (Thomas, G4b): Natur wird ins Bodenbild gebacken, auf der Karte zählt die Backzeit im Bildkern (Budget im Spiel), nicht das Einzelzeichnen; First Person der Natur wird erst ab FP1 geprüft. 16.11.2026 (Thomas, G5b): Bauteile (Wand, Tür, Tor, Dach) werden ebenso ins Bodenbild gebacken; Karte zählt die Backzeit, First Person der Bauteile ab FP2. 16.11.2026 (Thomas, FP2b): Bauteile werden in First Person im Strahlenzeichner mitgerechnet; dort zählt die Bildzeit im Spiel (Bild p95 ≤ 33,3 ms bei 4× gedrosselt, Bauprobe mit 50 und 200 Häusern), nicht das Einzelzeichnen. 20.11.2026 (AR1a, Vorschlag zur Freigabe durch Thomas): neue Gruppe „Große Anlagen“ (Arena, Rennbahn): ein großes Bild je Ausbaustufe, wenige Stück im Bild, darum eigene Grenzen für Datei und Bildspeicher. 23.11.2026 (Thomas, N6b3e3): neue Gruppe „Prunkbauten“ für sehr große Ganzbilder (Königspalast 15 × 15, je Hauptstadt einer): Datei bis 1 MB statt 512 KB, sonst wie „Große Anlagen“; gilt nach Kennungsanfang und geht der Art vor.",
  "drossel": 4,
  "bildspeicher": 262144,
  "gruppen": {
@@ -10,6 +10,7 @@
   "bau": {"name": "Bauteile", "kats": ["wand", "dach", "einrichtung"], "datei": 16384, "karte": {"stufen": [50, 500], "ms": 8, "gilt": "backzeit"}, "fp": {"stufen": [50, 200], "ms": 8, "gilt": "bildzeit"}},
   "figuren": {"name": "Figuren, Tiere, Karren", "kats": ["figur", "tier", "karren"], "datei": 24576, "karte": {"stufen": [50, 500], "ms": 8}, "fp": {"stufen": [20, 100], "ms": 8}},
   "ware": {"name": "Ware", "kats": ["ware"], "datei": 4096, "karte": {"stufen": [100, 1000], "ms": 4}, "fp": null},
+  "prunkbauten": {"name": "Prunkbauten (Thomas 23.11.2026)", "kats": [], "praefix": ["koenigspalast-"], "datei": 1048576, "bildspeicher": 4194304, "karte": {"stufen": [1, 4], "ms": 8}, "fp": {"stufen": [1, 4], "ms": 8}},
   "anlagen": {"name": "Große Anlagen (Vorschlag AR1a)", "kats": ["anlage"], "datei": 524288, "bildspeicher": 4194304, "karte": {"stufen": [1, 4], "ms": 8}, "fp": {"stufen": [1, 4], "ms": 8}}
  }
 }

@@ -46,10 +46,10 @@ function ansichtName(k){if(k==='fp')return'First Person (Farbfläche)';if(k==='n
  if(k[0]==='k')return'Karte Richtung '+k.slice(1);return'First Person schräg '+k.slice(1)}
 
 // Letzte Messung kurz: Ampel gegen das Budget, Datum, Datei, größte Stufe je Ansicht
-function messKurz(S,B,o){var m=o.messung,g=S.budgetGruppe(B,o.kat),r={budget:g?g.id:null};
+function messKurz(S,B,o){var m=o.messung,g=S.budgetGruppe(B,o.kat,o.id),r={budget:g?g.id:null};
  if(g)r.soll={datei:g.datei,karte:g.karte&&!g.karte.gilt?g.karte.ms:null,fp:g.fp&&!g.fp.gilt?g.fp.ms:null};
  if(!m){r.ampel='keine';return r}
- var bw=S.bewerte(m,B,o.kat);r.ampel=m.sig===S.signatur(o)?bw.ampel:'veraltet';r.datum=m.datum;r.datei=m.datei;
+ var bw=S.bewerte(m,B,o.kat,o.id);r.ampel=m.sig===S.signatur(o)?bw.ampel:'veraltet';r.datum=m.datum;r.datei=m.datei;
  ['karte','fp'].forEach(function(a){var L=m[a]||[],s=L[L.length-1];if(s)r[a]={n:s.n,ms:Math.round(s.p95*10)/10}});return r}
 
 // Welche Teile setzt ein Gebäude zusammen? Baukasten mit einem leeren 1 × 1-Bild für jedes Teil: setzen() fragt jede Kennung ab, gemalt wird fast nichts.

@@ -182,10 +182,12 @@ function nachAenderung(alt,neu){if(!alt)return neu;
  if(signatur(alt)!==signatur(neu)){neu.status='skizze';delete neu.messung;delete neu.geraet;return neu}
  if(alt.messung)neu.messung=alt.messung;if(alt.geraet)neu.geraet=alt.geraet;
  neu.status=JSON.stringify([alt.karte,alt.name,alt.typ])===JSON.stringify([neu.karte,neu.name,neu.typ])?(alt.status||'skizze'):'skizze';return neu}
-function budgetGruppe(B,kat){if(!B||!B.gruppen)return null;for(var k in B.gruppen)if(B.gruppen[k].kats.indexOf(kat)>=0){var g=B.gruppen[k];g.id=k;return g}return null}
+// N6b3e3 (Thomas 23.11.2026): eine Gruppe kann statt Arten Kennungsanfänge haben (praefix, z. B. Prunkbauten); sie geht der Art vor.
+function budgetGruppe(B,kat,id){if(!B||!B.gruppen)return null;var k,g;if(id)for(k in B.gruppen){g=B.gruppen[k];if(g.praefix&&g.praefix.some(function(p){return id.indexOf(p)===0})){g.id=k;return g}}
+ for(k in B.gruppen)if(B.gruppen[k].kats.indexOf(kat)>=0){g=B.gruppen[k];g.id=k;return g}return null}
 // Messung gegen Budget: rot = über Budget (keine Übernahme), gelb = über 75 % des Budgets, grün = darunter.
 // m = {datei, bildspeicher, karte:[{n,p95}], fp:[{n,p95}]}; bewertet wird die größte Stufe. Budgets wirken auch auf alte Messungen.
-function bewerte(m,B,kat){var g=budgetGruppe(B,kat),r=[],gelb=[];
+function bewerte(m,B,kat,id){var g=budgetGruppe(B,kat,id),r=[],gelb=[];
  if(!g)return{ampel:'rot',gruende:['keine Budgetgruppe für Art „'+kat+'“']};
  if(!m)return{ampel:'keine',gruende:['noch nicht gemessen']};
  if(m.datei>g.datei)r.push('Datei '+m.datei+' B über '+g.datei+' B');else if(m.datei>.75*g.datei)gelb.push('Datei knapp');
@@ -200,8 +202,8 @@ function bewerte(m,B,kat){var g=budgetGruppe(B,kat),r=[],gelb=[];
 function ladbar(o,B){var f=pruefeObjekt(o);if(!o||o.format!=='at3-objekt')return f;var sig=signatur(o);
  if(o.status!=='uebernommen')f.push('Status ist „'+o.status+'“, nicht „übernommen“');
  if(!o.messung)f.push('keine Messung');else if(o.messung.sig!==sig)f.push('Messung veraltet (Bild geändert)');
- else if(B){var b=bewerte(o.messung,B,o.kat);if(b.ampel==='rot')f=f.concat(b.gruende);if(dateiBytes(o)>(budgetGruppe(B,o.kat)||{datei:0}).datei)f.push('Datei über Budget')}
- if(o.geraet&&o.geraet.sig===sig&&B&&bewerte(o.geraet,B,o.kat).ampel==='rot')f.push('auf dem Gerät über Budget');
+ else if(B){var b=bewerte(o.messung,B,o.kat,o.id);if(b.ampel==='rot')f=f.concat(b.gruende);if(dateiBytes(o)>(budgetGruppe(B,o.kat,o.id)||{datei:0}).datei)f.push('Datei über Budget')}
+ if(o.geraet&&o.geraet.sig===sig&&B&&bewerte(o.geraet,B,o.kat,o.id).ampel==='rot')f.push('auf dem Gerät über Budget');
  return f}
 // Lader fürs Spiel (ab G1): holt nur Kartei-Einträge mit Status „übernommen“ und prüft jedes Objekt noch einmal mit ladbar.
 // holen(datei) → Promise mit dem Objekt. Ergebnis {objekte:{id:o}, abgelehnt:[{id,gruende}]}.
