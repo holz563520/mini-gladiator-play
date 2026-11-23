@@ -732,6 +732,20 @@ function forumArtLok(Su,St,t,u){if(t<0||u<0||t>=St||u>=Su)return null;if(t<1||u<
  var m=Su>>1,ts=((4+St)>>1)-1;if(t>=2&&t<=3&&u>=m-2&&u<=m+1)return 'rostra';if(t>=ts&&t<=ts+1&&u>=m-1&&u<=m)return 'statue';return 'platz'}
 function forumArtF(F,i,j){if(i<F.i||j<F.j||i>=F.i+F.w||j>=F.j+F.h)return null;var M=forumMass(F),L=forumLok(F,i,j);return forumArtLok(M[0],M[1],L[0],L[1])}
 function forumArt(P,i,j){return P&&P.forum?forumArtF(P.forum,i,j):null}
+// N6b3c2 Säulenhallen: ein vorgezeichnetes Randstück je Laden- und Gangfeld (tools/at3-forum-hallen.py), Kennung nach Lage.
+// Seite = Rand des Forums, an dem die Halle steht (i0 = kleinstes i …); Ecke = zwei Hallen, Ende = Feld an der offenen Seite. Varianten nach Lage aus dem Seed:
+// Laden ruhig ~45 %, Läden zu ~27 %, Metzger ~15 %, aufgegeben ~13 %; Gang ruhig 60 %, Tauben 22 %, Säule mit Riss 18 %.
+var FORUM_SEITE=['i0','i1','j0','j1'];
+function forumOffen(F){var d=F.offen;return d[0]>0?'i1':d[0]<0?'i0':d[1]>0?'j1':'j0'}
+function forumId(F,x,y,seed){var a=forumArtF(F,x,y);if(a!=='laden'&&a!=='gang')return null;var tief=a==='laden'?0:1,of=forumOffen(F);
+ var ab={i0:x-F.i,i1:F.i+F.w-1-x,j0:y-F.j,j1:F.j+F.h-1-y},E=FORUM_SEITE.filter(function(s){return s!==of&&ab[s]===tief});
+ if(E.length===2)return 'forum-'+a+'-ecke-'+E[0]+E[1];
+ if(ab[of]===0)return 'forum-'+a+'-ende-'+E[0]+of;
+ var u=rausch(x,y,(seed|0)+161),v=a==='laden'?(u<.45?'':u<.72?'-a':u<.87?'-b':'-c'):(u<.6?'':u<.82?'-a':'-b');
+ return 'forum-'+a+'-'+E[0]+v}
+function FORUM_IDS(){var r=[];FORUM_SEITE.forEach(function(s){['','-a','-b','-c'].forEach(function(v){r.push('forum-laden-'+s+v);if(v!=='-c')r.push('forum-gang-'+s+v)});
+  FORUM_SEITE.forEach(function(o){if(o[0]!==s[0])['laden','gang'].forEach(function(a){r.push('forum-'+a+'-ende-'+s+o)})})});
+ ['i0j0','i0j1','i1j0','i1j1'].forEach(function(e){r.push('forum-laden-ecke-'+e,'forum-gang-ecke-'+e)});return r}
 // Rechtecke je Art (für Bilder und Spielwege)
 function forumTeile(F){var R={laden:[],gang:[],rostra:[],statue:[]},seen=new Uint8Array(F.w*F.h),x,y;
  var art=function(x,y){return forumArtF(F,F.i+x,F.j+y)},frei=function(x,y,a){return x<F.w&&y<F.h&&!seen[y*F.w+x]&&art(x,y)===a};
@@ -1813,12 +1827,14 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
    var st=R.stufe(k);dz(a==='r'?'fels-treppe-'+st:a!=='T'&&st!=='.'?'mauer-rampe-'+st:'mauer-gang',top);
    var zb=R.zinne(k);if(zb)['n','w','o','s'].forEach(function(d){if(zb&ZBIT[d])dz(zinneWahl(d,i,j,P.seed),top)});
    spiess.forEach(function(sp2){dz('torhaus-spiesse-'+sp2[0]+(rausch(i,j,P.seed+151)<.5?'':'-a'),sp2[1])})})};   // Köpfe auf Spießen über der Mitte der Außenseite
+ // N6b3c2 Säulenhallen: je Laden- und Gangfeld ein Randstück auf der Stufe des Forums (opt.forumBild:false = schlichter Marmorplatz wie bisher)
+ var forumEls=function(F){for(var y=F.j;y<F.j+F.h;y++)for(var x=F.i;x<F.i+F.w;x++){var id=forumId(F,x,y,P.seed);if(id)el.push({t:x+y+.02,n:n++,d:{id:id,i:x,j:y,hz:F.hz|0}})}};
  // Liste füllen, auf Wunsch in Schritten: aus() → true, wenn der Zeitanteil um ist (Kachelbauer); bauer() füllt am Stück wie bisher
  var fuellen=function(aus){var c=0;while(stufe<5){
    if(stufe===0){for(;qs<=2*(W-1)+U;qs++,qi=-U){for(;qi<W+U;qi++){var j=qs-qi;if(j<-U||j>=W+U)continue;L.push({k:0,id:bodenId(qi,j),X:bx(qi,j),Y:by(qi,j)+16});
       if(HZ&&qi>=0&&j>=0&&qi<W&&j<W&&(lv(qi,j)||lv(qi+1,j)||lv(qi-1,j)||lv(qi,j+1)||lv(qi,j-1)))HL.push(j*W+qi);
       if((++c&255)===0&&aus&&aus()){qi++;return false}}}stufe=1}
-   else if(stufe===1){var WE=P.wehr;P.bauten.forEach(function(b){if(WE&&b.rolle==='mauer')return;el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});if(WE)wehrEls(WE);P.dinge.forEach(function(d){el.push({t:d.i+d.j+1.02,n:n++,d:d})});if(HL.length){UNTER=new Uint8Array(W*W);P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)UNTER[y*W+x]=1})}
+   else if(stufe===1){var WE=P.wehr;P.bauten.forEach(function(b){if(WE&&b.rolle==='mauer')return;el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});if(WE)wehrEls(WE);if(P.forum&&opt.forumBild!==false)forumEls(P.forum);P.dinge.forEach(function(d){el.push({t:d.i+d.j+1.02,n:n++,d:d})});if(HL.length){UNTER=new Uint8Array(W*W);P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)UNTER[y*W+x]=1})}
    HL.forEach(function(k){huegelEl(k%W,(k/W)|0)});HL=null;stufe=U?2:3;if(aus&&aus())return false}
    else if(stufe===2){for(;uj<W+U;uj++,ui=-U){for(;ui<W+U;ui++){if(ui>=0&&uj>=0&&ui<W&&uj<W)continue;
       if(rausch(ui,uj,P.seed+21)<B.dichte*(1+.15*Math.max(ui<0?-ui:ui-W+1,uj<0?-uj:uj-W+1)))el.push({t:ui+uj+1.02,n:n++,d:{id:B.baeume[Math.floor(rausch(ui,uj,P.seed+22)*B.baeume.length)],i:ui,j:uj}})}}stufe=3}
@@ -1931,9 +1947,9 @@ function kacheln(r,K){K=K||256;var L=[],ty,tx,y;for(ty=0;ty<r.h;ty+=K)for(tx=0;t
 // Kennzahlen eines Plans für Anzeige und Tests
 function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.bauten.forEach(function(b){if(b.rolle==='house'||b.rolle==='shack')n.haeuser++;else if(b.rolle==='mauer')n.mauer++;else n.besondere++});return n}
 // Alle Kartei-Kennungen, die ein Plan braucht (Editor lädt nur diese)
-function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
+function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.forum?FORUM_IDS():[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={FORUM:FORUM,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={FORUM:FORUM,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);

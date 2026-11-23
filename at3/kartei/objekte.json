@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 533,
+ "typMax": 585,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -4656,6 +4656,474 @@
    "name": "Column of Shame I",
    "status": "uebernommen",
    "datei": "obj/ehrensaeule-schande-i.json"
+  },
+  {
+   "id": "forum-laden-i0",
+   "version": 1,
+   "typ": 534,
+   "kat": "baum",
+   "name": "Forum Shop I0",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-i0.json"
+  },
+  {
+   "id": "forum-laden-i0-a",
+   "version": 1,
+   "typ": 535,
+   "kat": "baum",
+   "name": "Forum Shop Shut I0 A",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-i0-a.json"
+  },
+  {
+   "id": "forum-laden-i0-b",
+   "version": 1,
+   "typ": 536,
+   "kat": "baum",
+   "name": "Forum Butcher I0 B",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-i0-b.json"
+  },
+  {
+   "id": "forum-laden-i0-c",
+   "version": 1,
+   "typ": 537,
+   "kat": "baum",
+   "name": "Forum Shop Abandoned I0 C",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-i0-c.json"
+  },
+  {
+   "id": "forum-gang-i0",
+   "version": 1,
+   "typ": 538,
+   "kat": "baum",
+   "name": "Forum Colonnade I0",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-i0.json"
+  },
+  {
+   "id": "forum-gang-i0-a",
+   "version": 1,
+   "typ": 539,
+   "kat": "baum",
+   "name": "Forum Colonnade Pigeons I0 A",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-i0-a.json"
+  },
+  {
+   "id": "forum-gang-i0-b",
+   "version": 1,
+   "typ": 540,
+   "kat": "baum",
+   "name": "Forum Colonnade Cracked I0 B",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-i0-b.json"
+  },
+  {
+   "id": "forum-laden-i1",
+   "version": 1,
+   "typ": 541,
+   "kat": "baum",
+   "name": "Forum Shop I1",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-i1.json"
+  },
+  {
+   "id": "forum-laden-i1-a",
+   "version": 1,
+   "typ": 542,
+   "kat": "baum",
+   "name": "Forum Shop Shut I1 A",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-i1-a.json"
+  },
+  {
+   "id": "forum-laden-i1-b",
+   "version": 1,
+   "typ": 543,
+   "kat": "baum",
+   "name": "Forum Butcher I1 B",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-i1-b.json"
+  },
+  {
+   "id": "forum-laden-i1-c",
+   "version": 1,
+   "typ": 544,
+   "kat": "baum",
+   "name": "Forum Shop Abandoned I1 C",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-i1-c.json"
+  },
+  {
+   "id": "forum-gang-i1",
+   "version": 1,
+   "typ": 545,
+   "kat": "baum",
+   "name": "Forum Colonnade I1",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-i1.json"
+  },
+  {
+   "id": "forum-gang-i1-a",
+   "version": 1,
+   "typ": 546,
+   "kat": "baum",
+   "name": "Forum Colonnade Pigeons I1 A",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-i1-a.json"
+  },
+  {
+   "id": "forum-gang-i1-b",
+   "version": 1,
+   "typ": 547,
+   "kat": "baum",
+   "name": "Forum Colonnade Cracked I1 B",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-i1-b.json"
+  },
+  {
+   "id": "forum-laden-j0",
+   "version": 1,
+   "typ": 548,
+   "kat": "baum",
+   "name": "Forum Shop J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-j0.json"
+  },
+  {
+   "id": "forum-laden-j0-a",
+   "version": 1,
+   "typ": 549,
+   "kat": "baum",
+   "name": "Forum Shop Shut J0 A",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-j0-a.json"
+  },
+  {
+   "id": "forum-laden-j0-b",
+   "version": 1,
+   "typ": 550,
+   "kat": "baum",
+   "name": "Forum Butcher J0 B",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-j0-b.json"
+  },
+  {
+   "id": "forum-laden-j0-c",
+   "version": 1,
+   "typ": 551,
+   "kat": "baum",
+   "name": "Forum Shop Abandoned J0 C",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-j0-c.json"
+  },
+  {
+   "id": "forum-gang-j0",
+   "version": 1,
+   "typ": 552,
+   "kat": "baum",
+   "name": "Forum Colonnade J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-j0.json"
+  },
+  {
+   "id": "forum-gang-j0-a",
+   "version": 1,
+   "typ": 553,
+   "kat": "baum",
+   "name": "Forum Colonnade Pigeons J0 A",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-j0-a.json"
+  },
+  {
+   "id": "forum-gang-j0-b",
+   "version": 1,
+   "typ": 554,
+   "kat": "baum",
+   "name": "Forum Colonnade Cracked J0 B",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-j0-b.json"
+  },
+  {
+   "id": "forum-laden-j1",
+   "version": 1,
+   "typ": 555,
+   "kat": "baum",
+   "name": "Forum Shop J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-j1.json"
+  },
+  {
+   "id": "forum-laden-j1-a",
+   "version": 1,
+   "typ": 556,
+   "kat": "baum",
+   "name": "Forum Shop Shut J1 A",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-j1-a.json"
+  },
+  {
+   "id": "forum-laden-j1-b",
+   "version": 1,
+   "typ": 557,
+   "kat": "baum",
+   "name": "Forum Butcher J1 B",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-j1-b.json"
+  },
+  {
+   "id": "forum-laden-j1-c",
+   "version": 1,
+   "typ": 558,
+   "kat": "baum",
+   "name": "Forum Shop Abandoned J1 C",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-j1-c.json"
+  },
+  {
+   "id": "forum-gang-j1",
+   "version": 1,
+   "typ": 559,
+   "kat": "baum",
+   "name": "Forum Colonnade J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-j1.json"
+  },
+  {
+   "id": "forum-gang-j1-a",
+   "version": 1,
+   "typ": 560,
+   "kat": "baum",
+   "name": "Forum Colonnade Pigeons J1 A",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-j1-a.json"
+  },
+  {
+   "id": "forum-gang-j1-b",
+   "version": 1,
+   "typ": 561,
+   "kat": "baum",
+   "name": "Forum Colonnade Cracked J1 B",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-j1-b.json"
+  },
+  {
+   "id": "forum-laden-ecke-i0j0",
+   "version": 1,
+   "typ": 562,
+   "kat": "baum",
+   "name": "Forum Corner Shop I0J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ecke-i0j0.json"
+  },
+  {
+   "id": "forum-gang-ecke-i0j0",
+   "version": 1,
+   "typ": 563,
+   "kat": "baum",
+   "name": "Forum Corner Column I0J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ecke-i0j0.json"
+  },
+  {
+   "id": "forum-laden-ecke-i0j1",
+   "version": 1,
+   "typ": 564,
+   "kat": "baum",
+   "name": "Forum Corner Shop I0J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ecke-i0j1.json"
+  },
+  {
+   "id": "forum-gang-ecke-i0j1",
+   "version": 1,
+   "typ": 565,
+   "kat": "baum",
+   "name": "Forum Corner Column I0J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ecke-i0j1.json"
+  },
+  {
+   "id": "forum-laden-ecke-i1j0",
+   "version": 1,
+   "typ": 566,
+   "kat": "baum",
+   "name": "Forum Corner Shop I1J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ecke-i1j0.json"
+  },
+  {
+   "id": "forum-gang-ecke-i1j0",
+   "version": 1,
+   "typ": 567,
+   "kat": "baum",
+   "name": "Forum Corner Column I1J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ecke-i1j0.json"
+  },
+  {
+   "id": "forum-laden-ecke-i1j1",
+   "version": 1,
+   "typ": 568,
+   "kat": "baum",
+   "name": "Forum Corner Shop I1J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ecke-i1j1.json"
+  },
+  {
+   "id": "forum-gang-ecke-i1j1",
+   "version": 1,
+   "typ": 569,
+   "kat": "baum",
+   "name": "Forum Corner Column I1J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ecke-i1j1.json"
+  },
+  {
+   "id": "forum-laden-ende-i0j0",
+   "version": 1,
+   "typ": 570,
+   "kat": "baum",
+   "name": "Forum Shop End I0J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ende-i0j0.json"
+  },
+  {
+   "id": "forum-gang-ende-i0j0",
+   "version": 1,
+   "typ": 571,
+   "kat": "baum",
+   "name": "Forum Colonnade End I0J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ende-i0j0.json"
+  },
+  {
+   "id": "forum-laden-ende-i0j1",
+   "version": 1,
+   "typ": 572,
+   "kat": "baum",
+   "name": "Forum Shop End I0J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ende-i0j1.json"
+  },
+  {
+   "id": "forum-gang-ende-i0j1",
+   "version": 1,
+   "typ": 573,
+   "kat": "baum",
+   "name": "Forum Colonnade End I0J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ende-i0j1.json"
+  },
+  {
+   "id": "forum-laden-ende-i1j0",
+   "version": 1,
+   "typ": 574,
+   "kat": "baum",
+   "name": "Forum Shop End I1J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ende-i1j0.json"
+  },
+  {
+   "id": "forum-gang-ende-i1j0",
+   "version": 1,
+   "typ": 575,
+   "kat": "baum",
+   "name": "Forum Colonnade End I1J0",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ende-i1j0.json"
+  },
+  {
+   "id": "forum-laden-ende-i1j1",
+   "version": 1,
+   "typ": 576,
+   "kat": "baum",
+   "name": "Forum Shop End I1J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ende-i1j1.json"
+  },
+  {
+   "id": "forum-gang-ende-i1j1",
+   "version": 1,
+   "typ": 577,
+   "kat": "baum",
+   "name": "Forum Colonnade End I1J1",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ende-i1j1.json"
+  },
+  {
+   "id": "forum-laden-ende-j0i0",
+   "version": 1,
+   "typ": 578,
+   "kat": "baum",
+   "name": "Forum Shop End J0I0",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ende-j0i0.json"
+  },
+  {
+   "id": "forum-gang-ende-j0i0",
+   "version": 1,
+   "typ": 579,
+   "kat": "baum",
+   "name": "Forum Colonnade End J0I0",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ende-j0i0.json"
+  },
+  {
+   "id": "forum-laden-ende-j0i1",
+   "version": 1,
+   "typ": 580,
+   "kat": "baum",
+   "name": "Forum Shop End J0I1",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ende-j0i1.json"
+  },
+  {
+   "id": "forum-gang-ende-j0i1",
+   "version": 1,
+   "typ": 581,
+   "kat": "baum",
+   "name": "Forum Colonnade End J0I1",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ende-j0i1.json"
+  },
+  {
+   "id": "forum-laden-ende-j1i0",
+   "version": 1,
+   "typ": 582,
+   "kat": "baum",
+   "name": "Forum Shop End J1I0",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ende-j1i0.json"
+  },
+  {
+   "id": "forum-gang-ende-j1i0",
+   "version": 1,
+   "typ": 583,
+   "kat": "baum",
+   "name": "Forum Colonnade End J1I0",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ende-j1i0.json"
+  },
+  {
+   "id": "forum-laden-ende-j1i1",
+   "version": 1,
+   "typ": 584,
+   "kat": "baum",
+   "name": "Forum Shop End J1I1",
+   "status": "uebernommen",
+   "datei": "obj/forum-laden-ende-j1i1.json"
+  },
+  {
+   "id": "forum-gang-ende-j1i1",
+   "version": 1,
+   "typ": 585,
+   "kat": "baum",
+   "name": "Forum Colonnade End J1I1",
+   "status": "uebernommen",
+   "datei": "obj/forum-gang-ende-j1i1.json"
   }
  ]
 }
