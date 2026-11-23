@@ -169,7 +169,7 @@ function ansichtenBytes(o){var k=bytes(o.bild),fp=0;(o.richtungen||[]).forEach(f
 
 // ── M6: Prüfstand und Übernahme ────────────────────────────────────────────────────────────────────
 // Feldreihenfolge der Objekt-Datei. messung = gedrosselte Messung, geraet = Messung auf einem echten Gerät (beide mit Bildsignatur).
-var FELDER=['format','id','version','typ','kat','name','status','herkunft','karte','bild','richtungen','schilder','fp','messung','geraet'];   // schilder: Wechselschilder eines Ganzbilds (N6b3b1/b2)
+var FELDER=['format','id','version','typ','kat','name','status','herkunft','karte','bild','richtungen','schilder','zeremonie','fp','messung','geraet'];   // schilder: Wechselschilder eines Ganzbilds (N6b3b1/b2); zeremonie: Zeremonienfeld der Tempel (N6b3b3)
 function ordne(o){var n={};FELDER.forEach(function(k){if(o[k]!==undefined)n[k]=o[k]});return n}
 // Signatur über alles, was gezeichnet wird (Art und alle Ansichten). Ändert sich ein Bildpunkt, ist jede alte Messung ungültig.
 function signatur(o){var t=JSON.stringify([o.kat,o.bild||null,o.richtungen||null,o.fp||null]),h=0x811c9dc5;

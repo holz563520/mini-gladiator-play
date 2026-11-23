@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 507,
+ "typMax": 527,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -4422,6 +4422,186 @@
    "name": "Banner Anchor I",
    "status": "uebernommen",
    "datei": "obj/tempel-banner-klein-tide-i.json"
+  },
+  {
+   "id": "tempel-gross-vorn",
+   "version": 1,
+   "typ": 508,
+   "kat": "anlage",
+   "name": "Great Temple",
+   "status": "uebernommen",
+   "datei": "obj/tempel-gross-vorn.json"
+  },
+  {
+   "id": "tempel-gross-hinten",
+   "version": 1,
+   "typ": 509,
+   "kat": "anlage",
+   "name": "Great Temple Rear",
+   "status": "uebernommen",
+   "datei": "obj/tempel-gross-hinten.json"
+  },
+  {
+   "id": "tempel-giebel-gross-ohne",
+   "version": 1,
+   "typ": 510,
+   "kat": "anlage",
+   "name": "Great Pediment Blank",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-gross-ohne.json"
+  },
+  {
+   "id": "tempel-giebel-gross-thunderous",
+   "version": 1,
+   "typ": 511,
+   "kat": "anlage",
+   "name": "Great Pediment Thunderbolt",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-gross-thunderous.json"
+  },
+  {
+   "id": "tempel-giebel-gross-polite",
+   "version": 1,
+   "typ": 512,
+   "kat": "anlage",
+   "name": "Great Pediment Question",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-gross-polite.json"
+  },
+  {
+   "id": "tempel-giebel-gross-tide",
+   "version": 1,
+   "typ": 513,
+   "kat": "anlage",
+   "name": "Great Pediment Anchor",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-gross-tide.json"
+  },
+  {
+   "id": "tempel-banner-gross-ohne",
+   "version": 1,
+   "typ": 514,
+   "kat": "anlage",
+   "name": "Great Banner Blank",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-gross-ohne.json"
+  },
+  {
+   "id": "tempel-banner-gross-thunderous",
+   "version": 1,
+   "typ": 515,
+   "kat": "anlage",
+   "name": "Great Banner Thunderbolt",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-gross-thunderous.json"
+  },
+  {
+   "id": "tempel-banner-gross-polite",
+   "version": 1,
+   "typ": 516,
+   "kat": "anlage",
+   "name": "Great Banner Question",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-gross-polite.json"
+  },
+  {
+   "id": "tempel-banner-gross-tide",
+   "version": 1,
+   "typ": 517,
+   "kat": "anlage",
+   "name": "Great Banner Anchor",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-gross-tide.json"
+  },
+  {
+   "id": "tempel-gross-vorn-i",
+   "version": 1,
+   "typ": 518,
+   "kat": "anlage",
+   "name": "Great Temple I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-gross-vorn-i.json"
+  },
+  {
+   "id": "tempel-gross-hinten-i",
+   "version": 1,
+   "typ": 519,
+   "kat": "anlage",
+   "name": "Great Temple Rear I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-gross-hinten-i.json"
+  },
+  {
+   "id": "tempel-giebel-gross-ohne-i",
+   "version": 1,
+   "typ": 520,
+   "kat": "anlage",
+   "name": "Great Pediment Blank I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-gross-ohne-i.json"
+  },
+  {
+   "id": "tempel-giebel-gross-thunderous-i",
+   "version": 1,
+   "typ": 521,
+   "kat": "anlage",
+   "name": "Great Pediment Thunderbolt I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-gross-thunderous-i.json"
+  },
+  {
+   "id": "tempel-giebel-gross-polite-i",
+   "version": 1,
+   "typ": 522,
+   "kat": "anlage",
+   "name": "Great Pediment Question I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-gross-polite-i.json"
+  },
+  {
+   "id": "tempel-giebel-gross-tide-i",
+   "version": 1,
+   "typ": 523,
+   "kat": "anlage",
+   "name": "Great Pediment Anchor I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-giebel-gross-tide-i.json"
+  },
+  {
+   "id": "tempel-banner-gross-ohne-i",
+   "version": 1,
+   "typ": 524,
+   "kat": "anlage",
+   "name": "Great Banner Blank I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-gross-ohne-i.json"
+  },
+  {
+   "id": "tempel-banner-gross-thunderous-i",
+   "version": 1,
+   "typ": 525,
+   "kat": "anlage",
+   "name": "Great Banner Thunderbolt I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-gross-thunderous-i.json"
+  },
+  {
+   "id": "tempel-banner-gross-polite-i",
+   "version": 1,
+   "typ": 526,
+   "kat": "anlage",
+   "name": "Great Banner Question I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-gross-polite-i.json"
+  },
+  {
+   "id": "tempel-banner-gross-tide-i",
+   "version": 1,
+   "typ": 527,
+   "kat": "anlage",
+   "name": "Great Banner Anchor I",
+   "status": "uebernommen",
+   "datei": "obj/tempel-banner-gross-tide-i.json"
   }
  ]
 }
