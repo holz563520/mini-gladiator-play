@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 619,
+ "typMax": 668,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -5430,6 +5430,447 @@
    "name": "Royal Banner Blank I",
    "status": "uebernommen",
    "datei": "obj/koenigspalast-banner-ohne-i.json"
+  },
+  {
+   "id": "feld-weizen",
+   "version": 1,
+   "typ": 620,
+   "kat": "boden",
+   "name": "Wheat Field",
+   "status": "skizze",
+   "datei": "obj/feld-weizen.json"
+  },
+  {
+   "id": "feld-weizen-a",
+   "version": 1,
+   "typ": 621,
+   "kat": "boden",
+   "name": "Wheat Field B",
+   "status": "skizze",
+   "datei": "obj/feld-weizen-a.json"
+  },
+  {
+   "id": "feld-weizen-b",
+   "version": 1,
+   "typ": 622,
+   "kat": "boden",
+   "name": "Wheat Field (trampled)",
+   "status": "skizze",
+   "datei": "obj/feld-weizen-b.json"
+  },
+  {
+   "id": "feld-weizen-c",
+   "version": 1,
+   "typ": 623,
+   "kat": "boden",
+   "name": "Wheat Field (crows)",
+   "status": "skizze",
+   "datei": "obj/feld-weizen-c.json"
+  },
+  {
+   "id": "feld-weizen-d",
+   "version": 1,
+   "typ": 624,
+   "kat": "boden",
+   "name": "Wheat Field (sickle)",
+   "status": "skizze",
+   "datei": "obj/feld-weizen-d.json"
+  },
+  {
+   "id": "feld-weizen-j",
+   "version": 1,
+   "typ": 625,
+   "kat": "boden",
+   "name": "Wheat Field",
+   "status": "skizze",
+   "datei": "obj/feld-weizen-j.json"
+  },
+  {
+   "id": "feld-weizen-j-a",
+   "version": 1,
+   "typ": 626,
+   "kat": "boden",
+   "name": "Wheat Field B",
+   "status": "skizze",
+   "datei": "obj/feld-weizen-j-a.json"
+  },
+  {
+   "id": "feld-weizen-j-b",
+   "version": 1,
+   "typ": 627,
+   "kat": "boden",
+   "name": "Wheat Field (trampled)",
+   "status": "skizze",
+   "datei": "obj/feld-weizen-j-b.json"
+  },
+  {
+   "id": "feld-weizen-j-c",
+   "version": 1,
+   "typ": 628,
+   "kat": "boden",
+   "name": "Wheat Field (crows)",
+   "status": "skizze",
+   "datei": "obj/feld-weizen-j-c.json"
+  },
+  {
+   "id": "feld-weizen-j-d",
+   "version": 1,
+   "typ": 629,
+   "kat": "boden",
+   "name": "Wheat Field (sickle)",
+   "status": "skizze",
+   "datei": "obj/feld-weizen-j-d.json"
+  },
+  {
+   "id": "feld-gerste",
+   "version": 1,
+   "typ": 630,
+   "kat": "boden",
+   "name": "Barley Field",
+   "status": "skizze",
+   "datei": "obj/feld-gerste.json"
+  },
+  {
+   "id": "feld-gerste-a",
+   "version": 1,
+   "typ": 631,
+   "kat": "boden",
+   "name": "Barley Field B",
+   "status": "skizze",
+   "datei": "obj/feld-gerste-a.json"
+  },
+  {
+   "id": "feld-gerste-j",
+   "version": 1,
+   "typ": 632,
+   "kat": "boden",
+   "name": "Barley Field",
+   "status": "skizze",
+   "datei": "obj/feld-gerste-j.json"
+  },
+  {
+   "id": "feld-gerste-j-a",
+   "version": 1,
+   "typ": 633,
+   "kat": "boden",
+   "name": "Barley Field B",
+   "status": "skizze",
+   "datei": "obj/feld-gerste-j-a.json"
+  },
+  {
+   "id": "feld-garten",
+   "version": 1,
+   "typ": 634,
+   "kat": "boden",
+   "name": "Market Garden",
+   "status": "skizze",
+   "datei": "obj/feld-garten.json"
+  },
+  {
+   "id": "feld-garten-a",
+   "version": 1,
+   "typ": 635,
+   "kat": "boden",
+   "name": "Market Garden B",
+   "status": "skizze",
+   "datei": "obj/feld-garten-a.json"
+  },
+  {
+   "id": "feld-garten-b",
+   "version": 1,
+   "typ": 636,
+   "kat": "boden",
+   "name": "Market Garden (hoe)",
+   "status": "skizze",
+   "datei": "obj/feld-garten-b.json"
+  },
+  {
+   "id": "feld-garten-j",
+   "version": 1,
+   "typ": 637,
+   "kat": "boden",
+   "name": "Market Garden",
+   "status": "skizze",
+   "datei": "obj/feld-garten-j.json"
+  },
+  {
+   "id": "feld-garten-j-a",
+   "version": 1,
+   "typ": 638,
+   "kat": "boden",
+   "name": "Market Garden B",
+   "status": "skizze",
+   "datei": "obj/feld-garten-j-a.json"
+  },
+  {
+   "id": "feld-garten-j-b",
+   "version": 1,
+   "typ": 639,
+   "kat": "boden",
+   "name": "Market Garden (hoe)",
+   "status": "skizze",
+   "datei": "obj/feld-garten-j-b.json"
+  },
+  {
+   "id": "feld-huelsen",
+   "version": 1,
+   "typ": 640,
+   "kat": "boden",
+   "name": "Bean and Lentil Beds",
+   "status": "skizze",
+   "datei": "obj/feld-huelsen.json"
+  },
+  {
+   "id": "feld-huelsen-a",
+   "version": 1,
+   "typ": 641,
+   "kat": "boden",
+   "name": "Bean and Lentil Beds B",
+   "status": "skizze",
+   "datei": "obj/feld-huelsen-a.json"
+  },
+  {
+   "id": "feld-huelsen-j",
+   "version": 1,
+   "typ": 642,
+   "kat": "boden",
+   "name": "Bean and Lentil Beds",
+   "status": "skizze",
+   "datei": "obj/feld-huelsen-j.json"
+  },
+  {
+   "id": "feld-huelsen-j-a",
+   "version": 1,
+   "typ": 643,
+   "kat": "boden",
+   "name": "Bean and Lentil Beds B",
+   "status": "skizze",
+   "datei": "obj/feld-huelsen-j-a.json"
+  },
+  {
+   "id": "feld-lavendel",
+   "version": 1,
+   "typ": 644,
+   "kat": "boden",
+   "name": "Lavender Field",
+   "status": "skizze",
+   "datei": "obj/feld-lavendel.json"
+  },
+  {
+   "id": "feld-lavendel-j",
+   "version": 1,
+   "typ": 645,
+   "kat": "boden",
+   "name": "Lavender Field",
+   "status": "skizze",
+   "datei": "obj/feld-lavendel-j.json"
+  },
+  {
+   "id": "feld-faerber",
+   "version": 1,
+   "typ": 646,
+   "kat": "boden",
+   "name": "Dye Garden",
+   "status": "skizze",
+   "datei": "obj/feld-faerber.json"
+  },
+  {
+   "id": "feld-faerber-a",
+   "version": 1,
+   "typ": 647,
+   "kat": "boden",
+   "name": "Dye Garden (spill)",
+   "status": "skizze",
+   "datei": "obj/feld-faerber-a.json"
+  },
+  {
+   "id": "feld-faerber-j",
+   "version": 1,
+   "typ": 648,
+   "kat": "boden",
+   "name": "Dye Garden",
+   "status": "skizze",
+   "datei": "obj/feld-faerber-j.json"
+  },
+  {
+   "id": "feld-faerber-j-a",
+   "version": 1,
+   "typ": 649,
+   "kat": "boden",
+   "name": "Dye Garden (spill)",
+   "status": "skizze",
+   "datei": "obj/feld-faerber-j-a.json"
+  },
+  {
+   "id": "feld-safran",
+   "version": 1,
+   "typ": 650,
+   "kat": "boden",
+   "name": "Saffron Field",
+   "status": "skizze",
+   "datei": "obj/feld-safran.json"
+  },
+  {
+   "id": "feld-safran-j",
+   "version": 1,
+   "typ": 651,
+   "kat": "boden",
+   "name": "Saffron Field",
+   "status": "skizze",
+   "datei": "obj/feld-safran-j.json"
+  },
+  {
+   "id": "feld-mohn",
+   "version": 1,
+   "typ": 652,
+   "kat": "boden",
+   "name": "Poppy Field",
+   "status": "skizze",
+   "datei": "obj/feld-mohn.json"
+  },
+  {
+   "id": "feld-mohn-a",
+   "version": 1,
+   "typ": 653,
+   "kat": "boden",
+   "name": "Poppy Field (knife)",
+   "status": "skizze",
+   "datei": "obj/feld-mohn-a.json"
+  },
+  {
+   "id": "feld-mohn-j",
+   "version": 1,
+   "typ": 654,
+   "kat": "boden",
+   "name": "Poppy Field",
+   "status": "skizze",
+   "datei": "obj/feld-mohn-j.json"
+  },
+  {
+   "id": "feld-mohn-j-a",
+   "version": 1,
+   "typ": 655,
+   "kat": "boden",
+   "name": "Poppy Field (knife)",
+   "status": "skizze",
+   "datei": "obj/feld-mohn-j-a.json"
+  },
+  {
+   "id": "feld-blumen",
+   "version": 1,
+   "typ": 656,
+   "kat": "boden",
+   "name": "Flower Beds",
+   "status": "skizze",
+   "datei": "obj/feld-blumen.json"
+  },
+  {
+   "id": "feld-blumen-j",
+   "version": 1,
+   "typ": 657,
+   "kat": "boden",
+   "name": "Flower Beds",
+   "status": "skizze",
+   "datei": "obj/feld-blumen-j.json"
+  },
+  {
+   "id": "feld-kraeuter",
+   "version": 1,
+   "typ": 658,
+   "kat": "boden",
+   "name": "Physic Garden",
+   "status": "skizze",
+   "datei": "obj/feld-kraeuter.json"
+  },
+  {
+   "id": "feld-kraeuter-a",
+   "version": 1,
+   "typ": 659,
+   "kat": "boden",
+   "name": "Physic Garden (label)",
+   "status": "skizze",
+   "datei": "obj/feld-kraeuter-a.json"
+  },
+  {
+   "id": "feld-alraune",
+   "version": 1,
+   "typ": 660,
+   "kat": "boden",
+   "name": "Mandrake Bed",
+   "status": "skizze",
+   "datei": "obj/feld-alraune.json"
+  },
+  {
+   "id": "feld-alraune-a",
+   "version": 1,
+   "typ": 661,
+   "kat": "boden",
+   "name": "Mandrake Bed (dug up)",
+   "status": "skizze",
+   "datei": "obj/feld-alraune-a.json"
+  },
+  {
+   "id": "feld-weide",
+   "version": 1,
+   "typ": 662,
+   "kat": "boden",
+   "name": "Pasture",
+   "status": "skizze",
+   "datei": "obj/feld-weide.json"
+  },
+  {
+   "id": "feld-weide-a",
+   "version": 1,
+   "typ": 663,
+   "kat": "boden",
+   "name": "Pasture B",
+   "status": "skizze",
+   "datei": "obj/feld-weide-a.json"
+  },
+  {
+   "id": "feld-weide-b",
+   "version": 1,
+   "typ": 664,
+   "kat": "boden",
+   "name": "Pasture (thistles)",
+   "status": "skizze",
+   "datei": "obj/feld-weide-b.json"
+  },
+  {
+   "id": "feld-weide-c",
+   "version": 1,
+   "typ": 665,
+   "kat": "boden",
+   "name": "Pasture (salt lick)",
+   "status": "skizze",
+   "datei": "obj/feld-weide-c.json"
+  },
+  {
+   "id": "feld-weide-d",
+   "version": 1,
+   "typ": 666,
+   "kat": "boden",
+   "name": "Pasture (lost bell)",
+   "status": "skizze",
+   "datei": "obj/feld-weide-d.json"
+  },
+  {
+   "id": "feld-pferch",
+   "version": 1,
+   "typ": 667,
+   "kat": "boden",
+   "name": "Pen",
+   "status": "skizze",
+   "datei": "obj/feld-pferch.json"
+  },
+  {
+   "id": "feld-pferch-a",
+   "version": 1,
+   "typ": 668,
+   "kat": "boden",
+   "name": "Pen (trough)",
+   "status": "skizze",
+   "datei": "obj/feld-pferch-a.json"
   }
  ]
 }
