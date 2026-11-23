@@ -711,6 +711,7 @@ function plan0(opt){
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false&&opt.wasserOffen!==false)wassertoreGerade(P,opt);   // N6b2e2g2 Mauer endet am Fluss mit Türmen an beiden Ufern (opt.wasserOffen:false = wie vorher)
  if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P,opt);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
+ if(!elend&&opt.ehrensaeulen!==false)ehrensaeulen(P);   // N6b3b4 Ehrensäulen am Marktplatz (opt.ehrensaeulen:false = wie vorher)
  delete P.mauertor;delete P.uferAuf;   // nur zum Rechnen der Tore
  P.dinge.forEach(function(d){d.id=dingWahl(d.id,d.i,d.j)});
  return P}
@@ -749,6 +750,36 @@ function tempelFest(P,opt){var W=P.W,WW=W*W,Z=P.zellen.split(''),HZ=P.hoehe,B=BI
   b.i=best.i;b.j=best.j;b.w=best.w;b.h=best.h;b.tuer=best.tuer;b.achse=best.w>best.h?'i':'j';st.fest++;if(b.gross)st.gross++;
   P.dinge=P.dinge.filter(function(d){return d});ding={};P.dinge.forEach(function(d,n){ding[d.j*W+d.i]=n})});
  P.zellen=Z.join('');P.tempel=st}
+// N6b3b4 Ehrensäulen (Thomas 23.11.2026): nur Biome mit Pflaster (Mittelmeer), ab Marktflecken auf dem Marktplatz, Marktflecken 1, Stadt 2, ab Großstadt 3.
+// Markt = größte zusammenhängende Platzfläche (o) mit einem Marktstand. Stelle: zweite Reihe vom Platzrand (die äußere Reihe bleibt zum Gehen frei),
+// kein Ding darauf, nicht vor oder neben einem Eingang, mindestens EHREN_ABSTAND Felder auseinander; die freien Platzfelder bleiben zusammenhängend.
+// Art aus dem Seed (Statue 1/2, gestürzt 1/4, Schande 1/4); Vorderseite zum nächsten Platzrand: Rand längs i → Bild ohne -i, längs j → -i.
+// Kosten: einmal je Ort, nur über die Marktfläche (≤ ~600 Felder).
+var EHREN_ART=['statue','statue','gestuerzt','schande'],EHREN_ABSTAND=5;
+function ehrensaeulen(P){var B=BIOME[P.biom],st={soll:0,gesetzt:0};P.ehrensaeulen=st;if(!B||!B.pflaster||(P.g|0)<MAUER_AB)return;
+ st.soll=P.g>=6?3:P.g===5?2:1;var W=P.W,WW=W*W,Z=P.zellen,HZ=P.hoehe,ding=new Uint8Array(WW),start=[];
+ P.dinge.forEach(function(d){if(d.i<0||d.j<0||d.i>=W||d.j>=W)return;var k=d.j*W+d.i;ding[k]=1;if(d.id==='markt-stand'&&d.rolle==='market'&&Z[k]==='o')start.push(k)});
+ if(!start.length)return;
+ var vor=new Uint8Array(WW);P.bauten.forEach(function(b){if(!b.tuer)return;var fx=b.tuer[0]+b.tuer[2],fy=b.tuer[1]+b.tuer[3];if(fx>=0&&fy>=0&&fx<W&&fy<W)vor[fy*W+fx]=1});
+ var nb=function(k,d){var x=k%W,y=(k/W)|0;return d===0?(x<W-1?k+1:-1):d===1?(y<W-1?k+W:-1):d===2?(x>0?k-1:-1):(y>0?k-W:-1)};
+ // Platzflächen von den Marktständen aus, die größte gilt
+ var comp=new Int32Array(WW).fill(-1),best=-1,bestN=0,nr=0;start.forEach(function(s0){if(comp[s0]>=0)return;var q=[s0],h=0;comp[s0]=nr;
+  while(h<q.length){var a=q[h++];for(var d=0;d<4;d++){var b=nb(a,d);if(b>=0&&comp[b]<0&&Z[b]==='o'){comp[b]=nr;q.push(b)}}}if(q.length>bestN){bestN=q.length;best=nr}nr++});
+ var M=[],dist=new Int32Array(WW).fill(-1),q=[],h=0,k,d;for(k=0;k<WW;k++)if(comp[k]===best){M.push(k);for(d=0;d<4;d++){var b=nb(k,d);if(b<0||comp[b]!==best){dist[k]=0;q.push(k);break}}}
+ while(h<q.length){var a=q[h++];for(d=0;d<4;d++){var b2=nb(a,d);if(b2>=0&&comp[b2]===best&&dist[b2]<0){dist[b2]=dist[a]+1;q.push(b2)}}}
+ var frei=function(k){return comp[k]===best&&!ding[k]};
+ var stuecke=function(){var v=new Uint8Array(WW),n=0;M.forEach(function(s0){if(v[s0]||!frei(s0))return;n++;var qq=[s0],hh=0;v[s0]=1;while(hh<qq.length){var a=qq[hh++];for(var e=0;e<4;e++){var b=nb(a,e);if(b>=0&&!v[b]&&frei(b)){v[b]=1;qq.push(b)}}}});return n};
+ var seed=P.seed>>>0,C=M.filter(function(k){if(dist[k]!==1||ding[k]||vor[k])return false;for(var e=0;e<4;e++){var b=nb(k,e);if(b>=0&&vor[b])return false}return true});
+ C.sort(function(x,y){return rausch(x%W,(x/W)|0,seed+151)-rausch(y%W,(y/W)|0,seed+151)});
+ var n0=stuecke(),gesetzt=[];
+ for(var c=0;c<C.length&&gesetzt.length<st.soll;c++){k=C[c];var x=k%W,y=(k/W)|0;
+  if(gesetzt.some(function(o){return Math.max(Math.abs(o%W-x),Math.abs(((o/W)|0)-y))<EHREN_ABSTAND}))continue;
+  ding[k]=1;if(stuecke()>n0){ding[k]=0;continue}gesetzt.push(k);
+  var art=EHREN_ART[Math.floor(rausch(x,y,seed+152)*EHREN_ART.length)],lj=false,li=false;
+  for(var e2=0;e2<4;e2++){var b3=nb(k,e2);if(b3>=0&&dist[b3]===0){if(e2&1)lj=true;else li=true}}
+  var achseI=li&&!lj?true:lj&&!li?false:rausch(x,y,seed+153)<.5;
+  P.dinge.push({id:'ehrensaeule-'+art+(achseI?'-i':''),i:x,j:y,rolle:'ehrensaeule',hz:HZ?HZ.charCodeAt(k)-48:0})}
+ st.gesetzt=gesetzt.length}
 // Ganzbild eines Tempels: Zeichnungen für Längsachse j (Eingang vorn = Süd, zum Betrachter; hinten = Nord); Längsachse i = gespiegelt (Eingang Ost bzw. West).
 // null, wenn der Tempel nicht genau passt (dann Baukasten-Bild).
 function tempelGanz(b){if(b.id!=='temple'||!b.tuer)return null;var T=b.gross?TEMPEL.gross:TEMPEL.klein,sp=b.w>b.h;
@@ -1559,7 +1590,7 @@ function drehen(P){var W=P.W,z=new Array(W*W),zh=P.hoehe?new Array(W*W):null,zt=
  var N=JSON.parse(JSON.stringify(P));N.zellen=z.join('');if(zh)N.hoehe=zh.join('');if(zt)N.mauertor=zt.join('');
  N.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b));o.i=W-b.j-b.h;o.j=b.i;o.w=b.h;o.h=b.w;o.achse=b.achse==='i'?'j':'i';
   if(b.tuer)o.tuer=[W-1-b.tuer[1],b.tuer[0],-b.tuer[3],b.tuer[2]];return o});
- N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=W-1-d.j;o.j=d.i;return o});N.tor={i:W-1-P.tor.j,j:P.tor.i};
+ N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=W-1-d.j;o.j=d.i;if(/^ehrensaeule-/.test(o.id))o.id=/-i$/.test(o.id)?o.id.slice(0,-2):o.id+'-i';return o});N.tor={i:W-1-P.tor.j,j:P.tor.i};   // N6b3b4: Ehrensäulen drehen ihre Achse mit
  if(P.wehr)N.wehr=wehrDrehen(P.wehr,W);return N}
 // Wehr (N6b2d) mitdrehen: Zeichenketten wie die Zellen, Richtungen (di, dj) → (−dj, di): s → w, o → s, n → o, w → n
 var DREH={s:'w',o:'s',n:'o',w:'n','.':'.',N:'E',E:'S',S:'W',W:'N'};   // N6b2e2a: Halbfeld-Ecken drehen mit
@@ -1836,6 +1867,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(P.wehr?WEHR_IDS:[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={TEMPEL:TEMPEL,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);

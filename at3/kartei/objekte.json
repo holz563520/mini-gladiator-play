@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 527,
+ "typMax": 533,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -4602,6 +4602,60 @@
    "name": "Great Banner Anchor I",
    "status": "uebernommen",
    "datei": "obj/tempel-banner-gross-tide-i.json"
+  },
+  {
+   "id": "ehrensaeule-statue",
+   "version": 1,
+   "typ": 528,
+   "kat": "baum",
+   "name": "Column of Honour",
+   "status": "uebernommen",
+   "datei": "obj/ehrensaeule-statue.json"
+  },
+  {
+   "id": "ehrensaeule-statue-i",
+   "version": 1,
+   "typ": 529,
+   "kat": "baum",
+   "name": "Column of Honour I",
+   "status": "uebernommen",
+   "datei": "obj/ehrensaeule-statue-i.json"
+  },
+  {
+   "id": "ehrensaeule-gestuerzt",
+   "version": 1,
+   "typ": 530,
+   "kat": "baum",
+   "name": "Toppled Column",
+   "status": "uebernommen",
+   "datei": "obj/ehrensaeule-gestuerzt.json"
+  },
+  {
+   "id": "ehrensaeule-gestuerzt-i",
+   "version": 1,
+   "typ": 531,
+   "kat": "baum",
+   "name": "Toppled Column I",
+   "status": "uebernommen",
+   "datei": "obj/ehrensaeule-gestuerzt-i.json"
+  },
+  {
+   "id": "ehrensaeule-schande",
+   "version": 1,
+   "typ": 532,
+   "kat": "baum",
+   "name": "Column of Shame",
+   "status": "uebernommen",
+   "datei": "obj/ehrensaeule-schande.json"
+  },
+  {
+   "id": "ehrensaeule-schande-i",
+   "version": 1,
+   "typ": 533,
+   "kat": "baum",
+   "name": "Column of Shame I",
+   "status": "uebernommen",
+   "datei": "obj/ehrensaeule-schande-i.json"
   }
  ]
 }
