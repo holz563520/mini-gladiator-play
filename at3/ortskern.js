@@ -46,7 +46,7 @@ function antwort(m){if(m.art==='sperre'){if(portW)portW.postMessage(m);else if(s
 
 // ── N7a4a2 (Thomas 24.11.2026): Sperrkarten für die Wegsuche des Weltkerns ──
 // Anfrage „sperre“ mit Fenster (Kartenstück cx0, cy0 links oben, FEN × FEN Stücke wie wegsuche.js). Antwort: alle Sperrkarten (ortssperre.js maske) der Orte und
-// Außenposten, die das Fenster berühren, [{k, x0, y0, W, m}], leer erlaubt. Gemerkt höchstens SP_MAX Byte (älteste fallen heraus), Postenpunkte je Ort (klein).
+// Außenposten, die das Fenster samt Hangring berühren, [{k, x0, y0, W, m, h0, R}] (N7a4b1: h0 Höhe des Ortspunkts, R Hangring), leer erlaubt. Gemerkt höchstens SP_MAX Byte (älteste fallen heraus), Postenpunkte je Ort (klein).
 // Nur aus Seed und Ortsnummer: gleiche Karte auf jedem Gerät, darum gleiches Wegergebnis, egal wann sie ankommt.
 var FEN=5, ST=64, WX=64*9600, SP_MAX=2*1048576, PWEIT=2600, SP=new Map(), SPB=0, PPT=new Map(), PPT_MAX=48, SPST={karten:0,ms:0,maxMs:0,anfragen:0};
 function ab(d){d%=WX;if(d>WX/2)d-=WX;else if(d<-WX/2)d+=WX;return d}
@@ -57,20 +57,21 @@ function karte(k,bau){var e=SP.get(k);if(e){SP.delete(k);SP.set(k,e);return e}va
 function postenVon(k){var L=PPT.get(k);if(L){PPT.delete(k);PPT.set(k,L);return L}var w=OB.wahl(seed,A,k,D,ON);L=OB.posten(G,seed,A,k,D,AP,w);PPT.set(k,L);
  while(PPT.size>PPT_MAX)PPT.delete(PPT.keys().next().value);return L}
 var PMAX=9;   // halbe Fläche des größten Postenplans (18 × 18, ortsflaeche.js PMAX)
+var RAMPE=24, RAMPE_P=8;   // N7a4b1: Hangring wie ortsflaeche.js RAMPE/RAMPE_P (Orte 24, Posten 8 Felder), damit die Wegsuche das eingeebnete Gelände sieht
 function sperre(cx0,cy0,KOL){var fx0=cx0*ST,fy0=cy0*ST,fn=FEN*ST,mx=fx0+(fn>>1),my=fy0+(fn>>1),R=[],zx,zy,zx0,zx1,zy0,zy1;SPST.anfragen++;
  // Orte: Grenze aussenposten.halb (jedes Ortsbild passt seit N7a1b hinein), dann genau mit der Planbreite
  zx0=Math.floor((fx0-600)/G.ZF);zx1=Math.floor((fx0+fn+600)/G.ZF);zy0=Math.max(0,Math.floor((fy0-600)/G.ZF));zy1=Math.min(G.GH-1,Math.floor((fy0+fn+600)/G.ZF));
  for(zy=zy0;zy<=zy1;zy++)for(zx=zx0;zx<=zx1;zx++){var X=((zx%G.GW)+G.GW)%G.GW,z=zy*G.GW+X;if(!(A.ort[z]&15))continue;var k=O.ortNr(A,z);if(k==null)continue;
-  var p=G.ortPunkt(seed,A,X,zy),h=AP.halb(O.groesse(seed,A,k))+2,dx=ab(p[0]-mx),dy=p[1]-my;if(Math.abs(dx)>h+(fn>>1)||Math.abs(dy)>h+(fn>>1))continue;
-  var e=karte(k,function(){var q=planRoh(k);return{x0:q.L.x0,y0:q.L.y0,W:q.r.P.W,m:OS.maske(q.r.P,KOL,q.w.opt)}});
-  if(beruehrt(e.x0,e.y0,e.W,fx0,fy0,fn))R.push(e)}
+  var p=G.ortPunkt(seed,A,X,zy),h=AP.halb(O.groesse(seed,A,k))+2+RAMPE,dx=ab(p[0]-mx),dy=p[1]-my;if(Math.abs(dx)>h+(fn>>1)||Math.abs(dy)>h+(fn>>1))continue;
+  var e=karte(k,function(){var q=planRoh(k);return{x0:q.L.x0,y0:q.L.y0,W:q.r.P.W,m:OS.maske(q.r.P,KOL,q.w.opt),h0:hoehe(q.L.punkt[0],q.L.punkt[1]),R:RAMPE}});   // N7a4b1: Höhe des Ortspunkts und Hang
+  if(beruehrt(e.x0-e.R,e.y0-e.R,e.W+2*e.R,fx0,fy0,fn))R.push(e)}
  // Außenposten und Gehöfte: Orte im Umkreis PWEIT, Postenpunkt nahe genug → Plan und Karte
  zx0=Math.floor((fx0-PWEIT)/G.ZF);zx1=Math.floor((fx0+fn+PWEIT)/G.ZF);zy0=Math.max(0,Math.floor((fy0-PWEIT)/G.ZF));zy1=Math.min(G.GH-1,Math.floor((fy0+fn+PWEIT)/G.ZF));
  for(zy=zy0;zy<=zy1;zy++)for(zx=zx0;zx<=zx1;zx++){var X2=((zx%G.GW)+G.GW)%G.GW,z2=zy*G.GW+X2;if(!(A.ort[z2]&15))continue;var k2=O.ortNr(A,z2);if(k2==null)continue;
   var p2=G.ortPunkt(seed,A,X2,zy);if(Math.abs(ab(p2[0]-mx))>PWEIT+(fn>>1)||Math.abs(p2[1]-my)>PWEIT+(fn>>1))continue;
-  postenVon(k2).forEach(function(q,n){if(Math.abs(ab(q.p.x-mx))>PMAX+2+(fn>>1)||Math.abs(q.p.y-my)>PMAX+2+(fn>>1))return;
-   var e2;try{e2=karte(PK+k2*16+n,function(){var P=SB.postenPlan(q.opt),La=OB.postenLage(G,q.p,P);return{x0:La.x0,y0:La.y0,W:P.W,m:OS.maske(P,KOL,q.opt)}})}catch(x){return}   // scheitert ein Posten, fällt nur er weg (wie postenPlanen)
-   if(beruehrt(e2.x0,e2.y0,e2.W,fx0,fy0,fn))R.push(e2)})}
+  postenVon(k2).forEach(function(q,n){if(Math.abs(ab(q.p.x-mx))>PMAX+2+RAMPE_P+(fn>>1)||Math.abs(q.p.y-my)>PMAX+2+RAMPE_P+(fn>>1))return;
+   var e2;try{e2=karte(PK+k2*16+n,function(){var P=SB.postenPlan(q.opt),La=OB.postenLage(G,q.p,P);return{x0:La.x0,y0:La.y0,W:P.W,m:OS.maske(P,KOL,q.opt),h0:hoehe(La.punkt[0],La.punkt[1]),R:RAMPE_P}})}catch(x){return}   // scheitert ein Posten, fällt nur er weg (wie postenPlanen)
+   if(beruehrt(e2.x0-e2.R,e2.y0-e2.R,e2.W+2*e2.R,fx0,fy0,fn))R.push(e2)})}
  R.sort(function(a,b){return a.k-b.k});return R}
 // Eine Anfrage nach der anderen; zwischen zwei Plänen kommen neue Nachrichten (Vergessen, neue Welt) dran
 function weiter(){if(laeuft||!schlange.length)return;laeuft=true;setTimeout(function(){laeuft=false;var a=schlange.shift();if(!a)return;

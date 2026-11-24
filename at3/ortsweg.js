@@ -6,13 +6,14 @@
 // Ortskern: eigener Hintergrundkern der Karte über einen eigenen Kanal (portWelt); ohne ihn (Kernprobe, ?n7a2k=0, Ausfall) lädt der Weltkern ortskern.js
 // eingebettet und rechnet in seinen Pausen (Regel 13). Speicher: höchstens MAX Byte Karten (je Ort W² Byte), älteste fallen heraus (Entscheidung Thomas: 2 MB).
 // Vorab (Entscheidung Thomas): 3 × 3 Fenster um die Parkmitte (z.war sx, sy), dazu das Fenster jedes neuen Wegauftrags sofort beim Vergeben.
+// N7a4b1 (Thomas 24.11.2026): zu jeder Karte Höhe des Ortspunkts h0 und Hangring R, die Wegsuche ebnet damit wie der Bildkern ein (ortssperre.js hoch); ?n7a4b1=0 lässt sie weg.
 // Notausschalter ?n7a4a2=0: keine Karten, alles wie vorher. Kerne: nur Weltkern. Kosten nur je Ort im Fenster, nie abhängig von der Weltgröße (Regel 14).
 (function(root){
 'use strict';
 var ST=64, SX=9600, FEN=5, HALB=2, MAX=2*1048576, WARTE_PORT=8000;
 var ARTEN={weg:1,kweg:1,pweg:1};
 function neu(opt){opt=opt||{};var MAXB=opt.max||MAX;   // opt.max nur für Tests
- var aus=!!opt.aus, modus=opt.port?'warte':'keiner', port=null, ok=null, gen=-1, seed=0, ans=null;
+ var hang=opt.hang!==false, aus=!!opt.aus, modus=opt.port?'warte':'keiner', port=null, ok=null, gen=-1, seed=0, ans=null;
  var F=new Map(), K=new Map(), bytes=0, bestellt=new Map(), schlange=[], vorabSchl='', warteSeit=0, st={angehaengt:0,bestellt:0,antworten:0,fehler:0,maxAntwortMs:0,warteMs:0,warteMal:0,ortskern:''};
  var wach=opt.wach||function(){}, wartAb=0;
  function um(c){return c<0?c+SX:c>=SX?c-SX:c}
@@ -35,11 +36,11 @@ function neu(opt){opt=opt||{};var MAXB=opt.max||MAX;   // opt.max nur für Tests
  function bereit(z,a){if(aus||!a||!ARTEN[a.art])return true;if(!z||!welt(z.wg)||a.gen!==gen||a.cx0==null)return true;
   if(liste(schl(a.cx0,a.cy0)))return true;bestellen(a.cx0,a.cy0);return false}
  function anhaengen(a){if(!brauchtKarten(a))return a;var L=liste(schl(a.cx0,a.cy0));if(!L)return a;var o=[];
-  for(var i=0;i<L.length;i++){var e=K.get(L[i]);K.delete(L[i]);K.set(L[i],e);o.push({x0:e.x0,y0:e.y0,W:e.W,m:e.m})}
+  for(var i=0;i<L.length;i++){var e=K.get(L[i]);K.delete(L[i]);K.set(L[i],e);o.push(hang&&e.h0!=null?{x0:e.x0,y0:e.y0,W:e.W,m:e.m,h0:e.h0,R:e.R}:{x0:e.x0,y0:e.y0,W:e.W,m:e.m})}   // N7a4b1: Höhe und Hangring mit (Wegsuche sieht das eingeebnete Gelände)
   if(o.length){a.orte=o;st.angehaengt++}return a}
  // Antwort des Ortskerns: Karten merken (höchstens MAX Byte), Fensterliste merken
  function aufnehmen(m){if(m.gen!==gen)return;var t=bestellt.get(m.id);bestellt.delete(m.id);st.antworten++;if(t){var d=Date.now()-t;if(d>st.maxAntwortMs)st.maxAntwortMs=d}
-  var L=[];if(m.fehler){st.fehler++}else for(var i=0;i<m.liste.length;i++){var e=m.liste[i];L.push(e.k);if(K.has(e.k)){var a=K.get(e.k);K.delete(e.k);K.set(e.k,a);continue}K.set(e.k,{x0:e.x0,y0:e.y0,W:e.W,m:e.m});bytes+=e.m.length}
+  var L=[];if(m.fehler){st.fehler++}else for(var i=0;i<m.liste.length;i++){var e=m.liste[i];L.push(e.k);if(K.has(e.k)){var a=K.get(e.k);K.delete(e.k);K.set(e.k,a);continue}K.set(e.k,{x0:e.x0,y0:e.y0,W:e.W,m:e.m,h0:e.h0,R:e.R});bytes+=e.m.length}
   F.set(m.id,L);while(F.size>256)F.delete(F.keys().next().value);
   // Grenze: älteste Karten fallen heraus, nie die gerade gelieferten
   var neuS=new Set(L);if(bytes>MAXB){var it=K.keys(),q;while(bytes>MAXB&&!(q=it.next()).done){if(neuS.has(q.value))continue;bytes-=K.get(q.value).m.length;K.delete(q.value)}}

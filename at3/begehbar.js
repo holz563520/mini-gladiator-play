@@ -9,6 +9,7 @@
 // (dazu Weltstraße, Ortsplatz, Brücke und Lagerboden für Ladestellen), große Bäume und Fels sperren, Türen nur zu Fuß, Tore für alle.
 // N7a4a1: Orte und Außenposten sperren über ihre Sperrkarte (ortssperre.js), wenn die Wegsuche sie mitgibt (holeB.ort): Tempo der Feldklasse, Hauswände mit Tür,
 // Pferchzäune; ohne holeB.ort alles wie vorher. Kartenstücke mit Gebautem des Spielers gehören nie zum Ort (Park gewinnt).
+// N7a4b1: Hang und Natur rechnen mit dem eingeebneten Gelände der Orte (holeB.ort.hoch), wie der Bildkern es zeigt.
 // G8: ein gefällter Baum (Stumpf, Feld-Merker Bit 3 aus bau.js) sperrt nicht mehr.
 // Vorschlagswerte (G6a, noch nicht von Thomas bestätigt): Hang mit einer Stufe zu Fuß ×0,9, Karren ×0,85; Hang mit zwei und mehr Stufen zu Fuß ×0,7, Karren gesperrt;
 // Furt zu Fuß 0,6, Karren gesperrt; Fähre vorerst gesperrt; Gebäudeboden zu Fuß 0,85; geplante Wände sperren nicht, begonnene und fertige schon (wie FP2a).
@@ -29,13 +30,15 @@ var DX=[0,-1,0,1], DY=[-1,0,1,0];
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
 function stufe(h){h=(h-MEER)>>LS;return h<0?0:h}
 function sicht(p){return p._s||(p._s={H:new Uint16Array(p.buffer,p.byteOffset,F),B:new Uint8Array(p.buffer,p.byteOffset+F*2,F),W:new Uint8Array(p.buffer,p.byteOffset+F*3,F)})}
-function hoehe(hole,X,Y){if(Y>=WY)Y=WY-1;var p=hole(X>>6,Y>>6);return p?stufe(sicht(p).H[((Y&63)<<6)|(X&63)]):-1}
+function hoehe(hole,X,Y,holeB){if(Y>=WY)Y=WY-1;var p=hole(X>>6,Y>>6);if(!p)return -1;var s=sicht(p),q=((Y&63)<<6)|(X&63);return stufe(eben(holeB,X,Y,s.H[q],s.B[q]))}
+// N7a4b1: Hangring und Ortsfläche eingeebnet wie im Bild (ortssperre.js hoch), außer in Kartenstücken mit Gebautem (Park gewinnt)
+function eben(holeB,X,Y,h,b){var o=holeB&&holeB.ort;return o&&o.hoch&&!holeB(X>>6,Y>>6)?o.hoch(X,Y,h,b):h}
 
 // Tempo eines Felds. hole(cx,cy) → Kartenstück des Weltgenerators, holeB(cx,cy) → Bau-Puffer (bau.stueck) oder null. −1 = Kartenstück fehlt.
 function tempo(hole,holeB,seed,X,Y,p){if(Y<0||Y>=WY)return 0;X=um(X);
  var w=hole(X>>6,Y>>6);if(!w)return -1;var s=sicht(w),q=((Y&63)<<6)|(X&63),a=holeB?holeB(X>>6,Y>>6):null;
  var ob=holeB&&holeB.ort;if(ob&&!a){var ov=ob(X,Y);if(ov>=0)return OSm().tempo(ov,p)}   // N7a4a1: Sperrkarte der Orte (Park gewinnt: Stück mit Gebautem nicht)
- var h0=stufe(s.H[q]),mn=h0,mx=h0;for(var k=1;k<4;k++){var h=hoehe(hole,um(X+(k&1)),Y+(k>>1));if(h<0)return -1;if(h<mn)mn=h;if(h>mx)mx=h}
+ var h0=stufe(eben(holeB,X,Y,s.H[q],s.B[q])),mn=h0,mx=h0;for(var k=1;k<4;k++){var h=hoehe(hole,um(X+(k&1)),Y+(k>>1),holeB);if(h<0)return -1;if(h<mn)mn=h;if(h>mx)mx=h}
  var steil=mx-mn,b=s.B[q],wv=s.W[q],t;
  if(a&&a[q]){var ga=a[q];t=ga===6?0:ga===7?(p===FUSS?100:0):p===FUSS?85:ga===1?100:0}            // Gebäudeboden; Karren nur ins Lager (Ladestelle); AR1b: Anlage gesperrt, Häuschen zu Fuß
  else{var g=a&&a.length>GW?a[GW+q]:0;

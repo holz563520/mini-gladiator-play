@@ -72,7 +72,7 @@ function wegSenden(){if(!z.weg||!z.weg.meld.length)return;var M=self.AT3WEGSTROM
 var OW=null, OW_AUS=/[?&]n7a4a2=0/.test(self.location.search), ORTSPORT=false, OKP, owLetzt=-99;
 self.AT3_N7A4A2_AUS=OW_AUS;   // für wegstrom.js/karren.js (gilt) und helfer
 function ow(){if(OW)return OW;var q=self.location.search,L=['ortsweg.js'+q];if(!self.AT3ORTSSPERRE)L.push('ortssperre.js'+q);importScripts.apply(self,L);
- OW=self.AT3ORTSWEG.neu({aus:OW_AUS,port:ORTSPORT&&OKP===undefined,wach:owWach});if(OKP!==undefined)OW.kanal(OKP||null);return OW}
+ OW=self.AT3ORTSWEG.neu({hang:!/[?&]n7a4b1=0/.test(self.location.search),aus:OW_AUS,port:ORTSPORT&&OKP===undefined,wach:owWach});if(OKP!==undefined)OW.kanal(OKP||null);return OW}
 var OW_ARTEN={weg:1,kweg:1,pweg:1};
 function owOk(a){if(OW_AUS||!a||!(a.art in OW_ARTEN))return true;return ow().bereit(z,a)}
 function owDran(a){if(OW&&OW.braucht(a))OW.anhaengen(a);return a}

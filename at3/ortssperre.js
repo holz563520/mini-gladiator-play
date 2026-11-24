@@ -7,7 +7,7 @@
 // lupe() macht aus den Karten der Orte im Fenster die Abfrage für begehbar.js (holeB.ort): Klasse und Kanten am Weltfeld, −1 außerhalb.
 // Reine Rechnung ohne Bildschirm, nur ganze Zahlen. Läuft im Ortskern (Karte bauen, N7a4a2) und auf Weltkern und Helfern (Abfrage). Kosten: Bauen einmal je Plan
 // (Großstadt 204 × 204 unter 20 ms), Abfrage fest je Feld (Orte im Fenster sind wenige), Speicher W² Byte je Ort, nichts hängt an der Weltgröße.
-// Hangring um den Ort: die Wegsuche sieht bis N7a4b noch das ungeebnete Gelände (Entscheidung Thomas). Park gewinnt: ein Kartenstück mit Gebautem des Spielers
+// Hangring um den Ort (N7a4b1, Thomas 24.11.2026): Karten mit h0 und R → lupe().hoch ebnet für die Wegsuche wie der Bildkern ein (begehbar.js). Park gewinnt: ein Kartenstück mit Gebautem des Spielers
 // gehört nicht zum Ort (begehbar.js fragt die Sperrkarte dort nicht).
 (function(root){
 'use strict';
@@ -50,12 +50,20 @@ function maske(P,KOL,opt){var W=P.W,WW=W*W,M=new Uint8Array(WW),Z=P.zellen,SB=SB
 // Abfrage für begehbar.js über die Orte im Fenster: L = [{x0, y0, W, m}] (x0 Weltfeld der Bildecke, über die Naht). Ergebnis Byte am Weltfeld oder −1.
 function lupe(L){if(!L||!L.length)return null;
  var f=function(X,Y){for(var n=0;n<L.length;n++){var o=L[n],dx=X-o.x0;if(dx<0)dx+=WX;else if(dx>=WX)dx-=WX;var dy=Y-o.y0;
-  if(dx<o.W&&dy>=0&&dy<o.W)return o.m[dy*o.W+dx]}return -1};f.L=L;return f}
+  if(dx<o.W&&dy>=0&&dy<o.W)return o.m[dy*o.W+dx]}return -1};f.L=L;
+ for(var n=0;n<L.length;n++)if(L[n].h0!=null){f.hoch=function(X,Y,h,b){return hoch(L,X,Y,h,b)};break}   // N7a4b1: nur mit Höhe und Hangring
+ return f}
+// N7a4b1: eingeebnete Höhe (Rohwert wie weltgen, 64 = eine Stufe) am Weltfeld X, Y, rechnet genau wie ortsflaeche.js flachen(): auf der Fläche die Höhe des Ortspunkts,
+// im Hangring (Abstand d = 1 … R) höchstens d Stufen davon entfernt; Meer (Biom 0, 1), Fluss (10) und See (11) bleiben, wie sie sind. Mehrere Orte nacheinander.
+function hoch(L,X,Y,h,b){for(var n=0;n<L.length;n++){var o=L[n];if(o.h0==null)continue;var R=o.R,N=o.W+2*R,i=X-(o.x0-R);i%=WX;if(i<0)i+=WX;var j=Y-(o.y0-R);
+  if(i>=N||j<0||j>=N)continue;var d=Math.max(i<R?R-i:i>=R+o.W?i-R-o.W+1:0,j<R?R-j:j>=R+o.W?j-R-o.W+1:0);
+  if(d===0){h=o.h0;continue}if(b<2||b===10||b===11)continue;var lo=o.h0-d*64,hi=o.h0+d*64;h=h<lo?lo:h>hi?hi:h;if(h<0)h=0}
+ return h}
 // Tempo × 100 einer Feldklasse für Profil p (0 zu Fuß, 1 Karren)
 function tempo(v,p){return TEMPO[v&15][p]}
 // Darf man von Feld a über Seite s ins Nachbarfeld b? (a, b = Byte oder −1 außerhalb)
 function kante(a,b,s){if(a>=0&&(a>>(4+s))&1)return false;if(b>=0&&(b>>(4+((s+2)&3)))&1)return false;return true}
 var OS={K_GESPERRT:K_GESPERRT,K_GASSE:K_GASSE,K_PLATZ:K_PLATZ,K_KAI:K_KAI,K_TOR:K_TOR,K_FELDWEG:K_FELDWEG,K_STEG:K_STEG,K_HAUS:K_HAUS,K_WIESE:K_WIESE,K_WALD:K_WALD,
- TEMPO:TEMPO,DS:DS,maske:maske,lupe:lupe,tempo:tempo,kante:kante,seiteVon:seiteVon};
+ TEMPO:TEMPO,DS:DS,maske:maske,lupe:lupe,hoch:hoch,tempo:tempo,kante:kante,seiteVon:seiteVon};
 if(typeof module!=='undefined'&&module.exports)module.exports=OS;else root.AT3ORTSSPERRE=OS;
 })(typeof self!=='undefined'?self:this);
