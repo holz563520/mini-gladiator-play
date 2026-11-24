@@ -32,7 +32,10 @@ function hoehe(x,y){puffer=puffer||new Uint8Array(G.GEL_BYTES);var cx=x>>6,cy=y>
 // Ein Ort: Wahl, Plan (mit Ausweich-Seeds und Ersatz), Lage, Höhe. Fehler → {fehler} (der Bildkern lässt den Ort dann einfach weg)
 // N7a4a2: die letzten Pläne kurz gemerkt (höchstens PLM), damit Bild und Sperrkarte desselben Orts nur einmal geplant werden
 var PLM=4, PLAN=new Map();
-function planRoh(k){var p=PLAN.get(k);if(p){PLAN.delete(k);PLAN.set(k,p);return p}var w=OB.wahl(seed,A,k,D,ON),r=OB.planen(SB,w.opt);p={w:w,r:r,L:OB.lage(G,seed,A,k,r.P)};
+// N7a5a1 (Thomas 24.11.2026): Wassermaske aus der Welt je Ort (ortsbild.js wasserMaske) in opt.welt, vor dem Plan; der Plan nutzt sie ab N7a5a2. Notausschalter ?n7a5a1=0.
+var N7A5A1=!/[?&]n7a5a1=0/.test(Q), MST={n:0,ms:0,maxMs:0,stuecke:0,bytes:0};
+function maske(k,w){var p=OB.punkt(G,seed,A,k),M=OB.wasserMaske(G,seed,A,k,w.roh.g,hoehe(p[0],p[1]),puffer);MST.n++;MST.ms=M.ms;if(M.ms>MST.maxMs)MST.maxMs=M.ms;MST.stuecke=M.stuecke;MST.bytes=M.m.length;return M}
+function planRoh(k){var p=PLAN.get(k);if(p){PLAN.delete(k);PLAN.set(k,p);return p}var w=OB.wahl(seed,A,k,D,ON);if(N7A5A1)w.opt.welt=maske(k,w);var r=OB.planen(SB,w.opt);p={w:w,r:r,L:OB.lage(G,seed,A,k,r.P)};
  PLAN.set(k,p);while(PLAN.size>PLM)PLAN.delete(PLAN.keys().next().value);return p}
 function planen(k){var t=performance.now(),q=planRoh(k),w=q.w,r=q.r,L=q.L;
  return{k:k,g:w.roh.g,name:w.name,P:r.P,lage:L,h0:hoehe(L.punkt[0],L.punkt[1]),ersatz:r.ersatz||null,ausweich:r.ausweich||0,ms:performance.now()-t}}
@@ -93,6 +96,6 @@ function nachricht(d){
  else if(d.art==='plan'||d.art==='posten'){if(d.gen!==gen)return;var q=d.art==='posten'?-d.k-1:d.k;for(var i=0;i<schlange.length;i++)if(schlange[i].k===q)return;if(q<0)schlange.unshift({k:q,gen:d.gen});else schlange.push({k:q,gen:d.gen});weiter()}   // N7a2c: Posten (winzig) vor die Ortspläne
  else if(d.art==='vergiss'){var s=new Set(d.liste||[]);schlange=schlange.filter(function(a){return !s.has(a.k)})}
  else if(d.art==='port'){port=d.port;port.onmessage=function(e){nachricht(e.data)}}}
-self.AT3ORTSKERN={nachricht:nachricht,planen:planen,postenPlanen:postenPlanen,PK:PK,daten:daten,sperre:sperre,kol:kol,stand:function(){return{karten:SP.size,bytes:SPB,ms:SPST.ms,maxMs:SPST.maxMs,gebaut:SPST.karten,anfragen:SPST.anfragen}}};
+self.AT3ORTSKERN={nachricht:nachricht,planRoh:planRoh,planen:planen,postenPlanen:postenPlanen,PK:PK,daten:daten,sperre:sperre,kol:kol,stand:function(){return{karten:SP.size,bytes:SPB,ms:SPST.ms,maxMs:SPST.maxMs,gebaut:SPST.karten,anfragen:SPST.anfragen,masken:MST.n,maskeMs:MST.ms,maskeMaxMs:MST.maxMs,maskeStuecke:MST.stuecke,maskeBytes:MST.bytes}}};
 if(!eingebettet)self.onmessage=function(e){nachricht(e.data)};
 })();

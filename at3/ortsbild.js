@@ -63,5 +63,26 @@ function posten(WG,seed,A,k,D,AP,w){w=w||wahl(seed,A,k,D);var P0=punkt(WG,seed,A
 // Lage eines Postenplans: Mitte = Postenpunkt (p.x, p.y), Ausgang = Anschluss des Feldwegs zum eigenen Ort
 function postenLage(WG,p,P){var h=P.W>>1,x0=welt(WG,p.x-h),y0=p.y-h,Q=P.posten,r=Q&&Q.weg&&Q.weg.rand;
  return{punkt:[p.x,p.y],x0:x0,y0:y0,W:P.W,tore:[],ausgaenge:r?[{seite:Q.anschluss.seite,i:r.i,j:r.j,breite:1,art:'feldweg',x:welt(WG,x0+r.i),y:y0+r.j}]:[]}}
-var M={AUSWEICH:AUSWEICH,ZONE_BIOM:ZONE_BIOM,biomVon:biomVon,planSeed:planSeed,religion:religion,wahl:wahl,planen:planen,punkt:punkt,lage:lage,toreAus:toreAus,ausgaenge:ausgaenge,posten:posten,postenLage:postenLage};
+// N7a5a1 (Thomas 24.11.2026): Wassermaske aus der Welt. Je Ort einmal die echten Felder aus dem Weltgenerator (gleiche Kartenstücke wie das Bodenbild),
+// quadratisch um den Ortspunkt: Seite N = größte Planseite der Ortsgröße (gemessen Seed 563520: Weiler ≤ 69, Dorf ≤ 101, Marktflecken ≤ 168, Stadt ≤ 213,
+// mit Reserve) plus Hangring 24 Felder je Seite. 1 Byte je Feld: Bit 0–1 Wasser (0 Land, 1 Meer, 2 Fluss, 3 See), Bit 2 Strand, Bit 3–7 Höhe in Zeichenstufen
+// (64 = 4 Felder) gegen die Höhe am Ortspunkt, −16 … +15 (Wert + 16, Ränder abgeschnitten). Außerhalb der Welt (Pole) Land auf Ortshöhe.
+// Lage: Feld (u, v) der Maske = Weltfeld (x0 + u, y0 + v); Planfeld (i, j) = Maske (i + N/2 − W/2, j + N/2 − W/2), maskeBei(). Reine Rechnung, Erde unverändert.
+// Kosten: (N/64 + 1)² Kartenstücke, Großstadt rund 36 (Messung im Test at3-n7a5a1); läuft im Ortskern (Hintergrund), nie auf dem Hauptkern.
+// N7a5a1 nur die Maske (opt.welt); der Plan nutzt sie ab N7a5a2/N7a5a3, Sperrkarte und Wegsuche ab N7a5a4.
+var MASKE_S=[96,96,96,128,192,240,288,320], MASKE_R=24, M_MEER=1, M_FLUSS=2, M_SEE=3, M_STRAND=4;
+function maskeSeite(g){g=g|0;return MASKE_S[g<0?0:g>7?7:g]+2*MASKE_R}
+// WG = weltgen.js, A = Ansicht der fertigen Erde (mit Orten und Wegen), g = Ortsgröße, h0 = Höhe am Ortspunkt (1/16 Feld), puf = Auftragspuffer (WG.GEL_BYTES) oder nichts
+function wasserMaske(WG,seed,A,k,g,h0,puf){var t0=Date.now(),p=punkt(WG,seed,A,k),N=maskeSeite(g),x0=welt(WG,p[0]-(N>>1)),y0=p[1]-(N>>1),m=new Uint8Array(N*N),
+  ST=64,F=WG.FELDER,WY=WG.GH*WG.ZF,SX=WG.GW*WG.ZF/ST,nW=0,nS=0,cx,cy,u,v;
+ puf=puf||new Uint8Array(WG.GEL_BYTES);m.fill(16<<3);
+ var c0=Math.floor(x0/ST),c1=Math.floor((x0+N-1)/ST),r0=Math.floor(Math.max(0,y0)/ST),r1=Math.floor((Math.min(WY,y0+N)-1)/ST);
+ for(cy=r0;cy<=r1;cy++)for(var c=c0;c<=c1;c++){cx=((c%SX)+SX)%SX;var b=WG.ausschnitt(A,cx,cy,puf);WG.gelaende({seed:seed,cx:cx,cy:cy,daten:b});nS++;
+  var H=new Uint16Array(b.buffer,b.byteOffset,F),B=new Uint8Array(b.buffer,b.byteOffset+F*2,F),gx=c*ST-x0,gy=cy*ST-y0;
+  for(var y=0;y<ST;y++){v=gy+y;if(v<0||v>=N)continue;for(var x=0;x<ST;x++){u=gx+x;if(u<0||u>=N)continue;var q=(y<<6)|x,bb=B[q],
+    w=bb<2?M_MEER:bb===10?M_FLUSS:bb===11?M_SEE:0,s=(H[q]-h0)>>6;if(s<-16)s=-16;else if(s>15)s=15;if(w)nW++;m[v*N+u]=w|(bb===2?M_STRAND:0)|((s+16)<<3)}}}
+ return{x0:x0,y0:y0,N:N,m:m,wasser:nW,stuecke:nS,ms:Date.now()-t0}}
+// Feld der Maske zum Planfeld (i, j) eines Plans mit Seite W (Mitte auf dem Ortspunkt wie lage()); außerhalb der Maske −1
+function maskeBei(M,W,i,j){var o=(M.N>>1)-(W>>1),u=i+o,v=j+o;return u<0||v<0||u>=M.N||v>=M.N?-1:M.m[v*M.N+u]}
+var M={AUSWEICH:AUSWEICH,ZONE_BIOM:ZONE_BIOM,biomVon:biomVon,planSeed:planSeed,religion:religion,wahl:wahl,planen:planen,punkt:punkt,lage:lage,toreAus:toreAus,ausgaenge:ausgaenge,posten:posten,postenLage:postenLage,MASKE_S:MASKE_S,MASKE_R:MASKE_R,M_MEER:M_MEER,M_FLUSS:M_FLUSS,M_SEE:M_SEE,M_STRAND:M_STRAND,maskeSeite:maskeSeite,wasserMaske:wasserMaske,maskeBei:maskeBei};
 if(typeof module!=='undefined'&&module.exports)module.exports=M;else G.AT3ORTSBILD=M})(typeof self!=='undefined'?self:this);
