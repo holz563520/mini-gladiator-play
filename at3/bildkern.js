@@ -21,12 +21,14 @@
 // Park gewinnt (Kartenstück mit Gebautem bleibt, wie es ist); Startplatz-Wahl hält Abstand von Orten. Notausschalter ?n7a2=0.
 // N7a2b1: echte Böden der Orte in 1× aus der Kartei (stadtbild.js elemente().boden, karteilader.js höchstens 4 MB, nur gebrauchte Bilder); Notausschalter ?n7a2b=0.
 // N7a2b2: echte Häuser, Mauern, Dinge in 1× (ortsflaeche.js schritt/fertige, Gebäudebilder ≤ 2 MB, 4 Orte mit Liste, gebündelt alle 0,3 s); Notausschalter ?n7a2b2=0.
+// N7a2c: Außenposten und Gehöfte wie kleine Orte (Postenlisten je Ort vom Ortskern, Hang 8 Felder, eigene Grenzen), Startplatz meidet auch Posten; Notausschalter ?n7a2c=0.
 // N7a2b3: Gebäudebilder in Abschnitten (stadtbild.js bauAuftrag, größter Schritt ≤ 8 ms gedrosselt), Messfeld in der Weltkarte mit ?mess=1; Notausschalter ?n7a2b3=0.
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
 var HR=self.AT3HERRSCHAFT, REI=true, RE=null;   // N4c1: Reiche in den Fernbildern (Knopf „Realms“), Tafeln einmal je Welt
 var BAUB=self.AT3BAUBILD, BAU=new Map(), BBILD=null, SP=self.AT3STARTPLATZ, FB=self.AT3FERN, ON=null, PBUF=null, TEX=null, TEXD=null, UEB=null;
 var OR=null, AP=null, SN=null, BB=self.AT3BB, G=self.AT3WG, NAT=self.AT3NATUR, NBILD=null, F=null, st=new Map(), lager=[], gen=-1, HALB=3, A=null, seed=0, kx=-1, ky=-1, laeuft=false;
+var N7A2C=!/[?&]n7a2c=0/.test(self.location.search),PD=null,PDL=null,PPK=new Map();   // N7a2c: Posten an?, Daten und Postenpunkte je Ort für den Startplatz
 var N7A2=!/[?&]n7a2=0/.test(self.location.search),OFL=null,OK=null,OKP=null,OKE=false,WB=null;   // N7a2a: Ortsflächen, Ortskern (Port), eingebettet?, Warteliste
 var BMP=typeof createImageBitmap==='function'&&typeof ImageData!=='undefined', stUs=0, stN=0;
 var ORDNUNG=(function(){var L=[];for(var y=-HALB;y<=HALB;y++)for(var x=-HALB;x<=HALB;x++)L.push([x,y,x*x+y*y]);L.sort(function(a,b){return a[2]-b[2]||a[1]-b[1]||a[0]-b[0]});return L})();
@@ -40,12 +42,17 @@ function bauFrei(X,Y){return BAUB.frei(holeBau,X,Y)}
 function natFrei(){var o=OFL&&OFL.orte.size;if(!o)return BAU.size?bauFrei:null;return BAU.size?function(X,Y){return OFL.frei(X,Y)&&bauFrei(X,Y)}:OFL.frei}
 function bauHat(k){var a=BAU.get(k);if(!a)return false;for(var i=0;i<4096;i++)if(a[i])return true;return false}
 function ofl(){if(!N7A2||OFL===false)return null;if(OFL)return OFL;try{importScripts('ortsflaeche.js'+self.location.search,'orte.js'+self.location.search,'aussenposten.js'+self.location.search);
-  OFL=self.AT3ORTSFLAECHE.neu(G,BB);if(!OR&&OR!==false)OR=self.AT3ORTE.AUS?false:self.AT3ORTE;if(AP==null)AP=self.AT3POSTEN.AUS?false:self.AT3POSTEN;if(!OR||!AP)OFL=false}catch(x){OFL=false}return OFL||null}
+  OFL=self.AT3ORTSFLAECHE.neu(G,BB);OFL.postenAn(N7A2C);if(!OR&&OR!==false)OR=self.AT3ORTE.AUS?false:self.AT3ORTE;if(AP==null)AP=self.AT3POSTEN.AUS?false:self.AT3POSTEN;if(!OR||!AP)OFL=false}catch(x){OFL=false}return OFL||null}
 // Anfrage an den Ortskern (Port) oder eingebettet (ohne zweiten Hintergrundkern: hier planen, je Pause ein Ort)
 function zumOrtskern(m){if(OKP){OKP.postMessage(m);return}if(!OK){try{self.AT3_ORTSKERN_EINGEBETTET=true;self.AT3_ORTSKERN_ANTWORT=vomOrtskern;importScripts('ortskern.js'+self.location.search);OK=self.AT3ORTSKERN;OKE=true;if(WB)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:WB})}catch(x){OK=false}}
  if(OK)OK.nachricht(m)}
-function ortsBedarf(){var O=ofl();if(!O||!A||kx<0)return;var b=O.bedarf(A,seed,OR,AP,kx,ky,HALB);
- if(b.vergessen.length)zumOrtskern({art:'vergiss',liste:b.vergessen});b.neu.forEach(function(k){zumOrtskern({art:'plan',gen:gen,k:k})})}
+function ortsBedarf(){var O=ofl();if(!O||!A||kx<0)return;var b=O.bedarf(A,seed,OR,AP,kx,ky,HALB,bauHat);
+ if(b.vergessen.length)zumOrtskern({art:'vergiss',liste:b.vergessen});b.neu.forEach(function(k){zumOrtskern({art:'plan',gen:gen,k:k})});
+ (b.neuP||[]).forEach(function(k){zumOrtskern({art:'posten',gen:gen,k:k})});   // N7a2c: Postenlisten der Orte im weiten Umkreis
+ if(b.stuecke&&b.stuecke.length){echteBoeden();var S=[];b.stuecke.forEach(function(k){if(S.indexOf(k)<0)S.push(k)});eingeebnet(S);var ps=O.postenStand();
+  self.postMessage({art:'ortNeu',gen:gen,stuecke:S,posten:ps.posten,postenListen:ps.orteMitListe,postenMs:ps.maxMs})}}
+// Betroffene, schon gerechnete Stücke einebnen und dem Hauptkern die neue Kurzauskunft schicken (Orte und Posten)
+function eingeebnet(L){L.forEach(function(k){var b=st.get(k);if(!b)return;if(OFL.flachen(b,(k/8192)|0,k%8192)){b._s=null;var q=BB.kunde(b);self.postMessage({art:'kunde',gen:gen,cx:(k/8192)|0,cy:k%8192,mm:q.mm,hg:q.hg,stUs:stUs/(stN||1)},[q.mm.buffer,q.hg.buffer])}})}
 // Plan eines Orts ist da: aufnehmen, betroffene Stücke einebnen, Kurzauskunft neu, Hauptkern markiert die Bilder als alt
 var ORTMS=[];
 // N7a2b1: echte Böden der Orte in 1× (Thomas 24.11.2026): stadtbild.js samt Teilen erst beim ersten Ort laden (eingebettet sind sie vom Ortskern schon da),
@@ -65,9 +72,21 @@ function haeuser(){HAUSL=false;if(!OFL||!OFL.schritt)return;var mehr=OFL.schritt
  if(OFL.fertigeZahl()&&t-HAUSF>=BUENDEL){HAUSF=t;var L=OFL.fertige(),h=OFL.haeuser();self.postMessage({art:'ortNeu',gen:gen,stuecke:L,haeuser:h.bilder,hausB:h.bytes,hausMs:h.maxMs,listeMs:h.listeMaxMs,hausPausen:h.pausen,listen:h.listen})}
  if(mehr||OFL.fertigeZahl()){HAUSL=true;setTimeout(haeuser,mehr?0:Math.max(0,BUENDEL-(t-HAUSF)))}}
 function haeuserAn(){if(!HAUSL&&OFL&&OFL.arbeitOffen&&(OFL.arbeitOffen()||OFL.fertigeZahl())){HAUSL=true;setTimeout(haeuser,0)}}
-function vomOrtskern(m){if(m.art!=='plan'||m.gen!==gen||!OFL)return;echteBoeden();if(m.ms!=null)ORTMS.push(m.ms);var L=OFL.aufnehmen(m,bauHat);if(!L.length)return;
- L.forEach(function(k){var b=st.get(k);if(!b)return;if(OFL.flachen(b,(k/8192)|0,k%8192)){b._s=null;var q=BB.kunde(b);self.postMessage({art:'kunde',gen:gen,cx:(k/8192)|0,cy:k%8192,mm:q.mm,hg:q.hg,stUs:stUs/(stN||1)},[q.mm.buffer,q.hg.buffer])}});
+function vomOrtskern(m){if(m.gen!==gen||!OFL)return;
+ if(m.art==='posten'){OFL.postenListe(m);ortsBedarf();return}   // N7a2c: Postenliste da → berührende Posten aufnehmen
+ if(m.art!=='plan')return;echteBoeden();if(m.ms!=null)ORTMS.push(m.ms);var L=OFL.aufnehmen(m,bauHat);if(!L.length)return;
+ eingeebnet(L);
  self.postMessage({art:'ortNeu',gen:gen,stuecke:L,k:m.k,name:m.name,ms:m.ms,ersatz:m.ersatz||null})}
+// N7a2c Startplatz: Postenpunkte rechnet der Bildkern selbst (Ortsbilanz + aussenposten.js, rund 0,3 ms je Ort, kein Plan), damit die Wahl nie auf den
+// Ortskern warten muss (der plant gerade vielleicht eine Großstadt). Daten (3 Dateien) einmal laden; je Ort gemerkt (höchstens 64 Orte).
+function postenDaten(){if(PDL)return PDL;var Q=self.location.search;
+ PDL=Promise.all(['gebaeude','rezepte','kulturen'].map(function(f){return fetch('daten/'+f+'.json'+Q).then(function(r){if(!r.ok)throw new Error(f);return r.json()})}))
+  .then(function(d){PD=OR.daten(d[0],d[1],d[2]);return PD},function(){PD=false;return null});return PDL}
+function postenPunkte(x,y){var L=[];OFL.orteUm(A,seed,OR,x,y).forEach(function(k){var P=PPK.get(k);
+  if(!P){P=[];try{var z=A.orte[k]&0xffffff,X=z%G.GW,Y=(z/G.GW)|0,r=OR.roh(seed,A,k,ON),b=OR.bilanz(seed,r,PD);
+    AP.posten(seed,b,AP.umgebung(seed,A,k),PD,G.ortPunkt(seed,A,X,Y),AP.fremde?AP.fremde(seed,A,k,G.ortPunkt,OR):null).forEach(function(p){P.push({x:p.x,y:p.y})})}catch(x){}
+   PPK.set(k,P);if(PPK.size>64)PPK.delete(PPK.keys().next().value)}
+  L=L.concat(P)});return L}
 function BA(offen){return BBILD?{M:BAUB,hole:holeBau,BILD:BBILD,offen:offen&&offen.length?new Set(offen):null}:null}
 // Nächstes fehlendes Stück im Fenster rechnen, dann dem Hauptkern die Kurzauskunft schicken. Immer nur eins je Durchlauf (Bildanfragen kommen dazwischen dran).
 function arbeit(){laeuft=false;if(!A||kx<0)return;
@@ -91,8 +110,12 @@ function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.f
  else if(d.frage==='platz'||d.frage==='zufall'){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}
   var x=d.x,y=d.y;if(d.frage==='zufall'){var z=SP.zufall(G,seed,A,d.r1,d.r2);if(!z){m.platz={ok:false};self.postMessage(m);return}x=z.x;y=z.y}
   PBUF=PBUF||new Uint8Array(G.GEL_BYTES);m.platz=SP.platz(G,ON,seed,A,x,y,PBUF);
-  var O=ofl();if(O)for(var v=0;v<3&&m.platz&&m.platz.ok;v++){var io=O.imOrt(A,seed,OR,AP,m.platz.x,m.platz.y);if(!io)break;   // N7a2a: nie in einer Ortsfläche (Park gewinnt nur bei alten Spielständen)
-   var h=O.hinaus(io);m.platz=SP.platz(G,ON,seed,A,h.x,h.y,PBUF);if(v===2&&m.platz&&m.platz.ok&&O.imOrt(A,seed,OR,AP,m.platz.x,m.platz.y))m.platz={ok:false,weit:-1,imOrt:true}}}
+  var O=ofl();
+  // N7a2c (Thomas 24.11.2026): auch nie in einem Außenposten oder Gehöft (Postenpunkte selbst gerechnet, siehe postenPunkte)
+  if(O&&N7A2C&&AP&&PD==null){postenDaten().then(function(){wahl(d)});return}   // erstes Mal: Daten laden, dann dieselbe Frage noch einmal
+  var imP=function(x,y){return O.imOrt(A,seed,OR,AP,x,y)||(N7A2C&&AP&&PD?O.imPosten(x,y,8,postenPunkte(x,y)):null)};
+  if(O)for(var v=0;v<3&&m.platz&&m.platz.ok;v++){var io=imP(m.platz.x,m.platz.y);if(!io)break;   // N7a2a: nie in einer Ortsfläche (Park gewinnt nur bei alten Spielständen)
+   var h=O.hinaus(io);m.platz=SP.platz(G,ON,seed,A,h.x,h.y,PBUF);if(v===2&&m.platz&&m.platz.ok&&imP(m.platz.x,m.platz.y))m.platz={ok:false,weit:-1,imOrt:true}}}
  else if(d.frage==='reich'){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}   // N4c1: Kette „Answers to“ an einem Weltfeld
   var zx=((d.x%G.WF+G.WF)%G.WF)>>10,zy=Math.max(0,Math.min(G.GH-1,d.y>>10)),u=A.hs?A.hs.zel[zy*G.GW+zx]:0;m.hat=!!A.hs;m.reich=u?HR.info(A.hs,A.vk,A.orte,u-1,seed,ON):null;
   if(!OR&&OR!==false){try{importScripts('orte.js'+self.location.search);OR=self.AT3ORTE.AUS?false:self.AT3ORTE}catch(x){OR=false}}   // N5b: nächster Ort im Umkreis von 3 × 3 Zellen (Rohdaten, Name)

@@ -14,13 +14,19 @@
 // Kachelbauer) einzeln mit Tiefe ins Bodenbild (Fach nach dem vordersten Feld, Reihenfolge der Stadt bleibt: Tiefe = laufendes Maximum der vordersten Felder).
 // Die Liste wird in Zeitanteilen gefüllt (schritt), höchstens LISTEN Orte halten sie (Entscheidung Thomas: 4). Gebäudebilder (bauBild) entstehen in Zeitanteilen,
 // höchstens HAUS Bytes gemerkt (2 MB), bis dahin steht der Klotz (Regel 20). Fertiges sammelt fertige() → Bildkern meldet gebündelt (Thomas: etwa alle 0,3 s).
+// N7a2c (Thomas 24.11.2026): Außenposten und Gehöfte auf demselben Weg wie kleine Orte (Fläche, Einebnen, Ersatzbild, echte Bilder in 1×), Hang nur RAMPE_P
+// Felder; eigene Grenzen (höchstens HALTEN_P Posten gemerkt, LISTEN_P mit Elementliste), damit viele kleine Posten die Städte nicht verdrängen. Die Postenlisten
+// kommen je Ort vom Ortskern (Anfrage „posten“), werden je Ort gemerkt (höchstens PL_HALTEN Orte) und nur die Posten, die das Fenster berühren, aufgenommen.
+// Startplatz meidet auch Posten (imPosten; die Postenpunkte rechnet der Bildkern selbst). Feldsuche (bei/frei) über ein Verzeichnis der Kartenstücke statt über alle Orte.
 (function(root){
 'use strict';
-var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152;   // N7a2b2: LISTEN Orte mit ganzer Elementliste, HAUS Bytes gemerkte Gebäudebilder
+var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152;
+var RAMPE_P=8, HALTEN_P=64, LISTEN_P=16, PL_HALTEN=48, PWEIT=2600;   // N7a2c: Hang, Posten gemerkt, Posten mit Liste, Orte mit Postenliste, größter Abstand Ortspunkt → Postenrand (gemessen 2.268 + 18 + Hang)   // N7a2b2: LISTEN Orte mit ganzer Elementliste, HAUS Bytes gemerkte Gebäudebilder
 //  RAMPE: Felder Hang rund um die Fläche (eine Höhenstufe = 64 Einheiten je Feld, wie RollerCoaster Tycoon); HALTEN: Orte im Speicher
 var CODES='gsomfwepxqyuh', FARBE_RGB=[[104,138,64],[150,128,96],[156,150,138],[216,210,198],[186,160,84],[56,98,150],[112,86,58],[124,154,78],[122,116,108],[140,134,122],[128,92,58],[214,194,146],[146,118,84]];
 var DACH_RGB=[150,66,48], WAND_RGB=[202,180,140], MAUER_RGB=[150,146,136];
 function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,sprite=new Map(),SBx=null,KL=null,EMS=[];
+ var POSTEN=false,PL=new Map(),gefragtP=new Set(),LIP=[],IDX=new Map(),PST={listen:0,ms:0,maxMs:0};   // N7a2c
  var ECHT=true,HGR=HAUS,LI=[],HB=new Map(),HBB=0,AUF=[],AKT=null,ABSCHNITTE=true,INQ=new Set(),FERTIG=new Set(),GEB=new Set(),HST={wieder:0,gebaut:0,ms:0,maxMs:0,listen:0,listeMs:0,verworfen:0,pausen:0};   // N7a2b2   // N7a2b1: SBx = stadtbild.js, KL = Kartei-Lader (bilder())
  var jetzt=typeof performance!=='undefined'?function(){return performance.now()}:function(){return Date.now()};
  function um(x){x%=WX;return x<0?x+WX:x}
@@ -33,30 +39,63 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  function stk(X,Y){return(um(X)>>6)*8192+(Y>>6)}
  // Ort aufnehmen (Antwort des Ortskerns). bau(k) → true, wenn das Kartenstück k Gebautes des Spielers hat (Park gewinnt). Gibt die Kartenstücke, deren Bild sich ändert.
  function aufnehmen(m,bau){gefragt.delete(m.k);if(m.fehler||!m.P||!m.lage)return[];var L=m.lage,P=m.P,W=L.W,o={k:m.k,g:m.g,name:m.name,x0:L.x0,y0:L.y0,W:W,h0:m.h0,s0:BB.stufe(m.h0),
-   Z:new Uint8Array(W*W),bauten:[],fach:new Map(),aus:new Set(),ms:m.ms,ersatz:m.ersatz,t:++zeit,P:P,E:null,wartet:false},i,j;   // N7a2b1: Plan für die echten Böden
+   Z:new Uint8Array(W*W),bauten:[],fach:new Map(),aus:new Set(),ms:m.ms,ersatz:m.ersatz,t:++zeit,P:P,E:null,wartet:false,posten:m.ort!=null,ort:m.ort,art:m.art,R:m.ort!=null?RAMPE_P:RAMPE},i,j;   // N7a2c: posten, Hang R   // N7a2b1: Plan für die echten Böden
   for(i=0;i<W*W;i++){var c=CODES.indexOf(P.zellen.charAt(i));o.Z[i]=c<0?0:c}
   P.bauten.forEach(function(b){if(!(b.w>0&&b.h>0))return;var e={i:b.i,j:b.j,w:b.w,h:b.h,m:b.rolle==='mauer'},fi=b.i+b.w-1,fj=b.j+b.h-1,key=(fi>>3)*4096+(fj>>3);   // Fach nach dem vordersten Feld (8 × 8)
    o.bauten.push(e);var f=o.fach.get(key);if(!f)o.fach.set(key,f=[]);f.push(e)});
-  var R=RAMPE,X0=o.x0-R,Y0=o.y0-R,N=W+2*R;
+  var R=o.R,X0=o.x0-R,Y0=o.y0-R,N=W+2*R;
   for(var cy=Math.max(0,Y0>>6);cy<=Math.min(BB.SY-1,(Y0+N-1)>>6);cy++)for(var cx=X0>>6;cx<=(X0+N-1)>>6;cx++){var k=((cx%BB.SX+BB.SX)%BB.SX)*8192+cy;if(bau(k))o.aus.add(k)}
-  orte.set(m.k,o);halten();return stuecke(o)}
+  if(orte.has(m.k))raus(orte.get(m.k));orte.set(m.k,o);rein(o);halten();return stuecke(o)}
+ // N7a2c: Verzeichnis Kartenstück → Orte/Posten, deren Fläche (ohne Hang) es berührt (für bei/frei)
+ function rein(o){for(var cy=Math.max(0,o.y0>>6);cy<=Math.min(BB.SY-1,(o.y0+o.W-1)>>6);cy++)for(var cx=o.x0>>6;cx<=(o.x0+o.W-1)>>6;cx++){var k=((cx%BB.SX+BB.SX)%BB.SX)*8192+cy,a=IDX.get(k);if(!a)IDX.set(k,a=[]);a.push(o)}}
+ function raus(o){IDX.forEach(function(a,k){var q=a.indexOf(o);if(q>=0){a.splice(q,1);if(!a.length)IDX.delete(k)}})}
+ function weg(k){var o=orte.get(k);if(!o)return;raus(o);orte.delete(k);var a=LI.indexOf(k);if(a>=0)LI.splice(a,1);a=LIP.indexOf(k);if(a>=0)LIP.splice(a,1)}
  // Kartenstücke, die vom Ort berührt werden (Fläche + Hang, dazu je eines nach Westen und Norden: deren Bildrand liest unsere Ecken)
- function stuecke(o){var R=RAMPE,X0=o.x0-R-1,Y0=o.y0-R-1,N=o.W+2*R+1,L=[];
+ function stuecke(o){var R=o.R,X0=o.x0-R-1,Y0=o.y0-R-1,N=o.W+2*R+1,L=[];
   for(var cy=Math.max(0,Y0>>6);cy<=Math.min(BB.SY-1,(Y0+N)>>6);cy++)for(var cx=X0>>6;cx<=(X0+N)>>6;cx++)L.push(((cx%BB.SX+BB.SX)%BB.SX)*8192+cy);return L}
  var zeit=0;
- function halten(){if(orte.size<=HALTEN)return;var L=[];orte.forEach(function(o){L.push(o)});L.sort(function(a,b){return a.t-b.t});for(var i=0;i<L.length-HALTEN;i++)orte.delete(L[i].k)}
+ function halten(){var L=[],LP=[];orte.forEach(function(o){(o.posten?LP:L).push(o)});[[L,HALTEN],[LP,HALTEN_P]].forEach(function(q){var X=q[0];if(X.length<=q[1])return;   // N7a2c: Orte und Posten getrennt
+  X.sort(function(a,b){return a.t-b.t});for(var i=0;i<X.length-q[1];i++)weg(X[i].k)})}
  // Welche Orte braucht das Fenster um Stück (kx, ky) (halbe Breite HALB Stücke)? OR = orte.js, AP = aussenposten.js. Gibt neu zu planende Ortsnummern, nächste zuerst;
  // vergessen = Nummern, die weit weg sind (nicht mehr im Ortskern planen).
- function bedarf(A,seed,OR,AP,kx,ky,HALB){var fx0=(kx-HALB)*ST,fy0=(ky-HALB)*ST,fn=(2*HALB+1)*ST,mx=fx0+(fn>>1),my=fy0+(fn>>1),L=[],da=new Set(),R=RAMPE;
+ function bedarf(A,seed,OR,AP,kx,ky,HALB,bau){var fx0=(kx-HALB)*ST,fy0=(ky-HALB)*ST,fn=(2*HALB+1)*ST,mx=fx0+(fn>>1),my=fy0+(fn>>1),L=[],da=new Set(),R=RAMPE;
   var zx0=Math.floor((fx0-600)/G.ZF),zx1=Math.floor((fx0+fn+600)/G.ZF),zy0=Math.max(0,Math.floor((fy0-600)/G.ZF)),zy1=Math.min(G.GH-1,Math.floor((fy0+fn+600)/G.ZF));
   for(var zy=zy0;zy<=zy1;zy++)for(var zx=zx0;zx<=zx1;zx++){var X=((zx%G.GW)+G.GW)%G.GW,z=zy*G.GW+X;if(!(A.ort[z]&15))continue;var k=OR.ortNr(A,z);if(k==null)continue;
    var p=G.ortPunkt(seed,A,X,zy),h=AP.halb(OR.groesse(seed,A,k))+R+2,dx=p[0]-mx;if(dx>WX/2)dx-=WX;else if(dx<-WX/2)dx+=WX;var dy=p[1]-my;
    if(Math.abs(dx)>h+(fn>>1)||Math.abs(dy)>h+(fn>>1))continue;da.add(k);var o=orte.get(k);if(o){o.t=++zeit;continue}if(!gefragt.has(k))L.push([dx*dx+dy*dy,k])}
   L.sort(function(a,b){return a[0]-b[0]});var neuL=L.map(function(a){gefragt.add(a[1]);return a[1]}),weg=[];gefragt.forEach(function(k){if(!da.has(k)){weg.push(k)}});weg.forEach(function(k){gefragt.delete(k)});
-  return{neu:neuL,vergessen:weg}}
+  // N7a2c: Orte, deren Posten das Fenster erreichen können: gemerkte Liste → berührende Posten aufnehmen, sonst Liste beim Ortskern anfragen (nächste zuerst)
+  var neuP=[],stu=[];if(POSTEN){var LP=[],daP=new Set(),WN={x0:fx0,y0:fy0,n:fn};
+   zx0=Math.floor((fx0-PWEIT)/G.ZF);zx1=Math.floor((fx0+fn+PWEIT)/G.ZF);zy0=Math.max(0,Math.floor((fy0-PWEIT)/G.ZF));zy1=Math.min(G.GH-1,Math.floor((fy0+fn+PWEIT)/G.ZF));
+   for(zy=zy0;zy<=zy1;zy++)for(zx=zx0;zx<=zx1;zx++){var X2=((zx%G.GW)+G.GW)%G.GW,z2=zy*G.GW+X2;if(!(A.ort[z2]&15))continue;var k2=OR.ortNr(A,z2);if(k2==null)continue;
+    var p2=G.ortPunkt(seed,A,X2,zy),ex=p2[0]-mx;if(ex>WX/2)ex-=WX;else if(ex<-WX/2)ex+=WX;var ey=p2[1]-my;if(Math.abs(ex)>PWEIT+(fn>>1)||Math.abs(ey)>PWEIT+(fn>>1))continue;
+    daP.add(k2);var pl=PL.get(k2);
+    if(pl){PL.delete(k2);PL.set(k2,pl);pl.forEach(function(q){if(!schneidet(q,WN))return;var o=orte.get(q.k);if(o){o.t=++zeit;return}stu=stu.concat(aufnehmen(q,bau||nie))})}
+    else if(!gefragtP.has(k2))LP.push([ex*ex+ey*ey,k2])}
+   LP.sort(function(a,b){return a[0]-b[0]});LP.forEach(function(a){gefragtP.add(a[1]);neuP.push(a[1])});
+   gefragtP.forEach(function(k){if(!daP.has(k)&&!PL.has(k))weg.push(-k-1)});weg.forEach(function(k){if(k<0)gefragtP.delete(-k-1)})}
+  return{neu:neuL,vergessen:weg,neuP:neuP,stuecke:stu}}
+ function nie(){return false}
+ // N7a2c: berührt Posten q (Fläche + Hang) das Fenster WN?
+ function schneidet(q,WN){var L=q.lage,R=RAMPE_P,dx=(L.x0-R)-WN.x0;dx%=WX;if(dx>WX/2)dx-=WX;else if(dx<-WX/2)dx+=WX;var dy=(L.y0-R)-WN.y0,N=L.W+2*R;
+  return dx<WN.n&&dx+N>0&&dy<WN.n&&dy+N>0}
+ // N7a2c: Antwort „posten“ des Ortskerns merken (höchstens PL_HALTEN Orte; wer herausfällt, darf neu gefragt werden)
+ function postenListe(m){gefragtP.delete(m.k);var t=m.liste||[];PL.delete(m.k);PL.set(m.k,t);PST.listen++;if(m.ms!=null){PST.ms=m.ms;if(m.ms>PST.maxMs)PST.maxMs=m.ms}
+  while(PL.size>PL_HALTEN){var a=PL.keys().next().value;PL.delete(a)}return t.length}
+ // N7a2c Startplatz: liegt (x, y) in einem Posten (Fläche + Hang + rand)? punkte = [{x, y}] Postenpunkte (ohne Plan: halbe Fläche PMAX, größter Plan 18 × 18);
+ // ohne punkte die gemerkten Postenlisten (mit echter Planbreite). Gibt {k, x, y, halb, dx, dy} wie imOrt oder null
+ var PMAX=9;
+ function imPosten(x,y,rand,punkte){rand=rand||8;var L=punkte||[];if(!punkte)PL.forEach(function(Q){Q.forEach(function(q){L.push({x:q.lage.punkt[0],y:q.lage.punkt[1],W:q.lage.W,k:q.k})})});
+  for(var a=0;a<L.length;a++){var q=L[a],h=(q.W?q.W>>1:PMAX)+RAMPE_P+rand,dx=x-q.x;if(dx>WX/2)dx-=WX;else if(dx<-WX/2)dx+=WX;var dy=y-q.y;
+   if(Math.abs(dx)<=h&&Math.abs(dy)<=h)return{k:q.k,x:q.x,y:q.y,halb:h,dx:dx,dy:dy}}return null}
+ // N7a2c: Orte, deren Posten (x, y) erreichen könnten (ohne=true: nur die ohne gemerkte Liste)
+ function orteUm(A,seed,OR,x,y,ohne){var L=[],zx0=Math.floor((x-PWEIT)/G.ZF),zx1=Math.floor((x+PWEIT)/G.ZF),zy0=Math.max(0,Math.floor((y-PWEIT)/G.ZF)),zy1=Math.min(G.GH-1,Math.floor((y+PWEIT)/G.ZF));
+  for(var zy=zy0;zy<=zy1;zy++)for(var zx=zx0;zx<=zx1;zx++){var X=((zx%G.GW)+G.GW)%G.GW,z=zy*G.GW+X;if(!(A.ort[z]&15))continue;var k=OR.ortNr(A,z);if(k==null||ohne&&PL.has(k))continue;
+   var p=G.ortPunkt(seed,A,X,zy),dx=p[0]-x;if(dx>WX/2)dx-=WX;else if(dx<-WX/2)dx+=WX;if(Math.abs(dx)<=PWEIT&&Math.abs(p[1]-y)<=PWEIT)L.push(k)}
+  return L}
  // Ein frisch gerechnetes Kartenstück (b = weltgen-Puffer) einebnen; gibt true, wenn sich etwas geändert hat
- function flachen(b,cx,cy){if(!orte.size)return false;var s=BB.sicht(b),H=s.H,B=s.B,k=cx*8192+cy,ja=false,R=RAMPE;
-  orte.forEach(function(o){if(o.aus.has(k))return;var W=o.W,N=W+2*R,i0=lok(o,cx*ST)+R,j0=cy*ST-o.y0+R;
+ function flachen(b,cx,cy){if(!orte.size)return false;var s=BB.sicht(b),H=s.H,B=s.B,k=cx*8192+cy,ja=false;
+  orte.forEach(function(o){if(o.aus.has(k))return;var R=o.R,W=o.W,N=W+2*R,i0=lok(o,cx*ST)+R,j0=cy*ST-o.y0+R;
    if((i0>=N&&i0<WX-ST)||j0>=N||j0+ST<=0)return;
    for(var y=0;y<ST;y++){var j=j0+y;if(j<0||j>=N)continue;for(var x=0;x<ST;x++){var i=i0+x;if(i>=WX)i-=WX;if(i<0||i>=N)continue;
      var d=Math.max(i<R?R-i:i>=R+W?i-R-W+1:0,j<R?R-j:j>=R+W?j-R-W+1:0),q=(y<<6)|x,h=H[q],z;
@@ -64,7 +103,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
      if(z!==h){H[q]=z;ja=true}}}});
   return ja}
  // Ort am Weltfeld (X, Y): {o, i, j} oder null
- function bei(X,Y){var r=null;orte.forEach(function(o){if(r)return;var i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W&&!o.aus.has(stk(X,Y)))r={o:o,i:i,j:j}});return r}
+ function bei(X,Y){var k=stk(X,Y),a=IDX.get(k);if(!a)return null;for(var q=0;q<a.length;q++){var o=a[q],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W&&!o.aus.has(k))return{o:o,i:i,j:j}}return null}
  function frei(X,Y){return !bei(X,Y)}
  // Klotz-Bild (Wand + Dach) für fw × fh Felder, Höhe hb, Stufe lod; Anker = obere Ecke des nördlichsten Felds auf dem Boden
  function klotz(fw,fh,hb,lod,mauer){var key=fw+':'+fh+':'+hb+':'+lod+':'+(mauer?1:0),sp=sprite.get(key);if(sp)return sp;var hw=32>>lod,hh=16>>lod,w=(fw+fh)*hw,h=(fw+fh)*hh+hb+1,ax=fh*hw,sx=fw*hw,px=new Uint8Array(w*h).fill(255);
@@ -79,8 +118,8 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
 
  // N7a2b2: Elementliste des Orts (o.E wie bodenBilder) ganz füllen lassen; höchstens LISTEN Orte, der am längsten nicht gebrauchte gibt seine Liste ab
  function elem(o){if(!o.E&&o.E!==false){var t0=jetzt();try{o.E=SBx.elemente(o.P,KL.hole,{inSchritten:true})}catch(x){o.E=false}EMS.push(jetzt()-t0);if(EMS.length>32)EMS.shift()}return o.E||null}
- function listeWunsch(o){var a=LI.indexOf(o.k);if(a>=0)LI.splice(a,1);LI.push(o.k);if(!o.EF&&!o.fuell)o.fuell={ix:0,t:0,R:0};
-  while(LI.length>LISTEN){var k=LI.shift(),x=orte.get(k);if(x){x.EF=null;x.RT=null;x.fuell=null;x.E=null;HST.verworfen++}}}
+ function listeWunsch(o){var Lx=o.posten?LIP:LI,MX=o.posten?LISTEN_P:LISTEN,a=Lx.indexOf(o.k);if(a>=0)Lx.splice(a,1);Lx.push(o.k);if(!o.EF&&!o.fuell)o.fuell={ix:0,t:0,R:0};   // N7a2c: Posten eigene Liste
+  while(Lx.length>MX){var k=Lx.shift(),x=orte.get(k);if(x){x.EF=null;x.RT=null;x.fuell=null;x.E=null;HST.verworfen++}}}
  // Fach (8 × 8 nach dem vordersten Feld) → Liste der Elementnummern; RT = Tiefe je Element (laufendes Maximum von fi + fj, so bleibt die Reihenfolge der Stadt)
  function fuellen(o,aus){var E=elem(o);if(!E){o.fuell=null;o.EF=false;return true}var f=o.fuell,t0=jetzt();
   if(!E.voll()&&!E.fuellen(aus)){f.t+=jetzt()-t0;return false}
@@ -93,6 +132,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  // Arbeit in Zeitanteilen (Bildkern, Regel 20): erst Listen füllen, dann Gebäudebilder bauen. Gibt true, wenn noch Arbeit übrig ist.
  function schritt(budget){budget=budget||4;var t0=jetzt(),aus=function(){return jetzt()-t0>=budget};
   for(var a=LI.length-1;a>=0;a--){var o=orte.get(LI[a]);if(!o||!o.fuell)continue;if(!fuellen(o,aus))return true;if(aus())return true}
+  for(a=LIP.length-1;a>=0;a--){o=orte.get(LIP[a]);if(!o||!o.fuell)continue;if(!fuellen(o,aus))return true;if(aus())return true}   // N7a2c
   // N7a2b3 (Thomas 24.11.2026): ein Gebäudebild in Abschnitten (bauAuftrag), angefangene Arbeit (AKT) geht im nächsten Zeitanteil weiter, größter Schritt ≤ 8 ms gedrosselt
   while(AUF.length||AKT){if(aus())return true;var w,o2;
    if(AKT){w=AKT.w;o2=orte.get(w.k);if(!o2||!o2.EF||o2.E!==w.E||HB.has(w.key)){AKT=null;continue}}
@@ -106,7 +146,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
    // schon einmal gebaut und verdrängt: kein neues „ortNeu“ (sonst bauen und verdrängen sich zu viele Häuser im Bild gegenseitig immer wieder), erscheint beim nächsten Neuzeichnen
    if(GEB.has(w.key))HST.wieder++;else{GEB.add(w.key);if(GEB.size>65536)GEB.clear();FERTIG.add(stk(o2.x0+w.fi,o2.y0+w.fj))}}
   return false}
- function arbeitOffen(){if(AUF.length||AKT)return true;for(var a=0;a<LI.length;a++){var o=orte.get(LI[a]);if(o&&o.fuell)return true}return false}
+ function arbeitOffen(){if(AUF.length||AKT)return true;var X=LI.concat(LIP);for(var a=0;a<X.length;a++){var o=orte.get(X[a]);if(o&&o.fuell)return true}return false}
  // Elemente eines Orts, deren vorderstes Feld in diesem Bild liegt (1×): Einträge wie natur.sammeln; fehlt ein Gebäudebild, der Klotz und ein Bauauftrag
  function elementeIns(o,aus,i0,j0,n){var E=o.E,L=E.L,N=L.length,z=0,dx=E.ax+(i0-j0)*32,dy=E.ay+(i0+j0)*16+o.s0*8;
   for(var fj=Math.max(0,j0)>>3;fj<=Math.min(o.W-1,j0+n-1)>>3;fj++)for(var fi=Math.max(0,i0)>>3;fi<=Math.min(o.W-1,i0+n-1)>>3;fi++){var f=o.EF.get(fi*4096+fj);if(!f)continue;
@@ -143,18 +183,20 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  // Startplatz aus einer Fläche schieben: an den nächsten Rand (+ rand), x über die Naht
  function hinaus(t){var ax=Math.abs(t.dx),ay=Math.abs(t.dy);if(t.halb-ax<=t.halb-ay)return{x:um(t.x+(t.dx<0?-1:1)*(t.halb+1)),y:t.y+t.dy};
   return{x:um(t.x+t.dx),y:Math.max(0,Math.min(BB.WY-1,t.y+(t.dy<0?-1:1)*(t.halb+1)))}}
- return{RAMPE:RAMPE,HALTEN:HALTEN,orte:orte,aufnehmen:aufnehmen,stuecke:stuecke,bedarf:bedarf,flachen:flachen,bei:bei,frei:frei,fuerBild:fuerBild,imOrt:imOrt,hinaus:hinaus,
+ return{RAMPE:RAMPE,HALTEN:HALTEN,orte:orte,postenListe:postenListe,imPosten:imPosten,orteUm:orteUm,postenFehlen:function(A,seed,OR,x,y){return orteUm(A,seed,OR,x,y,true)},PL:PL,
+  postenAn:function(an){POSTEN=!!an},   // N7a2c: Posten einschalten (Notausschalter ?n7a2c=0 lässt es aus)
+  postenStand:function(){var n=0,b=0;orte.forEach(function(o){if(o.posten){n++;if(o.EF)b++}});return{posten:n,listen:LIP.length,orteMitListe:PL.size,anfragen:gefragtP.size,ms:PST.ms,maxMs:PST.maxMs}},aufnehmen:aufnehmen,stuecke:stuecke,bedarf:bedarf,flachen:flachen,bei:bei,frei:frei,fuerBild:fuerBild,imOrt:imOrt,hinaus:hinaus,
   // N7a2b1: echte Böden einschalten (sb = stadtbild.js, kl = karteilader.js neu(…)); wartende() → Kartenstücke der Orte, die auf Kartei-Bilder gewartet haben
   bilder:function(sb,kl,opt){SBx=sb||null;KL=kl||null;ECHT=!(opt&&opt.haeuser===false);HGR=opt&&opt.hausSpeicher||HAUS;ABSCHNITTE=!(opt&&opt.abschnitte===false)},   // N7a2b3: opt.abschnitte:false = Gebäudebilder am Stück (Notausschalter ?n7a2b3=0)   // hausSpeicher: nur für Tests   // N7a2b2: opt.haeuser:false = Gebäude bleiben Klötze (Notausschalter ?n7a2b2=0)
   schritt:schritt,arbeitOffen:arbeitOffen,
   fertige:function(){var L=[];FERTIG.forEach(function(k){L.push(k)});FERTIG.clear();return L},fertigeZahl:function(){return FERTIG.size},
-  messNeu:function(){HST.maxMs=0;HST.listeMs=0;HST.pausen=0},   // N7a2b3: Höchstwerte neu (Messfeld)
+  messNeu:function(){HST.maxMs=0;HST.listeMs=0;HST.pausen=0;PST.maxMs=0},   // N7a2b3: Höchstwerte neu (Messfeld)
   haeuser:function(){return{listen:LI.length,bilder:HB.size,bytes:HBB,grenze:HGR,auftraege:AUF.length,gebaut:HST.gebaut,wieder:HST.wieder,ms:HST.ms,maxMs:HST.maxMs,listeMaxMs:HST.listeMs,listenVerworfen:HST.verworfen,pausen:HST.pausen,angefangen:!!AKT}},
   wartende:function(){var L=[];orte.forEach(function(o){if(!o.wartet)return;o.wartet=false;L=L.concat(stuecke(o))});return L},
   elementeMs:function(){var m=0;EMS.forEach(function(v){if(v>m)m=v});return m},
-  leeren:function(){orte.clear();gefragt.clear();LI.length=0;AUF.length=0;INQ.clear();FERTIG.clear();GEB.clear()},vergessenAlle:function(){gefragt.clear()},vergessen:function(k){gefragt.delete(k)},
+  leeren:function(){orte.clear();gefragt.clear();PL.clear();gefragtP.clear();IDX.clear();LIP.length=0;LI.length=0;AUF.length=0;INQ.clear();FERTIG.clear();GEB.clear()},vergessenAlle:function(){gefragt.clear();gefragtP.clear()},vergessen:function(k){gefragt.delete(k)},
   // Park gewinnt: der Spieler hat im Kartenstück k neu gebaut → k gehört zu keiner Ortsfläche mehr; true, wenn k vorher eingeebnet war (Stück neu rechnen)
   bauGeaendert:function(k){var ja=false;orte.forEach(function(o){if(o.aus.has(k))return;if(stuecke(o).indexOf(k)>=0){o.aus.add(k);ja=true}});return ja}}}
-var OF={RAMPE:RAMPE,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,neu:neu};
+var OF={RAMPE:RAMPE,RAMPE_P:RAMPE_P,HALTEN_P:HALTEN_P,LISTEN_P:LISTEN_P,PWEIT:PWEIT,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,neu:neu};
 if(typeof module!=='undefined'&&module.exports)module.exports=OF;else root.AT3ORTSFLAECHE=OF;
 })(typeof self!=='undefined'?self:this);

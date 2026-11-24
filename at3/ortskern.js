@@ -5,6 +5,8 @@
 // nur einem Hintergrundkern). Kein Spielzufall, kein Tick, nichts gespeichert: gleicher Seed + gleicher Ort = gleicher Plan auf jedem Gerät.
 // Kosten: einmal je Ort, der in das Fenster des Bildkerns kommt; nie abhängig von der Weltgröße (Regel 14). Wiederverwendet: ortsbild.js (N7a1/N7a1b),
 // stadtbild.js, stadtliste.js, landwirtschaft.js, orte.js, aussenposten.js, Höhe des Ortspunkts aus weltgen.js (ein Kartenstück).
+// N7a2c (Thomas 24.11.2026): Anfrage „posten“ mit Ortsnummer → alle Außenposten und Gehöfte des Orts auf einmal (ortsbild.js posten/postenLage,
+// stadtbild.js postenPlan, je Posten die Höhe am Postenpunkt). Klein: höchstens 8 Posten je Ort, Plan höchstens 18 × 18 Felder, im Mittel 0,2 ms.
 (function(){
 'use strict';
 var Q=self.location.search, eingebettet=!!self.AT3_ORTSKERN_EINGEBETTET;
@@ -23,17 +25,23 @@ function hoehe(x,y){puffer=puffer||new Uint8Array(G.GEL_BYTES);var cx=x>>6,cy=y>
 // Ein Ort: Wahl, Plan (mit Ausweich-Seeds und Ersatz), Lage, Höhe. Fehler → {fehler} (der Bildkern lässt den Ort dann einfach weg)
 function planen(k){var t=performance.now(),w=OB.wahl(seed,A,k,D,ON),r=OB.planen(SB,w.opt),L=OB.lage(G,seed,A,k,r.P);
  return{k:k,g:w.roh.g,name:w.name,P:r.P,lage:L,h0:hoehe(L.punkt[0],L.punkt[1]),ersatz:r.ersatz||null,ausweich:r.ausweich||0,ms:performance.now()-t}}
+// N7a2c: Außenposten und Gehöfte des Orts k; Kennung je Posten = PK + k * 16 + n (getrennt von den Ortsnummern), scheitert ein Posten, fällt nur er weg
+var PK=1048576;
+function postenPlanen(k){var t=performance.now(),w=OB.wahl(seed,A,k,D,ON),L=OB.posten(G,seed,A,k,D,AP,w),r=[];
+ L.forEach(function(q,n){try{var P=SB.postenPlan(q.opt),La=OB.postenLage(G,q.p,P);r.push({k:PK+k*16+n,ort:k,art:q.opt.art,P:P,lage:La,h0:hoehe(La.punkt[0],La.punkt[1])})}catch(x){}});
+ return{k:k,liste:r,ms:performance.now()-t}}
 function antwort(m){if(port)port.postMessage(m);else if(self.AT3_ORTSKERN_ANTWORT)self.AT3_ORTSKERN_ANTWORT(m)}
 // Eine Anfrage nach der anderen; zwischen zwei Plänen kommen neue Nachrichten (Vergessen, neue Welt) dran
 function weiter(){if(laeuft||!schlange.length)return;laeuft=true;setTimeout(function(){laeuft=false;var a=schlange.shift();if(!a)return;
  if(a.gen!==gen||!A){weiter();return}
- daten().then(function(){var m;try{m=planen(a.k)}catch(e){m={k:a.k,fehler:String(e&&e.message||e)}}m.art='plan';m.gen=a.gen;antwort(m);weiter()},
-  function(e){antwort({art:'plan',gen:a.gen,k:a.k,fehler:'daten: '+(e&&e.message||e)});weiter()})},0)}
+ var p=a.k<0,k=p?-a.k-1:a.k;   // N7a2c: negative Nummer = Posten des Orts
+ daten().then(function(){var m;try{m=p?postenPlanen(k):planen(k)}catch(e){m={k:k,fehler:String(e&&e.message||e)}}m.art=p?'posten':'plan';m.gen=a.gen;antwort(m);weiter()},
+  function(e){antwort({art:p?'posten':'plan',gen:a.gen,k:k,fehler:'daten: '+(e&&e.message||e)});weiter()})},0)}
 function nachricht(d){
  if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);schlange.length=0;daten()}
- else if(d.art==='plan'){if(d.gen!==gen)return;for(var i=0;i<schlange.length;i++)if(schlange[i].k===d.k)return;schlange.push({k:d.k,gen:d.gen});weiter()}
+ else if(d.art==='plan'||d.art==='posten'){if(d.gen!==gen)return;var q=d.art==='posten'?-d.k-1:d.k;for(var i=0;i<schlange.length;i++)if(schlange[i].k===q)return;if(q<0)schlange.unshift({k:q,gen:d.gen});else schlange.push({k:q,gen:d.gen});weiter()}   // N7a2c: Posten (winzig) vor die Ortspläne
  else if(d.art==='vergiss'){var s=new Set(d.liste||[]);schlange=schlange.filter(function(a){return !s.has(a.k)})}
  else if(d.art==='port'){port=d.port;port.onmessage=function(e){nachricht(e.data)}}}
-self.AT3ORTSKERN={nachricht:nachricht,planen:planen,daten:daten};
+self.AT3ORTSKERN={nachricht:nachricht,planen:planen,postenPlanen:postenPlanen,PK:PK,daten:daten};
 if(!eingebettet)self.onmessage=function(e){nachricht(e.data)};
 })();

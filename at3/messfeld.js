@@ -15,6 +15,7 @@ function zeilen(){var K=window.AT3SPIEL&&AT3SPIEL.karte&&AT3SPIEL.karte(),M=K&&K
  z.push('Draw (main): max '+ms(M.maxZeichenMs)+' ms · Ø '+ms(M.zeichnen?M.zeichenMs/M.zeichnen:0)+' ms');
  z.push('Ground image (worker): max '+ms(M.maxRechenUs/1000)+' ms · Ø '+ms(M.gerechnet?M.rechenUs/M.gerechnet/1000:0)+' ms · '+(M.gerechnet||0)+' made');
  z.push('Towns: '+(M.orte||0)+' · plan max '+ms(M.ortMaxMs)+' ms · lists '+(M.listen==null?'–':M.listen)+'/4 · list total '+ms(M.listeMs)+' ms');
+ z.push('Outposts: '+(M.posten||0)+' · lists of '+(M.postenListen||0)+' towns · biggest list '+ms(M.postenMs)+' ms');   // N7a2c
  z.push('Buildings: '+(M.haeuser||0)+' images '+mb(M.hausB)+'/2 MB · biggest step '+ms(M.hausMs)+' ms · pauses '+(M.hausPausen||0));
  z.push('Kartei: '+(M.kartei||0)+' images '+mb(M.karteiB)+'/4 MB');
  z.push('Map images: '+(M.bilder||0)+' · '+mb(M.bytes)+' MB (max '+mb(M.maxBytes)+') · visible '+(M.sichtbar||0)+' · placeholders '+(M.ersatz||0)+(M.fertig?' · done':' · working'));
