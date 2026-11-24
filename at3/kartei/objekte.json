@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 889,
+ "typMax": 921,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -7860,6 +7860,294 @@
    "name": "Trap Pile",
    "status": "uebernommen",
    "datei": "obj/jagd-fallen.json"
+  },
+  {
+   "id": "elend-bude-1-sued",
+   "version": 1,
+   "typ": 890,
+   "kat": "anlage",
+   "name": "Plank Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-1-sued.json"
+  },
+  {
+   "id": "elend-bude-1-ost",
+   "version": 1,
+   "typ": 891,
+   "kat": "anlage",
+   "name": "Plank Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-1-ost.json"
+  },
+  {
+   "id": "elend-bude-1-nord",
+   "version": 1,
+   "typ": 892,
+   "kat": "anlage",
+   "name": "Plank Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-1-nord.json"
+  },
+  {
+   "id": "elend-bude-1-west",
+   "version": 1,
+   "typ": 893,
+   "kat": "anlage",
+   "name": "Plank Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-1-west.json"
+  },
+  {
+   "id": "elend-bude-2-sued",
+   "version": 1,
+   "typ": 894,
+   "kat": "anlage",
+   "name": "Reed Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-2-sued.json"
+  },
+  {
+   "id": "elend-bude-2-ost",
+   "version": 1,
+   "typ": 895,
+   "kat": "anlage",
+   "name": "Reed Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-2-ost.json"
+  },
+  {
+   "id": "elend-bude-2-nord",
+   "version": 1,
+   "typ": 896,
+   "kat": "anlage",
+   "name": "Reed Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-2-nord.json"
+  },
+  {
+   "id": "elend-bude-2-west",
+   "version": 1,
+   "typ": 897,
+   "kat": "anlage",
+   "name": "Reed Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-2-west.json"
+  },
+  {
+   "id": "elend-bude-3-sued",
+   "version": 1,
+   "typ": 898,
+   "kat": "anlage",
+   "name": "Shard House S",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-3-sued.json"
+  },
+  {
+   "id": "elend-bude-3-ost",
+   "version": 1,
+   "typ": 899,
+   "kat": "anlage",
+   "name": "Shard House E",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-3-ost.json"
+  },
+  {
+   "id": "elend-bude-3-nord",
+   "version": 1,
+   "typ": 900,
+   "kat": "anlage",
+   "name": "Shard House N",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-3-nord.json"
+  },
+  {
+   "id": "elend-bude-3-west",
+   "version": 1,
+   "typ": 901,
+   "kat": "anlage",
+   "name": "Shard House W",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-3-west.json"
+  },
+  {
+   "id": "elend-bude-4-sued",
+   "version": 1,
+   "typ": 902,
+   "kat": "anlage",
+   "name": "Shack with Awning S",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-4-sued.json"
+  },
+  {
+   "id": "elend-bude-4-ost",
+   "version": 1,
+   "typ": 903,
+   "kat": "anlage",
+   "name": "Shack with Awning E",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-4-ost.json"
+  },
+  {
+   "id": "elend-bude-4-nord",
+   "version": 1,
+   "typ": 904,
+   "kat": "anlage",
+   "name": "Shack with Awning N",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-4-nord.json"
+  },
+  {
+   "id": "elend-bude-4-west",
+   "version": 1,
+   "typ": 905,
+   "kat": "anlage",
+   "name": "Shack with Awning W",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-4-west.json"
+  },
+  {
+   "id": "elend-bude-5-sued",
+   "version": 1,
+   "typ": 906,
+   "kat": "anlage",
+   "name": "Patchwork Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-5-sued.json"
+  },
+  {
+   "id": "elend-bude-5-ost",
+   "version": 1,
+   "typ": 907,
+   "kat": "anlage",
+   "name": "Patchwork Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-5-ost.json"
+  },
+  {
+   "id": "elend-bude-5-nord",
+   "version": 1,
+   "typ": 908,
+   "kat": "anlage",
+   "name": "Patchwork Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-5-nord.json"
+  },
+  {
+   "id": "elend-bude-5-west",
+   "version": 1,
+   "typ": 909,
+   "kat": "anlage",
+   "name": "Patchwork Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-5-west.json"
+  },
+  {
+   "id": "elend-bude-6-sued",
+   "version": 1,
+   "typ": 910,
+   "kat": "anlage",
+   "name": "Shack of Old Signs S",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-6-sued.json"
+  },
+  {
+   "id": "elend-bude-6-ost",
+   "version": 1,
+   "typ": 911,
+   "kat": "anlage",
+   "name": "Shack of Old Signs E",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-6-ost.json"
+  },
+  {
+   "id": "elend-bude-6-nord",
+   "version": 1,
+   "typ": 912,
+   "kat": "anlage",
+   "name": "Shack of Old Signs N",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-6-nord.json"
+  },
+  {
+   "id": "elend-bude-6-west",
+   "version": 1,
+   "typ": 913,
+   "kat": "anlage",
+   "name": "Shack of Old Signs W",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-6-west.json"
+  },
+  {
+   "id": "elend-bude-7-sued",
+   "version": 1,
+   "typ": 914,
+   "kat": "anlage",
+   "name": "Sagging Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-7-sued.json"
+  },
+  {
+   "id": "elend-bude-7-ost",
+   "version": 1,
+   "typ": 915,
+   "kat": "anlage",
+   "name": "Sagging Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-7-ost.json"
+  },
+  {
+   "id": "elend-bude-7-nord",
+   "version": 1,
+   "typ": 916,
+   "kat": "anlage",
+   "name": "Sagging Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-7-nord.json"
+  },
+  {
+   "id": "elend-bude-7-west",
+   "version": 1,
+   "typ": 917,
+   "kat": "anlage",
+   "name": "Sagging Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-7-west.json"
+  },
+  {
+   "id": "elend-bude-8-sued",
+   "version": 1,
+   "typ": 918,
+   "kat": "anlage",
+   "name": "Evicted Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-8-sued.json"
+  },
+  {
+   "id": "elend-bude-8-ost",
+   "version": 1,
+   "typ": 919,
+   "kat": "anlage",
+   "name": "Evicted Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-8-ost.json"
+  },
+  {
+   "id": "elend-bude-8-nord",
+   "version": 1,
+   "typ": 920,
+   "kat": "anlage",
+   "name": "Evicted Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-8-nord.json"
+  },
+  {
+   "id": "elend-bude-8-west",
+   "version": 1,
+   "typ": 921,
+   "kat": "anlage",
+   "name": "Evicted Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-bude-8-west.json"
   }
  ]
 }
