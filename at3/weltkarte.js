@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='078087d7', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='2c3fa2e4', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -47,21 +47,27 @@ function starten(o){
  var glob=null, gimg=null, gimgKey='', globOffen=false, wahl=null, marke=null;   // G4d: Globus {g Stufe, lon, lat} (null = Karte), letztes Bild
  var cam={x:WX/2,y:WY/2,z:0,lod:0,nah:false}, hatKam=false, zFest=false, gen=-1, seed=0, blickK=-1;
  var BAUM=new Map(), TR=new Map(), altB=new Set(), fest=new Set(), OFFEN=[], offenS='', hoverR=0, WZ=null, wzRahmen=null, BV=0, stV=new Map();   // G5b
- var fragen={}, frageNr=0, NV=0, bekannt=new Map(), bilder=new Map(), offen=new Map(), fehlt=new Map(), bytes=0, bildNr=0, geplant=false, zoomZeit=0, feldNr=0, feldOk={};
+ var okern=null, fragen={}, frageNr=0, NV=0, bekannt=new Map(), bilder=new Map(), offen=new Map(), fehlt=new Map(), bytes=0, bildNr=0, geplant=false, zoomZeit=0, feldNr=0, feldOk={};
  var M={festMs:0,maxFestMs:0,festVorMs:{},globus:-1,globusUs:0,globusN:0,bilder:0,bytes:0,maxBytes:0,gerechnet:0,rechenUs:0,maxRechenUs:0,zeichnen:0,zeichenMs:0,maxZeichenMs:0,sichtbar:0,ersatz:0,fertig:false,stuecke:0,anfragen:0,verdraengt:0,bmp:null,natur:0,rechenL:[],rechenN:0,naturArten:0,naturErsatz:0,bau:0,bauStuecke:0,bauArten:0,bauErsatz:0,veraltet:0,offen:[]};
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(MAXL,o.kam[2]|0));hatKam=true}
 
- function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(o.beiAusfall)o.beiAusfall(g2)}
- try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
+ function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;try{okern&&okern.terminate()}catch(e){}okern=null;if(o.beiAusfall)o.beiAusfall(g2)}
+ try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
  if(bk){bk.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ende('picture core failed')};bk.onmessage=vomBildkern;
   var F=S.PALETTEN[S.PALETTE].farben,pal=new Uint32Array(64),du=new Uint8Array(64),he=new Uint8Array(64);
   for(var i=0;i<64;i++){var c=S.farbe(F[i]);pal[i]=(255<<24|c[2]<<16|c[1]<<8|c[0])>>>0;du[i]=S.dunkler(i);he[i]=i}
   for(var r=0;r<S.REIHEN.length;r++)for(var k=0;k<S.REIHEN[r].n-1;k++)he[S.START[r]+k]=S.START[r]+k+1;
-  bk.postMessage({art:'init',pal:pal,du:du,he:he})}
+  bk.postMessage({art:'init',pal:pal,du:du,he:he});
+  // N7a2a: Ortskern (ortskern.js) = eigener Hintergrundkern für die Ortspläne, spricht über einen MessageChannel direkt mit dem Bildkern.
+  // Fehlt er (kein Worker, Fehler), plant der Bildkern eingebettet in seinen Pausen (Regel 13). Notausschalter ?n7a2=0 (dann keine Ortsflächen), ?n7a2k=0 nur ohne eigenen Ortskern (Probe für Regel 13).
+  if(!/[?&]n7a2k?=0/.test(location.search)&&typeof MessageChannel!=='undefined'){try{okern=new Worker(BASIS+'ortskern.js?v='+V);var mc=new MessageChannel();
+    okern.postMessage({art:'port',port:mc.port1},[mc.port1]);bk.postMessage({art:'ortskern',port:mc.port2},[mc.port2]);
+    okern.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();try{okern.terminate()}catch(x){}okern=null;if(bk)bk.postMessage({art:'ortskernWeg'})}}catch(e){okern=null}}}
 
  // ── Vom Weltkern (über kernstart.js beiWs): Erde und Kartenstücke weiterreichen ──
  function beiWs(d){if(tot||!bk)return;
   if(d.art==='wsErde'){gen=d.gen;seed=d.seed;bekannt.clear();bilderWeg();fehlt.clear();offen.clear();blickK=-1;M.stuecke=0;
+   if(okern)okern.postMessage({art:'welt',gen:gen,seed:seed,buf:d.buf.slice()});   // N7a2a: eigene Kopie der Erde für den Ortskern
    bk.postMessage({art:'welt',gen:gen,seed:seed,buf:d.buf},[d.buf.buffer]);if(hatKam)blick();else if(o.waehlen){if(o.beiErde)o.beiErde()}else bk.postMessage({art:'start'});plan()}
   else if(d.art==='wsStueck')kern.wsZurueck(d.buf)}
  // N4c1: Knopf „Realms“: Bildkern umschalten, Fernbilder und Globus verwerfen (unterwegs mit alter NV fliegen weg), Nahbilder bleiben
@@ -76,6 +82,8 @@ function starten(o){
   if(d.art==='kunde'){var mn=32767,mx=0;for(var i=0;i<128;i+=2){if(d.mm[i]<mn)mn=d.mm[i];if(d.mm[i+1]>mx)mx=d.mm[i+1]}
    if(ab(d.cx,cam.x>>6)>HALB||Math.abs(d.cy-(cam.y>>6))>HALB)return;
    bekannt.set(d.cx*8192+d.cy,{cx:d.cx,cy:d.cy,mm:d.mm,hg:d.hg,mn:mn,mx:mx});M.stuecke=bekannt.size;M.stueckUs=d.stUs;fehlt.clear();plan()}
+  else if(d.art==='ortNeu'){var S=new Set(d.stuecke||[]);S.forEach(function(k){stV.set(k,++BV)});   // N7a2a: Ortsfläche eingeebnet (oder Park gewinnt): Bilder dieser Stücke neu holen
+   bilder.forEach(function(b,key){if(b.lod<STUFEN&&S.has(stk(b.x0,b.y0)))altB.add(key)});if(d.name){M.orte=(M.orte||0)+1;M.ortMs=d.ms;if(d.ms>(M.ortMaxMs||0))M.ortMaxMs=d.ms;if(d.ersatz)M.ortErsatz=(M.ortErsatz||0)+1}plan()}
   else if(d.art==='start'){if(d.platz&&!hatKam){cam.x=umX(d.platz.x+.5);cam.y=halteY(d.platz.y+.5);hatKam=true;M.startOrt=d.platz.ort;blick();plan()}}
   else if(d.art==='bild'){var gv=offen.get(d.key);offen.delete(d.key);if(d.nv!==NV){if(d.bmp&&d.bmp.close)d.bmp.close();plan();return}
    if(d.fehlt){fehlt.set(d.key,performance.now());plan();setTimeout(plan,FEHLT_MS+50);return}   // G4d: „fehlt“ verfällt nach FEHLT_MS (Bildkern hatte das Stück gerade verworfen; sonst hinge das Ersatzbild)

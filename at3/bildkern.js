@@ -16,11 +16,15 @@
 // „Answers to“ an einem Weltfeld mit Ortsnamen der Sitze. N5b: dazu der nächste Ort (orte.js, erst beim ersten Antippen geladen; Notausschalter ?n5b=0).
 // N5c: dazu die Umgebung des Orts und sein Ortspunkt für die Außenposten (aussenposten.js, erst beim ersten Antippen geladen; Notausschalter ?n5c=0).
 // N5d: dazu die Straße unter dem Finger mit Rang, Bauweise, Haltepunkt und beiden Orten (strassen.js, Netz einmal je Welt beim ersten Antippen; Notausschalter ?n5d=0).
+// N7a2a: Ortsflächen (ortsflaeche.js): Pläne der Orte im Fenster kommen vom Ortskern (ortskern.js, eigener Hintergrundkern über einen MessageChannel; ohne ihn
+// eingebettet hier in den Pausen), das Gelände darunter wird eingeebnet, Bodenbilder zeigen das Ersatzbild (Planfelder, Klötze), keine Natur auf der Fläche;
+// Park gewinnt (Kartenstück mit Gebautem bleibt, wie es ist); Startplatz-Wahl hält Abstand von Orten. Notausschalter ?n7a2=0.
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
 var HR=self.AT3HERRSCHAFT, REI=true, RE=null;   // N4c1: Reiche in den Fernbildern (Knopf „Realms“), Tafeln einmal je Welt
 var BAUB=self.AT3BAUBILD, BAU=new Map(), BBILD=null, SP=self.AT3STARTPLATZ, FB=self.AT3FERN, ON=null, PBUF=null, TEX=null, TEXD=null, UEB=null;
 var OR=null, AP=null, SN=null, BB=self.AT3BB, G=self.AT3WG, NAT=self.AT3NATUR, NBILD=null, F=null, st=new Map(), lager=[], gen=-1, HALB=3, A=null, seed=0, kx=-1, ky=-1, laeuft=false;
+var N7A2=!/[?&]n7a2=0/.test(self.location.search),OFL=null,OK=null,OKP=null,OKE=false,WB=null;   // N7a2a: Ortsflächen, Ortskern (Port), eingebettet?, Warteliste
 var BMP=typeof createImageBitmap==='function'&&typeof ImageData!=='undefined', stUs=0, stN=0;
 var ORDNUNG=(function(){var L=[];for(var y=-HALB;y<=HALB;y++)for(var x=-HALB;x<=HALB;x++)L.push([x,y,x*x+y*y]);L.sort(function(a,b){return a[2]-b[2]||a[1]-b[1]||a[0]-b[0]});return L})();
 var SX=G.SEITE_X, SY=G.SEITE_Y;
@@ -29,11 +33,26 @@ function ab(a,b){var d=Math.abs(a-b);return d>SX-d?SX-d:d}
 function hole(cx,cy){return st.get(um(cx)*8192+cy)||null}
 function holeBau(cx,cy){return BAU.size?BAU.get(um(cx)*8192+cy)||null:null}
 function bauFrei(X,Y){return BAUB.frei(holeBau,X,Y)}
+// N7a2a: Natur frei = nicht gebaut und nicht in einer Ortsfläche
+function natFrei(){var o=OFL&&OFL.orte.size;if(!o)return BAU.size?bauFrei:null;return BAU.size?function(X,Y){return OFL.frei(X,Y)&&bauFrei(X,Y)}:OFL.frei}
+function bauHat(k){var a=BAU.get(k);if(!a)return false;for(var i=0;i<4096;i++)if(a[i])return true;return false}
+function ofl(){if(!N7A2||OFL===false)return null;if(OFL)return OFL;try{importScripts('ortsflaeche.js'+self.location.search,'orte.js'+self.location.search,'aussenposten.js'+self.location.search);
+  OFL=self.AT3ORTSFLAECHE.neu(G,BB);if(!OR&&OR!==false)OR=self.AT3ORTE.AUS?false:self.AT3ORTE;if(AP==null)AP=self.AT3POSTEN.AUS?false:self.AT3POSTEN;if(!OR||!AP)OFL=false}catch(x){OFL=false}return OFL||null}
+// Anfrage an den Ortskern (Port) oder eingebettet (ohne zweiten Hintergrundkern: hier planen, je Pause ein Ort)
+function zumOrtskern(m){if(OKP){OKP.postMessage(m);return}if(!OK){try{self.AT3_ORTSKERN_EINGEBETTET=true;self.AT3_ORTSKERN_ANTWORT=vomOrtskern;importScripts('ortskern.js'+self.location.search);OK=self.AT3ORTSKERN;OKE=true;if(WB)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:WB})}catch(x){OK=false}}
+ if(OK)OK.nachricht(m)}
+function ortsBedarf(){var O=ofl();if(!O||!A||kx<0)return;var b=O.bedarf(A,seed,OR,AP,kx,ky,HALB);
+ if(b.vergessen.length)zumOrtskern({art:'vergiss',liste:b.vergessen});b.neu.forEach(function(k){zumOrtskern({art:'plan',gen:gen,k:k})})}
+// Plan eines Orts ist da: aufnehmen, betroffene Stücke einebnen, Kurzauskunft neu, Hauptkern markiert die Bilder als alt
+var ORTMS=[];
+function vomOrtskern(m){if(m.art!=='plan'||m.gen!==gen||!OFL)return;if(m.ms!=null)ORTMS.push(m.ms);var L=OFL.aufnehmen(m,bauHat);if(!L.length)return;
+ L.forEach(function(k){var b=st.get(k);if(!b)return;if(OFL.flachen(b,(k/8192)|0,k%8192)){b._s=null;var q=BB.kunde(b);self.postMessage({art:'kunde',gen:gen,cx:(k/8192)|0,cy:k%8192,mm:q.mm,hg:q.hg,stUs:stUs/(stN||1)},[q.mm.buffer,q.hg.buffer])}});
+ self.postMessage({art:'ortNeu',gen:gen,stuecke:L,k:m.k,name:m.name,ms:m.ms,ersatz:m.ersatz||null})}
 function BA(offen){return BBILD?{M:BAUB,hole:holeBau,BILD:BBILD,offen:offen&&offen.length?new Set(offen):null}:null}
 // Nächstes fehlendes Stück im Fenster rechnen, dann dem Hauptkern die Kurzauskunft schicken. Immer nur eins je Durchlauf (Bildanfragen kommen dazwischen dran).
 function arbeit(){laeuft=false;if(!A||kx<0)return;
  for(var i=0;i<ORDNUNG.length;i++){var cx=um(kx+ORDNUNG[i][0]),cy=ky+ORDNUNG[i][1];if(cy<0||cy>=SY)continue;var k=cx*8192+cy;if(st.has(k))continue;
-  var t=performance.now(),b=G.ausschnitt(A,cx,cy,lager.pop()||new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:cx,cy:cy,daten:b});b._s=null;st.set(k,b);stUs+=(performance.now()-t)*1000;stN++;
+  var t=performance.now(),b=G.ausschnitt(A,cx,cy,lager.pop()||new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:cx,cy:cy,daten:b});b._s=null;if(OFL)OFL.flachen(b,cx,cy);st.set(k,b);stUs+=(performance.now()-t)*1000;stN++;
   var q=BB.kunde(b);self.postMessage({art:'kunde',gen:gen,cx:cx,cy:cy,mm:q.mm,hg:q.hg,stUs:stUs/stN},[q.mm.buffer,q.hg.buffer]);weiter();return}}
 function weiter(){if(!laeuft){laeuft=true;setTimeout(arbeit,0)}}
 // Übersichtsbiome (Globus, Fernstufen ab ⅟1024): einmal je Welt, beim ersten Bedarf
@@ -51,7 +70,9 @@ function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.f
  else if(d.frage==='region'){var rx=SP.eckeX(d.zx),ry=SP.eckeY(d.zy),r=SP.regionBild(G,seed,A,rx,ry,F);m.rx=rx;m.ry=ry;m.w=m.h=SP.RP;m.rs=SP.RS;m.buf=r;tr.push(r.buffer)}
  else if(d.frage==='platz'||d.frage==='zufall'){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}
   var x=d.x,y=d.y;if(d.frage==='zufall'){var z=SP.zufall(G,seed,A,d.r1,d.r2);if(!z){m.platz={ok:false};self.postMessage(m);return}x=z.x;y=z.y}
-  PBUF=PBUF||new Uint8Array(G.GEL_BYTES);m.platz=SP.platz(G,ON,seed,A,x,y,PBUF)}
+  PBUF=PBUF||new Uint8Array(G.GEL_BYTES);m.platz=SP.platz(G,ON,seed,A,x,y,PBUF);
+  var O=ofl();if(O)for(var v=0;v<3&&m.platz&&m.platz.ok;v++){var io=O.imOrt(A,seed,OR,AP,m.platz.x,m.platz.y);if(!io)break;   // N7a2a: nie in einer Ortsfläche (Park gewinnt nur bei alten Spielständen)
+   var h=O.hinaus(io);m.platz=SP.platz(G,ON,seed,A,h.x,h.y,PBUF);if(v===2&&m.platz&&m.platz.ok&&O.imOrt(A,seed,OR,AP,m.platz.x,m.platz.y))m.platz={ok:false,weit:-1,imOrt:true}}}
  else if(d.frage==='reich'){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}   // N4c1: Kette „Answers to“ an einem Weltfeld
   var zx=((d.x%G.WF+G.WF)%G.WF)>>10,zy=Math.max(0,Math.min(G.GH-1,d.y>>10)),u=A.hs?A.hs.zel[zy*G.GW+zx]:0;m.hat=!!A.hs;m.reich=u?HR.info(A.hs,A.vk,A.orte,u-1,seed,ON):null;
   if(!OR&&OR!==false){try{importScripts('orte.js'+self.location.search);OR=self.AT3ORTE.AUS?false:self.AT3ORTE}catch(x){OR=false}}   // N5b: nächster Ort im Umkreis von 3 × 3 Zellen (Rohdaten, Name)
@@ -75,9 +96,10 @@ function dachF(){if(DACHF&&DACHF.b===BBILD)return DACHF;var b=BBILD&&BBILD[BAUB.
 function fp(d,m,t){if(!FPA){importScripts('fpausschnitt.js'+self.location.search);FPA=self.AT3FPA}
  var L=FPA.stuecke(BB,d.ox,d.oy),mx=L[0][0]+((L[L.length-1][0]-L[0][0]+SX)%SX>>1),my=(L[0][1]+L[L.length-1][1])>>1,neu=0;kx=um(mx);ky=my;
  st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});
- L.forEach(function(c){var k=um(c[0])*8192+c[1];if(st.has(k))return;var b=G.ausschnitt(A,c[0],c[1],lager.pop()||new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:c[0],cy:c[1],daten:b});b._s=null;st.set(k,b);neu++});
+ ortsBedarf();
+ L.forEach(function(c){var k=um(c[0])*8192+c[1];if(st.has(k))return;var b=G.ausschnitt(A,c[0],c[1],lager.pop()||new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:c[0],cy:c[1],daten:b});b._s=null;if(OFL)OFL.flachen(b,um(c[0]),c[1]);st.set(k,b);neu++});
  var sp=new Uint8Array(NAT.ARTEN.length);(d.sperr||[]).forEach(function(id){var i=NAT.ARTEN.indexOf(id);if(i>=0)sp[i]=1});
- var w=FPA.bauen(BB,NAT,hole,seed,d.ox,d.oy,sp,F,BAU.size?bauFrei:null,BAU.size?{hole:holeBau,BODEN:BAUB.BODEN,PUNKT:BAUB.PUNKT,DACHF:dachF()}:null,anl(d.anl));m.welt=w;m.arten=NAT.ARTEN;m.neu=neu;m.us=(performance.now()-t)*1000;self.postMessage(m,FPA.puffer(w));weiter()}
+ var w=FPA.bauen(BB,NAT,hole,seed,d.ox,d.oy,sp,F,natFrei(),BAU.size?{hole:holeBau,BODEN:BAUB.BODEN,PUNKT:BAUB.PUNKT,DACHF:dachF()}:null,anl(d.anl));m.welt=w;m.arten=NAT.ARTEN;m.neu=neu;m.us=(performance.now()-t)*1000;self.postMessage(m,FPA.puffer(w));weiter()}
 // AR1c2: Arena in First Person: Höhenfeld aus daten/arena-fp.json (vom Hauptkern mitgeschickt, hier einmal entpackt) und Lage der Anlage mit Häuschen
 function anl(a){if(!a||!a.fp)return null;if(!ANF||ANF.h!==a.fp.h){ANF={h:a.fp.h,d:FPA.entpacken(a.fp)}}return{d:ANF.d,x:a.x,y:a.y,w:a.w,h:a.h,haus:a.haus||[]}}
 function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
@@ -87,16 +109,20 @@ function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  return land<0?{x:BB.WX>>1,y:BB.WY>>1,ort:0}:{x:(land%G.GW)*G.ZF+(G.ZF>>1),y:((land/G.GW)|0)*G.ZF+(G.ZF>>1),ort:0}}
 self.onmessage=function(e){var d=e.data;
  if(d.art==='init'){F={pal:d.pal,du:d.du,he:d.he,dunkel:dunkelste(d.pal)};self.postMessage({art:'arten',liste:NAT.ARTEN,bau:BAUB.ARTEN})}
- else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();weiter()}
- else if(d.art==='blick'){kx=d.kx;ky=d.ky;st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});weiter()}
+ else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
+ else if(d.art==='blick'){kx=d.kx;ky=d.ky;st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});ortsBedarf();weiter()}
+ else if(d.art==='ortskern'){OKP=d.port;OKP.onmessage=function(e){vomOrtskern(e.data)}}
+ else if(d.art==='ortskernWeg'){OKP=null;if(OFL)OFL.vergessenAlle();ortsBedarf()}   // Ortskern ausgefallen: ab jetzt eingebettet   // N7a2a: eigener Hintergrundkern für die Ortspläne
  else if(d.art==='natur'){NBILD=NAT.vorbereiten(d.liste,d.grau,d.rand);if(d.bau)BBILD=BAUB.vorbereiten(d.bau,d.grau,d.rand)}   // G4b: Bilder der Naturobjekte (nur übernommene, Rest grau); G5b: Bauteile
- else if(d.art==='bau'){if(d.leer)BAU.clear();(d.stuecke||[]).forEach(function(e){if(e[1])BAU.set(e[0],e[1]);else BAU.delete(e[0])})}           // G5b: Bau-Kartenstücke (dünn)
- else if(d.art==='bild'){var t=performance.now(),r=d.gen!==gen||!F?null:d.lod>=BB.STUFEN?(A?FB.kachel(G,A,seed,d.x0,d.y0,d.lod,F,d.lod>=FB.U_AB?ueb():null,reiche()):null):BB.bild(hole,d.x0,d.y0,d.lod,F,NBILD?{N:NAT,seed:seed,BILD:NBILD}:null,BA(d.offen)),m={art:'bild',gen:d.gen,nv:d.nv,key:d.key,x0:d.x0,y0:d.y0,lod:d.lod};
+ else if(d.art==='bau'){if(d.leer)BAU.clear();(d.stuecke||[]).forEach(function(e){if(e[1])BAU.set(e[0],e[1]);else BAU.delete(e[0])})
+  if(OFL&&OFL.orte.size){var neuS=[];(d.stuecke||[]).forEach(function(e){var k=e[0];if(bauHat(k)&&OFL.bauGeaendert(k)){var b=st.get(k);if(b){st.delete(k);if(lager.length<8)lager.push(b)}   // N7a2a: Park gewinnt
+     var cx=(k/8192)|0,cy=k%8192;neuS.push(k,um(cx-1)*8192+cy);if(cy>0)neuS.push(cx*8192+cy-1)}});if(neuS.length){self.postMessage({art:'ortNeu',gen:gen,stuecke:neuS});weiter()}}}           // G5b: Bau-Kartenstücke (dünn)
+ else if(d.art==='bild'){var t=performance.now(),r=d.gen!==gen||!F?null:d.lod>=BB.STUFEN?(A?FB.kachel(G,A,seed,d.x0,d.y0,d.lod,F,d.lod>=FB.U_AB?ueb():null,reiche()):null):BB.bild(hole,d.x0,d.y0,d.lod,F,NBILD?{N:NAT,seed:seed,BILD:NBILD}:null,BA(d.offen),OFL?OFL.fuerBild(d.x0,d.y0,BB.TEIL<<d.lod,d.lod,F):null),m={art:'bild',gen:d.gen,nv:d.nv,key:d.key,x0:d.x0,y0:d.y0,lod:d.lod};
   if(!r){m.fehlt=true;self.postMessage(m);return}
-  m.w=r.w;m.h=r.h;m.ox=r.ox;m.oy=r.oy;m.natur=r.natur;m.bau=r.bau||0;m.us=(performance.now()-t)*1000;
+  m.w=r.w;m.h=r.h;m.ox=r.ox;m.oy=r.oy;m.natur=r.natur;m.bau=r.bau||0;m.ort=r.ort||0;m.us=(performance.now()-t)*1000;
   if(BMP)createImageBitmap(new ImageData(new Uint8ClampedArray(r.px.buffer),r.w,r.h)).then(function(b){m.bmp=b;self.postMessage(m,[b])},function(){BMP=false;m.buf=r.px;self.postMessage(m,[r.px.buffer])});
   else{m.buf=r.px;self.postMessage(m,[r.px.buffer])}}
- else if(d.art==='feld'){var fd=BB.feld(hole,d.px,d.py),ob=NBILD&&A?NAT.treffer(hole,d.px,d.py,seed,NBILD,BB.sicht,fd&&fd.xu,fd&&fd.y,BAU.size?bauFrei:null):null;
+ else if(d.art==='feld'){var fd=BB.feld(hole,d.px,d.py),ob=NBILD&&A?NAT.treffer(hole,d.px,d.py,seed,NBILD,BB.sicht,fd&&fd.xu,fd&&fd.y,natFrei()):null;
   if(BAU.size&&BBILD&&A){var bt=BAUB.treffer(holeBau,hole,BB.sicht,d.px,d.py,BBILD,d.offen&&d.offen.length?new Set(d.offen):null,fd&&fd.xu,fd&&fd.y);   // G5b: Bauteil vor oder hinter der Natur?
    if(bt&&(!ob||bt.tief>=(ob.x+ob.y)*4+1))ob=bt;var bf=fd&&fd.x!=null?BAUB.feld(holeBau,fd.x,fd.y):null;if(bf){fd.bau=bf}else if(bt&&bt.raum&&fd)fd.bau=BAUB.feld(holeBau,bt.x,bt.y)||{raum:bt.raum,art:0,zustand:bt.zustand}}
   if(BAU.size&&fd&&fd.x!=null&&!fd.bau){var ga=holeBau(fd.x>>6,fd.y>>6),gv=ga&&ga.length>32768?ga[32768+(((fd.y&63)<<6)|(fd.x&63))]:0;if(gv)fd.bweg=[gv&7,(gv>>4)&3]}   // G6a: gebauter Weg
