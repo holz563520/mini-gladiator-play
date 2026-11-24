@@ -10,12 +10,18 @@
 // Kachelbauers (stadtbild.js umrisse, Editor-Fenster N6b2-0), Halbbreite der Orte aus aussenposten.js.
 // N7a2b1: echte Böden in 1× (bilder(stadtbild, karteilader) einschalten): je Planfeld Boden und Säume wie im Stadtbild (elemente().boden), fehlt ein Kartei-Bild,
 // bleibt die Ersatzfarbe und der Ort wartet (wartende() → Kartenstücke neu). Gebäude bleiben Klötze bis N7a2b2.
+// N7a2b2 (Thomas 24.11.2026): in 1× kommen Häuser, Mauerteile, Türme, Burgberg und Dinge aus der Elementliste des Stadtbilds (stadtbild.js elemente, wie im
+// Kachelbauer) einzeln mit Tiefe ins Bodenbild (Fach nach dem vordersten Feld, Reihenfolge der Stadt bleibt: Tiefe = laufendes Maximum der vordersten Felder).
+// Die Liste wird in Zeitanteilen gefüllt (schritt), höchstens LISTEN Orte halten sie (Entscheidung Thomas: 4). Gebäudebilder (bauBild) entstehen in Zeitanteilen,
+// höchstens HAUS Bytes gemerkt (2 MB), bis dahin steht der Klotz (Regel 20). Fertiges sammelt fertige() → Bildkern meldet gebündelt (Thomas: etwa alle 0,3 s).
 (function(root){
 'use strict';
-var RAMPE=24, HALTEN=12, ST=64;   // RAMPE: Felder Hang rund um die Fläche (eine Höhenstufe = 64 Einheiten je Feld, wie RollerCoaster Tycoon); HALTEN: Orte im Speicher
+var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152;   // N7a2b2: LISTEN Orte mit ganzer Elementliste, HAUS Bytes gemerkte Gebäudebilder
+//  RAMPE: Felder Hang rund um die Fläche (eine Höhenstufe = 64 Einheiten je Feld, wie RollerCoaster Tycoon); HALTEN: Orte im Speicher
 var CODES='gsomfwepxqyuh', FARBE_RGB=[[104,138,64],[150,128,96],[156,150,138],[216,210,198],[186,160,84],[56,98,150],[112,86,58],[124,154,78],[122,116,108],[140,134,122],[128,92,58],[214,194,146],[146,118,84]];
 var DACH_RGB=[150,66,48], WAND_RGB=[202,180,140], MAUER_RGB=[150,146,136];
-function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,sprite=new Map(),SBx=null,KL=null,EMS=[];   // N7a2b1: SBx = stadtbild.js, KL = Kartei-Lader (bilder())
+function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,sprite=new Map(),SBx=null,KL=null,EMS=[];
+ var ECHT=true,HGR=HAUS,LI=[],HB=new Map(),HBB=0,AUF=[],INQ=new Set(),FERTIG=new Set(),GEB=new Set(),HST={wieder:0,gebaut:0,ms:0,maxMs:0,listen:0,listeMs:0,verworfen:0};   // N7a2b2   // N7a2b1: SBx = stadtbild.js, KL = Kartei-Lader (bilder())
  var jetzt=typeof performance!=='undefined'?function(){return performance.now()}:function(){return Date.now()};
  function um(x){x%=WX;return x<0?x+WX:x}
  function nah(p,c){var b=0,bd=1e9;for(var i=0;i<64;i++){var v=p[i],dr=(v&255)-c[0],dg=((v>>8)&255)-c[1],db=((v>>16)&255)-c[2],d=dr*dr*3+dg*dg*6+db*db;if(d<bd){bd=d;b=i}}return b}
@@ -70,6 +76,43 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  function bodenBilder(o,i,j){if(!o.E){var t0=jetzt();try{o.E=SBx.elemente(o.P,KL.hole,{inSchritten:true})}catch(x){o.E=false}EMS.push(jetzt()-t0);if(EMS.length>32)EMS.shift()}
   if(!o.E)return null;var e=o.E.boden(i,j),sp=SBx.malbild(KL.hole(e.id)),r,q;if(!sp){o.wartet=true;return null}r=[sp];
   if(e.su)for(q=0;q<e.su.length;q++){var s=e.su[q],so=SBx.malbild(SBx.saumObj(KL.hole(s[0]),s[1],s[2],s[3]));if(!so){o.wartet=true;return null}r.push(so)}return r}
+
+ // N7a2b2: Elementliste des Orts (o.E wie bodenBilder) ganz füllen lassen; höchstens LISTEN Orte, der am längsten nicht gebrauchte gibt seine Liste ab
+ function elem(o){if(!o.E&&o.E!==false){var t0=jetzt();try{o.E=SBx.elemente(o.P,KL.hole,{inSchritten:true})}catch(x){o.E=false}EMS.push(jetzt()-t0);if(EMS.length>32)EMS.shift()}return o.E||null}
+ function listeWunsch(o){var a=LI.indexOf(o.k);if(a>=0)LI.splice(a,1);LI.push(o.k);if(!o.EF&&!o.fuell)o.fuell={ix:0,t:0,R:0};
+  while(LI.length>LISTEN){var k=LI.shift(),x=orte.get(k);if(x){x.EF=null;x.RT=null;x.fuell=null;x.E=null;HST.verworfen++}}}
+ // Fach (8 × 8 nach dem vordersten Feld) → Liste der Elementnummern; RT = Tiefe je Element (laufendes Maximum von fi + fj, so bleibt die Reihenfolge der Stadt)
+ function fuellen(o,aus){var E=elem(o);if(!E){o.fuell=null;o.EF=false;return true}var f=o.fuell,t0=jetzt();
+  if(!E.voll()&&!E.fuellen(aus)){f.t+=jetzt()-t0;return false}
+  var L=E.L,N=L.length;if(!f.F){f.F=new Map();f.RT=new Int32Array(N)}
+  for(;f.ix<N;f.ix++){if((f.ix&1023)===0&&f.ix&&aus()){f.t+=jetzt()-t0;return false}var e=L[f.ix];if(!e.k)continue;var v=e.fi+e.fj;if(v>f.R)f.R=v;f.RT[f.ix]=f.R;
+   var key=(e.fi>>3)*4096+(e.fj>>3),a=f.F.get(key);if(!a)f.F.set(key,a=[]);a.push(f.ix)}
+  o.EF=f.F;o.RT=f.RT;o.fuell=null;f.t+=jetzt()-t0;HST.listen++;HST.listeMs=Math.max(HST.listeMs,f.t);stuecke(o).forEach(function(k){FERTIG.add(k)});return true}
+ function hausKey(o,q){return o.k+':'+q}
+ function hausRein(key,r){HB.set(key,r);HBB+=r.sp.px.length;while(HBB>HGR&&HB.size>1){var alt=HB.keys().next().value;HBB-=HB.get(alt).sp.px.length;HB.delete(alt)}}
+ // Arbeit in Zeitanteilen (Bildkern, Regel 20): erst Listen füllen, dann Gebäudebilder bauen. Gibt true, wenn noch Arbeit übrig ist.
+ function schritt(budget){budget=budget||4;var t0=jetzt(),aus=function(){return jetzt()-t0>=budget};
+  for(var a=LI.length-1;a>=0;a--){var o=orte.get(LI[a]);if(!o||!o.fuell)continue;if(!fuellen(o,aus))return true;if(aus())return true}
+  while(AUF.length){if(aus())return true;var w=AUF.shift();INQ.delete(w.key);var o2=orte.get(w.k);if(!o2||!o2.EF||o2.E!==w.E||HB.has(w.key))continue;
+   var t1=jetzt(),r=null;try{r=o2.E.bauBild(o2.E.L[w.q])}catch(x){r=null}var d=jetzt()-t1;HST.ms+=d;if(d>HST.maxMs)HST.maxMs=d;
+   if(!r||!r.sp||!r.sp.w){if(r&&r.fehlt&&r.fehlt.length&&KL.wuensche())o2.wartet=true;continue}
+   if(r.fehlt&&r.fehlt.length&&KL.wuensche()){o2.wartet=true;continue}   // Teile werden noch geladen: Klotz bleibt, nach dem Laden neu
+   hausRein(w.key,{sp:r.sp,X:r.X,Y:r.Y});HST.gebaut++;
+   // schon einmal gebaut und verdrängt: kein neues „ortNeu“ (sonst bauen und verdrängen sich zu viele Häuser im Bild gegenseitig immer wieder), erscheint beim nächsten Neuzeichnen
+   if(GEB.has(w.key))HST.wieder++;else{GEB.add(w.key);if(GEB.size>65536)GEB.clear();FERTIG.add(stk(o2.x0+w.fi,o2.y0+w.fj))}}
+  return false}
+ function arbeitOffen(){if(AUF.length)return true;for(var a=0;a<LI.length;a++){var o=orte.get(LI[a]);if(o&&o.fuell)return true}return false}
+ // Elemente eines Orts, deren vorderstes Feld in diesem Bild liegt (1×): Einträge wie natur.sammeln; fehlt ein Gebäudebild, der Klotz und ein Bauauftrag
+ function elementeIns(o,aus,i0,j0,n){var E=o.E,L=E.L,N=L.length,z=0,dx=E.ax+(i0-j0)*32,dy=E.ay+(i0+j0)*16+o.s0*8;
+  for(var fj=Math.max(0,j0)>>3;fj<=Math.min(o.W-1,j0+n-1)>>3;fj++)for(var fi=Math.max(0,i0)>>3;fi<=Math.min(o.W-1,i0+n-1)>>3;fi++){var f=o.EF.get(fi*4096+fj);if(!f)continue;
+   for(var a=0;a<f.length;a++){var q=f[a],e=L[q],vi=e.fi-i0,vj=e.fj-j0;if(vi<0||vj<0||vi>=n||vj>=n)continue;var tief=o.RT[q]-i0-j0+(q+1)/(N+2),sp,x,y;
+    if(e.k===1){sp=SBx.malbild(KL.hole(e.id));if(!sp){o.wartet=true;continue}x=e.X-dx;y=e.Y-dy}
+    else{var key=hausKey(o,q),c=HB.get(key);
+     if(c){HB.delete(key);HB.set(key,c);sp=c.sp;x=c.X-dx;y=c.Y-dy}
+     else{var b=e.b,li=e.fi-e.fw+1-i0,lj=e.fj-e.fh+1-j0;sp=klotz(e.fw,e.fh,b.rolle==='mauer'?20:28,0,b.rolle==='mauer');x=(li-lj)*32;y=(li+lj)*16-o.s0*8;
+      if(!INQ.has(key)){INQ.add(key);AUF.push({k:o.k,q:q,key:key,E:E,fi:e.fi,fj:e.fj})}}}
+    aus.push({tief:tief,i:vi,o:1,m:0,sp:sp,x:x,y:y});z++}}
+  return z}
  // Für ein Bodenbild (Felder x0.., y0.., n je Seite): Zugriff fürs Bodenbild oder null, wenn kein Ort es schneidet
  function fuerBild(x0,y0,n,lod,f){if(!orte.size)return null;var L=[];orte.forEach(function(o){var i=lok(o,x0),j=y0-o.y0;if((i<o.W||i>WX-n)&&j<o.W&&j+n>0)L.push(o)});if(!L.length)return null;
   var FBx=farben(f),k0=stk(x0,y0);L=L.filter(function(o){return !o.aus.has(k0)});if(!L.length)return null;
@@ -81,6 +124,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
    // Klötze, deren vorderstes Feld in diesem Bild liegt (Einträge wie natur.sammeln: tief, i, o, m, sp, x, y), nur in 1× und ½
    kloetze:function(aus){if(lod>1)return 0;var z=0,hw=32>>lod,hh=16>>lod,st=8>>lod;
     L.forEach(function(o){var i0=lok(o,x0),j0=y0-o.y0;if(i0>=WX-n)i0-=WX;
+     if(lod===0&&ECHT&&SBx&&KL&&o.E!==false){listeWunsch(o);if(o.EF&&o.E){z+=elementeIns(o,aus,i0,j0,n);return}}   // N7a2b2: echte Häuser, Mauern, Dinge (bis die Liste da ist: Klötze)
      for(var fj=Math.max(0,j0)>>3;fj<=Math.min(o.W-1,j0+n-1)>>3;fj++)for(var fi=Math.max(0,i0)>>3;fi<=Math.min(o.W-1,i0+n-1)>>3;fi++){var f=o.fach.get(fi*4096+fj);if(!f)continue;
       for(var a=0;a<f.length;a++){var e=f[a],vi=e.i+e.w-1-i0,vj=e.j+e.h-1-j0;if(vi<0||vj<0||vi>=n||vj>=n)continue;
        var hb=(e.m?20:28)>>lod,sp=klotz(e.w,e.h,hb,lod,e.m),li=e.i-i0,lj=e.j-j0;
@@ -96,12 +140,15 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
   return{x:um(t.x+t.dx),y:Math.max(0,Math.min(BB.WY-1,t.y+(t.dy<0?-1:1)*(t.halb+1)))}}
  return{RAMPE:RAMPE,HALTEN:HALTEN,orte:orte,aufnehmen:aufnehmen,stuecke:stuecke,bedarf:bedarf,flachen:flachen,bei:bei,frei:frei,fuerBild:fuerBild,imOrt:imOrt,hinaus:hinaus,
   // N7a2b1: echte Böden einschalten (sb = stadtbild.js, kl = karteilader.js neu(…)); wartende() → Kartenstücke der Orte, die auf Kartei-Bilder gewartet haben
-  bilder:function(sb,kl){SBx=sb||null;KL=kl||null},
+  bilder:function(sb,kl,opt){SBx=sb||null;KL=kl||null;ECHT=!(opt&&opt.haeuser===false);HGR=opt&&opt.hausSpeicher||HAUS},   // hausSpeicher: nur für Tests   // N7a2b2: opt.haeuser:false = Gebäude bleiben Klötze (Notausschalter ?n7a2b2=0)
+  schritt:schritt,arbeitOffen:arbeitOffen,
+  fertige:function(){var L=[];FERTIG.forEach(function(k){L.push(k)});FERTIG.clear();return L},fertigeZahl:function(){return FERTIG.size},
+  haeuser:function(){return{listen:LI.length,bilder:HB.size,bytes:HBB,grenze:HGR,auftraege:AUF.length,gebaut:HST.gebaut,wieder:HST.wieder,ms:HST.ms,maxMs:HST.maxMs,listeMaxMs:HST.listeMs,listenVerworfen:HST.verworfen}},
   wartende:function(){var L=[];orte.forEach(function(o){if(!o.wartet)return;o.wartet=false;L=L.concat(stuecke(o))});return L},
   elementeMs:function(){var m=0;EMS.forEach(function(v){if(v>m)m=v});return m},
-  leeren:function(){orte.clear();gefragt.clear()},vergessenAlle:function(){gefragt.clear()},vergessen:function(k){gefragt.delete(k)},
+  leeren:function(){orte.clear();gefragt.clear();LI.length=0;AUF.length=0;INQ.clear();FERTIG.clear();GEB.clear()},vergessenAlle:function(){gefragt.clear()},vergessen:function(k){gefragt.delete(k)},
   // Park gewinnt: der Spieler hat im Kartenstück k neu gebaut → k gehört zu keiner Ortsfläche mehr; true, wenn k vorher eingeebnet war (Stück neu rechnen)
   bauGeaendert:function(k){var ja=false;orte.forEach(function(o){if(o.aus.has(k))return;if(stuecke(o).indexOf(k)>=0){o.aus.add(k);ja=true}});return ja}}}
-var OF={RAMPE:RAMPE,HALTEN:HALTEN,CODES:CODES,neu:neu};
+var OF={RAMPE:RAMPE,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,neu:neu};
 if(typeof module!=='undefined'&&module.exports)module.exports=OF;else root.AT3ORTSFLAECHE=OF;
 })(typeof self!=='undefined'?self:this);
