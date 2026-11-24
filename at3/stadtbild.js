@@ -2244,7 +2244,11 @@ function spiegelSp(sp){var w=sp.w,px=new Uint8Array(sp.px.length),y,x;for(y=0;y<
 var BUDE_VAR=[.155,.155,.155,.155,.155,.155,.035,.035],BUDE_HOCH=52;
 function budeVariante(i,j,seed){var u=rausch(i,j,seed+277),k;for(k=0;k<BUDE_VAR.length-1;k++){u-=BUDE_VAR[k];if(u<0)return k+1}return BUDE_VAR.length}
 function budenBild(P,opt){var B=BIOME[P.biom];if(!B||!B.felder||(opt&&opt.budenbild===false))return;var s=P.seed>>>0;P.schlamm=true;
- P.bauten.forEach(function(b){if(b.rolle==='shack'&&b.tuer&&b.w<=3&&b.h<=3)b.bv=budeVariante(b.i,b.j,s)})}
+ P.bauten.forEach(function(b){if(b.rolle==='shack'&&b.tuer&&b.w<=3&&b.h<=3){b.bv=budeVariante(b.i,b.j,s);if(opt&&opt.drogenbude===false)return;
+  var u=rausch(b.i,b.j,s+911);if(u<DROGE_ANTEIL)b.dv=u<DROGE_ANTEIL/2?'opium':'hasch'}})}   // N6b5b2 Drogenbude nur auf dem Türfeld (Haufen: übrige Felder normale Buden)
+// N6b5b2 (Thomas 24.11.2026): Opiumküche und Haschischpresse (tools/at3-drogenbude.py) selten statt einer Bude, etwa 1 von 30, nur Bild (keine Ware,
+// keine Bewohner, Wirtschaft erst N15e1). Eigene Wahl nach Lage (rausch), b.bv bleibt; Notausschalter opt.drogenbude:false.
+var DROGE_ANTEIL=1/30;
 // N6b5a Rückmeldung Thomas („Boden wirkt zu monoton“): Schlammböden (tools/at3-schlamm.py) für alle e-Felder, wenn P.schlamm (Budenbild an), Wahl nach Lage
 var SCHLAMM=[['boden-schlamm-matsch',.34],['boden-schlamm-stroh',.14],['boden-schlamm-scherben',.12],['boden-schlamm-pfuetze',.1],['boden-schlamm-spur',.09],
  ['boden-schlamm-bretter',.08],['boden-schlamm-oel',.06],['boden-schlamm-rinne',.07]];
@@ -2254,7 +2258,7 @@ SCHLAMM.forEach(function(s){SAUM_RANG[s[0]]=SAUM_RANG['boden-erde']});
 function budeFelder(P){var W=P.W,F=null;P.bauten.forEach(function(b){if(!b.bv||b.rolle!=='shack')return;if(!F)F=new Uint8Array(W*W);
   for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)F[y*W+x]=1});return F}   // Erde statt Gras unter der Bude (sieht man zwischen den Buden)
 function budeGanz(b){if(b.rolle!=='shack'||!b.bv||!b.tuer)return null;var r=HOF_RICHT[b.tuer[2]+','+b.tuer[3]],t=b.tuer,innen=function(i,j){return i>=b.i&&j>=b.j&&i<b.i+b.w&&j<b.j+b.h};
- if(!r||!innen(t[0],t[1])||innen(t[0]+t[2],t[1]+t[3]))return null;return{id:'elend-bude-'+b.bv+'-'+r,hr:r}}
+ if(!r||!innen(t[0],t[1])||innen(t[0]+t[2],t[1]+t[3]))return null;return{id:(b.dv?'elend-'+b.dv:'elend-bude-'+b.bv)+'-'+r,hr:r}}
 // N6b5a Rückmeldung Thomas (24.11.2026, „extrem überfüllt“): nur vor dem Stinktor ummauerter Orte und in der Elendssiedlung (Weiler und Dörfer halten
 // 1 Feld Abstand), im Plan vor Mauer und Toren. Freie Schlammfelder (e) im Elendsviertel bekommen Anbauten (Bude 1 × 1, rolle shack, anbau:1,
 // ohne eigene Bewohner der Stadtliste). Nur höchstens 3 Felder von einer echten Bude, kein anderes Gebäude im Umkreis 1, keine Mauer im Umkreis 2 (Wehrgang-

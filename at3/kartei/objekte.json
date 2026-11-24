@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 952,
+ "typMax": 960,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -8427,6 +8427,78 @@
    "name": "Debt Post",
    "status": "uebernommen",
    "datei": "obj/elend-schuldpfahl.json"
+  },
+  {
+   "id": "elend-opium-sued",
+   "version": 1,
+   "typ": 953,
+   "kat": "anlage",
+   "name": "Opium Kitchen S",
+   "status": "uebernommen",
+   "datei": "obj/elend-opium-sued.json"
+  },
+  {
+   "id": "elend-opium-ost",
+   "version": 1,
+   "typ": 954,
+   "kat": "anlage",
+   "name": "Opium Kitchen E",
+   "status": "uebernommen",
+   "datei": "obj/elend-opium-ost.json"
+  },
+  {
+   "id": "elend-opium-nord",
+   "version": 1,
+   "typ": 955,
+   "kat": "anlage",
+   "name": "Opium Kitchen N",
+   "status": "uebernommen",
+   "datei": "obj/elend-opium-nord.json"
+  },
+  {
+   "id": "elend-opium-west",
+   "version": 1,
+   "typ": 956,
+   "kat": "anlage",
+   "name": "Opium Kitchen W",
+   "status": "uebernommen",
+   "datei": "obj/elend-opium-west.json"
+  },
+  {
+   "id": "elend-hasch-sued",
+   "version": 1,
+   "typ": 957,
+   "kat": "anlage",
+   "name": "Hash Press S",
+   "status": "uebernommen",
+   "datei": "obj/elend-hasch-sued.json"
+  },
+  {
+   "id": "elend-hasch-ost",
+   "version": 1,
+   "typ": 958,
+   "kat": "anlage",
+   "name": "Hash Press E",
+   "status": "uebernommen",
+   "datei": "obj/elend-hasch-ost.json"
+  },
+  {
+   "id": "elend-hasch-nord",
+   "version": 1,
+   "typ": 959,
+   "kat": "anlage",
+   "name": "Hash Press N",
+   "status": "uebernommen",
+   "datei": "obj/elend-hasch-nord.json"
+  },
+  {
+   "id": "elend-hasch-west",
+   "version": 1,
+   "typ": 960,
+   "kat": "anlage",
+   "name": "Hash Press W",
+   "status": "uebernommen",
+   "datei": "obj/elend-hasch-west.json"
   }
  ]
 }
