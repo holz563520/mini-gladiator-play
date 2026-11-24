@@ -8160,10 +8160,10 @@
   },
   {
    "id": "boden-schlamm-pfuetze",
-   "version": 1,
+   "version": 4,
    "typ": 923,
    "kat": "boden",
-   "name": "Slum Puddle",
+   "name": "Slum Puddles",
    "status": "skizze",
    "datei": "obj/boden-schlamm-pfuetze.json"
   },
@@ -8205,7 +8205,7 @@
   },
   {
    "id": "boden-schlamm-oel",
-   "version": 1,
+   "version": 3,
    "typ": 928,
    "kat": "boden",
    "name": "Greasy Puddle",
