@@ -9,6 +9,7 @@
 // · Gebäudeliste nach Einwohnern (N6b2c1, stadtliste.js): alle Gebäude des Orts nach Zweigen mit Anzahl, Grundfläche, Lage und Herkunft; erst beim Antippen geladen.
 // · Außenposten (N6b4b4): Wahl einer Postenart (Mine, Steinbruch, Holzfäller … und Gehöfte), Seite zum eigenen Ort, Leute; Plan aus stadtbild.js postenPlan(),
 //   gleiches Sichtfenster, Varianten, First Person; eigene Messung aller Postenarten des Bioms.
+// · Echter Ort (N7a1): Haken mit Welt-Seed und Ort Nr.; Welt einmal je Seed (erst beim Haken), Planwahl, Lage, Tore und Straßen am Rand aus ortsbild.js.
 // Nichts davon lädt das Spiel. Bis N6b sind alle Teile Skizzen aus dem Baukasten (Bauklassen-Teile mit Farbtausch nach Biom und Baustil).
 var AT3_STADTBILDER_MENUE=(function(){
 'use strict';
@@ -22,7 +23,7 @@ var POSTEN_DE={'iron-mine':'Eisenmine','copper-mine':'Kupfermine','tin-mine':'Zi
 var SEITE_DE={north:'Norden',east:'Osten',south:'Süden',west:'Westen'},ZIEL_DE={tor:'Stollentor',wand:'Abbauwand',waldrand:'Waldrand',steg:'Steg',becken:'Siedebecken',ufer:'Ufer'};
 function postenIds(){return Object.keys(SB.POSTEN_ANLAGE).concat(Object.keys(SB.POSTEN_HOF))}
 // Plan zur Wahl: Ortsbild oder Postenplan (N6b4b4)
-function planVon(w){return w.posten?SB.postenPlan({art:w.posten,biom:w.biom,stil:w.stil,seed:w.seed,arb:w.arb,ortSeite:w.ortSeite}):SB.plan(w)}
+function planVon(w){if(w.echt){var r=window.AT3ORTSBILD.planen(SB,w);E.ersatz=r.ersatz?r.fehler:null;return r.P}E.ersatz=null;return w.posten?SB.postenPlan({art:w.posten,biom:w.biom,stil:w.stil,seed:w.seed,arb:w.arb,ortSeite:w.ortSeite}):SB.plan(w)}
 var GANZ_BIS=4;   // ganzes Bild (Varianten, First Person, Messung am Stück) nur bis Marktflecken; größere Orte nur im Sichtfenster (Kacheln)
 var AMPEL={gruen:'🟢',gelb:'🟡',rot:'🔴'};
 function lade(f){return AT3ED.lade('grafik',f)}
@@ -30,7 +31,7 @@ function $(q){return E.el.querySelector(q)}
 function hole(id){return E.obj[id]||null}
 function aufbauen(el){E.el=el;el.innerHTML='<p class="leise">Die Stadtväter werden aus dem Bett geklopft …</p>';
  return Promise.all(['at3-64.js','baubild.js','fp.js','stadtliste.js'].map(lade)).then(function(){return lade('baukasten.js')}).then(function(){return lade('stadtbild.js')}).then(function(){return lade('daten/gebaeude.json')}).then(function(d){
-  S=window.AT3_64;BK=window.AT3_BAUKASTEN;SB=window.AT3_STADTBILD;FP=window.AT3_FP;E.gebD=SB.setzeDaten(d);   // N6b2c2: Plan braucht die Gebäudeliste
+  S=window.AT3_64;BK=window.AT3_BAUKASTEN;SB=window.AT3_STADTBILD;FP=window.AT3_FP;E.gebD=SB.setzeDaten(d);E.gebJ=d;   // N6b2c2: Plan braucht die Gebäudeliste
   // N6b4b2: Flurgürtel braucht die Landwirtschaftsdaten (fehlen sie, plant stadtbild.js ohne Flur wie vorher)
   return Promise.all([lade('landwirtschaft.js'),lade('begehbar.js'),lade('daten/landwirtschaft.json'),lade('daten/waren.json'),lade('daten/rezepte.json')]).then(function(r){
    if(window.AT3LANDW)SB.setzeLandw(window.AT3LANDW.daten(r[2],d,r[3],r[4]))},function(){})}).then(function(){
@@ -61,6 +62,9 @@ function zeigen(){var el=E.el,O=E.orte,biome=O.biome||[],stile=O.baustile||[];
   '<div class="sbForm"><label>Außenposten (N6b4b4) <select id="sbPosten"><option value="">– kein, Ortsbild –</option>'+postenIds().map(function(p){return '<option value="'+p+'">'+esc(POSTEN_DE[p]||p)+'</option>'}).join('')+'</select></label>'+
   '<label>Eigener Ort liegt im <select id="sbOrtSeite">'+['south','north','east','west'].map(function(s){return '<option value="'+s+'">'+SEITE_DE[s]+'</option>'}).join('')+'</select></label>'+
   '<label>Leute <input id="sbLeute" type="number" min="1" max="16" value="5"></label></div>'+
+  '<div class="sbForm"><label title="N7a1: ein echter Ort der Seed-Welt; Einwohner und Gebäudeliste aus der Ortsbilanz, Biom aus der Hauptzone, Fluss, Küste, Burgberg und Religion aus der Welt">Echter Ort (N7a1) <input type="checkbox" id="sbEcht"></label>'+
+  '<label>Welt-Seed <input id="sbWeltSeed" type="number" min="0" max="4294967295" value="563520"></label><label>Ort Nr. <input id="sbOrtNr" type="number" min="0" value="0"></label>'+
+  '<label>&nbsp;<button class="knopf klein" id="sbOrtWuerfel">🎲 anderer Ort</button></label></div><p class="leise" id="sbEchtInfo"></p>'+
   '<p class="leise" id="sbBauweise"></p>'+
   '<p><label title="N6b2c3: stinkendes Gewerbe und Elendsbuden am Stinktor, Gräberstraße mit Friedhof, Gehöfte an den Ausfallstraßen"><input type="checkbox" id="sbAussen" checked> Vor den Toren und Umland</label> &nbsp; <label title="N6b2d: Wehrgang 4 Stufen hoch mit Zinnen, Türme 3 × 3 (6 Stufen), Tore mit Sturz, Treppen innen; aus = Platzhalter wie vorher"><input type="checkbox" id="sbWehr" checked> Begehbare Mauer</label> &nbsp; <label title="N6b2c4c1: ab Marktflecken mitten durch die Stadt mit Ufergassen, Brücken und Flusstoren; Weiler und Dörfer: Fluss vor dem Ort mit Furt. Im Spiel kommt die Richtung aus der Welt (orte.js flussAchse).">Fluss <select id="sbFluss"><option value="">keiner</option><option value="ns">Nord–Süd</option><option value="ow">Ost–West</option></select></label> &nbsp; <label title="N6b2c4c2: gerade Küste mit Kai, Molen und Holzstegen mit Anlegern, Seemauer mit Hafentor, Hafen/Werft/Seefischerei am Kai; Weiler und Dörfer: Strand mit Bootssteg. Mit Fluss mündet er ins Meer (Richtung quer zur Küste). Im Spiel kommt die Seite aus der Welt (orte.js kuesteSeite).">Küste <select id="sbKueste"><option value="">keine</option><option value="south">Süden</option><option value="north">Norden</option><option value="east">Osten</option><option value="west">Westen</option></select></label> &nbsp; <label title="N6b2c4c3: ab Marktflecken ein Burgberg am Stadtrand (Fels mit Terrassen und Treppen, oben Palast, Statthalter oder Tempel, ab Großstadt ein zweites Monument), die Mauer läuft über den Fels. Im Spiel nur, wenn Gebirge die Hauptzone ist (orte.js huegel)."><input type="checkbox" id="sbHuegel"> Hügel (Burgberg)</label> &nbsp; <label><input type="checkbox" id="sbUmland"> Nachbarschaftsbild (4 Felder Biom ringsum)</label> &nbsp; <label title="Größte Stadt (20.000 Einwohner) zum Messen"><input type="checkbox" id="sbProbe"> Probestadt 20.000 Einwohner</label></p>'+
   '<p id="sbInfo" class="leise"></p><div class="sbKarte" id="sbKarte"></div>'+
@@ -77,6 +81,7 @@ function zeigen(){var el=E.el,O=E.orte,biome=O.biome||[],stile=O.baustile||[];
  el.innerHTML=h;
  $('#sbArt').onchange=function(){var a=$('#sbArt').value;if(a)$('#sbOrtEinw').value=SB.ARTEN[a].einw;neu()};$('#sbOrtEinw').onchange=function(){if($('#sbArt').value!=='slum')$('#sbArt').value='';neu()};['#sbBiom','#sbStil','#sbSeed'].forEach(function(q){$(q).onchange=neu});$('#sbUmland').onchange=function(){E.umland=$('#sbUmland').checked;neu()};$('#sbAussen').onchange=neu;$('#sbWehr').onchange=neu;$('#sbFluss').onchange=neu;$('#sbKueste').onchange=neu;$('#sbHuegel').onchange=neu;$('#sbProbe').onchange=function(){E.probe=$('#sbProbe').checked;neu()};
  ['#sbPosten','#sbOrtSeite','#sbLeute'].forEach(function(q){$(q).onchange=neu});
+ $('#sbEcht').onchange=echt;$('#sbWeltSeed').onchange=echt;$('#sbOrtNr').onchange=echt;$('#sbOrtWuerfel').onclick=function(){var n=E.welt&&E.welt.seed===(+$('#sbWeltSeed').value>>>0)?E.welt.A.orte.length:4000;$('#sbOrtNr').value=Math.floor(Math.random()*n);$('#sbEcht').checked=true;echt()};
  $('#sbWuerfel').onclick=function(){$('#sbSeed').value=Math.floor(Math.random()*1e6);neu()};
  $('#sbVarKnopf').onclick=varianten;$('#sbListeKnopf').onclick=gebListe;$('#sbEinw').onchange=gebListe;$('#sbMessen').onclick=messen;$('#sbPostenMessen').onclick=postenMessen;$('#sbFensterMessen').onclick=fensterMessen;
  $('#sbLinks').onclick=function(){E.seite=(E.seite+7)%8;fp()};$('#sbRechts').onclick=function(){E.seite=(E.seite+1)%8;fp()};
@@ -99,13 +104,33 @@ function gebListe(){var z=$('#sbListe');z.innerHTML='<p class="leise">Der Stadts
  if(E.gebD)return los();
  lade('stadtliste.js').then(function(){return lade('daten/gebaeude.json')}).then(function(d){E.gebD=window.AT3_STADTLISTE.daten(d);los()})
   .catch(function(e){z.innerHTML='<p class="witz">Stadtschreiber verschollen: '+esc(e.message)+'</p>'})}
-function wahl(seed){var w={einw:Math.max(1,Math.min(20000,+$('#sbOrtEinw').value|0)),biom:$('#sbBiom').value,stil:$('#sbStil').value,seed:seed==null?(+$('#sbSeed').value>>>0):seed};if($('#sbAussen')&&!$('#sbAussen').checked)w.aussen=false;if($('#sbWehr')&&!$('#sbWehr').checked)w.wehr=false;if($('#sbFluss')&&$('#sbFluss').value)w.fluss=$('#sbFluss').value;if($('#sbKueste')&&$('#sbKueste').value)w.kueste=$('#sbKueste').value;if($('#sbHuegel')&&$('#sbHuegel').checked)w.huegel=true;
+function wahl(seed){if($('#sbEcht')&&$('#sbEcht').checked&&E.echt){var we=Object.assign({},E.echt.w.opt);if(seed!=null)we.seed=seed;if($('#sbAussen')&&!$('#sbAussen').checked)we.aussen=false;if($('#sbWehr')&&!$('#sbWehr').checked)we.wehr=false;we.echt=true;return we}
+ var w={einw:Math.max(1,Math.min(20000,+$('#sbOrtEinw').value|0)),biom:$('#sbBiom').value,stil:$('#sbStil').value,seed:seed==null?(+$('#sbSeed').value>>>0):seed};if($('#sbAussen')&&!$('#sbAussen').checked)w.aussen=false;if($('#sbWehr')&&!$('#sbWehr').checked)w.wehr=false;if($('#sbFluss')&&$('#sbFluss').value)w.fluss=$('#sbFluss').value;if($('#sbKueste')&&$('#sbKueste').value)w.kueste=$('#sbKueste').value;if($('#sbHuegel')&&$('#sbHuegel').checked)w.huegel=true;
  if($('#sbArt').value==='slum')w.art='slum';
  if($('#sbPosten')&&$('#sbPosten').value){w.posten=$('#sbPosten').value;w.ortSeite=$('#sbOrtSeite').value;w.arb=Math.max(1,Math.min(16,+$('#sbLeute').value|0))}return w}
 function leinwand(r){var c=document.createElement('canvas');c.width=Math.max(1,r.w);c.height=Math.max(1,r.h);if(!r.w)return c;var x=c.getContext('2d'),d=x.createImageData(r.w,r.h),P=S.PALETTEN[S.PALETTE].farben.map(S.farbe);
  for(var i=0;i<r.px.length;i++){var n=r.px[i];if(n===255)continue;var c3=P[n],o=i*4;d.data[o]=c3[0];d.data[o+1]=c3[1];d.data[o+2]=c3[2];d.data[o+3]=255}x.putImageData(d,0,0);c.className='pixel';return c}
 var HOF_DE={cottage:'Kate',farmstead:'Bauernhof','villa-rustica':'Gutshof','herders-camp':'Hirtenlager',plantation:'Plantage','oasis-garden':'Oasengarten'};
 function hofZahl(f){var n={};f.hoefe.forEach(function(h){n[h.art]=(n[h.art]|0)+1});return Object.keys(n).map(function(k){return n[k]+' '+(HOF_DE[k]||k)}).join(', ')}
+// N7a1 Echter Ort: Erde einmal je Welt-Seed auf dem Hauptkern (nur im Editor, auf Knopfdruck), dann Wahl und Lage aus ortsbild.js
+function echtLaden(seed){if(E.welt&&E.welt.seed===seed)return Promise.resolve(E.welt);
+ return ['weltgen.js','ortsnamen.js','orte.js','aussenposten.js','ortsbild.js'].reduce(function(k,f){return k.then(function(){return lade(f)})},Promise.resolve())
+  .then(function(){return Promise.all(['daten/rezepte.json','daten/kulturen.json','daten/religionen.json'].map(lade))}).then(function(r){
+   var WG=window.AT3WG,O=window.AT3ORTE,SL=window.AT3_STADTLISTE,t=performance.now(),e=WG.erde(seed,1),A=WG.ansicht(e.buffer);
+   E.welt={seed:seed,A:A,WG:WG,ON:window.AT3ORTSNAMEN,AP:window.AT3POSTEN,OB:window.AT3ORTSBILD,ms:performance.now()-t,
+    D:{O:O,DD:O.daten(E.gebJ,r[0],r[1]),SL:SL,SLD:SL.daten(E.gebJ),REL:r[2].religionen,KK:r[1].kulturkreise}};return E.welt})}
+function echt(){var z=$('#sbEchtInfo');if(!$('#sbEcht').checked){E.echt=null;z.textContent='';neu();return}
+ var seed=+$('#sbWeltSeed').value>>>0;z.textContent=E.welt&&E.welt.seed===seed?'':'Die Welt wird erschaffen … sieben Tage sind eingeplant, es dauert ein paar Sekunden.';
+ setTimeout(function(){echtLaden(seed).then(function(Wl){var n=Wl.A.orte.length,k=Math.max(0,Math.min(n-1,+$('#sbOrtNr').value|0));$('#sbOrtNr').value=k;$('#sbOrtNr').max=n-1;
+  E.echt={k:k,w:Wl.OB.wahl(seed,Wl.A,k,Wl.D,Wl.ON)};neu()}).catch(function(e){z.innerHTML='<span class="witz">Die Welt ist beim Erschaffen eingestürzt: '+esc(e.message)+'</span>'})},30)}
+function echtInfo(P,w){var z=$('#sbEchtInfo');if(!w.echt||!E.echt||!E.welt){if(z&&!$('#sbEcht').checked)z.textContent='';return}var Wl=E.welt,x=E.echt.w,o=x.opt,L=Wl.OB.lage(Wl.WG,Wl.seed,Wl.A,E.echt.k,P),
+  halb=Wl.AP.halb(x.roh.g),kom=function(v){return Math.round(v).toLocaleString('de-DE')},tor=function(t){return SEITE_DE[t.seite]+' ('+kom(t.x)+', '+kom(t.y)+')'};
+ z.innerHTML='<b>'+esc(x.name)+'</b> · Ort '+E.echt.k+' von '+Wl.A.orte.length+' · '+kom(o.liste.einw)+' Einwohner · Biom '+esc(o.biom)+(o.fluss?' · Fluss '+(o.fluss==='ns'?'Nord–Süd':'Ost–West'):'')+(o.kueste?' · Küste im '+SEITE_DE[o.kueste]:'')+(o.huegel?' · Burgberg':'')+(o.religion?' · Religion '+esc(o.religion):'')+
+  (x.stilKultur?' · Baustil der Kultur '+esc(x.stilKultur)+' (kommt mit N6d, bis dahin nach Biom)':'')+' · Plan-Seed '+o.seed+
+  '<br>In der Welt: Ecke ('+kom(L.x0)+', '+kom(L.y0)+'), '+L.W+' × '+L.W+' Felder, Mitte = Ortspunkt ('+kom(L.punkt[0])+', '+kom(L.punkt[1])+')'+
+  ' · Mauertore: '+(L.tore.length?L.tore.map(tor).join(', '):'keine (offener Ort)')+' · Straßen am Bildrand: '+(L.ausgaenge.filter(function(a){return a.art==='strasse'}).map(tor).join(', ')||'keine')+
+  (P.W/2>halb?'<br><span class="witz">Bild ist breiter als der Platz, den die Außenposten frei lassen: halbe Breite '+(P.W>>1)+' statt höchstens '+halb+' Felder.</span>':'')+
+  (E.ersatz?'<br><span class="witz">Plan gescheitert ('+esc(E.ersatz)+'), Ersatz ohne Vor-den-Toren-Ring.</span>':'')+(Wl.ms?' <span class="leise">· Welt gerechnet in '+kom(Wl.ms)+' ms</span>':'');Wl.ms=0}
 function neu(){var w;try{w=wahl();if(E.probe){delete w.art;delete w.posten;w.einw=SB.PROBE_EINW}E.plan=planVon(w)}catch(e){$('#sbInfo').innerHTML='<span class="witz">'+esc(e.message)+'</span>';return}
  var B=(E.orte.biome||[]).filter(function(b){return b.id===w.biom})[0],st=(E.orte.baustile||[]).filter(function(s){return s.id===w.stil})[0];
  $('#sbBauweise').innerHTML='Bauweise im Biom: '+esc(B?B.bauweise:'')+(st?' · Baustil: '+esc(st.de)+(st.kulturen?' ('+esc(st.kulturen.join(', '))+')':''):'')+(B&&B.nurAussenposten?' · <span class="witz">Hier wohnen nur Außenposten. Und die nicht gern.</span>':'');
@@ -119,7 +144,7 @@ function neu(){var w;try{w=wahl();if(E.probe){delete w.art;delete w.posten;w.ein
   (P.kueste?'<br>Küste im '+({south:'Süden',north:'Norden',east:'Osten',west:'Westen'})[P.kueste.seite]+' · '+(P.kueste.strand?'Strand, '+P.kueste.stege+' Bootssteg'+(P.kueste.stege===1?'':'e'):P.kueste.hafentore+' Hafentor'+(P.kueste.hafentore===1?'':'e')+', '+P.kueste.molen+' Mole'+(P.kueste.molen===1?'':'n')+', '+P.kueste.stege+' Stege mit '+P.kueste.anleger+' Anlegern, '+P.kueste.hafen+' Hafenbau'+(P.kueste.hafen===1?'':'ten')+' am Kai'):'')+(P.wehr?'<br>Mauer begehbar: '+P.wehr.k.length.toLocaleString('de-DE')+' Felder Wehrgang (4 Stufen), '+P.wehr.tuerme.length+' Türme (6 Stufen), '+P.wehr.tore+' Tore mit Sturz, '+P.wehr.treppen.length+' Treppen hinauf':'')+(P.huegel?'<br>Burgberg mit '+P.huegel.stufen+' Stufen · oben '+P.huegel.gipfel.map(function(id){return GIPFEL_DE[id]||id}).join(' und ')+' · '+P.huegel.felder+' Felder gehoben':'')+(P.fluss?'<br>Fluss '+(P.fluss.achse==='ns'?'Nord–Süd':'Ost–West')+', '+BK.feld(P.fluss.breite)+' Felder breit · '+(P.fluss.furten!=null?P.fluss.furten+' Furt'+(P.fluss.furten===1?'':'en')+' (Fluss vor dem Ort)':P.fluss.bruecken+' Brücke'+(P.fluss.bruecken===1?'':'n')+' · '+P.fluss.tore+' Flusstor'+(P.fluss.tore===1?'':'e')):'')+
   (P.flur?'<br>Flur: '+P.flur.felder.toLocaleString('de-DE')+' Felder, '+P.flur.hoefe.length+' Höfe ('+hofZahl(P.flur)+'), '+P.flur.wege.toLocaleString('de-DE')+' Feldwegfelder'+(P.flur.fehlt?' · <span class="witz">'+P.flur.fehlt+' Felder ohne Platz</span>':''):'')+
   (P.gespiegelt?' · gespiegelt':'')+' · Plan '+kb.toFixed(1)+' KB im Speicher (gespeichert wird nur das Rezept: Einwohner, Biom, Stil, Seed)';
- fenster(P,E.umland);E.fpRoh=null;
+ echtInfo(P,w);fenster(P,E.umland);E.fpRoh=null;
  if(E.probe||P.g>GANZ_BIS){E.fpObj=null;$('#sbSeite').textContent='First Person nur bis Marktflecken (größere Orte wären am Stück zu groß; im Spiel nur sichtbare Kacheln).';var c=$('#sbFp');c.getContext('2d').clearRect(0,0,c.width,c.height)}else fpBau()}
 // Sichtfenster (N6b2-0): Wischen wie später im Spiel; je Bild ein Schritt mit 4 ms, gezeichnet werden fertige Kacheln, sonst das Ersatzbild aus dem Plan
 function fenster(P,umland){var lauf=++E.lauf,kb=SB.kachelBauer(P,hole,{umland:umland?4:0}),z=$('#sbKarte'),PAL=S.PALETTEN[S.PALETTE].farben,bilder=new Map();E.kb=kb;
