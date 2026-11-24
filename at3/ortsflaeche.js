@@ -8,12 +8,15 @@
 // Kosten (Regel 14): nur Orte, deren Fläche das Fenster des Bildkerns berührt (höchstens HALTEN), je Bodenbild nur die Orte, die es schneiden; nichts hängt an
 // der Weltgröße. Wiederverwendet: Plan und Lage aus ortsbild.js/stadtbild.js, Höhenstufe und Bildraster aus bodenbild.js, Klötze wie das Ersatzbild des
 // Kachelbauers (stadtbild.js umrisse, Editor-Fenster N6b2-0), Halbbreite der Orte aus aussenposten.js.
+// N7a2b1: echte Böden in 1× (bilder(stadtbild, karteilader) einschalten): je Planfeld Boden und Säume wie im Stadtbild (elemente().boden), fehlt ein Kartei-Bild,
+// bleibt die Ersatzfarbe und der Ort wartet (wartende() → Kartenstücke neu). Gebäude bleiben Klötze bis N7a2b2.
 (function(root){
 'use strict';
 var RAMPE=24, HALTEN=12, ST=64;   // RAMPE: Felder Hang rund um die Fläche (eine Höhenstufe = 64 Einheiten je Feld, wie RollerCoaster Tycoon); HALTEN: Orte im Speicher
 var CODES='gsomfwepxqyuh', FARBE_RGB=[[104,138,64],[150,128,96],[156,150,138],[216,210,198],[186,160,84],[56,98,150],[112,86,58],[124,154,78],[122,116,108],[140,134,122],[128,92,58],[214,194,146],[146,118,84]];
 var DACH_RGB=[150,66,48], WAND_RGB=[202,180,140], MAUER_RGB=[150,146,136];
-function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,sprite=new Map();
+function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,sprite=new Map(),SBx=null,KL=null,EMS=[];   // N7a2b1: SBx = stadtbild.js, KL = Kartei-Lader (bilder())
+ var jetzt=typeof performance!=='undefined'?function(){return performance.now()}:function(){return Date.now()};
  function um(x){x%=WX;return x<0?x+WX:x}
  function nah(p,c){var b=0,bd=1e9;for(var i=0;i<64;i++){var v=p[i],dr=(v&255)-c[0],dg=((v>>8)&255)-c[1],db=((v>>16)&255)-c[2],d=dr*dr*3+dg*dg*6+db*db;if(d<bd){bd=d;b=i}}return b}
  function farben(f){if(F===f&&FB)return FB;F=f;var o={boden:new Uint8Array(CODES.length),wasser:new Uint8Array(CODES.length)};
@@ -24,7 +27,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  function stk(X,Y){return(um(X)>>6)*8192+(Y>>6)}
  // Ort aufnehmen (Antwort des Ortskerns). bau(k) → true, wenn das Kartenstück k Gebautes des Spielers hat (Park gewinnt). Gibt die Kartenstücke, deren Bild sich ändert.
  function aufnehmen(m,bau){gefragt.delete(m.k);if(m.fehler||!m.P||!m.lage)return[];var L=m.lage,P=m.P,W=L.W,o={k:m.k,g:m.g,name:m.name,x0:L.x0,y0:L.y0,W:W,h0:m.h0,s0:BB.stufe(m.h0),
-   Z:new Uint8Array(W*W),bauten:[],fach:new Map(),aus:new Set(),ms:m.ms,ersatz:m.ersatz,t:++zeit},i,j;
+   Z:new Uint8Array(W*W),bauten:[],fach:new Map(),aus:new Set(),ms:m.ms,ersatz:m.ersatz,t:++zeit,P:P,E:null,wartet:false},i,j;   // N7a2b1: Plan für die echten Böden
   for(i=0;i<W*W;i++){var c=CODES.indexOf(P.zellen.charAt(i));o.Z[i]=c<0?0:c}
   P.bauten.forEach(function(b){if(!(b.w>0&&b.h>0))return;var e={i:b.i,j:b.j,w:b.w,h:b.h,m:b.rolle==='mauer'},fi=b.i+b.w-1,fj=b.j+b.h-1,key=(fi>>3)*4096+(fj>>3);   // Fach nach dem vordersten Feld (8 × 8)
    o.bauten.push(e);var f=o.fach.get(key);if(!f)o.fach.set(key,f=[]);f.push(e)});
@@ -63,12 +66,18 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
   for(var x=0;x<w;x++){var xm=x+.5,yT=Math.floor(Math.abs(xm-ax)*hh/hw),yB=Math.floor(xm<sx?fh*hh+xm*hh/hw:(fw+fh)*hh-(xm-sx)*hh/hw),y;
    for(y=yT;y<yB&&y<h;y++)px[y*w+x]=dach;for(;y<yB+hb&&y<h;y++)px[y*w+x]=xm<sx?wl:wr}
   sp={w:w,h:h,ax:ax,ay:hb,px:px};sprite.set(key,sp);if(sprite.size>256)sprite.delete(sprite.keys().next().value);return sp}
+ // N7a2b1: Elementliste des Orts (stadtbild.js elemente, ohne sie zu füllen) erst beim ersten echten Bild; Boden und Säume je Planfeld wie im Stadtbild
+ function bodenBilder(o,i,j){if(!o.E){var t0=jetzt();try{o.E=SBx.elemente(o.P,KL.hole,{inSchritten:true})}catch(x){o.E=false}EMS.push(jetzt()-t0);if(EMS.length>32)EMS.shift()}
+  if(!o.E)return null;var e=o.E.boden(i,j),sp=SBx.malbild(KL.hole(e.id)),r,q;if(!sp){o.wartet=true;return null}r=[sp];
+  if(e.su)for(q=0;q<e.su.length;q++){var s=e.su[q],so=SBx.malbild(SBx.saumObj(KL.hole(s[0]),s[1],s[2],s[3]));if(!so){o.wartet=true;return null}r.push(so)}return r}
  // Für ein Bodenbild (Felder x0.., y0.., n je Seite): Zugriff fürs Bodenbild oder null, wenn kein Ort es schneidet
  function fuerBild(x0,y0,n,lod,f){if(!orte.size)return null;var L=[];orte.forEach(function(o){var i=lok(o,x0),j=y0-o.y0;if((i<o.W||i>WX-n)&&j<o.W&&j+n>0)L.push(o)});if(!L.length)return null;
   var FBx=farben(f),k0=stk(x0,y0);L=L.filter(function(o){return !o.aus.has(k0)});if(!L.length)return null;
   return{farbe:FBx.boden,wasser:FBx.wasser,
    zelle:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return o.Z[j*o.W+i]}return -1},
    frei:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return false}return true},
+   // N7a2b1: echter Boden des Planfelds unter (X, Y) als Liste von Bildern (Boden, dann Säume) oder null (Kartei-Bild fehlt noch → Ersatzfarbe, Ort wartet), nur in 1×
+   boden:lod===0&&SBx&&KL?function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return bodenBilder(o,i,j)}return null}:null,
    // Klötze, deren vorderstes Feld in diesem Bild liegt (Einträge wie natur.sammeln: tief, i, o, m, sp, x, y), nur in 1× und ½
    kloetze:function(aus){if(lod>1)return 0;var z=0,hw=32>>lod,hh=16>>lod,st=8>>lod;
     L.forEach(function(o){var i0=lok(o,x0),j0=y0-o.y0;if(i0>=WX-n)i0-=WX;
@@ -86,6 +95,10 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  function hinaus(t){var ax=Math.abs(t.dx),ay=Math.abs(t.dy);if(t.halb-ax<=t.halb-ay)return{x:um(t.x+(t.dx<0?-1:1)*(t.halb+1)),y:t.y+t.dy};
   return{x:um(t.x+t.dx),y:Math.max(0,Math.min(BB.WY-1,t.y+(t.dy<0?-1:1)*(t.halb+1)))}}
  return{RAMPE:RAMPE,HALTEN:HALTEN,orte:orte,aufnehmen:aufnehmen,stuecke:stuecke,bedarf:bedarf,flachen:flachen,bei:bei,frei:frei,fuerBild:fuerBild,imOrt:imOrt,hinaus:hinaus,
+  // N7a2b1: echte Böden einschalten (sb = stadtbild.js, kl = karteilader.js neu(…)); wartende() → Kartenstücke der Orte, die auf Kartei-Bilder gewartet haben
+  bilder:function(sb,kl){SBx=sb||null;KL=kl||null},
+  wartende:function(){var L=[];orte.forEach(function(o){if(!o.wartet)return;o.wartet=false;L=L.concat(stuecke(o))});return L},
+  elementeMs:function(){var m=0;EMS.forEach(function(v){if(v>m)m=v});return m},
   leeren:function(){orte.clear();gefragt.clear()},vergessenAlle:function(){gefragt.clear()},vergessen:function(k){gefragt.delete(k)},
   // Park gewinnt: der Spieler hat im Kartenstück k neu gebaut → k gehört zu keiner Ortsfläche mehr; true, wenn k vorher eingeebnet war (Stück neu rechnen)
   bauGeaendert:function(k){var ja=false;orte.forEach(function(o){if(o.aus.has(k))return;if(stuecke(o).indexOf(k)>=0){o.aus.add(k);ja=true}});return ja}}}

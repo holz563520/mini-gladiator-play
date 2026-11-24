@@ -43,7 +43,7 @@ function bild(hole,x0,y0,lod,F,NT,BA,OT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,s
  var w=2*n*hw,h=bot-top+2,ox=n*hw,oy=-top,s=sicht(hole(x0>>6,y0>>6)),B=s.B,W=s.W,pal=F.pal,du=F.du,he=F.he,d2=2*hw,o2,sp;
  // Natur (G4b): erst sammeln, dann das Bild um ihre Überstände vergrößern (oben Baumkronen, seitlich wenige Bildpunkte)
  var gb=BA?BA.hole(x0>>6,y0>>6):null;if(gb&&gb.length<=GW)gb=null;
- var bz=-1,ab=BA&&BA.hole(x0>>6,y0>>6)?function(X,Y){return BA.M.frei(BA.hole,X,Y)}:null,oz=-1,nk=0;
+ var ob=0,bz=-1,ab=BA&&BA.hole(x0>>6,y0>>6)?function(X,Y){return BA.M.frei(BA.hole,X,Y)}:null,oz=-1,nk=0;
  if(OT){var ab0=ab;ab=ab0?function(X,Y){return OT.frei(X,Y)&&ab0(X,Y)}:OT.frei}
  var NL=NT?NT.N.sammeln(NT.seed,x0,y0,n,lod,ECK,B,W,NLISTE,ab):null;
  if(NL)for(i=0;i<NL.length;i++){NL[i].sp=NT.BILD[NL[i].t].L[lod];NL[i].o=1;NL[i].m=0}
@@ -73,10 +73,20 @@ function bild(hole,x0,y0,lod,F,NT,BA,OT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,s
    if(u>=h)u=h-1;if(t<0)t=0;o=t*w+x;
    if(gm)for(;t<=u;t++,o+=w)px[o]=gPx(gm,ga,x,t,lod,r,k+977,col,cL,cD,gP,gF,gK,gB);
    else if(korn)for(;t<=u;t++,o+=w){v=Math.imul(r^Math.imul(k*67+977+t-yN,0x9e3779b1),0x85ebca6b)>>>28;px[o]=v===0?cL:v===1?cD:col}else for(;t<=u;t++,o+=w)px[o]=col}}
+ if(OT&&OT.boden)ob=ortBoden(OT,px,w,h,ox,oy,x0,y0,n,hw,hh,st,pal);                       // N7a2b1: echte Böden der Orte (nur 1×) über der Ersatzfarbe
  if(bz>=0)BA.M.boden(px,w,h,ox,oy,n,lod,ECK,BOD,pal,he,du);                                 // G5b: Boden der Gebäudefelder (unter allen Bildern)
  if(NL)for(i=0;i<NL.length;i++){o2=NL[i];sp=o2.sp;if(o2.m||o2.o!==1){BA.M.malen(px,w,ox,oy,pal,o2,lod);continue}var sx=ox+o2.x-sp.ax,sy=oy+o2.y-sp.ay,spx=sp.px,sw=sp.w;   // hinten zuerst, Bildpunkt für Bildpunkt
   for(j=0;j<sp.h;j++){var zo=(sy+j)*w+sx,zs=j*sw;for(var k2=0;k2<sw;k2++){var c2=spx[zs+k2];if(c2!==255)px[zo+k2]=pal[c2]}}}
- return{w:w,h:h,ox:ox,oy:oy,px:px,natur:NL?NL.length-(bz>0?bz:0)-nk:0,bau:bz>0?bz:0,ort:nk}}
+ return{w:w,h:h,ox:ox,oy:oy,px:px,natur:NL?NL.length-(bz>0?bz:0)-nk:0,bau:bz>0?bz:0,ort:nk,ortBoden:ob}}
+// N7a2b1: Boden der Planfelder aus den Kartei-Bildern (Boden, dann Säume), hinten zuerst wie im Stadtbild; Anker = Feldmitte (obere Ecke + 16) wie stadtbild.js elemente.
+// Nur flache Felder (alle vier Ecken gleich, also die eingeebnete Fläche); Randfelder am Hang behalten die Ersatzfarbe (weiche Übergänge: N7a5). Gibt die Zahl der Felder.
+function ortBoden(OT,px,w,h,ox,oy,x0,y0,n,hw,hh,st,pal){var m=n+1,z=0;
+ for(var s=0;s<=2*(n-1);s++)for(var i=Math.max(0,s-n+1);i<=Math.min(n-1,s);i++){var j=s-i,X=x0+i,Y=y0+j;if(X>=WX)X-=WX;if(OT.zelle(X,Y)<0)continue;
+  var e=j*m+i,l=ECK[e];if(ECK[e+1]!==l||ECK[e+m]!==l||ECK[e+m+1]!==l)continue;var L=OT.boden(X,Y);if(!L)continue;z++;
+  var xc=ox+(i-j)*hw,yc=oy+(i+j)*hh-l*st+16;
+  for(var q=0;q<L.length;q++){var sp=L[q],sx=xc-sp.ax,sy=yc-sp.ay,spx=sp.px,sw=sp.w,k0=sx<0?-sx:0,k1=sx+sw>w?w-sx:sw;
+   for(var y=sy<0?-sy:0;y<sp.h&&sy+y<h;y++){var zo=(sy+y)*w+sx,zs=y*sw;for(var k=k0;k<k1;k++){var c=spx[zs+k];if(c!==255)px[zo+k]=pal[c]}}}}
+ return z}
 
 // Kurzauskunft je Kartenstück für den Hauptkern: kleinste und größte Stufe je Block 8 × 8 Felder (für „was ist im Bild“) und ein Höhenraster 9 × 9 (Kamerahöhe).
 function kunde(p){var H=sicht(p).H,mm=new Int16Array(128),hg=new Int16Array(81),bx,by,x,y;

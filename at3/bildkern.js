@@ -19,6 +19,7 @@
 // N7a2a: Ortsflächen (ortsflaeche.js): Pläne der Orte im Fenster kommen vom Ortskern (ortskern.js, eigener Hintergrundkern über einen MessageChannel; ohne ihn
 // eingebettet hier in den Pausen), das Gelände darunter wird eingeebnet, Bodenbilder zeigen das Ersatzbild (Planfelder, Klötze), keine Natur auf der Fläche;
 // Park gewinnt (Kartenstück mit Gebautem bleibt, wie es ist); Startplatz-Wahl hält Abstand von Orten. Notausschalter ?n7a2=0.
+// N7a2b1: echte Böden der Orte in 1× aus der Kartei (stadtbild.js elemente().boden, karteilader.js höchstens 4 MB, nur gebrauchte Bilder); Notausschalter ?n7a2b=0.
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
 var HR=self.AT3HERRSCHAFT, REI=true, RE=null;   // N4c1: Reiche in den Fernbildern (Knopf „Realms“), Tafeln einmal je Welt
@@ -45,7 +46,18 @@ function ortsBedarf(){var O=ofl();if(!O||!A||kx<0)return;var b=O.bedarf(A,seed,O
  if(b.vergessen.length)zumOrtskern({art:'vergiss',liste:b.vergessen});b.neu.forEach(function(k){zumOrtskern({art:'plan',gen:gen,k:k})})}
 // Plan eines Orts ist da: aufnehmen, betroffene Stücke einebnen, Kurzauskunft neu, Hauptkern markiert die Bilder als alt
 var ORTMS=[];
-function vomOrtskern(m){if(m.art!=='plan'||m.gen!==gen||!OFL)return;if(m.ms!=null)ORTMS.push(m.ms);var L=OFL.aufnehmen(m,bauHat);if(!L.length)return;
+// N7a2b1: echte Böden der Orte in 1× (Thomas 24.11.2026): stadtbild.js samt Teilen erst beim ersten Ort laden (eingebettet sind sie vom Ortskern schon da),
+// Kartei-Bilder nur, wenn ein Bodenbild sie braucht (karteilader.js, höchstens 4 MB); fertig geladen → „ortNeu“ für die wartenden Orte. Notausschalter ?n7a2b=0.
+var N7A2B=!/[?&]n7a2b=0/.test(self.location.search),KL=null,KLL=false,KLN=false;
+function echteBoeden(){if(!N7A2B||KL===false||!OFL)return;if(KL)return;var Q=self.location.search;
+ try{if(!self.AT3_STADTBILD)importScripts('at3-64.js'+Q,'baubild.js'+Q,'baukasten.js'+Q,'stadtliste.js'+Q,'landwirtschaft.js'+Q,'begehbar.js'+Q,'stadtbild.js'+Q);
+  if(!self.AT3KARTEILADER)importScripts('karteilader.js'+Q);
+  KL=self.AT3KARTEILADER.neu(function(id){return fetch('kartei/obj/'+encodeURIComponent(id)+'.json'+Q).then(function(r){return r.ok?r.json():null})});OFL.bilder(self.AT3_STADTBILD,KL)}
+ catch(x){KL=false}}
+function nachladen(){if(!KL||!KL.wuensche())return;if(KLL){KLN=true;return}KLL=true;var g=gen;
+ KL.laden().then(function(){KLL=false;if(g===gen&&OFL){var L=OFL.wartende(),k=KL.stand();if(L.length)self.postMessage({art:'ortNeu',gen:gen,stuecke:L,kartei:k.anzahl,karteiB:k.bytes,eMs:OFL.elementeMs()})}
+  if(KLN){KLN=false;nachladen()}})}
+function vomOrtskern(m){if(m.art!=='plan'||m.gen!==gen||!OFL)return;echteBoeden();if(m.ms!=null)ORTMS.push(m.ms);var L=OFL.aufnehmen(m,bauHat);if(!L.length)return;
  L.forEach(function(k){var b=st.get(k);if(!b)return;if(OFL.flachen(b,(k/8192)|0,k%8192)){b._s=null;var q=BB.kunde(b);self.postMessage({art:'kunde',gen:gen,cx:(k/8192)|0,cy:k%8192,mm:q.mm,hg:q.hg,stUs:stUs/(stN||1)},[q.mm.buffer,q.hg.buffer])}});
  self.postMessage({art:'ortNeu',gen:gen,stuecke:L,k:m.k,name:m.name,ms:m.ms,ersatz:m.ersatz||null})}
 function BA(offen){return BBILD?{M:BAUB,hole:holeBau,BILD:BBILD,offen:offen&&offen.length?new Set(offen):null}:null}
@@ -119,7 +131,7 @@ self.onmessage=function(e){var d=e.data;
      var cx=(k/8192)|0,cy=k%8192;neuS.push(k,um(cx-1)*8192+cy);if(cy>0)neuS.push(cx*8192+cy-1)}});if(neuS.length){self.postMessage({art:'ortNeu',gen:gen,stuecke:neuS});weiter()}}}           // G5b: Bau-Kartenstücke (dünn)
  else if(d.art==='bild'){var t=performance.now(),r=d.gen!==gen||!F?null:d.lod>=BB.STUFEN?(A?FB.kachel(G,A,seed,d.x0,d.y0,d.lod,F,d.lod>=FB.U_AB?ueb():null,reiche()):null):BB.bild(hole,d.x0,d.y0,d.lod,F,NBILD?{N:NAT,seed:seed,BILD:NBILD}:null,BA(d.offen),OFL?OFL.fuerBild(d.x0,d.y0,BB.TEIL<<d.lod,d.lod,F):null),m={art:'bild',gen:d.gen,nv:d.nv,key:d.key,x0:d.x0,y0:d.y0,lod:d.lod};
   if(!r){m.fehlt=true;self.postMessage(m);return}
-  m.w=r.w;m.h=r.h;m.ox=r.ox;m.oy=r.oy;m.natur=r.natur;m.bau=r.bau||0;m.ort=r.ort||0;m.us=(performance.now()-t)*1000;
+  m.w=r.w;m.h=r.h;m.ox=r.ox;m.oy=r.oy;m.natur=r.natur;m.bau=r.bau||0;m.ort=r.ort||0;m.ortBoden=r.ortBoden||0;m.us=(performance.now()-t)*1000;nachladen();
   if(BMP)createImageBitmap(new ImageData(new Uint8ClampedArray(r.px.buffer),r.w,r.h)).then(function(b){m.bmp=b;self.postMessage(m,[b])},function(){BMP=false;m.buf=r.px;self.postMessage(m,[r.px.buffer])});
   else{m.buf=r.px;self.postMessage(m,[r.px.buffer])}}
  else if(d.art==='feld'){var fd=BB.feld(hole,d.px,d.py),ob=NBILD&&A?NAT.treffer(hole,d.px,d.py,seed,NBILD,BB.sicht,fd&&fd.xu,fd&&fd.y,natFrei()):null;
