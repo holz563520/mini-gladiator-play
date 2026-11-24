@@ -16,6 +16,8 @@ function zeilen(){var K=window.AT3SPIEL&&AT3SPIEL.karte&&AT3SPIEL.karte(),M=K&&K
  z.push('Ground image (worker): max '+ms(M.maxRechenUs/1000)+' ms · Ø '+ms(M.gerechnet?M.rechenUs/M.gerechnet/1000:0)+' ms · '+(M.gerechnet||0)+' made');
  z.push('Towns: '+(M.orte||0)+' · plan max '+ms(M.ortMaxMs)+' ms · lists '+(M.listen==null?'–':M.listen)+'/4 · list total '+ms(M.listeMs)+' ms');
  z.push('Outposts: '+(M.posten||0)+' · lists of '+(M.postenListen||0)+' towns · biggest list '+ms(M.postenMs)+' ms');   // N7a2c
+{var KZ=window.AT3SPIEL&&AT3SPIEL.kern&&AT3SPIEL.kern(),OWS=KZ&&KZ.zustand&&KZ.zustand.ow;   // N7a4a2: Sperrkarten der Orte für die Wegsuche (Weltkern)
+  z.push(OWS?'Town masks: '+OWS.karten+' · '+mb(OWS.bytes)+' MB · '+OWS.modus+' · asked '+OWS.bestellt+' · slowest '+OWS.maxAntwortMs+' ms · world waited '+(OWS.warteMs/1000).toFixed(1)+' s ('+OWS.warteMal+'×)'+(OWS.an?'':' · off'):'Town masks: –')}
  z.push('Buildings: '+(M.haeuser||0)+' images '+mb(M.hausB)+'/2 MB · biggest step '+ms(M.hausMs)+' ms · pauses '+(M.hausPausen||0));
  z.push('Half (½): '+(M.halbN||0)+' images '+mb(M.halbB)+'/1 MB · biggest step '+ms(M.halbMs)+' ms');   // N7a3a
  z.push('Far (¼ ⅛): '+(M.fernN||0)+' images '+mb(M.fernB)+'/0.5 MB · biggest step '+ms(M.fernMs)+' ms');   // N7a3b

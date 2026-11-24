@@ -66,6 +66,18 @@ function wegLaden(){wsLaden();bauLaden();if(!self.AT3WEG)importScripts('begehbar
 function wegSenden(){if(!z.weg||!z.weg.meld.length)return;var M=self.AT3WEGSTROM.meld(z.weg),tr=[];
  for(var i=0;i<M.length;i++){var m=M[i];m.us=wegUs[m.nr]||0;delete wegUs[m.nr];m.helfer=helfer.length;if(m.punkte)tr.push(m.punkte.buffer);if(m.orte)tr.push(m.orte.buffer)}
  self.postMessage({art:'weg',meld:M},tr)}
+// N7a4a2 (Thomas 24.11.2026): Sperrkarten der Orte und Posten für die Wegaufträge (ortsweg.js). Erst beim Verteilen bzw. eigenen Rechnen angehängt; fehlt eine,
+// bleibt der Auftrag in der Schlange, die Karte wird beim Ortskern bestellt (eigener Kanal von der Karte, sonst eingebettet), und die Welt wartet am
+// Fälligkeitstick wie bei einem langsamen Helfer. Notausschalter ?n7a4a2=0. An den Hauptkern höchstens 1× je Sekunde eine kleine Messnachricht.
+var OW=null, OW_AUS=/[?&]n7a4a2=0/.test(self.location.search), ORTSPORT=false, OKP, owLetzt=-99;
+self.AT3_N7A4A2_AUS=OW_AUS;   // für wegstrom.js/karren.js (gilt) und helfer
+function ow(){if(OW)return OW;var q=self.location.search,L=['ortsweg.js'+q];if(!self.AT3ORTSSPERRE)L.push('ortssperre.js'+q);importScripts.apply(self,L);
+ OW=self.AT3ORTSWEG.neu({aus:OW_AUS,port:ORTSPORT&&OKP===undefined,wach:owWach});if(OKP!==undefined)OW.kanal(OKP||null);return OW}
+var OW_ARTEN={weg:1,kweg:1,pweg:1};
+function owOk(a){if(OW_AUS||!a||!(a.art in OW_ARTEN))return true;return ow().bereit(z,a)}
+function owDran(a){if(OW&&OW.braucht(a))OW.anhaengen(a);return a}
+function owWach(){verteilen();if(wartet){if(modus==='lauf')laufen();else{if(timer!=null){clearTimeout(timer);timer=null}takt()}}}
+function owSenden(){if(!OW||(z.tick-owLetzt<20&&z.tick>=owLetzt))return;owLetzt=z.tick;self.postMessage({art:'ortsweg',st:OW.stand()})}
 function bauSenden(){var b=z.bau;if(b!==bauVon){bauVon=b;if(bauGesendet){self.postMessage({art:'bau',leer:true,zaehler:0,gold:0,baustellen:0,meld:[]});bauGesendet=false}}
  if(!b){bauLetzt=-1;return}if(!b.meld.length&&b.zaehler===bauLetzt&&!b.neu.size)return;bauLetzt=b.zaehler;
  var L=self.AT3BAU.geaendert(b),st=[],tr=[];for(var i=0;i<L.length;i++){var a=self.AT3BAU.stueck(b,L[i]);st.push([L[i],a]);if(a)tr.push(a.buffer)}bauGesendet=true;
@@ -79,15 +91,18 @@ function rwSenden(){var r=z.rw;if(!r||(z.tick-rwLetzt<5&&z.tick>=rwLetzt))return
 
 function plane(ms){if(timer==null)timer=setTimeout(function(){timer=null;takt()},ms)}
 function version(){if(z.version!==V.version())V.verwerfen(z.version)}
-function verteilen(){for(var i=0;i<helfer.length;i++){if(!helfer[i].frei)continue;var a=V.naechster();if(!a)return;helfer[i].frei=false;
+function verteilen(){for(var i=0;i<helfer.length;i++){if(!helfer[i].frei)continue;var a=V.naechster(owOk);if(!a)return;helfer[i].frei=false;owDran(a);   // N7a4a2: nur Aufträge mit allen Sperrkarten
   if(a.art==='weg'&&a.fern&&helfer[i].netz!==a.gen&&self.AT3WEG.netzHat(a.gen)){a.netz=self.AT3WEG.netz();helfer[i].netz=a.gen}   // G6b: Straßennetz je Helfer einmal je Welt
   helfer[i].port.postMessage(a,a.daten?[a.daten.buffer]:[])}}
-function selbstRechnen(a){var t=performance.now();V.ergebnis(a.nr,a.version,K.auftragRechnen(a));selbst++;var us=(performance.now()-t)*1000;if(a.art==='weg')wegUs[a.nr]=us;if(rwUs[a.art]!==undefined){rwUs[a.art]+=us;rwJobs[a.art]++}else wsZeit(a.art,a.teil,us)}
-function bereit(){var L=K.faellig(z);for(var i=0;i<L.length;i++){if(V.hat(L[i]))continue;if(helfer.length)return false;var a=V.wartet(L[i]);if(a)selbstRechnen(a)}return true}
+function selbstRechnen(a){owDran(a);var t=performance.now();V.ergebnis(a.nr,a.version,K.auftragRechnen(a));selbst++;var us=(performance.now()-t)*1000;if(a.art==='weg')wegUs[a.nr]=us;if(rwUs[a.art]!==undefined){rwUs[a.art]+=us;rwJobs[a.art]++}else wsZeit(a.art,a.teil,us)}
+function bereit(){var L=K.faellig(z);for(var i=0;i<L.length;i++){if(V.hat(L[i]))continue;var a=V.wartet(L[i]);
+  if(a&&!owOk(a)){V.auf(a);OW.warte(true);return false}   // N7a4a2: Sperrkarte fehlt noch → Welt wartet
+  if(helfer.length){if(a)V.auf(a);return false}if(a)selbstRechnen(a)}if(OW)OW.warte(false);return true}
 function statistik(us){letzteUs=us;ring[ringN++&255]=us;if(ringN%20)return;var n=Math.min(ringN,256),s=Array.prototype.slice.call(ring,0,n).sort(function(a,b){return a-b}),t=0;
  for(var i=0;i<n;i++)t+=s[i];p95Us=s[Math.min(n-1,Math.floor(n*.95))];mittelUs=t/n}
 function einTick(){anw();version();if(!bereit()){if(!wartet){wartet=true;warteAb=performance.now();warteMal++}return false}if(wartet)warteMs+=performance.now()-warteAb;wartet=false;
- var t=performance.now(),neu=K.schritt(z,V.nimm);version();for(var i=0;i<neu.length;i++)V.auf(neu[i]);
+ var t=performance.now(),neu=K.schritt(z,V.nimm);version();for(var i=0;i<neu.length;i++){V.auf(neu[i]);if(!OW_AUS&&neu[i].art in OW_ARTEN)ow().vormerken(z,neu[i])}   // N7a4a2: Fenster gleich bestellen
+ if(!OW_AUS&&z.war&&z.wg&&z.wg.ans)ow().vorab(z);
  statistik((performance.now()-t)*1000);gesamt++;neuesBild=true;verteilen();return true}
 
 function senden(){if(!neuesBild||!puffer.length)return;neuesBild=false;var b=puffer.pop(),n=Math.min(z.last,SICHT),e=z.e;
@@ -104,9 +119,9 @@ function takt(){if(modus==='lauf'){laufen();return}
  var ende=jetzt+SCHEIBE;
  while(schuld>=1){if(!einTick())break;schuld-=1;if(performance.now()>ende)break}
  if(schuld<1)ueber=false;
- senden();rwSenden();wsSenden();bauSenden();wegSenden();karSenden();warSenden();glaSenden();
+ senden();rwSenden();wsSenden();bauSenden();wegSenden();karSenden();warSenden();glaSenden();owSenden();if(OW)OW.pruefen();
  if(wartet)return;                                                              // ein Helferergebnis weckt den Takt
- if(!helfer.length&&schuld<1){var a=V.naechster();if(a)selbstRechnen(a)}        // ohne Helfer: Aufträge in freien Scheiben vorrechnen
+ if(!helfer.length&&schuld<1){var a=V.naechster(owOk);if(a)selbstRechnen(a)}        // ohne Helfer: Aufträge in freien Scheiben vorrechnen
  plane(schuld>=1?0:Math.max(1,(1-schuld)*1000/(z.tempo*K.TICKS)))}
 
 // Fester Ablauf für die Kernprobe: so schnell wie möglich, Befehle an festen Laufschritten, am Ende der Fingerabdruck.
@@ -122,7 +137,9 @@ function vonHelfer(h){return function(e){var d=e.data;h.frei=true;fremd++;if(d.a
  if(wartet){if(modus==='lauf')laufen();else{if(timer!=null){clearTimeout(timer);timer=null}takt()}}}}
 
 self.onmessage=function(e){var d=e.data;
- if(d.art==='start'){(d.ports||[]).forEach(function(p){var h={port:p,frei:true};p.onmessage=vonHelfer(h);helfer.push(h)});
+ if(d.art==='ortskern'){OKP=d.port||null;if(OW)OW.kanal(OKP);return}   // N7a4a2: Kanal zum Ortskern der Karte (null = eingebettet)
+ if(d.art==='ortskernWeg'){OKP=null;if(OW)OW.kanal(null);return}
+ if(d.art==='start'){ORTSPORT=!!d.ortsPort;(d.ports||[]).forEach(function(p){var h={port:p,frei:true};p.onmessage=vonHelfer(h);helfer.push(h)});
   var ausS=null;if(d.stand&&(d.stand.bau||(Array.isArray(d.stand.warte)&&d.stand.warte.some(function(b){return b&&K.BAU_ARTEN[b[2]]}))))bauLaden();
   if(d.stand&&(d.stand.war||d.stand.per||(Array.isArray(d.stand.warte)&&d.stand.warte.some(function(b){return b&&K.WAR_ARTEN[b[2]]}))))warLaden();
   if(d.stand&&(d.stand.weg||(Array.isArray(d.stand.warte)&&d.stand.warte.some(function(b){return b&&K.WEG_ARTEN[b[2]]}))))wegLaden();bauLetzt=-1;

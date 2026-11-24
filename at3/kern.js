@@ -197,7 +197,7 @@ function verteiler(max){max=max||MAX_SCHLANGE;var schlange=[],fertig={},version=
  return{
   auf:function(a){if(a.version!==version)return false;if(schlange.length>=max)return false;
    var i=schlange.length;while(i>0&&(schlange[i-1].vorrang<a.vorrang||(schlange[i-1].vorrang===a.vorrang&&schlange[i-1].nr>a.nr)))i--;schlange.splice(i,0,a);return true},
-  naechster:function(){return schlange.length?schlange.shift():null},
+  naechster:function(f){if(!f)return schlange.length?schlange.shift():null;for(var i=0;i<schlange.length;i++)if(f(schlange[i]))return schlange.splice(i,1)[0];return null},   // N7a4a2: f = nur bereite Aufträge
   ergebnis:function(nr,v,wert){if(v!==version||fertig[nr]!==undefined)return false;fertig[nr]=wert;nFertig++;return true},
   hat:function(nr){return fertig[nr]!==undefined},
   nimm:function(nr){var w=fertig[nr];delete fertig[nr];nFertig--;return w},

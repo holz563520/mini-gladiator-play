@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='8322217c', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='f20e011d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
@@ -51,7 +51,7 @@ function starten(o){
  var M={festMs:0,maxFestMs:0,festVorMs:{},globus:-1,globusUs:0,globusN:0,bilder:0,bytes:0,maxBytes:0,gerechnet:0,rechenUs:0,maxRechenUs:0,zeichnen:0,zeichenMs:0,maxZeichenMs:0,sichtbar:0,ersatz:0,fertig:false,stuecke:0,anfragen:0,verdraengt:0,bmp:null,natur:0,rechenL:[],rechenN:0,naturArten:0,naturErsatz:0,bau:0,bauStuecke:0,bauArten:0,bauErsatz:0,veraltet:0,offen:[]};
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(MAXL,o.kam[2]|0));hatKam=true}
 
- function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;try{okern&&okern.terminate()}catch(e){}okern=null;if(o.beiAusfall)o.beiAusfall(g2)}
+ function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(okern&&kern&&kern.ortskernWeg)kern.ortskernWeg();try{okern&&okern.terminate()}catch(e){}okern=null;if(o.beiAusfall)o.beiAusfall(g2)}
  try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
  if(bk){bk.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ende('picture core failed')};bk.onmessage=vomBildkern;
   var F=S.PALETTEN[S.PALETTE].farben,pal=new Uint32Array(64),du=new Uint8Array(64),he=new Uint8Array(64);
@@ -62,7 +62,10 @@ function starten(o){
   // Fehlt er (kein Worker, Fehler), plant der Bildkern eingebettet in seinen Pausen (Regel 13). Notausschalter ?n7a2=0 (dann keine Ortsflächen), ?n7a2k=0 nur ohne eigenen Ortskern (Probe für Regel 13).
   if(!/[?&]n7a2k?=0/.test(location.search)&&typeof MessageChannel!=='undefined'){try{okern=new Worker(BASIS+'ortskern.js?v='+V);var mc=new MessageChannel();
     okern.postMessage({art:'port',port:mc.port1},[mc.port1]);bk.postMessage({art:'ortskern',port:mc.port2},[mc.port2]);
-    okern.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();try{okern.terminate()}catch(x){}okern=null;if(bk)bk.postMessage({art:'ortskernWeg'})}}catch(e){okern=null}}}
+    // N7a4a2: zweiter Kanal vom Ortskern zum Weltkern (Sperrkarten für die Wegsuche)
+    if(kern&&kern.ortskern){var mw=new MessageChannel();okern.postMessage({art:'portWelt',port:mw.port1},[mw.port1]);kern.ortskern(mw.port2)}
+    okern.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();try{okern.terminate()}catch(x){}okern=null;if(bk)bk.postMessage({art:'ortskernWeg'});if(kern&&kern.ortskernWeg)kern.ortskernWeg()}}catch(e){okern=null}}}
+  if(!okern&&kern&&kern.ortskern)kern.ortskern(null);   // N7a4a2: kein eigener Ortskern → Weltkern rechnet die Sperrkarten eingebettet
 
  // ── Vom Weltkern (über kernstart.js beiWs): Erde und Kartenstücke weiterreichen ──
  function beiWs(d){if(tot||!bk)return;

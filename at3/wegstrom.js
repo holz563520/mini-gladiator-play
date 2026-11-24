@@ -56,17 +56,21 @@ function ausgeben(z,neuL){var g=z.weg,w=z.wg;if(!g.anf.length)return;
 function uebernehmen(z,o,r){var g=z.weg;if(!g||!z.wg||o.gen!==z.wg.gen)return;
  var wt=z.bau&&z.bau.wt,alt=false;if(wt)for(var i=0;i<o.keys.length;i++){var t=wt.get(o.keys[i]);if(t!==undefined&&t>o.ab){alt=true;break}}
  var e={id:o.id,p:o.p,x0:o.x0,y0:o.y0,x1:o.x1,y1:o.y1,seit:z.tick,versuch:o.versuch+1};
- if(alt&&!(r&&r[0]===0&&r[2]>0&&gilt(z,o.p,r))){if(e.versuch<=MAX_VERSUCH)g.anf.unshift(e);else fertig(g,e,8,null);return}   // gefundener Weg, der noch begehbar ist, gilt weiter
+ if(alt&&!(r&&r[0]===0&&r[2]>0&&gilt(z,o.p,r,NUR()?o.ab:null))){if(e.versuch<=MAX_VERSUCH)g.anf.unshift(e);else fertig(g,e,8,null);return}   // gefundener Weg, der noch begehbar ist, gilt weiter
  if(!r||!r.length){fertig(g,e,2,null);return}
  fertig(g,e,r[0],r,o)}
 
 // Ist der gefundene Weg im jetzigen Zustand noch begehbar? Jeder Schritt wie in wegsuche.js (schräg nur über beide Nachbarfelder). Fehlt ein Kartenstück: nein.
-function gilt(z,p,r){var K=SU().KOPF,n=r[2],w=z.wg,B=BG(),M=new Map(),seed=w.seed>>>0,i;
+// N7a4a2: seit wie karren.js gilt (nur Schritte in seit der Suche geänderten Kartenstücken; dort fragt niemand die Sperrkarten der Orte: Park gewinnt)
+function NUR(){return !root.AT3_N7A4A2_AUS}
+function gilt(z,p,r,seit){var K=SU().KOPF,n=r[2],w=z.wg,B=BG(),M=new Map(),seed=w.seed>>>0,i,wt=seit!=null&&z.bau?z.bau.wt:null;
+ function neuK(X,Y){var t=wt.get(umS(X>>6)*8192+(Y>>6));return t!==undefined&&t>seit}
  function hole(cx,cy){return w.stuecke.get(umS(cx)*8192+cy)||null}
  function holeB(cx,cy){if(!z.bau)return null;var k=umS(cx)*8192+cy;if(!M.has(k))M.set(k,BAU().stueck(z.bau,k));return M.get(k)}
  function sch(X,Y,s){return B.schritt(hole,holeB,seed,X,Y,s,p)>0}
  for(i=1;i<n;i++){var X=r[K+i*2-2],Y=r[K+i*2-1],dx=r[K+i*2]-X,dy=r[K+i*2+1]-Y;if(dx>1)dx=-1;else if(dx<-1)dx=1;
   var sx=dx<0?1:3,sy=dy<0?0:2,X2=X+dx<0?X+dx+WX:X+dx>=WX?X+dx-WX:X+dx;
+  if(wt&&!(neuK(X,Y)||neuK(X2,Y+dy)||(dx&&dy&&(neuK(X2,Y)||neuK(X,Y+dy)))))continue;   // N7a4a2
   if(dx&&dy){if(!(sch(X,Y,sx)&&sch(X,Y,sy)&&sch(X2,Y,sy)&&sch(X,Y+dy,sx)))return false}else if(!sch(X,Y,dx?sx:sy))return false}
  return true}
 function abdruck(g,f){var i,e;f(g.anf.length);for(i=0;i<g.anf.length;i++){e=g.anf[i];f(e.id);f(e.p);f(e.x0);f(e.y0);f(e.x1);f(e.y1);f(e.seit);f(e.versuch)}

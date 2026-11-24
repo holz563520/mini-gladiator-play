@@ -36,6 +36,7 @@ var Z_SUCHT=0, Z_FAEHRT=1, Z_HAELT=2, Z_STEHT=3, ZUST=['seeks','drives','halts',
 // 11 waits_narrow (Gegenverkehr in der Engstelle), 12 waits_gate (Gegenverkehr am Tor)
 var GRUND=['','no_path','no_map','start_blocked','goal_blocked','no_road','no_town','busy','changed','no_world','waits_cart','waits_narrow','waits_gate'];
 var DX=[0,-1,0,1], DY=[-1,0,1,0];
+var NUR=!root.AT3_N7A4A2_AUS;   // N7a4a2: Prüfung „gilt noch“ nur in geänderten Kartenstücken (Notausschalter ?n7a4a2=0: wie vorher)
 function umX(X){return X<0?X+WX:X>=WX?X-WX:X}
 function umS(c){return c<0?c+SX:c>=SX?c-SX:c}
 function fk(X,Y){return X*WY+Y}
@@ -161,12 +162,16 @@ function schluessel(pf){var S=new Set(),n=pf.length>>1;for(var i=0;i<n;i++){var 
  return Array.from(S)}
 function veraltet(z,c){var wt=z.bau.wt;for(var i=0;i<c.keys.length;i++){var t=wt.get(c.keys[i]);if(t!==undefined&&t>c.ab)return true}return false}
 // Rest des Wegs ab Feld i im jetzigen Zustand noch befahrbar? Wie wegstrom.gilt (Kopie für eine Feldliste). Fehlt ein Kartenstück: nein.
-function gilt(z,pf,i0,pp){var w=z.wg,B=BG(),M=new Map(),seed=w.seed>>>0,n=pf.length>>1,p=pp===0?0:1;   // G7: pp = 0 prüft für Fußgänger (personen.js)
+// N7a4a2: seit = Tick der Suche; dann nur Schritte, die ein seitdem geändertes Kartenstück berühren (übrige Schritte sind wie bei der Suche, auch mit den
+// Sperrkarten der Orte, die hier nicht vorliegen müssen; ein Stück mit Gebautem fragt die Sperrkarte ohnehin nicht: Park gewinnt). Ohne seit wie vorher.
+function gilt(z,pf,i0,pp,seit){var w=z.wg,B=BG(),M=new Map(),seed=w.seed>>>0,n=pf.length>>1,p=pp===0?0:1,wt=seit!=null&&z.bau?z.bau.wt:null;   // G7: pp = 0 prüft für Fußgänger (personen.js)
+ function neuK(X,Y){var t=wt.get(umS(X>>6)*8192+(Y>>6));return t!==undefined&&t>seit}
  function hole(cx,cy){return w.stuecke.get(umS(cx)*8192+cy)||null}
  function holeB(cx,cy){var k=umS(cx)*8192+cy;if(!M.has(k))M.set(k,BAU().stueck(z.bau,k));return M.get(k)}
  function sch(X,Y,s){return B.schritt(hole,holeB,seed,X,Y,s,p)>0}
  for(var i=i0+1;i<n;i++){var X=pf[i*2-2],Y=pf[i*2-1],dx=dx1(X,pf[i*2]),dy=pf[i*2+1]-Y;
   var sx=dx<0?1:3,sy=dy<0?0:2,X2=umX(X+dx);
+  if(wt&&!(neuK(X,Y)||neuK(X2,Y+dy)||(dx&&dy&&(neuK(X2,Y)||neuK(X,Y+dy)))))continue;   // N7a4a2
   if(dx&&dy){if(!(sch(X,Y,sx)&&sch(X,Y,sy)&&sch(X2,Y,sy)&&sch(X,Y+dy,sx)))return false}else if(!sch(X,Y,dx?sx:sy))return false}
  return true}
 
@@ -232,7 +237,7 @@ function bewegen(z,g,c){
  if(c.zust===Z_STEHT){if(z.tick>=c.t){c.zust=Z_SUCHT;c.versuch=0}return}
  if(c.zust!==Z_FAEHRT)return;
  if(c.nx<0){
-  if(veraltet(z,c)){if(z.wg&&gilt(z,c.pf,c.i)){c.ab=z.tick;c.eng=null}else{suchen(g,c);return}}
+  if(veraltet(z,c)){if(z.wg&&gilt(z,c.pf,c.i,1,NUR?c.ab:null)){c.ab=z.tick;c.eng=null}else{suchen(g,c);return}}
   var n=c.pf.length>>1;if(c.i>=n-1){ankunft(z,c);return}
   var X=c.pf[c.i*2+2],Y=c.pf[c.i*2+3],k=fk(X,Y),o=g.bel.get(k),d;
   if(z.wg&&!haelt(c,k)){var r=abschnitt(z,c);                   // G6c2: Abschnitt vor einer Engstelle ganz reservieren oder davor warten
@@ -268,7 +273,7 @@ function uebernehmen(z,o,r){var g=z.kar;if(!g||!z.wg||o.gen!==z.wg.gen)return;va
  var KO=SU().KOPF,nF=r[2],nO=r[4],pf=r.slice(KO,KO+nF*2),tp=new Uint8Array(nF);for(i=0;i<nF;i++)tp[i]=r[KO+nF*2+nO+i];
  if(nF<1||pf[0]!==c.x||pf[1]!==c.y){stehen(z,c,2);return}
  var wt=z.bau.wt,alt=false;for(i=0;i<o.keys.length;i++){var t=wt.get(o.keys[i]);if(t!==undefined&&t>o.ab){alt=true;break}}
- if(alt&&!gilt(z,pf,0)){c.versuch++;if(c.versuch>MAX_VERSUCH)stehen(z,c,8);return}
+ if(alt&&!gilt(z,pf,0,1,NUR?o.ab:null)){c.versuch++;if(c.versuch>MAX_VERSUCH)stehen(z,c,8);return}
  c.versuch=0;if(c.ziel===0)c.ende=r[7]===2?1:0;
  c.voll=c.ziel===2?0:c.ziel===0?(pf[0]===c.lx&&pf[1]===c.ly?1:0):(pf[0]===c.sx&&pf[1]===c.sy&&pf[nF*2-2]===c.lx&&pf[nF*2-1]===c.ly?1:0);
  if(c.ziel===1&&(pf[nF*2-2]!==c.lx||pf[nF*2-1]!==c.ly)){stehen(z,c,1);return}
@@ -322,7 +327,7 @@ function ausStand(d,z){var M=2147483647,i,j;
  for(i=0;i<g.k.length;i++)if(g.k[i].job>=0&&!neuL.some(function(a){return a.nr===g.k[i].job}))return null;
  z.kar=g;return neuL}
 
-var KA={MAX_K:MAX_K,ALT:ALT,MELD:MELD,WARTE_GRUND:WARTE_GRUND,JE_TICK:JE_TICK,FRIST:FRIST,PRUEF:PRUEF,HALT_LADE:HALT_LADE,HALT_STR:HALT_STR,WIEDER:WIEDER,LEN_O:LEN_O,LEN_D:LEN_D,VF:VF,ZUST:ZUST,GRUND:GRUND,
+var KA={NUR:NUR,MAX_K:MAX_K,ALT:ALT,MELD:MELD,WARTE_GRUND:WARTE_GRUND,JE_TICK:JE_TICK,FRIST:FRIST,PRUEF:PRUEF,HALT_LADE:HALT_LADE,HALT_STR:HALT_STR,WIEDER:WIEDER,LEN_O:LEN_O,LEN_D:LEN_D,VF:VF,ZUST:ZUST,GRUND:GRUND,
  Z_SUCHT:Z_SUCHT,Z_FAEHRT:Z_FAEHRT,Z_HAELT:Z_HAELT,Z_STEHT:Z_STEHT,
  engstellen:engstellen,schritt:schritt,uebernehmen:uebernehmen,abdruck:abdruck,meld:meld,stand:stand,ausStand:ausStand,einfahrt:einfahrt,gilt:gilt,besuch:besuch,schluessel:schluessel};
 if(typeof module!=='undefined'&&module.exports)module.exports=KA;else root.AT3KARREN=KA;

@@ -106,7 +106,7 @@ function bewegen(z,g,c){var Wn=W(),o;
  if(c.nx<0){
   if(c.auf===A_BAUEN){var a2=bauVon(z,c.site);if(!a2||a2.zu!==BAU().B_LAEUFT){los(g,c);return}}
   if(traegt(c)){o=Wn.finde(z.war,c.o);if(!o||o.tt!==Wn.T_PERSON||o.ti!==c.id){zurueck(z,c);return}}      // Auftrag unterwegs abgebrochen (Ziel weg): gleich umkehren
-  if(veraltet(z,c)){if(z.wg&&KAR().gilt(z,c.pf,c.i,0))c.ab=z.tick;else{c.zust=Z_SUCHT;c.pf=null;c.tp=null;c.keys=[];c.i=0;c.job=-1;return}}
+  if(veraltet(z,c)){if(z.wg&&KAR().gilt(z,c.pf,c.i,0,KAR().NUR?c.ab:null))c.ab=z.tick;else{c.zust=Z_SUCHT;c.pf=null;c.tp=null;c.keys=[];c.i=0;c.job=-1;return}}
   var n=c.pf.length>>1;if(c.i>=n-1){ankunft(z,c);return}
   var X=c.pf[c.i*2+2],Y=c.pf[c.i*2+3],dx=dx1(c.x,X),dy=Y-c.y;c.nx=X;c.ny=Y;c.len=dx&&dy?LEN_D:LEN_O;c.sub=0;c.dir=richtung(dx,dy)}
  var v=(c.tp[c.i+1]||1)*VF;if(traegt(c))v=Math.floor(v*(200+c.f0)/200);if(c.hu)v>>=1;var hp=gesund(z,c.id);if(hp<100)v=Math.floor(v*Math.max(TEMPO_MIN,hp)/100);c.sub+=v;      // G9d3: Verletzte langsamer
@@ -165,7 +165,7 @@ function uebernehmen(z,o,r){var g=z.per;if(!g||!z.wg||o.gen!==z.wg.gen)return;va
  var KO=SU().KOPF,nF=r[2],nO=r[4],pf=r.slice(KO,KO+nF*2),tp=new Uint8Array(nF),i;for(i=0;i<nF;i++)tp[i]=r[KO+nF*2+nO+i];
  if(nF<1||pf[0]!==c.x||pf[1]!==c.y||pf[nF*2-2]!==c.zx||pf[nF*2-1]!==c.zy){scheitern(z,c,1);return}
  var wt=z.bau?z.bau.wt:null,alt=false;if(wt)for(i=0;i<o.keys.length;i++){var t=wt.get(o.keys[i]);if(t!==undefined&&t>o.ab){alt=true;break}}
- if(alt&&!KAR().gilt(z,pf,0,0)){if(++c.versuch>MAX_VERSUCH)scheitern(z,c,8);return}
+ if(alt&&!KAR().gilt(z,pf,0,0,KAR().NUR?o.ab:null)){if(++c.versuch>MAX_VERSUCH)scheitern(z,c,8);return}
  c.pf=pf;c.tp=tp;c.i=0;c.ab=alt?z.tick:o.ab;c.keys=KAR().schluessel(pf);c.zust=Z_GEHT;c.nx=-1;c.ny=-1;c.sub=0;c.versuch=0;if(nF===1)ankunft(z,c)}
 
 // ── Fingerabdruck, Nachricht an den Hauptkern, Spielstand ──

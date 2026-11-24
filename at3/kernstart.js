@@ -6,7 +6,7 @@
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='8322217c', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='f20e011d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -30,12 +30,15 @@ function starten(opt){opt=opt||{};
   // G5b: Bauvorschau (bau.js pruefen im Weltkern, ändert nichts): {ok, grund, kosten, felder, …}
   glaDaten:function(wo){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=function(d){ok(d.daten)};welt.postMessage({art:'glaDaten',id:id,wo:wo})})},      // G9c1
   bauPruefen:function(w){return new Promise(function(ok){if(!welt)return ok(null);var id=++frage;wartend[id]=function(d){ok(d.erg)};welt.postMessage({art:'bauPruefen',id:id,wert:w})})},
+  // N7a4a2: Kanal vom Ortskern der Karte zum Weltkern (Sperrkarten für die Wegsuche); null = Weltkern rechnet eingebettet
+  ortskern:function(port){if(!welt)return;if(port)welt.postMessage({art:'ortskern',port:port},[port]);else welt.postMessage({art:'ortskern',port:null})},
+  ortskernWeg:function(){if(welt)welt.postMessage({art:'ortskernWeg'})},
   testAusfall:function(wo){var w=wo==='helfer'?hs[0]:welt;if(w)w.postMessage({art:'testAusfall'})},
   ende:function(){tot=true;Z.laeuft=false;aufraeumen()}};
  if(typeof Worker==='undefined'||typeof MessageChannel==='undefined'){setTimeout(function(){ausfall('no background cores')},0);return H}
  try{
   var n=opt.helfer==null?helferZahl(navigator.hardwareConcurrency||1):opt.helfer, ports=[];
-  welt=new Worker(BASIS+'weltkern.js?v='+V+(location.search.match(/[?&]((n2[bcd]|n4b|ar1b)=0)/g)||[]).join('').replace(/\?/g,'&'));   // Notausschalter ?n2b=0, ?n2c=0, ?n2d=0, ?n4b=0 an die Kerne (N2d: vorher nur n2b)
+  welt=new Worker(BASIS+'weltkern.js?v='+V+(location.search.match(/[?&]((n2[bcd]|n4b|ar1b|n7a4a2)=0)/g)||[]).join('').replace(/\?/g,'&'));   // Notausschalter ?n2b=0, ?n2c=0, ?n2d=0, ?n4b=0 an die Kerne (N2d: vorher nur n2b)
   welt.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ausfall('world core failed')};
   for(var i=0;i<n;i++){var h=new Worker(BASIS+'helfer.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b)=0/g)||[]).join('').replace(/\?/g,'&')),k=new MessageChannel();
    h.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ausfall('helper core failed')};
@@ -53,13 +56,14 @@ function starten(opt){opt=opt||{};
    else if(d.art==='tiere'){if(opt.beiTiere)try{opt.beiTiere(d)}catch(x){}}   // G8: Rehe nach jedem Takt (solange es welche gibt)
    else if(d.art==='waren'){if(opt.beiWaren)try{opt.beiWaren(d)}catch(x){}}   // G7: Bestände und Aufträge, nur bei Änderung
    else if(d.art==='gladiatoren'){if(opt.beiGladiatoren)try{opt.beiGladiatoren(d)}catch(x){}}   // G9c1: Gladiatoren und Sklavenmarkt, nur bei Änderung
+   else if(d.art==='ortsweg'){Z.ow=d.st}   // N7a4a2: Messwerte der Sperrkarten (höchstens 1× je Sekunde)
    else if(d.art==='weg'){if(opt.beiWeg)try{opt.beiWeg(d)}catch(x){}}   // G6b: Ergebnisse der Wegsuche (Feldliste, Orte, Rechenzeit)
    else if(d.art==='bau'){Z.bauZaehler=d.zaehler;Z.gold=d.gold;Z.baustellen=d.baustellen;if(opt.beiBau)try{opt.beiBau(d)}catch(x){}}   // G5a: nur bei Änderung, mit den Ergebnissen der Bau-Befehle (meld)
    else if(d.art==='rw'){if(opt.beiRw)try{opt.beiRw(d)}catch(x){}if(d.bild&&welt)welt.postMessage({art:'rwBild',buf:d.bild},[d.bild.buffer])}
    else if(d.art==='ws'||d.art==='wsErde'||d.art==='wsStueck'){if(opt.beiWs)try{opt.beiWs(d)}catch(x){}}
    else if(d.art==='standFehler'){ausfall('save not readable: '+d.grund)}
    else if(d.art==='abdruck'||d.art==='laufFertig'||d.art==='rwStand'||d.art==='stand'||d.art==='bauPruefen'||d.art==='glaDaten'){var ok=wartend[d.id];delete wartend[d.id];if(ok)ok(d)}};
-  welt.postMessage({art:'start',seed:(opt.seed==null?1:opt.seed)>>>0,stand:opt.stand||null,ports:ports},ports);
+  welt.postMessage({art:'start',seed:(opt.seed==null?1:opt.seed)>>>0,stand:opt.stand||null,ports:ports,ortsPort:!!opt.ortsPort},ports);   // N7a4a2: ortsPort = Kanal zum Ortskern kommt von der Karte
   document.addEventListener('visibilitychange',sicht);sicht();
  }catch(e){setTimeout(function(){ausfall('no background cores')},0)}
  return H}
