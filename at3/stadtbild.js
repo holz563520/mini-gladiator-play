@@ -2459,14 +2459,14 @@ function ordner(el){var n=el.length,RI=new Int32Array(n),RJ=new Int32Array(n),RW
   if(phase===0){for(;k<n;k++){var e=el[k],b=e.b,i,j,w,h;if(!b){i=e.d.i;j=e.d.j;w=1;h=1}else if(b.rund){i=b.i-1;j=b.j-1;w=b.w+2;h=b.w+2}else{i=b.i;j=b.j;w=b.w;h=b.h}
      RI[k]=i;RJ[k]=j;RW[k]=w;RH[k]=h;X0[k]=(i-j-h)*32;X1[k]=(i+w-j)*32;Y0[k]=(i+j)*16-hoch(b)-((b||e.d).hz|0)*HSTUFE;Y1[k]=(i+w+j+h)*16;
      if(w>1||h>1){for(var fy=Math.floor(Y0[k]/FS);fy<=Math.floor((Y1[k]-1)/FS);fy++)for(var fx=Math.floor(X0[k]/FS);fx<=Math.floor((X1[k]-1)/FS);fx++){var L=F.get(fach(fx,fy));if(!L)F.set(fach(fx,fy),L=[]);L.push(k)}}
-     if((++c&127)===0&&aus&&aus()){k++;return false}}phase=1;k=0}
+     if((++c&31)===0&&aus&&aus()){k++;return false}}phase=1;k=0}
   else if(phase===1){for(;k<n;k++){var ga=gr(k),fy0=Math.floor(Y0[k]/FS),fx0=Math.floor(X0[k]/FS);
      for(var fy2=fy0;fy2<=Math.floor((Y1[k]-1)/FS);fy2++)for(var fx2=fx0;fx2<=Math.floor((X1[k]-1)/FS);fx2++){var L2=F.get(fach(fx2,fy2));if(!L2)continue;
       for(var q=0;q<L2.length;q++){var o=L2[q];if(o===k||(ga&&o<k))continue;                 // Paar groß–groß nur einmal
        if(X1[k]<=X0[o]||X1[o]<=X0[k]||Y1[k]<=Y0[o]||Y1[o]<=Y0[k])continue;
        if(Math.max(fy0,Math.floor(Y0[o]/FS))!==fy2||Math.max(fx0,Math.floor(X0[o]/FS))!==fx2)continue;paar(k,o)}}   // nur im ersten gemeinsamen Fach
-     if((++c&31)===0&&aus&&aus()){k++;return false}}phase=2;k=0;for(var z=0;z<n;z++)if(!ein[z])rein(z)}
-  else if(phase===2){while(heap.length){var v=raus();liste.push(el[v]);for(var x=kopf[v];x>=0;x=nxt[x])if(!--ein[zu[x]])rein(zu[x]);if((++c&127)===0&&aus&&aus())return false}phase=3}
+     if((++c&7)===0&&aus&&aus()){k++;return false}}phase=2;k=0;for(var z=0;z<n;z++)if(!ein[z])rein(z)}
+  else if(phase===2){while(heap.length){var v=raus();liste.push(el[v]);for(var x=kopf[v];x>=0;x=nxt[x])if(!--ein[zu[x]])rein(zu[x]);if((++c&31)===0&&aus&&aus())return false}phase=3}
   else{if(liste.length<n){var da={};liste.forEach(function(e2){da[e2.n]=1});el.filter(function(e2){return!da[e2.n]}).sort(function(a2,b2){return a2.t-b2.t||a2.n-b2.n}).forEach(function(e2){liste.push(e2)})}
    O.liste=liste;return true}}}};
  return O}
@@ -2491,7 +2491,7 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
  var SAUM=opt.saum!==false,saeume=function(e0,i,j){var p=SAUM_RANG[e0.id];if(p==null||(HZ&&lv(i,j)))return;var su=null,v=Math.floor(rausch(i,j,P.seed+177)*SAUM_VAR),sm=i>=0&&j>=0&&i<W&&j<W&&SAUM_WEG.test(P.zellen.charAt(j*W+i))?1:0;
   for(var q=0;q<4;q++){var x=i+SAUM_NB[q][0],y=j+SAUM_NB[q][1];if(x<-U||y<-U||x>=W+U||y>=W+U||(HZ&&lv(x,y)))continue;var nid=bodenId(x,y),np=SAUM_RANG[nid];
    if(np!=null&&np>p)(su||(su=[])).push([nid,q,v,sm])}if(su)e0.su=su};
- var O3=null,L=[],el=[],n=0,stufe=0,qs=-U,qi=-U,qk=0,uj=-U,ui=-U,HL=[],UNTER=null;
+ var O3=null,L=[],el=[],n=0,stufe=0,qs=-U,qi=-U,qk=0,uj=-U,ui=-U,HL=[],UNTER=null,S1=0,hk=0;
  // Burgberg (N6b2c4c3): Felder auf oder neben dem Hügel werden beim Boden gesammelt und als eigene Elemente gehoben gemalt (Felskanten, Boden, Treppen);
  // unter Gebäuden nur die Felskanten (der Boden läge in der Zeichenreihenfolge sonst über den Wänden)
  var lv=function(i,j){return HZ&&i>=0&&j>=0&&i<W&&j<W?HZ.charCodeAt(j*W+i)-48:0},GEH=/[somq]/,TR=[[0,1,'s'],[1,0,'o'],[0,-1,'n'],[-1,0,'w']];
@@ -2502,13 +2502,14 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
   if(tr)dz(tr,l);else if(!UNTER||!UNTER[j*W+i])dz(c==='g'||c==='x'?(rausch(i>>1,j>>1,P.seed+93)<.6?'boden-fels':B.boden[Math.floor(rausch(i>>1,j>>1,P.seed+1)*B.boden.length)]):bodenId(i,j),l)};
  // Mauer, Tore, Türme, Treppen (N6b2d): je Feld Wandstücke an den Vorderkanten (eine Stufe je Teil, vom höheren Boden bzw. Nachbarn bis oben), Turmtür, wo der
  // Wehrgang hineinführt (2 Stufen), Sturz über Toren, oben Wehrgang oder Stufe, dann Zinnen. Unter der Mauer malt der Burgberg seine Felskanten.
- var wehrEls=function(w){var R=wehrLese(w),gA=function(x,y){return x>=0&&y>=0&&x<W&&y<W?R.art(y*W+x):'.'},gL=function(x,y){return R.gang(y*W+x)};
+ var WZ=null;   // N7a2b3: Wehrteile in Abschnitten (je 64 Mauerfelder), WZ = angefangene Arbeit
+ var wehrEls=function(w,aus){if(WZ)return WZ(aus);var R=wehrLese(w),gA=function(x,y){return x>=0&&y>=0&&x<W&&y<W?R.art(y*W+x):'.'},gL=function(x,y){return R.gang(y*W+x)};
   var NG={};w.treppen.forEach(function(t){if(t.nische)NG[t.nische[1]*W+t.nische[0]]=t.gasse});var TD={};w.tuerme.forEach(function(t){var o=t[3];if(!o)return;var mk=function(f,c){var d=f[2]-f[0]===1?'o':f[3]-f[1]===1?'s':'';if(d)TD[(f[1]*W+f[0])+d]=c};   // N6b2e2t: Türen an den vorderen Turmseiten
    o.gang.forEach(function(f){mk(f,'g')});if(o.tuer)mk(o.tuer,'e')});
   // N6b2e1: Turm = Gang + TURM_H (in der Ablage), Rampen davor; eine Rampe deckt die Wand des höheren Nachbarn, in den sie hinaufführt
   var THB={},MKe=w.torhaus&&w.torhaus.length?innenMaske(P):null;(w.torhaus||[]).forEach(function(h){for(var q=0;q<9;q++)THB[(h.j+(q/3|0))*W+h.i+q%3]=[h.i,h.j]});
   var oben=function(x,y){var a=gA(x,y);if(a==='.'||a==='t'||a==='n')return lv(x,y);return gL(x,y)},GEG={o:'w',s:'n'};
-  w.k.forEach(function(k){var i=k%W,j=(k/W)|0,a=R.art(k),L0=R.gang(k),g0=lv(i,j),top=L0,t0=i+j+.02,s;
+  var eins=function(k){var i=k%W,j=(k/W)|0,a=R.art(k),L0=R.gang(k),g0=lv(i,j),top=L0,t0=i+j+.02,s;
    var dz=function(id,z){el.push({t:t0,n:n++,d:{id:id,i:i,j:j,hz:z}})};
    var spiess=[];
    if(a==='n'){var gs=NG[k];dz(gs?bodenId(gs[0],gs[1]):B.weg,g0);return}   // Nische vor dem Treppenfuß: Boden der Gasse daneben
@@ -2529,34 +2530,39 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
      dz(a==='T'?(s===top?'turm-scharte-':'turm-kante-')+q[1]:'mauer-kante-'+q[1],s)}});
    var st=R.stufe(k);dz(a==='r'?'fels-treppe-'+st:a!=='T'&&st!=='.'?'mauer-rampe-'+st:'mauer-gang',top);
    var zb=R.zinne(k);if(zb)['n','w','o','s'].forEach(function(d){if(zb&ZBIT[d])dz(zinneWahl(d,i,j,P.seed),top)});
-   spiess.forEach(function(sp2){dz('torhaus-spiesse-'+sp2[0]+(rausch(i,j,P.seed+151)<.5?'':'-a'),sp2[1])})})};   // Köpfe auf Spießen über der Mitte der Außenseite
+   spiess.forEach(function(sp2){dz('torhaus-spiesse-'+sp2[0]+(rausch(i,j,P.seed+151)<.5?'':'-a'),sp2[1])})};var ix=0;WZ=function(aus){var nz=0;for(;ix<w.k.length;ix++){if((++nz&63)===0&&aus&&aus())return false;eins(w.k[ix])}WZ=null;return true};return WZ(aus)};   // Köpfe auf Spießen über der Mitte der Außenseite
  // N6b3c2 Säulenhallen: je Laden- und Gangfeld ein Randstück auf der Stufe des Forums (opt.forumBild:false = schlichter Marmorplatz wie bisher)
  var forumEls=function(F){for(var y=F.j;y<F.j+F.h;y++)for(var x=F.i;x<F.i+F.w;x++){var id=forumId(F,x,y,P.seed);if(id)el.push({t:x+y+.02,n:n++,d:{id:id,i:x,j:y,hz:F.hz|0}})}};
  // Liste füllen, auf Wunsch in Schritten: aus() → true, wenn der Zeitanteil um ist (Kachelbauer); bauer() füllt am Stück wie bisher
  var fuellen=function(aus){var c=0;while(stufe<5){
    if(stufe===0){for(;qs<=2*(W-1)+U;qs++,qi=-U){for(;qi<W+U;qi++){var j=qs-qi;if(j<-U||j>=W+U)continue;var e0={k:0,id:bodenId(qi,j),X:bx(qi,j),Y:by(qi,j)+16};if(SAUM)saeume(e0,qi,j);L.push(e0);
       if(HZ&&qi>=0&&j>=0&&qi<W&&j<W&&(lv(qi,j)||lv(qi+1,j)||lv(qi-1,j)||lv(qi,j+1)||lv(qi,j-1)))HL.push(j*W+qi);
-      if((++c&255)===0&&aus&&aus()){qi++;return false}}}stufe=1}
-   else if(stufe===1){var WE=P.wehr;P.bauten.forEach(function(b){if(WE&&b.rolle==='mauer')return;el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});if(WE)wehrEls(WE);var FM=P.forum&&opt.forumBild!==false&&opt.forumMitte!==false;if(P.forum&&opt.forumBild!==false)forumEls(P.forum);
+      if((++c&63)===0&&aus&&aus()){qi++;return false}}}stufe=1}
+   else if(stufe===1){if(S1===1){if(HL.length){UNTER=new Uint8Array(W*W);P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)UNTER[y*W+x]=1})}S1=2;if(aus&&aus())return false}
+    if(S1===2){var nz=0;for(;hk<HL.length;hk++){if((++nz&31)===0&&aus&&aus())return false;huegelEl(HL[hk]%W,(HL[hk]/W)|0)}HL=null;stufe=U?2:3;if(aus&&aus())return false;continue}   // N7a2b3: Hügel in Abschnitten
+    var WE=P.wehr;if(S1===0){P.bauten.forEach(function(b){if(WE&&b.rolle==='mauer')return;el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});S1=3;if(aus&&aus())return false}
+    if(S1===3){if(WE&&!wehrEls(WE,aus))return false;S1=4;if(aus&&aus())return false}var FM=P.forum&&opt.forumBild!==false&&opt.forumMitte!==false;if(P.forum&&opt.forumBild!==false)forumEls(P.forum);
      if(FM)forumGanzEls(P.forum).forEach(function(b){el.push({t:b.i+b.j+(b.w+b.h)/2,n:n++,b:b})});   // N6b3c3 Bühne und Reiter (opt.forumMitte:false = alter Stand)
-     P.dinge.forEach(function(d){if(FM&&d.rolle==='forum')return;el.push({t:d.i+d.j+1.02,n:n++,d:d})});if(HL.length){UNTER=new Uint8Array(W*W);P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)UNTER[y*W+x]=1})}
-   HL.forEach(function(k){huegelEl(k%W,(k/W)|0)});HL=null;stufe=U?2:3;if(aus&&aus())return false}
+     P.dinge.forEach(function(d){if(FM&&d.rolle==='forum')return;el.push({t:d.i+d.j+1.02,n:n++,d:d})});S1=1;if(aus&&aus())return false}   // N7a2b3: Rest (Unterbau, Hügel) im nächsten Abschnitt
    else if(stufe===2){for(;uj<W+U;uj++,ui=-U){for(;ui<W+U;ui++){if(ui>=0&&uj>=0&&ui<W&&uj<W)continue;
       if(rausch(ui,uj,P.seed+21)<B.dichte*(1+.15*Math.max(ui<0?-ui:ui-W+1,uj<0?-uj:uj-W+1)))el.push({t:ui+uj+1.02,n:n++,d:{id:B.baeume[Math.floor(rausch(ui,uj,P.seed+22)*B.baeume.length)],i:ui,j:uj}})}}stufe=3}
    else if(stufe===3){if(!O3)O3=ordner(el);if(!O3.weiter(aus))return false;el=O3.liste;O3=null;stufe=4;if(aus&&aus())return false}
    else{for(;qk<el.length;qk++){var e=el[qk];if(e.d)L.push({k:1,id:e.d.id,X:bx(e.d.i,e.d.j),Y:by(e.d.i,e.d.j)+16-(e.d.hz|0)*HSTUFE,fi:e.d.i,fj:e.d.j});   // N7a2b2: fi/fj = vorderstes Feld (Bodenbilder der Karte)
       else{var b=e.b,ox=b.rund?b.i-1:b.i,oy=b.rund?b.j-1:b.j,fw=b.w,fh=b.h;if(b.rund){var R=bk.bilde('rund',b.w,b.w,b.klasse);fw=R.w;fh=R.h}L.push({k:2,b:b,X:bx(ox,oy),Y:by(ox,oy)-(b.hz|0)*HSTUFE,fw:fw,fh:fh,fi:ox+fw-1,fj:oy+fh-1})}
-      if((++c&255)===0&&aus&&aus()){qk++;return false}}el=null;stufe=5}}return true};
+      if((++c&63)===0&&aus&&aus()){qk++;return false}}el=null;stufe=5}}return true};
  if(!opt.inSchritten)fuellen(null);
  // Gebäude zusammensetzen (Baukasten); N6b: Teile des Biom-Satzes (bk-putz-…) vor den Klassenteilen, fehlt eins, gilt das Klassenteil
- var bauBild=function(e){var b=e.b,R;if(b.ganz){var fg=forumGanzBild(b,hole);if(!fg.sp)return{sp:{w:0,h:0,ax:0,ay:0,px:new Uint8Array(0)},X:e.X,Y:e.Y,fehlt:fg.fehlt,teile:0};fg.X=e.X;fg.Y=e.Y;return fg}
-  var gz=b.id==='temple'||b.id==='theatre'||b.id==='governor'||b.id==='senate'||b.id==='royal-palace'||PRESSE_ID[b.id]||(b.hv&&b.rolle==='hof')||(b.pv&&(b.rolle==='posten'||b.rolle==='stollen'))?ganzBild(b,hole):b.bv&&b.rolle==='shack'?budeBild(b,hole):null;if(gz){gz.X=e.X;gz.Y=e.Y;return gz}   // N6b3b1 Tempel als Ganzbild mit Wechselschild, N6b3d Theater
+ // N7a2b3 (Thomas 24.11.2026): bauAuftrag(e) baut dasselbe Bild in Abschnitten (weiter(aus) → true, wenn fertig; ergebnis() wie bauBild), für die Karte ≤ 8 ms je Schritt.
+ // Ganzbilder (Tempel, Theater, Höfe, Buden, Forum) bleiben am Stück. bauBild(e) = bauAuftrag am Stück, Ergebnis gleich wie vorher.
+ var bauAuftrag=function(e){var b=e.b,R,FG=function(r){return{weiter:function(){return true},ergebnis:function(){return r}}};if(b.ganz){var fg=forumGanzBild(b,hole);if(!fg.sp)return FG({sp:{w:0,h:0,ax:0,ay:0,px:new Uint8Array(0)},X:e.X,Y:e.Y,fehlt:fg.fehlt,teile:0});fg.X=e.X;fg.Y=e.Y;return FG(fg)}
+  var gz=b.id==='temple'||b.id==='theatre'||b.id==='governor'||b.id==='senate'||b.id==='royal-palace'||PRESSE_ID[b.id]||(b.hv&&b.rolle==='hof')||(b.pv&&(b.rolle==='posten'||b.rolle==='stollen'))?ganzBild(b,hole):b.bv&&b.rolle==='shack'?budeBild(b,hole):null;if(gz){gz.X=e.X;gz.Y=e.Y;return FG(gz)}   // N6b3b1 Tempel als Ganzbild mit Wechselschild, N6b3d Theater
   if(b.rund){R=bk.bilde('rund',b.w,b.w,b.klasse);R.dinge=[];R.tueren=[]}
   else R={w:b.w,h:b.h,c:new Array(b.w*b.h).fill('b'),klasse:b.klasse,achse:b.achse,dach:b.dach||'sattel',offen:false,tueren:b.tuer?[[b.tuer[0]-b.i,b.tuer[1]-b.j,b.tuer[2],b.tuer[3]]]:[],spina:[],dinge:[],geschosse:b.g||1};
   var vs=b.satz?'bk-'+KURZ[b.klasse]+'-':null;
-  var r=bk.setzen(R,function(id){if(vs&&id.indexOf(vs)===0){var o=hole('bk-'+b.satz+'-'+id.slice(vs.length));if(o)return o}return teil(id,b.klasse,b.wand,b.dachR)},b.dach||'',true);
-  return{sp:{w:r.w,h:r.h,ax:r.ax,ay:r.ay,px:r.px},X:e.X,Y:e.Y,fehlt:r.fehlt,teile:r.teile}};
- return{w:Zw,h:Zh,ax:bx(0,0),ay:by(0,0),bx:bx,by:by,W:W,U:U,L:L,hole:hole,bauBild:bauBild,fuellen:fuellen,voll:function(){return stufe===5},
+  var A=bk.setzenAuftrag(R,function(id){if(vs&&id.indexOf(vs)===0){var o=hole('bk-'+b.satz+'-'+id.slice(vs.length));if(o)return o}return teil(id,b.klasse,b.wand,b.dachR)},b.dach||'',true);
+  return{weiter:A.weiter,ergebnis:function(){var r=A.ergebnis();return r?{sp:{w:r.w,h:r.h,ax:r.ax,ay:r.ay,px:r.px},X:e.X,Y:e.Y,fehlt:r.fehlt,teile:r.teile}:null}}};
+ var bauBild=function(e){var A=bauAuftrag(e);A.weiter(null);return A.ergebnis()};
+ return{w:Zw,h:Zh,ax:bx(0,0),ay:by(0,0),bx:bx,by:by,W:W,U:U,L:L,hole:hole,bauBild:bauBild,bauAuftrag:bauAuftrag,fuellen:fuellen,voll:function(){return stufe===5},
   // N7a2b1: Boden eines Planfelds wie in Stufe 0 (Kennung und Säume), für die Bodenbilder der Karte (ortsflaeche.js), ohne die Liste zu füllen
   boden:function(i,j){var e={id:bodenId(i,j)};if(SAUM)saeume(e,i,j);return e}}}
 // Nach Tiefe sortieren wie sort(t, dann n), aber linear: alle Tiefen sind Vielfache von 1/50 (i + j + (w + h)/2 bzw. + 1,02), Zählsortierung ist stabil (n steigt schon)

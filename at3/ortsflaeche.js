@@ -21,7 +21,7 @@ var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152;   // N7a2b2: LISTEN Orte
 var CODES='gsomfwepxqyuh', FARBE_RGB=[[104,138,64],[150,128,96],[156,150,138],[216,210,198],[186,160,84],[56,98,150],[112,86,58],[124,154,78],[122,116,108],[140,134,122],[128,92,58],[214,194,146],[146,118,84]];
 var DACH_RGB=[150,66,48], WAND_RGB=[202,180,140], MAUER_RGB=[150,146,136];
 function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,sprite=new Map(),SBx=null,KL=null,EMS=[];
- var ECHT=true,HGR=HAUS,LI=[],HB=new Map(),HBB=0,AUF=[],INQ=new Set(),FERTIG=new Set(),GEB=new Set(),HST={wieder:0,gebaut:0,ms:0,maxMs:0,listen:0,listeMs:0,verworfen:0};   // N7a2b2   // N7a2b1: SBx = stadtbild.js, KL = Kartei-Lader (bilder())
+ var ECHT=true,HGR=HAUS,LI=[],HB=new Map(),HBB=0,AUF=[],AKT=null,ABSCHNITTE=true,INQ=new Set(),FERTIG=new Set(),GEB=new Set(),HST={wieder:0,gebaut:0,ms:0,maxMs:0,listen:0,listeMs:0,verworfen:0,pausen:0};   // N7a2b2   // N7a2b1: SBx = stadtbild.js, KL = Kartei-Lader (bilder())
  var jetzt=typeof performance!=='undefined'?function(){return performance.now()}:function(){return Date.now()};
  function um(x){x%=WX;return x<0?x+WX:x}
  function nah(p,c){var b=0,bd=1e9;for(var i=0;i<64;i++){var v=p[i],dr=(v&255)-c[0],dg=((v>>8)&255)-c[1],db=((v>>16)&255)-c[2],d=dr*dr*3+dg*dg*6+db*db;if(d<bd){bd=d;b=i}}return b}
@@ -93,15 +93,20 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  // Arbeit in Zeitanteilen (Bildkern, Regel 20): erst Listen füllen, dann Gebäudebilder bauen. Gibt true, wenn noch Arbeit übrig ist.
  function schritt(budget){budget=budget||4;var t0=jetzt(),aus=function(){return jetzt()-t0>=budget};
   for(var a=LI.length-1;a>=0;a--){var o=orte.get(LI[a]);if(!o||!o.fuell)continue;if(!fuellen(o,aus))return true;if(aus())return true}
-  while(AUF.length){if(aus())return true;var w=AUF.shift();INQ.delete(w.key);var o2=orte.get(w.k);if(!o2||!o2.EF||o2.E!==w.E||HB.has(w.key))continue;
-   var t1=jetzt(),r=null;try{r=o2.E.bauBild(o2.E.L[w.q])}catch(x){r=null}var d=jetzt()-t1;HST.ms+=d;if(d>HST.maxMs)HST.maxMs=d;
+  // N7a2b3 (Thomas 24.11.2026): ein Gebäudebild in Abschnitten (bauAuftrag), angefangene Arbeit (AKT) geht im nächsten Zeitanteil weiter, größter Schritt ≤ 8 ms gedrosselt
+  while(AUF.length||AKT){if(aus())return true;var w,o2;
+   if(AKT){w=AKT.w;o2=orte.get(w.k);if(!o2||!o2.EF||o2.E!==w.E||HB.has(w.key)){AKT=null;continue}}
+   else{w=AUF.shift();INQ.delete(w.key);o2=orte.get(w.k);if(!o2||!o2.EF||o2.E!==w.E||HB.has(w.key))continue;
+    try{AKT={w:w,A:ABSCHNITTE&&o2.E.bauAuftrag?o2.E.bauAuftrag(o2.E.L[w.q]):{weiter:function(){return true},ergebnis:(function(E,q){return function(){return E.bauBild(E.L[q])}})(o2.E,w.q)}}}catch(x){AKT=null;continue}}
+   var t1=jetzt(),r=null,fertig=true;try{fertig=AKT.A.weiter(ABSCHNITTE?aus:null);if(fertig)r=AKT.A.ergebnis()}catch(x){r=null;fertig=true}var d=jetzt()-t1;HST.ms+=d;if(d>HST.maxMs)HST.maxMs=d;
+   if(!fertig){HST.pausen++;return true}AKT=null;
    if(!r||!r.sp||!r.sp.w){if(r&&r.fehlt&&r.fehlt.length&&KL.wuensche())o2.wartet=true;continue}
    if(r.fehlt&&r.fehlt.length&&KL.wuensche()){o2.wartet=true;continue}   // Teile werden noch geladen: Klotz bleibt, nach dem Laden neu
    hausRein(w.key,{sp:r.sp,X:r.X,Y:r.Y});HST.gebaut++;
    // schon einmal gebaut und verdrängt: kein neues „ortNeu“ (sonst bauen und verdrängen sich zu viele Häuser im Bild gegenseitig immer wieder), erscheint beim nächsten Neuzeichnen
    if(GEB.has(w.key))HST.wieder++;else{GEB.add(w.key);if(GEB.size>65536)GEB.clear();FERTIG.add(stk(o2.x0+w.fi,o2.y0+w.fj))}}
   return false}
- function arbeitOffen(){if(AUF.length)return true;for(var a=0;a<LI.length;a++){var o=orte.get(LI[a]);if(o&&o.fuell)return true}return false}
+ function arbeitOffen(){if(AUF.length||AKT)return true;for(var a=0;a<LI.length;a++){var o=orte.get(LI[a]);if(o&&o.fuell)return true}return false}
  // Elemente eines Orts, deren vorderstes Feld in diesem Bild liegt (1×): Einträge wie natur.sammeln; fehlt ein Gebäudebild, der Klotz und ein Bauauftrag
  function elementeIns(o,aus,i0,j0,n){var E=o.E,L=E.L,N=L.length,z=0,dx=E.ax+(i0-j0)*32,dy=E.ay+(i0+j0)*16+o.s0*8;
   for(var fj=Math.max(0,j0)>>3;fj<=Math.min(o.W-1,j0+n-1)>>3;fj++)for(var fi=Math.max(0,i0)>>3;fi<=Math.min(o.W-1,i0+n-1)>>3;fi++){var f=o.EF.get(fi*4096+fj);if(!f)continue;
@@ -140,10 +145,11 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
   return{x:um(t.x+t.dx),y:Math.max(0,Math.min(BB.WY-1,t.y+(t.dy<0?-1:1)*(t.halb+1)))}}
  return{RAMPE:RAMPE,HALTEN:HALTEN,orte:orte,aufnehmen:aufnehmen,stuecke:stuecke,bedarf:bedarf,flachen:flachen,bei:bei,frei:frei,fuerBild:fuerBild,imOrt:imOrt,hinaus:hinaus,
   // N7a2b1: echte Böden einschalten (sb = stadtbild.js, kl = karteilader.js neu(…)); wartende() → Kartenstücke der Orte, die auf Kartei-Bilder gewartet haben
-  bilder:function(sb,kl,opt){SBx=sb||null;KL=kl||null;ECHT=!(opt&&opt.haeuser===false);HGR=opt&&opt.hausSpeicher||HAUS},   // hausSpeicher: nur für Tests   // N7a2b2: opt.haeuser:false = Gebäude bleiben Klötze (Notausschalter ?n7a2b2=0)
+  bilder:function(sb,kl,opt){SBx=sb||null;KL=kl||null;ECHT=!(opt&&opt.haeuser===false);HGR=opt&&opt.hausSpeicher||HAUS;ABSCHNITTE=!(opt&&opt.abschnitte===false)},   // N7a2b3: opt.abschnitte:false = Gebäudebilder am Stück (Notausschalter ?n7a2b3=0)   // hausSpeicher: nur für Tests   // N7a2b2: opt.haeuser:false = Gebäude bleiben Klötze (Notausschalter ?n7a2b2=0)
   schritt:schritt,arbeitOffen:arbeitOffen,
   fertige:function(){var L=[];FERTIG.forEach(function(k){L.push(k)});FERTIG.clear();return L},fertigeZahl:function(){return FERTIG.size},
-  haeuser:function(){return{listen:LI.length,bilder:HB.size,bytes:HBB,grenze:HGR,auftraege:AUF.length,gebaut:HST.gebaut,wieder:HST.wieder,ms:HST.ms,maxMs:HST.maxMs,listeMaxMs:HST.listeMs,listenVerworfen:HST.verworfen}},
+  messNeu:function(){HST.maxMs=0;HST.listeMs=0;HST.pausen=0},   // N7a2b3: Höchstwerte neu (Messfeld)
+  haeuser:function(){return{listen:LI.length,bilder:HB.size,bytes:HBB,grenze:HGR,auftraege:AUF.length,gebaut:HST.gebaut,wieder:HST.wieder,ms:HST.ms,maxMs:HST.maxMs,listeMaxMs:HST.listeMs,listenVerworfen:HST.verworfen,pausen:HST.pausen,angefangen:!!AKT}},
   wartende:function(){var L=[];orte.forEach(function(o){if(!o.wartet)return;o.wartet=false;L=L.concat(stuecke(o))});return L},
   elementeMs:function(){var m=0;EMS.forEach(function(v){if(v>m)m=v});return m},
   leeren:function(){orte.clear();gefragt.clear();LI.length=0;AUF.length=0;INQ.clear();FERTIG.clear();GEB.clear()},vergessenAlle:function(){gefragt.clear()},vergessen:function(k){gefragt.delete(k)},

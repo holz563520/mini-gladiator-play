@@ -254,7 +254,7 @@ function dachFeld(L,form,i,j){if(form==='flach')return{d:0,t:'dach-flach'};
  if(r.d>=DMAX)r={d:DMAX,t:'dach-flach'};return r}
 // L: Grundform (bilde/drehe), hole(id) → Speicherbild oder null, dachform: 'sattel'|'walm'|'flach' (leer = wie die Grundform), ohneWiese: Wiesenfelder weglassen
 // (für First Person, das Gebäude steht dort auf der eigenen Wiese). Ergebnis: {w,h,ax,ay,px,teile,fehlt}
-function setzen(L,hole,dachform,ohneWiese){
+function setzenAuftrag(L,hole,dachform,ohneWiese){
  var K=klasse(L.klasse),NG=L.offen||!L.dach?1:Math.max(1,Math.min(GMAX,L.geschosse|0||1)),TR=TRAUFE+(NG-1)*GH;hole=massHoler(hole,K.id);
  var gemerkt={},fehlt={},stueck=[],bod=[],seq=0,i,j,form=L.dach?(dachform||L.dach):null;
  function sp(id,gesp,r){var key=id+(gesp?'|m':'')+(r?'|'+r:'');if(gemerkt[key]!==undefined)return gemerkt[key];var o=hole(id),b=null;
@@ -285,30 +285,39 @@ function setzen(L,hole,dachform,ohneWiese){
   return R}
  function dazu(s,x,y,tief,m){if(s)stueck.push({sp:s,x:x,y:y,tief:tief,n:seq++,m:m|0})}
  var BODEN={g:'boden-gras',b:teil('boden'),o:teil('boden'),f:'bk-feld',r:teil('rang'),s:'boden-sand'};
- for(j=0;j<L.h;j++)for(i=0;i<L.w;i++){if(ohneWiese&&zelle(L,i,j)==='g')continue;var s0=sp(wahl(BODEN[zelle(L,i,j)],i,j));if(s0)bod.push({sp:s0,x:(i-j)*32,y:(i+j)*16+16,m:0})}
  var um=function(c){return c==='b'||c==='r'||c==='s'},tuer={};L.tueren.forEach(function(e){tuer[e.join(',')]=1});
  // Kante zwischen Zelle (i, j) und (i+di, j+dj): gehört der Nord- bzw. Westkante der Zelle mit dem größeren Index
  function kante(i,j,di,dj,id,hub,vorn){var oi=di>0?i+1:i,oj=dj>0?j+1:j,m=vorn&&L.offen?3:0;id=wahl(id,oi,oj+(di?1009:0));
   if(di)dazu(sp(id),(oi-oj-1)*32,(oi+oj+1)*16-hub,oi+oj,m);else dazu(sp(id,true),(oi+1-oj)*32,(oi+oj+1)*16-hub,oi+oj,m)}
  var R=[[-1,0],[1,0],[0,-1],[0,1]];
- for(j=0;j<L.h;j++)for(i=0;i<L.w;i++){if(!um(zelle(L,i,j)))continue;
-  R.forEach(function(d){if(um(zelle(L,i+d[0],j+d[1])))return;var vorn=d[0]>0||d[1]>0;kante(i,j,d[0],d[1],teil(tuer[[i,j,d[0],d[1]].join(',')]?'tuer':'wand'),0,vorn);
-   for(var g=1;g<NG;g++)kante(i,j,d[0],d[1],teil(rausch(i*3+d[0]+7,j*3+d[1]+7,90+g)<.8?'fenster':'wand-oben'),g*GH,vorn)})}   // Obergeschosse: meist mit Fenster
- L.spina.forEach(function(e){kante(e[0],e[1],e[2],e[3],teil('wand'),0,false)});
- if(form)for(j=0;j<L.h;j++)for(i=0;i<L.w;i++){if(zelle(L,i,j)!=='b')continue;var D=dachFeld(L,form,i,j);
-  var rd=rand(D,i,j,form),rid=wahl(rd.id,i,j),ox=(i-j)*32,oy=(i+j)*16-(TR+D.d*STEP);
-  if(rd.id!==teil(D.t))dazu(sp(wahl(teil(D.t),i,j)),ox,oy,i+j+1.5);   // darunter die Innenplatte, damit der Überhang keine Lücke lässt
-  dazu(sp(rid),ox+rd.x,oy+rd.y,i+j+1.5);
-  if(form!=='sattel')continue;
-  var quer=L.achse==='i'?[[-1,0],[1,0]]:[[0,-1],[0,1]],spitze=D.t==='dach-auf-j'||D.t==='dach-auf-i'?'giebel-auf':D.t==='dach-flach'?null:'giebel-ab';
-  quer.forEach(function(d){if(zelle(L,i+d[0],j+d[1])==='b')return;kante(i,j,d[0],d[1],teil('giebel'),TR-STEP+3);for(var k=0;k<D.d;k++)kante(i,j,d[0],d[1],teil('giebel'),TR+k*STEP);
-   if(spitze)kante(i,j,d[0],d[1],teil(spitze),TR+D.d*STEP)})}
- L.dinge.forEach(function(d){dazu(sp(d.id,false,d.r),(d.i-d.j)*32,(d.i+d.j)*16+16,d.i+d.j+.9)});
- stueck.sort(function(a,b){return a.tief-b.tief||a.n-b.n});
- var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;bod.concat(stueck).forEach(function(e){var a=e.x-e.sp.ax,b=e.y-e.sp.ay;if(a<x0)x0=a;if(b<y0)y0=b;if(a+e.sp.w>x1)x1=a+e.sp.w;if(b+e.sp.h>y1)y1=b+e.sp.h});
- var w=x1-x0,h=y1-y0,px=new Uint8Array(w*h).fill(LEER),pal=ID,bb=BB();
- bod.forEach(function(e){kopiere(px,w,-x0,-y0,e)});stueck.forEach(function(e){if(e.m)bb.malen(px,w,-x0,-y0,pal,e,0);else kopiere(px,w,-x0,-y0,e)});   // kniehohe Vorderwände wie baubild.js
- return{w:w,h:h,ax:-x0,ay:-y0,px:px,teile:bod.length+stueck.length,fehlt:Object.keys(fehlt)}}
+ // N7a2b3 (Thomas 24.11.2026, größter Arbeitsschritt ≤ 8 ms): dieselbe Arbeit in Abschnitten, Reihe für Reihe bzw. Teil für Teil; aus() → true heißt pausieren.
+ // Ohne aus (setzen) läuft alles am Stück, Ergebnis Bildpunkt für Bildpunkt gleich.
+ var ph=0,rj=0,ix=0,w,h,x0,y0,px,bb,ALLE,ERG=null;
+ function weiter(aus){var nz=0;   // nz: Arbeit in diesem Aufruf (erst nach etwas Arbeit pausieren, sonst kein Fortschritt)
+  if(ph===0){for(;rj<L.h;rj++){if(nz++&&aus&&aus())return false;for(i=0;i<L.w;i++){if(ohneWiese&&zelle(L,i,rj)==='g')continue;var s0=sp(wahl(BODEN[zelle(L,i,rj)],i,rj));if(s0)bod.push({sp:s0,x:(i-rj)*32,y:(i+rj)*16+16,m:0})}}ph=1;rj=0}
+  if(ph===1){for(;rj<L.h;rj++){if(nz++&&aus&&aus())return false;var jj=rj;for(i=0;i<L.w;i++){if(!um(zelle(L,i,jj)))continue;var ii=i;
+    R.forEach(function(d){if(um(zelle(L,ii+d[0],jj+d[1])))return;var vorn=d[0]>0||d[1]>0;kante(ii,jj,d[0],d[1],teil(tuer[[ii,jj,d[0],d[1]].join(',')]?'tuer':'wand'),0,vorn);
+     for(var g=1;g<NG;g++)kante(ii,jj,d[0],d[1],teil(rausch(ii*3+d[0]+7,jj*3+d[1]+7,90+g)<.8?'fenster':'wand-oben'),g*GH,vorn)})}}   // Obergeschosse: meist mit Fenster
+   L.spina.forEach(function(e){kante(e[0],e[1],e[2],e[3],teil('wand'),0,false)});ph=2;rj=0}
+  if(ph===2){if(form)for(;rj<L.h;rj++){if(nz++&&aus&&aus())return false;j=rj;for(i=0;i<L.w;i++){if(zelle(L,i,j)!=='b')continue;var D=dachFeld(L,form,i,j);
+    var rd=rand(D,i,j,form),rid=wahl(rd.id,i,j),ox=(i-j)*32,oy=(i+j)*16-(TR+D.d*STEP);
+    if(rd.id!==teil(D.t))dazu(sp(wahl(teil(D.t),i,j)),ox,oy,i+j+1.5);   // darunter die Innenplatte, damit der Überhang keine Lücke lässt
+    dazu(sp(rid),ox+rd.x,oy+rd.y,i+j+1.5);
+    if(form!=='sattel')continue;
+    var quer=L.achse==='i'?[[-1,0],[1,0]]:[[0,-1],[0,1]],spitze=D.t==='dach-auf-j'||D.t==='dach-auf-i'?'giebel-auf':D.t==='dach-flach'?null:'giebel-ab';
+    var qi=i,qj=j,QD=D;quer.forEach(function(d){if(zelle(L,qi+d[0],qj+d[1])==='b')return;kante(qi,qj,d[0],d[1],teil('giebel'),TR-STEP+3);for(var k=0;k<QD.d;k++)kante(qi,qj,d[0],d[1],teil('giebel'),TR+k*STEP);
+     if(spitze)kante(qi,qj,d[0],d[1],teil(spitze),TR+QD.d*STEP)})}}
+   if(aus&&aus()){ph=3;return false}ph=3}
+  if(ph===3){L.dinge.forEach(function(d){dazu(sp(d.id,false,d.r),(d.i-d.j)*32,(d.i+d.j)*16+16,d.i+d.j+.9)});
+   stueck.sort(function(a,b){return a.tief-b.tief||a.n-b.n});
+   x0=1e9;y0=1e9;var x1=-1e9,y1=-1e9;ALLE=bod.concat(stueck);ALLE.forEach(function(e){var a=e.x-e.sp.ax,b=e.y-e.sp.ay;if(a<x0)x0=a;if(b<y0)y0=b;if(a+e.sp.w>x1)x1=a+e.sp.w;if(b+e.sp.h>y1)y1=b+e.sp.h});
+   w=x1-x0;h=y1-y0;px=new Uint8Array(w*h).fill(LEER);bb=BB();ph=4;ix=0;if(aus&&aus())return false}
+  if(ph===4){for(;ix<ALLE.length;ix++){if((++nz&7)===0&&aus&&aus())return false;var e=ALLE[ix];if(e.m)bb.malen(px,w,-x0,-y0,ID,e,0);else kopiere(px,w,-x0,-y0,e)}   // kniehohe Vorderwände wie baubild.js
+   ERG={w:w,h:h,ax:-x0,ay:-y0,px:px,teile:bod.length+stueck.length,fehlt:Object.keys(fehlt)};ALLE=null;ph=5}
+  return true}
+ return{weiter:weiter,ergebnis:function(){return ERG}}}
+// Am Stück (wie bisher): L, hole, dachform, ohneWiese → {w,h,ax,ay,px,teile,fehlt}
+function setzen(L,hole,dachform,ohneWiese){var A=setzenAuftrag(L,hole,dachform,ohneWiese);A.weiter(null);return A.ergebnis()}
 var MALMERK=typeof WeakMap!=='undefined'?new WeakMap():null;
 var ID=(function(){var a=[];for(var i=0;i<256;i++)a.push(i);return a})();
 // Fertiges Bild → Speicherformat (für First Person, Prüfer), Anker unten in der Mitte
@@ -316,6 +325,6 @@ function zuBild(r,kat){var g={w:r.w,h:r.h,px:r.px};return alsBild(kat||'einricht
 
 var BK={KLASSEN:KLASSEN,DACHFORMEN:DACHFORMEN,TEILE:TEILE,OBEN:['fenster','wand-oben'],PLATTEN:PLATTEN,MUSTER:MUSTER,STEP:STEP,TRAUFE:TRAUFE,DMAX:DMAX,
  MASS:MASS,GESCHOSS:GH,GMAX:GMAX,HNEU:HNEU,feld:feld,strecke:strecke,obergeschoss:obergeschoss,massHoler:massHoler,
- klasse:klasse,kennung:kennung,teile:teile,feldObjekt:feldObjekt,umfaerben:umfaerben,bilde:bilde,drehe:drehe,muster:muster,setzen:setzen,zuBild:zuBild,dachFeld:dachFeld,zelle:zelle};
+ klasse:klasse,kennung:kennung,teile:teile,feldObjekt:feldObjekt,umfaerben:umfaerben,bilde:bilde,drehe:drehe,muster:muster,setzen:setzen,setzenAuftrag:setzenAuftrag,zuBild:zuBild,dachFeld:dachFeld,zelle:zelle};
 if(typeof module!=='undefined'&&module.exports)module.exports=BK;else G.AT3_BAUKASTEN=BK;
 })(typeof window!=='undefined'?window:globalThis);

@@ -21,6 +21,7 @@
 // Park gewinnt (Kartenstück mit Gebautem bleibt, wie es ist); Startplatz-Wahl hält Abstand von Orten. Notausschalter ?n7a2=0.
 // N7a2b1: echte Böden der Orte in 1× aus der Kartei (stadtbild.js elemente().boden, karteilader.js höchstens 4 MB, nur gebrauchte Bilder); Notausschalter ?n7a2b=0.
 // N7a2b2: echte Häuser, Mauern, Dinge in 1× (ortsflaeche.js schritt/fertige, Gebäudebilder ≤ 2 MB, 4 Orte mit Liste, gebündelt alle 0,3 s); Notausschalter ?n7a2b2=0.
+// N7a2b3: Gebäudebilder in Abschnitten (stadtbild.js bauAuftrag, größter Schritt ≤ 8 ms gedrosselt), Messfeld in der Weltkarte mit ?mess=1; Notausschalter ?n7a2b3=0.
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
 var HR=self.AT3HERRSCHAFT, REI=true, RE=null;   // N4c1: Reiche in den Fernbildern (Knopf „Realms“), Tafeln einmal je Welt
@@ -49,11 +50,11 @@ function ortsBedarf(){var O=ofl();if(!O||!A||kx<0)return;var b=O.bedarf(A,seed,O
 var ORTMS=[];
 // N7a2b1: echte Böden der Orte in 1× (Thomas 24.11.2026): stadtbild.js samt Teilen erst beim ersten Ort laden (eingebettet sind sie vom Ortskern schon da),
 // Kartei-Bilder nur, wenn ein Bodenbild sie braucht (karteilader.js, höchstens 4 MB); fertig geladen → „ortNeu“ für die wartenden Orte. Notausschalter ?n7a2b=0.
-var N7A2B=!/[?&]n7a2b=0/.test(self.location.search),N7A2B2=!/[?&]n7a2b2=0/.test(self.location.search),KL=null,KLL=false,KLN=false;
+var N7A2B=!/[?&]n7a2b=0/.test(self.location.search),N7A2B2=!/[?&]n7a2b2=0/.test(self.location.search),N7A2B3=!/[?&]n7a2b3=0/.test(self.location.search),KL=null,KLL=false,KLN=false;
 function echteBoeden(){if(!N7A2B||KL===false||!OFL)return;if(KL)return;var Q=self.location.search;
  try{if(!self.AT3_STADTBILD)importScripts('at3-64.js'+Q,'baubild.js'+Q,'baukasten.js'+Q,'stadtliste.js'+Q,'landwirtschaft.js'+Q,'begehbar.js'+Q,'stadtbild.js'+Q);
   if(!self.AT3KARTEILADER)importScripts('karteilader.js'+Q);
-  KL=self.AT3KARTEILADER.neu(function(id){return fetch('kartei/obj/'+encodeURIComponent(id)+'.json'+Q).then(function(r){return r.ok?r.json():null})});OFL.bilder(self.AT3_STADTBILD,KL,{haeuser:N7A2B2})}
+  KL=self.AT3KARTEILADER.neu(function(id){return fetch('kartei/obj/'+encodeURIComponent(id)+'.json'+Q).then(function(r){return r.ok?r.json():null})});OFL.bilder(self.AT3_STADTBILD,KL,{haeuser:N7A2B2,abschnitte:N7A2B3})}
  catch(x){KL=false}}
 function nachladen(){if(!KL||!KL.wuensche())return;if(KLL){KLN=true;return}KLL=true;var g=gen;
  KL.laden().then(function(){KLL=false;if(g===gen&&OFL){var L=OFL.wartende(),k=KL.stand();if(L.length)self.postMessage({art:'ortNeu',gen:gen,stuecke:L,kartei:k.anzahl,karteiB:k.bytes,eMs:OFL.elementeMs()})}
@@ -61,7 +62,7 @@ function nachladen(){if(!KL||!KL.wuensche())return;if(KLL){KLN=true;return}KLL=t
 // N7a2b2: Elementlisten und Gebäudebilder in Zeitanteilen (4 ms, dazwischen kommen Bildanfragen dran); Fertiges gebündelt etwa alle 0,3 s als „ortNeu“ (Thomas 24.11.2026)
 var HAUSL=false,HAUSF=0,BUENDEL=300;
 function haeuser(){HAUSL=false;if(!OFL||!OFL.schritt)return;var mehr=OFL.schritt(4),t=performance.now();nachladen();
- if(OFL.fertigeZahl()&&t-HAUSF>=BUENDEL){HAUSF=t;var L=OFL.fertige(),h=OFL.haeuser();self.postMessage({art:'ortNeu',gen:gen,stuecke:L,haeuser:h.bilder,hausB:h.bytes,hausMs:h.maxMs,listeMs:h.listeMaxMs})}
+ if(OFL.fertigeZahl()&&t-HAUSF>=BUENDEL){HAUSF=t;var L=OFL.fertige(),h=OFL.haeuser();self.postMessage({art:'ortNeu',gen:gen,stuecke:L,haeuser:h.bilder,hausB:h.bytes,hausMs:h.maxMs,listeMs:h.listeMaxMs,hausPausen:h.pausen,listen:h.listen})}
  if(mehr||OFL.fertigeZahl()){HAUSL=true;setTimeout(haeuser,mehr?0:Math.max(0,BUENDEL-(t-HAUSF)))}}
 function haeuserAn(){if(!HAUSL&&OFL&&OFL.arbeitOffen&&(OFL.arbeitOffen()||OFL.fertigeZahl())){HAUSL=true;setTimeout(haeuser,0)}}
 function vomOrtskern(m){if(m.art!=='plan'||m.gen!==gen||!OFL)return;echteBoeden();if(m.ms!=null)ORTMS.push(m.ms);var L=OFL.aufnehmen(m,bauHat);if(!L.length)return;
@@ -148,5 +149,6 @@ self.onmessage=function(e){var d=e.data;
   if(fd&&ob)fd.obj=ob;else if(ob)fd={obj:ob};
   self.postMessage({art:'feld',id:d.id,feld:fd})}
  else if(d.art==='wahl')wahl(d);
+ else if(d.art==='messNeu'){if(OFL&&OFL.messNeu)OFL.messNeu()}   // N7a2b3: Messfeld „Reset“
  else if(d.art==='reiche'){REI=!!d.an;RE=null;TEX=TEXD=null}   // N4c1: Knopf „Realms“; die Karte verwirft ihre Fernbilder selbst
  else if(d.art==='start'){self.postMessage({art:'start',gen:gen,platz:A?startplatz():null})}};
