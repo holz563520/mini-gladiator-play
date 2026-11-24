@@ -33,9 +33,10 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='e1e31006', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='3b4aaf82', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
+var N7A5A0=!/[?&]n7a5a0=0/.test(location.search||'');   // N7a5a0 Wasser waagrecht (ufer.js im Bildkern)
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
 
 function starten(o){
@@ -52,7 +53,7 @@ function starten(o){
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(MAXL,o.kam[2]|0));hatKam=true}
 
  function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(okern&&kern&&kern.ortskernWeg)kern.ortskernWeg();try{okern&&okern.terminate()}catch(e){}okern=null;if(o.beiAusfall)o.beiAusfall(g2)}
- try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
+ try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*|n7a5a0)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
  if(bk){bk.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ende('picture core failed')};bk.onmessage=vomBildkern;
   var F=S.PALETTEN[S.PALETTE].farben,pal=new Uint32Array(64),du=new Uint8Array(64),he=new Uint8Array(64);
   for(var i=0;i<64;i++){var c=S.farbe(F[i]);pal[i]=(255<<24|c[2]<<16|c[1]<<8|c[0])>>>0;du[i]=S.dunkler(i);he[i]=i}
@@ -60,7 +61,7 @@ function starten(o){
   bk.postMessage({art:'init',pal:pal,du:du,he:he});
   // N7a2a: Ortskern (ortskern.js) = eigener Hintergrundkern für die Ortspläne, spricht über einen MessageChannel direkt mit dem Bildkern.
   // Fehlt er (kein Worker, Fehler), plant der Bildkern eingebettet in seinen Pausen (Regel 13). Notausschalter ?n7a2=0 (dann keine Ortsflächen), ?n7a2k=0 nur ohne eigenen Ortskern (Probe für Regel 13).
-  if(!/[?&]n7a2k?=0/.test(location.search)&&typeof MessageChannel!=='undefined'){try{okern=new Worker(BASIS+'ortskern.js?v='+V);var mc=new MessageChannel();
+  if(!/[?&]n7a2k?=0/.test(location.search)&&typeof MessageChannel!=='undefined'){try{okern=new Worker(BASIS+'ortskern.js?v='+V+(/[?&]n7a5a0=0/.test(location.search)?'&n7a5a0=0':''));var mc=new MessageChannel();
     okern.postMessage({art:'port',port:mc.port1},[mc.port1]);bk.postMessage({art:'ortskern',port:mc.port2},[mc.port2]);
     // N7a4a2: zweiter Kanal vom Ortskern zum Weltkern (Sperrkarten für die Wegsuche)
     if(kern&&kern.ortskern){var mw=new MessageChannel();okern.postMessage({art:'portWelt',port:mw.port1},[mw.port1]);kern.ortskern(mw.port2)}
@@ -112,7 +113,7 @@ function starten(o){
     for(var j=by;j<by+q;j++)for(var i=bx;i<bx+q;i++){var e=(j*8+i)*2;if(m[e]<mn)mn=m[e];if(m[e+1]>mx)mx=m[e+1]}
     var x0=p.cx*ST+bx*8,xu=cu*ST+bx*8,y0=p.cy*ST+by*8,x=(xu-y0)*32,y=(xu+y0)*16;
     if(x+n*32+RS<CX-hb||x-n*32-RS>CX+hb||y+n*32-mn*8<CY-hh||y-mx*8-RO>CY+hh)continue;
-    var rr=bx+q>=8,ru=by+q>=8,nx=modu(p.cx+1,SX),rand=(rr&&!bekannt.has(nx*8192+p.cy))||(ru&&!bekannt.has(p.cx*8192+p.cy+1))||(rr&&ru&&!bekannt.has(nx*8192+p.cy+1));   // G4d: braucht ein Nachbarstück jenseits des Fensters
+    var rr=bx+q>=8,ru=by+q>=8,nx=modu(p.cx+1,SX),rand=(rr&&!bekannt.has(nx*8192+p.cy))||(ru&&!bekannt.has(p.cx*8192+p.cy+1))||(rr&&ru&&!bekannt.has(nx*8192+p.cy+1))||(N7A5A0&&(bx===0||by===0)&&randLO(p,bx===0,by===0));   // G4d: braucht ein Nachbarstück jenseits des Fensters
     var bk0=lod+':'+x0+':'+y0,of=lod?null:offenBei(x0,y0);aus.push({x0:x0,xu:xu,y0:y0,X:x,Y:y,key:of?bk0+'|o'+of.join(','):bk0,basis:bk0,offen:of,mn:mn,rand:rand,ab:Math.abs(x-CX)+2*Math.abs(y+n*16-((mn+mx)*4)-CY)})}});return aus}
  // G4d: Fernbilder der Stufe lod (≥ STUFEN), die den Ausschnitt schneiden: Raster aus (8 << lod)² Feldern in der Lage der Kamera, Schlüssel mit der Weltspalte
  function sichtFern(lod,CX,CY,hb,hh,aus){var n=TEIL<<lod;aus.length=0;
@@ -120,6 +121,7 @@ function starten(o){
   for(var tv=vA;tv<=vE;tv++){var y0=tv*n;if(y0<0||y0>=WY)continue;
    for(var tu=uA;tu<=uE;tu++){var xu=tu*n,X=(xu-y0)*32,Y=(xu+y0)*16;if(X+n*32<CX-hb||X-n*32>CX+hb||Y+n*32<CY-hh||Y>CY+hh)continue;var x0=umX(xu);
     aus.push({x0:x0,xu:xu,y0:y0,X:X,Y:Y,key:lod+':'+x0+':'+y0,mn:0,ab:Math.abs(X-CX)+2*Math.abs(Y+n*16-CY)})}}return aus}
+ function randLO(p,l,o){var vx=modu(p.cx-1,SX);return(l&&!bekannt.has(vx*8192+p.cy))||(o&&p.cy>0&&!bekannt.has(p.cx*8192+p.cy-1))||(l&&o&&p.cy>0&&!bekannt.has(vx*8192+p.cy-1))}   // N7a5a0: Ecken am Wasser brauchen auch das Stück links und oben
  function sichtX(lod,CX,CY,hb,hh,aus){return lod>=STUFEN?sichtFern(lod,CX,CY,hb,hh,aus):sicht(lod,CX,CY,hb,hh,aus)}
  function anfragen(L,lod,max){L.sort(function(a,b){return a.ab-b.ab});for(var i=0;i<L.length&&offen.size<max;i++){var c=L[i];if(c.rand||(bilder.has(c.key)&&!altB.has(c.key))||offen.has(c.key)||(fehlt.has(c.key)&&performance.now()-fehlt.get(c.key)<FEHLT_MS))continue;
    offen.set(c.key,lod<STUFEN?(stV.get(stk(c.x0,c.y0))||0):0);M.anfragen++;bk.postMessage({art:'bild',gen:gen,nv:NV,key:c.key,x0:c.x0,y0:c.y0,lod:lod,offen:c.offen||null})}}

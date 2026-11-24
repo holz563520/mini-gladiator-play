@@ -44,6 +44,9 @@ var N2D_NATUR=[
  [[LI,120],[FA,70],[BN,60],[KO,50],[BG,50],[BB_,40],[BU,20]],                               // 16 Regenwald: sehr dicht, Lianenbäume, Farne, Bananen, Palmen
  [[MA,200],[SC,120],[KO,20],[BG,20]]];                                                      // 17 Mangroven: Mangroven im Schlick, Schilf, ab und zu eine Palme
 // Notausschalter ?n2d=0: Natur der neuen Biome wie N2c (Platzhalter). Wird an Bild-, Welt- und Helferkern durchgereicht.
+// N7a5a0: Ecken am Wasser wie im Bodenbild (ufer.js), erst beim ersten Antippen geladen
+var UF_=undefined;function UFN(){if(UF_===undefined)UF_=UFm();return UF_}
+function UFm(){if(root.AT3UFER)return root.AT3UFER;try{if(typeof module!=='undefined'&&module.exports)return require('./ufer.js');if(typeof importScripts==='function'){importScripts('ufer.js'+((root.location&&root.location.search)||''));return root.AT3UFER||null}}catch(e){}return null}
 var N2D=!(root.location&&/[?&]n2d=0/.test(root.location.search||''));
 (N2D?N2D_NATUR:N2C_PLATZ).forEach(function(L,i){DICHTE[13+i]=L});
 var TAB=DICHTE.map(function(L){if(!L)return null;var a=new Int16Array(1000).fill(-1),p=0;L.forEach(function(e){for(var k=0;k<e[1];k++)a[p++]=e[0]});return a});
@@ -85,7 +88,7 @@ function sammeln(seed,x0,y0,n,lod,ECK,B,W,aus,ok){var m=n+1,hw=32>>lod,hh=16>>lo
 // G5b: ok(X,Y) wie bei sammeln (keine Natur auf Gebautem/Gerodetem).
 function treffer(hole,PX,PY,seed,BILD,sicht,fx,fy,frei){var u=fx!=null?fx:Math.floor((PX/32+PY/16)/2),v=fy!=null?fy:Math.floor((PY/16-PX/32)/2),best=null,bt=-1e9;   // fx,fy: Feld unter dem Finger (bodenbild.feld), sonst ohne Höhe geschätzt
  for(var dy=-3;dy<=8;dy++)for(var dx=-3;dx<=8;dx++){var XU=u+dx,Y=v+dy,X=((XU%WX)+WX)%WX;if(Y<0||Y>=WY-1)continue;
-  var H=[0,0,0,0],ok=true;for(var k=0;k<4&&ok;k++){var x=X+(k&1),y=Y+(k>>1);if(x>=WX)x-=WX;var p=hole(x>>6,y>>6);if(!p){ok=false;break}H[k]=stufe(sicht(p).H[((y&63)<<6)|(x&63)])}
+  var H=[0,0,0,0],ok=true;for(var k=0;k<4&&ok;k++){var x=X+(k&1),y=Y+(k>>1);if(x>=WX)x-=WX;var p=hole(x>>6,y>>6);if(!p){ok=false;break}H[k]=stufe(UFN()?UFN().eck(hole,sicht,x,y,false):sicht(p).H[((y&63)<<6)|(x&63)])}
   if(!ok)continue;var p0=sicht(hole(X>>6,Y>>6)),q=((Y&63)<<6)|(X&63),mn=Math.min(H[0],H[1],H[2],H[3]),mx=Math.max(H[0],H[1],H[2],H[3]);
   var t=art(seed,X,Y,p0.B[q],p0.W[q],mx-mn);if(t<0||XU+Y<=bt||(frei&&!frei(X,Y)))continue;
   var vs=versatz(seed,X,Y),s=BILD[t].L[0],ax=(XU-Y)*32+vs[0],ay=(XU+Y)*16+16+vs[1]-(((H[0]+H[1]+H[2]+H[3])*8+2)>>2),lx=Math.floor(PX-ax+s.ax),ly=Math.floor(PY-ay+s.ay);

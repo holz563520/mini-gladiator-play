@@ -8,6 +8,7 @@
 (function(root){
 'use strict';
 var N=96,U=4,M=N*U+1,WL=0.8,MEER=2048;
+function UFm(){if(root.AT3UFER)return root.AT3UFER;try{if(typeof module!=='undefined'&&module.exports)return require('./ufer.js');if(typeof importScripts==='function'){importScripts('ufer.js'+((root.location&&root.location.search)||''));return root.AT3UFER||null}}catch(e){}return null}   // N7a5a0
 // fpwelt-Codes: 0 Wasser, 1 Sand, 2 Gras, 3 Wald, 4 Fels, 5 Schnee, 6 Weg, 7 Steg/Brücke, 8 Platz (Hof)
 var VON_BIOM=[0,0,1,1,2,3,2,2,4,5,0,0,5,2,1,2,3,2];  // weltgen-Biome 0..17 → Code (Wüste wie Sand, Steppe/Sumpf/Tundra wie Gras fürs Muster; N2c: Savanne wie Sand, Regenwald wie Wald, übrige wie Gras)
 var VON_WEG=[-1,6,6,7,1,7,8,0];                    // Wegschicht 1..7: Pfad, Straße, Brücke, Furt (begehbar, sieht nass aus), Steg, Ortsplatz, Fähre (Wasser)
@@ -19,9 +20,10 @@ var BF=4096,Z_PLAN=1;
 function bauen(BB,NAT,hole,seed,ox,oy,sperr,PF,frei,BA,AN){                // G5b: frei(X,Y) = false auf Gebautem/Gerodetem (keine Natur)
 var WX=BB.WX,WY=BB.WY,F=N+2,t0=Date.now();
  oy=Math.max(0,Math.min(WY-F,oy|0));ox=((ox|0)%WX+WX)%WX;
- var EH=new Float32Array(F*F),EB=new Uint8Array(F*F),EW=new Uint8Array(F*F),ES=new Uint8Array(F*F),fehlt=0;
+ var RH=new Uint16Array(F*F),RB=new Uint8Array(F*F),EH=new Float32Array(F*F),EB=new Uint8Array(F*F),EW=new Uint8Array(F*F),ES=new Uint8Array(F*F),fehlt=0;
  for(var j=0;j<F;j++)for(var i=0;i<F;i++){var X=(ox+i)%WX,Y=oy+j,p=hole(X>>6,Y>>6),e=j*F+i;
-  if(!p){fehlt++;EH[e]=WL;continue}var s=BB.sicht(p),q=((Y&63)<<6)|(X&63);EH[e]=(s.H[q]-MEER)/16+WL;EB[e]=s.B[q];EW[e]=s.W[q];ES[e]=BB.stufe(s.H[q])}
+  if(!p){fehlt++;EH[e]=WL;RH[e]=MEER;RB[e]=5;continue}var s=BB.sicht(p),q=((Y&63)<<6)|(X&63);RH[e]=s.H[q];RB[e]=s.B[q];EH[e]=(s.H[q]-MEER)/16+WL;EB[e]=s.B[q];EW[e]=s.W[q];ES[e]=BB.stufe(s.H[q])}
+ var UF=UFm();if(UF&&UF.an())for(j=1;j<F;j++)for(i=1;i<F;i++){e=j*F+i;var hu=UF.eckRaster(RH,RB,F,e);if(hu!==RH[e]){EH[e]=(hu-MEER)/16+WL;ES[e]=BB.stufe(hu)}}   // N7a5a0: Wasser waagrecht wie im Bodenbild (ufer.js)
  var h=new Float32Array(M*M),biom=new Uint8Array(M*M),basis=new Uint8Array(M*M),BF=BB.BFARBE,WF=BB.WFARBE;
  for(j=0;j<M;j++){var fy=j/U,jy=fy|0,b=fy-jy;if(jy>N-1&&j===M-1){jy=N-1;b=1}
   for(i=0;i<M;i++){var fx=i/U,ix=fx|0,a=fx-ix;if(ix>N-1){ix=N-1;a=1}var k=j*M+i,e0=jy*F+ix;

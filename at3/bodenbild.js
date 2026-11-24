@@ -15,14 +15,25 @@ var GFARBE=[0,46,5,45,4,5], GFUGE=[0,45,4,44,3,4], GKORN=[0,47,6,46,5,6], GPUNKT
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
 function sicht(p){return p._s||(p._s={H:new Uint16Array(p.buffer,p.byteOffset,FELDER),B:new Uint8Array(p.buffer,p.byteOffset+FELDER*2,FELDER),W:new Uint8Array(p.buffer,p.byteOffset+FELDER*3,FELDER)})}
 function stufe(h){h=(h-MEER)>>LS;return h<0?0:h}
-var ECK=new Int16Array(65*65), NLISTE=[];
+var ECK=new Int16Array(65*65), NLISTE=[], RH=new Uint16Array(66*66), RB=new Uint8Array(66*66);
+// N7a5a0: Wasser immer waagrecht (ufer.js). Ohne ufer.js (Notausschalter oder nicht ladbar) Ecke = Feld wie vorher.
+function UFm(){if(root.AT3UFER)return root.AT3UFER;try{if(typeof module!=='undefined'&&module.exports)return require('./ufer.js');if(typeof importScripts==='function'){importScripts('ufer.js'+((root.location&&root.location.search)||''));return root.AT3UFER||null}}catch(e){}return null}
+var UF=UFm();
 
-// Stufen der Feldecken (n+1) × (n+1) ab Feld x0,y0. Ecke = Höhe des Feldes dort. false, wenn ein Nachbarstück noch fehlt.
-function ecken(hole,x0,y0,n){var m=n+1,p=null,pk=-1,H=null;
- for(var j=0;j<m;j++){var Y=y0+j;if(Y>=WY)Y=WY-1;
+// Stufen der Feldecken (n+1) × (n+1) ab Feld x0,y0. Ecke = Höhe des Feldes dort (N7a5a0: am Wasser der Wasserspiegel, ufer.js). false, wenn ein Nachbarstück noch fehlt
+// (seit N7a5a0 auch links und oben: die Kacheln dort entscheiden mit, ob eine Ecke am Wasser liegt).
+function ecken(hole,x0,y0,n){var m=n+1,p=null,pk=-1,H=null,Bq=null,an=UF&&UF.an();
+ if(!an){for(var j=0;j<m;j++){var Y=y0+j;if(Y>=WY)Y=WY-1;
   for(var i=0;i<m;i++){var X=x0+i;if(X>=WX)X-=WX;var k=(X>>6)*8192+(Y>>6);
    if(k!==pk){p=hole(X>>6,Y>>6);if(!p)return false;pk=k;H=sicht(p).H}
    ECK[j*m+i]=stufe(H[((Y&63)<<6)|(X&63)])}}
+  return true}
+ var L=m+1;
+ for(j=0;j<L;j++){Y=y0+j-1;if(Y>=WY)Y=WY-1;var oben=Y<0;if(oben)Y=0;
+  for(i=0;i<L;i++){X=x0+i-1;if(X<0)X+=WX;if(X>=WX)X-=WX;k=(X>>6)*8192+(Y>>6);
+   if(k!==pk){p=hole(X>>6,Y>>6);if(!p)return false;pk=k;var sv=sicht(p);H=sv.H;Bq=sv.B}
+   var q=((Y&63)<<6)|(X&63),e=j*L+i;RH[e]=H[q];RB[e]=oben?5:Bq[q]}}
+ for(j=0;j<m;j++)for(i=0;i<m;i++)ECK[j*m+i]=stufe(UF.eckRaster(RH,RB,L,(j+1)*L+i+1));
  return true}
 
 // Ein Bodenbild. F = {pal: Uint32Array(64) ABGR, du: dunkler, he: heller (Farbnummer → Farbnummer)}. Gibt {w,h,ox,oy,px} oder null (Nachbar fehlt).
@@ -61,6 +72,7 @@ function bild(hole,x0,y0,lod,F,NT,BA,OT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,s
   if(!wasser){var d=lE-lW,sh=d>1?2:d>0?1:d<-1?-2:d<0?-1:0;if(lS-lN>1)sh--;                // Licht von links: Hang nach Westen heller, nach Osten dunkler
    if(!wv&&lod>1){var r4=r&15;if(r4===0)sh++;else if(r4===1)sh--}                           // weit draußen: Körnung je Feld; nah: je Bildpunkt (unten)
    while(sh>0){c=he[c];sh--}while(sh<0){c=du[c];sh++}}
+  else if(!wv&&UF&&UF.an()&&(lN!==lE||lN!==lW||lN!==lS)){if((X+Y)&1)c=he[c]}                     // N7a5a0: Stufe im Fluss (Stromschnelle), Punktmuster aus Palettenfarben
   else if(!wv&&(r&31)===0)c=he[c];                                                          // vereinzelte Wellen
   var korn=!wasser&&!wv&&lod<2,cL=pal[he[c]],cD=pal[du[c]],v,gm=ga&&lod<2?(gz===1?1:gz===2?2:3):0;
   if(gm){korn=false;var gP=pal[GPUNKT],gF=pal[GFUGE[ga]],gK=pal[GKORN[ga]],gB=pal[BFARBE[b]]}

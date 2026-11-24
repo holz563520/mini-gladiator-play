@@ -30,7 +30,10 @@ var DX=[0,-1,0,1], DY=[-1,0,1,0];
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
 function stufe(h){h=(h-MEER)>>LS;return h<0?0:h}
 function sicht(p){return p._s||(p._s={H:new Uint16Array(p.buffer,p.byteOffset,F),B:new Uint8Array(p.buffer,p.byteOffset+F*2,F),W:new Uint8Array(p.buffer,p.byteOffset+F*3,F)})}
-function hoehe(hole,X,Y,holeB){if(Y>=WY)Y=WY-1;var p=hole(X>>6,Y>>6);if(!p)return -1;var s=sicht(p),q=((Y&63)<<6)|(X&63);return stufe(eben(holeB,X,Y,s.H[q],s.B[q]))}
+// N7a5a0: Ecke am Wasser wie im Bodenbild (ufer.js: Wasser immer waagrecht, Ufer als Böschung); fehlt ein Stück links/oben, zählt es nicht
+var UF_=undefined;function UFB(){if(UF_===undefined)UF_=UFm();return UF_}
+function UFm(){if(root.AT3UFER)return root.AT3UFER;try{if(typeof module!=='undefined'&&module.exports)return require('./ufer.js');if(typeof importScripts==='function'){importScripts('ufer.js'+((root.location&&root.location.search)||''));return root.AT3UFER||null}}catch(e){}return null}
+function hoehe(hole,X,Y,holeB){if(Y>=WY)Y=WY-1;var p=hole(X>>6,Y>>6);if(!p)return -1;var s=sicht(p),q=((Y&63)<<6)|(X&63),u=UFB();return stufe(u?u.eck(hole,sicht,X,Y,false,holeB&&holeB.ort?function(x,y,h,b){return eben(holeB,x,y,h,b)}:null):eben(holeB,X,Y,s.H[q],s.B[q]))}
 // N7a4b1: Hangring und Ortsfläche eingeebnet wie im Bild (ortssperre.js hoch), außer in Kartenstücken mit Gebautem (Park gewinnt)
 function eben(holeB,X,Y,h,b){var o=holeB&&holeB.ort;return o&&o.hoch&&!holeB(X>>6,Y>>6)?o.hoch(X,Y,h,b):h}
 
@@ -38,7 +41,7 @@ function eben(holeB,X,Y,h,b){var o=holeB&&holeB.ort;return o&&o.hoch&&!holeB(X>>
 function tempo(hole,holeB,seed,X,Y,p){if(Y<0||Y>=WY)return 0;X=um(X);
  var w=hole(X>>6,Y>>6);if(!w)return -1;var s=sicht(w),q=((Y&63)<<6)|(X&63),a=holeB?holeB(X>>6,Y>>6):null;
  var ob=holeB&&holeB.ort;if(ob&&!a){var ov=ob(X,Y);if(ov>=0)return OSm().tempo(ov,p)}   // N7a4a1: Sperrkarte der Orte (Park gewinnt: Stück mit Gebautem nicht)
- var h0=stufe(eben(holeB,X,Y,s.H[q],s.B[q])),mn=h0,mx=h0;for(var k=1;k<4;k++){var h=hoehe(hole,um(X+(k&1)),Y+(k>>1),holeB);if(h<0)return -1;if(h<mn)mn=h;if(h>mx)mx=h}
+ var h0=hoehe(hole,X,Y,holeB),mn=h0,mx=h0;for(var k=1;k<4;k++){var h=hoehe(hole,um(X+(k&1)),Y+(k>>1),holeB);if(h<0)return -1;if(h<mn)mn=h;if(h>mx)mx=h}
  var steil=mx-mn,b=s.B[q],wv=s.W[q],t;
  if(a&&a[q]){var ga=a[q];t=ga===6?0:ga===7?(p===FUSS?100:0):p===FUSS?85:ga===1?100:0}            // Gebäudeboden; Karren nur ins Lager (Ladestelle); AR1b: Anlage gesperrt, Häuschen zu Fuß
  else{var g=a&&a.length>GW?a[GW+q]:0;
@@ -75,6 +78,6 @@ function karte(hole,holeB,seed,cx,cy,p,aus){var x0=cx*ST,y0=cy*ST,i,j,X,Y,v;
 // wenn die Ortsbilder in die Kartenstücke kommen; bis dahin nutzen Ortsplan und Tests diese Funktion direkt.
 function LWm(){return root.AT3LANDW||(typeof module!=='undefined'&&module.exports?require('./landwirtschaft.js'):null)}
 function feldart(LD,id,p){var L=LWm(),b=L&&LD?L.begehbar(LD,id):null;return !b||p===KARREN?0:b.fuss}
-var BG={FUSS:FUSS,KARREN:KARREN,PROFIL:PROFIL,BIOM:BIOM,WELT:WELT,GEBAUT:GEBAUT,tempo:tempo,kante:kante,schritt:schritt,karte:karte,feldart:feldart};
+var BG={FUSS:FUSS,KARREN:KARREN,PROFIL:PROFIL,BIOM:BIOM,WELT:WELT,GEBAUT:GEBAUT,tempo:tempo,kante:kante,schritt:schritt,karte:karte,feldart:feldart,hoehe:hoehe};
 if(typeof module!=='undefined'&&module.exports)module.exports=BG;else root.AT3BEGEH=BG;
 })(typeof self!=='undefined'?self:this);

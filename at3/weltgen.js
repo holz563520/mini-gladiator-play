@@ -37,7 +37,8 @@ var ERD_ZELLEN=10*N, ERD_FEST=ERD_ZELLEN+NETZ_MAX+VK_MAX;   // Erdraster: bleibe
 var HS_MAX=16384, HS_KOPF=4, HS_BYTES=HS_KOPF+HS_MAX*8+N*2+ORT_MAX*2;   // N4c1: Herrschaften (Zahl, je Einheit 8 Byte, je Zelle und je Ort 2 Byte)
 var TAB=131072, SC=ERD_FEST, VK0=SC+11*N+TAB*12, HS0=VK0+VK_MAX, ERD_BYTES=HS0+HS_BYTES;   // N4b: Völker beim Entstehen hinter den Arbeitsfeldern   // beim Entstehen zusätzlich Arbeitsfelder der Wegsuche
 var N4B=!(root.location&&/[?&](n2b|n2c|n4b)=0/.test(root.location.search||''));   // N4b Notausschalter ?n4b=0 (auch mit ?n2b=0, ?n2c=0): kein Teil „Völker“, Erde Byte für Byte wie N4a
-var N4C=N4B&&!(root.location&&/[?&]n4c=0/.test(root.location.search||''));   // N4c1 Notausschalter ?n4c=0 (auch mit ?n4b=0): kein Teil „Herrschaften“, Erde Byte für Byte wie N4b
+var N4C=N4B&&!(root.location&&/[?&]n4c=0/.test(root.location.search||''));
+var N7A5A0=N4B&&!(root.location&&/[?&]n7a5a0=0/.test(root.location.search||''));   // N7a5a0 Notausschalter ?n7a5a0=0 (auch mit ?n2b=0, ?n2c=0, ?n4b=0): Fluss- und Teichspiegel wie vorher (schräg/wellig)   // N4c1 Notausschalter ?n4c=0 (auch mit ?n4b=0): kein Teil „Herrschaften“, Erde Byte für Byte wie N4b
 var BAND=8, TEILE=BAND+(N4C?11:N4B?10:8);                     // Teilaufträge der Erde
 var TEIL_NAME=['Rauschen 1','Rauschen 2','Rauschen 3','Rauschen 4','Rauschen 5','Rauschen 6','Rauschen 7','Rauschen 8','Ozean und Seen','Senken','Flüsse','Klima','Klimazonen','Orte und Häfen','Straßen','Seewege','Völker: Kernländer','Völker: Ausbreitung und Glaube','Herrschaften'];
 var ORT_ART=['','Dorf','Stadt','Hafendorf','Hafenstadt'], WEG_ART=['','Pfad','Straße','Brücke','Furt','Steg','Ortsplatz','Fähre'];
@@ -266,30 +267,65 @@ function stufe(seed,o,ld,gew,gx0,gy0,ziel,setzen){var S=1<<ld,c=ld>=6?1:ST>>ld,l
 var O_FEIN=[[9,72],[8,56],[7,44],[6,34],[5,24],[4,16],[3,10]];                                       // Summe 256
 var wx=new Int32Array(ST*3), wy=new Int32Array(ST*3), zeile=new Int32Array(ST*3), kanal=[new Int32Array(FELDER),new Int32Array(FELDER),new Int32Array(FELDER),new Int32Array(FELDER)];
 var HW=[0,1,2,3,5,7], UFER=6, SUMPF_W=14;                                                                        // halbe Flussbreite je Klasse, Uferzone in Feldern
-var segs=new Int32Array(5*5*8*5), nSeg=0, teiche=new Int32Array(5*3), nTeich=0;
+var SG=6, segs=new Int32Array(5*5*8*SG), nSeg=0, teiche=new Int32Array(5*3), nTeich=0;
 var wurzel=(function(){var t=new Uint8Array(1024);for(var i=0;i<1024;i++){var r=0;while((r+1)*(r+1)<=i)r++;t[i]=r}return t})();
 
 function X6(X,dx,dy,k){return X[((dy+2)*5+dx+2)*9+k]}
 // Punkt, an dem ein Fluss die Kante einer Zelle quert: hängt nur von der Kante ab, beide Nachbarn rechnen denselben Punkt.
 function kante(seed,zx,zy,q){var kx=um(q===0?zx+1:zx),ky=q===1?zy+1:zy,h=256+mix(seed^Math.imul(kx,0x632be5ab)^Math.imul(ky,0x7ed55d16)^((q&1)?0x51ed27:0x2c1b3c))%513;
  return q===0?[ZF,h]:q===2?[0,h]:q===1?[h,ZF]:[h,0]}
-function bogen(x0,y0,x2,y2,kl,sd,ox,oy){var h=mix(sd),x1=((x0+x2)>>1)+(h%321)-160,y1=((y0+y2)>>1)+((h>>>9)%321)-160;
+// N7a5a0 (Thomas 24.11.2026): Wasser je Gewässer flach. Der Fluss besteht aus flachen Abschnitten (je Teilstück eines Bogens eine Spiegelstufe),
+// dazwischen eine Stufe quer über die ganze Breite (Stromschnelle). Stufe = Erdhöhe am Ende des Teilstücks − 24, auf ganze Zeichenstufen (64) abgerundet,
+// flussab nie steigend (innerhalb des Bogens laufend das Kleinste, Start mit der Stufe am Anfangspunkt). Die Punkte hängen nur von Kante und Zelle ab
+// (kante, Zellmitte), die Erdhöhe nur vom Ausschnitt X: Nachbarstücke rechnen dieselbe Stufe.
+// rand: seit N7a5a0 auch die Sumpfzone (sonst sieht ein Nachbarstück den Fluss nicht, der dort Sumpf und Teichufer formt: Naht).
+var SP_ST=64, SP_AB=24, T_OKT=4, T_UFER=1200;
+function spStufe(v){v-=SP_AB;return v<0?0:v>>6}
+// Geglättete Erdhöhe (wie KE in gelaende) an einem Punkt px,py in Feldern relativ zum Stück cx,cy
+function erdH(X,cx,cy,px,py){var lx=(cx&15)*ST+px,ly=(cy&15)*ST+py,dx=Math.floor(lx/ZF),dy=Math.floor(ly/ZF),u=lx-dx*ZF,v=ly-dy*ZF;
+ if(dx<-1)dx=-1;if(dx>1)dx=1;if(dy<-1)dy=-1;if(dy>1)dy=1;
+ var a0=((ZF-u)*(ZF-u))>>6,a2=(u*u)>>6,a1=32768-a0-a2,b0=((ZF-v)*(ZF-v))>>6,b2=(v*v)>>6,b1=32768-b0-b2,z=[0,0,0];
+ for(var r=0;r<3;r++)z[r]=(a0*X6(X,dx-1,dy+r-1,0)+a1*X6(X,dx,dy+r-1,0)+a2*X6(X,dx+1,dy+r-1,0))>>15;
+ return(b0*z[0]+b1*z[1]+b2*z[2])>>15}
+// Teiche: Spiegel aus dem groben Gelände (Erdhöhe + die zwei gröbsten Rauschstufen von hoch, 512 und 256 Felder), an jedem Weltpunkt einzeln gerechnet
+// (darum gleich in Nachbarstücken); Spiegel eine Zeichenstufe darunter. Nur an Teich- und Uferfeldern gerechnet.
+function rauschPt(seed,o,ld,gx,gy){var S=1<<ld,P=WF>>ld;gx=((gx%WF)+WF)%WF;if(gy<0)gy=0;var lx=gx>>ld,ly=gy>>ld,tx=gx&(S-1),ty=gy&(S-1),
+ ux=glatt(ld>=8?tx>>(ld-8):tx<<(8-ld)),uy=glatt(ld>=8?ty>>(ld-8):ty<<(8-ld)),lx1=(lx+1)%P,
+ o1=gitter(seed,o,lx,ly)*(256-ux)+gitter(seed,o,lx1,ly)*ux,o2=gitter(seed,o,lx,ly+1)*(256-ux)+gitter(seed,o,lx1,ly+1)*ux;return(o1*(256-uy)+o2*uy)>>16}
+// Grobes Gelände an einem Weltpunkt fx,fy (Vielfaches von 8, wie das Raster GP): Erdhöhe, die vier gröbsten Rauschstufen von hoch (512 bis 64 Felder) und Hügel/Senken der
+// Biome (klasse ohne Fransen und ohne Flussufer), damit Teiche auch im Sumpf (der das Gelände senkt) im Gelände liegen statt darüber.
+var TP=new Int32Array(16), TG=new Int32Array(11*11), TGK=-1;
+function teichPunkt(X,seed,cx,cy,zx,zy,px,py,zonig){var b=erdH(X,cx,cy,px,py),amp=b>0?48+((b*3)>>3):48+((-b)>>3),gx=cx*ST+px,gy=cy*ST+py,k;
+ var g=0,gs=0;for(k=0;k<T_OKT;k++){g+=rauschPt(seed,20+k,O_FEIN[k][0],gx,gy)*O_FEIN[k][1];gs+=O_FEIN[k][1]}var hz=b+(((g-gs*255/2)*amp)>>15);
+ if(b<=0||!zonig)return hz;
+ punkt(seed,((gx%WF)+WF)%WF,gy<0?0:gy,TP,0);zonenX(X,seed,zx,zy,((gx%WF)+WF)%WF,gy<0?0:gy,VZ);for(k=0;k<KP;k++)TP[k]+=VZ[k];klasse(TP,0,V0,0,0,0);
+ var fk=b>=320?256:(b<<8)/320|0,hu=KL.d>-M_HUEGEL?KL.d+M_HUEGEL:0,se=KL.s>-M_SENKE?KL.s+M_SENKE:0,auf=(hu*hu)>>13,ab2=(se*se)>>14;
+ if(ab2>hz-48)ab2=hz-48;if(ab2<0)ab2=0;return hz+(((auf-ab2)*fk)>>8)}
+// Teich-Gelände an Feld x,y des Stücks (x,y von −1 bis 64): weich aus dem Raster (11 × 11 Punkte alle 8 Felder ab −8), einmal je Stück und erst beim ersten Teich.
+function teichH(X,seed,cx,cy,x,y,zonig){var key=cx*8192+cy;
+ if(TGK!==key){var sd=KL.d,ss=KL.s,st_=KL.t,sl=KL.l,sz=ZU,zx=cx>>4,zy=cy>>4;
+  for(var gj=0;gj<11;gj++)for(var gi=0;gi<11;gi++)TG[gj*11+gi]=teichPunkt(X,seed,cx,cy,zx,zy,(gi-1)*GRB,(gj-1)*GRB,zonig);
+  KL.d=sd;KL.s=ss;KL.t=st_;KL.l=sl;ZU=sz;TGK=key}
+ var ix=(x>>3)+1,iy=(y>>3)+1,fx=x&7,fy=y&7,e=iy*11+ix;
+ return(TG[e]*(8-fx)*(8-fy)+TG[e+1]*fx*(8-fy)+TG[e+11]*(8-fx)*fy+TG[e+12]*fx*fy)>>6}
+function bogen(x0,y0,x2,y2,kl,sd,ox,oy,X,cx,cy){var h=mix(sd),x1=((x0+x2)>>1)+(h%321)-160,y1=((y0+y2)>>1)+((h>>>9)%321)-160;
  x1=x1<32?32:x1>ZF-32?ZF-32:x1;y1=y1<32?32:y1>ZF-32?ZF-32:y1;
- var px=x0,py=y0,rand=HW[kl]+UFER+1;
+ var px=x0,py=y0,rand=HW[kl]+UFER+1+(N7A5A0?SUMPF_W:0),lv=N7A5A0&&X?spStufe(erdH(X,cx,cy,x0+ox,y0+oy)):0;
  for(var i=1;i<=8;i++){var a=(8-i)*(8-i),b=2*i*(8-i),c=i*i,qx=(a*x0+b*x1+c*x2)>>6,qy=(a*y0+b*y1+c*y2)>>6;
   var ax=px+ox,ay=py+oy,bx=qx+ox,by=qy+oy;                                                            // in Feldern relativ zum Stück
-  if(!((ax<-rand&&bx<-rand)||(ay<-rand&&by<-rand)||(ax>ST+rand&&bx>ST+rand)||(ay>ST+rand&&by>ST+rand))){var p=nSeg*5;segs[p]=ax;segs[p+1]=ay;segs[p+2]=bx;segs[p+3]=by;segs[p+4]=kl;nSeg++}
+  if(N7A5A0&&X){var l2=spStufe(erdH(X,cx,cy,bx,by));if(l2<lv)lv=l2}
+  if(!((ax<-rand&&bx<-rand)||(ay<-rand&&by<-rand)||(ax>ST+rand&&bx>ST+rand)||(ay>ST+rand&&by>ST+rand))){var p=nSeg*SG;segs[p]=ax;segs[p+1]=ay;segs[p+2]=bx;segs[p+3]=by;segs[p+4]=kl;segs[p+5]=lv;nSeg++}
   px=qx;py=qy}}
 // Flussläufe einer Zelle (dx, dy relativ zur Zelle des Stücks) einsammeln, soweit sie das Stück berühren
 function zelleFluss(X,seed,zx,zy,dx,dy,cx,cy){var Zx=zx+dx,Zy=zy+dy,k=X6(X,dx,dy,4),d=X6(X,dx,dy,5),wasser=X6(X,dx,dy,0)<0,q,ein=0;
  var ox=Zx*ZF-cx*ST,oy=Zy*ZF-cy*ST,hz=mix(seed^Math.imul(um(Zx),0x1b873593)^Math.imul(Zy,0xcc9e2d51)),jx=362+hz%301,jy=362+(hz>>>10)%301;
  if(!wasser&&!k)return;
  for(q=0;q<4;q++){var nk=X6(X,dx+DX[q],dy+DY[q],4);if(!nk||X6(X,dx+DX[q],dy+DY[q],5)!==(q^2))continue;
-  var P=kante(seed,Zx,Zy,q);bogen(P[0],P[1],jx,jy,nk,hz+q+1,ox,oy);ein++}
+  var P=kante(seed,Zx,Zy,q);bogen(P[0],P[1],jx,jy,nk,hz+q+1,ox,oy,X,cx,cy);ein++}
  if(wasser){if(ein&&nTeich<5){teiche[nTeich*3]=jx+ox;teiche[nTeich*3+1]=jy+oy;teiche[nTeich*3+2]=30;nTeich++}return}
- if(d<4){P=kante(seed,Zx,Zy,d);bogen(jx,jy,P[0],P[1],k,hz+7,ox,oy)}}
+ if(d<4){P=kante(seed,Zx,Zy,d);bogen(jx,jy,P[0],P[1],k,hz+7,ox,oy,X,cx,cy)}}
 
-function gelaende(a){var d=a.daten,buf=d.buffer,H=new Uint16Array(buf,0,FELDER),B=new Uint8Array(buf,FELDER*2,FELDER),W=new Uint8Array(buf,FELDER*3,FELDER),X=new Int16Array(buf,ST_BYTES,AUS);
+function gelaende(a){TGK=-1;var d=a.daten,buf=d.buffer,H=new Uint16Array(buf,0,FELDER),B=new Uint8Array(buf,FELDER*2,FELDER),W=new Uint8Array(buf,FELDER*3,FELDER),X=new Int16Array(buf,ST_BYTES,AUS);
  var seed=a.seed>>>0,cx=a.cx,cy=a.cy,zx=cx>>4,zy=cy>>4,gx0=cx*ST,gy0=cy*ST,i,x,y,k,u;
  // geglättete Erdwerte (Höhe, Feuchte, Wärme, Wasserart): weicher Übergang über 3 × 3 Zellen, an Zellgrenzen stetig
  for(x=0;x<ST;x++){u=(cx&15)*ST+x;wx[x*3]=((ZF-u)*(ZF-u))>>6;wx[x*3+2]=(u*u)>>6;wx[x*3+1]=32768-wx[x*3]-wx[x*3+2];
@@ -313,11 +349,11 @@ function gelaende(a){var d=a.daten,buf=d.buffer,H=new Uint16Array(buf,0,FELDER),
  var zonig=N2B&&X6(X,0,0,8)!==255;                                                                    // N2b: Zuschlag der Klimazonen auf dem groben Raster (statt Neigung je Feld)
  if(eisArt<2)for(gj=0;gj<GN;gj++)for(gi=0;gi<GN;gi++){var gq=(gj*GN+gi)*KP;punkt(seed,gx0+gi*GRB,gy0+gj*GRB,GP,gq);
   if(zonig){zonenX(X,seed,zx,zy,gx0+gi*GRB,gy0+gj*GRB,VZ);for(k=0;k<KP;k++)GP[gq+k]+=VZ[k];GZ[gj*GN+gi]=ZU}}
- for(y=0;y<ST;y++)for(x=0;x<ST;x++){i=y*ST+x;var b=KE[i],amp=b>0?48+((b*3)>>3):48+((-b)>>3),h=b+(((hoch[i]-32640)*amp)>>15),fl=0,best=255;
+ for(y=0;y<ST;y++)for(x=0;x<ST;x++){i=y*ST+x;var b=KE[i],amp=b>0?48+((b*3)>>3):48+((-b)>>3),h=b+(((hoch[i]-32640)*amp)>>15),fl=0,best=255,kb=-1;
   if(nSeg){best=1<<30;
-   for(k=0;k<nSeg;k++){var p=k*5,x1=segs[p],y1=segs[p+1],vx=segs[p+2]-x1,vy=segs[p+3]-y1,wxx=x-x1,wyy=y-y1,t=wxx*vx+wyy*vy,vv=vx*vx+vy*vy,d2=wxx*wxx+wyy*wyy;
+   for(k=0;k<nSeg;k++){var p=k*SG,x1=segs[p],y1=segs[p+1],vx=segs[p+2]-x1,vy=segs[p+3]-y1,wxx=x-x1,wyy=y-y1,t=wxx*vx+wyy*vy,vv=vx*vx+vy*vy,d2=wxx*wxx+wyy*wyy;
     if(t>0){if(t>=vv){wxx=x-segs[p+2];wyy=y-segs[p+3];d2=wxx*wxx+wyy*wyy}else d2-=Math.floor(t*t/vv)}
-    var hw=HW[segs[p+4]],gr=(hw+UFER+SUMPF_W)*(hw+UFER+SUMPF_W);if(d2<gr){var ab=wurzel[d2]-hw;if(ab<best)best=ab}}
+    var hw=HW[segs[p+4]],gr=(hw+UFER+SUMPF_W)*(hw+UFER+SUMPF_W);if(d2<gr){var ab=wurzel[d2]-hw;if(ab<best||(ab===best&&kb>=0&&segs[p+5]<segs[kb*SG+5])){best=ab;kb=k}}}   // N7a5a0: bei Gleichstand der tiefere Abschnitt (Reihenfolge der Bögen ist je Stück anders)
    if(best>255)best=255}
   var fx=x&7,fy=y&7,qe=(y>>3)*GN+(x>>3),q=qe*KP,w00=(8-fx)*(8-fy),w10=fx*(8-fy),w01=(8-fx)*fy,w11=fx*fy,q2=q+GN*KP;
   // W1c Eis: Kante mit dem feinen Rauschen ausgefranst; Eis liegt als flache Decke knapp über dem Wasser (Land darunter bleibt, ohne Hügel der Biome), Biom Schnee
@@ -330,14 +366,17 @@ function gelaende(a){var d=a.daten,buf=d.buffer,H=new Uint16Array(buf,0,FELDER),
   // Gelände folgt dem Biom: Hochland hebt zu Hügeln und Gipfeln, Sumpf senkt zu Senken; an der Küste ausgeblendet
   if(b>0){var fk=b>=320?256:(b<<8)/320|0,hu=KL.d>-M_HUEGEL?KL.d+M_HUEGEL:0,se=KL.s>-M_SENKE?KL.s+M_SENKE:0,auf=(hu*hu)>>13,ab2=(se*se)>>14;
    if(ab2>h-48)ab2=h-48;if(ab2<0)ab2=0;h+=((auf-ab2)*fk)>>8}
-  if(best<UFER&&h>=0){var ob=b-24;if(ob>h-8)ob=h-8;if(ob<4)ob=4;                                      // Wasserspiegel: glatte Erdhöhe, nie über dem Gelände (auch genau auf Meereshöhe: sonst reißt der Fluss an flachen Küsten ab)
+  if(best<UFER&&h>=0){var ob;if(N7A5A0&&kb>=0){ob=segs[kb*SG+5]*SP_ST+4;if(best>0&&h<ob+8)h=ob+8}   // N7a5a0: flacher Abschnitt; Uferfeld nie unter dem Spiegel
+   else{ob=b-24;if(ob>h-8)ob=h-8;if(ob<4)ob=4}                                      // Wasserspiegel: glatte Erdhöhe, nie über dem Gelände (auch genau auf Meereshöhe: sonst reißt der Fluss an flachen Küsten ab)
    if(best<=0){h=ob;fl=1}else{var ufer=ob+best*20;if(ufer<h)h=((h*best+ufer*(UFER-best))/UFER)|0}}
   for(k=0;k<nTeich;k++){var tx=x-teiche[k*3],ty=y-teiche[k*3+1],tr=teiche[k*3+2];if(tx*tx+ty*ty<tr*tr&&h>-8){h=-8;fl=0}}   // Mündung: der Fluss endet sichtbar im Wasser
   var bi;
   if(fl)bi=10;
   else if(h<0)bi=KS[i]>127?11:h<-600?0:1;
   else if(h<24&&KS[i]<=127)bi=2;
-  else{bi=bk;if(bi===11)h-=16}                                                                        // Teich: Spiegel ein Feld tiefer
+  else{bi=bk;if(N7A5A0&&bi!==11&&KL.t>-T_UFER){var tu=spStufe(teichH(X,seed,cx,cy,x,y,zonig)-SP_ST)*SP_ST+8;if(h<tu&&tu-h<=2*SP_ST)h=tu}   // N7a5a0: Ufer eines Teichs nie unter dem Spiegel (auch der Streifen zwischen zwei Stufen)
+  if(bi===11){if(N7A5A0){var th=teichH(X,seed,cx,cy,x,y,zonig),tr=(th-SP_AB-SP_ST)&63,td=(tr<32?tr:64-tr)*2,tg=3*Math.abs(teichH(X,seed,cx,cy,x+1,y,zonig)-teichH(X,seed,cx,cy,x-1,y,zonig))+3*Math.abs(teichH(X,seed,cx,cy,x,y+1,zonig)-teichH(X,seed,cx,cy,x,y-1,zonig));
+    if(td<tg){bi=unter(KAN[KL.l]);h=(spStufe(th-SP_ST)+1)*SP_ST+8}else h=spStufe(th-SP_ST)*SP_ST+4}else h-=16}}   // N7a5a0: nahe einer Stufengrenze (rund 2 Felder) bleibt Land: zwei Teiche statt eines Teichs mit Stufe   // N7a5a0: Teichspiegel flach (geglättete Erdhöhe, eine Stufe darunter) statt Gelände − 1                                                                        // Teich: Spiegel ein Feld tiefer
   h+=MEER;H[i]=h<0?0:h>65535?65535:h;B[i]=bi}
  // W1b: Straßen, Brücken, Stege, Ortsplatz (nur wenn die Zelle oder die Nachbarzelle hinter einer nahen Kante etwas davon hat)
  for(i=0;i<FELDER;i++)W[i]=0;nStempel=0;pTyp=0;
@@ -389,8 +428,9 @@ function klasse(P,p,V,j1,j2,ufer){var c,b=0,v,oh=-1e9,os=-1e9;
  for(c=0;c<KN;c++){v=P[p+c]+V[c]+(c===3?ufer:0);if(c!==5&&v>oh)oh=v;if(c!==3&&v>os)os=v;KV[c]=v+((JA[c]*j1+JB[c]*j2)>>1);if(KV[c]>KV[b])b=c}   // Vorsprünge ohne Fransen: Hügel und Schnee bleiben glatt
  KV[5]=P[p+5]+V[5];KV[3]=P[p+3]+V[3]+ufer;
  KL.d=KV[5]-oh;KL.s=KV[3]-os;
- if(b===5)return KL.d>M_SCHNEE+(P[p+KN+1]|0)+(V[KN+1]|0)?9:8;                                           // Schnee auf den Kuppen (N2b: Schwelle je Zone)
- if(P[p+KN]+(V[KN]|0)+j1-(KL.d>-M_HUEGEL?KL.d+M_HUEGEL:0)+(KL.s>0?KL.s>>2:0)>M_TEICH)return 11;               // Teiche und Seen, nie am Hang, gern im Sumpf
+ if(b===5){KL.t=-1e9;KL.l=5;return KL.d>M_SCHNEE+(P[p+KN+1]|0)+(V[KN+1]|0)?9:8}                                           // Schnee auf den Kuppen (N2b: Schwelle je Zone)
+ KL.l=b;KL.t=P[p+KN]+(V[KN]|0)+j1-(KL.d>-M_HUEGEL?KL.d+M_HUEGEL:0)+(KL.s>0?KL.s>>2:0)-M_TEICH;   // N7a5a0: Landbiom unter einem Teich, Abstand zur Teichschwelle (Ufer)
+ if(KL.t>0)return 11;               // Teiche und Seen, nie am Hang, gern im Sumpf
  return unter(KAN[b])}
 
 // ── N2b Kartenstücke folgen den Klimazonen (N2a) ──
@@ -807,5 +847,6 @@ function stueck(seed,A,cx,cy,daten){   // A muss ort und weg tragen (ansicht der
 
 var WG={N4C:N4C,HS_SYS:HS_SYS,HS_G:HS_G,HS_MAX:HS_MAX,HS_FARBEN:HS_FARBEN,HS_BEI:HS_BEI,teilHerrschaften:teilHerrschaften,hsKette:hsKette,hsReich:hsReich,N4B:N4B,VK_KUL:VK_KUL,VOLK_MAX:VOLK_MAX,VK_KOPF:VK_KOPF,VK_JE:VK_JE,teilVoelker:teilVoelker,ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,N2B:N2B,ZV:ZV,zonenV:zonenV,zfuell:zfuell,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
  TEIL_NAME:TEIL_NAME,BIOM:BIOM,DX:DX,DY:DY,HW:HW,mix:mix,ansicht:ansicht,erdTeil:erdTeil,erde:erde,ausschnitt:ausschnitt,gelaende:gelaende,stueck:stueck,rechnen:rechnen,kante:kante,biomVon:biomVon,herrscht:herrscht,ZONE:ZONE,ZONE_EN:ZONE_EN,N2C:N2C,Z_UNTER:Z_UNTER,Z_BIOM:Z_BIOM,zbio:zbio,istLand:istLand,unter:unter,ZK:ZK,zonen:zonen,zonenRegen:zonenRegen,zonenKlasse:zonenKlasse,zonenSpeicher:zonenSpeicher,waerme:waerme,zBreite:zBreite,anteile:anteile,punkt:punkt,neigung:neigung,klasse:klasse,KAN:KAN};
+WG.wasserFlach=function(on){if(on!=null)N7A5A0=!!on;return N7A5A0};WG.erdH=erdH;WG.spStufe=spStufe;WG.teichH=function(a,x,y){var X=new Int16Array(a.daten.buffer,ST_BYTES,AUS);return teichH(X,a.seed>>>0,a.cx,a.cy,x,y,true)};   // N7a5a0: Schalter für Tests
 if(typeof module!=='undefined'&&module.exports)module.exports=WG;else root.AT3WG=WG;
 })(typeof self!=='undefined'?self:this);
