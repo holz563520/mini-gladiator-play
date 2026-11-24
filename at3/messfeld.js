@@ -17,6 +17,7 @@ function zeilen(){var K=window.AT3SPIEL&&AT3SPIEL.karte&&AT3SPIEL.karte(),M=K&&K
  z.push('Towns: '+(M.orte||0)+' · plan max '+ms(M.ortMaxMs)+' ms · lists '+(M.listen==null?'–':M.listen)+'/4 · list total '+ms(M.listeMs)+' ms');
  z.push('Outposts: '+(M.posten||0)+' · lists of '+(M.postenListen||0)+' towns · biggest list '+ms(M.postenMs)+' ms');   // N7a2c
  z.push('Buildings: '+(M.haeuser||0)+' images '+mb(M.hausB)+'/2 MB · biggest step '+ms(M.hausMs)+' ms · pauses '+(M.hausPausen||0));
+ z.push('Half (½): '+(M.halbN||0)+' images '+mb(M.halbB)+'/1 MB · biggest step '+ms(M.halbMs)+' ms');   // N7a3a
  z.push('Kartei: '+(M.kartei||0)+' images '+mb(M.karteiB)+'/4 MB');
  z.push('Map images: '+(M.bilder||0)+' · '+mb(M.bytes)+' MB (max '+mb(M.maxBytes)+') · visible '+(M.sichtbar||0)+' · placeholders '+(M.ersatz||0)+(M.fertig?' · done':' · working'));
  z.push('Device: '+(n.hardwareConcurrency||'?')+' cores · '+(n.deviceMemory?n.deviceMemory+' GB':'? GB')+' · '+innerWidth+'×'+innerHeight+' @'+(devicePixelRatio||1)+' · '+((performance.now()-start)/1000|0)+' s');

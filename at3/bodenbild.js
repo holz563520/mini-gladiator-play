@@ -83,7 +83,7 @@ function bild(hole,x0,y0,lod,F,NT,BA,OT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,s
 function ortBoden(OT,px,w,h,ox,oy,x0,y0,n,hw,hh,st,pal){var m=n+1,z=0;
  for(var s=0;s<=2*(n-1);s++)for(var i=Math.max(0,s-n+1);i<=Math.min(n-1,s);i++){var j=s-i,X=x0+i,Y=y0+j;if(X>=WX)X-=WX;if(OT.zelle(X,Y)<0)continue;
   var e=j*m+i,l=ECK[e];if(ECK[e+1]!==l||ECK[e+m]!==l||ECK[e+m+1]!==l)continue;var L=OT.boden(X,Y);if(!L)continue;z++;
-  var xc=ox+(i-j)*hw,yc=oy+(i+j)*hh-l*st+16;
+  var xc=ox+(i-j)*hw,yc=oy+(i+j)*hh-l*st+hh;   // N7a3a: Feldmitte auch in ½ (1×: +16 wie vorher)
   for(var q=0;q<L.length;q++){var sp=L[q],sx=xc-sp.ax,sy=yc-sp.ay,spx=sp.px,sw=sp.w,k0=sx<0?-sx:0,k1=sx+sw>w?w-sx:sw;
    for(var y=sy<0?-sy:0;y<sp.h&&sy+y<h;y++){var zo=(sy+y)*w+sx,zs=y*sw;for(var k=k0;k<k1;k++){var c=spx[zs+k];if(c!==255)px[zo+k]=pal[c]}}}}
  return z}
