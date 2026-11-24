@@ -1,7 +1,7 @@
 {
  "format": 1,
  "hinweis": "Bilder der Welt außerhalb des Arena-Geländes (AT3_NEUAUSRICHTUNG.md 5–6, Schritt N1). Grundlage der Grafik-Arbeitsliste (arbeitsliste.js) und später von N5–N8. Namen englisch fürs Spiel, Beschreibungen deutsch für den Zeichner. Baustile und Hauptstädte gehören seit N4a zu den Kulturkreisen (kulturen.json). werkzeug: welche Werkzeuge schon gebaut sind; Einträge mit „wartet“ schlägt „nächste Grafik“ erst vor, wenn das Werkzeug da ist.",
- "werkzeug": {"N6a": true, "N6b": false},
+ "werkzeug": {"N6a": true, "N6b": true},
  "biome": [
   {"id": "mediterranean", "de": "Mittelmeer-Buschland", "en": "Mediterranean Scrub", "bauweise": "weiß verputzte Häuser, rote Ziegel, Säulen, Weinberge und Olivenhaine am Hang"},
   {"id": "grassland", "de": "Grasland, Steppe", "en": "Grassland", "bauweise": "Holz und Lehm, Pferdekoppeln, Zelte am Rand, weite Felder"},

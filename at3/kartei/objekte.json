@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 960,
+ "typMax": 964,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -8499,6 +8499,42 @@
    "name": "Hash Press W",
    "status": "uebernommen",
    "datei": "obj/elend-hasch-west.json"
+  },
+  {
+   "id": "boden-muellgrube-n",
+   "version": 1,
+   "typ": 961,
+   "kat": "boden",
+   "name": "Refuse Pit",
+   "status": "skizze",
+   "datei": "obj/boden-muellgrube-n.json"
+  },
+  {
+   "id": "boden-muellgrube-o",
+   "version": 1,
+   "typ": 962,
+   "kat": "boden",
+   "name": "Refuse Pit",
+   "status": "skizze",
+   "datei": "obj/boden-muellgrube-o.json"
+  },
+  {
+   "id": "boden-muellgrube-w",
+   "version": 1,
+   "typ": 963,
+   "kat": "boden",
+   "name": "Refuse Pit",
+   "status": "skizze",
+   "datei": "obj/boden-muellgrube-w.json"
+  },
+  {
+   "id": "boden-muellgrube-s",
+   "version": 1,
+   "typ": 964,
+   "kat": "boden",
+   "name": "Refuse Pit",
+   "status": "skizze",
+   "datei": "obj/boden-muellgrube-s.json"
   }
  ]
 }
