@@ -29,9 +29,14 @@ function wahl(seed,A,k,D,ON){var O=D.O,r=O.roh(seed,A,k,ON),b=O.bilanz(seed,r,D.
  var rel=religion(A,k,D.REL);if(rel)opt.religion=rel;
  var kk=D.KK&&r.kultur?D.KK.filter(function(c){return c.nr===r.kultur})[0]:null;
  return{opt:opt,roh:r,bilanz:b,name:r.name,stilKultur:kk?kk.baustil:null}}
-// Plan sicher bauen: SB = stadtbild.js. Echte Orte treffen Lagen, die im Editor selten vorkommen; scheitert der Plan (z. B. „Außenring passt nicht“),
-// plant er ohne Vor-den-Toren-Ring und Umland (opt.aussen:false) und meldet das in ersatz. Nie ohne Bild, nie ein Absturz im Bildkern.
-function planen(SB,opt){try{return{P:SB.plan(opt),ersatz:null}}catch(e){var o=Object.assign({},opt,{aussen:false});return{P:SB.plan(o),ersatz:'ohne-aussen',fehler:e.message}}}
+// Plan sicher bauen: SB = stadtbild.js. Echte Orte treffen Lagen, die im Editor selten vorkommen; scheitert der Plan (z. B. „Außenring passt nicht“) auch mit
+// den Ausweich-Seeds, plant er ohne Vor-den-Toren-Ring und Umland (opt.aussen:false) und meldet das in ersatz. Nie ohne Bild, nie ein Absturz im Bildkern.
+// N7a1b (Thomas 24.11.2026): vorher bis zu AUSWEICH andere Plan-Seeds (gleicher Ort, gleiche Liste, nur anders angelegt; z. B. Küste + Fluss ließen am
+// Stinktor keinen Platz für die Elendsbuden). ausweich = Nummer des genommenen Seeds (0 = eigener). Gleicher Ort = gleiches Ergebnis auf jedem Gerät.
+var AUSWEICH=4;
+function planen(SB,opt){var f1=null;for(var a=0;a<=AUSWEICH;a++){var o=a?Object.assign({},opt,{seed:(opt.seed+a*7919)>>>0}):opt;
+  try{var r={P:SB.plan(o),ersatz:null};if(a){r.ausweich=a;r.fehler=f1}return r}catch(e){if(!f1)f1=e.message}}
+ var o2=Object.assign({},opt,{aussen:false});return{P:SB.plan(o2),ersatz:'ohne-aussen',fehler:f1}}
 // Ortspunkt in Weltfeldern (weltgen.ortPunkt)
 function punkt(WG,seed,A,k){var z=A.orte[k]&0xffffff;return WG.ortPunkt(seed,A,z%WG.GW,(z/WG.GW)|0)}
 function welt(WG,x){var w=WG.GW*WG.ZF;x%=w;return x<0?x+w:x}
@@ -58,5 +63,5 @@ function posten(WG,seed,A,k,D,AP,w){w=w||wahl(seed,A,k,D);var P0=punkt(WG,seed,A
 // Lage eines Postenplans: Mitte = Postenpunkt (p.x, p.y), Ausgang = Anschluss des Feldwegs zum eigenen Ort
 function postenLage(WG,p,P){var h=P.W>>1,x0=welt(WG,p.x-h),y0=p.y-h,Q=P.posten,r=Q&&Q.weg&&Q.weg.rand;
  return{punkt:[p.x,p.y],x0:x0,y0:y0,W:P.W,tore:[],ausgaenge:r?[{seite:Q.anschluss.seite,i:r.i,j:r.j,breite:1,art:'feldweg',x:welt(WG,x0+r.i),y:y0+r.j}]:[]}}
-var M={ZONE_BIOM:ZONE_BIOM,biomVon:biomVon,planSeed:planSeed,religion:religion,wahl:wahl,planen:planen,punkt:punkt,lage:lage,toreAus:toreAus,ausgaenge:ausgaenge,posten:posten,postenLage:postenLage};
+var M={AUSWEICH:AUSWEICH,ZONE_BIOM:ZONE_BIOM,biomVon:biomVon,planSeed:planSeed,religion:religion,wahl:wahl,planen:planen,punkt:punkt,lage:lage,toreAus:toreAus,ausgaenge:ausgaenge,posten:posten,postenLage:postenLage};
 if(typeof module!=='undefined'&&module.exports)module.exports=M;else G.AT3ORTSBILD=M})(typeof self!=='undefined'?self:this);
