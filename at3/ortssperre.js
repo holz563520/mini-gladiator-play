@@ -16,7 +16,7 @@ var WX=64*9600;
 // Feldklassen: [zu Fuß, Karren] Tempo × 100 (wie begehbar.js: Gebäudeboden 85, Pflaster 110, Trampelpfad 95, Wiese/Sand 0,85)
 var K_GESPERRT=0,K_GASSE=1,K_PLATZ=2,K_KAI=3,K_TOR=4,K_FELDWEG=5,K_STEG=6,K_HAUS=7,K_WIESE=8,K_FELD70=9,K_FELD55=10,K_FELD40=11,K_WALD=12;
 var TEMPO=[[0,0],[100,100],[110,100],[100,100],[100,100],[95,0],[100,0],[85,0],[85,0],[70,0],[55,0],[40,0],[75,0],[0,0],[0,0],[0,0]];
-var ZELLE={s:K_GASSE,o:K_PLATZ,m:K_PLATZ,q:K_KAI,h:K_FELDWEG,y:K_STEG,g:K_WIESE,u:K_WIESE,e:K_WIESE,p:K_WIESE};   // w Wasser, x Fels: gesperrt
+var ZELLE={s:K_GASSE,o:K_PLATZ,m:K_PLATZ,q:K_KAI,h:K_FELDWEG,y:K_STEG,g:K_WIESE,u:K_WIESE,e:K_WIESE,p:K_WIESE,v:K_WIESE,r:K_GASSE};   // w Wasser, x Fels, n Weltwasser: gesperrt; N7a5a2 v Weltufer, r Holzbrücke
 var DS=[[0,-1],[-1,0],[0,1],[1,0]];   // Seiten 0 Nord, 1 West, 2 Süd, 3 Ost (begehbar.js)
 function feldKlasse(t){return t>=80?K_WIESE:t>=60?K_FELD70:t>=45?K_FELD55:t>0?K_FELD40:K_GESPERRT}
 function seiteVon(di,dj){return dj<0?0:di<0?1:dj>0?2:3}
@@ -31,7 +31,7 @@ function maske(P,KOL,opt){var W=P.W,WW=W*W,M=new Uint8Array(WW),Z=P.zellen,SB=SB
   if(c==='f'||(P.flur&&c==='g'&&SB&&SB.flurArt(P,i,j))){var t=SB?SB.flurTempo(P,i,j,'mensch',opt):null;M[k]=t==null?K_WIESE:feldKlasse(t)}
   else M[k]=ZELLE[c]||K_GESPERRT}
  // 2) Hohe Dinge sperren (Feldzeichen x), „nur zu Fuß“ (p) nimmt dem Karren das Feld. Das Ding steht auf seinem vordersten Feld (i, j), die Fläche reicht nach hinten.
- if(!po)for(var n=0;n<P.dinge.length;n++){var d=P.dinge[n],e=O[d.id];if(!e)continue;
+ if(!po)for(var n=0;n<P.dinge.length;n++){var d=P.dinge[n],e=O[d.id];if(!e||d.rolle==='bruecke')continue;
   for(y=0;y<e[1];y++)for(x=0;x<e[0];x++){var ch=e[2].charAt(y*e[0]+x),fi=d.i-e[0]+1+x,fj=d.j-e[1]+1+y;if(fi<0||fj<0||fi>=W||fj>=W)continue;k=fj*W+fi;
    if(ch==='x')M[k]=K_GESPERRT;else if(ch==='p'&&TEMPO[M[k]&15][1])M[k]=K_WIESE}}
  // 3) Pferchzäune: geschlossene Kanten (Gatter offen)
@@ -55,9 +55,10 @@ function lupe(L){if(!L||!L.length)return null;
  return f}
 // N7a4b1: eingeebnete Höhe (Rohwert wie weltgen, 64 = eine Stufe) am Weltfeld X, Y, rechnet genau wie ortsflaeche.js flachen(): auf der Fläche die Höhe des Ortspunkts,
 // im Hangring (Abstand d = 1 … R) höchstens d Stufen davon entfernt; Meer (Biom 0, 1), Fluss (10) und See (11) bleiben, wie sie sind. Mehrere Orte nacheinander.
+// N7a5a2: Karten mit ww (Ort mit Weltwasser) lassen Wasser in Ruhe, sk = Senke je Planfeld (Böschung zum tieferen Wasser), genau wie ortsflaeche.js flachen().
 function hoch(L,X,Y,h,b){for(var n=0;n<L.length;n++){var o=L[n];if(o.h0==null)continue;var R=o.R,N=o.W+2*R,i=X-(o.x0-R);i%=WX;if(i<0)i+=WX;var j=Y-(o.y0-R);
   if(i>=N||j<0||j>=N)continue;var d=Math.max(i<R?R-i:i>=R+o.W?i-R-o.W+1:0,j<R?R-j:j>=R+o.W?j-R-o.W+1:0);
-  if(d===0){h=o.h0;continue}if(b<2||b===10||b===11)continue;var lo=o.h0-d*64,hi=o.h0+d*64;h=h<lo?lo:h>hi?hi:h;if(h<0)h=0}
+  if(d===0){if(!(o.ww&&(b<2||b===10||b===11))){h=o.sk?o.h0-(o.sk.charCodeAt((j-R)*o.W+i-R)-48)*64:o.h0;if(h<0)h=0}continue}if(b<2||b===10||b===11)continue;var lo=o.h0-d*64,hi=o.h0+d*64;h=h<lo?lo:h>hi?hi:h;if(h<0)h=0}
  return h}
 // Tempo × 100 einer Feldklasse für Profil p (0 zu Fuß, 1 Karren)
 function tempo(v,p){return TEMPO[v&15][p]}

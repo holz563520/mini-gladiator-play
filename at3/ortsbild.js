@@ -73,7 +73,8 @@ function postenLage(WG,p,P){var h=P.W>>1,x0=welt(WG,p.x-h),y0=p.y-h,Q=P.posten,r
 var MASKE_S=[96,96,96,128,192,240,288,320], MASKE_R=24, M_MEER=1, M_FLUSS=2, M_SEE=3, M_STRAND=4;
 function maskeSeite(g){g=g|0;return MASKE_S[g<0?0:g>7?7:g]+2*MASKE_R}
 // WG = weltgen.js, A = Ansicht der fertigen Erde (mit Orten und Wegen), g = Ortsgröße, h0 = Höhe am Ortspunkt (1/16 Feld), puf = Auftragspuffer (WG.GEL_BYTES) oder nichts
-function wasserMaske(WG,seed,A,k,g,h0,puf){var t0=Date.now(),p=punkt(WG,seed,A,k),N=maskeSeite(g),x0=welt(WG,p[0]-(N>>1)),y0=p[1]-(N>>1),m=new Uint8Array(N*N),
+// N7a5a2: nMin = größere Seite, wenn der Plan um das Wasser herum über die übliche Größe gewachsen ist (Ortskern plant dann einmal neu)
+function wasserMaske(WG,seed,A,k,g,h0,puf,nMin){var t0=Date.now(),p=punkt(WG,seed,A,k),N=Math.max(maskeSeite(g),nMin|0),x0=welt(WG,p[0]-(N>>1)),y0=p[1]-(N>>1),m=new Uint8Array(N*N),
   ST=64,F=WG.FELDER,WY=WG.GH*WG.ZF,SX=WG.GW*WG.ZF/ST,nW=0,nS=0,cx,cy,u,v;
  puf=puf||new Uint8Array(WG.GEL_BYTES);m.fill(16<<3);
  var c0=Math.floor(x0/ST),c1=Math.floor((x0+N-1)/ST),r0=Math.floor(Math.max(0,y0)/ST),r1=Math.floor((Math.min(WY,y0+N)-1)/ST);

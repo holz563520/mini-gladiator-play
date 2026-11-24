@@ -31,6 +31,7 @@ var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152, HALB_GR=1048576, VIERTEL
 var RAMPE_P=8, HALTEN_P=64, LISTEN_P=16, PL_HALTEN=48, PWEIT=2600;   // N7a2c: Hang, Posten gemerkt, Posten mit Liste, Orte mit Postenliste, größter Abstand Ortspunkt → Postenrand (gemessen 2.268 + 18 + Hang)   // N7a2b2: LISTEN Orte mit ganzer Elementliste, HAUS Bytes gemerkte Gebäudebilder
 //  RAMPE: Felder Hang rund um die Fläche (eine Höhenstufe = 64 Einheiten je Feld, wie RollerCoaster Tycoon); HALTEN: Orte im Speicher
 var CODES='gsomfwepxqyuh', FARBE_RGB=[[104,138,64],[150,128,96],[156,150,138],[216,210,198],[186,160,84],[56,98,150],[112,86,58],[124,154,78],[122,116,108],[140,134,122],[128,92,58],[214,194,146],[146,118,84]];
+var WELT_C={n:1,v:1,r:1,y:1};   // N7a5a2: Zellen, unter denen der Boden der Welt bleibt (nur in Plänen mit P.weltwasser)
 var DACH_RGB=[150,66,48], WAND_RGB=[202,180,140], MAUER_RGB=[150,146,136];
 function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,sprite=new Map(),SBx=null,KL=null,EMS=[];
  var POSTEN=false,PL=new Map(),gefragtP=new Set(),LIP=[],IDX=new Map(),PST={listen:0,ms:0,maxMs:0};   // N7a2c
@@ -49,7 +50,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  // Ort aufnehmen (Antwort des Ortskerns). bau(k) → true, wenn das Kartenstück k Gebautes des Spielers hat (Park gewinnt). Gibt die Kartenstücke, deren Bild sich ändert.
  function aufnehmen(m,bau){gefragt.delete(m.k);if(m.fehler||!m.P||!m.lage)return[];var L=m.lage,P=m.P,W=L.W,o={k:m.k,g:m.g,name:m.name,x0:L.x0,y0:L.y0,W:W,h0:m.h0,s0:BB.stufe(m.h0),
    Z:new Uint8Array(W*W),bauten:[],fach:new Map(),aus:new Set(),ms:m.ms,ersatz:m.ersatz,t:++zeit,P:P,E:null,wartet:false,posten:m.ort!=null,ort:m.ort,art:m.art,R:m.ort!=null?RAMPE_P:RAMPE},i,j;   // N7a2c: posten, Hang R   // N7a2b1: Plan für die echten Böden
-  for(i=0;i<W*W;i++){var c=CODES.indexOf(P.zellen.charAt(i));o.Z[i]=c<0?0:c}
+  o.ww=!!P.weltwasser;o.sk=P.senke||null;for(i=0;i<W*W;i++){var ch=P.zellen.charAt(i),c=CODES.indexOf(ch);o.Z[i]=o.ww&&WELT_C[ch]?255:c<0?0:c}   // N7a5a2: Weltwasser, Weltufer, Brücke, Steg → hier malt die Welt
   P.bauten.forEach(function(b){if(!(b.w>0&&b.h>0))return;var e={i:b.i,j:b.j,w:b.w,h:b.h,m:b.rolle==='mauer'},fi=b.i+b.w-1,fj=b.j+b.h-1,key=(fi>>3)*4096+(fj>>3);   // Fach nach dem vordersten Feld (8 × 8)
    o.bauten.push(e);var f=o.fach.get(key);if(!f)o.fach.set(key,f=[]);f.push(e)});
   var R=o.R,X0=o.x0-R,Y0=o.y0-R,N=W+2*R;
@@ -103,12 +104,13 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
    var p=G.ortPunkt(seed,A,X,zy),dx=p[0]-x;if(dx>WX/2)dx-=WX;else if(dx<-WX/2)dx+=WX;if(Math.abs(dx)<=PWEIT&&Math.abs(p[1]-y)<=PWEIT)L.push(k)}
   return L}
  // Ein frisch gerechnetes Kartenstück (b = weltgen-Puffer) einebnen; gibt true, wenn sich etwas geändert hat
+ // N7a5a2: Orte mit Weltwasser (o.ww) lassen Meer, Fluss und See in Ruhe, Land am tieferen Wasser sinkt als Böschung um P.senke Stufen (gleich in ortssperre.js hoch)
  function flachen(b,cx,cy){if(!orte.size)return false;var s=BB.sicht(b),H=s.H,B=s.B,k=cx*8192+cy,ja=false;
   orte.forEach(function(o){if(o.aus.has(k))return;var R=o.R,W=o.W,N=W+2*R,i0=lok(o,cx*ST)+R,j0=cy*ST-o.y0+R;
    if((i0>=N&&i0<WX-ST)||j0>=N||j0+ST<=0)return;
    for(var y=0;y<ST;y++){var j=j0+y;if(j<0||j>=N)continue;for(var x=0;x<ST;x++){var i=i0+x;if(i>=WX)i-=WX;if(i<0||i>=N)continue;
      var d=Math.max(i<R?R-i:i>=R+W?i-R-W+1:0,j<R?R-j:j>=R+W?j-R-W+1:0),q=(y<<6)|x,h=H[q],z;
-     if(d===0)z=o.h0;else{var bb=B[q];if(bb<2||bb===10||bb===11)continue;var lo=o.h0-d*64,hi=o.h0+d*64;z=h<lo?lo:h>hi?hi:h;if(z<0)z=0}
+     if(d===0){var b0=B[q];if(o.ww&&(b0<2||b0===10||b0===11))continue;z=o.sk?o.h0-(o.sk.charCodeAt((j-R)*W+i-R)-48)*64:o.h0;if(z<0)z=0}else{var bb=B[q];if(bb<2||bb===10||bb===11)continue;var lo=o.h0-d*64,hi=o.h0+d*64;z=h<lo?lo:h>hi?hi:h;if(z<0)z=0}
      if(z!==h){H[q]=z;ja=true}}}});
   return ja}
  // Ort am Weltfeld (X, Y): {o, i, j} oder null
@@ -223,7 +225,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  function fuerBild(x0,y0,n,lod,f){if(!orte.size)return null;var L=[];orte.forEach(function(o){var i=lok(o,x0),j=y0-o.y0;if((i<o.W||i>WX-n)&&j<o.W&&j+n>0)L.push(o)});if(!L.length)return null;
   var FBx=farben(f),k0=stk(x0,y0);L=L.filter(function(o){return !o.aus.has(k0)});if(!L.length)return null;
   return{farbe:FBx.boden,wasser:FBx.wasser,
-   zelle:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return o.Z[j*o.W+i]}return -1},
+   zelle:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W){var z=o.Z[j*o.W+i];return z===255?-1:z}}return -1},
    frei:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return false}return true},
    // N7a2b1: echter Boden des Planfelds unter (X, Y) als Liste von Bildern (Boden, dann Säume) oder null (Kartei-Bild fehlt noch → Ersatzfarbe, Ort wartet), nur in 1×
    boden:echtLod(lod)&&SBx&&KL?function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return bodenBilder(o,i,j,lod)}return null}:null,   // N7a3a: auch ½

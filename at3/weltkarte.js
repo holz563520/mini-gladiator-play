@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='3f9ee22a', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='69fabba8', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var N7A5A0=!/[?&]n7a5a0=0/.test(location.search||'');   // N7a5a0 Wasser waagrecht (ufer.js im Bildkern)
@@ -53,15 +53,16 @@ function starten(o){
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(MAXL,o.kam[2]|0));hatKam=true}
 
  function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(okern&&kern&&kern.ortskernWeg)kern.ortskernWeg();try{okern&&okern.terminate()}catch(e){}okern=null;if(o.beiAusfall)o.beiAusfall(g2)}
- try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*|n7a5a0)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
+ try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*|n7a5a[0-9])=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
  if(bk){bk.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ende('picture core failed')};bk.onmessage=vomBildkern;
   var F=S.PALETTEN[S.PALETTE].farben,pal=new Uint32Array(64),du=new Uint8Array(64),he=new Uint8Array(64);
   for(var i=0;i<64;i++){var c=S.farbe(F[i]);pal[i]=(255<<24|c[2]<<16|c[1]<<8|c[0])>>>0;du[i]=S.dunkler(i);he[i]=i}
   for(var r=0;r<S.REIHEN.length;r++)for(var k=0;k<S.REIHEN[r].n-1;k++)he[S.START[r]+k]=S.START[r]+k+1;
   bk.postMessage({art:'init',pal:pal,du:du,he:he});
+  // N7a5a2: Notausschalter der Wasserschritte (?n7a5a0/1/2=0) gehen an den Ortskern mit.
   // N7a2a: Ortskern (ortskern.js) = eigener Hintergrundkern für die Ortspläne, spricht über einen MessageChannel direkt mit dem Bildkern.
   // Fehlt er (kein Worker, Fehler), plant der Bildkern eingebettet in seinen Pausen (Regel 13). Notausschalter ?n7a2=0 (dann keine Ortsflächen), ?n7a2k=0 nur ohne eigenen Ortskern (Probe für Regel 13).
-  if(!/[?&]n7a2k?=0/.test(location.search)&&typeof MessageChannel!=='undefined'){try{okern=new Worker(BASIS+'ortskern.js?v='+V+(/[?&]n7a5a0=0/.test(location.search)?'&n7a5a0=0':''));var mc=new MessageChannel();
+  if(!/[?&]n7a2k?=0/.test(location.search)&&typeof MessageChannel!=='undefined'){try{okern=new Worker(BASIS+'ortskern.js?v='+V+['n7a5a0','n7a5a1','n7a5a2'].map(function(x){return new RegExp('[?&]'+x+'=0').test(location.search)?'&'+x+'=0':''}).join(''));var mc=new MessageChannel();
     okern.postMessage({art:'port',port:mc.port1},[mc.port1]);bk.postMessage({art:'ortskern',port:mc.port2},[mc.port2]);
     // N7a4a2: zweiter Kanal vom Ortskern zum Weltkern (Sperrkarten für die Wegsuche)
     if(kern&&kern.ortskern){var mw=new MessageChannel();okern.postMessage({art:'portWelt',port:mw.port1},[mw.port1]);kern.ortskern(mw.port2)}
