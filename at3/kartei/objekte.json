@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 929,
+ "typMax": 952,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -8220,6 +8220,213 @@
    "name": "Open Gutter",
    "status": "skizze",
    "datei": "obj/boden-schlamm-rinne.json"
+  },
+  {
+   "id": "elend-muell-1",
+   "version": 1,
+   "typ": 930,
+   "kat": "einrichtung",
+   "name": "Rubbish Heap",
+   "status": "uebernommen",
+   "datei": "obj/elend-muell-1.json"
+  },
+  {
+   "id": "elend-muell-2",
+   "version": 1,
+   "typ": 931,
+   "kat": "einrichtung",
+   "name": "Spilled Rubbish",
+   "status": "uebernommen",
+   "datei": "obj/elend-muell-2.json"
+  },
+  {
+   "id": "elend-muell-3",
+   "version": 1,
+   "typ": 932,
+   "kat": "einrichtung",
+   "name": "Rubbish with Tax Notice",
+   "status": "uebernommen",
+   "datei": "obj/elend-muell-3.json"
+  },
+  {
+   "id": "elend-kot-1",
+   "version": 1,
+   "typ": 933,
+   "kat": "einrichtung",
+   "name": "Droppings",
+   "status": "uebernommen",
+   "datei": "obj/elend-kot-1.json"
+  },
+  {
+   "id": "elend-kot-2",
+   "version": 1,
+   "typ": 934,
+   "kat": "einrichtung",
+   "name": "Droppings with Sign",
+   "status": "uebernommen",
+   "datei": "obj/elend-kot-2.json"
+  },
+  {
+   "id": "elend-erbrochen-1",
+   "version": 1,
+   "typ": 935,
+   "kat": "einrichtung",
+   "name": "Vomit",
+   "status": "uebernommen",
+   "datei": "obj/elend-erbrochen-1.json"
+  },
+  {
+   "id": "elend-erbrochen-2",
+   "version": 1,
+   "typ": 936,
+   "kat": "einrichtung",
+   "name": "Vomit and Cup",
+   "status": "uebernommen",
+   "datei": "obj/elend-erbrochen-2.json"
+  },
+  {
+   "id": "elend-knochenhaufen-1",
+   "version": 1,
+   "typ": 937,
+   "kat": "einrichtung",
+   "name": "Bone Heap",
+   "status": "uebernommen",
+   "datei": "obj/elend-knochenhaufen-1.json"
+  },
+  {
+   "id": "elend-knochenhaufen-2",
+   "version": 1,
+   "typ": 938,
+   "kat": "einrichtung",
+   "name": "Bone Heap with Dice",
+   "status": "uebernommen",
+   "datei": "obj/elend-knochenhaufen-2.json"
+  },
+  {
+   "id": "elend-knochen-1",
+   "version": 1,
+   "typ": 939,
+   "kat": "einrichtung",
+   "name": "Bones",
+   "status": "uebernommen",
+   "datei": "obj/elend-knochen-1.json"
+  },
+  {
+   "id": "elend-knochen-2",
+   "version": 1,
+   "typ": 940,
+   "kat": "einrichtung",
+   "name": "Ribcage",
+   "status": "uebernommen",
+   "datei": "obj/elend-knochen-2.json"
+  },
+  {
+   "id": "elend-knochen-3",
+   "version": 1,
+   "typ": 941,
+   "kat": "einrichtung",
+   "name": "Soup Bone on a String",
+   "status": "uebernommen",
+   "datei": "obj/elend-knochen-3.json"
+  },
+  {
+   "id": "elend-waesche-1",
+   "version": 1,
+   "typ": 942,
+   "kat": "einrichtung",
+   "name": "Washing Line",
+   "status": "uebernommen",
+   "datei": "obj/elend-waesche-1.json"
+  },
+  {
+   "id": "elend-waesche-2",
+   "version": 1,
+   "typ": 943,
+   "kat": "einrichtung",
+   "name": "Line with a Toga",
+   "status": "uebernommen",
+   "datei": "obj/elend-waesche-2.json"
+  },
+  {
+   "id": "elend-kochstelle-1",
+   "version": 1,
+   "typ": 944,
+   "kat": "einrichtung",
+   "name": "Cold Fire Pit",
+   "status": "uebernommen",
+   "datei": "obj/elend-kochstelle-1.json"
+  },
+  {
+   "id": "elend-kochstelle-2",
+   "version": 1,
+   "typ": 945,
+   "kat": "einrichtung",
+   "name": "Soup Kettle",
+   "status": "uebernommen",
+   "datei": "obj/elend-kochstelle-2.json"
+  },
+  {
+   "id": "elend-wasser-1",
+   "version": 1,
+   "typ": 946,
+   "kat": "einrichtung",
+   "name": "Water Barrels",
+   "status": "uebernommen",
+   "datei": "obj/elend-wasser-1.json"
+  },
+  {
+   "id": "elend-wasser-2",
+   "version": 1,
+   "typ": 947,
+   "kat": "einrichtung",
+   "name": "Clean Water Mostly",
+   "status": "uebernommen",
+   "datei": "obj/elend-wasser-2.json"
+  },
+  {
+   "id": "elend-schrein-1",
+   "version": 1,
+   "typ": 948,
+   "kat": "einrichtung",
+   "name": "Shrine of the Gutter God",
+   "status": "uebernommen",
+   "datei": "obj/elend-schrein-1.json"
+  },
+  {
+   "id": "elend-schrein-2",
+   "version": 1,
+   "typ": 949,
+   "kat": "einrichtung",
+   "name": "Shrine with Offering Box",
+   "status": "uebernommen",
+   "datei": "obj/elend-schrein-2.json"
+  },
+  {
+   "id": "elend-karren",
+   "version": 1,
+   "typ": 950,
+   "kat": "einrichtung",
+   "name": "Broken Handcart",
+   "status": "uebernommen",
+   "datei": "obj/elend-karren.json"
+  },
+  {
+   "id": "elend-lumpen",
+   "version": 1,
+   "typ": 951,
+   "kat": "einrichtung",
+   "name": "Rag Bed",
+   "status": "uebernommen",
+   "datei": "obj/elend-lumpen.json"
+  },
+  {
+   "id": "elend-schuldpfahl",
+   "version": 1,
+   "typ": 952,
+   "kat": "einrichtung",
+   "name": "Debt Post",
+   "status": "uebernommen",
+   "datei": "obj/elend-schuldpfahl.json"
   }
  ]
 }

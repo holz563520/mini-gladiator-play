@@ -732,6 +732,7 @@ function plan0(opt){
  if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P,opt);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
  if(!elend&&opt.ehrensaeulen!==false)ehrensaeulen(P);
  if(!elend){flurPlan(P,opt);dauerDinge(P,opt);pferchZaun(P,opt)}   // N6b4b2 Flurgürtel mit Höfen, Feldern und Feldwegen in Bildfeldern, ganz zum Schluss (Hofhäuser vorn in P.bauten; opt.flur:false = wie vorher)   // N6b3b4 Ehrensäulen am Marktplatz (opt.ehrensaeulen:false = wie vorher)
+ if(B.felder&&opt.budenbild!==false&&opt.elendDinge!==false&&(elend||(g>=MAUER_AB&&P.aussen&&P.aussen.buden)))elendDinge(P,seed);   // N6b5b1 Dinge im Elendsviertel (opt.elendDinge:false = wie vorher)
  budenBild(P,opt);   // N6b5a Elendsbuden als Ganzbild (opt.budenbild:false = wie vorher)
  delete P.mauertor;delete P.uferAuf;   // nur zum Rechnen der Tore
  // N6b4b2: hat der Gürtel nicht für alle Felder gereicht (Wüste: viele kleine Höfe), denselben Ort mit breiterem Gürtel neu planen (höchstens 3-mal)
@@ -2261,6 +2262,15 @@ function budeGanz(b){if(b.rolle!=='shack'||!b.bv||!b.tuer)return null;var r=HOF_
 // verbunden bleiben (so bleibt jedes Wegfeld vom Tor aus erreichbar). Etwa 4 von 5 möglichen Feldern, Reihenfolge nach Lage (rausch). Unter dem Anbau
 // Wiese wie bei den echten Buden (gemalt wird Schlamm, budeFelder). Notausschalter opt.budenEng:false (auch die Dichte), opt.anbauten:false (nur die Anbauten).
 var WEG_Z={s:1,o:1,m:1,e:1,h:1};
+// Bleiben die freien Wegfelder nb um (x, y) ohne (x, y) im Umkreis 6 untereinander verbunden? wegK(q) = Feld q ist freier Weg. Für Anbauten und hohe Dinge (N6b5b1).
+function wegLokal(W,wegK){var stamp=new Int32Array(W*W),gen=0,stk=new Int32Array(4*13*13+8);
+ return function(x,y,nb){if(nb.length<2)return true;var R=6,sp=0,k0=y*W+x;gen++;var s0=nb[0][1]*W+nb[0][0];stamp[s0]=gen;stk[sp++]=s0;
+  while(sp){var q=stk[--sp],qx=q%W,qy=(q-qx)/W;
+   if(qx>0&&qx-1>=x-R&&q-1!==k0&&stamp[q-1]!==gen&&wegK(q-1)){stamp[q-1]=gen;stk[sp++]=q-1}
+   if(qx<W-1&&qx+1<=x+R&&q+1!==k0&&stamp[q+1]!==gen&&wegK(q+1)){stamp[q+1]=gen;stk[sp++]=q+1}
+   if(qy>0&&qy-1>=y-R&&q-W!==k0&&stamp[q-W]!==gen&&wegK(q-W)){stamp[q-W]=gen;stk[sp++]=q-W}
+   if(qy<W-1&&qy+1<=y+R&&q+W!==k0&&stamp[q+W]!==gen&&wegK(q+W)){stamp[q+W]=gen;stk[sp++]=q+W}}
+  for(var m=1;m<nb.length;m++)if(stamp[nb[m][1]*W+nb[m][0]]!==gen)return false;return true}}
 function anbauten(P,s){var W=P.W,Z=P.zellen,N=W*W,HZ=P.hoehe||null,occ=new Uint8Array(N),tr=new Uint8Array(N),sperr=new Uint8Array(N),nah=new Uint8Array(N),NB=[[0,1],[1,0],[0,-1],[-1,0]],k;
  var mark=function(A,b,R){for(var y=Math.max(0,b.j-R);y<Math.min(W,b.j+b.h+R);y++)for(var x=Math.max(0,b.i-R);x<Math.min(W,b.i+b.w+R);x++)A[y*W+x]=1};
  P.bauten.forEach(function(b){mark(occ,b,0);if(b.rolle==='shack'){if(!b.anbau)mark(nah,b,3)}else mark(sperr,b,b.rolle==='mauer'?2:1);
@@ -2272,14 +2282,7 @@ function anbauten(P,s){var W=P.W,Z=P.zellen,N=W*W,HZ=P.hoehe||null,occ=new Uint8
  if(!st.length)for(k=0;k<N;k++){var ex=k%W,ey=(k/W)|0;if((ex===0||ey===0||ex===W-1||ey===W-1)&&weg(ex,ey)){err[k]=1;st.push(k)}}   // Elendssiedlung: vom Rand
  while(st.length){var q=st.pop(),qx=q%W,qy=(q/W)|0;for(var d0=0;d0<4;d0++){var nx=qx+NB[d0][0],ny=qy+NB[d0][1];if(weg(nx,ny)&&!err[ny*W+nx]){err[ny*W+nx]=1;st.push(ny*W+nx)}}}
  // bleiben die freien Wegfelder um (x, y) ohne (x, y) im Umkreis 6 verbunden?
- var stamp=new Int32Array(N),gen=0,stk=new Int32Array(4*13*13+8),wegK=function(q){return WEG_Z[Z.charAt(q)]===1&&!occ[q]};
- var lokal=function(x,y,nb){if(nb.length<2)return true;var R=6,sp=0,k0=y*W+x;gen++;var s0=nb[0][1]*W+nb[0][0];stamp[s0]=gen;stk[sp++]=s0;
-  while(sp){var q=stk[--sp],qx=q%W,qy=(q-qx)/W;
-   if(qx>0&&qx-1>=x-R&&q-1!==k0&&stamp[q-1]!==gen&&wegK(q-1)){stamp[q-1]=gen;stk[sp++]=q-1}
-   if(qx<W-1&&qx+1<=x+R&&q+1!==k0&&stamp[q+1]!==gen&&wegK(q+1)){stamp[q+1]=gen;stk[sp++]=q+1}
-   if(qy>0&&qy-1>=y-R&&q-W!==k0&&stamp[q-W]!==gen&&wegK(q-W)){stamp[q-W]=gen;stk[sp++]=q-W}
-   if(qy<W-1&&qy+1<=y+R&&q+W!==k0&&stamp[q+W]!==gen&&wegK(q+W)){stamp[q+W]=gen;stk[sp++]=q+W}}
-  for(var m=1;m<nb.length;m++)if(stamp[nb[m][1]*W+nb[m][0]]!==gen)return false;return true};
+ var lokal=wegLokal(W,function(q){return WEG_Z[Z.charAt(q)]===1&&!occ[q]});
  var L=[];for(k=0;k<N;k++)if(nah[k]&&!sperr[k]&&err[k]&&Z.charAt(k)==='e'&&!occ[k]&&!ding[k]&&!tr[k]&&rausch(k%W,(k/W)|0,s+611)<.8)L.push(k);
  L.sort(function(a,b){return rausch(a%W,(a/W)|0,s+612)-rausch(b%W,(b/W)|0,s+612)});
  var neu=0,gb=[];L.forEach(function(k){var x=k%W,y=(k/W)|0;if(occ[k]||tr[k])return;var nb=[],tuer=null,d;
@@ -2289,6 +2292,46 @@ function anbauten(P,s){var W=P.W,Z=P.zellen,N=W*W,HZ=P.hoehe||null,occ=new Uint8
   P.bauten.push(o);gb.push(k);neu++});
  if(gb.length){var Zs=Z.split('');gb.forEach(function(k){Zs[k]='g'});P.zellen=Zs.join('')}
  P.anbauten=neu}
+// N6b5b1 (Thomas 24.11.2026): Dinge im Elendsviertel (tools/at3-elendding.py) auf freien Schlammfeldern (e) höchstens 3 Felder von einer Bude, vor dem
+// Stinktor ummauerter Orte und in der Elendssiedlung. Nie vor einer Tür. Flaches (Kot, Erbrochenes, Knochen, Lumpenlager) überall, auch mitten auf der Gasse;
+// Hohes (Müll, Knochenhaufen, Wäscheleine, Kochstelle, Wasserstelle, Schrein, Karren, Schuldenpfahl) nur, wo die Wegfelder
+// daneben im Umkreis 6 verbunden bleiben (wie die Anbauten), nicht neben anderen Gebäuden und nicht an der Mauer. Etwa 4 von 10 Feldern, Art nach Lage (rausch),
+// je Art eine seltene Variante. Wasserstelle und Schrein gedeckelt (1 je 15 bzw. 40 Buden, mindestens 1). Alte Lagerplätze im Viertel weichen.
+// Hinterhöfe (freie Wiese direkt an einer Bude, kein Weg) bekommen nur Hohes. Dinge ohne Rolle (lose, wie Lagerplätze), hoch:1 für Hohes. Notausschalter opt.elendDinge:false.
+var ELEND_FLACH=[['kot',26],['erbrochen',10],['knochen',14],['lumpen',5]],ELEND_HOCH=[['muell',18],['knochenhaufen',6],['waesche',8],['kochstelle',5],['wasser',4],['schrein',2],['karren',2],['schuldpfahl',2]],
+ ELEND_SELTEN={muell:[3,.1],kot:[2,.12],erbrochen:[2,.15],knochenhaufen:[2,.15],knochen:[3,.1],waesche:[2,.12],kochstelle:[2,.15],wasser:[2,.15],schrein:[2,.2]},ELEND_DICHTE=.4;
+function elendId(art,u){var S=ELEND_SELTEN[art];if(!S)return 'elend-'+art;if(u<S[1])return 'elend-'+art+'-'+S[0];
+ var n=S[0]-1;return 'elend-'+art+'-'+(1+Math.min(n-1,Math.floor((u-S[1])/(1-S[1])*n)))}
+function elendDinge(P,s){var W=P.W,Z=P.zellen,N=W*W,HZ=P.hoehe||null,occ=new Uint8Array(N),tr=new Uint8Array(N),sperr=new Uint8Array(N),nah=new Uint8Array(N),NB=[[0,1],[1,0],[0,-1],[-1,0]],k,nB=0;
+ var mark=function(A,b,R){for(var y=Math.max(0,b.j-R);y<Math.min(W,b.j+b.h+R);y++)for(var x=Math.max(0,b.i-R);x<Math.min(W,b.i+b.w+R);x++)A[y*W+x]=1};
+ P.bauten.forEach(function(b){mark(occ,b,0);if(b.rolle==='shack'){mark(nah,b,3);if(!b.anbau)nB++}else mark(sperr,b,b.rolle==='mauer'?2:1);
+  if(b.tuer){var tx=b.tuer[0]+b.tuer[2],ty=b.tuer[1]+b.tuer[3];if(tx>=0&&ty>=0&&tx<W&&ty<W)tr[ty*W+tx]=1}});
+ if(!nB)return;
+ var istE=function(q){return Z.charAt(q)==='e'&&nah[q]};
+ P.dinge=P.dinge.filter(function(d){return d.rolle||!/^lager-platz/.test(d.id)||!(d.i>=0&&d.j>=0&&d.i<W&&d.j<W&&istE(d.j*W+d.i))});   // alte Lagerplätze im Viertel weichen
+ var ding=new Uint8Array(N);P.dinge.forEach(function(d){if(d.i>=0&&d.j>=0&&d.i<W&&d.j<W)ding[d.j*W+d.i]=1});
+ var lv=function(q){return HZ?HZ.charCodeAt(q)-48:0},weg=function(x,y){return x>=0&&y>=0&&x<W&&y<W&&WEG_Z[Z.charAt(y*W+x)]&&!occ[y*W+x]};
+ // nur im Rechteck um die Buden rechnen (Kosten nach Größe des Viertels, nicht des Orts)
+ var bx0=W,by0=W,bx1=-1,by1=-1;P.bauten.forEach(function(b){if(b.rolle!=='shack')return;bx0=Math.min(bx0,b.i-3);by0=Math.min(by0,b.j-3);bx1=Math.max(bx1,b.i+b.w+2);by1=Math.max(by1,b.j+b.h+2)});
+ bx0=Math.max(0,bx0);by0=Math.max(0,by0);bx1=Math.min(W-1,bx1);by1=Math.min(W-1,by1);
+ var lokal=wegLokal(W,function(q){return WEG_Z[Z.charAt(q)]===1&&!occ[q]});
+ var deckel={wasser:Math.max(1,Math.floor(nB/15)),schrein:Math.max(1,Math.floor(nB/40))},zahl={},SF=0,SH=0;ELEND_FLACH.forEach(function(a){SF+=a[1]});ELEND_HOCH.forEach(function(a){SH+=a[1]});
+ var wahl=function(L,u){for(var m=0;m<L.length-1;m++){u-=L[m][1];if(u<0)return L[m][0]}return L[m][0]};
+ var L=[],yy,xx;for(yy=by0;yy<=by1;yy++)for(xx=bx0;xx<=bx1;xx++){k=yy*W+xx;if(istE(k)&&!occ[k]&&!ding[k]&&!tr[k]&&rausch(xx,yy,s+621)<ELEND_DICHTE)L.push(k)}
+ L.sort(function(a,b){return rausch(a%W,(a/W)|0,s+622)-rausch(b%W,(b/W)|0,s+622)});
+ var neu=0,hoch=0;L.forEach(function(k){var x=k%W,y=(k/W)|0,u=rausch(x,y,s+623),art=null,h=false;
+  if(u<SH/(SF+SH)&&!sperr[k]){var a=wahl(ELEND_HOCH,rausch(x,y,s+624)*SH);
+   if(deckel[a]==null||(zahl[a]|0)<deckel[a]){var nb=[];for(var d=0;d<4;d++){var tx=x+NB[d][0],ty=y+NB[d][1];if(weg(tx,ty))nb.push([tx,ty])}
+    if(nb.length&&lokal(x,y,nb)){art=a;h=true}}}
+  if(!art)art=wahl(ELEND_FLACH,rausch(x,y,s+625)*SF);
+  zahl[art]=(zahl[art]|0)+1;if(h){occ[k]=1;hoch++}
+  var o={id:elendId(art,rausch(x,y,s+626)),i:x,j:y};if(h)o.hoch=1;if(HZ)o.hz=lv(k);P.dinge.push(o);neu++});
+ // Hinterhöfe: freie Wiesenfelder direkt an einer Bude (kein Weg) bekommen nur Hohes (Müll, Gerümpel, Wäsche …), ohne Wasserstelle und Schrein
+ var nah1=new Uint8Array(N);P.bauten.forEach(function(b){if(b.rolle==='shack')mark(nah1,b,1)});
+ var HH=ELEND_HOCH.filter(function(a){return deckel[a[0]]==null}),SHH=0;HH.forEach(function(a){SHH+=a[1]});
+ for(yy=by0;yy<=by1;yy++)for(xx=bx0;xx<=bx1;xx++){k=yy*W+xx;if(Z.charAt(k)!=='g'||!nah1[k]||occ[k]||ding[k]||sperr[k]||tr[k])continue;var x=xx,y=yy;if(rausch(x,y,s+627)>=ELEND_DICHTE)continue;
+  var art=wahl(HH,rausch(x,y,s+628)*SHH),o={id:elendId(art,rausch(x,y,s+629)),i:x,j:y,hoch:1};if(HZ)o.hz=lv(k);P.dinge.push(o);zahl[art]=(zahl[art]|0)+1;occ[k]=1;hoch++;neu++}
+ P.elendDinge={zahl:neu,hoch:hoch,arten:zahl}}
 var BUDE_C=new Map();
 function budeBild(b,hole){var g=budeGanz(b);if(!g)return null;var ids=[],cells=[],di,dj;
  for(dj=0;dj<b.h;dj++)for(di=0;di<b.w;di++){var tf=b.i+di===b.tuer[0]&&b.j+dj===b.tuer[1],id=tf?g.id:'elend-bude-'+budeVariante(b.i+di,b.j+dj,b.bv*977)+'-'+g.hr,o=hole(id),sp=o&&malbild(o);
