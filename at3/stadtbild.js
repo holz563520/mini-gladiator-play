@@ -237,7 +237,8 @@ function plan0(opt){
   var legT=function(k,du,dl,gap,was){var z=minZ(k);return leg(z,du,dl,gap,was,true)||leg(z^1,du,dl,gap,was,true)};
   // Elendsbuden als wilder Haufen an der Mauer vor dem Stinktor, der Mauer entlang (auch um Ecken, solange es dieselbe Seite bleibt):
   // je Spalte eine Schlammgasse direkt vor der Mauer (an Stufen so lang, dass sie zusammenhängt), dahinter Ue Felder Schlamm für die Buden.
-  var tS=TO[stinkK],eG=[],eR=[],Ue=0;
+  // N6b5a Rückmeldung Thomas (24.11.2026): Elendsviertel extrem überfüllt: in Biomen mit Budenbild 1,25 statt 2,6 Felder Schlamm je Bude (opt.budenEng:false = wie vorher)
+  var tS=TO[stinkK],eG=[],eR=[],Ue=0,JE=B.felder&&opt.budenbild!==false&&opt.budenEng!==false&&opt.stinkEng!==false?1.25:2.6;   // stinkEng:false = alter Riesenplan ganz wie vorher
   if(buden){var uwC={},uw=function(l){if(l in uwC)return uwC[l];var last=null;for(var u=-Wi;u<0;u++){var p=glob(tS,u,l);if(p[0]>=0&&p[1]>=0&&p[0]<Wi&&p[1]<Wi&&MK[p[1]*Wi+p[0]])last=u}return uwC[l]=last===null?null:last+1};
    var strU=function(l){if(l===0||l===1)return tS.u0;for(var k=0;k<TO.length;k++){var t2=TO[k];if(k!==stinkK&&t2.s===tS.s&&(l+tS.c-t2.c===0||l+tS.c-t2.c===1))return t2.u0}return null};
    var gut=function(l,u){var p=glob(tS,u,l);return frei(p[0],p[1])&&seiteVon(p[0]+.5,p[1]+.5)===tS.s};
@@ -251,11 +252,11 @@ function plan0(opt){
    // N6b2e2g0 Riesenplan (Thomas 22.11.2026): liegt neben dem Stinktor ein Fluss oder eine Mauerschräge, bleiben kaum Spalten, die Buden würden sehr tief
    // gestapelt (bis 260 Felder) und der ganze Ring wüchse mit. Dann (tiefer als UE_MAX oder gar keine Spalte) das Haupttor mit den meisten Budenspalten;
    // das Gräbertor tauscht, falls es dasselbe wäre. Sonst bleibt alles wie vorher. Notausschalter opt.stinkEng:false.
-   if(opt.stinkEng!==false&&(!regW||Math.ceil(buden*2.6/regW)>UE_MAX)){var sAlt=stinkK,sBest=stinkK,sN=regW;
+   if(opt.stinkEng!==false&&(!regW||Math.ceil(buden*JE/regW)>UE_MAX)){var sAlt=stinkK,sBest=stinkK,sN=regW;
     HP.forEach(function(k){if(k===sAlt)return;stinkK=k;tS=TO[k];uwC={};var n=spalten(1).filter(function(c){return c.reg.length}).length;if(n>sN){sN=n;sBest=k}});
     stinkK=sBest;tS=TO[sBest];uwC={};regW=sN;if(sBest!==sAlt&&grabK===sBest)grabK=sAlt}
    if(!regW)return null;
-   Ue=Math.max(2,Math.ceil(buden*2.6/regW))+zug;
+   Ue=Math.max(2,Math.ceil(buden*JE/regW))+zug;
    spalten(Ue).forEach(function(c){for(var u=c.w;u<=c.end;u++){var p=glob(tS,u,c.l);eG.push(p);occ.add(key(p[0],p[1]))}
     c.reg.forEach(function(u){var p=glob(tS,u,c.l);eR.push(p);occ.add(key(p[0],p[1]))})})}
   var i0;
@@ -335,7 +336,7 @@ function plan0(opt){
    if(gesetztB<buden)return null;
    frei2.forEach(function(f){bude[at(f[0],f[1])]=0;bau('shack','shack',{i:f[0],j:f[1],w:1,h:1},[f[0],f[1],f[2][0],f[2][1]])});
    gesetzt.shack=(gesetzt.shack|0)+buden;
-   reg.forEach(function(k6){if(belegt[k6]||tuerRes[k6])return;var i6=k6%W,j6=(k6/W)|0;if(rausch(i6,j6,seed+43)<.1)dinge.push({id:rausch(i6,j6,seed+44)<.15?'leiche':'lager-platz',i:i6,j:j6})})}
+   reg.forEach(function(k6){if(belegt[k6]||tuerRes[k6])return;var i6=k6%W,j6=(k6/W)|0;if(rausch(i6,j6,seed+43)<.1&&(rausch(i6,j6,seed+44)>=.15||!B.felder||opt.budenbild===false))dinge.push({id:rausch(i6,j6,seed+44)<.15?'leiche':'lager-platz',i:i6,j:j6})})}
   // Bäume und Kram aus dem Plan innen weichen allem, was hier zwischen Mauer und Rand gebaut wurde
   dinge=dinge.filter(function(d,ix){return ix>=nE||!neu[at(d.i,d.j)]});
   // Fluss im Ring: Wasser, wo ein Weg kreuzt bleibt der Weg (Furt bzw. Brücke); Lage für die Spiegelung umrechnen
@@ -529,7 +530,7 @@ function plan0(opt){
     if(!erreicht[k2]&&!belegt[k2]&&/[seom]/.test(Z[k2])){erreicht[k2]=1;st.push(k2)}})}
   for(var q5=0;q5<W*W;q5++){if(belegt[q5])continue;var z5=Z[q5],i5=q5%W,j5=(q5/W)|0;if(z5==='o'&&!erreicht[q5]){Z[q5]='g';z5='g'}
    if(z5==='g'&&!elend){var u5=rausch(i5,j5,seed+7);if(u5<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i5,j5,seed+8)*B.baeume.length)],i:i5,j:j5});else if(u5>.97)dinge.push({id:'lager-platz',i:i5,j:j5})}
-   else if(z5==='e'&&rausch(i5,j5,seed+9)<.15&&!/[s]/.test(Z[q5]))dinge.push({id:rausch(i5,j5,seed+10)<.15?'leiche':'lager-platz',i:i5,j:j5})}
+   else if(z5==='e'&&rausch(i5,j5,seed+9)<.15&&!/[s]/.test(Z[q5]))(rausch(i5,j5,seed+10)>=.15||!B.felder||opt.budenbild===false)&&dinge.push({id:rausch(i5,j5,seed+10)<.15?'leiche':'lager-platz',i:i5,j:j5})}
   // Mit Umriss: jeder Weg muss von der Kreuzung aus erreichbar sein, sonst mit mehr Blöcken neu versuchen
   if(viel){var er2=new Uint8Array(WW),st2=[at(cA,cB)];er2[st2[0]]=1;
    while(st2.length){var q6=st2.pop(),i6=q6%W,j6=(q6/W)|0,nn=[i6>0?q6-1:-1,i6<W-1?q6+1:-1,j6>0?q6-W:-1,j6<W-1?q6+W:-1];
@@ -724,6 +725,7 @@ function plan0(opt){
  if(!elend&&TPL&&opt.senat!==false)senatFest(P,opt);   // N6b3e2 Senat genau 8 × 9, Tor mittig an der Schmalseite (opt.senat:false = wie vorher)
  if(!elend&&TPL&&opt.presse!==false)presseFest(P,opt);   // N6b4c4 Weinpresse und Ölmühle genau 4 × 5, Tor mittig an der Schmalseite (opt.presse:false = wie vorher)
  if(!elend&&TPL&&opt.koenigspalast!==false)koenigspalastFest(P,opt);   // N6b3e3 Königspalast genau 15 × 15, Tor mittig an einer Seite (opt.koenigspalast:false = wie vorher)
+ if(B.felder&&opt.budenbild!==false&&opt.budenEng!==false&&opt.anbauten!==false&&(elend||(g>=MAUER_AB&&P.aussen&&P.aussen.buden)))anbauten(P,seed);   // N6b5a überfülltes Elendsviertel (vor Mauer und Toren: die behandeln Anbauten wie Buden)
  if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false&&opt.wasserOffen!==false)wassertoreGerade(P,opt);   // N6b2e2g2 Mauer endet am Fluss mit Türmen an beiden Ufern (opt.wasserOffen:false = wie vorher)
@@ -2240,13 +2242,53 @@ function spiegelSp(sp){var w=sp.w,px=new Uint8Array(sp.px.length),y,x;for(y=0;y<
 // Variante b.bv nach Lage (rausch, verbraucht keinen Zufall des Plans): 1–6 gleich oft, 7 und 8 selten. Kein Bild: Baukasten wie vorher. Notausschalter opt.budenbild:false.
 var BUDE_VAR=[.155,.155,.155,.155,.155,.155,.035,.035],BUDE_HOCH=52;
 function budeVariante(i,j,seed){var u=rausch(i,j,seed+277),k;for(k=0;k<BUDE_VAR.length-1;k++){u-=BUDE_VAR[k];if(u<0)return k+1}return BUDE_VAR.length}
-function budenBild(P,opt){var B=BIOME[P.biom];if(!B||!B.felder||(opt&&opt.budenbild===false))return;var s=P.seed>>>0;
+function budenBild(P,opt){var B=BIOME[P.biom];if(!B||!B.felder||(opt&&opt.budenbild===false))return;var s=P.seed>>>0;P.schlamm=true;
  P.bauten.forEach(function(b){if(b.rolle==='shack'&&b.tuer&&b.w<=3&&b.h<=3)b.bv=budeVariante(b.i,b.j,s)})}
+// N6b5a Rückmeldung Thomas („Boden wirkt zu monoton“): Schlammböden (tools/at3-schlamm.py) für alle e-Felder, wenn P.schlamm (Budenbild an), Wahl nach Lage
+var SCHLAMM=[['boden-schlamm-matsch',.34],['boden-schlamm-stroh',.14],['boden-schlamm-scherben',.12],['boden-schlamm-pfuetze',.1],['boden-schlamm-spur',.09],
+ ['boden-schlamm-bretter',.08],['boden-schlamm-oel',.06],['boden-schlamm-rinne',.07]];
+function schlammWahl(i,j,seed){var u=rausch(i,j,seed+733),k;for(k=0;k<SCHLAMM.length-1;k++){u-=SCHLAMM[k][1];if(u<0)return SCHLAMM[k][0]}return SCHLAMM[k][0]}
+SCHLAMM.forEach(function(s){SAUM_RANG[s[0]]=SAUM_RANG['boden-erde']});
 // Felder unter Buden mit Bild: beim Malen Erde statt Gras (man sieht sie zwischen den Buden); die Zellen des Plans bleiben unverändert
 function budeFelder(P){var W=P.W,F=null;P.bauten.forEach(function(b){if(!b.bv||b.rolle!=='shack')return;if(!F)F=new Uint8Array(W*W);
   for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)F[y*W+x]=1});return F}   // Erde statt Gras unter der Bude (sieht man zwischen den Buden)
 function budeGanz(b){if(b.rolle!=='shack'||!b.bv||!b.tuer)return null;var r=HOF_RICHT[b.tuer[2]+','+b.tuer[3]],t=b.tuer,innen=function(i,j){return i>=b.i&&j>=b.j&&i<b.i+b.w&&j<b.j+b.h};
  if(!r||!innen(t[0],t[1])||innen(t[0]+t[2],t[1]+t[3]))return null;return{id:'elend-bude-'+b.bv+'-'+r,hr:r}}
+// N6b5a Rückmeldung Thomas (24.11.2026, „extrem überfüllt“): nur vor dem Stinktor ummauerter Orte und in der Elendssiedlung (Weiler und Dörfer halten
+// 1 Feld Abstand), im Plan vor Mauer und Toren. Freie Schlammfelder (e) im Elendsviertel bekommen Anbauten (Bude 1 × 1, rolle shack, anbau:1,
+// ohne eigene Bewohner der Stadtliste). Nur höchstens 3 Felder von einer echten Bude, kein anderes Gebäude im Umkreis 1, keine Mauer im Umkreis 2 (Wehrgang-
+// Stücke). Jeder Anbau hat seine Tür auf ein freies Schlammfeld; er wird nur gesetzt, wenn alle freien Wegfelder daneben im Umkreis 6 noch untereinander
+// verbunden bleiben (so bleibt jedes Wegfeld vom Tor aus erreichbar). Etwa 4 von 5 möglichen Feldern, Reihenfolge nach Lage (rausch). Unter dem Anbau
+// Wiese wie bei den echten Buden (gemalt wird Schlamm, budeFelder). Notausschalter opt.budenEng:false (auch die Dichte), opt.anbauten:false (nur die Anbauten).
+var WEG_Z={s:1,o:1,m:1,e:1,h:1};
+function anbauten(P,s){var W=P.W,Z=P.zellen,N=W*W,HZ=P.hoehe||null,occ=new Uint8Array(N),tr=new Uint8Array(N),sperr=new Uint8Array(N),nah=new Uint8Array(N),NB=[[0,1],[1,0],[0,-1],[-1,0]],k;
+ var mark=function(A,b,R){for(var y=Math.max(0,b.j-R);y<Math.min(W,b.j+b.h+R);y++)for(var x=Math.max(0,b.i-R);x<Math.min(W,b.i+b.w+R);x++)A[y*W+x]=1};
+ P.bauten.forEach(function(b){mark(occ,b,0);if(b.rolle==='shack'){if(!b.anbau)mark(nah,b,3)}else mark(sperr,b,b.rolle==='mauer'?2:1);
+  if(b.tuer){var tx=b.tuer[0]+b.tuer[2],ty=b.tuer[1]+b.tuer[3];if(tx>=0&&ty>=0&&tx<W&&ty<W)tr[ty*W+tx]=1}});
+ var ding=new Uint8Array(N);P.dinge.forEach(function(d){if(d.i>=0&&d.j>=0&&d.i<W&&d.j<W)ding[d.j*W+d.i]=1});   // auf Dinge wird nicht gebaut, gehen darf man darüber
+ var lv=function(q){return HZ?HZ.charCodeAt(q)-48:0},weg=function(x,y){return x>=0&&y>=0&&x<W&&y<W&&WEG_Z[Z.charAt(y*W+x)]&&!occ[y*W+x]};
+ // erreichbar vom Tor über freie Wegfelder (nur solche Felder kommen in Frage)
+ var err=new Uint8Array(N),st=[];if(P.tor&&weg(P.tor.i,P.tor.j)){err[P.tor.j*W+P.tor.i]=1;st.push(P.tor.j*W+P.tor.i)}
+ if(!st.length)for(k=0;k<N;k++){var ex=k%W,ey=(k/W)|0;if((ex===0||ey===0||ex===W-1||ey===W-1)&&weg(ex,ey)){err[k]=1;st.push(k)}}   // Elendssiedlung: vom Rand
+ while(st.length){var q=st.pop(),qx=q%W,qy=(q/W)|0;for(var d0=0;d0<4;d0++){var nx=qx+NB[d0][0],ny=qy+NB[d0][1];if(weg(nx,ny)&&!err[ny*W+nx]){err[ny*W+nx]=1;st.push(ny*W+nx)}}}
+ // bleiben die freien Wegfelder um (x, y) ohne (x, y) im Umkreis 6 verbunden?
+ var stamp=new Int32Array(N),gen=0,stk=new Int32Array(4*13*13+8),wegK=function(q){return WEG_Z[Z.charAt(q)]===1&&!occ[q]};
+ var lokal=function(x,y,nb){if(nb.length<2)return true;var R=6,sp=0,k0=y*W+x;gen++;var s0=nb[0][1]*W+nb[0][0];stamp[s0]=gen;stk[sp++]=s0;
+  while(sp){var q=stk[--sp],qx=q%W,qy=(q-qx)/W;
+   if(qx>0&&qx-1>=x-R&&q-1!==k0&&stamp[q-1]!==gen&&wegK(q-1)){stamp[q-1]=gen;stk[sp++]=q-1}
+   if(qx<W-1&&qx+1<=x+R&&q+1!==k0&&stamp[q+1]!==gen&&wegK(q+1)){stamp[q+1]=gen;stk[sp++]=q+1}
+   if(qy>0&&qy-1>=y-R&&q-W!==k0&&stamp[q-W]!==gen&&wegK(q-W)){stamp[q-W]=gen;stk[sp++]=q-W}
+   if(qy<W-1&&qy+1<=y+R&&q+W!==k0&&stamp[q+W]!==gen&&wegK(q+W)){stamp[q+W]=gen;stk[sp++]=q+W}}
+  for(var m=1;m<nb.length;m++)if(stamp[nb[m][1]*W+nb[m][0]]!==gen)return false;return true};
+ var L=[];for(k=0;k<N;k++)if(nah[k]&&!sperr[k]&&err[k]&&Z.charAt(k)==='e'&&!occ[k]&&!ding[k]&&!tr[k]&&rausch(k%W,(k/W)|0,s+611)<.8)L.push(k);
+ L.sort(function(a,b){return rausch(a%W,(a/W)|0,s+612)-rausch(b%W,(b/W)|0,s+612)});
+ var neu=0,gb=[];L.forEach(function(k){var x=k%W,y=(k/W)|0;if(occ[k]||tr[k])return;var nb=[],tuer=null,d;
+  for(d=0;d<4;d++){var tx=x+NB[d][0],ty=y+NB[d][1];if(weg(tx,ty)){nb.push([tx,ty]);if(tuer===null&&err[ty*W+tx]&&Z.charAt(ty*W+tx)==='e'&&lv(ty*W+tx)===lv(k))tuer=d}}
+  if(tuer===null||!lokal(x,y,nb))return;occ[k]=1;var t=NB[tuer];tr[(y+t[1])*W+x+t[0]]=1;
+  var o={rolle:'shack',id:'shack',anbau:1,i:x,j:y,w:1,h:1,g:1,klasse:'clay-wood',dach:'flach',achse:'i',wand:null,dachR:HOLZ,tuer:[x,y,t[0],t[1]],satz:null};if(HZ)o.hz=lv(k);
+  P.bauten.push(o);gb.push(k);neu++});
+ if(gb.length){var Zs=Z.split('');gb.forEach(function(k){Zs[k]='g'});P.zellen=Zs.join('')}
+ P.anbauten=neu}
 var BUDE_C=new Map();
 function budeBild(b,hole){var g=budeGanz(b);if(!g)return null;var ids=[],cells=[],di,dj;
  for(dj=0;dj<b.h;dj++)for(di=0;di<b.w;di++){var tf=b.i+di===b.tuer[0]&&b.j+dj===b.tuer[1],id=tf?g.id:'elend-bude-'+budeVariante(b.i+di,b.j+dj,b.bv*977)+'-'+g.hr,o=hole(id),sp=o&&malbild(o);
@@ -2309,7 +2351,7 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
  var weg=P.basis&&KURZ[P.basis.klasse]?'bk-'+KURZ[P.basis.klasse]+'-boden':'boden-weg';
  var PK=pflasterKarte(P);   // N6b3a
  var FB=!!(B.felder&&P.flur&&opt.feldbild!==false);   // N6b4c1
- var BUF=budeFelder(P),bodenId=function(i,j){var innen=i>=0&&j>=0&&i<W&&j<W,c=innen?P.zellen.charAt(j*W+i):'g';if(BUF&&innen&&c==='g'&&BUF[j*W+i])c='e';   // N6b5a Erde unter Buden
+ var BUF=budeFelder(P),bodenId=function(i,j){var innen=i>=0&&j>=0&&i<W&&j<W,c=innen?P.zellen.charAt(j*W+i):'g';if(BUF&&innen&&c==='g'&&BUF[j*W+i])c='e';if(c==='e'&&P.schlamm&&innen)return schlammWahl(i,j,P.seed>>>0);   // N6b5a Erde unter Buden, Schlammböden
   if(PK&&innen){var pc=PK[j*W+i];if(pc){if(pc===2)return 'pflaster-basalt-a';if(pc===3)return 'pflaster-basalt-b';return pflasterWahl(pc===1?'basalt':pc===4?'gasse':pc===5?'platz':'marmor',i,j,P.seed|0)}}
   if(c==='g'){if(FB&&innen&&P.dauer){var fh=feldBild(P,i,j);if(fh)return fh}var l=B.boden;return l[Math.floor(rausch(i,j,P.seed+1)*l.length*(l.length>1?.75:1))%l.length]}
   if(FB&&innen&&(c==='f'||c==='p')){var fb=feldBild(P,i,j);if(fb)return fb}   // N6b4c1 (Hainboden N6b4c2 oben bei 'g')
@@ -2484,6 +2526,6 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(B.felder&&P.flur?FELD_IDS:[],P.dauer?DAUER_IDS:[],P.wehr?WEHR_IDS:[],P.forum?FORUM_IDS().concat(FORUM_GANZ_IDS(P.forum)):[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});return Object.keys(s)}
 
-var SB={BUDE_VAR:BUDE_VAR,budeGanz:budeGanz,budeBild:budeBild,budeVariante:budeVariante,FISCHER_LAGER:FISCHER_LAGER,UFER_LAGER:UFER_LAGER,WASCH_LAGER:WASCH_LAGER,SALZ_LAGER:SALZ_LAGER,SALZ_BECKEN:SALZ_BECKEN,JAGD_LAGER:JAGD_LAGER,postenGanz:postenGanz,postenBildAn:postenBildAn,MINE_LAGER:MINE_LAGER,BRUCH_LAGER:BRUCH_LAGER,BRUCH_PLATZ:BRUCH_PLATZ,HOLZ_LAGER:HOLZ_LAGER,KOEHLER_LAGER:KOEHLER_LAGER,KOEHLER_PLATZ:KOEHLER_PLATZ,POSTEN_SELTEN:POSTEN_SELTEN,presseGanz:presseGanz,hofPresse:hofPresse,PRESSE:PRESSE,PRESSE_ID:PRESSE_ID,pferchZaun:pferchZaun,flurKante:flurKante,hofGanz:hofGanz,hofTuerOff:hofTuerOff,HOF_BILD_VAR:HOF_BILD_VAR,PFERCH_FUSS:PFERCH_FUSS,dauerDinge:dauerDinge,dauerDing:dauerDing,DAUER_BILD:DAUER_BILD,DAUER_IDS:DAUER_IDS,DAUER_DINGE:DAUER_DINGE,DAUER_STUMPF:DAUER_STUMPF,postenPlan:postenPlan,postenBegeh:postenBegeh,postenSeite:postenSeite,POSTEN_ANLAGE:POSTEN_ANLAGE,POSTEN_HOF:POSTEN_HOF,POSTEN_W:POSTEN_W,POSTEN_GROSS:POSTEN_GROSS,POSTEN_SEITEN:POSTEN_SEITEN,malbild:malbild,saumObj:saumObj,SAUM_RANG:SAUM_RANG,FELD_IDS:FELD_IDS,FELD_BILD:FELD_BILD,feldBild:feldBild,feldAchse:feldAchse,SAUM_SCHMAL:SAUM_SCHMAL,setzeLandw:setzeLandw,landwDaten:landwDaten,flurArt:flurArt,flurTempo:flurTempo,FLUR_RASTER:FLUR_RASTER,FLUR_WEIT:FLUR_WEIT,HOF_HAUS:HOF_HAUS,KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={SCHLAMM:SCHLAMM,schlammWahl:schlammWahl,BUDE_VAR:BUDE_VAR,budeGanz:budeGanz,budeBild:budeBild,budeVariante:budeVariante,FISCHER_LAGER:FISCHER_LAGER,UFER_LAGER:UFER_LAGER,WASCH_LAGER:WASCH_LAGER,SALZ_LAGER:SALZ_LAGER,SALZ_BECKEN:SALZ_BECKEN,JAGD_LAGER:JAGD_LAGER,postenGanz:postenGanz,postenBildAn:postenBildAn,MINE_LAGER:MINE_LAGER,BRUCH_LAGER:BRUCH_LAGER,BRUCH_PLATZ:BRUCH_PLATZ,HOLZ_LAGER:HOLZ_LAGER,KOEHLER_LAGER:KOEHLER_LAGER,KOEHLER_PLATZ:KOEHLER_PLATZ,POSTEN_SELTEN:POSTEN_SELTEN,presseGanz:presseGanz,hofPresse:hofPresse,PRESSE:PRESSE,PRESSE_ID:PRESSE_ID,pferchZaun:pferchZaun,flurKante:flurKante,hofGanz:hofGanz,hofTuerOff:hofTuerOff,HOF_BILD_VAR:HOF_BILD_VAR,PFERCH_FUSS:PFERCH_FUSS,dauerDinge:dauerDinge,dauerDing:dauerDing,DAUER_BILD:DAUER_BILD,DAUER_IDS:DAUER_IDS,DAUER_DINGE:DAUER_DINGE,DAUER_STUMPF:DAUER_STUMPF,postenPlan:postenPlan,postenBegeh:postenBegeh,postenSeite:postenSeite,POSTEN_ANLAGE:POSTEN_ANLAGE,POSTEN_HOF:POSTEN_HOF,POSTEN_W:POSTEN_W,POSTEN_GROSS:POSTEN_GROSS,POSTEN_SEITEN:POSTEN_SEITEN,malbild:malbild,saumObj:saumObj,SAUM_RANG:SAUM_RANG,FELD_IDS:FELD_IDS,FELD_BILD:FELD_BILD,feldBild:feldBild,feldAchse:feldAchse,SAUM_SCHMAL:SAUM_SCHMAL,setzeLandw:setzeLandw,landwDaten:landwDaten,flurArt:flurArt,flurTempo:flurTempo,FLUR_RASTER:FLUR_RASTER,FLUR_WEIT:FLUR_WEIT,HOF_HAUS:HOF_HAUS,KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);

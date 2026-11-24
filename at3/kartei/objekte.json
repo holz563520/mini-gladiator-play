@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 921,
+ "typMax": 929,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -8148,6 +8148,78 @@
    "name": "Evicted Shack W",
    "status": "uebernommen",
    "datei": "obj/elend-bude-8-west.json"
+  },
+  {
+   "id": "boden-schlamm-matsch",
+   "version": 1,
+   "typ": 922,
+   "kat": "boden",
+   "name": "Slum Mud",
+   "status": "skizze",
+   "datei": "obj/boden-schlamm-matsch.json"
+  },
+  {
+   "id": "boden-schlamm-pfuetze",
+   "version": 1,
+   "typ": 923,
+   "kat": "boden",
+   "name": "Slum Puddle",
+   "status": "skizze",
+   "datei": "obj/boden-schlamm-pfuetze.json"
+  },
+  {
+   "id": "boden-schlamm-spur",
+   "version": 1,
+   "typ": 924,
+   "kat": "boden",
+   "name": "Slum Ruts",
+   "status": "skizze",
+   "datei": "obj/boden-schlamm-spur.json"
+  },
+  {
+   "id": "boden-schlamm-stroh",
+   "version": 1,
+   "typ": 925,
+   "kat": "boden",
+   "name": "Trodden Straw",
+   "status": "skizze",
+   "datei": "obj/boden-schlamm-stroh.json"
+  },
+  {
+   "id": "boden-schlamm-bretter",
+   "version": 1,
+   "typ": 926,
+   "kat": "boden",
+   "name": "Plank Walk",
+   "status": "skizze",
+   "datei": "obj/boden-schlamm-bretter.json"
+  },
+  {
+   "id": "boden-schlamm-scherben",
+   "version": 1,
+   "typ": 927,
+   "kat": "boden",
+   "name": "Shards in Mud",
+   "status": "skizze",
+   "datei": "obj/boden-schlamm-scherben.json"
+  },
+  {
+   "id": "boden-schlamm-oel",
+   "version": 1,
+   "typ": 928,
+   "kat": "boden",
+   "name": "Greasy Puddle",
+   "status": "skizze",
+   "datei": "obj/boden-schlamm-oel.json"
+  },
+  {
+   "id": "boden-schlamm-rinne",
+   "version": 1,
+   "typ": 929,
+   "kat": "boden",
+   "name": "Open Gutter",
+   "status": "skizze",
+   "datei": "obj/boden-schlamm-rinne.json"
   }
  ]
 }
