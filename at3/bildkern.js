@@ -23,6 +23,7 @@
 // N7a2b2: echte Häuser, Mauern, Dinge in 1× (ortsflaeche.js schritt/fertige, Gebäudebilder ≤ 2 MB, 4 Orte mit Liste, gebündelt alle 0,3 s); Notausschalter ?n7a2b2=0.
 // N7a2c: Außenposten und Gehöfte wie kleine Orte (Postenlisten je Ort vom Ortskern, Hang 8 Felder, eigene Grenzen), Startplatz meidet auch Posten; Notausschalter ?n7a2c=0.
 // N7a3a: Stufe ½ mit echten verkleinerten Böden, Häusern, Mauern, Dingen (ortsflaeche.js halb, höchstens 1 MB); Notausschalter ?n7a3=0.
+// N7a3b: auch ¼ und ⅛ (¼ aus ½, ⅛ aus ¼, zusammen höchstens 0,5 MB); Notausschalter ?n7a3b=0.
 // N7a2b3: Gebäudebilder in Abschnitten (stadtbild.js bauAuftrag, größter Schritt ≤ 8 ms gedrosselt), Messfeld in der Weltkarte mit ?mess=1; Notausschalter ?n7a2b3=0.
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
@@ -58,11 +59,11 @@ function eingeebnet(L){L.forEach(function(k){var b=st.get(k);if(!b)return;if(OFL
 var ORTMS=[];
 // N7a2b1: echte Böden der Orte in 1× (Thomas 24.11.2026): stadtbild.js samt Teilen erst beim ersten Ort laden (eingebettet sind sie vom Ortskern schon da),
 // Kartei-Bilder nur, wenn ein Bodenbild sie braucht (karteilader.js, höchstens 4 MB); fertig geladen → „ortNeu“ für die wartenden Orte. Notausschalter ?n7a2b=0.
-var N7A2B=!/[?&]n7a2b=0/.test(self.location.search),N7A2B2=!/[?&]n7a2b2=0/.test(self.location.search),N7A2B3=!/[?&]n7a2b3=0/.test(self.location.search),N7A3=!/[?&]n7a3=0/.test(self.location.search),KL=null,KLL=false,KLN=false;
+var N7A2B=!/[?&]n7a2b=0/.test(self.location.search),N7A2B2=!/[?&]n7a2b2=0/.test(self.location.search),N7A2B3=!/[?&]n7a2b3=0/.test(self.location.search),N7A3=!/[?&]n7a3=0/.test(self.location.search),N7A3B=!/[?&]n7a3b=0/.test(self.location.search),KL=null,KLL=false,KLN=false;
 function echteBoeden(){if(!N7A2B||KL===false||!OFL)return;if(KL)return;var Q=self.location.search;
  try{if(!self.AT3_STADTBILD)importScripts('at3-64.js'+Q,'baubild.js'+Q,'baukasten.js'+Q,'stadtliste.js'+Q,'landwirtschaft.js'+Q,'begehbar.js'+Q,'stadtbild.js'+Q);
   if(!self.AT3KARTEILADER)importScripts('karteilader.js'+Q);
-  KL=self.AT3KARTEILADER.neu(function(id){return fetch('kartei/obj/'+encodeURIComponent(id)+'.json'+Q).then(function(r){return r.ok?r.json():null})});OFL.bilder(self.AT3_STADTBILD,KL,{haeuser:N7A2B2,abschnitte:N7A2B3,halb:N7A3})}
+  KL=self.AT3KARTEILADER.neu(function(id){return fetch('kartei/obj/'+encodeURIComponent(id)+'.json'+Q).then(function(r){return r.ok?r.json():null})});OFL.bilder(self.AT3_STADTBILD,KL,{haeuser:N7A2B2,abschnitte:N7A2B3,halb:N7A3,viertel:N7A3B})}
  catch(x){KL=false}}
 function nachladen(){if(!KL||!KL.wuensche())return;if(KLL){KLN=true;return}KLL=true;var g=gen;
  KL.laden().then(function(){KLL=false;if(g===gen&&OFL){var L=OFL.wartende(),k=KL.stand();if(L.length)self.postMessage({art:'ortNeu',gen:gen,stuecke:L,kartei:k.anzahl,karteiB:k.bytes,eMs:OFL.elementeMs()})}
@@ -70,7 +71,7 @@ function nachladen(){if(!KL||!KL.wuensche())return;if(KLL){KLN=true;return}KLL=t
 // N7a2b2: Elementlisten und Gebäudebilder in Zeitanteilen (4 ms, dazwischen kommen Bildanfragen dran); Fertiges gebündelt etwa alle 0,3 s als „ortNeu“ (Thomas 24.11.2026)
 var HAUSL=false,HAUSF=0,BUENDEL=300;
 function haeuser(){HAUSL=false;if(!OFL||!OFL.schritt)return;var mehr=OFL.schritt(4),t=performance.now();nachladen();
- if(OFL.fertigeZahl()&&t-HAUSF>=BUENDEL){HAUSF=t;var L=OFL.fertige(),h=OFL.haeuser(),h2=OFL.halbStand();self.postMessage({art:'ortNeu',gen:gen,stuecke:L,haeuser:h.bilder,hausB:h.bytes,hausMs:h.maxMs,listeMs:h.listeMaxMs,hausPausen:h.pausen,listen:h.listen,halbN:h2.bilder,halbB:h2.bytes,halbMs:h2.maxMs})}
+ if(OFL.fertigeZahl()&&t-HAUSF>=BUENDEL){HAUSF=t;var L=OFL.fertige(),h=OFL.haeuser(),h2=OFL.halbStand(),h4=OFL.viertelStand();self.postMessage({art:'ortNeu',gen:gen,stuecke:L,haeuser:h.bilder,hausB:h.bytes,hausMs:h.maxMs,listeMs:h.listeMaxMs,hausPausen:h.pausen,listen:h.listen,halbN:h2.bilder,halbB:h2.bytes,halbMs:h2.maxMs,fernN:h4.bilder,fernB:h4.bytes,fernMs:h4.maxMs})}
  if(mehr||OFL.fertigeZahl()){HAUSL=true;setTimeout(haeuser,mehr?0:Math.max(0,BUENDEL-(t-HAUSF)))}}
 function haeuserAn(){if(!HAUSL&&OFL&&OFL.arbeitOffen&&(OFL.arbeitOffen()||OFL.fertigeZahl())){HAUSL=true;setTimeout(haeuser,0)}}
 function vomOrtskern(m){if(m.gen!==gen||!OFL)return;

@@ -22,9 +22,12 @@
 // 2 × 2 Bildpunkte die häufigste Farbe, nur Palettenfarben, durchsichtig nur bei Mehrheit durchsichtig) und gemerkt, höchstens HALB_GR Bytes (1 MB, getrennt von
 // den 2 MB 1×-Gebäudebildern und 4 MB Kartei), älteste fallen heraus. Gebäude: aus dem 1×-Bild verkleinert in Zeitanteilen (schritt), fehlt es, wird es zuerst
 // gebaut; bis dahin der Klotz (Regel 20). Notausschalter opt.halb:false (?n7a3=0) = Klötze in ½ wie N7a2.
+// N7a3b (Thomas 24.11.2026): Stufen ¼ und ⅛ genauso, Kette ¼ aus ½, ⅛ aus ¼ (häufigste Farbe). ¼ und ⅛ zusammen höchstens VIERTEL_GR Bytes (0,5 MB), beide gemerkt;
+// fehlt die nächstgrößere Fassung, wird das Gebäude einmal in 1× in Abschnitten gebaut und in Zeitanteilen bis zur Zielstufe verkleinert, 1× und ½ bleiben dabei nur,
+// wenn diese Stufen sie selbst brauchen. Bis dahin der Klotz. Notausschalter opt.viertel:false (?n7a3b=0) = in ¼ und ⅛ nur Ersatzfarbe wie N7a3a.
 (function(root){
 'use strict';
-var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152, HALB_GR=1048576;
+var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152, HALB_GR=1048576, VIERTEL_GR=524288;
 var RAMPE_P=8, HALTEN_P=64, LISTEN_P=16, PL_HALTEN=48, PWEIT=2600;   // N7a2c: Hang, Posten gemerkt, Posten mit Liste, Orte mit Postenliste, größter Abstand Ortspunkt → Postenrand (gemessen 2.268 + 18 + Hang)   // N7a2b2: LISTEN Orte mit ganzer Elementliste, HAUS Bytes gemerkte Gebäudebilder
 //  RAMPE: Felder Hang rund um die Fläche (eine Höhenstufe = 64 Einheiten je Feld, wie RollerCoaster Tycoon); HALTEN: Orte im Speicher
 var CODES='gsomfwepxqyuh', FARBE_RGB=[[104,138,64],[150,128,96],[156,150,138],[216,210,198],[186,160,84],[56,98,150],[112,86,58],[124,154,78],[122,116,108],[140,134,122],[128,92,58],[214,194,146],[146,118,84]];
@@ -33,6 +36,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  var POSTEN=false,PL=new Map(),gefragtP=new Set(),LIP=[],IDX=new Map(),PST={listen:0,ms:0,maxMs:0};   // N7a2c
  var ECHT=true,HGR=HAUS,LI=[],HB=new Map(),HBB=0,AUF=[],AKT=null,ABSCHNITTE=true,INQ=new Set(),FERTIG=new Set(),GEB=new Set(),HST={wieder:0,gebaut:0,ms:0,maxMs:0,listen:0,listeMs:0,verworfen:0,pausen:0};   // N7a2b2   // N7a2b1: SBx = stadtbild.js, KL = Kartei-Lader (bilder())
  var HALBAN=true,K2=new Map(),K2B=0,K2GR=HALB_GR,AUF2=[],INQ2=new Set(),AKT2=null,GEB2=new Set(),HN=new Set(),H2ST={gebaut:0,ms:0,maxMs:0,verworfen:0,pausen:0};   // N7a3a: Stufe ½ (K2 = gemerkte halbe Bilder)
+ var VIERAN=true,K4=[null,null,new Map(),new Map()],K4B=0,K4GR=VIERTEL_GR,AUF4=[],INQ4=new Set(),AKT4=null,GEB4=new Set(),SID=new WeakMap(),SIDN=0,LETZT=3,H4ST={gebaut:0,ms:0,maxMs:0,verworfen:0,pausen:0};   // N7a3b: Stufen ¼ und ⅛ (K4[2], K4[3], gemeinsamer Zähler K4B; Schlüssel 's' + Bildnummer bzw. 'h' + Gebäude)
  var jetzt=typeof performance!=='undefined'?function(){return performance.now()}:function(){return Date.now()};
  function um(x){x%=WX;return x<0?x+WX:x}
  function nah(p,c){var b=0,bd=1e9;for(var i=0;i<64;i++){var v=p[i],dr=(v&255)-c[0],dg=((v>>8)&255)-c[1],db=((v>>16)&255)-c[2],d=dr*dr*3+dg*dg*6+db*db;if(d<bd){bd=d;b=i}}return b}
@@ -117,7 +121,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
    for(y=yT;y<yB&&y<h;y++)px[y*w+x]=dach;for(;y<yB+hb&&y<h;y++)px[y*w+x]=xm<sx?wl:wr}
   sp={w:w,h:h,ax:ax,ay:hb,px:px};sprite.set(key,sp);if(sprite.size>256)sprite.delete(sprite.keys().next().value);return sp}
  // N7a2b1: Elementliste des Orts (stadtbild.js elemente, ohne sie zu füllen) erst beim ersten echten Bild; Boden und Säume je Planfeld wie im Stadtbild
- function bodenBilder(o,i,j,lod){var r0=bodenBilder1(o,i,j);if(!r0||!lod)return r0;var r2=[];for(var q=0;q<r0.length;q++)r2.push(klein(r0[q]));return r2}   // N7a3a: ½ = verkleinert
+ function bodenBilder(o,i,j,lod){var r0=bodenBilder1(o,i,j);if(!r0||!lod)return r0;var r2=[];for(var q=0;q<r0.length;q++)r2.push(klein(r0[q],lod));return r2}   // N7a3a: ½ = verkleinert   // N7a3b: auch ¼, ⅛
  function bodenBilder1(o,i,j){if(!o.E){var t0=jetzt();try{o.E=SBx.elemente(o.P,KL.hole,{inSchritten:true})}catch(x){o.E=false}EMS.push(jetzt()-t0);if(EMS.length>32)EMS.shift()}
   if(!o.E)return null;var e=o.E.boden(i,j),sp=SBx.malbild(KL.hole(e.id)),r,q;if(!sp){o.wartet=true;return null}r=[sp];
   if(e.su)for(q=0;q<e.su.length;q++){var s=e.su[q],so=SBx.malbild(SBx.saumObj(KL.hole(s[0]),s[1],s[2],s[3]));if(!so){o.wartet=true;return null}r.push(so)}return r}
@@ -139,7 +143,22 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  function k2Rein(key,r){var a=K2.get(key);if(a){K2B-=a.sp.px.length;K2.delete(key)}K2.set(key,r);K2B+=r.sp.px.length;while(K2B>K2GR&&K2.size>1){var alt=K2.keys().next().value;K2B-=K2.get(alt).sp.px.length;K2.delete(alt);H2ST.verworfen++}}
  function k2(key){var c=K2.get(key);if(c){K2.delete(key);K2.set(key,c)}return c}
  // halbes Bild eines kleinen 1×-Bilds (Boden, Saum, Ding) sofort, gemerkt
- function klein(sp){var c=k2(sp);if(c)return c.sp;var r=halb(sp);k2Rein(sp,{sp:r});return r}
+ function klein(sp,lod){if(lod>1)return klein4(sp,lod);var c=k2(sp);if(c)return c.sp;var r=halb(sp);k2Rein(sp,{sp:r});return r}
+ // N7a3b: ¼ und ⅛ merken (K4, höchstens K4GR Bytes zusammen, älteste fallen heraus)
+ // zuerst fallen die ältesten Bilder der Stufe heraus, die gerade nicht gezeigt wird (LETZT = zuletzt angefragte Stufe; sonst verdrängen die ¼-Zwischenstufen der Kette die sichtbaren ⅛-Bilder)
+ function k4Rein(lod,key,r){var M=K4[lod],a=M.get(key);if(a){K4B-=a.sp.px.length;M.delete(key)}M.set(key,r);K4B+=r.sp.px.length;
+  while(K4B>K4GR){var X=null,alt;for(var u=0;u<2&&!X;u++){var Y=K4[(LETZT===2)===(u===0)?3:2];if(!Y.size)continue;alt=Y.keys().next().value;if(Y!==M||alt!==key)X=Y}   // nie das gerade eingefügte Bild
+   if(!X)break;K4B-=X.get(alt).sp.px.length;X.delete(alt);H4ST.verworfen++}}
+ function k4(lod,key){var M=K4[lod],c=M.get(key);if(c){M.delete(key);M.set(key,c)}return c}
+ function sid(sp){var v=SID.get(sp);if(v===undefined){v=++SIDN;SID.set(sp,v)}return v}
+ // kleines Bild in ¼ (aus ½) oder ⅛ (aus ¼) sofort, gemerkt; ½ nur aus K2 genommen, nicht dort abgelegt
+ var KZ=[null,null,[null,null,null,null],[null,null,null,null]];   // je Stufe die letzten zwei Treffer (Bild → kleine Fassung): benachbarte Felder haben meist dieselben Böden
+ function klein4(sp,lod){var z=KZ[lod];if(z[0]===sp)return z[1];if(z[2]===sp)return z[3];var r=klein4b(sp,lod);z[2]=z[0];z[3]=z[1];z[0]=sp;z[1]=r;return r}
+ function klein4b(sp,lod){LETZT=lod;var s='s'+sid(sp),c=k4(lod,s),r;if(c)return c.sp;
+  if(lod===3){var c2=k4(2,s);if(c2){r=halb(c2.sp);k4Rein(3,s,{sp:r});return r}}
+  var h=K2.get(sp);r=halb(h?h.sp:halb(sp));if(lod===3){k4Rein(2,s,{sp:r});r=halb(r)}k4Rein(lod,s,{sp:r});return r}
+ // größte schon vorhandene Fassung eines Gebäudes für Zielstufe L (⅛: zuerst ¼, dann ½, dann 1×)
+ function quelle(key,L){var c;if(L===3&&(c=K4[2].get('h'+key)))return{sp:c.sp,X:c.X,Y:c.Y,lod:2};if(c=K2.get(key))return{sp:c.sp,X:c.X,Y:c.Y,lod:1};if(c=HB.get(key))return{sp:c.sp,X:c.X,Y:c.Y,lod:0};return null}
  // Arbeit in Zeitanteilen (Bildkern, Regel 20): erst Listen füllen, dann Gebäudebilder bauen. Gibt true, wenn noch Arbeit übrig ist.
  function schritt(budget){budget=budget||4;var t0=jetzt(),aus=function(){return jetzt()-t0>=budget};
   for(var a=LI.length-1;a>=0;a--){var o=orte.get(LI[a]);if(!o||!o.fuell)continue;if(!fuellen(o,aus))return true;if(aus())return true}
@@ -153,9 +172,11 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
    if(!fertig){HST.pausen++;return true}AKT=null;
    if(!r||!r.sp||!r.sp.w){if(r&&r.fehlt&&r.fehlt.length&&KL.wuensche())o2.wartet=true;continue}
    if(r.fehlt&&r.fehlt.length&&KL.wuensche()){o2.wartet=true;continue}   // Teile werden noch geladen: Klotz bleibt, nach dem Laden neu
-   hausRein(w.key,{sp:r.sp,X:r.X,Y:r.Y});HST.gebaut++;
+   var nur=w.fern&&!w.halb&&!w.voll;   // N7a3b: nur für ¼/⅛ gebaut → 1× nicht merken
+   if(!nur)hausRein(w.key,{sp:r.sp,X:r.X,Y:r.Y});HST.gebaut++;
+   if(w.fern){INQ4.add(w.fern+'h'+w.key);AUF4.unshift({k:w.k,q:w.q,key:w.key,E:w.E,fi:w.fi,fj:w.fj,L:w.fern,src:{sp:r.sp,X:r.X,Y:r.Y,lod:0}})}   // als Nächstes verkleinern
    if(w.halb&&!K2.has(w.key)){INQ2.add(w.key);AUF2.unshift({k:w.k,q:w.q,key:w.key,E:w.E,fi:w.fi,fj:w.fj})}   // N7a3a: für ½ gebaut → als Nächstes verkleinern (vorn, sonst verdrängen sich die 1×-Bilder im Kreis)
-   if(w.halb){HN.delete(w.key);if(!w.voll)continue}   // nur für ½ gebaut: kein „ortNeu“ für 1× (erscheint mit dem halben Bild)
+   if(w.halb||w.fern){HN.delete(w.key);if(!w.voll)continue}   // nur für ½ gebaut: kein „ortNeu“ für 1× (erscheint mit dem halben Bild)
    // schon einmal gebaut und verdrängt: kein neues „ortNeu“ (sonst bauen und verdrängen sich zu viele Häuser im Bild gegenseitig immer wieder), erscheint beim nächsten Neuzeichnen
    if(GEB.has(w.key))HST.wieder++;else{GEB.add(w.key);if(GEB.size>65536)GEB.clear();FERTIG.add(stk(o2.x0+w.fi,o2.y0+w.fj))}}
   // N7a3a: Gebäudebilder für ½ verkleinern (aus dem gemerkten 1×-Bild in Zeitanteilen; fehlt es, zuerst bauen lassen)
@@ -167,22 +188,37 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
    var t2=jetzt(),fertig2=AKT2.A.weiter(ABSCHNITTE?aus:null),d2=jetzt()-t2;H2ST.ms+=d2;if(d2>H2ST.maxMs)H2ST.maxMs=d2;
    if(!fertig2){H2ST.pausen++;return true}var A2=AKT2;AKT2=null;k2Rein(w2.key,{sp:A2.A.ergebnis(),X:A2.X,Y:A2.Y});H2ST.gebaut++;
    if(!GEB2.has(w2.key)){GEB2.add(w2.key);if(GEB2.size>65536)GEB2.clear();FERTIG.add(stk(o3.x0+w2.fi,o3.y0+w2.fj))}}
+  // N7a3b: Gebäudebilder für ¼ und ⅛ aus der größten vorhandenen Fassung verkleinern, Stufe für Stufe in Zeitanteilen (¼ und ⅛ gemerkt); fehlt jede, 1× bauen lassen
+  while(AUF4.length||AKT4){if(aus())return true;var w4,o4,id4;
+   if(AKT4){w4=AKT4.w;o4=orte.get(w4.k);if(!o4||!o4.EF||o4.E!==w4.E){AKT4=null;continue}}
+   else{w4=AUF4.shift();id4=w4.L+'h'+w4.key;INQ4.delete(id4);o4=orte.get(w4.k);if(!o4||!o4.EF||o4.E!==w4.E||K4[w4.L].has('h'+w4.key))continue;
+    var s4=w4.src||quelle(w4.key,w4.L);w4.src=null;
+    if(!s4){if(!INQ.has(w4.key)){INQ.add(w4.key);HN.add(w4.key);AUF.push({k:w4.k,q:w4.q,key:w4.key,E:w4.E,fi:w4.fi,fj:w4.fj,fern:w4.L})}else fern(w4.key,w4.L);if(AUF.length||AKT)return true;continue}
+    AKT4={w:w4,cur:s4.lod,X:s4.X,Y:s4.Y,A:halbAuftrag(s4.sp)}}
+   var t4=jetzt(),f4=AKT4.A.weiter(ABSCHNITTE?aus:null),d4=jetzt()-t4;H4ST.ms+=d4;if(d4>H4ST.maxMs)H4ST.maxMs=d4;
+   if(!f4){H4ST.pausen++;return true}var A4=AKT4,r4=A4.A.ergebnis();A4.cur++;if(A4.cur>=2)k4Rein(A4.cur,'h'+w4.key,{sp:r4,X:A4.X,Y:A4.Y});
+   if(A4.cur<w4.L){A4.A=halbAuftrag(r4);continue}
+   AKT4=null;H4ST.gebaut++;if(!GEB4.has(id4=w4.L+'h'+w4.key)){GEB4.add(id4);if(GEB4.size>65536)GEB4.clear();FERTIG.add(stk(o4.x0+w4.fi,o4.y0+w4.fj))}}
   return false}
- function arbeitOffen(){if(AUF.length||AKT||AUF2.length||AKT2)return true;var X=LI.concat(LIP);for(var a=0;a<X.length;a++){var o=orte.get(X[a]);if(o&&o.fuell)return true}return false}
+ function arbeitOffen(){if(AUF.length||AKT||AUF2.length||AKT2||AUF4.length||AKT4)return true;var X=LI.concat(LIP);for(var a=0;a<X.length;a++){var o=orte.get(X[a]);if(o&&o.fuell)return true}return false}
  // Elemente eines Orts, deren vorderstes Feld in diesem Bild liegt (1×; N7a3a auch ½ = lod 1): Einträge wie natur.sammeln; fehlt ein Gebäudebild, der Klotz und ein Bauauftrag
  function elementeIns(o,aus,i0,j0,n,lod){lod=lod||0;var E=o.E,L=E.L,N=L.length,z=0,dx=E.ax+(i0-j0)*32,dy=E.ay+(i0+j0)*16+o.s0*8,hw=32>>lod,hh=16>>lod,st=8>>lod;
   for(var fj=Math.max(0,j0)>>3;fj<=Math.min(o.W-1,j0+n-1)>>3;fj++)for(var fi=Math.max(0,i0)>>3;fi<=Math.min(o.W-1,i0+n-1)>>3;fi++){var f=o.EF.get(fi*4096+fj);if(!f)continue;
    for(var a=0;a<f.length;a++){var q=f[a],e=L[q],vi=e.fi-i0,vj=e.fj-j0;if(vi<0||vj<0||vi>=n||vj>=n)continue;var tief=o.RT[q]-i0-j0+(q+1)/(N+2),sp,x,y;
-    if(e.k===1){sp=SBx.malbild(KL.hole(e.id));if(!sp){o.wartet=true;continue}if(lod)sp=klein(sp);x=(e.X-dx)>>lod;y=(e.Y-dy)>>lod}
-    else{var key=hausKey(o,q),c=lod?k2(key):HB.get(key);
+    if(e.k===1){sp=SBx.malbild(KL.hole(e.id));if(!sp){o.wartet=true;continue}if(lod)sp=klein(sp,lod);x=(e.X-dx)>>lod;y=(e.Y-dy)>>lod}
+    else{var key=hausKey(o,q),c=lod===0?HB.get(key):lod===1?k2(key):k4(LETZT=lod,'h'+key);
      if(c){if(!lod){HB.delete(key);HB.set(key,c)}sp=c.sp;x=(c.X-dx)>>lod;y=(c.Y-dy)>>lod}
      else{var b=e.b,li=e.fi-e.fw+1-i0,lj=e.fj-e.fh+1-j0;sp=klotz(e.fw,e.fh,(b.rolle==='mauer'?20:28)>>lod,lod,b.rolle==='mauer');x=(li-lj)*hw;y=(li+lj)*hh-o.s0*st;
       if(!lod){if(!INQ.has(key)){INQ.add(key);AUF.push({k:o.k,q:q,key:key,E:E,fi:e.fi,fj:e.fj})}else if(HN.has(key))voll(key)}
-      else if(!INQ2.has(key)){INQ2.add(key);AUF2.push({k:o.k,q:q,key:key,E:E,fi:e.fi,fj:e.fj})}}}
+      else if(lod===1){if(!INQ2.has(key)){INQ2.add(key);AUF2.push({k:o.k,q:q,key:key,E:E,fi:e.fi,fj:e.fj})}}
+      else{var id=lod+'h'+key;if(!INQ4.has(id)){INQ4.add(id);AUF4.push({k:o.k,q:q,key:key,E:E,fi:e.fi,fj:e.fj,L:lod})}}}}   // N7a3b
     aus.push({tief:tief,i:vi,o:1,m:0,sp:sp,x:x,y:y});z++}}
   return z}
  // ein für ½ angestoßener 1×-Bau wird auch in 1× gebraucht: dann meldet er sich auch für 1× fertig
  function voll(key){for(var a=0;a<AUF.length;a++)if(AUF[a].key===key){AUF[a].voll=true;return}if(AKT&&AKT.w.key===key)AKT.w.voll=true}
+ // N7a3b: ein laufender 1×-Bau wird auch für ¼/⅛ gebraucht: danach bis Stufe L verkleinern
+ function fern(key,L){for(var a=0;a<AUF.length;a++)if(AUF[a].key===key){if((AUF[a].fern||0)<L)AUF[a].fern=L;return}if(AKT&&AKT.w.key===key&&(AKT.w.fern||0)<L)AKT.w.fern=L}
+ function echtLod(lod){return lod===0||lod===1&&HALBAN||(lod===2||lod===3)&&VIERAN}
  // Für ein Bodenbild (Felder x0.., y0.., n je Seite): Zugriff fürs Bodenbild oder null, wenn kein Ort es schneidet
  function fuerBild(x0,y0,n,lod,f){if(!orte.size)return null;var L=[];orte.forEach(function(o){var i=lok(o,x0),j=y0-o.y0;if((i<o.W||i>WX-n)&&j<o.W&&j+n>0)L.push(o)});if(!L.length)return null;
   var FBx=farben(f),k0=stk(x0,y0);L=L.filter(function(o){return !o.aus.has(k0)});if(!L.length)return null;
@@ -190,11 +226,11 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
    zelle:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return o.Z[j*o.W+i]}return -1},
    frei:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return false}return true},
    // N7a2b1: echter Boden des Planfelds unter (X, Y) als Liste von Bildern (Boden, dann Säume) oder null (Kartei-Bild fehlt noch → Ersatzfarbe, Ort wartet), nur in 1×
-   boden:(lod===0||lod===1&&HALBAN)&&SBx&&KL?function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return bodenBilder(o,i,j,lod)}return null}:null,   // N7a3a: auch ½
+   boden:echtLod(lod)&&SBx&&KL?function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return bodenBilder(o,i,j,lod)}return null}:null,   // N7a3a: auch ½
    // Klötze, deren vorderstes Feld in diesem Bild liegt (Einträge wie natur.sammeln: tief, i, o, m, sp, x, y), nur in 1× und ½
-   kloetze:function(aus){if(lod>1)return 0;var z=0,hw=32>>lod,hh=16>>lod,st=8>>lod;
+   kloetze:function(aus){if(lod>3||lod>1&&!VIERAN)return 0;var z=0,hw=32>>lod,hh=16>>lod,st=8>>lod;
     L.forEach(function(o){var i0=lok(o,x0),j0=y0-o.y0;if(i0>=WX-n)i0-=WX;
-     if((lod===0||lod===1&&HALBAN)&&ECHT&&SBx&&KL&&o.E!==false){listeWunsch(o);if(o.EF&&o.E){z+=elementeIns(o,aus,i0,j0,n,lod);return}}   // N7a3a: ½ wie 1×, verkleinert   // N7a2b2: echte Häuser, Mauern, Dinge (bis die Liste da ist: Klötze)
+     if(echtLod(lod)&&ECHT&&SBx&&KL&&o.E!==false){listeWunsch(o);if(o.EF&&o.E){z+=elementeIns(o,aus,i0,j0,n,lod);return}}   // N7a3a: ½ wie 1×, verkleinert   // N7a2b2: echte Häuser, Mauern, Dinge (bis die Liste da ist: Klötze)
      for(var fj=Math.max(0,j0)>>3;fj<=Math.min(o.W-1,j0+n-1)>>3;fj++)for(var fi=Math.max(0,i0)>>3;fi<=Math.min(o.W-1,i0+n-1)>>3;fi++){var f=o.fach.get(fi*4096+fj);if(!f)continue;
       for(var a=0;a<f.length;a++){var e=f[a],vi=e.i+e.w-1-i0,vj=e.j+e.h-1-j0;if(vi<0||vj<0||vi>=n||vj>=n)continue;
        var hb=(e.m?20:28)>>lod,sp=klotz(e.w,e.h,hb,lod,e.m),li=e.i-i0,lj=e.j-j0;
@@ -212,15 +248,16 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
   postenAn:function(an){POSTEN=!!an},   // N7a2c: Posten einschalten (Notausschalter ?n7a2c=0 lässt es aus)
   postenStand:function(){var n=0,b=0;orte.forEach(function(o){if(o.posten){n++;if(o.EF)b++}});return{posten:n,listen:LIP.length,orteMitListe:PL.size,anfragen:gefragtP.size,ms:PST.ms,maxMs:PST.maxMs}},aufnehmen:aufnehmen,stuecke:stuecke,bedarf:bedarf,flachen:flachen,bei:bei,frei:frei,fuerBild:fuerBild,imOrt:imOrt,hinaus:hinaus,
   // N7a2b1: echte Böden einschalten (sb = stadtbild.js, kl = karteilader.js neu(…)); wartende() → Kartenstücke der Orte, die auf Kartei-Bilder gewartet haben
-  bilder:function(sb,kl,opt){SBx=sb||null;KL=kl||null;ECHT=!(opt&&opt.haeuser===false);HGR=opt&&opt.hausSpeicher||HAUS;ABSCHNITTE=!(opt&&opt.abschnitte===false);HALBAN=!(opt&&opt.halb===false);K2GR=opt&&opt.halbSpeicher||HALB_GR},   // N7a3a: opt.halb:false = ½ bleibt bei den Klötzen (?n7a3=0), halbSpeicher nur für Tests   // N7a2b3: opt.abschnitte:false = Gebäudebilder am Stück (Notausschalter ?n7a2b3=0)   // hausSpeicher: nur für Tests   // N7a2b2: opt.haeuser:false = Gebäude bleiben Klötze (Notausschalter ?n7a2b2=0)
+  bilder:function(sb,kl,opt){SBx=sb||null;KL=kl||null;ECHT=!(opt&&opt.haeuser===false);HGR=opt&&opt.hausSpeicher||HAUS;ABSCHNITTE=!(opt&&opt.abschnitte===false);HALBAN=!(opt&&opt.halb===false);K2GR=opt&&opt.halbSpeicher||HALB_GR;VIERAN=!(opt&&opt.viertel===false);K4GR=opt&&opt.viertelSpeicher||VIERTEL_GR},   // N7a3b: opt.viertel:false (?n7a3b=0)   // N7a3a: opt.halb:false = ½ bleibt bei den Klötzen (?n7a3=0), halbSpeicher nur für Tests   // N7a2b3: opt.abschnitte:false = Gebäudebilder am Stück (Notausschalter ?n7a2b3=0)   // hausSpeicher: nur für Tests   // N7a2b2: opt.haeuser:false = Gebäude bleiben Klötze (Notausschalter ?n7a2b2=0)
   schritt:schritt,arbeitOffen:arbeitOffen,
   fertige:function(){var L=[];FERTIG.forEach(function(k){L.push(k)});FERTIG.clear();return L},fertigeZahl:function(){return FERTIG.size},
-  messNeu:function(){HST.maxMs=0;HST.listeMs=0;HST.pausen=0;PST.maxMs=0;H2ST.maxMs=0;H2ST.pausen=0},   // N7a2b3: Höchstwerte neu (Messfeld)
+  messNeu:function(){HST.maxMs=0;HST.listeMs=0;HST.pausen=0;PST.maxMs=0;H2ST.maxMs=0;H2ST.pausen=0;H4ST.maxMs=0;H4ST.pausen=0},   // N7a2b3: Höchstwerte neu (Messfeld)
   haeuser:function(){return{listen:LI.length,bilder:HB.size,bytes:HBB,grenze:HGR,auftraege:AUF.length,gebaut:HST.gebaut,wieder:HST.wieder,ms:HST.ms,maxMs:HST.maxMs,listeMaxMs:HST.listeMs,listenVerworfen:HST.verworfen,pausen:HST.pausen,angefangen:!!AKT}},
   halbStand:function(){return{an:HALBAN,bilder:K2.size,bytes:K2B,grenze:K2GR,auftraege:AUF2.length,gebaut:H2ST.gebaut,ms:H2ST.ms,maxMs:H2ST.maxMs,verworfen:H2ST.verworfen,pausen:H2ST.pausen,angefangen:!!AKT2}},   // N7a3a
+  viertelStand:function(){var n2=K4[2].size,n3=K4[3].size;return{an:VIERAN,bilder:n2+n3,viertel:n2,achtel:n3,bytes:K4B,grenze:K4GR,auftraege:AUF4.length,gebaut:H4ST.gebaut,ms:H4ST.ms,maxMs:H4ST.maxMs,verworfen:H4ST.verworfen,pausen:H4ST.pausen,angefangen:!!AKT4}},   // N7a3b
   wartende:function(){var L=[];orte.forEach(function(o){if(!o.wartet)return;o.wartet=false;L=L.concat(stuecke(o))});return L},
   elementeMs:function(){var m=0;EMS.forEach(function(v){if(v>m)m=v});return m},
-  leeren:function(){orte.clear();gefragt.clear();PL.clear();gefragtP.clear();IDX.clear();LIP.length=0;LI.length=0;AUF.length=0;INQ.clear();FERTIG.clear();GEB.clear();AUF2.length=0;INQ2.clear();AKT2=null;GEB2.clear();HN.clear()},vergessenAlle:function(){gefragt.clear();gefragtP.clear()},vergessen:function(k){gefragt.delete(k)},
+  leeren:function(){orte.clear();gefragt.clear();PL.clear();gefragtP.clear();IDX.clear();LIP.length=0;LI.length=0;AUF.length=0;INQ.clear();FERTIG.clear();GEB.clear();AUF2.length=0;INQ2.clear();AKT2=null;GEB2.clear();HN.clear();AUF4.length=0;INQ4.clear();AKT4=null;GEB4.clear()},vergessenAlle:function(){gefragt.clear();gefragtP.clear()},vergessen:function(k){gefragt.delete(k)},
   // Park gewinnt: der Spieler hat im Kartenstück k neu gebaut → k gehört zu keiner Ortsfläche mehr; true, wenn k vorher eingeebnet war (Stück neu rechnen)
   bauGeaendert:function(k){var ja=false;orte.forEach(function(o){if(o.aus.has(k))return;if(stuecke(o).indexOf(k)>=0){o.aus.add(k);ja=true}});return ja}}}
 // N7a3a: halbe Größe eines Bilds ({w, h, ax, ay, px}, 255 = durchsichtig): je 2 × 2 Bildpunkte die häufigste Farbe (gleich oft: die erste), nur Palettenfarben;
@@ -233,6 +270,6 @@ function halbAuftrag(s){var W=s.w,H=s.h,P=s.px,w=(W+1)>>1,h=(H+1)>>1,px=new Uint
    if(2*t>n||!m){px[y*w+x]=255;continue}var best=v[0],bn=0;for(var a=0;a<m;a++){var z=0;for(var b=0;b<m;b++)if(v[b]===v[a])z++;if(z>bn){bn=z;best=v[a]}}px[y*w+x]=best}}
  return{weiter:function(aus){var y0=y;for(;y<h;y++){if(aus&&y>y0&&((y-y0)&7)===0&&aus())return false;zeile(y)}return true},ergebnis:function(){return{w:w,h:h,ax:s.ax>>1,ay:s.ay>>1,px:px}}}}
 function halb(s){var A=halbAuftrag(s);A.weiter(null);return A.ergebnis()}
-var OF={RAMPE:RAMPE,HALB_GR:HALB_GR,halb:halb,halbAuftrag:halbAuftrag,RAMPE_P:RAMPE_P,HALTEN_P:HALTEN_P,LISTEN_P:LISTEN_P,PWEIT:PWEIT,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,neu:neu};
+var OF={RAMPE:RAMPE,HALB_GR:HALB_GR,VIERTEL_GR:VIERTEL_GR,halb:halb,halbAuftrag:halbAuftrag,RAMPE_P:RAMPE_P,HALTEN_P:HALTEN_P,LISTEN_P:LISTEN_P,PWEIT:PWEIT,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,neu:neu};
 if(typeof module!=='undefined'&&module.exports)module.exports=OF;else root.AT3ORTSFLAECHE=OF;
 })(typeof self!=='undefined'?self:this);
