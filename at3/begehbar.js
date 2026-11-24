@@ -7,11 +7,14 @@
 // Wiederverwendet aus 2.0 welt-begehbar.js (Thomas 13.11.2026, als Kopie angepasst): Tempo je Boden (Steinstraße 1,15 · Pflaster 1,1 · Kies/Straße/Brücke 1,0 ·
 // Trampelpfad 0,95 · Wiese, Erde, Sand 0,85 · Wald, Nadelstreu 0,75 · Fels, Schnee 0,6 · Sumpf 0,45 · Wasser gesperrt), Karren nur auf Kiesweg und besser
 // (dazu Weltstraße, Ortsplatz, Brücke und Lagerboden für Ladestellen), große Bäume und Fels sperren, Türen nur zu Fuß, Tore für alle.
+// N7a4a1: Orte und Außenposten sperren über ihre Sperrkarte (ortssperre.js), wenn die Wegsuche sie mitgibt (holeB.ort): Tempo der Feldklasse, Hauswände mit Tür,
+// Pferchzäune; ohne holeB.ort alles wie vorher. Kartenstücke mit Gebautem des Spielers gehören nie zum Ort (Park gewinnt).
 // G8: ein gefällter Baum (Stumpf, Feld-Merker Bit 3 aus bau.js) sperrt nicht mehr.
 // Vorschlagswerte (G6a, noch nicht von Thomas bestätigt): Hang mit einer Stufe zu Fuß ×0,9, Karren ×0,85; Hang mit zwei und mehr Stufen zu Fuß ×0,7, Karren gesperrt;
 // Furt zu Fuß 0,6, Karren gesperrt; Fähre vorerst gesperrt; Gebäudeboden zu Fuß 0,85; geplante Wände sperren nicht, begonnene und fertige schon (wie FP2a).
 (function(root){
 'use strict';
+function OSm(){return root.AT3ORTSSPERRE||(typeof module!=='undefined'&&module.exports?require('./ortssperre.js'):null)}
 function NAT(){return root.AT3NATUR||(typeof module!=='undefined'&&module.exports?require('./natur.js'):null)}
 var ST=64, F=ST*ST, WX=ST*9600, WY=ST*4800, MEER=2048, LS=6, GW=F*8, F_ROD=2, Z_PLAN=1, Z_FERTIG=3;
 var FUSS=0, KARREN=1, PROFIL=['fuss','karren'];
@@ -31,6 +34,7 @@ function hoehe(hole,X,Y){if(Y>=WY)Y=WY-1;var p=hole(X>>6,Y>>6);return p?stufe(si
 // Tempo eines Felds. hole(cx,cy) → Kartenstück des Weltgenerators, holeB(cx,cy) → Bau-Puffer (bau.stueck) oder null. −1 = Kartenstück fehlt.
 function tempo(hole,holeB,seed,X,Y,p){if(Y<0||Y>=WY)return 0;X=um(X);
  var w=hole(X>>6,Y>>6);if(!w)return -1;var s=sicht(w),q=((Y&63)<<6)|(X&63),a=holeB?holeB(X>>6,Y>>6):null;
+ var ob=holeB&&holeB.ort;if(ob&&!a){var ov=ob(X,Y);if(ov>=0)return OSm().tempo(ov,p)}   // N7a4a1: Sperrkarte der Orte (Park gewinnt: Stück mit Gebautem nicht)
  var h0=stufe(s.H[q]),mn=h0,mx=h0;for(var k=1;k<4;k++){var h=hoehe(hole,um(X+(k&1)),Y+(k>>1));if(h<0)return -1;if(h<mn)mn=h;if(h>mx)mx=h}
  var steil=mx-mn,b=s.B[q],wv=s.W[q],t;
  if(a&&a[q]){var ga=a[q];t=ga===6?0:ga===7?(p===FUSS?100:0):p===FUSS?85:ga===1?100:0}            // Gebäudeboden; Karren nur ins Lager (Ladestelle); AR1b: Anlage gesperrt, Häuschen zu Fuß
@@ -45,10 +49,14 @@ function tempo(hole,holeB,seed,X,Y,p){if(Y<0||Y>=WY)return 0;X=um(X);
 
 // Darf man über die Kante an Seite s (0 Nord, 1 West, 2 Süd, 3 Ost) des Felds X,Y? Wand sperrt alle, Tür nur Karren, Tor niemanden; geplant sperrt nicht.
 function kante(holeB,X,Y,s,p){if(!holeB)return true;X=um(X);var t,kx=X,ky=Y,arr;
+ if(holeB.ort&&!ortKante(holeB,X,Y,s))return false;
  if(s===0){arr=1}else if(s===1){arr=2}else if(s===2){ky=Y+1;arr=1;if(ky>=WY)return false}else{kx=um(X+1);arr=2}
  var a=holeB(kx>>6,ky>>6);if(!a)return true;var v=a[arr*F+(((ky&63)<<6)|(kx&63))];t=v&3;if(!t||((v>>4)&3)===Z_PLAN)return true;
  return t===3||(t===2&&p===FUSS)}
 
+// N7a4a1: Kanten der Sperrkarte (Hauswand mit Tür, Pferchzaun) zwischen X,Y und dem Nachbarn an Seite s; Stücke mit Gebautem gehören nicht zum Ort
+function ortKante(holeB,X,Y,s){var nx=um(X+DX[s]),ny=Y+DY[s],o=holeB.ort,a=holeB(X>>6,Y>>6)?-1:o(X,Y),b=ny<0||ny>=WY||holeB(nx>>6,ny>>6)?-1:o(nx,ny);
+ return a<0&&b<0?true:OSm().kante(a,b,s)}
 // Schritt von X,Y nach Seite s: Tempo des Zielfelds oder 0 (gesperrt), −1 (Kartenstück fehlt).
 function schritt(hole,holeB,seed,X,Y,s,p){if(!kante(holeB,X,Y,s,p))return 0;var ny=Y+DY[s];if(ny<0||ny>=WY)return 0;return tempo(hole,holeB,seed,X+DX[s],ny,p)}
 

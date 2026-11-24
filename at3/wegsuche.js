@@ -12,10 +12,12 @@
 // Codes: 0 ok, 1 no_path, 2 no_map, 3 start_blocked, 4 goal_blocked, 5 no_road, 6 no_town.
 // G6c (Karren): a.anschl = Weg zur nächsten Weltstraße, die das Profil benutzen darf (Dijkstra im Fenster, Modus 2); gibt es keine, endet der Weg am weitesten
 // erreichbaren fertigen gebauten Weg dieses Profils (Kopf[7] = 2), sonst no_road. a.startFrei = Startfeld darf gesperrt sein. a.temp = hinter den Orten je Feld das Tempo (für die Fahrt ohne Kartenstücke).
+// N7a4a1: a.orte = [{x0, y0, W, m}] Sperrkarten der Orte und Außenposten, die das Fenster berühren (ortssperre.js maske); ohne a.orte wie vorher.
 // Bisherige Aufträge (ohne anschl/temp) rechnen und antworten genau wie in G6b.
 (function(root){
 'use strict';
 function BG(){return root.AT3BEGEH||(typeof module!=='undefined'&&module.exports?require('./begehbar.js'):null)}
+function OSm(){return root.AT3ORTSSPERRE||(typeof module!=='undefined'&&module.exports?require('./ortssperre.js'):null)}
 function WG(){return root.AT3WG||(typeof module!=='undefined'&&module.exports?require('./weltgen.js'):null)}
 var ST=64, F=ST*ST, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, FEN=5, HALB=2, FS=FEN*ST, NN=FS*FS, TERR=F*4, BAUB=F*9, KOPF=8;
 var CODE=['ok','no_path','no_map','start_blocked','goal_blocked','no_road','no_town'];
@@ -68,6 +70,7 @@ function rechnen(a){speicher();var G=WG(),B=BG(),d=a.daten,tab=a.tab,T=new Array
  function idx(cx,cy){var dx=cx-a.cx0;if(dx<0)dx+=SX;else if(dx>=SX)dx-=SX;var dy=cy-a.cy0;return dx>=FEN||dy<0||dy>=FEN?-1:dy*FEN+dx}
  function hole(cx,cy){var j=idx(cx,cy);return j<0?null:T[j]}
  function holeB(cx,cy){var j=idx(cx,cy);return j<0?null:BU[j]}
+ holeB.ort=a.orte&&a.orte.length&&OSm()?OSm().lupe(a.orte):null;   // N7a4a1: Sperrkarten der Orte im Fenster (begehbar.js)
  var OX=a.cx0*ST, OY=a.cy0*ST;
  function lokal(X,Y){var lx=X-OX;if(lx<0)lx+=WX;else if(lx>=WX)lx-=WX;var ly=Y-OY;return lx<0||lx>=FS||ly<0||ly>=FS?-1:ly*FS+lx}
  stamp++;if(stamp>4e9){temS.fill(0);stp.fill(0);zu.fill(0);stamp=1}
