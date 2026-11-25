@@ -33,11 +33,11 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='63193fc0', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='6d8c4a12', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 // N7a3c2 Ortsnamen (Thomas 25.11.2026): Staffel nach Ortsgröße g (2 Weiler … 7 Hauptstadt) je Stufe lod 4–9, Zusatz bis lod 5, Schriftgröße je g; Notausschalter ?n7a3c2=0
-var N7A3C2=!/[?&]n7a3c2=0/.test(location.search||''), NAMEN_G=[0,0,0,0,2,3,4,4,6,6], NAMEN_BIS=9, NAMEN_ZUS=5, NAMEN_MAX=8192, NAMEN_PX=[15,15,15,16,17,18,21,24]; var NAMEN_ANTEIL=4;   // ms je Bild fürs Vorzeichnen neuer Namen (Regel 20), der Rest folgt im nächsten Bild
+var N7A3C2=!/[?&]n7a3c2=0/.test(location.search||''), NAMEN_G=[0,0,0,0,2,3,4,4,6,6,6,6], NAMEN_BIS=11, NAMEN_ZUS=5, NAMEN_MAX=8192, NAMEN_PX=[15,15,15,16,17,18,21,24]; var NAMEN_ANTEIL=4;   // ms je Bild fürs Vorzeichnen neuer Namen (Regel 20), der Rest folgt im nächsten Bild
 var NF={papier:'#d8c499',papier2:'#b49c6c',rand:'#412614',tinte:'#24140a',tinte2:'#5f3d23',blut:'#5d0b07'};
 var NFARB=(function(){var P=typeof window!=='undefined'&&window.AT3_64,L=[];for(var k in NF){var v=parseInt(NF[k].slice(1),16),r=v>>16,gg=(v>>8)&255,bb=v&255;
  if(P){var f=P.farbe(P.PALETTEN[P.PALETTE].farben[P.naechste(r,gg,bb,P.PALETTE)]);r=f[0];gg=f[1];bb=f[2];NF[k]='rgb('+r+','+gg+','+bb+')'}L.push(r,gg,bb)}return L})();   // Farben = nächste der AT3-Palette

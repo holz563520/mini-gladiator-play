@@ -90,9 +90,9 @@ function miniDa(k,o){if(!o||!o.m||!o.W)return;MINIF.delete(k);var e=MINI.get(k);
 function miniMelden(){MINIT=0;if(!MININ.length)return;var L=MININ;MININ=[];self.postMessage({art:'fernNeu',gen:gen,flaechen:L,minis:MINI.size,miniB:MINIB,miniMs:MINIST.maxMs,miniRaus:MINIST.raus})}
 function miniAn(){if(!N7A3C1||!A||!ofl()){FB.miniAn(null);return}var lut=miniLut();FB.miniAn(lut?{hole:miniHole,lut:lut}:null)}
 // N7a3c2 (Thomas 25.11.2026): Ortsnamen für die Fernstufen. Frage „namen“ mit Ausschnitt (Weltfelder) und Stufe: alle Orte in den Erdzellen des Ausschnitts, die in
-// dieser Stufe einen Namen tragen (Staffel NAMEN_G: ⅟16 Weiler, bis ⅟32 Dörfer, bis ⅟128 Städte/Marktflecken, bis ⅟512 Haupt-/Großstädte), in ⅟16–⅟32 mit Zusatz
+// dieser Stufe einen Namen tragen (Staffel NAMEN_G: ⅟16 Weiler, bis ⅟32 Dörfer, bis ⅟128 Städte/Marktflecken, bis ⅟2048 Haupt-/Großstädte, Thomas 25.11.2026), in ⅟16–⅟32 mit Zusatz
 // (orte.js bilanz, Text aus sprache/en.json). Kosten nur nach Zellen im Bild; je Ort gemerkt (höchstens NAMEN_MAX), Daten beim ersten Mal geladen.
-var NAMEN_G=[0,0,0,0,2,3,4,4,6,6],NAMEN_MAX=8192,NAMK=new Map(),NTX=null,NTXL=null;
+var NAMEN_G=[0,0,0,0,2,3,4,4,6,6,6,6],NAMEN_MAX=8192,NAMK=new Map(),NTX=null,NTXL=null;
 function namenTexte(){if(NTXL)return NTXL;NTXL=fetch('sprache/en.json'+self.location.search).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){NTX=j.texte||j;return NTX},function(){NTX=false;return null});return NTXL}
 function namen(d,m,t){var lod=d.lod|0,gmin=NAMEN_G[lod];m.namen=[];if(!gmin||!A.ort){m.us=(performance.now()-t)*1000;self.postMessage(m);return}
  if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}
