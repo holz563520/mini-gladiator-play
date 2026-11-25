@@ -162,7 +162,12 @@ function plan0(opt){
  var F=opt.mass==null?BK().MASS:+opt.mass,seed=opt.seed>>>0,elend=!!(A&&A.elend);
  var einw=opt.liste?opt.liste.einw:opt.einw!=null?Math.max(1,Math.min(20000,opt.einw|0)):opt.probeW?PROBE_EINW:A?A.einw:150;
  var Li=opt.liste||(elend?null:SL().probe(einw,opt.biom,seed,daten(opt),opt.leit)),g=elend?3:Li.g;if(!art)art=ART_G[g];
- var BU=null;if(Li&&opt.buendeln!==false){var bu=buendeln(Li,!elend&&!!opt.kueste&&g>=MAUER_AB,opt.biom);Li=bu.L;BU=bu.info}   // N7a1b: Gewinnung nur als Außenposten, Rest und Häfen gebündelt
+ // N7a5a3a (Thomas 25.11.2026): Städte mit Mauer an Fluss und See. MS = Wassermaske aus der Welt (opt.welt) einer Stadt, in deren Maske kein Meer liegt (Meer folgt in N7a5a3b):
+ // kein gemalter Fluss und keine gerade Küste mehr; ein echter Fluss läuft durch die Stadt (Wassertore und Ufertürme wie vorher, Brücken nur, wo auf beiden
+ // Ufern Gasse ist), Seen und Teiche am Rand bleiben draußen, die Mauer folgt dem Ufer; Hafen, Werft und Seefischerei gibt es ohne Meer nicht im Bild (Liste bleibt).
+ // Notausschalter opt.stadtwasser:false (?n7a5a3a=0), auch opt.weltwasser:false.
+ var MS=!elend&&g>=MAUER_AB&&opt.welt&&opt.welt.m&&opt.weltwasser!==false&&opt.stadtwasser!==false&&!maskeMeer(opt.welt)?opt.welt:null;
+ var BU=null;if(Li&&opt.buendeln!==false){var bu=buendeln(Li,!elend&&!!opt.kueste&&g>=MAUER_AB&&!MS,opt.biom);Li=bu.L;BU=bu.info}   // N7a1b: Gewinnung nur als Außenposten, Rest und Häfen gebündelt
  var basis={klasse:(ST||B).klasse,dach:(ST||B).dach,wand:(ST||B).wand,dachR:(ST||B).dachR};
  // Fluss (N6b2c4c1): opt.fluss 'ns' | 'ow' (aus der Welt, orte.js flussAchse) oder true (Richtung aus dem Seed); nicht in Elendssiedlungen
  var FL=elend||!opt.fluss?null:opt.fluss==='ns'||opt.fluss==='ow'?opt.fluss:(rng(hashT([seed,einw,'flussachse'].join('|')))()<.5?'ns':'ow');
@@ -174,6 +179,7 @@ function plan0(opt){
  // Maske (FLh). Nach dem Spiegeln setzt weltWasser() die echten Wasser- und Strandfelder, Furten, Brücken und Stege. Notausschalter opt.weltwasser:false (?n7a5a2=0).
  var MW=!elend&&g<MAUER_AB&&opt.welt&&opt.welt.wasser>0&&opt.weltwasser!==false?opt.welt:null,FLh=FL;
  if(MW){FLh=maskeFluss(MW)?'ns':null;FL=null;KS=null}
+ if(MS){FLh=MS.wasser>0&&maskeFluss(MS)?'ns':null;FL=null;KS=null}
  var spW0=rng(hashT([seed,art,einw,'sp'].join('|')))()<.5,KSP=null,spK=null;
  if(KS!=null&&g>=MAUER_AB){if(FL)FL=KS<2?'ns':'ow';spK=FL?FL==='ow':spW0;KSP=spK?QUER[KS]:KS}
  // Gebäude einzeln
@@ -186,6 +192,8 @@ function plan0(opt){
  if(TPL&&B.pflaster&&opt.presse!==false)items.forEach(function(it){if(PRESSE_ID[it.id]){it.w=PRESSE_PLAN[0];it.h=PRESSE_PLAN[1]}});   // N6b4c4 Weinpresse/Ölmühle: Platz für 4 × 5 (nur Mittelmeer)   // N6b3e2 Senat: Platz für 8 × 9 (nur Mittelmeer)
  // Küste ab Marktflecken: Hafen, Werft, Seefischerei stehen draußen am Kai statt in der Stadt
  var hafenItems=KSP!=null?items.filter(function(it){return HAFEN[it.id]}):[];if(hafenItems.length)items=items.filter(function(it){return !HAFEN[it.id]});
+ if(MS&&items.some(function(it){return HAFEN[it.id]})){BU=BU||{};var hz={};items.forEach(function(it){if(HAFEN[it.id])hz[it.id]=(hz[it.id]|0)+1});Object.keys(hz).forEach(function(id){BU[id]={liste:BU[id]?BU[id].liste:hz[id],bild:0,wie:'meer'}});
+  items=items.filter(function(it){return !HAFEN[it.id]})}   // N7a5a3a: ohne Meer keine Hafengebäude im Bild
  var Bm=blockMass(g),P1=Bm+1,wall=g>=MAUER_AB&&!elend?MAUER:0,off=wall+1;
  // Burgberg (N6b2c4c3): Gipfelbau(ten) nach Rang, immer als Monument (eigener Doppelblock mit Platz)
  var HU=!!opt.huegel&&!elend&&g>=MAUER_AB,HT=g>=6?4:3,gip1=null,gip2=null;
@@ -206,10 +214,15 @@ function plan0(opt){
  // N7a5a2: passt das Dorf nicht auf das Land (z. B. ein Ort auf einer winzigen Insel), plant der Ort wie vorher ohne Maske und meldet das (weltwasserErsatz)
  if(MW&&!ergebnis){var Pe=plan0(Object.assign({},opt,{weltwasser:false}));Pe.weltwasserErsatz=true;return Pe}
  var flurGedeckelt=false;
- for(var versuch=0;versuch<14&&!ergebnis;versuch++,nb+=2)ergebnis=anlegen(nb);
+ for(var versuch=0;versuch<(MS?24:14)&&!ergebnis;versuch++,nb+=2)ergebnis=anlegen(nb);
+ // N7a5a3a: passt die Stadt nicht um das echte Wasser (fast nur See), plant sie wie vorher ohne Maske und meldet das (stadtwasserErsatz)
+ var ersatzS=function(){var Pe=plan0(Object.assign({},opt,{stadtwasser:false}));Pe.stadtwasserErsatz=true;return Pe};
+ if(!ergebnis&&MS)return ersatzS();
  if(!ergebnis)throw new Error('Stadtplan passt nicht ('+items.length+' Gebäude)');
+ var seeAusS=MS?ergebnis.seeAus:null;
+ if(MS){var nfA=weltNass(MS,F,spW0,true),eW=ergebnis.W;ergebnis.nass=function(x,y){return nfA(x,y,eW/2)};ergebnis.weit=opt.msWeit||MS_WEIT}   // Nässe für den Ring vor der Stadt
  // Vor den Toren und Umland (N6b2c3): Außenring um den Plan innen; opt.aussen === false = nur innen (Tests N6b2c2)
- if(opt.aussen!==false&&!elend){var ea=null;for(var zug=0;zug<12&&!ea;zug++)ea=aussen(ergebnis,zug);if(!ea)throw new Error('Außenring passt nicht');ergebnis=ea}
+ if(opt.aussen!==false&&!elend){var ea=null;for(var zug=0;zug<12&&!ea;zug++)ea=aussen(ergebnis,zug);if(!ea&&MS)return ersatzS();if(!ea)throw new Error('Außenring passt nicht');ergebnis=ea}
  function aussen(E,zug){
   var Wi=E.W,MK=E.maske,TO=E.tore,ra=rng(hashT([seed,art,opt.biom,einw,'aussen'].join('|'))),D=daten(opt),gST=SL().STUFE[g]||1,mit=g>=MAUER_AB;
   var FLUR=flurStart(opt,einw,FLh,Li);   // N6b4b2: Felder nach Bedarf statt HOF_JE (opt.flur:false = wie vorher)
@@ -257,7 +270,7 @@ function plan0(opt){
   var rechteck=function(t,u0,du,l0,dl){var a=glob(t,u0,l0),b=glob(t,u0+du-1,l0+dl-1);return{i:Math.min(a[0],b[0]),j:Math.min(a[1],b[1]),w:Math.abs(a[0]-b[0])+1,h:Math.abs(a[1]-b[1])+1}};
   var cur=[],teile=[];TO.forEach(function(t){cur.push(t.u0,t.u0)});
   var leg=function(z,du,dl,gap,was,fest){var t=TO[z>>1],sei=z&1,l0=sei===0?-dl:2;
-   for(var u=cur[z];u<cur[z]+800&&!(E.nass&&u>MW_WEIT);u++){var r=rechteck(t,u,du,l0,dl),ok=true,x,y;   // N7a5a2: um Wasser herum nicht beliebig weit hinaus
+   for(var u=cur[z];u<cur[z]+800&&!(E.nass&&u>(E.weit||MW_WEIT));u++){var r=rechteck(t,u,du,l0,dl),ok=true,x,y;   // N7a5a2: um Wasser herum nicht beliebig weit hinaus
     if(fest&&seiteVon(r.i+r.w/2,r.j+r.h/2)!==t.s)continue;
     for(y=r.j;y<r.j+r.h&&ok;y++)for(x=r.i;x<r.i+r.w&&ok;x++)if(!frei(x,y))ok=false;
     if(!ok)continue;for(y=r.j;y<r.j+r.h;y++)for(x=r.i;x<r.i+r.w;x++)occ.add(key(x,y));
@@ -430,6 +443,22 @@ function plan0(opt){
   // Ringgasse: Nachbarn der Mauer, auch schräg (so hängt sie auch an den Treppen zusammen); nutzbar: der Rest. Ohne Vielfalt: alles innen = Quadrat wie N6b2c2.
   var WW=W*W,M=new Uint8Array(WW),D4=new Int32Array(WW),wallC=new Uint8Array(WW),ring=new Uint8Array(WW),nutz=new Uint8Array(WW),weg=new Uint8Array(WW),offenM=new Uint8Array(WW),k1,i,j;
   for(j=0;j<W;j++)for(i=0;i<W;i++)M[at(i,j)]=viel?(UM.innen((i+.5)/W*2-1,(j+.5)/W*2-1)?1:0):1;
+  // N7a5a3a: Nässe je Planfeld (3 See, 2 Fluss, 1 Ufer daneben, 0 trocken). See samt Ufer, der von draußen erreichbar ist, gehört nicht zur Stadt (EXC, die Mauer
+  // folgt dem Ufer); ganz eingeschlossene Teiche bleiben innen ohne Mauer und ohne Haus (TEI). Flussfelder (RIV) bleiben innen und werden Wasser 'w'.
+  var NSa=null,RIV=null,TEI=null,EXC=null,NSB=[[1,0],[-1,0],[0,1],[0,-1]];
+  if(MS&&viel){var nfS=weltNass(MS,F,spW0,true),L0=new Uint8Array(WW),ex=new Uint8Array(WW),st0=[];NSa=new Uint8Array(WW);RIV=new Uint8Array(WW);TEI=new Uint8Array(WW);EXC=new Uint8Array(WW);
+   for(j=0;j<W;j++)for(i=0;i<W;i++){k1=at(i,j);var ns=nfS(i,j,W/2);NSa[k1]=ns;if(ns===3)L0[k1]=1;else if(ns===2)RIV[k1]=1}
+   // Uferzone (Strand, Böschung): gehört zum nächsten Wasser (Flut über die Uferfelder, See zuerst); Wüstensand fernab vom Wasser filtert weltNass(…, true) heraus
+   var zu=new Uint8Array(WW),fq=[],fh=0;for(k1=0;k1<WW;k1++)if(L0[k1]){zu[k1]=3;fq.push(k1)}for(k1=0;k1<WW;k1++)if(RIV[k1]){zu[k1]=2;fq.push(k1)}
+   while(fh<fq.length){var cf=fq[fh++],xf=cf%W,yf=(cf/W)|0;for(var ey=-1;ey<=1;ey++)for(var exx=-1;exx<=1;exx++){var xe=xf+exx,ye=yf+ey;if(xe<0||ye<0||xe>=W||ye>=W)continue;var ke=at(xe,ye);if(!zu[ke]&&NSa[ke]===1){zu[ke]=zu[cf];fq.push(ke)}}}
+   for(k1=0;k1<WW;k1++)if(L0[k1]||(NSa[k1]===1&&zu[k1]!==2))ex[k1]=1;   // Ufer ohne erkanntes Wasser (schmaler Streifen zwischen den Planfeldern) zählt zum See
+   var drau=new Uint8Array(WW);for(k1=0;k1<WW;k1++){var ie=k1%W,je=(k1/W)|0;if(!M[k1]||((ie===0||je===0||ie===W-1||je===W-1)&&ex[k1])){drau[k1]=1;st0.push(k1)}}
+   while(st0.length){var c0=st0.pop(),ci=c0%W,cj=(c0/W)|0;for(var d0=0;d0<4;d0++){var xn=ci+NSB[d0][0],yn=cj+NSB[d0][1];if(xn<0||yn<0||xn>=W||yn>=W)continue;var kn0=at(xn,yn);if(!drau[kn0]&&ex[kn0]){drau[kn0]=1;st0.push(kn0)}}}
+   for(k1=0;k1<WW;k1++)if(ex[k1]&&M[k1]){if(drau[k1]){M[k1]=0;EXC[k1]=1}else TEI[k1]=1}
+   // schneidet der See die Stadt in Stücke, bleibt nur das größte in der Mauer (die anderen hätten kein Tor)
+   var lbM=new Int32Array(WW).fill(-1),gr=[],sm=[];for(k1=0;k1<WW;k1++){if(!M[k1]||lbM[k1]>=0)continue;var id0=gr.length,n0=0;lbM[k1]=id0;sm.push(k1);
+    while(sm.length){var c4=sm.pop();n0++;for(var d4=0;d4<4;d4++){var x4=c4%W+NSB[d4][0],y4=((c4/W)|0)+NSB[d4][1];if(x4<0||y4<0||x4>=W||y4>=W)continue;var n4=at(x4,y4);if(M[n4]&&lbM[n4]<0){lbM[n4]=id0;sm.push(n4)}}}gr.push(n0)}
+   if(gr.length>1){var gb=0;for(var gq=1;gq<gr.length;gq++)if(gr[gq]>gr[gb])gb=gq;for(k1=0;k1<WW;k1++)if(M[k1]&&lbM[k1]!==gb){M[k1]=0;EXC[k1]=1;TEI[k1]=0}}}
   var qu=[],qh=0;for(j=0;j<W;j++)for(i=0;i<W;i++){k1=at(i,j);if(!M[k1])continue;D4[k1]=1e9;
    if(i===0||j===0||i===W-1||j===W-1||!M[k1-1]||!M[k1+1]||!M[k1-W]||!M[k1+W]){D4[k1]=1;qu.push(k1)}}
   while(qh<qu.length){var kq=qu[qh++],iq=kq%W,jq=(kq/W)|0,nq=[iq>0?kq-1:-1,iq<W-1?kq+1:-1,jq>0?kq-W:-1,jq<W-1?kq+W:-1];
@@ -439,7 +468,9 @@ function plan0(opt){
    for(var dy=-1;dy<=1&&!nah;dy++)for(var dx=-1;dx<=1&&!nah;dx++){var xx=i+dx,yy=j+dy;if(xx>=0&&yy>=0&&xx<W&&yy<W&&wallC[at(xx,yy)])nah=true}
    if(nah)ring[k1]=1;else nutz[k1]=1}
   for(k1=0;k1<WW;k1++){if(!M[k1])Z[k1]='g';else if(wallC[k1]){Z[k1]='g';belegt[k1]=1}else Z[k1]=elend?'e':'s'}
+  if(TEI)for(k1=0;k1<WW;k1++){if(TEI[k1]){nutz[k1]=0;ring[k1]=0;if(!wallC[k1])Z[k1]='g'}else if(NSa[k1]===1&&M[k1]){nutz[k1]=0}}   // N7a5a3a: Teich innen Wiese, Flussufer Gasse
   var frei0=function(k){return nutz[k]&&!weg[k]};
+  var amFluss=function(i,j){for(var y=j-1;y<=j+1;y++)for(var x=i-1;x<=i+1;x++)if(x>=0&&y>=0&&x<W&&y<W&&RIV&&RIV[at(x,y)])return true;return false};
   // Tore (Thomas: nach Größe). Hauptstraßen-Arme 0 Süd, 1 Nord, 2 Ost, 3 West; 2 Tore = eine durchgehende Straße, 3 Tore = ein Arm endet innen an der Ringgasse.
   var rt=rng(hashT([seed,art,einw,'tore'].join('|'))),arme=[0,1,2,3],tore=[];
   if(viel){if(UM.tore<=2)arme=rt()<.5?[0,1]:[2,3];else if(UM.tore===3){var ohne=Math.floor(rt()*4);arme=arme.filter(function(x){return x!==ohne})}}
@@ -451,7 +482,20 @@ function plan0(opt){
     for(var p0=a0;p0>=0&&p0<W;p0+=da){var k=s<2?at(cc,p0):at(p0,cc);weg[k]=1;if(wallC[k]){wallC[k]=0;offenM[k]=1;Z[k]='s';belegt[k]=1}else if(!M[k]){Z[k]='s';belegt[k]=1}
      if(M[k]){if(p0>mx)mx=p0;if(p0<mn)mn=p0}}}
    tore.push({s:s,c:c,u0:s===0||s===2?mx+1-W:-mn,haupt:haupt})}
+  // N7a5a3a: ein Haupttor, dessen Straße innen nicht auf die Mauer, sondern auf den See trifft, fällt weg (kein Tor ins Wasser); bleibt keins, passt der Plan nicht
+  if(EXC){var armOk=function(s,cA,cB){var c=s<2?cA:cB;if(EXC[at(cA,cB)]||EXC[at(cA+1,cB+1)])return false;for(var l=0;l<2;l++){var a0=s===0?cB+2:s===1?cB-1:s===2?cA+2:cA-1,da=s===0||s===2?1:-1;
+    for(var p0=a0;p0>=0&&p0<W;p0+=da){var k=s<2?at(c+l,p0):at(p0,c+l);if(!M[k]){if(EXC[k])return false;break}}}return true};
+   var arm0=arme.slice();arme=arme.filter(function(s){return armOk(s,cA,cB)});
+   // N7a5a3a: liegt das Straßenkreuz so, dass alle Haupttore im See endeten, rückt es auf eine andere Gasse (Reihe und Spalte aus derselben Auswahl wie oben)
+   if(!arme.length&&wahl.length){var rk=rng(hashT([seed,art,einw,nb,'kreuz'].join('|'))),PA=[];wahl.forEach(function(x){wahl.forEach(function(y){PA.push([x,y,rk()])})});PA.sort(function(u,v){return u[2]-v[2]});
+    var lage=function(L,h,a){var q=off;for(var b=0;b<a;b++){if(b===h)q++;q+=L[b]+1}if(a===h)q++;return q};
+    for(var pa=0;pa<PA.length&&!arme.length;pa++){var cA2=lage(cw,PA[pa][0],PA[pa][0])-2,cB2=lage(rh,PA[pa][1],PA[pa][1])-2,ar2=arm0.filter(function(s){return armOk(s,cA2,cB2)});
+     if(ar2.length){hx=PA[pa][0];hy=PA[pa][1];arme=ar2;X0.length=0;Y0.length=0;p=off;for(a=0;a<nb;a++){if(a===hx)p++;X0.push(p);p+=cw[a]+1}p=off;for(b=0;b<nb;b++){if(b===hy)p++;Y0.push(p);p+=rh[b]+1}cA=X0[hx]-2;cB=Y0[hy]-2}}}
+   if(!arme.length)return null}
   arme.forEach(function(s){oeffne(s,s<2?cA:cB,true)});
+  // N7a5a3a: echter Fluss durch die Stadt: Flussfelder werden Wasser, die Mauer bleibt dort offen (Flusstor; Ufertürme setzt wassertoreGerade)
+  var sTore=0;if(RIV){var offR=[];for(k1=0;k1<WW;k1++){if(!RIV[k1]||!M[k1])continue;if(wallC[k1]){wallC[k1]=0;offenM[k1]=1;offR.push(k1)}Z[k1]='w';belegt[k1]=1;nutz[k1]=0;ring[k1]=0}
+   var seenR=new Uint8Array(WW);offR.forEach(function(q0){if(seenR[q0])return;sTore++;var sq=[q0];seenR[q0]=1;while(sq.length){var c1=sq.pop();for(var d1=0;d1<4;d1++){var x1=c1%W+NSB[d1][0],y1=((c1/W)|0)+NSB[d1][1];if(x1<0||y1<0||x1>=W||y1>=W)continue;var n1=at(x1,y1);if(offenM[n1]&&RIV[n1]&&!seenR[n1]){seenR[n1]=1;sq.push(n1)}}}})}
   // Fluss Teil 1: Wasser von Bildrand zu Bildrand, die Mauer bleibt dort offen (Flusstor)
   var fx0=mitFluss?X0[fk-1]+cw[fk-1]+1:-1,ftore=0,vorM=false;
   if(mitFluss)for(j=0;j<W;j++){var warM=false;for(i=fx0;i<fx0+RW;i++){k1=at(i,j);if(wallC[k1]){wallC[k1]=0;offenM[k1]=1;warM=true}Z[k1]='w';belegt[k1]=1;nutz[k1]=0;ring[k1]=0}
@@ -510,7 +554,7 @@ function plan0(opt){
      // Die Straße muss in beiden Spalten durch die Mauer gehen (sonst läge das Tor neben einem Oval ins Leere)
      // und zwar einmal: erst innen, dann Mauer, dann draußen bis zum Bildrand (nicht außen entlang in eine Beule)
      for(var l5=0;l5<2&&ok2;l5++){var zst=0,a5=s3===0?cB+2:s3===1?cB-1:s3===2?cA+2:cA-1,d5=s3===0||s3===2?1:-1;
-      var nW=0;for(var p5=a5;p5>=0&&p5<W&&ok2;p5+=d5){var k5=sp?at(c5+l5,p5):at(p5,c5+l5);if(wallC[k5]){if(zst===2||p5===a5||++nW>4)ok2=false;else zst=1}else if(!M[k5]){if(zst===0)ok2=false;else zst=2}else if(zst)ok2=false}
+      var nW=0;for(var p5=a5;p5>=0&&p5<W&&ok2;p5+=d5){var k5=sp?at(c5+l5,p5):at(p5,c5+l5);if(wallC[k5]){if(zst===2||p5===a5||++nW>4)ok2=false;else zst=1}else if(!M[k5]){if(zst===0||(EXC&&EXC[k5]))ok2=false;else zst=2}else if(zst)ok2=false}
       if(!zst)ok2=false}   // quer durch die Mauer (höchstens 4 Mauerfelder), nicht längs in ihr
      if(!ok2)continue;
      for(ri=0;ri<R2.length;ri++){var bx=bl[sp?aa*nb+R2[ri]:R2[ri]*nb+aa];if(sp){if(dir===0)bx.x++;bx.w--}else{if(dir===0)bx.y++;bx.h--}bx.rest=bx.w*bx.h}
@@ -524,7 +568,7 @@ function plan0(opt){
      if(!schlecht)break;var mm=Math.max(sl,sr,st,sb);if(!mm){s.weg=true;break}
      if(mm===sl){s.x++;s.w--}else if(mm===sr)s.w--;else if(mm===st){s.y++;s.h--}else s.h--;
      if(s.w<3||s.h<3){s.weg=true;break}}
-    for(yy=0;yy<h0;yy++)for(xx=0;xx<w0;xx++){kk2=at(x0+xx,y0+yy);if(!frei0(kk2))continue;
+    for(yy=0;yy<h0;yy++)for(xx=0;xx<w0;xx++){kk2=at(x0+xx,y0+yy);if(!frei0(kk2)){if(NSa&&NSa[kk2]===1&&M[kk2]&&!wallC[kk2]&&!weg[kk2]&&!amFluss(x0+xx,y0+yy))Z[kk2]='g';continue}   // N7a5a3a: Böschung am Fluss Wiese, nur die Ufergasse bleibt
      if(s.weg)Z[kk2]='g';else if(x0+xx<s.x||x0+xx>=s.x+s.w||y0+yy<s.y||y0+yy>=s.y+s.h)Z[kk2]='o'}
     s.rest=s.weg?0:s.w*s.h})}
   // Fluss Teil 2: Brücken an der Hauptstraße, an Straßen zu Zusatztoren und an den gewählten Gassen, nur wo beide Ufer Gasse sind
@@ -534,6 +578,19 @@ function plan0(opt){
    for(j=0;j<W;j++){var wg=false;for(i=fx0;i<fx0+RW;i++)if(weg[at(i,j)])wg=true;
     if((brY[j]||wg)&&ufer(fx0-1,j)&&ufer(fx0+RW,j)){for(i=fx0;i<fx0+RW;i++){k1=at(i,j);Z[k1]='s';belegt[k1]=0}fbrZ.push(j)}}
    fbrZ.forEach(function(y,ix){if(ix===0||fbrZ[ix-1]!==y-1)fbr++})}
+  // N7a5a3a: Brücken über den echten Fluss: gerade Läufe über Wasser (höchstens BRUECKE_MAX) zwischen zwei Gassen; Hauptstraßen immer, sonst so wenige,
+  // dass alle Gassenstücke zusammenhängen (kürzeste zuerst)
+  var sBr=0;if(RIV){var LAND=function(k){return M[k]&&!wallC[k]&&(Z[k]==='s'||Z[k]==='o')},KD=[],lab=new Int32Array(WW).fill(-1),nl0=0;
+   for(k1=0;k1<WW;k1++){if(lab[k1]>=0||!LAND(k1))continue;var sl=[k1];lab[k1]=nl0;while(sl.length){var c2=sl.pop();for(var d2=0;d2<4;d2++){var x2=c2%W+NSB[d2][0],y2=((c2/W)|0)+NSB[d2][1];if(x2<0||y2<0||x2>=W||y2>=W)continue;var n2=at(x2,y2);if(lab[n2]<0&&LAND(n2)){lab[n2]=nl0;sl.push(n2)}}}nl0++}
+   for(var ax=0;ax<2;ax++)for(var l=0;l<W;l++){var aa=0;while(aa<W){var kk=ax?at(l,aa):at(aa,l);if(Z[kk]!=='w'||!M[kk]){aa++;continue}var a1=aa;while(a1+1<W&&Z[ax?at(l,a1+1):at(a1+1,l)]==='w')a1++;
+     if(aa>0&&a1<W-1&&a1-aa+1<=BRUECKE_MAX){var kA=ax?at(l,aa-1):at(aa-1,l),kB=ax?at(l,a1+1):at(a1+1,l);if(LAND(kA)&&LAND(kB)){var C=[],hw=false;for(var t=aa;t<=a1;t++){var kc=ax?at(l,t):at(t,l);C.push(kc);if(weg[kc])hw=true}
+      KD.push({C:C,a:lab[kA],b:lab[kB],L:C.length,h:hw,u:rausch(l,aa+ax*4096,seed+911)})}}aa=a1+1}}
+   var UF=[];for(var u0=0;u0<nl0;u0++)UF.push(u0);var fi=function(x){while(UF[x]!==x){UF[x]=UF[UF[x]];x=UF[x]}return x};
+   var baue=function(c){c.C.forEach(function(q){Z[q]='s';belegt[q]=0});UF[fi(c.a)]=fi(c.b)};
+   KD.filter(function(c){return c.h}).forEach(baue);
+   KD.filter(function(c){return !c.h}).sort(function(x,y){return x.L-y.L||x.u-y.u}).forEach(function(c){if(fi(c.a)!==fi(c.b))baue(c)});
+   var bz=new Uint8Array(WW);KD.forEach(function(c){if(Z[c.C[0]]==='s')c.C.forEach(function(q){bz[q]=1})});
+   var seenB=new Uint8Array(WW);for(k1=0;k1<WW;k1++){if(!bz[k1]||seenB[k1])continue;sBr++;var sb=[k1];seenB[k1]=1;while(sb.length){var c3=sb.pop();for(var d3=0;d3<4;d3++){var x3=c3%W+NSB[d3][0],y3=((c3/W)|0)+NSB[d3][1];if(x3<0||y3<0||x3>=W||y3>=W)continue;var n3=at(x3,y3);if(bz[n3]&&!seenB[n3]){seenB[n3]=1;sb.push(n3)}}}}}
   if(viel)gruppen.forEach(platzieren);
   function platzieren(grp){offen(grp);var it=grp.it,gw2=grp.w,gh2=grp.h,rot=r()<.5;if(!(rot?it.h<=gw2&&it.w<=gh2:it.w<=gw2&&it.h<=gh2))rot=!rot;
    var mw=rot?it.h:it.w,mh=rot?it.w:it.h,px=grp.x+((gw2-mw)>>1),py=grp.y+((gh2-mh)>>1);
@@ -571,7 +628,7 @@ function plan0(opt){
   var tp=tore.filter(function(t){return t.s===0})[0]||tore.filter(function(t){return t.s===2})[0]||tore[0];
   return{W:W,Z:Z,bauten:bauten,dinge:dinge,tor:tp.s===0?{i:tp.c,j:W-1}:tp.s===2?{i:W-1,j:tp.c}:tp.s===1?{i:tp.c,j:0}:{i:0,j:tp.c},achse:{i:cA,j:cB},nb:nb,gesetzt:gesetzt,
    mauertor:wall?Array.prototype.join.call(offenM,''):null,   // N6b2d: Felder, an denen die Mauer für Straße oder Fluss offen ist (Tore)
-   tore:tore,maske:M,fluss:mitFluss?{achse:'ns',x0:fx0,breite:RW,bruecken:fbr,tore:ftore}:null,
+   tore:tore,maske:M,fluss:mitFluss?{achse:'ns',x0:fx0,breite:RW,bruecken:fbr,tore:ftore}:RIV&&RIV.some(function(v,q){return v&&M[q]})?{achse:'welt',welt:true,bruecken:sBr,tore:sTore}:null,seeAus:EXC,
    vielfalt:viel?{spalten:cw,zeilen:rh,kreuzung:[hx,hy],gassen:2*(nb-2),krumm:Object.keys(SC).filter(function(x){return SC[x]}).length+Object.keys(TR).filter(function(x){return TR[x]}).length}:null};
   // Randstück im Block: x==0, y==0 oder an der rechten/unteren Kante, alle Zellen frei; Tür mittig an der Blockkante (Reihenfolge aus dem Seed)
   function randStelle(s,w,h){var L=[],x,y;for(x=0;x+w<=s.w;x++){L.push([x,0,0,-1]);L.push([x,s.h-h,0,1])}for(y=1;y+h<s.h;y++){L.push([0,y,-1,0]);L.push([s.w-w,y,1,0])}
@@ -767,9 +824,11 @@ function plan0(opt){
   P.umriss={dorf:E2.vielfalt&&E2.vielfalt.dorf||null,art:UM?UM.art:g>=MAUER_AB?'quadrat':'offen',ecken:UM?UM.ecken:4,beulen:UM?UM.beulen:0,tore:E2.tore.map(function(t){return SEITE[t.s]}),zeilen:zl,planW:E2.W}}
  if(HU)huegelPlan(P,HT,seed,P1);
  if(F!==1)P=skalieren(P,F);
- var spW=rng(hashT([seed,art,einw,'sp'].join('|')))()<.5;if(P.fluss)spW=P.fluss.achse!==FL;   // mit Fluss: Spiegeln so, dass er wie in der Welt fließt
+ var spW=rng(hashT([seed,art,einw,'sp'].join('|')))()<.5;if(P.fluss&&!P.fluss.welt)spW=P.fluss.achse!==FL;   // mit Fluss: Spiegeln so, dass er wie in der Welt fließt
  if(P.kueste){spW=P.kueste.spiegel;delete P.kueste.spiegel}   // mit Küste: so, dass das Meer auf der Seite aus der Welt liegt (N6b2c4c2)
  if(spW)P=spiegeln(P);
+ if(MS&&MS.wasser>0)stadtFluss(P,MS);   // N7a5a3a: Flussfelder genau wie die Maske (nach Maßstab und Spiegeln), Mauer auf dem Fluss wird Flusstor
+ if(MS&&MS.wasser>0)weltWasser(P,MS,g,false,true);   // N7a5a3a: Seen, Ufer, Querungen vor der Mauer (keine Mauer auf dem See); der Fluss bleibt bis nach der Mauer 'w'
  if(MW)weltWasser(P,MW,g);   // N7a5a2: echtes Wasser und Ufer, Furten, Brücken, Stege (in Bildfeldern, nach dem Spiegeln)
  if(P.kueste)hochstege(P);
  if(P.hoehe)huegelFertig(P);
@@ -782,13 +841,15 @@ function plan0(opt){
  if(!elend&&TPL&&opt.koenigspalast!==false)koenigspalastFest(P,opt);   // N6b3e3 Königspalast genau 15 × 15, Tor mittig an einer Seite (opt.koenigspalast:false = wie vorher)
  if(elend&&B.felder&&opt.budenbild!==false&&opt.gewirr!==false)elendGewirr(P,seed,{eng:opt.budenEng!==false&&opt.anbauten!==false,dinge:opt.elendDinge!==false});   // N6b5b3 Elendssiedlung als Gewirr (opt.gewirr:false = Blockraster wie vorher)
  if(B.felder&&opt.budenbild!==false&&opt.budenEng!==false&&opt.anbauten!==false&&(elend||(g>=MAUER_AB&&P.aussen&&P.aussen.buden)))anbauten(P,seed);   // N6b5a überfülltes Elendsviertel (vor Mauer und Toren: die behandeln Anbauten wie Buden)
- if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UM,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
+ var UMs=UM&&seeAusS?{art:UM.art,tore:UM.tore,innen:function(x,y){if(!UM.innen(x,y))return false;var a=Math.floor((x+1)/2*Wm),b=Math.floor((y+1)/2*Wm);return !(a>=0&&b>=0&&a<Wm&&b<Wm&&seeAusS[b*Wm+a])}}:UM;   // N7a5a3a: Mauerlinie ohne See
+ if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UMs,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false&&opt.wasserOffen!==false)wassertoreGerade(P,opt);   // N6b2e2g2 Mauer endet am Fluss mit Türmen an beiden Ufern (opt.wasserOffen:false = wie vorher)
  if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P,opt);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
+ if(MS&&P.weltwasser)stadtFlussEnde(P,MS);   // N7a5a3a: Fluss wird Weltwasser, Gebautes auf Wasser gezählt
  if(!elend&&opt.ehrensaeulen!==false)ehrensaeulen(P);
  if(!elend){flurPlan(P,opt);dauerDinge(P,opt);pferchZaun(P,opt)}
- if(MW)P.dinge=P.dinge.filter(function(d){return d.rolle==='steg'||d.rolle==='bruecke'||!WELT_Z[P.zellen.charAt(d.j*P.W+d.i)]});   // N7a5a2: nichts Gebautes auf Weltwasser und Weltufer   // N6b4b2 Flurgürtel mit Höfen, Feldern und Feldwegen in Bildfeldern, ganz zum Schluss (Hofhäuser vorn in P.bauten; opt.flur:false = wie vorher)   // N6b3b4 Ehrensäulen am Marktplatz (opt.ehrensaeulen:false = wie vorher)
+ if(MW||MS)P.dinge=P.dinge.filter(function(d){return d.rolle==='steg'||d.rolle==='bruecke'||!WELT_Z[P.zellen.charAt(d.j*P.W+d.i)]});   // N7a5a2: nichts Gebautes auf Weltwasser und Weltufer   // N6b4b2 Flurgürtel mit Höfen, Feldern und Feldwegen in Bildfeldern, ganz zum Schluss (Hofhäuser vorn in P.bauten; opt.flur:false = wie vorher)   // N6b3b4 Ehrensäulen am Marktplatz (opt.ehrensaeulen:false = wie vorher)
  if(B.felder&&opt.budenbild!==false&&opt.elendDinge!==false&&(elend||(g>=MAUER_AB&&P.aussen&&P.aussen.buden)))elendDinge(P,seed);   // N6b5b1 Dinge im Elendsviertel (opt.elendDinge:false = wie vorher)
  budenBild(P,opt);   // N6b5a Elendsbuden als Ganzbild (opt.budenbild:false = wie vorher)
  if(P._gasse&&opt.gasseZeigen)P.gasse=Array.prototype.join.call(P._gasse,'');delete P._gasse;   // N6b5b3 nur zum Planen (opt.gasseZeigen: als Zeichenkette für Tests)
@@ -1042,9 +1103,13 @@ function tempelUmwidmen(P,rel,n){var c=0;P.bauten.filter(function(b){return b.id
 // der Ort malt nichts, begehbar wie Wiese), r Holzbrücke über Weltwasser (Weg auch für Karren, Planken und Rampen aus den Stegteilen als Dinge mit Rolle „bruecke“).
 // Entscheidungen Thomas: Furt bis FURT_MAX Felder Wasser quer zum Weg (Weg bleibt), breiter Holzbrücke; Weg ins Wasser ohne Weiterweg endet am Ufer; Seen und Meer
 // werden darum nie gequert. Stege nur als Anlegestelle, wo ein Weg am Ufer ankommt: Weiler 1, Dorf bis 2 (STEG_N), mit Rampe und quer liegendem Anleger.
+var MS_WEIT=60;   // N7a5a3a: Höfe und Gewerbe vor einer Stadt am Wasser höchstens so viele Planfelder hinaus
 var MW_GRENZE=[138,138,138,202,0,0,0,0];   var MW_WEIT=40;   // Höfe und Gewerbe vor dem Dorf höchstens so viele Planfelder vom Dorf (sonst wandern sie über den See hinaus)   // N7a5a2: größte Planseite eines Weilers bzw. Dorfs mit Wasser (doppelte gemessene Größe ohne Wasser: 69, 101)
 var WELT_Z={n:1,v:1},FURT_MAX=2,STEG_N=[1,1,1,2],STEG_ABST=12,MASKE_RAND=24;   // MASKE_RAND wie ortsbild.js MASKE_R (Hangring der Maske)
 // Fluss im Ortsquadrat der Maske (ohne Hangring)? Für die Felderwahl (flurStart) statt der groben Vorwahl
+var BRUECKE_MAX=8;   // N7a5a3a: längste Brücke über den echten Fluss in Planfeldern (mit Maßstab 12 Bildfelder)
+// Meer im Ortsquadrat der Maske (ohne Hangring)? Städte am Meer planen bis N7a5a3b wie vorher
+function maskeMeer(M){if(M._meer!=null)return M._meer;var N=M.N,a=MASKE_RAND,u,v;for(v=a;v<N-a;v++)for(u=a;u<N-a;u++)if((M.m[v*N+u]&3)===1)return M._meer=true;return M._meer=false}
 function maskeFluss(M){var N=M.N,a=MASKE_RAND,u,v;for(v=a;v<N-a;v++)for(u=a;u<N-a;u++)if((M.m[v*N+u]&3)===2)return true;return false}
 // Nässe eines Planfelds (x, y) vor dem Maßstab F (Planseite mit Mitte c): 2 = Feldmitte im fertigen Bild ist Wasser, 1 = Wasser oder Strand im Feld oder 1 Feld daneben,
 // 0 = trocken. sw: der fertige Plan ist gegenüber diesen Lagen gespiegelt (Diagonale). Rundung von Maßstab und Mitte (höchstens 1 Feld) deckt der Rand von 1 Feld.
@@ -1058,21 +1123,42 @@ function maskeUfer(M){if(M._ufer)return M;var N=M.N,NN=N*N,m=M.m,S=new Int8Array
  for(k=0;k<NN;k++)if(U[k]<2&&S[k]>0)U[k]=1;
  var U2=U.slice();for(v=0;v<N;v++)for(u=0;u<N;u++){k=v*N+u;if(U[k])continue;for(var e=0;e<4;e++){var x2=u+[1,-1,0,0][e],y2=v+[0,0,1,-1][e];if(x2>=0&&y2>=0&&x2<N&&y2<N&&U[y2*N+x2]){U2[k]=1;break}}}
  M._ufer=U2;M._senke=S;return M}
-function weltNass(M,F,sw){maskeUfer(M);var N=M.N,h=N>>1,UF=M._ufer,bei=function(u,v){if(u<0||v<0||u>=N||v>=N)return 0;return UF[v*N+u]};
+// N7a5a3a Städte: Uferzone ohne Strand, der mehr als 3 Felder vom Wasser liegt (Wüstensand), einmal je Maske gemerkt (M._uferS)
+function maskeUferS(M){maskeUfer(M);if(M._uferS)return M._uferS;var N=M.N,NN=N*N,U=M._ufer,S=M._senke,m=M.m,NW=new Uint8Array(NN),k,r;for(k=0;k<NN;k++)if(m[k]&3)NW[k]=1;
+ for(r=0;r<3;r++){var N2=NW.slice();for(k=0;k<NN;k++){if(NW[k])continue;var u=k%N;if((u>0&&NW[k-1])||(u<N-1&&NW[k+1])||(k>=N&&NW[k-N])||(k+N<NN&&NW[k+N]))N2[k]=1}NW=N2}
+ var V=new Uint8Array(NN);for(k=0;k<NN;k++)V[k]=U[k]>=2||(U[k]&&(NW[k]||S[k]>0))?U[k]:0;return M._uferS=V}
+function weltNass(M,F,sw,ohneSand){maskeUfer(M);var N=M.N,h=N>>1,UF=ohneSand?maskeUferS(M):M._ufer,bei=function(u,v){if(u<0||v<0||u>=N||v>=N)return 0;return UF[v*N+u]};
  return function(x,y,c){var a0=(x-c)*F,a1=(x+1-c)*F,b0=(y-c)*F,b1=(y+1-c)*F,t;if(sw){t=a0;a0=b0;b0=t;t=a1;a1=b1;b1=t}
   var mi=bei(h+Math.floor((a0+a1)/2),h+Math.floor((b0+b1)/2));if(mi>=2)return mi;
   for(var v=h+Math.floor(b0)-1;v<=h+Math.ceil(b1);v++)for(var u=h+Math.floor(a0)-1;u<=h+Math.ceil(a1);u++)if(bei(u,v))return 1;return 0}}
+// N7a5a3a: nach Maßstab und Spiegeln, in Bildfeldern: Flussfelder der Stadt genau wie die Maske. Fluss unter Gasse bleibt Gasse (Brücke), Mauer auf dem Fluss
+// wird Flusstor (Mauerfelder einzeln, ohne die Flussfelder), übriges 'w' ohne Fluss wird Gasse bzw. Wiese. Ergebnis P.stadtFluss (fehler = Haus auf dem Fluss, soll 0 sein).
+function stadtFluss(P,M){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),MT=P.mauertor?P.mauertor.split(''):null,bau=new Uint8Array(WW),mau=new Uint8Array(WW),k,i,j,
+  st={auf:0,fehler:0,land:0},WEG={s:1,o:1,h:1},fl=function(i,j){var u=i+o,v=j+o;return u>=0&&v>=0&&u<N&&v<N&&(M.m[v*N+u]&3)===2};
+ P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)(b.rolle==='mauer'?mau:bau)[y*W+x]=1});
+ for(j=0;j<W;j++)for(i=0;i<W;i++){k=j*W+i;if(fl(i,j)){if(WEG[Z[k]])continue;if(mau[k]){mau[k]=2;if(MT)MT[k]='1';Z[k]='w';st.auf++;continue}if(bau[k]){st.fehler++;continue}Z[k]='w'}
+  else if(Z[k]==='w'){st.land++;Z[k]=(i>0&&Z[k-1]==='s')||(i<W-1&&Z[k+1]==='s')||(j>0&&Z[k-W]==='s')||(j<W-1&&Z[k+W]==='s')?'s':'g'}}
+ if(st.auf){var L=[];P.bauten.forEach(function(b){if(b.rolle!=='mauer'){L.push(b);return}var weg=false,x,y;for(y=b.j;y<b.j+b.h;y++)for(x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W&&mau[y*W+x]===2)weg=true;
+   if(!weg){L.push(b);return}for(y=b.j;y<b.j+b.h;y++)for(x=b.i;x<b.i+b.w;x++){if(x<0||y<0||x>=W||y>=W||mau[y*W+x]===2)continue;var c=JSON.parse(JSON.stringify(b));c.i=x;c.j=y;c.w=1;c.h=1;L.push(c)}});P.bauten=L}
+ P.zellen=Z.join('');if(MT)P.mauertor=MT.join('');P.stadtFluss=st;return st}
+function stadtFlussEnde(P,M){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),st=P.weltwasser,k,i,j,nass=function(i,j){var u=i+o,v=j+o;return u>=0&&v>=0&&u<N&&v<N&&(M.m[v*N+u]&3)};
+ for(j=0;j<W;j++)for(i=0;i<W;i++){k=j*W+i;if(Z[k]!=='w')continue;if(nass(i,j)){Z[k]='n';st.wasser++}else Z[k]=(i>0&&Z[k-1]==='s')||(i<W-1&&Z[k+1]==='s')?'s':'g'}
+ st.fehler=0;P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)if(nass(x,y))st.fehler++});
+ P.zellen=Z.join('')}
 var WW_RAMPE={'1,0':'steg-rampe-o','-1,0':'steg-rampe-w','0,1':'steg-rampe-s','0,-1':'steg-rampe-n'};
 // Nach dem Spiegeln, in Bildfeldern: Wasser der Maske wird n (Wege darauf werden Furt, Brücke oder enden am Ufer), Strand unter Wiese wird v, dann die Stege.
 // Ergebnis P.weltwasser (Zähler; fehler = Gebautes auf Wasser, soll 0 sein). Kosten: einmal je Ort, wenige Durchläufe über W² Felder.
-function weltWasser(P,M,g,po){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),k,i,j,q,d,
+function weltWasser(P,M,g,po,stadt){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),k,i,j,q,d,
   st={wasser:0,ufer:0,furten:0,bruecken:0,enden:0,stege:0,fehler:0},art=new Uint8Array(WW),bau=new Uint8Array(WW),X=new Uint8Array(WW),ende=new Uint8Array(WW),
   WEG={s:1,o:1,h:1},NB=[[1,0],[-1,0],[0,1],[0,-1]],nass=function(k){return art[k]&3};
  for(j=0;j<W;j++)for(i=0;i<W;i++){var u=i+o,v=j+o;art[j*W+i]=u<0||v<0||u>=N||v>=N?0:M.m[v*N+u]&7}
+ var NW=null,nahW=function(k){return NW[k]};if(stadt){NW=new Uint8Array(WW);for(k=0;k<WW;k++)if(art[k]&3)NW[k]=1;   // N7a5a3a: Strand bis 3 Felder vom Wasser (Wüstensand bleibt Boden der Stadt)
+  for(var nr=0;nr<3;nr++){var N2=NW.slice();for(k=0;k<WW;k++){if(NW[k])continue;i=k%W;if((i>0&&NW[k-1])||(i<W-1&&NW[k+1])||(k>=W&&NW[k-W])||(k+W<WW&&NW[k+W]))N2[k]=1}NW=N2}}
  P.bauten.forEach(function(b){for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)bau[y*W+x]=1});
- for(k=0;k<WW;k++){if(nass(k)){if(bau[k])st.fehler++;if(WEG[Z[k]])X[k]=1;else if(po&&Z[k]==='y')continue;else{Z[k]='n';st.wasser++}}else if(art[k]&4&&Z[k]==='g'){Z[k]='v';st.ufer++}}   // po (N7a5a2b Posten): eigener Steg bleibt
+ for(k=0;k<WW;k++){if(nass(k)){if(bau[k])st.fehler++;if(WEG[Z[k]])X[k]=1;else if(po&&Z[k]==='y')continue;else if(stadt&&Z[k]==='w')continue;else{Z[k]='n';st.wasser++}}else if(art[k]&4&&Z[k]==='g'&&(!stadt||nahW(k))){Z[k]='v';st.ufer++}}   // po (N7a5a2b Posten): eigener Steg bleibt
  // Wege auf Wasser: zusammenhängende Stücke; Weg an Land auf zwei gegenüberliegenden Seiten = Querung (Furt oder Brücke), sonst endet der Weg am Ufer
- var seen=new Uint8Array(WW);
+ var seen=new Uint8Array(WW),IN=null;
+ if(stadt&&P.umriss)IN=innenMaske(P);   // N7a5a3a: innerhalb der Mauer
  for(k=0;k<WW;k++){if(!X[k]||seen[k])continue;var C=[k],h0=0,x0=W,x1=-1,y0=W,y1=-1;seen[k]=1;
   while(h0<C.length){q=C[h0++];i=q%W;j=(q/W)|0;if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j;
    for(d=0;d<4;d++){var ni=i+NB[d][0],nj=j+NB[d][1];if(ni<0||nj<0||ni>=W||nj>=W)continue;var n=nj*W+ni;if(X[n]&&!seen[n]){seen[n]=1;C.push(n)}}}
@@ -1082,6 +1168,7 @@ function weltWasser(P,M,g,po){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>
   var ai=an[0]&&an[1],aj=an[2]&&an[3];
   if(!ai&&!aj){C.forEach(function(q){Z[q]='n'});st.enden++;land.forEach(function(n){ende[n]=1});continue}
   var ax=ai&&(!aj||x1-x0>=y1-y0)?'i':'j',L=ax==='i'?x1-x0+1:y1-y0+1;
+  if(stadt&&IN&&C.every(function(q){return IN[q]})&&C.every(function(q){return nass(q)===2})){st.bruecken++;continue}   // N7a5a3a: Brücke in der Stadt bleibt Gasse (Steinbrücke wie vorher)
   if(L<=FURT_MAX){st.furten++;continue}
   if(C.some(function(q){return nass(q)!==2})){C.forEach(function(q){Z[q]='n'});st.enden++;land.forEach(function(n){ende[n]=1});continue}   // Brücken nur über Flüsse, Seen und Meer nie
   st.bruecken++;C.forEach(function(q){var qi=q%W,qj=(q/W)|0;Z[q]='r';
@@ -2241,7 +2328,7 @@ function spiegeln(P){var W=P.W,z='',zh='',zt='',i,j;for(j=0;j<W;j++)for(i=0;i<W;
  N.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b));o.i=b.j;o.j=b.i;o.w=b.h;o.h=b.w;o.achse=b.achse==='i'?'j':'i';if(b.tuer)o.tuer=[b.tuer[1],b.tuer[0],b.tuer[3],b.tuer[2]];return o});
  N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=d.j;o.j=d.i;return o});N.tor={i:P.tor.j,j:P.tor.i};
  if(N.aussen){N.aussen.stinktor=SPIEGEL[N.aussen.stinktor];N.aussen.graebertor=SPIEGEL[N.aussen.graebertor];if(N.aussen.tore)N.aussen.tore=N.aussen.tore.map(function(x){return SPIEGEL[x]})}
- if(N.umriss)N.umriss.tore=N.umriss.tore.map(function(x){return SPIEGEL[x]});if(N.fluss)N.fluss.achse=N.fluss.achse==='ns'?'ow':'ns';if(N.kueste)N.kueste.seite=SPIEGEL[N.kueste.seite];return N}
+ if(N.umriss)N.umriss.tore=N.umriss.tore.map(function(x){return SPIEGEL[x]});if(N.fluss&&!N.fluss.welt)N.fluss.achse=N.fluss.achse==='ns'?'ow':'ns';if(N.kueste)N.kueste.seite=SPIEGEL[N.kueste.seite];return N}
 // Drehen um 90° (Blick von der nächsten Seite, für First Person): Zelle (i, j) → (W−1−j, i), Richtung (di, dj) → (−dj, di)
 function drehen(P){var W=P.W,z=new Array(W*W),zh=P.hoehe?new Array(W*W):null,zt=P.mauertor?new Array(W*W):null,i,j;for(j=0;j<W;j++)for(i=0;i<W;i++){z[i*W+(W-1-j)]=P.zellen[j*W+i];if(zh)zh[i*W+(W-1-j)]=P.hoehe[j*W+i];if(zt)zt[i*W+(W-1-j)]=P.mauertor[j*W+i]}
  var N=JSON.parse(JSON.stringify(P));N.zellen=z.join('');if(zh)N.hoehe=zh.join('');if(zt)N.mauertor=zt.join('');
@@ -2797,5 +2884,6 @@ function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.f
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});if(P.grube)GRUBE_IDS.forEach(function(i){s[i]=1});return Object.keys(s)}
 
 var SB={POSTEN_ART:POSTEN_ART,BUENDEL_MAX:BUENDEL_MAX,HAFEN_MAX:HAFEN_MAX,buendeln:buendeln,GRUBE_IDS:GRUBE_IDS,grubeId:grubeId,SCHLAMM:SCHLAMM,schlammWahl:schlammWahl,BUDE_VAR:BUDE_VAR,budeGanz:budeGanz,budeBild:budeBild,budeVariante:budeVariante,FISCHER_LAGER:FISCHER_LAGER,UFER_LAGER:UFER_LAGER,WASCH_LAGER:WASCH_LAGER,SALZ_LAGER:SALZ_LAGER,SALZ_BECKEN:SALZ_BECKEN,JAGD_LAGER:JAGD_LAGER,postenGanz:postenGanz,postenBildAn:postenBildAn,MINE_LAGER:MINE_LAGER,BRUCH_LAGER:BRUCH_LAGER,BRUCH_PLATZ:BRUCH_PLATZ,HOLZ_LAGER:HOLZ_LAGER,KOEHLER_LAGER:KOEHLER_LAGER,KOEHLER_PLATZ:KOEHLER_PLATZ,POSTEN_SELTEN:POSTEN_SELTEN,presseGanz:presseGanz,hofPresse:hofPresse,PRESSE:PRESSE,PRESSE_ID:PRESSE_ID,pferchZaun:pferchZaun,flurKante:flurKante,hofGanz:hofGanz,hofTuerOff:hofTuerOff,HOF_BILD_VAR:HOF_BILD_VAR,PFERCH_FUSS:PFERCH_FUSS,dauerDinge:dauerDinge,dauerDing:dauerDing,DAUER_BILD:DAUER_BILD,DAUER_IDS:DAUER_IDS,DAUER_DINGE:DAUER_DINGE,DAUER_STUMPF:DAUER_STUMPF,postenPlan:postenPlan,postenBegeh:postenBegeh,postenSeite:postenSeite,POSTEN_ANLAGE:POSTEN_ANLAGE,POSTEN_HOF:POSTEN_HOF,POSTEN_W:POSTEN_W,POSTEN_GROSS:POSTEN_GROSS,POSTEN_SEITEN:POSTEN_SEITEN,malbild:malbild,saumObj:saumObj,SAUM_RANG:SAUM_RANG,FELD_IDS:FELD_IDS,FELD_BILD:FELD_BILD,feldBild:feldBild,feldAchse:feldAchse,SAUM_SCHMAL:SAUM_SCHMAL,setzeLandw:setzeLandw,landwDaten:landwDaten,flurArt:flurArt,flurTempo:flurTempo,FLUR_RASTER:FLUR_RASTER,FLUR_WEIT:FLUR_WEIT,HOF_HAUS:HOF_HAUS,KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+SB.maskeMeer=maskeMeer;SB.stadtFluss=stadtFluss;   // N7a5a3a (Tests)
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
