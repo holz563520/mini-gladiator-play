@@ -156,6 +156,39 @@ function buendeln(Li,kai,biom){var KG=kulturGeb(biom||Li.biom),info={},geaendert
   else if(x.lage==='tor'&&x.id!=='shack'&&x.id!=='cemetery'&&!TOTE[x.id]&&n>BUENDEL_MAX){n=BUENDEL_MAX;wie='buendel'}
   if(!wie)return x;geaendert=true;info[x.id]={liste:x.n,bild:n,wie:wie};var y=Object.assign({},x);y.n=n;return y}).filter(function(x){return x.n>0});
  if(!geaendert)return{L:Li,info:null};var L2=Object.assign({},Li);L2.gebaeude=L;return{L:L2,info:info}}
+// N7a5a3c2: im Bild nur der Anteil f der Bauten innen und vor dem Tor (je Art mindestens einer); die Liste bleibt, P.buendel nennt je Art liste/bild (wie:'klein').
+function bildKlein(Li,f,BU){var info=BU?Object.assign({},BU):{},L=Li.gebaeude.map(function(x){if(x.lage!=='innen'&&x.lage!=='tor')return x;var n=Math.max(1,Math.round(x.n*f));if(n>=x.n)return x;
+  info[x.id]={liste:info[x.id]?info[x.id].liste:x.n,bild:n,wie:info[x.id]&&info[x.id].wie==='buendel'?'buendel':'klein'};var y=Object.assign({},x);y.n=n;return y});
+ var L2=Object.assign({},Li);L2.gebaeude=L;return{L:L2,info:info}}
+// N7a5a3c2 (Thomas 25.11.2026): Stadt, die nicht ums echte Wasser passt: Plan passt sich an, statt über Wasser zu bauen. Reihenfolge: am Meer erst im Bild kleiner
+// (ANPASS_MEER), dann Meer wie ein See ohne Hafen im Bild (Hafen, Werft, Seefischerei bleiben in der Liste); am See und auf Inselchen im Bild kleiner (ANPASS).
+// Passt auch die kleinste Fassung nicht: nur das Land bebauen (landNotfall). Ergebnis meldet P.angepasst {grund, anteil, meerAlsSee, versuche, notfall}.
+var ANPASS=[.7,.5,.35,.25],ANPASS_MEER=[.7,.5],ANPASS_VERSUCHE=8;   // ANPASS_VERSUCHE: Plangrößen je angepasstem Versuch (statt 24)
+function anpassS(opt,grund){var reihe=[],n=0,P=null;
+ if(grund==='insel'&&!landRaus(opt.welt)){P=plan0(Object.assign({},opt,{stadtwasser:false}));P.stadtwasserErsatz=true;P.meerErsatz='insel';P.angepasst={grund:grund,versuche:0,ersatz:true,ohneLand:true};return P}   // Inselchen ohne Landweg hinaus: kein Plan passt (auch kein Dorf), gleich Ersatz
+ if(grund==='hafen')ANPASS_MEER.forEach(function(f){reihe.push([f,false])});
+ if(grund!=='see')reihe.push([1,true]);ANPASS.forEach(function(f){reihe.push([f,grund!=='see'])});
+ for(var i=0;i<reihe.length&&!P;i++){n++;P=plan0(Object.assign({},opt,{bildAnteil:reihe[i][0],meerAlsSee:reihe[i][1]}));if(P)P.angepasst={grund:grund,anteil:reihe[i][0],meerAlsSee:reihe[i][1],versuche:n}}
+ if(!P){P=landNotfall(opt,grund);if(P)P.angepasst={grund:grund,anteil:P.angepasst?P.angepasst.anteil:0,meerAlsSee:grund!=='see',versuche:n+1,notfall:true}}
+ if(!P){P=plan0(Object.assign({},opt,{stadtwasser:false}));P.stadtwasserErsatz=true;if(grund!=='see')P.meerErsatz=grund;P.angepasst={grund:grund,versuche:n+1,ersatz:true}}
+ return P}
+// Notfall: die Stadt wird ohne Mauer wie ein Dorf um das echte Wasser gelegt (dorf() weicht der Maske aus, nie Bau auf Wasser), im Bild nach NOTFALL kleiner;
+// Liste, Größe in der Welt und Ortsdaten bleiben, P.gStadt nennt die eigentliche Größe. Kein Hafen im Bild (wie am See).
+var NOTFALL=[[.5,3],[.3,3],[.18,3],[.1,3],[.05,2],[.02,2]];   // [Anteil im Bild, Form: 3 Dorf, 2 Weiler]
+// Erreicht das Land um die Mitte der Maske den Rand? (Inselchen: nein; dann findet kein Plan, auch kein Dorf, einen Weg hinaus)
+function landRaus(M){var N=M.N,m=M.m,s=new Uint8Array(N*N),q=new Int32Array(N*N),a=0,e=0,c=(N>>1)*N+(N>>1),best=-1,bd=1e9;
+ for(var y=0;y<N;y++)for(var x=0;x<N;x++)if(!(m[y*N+x]&3)){var d=(x-(N>>1))*(x-(N>>1))+(y-(N>>1))*(y-(N>>1));if(d<bd){bd=d;best=y*N+x}}
+ if(best<0)return false;q[e++]=best;s[best]=1;
+ while(a<e){var k=q[a++],x0=k%N,y0=(k/N)|0;if(!x0||!y0||x0===N-1||y0===N-1)return true;var nb=[k-1,k+1,k-N,k+N];for(var r=0;r<4;r++){var j=nb[r];if(!s[j]&&!(m[j]&3)){s[j]=1;q[e++]=j}}}
+ return false}
+function landNotfall(opt,grund){if(!opt.welt||!(opt.welt.wasser>0))return null;var einw=opt.liste?opt.liste.einw:opt.einw!=null?Math.max(1,Math.min(20000,opt.einw|0)):opt.probeW?PROBE_EINW:ARTEN[opt.art]?ARTEN[opt.art].einw:150;
+ var Li=opt.liste||SL().probe(einw,opt.biom,opt.seed>>>0,daten(opt),opt.leit),g0=Li.g,P=null;
+ for(var i=0;i<NOTFALL.length&&!P;i++){var bk=bildKlein(Li,NOTFALL[i][0],null),L2=Object.assign({},bk.L,{g:NOTFALL[i][1]});L2.gebaeude=L2.gebaeude.filter(function(x){return !HAFEN[x.id]});
+  P=plan0(Object.assign({},opt,{liste:L2,art:NOTFALL[i][1]===3?'village':'hamlet',anpassen:false,bildAnteil:null}));
+  if(P&&P.weltwasserErsatz)P=null;
+  if(P){var BU=P.buendel||{};Object.keys(bk.info).forEach(function(id){BU[id]=bk.info[id]});Li.gebaeude.forEach(function(x){if(HAFEN[x.id]&&x.lage==='innen')BU[x.id]={liste:x.n,bild:0,wie:'meer'}});
+   P.buendel=BU;P.gStadt=g0;P.angepasst={anteil:NOTFALL[i][0]}}}
+ return P}
 function plan0(opt){
  var art=opt.art||'',A=art?ARTEN[art]:null;if(art&&!A)throw new Error('Unbekannte Siedlungsart: '+art);var B=BIOME[opt.biom];if(!B)throw new Error('Unbekanntes Biom: '+opt.biom);
  var ST=opt.stil?STILE[opt.stil]:null;if(opt.stil&&!ST)throw new Error('Unbekannter Baustil: '+opt.stil);
@@ -170,9 +203,13 @@ function plan0(opt){
  // N7a5a3b1 (Thomas 25.11.2026): Städte am Meer. MM = Maske mit Meer: die Mauer folgt der Küste wie am See, nur vor dem Hafentor (Seite mit dem meisten Meer) bleibt ein
  // Hafenstreifen frei; Hafen, Werft und Seefischerei stehen darin hinter dem Kai am echten Ufer. Inselstädte (fast nur Meer) und Städte, deren Hafentor das Meer nicht
  // erreicht, planen wie vorher (stadtwasserErsatz, meerErsatz 'insel' bzw. 'hafen'). Molen und Stege: N7a5a3b2 (meerHafen, opt.meerhafen:false = ?n7a5a3b2=0). Notausschalter opt.meerstadt:false (?n7a5a3b=0).
- var MM=MS&&opt.meerstadt!==false&&maskeMeer(MS)&&meerEchtJa(MS)?MS:null;   // nur echtes Meer (meerEcht); Meer-Tümpel zählen wie ein See
- if(MM&&meerAnteil(MM)>INSEL_AB){var Pi=plan0(Object.assign({},opt,{stadtwasser:false}));Pi.stadtwasserErsatz=true;Pi.meerErsatz='insel';return Pi}
+ var MM=MS&&opt.meerstadt!==false&&!opt.meerAlsSee&&maskeMeer(MS)&&meerEchtJa(MS)?MS:null;   // nur echtes Meer (meerEcht); Meer-Tümpel zählen wie ein See; N7a5a3c2: opt.meerAlsSee = Meer wie ein See (ohne Hafen im Bild)
+ // N7a5a3c2 (Thomas 25.11.2026): passt die Stadt nicht ums echte Wasser, passt sich der Plan an (anpassS: im Bild kleiner, am Meer ohne Hafen wie am See, zuletzt nur das Land) statt des alten Ersatzplans.
+ // Im inneren Versuch (opt.bildAnteil gesetzt) meldet ein Fehlschlag null. Notausschalter opt.anpassen:false (?n7a5a3c2=0) = Ersatz wie vorher.
+ var ANP=MS&&opt.anpassen!==false,ANPI=ANP&&opt.bildAnteil!=null;
+ if(MM&&meerAnteil(MM)>INSEL_AB){if(ANPI)return null;if(ANP)return anpassS(opt,'insel');var Pi=plan0(Object.assign({},opt,{stadtwasser:false}));Pi.stadtwasserErsatz=true;Pi.meerErsatz='insel';return Pi}
  var BU=null;if(Li&&opt.buendeln!==false){var bu=buendeln(Li,!elend&&g>=MAUER_AB&&(MM?true:!!opt.kueste&&!MS),opt.biom);Li=bu.L;BU=bu.info}   // N7a1b: Gewinnung nur als Außenposten, Rest und Häfen gebündelt
+ if(ANPI&&opt.bildAnteil<1){var bk0=bildKlein(Li,opt.bildAnteil,BU);Li=bk0.L;BU=bk0.info}   // N7a5a3c2: im Bild weniger Bauten (Liste bleibt, P.buendel wie:'klein')
  var basis={klasse:(ST||B).klasse,dach:(ST||B).dach,wand:(ST||B).wand,dachR:(ST||B).dachR};
  // Fluss (N6b2c4c1): opt.fluss 'ns' | 'ow' (aus der Welt, orte.js flussAchse) oder true (Richtung aus dem Seed); nicht in Elendssiedlungen
  var FL=elend||!opt.fluss?null:opt.fluss==='ns'||opt.fluss==='ow'?opt.fluss:(rng(hashT([seed,einw,'flussachse'].join('|')))()<.5?'ns':'ow');
@@ -224,9 +261,9 @@ function plan0(opt){
  if(MW&&!ergebnis){var Pe=plan0(Object.assign({},opt,{weltwasser:false}));Pe.weltwasserErsatz=true;return Pe}
  var flurGedeckelt=false;
  var kreuzN=0;   // N7a5a3b1: findet sich mehrmals kein Straßenkreuz mit Weg zum Meer, hilft ein größerer Plan nicht (er würde nur leer wachsen): Ersatz
- for(var versuch=0;versuch<(MM?MEER_VERSUCHE:MS?24:14)&&!ergebnis&&kreuzN<KREUZ_MAX;versuch++,nb+=2)ergebnis=anlegen(nb);   // am Meer wächst der Plan nicht leer
+ for(var versuch=0;versuch<(MM?MEER_VERSUCHE:ANPI?ANPASS_VERSUCHE:MS?24:14)&&!ergebnis&&kreuzN<KREUZ_MAX;versuch++,nb+=2)ergebnis=anlegen(nb);   // am Meer wächst der Plan nicht leer
  // N7a5a3a: passt die Stadt nicht um das echte Wasser (fast nur See), plant sie wie vorher ohne Maske und meldet das (stadtwasserErsatz)
- var ersatzS=function(){var Pe=plan0(Object.assign({},opt,{stadtwasser:false}));Pe.stadtwasserErsatz=true;if(MM)Pe.meerErsatz='hafen';return Pe};
+ var ersatzS=function(){if(ANPI)return null;if(ANP)return anpassS(opt,MM?'hafen':'see');var Pe=plan0(Object.assign({},opt,{stadtwasser:false}));Pe.stadtwasserErsatz=true;if(MM)Pe.meerErsatz='hafen';return Pe};
  if(!ergebnis&&MS)return ersatzS();
  if(!ergebnis)throw new Error('Stadtplan passt nicht ('+items.length+' Gebäude)');
  var seeAusS=MS?ergebnis.seeAus:null;

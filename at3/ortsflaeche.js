@@ -22,12 +22,12 @@
 // 2 × 2 Bildpunkte die häufigste Farbe, nur Palettenfarben, durchsichtig nur bei Mehrheit durchsichtig) und gemerkt, höchstens HALB_GR Bytes (1 MB, getrennt von
 // den 2 MB 1×-Gebäudebildern und 4 MB Kartei), älteste fallen heraus. Gebäude: aus dem 1×-Bild verkleinert in Zeitanteilen (schritt), fehlt es, wird es zuerst
 // gebaut; bis dahin der Klotz (Regel 20). Notausschalter opt.halb:false (?n7a3=0) = Klötze in ½ wie N7a2.
-// N7a3b (Thomas 24.11.2026): Stufen ¼ und ⅛ genauso, Kette ¼ aus ½, ⅛ aus ¼ (häufigste Farbe). ¼ und ⅛ zusammen höchstens VIERTEL_GR Bytes (0,5 MB), beide gemerkt;
+// N7a3b (Thomas 24.11.2026): Stufen ¼ und ⅛ genauso, Kette ¼ aus ½, ⅛ aus ¼ (häufigste Farbe). ¼ und ⅛ zusammen höchstens VIERTEL_GR Bytes (seit N7a5a3d 6 MB, vorher 0,5 MB), beide gemerkt;
 // fehlt die nächstgrößere Fassung, wird das Gebäude einmal in 1× in Abschnitten gebaut und in Zeitanteilen bis zur Zielstufe verkleinert, 1× und ½ bleiben dabei nur,
 // wenn diese Stufen sie selbst brauchen. Bis dahin der Klotz. Notausschalter opt.viertel:false (?n7a3b=0) = in ¼ und ⅛ nur Ersatzfarbe wie N7a3a.
 (function(root){
 'use strict';
-var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152, HALB_GR=1048576, VIERTEL_GR=524288;
+var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152, HALB_GR=1048576, VIERTEL_GR=6291456, VIERTEL_GR_ALT=524288;   // N7a5a3d (Thomas 25.11.2026): ¼ + ⅛ zusammen 6 MB statt 0,5 MB, damit die größte Hauptstadt (~4,1 MB) ganz gemerkt bleibt; Notausschalter ?n7a5a3d=0 (bildkern.js) = 0,5 MB wie vorher
 var RAMPE_P=8, HALTEN_P=64, LISTEN_P=16, PL_HALTEN=48, PWEIT=2600;   // N7a2c: Hang, Posten gemerkt, Posten mit Liste, Orte mit Postenliste, größter Abstand Ortspunkt → Postenrand (gemessen 2.268 + 18 + Hang)   // N7a2b2: LISTEN Orte mit ganzer Elementliste, HAUS Bytes gemerkte Gebäudebilder
 //  RAMPE: Felder Hang rund um die Fläche (eine Höhenstufe = 64 Einheiten je Feld, wie RollerCoaster Tycoon); HALTEN: Orte im Speicher
 var CODES='gsomfwepxqyuh', FARBE_RGB=[[104,138,64],[150,128,96],[156,150,138],[216,210,198],[186,160,84],[56,98,150],[112,86,58],[124,154,78],[122,116,108],[140,134,122],[128,92,58],[214,194,146],[146,118,84]];
@@ -272,6 +272,6 @@ function halbAuftrag(s){var W=s.w,H=s.h,P=s.px,w=(W+1)>>1,h=(H+1)>>1,px=new Uint
    if(2*t>n||!m){px[y*w+x]=255;continue}var best=v[0],bn=0;for(var a=0;a<m;a++){var z=0;for(var b=0;b<m;b++)if(v[b]===v[a])z++;if(z>bn){bn=z;best=v[a]}}px[y*w+x]=best}}
  return{weiter:function(aus){var y0=y;for(;y<h;y++){if(aus&&y>y0&&((y-y0)&7)===0&&aus())return false;zeile(y)}return true},ergebnis:function(){return{w:w,h:h,ax:s.ax>>1,ay:s.ay>>1,px:px}}}}
 function halb(s){var A=halbAuftrag(s);A.weiter(null);return A.ergebnis()}
-var OF={RAMPE:RAMPE,HALB_GR:HALB_GR,VIERTEL_GR:VIERTEL_GR,halb:halb,halbAuftrag:halbAuftrag,RAMPE_P:RAMPE_P,HALTEN_P:HALTEN_P,LISTEN_P:LISTEN_P,PWEIT:PWEIT,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,neu:neu};
+var OF={RAMPE:RAMPE,HALB_GR:HALB_GR,VIERTEL_GR:VIERTEL_GR,VIERTEL_GR_ALT:VIERTEL_GR_ALT,halb:halb,halbAuftrag:halbAuftrag,RAMPE_P:RAMPE_P,HALTEN_P:HALTEN_P,LISTEN_P:LISTEN_P,PWEIT:PWEIT,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,neu:neu};
 if(typeof module!=='undefined'&&module.exports)module.exports=OF;else root.AT3ORTSFLAECHE=OF;
 })(typeof self!=='undefined'?self:this);

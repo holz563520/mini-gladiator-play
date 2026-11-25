@@ -59,11 +59,11 @@ function eingeebnet(L){L.forEach(function(k){var b=st.get(k);if(!b)return;if(OFL
 var ORTMS=[];
 // N7a2b1: echte Böden der Orte in 1× (Thomas 24.11.2026): stadtbild.js samt Teilen erst beim ersten Ort laden (eingebettet sind sie vom Ortskern schon da),
 // Kartei-Bilder nur, wenn ein Bodenbild sie braucht (karteilader.js, höchstens 4 MB); fertig geladen → „ortNeu“ für die wartenden Orte. Notausschalter ?n7a2b=0.
-var N7A2B=!/[?&]n7a2b=0/.test(self.location.search),N7A2B2=!/[?&]n7a2b2=0/.test(self.location.search),N7A2B3=!/[?&]n7a2b3=0/.test(self.location.search),N7A3=!/[?&]n7a3=0/.test(self.location.search),N7A3B=!/[?&]n7a3b=0/.test(self.location.search),KL=null,KLL=false,KLN=false;
+var N7A2B=!/[?&]n7a2b=0/.test(self.location.search),N7A2B2=!/[?&]n7a2b2=0/.test(self.location.search),N7A2B3=!/[?&]n7a2b3=0/.test(self.location.search),N7A3=!/[?&]n7a3=0/.test(self.location.search),N7A3B=!/[?&]n7a3b=0/.test(self.location.search),N7A5A3D=!/[?&]n7a5a3d=0/.test(self.location.search),KL=null,KLL=false,KLN=false;
 function echteBoeden(){if(!N7A2B||KL===false||!OFL)return;if(KL)return;var Q=self.location.search;
  try{if(!self.AT3_STADTBILD)importScripts('at3-64.js'+Q,'baubild.js'+Q,'baukasten.js'+Q,'stadtliste.js'+Q,'landwirtschaft.js'+Q,'begehbar.js'+Q,'stadtbild.js'+Q);
   if(!self.AT3KARTEILADER)importScripts('karteilader.js'+Q);
-  KL=self.AT3KARTEILADER.neu(function(id){return fetch('kartei/obj/'+encodeURIComponent(id)+'.json'+Q).then(function(r){return r.ok?r.json():null})});OFL.bilder(self.AT3_STADTBILD,KL,{haeuser:N7A2B2,abschnitte:N7A2B3,halb:N7A3,viertel:N7A3B})}
+  KL=self.AT3KARTEILADER.neu(function(id){return fetch('kartei/obj/'+encodeURIComponent(id)+'.json'+Q).then(function(r){return r.ok?r.json():null})});OFL.bilder(self.AT3_STADTBILD,KL,{haeuser:N7A2B2,abschnitte:N7A2B3,halb:N7A3,viertel:N7A3B,viertelSpeicher:N7A5A3D?0:524288})}   // N7a5a3d: 0 = Standard 6 MB, ?n7a5a3d=0 = 0,5 MB wie vorher
  catch(x){KL=false}}
 function nachladen(){if(!KL||!KL.wuensche())return;if(KLL){KLN=true;return}KLL=true;var g=gen;
  KL.laden().then(function(){KLL=false;if(g===gen&&OFL){var L=OFL.wartende(),k=KL.stand();if(L.length)self.postMessage({art:'ortNeu',gen:gen,stuecke:L,kartei:k.anzahl,karteiB:k.bytes,eMs:OFL.elementeMs()})}
