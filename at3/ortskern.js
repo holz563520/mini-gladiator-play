@@ -33,9 +33,9 @@ function hoehe(x,y){puffer=puffer||new Uint8Array(G.GEL_BYTES);var cx=x>>6,cy=y>
 // N7a4a2: die letzten Pläne kurz gemerkt (höchstens PLM), damit Bild und Sperrkarte desselben Orts nur einmal geplant werden
 var PLM=4, PLAN=new Map();
 // N7a5a1 (Thomas 24.11.2026): Wassermaske aus der Welt je Ort (ortsbild.js wasserMaske) in opt.welt, vor dem Plan; der Plan nutzt sie ab N7a5a2. Notausschalter ?n7a5a1=0.
-var N7A5A1=!/[?&]n7a5a1=0/.test(Q),N7A5A2=!/[?&]n7a5a2=0/.test(Q),N7A5A3A=!/[?&]n7a5a3a=0/.test(Q),N7A5A3B=!/[?&]n7a5a3b=0/.test(Q),N7A5A3B2=!/[?&]n7a5a3b2=0/.test(Q), MST={n:0,ms:0,maxMs:0,stuecke:0,bytes:0};
+var N7A5A1=!/[?&]n7a5a1=0/.test(Q),N7A5A2=!/[?&]n7a5a2=0/.test(Q),N7A5A3A=!/[?&]n7a5a3a=0/.test(Q),N7A5A3B=!/[?&]n7a5a3b=0/.test(Q),N7A5A3B2=!/[?&]n7a5a3b2=0/.test(Q),N7A5A3C1=!/[?&]n7a5a3c1=0/.test(Q), MST={n:0,ms:0,maxMs:0,stuecke:0,bytes:0};
 function maske(k,w,nMin){var p=OB.punkt(G,seed,A,k),M=OB.wasserMaske(G,seed,A,k,w.roh.g,hoehe(p[0],p[1]),puffer,nMin);MST.n++;MST.ms=M.ms;if(M.ms>MST.maxMs)MST.maxMs=M.ms;MST.stuecke=M.stuecke;MST.bytes=M.m.length;return M}
-function planRoh(k){var p=PLAN.get(k);if(p){PLAN.delete(k);PLAN.set(k,p);return p}var w=OB.wahl(seed,A,k,D,ON);if(N7A5A1)w.opt.welt=maske(k,w);if(!N7A5A2)w.opt.weltwasser=false;if(!N7A5A3A)w.opt.stadtwasser=false;if(!N7A5A3B)w.opt.meerstadt=false;if(!N7A5A3B2)w.opt.meerhafen=false;var r=OB.planen(SB,w.opt);
+function planRoh(k){var p=PLAN.get(k);if(p){PLAN.delete(k);PLAN.set(k,p);return p}var w=OB.wahl(seed,A,k,D,ON);if(N7A5A1)w.opt.welt=maske(k,w);if(!N7A5A2)w.opt.weltwasser=false;if(!N7A5A3A)w.opt.stadtwasser=false;if(!N7A5A3B)w.opt.meerstadt=false;if(!N7A5A3B2)w.opt.meerhafen=false;if(!N7A5A3C1)w.opt.bergWasser=false;var r=OB.planen(SB,w.opt);
  // N7a5a2: um das Wasser gewachsener Plan größer als die Maske (Plan + Hangring): Maske passend neu holen und neu planen (höchstens 2-mal, dann deckt sie)
  for(var mz=0;mz<2&&r.P.weltwasser&&w.opt.welt.wasser>0&&r.P.W+2*OB.MASKE_R>w.opt.welt.N;mz++){w.opt.welt=maske(k,w,r.P.W+2*OB.MASKE_R+32);r=OB.planen(SB,w.opt);MST.neu=(MST.neu|0)+1}p={w:w,r:r,L:OB.lage(G,seed,A,k,r.P)};
  PLAN.set(k,p);while(PLAN.size>PLM)PLAN.delete(PLAN.keys().next().value);return p}

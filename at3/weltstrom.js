@@ -13,6 +13,7 @@
 (function(root){
 'use strict';
 function WG(){return root.AT3WG||(typeof module!=='undefined'&&module.exports?require('./weltgen.js'):null)}
+var N7A5A3C1=!(typeof location!=='undefined'&&/[?&]n7a5a3c1=0/.test(location.search||''));   // N7a5a3c1 Notausschalter ?n7a5a3c1=0: Fortsetzen wie vorher (Erde doppelt gefestigt, ohne Völker und Herrschaften)
 var FENSTER=7, HALB=3, ST_JE_TICK=2, FRIST=4, SX=9600, SY=4800, LAGER=8;   // W1c: Welt 9.600 × 4.800 Stücke, in x läuft sie um (Naht)
 function ab(cx,kx){var d=Math.abs(cx-kx);return d>SX-d?SX-d:d}                // Abstand zweier Stückspalten über die Naht
 function mix(a){a=a>>>0;a^=a>>>16;a=Math.imul(a,0x7feb352d);a^=a>>>15;a=Math.imul(a,0x846ca68b);a^=a>>>16;return a>>>0}
@@ -73,7 +74,8 @@ function ausStand(d,z){var G=WG(),U=function(v,max){return typeof v==='number'&&
  for(i=0;i<d.da.length;i++)if(!ARTEN.blick(d.da[i]))return null;
  for(i=0;i<d.auf.length;i++){var a=d.auf[i];if(!Array.isArray(a)||a.length!==3||!U(a[0],z.auftragNr-1)||!ARTEN.blick(a[1])||!U(a[2],2147483647))return null}
  beginn(w);if(d.teil<G.TEILE)return[];                                            // Erde war noch im Bau: neu anfangen (Stand war als nicht exakt gemeldet)
- w.erde=G.fest(G.erde(w.seed,w.dichte));w.ans=G.ansicht(w.erde.buffer);w.teil=G.TEILE;w.fertig=d.fertig;w.summe=d.summe;w.erdSumme=d.erdSumme;w.suche=!!d.suche;
+ w.erde=N7A5A3C1?G.erde(w.seed,w.dichte):G.fest(G.erde(w.seed,w.dichte));   // N7a5a3c1: erde() liefert schon den festen Teil; ein zweites fest() verlor Völker und Herrschaften
+ w.ans=G.ansicht(w.erde.buffer);w.teil=G.TEILE;w.fertig=d.fertig;w.summe=d.summe;w.erdSumme=d.erdSumme;w.suche=!!d.suche;
  for(i=0;i<d.da.length;i++){var k=d.da[i],cx=(k/8192)|0,cy=k%8192,b=G.ausschnitt(w.ans,cx,cy,new Uint8Array(G.GEL_BYTES));G.gelaende({seed:w.seed,cx:cx,cy:cy,daten:b});w.stuecke.set(k,b)}
  var neuL=[];for(i=0;i<d.auf.length;i++){var q=d.auf[i],x=(q[1]/8192)|0,y=q[1]%8192;w.bestellt.set(q[1],q[0]);
   z.offen.push({nr:q[0],art:'gelaende',key:q[1],gen:w.gen,faellig:q[2]});

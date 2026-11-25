@@ -579,7 +579,9 @@ function plan0(opt){
   // Burgberg: erster Gipfelbau so weit wie möglich vom Mittelpunkt (am Stadtrand), nie zur See und mit Abstand zum Fluss; der zweite so nah wie möglich daneben
   var gipfelWert=function(it,x,y,w,h){var gx=x+w/2,gy=y+h/2,v=it.gipfel===2&&g1c?Math.hypot(gx-g1c[0],gy-g1c[1]):-Math.hypot(gx-cx,gy-cy),reich=(HT>=4?2:1)*P1+2;
    if(KSP!=null&&(KSP===0?gy-cy:KSP===1?cy-gy:KSP===2?gx-cx:cx-gx)>0)v+=4*W;
-   if(mitFluss&&x<fx0+RW+reich&&x+w+reich>fx0)v+=2*W;return v};
+   if(mitFluss&&x<fx0+RW+reich&&x+w+reich>fx0)v+=2*W;
+   if(NSa&&opt.bergWasser!==false){var nz=0;for(var yn=Math.max(0,y-reich);yn<Math.min(W,y+h+reich)&&!nz;yn++)for(var xn=Math.max(0,x-reich);xn<Math.min(W,x+w+reich);xn++)if(NSa[at(xn,yn)]){nz=1;break}if(nz)v+=2*W}   // N7a5a3c1: auch echtes Wasser der Maske meiden
+   return v};
   var passt=function(it,gw,gh){return it.w<=gw&&it.h<=gh||it.h<=gw&&it.w<=gh};
   for(var m=0;m<mono.length;m++){var it=mono[m],k0=grpK(it),best=null,bd=1e9,bk=0;
    for(var q=0;q<bl.length;q++){var s=bl[q],kk=0;
@@ -890,7 +892,7 @@ function plan0(opt){
  if(!elend){var MK=E2.maske,Wm=Math.round(Math.sqrt(MK.length)),Rm=E2.rand||0,zl=[];
   for(var jm=0;jm<Wm;jm++){var im=0;while(im<Wm){if(!MK[jm*Wm+im]){im++;continue}var i1=im;while(i1+1<Wm&&MK[jm*Wm+i1+1])i1++;zl.push(jm+Rm,im+Rm,i1+Rm);im=i1+1}}
   P.umriss={dorf:E2.vielfalt&&E2.vielfalt.dorf||null,art:UM?UM.art:g>=MAUER_AB?'quadrat':'offen',ecken:UM?UM.ecken:4,beulen:UM?UM.beulen:0,tore:E2.tore.map(function(t){return SEITE[t.s]}),zeilen:zl,planW:E2.W}}
- if(HU)huegelPlan(P,HT,seed,P1);
+ if(HU)huegelPlan(P,HT,seed,P1,MS&&MS.wasser>0&&opt.bergWasser!==false?weltNass(MS,F,spW0,true):null);   // N7a5a3c1: Fels nie auf echtem Wasser (opt.bergWasser:false = wie vorher)
  if(F!==1)P=skalieren(P,F);
  var spW=rng(hashT([seed,art,einw,'sp'].join('|')))()<.5;if(P.fluss&&!P.fluss.welt)spW=P.fluss.achse!==FL;   // mit Fluss: Spiegeln so, dass er wie in der Welt fließt
  if(P.kueste){spW=P.kueste.spiegel;delete P.kueste.spiegel}   // mit Küste: so, dass das Meer auf der Seite aus der Welt liegt (N6b2c4c2)
@@ -1350,15 +1352,15 @@ function meerHafen(P,M,g){var W=P.W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),E
 // Burgberg (N6b2c4c3): Höhenstufe je Feld als Ziffernfolge P.hoehe (gleiche Lage wie P.zellen), vor dem Maßstab im Plan gerechnet. Kern = Doppelblock(s) der
 // Gipfelbauten (Stufe T); Abstand d bis ½ Block T−1, bis 1 Block T−2, ab Großstadt bis 2 Blöcke Stufe 1, sonst 0; Rand mit grobem Rauschen ±0,75 ausgefranst.
 // Wasser, Kai, Strand, Stege und Wege am Wasser (Brücken, Ufergassen) bleiben auf Stufe 0, von dort höchstens 1 Stufe je Feld (kein Weg springt um 2 Stufen).
-function huegelPlan(P,T,seed,P1){var W=P.W,Z=P.zellen,K=[],ids=[],i,j,n=0;
+function huegelPlan(P,T,seed,P1,NF){var W=P.W,Z=P.zellen,K=[],ids=[],i,j,n=0,c2=W/2,nas_=NF?function(x,y){return NF(x,y,c2)>0}:function(){return false};   // NF: Nässe der Maske (weltNass), Wasser und Ufer bleiben unten
  P.bauten.forEach(function(b){if(b.gipfel&&b.kern){K.push([b.i+b.kern[0],b.j+b.kern[1],b.kern[2],b.kern[3]]);ids[b.gipfel-1]=b.id}delete b.kern});if(!K.length)return;
  var c=function(x,y){return x>=0&&y>=0&&x<W&&y<W?Z.charAt(y*W+x):'g'},H=new Array(W*W);
  for(j=0;j<W;j++)for(i=0;i<W;i++){var z=Z.charAt(j*W+i),d=1e9,l;
   for(var q=0;q<K.length;q++){var k=K[q],dx=Math.max(k[0]-i,0,i-(k[0]+k[2]-1)),dy=Math.max(k[1]-j,0,j-(k[1]+k[3]-1)),e=(Math.sqrt(dx*dx+dy*dy)+Math.max(dx,dy))/2;if(e<d)d=e}
   var dr=d+(rausch(i>>1,j>>1,seed+91)-.5)*1.5;l=d===0?T:dr<=P1*.5?T-1:dr<=P1+.5?T-2:T>=4&&dr<=2*P1+1?1:0;if(l<0)l=0;
-  if(/[wquy]/.test(z)||z==='s'&&(c(i+1,j)==='w'||c(i-1,j)==='w'||c(i,j+1)==='w'||c(i,j-1)==='w'))l=0;H[j*W+i]=l}
+  if(/[wquy]/.test(z)||z==='s'&&(c(i+1,j)==='w'||c(i-1,j)==='w'||c(i,j+1)==='w'||c(i,j-1)==='w')||nas_(i,j))l=0;H[j*W+i]=l}
  // vom Wasser aus höchstens 1 Stufe je Feld (Abstand in 4 Richtungen), so springt kein Weg um 2 Stufen
- var D=new Int32Array(W*W).fill(1e9),qu=[],qh=0;for(var k0=0;k0<W*W;k0++){var z0=Z.charAt(k0),i0=k0%W,j0=(k0/W)|0;if(/[wquy]/.test(z0)||z0==='s'&&(c(i0+1,j0)==='w'||c(i0-1,j0)==='w'||c(i0,j0+1)==='w'||c(i0,j0-1)==='w')){D[k0]=0;qu.push(k0)}}
+ var D=new Int32Array(W*W).fill(1e9),qu=[],qh=0;for(var k0=0;k0<W*W;k0++){var z0=Z.charAt(k0),i0=k0%W,j0=(k0/W)|0;if(/[wquy]/.test(z0)||z0==='s'&&(c(i0+1,j0)==='w'||c(i0-1,j0)==='w'||c(i0,j0+1)==='w'||c(i0,j0-1)==='w')||nas_(i0,j0)){D[k0]=0;qu.push(k0)}}
  while(qh<qu.length){var kq=qu[qh++],iq=kq%W,jq=(kq/W)|0;[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(v){var x=iq+v[0],y=jq+v[1];if(x<0||y<0||x>=W||y>=W)return;var kn=y*W+x;if(D[kn]>D[kq]+1){D[kn]=D[kq]+1;qu.push(kn)}})}
  for(k0=0;k0<W*W;k0++){if(H[k0]>D[k0])H[k0]=D[k0];if(H[k0])n++}
  P.hoehe=H.join('');P.huegel={stufen:T,gipfel:ids.filter(Boolean),kern:K,felder:n}}
