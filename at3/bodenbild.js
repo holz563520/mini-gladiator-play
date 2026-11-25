@@ -19,6 +19,8 @@ var ECK=new Int16Array(65*65), NLISTE=[], RH=new Uint16Array(66*66), RB=new Uint
 // N7a5a0: Wasser immer waagrecht (ufer.js). Ohne ufer.js (Notausschalter oder nicht ladbar) Ecke = Feld wie vorher.
 function UFm(){if(root.AT3UFER)return root.AT3UFER;try{if(typeof module!=='undefined'&&module.exports)return require('./ufer.js');if(typeof importScripts==='function'){importScripts('ufer.js'+((root.location&&root.location.search)||''));return root.AT3UFER||null}}catch(e){}return null}
 var UF=UFm();
+// N7a5b1: Punktmuster des Übergangs Weltweg → Ortsweg (gleich wie ortsanschluss.js ortPunkt, UE = 4 Felder): Stufe k = 1 am Bildrand meist Ortsweg, k = 4 meist Weltweg
+var B4=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];function uePunkt(k,x,y){return B4[((y&3)<<2)|(x&3)]<Math.round((5-k)*16/5)}
 
 // Stufen der Feldecken (n+1) × (n+1) ab Feld x0,y0. Ecke = Höhe des Feldes dort (N7a5a0: am Wasser der Wasserspiegel, ufer.js). false, wenn ein Nachbarstück noch fehlt
 // (seit N7a5a0 auch links und oben: die Kacheln dort entscheiden mit, ob eine Ecke am Wasser liegt).
@@ -56,6 +58,7 @@ function bild(hole,x0,y0,lod,F,NT,BA,OT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,s
  var gb=BA?BA.hole(x0>>6,y0>>6):null;if(gb&&gb.length<=GW)gb=null;
  var ob=0,bz=-1,ab=BA&&BA.hole(x0>>6,y0>>6)?function(X,Y){return BA.M.frei(BA.hole,X,Y)}:null,oz=-1,nk=0;
  if(OT){var ab0=ab;ab=ab0?function(X,Y){return OT.frei(X,Y)&&ab0(X,Y)}:OT.frei}
+ var WM=OT&&OT.weg?OT.weg(W):null;if(WM)W=WM.W;                                              // N7a5b1: Weltwege im Hangring an die Ausgänge (ortsanschluss.js), auch für die Natur
  var NL=NT?NT.N.sammeln(NT.seed,x0,y0,n,lod,ECK,B,W,NLISTE,ab):null;
  if(NL)for(i=0;i<NL.length;i++){NL[i].sp=NT.BILD[NL[i].t].L[lod];NL[i].o=1;NL[i].m=0}
  if(BA){if(!NL){NLISTE.length=0;NL=NLISTE}bz=BA.M.sammeln(BA,x0,y0,n,lod,ECK,NL,BOD);if(bz>0)NL.sort(function(p,q2){return p.tief-q2.tief||p.i-q2.i||p.o-q2.o})}
@@ -69,21 +72,26 @@ function bild(hole,x0,y0,lod,F,NT,BA,OT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,s
   if(OT&&(oz=OT.zelle(X,Y))>=0){if(oz||wasser){c=OT.farbe[oz];wasser=!!OT.wasser[oz]}wv=0;ga=0;gz=0}   // N7a2a: Ortsfläche (Wiese g behält die Farbe des Bioms, außer auf Wasser)
   else if(ga&&gz>1){c=GFARBE[ga];wasser=false;wv=-1}
   else if(wv===7){if((X+Y)&1)c=WFARBE[7]}else if(wv){c=WFARBE[wv];wasser=false}
+  var ue=WM&&wv>0&&oz<0?WM.ue[q]:0,c2=0;                                                     // N7a5b1: Übergang Weltweg → Ortsweg (Punktmuster)
   if(!wasser){var d=lE-lW,sh=d>1?2:d>0?1:d<-1?-2:d<0?-1:0;if(lS-lN>1)sh--;                // Licht von links: Hang nach Westen heller, nach Osten dunkler
+   if(ue){c2=WM.c[q];var s2=sh;while(s2>0){c2=he[c2];s2--}while(s2<0){c2=du[c2];s2++}}
    if(!wv&&lod>1){var r4=r&15;if(r4===0)sh++;else if(r4===1)sh--}                           // weit draußen: Körnung je Feld; nah: je Bildpunkt (unten)
    while(sh>0){c=he[c];sh--}while(sh<0){c=du[c];sh++}}
   else if(!wv&&UF&&UF.an()&&(lN!==lE||lN!==lW||lN!==lS)){if((X+Y)&1)c=he[c]}                     // N7a5a0: Stufe im Fluss (Stromschnelle), Punktmuster aus Palettenfarben
   else if(!wv&&(r&31)===0)c=he[c];                                                          // vereinzelte Wellen
   var korn=!wasser&&!wv&&lod<2,cL=pal[he[c]],cD=pal[du[c]],v,gm=ga&&lod<2?(gz===1?1:gz===2?2:3):0;
   if(gm){korn=false;var gP=pal[GPUNKT],gF=pal[GFUGE[ga]],gK=pal[GKORN[ga]],gB=pal[BFARBE[b]]}
+  var col2=ue?pal[c2]:0;
   var col=pal[c],xc=ox+(i-j)*hw,yb=oy+(i+j)*hh,yN=yb-lN*st,yE=yb+hh-lE*st,yW=yb+hh-lW*st,yS=yb+2*hh-lS*st,a1=yN-yW,a2=yS-yW,b1=yE-yN,b2=yE-yS;
   for(var k=0;k<hw;k++){var f=2*k+1,t=yW+Math.floor(a1*f/d2),u=yW+Math.floor(a2*f/d2)+1,x=xc-hw+k,o;
    if(u>=h)u=h-1;if(t<0)t=0;o=t*w+x;
    if(gm)for(;t<=u;t++,o+=w)px[o]=gPx(gm,ga,x,t,lod,r,k,col,cL,cD,gP,gF,gK,gB);
+   else if(ue)for(;t<=u;t++,o+=w)px[o]=uePunkt(ue,x,t)?col2:col;
    else if(korn)for(;t<=u;t++,o+=w){v=Math.imul(r^Math.imul(k*61+t-yW,0x9e3779b1),0x85ebca6b)>>>28;px[o]=v===0?cL:v===1?cD:col}else for(;t<=u;t++,o+=w)px[o]=col;
    t=yN+Math.floor(b1*f/d2);u=yS+Math.floor(b2*f/d2)+1;x=xc+k;
    if(u>=h)u=h-1;if(t<0)t=0;o=t*w+x;
    if(gm)for(;t<=u;t++,o+=w)px[o]=gPx(gm,ga,x,t,lod,r,k+977,col,cL,cD,gP,gF,gK,gB);
+   else if(ue)for(;t<=u;t++,o+=w)px[o]=uePunkt(ue,x,t)?col2:col;
    else if(korn)for(;t<=u;t++,o+=w){v=Math.imul(r^Math.imul(k*67+977+t-yN,0x9e3779b1),0x85ebca6b)>>>28;px[o]=v===0?cL:v===1?cD:col}else for(;t<=u;t++,o+=w)px[o]=col}}
  if(OT&&OT.boden)ob=ortBoden(OT,px,w,h,ox,oy,x0,y0,n,hw,hh,st,pal);                       // N7a2b1: echte Böden der Orte (nur 1×) über der Ersatzfarbe
  if(bz>=0)BA.M.boden(px,w,h,ox,oy,n,lod,ECK,BOD,pal,he,du);                                 // G5b: Boden der Gebäudefelder (unter allen Bildern)

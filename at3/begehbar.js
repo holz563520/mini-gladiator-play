@@ -43,6 +43,7 @@ function tempo(hole,holeB,seed,X,Y,p){if(Y<0||Y>=WY)return 0;X=um(X);
  var ob=holeB&&holeB.ort;if(ob&&!a){var ov=ob(X,Y);if(ov>=0)return OSm().tempo(ov,p)}   // N7a4a1: Sperrkarte der Orte (Park gewinnt: Stück mit Gebautem nicht)
  var h0=hoehe(hole,X,Y,holeB),mn=h0,mx=h0;for(var k=1;k<4;k++){var h=hoehe(hole,um(X+(k&1)),Y+(k>>1),holeB);if(h<0)return -1;if(h<mn)mn=h;if(h>mx)mx=h}
  var steil=mx-mn,b=s.B[q],wv=s.W[q],t;
+ if(ob&&!a&&ob.weg){var w2=ob.weg(X,Y);if(w2>=0)wv=w2}                                          // N7a5b1: Weltweg im Hangring an den Ausgang (wie im Bild)
  if(a&&a[q]){var ga=a[q];t=ga===6?0:ga===7?(p===FUSS?100:0):p===FUSS?85:ga===1?100:0}            // Gebäudeboden; Karren nur ins Lager (Ladestelle); AR1b: Anlage gesperrt, Häuschen zu Fuß
  else{var g=a&&a.length>GW?a[GW+q]:0;
   if(g&&((g>>4)&3)===Z_FERTIG)t=GEBAUT[p][g&7];

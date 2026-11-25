@@ -52,6 +52,10 @@ function lupe(L){if(!L||!L.length)return null;
  var f=function(X,Y){for(var n=0;n<L.length;n++){var o=L[n],dx=X-o.x0;if(dx<0)dx+=WX;else if(dx>=WX)dx-=WX;var dy=Y-o.y0;
   if(dx<o.W&&dy>=0&&dy<o.W)return o.m[dy*o.W+dx]}return -1};f.L=L;
  for(var n=0;n<L.length;n++)if(L[n].h0!=null){f.hoch=function(X,Y,h,b){return hoch(L,X,Y,h,b)};break}   // N7a4b1: nur mit Höhe und Hangring
+ // N7a5b1: Weltweg im Hangring nach dem Anschluss (ortsanschluss.js, Karte.an): Wegart 0–5 oder −1 (Welt unverändert)
+ var LA=L.filter(function(o){return o.an&&o.an.liste&&o.an.liste.length});
+ if(LA.length)f.weg=function(X,Y){for(var n=0;n<LA.length;n++){var a=LA[n].an,dx=X-a.x0;if(dx<0)dx+=WX;else if(dx>=WX)dx-=WX;var dy=Y-a.y0;
+   if(dx<a.n&&dy>=0&&dy<a.n){if(!a._m){var m=new Map(),l=a.liste;for(var i=0;i<l.length;i+=2)m.set(l[i],l[i+1]);a._m=m}var v=a._m.get(dy*a.n+dx);if(v!==undefined)return v&7}}return -1};
  return f}
 // N7a4b1: eingeebnete Höhe (Rohwert wie weltgen, 64 = eine Stufe) am Weltfeld X, Y, rechnet genau wie ortsflaeche.js flachen(): auf der Fläche die Höhe des Ortspunkts,
 // im Hangring (Abstand d = 1 … R) höchstens d Stufen davon entfernt; Meer (Biom 0, 1), Fluss (10) und See (11) bleiben, wie sie sind. Mehrere Orte nacheinander.

@@ -50,6 +50,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  // Ort aufnehmen (Antwort des Ortskerns). bau(k) → true, wenn das Kartenstück k Gebautes des Spielers hat (Park gewinnt). Gibt die Kartenstücke, deren Bild sich ändert.
  function aufnehmen(m,bau){gefragt.delete(m.k);if(m.fehler||!m.P||!m.lage)return[];var L=m.lage,P=m.P,W=L.W,o={k:m.k,g:m.g,name:m.name,x0:L.x0,y0:L.y0,W:W,h0:m.h0,s0:BB.stufe(m.h0),
    Z:new Uint8Array(W*W),bauten:[],fach:new Map(),aus:new Set(),ms:m.ms,ersatz:m.ersatz,t:++zeit,P:P,E:null,wartet:false,posten:m.ort!=null,ort:m.ort,art:m.art,R:m.ort!=null?RAMPE_P:RAMPE},i,j;   // N7a2c: posten, Hang R   // N7a2b1: Plan für die echten Böden
+  o.AN=m.an&&m.an.liste&&m.an.liste.length?m.an:null;   // N7a5b1: Anschluss der Weltstraßen im Hangring (ortsanschluss.js)
   o.ww=!!P.weltwasser;o.sk=P.senke||null;for(i=0;i<W*W;i++){var ch=P.zellen.charAt(i),c=CODES.indexOf(ch);o.Z[i]=o.ww&&WELT_C[ch]?255:c<0?0:c}   // N7a5a2: Weltwasser, Weltufer, Brücke, Steg → hier malt die Welt
   P.bauten.forEach(function(b){if(!(b.w>0&&b.h>0))return;var e={i:b.i,j:b.j,w:b.w,h:b.h,m:b.rolle==='mauer'},fi=b.i+b.w-1,fj=b.j+b.h-1,key=(fi>>3)*4096+(fj>>3);   // Fach nach dem vordersten Feld (8 × 8)
    o.bauten.push(e);var f=o.fach.get(key);if(!f)o.fach.set(key,f=[]);f.push(e)});
@@ -222,9 +223,23 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  function fern(key,L){for(var a=0;a<AUF.length;a++)if(AUF[a].key===key){if((AUF[a].fern||0)<L)AUF[a].fern=L;return}if(AKT&&AKT.w.key===key&&(AKT.w.fern||0)<L)AKT.w.fern=L}
  function echtLod(lod){return lod===0||lod===1&&HALBAN||(lod===2||lod===3)&&VIERAN}
  // Für ein Bodenbild (Felder x0.., y0.., n je Seite): Zugriff fürs Bodenbild oder null, wenn kein Ort es schneidet
- function fuerBild(x0,y0,n,lod,f){if(!orte.size)return null;var L=[];orte.forEach(function(o){var i=lok(o,x0),j=y0-o.y0;if((i<o.W||i>WX-n)&&j<o.W&&j+n>0)L.push(o)});if(!L.length)return null;
-  var FBx=farben(f),k0=stk(x0,y0);L=L.filter(function(o){return !o.aus.has(k0)});if(!L.length)return null;
-  return{farbe:FBx.boden,wasser:FBx.wasser,
+ // N7a5b1 (Thomas 25.11.2026): Weltwege im Hangring nach ortsanschluss.js: Kopie der Wegschicht des Bilds mit dem Anschluss (Weg weg, Bogen zum Ausgang),
+ // dazu je Feld die Übergangsstufe (1 … UE) und die Farbe des Ortswegs am Ausgang. Gibt null, wenn kein Eintrag ins Bild fällt. Puffer einmal, je Bild neu gefüllt.
+ var WEGK=new Uint8Array(4096),WEGU=new Uint8Array(4096),WEGC=new Uint8Array(4096),UEFELD=new Int32Array(4096),uen=0;
+ function wegIns(LR,Wq,x0,y0,n,FBx){var neu=false;
+  for(var a=0;a<LR.length;a++){var o=LR[a],AN=o.AN,nn=AN.n,l=AN.liste,dx0=x0-AN.x0;if(dx0<-WX/2)dx0+=WX;else if(dx0>WX/2)dx0-=WX;var dy0=y0-AN.y0;
+   if(dx0>=nn||dy0>=nn||dx0+n<=0||dy0+n<=0)continue;
+   for(var e=0;e<l.length;e+=2){var r=l[e],u=r%nn-dx0,v=((r/nn)|0)-dy0;if(u<0||v<0||u>=n||v>=n)continue;var X=x0+u,Y=y0+v,q=((Y&63)<<6)|(X&63),val=l[e+1];
+    if(!neu){WEGK.set(Wq);neu=true;for(var z=0;z<uen;z++)WEGU[UEFELD[z]]=0;uen=0}
+    WEGK[q]=val&7;var k=(val>>4)&7;if(k){var zc=(val>>8)-1,c=zc>=0&&zc<o.Z.length?o.Z[zc]:255;if(c!==255){WEGU[q]=k;WEGC[q]=FBx.boden[c];UEFELD[uen++]=q}}}}
+  return neu?{W:WEGK,ue:WEGU,c:WEGC}:null}
+ function fuerBild(x0,y0,n,lod,f){if(!orte.size)return null;var L=[],LR=[];orte.forEach(function(o){var i=lok(o,x0),j=y0-o.y0;if((i<o.W||i>WX-n)&&j<o.W&&j+n>0)L.push(o);
+   else if(o.AN){var R=o.R,i2=i+R;if(i2>=WX)i2-=WX;if((i2<o.W+2*R||i2>WX-n)&&j+R<o.W+2*R&&j+R+n>0)LR.push(o)}});if(!L.length&&!LR.length)return null;
+  var FBx=farben(f),k0=stk(x0,y0);L=L.filter(function(o){return !o.aus.has(k0)});LR=LR.concat(L.filter(function(o){return o.AN})).filter(function(o){return !o.aus.has(k0)});
+  if(!L.length&&!LR.length)return null;
+  var weg=LR.length?function(Wq){return wegIns(LR,Wq,x0,y0,n,FBx)}:null;
+  if(!L.length)return{farbe:FBx.boden,wasser:FBx.wasser,zelle:function(){return -1},frei:function(){return true},boden:null,kloetze:function(){return 0},weg:weg};
+  return{farbe:FBx.boden,wasser:FBx.wasser,weg:weg,
    zelle:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W){var z=o.Z[j*o.W+i];return z===255?-1:z}}return -1},
    frei:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return false}return true},
    // N7a2b1: echter Boden des Planfelds unter (X, Y) als Liste von Bildern (Boden, dann Säume) oder null (Kartei-Bild fehlt noch → Ersatzfarbe, Ort wartet), nur in 1×

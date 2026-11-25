@@ -74,18 +74,19 @@ var MASKE_S=[96,96,96,128,192,240,288,320], MASKE_R=24, M_MEER=1, M_FLUSS=2, M_S
 function maskeSeite(g){g=g|0;return MASKE_S[g<0?0:g>7?7:g]+2*MASKE_R}
 // WG = weltgen.js, A = Ansicht der fertigen Erde (mit Orten und Wegen), g = Ortsgröße, h0 = Höhe am Ortspunkt (1/16 Feld), puf = Auftragspuffer (WG.GEL_BYTES) oder nichts
 // N7a5a2: nMin = größere Seite, wenn der Plan um das Wasser herum über die übliche Größe gewachsen ist (Ortskern plant dann einmal neu)
-function wasserMaske(WG,seed,A,k,g,h0,puf,nMin){var p=punkt(WG,seed,A,k);return wasserMaskeAm(WG,seed,A,p[0],p[1],Math.max(maskeSeite(g),nMin|0),h0,puf)}
+// N7a5b1: mitWeg = zusätzlich Schicht w (Weltweg je Feld wie weltgen, N² Byte) für den Anschluss der Weltstraßen (ortsanschluss.js)
+function wasserMaske(WG,seed,A,k,g,h0,puf,nMin,mitWeg){var p=punkt(WG,seed,A,k);return wasserMaskeAm(WG,seed,A,p[0],p[1],Math.max(maskeSeite(g),nMin|0),h0,puf,null,mitWeg)}
 // N7a5a2b: dieselbe Maske um einen beliebigen Punkt (px, py) mit Seite N (Außenposten: Postenpunkt, POSTEN_N). hole(cx, cy) = fertig gerechnetes Kartenstück
 // (Puffer wie WG.ausschnitt + gelaende) aus einem kleinen Merker des Ortskerns, damit Höhe, Maske und Wassersuche eines Postens ein Stück nur einmal rechnen.
-function wasserMaskeAm(WG,seed,A,px,py,N,h0,puf,hole){var t0=Date.now(),x0=welt(WG,px-(N>>1)),y0=py-(N>>1),m=new Uint8Array(N*N),
+function wasserMaskeAm(WG,seed,A,px,py,N,h0,puf,hole,mitWeg){var t0=Date.now(),x0=welt(WG,px-(N>>1)),y0=py-(N>>1),m=new Uint8Array(N*N),mw=mitWeg?new Uint8Array(N*N):null,
   ST=64,F=WG.FELDER,WY=WG.GH*WG.ZF,SX=WG.GW*WG.ZF/ST,nW=0,nS=0,cx,cy,u,v;
  if(!hole)puf=puf||new Uint8Array(WG.GEL_BYTES);m.fill(16<<3);
  var c0=Math.floor(x0/ST),c1=Math.floor((x0+N-1)/ST),r0=Math.floor(Math.max(0,y0)/ST),r1=Math.floor((Math.min(WY,y0+N)-1)/ST);
  for(cy=r0;cy<=r1;cy++)for(var c=c0;c<=c1;c++){cx=((c%SX)+SX)%SX;var b=hole?hole(cx,cy):WG.ausschnitt(A,cx,cy,puf);if(!hole)WG.gelaende({seed:seed,cx:cx,cy:cy,daten:b});nS++;
-  var H=new Uint16Array(b.buffer,b.byteOffset,F),B=new Uint8Array(b.buffer,b.byteOffset+F*2,F),gx=c*ST-x0,gy=cy*ST-y0;
+  var H=new Uint16Array(b.buffer,b.byteOffset,F),B=new Uint8Array(b.buffer,b.byteOffset+F*2,F),Wl=mw?new Uint8Array(b.buffer,b.byteOffset+F*3,F):null,gx=c*ST-x0,gy=cy*ST-y0;
   for(var y=0;y<ST;y++){v=gy+y;if(v<0||v>=N)continue;for(var x=0;x<ST;x++){u=gx+x;if(u<0||u>=N)continue;var q=(y<<6)|x,bb=B[q],
-    w=bb<2?M_MEER:bb===10?M_FLUSS:bb===11?M_SEE:0,s=(H[q]-h0)>>6;if(s<-16)s=-16;else if(s>15)s=15;if(w)nW++;m[v*N+u]=w|(bb===2?M_STRAND:0)|((s+16)<<3)}}}
- return{x0:x0,y0:y0,N:N,m:m,wasser:nW,stuecke:nS,ms:Date.now()-t0}}
+    w=bb<2?M_MEER:bb===10?M_FLUSS:bb===11?M_SEE:0,s=(H[q]-h0)>>6;if(s<-16)s=-16;else if(s>15)s=15;if(w)nW++;m[v*N+u]=w|(bb===2?M_STRAND:0)|((s+16)<<3);if(mw)mw[v*N+u]=Wl[q]}}}
+ var r={x0:x0,y0:y0,N:N,m:m,wasser:nW,stuecke:nS,ms:Date.now()-t0};if(mw)r.w=mw;return r}
 // N7a5a2b: Seite (north, east, south, west) zum nächsten Wasserfeld der Maske M von ihrer Mitte aus (gleich weit: kleinere Feldnummer), kein Wasser → null
 function seiteZu(dx,dy){return Math.abs(dx)>=Math.abs(dy)?(dx>=0?'east':'west'):(dy>=0?'south':'north')}
 function maskeWasserSeite(M){var N=M.N,h=N>>1,b=-1,bd=1e9;for(var k=0;k<N*N;k++){if(!(M.m[k]&3))continue;var dx=k%N-h,dy=((k/N)|0)-h,d=dx*dx+dy*dy;if(d<bd){bd=d;b=k}}

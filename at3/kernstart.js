@@ -6,7 +6,7 @@
 // es wird nichts auf den Hauptkern verlagert. Benutzt vom Spiel (spiel.js, erst nach dem ersten Bild geladen) und von der Kernprobe im Master-Editor.
 (function(){
 'use strict';
-var V='6d8c4a12', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
+var V='413c1af6', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,''), KOPF=16;
 // Zahl der Helferkerne: gemeldete Kerne minus Hauptkern und Weltkern, höchstens 4 (Startwert, MK1 misst nach), bei 2 oder weniger Kernen keiner.
 function helferZahl(kerne){kerne=kerne|0;return kerne<=2?0:Math.min(4,kerne-2)}
 
@@ -38,7 +38,7 @@ function starten(opt){opt=opt||{};
  if(typeof Worker==='undefined'||typeof MessageChannel==='undefined'){setTimeout(function(){ausfall('no background cores')},0);return H}
  try{
   var n=opt.helfer==null?helferZahl(navigator.hardwareConcurrency||1):opt.helfer, ports=[];
-  welt=new Worker(BASIS+'weltkern.js?v='+V+(location.search.match(/[?&]((n2[bcd]|n4b|ar1b|n7a4a2|n7a4b1|n7a5a0|n7a5a2b|n7a5a3a|n7a5a3b|n7a5a3b2|n7a5a3b0|n7a5a3c1|n7a5a3c2)=0)/g)||[]).join('').replace(/\?/g,'&'));   // Notausschalter ?n2b=0, ?n2c=0, ?n2d=0, ?n4b=0 an die Kerne (N2d: vorher nur n2b)
+  welt=new Worker(BASIS+'weltkern.js?v='+V+(location.search.match(/[?&]((n2[bcd]|n4b|ar1b|n7a4a2|n7a4b1|n7a5a0|n7a5a2b|n7a5a3a|n7a5a3b|n7a5a3b2|n7a5a3b0|n7a5a3c1|n7a5a3c2|n7a5b1)=0)/g)||[]).join('').replace(/\?/g,'&'));   // Notausschalter ?n2b=0, ?n2c=0, ?n2d=0, ?n4b=0 an die Kerne (N2d: vorher nur n2b)
   welt.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ausfall('world core failed')};
   for(var i=0;i<n;i++){var h=new Worker(BASIS+'helfer.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n7a5a0|n7a5a3b0)=0/g)||[]).join('').replace(/\?/g,'&')),k=new MessageChannel();
    h.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ausfall('helper core failed')};
