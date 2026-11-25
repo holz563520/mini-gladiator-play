@@ -38,7 +38,8 @@ var HS_MAX=16384, HS_KOPF=4, HS_BYTES=HS_KOPF+HS_MAX*8+N*2+ORT_MAX*2;   // N4c1:
 var TAB=131072, SC=ERD_FEST, VK0=SC+11*N+TAB*12, HS0=VK0+VK_MAX, ERD_BYTES=HS0+HS_BYTES;   // N4b: Völker beim Entstehen hinter den Arbeitsfeldern   // beim Entstehen zusätzlich Arbeitsfelder der Wegsuche
 var N4B=!(root.location&&/[?&](n2b|n2c|n4b)=0/.test(root.location.search||''));   // N4b Notausschalter ?n4b=0 (auch mit ?n2b=0, ?n2c=0): kein Teil „Völker“, Erde Byte für Byte wie N4a
 var N4C=N4B&&!(root.location&&/[?&]n4c=0/.test(root.location.search||''));
-var N7A5A0=N4B&&!(root.location&&/[?&]n7a5a0=0/.test(root.location.search||''));   // N7a5a0 Notausschalter ?n7a5a0=0 (auch mit ?n2b=0, ?n2c=0, ?n4b=0): Fluss- und Teichspiegel wie vorher (schräg/wellig)   // N4c1 Notausschalter ?n4c=0 (auch mit ?n4b=0): kein Teil „Herrschaften“, Erde Byte für Byte wie N4b
+var N7A5A0=N4B&&!(root.location&&/[?&]n7a5a0=0/.test(root.location.search||''));
+var N7A5A3B0=N4B&&!(root.location&&/[?&]n7a5a3b0=0/.test(root.location.search||''));   // N7a5a3b0 Notausschalter ?n7a5a3b0=0 (auch mit ?n2b=0, ?n2c=0, ?n4b=0): Inselstädte bleiben auf ihrem Inselchen   // N7a5a0 Notausschalter ?n7a5a0=0 (auch mit ?n2b=0, ?n2c=0, ?n4b=0): Fluss- und Teichspiegel wie vorher (schräg/wellig)   // N4c1 Notausschalter ?n4c=0 (auch mit ?n4b=0): kein Teil „Herrschaften“, Erde Byte für Byte wie N4b
 var BAND=8, TEILE=BAND+(N4C?11:N4B?10:8);                     // Teilaufträge der Erde
 var TEIL_NAME=['Rauschen 1','Rauschen 2','Rauschen 3','Rauschen 4','Rauschen 5','Rauschen 6','Rauschen 7','Rauschen 8','Ozean und Seen','Senken','Flüsse','Klima','Klimazonen','Orte und Häfen','Straßen','Seewege','Völker: Kernländer','Völker: Ausbreitung und Glaube','Herrschaften'];
 var ORT_ART=['','Dorf','Stadt','Hafendorf','Hafenstadt'], WEG_ART=['','Pfad','Straße','Brücke','Furt','Steg','Ortsplatz','Fähre'];
@@ -552,7 +553,34 @@ function teilOrte(A,seed,dichte){var E=A.E,bio=A.bio,flu=A.flu,dir=A.dir,ort=A.o
  bloecke(D[2],D[3],hafen,1000,0x4a7c15,hafenArt);                                                        // weitere Häfen
  bloecke(D[0],D[1],wert,1,0x2c1b3c6d,function(i){var h=mix(seed^Math.imul(i+3,0xc2b2ae35))&255,lage=(flu[i]>4?4:flu[i])*25+(hafen[i]?50:0);
   var stadt=h<16+(lage>>2);return hafen[i]>=1000?(stadt?4:3):(stadt?2:1)});                              // Dörfer und Städte; an fester Küste mit Hafen
- kopf[0]=nO;kopf[1]=0;kopf[2]=L;kopf[3]=dichte}
+ if(N7A5A3B0)inselUmzug();
+ kopf[0]=nO;kopf[1]=0;kopf[2]=L;kopf[3]=dichte
+ // N7a5a3b0 (Thomas 25.11.2026): Eine Stadt (ab Marktflecken, Größe wie orte.js groesse ohne Sitze) an der Küste eines Inselchens (Landmasse bis INSEL_ZELLEN
+ // Zellen) ohne festen Grund (Hafenplatz unter 1000): im Kartenstück versinkt die Insel bis auf den Ortsplatz, die Stadt passt nicht darauf. Sie zieht an die
+ // nächste feste Küste einer größeren Landmasse (Hafenplatz ab 1000, bis INSEL_R Zellen, frei wie jeder Ort, gleiche Ortsgröße). Nummer und Art bleiben, alle
+ // anderen Orte bleiben gleich, das Inselchen bleibt leer; Straßen und Seewege entstehen danach wie immer. Kein Platz: sie bleibt (Stadtbild plant den Ersatz).
+ function inselUmzug(){var Z=new Int32Array(L+1),k,i0,t0,j,dx,dy,X,Y,bd,bj;nUmzug=0;for(i=0;i<N;i++)if(lm[i])Z[lm[i]]++;
+  for(k=0;k<nO;k++){i0=orte[k]&0xffffff;t0=orte[k]>>>24;if(t0<3||hafen[i0]>=1000||Z[lm[i0]]>INSEL_ZELLEN||!stadtGr(i0,t0)||!inselchen(i0))continue;
+   var x0=i0%GW,y0=(i0/GW)|0;bd=1e9;bj=-1;ort[i0]=0;                                                  // die eigene alte Zelle zählt beim Abstand nicht
+   for(dy=-INSEL_R;dy<=INSEL_R;dy++){Y=y0+dy;if(Y<0||Y>=GH)continue;for(dx=-INSEL_R;dx<=INSEL_R;dx++){X=um(x0+dx);j=Y*GW+X;var d=dx*dx+dy*dy;
+    if(d>bd||hafen[j]<1000||Z[lm[j]]<=INSEL_ZELLEN||ort[j]||(d===bd&&j>bj)||!stadtGr(j,t0)||!frei(j))continue;bd=d;bj=j}}
+   if(bj<0){ort[i0]=t0;continue}ort[bj]=t0;orte[k]=(bj|t0<<24)>>>0;nUmzug++}}
+ // Liegt der Ortspunkt im Kartenstück auf einem Inselchen? 3 × 3 Kartenstücke um den Punkt (IW 192 Felder; 2 × 2 trennt Inselstädte nicht sicher von Städten auf größeren Inseln), Land ab dem Punkt füllen: berührt es den Rand nicht und bleibt
+ // unter INSEL_FELDER, ist es nur der Ortsplatz im Meer; ebenso bei mehr als INSEL_MEER Meer ringsum (Inseln, auf die die Stadt passt, bleiben). Nur für die wenigen Kandidaten (Seed 563520: 27), je 9 Stücke.
+ function inselchen(z){if(!IB){IB=new Uint8Array(GEL_BYTES);IL=new Uint8Array(IW*IW);IQ=new Int32Array(IW*IW)}var p=ortPunkt(seed,A,z%GW,(z/GW)|0),
+  SX=GW*ZF/ST,c0=(p[0]>>6)-1,r0=(p[1]>>6)-1,cx,cy,u,v,n=0,k=0,nM=0;IL.fill(0);
+  for(cy=0;cy<IW/64;cy++)for(cx=0;cx<IW/64;cx++){var ry=r0+cy;if(ry<0||ry>=GH*ZF/ST){for(v=0;v<64;v++)for(u=0;u<64;u++)IL[(cy*64+v)*IW+cx*64+u]=1;continue}
+   var b=ausschnitt(A,(((c0+cx)%SX)+SX)%SX,ry,IB);gelaende({seed:seed,cx:(((c0+cx)%SX)+SX)%SX,cy:ry,daten:b});var B=new Uint8Array(b.buffer,b.byteOffset+FELDER*2,FELDER);
+   for(v=0;v<64;v++)for(u=0;u<64;u++){var w=B[v*64+u],m=w<2?1:(w===10||w===11)?3:0;IL[(cy*64+v)*IW+cx*64+u]=m;if(m===1)nM++}}
+  if(nM>INSEL_MEER*IW*IW)return true;                                                                      // wie Stadtbild INSEL_AB: fast nur Meer ringsum
+  for(k=0;k<IW*IW;k++)if(IL[k]===3)IL[k]=1;k=0;
+  var s0=(p[1]-r0*64)*IW+(p[0]-c0*64);if(IL[s0])return true;IL[s0]=2;IQ[n++]=s0;
+  while(k<n){var q=IQ[k++],qx=q%IW,qy=(q/IW)|0;if(!qx||!qy||qx===IW-1||qy===IW-1||n>INSEL_FELDER)return false;
+   for(var r=0;r<4;r++){var j=r===0?q+1:r===1?q-1:r===2?q+IW:q-IW;if(!IL[j]){IL[j]=2;IQ[n++]=j}}}
+  return true}
+ function stadtGr(z,t){return t===4||(t===3&&(mix((seed>>>0)^Math.imul(z+1,0x85ebca6b)^Math.imul(2,0xc2b2ae35))&1)===1)}   // wie orte.js zz(seed, z, 1) & 1
+}
+var INSEL_ZELLEN=4, INSEL_R=8, INSEL_FELDER=1500, INSEL_MEER=.7, IW=192, nUmzug=0, IB=null, IL=null, IQ=null;   // N7a5a3b0: Inselchen bis 4 Zellen und bis 1500 Felder Land oder über 70 % Meer in den 3 × 3 Stücken, Suche bis 8 Zellen; nUmzug zählt (Tests)
 
 // Teile „Straßen“ (see = 0) und „Seewege“ (see = 1): Wegsuche von allen Orten bzw. Häfen zugleich (niedrigste Kosten zuerst). Jede Zelle gehört dem
 // Ort, von dem aus sie zuerst erreicht wird, und merkt sich die Richtung zurück. Wo sich zwei Gebiete berühren, entsteht eine mögliche Verbindung
@@ -845,7 +873,7 @@ function rechnen(a){return a.art==='erde'?erdTeil(a):gelaende(a)}
 function stueck(seed,A,cx,cy,daten){   // A muss ort und weg tragen (ansicht der fertigen Erde)
  daten=daten||new Uint8Array(GEL_BYTES);ausschnitt(A,cx,cy,daten);return gelaende({seed:seed,cx:cx,cy:cy,daten:daten})}
 
-var WG={N4C:N4C,HS_SYS:HS_SYS,HS_G:HS_G,HS_MAX:HS_MAX,HS_FARBEN:HS_FARBEN,HS_BEI:HS_BEI,teilHerrschaften:teilHerrschaften,hsKette:hsKette,hsReich:hsReich,N4B:N4B,VK_KUL:VK_KUL,VOLK_MAX:VOLK_MAX,VK_KOPF:VK_KOPF,VK_JE:VK_JE,teilVoelker:teilVoelker,ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,N2B:N2B,ZV:ZV,zonenV:zonenV,zfuell:zfuell,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
+var WG={N7A5A3B0:N7A5A3B0,INSEL_ZELLEN:INSEL_ZELLEN,INSEL_R:INSEL_R,umzuege:function(){return nUmzug},N4C:N4C,HS_SYS:HS_SYS,HS_G:HS_G,HS_MAX:HS_MAX,HS_FARBEN:HS_FARBEN,HS_BEI:HS_BEI,teilHerrschaften:teilHerrschaften,hsKette:hsKette,hsReich:hsReich,N4B:N4B,VK_KUL:VK_KUL,VOLK_MAX:VOLK_MAX,VK_KOPF:VK_KOPF,VK_JE:VK_JE,teilVoelker:teilVoelker,ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,N2B:N2B,ZV:ZV,zonenV:zonenV,zfuell:zfuell,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
  TEIL_NAME:TEIL_NAME,BIOM:BIOM,DX:DX,DY:DY,HW:HW,mix:mix,ansicht:ansicht,erdTeil:erdTeil,erde:erde,ausschnitt:ausschnitt,gelaende:gelaende,stueck:stueck,rechnen:rechnen,kante:kante,biomVon:biomVon,herrscht:herrscht,ZONE:ZONE,ZONE_EN:ZONE_EN,N2C:N2C,Z_UNTER:Z_UNTER,Z_BIOM:Z_BIOM,zbio:zbio,istLand:istLand,unter:unter,ZK:ZK,zonen:zonen,zonenRegen:zonenRegen,zonenKlasse:zonenKlasse,zonenSpeicher:zonenSpeicher,waerme:waerme,zBreite:zBreite,anteile:anteile,punkt:punkt,neigung:neigung,klasse:klasse,KAN:KAN};
 WG.wasserFlach=function(on){if(on!=null)N7A5A0=!!on;return N7A5A0};WG.erdH=erdH;WG.spStufe=spStufe;WG.teichH=function(a,x,y){var X=new Int16Array(a.daten.buffer,ST_BYTES,AUS);return teichH(X,a.seed>>>0,a.cx,a.cy,x,y,true)};   // N7a5a0: Schalter für Tests
 if(typeof module!=='undefined'&&module.exports)module.exports=WG;else root.AT3WG=WG;

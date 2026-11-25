@@ -1182,7 +1182,7 @@ var BRUECKE_MAX=8;   // N7a5a3a: längste Brücke über den echten Fluss in Plan
 // Meer im Ortsquadrat der Maske (ohne Hangring)? Städte am Meer planen bis N7a5a3b wie vorher
 function maskeMeer(M){if(M._meer!=null)return M._meer;var N=M.N,a=MASKE_RAND,u,v;for(v=a;v<N-a;v++)for(u=a;u<N-a;u++)if((M.m[v*N+u]&3)===1)return M._meer=true;return M._meer=false}
 // N7a5a3b1: Anteil Meer im Ortsquadrat; Seite (0 Süd, 1 Nord, 2 Ost, 3 West) mit den meisten Meerfeldern vom Ortspunkt aus (Welt, ohne Spiegeln)
-var INSEL_AB=.7,KREUZ_MAX=3,MEER_VERSUCHE=4,HAFEN_WEIT=35;   // Inselstadt ab 70 % Meer; Stadt am Meer: höchstens 4 Plangrößen; Hafenstraße vom Tor bis zum Meer höchstens 35 Planfelder   // N7a5a3b1: mehr Meer als das im Ortsquadrat = Inselstadt, plant bis N7a5a3b0 wie vorher
+var INSEL_AB=.7,KREUZ_MAX=3,MEER_VERSUCHE=4,HAFEN_WEIT=35;   // Inselstadt ab 70 % Meer (seit N7a5a3b0 nur noch ohne freien Platz an der Küste); Stadt am Meer: höchstens 4 Plangrößen; Hafenstraße vom Tor bis zum Meer höchstens 35 Planfelder   // N7a5a3b1: mehr Meer als das im Ortsquadrat = Inselstadt, plant bis N7a5a3b0 wie vorher
 function meerAnteil(M){if(M._meerA!=null)return M._meerA;var N=M.N,a=MASKE_RAND,u,v,s=0,n=0;for(v=a;v<N-a;v++)for(u=a;u<N-a;u++){n++;if((M.m[v*N+u]&3)===1)s++}return M._meerA=n?s/n:0}
 // Echtes Meer: zusammenhängende Meerfelder, die den Rand der Maske berühren oder mindestens MEER_MIN Felder groß sind (kleine Meer-Tümpel zählen wie ein See)
 var MEER_MIN=1500;
