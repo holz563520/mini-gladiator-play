@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='4d543df1', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='d1d3af36', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var N7A5A0=!/[?&]n7a5a0=0/.test(location.search||'');   // N7a5a0 Wasser waagrecht (ufer.js im Bildkern)
@@ -62,7 +62,7 @@ function starten(o){
   // N7a5a2: Notausschalter der Wasserschritte (?n7a5a0/1/2=0, N7a5a2b: ?n7a5a2b=0) gehen an den Ortskern mit.
   // N7a2a: Ortskern (ortskern.js) = eigener Hintergrundkern für die Ortspläne, spricht über einen MessageChannel direkt mit dem Bildkern.
   // Fehlt er (kein Worker, Fehler), plant der Bildkern eingebettet in seinen Pausen (Regel 13). Notausschalter ?n7a2=0 (dann keine Ortsflächen), ?n7a2k=0 nur ohne eigenen Ortskern (Probe für Regel 13).
-  if(!/[?&]n7a2k?=0/.test(location.search)&&typeof MessageChannel!=='undefined'){try{okern=new Worker(BASIS+'ortskern.js?v='+V+['n7a5a0','n7a5a1','n7a5a2','n7a5a2b','n7a5a3a'].map(function(x){return new RegExp('[?&]'+x+'=0').test(location.search)?'&'+x+'=0':''}).join(''));var mc=new MessageChannel();
+  if(!/[?&]n7a2k?=0/.test(location.search)&&typeof MessageChannel!=='undefined'){try{okern=new Worker(BASIS+'ortskern.js?v='+V+['n7a5a0','n7a5a1','n7a5a2','n7a5a2b','n7a5a3a','n7a5a3b'].map(function(x){return new RegExp('[?&]'+x+'=0').test(location.search)?'&'+x+'=0':''}).join(''));var mc=new MessageChannel();
     okern.postMessage({art:'port',port:mc.port1},[mc.port1]);bk.postMessage({art:'ortskern',port:mc.port2},[mc.port2]);
     // N7a4a2: zweiter Kanal vom Ortskern zum Weltkern (Sperrkarten für die Wegsuche)
     if(kern&&kern.ortskern){var mw=new MessageChannel();okern.postMessage({art:'portWelt',port:mw.port1},[mw.port1]);kern.ortskern(mw.port2)}
