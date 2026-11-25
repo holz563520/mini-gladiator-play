@@ -9,6 +9,7 @@
 // nicht ganz, an der Naht überlappen sich darum zwei Bilder, beide zeigen dort dieselbe Welt.
 // Wiederverwendet: Biomfarben, Netzfarben und Linien der Startplatz-Wahl (startplatz.js, G4c), Biomregel und Glättung des Kartenstücks (weltgen.js punkt/neigung/klasse/herrscht,
 // W1a+), Eiskante (W1c), Ortspunkte und Straßenläufe (W1b), Palette AT3-64 mit heller/dunkler (at3-64.js).
+// N7a3c1: Orte in ⅟16–⅟512 als Mini-Plan aus dem echten Ortsplan (miniAn, vom Bildkern gesetzt), sonst Punkt wie bisher.
 // N4c1: Reiche (Knopf „Realms“): Grenzlinie in der dunkleren Reichsfarbe, jede achte Landstichprobe in der Reichsfarbe; auf dem Globus je Erdzelle.
 //    Kosten: eine Nachschau je Stichprobe in einer Tafel, nichts je Bildpunkt.
 (function(root){
@@ -106,9 +107,25 @@ function netz(G,A,seed,x0,y0,lod,n,F,px){var pal=F.pal,zn={n:0};
    for(k=0;k<L.length;k++){var l=L[k],c=pal[l.see?F_SEE:l.faehre?F_FAEHRE:l.kl>1?F_STRASSE:F_PFAD],r=l.kl>1&&!l.see&&lod<=6?2:1;
     for(v=1;v<l.x.length;v++)lin(l.x[v-1]+vx,l.y[v-1],l.x[v]+vx,l.y[v],c,r,!!(l.see||l.faehre))}}
   else{var cs=pal[wg&64?F_FAEHRE:(wg>>4&3)>1?F_STRASSE:F_PFAD];for(k=0;k<4;k++)if(wg>>k&1)lin(x*ZF+512,y*ZF+512,x*ZF+512+G.DX[k]*512,y*ZF+512+G.DY[k]*512,cs,1,!!(wg&64))}}
- // Orte als Quadrate mit dunklem Rand (Städte größer)
- for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){var a=A.ort[y*GW+um(x)]&15;if(!a)continue;var pp=G.ortPunkt(seed,A,um(x),y),gross=a===2||a===4,gr=lod<=6?(gross?7:5):lod<=9?(gross?5:3):(gross?3:2);
+ // Orte als Quadrate mit dunklem Rand (Städte größer); N7a3c1: in ⅟16–⅟512 mit Mini-Plan der Ort selbst, maßstabsgetreu (fehlt er noch: Punkt, Regel 20)
+ var MH=MINI&&lod<=MINI_BIS?MINI:null,nr=MH?ortNr(A):null;
+ for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){var zi=y*GW+um(x),a=A.ort[zi]&15;if(!a)continue;
+  if(MH){var kk=nr.get(zi),mp=kk!=null?MH.hole(kk):null;if(mp){miniMalen(mp,x0,y0,n,px,pal);continue}}
+  var pp=G.ortPunkt(seed,A,um(x),y),gross=a===2||a===4,gr=lod<=6?(gross?7:5):lod<=9?(gross?5:3):(gross?3:2);
   P2(pp[0]+(x-um(x))*ZF,pp[1],p0);if(gr>2)pkt(p0[0]-gr/2-1,p0[1]-gr/2-1,pal[F.dunkel],gr+2);pkt(p0[0]-gr/2,p0[1]-gr/2,pal[OFARBE[a]],gr)}}
+
+// N7a3c1 (Thomas 25.11.2026): Mini-Pläne der Orte (ortsbild.js mini) in den Fernstufen ⅟16–⅟512 (lod 4 bis MINI_BIS). Der Bildkern setzt MINI = {hole(k) → {x0, y0, W, m}
+// oder null (dann fragt er den Ortskern), lut[256] → Farbnummer der Palette}. Jeder Bildpunkt der Ortsraute nimmt das Planfeld unter seiner Mitte (ab ⅟128 fallen
+// mehrere Felder auf einen Bildpunkt: das mittlere zählt, keine Mittelung); 255 = Welt bleibt. Nur Bildpunkte der eigenen Raute (TAB), Kosten höchstens ein Bild.
+var MINI=null, MINI_BIS=9;
+function miniAn(o){MINI=o||null}
+function ortNr(A){if(A._ortNr)return A._ortNr;var M=new Map(),L=A.orte,n=A.kopf?A.kopf[0]:L.length;for(var k=0;k<n&&k<L.length;k++){var z=L[k]&0xffffff;if(!M.has(z))M.set(z,k)}return A._ortNr=M}
+function miniMalen(mp,x0,y0,n,px,pal){var W=mp.W,m=mp.m,lut=MINI.lut,dx=mp.x0-x0;dx-=Math.round(dx/WF)*WF;
+ var a0=dx/n,b0=(mp.y0-y0)/n,s=W/n,cx=[a0-b0,a0+s-b0,a0-b0-s,a0+s-b0-s],cy=[a0+b0,a0+s+b0,a0+b0+s,a0+s+b0+s];
+ var xa=Math.max(0,Math.floor(256+Math.min.apply(null,cx)*256)),xe=Math.min(IW-1,Math.ceil(256+Math.max.apply(null,cx)*256)),
+  ya=Math.max(0,Math.floor(Math.min.apply(null,cy)*128)),ye=Math.min(IH-1,Math.ceil(Math.max.apply(null,cy)*128));
+ for(var py=ya;py<=ye;py++){var Y=(py+.5)/128;for(var qx=xa;qx<=xe;qx++){var o=py*IW+qx;if(TAB[o]<0)continue;var X=(qx+.5-256)/256,a=(X+Y)/2,b=(Y-X)/2,
+   i=Math.floor((a-a0)*n),j=Math.floor((b-b0)*n);if(i<0||j<0||i>=W||j>=W)continue;var v=m[j*W+i];if(v!==255)px[o]=pal[lut[v]]}}}
 
 // ── Globus (Norden oben) ──
 // tex: Erdbild 600 × 300 (Farben), texD: dieselbe Erde dunkler (Rand der Kugel). W, H Bildschirm, R Kugelhalbmesser in Bildpunkten, lon0/lat0 Mitte (Bogenmaß), s Verkleinerung.
@@ -130,6 +147,6 @@ function dunkler(tex,F){var inv=new Map(),d=new Uint32Array(tex.length);for(var 
 // N4c1: Reiche auf dem Erdbild des Globus (600 × 300 Farben): Grenze dunkel, jede vierte Zelle in der Reichsfarbe
 function reicheErde(tex,RE,F){for(var i=0;i<GW*GH;i++){var r=RE.z[i];if(!r)continue;var x=i%GW,y=(i/GW)|0,e=RE.z[x+1<GW?i+1:i+1-GW],s=y+1<GH?RE.z[i+GW]:0,rc=RE.f[r-1];
   if((e&&e!==r)||(s&&s!==r))tex[i]=F.pal[F.du[rc]];else if(!(x&1)&&!(y&1))tex[i]=F.pal[rc]}return tex}
-var FB={reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
+var FB={miniAn:miniAn,MINI_BIS:MINI_BIS,ortNr:ortNr,reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
 if(typeof module!=='undefined'&&module.exports)module.exports=FB;else root.AT3FERN=FB;
 })(typeof self!=='undefined'?self:this);

@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='c6c8ce7a', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='f6794c07', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 var N7A5A0=!/[?&]n7a5a0=0/.test(location.search||'');   // N7a5a0 Wasser waagrecht (ufer.js im Bildkern)
@@ -87,6 +87,9 @@ function starten(o){
   if(d.art==='kunde'){var mn=32767,mx=0;for(var i=0;i<128;i+=2){if(d.mm[i]<mn)mn=d.mm[i];if(d.mm[i+1]>mx)mx=d.mm[i+1]}
    if(ab(d.cx,cam.x>>6)>HALB||Math.abs(d.cy-(cam.y>>6))>HALB)return;
    bekannt.set(d.cx*8192+d.cy,{cx:d.cx,cy:d.cy,mm:d.mm,hg:d.hg,mn:mn,mx:mx});M.stuecke=bekannt.size;M.stueckUs=d.stUs;fehlt.clear();plan()}
+  else if(d.art==='fernNeu'){if(d.gen!==gen)return;var FL=d.flaechen||[];M.minis=d.minis;M.miniB=d.miniB;M.miniMs=d.miniMs;M.miniRaus=d.miniRaus;M.fernNeu=(M.fernNeu|0)+FL.length;   // N7a3c1: Mini-Pläne da → Fernbilder ⅟16–⅟512 dort neu holen (altes bleibt stehen)
+   bilder.forEach(function(b,key){if(b.lod<STUFEN||b.lod>9)return;var n=TEIL<<b.lod;for(var i=0;i<FL.length;i++){var f=FL[i],dx=modu(f[0]-b.x0,WX);
+    if((dx<n||dx+f[2]>WX)&&f[1]<b.y0+n&&f[1]+f[2]>b.y0){altB.add(key);break}}});plan()}
   else if(d.art==='ortNeu'){var S=new Set(d.stuecke||[]);S.forEach(function(k){stV.set(k,++BV)});   // N7a2a: Ortsfläche eingeebnet (oder Park gewinnt): Bilder dieser Stücke neu holen
    bilder.forEach(function(b,key){if(b.lod<STUFEN&&S.has(stk(b.x0,b.y0)))altB.add(key)});if(d.karteiB!=null){M.kartei=d.kartei;M.karteiB=d.karteiB;M.ortEMs=d.eMs}if(d.posten!=null){M.posten=d.posten;M.postenListen=d.postenListen;M.postenMs=d.postenMs}if(d.hausB!=null){M.haeuser=d.haeuser;M.hausB=d.hausB;M.hausMs=d.hausMs;M.listeMs=d.listeMs;M.hausPausen=d.hausPausen;M.listen=d.listen;M.halbN=d.halbN;M.halbB=d.halbB;M.halbMs=d.halbMs;M.fernN=d.fernN;M.fernB=d.fernB;M.fernMs=d.fernMs}if(d.name){M.orte=(M.orte||0)+1;M.ortMs=d.ms;if(d.ms>(M.ortMaxMs||0))M.ortMaxMs=d.ms;if(d.ersatz)M.ortErsatz=(M.ortErsatz||0)+1}plan()}
   else if(d.art==='start'){if(d.platz&&!hatKam){cam.x=umX(d.platz.x+.5);cam.y=halteY(d.platz.y+.5);hatKam=true;M.startOrt=d.platz.ort;blick();plan()}}

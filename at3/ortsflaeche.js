@@ -272,6 +272,6 @@ function halbAuftrag(s){var W=s.w,H=s.h,P=s.px,w=(W+1)>>1,h=(H+1)>>1,px=new Uint
    if(2*t>n||!m){px[y*w+x]=255;continue}var best=v[0],bn=0;for(var a=0;a<m;a++){var z=0;for(var b=0;b<m;b++)if(v[b]===v[a])z++;if(z>bn){bn=z;best=v[a]}}px[y*w+x]=best}}
  return{weiter:function(aus){var y0=y;for(;y<h;y++){if(aus&&y>y0&&((y-y0)&7)===0&&aus())return false;zeile(y)}return true},ergebnis:function(){return{w:w,h:h,ax:s.ax>>1,ay:s.ay>>1,px:px}}}}
 function halb(s){var A=halbAuftrag(s);A.weiter(null);return A.ergebnis()}
-var OF={RAMPE:RAMPE,HALB_GR:HALB_GR,VIERTEL_GR:VIERTEL_GR,VIERTEL_GR_ALT:VIERTEL_GR_ALT,halb:halb,halbAuftrag:halbAuftrag,RAMPE_P:RAMPE_P,HALTEN_P:HALTEN_P,LISTEN_P:LISTEN_P,PWEIT:PWEIT,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,neu:neu};
+var OF={RAMPE:RAMPE,HALB_GR:HALB_GR,VIERTEL_GR:VIERTEL_GR,VIERTEL_GR_ALT:VIERTEL_GR_ALT,halb:halb,halbAuftrag:halbAuftrag,RAMPE_P:RAMPE_P,HALTEN_P:HALTEN_P,LISTEN_P:LISTEN_P,PWEIT:PWEIT,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,FARBE_RGB:FARBE_RGB,neu:neu};
 if(typeof module!=='undefined'&&module.exports)module.exports=OF;else root.AT3ORTSFLAECHE=OF;
 })(typeof self!=='undefined'?self:this);

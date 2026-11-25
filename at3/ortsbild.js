@@ -97,6 +97,16 @@ function wasserSuche(WG,A,px,py,hole){var ST=64,F=WG.FELDER,WY=WG.GH*WG.ZF,SX=WG
   for(var q=0;q<F;q++){var bb=B[q];if(!(bb<2||bb===10||bb===11))continue;var dx=c*ST+(q&63)-px,dy=cy*ST+(q>>6)-py,d=dx*dx+dy*dy;if(d<bd){bd=d;bx=dx;by=dy}}}}
  return{seite:bd<1e18?seiteZu(bx,by):null,weit:bd<1e18?Math.round(Math.sqrt(bd)):null,stuecke:n}}
 // Feld der Maske zum Planfeld (i, j) eines Plans mit Seite W (Mitte auf dem Ortspunkt wie lage()); außerhalb der Maske −1
+// N7a3c1 (Thomas 25.11.2026): Mini-Plan für die Fernstufen ⅟16–⅟512: je Planfeld ein Byte. 0–63 = Farbnummer AT3-64 (Dach nach Bauweise: Mittelton der Dachreihe,
+// dachR des Gebäudes oder sonst dachReihe seiner Bauklasse aus baukasten.js), 128 + c = Bodencode c (Index in MINI_CODES, Farbe wie das Ersatzbild in ⅛),
+// 255 = hier zeigt die Welt (Weltwasser, Weltufer, Brücke, Steg in Plänen mit P.weltwasser, wie ortsflaeche.js). Offene Bauten (Hof, Forum, Becken …) behalten den Boden.
+var MINI_CODES='gsomfwepxqyuh', MINI_WELT={n:1,v:1,r:1,y:1}, MINI_OFFEN={hof:1,forum:1,becken:1,bruecke:1,steg:1,pferch:1,well:1,ehrensaeule:1};
+function mini(P,BK,S64){var W=P.W,m=new Uint8Array(W*W),ww=!!P.weltwasser,i,j;
+ for(i=0;i<W*W;i++){var ch=P.zellen.charAt(i),c=MINI_CODES.indexOf(ch);m[i]=ww&&MINI_WELT[ch]?255:128+(c<0?0:c)}
+ (P.bauten||[]).forEach(function(b){if(!(b.w>0&&b.h>0)||MINI_OFFEN[b.rolle])return;var r=b.dachR!=null?b.dachR:null;
+  if(r==null){var k=BK&&BK.klasse?BK.klasse(b.klasse):null;r=k?k.dachReihe:0}if(!S64.REIHEN[r])r=0;var f=S64.START[r]+Math.round((S64.REIHEN[r].n-1)*.55);
+  for(j=Math.max(0,b.j);j<Math.min(W,b.j+b.h);j++)for(i=Math.max(0,b.i);i<Math.min(W,b.i+b.w);i++)m[j*W+i]=f});
+ return m}
 function maskeBei(M,W,i,j){var o=(M.N>>1)-(W>>1),u=i+o,v=j+o;return u<0||v<0||u>=M.N||v>=M.N?-1:M.m[v*M.N+u]}
-var M={AUSWEICH:AUSWEICH,ZONE_BIOM:ZONE_BIOM,biomVon:biomVon,planSeed:planSeed,religion:religion,wahl:wahl,planen:planen,punkt:punkt,lage:lage,toreAus:toreAus,ausgaenge:ausgaenge,posten:posten,postenLage:postenLage,MASKE_S:MASKE_S,MASKE_R:MASKE_R,M_MEER:M_MEER,M_FLUSS:M_FLUSS,M_SEE:M_SEE,M_STRAND:M_STRAND,maskeSeite:maskeSeite,wasserMaske:wasserMaske,wasserMaskeAm:wasserMaskeAm,maskeWasserSeite:maskeWasserSeite,wasserSuche:wasserSuche,seiteZu:seiteZu,maskeBei:maskeBei};
+var M={mini:mini,MINI_CODES:MINI_CODES,AUSWEICH:AUSWEICH,ZONE_BIOM:ZONE_BIOM,biomVon:biomVon,planSeed:planSeed,religion:religion,wahl:wahl,planen:planen,punkt:punkt,lage:lage,toreAus:toreAus,ausgaenge:ausgaenge,posten:posten,postenLage:postenLage,MASKE_S:MASKE_S,MASKE_R:MASKE_R,M_MEER:M_MEER,M_FLUSS:M_FLUSS,M_SEE:M_SEE,M_STRAND:M_STRAND,maskeSeite:maskeSeite,wasserMaske:wasserMaske,wasserMaskeAm:wasserMaskeAm,maskeWasserSeite:maskeWasserSeite,wasserSuche:wasserSuche,seiteZu:seiteZu,maskeBei:maskeBei};
 if(typeof module!=='undefined'&&module.exports)module.exports=M;else G.AT3ORTSBILD=M})(typeof self!=='undefined'?self:this);

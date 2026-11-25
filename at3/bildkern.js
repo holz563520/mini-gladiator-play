@@ -24,6 +24,8 @@
 // N7a2c: Außenposten und Gehöfte wie kleine Orte (Postenlisten je Ort vom Ortskern, Hang 8 Felder, eigene Grenzen), Startplatz meidet auch Posten; Notausschalter ?n7a2c=0.
 // N7a3a: Stufe ½ mit echten verkleinerten Böden, Häusern, Mauern, Dingen (ortsflaeche.js halb, höchstens 1 MB); Notausschalter ?n7a3=0.
 // N7a3b: auch ¼ und ⅛ (¼ aus ½, ⅛ aus ¼, zusammen höchstens 0,5 MB); Notausschalter ?n7a3b=0.
+// N7a3c1: Mini-Pläne der Orte für die Fernstufen ⅟16–⅟512 (ortsbild.js mini, vom Ortskern mit jeder Planantwort oder auf „mini“), höchstens MINI_GR (4 MB) gemerkt,
+// fehlt einer, steht der Punkt und der Ort wird angefragt; Neues gebündelt (etwa alle 0,3 s) als „fernNeu“ mit den Ortsflächen. Notausschalter ?n7a3c1=0.
 // N7a2b3: Gebäudebilder in Abschnitten (stadtbild.js bauAuftrag, größter Schritt ≤ 8 ms gedrosselt), Messfeld in der Weltkarte mit ?mess=1; Notausschalter ?n7a2b3=0.
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
@@ -74,7 +76,20 @@ function haeuser(){HAUSL=false;if(!OFL||!OFL.schritt)return;var mehr=OFL.schritt
  if(OFL.fertigeZahl()&&t-HAUSF>=BUENDEL){HAUSF=t;var L=OFL.fertige(),h=OFL.haeuser(),h2=OFL.halbStand(),h4=OFL.viertelStand();self.postMessage({art:'ortNeu',gen:gen,stuecke:L,haeuser:h.bilder,hausB:h.bytes,hausMs:h.maxMs,listeMs:h.listeMaxMs,hausPausen:h.pausen,listen:h.listen,halbN:h2.bilder,halbB:h2.bytes,halbMs:h2.maxMs,fernN:h4.bilder,fernB:h4.bytes,fernMs:h4.maxMs})}
  if(mehr||OFL.fertigeZahl()){HAUSL=true;setTimeout(haeuser,mehr?0:Math.max(0,BUENDEL-(t-HAUSF)))}}
 function haeuserAn(){if(!HAUSL&&OFL&&OFL.arbeitOffen&&(OFL.arbeitOffen()||OFL.fertigeZahl())){HAUSL=true;setTimeout(haeuser,0)}}
-function vomOrtskern(m){if(m.gen!==gen||!OFL)return;
+// N7a3c1 (Thomas 25.11.2026): Mini-Pläne gemerkt (älteste fallen heraus), Anfrage je Ort nur einmal, Farbtafel je Palette (Böden wie das Ersatzbild in ⅛)
+var N7A3C1=!/[?&]n7a3c1=0/.test(self.location.search),MINI_GR=4194304,MINI=new Map(),MINIB=0,MINIF=new Set(),MININ=[],MINIT=0,MINILUT=null,MINIST={n:0,ms:0,maxMs:0,raus:0};
+function miniLut(){if(MINILUT&&MINILUT.F===F)return MINILUT;var O=self.AT3ORTSFLAECHE;if(!O||!F)return null;var t=new Uint8Array(256);
+ for(var v=0;v<64;v++)t[v]=v;for(var c=0;c<O.CODES.length;c++)t[128+c]=naechste(F.pal,O.FARBE_RGB[c]);t.F=F;return MINILUT=t}
+function naechste(p,c){var b=0,bd=1e9;for(var i=0;i<64;i++){var v=p[i],dr=(v&255)-c[0],dg=((v>>8)&255)-c[1],db=((v>>16)&255)-c[2],d=dr*dr*3+dg*dg*6+db*db;if(d<bd){bd=d;b=i}}return b}
+function miniHole(k){var e=MINI.get(k);if(e){MINI.delete(k);MINI.set(k,e);return e}if(!MINIF.has(k)){MINIF.add(k);zumOrtskern({art:'mini',gen:gen,k:k})}return null}
+function miniDa(k,o){if(!o||!o.m||!o.W)return;MINIF.delete(k);var e=MINI.get(k);if(e){MINIB-=e.m.length;MINI.delete(k)}
+ MINI.set(k,{x0:o.x0,y0:o.y0,W:o.W,m:o.m});MINIB+=o.m.length;while(MINIB>MINI_GR&&MINI.size>1){var k0=MINI.keys().next().value,e0=MINI.get(k0);MINIB-=e0.m.length;MINI.delete(k0);MINIST.raus++}
+ if(o.ms!=null){MINIST.n++;MINIST.ms=o.ms;if(o.ms>MINIST.maxMs)MINIST.maxMs=o.ms}
+ if(e)return;MININ.push([o.x0,o.y0,o.W]);if(!MINIT)MINIT=setTimeout(miniMelden,BUENDEL)}
+function miniMelden(){MINIT=0;if(!MININ.length)return;var L=MININ;MININ=[];self.postMessage({art:'fernNeu',gen:gen,flaechen:L,minis:MINI.size,miniB:MINIB,miniMs:MINIST.maxMs,miniRaus:MINIST.raus})}
+function miniAn(){if(!N7A3C1||!A||!ofl()){FB.miniAn(null);return}var lut=miniLut();FB.miniAn(lut?{hole:miniHole,lut:lut}:null)}
+function miniLeeren(){MINI.clear();MINIB=0;MINIF.clear();MININ=[];if(MINIT){clearTimeout(MINIT);MINIT=0}}
+function vomOrtskern(m){if(m.gen!==gen)return;if(m.art==='mini'){if(m.fehler)MINIF.delete(m.k);else if(N7A3C1)miniDa(m.k,m);return}if(N7A3C1&&m.art==='plan'&&m.mini)miniDa(m.k,m.mini);if(!OFL)return;
  if(m.art==='posten'){OFL.postenListe(m);ortsBedarf();return}   // N7a2c: Postenliste da → berührende Posten aufnehmen
  if(m.art!=='plan')return;echteBoeden();if(m.ms!=null)ORTMS.push(m.ms);var L=OFL.aufnehmen(m,bauHat);if(!L.length)return;
  eingeebnet(L);
@@ -154,7 +169,7 @@ function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  return land<0?{x:BB.WX>>1,y:BB.WY>>1,ort:0}:{x:(land%G.GW)*G.ZF+(G.ZF>>1),y:((land/G.GW)|0)*G.ZF+(G.ZF>>1),ort:0}}
 self.onmessage=function(e){var d=e.data;
  if(d.art==='init'){F={pal:d.pal,du:d.du,he:d.he,dunkel:dunkelste(d.pal)};self.postMessage({art:'arten',liste:NAT.ARTEN,bau:BAUB.ARTEN})}
- else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
+ else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;miniLeeren();WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
  else if(d.art==='blick'){kx=d.kx;ky=d.ky;st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});ortsBedarf();weiter()}
  else if(d.art==='ortskern'){OKP=d.port;OKP.onmessage=function(e){vomOrtskern(e.data)}}
  else if(d.art==='ortskernWeg'){OKP=null;if(OFL)OFL.vergessenAlle();ortsBedarf()}   // Ortskern ausgefallen: ab jetzt eingebettet   // N7a2a: eigener Hintergrundkern für die Ortspläne
@@ -162,7 +177,7 @@ self.onmessage=function(e){var d=e.data;
  else if(d.art==='bau'){if(d.leer)BAU.clear();(d.stuecke||[]).forEach(function(e){if(e[1])BAU.set(e[0],e[1]);else BAU.delete(e[0])})
   if(OFL&&OFL.orte.size){var neuS=[];(d.stuecke||[]).forEach(function(e){var k=e[0];if(bauHat(k)&&OFL.bauGeaendert(k)){var b=st.get(k);if(b){st.delete(k);if(lager.length<8)lager.push(b)}   // N7a2a: Park gewinnt
      var cx=(k/8192)|0,cy=k%8192;neuS.push(k,um(cx-1)*8192+cy);if(cy>0)neuS.push(cx*8192+cy-1)}});if(neuS.length){self.postMessage({art:'ortNeu',gen:gen,stuecke:neuS});weiter()}}}           // G5b: Bau-Kartenstücke (dünn)
- else if(d.art==='bild'){var t=performance.now(),r=d.gen!==gen||!F?null:d.lod>=BB.STUFEN?(A?FB.kachel(G,A,seed,d.x0,d.y0,d.lod,F,d.lod>=FB.U_AB?ueb():null,reiche()):null):BB.bild(hole,d.x0,d.y0,d.lod,F,NBILD?{N:NAT,seed:seed,BILD:NBILD}:null,BA(d.offen),OFL?OFL.fuerBild(d.x0,d.y0,BB.TEIL<<d.lod,d.lod,F):null),m={art:'bild',gen:d.gen,nv:d.nv,key:d.key,x0:d.x0,y0:d.y0,lod:d.lod};
+ else if(d.art==='bild'){var t=performance.now();if(d.lod>=BB.STUFEN&&d.lod<=FB.MINI_BIS&&A&&F)miniAn();var r=d.gen!==gen||!F?null:d.lod>=BB.STUFEN?(A?FB.kachel(G,A,seed,d.x0,d.y0,d.lod,F,d.lod>=FB.U_AB?ueb():null,reiche()):null):BB.bild(hole,d.x0,d.y0,d.lod,F,NBILD?{N:NAT,seed:seed,BILD:NBILD}:null,BA(d.offen),OFL?OFL.fuerBild(d.x0,d.y0,BB.TEIL<<d.lod,d.lod,F):null),m={art:'bild',gen:d.gen,nv:d.nv,key:d.key,x0:d.x0,y0:d.y0,lod:d.lod};
   if(!r){m.fehlt=true;self.postMessage(m);return}
   m.w=r.w;m.h=r.h;m.ox=r.ox;m.oy=r.oy;m.natur=r.natur;m.bau=r.bau||0;m.ort=r.ort||0;m.ortBoden=r.ortBoden||0;m.us=(performance.now()-t)*1000;nachladen();haeuserAn();
   if(BMP)createImageBitmap(new ImageData(new Uint8ClampedArray(r.px.buffer),r.w,r.h)).then(function(b){m.bmp=b;self.postMessage(m,[b])},function(){BMP=false;m.buf=r.px;self.postMessage(m,[r.px.buffer])});

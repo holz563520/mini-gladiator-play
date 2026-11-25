@@ -7,6 +7,7 @@
 // stadtbild.js, stadtliste.js, landwirtschaft.js, orte.js, aussenposten.js, Höhe des Ortspunkts aus weltgen.js (ein Kartenstück).
 // N7a2c (Thomas 24.11.2026): Anfrage „posten“ mit Ortsnummer → alle Außenposten und Gehöfte des Orts auf einmal (ortsbild.js posten/postenLage,
 // stadtbild.js postenPlan, je Posten die Höhe am Postenpunkt). Klein: höchstens 8 Posten je Ort, Plan höchstens 18 × 18 Felder, im Mittel 0,2 ms.
+// N7a3c1 (Thomas 25.11.2026): Mini-Plan für die Fernstufen (ortsbild.js mini) in jeder Planantwort, Anfrage „mini“ für ferne Orte ganz hinten; ?n7a3c1=0 aus.
 // N7a4a2 (Thomas 24.11.2026): Anfrage „sperre“ des Weltkerns (eigener Kanal portWelt, im Weltkern eingebettet ohne eigenen Ortskern): Sperrkarten
 // (ortssperre.js) aller Orte und Posten im Fenster einer Wegsuche, höchstens 2 MB gemerkt. Sperre-Anfragen kommen vor alle anderen (die Welt wartet darauf).
 (function(){
@@ -40,7 +41,12 @@ function planRoh(k){var p=PLAN.get(k);if(p){PLAN.delete(k);PLAN.set(k,p);return 
  for(var mz=0;mz<2&&r.P.weltwasser&&w.opt.welt.wasser>0&&r.P.W+2*OB.MASKE_R>w.opt.welt.N;mz++){w.opt.welt=maske(k,w,r.P.W+2*OB.MASKE_R+32);r=OB.planen(SB,w.opt);MST.neu=(MST.neu|0)+1}p={w:w,r:r,L:OB.lage(G,seed,A,k,r.P)};
  PLAN.set(k,p);while(PLAN.size>PLM)PLAN.delete(PLAN.keys().next().value);return p}
 function planen(k){var t=performance.now(),q=planRoh(k),w=q.w,r=q.r,L=q.L;
- return{k:k,g:w.roh.g,name:w.name,P:r.P,lage:L,h0:hoehe(L.punkt[0],L.punkt[1]),ersatz:r.ersatz||null,ausweich:r.ausweich||0,ms:performance.now()-t}}
+ var m={k:k,g:w.roh.g,name:w.name,P:r.P,lage:L,h0:hoehe(L.punkt[0],L.punkt[1]),ersatz:r.ersatz||null,ausweich:r.ausweich||0,ms:performance.now()-t};if(N7A3C1)m.mini=miniAus(q);return m}
+// N7a3c1 (Thomas 25.11.2026): Mini-Plan der Fernstufen (ortsbild.js mini, W² Byte) aus dem Plan; jede Planantwort bringt ihn mit, ferne Orte fragen mit „mini“
+// (Warteschlange hinter Sperre, Posten und Plan; gemerkter Plan PLAN, sonst planen). Notausschalter ?n7a3c1=0.
+var N7A3C1=!/[?&]n7a3c1=0/.test(Q);
+function miniAus(q){var P=q.r.P;return{x0:q.L.x0,y0:q.L.y0,W:P.W,m:OB.mini(P,self.AT3_BAUKASTEN,self.AT3_64)}}
+function miniPlanen(k){var t=performance.now(),q=planRoh(k),o=miniAus(q);o.k=k;o.ms=performance.now()-t;return o}
 // N7a2c: Außenposten und Gehöfte des Orts k; Kennung je Posten = PK + k * 16 + n (getrennt von den Ortsnummern), scheitert ein Posten, fällt nur er weg
 var PK=1048576;
 // N7a5a2b (Thomas 25.11.2026): Wassermaske je Posten (Seite POSTEN_N um den Postenpunkt, deckt Plan 18 + Hangring 8 je Seite), nasse Posten mit der Wasserseite aus
@@ -95,6 +101,8 @@ function weiter(){if(laeuft||!schlange.length)return;laeuft=true;setTimeout(func
  if(a.s){Promise.all([daten(),kol()]).then(function(r){var m;try{var t=performance.now(),L=sperre(a.cx0,a.cy0,r[1]);m={art:'sperre',gen:a.gen,id:a.id,liste:L,ms:performance.now()-t}}
    catch(e){m={art:'sperre',gen:a.gen,id:a.id,fehler:String(e&&e.message||e)}}antwort(m);weiter()},
   function(e){antwort({art:'sperre',gen:a.gen,id:a.id,fehler:'daten: '+(e&&e.message||e)});weiter()});return}   // N7a4a2
+ if(a.mini){daten().then(function(){var m;try{m=miniPlanen(a.k)}catch(e){m={k:a.k,fehler:String(e&&e.message||e)}}m.art='mini';m.gen=a.gen;antwort(m);weiter()},
+  function(e){antwort({art:'mini',gen:a.gen,k:a.k,fehler:'daten: '+(e&&e.message||e)});weiter()});return}   // N7a3c1
  var p=a.k<0,k=p?-a.k-1:a.k;   // N7a2c: negative Nummer = Posten des Orts
  daten().then(function(){var m;try{m=p?postenPlanen(k):planen(k)}catch(e){m={k:k,fehler:String(e&&e.message||e)}}m.art=p?'posten':'plan';m.gen=a.gen;antwort(m);weiter()},
   function(e){antwort({art:p?'posten':'plan',gen:a.gen,k:k,fehler:'daten: '+(e&&e.message||e)});weiter()})},0)}
@@ -106,9 +114,10 @@ function nachricht(d){
   for(var s0=0;s0<schlange.length;s0++)if(schlange[s0].s&&schlange[s0].id===d.id)return;
   var n0=0;while(n0<schlange.length&&schlange[n0].s)n0++;schlange.splice(n0,0,{s:true,id:d.id,cx0:d.cx0,cy0:d.cy0,gen:d.gen});weiter()}   // vor Posten und Ortspläne: die Welt wartet darauf
  else if(d.art==='portWelt'){portW=d.port;if(portW)portW.onmessage=function(e){nachricht(e.data)}}
- else if(d.art==='plan'||d.art==='posten'){if(d.gen!==gen)return;var q=d.art==='posten'?-d.k-1:d.k;for(var i=0;i<schlange.length;i++)if(schlange[i].k===q)return;if(q<0)schlange.unshift({k:q,gen:d.gen});else schlange.push({k:q,gen:d.gen});weiter()}   // N7a2c: Posten (winzig) vor die Ortspläne
- else if(d.art==='vergiss'){var s=new Set(d.liste||[]);schlange=schlange.filter(function(a){return !s.has(a.k)})}
+ else if(d.art==='plan'||d.art==='posten'){if(d.gen!==gen)return;var q=d.art==='posten'?-d.k-1:d.k;for(var i=0;i<schlange.length;i++)if(schlange[i].k===q)return;if(q<0)schlange.unshift({k:q,gen:d.gen});else{var n1=0;while(n1<schlange.length&&!schlange[n1].mini)n1++;schlange.splice(n1,0,{k:q,gen:d.gen})}weiter()}   // N7a2c: Posten (winzig) vor die Ortspläne
+ else if(d.art==='mini'){if(d.gen!==gen||!N7A3C1)return;for(var i2=0;i2<schlange.length;i2++)if(schlange[i2].mini&&schlange[i2].k===d.k)return;schlange.push({k:d.k,gen:d.gen,mini:true});weiter()}   // N7a3c1: ganz hinten
+ else if(d.art==='vergiss'){var s=new Set(d.liste||[]);schlange=schlange.filter(function(a){return a.mini||!s.has(a.k)})}
  else if(d.art==='port'){port=d.port;port.onmessage=function(e){nachricht(e.data)}}}
-self.AT3ORTSKERN={nachricht:nachricht,planRoh:planRoh,planen:planen,postenPlanen:postenPlanen,postenOpt:postenOpt,PK:PK,daten:daten,sperre:sperre,kol:kol,stand:function(){return{karten:SP.size,bytes:SPB,ms:SPST.ms,maxMs:SPST.maxMs,gebaut:SPST.karten,anfragen:SPST.anfragen,masken:MST.n,maskeMs:MST.ms,maskeMaxMs:MST.maxMs,maskeStuecke:MST.stuecke,maskeBytes:MST.bytes,postenMasken:PMST.n,postenMaskeMs:PMST.ms,postenMaskeMaxMs:PMST.maxMs,postenSuchen:PMST.suchen,postenStuecke:PMST.stuecke}}};
+self.AT3ORTSKERN={nachricht:nachricht,planRoh:planRoh,planen:planen,miniPlanen:miniPlanen,postenPlanen:postenPlanen,postenOpt:postenOpt,PK:PK,daten:daten,sperre:sperre,kol:kol,stand:function(){return{karten:SP.size,bytes:SPB,ms:SPST.ms,maxMs:SPST.maxMs,gebaut:SPST.karten,anfragen:SPST.anfragen,masken:MST.n,maskeMs:MST.ms,maskeMaxMs:MST.maxMs,maskeStuecke:MST.stuecke,maskeBytes:MST.bytes,postenMasken:PMST.n,postenMaskeMs:PMST.ms,postenMaskeMaxMs:PMST.maxMs,postenSuchen:PMST.suchen,postenStuecke:PMST.stuecke}}};
 if(!eingebettet)self.onmessage=function(e){nachricht(e.data)};
 })();
