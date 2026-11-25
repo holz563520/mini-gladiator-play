@@ -43,8 +43,19 @@ function planen(k){var t=performance.now(),q=planRoh(k),w=q.w,r=q.r,L=q.L;
  return{k:k,g:w.roh.g,name:w.name,P:r.P,lage:L,h0:hoehe(L.punkt[0],L.punkt[1]),ersatz:r.ersatz||null,ausweich:r.ausweich||0,ms:performance.now()-t}}
 // N7a2c: Außenposten und Gehöfte des Orts k; Kennung je Posten = PK + k * 16 + n (getrennt von den Ortsnummern), scheitert ein Posten, fällt nur er weg
 var PK=1048576;
+// N7a5a2b (Thomas 25.11.2026): Wassermaske je Posten (Seite POSTEN_N um den Postenpunkt, deckt Plan 18 + Hangring 8 je Seite), nasse Posten mit der Wasserseite aus
+// der Maske bzw. der Suche bis rund ±96 Felder (ortsbild.js wasserSuche). Kartenstücke dafür kurz gemerkt (höchstens STM), Höhe am Postenpunkt aus demselben Merker.
+// Notausschalter ?n7a5a2b=0 (Posten wie vorher). Gleiches Ergebnis für Bild und Sperrkarte (beide über postenOpt).
+var N7A5A2B=!/[?&]n7a5a2b=0/.test(Q)&&N7A5A2, POSTEN_N=40, STM=12, STK=new Map(), PNASS={fisher:1,'sea-fishery':1,'reed-cutter':1,'peat-cut':1,'salt-pan':1,'gold-wash':1},
+ PMST={n:0,ms:0,maxMs:0,suchen:0,stuecke:0};
+function stueck(cx,cy){var key=cx*8192+cy,b=STK.get(key);if(b){STK.delete(key);STK.set(key,b);return b}b=G.ausschnitt(A,cx,cy,new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:cx,cy:cy,daten:b});
+ PMST.stuecke++;STK.set(key,b);while(STK.size>STM)STK.delete(STK.keys().next().value);return b}
+function hoeheS(x,y){var b=stueck(x>>6,y>>6);return new Uint16Array(b.buffer,b.byteOffset,G.FELDER)[((y&63)<<6)|(x&63)]}
+function postenOpt(q){if(!N7A5A2B)return q.opt;var t=performance.now(),x=q.p.x,y=q.p.y,M=OB.wasserMaskeAm(G,seed,A,x,y,POSTEN_N,hoeheS(x,y),null,stueck),o=Object.assign({},q.opt,{welt:M});
+ if(PNASS[q.opt.art]){var se=M.wasser?OB.maskeWasserSeite(M):null;if(!se){var su=OB.wasserSuche(G,A,x,y,stueck);PMST.suchen++;se=su.seite}if(se)o.wasser=se}
+ var d=performance.now()-t;PMST.n++;PMST.ms=d;if(d>PMST.maxMs)PMST.maxMs=d;return o}
 function postenPlanen(k){var t=performance.now(),w=OB.wahl(seed,A,k,D,ON),L=OB.posten(G,seed,A,k,D,AP,w),r=[];
- L.forEach(function(q,n){try{var P=SB.postenPlan(q.opt),La=OB.postenLage(G,q.p,P);r.push({k:PK+k*16+n,ort:k,art:q.opt.art,P:P,lage:La,h0:hoehe(La.punkt[0],La.punkt[1])})}catch(x){}});
+ L.forEach(function(q,n){try{var P=SB.postenPlan(postenOpt(q)),La=OB.postenLage(G,q.p,P);r.push({k:PK+k*16+n,ort:k,art:q.opt.art,P:P,lage:La,h0:hoehe(La.punkt[0],La.punkt[1])})}catch(x){}});
  return{k:k,liste:r,ms:performance.now()-t}}
 function antwort(m){if(m.art==='sperre'){if(portW)portW.postMessage(m);else if(self.AT3_ORTSKERN_ANTWORT)self.AT3_ORTSKERN_ANTWORT(m);return}   // N7a4a2: Sperrkarten an den Weltkern
  if(port)port.postMessage(m);else if(self.AT3_ORTSKERN_ANTWORT)self.AT3_ORTSKERN_ANTWORT(m)}
@@ -75,7 +86,7 @@ function sperre(cx0,cy0,KOL){var fx0=cx0*ST,fy0=cy0*ST,fn=FEN*ST,mx=fx0+(fn>>1),
  for(zy=zy0;zy<=zy1;zy++)for(zx=zx0;zx<=zx1;zx++){var X2=((zx%G.GW)+G.GW)%G.GW,z2=zy*G.GW+X2;if(!(A.ort[z2]&15))continue;var k2=O.ortNr(A,z2);if(k2==null)continue;
   var p2=G.ortPunkt(seed,A,X2,zy);if(Math.abs(ab(p2[0]-mx))>PWEIT+(fn>>1)||Math.abs(p2[1]-my)>PWEIT+(fn>>1))continue;
   postenVon(k2).forEach(function(q,n){if(Math.abs(ab(q.p.x-mx))>PMAX+2+RAMPE_P+(fn>>1)||Math.abs(q.p.y-my)>PMAX+2+RAMPE_P+(fn>>1))return;
-   var e2;try{e2=karte(PK+k2*16+n,function(){var P=SB.postenPlan(q.opt),La=OB.postenLage(G,q.p,P);return{x0:La.x0,y0:La.y0,W:P.W,m:OS.maske(P,KOL,q.opt),h0:hoehe(La.punkt[0],La.punkt[1]),R:RAMPE_P}})}catch(x){return}   // scheitert ein Posten, fällt nur er weg (wie postenPlanen)
+   var e2;try{e2=karte(PK+k2*16+n,function(){var o=postenOpt(q),P=SB.postenPlan(o),La=OB.postenLage(G,q.p,P);return{x0:La.x0,y0:La.y0,W:P.W,m:OS.maske(P,KOL,o),h0:hoehe(La.punkt[0],La.punkt[1]),R:RAMPE_P,ww:P.weltwasser?1:0,sk:P.senke||null}})}catch(x){return}   // scheitert ein Posten, fällt nur er weg (wie postenPlanen)
    if(beruehrt(e2.x0-e2.R,e2.y0-e2.R,e2.W+2*e2.R,fx0,fy0,fn))R.push(e2)})}
  R.sort(function(a,b){return a.k-b.k});return R}
 // Eine Anfrage nach der anderen; zwischen zwei Plänen kommen neue Nachrichten (Vergessen, neue Welt) dran
@@ -89,7 +100,7 @@ function weiter(){if(laeuft||!schlange.length)return;laeuft=true;setTimeout(func
   function(e){antwort({art:p?'posten':'plan',gen:a.gen,k:k,fehler:'daten: '+(e&&e.message||e)});weiter()})},0)}
 function nachricht(d){
  if(d.art==='welt'){if(d.gen===gen&&A&&(d.seed>>>0)===seed)return;   // N7a4a2: dieselbe Welt von Karte und Weltkern nur einmal
-  gen=d.gen;seed=d.seed>>>0;A=d.ans||G.ansicht(d.buf.buffer);schlange.length=0;PLAN.clear();SP.clear();SPB=0;PPT.clear();daten();
+  gen=d.gen;seed=d.seed>>>0;A=d.ans||G.ansicht(d.buf.buffer);schlange.length=0;PLAN.clear();SP.clear();SPB=0;PPT.clear();STK.clear();daten();
   var sp=spaeter;spaeter=[];sp.forEach(function(q){if(q.gen===gen)nachricht(q)})}
  else if(d.art==='sperre'){if(d.gen!==gen||!A){if(d.gen>gen||!A){spaeter.push(d);if(spaeter.length>64)spaeter.shift()}return}   // N7a4a2: Welt noch nicht da → warten
   for(var s0=0;s0<schlange.length;s0++)if(schlange[s0].s&&schlange[s0].id===d.id)return;
@@ -98,6 +109,6 @@ function nachricht(d){
  else if(d.art==='plan'||d.art==='posten'){if(d.gen!==gen)return;var q=d.art==='posten'?-d.k-1:d.k;for(var i=0;i<schlange.length;i++)if(schlange[i].k===q)return;if(q<0)schlange.unshift({k:q,gen:d.gen});else schlange.push({k:q,gen:d.gen});weiter()}   // N7a2c: Posten (winzig) vor die Ortspläne
  else if(d.art==='vergiss'){var s=new Set(d.liste||[]);schlange=schlange.filter(function(a){return !s.has(a.k)})}
  else if(d.art==='port'){port=d.port;port.onmessage=function(e){nachricht(e.data)}}}
-self.AT3ORTSKERN={nachricht:nachricht,planRoh:planRoh,planen:planen,postenPlanen:postenPlanen,PK:PK,daten:daten,sperre:sperre,kol:kol,stand:function(){return{karten:SP.size,bytes:SPB,ms:SPST.ms,maxMs:SPST.maxMs,gebaut:SPST.karten,anfragen:SPST.anfragen,masken:MST.n,maskeMs:MST.ms,maskeMaxMs:MST.maxMs,maskeStuecke:MST.stuecke,maskeBytes:MST.bytes}}};
+self.AT3ORTSKERN={nachricht:nachricht,planRoh:planRoh,planen:planen,postenPlanen:postenPlanen,postenOpt:postenOpt,PK:PK,daten:daten,sperre:sperre,kol:kol,stand:function(){return{karten:SP.size,bytes:SPB,ms:SPST.ms,maxMs:SPST.maxMs,gebaut:SPST.karten,anfragen:SPST.anfragen,masken:MST.n,maskeMs:MST.ms,maskeMaxMs:MST.maxMs,maskeStuecke:MST.stuecke,maskeBytes:MST.bytes,postenMasken:PMST.n,postenMaskeMs:PMST.ms,postenMaskeMaxMs:PMST.maxMs,postenSuchen:PMST.suchen,postenStuecke:PMST.stuecke}}};
 if(!eingebettet)self.onmessage=function(e){nachricht(e.data)};
 })();

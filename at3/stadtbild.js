@@ -1065,12 +1065,12 @@ function weltNass(M,F,sw){maskeUfer(M);var N=M.N,h=N>>1,UF=M._ufer,bei=function(
 var WW_RAMPE={'1,0':'steg-rampe-o','-1,0':'steg-rampe-w','0,1':'steg-rampe-s','0,-1':'steg-rampe-n'};
 // Nach dem Spiegeln, in Bildfeldern: Wasser der Maske wird n (Wege darauf werden Furt, Brücke oder enden am Ufer), Strand unter Wiese wird v, dann die Stege.
 // Ergebnis P.weltwasser (Zähler; fehler = Gebautes auf Wasser, soll 0 sein). Kosten: einmal je Ort, wenige Durchläufe über W² Felder.
-function weltWasser(P,M,g){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),k,i,j,q,d,
+function weltWasser(P,M,g,po){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),k,i,j,q,d,
   st={wasser:0,ufer:0,furten:0,bruecken:0,enden:0,stege:0,fehler:0},art=new Uint8Array(WW),bau=new Uint8Array(WW),X=new Uint8Array(WW),ende=new Uint8Array(WW),
   WEG={s:1,o:1,h:1},NB=[[1,0],[-1,0],[0,1],[0,-1]],nass=function(k){return art[k]&3};
  for(j=0;j<W;j++)for(i=0;i<W;i++){var u=i+o,v=j+o;art[j*W+i]=u<0||v<0||u>=N||v>=N?0:M.m[v*N+u]&7}
  P.bauten.forEach(function(b){for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)bau[y*W+x]=1});
- for(k=0;k<WW;k++){if(nass(k)){if(bau[k])st.fehler++;if(WEG[Z[k]])X[k]=1;else{Z[k]='n';st.wasser++}}else if(art[k]&4&&Z[k]==='g'){Z[k]='v';st.ufer++}}
+ for(k=0;k<WW;k++){if(nass(k)){if(bau[k])st.fehler++;if(WEG[Z[k]])X[k]=1;else if(po&&Z[k]==='y')continue;else{Z[k]='n';st.wasser++}}else if(art[k]&4&&Z[k]==='g'){Z[k]='v';st.ufer++}}   // po (N7a5a2b Posten): eigener Steg bleibt
  // Wege auf Wasser: zusammenhängende Stücke; Weg an Land auf zwei gegenüberliegenden Seiten = Querung (Furt oder Brücke), sonst endet der Weg am Ufer
  var seen=new Uint8Array(WW);
  for(k=0;k<WW;k++){if(!X[k]||seen[k])continue;var C=[k],h0=0,x0=W,x1=-1,y0=W,y1=-1;seen[k]=1;
@@ -1089,7 +1089,7 @@ function weltWasser(P,M,g){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-
    P.dinge.push({id:id,i:qi,j:qj,rolle:'bruecke'})})}
  // Stege: Weg an Land, Nachbarfeld Weltwasser, Steg 3–4 Felder ins Wasser, dahinter noch Wasser (am Fluss 2 Felder, das andere Ufer bleibt frei), Anleger quer daneben.
  // Zuerst Wege, die am Ufer enden, dann nah an der Mitte; Abstand zwischen zwei Stegen STEG_ABST Felder.
- var K=[],nMax=STEG_N[Math.max(0,Math.min(3,g|0))],wa=function(x,y){return x>=0&&y>=0&&x<W&&y<W&&Z[y*W+x]==='n'};
+ var K=[],nMax=po?0:STEG_N[Math.max(0,Math.min(3,g|0))],wa=function(x,y){return x>=0&&y>=0&&x<W&&y<W&&Z[y*W+x]==='n'};
  for(k=0;k<WW;k++){if(!WEG[Z[k]]||nass(k))continue;i=k%W;j=(k/W)|0;
   for(d=0;d<4;d++){var dx=NB[d][0],dy=NB[d][1],Lg=3+(rausch(i,j,P.seed+741)<.5?1:0),fl=(art[(j+dy)*W+i+dx]&3)===2,ok=wa(i+dx,j+dy),s;
    for(s=1;s<=Lg+(fl?2:1)&&ok;s++)if(!wa(i+dx*s,j+dy*s))ok=false;if(!ok)continue;
@@ -2081,19 +2081,23 @@ function postenPlan(opt){var id=opt.art,an=POSTEN_ANLAGE[id]||(POSTEN_HOF[id]?'h
  var basis={klasse:(ST||B).klasse,dach:(ST||B).dach,wand:(ST||B).wand,dachR:(ST||B).dachR};
  var oS=POSTEN_SEITEN.indexOf(opt.ortSeite);if(oS<0)oS=Math.floor(ra()*4);
  var nass=an==='fischer'||an==='ufer'||an==='wasch'||an==='salz',fS=nass&&POSTEN_SEITEN.indexOf(opt.wasser)>=0?POSTEN_SEITEN.indexOf(opt.wasser):(oS+[2,2,1,3][Math.floor(ra()*4)])%4;
+ var MW=opt.welt&&opt.weltwasser!==false&&opt.welt.m?opt.welt:null,WM=false,NT=false,nassB=null;   // N7a5a2b: Wassermaske um den Postenpunkt (ortskern.js)
  var P={format:'at3-stadtplan',art:'outpost',g:1,einw:arb,biom:opt.biom,stil:opt.stil||'',seed:seed,W:0,block:0,nb:0,zellen:'',bauten:[],dinge:[],tor:{i:0,j:0},gesetzt:{},
   vielfalt:null,gespiegelt:false,basis:basis,feld:B.feld,aussen:null,fluss:null,kueste:null};
  var haus=function(i,j,w,h,rolle,hid,dach){return{rolle:rolle,id:hid,i:i,j:j,w:w,h:h,g:1,klasse:basis.klasse,dach:dach||(Math.min(w,h)<2?'flach':basis.dach),achse:w>=h?'i':'j',
   wand:basis.wand||null,dachR:basis.dachR||null,tuer:[i+(w>>1),j+h-1,0,1],satz:null}};
  var ziel=null,W,Z,HZ=null,k,i,j,bk=null;
- if(an==='hof'){var hf=postenHof(P,opt,ra,oS);W=hf.W;Z=hf.Z;ziel=hf.ziel}
+ if(an==='hof'){var hf=postenHof(P,opt,ra,oS,MW);W=hf.W;Z=hf.Z;ziel=hf.ziel;WM=hf.WM}
  else{W=POSTEN_W[an]+(gross?2:0);var WW=W*W,TF=POSTEN_TIEF[an],d=new Int32Array(W);Z=new Array(WW).fill('g');
+  if(MW){var nF0=postenNass(MW,W);WM=postenHatWasser(nF0,W);NT=nass&&!WM;var rz=fS;nassB=function(i,j){var f=postenFin(W,i,j,rz);return nF0(f[0],f[1])}}
   // Geländekante je Spalte: Grundtiefe ±1, Nachbarn höchstens 1 auseinander (ausgefranst, keine gerade Linie)
   for(i=0;i<W;i++){d[i]=TF[0]+Math.round((rausch(i>>1,0,seed+611)-.5)*2.4);if(i&&d[i]>d[i-1]+1)d[i]=d[i-1]+1;if(i&&d[i]<d[i-1]-1)d[i]=d[i-1]-1}
+  if(WM&&nass)for(i=0;i<W;i++){for(j=0;j<TF[0]+1&&nassB(i,j);j++);d[i]=j}   // N7a5a2b: Ufer des echten Wassers (gebaut im Norden), höchstens Grundtiefe + 1
   var mitte=(W>>1)-1+Math.floor(ra()*2),hh=gross?[3,2]:[2,2],hs=ra()<.5?1:W-1-hh[0];
+  if(WM&&an==='fischer'){for(var mq0=(W>>1)-3;mq0<=(W>>1)+2;mq0++)if(d[mq0]>d[mitte])mitte=mq0}   // N7a5a2b: Steg dort, wo das Wasser am tiefsten ist
   if(TF[1]){HZ=new Array(WW).fill('0');for(i=0;i<W;i++)for(j=0;j<d[i];j++){HZ[j*W+i]=String(Math.min(TF[1],d[i]-j));if(an==='bruch')Z[j*W+i]='x'}}
-  else if(nass){for(i=0;i<W;i++)for(j=0;j<d[i];j++)Z[j*W+i]='w';
-   if(B.wasser||POSTEN_MEER[id]||an==='salz')for(i=0;i<W;i++)Z[d[i]*W+i]='u'}   // Strand an Küste und Sumpf, sonst Wiese bis ans Ufer
+  else if(nass){if(!NT)for(i=0;i<W;i++)for(j=0;j<d[i];j++)Z[j*W+i]=WM?'n':'w';   // N7a5a2b: echtes Wasser (n), trockener Posten ohne eigenes Wasser
+   if(!MW&&(B.wasser||POSTEN_MEER[id]||an==='salz'))for(i=0;i<W;i++)Z[d[i]*W+i]='u'}   // eigener Strand nur ohne Maske (sonst Strand der Welt, v)   // Strand an Küste und Sumpf, sonst Wiese bis ans Ufer
   else{var BA=B.baeume.filter(function(b){return /^baum-/.test(b)});if(!BA.length)BA=['baum-tanne','baum-birke'];   // Waldrand: dichter Wald hinten (Biome ohne Bäume: Nadelwald)
    for(i=0;i<W;i++)for(j=0;j<d[i]+1;j++)if(rausch(i,j,seed+613)<(j<d[i]?.72:.3))P.dinge.push({id:BA[Math.floor(rausch(i,j,seed+614)*BA.length)],i:i,j:j})}
   var fuss=function(i0){return d[Math.max(0,Math.min(W-1,i0))]};
@@ -2112,9 +2116,9 @@ function postenPlan(opt){var id=opt.art,an=POSTEN_ANLAGE[id]||(POSTEN_HOF[id]?'h
    else{for(var mq=0;mq<4;mq++)lager(pb?(mq===1&&rausch(mitte,3,seed+235)<POSTEN_SELTEN?'koehler-meiler-a':KOEHLER_LAGER[mq]):'ware-stamm',mitte+(mq&1),fuss(mitte)+4+(mq>>1));
     lager(pb?KOEHLER_PLATZ:'lager-platz',mitte+3,fuss(mitte)+4)}}   // ohne Bilder: Meiler als Holzstoß
   else if(an==='jagd'){ziel={i:mitte,j:fuss(mitte)+1,art:'waldrand'};var JL=pb?JAGD_LAGER[id]:['ware-fleisch','ware-bretter'];lager(JL[0],mitte+2,fuss(mitte)+3);lager(JL[1],mitte+3,fuss(mitte)+3)}
-  else if(an==='fischer'){for(j=Math.max(0,fuss(mitte)-3);j<fuss(mitte);j++)Z[j*W+mitte]='y';ziel={i:mitte,j:fuss(mitte),art:'steg'};   // Steg ins Wasser, Planken mit hochstege()
+  else if(an==='fischer'){if(!NT)for(j=Math.max(0,fuss(mitte)-3);j<fuss(mitte);j++)Z[j*W+mitte]='y';ziel={i:mitte,j:fuss(mitte),art:'steg'};   // Steg ins Wasser, Planken mit hochstege()
    lager(pb?FISCHER_LAGER[0]:'lager-platz',mitte-2,fuss(mitte)+1);lager(pb?(rausch(mitte,5,seed+235)<POSTEN_SELTEN?'fischer-boot-a':FISCHER_LAGER[1]):'ware-fleisch',mitte+2,fuss(mitte)+1)}
-  else if(an==='salz'){var s0=fuss(mitte)+2;for(var pj=0;pj<2;pj++)for(var pi=2;pi+1<W-2;pi+=3)for(j=s0+pj*3;j<s0+pj*3+2;j++)for(i=pi;i<pi+2;i++){Z[j*W+i]='w';if(pb)(bk=bk||[]).push({id:beckenBild(i,j,seed),i:i,j:j,rolle:'becken'})}   // Siedebecken 2 × 2
+  else if(an==='salz'){var s0=fuss(mitte)+2;for(var pj=0;pj<2;pj++)for(var pi=2;pi+1<W-2;pi+=3)for(j=s0+pj*3;j<s0+pj*3+2;j++)for(i=pi;i<pi+2;i++){if(WM&&(nassB(pi,s0+pj*3)||nassB(pi+1,s0+pj*3)||nassB(pi,s0+pj*3+1)||nassB(pi+1,s0+pj*3+1)))continue;Z[j*W+i]='w';if(pb)(bk=bk||[]).push({id:beckenBild(i,j,seed),i:i,j:j,rolle:'becken'})}   // Siedebecken 2 × 2 (N7a5a2b: nicht im echten Wasser)
    ziel={i:mitte,j:s0+2,art:'becken'};lager(pb?SALZ_LAGER[Math.floor(rausch(mitte,4,seed+236)*3)]:'lager-platz',hs<W/2?W-3:2,s0+6)}
   else{ziel={i:mitte,j:fuss(mitte),art:'ufer'};var UL=pb?(an==='wasch'?WASCH_LAGER:UFER_LAGER[id]):['lager-platz','ware-bretter'];lager(UL[0],mitte-2,fuss(mitte)+1);lager(UL[1],mitte+2,fuss(mitte)+1);
    if(id==='peat-cut')for(i=1;i<W-1;i++)for(j=fuss(i)+1;j<fuss(i)+3;j++)if(rausch(i,j,seed+617)<.5)Z[j*W+i]='e'}   // Torfstiche
@@ -2127,45 +2131,71 @@ function postenPlan(opt){var id=opt.art,an=POSTEN_ANLAGE[id]||(POSTEN_HOF[id]?'h
  P.W=W;P.zellen=Z.join('');if(HZ){P.hoehe=HZ.join('');P.huegel={stufen:POSTEN_TIEF[an][1],gipfel:[],kern:[],felder:0}}
  dauerDinge(P,opt);pferchZaun(P,opt);   // N6b4c2 Hainbäume, Reben, Ranken am Gehöft; N6b4c3 Pferchzaun
  // Gebaute Dinge und Bauten liegen nie auf Wasser, Steg oder Becken
- P.dinge=P.dinge.filter(function(o){var c=P.zellen.charAt(o.j*W+o.i);return c!=='w'&&c!=='y'});if(bk)P.dinge=P.dinge.concat(bk);   // N6b4d3 Becken liegen auf dem Wasser
+ P.dinge=P.dinge.filter(function(o){var c=P.zellen.charAt(o.j*W+o.i);return c!=='w'&&c!=='y'&&c!=='n'});if(bk)P.dinge=P.dinge.concat(bk);   // N6b4d3 Becken liegen auf dem Wasser
  // Drehen, bis das Gelände (gebaut im Norden) auf seiner Seite liegt: ein drehen() bringt Norden nach Osten
  var dz=an==='hof'?0:fS;P.posten={id:id,anlage:an,ziel:ziel};
  for(var r=0;r<dz;r++){var zl=P.posten.ziel;P=drehen(P);if(zl)P.posten.ziel={i:W-1-zl.j,j:zl.i,art:zl.art}}
  if(pb&&an==='bruch')P.dinge.forEach(function(d){if(/^bruch-wand-\d$/.test(d.id))d.id+='-'+BRUCH_SEITE[dz]});   // N6b4d2 Stirn zum Hof
+ if(WM)postenWelt(P,MW);   // N7a5a2b: Hütte aufs Trockene, Weltwasser und Weltufer, Dinge nie auf Wasser
  if(an==='fischer'){P.kueste={seite:POSTEN_SEITEN[fS]};hochstege(P);P.kueste=null}
  postenWeg(P,oS,opt);
+ if(MW&&(WM||nass)){P.posten.wasser=WM?'echt':'trocken';if(nass)P.posten.wasserSeite=POSTEN_SEITEN[fS]}
  if(P.hoehe)huegelFertig(P);
  return P}
 // Gehöft (N5c Hof-Art): Hofhaus nach Hofart mitten im Plan, Tür und gerader Weg zum Rand auf der Ortsseite, Felder der Kultur per Breitensuche (höchstens FLUR_WEIT Schritte)
-function postenHof(P,opt,ra,oS){var id=opt.art,LM=LWm(),LD=landwDaten(opt),bl=LW_BIOM[opt.biom]||opt.biom,ku=null,ha=null,B=BIOME[opt.biom];
+function postenHof(P,opt,ra,oS,MW){var id=opt.art,LM=LWm(),LD=landwDaten(opt),bl=LW_BIOM[opt.biom]||opt.biom,ku=null,ha=null,B=BIOME[opt.biom];
  if(LM&&LD){LD.K.forEach(function(x){if(x.k.geb===id&&(!ku||x.biome.indexOf(bl)>=0&&ku.biome.indexOf(bl)<0))ku=x});
   if(ku){var HA=LM.hofarten(LD,bl).filter(function(h){return !h.wandert&&h.felder[1]>0&&HOF_HAUS[h.id]&&h.gruppen.indexOf(ku.k.gruppe)>=0});
    ha=HA.filter(function(h){return h.id==='farmstead'})[0]||HA[0]||null}}
  var hid=ha?ha.id:'farmstead',s=HOF_HAUS[hid]||2,fe=ha?ha.felder:[3,6],nF=fe[0]+Math.floor(ra()*(fe[1]-fe[0]+1));
- var W=Math.max(12,Math.ceil(Math.sqrt(nF*2.2+(s+4)*(s+4)))+4);if(W%2)W++;var WW=W*W,Z=new Array(WW).fill('g'),FZ=new Array(WW).fill('.'),c0=(W-s)>>1,k,i,j;
- var DS=[[0,-1],[1,0],[0,1],[-1,0]],dv=DS[oS],ti=c0+(s>>1),tj=c0+(s>>1);   // Tür an der Hausseite zum Ort
- if(dv[0])ti=dv[0]>0?c0+s-1:c0;if(dv[1])tj=dv[1]>0?c0+s-1:c0;
- var HBI=hofBildAn(P,opt)&&HOF_BILD_VAR[hid];if(HBI){var rr=HOF_RICHT[dv[0]+','+dv[1]],of=hofTuerOff(rr,s);if(dv[0])tj=c0+of;else ti=c0+of}   // N6b4c3 Türfeld des Hofbilds
- var bau={rolle:'hof',id:'hof-'+hid,hofart:hid,i:c0,j:c0,w:s,h:s,g:1,klasse:P.basis.klasse,dach:s<2?'flach':P.basis.dach,achse:ra()<.5?'i':'j',wand:P.basis.wand||null,dachR:P.basis.dachR||null,
-  tuer:[ti,tj,dv[0],dv[1]],satz:null};if(HBI)bau.hv=hofVariante(hid,c0,c0,P.seed>>>0);if(HBI&&ku&&opt.presse!==false){var kq={};kq[ku.k.id]=1;var hp1=hofPresse(hid,kq);if(hp1)bau.hp=hp1}P.bauten.push(bau);
- var frei=new Uint8Array(WW).fill(1);for(j=c0-1;j<=c0+s;j++)for(i=c0-1;i<=c0+s;i++)frei[j*W+i]=0;   // Hofplatz rings ums Haus bleibt Wiese
+ var W=Math.max(12,Math.ceil(Math.sqrt(nF*2.2+(s+4)*(s+4)))+4);if(W%2)W++;var WW=W*W,Z=new Array(WW).fill('g'),FZ=new Array(WW).fill('.'),c0=(W-s)>>1,ci=c0,cj=c0,k,i,j;
+ // N7a5a2b: mit echtem Wasser im Plan rückt das Hofhaus samt Hofplatz aufs nächste trockene Stück (ohne Strand), Felder meiden Wasser und Strand
+ var nF2=MW?postenNass(MW,W):null,WM=!!(nF2&&postenHatWasser(nF2,W)),nas=function(k){return WM&&nF2(k%W,(k/W)|0,true)};
+ if(WM){var hp=postenFrei(W,s,s,1,function(i,j){return nF2(i,j,true)},c0,c0,1);if(!hp)throw new Error('Gehöft im Wasser');ci=hp[0];cj=hp[1]}
+ var DS=[[0,-1],[1,0],[0,1],[-1,0]],dv=DS[oS],ti=ci+(s>>1),tj=cj+(s>>1);   // Tür an der Hausseite zum Ort
+ if(dv[0])ti=dv[0]>0?ci+s-1:ci;if(dv[1])tj=dv[1]>0?cj+s-1:cj;
+ var HBI=hofBildAn(P,opt)&&HOF_BILD_VAR[hid];if(HBI){var rr=HOF_RICHT[dv[0]+','+dv[1]],of=hofTuerOff(rr,s);if(dv[0])tj=cj+of;else ti=ci+of}   // N6b4c3 Türfeld des Hofbilds
+ var bau={rolle:'hof',id:'hof-'+hid,hofart:hid,i:ci,j:cj,w:s,h:s,g:1,klasse:P.basis.klasse,dach:s<2?'flach':P.basis.dach,achse:ra()<.5?'i':'j',wand:P.basis.wand||null,dachR:P.basis.dachR||null,
+  tuer:[ti,tj,dv[0],dv[1]],satz:null};if(HBI)bau.hv=hofVariante(hid,ci,cj,P.seed>>>0);if(HBI&&ku&&opt.presse!==false){var kq={};kq[ku.k.id]=1;var hp1=hofPresse(hid,kq);if(hp1)bau.hp=hp1}P.bauten.push(bau);
+ var frei=new Uint8Array(WW).fill(1);for(j=cj-1;j<=cj+s;j++)for(i=ci-1;i<=ci+s;i++)frei[j*W+i]=0;   // Hofplatz rings ums Haus bleibt Wiese
+ if(WM)for(k=0;k<WW;k++)if(nas(k))frei[k]=0;
  for(var x=ti+dv[0],y=tj+dv[1];x>=0&&y>=0&&x<W&&y<W;x+=dv[0],y+=dv[1])frei[y*W+x]=0;   // Weg zum Ort freihalten (postenWeg legt ihn)
  var gk=ku?ku.k.gruppe:'grain',hain=ku&&HAIN[ku.k.geb],Q=[],qh=0,dist=new Uint8Array(WW),mark=new Uint8Array(WW),felder=[];
- for(j=c0-1;j<=c0+s;j++)for(i=c0-1;i<=c0+s;i++){mark[j*W+i]=1;Q.push(j*W+i)}
+ for(j=cj-1;j<=cj+s;j++)for(i=ci-1;i<=ci+s;i++){mark[j*W+i]=1;Q.push(j*W+i)}
  while(qh<Q.length&&felder.length<nF){var p=Q[qh++];if(dist[p]>=FLUR_WEIT)continue;for(var q=0;q<4;q++){var xi=p%W+DS[q][0],yj=((p/W)|0)+DS[q][1],n=yj*W+xi;
-   if(xi<1||yj<1||xi>=W-1||yj>=W-1||mark[n])continue;mark[n]=1;dist[n]=dist[p]+1;Q.push(n);if(frei[n]&&felder.length<nF)felder.push(n)}}
+   if(xi<1||yj<1||xi>=W-1||yj>=W-1||mark[n])continue;mark[n]=1;if(WM&&nas(n))continue;dist[n]=dist[p]+1;Q.push(n);if(frei[n]&&felder.length<nF)felder.push(n)}}   // N7a5a2b: nicht übers Wasser
  felder.forEach(function(n){FZ[n]='0';Z[n]=WEIDE[gk]?'p':hain?'g':'f';if(hain&&((n%W+((n/W)|0))&1)===0)P.dinge.push({id:hain,i:n%W,j:(n/W)|0,rolle:id})});
  for(k=0;k<WW;k++){i=k%W;j=(k/W)|0;if(!frei[k]||FZ[k]!=='.')continue;if(rausch(i,j,P.seed+41)<B.dichte*.5+.03)P.dinge.push({id:B.baeume[Math.floor(rausch(i,j,P.seed+42)*B.baeume.length)],i:i,j:j})}
- P.flur={arten:ku?[ku.id]:[],z:FZ.join(''),hoefe:[{art:hid,i:c0,j:c0,kulturen:ku?(function(o){o[ku.id]=felder.length;return o})({}):{},felder:felder.length}],felder:felder.length,wege:0,fehlt:Math.max(0,nF-felder.length),
+ P.flur={arten:ku?[ku.id]:[],z:FZ.join(''),hoefe:[{art:hid,i:ci,j:cj,kulturen:ku?(function(o){o[ku.id]=felder.length;return o})({}):{},felder:felder.length}],felder:felder.length,wege:0,fehlt:Math.max(0,nF-felder.length),
   eA:0,raster:FLUR_RASTER,weit:FLUR_WEIT,stufe:null,biom:bl,zeilen:[],versuch:0};
  if(!ku)P.flur.z=new Array(WW).fill('.').join('');
- return{W:W,Z:Z,ziel:null}}
+ return{W:W,Z:Z,ziel:null,WM:WM}}
+// N7a5a2b (Thomas 25.11.2026): Außenposten und Gehöfte um das echte Wasser. Maske wie bei den Dörfern (ortsbild.js wasserMaskeAm, Mitte = Postenpunkt = Mitte des Plans).
+// Entscheidungen: Lage bleibt; nasse Posten nehmen die Wasserseite aus der Maske, ohne Wasser im Plan stehen sie trocken (kein eigenes Wasser, kein Steg) mit dem Arbeitsplatz
+// zum nächsten Wasser (Suche bis rund ±96 Felder im Ortskern, sonst Seite aus dem Seed); Siedebecken bleiben (eigenes Wasser auf Land); Hütte oder Hofhaus auf Wasser
+// rückt aufs nächste trockene Stück, gibt es keins, fällt der Posten weg. Weltwasser n und Weltufer v wie bei den Dörfern, auch für Posten ohne nasse Anlage.
+// postenNass(M, W)(i, j, mitStrand): Wasser im fertigen Plan (gedreht), mitStrand: auch Strand der Welt. postenFin: Feld des im Norden gebauten Plans nach r-mal drehen().
+function postenNass(M,W){var N=M.N,o=(N>>1)-(W>>1);return function(i,j,st){var u=i+o,v=j+o;if(u<0||v<0||u>=N||v>=N)return 0;var c=M.m[v*N+u];return st?c&7:c&3}}
+function postenHatWasser(f,W){for(var j=0;j<W;j++)for(var i=0;i<W;i++)if(f(i,j))return true;return false}
+function postenFin(W,i,j,r){for(var t=0;t<r;t++){var a=i;i=W-1-j;j=a}return[i,j]}
+// Nächste Ecke (i, j) für ein w × h großes Haus mit Ring rg (frei von nass(i, j)), von (i0, j0) aus nach Abstand; Rand m Felder; keine → null. block(i, j) sperrt zusätzlich.
+function postenFrei(W,w,h,rg,nass,i0,j0,m,block){var best=null,bd=1e9;for(var j=m;j+h+m<=W;j++)for(var i=m;i+w+m<=W;i++){var d=Math.max(Math.abs(i-i0),Math.abs(j-j0))*1000+Math.abs(i-i0)+Math.abs(j-j0);if(d>=bd)continue;
+  var ok=true;for(var y=j-rg;y<j+h+rg&&ok;y++)for(var x=i-rg;x<i+w+rg;x++){if(x<0||y<0||x>=W||y>=W)continue;if(nass(x,y)||(block&&y>=j&&y<j+h&&x>=i&&x<i+w&&block(x,y))){ok=false;break}}
+  if(ok){bd=d;best=[i,j]}}return best}
+// Nach dem Drehen: Bauten auf Wasser oder Strand rücken (Tür mit), dann Weltwasser, Weltufer und Böschung wie bei den Dörfern (weltWasser ohne neue Stege, eigene Stege bleiben),
+// Dinge nie auf Weltwasser oder Weltufer (außer Steg und Becken). P.weltwasser wie bei den Dörfern.
+function postenWelt(P,M){var W=P.W,nf=postenNass(M,W),st=function(i,j){return nf(i,j,true)},lag={};P.dinge.forEach(function(d){if(d.rolle==='lager')lag[d.j*W+d.i]=1});
+ P.bauten.forEach(function(b,n){var schlecht=false;for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(st(x,y))schlecht=true;if(!schlecht)return;
+  var andere=function(x,y){if(lag[y*W+x])return true;for(var q=0;q<P.bauten.length;q++){var c=P.bauten[q];if(q!==n&&x>=c.i-1&&x<=c.i+c.w&&y>=c.j-1&&y<=c.j+c.h)return true}return false};
+  var p=postenFrei(W,b.w,b.h,0,st,b.i,b.j,1,andere);if(!p)throw new Error('Außenposten im Wasser');var di=p[0]-b.i,dj=p[1]-b.j;b.i+=di;b.j+=dj;if(b.tuer){b.tuer[0]+=di;b.tuer[1]+=dj}});
+ maskeUfer(M);weltWasser(P,M,1,true);
+ P.dinge=P.dinge.filter(function(d){var c=P.zellen.charAt(d.j*W+d.i);return !(c==='n'||c==='v')||d.rolle==='steg'||d.rolle==='bruecke'||d.rolle==='becken'})}
 // Weg im Plan (Feldweg h) vom Rand auf der Ortsseite zur Hüttentür und zum Ziel der Anlage (Tor, Abbauwand, Steg …): Breitensuche vom ganzen Rand über ebene,
 // freie Felder; Bäume und Stümpfe auf dem Weg fallen weg. Danach Begehbarkeit je Bildfeld und Anschluss nach draußen (Richtung, Länge in Feldern).
 function postenWeg(P,oS,opt){var W=P.W,WW=W*W,Z=P.zellen.split(''),HZ=P.hoehe,i,j,k,DS=[[1,0],[-1,0],[0,1],[0,-1]];
  var bau=new Uint8Array(WW),sperr=new Uint8Array(WW);P.bauten.forEach(function(b){for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)bau[y*W+x]=1});
  P.dinge.forEach(function(d){if(d.rolle==='lager'||d.rolle==='steg')sperr[d.j*W+d.i]=d.rolle==='lager'?1:0});
- var geh=function(k){return !bau[k]&&!sperr[k]&&/[gxuhe]/.test(Z[k])&&(!HZ||HZ.charAt(k)==='0')};
+ var geh=function(k){return !bau[k]&&!sperr[k]&&/[gxuhev]/.test(Z[k])&&(!HZ||HZ.charAt(k)==='0')};   // N7a5a2b: v Weltufer begehbar
  var randS=function(s,k){var i=k%W,j=(k/W)|0;return s===0?j===0:s===1?i===W-1:s===2?j===W-1:i===0};
  var abO=function(k){var i=k%W,j=(k/W)|0;return oS===0?j:oS===1?W-1-i:oS===2?W-1-j:i};   // Abstand zum Rand der Ortsseite
  var vor=new Int32Array(WW).fill(-2),Q=[],qh=0;for(k=0;k<WW;k++)if(randS(oS,k)&&geh(k)){vor[k]=-1;Q.push(k)}
@@ -2188,7 +2218,7 @@ function postenWeg(P,oS,opt){var W=P.W,WW=W*W,Z=P.zellen.split(''),HZ=P.hoehe,i,
  // Begehbarkeit: x gesperrt (Wasser, Hang, Haus, Stollen und Untertage, Lager), p nur zu Fuß (Wald, Felder nach landwirtschaft.json), f frei; Steg frei
  var baum={},BG=[];P.dinge.forEach(function(d){if(!d.rolle&&/^(baum|busch|natur)-/.test(d.id))baum[d.j*W+d.i]=1});
  for(k=0;k<WW;k++){var c=Z[k],b='f';i=k%W;j=(k/W)|0;
-  if(bau[k]||sperr[k]||c==='w'||(HZ&&HZ.charAt(k)!=='0'))b='x';else if(c==='y')b='f';else if(P.flur){var ft=flurTempo(P,i,j,'mensch',opt);b=ft==null?(baum[k]?'p':'f'):ft>0?'p':'x';if(c==='h')b='f'}else if(baum[k])b='p';
+  if(bau[k]||sperr[k]||c==='w'||c==='n'||(HZ&&HZ.charAt(k)!=='0'))b='x';else if(c==='y')b='f';else if(P.flur){var ft=flurTempo(P,i,j,'mensch',opt);b=ft==null?(baum[k]?'p':'f'):ft>0?'p':'x';if(c==='h')b='f'}else if(baum[k])b='p';
   BG.push(b)}
  var hb=hut?{i:hut.i,j:hut.j,w:hut.w,h:hut.h,tuer:hut.tuer}:null;
  P.posten.haus=hb;P.posten.weg={felder:wege,rand:endR,fehlt:fehlt};P.posten.begeh=BG.join('');
