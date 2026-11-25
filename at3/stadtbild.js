@@ -220,6 +220,7 @@ function plan0(opt){
  // der Ort malt kein eigenes Wasser (kein Flussband, kein Strand), Häuser, Gärten, Plätze, Höfe und Felder weichen der Maske aus, Fluss für die Felderwahl nur aus der
  // Maske (FLh). Nach dem Spiegeln setzt weltWasser() die echten Wasser- und Strandfelder, Furten, Brücken und Stege. Notausschalter opt.weltwasser:false (?n7a5a2=0).
  var MW=!elend&&g<MAUER_AB&&opt.welt&&opt.welt.wasser>0&&opt.weltwasser!==false?opt.welt:null,FLh=FL;
+ var SCHW=opt.schwung!==false,SCHW_A=Math.round(8/F);   // N7a5b2a: Weiler und Dörfer mit geschwungenem Hauptweg (±8) und sanften Gassen (±2); opt.schwung:false bzw. ?n7a5b2=0 wie vorher
  if(MW){FLh=maskeFluss(MW)?'ns':null;FL=null;KS=null}
  if(MS){FLh=MS.wasser>0&&maskeFluss(MS)?'ns':null;FL=null;KS=null}
  var spW0=rng(hashT([seed,art,einw,'sp'].join('|')))()<.5,KSP=null,spK=null;
@@ -759,6 +760,12 @@ function plan0(opt){
  // Angerdorf 2–3, Haufendorf 3–4. Hinter jedem Wohnhaus ein Garten (Feldboden, 1–2 tief), Häuser locker mit mindestens 1 Feld Abstand, teils 1 Feld zurückgesetzt.
  // Gebaut wird stehend (Hauptweg Nord–Süd) und bei Bedarf gekippt. opt.vielfalt === false = Raster wie N6b2c2.
  function dorf(versuch){
+  // N7a5b2a: weiche Verschiebung (Rauschen in zwei Größen wie weltgen.js versch, Wellen 16 und 6 Planfelder = 24 und 9 Bildfelder), Wert bei 0 = 0, höchstens ±A
+  var welle=function(key,n,A){var o=new Float32Array(n);if(!A)return o;var rk=rng(hashT([seed,art,'schwung',key].join('|'))),p1=rk()*16,p2=rk()*6,
+    g=function(L,c){return rng(hashT([seed,art,'schwung',key,L,c].join('|')))()*2-1},
+    w=function(L,t){var c=Math.floor(t/L),f=t/L-c,s=f*f*(3-2*f);return g(L,c)*(1-s)+g(L,c+1)*s},
+    v=function(t){return .75*w(16,t+p1)+.25*w(6,t+p2)},v0=v(0);
+   for(var k=0;k<n;k++)o[k]=Math.max(-A,Math.min(A,A*(v(k)-v0)));return o};
   var rf=rng(hashT([seed,art,opt.biom,einw,'dorfform'].join('|'))),xf=rf(),form=g<=2?'weiler':xf<.4?'strasse':xf<.8?'haufen':'anger',kipp=rf()<.5;
   if(MW&&form==='anger')form='strasse';   // N7a5a2: am Wasser kein Angerdorf (die Linse quert sonst Seen)
   var r=rng(hashT([seed,art,opt.biom,opt.stil||'',einw,'dorf',versuch].join('|')));
@@ -786,9 +793,17 @@ function plan0(opt){
   var frei=function(i,j){if(i<0||j<0||i>=W||j>=W)return false;var k=at(i,j);return Z[k]==='g'&&!belegt[k]&&!res[k]&&!garten[k]&&!(NS&&NS[k])};
   var weg=function(i,j){if(i>=0&&j>=0&&i<W&&j<W&&Z[at(i,j)]==='g'&&!belegt[at(i,j)]){Z[at(i,j)]='s';res[at(i,j)]=0}};
   // Weg 2 breit, leicht krumm: Spalte je Zeile (stehend), an den Enden 3 Felder gerade
-  var krumm=function(t0,t1,x0,p){var L=[],v=x0,n=Math.abs(t1-t0)+1;for(var t=0;t<n;t++){if(t>=3&&t<n-3&&r()<p){var nv=v+(r()<.5?-1:1);if(nv>=2&&nv<=W-4)v=nv}L.push(v)}return L};
-  var senkrecht=function(t0,t1,x0,p){var L=krumm(t0,t1,x0,p),d=t1>=t0?1:-1;for(var k=0;k<L.length;k++){if(NS&&(NS[at(L[k],t0+k*d)]===3||NS[at(L[k]+1,t0+k*d)]===3)){L.length=k;L.zu=true;break}weg(L[k],t0+k*d);weg(L[k]+1,t0+k*d)}return L};   // N7a5a2: endet am See bzw. Meer (L.zu)
-  var waagrecht=function(t0,t1,y0,p){var L=krumm(t0,t1,y0,p),d=t1>=t0?1:-1;for(var k=0;k<L.length;k++){if(NS&&(NS[at(t0+k*d,L[k])]===3||NS[at(t0+k*d,L[k]+1)]===3)){L.length=k;L.zu=true;break}weg(t0+k*d,L[k]);weg(t0+k*d,L[k]+1)}return L};
+  var krumm=function(t0,t1,x0,p,senk){if(SCHW)return bogen(t0,t1,x0,senk);var L=[],v=x0,n=Math.abs(t1-t0)+1;for(var t=0;t<n;t++){if(t>=3&&t<n-3&&r()<p){var nv=v+(r()<.5?-1:1);if(nv>=2&&nv<=W-4)v=nv}L.push(v)}return L};
+  // N7a5b2a: Hauptweg als weicher Bogen (±8 Bildfelder = ±5 Planfelder, kleiner Plan weniger, mindestens ±2) aus dem Seed statt Zitterweg; höchstens 1 Feld seitlich je Zeile (2 breit bleibt
+  // zusammenhängend), an den Enden 3 Felder gerade; mit Wasser im Plan weicht er Ufer und Wasser 1–2 Felder aus (Blick 3 Zeilen voraus), quert nur, wo es muss.
+  var bogen=function(t0,t1,x0,senk){var d=t1>=t0?1:-1,n=Math.abs(t1-t0)+1,A=Math.max(2,Math.min(SCHW_A,(W>>1)-4)),off=welle([x0,t0,t1,senk?1:0].join(','),n,A),L=[],v=x0;
+   var nass=function(c,t){if(!NS||c<0||t<0||c>=W||t>=W)return 0;return NS[senk?at(c,t):at(t,c)]};
+   for(var k=0;k<n;k++){var t=t0+k*d;if(k>=3&&k<n-3){var ziel=Math.max(2,Math.min(W-4,x0+Math.round(off[k]))),best=v,bs=1e9;
+     for(var dv=-1;dv<=1;dv++){var c=v+dv;if(c<2||c>W-4||Math.abs(c-x0)>A+2)continue;var sc=Math.abs(c-ziel)*2+(dv?.5:0);
+      if(NS)for(var la=0;la<4;la++)for(var q=-2;q<=3;q++){var w=nass(c+q,t+la*d);if(w)sc+=(q===0||q===1?(w>=2?60:25):6)/(1+la)}
+      if(sc<bs){bs=sc;best=c}}v=best}L.push(v)}return L};
+  var senkrecht=function(t0,t1,x0,p){var L=krumm(t0,t1,x0,p,true),d=t1>=t0?1:-1;for(var k=0;k<L.length;k++){if(NS&&(NS[at(L[k],t0+k*d)]===3||NS[at(L[k]+1,t0+k*d)]===3)){L.length=k;L.zu=true;break}weg(L[k],t0+k*d);weg(L[k]+1,t0+k*d)}return L};   // N7a5a2: endet am See bzw. Meer (L.zu)
+  var waagrecht=function(t0,t1,y0,p){var L=krumm(t0,t1,y0,p,false),d=t1>=t0?1:-1;for(var k=0;k<L.length;k++){if(NS&&(NS[at(t0+k*d,L[k])]===3||NS[at(t0+k*d,L[k]+1)]===3)){L.length=k;L.zu=true;break}weg(t0+k*d,L[k]);weg(t0+k*d,L[k]+1)}return L};
   var setzeTor=function(s,c){tore.push({s:s,c:c,u0:0,haupt:true})};
   // N7a5a2: Hauptweg von der Mitte aus nach beiden Seiten, jede Hälfte endet am See bzw. Meer (dann kein Ausgang dort); T[Zeile] = Spalte, null ohne Weg
   var halbWeg=function(p){var Tu=senkrecht(cy,0,cx-1,p),Td=senkrecht(cy+1,W-1,cx-1,p),T=new Array(W).fill(null),t;for(t=0;t<Tu.length;t++)T[cy-t]=Tu[t];for(t=0;t<Td.length;t++)T[cy+1+t]=Td[t];
@@ -846,10 +861,14 @@ function plan0(opt){
   var gasse=function(mitte){var SL2=[];for(var k0=0;k0<WW;k0++)if(Z[k0]==='s'&&!belegt[k0]&&!vor[k0]&&!(NS&&NS[k0]))SL2.push(k0);if(!SL2.length)return false;
    if(mitte)SL2.sort(function(a,b){return Math.hypot(a%W-pcx,((a/W)|0)-pcy)-Math.hypot(b%W-pcx,((b/W)|0)-pcy)});
    for(var v=0;v<80;v++){var k=SL2[mitte?Math.floor(Math.pow(r(),2)*SL2.length):Math.floor(r()*SL2.length)],x=k%W,y=(k/W)|0,dv=[[1,0],[-1,0],[0,1],[0,-1]][Math.floor(r()*4)],dx=dv[0],dy=dv[1],L=[],n;
-    if(!frei(x+dx,y+dy))continue;var len=5+Math.floor(r()*8);
-    for(n=1;n<=len;n++){var xx=x+dx*n,yy=y+dy*n;if(xx<2||yy<2||xx>W-3||yy>W-3||!frei(xx,yy))break;var ok=true;
-     for(var dd=-2;dd<=2&&ok;dd++){if(!dd)continue;var px=xx+dy*dd,py=yy+dx*dd;if(px<0||py<0||px>=W||py>=W)continue;var kk=at(px,py);if(istWeg(kk)||(Math.abs(dd)===1&&anger[kk]))ok=false}
-     if(!ok)break;L.push([xx,yy])}
+    if(!frei(x+dx,y+dy))continue;var len=5+Math.floor(r()*8),gq=SCHW?welle([x,y,dx,dy].join(','),len+1,2):null,lq=0,gut=true;
+    // N7a5b2a: Gasse sanft geschwungen (±2 Planfelder quer, 1 Feld je Schritt, Eckfeld dazu, damit sie zusammenhängt); ab dem 2. Feld
+    var gf=function(xx,yy,mit){if(xx<2||yy<2||xx>W-3||yy>W-3||!frei(xx,yy))return false;
+     for(var dd=-2;dd<=2;dd++){if(!dd)continue;var px=xx+dy*dd,py=yy+dx*dd;if(px<0||py<0||px>=W||py>=W)continue;var kk=at(px,py);if(istWeg(kk)||(Math.abs(dd)===1&&anger[kk]))return false}
+     if(mit)L.push([xx,yy]);return true};
+    for(n=1;n<=len&&gut;n++){var lz=lq;if(gq&&n>=2){var zl=Math.round(gq[n]);lz=zl>lq?lq+1:zl<lq?lq-1:lq}
+     if(lz!==lq){var ex=x+dx*n+dy*lq,ey=y+dy*n+dx*lq,nx2=x+dx*n+dy*lz,ny2=y+dy*n+dx*lz;if(!gf(ex,ey,false)||!gf(nx2,ny2,false)){gut=false;break}gf(ex,ey,true);gf(nx2,ny2,true);lq=lz;continue}
+     if(!gf(x+dx*n+dy*lq,y+dy*n+dx*lq,true))break}
     if(L.length<4)continue;L.forEach(function(p){weg(p[0],p[1])});gassen++;return true}return false};
   var stehen=function(it){if(form==='weiler'||form==='haufen')return haufen(it);for(var v=0;v<10;v++){if(anStrasse(it,false))return true;if(!gasse())return false}return false};
   // Hauptwege je Form
