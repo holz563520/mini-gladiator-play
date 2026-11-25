@@ -169,7 +169,7 @@ function plan0(opt){
  var MS=!elend&&g>=MAUER_AB&&opt.welt&&opt.welt.m&&opt.weltwasser!==false&&opt.stadtwasser!==false&&(!maskeMeer(opt.welt)||opt.meerstadt!==false)?opt.welt:null;
  // N7a5a3b1 (Thomas 25.11.2026): Städte am Meer. MM = Maske mit Meer: die Mauer folgt der Küste wie am See, nur vor dem Hafentor (Seite mit dem meisten Meer) bleibt ein
  // Hafenstreifen frei; Hafen, Werft und Seefischerei stehen darin hinter dem Kai am echten Ufer. Inselstädte (fast nur Meer) und Städte, deren Hafentor das Meer nicht
- // erreicht, planen wie vorher (stadtwasserErsatz, meerErsatz 'insel' bzw. 'hafen'). Molen und Stege folgen in N7a5a3b2. Notausschalter opt.meerstadt:false (?n7a5a3b=0).
+ // erreicht, planen wie vorher (stadtwasserErsatz, meerErsatz 'insel' bzw. 'hafen'). Molen und Stege: N7a5a3b2 (meerHafen, opt.meerhafen:false = ?n7a5a3b2=0). Notausschalter opt.meerstadt:false (?n7a5a3b=0).
  var MM=MS&&opt.meerstadt!==false&&maskeMeer(MS)&&meerEchtJa(MS)?MS:null;   // nur echtes Meer (meerEcht); Meer-Tümpel zählen wie ein See
  if(MM&&meerAnteil(MM)>INSEL_AB){var Pi=plan0(Object.assign({},opt,{stadtwasser:false}));Pi.stadtwasserErsatz=true;Pi.meerErsatz='insel';return Pi}
  var BU=null;if(Li&&opt.buendeln!==false){var bu=buendeln(Li,!elend&&g>=MAUER_AB&&(MM?true:!!opt.kueste&&!MS),opt.biom);Li=bu.L;BU=bu.info}   // N7a1b: Gewinnung nur als Außenposten, Rest und Häfen gebündelt
@@ -437,7 +437,7 @@ function plan0(opt){
   var KU=null;
   if(MMa){var nKai=0;kaiZ.forEach(function(p){var x=p[0]+R,y=p[1]+R;if(x<0||y<0||x>=W||y>=W)return;var kk=at(x,y);if(belegt[kk]||Z[kk]==='s')return;Z[kk]='q';keinBaum[kk]=1;neu[kk]=1;nKai++});
    dinge=dinge.filter(function(d){return Z[at(d.i,d.j)]!=='q'});
-   KU={seite:SEITE[ks],echt:true,kai:nKai,strand:false,molen:0,stege:0,anleger:0,hafentore:TO.filter(function(t){return t.s===ks}).length,hafen:hafenTeile.length,spiegel:spKa}}
+   KU={seite:SEITE[ks],echt:true,ende:[glob(hTor,uE,0),glob(hTor,uE,1)].map(function(p){return[p[0]+R,p[1]+R]}),kai:nKai,strand:false,molen:0,stege:0,anleger:0,hafentore:TO.filter(function(t){return t.s===ks}).length,hafen:hafenTeile.length,spiegel:spKa}}
   else if(ks!=null){var rk=rng(hashT([seed,art,einw,'kueste'].join('|'))),zK=function(u,a){var p=ks<2?[a,ks===0?Wi+u:-1-u]:[ks===2?Wi+u:-1-u,a],x=p[0]+R,y=p[1]+R;return x>=0&&y>=0&&x<W&&y<W?at(x,y):-1};
    var kaiVon=-1,kaiBis=Wi,nKai=0;hafenTeile.forEach(function(h){kaiVon=Math.min(kaiVon,h.a0-1);kaiBis=Math.max(kaiBis,h.a1+1)});   // Kai reicht über alle Hafenbauten
    for(var jk=0;jk<W;jk++)for(var ik=0;ik<W;ik++){var xk=ik-R,yk=jk-R,uk=uS(xk,yk);if(uk<uK)continue;var kk=at(ik,jk),ak=lS(xk,yk);keinBaum[kk]=1;
@@ -896,9 +896,11 @@ function plan0(opt){
  if(P.kueste){spW=P.kueste.spiegel;delete P.kueste.spiegel}   // mit Küste: so, dass das Meer auf der Seite aus der Welt liegt (N6b2c4c2)
  if(spW)P=spiegeln(P);
  if(MS&&MS.wasser>0)stadtFluss(P,MS);   // N7a5a3a: Flussfelder genau wie die Maske (nach Maßstab und Spiegeln), Mauer auf dem Fluss wird Flusstor
- if(MS&&MS.wasser>0)weltWasser(P,MS,g,false,true);   // N7a5a3a: Seen, Ufer, Querungen vor der Mauer (keine Mauer auf dem See); der Fluss bleibt bis nach der Mauer 'w'
+ var MH=!!(MS&&MS.wasser>0&&P.kueste&&P.kueste.echt&&opt.meerhafen!==false);   // N7a5a3b2: Molen und Stege ins echte Meer (opt.meerhafen:false = ohne wie in N7a5a3b1)
+ if(MS&&MS.wasser>0)weltWasser(P,MS,g,false,true,MH);   // N7a5a3a: Seen, Ufer, Querungen vor der Mauer (keine Mauer auf dem See); der Fluss bleibt bis nach der Mauer 'w'
  if(MW)weltWasser(P,MW,g);   // N7a5a2: echtes Wasser und Ufer, Furten, Brücken, Stege (in Bildfeldern, nach dem Spiegeln)
- if(P.kueste&&!P.kueste.echt)hochstege(P);   // N7a5a3b1: am echten Meer folgen Stege in N7a5a3b2
+ if(P.kueste&&!P.kueste.echt)hochstege(P);
+ if(MH)meerHafen(P,MS,g);   // N7a5a3b2: Molen und Hochstege ins echte Meer, Richtung je Steg
  if(P.hoehe)huegelFertig(P);
  if(!elend&&TPL)tempelFest(P,opt);   // N6b3b1 Tempel genau 6 × 8 bzw. 10 × 14, Eingang an der Schmalseite (opt.tempel:false = wie vorher)
  if(!elend&&TPL&&opt.forum!==false)forumFest(P,opt);   // N6b3c1 Forum genau 14 × 14, Säulenhallen an 3 Seiten (opt.forum:false = wie vorher)
@@ -1241,7 +1243,7 @@ function stadtFlussEnde(P,M){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1
 var WW_RAMPE={'1,0':'steg-rampe-o','-1,0':'steg-rampe-w','0,1':'steg-rampe-s','0,-1':'steg-rampe-n'};
 // Nach dem Spiegeln, in Bildfeldern: Wasser der Maske wird n (Wege darauf werden Furt, Brücke oder enden am Ufer), Strand unter Wiese wird v, dann die Stege.
 // Ergebnis P.weltwasser (Zähler; fehler = Gebautes auf Wasser, soll 0 sein). Kosten: einmal je Ort, wenige Durchläufe über W² Felder.
-function weltWasser(P,M,g,po,stadt){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),k,i,j,q,d,
+function weltWasser(P,M,g,po,stadt,ohneMeer){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),k,i,j,q,d,
   st={wasser:0,ufer:0,furten:0,bruecken:0,enden:0,stege:0,fehler:0},art=new Uint8Array(WW),bau=new Uint8Array(WW),X=new Uint8Array(WW),ende=new Uint8Array(WW),
   WEG={s:1,o:1,h:1},NB=[[1,0],[-1,0],[0,1],[0,-1]],nass=function(k){return art[k]&3};
  for(j=0;j<W;j++)for(i=0;i<W;i++){var u=i+o,v=j+o;art[j*W+i]=u<0||v<0||u>=N||v>=N?0:M.m[v*N+u]&7}
@@ -1270,8 +1272,9 @@ function weltWasser(P,M,g,po,stadt){var W=P.W,WW=W*W,Z=P.zellen.split(''),N=M.N,
  // Stege: Weg an Land, Nachbarfeld Weltwasser, Steg 3–4 Felder ins Wasser, dahinter noch Wasser (am Fluss 2 Felder, das andere Ufer bleibt frei), Anleger quer daneben.
  // Zuerst Wege, die am Ufer enden, dann nah an der Mitte; Abstand zwischen zwei Stegen STEG_ABST Felder.
  var K=[],nMax=po?0:STEG_N[Math.max(0,Math.min(3,g|0))],wa=function(x,y){return x>=0&&y>=0&&x<W&&y<W&&Z[y*W+x]==='n'};
+ var EM=ohneMeer?meerEcht(M):null,meerK=function(x,y){var u=x+o,v=y+o;return u>=0&&v>=0&&u<N&&v<N&&EM[v*N+u]===1};   // N7a5a3b2: am echten Meer setzt nur der Hafen Stege
  for(k=0;k<WW;k++){if(!WEG[Z[k]]||nass(k))continue;i=k%W;j=(k/W)|0;
-  for(d=0;d<4;d++){var dx=NB[d][0],dy=NB[d][1],Lg=3+(rausch(i,j,P.seed+741)<.5?1:0),fl=(art[(j+dy)*W+i+dx]&3)===2,ok=wa(i+dx,j+dy),s;
+  for(d=0;d<4;d++){var dx=NB[d][0],dy=NB[d][1];if(EM&&meerK(i+dx,j+dy))continue;var Lg=3+(rausch(i,j,P.seed+741)<.5?1:0),fl=(art[(j+dy)*W+i+dx]&3)===2,ok=wa(i+dx,j+dy),s;
    for(s=1;s<=Lg+(fl?2:1)&&ok;s++)if(!wa(i+dx*s,j+dy*s))ok=false;if(!ok)continue;
    var ao=1+Math.floor(rausch(i,j,P.seed+742)*(Lg-1)),as=rausch(i,j,P.seed+743)<.5?1:-1,ax2=i+dx*(ao+1)+dy*as,ay2=j+dy*(ao+1)+dx*as;if(!wa(ax2,ay2)){as=-as;ax2=i+dx*(ao+1)+dy*as;ay2=j+dy*(ao+1)+dx*as;if(!wa(ax2,ay2))ao=-1}
    K.push({i:i,j:j,dx:dx,dy:dy,L:Lg,ao:ao,ax:ax2,ay:ay2,s:(ende[k]?0:1000)+Math.hypot(i-W/2,j-W/2)+rausch(i,j,P.seed+744)})}}
@@ -1295,6 +1298,55 @@ function hochstege(P){var W=P.W,Z=P.zellen,d=SEE_DIR[P.kueste.seite],ax=d[0]?'i'
  for(j=0;j<W;j++)for(i=0;i<W;i++){if(Z.charAt(j*W+i)!=='y')continue;var land=c(i-d[0],j-d[1]),see=c(i+d[0],j+d[1]),id;
   if(land!=='y'&&land!=='w')id=RAMPE[P.kueste.seite];else id='steg-deck-'+(land==='y'||see==='y'?ax:quer);
   P.dinge.push({id:id,i:i,j:j,rolle:'steg'})}}
+// N7a5a3b2 Stadt am echten Meer (Thomas 25.11.2026): Molen (Pflaster q auf dem Meer, auf Wasserhöhe wie die Stege, ufer.js bleibt) und Hochstege (y) mit Anlegern
+// ins echte Meer, nach dem Spiegeln in Bildfeldern. Die erste Mole verlängert die Straße vom Hafentor (Straßenende zur Meerseite mit dem längsten geraden Stück
+// landeinwärts), weitere Molen (MOLEN je Größe) und die Stege gehen vom Kai ins Meer, je Mole und Steg in Richtung zum Wasser. Nur über echtem Meer (meerEcht),
+// dahinter noch 1 Feld Meer. Passt es nicht, nächste Stelle, sonst weniger (kueste.molenSoll). Maße wie an der geraden Küste in Planfeldern × Maßstab:
+// Mole 2 breit, 5–7 (erste) bzw. 4–6 lang, 3 Abstand; Steg 3–5 lang, alle 4–7 Felder, 1–2 Anleger. Am echten Meer setzt weltWasser keine Stege (nur der Hafen).
+function meerHafen(P,M,g){var W=P.W,Z=P.zellen.split(''),N=M.N,o=(N>>1)-(W>>1),E=meerEcht(M),F=P.mass||1,KU=P.kueste,sd=(P.seed>>>0)+7531,
+  r=function(v){return Math.max(1,Math.round(v*F))},NB=[[1,0],[-1,0],[0,1],[0,-1]],d0=SEE_DIR[KU.seite],i,j,k,d,t,s,L=[];
+ var z=function(x,y){return x<0||y<0||x>=W||y>=W?'':Z[y*W+x]};
+ var meerM=function(x,y){var u=x+o,v=y+o;return u>=0&&v>=0&&u<N&&v<N&&E[v*N+u]===1},meer=function(x,y){return z(x,y)==='n'&&meerM(x,y)};   // meerM: echtes Meer in der Maske (auch unter Kai)
+ var passt=function(x,y,dx,dy,b,lg){var px=dy?1:0,py=dx?1:0;for(var t=0;t<b;t++)for(var s=1;s<=lg+1;s++)if(!meer(x+px*t+dx*s,y+py*t+dy*s))return false;return true};
+ var weit=function(x,y,ab,art){for(var q=0;q<L.length;q++){var e=L[q];if(art&&e.art!==art)continue;if(Math.max(Math.abs(e.x-x),Math.abs(e.y-y))<(e.art==='mole'||art==null?ab+e.b:ab))return false}return true};
+ var mole=function(x,y,dx,dy,b,lg){var px=dy?1:0,py=dx?1:0;for(var t=0;t<b;t++)for(var s=1;s<=lg;s++){Z[(y+py*t+dy*s)*W+x+px*t+dx*s]='q';KU.molenFelder++}
+  L.push({x:x+px*(b>>1),y:y+py*(b>>1),b:b,art:'mole'});KU.molen++};
+ KU.molen=0;KU.stege=0;KU.anleger=0;KU.molenFelder=0;KU.stegFelder=0;KU.molenSoll=MOLEN[g]||0;KU.molenStrasse=false;
+ // erste Mole: verlängert die Hafenstraße (KU.ende, in aussen() in Planfeldern gemerkt, hier über Maßstab und Spiegeln ins Bild) spaltenweise über ihre Breite:
+ // je Spalte bis zum letzten Straßenfeld, dann Land vor dem Meer (Kai, Ufer, Wiese, kein Haus, höchstens 3 Planfelder) als Pflaster, alle Spalten enden gleich weit im Meer.
+ var px0=d0[1]?1:0,py0=d0[0]?1:0,BM=new Uint8Array(W*W),vorL=function(c,x,y){return(c==='q'||c==='v'||c==='g'||c==='u')&&!BM[y*W+x]},tief=function(x,y){return x*d0[0]+y*d0[1]};
+ P.bauten.forEach(function(b){for(var y=b.j;y<b.j+b.h;y++)for(var x=b.i;x<b.i+b.w;x++)if(x>=0&&y>=0&&x<W&&y<W)BM[y*W+x]=1});   // Häuser, Mauer: keine Mole darüber
+ var zumMeer=function(x,y){for(var k=1;k<=r(3)+2;k++){var xx=x+d0[0]*k,yy=y+d0[1]*k;if(meer(xx,yy))return k;if(!vorL(z(xx,yy),xx,yy))return 0}return 0};
+ // Hafenstraße im Bild: Feld je Spalte (Straße s oder Kai q vor dem Tor); liegt dort schon Weltwasser, zurück bis zu Straße oder Kai
+ var weg=function(x,y){var c=z(x,y);return c==='s'||c==='q'&&!meerM(x,y)},sp={};
+ if(KU.molenSoll>0&&KU.ende)KU.ende.forEach(function(p){for(var I=Math.ceil(p[0]*F);I<Math.ceil((p[0]+1)*F);I++)for(var J=Math.ceil(p[1]*F);J<Math.ceil((p[1]+1)*F);J++){
+   var x=P.gespiegelt?J:I,y=P.gespiegelt?I:J,lt=x*px0+y*py0;for(var zb=0;zb<=r(3)+2&&!weg(x,y);zb++){x-=d0[0];y-=d0[1]}if(!weg(x,y))continue;
+   if(!sp[lt]||tief(x,y)>tief(sp[lt][0],sp[lt][1]))sp[lt]=[x,y]}});
+ var spK=Object.keys(sp).map(Number).sort(function(a,b){return a-b}),lg0=r(5+Math.floor(rausch(spK.length?spK[0]:0,W,sd)*3)),wahl=null;
+ var probe=function(ts){var sl=[],an=-1e9;for(var a=0;a<ts.length;a++){var x=sp[ts[a]][0],y=sp[ts[a]][1];while(weg(x+d0[0],y+d0[1])){x+=d0[0];y+=d0[1]}var k2=zumMeer(x,y);if(!k2)return null;
+   sl.push({x:x,y:y,k:k2});if(tief(x,y)+k2>an)an=tief(x,y)+k2}
+  var spitze=an+lg0-1;for(a=0;a<sl.length;a++){var c=sl[a];for(var k3=1;tief(c.x,c.y)+k3<=spitze+1;k3++){var xx=c.x+d0[0]*k3,yy=c.y+d0[1]*k3;
+    if(k3<c.k?!vorL(z(xx,yy),xx,yy):!(meer(xx,yy)||z(xx,yy)==='q'&&meerM(xx,yy)))return null}}
+  return{sl:sl,spitze:spitze}};
+ for(var bw=spK.length;bw>=2&&!wahl;bw--)for(var a0=0;a0+bw<=spK.length&&!wahl;a0++){var ts=spK.slice(a0,a0+bw);if(ts[bw-1]-ts[0]!==bw-1)continue;wahl=probe(ts)}   // volle Breite, sonst schmaler (mind. 2)
+ if(wahl){var sl=wahl.sl,spitze=wahl.spitze;sl.forEach(function(c){for(var k3=1;tief(c.x,c.y)+k3<=spitze;k3++){var xx=c.x+d0[0]*k3,yy=c.y+d0[1]*k3;Z[yy*W+xx]='q';if(meerM(xx,yy))KU.molenFelder++}});
+   var lnd={};sl.forEach(function(c){for(var k3=1;k3<c.k;k3++)lnd[(c.y+d0[1]*k3)*W+c.x+d0[0]*k3]=1});P.dinge=P.dinge.filter(function(e){return !lnd[e.j*W+e.i]});
+   var mt=sl[0];L.push({x:mt.x+d0[0]*mt.k,y:mt.y+d0[1]*mt.k,b:sl.length,art:'mole'});KU.molen++;KU.molenStrasse=true}
+ // weitere Molen und die Stege vom Kai: jede Stelle (Kai, Richtung zum Meer) in fester Zufallsreihenfolge
+ var K=[];for(j=0;j<W;j++)for(i=0;i<W;i++){if(Z[j*W+i]!=='q')continue;for(d=0;d<4;d++)if(meer(i+NB[d][0],j+NB[d][1]))K.push({x:i,y:j,dx:NB[d][0],dy:NB[d][1],s:rausch(i*4+d,j,sd+1)})}
+ K.sort(function(a,b){return a.s-b.s});
+ var bM=r(2);for(k=0;k<K.length&&KU.molen<KU.molenSoll;k++){var c=K[k],px=c.dy?1:0,py=c.dx?1:0,ok=true;
+  for(t=0;t<bM&&ok;t++)if(z(c.x+px*t,c.y+py*t)!=='q')ok=false;if(!ok||!weit(c.x,c.y,r(3)))continue;
+  var lg=r(4+Math.floor(rausch(c.x,c.y,sd+2)*3));if(passt(c.x,c.y,c.dx,c.dy,bM,lg))mole(c.x,c.y,c.dx,c.dy,bM,lg)}
+ for(k=0;k<K.length;k++){var c2=K[k];if(z(c2.x,c2.y)!=='q')continue;var ab=r(4+Math.floor(rausch(c2.x,c2.y,sd+3)*4));
+  if(!weit(c2.x,c2.y,ab,'steg')||!weit(c2.x,c2.y,r(3),'mole'))continue;var lgS=r(3+Math.floor(rausch(c2.x,c2.y,sd+4)*3));if(lgS<2||!passt(c2.x,c2.y,c2.dx,c2.dy,1,lgS))continue;
+  var ax=c2.dx?'i':'j',qr=c2.dx?'j':'i';
+  for(s=1;s<=lgS;s++){var si=c2.x+c2.dx*s,sj=c2.y+c2.dy*s;Z[sj*W+si]='y';KU.stegFelder++;P.dinge.push({id:s===1?WW_RAMPE[c2.dx+','+c2.dy]:'steg-deck-'+ax,i:si,j:sj,rolle:'steg'})}
+  for(var na=1+(rausch(c2.x,c2.y,sd+5)<.5?1:0),n=0;n<na;n++){var ao=2+Math.floor(rausch(c2.x+n,c2.y,sd+6)*(lgS-1)),sei=rausch(c2.x,c2.y+n,sd+7)<.5?1:-1;if(ao>lgS)ao=lgS;
+   for(var e2=0;e2<2;e2++,sei=-sei){var axn=c2.x+c2.dx*ao+c2.dy*sei,ayn=c2.y+c2.dy*ao+c2.dx*sei;if(!meer(axn,ayn))continue;Z[ayn*W+axn]='y';KU.stegFelder++;P.dinge.push({id:'steg-deck-'+qr,i:axn,j:ayn,rolle:'steg'});KU.anleger++;break}}
+  L.push({x:c2.x,y:c2.y,b:1,art:'steg'});KU.stege++}
+ var alt=P.zellen;P.dinge=P.dinge.filter(function(e){var q=e.j*W+e.i;return e.rolle==='steg'||e.i<0||e.j<0||e.i>=W||e.j>=W||Z[q]===alt.charAt(q)});   // Bäume, Felsen auf neuen Molen und Stegen weichen
+ delete KU.ende;P.zellen=Z.join('')}
 // Burgberg (N6b2c4c3): Höhenstufe je Feld als Ziffernfolge P.hoehe (gleiche Lage wie P.zellen), vor dem Maßstab im Plan gerechnet. Kern = Doppelblock(s) der
 // Gipfelbauten (Stufe T); Abstand d bis ½ Block T−1, bis 1 Block T−2, ab Großstadt bis 2 Blöcke Stufe 1, sonst 0; Rand mit grobem Rauschen ±0,75 ausgefranst.
 // Wasser, Kai, Strand, Stege und Wege am Wasser (Brücken, Ufergassen) bleiben auf Stufe 0, von dort höchstens 1 Stufe je Feld (kein Weg springt um 2 Stufen).
@@ -2977,6 +3029,6 @@ function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.f
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});if(P.grube)GRUBE_IDS.forEach(function(i){s[i]=1});return Object.keys(s)}
 
 var SB={POSTEN_ART:POSTEN_ART,BUENDEL_MAX:BUENDEL_MAX,HAFEN_MAX:HAFEN_MAX,buendeln:buendeln,GRUBE_IDS:GRUBE_IDS,grubeId:grubeId,SCHLAMM:SCHLAMM,schlammWahl:schlammWahl,BUDE_VAR:BUDE_VAR,budeGanz:budeGanz,budeBild:budeBild,budeVariante:budeVariante,FISCHER_LAGER:FISCHER_LAGER,UFER_LAGER:UFER_LAGER,WASCH_LAGER:WASCH_LAGER,SALZ_LAGER:SALZ_LAGER,SALZ_BECKEN:SALZ_BECKEN,JAGD_LAGER:JAGD_LAGER,postenGanz:postenGanz,postenBildAn:postenBildAn,MINE_LAGER:MINE_LAGER,BRUCH_LAGER:BRUCH_LAGER,BRUCH_PLATZ:BRUCH_PLATZ,HOLZ_LAGER:HOLZ_LAGER,KOEHLER_LAGER:KOEHLER_LAGER,KOEHLER_PLATZ:KOEHLER_PLATZ,POSTEN_SELTEN:POSTEN_SELTEN,presseGanz:presseGanz,hofPresse:hofPresse,PRESSE:PRESSE,PRESSE_ID:PRESSE_ID,pferchZaun:pferchZaun,flurKante:flurKante,hofGanz:hofGanz,hofTuerOff:hofTuerOff,HOF_BILD_VAR:HOF_BILD_VAR,PFERCH_FUSS:PFERCH_FUSS,dauerDinge:dauerDinge,dauerDing:dauerDing,DAUER_BILD:DAUER_BILD,DAUER_IDS:DAUER_IDS,DAUER_DINGE:DAUER_DINGE,DAUER_STUMPF:DAUER_STUMPF,postenPlan:postenPlan,postenBegeh:postenBegeh,postenSeite:postenSeite,POSTEN_ANLAGE:POSTEN_ANLAGE,POSTEN_HOF:POSTEN_HOF,POSTEN_W:POSTEN_W,POSTEN_GROSS:POSTEN_GROSS,POSTEN_SEITEN:POSTEN_SEITEN,malbild:malbild,saumObj:saumObj,SAUM_RANG:SAUM_RANG,FELD_IDS:FELD_IDS,FELD_BILD:FELD_BILD,feldBild:feldBild,feldAchse:feldAchse,SAUM_SCHMAL:SAUM_SCHMAL,setzeLandw:setzeLandw,landwDaten:landwDaten,flurArt:flurArt,flurTempo:flurTempo,FLUR_RASTER:FLUR_RASTER,FLUR_WEIT:FLUR_WEIT,HOF_HAUS:HOF_HAUS,KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
-SB.maskeMeer=maskeMeer;SB.stadtFluss=stadtFluss;SB.weltMeer=weltMeer;SB.meerAnteil=meerAnteil;SB.meerSeite=meerSeite;   // N7a5a3a (Tests)
+SB.maskeMeer=maskeMeer;SB.stadtFluss=stadtFluss;SB.weltMeer=weltMeer;SB.meerAnteil=meerAnteil;SB.meerSeite=meerSeite;SB.meerEcht=meerEcht;   // N7a5a3a, N7a5a3b2 (Tests)
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
