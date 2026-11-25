@@ -33,9 +33,14 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='f6794c07', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='63193fc0', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
+// N7a3c2 Ortsnamen (Thomas 25.11.2026): Staffel nach Ortsgröße g (2 Weiler … 7 Hauptstadt) je Stufe lod 4–9, Zusatz bis lod 5, Schriftgröße je g; Notausschalter ?n7a3c2=0
+var N7A3C2=!/[?&]n7a3c2=0/.test(location.search||''), NAMEN_G=[0,0,0,0,2,3,4,4,6,6], NAMEN_BIS=9, NAMEN_ZUS=5, NAMEN_MAX=8192, NAMEN_PX=[15,15,15,16,17,18,21,24]; var NAMEN_ANTEIL=4;   // ms je Bild fürs Vorzeichnen neuer Namen (Regel 20), der Rest folgt im nächsten Bild
+var NF={papier:'#d8c499',papier2:'#b49c6c',rand:'#412614',tinte:'#24140a',tinte2:'#5f3d23',blut:'#5d0b07'};
+var NFARB=(function(){var P=typeof window!=='undefined'&&window.AT3_64,L=[];for(var k in NF){var v=parseInt(NF[k].slice(1),16),r=v>>16,gg=(v>>8)&255,bb=v&255;
+ if(P){var f=P.farbe(P.PALETTEN[P.PALETTE].farben[P.naechste(r,gg,bb,P.PALETTE)]);r=f[0];gg=f[1];bb=f[2];NF[k]='rgb('+r+','+gg+','+bb+')'}L.push(r,gg,bb)}return L})();   // Farben = nächste der AT3-Palette
 var N7A5A0=!/[?&]n7a5a0=0/.test(location.search||'');   // N7a5a0 Wasser waagrecht (ufer.js im Bildkern)
 var GW_ZELLEN=600, RO=112, RS=16, RG0=GW_ZELLEN*8/(2*Math.PI), ZP=2*Math.PI;   // G4d: Globus-Halbmesser der ersten Stufe (eine Erdzelle = 8 Bildpunkte am Äquator)   // G4b: größte Überstände der Naturbilder über ihr Feld (Stufe 1×, wie RAND_OBEN/RAND_SEITE in natur.js), damit Baumkronen am Bildrand nicht fehlen
 
@@ -165,6 +170,8 @@ var t0=performance.now();
   tierGeht=false;if(TIER.size&&lod<STUFEN){tiereMalen(CX,CY,Z,W,H);if(tierGeht)weiter=true}      // G8: Rehe
   if(wzRahmen&&lod<STUFEN)rahmenMalen(CX,CY,Z,W,H);
   if(wzPfad&&lod<STUFEN)pfadMalen(CX,CY,Z,W,H);
+  if(N7A3C2&&!(lod>=STUFEN&&lod<=NAMEN_BIS&&!glob))M.namen=0;
+  if(N7A3C2&&lod>=STUFEN&&lod<=NAMEN_BIS&&!glob){var tn=performance.now();namenMalen(CX,CY,Z,W,H,lod,ruht);M.namenMs=performance.now()-tn;if(M.namenMs>(M.maxNamenMs||0))M.maxNamenMs=M.namenMs}      // N7a3c2: Ortsnamen
   if(marke){var mx=marke.x+Math.round((cam.x-marke.x)/WX)*WX,mh=lod<STUFEN?hoeheBei(marke.x,marke.y):0;kreuz(((mx-marke.y)*32-CX)/Z+W/2,((mx+marke.y)*16-(mh==null?cam.z:mh)*8-CY)/Z+H/2)}
   M.sichtbar=LISTE.length;M.ersatz=ersatz;M.veraltet=veraltet;M.offen=OFFEN.slice();M.rand=randN;M.bilder=bilder.size;M.bytes=bytes;if(bytes>M.maxBytes)M.maxBytes=bytes;M.fertig=gen>=0&&hatKam&&LISTE.length>0&&!ersatz&&!veraltet&&!weiter;
   var ms=performance.now()-t0;M.zeichnen++;M.zeichenMs+=ms;if(ms>M.maxZeichenMs)M.maxZeichenMs=ms;
@@ -191,6 +198,43 @@ var t0=performance.now();
    return{x:Math.floor(modu(lo/ZP,1)*WX),y:Math.max(0,Math.min(WY-1,Math.floor((.5-la/Math.PI)*WY)))}}
   var Z=zf(),PX=(cam.x-cam.y)*32+sx*Z,PY=(cam.x+cam.y)*16+sy*Z,u=(PX/32+PY/16)/2,v=(PY/16-PX/32)/2;
   return{x:Math.floor(umX(u)),y:Math.max(0,Math.min(WY-1,Math.floor(v)))}}
+ // N7a3c2 (Thomas 25.11.2026): Ortsnamen in den Fernstufen. Der Bildkern nennt die Orte im Ausschnitt (frage „namen“, erst wenn die Hand ruht), hier wird jeder Name
+ // einmal vorgezeichnet (Pergamentstreifen mit Rand, Tinte, Haupt-/Großstädte blutrot, Zusatz in heller Tinte; Schrift AT3 Text, Kanten hart auf Palettenfarben gerundet) und gemerkt (NBILD, höchstens NBILD_MAX), danach je Bild nur kopiert.
+ // Staffel nach Größe (NAMEN_G, wie im Bildkern), Zusatz nur ⅟16–⅟32, größere Orte größere Schrift; größere zuerst, ein Name, der einen gesetzten überdeckt, fällt weg.
+ var NAMEN=new Map(), NBILD=new Map(), NBILD_MAX=400, nFrage=null, nLetzt=null, nFont=null, NRECHT=[], NLISTE=[];
+ function namenFrage(lod,CX,CY,hb,hh){var x0=1e18,x1=-1e18,y0=1e18,y1=-1e18,ex=[-1,1,1,-1],ey=[-1,-1,1,1],q=1.25;
+  for(var i=0;i<4;i++){var a=(CX+ex[i]*hb*q)/32,b=(CY+ey[i]*hh*q)/16,wx=(a+b)/2,wy=(b-a)/2;if(wx<x0)x0=wx;if(wx>x1)x1=wx;if(wy<y0)y0=wy;if(wy>y1)y1=wy}
+  var L=nLetzt;if(L&&L.lod===lod&&L.gen===gen&&x0>=L.x0&&x1<=L.x1&&y0>=L.y0&&y1<=L.y1)return;if(nFrage)return;
+  var w=(x1-x0)*.25,h=(y1-y0)*.25,R={lod:lod,gen:gen,x0:x0-w,x1:x1+w,y0:Math.max(0,y0-h),y1:Math.min(WY,y1+h),zus:lod<=NAMEN_ZUS};nFrage=R;M.namenFragen=(M.namenFragen|0)+1;var tq=performance.now();
+  frage('namen',R).then(function(a){nFrage=null;if(a.fehlt||R.gen!==gen)return;M.namenAntwortMs=performance.now()-tq;M.namenUs=a.us;var L=a.namen||[];
+   for(var i=0;i<L.length;i++){var e=L[i],o=NAMEN.get(e[0]);if(!o){o={k:e[0],x:e[1],y:e[2],g:e[3],h:e[4],name:e[5],zus:undefined};NAMEN.set(e[0],o);if(NAMEN.size>NAMEN_MAX)NAMEN.delete(NAMEN.keys().next().value)}
+    if(e[6]!==undefined)o.zus=e[6]}
+   M.namenOrte=NAMEN.size;nLetzt=R;plan()})}
+ function schriftDa(){if(nFont)return true;var d=typeof document!=='undefined'?document:null;if(!d||!d.fonts||!d.fonts.check){nFont=true;return true}
+  if(d.fonts.check('16px "AT3 Text"')){nFont=true;return true}if(nFont!==false){nFont=false;d.fonts.load('16px "AT3 Text"').then(function(){nFont=true;plan()},function(){nFont=true;plan()})}return false}
+ function namenBild(o,mitZ){var key=o.k+(mitZ?'z':'n'),b=NBILD.get(key);if(b){NBILD.delete(key);NBILD.set(key,b);return b}
+  var t0=performance.now(),px=NAMEN_PX[o.g]||15,pz=Math.max(15,px-3),fn=function(p){return p+'px "AT3 Text",ui-monospace,monospace'},
+   c=document.createElement('canvas'),x=c.getContext('2d',{willReadFrequently:true});x.font=fn(px);var w1=Math.ceil(x.measureText(o.name).width),w2=0,zt=mitZ&&o.zus?o.zus:'';
+  if(zt){x.font=fn(pz);w2=Math.ceil(x.measureText(zt).width)}
+  var pad=5,W=w1+w2+2*pad,H=px+6;c.width=W;c.height=H;x=c.getContext('2d',{willReadFrequently:true});x.textBaseline='alphabetic';
+  var base=Math.round(H/2+px*.32),gross=o.g>=6;
+  x.fillStyle=NF.rand;x.fillRect(0,0,W,H);x.fillStyle=NF.papier2;x.fillRect(1,1,W-2,H-2);x.fillStyle=NF.papier;x.fillRect(2,2,W-4,H-4);
+   x.font=fn(px);x.fillStyle=gross?NF.blut:NF.tinte;x.fillText(o.name,pad,base);if(zt){x.font=fn(pz);x.fillStyle=NF.tinte2;x.fillText(zt,pad+w1,base)}
+  hart(x,W,H);b={c:c,w:W,h:H};NBILD.set(key,b);if(NBILD.size>NBILD_MAX)NBILD.delete(NBILD.keys().next().value);
+  var ms=performance.now()-t0;M.namenBilder=(M.namenBilder|0)+1;if(ms>(M.maxNamenBildMs||0))M.maxNamenBildMs=ms;return b}
+ // Kantenglättung der Schrift weg: jeder Bildpunkt ganz oder gar nicht, Farbe die nächste der verwendeten Farben (keine Zwischenfarben)
+ function hart(x,W,H){var D=x.getImageData(0,0,W,H),p=D.data,F=NFARB;for(var i=0;i<p.length;i+=4){if(p[i+3]<128){p[i+3]=0;continue}p[i+3]=255;
+   var bi=0,bd=1e9;for(var q=0;q<F.length;q+=3){var dr=p[i]-F[q],dg=p[i+1]-F[q+1],db=p[i+2]-F[q+2],dd=dr*dr*3+dg*dg*6+db*db;if(dd<bd){bd=dd;bi=q}}p[i]=F[bi];p[i+1]=F[bi+1];p[i+2]=F[bi+2]}x.putImageData(D,0,0)}
+ function namenMalen(CX,CY,Z,W,H,lod,ruht){var gmin=NAMEN_G[lod];if(!gmin)return;if(bk&&gen>=0&&ruht)namenFrage(lod,CX,CY,W/2*Z,H/2*Z);else if(!ruht)setTimeout(plan,RUHE_MS);
+  if(!NAMEN.size||!schriftDa())return;var L=NLISTE,R=NRECHT,mitZ=lod<=NAMEN_ZUS,i,j,n=0,weg=0;L.length=0;R.length=0;
+  NAMEN.forEach(function(o){if(o.g<gmin)return;var mx=o.x+Math.round((cam.x-o.x)/WX)*WX,sx=((mx-o.y)*32-CX)/Z+W/2,sy=((mx+o.y)*16-CY)/Z+H/2;
+   if(sx<-200||sx>W+200||sy<-60||sy>H+100)return;L.push({o:o,sx:sx,top:sy-o.h*32/Z,bot:sy+o.h*32/Z})});
+  L.sort(function(a,b){return b.o.g-a.o.g||a.o.k-b.o.k});
+  var tA=performance.now(),spaeter=false;for(i=0;i<L.length;i++){var e=L[i],zk=e.o.k+(mitZ&&e.o.zus?'z':'n');if(!NBILD.has(zk)&&performance.now()-tA>NAMEN_ANTEIL){spaeter=true;continue}var b=namenBild(e.o,mitZ&&e.o.zus),x0=Math.round(e.sx-b.w/2),y0=Math.round(e.top-b.h-2),ok=true;if(y0<3&&e.bot>b.h+3)y0=3;var hw=e.o.h*64/Z;if(e.sx+hw>0&&e.sx-hw<W)x0=Math.max(3,Math.min(W-3-b.w,x0));   // Ort größer als das Bild: Name bleibt am Rand sichtbar
+  
+   for(j=0;j<R.length;j+=4)if(x0<R[j+2]&&x0+b.w>R[j]&&y0<R[j+3]&&y0+b.h>R[j+1]){ok=false;break}
+   if(!ok){weg++;continue}R.push(x0,y0,x0+b.w,y0+b.h);g.drawImage(b.c,x0,y0);n++}
+  if(spaeter)setTimeout(plan,0);M.namen=n;M.namenWeg=weg}
  function zf(){return cam.nah===2?.25:cam.nah?.5:1<<cam.lod}
  function zText(l){return cam.nah===2&&l===0?'4×':cam.nah&&l===0?'2×':l===0?'1×':l<STUFEN?['','½','¼','⅛'][l]:'1/'+(1<<l)}
  function melden(){M.globus=glob?glob.g:-1;if(o.beiZoom)o.beiZoom(glob?-1:cam.lod,glob?'globe':zText(cam.lod))}

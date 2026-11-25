@@ -26,6 +26,7 @@
 // N7a3b: auch ¼ und ⅛ (¼ aus ½, ⅛ aus ¼, zusammen höchstens 0,5 MB); Notausschalter ?n7a3b=0.
 // N7a3c1: Mini-Pläne der Orte für die Fernstufen ⅟16–⅟512 (ortsbild.js mini, vom Ortskern mit jeder Planantwort oder auf „mini“), höchstens MINI_GR (4 MB) gemerkt,
 // fehlt einer, steht der Punkt und der Ort wird angefragt; Neues gebündelt (etwa alle 0,3 s) als „fernNeu“ mit den Ortsflächen. Notausschalter ?n7a3c1=0.
+// N7a3c2: Frage „namen“: Ortsnamen im Ausschnitt nach Staffel, Zusatz in ⅟16–⅟32 (Notausschalter ?n7a3c2=0 in der Weltkarte: keine Frage).
 // N7a2b3: Gebäudebilder in Abschnitten (stadtbild.js bauAuftrag, größter Schritt ≤ 8 ms gedrosselt), Messfeld in der Weltkarte mit ?mess=1; Notausschalter ?n7a2b3=0.
 'use strict';
 importScripts('bodenbild.js'+self.location.search,'weltgen.js'+self.location.search,'natur.js'+self.location.search,'startplatz.js'+self.location.search,'fernbild.js'+self.location.search,'baubild.js'+self.location.search,'herrschaften.js'+self.location.search);
@@ -88,6 +89,25 @@ function miniDa(k,o){if(!o||!o.m||!o.W)return;MINIF.delete(k);var e=MINI.get(k);
  if(e)return;MININ.push([o.x0,o.y0,o.W]);if(!MINIT)MINIT=setTimeout(miniMelden,BUENDEL)}
 function miniMelden(){MINIT=0;if(!MININ.length)return;var L=MININ;MININ=[];self.postMessage({art:'fernNeu',gen:gen,flaechen:L,minis:MINI.size,miniB:MINIB,miniMs:MINIST.maxMs,miniRaus:MINIST.raus})}
 function miniAn(){if(!N7A3C1||!A||!ofl()){FB.miniAn(null);return}var lut=miniLut();FB.miniAn(lut?{hole:miniHole,lut:lut}:null)}
+// N7a3c2 (Thomas 25.11.2026): Ortsnamen für die Fernstufen. Frage „namen“ mit Ausschnitt (Weltfelder) und Stufe: alle Orte in den Erdzellen des Ausschnitts, die in
+// dieser Stufe einen Namen tragen (Staffel NAMEN_G: ⅟16 Weiler, bis ⅟32 Dörfer, bis ⅟128 Städte/Marktflecken, bis ⅟512 Haupt-/Großstädte), in ⅟16–⅟32 mit Zusatz
+// (orte.js bilanz, Text aus sprache/en.json). Kosten nur nach Zellen im Bild; je Ort gemerkt (höchstens NAMEN_MAX), Daten beim ersten Mal geladen.
+var NAMEN_G=[0,0,0,0,2,3,4,4,6,6],NAMEN_MAX=8192,NAMK=new Map(),NTX=null,NTXL=null;
+function namenTexte(){if(NTXL)return NTXL;NTXL=fetch('sprache/en.json'+self.location.search).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){NTX=j.texte||j;return NTX},function(){NTX=false;return null});return NTXL}
+function namen(d,m,t){var lod=d.lod|0,gmin=NAMEN_G[lod];m.namen=[];if(!gmin||!A.ort){m.us=(performance.now()-t)*1000;self.postMessage(m);return}
+ if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}
+ if(!OR&&OR!==false){try{importScripts('orte.js'+self.location.search);OR=self.AT3ORTE.AUS?false:self.AT3ORTE}catch(x){OR=false}}
+ if(AP==null){try{importScripts('aussenposten.js'+self.location.search);AP=self.AT3POSTEN.AUS?false:self.AT3POSTEN}catch(x){AP=false}}
+ if(!ON||!OR){m.us=(performance.now()-t)*1000;self.postMessage(m);return}
+ var zus=!!d.zus;if(zus&&(PD==null||NTX==null)){Promise.all([PD==null?postenDaten():0,NTX==null?namenTexte():0]).then(function(){if(d.gen!==gen||!A){m.fehlt=true;self.postMessage(m);return}namen(d,m,performance.now())});return}
+ var ZF=G.ZF,za=Math.floor(d.x0/ZF),ze=Math.floor(d.x1/ZF),ya=Math.max(0,Math.floor(d.y0/ZF)),ye=Math.min(G.GH-1,Math.floor(d.y1/ZF)),x,y;if(ze-za>=G.GW)ze=za+G.GW-1;
+ for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){var X=((x%G.GW)+G.GW)%G.GW,z=y*G.GW+X;if(!(A.ort[z]&15))continue;var k=OR.ortNr(A,z);if(k==null)continue;
+  var e=NAMK.get(k);if(!e){var g=OR.groesse(seed,A,k);if(g<gmin)continue;var r=OR.roh(seed,A,k,ON),pp=G.ortPunkt(seed,A,X,y);
+   e={k:k,x:pp[0],y:pp[1],g:r.g,h:AP&&AP.HALB?(AP.HALB[r.g]||AP.HALB[7]):24,name:r.name,r:r};NAMK.set(k,e);if(NAMK.size>NAMEN_MAX)NAMK.delete(NAMK.keys().next().value)}
+  if(e.g<gmin)continue;
+  if(zus&&e.zus===undefined){e.zus=null;try{var b=PD?OR.bilanz(seed,e.r,PD):null;if(b&&b.zusatz&&NTX){var tx=NTX['ort.zusatz.'+b.zusatz.gruppe+'.'+b.zusatz.n];if(tx)e.zus=tx}}catch(q){}}
+  m.namen.push([e.k,e.x,e.y,e.g,e.h,e.name,zus?e.zus:undefined])}
+ m.us=(performance.now()-t)*1000;self.postMessage(m)}
 function miniLeeren(){MINI.clear();MINIB=0;MINIF.clear();MININ=[];if(MINIT){clearTimeout(MINIT);MINIT=0}}
 function vomOrtskern(m){if(m.gen!==gen)return;if(m.art==='mini'){if(m.fehler)MINIF.delete(m.k);else if(N7A3C1)miniDa(m.k,m);return}if(N7A3C1&&m.art==='plan'&&m.mini)miniDa(m.k,m.mini);if(!OFL)return;
  if(m.art==='posten'){OFL.postenListe(m);ortsBedarf();return}   // N7a2c: Postenliste da → berührende Posten aufnehmen
@@ -121,6 +141,7 @@ function dunkelste(p){var b=0,bl=1e9;for(var i=0;i<p.length;i++){var c=p[i],l=(c
 // G4c: Fragen der Startplatz-Wahl. Bilder gehen als Zahlenfeld zurück (klein, einmalig), der Hauptkern malt sie nur.
 function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.fehlt=true;self.postMessage(m);return}var t=performance.now();
  if(d.frage==='fp'){fp(d,m,t);return}
+ if(d.frage==='namen'){namen(d,m,t);return}      // N7a3c2: Ortsnamen im Ausschnitt
  if(d.frage==='globus'){if(!TEX){TEX=SP.erdBild(A,F,ueb(),FB.UFARBE);if(reiche())FB.reicheErde(TEX,RE,F);TEXD=FB.dunkler(TEX,F)}var gl=FB.globus(TEX,TEXD,d.W,d.H,d.R,d.lon,d.lat,d.s,F.pal[F.dunkel]);m.w=gl.w;m.h=gl.h;m.buf=gl.px;tr.push(gl.px.buffer)}
  else if(d.frage==='erdbild'){var e=SP.erdBild(A,F);m.w=SP.GW;m.h=SP.GH;m.buf=e;tr.push(e.buffer)}
  else if(d.frage==='region'){var rx=SP.eckeX(d.zx),ry=SP.eckeY(d.zy),r=SP.regionBild(G,seed,A,rx,ry,F);m.rx=rx;m.ry=ry;m.w=m.h=SP.RP;m.rs=SP.RS;m.buf=r;tr.push(r.buffer)}
@@ -169,7 +190,7 @@ function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  return land<0?{x:BB.WX>>1,y:BB.WY>>1,ort:0}:{x:(land%G.GW)*G.ZF+(G.ZF>>1),y:((land/G.GW)|0)*G.ZF+(G.ZF>>1),ort:0}}
 self.onmessage=function(e){var d=e.data;
  if(d.art==='init'){F={pal:d.pal,du:d.du,he:d.he,dunkel:dunkelste(d.pal)};self.postMessage({art:'arten',liste:NAT.ARTEN,bau:BAUB.ARTEN})}
- else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;miniLeeren();WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
+ else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;miniLeeren();NAMK.clear();WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
  else if(d.art==='blick'){kx=d.kx;ky=d.ky;st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});ortsBedarf();weiter()}
  else if(d.art==='ortskern'){OKP=d.port;OKP.onmessage=function(e){vomOrtskern(e.data)}}
  else if(d.art==='ortskernWeg'){OKP=null;if(OFL)OFL.vergessenAlle();ortsBedarf()}   // Ortskern ausgefallen: ab jetzt eingebettet   // N7a2a: eigener Hintergrundkern für die Ortspläne
