@@ -69,7 +69,7 @@ function bild(hole,x0,y0,lod,F,NT,BA,OT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,s
  var px=new Uint32Array(w*h);
  for(j=0;j<n;j++)for(i=0;i<n;i++){var X=x0+i,Y=y0+j,q=((Y&63)<<6)|(X&63),b=B[q],wv=W[q],e=j*m+i,lN=ECK[e],lE=ECK[e+1],lW=ECK[e+m],lS=ECK[e+m+1];
   var c=BFARBE[b],wasser=b<2||b===10||b===11,r=mix(Math.imul(X,73856093)^Math.imul(Y,19349663)),gw=gb?gb[GW+q]:0,ga=gw&7,gz=(gw>>4)&3;
-  if(OT&&(oz=OT.zelle(X,Y))>=0){if(oz||wasser){c=OT.farbe[oz];wasser=!!OT.wasser[oz]}wv=0;ga=0;gz=0}   // N7a2a: Ortsfläche (Wiese g behält die Farbe des Bioms, außer auf Wasser)
+  if(OT&&(oz=OT.zelle(X,Y))>=0){if(oz||wasser){c=OT.farbe[oz];wasser=!!OT.wasser[oz]}wv=0;if(oz||!OT.weltB||!OT.weltB(X,Y)){ga=0;gz=0}}   // N7a5e1: freie Wiese fern der Häuser behält auch das Bodenmuster der Welt   // N7a2a: Ortsfläche (Wiese g behält die Farbe des Bioms, außer auf Wasser)
   else if(ga&&gz>1){c=GFARBE[ga];wasser=false;wv=-1}
   else if(wv===7){if((X+Y)&1)c=WFARBE[7]}else if(wv){c=WFARBE[wv];wasser=false}
   var ue=WM&&wv>0&&oz<0?WM.ue[q]:0,c2=0;                                                     // N7a5b1: Übergang Weltweg → Ortsweg (Punktmuster)
@@ -99,14 +99,26 @@ function bild(hole,x0,y0,lod,F,NT,BA,OT){var n=TEIL<<lod,hw=32>>lod,hh=16>>lod,s
   for(j=0;j<sp.h;j++){var zo=(sy+j)*w+sx,zs=j*sw;for(var k2=0;k2<sw;k2++){var c2=spx[zs+k2];if(c2!==255)px[zo+k2]=pal[c2]}}}
  return{w:w,h:h,ox:ox,oy:oy,px:px,natur:NL?NL.length-(bz>0?bz:0)-nk:0,bau:bz>0?bz:0,ort:nk,ortBoden:ob}}
 // N7a2b1: Boden der Planfelder aus den Kartei-Bildern (Boden, dann Säume), hinten zuerst wie im Stadtbild; Anker = Feldmitte (obere Ecke + 16) wie stadtbild.js elemente.
-// Nur flache Felder (alle vier Ecken gleich, also die eingeebnete Fläche); Randfelder am Hang behalten die Ersatzfarbe (weiche Übergänge: N7a5). Gibt die Zahl der Felder.
-function ortBoden(OT,px,w,h,ox,oy,x0,y0,n,hw,hh,st,pal){var m=n+1,z=0;
+// Flache Felder (alle vier Ecken gleich) wie gehabt. N7a5e2 (26.11.2026): Randfelder am Hang (Böschung, Rand der Planfläche) bekommen denselben echten Boden, Spalte für
+// Spalte auf das schräge Feld gezogen (flache Raute → schräge Raute, nur innerhalb der Raute, Säume über den Rand fallen dort weg); vorher Ersatzfarbe. Notausschalter ?n7a5e2=0.
+var N7A5E2B=!(typeof self!=='undefined'&&self.location&&/[?&]n7a5e2?=0/.test(self.location.search||''));
+function ortBoden(OT,px,w,h,ox,oy,x0,y0,n,hw,hh,st,pal){var m=n+1,z=0,d2=2*hw;
  for(var s=0;s<=2*(n-1);s++)for(var i=Math.max(0,s-n+1);i<=Math.min(n-1,s);i++){var j=s-i,X=x0+i,Y=y0+j;if(X>=WX)X-=WX;if(OT.zelle(X,Y)<0)continue;
-  var e=j*m+i,l=ECK[e];if(ECK[e+1]!==l||ECK[e+m]!==l||ECK[e+m+1]!==l)continue;var L=OT.boden(X,Y);if(!L)continue;z++;
+  var e=j*m+i,l=ECK[e],lE=ECK[e+1],lW=ECK[e+m],lS=ECK[e+m+1],flach=lE===l&&lW===l&&lS===l;if(!flach&&!N7A5E2B)continue;if(OT.weltB&&OT.weltB(X,Y))continue;var L=OT.boden(X,Y);if(!L)continue;z++;   // N7a5e1: Weltboden statt Kartei-Wiese
   var xc=ox+(i-j)*hw,yc=oy+(i+j)*hh-l*st+hh;   // N7a3a: Feldmitte auch in ½ (1×: +16 wie vorher)
+  if(!flach){hangBoden(L,px,w,h,xc,oy+(i+j)*hh,l,lE,lW,lS,hw,hh,st,d2,pal);continue}
   for(var q=0;q<L.length;q++){var sp=L[q],sx=xc-sp.ax,sy=yc-sp.ay,spx=sp.px,sw=sp.w,k0=sx<0?-sx:0,k1=sx+sw>w?w-sx:sw;
    for(var y=sy<0?-sy:0;y<sp.h&&sy+y<h;y++){var zo=(sy+y)*w+sx,zs=y*sw;for(var k=k0;k<k1;k++){var c=spx[zs+k];if(c!==255)px[zo+k]=pal[c]}}}}
  return z}
+// N7a5e2: Boden eines schrägen Felds. yb = obere Ecke bei Höhe 0; je Bildspalte die Strecke der schrägen Raute (wie bild()) auf die Strecke der flachen Raute abbilden.
+function hangBoden(L,px,w,h,xc,yb,lN,lE,lW,lS,hw,hh,st,d2,pal){var yN=yb-lN*st,yE=yb+hh-lE*st,yW=yb+hh-lW*st,yS=yb+2*hh-lS*st,fN=yb,fW=yb+hh,fS=yb+2*hh,yc=yb+hh;
+ for(var hf=0;hf<2;hf++)for(var k=0;k<hw;k++){var f=2*k+1,x,T,U,T0,U0;
+  if(!hf){x=xc-hw+k;T=yW+Math.floor((yN-yW)*f/d2);U=yW+Math.floor((yS-yW)*f/d2)+1;T0=fW+Math.floor((fN-fW)*f/d2);U0=fW+Math.floor((fS-fW)*f/d2)+1}
+  else{x=xc+k;T=yN+Math.floor((yE-yN)*f/d2);U=yS+Math.floor((yE-yS)*f/d2)+1;T0=fN+Math.floor((fW-fN)*f/d2);U0=fS+Math.floor((fW-fS)*f/d2)+1}
+  if(x<0||x>=w)continue;var dT=U-T||1;
+  for(var t=T<0?0:T;t<=U&&t<h;t++){var tf=T0+Math.round((t-T)*(U0-T0)/dT),c=255;
+   for(var q=0;q<L.length;q++){var sp=L[q],sx=x-(xc-sp.ax),sy=tf-(yc-sp.ay);if(sx<0||sy<0||sx>=sp.w||sy>=sp.h)continue;var v=sp.px[sy*sp.w+sx];if(v!==255)c=v}
+   if(c!==255)px[t*w+x]=pal[c]}}}
 
 // Kurzauskunft je Kartenstück für den Hauptkern: kleinste und größte Stufe je Block 8 × 8 Felder (für „was ist im Bild“) und ein Höhenraster 9 × 9 (Kamerahöhe).
 function kunde(p){var H=sicht(p).H,mm=new Int16Array(128),hg=new Int16Array(81),bx,by,x,y;
@@ -123,6 +135,6 @@ function feld(hole,PX,PY){var u=(PX/32+PY/16)/2,v=(PY/16-PX/32)/2;
   var s=sicht(p),q=((y&63)<<6)|(x&63),l=stufe(s.H[q]);if(l>=4*t)return{x:x,xu:xu,y:y,bio:s.B[q],weg:s.W[q],hoehe:s.H[q]-MEER}}
  return null}
 
-var BB={sicht:sicht,ECK:ECK,TEIL:TEIL,STUFEN:STUFEN,LS:LS,ST:ST,SX:SX,SY:SY,WX:WX,WY:WY,MEER:MEER,BFARBE:BFARBE,WFARBE:WFARBE,bild:bild,kunde:kunde,feld:feld,stufe:stufe};
+var BB={sicht:sicht,ECK:ECK,TEIL:TEIL,STUFEN:STUFEN,LS:LS,ST:ST,SX:SX,SY:SY,WX:WX,WY:WY,MEER:MEER,BFARBE:BFARBE,WFARBE:WFARBE,bild:bild,kunde:kunde,feld:feld,stufe:stufe,hangBoden:hangBoden};
 if(typeof module!=='undefined'&&module.exports)module.exports=BB;else root.AT3BB=BB;
 })(typeof self!=='undefined'?self:this);

@@ -40,7 +40,7 @@ function eben(holeB,X,Y,h,b){var o=holeB&&holeB.ort;return o&&o.hoch&&!holeB(X>>
 // Tempo eines Felds. hole(cx,cy) → Kartenstück des Weltgenerators, holeB(cx,cy) → Bau-Puffer (bau.stueck) oder null. −1 = Kartenstück fehlt.
 function tempo(hole,holeB,seed,X,Y,p){if(Y<0||Y>=WY)return 0;X=um(X);
  var w=hole(X>>6,Y>>6);if(!w)return -1;var s=sicht(w),q=((Y&63)<<6)|(X&63),a=holeB?holeB(X>>6,Y>>6):null;
- var ob=holeB&&holeB.ort;if(ob&&!a){var ov=ob(X,Y);if(ov>=0)return OSm().tempo(ov,p)}   // N7a4a1: Sperrkarte der Orte (Park gewinnt: Stück mit Gebautem nicht)
+ var ob=holeB&&holeB.ort;if(ob&&!a){var ov=ob(X,Y);if(ov>=0&&(ov&15)!==13)return OSm().tempo(ov,p)}   // N7a5e2: Klasse 13 (K_WELT, Weltboden im Ort) rechnet wie draußen samt Natur   // N7a4a1: Sperrkarte der Orte (Park gewinnt: Stück mit Gebautem nicht)
  var h0=hoehe(hole,X,Y,holeB),mn=h0,mx=h0;for(var k=1;k<4;k++){var h=hoehe(hole,um(X+(k&1)),Y+(k>>1),holeB);if(h<0)return -1;if(h<mn)mn=h;if(h>mx)mx=h}
  var steil=mx-mn,b=s.B[q],wv=s.W[q],t;
  if(ob&&!a&&ob.weg){var w2=ob.weg(X,Y);if(w2>=0)wv=w2}                                          // N7a5b1: Weltweg im Hangring an den Ausgang (wie im Bild)

@@ -37,14 +37,17 @@ var PLM=4, PLAN=new Map();
 var N7A5A1=!/[?&]n7a5a1=0/.test(Q),N7A5A2=!/[?&]n7a5a2=0/.test(Q),N7A5A3A=!/[?&]n7a5a3a=0/.test(Q),N7A5A3B=!/[?&]n7a5a3b=0/.test(Q),N7A5A3B2=!/[?&]n7a5a3b2=0/.test(Q),N7A5A3C1=!/[?&]n7a5a3c1=0/.test(Q),N7A5A3C2=!/[?&]n7a5a3c2=0/.test(Q), MST={n:0,ms:0,maxMs:0,stuecke:0,bytes:0};
 // N7a5b1 (Thomas 25.11.2026): Maske mit Weltwegen (Schicht w), daraus je Ort einmal der Anschluss der Weltstraßen an die Ausgänge (ortsanschluss.js, p.an);
 // deckt die Maske Plan + Hangring nicht, wird sie einmal größer geholt. Notausschalter ?n7a5b1=0 (kein Anschluss, Weltwege wie vorher).
-var N7A5B2=!/[?&]n7a5b2=0/.test(Q);   // N7a5b2a: geschwungene Wege in Weilern und Dörfern (stadtbild.js opt.schwung)
+var N7A5B2=!/[?&]n7a5b2=0/.test(Q);var N7A5B2B=!/[?&]n7a5b2b=0/.test(Q);var N7A5B3=!/[?&]n7a5b3=0/.test(Q);var N7A5C=!/[?&]n7a5c=0/.test(Q);   // N7a5c: Höfe und Flur natürlich (stadtbild.js opt.flurNatur)
+   // N7a5b3: Stichwege zu Feldern, leere Feldwege gekappt (stadtbild.js opt.feldAnschluss)
+   // N7a5b2b: geschwungene Ausfallstraßen vor dem Ort und im Flurgürtel (stadtbild.js opt.schwungAussen)
+   // N7a5b2a: geschwungene Wege in Weilern und Dörfern (stadtbild.js opt.schwung)
 var N7A5B1=!/[?&]n7a5b1=0/.test(Q)&&!!OA, AST={n:0,ms:0,maxMs:0,eintraege:0,fehler:0};
 function anschluss(p,k,w){if(!N7A5B1||!w.opt.welt)return;var t=performance.now();
  if(p.r.P.W+2*RAMPE>w.opt.welt.N)w.opt.welt=maske(k,w,p.r.P.W+2*RAMPE+32);
  try{var a=OA.rechnen(w.opt.welt,p.L,p.r.P,RAMPE,G.GW*G.ZF);if(a.fehler){AST.fehler++;return}p.an={x0:a.x0,y0:a.y0,n:a.n,liste:a.liste};p.anSt=a.st;AST.eintraege=a.liste.length>>1}catch(e){AST.fehler++;return}
  var d=performance.now()-t;AST.n++;AST.ms=d;if(d>AST.maxMs)AST.maxMs=d}
 function maske(k,w,nMin){var p=OB.punkt(G,seed,A,k),M=OB.wasserMaske(G,seed,A,k,w.roh.g,hoehe(p[0],p[1]),puffer,nMin,N7A5B1);MST.n++;MST.ms=M.ms;if(M.ms>MST.maxMs)MST.maxMs=M.ms;MST.stuecke=M.stuecke;MST.bytes=M.m.length;return M}
-function planRoh(k){var p=PLAN.get(k);if(p){PLAN.delete(k);PLAN.set(k,p);return p}var w=OB.wahl(seed,A,k,D,ON);if(N7A5A1)w.opt.welt=maske(k,w);if(!N7A5A2)w.opt.weltwasser=false;if(!N7A5A3A)w.opt.stadtwasser=false;if(!N7A5A3B)w.opt.meerstadt=false;if(!N7A5A3B2)w.opt.meerhafen=false;if(!N7A5A3C1)w.opt.bergWasser=false;if(!N7A5A3C2)w.opt.anpassen=false;if(!N7A5B2)w.opt.schwung=false;var r=OB.planen(SB,w.opt);
+function planRoh(k){var p=PLAN.get(k);if(p){PLAN.delete(k);PLAN.set(k,p);return p}var w=OB.wahl(seed,A,k,D,ON);if(N7A5A1)w.opt.welt=maske(k,w);if(!N7A5A2)w.opt.weltwasser=false;if(!N7A5A3A)w.opt.stadtwasser=false;if(!N7A5A3B)w.opt.meerstadt=false;if(!N7A5A3B2)w.opt.meerhafen=false;if(!N7A5A3C1)w.opt.bergWasser=false;if(!N7A5A3C2)w.opt.anpassen=false;if(!N7A5B2)w.opt.schwung=false;if(!N7A5B2B)w.opt.schwungAussen=false;if(!N7A5B3)w.opt.feldAnschluss=false;if(!N7A5C)w.opt.flurNatur=false;var r=OB.planen(SB,w.opt);
  // N7a5a2: um das Wasser gewachsener Plan größer als die Maske (Plan + Hangring): Maske passend neu holen und neu planen (höchstens 2-mal, dann deckt sie)
  for(var mz=0;mz<2&&r.P.weltwasser&&w.opt.welt.wasser>0&&r.P.W+2*OB.MASKE_R>w.opt.welt.N;mz++){w.opt.welt=maske(k,w,r.P.W+2*OB.MASKE_R+32);r=OB.planen(SB,w.opt);MST.neu=(MST.neu|0)+1}p={w:w,r:r,L:OB.lage(G,seed,A,k,r.P)};anschluss(p,k,w);
  PLAN.set(k,p);while(PLAN.size>PLM)PLAN.delete(PLAN.keys().next().value);return p}
@@ -53,7 +56,7 @@ function planen(k){var t=performance.now(),q=planRoh(k),w=q.w,r=q.r,L=q.L;
 // N7a3c1 (Thomas 25.11.2026): Mini-Plan der Fernstufen (ortsbild.js mini, W² Byte) aus dem Plan; jede Planantwort bringt ihn mit, ferne Orte fragen mit „mini“
 // (Warteschlange hinter Sperre, Posten und Plan; gemerkter Plan PLAN, sonst planen). Notausschalter ?n7a3c1=0.
 var N7A3C1=!/[?&]n7a3c1=0/.test(Q);
-function miniAus(q){var P=q.r.P;return{x0:q.L.x0,y0:q.L.y0,W:P.W,m:OB.mini(P,self.AT3_BAUKASTEN,self.AT3_64)}}
+function miniAus(q){var P=q.r.P;return{x0:q.L.x0,y0:q.L.y0,W:P.W,m:OB.mini(P,self.AT3_BAUKASTEN,self.AT3_64,OS&&OS.weltBodenP?OS.weltBodenP(P,q.L.x0,q.L.y0):null)}}
 function miniPlanen(k){var t=performance.now(),q=planRoh(k),o=miniAus(q);o.k=k;o.ms=performance.now()-t;return o}
 // N7a2c: Außenposten und Gehöfte des Orts k; Kennung je Posten = PK + k * 16 + n (getrennt von den Ortsnummern), scheitert ein Posten, fällt nur er weg
 var PK=1048576;
@@ -68,7 +71,7 @@ function hoeheS(x,y){var b=stueck(x>>6,y>>6);return new Uint16Array(b.buffer,b.b
 function postenOpt(q){if(!N7A5A2B)return q.opt;var t=performance.now(),x=q.p.x,y=q.p.y,M=OB.wasserMaskeAm(G,seed,A,x,y,POSTEN_N,hoeheS(x,y),null,stueck),o=Object.assign({},q.opt,{welt:M});
  if(PNASS[q.opt.art]){var se=M.wasser?OB.maskeWasserSeite(M):null;if(!se){var su=OB.wasserSuche(G,A,x,y,stueck);PMST.suchen++;se=su.seite}if(se)o.wasser=se}
  var d=performance.now()-t;PMST.n++;PMST.ms=d;if(d>PMST.maxMs)PMST.maxMs=d;return o}
-function postenPlanen(k){var t=performance.now(),w=OB.wahl(seed,A,k,D,ON),L=OB.posten(G,seed,A,k,D,AP,w),r=[];
+function postenPlanen(k){var t=performance.now(),w=OB.wahl(seed,A,k,D,ON),L=OB.posten(G,seed,A,k,D,AP,w,stueck),r=[];
  L.forEach(function(q,n){try{var P=SB.postenPlan(postenOpt(q)),La=OB.postenLage(G,q.p,P);r.push({k:PK+k*16+n,ort:k,art:q.opt.art,P:P,lage:La,h0:hoehe(La.punkt[0],La.punkt[1])})}catch(x){}});
  return{k:k,liste:r,ms:performance.now()-t}}
 function antwort(m){if(m.art==='sperre'){if(portW)portW.postMessage(m);else if(self.AT3_ORTSKERN_ANTWORT)self.AT3_ORTSKERN_ANTWORT(m);return}   // N7a4a2: Sperrkarten an den Weltkern
@@ -85,7 +88,7 @@ function gr(e){return e.m.length+(e.an?e.an.liste.byteLength:0)}
 function merke(e){SP.set(e.k,e);SPB+=gr(e);while(SPB>SP_MAX&&SP.size>1){var a=SP.keys().next().value;SPB-=gr(SP.get(a));SP.delete(a)}return e}
 function karte(k,bau){var e=SP.get(k);if(e){SP.delete(k);SP.set(k,e);return e}var t=performance.now();e=bau();e.k=k;var d=performance.now()-t;SPST.karten++;SPST.ms=d;if(d>SPST.maxMs)SPST.maxMs=d;return merke(e)}
 // Postenpunkte eines Orts ohne Plan (Plan erst, wenn der Posten das Fenster berührt)
-function postenVon(k){var L=PPT.get(k);if(L){PPT.delete(k);PPT.set(k,L);return L}var w=OB.wahl(seed,A,k,D,ON);L=OB.posten(G,seed,A,k,D,AP,w);PPT.set(k,L);
+function postenVon(k){var L=PPT.get(k);if(L){PPT.delete(k);PPT.set(k,L);return L}var w=OB.wahl(seed,A,k,D,ON);L=OB.posten(G,seed,A,k,D,AP,w,stueck);PPT.set(k,L);
  while(PPT.size>PPT_MAX)PPT.delete(PPT.keys().next().value);return L}
 var PMAX=9;   // halbe Fläche des größten Postenplans (18 × 18, ortsflaeche.js PMAX)
 var RAMPE=24, RAMPE_P=8;   // N7a4b1: Hangring wie ortsflaeche.js RAMPE/RAMPE_P (Orte 24, Posten 8 Felder), damit die Wegsuche das eingeebnete Gelände sieht
@@ -94,14 +97,14 @@ function sperre(cx0,cy0,KOL){var fx0=cx0*ST,fy0=cy0*ST,fn=FEN*ST,mx=fx0+(fn>>1),
  zx0=Math.floor((fx0-600)/G.ZF);zx1=Math.floor((fx0+fn+600)/G.ZF);zy0=Math.max(0,Math.floor((fy0-600)/G.ZF));zy1=Math.min(G.GH-1,Math.floor((fy0+fn+600)/G.ZF));
  for(zy=zy0;zy<=zy1;zy++)for(zx=zx0;zx<=zx1;zx++){var X=((zx%G.GW)+G.GW)%G.GW,z=zy*G.GW+X;if(!(A.ort[z]&15))continue;var k=O.ortNr(A,z);if(k==null)continue;
   var p=G.ortPunkt(seed,A,X,zy),h=AP.halb(O.groesse(seed,A,k))+2+RAMPE,dx=ab(p[0]-mx),dy=p[1]-my;if(Math.abs(dx)>h+(fn>>1)||Math.abs(dy)>h+(fn>>1))continue;
-  var e=karte(k,function(){var q=planRoh(k);return{x0:q.L.x0,y0:q.L.y0,W:q.r.P.W,m:OS.maske(q.r.P,KOL,q.w.opt),h0:hoehe(q.L.punkt[0],q.L.punkt[1]),R:RAMPE,ww:q.r.P.weltwasser?1:0,sk:q.r.P.senke||null,an:q.an||null}});   // N7a4b1: Höhe des Ortspunkts und Hang
+  var e=karte(k,function(){var q=planRoh(k);return{x0:q.L.x0,y0:q.L.y0,W:q.r.P.W,m:OS.maske(q.r.P,KOL,q.w.opt,q.L.x0,q.L.y0),h0:hoehe(q.L.punkt[0],q.L.punkt[1]),R:RAMPE,ww:q.r.P.weltwasser?1:0,sk:q.r.P.senke||null,an:q.an||null}});   // N7a4b1: Höhe des Ortspunkts und Hang
   if(beruehrt(e.x0-e.R,e.y0-e.R,e.W+2*e.R,fx0,fy0,fn))R.push(e)}
  // Außenposten und Gehöfte: Orte im Umkreis PWEIT, Postenpunkt nahe genug → Plan und Karte
  zx0=Math.floor((fx0-PWEIT)/G.ZF);zx1=Math.floor((fx0+fn+PWEIT)/G.ZF);zy0=Math.max(0,Math.floor((fy0-PWEIT)/G.ZF));zy1=Math.min(G.GH-1,Math.floor((fy0+fn+PWEIT)/G.ZF));
  for(zy=zy0;zy<=zy1;zy++)for(zx=zx0;zx<=zx1;zx++){var X2=((zx%G.GW)+G.GW)%G.GW,z2=zy*G.GW+X2;if(!(A.ort[z2]&15))continue;var k2=O.ortNr(A,z2);if(k2==null)continue;
   var p2=G.ortPunkt(seed,A,X2,zy);if(Math.abs(ab(p2[0]-mx))>PWEIT+(fn>>1)||Math.abs(p2[1]-my)>PWEIT+(fn>>1))continue;
   postenVon(k2).forEach(function(q,n){if(Math.abs(ab(q.p.x-mx))>PMAX+2+RAMPE_P+(fn>>1)||Math.abs(q.p.y-my)>PMAX+2+RAMPE_P+(fn>>1))return;
-   var e2;try{e2=karte(PK+k2*16+n,function(){var o=postenOpt(q),P=SB.postenPlan(o),La=OB.postenLage(G,q.p,P);return{x0:La.x0,y0:La.y0,W:P.W,m:OS.maske(P,KOL,o),h0:hoehe(La.punkt[0],La.punkt[1]),R:RAMPE_P,ww:P.weltwasser?1:0,sk:P.senke||null}})}catch(x){return}   // scheitert ein Posten, fällt nur er weg (wie postenPlanen)
+   var e2;try{e2=karte(PK+k2*16+n,function(){var o=postenOpt(q),P=SB.postenPlan(o),La=OB.postenLage(G,q.p,P);return{x0:La.x0,y0:La.y0,W:P.W,m:OS.maske(P,KOL,o,La.x0,La.y0),h0:hoehe(La.punkt[0],La.punkt[1]),R:RAMPE_P,ww:P.weltwasser?1:0,sk:P.senke||null}})}catch(x){return}   // scheitert ein Posten, fällt nur er weg (wie postenPlanen)
    if(beruehrt(e2.x0-e2.R,e2.y0-e2.R,e2.W+2*e2.R,fx0,fy0,fn))R.push(e2)})}
  R.sort(function(a,b){return a.k-b.k});return R}
 // Eine Anfrage nach der anderen; zwischen zwei Plänen kommen neue Nachrichten (Vergessen, neue Welt) dran

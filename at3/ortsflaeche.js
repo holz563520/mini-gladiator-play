@@ -28,9 +28,36 @@
 (function(root){
 'use strict';
 var RAMPE=24, HALTEN=12, ST=64, LISTEN=4, HAUS=2097152, HALB_GR=1048576, VIERTEL_GR=6291456, VIERTEL_GR_ALT=524288;   // N7a5a3d (Thomas 25.11.2026): ¼ + ⅛ zusammen 6 MB statt 0,5 MB, damit die größte Hauptstadt (~4,1 MB) ganz gemerkt bleibt; Notausschalter ?n7a5a3d=0 (bildkern.js) = 0,5 MB wie vorher
-var RAMPE_P=8, HALTEN_P=64, LISTEN_P=16, PL_HALTEN=48, PWEIT=2600;   // N7a2c: Hang, Posten gemerkt, Posten mit Liste, Orte mit Postenliste, größter Abstand Ortspunkt → Postenrand (gemessen 2.268 + 18 + Hang)   // N7a2b2: LISTEN Orte mit ganzer Elementliste, HAUS Bytes gemerkte Gebäudebilder
+var RWX=64*9600, RAMPE_P=8, HALTEN_P=64, LISTEN_P=16, PL_HALTEN=48, PWEIT=2600;   // N7a2c: Hang, Posten gemerkt, Posten mit Liste, Orte mit Postenliste, größter Abstand Ortspunkt → Postenrand (gemessen 2.268 + 18 + Hang)   // N7a2b2: LISTEN Orte mit ganzer Elementliste, HAUS Bytes gemerkte Gebäudebilder
 //  RAMPE: Felder Hang rund um die Fläche (eine Höhenstufe = 64 Einheiten je Feld, wie RollerCoaster Tycoon); HALTEN: Orte im Speicher
 var CODES='gsomfwepxqyuh', FARBE_RGB=[[104,138,64],[150,128,96],[156,150,138],[216,210,198],[186,160,84],[56,98,150],[112,86,58],[124,154,78],[122,116,108],[140,134,122],[128,92,58],[214,194,146],[146,118,84]];
+// N7a5d (26.11.2026): natürlicher Rand der eingeebneten Fläche. Statt des quadratischen Rings (Abstand = größere Achse, Hang 1 Stufe je Feld ab der Planfläche)
+// zählt der echte Abstand zur Planfläche (abgerundete Ecken), davon geht ein gewellter Saum ab, der noch flach bleibt (R/8 … R/4 Felder, aus dem Ortspunkt,
+// Stützwerte alle 16 Felder rund um die Fläche, weich verbunden), danach Hang höchstens 1 Stufe je Feld wie vorher, dem Gelände folgend (Klemmen an die Welt).
+// Nur ganze Zahlen und Math.sqrt (überall gleich). Gleiche Rechnung in ortsflaeche.js und ortssperre.js (randE). Notausschalter ?n7a5d=0.
+var N7A5D=!(typeof self!=='undefined'&&self.location&&/[?&]n7a5d=0/.test(self.location.search||''));
+function randHs(x,y,a){var h=Math.imul(x^0x5bd1e995,0x27d4eb2d)^Math.imul(y+0x165667b1,0x9e3779b1)^Math.imul(a+1,0x85ebca6b);h^=h>>>15;h=Math.imul(h,0xc2b2ae35);h^=h>>>13;return h&255}
+function randE(x0,y0,i,j,R,W){var dx=i<R?R-i:i>=R+W?i-R-W+1:0,dy=j<R?R-j:j>=R+W?j-R-W+1:0;if(!N7A5D)return(dx>dy?dx:dy)*64;
+ var W1=W-1,px=i-R,py=j-R;px=px<0?0:px>W1?W1:px;py=py<0?0:py>W1?W1:py;var t=py===0?px:px===W1?W1+py:py===W1?3*W1-px:4*W1-py,P=4*W1,n=P>>4;if(n<4)n=4;
+ var u=Math.floor(t*n*256/P),a=(u>>8)%n,f=u&255,b=(a+1)%n;x0=((x0%RWX)+RWX)%RWX;var v=(randHs(x0,y0,a)*(256-f)+randHs(x0,y0,b)*f)>>8,w=R*8+((v*R*8)>>8),
+ e=Math.floor(Math.sqrt(dx*dx+dy*dy)*64)-w;return e<0?0:e}
+// N7a5e1 (26.11.2026): Boden nahtlos. Wiese (g) weit weg von Bebautem, Gärten und Flur (jede andere Zelle und jede Baufläche) zeigt den Boden der Welt
+// (Farbe, Körnung, Bodenmuster wie draußen, kein Kartei-Wiesenbild). Ortsboden bleibt nur nahe den Häusern: Grenze 2–5 Felder, weich aus dem Weltfeld
+// (Rauschen auf 6-Felder-Raster, Weltkoordinaten, also gleich über Nachbarorte) plus 0–1 je Feld (unregelmäßiges Auslaufen). Einmal je Ort, W² Byte.
+// Notausschalter ?n7a5e=0.
+var N7A5E=!(typeof self!=='undefined'&&self.location&&/[?&]n7a5e=0/.test(self.location.search||''));
+function wbHs(x,y){var h=Math.imul(x,0x27d4eb2d)^Math.imul(y,0x165667b1)^0x5e1a;h^=h>>>15;h=Math.imul(h,0x85ebca6b);h^=h>>>13;return h>>>0}
+function wbGrenze(X,Y){var gx=Math.floor(X/6),gy=Math.floor(Y/6),fx=X-gx*6,fy=Y-gy*6,a=wbHs(gx,gy)%3,b=wbHs(gx+1,gy)%3,c=wbHs(gx,gy+1)%3,d=wbHs(gx+1,gy+1)%3,
+ v=((a*(6-fx)+b*fx)*(6-fy)+(c*(6-fx)+d*fx)*fy+18)/36|0;return 2+v+((wbHs(X+977,Y+331)>>>7)&1)}
+function weltBoden(o){if(!N7A5E)return null;var W=o.W,Z=o.Z,N=W*W,D=new Uint8Array(N),Q=new Int32Array(N),qa=0,qe=0,k,i,j,z=0;D.fill(255);
+ for(k=0;k<N;k++){var c=Z[k];if(c!==0&&c!==255){D[k]=0;Q[qe++]=k}}
+ o.bauten.forEach(function(e){for(var y=e.j;y<e.j+e.h&&y<W;y++)for(var x=e.i;x<e.i+e.w&&x<W;x++){if(x<0||y<0)continue;var q=y*W+x;if(D[q]){D[q]=0;Q[qe++]=q}}});
+ if(!qe)return null;
+ while(qa<qe){k=Q[qa++];var dk=D[k];if(dk>=7)continue;i=k%W;j=(k-i)/W;for(var yy=j-1;yy<=j+1;yy++){if(yy<0||yy>=W)continue;for(var xx=i-1;xx<=i+1;xx++){if(xx<0||xx>=W)continue;var q2=yy*W+xx;if(D[q2]>dk+1){D[q2]=dk+1;Q[qe++]=q2}}}}
+ var WB=new Uint8Array(N),X0=((o.x0%RWX)+RWX)%RWX;for(k=0;k<N;k++){if(Z[k]!==0)continue;i=k%W;j=(k-i)/W;if(D[k]>wbGrenze(X0+i,o.y0+j)){WB[k]=1;z++}}
+ o.wbN=z;return z?WB:null}
+function OSm(){return root.AT3ORTSSPERRE||(typeof module!=='undefined'&&module.exports?require('./ortssperre.js'):null)}
+var NATD=new Map();function natD(id){var v=NATD.get(id);if(v===undefined){var O=OSm();v=!!(O&&O.naturDing(id));NATD.set(id,v)}return v}   // N7a5e2
 var WELT_C={n:1,v:1,r:1,y:1};   // N7a5a2: Zellen, unter denen der Boden der Welt bleibt (nur in Plänen mit P.weltwasser)
 var DACH_RGB=[150,66,48], WAND_RGB=[202,180,140], MAUER_RGB=[150,146,136];
 function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,sprite=new Map(),SBx=null,KL=null,EMS=[];
@@ -54,6 +81,8 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
   o.ww=!!P.weltwasser;o.sk=P.senke||null;for(i=0;i<W*W;i++){var ch=P.zellen.charAt(i),c=CODES.indexOf(ch);o.Z[i]=o.ww&&WELT_C[ch]?255:c<0?0:c}   // N7a5a2: Weltwasser, Weltufer, Brücke, Steg → hier malt die Welt
   P.bauten.forEach(function(b){if(!(b.w>0&&b.h>0))return;var e={i:b.i,j:b.j,w:b.w,h:b.h,m:b.rolle==='mauer'},fi=b.i+b.w-1,fj=b.j+b.h-1,key=(fi>>3)*4096+(fj>>3);   // Fach nach dem vordersten Feld (8 × 8)
    o.bauten.push(e);var f=o.fach.get(key);if(!f)o.fach.set(key,f=[]);f.push(e)});
+  o.WB=weltBoden(o);   // N7a5e1: Weltboden auf freier Wiese
+  var OSx=OSm();o.WN=OSx&&o.WB&&OSx.weltNatur?OSx.weltNatur(P,o.WB):null;   // N7a5e2: dort wächst die Natur der Welt, die Plan-Natur fällt weg
   var R=o.R,X0=o.x0-R,Y0=o.y0-R,N=W+2*R;
   for(var cy=Math.max(0,Y0>>6);cy<=Math.min(BB.SY-1,(Y0+N-1)>>6);cy++)for(var cx=X0>>6;cx<=(X0+N-1)>>6;cx++){var k=((cx%BB.SX+BB.SX)%BB.SX)*8192+cy;if(bau(k))o.aus.add(k)}
   if(orte.has(m.k))raus(orte.get(m.k));orte.set(m.k,o);rein(o);halten();return stuecke(o)}
@@ -111,7 +140,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
    if((i0>=N&&i0<WX-ST)||j0>=N||j0+ST<=0)return;
    for(var y=0;y<ST;y++){var j=j0+y;if(j<0||j>=N)continue;for(var x=0;x<ST;x++){var i=i0+x;if(i>=WX)i-=WX;if(i<0||i>=N)continue;
      var d=Math.max(i<R?R-i:i>=R+W?i-R-W+1:0,j<R?R-j:j>=R+W?j-R-W+1:0),q=(y<<6)|x,h=H[q],z;
-     if(d===0){var b0=B[q];if(o.ww&&(b0<2||b0===10||b0===11))continue;z=o.sk?o.h0-(o.sk.charCodeAt((j-R)*W+i-R)-48)*64:o.h0;if(z<0)z=0}else{var bb=B[q];if(bb<2||bb===10||bb===11)continue;var lo=o.h0-d*64,hi=o.h0+d*64;z=h<lo?lo:h>hi?hi:h;if(z<0)z=0}
+     if(d===0){var b0=B[q];if(o.ww&&(b0<2||b0===10||b0===11))continue;z=o.sk?o.h0-(o.sk.charCodeAt((j-R)*W+i-R)-48)*64:o.h0;if(z<0)z=0}else{var bb=B[q];if(bb<2||bb===10||bb===11)continue;var e=randE(o.x0,o.y0,i,j,R,W),lo=o.h0-e,hi=o.h0+e;z=h<lo?lo:h>hi?hi:h;if(z<0)z=0}
      if(z!==h){H[q]=z;ja=true}}}});
   return ja}
  // Ort am Weltfeld (X, Y): {o, i, j} oder null
@@ -208,6 +237,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
  function elementeIns(o,aus,i0,j0,n,lod){lod=lod||0;var E=o.E,L=E.L,N=L.length,z=0,dx=E.ax+(i0-j0)*32,dy=E.ay+(i0+j0)*16+o.s0*8,hw=32>>lod,hh=16>>lod,st=8>>lod;
   for(var fj=Math.max(0,j0)>>3;fj<=Math.min(o.W-1,j0+n-1)>>3;fj++)for(var fi=Math.max(0,i0)>>3;fi<=Math.min(o.W-1,i0+n-1)>>3;fi++){var f=o.EF.get(fi*4096+fj);if(!f)continue;
    for(var a=0;a<f.length;a++){var q=f[a],e=L[q],vi=e.fi-i0,vj=e.fj-j0;if(vi<0||vj<0||vi>=n||vj>=n)continue;var tief=o.RT[q]-i0-j0+(q+1)/(N+2),sp,x,y;
+    if(e.k===1&&o.WN&&o.WB[e.fj*o.W+e.fi]&&natD(e.id))continue;   // N7a5e2: Plan-Natur auf Weltboden fällt weg (dort wächst die Welt)
     if(e.k===1){sp=SBx.malbild(KL.hole(e.id));if(!sp){o.wartet=true;continue}if(lod)sp=klein(sp,lod);x=(e.X-dx)>>lod;y=(e.Y-dy)>>lod}
     else{var key=hausKey(o,q),c=lod===0?HB.get(key):lod===1?k2(key):k4(LETZT=lod,'h'+key);
      if(c){if(!lod){HB.delete(key);HB.set(key,c)}sp=c.sp;x=(c.X-dx)>>lod;y=(c.Y-dy)>>lod}
@@ -241,7 +271,8 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
   if(!L.length)return{farbe:FBx.boden,wasser:FBx.wasser,zelle:function(){return -1},frei:function(){return true},boden:null,kloetze:function(){return 0},weg:weg};
   return{farbe:FBx.boden,wasser:FBx.wasser,weg:weg,
    zelle:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W){var z=o.Z[j*o.W+i];return z===255?-1:z}}return -1},
-   frei:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return false}return true},
+   weltB:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return !!(o.WB&&o.WB[j*o.W+i])}return false},   // N7a5e1
+   frei:function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return !!(o.WN&&o.WN[j*o.W+i])}return true},   // N7a5e2: Weltnatur auf freien Ortsfeldern
    // N7a2b1: echter Boden des Planfelds unter (X, Y) als Liste von Bildern (Boden, dann Säume) oder null (Kartei-Bild fehlt noch → Ersatzfarbe, Ort wartet), nur in 1×
    boden:echtLod(lod)&&SBx&&KL?function(X,Y){for(var a=0;a<L.length;a++){var o=L[a],i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)return bodenBilder(o,i,j,lod)}return null}:null,   // N7a3a: auch ½
    // Klötze, deren vorderstes Feld in diesem Bild liegt (Einträge wie natur.sammeln: tief, i, o, m, sp, x, y), nur in 1× und ½
@@ -287,6 +318,6 @@ function halbAuftrag(s){var W=s.w,H=s.h,P=s.px,w=(W+1)>>1,h=(H+1)>>1,px=new Uint
    if(2*t>n||!m){px[y*w+x]=255;continue}var best=v[0],bn=0;for(var a=0;a<m;a++){var z=0;for(var b=0;b<m;b++)if(v[b]===v[a])z++;if(z>bn){bn=z;best=v[a]}}px[y*w+x]=best}}
  return{weiter:function(aus){var y0=y;for(;y<h;y++){if(aus&&y>y0&&((y-y0)&7)===0&&aus())return false;zeile(y)}return true},ergebnis:function(){return{w:w,h:h,ax:s.ax>>1,ay:s.ay>>1,px:px}}}}
 function halb(s){var A=halbAuftrag(s);A.weiter(null);return A.ergebnis()}
-var OF={RAMPE:RAMPE,HALB_GR:HALB_GR,VIERTEL_GR:VIERTEL_GR,VIERTEL_GR_ALT:VIERTEL_GR_ALT,halb:halb,halbAuftrag:halbAuftrag,RAMPE_P:RAMPE_P,HALTEN_P:HALTEN_P,LISTEN_P:LISTEN_P,PWEIT:PWEIT,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,FARBE_RGB:FARBE_RGB,neu:neu};
+var OF={RAMPE:RAMPE,HALB_GR:HALB_GR,VIERTEL_GR:VIERTEL_GR,VIERTEL_GR_ALT:VIERTEL_GR_ALT,halb:halb,halbAuftrag:halbAuftrag,RAMPE_P:RAMPE_P,weltBoden:weltBoden,wbGrenze:wbGrenze,HALTEN_P:HALTEN_P,LISTEN_P:LISTEN_P,PWEIT:PWEIT,HALTEN:HALTEN,LISTEN:LISTEN,HAUS:HAUS,CODES:CODES,FARBE_RGB:FARBE_RGB,neu:neu};
 if(typeof module!=='undefined'&&module.exports)module.exports=OF;else root.AT3ORTSFLAECHE=OF;
 })(typeof self!=='undefined'?self:this);

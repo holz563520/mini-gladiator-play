@@ -57,8 +57,8 @@ function ausgaenge(P){var W=P.W,Z=P.zellen,L=[],seiten=[['north',function(n){ret
 function lage(WG,seed,A,k,P){var p=punkt(WG,seed,A,k),h=P.W>>1,x0=welt(WG,p[0]-h),y0=p[1]-h,an=function(t){t.x=welt(WG,x0+t.i);t.y=y0+t.j;return t};
  return{punkt:[p[0],p[1]],x0:x0,y0:y0,W:P.W,mauer:!!(P.wehr&&P.wehr.k&&P.wehr.k.length),tore:toreAus(P).map(an),ausgaenge:ausgaenge(P).map(an)}}
 // Außenposten und Gehöfte des Orts (aussenposten.js posten) mit Planwahl (planOpt, Biom aus der Zone der Postenzelle); D wie wahl(), dazu AP = aussenposten.js
-function posten(WG,seed,A,k,D,AP,w){w=w||wahl(seed,A,k,D);var P0=punkt(WG,seed,A,k),U=AP.umgebung(seed,A,k),F=AP.fremde?AP.fremde(seed,A,k,WG.ortPunkt,D.O):null;
- return AP.posten(seed,w.bilanz,U,D.DD,P0,F).map(function(p){var u=U.filter(function(q){return q[0]===p.zelle})[0],biom=u?biomVon([[u[1],100]],D.DD.zon,true):w.opt.biom;
+function posten(WG,seed,A,k,D,AP,w,hole){w=w||wahl(seed,A,k,D);var P0=punkt(WG,seed,A,k),U=AP.umgebung(seed,A,k),F=AP.fremde?AP.fremde(seed,A,k,WG.ortPunkt,D.O):null;   // N7a5f: hole → Posten ans Wasser
+ return AP.posten(seed,w.bilanz,U,D.DD,P0,F,hole?{WG:WG,hole:hole}:null).map(function(p){var u=U.filter(function(q){return q[0]===p.zelle})[0],biom=u?biomVon([[u[1],100]],D.DD.zon,true):w.opt.biom;
   return{p:p,opt:AP.planOpt(seed,p,P0,biom)}})}
 // Lage eines Postenplans: Mitte = Postenpunkt (p.x, p.y), Ausgang = Anschluss des Feldwegs zum eigenen Ort
 function postenLage(WG,p,P){var h=P.W>>1,x0=welt(WG,p.x-h),y0=p.y-h,Q=P.posten,r=Q&&Q.weg&&Q.weg.rand;
@@ -102,8 +102,8 @@ function wasserSuche(WG,A,px,py,hole){var ST=64,F=WG.FELDER,WY=WG.GH*WG.ZF,SX=WG
 // dachR des Gebäudes oder sonst dachReihe seiner Bauklasse aus baukasten.js), 128 + c = Bodencode c (Index in MINI_CODES, Farbe wie das Ersatzbild in ⅛),
 // 255 = hier zeigt die Welt (Weltwasser, Weltufer, Brücke, Steg in Plänen mit P.weltwasser, wie ortsflaeche.js). Offene Bauten (Hof, Forum, Becken …) behalten den Boden.
 var MINI_CODES='gsomfwepxqyuh', MINI_WELT={n:1,v:1,r:1,y:1}, MINI_OFFEN={hof:1,forum:1,becken:1,bruecke:1,steg:1,pferch:1,well:1,ehrensaeule:1};
-function mini(P,BK,S64){var W=P.W,m=new Uint8Array(W*W),ww=!!P.weltwasser,i,j;
- for(i=0;i<W*W;i++){var ch=P.zellen.charAt(i),c=MINI_CODES.indexOf(ch);m[i]=ww&&MINI_WELT[ch]?255:128+(c<0?0:c)}
+function mini(P,BK,S64,WB){var W=P.W,m=new Uint8Array(W*W),ww=!!P.weltwasser,i,j;   // N7a5e2: WB = Weltboden (ortssperre.js weltBodenP) → dort zeigt der Mini-Plan die Welt
+ for(i=0;i<W*W;i++){var ch=P.zellen.charAt(i),c=MINI_CODES.indexOf(ch);m[i]=ww&&MINI_WELT[ch]||WB&&WB[i]?255:128+(c<0?0:c)}
  (P.bauten||[]).forEach(function(b){if(!(b.w>0&&b.h>0)||MINI_OFFEN[b.rolle])return;var r=b.dachR!=null?b.dachR:null;
   if(r==null){var k=BK&&BK.klasse?BK.klasse(b.klasse):null;r=k?k.dachReihe:0}if(!S64.REIHEN[r])r=0;var f=S64.START[r]+Math.round((S64.REIHEN[r].n-1)*.55);
   for(j=Math.max(0,b.j);j<Math.min(W,b.j+b.h);j++)for(i=Math.max(0,b.i);i<Math.min(W,b.i+b.w);i++)m[j*W+i]=f});

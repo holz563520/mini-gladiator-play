@@ -59,7 +59,30 @@ function passt(a,e){return !!(a.zonen&(1<<e[1]))||a.kueste&&(e[2]&2)||a.fluss&&(
 
 // Posten des Orts: b = Ortsbilanz (orte.js bilanz), U = umgebung(), P = Ortspunkt [x, y] in Feldern (optional, sonst Zellmitte), F = fremde() (N6b4b1, optional)
 // Ergebnis [{nr,id,name,gruppe,hof,g (0 Gehöft, 1 Außenposten),zelle,dx,dy,x,y,vor,arb,weg,spitz}]
-function posten(seed,b,U,D,P,F){if(AUS||!U||!U.length)return[];var r=b.roh,g=r.g,z=r.zelle,A=arten(D),leit={},belegt={},aus=[];
+// N7a5f (26.11.2026, ohne Rückfragen): Posten ans Wasser. Nasse Posten (NASS) rücken an das nächste echte Wasser in den 3 × 3 Kartenstücken um ihren Punkt
+// (bis rund ±96 Felder, wie die Wassersuche aus N7a5a2b): neuer Punkt AM Felder landeinwärts vom nächsten Wasserfeld, auf der Linie zum alten Punkt (bis
+// AM_MAX weiter, bis Land kommt). Jeder andere Posten, dessen Punkt im Wasser liegt, rückt aufs nächste Land (AL Felder landeinwärts, sonst aufs Ufer).
+// Die Abstandsregeln (eigenes Ortsbild, fremde Orte) gelten weiter; verletzt der neue Punkt sie, bleibt der alte. Ohne Wasser in Reichweite bleibt der Punkt.
+// W = {WG, hole(cx, cy) → Kartenstück} (Pflicht; ohne W wie vorher). Kosten höchstens 9 Kartenstücke je betroffenem Posten, nur wo Kartenstücke ohnehin
+// gerechnet werden (Ortskern, Bildkern). Notausschalter ?n7a5f=0.
+var N7A5F=!(root.location&&/[?&]n7a5f=0/.test(root.location.search||''));
+var WST={gerueckt:0,verboten:0}, NASS={fisher:1,'sea-fishery':1,'reed-cutter':1,'peat-cut':1,'salt-pan':1,'gold-wash':1}, AM=8, AM_MAX=24, AL=6, NAH=8;
+function nassB(bb){return bb<2||bb===10||bb===11}
+function feldB(W,X,Y){var ST=64,SX=GW*ZF/ST;if(Y<0||Y>=GH*ZF)return -1;X=((X%(GW*ZF))+GW*ZF)%(GW*ZF);var b=W.hole(X>>6,Y>>6);if(!b)return -1;return b[W.WG.FELDER*2+(((Y&63)<<6)|(X&63))]}
+// nächstes Feld mit nass === will (Wasser bzw. Land) in den 3 × 3 Stücken um (px, py): [dx, dy] oder null
+function naechstes(W,px,py,will){var ST=64,F=W.WG.FELDER,SX=GW*ZF/ST,c0=Math.floor(px/ST),r0=Math.floor(py/ST),bd=1e18,bx=0,by=0;
+ for(var cy=r0-1;cy<=r0+1;cy++){if(cy<0||cy*ST>=GH*ZF)continue;for(var c=c0-1;c<=c0+1;c++){var b=W.hole(((c%SX)+SX)%SX,cy);if(!b)continue;
+  for(var q=0;q<F;q++){if(nassB(b[F*2+q])!==will)continue;var dx=c*ST+(q&63)-px,dy=cy*ST+(q>>6)-py,d=dx*dx+dy*dy;if(d<bd){bd=d;bx=dx;by=dy}}}}
+ return bd<1e18?[bx,by]:null}
+// neuer Punkt [x, y] oder null (bleibt). id = Postenart.
+function ansWasser(id,x,y,W){if(!N7A5F||!W||!W.hole||!W.WG)return null;var b0=feldB(W,x,y);if(b0<0)return null;var imW=nassB(b0),T,r,ux,uy,l,k,nx,ny;
+ if(NASS[id]){T=naechstes(W,x,y,true);if(!T)return null;var wx=x+T[0],wy=y+T[1];l=Math.sqrt(T[0]*T[0]+T[1]*T[1]);
+  if(!imW&&l<=NAH)return null;                                          // liegt schon am Wasser
+  ux=l?-T[0]/l:0;uy=l?-T[1]/l:1;if(imW){var L=naechstes(W,x,y,false);if(!L)return null;wx=x+L[0];wy=y+L[1];l=Math.sqrt(L[0]*L[0]+L[1]*L[1])||1;ux=L[0]/l;uy=L[1]/l}
+  for(k=AM;k<=AM_MAX;k++){nx=Math.round(wx+ux*k);ny=Math.round(wy+uy*k);r=feldB(W,nx,ny);if(r>=0&&!nassB(r))return[((nx%(GW*ZF))+GW*ZF)%(GW*ZF),ny]}return null}
+ if(!imW)return null;T=naechstes(W,x,y,false);if(!T)return null;l=Math.sqrt(T[0]*T[0]+T[1]*T[1])||1;ux=T[0]/l;uy=T[1]/l;var lx=x+T[0],ly=y+T[1];
+ for(k=AL;k>=0;k--){nx=Math.round(lx+ux*k);ny=Math.round(ly+uy*k);r=feldB(W,nx,ny);if(r>=0&&!nassB(r))return[((nx%(GW*ZF))+GW*ZF)%(GW*ZF),ny]}return null}
+function posten(seed,b,U,D,P,F,W){if(AUS||!U||!U.length)return[];var r=b.roh,g=r.g,z=r.zelle,A=arten(D),leit={},belegt={},aus=[];
  b.leit.forEach(function(l){leit[l.id]=1});
  var ox=P?P[0]:(z%GW)*ZF+ZF/2,oy=P?P[1]:((z/GW)|0)*ZF+ZF/2,rO=halb(g)+EIGEN;
  // Punkt in Zelle e für Art a: der alte Punkt (Versuch 0) oder ein weiterer; null = keiner hält die Abstände ein
@@ -76,6 +99,8 @@ function posten(seed,b,U,D,P,F){if(AUS||!U||!U.length)return[];var r=b.roh,g=r.g
    U.forEach(function(e,k){if(belegt[e[0]]||!passt(a,e))return;K.push([(e[2]&1?2:1)*4+u01(zz(seed,e[0],300+a.nr)),k])});
    K.sort(function(p,q){return q[0]-p[0]||p[1]-q[1]});var j=-1,pt=null;for(var kq=0;kq<K.length&&!pt;kq++){pt=punktIn(U[K[kq][1]],a);if(pt)j=K[kq][1]}
    if(j<0)continue;var e=U[j],h=zz(seed,e[0],500+a.nr),fx=pt[0],fy=pt[1];
+   if(W){var nw=ansWasser(a.id,fx,fy,W);if(nw){var dN=abst(nw[0],nw[1],ox,oy),okN=dN>=rO;if(okN&&F)for(var qf=0;qf<F.length&&okN;qf++){var dF2=abst(nw[0],nw[1],F[qf][0],F[qf][1]);if(dF2<=dN||dF2<F[qf][2]+ABST)okN=false}
+    if(okN){fx=nw[0];fy=nw[1];pt=[fx,fy,dN];WST.gerueckt++}else WST.verboten++}}   // N7a5f: ans Wasser bzw. aus dem Wasser
    belegt[e[0]]=1;n--;
    aus.push({nr:a.nr,id:a.id,name:a.name,gruppe:a.gruppe,hof:hof,g:hof?0:1,zelle:e[0],dx:e[3],dy:e[4],x:fx,y:fy,
     vor:1,arb:hof?1+(h>>>22)%4:3+(h>>>22)%6+(a.stufe>=4?4:0),weg:Math.round(pt[2]),
@@ -92,6 +117,6 @@ function name(p,ort,t){return t('posten.name',{ort:ort,art:p.name})+(p.spitz>=0?
 function zeile(p,ort,t){return t(p.hof?'posten.zeile.hof':'posten.zeile',{name:name(p,ort,t),leute:p.vor+p.arb,weg:String(p.weg).replace(/\B(?=(\d{3})+(?!\d))/g,",")})}
 function kurzListe(L,t){if(!L.length)return t('posten.keine');return t('posten.liste',{liste:L.map(function(p){return t(p.hof?'posten.kurz.hof':'posten.kurz',{art:p.name,leute:p.vor+p.arb})}).join(', ')})}
 
-var P={AUS:AUS,VORK:VORK,HOF:HOF,SPITZ:SPITZ,NV:NV,NH:NH,MAXP:MAXP,ABST:ABST,EIGEN:EIGEN,HALB:HALB,RES:RES,FERN:FERN,halb:halb,fremde:fremde,abst:abst,umgebung:umgebung,arten:arten,posten:posten,planOpt:planOpt,name:name,zeile:zeile,kurzListe:kurzListe};
+var P={AUS:AUS,VORK:VORK,HOF:HOF,SPITZ:SPITZ,NV:NV,NH:NH,MAXP:MAXP,ABST:ABST,EIGEN:EIGEN,HALB:HALB,RES:RES,FERN:FERN,halb:halb,fremde:fremde,abst:abst,umgebung:umgebung,arten:arten,posten:posten,planOpt:planOpt,ansWasser:ansWasser,NASS:NASS,WST:WST,N7A5F:N7A5F,name:name,zeile:zeile,kurzListe:kurzListe};
 if(typeof module!=='undefined'&&module.exports)module.exports=P;else root.AT3POSTEN=P;
 })(typeof self!=='undefined'?self:this);

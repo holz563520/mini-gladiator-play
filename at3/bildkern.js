@@ -46,7 +46,7 @@ function bauFrei(X,Y){return BAUB.frei(holeBau,X,Y)}
 // N7a2a: Natur frei = nicht gebaut und nicht in einer Ortsfläche
 function natFrei(){var o=OFL&&OFL.orte.size;if(!o)return BAU.size?bauFrei:null;return BAU.size?function(X,Y){return OFL.frei(X,Y)&&bauFrei(X,Y)}:OFL.frei}
 function bauHat(k){var a=BAU.get(k);if(!a)return false;for(var i=0;i<4096;i++)if(a[i])return true;return false}
-function ofl(){if(!N7A2||OFL===false)return null;if(OFL)return OFL;try{importScripts('ortsflaeche.js'+self.location.search,'orte.js'+self.location.search,'aussenposten.js'+self.location.search);
+function ofl(){if(!N7A2||OFL===false)return null;if(OFL)return OFL;try{if(!self.AT3ORTSSPERRE)importScripts('ortssperre.js'+self.location.search);importScripts('ortsflaeche.js'+self.location.search,'orte.js'+self.location.search,'aussenposten.js'+self.location.search);
   OFL=self.AT3ORTSFLAECHE.neu(G,BB);OFL.postenAn(N7A2C);if(!OR&&OR!==false)OR=self.AT3ORTE.AUS?false:self.AT3ORTE;if(AP==null)AP=self.AT3POSTEN.AUS?false:self.AT3POSTEN;if(!OR||!AP)OFL=false}catch(x){OFL=false}return OFL||null}
 // Anfrage an den Ortskern (Port) oder eingebettet (ohne zweiten Hintergrundkern: hier planen, je Pause ein Ort)
 function zumOrtskern(m){if(OKP){OKP.postMessage(m);return}if(!OK){try{self.AT3_ORTSKERN_EINGEBETTET=true;self.AT3_ORTSKERN_ANTWORT=vomOrtskern;importScripts('ortskern.js'+self.location.search);OK=self.AT3ORTSKERN;OKE=true;if(WB)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:WB})}catch(x){OK=false}}
@@ -119,9 +119,11 @@ function vomOrtskern(m){if(m.gen!==gen)return;if(m.art==='mini'){if(m.fehler)MIN
 function postenDaten(){if(PDL)return PDL;var Q=self.location.search;
  PDL=Promise.all(['gebaeude','rezepte','kulturen'].map(function(f){return fetch('daten/'+f+'.json'+Q).then(function(r){if(!r.ok)throw new Error(f);return r.json()})}))
   .then(function(d){PD=OR.daten(d[0],d[1],d[2]);return PD},function(){PD=false;return null});return PDL}
+// N7a5f: Kartenstücke für „Posten ans Wasser“ (gleich dem Ortskern), höchstens 12 gemerkt
+var STR=new Map();function stueckR(cx,cy){var key=cx*8192+cy,b=STR.get(key);if(b)return b;b=G.ausschnitt(A,cx,cy,new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:cx,cy:cy,daten:b});STR.set(key,b);if(STR.size>12)STR.delete(STR.keys().next().value);return b}
 function postenPunkte(x,y){var L=[];OFL.orteUm(A,seed,OR,x,y).forEach(function(k){var P=PPK.get(k);
   if(!P){P=[];try{var z=A.orte[k]&0xffffff,X=z%G.GW,Y=(z/G.GW)|0,r=OR.roh(seed,A,k,ON),b=OR.bilanz(seed,r,PD);
-    AP.posten(seed,b,AP.umgebung(seed,A,k),PD,G.ortPunkt(seed,A,X,Y),AP.fremde?AP.fremde(seed,A,k,G.ortPunkt,OR):null).forEach(function(p){P.push({x:p.x,y:p.y})})}catch(x){}
+    AP.posten(seed,b,AP.umgebung(seed,A,k),PD,G.ortPunkt(seed,A,X,Y),AP.fremde?AP.fremde(seed,A,k,G.ortPunkt,OR):null,{WG:G,hole:stueckR}).forEach(function(p){P.push({x:p.x,y:p.y})})}catch(x){}
    PPK.set(k,P);if(PPK.size>64)PPK.delete(PPK.keys().next().value)}
   L=L.concat(P)});return L}
 function BA(offen){return BBILD?{M:BAUB,hole:holeBau,BILD:BBILD,offen:offen&&offen.length?new Set(offen):null}:null}
