@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1068,
+ "typMax": 1093,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2802,6 +2802,231 @@
    "name": "Steppe Wattle Upper Wall A",
    "status": "uebernommen",
    "datei": "obj/bk-steppe-wand-oben-a.json"
+  },
+  {
+   "id": "bk-wueste-dach-flach",
+   "version": 1,
+   "typ": 1075,
+   "kat": "dach",
+   "name": "Mudbrick Roof",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-dach-flach.json"
+  },
+  {
+   "id": "bk-wueste-dach-flach-a",
+   "version": 1,
+   "typ": 1069,
+   "kat": "dach",
+   "name": "Mudbrick Roof A",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-dach-flach-a.json"
+  },
+  {
+   "id": "bk-wueste-dach-flach-b",
+   "version": 1,
+   "typ": 1070,
+   "kat": "dach",
+   "name": "Mudbrick Roof B",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-dach-flach-b.json"
+  },
+  {
+   "id": "bk-wueste-dach-flach-c",
+   "version": 1,
+   "typ": 1071,
+   "kat": "dach",
+   "name": "Mudbrick Roof C",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-dach-flach-c.json"
+  },
+  {
+   "id": "bk-wueste-dach-flach-d",
+   "version": 1,
+   "typ": 1072,
+   "kat": "dach",
+   "name": "Mudbrick Roof D",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-dach-flach-d.json"
+  },
+  {
+   "id": "bk-wueste-dach-flach-e",
+   "version": 1,
+   "typ": 1073,
+   "kat": "dach",
+   "name": "Mudbrick Roof E",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-dach-flach-e.json"
+  },
+  {
+   "id": "bk-wueste-dach-flach-f",
+   "version": 1,
+   "typ": 1074,
+   "kat": "dach",
+   "name": "Mudbrick Roof F",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-dach-flach-f.json"
+  },
+  {
+   "id": "bk-wueste-fenster",
+   "version": 1,
+   "typ": 1080,
+   "kat": "wand",
+   "name": "Mudbrick Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-fenster.json"
+  },
+  {
+   "id": "bk-wueste-fenster-a",
+   "version": 1,
+   "typ": 1076,
+   "kat": "wand",
+   "name": "Mudbrick Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-fenster-a.json"
+  },
+  {
+   "id": "bk-wueste-fenster-b",
+   "version": 1,
+   "typ": 1077,
+   "kat": "wand",
+   "name": "Mudbrick Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-fenster-b.json"
+  },
+  {
+   "id": "bk-wueste-fenster-c",
+   "version": 1,
+   "typ": 1078,
+   "kat": "wand",
+   "name": "Mudbrick Window C",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-fenster-c.json"
+  },
+  {
+   "id": "bk-wueste-fenster-d",
+   "version": 1,
+   "typ": 1079,
+   "kat": "wand",
+   "name": "Mudbrick Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-fenster-d.json"
+  },
+  {
+   "id": "bk-wueste-tuer",
+   "version": 1,
+   "typ": 1083,
+   "kat": "wand",
+   "name": "Mudbrick Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-tuer.json"
+  },
+  {
+   "id": "bk-wueste-tuer-a",
+   "version": 1,
+   "typ": 1081,
+   "kat": "wand",
+   "name": "Mudbrick Door A",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-tuer-a.json"
+  },
+  {
+   "id": "bk-wueste-tuer-b",
+   "version": 1,
+   "typ": 1082,
+   "kat": "wand",
+   "name": "Mudbrick Door B",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-tuer-b.json"
+  },
+  {
+   "id": "bk-wueste-wand",
+   "version": 1,
+   "typ": 1093,
+   "kat": "wand",
+   "name": "Mudbrick Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand.json"
+  },
+  {
+   "id": "bk-wueste-wand-a",
+   "version": 1,
+   "typ": 1084,
+   "kat": "wand",
+   "name": "Mudbrick Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand-a.json"
+  },
+  {
+   "id": "bk-wueste-wand-b",
+   "version": 1,
+   "typ": 1085,
+   "kat": "wand",
+   "name": "Mudbrick Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand-b.json"
+  },
+  {
+   "id": "bk-wueste-wand-c",
+   "version": 1,
+   "typ": 1086,
+   "kat": "wand",
+   "name": "Mudbrick Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand-c.json"
+  },
+  {
+   "id": "bk-wueste-wand-d",
+   "version": 1,
+   "typ": 1087,
+   "kat": "wand",
+   "name": "Mudbrick Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand-d.json"
+  },
+  {
+   "id": "bk-wueste-wand-e",
+   "version": 1,
+   "typ": 1088,
+   "kat": "wand",
+   "name": "Mudbrick Wall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand-e.json"
+  },
+  {
+   "id": "bk-wueste-wand-f",
+   "version": 1,
+   "typ": 1089,
+   "kat": "wand",
+   "name": "Mudbrick Wall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand-f.json"
+  },
+  {
+   "id": "bk-wueste-wand-oben",
+   "version": 1,
+   "typ": 1092,
+   "kat": "wand",
+   "name": "Mudbrick Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand-oben.json"
+  },
+  {
+   "id": "bk-wueste-wand-oben-a",
+   "version": 1,
+   "typ": 1090,
+   "kat": "wand",
+   "name": "Mudbrick Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand-oben-a.json"
+  },
+  {
+   "id": "bk-wueste-wand-oben-b",
+   "version": 1,
+   "typ": 1091,
+   "kat": "wand",
+   "name": "Mudbrick Upper Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-wueste-wand-oben-b.json"
   },
   {
    "id": "bk-ziegel-boden",
