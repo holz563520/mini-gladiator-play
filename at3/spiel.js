@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='360f51fd', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='9038692f', T_SKRIPT=performance.now(), S=window.AT3_64;
 if(/[?&]mess=1\b/.test(location.search)){(function(){var s=document.createElement('script');s.src='messfeld.js?v='+V;document.head.appendChild(s)})()}   // N7a2b3: Messfeld der Weltkarte nur mit ?mess=1 (messfeld.js)
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
