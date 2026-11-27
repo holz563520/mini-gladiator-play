@@ -160,7 +160,7 @@ function curPose(a,t,SH){const P=a.pose;if(!P||P.mode!==a.mode&&!P.to){const set
 function setMode(a,mode,t=performance.now()/1000,queued=false){if(!MODES.includes(mode))return;const SH=a.SH||shapeOf(a.bear);if(!queued)a.queue.length=0;
  const from={...curPose(a,t,SH)},was=a.pose?.mode||a.mode;if(mode===was&&!a.pose?.to)return;
  if(!queued&&((was==='lie'&&mode==='rear')||(was==='rear'&&mode==='lie'))){a.queue.push(mode);mode='stand';}
- const heavy=cl(a.bear.weight/400,.3,2),dur=(mode==='rear'||was==='rear'?1.5:1.0)+.45*heavy;
+ const heavy=cl(a.bear.weight/400,.3,2),dur=((mode==='rear'||was==='rear'?1.5:1.0)+.45*heavy)/(a.rate||1);
  a.mode=mode;a.pose={mode,from,to:poseSet(mode,SH),t0:t,dur,cur:from};}
 BAER.MODES=MODES;BAER.setMode=setMode;BAER.poseSet=poseSet;
 BAER.snap=(a,mode)=>{a.mode=mode;a.pose=null;a.queue.length=0;};
@@ -191,7 +191,7 @@ function step(a,dt,t){dt=cl(dt,0,.05);const D=a.bear,SH=a.SH||shapeOf(D),lf=SH.l
  if(need&&a.mode!==need){if(v<1&&!busy&&!a.turn){v=0;setMode(a,need,t);}}
  else{if(a.want)a.want=null;if(a.go&&!busy)vT=GAITS[a.go].v*(a.pace||1);}
  // Wenden: im Sitzen und Liegen erst aufstehen
- if(a.turnWant&&!a.turn){if(a.mode==='sit'||a.mode==='lie'){if(!busy&&!a.want)a.want='stand';}else if(!busy){a.turnWant=false;a.turn={t0:t,dur:.9+.5*heavy,from:a.facing||1};}}
+ if(a.turnWant&&!a.turn){if(a.mode==='sit'||a.mode==='lie'){if(!busy&&!a.want)a.want='stand';}else if(!busy){a.turnWant=false;a.turn={t0:t,dur:(.9+.5*heavy)/(a.rate||1),from:a.facing||1};}}
  if(a.turn){const u=(t-a.turn.t0)/a.turn.dur;a.tl=Math.sin(Math.PI*cl(u,0,1));if(u>=.5)a.facing=-a.turn.from;if(u>=1){a.turn=null;a.tl=0;}}
  // Tempo: schwere Bären kommen langsam in Fahrt und bremsen langsam
  const v0=v,acc=(30+.6*Math.max(vT,v))/hs*(vT<v?1.3:1);v+=cl(vT-v,-acc*dt,acc*dt);a.v=v;
@@ -221,9 +221,14 @@ function faceOf(a,t,ph){const F={mouth:0,lip:0,ear:0,blink:0,nose:0,dne:0,dhe:0}
  else F.ear=Math.sin(u*TAU*2)*e;
  return F;}
 
+// ---------------------------------------------------------------- Überlagerung für Angriffe (B3, dist/baer-kampf.js)
+// a.over: Zahlen, die auf die Haltung addiert werden (Schlüssel wie oben), dazu nx,ny (nahe Vorderpranke), fx,fy (ferne Vorderpranke),
+// na (Winkel der nahen Pranke), mouth, lip, ear (Mimik). a.rate: Haltungswechsel und Wenden schneller (Kampf).
+function overPose(C,O){const R={};for(const k of KEYS)R[k]=C[k]+(O[k]||0);return R;}
 // ---------------------------------------------------------------- Skelett
-function rig(a,t,SH){const C=curPose(a,t,SH),lf=SH.leg,L=SH.L,D=a.bear,ph=(D.seed%97)*.13;
+function rig(a,t,SH){const O=a.over,C=O?overPose(curPose(a,t,SH),O):curPose(a,t,SH),lf=SH.leg,L=SH.L,D=a.bear,ph=(D.seed%97)*.13;
  const breathe=Math.sin(t*1.45+ph),still=1-cl(Math.abs(C.p-.02)*.4,0,.5),F=faceOf(a,t,ph);
+ if(O){if(O.mouth)F.mouth=Math.max(F.mouth,O.mouth);if(O.lip)F.lip=Math.max(F.lip,O.lip);if(O.ear)F.ear+=O.ear;}
  // Gang: Füße im Takt, Rumpf wippt, nickt und (im Galopp) rollt und krümmt sich
  const gs=a.gs||0,gl=Math.max(gs,a.tl||0);let dhy=0,dp=0,dbend=0,dne=0,dhe=0,hsx=0,fsx=0,F4=null;
  if(gl>.002){const c=a.cyc||0,up=a.gk==='up',m=up?0:smooth(a.mix||0),w=gs*(1-m),r=gs*m,W=GAITS.walk,R=GAITS.run,U=GAITS.up;
@@ -240,9 +245,9 @@ function rig(a,t,SH){const C=curPose(a,t,SH),lf=SH.leg,L=SH.L,D=a.bear,ph=(D.see
  const sx=hx+L*Tx,sy=hy+L*Ty;
  // Abrollen: hebt sich Ferse oder Handgelenk (Winkel < 0), bleibt die Zehenspitze stehen und das Gelenk wandert nach oben
  const leg=(front,near)=>{const off=near?0:1,g=F4&&F4[(near?2:0)+(front?1:0)],ga=g&&g.a<0?g.a:0;
-  if(front){const jx=sx-1*Tx-1.2*Nx+off*1.2,jy=sy-1*Ty-1.2*Ny-off*.6;let fx=C.wx-off*(3.2-6*Ty0),fy=C.wy-off*Ty0*1.5;
+  if(front){const jx=sx-1*Tx-1.2*Nx+off*1.2,jy=sy-1*Ty-1.2*Ny-off*.6;let fx=C.wx-off*(3.2-6*Ty0),fy=C.wy-off*Ty0*1.5;if(O){fx+=(near?O.nx:O.fx)||0;fy+=(near?O.ny:O.fy)||0;}
    if(g){fx+=g.dx+fsx+FOOT_V*(1-Math.cos(ga));fy+=FOOT_V*Math.sin(ga)-g.up;}const r=ik(jx,jy,fx,fy,hum,rad,1);
-   return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-6.4*SH.legW),fx:r.fx,fy:Math.min(r.fy,-5.2*SH.legW),ang:C.pa+(g?g.a:0),st:g?g.st:true,px:r.fx+FOOT_V*Math.cos(ga)};}
+   return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-6.4*SH.legW),fx:r.fx,fy:Math.min(r.fy,-5.2*SH.legW),ang:C.pa+(g?g.a:0)+(O&&near&&O.na||0),st:g?g.st:true,px:r.fx+FOOT_V*Math.cos(ga)};}
   const jx=hx+2*Tx-2.5*Nx-off*1.2,jy=hy+2*Ty-2.5*Ny-off*.5;let fx=C.ax+off*3.4,fy=C.ay;
   if(g){fx+=g.dx+hsx+FOOT_H*(1-Math.cos(ga));fy+=FOOT_H*Math.sin(ga)-g.up;}const r=ik(jx,jy,fx,fy,fem,tib,-1);
   return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-7*SH.legW),fx:r.fx,fy:Math.min(r.fy,-5*SH.legW),ang:g?g.a:0,st:g?g.st:true,px:r.fx+FOOT_H*Math.cos(ga)};};
@@ -295,7 +300,25 @@ function drawBear(c,a,px,py,k,face,opt={}){const D=a.bear,col=D.appearance.color
  // ---- Kopf (Zeichner je Sorte)
  c.save();c.translate(R.hcx,Math.min(R.hcy,G-6.5*SH.headS));c.rotate(-R.he);c.scale(SH.headS,SH.headS);
  (BAER.HEADS[SH.head]||headPlain)(c,D,SH,col,{t,breathe:R.breathe,prim:BAER.prim,f:R.face});c.restore();
+ if(a.wounds&&a.wounds.length||a.mouthBlood>0)drawWounds(c,a,R,SH);
  c.restore();return R;}
 function headPlain(c,D,SH,col){disk(c,0,0,7.6,col.base);poly(c,[[3,-5],[13.5,-2],[14,1.5],[6,5],[0,6]],col.base);rr(c,12.4,-2.2,2,2,'#17100c');rr(c,4.6,-2.6,1.2,1.2,'#120c08');}
+// ---------------------------------------------------------------- Wunden und Blut am Bären (B3): sitzen an der getroffenen Stelle und wandern mit dem Körper
+// Stellen: kopf, hals, brust, bauch, vl (Vorderpranke), hl (Hinterlauf). Wunde: {part,u,v,size 1–6,kind: claw|bite|cut|stab|blunt,seed}
+function anchor(R,part){const {Tx,Ty,Nx,Ny,hx,hy,sx,sy}=R,l=R.legs;
+ if(part==='kopf')return [R.hcx+2,R.hcy-1];if(part==='hals')return [(sx+R.hcx)/2+1,(sy+R.hcy)/2+1];
+ if(part==='brust')return [sx-5*Tx-4*Nx,sy-5*Ty-4*Ny];if(part==='vl')return [(l[3].jx+l[3].kx)/2,(l[3].jy+l[3].ky)/2+1];
+ if(part==='hl')return [(l[2].jx+l[2].kx)/2,(l[2].jy+l[2].ky)/2+1];return [(hx+sx)/2-4*Nx,(hy+sy)/2-4*Ny];}
+BAER.anchor=anchor;
+function drawWounds(c,a,R,SH){const W=a.wounds||[];
+ for(const w of W){const [ax,ay]=anchor(R,w.part),x=ax+w.u,y=Math.min(ay+w.v,G-1),n=w.size,s=w.seed;
+  if(w.kind==='claw'){for(let i=0;i<4;i++){const o=(i-1.5)*1.25;seg(c,x-n*.9+o*.3,y+o-n*.35,x+n*.9+o*.3,y+o+n*.35,.75,i%2?'#8d1c13':'#5d140f');}}
+  else if(w.kind==='bite'){for(let i=0;i<4;i++)rr(c,x+(i%2?1:-1)*(1+n*.35)+hrand(s+i)-.5,y+(i<2?-1:1)*(.8+n*.2),1.1,1.1+n*.15,'#5d140f');rr(c,x-n*.3,y-.5,n*.6+.6,1,'#8d1c13');}
+  else if(w.kind==='blunt'){rr(c,x-n*.5,y-n*.3,n+1,n*.6+.6,'#3a1c1880');}
+  else if(w.kind==='stab'){rr(c,x-.6,y-.6,1.4+n*.15,1.4+n*.15,'#3d0c08');rr(c,x-.2,y+.8,.9,n*.7,'#8d1c13');}
+  else{seg(c,x-n*.9,y-n*.45,x+n*.9,y+n*.45,.9+n*.08,'#5d140f');seg(c,x-n*.7,y-n*.3,x+n*.6,y+n*.3,.5,'#a3261b');}
+  if(n>2.5)rr(c,x+hrand(s)*1.5-.7,y+.6,.8,Math.min(1.2+n*.8,G-y-.3),'#7d150e');}
+ if(a.mouthBlood>0){const m=a.mouthBlood,hs=SH.headS,x=R.hcx+Math.cos(R.he)*11*hs,y=Math.min(R.hcy,G-6.5*hs)-Math.sin(R.he)*11*hs+1.6*hs;
+  rr(c,x-1.5*hs,y,3.6*hs,1.1*hs+m*hs,'#8d1c13');if(m>.4)rr(c,x-.4*hs,y+1.4*hs,1*hs,1.6*hs*m,'#7d150e');if(m>.7)rr(c,x-3*hs,y-.6*hs,2*hs,1*hs,'#6b1611');}}
 BAER.draw=drawBear;
 })();

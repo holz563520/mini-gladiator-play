@@ -1,0 +1,94 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Bären · Kampf-Editor</title>
+<link rel="stylesheet" href="brand.css">
+<link rel="stylesheet" href="manager.css">
+<style>
+/* Bären-Kampf-Editor (Wunsch Thomas 27.11.2026, Schritt B3a): Bären gegen Menschen, Hunde und andere Bären mit der echten Kampflogik des Spiels
+   (sim, arena-core, hund) und dem Bären-Kampfkern (baer-kampf.js). Bedienung Deutsch, Inhalte der Bären Englisch. Ändert keinen Spielstand. */
+[hidden]{display:none!important}
+body{min-height:100vh;margin:0}
+.wrap{max-width:1240px;margin:auto;padding:14px 16px 60px}
+.tl{font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+.tl a{color:var(--gold)}
+h1{font-size:clamp(22px,5vw,34px);color:var(--gold);letter-spacing:3px;margin:4px 0;text-transform:uppercase}
+h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;margin:18px 0 6px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 10px;line-height:1.5;max-width:940px}
+.teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.team{border:1px solid var(--line);padding:8px 10px;background:#17201f}
+.team h3{margin:0 0 6px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.bbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end;margin:8px 0}
+.bbar label{display:grid;gap:3px;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.bbar label.frei{text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;font-size:13px}
+.bbar select,.bbar input[type=range]{min-height:36px;background:#293639;color:var(--cream);border:1px solid #52625b;font:inherit;font-size:13px;padding:4px 8px;max-width:230px}
+.bbar .btn{min-height:38px}
+.stage{position:relative;background:#101719;border:1px solid var(--line)}
+#arenaCanvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.hud{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px;font-size:13px;color:var(--cream);margin:8px 0}
+.karte{border:1px solid var(--line);padding:6px 8px;background:#17201f}
+.karte b{color:var(--gold);font-weight:normal}
+.karte .tot{color:#f29b83}
+.bar{height:7px;background:#26343a;border:1px solid #52625b;width:90px;display:inline-block;vertical-align:middle}
+.bar i{display:block;height:100%;background:#d8b25a;width:0}.bar.rot i{background:#b5402f}
+.teile{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 8px;font-size:11px;color:var(--muted);margin-top:4px}
+#log{font-size:12px;line-height:1.5;color:var(--cream);max-height:190px;overflow:auto;border:1px solid var(--line);padding:6px 8px;background:#101719}
+#log span{color:var(--muted)}
+#serie{font-size:13px;color:var(--cream)}
+.err{color:#f29b83;white-space:pre-wrap}
+</style></head><body><div class="wrap">
+<div class="tl">Arena Theory · Werkzeug · <a href="baer-editor.html">zurück zum Bären-Editor</a></div><h1>Bären · Kampf-Editor</h1>
+<p class="sub">Bären gegen Menschen, Hunde und andere Bären, mit der echten Kampflogik des Spiels. Testversion (Schritt B3a): Die Werte sind vorläufig und noch nicht eingemessen, bisher hat nur der Europäische Braunbär eine eigene Gestalt, alle anderen Sorten kämpfen mit ihren eigenen Werten in seinem Körper. Dein Spielstand wird nicht verändert.</p>
+<div class="teams">
+ <div class="team"><h3>Seite A (links)</h3><div class="bbar">
+  <label>Art<select id="artA"><option value="bear" selected>Bär</option><option value="human">Mensch</option><option value="dog">Hund</option></select></label>
+  <label>Anzahl<select id="zahlA"></select></label>
+  <label data-fuer="bear">Bärensorte<select id="sorteA"></select></label>
+  <label data-fuer="dog">Hunderasse<select id="rasseA"></select></label>
+  <label data-fuer="human">Stufe<select id="stufeA"></select></label>
+  <label data-fuer="human">Waffe<select id="waffeA"></select></label>
+  <label data-fuer="human">Rüstung<select id="ruestA"></select></label>
+ </div></div>
+ <div class="team"><h3>Seite B (rechts)</h3><div class="bbar">
+  <label>Art<select id="artB"><option value="bear">Bär</option><option value="human" selected>Mensch</option><option value="dog">Hund</option></select></label>
+  <label>Anzahl<select id="zahlB"></select></label>
+  <label data-fuer="bear">Bärensorte<select id="sorteB"></select></label>
+  <label data-fuer="dog">Hunderasse<select id="rasseB"></select></label>
+  <label data-fuer="human">Stufe<select id="stufeB"></select></label>
+  <label data-fuer="human">Waffe<select id="waffeB"></select></label>
+  <label data-fuer="human">Rüstung<select id="ruestB"></select></label>
+ </div></div>
+</div>
+<div class="bbar">
+ <label>Werte der Bären<select id="werte"><option value="frisch" selected>frisch gewürfelt (Istwerte)</option><option value="typisch">typisch (Sortenwerte)</option></select></label>
+ <label>Ansicht<select id="zoom"><option value="1">ganze Arena</option><option value="1.7" selected>nah</option><option value="2.6">sehr nah</option></select></label>
+ <label>Tempo<select id="spd"><option value="0.25">¼ (Zeitlupe)</option><option value="0.5">½</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+ <button class="btn primary" id="go" type="button">▶ Neuer Kampf</button>
+ <button class="btn" id="pause" type="button">⏸ Pause</button>
+ <button class="btn" id="einzel" type="button">Bild vor</button>
+ <label class="frei"><input type="checkbox" id="loop"> immer wieder</label>
+</div>
+<div class="stage"><canvas id="arenaCanvas" width="1040" height="720"></canvas></div>
+<div class="hud" id="hud">Lädt …</div>
+<h2>Angriff auslösen</h2>
+<p class="sub">Der erste Bär der Seite A nimmt den gewählten Angriff als Nächstes. Abreißen und Kopfbiss gehen nur am Liegenden: Der Bär reißt den Gegner dafür erst zu Boden. Von selbst kommen beide nach den Startwerten aus dem Fahrplan: Abreißen nur an einem schon schwer verletzten Glied (kleine Bären nur Hand und Fuß, höchstens einmal je Opfer), Kopfbiss nur ab ☠3 mit Bisskraft ab 70 an einem fast wehrlosen Opfer. Mit den Reglern lässt sich beides häufiger stellen oder abschalten.</p>
+<div class="bbar" id="angriffe"></div>
+<div class="bbar">
+ <label>Abreißen, Häufigkeit (0 = aus): <span id="tearText"></span><input type="range" id="tear" min="0" max="10" step="0.5" value="1"></label>
+ <label>Kopfbiss, Häufigkeit (0 = aus): <span id="headText"></span><input type="range" id="head" min="0" max="10" step="0.5" value="1"></label>
+ <label>Schaden der Bären: <span id="schadenText"></span><input type="range" id="schaden" min="0.4" max="2" step="0.05" value="1"></label>
+ <label>Härte der Bären: <span id="haerteText"></span><input type="range" id="haerte" min="0.4" max="2.5" step="0.05" value="1"></label>
+</div>
+<h2>Kampfbericht (Englisch wie im Spiel)</h2>
+<div id="log"></div>
+<h2>Viele Kämpfe rechnen</h2>
+<p class="sub">Rechnet dieselbe Aufstellung ohne Bild mehrmals durch (jedes Mal frisch gewürfelt) und zeigt, wer wie oft gewinnt.</p>
+<div class="bbar"><button class="btn" id="serieGo" type="button">30 Kämpfe rechnen</button></div>
+<div id="serie"></div>
+<p class="sub err" id="err" hidden></p>
+</div>
+<script>window.BAER_KAMPF_EDITOR=true;window.onerror=(m,src,l)=>{const e=document.getElementById('err');if(e){e.hidden=false;e.textContent+='Fehler: '+m+' ('+String(src).split('/').pop()+':'+l+')\n';}};</script>
+<script>
+// Spielmodule in Reihenfolge laden (wie der Wurfnetz-Editor), danach die Bären. Die Bärendateien werden nur hier und im Bären-Editor geladen.
+(async()=>{const V='72f46117',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
+ const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','lion','hahn-engine','hahn-arena','arena-beasts','hund','arena-core','baer','baer-koepfe','baer-mini','baer-kampf','baer-kampf-editor'];
+ for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v='+v;s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
+</script>
+</body></html>
