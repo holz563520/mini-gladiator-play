@@ -9,13 +9,15 @@
 //   Griff des Spiels fest: grabbedBy/rearFinish aus sim.js), Wegschleudern, Wegzerren, Lahmen bei verletzten Läufen, Abreißen am Gepackten
 //   und (ab ☠4) am Stehenden.
 // · Eigener Simulationsschritt für Kämpfe mit Bären (K.build, M.fixedStep nur für battle.baer), aus denselben Bausteinen wie arena-core.js.
+// · B3c1 (Rückmeldung Thomas 27.11.2026): Pranke und Maul zielen auf die Trefferstelle am Gegner (Abschnitt „Zielen“), am Liegenden beißt der Bär
+//   direkt in den Körperteil; die Stelle steht vor dem Ausholen fest. Schalter K.OPT.ziel, Adresse ?baerZiel=0.
 // Keine Spieldatei wird geändert; die Werte sind vorläufig (Einmessen in B28). Schalter: K.OPT.
 // =====================================================================================================
 (()=>{
 const M=window.MG,B=window.BAER,AN=window.AN;if(!M||!B||!AN)return;
 const S=M.s,H=window.HahnArena,DG=()=>window.DOG,cl=M.clamp,TAU=Math.PI*2;
 const rnd=(a,b)=>a+Math.random()*(b-a),sm=u=>{u=u<0?0:u>1?1:u;return u*u*(3-2*u);},dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const K={SCALE:1.08,TMAX:180,OPT:{tear:1,head:1,schaden:1,haerte:1,ringen:1},force:null};B.K=K;
+const K={SCALE:1.08,TMAX:180,OPT:{tear:1,head:1,schaden:1,haerte:1,ringen:1,ziel:1},force:null};B.K=K;
 
 // ---------------------------------------------------------------- Angriffe (Name im Spiel Englisch, Bedienung Deutsch)
 K.ATTACKS=[['threat','Threat display','Drohen','Richtet sich auf, brüllt, zeigt die Zähne.'],['bluff','Bluff charge','Scheinangriff','Stürmt heran und bricht kurz vorher ab.'],
@@ -52,7 +54,7 @@ K.makeFighter=function(D,team,x,y){
 const out=a=>a.bear?a.g.dead||a.fled:a.dog?DG().out(a):a.down||a.surrendered||a.g.dead;K.out=out;
 K.health=b=>cl(Math.min(...['kopf','hals','brust'].map(p=>b.tissue[p]/b.max[p]),(b.tissue.bauch+b.tissue.vl+b.tissue.hl)/(b.max.bauch+b.max.vl+b.max.hl))*100*Math.min(1,b.blood/70),0,100);
 function log(t){const b=S.battle;if(!b)return;b.log.unshift({time:Math.floor(b.time),text:t});b.log.length=Math.min(60,b.log.length);K.onLog?.(t);}
-function state(b,mode,dur=0){b.mode=mode;b.clock=0;b.duration=dur;b.struck=false;b.ticks=0;if(NAME[mode])b.attacks[mode]=(b.attacks[mode]||0)+1;}
+function state(b,mode,dur=0){b.mode=mode;b.clock=0;b.duration=dur;b.struck=false;b.ticks=0;b.aimPt=null;if(NAME[mode])b.attacks[mode]=(b.attacks[mode]||0)+1;}
 
 // ---------------------------------------------------------------- Blut (wie beim Hund)
 function spray(b,x,y,z,n,dir=null){for(let i=0;i<n;i++){const an=dir==null?rnd(0,TAU):dir+rnd(-.7,.7),v=rnd(15,75);b.spray.push({x,y,z,vx:Math.cos(an)*v,vy:Math.sin(an)*v*.55,vz:rnd(10,70),s:Math.random()<.3?2:1});}
@@ -120,7 +122,7 @@ function headChance(b,V){if(b.P.skulls<3||b.bear.stats.biss<70||V.g.body.head?.m
  const helm=DG()?.armorMat?.(V,'head');if(helm&&helm.m==='metal'&&b.P.skulls===3)return 0;// geschlossener Helm hält bei ☠3 stand
  return (b.P.bauart==='H'?.2:.15)*(helm?.5:1)*K.OPT.head;}
 K.tearChance=tearChance;K.headChance=headChance;
-try{const q=new URLSearchParams(location.search);if(q.get('baerAbriss')==='0')K.OPT.tear=0;if(q.get('baerKopfbiss')==='0')K.OPT.head=0;if(q.get('baerRingen')==='0')K.OPT.ringen=0;}catch{}
+try{const q=new URLSearchParams(location.search);if(q.get('baerAbriss')==='0')K.OPT.tear=0;if(q.get('baerKopfbiss')==='0')K.OPT.head=0;if(q.get('baerRingen')==='0')K.OPT.ringen=0;if(q.get('baerZiel')==='0')K.OPT.ziel=0;}catch{}
 const DOG_AT=[['kopf',.15],['hals',.15],['brust',.25],['bauch',.25],['vl',.1],['hl',.1]];
 function humanPart(b,t,kind){const A=b.P.bauart;let L=kind==='pin'?PIN_AT:kind==='bite'?BITE_AT:SWIPE_AT;
  if(kind==='swipe'&&A==='B')L=[['head',.6],...L.slice(1)];// Lippenbär: Sichelkrallen ins Gesicht
@@ -129,7 +131,8 @@ function humanPart(b,t,kind){const A=b.P.bauart;let L=kind==='pin'?PIN_AT:kind==
 // Rüstung: Zähne wie beim Hund (DOG.biteFactor), Krallen und Wucht kommen besser durch
 function armorF(t,part,kind){const bf=DG()?.biteFactor?.(t,part,kind==='ram'?'leap':'bite')?.f??1;return kind==='bite'||kind==='pin'?Math.min(1,bf*1.35):kind==='ram'||kind==='slam'?.6+.4*bf:.4+.6*bf;}
 function hurtHuman(b,t,kind,partId,dmg){const old=t.taken,wasDead=t.g.dead,f=armorF(t,partId,kind);dmg*=f*K.OPT.schaden;
- const ef={...M.effective(b),damage:dmg,range:70,attackKey:'bear-'+kind,partId,w:{id:'bear-'+kind,name:NAME[kind]||'Mauling',damage:dmg,range:70,weight:kind==='ram'?14:kind==='slam'?12:kind==='swipe'?8:4,pen:.3,crit:1.2,bladed:false,ammo:0,block:0}};
+ const rg=fallen(t)?Math.max(70,dist(b,t)+20):70;/* am Liegenden steht der Bär am Rumpf, nicht an den Füßen (B3c1) */
+ const ef={...M.effective(b),damage:dmg,range:rg,attackKey:'bear-'+kind,partId,w:{id:'bear-'+kind,name:NAME[kind]||'Mauling',damage:dmg,range:rg,weight:kind==='ram'?14:kind==='slam'?12:kind==='swipe'?8:4,pen:.3,crit:1.2,bladed:false,ammo:0,block:0}};
  M.hit(b,t,false,ef);const landed=t.taken>old;
  if(landed){b.hits++;if(kind!=='ram')b.fig.mouthBlood=Math.min(1,(b.fig.mouthBlood||0)+(kind==='swipe'||kind==='slam'?.03:.2));const p=t.g.body[partId];if(p&&kind!=='ram')p.bleed=(p.bleed||0)+(.6+dmg*.025)*f;
   try{const pt=M.contactAnchor(t,partId||'chest');spray(b,pt.x,pt.y+8,Math.max(4,t.y-pt.y),8+dmg*.35,b.a);}catch{}
@@ -141,7 +144,7 @@ function strike(b,t,kind,dmg,at){if(!t||t.g.dead)return false;
   const dead0=t.g.dead;D.hurt(t,pick(DOG_AT),dmg*2.2*K.OPT.schaden,kind==='bite'||kind==='pin'?'bite':kind==='ram'?'crush':'tear',b);b.hits++;if(t.mode==='grip'&&t.victim===b.id)D.release?.(t);if(!dead0&&t.g.dead)b.kills++;return true;}
  const part=at||humanPart(b,t,kind);return hurtHuman(b,t,kind,part,dmg);}
 function fell(b,t,why,dur,push){if(t.bear||t.dog||t.g.dead)return;M.knockdown(t,why,dur);t.kx=(t.kx||0)+Math.cos(b.a)*push;t.ky=(t.ky||0)+Math.sin(b.a)*push*.3;}
-function releaseVictim(b){const t=S.battle?.actors.find(a=>a.id===b.victim);if(t){if(t.pinnedBy===b.id)delete t.pinnedBy;if(t.grabbedBy===b.id)delete t.grabbedBy;}delete b.rearFinish;b.held=false;b.victim=null;b.interrupt=0;}
+function releaseVictim(b){const t=S.battle?.actors.find(a=>a.id===b.victim);if(t){if(t.pinnedBy===b.id)delete t.pinnedBy;if(t.grabbedBy===b.id)delete t.grabbedBy;}delete b.rearFinish;b.held=false;b.victim=null;b.interrupt=0;b.pinPart=b.pinLast=b.grPart=b.grLast=null;}
 // Packen (B3b1): Der Stehende wird über den vorhandenen Griff des Spiels gehalten (sim.js: grabbedBy am Opfer, rearFinish am Halter).
 // Solange das gilt, handelt das Opfer nicht; lässt der Bär los oder stirbt er, löst sim.js den Griff von selbst.
 function hold(b,V){V.grabbedBy=b.id;V.state='grabbed';V.wind=0;V.pendingStrike=null;V.swing=0;V.kx=V.ky=0;b.rearFinish={target:V.id,left:.85,bear:true};b.held=true;}
@@ -173,9 +176,80 @@ const reachOf=b=>40*b.P.sz*K.SCALE;
 const inReach=(b,t)=>(t.x-b.x)*B.facing(b.fig)>10&&Math.abs(t.x-b.x)<reachOf(b)+(t.r||14)+8&&Math.abs(t.y-b.y)<22&&!b.fig.turn;
 function spot(b,t){const side=b.x<=t.x?-1:1;return {x:t.x+side*(reachOf(b)+(t.r||14)*.5),y:t.y+1};}
 
+// ---------------------------------------------------------------- Zielen (B3c1, Rückmeldung Thomas 27.11.2026): Pranke und Maul treffen die Stelle
+// Die Trefferstelle am Gegner wird ins Maß des Bärenskeletts umgerechnet (x nach vorn, y nach oben negativ). Der Rumpf lehnt sich so weit,
+// dass Vorderpranke bzw. Hals und Kopf hinreichen (hoch: Vorderkörper hebt sich, tief: er knickt vorn ein), dann greifen Pranke und Maul den Punkt.
+// Schalter: K.OPT.ziel (0 = alte feste Bewegungen), Adresse ?baerZiel=0.
+const HY={head:-62,neck:-56,chest:-47,belly:-35,ls:-49,rs:-49,lua:-43,rua:-43,lfa:-35,rfa:-35,lh:-35,rh:-35,lt:-23,rt:-23,lsh:-11,rsh:-11,lf:-2,rf:-2};
+// Stelle am Liegenden in Arenakoordinaten: dieselbe Lage wie contactAnchor in sim.js, aber für jedes Körperteil
+function groundPoint(V,part){const sc=(V.g.height||180)/180*1.14,face=Math.cos(V.a||0)>=0?1:-1,rot=(V.fallSide||-1)*1.35,xs=part[0]==='l'?-8:part[0]==='r'?8:0,ys=HY[part]??-45;
+ return {x:V.x+(12+Math.cos(rot)*xs-Math.sin(rot)*ys)*sc*face,y:V.y+(5+Math.sin(rot)*xs+Math.cos(rot)*ys)*sc};}
+function worldPoint(V,part){if(V.bear)return {x:V.x,y:V.y-34*V.P.sz*K.SCALE};if(V.dog)return {x:V.x,y:V.y-14};part=part||'chest';
+ if(fallen(V))return groundPoint(V,part);try{return M.contactAnchor(V,part);}catch{return {x:V.x,y:V.y-50};}}
+function aimPoint(b,V,part){const w=worldPoint(V,part),s=b.P.sz*K.SCALE;return {x:cl((w.x-b.x)*B.facing(b.fig)/s,8,84),y:cl((w.y-b.y)/s,-100,-3)};}
+K.aimPoint=aimPoint;
+// Bis zum Treffer folgt der Punkt dem Gegner, danach bleibt er stehen (der Getroffene fällt oder fliegt weg)
+function aimNow(b,V,part){if(V&&!V.g.dead&&!(b.struck&&b.aimPt))b.aimPt=aimPoint(b,V,part);return b.aimPt;}
+// Platz beim Niederdrücken: neben dem Rumpf des Liegenden (nicht neben seinen Füßen), damit das Maul Kopf, Brust und Arme erreicht
+function pinSpot(b,V){if(!K.OPT.ziel||!human(V))return {x:V.x+(b.x<=V.x?-1:1)*(reachOf(b)-6*b.P.sz),y:V.y-2};const c=groundPoint(V,'chest');return {x:cl(c.x+(b.x<=c.x?-1:1)*31*b.P.sz*K.SCALE,BX[0],BX[1]),y:V.y+3};}// ein Stück vor dem Liegenden: Kopf und Pranke des Bären liegen sichtbar auf ihm
+// Stelle für den Biss am Liegenden: nur was das Maul vom Platz am Rumpf aus erreicht (ein Bein unter dem eigenen Bauch beißt er nicht)
+const pinOk=(b,V,p)=>{const x=(groundPoint(V,p).x-b.x)*B.facing(b.fig)/(b.P.sz*K.SCALE);return x>=12&&x<=66;};
+function pinPick(b,V){if(!K.OPT.ziel||!human(V))return humanPart(b,V,'pin');const s=b.P.sz*K.SCALE,f=B.facing(b.fig);
+ for(let i=0;i<6;i++){const p=humanPart(b,V,'pin'),x=(groundPoint(V,p).x-b.x)*f/s;if(x>=14&&x<=64)return p;}return V.g.body.chest?.missing?'belly':'chest';}
+const grPick=b=>pick(b.P.bauart==='H'?[['head',.5],['neck',.2],['ls',.15],['rs',.15]]:[['head',.22],['neck',.2],['ls',.2],['rs',.2],['lua',.09],['rua',.09]]);// Biss beim Ringen
+const curOf=fig=>fig.pose?.cur||B.poseSet(fig.mode,fig.SH||B.shapeOf(fig.bear));
+const shoulder=(C,SH,p,hx)=>({x:hx+SH.L*Math.cos(p),y:C.hy-SH.L*Math.sin(p)});
+// Rumpf lehnen: liefert {p,hx} als Zugabe zur Haltung, sodass ein Glied der Länge len von der Schulter den Punkt T erreicht
+function lean(C,SH,T,len){const L=SH.L;let p=C.p,hx=C.hx,s=shoulder(C,SH,p,hx);
+ const want=cl(s.y,T.y-len*.8,T.y+len*.7);if(want!==s.y)p=cl(Math.asin(cl((C.hy-want)/L,-1,1)),C.p-.45,C.p+.75);
+ s=shoulder(C,SH,p,hx);const hr=Math.sqrt(Math.max(1,len*len*.9-(T.y-s.y)*(T.y-s.y)));const up=C.p>.7;hx+=up?cl(T.x-s.x-hr,-3,3):cl(T.x-s.x-hr,-12,16);// aufgerichtet stehen die Hinterbeine fast gestreckt: das Becken kann nicht vor, der Bär beugt sich vor
+ if(up)for(let i=0;i<14;i++){s=shoulder(C,SH,p,hx);if(Math.hypot(T.x-s.x,T.y-s.y)<=len*.9||p<C.p-.95||s.x>T.x-9)break;p-=.07;}
+ return {p:p-C.p,hx:hx-C.hx};}
+// Hals und Kopf so stellen, dass das Maul am Punkt T ist (zwei Glieder: Hals, Schädel bis zur Schnauze). O: schon gesetzte Zugaben für den Rumpf.
+function mouthTo(C,O,SH,T){const p=C.p+(O.p||0),hx=C.hx+(O.hx||0),hy=C.hy+(O.hy||0),L=SH.L,cp=Math.cos(p),sp=Math.sin(p),nbx=hx+L*cp+3*cp-3*sp,nby=hy-L*sp-3*sp-3*cp,a=SH.neck,m=11*SH.headS;
+ let dx=Math.max(2,T.x-nbx),dy=nby-T.y,d=Math.hypot(dx,dy)||1;/* der Punkt liegt immer vor dem Halsansatz: kein Umklappen des Halses */const dd=cl(d,Math.abs(a-m)+.5,a+m-.3);dx*=dd/d;dy*=dd/d;
+ const ne=Math.atan2(dy,dx)+Math.acos(cl((a*a+dd*dd-m*m)/(2*a*dd),-1,1)),he=Math.atan2(dy-a*Math.sin(ne),dx-a*Math.cos(ne));
+ return {ne:cl(ne,-1.3,2.3)-C.ne,he:cl(he,-1.57,2.2)-C.he};}
+const L2=(a,b,t)=>a+(b-a)*t;
 // ---------------------------------------------------------------- Überlagerte Bewegung je Angriff (Zahlen für BAER.over)
-function over(b,t){const m=b.mode,u=b.duration?cl(b.clock/b.duration,0,1):0,O={},hr=b.hit>0?b.hit/.3:0;
- if(m==='swipe'){const w=sm(u/.36),s=sm((u-.36)/.12),r=sm((u-.58)/.42),k=1-r;O.nx=(-7*w+26*s)*k;O.ny=(-13*w-5*s)*k;O.na=-.9*w*k+.7*s*k;O.p=.05*s*k;O.hx=3.5*s*k;O.ne=.16*w*k;O.he=.1*s*k;O.lip=.9*k;O.mouth=.35*s*k;O.ear=-.8*k;}
+function over(b,t){const m=b.mode,u=b.duration?cl(b.clock/b.duration,0,1):0,O={},hr=b.hit>0?b.hit/.3:0,fig=b.fig,Z=K.OPT.ziel&&!b.g.dead&&!fig.turn,act=id=>S.battle?.actors.find(a=>a.id===id);
+ let A=null,V=null;
+ if(Z&&(m==='swipe'||m==='bite'||m==='slam'&&b.phase===1))A=aimNow(b,act(b.aim),b.at);
+ if(Z&&HOLD.includes(m)&&m!=='drag'){V=act(b.victim);if(!human(V))V=null;}
+ const PZ=V&&m==='pin'&&fig.mode==='stand'&&(fig.v||0)<6;
+ if(A&&m==='swipe'){// Gewicht auf die andere Seite, Pranke holt nach hinten oben aus, schlägt im Bogen durch die Trefferstelle, schwingt nach unten durch
+  const C=curOf(fig),SH=fig.SH||B.shapeOf(fig.bear),w=sm(u/.34),s=sm((u-.34)/.12),f=sm((u-.46)/.16),r=sm((u-.62)/.38),k=1-r,Bd=lean(C,SH,A,26*SH.leg);
+  const hx=A.x-5-C.wx,hy=A.y-C.wy,wx=hx*.3-9,wy=Math.min(hy-9,-17),fx=hx+8,fy=Math.min(0,hy+15);
+  const px=u<.34?wx*w:u<.46?L2(wx,hx,s):L2(hx,fx,f),py=u<.34?wy*w:u<.46?L2(wy,hy,s):L2(hy,fy,f);
+  O.nx=px*k;O.ny=py*k;O.na=(-1.0*w*(1-s)+.8*s*(1-f)-.5*f)*k;O.p=Bd.p*w*k+.04*s*k;O.hx=(Bd.hx*(.25*w+.75*s)-3*w*(1-s))*k;O.bend=1.2*w*(1-s)*k;
+  O.ne=(.2*w-.12*s)*k;O.he=(.14*s-.08*w)*k;O.lip=.9*k;O.mouth=(.15*w+.4*s)*k;O.ear=-.8*k;if(Bd.p>.12)O.fy=-3*Bd.p*w*k;}
+ else if(A&&m==='bite'){// Hals streckt sich, Maul auf, Kopf schnappt an die Stelle, Kiefer zu, Schütteln mit Kopf und Nacken
+  const C=curOf(fig),SH=fig.SH||B.shapeOf(fig.bear),back=sm(u/.12)*(1-sm((u-.12)/.14)),l=sm((u-.1)/.22),r=sm((u-.82)/.18),k=1-r,held=b.struck&&b.landed&&u>.36,sh=held?Math.sin(t*44)*k:0;
+  const Bd=lean(C,SH,A,(SH.neck+11*SH.headS)*.92);O.p=Bd.p*l*k+.03*sh;O.hx=(Bd.hx*l-3*back)*k;const q=mouthTo(C,{p:Bd.p,hx:Bd.hx},SH,A);
+  O.ne=(q.ne*l+.12*back)*k+.05*sh;O.he=(q.he*l+.1*back)*k+.2*sh;O.mouth=u<.34?.95*sm(u/.2):.22*k;O.lip=k;O.ear=-.9*k;O.nx=3*l*k;}
+ else if(A&&m==='slam'){// lässt sich mit dem ganzen Gewicht fallen, beide Pranken schlagen auf die Stelle
+  const C=curOf(fig),s=sm(u/.6),r=sm((u-.66)/.34),k=s*(1-r);O.nx=(A.x-5-C.wx)*k;O.ny=(A.y-C.wy)*k;O.fx=(A.x-2-C.wx)*k;O.fy=(A.y+2-C.wy)*k;O.na=.5*k;O.mouth=.6*(1-r);O.lip=1-r;O.ear=-.8;O.he=-.15*k;}
+ else if(PZ){// steht über dem Liegenden, eine Pranke auf ihm; der Kopf geht hinunter bis an den Körperteil, beißt, reißt nach oben
+  const C=curOf(fig),SH=fig.SH||B.shapeOf(fig.bear),e0=b.ticks?1:sm(b.clock/.45),c=(b.clock%.75)/.75,nx=aimPoint(b,V,b.pinPart||'chest'),la=b.pinLast?aimPoint(b,V,b.pinLast):nx,up=8;let T,mo,sh=0;
+  if(c>=.7){const e=sm((c-.7)/.3);T={x:nx.x,y:nx.y-up*(1-e*e)};mo=.95;}// stößt hinunter, im Takt des Bisses ist das Maul an der Stelle
+  else if(b.pinLast&&c<.3){const e=sm(c/.3);T={x:la.x-2*e,y:la.y-up*e};mo=.08;sh=Math.sin(t*42)*(1-e*.6);}// Kiefer zu, reißt nach oben und schüttelt
+  else{const e=b.pinLast?sm((c-.3)/.4):1;T={x:L2(la.x-2,nx.x,e),y:L2(la.y-up,nx.y-up,e)};mo=.9*(b.pinLast?e:sm(c/.6));}// Kopf wandert zur nächsten Stelle, Maul geht auf
+  const len=(SH.neck+11*SH.headS)*.92,Bd=lean(C,SH,T,len);O.p=Bd.p*e0+.02*sh;O.hx=Bd.hx*e0;const q=mouthTo(C,{p:Bd.p,hx:Bd.hx},SH,T);O.ne=q.ne*e0+.04*sh;O.he=q.he*e0+.16*sh;
+  const bl=aimPoint(b,V,'belly');O.nx=cl(bl.x-4-C.wx,-10,14)*e0;O.ny=cl(bl.y-1-C.wy,-9,0)*e0;O.mouth=mo*e0;O.lip=e0;O.ear=-.7*e0;}
+ else if(V&&(m==='tear'||m==='crush')){// Abreißen: verbeißt sich im Glied, stemmt die Pranke auf den Körper, reißt mit Kopf und Nacken zurück. Kopfbiss: Maul schließt sich um den Kopf.
+  const C=curOf(fig),SH=fig.SH||B.shapeOf(fig.bear),g=sm(u/(m==='tear'?.2:.2)),r=sm((u-(m==='tear'?.85:.9))/.12),k=1-r,y=m==='tear'?sm((u-.45)/.27):0,P0=aimPoint(b,V,m==='tear'?b.limb:'head');
+  const T={x:P0.x-13*y,y:P0.y-13*y},sh=m==='tear'?(u>.72?Math.sin(t*40):.3*y*Math.sin(t*31)):(u>.7?Math.sin(t*38):.25*Math.sin(t*60)),len=(SH.neck+11*SH.headS)*.92,Bd=lean(C,SH,T,len);
+  O.p=Bd.p*g*k+.02*sh*k;O.hx=(Bd.hx*g-4*y)*k;const q=mouthTo(C,{p:Bd.p,hx:Bd.hx-4*y},SH,T);O.ne=(q.ne*g+.04*sh)*k;O.he=(q.he*g+.18*sh)*k;O.bend=2*y*k;
+  const ch=aimPoint(b,V,'chest');O.nx=cl(ch.x-4-C.wx,-10,14)*g*k;O.ny=cl(ch.y-1-C.wy,-9,0)*g*k;O.mouth=m==='tear'?(u<.2?.9*sm(u/.15):.3):(u<.2?sm(u/.15):cl(.95-(u-.2)*1.25,.08,1));O.lip=1;O.ear=-1;}
+ else if(V&&m==='grapple'&&b.phase===1){// klammert mit beiden Pranken; vor jedem Biss hebt sich der Kopf, dann schnappt er an die Stelle und schüttelt
+  const C=curOf(fig),SH=fig.SH||B.shapeOf(fig.bear),e=sm(b.clock/.35),c=(b.clock%.7)/.7,nx=aimPoint(b,V,b.grPart||'head'),la=b.grLast?aimPoint(b,V,b.grLast):nx,up=7;let T,mo,sh=0;
+  if(c>=.72){const q=sm((c-.72)/.28);T={x:nx.x,y:nx.y-up*(1-q*q)};mo=.95;}
+  else if(b.grLast&&c<.3){const q=sm(c/.3);T={x:la.x,y:la.y-up*q};mo=.1;sh=Math.sin(t*42)*(1-q*.5);}
+  else{const q=b.grLast?sm((c-.3)/.42):1;T={x:L2(la.x,nx.x,q),y:L2(la.y-up,nx.y-up,q)};mo=.85*(b.grLast?q:sm(c/.6));}
+  if(fallen(V)&&b.grT)T=b.grT;else b.grT=T;// sackt der Gepackte weg, bleibt das Maul, wo es war (der Wechsel zum Niederdrücken läuft weich)
+  const Bd=lean(C,SH,T,(SH.neck+11*SH.headS)*.92);O.p=Bd.p*e+.02*sh;O.hx=Bd.hx*e;const q=mouthTo(C,{p:Bd.p,hx:Bd.hx},SH,T);O.ne=q.ne*e+.03*sh;O.he=q.he*e+.16*sh;
+  O.nx=7*e;O.fx=7*e;O.ny=2.5*e;O.fy=2.5*e;O.mouth=mo*e;O.lip=e;O.ear=-.9*e;}
+ else if(m==='swipe'){const w=sm(u/.36),s=sm((u-.36)/.12),r=sm((u-.58)/.42),k=1-r;O.nx=(-7*w+26*s)*k;O.ny=(-13*w-5*s)*k;O.na=-.9*w*k+.7*s*k;O.p=.05*s*k;O.hx=3.5*s*k;O.ne=.16*w*k;O.he=.1*s*k;O.lip=.9*k;O.mouth=.35*s*k;O.ear=-.8*k;}
  else if(m==='bite'){const l=sm(u/.3),r=sm((u-.82)/.18),k=1-r,held=b.struck&&b.landed&&u>.36;O.hx=4*l*k;O.ne=.32*l*k;O.he=.22*l*k+(held?.2*Math.sin(t*44)*k:0);O.p=(held?.03*Math.sin(t*44+1):0);
   O.mouth=u<.33?.95*sm(u/.22):.25*k;O.lip=k;O.ear=-.9*k;}
  else if(m==='slam'&&b.phase===1){const s=sm(u/.55),r=sm((u-.6)/.4);O.nx=9*s*(1-r);O.fx=9*s*(1-r);O.ny=-5*(1-s);O.fy=-5*(1-s);O.mouth=.6*(1-r);O.lip=1-r;O.ear=-.8;}
@@ -199,7 +273,10 @@ function over(b,t){const m=b.mode,u=b.duration?cl(b.clock/b.duration,0,1):0,O={}
  const lv=lameOf(b,'vl'),lh=lameOf(b,'hl'),fg=b.fig;if((lv>0||lh>0)&&!b.g.dead&&fg.mode==='stand'&&!fg.turn){const gs=fg.gs||0,c=fg.cyc||0,sv=Math.max(0,Math.sin(TAU*(c-.5))),sh=Math.max(0,Math.sin(TAU*(c-.6)));
   O.ne=(O.ne||0)+.24*lv*gs*sv;O.he=(O.he||0)-.1*lv*gs*sv;O.p=(O.p||0)+.05*lv*gs*sv-.06*lh*gs*sh;O.hy=(O.hy||0)+1.8*lh*gs*sh;
   if(lv>.5&&gs<.2&&(m==='approach'||m==='threat'))O.ny=(O.ny||0)-5*(lv-.5)*(1-gs*5);}
- b.fig.over=O;}
+ // Wechselt die Bewegung (anderer Angriff, andere Phase), läuft die alte Haltung in 0,2 s weich in die neue über (kein Ruck)
+ const key=m+(b.phase||0)+(A?'a':V?(m==='pin'&&!PZ?'w':'v'):'');if(b.ovKey!==key){b.ovKey=key;b.ovFrom=b.ovLast||{};b.ovT=t;}
+ const xe=Z?sm((t-b.ovT)/.2):1;if(xe<1){const F0=b.ovFrom;for(const k in F0)if(!(k in O))O[k]=0;for(const k in O)O[k]=L2(F0[k]||0,O[k],xe);}
+ b.ovLast=O;b.fig.over=O;}
 
 // ---------------------------------------------------------------- Ein Schritt des Bären
 function foes(b){return S.battle.actors.filter(a=>a.team!==b.team&&!a.g.dead&&!a.surrendered&&!(a.dog&&DG().out(a))&&!(a.bear&&a.fled));}
@@ -233,8 +310,8 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
  else if(m==='swipe'||m==='bite'){halt(b);const tg=bt.actors.find(a=>a.id===b.aim),hitAt=m==='swipe'?.46:.34;
   if(!b.struck&&b.clock>=b.duration*hitAt){b.struck=true;const ok=tg&&!tg.g.dead&&(b.swat&&tg.mode==='grip'&&tg.victim===b.id||Math.abs(tg.x-b.x)<reachOf(b)+(tg.r||14)+16&&Math.abs(tg.y-b.y)<26);
    // Abreißen am Stehenden (Startwerte: erst ab ☠4): entschieden vor dem Biss, am schon schwer verletzten Glied
-   const at=ok&&m==='bite'&&human(tg)?humanPart(b,tg,'bite'):null,rip=at&&!fallen(tg)&&P.skulls>=4&&Math.random()<tearChance(b,tg,at)?limbFor(b,tg,at):null;
-   b.landed=ok&&strike(b,tg,m,m==='swipe'?P.swipe*rnd(.85,1.15):P.bite*rnd(.85,1.15),at);
+   const at=ok&&human(tg)?(b.at&&!tg.g.body[b.at]?.missing?b.at:humanPart(b,tg,m)):null,rip=m==='bite'&&at&&!fallen(tg)&&P.skulls>=4&&Math.random()<tearChance(b,tg,at)?limbFor(b,tg,at):null;
+   b.landed=ok&&strike(b,tg,m,m==='swipe'?P.swipe*rnd(.85,1.15):P.bite*rnd(.85,1.15),at);if(ok)b.chk={kind:m};
    if(b.landed&&b.swat&&tg.dog){tg.kbx=(tg.kbx||0)+(tg.x>=b.x?1:-1)*70;log(b.g.name+' swats '+tg.g.name+' off.');}
    if(b.landed&&m==='swipe'&&!tg.bear&&!tg.dog&&Math.random()<cl(P.mass/(tg.g.weight||80)/9,.1,.75)){fell(b,tg,'Swatted down by '+b.g.name,2.2,60);log(b.g.name+' swats '+tg.g.name+' off his feet.');}
    if(!b.landed&&m==='bite')b.duration=Math.min(b.duration,b.clock+.35);
@@ -244,7 +321,7 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
  else if(m==='slam'){halt(b);const tg=bt.actors.find(a=>a.id===b.aim);
   if(b.phase===0){if(fig.mode!=='rear'&&!fig.want)B.pose(fig,'rear');if(fig.mode==='rear'&&!B.moving(fig)&&b.clock>.5||b.clock>3.2){b.phase=1;b.clock=0;b.duration=(1.5+.45*cl(b.bear.weight/400,.3,2))/fig.rate;B.pose(fig,'stand');}}
   else{if(!b.struck&&b.clock>=b.duration*.62){b.struck=true;const ok=tg&&!tg.g.dead&&Math.abs(tg.x-b.x)<reachOf(b)+(tg.r||14)+20&&Math.abs(tg.y-b.y)<28;
-    if(ok&&strike(b,tg,'slam',P.slam*rnd(.85,1.15))){if(!tg.bear&&!tg.dog&&Math.random()<cl(P.mass/(tg.g.weight||80)/5,.3,.95)){fell(b,tg,'Crushed under '+b.g.name,2.6,25);log(b.g.name+' drops on '+tg.g.name+' with both paws.');}}}
+    if(ok)b.chk={kind:'slam'};if(ok&&strike(b,tg,'slam',P.slam*rnd(.85,1.15),human(tg)&&b.at&&!tg.g.body[b.at]?.missing?b.at:null)){if(!tg.bear&&!tg.dog&&Math.random()<cl(P.mass/(tg.g.weight||80)/5,.3,.95)){fell(b,tg,'Crushed under '+b.g.name,2.6,25);log(b.g.name+' drops on '+tg.g.name+' with both paws.');}}}
    if(b.clock>=b.duration+.15){b.phase=0;state(b,'approach');b.cool=rnd(.6,1.2);}}}
  else if(m==='grapple'){halt(b);const V=bt.actors.find(a=>a.id===b.victim),near=V&&Math.abs(V.x-b.x)<reachOf(b)+(V.r||14)+18&&Math.abs(V.y-b.y)<28;
   if(!V||V.g.dead||b.phase===0&&fallen(V)){releaseVictim(b);state(b,'approach');b.cool=.4;}
@@ -252,13 +329,13 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
    if(fig.mode!=='rear'&&!fig.want)B.pose(fig,'rear');
    if(fig.mode==='rear'&&!B.moving(fig)&&b.clock>.4||b.clock>3.2){const duck=cl(.1+((V.g.stats.agility||50)-50)*.004,.04,.3);
     if(!near||Math.random()<duck){log(V.g.name+(near?' ducks out of ':' steps back from ')+b.g.name+"'s reach.");releaseVictim(b);state(b,'approach');b.cool=.7;}
-    else{b.phase=1;b.clock=0;b.ticks=0;b.duration=2.9;hold(b,V);b.grapples++;b.hx=V.x;log(b.g.name+' clamps both paws around '+V.g.name+'.');}}}
+    else{b.phase=1;b.clock=0;b.ticks=0;b.duration=2.9;hold(b,V);b.grapples++;b.grLast=null;b.grPart=grPick(b);b.hx=V.x;log(b.g.name+' clamps both paws around '+V.g.name+'.');}}}
   else if(fallen(V)||!V.grabbedBy){// liegt schon (Blutverlust, Treffer): weiter am Boden
    unhold(b,V);state(b,'pin');b.ticks=0;}
   else{if(fig.mode!=='rear'&&!fig.want)B.pose(fig,'rear');
    // der Gepackte steht an der Brust des Bären (ein Stück dahinter gezeichnet, die Pranken liegen über ihm)
    const hx=b.x+B.facing(fig)*(15*P.sz*K.SCALE+(V.r||14)*.5),k=Math.min(1,dt*9);V.x+=(hx-V.x)*k;V.y+=(b.y-1-V.y)*k;V.kx=V.ky=0;V.state='grabbed';
-   const n=Math.floor(b.clock/.7);if(n>b.ticks){b.ticks=n;const part=pick(P.bauart==='H'?[['head',.5],['neck',.2],['ls',.15],['rs',.15]]:[['head',.22],['neck',.2],['ls',.2],['rs',.2],['lua',.09],['rua',.09]]),pid=V.g.body[part]?.missing?'chest':part;
+   const n=Math.floor(b.clock/.7);if(n>b.ticks){b.ticks=n;const gp=()=>grPick(b),part=b.grPart||gp(),pid=V.g.body[part]?.missing?'chest':part;b.grLast=pid;b.grPart=gp();b.chk={kind:'grapple',V,part:pid};
     const limb=Math.random()<tearChance(b,V,pid)?limbFor(b,V,pid):null,kopf=!limb&&pid==='head'&&Math.random()<headChance(b,V);// Schlussangriffe: entschieden vor dem Biss
     hurtHuman(b,V,'bite',pid,P.bite*.55*rnd(.8,1.2));
     if(!V.g.dead){
@@ -298,20 +375,20 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
     if(m==='charge'&&d<(26*P.sz*K.SCALE+(T.r||14))&&(fig.v||0)>110){const v=fig.v;if(strike(b,T,'ram',P.ram*(v/250)*rnd(.85,1.15))){if(!T.bear&&!T.dog){fell(b,T,'Run down by '+b.g.name,2.6,95);log(b.g.name+' runs '+T.g.name+' down.');}else if(T.dog){T.kbx=(T.kbx||0)+Math.cos(b.a)*90;}}state(b,'approach');b.cool=.5;b.energy-=12;}
     else if(b.clock>6)state(b,'approach');}}}
  else if(m==='pin'||m==='tear'||m==='crush'){const V=bt.actors.find(a=>a.id===b.victim);if(!V){state(b,'approach');}
-  else{const sp={x:V.x+(b.x<=V.x?-1:1)*(reachOf(b)-6*P.sz),y:V.y-2},d=Math.hypot(sp.x-b.x,sp.y-b.y);if(d>10&&m==='pin')head(b,sp.x,sp.y,'walk');else{halt(b);if(fig.mode==='rear'&&!fig.want)B.pose(fig,'stand');faceTo(b,V);}
+  else{const sp=pinSpot(b,V),d=Math.hypot(sp.x-b.x,sp.y-b.y);if(m==='pin'&&!fig.turn&&(!b.pinPart||K.OPT.ziel&&human(V)&&!pinOk(b,V,b.pinPart)))b.pinPart=pinPick(b,V);if(d>10&&m==='pin')head(b,sp.x,sp.y,'walk');else{halt(b);if(fig.mode==='rear'&&!fig.want)B.pose(fig,'stand');faceTo(b,K.OPT.ziel&&human(V)?groundPoint(V,'chest'):V);}
    V.pinnedBy=b.id;if(!(V.fallTimer>0)&&!V.down)M.knockdown(V,'Held down by '+b.g.name,2.6);
-   if(m==='pin'&&d<=14){const n=Math.floor(b.clock/.75);if(n>b.ticks){b.ticks=n;let sp0=b.wantSpecial;b.wantSpecial=null;if(!sp0&&b.team===0&&(K.force==='tear'||K.force==='crush'||K.force==='drag')){sp0=K.force;K.force=null;}
+   if(m==='pin'&&d<=14&&!(K.OPT.ziel&&human(V)&&(fig.turn||fig.turnWant))){const n=Math.floor(b.clock/.75);if(n>b.ticks){b.ticks=n;let sp0=b.wantSpecial;b.wantSpecial=null;if(!sp0&&b.team===0&&(K.force==='tear'||K.force==='crush'||K.force==='drag')){sp0=K.force;K.force=null;}
      // Wegzerren: Stören andere Gegner in der Nähe, zerrt der Bär seine Beute von ihnen weg (höchstens alle 7 s)
      const stoer=foes(b).filter(a=>a!==V&&!fallen(a)&&dist(a,b)<150).sort((p,q)=>dist(p,b)-dist(q,b))[0];
      if(sp0==='drag'||!sp0&&K.OPT.ringen&&stoer&&heavier(b,V,1.2)&&t>(b.dragUntil||0)&&Math.random()<.22){const ax=stoer?b.x-stoer.x:B.facing(fig),ay=stoer?b.y-stoer.y:0,l=Math.hypot(ax,ay)||1;
       b.dragTo={x:cl(b.x+ax/l*130,BX[0]+30,BX[1]-30),y:cl(b.y+ay/l*90,BY[0]+10,BY[1]-10)};b.dragPart=(Math.random()<.5?['lt','rt']:['rt','lt']).find(id=>!V.g.body[id]?.missing)||'belly';
       b.dragged++;state(b,'drag',3.4);log(b.g.name+' drags '+V.g.name+' away by the '+(b.dragPart==='belly'?'belt':'leg')+'.');animate(b,dt,t);return;}
      // Biss am Liegenden: erst die Stelle wählen, dann entscheidet sich, ob daraus ein Abriss oder ein Kopfbiss wird (Schlussangriffe)
-     const part=humanPart(b,V,'pin'),forced=sp0==='tear'?(['lfa','rfa','lua','rua','lsh','rsh','lh','rh','lf','rf'].map(x=>limbFor(b,V,x)).find(Boolean)||null):null;
+     const part=b.pinPart&&!V.g.body[b.pinPart]?.missing?b.pinPart:pinPick(b,V),forced=sp0==='tear'?(['lfa','rfa','lua','rua','lsh','rsh','lh','rh','lf','rf'].map(x=>limbFor(b,V,x)).find(Boolean)||null):null;
      const limb=sp0==='tear'?forced:!sp0&&Math.random()<tearChance(b,V,part)?limbFor(b,V,part):null;
      if(limb){b.limb=limb;V.tornOnce=true;state(b,'tear',1.9);log(b.g.name+' sinks its teeth into '+V.g.name+"'s "+LIMB_EN[b.limb]+'.');}
      else if(sp0==='crush'||!sp0&&part==='head'&&Math.random()<headChance(b,V)){state(b,'crush',2.2);log(b.g.name+' closes its jaws around '+V.g.name+"'s head.");}
-     else{hurtHuman(b,V,'pin',part,P.bite*.6*rnd(.8,1.2));
+     else{hurtHuman(b,V,'pin',part,P.bite*.6*rnd(.8,1.2));b.pinLast=part;b.pinPart=pinPick(b,V);b.chk={kind:'pin',V,part};
       // Ablassen: Braunbären (und Höhlenbären) verlieren das Interesse an einem reglosen Opfer, wenn es noch andere Gegner gibt
       if(!V.g.dead&&['G','I','C'].includes(P.bauart)&&M.health(V.g)<38&&b.ticks>=3&&foes(b).length>1&&Math.random()<.3){log(b.g.name+' loses interest in '+V.g.name+'. Playing dead works. Mostly.');state(b,'leave');releaseVictim(b);b.shun=V.id;state(b,'approach');b.cool=.6;}
       else if(!V.g.dead&&Math.random()<.05*((V.g.stats.strength||50)/50)*(M.health(V.g)/100)){log(V.g.name+' rolls out from under '+b.g.name+'.');releaseVictim(b);state(b,'approach');b.cool=1;}}}}
@@ -330,19 +407,24 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
   else{const d=dist(b,T),sp=spot(b,T),ds=Math.hypot(sp.x-b.x,sp.y-b.y),f=K.force&&b.team===0?K.force:null;
    // Hängt ein Hund am Bären, schlägt er ihn sofort weg (dafür muss er sich nicht erst hindrehen)
    const hang=b.cool<=0&&bt.actors.find(a=>a.dog&&!a.g.dead&&a.mode==='grip'&&a.victim===b.id);
-   if(hang){b.aim=hang.id;state(b,'swipe',.7);b.swat=true;b.energy-=4;animate(b,dt,t);return;}
+   if(hang){b.aim=hang.id;b.at=null;state(b,'swipe',.7);b.swat=true;b.energy-=4;animate(b,dt,t);return;}
    if(!b.threatDone&&(f==='threat'||!f&&d>150)){b.threatDone=true;if(f==='threat'||Math.random()<.35+.4*P.wild){if(f)K.force=null;b.roared=false;state(b,'threat',2.3);log(b.g.name+' rises on its hind legs and roars.');animate(b,dt,t);return;}}
    if(b.cool<=0&&(f==='charge'||f==='bluff'||!f&&d>170&&b.energy>30&&!fallen(T)&&K.lame(b)<=.45)){const bl=f==='bluff'||!f&&b.bluffs<1&&Math.random()<.3*(1.1-P.wild);if(f)K.force=null;if(bl)b.bluffs++;b.aim=T.id;state(b,bl?'bluff':'charge');animate(b,dt,t);return;}
    if(fallen(T)&&d<70*P.sz+20){b.victim=T.id;b.interrupt=0;state(b,'pin');if(b.stoodOver!==T.id){b.stoodOver=T.id;log(b.g.name+' stands over '+T.g.name+'.');}}
    else if(ds>12&&!(b.cool<=0&&inReach(b,T)))head(b,sp.x,sp.y,ds>70?'run':'walk');
-   else{halt(b);if(faceTo(b,T)&&b.cool<=0&&(fig.v||0)<45&&!B.moving(fig)){const k=chooseAttack(b,T);b.aim=T.id;b.energy-=k==='slam'?10:6;
+   else{halt(b);if(faceTo(b,T)&&b.cool<=0&&(fig.v||0)<45&&!B.moving(fig)){const k=chooseAttack(b,T);b.aim=T.id;b.at=human(T)&&(k==='swipe'||k==='bite'||k==='slam')?humanPart(b,T,k):null;/* die Stelle steht vor dem Ausholen fest: Pranke und Maul zielen darauf */b.energy-=k==='slam'?10:6;
      if(k==='pin'){b.victim=T.id;b.interrupt=0;state(b,'pin');}else if(k==='slam'){state(b,'slam');b.phase=0;}
      else if(k==='grapple'){b.victim=T.id;b.interrupt=0;state(b,'grapple');b.phase=0;}else if(k==='fling'){b.victim=T.id;b.interrupt=0;b.held=false;state(b,'fling',1.2);}else if(k==='charge'||k==='bluff'||k==='threat')state(b,k,k==='threat'?2.3:0);
      else state(b,k,k==='swipe'?.95+.25*cl(b.bear.weight/400,.3,2):1.25);}}}}
  animate(b,dt,t);}
-function animate(b,dt,t){const fig=b.fig,P=b.P;over(b,t);B.step(fig,dt,t);fig._R=B.rig(fig,t);// rechnet auch ohne Bild die Haltung weiter (Reihenrechnung)
+function animate(b,dt,t){const fig=b.fig,P=b.P;over(b,t);B.step(fig,dt,t);fig._R=B.rig(fig,t);if(b.chk)contactCheck(b);// rechnet auch ohne Bild die Haltung weiter (Reihenrechnung)
  const v=(fig.v||0)*P.sz*K.SCALE;b.velocity=v;b.moveSpeed=v;if(v>.5){b.x=cl(b.x+b.dirx*v*dt,BX[0],BX[1]);b.y=cl(b.y+b.diry*v*dt*.8,BY[0],BY[1]);}
  b.a=B.facing(fig)>0?0:Math.PI;b.face=B.facing(fig);fig.mouthBlood=Math.max(0,(fig.mouthBlood||0)-dt*.004);}
+// Prüfwert (B3c1): Abstand von Maul bzw. Pranke zur Trefferstelle im Bild des Treffers, in Einheiten des Skeletts (K.contacts, für den Test)
+K.contacts=[];
+function contactCheck(b){const q=b.chk,R=b.fig._R;b.chk=null;if(!R||!K.OPT.ziel)return;const T=q.V?(q.V.g.dead&&!fallen(q.V)?null:aimPoint(b,q.V,q.part)):b.aimPt;if(!T)return;const SH=b.fig.SH||B.shapeOf(b.bear),l=R.legs[3];
+ const paw=q.kind==='swipe'||q.kind==='slam',x=paw?l.fx+5:R.hcx+11*SH.headS*Math.cos(R.he),y=paw?l.fy:R.hcy-11*SH.headS*Math.sin(R.he);
+ K.contacts.push({kind:q.kind,d:Math.hypot(x-T.x,y-T.y),tx:T.x,ty:T.y});if(K.contacts.length>200)K.contacts.shift();}
 K.stepBear=stepBear;
 
 // ---------------------------------------------------------------- Zeichnen in der Arena (über M.drawRex)
