@@ -111,8 +111,9 @@ function fertig(Bf,G,A,seed,x0,y0,lod,F,U,RE,ohneMehrheit){var S2=Bf.S,GS2=Bf.GS
    if(RE){var rr=RQ2[q];if(rr){var rc=RE.f[rr-1],m4=rm*4-1,h2=rm*2;if((RQ2[q+1]&&RQ2[q+1]!==rr)||(RQ2[q+GS2]&&RQ2[q+GS2]!==rr))c=du[rc];else if(((i&m4)===0&&(j&m4)===0)||((i&m4)===h2&&(j&m4)===h2))c=rc}}}
   COL2[j*S2+i]=c}
  var px=new Uint32Array(IW*IH);for(k=0;k<IW*IH;k++){var t=T[k];if(t>=0)px[k]=pal[COL2[t]]}
+ var r={w:IW,h:IH,ox:256,oy:0,px:px};if(ohneMehrheit&&N7H2)return r;   // N7h2: scharf malt das Netz im eigenen Zeitanteil (scharf → netz mit Bf)
  netz(G,A,seed,x0,y0,lod,n,F,px);
- return{w:IW,h:IH,ox:256,oy:0,px:px}}
+ return r}
 function kachel(G,A,seed,x0,y0,lod,F,U,RE){seed=seed>>>0;x0=umF(x0);zeilen(K0,G,A,seed,x0,y0,lod,U,RE,0,K0.GS,0);return fertig(K0,G,A,seed,x0,y0,lod,F,U,RE)}
 // N7h1 Weltansicht schärfer: scharfe Fassung eines Fernbilds als Auftrag in kleinen Zeitanteilen (Bildkern). 256 × 256 Stichproben (eine je Bildpunkt der
 // Raute statt einer je 4 × 2), Höhe mit dem feinen Rauschen des Kartenstücks, also Küsten, Seen, Strand, Eis, Biomgrenzen und Hangschatten so fein wie auf
@@ -120,32 +121,35 @@ function kachel(G,A,seed,x0,y0,lod,F,U,RE){seed=seed>>>0;x0=umF(x0);zeilen(K0,G,
 // schritt(ms) rechnet bis zur Zeitgrenze weiter und meldet true, wenn fertig; bild() gibt dann das Bild. Ein neuer Auftrag verwirft den alten.
 var S_SCHARF=256, Z_SCHRITT=4;
 function feinVon(lod){var st=(8<<lod)/S_SCHARF,ld=3;while(ld<9&&(1<<ld)<2*st)ld++;return ld}   // kleinste Oktave, die zwei Stichproben überspannt
-function scharf(G,A,seed,x0,y0,lod,F,U,RE){seed=seed>>>0;x0=umF(x0);if(!K1)K1=satz(S_SCHARF);var Bf=K1,j=0,fe=feinVon(lod),fertigB=null,mehr=false,uhr=typeof performance!=='undefined'?performance:Date;
- var auf={lod:lod,x0:x0,y0:y0,ms:0,schritte:0,
+function scharf(G,A,seed,x0,y0,lod,F,U,RE){seed=seed>>>0;x0=umF(x0);if(!K1)K1=satz(S_SCHARF);var Bf=K1,j=0,fe=feinVon(lod),fertigB=null,farb=null,nf=null,mehr=false,uhr=typeof performance!=='undefined'?performance:Date;
+ var auf={lod:lod,x0:x0,y0:y0,ms:0,schritte:0,netzMs:0,
   schritt:function(ms){var t=uhr.now();auf.schritte++;
    while(j<Bf.GS){j=zeilen(Bf,G,A,seed,x0,y0,lod,U,RE,j,j+Z_SCHRITT,fe);if(uhr.now()-t>=ms)break}
    if(j>=Bf.GS&&!mehr&&uhr.now()-t<ms){mehrheit(Bf,lod,U);mehr=true}                     // Mehrheit und Färben je in einem eigenen Zeitanteil
-   if(mehr&&!fertigB&&uhr.now()-t<ms)fertigB=fertig(Bf,G,A,seed,x0,y0,lod,F,U,RE,true);
+   if(mehr&&!farb&&uhr.now()-t<ms){farb=fertig(Bf,G,A,seed,x0,y0,lod,F,U,RE,true);if(!N7H2)fertigB=farb}
+   if(farb&&!fertigB&&uhr.now()-t<ms){var tn=uhr.now();if(!nf)nf=netzFein(G,A,seed,x0,y0,lod,8<<lod,F,farb.px,Bf);   // N7h2: Flüsse und Straßen in Zeitanteilen, dann Seewege und Orte
+    if(nf.weiter(t+ms)&&uhr.now()-t<ms){netz(G,A,seed,x0,y0,lod,8<<lod,F,farb.px,Bf);fertigB=farb}auf.netzMs+=uhr.now()-tn}
    auf.ms+=uhr.now()-t;return!!fertigB},
   bild:function(){return fertigB}};
  K1.wer=auf;return auf}
 // Flüsse, Straßen, Seewege, Orte (nur Bildpunkte in der eigenen Raute, damit Nachbarbilder nichts überdecken)
-function netz(G,A,seed,x0,y0,lod,n,F,px){var pal=F.pal,zn={n:0};
+function netz(G,A,seed,x0,y0,lod,n,F,px,Bf){var pal=F.pal,zn={n:0},fein=!!(Bf&&N7H2&&G.flussLinien);
  function P2(fx,fy,o){var dx=fx-x0;dx-=Math.round(dx/WF)*WF;var a=dx/n,b=(fy-y0)/n;o[0]=256+(a-b)*256;o[1]=(a+b)*128;return o}
- function pkt(x,y,c,r){x=Math.round(x);y=Math.round(y);for(var v=0;v<r;v++)for(var u=0;u<r;u++){var X=x+u,Y=y+v;if(X<0||Y<0||X>=IW||Y>=IH)continue;var o=Y*IW+X;if(TAB[o]>=0)px[o]=c}}
+ function pkt(x,y,c,r,ok){x=Math.round(x);y=Math.round(y);for(var v=0;v<r;v++)for(var u=0;u<r;u++){var X=x+u,Y=y+v;if(X<0||Y<0||X>=IW||Y>=IH)continue;var o=Y*IW+X;if(TAB[o]>=0&&(!ok||ok(o)))px[o]=c}}
  var p0=[0,0],p1=[0,0];
- function lin(ax,ay,bx,by,c,r,strich){P2(ax,ay,p0);P2(bx,by,p1);var L=Math.hypot(p1[0]-p0[0],p1[1]-p0[1]);if(L>4000)return;var m=Math.max(1,Math.ceil(L*1.5));
-  for(var s=0;s<=m;s++){zn.n++;if(strich&&(zn.n%8)>4)continue;pkt(p0[0]+(p1[0]-p0[0])*s/m-(r>>1),p0[1]+(p1[1]-p0[1])*s/m-(r>>1),c,r)}}
+ function lin(ax,ay,bx,by,c,r,strich,ok){P2(ax,ay,p0);P2(bx,by,p1);var L=Math.hypot(p1[0]-p0[0],p1[1]-p0[1]);if(L>4000)return;var m=Math.max(1,Math.ceil(L*1.5));
+  for(var s=0;s<=m;s++){zn.n++;if(strich&&(zn.n%8)>4)continue;pkt(p0[0]+(p1[0]-p0[0])*s/m-(r>>1),p0[1]+(p1[1]-p0[1])*s/m-(r>>1),c,r,ok)}}
  var za=Math.floor((x0-ZF)/ZF),ze=Math.floor((x0+n+ZF)/ZF),ya=Math.max(0,Math.floor((y0-ZF)/ZF)),ye=Math.min(GH-1,Math.floor((y0+n+ZF)/ZF)),x,y,i,k,v;
  var breit=lod<=6?2:1,fw=pal[BFARBE[10]];
+ // N7h2: mit Bf (scharf) malt netzFein Flüsse und Straßen vorher in eigenen Zeitanteilen; hier nur Seewege und Orte wie bisher
  // Flüsse: Zellmitte → Mitte der Abflusszelle
- for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){i=y*GW+um(x);if(A.flu[i]<2||A.bio[i]<2||A.bio[i]===11||A.bio[i]===12)continue;var r0=A.dir[i]&7;if(r0>3)continue;
+ if(!fein)for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){i=y*GW+um(x);if(A.flu[i]<2||A.bio[i]<2||A.bio[i]===11||A.bio[i]===12)continue;var r0=A.dir[i]&7;if(r0>3)continue;
   lin(x*ZF+512,y*ZF+512,(x+G.DX[r0])*ZF+512,(y+G.DY[r0])*ZF+512,fw,A.flu[i]>3?breit:1,false)}
  // Seewege (gestrichelt, von der Mitte der Meereszelle zu ihren Ausgängen)
  for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){i=y*GW+um(x);var o=A.ort[i];if(A.bio[i]>=2||!(o>>4))continue;
   for(k=0;k<4;k++)if(o>>4>>k&1)lin(x*ZF+512,y*ZF+512,x*ZF+512+G.DX[k]*512,y*ZF+512+G.DY[k]*512,pal[F_SEE],1,true)}
  // Straßen: nah die echten Läufe aus dem Seed, weiter draußen von der Zellmitte zu den Ausgängen
- for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){i=y*GW+um(x);var wg=A.weg[i];if(!(wg&15)&&!(A.ort[i]&15))continue;
+ if(!fein)for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){i=y*GW+um(x);var wg=A.weg[i];if(!(wg&15)&&!(A.ort[i]&15))continue;
   if(lod<=WEGE_BIS){var L=G.wegLinien(seed,A,um(x),y),vx=(x-um(x))*ZF;
    for(k=0;k<L.length;k++){var l=L[k],c=pal[l.see?F_SEE:l.faehre?F_FAEHRE:l.kl>1?F_STRASSE:F_PFAD],r=l.kl>1&&!l.see&&lod<=6?2:1;
     for(v=1;v<l.x.length;v++)lin(l.x[v-1]+vx,l.y[v-1],l.x[v]+vx,l.y[v],c,r,!!(l.see||l.faehre))}}
@@ -160,6 +164,38 @@ function netz(G,A,seed,x0,y0,lod,n,F,px){var pal=F.pal,zn={n:0};
   var gross=a===2||a===4,gr=lod<=6?(gross?7:5):lod<=9?(gross?5:3):(gross?3:2);
   P2(pp[0]+(x-um(x))*ZF,pp[1],p0);if(gr>2)pkt(p0[0]-gr/2-1,p0[1]-gr/2-1,pal[F.dunkel],gr+2);pkt(p0[0]-gr/2,p0[1]-gr/2,pal[OFARBE[a]],gr)}
  if(SL&&SL.length)symbole(SL,px,F,true)}
+
+// N7h2 (27.11.2026): Flüsse und Straßen der scharfen Fassung, Lauf wie im Kartenstück (weltgen.js flussLinien, wegLinienFein), nur so fein, wie es Bildpunkte gibt:
+// Breite aus der echten Flussbreite (HW) bzw. dem Rang, Wegpunkte höchstens alle 2 Bildpunkte, kleinste Flüsse (Klasse 1) nur, solange sie mindestens 0,4 Bildpunkte breit sind, größere
+// immer (mindestens 1 Bildpunkt, wie im groben Bild),
+// alle Ränge bis ⅟4096 (Pfade dünn, Straßen breiter, Reichsstraßen dunkler und am breitesten; Ausdünnen nach Rang erst mit N7d; PFAD_BIS), Flüsse malen nur auf Land der scharfen Fassung
+// (Mündung endet an der feinen Küste). Kosten: Läufe der Erdzellen im Bild (fest je Stufe, nie von der Weltgröße abhängig). Notausschalter ?n7h2=0 (Bildkern).
+var N7H2=true;
+function n7h2An(b){N7H2=b!==false}
+var PFAD_BIS=12;   // Pfade (Rang 1) bis zu dieser Stufe (12 = ⅟4096, also überall wie im groben Bild)
+var PXF=286;   // Bildpunkte je Feld × n (Raute: ein Feld entlang einer Achse ≈ 286 / n Bildpunkte)
+// Als Auftrag in Teilen: weiter(ende) malt Zelle für Zelle (erst alle Flüsse, dann alle Straßen) bis zur Zeitgrenze und meldet true, wenn fertig.
+function stift(x0,y0,n,px){var zn=0,p0=[0,0],p1=[0,0];
+ function P2(fx,fy,o){var dx=fx-x0;dx-=Math.round(dx/WF)*WF;var a=dx/n,b=(fy-y0)/n;o[0]=256+(a-b)*256;o[1]=(a+b)*128;return o}
+ function pkt(x,y,c,r,ok){x=Math.round(x);y=Math.round(y);for(var v=0;v<r;v++)for(var u=0;u<r;u++){var X=x+u,Y=y+v;if(X<0||Y<0||X>=IW||Y>=IH)continue;var o=Y*IW+X;if(TAB[o]>=0&&(!ok||ok(o)))px[o]=c}}
+ return function lin(ax,ay,bx,by,c,r,strich,ok){P2(ax,ay,p0);P2(bx,by,p1);var L=Math.hypot(p1[0]-p0[0],p1[1]-p0[1]);if(L>4000)return;
+  var m=Math.max(1,Math.ceil(L*1.5/(r>2?r/2:1)));   // breite Linien: Punkte im Abstand einer halben Breite statt je Bildpunkt (gleiche Fläche, weniger Arbeit)
+  for(var s=0;s<=m;s++){zn++;if(strich&&(zn%8)>4)continue;pkt(p0[0]+(p1[0]-p0[0])*s/m-(r>>1),p0[1]+(p1[1]-p0[1])*s/m-(r>>1),c,r,ok)}}}
+function netzFein(G,A,seed,x0,y0,lod,n,F,px,Bf){var pal=F.pal,T=Bf.TAB,GS2=Bf.GS,BI2=Bf.BI,S2=Bf.S,HW=G.HW,lin=stift(x0,y0,n,px);
+ var za=Math.floor((x0-ZF)/ZF),ze=Math.floor((x0+n+ZF)/ZF),ya=Math.max(0,Math.floor((y0-ZF)/ZF)),ye=Math.min(GH-1,Math.floor((y0+n+ZF)/ZF)),bw=ze-za+1,nz=bw*(ye-ya+1),z=0;
+ var fw=pal[BFARBE[10]],land=function(o){var t=T[o];if(t<0)return false;var b=BI2[((t/S2|0)+M)*GS2+(t%S2)+M];return b>=2&&b<=10||b>=13};
+ var schritt=Math.max(8,Math.round(2*n/PXF)),cS=pal[F_STRASSE],cR=pal[F.du[F_STRASSE]],uhr=typeof performance!=='undefined'?performance:Date;
+ function fluss(x,y){var i=y*GW+um(x),k,v,l,L;if(A.bio[i]===12||(!A.flu[i]&&A.E[i]>=0))return;   // nur auf Land (Biom 2–9 und ab 13), Breite nach der Flussklasse
+  L=G.flussLinien(seed,A,um(x),y);var vx=(x-um(x))*ZF;
+  for(k=0;k<L.length;k++){l=L[k];var w=(2*HW[l.kl]+1)*PXF/n;if(w<.4&&l.kl<2)continue;var r=Math.max(1,Math.min(12,Math.round(w)));
+   for(v=1;v<l.x.length;v++)lin(l.x[v-1]+vx,l.y[v-1],l.x[v]+vx,l.y[v],fw,r,false,land)}}
+ function weg(x,y){var i=y*GW+um(x),k,v,l,L;if(!(A.weg[i]&15)&&!(A.ort[i]&15))return;   // nach Rang, Seewege und Fähren gestrichelt
+  L=G.wegLinienFein(seed,A,um(x),y,schritt);var vx=(x-um(x))*ZF;
+  for(k=0;k<L.length;k++){l=L[k];var kl=l.kl,c,r;if(kl<2&&lod>PFAD_BIS&&!l.see)continue;
+   if(l.see){c=pal[F_SEE];r=1}else if(l.faehre){c=pal[F_FAEHRE];r=1}
+   else if(kl>=3){c=cR;r=lod<=5?3:lod<=8?2:1}else if(kl===2){c=cS;r=lod<=6?2:1}else{c=pal[F_PFAD];r=1}
+   for(v=1;v<l.x.length;v++)lin(l.x[v-1]+vx,l.y[v-1],l.x[v]+vx,l.y[v],c,r,!!(l.see||l.faehre))}}
+ return{weiter:function(ende){while(z<2*nz){var q=z%nz,x=za+q%bw,y=ya+(q/bw|0);if(z<nz)fluss(x,y);else weg(x,y);z++;if((z&7)===0&&uhr.now()>=ende)break}return z>=2*nz}}}
 
 // N7b1 (26.11.2026): Ortssymbole nach Größe (orte.js groesse, G2 Weiler … G7 Hauptstadt) in den Fernstufen statt Quadraten: ab ⅟1024 immer, in ⅟16–⅟512 dort,
 // wo der Mini-Plan (N7a3c1) noch fehlt. Auf dem Globus nur Großstadt (G6) und Hauptstadt (G7). Feste kleine Bildchen (höchstens 15 × 14 Bildpunkte), nur Palettenfarben
@@ -229,6 +265,6 @@ function dunkler(tex,F){var inv=new Map(),d=new Uint32Array(tex.length);for(var 
 // N4c1: Reiche auf dem Erdbild des Globus (600 × 300 Farben): Grenze dunkel, jede vierte Zelle in der Reichsfarbe
 function reicheErde(tex,RE,F){for(var i=0;i<GW*GH;i++){var r=RE.z[i];if(!r)continue;var x=i%GW,y=(i/GW)|0,e=RE.z[x+1<GW?i+1:i+1-GW],s=y+1<GH?RE.z[i+GW]:0,rc=RE.f[r-1];
   if((e&&e!==r)||(s&&s!==r))tex[i]=F.pal[F.du[rc]];else if(!(x&1)&&!(y&1))tex[i]=F.pal[rc]}return tex}
-var FB={groesseAn:groesseAn,globusOrte:globusOrte,symbole:symbole,SYM_ROH:SYM_ROH,miniAn:miniAn,MINI_BIS:MINI_BIS,ortNr:ortNr,reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,scharf:scharf,S_SCHARF:S_SCHARF,feinH:feinH,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
+var FB={n7h2An:n7h2An,groesseAn:groesseAn,globusOrte:globusOrte,symbole:symbole,SYM_ROH:SYM_ROH,miniAn:miniAn,MINI_BIS:MINI_BIS,ortNr:ortNr,reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,scharf:scharf,S_SCHARF:S_SCHARF,feinH:feinH,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
 if(typeof module!=='undefined'&&module.exports)module.exports=FB;else root.AT3FERN=FB;
 })(typeof self!=='undefined'?self:this);

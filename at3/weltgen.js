@@ -850,6 +850,29 @@ function wegLinien(seed,A,zx,zy){var i=zy*GW+zx,wg=A.weg[i],og=A.ort[i],ex=wg&15
   for(var k=0;k<=12;k++){var x=zx*ZF+GX[k],y=zy*ZF+GY[k];versch(seed,x,y);X.push(x+VS[0]);Y.push(y+VS[1])}
   L.push({x:X,y:Y,kl:ex>>q&1?(wg>>4)&3||1:typ===4?2:1,see:!(ex>>q&1),faehre:!!(wg&64)})}
  return L}
+// N7h2 (27.11.2026): Läufe für die scharfe Weltansicht (fernbild.js, Bildkern), dieselbe Rechnung wie das Kartenstück, aber aus der fertigen Erde A statt aus dem Ausschnitt.
+// wegLinienFein: wie wegLinien, jedes der 12 groben Stücke wie fein2 in Teile von höchstens `schritt` Feldern geteilt, jeder Punkt verschoben (schritt 8 = genau der Lauf
+// des Kartenstücks; größer = weniger Punkte, wo ein Bildpunkt viele Felder deckt). Liefert [{x,y,kl,see,faehre}] in Weltfeldern.
+function wegLinienFein(seed,A,zx,zy,schritt){var i=zy*GW+zx,wg=A.weg[i],og=A.ort[i],ex=wg&15,typ=og&15,sea=typ>=3?(og>>4)&15:0,L=[];seed=seed>>>0;if(!ex&&!sea)return L;
+ schritt=schritt>8?schritt|0:8;jeFuell(A.E,zx,zy);jWahl(seed,zx,zy);knoten(seed,zx,zy,ex,typ);var jx=JP[0],jy=JP[1];
+ for(var q=0;q<4;q++){if(!((ex|sea)>>q&1))continue;grob(seed,zx,zy,q,jx,jy);var X=[],Y=[];
+  for(var g=1;g<=12;g++){var x0=zx*ZF+GX[g-1],y0=zy*ZF+GY[g-1],dx=zx*ZF+GX[g]-x0,dy=zy*ZF+GY[g]-y0,len=Math.max(Math.abs(dx),Math.abs(dy)),m=((len+schritt-1)/schritt|0)||1;
+   for(var k=g===1?0:1;k<=m;k++){var x=x0+Math.trunc(dx*k/m),y=y0+Math.trunc(dy*k/m);versch(seed,x,y);X.push(x+VS[0]);Y.push(y+VS[1])}}
+  L.push({x:X,y:Y,kl:ex>>q&1?(wg>>4)&3||1:typ===4?2:1,see:!(ex>>q&1),faehre:!!(wg&64)})}
+ return L}
+// flussLinien: Flussläufe einer Zelle wie zelleFluss (Zuflüsse von den Kanten zur Mündung jx/jy, Abfluss zur Kante), je Bogen 9 Punkte in Weltfeldern, kl = Flussklasse
+// (halbe Breite HW[kl]). Wasserzellen (See, Meer) nur mit Zuflüssen bis zur Mitte. Liefert [{x,y,kl}].
+function flussLinien(seed,A,zx,zy){var i=zy*GW+zx,k=A.flu[i],d=A.dir[i]&7,wasser=A.E[i]<0,L=[],q;seed=seed>>>0;
+ var hz=mix(seed^Math.imul(um(zx),0x1b873593)^Math.imul(zy,0xcc9e2d51)),jx=362+hz%301,jy=362+(hz>>>10)%301;
+ if(!wasser&&!k)return L;
+ function bg(x0,y0,x2,y2,kl,sd){var h=mix(sd),x1=((x0+x2)>>1)+(h%321)-160,y1=((y0+y2)>>1)+((h>>>9)%321)-160,X=[zx*ZF+x0],Y=[zy*ZF+y0];
+  x1=x1<32?32:x1>ZF-32?ZF-32:x1;y1=y1<32?32:y1>ZF-32?ZF-32:y1;
+  for(var s=1;s<=8;s++){var a=(8-s)*(8-s),b=2*s*(8-s),c=s*s;X.push(zx*ZF+((a*x0+b*x1+c*x2)>>6));Y.push(zy*ZF+((a*y0+b*y1+c*y2)>>6))}
+  L.push({x:X,y:Y,kl:kl})}
+ for(q=0;q<4;q++){var ny=zy+DY[q];if(ny<0||ny>=GH)continue;var j=ny*GW+um(zx+DX[q]),nk=A.flu[j];if(!nk||(A.dir[j]&7)!==(q^2))continue;
+  var P=kante(seed,zx,zy,q);bg(P[0],P[1],jx,jy,nk,hz+q+1)}
+ if(!wasser&&d<4){P=kante(seed,zx,zy,d);bg(jx,jy,P[0],P[1],k,hz+7)}
+ return L}
 // Straßen und Ort einer Zelle (dx, dy relativ zur Zelle des Stücks), soweit sie das Stück berühren
 function wegZelle(X,seed,zx,zy,dx,dy,cx,cy,W){var wg=X6(X,dx,dy,6),og=X6(X,dx,dy,7),ex=wg&15,typ=og&15,sea=typ>=3?(og>>4)&15:0,p=0,q;
  if(!ex&&!typ)return;
@@ -873,7 +896,7 @@ function rechnen(a){return a.art==='erde'?erdTeil(a):gelaende(a)}
 function stueck(seed,A,cx,cy,daten){   // A muss ort und weg tragen (ansicht der fertigen Erde)
  daten=daten||new Uint8Array(GEL_BYTES);ausschnitt(A,cx,cy,daten);return gelaende({seed:seed,cx:cx,cy:cy,daten:daten})}
 
-var WG={N7A5A3B0:N7A5A3B0,INSEL_ZELLEN:INSEL_ZELLEN,INSEL_R:INSEL_R,umzuege:function(){return nUmzug},N4C:N4C,HS_SYS:HS_SYS,HS_G:HS_G,HS_MAX:HS_MAX,HS_FARBEN:HS_FARBEN,HS_BEI:HS_BEI,teilHerrschaften:teilHerrschaften,hsKette:hsKette,hsReich:hsReich,N4B:N4B,VK_KUL:VK_KUL,VOLK_MAX:VOLK_MAX,VK_KOPF:VK_KOPF,VK_JE:VK_JE,teilVoelker:teilVoelker,ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,N2B:N2B,ZV:ZV,zonenV:zonenV,zfuell:zfuell,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
+var WG={N7A5A3B0:N7A5A3B0,INSEL_ZELLEN:INSEL_ZELLEN,INSEL_R:INSEL_R,umzuege:function(){return nUmzug},N4C:N4C,HS_SYS:HS_SYS,HS_G:HS_G,HS_MAX:HS_MAX,HS_FARBEN:HS_FARBEN,HS_BEI:HS_BEI,teilHerrschaften:teilHerrschaften,hsKette:hsKette,hsReich:hsReich,N4B:N4B,VK_KUL:VK_KUL,VOLK_MAX:VOLK_MAX,VK_KOPF:VK_KOPF,VK_JE:VK_JE,teilVoelker:teilVoelker,ORT_MAX:ORT_MAX,KANTE_MAX:KANTE_MAX,NETZ_MAX:NETZ_MAX,ERD_ZELLEN:ERD_ZELLEN,ORT_ART:ORT_ART,WEG_ART:WEG_ART,fest:fest,kanteW:kanteW,ortPunkt:ortPunkt,wegLinien:wegLinien,wegLinienFein:wegLinienFein,flussLinien:flussLinien,HW:HW,N2B:N2B,ZV:ZV,zonenV:zonenV,zfuell:zfuell,ST:ST,FELDER:FELDER,SEITE_X:SEITE_X,SEITE_Y:SEITE_Y,GW:GW,GH:GH,WF:WF,HF:HF,N:N,nb:nb,um:um,eis:eis,eisSeed:eisSeed,EIS_MAX:EIS_MAX,pn:pn,gv:gv,ZP:ZP,ZF:ZF,MEER:MEER,ST_BYTES:ST_BYTES,GEL_BYTES:GEL_BYTES,ERD_FEST:ERD_FEST,ERD_BYTES:ERD_BYTES,BAND:BAND,TEILE:TEILE,
  TEIL_NAME:TEIL_NAME,BIOM:BIOM,DX:DX,DY:DY,HW:HW,mix:mix,ansicht:ansicht,erdTeil:erdTeil,erde:erde,ausschnitt:ausschnitt,gelaende:gelaende,stueck:stueck,rechnen:rechnen,kante:kante,biomVon:biomVon,herrscht:herrscht,ZONE:ZONE,ZONE_EN:ZONE_EN,N2C:N2C,Z_UNTER:Z_UNTER,Z_BIOM:Z_BIOM,zbio:zbio,istLand:istLand,unter:unter,ZK:ZK,zonen:zonen,zonenRegen:zonenRegen,zonenKlasse:zonenKlasse,zonenSpeicher:zonenSpeicher,waerme:waerme,zBreite:zBreite,anteile:anteile,punkt:punkt,neigung:neigung,klasse:klasse,KAN:KAN};
 WG.wasserFlach=function(on){if(on!=null)N7A5A0=!!on;return N7A5A0};WG.erdH=erdH;WG.spStufe=spStufe;WG.teichH=function(a,x,y){var X=new Int16Array(a.daten.buffer,ST_BYTES,AUS);return teichH(X,a.seed>>>0,a.cx,a.cy,x,y,true)};   // N7a5a0: Schalter für Tests
 if(typeof module!=='undefined'&&module.exports)module.exports=WG;else root.AT3WG=WG;

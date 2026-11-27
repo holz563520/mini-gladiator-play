@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='67e22caf', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='f314da2f', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var N7B2=!/[?&]n7b2=0/.test(location.search);
 // N7h1 Weltansicht schärfer (Thomas 24.11.2026): In den Fernstufen steht sofort das grobe Bild. Ruht der Blick VERWEILEN_MS, rechnet der Bildkern die scharfen
 // Fassungen der sichtbaren Fernbilder (Bildmitte zuerst, fernbild.js scharf) und die Karte blendet jede in EINBLENDEN_MS ein. Fertige scharfe Bilder bleiben
@@ -64,7 +64,7 @@ function starten(o){
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(MAXL,o.kam[2]|0));hatKam=true}
 
  function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(okern&&kern&&kern.ortskernWeg)kern.ortskernWeg();try{okern&&okern.terminate()}catch(e){}okern=null;if(o.beiAusfall)o.beiAusfall(g2)}
- try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*|n7a5a[0-9][a-z]?|n7a5b[0-9]|n7a5d|n7a5e2?|n7a5f|n7b1|n7b2|n7b3)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
+ try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*|n7a5a[0-9][a-z]?|n7a5b[0-9]|n7a5d|n7a5e2?|n7a5f|n7b1|n7b2|n7b3|n7h2)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
  if(bk){bk.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ende('picture core failed')};bk.onmessage=vomBildkern;
   var F=S.PALETTEN[S.PALETTE].farben,pal=new Uint32Array(64),du=new Uint8Array(64),he=new Uint8Array(64);
   for(var i=0;i<64;i++){var c=S.farbe(F[i]);pal[i]=(255<<24|c[2]<<16|c[1]<<8|c[0])>>>0;du[i]=S.dunkler(i);he[i]=i}

@@ -6,6 +6,7 @@
 // G4c: Startplatz-Wahl (startplatz.js): Erdbild, Regionsbild, trockenes Feld mit nächstem Ort, zufälliger Platz an Land; Antwort mit der Fragenummer.
 // G4b: backt die Natur aus dem Startset (natur.js) mit ins Bodenbild und findet beim Antippen das vorderste Naturobjekt unter dem Finger.
 // W1c Runde Welt: Das Fenster der Stücke läuft in x über die Naht (hole rechnet die Stückspalte um), in y endet es am Pol.
+// N7h2: in der scharfen Fassung Flüsse und Straßen aus den Läufen des Kartenstücks (fernbild.js netzFein), Notausschalter ?n7h2=0.
 // N7h1: scharfe Fernbilder auf Wunschliste der Karte („scharf“), ein Auftrag zugleich, je Durchlauf höchstens 6 ms, neue Liste bricht Überholtes ab.
 // G4d: Fernbilder der Stufen ⅟16 bis ⅟4096 (fernbild.js, nur aus dem Erdraster, ohne Kartenstücke) und der Globus (Frage „globus“, aus dem Erdbild der Startplatz-Wahl).
 // FP1: Frage „fp“: Ausschnitt der echten Welt für die First-Person-Ansicht (fpausschnitt.js). FP2a: mit Wänden, Türen, Toren und Gebäudeböden.
@@ -92,6 +93,7 @@ function miniMelden(){MINIT=0;if(!MININ.length)return;var L=MININ;MININ=[];self.
 // N7b1 (26.11.2026): Ortssymbole nach Größe in den Fernstufen und auf dem Globus. orte.js (Größe G2–G7) wird beim ersten Fernbild geladen; ohne orte.js oder
 // mit ?n7b1=0 bleiben die Quadrate wie vorher. Größen einmal je Welt in einer Tafel (4.450 Orte ≈ 4 KB), Globus-Liste einmal je Welt.
 var N7B1=!/[?&]n7b1=0/.test(self.location.search), GRT=null, GORTE=null;
+FB.n7h2An(!/[?&]n7h2=0/.test(self.location.search));   // N7h2: Flüsse und Straßen der scharfen Fassung wie in der Kartenansicht; ?n7h2=0 = Netz wie im groben Bild
 function groeAn(){if(!N7B1||!A){FB.groesseAn(null);return false}
  if(!OR&&OR!==false){try{importScripts('orte.js'+self.location.search);OR=self.AT3ORTE.AUS?false:self.AT3ORTE}catch(x){OR=false}}
  if(!OR){FB.groesseAn(null);return false}
