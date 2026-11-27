@@ -295,6 +295,23 @@
   "bk-ziegel-wand-a",
   "bk-ziegel-wand-b",
   "bk-ziegel-wand-d",
-  "bk-ziegel-wand-oben"
+  "bk-ziegel-wand-oben",
+  "bk-steppe-wand",
+  "bk-steppe-wand-a",
+  "bk-steppe-wand-b",
+  "bk-steppe-wand-d",
+  "bk-steppe-tuer",
+  "bk-steppe-fenster",
+  "bk-steppe-fenster-a",
+  "bk-steppe-fenster-b",
+  "bk-steppe-fenster-d",
+  "bk-steppe-wand-oben",
+  "bk-steppe-wand-oben-a",
+  "bk-steppe-giebel",
+  "bk-steppe-giebel-a",
+  "bk-steppe-giebel-b",
+  "bk-steppe-giebel-c",
+  "bk-steppe-giebel-auf",
+  "bk-steppe-giebel-ab"
  ]
 }

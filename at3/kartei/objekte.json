@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1051,
+ "typMax": 1068,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -2649,6 +2649,159 @@
    "name": "Whitewash Upper Wall C",
    "status": "uebernommen",
    "datei": "obj/bk-putz-wand-oben-c.json"
+  },
+  {
+   "id": "bk-steppe-fenster",
+   "version": 1,
+   "typ": 1055,
+   "kat": "wand",
+   "name": "Steppe Wattle Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-fenster.json"
+  },
+  {
+   "id": "bk-steppe-fenster-a",
+   "version": 1,
+   "typ": 1052,
+   "kat": "wand",
+   "name": "Steppe Wattle Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-fenster-a.json"
+  },
+  {
+   "id": "bk-steppe-fenster-b",
+   "version": 1,
+   "typ": 1053,
+   "kat": "wand",
+   "name": "Steppe Wattle Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-fenster-b.json"
+  },
+  {
+   "id": "bk-steppe-fenster-d",
+   "version": 1,
+   "typ": 1054,
+   "kat": "wand",
+   "name": "Steppe Wattle Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-fenster-d.json"
+  },
+  {
+   "id": "bk-steppe-giebel",
+   "version": 1,
+   "typ": 1061,
+   "kat": "wand",
+   "name": "Steppe Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-giebel.json"
+  },
+  {
+   "id": "bk-steppe-giebel-a",
+   "version": 1,
+   "typ": 1056,
+   "kat": "wand",
+   "name": "Steppe Gable A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-giebel-a.json"
+  },
+  {
+   "id": "bk-steppe-giebel-ab",
+   "version": 1,
+   "typ": 1057,
+   "kat": "wand",
+   "name": "Steppe Gable Peak (down)",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-giebel-ab.json"
+  },
+  {
+   "id": "bk-steppe-giebel-auf",
+   "version": 1,
+   "typ": 1058,
+   "kat": "wand",
+   "name": "Steppe Gable Peak (up)",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-giebel-auf.json"
+  },
+  {
+   "id": "bk-steppe-giebel-b",
+   "version": 1,
+   "typ": 1059,
+   "kat": "wand",
+   "name": "Steppe Gable B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-giebel-b.json"
+  },
+  {
+   "id": "bk-steppe-giebel-c",
+   "version": 1,
+   "typ": 1060,
+   "kat": "wand",
+   "name": "Steppe Gable C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-giebel-c.json"
+  },
+  {
+   "id": "bk-steppe-tuer",
+   "version": 1,
+   "typ": 1062,
+   "kat": "wand",
+   "name": "Steppe Wattle Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-tuer.json"
+  },
+  {
+   "id": "bk-steppe-wand",
+   "version": 1,
+   "typ": 1068,
+   "kat": "wand",
+   "name": "Steppe Wattle Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand.json"
+  },
+  {
+   "id": "bk-steppe-wand-a",
+   "version": 1,
+   "typ": 1063,
+   "kat": "wand",
+   "name": "Steppe Wattle Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-a.json"
+  },
+  {
+   "id": "bk-steppe-wand-b",
+   "version": 1,
+   "typ": 1064,
+   "kat": "wand",
+   "name": "Steppe Wattle Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-b.json"
+  },
+  {
+   "id": "bk-steppe-wand-d",
+   "version": 1,
+   "typ": 1065,
+   "kat": "wand",
+   "name": "Steppe Wattle Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-d.json"
+  },
+  {
+   "id": "bk-steppe-wand-oben",
+   "version": 1,
+   "typ": 1067,
+   "kat": "wand",
+   "name": "Steppe Wattle Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-oben.json"
+  },
+  {
+   "id": "bk-steppe-wand-oben-a",
+   "version": 1,
+   "typ": 1066,
+   "kat": "wand",
+   "name": "Steppe Wattle Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-oben-a.json"
   },
   {
    "id": "bk-ziegel-boden",
