@@ -5,7 +5,7 @@
 //   die einzelne Katze bekommt Anlage (64 Bernoulli-Versuche um den Sortenwert) und Istwert (um Sortenwert minus 20).
 // · Pixelgrafik: alle Formen werden in ganze Rasterkästchen zerlegt (KATZE.PX), passend zu den Figuren und zum Löwen aus 1.0.
 // · Zeichner: Katze in Seitenansicht aus einem Skelett (Zehengänger, Pfoten stehen fest, biegsame Wirbelsäule, langer Schwanz),
-//   Haltungen Stand, Sitzen, Liegen mit weichen Übergängen. Köpfe, Mähnen und Fell je Sorte: dist/katze-koepfe.js.
+//   Haltungen Stand, Sitzen, Liegen, Ducken mit weichen Übergängen; Gangarten Schleichen, Schritt, Trab, Galopp; Sprung; Mimik (KA2). Köpfe, Mähnen und Fell je Sorte: dist/katze-koepfe.js.
 // · Sortenliste und Werte: KATZEN_SORTEN.md. Fahrplan: KATZEN_FAHRPLAN.md. Editor: dist/katze-editor.html.
 // Maßstab wie im Spiel: 81 Einheiten = 180 cm → 2,22 cm je Einheit.
 // =====================================================================================================
@@ -156,13 +156,23 @@ KATZE.prim={rr,poly,disk,seg,limb,hrand};
 // (Zehen bei A0), nichts rutscht: Beim Hinsetzen und Hinlegen sinkt das Sprunggelenk hinter den Zehen auf den Boden, der Mittelfuß liegt dann flach.
 // hx,hy Becken · p Neigung des Rumpfs (0 waagerecht) · bend Buckel der Wirbelsäule · ax,ay Sprunggelenk hinten · wx,wy Handgelenk vorn
 // pa Neigung der Vorderpfote · ne Hals (Winkel nach oben) · he Kopf (Winkel nach oben) · sag Bauch sackt durch · ta Richtung des Schwanzansatzes · tc Krümmung des Schwanzes
-const MODES=['stand','sit','lie'];
-function poseSet(mode,SH){const lf=SH.leg,L=SH.L,A0=-L/2-3;
+// KA2: tdx,tdy Hinterzehen versetzt (nur im Sprung) · z ganze Katze gehoben (Flug) · dL Wirbelsäule verkürzt (Anteil) · sc Schulterblätter treten hervor
+const MODES=['stand','sit','lie','crouch'];
+function poseRaw(mode,SH){const lf=SH.leg,L=SH.L,A0=-L/2-3,H0=26.5*lf+11,WX=-L/2+L*Math.cos(.025)+1.2;
  if(mode==='sit'){const hx=A0-12*lf,hy=-9*SH.bulk,target=28*lf+6.2+hy;let p=.7;for(let i=0;i<4;i++)p=Math.asin(cl((target+4.5*Math.cos(p))/L,.2,.98));
   const sx=hx+L*Math.cos(p);return {hx,hy,p,bend:3,ax:A0-10.3*lf,ay:-3.4,wx:sx+.5*Math.cos(p)+4.5*Math.sin(p)+.8,wy:-6.2,pa:-1.3,ne:1.02,he:-.1,sag:1.2,ta:3.02,tc:-.5};}
  if(mode==='lie'){const hx=A0-9*lf,hy=-8.6*SH.bulk,p=.07,sx=hx+L*Math.cos(p);return {hx,hy,p,bend:.5,ax:A0-10.3*lf,ay:-3.4,wx:sx+21*lf,wy:-3,pa:0,ne:.84,he:.02,sag:1.6,ta:3.02,tc:-.5};}
- const hx=-L/2,hy=-(26.5*lf+11),p=.025;return {hx,hy,p,bend:0,ax:A0-3.3,ay:-1.7-10.5*lf,wx:hx+L*Math.cos(p)+1.2,wy:-6.2,pa:-1.3,ne:.42,he:-.14,sag:0,ta:1.95,tc:1.75};}
-const KEYS=['hx','hy','p','bend','ax','ay','wx','wy','pa','ne','he','sag','ta','tc'];
+ // Ducken (vor dem Sprung, Lauern): Bauch tief, Hinterbeine gefaltet unter dem Körper, Schultern etwas tiefer als das Becken, Kopf flach voraus
+ if(mode==='crouch'){const hx=-L/2-2,hy=-(13.5*lf+9.5),p=-.07;return {hx,hy,p,bend:1.2,ax:A0-8.6,ay:-1.7-6.4*lf,wx:hx+L*Math.cos(p)+5,wy:-6.2,pa:-1.3,ne:.06,he:-.02,sag:.6,ta:2.72,tc:.45,sc:.85};}
+ // Sprung (nur als Stationen von jumpPose): Absprung, Flug, Vorgreifen, Aufsetzen, Abfangen
+ if(mode==='launch'){const hx=-L/2+8,hy=-H0+5,p=.42;return {hx,hy,p,bend:-.6,ax:A0+2,ay:-1.7-10.6*lf,wx:hx+L*Math.cos(p)+12,wy:hy-L*Math.sin(p)+16,pa:-.9,ne:.5,he:-.25,sag:0,ta:2.5,tc:.5,dL:-.03};}
+ if(mode==='fly'){const hx=-L/2+2,hy=-H0-2,p=.1;return {hx,hy,p,bend:-1.2,ax:A0-16,ay:-23.7,tdx:-25,tdy:-17,wx:hx+L*Math.cos(p)+27,wy:hy-L*Math.sin(p)+9,pa:-.3,ne:.2,he:-.1,sag:0,ta:3.05,tc:.25,dL:-.05};}
+ if(mode==='reach'){const hx=-L/2-1,hy=-H0-4,p=-.22;return {hx,hy,p,bend:1.6,ax:A0-5,ay:-25.7,tdx:-12,tdy:-16,wx:hx+L*Math.cos(p)+15,wy:hy-L*Math.sin(p)+19,pa:-1,ne:.55,he:-.2,sag:0,ta:3.5,tc:-.3,dL:.04};}
+ if(mode==='touch')return {hx:-L/2-3,hy:-H0-4,p:-.2,bend:1.8,ax:A0-1,ay:-22.2,tdx:-6,tdy:-11,wx:WX,wy:-6.2,pa:-1.3,ne:.6,he:-.18,sag:0,ta:3.7,tc:-.5,dL:.05};
+ if(mode==='absorb')return {hx:-L/2-5,hy:-H0+5,p:-.1,bend:1,ax:A0-4.5,ay:-1.7-9.6*lf,wx:WX,wy:-6.2,pa:-1.3,ne:.5,he:-.12,sag:.4,ta:2.9,tc:.6,dL:.03};
+ const hx=-L/2,hy=-H0,p=.025;return {hx,hy,p,bend:0,ax:A0-3.3,ay:-1.7-10.5*lf,wx:hx+L*Math.cos(p)+1.2,wy:-6.2,pa:-1.3,ne:.42,he:-.14,sag:0,ta:1.95,tc:1.75};}
+const KEYS=['hx','hy','p','bend','ax','ay','wx','wy','pa','ne','he','sag','ta','tc','tdx','tdy','z','dL','sc'];
+function poseSet(mode,SH){const P=poseRaw(mode,SH);for(const k of KEYS)if(P[k]===undefined)P[k]=0;return P;}
 const ease=u=>u*u*u*(u*(u*6-15)+10);
 // Aktuelle Haltung (gemischt). Schwere Katzen brauchen etwas länger.
 function curPose(a,t,SH){const P=a.pose;if(!P||P.mode!==a.mode&&!P.to){const set=poseSet(a.mode,SH);a.pose={mode:a.mode,cur:set,to:null};return set;}
@@ -171,34 +181,120 @@ function curPose(a,t,SH){const P=a.pose;if(!P||P.mode!==a.mode&&!P.to){const set
   P.cur=cur;if(u>=1){P.to=null;P.cur=poseSet(P.mode,SH);if(a.queue.length)setMode(a,a.queue.shift(),t,true);}return P.cur;}
  return P.cur=poseSet(P.mode,SH);}
 // Haltung wechseln. Vom Sitzen ins Liegen rutschen die Vorderpfoten vor, alles andere geht direkt.
-function setMode(a,mode,t=performance.now()/1000,queued=false){if(!MODES.includes(mode))return;const SH=a.SH||shapeOf(a.cat);if(!queued)a.queue.length=0;
+function setMode(a,mode,t=performance.now()/1000,queued=false){if(!MODES.includes(mode)||a.jump)return;const SH=a.SH||shapeOf(a.cat);if(!queued)a.queue.length=0;
  const from={...curPose(a,t,SH)},was=a.pose?.mode||a.mode;if(mode===was&&!a.pose?.to)return;
- const heavy=cl(a.cat.weight/200,.3,2),dur=.75+.35*heavy;
+ const heavy=cl(a.cat.weight/200,.3,2),dur=(mode==='crouch'||was==='crouch'?.5:.75)+.35*heavy;
  a.mode=mode;a.pose={mode,from,to:poseSet(mode,SH),t0:t,dur,cur:from};}
 KATZE.MODES=MODES;KATZE.setMode=setMode;KATZE.poseSet=poseSet;
-KATZE.snap=(a,mode)=>{a.mode=mode;a.pose=null;a.queue.length=0;};
-KATZE.moving=a=>!!(a.pose&&a.pose.to)||a.queue.length>0;
+KATZE.snap=(a,mode)=>{a.mode=mode;a.pose=null;a.queue.length=0;a.jump=null;a.v=0;a.gs=0;a.gb=0;a.go=null;a.want=null;a.leapWant=false;};
+KATZE.moving=a=>!!(a.pose&&a.pose.to)||a.queue.length>0||!!a.jump;
 
-// ---------------------------------------------------------------- Mimik (KA1: nur Blinzeln; Ohren, Zähne, Gähnen kommen in KA2)
-function faceOf(a,t,ph){const F={mouth:0,lip:0,ear:0,blink:0,nose:0},bt=(t+ph*3)%4.9;if(t>0&&bt>4.76)F.blink=1;return F;}
+// ---------------------------------------------------------------- Gangarten (KA2; Muster wie GAITS/footCyc in dist/baer.js und dist/hund.js, eigene Katzenwerte)
+// off: Versatz je Bein [hinten fern, vorn fern, hinten nah, vorn nah] · duty: Anteil am Boden · stride: Weg der Pfote am Boden · v: Tempo (Einheiten je Sekunde)
+// roll: Abrollen (Sprunggelenk bzw. Handgelenk wandert über die stehenden Zehen) · curl: Pfote klappt im Schwung ein · hs, fs: Pfoten greifen weiter vor
+// B: Körper im Gang [Becken tiefer, Neigung, Hals, Kopf, Schwanzansatz, Schwanzkrümmung] · bob, pit, nod: Wippen, Nicken · scap: Schulterblätter treten hervor
+// Schleichen und Schritt: eine Seite nach der anderen (hinten, dann vorn), die Hinterpfote tritt fast in die Spur der Vorderpfote. Trab: über Kreuz.
+// Galopp: erst beide Hinterpfoten, dann beide Vorderpfoten, dann Schwebephase mit gekrümmter Wirbelsäule; beim Abdruck streckt sie sich.
+const GAITS={stalk:{name:'Stalk',de:'Schleichen',off:[.5,.22,0,.72],duty:.76,stride:19,lift:3.4,roll:.45,curl:.55,v:15,hs:2,fs:0,B:[9,-.03,-.42,.12,.7,-1.1],bob:.4,pit:.012,nod:.015,scap:1},
+ walk:{name:'Walk',de:'Schritt',off:[.5,.25,0,.75],duty:.64,stride:31,lift:3.4,roll:.55,curl:.45,v:50,hs:3,fs:0,B:[1.8,0,-.2,.05,.2,0],bob:.7,pit:.02,nod:.035,scap:.6},
+ trot:{name:'Trot',de:'Trab',off:[.5,0,0,.5],duty:.46,stride:28,lift:5,roll:.6,curl:.5,v:125,hs:4,fs:1,B:[2.6,0,-.12,.03,.45,-.6],bob:1.1,pit:.008,nod:.02,scap:.3},
+ gallop:{name:'Gallop',de:'Galopp',off:[0,.7,.92,.6],duty:.24,stride:46,lift:9,roll:.7,curl:.6,v:420,hs:7,fs:3,B:[5,0,-.18,.1,.95,-1.3],bob:0,pit:0,nod:0,scap:.2}};
+const GK=['stalk','walk','trot','gallop'];
+// Eine Pfote im Takt: sS Schrittweite (0–1), sL Hub (0–1). s: Fortschritt der Standphase
+function footCyc(G,c,i,sS,sL,lf){const u=((c+G.off[i])%1+1)%1,st=G.stride*lf*sS;
+ if(u<G.duty){const s=u/G.duty,q=s>.72?(s-.72)/.28:0;return {dx:st*(.5-s),up:0,a:-G.roll*q*q*sL,st:true,s};}
+ const v=(u-G.duty)/(1-G.duty),w=v*v*(3-2*v),sn=Math.sin(Math.PI*v);return {dx:st*(w-.5),up:G.lift*lf*sL*sn,a:(-G.roll*(1-w)-G.curl*sn)*sL,st:false,s:0};}
+// Befehle: go = null | 'stalk' | 'walk' | 'trot' | 'gallop'. Die Katze hält erst an, wechselt die Haltung und läuft dann los.
+KATZE.GAITS=GAITS;KATZE.GK=GK;
+KATZE.go=(a,kind)=>{a.go=GAITS[kind]?kind:null;a.want=null;a.leapWant=false;};
+KATZE.pose=(a,mode)=>{if(MODES.includes(mode)){a.go=null;a.want=mode;a.leapWant=false;}};
+// Sprung: hält an, duckt sich, wackelt kurz mit dem Hinterteil, springt aus den Hinterbeinen ab, fliegt gestreckt mit vorgestreckten Pranken, landet auf den Vorderpfoten.
+KATZE.leap=a=>{if(a.jump)return;a.go=null;a.want='crouch';a.leapWant=true;};
+// Sprungweite in Einheiten, abgeleitet aus Schnelligkeit, Kraft und Gewicht (kein eigener Wert; vorläufig, wird in KA25 eingemessen)
+KATZE.leapRange=D=>cl(95+.5*D.stats.tempo+.45*D.stats.kraft-12*Math.log2(D.weight/100),60,260);
+function startJump(a,t,SH){const D=a.cat,sz=szOf(D,SH),hs=Math.sqrt(cl(D.weight/200,.3,2)),range=KATZE.leapRange(D)/sz,h=.12*range,Tf=2*Math.sqrt(2*h*sz/441);// 441 Einheiten/s² = Erdbeschleunigung
+ const tw=.5,t1=tw+.2*hs,t2=t1+Tf,ta=t2+.14,t3=ta+.36*hs,F=[[0,'crouch'],[tw,'crouch'],[t1,'launch'],[t1+.38*Tf,'fly'],[t1+.78*Tf,'reach'],[t2,'touch'],[ta,'absorb'],[t3,'stand']].map(([tt,m])=>({t:tt,P:poseSet(m,SH),m:{}}));
+ // Steigungen je Station: null, wo die Richtung wechselt oder ein Wert stehen bleibt (stehende Pfoten bleiben stehen, nichts schwingt über)
+ for(const k of KEYS)for(let i=0;i<F.length;i++){if(i===0||i===F.length-1){F[i].m[k]=0;continue;}const d0=(F[i].P[k]-F[i-1].P[k])/(F[i].t-F[i-1].t),d1=(F[i+1].P[k]-F[i].P[k])/(F[i+1].t-F[i].t);F[i].m[k]=d0*d1<=0?0:2*d0*d1/(d0+d1);}
+ const vx=(range-2)/(Tf+.3*(t1-tw)+.3*(ta-t2));a.jump={t0:t,d0:a.dist||0,tw,t1,t2,ta,t3,Tf,h,vx,dA:.3*vx*(t1-tw),dB:.3*vx*(ta-t2),range,frames:F};a.mode='crouch';a.pose=null;}
+// Weg im Sprung: im Abdruck beschleunigt der Körper über den stehenden Hinterpfoten, im Flug gleiches Tempo, nach dem Aufsetzen läuft er über den stehenden Vorderpfoten aus
+function jumpWay(J,u){if(u<=J.tw)return 0;if(u<J.t1){const s=(u-J.tw)/(J.t1-J.tw);return J.dA*s*s;}if(u<J.t2)return J.dA+J.vx*(u-J.t1);const s=cl((u-J.t2)/(J.ta-J.t2),0,1);return J.dA+J.vx*J.Tf+2*J.dB*(s-s*s/2);}
+const jumpV=(J,u)=>u<=J.tw||u>=J.ta?0:u<J.t1?.6*J.vx*(u-J.tw)/(J.t1-J.tw):u<J.t2?J.vx:.6*J.vx*(1-(u-J.t2)/(J.ta-J.t2));
+function jumpPose(a,t){const J=a.jump,u=cl(t-J.t0,0,J.t3),F=J.frames;let i=0;while(i<F.length-2&&u>=F[i+1].t)i++;
+ const A=F[i],B=F[i+1],h=B.t-A.t,s=cl((u-A.t)/h,0,1),s2=s*s,s3=s2*s,h00=2*s3-3*s2+1,h10=s3-2*s2+s,h01=-2*s3+3*s2,h11=s3-s2,cur={};
+ for(const k of KEYS)cur[k]=h00*A.P[k]+h10*h*A.m[k]+h01*B.P[k]+h11*h*B.m[k];
+ if(u<J.tw){const e=smooth(cl(u/.12,0,1))*smooth(cl((J.tw-u)/.1,0,1)),w=u*TAU*5.5;cur.hx+=.8*e*Math.sin(w);cur.hy+=.35*e*Math.sin(w+1.3);cur.tc+=.3*e*Math.sin(w*.5);}
+ const f=(u-J.t1)/J.Tf;cur.z=f>0&&f<1?4*J.h*f*(1-f):0;
+ const hb=u<J.t1?-jumpWay(J,u):-J.dA*(1-smooth(cl(f/.3,0,1))),fb=u<J.t2?J.dB*smooth(cl(f,0,1)):J.dB-(jumpWay(J,u)-J.dA-J.vx*J.Tf);cur.tdx+=hb;cur.ax+=hb;cur.wx+=fb;return cur;}
+// Einen Zeitschritt rechnen (einmal je Bild vor dem Zeichnen). Kosten: ein paar Rechnungen, kein Zeichnen.
+function step(a,dt,t){dt=cl(dt,0,.05);const D=a.cat,SH=a.SH||shapeOf(D),lf=SH.leg,hs=Math.sqrt(cl(D.weight/200,.3,2)),pc=a.pace||1;let v=a.v||0;const v0=v;
+ if(a.jump){const J=a.jump,u=t-J.t0;v=jumpV(J,u);a.gs=0;a.gb=0;a.dist=J.d0+jumpWay(J,u);if(u>=J.t3){a.jump=null;a.mode='stand';a.pose=null;a.want=null;}}
+ else{const need=a.want||(a.go?'stand':null),busy=KATZE.moving(a);let vT=0;
+  if(need&&a.mode!==need){if(v<1&&!busy){v=0;setMode(a,need,t);}}
+  else if(a.leapWant){if(!busy&&v<1){v=0;a.leapWant=false;a.want=null;startJump(a,t,SH);}}
+  else{if(a.want)a.want=null;if(a.go&&!busy)vT=GAITS[a.go].v*pc;}
+  // Tempo: Katzen kommen schnell in Fahrt; die Gangart folgt dem Tempo (Schritt, Trab, Galopp), Schleichen nur auf Befehl
+  const acc=(60+1.2*Math.max(vT,v))/hs*(vT<v?1.4:1);v+=cl(vT-v,-acc*dt,acc*dt);
+  const slow=a.go==='stalk'||!a.go&&a.gk==='stalk';a.gk=v>210*pc?'gallop':v>80*pc?'trot':slow&&v<30*pc?'stalk':'walk';
+  const W=a.gw||(a.gw=[0,1,0,0]),ki=GK.indexOf(a.gk);let sum=0,len=0;for(let k=0;k<4;k++){W[k]+=cl((k===ki?1:0)-W[k],-dt*3.2,dt*3.2);sum+=W[k];}
+  for(let k=0;k<4;k++){W[k]/=sum;len+=W[k]*GAITS[GK[k]].stride/GAITS[GK[k]].duty;}
+  a.gs=smooth(cl(v/10,0,1));a.gb=cl((a.gb||0)+(v>1||vT>0?1:-1)*dt*2.4,0,1);a.cyc=(a.cyc||0)+v*dt/(len*lf*Math.max(a.gs,.3));}
+ a.v=v;if(!a.jump)a.dist=(a.dist||0)+v*dt;
+ // Mähne und Schwanz: Feder, angeregt vom Auf und Ab des Gangs (q) und vom Anfahren und Bremsen (qx)
+ const c=a.cyc||0,gal=a.gw?a.gw[3]:0,tq=a.gs*((1-gal)*.6*Math.sin(2*TAU*c)+gal*2*Math.sin(TAU*(c-.2)));
+ const tx=cl(-(v-v0)/Math.max(dt,1e-3)*.01-v*.004,-3.5,3.5),om=13/hs,dm=.5*om;
+ a.qv=(a.qv||0)+(om*om*(tq-(a.q||0))-dm*(a.qv||0))*dt;a.q=cl((a.q||0)+a.qv*dt,-4,4);
+ a.qxv=(a.qxv||0)+(om*om*(tx-(a.qx||0))-dm*(a.qxv||0))*dt;a.qx=cl((a.qx||0)+a.qxv*dt,-4,4);}
+KATZE.step=step;
+
+// ---------------------------------------------------------------- Mimik (KA2): Ohren spielen, Zähne zeigen, gähnen, Lippe hochziehen (Flehmen), brüllen, Schwanz peitscht
+const EXPR={ears:{de:'Ohren',dur:1.6},snarl:{de:'Zähne zeigen',dur:2.6},yawn:{de:'Gähnen',dur:3.2},flehmen:{de:'Lippe hochziehen',dur:3},roar:{de:'Brüllen',dur:3.4},lash:{de:'Schwanz peitscht',dur:2.4}};
+KATZE.EXPR=EXPR;KATZE.express=(a,kind,t)=>{if(EXPR[kind])a.expr={kind,t0:t,dur:EXPR[kind].dur};};
+function faceOf(a,t,ph){const F={mouth:0,lip:0,ear:0,blink:0,nose:0,tongue:0,dne:0,dhe:0,lash:0,claws:0},bt=(t+ph*3)%4.9;if(t>0&&bt>4.76)F.blink=1;
+ const J=a.jump;if(J){const u=t-J.t0,fl=smooth(cl((u-J.tw)/.12,0,1))*smooth(cl((J.t2+.1-u)/.2,0,1));F.ear=.6*(1-fl)-.8*fl;F.mouth=.32*fl;F.lip=.4*fl;F.claws=fl;return F;}
+ const X=a.expr;if(!X)return F;const u=(t-X.t0)/X.dur;if(u>=1||u<0){if(u>=1)a.expr=null;return F;}
+ const ramp=X.kind==='yawn'?.36:.2,e=smooth(cl(u/ramp,0,1))*smooth(cl((1-u)/ramp,0,1));
+ if(X.kind==='snarl'){F.lip=e*(.92+.08*Math.sin(t*31));F.mouth=.26*e;F.ear=-e;F.nose=e;F.dne=-.1*e;F.dhe=-.05*e;F.lash=.6*e;}
+ else if(X.kind==='yawn'){F.mouth=e;F.tongue=e;F.dhe=.34*e;F.dne=.1*e;F.ear=-.5*e;if(e>.4)F.blink=1;}
+ else if(X.kind==='flehmen'){F.lip=.85*e;F.mouth=.16*e;F.nose=e;F.dne=.22*e;F.dhe=.42*e;F.ear=-.3*e;if(e>.6)F.blink=1;}
+ else if(X.kind==='roar'){F.mouth=.82*e*(.94+.06*Math.sin(t*27));F.lip=.45*e;F.tongue=.5*e;F.dne=.1*e;F.dhe=.2*e;F.ear=-.45*e;}
+ else if(X.kind==='lash')F.lash=e;
+ else F.ear=Math.sin(u*TAU*2)*e;
+ return F;}
 
 // ---------------------------------------------------------------- Skelett
-function rig(a,t,SH){const C=curPose(a,t,SH),lf=SH.leg,L=SH.L,D=a.cat,ph=(D.seed%97)*.13,A0=-L/2-3;
- const breathe=Math.sin(t*1.3+ph),F=faceOf(a,t,ph);
- const p=C.p,Tx=Math.cos(p),Ty=-Math.sin(p),Nx=-Math.sin(p),Ny=-Math.cos(p),fem=14*lf,tib=15*lf,hum=12.5*lf,rad=16.5*lf,Ty0=Math.abs(Math.sin(p));
- let hx=C.hx,hy=C.hy+breathe*.1;
+const FOOT=[0,1,2,3].map(()=>({dx:0,up:0,a:0,st:false,s:0}));
+function rig(a,t,SH){const C=a.jump?jumpPose(a,t):curPose(a,t,SH),lf=SH.leg,D=a.cat,ph=(D.seed%97)*.13,A0=-SH.L/2-3,z=C.z,air=z>.01;
+ const breathe=Math.sin(t*1.3+ph),F=faceOf(a,t,ph),gs=a.jump?0:(a.gs||0),gb=a.jump?0:smooth(a.gb||0),c=a.cyc||0;
+ // Gang: Pfoten im Takt, Rumpf wippt und nickt; im Galopp krümmt und streckt sich die Wirbelsäule
+ let dhy=0,dp=0,dbend=0,dne=F.dne,dhe=F.dhe,dL=0,dta=0,dtc=0,hsx=0,fsx=0,sc0=C.sc,sc1=C.sc,F4=null,twA=.75*F.lash,twP=t*8.5,twK=2.6;
+ if(gs>.002||gb>.002){F4=FOOT;for(const o of F4){o.dx=0;o.up=0;o.a=0;o.st=false;o.s=0;}const W=a.gw||[0,1,0,0];let wm=0,sg=0;
+  for(let k=0;k<4;k++){const w=W[k];if(w<.002)continue;const G=GAITS[GK[k]],g=gs*w,b=gb*w,S=G.B,dom=w>wm;if(dom){wm=w;sg=G.scap;}
+   for(let i=0;i<4;i++){const f=footCyc(G,c,i,gs,gs,lf),o=F4[i];o.dx+=w*f.dx;o.up+=w*f.up;o.a+=w*f.a;if(dom){o.st=f.st;o.s=f.s;}}
+   dhy+=b*S[0];dp+=b*S[1];dne+=b*S[2];dhe+=b*S[3];dta+=b*S[4];dtc+=b*S[5];hsx+=g*G.hs;fsx+=g*G.fs;
+   if(k===3){const fl=Math.cos(TAU*(c-.85));dhy-=g*2.4*Math.cos(TAU*(c-.8));dp+=g*.11*Math.cos(TAU*(c-.05));dbend+=g*(2.4*fl+.4);dL+=g*(.1*fl+.02);dne-=g*.08*Math.cos(TAU*(c-.05));dtc+=g*.25*Math.sin(TAU*c);}
+   else{dhy+=g*G.bob*Math.sin(2*TAU*c+.6);dp+=g*G.pit*Math.sin(2*TAU*c+1.4);dne+=g*G.nod*Math.sin(2*TAU*c+.9);}}
+  sc0=Math.max(sc0,gs*sg*(F4[1].st?Math.sin(Math.PI*F4[1].s):0));sc1=Math.max(sc1,gs*sg*(F4[3].st?Math.sin(Math.PI*F4[3].s):0));
+  if(twA<.05){twA=gs*.1;twP=2*TAU*c;twK=2;}}
+ const L=SH.L*(1-C.dL-dL),p=C.p+dp,bend=C.bend+dbend,Tx=Math.cos(p),Ty=-Math.sin(p),Nx=-Math.sin(p),Ny=-Math.cos(p),fem=14*lf,tib=15*lf,hum=12.5*lf,rad=16.5*lf,Ty0=Math.abs(Math.sin(C.p)),MC=4.2;
+ let hx=C.hx+SH.L*dL*.5,hy=C.hy+breathe*.1+dhy-z;
  // Hinterpfoten stehen fest: reicht das Bein im Übergang nicht, gibt das Becken nach, nicht die Pfote
- {const jx=hx+1.5*Tx-3*Nx,jy=hy+1.5*Ty-3*Ny,dx=C.ax-jx,dy=C.ay-jy,d=Math.hypot(dx,dy),mx=fem+tib-.4;if(d>mx){hx+=dx/d*(d-mx);hy+=dy/d*(d-mx);}}
+ if(!F4&&!air&&C.tdy>-.5){const jx=hx+1.5*Tx-3*Nx,jy=hy+1.5*Ty-3*Ny,dx=C.ax-jx,dy=C.ay-jy,d=Math.hypot(dx,dy),mx=fem+tib-.4;if(d>mx){hx+=dx/d*(d-mx);hy+=dy/d*(d-mx);}}
  const sx=hx+L*Tx,sy=hy+L*Ty;
- const leg=(front,near)=>{const off=near?0:1;
-  if(front){const jx=sx+.5*Tx-4.5*Nx+off*1.3,jy=sy+.5*Ty-4.5*Ny-off*.5,r=ik(jx,jy,C.wx-off*(3-5*Ty0),C.wy-off*Ty0*1.2,hum,rad,1);
-   return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-4.9*SH.legW),fx:r.fx,fy:Math.min(r.fy,-3.2*SH.legW),ang:C.pa,st:true};}
-  const jx=hx+1.5*Tx-3*Nx-off*1.2,jy=hy+1.5*Ty-3*Ny-off*.4,r=ik(jx,jy,C.ax+off*3.2,C.ay,fem,tib,-1);
-  return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-5.5*SH.legW),fx:r.fx,fy:Math.min(r.fy,-2.9*SH.legW),tx:A0+off*3.2,ty:-1.7,st:true};};
- const nbx=sx+3*Tx+2*Nx,nby=sy+3*Ty+2*Ny,nod=breathe*.012,ne=C.ne+nod;
+ // Abrollen: Das Gelenk wandert über die stehenden Zehen (Winkel a < 0), im Schwung klappt die Pfote ein. In der Luft folgt die Pfote dem Bein.
+ const leg=(front,near)=>{const off=near?0:1,g=F4&&F4[(near?2:0)+(front?1:0)],ga=g?g.a:0;
+  if(front){const jx=sx+.5*Tx-4.5*Nx+off*1.3,jy=sy+.5*Ty-4.5*Ny-off*.5;let wx=C.wx-off*(3-5*Ty0),wy=C.wy-off*Ty0*1.2-z,ang=C.pa;
+   if(g){const tx=wx+MC*Math.cos(ang)+g.dx+fsx,ty=wy-MC*Math.sin(ang)-g.up;ang+=ga;wx=tx-MC*Math.cos(ang);wy=ty+MC*Math.sin(ang);}
+   const r=ik(jx,jy,wx,wy,hum,rad,1);
+   return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-4.9*SH.legW),fx:r.fx,fy:Math.min(r.fy,-3.2*SH.legW),ang,st:g?g.st:!air,px:r.fx+MC*Math.cos(ang)};}
+  const jx=hx+1.5*Tx-3*Nx-off*1.2,jy=hy+1.5*Ty-3*Ny-off*.4;let tx=A0+off*3.2+C.tdx,ty=-1.7+C.tdy-z,mx=C.ax-A0-C.tdx,my=C.ay+1.7-C.tdy,pa=0;
+  if(g){tx+=g.dx+hsx;ty-=g.up;const co=Math.cos(-ga),si=Math.sin(-ga),x=mx;mx=x*co-my*si;my=x*si+my*co;pa=ga*1.1;}
+  const r=ik(jx,jy,tx+mx,ty+my,fem,tib,-1),free=air||C.tdy<-.5||g&&!g.st;if(free){tx=r.fx-mx;ty=r.fy-my;}
+  return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-5.5*SH.legW),fx:r.fx,fy:Math.min(r.fy,-2.9*SH.legW),tx,ty,pa,st:g?g.st:!free,px:tx};};
+ const nbx=sx+3*Tx+2*Nx,nby=sy+3*Ty+2*Ny,nod=breathe*.012,ne=C.ne+nod+dne;
  const hcx=nbx+SH.neck*Math.cos(ne),hcy=nby-SH.neck*Math.sin(ne);
- return {C,p,bend:C.bend,Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,breathe,ph,legs:[leg(false,false),leg(true,false),leg(false,true),leg(true,true)],nbx,nby,hcx,hcy,he:C.he+nod,face:F,
-  cx:(hx+sx)/2,lie:cl(1-Math.abs(hy+9)/8,0,1)*(1-cl(p*2,0,1))};}
+ return {C,p,bend,Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,z,breathe,ph,legs:[leg(false,false),leg(true,false),leg(false,true),leg(true,true)],nbx,nby,hcx,hcy,he:C.he+nod+dhe,face:F,
+  ta:C.ta+dta,tc:C.tc+dtc,twA,twP,twK,sc0,sc1,q:a.q||0,qx:a.qx||0,cx:(hx+sx)/2,lie:cl(1-Math.abs(hy+9)/8,0,1)*(1-cl(p*2,0,1))};}
 KATZE.rig=(a,t)=>rig(a,t,a.SH||shapeOf(a.cat));
 
 // ---------------------------------------------------------------- Zeichner
@@ -208,23 +304,24 @@ function drawCat(c,a,px,py,k,face,opt={}){const D=a.cat,col=D.appearance.colors,
  const R=rig(a,t,SH),{Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,C}=R,bk=SH.bulk,lw=SH.legW,pw=SH.paw,seed=D.seed%1000;
  const base=col.base,light=col.light,shade=col.shade,dark=col.dark,farC=mix(shade,dark,.55),farP=mix(shade,dark,.7);
  c.save();c.translate(px,py);c.scale(k,k);
- if(!opt.noShadow){c.fillStyle='#1c140c50';c.beginPath();c.ellipse(face*(R.cx+4)*sz,1,(L*.5+17+R.lie*8)*sz*(1-cl(R.p,0,1.2)*.3),(3.6+R.lie)*sz,0,0,TAU);c.fill();}
+ if(!opt.noShadow){c.fillStyle='#1c140c50';c.beginPath();const zs=1-cl(R.z/70,0,.45);c.ellipse(face*(R.cx+4)*sz,1,(L*.5+17+R.lie*8)*sz*(1-cl(R.p,0,1.2)*.3)*zs,(3.6+R.lie)*sz*zs,0,0,TAU);c.fill();}
  c.scale(face*sz,sz);GS=(opt.px||KATZE.PX)/sz;TM=null;
  // ---- Pfote: runder Ballen, Zehen nach vorn, Krallen eingezogen
- function paw(x,y,ang,cc,toe){const dx=Math.cos(ang),dy=-Math.sin(ang),r=2.7*pw*lw,gp=v=>Math.min(v,-r);
+ function paw(x,y,ang,cc,toe,claw){const dx=Math.cos(ang),dy=-Math.sin(ang),r=2.7*pw*lw,gp=v=>Math.min(v,-r);
   limb(c,x,gp(y),x+dx*4.8*pw,gp(y+dy*4.8*pw),5.4*pw*lw,4.8*pw*lw,cc);
-  if(toe){const ex=x+dx*4.6*pw,ey=gp(y+dy*4.6*pw);seg(c,ex+.9,ey-.6,ex+1.5,ey+1.2,.45,toe);seg(c,ex-.9,ey-.9,ex-.5,ey+1.4,.45,toe);}}
+  if(toe){const ex=x+dx*4.6*pw,ey=gp(y+dy*4.6*pw);seg(c,ex+.9,ey-.6,ex+1.5,ey+1.2,.45,toe);seg(c,ex-.9,ey-.9,ex-.5,ey+1.4,.45,toe);}
+  if(claw>.3){const ex=x+dx*5.6*pw,ey=gp(y+dy*5.6*pw),l=2.2*claw*pw;for(let i=-1;i<=1;i++)seg(c,ex-dy*i*1.5,gp(ey+dx*i*1.5),ex-dy*i*1.5+dx*l+dy*l*.5,gp(ey+dx*i*1.5+dy*l+dx*l*.5),.5,'#efe6d2');}}
  function drawLeg(l){const near=l.near,up=near?mix(base,light,.22):farC,lo=near?mix(base,light,.38):farC,pc=near?mix(base,light,.6):farP,toe=near?shade:null;
   if(l.front){limb(c,l.jx,Math.min(l.jy,-7.3*lw*bk),l.kx,l.ky,14.5*lw*bk,9.6*lw,up);limb(c,l.kx,l.ky,l.fx,l.fy,8.8*lw,6.2*lw,lo);
    const dx=Math.cos(l.ang),dy=-Math.sin(l.ang),flat=1-Math.abs(dy);// steht die Pfote, zeigt der Mittelfuß nach unten und die Zehen nach vorn
    if(flat<.5){const bx=l.fx+dx*4.2,by=Math.min(l.fy+dy*4.2,-2.2*pw*lw);limb(c,l.fx,l.fy,bx,by,6*lw,5.2*lw*pw,lo);paw(bx-1.2,by,0,pc,toe);}
-   else paw(l.fx,l.fy+.4,l.ang,pc,toe);}
+   else paw(l.fx,l.fy+.4,l.ang,pc,toe,near?R.face.claws:0);}
   else{limb(c,l.jx,Math.min(l.jy,-9.6*lw*bk),l.kx,l.ky,19*lw*bk,10.8*lw,up);limb(c,l.kx,l.ky,l.fx,l.fy,9.8*lw,5.6*lw,lo);
-   limb(c,l.fx,l.fy,l.tx,Math.min(l.ty,-2.4*lw),5.4*lw,4.8*lw,lo);paw(l.tx-.6,l.ty,0,pc,toe);}}
+   limb(c,l.fx,l.fy,l.tx,Math.min(l.ty,-2.4*lw),5.4*lw,4.8*lw,lo);paw(l.tx-.6,l.ty,l.pa||0,pc,toe);}}
  drawLeg(R.legs[0]);drawLeg(R.legs[1]);
  // ---- Schwanz: Kette von Gliedern, hängt im Stand und liegt im Sitzen und Liegen am Boden; Spitze pendelt leicht
  {const n=10,len=4.1*SH.tail,w0=3.6*SH.tailW*bk,sway=Math.sin(t*.9+R.ph)*.1+Math.sin(t*2.3+R.ph*2)*.04,up=[],dn=[];let x=hx-Tx*7*bk+Nx*2.2,y=hy-Ty*7*bk+Ny*2.2;
-  for(let i=0;i<=n;i++){const u=i/n,an=C.ta+C.tc*Math.pow(u,1.4)+sway*u*u,w=lerp(w0,w0*.45,u)/2,ca=Math.cos(an),sa=Math.sin(an);
+  for(let i=0;i<=n;i++){const u=i/n,an=R.ta+R.tc*Math.pow(u,1.4)+sway*u*u+R.twA*Math.sin(R.twP-u*R.twK)*u+R.q*.05*u*u,w=lerp(w0,w0*.45,u)/2,ca=Math.cos(an),sa=Math.sin(an);
    if(i){x+=ca*len;y=Math.min(y+sa*len,-w0*.3);}up.push([x+sa*w,gy(y-ca*w)]);dn.push([x-sa*w,gy(y+ca*w)]);}
   poly(c,up.concat(dn.reverse()),base);
   if(SH.tail>.3){disk(c,x,Math.min(y,-1.6),2.4*SH.tailW,col.tuft);disk(c,x-1.2,Math.min(y+.8,-1.4),1.7*SH.tailW,col.tuft);}}
@@ -238,6 +335,7 @@ function drawCat(c,a,px,py,k,face,opt={}){const D=a.cat,col=D.appearance.colors,
  const blob=(x,y,r,cc)=>{const pts=[];for(let i=0;i<16;i++){const an=i/16*TAU;pts.push([x+Math.cos(an)*r,gy(y+Math.sin(an)*r)]);}poly(c,pts,cc);};
  blob(hx,hy,8.3*bk,base);blob(sx,sy,(8.6+2.3*SH.chest)*bk,base);
  poly(c,[...top,...[...bot].reverse()],base);
+ if(R.sc0>.05||R.sc1>.05){const rt0=(8.2+2.6*SH.chest)*bk+SH.wither*.6,sb=(o,s,cc)=>{if(s>.05)blob(sx-(3.5+o)*Tx+Nx*(rt0-3.4+3*s),sy-(3.5+o)*Ty+Ny*(rt0-3.4+3*s),3.6*bk,cc);};sb(3,R.sc0,mix(base,shade,.5));sb(0,R.sc1,mix(base,light,.15));}
  // Hals
  const nw=(15+5*SH.chest)*bk;limb(c,sx+Tx*1.5,Math.min(sy+Ty*1.5,-nw/2),R.hcx,Math.min(R.hcy,-6.5*SH.headS),nw,13*SH.headS,base);
  // heller Bauch (Katzen sind unten heller), dunklerer Rückenstreif
@@ -248,16 +346,17 @@ function drawCat(c,a,px,py,k,face,opt={}){const D=a.cat,col=D.appearance.colors,
  const m=SH.mane*(D.appearance.mane||1);
  if(m>.05){const md=col.maneDark,ml=col.mane,mm=mix(ml,md,.5),hs=SH.headS;
   const tuft=(x,y,r,cc,ks)=>{const pts=[],nn=13;for(let i=0;i<nn;i++){const an=i/nn*TAU,j=.8+.34*hrand(i*7.3+ks+seed);pts.push([x+Math.cos(an)*r*j,gy(y+Math.sin(an)*r*j*1.06)]);}poly(c,pts,cc);};
+  const mq=R.q*.55,mqx=R.qx*.5;
   // Bauchmähne (Berberlöwe, Kaplöwe): Fransen unter Brust und Bauch
-  if(SH.maneBelly>.05){const zk=[],ob=[];for(let j=7;j<2*n-1;j++){const i=j>>1,u=(j&1)*.5,x=lerp(bot[i][0],bot[i+1][0],u),y=lerp(bot[i][1],bot[i+1][1],u),h=hrand(j*5.1+seed),l=(2.2+3*h)*SH.maneBelly*m*(.45+.55*j/(2*n));
+  if(SH.maneBelly>.05){const zk=[],ob=[];for(let j=7;j<2*n-1;j++){const i=j>>1,u=(j&1)*.5,x=lerp(bot[i][0],bot[i+1][0],u),y=lerp(bot[i][1],bot[i+1][1],u),h=hrand(j*5.1+seed),l=(2.2+3*h)*SH.maneBelly*m*(.45+.55*j/(2*n))+mq*.5*(j&1?1:.4);
     ob.push([x,y-1.6]);zk.push([x-1.2,gy(y+l*.25)],[x-.4-h*1.4,gy(y+l)]);}
    if(ob.length)poly(c,ob.concat(zk.reverse()),md);}
   const nx0=lerp(sx,R.hcx,.5),ny0=lerp(sy,R.hcy,.5);
-  tuft(sx-3,sy-3.5,11.5*m,md,1);tuft(sx+5.5,sy+8.5,10.5*m,md,2);tuft(nx0-1,ny0+5,11.5*m,md,3);
-  tuft(nx0-2,ny0-2,12*m,mm,4);tuft(R.hcx+1,R.hcy+8.5*hs,7*m*hs,mm,5);
+  tuft(sx-3+mqx*.5,sy-3.5+mq*.4-2.6*Math.max(R.sc0,R.sc1),11.5*m,md,1);tuft(sx+5.5+mqx*.8,sy+8.5+mq,10.5*m,md,2);tuft(nx0-1+mqx*.8,ny0+5+mq*.9,11.5*m,md,3);
+  tuft(nx0-2+mqx*.6,ny0-2+mq*.5,12*m,mm,4);tuft(R.hcx+1+mqx*.5,R.hcy+8.5*hs+mq*.8,7*m*hs,mm,5);
   tuft(R.hcx-4*hs,R.hcy+1,11.2*m*hs,ml,6);
   // einzelne Strähnen
-  for(let i=0;i<10;i++){const h=hrand(i*3.3+seed),h2=hrand(i*8.7+seed),x=lerp(sx-10*m,R.hcx-2,h),y=lerp(sy-8*m,ny0+12*m,h2);seg(c,x,gy(y),x-1.5-h*1.5,gy(y+2.4+h2*2),.8,i%2?mix(ml,md,.25):md);}}
+  for(let i=0;i<10;i++){const h=hrand(i*3.3+seed),h2=hrand(i*8.7+seed),x=lerp(sx-10*m,R.hcx-2,h)+mqx*.7,y=lerp(sy-8*m,ny0+12*m,h2)+mq*(.3+.7*h2);seg(c,x,gy(y),x-1.5-h*1.5,gy(y+2.4+h2*2),.8,i%2?mix(ml,md,.25):md);}}
  // ---- Kopf (Zeichner je Sorte)
  {const hs=SH.headS,co=Math.cos(R.he)*hs,si=Math.sin(R.he)*hs;TM=[co,-si,si,co,R.hcx,Math.min(R.hcy,G-6*hs)];TS=hs;
   (KATZE.HEADS[SH.head]||headPlain)(c,D,SH,col,{t,breathe:R.breathe,prim:KATZE.prim,f:R.face});TM=null;TS=1;}
