@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1093,
+ "typMax": 1130,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -1823,6 +1823,105 @@
    "datei": "obj/bk-marmor-wand-oben.json"
   },
   {
+   "id": "bk-pfahl-fenster",
+   "version": 1,
+   "typ": 1094,
+   "kat": "wand",
+   "name": "Stilt Plank Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-fenster.json"
+  },
+  {
+   "id": "bk-pfahl-fenster-a",
+   "version": 1,
+   "typ": 1095,
+   "kat": "wand",
+   "name": "Stilt Plank Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-fenster-a.json"
+  },
+  {
+   "id": "bk-pfahl-fenster-b",
+   "version": 1,
+   "typ": 1096,
+   "kat": "wand",
+   "name": "Stilt Plank Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-fenster-b.json"
+  },
+  {
+   "id": "bk-pfahl-fenster-d",
+   "version": 1,
+   "typ": 1097,
+   "kat": "wand",
+   "name": "Stilt Plank Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-fenster-d.json"
+  },
+  {
+   "id": "bk-pfahl-tuer",
+   "version": 1,
+   "typ": 1098,
+   "kat": "wand",
+   "name": "Stilt Plank Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-tuer.json"
+  },
+  {
+   "id": "bk-pfahl-wand",
+   "version": 1,
+   "typ": 1099,
+   "kat": "wand",
+   "name": "Stilt Plank Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-wand.json"
+  },
+  {
+   "id": "bk-pfahl-wand-a",
+   "version": 1,
+   "typ": 1100,
+   "kat": "wand",
+   "name": "Stilt Plank Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-wand-a.json"
+  },
+  {
+   "id": "bk-pfahl-wand-b",
+   "version": 1,
+   "typ": 1101,
+   "kat": "wand",
+   "name": "Stilt Plank Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-wand-b.json"
+  },
+  {
+   "id": "bk-pfahl-wand-d",
+   "version": 1,
+   "typ": 1102,
+   "kat": "wand",
+   "name": "Stilt Plank Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-wand-d.json"
+  },
+  {
+   "id": "bk-pfahl-wand-oben",
+   "version": 1,
+   "typ": 1103,
+   "kat": "wand",
+   "name": "Stilt Plank Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-wand-oben.json"
+  },
+  {
+   "id": "bk-pfahl-wand-oben-a",
+   "version": 1,
+   "typ": 1104,
+   "kat": "wand",
+   "name": "Stilt Plank Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-pfahl-wand-oben-a.json"
+  },
+  {
    "id": "bk-putz-dach-ab-i",
    "version": 2,
    "typ": 148,
@@ -2651,6 +2750,141 @@
    "datei": "obj/bk-putz-wand-oben-c.json"
   },
   {
+   "id": "bk-sode-dach-flach",
+   "version": 1,
+   "typ": 1105,
+   "kat": "dach",
+   "name": "Sod Roof, Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-dach-flach.json"
+  },
+  {
+   "id": "bk-sode-dach-flach-a",
+   "version": 1,
+   "typ": 1106,
+   "kat": "dach",
+   "name": "Sod Roof, Flat A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-dach-flach-a.json"
+  },
+  {
+   "id": "bk-sode-dach-flach-b",
+   "version": 1,
+   "typ": 1107,
+   "kat": "dach",
+   "name": "Sod Roof, Flat B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-dach-flach-b.json"
+  },
+  {
+   "id": "bk-sode-dach-flach-d",
+   "version": 1,
+   "typ": 1108,
+   "kat": "dach",
+   "name": "Sod Roof, Flat D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-dach-flach-d.json"
+  },
+  {
+   "id": "bk-sode-fenster",
+   "version": 1,
+   "typ": 1109,
+   "kat": "wand",
+   "name": "Sod House Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-fenster.json"
+  },
+  {
+   "id": "bk-sode-fenster-a",
+   "version": 1,
+   "typ": 1110,
+   "kat": "wand",
+   "name": "Sod House Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-fenster-a.json"
+  },
+  {
+   "id": "bk-sode-fenster-b",
+   "version": 1,
+   "typ": 1111,
+   "kat": "wand",
+   "name": "Sod House Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-fenster-b.json"
+  },
+  {
+   "id": "bk-sode-fenster-d",
+   "version": 1,
+   "typ": 1112,
+   "kat": "wand",
+   "name": "Sod House Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-fenster-d.json"
+  },
+  {
+   "id": "bk-sode-tuer",
+   "version": 1,
+   "typ": 1113,
+   "kat": "wand",
+   "name": "Sod House Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-tuer.json"
+  },
+  {
+   "id": "bk-sode-wand",
+   "version": 1,
+   "typ": 1114,
+   "kat": "wand",
+   "name": "Sod Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-wand.json"
+  },
+  {
+   "id": "bk-sode-wand-a",
+   "version": 1,
+   "typ": 1115,
+   "kat": "wand",
+   "name": "Sod Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-wand-a.json"
+  },
+  {
+   "id": "bk-sode-wand-b",
+   "version": 1,
+   "typ": 1116,
+   "kat": "wand",
+   "name": "Sod Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-wand-b.json"
+  },
+  {
+   "id": "bk-sode-wand-d",
+   "version": 1,
+   "typ": 1117,
+   "kat": "wand",
+   "name": "Sod Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-wand-d.json"
+  },
+  {
+   "id": "bk-sode-wand-oben",
+   "version": 1,
+   "typ": 1118,
+   "kat": "wand",
+   "name": "Sod Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-wand-oben.json"
+  },
+  {
+   "id": "bk-sode-wand-oben-a",
+   "version": 1,
+   "typ": 1119,
+   "kat": "wand",
+   "name": "Sod Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sode-wand-oben-a.json"
+  },
+  {
    "id": "bk-steppe-fenster",
    "version": 1,
    "typ": 1055,
@@ -2802,6 +3036,105 @@
    "name": "Steppe Wattle Upper Wall A",
    "status": "uebernommen",
    "datei": "obj/bk-steppe-wand-oben-a.json"
+  },
+  {
+   "id": "bk-sumpf-fenster",
+   "version": 1,
+   "typ": 1120,
+   "kat": "wand",
+   "name": "Reed Stilt Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-fenster.json"
+  },
+  {
+   "id": "bk-sumpf-fenster-a",
+   "version": 1,
+   "typ": 1121,
+   "kat": "wand",
+   "name": "Reed Stilt Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-fenster-a.json"
+  },
+  {
+   "id": "bk-sumpf-fenster-b",
+   "version": 1,
+   "typ": 1122,
+   "kat": "wand",
+   "name": "Reed Stilt Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-fenster-b.json"
+  },
+  {
+   "id": "bk-sumpf-fenster-d",
+   "version": 1,
+   "typ": 1123,
+   "kat": "wand",
+   "name": "Reed Stilt Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-fenster-d.json"
+  },
+  {
+   "id": "bk-sumpf-tuer",
+   "version": 1,
+   "typ": 1124,
+   "kat": "wand",
+   "name": "Reed Stilt Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-tuer.json"
+  },
+  {
+   "id": "bk-sumpf-wand",
+   "version": 1,
+   "typ": 1125,
+   "kat": "wand",
+   "name": "Reed Stilt Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-wand.json"
+  },
+  {
+   "id": "bk-sumpf-wand-a",
+   "version": 1,
+   "typ": 1126,
+   "kat": "wand",
+   "name": "Reed Stilt Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-wand-a.json"
+  },
+  {
+   "id": "bk-sumpf-wand-b",
+   "version": 1,
+   "typ": 1127,
+   "kat": "wand",
+   "name": "Reed Stilt Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-wand-b.json"
+  },
+  {
+   "id": "bk-sumpf-wand-d",
+   "version": 1,
+   "typ": 1128,
+   "kat": "wand",
+   "name": "Reed Stilt Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-wand-d.json"
+  },
+  {
+   "id": "bk-sumpf-wand-oben",
+   "version": 1,
+   "typ": 1129,
+   "kat": "wand",
+   "name": "Reed Stilt Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-wand-oben.json"
+  },
+  {
+   "id": "bk-sumpf-wand-oben-a",
+   "version": 1,
+   "typ": 1130,
+   "kat": "wand",
+   "name": "Reed Stilt Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sumpf-wand-oben-a.json"
   },
   {
    "id": "bk-wueste-dach-flach",
