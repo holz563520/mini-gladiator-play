@@ -3,6 +3,7 @@
 // ARENA THEORY · KATZEN (Löwen, Tiger und alle Raubkatzen; eigenständige Testversion, ändert keine Spieldatei, hängt nicht an window.MG)
 // · Modell wie bei Hunden und Bären (dist/hund.js, dist/baer.js): jede Sorte hat Sollwerte je Wert (acht Werte),
 //   die einzelne Katze bekommt Anlage (64 Bernoulli-Versuche um den Sortenwert) und Istwert (um Sortenwert minus 20).
+// · Pixelgrafik: alle Formen werden in ganze Rasterkästchen zerlegt (KATZE.PX), passend zu den Figuren und zum Löwen aus 1.0.
 // · Zeichner: Katze in Seitenansicht aus einem Skelett (Zehengänger, Pfoten stehen fest, biegsame Wirbelsäule, langer Schwanz),
 //   Haltungen Stand, Sitzen, Liegen mit weichen Übergängen. Köpfe, Mähnen und Fell je Sorte: dist/katze-koepfe.js.
 // · Sortenliste und Werte: KATZEN_SORTEN.md. Fahrplan: KATZEN_FAHRPLAN.md. Editor: dist/katze-editor.html.
@@ -120,12 +121,31 @@ KATZE.create=create;KATZE.sizeOf=sizeOf;KATZE.talent=talent;KATZE.szOf=szOf;KATZ
 // Bühnenfigur: eine Katze mit Haltung (wird vom Editor und später von Kampf und Käfig benutzt)
 KATZE.actor=(D,mode='stand')=>({id:D.id,cat:D,mode,pose:null,queue:[]});
 
-// ---------------------------------------------------------------- Grundformen (wie dist/hund.js und dist/baer.js)
-function rr(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));}
-function poly(c,pts,col){c.fillStyle=col;c.beginPath();for(let i=0;i<pts.length;i++){const x=Math.round(pts[i][0]*2)/2,y=Math.round(pts[i][1]*2)/2;i?c.lineTo(x,y):c.moveTo(x,y);}c.closePath();c.fill();}
-function disk(c,x,y,r,col){c.fillStyle=col;c.beginPath();c.arc(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,r),0,TAU);c.fill();}
-function seg(c,x,y,xx,yy,w,col){c.strokeStyle=col;c.lineWidth=w;c.lineCap='round';c.beginPath();c.moveTo(x,y);c.lineTo(xx,yy);c.stroke();}
-function limb(c,x,y,xx,yy,w1,w2,col){const dx=xx-x,dy=yy-y,l=Math.hypot(dx,dy)||1,nx=-dy/l,ny=dx/l;poly(c,[[x+nx*w1/2,y+ny*w1/2],[xx+nx*w2/2,yy+ny*w2/2],[xx-nx*w2/2,yy-ny*w2/2],[x-nx*w1/2,y-ny*w1/2]],col);disk(c,x,y,w1/2,col);disk(c,xx,yy,w2/2,col);}
+// ---------------------------------------------------------------- Grundformen im Pixelraster (Wunsch Thomas 27.11.2026: Pixelgrafik wie die Figuren und der Löwe aus 1.0)
+// Jede Form wird zeilenweise in ganze Rasterkästchen zerlegt (wie R und bone im Löwen aus 1.0, dist/lion.js), kein weicher Rand, kein Zurücklesen von Bildern.
+// GS: Kantenlänge eines Kästchens in Zeichen-Einheiten (KATZE.PX Welt-Einheiten, unabhängig von der Größe der Katze). TM: Drehung und Lage des Kopfes,
+// wird auf die Punkte gerechnet statt auf die Zeichenfläche, damit auch der Kopf im selben geraden Raster liegt. Je Form ein Pfad aus Kästchen, ein fill.
+KATZE.PX=1;let GS=1,TM=null,TS=1;const XS=[],XD=[];
+const txf=(x,y)=>TM[0]*x+TM[2]*y+TM[4],tyf=(x,y)=>TM[1]*x+TM[3]*y+TM[5];
+function spansPoly(c,P,n){const g=GS;let y0=1e9,y1=-1e9;for(let i=0;i<n;i++){const y=P[i*2+1];if(y<y0)y0=y;if(y>y1)y1=y;}
+ for(let r=Math.round(y0/g),r1=Math.round(y1/g);r<r1;r++){const yc=(r+.5)*g;let m=0;
+  for(let i=0,j=n-1;i<n;j=i++){const ay=P[i*2+1],by=P[j*2+1];if((ay>yc)!==(by>yc)){const x=P[i*2]+(yc-ay)/(by-ay)*(P[j*2]-P[i*2]),d=ay>yc?1:-1;let k=m++;while(k>0&&XS[k-1]>x){XS[k]=XS[k-1];XD[k]=XD[k-1];k--;}XS[k]=x;XD[k]=d;}}
+  let w=0,st=0;for(let k=0;k<m;k++){if(w===0)st=XS[k];w+=XD[k];if(w===0){const xa=Math.round(st/g),xb=Math.round(XS[k]/g);if(xb>xa)c.rect(xa*g,r*g,(xb-xa)*g,g);}}}}
+function spansDisk(c,x,y,r){const g=GS;if(r<g*.62){c.rect(Math.round(x/g-.5)*g,Math.round(y/g-.5)*g,g,g);return;}
+ for(let q=Math.round((y-r)/g),q1=Math.round((y+r)/g);q<q1;q++){const dy=(q+.5)*g-y,h2=r*r-dy*dy;if(h2<=0)continue;const hw=Math.sqrt(h2),xa=Math.round((x-hw)/g),xb=Math.round((x+hw)/g);if(xb>xa)c.rect(xa*g,q*g,(xb-xa)*g,g);}}
+const PB=[];
+function loadPts(pts){const n=pts.length;if(TM)for(let i=0;i<n;i++){const x=pts[i][0],y=pts[i][1];PB[i*2]=txf(x,y);PB[i*2+1]=tyf(x,y);}else for(let i=0;i<n;i++){PB[i*2]=pts[i][0];PB[i*2+1]=pts[i][1];}return n;}
+function poly(c,pts,col){c.fillStyle=col;c.beginPath();spansPoly(c,PB,loadPts(pts));c.fill();}
+function disk(c,x,y,r,col){c.fillStyle=col;c.beginPath();if(TM)spansDisk(c,txf(x,y),tyf(x,y),r*TS);else spansDisk(c,x,y,r);c.fill();}
+function rr(c,x,y,w,h,col){const g=GS;c.fillStyle=col;if(TM){const cx=txf(x+w/2,y+h/2),cy=tyf(x+w/2,y+h/2),W=Math.max(1,Math.round(w*TS/g)),H=Math.max(1,Math.round(h*TS/g));c.fillRect(Math.round(cx/g-W/2)*g,Math.round(cy/g-H/2)*g,W*g,H*g);return;}
+ c.fillRect(Math.round(x/g)*g,Math.round(y/g)*g,Math.max(1,Math.round(w/g))*g,Math.max(1,Math.round(h/g))*g);}
+// Dünne Linie als Kette von Kästchen (wie bone im Löwen aus 1.0)
+function seg(c,x,y,xx,yy,w,col){const g=GS;if(TM){const a=txf(x,y),b=tyf(x,y),d=txf(xx,yy),e=tyf(xx,yy);x=a;y=b;xx=d;yy=e;w*=TS;}
+ const s=Math.max(1,Math.round(w/g))*g,n=Math.max(1,Math.ceil(Math.hypot(xx-x,yy-y)/g));c.fillStyle=col;c.beginPath();
+ for(let i=0;i<=n;i++)c.rect(Math.round((x+(xx-x)*i/n-s/2)/g)*g,Math.round((y+(yy-y)*i/n-s/2)/g)*g,s,s);c.fill();}
+function limb(c,x,y,xx,yy,w1,w2,col){if(TM){const a=txf(x,y),b=tyf(x,y),d=txf(xx,yy),e=tyf(xx,yy);x=a;y=b;xx=d;yy=e;w1*=TS;w2*=TS;}
+ const dx=xx-x,dy=yy-y,l=Math.hypot(dx,dy)||1,nx=-dy/l,ny=dx/l;PB[0]=x+nx*w1/2;PB[1]=y+ny*w1/2;PB[2]=xx+nx*w2/2;PB[3]=yy+ny*w2/2;PB[4]=xx-nx*w2/2;PB[5]=yy-ny*w2/2;PB[6]=x-nx*w1/2;PB[7]=y-ny*w1/2;
+ c.fillStyle=col;c.beginPath();spansPoly(c,PB,4);spansDisk(c,x,y,w1/2);spansDisk(c,xx,yy,w2/2);c.fill();}
 // Gelenk aus zwei Knochen (wie ik in dist/hund.js)
 function ik(jx,jy,fx,fy,a,b,dir){let dx=fx-jx,dy=fy-jy,dd=Math.hypot(dx,dy);const mx=a+b-.05;if(dd>mx){fx=jx+dx/dd*mx;fy=jy+dy/dd*mx;dx=fx-jx;dy=fy-jy;dd=mx;}dd=Math.max(dd,Math.abs(a-b)+.1);
  const th=Math.atan2(dy,dx),al=Math.acos(cl((a*a+dd*dd-b*b)/(2*a*dd),-1,1)),an=th+dir*al;return {kx:jx+Math.cos(an)*a,ky:jy+Math.sin(an)*a,fx,fy};}
@@ -186,15 +206,15 @@ const G=-.25;// nichts reicht unter den Boden
 const gy=y=>Math.min(y,G);
 function drawCat(c,a,px,py,k,face,opt={}){const D=a.cat,col=D.appearance.colors,SH=a.SH||shapeOf(D),sz=szOf(D,SH),t=opt.time??performance.now()/1000;
  const R=rig(a,t,SH),{Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,C}=R,bk=SH.bulk,lw=SH.legW,pw=SH.paw,seed=D.seed%1000;
- const base=col.base,light=col.light,shade=col.shade,dark=col.dark,farC=mix(shade,dark,.35),farP=mix(shade,dark,.5);
+ const base=col.base,light=col.light,shade=col.shade,dark=col.dark,farC=mix(shade,dark,.55),farP=mix(shade,dark,.7);
  c.save();c.translate(px,py);c.scale(k,k);
  if(!opt.noShadow){c.fillStyle='#1c140c50';c.beginPath();c.ellipse(face*(R.cx+4)*sz,1,(L*.5+17+R.lie*8)*sz*(1-cl(R.p,0,1.2)*.3),(3.6+R.lie)*sz,0,0,TAU);c.fill();}
- c.scale(face*sz,sz);
+ c.scale(face*sz,sz);GS=(opt.px||KATZE.PX)/sz;TM=null;
  // ---- Pfote: runder Ballen, Zehen nach vorn, Krallen eingezogen
  function paw(x,y,ang,cc,toe){const dx=Math.cos(ang),dy=-Math.sin(ang),r=2.7*pw*lw,gp=v=>Math.min(v,-r);
   limb(c,x,gp(y),x+dx*4.8*pw,gp(y+dy*4.8*pw),5.4*pw*lw,4.8*pw*lw,cc);
   if(toe){const ex=x+dx*4.6*pw,ey=gp(y+dy*4.6*pw);seg(c,ex+.9,ey-.6,ex+1.5,ey+1.2,.45,toe);seg(c,ex-.9,ey-.9,ex-.5,ey+1.4,.45,toe);}}
- function drawLeg(l){const near=l.near,up=near?base:farC,lo=near?mix(base,light,.25):farC,pc=near?mix(base,light,.4):farP,toe=near?shade:null;
+ function drawLeg(l){const near=l.near,up=near?mix(base,light,.22):farC,lo=near?mix(base,light,.38):farC,pc=near?mix(base,light,.6):farP,toe=near?shade:null;
   if(l.front){limb(c,l.jx,Math.min(l.jy,-7.3*lw*bk),l.kx,l.ky,14.5*lw*bk,9.6*lw,up);limb(c,l.kx,l.ky,l.fx,l.fy,8.8*lw,6.2*lw,lo);
    const dx=Math.cos(l.ang),dy=-Math.sin(l.ang),flat=1-Math.abs(dy);// steht die Pfote, zeigt der Mittelfuß nach unten und die Zehen nach vorn
    if(flat<.5){const bx=l.fx+dx*4.2,by=Math.min(l.fy+dy*4.2,-2.2*pw*lw);limb(c,l.fx,l.fy,bx,by,6*lw,5.2*lw*pw,lo);paw(bx-1.2,by,0,pc,toe);}
@@ -237,11 +257,10 @@ function drawCat(c,a,px,py,k,face,opt={}){const D=a.cat,col=D.appearance.colors,
   tuft(nx0-2,ny0-2,12*m,mm,4);tuft(R.hcx+1,R.hcy+8.5*hs,7*m*hs,mm,5);
   tuft(R.hcx-4*hs,R.hcy+1,11.2*m*hs,ml,6);
   // einzelne Strähnen
-  c.lineWidth=.8;c.lineCap='round';for(let pass=0;pass<2;pass++){c.strokeStyle=pass?mix(ml,md,.25):md;c.beginPath();
-   for(let i=pass;i<10;i+=2){const h=hrand(i*3.3+seed),h2=hrand(i*8.7+seed),x=lerp(sx-10*m,R.hcx-2,h),y=lerp(sy-8*m,ny0+12*m,h2);c.moveTo(x,gy(y));c.lineTo(x-1.5-h*1.5,gy(y+2.4+h2*2));}c.stroke();}}
+  for(let i=0;i<10;i++){const h=hrand(i*3.3+seed),h2=hrand(i*8.7+seed),x=lerp(sx-10*m,R.hcx-2,h),y=lerp(sy-8*m,ny0+12*m,h2);seg(c,x,gy(y),x-1.5-h*1.5,gy(y+2.4+h2*2),.8,i%2?mix(ml,md,.25):md);}}
  // ---- Kopf (Zeichner je Sorte)
- c.save();c.translate(R.hcx,Math.min(R.hcy,G-6*SH.headS));c.rotate(-R.he);c.scale(SH.headS,SH.headS);
- (KATZE.HEADS[SH.head]||headPlain)(c,D,SH,col,{t,breathe:R.breathe,prim:KATZE.prim,f:R.face});c.restore();
+ {const hs=SH.headS,co=Math.cos(R.he)*hs,si=Math.sin(R.he)*hs;TM=[co,-si,si,co,R.hcx,Math.min(R.hcy,G-6*hs)];TS=hs;
+  (KATZE.HEADS[SH.head]||headPlain)(c,D,SH,col,{t,breathe:R.breathe,prim:KATZE.prim,f:R.face});TM=null;TS=1;}
  c.restore();return R;}
 function headPlain(c,D,SH,col){disk(c,0,0,7,col.base);poly(c,[[3,-5],[12,-2.5],[12.5,1.5],[6,5],[0,6]],col.base);rr(c,11.4,-2.6,1.6,1.6,col.nose);rr(c,4.4,-3.4,1.2,1.2,'#120c08');}
 KATZE.draw=drawCat;

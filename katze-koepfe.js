@@ -23,18 +23,18 @@ K.HEADS.lion=(c,D,SH,col,o)=>{const base=col.base,dark=col.dark,shade=col.shade,
  seg(c,tip-.1,1.4,tip-2.2,2.3,.5,line);seg(c,tip-2.2,2.3,tip-6.2,2.7,.5,line);// Maulspalte
  poly(c,[[tip-2,-3.7],[tip-.1,-3],[tip+.45,-1.3],[tip-1,-1.15]],col.nose);// Nasenspiegel
  for(let i=0;i<3;i++)rr(c,tip-2.6-i*1.25,.1+i*.3,.6,.5,'#6a5038');// Tasthaarpunkte
- c.strokeStyle='#f6f0e2c8';c.lineWidth=.3;c.beginPath();c.moveTo(tip-3,.5);c.lineTo(tip-9.5,2.4);c.moveTo(tip-3.6,.9);c.lineTo(tip-9,3.8);c.moveTo(tip-2.6,.2);c.lineTo(tip-9,.6);c.stroke();// Schnurrhaare
+ seg(c,tip-3,.6,tip-9,2.6,.3,'#f1eada');seg(c,tip-3.4,.2,tip-9,.4,.3,'#f1eada');// Schnurrhaare
  poly(c,[[3.2,-2.1],[6.4,-2.6],[6.2,-1.3],[3.8,-1]],mix(base,mz,.5));// heller Fleck unterm Auge
- if(f.blink>.5)rr(c,3.6,-3.3,2.3,.5,dark);
- else{poly(c,[[3.2,-3.1],[4.6,-4.3],[6.2,-3.5],[4.8,-2.5]],'#20160f');rr(c,4,-3.8,1.5,1.1,col.eye);rr(c,4.7,-3.7,.6,.9,'#120c08');}
- seg(c,2.8,-4.7,6,-4.8,.9,mix(base,shade,.65));// Braue
+ // Auge: dunkle Höhle, bernsteinfarbene Iris, Pupille vorn; darüber die Braue als dunkle Zeile
+ rr(c,3.4,-4.2,3,2.2,'#20160f');if(f.blink<.5){rr(c,3.6,-3.9,1.6,1.2,col.eye);rr(c,5,-3.9,1,1.2,'#120c08');}
+ rr(c,2.6,-5.4,4,1,mix(base,shade,.7));
  disk(c,-2,-6.9,2.9*e,base);disk(c,-1.9,-6.6,1.7*e,mix(mz,shade,.55));// nahes Ohr
  seg(c,-3.9,-8.6,-4.6,-5.6,.9*e,mix(dark,'#000000',.2));// schwarzer Rand hinten am Ohr
 };
 
-// Fell des Berberlöwen: graugelb, Mähne dunkel bis schwarz über Schultern, Brust und Bauch, heller ums Gesicht
+// Fell des Berberlöwen (Grundfarben der ersten Fassung vom Löwen aus 1.0, dist/lion.js: skin, shade, dark): graugelb, Mähne dunkel bis schwarz über Schultern, Brust und Bauch, heller ums Gesicht
 K.COATS.barbary=[
- {id:'dark',name:'Dark-maned',w:5,base:'#b39160',light:'#dac49b',shade:'#8f7248',dark:'#5b4429',muzzle:'#efe6d2',nose:'#3b2a22',mane:'#8c6b3d',maneDark:'#33261a',eye:'#c9962e',tuft:'#2a2018'},
+ {id:'dark',name:'Dark-maned',w:5,base:'#b18a50',light:'#d9be8a',shade:'#7c582f',dark:'#49341f',muzzle:'#efe6d2',nose:'#3b2a22',mane:'#8c6b3d',maneDark:'#33261a',eye:'#c9962e',tuft:'#2a2018'},
  {id:'black',name:'Black-maned',w:3,base:'#ab8c60',light:'#d6c19a',shade:'#876c46',dark:'#544027',muzzle:'#ece3cf',nose:'#33241d',mane:'#5d4628',maneDark:'#1d1712',eye:'#c08f2c',tuft:'#1b1511'},
  {id:'tawny',name:'Tawny-maned',w:2,base:'#bd9a62',light:'#e0cba0',shade:'#977949',dark:'#60482b',muzzle:'#f1e9d6',nose:'#40302a',mane:'#aa8950',maneDark:'#5c4426',eye:'#d09c30',tuft:'#33261a'}];
 })();
