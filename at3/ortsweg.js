@@ -36,11 +36,11 @@ function neu(opt){opt=opt||{};var MAXB=opt.max||MAX;   // opt.max nur für Tests
  function bereit(z,a){if(aus||!a||!ARTEN[a.art])return true;if(!z||!welt(z.wg)||a.gen!==gen||a.cx0==null)return true;
   if(liste(schl(a.cx0,a.cy0)))return true;bestellen(a.cx0,a.cy0);return false}
  function anhaengen(a){if(!brauchtKarten(a))return a;var L=liste(schl(a.cx0,a.cy0));if(!L)return a;var o=[];
-  for(var i=0;i<L.length;i++){var e=K.get(L[i]);K.delete(L[i]);K.set(L[i],e);o.push(hang&&e.h0!=null?{x0:e.x0,y0:e.y0,W:e.W,m:e.m,h0:e.h0,R:e.R,ww:e.ww,sk:e.sk}:{x0:e.x0,y0:e.y0,W:e.W,m:e.m})}   // N7a4b1: Höhe und Hangring mit (Wegsuche sieht das eingeebnete Gelände)
+  for(var i=0;i<L.length;i++){var e=K.get(L[i]);K.delete(L[i]);K.set(L[i],e);o.push(hang&&e.h0!=null?{x0:e.x0,y0:e.y0,W:e.W,m:e.m,h0:e.h0,R:e.R,RS:e.RS,ww:e.ww,sk:e.sk}:{x0:e.x0,y0:e.y0,W:e.W,m:e.m})}   // N7a4b1: Höhe und Hangring mit (Wegsuche sieht das eingeebnete Gelände)
   if(o.length){a.orte=o;st.angehaengt++}return a}
  // Antwort des Ortskerns: Karten merken (höchstens MAX Byte), Fensterliste merken
  function aufnehmen(m){if(m.gen!==gen)return;var t=bestellt.get(m.id);bestellt.delete(m.id);st.antworten++;if(t){var d=Date.now()-t;if(d>st.maxAntwortMs)st.maxAntwortMs=d}
-  var L=[];if(m.fehler){st.fehler++}else for(var i=0;i<m.liste.length;i++){var e=m.liste[i];L.push(e.k);if(K.has(e.k)){var a=K.get(e.k);K.delete(e.k);K.set(e.k,a);continue}K.set(e.k,{x0:e.x0,y0:e.y0,W:e.W,m:e.m,h0:e.h0,R:e.R,ww:e.ww,sk:e.sk});bytes+=e.m.length}
+  var L=[];if(m.fehler){st.fehler++}else for(var i=0;i<m.liste.length;i++){var e=m.liste[i];L.push(e.k);if(K.has(e.k)){var a=K.get(e.k);K.delete(e.k);K.set(e.k,a);continue}K.set(e.k,{x0:e.x0,y0:e.y0,W:e.W,m:e.m,h0:e.h0,R:e.R,RS:e.RS,ww:e.ww,sk:e.sk});bytes+=e.m.length}
   F.set(m.id,L);while(F.size>256)F.delete(F.keys().next().value);
   // Grenze: älteste Karten fallen heraus, nie die gerade gelieferten
   var neuS=new Set(L);if(bytes>MAXB){var it=K.keys(),q;while(bytes>MAXB&&!(q=it.next()).done){if(neuS.has(q.value))continue;bytes-=K.get(q.value).m.length;K.delete(q.value)}}

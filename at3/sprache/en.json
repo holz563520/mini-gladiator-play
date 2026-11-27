@@ -405,6 +405,17 @@
   "att.grund.small_arena": "This old game keeps its little arena. Big arenas come with new games only.",
   "att.grund.occupied": "Something is already there: a building, the market, the medicus or the other hut.",
   "att.grund.no_world": "The world is not ready yet.",
-  "att.hinweis": "No arena yet. Open Build \u203a Attractions \u203a Arena and pick a spot; the gods prefer flat ground."
+  "att.hinweis": "No arena yet. Open Build \u203a Attractions \u203a Arena and pick a spot; the gods prefer flat ground.",
+  "stadt.zeile": "{groesse} \u00b7 {leute} souls",
+  "stadt.vorsteher": "Run by: {wer}",
+  "stadt.keinVorsteher": "Run by: whoever shouts loudest.",
+  "stadt.herr": "Lord: {wer}",
+  "stadt.niemand": "Lord: nobody. The locals call it freedom, the tax collectors call it an oversight.",
+  "stadt.witz.2": "Three huts and a grudge. Everyone here is related, which explains a lot.",
+  "stadt.witz.3": "A village: one well, one priest, one opinion.",
+  "stadt.witz.4": "A market town. Everything is for sale, including the scales.",
+  "stadt.witz.5": "A proper city. The walls keep the bandits out and the taxes in.",
+  "stadt.witz.6": "A great city. Ten thousand people, and every one of them wants a better seat at the games.",
+  "stadt.witz.7": "The capital. All roads lead here, mostly carrying the dead."
  }
 }

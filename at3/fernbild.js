@@ -10,6 +10,7 @@
 // Wiederverwendet: Biomfarben, Netzfarben und Linien der Startplatz-Wahl (startplatz.js, G4c), Biomregel und Glättung des Kartenstücks (weltgen.js punkt/neigung/klasse/herrscht,
 // W1a+), Eiskante (W1c), Ortspunkte und Straßenläufe (W1b), Palette AT3-64 mit heller/dunkler (at3-64.js).
 // N7a3c1: Orte in ⅟16–⅟512 als Mini-Plan aus dem echten Ortsplan (miniAn, vom Bildkern gesetzt), sonst Punkt wie bisher.
+// N7b1: Ortssymbole nach Größe statt Quadraten (groesseAn vom Bildkern), Großstädte und Hauptstädte auf dem Globus (globusOrte).
 // N4c1: Reiche (Knopf „Realms“): Grenzlinie in der dunkleren Reichsfarbe, jede achte Landstichprobe in der Reichsfarbe; auf dem Globus je Erdzelle.
 //    Kosten: eine Nachschau je Stichprobe in einer Tafel, nichts je Bildpunkt.
 (function(root){
@@ -108,11 +109,41 @@ function netz(G,A,seed,x0,y0,lod,n,F,px){var pal=F.pal,zn={n:0};
     for(v=1;v<l.x.length;v++)lin(l.x[v-1]+vx,l.y[v-1],l.x[v]+vx,l.y[v],c,r,!!(l.see||l.faehre))}}
   else{var cs=pal[wg&64?F_FAEHRE:(wg>>4&3)>1?F_STRASSE:F_PFAD];for(k=0;k<4;k++)if(wg>>k&1)lin(x*ZF+512,y*ZF+512,x*ZF+512+G.DX[k]*512,y*ZF+512+G.DY[k]*512,cs,1,!!(wg&64))}}
  // Orte als Quadrate mit dunklem Rand (Städte größer); N7a3c1: in ⅟16–⅟512 mit Mini-Plan der Ort selbst, maßstabsgetreu (fehlt er noch: Punkt, Regel 20)
- var MH=MINI&&lod<=MINI_BIS?MINI:null,nr=MH?ortNr(A):null;
+ var MH=MINI&&lod<=MINI_BIS?MINI:null,nr=MH||GROE?ortNr(A):null,SL=GROE?[]:null;
  for(y=ya;y<=ye;y++)for(x=za;x<=ze;x++){var zi=y*GW+um(x),a=A.ort[zi]&15;if(!a)continue;
-  if(MH){var kk=nr.get(zi),mp=kk!=null?MH.hole(kk):null;if(mp){miniMalen(mp,x0,y0,n,px,pal);continue}}
-  var pp=G.ortPunkt(seed,A,um(x),y),gross=a===2||a===4,gr=lod<=6?(gross?7:5):lod<=9?(gross?5:3):(gross?3:2);
-  P2(pp[0]+(x-um(x))*ZF,pp[1],p0);if(gr>2)pkt(p0[0]-gr/2-1,p0[1]-gr/2-1,pal[F.dunkel],gr+2);pkt(p0[0]-gr/2,p0[1]-gr/2,pal[OFARBE[a]],gr)}}
+  var kk=nr?nr.get(zi):null;
+  if(MH){var mp=kk!=null?MH.hole(kk):null;if(mp){miniMalen(mp,x0,y0,n,px,pal);continue}}
+  var pp=G.ortPunkt(seed,A,um(x),y);
+  if(SL&&kk!=null){P2(pp[0]+(x-um(x))*ZF,pp[1],p0);SL.push(Math.round(p0[0]),Math.round(p0[1]),GROE(kk));continue}   // N7b1: Symbol nach Größe, unten gemalt
+  var gross=a===2||a===4,gr=lod<=6?(gross?7:5):lod<=9?(gross?5:3):(gross?3:2);
+  P2(pp[0]+(x-um(x))*ZF,pp[1],p0);if(gr>2)pkt(p0[0]-gr/2-1,p0[1]-gr/2-1,pal[F.dunkel],gr+2);pkt(p0[0]-gr/2,p0[1]-gr/2,pal[OFARBE[a]],gr)}
+ if(SL&&SL.length)symbole(SL,px,F,true)}
+
+// N7b1 (26.11.2026): Ortssymbole nach Größe (orte.js groesse, G2 Weiler … G7 Hauptstadt) in den Fernstufen statt Quadraten: ab ⅟1024 immer, in ⅟16–⅟512 dort,
+// wo der Mini-Plan (N7a3c1) noch fehlt. Auf dem Globus nur Großstadt (G6) und Hauptstadt (G7). Feste kleine Bildchen (höchstens 15 × 14 Bildpunkte), nur Palettenfarben
+// (AT3-64), keine Figuren (Regel 22). Der Bildkern setzt GROE(k) → Größe mit groesseAn(); ohne bleibt alles wie vorher (Notausschalter ?n7b1=0 im Bildkern).
+// Kosten: eine Nachschau je Ort im Bild (Orte sind dünn: im Mittel rund 25 je Bild in ⅟4096) und höchstens 210 Bildpunkte je Symbol, nichts je Bildpunkt des Bilds.
+var GROE=null;
+function groesseAn(f){GROE=typeof f==='function'?f:null}
+var SYM_ROH={
+ 2:['..k..','.krk.','krrrk','khhhk','kkkkk'],
+ 3:['..k...k..','.krk.krk.','krrrkrrrk','khhhkhhhk','khkhkhkhk','kkkkkkkkk'],
+ 4:['....k....','...krk...','.k.krk.k.','krkrrrkrk','krkhhhkrk','khkhhhkhk','khkhkhkhk','kkkkkkkkk'],
+ 5:['...k...k...','..krk.krk..','.krrrkrrrk.','kkkkkkkkkkk','kwkwkwkwkwk','kwwwwwwwwwk','kswwkkkwwsk','kswkdddkwsk','kkkkkkkkkkk'],
+ 6:['......k......','.k...krk...k.','krk.krrrk.krk','krk.khhhk.krk','kwkkkkkkkkkwk','kwkwkwkwkwkwk','kwwwwwwwwwwwk','kswwwkkkwwwsk','kswwkdddkwwsk','kswwkdddkwwsk','kkkkkkkkkkkkk'],
+ 7:['.......b.......','.......bb......','.......k.......','......kgk......','.k...kgggk...k.','kbk.kgggggk.kbk','kwk.khhhhhk.kwk','kwkkkkkkkkkkkwk','kwkwkwkwkwkwkwk','kwwwwwwwwwwwwwk','kswwwwkkkwwwwsk','kswwwkdddkwwwsk','kswwwkdddkwwwsk','kkkkkkkkkkkkkkk'],
+ 16:['.k.','khk','.k.'],                          // Globus: Großstadt
+ 17:['..k..','.kgk.','kgggk','.kgk.','..k..']};   // Globus: Hauptstadt
+var SYM_FARBE={k:1,r:36,h:47,w:5,s:4,d:0,g:53,b:36};   // Palettennummern AT3-64 (Rattenpergament)
+var SYM=null;
+function symBau(){if(SYM)return SYM;SYM={};for(var g in SYM_ROH){var R=SYM_ROH[g],h=R.length,w=R[0].length,m=new Int8Array(w*h).fill(-1);
+  for(var y=0;y<h;y++)for(var x=0;x<w;x++){var c=R[y][x];if(c!=='.')m[y*w+x]=SYM_FARBE[c]}SYM[g]={w:w,h:h,m:m}}return SYM}
+// L = [x, y, g, …] Mitte des Symbols in Bildpunkten; raute: nur Bildpunkte der eigenen Raute (Fernbild), sonst ganzes Bild (Globus: w, h in L.w/L.h)
+function symbole(L,px,F,raute,bw,bh){var S=symBau(),pal=F.pal,W=raute?IW:bw,H=raute?IH:bh,o=[],i;
+ for(i=0;i<L.length;i+=3)o.push(i);o.sort(function(a,b){return L[a+2]-L[b+2]||L[a+1]-L[b+1]});   // kleine zuerst, große obenauf
+ for(var q=0;q<o.length;q++){i=o[q];var s=S[L[i+2]];if(!s)continue;var sx=L[i]-(s.w>>1),sy=L[i+1]-(s.h>>1);
+  for(var y=0;y<s.h;y++){var Y=sy+y;if(Y<0||Y>=H)continue;for(var x=0;x<s.w;x++){var c=s.m[y*s.w+x];if(c<0)continue;var X=sx+x;if(X<0||X>=W)continue;var p=Y*W+X;
+   if(raute&&TAB[p]<0)continue;px[p]=pal[c]}}}}
 
 // N7a3c1 (Thomas 25.11.2026): Mini-Pläne der Orte (ortsbild.js mini) in den Fernstufen ⅟16–⅟512 (lod 4 bis MINI_BIS). Der Bildkern setzt MINI = {hole(k) → {x0, y0, W, m}
 // oder null (dann fragt er den Ortskern), lut[256] → Farbnummer der Palette}. Jeder Bildpunkt der Ortsraute nimmt das Planfeld unter seiner Mitte (ab ⅟128 fallen
@@ -129,13 +160,22 @@ function miniMalen(mp,x0,y0,n,px,pal){var W=mp.W,m=mp.m,lut=MINI.lut,dx=mp.x0-x0
 
 // ── Globus (Norden oben) ──
 // tex: Erdbild 600 × 300 (Farben), texD: dieselbe Erde dunkler (Rand der Kugel). W, H Bildschirm, R Kugelhalbmesser in Bildpunkten, lon0/lat0 Mitte (Bogenmaß), s Verkleinerung.
-function globus(tex,texD,W,H,R,lon0,lat0,s,rand){var w=Math.ceil(W/s),h=Math.ceil(H/s),r=R/s,cx=W/2/s,cy=H/2/s,px=new Uint32Array(w*h),cl=Math.cos(lat0),sl=Math.sin(lat0),
+function globus(tex,texD,W,H,R,lon0,lat0,s,rand,ORTE,F){var w=Math.ceil(W/s),h=Math.ceil(H/s),r=R/s,cx=W/2/s,cy=H/2/s,px=new Uint32Array(w*h),cl=Math.cos(lat0),sl=Math.sin(lat0),
   ZP=2*Math.PI,ra=(1+1.5/r)*(1+1.5/r);
  var y0=Math.max(0,Math.floor(cy-r-2)),y1=Math.min(h,Math.ceil(cy+r+2)),x0=Math.max(0,Math.floor(cx-r-2)),x1=Math.min(w,Math.ceil(cx+r+2));
  for(var py=y0;py<y1;py++){var y=-(py+.5-cy)/r;for(var qx=x0;qx<x1;qx++){var x=(qx+.5-cx)/r,r2=x*x+y*y;if(r2>=1){if(r2<ra)px[py*w+qx]=rand;continue}
   var z=Math.sqrt(1-r2),la=Math.asin(y*cl+z*sl),lo=lon0+Math.atan2(x,z*cl-y*sl),col=Math.floor(lo/ZP*GW)%GW,row=Math.floor((.5-la/Math.PI)*GH);
   if(col<0)col+=GW;if(row<0)row=0;else if(row>=GH)row=GH-1;var t=row*GW+col;px[py*w+qx]=z<.28?texD[t]:tex[t]}}
+ if(ORTE&&F&&ORTE.length){var SL=[],dl;   // N7b1: Großstädte und Hauptstädte auf der Vorderseite der Kugel (ORTE = [Länge, Breite, Größe, …] im Bogenmaß)
+  for(var k=0;k<ORTE.length;k+=3){var la=ORTE[k+1],cp=Math.cos(la);dl=ORTE[k]-lon0;var gx=cp*Math.sin(dl),gy=cl*Math.sin(la)-sl*cp*Math.cos(dl),gz=sl*Math.sin(la)+cl*cp*Math.cos(dl);
+   if(gz<.3)continue;SL.push(Math.round(cx+gx*r-.5),Math.round(cy-gy*r-.5),ORTE[k+2]+10)}
+  if(SL.length)symbole(SL,px,F,false,w,h)}
  return{w:w,h:h,px:px}}
+// N7b1: Liste der Globus-Orte (Großstadt G6, Hauptstadt G7) aus dem Erdraster, einmal je Welt: [Länge, Breite, Größe, …]
+function globusOrte(G,A,seed,groe){var L=[],O=A.orte,n=A.kopf?A.kopf[0]:O.length;
+ for(var k=0;k<n&&k<O.length;k++){var g=groe(k);if(g<6)continue;var z=O[k]&0xffffff,pp=G.ortPunkt(seed,A,z%GW,(z/GW)|0);
+  L.push((pp[0]+.5)/WF*2*Math.PI,(.5-(pp[1]+.5)/HF)*Math.PI,g)}
+ return L}
 // Bildschirmpunkt auf dem Globus → Feld der Welt (oder null außerhalb der Kugel). x, y relativ zur Kugelmitte in Bildpunkten.
 function aufGlobus(x,y,R,lon0,lat0){x/=R;y=-y/R;var r2=x*x+y*y;if(r2>=1)return null;var z=Math.sqrt(1-r2),cl=Math.cos(lat0),sl=Math.sin(lat0),
   la=Math.asin(y*cl+z*sl),lo=lon0+Math.atan2(x,z*cl-y*sl);
@@ -147,6 +187,6 @@ function dunkler(tex,F){var inv=new Map(),d=new Uint32Array(tex.length);for(var 
 // N4c1: Reiche auf dem Erdbild des Globus (600 × 300 Farben): Grenze dunkel, jede vierte Zelle in der Reichsfarbe
 function reicheErde(tex,RE,F){for(var i=0;i<GW*GH;i++){var r=RE.z[i];if(!r)continue;var x=i%GW,y=(i/GW)|0,e=RE.z[x+1<GW?i+1:i+1-GW],s=y+1<GH?RE.z[i+GW]:0,rc=RE.f[r-1];
   if((e&&e!==r)||(s&&s!==r))tex[i]=F.pal[F.du[rc]];else if(!(x&1)&&!(y&1))tex[i]=F.pal[rc]}return tex}
-var FB={miniAn:miniAn,MINI_BIS:MINI_BIS,ortNr:ortNr,reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
+var FB={groesseAn:groesseAn,globusOrte:globusOrte,symbole:symbole,SYM_ROH:SYM_ROH,miniAn:miniAn,MINI_BIS:MINI_BIS,ortNr:ortNr,reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
 if(typeof module!=='undefined'&&module.exports)module.exports=FB;else root.AT3FERN=FB;
 })(typeof self!=='undefined'?self:this);

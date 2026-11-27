@@ -17,11 +17,12 @@ var WX=64*9600;
 // zählt der echte Abstand zur Planfläche (abgerundete Ecken), davon geht ein gewellter Saum ab, der noch flach bleibt (R/8 … R/4 Felder, aus dem Ortspunkt,
 // Stützwerte alle 16 Felder rund um die Fläche, weich verbunden), danach Hang höchstens 1 Stufe je Feld wie vorher, dem Gelände folgend (Klemmen an die Welt).
 // Nur ganze Zahlen und Math.sqrt (überall gleich). Gleiche Rechnung in ortsflaeche.js und ortssperre.js (randE). Notausschalter ?n7a5d=0.
+var N7A7=!(typeof self!=='undefined'&&self.location&&/[?&]n7a7=0/.test(self.location.search||''));   // N7a7
 var N7A5D=!(typeof self!=='undefined'&&self.location&&/[?&]n7a5d=0/.test(self.location.search||''));
 function randHs(x,y,a){var h=Math.imul(x^0x5bd1e995,0x27d4eb2d)^Math.imul(y+0x165667b1,0x9e3779b1)^Math.imul(a+1,0x85ebca6b);h^=h>>>15;h=Math.imul(h,0xc2b2ae35);h^=h>>>13;return h&255}
-function randE(x0,y0,i,j,R,W){var dx=i<R?R-i:i>=R+W?i-R-W+1:0,dy=j<R?R-j:j>=R+W?j-R-W+1:0;if(!N7A5D)return(dx>dy?dx:dy)*64;
+function randE(x0,y0,i,j,R,W,S){if(S==null)S=R;var dx=i<R?R-i:i>=R+W?i-R-W+1:0,dy=j<R?R-j:j>=R+W?j-R-W+1:0;if(!N7A5D)return(dx>dy?dx:dy)*64;
  var W1=W-1,px=i-R,py=j-R;px=px<0?0:px>W1?W1:px;py=py<0?0:py>W1?W1:py;var t=py===0?px:px===W1?W1+py:py===W1?3*W1-px:4*W1-py,P=4*W1,n=P>>4;if(n<4)n=4;
- var u=Math.floor(t*n*256/P),a=(u>>8)%n,f=u&255,b=(a+1)%n;x0=((x0%WX)+WX)%WX;var v=(randHs(x0,y0,a)*(256-f)+randHs(x0,y0,b)*f)>>8,w=R*8+((v*R*8)>>8),
+ var u=Math.floor(t*n*256/P),a=(u>>8)%n,f=u&255,b=(a+1)%n;x0=((x0%WX)+WX)%WX;var v=(randHs(x0,y0,a)*(256-f)+randHs(x0,y0,b)*f)>>8,w=S*8+((v*S*8)>>8),
  e=Math.floor(Math.sqrt(dx*dx+dy*dy)*64)-w;return e<0?0:e}
 // N7a5e2 (26.11.2026): Natur der Welt auf freien Ortsfeldern. Weltboden-Felder (N7a5e1, gleiche Rechnung wie ortsflaeche.js weltBoden, hier aus dem Plan)
 // ohne Ding des Orts (Lagerplatz u. Ä.) bekommen Bäume, Büsche und Fels aus natur.js wie draußen; die Natur-Dinge des Plans (Bäume, Büsche, Blumen,
@@ -94,7 +95,7 @@ function lupe(L){if(!L||!L.length)return null;
 // N7a5a2: Karten mit ww (Ort mit Weltwasser) lassen Wasser in Ruhe, sk = Senke je Planfeld (Böschung zum tieferen Wasser), genau wie ortsflaeche.js flachen().
 function hoch(L,X,Y,h,b){for(var n=0;n<L.length;n++){var o=L[n];if(o.h0==null)continue;var R=o.R,N=o.W+2*R,i=X-(o.x0-R);i%=WX;if(i<0)i+=WX;var j=Y-(o.y0-R);
   if(i>=N||j<0||j>=N)continue;var d=Math.max(i<R?R-i:i>=R+o.W?i-R-o.W+1:0,j<R?R-j:j>=R+o.W?j-R-o.W+1:0);
-  if(d===0){if(!(o.ww&&(b<2||b===10||b===11))){h=o.sk?o.h0-(o.sk.charCodeAt((j-R)*o.W+i-R)-48)*64:o.h0;if(h<0)h=0}continue}if(b<2||b===10||b===11)continue;var e=randE(o.x0,o.y0,i,j,R,o.W),lo=o.h0-e,hi=o.h0+e;h=h<lo?lo:h>hi?hi:h;if(h<0)h=0}
+  if(d===0){if(!(o.ww&&(b<2||b===10||b===11))){h=o.sk?o.h0-(o.sk.charCodeAt((j-R)*o.W+i-R)-48)*64:o.h0;if(h<0)h=0}continue}if(b<2||b===10||b===11)continue;var e=randE(o.x0,o.y0,i,j,R,o.W,o.RS),hb=o.h0;if(o.sk&&N7A7){var pi=i-R,pj=j-R,W=o.W;pi=pi<0?0:pi>=W?W-1:pi;pj=pj<0?0:pj>=W?W-1:pj;hb-=(o.sk.charCodeAt(pj*W+pi)-48)*64;if(hb<0)hb=0}var lo=hb-e,hi=hb+e;h=h<lo?lo:h>hi?hi:h;if(h<0)h=0}   // N7a7: wie ortsflaeche.js flachen
  return h}
 // Tempo × 100 einer Feldklasse für Profil p (0 zu Fuß, 1 Karren)
 function tempo(v,p){return TEMPO[v&15][p]}

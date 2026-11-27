@@ -88,6 +88,36 @@ function miniDa(k,o){if(!o||!o.m||!o.W)return;MINIF.delete(k);var e=MINI.get(k);
  if(o.ms!=null){MINIST.n++;MINIST.ms=o.ms;if(o.ms>MINIST.maxMs)MINIST.maxMs=o.ms}
  if(e)return;MININ.push([o.x0,o.y0,o.W]);if(!MINIT)MINIT=setTimeout(miniMelden,BUENDEL)}
 function miniMelden(){MINIT=0;if(!MININ.length)return;var L=MININ;MININ=[];self.postMessage({art:'fernNeu',gen:gen,flaechen:L,minis:MINI.size,miniB:MINIB,miniMs:MINIST.maxMs,miniRaus:MINIST.raus})}
+// N7b1 (26.11.2026): Ortssymbole nach Größe in den Fernstufen und auf dem Globus. orte.js (Größe G2–G7) wird beim ersten Fernbild geladen; ohne orte.js oder
+// mit ?n7b1=0 bleiben die Quadrate wie vorher. Größen einmal je Welt in einer Tafel (4.450 Orte ≈ 4 KB), Globus-Liste einmal je Welt.
+var N7B1=!/[?&]n7b1=0/.test(self.location.search), GRT=null, GORTE=null;
+function groeAn(){if(!N7B1||!A){FB.groesseAn(null);return false}
+ if(!OR&&OR!==false){try{importScripts('orte.js'+self.location.search);OR=self.AT3ORTE.AUS?false:self.AT3ORTE}catch(x){OR=false}}
+ if(!OR){FB.groesseAn(null);return false}
+ if(!GRT){var O=A.orte,n=Math.min(O.length,A.kopf?A.kopf[0]:O.length);GRT=new Uint8Array(O.length);for(var k=0;k<n;k++)GRT[k]=OR.groesse(seed,A,k)}
+ FB.groesseAn(function(k){return GRT[k]||2});return true}
+function globusOrte(){if(GORTE)return GORTE;if(!groeAn())return null;return GORTE=FB.globusOrte(G,A,seed,function(k){return GRT[k]||2})}
+// N7b2 (27.11.2026): Stadtkarte beim Antippen. stadtInfo(k) = Rohdaten des Orts (orte.js roh) mit Nummer, Zellart (1 Dorf, 2 Stadt, 3 Hafendorf, 4 Hafenstadt),
+// Ortspunkt und der Kette „Answers to“ seiner Herrschaft (herrschaften.js); stadtSuche(d) = Ort unter dem Finger in den Fernstufen und auf dem Globus:
+// alle Orte einmal durchgehen (rund 4.450, unter 2 ms), Abstand in Bildpunkten wie gemalt (Raute bzw. Kugel), Treffer bis d.T Bildpunkte, in den Stufen mit
+// Mini-Plan (⅟16–⅟512) auch innerhalb der halben Ortsbreite. Nur beim Antippen, nichts je Bild. Notausschalter ?n7b2=0.
+var N7B2=!/[?&]n7b2=0/.test(self.location.search);
+function onLaden(){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}return ON}
+function orLaden(){if(!OR&&OR!==false){try{importScripts('orte.js'+self.location.search);OR=self.AT3ORTE.AUS?false:self.AT3ORTE}catch(x){OR=false}}return OR||null}
+function stadtInfo(k){if(!orLaden()||!A||!A.orte||k==null||k<0||k>=A.orte.length)return null;onLaden();var c=A.orte[k],z=c&0xffffff,r=OR.roh(seed,A,k,ON),pp=G.ortPunkt(seed,A,z%G.GW,(z/G.GW)|0),u=A.hs&&A.hs.ort?A.hs.ort[k]:0;
+ r.k=k;r.art=A.ort?A.ort[z]&15:0;r.punkt=[pp[0],pp[1]];r.kette=u&&HR?HR.info(A.hs,A.vk,A.orte,u-1,seed,ON):null;
+ if(AP==null){try{importScripts('aussenposten.js'+self.location.search);AP=self.AT3POSTEN.AUS?false:self.AT3POSTEN}catch(x){AP=false}}
+ if(AP){r.umg=AP.umgebung(seed,A,k);r.fremd=AP.fremde?AP.fremde(seed,A,k,G.ortPunkt,OR):null}return r}
+function stadtSuche(d){if(!N7B2||!groeAn())return null;var O=A.orte,n=Math.min(O.length,A.kopf?A.kopf[0]:O.length),best=-1,bd=1e18,T2=d.T*d.T,glob=d.glob,k;
+ if(!glob&&AP==null){try{importScripts('aussenposten.js'+self.location.search);AP=self.AT3POSTEN.AUS?false:self.AT3POSTEN}catch(x){AP=false}}
+ var cl=glob?Math.cos(glob.lat):0,sl=glob?Math.sin(glob.lat):0,WF=G.WF,HF=G.GH*G.ZF;
+ for(k=0;k<n;k++){var g=GRT[k]||2;if(glob&&g<6)continue;var z=O[k]&0xffffff,pp=G.ortPunkt(seed,A,z%G.GW,(z/G.GW)|0),q;
+  if(glob){var la=(.5-(pp[1]+.5)/HF)*Math.PI,cp=Math.cos(la),dl=(pp[0]+.5)/WF*2*Math.PI-glob.lon,gx=cp*Math.sin(dl),gy=cl*Math.sin(la)-sl*cp*Math.cos(dl),gz=sl*Math.sin(la)+cl*cp*Math.cos(dl);
+   if(gz<.3)continue;var ax=(gx-d.x)*glob.R,ay=(gy-d.y)*glob.R;q=ax*ax+ay*ay;if(q>T2)continue}
+  else{var ex=pp[0]-d.x,ey=pp[1]-d.y;if(ex>WF/2)ex-=WF;else if(ex<-WF/2)ex+=WF;var sx=(ex-ey)*32/d.Z,sy=(ex+ey)*16/d.Z;q=sx*sx+sy*sy;
+   if(q>T2){if(!d.mini||!AP||!AP.halb)continue;var hb=AP.halb(g);if(Math.abs(ex)>hb||Math.abs(ey)>hb)continue;q=T2+(ex*ex+ey*ey)}}
+  if(q<bd){bd=q;best=k}}
+ return best<0?null:stadtInfo(best)}
 function miniAn(){if(!N7A3C1||!A||!ofl()){FB.miniAn(null);return}var lut=miniLut();FB.miniAn(lut?{hole:miniHole,lut:lut}:null)}
 // N7a3c2 (Thomas 25.11.2026): Ortsnamen für die Fernstufen. Frage „namen“ mit Ausschnitt (Weltfelder) und Stufe: alle Orte in den Erdzellen des Ausschnitts, die in
 // dieser Stufe einen Namen tragen (Staffel NAMEN_G: ⅟16 Weiler, bis ⅟32 Dörfer, bis ⅟128 Städte/Marktflecken, bis ⅟2048 Haupt-/Großstädte, Thomas 25.11.2026), in ⅟16–⅟32 mit Zusatz
@@ -143,8 +173,9 @@ function dunkelste(p){var b=0,bl=1e9;for(var i=0;i<p.length;i++){var c=p[i],l=(c
 // G4c: Fragen der Startplatz-Wahl. Bilder gehen als Zahlenfeld zurück (klein, einmalig), der Hauptkern malt sie nur.
 function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.fehlt=true;self.postMessage(m);return}var t=performance.now();
  if(d.frage==='fp'){fp(d,m,t);return}
- if(d.frage==='namen'){namen(d,m,t);return}      // N7a3c2: Ortsnamen im Ausschnitt
- if(d.frage==='globus'){if(!TEX){TEX=SP.erdBild(A,F,ueb(),FB.UFARBE);if(reiche())FB.reicheErde(TEX,RE,F);TEXD=FB.dunkler(TEX,F)}var gl=FB.globus(TEX,TEXD,d.W,d.H,d.R,d.lon,d.lat,d.s,F.pal[F.dunkel]);m.w=gl.w;m.h=gl.h;m.buf=gl.px;tr.push(gl.px.buffer)}
+ if(d.frage==='namen'){namen(d,m,t);return}
+ if(d.frage==='stadt'){m.ort=stadtSuche(d);m.us=(performance.now()-t)*1000;self.postMessage(m);return}      // N7b2: Ort unter dem Finger (Fernstufen, Globus)      // N7a3c2: Ortsnamen im Ausschnitt
+ if(d.frage==='globus'){if(!TEX){TEX=SP.erdBild(A,F,ueb(),FB.UFARBE);if(reiche())FB.reicheErde(TEX,RE,F);TEXD=FB.dunkler(TEX,F)}var gl=FB.globus(TEX,TEXD,d.W,d.H,d.R,d.lon,d.lat,d.s,F.pal[F.dunkel],globusOrte(),F);m.w=gl.w;m.h=gl.h;m.buf=gl.px;tr.push(gl.px.buffer)}
  else if(d.frage==='erdbild'){var e=SP.erdBild(A,F);m.w=SP.GW;m.h=SP.GH;m.buf=e;tr.push(e.buffer)}
  else if(d.frage==='region'){var rx=SP.eckeX(d.zx),ry=SP.eckeY(d.zy),r=SP.regionBild(G,seed,A,rx,ry,F);m.rx=rx;m.ry=ry;m.w=m.h=SP.RP;m.rs=SP.RS;m.buf=r;tr.push(r.buffer)}
  else if(d.frage==='platz'||d.frage==='zufall'){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}
@@ -192,7 +223,7 @@ function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  return land<0?{x:BB.WX>>1,y:BB.WY>>1,ort:0}:{x:(land%G.GW)*G.ZF+(G.ZF>>1),y:((land/G.GW)|0)*G.ZF+(G.ZF>>1),ort:0}}
 self.onmessage=function(e){var d=e.data;
  if(d.art==='init'){F={pal:d.pal,du:d.du,he:d.he,dunkel:dunkelste(d.pal)};self.postMessage({art:'arten',liste:NAT.ARTEN,bau:BAUB.ARTEN})}
- else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;miniLeeren();NAMK.clear();WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
+ else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;GRT=GORTE=null;miniLeeren();NAMK.clear();WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
  else if(d.art==='blick'){kx=d.kx;ky=d.ky;st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});ortsBedarf();weiter()}
  else if(d.art==='ortskern'){OKP=d.port;OKP.onmessage=function(e){vomOrtskern(e.data)}}
  else if(d.art==='ortskernWeg'){OKP=null;if(OFL)OFL.vergessenAlle();ortsBedarf()}   // Ortskern ausgefallen: ab jetzt eingebettet   // N7a2a: eigener Hintergrundkern für die Ortspläne
@@ -200,7 +231,7 @@ self.onmessage=function(e){var d=e.data;
  else if(d.art==='bau'){if(d.leer)BAU.clear();(d.stuecke||[]).forEach(function(e){if(e[1])BAU.set(e[0],e[1]);else BAU.delete(e[0])})
   if(OFL&&OFL.orte.size){var neuS=[];(d.stuecke||[]).forEach(function(e){var k=e[0];if(bauHat(k)&&OFL.bauGeaendert(k)){var b=st.get(k);if(b){st.delete(k);if(lager.length<8)lager.push(b)}   // N7a2a: Park gewinnt
      var cx=(k/8192)|0,cy=k%8192;neuS.push(k,um(cx-1)*8192+cy);if(cy>0)neuS.push(cx*8192+cy-1)}});if(neuS.length){self.postMessage({art:'ortNeu',gen:gen,stuecke:neuS});weiter()}}}           // G5b: Bau-Kartenstücke (dünn)
- else if(d.art==='bild'){var t=performance.now();if(d.lod>=BB.STUFEN&&d.lod<=FB.MINI_BIS&&A&&F)miniAn();var r=d.gen!==gen||!F?null:d.lod>=BB.STUFEN?(A?FB.kachel(G,A,seed,d.x0,d.y0,d.lod,F,d.lod>=FB.U_AB?ueb():null,reiche()):null):BB.bild(hole,d.x0,d.y0,d.lod,F,NBILD?{N:NAT,seed:seed,BILD:NBILD}:null,BA(d.offen),OFL?OFL.fuerBild(d.x0,d.y0,BB.TEIL<<d.lod,d.lod,F):null),m={art:'bild',gen:d.gen,nv:d.nv,key:d.key,x0:d.x0,y0:d.y0,lod:d.lod};
+ else if(d.art==='bild'){var t=performance.now();if(d.lod>=BB.STUFEN&&d.lod<=FB.MINI_BIS&&A&&F)miniAn();if(d.lod>=BB.STUFEN&&A&&F)groeAn();var r=d.gen!==gen||!F?null:d.lod>=BB.STUFEN?(A?FB.kachel(G,A,seed,d.x0,d.y0,d.lod,F,d.lod>=FB.U_AB?ueb():null,reiche()):null):BB.bild(hole,d.x0,d.y0,d.lod,F,NBILD?{N:NAT,seed:seed,BILD:NBILD}:null,BA(d.offen),OFL?OFL.fuerBild(d.x0,d.y0,BB.TEIL<<d.lod,d.lod,F):null),m={art:'bild',gen:d.gen,nv:d.nv,key:d.key,x0:d.x0,y0:d.y0,lod:d.lod};
   if(!r){m.fehlt=true;self.postMessage(m);return}
   m.w=r.w;m.h=r.h;m.ox=r.ox;m.oy=r.oy;m.natur=r.natur;m.bau=r.bau||0;m.ort=r.ort||0;m.ortBoden=r.ortBoden||0;m.us=(performance.now()-t)*1000;nachladen();haeuserAn();
   if(BMP)createImageBitmap(new ImageData(new Uint8ClampedArray(r.px.buffer),r.w,r.h)).then(function(b){m.bmp=b;self.postMessage(m,[b])},function(){BMP=false;m.buf=r.px;self.postMessage(m,[r.px.buffer])});
@@ -209,6 +240,7 @@ self.onmessage=function(e){var d=e.data;
   if(BAU.size&&BBILD&&A){var bt=BAUB.treffer(holeBau,hole,BB.sicht,d.px,d.py,BBILD,d.offen&&d.offen.length?new Set(d.offen):null,fd&&fd.xu,fd&&fd.y);   // G5b: Bauteil vor oder hinter der Natur?
    if(bt&&(!ob||bt.tief>=(ob.x+ob.y)*4+1))ob=bt;var bf=fd&&fd.x!=null?BAUB.feld(holeBau,fd.x,fd.y):null;if(bf){fd.bau=bf}else if(bt&&bt.raum&&fd)fd.bau=BAUB.feld(holeBau,bt.x,bt.y)||{raum:bt.raum,art:0,zustand:bt.zustand}}
   if(BAU.size&&fd&&fd.x!=null&&!fd.bau){var ga=holeBau(fd.x>>6,fd.y>>6),gv=ga&&ga.length>32768?ga[32768+(((fd.y&63)<<6)|(fd.x&63))]:0;if(gv)fd.bweg=[gv&7,(gv>>4)&3]}   // G6a: gebauter Weg
+  if(N7B2&&fd&&fd.x!=null&&!fd.bau&&OFL&&OFL.ortBei){var sk=OFL.ortBei(fd.x,fd.y);if(sk!=null)fd.stadt=stadtInfo(sk)}   // N7b2: Feld in einem Ort → Stadtkarte
   if(fd&&ob)fd.obj=ob;else if(ob)fd={obj:ob};
   self.postMessage({art:'feld',id:d.id,feld:fd})}
  else if(d.art==='wahl')wahl(d);

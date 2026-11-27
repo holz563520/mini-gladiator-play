@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='968894bd', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='e3a96ec6', T_SKRIPT=performance.now(), S=window.AT3_64;
 if(/[?&]mess=1\b/.test(location.search)){(function(){var s=document.createElement('script');s.src='messfeld.js?v='+V;document.head.appendChild(s)})()}   // N7a2b3: Messfeld der Weltkarte nur mit ?mess=1 (messfeld.js)
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
@@ -129,10 +129,24 @@ function strasseHtml(s,L){if(!s)return '';window.AT3SPIEL.strasse={rang:s.rang,a
  var h='<br><b>'+esc(t('strasse.zeile',{rang:t('strasse.rang.'+s.rang),a:s.an,b:s.bn,bau:t('strasse.bau.'+s.bau)}))+'</b>';
  if(s.halt)h+='<br><span class="leise">'+esc(t('strasse.halt.'+s.halt))+'</span>';
  var H=window.AT3HERRSCHAFT;if(H&&L&&L.length&&s.einheit)h+='<br><span class="leise">'+esc(t('strasse.besitz',{herr:H.name(L[0],t)}))+'</span>';return h}
-function ortTipp(r){ORT_HTML='';if(!r)return;var tip=r;
- (ORL||(ORL=new Promise(function(ok,no){if(window.AT3ORTE)return ok();var s=document.createElement('script');s.src='orte.js?v='+V;s.onload=ok;s.onerror=function(){ORL=null;no(new Error('orte.js'))};document.head.appendChild(s)})
+// N7b2: Lader für Ortsdaten und Herrscher (vorher in ortTipp und reichTipp, jetzt auch für die Stadtkarte; je einmal je Sitzung)
+function ortLaden(){return ORL||(ORL=new Promise(function(ok,no){if(window.AT3ORTE)return ok();var s=document.createElement('script');s.src='orte.js?v='+V;s.onload=ok;s.onerror=function(){ORL=null;no(new Error('orte.js'))};document.head.appendChild(s)})
   .then(function(){return window.AT3POSTEN?null:new Promise(function(ok){var s=document.createElement('script');s.src='aussenposten.js?v='+V;s.onload=s.onerror=ok;document.head.appendChild(s)})})   // N5c: Außenposten (fehlt die Datei, bleibt die Ortskarte wie N5b)
-  .then(function(){return Promise.all(['daten/gebaeude.json','daten/rezepte.json','daten/kulturen.json'].map(holeJson))}).then(function(d){return window.AT3ORTE.daten(d[0],d[1],d[2])}).catch(function(e){ORL=null;throw e})))
+  .then(function(){return Promise.all(['daten/gebaeude.json','daten/rezepte.json','daten/kulturen.json'].map(holeJson))}).then(function(d){return window.AT3ORTE.daten(d[0],d[1],d[2])}).catch(function(e){ORL=null;throw e}))}
+function hrLaden(){return HRL||(HRL=Promise.all([['herrschaften.js','AT3HERRSCHAFT'],['herrscher.js','AT3HERRSCHER']].map(function(q){return new Promise(function(ok,no){if(window[q[1]])return ok();var s=document.createElement('script');s.src=q[0]+'?v='+V;s.onload=ok;s.onerror=function(){HRL=null;no(new Error(q[0]))};document.head.appendChild(s)})})))}
+// N7b2 (27.11.2026): einfache Stadtkarte beim Antippen eines Orts (Fernstufen, Globus, Ortsfläche in der Kartenansicht): Name, Größe mit Einwohnern, Vorsteher
+// und Herr (Herrscher der Herrschaft, zu der der Ort gehört; herrscher.js aus Seed und Nummer). Rechnung beim Antippen im Hauptkern, wenige Mikrosekunden.
+var STADT_LETZT=null;
+function stadtKarte(r){if(!r)return;STADT_LETZT=r;var tip=r;Promise.all([ortLaden(),hrLaden().catch(function(){return null})]).then(function(x){if(tip!==STADT_LETZT)return;
+ var D=x[0],O=window.AT3ORTE,P=window.AT3HERRSCHER,b=O.bilanz(WSEED,r,D),name=O.voll(b,t),gr=O.groesseName(r.g,t),e=r.kette&&r.kette[0],vor=null,herr=null;
+ if(P&&!P.AUS&&e){vor=P.vorsteher(WSEED,r.k,r.art||1,e);herr=P.herrscher(WSEED,e)}
+ var vw=vor?P.titelName(vor,t):'',hw=herr?P.titelName(herr,t):'',witz=t('stadt.witz.'+r.g);
+ window.AT3SPIEL.stadtKarte={k:r.k,name:name,g:r.g,groesse:gr,einwohner:b.einwohner,vorsteher:vw,herr:hw};window.AT3SPIEL.angetippt='stadt:'+r.k;
+ $('karte').innerHTML='<b>'+esc(name)+'</b><br>'+esc(t('stadt.zeile',{groesse:gr,leute:O.zahl(b.einwohner)}))+'<br>'+esc(vw?t('stadt.vorsteher',{wer:vw}):t('stadt.keinVorsteher'))+
+  '<br>'+esc(hw?t('stadt.herr',{wer:hw}):t('stadt.niemand'))+'<br><span class="leise">'+esc(witz)+'</span>';
+ sprich(name+'. '+gr+'. '+(hw?t('stadt.herr',{wer:hw})+'. ':'')+witz)},function(){})}
+function ortTipp(r){ORT_HTML='';if(!r)return;var tip=r;
+ ortLaden()
  .then(function(D){if(tip!==ORT_LETZT)return;var O=window.AT3ORTE,b=O.bilanz(WSEED,r,D),AP=window.AT3POSTEN,PO=AP&&!AP.AUS&&r.umg?AP.posten(WSEED,b,r.umg,D,r.punkt,r.fremd):null;b.posten=PO||[];
   window.AT3SPIEL.ort={name:O.voll(b,t),g:r.g,einwohner:b.einwohner,leit:b.leit.map(function(l){return l.id}),posten:PO?PO.map(function(p){return p.id}):null};
   ORT_HTML='<br><b>'+esc(O.zeile(b,t))+'</b>'+(PO?'<br>'+esc(AP.kurzListe(PO,t)):'');infoZeigen();
@@ -153,7 +167,7 @@ function flurHtml(o,LD){var st=LD.S[o.stufe.id],kopf=o.felder?t('flur.zeile',{fe
 var ORT_LETZT=null;
 function reichTipp(L,hat,ort,str){ORT_LETZT=ort||null;ORT_HTML='';STR_HTML=strasseHtml(str,null);if(!str)window.AT3SPIEL.strasse=null;ortTipp(ort);
  if(!hat){REICH_HTML=esc(t('welt.leer'));infoZeigen();return}if(!L||!L.length){REICH_HTML=esc(t('reich.niemand'));infoZeigen();return}
- (HRL||(HRL=Promise.all([['herrschaften.js','AT3HERRSCHAFT'],['herrscher.js','AT3HERRSCHER']].map(function(q){return new Promise(function(ok,no){if(window[q[1]])return ok();var s=document.createElement('script');s.src=q[0]+'?v='+V;s.onload=ok;s.onerror=function(){HRL=null;no(new Error(q[0]))};document.head.appendChild(s)})}))))
+ hrLaden()
  .then(function(){var H=window.AT3HERRSCHAFT,P=window.AT3HERRSCHER,el=$('weltInfo');window.AT3SPIEL.reich=L;STR_HTML=strasseHtml(str,L);REICH_HTML=esc(t('reich.antwortet',{kette:H.ketteText(L,t)}));infoZeigen();
   if(!P||P.AUS)return;var ri=0;while(ri<L.length-1&&L[ri].stufe)ri++;   // N4c2: Herrscher der untersten Stufe und des Reichs, Vorgeschichte des Reichs (Notausschalter ?n4c2=0)
   var wer=(ri?[L[0],L[ri]]:[L[0]]).map(function(e){return P.titelName(P.herrscher(WSEED,e),t)}).join(' › '),ch=P.chronik(WSEED,L.slice(ri),t,H.name);
@@ -166,13 +180,14 @@ function karteStarten(w){var sp=w.daten&&w.daten.spiel,kw=w.daten&&w.daten.kern&
   beiNahFehlt:function(){figurenNahPflegen()},
   beiZoom:function(l,z){$('weltInfo').textContent=l<0?t('welt.globus'):t('welt.zoom',{z:z});$('reicheKnopf').hidden=!(l<0||l>=4)},   // N4c1: Knopf „Realms“ nur in den Fernstufen und am Globus
   beiReich:reichTipp,
+  beiStadt:function(r){if(BAUW&&!fpAn)return;stadtKarte(r)},      // N7b2: Ortssymbol in den Fernstufen oder auf dem Globus
   beiKarren:function(k){if(BAUW&&!fpAn)return false;karrenKarte(k);return true},
   beiPerson:function(k){if(BAUW&&!fpAn)return false;personKarte(k);return true},
   beiTier:function(k){if(BAUW&&!fpAn)return false;tierKarte(k);return true},      // G8: Reh antippen
   beiBesucher:function(k){if(BAUW&&!fpAn)return false;besucherKarte(k);return true},      // AR2b: Zuschauer antippen
   beiBesFehlt:function(){besucherPflegen()},
   beiFest:function(e){if(BAUW&&!fpAn)return false;return festKarte(e)},      // G9d3: Leiche      // G9c1: Marktstand antippen, G9d2: Arena
-  beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else if(ATT_WZ[BAUW])attTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f)window.AT3SPIEL.angetippt=null;
+  beiFeld:function(f){window.AT3SPIEL.feld=f;if(BAUW&&BAUWZ[BAUW].form==='tipp'&&!fpAn){if(BAUW==='pfadFuss'||BAUW==='pfadKarren')pfadTipp(f);else if(ATT_WZ[BAUW])attTipp(f);else bauTipp(f);return}if(f&&f.bau){bauFeld(f);return}if(f&&f.obj){objektKarte(f.obj.id,f.obj.ersatz);if(f.bio==null)return}else if(f&&f.stadt)stadtKarte(f.stadt);else if(f)window.AT3SPIEL.angetippt=null;      // N7b2: Feld in einem Ort → Stadtkarte
    $('weltInfo').textContent=f&&f.bio!=null?t('welt.feld',{b:t('welt.bio.'+f.bio),w:f.bweg?', '+t('welt.bweg.'+f.bweg[0])+(f.bweg[1]<3?' ('+t('bau.zustand.'+f.bweg[1])+')':''):f.weg?', '+t('welt.weg.'+f.weg):'',h:f.hoehe,x:f.x,y:f.y}):t('welt.leer')}});
  if(mess.objekteMs)KARTE.natur(geladen.objekte);      // G4b: Naturbilder an den Bildkern (sonst, sobald die Objekte geladen sind)
  bauAnschliessen();warenAnschliessen();

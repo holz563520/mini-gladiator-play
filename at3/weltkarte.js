@@ -33,7 +33,8 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='968894bd', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='e3a96ec6', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var N7B2=!/[?&]n7b2=0/.test(location.search);   // N7b2: Stadtkarte beim Antippen (Notausschalter ?n7b2=0)
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 // N7a3c2 Ortsnamen (Thomas 25.11.2026): Staffel nach Ortsgröße g (2 Weiler … 7 Hauptstadt) je Stufe lod 4–9, Zusatz bis lod 5, Schriftgröße je g; Notausschalter ?n7a3c2=0
@@ -58,7 +59,7 @@ function starten(o){
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(MAXL,o.kam[2]|0));hatKam=true}
 
  function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(okern&&kern&&kern.ortskernWeg)kern.ortskernWeg();try{okern&&okern.terminate()}catch(e){}okern=null;if(o.beiAusfall)o.beiAusfall(g2)}
- try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*|n7a5a[0-9][a-z]?|n7a5b[0-9]|n7a5d|n7a5e2?|n7a5f)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
+ try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*|n7a5a[0-9][a-z]?|n7a5b[0-9]|n7a5d|n7a5e2?|n7a5f|n7b1|n7b2)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
  if(bk){bk.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ende('picture core failed')};bk.onmessage=vomBildkern;
   var F=S.PALETTEN[S.PALETTE].farben,pal=new Uint32Array(64),du=new Uint8Array(64),he=new Uint8Array(64);
   for(var i=0;i<64;i++){var c=S.farbe(F[i]);pal[i]=(255<<24|c[2]<<16|c[1]<<8|c[0])>>>0;du[i]=S.dunkler(i);he[i]=i}
@@ -554,7 +555,10 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
   bk.postMessage({art:'feld',id:id,offen:OFFEN,px:(cam.x-cam.y)*32+((cx-r.left)*f-cv.width/2)*Z,py:(cam.x+cam.y)*16-cam.z*8+((cy-r.top)*f-cv.height/2)*Z})})}
  function tipp(cx,cy){if(wahl){if(cam.lod<STUFEN&&!glob)feldBei(cx,cy).then(function(fd){var w=fd&&fd.x!=null?fd:weltBei(cx,cy);if(w&&wahl)wahl.beiTipp(w.x,w.y)});else{var w=weltBei(cx,cy);if(w)wahl.beiTipp(w.x,w.y)}return}
   if(glob){var r=cv.getBoundingClientRect(),f=cv.width/(r.width||1),R=globR(),x=((cx-r.left)*f-cv.width/2)/R,y=-((cy-r.top)*f-cv.height/2)/R,q=x*x+y*y;if(q>=1)return;
-   var z=Math.sqrt(1-q),cl=Math.cos(glob.lat),sl=Math.sin(glob.lat),la=Math.asin(y*cl+z*sl),lo=glob.lon+Math.atan2(x,z*cl-y*sl);zurKarte(modu(lo/ZP,1)*WX,(.5-la/Math.PI)*WY,3);return}
+   var z=Math.sqrt(1-q),cl=Math.cos(glob.lat),sl=Math.sin(glob.lat),la=Math.asin(y*cl+z*sl),lo=glob.lon+Math.atan2(x,z*cl-y*sl),gx=modu(lo/ZP,1)*WX,gy=(.5-la/Math.PI)*WY;
+   if(!N7B2||!o.beiStadt){zurKarte(gx,gy,3);return}var gl={lon:glob.lon,lat:glob.lat,R:R};   // N7b2: Großstadt oder Hauptstadt unter dem Finger → Stadtkarte, sonst Sprung in die Karte
+   frage('stadt',{x:x,y:y,T:tippT(f),glob:gl}).then(function(a){if(a&&a.ort){o.beiStadt(a.ort);return}if(glob&&glob.lon===gl.lon&&glob.lat===gl.lat)zurKarte(gx,gy,3)});return}
+  if(cam.lod>=STUFEN&&N7B2&&o.beiStadt){var ws=weltBei(cx,cy),fs=cv.width/(cv.getBoundingClientRect().width||1);if(ws)frage('stadt',{x:ws.x,y:ws.y,Z:zf(),T:tippT(fs),mini:cam.lod<=9}).then(function(a){if(a&&a.ort)o.beiStadt(a.ort)})}   // N7b2: Ortssymbol unter dem Finger → Stadtkarte
   if(cam.lod>=STUFEN){var wr=o.beiReich?weltBei(cx,cy):null;if(wr){frage('reich',{x:wr.x,y:wr.y}).then(function(a){if(a&&!a.fehlt)o.beiReich(a.reich,a.hat,a.ort,a.strasse)});return}if(o.beiFeld)o.beiFeld(null);return}   // N4c1: Fernansicht: wem gehört das Land
   if(o.beiPerson&&!WZ_AKTIV()){var pp=personBei(cx,cy);if(pp&&o.beiPerson(pp)!==false)return}      // G7: Arbeiter zuerst (stehen vor dem Karren)
   if(o.beiBesucher&&!WZ_AKTIV()){var bb=besucherBei(cx,cy);if(bb&&o.beiBesucher(bb)!==false)return}      // AR2b: Zuschauer
@@ -564,6 +568,7 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
   feldBei(cx,cy).then(function(fd){var r=fd&&fd.bau&&fd.bau.raum;                              // G5b: Gebäude antippen schaltet in 1× sein Dach auf/zu (wie 2.0)
    if(r&&cam.lod===0&&!WZ_AKTIV()){if(fest.has(r))fest.delete(r);else fest.add(r);if(fd)fd.dachOffen=fest.has(r);plan()}
    if(o.beiFeld)o.beiFeld(fd)})}
+ function tippT(f){return Math.max(10,14*f)}   // N7b2: Trefferweite fürs Antippen eines Ortssymbols in Bildpunkten (etwa ein Fingerabdruck)
  function WZ_AKTIV(){return !!(WZ&&WZ.aktiv())}
  if(window.ResizeObserver)new ResizeObserver(plan).observe(cv);else addEventListener('resize',plan);
  plan();
