@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1305,
+ "typMax": 1387,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -237,6 +237,744 @@
    "name": "Straw Bed",
    "status": "geprueft",
    "datei": "obj/bett-stroh.json"
+  },
+  {
+   "id": "bk-block-dach-ab-i",
+   "version": 3,
+   "typ": 1306,
+   "kat": "dach",
+   "name": "Shingled Roof Slope, Right",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-i.json"
+  },
+  {
+   "id": "bk-block-dach-ab-i-a",
+   "version": 4,
+   "typ": 1307,
+   "kat": "dach",
+   "name": "Shingle Right A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-i-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-i-b",
+   "version": 4,
+   "typ": 1308,
+   "kat": "dach",
+   "name": "Shingle Right B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-i-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-i-c",
+   "version": 4,
+   "typ": 1309,
+   "kat": "dach",
+   "name": "Shingle Right C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-i-c.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j",
+   "version": 3,
+   "typ": 1310,
+   "kat": "dach",
+   "name": "Shingled Roof Slope, Front",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-a",
+   "version": 4,
+   "typ": 1311,
+   "kat": "dach",
+   "name": "Shingle Front A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-b",
+   "version": 3,
+   "typ": 1312,
+   "kat": "dach",
+   "name": "Shingle Front B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-c",
+   "version": 4,
+   "typ": 1313,
+   "kat": "dach",
+   "name": "Shingle Front C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-c.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-d",
+   "version": 3,
+   "typ": 1314,
+   "kat": "dach",
+   "name": "Shingle Front D",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-d.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-e",
+   "version": 4,
+   "typ": 1315,
+   "kat": "dach",
+   "name": "Shingle Front E",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-e.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-f",
+   "version": 3,
+   "typ": 1316,
+   "kat": "dach",
+   "name": "Shingle Front F",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-f.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-k",
+   "version": 4,
+   "typ": 1317,
+   "kat": "dach",
+   "name": "Shingle Front Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-k.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-k-a",
+   "version": 5,
+   "typ": 1318,
+   "kat": "dach",
+   "name": "Shingle Front Ridge A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-k-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-k-b",
+   "version": 5,
+   "typ": 1319,
+   "kat": "dach",
+   "name": "Shingle Front Ridge B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-k-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-k-c",
+   "version": 4,
+   "typ": 1320,
+   "kat": "dach",
+   "name": "Shingle Front Ridge C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-k-c.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-kn",
+   "version": 4,
+   "typ": 1321,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-kn.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-kn-a",
+   "version": 5,
+   "typ": 1322,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-kn-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-kn-b",
+   "version": 5,
+   "typ": 1323,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-kn-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-kn-c",
+   "version": 4,
+   "typ": 1324,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-kn-c.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-ks",
+   "version": 4,
+   "typ": 1325,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-ks.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-ks-a",
+   "version": 5,
+   "typ": 1326,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-ks-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-ks-b",
+   "version": 5,
+   "typ": 1327,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-ks-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-ks-c",
+   "version": 4,
+   "typ": 1328,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-ks-c.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-n",
+   "version": 4,
+   "typ": 1329,
+   "kat": "dach",
+   "name": "Shingle Front Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-n.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-n-a",
+   "version": 5,
+   "typ": 1330,
+   "kat": "dach",
+   "name": "Shingle Front Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-n-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-n-b",
+   "version": 4,
+   "typ": 1331,
+   "kat": "dach",
+   "name": "Shingle Front Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-n-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-n-c",
+   "version": 4,
+   "typ": 1332,
+   "kat": "dach",
+   "name": "Shingle Front Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-n-c.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-r",
+   "version": 3,
+   "typ": 1333,
+   "kat": "dach",
+   "name": "Shingle Front Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-r.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-r-a",
+   "version": 4,
+   "typ": 1334,
+   "kat": "dach",
+   "name": "Shingle Front Eave A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-r-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-r-b",
+   "version": 3,
+   "typ": 1335,
+   "kat": "dach",
+   "name": "Shingle Front Eave B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-r-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-r-c",
+   "version": 3,
+   "typ": 1336,
+   "kat": "dach",
+   "name": "Shingle Front Eave C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-r-c.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-rn",
+   "version": 4,
+   "typ": 1337,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-rn.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-rn-a",
+   "version": 5,
+   "typ": 1338,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-rn-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-rn-b",
+   "version": 4,
+   "typ": 1339,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-rn-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-rn-c",
+   "version": 4,
+   "typ": 1340,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-rn-c.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-rs",
+   "version": 4,
+   "typ": 1341,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-rs.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-rs-a",
+   "version": 5,
+   "typ": 1342,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-rs-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-rs-b",
+   "version": 4,
+   "typ": 1343,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-rs-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-rs-c",
+   "version": 4,
+   "typ": 1344,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-rs-c.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-s",
+   "version": 4,
+   "typ": 1345,
+   "kat": "dach",
+   "name": "Shingle Front Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-s.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-s-a",
+   "version": 5,
+   "typ": 1346,
+   "kat": "dach",
+   "name": "Shingle Front Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-s-a.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-s-b",
+   "version": 4,
+   "typ": 1347,
+   "kat": "dach",
+   "name": "Shingle Front Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-s-b.json"
+  },
+  {
+   "id": "bk-block-dach-ab-j-s-c",
+   "version": 4,
+   "typ": 1348,
+   "kat": "dach",
+   "name": "Shingle Front Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-ab-j-s-c.json"
+  },
+  {
+   "id": "bk-block-dach-auf-i",
+   "version": 3,
+   "typ": 1349,
+   "kat": "dach",
+   "name": "Shingled Roof Slope, Left",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-i.json"
+  },
+  {
+   "id": "bk-block-dach-auf-i-a",
+   "version": 4,
+   "typ": 1350,
+   "kat": "dach",
+   "name": "Shingle Left A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-i-a.json"
+  },
+  {
+   "id": "bk-block-dach-auf-i-b",
+   "version": 4,
+   "typ": 1351,
+   "kat": "dach",
+   "name": "Shingle Left B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-i-b.json"
+  },
+  {
+   "id": "bk-block-dach-auf-i-c",
+   "version": 4,
+   "typ": 1352,
+   "kat": "dach",
+   "name": "Shingle Left C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-i-c.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j",
+   "version": 3,
+   "typ": 1353,
+   "kat": "dach",
+   "name": "Shingled Roof Slope, Rear",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-a",
+   "version": 4,
+   "typ": 1354,
+   "kat": "dach",
+   "name": "Shingle Rear A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-a.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-b",
+   "version": 4,
+   "typ": 1355,
+   "kat": "dach",
+   "name": "Shingle Rear B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-b.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-c",
+   "version": 4,
+   "typ": 1356,
+   "kat": "dach",
+   "name": "Shingle Rear C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-c.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-d",
+   "version": 3,
+   "typ": 1357,
+   "kat": "dach",
+   "name": "Shingle Rear D",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-d.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-k",
+   "version": 4,
+   "typ": 1358,
+   "kat": "dach",
+   "name": "Shingle Rear Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-k.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-kn",
+   "version": 4,
+   "typ": 1359,
+   "kat": "dach",
+   "name": "Shingle Rear Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-kn.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-ks",
+   "version": 4,
+   "typ": 1360,
+   "kat": "dach",
+   "name": "Shingle Rear Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-ks.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-n",
+   "version": 4,
+   "typ": 1361,
+   "kat": "dach",
+   "name": "Shingle Rear Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-n.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-r",
+   "version": 3,
+   "typ": 1362,
+   "kat": "dach",
+   "name": "Shingle Rear Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-r.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-rn",
+   "version": 4,
+   "typ": 1363,
+   "kat": "dach",
+   "name": "Shingle Rear Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-rn.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-rs",
+   "version": 4,
+   "typ": 1364,
+   "kat": "dach",
+   "name": "Shingle Rear Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-rs.json"
+  },
+  {
+   "id": "bk-block-dach-auf-j-s",
+   "version": 4,
+   "typ": 1365,
+   "kat": "dach",
+   "name": "Shingle Rear Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-auf-j-s.json"
+  },
+  {
+   "id": "bk-block-dach-flach",
+   "version": 3,
+   "typ": 1366,
+   "kat": "dach",
+   "name": "Shingled Roof, Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-flach.json"
+  },
+  {
+   "id": "bk-block-dach-flach-a",
+   "version": 4,
+   "typ": 1367,
+   "kat": "dach",
+   "name": "Shingle Flat A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-flach-a.json"
+  },
+  {
+   "id": "bk-block-dach-flach-b",
+   "version": 4,
+   "typ": 1368,
+   "kat": "dach",
+   "name": "Shingle Flat B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-flach-b.json"
+  },
+  {
+   "id": "bk-block-dach-flach-c",
+   "version": 4,
+   "typ": 1369,
+   "kat": "dach",
+   "name": "Shingle Flat C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-dach-flach-c.json"
+  },
+  {
+   "id": "bk-block-fenster",
+   "version": 1,
+   "typ": 1370,
+   "kat": "wand",
+   "name": "Log Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-fenster.json"
+  },
+  {
+   "id": "bk-block-fenster-a",
+   "version": 1,
+   "typ": 1371,
+   "kat": "wand",
+   "name": "Log Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-fenster-a.json"
+  },
+  {
+   "id": "bk-block-fenster-b",
+   "version": 1,
+   "typ": 1372,
+   "kat": "wand",
+   "name": "Log Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-fenster-b.json"
+  },
+  {
+   "id": "bk-block-fenster-d",
+   "version": 1,
+   "typ": 1373,
+   "kat": "wand",
+   "name": "Log Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-fenster-d.json"
+  },
+  {
+   "id": "bk-block-giebel",
+   "version": 1,
+   "typ": 1374,
+   "kat": "wand",
+   "name": "Log Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-giebel.json"
+  },
+  {
+   "id": "bk-block-giebel-a",
+   "version": 1,
+   "typ": 1375,
+   "kat": "wand",
+   "name": "Log Gable A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-giebel-a.json"
+  },
+  {
+   "id": "bk-block-giebel-ab",
+   "version": 1,
+   "typ": 1376,
+   "kat": "wand",
+   "name": "Log Gable Peak (down)",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-giebel-ab.json"
+  },
+  {
+   "id": "bk-block-giebel-auf",
+   "version": 1,
+   "typ": 1377,
+   "kat": "wand",
+   "name": "Log Gable Peak (up)",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-giebel-auf.json"
+  },
+  {
+   "id": "bk-block-giebel-b",
+   "version": 1,
+   "typ": 1378,
+   "kat": "wand",
+   "name": "Log Gable B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-giebel-b.json"
+  },
+  {
+   "id": "bk-block-giebel-c",
+   "version": 1,
+   "typ": 1379,
+   "kat": "wand",
+   "name": "Log Gable C",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-giebel-c.json"
+  },
+  {
+   "id": "bk-block-tuer",
+   "version": 1,
+   "typ": 1380,
+   "kat": "wand",
+   "name": "Log Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-tuer.json"
+  },
+  {
+   "id": "bk-block-tuer-a",
+   "version": 1,
+   "typ": 1381,
+   "kat": "wand",
+   "name": "Log Door A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-tuer-a.json"
+  },
+  {
+   "id": "bk-block-wand",
+   "version": 1,
+   "typ": 1382,
+   "kat": "wand",
+   "name": "Log Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-wand.json"
+  },
+  {
+   "id": "bk-block-wand-a",
+   "version": 1,
+   "typ": 1383,
+   "kat": "wand",
+   "name": "Log Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-wand-a.json"
+  },
+  {
+   "id": "bk-block-wand-b",
+   "version": 1,
+   "typ": 1384,
+   "kat": "wand",
+   "name": "Log Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-wand-b.json"
+  },
+  {
+   "id": "bk-block-wand-d",
+   "version": 1,
+   "typ": 1385,
+   "kat": "wand",
+   "name": "Log Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-wand-d.json"
+  },
+  {
+   "id": "bk-block-wand-oben",
+   "version": 1,
+   "typ": 1386,
+   "kat": "wand",
+   "name": "Log Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-wand-oben.json"
+  },
+  {
+   "id": "bk-block-wand-oben-a",
+   "version": 2,
+   "typ": 1387,
+   "kat": "wand",
+   "name": "Log Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-block-wand-oben-a.json"
   },
   {
    "id": "bk-bruch-boden",
