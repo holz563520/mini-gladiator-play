@@ -11,13 +11,17 @@
 // · Eigener Simulationsschritt für Kämpfe mit Bären (K.build, M.fixedStep nur für battle.baer), aus denselben Bausteinen wie arena-core.js.
 // · B3c1 (Rückmeldung Thomas 27.11.2026): Pranke und Maul zielen auf die Trefferstelle am Gegner (Abschnitt „Zielen“), am Liegenden beißt der Bär
 //   direkt in den Körperteil; die Stelle steht vor dem Ausholen fest. Schalter K.OPT.ziel, Adresse ?baerZiel=0.
+// · B3c2 (Rückmeldung Thomas 27.11.2026): Drohen als Folge (volle Höhe, Tatzen schlagen durch die Luft, Brüllen, Schlag auf den Boden, Kieferklappern),
+//   Anrennen im gestreckten Galopp mit echtem Tempo (K.OPT.tempo × Galopp, BAER.sprint), Sand unter den Pranken, Umspringen: der letzte Sprung geht
+//   mit Brust und Vorderpranken in den Gegner, der fliegt nach Gewichtsverhältnis, der Bär landet bei ihm und drückt sofort nieder.
+//   Schalter K.OPT.sturm, Adresse ?baerSturm=0 (dann alles wie vor B3c2).
 // Keine Spieldatei wird geändert; die Werte sind vorläufig (Einmessen in B28). Schalter: K.OPT.
 // =====================================================================================================
 (()=>{
 const M=window.MG,B=window.BAER,AN=window.AN;if(!M||!B||!AN)return;
 const S=M.s,H=window.HahnArena,DG=()=>window.DOG,cl=M.clamp,TAU=Math.PI*2;
 const rnd=(a,b)=>a+Math.random()*(b-a),sm=u=>{u=u<0?0:u>1?1:u;return u*u*(3-2*u);},dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const K={SCALE:1.08,TMAX:180,OPT:{tear:1,head:1,schaden:1,haerte:1,ringen:1,ziel:1},force:null};B.K=K;
+const K={SCALE:1.08,TMAX:180,OPT:{tear:1,head:1,schaden:1,haerte:1,ringen:1,ziel:1,sturm:1,tempo:1.75},force:null};B.K=K;
 
 // ---------------------------------------------------------------- Angriffe (Name im Spiel Englisch, Bedienung Deutsch)
 K.ATTACKS=[['threat','Threat display','Drohen','Richtet sich auf, brüllt, zeigt die Zähne.'],['bluff','Bluff charge','Scheinangriff','Stürmt heran und bricht kurz vorher ab.'],
@@ -54,7 +58,7 @@ K.makeFighter=function(D,team,x,y){
 const out=a=>a.bear?a.g.dead||a.fled:a.dog?DG().out(a):a.down||a.surrendered||a.g.dead;K.out=out;
 K.health=b=>cl(Math.min(...['kopf','hals','brust'].map(p=>b.tissue[p]/b.max[p]),(b.tissue.bauch+b.tissue.vl+b.tissue.hl)/(b.max.bauch+b.max.vl+b.max.hl))*100*Math.min(1,b.blood/70),0,100);
 function log(t){const b=S.battle;if(!b)return;b.log.unshift({time:Math.floor(b.time),text:t});b.log.length=Math.min(60,b.log.length);K.onLog?.(t);}
-function state(b,mode,dur=0){b.mode=mode;b.clock=0;b.duration=dur;b.struck=false;b.ticks=0;b.aimPt=null;if(NAME[mode])b.attacks[mode]=(b.attacks[mode]||0)+1;}
+function state(b,mode,dur=0){if(mode!=='pin')b.rush=false;if(b.mode==='threat'||mode==='threat'){b.phase=0;b.clacked=false;b.thrForce=false;}b.leap=null;b.mode=mode;b.clock=0;b.duration=dur;b.struck=false;b.ticks=0;b.aimPt=null;if(NAME[mode])b.attacks[mode]=(b.attacks[mode]||0)+1;}
 
 // ---------------------------------------------------------------- Blut (wie beim Hund)
 function spray(b,x,y,z,n,dir=null){for(let i=0;i<n;i++){const an=dir==null?rnd(0,TAU):dir+rnd(-.7,.7),v=rnd(15,75);b.spray.push({x,y,z,vx:Math.cos(an)*v,vy:Math.sin(an)*v*.55,vz:rnd(10,70),s:Math.random()<.3?2:1});}
@@ -64,6 +68,10 @@ function stepSpray(b,dt){for(let i=b.spray.length-1;i>=0;i--){const p=b.spray[i]
 // Stelle am Bären in Arenakoordinaten (für Blut)
 function partWorld(b,part){const R=b.fig._R,f=B.facing(b.fig),s=b.P.sz*K.SCALE;if(!R)return {x:b.x,y:b.y,z:20*s};const [ax,ay]=B.anchor(R,part);return {x:b.x+f*ax*s,y:b.y,z:-ay*s};}
 
+// ---------------------------------------------------------------- Sand (B3c2): spritzt unter den Pranken beim Anrennen, beim Schlag auf den Boden und beim Aufprall.
+// Höchstens 40 Körner je Bär, jedes ein Kästchen, kein Fleck am Boden, nach einer halben Sekunde weg (Zeichenarbeit bleibt klein).
+function sand(b,x,y,n,vx,pow){const L=b.dust||(b.dust=[]);for(let i=0;i<n&&L.length<40;i++)L.push({x:x+rnd(-3,3),y:y+rnd(-2,2),z:0,vx:vx*rnd(.3,1)+rnd(-14,14),vy:rnd(-9,9),vz:rnd(34,78)*pow,s:Math.random()<.35?2:1,l:rnd(.3,.55)});}
+function stepDust(b,dt){const L=b.dust;if(!L||!L.length)return;for(let i=L.length-1;i>=0;i--){const p=L[i];p.vz-=260*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.l-=dt;if(p.z<0||p.l<=0)L.splice(i,1);}}
 // ---------------------------------------------------------------- Schaden am Bären. kind: bite | claw | cut | stab | blunt
 const WOUND_AT={kopf:[[-3,4],[-3,3]],hals:[[-4,4],[-4,4]],brust:[[-5,5],[-6,5]],bauch:[[-10,10],[-5,5]],vl:[[-2,2],[-5,5]],hl:[[-2,3],[-5,5]]};
 function hurt(b,part,dmg,kind,att){if(b.g.dead||!(dmg>0))return 0;const P=b.P;
@@ -122,7 +130,7 @@ function headChance(b,V){if(b.P.skulls<3||b.bear.stats.biss<70||V.g.body.head?.m
  const helm=DG()?.armorMat?.(V,'head');if(helm&&helm.m==='metal'&&b.P.skulls===3)return 0;// geschlossener Helm hält bei ☠3 stand
  return (b.P.bauart==='H'?.2:.15)*(helm?.5:1)*K.OPT.head;}
 K.tearChance=tearChance;K.headChance=headChance;
-try{const q=new URLSearchParams(location.search);if(q.get('baerAbriss')==='0')K.OPT.tear=0;if(q.get('baerKopfbiss')==='0')K.OPT.head=0;if(q.get('baerRingen')==='0')K.OPT.ringen=0;if(q.get('baerZiel')==='0')K.OPT.ziel=0;}catch{}
+try{const q=new URLSearchParams(location.search);if(q.get('baerAbriss')==='0')K.OPT.tear=0;if(q.get('baerKopfbiss')==='0')K.OPT.head=0;if(q.get('baerRingen')==='0')K.OPT.ringen=0;if(q.get('baerZiel')==='0')K.OPT.ziel=0;if(q.get('baerSturm')==='0')K.OPT.sturm=0;}catch{}
 const DOG_AT=[['kopf',.15],['hals',.15],['brust',.25],['bauch',.25],['vl',.1],['hl',.1]];
 function humanPart(b,t,kind){const A=b.P.bauart;let L=kind==='pin'?PIN_AT:kind==='bite'?BITE_AT:SWIPE_AT;
  if(kind==='swipe'&&A==='B')L=[['head',.6],...L.slice(1)];// Lippenbär: Sichelkrallen ins Gesicht
@@ -163,11 +171,12 @@ K.lame=b=>Math.max(lameOf(b,'vl'),lameOf(b,'hl'));
 // ---------------------------------------------------------------- Bewegung: der Körper kommt nur so weit voran, wie die Beine laufen (BAER.step)
 const BX=[110,930],BY=[190,605];
 function brake(fig){const v=fig.v||0,hs=Math.sqrt(cl(fig.bear.weight/400,.3,2));return v*v/(2*(30+.6*v)/hs*1.3);}
-function head(b,tx,ty,gait){const fig=b.fig,dx=tx-b.x,dy=ty-b.y,d=Math.hypot(dx,dy)||1,want=dx>=0?1:-1;
+function head(b,tx,ty,gait,durch){const fig=b.fig,dx=tx-b.x,dy=ty-b.y,d=Math.hypot(dx,dy)||1,want=dx>=0?1:-1;
+ if(K.OPT.sturm&&(fig.v||0)>70&&b.dirx*dx+b.diry*dy<0){B.go(fig,null);return d;}// Schwung: liegt das Ziel hinter ihm, läuft er erst aus, statt im vollen Lauf rückwärts zu gleiten
  if(Math.abs(dx)>12&&want!==B.facing(fig)&&!fig.turn&&!fig.turnWant)B.turn(fig);
  if(fig.turn||fig.turnWant||fig.mode!=='stand'&&!fig.go){B.go(fig,null);if(fig.mode!=='stand'&&!fig.want)B.pose(fig,'stand');}
- else if(d<=brake(fig)*b.P.sz+2)B.go(fig,null);
- else{const lame=K.lame(b);if(lame>.45&&gait==='run')gait='walk';B.go(fig,gait);fig.pace=(gait==='run'?b.P.pace:1.9*b.P.pace)*(1-.5*lame)*(b.mode==='drag'?.55:1);}
+ else if(!durch&&d<=brake(fig)*b.P.sz*(b.rush?1.3:1)+2)B.go(fig,null);
+ else{const lame=K.lame(b);if(lame>.45&&gait==='run')gait='walk';B.go(fig,gait);fig.pace=(gait==='run'?b.P.pace*(fig.sprint?K.OPT.tempo:1):1.9*b.P.pace)*(1-.5*lame)*(b.mode==='drag'?.55:1);}
  b.dirx=dx/d;b.diry=dy/d;return d;}
 function halt(b){B.go(b.fig,null);}
 function faceTo(b,t){const fig=b.fig,want=t.x>=b.x?1:-1;if(want!==B.facing(fig)&&!fig.turn&&!fig.turnWant){B.turn(fig);return false;}return !fig.turn&&!fig.turnWant;}
@@ -253,6 +262,16 @@ function over(b,t){const m=b.mode,u=b.duration?cl(b.clock/b.duration,0,1):0,O={}
  else if(m==='bite'){const l=sm(u/.3),r=sm((u-.82)/.18),k=1-r,held=b.struck&&b.landed&&u>.36;O.hx=4*l*k;O.ne=.32*l*k;O.he=.22*l*k+(held?.2*Math.sin(t*44)*k:0);O.p=(held?.03*Math.sin(t*44+1):0);
   O.mouth=u<.33?.95*sm(u/.22):.25*k;O.lip=k;O.ear=-.9*k;}
  else if(m==='slam'&&b.phase===1){const s=sm(u/.55),r=sm((u-.6)/.4);O.nx=9*s*(1-r);O.fx=9*s*(1-r);O.ny=-5*(1-s);O.fy=-5*(1-s);O.mouth=.6*(1-r);O.lip=1-r;O.ear=-.8;}
+ else if(m==='threat'&&K.OPT.sturm){const ph=b.phase||0,c=b.clock;O.ear=-.9;
+  if(ph===0){const e=sm(c/.5);O.lip=e;O.mouth=.35*e;O.ear=-.8*e;}// richtet sich auf
+  else if(ph===1){// steht in voller Höhe: die Tatzen schlagen abwechselnd durch die Luft, Kopf vor, Maul weit auf, der ganze Körper bebt vom Brüllen
+   const k=sm(c/.2)*(1-sm((c-1.7)/.2)),pr=x=>{const u=(c-x)/.6;return u>0&&u<1?u:0;},un=Math.max(pr(.1),pr(1.2)),uf=pr(.65);
+   const X=u=>-5*sm(u/.4)+16*sm((u-.4)/.22)-11*sm((u-.62)/.38),Y=u=>-13*sm(u/.4)+23*sm((u-.4)/.22)-10*sm((u-.62)/.38);// hoch über die Schulter, dann im Bogen nach vorn unten
+   O.nx=(5+X(un))*k;O.ny=(-13+Y(un))*k;O.fx=(5+X(uf))*k;O.fy=(-13+Y(uf))*k;O.na=(-.6*sm(un/.4)+1.1*sm((un-.4)/.25)-.5*sm((un-.65)/.35))*k;
+   O.ne=-.3*k;O.he=.1*k;O.mouth=.95*k*(.86+.14*Math.sin(t*31));O.lip=1;O.p=(-.07+.012*Math.sin(t*53))*k;O.hx=.5*Math.sin(t*47)*k;}
+  else if(ph===2){O.lip=1;O.mouth=.6;O.he=.05;}// lässt sich nach vorn fallen
+  else{const d=Math.exp(-c*7),st=c>.34&&c<.62?Math.sin(Math.PI*(c-.34)/.28):0;// Pranken schlagen auf, der Rumpf federt nach, die Kiefer klappern, eine Pranke stampft nach
+   O.hy=1.6*d;O.p=-.03*d;O.lip=1;O.mouth=c>.1&&c<.7?(Math.sin(t*38)>0?.5:.04):.15;O.ne=-.08;O.he=.08*(1-d);O.ny=-4.5*st;}}
  else if(m==='slam'||m==='threat'){const e=sm(b.clock/.5);O.lip=e;O.mouth=m==='threat'?.85*e*(.8+.2*Math.sin(t*23)):.3*e;O.ear=-.8*e;if(m==='threat'){O.nx=3*Math.sin(t*5)*e;O.he=.12*e;}}
  else if(m==='pin'){const e=sm(b.clock/.5),bob=Math.sin(t*9);O.ne=-.22*e;O.he=(-.42+.1*bob)*e;O.mouth=(.45+.4*bob)*e;O.lip=e;O.nx=5*e;O.ny=0;O.hy=1.2*e;O.ear=-.7*e;}
  else if(m==='tear'){const g=sm(u/.25),y=sm((u-.45)/.3),r=sm((u-.85)/.15),k=1-r;O.ne=(-.2*g+.6*y)*k;O.he=(-.4*g+.5*y)*k+(u>.72?.22*Math.sin(t*40)*k:0);O.hx=(2*g-7*y)*k;O.mouth=u<.2?.9*sm(u/.15):.3;O.lip=1;O.ear=-1;O.nx=5*g*k;}
@@ -265,7 +284,9 @@ function over(b,t){const m=b.mode,u=b.duration?cl(b.clock/b.duration,0,1):0,O={}
   const l=sm(u/.26),w=sm((u-.5)/.14),r=sm((u-.74)/.26),k=1-r,lo=b.held?0:1;O.hx=(4*l*lo-3*w)*k;O.ne=(.3*l*lo-.45*sm((u-.3)/.15)*(1-w)+.8*w)*k;O.he=(.2*l*lo+.55*w)*k;O.p=.07*w*k;
   O.mouth=u<.28&&lo?.95*sm(u/.2):u<.56?.22:.5*k;O.lip=k;O.ear=-.9*k;if(b.held){O.nx=7*(1-w);O.fx=7*(1-w);O.ny=2.5*(1-w);O.fy=2.5*(1-w);}}
  else if(m==='drag'){const e=sm(b.clock/.4);O.ne=-.3*e;O.he=-.4*e+.05*Math.sin(t*7)*e;O.mouth=.22*e;O.lip=e;O.ear=-.8*e;O.hy=.8*e;}
- else if(m==='bluff'||m==='charge'){O.lip=.7;O.mouth=.25;O.ear=-.8;}
+ else if(m==='bluff'||m==='charge'){O.lip=.7;O.mouth=.25;O.ear=-.8;
+  if(b.leap){// der letzte Galoppsprung: Brust und Vorderpranken voraus, Hinterläufe strecken sich nach hinten, Maul auf
+   const u=cl(b.leap.t/.26,0,1),sn=Math.sin(Math.PI*u*.9),e=sm(u/.5);O.hy=-6*sn;O.p=.2*sn;O.nx=11*e;O.fx=11*e;O.ny=-8*sn-2*e;O.fy=-8*sn-2*e;O.ax=-5*e;O.ay=-5*sn;O.mouth=.3+.6*e;O.lip=1;O.ne=.15*e;}}
  else if(m==='dead'){const e=sm(b.clock/1.2);O.he=-.3*e;O.ne=-.15*e;O.mouth=.25*e;}
  if(hr>0){O.he=(O.he||0)+.14*hr;O.hx=(O.hx||0)-1.5*hr;O.ear=(O.ear||0)-.5*hr;}
  // Lahmen: Tritt die kranke Pranke auf, geht der Kopf hoch (der Bär nimmt Last von ihr); lahmt er hinten, sackt die Kruppe weg.
@@ -274,7 +295,7 @@ function over(b,t){const m=b.mode,u=b.duration?cl(b.clock/b.duration,0,1):0,O={}
   O.ne=(O.ne||0)+.24*lv*gs*sv;O.he=(O.he||0)-.1*lv*gs*sv;O.p=(O.p||0)+.05*lv*gs*sv-.06*lh*gs*sh;O.hy=(O.hy||0)+1.8*lh*gs*sh;
   if(lv>.5&&gs<.2&&(m==='approach'||m==='threat'))O.ny=(O.ny||0)-5*(lv-.5)*(1-gs*5);}
  // Wechselt die Bewegung (anderer Angriff, andere Phase), läuft die alte Haltung in 0,2 s weich in die neue über (kein Ruck)
- const key=m+(b.phase||0)+(A?'a':V?(m==='pin'&&!PZ?'w':'v'):'');if(b.ovKey!==key){b.ovKey=key;b.ovFrom=b.ovLast||{};b.ovT=t;}
+ const key=m+(b.phase||0)+(b.leap?'L':'')+(A?'a':V?(m==='pin'&&!PZ?'w':'v'):'');if(b.ovKey!==key){b.ovKey=key;b.ovFrom=b.ovLast||{};b.ovT=t;}
  const xe=Z?sm((t-b.ovT)/.2):1;if(xe<1){const F0=b.ovFrom;for(const k in F0)if(!(k in O))O[k]=0;for(const k in O)O[k]=L2(F0[k]||0,O[k],xe);}
  b.ovLast=O;b.fig.over=O;}
 
@@ -293,7 +314,19 @@ function chooseAttack(b,t){const f=K.force;if(f&&b.team===0){K.force=null;if(['t
  // Packen und Schleudern nur gegen Menschen, die der Bär vom Gewicht her halten kann; Schleudern eher, wenn mehrere Gegner nah sind (schafft Platz)
  if(human(t)&&K.OPT.ringen){if(heavier(b,t,.9))w.grapple=A==='D'?.08:A==='H'?.14:.2;if(heavier(b,t,1.5))w.fling=foes(b).filter(a=>a!==t&&dist(a,b)<130).length?.2:.08;}
  if(b.tissue.vl/b.max.vl<.35){w.swipe*=.3;w.slam*=.3;if(w.grapple)w.grapple*=.2;}return pick(Object.entries(w));}
-function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;b.cool=Math.max(0,b.cool-dt);b.hit=Math.max(0,b.hit-dt);stepSpray(b,dt);
+// Umspringen (B3c2): Aufprall mit Brust und Vorderpranken. Der Schaden ist der alte Rammstoß (wächst nicht mit dem höheren Tempo). Menschen fliegen
+// nach Gewichtsverhältnis (Flug über b.toss wie beim Wegschleudern), der Bär verliert am Gegner den größten Teil seines Tempos, landet bei ihm und drückt nieder.
+function pounce(b,T){const fig=b.fig,P=b.P,v=fig.v||0,f=B.facing(fig);b.leap=null;b.energy-=12;sand(b,b.x+f*22*P.sz*K.SCALE,b.y+1,12,f*v*.2,1.3);
+ const ok=strike(b,T,'ram',P.ram*(v/K.OPT.tempo/250)*rnd(.85,1.15));
+ if(!ok||T.bear||T.dog){if(ok&&T.dog)T.kbx=(T.kbx||0)+Math.cos(b.a)*90;if(!ok&&human(T)){T.ky=(T.ky||0)+(T.y>=b.y?1:-1)*70;/* er wirft sich zur Seite, der Bär schiebt ihn nicht vor sich her */}if(!ok&&human(T))log(T.g.name+' gets out of the way. '+b.g.name+' thunders past, taking the breeze with it.');state(b,'approach');b.cool=.5;return;}
+ const D=cl(40+20*P.mass/(T.g.weight||80),50,170),l=Math.hypot(b.dirx,b.diry*.5)||1,tt=.3+D/400;
+ M.knockdown(T,'Run down by '+b.g.name,3);
+ {let best=null,bx=-1e9;for(const fs of [-1,1]){T.fallSide=fs;const x=(groundPoint(T,'head').x-T.x)*f;if(x>bx){bx=x;best=fs;}}T.fallSide=best;}// von vorn umgerissen: er fällt nach hinten, der Kopf zeigt vom Bären weg
+ b.toss={id:T.id,vx:b.dirx/l*2*D/tt,vy:b.diry*.5/l*2*D/tt,left:tt,T:tt};fig.v=v*.45;b.pounces=(b.pounces||0)+1;b.pounceD=D;b.rush=true;
+ if(T.g.dead){log(b.g.name+' goes through '+T.g.name+' at full gallop. There is no second act.');state(b,'approach');b.cool=.6;return;}
+ log(b.g.name+' leaps into '+T.g.name+' chest first. He is still flying when the bear lands on him.');b.victim=T.id;b.interrupt=0;state(b,'pin');b.pinPart=null;b.stoodOver=T.id;}
+function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;b.cool=Math.max(0,b.cool-dt);b.hit=Math.max(0,b.hit-dt);stepSpray(b,dt);stepDust(b,dt);
+ fig.sprint=K.OPT.sturm&&(b.mode==='charge'||b.mode==='bluff')&&!b.g.dead?1:0;
  // Geschleuderter fliegt aus: schnell los, läuft aus (sim.js bremst Stöße zu früh für einen Wurf)
  if(b.toss){const q=b.toss,V=bt.actors.find(a=>a.id===q.id);if(V&&q.left>0){const v=q.left/q.T;V.x=cl(V.x+q.vx*v*dt,BX[0],BX[1]);V.y=cl(V.y+q.vy*v*dt,BY[0],BY[1]);q.left-=dt;}else b.toss=null;}
  if(!b.g.dead){let bl=0;for(const p of PARTS){const v=b.bleed[p]||0;if(v>0){bl+=v;b.bleed[p]=v*Math.exp(-dt*.1);/* Wunden schließen sich langsam */}}b.blood=Math.max(0,b.blood-bl*dt);
@@ -366,16 +399,28 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
    if(Math.random()<dt*9&&(fig.v||0)>4)stain(V.x,V.y,1.2+Math.random()*1.6);
    const n=Math.floor(b.clock/.8);if(n>b.ticks){b.ticks=n;hurtHuman(b,V,'pin',b.dragPart,P.bite*.22*rnd(.8,1.2));}
    if(d<14&&!fig.turn||b.clock>=b.duration){b.dragUntil=bt.time+7;state(b,'pin');b.ticks=0;}}}
+ else if(m==='threat'&&K.OPT.sturm){halt(b);const nah=!b.thrForce&&foes(b).some(a=>!fallen(a)&&dist(a,b)<115);// kommt ihm einer zu nah, bricht er das Drohen ab
+  if(b.phase===0){if(nah){b.phase=2;b.clock=0;B.pose(fig,'stand');}else{if(fig.mode!=='rear'&&!fig.want)B.pose(fig,'rear');if(fig.mode==='rear'&&!B.moving(fig)&&b.clock>.4||b.clock>3.2){b.phase=1;b.clock=0;B.sound?.('roar',b);}}}
+  else if(b.phase===1){if(b.clock>=1.9||nah){b.phase=2;b.clock=0;B.pose(fig,'stand');}}
+  else if(b.phase===2){if(fig.mode==='stand'&&!B.moving(fig)||b.clock>2.6){b.phase=3;b.clock=0;const f=B.facing(fig),R=fig._R;sand(b,b.x+f*(R?R.legs[3].px:25)*P.sz*K.SCALE,b.y+1,16,f*45,1.5);B.sound?.('slam',b);
+    log(b.g.name+' drops and slams both paws into the sand. The front row reconsiders its seats.');}}
+  else{if(!b.clacked&&b.clock>.12){b.clacked=true;B.sound?.('clack',b);}if(b.clock>=.8||nah&&b.clock>.25){state(b,'approach');b.cool=.3;}}}
  else if(m==='threat'){halt(b);if(fig.mode!=='rear'&&!fig.want&&b.clock<1)B.pose(fig,'rear');if(b.clock>.9&&!b.roared){b.roared=true;B.sound?.('roar',b);}
   if(b.clock>=b.duration){B.pose(fig,'stand');state(b,'approach');b.cool=.4;}}
  else if(m==='bluff'||m==='charge'){T=bt.actors.find(a=>a.id===b.aim);if(!T||T.g.dead||out(T)){state(b,'approach');}
   else{const d=dist(b,T),stopAt=m==='bluff'?95:0;
    if(m==='bluff'&&d<stopAt+brake(fig)*P.sz){halt(b);if((fig.v||0)<8){log(b.g.name+' charges and stops short. Just checking.');state(b,'approach');b.cool=rnd(.4,.9);}}
-   else{head(b,T.x,T.y,'run');
-    if(m==='charge'&&d<(26*P.sz*K.SCALE+(T.r||14))&&(fig.v||0)>110){const v=fig.v;if(strike(b,T,'ram',P.ram*(v/250)*rnd(.85,1.15))){if(!T.bear&&!T.dog){fell(b,T,'Run down by '+b.g.name,2.6,95);log(b.g.name+' runs '+T.g.name+' down.');}else if(T.dog){T.kbx=(T.kbx||0)+Math.cos(b.a)*90;}}state(b,'approach');b.cool=.5;b.energy-=12;}
+   else{const sturm=m==='charge'&&K.OPT.sturm,reach=26*P.sz*K.SCALE+(T.r||14);head(b,T.x,T.y,'run',sturm);
+    if(sturm){// Umspringen: rund eine Viertelsekunde vor dem Gegner springt der Bär ab; in der Luft bremst nichts
+     if(!b.leap&&(fig.v||0)>110&&!fig.turn&&d<reach+(fig.v||0)*P.sz*K.SCALE*.26){b.leap={t:0,v:fig.v};B.sound?.('huff',b);}
+     if(b.leap){b.leap.t+=dt;fig.v=Math.max(fig.v||0,b.leap.v);
+      if(d<reach){pounce(b,T);animate(b,dt,t);return;}
+      if(b.leap.t>.55){log(b.g.name+' lands where '+T.g.name+' no longer is.');state(b,'approach');b.cool=.6;b.energy-=8;}}
+     else if(b.clock>6)state(b,'approach');}
+    else if(m==='charge'&&d<reach&&(fig.v||0)>110){const v=fig.v;if(strike(b,T,'ram',P.ram*(v/250)*rnd(.85,1.15))){if(!T.bear&&!T.dog){fell(b,T,'Run down by '+b.g.name,2.6,95);log(b.g.name+' runs '+T.g.name+' down.');}else if(T.dog){T.kbx=(T.kbx||0)+Math.cos(b.a)*90;}}state(b,'approach');b.cool=.5;b.energy-=12;}
     else if(b.clock>6)state(b,'approach');}}}
  else if(m==='pin'||m==='tear'||m==='crush'){const V=bt.actors.find(a=>a.id===b.victim);if(!V){state(b,'approach');}
-  else{const sp=pinSpot(b,V),d=Math.hypot(sp.x-b.x,sp.y-b.y);if(m==='pin'&&!fig.turn&&(!b.pinPart||K.OPT.ziel&&human(V)&&!pinOk(b,V,b.pinPart)))b.pinPart=pinPick(b,V);if(d>10&&m==='pin')head(b,sp.x,sp.y,'walk');else{halt(b);if(fig.mode==='rear'&&!fig.want)B.pose(fig,'stand');faceTo(b,K.OPT.ziel&&human(V)?groundPoint(V,'chest'):V);}
+  else{const sp=pinSpot(b,V),d=Math.hypot(sp.x-b.x,sp.y-b.y);if(m==='pin'&&!fig.turn&&(!b.pinPart||K.OPT.ziel&&human(V)&&!pinOk(b,V,b.pinPart)))b.pinPart=pinPick(b,V);if(d>10&&m==='pin')head(b,sp.x,sp.y,b.rush&&d>45?'run':'walk');else{b.rush=false;halt(b);if(fig.mode==='rear'&&!fig.want)B.pose(fig,'stand');faceTo(b,K.OPT.ziel&&human(V)?groundPoint(V,'chest'):V);}
    V.pinnedBy=b.id;if(!(V.fallTimer>0)&&!V.down)M.knockdown(V,'Held down by '+b.g.name,2.6);
    if(m==='pin'&&d<=14&&!(K.OPT.ziel&&human(V)&&(fig.turn||fig.turnWant))){const n=Math.floor(b.clock/.75);if(n>b.ticks){b.ticks=n;let sp0=b.wantSpecial;b.wantSpecial=null;if(!sp0&&b.team===0&&(K.force==='tear'||K.force==='crush'||K.force==='drag')){sp0=K.force;K.force=null;}
      // Wegzerren: Stören andere Gegner in der Nähe, zerrt der Bär seine Beute von ihnen weg (höchstens alle 7 s)
@@ -408,16 +453,19 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
    // Hängt ein Hund am Bären, schlägt er ihn sofort weg (dafür muss er sich nicht erst hindrehen)
    const hang=b.cool<=0&&bt.actors.find(a=>a.dog&&!a.g.dead&&a.mode==='grip'&&a.victim===b.id);
    if(hang){b.aim=hang.id;b.at=null;state(b,'swipe',.7);b.swat=true;b.energy-=4;animate(b,dt,t);return;}
-   if(!b.threatDone&&(f==='threat'||!f&&d>150)){b.threatDone=true;if(f==='threat'||Math.random()<.35+.4*P.wild){if(f)K.force=null;b.roared=false;state(b,'threat',2.3);log(b.g.name+' rises on its hind legs and roars.');animate(b,dt,t);return;}}
+   if(!b.threatDone&&(f==='threat'||!f&&d>150)){b.threatDone=true;if(f==='threat'||Math.random()<.35+.4*P.wild){if(f)K.force=null;b.roared=false;state(b,'threat',2.3);b.thrForce=!!f;log(b.g.name+(K.OPT.sturm?' rises to its full height, claws the air and roars.':' rises on its hind legs and roars.'));animate(b,dt,t);return;}}
    if(b.cool<=0&&(f==='charge'||f==='bluff'||!f&&d>170&&b.energy>30&&!fallen(T)&&K.lame(b)<=.45)){const bl=f==='bluff'||!f&&b.bluffs<1&&Math.random()<.3*(1.1-P.wild);if(f)K.force=null;if(bl)b.bluffs++;b.aim=T.id;state(b,bl?'bluff':'charge');animate(b,dt,t);return;}
    if(fallen(T)&&d<70*P.sz+20){b.victim=T.id;b.interrupt=0;state(b,'pin');if(b.stoodOver!==T.id){b.stoodOver=T.id;log(b.g.name+' stands over '+T.g.name+'.');}}
    else if(ds>12&&!(b.cool<=0&&inReach(b,T)))head(b,sp.x,sp.y,ds>70?'run':'walk');
    else{halt(b);if(faceTo(b,T)&&b.cool<=0&&(fig.v||0)<45&&!B.moving(fig)){const k=chooseAttack(b,T);b.aim=T.id;b.at=human(T)&&(k==='swipe'||k==='bite'||k==='slam')?humanPart(b,T,k):null;/* die Stelle steht vor dem Ausholen fest: Pranke und Maul zielen darauf */b.energy-=k==='slam'?10:6;
      if(k==='pin'){b.victim=T.id;b.interrupt=0;state(b,'pin');}else if(k==='slam'){state(b,'slam');b.phase=0;}
-     else if(k==='grapple'){b.victim=T.id;b.interrupt=0;state(b,'grapple');b.phase=0;}else if(k==='fling'){b.victim=T.id;b.interrupt=0;b.held=false;state(b,'fling',1.2);}else if(k==='charge'||k==='bluff'||k==='threat')state(b,k,k==='threat'?2.3:0);
+     else if(k==='grapple'){b.victim=T.id;b.interrupt=0;state(b,'grapple');b.phase=0;}else if(k==='fling'){b.victim=T.id;b.interrupt=0;b.held=false;state(b,'fling',1.2);}else if(k==='charge'||k==='bluff'||k==='threat'){state(b,k,k==='threat'?2.3:0);if(k==='threat')b.thrForce=true;}
      else state(b,k,k==='swipe'?.95+.25*cl(b.bear.weight/400,.3,2):1.25);}}}}
  animate(b,dt,t);}
 function animate(b,dt,t){const fig=b.fig,P=b.P;over(b,t);B.step(fig,dt,t);fig._R=B.rig(fig,t);if(b.chk)contactCheck(b);// rechnet auch ohne Bild die Haltung weiter (Reihenrechnung)
+ // Sand spritzt, wo im Sturm eine Pranke aufsetzt oder abdrückt (B3c2)
+ if((fig.spr||0)>.3&&(fig.v||0)>150){const R=fig._R,f=B.facing(fig),k=P.sz*K.SCALE;let bits=0;for(let i=0;i<4;i++)if(R.legs[i].st)bits|=1<<i;const ch=bits^(b.ftBits==null?bits:b.ftBits);b.ftBits=bits;
+  if(ch)for(let i=0;i<4;i++)if(ch>>i&1)sand(b,b.x+f*R.legs[i].px*k,b.y+(R.legs[i].near?2:-2),2,-f*fig.v*.22,1);}else b.ftBits=null;
  const v=(fig.v||0)*P.sz*K.SCALE;b.velocity=v;b.moveSpeed=v;if(v>.5){b.x=cl(b.x+b.dirx*v*dt,BX[0],BX[1]);b.y=cl(b.y+b.diry*v*dt*.8,BY[0],BY[1]);}
  b.a=B.facing(fig)>0?0:Math.PI;b.face=B.facing(fig);fig.mouthBlood=Math.max(0,(fig.mouthBlood||0)-dt*.004);}
 // Prüfwert (B3c1): Abstand von Maul bzw. Pranke zur Trefferstelle im Bild des Treffers, in Einheiten des Skeletts (K.contacts, für den Test)
@@ -432,6 +480,7 @@ const baseDraw=M.drawRex;
 M.drawRex=function(ctx,a){if(!a?.bear)return baseDraw?.apply(this,arguments);const px=Math.round(a.x),py=Math.round(a.y),t=S.battle?.time||0;
  if(a.pool&&a.pool.r>1){ctx.fillStyle='#4c0f0b';ctx.beginPath();ctx.ellipse(px,py+2,a.pool.r*1.3,a.pool.r*.32,0,0,TAU);ctx.fill();}
  const t0=performance.now();a.fig._R=B.draw(ctx,a.fig,px,py,K.SCALE,1,{time:t});K.drawMs=(K.drawMs||0)*.95+(performance.now()-t0)*.05;
+ if(a.dust&&a.dust.length)for(const p of a.dust){ctx.fillStyle=p.s>1?'#b08a52':'#dcc08a';ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z),p.s,p.s);}
  if(a.spray.length)for(const p of a.spray){ctx.fillStyle='#8d1c13';ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z),p.s,p.s);}
  if(a.fled&&!a.g.dead){ctx.fillStyle='#e9d6a2';ctx.font='bold 9px monospace';ctx.textAlign='center';ctx.fillText('flees',a.x,a.y-62*a.P.sz);}};
 

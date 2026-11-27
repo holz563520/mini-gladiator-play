@@ -9,6 +9,7 @@
 // · Pixelgrafik (Rückmeldung Thomas 27.11.2026): alle Formen in ganzen Rasterkästchen (BAER.PX, wie KATZE.PX und der Löwe aus 1.0).
 //   Wenden ist eine echte Drehung über die Vorderansicht: Kopf führt, Rumpf wird kürzer, Beine rücken nebeneinander, Kopf von vorn.
 //   Fell und Speck schwingen an einer Feder nach, schwere Bären beschleunigen und bremsen langsamer.
+//   a.sprint = 1 (B3c2, Angriff): gestreckter flacher Galopp, siehe sprintGait.
 // · Sortenliste und Werte: BAER_SORTEN.md. Fahrplan: BAER_FAHRPLAN.md. Editor: dist/baer-editor.html.
 // Maßstab wie im Spiel: 81 Einheiten = 180 cm → 2,22 cm je Einheit.
 // =====================================================================================================
@@ -194,6 +195,10 @@ BAER.moving=a=>!!(a.pose&&a.pose.to)||a.queue.length>0;
 const GAITS={walk:{name:'Pace walk',de:'Passgang',off:[.1,0,.6,.5],duty:.66,stride:25,lift:4,roll:.75,curl:.35,v:42,hs:0,fs:0},
  run:{name:'Gallop',de:'Galopp',off:[.55,.12,.45,0],duty:.34,stride:31,lift:7.5,roll:.9,curl:.5,v:250,hs:0,fs:2},
  up:{name:'Upright walk',de:'Aufrecht gehen',off:[0,0,.5,0],duty:.7,stride:9,lift:2.2,roll:.45,curl:.1,v:14,hs:0,fs:0}};
+// Gestreckter Galopp beim Angriff (B3c2, a.sprint = 1): längerer Sprung, kürzer am Boden (längere Schwebephase), Pranken greifen weiter vor.
+// Ein gemeinsames Arbeitsobjekt, kein neues Objekt je Bild. Bei s = 0 ist es genau der normale Galopp.
+const SG={...GAITS.run};
+function sprintGait(s){const R=GAITS.run;if(!(s>.001))return R;SG.stride=R.stride*(1+.2*s);SG.duty=R.duty-.07*s;SG.lift=R.lift*(1+.2*s);SG.fs=R.fs+1*s;SG.hs=R.hs+.5*s;return SG;}
 const FOOT_H=9.6,FOOT_V=6.6,Z1={dx:0,up:0,a:0,st:false};
 // Ein Fuß im Takt: sS Schrittweite (0–1), sL Hub (0–1)
 function footCyc(G,c,i,sS,sL,lf){const u=((c+G.off[i])%1+1)%1,st=G.stride*lf*sS;
@@ -218,12 +223,13 @@ function step(a,dt,t){dt=cl(dt,0,.05);const D=a.bear,SH=a.SH||shapeOf(D),lf=SH.l
  const v0=v,acc=(30+.6*Math.max(vT,v))/hs*(vT<v?1.3:1);v+=cl(vT-v,-acc*dt,acc*dt);a.v=v;
  if(v<.5&&!a.turn)a.gk=a.mode==='rear'?'up':'quad';const up=a.gk==='up';
  a.gs=smooth(cl(v/(up?8:27),0,1));const mt=!up&&v>85?1:0;a.mix=cl((a.mix||0)+cl(mt-(a.mix||0),-dt*2.2,dt*2.2),0,1);
- const len=(up?GAITS.up.stride/GAITS.up.duty:lerp(GAITS.walk.stride/GAITS.walk.duty,GAITS.run.stride/GAITS.run.duty,smooth(a.mix)))*lf*Math.max(a.gs,.3);
+ const st=a.sprint&&!up&&a.mix>.6?1:0,sp=a.spr=cl((a.spr||0)+cl(st-(a.spr||0),-dt*2.5,dt*2.5),0,1),RG=sprintGait(sp);
+ const len=(up?GAITS.up.stride/GAITS.up.duty:lerp(GAITS.walk.stride/GAITS.walk.duty,RG.stride/RG.duty,smooth(a.mix)))*lf*Math.max(a.gs,.3);
  a.cyc=(a.cyc||0)+v*dt/len+(a.turn?dt*1.3*a.tl*(1-a.gs):0);a.dist=(a.dist||0)+v*dt*(a.facing||1);
  // Fell und Speck: Feder, angeregt vom Auf und Ab des Gangs (q) und vom Anfahren und Bremsen (qx)
- const c=a.cyc,m=smooth(a.mix),w=a.gs*(1-m),r=a.gs*m,tq=up?.5*a.gs*Math.sin(2*TAU*c):w*.7*Math.sin(2*TAU*c)+r*2.2*Math.sin(TAU*(c-.2));
+ const c=a.cyc,m=smooth(a.mix),w=a.gs*(1-m),r=a.gs*m,tq=up?.5*a.gs*Math.sin(2*TAU*c):w*.7*Math.sin(2*TAU*c)+r*2.2*(1+1.4*sp)*lerp(1,cl(hs*hs/.36,1,3.5),sp)*Math.sin(TAU*(c-.2));// im Sturm wackeln Fell, Speck und Buckel deutlich stärker
  const tx=cl(-(v-v0)/Math.max(dt,1e-3)*.012-v*.005,-3.5,3.5),om=10/hs,dm=2*.25*om;
- a.qv=(a.qv||0)+(om*om*(tq-(a.q||0))-dm*(a.qv||0))*dt;a.q=cl((a.q||0)+a.qv*dt,-4,4);
+ a.qv=(a.qv||0)+(om*om*(tq-(a.q||0))-dm*(a.qv||0))*dt;a.q=cl((a.q||0)+a.qv*dt,-4-3*sp,4+3*sp);
  a.qxv=(a.qxv||0)+(om*om*(tx-(a.qx||0))-dm*(a.qxv||0))*dt;a.qx=cl((a.qx||0)+a.qxv*dt,-4,4);}
 BAER.step=step;
 // Stauchung beim Wenden: der Bär dreht sich um die Hochachse, in der Seitenansicht wird er kurz schmal
@@ -256,11 +262,12 @@ function rig(a,t,SH){const O=a.over,C=O?overPose(curPose(a,t,SH),O):curPose(a,t,
  if(O){if(O.mouth)F.mouth=Math.max(F.mouth,O.mouth);if(O.lip)F.lip=Math.max(F.lip,O.lip);if(O.ear)F.ear+=O.ear;}
  // Gang: Füße im Takt, Rumpf wippt, nickt und (im Galopp) rollt und krümmt sich
  const gs=a.gs||0,gl=Math.max(gs,a.tl||0);let dhy=0,dp=0,dbend=0,dne=0,dhe=0,hsx=0,fsx=0,F4=null;
- if(gl>.002){const c=a.cyc||0,up=a.gk==='up',m=up?0:smooth(a.mix||0),w=gs*(1-m),r=gs*m,W=GAITS.walk,R=GAITS.run,U=GAITS.up;
+ if(gl>.002){const c=a.cyc||0,up=a.gk==='up',m=up?0:smooth(a.mix||0),w=gs*(1-m),r=gs*m,sp=a.spr||0,W=GAITS.walk,R=sprintGait(sp),U=GAITS.up;
   if(up){dhy=gs*(4.8+.4*Math.sin(2*TAU*c));dp=.045*gs*Math.sin(TAU*c);dne=-.03*gs*Math.sin(TAU*c);
    F4=[footCyc(U,c,0,gs,gl,lf),Z1,footCyc(U,c,2,gs,gl,lf),Z1];}
-  else{dhy=w*(1.5+.7*Math.sin(2*TAU*c))+r*(2.6-2.6*Math.cos(TAU*(c-.36)));dp=w*.025*Math.sin(2*TAU*c+1.2)+r*.13*Math.cos(TAU*(c-.67));
-   dbend=r*(.8+2.2*Math.cos(TAU*(c-.36)));dne=w*(-.05+.04*Math.sin(2*TAU*c+.8))+r*(.2-.1*Math.cos(TAU*(c-.67)));dhe=.05*w*Math.sin(TAU*c)+.12*r;hsx=r*R.hs;fsx=r*R.fs;
+  else{dhy=w*(1.5+.7*Math.sin(2*TAU*c))+r*(2.6-2.6*Math.cos(TAU*(c-.36)))+r*sp*1.2;dp=w*.025*Math.sin(2*TAU*c+1.2)+r*.13*Math.cos(TAU*(c-.67));
+   // Sturm: Rumpf tiefer, Rücken streckt und krümmt sich stärker, Hals und Kopf tief und nach vorn gestreckt
+   dbend=r*(.8+2.2*(1+.5*sp)*Math.cos(TAU*(c-.36)));dne=w*(-.05+.04*Math.sin(2*TAU*c+.8))+r*(.2-.1*Math.cos(TAU*(c-.67)))-r*sp*.3;dhe=.05*w*Math.sin(TAU*c)+.12*r+.14*r*sp;hsx=r*R.hs;fsx=r*R.fs;
    F4=[0,1,2,3].map(i=>{if(m<.001)return footCyc(W,c,i,gs,gl,lf);const B=footCyc(R,c,i,gs,gl,lf);if(m>.999)return B;const A=footCyc(W,c,i,gs,gl,lf);
     return {dx:lerp(A.dx,B.dx,m),up:lerp(A.up,B.up,m),a:lerp(A.a,B.a,m),st:m<.5?A.st:B.st};});}}
  const p=C.p+dp,bend=C.bend+dbend,Tx=Math.cos(p),Ty=-Math.sin(p),Nx=-Math.sin(p),Ny=-Math.cos(p),fem=14*lf,tib=13*lf,hum=13*lf,rad=14*lf,Ty0=Math.abs(Math.sin(C.p));

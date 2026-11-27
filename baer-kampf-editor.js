@@ -23,7 +23,7 @@ for(const s of ['A','B']){
  for(const [id,n] of RUEST)$('ruest'+s).insertAdjacentHTML('beforeend',`<option value="${id}"${id==='leather'?' selected':''}>${n}</option>`);
 }
 function sync(){for(const s of ['A','B']){const art=val('art'+s);for(const l of $('art'+s).closest('.team').querySelectorAll('[data-fuer]'))l.hidden=l.dataset.fuer!==art;}
- for(const k of ['tear','head','schaden','haerte']){K.OPT[k]=+val(k);$(k+'Text').textContent=nf(K.OPT[k],2)+'×';}}
+ for(const k of ['tear','head','schaden','haerte','tempo']){K.OPT[k]=+val(k);$(k+'Text').textContent=nf(K.OPT[k],2)+'×';}}
 
 // ---------- Aufstellung ----------
 function mensch(team,s,i){const q=+val('stufe'+s),rng=S.rng,g=M.makeGladiator(q,team===1);S.rng=rng;g.role='Soldat';
@@ -41,7 +41,7 @@ $('pause').onclick=()=>{const b=S.battle;if(!b)return;b.paused=!b.paused;$('paus
 $('einzel').onclick=()=>{const b=S.battle;if(!b)return;b.paused=false;K.fixed(1/60);b.paused=true;$('pause').textContent='▶ Weiter';};
 $('spd').onchange=()=>{S.options.speed=+val('spd');};
 for(const id of ['artA','artB','zahlA','zahlB','sorteA','sorteB','rasseA','rasseB','stufeA','stufeB','waffeA','waffeB','ruestA','ruestB','werte'])$(id).addEventListener('input',()=>{sync();build();});
-for(const id of ['tear','head','schaden','haerte'])$(id).addEventListener('input',sync);
+for(const id of ['tear','head','schaden','haerte','tempo'])$(id).addEventListener('input',sync);
 for(const [id,en,de,text] of K.ATTACKS)if(!['leave','flee'].includes(id))$('angriffe').insertAdjacentHTML('beforeend',`<button class="btn" type="button" data-angriff="${id}" title="${esc(text)}">${esc(de)}<br><small>${esc(en)}</small></button>`);
 $('angriffe').onclick=e=>{const k=e.target.closest('[data-angriff]')?.dataset.angriff;if(!k)return;K.force=k;const b=S.battle?.actors.find(a=>a.bear&&a.team===0&&!a.g.dead);if(b){b.cool=0;if(k==='threat')b.threatDone=false;}};
 
@@ -52,7 +52,7 @@ function karte(a){
  if(a.bear){const D=a.bear,Br=B.breed(D.breed);return `<div class="karte"><b>${esc(a.g.name)}</b> · ${esc(Br.name)} · ${D.weight} kg · Seite ${a.team?'B':'A'}<br>`+
   (a.g.dead?`<span class="tot">tot: ${esc(a.g.cause)}</span>`:a.fled?'<span class="tot">geflohen</span>':`${esc(MODE_DE[a.mode]||a.mode)}`)+
   `<br>Gesundheit ${bar(K.health(a))} Blut ${bar(a.blood,1)} Mut ${bar(a.morale)}<div class="teile">`+K.PARTS.map(p=>`<span>${K.PART_DE[p]} ${Math.round(a.tissue[p]/a.max[p]*100)} %</span>`).join('')+
-  `</div><small>Treffer ${a.hits} · getötet ${a.kills} · abgerissen ${a.torn||0} · Kopfbisse ${a.crushed||0} · gepackt ${a.grapples||0} · geschleudert ${a.flung||0} · weggezerrt ${a.dragged||0}`+(K.lame(a)>0?` · lahmt ${Math.round(K.lame(a)*100)} %`:'')+`</small></div>`;}
+  `</div><small>Treffer ${a.hits} · getötet ${a.kills} · abgerissen ${a.torn||0} · Kopfbisse ${a.crushed||0} · gepackt ${a.grapples||0} · umgesprungen ${a.pounces||0} · geschleudert ${a.flung||0} · weggezerrt ${a.dragged||0}`+(K.lame(a)>0?` · lahmt ${Math.round(K.lame(a)*100)} %`:'')+`</small></div>`;}
  if(a.dog){return `<div class="karte"><b>${esc(a.g.name)}</b> · ${esc(a.dog.breedName||'Hund')} · ${a.dog.weight} kg · Seite ${a.team?'B':'A'}<br>`+(a.g.dead?'<span class="tot">tot</span>':a.fled?'<span class="tot">geflohen</span>':a.submit?'<span class="tot">unterwirft sich</span>':`Gesundheit ${bar(DOG.health(a))} Blut ${bar(a.blood,1)}`)+'</div>';}
  const g=a.g,weg=Object.entries(g.body).filter(([,p])=>p.missing).map(([id])=>M.partName?M.partName(id):id);
  return `<div class="karte"><b>${esc(g.name)}</b> · Mensch · Seite ${a.team?'B':'A'}<br>`+(g.dead?`<span class="tot">tot: ${esc(g.cause||'')}</span>`:a.pinnedBy?'<span class="tot">liegt unter dem Bären</span>':a.grabbedBy?'<span class="tot">vom Bären gepackt</span>':a.down?'<span class="tot">am Boden</span>':`Gesundheit ${bar(M.health(g))} Blut ${bar(g.blood??100,1)}`)+
