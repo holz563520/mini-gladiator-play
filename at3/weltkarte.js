@@ -33,8 +33,13 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='96f13d31', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
-var N7B2=!/[?&]n7b2=0/.test(location.search);   // N7b2: Stadtkarte beim Antippen (Notausschalter ?n7b2=0)
+var V='a3ed4e51', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var N7B2=!/[?&]n7b2=0/.test(location.search);
+// N7h1 Weltansicht schärfer (Thomas 24.11.2026): In den Fernstufen steht sofort das grobe Bild. Ruht der Blick VERWEILEN_MS, rechnet der Bildkern die scharfen
+// Fassungen der sichtbaren Fernbilder (Bildmitte zuerst, fernbild.js scharf) und die Karte blendet jede in EINBLENDEN_MS ein. Fertige scharfe Bilder bleiben
+// gemerkt (eigener Speicher SCH_SPEICHER, am längsten Ungenutztes fliegt zuerst), beim Zurückzoomen oder Verschieben wird nichts neu gerechnet. Bewegt sich der
+// Blick, bekommt der Bildkern eine leere Liste und bricht ab. Hauptkern: nur Liste schicken und Bilder kopieren. Notausschalter ?n7h=0 (nur grobes Bild).
+var N7H=!/[?&]n7h=0/.test(location.search), VERWEILEN_MS=600, EINBLENDEN_MS=900, SCH_SPEICHER=24*1048576;   // N7b2: Stadtkarte beim Antippen (Notausschalter ?n7b2=0)
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
 // N7a3c2 Ortsnamen (Thomas 25.11.2026): Staffel nach Ortsgröße g (2 Weiler … 7 Hauptstadt) je Stufe lod 4–9, Zusatz bis lod 5, Schriftgröße je g; Notausschalter ?n7a3c2=0
@@ -82,8 +87,17 @@ function starten(o){
    bk.postMessage({art:'welt',gen:gen,seed:seed,buf:d.buf},[d.buf.buffer]);if(hatKam)blick();else if(o.waehlen){if(o.beiErde)o.beiErde()}else bk.postMessage({art:'start'});plan()}
   else if(d.art==='wsStueck')kern.wsZurueck(d.buf)}
  // N4c1: Knopf „Realms“: Bildkern umschalten, Fernbilder und Globus verwerfen (unterwegs mit alter NV fliegen weg), Nahbilder bleiben
- function reiche(an){if(!bk)return;bk.postMessage({art:'reiche',an:!!an});NV++;bilder.forEach(function(b,k){if(b.lod>=STUFEN){if(b.bmp&&b.bmp.close)b.bmp.close();bytes-=b.bytes;bilder.delete(k);altB.delete(k)}});fehlt.clear();gimg=null;gimgKey='';plan()}
- function bilderWeg(){bilder.forEach(function(b){if(b.bmp&&b.bmp.close)b.bmp.close()});bilder.clear();altB.clear();bytes=0}
+ function reiche(an){if(!bk)return;bk.postMessage({art:'reiche',an:!!an});NV++;schWeg();bilder.forEach(function(b,k){if(b.lod>=STUFEN){if(b.bmp&&b.bmp.close)b.bmp.close();bytes-=b.bytes;bilder.delete(k);altB.delete(k)}});fehlt.clear();gimg=null;gimgKey='';plan()}
+ function bilderWeg(){bilder.forEach(function(b){if(b.bmp&&b.bmp.close)b.bmp.close()});bilder.clear();altB.clear();bytes=0;schWeg()}
+ // N7h1: scharfe Fernbilder (Schlüssel wie die groben)
+ var schB=new Map(), schBytes=0, schSig='', schRuhe=0, schCam='';
+ function schWeg(k){if(k!=null){var b=schB.get(k);if(b){if(b.bmp.close)b.bmp.close();schBytes-=b.bytes;schB.delete(k)}return}schB.forEach(function(b){if(b.bmp.close)b.bmp.close()});schB.clear();schBytes=0;schSig=''}
+ function schListe(L){var sig=L.map(function(e){return e[0]}).join(';');if(sig===schSig)return;schSig=sig;if(bk)bk.postMessage({art:'scharf',gen:gen,nv:NV,liste:L})}
+ function schNeu(d){if(d.nv!==NV||d.gen!==gen){if(d.bmp&&d.bmp.close)d.bmp.close();return}var b={bmp:d.bmp||null,w:d.w,h:d.h,ox:d.ox,oy:d.oy,lod:d.lod,x0:d.x0,y0:d.y0,nr:bildNr,bytes:d.w*d.h*4,t:performance.now()};
+  if(!b.bmp){var c=document.createElement('canvas');c.width=d.w;c.height=d.h;c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(d.buf.buffer),d.w,d.h),0,0);b.bmp=c}
+  schWeg(d.key);schB.set(d.key,b);schBytes+=b.bytes;M.scharfN=(M.scharfN|0)+1;M.scharfMs=d.ms;if(d.ms>(M.maxScharfMs||0))M.maxScharfMs=d.ms;M.scharfSchritte=d.schritte;
+  if(schBytes>SCH_SPEICHER){var L=[];schB.forEach(function(x,k){if(x.nr<bildNr-1)L.push([x.nr,k])});L.sort(function(a,c){return a[0]-c[0]});for(var i=0;i<L.length&&schBytes>SCH_SPEICHER*.8;i++){schWeg(L[i][1]);M.scharfRaus=(M.scharfRaus|0)+1}}
+  M.scharfZahl=schB.size;M.scharfB=schBytes;schSig=schSig.split(';').filter(function(k){return k&&k!==d.key}).join(';');plan()}
 
  function vomBildkern(e){var d=e.data;
   if(d.art==='arten'){NARTEN=d.liste;BARTEN=d.bau||[];naturSenden();return}
@@ -95,10 +109,11 @@ function starten(o){
    bekannt.set(d.cx*8192+d.cy,{cx:d.cx,cy:d.cy,mm:d.mm,hg:d.hg,mn:mn,mx:mx});M.stuecke=bekannt.size;M.stueckUs=d.stUs;fehlt.clear();plan()}
   else if(d.art==='fernNeu'){if(d.gen!==gen)return;var FL=d.flaechen||[];M.minis=d.minis;M.miniB=d.miniB;M.miniMs=d.miniMs;M.miniRaus=d.miniRaus;M.fernNeu=(M.fernNeu|0)+FL.length;   // N7a3c1: Mini-Pläne da → Fernbilder ⅟16–⅟512 dort neu holen (altes bleibt stehen)
    bilder.forEach(function(b,key){if(b.lod<STUFEN||b.lod>9)return;var n=TEIL<<b.lod;for(var i=0;i<FL.length;i++){var f=FL[i],dx=modu(f[0]-b.x0,WX);
-    if((dx<n||dx+f[2]>WX)&&f[1]<b.y0+n&&f[1]+f[2]>b.y0){altB.add(key);break}}});plan()}
+    if((dx<n||dx+f[2]>WX)&&f[1]<b.y0+n&&f[1]+f[2]>b.y0){altB.add(key);schWeg(key);break}}});plan()}
   else if(d.art==='ortNeu'){if(d.fpNeu&&window.AT3FP&&window.AT3FP.zustand().an)window.AT3FP.bauNeu();var S=new Set(d.stuecke||[]);   // N7b3: Stadtplan im First-Person-Ausschnitt angekommenS.forEach(function(k){stV.set(k,++BV)});   // N7a2a: Ortsfläche eingeebnet (oder Park gewinnt): Bilder dieser Stücke neu holen
    bilder.forEach(function(b,key){if(b.lod<STUFEN&&S.has(stk(b.x0,b.y0)))altB.add(key)});if(d.karteiB!=null){M.kartei=d.kartei;M.karteiB=d.karteiB;M.ortEMs=d.eMs}if(d.posten!=null){M.posten=d.posten;M.postenListen=d.postenListen;M.postenMs=d.postenMs}if(d.hausB!=null){M.haeuser=d.haeuser;M.hausB=d.hausB;M.hausMs=d.hausMs;M.listeMs=d.listeMs;M.hausPausen=d.hausPausen;M.listen=d.listen;M.halbN=d.halbN;M.halbB=d.halbB;M.halbMs=d.halbMs;M.fernN=d.fernN;M.fernB=d.fernB;M.fernMs=d.fernMs}if(d.name){M.orte=(M.orte||0)+1;M.ortMs=d.ms;if(d.ms>(M.ortMaxMs||0))M.ortMaxMs=d.ms;if(d.ersatz)M.ortErsatz=(M.ortErsatz||0)+1}plan()}
   else if(d.art==='start'){if(d.platz&&!hatKam){cam.x=umX(d.platz.x+.5);cam.y=halteY(d.platz.y+.5);hatKam=true;M.startOrt=d.platz.ort;blick();plan()}}
+  else if(d.art==='scharf')schNeu(d);   // N7h1
   else if(d.art==='bild'){var gv=offen.get(d.key);offen.delete(d.key);if(d.nv!==NV){if(d.bmp&&d.bmp.close)d.bmp.close();plan();return}
    if(d.fehlt){fehlt.set(d.key,performance.now());plan();setTimeout(plan,FEHLT_MS+50);return}   // G4d: „fehlt“ verfällt nach FEHLT_MS (Bildkern hatte das Stück gerade verworfen; sonst hinge das Ersatzbild)
    var b={bmp:d.bmp||null,w:d.w,h:d.h,ox:d.ox,oy:d.oy,lod:d.lod,x0:d.x0,y0:d.y0,nr:bildNr,bytes:d.w*d.h*4};
@@ -150,7 +165,9 @@ var t0=performance.now();
   // G4d: in den Kartenstufen das Fernbild ⅟16 als Untergrund, solange Kartenstücke oder Bilder fehlen (nach einem Sprung vom Globus, nach dem Hereinzoomen)
   var grund=false;if(lod<STUFEN&&(bekannt.size<49||M.ersatz)){sichtFern(STUFEN,CX,CY,hb,hh,GRUND);for(i=0;i<GRUND.length;i++){c=GRUND[i];b=bilder.get(c.key);if(b){mal(b,c.xu,CX,CY,Z,W,H);grund=true}}}
   offenSetzen();sichtX(lod,CX,CY,hb,hh,LISTE).sort(function(a,b2){return(a.x0+a.y0)-(b2.x0+b2.y0)||a.x0-b2.x0});gemaltB.clear();
-  var randN=0,veraltet=0;for(i=0;i<LISTE.length;i++){c=LISTE[i];b=bilder.get(c.key);if(b){mal(b,c.xu,CX,CY,Z,W,H);if(altB.has(c.key))veraltet++;continue}
+  var randN=0,veraltet=0,tS=performance.now();for(i=0;i<LISTE.length;i++){c=LISTE[i];b=bilder.get(c.key);var sb=lod>=STUFEN?schB.get(c.key):null;   // N7h1: scharfes Bild darüber einblenden
+   if(sb){var al=(tS-sb.t)/EINBLENDEN_MS;if(al>=1&&!altB.has(c.key)){mal(sb,c.xu,CX,CY,Z,W,H);if(b)b.nr=bildNr;continue}if(b)mal(b,c.xu,CX,CY,Z,W,H);g.globalAlpha=Math.max(0,Math.min(1,al));mal(sb,c.xu,CX,CY,Z,W,H);g.globalAlpha=1;if(al<1)weiter=true;if(b){if(altB.has(c.key))veraltet++;continue}}
+   if(b){mal(b,c.xu,CX,CY,Z,W,H);if(altB.has(c.key))veraltet++;continue}
    if(c.basis!==c.key&&(b=bilder.get(c.basis))){mal(b,c.xu,CX,CY,Z,W,H);veraltet++;continue}   // G5b: offenes Dach noch unterwegs → geschlossenes Bild zeigen
    if(c.rand)randN++;else ersatz++;   // Randbild (Nachbarstück jenseits des Fensters): gröbere Stufe zeigen, nicht anfragen, nicht als fehlend zählen
    // Ersatzbild: gröbere Stufe vergrößert, sonst feinere verkleinert, sonst graue Raute
@@ -163,6 +180,10 @@ var t0=performance.now();
   if(bk&&gen>=0&&ruht){if(ersatz||veraltet)anfragen(LISTE,lod,ANFRAGEN);
    else if(!offen.size&&bytes<SPEICHER*.6){if(lod<MAXL)anfragen(sichtX(lod+1,CX,CY,hb,hh,NEBEN),lod+1,2);if(lod>0&&!offen.size)anfragen(sichtX(lod-1,CX,CY,hb/2,hh/2,NEBEN),lod-1,2)}}
   else if((ersatz||veraltet)&&!ruht){setTimeout(plan,RUHE_MS)}
+  if(N7H&&bk&&gen>=0){var camS=lod+':'+Math.round(cam.x)+':'+Math.round(cam.y),jetzt=performance.now();if(camS!==schCam){schCam=camS;schRuhe=jetzt}
+   if(lod>=STUFEN&&ruht&&!ersatz&&!veraltet&&!offen.size){if(jetzt-schRuhe>=VERWEILEN_MS){var SL=[];for(i=0;i<LISTE.length;i++){c=LISTE[i];if(!schB.has(c.key)&&bilder.has(c.key))SL.push(c)}
+     SL.sort(function(a,b2){return a.ab-b2.ab});schListe(SL.map(function(c){return[c.key,c.x0,c.y0,lod]}))}else{schListe([]);setTimeout(plan,VERWEILEN_MS-(jetzt-schRuhe)+20)}}
+   else schListe([])}
   karFaehrt=false;if(KAR.size&&lod<STUFEN){var tk=performance.now();karrenMalen(CX,CY,Z,W,H);M.karrenMs=performance.now()-tk;if(karFaehrt)weiter=true}
   if(FEST.length&&lod<STUFEN){var tf=performance.now();festMalen(CX,CY,Z,W,H);M.festMs=performance.now()-tf;if(M.festMs>M.maxFestMs)M.maxFestMs=M.festMs}      // G9c1: Marktstand (vor den Personen, die davor stehen)
   perGeht=false;if(PER.size&&lod<STUFEN){var tp=performance.now();personenMalen(CX,CY,Z,W,H);M.personenMs=performance.now()-tp;if(perGeht)weiter=true}      // G7: Arbeiter
@@ -592,7 +613,7 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,bau:bau,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
- return{reiche:reiche,beiWs:beiWs,mess:M,messNeu:function(){M.maxRechenUs=0;M.maxZeichenMs=0;M.maxFestMs=0;M.ortMaxMs=0;M.hausMs=0;M.listeMs=0;if(bk)bk.postMessage({art:'messNeu'})},frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,besucher:besucher,besucherArena:besucherArena,festNeu:festNeu,besucherBlaetter:besucherBlaetter,besucherFehlt:function(){var L=besFehltL.slice();FPFEHLT.forEach(function(i){if(L.indexOf(i)<0)L.push(i)});return L.filter(function(i){return !BFIG.has(i)})},
+ return{reiche:reiche,beiWs:beiWs,mess:M,messNeu:function(){M.maxRechenUs=0;M.maxScharfMs=0;M.maxZeichenMs=0;M.maxFestMs=0;M.ortMaxMs=0;M.hausMs=0;M.listeMs=0;if(bk)bk.postMessage({art:'messNeu'})},frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,besucher:besucher,besucherArena:besucherArena,festNeu:festNeu,besucherBlaetter:besucherBlaetter,besucherFehlt:function(){var L=besFehltL.slice();FPFEHLT.forEach(function(i){if(L.indexOf(i)<0)L.push(i)});return L.filter(function(i){return !BFIG.has(i)})},
   besucherWunsch:function(L){FPFEHLT=(L||[]).filter(function(i){return !BFIG.has(i)});if(FPFEHLT.length)M.besFpWunsch=(M.besFpWunsch||0)+1;var t=performance.now();if(FPFEHLT.length&&o.beiBesFehlt&&t-besMeldT>250){besMeldT=t;setTimeout(o.beiBesFehlt,0)}},      // AR2c2: First Person bestellt nach,besucherHat:function(i){return BFIG.has(i)},
   besucherNahFehlt:function(){return besNahFehltL.length?{stufe:besNahStufe,typen:besNahFehltL.slice()}:null},besucherNahBlaetter:besucherNahBlaetter,      // Z4b
   besucherNahTest:function(s){var L=[];BN[s===4?4:2].forEach(function(v,typ){L.push({typ:typ,c:v.c})});return L},

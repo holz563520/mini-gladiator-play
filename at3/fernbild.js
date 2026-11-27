@@ -13,6 +13,8 @@
 // N7b1: Ortssymbole nach Größe statt Quadraten (groesseAn vom Bildkern), Großstädte und Hauptstädte auf dem Globus (globusOrte).
 // N4c1: Reiche (Knopf „Realms“): Grenzlinie in der dunkleren Reichsfarbe, jede achte Landstichprobe in der Reichsfarbe; auf dem Globus je Erdzelle.
 //    Kosten: eine Nachschau je Stichprobe in einer Tafel, nichts je Bildpunkt.
+// N7h1: scharf() rechnet dieselbe Raute mit 256 × 256 Stichproben und dem feinen Höhenrauschen des Kartenstücks als Auftrag in kleinen Zeitanteilen (Bildkern);
+//    kachel() (grob) bleibt Byte für Byte gleich. Kosten fest je Bild, unabhängig von Ort und Weltgröße.
 (function(root){
 'use strict';
 var GW=600, GH=300, ZF=1024, WF=GW*ZF, HF=GH*ZF, S=128, IW=512, IH=256, ZONE=58, WEGE_BIS=8, MAX=12;
@@ -62,31 +64,71 @@ function uebersicht(G,A,seed){seed=seed>>>0;var N=GW*GH,C=new Uint16Array(N*UK),
 // G = weltgen.js, A = Erdraster (ansicht), F = {pal, du, he, dunkel}. x0 darf beliebig sein (wird umgerechnet), y0 im Raster der Stufe. Gibt {w,h,ox,oy,px}.
 // N4c1: RE = {z: Reich + 1 je Erdzelle, f: Farbnummer je Reich} oder null (Knopf „Realms“ aus, Erde ohne Herrschaften). Grenzen leicht ausgefranst
 // (Versatz je Block von 128 Feldern wie die Übersicht), Grenzlinie in der dunkleren Reichsfarbe, Land jede achte Stichprobe (versetzt) in der Reichsfarbe.
-function kachel(G,A,seed,x0,y0,lod,F,U,RE){seed=seed>>>0;var ueb=U&&lod>=U_AB;x0=umF(x0);var n=8<<lod,st=n/S,sI=G.eisSeed(seed),i,j,k,q,fx,fy;
- for(j=0;j<GS;j++){fy=Math.floor(y0+(j-M+.5)*st);if(fy<0)fy=0;else if(fy>=HF)fy=HF-1;var zy=fy>>10,pol=zy<ZONE||zy>=GH-ZONE;
-  for(i=0;i<GS;i++){fx=umF(Math.floor(x0+(i-M+.5)*st));q=j*GS+i;var h=HS[q]=weich(A,0,fx,fy),ks=KS[q]=weich(A,3,fx,fy),fa=FA[q]=weich(A,1,fx,fy),tt=TT[q]=weich(A,2,fx,fy),b;
+// N7h1: Rechnung in Teilen über einen Satz Felder Bf (grob: der feste Satz K0 mit 128 × 128 Stichproben; scharf: ein eigener Satz mit 256 × 256, Zeile für Zeile
+// in kleinen Zeitanteilen). Grob bleibt Byte für Byte wie vorher.
+function satz(S2,HS2,KS2,FA2,TT2,BI2,BQ2,RQ2,COL2){var GS2=S2+2*M,n=GS2*GS2;return{S:S2,GS:GS2,HS:HS2||new Int32Array(n),KS:KS2||new Uint8Array(n),FA:FA2||new Int32Array(n),TT:TT2||new Int32Array(n),
+ BI:BI2||new Uint8Array(n),BQ:BQ2||new Uint8Array(n),RQ:RQ2||new Uint16Array(n),COL:COL2||new Uint8Array(S2*S2),TAB:S2===S?TAB:tafel(S2)}}
+function tafel(S2){var t=new Int32Array(IW*IH);for(var py=0;py<IH;py++)for(var px=0;px<IW;px++){var X=px+.5-256,Y=py+.5,a=(X/256+Y/128)/2,b=(Y/128-X/256)/2;
+ t[py*IW+px]=a<0||b<0||a>=1||b>=1?-1:((b*S2)|0)*S2+((a*S2)|0)}return t}
+var K0=satz(S,HS,KS,FA,TT,BI,BQ,RQ,COL), K1=null;
+// N7h1: feines Höhenrauschen des Kartenstücks (weltgen.js gelaende: O_FEIN, gitter, glatt) an einem Punkt. Oktaven feiner als zwei Stichproben zählen mit ihrem
+// Mittelwert (keine Arbeit für Unsichtbares). Ergibt dieselbe Summe wie stufe() im Kartenstück.
+var O_FEIN=[[9,72],[8,56],[7,44],[6,34],[5,24],[4,16],[3,10]];
+function glatt(u){return(u*u*(768-2*u))>>16}
+function feinH(G,seed,fx,fy,minLd){var s=0;for(var i=0;i<7;i++){var ld=O_FEIN[i][0],gew=O_FEIN[i][1];if(ld<minLd){s+=(255*gew)>>1;continue}
+ var P=WF>>ld,lx=fx>>ld,ly=fy>>ld,o=i+20,tx=fx-(lx<<ld),ty=fy-(ly<<ld),ux=glatt(ld>=8?tx>>(ld-8):tx<<(8-ld)),uy=glatt(ld>=8?ty>>(ld-8):ty<<(8-ld)),l1=(lx+1)%P;lx%=P;
+ var e00=git(G,seed,o,lx,ly),e10=git(G,seed,o,l1,ly),e01=git(G,seed,o,lx,ly+1),e11=git(G,seed,o,l1,ly+1),o1=e00*(256-ux)+e10*ux,o2=e01*(256-ux)+e11*ux;s+=((o1*(256-uy)+o2*uy)>>16)*gew}return s}
+function git(G,seed,o,lx,ly){return G.mix(seed^Math.imul(lx,0x27d4eb2d)^Math.imul(ly,0x165667b1)^Math.imul(o+1,0x9e3779b9))&255}
+// Zeilen j0 … j1−1 der Stichproben. fein: kleinste Oktave des feinen Rauschens (0 = ohne, wie das grobe Bild)
+function zeilen(Bf,G,A,seed,x0,y0,lod,U,RE,j0,j1,fein){var S2=Bf.S,GS2=Bf.GS,HS2=Bf.HS,KS2=Bf.KS,FA2=Bf.FA,TT2=Bf.TT,BI2=Bf.BI,RQ2=Bf.RQ,ueb=U&&lod>=U_AB,n=8<<lod,st=n/S2,sI=G.eisSeed(seed),i,j,q,fx,fy;
+ if(j1>GS2)j1=GS2;
+ for(j=j0;j<j1;j++){fy=Math.floor(y0+(j-M+.5)*st);if(fy<0)fy=0;else if(fy>=HF)fy=HF-1;var zy=fy>>10,pol=zy<ZONE||zy>=GH-ZONE;
+  for(i=0;i<GS2;i++){fx=umF(Math.floor(x0+(i-M+.5)*st));q=j*GS2+i;var h=weich(A,0,fx,fy),ks=KS2[q]=weich(A,3,fx,fy),fa=FA2[q]=weich(A,1,fx,fy),tt=TT2[q]=weich(A,2,fx,fy),b,ho=0;
+   if(fein){var hr=feinH(G,seed,fx,fy,fein),amp=h>0?48+((h*3)>>3):48+((-h)>>3);ho=hr-32640;h+=(ho*amp)>>15}   // N7h1: wie im Kartenstück: Höhe = weiche Erdhöhe + feines Rauschen
+   HS2[q]=h;
    if(pol&&G.eis(sI,fx&~7,fy&~7,true)>0)b=12;
    else if(h<0)b=ks>127?11:h<-600?0:1;
    else if(h<24&&ks<=127)b=2;
    else if(ueb){var hz=G.mix(seed^Math.imul(fx>>7,0x2c9277b5)^Math.imul(fy>>7,0x5bd1e995)),ux=umF(fx+(hz&511)-256)>>10,uy=(fy+((hz>>>9)&511)-256)>>10;   // Grenzen leicht ausgefranst
     uy=uy<0?0:uy>=GH?GH-1:uy;b=U[uy*GW+ux];if(!binnen(b))b=U[zy*GW+(fx>>10)];if(!binnen(b))b=5}
-   else{if(G.N2B&&A.zon)G.zonenV(A,seed,fx,fy,V);else G.neigung(tt,fa,h,V);G.punkt(seed,fx,fy,P,0);b=G.klasse(P,0,V,0,0,0)}
-   if(RE){var hr=G.mix(seed^0x7e1c5a3^Math.imul(fx>>7,0x2c9277b5)^Math.imul(fy>>7,0x5bd1e995)),rx=umF(fx+(hr&511)-256)>>10,ry=(fy+((hr>>>9)&511)-256)>>10;ry=ry<0?0:ry>=GH?GH-1:ry;RQ[q]=RE.z[ry*GW+rx]}
-   BI[q]=b}}
+   else{if(G.N2B&&A.zon)G.zonenV(A,seed,fx,fy,V);else G.neigung(tt,fa,h,V);G.punkt(seed,fx,fy,P,0);b=G.klasse(P,0,V,0,ho>>6,0)}
+   if(RE){var hq=G.mix(seed^0x7e1c5a3^Math.imul(fx>>7,0x2c9277b5)^Math.imul(fy>>7,0x5bd1e995)),rx=umF(fx+(hq&511)-256)>>10,ry=(fy+((hq>>>9)&511)-256)>>10;ry=ry<0?0:ry>=GH?GH-1:ry;RQ2[q]=RE.z[ry*GW+rx]}
+   BI2[q]=b}}
+ return j1}
+// Mehrheit, Farben, Bildpunkte, Netz
+function mehrheit(Bf,lod,U){var GS2=Bf.GS,BI2=Bf.BI,BQ2=Bf.BQ,ueb=U&&lod>=U_AB,i,j,k,q;
  // Weit draußen deckt eine Stichprobe viele Felder, die Flecken sind kleiner: Mehrheit je 3 × 3 (⅟256, ⅟512 einmal, ab ⅟1024 zweimal), wie die Region der Startplatz-Wahl
  var pass=ueb?0:lod>=10?2:lod>=8?1:0;
- for(var d=0;d<pass;d++){BQ.set(BI);for(j=1;j<GS-1;j++)for(i=1;i<GS-1;i++){q=j*GS+i;if(!binnen(BQ[q]))continue;for(k=0;k<18;k++)ZB[k]=0;var mb=BQ[q],mz=0;
-  for(var v=-1;v<=1;v++)for(var u=-1;u<=1;u++){var b2=BQ[q+v*GS+u];if(!binnen(b2))continue;if(++ZB[b2]>mz){mz=ZB[b2];mb=b2}}if(ZB[BQ[q]]<mz)BI[q]=mb}}
- var pal=F.pal,du=F.du,he=F.he;
- for(j=0;j<S;j++)for(i=0;i<S;i++){q=(j+M)*GS+i+M;var b=BI[q],c=ueb?UFARBE[b]:BFARBE[b];
-  if(b>=2&&b<=9||b>=13){var gx=(HS[q+1]-HS[q-1])/(2*st),gy=(HS[q+GS]-HS[q-GS])/(2*st),sh=gx>T2?2:gx>T1?1:gx<-T2?-2:gx<-T1?-1:0;   // Licht von Westen wie im Bodenbild
+ for(var d=0;d<pass;d++){BQ2.set(BI2);for(j=1;j<GS2-1;j++)for(i=1;i<GS2-1;i++){q=j*GS2+i;if(!binnen(BQ2[q]))continue;for(k=0;k<18;k++)ZB[k]=0;var mb=BQ2[q],mz=0;
+  for(var v=-1;v<=1;v++)for(var u=-1;u<=1;u++){var b2=BQ2[q+v*GS2+u];if(!binnen(b2))continue;if(++ZB[b2]>mz){mz=ZB[b2];mb=b2}}if(ZB[BQ2[q]]<mz)BI2[q]=mb}}
+}
+function fertig(Bf,G,A,seed,x0,y0,lod,F,U,RE,ohneMehrheit){var S2=Bf.S,GS2=Bf.GS,HS2=Bf.HS,BI2=Bf.BI,RQ2=Bf.RQ,COL2=Bf.COL,T=Bf.TAB,ueb=U&&lod>=U_AB,n=8<<lod,st=n/S2,i,j,k,q;
+ if(!ohneMehrheit)mehrheit(Bf,lod,U);
+ var pal=F.pal,du=F.du,he=F.he,rm=S2>>7;   // Reichsmuster: grob jede 4. Stichprobe, scharf jede 8. (gleich viel Fläche)
+ for(j=0;j<S2;j++)for(i=0;i<S2;i++){q=(j+M)*GS2+i+M;var b=BI2[q],c=ueb?UFARBE[b]:BFARBE[b];
+  if(b>=2&&b<=9||b>=13){var gx=(HS2[q+1]-HS2[q-1])/(2*st),gy=(HS2[q+GS2]-HS2[q-GS2])/(2*st),sh=gx>T2?2:gx>T1?1:gx<-T2?-2:gx<-T1?-1:0;   // Licht von Westen wie im Bodenbild
    if(gy>T2)sh--;while(sh>0){c=he[c];sh--}while(sh<0){c=du[c];sh++}
-   if(RE){var rr=RQ[q];if(rr){var rc=RE.f[rr-1];if((RQ[q+1]&&RQ[q+1]!==rr)||(RQ[q+GS]&&RQ[q+GS]!==rr))c=du[rc];else if(((i&3)===0&&(j&3)===0)||((i&3)===2&&(j&3)===2))c=rc}}}
-  COL[j*S+i]=c}
- var px=new Uint32Array(IW*IH);for(k=0;k<IW*IH;k++){var t=TAB[k];if(t>=0)px[k]=pal[COL[t]]}
+   if(RE){var rr=RQ2[q];if(rr){var rc=RE.f[rr-1],m4=rm*4-1,h2=rm*2;if((RQ2[q+1]&&RQ2[q+1]!==rr)||(RQ2[q+GS2]&&RQ2[q+GS2]!==rr))c=du[rc];else if(((i&m4)===0&&(j&m4)===0)||((i&m4)===h2&&(j&m4)===h2))c=rc}}}
+  COL2[j*S2+i]=c}
+ var px=new Uint32Array(IW*IH);for(k=0;k<IW*IH;k++){var t=T[k];if(t>=0)px[k]=pal[COL2[t]]}
  netz(G,A,seed,x0,y0,lod,n,F,px);
  return{w:IW,h:IH,ox:256,oy:0,px:px}}
-
+function kachel(G,A,seed,x0,y0,lod,F,U,RE){seed=seed>>>0;x0=umF(x0);zeilen(K0,G,A,seed,x0,y0,lod,U,RE,0,K0.GS,0);return fertig(K0,G,A,seed,x0,y0,lod,F,U,RE)}
+// N7h1 Weltansicht schärfer: scharfe Fassung eines Fernbilds als Auftrag in kleinen Zeitanteilen (Bildkern). 256 × 256 Stichproben (eine je Bildpunkt der
+// Raute statt einer je 4 × 2), Höhe mit dem feinen Rauschen des Kartenstücks, also Küsten, Seen, Strand, Eis, Biomgrenzen und Hangschatten so fein wie auf
+// der nahen Karte. Kosten fest je Bild (66.564 Stichproben), unabhängig von Ort und Weltgröße. Nur ein Auftrag rechnet zugleich (ein gemeinsamer Satz Felder).
+// schritt(ms) rechnet bis zur Zeitgrenze weiter und meldet true, wenn fertig; bild() gibt dann das Bild. Ein neuer Auftrag verwirft den alten.
+var S_SCHARF=256, Z_SCHRITT=4;
+function feinVon(lod){var st=(8<<lod)/S_SCHARF,ld=3;while(ld<9&&(1<<ld)<2*st)ld++;return ld}   // kleinste Oktave, die zwei Stichproben überspannt
+function scharf(G,A,seed,x0,y0,lod,F,U,RE){seed=seed>>>0;x0=umF(x0);if(!K1)K1=satz(S_SCHARF);var Bf=K1,j=0,fe=feinVon(lod),fertigB=null,mehr=false,uhr=typeof performance!=='undefined'?performance:Date;
+ var auf={lod:lod,x0:x0,y0:y0,ms:0,schritte:0,
+  schritt:function(ms){var t=uhr.now();auf.schritte++;
+   while(j<Bf.GS){j=zeilen(Bf,G,A,seed,x0,y0,lod,U,RE,j,j+Z_SCHRITT,fe);if(uhr.now()-t>=ms)break}
+   if(j>=Bf.GS&&!mehr&&uhr.now()-t<ms){mehrheit(Bf,lod,U);mehr=true}                     // Mehrheit und Färben je in einem eigenen Zeitanteil
+   if(mehr&&!fertigB&&uhr.now()-t<ms)fertigB=fertig(Bf,G,A,seed,x0,y0,lod,F,U,RE,true);
+   auf.ms+=uhr.now()-t;return!!fertigB},
+  bild:function(){return fertigB}};
+ K1.wer=auf;return auf}
 // Flüsse, Straßen, Seewege, Orte (nur Bildpunkte in der eigenen Raute, damit Nachbarbilder nichts überdecken)
 function netz(G,A,seed,x0,y0,lod,n,F,px){var pal=F.pal,zn={n:0};
  function P2(fx,fy,o){var dx=fx-x0;dx-=Math.round(dx/WF)*WF;var a=dx/n,b=(fy-y0)/n;o[0]=256+(a-b)*256;o[1]=(a+b)*128;return o}
@@ -187,6 +229,6 @@ function dunkler(tex,F){var inv=new Map(),d=new Uint32Array(tex.length);for(var 
 // N4c1: Reiche auf dem Erdbild des Globus (600 × 300 Farben): Grenze dunkel, jede vierte Zelle in der Reichsfarbe
 function reicheErde(tex,RE,F){for(var i=0;i<GW*GH;i++){var r=RE.z[i];if(!r)continue;var x=i%GW,y=(i/GW)|0,e=RE.z[x+1<GW?i+1:i+1-GW],s=y+1<GH?RE.z[i+GW]:0,rc=RE.f[r-1];
   if((e&&e!==r)||(s&&s!==r))tex[i]=F.pal[F.du[rc]];else if(!(x&1)&&!(y&1))tex[i]=F.pal[rc]}return tex}
-var FB={groesseAn:groesseAn,globusOrte:globusOrte,symbole:symbole,SYM_ROH:SYM_ROH,miniAn:miniAn,MINI_BIS:MINI_BIS,ortNr:ortNr,reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
+var FB={groesseAn:groesseAn,globusOrte:globusOrte,symbole:symbole,SYM_ROH:SYM_ROH,miniAn:miniAn,MINI_BIS:MINI_BIS,ortNr:ortNr,reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,scharf:scharf,S_SCHARF:S_SCHARF,feinH:feinH,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
 if(typeof module!=='undefined'&&module.exports)module.exports=FB;else root.AT3FERN=FB;
 })(typeof self!=='undefined'?self:this);

@@ -6,6 +6,7 @@
 // G4c: Startplatz-Wahl (startplatz.js): Erdbild, Regionsbild, trockenes Feld mit nächstem Ort, zufälliger Platz an Land; Antwort mit der Fragenummer.
 // G4b: backt die Natur aus dem Startset (natur.js) mit ins Bodenbild und findet beim Antippen das vorderste Naturobjekt unter dem Finger.
 // W1c Runde Welt: Das Fenster der Stücke läuft in x über die Naht (hole rechnet die Stückspalte um), in y endet es am Pol.
+// N7h1: scharfe Fernbilder auf Wunschliste der Karte („scharf“), ein Auftrag zugleich, je Durchlauf höchstens 6 ms, neue Liste bricht Überholtes ab.
 // G4d: Fernbilder der Stufen ⅟16 bis ⅟4096 (fernbild.js, nur aus dem Erdraster, ohne Kartenstücke) und der Globus (Frage „globus“, aus dem Erdbild der Startplatz-Wahl).
 // FP1: Frage „fp“: Ausschnitt der echten Welt für die First-Person-Ansicht (fpausschnitt.js). FP2a: mit Wänden, Türen, Toren und Gebäudeböden.
 // G5b: Gebäude (baubild.js). Der Hauptkern reicht die geänderten Bau-Kartenstücke vom Weltkern weiter (Nachricht „bau“, dünn: nur wo gebaut ist) und die Bilder
@@ -164,6 +165,21 @@ function arbeit(){laeuft=false;if(!A||kx<0)return;
   var t=performance.now(),b=G.ausschnitt(A,cx,cy,lager.pop()||new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:cx,cy:cy,daten:b});b._s=null;if(OFL)OFL.flachen(b,cx,cy);st.set(k,b);stUs+=(performance.now()-t)*1000;stN++;
   var q=BB.kunde(b);self.postMessage({art:'kunde',gen:gen,cx:cx,cy:cy,mm:q.mm,hg:q.hg,stUs:stUs/stN},[q.mm.buffer,q.hg.buffer]);weiter();return}}
 function weiter(){if(!laeuft){laeuft=true;setTimeout(arbeit,0)}}
+// N7h1 Weltansicht schärfer (27.11.2026): Wunschliste der scharfen Fernbilder vom Hauptkern (nur wenn der Blick ruht, Bildmitte zuerst). Immer nur ein Auftrag
+// in Arbeit, je Durchlauf höchstens SCH_MS Rechenzeit, dazwischen kommen grobe Bilder und Kartenstücke dran. Eine neue Liste verwirft alles, was nicht mehr
+// darauf steht (auch den laufenden Auftrag). Fertige Bilder gehen als „scharf“ an den Hauptkern, der sie merkt und einblendet. Notausschalter ?n7h=0 (Hauptkern).
+var SCH=[], SCHA=null, SCHL=false, SCH_MS=6;
+function scharfListe(d){SCH=(d.liste||[]).map(function(e){return{key:e[0],x0:e[1],y0:e[2],lod:e[3],nv:d.nv,gen:d.gen}});
+ if(SCHA&&!SCH.some(function(e){return e.key===SCHA.e.key}))SCHA=null;scharfWeiter()}
+function scharfWeiter(){if(!SCHL&&(SCHA||SCH.length)){SCHL=true;setTimeout(scharfArbeit,0)}}
+function scharfArbeit(){SCHL=false;if(!A||!F){SCHA=null;SCH.length=0;return}
+ if(!SCHA){var e=SCH.shift();if(!e)return;if(e.gen!==gen){scharfWeiter();return}
+  if(e.lod<=FB.MINI_BIS)miniAn();groeAn();SCHA={e:e,j:FB.scharf(G,A,seed,e.x0,e.y0,e.lod,F,e.lod>=FB.U_AB?ueb():null,reiche())}}
+ var a=SCHA;if(a.e.lod<=FB.MINI_BIS)miniAn();groeAn();
+ if(a.j.schritt(SCH_MS)){SCHA=null;var r=a.j.bild(),m={art:'scharf',gen:a.e.gen,nv:a.e.nv,key:a.e.key,x0:a.e.x0,y0:a.e.y0,lod:a.e.lod,w:r.w,h:r.h,ox:r.ox,oy:r.oy,ms:a.j.ms,schritte:a.j.schritte};
+  if(BMP)createImageBitmap(new ImageData(new Uint8ClampedArray(r.px.buffer),r.w,r.h)).then(function(b){m.bmp=b;self.postMessage(m,[b])},function(){m.buf=r.px;self.postMessage(m,[r.px.buffer])});
+  else{m.buf=r.px;self.postMessage(m,[r.px.buffer])}}
+ scharfWeiter()}
 // Übersichtsbiome (Globus, Fernstufen ab ⅟1024): einmal je Welt, beim ersten Bedarf
 function ueb(){if(!UEB)UEB=FB.uebersicht(G,A,seed);return UEB}
 // N4c1: Reich + 1 je Erdzelle und Farbnummer je Reich (Vasallen eine Stufe heller), nur wenn die Erde Herrschaften trägt und der Knopf an ist
@@ -230,7 +246,7 @@ function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  return land<0?{x:BB.WX>>1,y:BB.WY>>1,ort:0}:{x:(land%G.GW)*G.ZF+(G.ZF>>1),y:((land/G.GW)|0)*G.ZF+(G.ZF>>1),ort:0}}
 self.onmessage=function(e){var d=e.data;
  if(d.art==='init'){F={pal:d.pal,du:d.du,he:d.he,dunkel:dunkelste(d.pal)};self.postMessage({art:'arten',liste:NAT.ARTEN,bau:BAUB.ARTEN})}
- else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);TEX=TEXD=UEB=RE=null;GRT=GORTE=null;miniLeeren();NAMK.clear();WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
+ else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);SCHA=null;SCH.length=0;TEX=TEXD=UEB=RE=null;GRT=GORTE=null;miniLeeren();NAMK.clear();WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
  else if(d.art==='blick'){kx=d.kx;ky=d.ky;st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});ortsBedarf();weiter()}
  else if(d.art==='ortskern'){OKP=d.port;OKP.onmessage=function(e){vomOrtskern(e.data)}}
  else if(d.art==='ortskernWeg'){OKP=null;if(OFL)OFL.vergessenAlle();ortsBedarf()}   // Ortskern ausgefallen: ab jetzt eingebettet   // N7a2a: eigener Hintergrundkern für die Ortspläne
@@ -250,7 +266,8 @@ self.onmessage=function(e){var d=e.data;
   if(N7B2&&fd&&fd.x!=null&&!fd.bau&&OFL&&OFL.ortBei){var sk=OFL.ortBei(fd.x,fd.y);if(sk!=null)fd.stadt=stadtInfo(sk)}   // N7b2: Feld in einem Ort → Stadtkarte
   if(fd&&ob)fd.obj=ob;else if(ob)fd={obj:ob};
   self.postMessage({art:'feld',id:d.id,feld:fd})}
+ else if(d.art==='scharf')scharfListe(d);   // N7h1
  else if(d.art==='wahl')wahl(d);
  else if(d.art==='messNeu'){if(OFL&&OFL.messNeu)OFL.messNeu()}   // N7a2b3: Messfeld „Reset“
- else if(d.art==='reiche'){REI=!!d.an;RE=null;TEX=TEXD=null}   // N4c1: Knopf „Realms“; die Karte verwirft ihre Fernbilder selbst
+ else if(d.art==='reiche'){REI=!!d.an;RE=null;SCHA=null;SCH.length=0;TEX=TEXD=null}   // N4c1: Knopf „Realms“; die Karte verwirft ihre Fernbilder selbst
  else if(d.art==='start'){self.postMessage({art:'start',gen:gen,platz:A?startplatz():null})}};
