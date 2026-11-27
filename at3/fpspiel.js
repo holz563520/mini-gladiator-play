@@ -92,15 +92,21 @@ function eingaben(cv){P.eing=true;
 function antippen(e){var cv=P.o.cv,r=cv.getBoundingClientRect(),sx=(e.clientX-r.left)/r.width*OPT.W,sy=(e.clientY-r.top)/r.height*OPT.H,best=null;
  (P.letzt&&P.letzt.treffer||[]).forEach(function(t){if(sx>=t.x0&&sx<t.x1&&sy>=t.y0&&sy<t.y1&&(!best||t.d<best.d))best=t});
  // FP2b: Dach (außen) oder Decke (innen) unter dem Finger: der Bildpunkt zeigt genau, was vorn ist (Stempel des Zeichners)
- var X0=Math.floor(sx),dd=dachVor(X0,sy);if(dd){var wd=P.o.objekte[DACH];if(P.o.beiObjekt)P.o.beiObjekt(DACH,!wd,dd*3);return}
+ var X0=Math.floor(sx),dd=dachVor(X0,sy);if(dd&&stadtTipp(X0,dd))return;if(dd){var wd=P.o.objekte[DACH];if(P.o.beiObjekt)P.o.beiObjekt(DACH,!wd,dd*3);return}
  // FP2a: Wand, Tür oder Tor unter dem Finger, wenn sie näher ist als das Objekt
  var wa=P.letzt&&P.letzt.wand,X=Math.floor(sx);
- if(wa&&X>=0&&X<OPT.W&&wa.d[X]<1e8&&sy>=wa.y0[X]&&sy<wa.y1[X]&&(!best||wa.d[X]<best.d)){var id=WAENDE[wa.typ[X]-1],wo=P.o.objekte[id];
+ if(wa&&X>=0&&X<OPT.W&&wa.d[X]<1e8&&sy>=wa.y0[X]&&sy<wa.y1[X]&&(!best||wa.d[X]<best.d)){if(stadtTipp(X,wa.d[X]))return;var id=WAENDE[wa.typ[X]-1],wo=P.o.objekte[id];
   if(P.o.beiObjekt)P.o.beiObjekt(id,!wo,wa.d[X]*3);return}
  // AR1c2: Arena (Ring, Ränge, Sand) unter dem Finger, wenn sie näher ist als das Objekt: Arena-Karte wie auf der Karte
  var an=P.letzt&&P.letzt.anl;if(an&&X>=0&&X<OPT.W&&an.d[X]<1e8&&sy>=an.y0[X]&&sy<an.y1[X]&&(!best||an.d[X]<best.d)&&P.o.beiBewegt){P.o.beiBewegt('fest',{art:'arena-sandgrube',anl:1},an.d[X]*3);return}
  if(best&&best.o.bew&&P.o.beiBewegt){P.o.beiBewegt(best.o.typ,best.o.karte,best.d*3);return}   // FP3: Arbeiter, Karren
  var ob=best&&P.arten[best.o.art];if(P.o.beiObjekt)P.o.beiObjekt(ob?ob.id:null,ob?!!ob.ersatz:false,best?best.d*3:0)}
+
+// N7b3: Wand oder Dach eines Orts unter dem Finger → Stadtkarte wie auf der Karte (N7b2). Punkt = Kamera + Blickstrahl der Spalte × Abstand (+⅓ Feld, damit die
+// Außenwand zum Ort zählt); w.orte kommt vom Bildkern (Lage in Ausschnitt-Feldern). Ohne Stadtkarte (Außenposten, ?n7b2=0) bleibt es bei der Objektkarte.
+function stadtTipp(X,d){var w=P.w,c=P.cam;if(!w||!w.orte||!w.orte.length||!c||!P.o.beiStadt)return false;
+ var f=(OPT.W/2)/Math.tan(75*Math.PI/360),an=c.a+Math.atan((X+.5-OPT.W/2)/f),r=d/Math.max(.2,Math.cos(an-c.a))+.33,px=Math.floor(c.x+Math.cos(an)*r),py=Math.floor(c.y+Math.sin(an)*r);
+ for(var n=0;n<w.orte.length;n++){var o=w.orte[n];if(o.stadt&&px>=o.i0&&px<o.i0+o.W&&py>=o.j0&&py<o.j0+o.W){P.o.beiStadt(o.stadt);return true}}return false}
 
 // ---------- FP3: bewegte Objekte ----------
 // Je Bild: Lage aus der Karte in Ausschnitt-Felder umrechnen, nur was im Ausschnitt liegt. Blickrichtung = letzte Bewegung (sonst Kartenrichtung),

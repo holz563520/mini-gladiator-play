@@ -17,7 +17,7 @@ var VON_WEG=[-1,6,6,7,1,7,8,0];                    // Wegschicht 1..7: Pfad, Str
 // FP2a: BA = {hole(cx,cy) → Bau-Kartenstück (gepackt wie bau.stueck) oder null, BODEN, PUNKT} oder null: Wände, Türen, Tore auf die Kanten, Gebäudeböden in die Farben.
 // FP2b: BA.DACHF = [Ziegel, Fuge] (Palettennummern aus dem Startset dach-ziegel): Walmdach über fertigen Feldern mit Dach (w.innen, w.dachR, w.dachC).
 var BF=4096,Z_PLAN=1;
-function bauen(BB,NAT,hole,seed,ox,oy,sperr,PF,frei,BA,AN){                // G5b: frei(X,Y) = false auf Gebautem/Gerodetem (keine Natur)
+function bauen(BB,NAT,hole,seed,ox,oy,sperr,PF,frei,BA,AN,OK){   // N7b3: OK = Orte als Kulisse (kulisse unten) oder null                // G5b: frei(X,Y) = false auf Gebautem/Gerodetem (keine Natur)
 var WX=BB.WX,WY=BB.WY,F=N+2,t0=Date.now();
  oy=Math.max(0,Math.min(WY-F,oy|0));ox=((ox|0)%WX+WX)%WX;
  var RH=new Uint16Array(F*F),RB=new Uint8Array(F*F),EH=new Float32Array(F*F),EB=new Uint8Array(F*F),EW=new Uint8Array(F*F),ES=new Uint8Array(F*F),fehlt=0;
@@ -33,20 +33,21 @@ var WX=BB.WX,WY=BB.WY,F=N+2,t0=Date.now();
    biom[k]=code;basis[k]=c}}
  // Farben je Höhenpunkt wie fpwelt.farben mit Muster: Licht von Nordwesten (Hang), leichte Streuung; he/du = eine Stufe heller/dunkler in der Palettenreihe.
  // Hier im Bildkern gerechnet, damit der Hauptkern beim Nachladen nichts rechnen muss (Regel 13).
+ var wandX=new Uint8Array((N+1)*N),wandY=new Uint8Array(N*(N+1)),sperre=new Uint8Array(N*N),ku=OK?kulisse(OK,ox,oy,WX,h,biom,basis,wandX,wandY,sperre):null;   // N7b3: vor dem Licht, damit Mauern Schatten bekommen
  var farbe=new Uint8Array(M*M),he=PF.he,du=PF.du,z=12345;
  for(j=0;j<M;j++)for(i=0;i<M;i++){var k2=j*M+i,c2=basis[k2],b2=biom[k2],sh=0;
   if(b2!==0){var l=((i>0?h[k2-1]:h[k2])-(i<M-1?h[k2+1]:h[k2])+(j>0?h[k2-M]:h[k2])-(j<M-1?h[k2+M]:h[k2]))*U*.6;sh=Math.max(-2,Math.min(2,Math.round(l)))}
   z=(z*1103515245+12345)&0x7fffffff;var q2=z%7;if(b2===0)sh+=((i+j*3)%11===0)?1:0;else if(b2===7)sh+=(j%2)?-1:0;else sh+=q2<1?-1:q2>5&&(b2===2||b2===3)?1:0;
   while(sh>0){c2=he[c2];sh--}while(sh<0){c2=du[c2];sh++}farbe[k2]=c2}
  // Natur wie auf der Karte: Art je Feld, Versatz im Feld (Bildpunkte der Karte → Felder), Sperren nach Kollision der Kartei
- var ox2=[],oy2=[],oa=[],sperre=new Uint8Array(N*N);
+ var ox2=[],oy2=[],oa=[];
  for(j=0;j<N;j++)for(i=0;i<N;i++){var e1=j*F+i,X2=(ox+i)%WX,Y2=oy+j,mn=Math.min(ES[e1],ES[e1+1],ES[e1+F],ES[e1+F+1]),mx=Math.max(ES[e1],ES[e1+1],ES[e1+F],ES[e1+F+1]);
   var t=NAT.art(seed,X2,Y2,EB[e1],EW[e1],mx-mn);if(t<0||(frei&&!frei(X2,Y2)))continue;var v=NAT.versatz(seed,X2,Y2),du=(v[0]/32+v[1]/16)/2,dv=(v[1]/16-v[0]/32)/2;
   ox2.push(i+.5+du);oy2.push(j+.5+dv);oa.push(t);if(sperr&&sperr[t])sperre[j*N+i]=1}
- var n=oa.length,wandX=new Uint8Array((N+1)*N),wandY=new Uint8Array(N*(N+1)),kanten=BA?gebaeude(BA,ox,oy,WX,WY,wandX,wandY,farbe,PF):0,dach=BA?walm(BA,ox,oy,WX,WY,farbe,PF):null;
+ var n=oa.length,kanten=(ku?ku.kanten:0)+(BA?gebaeude(BA,ox,oy,WX,WY,wandX,wandY,farbe,PF):0),dach=BA||ku?walm(BA,ox,oy,WX,WY,farbe,PF,ku&&ku.dach):null;
  var anl=AN?anlage(AN,BB,hole,ox,oy,WX,h,farbe):null;
  return{format:'at3-fpwelt',ausschnitt:true,anl:anl,N:N,U:U,M:M,WL:WL,WANDH:1,ox:ox,oy:oy,h:h,biom:biom,farbe:farbe,kanten:kanten,
-  wandX:wandX,wandY:wandY,sperre:sperre,innen:dach&&dach.innen,dachR:dach&&dach.R,dachC:dach&&dach.C,dachN:dach?dach.n:0,objX:new Float32Array(ox2),objY:new Float32Array(oy2),objArt:new Uint8Array(oa),objN:n,fehlt:fehlt,ms:Date.now()-t0}}
+  wandX:wandX,wandY:wandY,sperre:sperre,innen:dach&&dach.innen,dachR:dach&&dach.R,dachC:dach&&dach.C,dachN:dach?dach.n:0,objX:new Float32Array(ox2),objY:new Float32Array(oy2),objArt:new Uint8Array(oa),objN:n,fehlt:fehlt,kulisse:ku?ku.orte:0,ms:Date.now()-t0}}
 // FP2a: Gebautes aus dem Bau-Kartenstück (bau.js, eine Wahrheit) in den Ausschnitt. Kante: Typ und Bauzustand (ohne Herkunft) wie fpwelt.js sie liest.
 // Nordkante eines Felds → wandY, Westkante → wandX; die Ost- und Südkante des Ausschnitts kommt vom Feld dahinter (eine Spalte/Zeile mehr gelesen).
 // Geplante Kanten: Punktlinie am Boden. Boden der Gebäudefelder wie auf der Karte (Lager Sand, Werkstatt Erde, Unterkunft Holz), geplant als Punktmuster,
@@ -67,12 +68,13 @@ function gebaeude(BA,ox,oy,WX,WY,wandX,wandY,farbe,PF){var n=0,BOD=BA.BODEN,PK=B
 // Innen (w.innen je Feld = 1): Boden eine Stufe dunkler. w.dachR je Höhenpunkt: Höhe über der Traufe in 1/32 Geschoss; w.dachC: Ziegelfarbe mit Licht von Nordwesten.
 // Kosten: nur wo Bau-Kartenstücke liegen, Abstandsrechnung nur im Rechteck um die Dachfelder. Ohne Dach: nichts (null).
 var SL=.5,DMAX=1.5,RAND=3;                          // Vorschlagswerte: 0,5 Geschoss Anstieg je Feld, First höchstens 1,5 Geschosse über der Traufe
-function walm(BA,ox,oy,WX,WY,farbe,PF){var NE=N+2*RAND,mk=new Uint8Array(NE*NE),n=0,i0=NE,i1=-1,j0=NE,j1=-1,i,j;
+function walm(BA,ox,oy,WX,WY,farbe,PF,OD){var NE=N+2*RAND,mk=new Uint8Array(NE*NE),col=OD?new Uint8Array(NE*NE).fill(255):null,n=0,i0=NE,i1=-1,j0=NE,j1=-1,i,j;   // N7b3: OD(X, Y) → Dachfarbe eines Ortshauses oder −1
  for(j=0;j<NE;j++){var Y=oy+j-RAND;if(Y<0||Y>=WY)continue;
-  for(i=0;i<NE;i++){var X=((ox+i-RAND)%WX+WX)%WX,a=BA.hole(X>>6,Y>>6);if(!a)continue;var q=((Y&63)<<6)|(X&63),fl=a[3*BF+q];
-   if(a[q]&&(fl&1)&&((fl>>4)&3)===3){mk[j*NE+i]=1;n++;if(i<i0)i0=i;if(i>i1)i1=i;if(j<j0)j0=j;if(j>j1)j1=j}}}
+  for(i=0;i<NE;i++){var X=((ox+i-RAND)%WX+WX)%WX,a=BA?BA.hole(X>>6,Y>>6):null,ja=false;if(a){var q=((Y&63)<<6)|(X&63),fl=a[3*BF+q];ja=!!(a[q]&&(fl&1)&&((fl>>4)&3)===3)}
+   if(!ja&&OD){var oc=OD(X,Y);if(oc>=0){col[j*NE+i]=oc;ja=true}}
+   if(ja){mk[j*NE+i]=1;n++;if(i<i0)i0=i;if(i>i1)i1=i;if(j<j0)j0=j;if(j>j1)j1=j}}}
  if(!n)return null;
- var innen=new Uint8Array(N*N),R=new Uint8Array(M*M),C=new Uint8Array(M*M),du=PF.du,he=PF.he,DF=BA.DACHF||[du[du[46]],du[du[du[46]]]],ni=0;
+ var innen=new Uint8Array(N*N),R=new Uint8Array(M*M),C=new Uint8Array(M*M),du=PF.du,he=PF.he,DF=BA&&BA.DACHF||[du[du[46]],du[du[du[46]]]],ni=0;
  for(j=0;j<N;j++)for(i=0;i<N;i++)if(mk[(j+RAND)*NE+i+RAND]){innen[j*N+i]=1;ni++}
  if(!ni)return null;
  // Innenboden eine Stufe dunkler (Licht kommt nur durch Tür und Tor); Punkt dunkel, wenn alle angrenzenden Felder innen sind
@@ -89,9 +91,41 @@ function walm(BA,ox,oy,WX,WY,farbe,PF){var NE=N+2*RAND,mk=new Uint8Array(NE*NE),
  function dv(px,py){px-=a0;py-=b0;if(px<0)px=0;if(py<0)py=0;if(px>=PW)px=PW-1;if(py>=PH)py=PH-1;return Math.min(TOP,d[py*PW+px])}
  for(j=0;j<M;j++){var pj=j+off;if(pj<b0-U||pj>=b0+PH+U)continue;
   for(i=0;i<M;i++){var pi=i+off;if(pi<a0-U||pi>=a0+PW+U)continue;var e=dv(pi,pj);R[j*M+i]=Math.round(e*SL/U*32);
-   var l=(dv(pi+1,pj)-dv(pi-1,pj))+(dv(pi,pj+1)-dv(pi,pj-1)),c=DF[0];   // steigt nach Südosten = Fläche schaut nach Nordwesten = heller
+   var l=(dv(pi+1,pj)-dv(pi-1,pj))+(dv(pi,pj+1)-dv(pi,pj-1)),c=DF[0];if(col){var cv=col[Math.min(NE-1,(pi/U)|0)+Math.min(NE-1,(pj/U)|0)*NE];if(cv!==255)c=cv}   // steigt nach Südosten = Fläche schaut nach Nordwesten = heller
    C[j*M+i]=l>0?he[c]:l<0?du[c]:c}}
  return{innen:innen,R:R,C:C,n:ni}}
+// N7b3 Stadt als Kulisse in First Person (Thomas 27.11.2026, ohne Rückfragen nach Empfehlung). Die Pläne der Orte und Außenposten, die der Bildkern für die
+// Karte ohnehin hält (ortsflaeche.js, vom Ortskern), kommen in den Ausschnitt: Boden je Planfeld in der Farbe der Karte (Gasse, Platz, Feld, Kai, Wasser …),
+// Häuser mit Wand ringsum, Tür an der Türkante und Walmdach wie FP2a/FP2b (innen begehbar wie in der Wegsuche, ortssperre.js), Mauerring, Türme und Treppen
+// (P.wehr) als Stein im Höhenfeld (Gang je Stufe ½ Geschoss wie im Stadtbild: HSTUFE 16 Bildpunkte, Geschoss 32), Tore offen, Wasser und Fels des Plans
+// sperren. Mauerstücke ohne Wehr (rolle 'mauer') 1¼ Geschoss. Park gewinnt (ortsflaeche.js bei). Je Ort einmal ein Auszug (o.FPK, W² Byte × 4, Großstadt 204² ≈ 166 KB);
+// je Ausschnitt fest 96² Felder, unabhängig von Ortszahl und Weltgröße (Regel 14). OK = {bei(X, Y) → {o, i, j} | null, F: Farben (ortsflaeche.js fpFarben)}.
+var OCODE='gsomfwepxqyuh',O_BIOM=[2,6,8,8,2,0,2,2,4,6,7,1,6],K_WAND=0x31,K_TUER=0x32,TURM_H=2;   // Codes wie ortsflaeche.js CODES; fpwelt-Codes siehe oben
+function fpk(o){if(o.FPK)return o.FPK;var W=o.W,P=o.P,WW=W*W,dach=new Uint8Array(WW),kan=new Uint8Array(WW),hoch=new Uint8Array(WW),zu=new Uint8Array(WW),k,x,y,n;
+ for(k=0;k<WW;k++){var z=o.Z[k];if(z===5||z===8)zu[k]=1}                      // Wasser, Fels des Plans (255 = hier malt die Welt)
+ (P.bauten||[]).forEach(function(b){if(!(b.w>0&&b.h>0))return;var bi=b.rund?b.i-1:b.i,bj=b.rund?b.j-1:b.j,bw=b.w|0,bh=b.h|0,tu=b.tuer,mau=b.rolle==='mauer';
+  for(y=bj;y<bj+bh;y++)for(x=bi;x<bi+bw;x++){if(x<0||y<0||x>=W||y>=W)continue;k=y*W+x;
+   if(mau){hoch[k]=5;zu[k]=1;dach[k]=0;kan[k]=0;continue}
+   dach[k]=1;zu[k]=0;var r=0;if(y===bj)r|=1;if(x===bi)r|=2;if(y===bj+bh-1)r|=4;if(x===bi+bw-1)r|=8;kan[k]|=r}   // Seiten: 1 Nord, 2 West, 4 Süd, 8 Ost
+  if(tu&&!mau&&tu[0]>=0&&tu[1]>=0&&tu[0]<W&&tu[1]<W){k=tu[1]*W+tu[0];if(dach[k]){var s=tu[3]<0?0:tu[2]<0?1:tu[3]>0?2:3;kan[k]|=16<<s}}});   // Tür wie ortssperre.js seiteVon
+ var Wh=P.wehr;if(Wh&&Wh.k)for(n=0;n<Wh.k.length;n++){k=Wh.k[n];var a=Wh.f.charAt(n*4),g=Wh.f.charCodeAt(n*4+1)-48;if(a==='.')continue;dach[k]=0;kan[k]=0;
+  if(a==='t'||a==='n'||a==='d'||a==='q'){hoch[k]=0;zu[k]=0;continue}            // Tor und Nische: Boden, frei
+  var st=a==='T'?g+TURM_H:g;hoch[k]=Math.max(2,Math.min(60,st*2));zu[k]=1}      // hoch in ¼ Geschoss: Stufe = ½ Geschoss
+ return o.FPK={dach:dach,kan:kan,hoch:hoch,zu:zu}}
+function kulisse(OK,ox,oy,WX,h,biom,basis,wandX,wandY,sperre){var FB=OK.F,NN=N*N,fo=new Int32Array(NN).fill(-1),fq=new Int32Array(NN),L=[],RF=new Uint8Array(NN),nk=0,i,j,e,t;
+ for(j=0;j<N;j++)for(i=0;i<N;i++){var b=OK.bei((ox+i)%WX,oy+j);if(!b)continue;t=L.indexOf(b.o);if(t<0){t=L.length;L.push(b.o);fpk(b.o)}e=j*N+i;fo[e]=t;fq[e]=b.j*b.o.W+b.i}
+ if(!L.length)return null;
+ function setz(a,k,v){if(a[k]!==K_TUER)a[k]=v;nk++}
+ for(e=0;e<NN;e++){t=fo[e];if(t<0)continue;var K=L[t].FPK,q=fq[e],kb=K.kan[q];i=e%N;j=(e-i)/N;if(K.zu[q])sperre[e]=1;RF[e]=K.hoch[q];
+  if(kb){var d=kb>>4;if(kb&1)setz(wandY,i+j*N,d&1?K_TUER:K_WAND);if(kb&2)setz(wandX,i+j*(N+1),d&2?K_TUER:K_WAND);
+   if(kb&4)setz(wandY,i+(j+1)*N,d&4?K_TUER:K_WAND);if(kb&8)setz(wandX,i+1+j*(N+1),d&8?K_TUER:K_WAND)}}
+ // Boden und Stein je Höhenpunkt: Feld wie in bauen(); Höhe = kleinste Mauerhöhe der angrenzenden Felder (Mauer steigt in ¼ Feld an), Seiten in Mauerfarbe, Krone heller
+ for(j=0;j<M;j++)for(i=0;i<M;i++){var k2=j*M+i,fx=Math.min(N-1,(i/U)|0),fy=Math.min(N-1,(j/U)|0),fe=fy*N+fx;t=fo[fe];
+  if(t>=0){var o=L[t],q2=fq[fe],z=o.Z[q2];if(z!==255&&!(o.WB&&o.WB[q2])&&z<O_BIOM.length){biom[k2]=O_BIOM[z];basis[k2]=FB.boden[z]}}
+  var f0=i%U?(i/U)|0:i/U-1,f1=Math.min(N-1,(i/U)|0),g0=j%U?(j/U)|0:j/U-1,g1=Math.min(N-1,(j/U)|0),mn=255,mx=0;if(f0<0)f0=f1;if(g0<0)g0=g1;
+  var r0=RF[g0*N+f0],r1=RF[g0*N+f1],r2=RF[g1*N+f0],r3=RF[g1*N+f1];mn=Math.min(r0,r1,r2,r3);mx=Math.max(r0,r1,r2,r3);
+  if(mx){basis[k2]=mn?FB.dachM:FB.mauer;biom[k2]=4;if(mn)h[k2]+=mn/4}}
+ return{kanten:nk,orte:L.length,dach:function(X,Y){var b=OK.bei(X,Y);if(!b)return -1;var K=fpk(b.o);return K.dach[b.j*b.o.W+b.i]?FB.dach:-1}}}
 // AR1c2: große Anlage (Arena) in First Person. AN = {d: Höhenfeld aus daten/arena-fp.json (entpackt), x, y (linke obere Ecke), w, h, haus: [[x,y], …]}.
 // Der Bauplan liegt vorgezeichnet vor (tools/at3-ar1-zeichnen.cjs, 4 Punkte je Feld wie hier); er wird auf die Bodenhöhe der Anlagenmitte gesetzt.
 // Je Häuschen ein Aufgang: 1 Feld breit auf der Linie Mitte → Häuschen, vom Boden am Außenrand bis auf die Höhe des Umgangs (Steigung unter der Grenze
@@ -120,6 +154,6 @@ function puffer(w){var L=[w.h.buffer,w.biom.buffer,w.farbe.buffer,w.wandX.buffer
 function stuecke(BB,ox,oy){var WX=BB.WX,WY=BB.WY,F=N+2,L=[],x0,y0;oy=Math.max(0,Math.min(WY-F,oy|0));ox=((ox|0)%WX+WX)%WX;
  for(y0=oy>>6;y0<=(oy+F-1)>>6;y0++)for(x0=ox>>6;x0<=(ox+F-1)>>6;x0++)L.push([x0%BB.SX,y0]);return L}
 
-var FA={anlage:anlage,entpacken:entpacken,N:N,U:U,M:M,WL:WL,SL:SL,DMAX:DMAX,bauen:bauen,walm:walm,puffer:puffer,stuecke:stuecke,VON_BIOM:VON_BIOM,VON_WEG:VON_WEG};
+var FA={kulisse:kulisse,fpk:fpk,anlage:anlage,entpacken:entpacken,N:N,U:U,M:M,WL:WL,SL:SL,DMAX:DMAX,bauen:bauen,walm:walm,puffer:puffer,stuecke:stuecke,VON_BIOM:VON_BIOM,VON_WEG:VON_WEG};
 if(typeof module!=='undefined'&&module.exports)module.exports=FA;else root.AT3FPA=FA;
 })(typeof self!=='undefined'?self:this);

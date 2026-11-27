@@ -6,6 +6,8 @@
 // · Zeichner: Bär in Seitenansicht aus einem Skelett (Sohlengänger, Füße stehen fest), Haltungen Stand, Sitzen,
 //   Liegen, Aufgerichtet mit weichen Übergängen. Köpfe und Fell je Sorte: dist/baer-koepfe.js.
 // · Bewegung (B2): Passgang, Galopp, aufrecht gehen, Wenden, Mimik; BAER.step(a,dt,t) je Bild, dann BAER.draw.
+// · Pixelgrafik (Rückmeldung Thomas 27.11.2026): alle Formen in ganzen Rasterkästchen (BAER.PX, wie KATZE.PX und der Löwe aus 1.0).
+//   Wenden ist eine echte Drehung über die Vorderansicht: Kopf führt, Rumpf wird kürzer, Beine rücken nebeneinander, Kopf von vorn.
 //   Fell und Speck schwingen an einer Feder nach, schwere Bären beschleunigen und bremsen langsamer.
 // · Sortenliste und Werte: BAER_SORTEN.md. Fahrplan: BAER_FAHRPLAN.md. Editor: dist/baer-editor.html.
 // Maßstab wie im Spiel: 81 Einheiten = 180 cm → 2,22 cm je Einheit.
@@ -126,16 +128,35 @@ BAER.create=create;BAER.sizeOf=sizeOf;BAER.talent=talent;BAER.params=params;
 // Bühnenfigur: ein Bär mit Haltung (wird vom Editor und später von Kampf und Käfig benutzt)
 BAER.actor=(D,mode='stand')=>({id:D.id,bear:D,P:params(D),mode,pose:null,queue:[]});
 
-// ---------------------------------------------------------------- Grundformen (wie dist/hund.js)
-function rr(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));}
-function poly(c,pts,col){c.fillStyle=col;c.beginPath();for(let i=0;i<pts.length;i++){const x=Math.round(pts[i][0]*2)/2,y=Math.round(pts[i][1]*2)/2;i?c.lineTo(x,y):c.moveTo(x,y);}c.closePath();c.fill();}
-function disk(c,x,y,r,col){c.fillStyle=col;c.beginPath();c.arc(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,r),0,TAU);c.fill();}
-function seg(c,x,y,xx,yy,w,col){c.strokeStyle=col;c.lineWidth=w;c.lineCap='round';c.beginPath();c.moveTo(x,y);c.lineTo(xx,yy);c.stroke();}
-function limb(c,x,y,xx,yy,w1,w2,col){const dx=xx-x,dy=yy-y,l=Math.hypot(dx,dy)||1,nx=-dy/l,ny=dx/l;poly(c,[[x+nx*w1/2,y+ny*w1/2],[xx+nx*w2/2,yy+ny*w2/2],[xx-nx*w2/2,yy-ny*w2/2],[x-nx*w1/2,y-ny*w1/2]],col);disk(c,x,y,w1/2,col);disk(c,xx,yy,w2/2,col);}
+// ---------------------------------------------------------------- Grundformen im Pixelraster (Rückmeldung Thomas 27.11.2026: Pixelgrafik wie die Gladiatoren)
+// Übernommen von den Katzen (KATZE.PX in dist/katze.js, dort nach R und bone im Löwen aus 1.0): jede Form wird zeilenweise in ganze Rasterkästchen
+// zerlegt, kein weicher Rand, kein Zurücklesen von Bildern. GS: Kantenlänge eines Kästchens in Zeichen-Einheiten (BAER.PX Welt-Einheiten, unabhängig
+// von der Größe des Bären). M: Lage, Drehung und Spiegelung, wird auf die Punkte gerechnet statt auf die Zeichenfläche, damit alles im selben geraden
+// Raster liegt; TS: Maßstab für Breiten. push/pop: Unterrahmen (Kopf, Unterkiefer) wie c.save/translate/rotate/scale.
+BAER.PX=1;let GS=1,TS=1;const M=[1,0,0,1,0,0],MST=[],XS=[],XD=[],PB=[];
+const txf=(x,y)=>M[0]*x+M[2]*y+M[4],tyf=(x,y)=>M[1]*x+M[3]*y+M[5];
+function push(x,y,rot=0,sc=1){MST.push(M[0],M[1],M[2],M[3],M[4],M[5],TS);const co=Math.cos(rot)*sc,si=Math.sin(rot)*sc,e=txf(x,y),f=tyf(x,y),a=M[0]*co+M[2]*si,b=M[1]*co+M[3]*si,cc=-M[0]*si+M[2]*co,d=-M[1]*si+M[3]*co;
+ M[0]=a;M[1]=b;M[2]=cc;M[3]=d;M[4]=e;M[5]=f;TS*=sc;}
+function pop(){if(MST.length<7)return;TS=MST.pop();for(let i=5;i>=0;i--)M[i]=MST.pop();}
+function spansPoly(c,P,n){const g=GS;let y0=1e9,y1=-1e9;for(let i=0;i<n;i++){const y=P[i*2+1];if(y<y0)y0=y;if(y>y1)y1=y;}
+ for(let r=Math.round(y0/g),r1=Math.round(y1/g);r<r1;r++){const yc=(r+.5)*g;let m=0;
+  for(let i=0,j=n-1;i<n;j=i++){const ay=P[i*2+1],by=P[j*2+1];if((ay>yc)!==(by>yc)){const x=P[i*2]+(yc-ay)/(by-ay)*(P[j*2]-P[i*2]),d=ay>yc?1:-1;let k=m++;while(k>0&&XS[k-1]>x){XS[k]=XS[k-1];XD[k]=XD[k-1];k--;}XS[k]=x;XD[k]=d;}}
+  let w=0,st=0;for(let k=0;k<m;k++){if(w===0)st=XS[k];w+=XD[k];if(w===0){const xa=Math.round(st/g),xb=Math.round(XS[k]/g);if(xb>xa)c.rect(xa*g,r*g,(xb-xa)*g,g);}}}}
+function spansDisk(c,x,y,r){const g=GS;if(r<g*.62){c.rect(Math.round(x/g-.5)*g,Math.round(y/g-.5)*g,g,g);return;}
+ for(let q=Math.round((y-r)/g),q1=Math.round((y+r)/g);q<q1;q++){const dy=(q+.5)*g-y,h2=r*r-dy*dy;if(h2<=0)continue;const hw=Math.sqrt(h2),xa=Math.round((x-hw)/g),xb=Math.round((x+hw)/g);if(xb>xa)c.rect(xa*g,q*g,(xb-xa)*g,g);}}
+function poly(c,pts,col){const n=pts.length;for(let i=0;i<n;i++){const x=pts[i][0],y=pts[i][1];PB[i*2]=txf(x,y);PB[i*2+1]=tyf(x,y);}c.fillStyle=col;c.beginPath();spansPoly(c,PB,n);c.fill();}
+function disk(c,x,y,r,col){c.fillStyle=col;c.beginPath();spansDisk(c,txf(x,y),tyf(x,y),r*TS);c.fill();}
+function rr(c,x,y,w,h,col){const g=GS,cx=txf(x+w/2,y+h/2),cy=tyf(x+w/2,y+h/2),W=Math.max(1,Math.round(w*TS/g)),H=Math.max(1,Math.round(h*TS/g));c.fillStyle=col;c.fillRect(Math.round(cx/g-W/2)*g,Math.round(cy/g-H/2)*g,W*g,H*g);}
+// Dünne Linie als Kette von Kästchen (wie bone im Löwen aus 1.0)
+function seg(c,x,y,xx,yy,w,col){const g=GS,a=txf(x,y),b=tyf(x,y),d=txf(xx,yy),e=tyf(xx,yy),s=Math.max(1,Math.round(w*TS/g))*g,n=Math.max(1,Math.ceil(Math.hypot(d-a,e-b)/g));c.fillStyle=col;c.beginPath();
+ for(let i=0;i<=n;i++)c.rect(Math.round((a+(d-a)*i/n-s/2)/g)*g,Math.round((b+(e-b)*i/n-s/2)/g)*g,s,s);c.fill();}
+function limb(c,x,y,xx,yy,w1,w2,col){const a=txf(x,y),b=tyf(x,y),d=txf(xx,yy),e=tyf(xx,yy);w1*=TS;w2*=TS;
+ const dx=d-a,dy=e-b,l=Math.hypot(dx,dy)||1,nx=-dy/l,ny=dx/l;PB[0]=a+nx*w1/2;PB[1]=b+ny*w1/2;PB[2]=d+nx*w2/2;PB[3]=e+ny*w2/2;PB[4]=d-nx*w2/2;PB[5]=e-ny*w2/2;PB[6]=a-nx*w1/2;PB[7]=b-ny*w1/2;
+ c.fillStyle=col;c.beginPath();spansPoly(c,PB,4);spansDisk(c,a,b,w1/2);spansDisk(c,d,e,w2/2);c.fill();}
 // Gelenk aus zwei Knochen (wie ik in dist/hund.js)
 function ik(jx,jy,fx,fy,a,b,dir){let dx=fx-jx,dy=fy-jy,dd=Math.hypot(dx,dy);const mx=a+b-.05;if(dd>mx){fx=jx+dx/dd*mx;fy=jy+dy/dd*mx;dx=fx-jx;dy=fy-jy;dd=mx;}dd=Math.max(dd,Math.abs(a-b)+.1);
  const th=Math.atan2(dy,dx),al=Math.acos(cl((a*a+dd*dd-b*b)/(2*a*dd),-1,1)),an=th+dir*al;return {kx:jx+Math.cos(an)*a,ky:jy+Math.sin(an)*a,fx,fy};}
-BAER.prim={rr,poly,disk,seg,limb,hrand};
+BAER.prim={rr,poly,disk,seg,limb,hrand,push,pop};
 
 // ---------------------------------------------------------------- Haltungen
 // Jede Haltung ist ein Satz Zahlen; Übergänge mischen die Zahlen weich. Die Hinterfüße stehen in allen Haltungen
@@ -208,6 +229,10 @@ BAER.step=step;
 // Stauchung beim Wenden: der Bär dreht sich um die Hochachse, in der Seitenansicht wird er kurz schmal
 const turnScale=(a,t)=>{if(!a.turn)return a.facing||1;const u=cl((t-a.turn.t0)/a.turn.dur,0,1),f=a.turn.from*Math.cos(Math.PI*smooth(u));return Math.abs(f)<.04?(f<0?-.04:.04):f;};
 BAER.turnScale=turnScale;
+// Echte Drehung über die Vorderansicht (Rückmeldung Thomas 27.11.2026): b Drehwinkel des Rumpfs (0 Seite … π/2 von vorn … π andere Seite),
+// h Drehwinkel des Kopfes: er führt, dreht zuerst zum Betrachter und kommt zuerst in der neuen Richtung an. F: Blickrichtung vor dem Wenden.
+const yawOf=(a,t)=>{const u=cl((t-a.turn.t0)/a.turn.dur,0,1),b=Math.PI*smooth(u);return {F:a.turn.from,b,h:Math.min(Math.PI,b+.6*Math.sin(Math.PI*u))};};
+BAER.yaw=(a,t)=>a.turn?yawOf(a,t):null;
 
 // ---------------------------------------------------------------- Mimik: wittern, gähnen, Lefzen heben, Ohren spielen
 const EXPR={sniff:{de:'Wittern',dur:2.8},yawn:{de:'Gähnen',dur:3.4},snarl:{de:'Lefzen',dur:2.6},ears:{de:'Ohren',dur:1.6}};
@@ -260,23 +285,31 @@ BAER.rig=(a,t)=>rig(a,t,a.SH||shapeOf(a.bear));
 // ---------------------------------------------------------------- Zeichner
 const G=-.25;// nichts reicht unter den Boden: Speck und Fell legen sich auf
 function drawBear(c,a,px,py,k,face,opt={}){const D=a.bear,col=D.appearance.colors,SH=a.SH||shapeOf(D),sz=(a.P||(a.P=params(D))).sz,t=opt.time??performance.now()/1000;
- const R=rig(a,t,SH),{Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,C}=R,bk=SH.bulk,lw=SH.legW,seed=D.seed%1000,q=a.q||0,qx=a.qx||0,ts=turnScale(a,t);
+ const R=rig(a,t,SH),{Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,C}=R,bk=SH.bulk,lw=SH.legW,seed=D.seed%1000,q=a.q||0,qx=a.qx||0;
+ // Wenden: Punkt (x, Tiefe z zur nahen Seite) liegt im Bild bei x·bc + z·bs; Breiten bleiben, darum wird der Bär von vorn breit statt schmal
+ const Y=a.turn?yawOf(a,t):null,F=Y?Y.F:(a.facing||1),cb=Y?Math.cos(Y.b):1,sb=Y?Math.sin(Y.b):0,ch=Y?Math.cos(Y.h):1,bc=F*cb,bs=-F*sb,ts=bc,zw=8.5*bk;
  const base=col.base,light=col.light,shade=col.shade,dark=col.dark,legC=mix(base,dark,.34),farC=mix(dark,shade,.45),clawC=col.claw;
  c.save();c.translate(px,py);c.scale(k,k);
  if(!opt.noShadow){c.fillStyle='#1c140c50';c.beginPath();c.ellipse(face*ts*R.cx*sz,1.2,(L*.5+18+R.lie*8)*sz*(1-cl(R.p,0,1.4)*.35)*Math.max(.42,Math.abs(ts)),(4.2+R.lie)*sz,0,0,TAU);c.fill();}
- c.scale(face*sz*ts,sz);
+ c.scale(face*sz,sz);GS=(opt.px||BAER.PX)/sz;MST.length=0;
+ let curZ=0;const lay=z=>{curZ=z;M[0]=bc;M[1]=0;M[2]=0;M[3]=1;M[4]=bs*z;M[5]=0;TS=1;};lay(0);
  const gy=y=>Math.min(y,G);
- const blob=(x,y,r,cc)=>{const pts=[];for(let i=0;i<16;i++){const an=i/16*TAU;pts.push([x+Math.cos(an)*r,gy(y+Math.sin(an)*r)]);}poly(c,pts,cc);};
+ // Runde Masse: nur die Mitte dreht mit, die Rundung bleibt (von vorn ist der Rumpf rund, nicht flach)
+ const blob=(x,y,r,cc)=>{const X=M[0]*x+M[4],m0=M[0],m4=M[4],pts=[];for(let i=0;i<16;i++){const an=i/16*TAU;pts.push([X+Math.cos(an)*r,gy(y+Math.sin(an)*r)]);}M[0]=1;M[4]=0;poly(c,pts,cc);M[0]=m0;M[4]=m4;};
  // ---- Pranke und Fuß mit Krallen
- function claws(x,y,dx,dy,h,n){const len=SH.claw;for(let i=0;i<n;i++){const o=(i-(n-1)/2)*h*.24,bx=x-dy*o,by=y+dx*o;seg(c,bx,by,bx+dx*len*.8-dy*len*.12,gy(by+dy*len*.8+dx*len*.12+len*.28),.75,clawC);}}
- function drawLeg(l){const cc=l.near?legC:farC,up=l.near?mix(base,legC,.35):farC;
+ function claws(x,y,dx,dy,h,n){const len=SH.claw;const z0=curZ;for(let i=0;i<n;i++){const o=(i-(n-1)/2)*h*.24,bx=x-dy*o,by=y+dx*o;if(bs)M[4]=bs*(z0+(i-(n-1)/2)*1.6*lw);seg(c,bx,by,bx+dx*len*.8-dy*len*.12,gy(by+dy*len*.8+dx*len*.12+len*.28),.75,clawC);}M[4]=bs*z0;}
+  // Farbe nach Tiefe: beim Wenden wird das nahe Bein zum fernen, ohne Farbsprung
+ const upN=mix(base,legC,.35);
+ function drawLeg(l){const dz=l.near?1:-1,dq=Math.round(cl((dz*cb+1)/2+(l.front?.5:-.3)*sb,0,1)*8)/8,cc=dq>=1?legC:dq<=0?farC:mix(farC,legC,dq),up=dq>=1?upN:dq<=0?farC:mix(farC,upN,dq);lay(dz*zw);
   if(l.front){limb(c,l.jx,Math.min(l.jy,-8*lw*bk),l.kx,l.ky,16*lw*bk,12.5*lw,up);limb(c,l.kx,l.ky,l.fx,l.fy,12.5*lw,10.4*lw,cc);
    const dx=Math.cos(l.ang),dy=-Math.sin(l.ang),pr=3.1*lw,x0=l.fx-dx*1.2,y0=l.fy-dy*1.2+2.2,x1=l.fx+dx*6.6,y1=l.fy+dy*6.6+2.2,gp=y=>Math.min(y,-pr);
    limb(c,x0-dx*2.6,gp(y0-dy*2.6),x1,gp(y1),6.2*lw,5.2*lw,cc);claws(x1+dx*2,gp(y1)+dy*2+.2,dx,dy,5.2*lw,4);}
   else{limb(c,l.jx,Math.min(l.jy,-10*lw*bk),l.kx,l.ky,20*lw*bk,14*lw,up);limb(c,l.kx,l.ky,l.fx,l.fy,13.5*lw,10*lw,cc);
    {const fr=2.9*lw,dx=Math.cos(l.ang),dy=-Math.sin(l.ang),y0=l.fy+2.2,gf=y=>Math.min(y,-fr),xt=l.fx+dx*9.6,yt=gf(y0+dy*9.6+.4);// Sohle: Ferse bis Zehen, rollt beim Gehen ab
     limb(c,l.fx-dx*3.6,gf(y0-dy*3.6),xt,yt,5.8*lw,4.8*lw,cc);claws(xt+dx*1.8,yt+dy*1.8+.1,dx,dy,4.8*lw,3);}}}
- drawLeg(R.legs[0]);drawLeg(R.legs[1]);
+ // Reihenfolge nach Tiefe: von der Seite ferne Beine, Rumpf, nahe Beine; von vorn Hinterbeine, Rumpf, Vorderbeine
+ const dep=l=>(l.jx-R.cx)*sb+(l.near?zw:-zw)*cb,LS=Y?[...R.legs].sort((p,q)=>dep(p)-dep(q)):R.legs;
+ for(const l of LS)if(Y?dep(l)<0:!l.near)drawLeg(l);lay(0);
  // ---- Rumpf: Wirbelsäule als Bogen vom Becken zur Schulter, oben Rücken mit Buckel, unten Bauch
  const top=[],bot=[],n=14,mx=(hx+sx)/2+Nx*R.bend*2,my=(hy+sy)/2+Ny*R.bend*2,br=R.breathe*.35,hump=Math.max(0,SH.hump-q*.35);
  for(let i=0;i<=n;i++){const u=i/n,q=1-u,x=q*q*hx+2*u*q*mx+u*u*sx,y=q*q*hy+2*u*q*my+u*u*sy;
@@ -286,22 +319,34 @@ function drawBear(c,a,px,py,k,face,opt={}){const D=a.bear,col=D.appearance.color
   top.push([x+nx*rt,gy(y+ny*rt)]);bot.push([x-nx*rb,gy(y-ny*rb)]);}
  disk(c,hx-Tx*10.5*bk+Nx*5*bk,hy-Ty*10.5*bk+Ny*5*bk,2.4*SH.tail,shade);// Stummelschwanz
  blob(hx,hy,12.6*bk,base);blob(sx,sy,13.6*bk,base);
- poly(c,[...top,...[...bot].reverse()],base);
+ if(sb>.02){// von vorn: Schultern und Buckel als runde Masse, der Rumpf ist so breit wie hoch (sonst bliebe vom Buckel nur eine Spitze)
+  let ui=0;for(let i=1;i<=n;i++)if(top[i][1]<top[ui][1])ui=i;const [ux,uy]=top[ui],hr=(8+3*sb)*bk;blob(ux,uy+hr-.4,hr,base);
+  for(const sd of [-1,1]){M[4]=bs*sd*3.5*bk;blob(sx,sy+1.5*bk,12.5*bk,base);blob(hx,hy,11.5*bk,base);}M[4]=0;
+  limb(c,hx,Math.min(hy,-11.5*bk),sx,Math.min(sy,-12.5*bk),23*bk,25*bk,base);}// Rumpf als runde Walze zwischen Becken und Schulter
+ const wide=Math.abs(bc)>.15,strip=Math.abs(bc)>.5;// fast von vorn ist die Seitenfläche nur noch ein Strich: weglassen, die runden Massen tragen die Form
+ if(wide)poly(c,[...top,...[...bot].reverse()],base);
  // Brust vorn (zwischen Schulter und Hals) und Hals
- const nw=24*bk;limb(c,sx+Tx*1,Math.min(sy+Ty*1,-nw/2),R.hcx,Math.min(R.hcy,-7.75*SH.headS),nw,15.5*SH.headS,base);
+ // Kopf führt die Drehung: Hals schwenkt mit dem Kopfwinkel
+ const HX=bc*R.nbx+F*ch*(R.hcx-R.nbx),nw=24*bk;M[0]=1;M[4]=0;limb(c,bc*(sx+Tx*1),Math.min(sy+Ty*1,-nw/2),HX,Math.min(R.hcy,-7.75*SH.headS),nw,15.5*SH.headS,base);lay(0);
  // Schattierung: Bauch dunkler, Rücken und Buckel heller
- poly(c,bot.slice(1,n).map(([x,y])=>[x+Nx*3.4,gy(y+Ny*3.4)]).concat(bot.slice(1,n).reverse()),shade);
- poly(c,top.slice(2,n).concat(top.slice(2,n).reverse().map(([x,y],i)=>{return [x-Nx*2,y-Ny*2];})),light+'90');
+ if(strip)poly(c,bot.slice(1,n).map(([x,y])=>[x+Nx*3.4,gy(y+Ny*3.4)]).concat(bot.slice(1,n).reverse()),shade);
+ if(strip)poly(c,top.slice(2,n).concat(top.slice(2,n).reverse().map(([x,y],i)=>{return [x-Nx*2,y-Ny*2];})),light+'90');
  // Zotteln: am Bauch hängend, am Rücken und Buckel abstehend (fest je Bär, flimmert nicht)
- if(SH.shag>0){const s=SH.shag;for(let i=1;i<n;i++){const [x,y]=bot[i],h=hrand(i*3.7+seed);if(y<G-1){seg(c,x,y-.6,x-1.3-h+qx*(.5+h),gy(y+.9*s+h*s),.9,shade);seg(c,x+1.8,y-.6,x+.8-h+qx*(.4+h),gy(y+.6*s+h*.8*s),.8,mix(shade,dark,.4));}
-   if(i%2){const [X,Y]=top[i];seg(c,X,Y+.6,X-1.3*s-h*s*.6+qx*.5,Y-.15*s-h*.35*s-Math.abs(q)*.15,.9,mix(base,light,.5));}}
+ if(SH.shag>0&&strip){const s=SH.shag;for(let i=1;i<n;i++){const [x,y]=bot[i],h=hrand(i*3.7+seed);if(y<G-1){seg(c,x,y-.6,x-1.3-h+qx*(.5+h),gy(y+.9*s+h*s),.9,shade);seg(c,x+1.8,y-.6,x+.8-h+qx*(.4+h),gy(y+.6*s+h*.8*s),.8,mix(shade,dark,.4));}
+   if(i%2&&Math.abs(cb)>.3){const [X,Y]=top[i];seg(c,X,Y+.6,X-1.3*s-h*s*.6+qx*.5,Y-.15*s-h*.35*s-Math.abs(q)*.15,.9,mix(base,light,.5));}}
   for(let i=0;i<4;i++){const u=.25+i*.2,h=hrand(i*9.1+seed);seg(c,lerp(sx,R.hcx,u)-Nx*-8*bk*(1-u*.3),gy(lerp(sy,R.hcy,u)+ (8*bk*(1-u*.3))),lerp(sx,R.hcx,u)-1.5+qx*.6,gy(lerp(sy,R.hcy,u)+9.5*bk*(1-u*.3)+h*1.6*s),.9,shade);}}
- drawLeg(R.legs[2]);drawLeg(R.legs[3]);
+ for(const l of LS)if(Y?dep(l)>=0:l.near)drawLeg(l);
  // ---- Kopf (Zeichner je Sorte)
- c.save();c.translate(R.hcx,Math.min(R.hcy,G-6.5*SH.headS));c.rotate(-R.he);c.scale(SH.headS,SH.headS);
- (BAER.HEADS[SH.head]||headPlain)(c,D,SH,col,{t,breathe:R.breathe,prim:BAER.prim,f:R.face});c.restore();
+ {const hs=SH.headS,o={t,breathe:R.breathe,prim:BAER.prim,f:R.face};M[1]=0;M[2]=0;M[3]=1;M[4]=HX;M[5]=Math.min(R.hcy,G-6.5*hs);TS=1;
+  if(Math.abs(ch)>=.5){// von der Seite; beim Wenden wird die Schnauze kürzer, je weiter der Kopf zum Betrachter dreht
+   M[0]=F*ch<0?-1:1;push(0,0,-R.he,hs);(BAER.HEADS[SH.head]||headPlain)(c,D,Y?{...SH,snout:SH.snout*(.4+1.2*(Math.abs(ch)-.5))}:SH,col,o);}
+  else{M[0]=1;push(0,0,0,hs);o.yaw=F*ch*2;o.pitch=R.he;(BAER.HEADS_FRONT[SH.head]||headFront)(c,D,SH,col,o);}// von vorn
+  pop();lay(0);}
  if(a.wounds&&a.wounds.length||a.mouthBlood>0)drawWounds(c,a,R,SH);
  c.restore();return R;}
+// Kopf von vorn (Ersatz, wenn die Sorte keinen eigenen hat): o.yaw -1…1 schiebt Schnauze und Augen zur Seite, in die der Kopf schaut
+function headFront(c,D,SH,col,o){const mx=(o.yaw||0)*3;disk(c,-5.4,-6.2,2.6,col.base);disk(c,5.4,-6.2,2.6,col.base);disk(c,0,0,8,col.base);disk(c,mx,2.6,4,col.muzzle||col.light);rr(c,mx-1.4,.6,2.8,2,'#17100c');rr(c,mx*.6-4.2,-2.8,1.3,1.3,'#120c08');rr(c,mx*.6+2.9,-2.8,1.3,1.3,'#120c08');}
+BAER.HEADS_FRONT={};
 function headPlain(c,D,SH,col){disk(c,0,0,7.6,col.base);poly(c,[[3,-5],[13.5,-2],[14,1.5],[6,5],[0,6]],col.base);rr(c,12.4,-2.2,2,2,'#17100c');rr(c,4.6,-2.6,1.2,1.2,'#120c08');}
 // ---------------------------------------------------------------- Wunden und Blut am Bären (B3): sitzen an der getroffenen Stelle und wandern mit dem Körper
 // Stellen: kopf, hals, brust, bauch, vl (Vorderpranke), hl (Hinterlauf). Wunde: {part,u,v,size 1–6,kind: claw|bite|cut|stab|blunt,seed}

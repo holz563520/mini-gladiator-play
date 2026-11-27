@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='9038692f', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='8f04889c', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var N7B2=!/[?&]n7b2=0/.test(location.search);   // N7b2: Stadtkarte beim Antippen (Notausschalter ?n7b2=0)
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
@@ -59,7 +59,7 @@ function starten(o){
  if(o.kam&&o.kam.length===3&&o.kam[0]>=0&&o.kam[0]<WX&&o.kam[1]>=0&&o.kam[1]<WY){cam.x=o.kam[0];cam.y=halteY(o.kam[1]);cam.lod=Math.max(0,Math.min(MAXL,o.kam[2]|0));hatKam=true}
 
  function ende(g2){if(tot)return;tot=true;try{bk&&bk.terminate()}catch(e){}bk=null;if(okern&&kern&&kern.ortskernWeg)kern.ortskernWeg();try{okern&&okern.terminate()}catch(e){}okern=null;if(o.beiAusfall)o.beiAusfall(g2)}
- try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*|n7a5a[0-9][a-z]?|n7a5b[0-9]|n7a5d|n7a5e2?|n7a5f|n7b1|n7b2)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
+ try{bk=new Worker(BASIS+'bildkern.js?v='+V+(location.search.match(/[?&](n2[bcd]|n4b|n5d|n7a2[a-z0-9]*|n7a3[a-z0-9]*|n7a5a[0-9][a-z]?|n7a5b[0-9]|n7a5d|n7a5e2?|n7a5f|n7b1|n7b2|n7b3)=0/g)||[]).join('').replace(/\?/g,'&'))}catch(e){setTimeout(function(){ende('no picture core')},0)}
  if(bk){bk.onerror=function(e){if(e&&e.preventDefault)e.preventDefault();ende('picture core failed')};bk.onmessage=vomBildkern;
   var F=S.PALETTEN[S.PALETTE].farben,pal=new Uint32Array(64),du=new Uint8Array(64),he=new Uint8Array(64);
   for(var i=0;i<64;i++){var c=S.farbe(F[i]);pal[i]=(255<<24|c[2]<<16|c[1]<<8|c[0])>>>0;du[i]=S.dunkler(i);he[i]=i}
@@ -96,7 +96,7 @@ function starten(o){
   else if(d.art==='fernNeu'){if(d.gen!==gen)return;var FL=d.flaechen||[];M.minis=d.minis;M.miniB=d.miniB;M.miniMs=d.miniMs;M.miniRaus=d.miniRaus;M.fernNeu=(M.fernNeu|0)+FL.length;   // N7a3c1: Mini-Pläne da → Fernbilder ⅟16–⅟512 dort neu holen (altes bleibt stehen)
    bilder.forEach(function(b,key){if(b.lod<STUFEN||b.lod>9)return;var n=TEIL<<b.lod;for(var i=0;i<FL.length;i++){var f=FL[i],dx=modu(f[0]-b.x0,WX);
     if((dx<n||dx+f[2]>WX)&&f[1]<b.y0+n&&f[1]+f[2]>b.y0){altB.add(key);break}}});plan()}
-  else if(d.art==='ortNeu'){var S=new Set(d.stuecke||[]);S.forEach(function(k){stV.set(k,++BV)});   // N7a2a: Ortsfläche eingeebnet (oder Park gewinnt): Bilder dieser Stücke neu holen
+  else if(d.art==='ortNeu'){if(d.fpNeu&&window.AT3FP&&window.AT3FP.zustand().an)window.AT3FP.bauNeu();var S=new Set(d.stuecke||[]);   // N7b3: Stadtplan im First-Person-Ausschnitt angekommenS.forEach(function(k){stV.set(k,++BV)});   // N7a2a: Ortsfläche eingeebnet (oder Park gewinnt): Bilder dieser Stücke neu holen
    bilder.forEach(function(b,key){if(b.lod<STUFEN&&S.has(stk(b.x0,b.y0)))altB.add(key)});if(d.karteiB!=null){M.kartei=d.kartei;M.karteiB=d.karteiB;M.ortEMs=d.eMs}if(d.posten!=null){M.posten=d.posten;M.postenListen=d.postenListen;M.postenMs=d.postenMs}if(d.hausB!=null){M.haeuser=d.haeuser;M.hausB=d.hausB;M.hausMs=d.hausMs;M.listeMs=d.listeMs;M.hausPausen=d.hausPausen;M.listen=d.listen;M.halbN=d.halbN;M.halbB=d.halbB;M.halbMs=d.halbMs;M.fernN=d.fernN;M.fernB=d.fernB;M.fernMs=d.fernMs}if(d.name){M.orte=(M.orte||0)+1;M.ortMs=d.ms;if(d.ms>(M.ortMaxMs||0))M.ortMaxMs=d.ms;if(d.ersatz)M.ortErsatz=(M.ortErsatz||0)+1}plan()}
   else if(d.art==='start'){if(d.platz&&!hatKam){cam.x=umX(d.platz.x+.5);cam.y=halteY(d.platz.y+.5);hatKam=true;M.startOrt=d.platz.ort;blick();plan()}}
   else if(d.art==='bild'){var gv=offen.get(d.key);offen.delete(d.key);if(d.nv!==NV){if(d.bmp&&d.bmp.close)d.bmp.close();plan();return}

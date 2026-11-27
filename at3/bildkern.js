@@ -102,6 +102,7 @@ function globusOrte(){if(GORTE)return GORTE;if(!groeAn())return null;return GORT
 // alle Orte einmal durchgehen (rund 4.450, unter 2 ms), Abstand in Bildpunkten wie gemalt (Raute bzw. Kugel), Treffer bis d.T Bildpunkte, in den Stufen mit
 // Mini-Plan (⅟16–⅟512) auch innerhalb der halben Ortsbreite. Nur beim Antippen, nichts je Bild. Notausschalter ?n7b2=0.
 var N7B2=!/[?&]n7b2=0/.test(self.location.search);
+var N7B3=!/[?&]n7b3=0/.test(self.location.search),FPL=null;   // N7b3: Stadt als Kulisse in First Person; FPL = Lage des letzten Ausschnitts (Pläne, die später kommen, holen ihn neu)
 function onLaden(){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}return ON}
 function orLaden(){if(!OR&&OR!==false){try{importScripts('orte.js'+self.location.search);OR=self.AT3ORTE.AUS?false:self.AT3ORTE}catch(x){OR=false}}return OR||null}
 function stadtInfo(k){if(!orLaden()||!A||!A.orte||k==null||k<0||k>=A.orte.length)return null;onLaden();var c=A.orte[k],z=c&0xffffff,r=OR.roh(seed,A,k,ON),pp=G.ortPunkt(seed,A,z%G.GW,(z/G.GW)|0),u=A.hs&&A.hs.ort?A.hs.ort[k]:0;
@@ -143,7 +144,7 @@ function vomOrtskern(m){if(m.gen!==gen)return;if(m.art==='mini'){if(m.fehler)MIN
  if(m.art==='posten'){OFL.postenListe(m);ortsBedarf();return}   // N7a2c: Postenliste da → berührende Posten aufnehmen
  if(m.art!=='plan')return;echteBoeden();if(m.ms!=null)ORTMS.push(m.ms);var L=OFL.aufnehmen(m,bauHat);if(!L.length)return;
  eingeebnet(L);
- self.postMessage({art:'ortNeu',gen:gen,stuecke:L,k:m.k,name:m.name,ms:m.ms,ersatz:m.ersatz||null})}
+ self.postMessage({art:'ortNeu',gen:gen,stuecke:L,k:m.k,name:m.name,ms:m.ms,ersatz:m.ersatz||null,fpNeu:fpBeruehrt(L)})}   // N7b3: Plan im First-Person-Ausschnitt → neu holen
 // N7a2c Startplatz: Postenpunkte rechnet der Bildkern selbst (Ortsbilanz + aussenposten.js, rund 0,3 ms je Ort, kein Plan), damit die Wahl nie auf den
 // Ortskern warten muss (der plant gerade vielleicht eine Großstadt). Daten (3 Dateien) einmal laden; je Ort gemerkt (höchstens 64 Orte).
 function postenDaten(){if(PDL)return PDL;var Q=self.location.search;
@@ -213,7 +214,13 @@ function fp(d,m,t){if(!FPA){importScripts('fpausschnitt.js'+self.location.search
  ortsBedarf();
  L.forEach(function(c){var k=um(c[0])*8192+c[1];if(st.has(k))return;var b=G.ausschnitt(A,c[0],c[1],lager.pop()||new Uint8Array(G.GEL_BYTES));G.gelaende({seed:seed,cx:c[0],cy:c[1],daten:b});b._s=null;if(OFL)OFL.flachen(b,um(c[0]),c[1]);st.set(k,b);neu++});
  var sp=new Uint8Array(NAT.ARTEN.length);(d.sperr||[]).forEach(function(id){var i=NAT.ARTEN.indexOf(id);if(i>=0)sp[i]=1});
- var w=FPA.bauen(BB,NAT,hole,seed,d.ox,d.oy,sp,F,natFrei(),BAU.size?{hole:holeBau,BODEN:BAUB.BODEN,PUNKT:BAUB.PUNKT,DACHF:dachF()}:null,anl(d.anl));m.welt=w;m.arten=NAT.ARTEN;m.neu=neu;m.us=(performance.now()-t)*1000;self.postMessage(m,FPA.puffer(w));weiter()}
+ var w=FPA.bauen(BB,NAT,hole,seed,d.ox,d.oy,sp,F,natFrei(),BAU.size?{hole:holeBau,BODEN:BAUB.BODEN,PUNKT:BAUB.PUNKT,DACHF:dachF()}:null,anl(d.anl),kuli());m.welt=w;FPL={ox:w.ox,oy:w.oy};if(w.kulisse)w.orte=fpOrte(w);m.arten=NAT.ARTEN;m.neu=neu;m.us=(performance.now()-t)*1000;self.postMessage(m,FPA.puffer(w));weiter()}
+// N7b3: Orte im Ausschnitt als Kulisse (fpausschnitt.js kulisse), Stadtkarte fürs Antippen (Lage in Ausschnitt-Feldern, nur Orte, keine Posten)
+function kuli(){return N7B3&&OFL&&OFL.orte.size&&F?{bei:OFL.bei,F:OFL.fpFarben(F)}:null}
+function fpOrte(w){var L=[];OFL.orte.forEach(function(o){if(o.posten)return;var i0=o.x0-w.ox;i0=((i0%BB.WX)+BB.WX)%BB.WX;if(i0>BB.WX/2)i0-=BB.WX;var j0=o.y0-w.oy;
+  if(i0+o.W<=0||j0+o.W<=0||i0>=FPA.N||j0>=FPA.N)return;L.push({i0:i0,j0:j0,W:o.W,k:o.k,stadt:N7B2?stadtInfo(o.k):null})});return L}
+function fpBeruehrt(L){if(!FPL||!N7B3)return false;for(var n=0;n<L.length;n++){var cx=(L[n]/8192)|0,cy=L[n]%8192,dx=cx*64-FPL.ox;dx=((dx%BB.WX)+BB.WX)%BB.WX;if(dx>BB.WX/2)dx-=BB.WX;
+  if(dx>-64&&dx<FPA.N&&cy*64>FPL.oy-64&&cy*64<FPL.oy+FPA.N)return true}return false}
 // AR1c2: Arena in First Person: Höhenfeld aus daten/arena-fp.json (vom Hauptkern mitgeschickt, hier einmal entpackt) und Lage der Anlage mit Häuschen
 function anl(a){if(!a||!a.fp)return null;if(!ANF||ANF.h!==a.fp.h){ANF={h:a.fp.h,d:FPA.entpacken(a.fp)}}return{d:ANF.d,x:a.x,y:a.y,w:a.w,h:a.h,haus:a.haus||[]}}
 function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;

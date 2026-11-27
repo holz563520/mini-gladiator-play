@@ -295,6 +295,7 @@ function neu(G,BB){var WX=BB.WX,orte=new Map(),gefragt=new Set(),F=null,FB=null,
   return{x:um(t.x+t.dx),y:Math.max(0,Math.min(BB.WY-1,t.y+(t.dy<0?-1:1)*(t.halb+1)))}}
  return{RAMPE:RAMPE,HALTEN:HALTEN,orte:orte,postenListe:postenListe,imPosten:imPosten,orteUm:orteUm,postenFehlen:function(A,seed,OR,x,y){return orteUm(A,seed,OR,x,y,true)},PL:PL,
   ortBei:function(X,Y){var b=null;orte.forEach(function(o){if(b!=null||o.posten)return;var i=lok(o,X),j=Y-o.y0;if(i>=0&&i<o.W&&j>=0&&j<o.W)b=o.k});return b},   // N7b2: Ort (Nummer), dessen Planquadrat das Feld enthält (nur Orte, keine Posten)
+  fpFarben:function(f){return farben(f)},   // N7b3: Boden-, Dach-, Wand- und Mauerfarben für die Kulisse in First Person (fpausschnitt.js)
   postenAn:function(an){POSTEN=!!an},   // N7a2c: Posten einschalten (Notausschalter ?n7a2c=0 lässt es aus)
   postenStand:function(){var n=0,b=0;orte.forEach(function(o){if(o.posten){n++;if(o.EF)b++}});return{posten:n,listen:LIP.length,orteMitListe:PL.size,anfragen:gefragtP.size,ms:PST.ms,maxMs:PST.maxMs}},aufnehmen:aufnehmen,stuecke:stuecke,bedarf:bedarf,flachen:flachen,bei:bei,frei:frei,fuerBild:fuerBild,imOrt:imOrt,hinaus:hinaus,
   // N7a2b1: echte Böden einschalten (sb = stadtbild.js, kl = karteilader.js neu(…)); wartende() → Kartenstücke der Orte, die auf Kartei-Bilder gewartet haben
