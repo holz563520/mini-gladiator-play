@@ -94,7 +94,7 @@ function herde(){if(ED.tab==='messung'&&$('herde').checked){const cv=$('herdeBil
 // „alt neben neu“: links der Löwe aus 1.0 (M.drawRex aus dist/lion.js) in derselben Bewegung. Das Spiel wird erst beim Einschalten nachgeladen.
 const GANG=Object.fromEntries(K.GK.map(g=>[g,K.GAITS[g].de]));
 const ALT_DATEIEN=['data','household','management','scout','sim','benchmark','school','world','weapon-art','lion'];
-async function altLaden(){if(ED.alt)return;ED.alt={ok:false,l:null};$('bwAltText').textContent='Löwe aus 1.0 wird geladen …';const V='b3b0e618',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
+async function altLaden(){if(ED.alt)return;ED.alt={ok:false,l:null};$('bwAltText').textContent='Löwe aus 1.0 wird geladen …';const V='3824ad85',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
  try{for(const n of ALT_DATEIEN)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v='+v;s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);});
   if(!window.MG||!window.MG.drawRex)throw Error('M.drawRex fehlt');
   ED.alt.l={x:0,y:0,a:0,mode:'stalk',phase:0,g:{dead:false,name:'Rex Vetus'},tissue:{head:160,chest:290,belly:140,front:120,rear:100},max:{head:160,chest:290,belly:140,front:120,rear:100},blood:100,trauma:0,wounds:[],z:0,hit:0,clock:0,moveSpeed:0,cute:0,velocity:0,team:0};

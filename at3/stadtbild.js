@@ -68,7 +68,7 @@ function daten(o){if(o&&o.daten)return o.daten.G?o.daten:SL().daten(o.daten);if(
 var BIOME={
  mediterranean:{klasse:'brick',dach:'sattel',wand:STEIN,satz:'putz',pflaster:true,felder:true,boden:['boden-gras','boden-erde'],weg:'boden-weg',baeume:['baum-olive','baum-zypresse','busch-bluete'],dichte:.16,feld:'bk-feld'},
  grassland:{klasse:'clay-wood',dach:'sattel',satz:'steppe',boden:['boden-gras'],weg:'boden-weg',baeume:['baum-pappel','busch-hasel'],dichte:.06,feld:'bk-feld'},
- broadleaf:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,satz:'fachwerk',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-eiche-skizze','baum-buche','baum-apfel','busch-gruen'],dichte:.3,feld:'bk-feld'},
+ broadleaf:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,satz:'fachwerk',bilder:'laub',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-eiche-skizze','baum-buche','baum-apfel','busch-gruen'],dichte:.3,feld:'bk-feld'},
  desert:{klasse:'clay-wood',dach:'flach',wand:SAND,dachR:SAND,satz:'wueste',satzKlassen:['brick'],boden:['boden-sand'],weg:'boden-sand',baeume:['baum-dattelpalme','busch-tamariske'],dichte:.03,feld:'boden-erde'},
  mountain:{klasse:'marble',dach:'sattel',dachR:HOLZ,satz:'bruch',boden:['boden-fels','boden-gras'],weg:'boden-weg',baeume:['baum-tanne','fels-block'],dichte:.14,feld:'bk-feld'},
  savanna:{klasse:'clay-wood',dach:'walm',dachR:OCKER,satz:'rotlehm',boden:['boden-gras','boden-sand'],weg:'boden-sand',baeume:['baum-akazie','baum-baobab','blume-hohes-gras'],dichte:.07,feld:'boden-erde'},
@@ -345,7 +345,7 @@ function plan0(opt){
   // Elendsbuden als wilder Haufen an der Mauer vor dem Stinktor, der Mauer entlang (auch um Ecken, solange es dieselbe Seite bleibt):
   // je Spalte eine Schlammgasse direkt vor der Mauer (an Stufen so lang, dass sie zusammenhängt), dahinter Ue Felder Schlamm für die Buden.
   // N6b5a Rückmeldung Thomas (24.11.2026): Elendsviertel extrem überfüllt: in Biomen mit Budenbild 1,25 statt 2,6 Felder Schlamm je Bude (opt.budenEng:false = wie vorher)
-  var tS=TO[stinkK],eG=[],eR=[],Ue=0,JE=B.felder&&opt.budenbild!==false&&opt.budenEng!==false&&opt.stinkEng!==false?1.25:2.6;   // stinkEng:false = alter Riesenplan ganz wie vorher
+  var tS=TO[stinkK],eG=[],eR=[],Ue=0,JE=elendAn(B)&&opt.budenbild!==false&&opt.budenEng!==false&&opt.stinkEng!==false?1.25:2.6;   // stinkEng:false = alter Riesenplan ganz wie vorher
   if(buden){var uwC={},uw=function(l){if(l in uwC)return uwC[l];var last=null;for(var u=-Wi;u<0;u++){var p=glob(tS,u,l);if(p[0]>=0&&p[1]>=0&&p[0]<Wi&&p[1]<Wi&&MK[p[1]*Wi+p[0]])last=u}return uwC[l]=last===null?null:last+1};
    var strU=function(l){if(l===0||l===1)return tS.u0;for(var k=0;k<TO.length;k++){var t2=TO[k];if(k!==stinkK&&t2.s===tS.s&&(l+tS.c-t2.c===0||l+tS.c-t2.c===1))return t2.u0}return null};
    var gut=function(l,u){var p=glob(tS,u,l);return frei(p[0],p[1])&&seiteVon(p[0]+.5,p[1]+.5)===tS.s};
@@ -503,7 +503,7 @@ function plan0(opt){
    if(gesetztB<buden)return null;
    frei2.forEach(function(f){bude[at(f[0],f[1])]=0;bau('shack','shack',{i:f[0],j:f[1],w:1,h:1},[f[0],f[1],f[2][0],f[2][1]])});
    gesetzt.shack=(gesetzt.shack|0)+buden;
-   reg.forEach(function(k6){if(belegt[k6]||tuerRes[k6])return;var i6=k6%W,j6=(k6/W)|0;if(rausch(i6,j6,seed+43)<.1&&(rausch(i6,j6,seed+44)>=.15||!B.felder||opt.budenbild===false))dinge.push({id:rausch(i6,j6,seed+44)<.15?'leiche':'lager-platz',i:i6,j:j6})})}
+   reg.forEach(function(k6){if(belegt[k6]||tuerRes[k6])return;var i6=k6%W,j6=(k6/W)|0;if(rausch(i6,j6,seed+43)<.1&&(rausch(i6,j6,seed+44)>=.15||!elendAn(B)||opt.budenbild===false))dinge.push({id:rausch(i6,j6,seed+44)<.15?'leiche':'lager-platz',i:i6,j:j6})})}
   // Bäume und Kram aus dem Plan innen weichen allem, was hier zwischen Mauer und Rand gebaut wurde
   dinge=dinge.filter(function(d,ix){return ix>=nE||!neu[at(d.i,d.j)]});
   // Fluss im Ring: Wasser, wo ein Weg kreuzt bleibt der Weg (Furt bzw. Brücke); Lage für die Spiegelung umrechnen
@@ -767,7 +767,7 @@ function plan0(opt){
     if(!erreicht[k2]&&!belegt[k2]&&/[seom]/.test(Z[k2])){erreicht[k2]=1;st.push(k2)}})}
   for(var q5=0;q5<W*W;q5++){if(belegt[q5])continue;var z5=Z[q5],i5=q5%W,j5=(q5/W)|0;if(z5==='o'&&!erreicht[q5]){Z[q5]='g';z5='g'}
    if(z5==='g'&&!elend){var u5=rausch(i5,j5,seed+7);if(u5<B.dichte*.6+.04)dinge.push({id:B.baeume[Math.floor(rausch(i5,j5,seed+8)*B.baeume.length)],i:i5,j:j5});else if(u5>.97)dinge.push({id:'lager-platz',i:i5,j:j5})}
-   else if(z5==='e'&&rausch(i5,j5,seed+9)<.15&&!/[s]/.test(Z[q5]))(rausch(i5,j5,seed+10)>=.15||!B.felder||opt.budenbild===false)&&dinge.push({id:rausch(i5,j5,seed+10)<.15?'leiche':'lager-platz',i:i5,j:j5})}
+   else if(z5==='e'&&rausch(i5,j5,seed+9)<.15&&!/[s]/.test(Z[q5]))(rausch(i5,j5,seed+10)>=.15||!elendAn(B)||opt.budenbild===false)&&dinge.push({id:rausch(i5,j5,seed+10)<.15?'leiche':'lager-platz',i:i5,j:j5})}
   // Mit Umriss: jeder Weg muss von der Kreuzung aus erreichbar sein, sonst mit mehr Blöcken neu versuchen
   if(viel){var er2=new Uint8Array(WW),st2=[at(cA,cB)];er2[st2[0]]=1;
    while(st2.length){var q6=st2.pop(),i6=q6%W,j6=(q6/W)|0,nn=[i6>0?q6-1:-1,i6<W-1?q6+1:-1,j6>0?q6-W:-1,j6<W-1?q6+W:-1];
@@ -1003,8 +1003,8 @@ function plan0(opt){
  if(!elend&&TPL&&opt.senat!==false)senatFest(P,opt);   // N6b3e2 Senat genau 8 × 9, Tor mittig an der Schmalseite (opt.senat:false = wie vorher)
  if(!elend&&TPL&&opt.presse!==false)presseFest(P,opt);   // N6b4c4 Weinpresse und Ölmühle genau 4 × 5, Tor mittig an der Schmalseite (opt.presse:false = wie vorher)
  if(!elend&&TPL&&opt.koenigspalast!==false)koenigspalastFest(P,opt);   // N6b3e3 Königspalast genau 15 × 15, Tor mittig an einer Seite (opt.koenigspalast:false = wie vorher)
- if(elend&&B.felder&&opt.budenbild!==false&&opt.gewirr!==false)elendGewirr(P,seed,{eng:opt.budenEng!==false&&opt.anbauten!==false,dinge:opt.elendDinge!==false});   // N6b5b3 Elendssiedlung als Gewirr (opt.gewirr:false = Blockraster wie vorher)
- if(B.felder&&opt.budenbild!==false&&opt.budenEng!==false&&opt.anbauten!==false&&(elend||(g>=MAUER_AB&&P.aussen&&P.aussen.buden)))anbauten(P,seed);   // N6b5a überfülltes Elendsviertel (vor Mauer und Toren: die behandeln Anbauten wie Buden)
+ if(elend&&elendAn(B)&&opt.budenbild!==false&&opt.gewirr!==false)elendGewirr(P,seed,{eng:opt.budenEng!==false&&opt.anbauten!==false,dinge:opt.elendDinge!==false});   // N6b5b3 Elendssiedlung als Gewirr (opt.gewirr:false = Blockraster wie vorher)
+ if(elendAn(B)&&opt.budenbild!==false&&opt.budenEng!==false&&opt.anbauten!==false&&(elend||(g>=MAUER_AB&&P.aussen&&P.aussen.buden)))anbauten(P,seed);   // N6b5a überfülltes Elendsviertel (vor Mauer und Toren: die behandeln Anbauten wie Buden)
  var UMs=UM&&seeAusS?{art:UM.art,tore:UM.tore,innen:function(x,y){if(!UM.innen(x,y))return false;var a=Math.floor((x+1)/2*Wm),b=Math.floor((y+1)/2*Wm);return !(a>=0&&b>=0&&a<Wm&&b<Wm&&seeAusS[b*Wm+a])}}:UM;   // N7a5a3a: Mauerlinie ohne See
  if(g>=MAUER_AB&&UM&&opt.rund!==false)mauerRund(P,UMs,Rm,Wm,spW,opt.torGerade);   // N6b2e2a runde Mauerlinie in Bildfeldern (opt.rund:false = vergrößerter Plan wie vorher)
  if(g>=MAUER_AB&&UM&&opt.rund!==false&&opt.torGerade!==false)toreGerade(P,opt);   // N6b2e2g1 jedes Straßentor 3 breit in geradem Mauerstück (opt.torGerade:false = wie vorher)
@@ -1015,7 +1015,7 @@ function plan0(opt){
  if(!elend&&opt.ehrensaeulen!==false)ehrensaeulen(P);
  if(!elend){flurPlan(P,opt);dauerDinge(P,opt);pferchZaun(P,opt)}
  if(MW||MS)P.dinge=P.dinge.filter(function(d){return d.rolle==='steg'||d.rolle==='bruecke'||!WELT_Z[P.zellen.charAt(d.j*P.W+d.i)]});   // N7a5a2: nichts Gebautes auf Weltwasser und Weltufer   // N6b4b2 Flurgürtel mit Höfen, Feldern und Feldwegen in Bildfeldern, ganz zum Schluss (Hofhäuser vorn in P.bauten; opt.flur:false = wie vorher)   // N6b3b4 Ehrensäulen am Marktplatz (opt.ehrensaeulen:false = wie vorher)
- if(B.felder&&opt.budenbild!==false&&opt.elendDinge!==false&&(elend||(g>=MAUER_AB&&P.aussen&&P.aussen.buden)))elendDinge(P,seed);   // N6b5b1 Dinge im Elendsviertel (opt.elendDinge:false = wie vorher)
+ if(elendAn(B)&&opt.budenbild!==false&&opt.elendDinge!==false&&(elend||(g>=MAUER_AB&&P.aussen&&P.aussen.buden)))elendDinge(P,seed);   // N6b5b1 Dinge im Elendsviertel (opt.elendDinge:false = wie vorher)
  budenBild(P,opt);   // N6b5a Elendsbuden als Ganzbild (opt.budenbild:false = wie vorher)
  if(P._gasse&&opt.gasseZeigen)P.gasse=Array.prototype.join.call(P._gasse,'');delete P._gasse;   // N6b5b3 nur zum Planen (opt.gasseZeigen: als Zeichenkette für Tests)
  delete P.mauertor;delete P.uferAuf;   // nur zum Rechnen der Tore
@@ -2232,7 +2232,11 @@ var FLUR_PLATZ=1.25,FLUR_MAX=240,FLUR_RASTER=13,FLUR_WEIT=16,LW_BIOM={mountain:'
 // Kein passendes Bild (andere Hofart, Tür woanders): Baukasten wie vorher. Notausschalter opt.hofbild:false.
 var HOF_BILD_VAR={cottage:[.5,.4,.1],farmstead:[.5,.4,.1],'villa-rustica':[.85,.15],'herders-camp':[.85,.15]},HOF_HOCH={cottage:52,farmstead:78,'villa-rustica':86,'herders-camp':54},
  HOF_RICHT={'0,1':'sued','1,0':'ost','0,-1':'nord','-1,0':'west'};
-function hofBildAn(P,opt){var B=BIOME[P.biom];return !!(B&&B.felder&&!(opt&&opt.hofbild===false))}
+function hofBildAn(P,opt){var B=BIOME[P.biom];return !!(B&&(B.felder||B.bilder)&&!(opt&&opt.hofbild===false))}
+// Laubwald (Thomas 27.11.2026): Biome mit eigenen Bildern (B.bilder, z. B. 'laub') bekommen Hof- und Budenbilder unter eigener Kennung
+// (hof-<bilder>-<art>-…, elend-<bilder>-bude-…, tools/at3-laubwald-hof.py); keine Presse am Gutshof, keine Drogenbuden, keine Außenpostenbilder.
+// Notausschalter: Angabe bilder im Biom entfernen.
+function elendAn(B){return !!(B&&(B.felder||B.bilder))}
 function hofTuerOff(r,s){var c=s>>1;return r==='sued'||r==='west'?c:s-1-c}
 function hofVariante(art,i,j,seed){var V=HOF_BILD_VAR[art];if(!V)return 0;var u=rausch(i,j,seed+231),k;for(k=0;k<V.length-1;k++){u-=V[k];if(u<0)return k+1}return V.length}
 var LWDAT=null;
@@ -2353,8 +2357,8 @@ function flurPlan(P,opt){var A=P.aussen&&P.aussen.flur;if(!A)return;var LM=LWm()
   nFeld+=hof.felder;hoefe.push(hof);
   HB.push({rolle:'hof',id:'hof-'+H.id,hofart:H.id,i:pl.i,j:pl.j,w:s,h:s,g:1,klasse:P.basis.klasse,dach:s<2?'flach':P.basis.dach,achse:ra()<.5?'i':'j',
    wand:P.basis.wand||null,dachR:P.basis.dachR||null,tuer:pl.tuer,satz:null});if(HZ)HB[HB.length-1].hz=HZ.charCodeAt(pl.j*W+pl.i)-48;
-  if(HBILD&&HOF_BILD_VAR[H.id])HB[HB.length-1].hv=hofVariante(H.id,pl.i,pl.j,seed);
-  if(HBILD&&opt.presse!==false){var hp0=hofPresse(H.id,hof.kulturen);if(hp0)HB[HB.length-1].hp=hp0}   // N6b4c4 kleine Presse am Gutshof
+  if(HBILD&&HOF_BILD_VAR[H.id]){HB[HB.length-1].hv=hofVariante(H.id,pl.i,pl.j,seed);if(BIOME[P.biom].bilder)HB[HB.length-1].hk=BIOME[P.biom].bilder}
+  if(HBILD&&opt.presse!==false&&!BIOME[P.biom].bilder){var hp0=hofPresse(H.id,hof.kulturen);if(hp0)HB[HB.length-1].hp=hp0}   // N6b4c4 kleine Presse am Gutshof
   for(y5=pl.j;y5<pl.j+s;y5++)for(x5=pl.i;x5<pl.i+s;x5++){Z[y5*W+x5]='g';FZ[y5*W+x5]='.'}}}
  var FA=opt.feldAnschluss!==false?feldAnschluss(Z,FZ,frei,HB,W,nachbar,weg,stinkSeiten(P)):null;if(FA)nWeg+=FA.neu-FA.weg;
  P.bauten=HB.concat(P.bauten);   // Hofhäuser vorn: spätere Zusätze (vorspringende Türme) hängen weiter hinten an wie ohne Flur
@@ -2564,7 +2568,7 @@ function postenHof(P,opt,ra,oS,MW){var id=opt.art,LM=LWm(),LD=landwDaten(opt),bl
  if(dv[0])ti=dv[0]>0?ci+s-1:ci;if(dv[1])tj=dv[1]>0?cj+s-1:cj;
  var HBI=hofBildAn(P,opt)&&HOF_BILD_VAR[hid];if(HBI){var rr=HOF_RICHT[dv[0]+','+dv[1]],of=hofTuerOff(rr,s);if(dv[0])tj=cj+of;else ti=ci+of}   // N6b4c3 Türfeld des Hofbilds
  var bau={rolle:'hof',id:'hof-'+hid,hofart:hid,i:ci,j:cj,w:s,h:s,g:1,klasse:P.basis.klasse,dach:s<2?'flach':P.basis.dach,achse:ra()<.5?'i':'j',wand:P.basis.wand||null,dachR:P.basis.dachR||null,
-  tuer:[ti,tj,dv[0],dv[1]],satz:null};if(HBI)bau.hv=hofVariante(hid,ci,cj,P.seed>>>0);if(HBI&&ku&&opt.presse!==false){var kq={};kq[ku.k.id]=1;var hp1=hofPresse(hid,kq);if(hp1)bau.hp=hp1}P.bauten.push(bau);
+  tuer:[ti,tj,dv[0],dv[1]],satz:null};if(HBI){bau.hv=hofVariante(hid,ci,cj,P.seed>>>0);if(BIOME[P.biom].bilder)bau.hk=BIOME[P.biom].bilder}if(HBI&&ku&&opt.presse!==false&&!bau.hk){var kq={};kq[ku.k.id]=1;var hp1=hofPresse(hid,kq);if(hp1)bau.hp=hp1}P.bauten.push(bau);
  var frei=new Uint8Array(WW).fill(1);for(j=cj-1;j<=cj+s;j++)for(i=ci-1;i<=ci+s;i++)frei[j*W+i]=0;   // Hofplatz rings ums Haus bleibt Wiese
  if(WM)for(k=0;k<WW;k++)if(nas(k))frei[k]=0;
  for(var x=ti+dv[0],y=tj+dv[1];x>=0&&y>=0&&x<W&&y<W;x+=dv[0],y+=dv[1])frei[y*W+x]=0;   // Weg zum Ort freihalten (postenWeg legt ihn)
@@ -2808,8 +2812,8 @@ function spiegelSp(sp){var w=sp.w,px=new Uint8Array(sp.px.length),y,x;for(y=0;y<
 // Variante b.bv nach Lage (rausch, verbraucht keinen Zufall des Plans): 1–6 gleich oft, 7 und 8 selten. Kein Bild: Baukasten wie vorher. Notausschalter opt.budenbild:false.
 var BUDE_VAR=[.155,.155,.155,.155,.155,.155,.035,.035],BUDE_HOCH=52;
 function budeVariante(i,j,seed){var u=rausch(i,j,seed+277),k;for(k=0;k<BUDE_VAR.length-1;k++){u-=BUDE_VAR[k];if(u<0)return k+1}return BUDE_VAR.length}
-function budenBild(P,opt){var B=BIOME[P.biom];if(!B||!B.felder||(opt&&opt.budenbild===false))return;var s=P.seed>>>0;P.schlamm=true;
- P.bauten.forEach(function(b){if(b.rolle==='shack'&&b.tuer&&b.w<=3&&b.h<=3){b.bv=budeVariante(b.i,b.j,s);if(opt&&opt.drogenbude===false)return;
+function budenBild(P,opt){var B=BIOME[P.biom];if(!elendAn(B)||(opt&&opt.budenbild===false))return;var s=P.seed>>>0;P.schlamm=true;
+ P.bauten.forEach(function(b){if(b.rolle==='shack'&&b.tuer&&b.w<=3&&b.h<=3){b.bv=budeVariante(b.i,b.j,s);if(B.bilder){b.bk=B.bilder;return}if(opt&&opt.drogenbude===false)return;
   var u=rausch(b.i,b.j,s+911);if(u<DROGE_ANTEIL)b.dv=u<DROGE_ANTEIL/2?'opium':'hasch'}})}   // N6b5b2 Drogenbude nur auf dem Türfeld (Haufen: übrige Felder normale Buden)
 // N6b5b2 (Thomas 24.11.2026): Opiumküche und Haschischpresse (tools/at3-drogenbude.py) selten statt einer Bude, etwa 1 von 30, nur Bild (keine Ware,
 // keine Bewohner, Wirtschaft erst N15e1). Eigene Wahl nach Lage (rausch), b.bv bleibt; Notausschalter opt.drogenbude:false.
@@ -2823,7 +2827,7 @@ SCHLAMM.forEach(function(s){SAUM_RANG[s[0]]=SAUM_RANG['boden-erde']});
 function budeFelder(P){var W=P.W,F=null;P.bauten.forEach(function(b){if(!b.bv||b.rolle!=='shack')return;if(!F)F=new Uint8Array(W*W);
   for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)F[y*W+x]=1});return F}   // Erde statt Gras unter der Bude (sieht man zwischen den Buden)
 function budeGanz(b){if(b.rolle!=='shack'||!b.bv||!b.tuer)return null;var r=HOF_RICHT[b.tuer[2]+','+b.tuer[3]],t=b.tuer,innen=function(i,j){return i>=b.i&&j>=b.j&&i<b.i+b.w&&j<b.j+b.h};
- if(!r||!innen(t[0],t[1])||innen(t[0]+t[2],t[1]+t[3]))return null;return{id:(b.dv?'elend-'+b.dv:'elend-bude-'+b.bv)+'-'+r,hr:r}}
+ if(!r||!innen(t[0],t[1])||innen(t[0]+t[2],t[1]+t[3]))return null;return{id:(b.dv?'elend-'+b.dv:'elend-'+(b.bk?b.bk+'-':'')+'bude-'+b.bv)+'-'+r,hr:r}}
 // N6b5a Rückmeldung Thomas (24.11.2026, „extrem überfüllt“): nur vor dem Stinktor ummauerter Orte und in der Elendssiedlung (Weiler und Dörfer halten
 // 1 Feld Abstand), im Plan vor Mauer und Toren. Freie Schlammfelder (e) im Elendsviertel bekommen Anbauten (Bude 1 × 1, rolle shack, anbau:1,
 // ohne eigene Bewohner der Stadtliste). Nur höchstens 3 Felder von einer echten Bude, kein anderes Gebäude im Umkreis 1, keine Mauer im Umkreis 2 (Wehrgang-
@@ -2960,7 +2964,7 @@ function elendGewirr(P,s,f){f=f||{eng:true,dinge:true};var W=P.W,N=W*W,r=rng(has
 function grubeId(P,i,j){var W=P.W,x=function(a,b){return a>=0&&b>=0&&a<W&&b<W&&P.zellen.charAt(b*W+a)==='x'};var l=x(i-1,j),o=x(i,j-1);return GRUBE_IDS[(l?1:0)+(o?2:0)]}
 var BUDE_C=new Map();
 function budeBild(b,hole){var g=budeGanz(b);if(!g)return null;var ids=[],cells=[],di,dj;
- for(dj=0;dj<b.h;dj++)for(di=0;di<b.w;di++){var tf=b.i+di===b.tuer[0]&&b.j+dj===b.tuer[1],id=tf?g.id:'elend-bude-'+budeVariante(b.i+di,b.j+dj,b.bv*977)+'-'+g.hr,o=hole(id),sp=o&&malbild(o);
+ for(dj=0;dj<b.h;dj++)for(di=0;di<b.w;di++){var tf=b.i+di===b.tuer[0]&&b.j+dj===b.tuer[1],id=tf?g.id:'elend-'+(b.bk?b.bk+'-':'')+'bude-'+budeVariante(b.i+di,b.j+dj,b.bv*977)+'-'+g.hr,o=hole(id),sp=o&&malbild(o);
   if(!sp)return null;ids.push(id);cells.push({sp:sp,o:o,x:(di-dj)*32,y:(di+dj)*16+16,t:di+dj})}   // Anker der Kartei = Feldmitte, hier obere Ecke von Feld (0, 0)
  var key=b.w+'x'+b.h+'|'+ids.join('|'),m=BUDE_C.get(key);if(m&&m.o===cells[0].o)return{sp:m.sp,fehlt:[],teile:cells.length};
  cells.sort(function(a,c){return a.t-c.t});var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
@@ -2970,7 +2974,7 @@ function budeBild(b,hole){var g=budeGanz(b);if(!g)return null;var ids=[],cells=[
 function hofGanz(b){if(b.rolle!=='hof'||!b.hv||!b.tuer||b.w!==b.h||HOF_HAUS[b.hofart]!==b.w)return null;var r=HOF_RICHT[b.tuer[2]+','+b.tuer[3]];if(!r)return null;
  var s=b.w,o=hofTuerOff(r,s),ti=b.tuer[0]-b.i,tj=b.tuer[1]-b.j;
  if(r==='sued'?(tj!==s-1||ti!==o):r==='nord'?(tj!==0||ti!==o):r==='ost'?(ti!==s-1||tj!==o):(ti!==0||tj!==o))return null;
- return{id:'hof-'+b.hofart+'-'+b.hv+'-'+r,spiegel:false,rel:null,hp:b.hp||null,hr:r}}
+ return{id:'hof-'+(b.hk?b.hk+'-':'')+b.hofart+'-'+b.hv+'-'+r,spiegel:false,rel:null,hp:b.hp||null,hr:r}}
 function ganzBild(b,hole){var g=tempelGanz(b)||theaterGanz(b)||statthalterGanz(b)||senatGanz(b)||koenigspalastGanz(b)||presseGanz(b)||hofGanz(b)||postenGanz(b);if(!g)return null;var o=hole(g.id),oi=g.spiegel?hole(g.id+'-i'):null,suf='';if(oi&&malbild(oi)){o=oi;suf='-i'}
  var sp=malbild(o);if(!sp)return null;var gr=b.gross?'gross':'klein',spiegel=g.spiegel&&!suf,rk=relKurz(g.rel);
  var key=g.id+'|'+(spiegel?1:0)+suf+'|'+(g.rel||g.herr||'')+(g.hp?'|'+g.hp:'')+(g.zub?'|'+g.zub:''),m=GANZ&&GANZ.get(key);if(m&&m.o===o)return{sp:m.sp,fehlt:[],teile:m.teile};

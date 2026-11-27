@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1533,
+ "typMax": 1605,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -8186,6 +8186,294 @@
    "datei": "obj/elend-kot-2.json"
   },
   {
+   "id": "elend-laub-bude-1-nord",
+   "version": 1,
+   "typ": 1576,
+   "kat": "anlage",
+   "name": "Slab Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-1-nord.json"
+  },
+  {
+   "id": "elend-laub-bude-1-ost",
+   "version": 1,
+   "typ": 1575,
+   "kat": "anlage",
+   "name": "Slab Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-1-ost.json"
+  },
+  {
+   "id": "elend-laub-bude-1-sued",
+   "version": 1,
+   "typ": 1574,
+   "kat": "anlage",
+   "name": "Slab Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-1-sued.json"
+  },
+  {
+   "id": "elend-laub-bude-1-west",
+   "version": 1,
+   "typ": 1577,
+   "kat": "anlage",
+   "name": "Slab Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-1-west.json"
+  },
+  {
+   "id": "elend-laub-bude-2-nord",
+   "version": 1,
+   "typ": 1580,
+   "kat": "anlage",
+   "name": "Bark Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-2-nord.json"
+  },
+  {
+   "id": "elend-laub-bude-2-ost",
+   "version": 1,
+   "typ": 1579,
+   "kat": "anlage",
+   "name": "Bark Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-2-ost.json"
+  },
+  {
+   "id": "elend-laub-bude-2-sued",
+   "version": 1,
+   "typ": 1578,
+   "kat": "anlage",
+   "name": "Bark Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-2-sued.json"
+  },
+  {
+   "id": "elend-laub-bude-2-west",
+   "version": 1,
+   "typ": 1581,
+   "kat": "anlage",
+   "name": "Bark Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-2-west.json"
+  },
+  {
+   "id": "elend-laub-bude-3-nord",
+   "version": 1,
+   "typ": 1584,
+   "kat": "anlage",
+   "name": "Wattle Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-3-nord.json"
+  },
+  {
+   "id": "elend-laub-bude-3-ost",
+   "version": 1,
+   "typ": 1583,
+   "kat": "anlage",
+   "name": "Wattle Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-3-ost.json"
+  },
+  {
+   "id": "elend-laub-bude-3-sued",
+   "version": 1,
+   "typ": 1582,
+   "kat": "anlage",
+   "name": "Wattle Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-3-sued.json"
+  },
+  {
+   "id": "elend-laub-bude-3-west",
+   "version": 1,
+   "typ": 1585,
+   "kat": "anlage",
+   "name": "Wattle Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-3-west.json"
+  },
+  {
+   "id": "elend-laub-bude-4-nord",
+   "version": 1,
+   "typ": 1588,
+   "kat": "anlage",
+   "name": "Firewood Stall Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-4-nord.json"
+  },
+  {
+   "id": "elend-laub-bude-4-ost",
+   "version": 1,
+   "typ": 1587,
+   "kat": "anlage",
+   "name": "Firewood Stall Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-4-ost.json"
+  },
+  {
+   "id": "elend-laub-bude-4-sued",
+   "version": 1,
+   "typ": 1586,
+   "kat": "anlage",
+   "name": "Firewood Stall Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-4-sued.json"
+  },
+  {
+   "id": "elend-laub-bude-4-west",
+   "version": 1,
+   "typ": 1589,
+   "kat": "anlage",
+   "name": "Firewood Stall Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-4-west.json"
+  },
+  {
+   "id": "elend-laub-bude-5-nord",
+   "version": 1,
+   "typ": 1592,
+   "kat": "anlage",
+   "name": "Patchwork Hovel N",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-5-nord.json"
+  },
+  {
+   "id": "elend-laub-bude-5-ost",
+   "version": 1,
+   "typ": 1591,
+   "kat": "anlage",
+   "name": "Patchwork Hovel E",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-5-ost.json"
+  },
+  {
+   "id": "elend-laub-bude-5-sued",
+   "version": 1,
+   "typ": 1590,
+   "kat": "anlage",
+   "name": "Patchwork Hovel S",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-5-sued.json"
+  },
+  {
+   "id": "elend-laub-bude-5-west",
+   "version": 1,
+   "typ": 1593,
+   "kat": "anlage",
+   "name": "Patchwork Hovel W",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-5-west.json"
+  },
+  {
+   "id": "elend-laub-bude-6-nord",
+   "version": 1,
+   "typ": 1596,
+   "kat": "anlage",
+   "name": "Shack of Old Signs N",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-6-nord.json"
+  },
+  {
+   "id": "elend-laub-bude-6-ost",
+   "version": 1,
+   "typ": 1595,
+   "kat": "anlage",
+   "name": "Shack of Old Signs E",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-6-ost.json"
+  },
+  {
+   "id": "elend-laub-bude-6-sued",
+   "version": 1,
+   "typ": 1594,
+   "kat": "anlage",
+   "name": "Shack of Old Signs S",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-6-sued.json"
+  },
+  {
+   "id": "elend-laub-bude-6-west",
+   "version": 1,
+   "typ": 1597,
+   "kat": "anlage",
+   "name": "Shack of Old Signs W",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-6-west.json"
+  },
+  {
+   "id": "elend-laub-bude-7-nord",
+   "version": 1,
+   "typ": 1600,
+   "kat": "anlage",
+   "name": "Sinking Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-7-nord.json"
+  },
+  {
+   "id": "elend-laub-bude-7-ost",
+   "version": 1,
+   "typ": 1599,
+   "kat": "anlage",
+   "name": "Sinking Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-7-ost.json"
+  },
+  {
+   "id": "elend-laub-bude-7-sued",
+   "version": 1,
+   "typ": 1598,
+   "kat": "anlage",
+   "name": "Sinking Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-7-sued.json"
+  },
+  {
+   "id": "elend-laub-bude-7-west",
+   "version": 1,
+   "typ": 1601,
+   "kat": "anlage",
+   "name": "Sinking Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-7-west.json"
+  },
+  {
+   "id": "elend-laub-bude-8-nord",
+   "version": 1,
+   "typ": 1604,
+   "kat": "anlage",
+   "name": "Evicted Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-8-nord.json"
+  },
+  {
+   "id": "elend-laub-bude-8-ost",
+   "version": 1,
+   "typ": 1603,
+   "kat": "anlage",
+   "name": "Evicted Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-8-ost.json"
+  },
+  {
+   "id": "elend-laub-bude-8-sued",
+   "version": 1,
+   "typ": 1602,
+   "kat": "anlage",
+   "name": "Evicted Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-8-sued.json"
+  },
+  {
+   "id": "elend-laub-bude-8-west",
+   "version": 1,
+   "typ": 1605,
+   "kat": "anlage",
+   "name": "Evicted Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-laub-bude-8-west.json"
+  },
+  {
    "id": "elend-lumpen",
    "version": 1,
    "typ": 951,
@@ -9894,6 +10182,366 @@
    "name": "Herders Camp 2 W",
    "status": "uebernommen",
    "datei": "obj/hof-herders-camp-2-west.json"
+  },
+  {
+   "id": "hof-laub-cottage-1-nord",
+   "version": 1,
+   "typ": 1536,
+   "kat": "anlage",
+   "name": "Forest Cottage 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-1-nord.json"
+  },
+  {
+   "id": "hof-laub-cottage-1-ost",
+   "version": 1,
+   "typ": 1535,
+   "kat": "anlage",
+   "name": "Forest Cottage 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-1-ost.json"
+  },
+  {
+   "id": "hof-laub-cottage-1-sued",
+   "version": 1,
+   "typ": 1534,
+   "kat": "anlage",
+   "name": "Forest Cottage 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-1-sued.json"
+  },
+  {
+   "id": "hof-laub-cottage-1-west",
+   "version": 1,
+   "typ": 1537,
+   "kat": "anlage",
+   "name": "Forest Cottage 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-1-west.json"
+  },
+  {
+   "id": "hof-laub-cottage-2-nord",
+   "version": 1,
+   "typ": 1540,
+   "kat": "anlage",
+   "name": "Forest Cottage 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-2-nord.json"
+  },
+  {
+   "id": "hof-laub-cottage-2-ost",
+   "version": 1,
+   "typ": 1539,
+   "kat": "anlage",
+   "name": "Forest Cottage 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-2-ost.json"
+  },
+  {
+   "id": "hof-laub-cottage-2-sued",
+   "version": 1,
+   "typ": 1538,
+   "kat": "anlage",
+   "name": "Forest Cottage 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-2-sued.json"
+  },
+  {
+   "id": "hof-laub-cottage-2-west",
+   "version": 1,
+   "typ": 1541,
+   "kat": "anlage",
+   "name": "Forest Cottage 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-2-west.json"
+  },
+  {
+   "id": "hof-laub-cottage-3-nord",
+   "version": 1,
+   "typ": 1544,
+   "kat": "anlage",
+   "name": "Forest Cottage 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-3-nord.json"
+  },
+  {
+   "id": "hof-laub-cottage-3-ost",
+   "version": 1,
+   "typ": 1543,
+   "kat": "anlage",
+   "name": "Forest Cottage 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-3-ost.json"
+  },
+  {
+   "id": "hof-laub-cottage-3-sued",
+   "version": 1,
+   "typ": 1542,
+   "kat": "anlage",
+   "name": "Forest Cottage 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-3-sued.json"
+  },
+  {
+   "id": "hof-laub-cottage-3-west",
+   "version": 1,
+   "typ": 1545,
+   "kat": "anlage",
+   "name": "Forest Cottage 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-cottage-3-west.json"
+  },
+  {
+   "id": "hof-laub-farmstead-1-nord",
+   "version": 1,
+   "typ": 1548,
+   "kat": "anlage",
+   "name": "Forest Farm 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-1-nord.json"
+  },
+  {
+   "id": "hof-laub-farmstead-1-ost",
+   "version": 1,
+   "typ": 1547,
+   "kat": "anlage",
+   "name": "Forest Farm 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-1-ost.json"
+  },
+  {
+   "id": "hof-laub-farmstead-1-sued",
+   "version": 1,
+   "typ": 1546,
+   "kat": "anlage",
+   "name": "Forest Farm 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-1-sued.json"
+  },
+  {
+   "id": "hof-laub-farmstead-1-west",
+   "version": 1,
+   "typ": 1549,
+   "kat": "anlage",
+   "name": "Forest Farm 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-1-west.json"
+  },
+  {
+   "id": "hof-laub-farmstead-2-nord",
+   "version": 1,
+   "typ": 1552,
+   "kat": "anlage",
+   "name": "Forest Farm 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-2-nord.json"
+  },
+  {
+   "id": "hof-laub-farmstead-2-ost",
+   "version": 1,
+   "typ": 1551,
+   "kat": "anlage",
+   "name": "Forest Farm 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-2-ost.json"
+  },
+  {
+   "id": "hof-laub-farmstead-2-sued",
+   "version": 1,
+   "typ": 1550,
+   "kat": "anlage",
+   "name": "Forest Farm 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-2-sued.json"
+  },
+  {
+   "id": "hof-laub-farmstead-2-west",
+   "version": 1,
+   "typ": 1553,
+   "kat": "anlage",
+   "name": "Forest Farm 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-2-west.json"
+  },
+  {
+   "id": "hof-laub-farmstead-3-nord",
+   "version": 1,
+   "typ": 1556,
+   "kat": "anlage",
+   "name": "Forest Farm 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-3-nord.json"
+  },
+  {
+   "id": "hof-laub-farmstead-3-ost",
+   "version": 1,
+   "typ": 1555,
+   "kat": "anlage",
+   "name": "Forest Farm 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-3-ost.json"
+  },
+  {
+   "id": "hof-laub-farmstead-3-sued",
+   "version": 1,
+   "typ": 1554,
+   "kat": "anlage",
+   "name": "Forest Farm 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-3-sued.json"
+  },
+  {
+   "id": "hof-laub-farmstead-3-west",
+   "version": 1,
+   "typ": 1557,
+   "kat": "anlage",
+   "name": "Forest Farm 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-farmstead-3-west.json"
+  },
+  {
+   "id": "hof-laub-herders-camp-1-nord",
+   "version": 1,
+   "typ": 1568,
+   "kat": "anlage",
+   "name": "Swineherd Camp 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-herders-camp-1-nord.json"
+  },
+  {
+   "id": "hof-laub-herders-camp-1-ost",
+   "version": 1,
+   "typ": 1567,
+   "kat": "anlage",
+   "name": "Swineherd Camp 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-herders-camp-1-ost.json"
+  },
+  {
+   "id": "hof-laub-herders-camp-1-sued",
+   "version": 1,
+   "typ": 1566,
+   "kat": "anlage",
+   "name": "Swineherd Camp 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-herders-camp-1-sued.json"
+  },
+  {
+   "id": "hof-laub-herders-camp-1-west",
+   "version": 1,
+   "typ": 1569,
+   "kat": "anlage",
+   "name": "Swineherd Camp 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-herders-camp-1-west.json"
+  },
+  {
+   "id": "hof-laub-herders-camp-2-nord",
+   "version": 1,
+   "typ": 1572,
+   "kat": "anlage",
+   "name": "Swineherd Camp 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-herders-camp-2-nord.json"
+  },
+  {
+   "id": "hof-laub-herders-camp-2-ost",
+   "version": 1,
+   "typ": 1571,
+   "kat": "anlage",
+   "name": "Swineherd Camp 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-herders-camp-2-ost.json"
+  },
+  {
+   "id": "hof-laub-herders-camp-2-sued",
+   "version": 1,
+   "typ": 1570,
+   "kat": "anlage",
+   "name": "Swineherd Camp 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-herders-camp-2-sued.json"
+  },
+  {
+   "id": "hof-laub-herders-camp-2-west",
+   "version": 1,
+   "typ": 1573,
+   "kat": "anlage",
+   "name": "Swineherd Camp 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-herders-camp-2-west.json"
+  },
+  {
+   "id": "hof-laub-villa-rustica-1-nord",
+   "version": 1,
+   "typ": 1560,
+   "kat": "anlage",
+   "name": "Forest Manor 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-villa-rustica-1-nord.json"
+  },
+  {
+   "id": "hof-laub-villa-rustica-1-ost",
+   "version": 1,
+   "typ": 1559,
+   "kat": "anlage",
+   "name": "Forest Manor 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-villa-rustica-1-ost.json"
+  },
+  {
+   "id": "hof-laub-villa-rustica-1-sued",
+   "version": 1,
+   "typ": 1558,
+   "kat": "anlage",
+   "name": "Forest Manor 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-villa-rustica-1-sued.json"
+  },
+  {
+   "id": "hof-laub-villa-rustica-1-west",
+   "version": 1,
+   "typ": 1561,
+   "kat": "anlage",
+   "name": "Forest Manor 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-villa-rustica-1-west.json"
+  },
+  {
+   "id": "hof-laub-villa-rustica-2-nord",
+   "version": 1,
+   "typ": 1564,
+   "kat": "anlage",
+   "name": "Forest Manor 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-villa-rustica-2-nord.json"
+  },
+  {
+   "id": "hof-laub-villa-rustica-2-ost",
+   "version": 1,
+   "typ": 1563,
+   "kat": "anlage",
+   "name": "Forest Manor 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-villa-rustica-2-ost.json"
+  },
+  {
+   "id": "hof-laub-villa-rustica-2-sued",
+   "version": 1,
+   "typ": 1562,
+   "kat": "anlage",
+   "name": "Forest Manor 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-villa-rustica-2-sued.json"
+  },
+  {
+   "id": "hof-laub-villa-rustica-2-west",
+   "version": 1,
+   "typ": 1565,
+   "kat": "anlage",
+   "name": "Forest Manor 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-laub-villa-rustica-2-west.json"
   },
   {
    "id": "hof-villa-rustica-1-nord",
