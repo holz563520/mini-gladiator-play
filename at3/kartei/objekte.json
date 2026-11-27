@@ -51,7 +51,7 @@
   },
   {
    "id": "armoury",
-   "version": 1,
+   "version": 2,
    "typ": 973,
    "kat": "anlage",
    "name": "Armoury",
@@ -87,7 +87,7 @@
   },
   {
    "id": "barracks",
-   "version": 1,
+   "version": 2,
    "typ": 972,
    "kat": "anlage",
    "name": "Barracks",
@@ -231,7 +231,7 @@
   },
   {
    "id": "beastrium",
-   "version": 1,
+   "version": 2,
    "typ": 965,
    "kat": "anlage",
    "name": "Beastrium",
@@ -9591,7 +9591,7 @@
   },
   {
    "id": "hall-of-fallen",
-   "version": 1,
+   "version": 2,
    "typ": 968,
    "kat": "anlage",
    "name": "Hall of the Fallen",
