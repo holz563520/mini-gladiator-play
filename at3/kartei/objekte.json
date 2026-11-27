@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 964,
+ "typMax": 979,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -8535,6 +8535,141 @@
    "name": "Workbench",
    "status": "geprueft",
    "datei": "obj/werk-bank.json"
+  },
+  {
+   "id": "beastrium",
+   "version": 1,
+   "typ": 965,
+   "kat": "anlage",
+   "name": "Beastrium",
+   "status": "uebernommen",
+   "datei": "obj/beastrium.json"
+  },
+  {
+   "id": "menagerie",
+   "version": 1,
+   "typ": 966,
+   "kat": "anlage",
+   "name": "Menagerie",
+   "status": "uebernommen",
+   "datei": "obj/menagerie.json"
+  },
+  {
+   "id": "fighting-pit",
+   "version": 1,
+   "typ": 967,
+   "kat": "anlage",
+   "name": "Fighting Pit",
+   "status": "uebernommen",
+   "datei": "obj/fighting-pit.json"
+  },
+  {
+   "id": "hall-of-fallen",
+   "version": 1,
+   "typ": 968,
+   "kat": "anlage",
+   "name": "Hall of the Fallen",
+   "status": "uebernommen",
+   "datei": "obj/hall-of-fallen.json"
+  },
+  {
+   "id": "slave-market",
+   "version": 1,
+   "typ": 969,
+   "kat": "anlage",
+   "name": "Slave Market",
+   "status": "uebernommen",
+   "datei": "obj/slave-market.json"
+  },
+  {
+   "id": "stands-wood",
+   "version": 1,
+   "typ": 970,
+   "kat": "anlage",
+   "name": "Extra Stands",
+   "status": "uebernommen",
+   "datei": "obj/stands-wood.json"
+  },
+  {
+   "id": "training-yard",
+   "version": 1,
+   "typ": 971,
+   "kat": "anlage",
+   "name": "Training Yard",
+   "status": "uebernommen",
+   "datei": "obj/training-yard.json"
+  },
+  {
+   "id": "barracks",
+   "version": 1,
+   "typ": 972,
+   "kat": "anlage",
+   "name": "Barracks",
+   "status": "uebernommen",
+   "datei": "obj/barracks.json"
+  },
+  {
+   "id": "armoury",
+   "version": 1,
+   "typ": 973,
+   "kat": "anlage",
+   "name": "Armoury",
+   "status": "uebernommen",
+   "datei": "obj/armoury.json"
+  },
+  {
+   "id": "queue-path",
+   "version": 1,
+   "typ": 974,
+   "kat": "boden",
+   "name": "Queue Path",
+   "status": "skizze",
+   "datei": "obj/queue-path.json"
+  },
+  {
+   "id": "queue-path-a",
+   "version": 1,
+   "typ": 975,
+   "kat": "boden",
+   "name": "Queue Path A",
+   "status": "skizze",
+   "datei": "obj/queue-path-a.json"
+  },
+  {
+   "id": "queue-path-b",
+   "version": 1,
+   "typ": 976,
+   "kat": "boden",
+   "name": "Queue Path B",
+   "status": "skizze",
+   "datei": "obj/queue-path-b.json"
+  },
+  {
+   "id": "queue-path-c",
+   "version": 1,
+   "typ": 977,
+   "kat": "boden",
+   "name": "Queue Path C",
+   "status": "skizze",
+   "datei": "obj/queue-path-c.json"
+  },
+  {
+   "id": "queue-path-j",
+   "version": 1,
+   "typ": 978,
+   "kat": "boden",
+   "name": "Queue Path Across",
+   "status": "skizze",
+   "datei": "obj/queue-path-j.json"
+  },
+  {
+   "id": "queue-path-j-a",
+   "version": 1,
+   "typ": 979,
+   "kat": "boden",
+   "name": "Queue Path Across A",
+   "status": "skizze",
+   "datei": "obj/queue-path-j-a.json"
   }
  ]
 }

@@ -19,7 +19,10 @@ var W2C=['woodcutter','forester','sawmill','firewood-yard','quarry','well','latr
  'porridge-kitchen','pig-farm','butcher','sausage-maker','fisher','tavern','stall-porridge','stall-fish','stall-sausage','stall-beer','public-latrine','market'];
 // Vorhandene Spielwaren und Gebäude, die schon ein Bild in der Kartei haben
 var WARE_BILD={log:'ware-stamm',boards:'ware-bretter',meat:'ware-fleisch'};
-var GEB_BILD={medicus:'medicus',lager:'lager-platz',arena:'arena-sand',market:'markt-stand'};
+var GEB_BILD={medicus:'medicus',lager:'lager-platz',arena:'arena-sand',market:'markt-stand',
+ // Arena-Gelände, Ganzbilder vom 27.11.2026 (tools/at3-arena-gebaeude.py)
+ beastrium:'beastrium',menagerie:'menagerie','fighting-pit':'fighting-pit','hall-of-dead':'hall-of-fallen','slave-market':'slave-market',
+ stands:'stands-wood','training-yard':'training-yard',unterkunft:'barracks',waffenkammer:'armoury',queue:'queue-path'};
 var TEIL_DE={wand:'Wand',tuer:'Tür',giebel:'Giebelstück','giebel-auf':'Giebelspitze (steigend)','giebel-ab':'Giebelspitze (fallend)','dach-flach':'flache Dachplatte',
  'dach-auf-j':'Dachplatte, steigt nach Süden','dach-ab-j':'Dachplatte, fällt nach Süden','dach-auf-i':'Dachplatte, steigt nach Osten','dach-ab-i':'Dachplatte, fällt nach Osten',
  boden:'Innenboden',rang:'Sitzstufen (Ränge)',schild:'Schild vor der Tür'};
