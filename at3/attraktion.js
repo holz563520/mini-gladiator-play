@@ -16,7 +16,9 @@ var ST=64, WX=ST*9600, WY=ST*4800, MAX_SCHLANGE=256, WEG_Q=5;
 var DX=[0,-1,0,1], DY=[-1,0,1,0];                        // Seiten 0 Nord, 1 West, 2 Süd, 3 Ost
 // Tafel der Anlagen: Kennung in der Kartei, Fläche, Fußabdruck (x = gesperrt, f = frei, Zeile für Zeile von Nord nach Süd)
 var ANLAGEN={
- sandgrube:{id:'arena-sandgrube',w:17,h:17,feld:new Array(290).join('x')}};   // seit 27.11.2026 (Thomas) eckiger Platz: die ganze Fläche 17 × 17 gehört zur Anlage
+ sandgrube:{id:'arena-sandgrube',w:17,h:17,feld:new Array(290).join('x')},   // seit 27.11.2026 (Thomas) eckiger Platz: die ganze Fläche 17 × 17 gehört zur Anlage
+ // AR4 (Thomas 27.11.2026): Arena Stufe 4 „Great Amphitheatre“, eckiger Platz 47 × 47 wie die Sandgrube (= kartei arena-amphitheater, Test)
+ amphitheater:{id:'arena-amphitheater',w:47,h:47,feld:new Array(47*47+1).join('x')}};
 var HAUS=['ein','aus'];
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
 function rel(X,x0){var d=X-x0;if(d<-WX/2)d+=WX;else if(d>WX/2)d-=WX;return d}      // Abstand in x über die Naht
@@ -43,6 +45,10 @@ function pruefen(z,rec,x0,y0,sperr){var A=ANLAGEN[rec.typ];if(!A)return{ok:false
 function setzen(z,rec,x0,y0,sperr){x0=um(x0);var p=pruefen(z,rec,x0,y0,sperr);if(!p.ok)return p.grund;
  var r=raum(rec);if(rec.x>=0)BAU().anlageLoeschen(z,alle(rec),r);
  BAU().anlageSchreiben(z,p.felder,BAU().A_ANLAGE,r);rec.x=x0;rec.y=y0;rec.hs=p.hs;rec.ein=null;rec.aus=null;rec.v=-1;zustand(z,rec);return null}
+// AR4: Anlage gegen eine andere Art tauschen (z. B. Sandgrube → Great Amphitheatre), Mitte cx,cy. Erst prüfen (die eigenen Felder zählen als frei), dann die alte
+// abräumen und die neue setzen; Häuschen fallen weg wie beim Versetzen. Gibt den neuen Datensatz zurück oder den Ablehnungsgrund (dann bleibt alles, wie es war).
+function wechseln(z,rec,typ,cx,cy,sperr){var A=ANLAGEN[typ];if(!A)return'invalid';var n=neu(typ,rec.id),x0=um(cx-(A.w>>1)),y0=cy-(A.h>>1),p=pruefen(z,n,x0,y0,sperr);if(!p.ok)return p.grund;
+ if(rec.x>=0)BAU().anlageLoeschen(z,alle(rec),raum(rec));var g=setzen(z,n,x0,y0,sperr);return g||n}
 function alle(rec){var L=felder(ANLAGEN[rec.typ],rec.x,rec.y);HAUS.forEach(function(h){if(rec[h])L.push(rec[h][0],rec[h][1])});return L}
 
 // ── Häuschen: je ein Feld direkt außen am Rand (Nachbar eines Fußabdruck-Felds), nicht auf dem anderen Häuschen ──
@@ -105,7 +111,7 @@ function abdruck(rec,f){if(!rec){f(-1);return}f(rec.id);f(rec.x);f(rec.y);f(rec.
 function kurz(rec){if(!rec)return null;var A=ANLAGEN[rec.typ];return{typ:rec.typ,id:A.id,x:rec.x,y:rec.y,w:A.w,h:A.h,hs:rec.hs,ein:rec.ein?rec.ein.slice():null,aus:rec.aus?rec.aus.slice():null,
  offen:rec.offen,grund:rec.grund,schlange:rec.schlange,ende:rec.ende?rec.ende.slice():null}}
 
-var AT={ANLAGEN:ANLAGEN,MAX_SCHLANGE:MAX_SCHLANGE,WEG_Q:WEG_Q,neu:neu,felder:felder,innen:innen,seite:seite,pruefen:pruefen,setzen:setzen,hausPruefen:hausPruefen,hausSetzen:hausSetzen,
+var AT={ANLAGEN:ANLAGEN,MAX_SCHLANGE:MAX_SCHLANGE,WEG_Q:WEG_Q,neu:neu,felder:felder,innen:innen,seite:seite,pruefen:pruefen,setzen:setzen,wechseln:wechseln,hausPruefen:hausPruefen,hausSetzen:hausSetzen,
  zustand:zustand,kette:kette,stand:stand,ausStand:ausStand,abdruck:abdruck,kurz:kurz};
 if(typeof module!=='undefined'&&module.exports)module.exports=AT;else root.AT3ATT=AT;
 })(typeof self!=='undefined'?self:this);

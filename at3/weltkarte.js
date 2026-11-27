@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='c896103c', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='cd3c3837', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var N7B2=!/[?&]n7b2=0/.test(location.search);   // N7b2: Stadtkarte beim Antippen (Notausschalter ?n7b2=0)
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
@@ -445,7 +445,15 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
  // gezeichnet nur, wenn im Bild; Antippen wie bei den Personen. Keine eigene Rechenarbeit je Bild außer Lage und Kopieren. ──
  var FEST=[], FBILD={}, FOBJ=null;
  function festSetzen(L){FEST=(L||[]).map(function(e){return{art:e.art,x:e.x,y:e.y,info:e.info||null,r:e.r|0,anl:!!e.anl}}).sort(function(a,b){return(a.x+a.y)-(b.x+b.y)});if(cam&&cam.lod<STUFEN&&!glob)plan()}      // AR1c1: hinten zuerst; große Anlage nach ihrer Mitte (Häuschen hinter dem Ring liegen darunter)
- function festBild(art,ri){var k=art+':'+(ri|0);if(k in FBILD)return FBILD[k];var ob=FOBJ&&FOBJ[art],r=null;if(ob&&ob.bild){var b=S.richtungsBild(ob,ri|0)||ob.bild,t0=performance.now(),c=S.zuCanvas(b,S.PALETTE);r={c:c,w:b.w,h:b.h,ax:b.ax,ay:b.ay};M.festVorMs[k]=performance.now()-t0}
+ // AR4: sehr große Bilder (Great Amphitheatre, 2109 × 1237) in Streifen zu 64 Zeilen vorzeichnen, ein Streifen je Zeitscheibe (Regel 20: große Bilder in kleinen Schritten);
+ // bis das Bild fertig ist, zeigt die Karte das Ersatzbild. festNeu(art): ein Objekt kam nachträglich (spiel.js spaetObjekt), sein Bild neu holen.
+ var FGROSS=600000, FBAU={};
+ function festGross(k,b){if(FBAU[k])return;FBAU[k]=1;var c=document.createElement('canvas');c.width=b.w;c.height=b.h;var x2=c.getContext('2d'),y=0;M.festVorMs[k]=0;
+  (function teil(){var t0=performance.now(),h=Math.min(64,b.h-y);x2.drawImage(S.zuCanvas({w:b.w,h:h,z:b.z.slice(y,y+h)},S.PALETTE),0,y);y+=h;var ms=performance.now()-t0;if(ms>M.festVorMs[k])M.festVorMs[k]=ms;
+   if(y<b.h)setTimeout(teil,0);else{delete FBAU[k];FBILD[k]={c:c,w:b.w,h:b.h,ax:b.ax,ay:b.ay};plan()}})()}
+ function festNeu(art){Object.keys(FBILD).forEach(function(k){if(k.indexOf(art+':')===0)delete FBILD[k]});plan()}
+ function festBild(art,ri){var k=art+':'+(ri|0);if(k in FBILD)return FBILD[k];var ob=FOBJ&&FOBJ[art],r=null;if(ob&&ob.bild){var b=S.richtungsBild(ob,ri|0)||ob.bild;if(b.w*b.h>FGROSS){FBILD[k]=null;festGross(k,b);return null}
+  var t0=performance.now(),c=S.zuCanvas(b,S.PALETTE);r={c:c,w:b.w,h:b.h,ax:b.ax,ay:b.ay};M.festVorMs[k]=performance.now()-t0}
   if(FOBJ)FBILD[k]=r;return r}      // AR1c1: Richtung je Eintrag (Häuschen); große Anlage einmal vorgezeichnet, danach nur Kopieren
  function festMalen(CX,CY,Z,W,H){FEST.forEach(function(e){var x=e.x+.5,y=e.y+.5;x+=Math.round((cam.x-x)/WX)*WX;var h=hoeheBei(umX(Math.floor(x)),Math.floor(y));if(h==null)h=cam.z;
   var sx=((x-y)*32-CX)/Z+W/2,sy=((x+y)*16-h*8-CY)/Z+H/2,B=festBild(e.art,e.r),rx=B?Math.max(B.ax,B.w-B.ax)/Z:64,ry=B?Math.max(B.ay,B.h-B.ay)/Z:80;e.sx=-1e9;e.B=B;e.Z=Z;
@@ -584,7 +592,7 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,bau:bau,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
- return{reiche:reiche,beiWs:beiWs,mess:M,messNeu:function(){M.maxRechenUs=0;M.maxZeichenMs=0;M.maxFestMs=0;M.ortMaxMs=0;M.hausMs=0;M.listeMs=0;if(bk)bk.postMessage({art:'messNeu'})},frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,besucher:besucher,besucherArena:besucherArena,besucherBlaetter:besucherBlaetter,besucherFehlt:function(){var L=besFehltL.slice();FPFEHLT.forEach(function(i){if(L.indexOf(i)<0)L.push(i)});return L.filter(function(i){return !BFIG.has(i)})},
+ return{reiche:reiche,beiWs:beiWs,mess:M,messNeu:function(){M.maxRechenUs=0;M.maxZeichenMs=0;M.maxFestMs=0;M.ortMaxMs=0;M.hausMs=0;M.listeMs=0;if(bk)bk.postMessage({art:'messNeu'})},frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,besucher:besucher,besucherArena:besucherArena,festNeu:festNeu,besucherBlaetter:besucherBlaetter,besucherFehlt:function(){var L=besFehltL.slice();FPFEHLT.forEach(function(i){if(L.indexOf(i)<0)L.push(i)});return L.filter(function(i){return !BFIG.has(i)})},
   besucherWunsch:function(L){FPFEHLT=(L||[]).filter(function(i){return !BFIG.has(i)});if(FPFEHLT.length)M.besFpWunsch=(M.besFpWunsch||0)+1;var t=performance.now();if(FPFEHLT.length&&o.beiBesFehlt&&t-besMeldT>250){besMeldT=t;setTimeout(o.beiBesFehlt,0)}},      // AR2c2: First Person bestellt nach,besucherHat:function(i){return BFIG.has(i)},
   besucherNahFehlt:function(){return besNahFehltL.length?{stufe:besNahStufe,typen:besNahFehltL.slice()}:null},besucherNahBlaetter:besucherNahBlaetter,      // Z4b
   besucherNahTest:function(s){var L=[];BN[s===4?4:2].forEach(function(v,typ){L.push({typ:typ,c:v.c})});return L},

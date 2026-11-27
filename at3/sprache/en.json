@@ -365,6 +365,8 @@
   "bau.hilfe.warteweg": "Queue path: drag with one finger from an entrance hut to a road. Feet only. People will stand on it for hours and call it fun.",
   "bau.art.arena": "Arena",
   "bau.hilfe.arena": "Arena: tap where its middle should be. Free, built at once, and easy to move as long as no fight is booked. The ground must be nearly flat; trees are cleared, nobody asks the trees.",
+  "bau.art.amphi": "Great Amphitheatre",
+  "bau.hilfe.amphi": "Great Amphitheatre: tap where its middle should be. A paved square forty-seven fields across, sixteen hundred seats, free for now. It replaces the arena you have and tears out both huts; nobody may be booked to die that day.",
   "bau.art.eingang": "Entrance",
   "bau.hilfe.eingang": "Entrance hut: tap a field right next to the arena wall. Tap again elsewhere to move it. Then build a queue path from it to a road.",
   "bau.art.ausgang": "Exit",

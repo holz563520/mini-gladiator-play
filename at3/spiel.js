@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='c896103c', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='cd3c3837', T_SKRIPT=performance.now(), S=window.AT3_64;
 if(/[?&]mess=1\b/.test(location.search)){(function(){var s=document.createElement('script');s.src='messfeld.js?v='+V;document.head.appendChild(s)})()}   // N7a2b3: Messfeld der Weltkarte nur mit ?mess=1 (messfeld.js)
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
@@ -250,11 +250,11 @@ var BAUWZ={lager:{gr:'haus',bild:'📦',form:'rechteck',preis:1},werkstatt:{gr:'
  trampelpfad:{gr:'weg',bild:'👣',form:'rechteck',preis:1},kiesweg:{gr:'weg',bild:'∴',form:'rechteck',preis:1},pflaster:{gr:'weg',bild:'▦',form:'rechteck',preis:1},
  steinstrasse:{gr:'weg',bild:'▣',form:'rechteck',preis:1},                                    // G6a: vier Wegarten wie 2.0 (Thomas 16.11.2026)
  warteweg:{gr:'weg',bild:'⋯',form:'rechteck',preis:1},      // AR1c1: Queue Path (nur zu Fuß, Schlange vor dem Eingang)
- arena:{gr:'attraktion',bild:'🏟',form:'tipp',preis:0},eingang:{gr:'attraktion',bild:'🎟',form:'tipp',preis:0},ausgang:{gr:'attraktion',bild:'🚶',form:'tipp',preis:0},      // AR1c1: Attraktionen (Regel 20), kostenlos
+ arena:{gr:'attraktion',bild:'🏟',form:'tipp',preis:0},amphi:{gr:'attraktion',bild:'🏛',form:'tipp',preis:0},eingang:{gr:'attraktion',bild:'🎟',form:'tipp',preis:0},ausgang:{gr:'attraktion',bild:'🚶',form:'tipp',preis:0},      // AR1c1: Attraktionen (Regel 20), kostenlos
  tuer:{gr:'werkzeug',bild:'🚪',form:'tipp',preis:1},pfadFuss:{gr:'werkzeug',bild:'🚶',form:'tipp',preis:0},pfadKarren:{gr:'werkzeug',bild:'🐂',form:'tipp',preis:0},abriss:{gr:'werkzeug',bild:'💥',form:'rechteck',preis:0}};   // G6b: Wegprobe (pfadFuss, pfadKarren)
 // Thomas 16.11.2026: wie 2.0 nur Boden ziehen, Wände, Dach und Tür kommen von selbst; von Hand nur Türen. Wandlinie, Dach und „Wände neu“ bleiben im Weltkern
 // (bauWaende, bauDach, bauHuelle) und in der Karte (Form „linie“), haben aber keinen Knopf.
-var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5}, WEG_NR={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4,warteweg:5}, ATT_WZ={arena:1,eingang:1,ausgang:1}, MAXA=1024, MAXL=256;
+var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5}, WEG_NR={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4,warteweg:5}, ATT_WZ={arena:1,amphi:1,eingang:1,ausgang:1}, ANL_WZ={arena:['sandgrube',17],amphi:['amphitheater',47]}, MAXA=1024, MAXL=256;
 // ── G7 Waren und Arbeiter: Knopf „Goods“ (Bestände, Aufträge, stehende Baustellen mit Grund), Arbeiter antippen (Aufgabe, Last, Fähigkeiten, Rollen von Hand).
 // Alles kommt als fertige Zahlen vom Weltkern (Nachricht waren nur bei Änderung), der Hauptkern füllt nur die Liste, und nur wenn sie offen ist. ──
 var WAREN=null, PERSON=null;
@@ -324,9 +324,11 @@ var BESL=null, BESW=false, AR2B_AUS=/[?&]ar2b=0/.test(location.search);
 // AR2c1: die Blätter kommen gleich mit den Bildern von vorn und hinten (für First Person, figurbild.js vornHinten). Notausschalter ?ar2c=0
 var AR2C_AUS=/[?&]ar2c=0/.test(location.search);
 function skript(src,glob){return new Promise(function(ok,no){if(window[glob])return ok();var s=document.createElement('script');s.src=src+'?v='+V;s.onload=ok;s.onerror=function(){no(new Error(src))};document.head.appendChild(s)})}
+// AR4: Sitzplätze je Art der Anlage (Great Amphitheatre: arena-sitze-amphitheater.js, erst geladen, wenn dort Zuschauer sind)
 function besArenaPflegen(){if(AR2B_AUS||!KARTE||!KARTE.besucherArena)return;var A=GLAD&&GLAD.arena,B=A&&A.gross&&A.anlage&&A.bes;if(!B){if(besArenaPflegen.an){besArenaPflegen.an=false;KARTE.besucherArena(null)}return}
- if(!window.AT3SITZE||!window.AT3HERRSCHER){if(!BESL)BESL=Promise.all([skript('arena-sitze.js','AT3SITZE'),skript('herrscher.js','AT3HERRSCHER')]).then(besArenaPflegen,function(e){BESL=null;console.warn('Zuschauer:',e)});return}
- besArenaPflegen.an=true;KARTE.besucherArena(A.anlage,window.AT3SITZE)}
+ var amphi=A.anlage.typ==='amphitheater',gl=amphi?'AT3SITZE_AMPHI':'AT3SITZE';
+ if(!window[gl]||!window.AT3HERRSCHER){if(!BESL)BESL=Promise.all([skript(amphi?'arena-sitze-amphitheater.js':'arena-sitze.js',gl),skript('herrscher.js','AT3HERRSCHER')]).then(function(){BESL=null;besArenaPflegen()},function(e){BESL=null;console.warn('Zuschauer:',e)});return}
+ besArenaPflegen.an=true;KARTE.besucherArena(A.anlage,window[gl])}
 // Z4b: danach die Nahblätter für 2× und 4× (KA.knah btypen, volle 1.0-Figur ohne Waffen), auf 2× höchstens 4 je Auftrag, auf 4× einer; gezeichnet im Kampfkern
 function besucherNahPflegen(){var N=KARTE.besucherNahFehlt&&KARTE.besucherNahFehlt();if(!N)return;BESW=true;var teil=N.typen.slice(0,N.stufe===4?1:4);
  anschluss().then(function(KA){return KA.knah({btypen:teil,bseed:WSEED>>>0,ohneArbeit:true,stufe:N.stufe,lasten:false},'',V)}).then(function(R){if(KARTE)KARTE.besucherNahBlaetter(R)})
@@ -370,13 +372,17 @@ var ARENA_OFFEN=false, arenaAuto='', arenaTempo=0;
 // Werkzeuge in der Gruppe „Attractions“: antippen setzt die Arena (Mitte) oder ein Häuschen; Antwort kommt als Meldung vom Weltkern (arenaMeld). Neue Spiele starten
 // ohne Arena, ein Hinweis zeigt den Weg ins Baumenü. Alles nur Liste und Text im Hauptkern, gerechnet wird im Weltkern (attraktion.js). ──
 var DXS=[0,-1,0,1], DYS=[-1,0,1,0], attHinweis=false;
-function anlageFest(A){if(!A||A.x<0)return[];var L=[{art:A.id,x:A.x+(A.w>>1),y:A.y+(A.h>>1),anl:1}];
+// AR4: sehr große Kartei-Objekte (Great Amphitheatre, 3 MB) lädt das Spiel erst, wenn die Anlage steht; bis dahin zeigt die Karte das Ersatzbild (Regel 20)
+var SPAET={'arena-amphitheater':1}, SPAETL={};
+function spaetObjekt(id){if(!SPAET[id]||geladen.objekte[id]||SPAETL[id])return;SPAETL[id]=holeJson('kartei/obj/'+id+'.json').then(function(o){var e=(kartei.objekte||[]).filter(function(x){return x.id===id})[0],f=e&&e.status==='uebernommen'?S.ladbar(o,B):['in der Kartei nicht übernommen'];
+  if(f.length){geladen.abgelehnt.push({id:id,gruende:f});return}geladen.objekte[id]=o;if(KARTE&&KARTE.festNeu)KARTE.festNeu(id)}).catch(function(e){SPAETL[id]=null;console.warn('Objekt:',id,e)})}
+function anlageFest(A){if(!A||A.x<0)return[];spaetObjekt(A.id);var L=[{art:A.id,x:A.x+(A.w>>1),y:A.y+(A.h>>1),anl:1}];
  if(A.ein)L.push({art:'arena-eingang',x:A.ein[0],y:A.ein[1],r:A.ein[2]&1});if(A.aus)L.push({art:'arena-ausgang',x:A.aus[0],y:A.aus[1],r:A.aus[2]&1});
  if(!A.offen){var e=A.ein,sx=e?e[0]-DXS[e[2]]:A.x+(A.w>>1),sy=e?e[1]-DYS[e[2]]:A.y+A.h;L.push({art:'schild-closed',x:sx,y:sy})}
  return L}
 function attTipp(f){if(!f||f.x==null){$('bauInfo').textContent=t('weg.tippLand');return}var AR=GLAD&&GLAD.arena;
  if(!AR){$('bauInfo').textContent=t('att.grund.no_world');return}
- if(BAUW==='arena'){var A=AR.anlage,w=A?A.w:17,h=A?A.h:17;KARTE.rahmen({x:f.x-(w>>1),y:f.y-(h>>1),w:w,h:h},null);KERN.befehl('arenaSetzen',{x:f.x,y:f.y})}
+ if(ANL_WZ[BAUW]){var w=ANL_WZ[BAUW][1];KARTE.rahmen({x:f.x-(w>>1),y:f.y-(w>>1),w:w,h:w},null);KERN.befehl('arenaSetzen',{x:f.x,y:f.y,typ:ANL_WZ[BAUW][0]})}      // AR4: Art der Anlage (Sandgrube, Great Amphitheatre)
  else KERN.befehl('arenaHaus',{art:BAUW==='eingang'?'ein':'aus',x:f.x,y:f.y});
  $('bauInfo').textContent=t('att.wartet');window.AT3SPIEL.attBefehl={art:BAUW,x:f.x,y:f.y}}
 function attText(g){var k='att.grund.'+g;return TXT[k]!=null?t(k):grundText(g)}
@@ -695,7 +701,7 @@ window.AT3SPIEL={medicus:function(){return{key:MED.key,liste:MED.liste,warte:MED
 
 Promise.all([holeJson('sprache/en.json'),holeJson('kartei/text-en.json'),holeJson('kartei/objekte.json'),holeJson('kartei/budgets.json'),holeJson('spiel-budgets.json')])
 .then(function(d){TXT=d[0].texte;OBJTXT=d[1].texte;kartei=d[2];B=d[3];BUDGETS=d[4];mess.datenMs=performance.now();texteSetzen();platzWaehlen();
- return S.ladeUebernommene(kartei,function(datei){return holeJson('kartei/'+datei)},B)})
+ return S.ladeUebernommene({objekte:kartei.objekte.filter(function(e){return !SPAET[e.id]})},function(datei){return holeJson('kartei/'+datei)},B)})      // AR4: SPAET erst bei Bedarf (spaetObjekt)
 .then(function(g){geladen=g;mess.objekteMs=performance.now();if(KARTE)KARTE.natur(g.objekte);
  var f=document.fonts&&document.fonts.load?document.fonts.load('18px "AT3 Text"').catch(function(){}):Promise.resolve();
  return Promise.race([f,new Promise(function(r){setTimeout(r,3000)})])})

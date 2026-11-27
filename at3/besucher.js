@@ -24,10 +24,12 @@ function WE(){return root.AT3WEGSTROM||(typeof module!=='undefined'&&module.expo
 function BAU(){return root.AT3BAU||(typeof module!=='undefined'&&module.exports?require('./bau.js'):null)}
 function ATT(){return root.AT3ATT||(typeof module!=='undefined'&&module.exports?require('./attraktion.js'):null)}
 function PERS(){return root.AT3PERS||(typeof module!=='undefined'&&module.exports?require('./personen.js'):null)}
-function SITZE(){return root.AT3SITZE||(typeof module!=='undefined'&&module.exports?require('./arena-sitze.js'):null)}
+// AR4: Sitzplätze je Art der Anlage (Sandgrube: arena-sitze.js, Great Amphitheatre: arena-sitze-amphitheater.js). TYP setzt jeder Einstieg (schritt, meld, ausStand, wechsel).
+var TYP='sandgrube';
+function SITZE(){var N=typeof module!=='undefined'&&module.exports;if(TYP==='amphitheater')return root.AT3SITZE_AMPHI||(N?require('./arena-sitze-amphitheater.js'):null);return root.AT3SITZE||(N?require('./arena-sitze.js'):null)}
 var ST=64, WX=ST*9600, WY=ST*4800, M31=2147483647, STAND=1, MELD=9, TYPEN=60;
 // Vorschlagswerte (Ticks: 20 = 1 s)
-var ZUSCHAUER=40, TICKET=1, SPAWN=400, EIN=5, ABSTAND=128, SCHRITT_Q=13, WEIT=30, ORTE_MAX=3, GEHEN=400, MAX_V=512, MAX_PF=4096;
+var ZUSCHAUER=40, TICKET=1, SPAWN=400, EIN=5, ABSTAND=128, SCHRITT_Q=13, WEIT=30, ORTE_MAX=3, GEHEN=400, MAX_V=2048, MAX_PF=4096;
 var LEN_O=256000, LEN_D=362039, VF=128;      // wie personen.js: Tempo 100 = 1 Feld/s
 var B_HIN=1, B_SCHLANGE=2, B_HINEIN=3, B_SITZT=4, B_HINAUS=5, B_HEIM=6, B_KEHRT=7, B_RAUS=8, ZUST=['','arrives','queues','enters','seated','leaves','home','turns','backs'];
 var DX=[0,-1,0,1], DY=[-1,0,1,0];
@@ -92,8 +94,11 @@ function ende(z,r){var b=r.bes;if(!b)return 0;var n=0;b.ende=1;b.soll=b.n;
  return n}
 function schliessen(b){for(var i=0;i<b.v.length;i++){var v=b.v[i];if(v.st===B_HIN)kehren(b,v);else if(v.st===B_SCHLANGE)v.st=B_RAUS}b.Q=[]}
 
+// AR4: Die Anlage wurde gegen eine andere Art getauscht (arena.js): wer drin war, ist weg, die Plätze gelten für die neue Art
+function wechsel(r){var b=r.bes,anl=r.anl;if(!b||!anl)return;TYP=anl.typ;b.v=b.v.filter(function(v){return v.st===B_HIN||v.st===B_KEHRT||v.st===B_HEIM});b.Q=[];b.K=null;b.ende=1;
+ b.sitz=new Array(SITZE().plaetze.length).fill(0);b.ax=anl.x;b.ay=anl.y}
 // ── Ein Tick (aus arena.js, nur große Arena) ──
-function schritt(z,a,r){var t=r.termin,b=r.bes,anl=r.anl;
+function schritt(z,a,r){var t=r.termin,b=r.bes,anl=r.anl;if(anl)TYP=anl.typ;
  if(b&&!b.v.length&&(!t||t.id!==b.id))r.bes=b=null;      // fertig: alle weg, Termin vorbei (Wege und Plätze vergessen)
  if(!b){if(t&&t.zu>=1&&anl&&anl.x>=0){r.bes=b=neu(z,a,r,t);a.zaehler++}else return}
  if(anl.x!==b.ax||anl.y!==b.ay){b.v=b.v.filter(function(v){return v.st===B_HIN||v.st===B_KEHRT||v.st===B_HEIM});b.Q=[];b.K=null;b.ende=1;b.sitz.fill(0)}      // versetzt
@@ -103,7 +108,8 @@ function schritt(z,a,r){var t=r.termin,b=r.bes,anl=r.anl;
  if(!b.ende&&b.K&&b.sp.length)while(b.n<b.soll&&z.tick>=b.t0+Math.floor(b.n*SPAWN/b.soll)+(b.n*7)%20)dazu(z,b);
  // Schlange: vorn zuerst, je halbes Feld einer
  var K=b.K,qm=K?((K.length>>1)-1)*256:0,i,v;
- for(i=0;i<b.Q.length;i++){v=finde(b,b.Q[i]);if(!v)continue;var ziel=Math.min(qm,i*ABSTAND);if(v.q>ziel)v.q=Math.max(ziel,v.q-SCHRITT_Q)}
+ var IX=null;if(b.Q.length>16){IX=new Map();for(i=0;i<b.v.length;i++)IX.set(b.v[i].id,b.v[i])}      // AR4: lange Schlangen (bis 1.600 Zuschauer) ohne Suchen je Platz
+ for(i=0;i<b.Q.length;i++){v=IX?IX.get(b.Q[i]):finde(b,b.Q[i]);if(!v)continue;var ziel=Math.min(qm,i*ABSTAND);if(v.q>ziel)v.q=Math.max(ziel,v.q-SCHRITT_Q)}
  if(!b.ende&&b.Q.length&&z.tick>=b.ein){v=finde(b,b.Q[0]);if(v&&v.q<=0){b.Q.shift();b.ein=z.tick+EIN;var s=platz(b,v);
    if(s<0){v.st=B_RAUS}else{b.sitz[s]=1;v.sitz=s;v.st=B_HINEIN;v.t0=z.tick;v.t=z.tick+dauer(b,s,anl.ein);b.tk++;if(z.bau){z.bau.gold+=TICKET;z.bau.zaehler++}}}}
  var weg2=false;
@@ -132,7 +138,7 @@ function kurz(r,z){var b=r&&r.bes;if(!b)return null;var c=zaehlen(b);return{id:b
  tickets:b.tk,ende:b.ende,ohne:b.ohne,plaetze:b.sitz.length,frei:frei(b),her:herkunft(z,b)}}
 // Je Zuschauer MELD Zahlen: Nummer, Lage x und y in 1/256 Feld (draußen und in der Schlange; drinnen das Häuschen bzw. der Platz), Zustand, Typ (0–59),
 // Platz (−1 keiner), Fortschritt drinnen 0–256 (zum Platz bzw. zum Ausgang), Richtung, Ankunftspunkt (AR2b: Herkunft über kurz().her)
-function meld(z){var r=z.gla&&z.gla.ar,b=r&&r.bes;if(!b)return new Int32Array(1);var n=b.v.length,A=new Int32Array(1+n*MELD),S=SITZE().plaetze,anl=r.anl,K=b.K;A[0]=n;
+function meld(z){var r=z.gla&&z.gla.ar,b=r&&r.bes;if(!b)return new Int32Array(1);if(r.anl)TYP=r.anl.typ;var n=b.v.length,A=new Int32Array(1+n*MELD),S=SITZE().plaetze,anl=r.anl,K=b.K;A[0]=n;
  for(var i=0;i<n;i++){var v=b.v[i],o=1+i*MELD,px=v.x*256+128,py=v.y*256+128,pr=0,dir=v.dir;
   if(v.st===B_SCHLANGE||v.st===B_RAUS){if(K){var j=v.q>>8,fr=v.q&255,m=(K.length>>1)-1;if(j>m){j=m;fr=0}px=K[j*2]*256+128;py=K[j*2+1]*256+128;
     if(j<m&&fr){var ddx=dx1(K[j*2],K[j*2+2]),ddy=K[j*2+3]-K[j*2+1];px+=ddx*fr;py+=ddy*fr;dir=v.st===B_RAUS?richtung(ddx,ddy):richtung(-ddx,-ddy)}}}
@@ -152,8 +158,8 @@ function stand(b){if(!b)return null;return{format:STAND,id:b.id,rng:b.rng,soll:b
  sp:b.sp.map(function(s){return s.slice()}),P:b.P.map(function(p){return{pf:p.pf.slice(),tp:p.tp.slice()}}),W:b.W.slice(),K:b.K?b.K.slice():null,Q:b.Q.slice(),sitz:b.sitz.slice(),
  v:b.v.map(function(v){return VF_.map(function(k){return v[k]})})}}
 function G(v,a,c){return typeof v==='number'&&v===Math.floor(v)&&v>=a&&v<=c}
-function ausStand(d){if(d==null)return null;var S=SITZE().plaetze,i;
- if(typeof d!=='object'||d.format!==STAND||typeof d.id!=='string'||d.id.length>40||!G(d.rng,1,4294967295)||!G(d.soll,0,S.length)||!G(d.n,0,MAX_V)||!G(d.t0,0,M31)||!G(d.nid,1,M31)||!G(d.tk,0,M31)||
+function ausStand(d,typ){if(d==null)return null;TYP=typ||'sandgrube';var S=SITZE().plaetze,i;
+ if(typeof d!=='object'||d.format!==STAND||typeof d.id!=='string'||d.id.length>40||!G(d.rng,1,4294967295)||!G(d.soll,0,MAX_V)||!G(d.n,0,MAX_V)||!G(d.t0,0,M31)||!G(d.nid,1,M31)||!G(d.tk,0,M31)||
   !G(d.ein,0,M31)||!G(d.ende,0,1)||!G(d.ohne,0,1)||!G(d.kv,-1,M31)||!G(d.ax,0,WX-1)||!G(d.ay,0,WY-1)||!G(d.oi,-1,ORTE_MAX))return false;
  if(!Array.isArray(d.P)||d.P.length>4*ORTE_MAX+2||!d.P.every(function(p){return p&&Array.isArray(p.pf)&&Array.isArray(p.tp)&&p.pf.length>=2&&p.pf.length<=MAX_PF&&p.pf.length===p.tp.length*2&&
   p.pf.every(function(x,j){return G(x,0,j&1?WY-1:WX-1)})&&p.tp.every(function(x){return G(x,0,255)})}))return false;
@@ -172,6 +178,6 @@ function ausStand(d){if(d==null)return null;var S=SITZE().plaetze,i;
  b=JSON.parse(JSON.stringify(d));delete b.format;b.v=V;b.zk='';return b}
 
 var BES={STAND:STAND,MELD:MELD,ZUST:ZUST,ZUSCHAUER:ZUSCHAUER,TICKET:TICKET,SPAWN:SPAWN,EIN:EIN,GEHEN:GEHEN,WEIT:WEIT,B_HIN:B_HIN,B_SCHLANGE:B_SCHLANGE,B_HINEIN:B_HINEIN,B_SITZT:B_SITZT,
- B_HINAUS:B_HINAUS,B_HEIM:B_HEIM,B_KEHRT:B_KEHRT,B_RAUS:B_RAUS,adel:adel,weg:weg,schritt:schritt,ende:ende,zaehlen:zaehlen,kurz:kurz,meld:meld,abdruck:abdruck,stand:stand,ausStand:ausStand};
+ B_HINAUS:B_HINAUS,B_HEIM:B_HEIM,B_KEHRT:B_KEHRT,B_RAUS:B_RAUS,adel:adel,weg:weg,schritt:schritt,wechsel:wechsel,ende:ende,zaehlen:zaehlen,kurz:kurz,meld:meld,abdruck:abdruck,stand:stand,ausStand:ausStand};
 if(typeof module!=='undefined'&&module.exports)module.exports=BES;else root.AT3BES=BES;
 })(typeof self!=='undefined'?self:this);

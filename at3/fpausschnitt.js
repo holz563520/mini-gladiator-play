@@ -97,7 +97,7 @@ function walm(BA,ox,oy,WX,WY,farbe,PF){var NE=N+2*RAND,mk=new Uint8Array(NE*NE),
 // Je Häuschen ein Aufgang: 1 Feld breit auf der Linie Mitte → Häuschen, vom Boden am Außenrand bis auf die Höhe des Umgangs (Steigung unter der Grenze
 // fürs Laufen), Holzstufen; der Aufgang beginnt auf dem echten Boden am Außenrand. Der Zeichner bekommt Wandseiten und Lage (w.anl). Kosten fest: n² Punkte (69²), nur wenn die Anlage im Ausschnitt liegt.
 var AUF=1.3;
-function anlage(AN,BB,hole,ox,oy,WX,h,farbe){var D=AN.d,n=D.n,mi=D.mitte;
+function anlage(AN,BB,hole,ox,oy,WX,h,farbe){var D=AN.d,n=D.n,mi=D.mitte,LA=D.auf||AUF;      // AR4: Länge des Aufgangs je Anlage (Great Amphitheatre 4 Felder bis auf die Galerie)
  var dxA=((AN.x-ox)%WX+WX)%WX;if(dxA>WX/2)dxA-=WX;var i0=dxA*U+(U*AN.w/2-mi),j0=(AN.y-oy)*U+(U*AN.h/2-mi);
  if(i0+n<=0||j0+n<=0||i0>=M||j0>=M)return null;
  var X=(AN.x+(AN.w>>1))%WX,Y=AN.y+(AN.h>>1),p=hole(X>>6,Y>>6);if(!p)return null;var sc=BB.sicht(p),base=(sc.H[((Y&63)<<6)|(X&63)]-MEER)/16+WL;
@@ -105,14 +105,14 @@ function anlage(AN,BB,hole,ox,oy,WX,h,farbe){var D=AN.d,n=D.n,mi=D.mitte;
  var hm=(AN.haus||[]).map(function(e){var vx=e[0]-AN.x+.5-AN.w/2,vy=e[1]-AN.y+.5-AN.h/2,l=Math.hypot(vx,vy)||1;return[vx/l,vy/l]});
  if(hm.length){ca=new Uint8Array(n*n).fill(255);auf=new Uint8Array(n*n);
   for(j=0;j<n;j++)for(i=0;i<n;i++){q=j*n+i;if(dh[q]===255)continue;var wx=(i-mi)/U,wy=(j-mi)/U;
-   for(k=0;k<hm.length;k++){var al=wx*hm[k][0]+wy*hm[k][1],qu=Math.abs(wx*hm[k][1]-wy*hm[k][0]);if(qu>.5||al<D.raus-AUF)continue;
-    var tq=Math.max(0,Math.min(1,(D.raus-al)/AUF));dh[q]=Math.round(tq*D.umgang);auf[q]=Math.round(tq*250)+1;fi[q]=0;ca[q]=D.treppe[Math.floor(al*U)&1];break}}}
+   for(k=0;k<hm.length;k++){var al=wx*hm[k][0]+wy*hm[k][1],qu=Math.abs(wx*hm[k][1]-wy*hm[k][0]);if(qu>.5||al<D.raus-LA)continue;
+    var tq=Math.max(0,Math.min(1,(D.raus-al)/LA));dh[q]=Math.round(tq*D.umgang);auf[q]=Math.round(tq*250)+1;fi[q]=0;ca[q]=D.treppe[Math.floor(al*U)&1];break}}}
  for(j=0;j<n;j++){var gj=j0+j;if(gj<0||gj>=M)continue;
   for(i=0;i<n;i++){var gi=i0+i;q=j*n+i;if(gi<0||gi>=M||dh[q]===255)continue;var g=gj*M+gi;h[g]=auf&&auf[q]?h[g]+(base+D.umgang/32-h[g])*(auf[q]-1)/250:base+dh[q]/32;farbe[g]=ca&&ca[q]!==255?ca[q]:D.c[q]}}
  return{i0:i0,j0:j0,n:n,h:dh,fi:fi,tab:D.tab,nb:D.baender,bpg:32/D.band,base:base}}
 // AR1c2: daten/arena-fp.json entpacken (Base64 → Felder), einmal je Kern
 function entpacken(J){function b(s){var t=typeof atob==='function'?atob(s):Buffer.from(s,'base64').toString('binary'),u=new Uint8Array(t.length);for(var i=0;i<t.length;i++)u[i]=t.charCodeAt(i);return u}
- var fi=b(J.fi);return{n:J.n,mitte:J.mitte,baender:J.baender,band:J.band,raus:J.raus,umgang:J.umgang,treppe:J.treppe,h:b(J.h),c:b(J.c),fi:new Uint16Array(fi.buffer,0,fi.length>>1),tab:b(J.tab)}}
+ var fi=b(J.fi);return{n:J.n,mitte:J.mitte,baender:J.baender,band:J.band,raus:J.raus,umgang:J.umgang,auf:J.auf||0,treppe:J.treppe,h:b(J.h),c:b(J.c),fi:new Uint16Array(fi.buffer,0,fi.length>>1),tab:b(J.tab)}}
 // Felder (Puffer), die beim Verschicken ohne Kopie übergeben werden
 function puffer(w){var L=[w.h.buffer,w.biom.buffer,w.farbe.buffer,w.wandX.buffer,w.wandY.buffer,w.sperre.buffer,w.objX.buffer,w.objY.buffer,w.objArt.buffer];
  if(w.innen)L.push(w.innen.buffer,w.dachR.buffer,w.dachC.buffer);if(w.anl)L.push(w.anl.h.buffer,w.anl.fi.buffer);return L}

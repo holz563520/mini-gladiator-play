@@ -2,6 +2,8 @@
  "format": "at3-text",
  "sprache": "en",
  "texte": {
+  "arena-amphitheater.info": "Three storeys of arches, thirteen rings of stone seats and room for sixteen hundred on its own paved square. It has a gate for the living and a gate for the dead, and only one of them is ever busy both ways.",
+  "arena-amphitheater.name": "Great Amphitheatre",
   "arena-ausgang.info": "The way out, with a bucket for the faint of stomach. It is emptied after every fight, and it is never empty.",
   "arena-ausgang.name": "Arena Exit",
   "arena-eingang.info": "The ticket hut, skull on the roof. Seats are numbered, limbs are not.",

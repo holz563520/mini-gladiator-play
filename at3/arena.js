@@ -74,7 +74,7 @@ var ARTEN={
   !!w.offer&&typeof w.offer==='object'&&Array.isArray(w.offer.enemy)&&w.offer.enemy.length>=1&&w.offer.enemy.length<=40&&w.offer.enemy.every(function(u){return !!u&&istG(u.g)})&&
   (w.auf===null||(!!w.auf&&typeof w.auf==='object'&&!Array.isArray(w.auf)))&&ganz(w.seed,0,4294967295)&&typeof w.label==='string'&&w.label.length<=200&&ganz(w.skulls,1,5)&&istOrt(w.ort)},
  arenaAbsage:function(w){return !!w&&typeof w.id==='string'&&w.id.length<=40},
- arenaSetzen:function(w){return !!w&&ganz(w.x,0,WX-1)&&ganz(w.y,0,1e9)},
+ arenaSetzen:function(w){return !!w&&ganz(w.x,0,WX-1)&&ganz(w.y,0,1e9)&&(w.typ===undefined||(typeof w.typ==='string'&&ATT().ANLAGEN.hasOwnProperty(w.typ)))},      // AR4: typ = Art der Anlage (ohne: wie bisher)
  arenaHaus:function(w){return !!w&&(w.art==='ein'||w.art==='aus')&&ganz(w.x,0,WX-1)&&ganz(w.y,0,1e9)},
  arenaErgebnis:function(w){return !!w&&typeof w.id==='string'&&w.id.length<=40&&ganz(w.praemie,0,MAX_GOLD)&&ganz(w.gewonnen,0,2)&&
   (w.spekt===undefined||ganz(w.spekt,0,100000))&&(w.ruhm===undefined||ganz(w.ruhm,0,10000))&&(w.angesehen===undefined||ganz(w.angesehen,0,1))&&
@@ -108,9 +108,11 @@ function befehl(z,art,w){var a=z.gla;if(!a||!a.platz)return;var r=a.ar||(a.ar=ne
 function grosse(z,a,r,art,w){var m={tick:z.tick,arena:1,art:art};
  if(!r.gross){m.ok=0;m.grund='small_arena';melde(a,m);return}
  if(art==='arenaSetzen'){if(r.termin){m.ok=0;m.grund='busy';melde(a,m);return}
-  var rec=r.anl||ATT().neu('sandgrube',1),A=ATT().ANLAGEN[rec.typ],g=ATT().setzen(z,rec,w.x-(A.w>>1),w.y-(A.h>>1),[[a.mx,a.my],a.md||null]);
+  var typ=w.typ||(r.anl?r.anl.typ:'sandgrube'),rec=r.anl||ATT().neu(typ,1),A=ATT().ANLAGEN[typ],sp=[[a.mx,a.my],a.md||null],g=null;
+  if(rec.typ!==typ){var nr=ATT().wechseln(z,rec,typ,w.x,w.y,sp);if(typeof nr==='string')g=nr;else{rec=nr;r.anl=rec;if(r.bes)BES().wechsel(r)}}      // AR4: andere Art (Great Amphitheatre) am neuen Platz
+  else g=ATT().setzen(z,rec,w.x-(A.w>>1),w.y-(A.h>>1),sp);
   if(g){m.ok=0;m.grund=g;melde(a,m);return}
-  r.anl=rec;r.platz=true;if(!r.fern.length)r.fern=ferne(z,a);sammel(z,r);m.ok=1;m.x=rec.x;m.y=rec.y;melde(a,m);return}
+  r.anl=rec;r.platz=true;if(!r.fern.length)r.fern=ferne(z,a);sammel(z,r);m.ok=1;m.x=rec.x;m.y=rec.y;m.typ=rec.typ;melde(a,m);return}
  if(!r.anl||r.anl.x<0){m.ok=0;m.grund='unplaced';melde(a,m);return}
  var h=ATT().hausSetzen(z,r.anl,w.art,w.x,w.y);if(h){m.ok=0;m.grund=h;melde(a,m);return}
  sammel(z,r);m.ok=1;m.haus=w.art;melde(a,m)}
@@ -158,7 +160,7 @@ function ausStand(d){if(d==null)return null;if(typeof d!=='object'||(d.format!==
  if(d.leichen!==undefined&&(!Array.isArray(d.leichen)||d.leichen.length>MAX_LEICHEN||!d.leichen.every(function(l){return !!l&&ganz(l.id,1,2147483647)&&ganz(l.x,0,WX-1)&&ganz(l.y,0,1e9)&&ganz(l.bis,0,1e12)&&typeof l.name==='string'})))return false;
  if(d.gef!==undefined&&(!Array.isArray(d.gef)||d.gef.length>MAX_GEF))return false;
  var an=null,bs=null;if(d.format===STAND_G){if(d.gross!==1)return false;if(d.anl!=null){an=ATT().ausStand(d.anl);if(!an)return false}if(!!d.platz!==!!(an&&an.x>=0))return false;
-  if(d.bes!=null){if(!an)return false;bs=BES().ausStand(d.bes);if(!bs)return false}}      // AR2a
+  if(d.bes!=null){if(!an)return false;bs=BES().ausStand(d.bes,an.typ);if(!bs)return false}}      // AR2a
  var r=JSON.parse(JSON.stringify(d));delete r.format;r.gross=d.format===STAND_G?1:0;r.anl=an;r.platz=!!r.platz;r.versuche=r.versuche|0;r.da=r.da|0;r.auf=r.auf||null;r.letzt=r.letzt||null;r.leichen=r.leichen||[];r.gef=r.gef||[];delete r.bes;if(bs)r.bes=bs;return r}      // G9d3: ältere Stände ohne Leichen/Gefallene
 
 var AR={STAND:STAND,STAND_G:STAND_G,gross:function(v){AN=!!v},zuschauerAn:function(v){AN2=!!v},bonus:bonus,ZUSCHAUER:ZUSCHAUER,TICKET:TICKET,zuschauer:zuschauer,TAG:TAG,RUF:RUF,KAMPF:KAMPF,SPAET:SPAET,A_ARENA:A_ARENA,ARTEN:ARTEN,neu:neu,schritt:schritt,befehl:befehl,ruft:ruft,kurz:kurz,daten:daten,abdruck:abdruck,stand:stand,ausStand:ausStand};

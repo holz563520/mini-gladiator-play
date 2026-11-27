@@ -42,7 +42,7 @@ var GROESSEN={
  figur: {w:16,h:32, text:'Figur auf der Karte, so groß wie in 2.0 (rund 22 Bildpunkte hoch, Thomas 15.11.2026), hinter Wänden als Umriss sichtbar'},
  tier:  {w:32,h:32, text:'Tier auf der Karte'},
  karren:{w:48,h:40, text:'Karren, Fahrzeug'},
- anlage:{w:1280,h:768,text:'Große Anlage (Arena, Rennbahn): ein großes vorgezeichnetes Bild je Ausbaustufe, Anker = Mitte des Mittelfelds (AR1a)'}
+ anlage:{w:3072,h:1600,text:'Große Anlage (Arena, Rennbahn): ein großes vorgezeichnetes Bild je Ausbaustufe, Anker = Mitte des Mittelfelds (AR1a; AR4: bis 3072 × 1600 für das Great Amphitheatre auf eckigem Platz 47 × 47 Felder)'}
 };
 
 function farbe(hex){return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)]}

@@ -31,11 +31,18 @@ function ersatz(id){var s=S(),g=s.naechste(132,128,122,s.PALETTE),r=s.dunkler(g)
 
 // Ausschnitt beim Bildkern holen; ist der noch nicht bereit, kurz warten und nochmal fragen
 // AR1c2: Arena in voller Größe (Höhenfeld daten/arena-fp.json, einmal geladen; Notausschalter ?ar1c2=0: wie AR1c1, nur Häuschen und Schild)
-var ANL_AUS=/[?&]ar1c2=0/.test(location.search),ANFP=null,ANFP_L=null;
-function anlFp(){if(ANL_AUS||!P.o.anlage)return Promise.resolve(null);if(ANFP_L)return ANFP_L;
- ANFP_L=(P.o.json?P.o.json('daten/arena-fp.json'):fetch('daten/arena-fp.json').then(function(r){return r.ok?r.json():null})).then(function(j){ANFP=j&&j.format==='at3-arena-fp'?j:null;return ANFP}).catch(function(){return null});return ANFP_L}
-function anlDaten(){if(!ANFP||!P.o.anlage)return null;var A=P.o.anlage();if(!A||A.x<0)return null;var H=[];if(A.ein)H.push([A.ein[0],A.ein[1]]);if(A.aus)H.push([A.aus[0],A.aus[1]]);
+// AR4: je Art der Anlage ein eigenes Höhenfeld (Sandgrube daten/arena-fp.json, Great Amphitheatre daten/arena-fp-amphitheater.json), jedes einmal geladen
+var ANL_AUS=/[?&]ar1c2=0/.test(location.search),ANFP=null,ANFPS={},ANFP_LS={},ANFP_DATEI={'arena-amphitheater':'daten/arena-fp-amphitheater.json'};
+function anlFp(){if(ANL_AUS||!P.o.anlage)return Promise.resolve(null);var A=P.o.anlage(),id=A&&A.id||'arena-sandgrube',datei=ANFP_DATEI[id]||'daten/arena-fp.json';ANFP=ANFPS[id]||null;if(ANFP_LS[id])return ANFP_LS[id];
+ ANFP_LS[id]=(P.o.json?P.o.json(datei):fetch(datei).then(function(r){return r.ok?r.json():null})).then(function(j){ANFPS[id]=j&&j.format==='at3-arena-fp'?j:null;var B=P.o.anlage();if((B&&B.id||'arena-sandgrube')===id)ANFP=ANFPS[id];return ANFPS[id]}).catch(function(){return null});return ANFP_LS[id]}
+function anlDaten(){if(!P.o.anlage)return null;var A=P.o.anlage();if(!A||A.x<0)return null;ANFP=ANFPS[A.id||'arena-sandgrube']||null;if(!ANFP){anlFp();return null}var H=[];if(A.ein)H.push([A.ein[0],A.ein[1]]);if(A.aus)H.push([A.aus[0],A.aus[1]]);
  return{x:A.x,y:A.y,w:A.w,h:A.h,haus:H,fp:ANFP}}
+// AR4: In einer sehr großen Anlage (Great Amphitheatre, Ø 47 Felder) reicht die übliche Sichtweite (24 Felder) nicht bis zur Gegenseite. Solange man in der Anlage
+// oder dicht davor steht, liegt der Ausschnitt (96 Felder) mittig auf der Anlage statt auf der Kamera, es wird dort nicht nachgeladen, und die Sichtweite reicht
+// über die ganze Anlage (SICHT_ANL). Kleine Anlagen (Sandgrube) und alles draußen: wie bisher. Kosten: gemessen in tests/at3-ar4-browser.cjs.
+var SICHT=24,SICHT_ANL=47,ANL_ZONE=4;
+function anlMitte(wx,wy){if(ANL_AUS||!P.o||!P.o.anlage)return null;var A=P.o.anlage();if(!A||A.x<0||A.w<=30)return null;var mx=A.x+A.w/2,my=A.y+A.h/2,dx=mx-wx;dx-=Math.round(dx/WX)*WX;
+ return Math.hypot(dx,my-wy)<A.w/2+ANL_ZONE?{ox:Math.floor(wx+dx)-MITTE,oy:Math.floor(my)-MITTE}:null}
 function holen(ox,oy){var o=P.o,sperr=[];for(var id in o.objekte){var k=o.objekte[id].karte;if(k&&k.feld==='x')sperr.push(id)}
  return new Promise(function(ok,no){var n=0;(function frag(){o.karte.frage('fp',{ox:ox,oy:oy,sperr:sperr,anl:anlDaten()}).then(function(r){
    if(r.fehlt||!r.welt){if(++n>40)return no(new Error('picture core not ready'));return setTimeout(frag,250)}ok(r)})})()})}
@@ -53,7 +60,7 @@ function platz(w,x,y){var F=window.AT3_FPW;for(var r=0;r<30;r++)for(var dy=-r;dy
 // o: {karte, objekte (übernommene Objekte), cv (Canvas), rahmen, stick, beiObjekt(id, ersatz), beiText(schlüssel)}
 function an(o){P.o=o;var k=o.karte.kamera();
  if(!k||k.globus)return Promise.reject(new Error('globe'));
- var ox=Math.floor(k.x)-MITTE,oy=Math.floor(k.y)-MITTE;P.holt=true;
+ var ox=Math.floor(k.x)-MITTE,oy=Math.floor(k.y)-MITTE,am=anlMitte(k.x,k.y);if(am){ox=am.ox;oy=am.oy}P.holt=true;
  return anlFp().then(function(){return holen(ox,oy)}).then(function(r){var w=annehmen(r),lx=k.x-w.ox,ly=k.y-w.oy;if(lx<0)lx+=WX;var p=platz(w,lx,ly);P.holt=false;
   if(!p)throw new Error('no ground');
   P.w=w;P.cam={x:p.x,y:p.y,a:-Math.PI/2,z:null};window.AT3_FPW.bewegen(w,P.cam,0,0,1,AUGE);
@@ -144,7 +151,7 @@ function weckerAn(){if(wecker)return;wecker=setInterval(function(){if(!P.an){cle
 function starten(){if(P.lauf||!P.an||!P.w)return;P.lauf=true;P.ts=performance.now();requestAnimationFrame(bild)}
 function bild(t){if(!P.an||document.hidden){P.lauf=false;return}
  var dt=Math.min(.1,(t-P.ts)/1000);P.ts=t;var c=P.cam,vx=c.x,vy=c.y,va=c.a,vz=c.z;steuern(dt);
- if(c.x!==vx||c.y!==vy||c.a!==va||Math.abs((c.z||0)-(vz||0))>1e-4)P.neu=true;nachladen();var bw=bewegte();if(bw)P.neu=true;
+ if(c.x!==vx||c.y!==vy||c.a!==va||Math.abs((c.z||0)-(vz||0))>1e-4)P.neu=true;nachladen();var si=P.anlSicht?SICHT_ANL:SICHT;if(si!==OPT.sicht){OPT.sicht=si;P.neu=true}var bw=bewegte();if(bw)P.neu=true;
  if(P.neu){P.neu=false;var F=window.AT3_FP,W=window.AT3_FPW,s=S(),t0=performance.now(),r;
   for(var i=0;i<P.drossel;i++)r=W.zeichne(P.buf,P.w,P.cam,OPT,P.arten,s,F);
   var b=P.buf,d=P.d32,pp=P.P32;for(var k=0;k<b.length;k++)d[k]=pp[b[k]];P.ctx.putImageData(P.img,0,0);
@@ -156,8 +163,10 @@ function steuern(dt){var T=P.tasten,vor=0,seit=0,dreh=0,renn=T.shift;
  if(P.stick){var dx=P.stick.dx/40,dy=-P.stick.dy/40,l=Math.hypot(dx,dy);if(l>.15){var q=Math.min(1,l);vor+=dy/l*q;seit+=dx/l*q;if(l>1.6)renn=true}}
  if(P.probe)dreh+=P.probe.dreh;P.cam.a+=dreh*DREH*dt;var v=TEMPO*(renn?RENNEN:1);window.AT3_FPW.bewegen(P.w,P.cam,vor*v,seit*v*.8,dt,AUGE)}
 // Weiter als NACHLADEN Felder von der Mitte: nächsten Ausschnitt um den Gladiator holen; bis er da ist, läuft man im alten weiter
-function nachladen(){if(P.holt||!P.w)return;var c=P.cam;if(Math.abs(c.x-MITTE)<=NACHLADEN&&Math.abs(c.y-MITTE)<=NACHLADEN)return;
- var alt=P.w,ox=alt.ox+Math.floor(c.x)-MITTE,oy=alt.oy+Math.floor(c.y)-MITTE;P.holt=true;
+function nachladen(){if(P.holt||!P.w)return;var c=P.cam,am=anlMitte(P.w.ox+c.x,P.w.oy+c.y);
+ if(am&&P.anlNie===am.ox+','+am.oy)am=null;      // am Weltrand lässt sich der Ausschnitt nicht mittig legen: dort wie bisher
+ if(am){var ddx=am.ox-P.w.ox;ddx-=Math.round(ddx/WX)*WX;P.anlSicht=!ddx&&am.oy===P.w.oy;if(P.anlSicht)return;if(P.anlVer===am.ox+','+am.oy){P.anlNie=P.anlVer;return}P.anlVer=am.ox+','+am.oy}else{P.anlSicht=false;if(Math.abs(c.x-MITTE)<=NACHLADEN&&Math.abs(c.y-MITTE)<=NACHLADEN)return}
+ var alt=P.w,ox=am?alt.ox+ddx:alt.ox+Math.floor(c.x)-MITTE,oy=am?am.oy:alt.oy+Math.floor(c.y)-MITTE;P.holt=true;
  holen(ox,oy).then(function(r){var w=annehmen(r);P.holt=false;if(P.w!==alt)return;var dx=w.ox-alt.ox;if(dx>WX/2)dx-=WX;if(dx<-WX/2)dx+=WX;
   P.cam.x-=dx;P.cam.y-=w.oy-alt.oy;P.w=w;P.neu=true;starten()},function(){P.holt=false})}
 

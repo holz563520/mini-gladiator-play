@@ -2,8 +2,17 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1387,
+ "typMax": 1388,
  "objekte": [
+  {
+   "id": "arena-amphitheater",
+   "version": 1,
+   "typ": 1388,
+   "kat": "anlage",
+   "name": "Great Amphitheatre",
+   "status": "uebernommen",
+   "datei": "obj/arena-amphitheater.json"
+  },
   {
    "id": "arena-ausgang",
    "version": 2,
