@@ -182,7 +182,7 @@ function sortiere(L){var q={kartei:0,ware:1,gebaeude:2,ort:3};return L.sort(func
 // Neue Fassung (Version in der Kartei größer): Stand bleibt, die Messung zeigt „keine“ bzw. „veraltet“, bis der Prüfstand neu misst (wie M6).
 function zusammen(alt,neu){var A={},weg=[],L;(alt&&alt.eintraege||[]).forEach(function(e){A[e.id]=e});
  L=neu.map(function(n){var a=A[n.id];if(!a)return n;delete A[n.id];var e=JSON.parse(JSON.stringify(n));
-  if(a.stand==='ueberarbeitet'||a.stand==='fertig')e.stand=n.stand==='fehlt'||n.stand==='teile'||n.stand==='keinbild'?n.stand:a.stand;
+  if(a.stand==='ueberarbeitet'||a.stand==='fertig')e.stand=(n.stand==='fehlt'&&n.quelle!=='ort')||n.stand==='teile'||n.stand==='keinbild'?n.stand:a.stand;   // Ortsbilder haben kein Kartei-Objekt (Bild aus Plan und Teilen): Hand-Stand bleibt (Thomas 27.11.2026)
   if(e.ansichten&&a.ansichten)Object.keys(e.ansichten).forEach(function(k){var v=a.ansichten[k];if(v==='ueberarbeitet'||v==='fertig')e.ansichten[k]=v});
   if(a.wichtigHand)e.wichtigHand=a.wichtigHand;if(a.hinweis&&a.hinweis!==vorschlag(e))e.hinweis=a.hinweis
   if(a.etappeHand)e.etappeHand=a.etappeHand;return e});

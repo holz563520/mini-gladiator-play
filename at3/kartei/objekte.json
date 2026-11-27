@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1214,
+ "typMax": 1305,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -213,7 +213,7 @@
   },
   {
    "id": "baum-zypresse",
-   "version": 2,
+   "version": 3,
    "typ": 141,
    "kat": "baum",
    "name": "Cypress",
@@ -237,6 +237,825 @@
    "name": "Straw Bed",
    "status": "geprueft",
    "datei": "obj/bett-stroh.json"
+  },
+  {
+   "id": "bk-bruch-boden",
+   "version": 4,
+   "typ": 1221,
+   "kat": "boden",
+   "name": "Slate Floor",
+   "status": "skizze",
+   "datei": "obj/bk-bruch-boden.json"
+  },
+  {
+   "id": "bk-bruch-boden-a",
+   "version": 4,
+   "typ": 1215,
+   "kat": "boden",
+   "name": "Slate Floor A",
+   "status": "skizze",
+   "datei": "obj/bk-bruch-boden-a.json"
+  },
+  {
+   "id": "bk-bruch-boden-b",
+   "version": 4,
+   "typ": 1216,
+   "kat": "boden",
+   "name": "Slate Floor B",
+   "status": "skizze",
+   "datei": "obj/bk-bruch-boden-b.json"
+  },
+  {
+   "id": "bk-bruch-boden-c",
+   "version": 4,
+   "typ": 1217,
+   "kat": "boden",
+   "name": "Slate Floor C",
+   "status": "skizze",
+   "datei": "obj/bk-bruch-boden-c.json"
+  },
+  {
+   "id": "bk-bruch-boden-d",
+   "version": 4,
+   "typ": 1218,
+   "kat": "boden",
+   "name": "Slate Floor D",
+   "status": "skizze",
+   "datei": "obj/bk-bruch-boden-d.json"
+  },
+  {
+   "id": "bk-bruch-boden-e",
+   "version": 4,
+   "typ": 1219,
+   "kat": "boden",
+   "name": "Slate Floor E",
+   "status": "skizze",
+   "datei": "obj/bk-bruch-boden-e.json"
+  },
+  {
+   "id": "bk-bruch-boden-f",
+   "version": 4,
+   "typ": 1220,
+   "kat": "boden",
+   "name": "Slate Floor F",
+   "status": "skizze",
+   "datei": "obj/bk-bruch-boden-f.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-i",
+   "version": 4,
+   "typ": 1228,
+   "kat": "dach",
+   "name": "Shingle Roof Fall I",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-i.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-i-a",
+   "version": 4,
+   "typ": 1222,
+   "kat": "dach",
+   "name": "Shingle Roof Fall I A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-i-a.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-i-b",
+   "version": 4,
+   "typ": 1223,
+   "kat": "dach",
+   "name": "Shingle Roof Fall I B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-i-b.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-i-c",
+   "version": 4,
+   "typ": 1224,
+   "kat": "dach",
+   "name": "Shingle Roof Fall I C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-i-c.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-i-d",
+   "version": 4,
+   "typ": 1225,
+   "kat": "dach",
+   "name": "Shingle Roof Fall I D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-i-d.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-i-e",
+   "version": 4,
+   "typ": 1226,
+   "kat": "dach",
+   "name": "Shingle Roof Fall I E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-i-e.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-i-f",
+   "version": 4,
+   "typ": 1227,
+   "kat": "dach",
+   "name": "Shingle Roof Fall I F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-i-f.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-j",
+   "version": 4,
+   "typ": 1235,
+   "kat": "dach",
+   "name": "Shingle Roof Fall J",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-j.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-j-a",
+   "version": 4,
+   "typ": 1229,
+   "kat": "dach",
+   "name": "Shingle Roof Fall J A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-j-a.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-j-b",
+   "version": 4,
+   "typ": 1230,
+   "kat": "dach",
+   "name": "Shingle Roof Fall J B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-j-b.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-j-c",
+   "version": 4,
+   "typ": 1231,
+   "kat": "dach",
+   "name": "Shingle Roof Fall J C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-j-c.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-j-d",
+   "version": 4,
+   "typ": 1232,
+   "kat": "dach",
+   "name": "Shingle Roof Fall J D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-j-d.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-j-e",
+   "version": 4,
+   "typ": 1233,
+   "kat": "dach",
+   "name": "Shingle Roof Fall J E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-j-e.json"
+  },
+  {
+   "id": "bk-bruch-dach-ab-j-f",
+   "version": 4,
+   "typ": 1234,
+   "kat": "dach",
+   "name": "Shingle Roof Fall J F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-ab-j-f.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-i",
+   "version": 4,
+   "typ": 1242,
+   "kat": "dach",
+   "name": "Shingle Roof Rise I",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-i.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-i-a",
+   "version": 4,
+   "typ": 1236,
+   "kat": "dach",
+   "name": "Shingle Roof Rise I A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-i-a.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-i-b",
+   "version": 4,
+   "typ": 1237,
+   "kat": "dach",
+   "name": "Shingle Roof Rise I B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-i-b.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-i-c",
+   "version": 4,
+   "typ": 1238,
+   "kat": "dach",
+   "name": "Shingle Roof Rise I C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-i-c.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-i-d",
+   "version": 4,
+   "typ": 1239,
+   "kat": "dach",
+   "name": "Shingle Roof Rise I D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-i-d.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-i-e",
+   "version": 4,
+   "typ": 1240,
+   "kat": "dach",
+   "name": "Shingle Roof Rise I E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-i-e.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-i-f",
+   "version": 4,
+   "typ": 1241,
+   "kat": "dach",
+   "name": "Shingle Roof Rise I F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-i-f.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-j",
+   "version": 4,
+   "typ": 1249,
+   "kat": "dach",
+   "name": "Shingle Roof Rise J",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-j.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-j-a",
+   "version": 4,
+   "typ": 1243,
+   "kat": "dach",
+   "name": "Shingle Roof Rise J A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-j-a.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-j-b",
+   "version": 4,
+   "typ": 1244,
+   "kat": "dach",
+   "name": "Shingle Roof Rise J B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-j-b.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-j-c",
+   "version": 4,
+   "typ": 1245,
+   "kat": "dach",
+   "name": "Shingle Roof Rise J C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-j-c.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-j-d",
+   "version": 4,
+   "typ": 1246,
+   "kat": "dach",
+   "name": "Shingle Roof Rise J D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-j-d.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-j-e",
+   "version": 4,
+   "typ": 1247,
+   "kat": "dach",
+   "name": "Shingle Roof Rise J E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-j-e.json"
+  },
+  {
+   "id": "bk-bruch-dach-auf-j-f",
+   "version": 4,
+   "typ": 1248,
+   "kat": "dach",
+   "name": "Shingle Roof Rise J F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-auf-j-f.json"
+  },
+  {
+   "id": "bk-bruch-dach-flach",
+   "version": 4,
+   "typ": 1256,
+   "kat": "dach",
+   "name": "Shingle Flat Roof",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-flach.json"
+  },
+  {
+   "id": "bk-bruch-dach-flach-a",
+   "version": 4,
+   "typ": 1250,
+   "kat": "dach",
+   "name": "Shingle Flat Roof A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-flach-a.json"
+  },
+  {
+   "id": "bk-bruch-dach-flach-b",
+   "version": 4,
+   "typ": 1251,
+   "kat": "dach",
+   "name": "Shingle Flat Roof B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-flach-b.json"
+  },
+  {
+   "id": "bk-bruch-dach-flach-c",
+   "version": 4,
+   "typ": 1252,
+   "kat": "dach",
+   "name": "Shingle Flat Roof C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-flach-c.json"
+  },
+  {
+   "id": "bk-bruch-dach-flach-d",
+   "version": 4,
+   "typ": 1253,
+   "kat": "dach",
+   "name": "Shingle Flat Roof D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-flach-d.json"
+  },
+  {
+   "id": "bk-bruch-dach-flach-e",
+   "version": 4,
+   "typ": 1254,
+   "kat": "dach",
+   "name": "Shingle Flat Roof E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-flach-e.json"
+  },
+  {
+   "id": "bk-bruch-dach-flach-f",
+   "version": 4,
+   "typ": 1255,
+   "kat": "dach",
+   "name": "Shingle Flat Roof F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-dach-flach-f.json"
+  },
+  {
+   "id": "bk-bruch-fenster",
+   "version": 4,
+   "typ": 1263,
+   "kat": "wand",
+   "name": "Rubble Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-fenster.json"
+  },
+  {
+   "id": "bk-bruch-fenster-a",
+   "version": 4,
+   "typ": 1257,
+   "kat": "wand",
+   "name": "Rubble Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-fenster-a.json"
+  },
+  {
+   "id": "bk-bruch-fenster-b",
+   "version": 4,
+   "typ": 1258,
+   "kat": "wand",
+   "name": "Rubble Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-fenster-b.json"
+  },
+  {
+   "id": "bk-bruch-fenster-c",
+   "version": 4,
+   "typ": 1259,
+   "kat": "wand",
+   "name": "Rubble Window C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-fenster-c.json"
+  },
+  {
+   "id": "bk-bruch-fenster-d",
+   "version": 4,
+   "typ": 1260,
+   "kat": "wand",
+   "name": "Rubble Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-fenster-d.json"
+  },
+  {
+   "id": "bk-bruch-fenster-e",
+   "version": 4,
+   "typ": 1261,
+   "kat": "wand",
+   "name": "Rubble Window E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-fenster-e.json"
+  },
+  {
+   "id": "bk-bruch-fenster-f",
+   "version": 4,
+   "typ": 1262,
+   "kat": "wand",
+   "name": "Rubble Window F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-fenster-f.json"
+  },
+  {
+   "id": "bk-bruch-giebel",
+   "version": 4,
+   "typ": 1284,
+   "kat": "wand",
+   "name": "Rubble Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel.json"
+  },
+  {
+   "id": "bk-bruch-giebel-a",
+   "version": 4,
+   "typ": 1264,
+   "kat": "wand",
+   "name": "Rubble Gable A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-a.json"
+  },
+  {
+   "id": "bk-bruch-giebel-ab",
+   "version": 4,
+   "typ": 1271,
+   "kat": "wand",
+   "name": "Rubble Gable Fall",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-ab.json"
+  },
+  {
+   "id": "bk-bruch-giebel-ab-a",
+   "version": 4,
+   "typ": 1265,
+   "kat": "wand",
+   "name": "Rubble Gable Fall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-ab-a.json"
+  },
+  {
+   "id": "bk-bruch-giebel-ab-b",
+   "version": 4,
+   "typ": 1266,
+   "kat": "wand",
+   "name": "Rubble Gable Fall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-ab-b.json"
+  },
+  {
+   "id": "bk-bruch-giebel-ab-c",
+   "version": 4,
+   "typ": 1267,
+   "kat": "wand",
+   "name": "Rubble Gable Fall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-ab-c.json"
+  },
+  {
+   "id": "bk-bruch-giebel-ab-d",
+   "version": 4,
+   "typ": 1268,
+   "kat": "wand",
+   "name": "Rubble Gable Fall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-ab-d.json"
+  },
+  {
+   "id": "bk-bruch-giebel-ab-e",
+   "version": 4,
+   "typ": 1269,
+   "kat": "wand",
+   "name": "Rubble Gable Fall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-ab-e.json"
+  },
+  {
+   "id": "bk-bruch-giebel-ab-f",
+   "version": 4,
+   "typ": 1270,
+   "kat": "wand",
+   "name": "Rubble Gable Fall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-ab-f.json"
+  },
+  {
+   "id": "bk-bruch-giebel-auf",
+   "version": 4,
+   "typ": 1278,
+   "kat": "wand",
+   "name": "Rubble Gable Rise",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-auf.json"
+  },
+  {
+   "id": "bk-bruch-giebel-auf-a",
+   "version": 4,
+   "typ": 1272,
+   "kat": "wand",
+   "name": "Rubble Gable Rise A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-auf-a.json"
+  },
+  {
+   "id": "bk-bruch-giebel-auf-b",
+   "version": 4,
+   "typ": 1273,
+   "kat": "wand",
+   "name": "Rubble Gable Rise B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-auf-b.json"
+  },
+  {
+   "id": "bk-bruch-giebel-auf-c",
+   "version": 4,
+   "typ": 1274,
+   "kat": "wand",
+   "name": "Rubble Gable Rise C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-auf-c.json"
+  },
+  {
+   "id": "bk-bruch-giebel-auf-d",
+   "version": 4,
+   "typ": 1275,
+   "kat": "wand",
+   "name": "Rubble Gable Rise D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-auf-d.json"
+  },
+  {
+   "id": "bk-bruch-giebel-auf-e",
+   "version": 4,
+   "typ": 1276,
+   "kat": "wand",
+   "name": "Rubble Gable Rise E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-auf-e.json"
+  },
+  {
+   "id": "bk-bruch-giebel-auf-f",
+   "version": 4,
+   "typ": 1277,
+   "kat": "wand",
+   "name": "Rubble Gable Rise F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-auf-f.json"
+  },
+  {
+   "id": "bk-bruch-giebel-b",
+   "version": 4,
+   "typ": 1279,
+   "kat": "wand",
+   "name": "Rubble Gable B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-b.json"
+  },
+  {
+   "id": "bk-bruch-giebel-c",
+   "version": 4,
+   "typ": 1280,
+   "kat": "wand",
+   "name": "Rubble Gable C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-c.json"
+  },
+  {
+   "id": "bk-bruch-giebel-d",
+   "version": 4,
+   "typ": 1281,
+   "kat": "wand",
+   "name": "Rubble Gable D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-d.json"
+  },
+  {
+   "id": "bk-bruch-giebel-e",
+   "version": 4,
+   "typ": 1282,
+   "kat": "wand",
+   "name": "Rubble Gable E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-e.json"
+  },
+  {
+   "id": "bk-bruch-giebel-f",
+   "version": 4,
+   "typ": 1283,
+   "kat": "wand",
+   "name": "Rubble Gable F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-giebel-f.json"
+  },
+  {
+   "id": "bk-bruch-tuer",
+   "version": 4,
+   "typ": 1291,
+   "kat": "wand",
+   "name": "Rubble Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-tuer.json"
+  },
+  {
+   "id": "bk-bruch-tuer-a",
+   "version": 4,
+   "typ": 1285,
+   "kat": "wand",
+   "name": "Rubble Door A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-tuer-a.json"
+  },
+  {
+   "id": "bk-bruch-tuer-b",
+   "version": 4,
+   "typ": 1286,
+   "kat": "wand",
+   "name": "Rubble Door B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-tuer-b.json"
+  },
+  {
+   "id": "bk-bruch-tuer-c",
+   "version": 4,
+   "typ": 1287,
+   "kat": "wand",
+   "name": "Rubble Door C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-tuer-c.json"
+  },
+  {
+   "id": "bk-bruch-tuer-d",
+   "version": 4,
+   "typ": 1288,
+   "kat": "wand",
+   "name": "Rubble Door D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-tuer-d.json"
+  },
+  {
+   "id": "bk-bruch-tuer-e",
+   "version": 4,
+   "typ": 1289,
+   "kat": "wand",
+   "name": "Rubble Door E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-tuer-e.json"
+  },
+  {
+   "id": "bk-bruch-tuer-f",
+   "version": 4,
+   "typ": 1290,
+   "kat": "wand",
+   "name": "Rubble Door F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-tuer-f.json"
+  },
+  {
+   "id": "bk-bruch-wand",
+   "version": 4,
+   "typ": 1305,
+   "kat": "wand",
+   "name": "Rubble Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand.json"
+  },
+  {
+   "id": "bk-bruch-wand-a",
+   "version": 4,
+   "typ": 1292,
+   "kat": "wand",
+   "name": "Rubble Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-a.json"
+  },
+  {
+   "id": "bk-bruch-wand-b",
+   "version": 4,
+   "typ": 1293,
+   "kat": "wand",
+   "name": "Rubble Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-b.json"
+  },
+  {
+   "id": "bk-bruch-wand-c",
+   "version": 4,
+   "typ": 1294,
+   "kat": "wand",
+   "name": "Rubble Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-c.json"
+  },
+  {
+   "id": "bk-bruch-wand-d",
+   "version": 4,
+   "typ": 1295,
+   "kat": "wand",
+   "name": "Rubble Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-d.json"
+  },
+  {
+   "id": "bk-bruch-wand-e",
+   "version": 4,
+   "typ": 1296,
+   "kat": "wand",
+   "name": "Rubble Wall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-e.json"
+  },
+  {
+   "id": "bk-bruch-wand-f",
+   "version": 4,
+   "typ": 1297,
+   "kat": "wand",
+   "name": "Rubble Wall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-f.json"
+  },
+  {
+   "id": "bk-bruch-wand-oben",
+   "version": 4,
+   "typ": 1304,
+   "kat": "wand",
+   "name": "Rubble Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-oben.json"
+  },
+  {
+   "id": "bk-bruch-wand-oben-a",
+   "version": 4,
+   "typ": 1298,
+   "kat": "wand",
+   "name": "Rubble Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-oben-a.json"
+  },
+  {
+   "id": "bk-bruch-wand-oben-b",
+   "version": 4,
+   "typ": 1299,
+   "kat": "wand",
+   "name": "Rubble Upper Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-oben-b.json"
+  },
+  {
+   "id": "bk-bruch-wand-oben-c",
+   "version": 4,
+   "typ": 1300,
+   "kat": "wand",
+   "name": "Rubble Upper Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-oben-c.json"
+  },
+  {
+   "id": "bk-bruch-wand-oben-d",
+   "version": 4,
+   "typ": 1301,
+   "kat": "wand",
+   "name": "Rubble Upper Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-oben-d.json"
+  },
+  {
+   "id": "bk-bruch-wand-oben-e",
+   "version": 4,
+   "typ": 1302,
+   "kat": "wand",
+   "name": "Rubble Upper Wall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-oben-e.json"
+  },
+  {
+   "id": "bk-bruch-wand-oben-f",
+   "version": 4,
+   "typ": 1303,
+   "kat": "wand",
+   "name": "Rubble Upper Wall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-bruch-wand-oben-f.json"
   },
   {
    "id": "bk-fachwerk-dach-ab-i",
@@ -4605,11 +5424,11 @@
   },
   {
    "id": "boden-weg",
-   "version": 1,
+   "version": 2,
    "typ": 6,
    "kat": "boden",
    "name": "Dirt Road",
-   "status": "geprueft",
+   "status": "skizze",
    "datei": "obj/boden-weg.json"
   },
   {
@@ -6000,38 +6819,38 @@
   },
   {
    "id": "fels-treppe-n",
-   "version": 1,
+   "version": 2,
    "typ": 298,
    "kat": "einrichtung",
    "name": "Rock Stairs",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/fels-treppe-n.json"
   },
   {
    "id": "fels-treppe-o",
-   "version": 1,
+   "version": 2,
    "typ": 299,
    "kat": "einrichtung",
    "name": "Rock Stairs",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/fels-treppe-o.json"
   },
   {
    "id": "fels-treppe-s",
-   "version": 1,
+   "version": 2,
    "typ": 297,
    "kat": "einrichtung",
    "name": "Rock Stairs",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/fels-treppe-s.json"
   },
   {
    "id": "fels-treppe-w",
-   "version": 1,
+   "version": 2,
    "typ": 300,
    "kat": "einrichtung",
    "name": "Rock Stairs",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/fels-treppe-w.json"
   },
   {
@@ -7323,11 +8142,11 @@
   },
   {
    "id": "lager-platz",
-   "version": 1,
+   "version": 2,
    "typ": 24,
    "kat": "einrichtung",
    "name": "Storage Spot",
-   "status": "geprueft",
+   "status": "uebernommen",
    "datei": "obj/lager-platz.json"
   },
   {
@@ -7386,7 +8205,7 @@
   },
   {
    "id": "markt-stand",
-   "version": 1,
+   "version": 2,
    "typ": 34,
    "kat": "einrichtung",
    "name": "Slave Market",
@@ -7395,7 +8214,7 @@
   },
   {
    "id": "mauer-gang",
-   "version": 1,
+   "version": 2,
    "typ": 311,
    "kat": "boden",
    "name": "Wall Walk",
@@ -7539,20 +8358,20 @@
   },
   {
    "id": "mauer-kante-i",
-   "version": 1,
+   "version": 2,
    "typ": 301,
    "kat": "einrichtung",
    "name": "Town Wall",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/mauer-kante-i.json"
   },
   {
    "id": "mauer-kante-j",
-   "version": 1,
+   "version": 2,
    "typ": 302,
    "kat": "einrichtung",
    "name": "Town Wall",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/mauer-kante-j.json"
   },
   {
@@ -10572,38 +11391,38 @@
   },
   {
    "id": "turm-kante-i",
-   "version": 1,
+   "version": 2,
    "typ": 303,
    "kat": "einrichtung",
    "name": "Wall Tower",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/turm-kante-i.json"
   },
   {
    "id": "turm-kante-j",
-   "version": 1,
+   "version": 2,
    "typ": 304,
    "kat": "einrichtung",
    "name": "Wall Tower",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/turm-kante-j.json"
   },
   {
    "id": "turm-scharte-i",
-   "version": 1,
+   "version": 2,
    "typ": 305,
    "kat": "einrichtung",
    "name": "Arrow Slit",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/turm-scharte-i.json"
   },
   {
    "id": "turm-scharte-j",
-   "version": 1,
+   "version": 2,
    "typ": 306,
    "kat": "einrichtung",
    "name": "Arrow Slit",
-   "status": "skizze",
+   "status": "uebernommen",
    "datei": "obj/turm-scharte-j.json"
   },
   {
