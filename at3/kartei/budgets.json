@@ -11,7 +11,7 @@
   "figuren": {"name": "Figuren, Tiere, Karren", "kats": ["figur", "tier", "karren"], "datei": 24576, "karte": {"stufen": [50, 500], "ms": 8}, "fp": {"stufen": [20, 100], "ms": 8}},
   "ware": {"name": "Ware", "kats": ["ware"], "datei": 4096, "karte": {"stufen": [100, 1000], "ms": 4}, "fp": null},
   "prunkbauten": {"name": "Prunkbauten (Thomas 23.11.2026)", "kats": [], "praefix": ["koenigspalast-"], "datei": 1048576, "bildspeicher": 4194304, "karte": {"stufen": [1, 4], "ms": 8}, "fp": {"stufen": [1, 4], "ms": 8}},
-  "anlagen": {"name": "Große Anlagen (Vorschlag AR1a)", "kats": ["anlage"], "datei": 1048576, "bildspeicher": 4194304, "karte": {"stufen": [1, 4], "ms": 8}, "fp": {"stufen": [1, 4], "ms": 8}},
+  "anlagen": {"name": "Große Anlagen (Vorschlag AR1a; N12j1: Datei 1,25 MB und Bildspeicher 5 MB für die rechteckige Sandgrube 25 × 17, Vorschlag zur Freigabe)", "kats": ["anlage"], "datei": 1310720, "bildspeicher": 5242880, "karte": {"stufen": [1, 4], "ms": 8}, "fp": {"stufen": [1, 4], "ms": 8}},
   "riesenanlagen": {"name": "Riesenanlagen (Vorschlag AR4)", "kats": [], "praefix": ["arena-amphitheater"], "datei": 6291456, "bildspeicher": 25165824, "karte": {"stufen": [1, 4], "ms": 8}, "fp": {"stufen": [1, 4], "ms": 8}}
  }
 }

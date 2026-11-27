@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1532,
+ "typMax": 1533,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -48,6 +48,15 @@
    "name": "Sand Pit",
    "status": "uebernommen",
    "datei": "obj/arena-sandgrube.json"
+  },
+  {
+   "id": "arena-sandgrube-viertel",
+   "version": 1,
+   "typ": 1533,
+   "kat": "anlage",
+   "name": "Sand Pit",
+   "status": "uebernommen",
+   "datei": "obj/arena-sandgrube-viertel.json"
   },
   {
    "id": "armoury",

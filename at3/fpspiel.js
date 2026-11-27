@@ -32,7 +32,7 @@ function ersatz(id){var s=S(),g=s.naechste(132,128,122,s.PALETTE),r=s.dunkler(g)
 // Ausschnitt beim Bildkern holen; ist der noch nicht bereit, kurz warten und nochmal fragen
 // AR1c2: Arena in voller Größe (Höhenfeld daten/arena-fp.json, einmal geladen; Notausschalter ?ar1c2=0: wie AR1c1, nur Häuschen und Schild)
 // AR4: je Art der Anlage ein eigenes Höhenfeld (Sandgrube daten/arena-fp.json, Great Amphitheatre daten/arena-fp-amphitheater.json), jedes einmal geladen
-var ANL_AUS=/[?&]ar1c2=0/.test(location.search),ANFP=null,ANFPS={},ANFP_LS={},ANFP_DATEI={'arena-amphitheater':'daten/arena-fp-amphitheater.json'};
+var ANL_AUS=/[?&]ar1c2=0/.test(location.search),ANFP=null,ANFPS={},ANFP_LS={},ANFP_DATEI={'arena-amphitheater':'daten/arena-fp-amphitheater.json','arena-sandgrube-viertel':'daten/arena-fp-viertel.json'};      // N12j1: Sandgrube mit Budenviertel
 function anlFp(){if(ANL_AUS||!P.o.anlage)return Promise.resolve(null);var A=P.o.anlage(),id=A&&A.id||'arena-sandgrube',datei=ANFP_DATEI[id]||'daten/arena-fp.json';ANFP=ANFPS[id]||null;if(ANFP_LS[id])return ANFP_LS[id];
  ANFP_LS[id]=(P.o.json?P.o.json(datei):fetch(datei).then(function(r){return r.ok?r.json():null})).then(function(j){ANFPS[id]=j&&j.format==='at3-arena-fp'?j:null;var B=P.o.anlage();if((B&&B.id||'arena-sandgrube')===id)ANFP=ANFPS[id];return ANFPS[id]}).catch(function(){return null});return ANFP_LS[id]}
 function anlDaten(){if(!P.o.anlage)return null;var A=P.o.anlage();if(!A||A.x<0)return null;ANFP=ANFPS[A.id||'arena-sandgrube']||null;if(!ANFP){anlFp();return null}var H=[];if(A.ein)H.push([A.ein[0],A.ein[1]]);if(A.aus)H.push([A.aus[0],A.aus[1]]);

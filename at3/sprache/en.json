@@ -404,6 +404,7 @@
   "att.grund.busy": "A fight is booked. The arena stays where it is until the sand is dry.",
   "att.grund.unplaced": "Place the arena first. A hut in a field is just a shed.",
   "att.grund.not_at_edge": "The hut has to stand right next to the arena wall.",
+  "att.grund.not_at_gate": "The hut belongs in front of the gate on the south side. Tap there and it finds its door.",
   "att.grund.small_arena": "This old game keeps its little arena. Big arenas come with new games only.",
   "att.grund.occupied": "Something is already there: a building, the market, the medicus or the other hut.",
   "att.grund.no_world": "The world is not ready yet.",

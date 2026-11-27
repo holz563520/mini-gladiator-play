@@ -18,7 +18,7 @@
 // Art und Bauzustand und schaltet in 1× das Dach auf/zu. Die Werkzeugleiste mit Wänden, Türen und Dach kommt mit G5c.
 (function(){
 'use strict';
-var V='2dc2b202', T_SKRIPT=performance.now(), S=window.AT3_64;
+var V='4e513875', T_SKRIPT=performance.now(), S=window.AT3_64;
 if(/[?&]mess=1\b/.test(location.search)){(function(){var s=document.createElement('script');s.src='messfeld.js?v='+V;document.head.appendChild(s)})()}   // N7a2b3: Messfeld der Weltkarte nur mit ?mess=1 (messfeld.js)
 var $=function(id){return document.getElementById(id)};
 var basis=location.pathname.replace(/[^/]*$/,'');
@@ -254,7 +254,8 @@ var BAUWZ={lager:{gr:'haus',bild:'📦',form:'rechteck',preis:1},werkstatt:{gr:'
  tuer:{gr:'werkzeug',bild:'🚪',form:'tipp',preis:1},pfadFuss:{gr:'werkzeug',bild:'🚶',form:'tipp',preis:0},pfadKarren:{gr:'werkzeug',bild:'🐂',form:'tipp',preis:0},abriss:{gr:'werkzeug',bild:'💥',form:'rechteck',preis:0}};   // G6b: Wegprobe (pfadFuss, pfadKarren)
 // Thomas 16.11.2026: wie 2.0 nur Boden ziehen, Wände, Dach und Tür kommen von selbst; von Hand nur Türen. Wandlinie, Dach und „Wände neu“ bleiben im Weltkern
 // (bauWaende, bauDach, bauHuelle) und in der Karte (Form „linie“), haben aber keinen Knopf.
-var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5}, WEG_NR={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4,warteweg:5}, ATT_WZ={arena:1,amphi:1,eingang:1,ausgang:1}, ANL_WZ={arena:['sandgrube',17],amphi:['amphitheater',47]}, MAXA=1024, MAXL=256;
+var BAUW=null, bauNr={}, bauVor=null, bauVorLaeuft=false, bauStand={gold:null,s:0}, ART_NR={lager:1,werkstatt:2,unterkunft:3,kueche:4,jagdhuette:5}, WEG_NR={trampelpfad:1,kiesweg:2,pflaster:3,steinstrasse:4,warteweg:5}, ATT_WZ={arena:1,amphi:1,eingang:1,ausgang:1}, ANL_WZ={arena:/[?&]arenaRechteck=0/.test(location.search)?['sandgrube',17,17]:['sandviertel',25,17],amphi:['amphitheater',47,47]},      // N12j1: Sandgrube als Rechteck 25 × 17 mit Budenviertel; Notausschalter ?arenaRechteck=0 (alter eckiger Platz)
+    MAXA=1024, MAXL=256;
 // ── G7 Waren und Arbeiter: Knopf „Goods“ (Bestände, Aufträge, stehende Baustellen mit Grund), Arbeiter antippen (Aufgabe, Last, Fähigkeiten, Rollen von Hand).
 // Alles kommt als fertige Zahlen vom Weltkern (Nachricht waren nur bei Änderung), der Hauptkern füllt nur die Liste, und nur wenn sie offen ist. ──
 var WAREN=null, PERSON=null;
@@ -326,9 +327,9 @@ var AR2C_AUS=/[?&]ar2c=0/.test(location.search);
 function skript(src,glob){return new Promise(function(ok,no){if(window[glob])return ok();var s=document.createElement('script');s.src=src+'?v='+V;s.onload=ok;s.onerror=function(){no(new Error(src))};document.head.appendChild(s)})}
 // AR4: Sitzplätze je Art der Anlage (Great Amphitheatre: arena-sitze-amphitheater.js, erst geladen, wenn dort Zuschauer sind)
 function besArenaPflegen(){if(AR2B_AUS||!KARTE||!KARTE.besucherArena)return;var A=GLAD&&GLAD.arena,B=A&&A.gross&&A.anlage&&A.bes;if(!B){if(besArenaPflegen.an){besArenaPflegen.an=false;KARTE.besucherArena(null)}return}
- var amphi=A.anlage.typ==='amphitheater',gl=amphi?'AT3SITZE_AMPHI':'AT3SITZE';
+ var amphi=A.anlage.typ==='amphitheater',gl=amphi?'AT3SITZE_AMPHI':'AT3SITZE',rechteck=A.anlage.typ==='sandviertel';
  if(!window[gl]||!window.AT3HERRSCHER){if(!BESL)BESL=Promise.all([skript(amphi?'arena-sitze-amphitheater.js':'arena-sitze.js',gl),skript('herrscher.js','AT3HERRSCHER')]).then(function(){BESL=null;besArenaPflegen()},function(e){BESL=null;console.warn('Zuschauer:',e)});return}
- besArenaPflegen.an=true;KARTE.besucherArena(A.anlage,window[gl])}
+ besArenaPflegen.an=true;KARTE.besucherArena(A.anlage,rechteck?window[gl].rechteck:window[gl])}      // N12j1: Plätze des Runds im Rechteck
 // Z4b: danach die Nahblätter für 2× und 4× (KA.knah btypen, volle 1.0-Figur ohne Waffen), auf 2× höchstens 4 je Auftrag, auf 4× einer; gezeichnet im Kampfkern
 function besucherNahPflegen(){var N=KARTE.besucherNahFehlt&&KARTE.besucherNahFehlt();if(!N)return;BESW=true;var teil=N.typen.slice(0,N.stufe===4?1:4);
  anschluss().then(function(KA){return KA.knah({btypen:teil,bseed:WSEED>>>0,ohneArbeit:true,stufe:N.stufe,lasten:false},'',V)}).then(function(R){if(KARTE)KARTE.besucherNahBlaetter(R)})
@@ -382,7 +383,7 @@ function anlageFest(A){if(!A||A.x<0)return[];spaetObjekt(A.id);var L=[{art:A.id,
  return L}
 function attTipp(f){if(!f||f.x==null){$('bauInfo').textContent=t('weg.tippLand');return}var AR=GLAD&&GLAD.arena;
  if(!AR){$('bauInfo').textContent=t('att.grund.no_world');return}
- if(ANL_WZ[BAUW]){var w=ANL_WZ[BAUW][1];KARTE.rahmen({x:f.x-(w>>1),y:f.y-(w>>1),w:w,h:w},null);KERN.befehl('arenaSetzen',{x:f.x,y:f.y,typ:ANL_WZ[BAUW][0]})}      // AR4: Art der Anlage (Sandgrube, Great Amphitheatre)
+ if(ANL_WZ[BAUW]){var w=ANL_WZ[BAUW][1],hh=ANL_WZ[BAUW][2];KARTE.rahmen({x:f.x-(w>>1),y:f.y-(hh>>1),w:w,h:hh},null);KERN.befehl('arenaSetzen',{x:f.x,y:f.y,typ:ANL_WZ[BAUW][0]})}      // AR4: Art der Anlage (Sandgrube, Great Amphitheatre)
  else KERN.befehl('arenaHaus',{art:BAUW==='eingang'?'ein':'aus',x:f.x,y:f.y});
  $('bauInfo').textContent=t('att.wartet');window.AT3SPIEL.attBefehl={art:BAUW,x:f.x,y:f.y}}
 function attText(g){var k='att.grund.'+g;return TXT[k]!=null?t(k):grundText(g)}

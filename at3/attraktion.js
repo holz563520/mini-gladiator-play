@@ -18,7 +18,11 @@ var DX=[0,-1,0,1], DY=[-1,0,1,0];                        // Seiten 0 Nord, 1 Wes
 var ANLAGEN={
  sandgrube:{id:'arena-sandgrube',w:17,h:17,feld:new Array(290).join('x')},   // seit 27.11.2026 (Thomas) eckiger Platz: die ganze Fläche 17 × 17 gehört zur Anlage
  // AR4 (Thomas 27.11.2026): Arena Stufe 4 „Great Amphitheatre“, eckiger Platz 47 × 47 wie die Sandgrube (= kartei arena-amphitheater, Test)
- amphitheater:{id:'arena-amphitheater',w:47,h:47,feld:new Array(47*47+1).join('x')}};
+ amphitheater:{id:'arena-amphitheater',w:47,h:47,feld:new Array(47*47+1).join('x')},
+ // N12j1 (Thomas 27.11.2026): Sandgrube als Rechteck 25 × 17 mit Budenviertel (= kartei arena-sandgrube-viertel, Test). Das Rund steht in der Mitte, die lange Seite
+ // liegt in Ost-West-Richtung. Doppeltor in der Mitte der Südseite: tor = Lage der Häuschen in Feldern neben der Mittelspalte (Eingang links vor IN, Ausgang rechts
+ // vor OUT), weit = so nah an der Mitte muss der Spieler tippen. Die alte Art sandgrube (eckiger Platz 17 × 17) bleibt für alte Spielstände und ?arenaRechteck=0.
+ sandviertel:{id:'arena-sandgrube-viertel',w:25,h:17,feld:new Array(25*17+1).join('x'),tor:{ein:-2,aus:2,weit:3}}};
 var HAUS=['ein','aus'];
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
 function rel(X,x0){var d=X-x0;if(d<-WX/2)d+=WX;else if(d>WX/2)d-=WX;return d}      // Abstand in x über die Naht
@@ -56,14 +60,16 @@ function alle(rec){var L=felder(ANLAGEN[rec.typ],rec.x,rec.y);HAUS.forEach(funct
 function seite(rec,X,Y){var A=ANLAGEN[rec.typ],best=-1,bd=1e9;
  for(var s=0;s<4;s++){var nx=um(X+DX[s]),ny=Y+DY[s];if(!innen(rec,nx,ny))continue;var dx=2*rel(nx,rec.x)-(A.w-1),dy=2*(ny-rec.y)-(A.h-1),d=dx*dx+dy*dy;if(d<bd){bd=d;best=s}}
  return best}
+// N12j1: Hat die Anlage ein festes Tor (ANLAGEN.tor), steht das Häuschen immer vor seiner Tür an der Südseite: Tippen vor dem Tor genügt, die Lage rastet ein.
 function hausPruefen(z,rec,art,X,Y){if(HAUS.indexOf(art)<0)return{ok:false,grund:'invalid'};if(rec.x<0)return{ok:false,grund:'unplaced'};X=um(X);
+ var T=ANLAGEN[rec.typ].tor;if(T){var mx=um(rec.x+(ANLAGEN[rec.typ].w>>1));if(Y!==rec.y+ANLAGEN[rec.typ].h||Math.abs(rel(X,mx))>T.weit)return{ok:false,grund:'not_at_gate',x:X,y:Y};X=um(mx+T[art])}
  var alt=rec[art],ander=rec[art==='ein'?'aus':'ein'];if(alt&&alt[0]===X&&alt[1]===Y)return{ok:false,grund:'nothing'};
  if(innen(rec,X,Y)||(ander&&ander[0]===X&&ander[1]===Y))return{ok:false,grund:'occupied',x:X,y:Y};
  var s=seite(rec,X,Y);if(s<0)return{ok:false,grund:'not_at_edge',x:X,y:Y};
  var g=BAU().anlageBoden(z,X,Y,new Map(),alt&&alt[0]===X&&alt[1]===Y?raum(rec):0);if(typeof g==='string')return{ok:false,grund:g,x:X,y:Y};
  if(g[1]-g[0]>1)return{ok:false,grund:'too_steep',x:X,y:Y};
- return{ok:true,grund:'',seite:s}}
-function hausSetzen(z,rec,art,X,Y){X=um(X);var p=hausPruefen(z,rec,art,X,Y);if(!p.ok)return p.grund;var r=raum(rec);
+ return{ok:true,grund:'',seite:s,x:X,y:Y}}
+function hausSetzen(z,rec,art,X,Y){X=um(X);var p=hausPruefen(z,rec,art,X,Y);if(!p.ok)return p.grund;var r=raum(rec);X=p.x;Y=p.y;
  if(rec[art])BAU().anlageLoeschen(z,[rec[art][0],rec[art][1]],r);
  BAU().anlageSchreiben(z,[X,Y],BAU().A_HAUS,r);rec[art]=[X,Y,p.seite];rec.v=-1;zustand(z,rec);return null}
 

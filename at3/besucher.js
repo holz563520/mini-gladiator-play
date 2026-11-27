@@ -26,7 +26,8 @@ function ATT(){return root.AT3ATT||(typeof module!=='undefined'&&module.exports?
 function PERS(){return root.AT3PERS||(typeof module!=='undefined'&&module.exports?require('./personen.js'):null)}
 // AR4: Sitzplätze je Art der Anlage (Sandgrube: arena-sitze.js, Great Amphitheatre: arena-sitze-amphitheater.js). TYP setzt jeder Einstieg (schritt, meld, ausStand, wechsel).
 var TYP='sandgrube';
-function SITZE(){var N=typeof module!=='undefined'&&module.exports;if(TYP==='amphitheater')return root.AT3SITZE_AMPHI||(N?require('./arena-sitze-amphitheater.js'):null);return root.AT3SITZE||(N?require('./arena-sitze.js'):null)}
+function SITZE(){var N=typeof module!=='undefined'&&module.exports;if(TYP==='sandviertel'){var S0=root.AT3SITZE||(N?require('./arena-sitze.js'):null);return S0?S0.rechteck:null}      // N12j1: dieselben Plätze, 4 Felder weiter rechts
+ if(TYP==='amphitheater')return root.AT3SITZE_AMPHI||(N?require('./arena-sitze-amphitheater.js'):null);return root.AT3SITZE||(N?require('./arena-sitze.js'):null)}
 var ST=64, WX=ST*9600, WY=ST*4800, M31=2147483647, STAND=1, MELD=9, TYPEN=60;
 // Vorschlagswerte (Ticks: 20 = 1 s)
 var ZUSCHAUER=40, TICKET=1, SPAWN=400, EIN=5, ABSTAND=128, SCHRITT_Q=13, WEIT=30, ORTE_MAX=3, GEHEN=400, MAX_V=2048, MAX_PF=4096;
