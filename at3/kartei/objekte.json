@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1130,
+ "typMax": 1214,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -894,6 +894,762 @@
    "name": "Ploughed Field",
    "status": "skizze",
    "datei": "obj/bk-feld.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i",
+   "version": 1,
+   "typ": 1131,
+   "kat": "dach",
+   "name": "Slate Right",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-a",
+   "version": 1,
+   "typ": 1132,
+   "kat": "dach",
+   "name": "Slate Right A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-a.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-b",
+   "version": 1,
+   "typ": 1133,
+   "kat": "dach",
+   "name": "Slate Right B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-b.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-c",
+   "version": 1,
+   "typ": 1134,
+   "kat": "dach",
+   "name": "Slate Right C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-c.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-d",
+   "version": 1,
+   "typ": 1135,
+   "kat": "dach",
+   "name": "Slate Right D",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-d.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-e",
+   "version": 1,
+   "typ": 1136,
+   "kat": "dach",
+   "name": "Slate Right E",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-e.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-f",
+   "version": 1,
+   "typ": 1137,
+   "kat": "dach",
+   "name": "Slate Right F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-f.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-k",
+   "version": 1,
+   "typ": 1138,
+   "kat": "dach",
+   "name": "Slate Right Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-k.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-kn",
+   "version": 1,
+   "typ": 1139,
+   "kat": "dach",
+   "name": "Slate Right Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-kn.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-ks",
+   "version": 1,
+   "typ": 1140,
+   "kat": "dach",
+   "name": "Slate Right Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-ks.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-n",
+   "version": 1,
+   "typ": 1141,
+   "kat": "dach",
+   "name": "Slate Right Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-n.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-r",
+   "version": 1,
+   "typ": 1142,
+   "kat": "dach",
+   "name": "Slate Right Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-r.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-rn",
+   "version": 1,
+   "typ": 1143,
+   "kat": "dach",
+   "name": "Slate Right Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-rn.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-rs",
+   "version": 1,
+   "typ": 1144,
+   "kat": "dach",
+   "name": "Slate Right Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-rs.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-i-s",
+   "version": 1,
+   "typ": 1145,
+   "kat": "dach",
+   "name": "Slate Right Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-i-s.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j",
+   "version": 1,
+   "typ": 1146,
+   "kat": "dach",
+   "name": "Slate Back",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-a",
+   "version": 1,
+   "typ": 1147,
+   "kat": "dach",
+   "name": "Slate Back A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-a.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-b",
+   "version": 1,
+   "typ": 1148,
+   "kat": "dach",
+   "name": "Slate Back B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-b.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-c",
+   "version": 1,
+   "typ": 1149,
+   "kat": "dach",
+   "name": "Slate Back C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-c.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-d",
+   "version": 1,
+   "typ": 1150,
+   "kat": "dach",
+   "name": "Slate Back D",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-d.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-e",
+   "version": 1,
+   "typ": 1151,
+   "kat": "dach",
+   "name": "Slate Back E",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-e.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-f",
+   "version": 1,
+   "typ": 1152,
+   "kat": "dach",
+   "name": "Slate Back F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-f.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-k",
+   "version": 1,
+   "typ": 1153,
+   "kat": "dach",
+   "name": "Slate Front Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-k.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-kn",
+   "version": 1,
+   "typ": 1154,
+   "kat": "dach",
+   "name": "Slate Front Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-kn.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-ks",
+   "version": 1,
+   "typ": 1155,
+   "kat": "dach",
+   "name": "Slate Front Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-ks.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-n",
+   "version": 1,
+   "typ": 1156,
+   "kat": "dach",
+   "name": "Slate Front Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-n.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-r",
+   "version": 1,
+   "typ": 1157,
+   "kat": "dach",
+   "name": "Slate Front Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-r.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-rn",
+   "version": 1,
+   "typ": 1158,
+   "kat": "dach",
+   "name": "Slate Front Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-rn.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-rs",
+   "version": 1,
+   "typ": 1159,
+   "kat": "dach",
+   "name": "Slate Front Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-rs.json"
+  },
+  {
+   "id": "bk-kueste-dach-ab-j-s",
+   "version": 1,
+   "typ": 1160,
+   "kat": "dach",
+   "name": "Slate Front Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-ab-j-s.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i",
+   "version": 1,
+   "typ": 1161,
+   "kat": "dach",
+   "name": "Slate Left",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-a",
+   "version": 1,
+   "typ": 1162,
+   "kat": "dach",
+   "name": "Slate Left A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-a.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-b",
+   "version": 1,
+   "typ": 1163,
+   "kat": "dach",
+   "name": "Slate Left B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-b.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-c",
+   "version": 1,
+   "typ": 1164,
+   "kat": "dach",
+   "name": "Slate Left C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-c.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-d",
+   "version": 1,
+   "typ": 1165,
+   "kat": "dach",
+   "name": "Slate Left D",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-d.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-e",
+   "version": 1,
+   "typ": 1166,
+   "kat": "dach",
+   "name": "Slate Left E",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-e.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-f",
+   "version": 1,
+   "typ": 1167,
+   "kat": "dach",
+   "name": "Slate Left F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-f.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-k",
+   "version": 1,
+   "typ": 1168,
+   "kat": "dach",
+   "name": "Slate Left Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-k.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-kn",
+   "version": 1,
+   "typ": 1169,
+   "kat": "dach",
+   "name": "Slate Left Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-kn.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-ks",
+   "version": 1,
+   "typ": 1170,
+   "kat": "dach",
+   "name": "Slate Left Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-ks.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-n",
+   "version": 1,
+   "typ": 1171,
+   "kat": "dach",
+   "name": "Slate Left Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-n.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-r",
+   "version": 1,
+   "typ": 1172,
+   "kat": "dach",
+   "name": "Slate Left Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-r.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-rn",
+   "version": 1,
+   "typ": 1173,
+   "kat": "dach",
+   "name": "Slate Left Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-rn.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-rs",
+   "version": 1,
+   "typ": 1174,
+   "kat": "dach",
+   "name": "Slate Left Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-rs.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-i-s",
+   "version": 1,
+   "typ": 1175,
+   "kat": "dach",
+   "name": "Slate Left Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-i-s.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j",
+   "version": 1,
+   "typ": 1176,
+   "kat": "dach",
+   "name": "Slate Front",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-a",
+   "version": 1,
+   "typ": 1177,
+   "kat": "dach",
+   "name": "Slate Front A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-a.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-b",
+   "version": 1,
+   "typ": 1178,
+   "kat": "dach",
+   "name": "Slate Front B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-b.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-c",
+   "version": 1,
+   "typ": 1179,
+   "kat": "dach",
+   "name": "Slate Front C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-c.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-d",
+   "version": 1,
+   "typ": 1180,
+   "kat": "dach",
+   "name": "Slate Front D",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-d.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-e",
+   "version": 1,
+   "typ": 1181,
+   "kat": "dach",
+   "name": "Slate Front E",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-e.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-f",
+   "version": 1,
+   "typ": 1182,
+   "kat": "dach",
+   "name": "Slate Front F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-f.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-k",
+   "version": 1,
+   "typ": 1183,
+   "kat": "dach",
+   "name": "Slate Rear Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-k.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-kn",
+   "version": 1,
+   "typ": 1184,
+   "kat": "dach",
+   "name": "Slate Rear Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-kn.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-ks",
+   "version": 1,
+   "typ": 1185,
+   "kat": "dach",
+   "name": "Slate Rear Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-ks.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-n",
+   "version": 1,
+   "typ": 1186,
+   "kat": "dach",
+   "name": "Slate Rear Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-n.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-r",
+   "version": 1,
+   "typ": 1187,
+   "kat": "dach",
+   "name": "Slate Rear Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-r.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-rn",
+   "version": 1,
+   "typ": 1188,
+   "kat": "dach",
+   "name": "Slate Rear Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-rn.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-rs",
+   "version": 1,
+   "typ": 1189,
+   "kat": "dach",
+   "name": "Slate Rear Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-rs.json"
+  },
+  {
+   "id": "bk-kueste-dach-auf-j-s",
+   "version": 1,
+   "typ": 1190,
+   "kat": "dach",
+   "name": "Slate Rear Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-auf-j-s.json"
+  },
+  {
+   "id": "bk-kueste-dach-flach",
+   "version": 1,
+   "typ": 1191,
+   "kat": "dach",
+   "name": "Slate Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-flach.json"
+  },
+  {
+   "id": "bk-kueste-dach-flach-a",
+   "version": 1,
+   "typ": 1192,
+   "kat": "dach",
+   "name": "Slate Flat A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-flach-a.json"
+  },
+  {
+   "id": "bk-kueste-dach-flach-b",
+   "version": 1,
+   "typ": 1193,
+   "kat": "dach",
+   "name": "Slate Flat B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-flach-b.json"
+  },
+  {
+   "id": "bk-kueste-dach-flach-c",
+   "version": 1,
+   "typ": 1194,
+   "kat": "dach",
+   "name": "Slate Flat C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-flach-c.json"
+  },
+  {
+   "id": "bk-kueste-dach-flach-d",
+   "version": 1,
+   "typ": 1195,
+   "kat": "dach",
+   "name": "Slate Flat D",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-flach-d.json"
+  },
+  {
+   "id": "bk-kueste-dach-flach-e",
+   "version": 1,
+   "typ": 1196,
+   "kat": "dach",
+   "name": "Slate Flat E",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-flach-e.json"
+  },
+  {
+   "id": "bk-kueste-dach-flach-f",
+   "version": 1,
+   "typ": 1197,
+   "kat": "dach",
+   "name": "Slate Flat F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-dach-flach-f.json"
+  },
+  {
+   "id": "bk-kueste-fenster",
+   "version": 1,
+   "typ": 1198,
+   "kat": "wand",
+   "name": "Fishhouse Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-fenster.json"
+  },
+  {
+   "id": "bk-kueste-fenster-a",
+   "version": 1,
+   "typ": 1199,
+   "kat": "wand",
+   "name": "Fishhouse Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-fenster-a.json"
+  },
+  {
+   "id": "bk-kueste-fenster-b",
+   "version": 1,
+   "typ": 1200,
+   "kat": "wand",
+   "name": "Fishhouse Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-fenster-b.json"
+  },
+  {
+   "id": "bk-kueste-fenster-d",
+   "version": 1,
+   "typ": 1201,
+   "kat": "wand",
+   "name": "Fishhouse Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-fenster-d.json"
+  },
+  {
+   "id": "bk-kueste-giebel",
+   "version": 1,
+   "typ": 1202,
+   "kat": "wand",
+   "name": "Fishhouse Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel.json"
+  },
+  {
+   "id": "bk-kueste-giebel-ab",
+   "version": 1,
+   "typ": 1203,
+   "kat": "wand",
+   "name": "Fishhouse Gable Peak (down)",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-ab.json"
+  },
+  {
+   "id": "bk-kueste-giebel-auf",
+   "version": 1,
+   "typ": 1204,
+   "kat": "wand",
+   "name": "Fishhouse Gable Peak (up)",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-auf.json"
+  },
+  {
+   "id": "bk-kueste-tuer",
+   "version": 1,
+   "typ": 1205,
+   "kat": "wand",
+   "name": "Fishhouse Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-tuer.json"
+  },
+  {
+   "id": "bk-kueste-tuer-a",
+   "version": 1,
+   "typ": 1206,
+   "kat": "wand",
+   "name": "Fishhouse Door A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-tuer-a.json"
+  },
+  {
+   "id": "bk-kueste-wand",
+   "version": 1,
+   "typ": 1207,
+   "kat": "wand",
+   "name": "Fishhouse Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand.json"
+  },
+  {
+   "id": "bk-kueste-wand-a",
+   "version": 1,
+   "typ": 1208,
+   "kat": "wand",
+   "name": "Fishhouse Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-a.json"
+  },
+  {
+   "id": "bk-kueste-wand-b",
+   "version": 1,
+   "typ": 1209,
+   "kat": "wand",
+   "name": "Fishhouse Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-b.json"
+  },
+  {
+   "id": "bk-kueste-wand-d",
+   "version": 1,
+   "typ": 1210,
+   "kat": "wand",
+   "name": "Fishhouse Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-d.json"
+  },
+  {
+   "id": "bk-kueste-wand-oben",
+   "version": 1,
+   "typ": 1211,
+   "kat": "wand",
+   "name": "Fishhouse Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-oben.json"
+  },
+  {
+   "id": "bk-kueste-wand-oben-a",
+   "version": 1,
+   "typ": 1212,
+   "kat": "wand",
+   "name": "Fishhouse Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-oben-a.json"
+  },
+  {
+   "id": "bk-kueste-wand-oben-b",
+   "version": 1,
+   "typ": 1213,
+   "kat": "wand",
+   "name": "Fishhouse Upper Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-oben-b.json"
+  },
+  {
+   "id": "bk-kueste-wand-oben-d",
+   "version": 1,
+   "typ": 1214,
+   "kat": "wand",
+   "name": "Fishhouse Upper Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-oben-d.json"
   },
   {
    "id": "bk-lehm-boden",
