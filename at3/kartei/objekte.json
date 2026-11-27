@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 979,
+ "typMax": 1051,
  "objekte": [
   {
    "id": "arena-ausgang",
@@ -41,6 +41,15 @@
    "datei": "obj/arena-sandgrube.json"
   },
   {
+   "id": "armoury",
+   "version": 1,
+   "typ": 973,
+   "kat": "anlage",
+   "name": "Armoury",
+   "status": "uebernommen",
+   "datei": "obj/armoury.json"
+  },
+  {
    "id": "bacchant-ranke",
    "version": 1,
    "typ": 692,
@@ -66,6 +75,15 @@
    "name": "Bacchant Vine (altar)",
    "status": "uebernommen",
    "datei": "obj/bacchant-ranke-b.json"
+  },
+  {
+   "id": "barracks",
+   "version": 1,
+   "typ": 972,
+   "kat": "anlage",
+   "name": "Barracks",
+   "status": "uebernommen",
+   "datei": "obj/barracks.json"
   },
   {
    "id": "baum-akazie",
@@ -203,6 +221,15 @@
    "datei": "obj/baum-zypresse.json"
   },
   {
+   "id": "beastrium",
+   "version": 1,
+   "typ": 965,
+   "kat": "anlage",
+   "name": "Beastrium",
+   "status": "uebernommen",
+   "datei": "obj/beastrium.json"
+  },
+  {
    "id": "bett-stroh",
    "version": 1,
    "typ": 26,
@@ -210,6 +237,654 @@
    "name": "Straw Bed",
    "status": "geprueft",
    "datei": "obj/bett-stroh.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-i",
+   "version": 1,
+   "typ": 980,
+   "kat": "dach",
+   "name": "Shingled Roof Slope, Right",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-i.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j",
+   "version": 1,
+   "typ": 981,
+   "kat": "dach",
+   "name": "Shingled Roof Slope, Front",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-a",
+   "version": 1,
+   "typ": 982,
+   "kat": "dach",
+   "name": "Shingle Front A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-b",
+   "version": 1,
+   "typ": 983,
+   "kat": "dach",
+   "name": "Shingle Front B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-c",
+   "version": 1,
+   "typ": 984,
+   "kat": "dach",
+   "name": "Shingle Front C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-d",
+   "version": 1,
+   "typ": 985,
+   "kat": "dach",
+   "name": "Shingle Front D",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-d.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-e",
+   "version": 1,
+   "typ": 986,
+   "kat": "dach",
+   "name": "Shingle Front E",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-e.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-f",
+   "version": 1,
+   "typ": 987,
+   "kat": "dach",
+   "name": "Shingle Front F",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-f.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-k",
+   "version": 1,
+   "typ": 988,
+   "kat": "dach",
+   "name": "Shingle Front Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-k.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-k-a",
+   "version": 1,
+   "typ": 989,
+   "kat": "dach",
+   "name": "Shingle Front Ridge A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-k-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-k-b",
+   "version": 1,
+   "typ": 990,
+   "kat": "dach",
+   "name": "Shingle Front Ridge B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-k-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-k-c",
+   "version": 1,
+   "typ": 991,
+   "kat": "dach",
+   "name": "Shingle Front Ridge C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-k-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-kn",
+   "version": 1,
+   "typ": 992,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-kn.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-kn-a",
+   "version": 1,
+   "typ": 993,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-kn-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-kn-b",
+   "version": 1,
+   "typ": 994,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-kn-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-kn-c",
+   "version": 1,
+   "typ": 995,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-kn-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-ks",
+   "version": 1,
+   "typ": 996,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-ks.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-ks-a",
+   "version": 1,
+   "typ": 997,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-ks-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-ks-b",
+   "version": 1,
+   "typ": 998,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-ks-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-ks-c",
+   "version": 1,
+   "typ": 999,
+   "kat": "dach",
+   "name": "Shingle Front Ridge+Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-ks-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-n",
+   "version": 1,
+   "typ": 1000,
+   "kat": "dach",
+   "name": "Shingle Front Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-n.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-n-a",
+   "version": 1,
+   "typ": 1001,
+   "kat": "dach",
+   "name": "Shingle Front Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-n-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-n-b",
+   "version": 1,
+   "typ": 1002,
+   "kat": "dach",
+   "name": "Shingle Front Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-n-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-n-c",
+   "version": 1,
+   "typ": 1003,
+   "kat": "dach",
+   "name": "Shingle Front Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-n-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-r",
+   "version": 1,
+   "typ": 1004,
+   "kat": "dach",
+   "name": "Shingle Front Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-r.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-r-a",
+   "version": 1,
+   "typ": 1005,
+   "kat": "dach",
+   "name": "Shingle Front Eave A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-r-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-r-b",
+   "version": 1,
+   "typ": 1006,
+   "kat": "dach",
+   "name": "Shingle Front Eave B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-r-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-r-c",
+   "version": 1,
+   "typ": 1007,
+   "kat": "dach",
+   "name": "Shingle Front Eave C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-r-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-rn",
+   "version": 1,
+   "typ": 1008,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-rn.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-rn-a",
+   "version": 1,
+   "typ": 1009,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-rn-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-rn-b",
+   "version": 1,
+   "typ": 1010,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-rn-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-rn-c",
+   "version": 1,
+   "typ": 1011,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-rn-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-rs",
+   "version": 1,
+   "typ": 1012,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-rs.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-rs-a",
+   "version": 1,
+   "typ": 1013,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-rs-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-rs-b",
+   "version": 1,
+   "typ": 1014,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-rs-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-rs-c",
+   "version": 1,
+   "typ": 1015,
+   "kat": "dach",
+   "name": "Shingle Front Eave+Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-rs-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-s",
+   "version": 1,
+   "typ": 1016,
+   "kat": "dach",
+   "name": "Shingle Front Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-s.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-s-a",
+   "version": 1,
+   "typ": 1017,
+   "kat": "dach",
+   "name": "Shingle Front Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-s-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-s-b",
+   "version": 1,
+   "typ": 1018,
+   "kat": "dach",
+   "name": "Shingle Front Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-s-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-ab-j-s-c",
+   "version": 1,
+   "typ": 1019,
+   "kat": "dach",
+   "name": "Shingle Front Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-ab-j-s-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-i",
+   "version": 1,
+   "typ": 1020,
+   "kat": "dach",
+   "name": "Shingled Roof Slope, Left",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-i.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j",
+   "version": 1,
+   "typ": 1021,
+   "kat": "dach",
+   "name": "Shingled Roof Slope, Rear",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-a",
+   "version": 1,
+   "typ": 1022,
+   "kat": "dach",
+   "name": "Shingle Rear A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-a.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-b",
+   "version": 1,
+   "typ": 1023,
+   "kat": "dach",
+   "name": "Shingle Rear B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-b.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-c",
+   "version": 1,
+   "typ": 1024,
+   "kat": "dach",
+   "name": "Shingle Rear C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-c.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-d",
+   "version": 1,
+   "typ": 1025,
+   "kat": "dach",
+   "name": "Shingle Rear D",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-d.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-k",
+   "version": 1,
+   "typ": 1026,
+   "kat": "dach",
+   "name": "Shingle Rear K",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-k.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-kn",
+   "version": 1,
+   "typ": 1027,
+   "kat": "dach",
+   "name": "Shingle Rear KN",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-kn.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-ks",
+   "version": 1,
+   "typ": 1028,
+   "kat": "dach",
+   "name": "Shingle Rear KS",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-ks.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-n",
+   "version": 1,
+   "typ": 1029,
+   "kat": "dach",
+   "name": "Shingle Rear N",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-n.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-r",
+   "version": 1,
+   "typ": 1030,
+   "kat": "dach",
+   "name": "Shingle Rear R",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-r.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-rn",
+   "version": 1,
+   "typ": 1031,
+   "kat": "dach",
+   "name": "Shingle Rear RN",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-rn.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-rs",
+   "version": 1,
+   "typ": 1032,
+   "kat": "dach",
+   "name": "Shingle Rear RS",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-rs.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-auf-j-s",
+   "version": 1,
+   "typ": 1033,
+   "kat": "dach",
+   "name": "Shingle Rear S",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-auf-j-s.json"
+  },
+  {
+   "id": "bk-fachwerk-dach-flach",
+   "version": 1,
+   "typ": 1034,
+   "kat": "dach",
+   "name": "Shingled Roof, Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-dach-flach.json"
+  },
+  {
+   "id": "bk-fachwerk-fenster",
+   "version": 1,
+   "typ": 1035,
+   "kat": "wand",
+   "name": "Half-Timbered Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-fenster.json"
+  },
+  {
+   "id": "bk-fachwerk-fenster-a",
+   "version": 1,
+   "typ": 1036,
+   "kat": "wand",
+   "name": "Half-Timbered Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-fenster-a.json"
+  },
+  {
+   "id": "bk-fachwerk-fenster-b",
+   "version": 1,
+   "typ": 1037,
+   "kat": "wand",
+   "name": "Half-Timbered Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-fenster-b.json"
+  },
+  {
+   "id": "bk-fachwerk-fenster-d",
+   "version": 1,
+   "typ": 1038,
+   "kat": "wand",
+   "name": "Half-Timbered Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-fenster-d.json"
+  },
+  {
+   "id": "bk-fachwerk-giebel",
+   "version": 1,
+   "typ": 1039,
+   "kat": "wand",
+   "name": "Half-Timbered Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-giebel.json"
+  },
+  {
+   "id": "bk-fachwerk-giebel-a",
+   "version": 1,
+   "typ": 1040,
+   "kat": "wand",
+   "name": "Half-Timbered Gable A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-giebel-a.json"
+  },
+  {
+   "id": "bk-fachwerk-giebel-ab",
+   "version": 1,
+   "typ": 1041,
+   "kat": "wand",
+   "name": "Half-Timbered Gable Peak (down)",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-giebel-ab.json"
+  },
+  {
+   "id": "bk-fachwerk-giebel-auf",
+   "version": 1,
+   "typ": 1042,
+   "kat": "wand",
+   "name": "Half-Timbered Gable Peak (up)",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-giebel-auf.json"
+  },
+  {
+   "id": "bk-fachwerk-giebel-b",
+   "version": 1,
+   "typ": 1043,
+   "kat": "wand",
+   "name": "Half-Timbered Gable B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-giebel-b.json"
+  },
+  {
+   "id": "bk-fachwerk-giebel-c",
+   "version": 1,
+   "typ": 1044,
+   "kat": "wand",
+   "name": "Half-Timbered Gable C",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-giebel-c.json"
+  },
+  {
+   "id": "bk-fachwerk-tuer",
+   "version": 1,
+   "typ": 1045,
+   "kat": "wand",
+   "name": "Half-Timbered Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-tuer.json"
+  },
+  {
+   "id": "bk-fachwerk-wand",
+   "version": 1,
+   "typ": 1046,
+   "kat": "wand",
+   "name": "Half-Timbered Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-wand.json"
+  },
+  {
+   "id": "bk-fachwerk-wand-a",
+   "version": 1,
+   "typ": 1047,
+   "kat": "wand",
+   "name": "Half-Timbered Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-wand-a.json"
+  },
+  {
+   "id": "bk-fachwerk-wand-b",
+   "version": 1,
+   "typ": 1048,
+   "kat": "wand",
+   "name": "Half-Timbered Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-wand-b.json"
+  },
+  {
+   "id": "bk-fachwerk-wand-d",
+   "version": 1,
+   "typ": 1049,
+   "kat": "wand",
+   "name": "Half-Timbered Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-wand-d.json"
+  },
+  {
+   "id": "bk-fachwerk-wand-oben",
+   "version": 1,
+   "typ": 1050,
+   "kat": "wand",
+   "name": "Half-Timbered Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-wand-oben.json"
+  },
+  {
+   "id": "bk-fachwerk-wand-oben-a",
+   "version": 1,
+   "typ": 1051,
+   "kat": "wand",
+   "name": "Half-Timbered Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-fachwerk-wand-oben-a.json"
   },
   {
    "id": "bk-feld",
@@ -3893,6 +4568,15 @@
    "datei": "obj/fels-treppe-w.json"
   },
   {
+   "id": "fighting-pit",
+   "version": 1,
+   "typ": 967,
+   "kat": "anlage",
+   "name": "Fighting Pit",
+   "status": "uebernommen",
+   "datei": "obj/fighting-pit.json"
+  },
+  {
    "id": "figur-arbeiter",
    "version": 2,
    "typ": 30,
@@ -4575,6 +5259,15 @@
    "name": "Felled Grove Tree",
    "status": "uebernommen",
    "datei": "obj/hain-stumpf.json"
+  },
+  {
+   "id": "hall-of-fallen",
+   "version": 1,
+   "typ": 968,
+   "kat": "anlage",
+   "name": "Hall of the Fallen",
+   "status": "uebernommen",
+   "datei": "obj/hall-of-fallen.json"
   },
   {
    "id": "hof-cottage-1-nord",
@@ -6089,6 +6782,15 @@
    "datei": "obj/medicus.json"
   },
   {
+   "id": "menagerie",
+   "version": 1,
+   "typ": 966,
+   "kat": "anlage",
+   "name": "Menagerie",
+   "status": "uebernommen",
+   "datei": "obj/menagerie.json"
+  },
+  {
    "id": "mine-erzhalde",
    "version": 1,
    "typ": 795,
@@ -7223,6 +7925,60 @@
    "datei": "obj/posten-zubehoer-wasch-3-sued.json"
   },
   {
+   "id": "queue-path",
+   "version": 1,
+   "typ": 974,
+   "kat": "boden",
+   "name": "Queue Path",
+   "status": "skizze",
+   "datei": "obj/queue-path.json"
+  },
+  {
+   "id": "queue-path-a",
+   "version": 1,
+   "typ": 975,
+   "kat": "boden",
+   "name": "Queue Path A",
+   "status": "skizze",
+   "datei": "obj/queue-path-a.json"
+  },
+  {
+   "id": "queue-path-b",
+   "version": 1,
+   "typ": 976,
+   "kat": "boden",
+   "name": "Queue Path B",
+   "status": "skizze",
+   "datei": "obj/queue-path-b.json"
+  },
+  {
+   "id": "queue-path-c",
+   "version": 1,
+   "typ": 977,
+   "kat": "boden",
+   "name": "Queue Path C",
+   "status": "skizze",
+   "datei": "obj/queue-path-c.json"
+  },
+  {
+   "id": "queue-path-j",
+   "version": 1,
+   "typ": 978,
+   "kat": "boden",
+   "name": "Queue Path Across",
+   "status": "skizze",
+   "datei": "obj/queue-path-j.json"
+  },
+  {
+   "id": "queue-path-j-a",
+   "version": 1,
+   "typ": 979,
+   "kat": "boden",
+   "name": "Queue Path Across A",
+   "status": "skizze",
+   "datei": "obj/queue-path-j-a.json"
+  },
+  {
    "id": "rebstock",
    "version": 1,
    "typ": 686,
@@ -7392,6 +8148,24 @@
    "name": "Senate E",
    "status": "uebernommen",
    "datei": "obj/senat-vorn-i.json"
+  },
+  {
+   "id": "slave-market",
+   "version": 1,
+   "typ": 969,
+   "kat": "anlage",
+   "name": "Slave Market",
+   "status": "uebernommen",
+   "datei": "obj/slave-market.json"
+  },
+  {
+   "id": "stands-wood",
+   "version": 1,
+   "typ": 970,
+   "kat": "anlage",
+   "name": "Extra Stands",
+   "status": "uebernommen",
+   "datei": "obj/stands-wood.json"
   },
   {
    "id": "statthalter-banner-ohne",
@@ -8303,6 +9077,15 @@
    "datei": "obj/torhaus-spiesse-j-a.json"
   },
   {
+   "id": "training-yard",
+   "version": 1,
+   "typ": 971,
+   "kat": "anlage",
+   "name": "Training Yard",
+   "status": "uebernommen",
+   "datei": "obj/training-yard.json"
+  },
+  {
    "id": "turm-eingang-i",
    "version": 1,
    "typ": 343,
@@ -8535,141 +9318,6 @@
    "name": "Workbench",
    "status": "geprueft",
    "datei": "obj/werk-bank.json"
-  },
-  {
-   "id": "beastrium",
-   "version": 1,
-   "typ": 965,
-   "kat": "anlage",
-   "name": "Beastrium",
-   "status": "uebernommen",
-   "datei": "obj/beastrium.json"
-  },
-  {
-   "id": "menagerie",
-   "version": 1,
-   "typ": 966,
-   "kat": "anlage",
-   "name": "Menagerie",
-   "status": "uebernommen",
-   "datei": "obj/menagerie.json"
-  },
-  {
-   "id": "fighting-pit",
-   "version": 1,
-   "typ": 967,
-   "kat": "anlage",
-   "name": "Fighting Pit",
-   "status": "uebernommen",
-   "datei": "obj/fighting-pit.json"
-  },
-  {
-   "id": "hall-of-fallen",
-   "version": 1,
-   "typ": 968,
-   "kat": "anlage",
-   "name": "Hall of the Fallen",
-   "status": "uebernommen",
-   "datei": "obj/hall-of-fallen.json"
-  },
-  {
-   "id": "slave-market",
-   "version": 1,
-   "typ": 969,
-   "kat": "anlage",
-   "name": "Slave Market",
-   "status": "uebernommen",
-   "datei": "obj/slave-market.json"
-  },
-  {
-   "id": "stands-wood",
-   "version": 1,
-   "typ": 970,
-   "kat": "anlage",
-   "name": "Extra Stands",
-   "status": "uebernommen",
-   "datei": "obj/stands-wood.json"
-  },
-  {
-   "id": "training-yard",
-   "version": 1,
-   "typ": 971,
-   "kat": "anlage",
-   "name": "Training Yard",
-   "status": "uebernommen",
-   "datei": "obj/training-yard.json"
-  },
-  {
-   "id": "barracks",
-   "version": 1,
-   "typ": 972,
-   "kat": "anlage",
-   "name": "Barracks",
-   "status": "uebernommen",
-   "datei": "obj/barracks.json"
-  },
-  {
-   "id": "armoury",
-   "version": 1,
-   "typ": 973,
-   "kat": "anlage",
-   "name": "Armoury",
-   "status": "uebernommen",
-   "datei": "obj/armoury.json"
-  },
-  {
-   "id": "queue-path",
-   "version": 1,
-   "typ": 974,
-   "kat": "boden",
-   "name": "Queue Path",
-   "status": "skizze",
-   "datei": "obj/queue-path.json"
-  },
-  {
-   "id": "queue-path-a",
-   "version": 1,
-   "typ": 975,
-   "kat": "boden",
-   "name": "Queue Path A",
-   "status": "skizze",
-   "datei": "obj/queue-path-a.json"
-  },
-  {
-   "id": "queue-path-b",
-   "version": 1,
-   "typ": 976,
-   "kat": "boden",
-   "name": "Queue Path B",
-   "status": "skizze",
-   "datei": "obj/queue-path-b.json"
-  },
-  {
-   "id": "queue-path-c",
-   "version": 1,
-   "typ": 977,
-   "kat": "boden",
-   "name": "Queue Path C",
-   "status": "skizze",
-   "datei": "obj/queue-path-c.json"
-  },
-  {
-   "id": "queue-path-j",
-   "version": 1,
-   "typ": 978,
-   "kat": "boden",
-   "name": "Queue Path Across",
-   "status": "skizze",
-   "datei": "obj/queue-path-j.json"
-  },
-  {
-   "id": "queue-path-j-a",
-   "version": 1,
-   "typ": 979,
-   "kat": "boden",
-   "name": "Queue Path Across A",
-   "status": "skizze",
-   "datei": "obj/queue-path-j-a.json"
   }
  ]
 }
