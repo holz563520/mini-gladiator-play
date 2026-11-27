@@ -16,10 +16,7 @@ var ST=64, WX=ST*9600, WY=ST*4800, MAX_SCHLANGE=256, WEG_Q=5;
 var DX=[0,-1,0,1], DY=[-1,0,1,0];                        // Seiten 0 Nord, 1 West, 2 Süd, 3 Ost
 // Tafel der Anlagen: Kennung in der Kartei, Fläche, Fußabdruck (x = gesperrt, f = frei, Zeile für Zeile von Nord nach Süd)
 var ANLAGEN={
- sandgrube:{id:'arena-sandgrube',w:17,h:17,feld:
-  'ffffffxxxxxffffff'+'ffffxxxxxxxxxffff'+'fffxxxxxxxxxxxfff'+'ffxxxxxxxxxxxxxff'+'fxxxxxxxxxxxxxxxf'+'fxxxxxxxxxxxxxxxf'+
-  'xxxxxxxxxxxxxxxxx'+'xxxxxxxxxxxxxxxxx'+'xxxxxxxxxxxxxxxxx'+'xxxxxxxxxxxxxxxxx'+'xxxxxxxxxxxxxxxxx'+
-  'fxxxxxxxxxxxxxxxf'+'fxxxxxxxxxxxxxxxf'+'ffxxxxxxxxxxxxxff'+'fffxxxxxxxxxxxfff'+'ffffxxxxxxxxxffff'+'ffffffxxxxxffffff'}};
+ sandgrube:{id:'arena-sandgrube',w:17,h:17,feld:new Array(290).join('x')}};   // seit 27.11.2026 (Thomas) eckiger Platz: die ganze Fläche 17 × 17 gehört zur Anlage
 var HAUS=['ein','aus'];
 function um(X){return X<0?X+WX:X>=WX?X-WX:X}
 function rel(X,x0){var d=X-x0;if(d<-WX/2)d+=WX;else if(d>WX/2)d-=WX;return d}      // Abstand in x über die Naht
