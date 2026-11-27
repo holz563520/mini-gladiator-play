@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bären-Editor (Testversion): Sorten, Körper, Messung</title>
+<style>
+:root{--bg:#1d1711;--panel:#2a2119;--line:#4a3a2a;--ink:#e9dcc0;--dim:#a8977a;--gold:#d2a550;--red:#b5402f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Georgia,'Times New Roman',serif}
+header{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:18px;margin:0;color:var(--gold)}
+header small{color:var(--dim)}
+nav{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:2}
+button,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:8px 12px;min-height:40px;cursor:pointer}
+button.on{background:var(--gold);color:#1d1711;border-color:var(--gold)}
+main{padding:12px 14px;max-width:1100px;margin:0 auto}
+section{display:none}section.on{display:block}
+h2{font-size:16px;color:var(--gold);margin:16px 0 6px}
+.kacheln{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.kachel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center;cursor:pointer;min-height:118px}
+.kachel.leer{opacity:.55}
+.kachel.on{border-color:var(--gold)}
+.kachel canvas{display:block;margin:0 auto;image-rendering:pixelated}
+.kachel b{display:block;font-size:13px}
+.kachel span{font-size:12px;color:var(--dim)}
+.kopf{color:var(--red);letter-spacing:1px}
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;margin:10px 0;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.detail canvas{image-rendering:pixelated;max-width:100%}
+.detail p{margin:4px 0}.detail i{color:var(--dim)}
+.buehne{width:100%;max-width:820px;background:#cdbb96;border:1px solid var(--line);border-radius:6px;display:block;image-rendering:pixelated}
+.reihe{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;align-items:center}
+.spalten{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.regler label{display:grid;grid-template-columns:120px 1fr 48px;gap:6px;align-items:center;font-size:13px;margin:3px 0}
+.regler input[type=range]{width:100%}
+.balken{display:grid;grid-template-columns:110px 1fr 70px;gap:6px;align-items:center;font-size:13px;margin:3px 0}
+.balken div{position:relative;height:14px;background:#17120d;border:1px solid var(--line)}
+.balken div i{position:absolute;left:0;top:0;bottom:0;background:#7d6a45}
+.balken div b{position:absolute;left:0;top:3px;bottom:3px;background:var(--gold)}
+.balken div u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+textarea{width:100%;height:70px;background:#17120d;color:var(--ink);border:1px solid var(--line);font:12px monospace}
+table{border-collapse:collapse;font-size:14px}td,th{border:1px solid var(--line);padding:4px 8px;text-align:right}th{color:var(--gold)}
+.hinweis{color:var(--dim);font-size:13px}
+</style>
+</head>
+<body>
+<header><h1>Bären-Editor</h1><small>Testversion · Bedienung Deutsch, Inhalte der Bären Englisch · Stand B1: Körper, Stand, Miniatur</small></header>
+<nav><button data-tab="sorten" class="on">Sorten</button><button data-tab="koerper">Körper</button><button data-tab="messung">Messung</button></nav>
+<main>
+<section id="sorten" class="on">
+ <div class="reihe"><label><input type="checkbox" id="massstab"> Miniaturen im echten Größenverhältnis</label></div>
+ <div id="detail"></div>
+ <div id="liste"></div>
+</section>
+<section id="koerper">
+ <div class="reihe"><select id="sorte"></select><button id="wuerfeln">Bär würfeln</button><label><input type="checkbox" id="vergleich" checked> Größenvergleich</label><label><input type="checkbox" id="wenden"> nach links</label></div>
+ <canvas id="buehne" class="buehne" width="820" height="470"></canvas>
+ <div class="reihe" id="haltungen"></div>
+ <div id="steckbrief" class="hinweis"></div>
+ <div class="spalten">
+  <div><h2>Werte: Anlage (hell) und Istwert (gold), Strich = Sortenwert</h2><div id="werte"></div>
+   <h2>Verteilung über 1000 gewürfelte Bären</h2><canvas id="verteilung" width="420" height="150" style="width:100%;max-width:420px;background:#17120d;border:1px solid var(--line)"></canvas>
+   <div class="hinweis" id="verteilungText"></div></div>
+  <div><h2>Gestalt</h2><div class="regler" id="gestalt"></div>
+   <h2>Fell</h2><div class="reihe" id="fell"></div>
+   <div class="reihe"><button id="zurueck">Gestalt zurücksetzen</button></div>
+   <textarea id="ausgabe" readonly></textarea><div class="hinweis">Diese Zeile an Claude schicken, wenn die Gestalt so bleiben soll.</div></div>
+ </div>
+</section>
+<section id="messung">
+ <p class="hinweis">Misst, wie lange das Zeichnen eines Bären dauert (Mittel über viele Bilder). Auf dem Handy messen, das zählt.</p>
+ <div class="reihe"><button id="messen">Messen</button><label><input type="checkbox" id="herde" checked> 40 Bären laufend zeichnen</label></div>
+ <table id="messTabelle"></table>
+ <canvas id="herdeBild" class="buehne" width="820" height="300" style="margin-top:10px"></canvas>
+ <div class="hinweis" id="herdeText"></div>
+</section>
+</main>
+<script src="baer.js?v=c4e5ea13"></script>
+<script src="baer-koepfe.js?v=c4e5ea13"></script>
+<script src="baer-mini.js?v=c4e5ea13"></script>
+<script src="baer-editor.js?v=c4e5ea13"></script>
+</body>
+</html>
