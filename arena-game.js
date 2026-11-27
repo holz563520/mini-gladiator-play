@@ -27,7 +27,7 @@ const C={startHidden:true,roosters:[],lions:[],
  classic:CLASSIC_ARENA?function(){classic=true;window.ArenaUI?.close();try{M.ui.render();}catch{}}:null};
 window.ArenaCareer=C;
 // Spionage: eigener Worker, der dieselben Spieldateien lädt (gleiche Version wie das Spiel)
-window.ARENA_WORKER_URL='arena-spy-worker.js?v='+encodeURIComponent(typeof BUILD!=='undefined'?BUILD:'');
+window.ARENA_WORKER_URL='arena-spy-worker.js?v='+encodeURIComponent(typeof BUILD!=='undefined'?BUILD:'')+(window.Beasts?.abriss?'&loeweAbriss=1':'');// Spione rechnen mit demselben Schalter wie der Kampf
 // Gold nach dem Kampf: das Spiel bucht die Ligaprämie – hier gilt stattdessen die Prämie der Herausforderung
 const baseFinish=M.onFinish;
 M.onFinish=function(report){

@@ -1,7 +1,7 @@
 'use strict';
 // =====================================================================================================
 // ARENA-NEU · LÖWEN FÜR ALLE SEITEN (nur Testversion, ändert keine Spieldatei)
-// Die Löwen-KI ist die von Rex Vetus aus dist/lion.js (Pranke, Sprung, Biss, Wegzerren, Ausweichen, Drohen),
+// Die Löwen-KI ist die von Rex Vetus aus dist/lion.js (Pranke, Sprung, Biss, Wegzerren, Ausweichen, Drohen; dazu Gliedmaße abreißen, L1),
 // hier verallgemeinert: beliebig viele Löwen, auf jeder Seite, gegen Menschen, Hähne und andere Löwen.
 // Jeder Löwe hat eigene Werte (Kraft, Schnelligkeit, Zähigkeit, Wildheit) und einen Zustand (verletzt, ausgehungert …).
 // Gezeichnet wird mit M.drawRex aus dem Spiel. Getroffen wird ein Löwe über M.rexReceive (hier für eigene Löwen umhüllt).
@@ -10,6 +10,18 @@
 (()=>{
 const M=window.MG,S=M.s,cl=M.clamp,dist=M.dist;
 const BZ={fx:true};window.Beasts=BZ;
+// ---------- Gliedmaße abreißen (LOEWE_FAHRPLAN.md, L1) ----------
+// Schlussangriff am gepackten, liegenden Menschen: beim Wegzerren und Zerfleischen schnappt der Löwe alle ABRISS.every Sekunden nach
+// Arm oder Bein, zuerst nach dem am schwersten verletzten Glied, und reißt es mit ABRISS.chance ab (Arm- oder Beinschiene halbiert),
+// höchstens einmal je Opfer und Kampf. ABRISS.hp = 100: keine Lebensgrenze mehr (mit Grenze 50 kam der Abriss gemessen nur in 0,3 % der
+// Kämpfe vor, Ziel sind 10–15 %; das gepackte, liegende Opfer verliert ohnehin schon). Die Folgen kommen unverändert aus M.sever (sim.js). Kein Kopfbiss (bleibt den Bären).
+// Notausschalter: ?loeweAbriss=0. Bis zur Abnahme durch Thomas im Hauptspiel AUS, an nur mit ?loeweAbriss=1 (oder window.LOEWE_ABRISS=true
+// vor dem Laden, für Editoren). Ist es aus, läuft der Löwe genau wie vorher (kein zusätzlicher Zufallswurf).
+{let q=null;try{q=((typeof location!=='undefined'&&location.search)||'').match(/[?&]loeweAbriss=([01])/)?.[1]||null;}catch{}
+ BZ.abriss=q==='1'||q!=='0'&&!!window.LOEWE_ABRISS;}
+BZ.ABRISS={chance:.09,hp:100,every:.5,dauer:.9};BZ.stats={tears:0,snaps:0,rolls:0};// Zähler für den Ausgleichstest (tests/loewe-l1.cjs)
+const TEAR_DRAG=['lh','rh','lf','rf','lfa','rfa','lsh','rsh'],TEAR_MAUL=[...TEAR_DRAG,'lua','rua'];// ganzer Arm nur am still Liegenden, ganzes Bein nie
+const TEAR_NAME={lh:'die linke Hand',rh:'die rechte Hand',lf:'den linken Fuß',rf:'den rechten Fuß',lfa:'den linken Unterarm',rfa:'den rechten Unterarm',lsh:'den linken Unterschenkel',rsh:'den rechten Unterschenkel',lua:'den linken Arm',rua:'den rechten Arm'};
 const alive=a=>!a.g.dead&&!a.surrendered;
 function log(t){const b=S.battle;if(!b)return;b.log.unshift({time:Math.floor(b.time),text:t});b.log.length=Math.min(40,b.log.length);}
 function blood(x,y,n){M.emit(x,y-12,n,'#a2392e',85);M.stains.push({x:x+M.rnd(-8,8),y:y+M.rnd(-5,5),r:M.rnd(2,6)});if(M.stains.length>300)M.stains.shift();}
@@ -31,7 +43,7 @@ function makeLion(L,team,x,y){
  l.max={head:160,chest:290,belly:140,front:120,rear:100};l.a=team?Math.PI:0;return l;}
 
 // ---------- Treffer am Löwen (wie M.rexReceive, mit eigenen Werten und Namen) ----------
-function release(l,rescued=false){const t=S.battle.actors.find(a=>a.id===l.victim);if(t){delete t.grabbedBy;delete t.draggedBy;t.kx=t.ky=0;if(rescued&&!t.g.dead){l.interruptions++;t.rescuedAt=S.battle.time;t.rescueCounted=false;const canRise=M.health(t.g)>37&&t.g.body.head.hp>12&&t.g.body.neck.hp>9&&t.g.body.chest.hp>10&&t.g.blood>=28;if(canRise&&!t.hahn){t.down=false;t.fallDuration=2.3;t.fallTimer=2.3;t.riseDuration=1.35;t.riseAttempted=false;t.riseHoldChecked=false;t.riseHold=0;t.state='fallen';}else t.fallTimer=Math.max(t.fallTimer||0,1.2);}else if(!t.g.dead)t.fallTimer=Math.max(t.fallTimer||0,1.2);}l.victim=null;l.interruptDamage=0;}
+function release(l,rescued=false){const t=S.battle.actors.find(a=>a.id===l.victim);if(t){delete t.grabbedBy;delete t.draggedBy;t.kx=t.ky=0;if(rescued&&!t.g.dead){l.interruptions++;t.rescuedAt=S.battle.time;t.rescueCounted=false;const canRise=M.health(t.g)>37&&t.g.body.head.hp>12&&t.g.body.neck.hp>9&&t.g.body.chest.hp>10&&t.g.blood>=28;if(canRise&&!t.hahn){t.down=false;t.fallDuration=2.3;t.fallTimer=2.3;t.riseDuration=1.35;t.riseAttempted=false;t.riseHoldChecked=false;t.riseHold=0;t.state='fallen';}else t.fallTimer=Math.max(t.fallTimer||0,1.2);}else if(!t.g.dead)t.fallTimer=Math.max(t.fallTimer||0,1.2);}l.victim=null;l.interruptDamage=0;l.tear=null;}
 function state(l,mode,duration){l.mode=mode;l.clock=0;l.duration=mode==='evade'?duration*1.3:duration;if(['snarl','roar','threaten'].includes(mode)&&BZ.fx)BZ.sound?.(mode);}
 function injury(l){return cl(l.trauma/600+(100-l.blood)/180,0,1);}
 function dieLion(l,a){if(l.g.dead)return;release(l,!!l.victim);l.g.dead=true;l.down=true;l.death=true;l.z=0;l.deathAt=S.battle.time;l.g.cause=a?'Getötet von '+(a.hahn?a.hahn.name:a.g.name):'An den Wunden verendet';l.g.killer=a?(a.hahn?a.hahn.name:a.g.name):'';if(a)a.kills=(a.kills||0)+1;state(l,'dead',99);log(a?(a.hahn?a.hahn.name:a.g.name)+' streckt '+l.g.name+' nieder.':l.g.name+' bricht an seinen Wunden zusammen.');}
@@ -62,13 +74,29 @@ function hurt(l,t,kind){if(!t||!alive(t))return false;const old=t.taken,wasDead=
   if(kind==='bite'&&t.g.body.neck.hp<9&&!t.g.dead)M.death(t,'Tödlicher Kehlbiss',l);if(!wasDead&&t.g.dead){l.kills=(l.kills||0)+1;if(kind==='bite')l.bites++;}
   if(BZ.fx)M.shake=Math.max(M.shake||0,kind==='swipe'?4:kind==='leap'?11:7);log(kind==='bite'?l.g.name+' beißt '+nameOf(t)+'.':kind==='leap'?l.g.name+' reißt '+nameOf(t)+' um!':l.g.name+' trifft '+nameOf(t)+' mit der Pranke.');}
  return t.taken>old;}
-function beginGrip(l,t){l.gripFace=t.x>=l.x?1:-1;l.victim=t.id;l.grabs++;l.gripType=M.rng()<.65?'head':'body';l.interruptDamage=0;t.grabbedBy=l.id;t.draggedBy=l.id;t.wind=0;t.pendingStrike=null;t.swing=0;t.kx=t.ky=0;t.fallTimer=Math.max(2.3,t.fallTimer||0);t.fallDuration=Math.max(t.fallDuration||0,t.fallTimer);
+function beginGrip(l,t){l.tear=null;l.limbClock=0;l.gripFace=t.x>=l.x?1:-1;l.victim=t.id;l.grabs++;l.gripType=M.rng()<.65?'head':'body';l.interruptDamage=0;t.grabbedBy=l.id;t.draggedBy=l.id;t.wind=0;t.pendingStrike=null;t.swing=0;t.kx=t.ky=0;t.fallTimer=Math.max(2.3,t.fallTimer||0);t.fallDuration=Math.max(t.fallDuration||0,t.fallTimer);
  const part=t.g.body[l.gripType==='head'?'head':'chest'],damage=Math.min(12,Math.max(0,part.hp-20))*(l.P.bite/54);part.hp-=damage;part.pain=Math.min(100,part.pain+18);part.bleed+=.6;part.grade=M.injuryGrade(part);t.g.blood=Math.max(0,t.g.blood-2);t.taken+=damage;l.damage+=damage;M.recordDamage(l,'grip',damage);
  if(damage>0){try{const point=M.contactAnchor({...t,down:true},l.gripType==='head'?'head':'chest');blood(point.x,point.y+12,6);}catch{}t.hit=.23;t.bloodMarks=t.bloodMarks||{};t.bloodMarks[l.gripType==='head'?'head':'chest']=1;}
  state(l,'drag',l.P.grip);log(l.g.name+' packt '+nameOf(t)+' und zieht '+(t.hahn?'ihn':'ihn')+' weg!');}
 function walk(l,tx,ty,v,dt,faceTarget=null){const dx=tx-l.x,dy=ty-l.y,d=Math.hypot(dx,dy),desired=Math.atan2(dy,dx);l.velocity+=(v-l.velocity)*Math.min(1,dt*9);const step=Math.min(d,l.velocity*dt),turn=M.angleDiff(desired,l.heading);l.heading+=cl(turn,-dt*5.5,dt*5.5);l.turn+=(turn-l.turn)*Math.min(1,dt*8);l.x=cl(l.x+Math.cos(l.heading)*step,95,945);l.y=cl(l.y+Math.sin(l.heading)*step,165,615);l.moveSpeed=step/dt;const facing=faceTarget?M.angle(l,faceTarget):l.heading;l.a+=cl(M.angleDiff(facing,l.a),-dt*7,dt*7);l.phase=(l.phase||0)+step*.08;}
 function escape(l,targets,dt,speed){let dx=0,dy=0;for(const a of targets){const d=Math.max(20,dist(l,a));dx+=(l.x-a.x)/(d*d);dy+=(l.y-a.y)/(d*d);}const side=l.side||1;/* Wände aus der echten Feldgröße (große Arena, große Kämpfe); bei 1040×720 genau die alten Werte */const FG=M.fieldGeom?.()||{cx:520,cy:392,rx:452,ry:258},fx=FG.rx/452,fy=FG.ry/258;dx+=(FG.cx-l.x)*.000022+80*(1/Math.max(30,l.x-(FG.cx-450*fx))**2-1/Math.max(30,FG.cx+450*fx-l.x)**2);dy+=(FG.cy-7*fy-l.y)*.000035+65*(1/Math.max(30,l.y-(FG.cy-252*fy))**2-1/Math.max(30,FG.cy+248*fy-l.y)**2);const an=Math.atan2(dy,dx)+side*.40;l.escapeAngle=an;walk(l,l.x+Math.cos(an)*160,l.y+Math.sin(an)*160,speed,dt,l.mode==='evade'?targets.reduce((a,b)=>dist(l,a)<dist(l,b)?a:b):null);}
-function alignGrip(l,t,dt){const face=l.gripFace||(t.x>=l.x?1:-1);l.a=face>0?0:Math.PI;t.a=face>0?Math.PI:0;t.fallSide=1;t.kx=t.ky=0;let point,contact;try{point=M.contactAnchor({...t,down:true},l.gripType==='head'?'head':'chest');}catch{point={x:t.x,y:t.y};}const reach=62*l.P.size,dx=l.x+face*reach-point.x,dy=l.y-12-point.y,k=Math.min(1,dt*12,240*dt/Math.max(1,Math.hypot(dx,dy)));t.x=cl(t.x+dx*k,105,935);t.y=cl(t.y+dy*k,175,610);try{contact=M.contactAnchor({...t,down:true},l.gripType==='head'?'head':'chest');}catch{contact={x:t.x,y:t.y};}l.x=cl(l.x+(contact.x-face*reach-l.x)*Math.min(1,dt*8),95,945);l.y=cl(l.y+(contact.y+12-l.y)*Math.min(1,dt*8),165,615);}
+function alignGrip(l,t,dt){const face=l.gripFace||(t.x>=l.x?1:-1),gp=l.tear?l.tear.limb:l.gripType==='head'?'head':'chest';l.a=face>0?0:Math.PI;t.a=face>0?Math.PI:0;t.fallSide=1;t.kx=t.ky=0;let point,contact;try{point=M.contactAnchor({...t,down:true},gp);}catch{point={x:t.x,y:t.y};}const reach=62*l.P.size,dx=l.x+face*reach-point.x,dy=l.y-12-point.y,k=Math.min(1,dt*12,240*dt/Math.max(1,Math.hypot(dx,dy)));t.x=cl(t.x+dx*k,105,935);t.y=cl(t.y+dy*k,175,610);try{contact=M.contactAnchor({...t,down:true},gp);}catch{contact={x:t.x,y:t.y};}l.x=cl(l.x+(contact.x-face*reach-l.x)*Math.min(1,dt*8),95,945);l.y=cl(l.y+(contact.y+12-l.y)*Math.min(1,dt*8),165,615);}
+
+// ---------- Gliedmaße abreißen: Auswahl, Wurf und Ablauf (nur wenn BZ.abriss) ----------
+// Welches Glied? Das am schwersten verletzte, das noch dran ist (bei Gleichstand eines davon, u = Zufall 0..1).
+function tearLimb(l,t,u=0){let best=[],low=1e9;for(const id of l.mode==='maul'?TEAR_MAUL:TEAR_DRAG){const p=t.g.body[id];if(!p||p.missing||p.hp>BZ.ABRISS.hp)continue;if(p.hp<low-.01){low=p.hp;best=[id];}else if(p.hp<low+.01)best.push(id);}return best.length?best[Math.min(best.length-1,Math.floor(u*best.length))]:null;}
+// Eigener Zufall für das Abreißen, abgeleitet aus dem Stand des Spielzufalls, ohne ihn zu verbrauchen: bis zu einem Abriss läuft der Kampf Wurf für Wurf wie ohne.
+function tearRoll(l,k){let h=((S.rng>>>0)^Math.imul((l.grabs||0)*64+(BZ.stats.snaps&63)+k*4096+1,0x9E3779B1))>>>0;h=Math.imul(h^h>>>15,0x85EBCA6B);h=Math.imul(h^h>>>13,0xC2B2AE35);return((h^h>>>16)>>>0)/4294967296;}
+function tearChance(t,id){return BZ.ABRISS.chance*((M.armorProtection?.(t.g,id)||0)>0?.5:1);}
+function tearTry(l,t,dt){if(t.hahn||t.dog||t.lion||t.tornOnce)return;l.limbClock=(l.limbClock||0)+dt;if(l.limbClock<BZ.ABRISS.every)return;l.limbClock=0;BZ.stats.snaps++;const id=tearLimb(l,t,tearRoll(l,1));if(!id)return;BZ.stats.rolls++;if(tearRoll(l,2)>=tearChance(t,id))return;
+ l.tear={limb:id,t:0,done:false};log(l.g.name+' verbeißt sich in '+TEAR_NAME[id]+' von '+nameOf(t)+'.');}
+// Ablauf wie beim echten Löwen: Zähne schlagen ein, Hinterbeine stemmen, Ruck mit Kopf und Nacken nach hinten, das Glied reißt ab und fällt aus dem Maul.
+function tearStep(l,t,dt){const T=l.tear,D=BZ.ABRISS.dauer,face=l.gripFace||1;T.t+=dt;l.clock-=dt;/* die Uhr von Wegzerren/Zerfleischen steht solange */l.velocity*=Math.exp(-dt*10);l.moveSpeed=0;alignGrip(l,t,dt);
+ const k=T.t/D,pull=k<.45?0:k<.72?(k-.45)/.27:1;l.x=cl(l.x-face*pull*9*l.P.size*Math.min(1,dt*10),95,945);t.hit=Math.max(t.hit||0,.08);
+ if(!T.done&&k>=.72){T.done=true;if(!t.g.body[T.limb]?.missing&&M.sever?.(l,t,T.limb)){t.tornOnce=true;l.tears=(l.tears||0)+1;BZ.stats.tears++;
+   const piece=M.limbs[M.limbs.length-1];if(piece&&piece.owner===t.id){piece.x=l.x+face*44*l.P.size;piece.y=l.y+4;piece.vx=-face*30;piece.vy=12;piece.z=24*l.P.size;piece.vz=10;}// fällt dort, wo der Löwe es fallen lässt
+   blood(t.x,t.y,16);if(BZ.fx)M.shake=Math.max(M.shake||0,9);log(l.g.name+' reißt '+nameOf(t)+' '+TEAR_NAME[T.limb]+' ab!');}}
+ if(k>=1){l.tear=null;l.limbClock=0;if(BZ.fx)BZ.sound?.('snarl');}}
 
 // ---------- Ein Schritt der Löwen-KI (aus lion.js, mit Gegnern beider Seiten) ----------
 function step(l,dt){const b=S.battle;l.hit=Math.max(0,(l.hit||0)-dt);l.clock+=dt;l.cool-=dt;l.pounceCD-=dt;l.energy=Math.min(100,l.energy+dt*8);if(l.g.dead)return;
@@ -81,6 +109,7 @@ function step(l,dt){const b=S.battle;l.hit=Math.max(0,(l.hit||0)-dt);l.clock+=dt
  if(l.mode==='sprint'){walk(l,t.x,t.y,385*condition,dt);l.energy=Math.max(0,l.energy-dt*22);if(d<137||l.clock>.9){l.sx=l.x;l.sy=l.y;const an=M.angle(l,t),len=Math.min(160,Math.max(15,dist(l,t)-28));l.ex=cl(l.x+Math.cos(an)*len,95,945);l.ey=cl(l.y+Math.sin(an)*len,165,615);l.leapHit=false;l.leapLanded=false;state(l,'leap',.26);}return;}
  if(l.mode==='crouch'){l.velocity*=Math.exp(-dt*12);l.a+=cl(M.angleDiff(M.angle(l,t),l.a),-dt*7,dt*7);if(l.clock>=l.duration)state(l,'sprint',1);return;}
  if(['drag','maul'].includes(l.mode)){t=b.actors.find(a=>a.id===l.victim);if(!t||!alive(t)){l.gripAborts++;release(l);state(l,'evade',.7);return;}const friends=targets.filter(a=>a!==t&&!a.down);t.fallTimer=Math.max(2.3,t.fallTimer||0);t.state='fallen';t.grabbedBy=l.id;t.draggedBy=l.id;t.moveSpeed=0;
+  if(l.tear){tearStep(l,t,dt);return;}if(BZ.abriss){tearTry(l,t,dt);if(l.tear)return;}
   if(l.mode==='drag'){if(friends.length)escape(l,friends,dt,l.P.drag*condition);else{const a=l.heading;walk(l,l.x+Math.cos(a)*80,l.y+Math.sin(a)*80,l.P.drag*.7,dt);}alignGrip(l,t,dt);if(l.clock>=l.P.grip-.6)state(l,'maul',.6);}
   else{l.velocity*=Math.exp(-dt*10);alignGrip(l,t,dt);if(l.clock>=l.duration){t.hit=.23;M.death(t,l.gripType==='head'?'Tödlicher Biss':'Tödlicher Angriff am Boden',l);l.bites++;l.gripKills++;l.kills=(l.kills||0)+1;if(BZ.fx)M.shake=Math.max(M.shake||0,8);log('Die Hilfe kommt zu spät für '+nameOf(t)+'.');release(l);state(l,'evade',.7);l.pounceCD=2.4;}}
   return;}
@@ -103,6 +132,6 @@ function writeBack(l){const L=l.lion,tf=Math.min(...['head','chest','belly','fro
  if(l.g.dead){L.dead=true;L.cause=l.g.cause||'In der Arena gefallen';L.killer=l.g.killer||'';}
  L.kills=(L.kills||0)+(l.kills||0);}
 function health(l){const f=l.max;return cl(Math.min(l.tissue.head/f.head,l.tissue.chest/f.chest,(l.tissue.belly+l.tissue.front)/(f.belly+f.front))*100*Math.min(1,l.blood/80),0,100);}
-Object.assign(BZ,{params,makeLion,step,writeBack,health,injury,dieLion});
+Object.assign(BZ,{params,makeLion,step,writeBack,health,injury,dieLion,tearLimb,tearChance});
 window.BEASTS_LOADED=true;
 })();
