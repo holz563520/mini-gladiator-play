@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1388,
+ "typMax": 1532,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -4145,6 +4145,654 @@
    "datei": "obj/bk-marmor-wand-oben.json"
   },
   {
+   "id": "bk-palm-dach-ab-i",
+   "version": 1,
+   "typ": 1389,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof Slope, Right",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-i.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j",
+   "version": 1,
+   "typ": 1428,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof Slope, Front",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-a",
+   "version": 1,
+   "typ": 1390,
+   "kat": "dach",
+   "name": "Palm Front A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-b",
+   "version": 1,
+   "typ": 1391,
+   "kat": "dach",
+   "name": "Palm Front B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-b.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-c",
+   "version": 1,
+   "typ": 1392,
+   "kat": "dach",
+   "name": "Palm Front C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-c.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-d",
+   "version": 1,
+   "typ": 1393,
+   "kat": "dach",
+   "name": "Palm Front D",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-d.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-e",
+   "version": 1,
+   "typ": 1394,
+   "kat": "dach",
+   "name": "Palm Front E",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-e.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-f",
+   "version": 1,
+   "typ": 1395,
+   "kat": "dach",
+   "name": "Palm Front F",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-f.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-k",
+   "version": 1,
+   "typ": 1399,
+   "kat": "dach",
+   "name": "Palm Front Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-k.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-k-a",
+   "version": 1,
+   "typ": 1396,
+   "kat": "dach",
+   "name": "Palm Front Ridge A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-k-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-k-b",
+   "version": 1,
+   "typ": 1397,
+   "kat": "dach",
+   "name": "Palm Front Ridge B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-k-b.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-k-c",
+   "version": 1,
+   "typ": 1398,
+   "kat": "dach",
+   "name": "Palm Front Ridge C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-k-c.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-kn",
+   "version": 1,
+   "typ": 1403,
+   "kat": "dach",
+   "name": "Palm Front Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-kn.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-kn-a",
+   "version": 1,
+   "typ": 1400,
+   "kat": "dach",
+   "name": "Palm Front Ridge+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-kn-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-kn-b",
+   "version": 1,
+   "typ": 1401,
+   "kat": "dach",
+   "name": "Palm Front Ridge+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-kn-b.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-kn-c",
+   "version": 1,
+   "typ": 1402,
+   "kat": "dach",
+   "name": "Palm Front Ridge+Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-kn-c.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-ks",
+   "version": 1,
+   "typ": 1407,
+   "kat": "dach",
+   "name": "Palm Front Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-ks.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-ks-a",
+   "version": 1,
+   "typ": 1404,
+   "kat": "dach",
+   "name": "Palm Front Ridge+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-ks-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-ks-b",
+   "version": 1,
+   "typ": 1405,
+   "kat": "dach",
+   "name": "Palm Front Ridge+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-ks-b.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-ks-c",
+   "version": 1,
+   "typ": 1406,
+   "kat": "dach",
+   "name": "Palm Front Ridge+Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-ks-c.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-n",
+   "version": 1,
+   "typ": 1411,
+   "kat": "dach",
+   "name": "Palm Front Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-n.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-n-a",
+   "version": 1,
+   "typ": 1408,
+   "kat": "dach",
+   "name": "Palm Front Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-n-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-n-b",
+   "version": 1,
+   "typ": 1409,
+   "kat": "dach",
+   "name": "Palm Front Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-n-b.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-n-c",
+   "version": 1,
+   "typ": 1410,
+   "kat": "dach",
+   "name": "Palm Front Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-n-c.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-r",
+   "version": 1,
+   "typ": 1415,
+   "kat": "dach",
+   "name": "Palm Front Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-r.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-r-a",
+   "version": 1,
+   "typ": 1412,
+   "kat": "dach",
+   "name": "Palm Front Eave A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-r-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-r-b",
+   "version": 1,
+   "typ": 1413,
+   "kat": "dach",
+   "name": "Palm Front Eave B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-r-b.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-r-c",
+   "version": 1,
+   "typ": 1414,
+   "kat": "dach",
+   "name": "Palm Front Eave C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-r-c.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-rn",
+   "version": 1,
+   "typ": 1419,
+   "kat": "dach",
+   "name": "Palm Front Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-rn.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-rn-a",
+   "version": 1,
+   "typ": 1416,
+   "kat": "dach",
+   "name": "Palm Front Eave+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-rn-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-rn-b",
+   "version": 1,
+   "typ": 1417,
+   "kat": "dach",
+   "name": "Palm Front Eave+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-rn-b.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-rn-c",
+   "version": 1,
+   "typ": 1418,
+   "kat": "dach",
+   "name": "Palm Front Eave+Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-rn-c.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-rs",
+   "version": 1,
+   "typ": 1423,
+   "kat": "dach",
+   "name": "Palm Front Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-rs.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-rs-a",
+   "version": 1,
+   "typ": 1420,
+   "kat": "dach",
+   "name": "Palm Front Eave+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-rs-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-rs-b",
+   "version": 1,
+   "typ": 1421,
+   "kat": "dach",
+   "name": "Palm Front Eave+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-rs-b.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-rs-c",
+   "version": 1,
+   "typ": 1422,
+   "kat": "dach",
+   "name": "Palm Front Eave+Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-rs-c.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-s",
+   "version": 1,
+   "typ": 1427,
+   "kat": "dach",
+   "name": "Palm Front Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-s.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-s-a",
+   "version": 1,
+   "typ": 1424,
+   "kat": "dach",
+   "name": "Palm Front Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-s-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-s-b",
+   "version": 1,
+   "typ": 1425,
+   "kat": "dach",
+   "name": "Palm Front Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-s-b.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-j-s-c",
+   "version": 1,
+   "typ": 1426,
+   "kat": "dach",
+   "name": "Palm Front Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-j-s-c.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-i",
+   "version": 1,
+   "typ": 1429,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof Slope, Left",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-i.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j",
+   "version": 1,
+   "typ": 1442,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof Slope, Rear",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-a",
+   "version": 1,
+   "typ": 1430,
+   "kat": "dach",
+   "name": "Palm Rear A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-a.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-b",
+   "version": 1,
+   "typ": 1431,
+   "kat": "dach",
+   "name": "Palm Rear B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-b.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-c",
+   "version": 1,
+   "typ": 1432,
+   "kat": "dach",
+   "name": "Palm Rear C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-c.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-d",
+   "version": 1,
+   "typ": 1433,
+   "kat": "dach",
+   "name": "Palm Rear D",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-d.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-k",
+   "version": 1,
+   "typ": 1434,
+   "kat": "dach",
+   "name": "Palm Rear K",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-k.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-kn",
+   "version": 1,
+   "typ": 1435,
+   "kat": "dach",
+   "name": "Palm Rear KN",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-kn.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-ks",
+   "version": 1,
+   "typ": 1436,
+   "kat": "dach",
+   "name": "Palm Rear KS",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-ks.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-n",
+   "version": 1,
+   "typ": 1437,
+   "kat": "dach",
+   "name": "Palm Rear N",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-n.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-r",
+   "version": 1,
+   "typ": 1438,
+   "kat": "dach",
+   "name": "Palm Rear R",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-r.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-rn",
+   "version": 1,
+   "typ": 1439,
+   "kat": "dach",
+   "name": "Palm Rear RN",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-rn.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-rs",
+   "version": 1,
+   "typ": 1440,
+   "kat": "dach",
+   "name": "Palm Rear RS",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-rs.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-j-s",
+   "version": 1,
+   "typ": 1441,
+   "kat": "dach",
+   "name": "Palm Rear S",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-j-s.json"
+  },
+  {
+   "id": "bk-palm-dach-flach",
+   "version": 1,
+   "typ": 1443,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof, Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-flach.json"
+  },
+  {
+   "id": "bk-palm-fenster",
+   "version": 1,
+   "typ": 1447,
+   "kat": "wand",
+   "name": "Stilt Bamboo Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-fenster.json"
+  },
+  {
+   "id": "bk-palm-fenster-a",
+   "version": 1,
+   "typ": 1444,
+   "kat": "wand",
+   "name": "Stilt Bamboo Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-fenster-a.json"
+  },
+  {
+   "id": "bk-palm-fenster-b",
+   "version": 1,
+   "typ": 1445,
+   "kat": "wand",
+   "name": "Stilt Bamboo Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-fenster-b.json"
+  },
+  {
+   "id": "bk-palm-fenster-d",
+   "version": 1,
+   "typ": 1446,
+   "kat": "wand",
+   "name": "Stilt Bamboo Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-fenster-d.json"
+  },
+  {
+   "id": "bk-palm-giebel",
+   "version": 1,
+   "typ": 1453,
+   "kat": "wand",
+   "name": "Stilt Bamboo Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-giebel.json"
+  },
+  {
+   "id": "bk-palm-giebel-a",
+   "version": 1,
+   "typ": 1448,
+   "kat": "wand",
+   "name": "Stilt Bamboo Gable A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-giebel-a.json"
+  },
+  {
+   "id": "bk-palm-giebel-ab",
+   "version": 1,
+   "typ": 1449,
+   "kat": "wand",
+   "name": "Stilt Bamboo Gable Peak (down)",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-giebel-ab.json"
+  },
+  {
+   "id": "bk-palm-giebel-auf",
+   "version": 1,
+   "typ": 1450,
+   "kat": "wand",
+   "name": "Stilt Bamboo Gable Peak (up)",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-giebel-auf.json"
+  },
+  {
+   "id": "bk-palm-giebel-b",
+   "version": 1,
+   "typ": 1451,
+   "kat": "wand",
+   "name": "Stilt Bamboo Gable B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-giebel-b.json"
+  },
+  {
+   "id": "bk-palm-giebel-c",
+   "version": 1,
+   "typ": 1452,
+   "kat": "wand",
+   "name": "Stilt Bamboo Gable C",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-giebel-c.json"
+  },
+  {
+   "id": "bk-palm-tuer",
+   "version": 1,
+   "typ": 1454,
+   "kat": "wand",
+   "name": "Stilt Bamboo Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-tuer.json"
+  },
+  {
+   "id": "bk-palm-wand",
+   "version": 1,
+   "typ": 1460,
+   "kat": "wand",
+   "name": "Stilt Bamboo Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-wand.json"
+  },
+  {
+   "id": "bk-palm-wand-a",
+   "version": 1,
+   "typ": 1455,
+   "kat": "wand",
+   "name": "Stilt Bamboo Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-wand-a.json"
+  },
+  {
+   "id": "bk-palm-wand-b",
+   "version": 1,
+   "typ": 1456,
+   "kat": "wand",
+   "name": "Stilt Bamboo Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-wand-b.json"
+  },
+  {
+   "id": "bk-palm-wand-d",
+   "version": 1,
+   "typ": 1457,
+   "kat": "wand",
+   "name": "Stilt Bamboo Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-wand-d.json"
+  },
+  {
+   "id": "bk-palm-wand-oben",
+   "version": 1,
+   "typ": 1459,
+   "kat": "wand",
+   "name": "Stilt Bamboo Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-wand-oben.json"
+  },
+  {
+   "id": "bk-palm-wand-oben-a",
+   "version": 1,
+   "typ": 1458,
+   "kat": "wand",
+   "name": "Stilt Bamboo Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-wand-oben-a.json"
+  },
+  {
    "id": "bk-pfahl-fenster",
    "version": 1,
    "typ": 1094,
@@ -5070,6 +5718,654 @@
    "name": "Whitewash Upper Wall C",
    "status": "uebernommen",
    "datei": "obj/bk-putz-wand-oben-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-i",
+   "version": 1,
+   "typ": 1461,
+   "kat": "dach",
+   "name": "Grass-Grassed Roof Slope, Right",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-i.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j",
+   "version": 1,
+   "typ": 1500,
+   "kat": "dach",
+   "name": "Grass-Grassed Roof Slope, Front",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-a",
+   "version": 1,
+   "typ": 1462,
+   "kat": "dach",
+   "name": "Grass Front A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-b",
+   "version": 1,
+   "typ": 1463,
+   "kat": "dach",
+   "name": "Grass Front B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-c",
+   "version": 1,
+   "typ": 1464,
+   "kat": "dach",
+   "name": "Grass Front C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-d",
+   "version": 1,
+   "typ": 1465,
+   "kat": "dach",
+   "name": "Grass Front D",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-d.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-e",
+   "version": 1,
+   "typ": 1466,
+   "kat": "dach",
+   "name": "Grass Front E",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-e.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-f",
+   "version": 1,
+   "typ": 1467,
+   "kat": "dach",
+   "name": "Grass Front F",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-f.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-k",
+   "version": 1,
+   "typ": 1471,
+   "kat": "dach",
+   "name": "Grass Front Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-k.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-k-a",
+   "version": 1,
+   "typ": 1468,
+   "kat": "dach",
+   "name": "Grass Front Ridge A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-k-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-k-b",
+   "version": 1,
+   "typ": 1469,
+   "kat": "dach",
+   "name": "Grass Front Ridge B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-k-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-k-c",
+   "version": 1,
+   "typ": 1470,
+   "kat": "dach",
+   "name": "Grass Front Ridge C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-k-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-kn",
+   "version": 1,
+   "typ": 1475,
+   "kat": "dach",
+   "name": "Grass Front Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-kn.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-kn-a",
+   "version": 1,
+   "typ": 1472,
+   "kat": "dach",
+   "name": "Grass Front Ridge+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-kn-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-kn-b",
+   "version": 1,
+   "typ": 1473,
+   "kat": "dach",
+   "name": "Grass Front Ridge+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-kn-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-kn-c",
+   "version": 1,
+   "typ": 1474,
+   "kat": "dach",
+   "name": "Grass Front Ridge+Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-kn-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-ks",
+   "version": 1,
+   "typ": 1479,
+   "kat": "dach",
+   "name": "Grass Front Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-ks.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-ks-a",
+   "version": 1,
+   "typ": 1476,
+   "kat": "dach",
+   "name": "Grass Front Ridge+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-ks-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-ks-b",
+   "version": 1,
+   "typ": 1477,
+   "kat": "dach",
+   "name": "Grass Front Ridge+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-ks-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-ks-c",
+   "version": 1,
+   "typ": 1478,
+   "kat": "dach",
+   "name": "Grass Front Ridge+Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-ks-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-n",
+   "version": 1,
+   "typ": 1483,
+   "kat": "dach",
+   "name": "Grass Front Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-n.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-n-a",
+   "version": 1,
+   "typ": 1480,
+   "kat": "dach",
+   "name": "Grass Front Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-n-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-n-b",
+   "version": 1,
+   "typ": 1481,
+   "kat": "dach",
+   "name": "Grass Front Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-n-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-n-c",
+   "version": 1,
+   "typ": 1482,
+   "kat": "dach",
+   "name": "Grass Front Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-n-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-r",
+   "version": 1,
+   "typ": 1487,
+   "kat": "dach",
+   "name": "Grass Front Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-r.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-r-a",
+   "version": 1,
+   "typ": 1484,
+   "kat": "dach",
+   "name": "Grass Front Eave A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-r-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-r-b",
+   "version": 1,
+   "typ": 1485,
+   "kat": "dach",
+   "name": "Grass Front Eave B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-r-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-r-c",
+   "version": 1,
+   "typ": 1486,
+   "kat": "dach",
+   "name": "Grass Front Eave C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-r-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-rn",
+   "version": 1,
+   "typ": 1491,
+   "kat": "dach",
+   "name": "Grass Front Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-rn.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-rn-a",
+   "version": 1,
+   "typ": 1488,
+   "kat": "dach",
+   "name": "Grass Front Eave+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-rn-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-rn-b",
+   "version": 1,
+   "typ": 1489,
+   "kat": "dach",
+   "name": "Grass Front Eave+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-rn-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-rn-c",
+   "version": 1,
+   "typ": 1490,
+   "kat": "dach",
+   "name": "Grass Front Eave+Gable L C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-rn-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-rs",
+   "version": 1,
+   "typ": 1495,
+   "kat": "dach",
+   "name": "Grass Front Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-rs.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-rs-a",
+   "version": 1,
+   "typ": 1492,
+   "kat": "dach",
+   "name": "Grass Front Eave+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-rs-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-rs-b",
+   "version": 1,
+   "typ": 1493,
+   "kat": "dach",
+   "name": "Grass Front Eave+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-rs-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-rs-c",
+   "version": 1,
+   "typ": 1494,
+   "kat": "dach",
+   "name": "Grass Front Eave+Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-rs-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-s",
+   "version": 1,
+   "typ": 1499,
+   "kat": "dach",
+   "name": "Grass Front Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-s.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-s-a",
+   "version": 1,
+   "typ": 1496,
+   "kat": "dach",
+   "name": "Grass Front Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-s-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-s-b",
+   "version": 1,
+   "typ": 1497,
+   "kat": "dach",
+   "name": "Grass Front Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-s-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-j-s-c",
+   "version": 1,
+   "typ": 1498,
+   "kat": "dach",
+   "name": "Grass Front Gable R C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-j-s-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-i",
+   "version": 1,
+   "typ": 1501,
+   "kat": "dach",
+   "name": "Grass-Grassed Roof Slope, Left",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-i.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j",
+   "version": 1,
+   "typ": 1514,
+   "kat": "dach",
+   "name": "Grass-Grassed Roof Slope, Rear",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-a",
+   "version": 1,
+   "typ": 1502,
+   "kat": "dach",
+   "name": "Grass Rear A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-b",
+   "version": 1,
+   "typ": 1503,
+   "kat": "dach",
+   "name": "Grass Rear B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-b.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-c",
+   "version": 1,
+   "typ": 1504,
+   "kat": "dach",
+   "name": "Grass Rear C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-c.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-d",
+   "version": 1,
+   "typ": 1505,
+   "kat": "dach",
+   "name": "Grass Rear D",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-d.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-k",
+   "version": 1,
+   "typ": 1506,
+   "kat": "dach",
+   "name": "Grass Rear K",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-k.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-kn",
+   "version": 1,
+   "typ": 1507,
+   "kat": "dach",
+   "name": "Grass Rear KN",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-kn.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-ks",
+   "version": 1,
+   "typ": 1508,
+   "kat": "dach",
+   "name": "Grass Rear KS",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-ks.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-n",
+   "version": 1,
+   "typ": 1509,
+   "kat": "dach",
+   "name": "Grass Rear N",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-n.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-r",
+   "version": 1,
+   "typ": 1510,
+   "kat": "dach",
+   "name": "Grass Rear R",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-r.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-rn",
+   "version": 1,
+   "typ": 1511,
+   "kat": "dach",
+   "name": "Grass Rear RN",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-rn.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-rs",
+   "version": 1,
+   "typ": 1512,
+   "kat": "dach",
+   "name": "Grass Rear RS",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-rs.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-s",
+   "version": 1,
+   "typ": 1513,
+   "kat": "dach",
+   "name": "Grass Rear S",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-s.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-flach",
+   "version": 1,
+   "typ": 1515,
+   "kat": "dach",
+   "name": "Grass-Grassed Roof, Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-flach.json"
+  },
+  {
+   "id": "bk-rotlehm-fenster",
+   "version": 1,
+   "typ": 1519,
+   "kat": "wand",
+   "name": "Red Daub Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-fenster.json"
+  },
+  {
+   "id": "bk-rotlehm-fenster-a",
+   "version": 1,
+   "typ": 1516,
+   "kat": "wand",
+   "name": "Red Daub Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-fenster-a.json"
+  },
+  {
+   "id": "bk-rotlehm-fenster-b",
+   "version": 1,
+   "typ": 1517,
+   "kat": "wand",
+   "name": "Red Daub Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-fenster-b.json"
+  },
+  {
+   "id": "bk-rotlehm-fenster-d",
+   "version": 1,
+   "typ": 1518,
+   "kat": "wand",
+   "name": "Red Daub Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-fenster-d.json"
+  },
+  {
+   "id": "bk-rotlehm-giebel",
+   "version": 1,
+   "typ": 1525,
+   "kat": "wand",
+   "name": "Red Daub Gable",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-giebel.json"
+  },
+  {
+   "id": "bk-rotlehm-giebel-a",
+   "version": 1,
+   "typ": 1520,
+   "kat": "wand",
+   "name": "Red Daub Gable A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-giebel-a.json"
+  },
+  {
+   "id": "bk-rotlehm-giebel-ab",
+   "version": 1,
+   "typ": 1521,
+   "kat": "wand",
+   "name": "Red Daub Gable Peak (down)",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-giebel-ab.json"
+  },
+  {
+   "id": "bk-rotlehm-giebel-auf",
+   "version": 1,
+   "typ": 1522,
+   "kat": "wand",
+   "name": "Red Daub Gable Peak (up)",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-giebel-auf.json"
+  },
+  {
+   "id": "bk-rotlehm-giebel-b",
+   "version": 1,
+   "typ": 1523,
+   "kat": "wand",
+   "name": "Red Daub Gable B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-giebel-b.json"
+  },
+  {
+   "id": "bk-rotlehm-giebel-c",
+   "version": 1,
+   "typ": 1524,
+   "kat": "wand",
+   "name": "Red Daub Gable C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-giebel-c.json"
+  },
+  {
+   "id": "bk-rotlehm-tuer",
+   "version": 1,
+   "typ": 1526,
+   "kat": "wand",
+   "name": "Red Daub Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-tuer.json"
+  },
+  {
+   "id": "bk-rotlehm-wand",
+   "version": 1,
+   "typ": 1532,
+   "kat": "wand",
+   "name": "Red Daub Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-a",
+   "version": 1,
+   "typ": 1527,
+   "kat": "wand",
+   "name": "Red Daub Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-a.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-b",
+   "version": 1,
+   "typ": 1528,
+   "kat": "wand",
+   "name": "Red Daub Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-b.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-d",
+   "version": 1,
+   "typ": 1529,
+   "kat": "wand",
+   "name": "Red Daub Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-d.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-oben",
+   "version": 1,
+   "typ": 1531,
+   "kat": "wand",
+   "name": "Red Daub Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-oben.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-oben-a",
+   "version": 1,
+   "typ": 1530,
+   "kat": "wand",
+   "name": "Red Daub Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-oben-a.json"
   },
   {
    "id": "bk-sode-dach-flach",
