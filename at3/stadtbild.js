@@ -63,12 +63,13 @@ function SL(){return G.AT3_STADTLISTE||(typeof require!=='undefined'?require('./
 var DAT=null;function setzeDaten(geb){DAT=geb&&geb.G?geb:SL().daten(geb);return DAT}
 function daten(o){if(o&&o.daten)return o.daten.G?o.daten:SL().daten(o.daten);if(!DAT&&typeof require!=='undefined')DAT=SL().daten(require('./daten/gebaeude.json'));
  if(!DAT)throw new Error('Gebäudedaten fehlen (setzeDaten)');return DAT}
+// satzKlassen (Wüste, Thomas 27.11.2026): der Biom-Satz gilt auch für Häuser dieser Bauklassen (sonst nur für die Grundklasse); Notausschalter: Angabe entfernen.
 // Bauweise je Biom (5.3a) als Skizze aus den Baukasten-Teilen: Bauklasse, Dachform, Farbtausch (Wand, Dach), Boden, Gassenbelag, Bäume, Dichte im Umland, Felder.
 var BIOME={
  mediterranean:{klasse:'brick',dach:'sattel',wand:STEIN,satz:'putz',pflaster:true,felder:true,boden:['boden-gras','boden-erde'],weg:'boden-weg',baeume:['baum-olive','baum-zypresse','busch-bluete'],dichte:.16,feld:'bk-feld'},
  grassland:{klasse:'clay-wood',dach:'sattel',satz:'steppe',boden:['boden-gras'],weg:'boden-weg',baeume:['baum-pappel','busch-hasel'],dichte:.06,feld:'bk-feld'},
  broadleaf:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,satz:'fachwerk',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-eiche-skizze','baum-buche','baum-apfel','busch-gruen'],dichte:.3,feld:'bk-feld'},
- desert:{klasse:'clay-wood',dach:'flach',wand:SAND,dachR:SAND,satz:'wueste',boden:['boden-sand'],weg:'boden-sand',baeume:['baum-dattelpalme','busch-tamariske'],dichte:.03,feld:'boden-erde'},
+ desert:{klasse:'clay-wood',dach:'flach',wand:SAND,dachR:SAND,satz:'wueste',satzKlassen:['brick'],boden:['boden-sand'],weg:'boden-sand',baeume:['baum-dattelpalme','busch-tamariske'],dichte:.03,feld:'boden-erde'},
  mountain:{klasse:'marble',dach:'sattel',dachR:HOLZ,satz:'bruch',boden:['boden-fels','boden-gras'],weg:'boden-weg',baeume:['baum-tanne','fels-block'],dichte:.14,feld:'bk-feld'},
  savanna:{klasse:'clay-wood',dach:'walm',dachR:OCKER,boden:['boden-gras','boden-sand'],weg:'boden-sand',baeume:['baum-akazie','baum-baobab','blume-hohes-gras'],dichte:.07,feld:'boden-erde'},
  conifer:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,dachR:HOLZ,satz:'block',boden:['boden-gras','boden-erde'],weg:'boden-erde',baeume:['baum-tanne','baum-birke'],dichte:.32,feld:'bk-feld'},
@@ -463,7 +464,7 @@ function plan0(opt){
   for(var y1=R;y1<R+Wi;y1++)for(var x1=R;x1<R+Wi;x1++)keinBaum[at(x1,y1)]=1;
   var hin=function(r,c){for(var y=r.j;y<r.j+r.h;y++)for(var x=r.i;x<r.i+r.w;x++){Z[at(x,y)]=c;keinBaum[at(x,y)]=1;neu[at(x,y)]=1}};
   var bau=function(id,rolle,r,tuer,kl){var u=rausch(r.i,r.j,seed+31),sh=rolle==='shack',gr=rolle==='grab';kl=kl||(sh?'clay-wood':gr?'marble':basis.klasse);
-   var satz=!sh&&!gr&&!ST&&B.satz&&kl===basis.klasse?B.satz:null,schmal=Math.min(r.w,r.h)<2;
+   var satz=!sh&&!gr&&!ST&&B.satz&&(kl===basis.klasse||(B.satzKlassen&&B.satzKlassen.indexOf(kl)>=0))?B.satz:null,schmal=Math.min(r.w,r.h)<2;
    for(var y=r.j;y<r.j+r.h;y++)for(var x=r.i;x<r.i+r.w;x++){belegt[at(x,y)]=1;keinBaum[at(x,y)]=1;neu[at(x,y)]=1;Z[at(x,y)]='g'}
    bauten.push({rolle:rolle,id:id,i:r.i,j:r.j,w:r.w,h:r.h,g:sh||gr||rolle==='hof'?1:stock(id,g,u,r.w,r.h),klasse:kl,dach:sh||gr||schmal?'flach':basis.dach,
     achse:r.w>r.h?'i':r.h>r.w?'j':(u<.5?'i':'j'),wand:kl===basis.klasse&&!sh&&!satz?basis.wand:null,dachR:sh?HOLZ:kl===basis.klasse&&!satz?basis.dachR:null,tuer:tuer,satz:satz})};
@@ -789,7 +790,7 @@ function plan0(opt){
    if(!tuer){var T=[[i+(w>>1),j+h-1,0,1,i+(w>>1),j+h],[i+w-1,j+(h>>1),1,0,i+w,j+(h>>1)],[i,j+(h>>1),-1,0,i-1,j+(h>>1)],[i+(w>>1),j,0,-1,i+(w>>1),j-1]];
     for(var k=0;k<4&&!tuer;k++){var o=T[k][5]*W+T[k][4];if(Z[o]==='o'&&!belegt[o])tuer=T[k].slice(0,4)}if(!tuer)tuer=T[0].slice(0,4)}
    var sh=id==='shack',u=rausch(i,j,seed+31),kl=sh?'clay-wood':MARMOR[id]&&g>=MAUER_AB?'marble':EDEL[id]?STUFE[basis.klasse]:basis.klasse;
-   var satz=!sh&&!ST&&B.satz&&kl===basis.klasse?B.satz:null,schmal=Math.min(w,h)<2;
+   var satz=!sh&&!ST&&B.satz&&(kl===basis.klasse||(B.satzKlassen&&B.satzKlassen.indexOf(kl)>=0))?B.satz:null,schmal=Math.min(w,h)<2;
    bauten.push({rolle:sh?'shack':(WOHN[id]?'house':'bau'),id:id,i:i,j:j,w:w,h:h,g:stock(id,g,u,w,h),klasse:kl,dach:sh||schmal?'flach':basis.dach,
     achse:w>h?'i':h>w?'j':(u<.5?'i':'j'),wand:kl===basis.klasse&&!sh&&!satz?basis.wand:null,dachR:sh?HOLZ:kl===basis.klasse&&!satz?basis.dachR:null,tuer:tuer,satz:satz})}
  }
@@ -849,7 +850,7 @@ function plan0(opt){
   // Bau eintragen (wie setzen() im Raster)
   var bau=function(it,i,j,w,h,tuer){var id=it.id;gesetzt[id]=(gesetzt[id]||0)+1;for(var y=j;y<j+h;y++)for(var x=i;x<i+w;x++){belegt[at(x,y)]=1;Z[at(x,y)]='g'}
    var sh=id==='shack',u=rausch(i,j,seed+31),kl=sh?'clay-wood':MARMOR[id]&&g>=MAUER_AB?'marble':EDEL[id]?STUFE[basis.klasse]:basis.klasse;
-   var satz=!sh&&!ST&&B.satz&&kl===basis.klasse?B.satz:null,schmal=Math.min(w,h)<2;
+   var satz=!sh&&!ST&&B.satz&&(kl===basis.klasse||(B.satzKlassen&&B.satzKlassen.indexOf(kl)>=0))?B.satz:null,schmal=Math.min(w,h)<2;
    bauten.push({rolle:sh?'shack':(WOHN[id]?'house':'bau'),id:id,i:i,j:j,w:w,h:h,g:stock(id,g,u,w,h),klasse:kl,dach:sh||schmal?'flach':basis.dach,
     achse:w>h?'i':h>w?'j':(u<.5?'i':'j'),wand:kl===basis.klasse&&!sh&&!satz?basis.wand:null,dachR:sh?HOLZ:kl===basis.klasse&&!satz?basis.dachR:null,tuer:tuer,satz:satz})};
   // Rechteck frei und mit 1 Feld Abstand zu anderen Bauten (Rand 1 Feld frei)
