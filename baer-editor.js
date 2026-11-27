@@ -1,13 +1,15 @@
 'use strict';
 // =====================================================================================================
-// ARENA THEORY · BÄREN-EDITOR (dist/baer-editor.html): Sorten ansehen, Körper und Haltungen prüfen, Zeichenzeit messen.
+// ARENA THEORY · BÄREN-EDITOR (dist/baer-editor.html): Sorten ansehen, Körper, Haltungen, Gangarten und Mimik prüfen, Zeichenzeit messen.
 // Bedienung Deutsch, Inhalte der Bären Englisch. Lädt nur die Bärendateien, nicht das Spiel. Wächst mit jedem Schritt in BAER_FAHRPLAN.md.
 // =====================================================================================================
 (()=>{
 const B=window.BAER,$=id=>document.getElementById(id),el=(t,a={},h='')=>{const e=document.createElement(t);Object.assign(e,a);if(h)e.innerHTML=h;return e;};
 const now=()=>performance.now()/1000,skulls=n=>'☠'.repeat(n);
 const HALTUNG={stand:'Stand',sit:'Sitzen',lie:'Liegen',rear:'Aufgerichtet'};
-const ED={tab:'sorten',breed:'brown',bear:null,actor:null,shape:null,face:1};window.BAER_ED=ED;
+const GANG={walk:'Passgang',run:'Galopp',up:'Aufrecht gehen'};
+// T: Uhr des Editors (läuft im Reiter Bewegung langsamer oder steht), rate: Zeitlupe
+const ED={tab:'sorten',breed:'brown',bear:null,actor:null,shape:null,face:1,T:0,rate:1,pause:false,prints:[],jump:0};window.BAER_ED=ED;
 
 // ---------------------------------------------------------------- Reiter
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ED.tab=b.dataset.tab;document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
@@ -29,7 +31,7 @@ function detail(X){const D=$('detail');D.innerHTML='';const box=el('div',{classN
 $('massstab').onchange=sorten;
 
 // ---------------------------------------------------------------- Reiter Körper
-function neu(id,seed){ED.breed=id;ED.bear=B.create(id,seed);ED.actor=B.actor(ED.bear,ED.actor?.mode||'stand');ED.shape={...B.shapeOf(id)};ED.actor.SH=ED.shape;gestalt();fell();werte();verteilung();ausgabe();}
+function neu(id,seed){ED.breed=id;ED.bear=B.create(id,seed);ED.actor=B.actor(ED.bear,ED.actor?.mode||'stand');ED.shape={...B.shapeOf(id)};ED.actor.SH=ED.shape;ED.actor.pace=+$('bwTempo').value;ED.prints.length=0;ED.jump=0;ED.prevR=null;gestalt();fell();werte();verteilung();ausgabe();}
 function steckbrief(){const D=ED.bear,X=B.breed(D.breed);$('steckbrief').innerHTML='<b>'+D.name+'</b> · '+X.name+' · '+D.sex+', '+D.ageYears+' years · Schulterhöhe '+D.height+' cm, aufgerichtet '+D.upright+' cm, '+D.weight+' kg · Fell: '+D.appearance.coatName+' · Talent T'+B.talent(D)+' · Kennzahl '+D.seed;}
 function werte(){const D=ED.bear,X=B.breed(D.breed),W=$('werte');W.innerHTML='';
  for(const [k,de] of B.STATS){const r=el('div',{className:'balken'});r.append(el('span',{},de),el('div',{},'<i style="width:'+D.caps[k]+'%"></i><b style="width:'+D.stats[k]+'%"></b><u style="left:'+X.werte[k]+'%"></u>'),el('span',{},D.stats[k]+' / '+D.caps[k]));W.append(r);}
@@ -51,16 +53,15 @@ function schatten(c,x,gy,k,art){c.save();c.translate(x,gy);c.scale(k/B.CM,k/B.CM
  else if(art==='hund'){R(-36,40,70,30);R(-34,0,10,44);R(22,0,10,44);R(26,62,24,22);R(46,64,16,11);R(-48,60,14,6);}
  else{R(-80,66,140,50);R(-76,0,18,72);R(38,0,18,72);K(72,112,30);R(86,92,30,24);R(-112,92,34,8);R(-116,50,8,46);}
  c.restore();}
-function buehne(){const cv=$('buehne'),c=cv.getContext('2d'),W=cv.width,H=cv.height,gy=H-46,ver=$('vergleich').checked,k=Math.min((H-90)/(240/B.CM),ver?W/(585/B.CM):99),cm=k/B.CM,t=now();c.imageSmoothingEnabled=false;
+function buehne(){const cv=$('buehne'),c=cv.getContext('2d'),W=cv.width,H=cv.height,gy=H-46,ver=$('vergleich').checked,k=Math.min((H-90)/(240/B.CM),ver?W/(585/B.CM):99),cm=k/B.CM,t=ED.T;c.imageSmoothingEnabled=false;
  c.fillStyle='#cdbb96';c.fillRect(0,0,W,H);c.fillStyle='#8a7350';c.fillRect(0,gy,W,H-gy);
  // Höhenlinien alle 50 cm
  c.font='11px Georgia';for(let h=50;h<=250;h+=50){const y=gy-h*cm;if(y<8)break;c.fillStyle='#b3a07a';c.fillRect(0,y,W,1);c.fillStyle='#7c6b4c';c.fillText(h+' cm',4,y-2);}
  const bx=ver?470*cm:W*.5;
  if(ver){schatten(c,62*cm,gy,k,'mensch');schatten(c,150*cm,gy,k,'hund');schatten(c,290*cm,gy,k,'loewe');c.fillStyle='#5a4c36';c.fillText('Mensch 180 cm',62*cm-36,gy+16);c.fillText('Hund 75 cm',150*cm-28,gy+16);c.fillText('Löwe 120 cm',290*cm-30,gy+16);}
  B.draw(c,ED.actor,bx,gy,k,ED.face,{time:t});
- document.querySelectorAll('#haltungen button').forEach(b=>b.classList.toggle('on',b.dataset.m===ED.actor.mode));
- requestAnimationFrame(buehne);}
-for(const m of B.MODES){const b=el('button',{},HALTUNG[m]);b.dataset.m=m;b.onclick=()=>B.setMode(ED.actor,m,now());$('haltungen').append(b);}
+ document.querySelectorAll('#haltungen button').forEach(b=>b.classList.toggle('on',b.dataset.m===ED.actor.mode));}
+for(const m of B.MODES){const b=el('button',{},HALTUNG[m]);b.dataset.m=m;b.onclick=()=>B.pose(ED.actor,m);$('haltungen').append(b);}
 B.BREEDS.filter(x=>x.built).forEach(x=>$('sorte').append(el('option',{value:x.id},x.name)));
 $('sorte').onchange=()=>neu($('sorte').value);
 $('wuerfeln').onclick=()=>neu(ED.breed);
@@ -69,11 +70,13 @@ $('zurueck').onclick=()=>{ED.shape={...B.shapeOf(ED.breed)};ED.actor.SH=ED.shape
 
 // ---------------------------------------------------------------- Reiter Messung
 // Zeichenzeit je Bär: viele Bilder auf eine unsichtbare Fläche, Mittelwert
-function messe(mode,k,n=300){const cv=document.createElement('canvas');cv.width=400;cv.height=300;const c=cv.getContext('2d'),a=B.actor(B.typical(ED.breed),mode);B.draw(c,a,200,280,k,1,{time:0});
- const t0=performance.now();for(let i=0;i<n;i++)B.draw(c,a,200,280,k,1,{time:i*.05});return (performance.now()-t0)/n;}
+// mode: Haltung oder Gangart (walk, run, up); im Gang wird der Takt je Bild weitergedreht
+function messe(mode,k,n=300){const cv=document.createElement('canvas');cv.width=400;cv.height=300;const c=cv.getContext('2d'),gang=B.GAITS[mode],a=B.actor(B.typical(ED.breed),gang?(mode==='up'?'rear':'stand'):mode);
+ if(gang){a.gs=1;a.gk=mode==='up'?'up':'quad';a.mix=mode==='run'?1:0;a.q=1;a.qx=-1;}B.draw(c,a,200,280,k,1,{time:0});
+ const t0=performance.now();for(let i=0;i<n;i++){if(gang)a.cyc=i*.037;B.draw(c,a,200,280,k,1,{time:i*.05});}return (performance.now()-t0)/n;}
 B.messe=messe;
 $('messen').onclick=()=>{const T=$('messTabelle');T.innerHTML='<tr><th>Haltung</th><th>Kampfgröße (Zoom 1)</th><th>Nahansicht (Zoom 4)</th></tr>';
- for(const m of B.MODES)T.append(el('tr',{},'<td style="text-align:left">'+HALTUNG[m]+'</td><td>'+messe(m,1).toFixed(3)+' ms</td><td>'+messe(m,4).toFixed(3)+' ms</td>'));
+ for(const m of [...B.MODES,...Object.keys(GANG)])T.append(el('tr',{},'<td style="text-align:left">'+(HALTUNG[m]||GANG[m])+'</td><td>'+messe(m,1).toFixed(3)+' ms</td><td>'+messe(m,4).toFixed(3)+' ms</td>'));
  const t0=performance.now();B.miniClear();B.mini(ED.breed,'side',128);const t1=performance.now();for(let i=0;i<1000;i++)B.mini(ED.breed,'side',128);const t2=performance.now();
  T.append(el('tr',{},'<td style="text-align:left">Miniatur</td><td>erstes Mal '+(t1-t0).toFixed(2)+' ms</td><td>danach '+((t2-t1)/1000).toFixed(4)+' ms</td>'));sorten();};
 const HERDE=[];let hz=0,hn=0,hl=0;
@@ -83,5 +86,43 @@ function herde(){if(ED.tab==='messung'&&$('herde').checked){const cv=$('herdeBil
   hz+=performance.now()-t0;hn++;if(t-hl>1){$('herdeText').textContent='40 Bären: '+(hz/hn).toFixed(2)+' ms je Bild, '+(hz/hn/40).toFixed(3)+' ms je Bär';hz=0;hn=0;hl=t;}}
  requestAnimationFrame(herde);}
 
-neu('brown',20261127);sorten();ED.pick='brown';sorten();detail(B.breed('brown'));buehne();herde();
+// ---------------------------------------------------------------- Reiter Bewegung
+// Der Bär bleibt in der Bildmitte, der Boden zieht durch (ED.actor.dist). Abdrücke: Stelle, an der ein Fuß aufgesetzt hat.
+function bewegung(){const cv=$('bwBild'),c=cv.getContext('2d'),W=cv.width,H=cv.height,gy=H-52,a=ED.actor,sz=a.P.sz,k=Math.min((H-80)/(245/B.CM),2.4),cm=k/B.CM,t=ED.T,cx=W*.5,welt=(a.dist||0)*sz;c.imageSmoothingEnabled=false;
+ c.fillStyle='#cdbb96';c.fillRect(0,0,W,H);c.fillStyle='#8a7350';c.fillRect(0,gy,W,H-gy);
+ if($('bwLinien').checked){c.font='11px Georgia';for(let h=50;h<=250;h+=50){const y=gy-h*cm;if(y<8)break;c.fillStyle='#b3a07a';c.fillRect(0,y,W,1);c.fillStyle='#7c6b4c';c.fillText(h+' cm',4,y-2);}}
+ // Bodenmarken alle 50 cm, jede zweite beschriftet (Meter)
+ const m50=50/B.CM,i0=Math.floor((welt-cx/k)/m50),i1=Math.ceil((welt+cx/k)/m50);c.font='11px Georgia';
+ for(let i=i0;i<=i1;i++){const x=cx+(i*m50-welt)*k;c.fillStyle='#6f5b3d';c.fillRect(Math.round(x),gy,i%2?1:2,i%2?6:11);if(i%2===0){c.fillStyle='#5a4c36';c.fillText((i/2)+' m',x+4,gy+22);}}
+ const R=B.draw(c,a,cx,gy,k,1,{time:t});
+ // Abdrücke merken, sobald ein Fuß aufsetzt
+ const f=B.turnScale(a,t);if(ED.prevR&&(a.gs||0)>.5&&!a.turn)R.legs.forEach((l,i)=>{if(l.st&&!ED.prevR.legs[i].st){ED.prints.push({x:welt+f*l.px*sz,front:l.front});if(ED.prints.length>40)ED.prints.shift();}});
+ if($('bwSpur').checked)for(const p of ED.prints){const x=cx+(p.x-welt)*k;if(x>-20&&x<W+20){c.fillStyle=p.front?'#3d2f1d':'#54412a';c.fillRect(Math.round(x-5*k*sz),gy+2,Math.round(5*k*sz),3);}}
+ // größter Sprung des Kopfes je Bild (auf 1/60 s gerechnet)
+ if(ED.prevR&&ED.dtLast>0){const d=Math.hypot(R.hcx*f-ED.prevR.hcx*ED.prevF,R.hcy-ED.prevR.hcy)*sz*B.CM/(ED.dtLast*60);if(d>ED.jump)ED.jump=d;}
+ if(ED.dtLast>0||!ED.prevR){ED.prevR=R;ED.prevF=f;}
+ const v=(a.v||0)*sz*B.CM/100,gang=a.gs>.05?(a.gk==='up'?GANG.up:(a.mix||0)>.5?GANG.run:GANG.walk):HALTUNG[a.mode];
+ $('bwText').textContent=gang+' · Tempo '+v.toFixed(1)+' m/s ('+(v*3.6).toFixed(1)+' km/h) · Blick nach '+(B.facing(a)>0?'rechts':'links')+' · größter Sprung des Kopfes je Bild seit dem letzten Befehl: '+ED.jump.toFixed(1)+' cm · Zeit '+t.toFixed(2)+' s'+(ED.pause?' · PAUSE':'');
+ document.querySelectorAll('#bwHaltung button').forEach(b=>b.classList.toggle('on',!a.go&&b.dataset.m===a.mode&&!(a.gs>.05)));
+ document.querySelectorAll('#bwGang button[data-g]').forEach(b=>b.classList.toggle('on',a.go===b.dataset.g));}
+const befehl=fn=>()=>{fn();ED.jump=0;};
+for(const m of B.MODES){const b=el('button',{},HALTUNG[m]);b.dataset.m=m;b.onclick=befehl(()=>B.pose(ED.actor,m));$('bwHaltung').append(b);}
+for(const g of Object.keys(GANG)){const b=el('button',{},GANG[g]);b.dataset.g=g;b.onclick=befehl(()=>B.go(ED.actor,g));$('bwGang').append(b);}
+{const b=el('button',{id:'bwHalt'},'Anhalten');b.onclick=befehl(()=>B.go(ED.actor,null));const w=el('button',{id:'bwWenden'},'Wenden');w.onclick=befehl(()=>B.turn(ED.actor));$('bwGang').append(b,w);}
+for(const [x,o] of Object.entries(B.EXPR)){const b=el('button',{},o.de);b.dataset.x=x;b.onclick=befehl(()=>B.express(ED.actor,x,ED.T));$('bwMimik').append(b);}
+for(const [r,name] of [[1,'1×'],[.5,'½'],[.25,'¼'],[.125,'⅛']]){const b=el('button',{className:r===1?'on':''},name);b.dataset.r=r;b.onclick=()=>{ED.rate=r;document.querySelectorAll('#bwZeit button').forEach(x=>x.classList.toggle('on',x===b));};$('bwZeit').append(b);}
+$('bwPause').onclick=()=>{ED.pause=!ED.pause;$('bwPause').classList.toggle('on',ED.pause);$('bwPause').textContent=ED.pause?'Weiter':'Pause';};
+// Einzelbild: genau 1/60 Sekunde weiter (hält dabei an)
+$('bwBildVor').onclick=()=>{if(!ED.pause)$('bwPause').onclick();vor(1/60);};
+$('bwTempo').oninput=()=>{ED.actor.pace=+$('bwTempo').value;$('bwTempoText').textContent=$('bwTempo').value;};
+function vor(dt){ED.T+=dt;ED.dtLast=dt;B.step(ED.actor,dt,ED.T);}
+// Ein Takt für alle Reiter: Uhr weiterdrehen, Bär rechnen, den sichtbaren Reiter zeichnen
+let last=performance.now();
+function bild(){const n=performance.now(),real=Math.min(.05,(n-last)/1000);last=n;const bw=ED.tab==='bewegung';
+ if(bw&&ED.pause)ED.dtLast=0;else vor(real*(bw?ED.rate:1));
+ if(bw)bewegung();else if(ED.tab==='koerper')buehne();
+ requestAnimationFrame(bild);}
+ED.vor=vor;
+
+neu('brown',20261127);sorten();ED.pick='brown';sorten();detail(B.breed('brown'));bild();herde();
 })();

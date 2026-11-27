@@ -5,6 +5,8 @@
 //   der einzelne Bär bekommt Anlage (64 Bernoulli-Versuche um den Sortenwert) und Istwert (um Sortenwert minus 20).
 // · Zeichner: Bär in Seitenansicht aus einem Skelett (Sohlengänger, Füße stehen fest), Haltungen Stand, Sitzen,
 //   Liegen, Aufgerichtet mit weichen Übergängen. Köpfe und Fell je Sorte: dist/baer-koepfe.js.
+// · Bewegung (B2): Passgang, Galopp, aufrecht gehen, Wenden, Mimik; BAER.step(a,dt,t) je Bild, dann BAER.draw.
+//   Fell und Speck schwingen an einer Feder nach, schwere Bären beschleunigen und bremsen langsamer.
 // · Sortenliste und Werte: BAER_SORTEN.md. Fahrplan: BAER_FAHRPLAN.md. Editor: dist/baer-editor.html.
 // Maßstab wie im Spiel: 81 Einheiten = 180 cm → 2,22 cm je Einheit.
 // =====================================================================================================
@@ -164,33 +166,100 @@ BAER.MODES=MODES;BAER.setMode=setMode;BAER.poseSet=poseSet;
 BAER.snap=(a,mode)=>{a.mode=mode;a.pose=null;a.queue.length=0;};
 BAER.moving=a=>!!(a.pose&&a.pose.to)||a.queue.length>0;
 
+// ---------------------------------------------------------------- Gangarten (Muster wie GAITS/cyc2 in dist/hund.js, eigene Bärenwerte)
+// off: Versatz je Bein [hinten fern, vorn fern, hinten nah, vorn nah] · duty: Anteil am Boden · stride: Weg des Fußes am Boden · v: Tempo (Einheiten je Sekunde)
+// roll: Abrollen (Ferse bzw. Handgelenk hebt sich, die Zehen bleiben stehen) · curl: Pranke klappt im Schwung ein · hs, fs: Füße greifen weiter vor
+// Passgang: Hinter- und Vorderbein einer Seite fast zusammen, drei Füße am Boden. Galopp: erst beide Hinterbeine, dann beide Vorderbeine, dann Schwebephase.
+const GAITS={walk:{name:'Pace walk',de:'Passgang',off:[.1,0,.6,.5],duty:.66,stride:25,lift:4,roll:.75,curl:.35,v:42,hs:0,fs:0},
+ run:{name:'Gallop',de:'Galopp',off:[.55,.12,.45,0],duty:.34,stride:31,lift:7.5,roll:.9,curl:.5,v:250,hs:0,fs:2},
+ up:{name:'Upright walk',de:'Aufrecht gehen',off:[0,0,.5,0],duty:.7,stride:9,lift:2.2,roll:.45,curl:.1,v:14,hs:0,fs:0}};
+const FOOT_H=9.6,FOOT_V=6.6,Z1={dx:0,up:0,a:0,st:false};
+// Ein Fuß im Takt: sS Schrittweite (0–1), sL Hub (0–1)
+function footCyc(G,c,i,sS,sL,lf){const u=((c+G.off[i])%1+1)%1,st=G.stride*lf*sS;
+ if(u<G.duty){const s=u/G.duty,q=s>.72?(s-.72)/.28:0;return {dx:st*(.5-s),up:0,a:-G.roll*q*q*sL,st:true};}
+ const v=(u-G.duty)/(1-G.duty),w=v*v*(3-2*v),sn=Math.sin(Math.PI*v);return {dx:st*(w-.5),up:G.lift*lf*sL*sn,a:(-G.roll*(1-w)-G.curl*sn)*sL,st:false};}
+const smooth=u=>u*u*(3-2*u);
+// Befehle: go = null | 'walk' | 'run' | 'up'. Der Bär hält erst an, wechselt die Haltung und läuft dann los.
+BAER.GAITS=GAITS;
+BAER.go=(a,kind)=>{a.go=GAITS[kind]?kind:null;a.want=null;};
+BAER.pose=(a,mode)=>{if(MODES.includes(mode)){a.go=null;a.want=mode;}};
+BAER.turn=a=>{a.turnWant=true;};
+BAER.facing=a=>a.facing||1;
+// Einen Zeitschritt rechnen (einmal je Bild vor dem Zeichnen). Kosten: ein paar Rechnungen, kein Zeichnen.
+function step(a,dt,t){dt=cl(dt,0,.05);const D=a.bear,SH=a.SH||shapeOf(D),lf=SH.leg,heavy=cl(D.weight/400,.3,2),hs=Math.sqrt(heavy);let v=a.v||0;
+ const need=a.want||(a.go?(a.go==='up'?'rear':'stand'):null),busy=BAER.moving(a);let vT=0;
+ if(need&&a.mode!==need){if(v<1&&!busy&&!a.turn){v=0;setMode(a,need,t);}}
+ else{if(a.want)a.want=null;if(a.go&&!busy)vT=GAITS[a.go].v*(a.pace||1);}
+ // Wenden: im Sitzen und Liegen erst aufstehen
+ if(a.turnWant&&!a.turn){if(a.mode==='sit'||a.mode==='lie'){if(!busy&&!a.want)a.want='stand';}else if(!busy){a.turnWant=false;a.turn={t0:t,dur:.9+.5*heavy,from:a.facing||1};}}
+ if(a.turn){const u=(t-a.turn.t0)/a.turn.dur;a.tl=Math.sin(Math.PI*cl(u,0,1));if(u>=.5)a.facing=-a.turn.from;if(u>=1){a.turn=null;a.tl=0;}}
+ // Tempo: schwere Bären kommen langsam in Fahrt und bremsen langsam
+ const v0=v,acc=(30+.6*Math.max(vT,v))/hs*(vT<v?1.3:1);v+=cl(vT-v,-acc*dt,acc*dt);a.v=v;
+ if(v<.5&&!a.turn)a.gk=a.mode==='rear'?'up':'quad';const up=a.gk==='up';
+ a.gs=smooth(cl(v/(up?8:27),0,1));const mt=!up&&v>85?1:0;a.mix=cl((a.mix||0)+cl(mt-(a.mix||0),-dt*2.2,dt*2.2),0,1);
+ const len=(up?GAITS.up.stride/GAITS.up.duty:lerp(GAITS.walk.stride/GAITS.walk.duty,GAITS.run.stride/GAITS.run.duty,smooth(a.mix)))*lf*Math.max(a.gs,.3);
+ a.cyc=(a.cyc||0)+v*dt/len+(a.turn?dt*1.3*a.tl*(1-a.gs):0);a.dist=(a.dist||0)+v*dt*(a.facing||1);
+ // Fell und Speck: Feder, angeregt vom Auf und Ab des Gangs (q) und vom Anfahren und Bremsen (qx)
+ const c=a.cyc,m=smooth(a.mix),w=a.gs*(1-m),r=a.gs*m,tq=up?.5*a.gs*Math.sin(2*TAU*c):w*.7*Math.sin(2*TAU*c)+r*2.2*Math.sin(TAU*(c-.2));
+ const tx=cl(-(v-v0)/Math.max(dt,1e-3)*.012-v*.005,-3.5,3.5),om=10/hs,dm=2*.25*om;
+ a.qv=(a.qv||0)+(om*om*(tq-(a.q||0))-dm*(a.qv||0))*dt;a.q=cl((a.q||0)+a.qv*dt,-4,4);
+ a.qxv=(a.qxv||0)+(om*om*(tx-(a.qx||0))-dm*(a.qxv||0))*dt;a.qx=cl((a.qx||0)+a.qxv*dt,-4,4);}
+BAER.step=step;
+// Stauchung beim Wenden: der Bär dreht sich um die Hochachse, in der Seitenansicht wird er kurz schmal
+const turnScale=(a,t)=>{if(!a.turn)return a.facing||1;const u=cl((t-a.turn.t0)/a.turn.dur,0,1),f=a.turn.from*Math.cos(Math.PI*smooth(u));return Math.abs(f)<.04?(f<0?-.04:.04):f;};
+BAER.turnScale=turnScale;
+
+// ---------------------------------------------------------------- Mimik: wittern, gähnen, Lefzen heben, Ohren spielen
+const EXPR={sniff:{de:'Wittern',dur:2.8},yawn:{de:'Gähnen',dur:3.4},snarl:{de:'Lefzen',dur:2.6},ears:{de:'Ohren',dur:1.6}};
+BAER.EXPR=EXPR;BAER.express=(a,kind,t)=>{if(EXPR[kind])a.expr={kind,t0:t,dur:EXPR[kind].dur};};
+function faceOf(a,t,ph){const F={mouth:0,lip:0,ear:0,blink:0,nose:0,dne:0,dhe:0},bt=(t+ph*3)%4.3;if(t>0&&bt>4.17)F.blink=1;
+ const X=a.expr;if(!X)return F;const u=(t-X.t0)/X.dur;if(u>=1||u<0){if(u>=1)a.expr=null;return F;}
+ const ramp=X.kind==='yawn'?.36:.22,e=smooth(cl(u/ramp,0,1))*smooth(cl((1-u)/ramp,0,1));
+ if(X.kind==='sniff'){F.dne=.3*e;F.dhe=.5*e;F.nose=Math.sin(t*20)*.4*e;F.ear=.8*e;}
+ else if(X.kind==='yawn'){F.mouth=e;F.dhe=.3*e;F.dne=.1*e;F.ear=-.6*e;if(e>.45)F.blink=1;}
+ else if(X.kind==='snarl'){F.lip=e*(.9+.1*Math.sin(t*31));F.mouth=.2*e;F.ear=-e;F.dne=-.08*e;F.dhe=-.06*e;}
+ else F.ear=Math.sin(u*TAU*2)*e;
+ return F;}
+
 // ---------------------------------------------------------------- Skelett
 function rig(a,t,SH){const C=curPose(a,t,SH),lf=SH.leg,L=SH.L,D=a.bear,ph=(D.seed%97)*.13;
- const breathe=Math.sin(t*1.45+ph),still=1-cl(Math.abs(C.p-.02)*.4,0,.5);
- const p=C.p,Tx=Math.cos(p),Ty=-Math.sin(p),Nx=-Math.sin(p),Ny=-Math.cos(p),fem=14*lf,tib=13*lf,hum=13*lf,rad=14*lf;
- let hx=C.hx,hy=C.hy+breathe*.12;
+ const breathe=Math.sin(t*1.45+ph),still=1-cl(Math.abs(C.p-.02)*.4,0,.5),F=faceOf(a,t,ph);
+ // Gang: Füße im Takt, Rumpf wippt, nickt und (im Galopp) rollt und krümmt sich
+ const gs=a.gs||0,gl=Math.max(gs,a.tl||0);let dhy=0,dp=0,dbend=0,dne=0,dhe=0,hsx=0,fsx=0,F4=null;
+ if(gl>.002){const c=a.cyc||0,up=a.gk==='up',m=up?0:smooth(a.mix||0),w=gs*(1-m),r=gs*m,W=GAITS.walk,R=GAITS.run,U=GAITS.up;
+  if(up){dhy=gs*(4.8+.4*Math.sin(2*TAU*c));dp=.045*gs*Math.sin(TAU*c);dne=-.03*gs*Math.sin(TAU*c);
+   F4=[footCyc(U,c,0,gs,gl,lf),Z1,footCyc(U,c,2,gs,gl,lf),Z1];}
+  else{dhy=w*(1.5+.7*Math.sin(2*TAU*c))+r*(2.6-2.6*Math.cos(TAU*(c-.36)));dp=w*.025*Math.sin(2*TAU*c+1.2)+r*.13*Math.cos(TAU*(c-.67));
+   dbend=r*(.8+2.2*Math.cos(TAU*(c-.36)));dne=w*(-.05+.04*Math.sin(2*TAU*c+.8))+r*(.2-.1*Math.cos(TAU*(c-.67)));dhe=.05*w*Math.sin(TAU*c)+.12*r;hsx=r*R.hs;fsx=r*R.fs;
+   F4=[0,1,2,3].map(i=>{if(m<.001)return footCyc(W,c,i,gs,gl,lf);const B=footCyc(R,c,i,gs,gl,lf);if(m>.999)return B;const A=footCyc(W,c,i,gs,gl,lf);
+    return {dx:lerp(A.dx,B.dx,m),up:lerp(A.up,B.up,m),a:lerp(A.a,B.a,m),st:m<.5?A.st:B.st};});}}
+ const p=C.p+dp,bend=C.bend+dbend,Tx=Math.cos(p),Ty=-Math.sin(p),Nx=-Math.sin(p),Ny=-Math.cos(p),fem=14*lf,tib=13*lf,hum=13*lf,rad=14*lf,Ty0=Math.abs(Math.sin(C.p));
+ let hx=C.hx,hy=C.hy+breathe*.12+dhy;
  // Hinterfüße stehen fest: reicht das Bein im Übergang nicht, gibt das Becken nach, nicht der Fuß
- {const jx=hx+2*Tx-2.5*Nx,jy=hy+2*Ty-2.5*Ny,dx=C.ax-jx,dy=C.ay-jy,d=Math.hypot(dx,dy),mx=fem+tib-.4;if(d>mx){hx+=dx/d*(d-mx);hy+=dy/d*(d-mx);}}
+ if(!F4){const jx=hx+2*Tx-2.5*Nx,jy=hy+2*Ty-2.5*Ny,dx=C.ax-jx,dy=C.ay-jy,d=Math.hypot(dx,dy),mx=fem+tib-.4;if(d>mx){hx+=dx/d*(d-mx);hy+=dy/d*(d-mx);}}
  const sx=hx+L*Tx,sy=hy+L*Ty;
- const leg=(front,near)=>{const off=near?0:1;
-  if(front){const jx=sx-1*Tx-1.2*Nx+off*1.2,jy=sy-1*Ty-1.2*Ny-off*.6,fx=C.wx-off*(3.2-6*Math.abs(Ty)),fy=C.wy-off*Math.abs(Ty)*1.5;const r=ik(jx,jy,fx,fy,hum,rad,1);
-   return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-6.4*SH.legW),fx:r.fx,fy:Math.min(r.fy,-5.2*SH.legW),ang:C.pa};}
-  const jx=hx+2*Tx-2.5*Nx-off*1.2,jy=hy+2*Ty-2.5*Ny-off*.5,fx=C.ax+off*3.4,fy=C.ay;const r=ik(jx,jy,fx,fy,fem,tib,-1);
-  return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-7*SH.legW),fx:r.fx,fy:Math.min(r.fy,-5*SH.legW),ang:0};};
- const nbx=sx+3*Tx+3*Nx,nby=sy+3*Ty+3*Ny,nod=breathe*.015*still;
- const hcx=nbx+SH.neck*Math.cos(C.ne+nod),hcy=nby-SH.neck*Math.sin(C.ne+nod);
- return {C,p,Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,breathe,legs:[leg(false,false),leg(true,false),leg(false,true),leg(true,true)],nbx,nby,hcx,hcy,he:C.he+nod,
+ // Abrollen: hebt sich Ferse oder Handgelenk (Winkel < 0), bleibt die Zehenspitze stehen und das Gelenk wandert nach oben
+ const leg=(front,near)=>{const off=near?0:1,g=F4&&F4[(near?2:0)+(front?1:0)],ga=g&&g.a<0?g.a:0;
+  if(front){const jx=sx-1*Tx-1.2*Nx+off*1.2,jy=sy-1*Ty-1.2*Ny-off*.6;let fx=C.wx-off*(3.2-6*Ty0),fy=C.wy-off*Ty0*1.5;
+   if(g){fx+=g.dx+fsx+FOOT_V*(1-Math.cos(ga));fy+=FOOT_V*Math.sin(ga)-g.up;}const r=ik(jx,jy,fx,fy,hum,rad,1);
+   return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-6.4*SH.legW),fx:r.fx,fy:Math.min(r.fy,-5.2*SH.legW),ang:C.pa+(g?g.a:0),st:g?g.st:true,px:r.fx+FOOT_V*Math.cos(ga)};}
+  const jx=hx+2*Tx-2.5*Nx-off*1.2,jy=hy+2*Ty-2.5*Ny-off*.5;let fx=C.ax+off*3.4,fy=C.ay;
+  if(g){fx+=g.dx+hsx+FOOT_H*(1-Math.cos(ga));fy+=FOOT_H*Math.sin(ga)-g.up;}const r=ik(jx,jy,fx,fy,fem,tib,-1);
+  return {front,near,jx,jy,kx:r.kx,ky:Math.min(r.ky,-7*SH.legW),fx:r.fx,fy:Math.min(r.fy,-5*SH.legW),ang:g?g.a:0,st:g?g.st:true,px:r.fx+FOOT_H*Math.cos(ga)};};
+ const nbx=sx+3*Tx+3*Nx,nby=sy+3*Ty+3*Ny,nod=breathe*.015*still,ne=C.ne+nod+dne+F.dne;
+ const hcx=nbx+SH.neck*Math.cos(ne),hcy=nby-SH.neck*Math.sin(ne);
+ return {C,p,bend,Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,breathe,legs:[leg(false,false),leg(true,false),leg(false,true),leg(true,true)],nbx,nby,hcx,hcy,he:C.he+nod+dhe+F.dhe,face:F,
   cx:(hx+sx)/2,lie:cl(1-Math.abs(hy+10)/8,0,1)*(1-cl(p,0,1))};}
 BAER.rig=(a,t)=>rig(a,t,a.SH||shapeOf(a.bear));
 
 // ---------------------------------------------------------------- Zeichner
 const G=-.25;// nichts reicht unter den Boden: Speck und Fell legen sich auf
 function drawBear(c,a,px,py,k,face,opt={}){const D=a.bear,col=D.appearance.colors,SH=a.SH||shapeOf(D),sz=(a.P||(a.P=params(D))).sz,t=opt.time??performance.now()/1000;
- const R=rig(a,t,SH),{Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,C}=R,bk=SH.bulk,lw=SH.legW,seed=D.seed%1000;
+ const R=rig(a,t,SH),{Tx,Ty,Nx,Ny,hx,hy,sx,sy,L,C}=R,bk=SH.bulk,lw=SH.legW,seed=D.seed%1000,q=a.q||0,qx=a.qx||0,ts=turnScale(a,t);
  const base=col.base,light=col.light,shade=col.shade,dark=col.dark,legC=mix(base,dark,.34),farC=mix(dark,shade,.45),clawC=col.claw;
  c.save();c.translate(px,py);c.scale(k,k);
- if(!opt.noShadow){c.fillStyle='#1c140c50';c.beginPath();c.ellipse(face*R.cx*sz,1.2,(L*.5+18+R.lie*8)*sz*(1-cl(R.p,0,1.4)*.35),(4.2+R.lie)*sz,0,0,TAU);c.fill();}
- c.scale(face*sz,sz);
+ if(!opt.noShadow){c.fillStyle='#1c140c50';c.beginPath();c.ellipse(face*ts*R.cx*sz,1.2,(L*.5+18+R.lie*8)*sz*(1-cl(R.p,0,1.4)*.35)*Math.max(.42,Math.abs(ts)),(4.2+R.lie)*sz,0,0,TAU);c.fill();}
+ c.scale(face*sz*ts,sz);
  const gy=y=>Math.min(y,G);
  const blob=(x,y,r,cc)=>{const pts=[];for(let i=0;i<16;i++){const an=i/16*TAU;pts.push([x+Math.cos(an)*r,gy(y+Math.sin(an)*r)]);}poly(c,pts,cc);};
  // ---- Pranke und Fuß mit Krallen
@@ -200,14 +269,15 @@ function drawBear(c,a,px,py,k,face,opt={}){const D=a.bear,col=D.appearance.color
    const dx=Math.cos(l.ang),dy=-Math.sin(l.ang),pr=3.1*lw,x0=l.fx-dx*1.2,y0=l.fy-dy*1.2+2.2,x1=l.fx+dx*6.6,y1=l.fy+dy*6.6+2.2,gp=y=>Math.min(y,-pr);
    limb(c,x0-dx*2.6,gp(y0-dy*2.6),x1,gp(y1),6.2*lw,5.2*lw,cc);claws(x1+dx*2,gp(y1)+dy*2+.2,dx,dy,5.2*lw,4);}
   else{limb(c,l.jx,Math.min(l.jy,-10*lw*bk),l.kx,l.ky,20*lw*bk,14*lw,up);limb(c,l.kx,l.ky,l.fx,l.fy,13.5*lw,10*lw,cc);
-   {const fr=2.9*lw,yf=Math.min(l.fy+2.2,-fr);limb(c,l.fx-3.6,yf,l.fx+9.6,yf+.4,5.8*lw,4.8*lw,cc);claws(l.fx+11.4,yf+.5,1,0,4.8*lw,3);}}}
+   {const fr=2.9*lw,dx=Math.cos(l.ang),dy=-Math.sin(l.ang),y0=l.fy+2.2,gf=y=>Math.min(y,-fr),xt=l.fx+dx*9.6,yt=gf(y0+dy*9.6+.4);// Sohle: Ferse bis Zehen, rollt beim Gehen ab
+    limb(c,l.fx-dx*3.6,gf(y0-dy*3.6),xt,yt,5.8*lw,4.8*lw,cc);claws(xt+dx*1.8,yt+dy*1.8+.1,dx,dy,4.8*lw,3);}}}
  drawLeg(R.legs[0]);drawLeg(R.legs[1]);
  // ---- Rumpf: Wirbelsäule als Bogen vom Becken zur Schulter, oben Rücken mit Buckel, unten Bauch
- const top=[],bot=[],n=14,mx=(hx+sx)/2+Nx*C.bend*2,my=(hy+sy)/2+Ny*C.bend*2,br=R.breathe*.35;
+ const top=[],bot=[],n=14,mx=(hx+sx)/2+Nx*R.bend*2,my=(hy+sy)/2+Ny*R.bend*2,br=R.breathe*.35,hump=Math.max(0,SH.hump-q*.35);
  for(let i=0;i<=n;i++){const u=i/n,q=1-u,x=q*q*hx+2*u*q*mx+u*u*sx,y=q*q*hy+2*u*q*my+u*u*sy;
   let tx=2*q*(mx-hx)+2*u*(sx-mx),ty=2*q*(my-hy)+2*u*(sy-my);const tl=Math.hypot(tx,ty)||1;tx/=tl;ty/=tl;const nx=ty,ny=-tx;// zeigt zum Rücken
-  const rt=(12.4-1.1*Math.sin(Math.PI*cl(u/.7,0,1))+1.4*u)*bk+SH.hump*Math.exp(-Math.pow((u-.82)/.22,2));
-  const rb=(13+(1.8+SH.belly+C.sag)*Math.sin(Math.PI*cl((u-.05)/.9,0,1))+br*Math.sin(Math.PI*u))*bk;
+  const rt=(12.4-1.1*Math.sin(Math.PI*cl(u/.7,0,1))+1.4*u)*bk+hump*Math.exp(-Math.pow((u-.82)/.22,2));
+  const rb=(13+(1.8+SH.belly+C.sag)*Math.sin(Math.PI*cl((u-.05)/.9,0,1))+(br+q*1.1)*Math.sin(Math.PI*u))*bk;
   top.push([x+nx*rt,gy(y+ny*rt)]);bot.push([x-nx*rb,gy(y-ny*rb)]);}
  disk(c,hx-Tx*10.5*bk+Nx*5*bk,hy-Ty*10.5*bk+Ny*5*bk,2.4*SH.tail,shade);// Stummelschwanz
  blob(hx,hy,12.6*bk,base);blob(sx,sy,13.6*bk,base);
@@ -218,13 +288,13 @@ function drawBear(c,a,px,py,k,face,opt={}){const D=a.bear,col=D.appearance.color
  poly(c,bot.slice(1,n).map(([x,y])=>[x+Nx*3.4,gy(y+Ny*3.4)]).concat(bot.slice(1,n).reverse()),shade);
  poly(c,top.slice(2,n).concat(top.slice(2,n).reverse().map(([x,y],i)=>{return [x-Nx*2,y-Ny*2];})),light+'90');
  // Zotteln: am Bauch hängend, am Rücken und Buckel abstehend (fest je Bär, flimmert nicht)
- if(SH.shag>0){const s=SH.shag;for(let i=1;i<n;i++){const [x,y]=bot[i],h=hrand(i*3.7+seed);if(y<G-1){seg(c,x,y-.6,x-1.3-h,gy(y+.9*s+h*s),.9,shade);seg(c,x+1.8,y-.6,x+.8-h,gy(y+.6*s+h*.8*s),.8,mix(shade,dark,.4));}
-   if(i%2){const [X,Y]=top[i];seg(c,X,Y+.6,X-1.3*s-h*s*.6,Y-.15*s-h*.35*s,.9,mix(base,light,.5));}}
-  for(let i=0;i<4;i++){const u=.25+i*.2,h=hrand(i*9.1+seed);seg(c,lerp(sx,R.hcx,u)-Nx*-8*bk*(1-u*.3),gy(lerp(sy,R.hcy,u)+ (8*bk*(1-u*.3))),lerp(sx,R.hcx,u)-1.5,gy(lerp(sy,R.hcy,u)+9.5*bk*(1-u*.3)+h*1.6*s),.9,shade);}}
+ if(SH.shag>0){const s=SH.shag;for(let i=1;i<n;i++){const [x,y]=bot[i],h=hrand(i*3.7+seed);if(y<G-1){seg(c,x,y-.6,x-1.3-h+qx*(.5+h),gy(y+.9*s+h*s),.9,shade);seg(c,x+1.8,y-.6,x+.8-h+qx*(.4+h),gy(y+.6*s+h*.8*s),.8,mix(shade,dark,.4));}
+   if(i%2){const [X,Y]=top[i];seg(c,X,Y+.6,X-1.3*s-h*s*.6+qx*.5,Y-.15*s-h*.35*s-Math.abs(q)*.15,.9,mix(base,light,.5));}}
+  for(let i=0;i<4;i++){const u=.25+i*.2,h=hrand(i*9.1+seed);seg(c,lerp(sx,R.hcx,u)-Nx*-8*bk*(1-u*.3),gy(lerp(sy,R.hcy,u)+ (8*bk*(1-u*.3))),lerp(sx,R.hcx,u)-1.5+qx*.6,gy(lerp(sy,R.hcy,u)+9.5*bk*(1-u*.3)+h*1.6*s),.9,shade);}}
  drawLeg(R.legs[2]);drawLeg(R.legs[3]);
  // ---- Kopf (Zeichner je Sorte)
  c.save();c.translate(R.hcx,Math.min(R.hcy,G-6.5*SH.headS));c.rotate(-R.he);c.scale(SH.headS,SH.headS);
- (BAER.HEADS[SH.head]||headPlain)(c,D,SH,col,{t,breathe:R.breathe,prim:BAER.prim});c.restore();
+ (BAER.HEADS[SH.head]||headPlain)(c,D,SH,col,{t,breathe:R.breathe,prim:BAER.prim,f:R.face});c.restore();
  c.restore();return R;}
 function headPlain(c,D,SH,col){disk(c,0,0,7.6,col.base);poly(c,[[3,-5],[13.5,-2],[14,1.5],[6,5],[0,6]],col.base);rr(c,12.4,-2.2,2,2,'#17100c');rr(c,4.6,-2.6,1.2,1.2,'#120c08');}
 BAER.draw=drawBear;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bären-Editor (Testversion): Sorten, Körper, Messung</title>
+<title>Bären-Editor (Testversion): Sorten, Körper, Bewegung, Messung</title>
 <style>
 :root{--bg:#1d1711;--panel:#2a2119;--line:#4a3a2a;--ink:#e9dcc0;--dim:#a8977a;--gold:#d2a550;--red:#b5402f}
 *{box-sizing:border-box}
@@ -44,8 +44,8 @@ table{border-collapse:collapse;font-size:14px}td,th{border:1px solid var(--line)
 </style>
 </head>
 <body>
-<header><h1>Bären-Editor</h1><small>Testversion · Bedienung Deutsch, Inhalte der Bären Englisch · Stand B1: Körper, Stand, Miniatur</small></header>
-<nav><button data-tab="sorten" class="on">Sorten</button><button data-tab="koerper">Körper</button><button data-tab="messung">Messung</button></nav>
+<header><h1>Bären-Editor</h1><small>Testversion · Bedienung Deutsch, Inhalte der Bären Englisch · Stand B2: Körper, Bewegung, Mimik, Miniatur</small></header>
+<nav><button data-tab="sorten" class="on">Sorten</button><button data-tab="koerper">Körper</button><button data-tab="bewegung">Bewegung</button><button data-tab="messung">Messung</button></nav>
 <main>
 <section id="sorten" class="on">
  <div class="reihe"><label><input type="checkbox" id="massstab"> Miniaturen im echten Größenverhältnis</label></div>
@@ -67,6 +67,17 @@ table{border-collapse:collapse;font-size:14px}td,th{border:1px solid var(--line)
    <textarea id="ausgabe" readonly></textarea><div class="hinweis">Diese Zeile an Claude schicken, wenn die Gestalt so bleiben soll.</div></div>
  </div>
 </section>
+<section id="bewegung">
+ <p class="hinweis">Der Bär läuft auf der Stelle, der Boden zieht unter ihm durch. Die dunklen Abdrücke zeigen, wo ein Fuß aufgesetzt hat: Sie dürfen unter dem stehenden Fuß nicht wandern.</p>
+ <div class="reihe"><b>Haltung</b><span class="reihe" id="bwHaltung" style="margin:0"></span></div>
+ <div class="reihe"><b>Gang</b><span class="reihe" id="bwGang" style="margin:0"></span></div>
+ <div class="reihe"><b>Mimik</b><span class="reihe" id="bwMimik" style="margin:0"></span></div>
+ <canvas id="bwBild" class="buehne" width="820" height="430"></canvas>
+ <div class="reihe"><b>Zeit</b><span class="reihe" id="bwZeit" style="margin:0"></span><button id="bwPause">Pause</button><button id="bwBildVor">Bild vor</button></div>
+ <div class="reihe regler" style="max-width:520px"><label><span>Gangtempo</span><input type="range" id="bwTempo" min="0.6" max="1.4" step="0.05" value="1"><span id="bwTempoText">1</span></label></div>
+ <div class="reihe"><label><input type="checkbox" id="bwSpur" checked> Abdrücke zeigen</label><label><input type="checkbox" id="bwLinien"> Höhenlinien</label></div>
+ <div id="bwText" class="hinweis"></div>
+</section>
 <section id="messung">
  <p class="hinweis">Misst, wie lange das Zeichnen eines Bären dauert (Mittel über viele Bilder). Auf dem Handy messen, das zählt.</p>
  <div class="reihe"><button id="messen">Messen</button><label><input type="checkbox" id="herde" checked> 40 Bären laufend zeichnen</label></div>
@@ -75,9 +86,9 @@ table{border-collapse:collapse;font-size:14px}td,th{border:1px solid var(--line)
  <div class="hinweis" id="herdeText"></div>
 </section>
 </main>
-<script src="baer.js?v=727dacb0"></script>
-<script src="baer-koepfe.js?v=727dacb0"></script>
-<script src="baer-mini.js?v=727dacb0"></script>
-<script src="baer-editor.js?v=727dacb0"></script>
+<script src="baer.js?v=381fc006"></script>
+<script src="baer-koepfe.js?v=381fc006"></script>
+<script src="baer-mini.js?v=381fc006"></script>
+<script src="baer-editor.js?v=381fc006"></script>
 </body>
 </html>

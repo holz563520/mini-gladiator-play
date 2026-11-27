@@ -8,9 +8,11 @@
 const BAER=window.BAER,{rr,poly,disk,seg}=BAER.prim,mix=BAER.mix;
 
 // ---------------------------------------------------------------- Braunbär (Bauart G): breiter Schädel, eingedelltes Profil, kleine runde Ohren, helle Schnauze
-BAER.HEADS.br=(c,D,SH,col,o)=>{const base=col.base,dark=col.dark,shade=col.shade,mz=col.muzzle,e=SH.ear,sn=SH.snout,st=SH.stop;
- const tip=6.4+8*sn;// Nasenspitze
- disk(c,-4.4,-6.6,2.7*e,mix(dark,shade,.4));// fernes Ohr
+// Mimik (o.f aus baer.js): mouth Maul auf (0–1) · lip Lefzen gehoben · ear Ohren (-1 angelegt … 1 nach vorn) · blink Auge zu · nose Nase zuckt
+const F0={mouth:0,lip:0,ear:0,blink:0,nose:0};
+BAER.HEADS.br=(c,D,SH,col,o)=>{const base=col.base,dark=col.dark,shade=col.shade,mz=col.muzzle,e=SH.ear,sn=SH.snout,st=SH.stop,f=o.f||F0,m=f.mouth,lp=f.lip,eb=Math.max(0,-f.ear),ef=Math.max(0,f.ear);
+ const tip=6.4+8*sn,tooth='#e8dcc0';// Nasenspitze
+ disk(c,-4.4-1.4*eb+.5*ef,-6.6+1.6*eb-.3*ef,2.7*e*(1-.2*eb),mix(dark,shade,.4));// fernes Ohr
  disk(c,-1.2,3.2,7.2,base);// Backen, Wamme
  disk(c,0,0,7.9,base);// Schädel
  // Stirn mit Absatz, Nasenrücken, Schnauze, Unterkiefer
@@ -18,11 +20,25 @@ BAER.HEADS.br=(c,D,SH,col,o)=>{const base=col.base,dark=col.dark,shade=col.shade
  // helle Schnauze, zur Stirn hin auslaufend
  poly(c,[[7.6,-3.1+st*.2],[tip-1.4,-2.9],[tip,-1.9],[tip+.2,.2],[tip-.7,2],[tip-3,3.1],[7.4,3.6],[6.2,.4]],mz);
  poly(c,[[5.4,-2.4],[7.8,-3],[6.6,.6],[7.4,3.4],[4.6,3.4]],mix(base,mz,.5));
- poly(c,[[1,5.2],[6,3.6],[tip-3,3.2],[6.2,4.8],[2,6.7]],shade);// Schatten unterm Kiefer
- seg(c,tip-.5,1.25,7.4,2.3,.55,mix(dark,'#000000',.3));// Maulspalte
- poly(c,[[tip-1.7,-3.1],[tip+.1,-2.2],[tip+.4,-.2],[tip-1.1,-.5]],'#17100c');// Nase
- rr(c,4.3,-3.3,1.5,1.4,'#120c08');rr(c,4.1,-4.3,2.4,.8,shade);// Auge, Braue
- disk(c,-3.2,-6.9,3*e,base);disk(c,-3.1,-6.6,1.7*e,mix(dark,shade,.5));// nahes Ohr
+ if(m<.03){poly(c,[[1,5.2],[6,3.6],[tip-3,3.2],[6.2,4.8],[2,6.7]],shade);// Schatten unterm Kiefer
+  seg(c,tip-.5,1.25,7.4,2.3,.55,mix(dark,'#000000',.3));}// Maulspalte
+ else{// Maul offen: Rachen, dann der Unterkiefer, um das Kiefergelenk gedreht
+  const jx0=5.4,jy0=2.6,an=m*.78,jl=tip-1.2-jx0,ca=Math.cos(an),sa=Math.sin(an),X=(x,y)=>jx0+x*ca-y*sa,Y=(x,y)=>jy0+x*sa+y*ca;
+  poly(c,[[jx0-1,jy0-.9],[tip-.6,1.05],[tip-.5,2.3],[X(jl,-1.2),Y(jl,-1.2)],[X(0,1.4),Y(0,1.4)]],'#3a1512');
+  poly(c,[[jx0+1.5,jy0-.2],[tip-2.6,1.5],[X(jl-2.4,-.9),Y(jl-2.4,-.9)],[X(1.5,.4),Y(1.5,.4)]],'#6e2a25');
+  c.save();c.translate(jx0,jy0);c.rotate(an);
+  if(m>.4)poly(c,[[1.4,-.5],[jl-2.2,-1.5],[jl-.9,-1.25],[jl-1.6,-.5],[1.6,.6]],'#b65c53');// Zunge
+  poly(c,[[-1.6,-.3],[jl,-1.05],[jl+.5,.5],[jl-2.6,1.6],[.6,2.4],[-3.4,2.5]],mix(base,mz,.55));poly(c,[[jl-4.6,-.72],[jl,-1.05],[jl+.5,.5],[jl-2.6,1.6]],mz);
+  poly(c,[[-3.2,1.6],[.6,1.6],[jl-2.6,.9],[jl-2.6,1.6],[.6,2.4],[-3.4,2.5]],shade);
+  poly(c,[[jl-2.3,-.95],[jl-1.3,-1.05],[jl-1.7,-2.6]],tooth);rr(c,jl-.9,-1.6,.7,.7,tooth);rr(c,jl-4.6,-1.25,1.6,.6,tooth);// Eckzahn unten, Schneidezahn, Backenzähne
+  c.restore();}
+ if(lp>.03){// Lefze gehoben: Zahnfleisch, Zähne, Falten auf dem Nasenrücken
+  poly(c,[[tip-5,2],[tip-.7,1.15],[tip-.6,1.1-1.3*lp],[tip-4.8,1.9-1.2*lp]],'#6a2420');rr(c,tip-4.6,1.9-.9*lp,1.5,.2+.8*lp,tooth);rr(c,tip-1.5,1.2-.8*lp,.8,.2+.7*lp,tooth);
+  if(lp>.3){seg(c,tip-3.4,-3,tip-3.9,-1.5,.5,shade);seg(c,tip-5,-3,tip-5.6,-1.4,.5,shade);}}
+ if(m>=.03||lp>.03)poly(c,[[tip-3.1,1.55-.9*lp],[tip-1.9,1.3-.9*lp],[tip-2.3,3.2]],tooth);// Eckzahn oben
+ poly(c,[[tip-1.7,-3.1+f.nose],[tip+.1,-2.2+f.nose],[tip+.4,-.2+f.nose*.5],[tip-1.1,-.5+f.nose*.5]],'#17100c');// Nase
+ if(f.blink>.5)rr(c,4.2,-2.6,1.8,.5,dark);else rr(c,4.3,-3.3,1.5,1.4,'#120c08');rr(c,4.1,-4.3+.6*lp,2.4,.8+.3*lp,shade);// Auge, Braue
+ disk(c,-3.2-1.8*eb+.6*ef,-6.9+2*eb-.3*ef,3*e*(1-.2*eb),base);disk(c,-3.1-1.8*eb+.7*ef,-6.6+2*eb-.3*ef,1.7*e*(1-.3*eb),mix(dark,shade,.5));// nahes Ohr
  seg(c,-6.6,2,-7.8,5.4,1,shade);seg(c,-4.6,4.6,-5.6,7.6,1,shade);// Nackenfell
 };
 
