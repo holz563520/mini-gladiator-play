@@ -1,5 +1,5 @@
 'use strict';
-/* BÄREN-KAMPF-EDITOR (baer-kampf.html, Schritt B3a): baut mit BAER.K.build (baer-kampf.js) einen Kampf Bär gegen Mensch, Hund oder Bär,
+/* BÄREN-KAMPF-EDITOR (baer-kampf.html, Schritte B3a und B3b1): baut mit BAER.K.build (baer-kampf.js) einen Kampf Bär gegen Mensch, Hund oder Bär,
    zeigt Zustand, Wunden, Kampfbericht, löst einzelne Angriffe aus und rechnet viele Kämpfe ohne Bild. Bedienung Deutsch, Bäreninhalte Englisch.
    Ändert keinen Spielstand: Der Speicher des Spiels wird hier gar nicht geladen, M.persist ist abgeschaltet. */
 (()=>{
@@ -52,10 +52,10 @@ function karte(a){
  if(a.bear){const D=a.bear,Br=B.breed(D.breed);return `<div class="karte"><b>${esc(a.g.name)}</b> · ${esc(Br.name)} · ${D.weight} kg · Seite ${a.team?'B':'A'}<br>`+
   (a.g.dead?`<span class="tot">tot: ${esc(a.g.cause)}</span>`:a.fled?'<span class="tot">geflohen</span>':`${esc(MODE_DE[a.mode]||a.mode)}`)+
   `<br>Gesundheit ${bar(K.health(a))} Blut ${bar(a.blood,1)} Mut ${bar(a.morale)}<div class="teile">`+K.PARTS.map(p=>`<span>${K.PART_DE[p]} ${Math.round(a.tissue[p]/a.max[p]*100)} %</span>`).join('')+
-  `</div><small>Treffer ${a.hits} · getötet ${a.kills} · abgerissen ${a.torn||0} · Kopfbisse ${a.crushed||0}</small></div>`;}
+  `</div><small>Treffer ${a.hits} · getötet ${a.kills} · abgerissen ${a.torn||0} · Kopfbisse ${a.crushed||0} · gepackt ${a.grapples||0} · geschleudert ${a.flung||0} · weggezerrt ${a.dragged||0}`+(K.lame(a)>0?` · lahmt ${Math.round(K.lame(a)*100)} %`:'')+`</small></div>`;}
  if(a.dog){return `<div class="karte"><b>${esc(a.g.name)}</b> · ${esc(a.dog.breedName||'Hund')} · ${a.dog.weight} kg · Seite ${a.team?'B':'A'}<br>`+(a.g.dead?'<span class="tot">tot</span>':a.fled?'<span class="tot">geflohen</span>':a.submit?'<span class="tot">unterwirft sich</span>':`Gesundheit ${bar(DOG.health(a))} Blut ${bar(a.blood,1)}`)+'</div>';}
  const g=a.g,weg=Object.entries(g.body).filter(([,p])=>p.missing).map(([id])=>M.partName?M.partName(id):id);
- return `<div class="karte"><b>${esc(g.name)}</b> · Mensch · Seite ${a.team?'B':'A'}<br>`+(g.dead?`<span class="tot">tot: ${esc(g.cause||'')}</span>`:a.pinnedBy?'<span class="tot">liegt unter dem Bären</span>':a.down?'<span class="tot">am Boden</span>':`Gesundheit ${bar(M.health(g))} Blut ${bar(g.blood??100,1)}`)+
+ return `<div class="karte"><b>${esc(g.name)}</b> · Mensch · Seite ${a.team?'B':'A'}<br>`+(g.dead?`<span class="tot">tot: ${esc(g.cause||'')}</span>`:a.pinnedBy?'<span class="tot">liegt unter dem Bären</span>':a.grabbedBy?'<span class="tot">vom Bären gepackt</span>':a.down?'<span class="tot">am Boden</span>':`Gesundheit ${bar(M.health(g))} Blut ${bar(g.blood??100,1)}`)+
   (weg.length?`<br><small>fehlt: ${esc(weg.join(', '))}</small>`:'')+'</div>';}
 let logLen=-1;
 function tick(){const r=run;if(!r||S.battle!==r.b)return;const b=r.b;
@@ -72,7 +72,7 @@ const cam={x:520,y:390};M.battleCamera=b=>{if(!b?.baer||!run)return null;const z
 
 // ---------- Viele Kämpfe ----------
 $('serieGo').onclick=()=>{$('serie').textContent='Rechnet …';setTimeout(()=>{const alt=S.battle,p=alt?.paused;if(alt)alt.paused=true;let R;try{R=K.series(spec,30);}catch(e){$('serie').textContent='Fehler: '+e.message;return;}finally{S.battle=alt;if(alt)alt.paused=p;}
- $('serie').innerHTML=`Seite A gewinnt <b>${R.wins[0]}</b> · Seite B gewinnt <b>${R.wins[1]}</b> · ohne Sieger <b>${R.draw}</b> (von ${R.n})<br>mittlere Kampfdauer ${nf(R.time)} s · tote Bären ${R.deadBears} · geflohene Bären ${R.fled} · abgerissene Gliedmaßen ${R.torn} · Kopfbisse ${R.crushed} · Rechenzeit ${nf(R.ms/R.n,0)} ms je Kampf`;},30);};
+ $('serie').innerHTML=`Seite A gewinnt <b>${R.wins[0]}</b> · Seite B gewinnt <b>${R.wins[1]}</b> · ohne Sieger <b>${R.draw}</b> (von ${R.n})<br>mittlere Kampfdauer ${nf(R.time)} s · tote Bären ${R.deadBears} · geflohene Bären ${R.fled} · abgerissene Gliedmaßen ${R.torn} · Kopfbisse ${R.crushed} · gepackt ${R.grapples} · geschleudert ${R.flung} · weggezerrt ${R.dragged} · Rechenzeit ${nf(R.ms/R.n,0)} ms je Kampf`;},30);};
 for(const k of ['tear','head'])if(K.OPT[k]===0)$(k).value='0';// Notausschalter aus der Adresse
 sync();build();
 window.BAER_KAMPF_ED={build,spec};

@@ -35,7 +35,7 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 .err{color:#f29b83;white-space:pre-wrap}
 </style></head><body><div class="wrap">
 <div class="tl">Arena Theory · Werkzeug · <a href="baer-editor.html">zurück zum Bären-Editor</a></div><h1>Bären · Kampf-Editor</h1>
-<p class="sub">Bären gegen Menschen, Hunde und andere Bären, mit der echten Kampflogik des Spiels. Testversion (Schritt B3a): Die Werte sind vorläufig und noch nicht eingemessen, bisher hat nur der Europäische Braunbär eine eigene Gestalt, alle anderen Sorten kämpfen mit ihren eigenen Werten in seinem Körper. Dein Spielstand wird nicht verändert.</p>
+<p class="sub">Bären gegen Menschen, Hunde und andere Bären, mit der echten Kampflogik des Spiels. Testversion (Schritte B3a und B3b1): Die Werte sind vorläufig und noch nicht eingemessen, bisher hat nur der Europäische Braunbär eine eigene Gestalt, alle anderen Sorten kämpfen mit ihren eigenen Werten in seinem Körper. Dein Spielstand wird nicht verändert.</p>
 <div class="teams">
  <div class="team"><h3>Seite A (links)</h3><div class="bbar">
   <label>Art<select id="artA"><option value="bear" selected>Bär</option><option value="human">Mensch</option><option value="dog">Hund</option></select></label>
@@ -68,7 +68,7 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 <div class="stage"><canvas id="arenaCanvas" width="1040" height="720"></canvas></div>
 <div class="hud" id="hud">Lädt …</div>
 <h2>Angriff auslösen</h2>
-<p class="sub">Der erste Bär der Seite A nimmt den gewählten Angriff als Nächstes. Abreißen und Kopfbiss gehen nur am Liegenden: Der Bär reißt den Gegner dafür erst zu Boden. Von selbst kommen beide nach den Startwerten aus dem Fahrplan: Abreißen nur an einem schon schwer verletzten Glied (kleine Bären nur Hand und Fuß, höchstens einmal je Opfer), Kopfbiss nur ab ☠3 mit Bisskraft ab 70 an einem fast wehrlosen Opfer. Mit den Reglern lässt sich beides häufiger stellen oder abschalten.</p>
+<p class="sub">Der erste Bär der Seite A nimmt den gewählten Angriff als Nächstes. Neu (B3b1): Packen und Ringen (hält den Stehenden fest, beißt, ringt ihn zu Boden oder schleudert ihn weg), Wegschleudern, Wegzerren (zerrt den Liegenden von anderen Gegnern weg, darum am besten mit zwei oder mehr Gegnern ansehen). Bären mit schwer verletzter Vorderpranke oder verletztem Hinterlauf lahmen: langsamer, kein Galopp. Große Bären (ab ☠4) reißen ein schon schwer verletztes Glied auch am Stehenden ab. Abreißen und Kopfbiss gehen nur am Liegenden: Der Bär reißt den Gegner dafür erst zu Boden. Von selbst kommen beide nach den Startwerten aus dem Fahrplan: Abreißen nur an einem schon schwer verletzten Glied (kleine Bären nur Hand und Fuß, höchstens einmal je Opfer), Kopfbiss nur ab ☠3 mit Bisskraft ab 70 an einem fast wehrlosen Opfer. Mit den Reglern lässt sich beides häufiger stellen oder abschalten.</p>
 <div class="bbar" id="angriffe"></div>
 <div class="bbar">
  <label>Abreißen, Häufigkeit (0 = aus): <span id="tearText"></span><input type="range" id="tear" min="0" max="10" step="0.5" value="1"></label>
@@ -87,7 +87,7 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 <script>window.BAER_KAMPF_EDITOR=true;window.onerror=(m,src,l)=>{const e=document.getElementById('err');if(e){e.hidden=false;e.textContent+='Fehler: '+m+' ('+String(src).split('/').pop()+':'+l+')\n';}};</script>
 <script>
 // Spielmodule in Reihenfolge laden (wie der Wurfnetz-Editor), danach die Bären. Die Bärendateien werden nur hier und im Bären-Editor geladen.
-(async()=>{const V='7054d96c',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
+(async()=>{const V='96f13d31',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
  const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','lion','hahn-engine','hahn-arena','arena-beasts','hund','arena-core','baer','baer-koepfe','baer-mini','baer-kampf','baer-kampf-editor'];
  for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v='+v;s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
 </script>
