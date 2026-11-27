@@ -1,6 +1,7 @@
 // WAS DIE DATEI TUT: Menü „Kampf“ des AT3-Master-Editors (wird erst beim Öffnen geladen). M8: vorhandene Kampf-Editoren und -Labore aus 1.0, unverändert verlinkt.
 // G9d1: Knopf „Probekampf ansehen“ lädt kampfanschluss.js und menue/kampfprobe.js erst beim Antippen; der Kampf läuft im Kampffenster (kampffenster.html, 1.0 abgeschottet).
 // B3a (Bären): Gruppe „Tiere“ verlinkt Bären-Kampf-Editor und Bären-Editor (eigene Seiten, wie die alten Labore).
+// KA1 (Katzen): Katzen-Editor in derselben Gruppe.
 // G9b: Knopf „Kampf-Labor (AT3)“ lädt kampfanschluss.js und menue/kampflabor.js erst beim Antippen; gerechnet wird im Kampfkern (kampfkern.js).
 AT3ED.menue('kampf',function(el){
  el.innerHTML='<p>Die Kampfmechanik aus Arena Theory 1.0 zieht hier ein. Blut wird mitgeliefert.</p>'+
@@ -21,6 +22,7 @@ AT3ED.menue('kampf',function(el){
    ['todes-editor.html','Todes-Editor','Wie gestorben wird, im echten Arenakampf'],
    ['netz-editor.html','Wurfnetz-Editor','Netzwerfer gegen Mensch, Hund oder Löwe']]},
   {titel:'Tiere',seiten:[
+   ['katze-editor.html','Katzen-Editor','Löwen, Tiger und alle Raubkatzen: Sorten, Körper, Haltungen, Messung (Testdatei KA1)'],
    ['baer-kampf.html','Bären-Kampf-Editor','Bären gegen Menschen, Hunde und andere Bären (Testversion B3a)'],
    ['baer-editor.html','Bären-Editor','Sorten, Körper, Bewegung, Messung']]},
   {titel:'Schädelbruch',seiten:[
