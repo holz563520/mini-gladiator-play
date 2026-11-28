@@ -42,6 +42,7 @@ T.make=function(o){const v=o.victim,g=v?.g||o.g,e={kind:o.kind==='tear'?'tear':'
   e.cracks=[];for(let i=0;i<22;i++)e.cracks.push({o:i%2,an:-2.6+hsh(e.seed+i)*3.4,len:5+hsh(e.seed+i*3)*13,st:i<5?0:i<11?1:i<17?2:3,jit:e.seed+i*7});}
  else{const k=e.limb.slice(1);e.right=e.limb[0]==='r';e.view=M.injuryShots?.viewOf(e.limb)||'forearm';e.A=LIMBV[e.view]||LIMBV.forearm;e.len=TE.len;const s=SIDE(e.limb);e.title=s[0].toUpperCase()+s.slice(1)+' '+LIMB_EN[k]+' torn off';e.line1=att+' tears at '+name+"'s "+s+' '+LIMB_EN[k]+':';e.line3='skin, muscle, sinew, bone. In that order.';}
  return e;};
+function brain(e,x,y,n,v,dir,spread=1){for(let i=0;i<n;i++){const an=dir+rnd(-.8,.8)*spread,sp=rnd(.25,.8)*v;e.parts.push({x,y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp,life:rnd(.9,2.2),s:Math.random()<.5?3:2,c:BRAIN[(Math.random()*BRAIN.length)|0],brain:1});}}
 function blood(e,x,y,n,v,dir,spread=1,col=null){for(let i=0;i<n;i++){const an=dir+rnd(-.8,.8)*spread,sp=rnd(.3,1)*v;e.parts.push({x,y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp,life:rnd(.7,2),s:Math.random()<.4?2:1,c:col});}}
 const once=(e,key,at)=>e.ev[key]||e.t<at?false:(e.ev[key]=1);
 // Zustand des Kopfbisses: a Zeit seit dem Zubeißen, st Stufe 0–3, m Maul, sink/tilt des Kopfs, env Schütteln
@@ -53,7 +54,9 @@ function stepEntry(e,dt){e.t+=dt;const t=e.t;
   if(once(e,'b',IMP)){e.shake=2;blood(e,x-4,y+4,8,60,-2.2);}
   if(once(e,'s1',IMP+CR.s1)){e.shake=3;e.flash=.25;blood(e,x-4,y+4,16,80,-2,1.2);blood(e,x+12,y+22,8,60,-.6);}
   if(once(e,'s2',IMP+CR.s2)){e.shake=4;e.flash=.45;blood(e,x,y+8,30,110,-1.8,1.4);for(let i=0;i<5;i++)blood(e,x,y+10,1,100,-2,1.2,'#efe6d0');}
-  if(once(e,'s3',IMP+CR.s3)){e.shake=6;e.flash=.8;blood(e,x+2,y+10,70,150,-1.6,2.2);for(let i=0;i<10;i++)blood(e,x+2,y+10,1,130,-1.7,1.8,'#efe6d0');if(e.helm)for(let i=0;i<5;i++)blood(e,x+2,y+8,1,110,-1.6,1.6,e.helm.col);}
+  if(once(e,'s3',IMP+CR.s3)){e.shake=6;e.flash=.4;blood(e,x+2,y+10,70,150,-1.6,2.2);for(let i=0;i<22;i++)blood(e,x+2,y+10,1,140,-1.7,2,BONE[i%3]);for(let i=0;i<26;i++)brain(e,x+rnd(-6,8),y+rnd(4,16),120,-1.6,2);if(e.helm)for(let i=0;i<5;i++)blood(e,x+2,y+8,1,110,-1.6,1.6,e.helm.col);}
+  if(e.shards)stepShards(e,dt);
+  if(S.a>CR.s3&&S.a<CR.s3+1.2){e.acc2=(e.acc2||0)+dt;if(e.acc2>.07){e.acc2=0;brain(e,80+rnd(-3,3),84,1,70+rnd(0,50),-1.57,.5);if(Math.random()<.4)blood(e,80,84,1,90,-1.57,.4,BONE[(Math.random()*3)|0]);}}// Hirnmasse und Splitter quellen aus dem Halsstumpf
   if(S.a>CR.s1){e.acc=(e.acc||0)+dt;if(e.acc>(S.st>2?.03:.09)){e.acc=0;blood(e,x+rnd(-8,12),y+rnd(4,20),S.st>2?2:1,S.st>2?70:40,rnd(-2.6,-.5));}}}
  else{const [ax,ay]=e.A,a=t-IMP;
   if(once(e,'b',IMP)){e.shake=2;blood(e,ax,ay,10,60,-1.6);}
@@ -81,26 +84,51 @@ function beast(o,e,P,opt,see){const q=gTier.getContext('2d',{willReadFrequently:
 const Bx=c=>(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
 function drops(o,e){const B=Bx(o);for(const p of e.parts)B(p.x,p.y,p.s,p.s,p.c||(p.s>1?'#7d150e':'#b8352a'));}
 
-// Kopf zwischen den Kiefern: Gesicht des Spiels, darüber Risse, Blut, der Bär von rechts oben
+// Kopf zwischen den Kiefern: Gesicht des Spiels auf Schwarz (keine Arena dahinter), Risse, der Bär von rechts oben. Beim letzten Biss (Stufe 3) zerspringt
+// der Kopf (Rückmeldung Thomas 28.11.2026): das echte Kopfbild wird einmal in Bruchstücke zerlegt (Voronoi über die Kopfpunkte), jede Bruchkante bekommt
+// Knochen und Blut, die Stücke fliegen mit Knochensplittern, Hirnmasse und Blut auseinander; am Rumpf bleibt der Halsstumpf des Spiels (fx.stump).
+const BRAIN=['#e3b3ab','#cf8f88','#b86c68','#f0cbc0','#9e5552'],BONE=['#efe6d0','#dccfae','#c4b48e'];
+function shatter(e,tt,S){const fw=M.faceShot.FW||FW,fh=M.faceShot.FH||FH,cv=document.createElement('canvas');cv.width=fw;cv.height=fh;const g=cv.getContext('2d',{willReadFrequently:true});
+ const o={g:e.g,team:e.team,mood:'out',yaw:-.16,pale:.85,blood:1,hurt:1,noseCrack:1,sink:S.sink,tilt:S.tilt,zoom:1/(1.12*(1+.07*ease(tt/5))),shake:0,clear:true};
+ M.faceShot.paint(g,fw,fh,o,tt);const A=g.getImageData(0,0,fw,fh).data;g.clearRect(0,0,fw,fh);M.faceShot.paint(g,fw,fh,{...o,noHead:true},tt);const N=g.getImageData(0,0,fw,fh).data;
+ const own=new Int16Array(fw*fh).fill(-1);let x0=fw,y0=fh,x1=0,y1=0;
+ for(let i=0,j=0;j<fw*fh;j++,i+=4){if(A[i+3]<128)continue;if(N[i+3]>=128&&Math.abs(A[i]-N[i])+Math.abs(A[i+1]-N[i+1])+Math.abs(A[i+2]-N[i+2])<6)continue;own[j]=0;const x=j%fw,y=(j/fw)|0;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+ if(x1<=x0)return [];const cx=(x0+x1)/2,cy=(y0+y1)/2,seeds=[];
+ for(let i=0;i<11;i++){const an=(i<3?i/3:(i-3)/8)*Math.PI*2+hsh(e.seed+i*1.7)*.7,r=i<3?.2:.6;seeds.push({x:cx+Math.cos(an)*(x1-x0)*r*(.6+.5*hsh(e.seed+i*4.1)),y:cy+Math.sin(an)*(y1-y0)*r*(.6+.5*hsh(e.seed+i*2.9))});}
+ for(let j=0;j<own.length;j++){if(own[j]<0)continue;const x=j%fw,y=(j/fw)|0,sd=e.seed%97,nx=x+2.2*Math.sin(y*.55+sd)+1*Math.sin(y*1.7+sd*2),ny=y+2.2*Math.sin(x*.6+sd*3)+1*Math.sin(x*1.9+sd);let k=0,d=1e9;for(let i=0;i<seeds.length;i++){const dx=nx-seeds[i].x,dy=ny-seeds[i].y,q=dx*dx+dy*dy;if(q<d){d=q;k=i;}}own[j]=k;}
+ const hc=e.helm,parts=[];
+ for(let k=0;k<seeds.length;k++){let a0=fw,b0=fh,a1=-1,b1=-1;for(let j=0;j<own.length;j++)if(own[j]===k){const x=j%fw,y=(j/fw)|0;if(x<a0)a0=x;if(x>a1)a1=x;if(y<b0)b0=y;if(y>b1)b1=y;}if(a1<0)continue;
+  const w=a1-a0+1,h=b1-b0+1,pc=document.createElement('canvas');pc.width=w;pc.height=h;const q=pc.getContext('2d'),im=q.createImageData(w,h),d=im.data;let n=0;
+  for(let y=b0;y<=b1;y++)for(let x=a0;x<=a1;x++){const j=y*fw+x;if(own[j]!==k)continue;n++;const o4=((y-b0)*w+x-a0)*4,s4=j*4;let r=A[s4],gg=A[s4+1],bb=A[s4+2];
+   // Bruchkante zu einem anderen Stück: Knochen (Schädel im Querschnitt), dahinter Blut; Außenrand bleibt wie er war
+   let brk=0;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=fw||yy>=fh)continue;const o2=own[yy*fw+xx];if(o2>=0&&o2!==k){brk=dy<0||dx<0?1:2;break;}}
+   if(brk){const c=hc&&hc.mat==='metal'&&brk===2?'#3c3a38':brk===1?BONE[0]:BONE[2];r=parseInt(c.slice(1,3),16);gg=parseInt(c.slice(3,5),16);bb=parseInt(c.slice(5,7),16);}
+   else{let inner=0;for(const [dx,dy] of [[2,0],[-2,0],[0,2],[0,-2]]){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=fw||yy>=fh)continue;const o2=own[yy*fw+xx];if(o2>=0&&o2!==k){inner=1;break;}}
+    if(inner){r=0x7a;gg=0x18;bb=0x10;}}// Blut und Mark hinter der Knochenkante
+   d[o4]=r;d[o4+1]=gg;d[o4+2]=bb;d[o4+3]=255;}
+  if(n<4)continue;q.putImageData(im,0,0);
+  const mx=a0+w/2,my=b0+h/2,dx=mx-cx,dy=my-cy,L=Math.hypot(dx,dy)||1,sp=35+hsh(e.seed+k*9.1)*65;
+  parts.push({cv:pc,w,h,x:mx,y:my,vx:dx/L*sp+(hsh(e.seed+k*3.3)-.5)*30-25,vy:dy/L*sp*.6-45-hsh(e.seed+k*5.5)*55,r:0,vr:(hsh(e.seed+k*6.6)-.5)*9});}
+ return parts;}
+function stepShards(e,dt){for(const p of e.shards){p.vy+=140*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;p.vx*=1-.4*dt;
+  if(p.y>FH+30)continue;p.trail=(p.trail||0)+dt;if(p.trail>.05){p.trail=0;e.parts.push({x:p.x,y:p.y,vx:p.vx*.2,vy:p.vy*.2,life:.4,s:1,c:'#a8372f'});}}}
 function paintCrush(cv,e){const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,tt=e.t,S=crushState(e),a=S.a,o=layers(W,H),bg=gBase.getContext('2d');bg.imageSmoothingEnabled=false;
- const TZ=Math.max(.6,(W/160)/(Math.max(W/160,H/104)*1.12)),mood=a<0?'terror':S.st<2?'pain':S.st<3?'shock':'out';
- M.faceShot.paint(bg,W,H,{g:e.g,team:e.team,mood,yaw:-.16,pale:cl((a-1)/1.6)*.85,blood:cl((a-.4)/1.4),hurt:cl(a/1.8),noseCrack:S.st>=2?1:0,sink:S.sink,tilt:S.tilt,zoom:TZ,shake:0,dark:cl((a-3.3)/1)*.55},tt);
- const z=TZ*1.12*(1+.06*ease(tt/5)),s=Math.max(W/160,H/104)*z,x0=Math.round(W/2-160*s/2),y0=Math.round(Math.min(0,(H-104*s)*.42));
+ const TZ=Math.max(.6,(W/160)/(Math.max(W/160,H/104)*1.12)),mood=a<0?'terror':S.st<2?'pain':S.st<3?'shock':'out',burst=a>=CR.s3;
+ if(burst&&!e.shards){try{e.shards=shatter(e,tt,S);}catch{e.shards=[];}}
+ M.faceShot.paint(bg,W,H,{g:e.g,team:e.team,mood,yaw:-.16,pale:cl((a-1)/1.6)*.85,blood:cl((a-.4)/1.4),hurt:cl(a/1.8),noseCrack:S.st>=2?1:0,sink:S.sink,tilt:S.tilt,zoom:TZ,shake:0,black:true,
+  noHead:burst,fx:burst?{stump:Math.max(.01,a-CR.s3)}:undefined,dark:cl((a-3.3)/1)*.55},tt);
+ const z=TZ*1.12*(1+.07*ease(tt/5)),s=Math.max(W/160,H/104)*z,x0=Math.round(W/2-160*s/2),y0=Math.round(Math.min(0,(H-104*s)*.42));
  const B=Bx(o),P={x:84+S.sx,y:33+S.sink+S.sy},C=[{x:P.x-5,y:P.y+5},{x:P.x+15,y:P.y+24}],hc=e.helm,dark=hc?'#14100e':'#3d0a0c',lite=hc?(hc.mat==='metal'?'#c9d2d6':'#8d7250'):'#8d2219';
- if(a>0){ // Zahnlöcher, Risse, die mit jeder Stufe weiterlaufen
-  for(const c0 of C){B(c0.x-1,c0.y-1,3,3,'#2d0705');B(c0.x-3,c0.y+1,7,2,'#8d2219');}
-  for(const k of e.cracks){if(k.st>S.st)continue;const c0=C[k.o],grow=cl((a-[0,CR.s1,CR.s2,CR.s3][k.st])/.2);let x=c0.x,y=c0.y,an=k.an;for(let i=0;i<k.len*grow;i++){an+=(hsh(k.jit+i)-.5)*.7;x+=Math.cos(an);y+=Math.sin(an);B(x,y,1,1,dark);if(hc&&i%4===1)B(x,y-1,1,1,lite);}}
-  // Blut läuft über Helm, Stirn und Gesicht
-  for(const [dx,f,w] of [[-12,.8,1],[-6,1,2],[1,.6,1],[9,.9,2],[16,.7,1]]){const L=Math.min(46,Math.max(0,a-.25)*(9+S.st*5)*f);B(P.x+dx,P.y+7,w,L,'#8d2219');B(P.x+dx+(w>1?1:0),P.y+7+L*.3,1,L*.6,'#6b2420');}
-  if(S.st>=3){const g2=ease((a-CR.s3)/.3),R=[[-16,2],[-10,-3],[-3,-1],[4,-4],[11,0],[19,5],[21,14],[17,24],[9,28],[1,25],[-7,27],[-13,19],[-17,10]];// Schädeldach bricht ein
-   const poly=(sc,col)=>{o.fillStyle=col;o.beginPath();R.forEach(([x,y],i)=>{const X=Math.round(P.x+3+x*sc),Y=Math.round(P.y+12+(y-12)*sc*g2);i?o.lineTo(X,Y):o.moveTo(X,Y);});o.closePath();o.fill();};poly(1,'#240302');poly(.74,'#6e110b');
-   for(let i=0;i<16;i++){const x=P.x-9+hsh(e.seed+i*2.3)*24,y=P.y+5+hsh(e.seed+i*5.1)*17*g2;B(x,y,i%4?1:2,1,i%3===0?'#efe6d0':i%3===1?'#c0281c':(hc?hc.col:'#d9b8a8'));}
-   for(let i=0;i<7;i++)B(P.x-12+i*5,P.y+24*g2+(i%2),2,2+((a*3+i)%3),'#a8372f');}}
- for(const st of e.stains)B(st.x,st.y,st.w,1,'#8a2a22');
+ if(a>0&&!burst){ // Zahnlöcher, Risse, die mit jeder Stufe weiterlaufen; nur feine Rinnsale, kein Blutfleck über dem Kopf
+  for(const c0 of C){B(c0.x-1,c0.y-1,3,3,'#2d0705');B(c0.x-2,c0.y+1,5,1,'#8d2219');}
+  for(const k of e.cracks){if(k.st>S.st)continue;const c0=C[k.o],grow=cl((a-[0,CR.s1,CR.s2,CR.s3][k.st])/.2);let x=c0.x,y=c0.y,an=k.an;for(let i=0;i<k.len*grow;i++){an+=(hsh(k.jit+i)-.5)*.7;x+=Math.cos(an);y+=Math.sin(an);B(x,y,1,1,dark);if(hc&&i%4===1)B(x,y-1,1,1,lite);else if(!hc&&S.st>=2&&i%5===2)B(x+1,y,1,1,'#efe6d0');}}
+  for(const [dx,f] of [[-12,.8],[-6,1],[1,.6],[9,.9],[16,.7]]){const L=Math.min(30,Math.max(0,a-.25)*(6+S.st*4)*f);B(P.x+dx,P.y+7,1,L,'#8d2219');B(P.x+dx,P.y+7+L,1,1,'#6b2420');}}
+ for(const st of e.stains)B(st.x,st.y,st.w,1,st.c||'#8a2a22');
  beast(o,e,{x:P.x+Math.round(34*S.lunge),y:P.y-Math.round(26*S.lunge)},{k:2.05*(e.beast.cm||2.2),he:-.3-.04*S.st,mouth:S.m,blood:cl(a*.1,0,.12),t:tt},true);
+ if(e.shards)for(const p of e.shards){if(p.y>FH+30)continue;o.save();o.translate(Math.round(p.x),Math.round(p.y));o.rotate(Math.round(p.r*4)/4);o.drawImage(p.cv,-p.w/2|0,-p.h/2|0);o.restore();}
  drops(o,e);
  const shx=Math.round(rnd(-1,1)*e.shake*s*.3),shy=Math.round(rnd(-1,1)*e.shake*s*.2);
- ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#120c09';ctx.fillRect(0,0,W,H);ctx.drawImage(gBase,shx,shy);ctx.drawImage(gOver,0,0,FW,FH,x0+shx,y0+shy,Math.round(FW*s),Math.round(FH*s));
+ ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);ctx.drawImage(gBase,shx,shy);ctx.drawImage(gOver,0,0,FW,FH,x0+shx,y0+shy,Math.round(FW*s),Math.round(FH*s));
  if(a>CR.s1){const v=Math.min(.6,.1+.14*S.st),g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.32,W/2,H/2,Math.max(W,H)*.7);g.addColorStop(0,'rgba(120,0,0,0)');g.addColorStop(1,`rgba(130,6,4,${v})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
  finish(ctx,W,H,e,a);}
 

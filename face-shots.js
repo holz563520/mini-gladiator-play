@@ -317,7 +317,7 @@ function paint(g,w,h,o,t){if(g?.canvas&&o?.g&&!o._sprech){recs.set(g.canvas,{ctx
  // Figur auf eigener Fläche, damit sie am Boden als Ganzes liegen kann
  const q=B.c.getContext('2d');q.imageSmoothingEnabled=false;q.setTransform(1,0,0,1,0,0);q.clearRect(0,0,FW,FH+40);const T=tools(q);torso(q,T,C,opt,yaw);/* under: Zeichnung hinter dem Kopf (Hals, Stumpf …), Rumpfkoordinaten */try{o.under?.(q,T,t,yaw);}catch(e){}
  const hq=B.b.getContext('2d');hq.imageSmoothingEnabled=false;hq.setTransform(1,0,0,1,0,0);hq.clearRect(0,0,FW,FH+40);if(armor.helm){hq.translate(80,43);hq.scale(.78,.78);hq.translate(-80,0);}else hq.translate(0,20);head(hq,tools(hq),C,opt,yaw,t,mood);/* onHead: Wunden am Kopf in Kopfkoordinaten – bewegen und neigen sich mit dem Kopf */try{o.onHead?.(hq,tools(hq),t,yaw);}catch(e){}hq.setTransform(1,0,0,1,0,0);
- const bob=Math.round(Math.sin(t*1.6)*.6)+(m.tremble?Math.round(Math.sin(t*38)*.8):0);q.save();q.translate(80,70+(o.sink||0)+bob);q.rotate(o.tilt||0);q.drawImage(B.b,-80,-90);q.restore();
+ const bob=Math.round(Math.sin(t*1.6)*.6)+(m.tremble?Math.round(Math.sin(t*38)*.8):0);q.save();q.translate(80,70+(o.sink||0)+bob);q.rotate(o.tilt||0);/* noHead: Kopf weglassen (Tier-Nahaufnahme „Kopf zerdrückt“, Kopf fliegt dort in Stücken) */if(!o.noHead)q.drawImage(B.b,-80,-90);q.restore();
  if(o.fist||o.trophy){const pump=Math.round(Math.sin(t*7)*3),arm=(x0,x1,y1)=>{for(let y=y1;y<FH;y++){const u=(y-y1)/(FH-y1),x=x1+(x0-x1)*u;T.r(x-7,y,14,1,C.skin);T.r(x-7,y,3,1,C.light);T.r(x+4,y,3,1,C.shade);}};
   arm(24,20,24+pump);T.r(11,10+pump,19,16,C.skin);T.r(11,10+pump,19,3,C.light);T.r(26,10+pump,4,16,C.shade);for(let i=0;i<4;i++)T.r(12+i*4.5,13+pump,1,10,C.shade);
   const ty=o.trophy?-pump:pump;arm(138,142,(o.trophy?20:24)+ty);

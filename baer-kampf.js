@@ -218,17 +218,29 @@ function faceTo(b,t){const fig=b.fig,want=t.x>=b.x?1:-1;if(want!==B.facing(fig)&
 const reachOf=b=>40*b.P.sz*K.SCALE;K.reach=b=>reachOf(b)+22;
 // Leichenansicht für den zerdrückten Kopf (B3b2): Der Kopf fehlt an der Figur (vorhandener Weg des Spiels für fehlende Körperteile), an seiner Stelle
 // liegt Knochenbrei im Sand, dazu der zerdrückte Helm. Einmal je Opfer, gemerkt am Kampf (battle.pulp), gezeichnet mit wenigen Kästchen.
-function pulp(b,V){const bt=S.battle;if(!K.OPT.brei||!bt||V.pulped||V.bear||V.dog)return;V.pulped=true;const w=groundPoint(V,'head'),helm=helmOf(V),h=V.g.body.head;if(h)h.missing=true;
- const seed=Math.random()*1e4,bits=[];for(let i=0;i<18;i++){const an=hr(seed+i)*TAU,d=1+hr(seed+i*7.3)*9;bits.push({x:Math.cos(an)*d,y:Math.sin(an)*d*.45,k:i<8?0:i<12?1:i<15?2:3,s:hr(seed+i*3.1)<.35?2:1});}
- (bt.pulp=bt.pulp||[]).push({x:w.x,y:w.y,helm,bits});for(let i=0;i<7;i++)stain(w.x+rnd(-9,9),w.y+rnd(-4,4),i?rnd(1.5,3.5):6);
+function pulp(b,V){const bt=S.battle;if(!K.OPT.brei||!bt||V.pulped||V.bear||V.dog)return;V.pulped=true;const w=groundPoint(V,'head'),nk=groundPoint(V,'neck'),helm=helmOf(V),h=V.g.body.head;if(h)h.missing=true;
+ // Rückmeldung Thomas 28.11.2026: passend zur Nahaufnahme liegt der Kopf in Stücken: Schädelstücke in Haut- und Haarfarbe mit Knochenkante, Splitter, Zähne,
+ // Hirnmasse, Blutspritzer vom Halsstumpf weg, Helm in Teilen. Alles einmal festgelegt, gezeichnet mit wenigen Kästchen unter dem Bären.
+ let ux=w.x-nk.x,uy=w.y-nk.y;const L=Math.hypot(ux,uy)||1;ux/=L;uy/=L;const A=V.g.appearance||{},hx=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:null,skin=hx(A.skin)||'#c19169',hair=hx(A.hair)||'#443025';
+ const seed=Math.random()*1e4,bits=[],at=(i,d0,d1,spr)=>{const an=Math.atan2(uy,ux)+(hr(seed+i*1.9)-.5)*spr,d=d0+hr(seed+i*7.3)*(d1-d0);return {x:Math.cos(an)*d,y:Math.sin(an)*d*.55};};
+ for(let i=0;i<9;i++){const p=at(i,2,16,2.6);bits.push({...p,k:'shard',c:i%3===2?hair:skin,s:hr(seed+i*3.1)<.5?3:2});}// Schädelstücke
+ for(let i=0;i<12;i++)bits.push({...at(20+i,0,12,3),k:'brain',c:PULP_BRAIN[i%PULP_BRAIN.length],s:hr(seed+i*5.7)<.4?2:1});
+ for(let i=0;i<10;i++)bits.push({...at(40+i,2,19,3.2),k:'bone',c:PULP_C[i%2?0:1],s:1});
+ for(let i=0;i<3;i++)bits.push({...at(60+i,3,10,2),k:'bone',c:'#f6f0e0',s:1});// Zähne
+ const spray=[];for(let i=0;i<7;i++){const an=Math.atan2(uy,ux)+(hr(seed+i*11.3)-.5)*2.2,len=6+hr(seed+i*2.7)*12;spray.push({an,len});}
+ (bt.pulp=bt.pulp||[]).push({x:w.x,y:w.y,nx:nk.x-w.x,ny:nk.y-w.y,helm,bits,spray});for(let i=0;i<7;i++)stain(w.x+ux*4+rnd(-7,7),w.y+uy*3+rnd(-3,3),i?rnd(1.5,3.5):6);
  if(helm)log(helm.art==='closed'?'The helmet comes out flat. So does what was in it.':'The '+(helm.m==='leather'?'leather cap':'helmet')+' was never going to help.');}
 const hr=n=>{const x=Math.sin(n*127.1)*43758.5453;return x-Math.floor(x);};
-const PULP_C=['#f1e6c8','#cbb48c','#b0443a','#e8dcc0'],HELM_C={leather:['#6b4a2c','#4a3220'],medium:['#8a8676','#5c5a50'],metal:['#9aa0a2','#5d6468']};
-function drawPulp(ctx,L){for(const q of L){const x=Math.round(q.x),y=Math.round(q.y);
-  ctx.fillStyle='#4c0f0b';ctx.fillRect(x-8,y-2,16,5);ctx.fillRect(x-5,y-3,10,7);ctx.fillStyle='#7d150e';ctx.fillRect(x-5,y-1,9,3);ctx.fillStyle='#a3261b';ctx.fillRect(x-2,y-1,4,2);
-  for(const p of q.bits){ctx.fillStyle=PULP_C[p.k];ctx.fillRect(x+Math.round(p.x),y+Math.round(p.y),p.k===3?1:p.s,p.k===1?1:p.s>1&&p.k===0?1:p.s);}
-  if(q.helm){const [c1,c2]=HELM_C[q.helm.m]||HELM_C.metal,hx=x+7,hy=y-1;/* flach gedrückt, eingedellt, aufgerissen */
-   ctx.fillStyle=c2;ctx.fillRect(hx-5,hy,11,3);ctx.fillStyle=c1;ctx.fillRect(hx-4,hy-1,9,2);ctx.fillRect(hx-5,hy+1,3,1);ctx.fillStyle=c2;ctx.fillRect(hx-1,hy-1,2,2);ctx.fillRect(hx+3,hy,1,1);ctx.fillStyle='#7d150e';ctx.fillRect(hx-2,hy+2,4,1);}}}
+const PULP_C=['#f1e6c8','#cbb48c','#b0443a','#e8dcc0'],PULP_BRAIN=['#e3b3ab','#cf8f88','#b86c68','#f0cbc0'],HELM_C={leather:['#6b4a2c','#4a3220'],medium:['#8a8676','#5c5a50'],metal:['#9aa0a2','#5d6468']};
+function drawPulp(ctx,L){for(const q of L){const x=Math.round(q.x),y=Math.round(q.y),R=(px,py,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x+Math.round(px),y+Math.round(py),w,h);};
+  // Blutlache und Spritzer vom Hals weg
+  R(-5,-2,10,4,'#4c0f0b');R(-3,-3,7,6,'#4c0f0b');R(-3,-1,6,2,'#7d150e');
+  if(q.spray)for(const s of q.spray)for(let d=3;d<s.len;d+=2)R(Math.cos(s.an)*d,Math.sin(s.an)*d*.55,d<s.len*.6?2:1,1,d<s.len*.6?'#7d150e':'#a3261b');
+  // Halsstumpf an der Leiche: Fleisch, Wirbel
+  if(q.nx!==undefined){const sx=q.nx*.55,sy=q.ny*.55;R(sx-2,sy-1,4,3,'#6e110b');R(sx-1,sy-1,3,2,'#a3261b');R(sx,sy,1,1,'#efe6d0');}
+  for(const p of q.bits){if(p.k==='shard'){R(p.x,p.y,p.s,p.s-1,p.c);R(p.x,p.y+p.s-1,p.s,1,'#e8dcc0');R(p.x+p.s-1,p.y,1,1,'#7d150e');}else R(p.x,p.y,p.s,p.s,p.c);}
+  if(q.helm){const [c1,c2]=HELM_C[q.helm.m]||HELM_C.metal;/* in Teile gedrückt, eingedellt, blutig */
+   for(const [hx,hy,w] of [[7,-1,6],[-8,2,4],[3,4,3]]){R(hx,hy,w,2,c2);R(hx,hy-1,w-1,1,c1);R(hx+1,hy+1,Math.max(1,w-3),1,'#7d150e');}}}}
 // Reichweite und Treffpunkt (B3b2, Editor-Reiter Attacken): Zone am Boden, in der ein Gegner getroffen wird; Kreuz = Stelle, auf die gezielt wird;
 // nach dem Treffer: Punkt = wo Krallen oder Maul im Trefferbild waren, Kreuz = die Trefferstelle.
 function drawAim(ctx,a,t){const f=B.facing(a.fig),s=a.P.sz*K.SCALE,x0=Math.round(a.x+f*10),x1=Math.round(a.x+f*K.reach(a)),y=Math.round(a.y),lo=Math.min(x0,x1),w=Math.abs(x1-x0);
