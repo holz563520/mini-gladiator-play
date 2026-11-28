@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1674,
+ "typMax": 1702,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -14925,6 +14925,258 @@
    "name": "Workbench",
    "status": "geprueft",
    "datei": "obj/werk-bank.json"
+  },
+  {
+   "id": "marktstand-animals",
+   "version": 1,
+   "typ": 1675,
+   "kat": "einrichtung",
+   "name": "Animal Goods Stall",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals.json"
+  },
+  {
+   "id": "marktstand-animals-a",
+   "version": 1,
+   "typ": 1676,
+   "kat": "einrichtung",
+   "name": "Animal Goods Stall B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-a.json"
+  },
+  {
+   "id": "marktstand-animals-b",
+   "version": 1,
+   "typ": 1677,
+   "kat": "einrichtung",
+   "name": "Animal Goods Stall C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-b.json"
+  },
+  {
+   "id": "marktstand-animals-c",
+   "version": 1,
+   "typ": 1678,
+   "kat": "einrichtung",
+   "name": "Animal Goods Stall D",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-c.json"
+  },
+  {
+   "id": "marktstand-arena-supplies",
+   "version": 1,
+   "typ": 1679,
+   "kat": "einrichtung",
+   "name": "Arena Supply Stall",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-a",
+   "version": 1,
+   "typ": 1680,
+   "kat": "einrichtung",
+   "name": "Arena Supply Stall B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-a.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-b",
+   "version": 1,
+   "typ": 1681,
+   "kat": "einrichtung",
+   "name": "Arena Supply Stall C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-b.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-c",
+   "version": 1,
+   "typ": 1682,
+   "kat": "einrichtung",
+   "name": "Arena Supply Stall D",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-c.json"
+  },
+  {
+   "id": "marktstand-arms",
+   "version": 1,
+   "typ": 1683,
+   "kat": "einrichtung",
+   "name": "Arms & Armour Stall",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms.json"
+  },
+  {
+   "id": "marktstand-arms-a",
+   "version": 1,
+   "typ": 1684,
+   "kat": "einrichtung",
+   "name": "Arms & Armour Stall B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-a.json"
+  },
+  {
+   "id": "marktstand-arms-b",
+   "version": 1,
+   "typ": 1685,
+   "kat": "einrichtung",
+   "name": "Arms & Armour Stall C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-b.json"
+  },
+  {
+   "id": "marktstand-arms-c",
+   "version": 1,
+   "typ": 1686,
+   "kat": "einrichtung",
+   "name": "Arms & Armour Stall D",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-c.json"
+  },
+  {
+   "id": "marktstand-clothing",
+   "version": 1,
+   "typ": 1687,
+   "kat": "einrichtung",
+   "name": "Clothing Stall",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing.json"
+  },
+  {
+   "id": "marktstand-clothing-a",
+   "version": 1,
+   "typ": 1688,
+   "kat": "einrichtung",
+   "name": "Clothing Stall B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-a.json"
+  },
+  {
+   "id": "marktstand-clothing-b",
+   "version": 1,
+   "typ": 1689,
+   "kat": "einrichtung",
+   "name": "Clothing Stall C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-b.json"
+  },
+  {
+   "id": "marktstand-clothing-c",
+   "version": 1,
+   "typ": 1690,
+   "kat": "einrichtung",
+   "name": "Clothing Stall D",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-c.json"
+  },
+  {
+   "id": "marktstand-crops",
+   "version": 1,
+   "typ": 1691,
+   "kat": "einrichtung",
+   "name": "Crops Stall",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops.json"
+  },
+  {
+   "id": "marktstand-crops-a",
+   "version": 1,
+   "typ": 1692,
+   "kat": "einrichtung",
+   "name": "Crops Stall B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-a.json"
+  },
+  {
+   "id": "marktstand-crops-b",
+   "version": 1,
+   "typ": 1693,
+   "kat": "einrichtung",
+   "name": "Crops Stall C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-b.json"
+  },
+  {
+   "id": "marktstand-crops-c",
+   "version": 1,
+   "typ": 1694,
+   "kat": "einrichtung",
+   "name": "Crops Stall D",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-c.json"
+  },
+  {
+   "id": "marktstand-drink",
+   "version": 1,
+   "typ": 1695,
+   "kat": "einrichtung",
+   "name": "Drink Stall",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink.json"
+  },
+  {
+   "id": "marktstand-drink-a",
+   "version": 1,
+   "typ": 1696,
+   "kat": "einrichtung",
+   "name": "Drink Stall B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-a.json"
+  },
+  {
+   "id": "marktstand-drink-b",
+   "version": 1,
+   "typ": 1697,
+   "kat": "einrichtung",
+   "name": "Drink Stall C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-b.json"
+  },
+  {
+   "id": "marktstand-drink-c",
+   "version": 1,
+   "typ": 1698,
+   "kat": "einrichtung",
+   "name": "Drink Stall D",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-c.json"
+  },
+  {
+   "id": "marktstand-exotic",
+   "version": 1,
+   "typ": 1699,
+   "kat": "einrichtung",
+   "name": "Exotic Food Stall",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic.json"
+  },
+  {
+   "id": "marktstand-exotic-a",
+   "version": 1,
+   "typ": 1700,
+   "kat": "einrichtung",
+   "name": "Exotic Food Stall B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-a.json"
+  },
+  {
+   "id": "marktstand-exotic-b",
+   "version": 1,
+   "typ": 1701,
+   "kat": "einrichtung",
+   "name": "Exotic Food Stall C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-b.json"
+  },
+  {
+   "id": "marktstand-exotic-c",
+   "version": 1,
+   "typ": 1702,
+   "kat": "einrichtung",
+   "name": "Exotic Food Stall D",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-c.json"
   }
  ]
 }
