@@ -1,5 +1,5 @@
 'use strict';
-/* BÄREN-KAMPF-EDITOR (baer-kampf.html, Schritte B3a bis B3b2; Reiter Kampf, Attacken mit Übungsfigur, Wunden von Hand): baut mit BAER.K.build (baer-kampf.js) einen Kampf Bär gegen Mensch, Hund oder Bär,
+/* BÄREN-KAMPF-EDITOR (baer-kampf.html, Schritte B3a bis B5a; Reiter Kampf, Attacken mit Übungsfigur, Wunden von Hand, Nahaufnahmen): baut mit BAER.K.build (baer-kampf.js) einen Kampf Bär gegen Mensch, Hund oder Bär,
    zeigt Zustand, Wunden, Kampfbericht, löst einzelne Angriffe aus und rechnet viele Kämpfe ohne Bild. Bedienung Deutsch, Bäreninhalte Englisch.
    Ändert keinen Spielstand: Der Speicher des Spiels wird hier gar nicht geladen, M.persist ist abgeschaltet. */
 (()=>{
@@ -36,7 +36,7 @@ let tab='kampf';
 // Reiter Attacken und Wunden (B3b2): erster Bär der Seite A gegen eine Übungsfigur mit der Ausrüstung der Seite B
 const spec=()=>tab==='kampf'?{blue:seite('A',0),red:seite('B',1),title:'Bear pit'}:{blue:[baer('A',0)],red:[mensch(1,'B',0)],title:'Bear pit'};
 let run=null;
-function build(){S.battle=null;M.shots?.forEach?.(p=>p.active=false);M.fx?.forEach?.(p=>p.active=false);/* kein Blut aus dem vorigen Kampf */M.stains.length=0;if(M.limbs)M.limbs.length=0;
+function build(){TS?.skip();K.force=null;K.forceLimb=null;S.battle=null;M.shots?.forEach?.(p=>p.active=false);M.fx?.forEach?.(p=>p.active=false);/* kein Blut aus dem vorigen Kampf */M.stains.length=0;if(M.limbs)M.limbs.length=0;
  const b=K.build(spec());b.time=b.startTime=0;S.battle=b;run={b,end:0};S.options.speed=+val('spd');
  if(tab!=='kampf'){const pu=b.actors.find(a=>!a.bear&&!a.dog);if(pu)pu.puppe=!(tab==='attacken'&&$('wehrt').checked);for(const a of b.actors)if(a.bear)a.threatDone=true;}$('pause').textContent='⏸ Pause';logLen=-1;}
 $('go').onclick=build;
@@ -44,6 +44,21 @@ function setTab(t){tab=t;for(const k of $('tabs').children)k.classList.toggle('p
  K.OPT.ueben=t==='kampf'?0:1;K.OPT.zeigen=t==='attacken'&&$('zeigen').checked?1:0;K.force=null;build();}
 $('tabs').onclick=e=>{const t=e.target.closest('[data-tab]')?.dataset.tab;if(t)setTab(t);};
 $('zeigen').onchange=()=>{K.OPT.zeigen=tab==='attacken'&&$('zeigen').checked?1:0;};$('wehrt').onchange=build;$('puppeNeu').onclick=build;
+// ---------- Nahaufnahmen (B5a): Kopf zerdrücken und Glied abreißen, aus dist/tier-shots.js (echtes Gesicht und echte Ausrüstung des Spiels, echter Bär) ----------
+const TS=window.TIER_SHOTS,shotCv=$('shotCanvas');S.options.closeups='off';// die Nahaufnahmen von 1.0 selbst bleiben hier aus (kommen mit der Kino-Kamera, B3b3)
+const LIMB_DE={lh:'linke Hand',rh:'rechte Hand',lfa:'linker Unterarm',rfa:'rechter Unterarm',lua:'linker Arm',rua:'rechter Arm',lf:'linker Fuß',rf:'rechter Fuß',lsh:'linker Unterschenkel',rsh:'rechter Unterschenkel',lt:'linkes Bein',rt:'rechtes Bein'};
+let nahInfo='';
+if(TS){for(const id of TS.LIMBS)$('nahGlied').insertAdjacentHTML('beforeend',`<option value="${id}"${id==='rfa'?' selected':''}>${LIMB_DE[id]}</option>`);
+ // Der Kampfkern ruft K.shot im Bild des Geschehens. Nur im sichtbaren Kampf, nie in gerechneten Serien (dort ist S.battle ein anderer Kampf).
+ K.shot=(kind,b,V,limb)=>{if(!TS.ready()||!run||S.battle!==run.b||!V?.g||V.bear||V.dog)return false;TS.play({kind,limb,victim:V,beast:TS.bear(b)});nahInfo=kind==='crush'?'Kopfbiss':'Abriss: '+(LIMB_DE[limb]||limb);return true;};
+ shotCv.onclick=()=>TS.skip();$('nahStop').onclick=()=>TS.skip();
+ $('nah').checked=!!K.OPT.nah;$('nah').addEventListener('change',()=>{K.OPT.nah=$('nah').checked?1:0;});
+ document.addEventListener('click',ev=>{const k=ev.target.closest('[data-nah]')?.dataset.nah;if(!k)return;build();const b=S.battle,a=b.actors.find(x=>x.bear&&x.team===0),pu=b.actors.find(x=>!x.bear&&!x.dog);if(!a||!pu)return;const limb=val('nahGlied');
+  if($('nahKampf').checked){K.OPT.nah=1;$('nah').checked=true;K.force=k;K.forceLimb=k==='tear'?limb:null;a.cool=0;nahInfo='Der Bär geht zum Gegner und greift an …';}
+  else{TS.play({kind:k,limb,victim:pu,beast:TS.bear(a),preview:true});nahInfo=k==='crush'?'Kopfbiss (nur Nahaufnahme)':'Abriss: '+LIMB_DE[limb]+' (nur Nahaufnahme)';}});
+ let last=0;const frame=now=>{requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000||0);last=now;
+  if(TS.cur||TS.q.length){if(!S.battle?.paused)TS.step(dt*(+val('spd')||1));if(TS.cur){if(shotCv.hidden)shotCv.hidden=false;TS.paint(shotCv);}}
+  if(!TS.cur&&!TS.q.length&&!shotCv.hidden)shotCv.hidden=true;};requestAnimationFrame(frame);}
 // ---------- Wunden von Hand ----------
 for(const p of K.PARTS)$('wStelle').insertAdjacentHTML('beforeend',`<option value="${p}"${p==='bauch'?' selected':''}>${K.PART_DE[p]}</option>`);
 const ersterBaer=()=>S.battle?.actors.find(a=>a.bear&&a.team===0);
@@ -51,7 +66,7 @@ const wSync=()=>{$('wStarkText').textContent=nf(+val('wStark'),1);};$('wStark').
 $('wSetzen').onclick=()=>{const b=ersterBaer();if(!b||b.g.dead)return;K.wound(b,val('wStelle'),val('wArt'),+val('wStark'));};
 $('wHeilen').onclick=()=>{const b=ersterBaer();if(!b)return;if(b.g.dead)build();else K.heal(b);};
 $('pause').onclick=()=>{const b=S.battle;if(!b)return;b.paused=!b.paused;$('pause').textContent=b.paused?'▶ Weiter':'⏸ Pause';};
-$('einzel').onclick=()=>{const b=S.battle;if(!b)return;b.paused=false;K.fixed(1/60);b.paused=true;$('pause').textContent='▶ Weiter';};
+$('einzel').onclick=()=>{const b=S.battle;if(!b)return;if(TS?.active){TS.step(1/30);TS.paint(shotCv);}else{b.paused=false;K.fixed(1/60);}b.paused=true;$('pause').textContent='▶ Weiter';};
 $('spd').onchange=()=>{S.options.speed=+val('spd');};
 for(const id of ['artA','artB','zahlA','zahlB','sorteA','sorteB','rasseA','rasseB','stufeA','stufeB','waffeA','waffeB','ruestA','ruestB','werte'])$(id).addEventListener('input',()=>{sync();build();});
 for(const id of ['tear','head','schaden','haerte','tempo'])$(id).addEventListener('input',sync);
@@ -79,6 +94,7 @@ function tick(){const r=run;if(!r||S.battle!==r.b)return;const b=r.b;
  if(tab==='attacken'){const a=ersterBaer(),pu=b.actors.find(x=>!x.bear&&!x.dog);if(a){const m=a.mark,h=pu?K.helm(pu):null,HELM={open:'offen (Leder oder Schienen): halbiert den Kopfbiss',closed:'geschlossen (Metall): hält bei ☠3 stand, halbiert ab ☠4'};
    $('messung').innerHTML=`Reichweite nach vorn <b>${nf(K.reach(a),0)}</b> Bildpunkte (${nf(K.reach(a)/(a.P.sz*K.SCALE)*2.2,0)} cm), seitlich ±22.`+(m?` Letzter Treffer (${esc(MODE_DE[m.kind]||m.kind)}): Abstand von ${m.kind==='swipe'||m.kind==='slam'?'Krallen':'Maul'} zur Trefferstelle <b>${nf(m.d,1)}</b> Einheiten (${nf(m.d*2.2,0)} cm).`:' Noch kein Treffer gemessen.')+
     `<br>Helm der Übungsfigur: ${h?HELM[h.art]:'keiner'}. Kopfbiss von selbst bei diesem Bären: ${a.P.skulls<3||a.bear.stats.biss<70?'nie (erst ab ☠3 mit Bisskraft ab 70)':h&&h.art==='closed'&&a.P.skulls===3?'nie (der Helm hält)':nf((a.P.bauart==='H'?20:15)*(h?.5:1)*K.OPT.head,1)+' % je Biss in den Kopf des Wehrlosen'}. Der Knopf „Kopfbiss“ erzwingt ihn immer.`;}}
+ if(tab==='nah'&&TS){const a=ersterBaer(),pu=b.actors.find(x=>!x.bear&&!x.dog),weg=pu?Object.entries(pu.g.body).filter(([,p])=>p.missing).map(([id])=>LIMB_DE[id]||id):[];$('nahText').innerHTML=(TS.ready()?'':'<b>Die Bilddateien des Spiels (face-shots.js, injury-shots.js) fehlen.</b> ')+(nahInfo?`Zuletzt: <b>${esc(nahInfo)}</b>. `:'')+`Zeichenzeit je Bild der Nahaufnahme <b>${nf(TS.ms||0,1)} ms</b>.`+(pu?` An der Arena-Figur fehlt: <b>${weg.length?esc(weg.join(', ')):'nichts'}</b>${pu.headCrushed?' · Kopf zerdrückt':''}.`:'')+(a&&a.P.skulls<4?' Dieser Bär ist für ganze Beine zu klein (erst ab ☠4), er reißt dann das größte Glied ab, das seine Klasse schafft.':'');}
  if(tab==='wunden'){const a=ersterBaer();if(a)$('wText').innerHTML=a.g.dead?`<b>Tot:</b> ${esc(a.g.cause)}. „Alle Wunden heilen“ stellt einen neuen Bären auf.`:`Wunden am Bären: <b>${a.wounds.length}</b> · Gesundheit ${nf(K.health(a),0)} % · Blut ${nf(a.blood,0)} % · Mut ${nf(a.morale,0)} % · lahmt ${nf(K.lame(a)*100,0)} %. Kopf, Hals oder Brust auf 0 % töten den Bären.`;}
  if(b.ende&&!r.end)r.end=performance.now();
  if(r.end&&performance.now()-r.end>3500&&$('loop').checked)build();}
@@ -93,5 +109,5 @@ $('serieGo').onclick=()=>{$('serie').textContent='Rechnet …';setTimeout(()=>{c
  $('serie').innerHTML=`Seite A gewinnt <b>${R.wins[0]}</b> · Seite B gewinnt <b>${R.wins[1]}</b> · ohne Sieger <b>${R.draw}</b> (von ${R.n})<br>mittlere Kampfdauer ${nf(R.time)} s · tote Bären ${R.deadBears} · geflohene Bären ${R.fled} · abgerissene Gliedmaßen ${R.torn} · Kopfbisse ${R.crushed} · gepackt ${R.grapples} · geschleudert ${R.flung} · weggezerrt ${R.dragged} · Rechenzeit ${nf(R.ms/R.n,0)} ms je Kampf`;},30);};
 for(const k of ['tear','head'])if(K.OPT[k]===0)$(k).value='0';// Notausschalter aus der Adresse
 sync();wSync();setTab('kampf');
-window.BAER_KAMPF_ED={build,spec,setTab};
+window.BAER_KAMPF_ED={build,spec,setTab,shots:TS};
 })();

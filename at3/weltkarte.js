@@ -33,12 +33,15 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='929a445f', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='0626cb3b', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var N7B2=!/[?&]n7b2=0/.test(location.search);
 // N7h1 Weltansicht schärfer (Thomas 24.11.2026): In den Fernstufen steht sofort das grobe Bild. Ruht der Blick VERWEILEN_MS, rechnet der Bildkern die scharfen
 // Fassungen der sichtbaren Fernbilder (Bildmitte zuerst, fernbild.js scharf) und die Karte blendet jede in EINBLENDEN_MS ein. Fertige scharfe Bilder bleiben
 // gemerkt (eigener Speicher SCH_SPEICHER, am längsten Ungenutztes fliegt zuerst), beim Zurückzoomen oder Verschieben wird nichts neu gerechnet. Bewegt sich der
 // Blick, bekommt der Bildkern eine leere Liste und bricht ab. Hauptkern: nur Liste schicken und Bilder kopieren. Notausschalter ?n7h=0 (nur grobes Bild).
+// N7h3 Globus schärfer (28.11.2026): auf dem Globus nach VERWEILEN_MS „gscharf“ an den Bildkern (Ansicht, Verkleinerung halb so stark wie grob), der schickt den
+// Globus aus der feinen Erdtextur zurück, Einblenden in EINBLENDEN_MS. Neue Ansicht bricht ab. Notausschalter ?n7h3=0 (oder ?n7h=0): grober Globus wie vorher.
+var N7H3=!/[?&]n7h3?=0/.test(location.search), G_PUNKTE=800000;
 var N7H=!/[?&]n7h=0/.test(location.search), VERWEILEN_MS=600, EINBLENDEN_MS=900, SCH_SPEICHER=24*1048576;   // N7b2: Stadtkarte beim Antippen (Notausschalter ?n7b2=0)
 var ST=64, SX=9600, SY=4800, WX=ST*SX, WY=ST*SY, POL=4*ST, HALB=3, TEIL=8, STUFEN=4, MAXL=12, ANFRAGEN=4, SPEICHER=48*1048576, MAXB=1300, MAXH=900, RUHE_MS=220, FEHLT_MS=800;
 var ERSATZ='#3e3934', NACHT='#0e0c0b';
@@ -56,6 +59,7 @@ function starten(o){
  function halteY(y){return Math.max(POL,Math.min(WY-POL-.01,y))}
  function ab(a,b){var d=Math.abs(a-b);return d>SX-d?SX-d:d}                     // Abstand zweier Stückspalten über die Naht
  function modu(a,m){a%=m;return a<0?a+m:a}
+ var gsch=null, gsKey='', gsSeit=0, gsWeg='';   // N7h3: scharfer Globus {c,w,h,s,R,key,t}, Ansicht seit, geschickter Wunsch
  var glob=null, gimg=null, gimgKey='', globOffen=false, wahl=null, marke=null;   // G4d: Globus {g Stufe, lon, lat} (null = Karte), letztes Bild
  var cam={x:WX/2,y:WY/2,z:0,lod:0,nah:false}, hatKam=false, zFest=false, gen=-1, seed=0, blickK=-1;
  var BAUM=new Map(), TR=new Map(), altB=new Set(), fest=new Set(), OFFEN=[], offenS='', hoverR=0, WZ=null, wzRahmen=null, BV=0, stV=new Map();   // G5b
@@ -87,7 +91,7 @@ function starten(o){
    bk.postMessage({art:'welt',gen:gen,seed:seed,buf:d.buf},[d.buf.buffer]);if(hatKam)blick();else if(o.waehlen){if(o.beiErde)o.beiErde()}else bk.postMessage({art:'start'});plan()}
   else if(d.art==='wsStueck')kern.wsZurueck(d.buf)}
  // N4c1: Knopf „Realms“: Bildkern umschalten, Fernbilder und Globus verwerfen (unterwegs mit alter NV fliegen weg), Nahbilder bleiben
- function reiche(an){if(!bk)return;bk.postMessage({art:'reiche',an:!!an});NV++;schWeg();bilder.forEach(function(b,k){if(b.lod>=STUFEN){if(b.bmp&&b.bmp.close)b.bmp.close();bytes-=b.bytes;bilder.delete(k);altB.delete(k)}});fehlt.clear();gimg=null;gimgKey='';plan()}
+ function reiche(an){if(!bk)return;bk.postMessage({art:'reiche',an:!!an});NV++;schWeg();bilder.forEach(function(b,k){if(b.lod>=STUFEN){if(b.bmp&&b.bmp.close)b.bmp.close();bytes-=b.bytes;bilder.delete(k);altB.delete(k)}});fehlt.clear();gimg=null;gimgKey='';gsch=null;gsKey=gsWeg='';plan()}
  function bilderWeg(){bilder.forEach(function(b){if(b.bmp&&b.bmp.close)b.bmp.close()});bilder.clear();altB.clear();bytes=0;schWeg()}
  // N7h1: scharfe Fernbilder (Schlüssel wie die groben)
  var schB=new Map(), schBytes=0, schSig='', schRuhe=0, schCam='';
@@ -114,6 +118,9 @@ function starten(o){
    bilder.forEach(function(b,key){if(b.lod<STUFEN&&S.has(stk(b.x0,b.y0)))altB.add(key)});if(d.karteiB!=null){M.kartei=d.kartei;M.karteiB=d.karteiB;M.ortEMs=d.eMs}if(d.posten!=null){M.posten=d.posten;M.postenListen=d.postenListen;M.postenMs=d.postenMs}if(d.hausB!=null){M.haeuser=d.haeuser;M.hausB=d.hausB;M.hausMs=d.hausMs;M.listeMs=d.listeMs;M.hausPausen=d.hausPausen;M.listen=d.listen;M.halbN=d.halbN;M.halbB=d.halbB;M.halbMs=d.halbMs;M.fernN=d.fernN;M.fernB=d.fernB;M.fernMs=d.fernMs}if(d.name){M.orte=(M.orte||0)+1;M.ortMs=d.ms;if(d.ms>(M.ortMaxMs||0))M.ortMaxMs=d.ms;if(d.ersatz)M.ortErsatz=(M.ortErsatz||0)+1}plan()}
   else if(d.art==='start'){if(d.platz&&!hatKam){cam.x=umX(d.platz.x+.5);cam.y=halteY(d.platz.y+.5);hatKam=true;M.startOrt=d.platz.ort;blick();plan()}}
   else if(d.art==='scharf')schNeu(d);   // N7h1
+  else if(d.art==='gscharf'){if(d.nv!==NV)return;if(gsWeg===d.key)gsWeg='';if(!glob||d.key!==gsKey)return;var c=document.createElement('canvas');c.width=d.w;c.height=d.h;   // N7h3
+   c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(d.buf.buffer),d.w,d.h),0,0);gsch={c:c,w:d.w,h:d.h,s:d.s,R:d.R,key:d.key,t:performance.now()};gsWeg=d.key;
+   M.gScharfN=(M.gScharfN|0)+1;M.gScharfMs=d.ms;if(d.ms>(M.maxGScharfMs||0))M.maxGScharfMs=d.ms;M.gKMs=d.kMs;M.gGMs=d.gMs;M.gNeu=d.neu;M.gSchritte=d.schritte;M.gKacheln=d.kacheln;M.gBytes=d.bytes;M.gRaus=d.raus;M.gK=d.k;M.gScharf=d.key;plan()}
   else if(d.art==='bild'){var gv=offen.get(d.key);offen.delete(d.key);if(d.nv!==NV){if(d.bmp&&d.bmp.close)d.bmp.close();plan();return}
    if(d.fehlt){fehlt.set(d.key,performance.now());plan();setTimeout(plan,FEHLT_MS+50);return}   // G4d: „fehlt“ verfällt nach FEHLT_MS (Bildkern hatte das Stück gerade verworfen; sonst hinge das Ersatzbild)
    var b={bmp:d.bmp||null,w:d.w,h:d.h,ox:d.ox,oy:d.oy,lod:d.lod,x0:d.x0,y0:d.y0,nr:bildNr,bytes:d.w*d.h*4};
@@ -204,7 +211,11 @@ var t0=performance.now();
  function globusZeichnen(W,H,t0){var L=globStufen(W,H);if(glob.g>=L.length)glob.g=L.length-1;var R=L[glob.g],s=Math.max(2,Math.ceil(Math.sqrt(W*H/200000)));
   if(gimg){var k=R/gimg.R,w=gimg.w*gimg.s*k,h=gimg.h*gimg.s*k;g.drawImage(gimg.c,Math.round(W/2-w/2),Math.round(H/2-h/2),Math.round(w),Math.round(h))}
   var key=W+','+H+','+R.toFixed(2)+','+glob.lon.toFixed(5)+','+glob.lat.toFixed(5);
-  if(key!==gimgKey&&!globOffen&&bk&&gen>=0){globOffen=true;frage('globus',{W:W,H:H,R:R,lon:glob.lon,lat:glob.lat,s:s}).then(function(a){globOffen=false;
+  if(gsch&&gsch.key===key){var al=(performance.now()-gsch.t)/EINBLENDEN_MS;g.globalAlpha=Math.max(0,Math.min(1,al));g.drawImage(gsch.c,Math.round(W/2-gsch.w*gsch.s/2),Math.round(H/2-gsch.h*gsch.s/2),gsch.w*gsch.s,gsch.h*gsch.s);g.globalAlpha=1;if(al<1)plan()}   // N7h3
+  if(N7H3&&bk&&gen>=0){var jt=performance.now();if(key!==gsKey){gsKey=key;gsSeit=jt;if(gsWeg){bk.postMessage({art:'gscharf',an:false});gsWeg=''}}
+   if(key===gimgKey&&!(gsch&&gsch.key===key)&&gsWeg!==key&&jt-zoomZeit>RUHE_MS&&zeiger.size<2){if(jt-gsSeit>=VERWEILEN_MS){gsWeg=key;
+     bk.postMessage({art:'gscharf',an:true,gen:gen,nv:NV,key:key,W:W,H:H,R:R,lon:glob.lon,lat:glob.lat,sg:s,s:Math.max(1,Math.ceil(Math.sqrt(W*H/G_PUNKTE)))})}else setTimeout(plan,VERWEILEN_MS-(jt-gsSeit)+20)}}
+  if(key!==gimgKey&&!globOffen&&bk&&gen>=0){globOffen=true;frage('globus',{W:W,H:H,R:R,lon:glob.lon,lat:glob.lat,s:s,fein:N7H3}).then(function(a){globOffen=false;
     if(!a.fehlt&&glob){var c=document.createElement('canvas');c.width=a.w;c.height=a.h;c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(a.buf.buffer),a.w,a.h),0,0);
      gimg={c:c,w:a.w,h:a.h,s:s,R:R};gimgKey=key;M.globusUs=a.us;M.globusN++}plan()})}
   if(marke){var lo=marke.x/WX*ZP-glob.lon,la=(.5-marke.y/WY)*Math.PI,cl=Math.cos(glob.lat),sl=Math.sin(glob.lat),cla=Math.cos(la),sla=Math.sin(la);
@@ -613,7 +624,7 @@ if(f>1)f=1;if(f<0)f=0;var dx=e.px-e.px0;if(dx>WX*128)dx-=WX*256;else if(dx<-WX*1
   var grau=S.naechste(132,128,122,S.PALETTE);bk.postMessage({art:'natur',liste:liste,bau:bau,grau:grau,rand:S.dunkler(grau)},tr);
   M.naturArten=arten.length-ers;M.naturErsatz=ers;NV++;bilderWeg();fehlt.clear();M.natur=0;plan()}   // Bilder, die noch ohne Natur unterwegs sind, kommen mit alter NV und fliegen weg
  function frage(f,w){return new Promise(function(ok){if(!bk||gen<0)return ok({fehlt:true});var id=++frageNr,m={art:'wahl',frage:f,id:id,gen:gen};for(var k in w)m[k]=w[k];fragen[id]=ok;bk.postMessage(m)})}
- return{reiche:reiche,beiWs:beiWs,mess:M,messNeu:function(){M.maxRechenUs=0;M.maxScharfMs=0;M.maxZeichenMs=0;M.maxFestMs=0;M.ortMaxMs=0;M.hausMs=0;M.listeMs=0;if(bk)bk.postMessage({art:'messNeu'})},frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,besucher:besucher,besucherArena:besucherArena,festNeu:festNeu,besucherBlaetter:besucherBlaetter,besucherFehlt:function(){var L=besFehltL.slice();FPFEHLT.forEach(function(i){if(L.indexOf(i)<0)L.push(i)});return L.filter(function(i){return !BFIG.has(i)})},
+ return{reiche:reiche,beiWs:beiWs,mess:M,messNeu:function(){M.maxRechenUs=0;M.maxScharfMs=0;M.maxGScharfMs=0;M.maxZeichenMs=0;M.maxFestMs=0;M.ortMaxMs=0;M.hausMs=0;M.listeMs=0;if(bk)bk.postMessage({art:'messNeu'})},frage:frage,zoom:zoom,plan:plan,feldBei:feldBei,natur:natur,beiBau:beiBau,karren:karren,personen:personen,besucher:besucher,besucherArena:besucherArena,festNeu:festNeu,besucherBlaetter:besucherBlaetter,besucherFehlt:function(){var L=besFehltL.slice();FPFEHLT.forEach(function(i){if(L.indexOf(i)<0)L.push(i)});return L.filter(function(i){return !BFIG.has(i)})},
   besucherWunsch:function(L){FPFEHLT=(L||[]).filter(function(i){return !BFIG.has(i)});if(FPFEHLT.length)M.besFpWunsch=(M.besFpWunsch||0)+1;var t=performance.now();if(FPFEHLT.length&&o.beiBesFehlt&&t-besMeldT>250){besMeldT=t;setTimeout(o.beiBesFehlt,0)}},      // AR2c2: First Person bestellt nach,besucherHat:function(i){return BFIG.has(i)},
   besucherNahFehlt:function(){return besNahFehltL.length?{stufe:besNahStufe,typen:besNahFehltL.slice()}:null},besucherNahBlaetter:besucherNahBlaetter,      // Z4b
   besucherNahTest:function(s){var L=[];BN[s===4?4:2].forEach(function(v,typ){L.push({typ:typ,c:v.c})});return L},

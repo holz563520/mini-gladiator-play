@@ -15,6 +15,8 @@
 //    Kosten: eine Nachschau je Stichprobe in einer Tafel, nichts je Bildpunkt.
 // N7h1: scharf() rechnet dieselbe Raute mit 256 × 256 Stichproben und dem feinen Höhenrauschen des Kartenstücks als Auftrag in kleinen Zeitanteilen (Bildkern);
 //    kachel() (grob) bleibt Byte für Byte gleich. Kosten fest je Bild, unabhängig von Ort und Weltgröße.
+// N7h3: Globus schärfer: globusKachel() rechnet die Erdtextur in Kacheln von 8 × 8 Erdzellen (2/4/8 Stichproben je Zelle, Rechnung wie die scharfen Fernstufen),
+//    globusBedarf() sagt, welche die Ansicht zeigt (Mitte zuerst), globusAuftrag() malt den Globus in Zeitanteilen aus den feinsten vorhandenen Kacheln.
 (function(root){
 'use strict';
 var GW=600, GH=300, ZF=1024, WF=GW*ZF, HF=GH*ZF, S=128, IW=512, IH=256, ZONE=58, WEGE_BIS=8, MAX=12;
@@ -104,16 +106,20 @@ function mehrheit(Bf,lod,U){var GS2=Bf.GS,BI2=Bf.BI,BQ2=Bf.BQ,ueb=U&&lod>=U_AB,i
 }
 function fertig(Bf,G,A,seed,x0,y0,lod,F,U,RE,ohneMehrheit){var S2=Bf.S,GS2=Bf.GS,HS2=Bf.HS,BI2=Bf.BI,RQ2=Bf.RQ,COL2=Bf.COL,T=Bf.TAB,ueb=U&&lod>=U_AB,n=8<<lod,st=n/S2,i,j,k,q;
  if(!ohneMehrheit)mehrheit(Bf,lod,U);
- var pal=F.pal,du=F.du,he=F.he,rm=S2>>7;   // Reichsmuster: grob jede 4. Stichprobe, scharf jede 8. (gleich viel Fläche)
- for(j=0;j<S2;j++)for(i=0;i<S2;i++){q=(j+M)*GS2+i+M;var b=BI2[q],c=ueb?UFARBE[b]:BFARBE[b];
-  if(b>=2&&b<=9||b>=13){var gx=(HS2[q+1]-HS2[q-1])/(2*st),gy=(HS2[q+GS2]-HS2[q-GS2])/(2*st),sh=gx>T2?2:gx>T1?1:gx<-T2?-2:gx<-T1?-1:0;   // Licht von Westen wie im Bodenbild
-   if(gy>T2)sh--;while(sh>0){c=he[c];sh--}while(sh<0){c=du[c];sh++}
-   if(RE){var rr=RQ2[q];if(rr){var rc=RE.f[rr-1],m4=rm*4-1,h2=rm*2;if((RQ2[q+1]&&RQ2[q+1]!==rr)||(RQ2[q+GS2]&&RQ2[q+GS2]!==rr))c=du[rc];else if(((i&m4)===0&&(j&m4)===0)||((i&m4)===h2&&(j&m4)===h2))c=rc}}}
-  COL2[j*S2+i]=c}
+ farben(Bf,lod,F,U,RE);var pal=F.pal;
  var px=new Uint32Array(IW*IH);for(k=0;k<IW*IH;k++){var t=T[k];if(t>=0)px[k]=pal[COL2[t]]}
  var r={w:IW,h:IH,ox:256,oy:0,px:px};if(ohneMehrheit&&N7H2)return r;   // N7h2: scharf malt das Netz im eigenen Zeitanteil (scharf → netz mit Bf)
  netz(G,A,seed,x0,y0,lod,n,F,px);
  return r}
+// Farbnummer je Stichprobe (Bf.COL): Biomfarbe, Hangschatten (Licht von Westen), Reiche. N7h3: auch für die Kacheln des scharfen Globus.
+function farben(Bf,lod,F,U,RE){var S2=Bf.S,GS2=Bf.GS,HS2=Bf.HS,BI2=Bf.BI,RQ2=Bf.RQ,COL2=Bf.COL,ueb=U&&lod>=U_AB,st=(8<<lod)/S2,i,j,q;
+ var du=F.du,he=F.he,rm=S2>>7;   // Reichsmuster: grob jede 4. Stichprobe, scharf jede 8. (gleich viel Fläche)
+ if(rm<1)rm=1;   // N7h3: Globus-Kacheln haben weniger als 128 Stichproben je Seite
+ for(j=0;j<S2;j++)for(i=0;i<S2;i++){q=(j+M)*GS2+i+M;var b=BI2[q],c=ueb?UFARBE[b]:BFARBE[b];
+  if(b>=2&&b<=9||b>=13){var gx=(HS2[q+1]-HS2[q-1])/(2*st),gy=(HS2[q+GS2]-HS2[q-GS2])/(2*st),sh=gx>T2?2:gx>T1?1:gx<-T2?-2:gx<-T1?-1:0;   // Licht von Westen wie im Bodenbild
+   if(gy>T2)sh--;while(sh>0){c=he[c];sh--}while(sh<0){c=du[c];sh++}
+   if(RE){var rr=RQ2[q];if(rr){var rc=RE.f[rr-1],m4=rm*4-1,h2=rm*2;if((RQ2[q+1]&&RQ2[q+1]!==rr)||(RQ2[q+GS2]&&RQ2[q+GS2]!==rr))c=du[rc];else if(((i&m4)===0&&(j&m4)===0)||((i&m4)===h2&&(j&m4)===h2))c=rc}}}
+  COL2[j*S2+i]=c}}
 function kachel(G,A,seed,x0,y0,lod,F,U,RE){seed=seed>>>0;x0=umF(x0);zeilen(K0,G,A,seed,x0,y0,lod,U,RE,0,K0.GS,0);return fertig(K0,G,A,seed,x0,y0,lod,F,U,RE)}
 // N7h1 Weltansicht schärfer: scharfe Fassung eines Fernbilds als Auftrag in kleinen Zeitanteilen (Bildkern). 256 × 256 Stichproben (eine je Bildpunkt der
 // Raute statt einer je 4 × 2), Höhe mit dem feinen Rauschen des Kartenstücks, also Küsten, Seen, Strand, Eis, Biomgrenzen und Hangschatten so fein wie auf
@@ -217,10 +223,10 @@ var SYM=null;
 function symBau(){if(SYM)return SYM;SYM={};for(var g in SYM_ROH){var R=SYM_ROH[g],h=R.length,w=R[0].length,m=new Int8Array(w*h).fill(-1);
   for(var y=0;y<h;y++)for(var x=0;x<w;x++){var c=R[y][x];if(c!=='.')m[y*w+x]=SYM_FARBE[c]}SYM[g]={w:w,h:h,m:m}}return SYM}
 // L = [x, y, g, …] Mitte des Symbols in Bildpunkten; raute: nur Bildpunkte der eigenen Raute (Fernbild), sonst ganzes Bild (Globus: w, h in L.w/L.h)
-function symbole(L,px,F,raute,bw,bh){var S=symBau(),pal=F.pal,W=raute?IW:bw,H=raute?IH:bh,o=[],i;
+function symbole(L,px,F,raute,bw,bh,z){var S=symBau(),pal=F.pal,W=raute?IW:bw,H=raute?IH:bh,o=[],i;z=z>1?z|0:1;   // N7h3: z = Vergrößerung (scharfer Globus: gleich groß wie im groben)
  for(i=0;i<L.length;i+=3)o.push(i);o.sort(function(a,b){return L[a+2]-L[b+2]||L[a+1]-L[b+1]});   // kleine zuerst, große obenauf
- for(var q=0;q<o.length;q++){i=o[q];var s=S[L[i+2]];if(!s)continue;var sx=L[i]-(s.w>>1),sy=L[i+1]-(s.h>>1);
-  for(var y=0;y<s.h;y++){var Y=sy+y;if(Y<0||Y>=H)continue;for(var x=0;x<s.w;x++){var c=s.m[y*s.w+x];if(c<0)continue;var X=sx+x;if(X<0||X>=W)continue;var p=Y*W+X;
+ for(var q=0;q<o.length;q++){i=o[q];var s=S[L[i+2]];if(!s)continue;var sx=L[i]-((s.w*z)>>1),sy=L[i+1]-((s.h*z)>>1);
+  for(var y=0;y<s.h*z;y++){var Y=sy+y;if(Y<0||Y>=H)continue;for(var x=0;x<s.w*z;x++){var c=s.m[((y/z)|0)*s.w+((x/z)|0)];if(c<0)continue;var X=sx+x;if(X<0||X>=W)continue;var p=Y*W+X;
    if(raute&&TAB[p]<0)continue;px[p]=pal[c]}}}}
 
 // N7a3c1 (Thomas 25.11.2026): Mini-Pläne der Orte (ortsbild.js mini) in den Fernstufen ⅟16–⅟512 (lod 4 bis MINI_BIS). Der Bildkern setzt MINI = {hole(k) → {x0, y0, W, m}
@@ -238,17 +244,51 @@ function miniMalen(mp,x0,y0,n,px,pal){var W=mp.W,m=mp.m,lut=MINI.lut,dx=mp.x0-x0
 
 // ── Globus (Norden oben) ──
 // tex: Erdbild 600 × 300 (Farben), texD: dieselbe Erde dunkler (Rand der Kugel). W, H Bildschirm, R Kugelhalbmesser in Bildpunkten, lon0/lat0 Mitte (Bogenmaß), s Verkleinerung.
-function globus(tex,texD,W,H,R,lon0,lat0,s,rand,ORTE,F){var w=Math.ceil(W/s),h=Math.ceil(H/s),r=R/s,cx=W/2/s,cy=H/2/s,px=new Uint32Array(w*h),cl=Math.cos(lat0),sl=Math.sin(lat0),
-  ZP=2*Math.PI,ra=(1+1.5/r)*(1+1.5/r);
- var y0=Math.max(0,Math.floor(cy-r-2)),y1=Math.min(h,Math.ceil(cy+r+2)),x0=Math.max(0,Math.floor(cx-r-2)),x1=Math.min(w,Math.ceil(cx+r+2));
- for(var py=y0;py<y1;py++){var y=-(py+.5-cy)/r;for(var qx=x0;qx<x1;qx++){var x=(qx+.5-cx)/r,r2=x*x+y*y;if(r2>=1){if(r2<ra)px[py*w+qx]=rand;continue}
-  var z=Math.sqrt(1-r2),la=Math.asin(y*cl+z*sl),lo=lon0+Math.atan2(x,z*cl-y*sl),col=Math.floor(lo/ZP*GW)%GW,row=Math.floor((.5-la/Math.PI)*GH);
+// N7h3: FEIN (oder null = wie vorher, Byte für Byte) = Kacheln der scharfen Erdtextur {L:[{k, T}], …} feinste zuerst; je Bildpunkt die feinste vorhandene Kachel, sonst das Erdbild.
+function globus(tex,texD,W,H,R,lon0,lat0,s,rand,ORTE,F,FEIN){var j=globusAuftrag(tex,texD,W,H,R,lon0,lat0,s,rand,ORTE,F,FEIN);j.schritt(1e9);return j.bild()}
+// N7h3: derselbe Globus als Auftrag in Zeitanteilen (Zeilen für Zeilen, Orte am Schluss). schritt(ms) → true wenn fertig, bild() → {w,h,px}.
+function globusAuftrag(tex,texD,W,H,R,lon0,lat0,s,rand,ORTE,F,FEIN){var w=Math.ceil(W/s),h=Math.ceil(H/s),r=R/s,cx=W/2/s,cy=H/2/s,px=new Uint32Array(w*h),cl=Math.cos(lat0),sl=Math.sin(lat0),
+  ZP=2*Math.PI,ra=(1+1.5/r)*(1+1.5/r),uhr=typeof performance!=='undefined'?performance:Date;
+ var y0=Math.max(0,Math.floor(cy-r-2)),y1=Math.min(h,Math.ceil(cy+r+2)),x0=Math.max(0,Math.floor(cx-r-2)),x1=Math.min(w,Math.ceil(cx+r+2)),py=y0,fertigB=null;
+ var FL=FEIN&&FEIN.L&&FEIN.L.length?FEIN.L:null,pal=F&&F.pal,du=F&&F.du;
+ function zeile(py){var y=-(py+.5-cy)/r;for(var qx=x0;qx<x1;qx++){var x=(qx+.5-cx)/r,r2=x*x+y*y;if(r2>=1){if(r2<ra)px[py*w+qx]=rand;continue}
+  var z=Math.sqrt(1-r2),la=Math.asin(y*cl+z*sl),lo=lon0+Math.atan2(x,z*cl-y*sl);
+  if(FL){var u=lo/ZP*GW,v=(.5-la/Math.PI)*GH,c=-1;
+   for(var l=0;l<FL.length;l++){var e=FL[l],k=e.k,KS=GK*k,sx=Math.floor(u*k)%(GW*k),sy=Math.floor(v*k);if(sx<0)sx+=GW*k;if(sy<0)sy=0;else if(sy>=GH*k)sy=GH*k-1;
+    var tx=(sx/KS)|0,ty=(sy/KS)|0,d=e.T[ty*GTX+tx];if(d){c=d[(sy-ty*KS)*KS+sx-tx*KS];if(e.nr)e.nr[ty*GTX+tx]=FEIN.nr;break}}
+   if(c>=0){px[py*w+qx]=z<.28?pal[du[c]]:pal[c];continue}}
+  var col=Math.floor(lo/ZP*GW)%GW,row=Math.floor((.5-la/Math.PI)*GH);
   if(col<0)col+=GW;if(row<0)row=0;else if(row>=GH)row=GH-1;var t=row*GW+col;px[py*w+qx]=z<.28?texD[t]:tex[t]}}
- if(ORTE&&F&&ORTE.length){var SL=[],dl;   // N7b1: Großstädte und Hauptstädte auf der Vorderseite der Kugel (ORTE = [Länge, Breite, Größe, …] im Bogenmaß)
+ function orte(){if(ORTE&&F&&ORTE.length){var SL=[],dl;   // N7b1: Großstädte und Hauptstädte auf der Vorderseite der Kugel (ORTE = [Länge, Breite, Größe, …] im Bogenmaß)
   for(var k=0;k<ORTE.length;k+=3){var la=ORTE[k+1],cp=Math.cos(la);dl=ORTE[k]-lon0;var gx=cp*Math.sin(dl),gy=cl*Math.sin(la)-sl*cp*Math.cos(dl),gz=sl*Math.sin(la)+cl*cp*Math.cos(dl);
    if(gz<.3)continue;SL.push(Math.round(cx+gx*r-.5),Math.round(cy-gy*r-.5),ORTE[k+2]+10)}
-  if(SL.length)symbole(SL,px,F,false,w,h)}
- return{w:w,h:h,px:px}}
+  if(SL.length)symbole(SL,px,F,false,w,h,FEIN&&FEIN.z)}}
+ var auf={ms:0,schritte:0,schritt:function(ms){if(fertigB)return true;var t=uhr.now();auf.schritte++;
+   while(py<y1){zeile(py++);if((py&7)===0&&uhr.now()-t>=ms)break}
+   if(py>=y1){orte();fertigB={w:w,h:h,px:px}}auf.ms+=uhr.now()-t;return!!fertigB},
+  bild:function(){return fertigB}};
+ return auf}
+// N7h3 Globus schärfer: Kacheln der Erdtextur, je GK × GK Erdzellen (8 × 8 = 8.192 × 8.192 Felder, genau ein Fernbild ⅟1024), k = 2, 4 oder 8 Stichproben je
+// Erdzelle und Richtung. Gerechnet mit derselben Rechnung wie die scharfen Fernstufen ab ⅟1024 (zeilen, Übersichtsfarben, feine Küsten, Seen, Eis, Hangschatten,
+// Reiche), achsparallel statt als Raute, also passen Globus und ⅟4096 zusammen. Daten: eine Farbnummer je Stichprobe ((8k)² Byte). Kosten fest je Kachel
+// (höchstens 68 × 68 Stichproben mit Rand), unabhängig von Ort und Weltgröße.
+var GK=8, GTX=GW/GK, GTY=Math.ceil(GH/GK), GLOD=10, GSATZ={};
+function globusStufe(R,s){var ppz=2*Math.PI*R/GW/s;return ppz>4?8:ppz>2?4:2}   // Stichproben je Erdzelle nach Bildpunkten je Erdzelle am Äquator
+function globusKachel(G,A,seed,tx,ty,k,F,U,RE){seed=seed>>>0;var S2=GK*k,Bf=GSATZ[S2]||(GSATZ[S2]=satz(S2)),x0=tx*GK*ZF,y0=ty*GK*ZF,st=(8<<GLOD)/S2,j=0,daten=null,
+  fe=3,uhr=typeof performance!=='undefined'?performance:Date;while(fe<9&&(1<<fe)<2*st)fe++;
+ var auf={tx:tx,ty:ty,k:k,ms:0,schritte:0,schritt:function(ms){if(daten)return true;var t=uhr.now();auf.schritte++;Bf.wer=auf;
+   while(j<Bf.GS){j=zeilen(Bf,G,A,seed,x0,y0,GLOD,U,RE,j,j+Z_SCHRITT,fe);if(uhr.now()-t>=ms)break}
+   if(j>=Bf.GS&&uhr.now()-t<ms){farben(Bf,GLOD,F,U,RE);daten=Bf.COL.slice()}auf.ms+=uhr.now()-t;return!!daten},
+  daten:function(){return daten}};
+ return auf}
+// Kacheln, die der Globus mit dieser Ansicht zeigt (Vorderseite), Bildmitte zuerst: [Nummer ty·GTX+tx, …]. Kosten nur von der Bildgröße (Raster alle 3 Bildpunkte).
+function globusBedarf(W,H,R,lon0,lat0,s,k){var w=Math.ceil(W/s),h=Math.ceil(H/s),r=R/s,cx=W/2/s,cy=H/2/s,cl=Math.cos(lat0),sl=Math.sin(lat0),ZP=2*Math.PI,KS=GK*k,
+  D=new Map(),SCH=3;
+ for(var py=Math.max(0,Math.floor(cy-r));py<Math.min(h,Math.ceil(cy+r));py+=SCH){var y=-(py+.5-cy)/r;for(var qx=Math.max(0,Math.floor(cx-r));qx<Math.min(w,Math.ceil(cx+r));qx+=SCH){
+  var x=(qx+.5-cx)/r,r2=x*x+y*y;if(r2>=1)continue;var z=Math.sqrt(1-r2),la=Math.asin(y*cl+z*sl),lo=lon0+Math.atan2(x,z*cl-y*sl),
+   sx=Math.floor(lo/ZP*GW*k)%(GW*k),sy=Math.floor((.5-la/Math.PI)*GH*k);if(sx<0)sx+=GW*k;if(sy<0)sy=0;else if(sy>=GH*k)sy=GH*k-1;
+  var n=((sy/KS)|0)*GTX+((sx/KS)|0),ab=(qx-cx)*(qx-cx)+(py-cy)*(py-cy),a=D.get(n);if(a==null||ab<a)D.set(n,ab)}}
+ var L=[];D.forEach(function(ab,n){L.push([ab,n])});L.sort(function(a,b){return a[0]-b[0]||a[1]-b[1]});return L.map(function(e){return e[1]})}
 // N7b1: Liste der Globus-Orte (Großstadt G6, Hauptstadt G7) aus dem Erdraster, einmal je Welt: [Länge, Breite, Größe, …]
 function globusOrte(G,A,seed,groe){var L=[],O=A.orte,n=A.kopf?A.kopf[0]:O.length;
  for(var k=0;k<n&&k<O.length;k++){var g=groe(k);if(g<6)continue;var z=O[k]&0xffffff,pp=G.ortPunkt(seed,A,z%GW,(z/GW)|0);
@@ -265,6 +305,6 @@ function dunkler(tex,F){var inv=new Map(),d=new Uint32Array(tex.length);for(var 
 // N4c1: Reiche auf dem Erdbild des Globus (600 × 300 Farben): Grenze dunkel, jede vierte Zelle in der Reichsfarbe
 function reicheErde(tex,RE,F){for(var i=0;i<GW*GH;i++){var r=RE.z[i];if(!r)continue;var x=i%GW,y=(i/GW)|0,e=RE.z[x+1<GW?i+1:i+1-GW],s=y+1<GH?RE.z[i+GW]:0,rc=RE.f[r-1];
   if((e&&e!==r)||(s&&s!==r))tex[i]=F.pal[F.du[rc]];else if(!(x&1)&&!(y&1))tex[i]=F.pal[rc]}return tex}
-var FB={n7h2An:n7h2An,groesseAn:groesseAn,globusOrte:globusOrte,symbole:symbole,SYM_ROH:SYM_ROH,miniAn:miniAn,MINI_BIS:MINI_BIS,ortNr:ortNr,reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,scharf:scharf,S_SCHARF:S_SCHARF,feinH:feinH,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
+var FB={n7h2An:n7h2An,groesseAn:groesseAn,globusOrte:globusOrte,symbole:symbole,SYM_ROH:SYM_ROH,miniAn:miniAn,MINI_BIS:MINI_BIS,ortNr:ortNr,reicheErde:reicheErde,S:S,IW:IW,IH:IH,MAX:MAX,WEGE_BIS:WEGE_BIS,TAB:TAB,kachel:kachel,scharf:scharf,S_SCHARF:S_SCHARF,feinH:feinH,uebersicht:uebersicht,UFARBE:UFARBE,U_AB:U_AB,globus:globus,globusAuftrag:globusAuftrag,globusKachel:globusKachel,globusBedarf:globusBedarf,globusStufe:globusStufe,GK:GK,GTX:GTX,GTY:GTY,aufGlobus:aufGlobus,dunkler:dunkler,weich:weich};
 if(typeof module!=='undefined'&&module.exports)module.exports=FB;else root.AT3FERN=FB;
 })(typeof self!=='undefined'?self:this);

@@ -22,6 +22,8 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 .bbar .btn{min-height:38px}
 .stage{position:relative;background:#101719;border:1px solid var(--line)}
 #arenaCanvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+#shotCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;cursor:pointer;background:#120c09}
+.nahg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin:6px 0}
 .hud{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px;font-size:13px;color:var(--cream);margin:8px 0}
 .karte{border:1px solid var(--line);padding:6px 8px;background:#17201f}
 .karte b{color:var(--gold);font-weight:normal}
@@ -35,9 +37,10 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 .err{color:#f29b83;white-space:pre-wrap}
 </style></head><body><div class="wrap">
 <div class="tl">Arena Theory · Werkzeug · <a href="baer-editor.html">zurück zum Bären-Editor</a></div><h1>Bären · Kampf-Editor</h1>
-<p class="sub">Bären gegen Menschen, Hunde und andere Bären, mit der echten Kampflogik des Spiels. Testversion (Schritte B3a bis B3b2): Die Werte sind vorläufig und noch nicht eingemessen, bisher hat nur der Europäische Braunbär eine eigene Gestalt, alle anderen Sorten kämpfen mit ihren eigenen Werten in seinem Körper. Dein Spielstand wird nicht verändert.</p>
-<div class="bbar" id="tabs"><button class="btn primary" type="button" data-tab="kampf">Kampf</button><button class="btn" type="button" data-tab="attacken">Attacken</button><button class="btn" type="button" data-tab="wunden">Wunden</button></div>
+<p class="sub">Bären gegen Menschen, Hunde und andere Bären, mit der echten Kampflogik des Spiels. Testversion (Schritte B3a bis B5a): Die Werte sind vorläufig und noch nicht eingemessen, bisher hat nur der Europäische Braunbär eine eigene Gestalt, alle anderen Sorten kämpfen mit ihren eigenen Werten in seinem Körper. Dein Spielstand wird nicht verändert.</p>
+<div class="bbar" id="tabs"><button class="btn primary" type="button" data-tab="kampf">Kampf</button><button class="btn" type="button" data-tab="attacken">Attacken</button><button class="btn" type="button" data-tab="wunden">Wunden</button><button class="btn" type="button" data-tab="nah">Nahaufnahmen</button></div>
 <p class="sub" data-tabs="attacken">Attacken einzeln ansehen: Der erste Bär der Seite A steht einer Übungsfigur gegenüber (ein Mensch mit Stufe, Waffe und Rüstung der Seite B). Der Bär greift nur an, wenn du unten einen Angriff antippst. Am besten mit Tempo ¼ und „Bild vor“ ansehen.</p>
+<p class="sub" data-tabs="nah">Nahaufnahmen einzeln ansehen (Schritt B5a): Kopf zerdrücken und Gliedmaße abreißen. Opfer ist die Übungsfigur mit Stufe und Rüstung der Seite B (ihr echtes Gesicht und ihre echte Ausrüstung wie in den Nahaufnahmen des Spiels), Angreifer der erste Bär der Seite A mit seinem Fell. „Im Kampf“ lässt den Bären den Angriff in der Arena ausführen: Die Nahaufnahme startet dann in dem Bild, in dem es geschieht, der Kampf hält so lange an, danach fehlt der Kopf oder das Glied an der Figur. Antippen überspringt.</p>
 <p class="sub" data-tabs="wunden">Wunden von Hand auf den ersten Bären der Seite A setzen, um Aussehen und Folgen zu prüfen (Blut, Lahmen, Mut). Der Bär greift hier nicht von selbst an.</p>
 <div class="teams">
  <div class="team"><h3>Seite A (links)</h3><div class="bbar">
@@ -68,7 +71,7 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
  <button class="btn" id="einzel" type="button">Bild vor</button>
  <label class="frei"><input type="checkbox" id="loop"> immer wieder</label>
 </div>
-<div class="stage"><canvas id="arenaCanvas" width="1040" height="720"></canvas></div>
+<div class="stage"><canvas id="arenaCanvas" width="1040" height="720"></canvas><canvas id="shotCanvas" width="1040" height="720" hidden title="Antippen: Nahaufnahme überspringen"></canvas></div>
 <div class="hud" id="hud">Lädt …</div>
 <div data-tabs="wunden"><h2>Wunde setzen</h2>
 <div class="bbar">
@@ -79,6 +82,13 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
  <button class="btn" id="wHeilen" type="button">Alle Wunden heilen</button>
 </div>
 <p class="sub" id="wText"></p></div>
+<div data-tabs="nah"><h2>Nahaufnahme ansehen</h2>
+<div class="bbar"><button class="btn primary" type="button" data-nah="crush">Kopf zerdrücken<br><small>Head crushed</small></button>
+ <label>Glied<select id="nahGlied"></select></label>
+ <button class="btn primary" type="button" data-nah="tear">Glied abreißen<br><small>Limb torn off</small></button>
+ <label class="frei"><input type="checkbox" id="nahKampf" checked> im Kampf (Bär führt den Angriff in der Arena aus)</label>
+ <button class="btn" type="button" id="nahStop">Nahaufnahme abbrechen</button></div>
+<p class="sub" id="nahText"></p></div>
 <h2 data-tabs="kampf attacken">Angriff auslösen</h2>
 <div data-tabs="attacken"><div class="bbar">
  <label class="frei"><input type="checkbox" id="zeigen" checked> Reichweite und Treffpunkt zeigen</label>
@@ -95,6 +105,7 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
  <label>Schaden der Bären: <span id="schadenText"></span><input type="range" id="schaden" min="0.4" max="2" step="0.05" value="1"></label>
  <label>Härte der Bären: <span id="haerteText"></span><input type="range" id="haerte" min="0.4" max="2.5" step="0.05" value="1"></label>
  <label title="Vielfaches des Galopps beim Anrennen und beim Scheinangriff. 1 = Tempo wie vor B3c2. Ganz aus: Adresse ?baerSturm=0">Tempo beim Anrennen: <span id="tempoText"></span><input type="range" id="tempo" min="1" max="2.5" step="0.05" value="1.75"></label>
+ <label class="frei" title="B5a: Bei Kopfbiss und Abreißen hält der Kampf an und zeigt die Nahaufnahme. Aus = wie vor B5a (auch über die Adresse ?baerNah=0)"><input type="checkbox" id="nah" checked> Nahaufnahmen im Kampf</label>
  <label title="B3c3: Der Bär zuckt an der getroffenen Stelle, schnappt zurück, wird von schweren Treffern zurückgeworfen, weicht Schlägen nach hinten aus, geht rückwärts und zieht sein Opfer rückwärts von den Helfern weg. Aus = alles wie vor B3c3 (auch über die Adresse ?baerReakt=0)"><input type="checkbox" id="reakt" checked> Reagieren, Zurückweichen, Wegziehen</label>
 </div>
 <h2>Kampfbericht (Englisch wie im Spiel)</h2>
@@ -108,8 +119,8 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 <script>window.BAER_KAMPF_EDITOR=true;window.onerror=(m,src,l)=>{const e=document.getElementById('err');if(e){e.hidden=false;e.textContent+='Fehler: '+m+' ('+String(src).split('/').pop()+':'+l+')\n';}};</script>
 <script>
 // Spielmodule in Reihenfolge laden (wie der Wurfnetz-Editor), danach die Bären. Die Bärendateien werden nur hier und im Bären-Editor geladen.
-(async()=>{const V='929a445f',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
- const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','lion','hahn-engine','hahn-arena','arena-beasts','hund','arena-core','baer','baer-koepfe','baer-mini','baer-kampf','baer-kampf-editor'];
+(async()=>{const V='0626cb3b',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
+ const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','lion','hahn-engine','hahn-arena','arena-beasts','hund','arena-core','face-shots','injury-shots','tier-shots','baer','baer-koepfe','baer-mini','baer-kampf','baer-kampf-editor'];
  for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v='+v;s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
 </script>
 </body></html>

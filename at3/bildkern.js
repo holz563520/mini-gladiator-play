@@ -7,6 +7,7 @@
 // G4b: backt die Natur aus dem Startset (natur.js) mit ins Bodenbild und findet beim Antippen das vorderste Naturobjekt unter dem Finger.
 // W1c Runde Welt: Das Fenster der Stücke läuft in x über die Naht (hole rechnet die Stückspalte um), in y endet es am Pol.
 // N7h2: in der scharfen Fassung Flüsse und Straßen aus den Läufen des Kartenstücks (fernbild.js netzFein), Notausschalter ?n7h2=0.
+// N7h3: scharfer Globus auf Wunsch der Karte („gscharf“): Kacheln der feinen Erdtextur in Zeitanteilen, gemerkt bis 8 MB, Globus in voller Auflösung.
 // N7h1: scharfe Fernbilder auf Wunschliste der Karte („scharf“), ein Auftrag zugleich, je Durchlauf höchstens 6 ms, neue Liste bricht Überholtes ab.
 // G4d: Fernbilder der Stufen ⅟16 bis ⅟4096 (fernbild.js, nur aus dem Erdraster, ohne Kartenstücke) und der Globus (Frage „globus“, aus dem Erdbild der Startplatz-Wahl).
 // FP1: Frage „fp“: Ausschnitt der echten Welt für die First-Person-Ansicht (fpausschnitt.js). FP2a: mit Wänden, Türen, Toren und Gebäudeböden.
@@ -182,6 +183,32 @@ function scharfArbeit(){SCHL=false;if(!A||!F){SCHA=null;SCH.length=0;return}
   if(BMP)createImageBitmap(new ImageData(new Uint8ClampedArray(r.px.buffer),r.w,r.h)).then(function(b){m.bmp=b;self.postMessage(m,[b])},function(){m.buf=r.px;self.postMessage(m,[r.px.buffer])});
   else{m.buf=r.px;self.postMessage(m,[r.px.buffer])}}
  scharfWeiter()}
+// N7h3 Globus schärfer (28.11.2026): ruht der Blick auf dem Globus, schickt die Karte „gscharf“ mit der Ansicht. Der Bildkern rechnet die fehlenden Kacheln der
+// feinen Erdtextur (fernbild.js globusKachel, Mitte zuerst), dann den Globus in voller Auflösung (globusAuftrag), je Durchlauf höchstens SCH_MS, und schickt ihn
+// zurück. Fertige Kacheln bleiben gemerkt (GT_SPEICHER, am längsten Ungenutztes fliegt) und erscheinen auch im groben Globus beim Drehen. Neue Ansicht oder
+// „gscharf“ ohne an bricht die laufende Arbeit ab (Fertiges bleibt). Notausschalter ?n7h=0 / ?n7h3=0 auf dem Hauptkern (schickt dann nichts, grober Globus wie vorher).
+var GT={}, GTB=0, GTNR=0, GJ=null, GJL=false, GT_SPEICHER=8*1048576;
+function gtLeeren(){GT={};GTB=0;GJ=null}
+function gtStufe(k){var e=GT[k];if(!e)e=GT[k]={k:k,T:new Array(FB.GTX*FB.GTY),nr:new Int32Array(FB.GTX*FB.GTY),n:0};return e}
+function gtFein(kMax){var L=[];[8,4,2].forEach(function(k){if(k<=kMax&&GT[k]&&GT[k].n)L.push(GT[k])});return L.length?{L:L,nr:++GTNR}:null}
+function texAn(){if(!TEX){TEX=SP.erdBild(A,F,ueb(),FB.UFARBE);if(reiche())FB.reicheErde(TEX,RE,F);TEXD=FB.dunkler(TEX,F)}}
+function gtRaus(schutz){if(GTB<=GT_SPEICHER)return;var L=[];[2,4,8].forEach(function(k){var e=GT[k];if(!e)return;for(var i=0;i<e.T.length;i++)if(e.T[i]&&!(k===schutz.k&&schutz.s.has(i)))L.push([e.nr[i],k,i])});
+ L.sort(function(a,b){return a[0]-b[0]});for(var j=0;j<L.length&&GTB>GT_SPEICHER*.8;j++){var e=GT[L[j][1]],d=e.T[L[j][2]];GTB-=d.length;e.T[L[j][2]]=null;e.n--;GTRAUS++}}
+var GTRAUS=0;
+function gscharf(d){if(!d.an||!A||!F||d.gen!==gen){GJ=null;return}var k=d.k===8||d.k===4||d.k===2?d.k:FB.globusStufe(d.R,d.s),e=gtStufe(k),B=FB.globusBedarf(d.W,d.H,d.R,d.lon,d.lat,d.s,k);
+ GJ={d:d,k:k,e:e,L:B.filter(function(n){return!e.T[n]}),s:new Set(B),job:null,bild:null,ms:0,neu:0,schritte:0,kMs:0};gWeiter()}
+function gWeiter(){if(!GJL&&GJ){GJL=true;setTimeout(gArbeit,0)}}
+function gArbeit(){GJL=false;var J=GJ;if(!J)return;if(!A||!F||J.d.gen!==gen){GJ=null;return}var t=performance.now();J.schritte++;
+ while(performance.now()-t<SCH_MS){
+  if(!J.bild&&(J.job||J.L.length)){if(!J.job){var n=J.L.shift();J.job=FB.globusKachel(G,A,seed,n%FB.GTX,(n/FB.GTX)|0,J.k,F,ueb(),reiche());J.n=n}
+   var rest=SCH_MS-(performance.now()-t);if(rest<=0)break;var tk=performance.now();
+   if(J.job.schritt(rest)){var D=J.job.daten();if(!J.e.T[J.n]){J.e.T[J.n]=D;J.e.n++;GTB+=D.length}J.e.nr[J.n]=++GTNR;J.neu++;J.job=null;gtRaus({k:J.k,s:J.s})}J.kMs+=performance.now()-tk;continue}
+  if(!J.bild){texAn();var d=J.d;var FE=gtFein(J.k);if(FE)FE.z=Math.max(1,Math.round((d.sg||d.s)/d.s));J.bild=FB.globusAuftrag(TEX,TEXD,d.W,d.H,d.R,d.lon,d.lat,d.s,F.pal[F.dunkel],globusOrte(),F,FE)}   // z: Ortssymbole so groß wie im groben Globus
+  if(J.bild.schritt(Math.max(1,SCH_MS-(performance.now()-t)))){var r=J.bild.bild();J.ms+=performance.now()-t;GJ=null;
+   self.postMessage({art:'gscharf',gen:J.d.gen,nv:J.d.nv,key:J.d.key,w:r.w,h:r.h,s:J.d.s,R:J.d.R,k:J.k,buf:r.px,ms:J.ms,kMs:J.kMs,gMs:J.bild.ms,neu:J.neu,schritte:J.schritte,
+    kacheln:(GT[2]?GT[2].n:0)+(GT[4]?GT[4].n:0)+(GT[8]?GT[8].n:0),bytes:GTB,raus:GTRAUS},[r.px.buffer]);return}
+  break}
+ J.ms+=performance.now()-t;gWeiter()}
 // Übersichtsbiome (Globus, Fernstufen ab ⅟1024): einmal je Welt, beim ersten Bedarf
 function ueb(){if(!UEB)UEB=FB.uebersicht(G,A,seed);return UEB}
 // N4c1: Reich + 1 je Erdzelle und Farbnummer je Reich (Vasallen eine Stufe heller), nur wenn die Erde Herrschaften trägt und der Knopf an ist
@@ -194,7 +221,8 @@ function wahl(d){var m={art:'antwort',id:d.id},tr=[];if(!A||!F||d.gen!==gen){m.f
  if(d.frage==='fp'){fp(d,m,t);return}
  if(d.frage==='namen'){namen(d,m,t);return}
  if(d.frage==='stadt'){m.ort=stadtSuche(d);m.us=(performance.now()-t)*1000;self.postMessage(m);return}      // N7b2: Ort unter dem Finger (Fernstufen, Globus)      // N7a3c2: Ortsnamen im Ausschnitt
- if(d.frage==='globus'){if(!TEX){TEX=SP.erdBild(A,F,ueb(),FB.UFARBE);if(reiche())FB.reicheErde(TEX,RE,F);TEXD=FB.dunkler(TEX,F)}var gl=FB.globus(TEX,TEXD,d.W,d.H,d.R,d.lon,d.lat,d.s,F.pal[F.dunkel],globusOrte(),F);m.w=gl.w;m.h=gl.h;m.buf=gl.px;tr.push(gl.px.buffer)}
+ if(d.frage==='globus'){texAn();var gl=FB.globus(TEX,TEXD,d.W,d.H,d.R,d.lon,d.lat,d.s,F.pal[F.dunkel],globusOrte(),F,d.fein?gtFein(8):null);   // N7h3: gemerkte feine Kacheln auch beim Drehen
+ m.w=gl.w;m.h=gl.h;m.buf=gl.px;tr.push(gl.px.buffer)}
  else if(d.frage==='erdbild'){var e=SP.erdBild(A,F);m.w=SP.GW;m.h=SP.GH;m.buf=e;tr.push(e.buffer)}
  else if(d.frage==='region'){var rx=SP.eckeX(d.zx),ry=SP.eckeY(d.zy),r=SP.regionBild(G,seed,A,rx,ry,F);m.rx=rx;m.ry=ry;m.w=m.h=SP.RP;m.rs=SP.RS;m.buf=r;tr.push(r.buffer)}
  else if(d.frage==='platz'||d.frage==='zufall'){if(!ON){try{importScripts('ortsnamen.js'+self.location.search);ON=self.AT3ORTSNAMEN}catch(x){ON=null}}
@@ -248,7 +276,7 @@ function startplatz(){var MX=G.GW>>1,MY=G.GH>>1,land=-1;
  return land<0?{x:BB.WX>>1,y:BB.WY>>1,ort:0}:{x:(land%G.GW)*G.ZF+(G.ZF>>1),y:((land/G.GW)|0)*G.ZF+(G.ZF>>1),ort:0}}
 self.onmessage=function(e){var d=e.data;
  if(d.art==='init'){F={pal:d.pal,du:d.du,he:d.he,dunkel:dunkelste(d.pal)};self.postMessage({art:'arten',liste:NAT.ARTEN,bau:BAUB.ARTEN})}
- else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);SCHA=null;SCH.length=0;TEX=TEXD=UEB=RE=null;GRT=GORTE=null;miniLeeren();NAMK.clear();WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
+ else if(d.art==='welt'){gen=d.gen;seed=d.seed>>>0;A=G.ansicht(d.buf.buffer);SCHA=null;SCH.length=0;TEX=TEXD=UEB=RE=null;GRT=GORTE=null;gtLeeren();miniLeeren();NAMK.clear();WB=d.buf;if(OFL)OFL.leeren();if(!OKP&&OK)OK.nachricht({art:'welt',gen:gen,seed:seed,buf:d.buf});st.forEach(function(b){if(lager.length<8)lager.push(b)});st.clear();ortsBedarf();weiter()}
  else if(d.art==='blick'){kx=d.kx;ky=d.ky;st.forEach(function(b,k){if(ab((k/8192)|0,kx)>HALB||Math.abs(k%8192-ky)>HALB){st.delete(k);if(lager.length<8)lager.push(b)}});ortsBedarf();weiter()}
  else if(d.art==='ortskern'){OKP=d.port;OKP.onmessage=function(e){vomOrtskern(e.data)}}
  else if(d.art==='ortskernWeg'){OKP=null;if(OFL)OFL.vergessenAlle();ortsBedarf()}   // Ortskern ausgefallen: ab jetzt eingebettet   // N7a2a: eigener Hintergrundkern für die Ortspläne
@@ -269,7 +297,8 @@ self.onmessage=function(e){var d=e.data;
   if(fd&&ob)fd.obj=ob;else if(ob)fd={obj:ob};
   self.postMessage({art:'feld',id:d.id,feld:fd})}
  else if(d.art==='scharf')scharfListe(d);   // N7h1
+ else if(d.art==='gscharf')gscharf(d);   // N7h3
  else if(d.art==='wahl')wahl(d);
  else if(d.art==='messNeu'){if(OFL&&OFL.messNeu)OFL.messNeu()}   // N7a2b3: Messfeld „Reset“
- else if(d.art==='reiche'){REI=!!d.an;RE=null;SCHA=null;SCH.length=0;TEX=TEXD=null}   // N4c1: Knopf „Realms“; die Karte verwirft ihre Fernbilder selbst
+ else if(d.art==='reiche'){REI=!!d.an;RE=null;SCHA=null;SCH.length=0;TEX=TEXD=null;gtLeeren()}   // N4c1: Knopf „Realms“; die Karte verwirft ihre Fernbilder selbst
  else if(d.art==='start'){self.postMessage({art:'start',gen:gen,platz:A?startplatz():null})}};

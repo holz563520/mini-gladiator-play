@@ -22,6 +22,7 @@ function zeilen(){var K=window.AT3SPIEL&&AT3SPIEL.karte&&AT3SPIEL.karte(),M=K&&K
  z.push('Half (½): '+(M.halbN||0)+' images '+mb(M.halbB)+'/1 MB · biggest step '+ms(M.halbMs)+' ms');   // N7a3a
  z.push('Far (¼ ⅛): '+(M.fernN||0)+' images '+mb(M.fernB)+'/0.5 MB · biggest step '+ms(M.fernMs)+' ms');   // N7a3b
  z.push('Sharp world view: '+(M.scharfZahl||0)+' images '+mb(M.scharfB)+'/24 MB · last '+ms(M.scharfMs)+' ms in '+(M.scharfSchritte||0)+' steps · max '+ms(M.maxScharfMs)+' ms · dropped '+(M.scharfRaus||0));   // N7h1
+ z.push('Sharp globe: '+(M.gKacheln||0)+' tiles '+mb(M.gBytes)+'/8 MB · last '+ms(M.gScharfMs)+' ms (tiles '+ms(M.gKMs)+' + picture '+ms(M.gGMs)+') in '+(M.gSchritte||0)+' steps, '+(M.gNeu||0)+' new, '+(M.gK||0)+'/cell · max '+ms(M.maxGScharfMs)+' ms · dropped '+(M.gRaus||0));   // N7h3
  z.push('Kartei: '+(M.kartei||0)+' images '+mb(M.karteiB)+'/4 MB');
  z.push('Map images: '+(M.bilder||0)+' · '+mb(M.bytes)+' MB (max '+mb(M.maxBytes)+') · visible '+(M.sichtbar||0)+' · placeholders '+(M.ersatz||0)+(M.fertig?' · done':' · working'));
  z.push('Device: '+(n.hardwareConcurrency||'?')+' cores · '+(n.deviceMemory?n.deviceMemory+' GB':'? GB')+' · '+innerWidth+'×'+innerHeight+' @'+(devicePixelRatio||1)+' · '+((performance.now()-start)/1000|0)+' s');
