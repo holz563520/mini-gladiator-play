@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1951,
+ "typMax": 1982,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -17418,6 +17418,285 @@
    "name": "Coconut Palm D (tally)",
    "status": "uebernommen",
    "datei": "obj/baum-kokospalme-c.json"
+  },
+  {
+   "id": "bk-kueste-boden",
+   "version": 1,
+   "typ": 1952,
+   "kat": "boden",
+   "name": "Quay Flagstones",
+   "status": "skizze",
+   "datei": "obj/bk-kueste-boden.json"
+  },
+  {
+   "id": "bk-kueste-boden-a",
+   "version": 1,
+   "typ": 1953,
+   "kat": "boden",
+   "name": "Quay Flagstones A",
+   "status": "skizze",
+   "datei": "obj/bk-kueste-boden-a.json"
+  },
+  {
+   "id": "bk-kueste-boden-b",
+   "version": 1,
+   "typ": 1954,
+   "kat": "boden",
+   "name": "Quay Flagstones B",
+   "status": "skizze",
+   "datei": "obj/bk-kueste-boden-b.json"
+  },
+  {
+   "id": "bk-kueste-boden-c",
+   "version": 1,
+   "typ": 1955,
+   "kat": "boden",
+   "name": "Quay Flagstones C",
+   "status": "skizze",
+   "datei": "obj/bk-kueste-boden-c.json"
+  },
+  {
+   "id": "bk-kueste-boden-d",
+   "version": 1,
+   "typ": 1956,
+   "kat": "boden",
+   "name": "Quay Flagstones D",
+   "status": "skizze",
+   "datei": "obj/bk-kueste-boden-d.json"
+  },
+  {
+   "id": "bk-kueste-boden-e",
+   "version": 1,
+   "typ": 1957,
+   "kat": "boden",
+   "name": "Quay Flagstones E",
+   "status": "skizze",
+   "datei": "obj/bk-kueste-boden-e.json"
+  },
+  {
+   "id": "bk-kueste-boden-f",
+   "version": 1,
+   "typ": 1958,
+   "kat": "boden",
+   "name": "Quay Flagstones F",
+   "status": "skizze",
+   "datei": "obj/bk-kueste-boden-f.json"
+  },
+  {
+   "id": "bk-kueste-wand-c",
+   "version": 1,
+   "typ": 1959,
+   "kat": "wand",
+   "name": "Fishhouse Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-c.json"
+  },
+  {
+   "id": "bk-kueste-wand-e",
+   "version": 1,
+   "typ": 1960,
+   "kat": "wand",
+   "name": "Fishhouse Wall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-e.json"
+  },
+  {
+   "id": "bk-kueste-wand-f",
+   "version": 1,
+   "typ": 1961,
+   "kat": "wand",
+   "name": "Fishhouse Wall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-f.json"
+  },
+  {
+   "id": "bk-kueste-wand-oben-c",
+   "version": 1,
+   "typ": 1962,
+   "kat": "wand",
+   "name": "Fishhouse Upper Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-oben-c.json"
+  },
+  {
+   "id": "bk-kueste-wand-oben-e",
+   "version": 1,
+   "typ": 1963,
+   "kat": "wand",
+   "name": "Fishhouse Upper Wall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-oben-e.json"
+  },
+  {
+   "id": "bk-kueste-wand-oben-f",
+   "version": 1,
+   "typ": 1964,
+   "kat": "wand",
+   "name": "Fishhouse Upper Wall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-wand-oben-f.json"
+  },
+  {
+   "id": "bk-kueste-fenster-c",
+   "version": 1,
+   "typ": 1965,
+   "kat": "wand",
+   "name": "Fishhouse Window C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-fenster-c.json"
+  },
+  {
+   "id": "bk-kueste-fenster-e",
+   "version": 1,
+   "typ": 1966,
+   "kat": "wand",
+   "name": "Fishhouse Window E",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-fenster-e.json"
+  },
+  {
+   "id": "bk-kueste-fenster-f",
+   "version": 1,
+   "typ": 1967,
+   "kat": "wand",
+   "name": "Fishhouse Window F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-fenster-f.json"
+  },
+  {
+   "id": "bk-kueste-tuer-b",
+   "version": 1,
+   "typ": 1968,
+   "kat": "wand",
+   "name": "Fishhouse Door B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-tuer-b.json"
+  },
+  {
+   "id": "bk-kueste-tuer-c",
+   "version": 1,
+   "typ": 1969,
+   "kat": "wand",
+   "name": "Fishhouse Door C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-tuer-c.json"
+  },
+  {
+   "id": "bk-kueste-tuer-d",
+   "version": 1,
+   "typ": 1970,
+   "kat": "wand",
+   "name": "Fishhouse Door D",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-tuer-d.json"
+  },
+  {
+   "id": "bk-kueste-tuer-e",
+   "version": 1,
+   "typ": 1971,
+   "kat": "wand",
+   "name": "Fishhouse Door E",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-tuer-e.json"
+  },
+  {
+   "id": "bk-kueste-giebel-a",
+   "version": 1,
+   "typ": 1972,
+   "kat": "wand",
+   "name": "Fishhouse Gable A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-a.json"
+  },
+  {
+   "id": "bk-kueste-giebel-b",
+   "version": 1,
+   "typ": 1973,
+   "kat": "wand",
+   "name": "Fishhouse Gable B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-b.json"
+  },
+  {
+   "id": "bk-kueste-giebel-c",
+   "version": 1,
+   "typ": 1974,
+   "kat": "wand",
+   "name": "Fishhouse Gable C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-c.json"
+  },
+  {
+   "id": "bk-kueste-giebel-f",
+   "version": 1,
+   "typ": 1975,
+   "kat": "wand",
+   "name": "Fishhouse Gable F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-f.json"
+  },
+  {
+   "id": "bk-kueste-giebel-ab-a",
+   "version": 1,
+   "typ": 1976,
+   "kat": "wand",
+   "name": "Fishhouse Gable Peak (down) A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-ab-a.json"
+  },
+  {
+   "id": "bk-kueste-giebel-ab-b",
+   "version": 1,
+   "typ": 1977,
+   "kat": "wand",
+   "name": "Fishhouse Gable Peak (down) B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-ab-b.json"
+  },
+  {
+   "id": "bk-kueste-giebel-ab-c",
+   "version": 1,
+   "typ": 1978,
+   "kat": "wand",
+   "name": "Fishhouse Gable Peak (down) C",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-ab-c.json"
+  },
+  {
+   "id": "bk-kueste-giebel-ab-f",
+   "version": 1,
+   "typ": 1979,
+   "kat": "wand",
+   "name": "Fishhouse Gable Peak (down) F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-ab-f.json"
+  },
+  {
+   "id": "bk-kueste-giebel-auf-a",
+   "version": 1,
+   "typ": 1980,
+   "kat": "wand",
+   "name": "Fishhouse Gable Peak (up) A",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-auf-a.json"
+  },
+  {
+   "id": "bk-kueste-giebel-auf-b",
+   "version": 1,
+   "typ": 1981,
+   "kat": "wand",
+   "name": "Fishhouse Gable Peak (up) B",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-auf-b.json"
+  },
+  {
+   "id": "bk-kueste-giebel-auf-f",
+   "version": 1,
+   "typ": 1982,
+   "kat": "wand",
+   "name": "Fishhouse Gable Peak (up) F",
+   "status": "uebernommen",
+   "datei": "obj/bk-kueste-giebel-auf-f.json"
   }
  ]
 }
