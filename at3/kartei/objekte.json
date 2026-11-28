@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1702,
+ "typMax": 1726,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -15177,6 +15177,222 @@
    "name": "Exotic Food Stall D",
    "status": "uebernommen",
    "datei": "obj/marktstand-exotic-c.json"
+  },
+  {
+   "id": "ort-teil-granary",
+   "version": 1,
+   "typ": 1703,
+   "kat": "anlage",
+   "name": "Granary",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-granary.json"
+  },
+  {
+   "id": "ort-teil-granary-a",
+   "version": 1,
+   "typ": 1704,
+   "kat": "anlage",
+   "name": "Granary A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-granary-a.json"
+  },
+  {
+   "id": "ort-teil-granary-b",
+   "version": 1,
+   "typ": 1705,
+   "kat": "anlage",
+   "name": "Granary B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-granary-b.json"
+  },
+  {
+   "id": "ort-teil-lighthouse",
+   "version": 3,
+   "typ": 1706,
+   "kat": "anlage",
+   "name": "Lighthouse",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-lighthouse.json"
+  },
+  {
+   "id": "ort-teil-lighthouse-a",
+   "version": 3,
+   "typ": 1707,
+   "kat": "anlage",
+   "name": "Lighthouse A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-lighthouse-a.json"
+  },
+  {
+   "id": "ort-teil-lighthouse-b",
+   "version": 3,
+   "typ": 1708,
+   "kat": "anlage",
+   "name": "Lighthouse B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-lighthouse-b.json"
+  },
+  {
+   "id": "ort-teil-mine-chimney",
+   "version": 2,
+   "typ": 1709,
+   "kat": "anlage",
+   "name": "Smelter Stacks",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-mine-chimney.json"
+  },
+  {
+   "id": "ort-teil-mine-chimney-a",
+   "version": 3,
+   "typ": 1710,
+   "kat": "anlage",
+   "name": "Smelter Stacks A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-mine-chimney-a.json"
+  },
+  {
+   "id": "ort-teil-mine-chimney-b",
+   "version": 2,
+   "typ": 1711,
+   "kat": "anlage",
+   "name": "Smelter Stacks B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-mine-chimney-b.json"
+  },
+  {
+   "id": "ort-teil-olive-grove",
+   "version": 2,
+   "typ": 1712,
+   "kat": "anlage",
+   "name": "Olive Grove",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-olive-grove.json"
+  },
+  {
+   "id": "ort-teil-olive-grove-a",
+   "version": 2,
+   "typ": 1713,
+   "kat": "anlage",
+   "name": "Olive Grove A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-olive-grove-a.json"
+  },
+  {
+   "id": "ort-teil-olive-grove-b",
+   "version": 2,
+   "typ": 1714,
+   "kat": "anlage",
+   "name": "Olive Grove B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-olive-grove-b.json"
+  },
+  {
+   "id": "ort-teil-olive-grove-c",
+   "version": 2,
+   "typ": 1715,
+   "kat": "anlage",
+   "name": "Olive Grove C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-olive-grove-c.json"
+  },
+  {
+   "id": "ort-teil-palace",
+   "version": 2,
+   "typ": 1716,
+   "kat": "anlage",
+   "name": "Palace",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-palace.json"
+  },
+  {
+   "id": "ort-teil-palace-a",
+   "version": 2,
+   "typ": 1717,
+   "kat": "anlage",
+   "name": "Palace A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-palace-a.json"
+  },
+  {
+   "id": "ort-teil-palace-b",
+   "version": 2,
+   "typ": 1718,
+   "kat": "anlage",
+   "name": "Palace B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-palace-b.json"
+  },
+  {
+   "id": "ort-teil-pastures",
+   "version": 2,
+   "typ": 1719,
+   "kat": "anlage",
+   "name": "Pastures",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-pastures.json"
+  },
+  {
+   "id": "ort-teil-pastures-a",
+   "version": 2,
+   "typ": 1720,
+   "kat": "anlage",
+   "name": "Pastures A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-pastures-a.json"
+  },
+  {
+   "id": "ort-teil-pastures-b",
+   "version": 2,
+   "typ": 1721,
+   "kat": "anlage",
+   "name": "Pastures B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-pastures-b.json"
+  },
+  {
+   "id": "ort-teil-pastures-c",
+   "version": 2,
+   "typ": 1722,
+   "kat": "anlage",
+   "name": "Pastures C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-pastures-c.json"
+  },
+  {
+   "id": "ort-teil-ruins",
+   "version": 2,
+   "typ": 1723,
+   "kat": "anlage",
+   "name": "Ruins",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-ruins.json"
+  },
+  {
+   "id": "ort-teil-ruins-a",
+   "version": 2,
+   "typ": 1724,
+   "kat": "anlage",
+   "name": "Ruins A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-ruins-a.json"
+  },
+  {
+   "id": "ort-teil-ruins-b",
+   "version": 2,
+   "typ": 1725,
+   "kat": "anlage",
+   "name": "Ruins B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-ruins-b.json"
+  },
+  {
+   "id": "ort-teil-ruins-c",
+   "version": 2,
+   "typ": 1726,
+   "kat": "anlage",
+   "name": "Ruins C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-ruins-c.json"
   }
  ]
 }
