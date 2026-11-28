@@ -85,7 +85,7 @@ var BIOME={
  coast:{klasse:'brick',dach:'sattel',satz:'kueste',platz:'bk-kueste-boden',boden:['boden-gras','boden-sand'],weg:'boden-weg',baeume:['baum-pappel','busch-gruen'],dichte:.05,feld:'bk-feld',wasser:true},
  swamp:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:OCKER,satz:'sumpf',boden:['boden-erde','boden-gras'],weg:'boden-erde',baeume:['blume-schilf','busch-gruen','baum-lianen'],dichte:.2,feld:'boden-erde',wasser:true},
  rainforest:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:GRUEN,satz:'palm',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-lianen','baum-kokospalme','busch-banane','baum-farn'],dichte:.42,feld:'boden-erde'},
- mangrove:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:OCKER,satz:'pfahl',boden:['boden-erde','boden-sand'],weg:'boden-sand',baeume:['baum-mangrove','blume-schilf'],dichte:.22,feld:'boden-erde',wasser:true},
+ mangrove:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:OCKER,satz:'pfahl',bilder:'mang',boden:['boden-erde','boden-sand'],weg:'boden-sand',baeume:['baum-mangrove','blume-schilf'],dichte:.22,feld:'boden-erde',wasser:true},
  tundra:{klasse:'clay-wood',dach:'flach',wand:ERDE,dachR:GRUEN,satz:'sode',boden:['boden-erde','boden-gras'],weg:'boden-erde',baeume:['busch-gruen','fels-block'],dichte:.04,feld:'boden-erde'},
  snow:{klasse:'marble',dach:'flach',boden:['boden-fels'],weg:'boden-fels',baeume:['fels-block'],dichte:.03,feld:'boden-fels',nurAussenposten:true}};
 // Baustile der Kulturen (daten/ortsbilder.json, zweite Achse): überschreiben Bauklasse, Dach und Farben; Boden und Pflanzen bleiben vom Biom.

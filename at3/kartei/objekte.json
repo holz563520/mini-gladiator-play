@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 2100,
+ "typMax": 2172,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -18759,6 +18759,654 @@
    "name": "Evicted Hut W",
    "status": "uebernommen",
    "datei": "obj/elend-taiga-bude-8-west.json"
+  },
+  {
+   "id": "hof-mang-cottage-1-sued",
+   "version": 1,
+   "typ": 2101,
+   "kat": "anlage",
+   "name": "Stilt Hut 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-1-sued.json"
+  },
+  {
+   "id": "hof-mang-cottage-1-ost",
+   "version": 1,
+   "typ": 2102,
+   "kat": "anlage",
+   "name": "Stilt Hut 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-1-ost.json"
+  },
+  {
+   "id": "hof-mang-cottage-1-nord",
+   "version": 1,
+   "typ": 2103,
+   "kat": "anlage",
+   "name": "Stilt Hut 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-1-nord.json"
+  },
+  {
+   "id": "hof-mang-cottage-1-west",
+   "version": 1,
+   "typ": 2104,
+   "kat": "anlage",
+   "name": "Stilt Hut 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-1-west.json"
+  },
+  {
+   "id": "hof-mang-cottage-2-sued",
+   "version": 1,
+   "typ": 2105,
+   "kat": "anlage",
+   "name": "Stilt Hut 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-2-sued.json"
+  },
+  {
+   "id": "hof-mang-cottage-2-ost",
+   "version": 1,
+   "typ": 2106,
+   "kat": "anlage",
+   "name": "Stilt Hut 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-2-ost.json"
+  },
+  {
+   "id": "hof-mang-cottage-2-nord",
+   "version": 1,
+   "typ": 2107,
+   "kat": "anlage",
+   "name": "Stilt Hut 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-2-nord.json"
+  },
+  {
+   "id": "hof-mang-cottage-2-west",
+   "version": 1,
+   "typ": 2108,
+   "kat": "anlage",
+   "name": "Stilt Hut 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-2-west.json"
+  },
+  {
+   "id": "hof-mang-cottage-3-sued",
+   "version": 1,
+   "typ": 2109,
+   "kat": "anlage",
+   "name": "Stilt Hut 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-3-sued.json"
+  },
+  {
+   "id": "hof-mang-cottage-3-ost",
+   "version": 1,
+   "typ": 2110,
+   "kat": "anlage",
+   "name": "Stilt Hut 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-3-ost.json"
+  },
+  {
+   "id": "hof-mang-cottage-3-nord",
+   "version": 1,
+   "typ": 2111,
+   "kat": "anlage",
+   "name": "Stilt Hut 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-3-nord.json"
+  },
+  {
+   "id": "hof-mang-cottage-3-west",
+   "version": 1,
+   "typ": 2112,
+   "kat": "anlage",
+   "name": "Stilt Hut 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-cottage-3-west.json"
+  },
+  {
+   "id": "hof-mang-farmstead-1-sued",
+   "version": 1,
+   "typ": 2113,
+   "kat": "anlage",
+   "name": "Stilt Farm 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-1-sued.json"
+  },
+  {
+   "id": "hof-mang-farmstead-1-ost",
+   "version": 1,
+   "typ": 2114,
+   "kat": "anlage",
+   "name": "Stilt Farm 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-1-ost.json"
+  },
+  {
+   "id": "hof-mang-farmstead-1-nord",
+   "version": 1,
+   "typ": 2115,
+   "kat": "anlage",
+   "name": "Stilt Farm 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-1-nord.json"
+  },
+  {
+   "id": "hof-mang-farmstead-1-west",
+   "version": 1,
+   "typ": 2116,
+   "kat": "anlage",
+   "name": "Stilt Farm 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-1-west.json"
+  },
+  {
+   "id": "hof-mang-farmstead-2-sued",
+   "version": 1,
+   "typ": 2117,
+   "kat": "anlage",
+   "name": "Stilt Farm 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-2-sued.json"
+  },
+  {
+   "id": "hof-mang-farmstead-2-ost",
+   "version": 1,
+   "typ": 2118,
+   "kat": "anlage",
+   "name": "Stilt Farm 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-2-ost.json"
+  },
+  {
+   "id": "hof-mang-farmstead-2-nord",
+   "version": 1,
+   "typ": 2119,
+   "kat": "anlage",
+   "name": "Stilt Farm 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-2-nord.json"
+  },
+  {
+   "id": "hof-mang-farmstead-2-west",
+   "version": 1,
+   "typ": 2120,
+   "kat": "anlage",
+   "name": "Stilt Farm 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-2-west.json"
+  },
+  {
+   "id": "hof-mang-farmstead-3-sued",
+   "version": 1,
+   "typ": 2121,
+   "kat": "anlage",
+   "name": "Stilt Farm 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-3-sued.json"
+  },
+  {
+   "id": "hof-mang-farmstead-3-ost",
+   "version": 1,
+   "typ": 2122,
+   "kat": "anlage",
+   "name": "Stilt Farm 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-3-ost.json"
+  },
+  {
+   "id": "hof-mang-farmstead-3-nord",
+   "version": 1,
+   "typ": 2123,
+   "kat": "anlage",
+   "name": "Stilt Farm 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-3-nord.json"
+  },
+  {
+   "id": "hof-mang-farmstead-3-west",
+   "version": 1,
+   "typ": 2124,
+   "kat": "anlage",
+   "name": "Stilt Farm 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-farmstead-3-west.json"
+  },
+  {
+   "id": "hof-mang-villa-rustica-1-sued",
+   "version": 1,
+   "typ": 2125,
+   "kat": "anlage",
+   "name": "Salt Lord's Stilt Manor 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-villa-rustica-1-sued.json"
+  },
+  {
+   "id": "hof-mang-villa-rustica-1-ost",
+   "version": 1,
+   "typ": 2126,
+   "kat": "anlage",
+   "name": "Salt Lord's Stilt Manor 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-villa-rustica-1-ost.json"
+  },
+  {
+   "id": "hof-mang-villa-rustica-1-nord",
+   "version": 1,
+   "typ": 2127,
+   "kat": "anlage",
+   "name": "Salt Lord's Stilt Manor 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-villa-rustica-1-nord.json"
+  },
+  {
+   "id": "hof-mang-villa-rustica-1-west",
+   "version": 1,
+   "typ": 2128,
+   "kat": "anlage",
+   "name": "Salt Lord's Stilt Manor 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-villa-rustica-1-west.json"
+  },
+  {
+   "id": "hof-mang-villa-rustica-2-sued",
+   "version": 1,
+   "typ": 2129,
+   "kat": "anlage",
+   "name": "Salt Lord's Stilt Manor 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-villa-rustica-2-sued.json"
+  },
+  {
+   "id": "hof-mang-villa-rustica-2-ost",
+   "version": 1,
+   "typ": 2130,
+   "kat": "anlage",
+   "name": "Salt Lord's Stilt Manor 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-villa-rustica-2-ost.json"
+  },
+  {
+   "id": "hof-mang-villa-rustica-2-nord",
+   "version": 1,
+   "typ": 2131,
+   "kat": "anlage",
+   "name": "Salt Lord's Stilt Manor 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-villa-rustica-2-nord.json"
+  },
+  {
+   "id": "hof-mang-villa-rustica-2-west",
+   "version": 1,
+   "typ": 2132,
+   "kat": "anlage",
+   "name": "Salt Lord's Stilt Manor 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-villa-rustica-2-west.json"
+  },
+  {
+   "id": "hof-mang-herders-camp-1-sued",
+   "version": 1,
+   "typ": 2133,
+   "kat": "anlage",
+   "name": "Crabber's Camp 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-herders-camp-1-sued.json"
+  },
+  {
+   "id": "hof-mang-herders-camp-1-ost",
+   "version": 1,
+   "typ": 2134,
+   "kat": "anlage",
+   "name": "Crabber's Camp 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-herders-camp-1-ost.json"
+  },
+  {
+   "id": "hof-mang-herders-camp-1-nord",
+   "version": 1,
+   "typ": 2135,
+   "kat": "anlage",
+   "name": "Crabber's Camp 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-herders-camp-1-nord.json"
+  },
+  {
+   "id": "hof-mang-herders-camp-1-west",
+   "version": 1,
+   "typ": 2136,
+   "kat": "anlage",
+   "name": "Crabber's Camp 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-herders-camp-1-west.json"
+  },
+  {
+   "id": "hof-mang-herders-camp-2-sued",
+   "version": 1,
+   "typ": 2137,
+   "kat": "anlage",
+   "name": "Crabber's Camp 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-herders-camp-2-sued.json"
+  },
+  {
+   "id": "hof-mang-herders-camp-2-ost",
+   "version": 1,
+   "typ": 2138,
+   "kat": "anlage",
+   "name": "Crabber's Camp 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-herders-camp-2-ost.json"
+  },
+  {
+   "id": "hof-mang-herders-camp-2-nord",
+   "version": 1,
+   "typ": 2139,
+   "kat": "anlage",
+   "name": "Crabber's Camp 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-herders-camp-2-nord.json"
+  },
+  {
+   "id": "hof-mang-herders-camp-2-west",
+   "version": 1,
+   "typ": 2140,
+   "kat": "anlage",
+   "name": "Crabber's Camp 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-mang-herders-camp-2-west.json"
+  },
+  {
+   "id": "elend-mang-bude-1-sued",
+   "version": 1,
+   "typ": 2141,
+   "kat": "anlage",
+   "name": "Driftwood Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-1-sued.json"
+  },
+  {
+   "id": "elend-mang-bude-1-ost",
+   "version": 1,
+   "typ": 2142,
+   "kat": "anlage",
+   "name": "Driftwood Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-1-ost.json"
+  },
+  {
+   "id": "elend-mang-bude-1-nord",
+   "version": 1,
+   "typ": 2143,
+   "kat": "anlage",
+   "name": "Driftwood Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-1-nord.json"
+  },
+  {
+   "id": "elend-mang-bude-1-west",
+   "version": 1,
+   "typ": 2144,
+   "kat": "anlage",
+   "name": "Driftwood Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-1-west.json"
+  },
+  {
+   "id": "elend-mang-bude-2-sued",
+   "version": 1,
+   "typ": 2145,
+   "kat": "anlage",
+   "name": "Reed Stilt Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-2-sued.json"
+  },
+  {
+   "id": "elend-mang-bude-2-ost",
+   "version": 1,
+   "typ": 2146,
+   "kat": "anlage",
+   "name": "Reed Stilt Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-2-ost.json"
+  },
+  {
+   "id": "elend-mang-bude-2-nord",
+   "version": 1,
+   "typ": 2147,
+   "kat": "anlage",
+   "name": "Reed Stilt Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-2-nord.json"
+  },
+  {
+   "id": "elend-mang-bude-2-west",
+   "version": 1,
+   "typ": 2148,
+   "kat": "anlage",
+   "name": "Reed Stilt Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-2-west.json"
+  },
+  {
+   "id": "elend-mang-bude-3-sued",
+   "version": 1,
+   "typ": 2149,
+   "kat": "anlage",
+   "name": "Hull Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-3-sued.json"
+  },
+  {
+   "id": "elend-mang-bude-3-ost",
+   "version": 1,
+   "typ": 2150,
+   "kat": "anlage",
+   "name": "Hull Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-3-ost.json"
+  },
+  {
+   "id": "elend-mang-bude-3-nord",
+   "version": 1,
+   "typ": 2151,
+   "kat": "anlage",
+   "name": "Hull Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-3-nord.json"
+  },
+  {
+   "id": "elend-mang-bude-3-west",
+   "version": 1,
+   "typ": 2152,
+   "kat": "anlage",
+   "name": "Hull Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-3-west.json"
+  },
+  {
+   "id": "elend-mang-bude-4-sued",
+   "version": 1,
+   "typ": 2153,
+   "kat": "anlage",
+   "name": "Salt Seller's Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-4-sued.json"
+  },
+  {
+   "id": "elend-mang-bude-4-ost",
+   "version": 1,
+   "typ": 2154,
+   "kat": "anlage",
+   "name": "Salt Seller's Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-4-ost.json"
+  },
+  {
+   "id": "elend-mang-bude-4-nord",
+   "version": 1,
+   "typ": 2155,
+   "kat": "anlage",
+   "name": "Salt Seller's Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-4-nord.json"
+  },
+  {
+   "id": "elend-mang-bude-4-west",
+   "version": 1,
+   "typ": 2156,
+   "kat": "anlage",
+   "name": "Salt Seller's Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-4-west.json"
+  },
+  {
+   "id": "elend-mang-bude-5-sued",
+   "version": 1,
+   "typ": 2157,
+   "kat": "anlage",
+   "name": "Net and Hull Hovel S",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-5-sued.json"
+  },
+  {
+   "id": "elend-mang-bude-5-ost",
+   "version": 1,
+   "typ": 2158,
+   "kat": "anlage",
+   "name": "Net and Hull Hovel E",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-5-ost.json"
+  },
+  {
+   "id": "elend-mang-bude-5-nord",
+   "version": 1,
+   "typ": 2159,
+   "kat": "anlage",
+   "name": "Net and Hull Hovel N",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-5-nord.json"
+  },
+  {
+   "id": "elend-mang-bude-5-west",
+   "version": 1,
+   "typ": 2160,
+   "kat": "anlage",
+   "name": "Net and Hull Hovel W",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-5-west.json"
+  },
+  {
+   "id": "elend-mang-bude-6-sued",
+   "version": 1,
+   "typ": 2161,
+   "kat": "anlage",
+   "name": "Shack of the Tariff Board S",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-6-sued.json"
+  },
+  {
+   "id": "elend-mang-bude-6-ost",
+   "version": 1,
+   "typ": 2162,
+   "kat": "anlage",
+   "name": "Shack of the Tariff Board E",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-6-ost.json"
+  },
+  {
+   "id": "elend-mang-bude-6-nord",
+   "version": 1,
+   "typ": 2163,
+   "kat": "anlage",
+   "name": "Shack of the Tariff Board N",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-6-nord.json"
+  },
+  {
+   "id": "elend-mang-bude-6-west",
+   "version": 1,
+   "typ": 2164,
+   "kat": "anlage",
+   "name": "Shack of the Tariff Board W",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-6-west.json"
+  },
+  {
+   "id": "elend-mang-bude-7-sued",
+   "version": 1,
+   "typ": 2165,
+   "kat": "anlage",
+   "name": "Leaning Stilt Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-7-sued.json"
+  },
+  {
+   "id": "elend-mang-bude-7-ost",
+   "version": 1,
+   "typ": 2166,
+   "kat": "anlage",
+   "name": "Leaning Stilt Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-7-ost.json"
+  },
+  {
+   "id": "elend-mang-bude-7-nord",
+   "version": 1,
+   "typ": 2167,
+   "kat": "anlage",
+   "name": "Leaning Stilt Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-7-nord.json"
+  },
+  {
+   "id": "elend-mang-bude-7-west",
+   "version": 1,
+   "typ": 2168,
+   "kat": "anlage",
+   "name": "Leaning Stilt Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-7-west.json"
+  },
+  {
+   "id": "elend-mang-bude-8-sued",
+   "version": 1,
+   "typ": 2169,
+   "kat": "anlage",
+   "name": "Evicted Stilt Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-8-sued.json"
+  },
+  {
+   "id": "elend-mang-bude-8-ost",
+   "version": 1,
+   "typ": 2170,
+   "kat": "anlage",
+   "name": "Evicted Stilt Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-8-ost.json"
+  },
+  {
+   "id": "elend-mang-bude-8-nord",
+   "version": 1,
+   "typ": 2171,
+   "kat": "anlage",
+   "name": "Evicted Stilt Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-8-nord.json"
+  },
+  {
+   "id": "elend-mang-bude-8-west",
+   "version": 1,
+   "typ": 2172,
+   "kat": "anlage",
+   "name": "Evicted Stilt Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-mang-bude-8-west.json"
   }
  ]
 }
