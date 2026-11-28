@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1790,
+ "typMax": 1874,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -15969,6 +15969,762 @@
    "name": "Market Stall: Vice C",
    "status": "uebernommen",
    "datei": "obj/marktstand-vice-c.json"
+  },
+  {
+   "id": "weg-corduroy",
+   "typ": 1791,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy.json"
+  },
+  {
+   "id": "weg-corduroy-a",
+   "typ": 1792,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road (Missing Log)",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy-a.json"
+  },
+  {
+   "id": "weg-corduroy-b",
+   "typ": 1793,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road (Rotten Logs)",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy-b.json"
+  },
+  {
+   "id": "weg-corduroy-c",
+   "typ": 1794,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road (Tally Marks)",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy-c.json"
+  },
+  {
+   "id": "weg-corduroy-d",
+   "typ": 1795,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road (Red Rag)",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy-d.json"
+  },
+  {
+   "id": "weg-corduroy-j",
+   "typ": 1796,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road NE",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy-j.json"
+  },
+  {
+   "id": "weg-corduroy-j-a",
+   "typ": 1797,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road (Missing Log) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy-j-a.json"
+  },
+  {
+   "id": "weg-corduroy-j-b",
+   "typ": 1798,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road (Rotten Logs) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy-j-b.json"
+  },
+  {
+   "id": "weg-corduroy-j-c",
+   "typ": 1799,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road (Tally Marks) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy-j-c.json"
+  },
+  {
+   "id": "weg-corduroy-j-d",
+   "typ": 1800,
+   "version": 1,
+   "kat": "boden",
+   "name": "Corduroy Road (Red Rag) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-corduroy-j-d.json"
+  },
+  {
+   "id": "weg-plank-walk",
+   "typ": 1801,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk.json"
+  },
+  {
+   "id": "weg-plank-walk-a",
+   "typ": 1802,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk (Missing Plank)",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk-a.json"
+  },
+  {
+   "id": "weg-plank-walk-b",
+   "typ": 1803,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk (Patched Plank)",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk-b.json"
+  },
+  {
+   "id": "weg-plank-walk-c",
+   "typ": 1804,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk (Lost Sandal)",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk-c.json"
+  },
+  {
+   "id": "weg-plank-walk-d",
+   "typ": 1805,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk (Broken Plank)",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk-d.json"
+  },
+  {
+   "id": "weg-plank-walk-j",
+   "typ": 1806,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk NE",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk-j.json"
+  },
+  {
+   "id": "weg-plank-walk-j-a",
+   "typ": 1807,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk (Missing Plank) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk-j-a.json"
+  },
+  {
+   "id": "weg-plank-walk-j-b",
+   "typ": 1808,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk (Patched Plank) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk-j-b.json"
+  },
+  {
+   "id": "weg-plank-walk-j-c",
+   "typ": 1809,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk (Lost Sandal) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk-j-c.json"
+  },
+  {
+   "id": "weg-plank-walk-j-d",
+   "typ": 1810,
+   "version": 1,
+   "kat": "boden",
+   "name": "Plank Walk (Broken Plank) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-plank-walk-j-d.json"
+  },
+  {
+   "id": "weg-switchback",
+   "typ": 1811,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback.json"
+  },
+  {
+   "id": "weg-switchback-a",
+   "typ": 1812,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback (Boulder)",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback-a.json"
+  },
+  {
+   "id": "weg-switchback-b",
+   "typ": 1813,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback (Patched Wall)",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback-b.json"
+  },
+  {
+   "id": "weg-switchback-c",
+   "typ": 1814,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback (Broken Wall)",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback-c.json"
+  },
+  {
+   "id": "weg-switchback-d",
+   "typ": 1815,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback (Cairn)",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback-d.json"
+  },
+  {
+   "id": "weg-switchback-j",
+   "typ": 1816,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback NE",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback-j.json"
+  },
+  {
+   "id": "weg-switchback-j-a",
+   "typ": 1817,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback (Boulder) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback-j-a.json"
+  },
+  {
+   "id": "weg-switchback-j-b",
+   "typ": 1818,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback (Patched Wall) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback-j-b.json"
+  },
+  {
+   "id": "weg-switchback-j-c",
+   "typ": 1819,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback (Broken Wall) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback-j-c.json"
+  },
+  {
+   "id": "weg-switchback-j-d",
+   "typ": 1820,
+   "version": 1,
+   "kat": "boden",
+   "name": "Switchback (Cairn) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-switchback-j-d.json"
+  },
+  {
+   "id": "weg-sand-drift",
+   "typ": 1821,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift.json"
+  },
+  {
+   "id": "weg-sand-drift-a",
+   "typ": 1822,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift (Deep Drift)",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift-a.json"
+  },
+  {
+   "id": "weg-sand-drift-b",
+   "typ": 1823,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift (Ripples)",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift-b.json"
+  },
+  {
+   "id": "weg-sand-drift-c",
+   "typ": 1824,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift (Skull)",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift-c.json"
+  },
+  {
+   "id": "weg-sand-drift-d",
+   "typ": 1825,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift (Amphora)",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift-d.json"
+  },
+  {
+   "id": "weg-sand-drift-j",
+   "typ": 1826,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift NE",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift-j.json"
+  },
+  {
+   "id": "weg-sand-drift-j-a",
+   "typ": 1827,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift (Deep Drift) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift-j-a.json"
+  },
+  {
+   "id": "weg-sand-drift-j-b",
+   "typ": 1828,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift (Ripples) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift-j-b.json"
+  },
+  {
+   "id": "weg-sand-drift-j-c",
+   "typ": 1829,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift (Skull) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift-j-c.json"
+  },
+  {
+   "id": "weg-sand-drift-j-d",
+   "typ": 1830,
+   "version": 1,
+   "kat": "boden",
+   "name": "Sand Drift (Amphora) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-sand-drift-j-d.json"
+  },
+  {
+   "id": "weg-ford",
+   "typ": 1831,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ford",
+   "status": "geprueft",
+   "datei": "obj/weg-ford.json"
+  },
+  {
+   "id": "weg-ford-a",
+   "typ": 1832,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ford (Missing Stone)",
+   "status": "geprueft",
+   "datei": "obj/weg-ford-a.json"
+  },
+  {
+   "id": "weg-ford-b",
+   "typ": 1833,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ford (Slimy Stones)",
+   "status": "geprueft",
+   "datei": "obj/weg-ford-b.json"
+  },
+  {
+   "id": "weg-ford-c",
+   "typ": 1834,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ford (Sunken Wheel)",
+   "status": "geprueft",
+   "datei": "obj/weg-ford-c.json"
+  },
+  {
+   "id": "weg-ford-j",
+   "typ": 1835,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ford NE",
+   "status": "geprueft",
+   "datei": "obj/weg-ford-j.json"
+  },
+  {
+   "id": "weg-ford-j-a",
+   "typ": 1836,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ford (Missing Stone) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-ford-j-a.json"
+  },
+  {
+   "id": "weg-ford-j-b",
+   "typ": 1837,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ford (Slimy Stones) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-ford-j-b.json"
+  },
+  {
+   "id": "weg-ford-j-c",
+   "typ": 1838,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ford (Sunken Wheel) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-ford-j-c.json"
+  },
+  {
+   "id": "weg-ferry",
+   "typ": 1839,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ferry",
+   "status": "geprueft",
+   "datei": "obj/weg-ferry.json"
+  },
+  {
+   "id": "weg-ferry-a",
+   "typ": 1840,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ferry (Rope)",
+   "status": "geprueft",
+   "datei": "obj/weg-ferry-a.json"
+  },
+  {
+   "id": "weg-ferry-b",
+   "typ": 1841,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ferry (Old Rope)",
+   "status": "geprueft",
+   "datei": "obj/weg-ferry-b.json"
+  },
+  {
+   "id": "weg-ferry-c",
+   "typ": 1842,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ferry (Rag and Barrel)",
+   "status": "geprueft",
+   "datei": "obj/weg-ferry-c.json"
+  },
+  {
+   "id": "weg-ferry-j",
+   "typ": 1843,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ferry NE",
+   "status": "geprueft",
+   "datei": "obj/weg-ferry-j.json"
+  },
+  {
+   "id": "weg-ferry-j-a",
+   "typ": 1844,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ferry (Rope) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-ferry-j-a.json"
+  },
+  {
+   "id": "weg-ferry-j-b",
+   "typ": 1845,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ferry (Old Rope) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-ferry-j-b.json"
+  },
+  {
+   "id": "weg-ferry-j-c",
+   "typ": 1846,
+   "version": 1,
+   "kat": "boden",
+   "name": "Ferry (Rag and Barrel) NE",
+   "status": "geprueft",
+   "datei": "obj/weg-ferry-j-c.json"
+  },
+  {
+   "id": "weg-milestone",
+   "typ": 1847,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Milestone",
+   "status": "uebernommen",
+   "datei": "obj/weg-milestone.json"
+  },
+  {
+   "id": "weg-milestone-a",
+   "typ": 1848,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Mossy Milestone",
+   "status": "uebernommen",
+   "datei": "obj/weg-milestone-a.json"
+  },
+  {
+   "id": "weg-milestone-b",
+   "typ": 1849,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Chipped Milestone",
+   "status": "uebernommen",
+   "datei": "obj/weg-milestone-b.json"
+  },
+  {
+   "id": "weg-milestone-c",
+   "typ": 1850,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Milestone That Lies",
+   "status": "uebernommen",
+   "datei": "obj/weg-milestone-c.json"
+  },
+  {
+   "id": "weg-signpost",
+   "typ": 1851,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Signpost",
+   "status": "uebernommen",
+   "datei": "obj/weg-signpost.json"
+  },
+  {
+   "id": "weg-signpost-a",
+   "typ": 1852,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Broken Signpost",
+   "status": "uebernommen",
+   "datei": "obj/weg-signpost-a.json"
+  },
+  {
+   "id": "weg-signpost-b",
+   "typ": 1853,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Signpost with Skull",
+   "status": "uebernommen",
+   "datei": "obj/weg-signpost-b.json"
+  },
+  {
+   "id": "weg-signpost-c",
+   "typ": 1854,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "All Roads Signpost",
+   "status": "uebernommen",
+   "datei": "obj/weg-signpost-c.json"
+  },
+  {
+   "id": "weg-toll-barrier",
+   "typ": 1855,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Toll Barrier",
+   "status": "uebernommen",
+   "datei": "obj/weg-toll-barrier.json"
+  },
+  {
+   "id": "weg-toll-barrier-a",
+   "typ": 1856,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Open Toll Barrier",
+   "status": "uebernommen",
+   "datei": "obj/weg-toll-barrier-a.json"
+  },
+  {
+   "id": "weg-toll-barrier-b",
+   "typ": 1857,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Toll Barrier with Tariff",
+   "status": "uebernommen",
+   "datei": "obj/weg-toll-barrier-b.json"
+  },
+  {
+   "id": "weg-watchtower",
+   "typ": 1858,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Watchtower",
+   "status": "uebernommen",
+   "datei": "obj/weg-watchtower.json"
+  },
+  {
+   "id": "weg-watchtower-a",
+   "typ": 1859,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Watchtower with Cage",
+   "status": "uebernommen",
+   "datei": "obj/weg-watchtower-a.json"
+  },
+  {
+   "id": "weg-watchtower-b",
+   "typ": 1860,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Watchtower with Gong",
+   "status": "uebernommen",
+   "datei": "obj/weg-watchtower-b.json"
+  },
+  {
+   "id": "weg-way-station",
+   "typ": 1861,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Way Station",
+   "status": "uebernommen",
+   "datei": "obj/weg-way-station.json"
+  },
+  {
+   "id": "weg-way-station-a",
+   "typ": 1862,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Tiled Way Station",
+   "status": "uebernommen",
+   "datei": "obj/weg-way-station-a.json"
+  },
+  {
+   "id": "weg-way-station-b",
+   "typ": 1863,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Way Station with Coffin",
+   "status": "uebernommen",
+   "datei": "obj/weg-way-station-b.json"
+  },
+  {
+   "id": "weg-roadside-well",
+   "typ": 1864,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Roadside Well",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-well.json"
+  },
+  {
+   "id": "weg-roadside-well-a",
+   "typ": 1865,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Dry Roadside Well",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-well-a.json"
+  },
+  {
+   "id": "weg-roadside-well-b",
+   "typ": 1866,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Well with Skull in Trough",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-well-b.json"
+  },
+  {
+   "id": "weg-roadside-tomb",
+   "typ": 1867,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Roadside Tomb",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-tomb.json"
+  },
+  {
+   "id": "weg-roadside-tomb-a",
+   "typ": 1868,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Round Roadside Tomb",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-tomb-a.json"
+  },
+  {
+   "id": "weg-roadside-tomb-b",
+   "typ": 1869,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Roadside Sarcophagus",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-tomb-b.json"
+  },
+  {
+   "id": "weg-roadside-tomb-c",
+   "typ": 1870,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Tomb of a Champion",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-tomb-c.json"
+  },
+  {
+   "id": "weg-roadside-ruin",
+   "typ": 1871,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Roadside Ruin",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-ruin.json"
+  },
+  {
+   "id": "weg-roadside-ruin-a",
+   "typ": 1872,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Ruined Corner",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-ruin-a.json"
+  },
+  {
+   "id": "weg-roadside-ruin-b",
+   "typ": 1873,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Ruin with Niche",
+   "status": "uebernommen",
+   "datei": "obj/weg-roadside-ruin-b.json"
+  },
+  {
+   "id": "weg-ferry-hut",
+   "typ": 1874,
+   "version": 1,
+   "kat": "einrichtung",
+   "name": "Ferry Hut",
+   "status": "uebernommen",
+   "datei": "obj/weg-ferry-hut.json"
   }
  ]
 }
