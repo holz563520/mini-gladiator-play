@@ -75,11 +75,11 @@ $('zurueck').onclick=()=>{ED.shape={...K.shapeOf(ED.breed)};ED.actor.SH=ED.shape
 // Zeichenzeit je Katze: viele Bilder auf eine unsichtbare Fläche, Mittelwert
 // Haltung, Gangart oder Sprung: die Katze wird vorher in Bewegung gebracht, gemessen wird Rechnen (K.step) und Zeichnen je Bild
 function messe(mode,k,n=300){const cv=document.createElement('canvas');cv.width=400;cv.height=300;const c=cv.getContext('2d'),gang=!K.MODES.includes(mode),a=K.actor(K.typical(ED.breed),gang?'stand':mode);let t=0;
- if(mode==='leap'){K.snap(a,'crouch');K.leap(a);}else if(gang){K.go(a,mode);for(let i=0;i<240;i++)K.step(a,1/60,t+=1/60);}K.draw(c,a,200,280,k,1,{time:t});
- const t0=performance.now();for(let i=0;i<n;i++){if(gang){if(mode==='leap'&&!a.jump&&!a.leapWant)K.leap(a);K.step(a,1/60,t+=1/60);}else t=i*.05;K.draw(c,a,200,280,k,1,{time:t});}return (performance.now()-t0)/n;}
+ if(mode==='leap'){K.snap(a,'crouch');K.leap(a);}else if(mode==='turn')K.turn(a);else if(gang){K.go(a,mode);for(let i=0;i<240;i++)K.step(a,1/60,t+=1/60);}K.draw(c,a,200,280,k,1,{time:t});
+ const t0=performance.now();for(let i=0;i<n;i++){if(gang){if(mode==='leap'&&!a.jump&&!a.leapWant)K.leap(a);if(mode==='turn'&&!a.turn&&!a.turnWant)K.turn(a);K.step(a,1/60,t+=1/60);}else t=i*.05;K.draw(c,a,200,280,k,1,{time:t});}return (performance.now()-t0)/n;}
 K.messe=messe;
 $('messen').onclick=()=>{const T=$('messTabelle');T.innerHTML='<tr><th>Haltung</th><th>Kampfgröße (Zoom 1)</th><th>Nahansicht (Zoom 4)</th></tr>';
- for(const m of [...K.MODES,...K.GK,'leap'])T.append(el('tr',{},'<td style="text-align:left">'+(HALTUNG[m]||GANG[m]||'Sprung')+'</td><td>'+messe(m,1).toFixed(3)+' ms</td><td>'+messe(m,4).toFixed(3)+' ms</td>'));
+ for(const m of [...K.MODES,...K.GK,'leap','turn'])T.append(el('tr',{},'<td style="text-align:left">'+(HALTUNG[m]||GANG[m]||(m==='turn'?'Wenden':'Sprung'))+'</td><td>'+messe(m,1).toFixed(3)+' ms</td><td>'+messe(m,4).toFixed(3)+' ms</td>'));
  const t0=performance.now();K.miniClear();K.mini(ED.breed,'side',128);const t1=performance.now();for(let i=0;i<1000;i++)K.mini(ED.breed,'side',128);const t2=performance.now();
  T.append(el('tr',{},'<td style="text-align:left">Miniatur</td><td>erstes Mal '+(t1-t0).toFixed(2)+' ms</td><td>danach '+((t2-t1)/1000).toFixed(4)+' ms</td>'));sorten();};
 const HERDE=[];let hz=0,hn=0,hl=0;
@@ -89,12 +89,12 @@ function herde(){if(ED.tab==='messung'&&$('herde').checked){const cv=$('herdeBil
   hz+=performance.now()-t0;hn++;if(t-hl>1){$('herdeText').textContent='40 Katzen: '+(hz/hn).toFixed(2)+' ms je Bild, '+(hz/hn/40).toFixed(3)+' ms je Katze';hz=0;hn=0;hl=t;}}
  requestAnimationFrame(herde);}
 
-// ---------------------------------------------------------------- Reiter Bewegung (KA2a; Aufbau wie im Bären-Editor)
+// ---------------------------------------------------------------- Reiter Bewegung (KA2a, Wenden KA2b; Aufbau wie im Bären-Editor)
 // Die Katze bleibt in der Bildmitte, der Boden zieht durch (ED.actor.dist). Abdrücke: Stelle, an der eine Pfote aufgesetzt hat.
 // „alt neben neu“: links der Löwe aus 1.0 (M.drawRex aus dist/lion.js) in derselben Bewegung. Das Spiel wird erst beim Einschalten nachgeladen.
 const GANG=Object.fromEntries(K.GK.map(g=>[g,K.GAITS[g].de]));
 const ALT_DATEIEN=['data','household','management','scout','sim','benchmark','school','world','weapon-art','lion'];
-async function altLaden(){if(ED.alt)return;ED.alt={ok:false,l:null};$('bwAltText').textContent='Löwe aus 1.0 wird geladen …';const V='d1a45e9c',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
+async function altLaden(){if(ED.alt)return;ED.alt={ok:false,l:null};$('bwAltText').textContent='Löwe aus 1.0 wird geladen …';const V='84a80375',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
  try{for(const n of ALT_DATEIEN)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v='+v;s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);});
   if(!window.MG||!window.MG.drawRex)throw Error('M.drawRex fehlt');
   ED.alt.l={x:0,y:0,a:0,mode:'stalk',phase:0,g:{dead:false,name:'Rex Vetus'},tissue:{head:160,chest:290,belly:140,front:120,rear:100},max:{head:160,chest:290,belly:140,front:120,rear:100},blood:100,trauma:0,wounds:[],z:0,hit:0,clock:0,moveSpeed:0,cute:0,velocity:0,team:0};
@@ -106,8 +106,8 @@ async function altLaden(){if(ED.alt)return;ED.alt={ok:false,l:null};$('bwAltText
 // Zustand der neuen Katze auf die Bewegungen des alten Löwen abbilden
 function altZeichnen(c,x,gy,k,a,t,welt){const A=ED.alt,l=A.l,J=a.jump,X=a.expr,u=J?t-J.t0:0;
  l.mode=J?(u>J.t1&&u<J.t2?'leap':'crouch'):a.mode==='crouch'?'crouch':X&&X.kind==='roar'?'roar':X&&X.kind==='snarl'?'threaten':(a.v||0)>170?'sprint':'stalk';
- l.moveSpeed=l.mode==='leap'?0:(a.v||0);l.z=J?K.rig(a,t).z*K.szOf(a.cat,a.SH)/A.sc:0;l.phase=welt*.08;l.clock=X?t-X.t0:u;window.MG.rexClock=t;
- c.save();c.translate(x,gy);c.scale(k*A.sc,k*A.sc);try{window.MG.drawRex(c,l);}catch(e){}c.restore();}
+ l.moveSpeed=l.mode==='leap'?0:(a.v||0);l.z=J?K.rig(a,t).z*K.szOf(a.cat,a.SH)/A.sc:0;l.phase=welt*.08*K.facing(a);l.clock=X?t-X.t0:u;window.MG.rexClock=t;
+ c.save();c.translate(x,gy);c.scale(k*A.sc*K.facing(a),k*A.sc);try{window.MG.drawRex(c,l);}catch(e){}c.restore();}
 function bewegung(){const cv=$('bwBild'),c=cv.getContext('2d'),W=cv.width,H=cv.height,gy=H-52,a=ED.actor,sz=K.szOf(a.cat,a.SH),alt=$('bwAlt').checked&&ED.alt&&ED.alt.ok,k=Math.min((H-80)/(190/K.CM),alt?1.6:2.4),cm=k/K.CM,t=ED.T,cx=alt?W*.68:W*.5,welt=(a.dist||0)*sz;c.imageSmoothingEnabled=false;
  c.fillStyle='#cdbb96';c.fillRect(0,0,W,H);c.fillStyle='#8a7350';c.fillRect(0,gy,W,H-gy);
  if($('bwLinien').checked){c.font='11px Georgia';for(let h=50;h<=200;h+=50){const y=gy-h*cm;if(y<8)break;c.fillStyle='#b3a07a';c.fillRect(0,y,W,1);c.fillStyle='#7c6b4c';c.fillText(h+' cm',4,y-2);}}
@@ -117,19 +117,20 @@ function bewegung(){const cv=$('bwBild'),c=cv.getContext('2d'),W=cv.width,H=cv.h
  if(alt){altZeichnen(c,W*.2,gy,k,a,t,welt);c.fillStyle='#5a4c36';c.fillText('alt: Löwe aus 1.0',W*.2-40,gy+38);c.fillText('neu',cx-8,gy+38);}
  const R=K.draw(c,a,cx,gy,k,1,{time:t});
  // Abdrücke merken, sobald eine Pfote aufsetzt
- if(ED.prevR&&((a.gs||0)>.5||a.jump))R.legs.forEach((l,i)=>{if(l.st&&!ED.prevR.legs[i].st){ED.prints.push({x:welt+l.px*sz,front:l.front});if(ED.prints.length>48)ED.prints.shift();}});
+ const fr=K.facing(a);R.HX=K.headX(a,t,R);
+ if(ED.prevR&&((a.gs||0)>.5||a.jump)&&!a.turn)R.legs.forEach((l,i)=>{if(l.st&&!ED.prevR.legs[i].st){ED.prints.push({x:welt+fr*l.px*sz,front:l.front});if(ED.prints.length>48)ED.prints.shift();}});
  if($('bwSpur').checked)for(const p of ED.prints){const x=cx+(p.x-welt)*k;if(x>-20&&x<W+20){c.fillStyle=p.front?'#3d2f1d':'#6a5536';c.fillRect(Math.round(x-(p.front?0:2.5*k*sz)),gy+(p.front?2:6),Math.round(5*k*sz),3);}}
  // größter Sprung des Kopfes je Bild (auf 1/60 s gerechnet, ohne den Weg der Katze)
- if(ED.prevR&&ED.dtLast>0){const d=Math.hypot(R.hcx-ED.prevR.hcx,R.hcy-ED.prevR.hcy)*sz*K.CM/(ED.dtLast*60);if(d>ED.jump)ED.jump=d;}
+ if(ED.prevR&&ED.dtLast>0){const d=Math.hypot(R.HX-ED.prevR.HX,R.hcy-ED.prevR.hcy)*sz*K.CM/(ED.dtLast*60);if(d>ED.jump)ED.jump=d;}
  if(ED.dtLast>0||!ED.prevR)ED.prevR=R;
  const v=(a.v||0)*sz*K.CM/100,J=a.jump,gang=J?'Sprung':(a.gs||0)>.05?GANG[a.gk]:HALTUNG[a.mode];
- $('bwText').textContent=gang+' · Tempo '+v.toFixed(1)+' m/s ('+(v*3.6).toFixed(1)+' km/h)'+(J?' · Sprungweite '+(J.range*sz*K.CM/100).toFixed(1)+' m, Scheitel '+(J.h*sz*K.CM).toFixed(0)+' cm (vorläufig, wird in KA25 eingemessen)':'')+' · größter Sprung des Kopfes je Bild seit dem letzten Befehl: '+ED.jump.toFixed(1)+' cm · Zeit '+t.toFixed(2)+' s'+(ED.pause?' · PAUSE':'');
+ $('bwText').textContent=gang+(a.turn?' · wendet':'')+' · Blick nach '+(fr>0?'rechts':'links')+' · Tempo '+v.toFixed(1)+' m/s ('+(v*3.6).toFixed(1)+' km/h)'+(J?' · Sprungweite '+(J.range*sz*K.CM/100).toFixed(1)+' m, Scheitel '+(J.h*sz*K.CM).toFixed(0)+' cm (vorläufig, wird in KA25 eingemessen)':'')+' · größter Sprung des Kopfes je Bild seit dem letzten Befehl: '+ED.jump.toFixed(1)+' cm · Zeit '+t.toFixed(2)+' s'+(ED.pause?' · PAUSE':'');
  document.querySelectorAll('#bwHaltung button').forEach(b=>b.classList.toggle('on',!a.go&&!J&&b.dataset.m===a.mode&&!((a.gs||0)>.05)));
- document.querySelectorAll('#bwGang button[data-g]').forEach(b=>b.classList.toggle('on',a.go===b.dataset.g));$('bwSprung').classList.toggle('on',!!J||!!a.leapWant);}
+ document.querySelectorAll('#bwGang button[data-g]').forEach(b=>b.classList.toggle('on',a.go===b.dataset.g));$('bwSprung').classList.toggle('on',!!J||!!a.leapWant);$('bwWenden').classList.toggle('on',!!a.turn||!!a.turnWant);}
 const befehl=fn=>()=>{fn();ED.jump=0;};
 for(const m of K.MODES){const b=el('button',{},HALTUNG[m]);b.dataset.m=m;b.onclick=befehl(()=>K.pose(ED.actor,m));$('bwHaltung').append(b);}
 for(const g of K.GK){const b=el('button',{},GANG[g]);b.dataset.g=g;b.onclick=befehl(()=>K.go(ED.actor,g));$('bwGang').append(b);}
-{const b=el('button',{id:'bwHalt'},'Anhalten');b.onclick=befehl(()=>K.go(ED.actor,null));const s=el('button',{id:'bwSprung'},'Sprung');s.onclick=befehl(()=>K.leap(ED.actor));$('bwGang').append(b,s);}
+{const b=el('button',{id:'bwHalt'},'Anhalten');b.onclick=befehl(()=>K.go(ED.actor,null));const s=el('button',{id:'bwSprung'},'Sprung');s.onclick=befehl(()=>K.leap(ED.actor));const w=el('button',{id:'bwWenden'},'Wenden');w.onclick=befehl(()=>K.turn(ED.actor));$('bwGang').append(b,s,w);}
 for(const [x,o] of Object.entries(K.EXPR)){const b=el('button',{},o.de);b.dataset.x=x;b.onclick=befehl(()=>K.express(ED.actor,x,ED.T));$('bwMimik').append(b);}
 for(const [r,name] of [[1,'1×'],[.5,'½'],[.25,'¼'],[.125,'⅛']]){const b=el('button',{className:r===1?'on':''},name);b.dataset.r=r;b.onclick=()=>{ED.rate=r;document.querySelectorAll('#bwZeit button').forEach(x=>x.classList.toggle('on',x===b));};$('bwZeit').append(b);}
 $('bwPause').onclick=()=>{ED.pause=!ED.pause;$('bwPause').classList.toggle('on',ED.pause);$('bwPause').textContent=ED.pause?'Weiter':'Pause';};

@@ -43,6 +43,36 @@ K.HEADS.lion=(c,D,SH,col,o)=>{const base=col.base,dark=col.dark,shade=col.shade,
  seg(c,-3.9+ex,-8.6+ey+eb,-4.6+ex,-5.6+ey,.9*e,mix(dark,'#000000',.2));// schwarzer Rand hinten am Ohr
 };
 
+// Löwe von vorn (KA2b, für das Wenden über die Vorderansicht): breiter Schädel, runde Ohren links und rechts, breiter gerader Nasenrücken,
+// zwei helle Schnurrhaarkissen, helles Kinn, bernsteinfarbene Augen. Die Mähne steht als Kranz dahinter (zeichnet katze.js).
+// o.yaw -1…1: Schnauze, Nase und Augen rücken zu der Seite, in die der Kopf gerade schaut (Dreiviertelansicht), das ferne Ohr wird kleiner.
+// o.pitch: Kopf gesenkt (negativ) schiebt die Schnauze tiefer. Mimik wie in der Seitenansicht (Maul, Lippe, Ohren, Blinzeln, Nasenfalten, Zunge).
+K.HEADS_FRONT.lion=(c,D,SH,col,o)=>{const base=col.base,dark=col.dark,shade=col.shade,mz=col.muzzle,e=SH.ear,f=o.f||F0,m=f.mouth||0,lp=f.lip||0,eb=Math.max(0,-f.ear),ef=Math.max(0,f.ear),line='#2a1c16',zahn='#f4eedc';
+ const yw=Math.max(-1,Math.min(1,o.yaw||0)),mx=yw*3.2,ex=yw*2,dn=Math.max(0,Math.min(2,-(o.pitch||0)*4)),my=2.2+dn,pd=2.5+.5*SH.snout,h=m>=.03?1+5.4*m:0,lu=lp*1.1;
+ const ear=sd=>{const far=sd*yw<0?1-.28*Math.abs(yw):1,x=sd*(5.7+1.5*eb)-yw*1.3,y=-6.3+2.4*eb-.5*ef;disk(c,x,y,2.9*e*far,base);disk(c,x-sd*.3,y+.5,1.7*e*far,mix(mz,shade,.55));rr(c,x+sd*1.6*e*far-.4,y-1.4,.9,2.2,mix(dark,'#000000',.2));};
+ ear(yw>0?-1:1);ear(yw>0?1:-1);// fernes Ohr zuerst
+ poly(c,[[-5.8,-6.2],[5.8,-6.2],[8,-1.6],[7.6,3],[4.8,6.4],[-4.8,6.4],[-7.6,3],[-8,-1.6]],base);disk(c,0,-1,7.6,base);// Schädel und Backen
+ poly(c,[[-7.2,3.6],[-4.6,6.4],[4.6,6.4],[7.2,3.6],[4.8,5.4],[-4.8,5.4]],mix(base,shade,.6));// Schatten unter den Backen
+ poly(c,[[ex-2,-5],[ex+2,-5],[mx+2.3,my-2.2],[mx-2.3,my-2.2]],mix(base,shade,.4));// breiter Nasenrücken
+ if((f.nose||0)>.3){const w=mix(base,shade,.9);rr(c,(ex+mx)/2-1.9,(my-7)/2,3.8,.5,w);rr(c,(ex+mx)/2-1.6,(my-7)/2+1.2,3.2,.5,w);}// Falten auf dem Nasenrücken
+ for(const sd of [-1,1]){const x=ex+sd*3.6;poly(c,[[x-1.5,-1.9],[x+1.5,-1.9],[x+sd*1.2+1,-.5],[x+sd*1.2-1,-.5]],mix(base,mz,.5));}// helle Flecken unter den Augen
+ // Unterkiefer mit hellem Kinn: klappt nach unten auf; darüber Rachen, Zunge und untere Eckzähne
+ if(h){rr(c,mx-3,my+1,6,h+.6,'#5a1a1c');if(m>.25)rr(c,mx-1.6,my+1+h*.45,3.2,h*.6,'#c0626a');if(m>.5&&(f.tongue||0)>.3)rr(c,mx-1.2,my+1+h,2.4,1,'#c0626a');
+  rr(c,mx-2.7,my+h-.4,.9,1.4,zahn);rr(c,mx+1.8,my+h-.4,.9,1.4,zahn);}
+ poly(c,[[mx-3.2,my+.8+h],[mx+3.2,my+.8+h],[mx+2.4,my+3.6+h],[mx-2.4,my+3.6+h]],mix(mz,shade,.25));rr(c,mx-1.8,my+1.6+h,3.6,1.4,mz);// Kinn
+ // Zahnfleisch, Schneidezähne und obere Eckzähne: sichtbar, wenn die Lippe hochgezogen oder das Maul offen ist
+ if(lp>.2||m>.2){rr(c,mx-2.8,my+.4-lu*.5,5.6,1.2+lu*.5,'#8a3a36');rr(c,mx-1.5,my+.9-lu*.3,3,.8,zahn);rr(c,mx-2.9,my+.6-lu*.3,1,2.2+1.4*Math.max(m,lp*.6),zahn);rr(c,mx+1.9,my+.6-lu*.3,1,2.2+1.4*Math.max(m,lp*.6),zahn);}
+ // helle Schnauze: zwei Schnurrhaarkissen, ihr unterer Rand ist die Oberlippe (hebt sich beim Zähnezeigen)
+ disk(c,mx-2.3,my-.3-lu*.5,pd,mz);disk(c,mx+2.3,my-.3-lu*.5,pd,mz);
+ poly(c,[[mx-2.3,my-2.6],[mx+2.3,my-2.6],[mx+1.1,my-.7],[mx-1.1,my-.7]],col.nose);// Nasenspiegel
+ rr(c,mx-.3,my-.7,.6,1.5-lu*.5,line);if(!h&&lp<.2){rr(c,mx-2.4,my+.8,4.8,.5,line);}// Spalte unter der Nase, Maulspalte
+ for(const sd of [-1,1]){for(let i=0;i<2;i++)rr(c,mx+sd*(1.9+i*1.2)-.3,my-.4+i*.4-lu*.5,.6,.5,'#6a5038');// Tasthaarpunkte, Schnurrhaare
+  seg(c,mx+sd*3.4,my-.2-lu*.5,mx+sd*9.2,my+1.4-lu*.3,.3,'#f1eada');seg(c,mx+sd*3.6,my-.8-lu*.5,mx+sd*9.4,my-1-lu*.3,.3,'#f1eada');}
+ // Augen: dunkle Höhle, bernsteinfarbene Iris, Pupille in der Mitte; darüber die Braue (senkt sich beim Drohen)
+ for(const sd of [-1,1]){const x=ex+sd*3.7-1.3;rr(c,x,-4,2.6,2,'#20160f');if(f.blink<.5){rr(c,x+.3,-3.7,2,1.3,col.eye);rr(c,x+.9+yw*.5,-3.7,.8,1.3,'#120c08');}
+  rr(c,x-.4,-5.1+(lp>.5?.8:0),3.4,.9,mix(base,shade,.7));}
+};
+
 // Fell des Berberlöwen (Grundfarben der ersten Fassung vom Löwen aus 1.0, dist/lion.js: skin, shade, dark): graugelb, Mähne dunkel bis schwarz über Schultern, Brust und Bauch, heller ums Gesicht
 K.COATS.barbary=[
  {id:'dark',name:'Dark-maned',w:5,base:'#b18a50',light:'#d9be8a',shade:'#7c582f',dark:'#49341f',muzzle:'#efe6d2',nose:'#3b2a22',mane:'#8c6b3d',maneDark:'#33261a',eye:'#c9962e',tuft:'#2a2018'},
