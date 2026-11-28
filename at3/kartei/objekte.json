@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 2361,
+ "typMax": 2433,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -21108,6 +21108,654 @@
    "name": "Palm-Leaf Roof, Flat D",
    "status": "uebernommen",
    "datei": "obj/bk-palm-dach-flach-d.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-1-sued",
+   "version": 1,
+   "typ": 2362,
+   "kat": "anlage",
+   "name": "Stilt Cottage 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-1-sued.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-1-ost",
+   "version": 1,
+   "typ": 2363,
+   "kat": "anlage",
+   "name": "Stilt Cottage 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-1-ost.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-1-nord",
+   "version": 1,
+   "typ": 2364,
+   "kat": "anlage",
+   "name": "Stilt Cottage 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-1-nord.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-1-west",
+   "version": 1,
+   "typ": 2365,
+   "kat": "anlage",
+   "name": "Stilt Cottage 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-1-west.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-2-sued",
+   "version": 1,
+   "typ": 2366,
+   "kat": "anlage",
+   "name": "Stilt Cottage 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-2-sued.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-2-ost",
+   "version": 1,
+   "typ": 2367,
+   "kat": "anlage",
+   "name": "Stilt Cottage 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-2-ost.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-2-nord",
+   "version": 1,
+   "typ": 2368,
+   "kat": "anlage",
+   "name": "Stilt Cottage 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-2-nord.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-2-west",
+   "version": 1,
+   "typ": 2369,
+   "kat": "anlage",
+   "name": "Stilt Cottage 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-2-west.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-3-sued",
+   "version": 1,
+   "typ": 2370,
+   "kat": "anlage",
+   "name": "Stilt Cottage 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-3-sued.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-3-ost",
+   "version": 1,
+   "typ": 2371,
+   "kat": "anlage",
+   "name": "Stilt Cottage 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-3-ost.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-3-nord",
+   "version": 1,
+   "typ": 2372,
+   "kat": "anlage",
+   "name": "Stilt Cottage 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-3-nord.json"
+  },
+  {
+   "id": "hof-sumpf-cottage-3-west",
+   "version": 1,
+   "typ": 2373,
+   "kat": "anlage",
+   "name": "Stilt Cottage 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-cottage-3-west.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-1-sued",
+   "version": 1,
+   "typ": 2374,
+   "kat": "anlage",
+   "name": "Swamp Croft 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-1-sued.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-1-ost",
+   "version": 1,
+   "typ": 2375,
+   "kat": "anlage",
+   "name": "Swamp Croft 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-1-ost.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-1-nord",
+   "version": 1,
+   "typ": 2376,
+   "kat": "anlage",
+   "name": "Swamp Croft 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-1-nord.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-1-west",
+   "version": 1,
+   "typ": 2377,
+   "kat": "anlage",
+   "name": "Swamp Croft 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-1-west.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-2-sued",
+   "version": 1,
+   "typ": 2378,
+   "kat": "anlage",
+   "name": "Swamp Croft 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-2-sued.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-2-ost",
+   "version": 1,
+   "typ": 2379,
+   "kat": "anlage",
+   "name": "Swamp Croft 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-2-ost.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-2-nord",
+   "version": 1,
+   "typ": 2380,
+   "kat": "anlage",
+   "name": "Swamp Croft 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-2-nord.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-2-west",
+   "version": 1,
+   "typ": 2381,
+   "kat": "anlage",
+   "name": "Swamp Croft 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-2-west.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-3-sued",
+   "version": 1,
+   "typ": 2382,
+   "kat": "anlage",
+   "name": "Swamp Croft 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-3-sued.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-3-ost",
+   "version": 1,
+   "typ": 2383,
+   "kat": "anlage",
+   "name": "Swamp Croft 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-3-ost.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-3-nord",
+   "version": 1,
+   "typ": 2384,
+   "kat": "anlage",
+   "name": "Swamp Croft 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-3-nord.json"
+  },
+  {
+   "id": "hof-sumpf-farmstead-3-west",
+   "version": 1,
+   "typ": 2385,
+   "kat": "anlage",
+   "name": "Swamp Croft 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-farmstead-3-west.json"
+  },
+  {
+   "id": "hof-sumpf-villa-rustica-1-sued",
+   "version": 1,
+   "typ": 2386,
+   "kat": "anlage",
+   "name": "Bog Manor 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-villa-rustica-1-sued.json"
+  },
+  {
+   "id": "hof-sumpf-villa-rustica-1-ost",
+   "version": 1,
+   "typ": 2387,
+   "kat": "anlage",
+   "name": "Bog Manor 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-villa-rustica-1-ost.json"
+  },
+  {
+   "id": "hof-sumpf-villa-rustica-1-nord",
+   "version": 1,
+   "typ": 2388,
+   "kat": "anlage",
+   "name": "Bog Manor 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-villa-rustica-1-nord.json"
+  },
+  {
+   "id": "hof-sumpf-villa-rustica-1-west",
+   "version": 1,
+   "typ": 2389,
+   "kat": "anlage",
+   "name": "Bog Manor 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-villa-rustica-1-west.json"
+  },
+  {
+   "id": "hof-sumpf-villa-rustica-2-sued",
+   "version": 1,
+   "typ": 2390,
+   "kat": "anlage",
+   "name": "Bog Manor 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-villa-rustica-2-sued.json"
+  },
+  {
+   "id": "hof-sumpf-villa-rustica-2-ost",
+   "version": 1,
+   "typ": 2391,
+   "kat": "anlage",
+   "name": "Bog Manor 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-villa-rustica-2-ost.json"
+  },
+  {
+   "id": "hof-sumpf-villa-rustica-2-nord",
+   "version": 1,
+   "typ": 2392,
+   "kat": "anlage",
+   "name": "Bog Manor 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-villa-rustica-2-nord.json"
+  },
+  {
+   "id": "hof-sumpf-villa-rustica-2-west",
+   "version": 1,
+   "typ": 2393,
+   "kat": "anlage",
+   "name": "Bog Manor 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-villa-rustica-2-west.json"
+  },
+  {
+   "id": "hof-sumpf-herders-camp-1-sued",
+   "version": 1,
+   "typ": 2394,
+   "kat": "anlage",
+   "name": "Leech Pond 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-herders-camp-1-sued.json"
+  },
+  {
+   "id": "hof-sumpf-herders-camp-1-ost",
+   "version": 1,
+   "typ": 2395,
+   "kat": "anlage",
+   "name": "Leech Pond 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-herders-camp-1-ost.json"
+  },
+  {
+   "id": "hof-sumpf-herders-camp-1-nord",
+   "version": 1,
+   "typ": 2396,
+   "kat": "anlage",
+   "name": "Leech Pond 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-herders-camp-1-nord.json"
+  },
+  {
+   "id": "hof-sumpf-herders-camp-1-west",
+   "version": 1,
+   "typ": 2397,
+   "kat": "anlage",
+   "name": "Leech Pond 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-herders-camp-1-west.json"
+  },
+  {
+   "id": "hof-sumpf-herders-camp-2-sued",
+   "version": 1,
+   "typ": 2398,
+   "kat": "anlage",
+   "name": "Leech Pond 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-herders-camp-2-sued.json"
+  },
+  {
+   "id": "hof-sumpf-herders-camp-2-ost",
+   "version": 1,
+   "typ": 2399,
+   "kat": "anlage",
+   "name": "Leech Pond 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-herders-camp-2-ost.json"
+  },
+  {
+   "id": "hof-sumpf-herders-camp-2-nord",
+   "version": 1,
+   "typ": 2400,
+   "kat": "anlage",
+   "name": "Leech Pond 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-herders-camp-2-nord.json"
+  },
+  {
+   "id": "hof-sumpf-herders-camp-2-west",
+   "version": 1,
+   "typ": 2401,
+   "kat": "anlage",
+   "name": "Leech Pond 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-sumpf-herders-camp-2-west.json"
+  },
+  {
+   "id": "elend-sumpf-bude-1-sued",
+   "version": 1,
+   "typ": 2402,
+   "kat": "anlage",
+   "name": "Reed Mat Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-1-sued.json"
+  },
+  {
+   "id": "elend-sumpf-bude-1-ost",
+   "version": 1,
+   "typ": 2403,
+   "kat": "anlage",
+   "name": "Reed Mat Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-1-ost.json"
+  },
+  {
+   "id": "elend-sumpf-bude-1-nord",
+   "version": 1,
+   "typ": 2404,
+   "kat": "anlage",
+   "name": "Reed Mat Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-1-nord.json"
+  },
+  {
+   "id": "elend-sumpf-bude-1-west",
+   "version": 1,
+   "typ": 2405,
+   "kat": "anlage",
+   "name": "Reed Mat Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-1-west.json"
+  },
+  {
+   "id": "elend-sumpf-bude-2-sued",
+   "version": 1,
+   "typ": 2406,
+   "kat": "anlage",
+   "name": "Punt-Roof Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-2-sued.json"
+  },
+  {
+   "id": "elend-sumpf-bude-2-ost",
+   "version": 1,
+   "typ": 2407,
+   "kat": "anlage",
+   "name": "Punt-Roof Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-2-ost.json"
+  },
+  {
+   "id": "elend-sumpf-bude-2-nord",
+   "version": 1,
+   "typ": 2408,
+   "kat": "anlage",
+   "name": "Punt-Roof Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-2-nord.json"
+  },
+  {
+   "id": "elend-sumpf-bude-2-west",
+   "version": 1,
+   "typ": 2409,
+   "kat": "anlage",
+   "name": "Punt-Roof Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-2-west.json"
+  },
+  {
+   "id": "elend-sumpf-bude-3-sued",
+   "version": 1,
+   "typ": 2410,
+   "kat": "anlage",
+   "name": "Mud Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-3-sued.json"
+  },
+  {
+   "id": "elend-sumpf-bude-3-ost",
+   "version": 1,
+   "typ": 2411,
+   "kat": "anlage",
+   "name": "Mud Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-3-ost.json"
+  },
+  {
+   "id": "elend-sumpf-bude-3-nord",
+   "version": 1,
+   "typ": 2412,
+   "kat": "anlage",
+   "name": "Mud Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-3-nord.json"
+  },
+  {
+   "id": "elend-sumpf-bude-3-west",
+   "version": 1,
+   "typ": 2413,
+   "kat": "anlage",
+   "name": "Mud Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-3-west.json"
+  },
+  {
+   "id": "elend-sumpf-bude-4-sued",
+   "version": 1,
+   "typ": 2414,
+   "kat": "anlage",
+   "name": "Net Mender's Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-4-sued.json"
+  },
+  {
+   "id": "elend-sumpf-bude-4-ost",
+   "version": 1,
+   "typ": 2415,
+   "kat": "anlage",
+   "name": "Net Mender's Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-4-ost.json"
+  },
+  {
+   "id": "elend-sumpf-bude-4-nord",
+   "version": 1,
+   "typ": 2416,
+   "kat": "anlage",
+   "name": "Net Mender's Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-4-nord.json"
+  },
+  {
+   "id": "elend-sumpf-bude-4-west",
+   "version": 1,
+   "typ": 2417,
+   "kat": "anlage",
+   "name": "Net Mender's Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-4-west.json"
+  },
+  {
+   "id": "elend-sumpf-bude-5-sued",
+   "version": 1,
+   "typ": 2418,
+   "kat": "anlage",
+   "name": "Patchwork Hovel S",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-5-sued.json"
+  },
+  {
+   "id": "elend-sumpf-bude-5-ost",
+   "version": 1,
+   "typ": 2419,
+   "kat": "anlage",
+   "name": "Patchwork Hovel E",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-5-ost.json"
+  },
+  {
+   "id": "elend-sumpf-bude-5-nord",
+   "version": 1,
+   "typ": 2420,
+   "kat": "anlage",
+   "name": "Patchwork Hovel N",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-5-nord.json"
+  },
+  {
+   "id": "elend-sumpf-bude-5-west",
+   "version": 1,
+   "typ": 2421,
+   "kat": "anlage",
+   "name": "Patchwork Hovel W",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-5-west.json"
+  },
+  {
+   "id": "elend-sumpf-bude-6-sued",
+   "version": 1,
+   "typ": 2422,
+   "kat": "anlage",
+   "name": "Peat Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-6-sued.json"
+  },
+  {
+   "id": "elend-sumpf-bude-6-ost",
+   "version": 1,
+   "typ": 2423,
+   "kat": "anlage",
+   "name": "Peat Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-6-ost.json"
+  },
+  {
+   "id": "elend-sumpf-bude-6-nord",
+   "version": 1,
+   "typ": 2424,
+   "kat": "anlage",
+   "name": "Peat Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-6-nord.json"
+  },
+  {
+   "id": "elend-sumpf-bude-6-west",
+   "version": 1,
+   "typ": 2425,
+   "kat": "anlage",
+   "name": "Peat Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-6-west.json"
+  },
+  {
+   "id": "elend-sumpf-bude-7-sued",
+   "version": 1,
+   "typ": 2426,
+   "kat": "anlage",
+   "name": "Sinking Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-7-sued.json"
+  },
+  {
+   "id": "elend-sumpf-bude-7-ost",
+   "version": 1,
+   "typ": 2427,
+   "kat": "anlage",
+   "name": "Sinking Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-7-ost.json"
+  },
+  {
+   "id": "elend-sumpf-bude-7-nord",
+   "version": 1,
+   "typ": 2428,
+   "kat": "anlage",
+   "name": "Sinking Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-7-nord.json"
+  },
+  {
+   "id": "elend-sumpf-bude-7-west",
+   "version": 1,
+   "typ": 2429,
+   "kat": "anlage",
+   "name": "Sinking Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-7-west.json"
+  },
+  {
+   "id": "elend-sumpf-bude-8-sued",
+   "version": 1,
+   "typ": 2430,
+   "kat": "anlage",
+   "name": "Evicted Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-8-sued.json"
+  },
+  {
+   "id": "elend-sumpf-bude-8-ost",
+   "version": 1,
+   "typ": 2431,
+   "kat": "anlage",
+   "name": "Evicted Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-8-ost.json"
+  },
+  {
+   "id": "elend-sumpf-bude-8-nord",
+   "version": 1,
+   "typ": 2432,
+   "kat": "anlage",
+   "name": "Evicted Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-8-nord.json"
+  },
+  {
+   "id": "elend-sumpf-bude-8-west",
+   "version": 1,
+   "typ": 2433,
+   "kat": "anlage",
+   "name": "Evicted Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-sumpf-bude-8-west.json"
   }
  ]
 }

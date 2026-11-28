@@ -83,8 +83,13 @@ var BIOME={
  savanna:{klasse:'clay-wood',dach:'walm',dachR:OCKER,satz:'rotlehm',boden:['boden-gras','boden-sand'],weg:'boden-sand',baeume:['baum-akazie','baum-baobab','blume-hohes-gras'],dichte:.07,feld:'boden-erde'},
  conifer:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,dachR:HOLZ,satz:'block',satzKlassen:['brick'],bilder:'taiga',boden:['boden-gras','boden-erde'],weg:'boden-erde',baeume:['baum-tanne','baum-birke'],dichte:.32,feld:'bk-feld'},
  coast:{klasse:'brick',dach:'sattel',satz:'kueste',platz:'bk-kueste-boden',boden:['boden-gras','boden-sand'],weg:'boden-weg',baeume:['baum-pappel','busch-gruen'],dichte:.05,feld:'bk-feld',wasser:true},
+<<<<<<< HEAD
  swamp:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:OCKER,satz:'sumpf',boden:['boden-erde','boden-gras'],weg:'boden-erde',baeume:['blume-schilf','busch-gruen','baum-lianen'],dichte:.2,feld:'boden-erde',wasser:true},
  rainforest:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:GRUEN,satz:'palm',satzKlassen:['brick'],bilder:'regen',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-lianen','baum-kokospalme','busch-banane','baum-farn'],dichte:.42,feld:'boden-erde'},
+=======
+ swamp:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:OCKER,satz:'sumpf',bilder:'sumpf',boden:['boden-erde','boden-gras'],weg:'boden-erde',baeume:['blume-schilf','busch-gruen','baum-lianen'],dichte:.2,feld:'boden-erde',wasser:true},
+ rainforest:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:GRUEN,satz:'palm',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-lianen','baum-kokospalme','busch-banane','baum-farn'],dichte:.42,feld:'boden-erde'},
+>>>>>>> 42a0f81 (AT3 Grafik Sumpf: Hof- und Budenbilder (72), ort-homestead/hamlet/market-town/slum/great-city-swamp überarbeitet)
  mangrove:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:OCKER,satz:'pfahl',bilder:'mang',boden:['boden-erde','boden-sand'],weg:'boden-sand',baeume:['baum-mangrove','blume-schilf'],dichte:.22,feld:'boden-erde',wasser:true},
  tundra:{klasse:'clay-wood',dach:'flach',wand:ERDE,dachR:GRUEN,satz:'sode',boden:['boden-erde','boden-gras'],weg:'boden-erde',baeume:['busch-gruen','fels-block'],dichte:.04,feld:'boden-erde'},
  snow:{klasse:'marble',dach:'flach',boden:['boden-fels'],weg:'boden-fels',baeume:['fels-block'],dichte:.03,feld:'boden-fels',nurAussenposten:true}};
@@ -2300,6 +2305,7 @@ var HOF_BILD_VAR={cottage:[.5,.4,.1],farmstead:[.5,.4,.1],'villa-rustica':[.85,.
 function hofBildAn(P,opt){var B=BIOME[P.biom];return !!(B&&(B.felder||B.bilder)&&!(opt&&opt.hofbild===false))}
 // Laubwald (Thomas 27.11.2026): Biome mit eigenen Bildern (B.bilder, z. B. 'laub') bekommen Hof- und Budenbilder unter eigener Kennung
 // (hof-<bilder>-<art>-…, elend-<bilder>-bude-…, tools/at3-laubwald-hof.py); keine Presse am Gutshof, keine Drogenbuden, keine Außenpostenbilder.
+// Sumpf (Thomas 28.11.2026): bilder:'sumpf' (hof-sumpf-…, elend-sumpf-bude-…, tools/at3-sumpf-hof.py: Pfahlhäuser, Schilf, Stege, Kähne).
 // Notausschalter: Angabe bilder im Biom entfernen.
 function elendAn(B){return !!(B&&(B.felder||B.bilder))}
 function hofTuerOff(r,s){var c=s>>1;return r==='sued'||r==='west'?c:s-1-c}
