@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1762,
+ "typMax": 1790,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -15717,6 +15717,258 @@
    "name": "Olive Oil C",
    "status": "skizze",
    "datei": "obj/ware-olive-oil-b.json"
+  },
+  {
+   "id": "marktstand-food",
+   "version": 1,
+   "typ": 1763,
+   "kat": "einrichtung",
+   "name": "Market Stall: Food",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-food.json"
+  },
+  {
+   "id": "marktstand-food-a",
+   "version": 1,
+   "typ": 1764,
+   "kat": "einrichtung",
+   "name": "Market Stall: Food A",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-food-a.json"
+  },
+  {
+   "id": "marktstand-food-b",
+   "version": 1,
+   "typ": 1765,
+   "kat": "einrichtung",
+   "name": "Market Stall: Food B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-food-b.json"
+  },
+  {
+   "id": "marktstand-food-c",
+   "version": 1,
+   "typ": 1766,
+   "kat": "einrichtung",
+   "name": "Market Stall: Food C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-food-c.json"
+  },
+  {
+   "id": "marktstand-household",
+   "version": 1,
+   "typ": 1767,
+   "kat": "einrichtung",
+   "name": "Market Stall: Household",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-household.json"
+  },
+  {
+   "id": "marktstand-household-a",
+   "version": 1,
+   "typ": 1768,
+   "kat": "einrichtung",
+   "name": "Market Stall: Household A",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-household-a.json"
+  },
+  {
+   "id": "marktstand-household-b",
+   "version": 1,
+   "typ": 1769,
+   "kat": "einrichtung",
+   "name": "Market Stall: Household B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-household-b.json"
+  },
+  {
+   "id": "marktstand-household-c",
+   "version": 1,
+   "typ": 1770,
+   "kat": "einrichtung",
+   "name": "Market Stall: Household C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-household-c.json"
+  },
+  {
+   "id": "marktstand-intermediate",
+   "version": 1,
+   "typ": 1771,
+   "kat": "einrichtung",
+   "name": "Market Stall: Intermediate Goods",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-intermediate.json"
+  },
+  {
+   "id": "marktstand-intermediate-a",
+   "version": 1,
+   "typ": 1772,
+   "kat": "einrichtung",
+   "name": "Market Stall: Materials A",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-intermediate-a.json"
+  },
+  {
+   "id": "marktstand-intermediate-b",
+   "version": 1,
+   "typ": 1773,
+   "kat": "einrichtung",
+   "name": "Market Stall: Materials B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-intermediate-b.json"
+  },
+  {
+   "id": "marktstand-intermediate-c",
+   "version": 1,
+   "typ": 1774,
+   "kat": "einrichtung",
+   "name": "Market Stall: Materials C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-intermediate-c.json"
+  },
+  {
+   "id": "marktstand-luxury",
+   "version": 1,
+   "typ": 1775,
+   "kat": "einrichtung",
+   "name": "Market Stall: Luxury",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-luxury.json"
+  },
+  {
+   "id": "marktstand-luxury-a",
+   "version": 1,
+   "typ": 1776,
+   "kat": "einrichtung",
+   "name": "Market Stall: Luxury A",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-luxury-a.json"
+  },
+  {
+   "id": "marktstand-luxury-b",
+   "version": 1,
+   "typ": 1777,
+   "kat": "einrichtung",
+   "name": "Market Stall: Luxury B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-luxury-b.json"
+  },
+  {
+   "id": "marktstand-luxury-c",
+   "version": 1,
+   "typ": 1778,
+   "kat": "einrichtung",
+   "name": "Market Stall: Luxury C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-luxury-c.json"
+  },
+  {
+   "id": "marktstand-raw",
+   "version": 1,
+   "typ": 1779,
+   "kat": "einrichtung",
+   "name": "Market Stall: Raw Materials",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-raw.json"
+  },
+  {
+   "id": "marktstand-raw-a",
+   "version": 1,
+   "typ": 1780,
+   "kat": "einrichtung",
+   "name": "Market Stall: Raw Materials A",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-raw-a.json"
+  },
+  {
+   "id": "marktstand-raw-b",
+   "version": 1,
+   "typ": 1781,
+   "kat": "einrichtung",
+   "name": "Market Stall: Raw Materials B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-raw-b.json"
+  },
+  {
+   "id": "marktstand-raw-c",
+   "version": 1,
+   "typ": 1782,
+   "kat": "einrichtung",
+   "name": "Market Stall: Raw Materials C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-raw-c.json"
+  },
+  {
+   "id": "marktstand-souvenirs",
+   "version": 1,
+   "typ": 1783,
+   "kat": "einrichtung",
+   "name": "Market Stall: Souvenirs",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-souvenirs.json"
+  },
+  {
+   "id": "marktstand-souvenirs-a",
+   "version": 1,
+   "typ": 1784,
+   "kat": "einrichtung",
+   "name": "Market Stall: Souvenirs A",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-souvenirs-a.json"
+  },
+  {
+   "id": "marktstand-souvenirs-b",
+   "version": 1,
+   "typ": 1785,
+   "kat": "einrichtung",
+   "name": "Market Stall: Souvenirs B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-souvenirs-b.json"
+  },
+  {
+   "id": "marktstand-souvenirs-c",
+   "version": 1,
+   "typ": 1786,
+   "kat": "einrichtung",
+   "name": "Market Stall: Souvenirs C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-souvenirs-c.json"
+  },
+  {
+   "id": "marktstand-vice",
+   "version": 1,
+   "typ": 1787,
+   "kat": "einrichtung",
+   "name": "Market Stall: Vice",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-vice.json"
+  },
+  {
+   "id": "marktstand-vice-a",
+   "version": 1,
+   "typ": 1788,
+   "kat": "einrichtung",
+   "name": "Market Stall: Vice A",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-vice-a.json"
+  },
+  {
+   "id": "marktstand-vice-b",
+   "version": 1,
+   "typ": 1789,
+   "kat": "einrichtung",
+   "name": "Market Stall: Vice B",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-vice-b.json"
+  },
+  {
+   "id": "marktstand-vice-c",
+   "version": 1,
+   "typ": 1790,
+   "kat": "einrichtung",
+   "name": "Market Stall: Vice C",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-vice-c.json"
   }
  ]
 }
