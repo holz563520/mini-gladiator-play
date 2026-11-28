@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1650,
+ "typMax": 1674,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -105,7 +105,7 @@
   },
   {
    "id": "baum-akazie",
-   "version": 1,
+   "version": 2,
    "typ": 134,
    "kat": "baum",
    "name": "Acacia",
@@ -113,8 +113,35 @@
    "datei": "obj/baum-akazie.json"
   },
   {
-   "id": "baum-apfel",
+   "id": "baum-akazie-a",
    "version": 1,
+   "typ": 1651,
+   "kat": "baum",
+   "name": "Acacia, Helmet Hook",
+   "status": "uebernommen",
+   "datei": "obj/baum-akazie-a.json"
+  },
+  {
+   "id": "baum-akazie-b",
+   "version": 1,
+   "typ": 1652,
+   "kat": "baum",
+   "name": "Acacia, Picnic Leftovers",
+   "status": "uebernommen",
+   "datei": "obj/baum-akazie-b.json"
+  },
+  {
+   "id": "baum-akazie-c",
+   "version": 1,
+   "typ": 1653,
+   "kat": "baum",
+   "name": "Acacia, Dry Season",
+   "status": "uebernommen",
+   "datei": "obj/baum-akazie-c.json"
+  },
+  {
+   "id": "baum-apfel",
+   "version": 2,
    "typ": 11,
    "kat": "baum",
    "name": "Apple Tree",
@@ -122,8 +149,35 @@
    "datei": "obj/baum-apfel.json"
   },
   {
+   "id": "baum-apfel-a",
+   "version": 1,
+   "typ": 1654,
+   "kat": "baum",
+   "name": "Apple Tree, Windfall",
+   "status": "uebernommen",
+   "datei": "obj/baum-apfel-a.json"
+  },
+  {
+   "id": "baum-apfel-b",
+   "version": 1,
+   "typ": 1655,
+   "kat": "baum",
+   "name": "Apple Tree, Helmet Basket",
+   "status": "uebernommen",
+   "datei": "obj/baum-apfel-b.json"
+  },
+  {
+   "id": "baum-apfel-c",
+   "version": 1,
+   "typ": 1656,
+   "kat": "baum",
+   "name": "Apple Tree, Tally Board",
+   "status": "uebernommen",
+   "datei": "obj/baum-apfel-c.json"
+  },
+  {
    "id": "baum-baobab",
-   "version": 2,
+   "version": 3,
    "typ": 142,
    "kat": "baum",
    "name": "Baobab",
@@ -131,8 +185,35 @@
    "datei": "obj/baum-baobab.json"
   },
   {
-   "id": "baum-birke",
+   "id": "baum-baobab-a",
    "version": 1,
+   "typ": 1657,
+   "kat": "baum",
+   "name": "Baobab, Chained",
+   "status": "uebernommen",
+   "datei": "obj/baum-baobab-a.json"
+  },
+  {
+   "id": "baum-baobab-b",
+   "version": 1,
+   "typ": 1658,
+   "kat": "baum",
+   "name": "Baobab, Scoreboard",
+   "status": "uebernommen",
+   "datei": "obj/baum-baobab-b.json"
+  },
+  {
+   "id": "baum-baobab-c",
+   "version": 1,
+   "typ": 1659,
+   "kat": "baum",
+   "name": "Baobab, Dry Season",
+   "status": "uebernommen",
+   "datei": "obj/baum-baobab-c.json"
+  },
+  {
+   "id": "baum-birke",
+   "version": 2,
    "typ": 9,
    "kat": "baum",
    "name": "Birch",
@@ -140,8 +221,35 @@
    "datei": "obj/baum-birke.json"
   },
   {
-   "id": "baum-buche",
+   "id": "baum-birke-a",
    "version": 1,
+   "typ": 1660,
+   "kat": "baum",
+   "name": "Birch, Counted",
+   "status": "uebernommen",
+   "datei": "obj/baum-birke-a.json"
+  },
+  {
+   "id": "baum-birke-b",
+   "version": 1,
+   "typ": 1661,
+   "kat": "baum",
+   "name": "Birch, Target Practice",
+   "status": "uebernommen",
+   "datei": "obj/baum-birke-b.json"
+  },
+  {
+   "id": "baum-birke-c",
+   "version": 1,
+   "typ": 1662,
+   "kat": "baum",
+   "name": "Birch, Snapped",
+   "status": "uebernommen",
+   "datei": "obj/baum-birke-c.json"
+  },
+  {
+   "id": "baum-buche",
+   "version": 2,
    "typ": 10,
    "kat": "baum",
    "name": "Beech",
@@ -149,8 +257,35 @@
    "datei": "obj/baum-buche.json"
   },
   {
-   "id": "baum-dattelpalme",
+   "id": "baum-buche-a",
    "version": 1,
+   "typ": 1663,
+   "kat": "baum",
+   "name": "Beech, Crossed Heart",
+   "status": "uebernommen",
+   "datei": "obj/baum-buche-a.json"
+  },
+  {
+   "id": "baum-buche-b",
+   "version": 1,
+   "typ": 1664,
+   "kat": "baum",
+   "name": "Beech, Stuck Sword",
+   "status": "uebernommen",
+   "datei": "obj/baum-buche-b.json"
+  },
+  {
+   "id": "baum-buche-c",
+   "version": 1,
+   "typ": 1665,
+   "kat": "baum",
+   "name": "Beech, Autumn Copper",
+   "status": "uebernommen",
+   "datei": "obj/baum-buche-c.json"
+  },
+  {
+   "id": "baum-dattelpalme",
+   "version": 2,
    "typ": 133,
    "kat": "baum",
    "name": "Date Palm",
@@ -158,8 +293,35 @@
    "datei": "obj/baum-dattelpalme.json"
   },
   {
+   "id": "baum-dattelpalme-a",
+   "version": 1,
+   "typ": 1666,
+   "kat": "baum",
+   "name": "Date Palm, Shield Nail",
+   "status": "uebernommen",
+   "datei": "obj/baum-dattelpalme-a.json"
+  },
+  {
+   "id": "baum-dattelpalme-b",
+   "version": 1,
+   "typ": 1667,
+   "kat": "baum",
+   "name": "Date Palm, Withered Skirt",
+   "status": "uebernommen",
+   "datei": "obj/baum-dattelpalme-b.json"
+  },
+  {
+   "id": "baum-dattelpalme-c",
+   "version": 1,
+   "typ": 1668,
+   "kat": "baum",
+   "name": "Date Palm, Climbing Notches",
+   "status": "uebernommen",
+   "datei": "obj/baum-dattelpalme-c.json"
+  },
+  {
    "id": "baum-eiche-skizze",
-   "version": 3,
+   "version": 4,
    "typ": 1,
    "kat": "baum",
    "name": "Old Oak",
@@ -167,13 +329,67 @@
    "datei": "obj/baum-eiche-skizze.json"
   },
   {
-   "id": "baum-farn",
+   "id": "baum-eiche-skizze-a",
    "version": 1,
+   "typ": 1669,
+   "kat": "baum",
+   "name": "Old Oak, Trophy Branch",
+   "status": "uebernommen",
+   "datei": "obj/baum-eiche-skizze-a.json"
+  },
+  {
+   "id": "baum-eiche-skizze-b",
+   "version": 1,
+   "typ": 1670,
+   "kat": "baum",
+   "name": "Old Oak, Hollow",
+   "status": "uebernommen",
+   "datei": "obj/baum-eiche-skizze-b.json"
+  },
+  {
+   "id": "baum-eiche-skizze-c",
+   "version": 1,
+   "typ": 1671,
+   "kat": "baum",
+   "name": "Old Oak, Lightning Struck",
+   "status": "uebernommen",
+   "datei": "obj/baum-eiche-skizze-c.json"
+  },
+  {
+   "id": "baum-farn",
+   "version": 2,
    "typ": 139,
    "kat": "baum",
    "name": "Tree Fern",
    "status": "uebernommen",
    "datei": "obj/baum-farn.json"
+  },
+  {
+   "id": "baum-farn-a",
+   "version": 1,
+   "typ": 1672,
+   "kat": "baum",
+   "name": "Tree Fern, Broken Spear",
+   "status": "uebernommen",
+   "datei": "obj/baum-farn-a.json"
+  },
+  {
+   "id": "baum-farn-b",
+   "version": 1,
+   "typ": 1673,
+   "kat": "baum",
+   "name": "Tree Fern, Wilting",
+   "status": "uebernommen",
+   "datei": "obj/baum-farn-b.json"
+  },
+  {
+   "id": "baum-farn-c",
+   "version": 1,
+   "typ": 1674,
+   "kat": "baum",
+   "name": "Tree Fern, Lost Blade",
+   "status": "uebernommen",
+   "datei": "obj/baum-farn-c.json"
   },
   {
    "id": "baum-kokospalme",
@@ -11894,6 +12110,231 @@
    "datei": "obj/oelmuehle-vorn-i.json"
   },
   {
+   "id": "ort-teil-shipyard",
+   "version": 2,
+   "typ": 1630,
+   "kat": "anlage",
+   "name": "Shipyard",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-shipyard.json"
+  },
+  {
+   "id": "ort-teil-shipyard-a",
+   "version": 2,
+   "typ": 1631,
+   "kat": "anlage",
+   "name": "Shipyard A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-shipyard-a.json"
+  },
+  {
+   "id": "ort-teil-shipyard-b",
+   "version": 2,
+   "typ": 1632,
+   "kat": "anlage",
+   "name": "Shipyard B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-shipyard-b.json"
+  },
+  {
+   "id": "ort-teil-shipyard-c",
+   "version": 2,
+   "typ": 1633,
+   "kat": "anlage",
+   "name": "Shipyard C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-shipyard-c.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter",
+   "version": 1,
+   "typ": 1642,
+   "kat": "anlage",
+   "name": "Slum Quarter",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter-a",
+   "version": 1,
+   "typ": 1643,
+   "kat": "anlage",
+   "name": "Slum Quarter A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter-a.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter-b",
+   "version": 1,
+   "typ": 1644,
+   "kat": "anlage",
+   "name": "Slum Quarter B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter-b.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter-c",
+   "version": 1,
+   "typ": 1645,
+   "kat": "anlage",
+   "name": "Slum Quarter C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter-c.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter-d",
+   "version": 1,
+   "typ": 1646,
+   "kat": "anlage",
+   "name": "Slum Quarter D",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter-d.json"
+  },
+  {
+   "id": "ort-teil-suburbs",
+   "version": 1,
+   "typ": 1647,
+   "kat": "anlage",
+   "name": "Suburbs",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-suburbs.json"
+  },
+  {
+   "id": "ort-teil-suburbs-a",
+   "version": 1,
+   "typ": 1648,
+   "kat": "anlage",
+   "name": "Suburbs A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-suburbs-a.json"
+  },
+  {
+   "id": "ort-teil-suburbs-b",
+   "version": 1,
+   "typ": 1649,
+   "kat": "anlage",
+   "name": "Suburbs B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-suburbs-b.json"
+  },
+  {
+   "id": "ort-teil-suburbs-c",
+   "version": 1,
+   "typ": 1650,
+   "kat": "anlage",
+   "name": "Suburbs C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-suburbs-c.json"
+  },
+  {
+   "id": "ort-teil-theatre",
+   "version": 2,
+   "typ": 1634,
+   "kat": "anlage",
+   "name": "Theatre",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-theatre.json"
+  },
+  {
+   "id": "ort-teil-theatre-a",
+   "version": 2,
+   "typ": 1635,
+   "kat": "anlage",
+   "name": "Theatre A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-theatre-a.json"
+  },
+  {
+   "id": "ort-teil-theatre-b",
+   "version": 2,
+   "typ": 1636,
+   "kat": "anlage",
+   "name": "Theatre B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-theatre-b.json"
+  },
+  {
+   "id": "ort-teil-vineyards",
+   "version": 1,
+   "typ": 1637,
+   "kat": "anlage",
+   "name": "Vineyards",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards.json"
+  },
+  {
+   "id": "ort-teil-vineyards-a",
+   "version": 1,
+   "typ": 1638,
+   "kat": "anlage",
+   "name": "Vineyards A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards-a.json"
+  },
+  {
+   "id": "ort-teil-vineyards-b",
+   "version": 1,
+   "typ": 1639,
+   "kat": "anlage",
+   "name": "Vineyards B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards-b.json"
+  },
+  {
+   "id": "ort-teil-vineyards-c",
+   "version": 1,
+   "typ": 1640,
+   "kat": "anlage",
+   "name": "Vineyards C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards-c.json"
+  },
+  {
+   "id": "ort-teil-vineyards-d",
+   "version": 1,
+   "typ": 1641,
+   "kat": "anlage",
+   "name": "Vineyards D",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards-d.json"
+  },
+  {
+   "id": "ort-teil-watermill",
+   "version": 1,
+   "typ": 1626,
+   "kat": "anlage",
+   "name": "Watermill",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-watermill.json"
+  },
+  {
+   "id": "ort-teil-watermill-a",
+   "version": 1,
+   "typ": 1627,
+   "kat": "anlage",
+   "name": "Watermill A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-watermill-a.json"
+  },
+  {
+   "id": "ort-teil-watermill-b",
+   "version": 1,
+   "typ": 1628,
+   "kat": "anlage",
+   "name": "Watermill B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-watermill-b.json"
+  },
+  {
+   "id": "ort-teil-watermill-c",
+   "version": 1,
+   "typ": 1629,
+   "kat": "anlage",
+   "name": "Watermill C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-watermill-c.json"
+  },
+  {
    "id": "pferch-gatter-nord",
    "version": 1,
    "typ": 738,
@@ -12407,6 +12848,114 @@
    "datei": "obj/posten-huette-3-2-west.json"
   },
   {
+   "id": "posten-rival-ludus-a",
+   "version": 1,
+   "typ": 1622,
+   "kat": "anlage",
+   "name": "Rival Ludus A",
+   "status": "uebernommen",
+   "datei": "obj/posten-rival-ludus-a.json"
+  },
+  {
+   "id": "posten-rival-ludus-b",
+   "version": 1,
+   "typ": 1623,
+   "kat": "anlage",
+   "name": "Rival Ludus B",
+   "status": "uebernommen",
+   "datei": "obj/posten-rival-ludus-b.json"
+  },
+  {
+   "id": "posten-rival-ludus-c",
+   "version": 1,
+   "typ": 1624,
+   "kat": "anlage",
+   "name": "Rival Ludus C",
+   "status": "uebernommen",
+   "datei": "obj/posten-rival-ludus-c.json"
+  },
+  {
+   "id": "posten-rival-ludus-d",
+   "version": 1,
+   "typ": 1625,
+   "kat": "anlage",
+   "name": "Rival Ludus D",
+   "status": "uebernommen",
+   "datei": "obj/posten-rival-ludus-d.json"
+  },
+  {
+   "id": "posten-saltworks-a",
+   "version": 1,
+   "typ": 1614,
+   "kat": "anlage",
+   "name": "Saltworks A",
+   "status": "uebernommen",
+   "datei": "obj/posten-saltworks-a.json"
+  },
+  {
+   "id": "posten-saltworks-b",
+   "version": 1,
+   "typ": 1615,
+   "kat": "anlage",
+   "name": "Saltworks B",
+   "status": "uebernommen",
+   "datei": "obj/posten-saltworks-b.json"
+  },
+  {
+   "id": "posten-saltworks-c",
+   "version": 1,
+   "typ": 1616,
+   "kat": "anlage",
+   "name": "Saltworks C",
+   "status": "uebernommen",
+   "datei": "obj/posten-saltworks-c.json"
+  },
+  {
+   "id": "posten-saltworks-d",
+   "version": 1,
+   "typ": 1617,
+   "kat": "anlage",
+   "name": "Saltworks D",
+   "status": "uebernommen",
+   "datei": "obj/posten-saltworks-d.json"
+  },
+  {
+   "id": "posten-smugglers-cove-a",
+   "version": 1,
+   "typ": 1618,
+   "kat": "anlage",
+   "name": "Smugglers' Cove A",
+   "status": "uebernommen",
+   "datei": "obj/posten-smugglers-cove-a.json"
+  },
+  {
+   "id": "posten-smugglers-cove-b",
+   "version": 1,
+   "typ": 1619,
+   "kat": "anlage",
+   "name": "Smugglers' Cove B",
+   "status": "uebernommen",
+   "datei": "obj/posten-smugglers-cove-b.json"
+  },
+  {
+   "id": "posten-smugglers-cove-c",
+   "version": 1,
+   "typ": 1620,
+   "kat": "anlage",
+   "name": "Smugglers' Cove C",
+   "status": "uebernommen",
+   "datei": "obj/posten-smugglers-cove-c.json"
+  },
+  {
+   "id": "posten-smugglers-cove-d",
+   "version": 1,
+   "typ": 1621,
+   "kat": "anlage",
+   "name": "Smugglers' Cove D",
+   "status": "uebernommen",
+   "datei": "obj/posten-smugglers-cove-d.json"
+  },
+  {
    "id": "posten-stollen-1-nord",
    "version": 2,
    "typ": 789,
@@ -12477,6 +13026,78 @@
    "name": "Mine Adit 2 W",
    "status": "uebernommen",
    "datei": "obj/posten-stollen-2-west.json"
+  },
+  {
+   "id": "posten-toll-station-a",
+   "version": 1,
+   "typ": 1606,
+   "kat": "anlage",
+   "name": "Toll Station A",
+   "status": "uebernommen",
+   "datei": "obj/posten-toll-station-a.json"
+  },
+  {
+   "id": "posten-toll-station-b",
+   "version": 1,
+   "typ": 1607,
+   "kat": "anlage",
+   "name": "Toll Station B",
+   "status": "uebernommen",
+   "datei": "obj/posten-toll-station-b.json"
+  },
+  {
+   "id": "posten-toll-station-c",
+   "version": 1,
+   "typ": 1608,
+   "kat": "anlage",
+   "name": "Toll Station C",
+   "status": "uebernommen",
+   "datei": "obj/posten-toll-station-c.json"
+  },
+  {
+   "id": "posten-toll-station-d",
+   "version": 1,
+   "typ": 1609,
+   "kat": "anlage",
+   "name": "Toll Station D",
+   "status": "uebernommen",
+   "datei": "obj/posten-toll-station-d.json"
+  },
+  {
+   "id": "posten-trading-post-a",
+   "version": 1,
+   "typ": 1610,
+   "kat": "anlage",
+   "name": "Trading Post A",
+   "status": "uebernommen",
+   "datei": "obj/posten-trading-post-a.json"
+  },
+  {
+   "id": "posten-trading-post-b",
+   "version": 1,
+   "typ": 1611,
+   "kat": "anlage",
+   "name": "Trading Post B",
+   "status": "uebernommen",
+   "datei": "obj/posten-trading-post-b.json"
+  },
+  {
+   "id": "posten-trading-post-c",
+   "version": 1,
+   "typ": 1612,
+   "kat": "anlage",
+   "name": "Trading Post C",
+   "status": "uebernommen",
+   "datei": "obj/posten-trading-post-c.json"
+  },
+  {
+   "id": "posten-trading-post-d",
+   "version": 1,
+   "typ": 1613,
+   "kat": "anlage",
+   "name": "Trading Post D",
+   "status": "uebernommen",
+   "datei": "obj/posten-trading-post-d.json"
   },
   {
    "id": "posten-zubehoer-bruch-2-ost",
@@ -14304,411 +14925,6 @@
    "name": "Workbench",
    "status": "geprueft",
    "datei": "obj/werk-bank.json"
-  },
-  {
-   "id": "posten-toll-station-a",
-   "version": 1,
-   "typ": 1606,
-   "kat": "anlage",
-   "name": "Toll Station A",
-   "status": "uebernommen",
-   "datei": "obj/posten-toll-station-a.json"
-  },
-  {
-   "id": "posten-toll-station-b",
-   "version": 1,
-   "typ": 1607,
-   "kat": "anlage",
-   "name": "Toll Station B",
-   "status": "uebernommen",
-   "datei": "obj/posten-toll-station-b.json"
-  },
-  {
-   "id": "posten-toll-station-c",
-   "version": 1,
-   "typ": 1608,
-   "kat": "anlage",
-   "name": "Toll Station C",
-   "status": "uebernommen",
-   "datei": "obj/posten-toll-station-c.json"
-  },
-  {
-   "id": "posten-toll-station-d",
-   "version": 1,
-   "typ": 1609,
-   "kat": "anlage",
-   "name": "Toll Station D",
-   "status": "uebernommen",
-   "datei": "obj/posten-toll-station-d.json"
-  },
-  {
-   "id": "posten-trading-post-a",
-   "version": 1,
-   "typ": 1610,
-   "kat": "anlage",
-   "name": "Trading Post A",
-   "status": "uebernommen",
-   "datei": "obj/posten-trading-post-a.json"
-  },
-  {
-   "id": "posten-trading-post-b",
-   "version": 1,
-   "typ": 1611,
-   "kat": "anlage",
-   "name": "Trading Post B",
-   "status": "uebernommen",
-   "datei": "obj/posten-trading-post-b.json"
-  },
-  {
-   "id": "posten-trading-post-c",
-   "version": 1,
-   "typ": 1612,
-   "kat": "anlage",
-   "name": "Trading Post C",
-   "status": "uebernommen",
-   "datei": "obj/posten-trading-post-c.json"
-  },
-  {
-   "id": "posten-trading-post-d",
-   "version": 1,
-   "typ": 1613,
-   "kat": "anlage",
-   "name": "Trading Post D",
-   "status": "uebernommen",
-   "datei": "obj/posten-trading-post-d.json"
-  },
-  {
-   "id": "posten-saltworks-a",
-   "version": 1,
-   "typ": 1614,
-   "kat": "anlage",
-   "name": "Saltworks A",
-   "status": "uebernommen",
-   "datei": "obj/posten-saltworks-a.json"
-  },
-  {
-   "id": "posten-saltworks-b",
-   "version": 1,
-   "typ": 1615,
-   "kat": "anlage",
-   "name": "Saltworks B",
-   "status": "uebernommen",
-   "datei": "obj/posten-saltworks-b.json"
-  },
-  {
-   "id": "posten-saltworks-c",
-   "version": 1,
-   "typ": 1616,
-   "kat": "anlage",
-   "name": "Saltworks C",
-   "status": "uebernommen",
-   "datei": "obj/posten-saltworks-c.json"
-  },
-  {
-   "id": "posten-saltworks-d",
-   "version": 1,
-   "typ": 1617,
-   "kat": "anlage",
-   "name": "Saltworks D",
-   "status": "uebernommen",
-   "datei": "obj/posten-saltworks-d.json"
-  },
-  {
-   "id": "posten-smugglers-cove-a",
-   "version": 1,
-   "typ": 1618,
-   "kat": "anlage",
-   "name": "Smugglers' Cove A",
-   "status": "uebernommen",
-   "datei": "obj/posten-smugglers-cove-a.json"
-  },
-  {
-   "id": "posten-smugglers-cove-b",
-   "version": 1,
-   "typ": 1619,
-   "kat": "anlage",
-   "name": "Smugglers' Cove B",
-   "status": "uebernommen",
-   "datei": "obj/posten-smugglers-cove-b.json"
-  },
-  {
-   "id": "posten-smugglers-cove-c",
-   "version": 1,
-   "typ": 1620,
-   "kat": "anlage",
-   "name": "Smugglers' Cove C",
-   "status": "uebernommen",
-   "datei": "obj/posten-smugglers-cove-c.json"
-  },
-  {
-   "id": "posten-smugglers-cove-d",
-   "version": 1,
-   "typ": 1621,
-   "kat": "anlage",
-   "name": "Smugglers' Cove D",
-   "status": "uebernommen",
-   "datei": "obj/posten-smugglers-cove-d.json"
-  },
-  {
-   "id": "posten-rival-ludus-a",
-   "version": 1,
-   "typ": 1622,
-   "kat": "anlage",
-   "name": "Rival Ludus A",
-   "status": "uebernommen",
-   "datei": "obj/posten-rival-ludus-a.json"
-  },
-  {
-   "id": "posten-rival-ludus-b",
-   "version": 1,
-   "typ": 1623,
-   "kat": "anlage",
-   "name": "Rival Ludus B",
-   "status": "uebernommen",
-   "datei": "obj/posten-rival-ludus-b.json"
-  },
-  {
-   "id": "posten-rival-ludus-c",
-   "version": 1,
-   "typ": 1624,
-   "kat": "anlage",
-   "name": "Rival Ludus C",
-   "status": "uebernommen",
-   "datei": "obj/posten-rival-ludus-c.json"
-  },
-  {
-   "id": "posten-rival-ludus-d",
-   "version": 1,
-   "typ": 1625,
-   "kat": "anlage",
-   "name": "Rival Ludus D",
-   "status": "uebernommen",
-   "datei": "obj/posten-rival-ludus-d.json"
-  },
-  {
-   "id": "ort-teil-watermill",
-   "version": 1,
-   "typ": 1626,
-   "kat": "anlage",
-   "name": "Watermill",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-watermill.json"
-  },
-  {
-   "id": "ort-teil-watermill-a",
-   "version": 1,
-   "typ": 1627,
-   "kat": "anlage",
-   "name": "Watermill A",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-watermill-a.json"
-  },
-  {
-   "id": "ort-teil-watermill-b",
-   "version": 1,
-   "typ": 1628,
-   "kat": "anlage",
-   "name": "Watermill B",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-watermill-b.json"
-  },
-  {
-   "id": "ort-teil-watermill-c",
-   "version": 1,
-   "typ": 1629,
-   "kat": "anlage",
-   "name": "Watermill C",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-watermill-c.json"
-  },
-  {
-   "id": "ort-teil-shipyard",
-   "version": 2,
-   "typ": 1630,
-   "kat": "anlage",
-   "name": "Shipyard",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-shipyard.json"
-  },
-  {
-   "id": "ort-teil-shipyard-a",
-   "version": 2,
-   "typ": 1631,
-   "kat": "anlage",
-   "name": "Shipyard A",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-shipyard-a.json"
-  },
-  {
-   "id": "ort-teil-shipyard-b",
-   "version": 2,
-   "typ": 1632,
-   "kat": "anlage",
-   "name": "Shipyard B",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-shipyard-b.json"
-  },
-  {
-   "id": "ort-teil-shipyard-c",
-   "version": 2,
-   "typ": 1633,
-   "kat": "anlage",
-   "name": "Shipyard C",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-shipyard-c.json"
-  },
-  {
-   "id": "ort-teil-theatre",
-   "version": 2,
-   "typ": 1634,
-   "kat": "anlage",
-   "name": "Theatre",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-theatre.json"
-  },
-  {
-   "id": "ort-teil-theatre-a",
-   "version": 2,
-   "typ": 1635,
-   "kat": "anlage",
-   "name": "Theatre A",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-theatre-a.json"
-  },
-  {
-   "id": "ort-teil-theatre-b",
-   "version": 2,
-   "typ": 1636,
-   "kat": "anlage",
-   "name": "Theatre B",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-theatre-b.json"
-  },
-  {
-   "id": "ort-teil-vineyards",
-   "version": 1,
-   "typ": 1637,
-   "kat": "anlage",
-   "name": "Vineyards",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-vineyards.json"
-  },
-  {
-   "id": "ort-teil-vineyards-a",
-   "version": 1,
-   "typ": 1638,
-   "kat": "anlage",
-   "name": "Vineyards A",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-vineyards-a.json"
-  },
-  {
-   "id": "ort-teil-vineyards-b",
-   "version": 1,
-   "typ": 1639,
-   "kat": "anlage",
-   "name": "Vineyards B",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-vineyards-b.json"
-  },
-  {
-   "id": "ort-teil-vineyards-c",
-   "version": 1,
-   "typ": 1640,
-   "kat": "anlage",
-   "name": "Vineyards C",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-vineyards-c.json"
-  },
-  {
-   "id": "ort-teil-vineyards-d",
-   "version": 1,
-   "typ": 1641,
-   "kat": "anlage",
-   "name": "Vineyards D",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-vineyards-d.json"
-  },
-  {
-   "id": "ort-teil-slum-quarter",
-   "version": 1,
-   "typ": 1642,
-   "kat": "anlage",
-   "name": "Slum Quarter",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-slum-quarter.json"
-  },
-  {
-   "id": "ort-teil-slum-quarter-a",
-   "version": 1,
-   "typ": 1643,
-   "kat": "anlage",
-   "name": "Slum Quarter A",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-slum-quarter-a.json"
-  },
-  {
-   "id": "ort-teil-slum-quarter-b",
-   "version": 1,
-   "typ": 1644,
-   "kat": "anlage",
-   "name": "Slum Quarter B",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-slum-quarter-b.json"
-  },
-  {
-   "id": "ort-teil-slum-quarter-c",
-   "version": 1,
-   "typ": 1645,
-   "kat": "anlage",
-   "name": "Slum Quarter C",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-slum-quarter-c.json"
-  },
-  {
-   "id": "ort-teil-slum-quarter-d",
-   "version": 1,
-   "typ": 1646,
-   "kat": "anlage",
-   "name": "Slum Quarter D",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-slum-quarter-d.json"
-  },
-  {
-   "id": "ort-teil-suburbs",
-   "version": 1,
-   "typ": 1647,
-   "kat": "anlage",
-   "name": "Suburbs",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-suburbs.json"
-  },
-  {
-   "id": "ort-teil-suburbs-a",
-   "version": 1,
-   "typ": 1648,
-   "kat": "anlage",
-   "name": "Suburbs A",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-suburbs-a.json"
-  },
-  {
-   "id": "ort-teil-suburbs-b",
-   "version": 1,
-   "typ": 1649,
-   "kat": "anlage",
-   "name": "Suburbs B",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-suburbs-b.json"
-  },
-  {
-   "id": "ort-teil-suburbs-c",
-   "version": 1,
-   "typ": 1650,
-   "kat": "anlage",
-   "name": "Suburbs C",
-   "status": "uebernommen",
-   "datei": "obj/ort-teil-suburbs-c.json"
   }
  ]
 }
