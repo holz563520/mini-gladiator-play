@@ -2,6 +2,7 @@
 // G9d1: Knopf „Probekampf ansehen“ lädt kampfanschluss.js und menue/kampfprobe.js erst beim Antippen; der Kampf läuft im Kampffenster (kampffenster.html, 1.0 abgeschottet).
 // B3a (Bären): Gruppe „Tiere“ verlinkt Bären-Kampf-Editor und Bären-Editor (eigene Seiten, wie die alten Labore).
 // KA1 (Katzen): Katzen-Editor in derselben Gruppe.
+// KA3a (Katzen): Katzen-Kampf-Editor in derselben Gruppe.
 // ST1 (Stiere und Ochsen): Stier-Editor in derselben Gruppe.
 // G9b: Knopf „Kampf-Labor (AT3)“ lädt kampfanschluss.js und menue/kampflabor.js erst beim Antippen; gerechnet wird im Kampfkern (kampfkern.js).
 AT3ED.menue('kampf',function(el){
@@ -25,6 +26,7 @@ AT3ED.menue('kampf',function(el){
   {titel:'Tiere',seiten:[
    ['stier-editor.html','Stiere und Ochsen (Testdatei)','20 Rassen als Stier und Ochse: Körper, Hörner, Kampf- und Zugwerte, Messung (ST1)'],
    ['katze-editor.html','Katzen-Editor','Löwen, Tiger und alle Raubkatzen: Sorten, Körper, Haltungen, Messung (Testdatei KA1)'],
+   ['katze-kampf.html','Katzen-Kampf-Editor','Raubkatzen gegen Menschen: Ansprung, Prankenhieb, Würgebiss, Mähne als Schutz (Testversion KA3a)'],
    ['baer-kampf.html','Bären-Kampf-Editor','Bären gegen Menschen, Hunde und andere Bären (Testversion B3a)'],
    ['baer-editor.html','Bären-Editor','Sorten, Körper, Bewegung, Messung']]},
   {titel:'Schädelbruch',seiten:[
