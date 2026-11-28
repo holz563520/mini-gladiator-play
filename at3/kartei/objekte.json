@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 2283,
+ "typMax": 2361,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -20406,6 +20406,708 @@
    "name": "Steppe Wattle Upper Wall C",
    "status": "uebernommen",
    "datei": "obj/bk-steppe-wand-oben-c.json"
+  },
+  {
+   "id": "hof-regen-cottage-1-sued",
+   "version": 1,
+   "typ": 2284,
+   "kat": "anlage",
+   "name": "Stilt Hut 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-1-sued.json"
+  },
+  {
+   "id": "hof-regen-cottage-1-ost",
+   "version": 1,
+   "typ": 2285,
+   "kat": "anlage",
+   "name": "Stilt Hut 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-1-ost.json"
+  },
+  {
+   "id": "hof-regen-cottage-1-nord",
+   "version": 1,
+   "typ": 2286,
+   "kat": "anlage",
+   "name": "Stilt Hut 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-1-nord.json"
+  },
+  {
+   "id": "hof-regen-cottage-1-west",
+   "version": 1,
+   "typ": 2287,
+   "kat": "anlage",
+   "name": "Stilt Hut 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-1-west.json"
+  },
+  {
+   "id": "hof-regen-cottage-2-sued",
+   "version": 1,
+   "typ": 2288,
+   "kat": "anlage",
+   "name": "Stilt Hut 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-2-sued.json"
+  },
+  {
+   "id": "hof-regen-cottage-2-ost",
+   "version": 1,
+   "typ": 2289,
+   "kat": "anlage",
+   "name": "Stilt Hut 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-2-ost.json"
+  },
+  {
+   "id": "hof-regen-cottage-2-nord",
+   "version": 1,
+   "typ": 2290,
+   "kat": "anlage",
+   "name": "Stilt Hut 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-2-nord.json"
+  },
+  {
+   "id": "hof-regen-cottage-2-west",
+   "version": 1,
+   "typ": 2291,
+   "kat": "anlage",
+   "name": "Stilt Hut 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-2-west.json"
+  },
+  {
+   "id": "hof-regen-cottage-3-sued",
+   "version": 1,
+   "typ": 2292,
+   "kat": "anlage",
+   "name": "Stilt Hut 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-3-sued.json"
+  },
+  {
+   "id": "hof-regen-cottage-3-ost",
+   "version": 1,
+   "typ": 2293,
+   "kat": "anlage",
+   "name": "Stilt Hut 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-3-ost.json"
+  },
+  {
+   "id": "hof-regen-cottage-3-nord",
+   "version": 1,
+   "typ": 2294,
+   "kat": "anlage",
+   "name": "Stilt Hut 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-3-nord.json"
+  },
+  {
+   "id": "hof-regen-cottage-3-west",
+   "version": 1,
+   "typ": 2295,
+   "kat": "anlage",
+   "name": "Stilt Hut 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-cottage-3-west.json"
+  },
+  {
+   "id": "hof-regen-farmstead-1-sued",
+   "version": 1,
+   "typ": 2296,
+   "kat": "anlage",
+   "name": "Clearing Farm 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-1-sued.json"
+  },
+  {
+   "id": "hof-regen-farmstead-1-ost",
+   "version": 1,
+   "typ": 2297,
+   "kat": "anlage",
+   "name": "Clearing Farm 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-1-ost.json"
+  },
+  {
+   "id": "hof-regen-farmstead-1-nord",
+   "version": 1,
+   "typ": 2298,
+   "kat": "anlage",
+   "name": "Clearing Farm 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-1-nord.json"
+  },
+  {
+   "id": "hof-regen-farmstead-1-west",
+   "version": 1,
+   "typ": 2299,
+   "kat": "anlage",
+   "name": "Clearing Farm 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-1-west.json"
+  },
+  {
+   "id": "hof-regen-farmstead-2-sued",
+   "version": 1,
+   "typ": 2300,
+   "kat": "anlage",
+   "name": "Clearing Farm 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-2-sued.json"
+  },
+  {
+   "id": "hof-regen-farmstead-2-ost",
+   "version": 1,
+   "typ": 2301,
+   "kat": "anlage",
+   "name": "Clearing Farm 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-2-ost.json"
+  },
+  {
+   "id": "hof-regen-farmstead-2-nord",
+   "version": 1,
+   "typ": 2302,
+   "kat": "anlage",
+   "name": "Clearing Farm 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-2-nord.json"
+  },
+  {
+   "id": "hof-regen-farmstead-2-west",
+   "version": 1,
+   "typ": 2303,
+   "kat": "anlage",
+   "name": "Clearing Farm 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-2-west.json"
+  },
+  {
+   "id": "hof-regen-farmstead-3-sued",
+   "version": 1,
+   "typ": 2304,
+   "kat": "anlage",
+   "name": "Clearing Farm 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-3-sued.json"
+  },
+  {
+   "id": "hof-regen-farmstead-3-ost",
+   "version": 1,
+   "typ": 2305,
+   "kat": "anlage",
+   "name": "Clearing Farm 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-3-ost.json"
+  },
+  {
+   "id": "hof-regen-farmstead-3-nord",
+   "version": 1,
+   "typ": 2306,
+   "kat": "anlage",
+   "name": "Clearing Farm 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-3-nord.json"
+  },
+  {
+   "id": "hof-regen-farmstead-3-west",
+   "version": 1,
+   "typ": 2307,
+   "kat": "anlage",
+   "name": "Clearing Farm 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-farmstead-3-west.json"
+  },
+  {
+   "id": "hof-regen-villa-rustica-1-sued",
+   "version": 1,
+   "typ": 2308,
+   "kat": "anlage",
+   "name": "Cocoa Estate 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-villa-rustica-1-sued.json"
+  },
+  {
+   "id": "hof-regen-villa-rustica-1-ost",
+   "version": 1,
+   "typ": 2309,
+   "kat": "anlage",
+   "name": "Cocoa Estate 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-villa-rustica-1-ost.json"
+  },
+  {
+   "id": "hof-regen-villa-rustica-1-nord",
+   "version": 1,
+   "typ": 2310,
+   "kat": "anlage",
+   "name": "Cocoa Estate 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-villa-rustica-1-nord.json"
+  },
+  {
+   "id": "hof-regen-villa-rustica-1-west",
+   "version": 1,
+   "typ": 2311,
+   "kat": "anlage",
+   "name": "Cocoa Estate 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-villa-rustica-1-west.json"
+  },
+  {
+   "id": "hof-regen-villa-rustica-2-sued",
+   "version": 1,
+   "typ": 2312,
+   "kat": "anlage",
+   "name": "Cocoa Estate 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-villa-rustica-2-sued.json"
+  },
+  {
+   "id": "hof-regen-villa-rustica-2-ost",
+   "version": 1,
+   "typ": 2313,
+   "kat": "anlage",
+   "name": "Cocoa Estate 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-villa-rustica-2-ost.json"
+  },
+  {
+   "id": "hof-regen-villa-rustica-2-nord",
+   "version": 1,
+   "typ": 2314,
+   "kat": "anlage",
+   "name": "Cocoa Estate 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-villa-rustica-2-nord.json"
+  },
+  {
+   "id": "hof-regen-villa-rustica-2-west",
+   "version": 1,
+   "typ": 2315,
+   "kat": "anlage",
+   "name": "Cocoa Estate 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-villa-rustica-2-west.json"
+  },
+  {
+   "id": "hof-regen-herders-camp-1-sued",
+   "version": 1,
+   "typ": 2316,
+   "kat": "anlage",
+   "name": "Beast Catcher Camp 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-herders-camp-1-sued.json"
+  },
+  {
+   "id": "hof-regen-herders-camp-1-ost",
+   "version": 1,
+   "typ": 2317,
+   "kat": "anlage",
+   "name": "Beast Catcher Camp 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-herders-camp-1-ost.json"
+  },
+  {
+   "id": "hof-regen-herders-camp-1-nord",
+   "version": 1,
+   "typ": 2318,
+   "kat": "anlage",
+   "name": "Beast Catcher Camp 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-herders-camp-1-nord.json"
+  },
+  {
+   "id": "hof-regen-herders-camp-1-west",
+   "version": 1,
+   "typ": 2319,
+   "kat": "anlage",
+   "name": "Beast Catcher Camp 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-herders-camp-1-west.json"
+  },
+  {
+   "id": "hof-regen-herders-camp-2-sued",
+   "version": 1,
+   "typ": 2320,
+   "kat": "anlage",
+   "name": "Beast Catcher Camp 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-herders-camp-2-sued.json"
+  },
+  {
+   "id": "hof-regen-herders-camp-2-ost",
+   "version": 1,
+   "typ": 2321,
+   "kat": "anlage",
+   "name": "Beast Catcher Camp 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-herders-camp-2-ost.json"
+  },
+  {
+   "id": "hof-regen-herders-camp-2-nord",
+   "version": 1,
+   "typ": 2322,
+   "kat": "anlage",
+   "name": "Beast Catcher Camp 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-herders-camp-2-nord.json"
+  },
+  {
+   "id": "hof-regen-herders-camp-2-west",
+   "version": 1,
+   "typ": 2323,
+   "kat": "anlage",
+   "name": "Beast Catcher Camp 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-regen-herders-camp-2-west.json"
+  },
+  {
+   "id": "elend-regen-bude-1-sued",
+   "version": 1,
+   "typ": 2324,
+   "kat": "anlage",
+   "name": "Stilt Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-1-sued.json"
+  },
+  {
+   "id": "elend-regen-bude-1-ost",
+   "version": 1,
+   "typ": 2325,
+   "kat": "anlage",
+   "name": "Stilt Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-1-ost.json"
+  },
+  {
+   "id": "elend-regen-bude-1-nord",
+   "version": 1,
+   "typ": 2326,
+   "kat": "anlage",
+   "name": "Stilt Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-1-nord.json"
+  },
+  {
+   "id": "elend-regen-bude-1-west",
+   "version": 1,
+   "typ": 2327,
+   "kat": "anlage",
+   "name": "Stilt Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-1-west.json"
+  },
+  {
+   "id": "elend-regen-bude-2-sued",
+   "version": 1,
+   "typ": 2328,
+   "kat": "anlage",
+   "name": "Frond Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-2-sued.json"
+  },
+  {
+   "id": "elend-regen-bude-2-ost",
+   "version": 1,
+   "typ": 2329,
+   "kat": "anlage",
+   "name": "Frond Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-2-ost.json"
+  },
+  {
+   "id": "elend-regen-bude-2-nord",
+   "version": 1,
+   "typ": 2330,
+   "kat": "anlage",
+   "name": "Frond Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-2-nord.json"
+  },
+  {
+   "id": "elend-regen-bude-2-west",
+   "version": 1,
+   "typ": 2331,
+   "kat": "anlage",
+   "name": "Frond Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-2-west.json"
+  },
+  {
+   "id": "elend-regen-bude-3-sued",
+   "version": 2,
+   "typ": 2332,
+   "kat": "anlage",
+   "name": "Bark Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-3-sued.json"
+  },
+  {
+   "id": "elend-regen-bude-3-ost",
+   "version": 2,
+   "typ": 2333,
+   "kat": "anlage",
+   "name": "Bark Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-3-ost.json"
+  },
+  {
+   "id": "elend-regen-bude-3-nord",
+   "version": 2,
+   "typ": 2334,
+   "kat": "anlage",
+   "name": "Bark Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-3-nord.json"
+  },
+  {
+   "id": "elend-regen-bude-3-west",
+   "version": 2,
+   "typ": 2335,
+   "kat": "anlage",
+   "name": "Bark Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-3-west.json"
+  },
+  {
+   "id": "elend-regen-bude-4-sued",
+   "version": 1,
+   "typ": 2336,
+   "kat": "anlage",
+   "name": "Banana Stall Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-4-sued.json"
+  },
+  {
+   "id": "elend-regen-bude-4-ost",
+   "version": 1,
+   "typ": 2337,
+   "kat": "anlage",
+   "name": "Banana Stall Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-4-ost.json"
+  },
+  {
+   "id": "elend-regen-bude-4-nord",
+   "version": 1,
+   "typ": 2338,
+   "kat": "anlage",
+   "name": "Banana Stall Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-4-nord.json"
+  },
+  {
+   "id": "elend-regen-bude-4-west",
+   "version": 1,
+   "typ": 2339,
+   "kat": "anlage",
+   "name": "Banana Stall Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-4-west.json"
+  },
+  {
+   "id": "elend-regen-bude-5-sued",
+   "version": 2,
+   "typ": 2340,
+   "kat": "anlage",
+   "name": "Canoe-Roof Hovel S",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-5-sued.json"
+  },
+  {
+   "id": "elend-regen-bude-5-ost",
+   "version": 2,
+   "typ": 2341,
+   "kat": "anlage",
+   "name": "Canoe-Roof Hovel E",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-5-ost.json"
+  },
+  {
+   "id": "elend-regen-bude-5-nord",
+   "version": 2,
+   "typ": 2342,
+   "kat": "anlage",
+   "name": "Canoe-Roof Hovel N",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-5-nord.json"
+  },
+  {
+   "id": "elend-regen-bude-5-west",
+   "version": 1,
+   "typ": 2343,
+   "kat": "anlage",
+   "name": "Canoe-Roof Hovel W",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-5-west.json"
+  },
+  {
+   "id": "elend-regen-bude-6-sued",
+   "version": 1,
+   "typ": 2344,
+   "kat": "anlage",
+   "name": "Cocoa Crate Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-6-sued.json"
+  },
+  {
+   "id": "elend-regen-bude-6-ost",
+   "version": 1,
+   "typ": 2345,
+   "kat": "anlage",
+   "name": "Cocoa Crate Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-6-ost.json"
+  },
+  {
+   "id": "elend-regen-bude-6-nord",
+   "version": 1,
+   "typ": 2346,
+   "kat": "anlage",
+   "name": "Cocoa Crate Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-6-nord.json"
+  },
+  {
+   "id": "elend-regen-bude-6-west",
+   "version": 1,
+   "typ": 2347,
+   "kat": "anlage",
+   "name": "Cocoa Crate Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-6-west.json"
+  },
+  {
+   "id": "elend-regen-bude-7-sued",
+   "version": 1,
+   "typ": 2348,
+   "kat": "anlage",
+   "name": "Swallowed Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-7-sued.json"
+  },
+  {
+   "id": "elend-regen-bude-7-ost",
+   "version": 1,
+   "typ": 2349,
+   "kat": "anlage",
+   "name": "Swallowed Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-7-ost.json"
+  },
+  {
+   "id": "elend-regen-bude-7-nord",
+   "version": 1,
+   "typ": 2350,
+   "kat": "anlage",
+   "name": "Swallowed Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-7-nord.json"
+  },
+  {
+   "id": "elend-regen-bude-7-west",
+   "version": 1,
+   "typ": 2351,
+   "kat": "anlage",
+   "name": "Swallowed Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-7-west.json"
+  },
+  {
+   "id": "elend-regen-bude-8-sued",
+   "version": 1,
+   "typ": 2352,
+   "kat": "anlage",
+   "name": "Evicted Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-8-sued.json"
+  },
+  {
+   "id": "elend-regen-bude-8-ost",
+   "version": 1,
+   "typ": 2353,
+   "kat": "anlage",
+   "name": "Evicted Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-8-ost.json"
+  },
+  {
+   "id": "elend-regen-bude-8-nord",
+   "version": 1,
+   "typ": 2354,
+   "kat": "anlage",
+   "name": "Evicted Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-8-nord.json"
+  },
+  {
+   "id": "elend-regen-bude-8-west",
+   "version": 1,
+   "typ": 2355,
+   "kat": "anlage",
+   "name": "Evicted Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-regen-bude-8-west.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-i-a",
+   "version": 1,
+   "typ": 2356,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof Slope, Left A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-i-a.json"
+  },
+  {
+   "id": "bk-palm-dach-auf-i-d",
+   "version": 1,
+   "typ": 2357,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof Slope, Left D",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-auf-i-d.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-i-a",
+   "version": 1,
+   "typ": 2358,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof Slope, Right A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-i-a.json"
+  },
+  {
+   "id": "bk-palm-dach-ab-i-d",
+   "version": 1,
+   "typ": 2359,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof Slope, Right D",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-ab-i-d.json"
+  },
+  {
+   "id": "bk-palm-dach-flach-a",
+   "version": 1,
+   "typ": 2360,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof, Flat A",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-flach-a.json"
+  },
+  {
+   "id": "bk-palm-dach-flach-d",
+   "version": 1,
+   "typ": 2361,
+   "kat": "dach",
+   "name": "Palm-Leaf Roof, Flat D",
+   "status": "uebernommen",
+   "datei": "obj/bk-palm-dach-flach-d.json"
   }
  ]
 }
