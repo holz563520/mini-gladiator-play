@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1605,
+ "typMax": 1625,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -14304,6 +14304,186 @@
    "name": "Workbench",
    "status": "geprueft",
    "datei": "obj/werk-bank.json"
+  },
+  {
+   "id": "posten-toll-station-a",
+   "version": 1,
+   "typ": 1606,
+   "kat": "anlage",
+   "name": "Toll Station A",
+   "status": "uebernommen",
+   "datei": "obj/posten-toll-station-a.json"
+  },
+  {
+   "id": "posten-toll-station-b",
+   "version": 1,
+   "typ": 1607,
+   "kat": "anlage",
+   "name": "Toll Station B",
+   "status": "uebernommen",
+   "datei": "obj/posten-toll-station-b.json"
+  },
+  {
+   "id": "posten-toll-station-c",
+   "version": 1,
+   "typ": 1608,
+   "kat": "anlage",
+   "name": "Toll Station C",
+   "status": "uebernommen",
+   "datei": "obj/posten-toll-station-c.json"
+  },
+  {
+   "id": "posten-toll-station-d",
+   "version": 1,
+   "typ": 1609,
+   "kat": "anlage",
+   "name": "Toll Station D",
+   "status": "uebernommen",
+   "datei": "obj/posten-toll-station-d.json"
+  },
+  {
+   "id": "posten-trading-post-a",
+   "version": 1,
+   "typ": 1610,
+   "kat": "anlage",
+   "name": "Trading Post A",
+   "status": "uebernommen",
+   "datei": "obj/posten-trading-post-a.json"
+  },
+  {
+   "id": "posten-trading-post-b",
+   "version": 1,
+   "typ": 1611,
+   "kat": "anlage",
+   "name": "Trading Post B",
+   "status": "uebernommen",
+   "datei": "obj/posten-trading-post-b.json"
+  },
+  {
+   "id": "posten-trading-post-c",
+   "version": 1,
+   "typ": 1612,
+   "kat": "anlage",
+   "name": "Trading Post C",
+   "status": "uebernommen",
+   "datei": "obj/posten-trading-post-c.json"
+  },
+  {
+   "id": "posten-trading-post-d",
+   "version": 1,
+   "typ": 1613,
+   "kat": "anlage",
+   "name": "Trading Post D",
+   "status": "uebernommen",
+   "datei": "obj/posten-trading-post-d.json"
+  },
+  {
+   "id": "posten-saltworks-a",
+   "version": 1,
+   "typ": 1614,
+   "kat": "anlage",
+   "name": "Saltworks A",
+   "status": "uebernommen",
+   "datei": "obj/posten-saltworks-a.json"
+  },
+  {
+   "id": "posten-saltworks-b",
+   "version": 1,
+   "typ": 1615,
+   "kat": "anlage",
+   "name": "Saltworks B",
+   "status": "uebernommen",
+   "datei": "obj/posten-saltworks-b.json"
+  },
+  {
+   "id": "posten-saltworks-c",
+   "version": 1,
+   "typ": 1616,
+   "kat": "anlage",
+   "name": "Saltworks C",
+   "status": "uebernommen",
+   "datei": "obj/posten-saltworks-c.json"
+  },
+  {
+   "id": "posten-saltworks-d",
+   "version": 1,
+   "typ": 1617,
+   "kat": "anlage",
+   "name": "Saltworks D",
+   "status": "uebernommen",
+   "datei": "obj/posten-saltworks-d.json"
+  },
+  {
+   "id": "posten-smugglers-cove-a",
+   "version": 1,
+   "typ": 1618,
+   "kat": "anlage",
+   "name": "Smugglers' Cove A",
+   "status": "uebernommen",
+   "datei": "obj/posten-smugglers-cove-a.json"
+  },
+  {
+   "id": "posten-smugglers-cove-b",
+   "version": 1,
+   "typ": 1619,
+   "kat": "anlage",
+   "name": "Smugglers' Cove B",
+   "status": "uebernommen",
+   "datei": "obj/posten-smugglers-cove-b.json"
+  },
+  {
+   "id": "posten-smugglers-cove-c",
+   "version": 1,
+   "typ": 1620,
+   "kat": "anlage",
+   "name": "Smugglers' Cove C",
+   "status": "uebernommen",
+   "datei": "obj/posten-smugglers-cove-c.json"
+  },
+  {
+   "id": "posten-smugglers-cove-d",
+   "version": 1,
+   "typ": 1621,
+   "kat": "anlage",
+   "name": "Smugglers' Cove D",
+   "status": "uebernommen",
+   "datei": "obj/posten-smugglers-cove-d.json"
+  },
+  {
+   "id": "posten-rival-ludus-a",
+   "version": 1,
+   "typ": 1622,
+   "kat": "anlage",
+   "name": "Rival Ludus A",
+   "status": "uebernommen",
+   "datei": "obj/posten-rival-ludus-a.json"
+  },
+  {
+   "id": "posten-rival-ludus-b",
+   "version": 1,
+   "typ": 1623,
+   "kat": "anlage",
+   "name": "Rival Ludus B",
+   "status": "uebernommen",
+   "datei": "obj/posten-rival-ludus-b.json"
+  },
+  {
+   "id": "posten-rival-ludus-c",
+   "version": 1,
+   "typ": 1624,
+   "kat": "anlage",
+   "name": "Rival Ludus C",
+   "status": "uebernommen",
+   "datei": "obj/posten-rival-ludus-c.json"
+  },
+  {
+   "id": "posten-rival-ludus-d",
+   "version": 1,
+   "typ": 1625,
+   "kat": "anlage",
+   "name": "Rival Ludus D",
+   "status": "uebernommen",
+   "datei": "obj/posten-rival-ludus-d.json"
   }
  ]
 }
