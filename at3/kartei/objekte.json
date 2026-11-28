@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1726,
+ "typMax": 1762,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -15393,6 +15393,330 @@
    "name": "Ruins C",
    "status": "uebernommen",
    "datei": "obj/ort-teil-ruins-c.json"
+  },
+  {
+   "id": "ware-flour",
+   "version": 1,
+   "typ": 1727,
+   "kat": "ware",
+   "name": "Flour",
+   "status": "skizze",
+   "datei": "obj/ware-flour.json"
+  },
+  {
+   "id": "ware-flour-a",
+   "version": 1,
+   "typ": 1728,
+   "kat": "ware",
+   "name": "Flour B",
+   "status": "skizze",
+   "datei": "obj/ware-flour-a.json"
+  },
+  {
+   "id": "ware-flour-b",
+   "version": 1,
+   "typ": 1729,
+   "kat": "ware",
+   "name": "Flour C",
+   "status": "skizze",
+   "datei": "obj/ware-flour-b.json"
+  },
+  {
+   "id": "ware-gold-bars",
+   "version": 1,
+   "typ": 1730,
+   "kat": "ware",
+   "name": "Gold Bars",
+   "status": "skizze",
+   "datei": "obj/ware-gold-bars.json"
+  },
+  {
+   "id": "ware-gold-bars-a",
+   "version": 1,
+   "typ": 1731,
+   "kat": "ware",
+   "name": "Gold Bars B",
+   "status": "skizze",
+   "datei": "obj/ware-gold-bars-a.json"
+  },
+  {
+   "id": "ware-gold-bars-b",
+   "version": 1,
+   "typ": 1732,
+   "kat": "ware",
+   "name": "Gold Bars C",
+   "status": "skizze",
+   "datei": "obj/ware-gold-bars-b.json"
+  },
+  {
+   "id": "ware-hay",
+   "version": 1,
+   "typ": 1733,
+   "kat": "ware",
+   "name": "Hay",
+   "status": "skizze",
+   "datei": "obj/ware-hay.json"
+  },
+  {
+   "id": "ware-hay-a",
+   "version": 1,
+   "typ": 1734,
+   "kat": "ware",
+   "name": "Hay B",
+   "status": "skizze",
+   "datei": "obj/ware-hay-a.json"
+  },
+  {
+   "id": "ware-hay-b",
+   "version": 1,
+   "typ": 1735,
+   "kat": "ware",
+   "name": "Hay C",
+   "status": "skizze",
+   "datei": "obj/ware-hay-b.json"
+  },
+  {
+   "id": "ware-hides",
+   "version": 1,
+   "typ": 1736,
+   "kat": "ware",
+   "name": "Hides",
+   "status": "skizze",
+   "datei": "obj/ware-hides.json"
+  },
+  {
+   "id": "ware-hides-a",
+   "version": 1,
+   "typ": 1737,
+   "kat": "ware",
+   "name": "Hides B",
+   "status": "skizze",
+   "datei": "obj/ware-hides-a.json"
+  },
+  {
+   "id": "ware-hides-b",
+   "version": 1,
+   "typ": 1738,
+   "kat": "ware",
+   "name": "Hides C",
+   "status": "skizze",
+   "datei": "obj/ware-hides-b.json"
+  },
+  {
+   "id": "ware-honey",
+   "version": 1,
+   "typ": 1739,
+   "kat": "ware",
+   "name": "Honey",
+   "status": "skizze",
+   "datei": "obj/ware-honey.json"
+  },
+  {
+   "id": "ware-honey-a",
+   "version": 1,
+   "typ": 1740,
+   "kat": "ware",
+   "name": "Honey B",
+   "status": "skizze",
+   "datei": "obj/ware-honey-a.json"
+  },
+  {
+   "id": "ware-honey-b",
+   "version": 1,
+   "typ": 1741,
+   "kat": "ware",
+   "name": "Honey C",
+   "status": "skizze",
+   "datei": "obj/ware-honey-b.json"
+  },
+  {
+   "id": "ware-horses",
+   "version": 1,
+   "typ": 1742,
+   "kat": "ware",
+   "name": "Horses",
+   "status": "skizze",
+   "datei": "obj/ware-horses.json"
+  },
+  {
+   "id": "ware-horses-a",
+   "version": 1,
+   "typ": 1743,
+   "kat": "ware",
+   "name": "Horses B",
+   "status": "skizze",
+   "datei": "obj/ware-horses-a.json"
+  },
+  {
+   "id": "ware-horses-b",
+   "version": 1,
+   "typ": 1744,
+   "kat": "ware",
+   "name": "Horses C",
+   "status": "skizze",
+   "datei": "obj/ware-horses-b.json"
+  },
+  {
+   "id": "ware-leather",
+   "version": 1,
+   "typ": 1745,
+   "kat": "ware",
+   "name": "Leather",
+   "status": "skizze",
+   "datei": "obj/ware-leather.json"
+  },
+  {
+   "id": "ware-leather-a",
+   "version": 1,
+   "typ": 1746,
+   "kat": "ware",
+   "name": "Leather B",
+   "status": "skizze",
+   "datei": "obj/ware-leather-a.json"
+  },
+  {
+   "id": "ware-leather-b",
+   "version": 1,
+   "typ": 1747,
+   "kat": "ware",
+   "name": "Leather C",
+   "status": "skizze",
+   "datei": "obj/ware-leather-b.json"
+  },
+  {
+   "id": "ware-marble",
+   "version": 1,
+   "typ": 1748,
+   "kat": "ware",
+   "name": "Marble",
+   "status": "skizze",
+   "datei": "obj/ware-marble.json"
+  },
+  {
+   "id": "ware-marble-a",
+   "version": 1,
+   "typ": 1749,
+   "kat": "ware",
+   "name": "Marble B",
+   "status": "skizze",
+   "datei": "obj/ware-marble-a.json"
+  },
+  {
+   "id": "ware-marble-b",
+   "version": 1,
+   "typ": 1750,
+   "kat": "ware",
+   "name": "Marble C",
+   "status": "skizze",
+   "datei": "obj/ware-marble-b.json"
+  },
+  {
+   "id": "ware-meal",
+   "version": 1,
+   "typ": 1751,
+   "kat": "ware",
+   "name": "Meal",
+   "status": "skizze",
+   "datei": "obj/ware-meal.json"
+  },
+  {
+   "id": "ware-meal-a",
+   "version": 1,
+   "typ": 1752,
+   "kat": "ware",
+   "name": "Meal B",
+   "status": "skizze",
+   "datei": "obj/ware-meal-a.json"
+  },
+  {
+   "id": "ware-meal-b",
+   "version": 1,
+   "typ": 1753,
+   "kat": "ware",
+   "name": "Meal C",
+   "status": "skizze",
+   "datei": "obj/ware-meal-b.json"
+  },
+  {
+   "id": "ware-mutton",
+   "version": 1,
+   "typ": 1754,
+   "kat": "ware",
+   "name": "Mutton",
+   "status": "skizze",
+   "datei": "obj/ware-mutton.json"
+  },
+  {
+   "id": "ware-mutton-a",
+   "version": 1,
+   "typ": 1755,
+   "kat": "ware",
+   "name": "Mutton B",
+   "status": "skizze",
+   "datei": "obj/ware-mutton-a.json"
+  },
+  {
+   "id": "ware-mutton-b",
+   "version": 1,
+   "typ": 1756,
+   "kat": "ware",
+   "name": "Mutton C",
+   "status": "skizze",
+   "datei": "obj/ware-mutton-b.json"
+  },
+  {
+   "id": "ware-oats",
+   "version": 1,
+   "typ": 1757,
+   "kat": "ware",
+   "name": "Oats",
+   "status": "skizze",
+   "datei": "obj/ware-oats.json"
+  },
+  {
+   "id": "ware-oats-a",
+   "version": 1,
+   "typ": 1758,
+   "kat": "ware",
+   "name": "Oats B",
+   "status": "skizze",
+   "datei": "obj/ware-oats-a.json"
+  },
+  {
+   "id": "ware-oats-b",
+   "version": 1,
+   "typ": 1759,
+   "kat": "ware",
+   "name": "Oats C",
+   "status": "skizze",
+   "datei": "obj/ware-oats-b.json"
+  },
+  {
+   "id": "ware-olive-oil",
+   "version": 1,
+   "typ": 1760,
+   "kat": "ware",
+   "name": "Olive Oil",
+   "status": "skizze",
+   "datei": "obj/ware-olive-oil.json"
+  },
+  {
+   "id": "ware-olive-oil-a",
+   "version": 1,
+   "typ": 1761,
+   "kat": "ware",
+   "name": "Olive Oil B",
+   "status": "skizze",
+   "datei": "obj/ware-olive-oil-a.json"
+  },
+  {
+   "id": "ware-olive-oil-b",
+   "version": 1,
+   "typ": 1762,
+   "kat": "ware",
+   "name": "Olive Oil C",
+   "status": "skizze",
+   "datei": "obj/ware-olive-oil-b.json"
   }
  ]
 }
