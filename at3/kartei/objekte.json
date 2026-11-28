@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1874,
+ "typMax": 1930,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -16725,6 +16725,510 @@
    "name": "Ferry Hut",
    "status": "uebernommen",
    "datei": "obj/weg-ferry-hut.json"
+  },
+  {
+   "id": "marktstand-animals-2x1-sued",
+   "version": 1,
+   "typ": 1875,
+   "kat": "anlage",
+   "name": "Animal Goods Double Stall S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-2x1-sued.json"
+  },
+  {
+   "id": "marktstand-animals-2x1-ost",
+   "version": 1,
+   "typ": 1876,
+   "kat": "anlage",
+   "name": "Animal Goods Double Stall E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-2x1-ost.json"
+  },
+  {
+   "id": "marktstand-animals-2x1-nord",
+   "version": 1,
+   "typ": 1877,
+   "kat": "anlage",
+   "name": "Animal Goods Double Stall N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-2x1-nord.json"
+  },
+  {
+   "id": "marktstand-animals-2x1-west",
+   "version": 1,
+   "typ": 1878,
+   "kat": "anlage",
+   "name": "Animal Goods Double Stall W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-2x1-west.json"
+  },
+  {
+   "id": "marktstand-animals-2x2-sued",
+   "version": 1,
+   "typ": 1879,
+   "kat": "anlage",
+   "name": "Animal Goods Market Tent S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-2x2-sued.json"
+  },
+  {
+   "id": "marktstand-animals-2x2-ost",
+   "version": 1,
+   "typ": 1880,
+   "kat": "anlage",
+   "name": "Animal Goods Market Tent E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-2x2-ost.json"
+  },
+  {
+   "id": "marktstand-animals-2x2-nord",
+   "version": 1,
+   "typ": 1881,
+   "kat": "anlage",
+   "name": "Animal Goods Market Tent N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-2x2-nord.json"
+  },
+  {
+   "id": "marktstand-animals-2x2-west",
+   "version": 1,
+   "typ": 1882,
+   "kat": "anlage",
+   "name": "Animal Goods Market Tent W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-animals-2x2-west.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-2x1-sued",
+   "version": 1,
+   "typ": 1883,
+   "kat": "anlage",
+   "name": "Arena Supply Double Stall S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-2x1-sued.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-2x1-ost",
+   "version": 1,
+   "typ": 1884,
+   "kat": "anlage",
+   "name": "Arena Supply Double Stall E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-2x1-ost.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-2x1-nord",
+   "version": 1,
+   "typ": 1885,
+   "kat": "anlage",
+   "name": "Arena Supply Double Stall N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-2x1-nord.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-2x1-west",
+   "version": 1,
+   "typ": 1886,
+   "kat": "anlage",
+   "name": "Arena Supply Double Stall W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-2x1-west.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-2x2-sued",
+   "version": 1,
+   "typ": 1887,
+   "kat": "anlage",
+   "name": "Arena Supply Market Tent S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-2x2-sued.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-2x2-ost",
+   "version": 1,
+   "typ": 1888,
+   "kat": "anlage",
+   "name": "Arena Supply Market Tent E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-2x2-ost.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-2x2-nord",
+   "version": 1,
+   "typ": 1889,
+   "kat": "anlage",
+   "name": "Arena Supply Market Tent N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-2x2-nord.json"
+  },
+  {
+   "id": "marktstand-arena-supplies-2x2-west",
+   "version": 1,
+   "typ": 1890,
+   "kat": "anlage",
+   "name": "Arena Supply Market Tent W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arena-supplies-2x2-west.json"
+  },
+  {
+   "id": "marktstand-arms-2x1-sued",
+   "version": 1,
+   "typ": 1891,
+   "kat": "anlage",
+   "name": "Arms & Armour Double Stall S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-2x1-sued.json"
+  },
+  {
+   "id": "marktstand-arms-2x1-ost",
+   "version": 1,
+   "typ": 1892,
+   "kat": "anlage",
+   "name": "Arms & Armour Double Stall E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-2x1-ost.json"
+  },
+  {
+   "id": "marktstand-arms-2x1-nord",
+   "version": 1,
+   "typ": 1893,
+   "kat": "anlage",
+   "name": "Arms & Armour Double Stall N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-2x1-nord.json"
+  },
+  {
+   "id": "marktstand-arms-2x1-west",
+   "version": 1,
+   "typ": 1894,
+   "kat": "anlage",
+   "name": "Arms & Armour Double Stall W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-2x1-west.json"
+  },
+  {
+   "id": "marktstand-arms-2x2-sued",
+   "version": 1,
+   "typ": 1895,
+   "kat": "anlage",
+   "name": "Arms & Armour Market Tent S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-2x2-sued.json"
+  },
+  {
+   "id": "marktstand-arms-2x2-ost",
+   "version": 1,
+   "typ": 1896,
+   "kat": "anlage",
+   "name": "Arms & Armour Market Tent E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-2x2-ost.json"
+  },
+  {
+   "id": "marktstand-arms-2x2-nord",
+   "version": 1,
+   "typ": 1897,
+   "kat": "anlage",
+   "name": "Arms & Armour Market Tent N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-2x2-nord.json"
+  },
+  {
+   "id": "marktstand-arms-2x2-west",
+   "version": 1,
+   "typ": 1898,
+   "kat": "anlage",
+   "name": "Arms & Armour Market Tent W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-arms-2x2-west.json"
+  },
+  {
+   "id": "marktstand-clothing-2x1-sued",
+   "version": 1,
+   "typ": 1899,
+   "kat": "anlage",
+   "name": "Clothing Double Stall S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-2x1-sued.json"
+  },
+  {
+   "id": "marktstand-clothing-2x1-ost",
+   "version": 1,
+   "typ": 1900,
+   "kat": "anlage",
+   "name": "Clothing Double Stall E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-2x1-ost.json"
+  },
+  {
+   "id": "marktstand-clothing-2x1-nord",
+   "version": 1,
+   "typ": 1901,
+   "kat": "anlage",
+   "name": "Clothing Double Stall N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-2x1-nord.json"
+  },
+  {
+   "id": "marktstand-clothing-2x1-west",
+   "version": 1,
+   "typ": 1902,
+   "kat": "anlage",
+   "name": "Clothing Double Stall W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-2x1-west.json"
+  },
+  {
+   "id": "marktstand-clothing-2x2-sued",
+   "version": 1,
+   "typ": 1903,
+   "kat": "anlage",
+   "name": "Clothing Market Tent S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-2x2-sued.json"
+  },
+  {
+   "id": "marktstand-clothing-2x2-ost",
+   "version": 1,
+   "typ": 1904,
+   "kat": "anlage",
+   "name": "Clothing Market Tent E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-2x2-ost.json"
+  },
+  {
+   "id": "marktstand-clothing-2x2-nord",
+   "version": 1,
+   "typ": 1905,
+   "kat": "anlage",
+   "name": "Clothing Market Tent N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-2x2-nord.json"
+  },
+  {
+   "id": "marktstand-clothing-2x2-west",
+   "version": 1,
+   "typ": 1906,
+   "kat": "anlage",
+   "name": "Clothing Market Tent W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-clothing-2x2-west.json"
+  },
+  {
+   "id": "marktstand-crops-2x1-sued",
+   "version": 1,
+   "typ": 1907,
+   "kat": "anlage",
+   "name": "Crops Double Stall S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-2x1-sued.json"
+  },
+  {
+   "id": "marktstand-crops-2x1-ost",
+   "version": 1,
+   "typ": 1908,
+   "kat": "anlage",
+   "name": "Crops Double Stall E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-2x1-ost.json"
+  },
+  {
+   "id": "marktstand-crops-2x1-nord",
+   "version": 1,
+   "typ": 1909,
+   "kat": "anlage",
+   "name": "Crops Double Stall N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-2x1-nord.json"
+  },
+  {
+   "id": "marktstand-crops-2x1-west",
+   "version": 1,
+   "typ": 1910,
+   "kat": "anlage",
+   "name": "Crops Double Stall W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-2x1-west.json"
+  },
+  {
+   "id": "marktstand-crops-2x2-sued",
+   "version": 1,
+   "typ": 1911,
+   "kat": "anlage",
+   "name": "Crops Market Tent S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-2x2-sued.json"
+  },
+  {
+   "id": "marktstand-crops-2x2-ost",
+   "version": 1,
+   "typ": 1912,
+   "kat": "anlage",
+   "name": "Crops Market Tent E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-2x2-ost.json"
+  },
+  {
+   "id": "marktstand-crops-2x2-nord",
+   "version": 1,
+   "typ": 1913,
+   "kat": "anlage",
+   "name": "Crops Market Tent N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-2x2-nord.json"
+  },
+  {
+   "id": "marktstand-crops-2x2-west",
+   "version": 1,
+   "typ": 1914,
+   "kat": "anlage",
+   "name": "Crops Market Tent W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-crops-2x2-west.json"
+  },
+  {
+   "id": "marktstand-drink-2x1-sued",
+   "version": 1,
+   "typ": 1915,
+   "kat": "anlage",
+   "name": "Drink Double Stall S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-2x1-sued.json"
+  },
+  {
+   "id": "marktstand-drink-2x1-ost",
+   "version": 1,
+   "typ": 1916,
+   "kat": "anlage",
+   "name": "Drink Double Stall E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-2x1-ost.json"
+  },
+  {
+   "id": "marktstand-drink-2x1-nord",
+   "version": 1,
+   "typ": 1917,
+   "kat": "anlage",
+   "name": "Drink Double Stall N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-2x1-nord.json"
+  },
+  {
+   "id": "marktstand-drink-2x1-west",
+   "version": 1,
+   "typ": 1918,
+   "kat": "anlage",
+   "name": "Drink Double Stall W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-2x1-west.json"
+  },
+  {
+   "id": "marktstand-drink-2x2-sued",
+   "version": 1,
+   "typ": 1919,
+   "kat": "anlage",
+   "name": "Drink Market Tent S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-2x2-sued.json"
+  },
+  {
+   "id": "marktstand-drink-2x2-ost",
+   "version": 1,
+   "typ": 1920,
+   "kat": "anlage",
+   "name": "Drink Market Tent E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-2x2-ost.json"
+  },
+  {
+   "id": "marktstand-drink-2x2-nord",
+   "version": 1,
+   "typ": 1921,
+   "kat": "anlage",
+   "name": "Drink Market Tent N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-2x2-nord.json"
+  },
+  {
+   "id": "marktstand-drink-2x2-west",
+   "version": 1,
+   "typ": 1922,
+   "kat": "anlage",
+   "name": "Drink Market Tent W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-drink-2x2-west.json"
+  },
+  {
+   "id": "marktstand-exotic-2x1-sued",
+   "version": 1,
+   "typ": 1923,
+   "kat": "anlage",
+   "name": "Exotic Food Double Stall S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-2x1-sued.json"
+  },
+  {
+   "id": "marktstand-exotic-2x1-ost",
+   "version": 1,
+   "typ": 1924,
+   "kat": "anlage",
+   "name": "Exotic Food Double Stall E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-2x1-ost.json"
+  },
+  {
+   "id": "marktstand-exotic-2x1-nord",
+   "version": 1,
+   "typ": 1925,
+   "kat": "anlage",
+   "name": "Exotic Food Double Stall N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-2x1-nord.json"
+  },
+  {
+   "id": "marktstand-exotic-2x1-west",
+   "version": 1,
+   "typ": 1926,
+   "kat": "anlage",
+   "name": "Exotic Food Double Stall W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-2x1-west.json"
+  },
+  {
+   "id": "marktstand-exotic-2x2-sued",
+   "version": 1,
+   "typ": 1927,
+   "kat": "anlage",
+   "name": "Exotic Food Market Tent S",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-2x2-sued.json"
+  },
+  {
+   "id": "marktstand-exotic-2x2-ost",
+   "version": 1,
+   "typ": 1928,
+   "kat": "anlage",
+   "name": "Exotic Food Market Tent E",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-2x2-ost.json"
+  },
+  {
+   "id": "marktstand-exotic-2x2-nord",
+   "version": 1,
+   "typ": 1929,
+   "kat": "anlage",
+   "name": "Exotic Food Market Tent N",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-2x2-nord.json"
+  },
+  {
+   "id": "marktstand-exotic-2x2-west",
+   "version": 1,
+   "typ": 1930,
+   "kat": "anlage",
+   "name": "Exotic Food Market Tent W",
+   "status": "uebernommen",
+   "datei": "obj/marktstand-exotic-2x2-west.json"
   }
  ]
 }
