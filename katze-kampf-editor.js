@@ -20,7 +20,7 @@ for(let i=1;i<=6;i++)$('zahlB').insertAdjacentHTML('beforeend',`<option value="$
 STUFEN.forEach((t,i)=>$('stufeB').insertAdjacentHTML('beforeend',`<option value="${i}"${i===2?' selected':''}>${t}</option>`));
 for(const [id,n] of WAFFEN)$('waffeB').insertAdjacentHTML('beforeend',`<option value="${id}">${n}</option>`);
 for(const [id,n] of RUEST)$('ruestB').insertAdjacentHTML('beforeend',`<option value="${id}"${id==='leather'?' selected':''}>${n}</option>`);
-function sync(){for(const k of REGLER){K.OPT[k]=+val(k);$(k+'Text').textContent=nf(K.OPT[k],2)+'×';}K.OPT.sprung=$('sprung').checked?1:0;}
+function sync(){for(const k of REGLER){K.OPT[k]=+val(k);$(k+'Text').textContent=nf(K.OPT[k],2)+'×';}K.OPT.sprung=$('sprung').checked?1:0;K.OPT.reakt=$('reakt').checked?1:0;}
 
 // ---------- Aufstellung ----------
 function mensch(i){const q=+val('stufeB'),rng=S.rng,g=M.makeGladiator(q,true);S.rng=rng;g.role='Soldat';
@@ -38,7 +38,7 @@ $('einzel').onclick=()=>{const b=S.battle;if(!b)return;b.paused=false;K.fixed(1/
 $('spd').onchange=()=>{S.options.speed=+val('spd');};
 for(const id of ['zahlA','zahlB','sorteA','stufeB','waffeB','ruestB','werte'])$(id).addEventListener('input',()=>{sync();build();});
 for(const id of REGLER)$(id).addEventListener('input',sync);
-$('sprung').checked=!!K.OPT.sprung;$('sprung').addEventListener('change',sync);
+$('sprung').checked=!!K.OPT.sprung;$('sprung').addEventListener('change',sync);$('reakt').checked=!!K.OPT.reakt;$('reakt').addEventListener('change',sync);
 for(const [id,en,de,text] of K.ATTACKS)$('angriffe').insertAdjacentHTML('beforeend',`<button class="btn" type="button" data-angriff="${id}" title="${esc(text)}">${esc(de)}<br><small>${esc(en)}</small></button>`);
 $('angriffe').onclick=e=>{const k=e.target.closest('[data-angriff]')?.dataset.angriff;if(!k)return;K.force=k;const b=S.battle?.actors.find(a=>a.katze&&a.team===0&&!a.g.dead);if(b)b.cool=0;};
 
@@ -49,7 +49,7 @@ function karte(a){
  if(a.katze){const D=a.katze,Br=C.breed(D.breed);return `<div class="karte"><b>${esc(a.g.name)}</b> · ${esc(Br.name)} · ${D.weight} kg · Seite A<br>`+
   (a.g.dead?`<span class="tot">tot: ${esc(a.g.cause)}</span>`:a.fled?'<span class="tot">geflohen</span>':`${esc(MODE_DE[a.mode]||a.mode)}`+(K.fury(a)?' · <span class="tot">verwundet und wütend</span>':''))+
   `<br>Gesundheit ${bar(K.health(a))} Blut ${bar(a.blood,1)} Mut ${bar(a.morale)} Kraft ${bar(a.energy)}<div class="teile">`+K.PARTS.map(p=>`<span>${K.PART_DE[p]} ${Math.round(a.tissue[p]/a.max[p]*100)} %</span>`).join('')+
-  `</div><small>Treffer ${a.hits} · getötet ${a.kills} · Ansprünge ${a.pounces} (gelandet ${a.landed}) · Würgebisse ${a.pins}`+(K.lame(a)>0?` · lahmt ${Math.round(K.lame(a)*100)} %`:'')+`</small></div>`;}
+  `</div><small>Treffer ${a.hits} · getötet ${a.kills} · Ansprünge ${a.pounces} (gelandet ${a.landed}) · Würgebisse ${a.pins} (Nacken ${a.napes}) · Boxen ${a.boxes} · Festkrallen ${a.grabs} · Aufschlitzen ${a.rakes} · Wegzerren ${a.dragged} · Lauern ${a.lurks} · Scheinangriffe ${a.feints} · ausgewichen ${a.dodges} · zurückgeworfen ${a.recoils} · Gegenangriffe ${a.retorts}`+(K.lame(a)>0?` · lahmt ${Math.round(K.lame(a)*100)} %`:'')+`</small></div>`;}
  const g=a.g,weg=Object.entries(g.body).filter(([,p])=>p.missing).map(([id])=>M.partName?M.partName(id):id);
  return `<div class="karte"><b>${esc(g.name)}</b> · Mensch · Seite B<br>`+(g.dead?`<span class="tot">tot: ${esc(g.cause||'')}</span>`:a.pinnedBy?'<span class="tot">liegt unter der Katze</span>':a.down?'<span class="tot">am Boden</span>':`Gesundheit ${bar(M.health(g))} Blut ${bar(g.blood??100,1)}`)+
   (weg.length?`<br><small>fehlt: ${esc(weg.join(', '))}</small>`:'')+'</div>';}
@@ -67,7 +67,7 @@ const cam={x:520,y:390};M.battleCamera=b=>{if(!b?.katze||!run)return null;const 
 
 // ---------- Viele Kämpfe ----------
 $('serieGo').onclick=()=>{$('serie').textContent='Rechnet …';setTimeout(()=>{const alt=S.battle,p=alt?.paused;if(alt)alt.paused=true;let R;try{R=K.series(spec,30);}catch(e){$('serie').textContent='Fehler: '+e.message;return;}finally{S.battle=alt;if(alt)alt.paused=p;}
- $('serie').innerHTML=`Seite A (Katzen) gewinnt <b>${R.wins[0]}</b> · Seite B (Menschen) gewinnt <b>${R.wins[1]}</b> · ohne Sieger <b>${R.draw}</b> (von ${R.n})<br>mittlere Kampfdauer ${nf(R.time)} s · tote Katzen ${R.deadCats} · geflohene Katzen ${R.fled} · Ansprünge ${R.pounces} (gelandet ${R.landed}) · Würgebisse ${R.pins} · Rechenzeit ${nf(R.ms/R.n,0)} ms je Kampf`;},30);};
+ $('serie').innerHTML=`Seite A (Katzen) gewinnt <b>${R.wins[0]}</b> · Seite B (Menschen) gewinnt <b>${R.wins[1]}</b> · ohne Sieger <b>${R.draw}</b> (von ${R.n})<br>mittlere Kampfdauer ${nf(R.time)} s · tote Katzen ${R.deadCats} · geflohene Katzen ${R.fled} · Ansprünge ${R.pounces} (gelandet ${R.landed}) · Haltebisse ${R.pins} (Nacken ${R.napes}) · Anschleichen ${R.stalks} · Scheinangriffe ${R.feints} · Boxen ${R.boxes} · Festkrallen ${R.grabs} · Aufschlitzen ${R.rakes} · Wegzerren ${R.dragged} · ausgewichen ${R.dodges} · zurückgeworfen ${R.recoils} · Gegenangriffe ${R.retorts}<br>Rechenzeit ${nf(R.ms/R.n,0)} ms je Kampf`;},30);};
 if(K.OPT.maehne===0)$('maehne').value='0';// Notausschalter aus der Adresse
 sync();build();
 window.KATZE_KAMPF_ED={build,spec};

@@ -35,7 +35,7 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 .err{color:#f29b83;white-space:pre-wrap}
 </style></head><body><div class="wrap">
 <div class="tl">Arena Theory · Werkzeug · <a href="katze-editor.html">zurück zum Katzen-Editor</a></div><h1>Katzen · Kampf-Editor</h1>
-<p class="sub">Raubkatzen gegen Menschen, mit der echten Kampflogik des Spiels. Testversion (Schritt KA3a): Kampfkern mit Drohen, Ansprung, Prankenhieb, Prankenfolge, Biss, Niederhalten mit Würgebiss und Flucht; die Mähne schützt den Hals. Die Werte sind vorläufig und noch nicht eingemessen. Bisher hat nur der Berberlöwe eine eigene Gestalt, alle anderen Sorten (mit * markiert) kämpfen mit ihren eigenen Werten in seinem Körper. Katze gegen Tiere folgt in KA4. Dein Spielstand wird nicht verändert.</p>
+<p class="sub">Raubkatzen gegen Menschen, mit der echten Kampflogik des Spiels. Testversion (Schritte KA3a und KA3b): Drohen, Anschleichen und Umkreisen (lauert geduckt, springt von hinten an), Scheinangriff, Ansprung, Prankenhieb, Prankenfolge, aufgerichtet boxen, Festkrallen und Heranziehen, Biss, Niederhalten mit Würgebiss oder Nackenbiss, Aufschlitzen mit den Hinterläufen, Wegzerren von den Helfern, Ausweichen, Zucken an der getroffenen Stelle, Zurückgeworfen, Gegenangriff, Lahmen, Flucht und Tod auf der Seite; die Mähne schützt den Hals. Die Werte sind vorläufig und noch nicht eingemessen. Bisher hat nur der Berberlöwe eine eigene Gestalt, alle anderen Sorten (mit * markiert) kämpfen mit ihren eigenen Werten in seinem Körper. Katze gegen Tiere folgt in KA4. Dein Spielstand wird nicht verändert.</p>
 <div class="teams">
  <div class="team"><h3>Seite A (links): Katzen</h3><div class="bbar">
   <label>Anzahl<select id="zahlA"></select></label>
@@ -60,13 +60,14 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 <div class="stage"><canvas id="arenaCanvas" width="1040" height="720"></canvas></div>
 <div class="hud" id="hud">Lädt …</div>
 <h2>Angriff auslösen</h2>
-<p class="sub">Die erste Katze der Seite A nimmt den gewählten Angriff als Nächstes. Für den Ansprung nimmt sie erst Abstand, wenn der Gegner zu nah steht; für „Niederhalten und Würgebiss“ reißt sie ihn vorher um. Am besten in Zeitlupe und mit „Bild vor“ ansehen: Pranke und Maul treffen die Stelle, an der der Schaden entsteht.</p>
+<p class="sub">Die erste Katze der Seite A nimmt den gewählten Angriff als Nächstes. Für den Ansprung nimmt sie erst Abstand, wenn der Gegner zu nah steht; für „Niederhalten und Würgebiss“, „Nackenbiss“, „Aufschlitzen“ und „Wegzerren“ reißt sie ihn vorher um; „Ausweichen“ und „Zurückgeworfen“ gelten für den nächsten Schlag eines Menschen. Am besten in Zeitlupe und mit „Bild vor“ ansehen: Pranke und Maul treffen die Stelle, an der der Schaden entsteht.</p>
 <div class="bbar" id="angriffe"></div>
 <div class="bbar">
  <label>Schaden der Katzen: <span id="schadenText"></span><input type="range" id="schaden" min="0.4" max="2" step="0.05" value="1"></label>
  <label>Härte der Katzen: <span id="haerteText"></span><input type="range" id="haerte" min="0.4" max="2.5" step="0.05" value="1"></label>
  <label title="Wie stark die Mähne den Hals schützt. 0 = aus (auch über die Adresse ?katzeMaehne=0)">Schutz der Mähne: <span id="maehneText"></span><input type="range" id="maehne" min="0" max="2" step="0.1" value="1"></label>
  <label class="frei" title="Aus = die Katze springt nicht mehr an (auch über die Adresse ?katzeSprung=0)"><input type="checkbox" id="sprung" checked> Ansprung</label>
+ <label class="frei" title="Aus = die Katze zuckt nicht an der getroffenen Stelle, weicht nicht aus, wird nicht zurückgeworfen und greift nicht sofort zurück an (auch über die Adresse ?katzeReakt=0)"><input type="checkbox" id="reakt" checked> Reagieren und Ausweichen</label>
 </div>
 <h2>Kampfbericht (Englisch wie im Spiel)</h2>
 <div id="log"></div>
@@ -79,7 +80,7 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 <script>window.KATZE_KAMPF_EDITOR=true;window.onerror=(m,src,l)=>{const e=document.getElementById('err');if(e){e.hidden=false;e.textContent+='Fehler: '+m+' ('+String(src).split('/').pop()+':'+l+')\n';}};</script>
 <script>
 // Spielmodule in Reihenfolge laden (wie der Bären-Kampf-Editor), danach die Katzen. Die Katzendateien werden nur hier und im Katzen-Editor geladen.
-(async()=>{const V='70c421ab',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
+(async()=>{const V='c8c0a217',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
  const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','lion','hahn-engine','hahn-arena','arena-beasts','hund','arena-core','katze','katze-koepfe','katze-kampf','katze-kampf-editor'];
  for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v='+v;s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
 </script>

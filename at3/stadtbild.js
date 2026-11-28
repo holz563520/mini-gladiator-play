@@ -64,6 +64,7 @@ var DAT=null;function setzeDaten(geb){DAT=geb&&geb.G?geb:SL().daten(geb);return 
 function daten(o){if(o&&o.daten)return o.daten.G?o.daten:SL().daten(o.daten);if(!DAT&&typeof require!=='undefined')DAT=SL().daten(require('./daten/gebaeude.json'));
  if(!DAT)throw new Error('Gebäudedaten fehlen (setzeDaten)');return DAT}
 // satzKlassen (Wüste, Thomas 27.11.2026): der Biom-Satz gilt auch für Häuser dieser Bauklassen (sonst nur für die Grundklasse); Notausschalter: Angabe entfernen.
+// Wüste (Thomas 28.11.2026, Zweig grafik-wueste-b): Satz 'sandlehm' (bk-sandlehm-*, ausgefranste Flachdach-Traufe, je 6 Varianten) statt 'wueste'; Notausschalter: wieder 'wueste' eintragen.
 // Bauweise je Biom (5.3a) als Skizze aus den Baukasten-Teilen: Bauklasse, Dachform, Farbtausch (Wand, Dach), Boden, Gassenbelag, Bäume, Dichte im Umland, Felder.
 // Mittelmeer eigene Teile (Thomas 28.11.2026, Zweig grafik-mittelmeer-b): trockenes Buschland boden-macchia(-a…-f) statt der geteilten Skizze boden-gras,
 // Macchia-Büsche busch-macchia(-a…-c) statt busch-bluete, dazu die vorhandenen Oliven- und Zypressen-Varianten. Wahl bei 'g': nur die ersten 3/4 der Liste
@@ -77,7 +78,7 @@ var BIOME={
  mediterranean:{klasse:'brick',dach:'sattel',wand:STEIN,satz:'putz',pflaster:true,felder:true,boden:BODEN_MM,weg:'boden-weg',baeume:BAEUME_MM,dichte:.16,feld:'bk-feld'},
  grassland:{klasse:'clay-wood',dach:'sattel',satz:'steppe',boden:['boden-gras'],weg:'boden-weg',baeume:['baum-pappel','busch-hasel'],dichte:.06,feld:'bk-feld'},
  broadleaf:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,satz:'fachwerk',bilder:'laub',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-eiche-skizze','baum-buche','baum-apfel','busch-gruen'],dichte:.3,feld:'bk-feld'},
- desert:{klasse:'clay-wood',dach:'flach',wand:SAND,dachR:SAND,satz:'wueste',satzKlassen:['brick'],boden:['boden-sand'],weg:'boden-sand',baeume:['baum-dattelpalme','busch-tamariske'],dichte:.03,feld:'boden-erde'},
+ desert:{klasse:'clay-wood',dach:'flach',wand:SAND,dachR:SAND,satz:'sandlehm',satzKlassen:['brick'],boden:['boden-sand'],weg:'boden-sand',baeume:['baum-dattelpalme','busch-tamariske'],dichte:.03,feld:'boden-erde'},
  mountain:{klasse:'marble',dach:'sattel',dachR:HOLZ,satz:'bruch',boden:['boden-fels','boden-gras'],weg:'boden-weg',baeume:['baum-tanne','fels-block'],dichte:.14,feld:'bk-feld'},
  savanna:{klasse:'clay-wood',dach:'walm',dachR:OCKER,satz:'rotlehm',boden:['boden-gras','boden-sand'],weg:'boden-sand',baeume:['baum-akazie','baum-baobab','blume-hohes-gras'],dichte:.07,feld:'boden-erde'},
  conifer:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,dachR:HOLZ,satz:'block',boden:['boden-gras','boden-erde'],weg:'boden-erde',baeume:['baum-tanne','baum-birke'],dichte:.32,feld:'bk-feld'},

@@ -157,11 +157,13 @@ KATZE.prim={rr,poly,disk,seg,limb,hrand};
 // hx,hy Becken · p Neigung des Rumpfs (0 waagerecht) · bend Buckel der Wirbelsäule · ax,ay Sprunggelenk hinten · wx,wy Handgelenk vorn
 // pa Neigung der Vorderpfote · ne Hals (Winkel nach oben) · he Kopf (Winkel nach oben) · sag Bauch sackt durch · ta Richtung des Schwanzansatzes · tc Krümmung des Schwanzes
 // KA2: tdx,tdy Hinterzehen versetzt (nur im Sprung) · z ganze Katze gehoben (Flug) · dL Wirbelsäule verkürzt (Anteil) · sc Schulterblätter treten hervor
-const MODES=['stand','sit','lie','crouch'];
+const MODES=['stand','sit','lie','crouch','side'];
 function poseRaw(mode,SH){const lf=SH.leg,L=SH.L,A0=-L/2-3,H0=26.5*lf+11,WX=-L/2+L*Math.cos(.025)+1.2;
  if(mode==='sit'){const hx=A0-12*lf,hy=-9*SH.bulk,target=28*lf+6.2+hy;let p=.7;for(let i=0;i<4;i++)p=Math.asin(cl((target+4.5*Math.cos(p))/L,.2,.98));
   const sx=hx+L*Math.cos(p);return {hx,hy,p,bend:3,ax:A0-10.3*lf,ay:-3.4,wx:sx+.5*Math.cos(p)+4.5*Math.sin(p)+.8,wy:-6.2,pa:-1.3,ne:1.02,he:-.1,sag:1.2,ta:3.02,tc:-.5};}
  if(mode==='lie'){const hx=A0-9*lf,hy=-8.6*SH.bulk,p=.07,sx=hx+L*Math.cos(p);return {hx,hy,p,bend:.5,ax:A0-10.3*lf,ay:-3.4,wx:sx+21*lf,wy:-3,pa:0,ne:.84,he:.02,sag:1.6,ta:3.02,tc:-.5};}
+ // Auf der Seite liegen (KA3b, Todeslage): Rumpf flach am Boden, Vorderläufe lang nach vorn, Hinterläufe lang nach hinten, Kopf flach im Sand, Schwanz gestreckt
+ if(mode==='side'){const hx=-L/2-1,hy=-6.6*SH.bulk,p=-.02,sx=hx+L*Math.cos(p);return {hx,hy,p,bend:-1,ax:A0-15*lf,ay:-4.2,tdx:-27*lf,tdy:-.2,wx:sx+29*lf,wy:-4.6,pa:.12,ne:.02,he:-.34,sag:-2.4,ta:3.12,tc:-.1};}
  // Ducken (vor dem Sprung, Lauern): Bauch tief, Hinterbeine gefaltet unter dem Körper, Schultern etwas tiefer als das Becken, Kopf flach voraus
  if(mode==='crouch'){const hx=-L/2-2,hy=-(13.5*lf+9.5),p=-.07;return {hx,hy,p,bend:1.2,ax:A0-8.6,ay:-1.7-6.4*lf,wx:hx+L*Math.cos(p)+5,wy:-6.2,pa:-1.3,ne:.06,he:-.02,sag:.6,ta:2.72,tc:.45,sc:.85};}
  // Sprung (nur als Stationen von jumpPose): Absprung, Flug, Vorgreifen, Aufsetzen, Abfangen
@@ -229,7 +231,7 @@ function jumpPose(a,t){const J=a.jump,u=cl(t-J.t0,0,J.t3),F=J.frames;let i=0;whi
  const f=(u-J.t1)/J.Tf;cur.z=f>0&&f<1?4*J.h*f*(1-f):0;
  const hb=u<J.t1?-jumpWay(J,u):-J.dA*(1-smooth(cl(f/.3,0,1))),fb=u<J.t2?J.dB*smooth(cl(f,0,1)):J.dB-(jumpWay(J,u)-J.dA-J.vx*J.Tf);cur.tdx+=hb;cur.ax+=hb;cur.wx+=fb;return cur;}
 // Einen Zeitschritt rechnen (einmal je Bild vor dem Zeichnen). Kosten: ein paar Rechnungen, kein Zeichnen.
-function step(a,dt,t){dt=cl(dt,0,.05);const D=a.cat,SH=a.SH||shapeOf(D),lf=SH.leg,hs=Math.sqrt(cl(D.weight/200,.3,2)),pc=a.pace||1;let v=a.v||0;const v0=v;
+function step(a,dt,t){dt=cl(dt,0,.05);let bd=1;const D=a.cat,SH=a.SH||shapeOf(D),lf=SH.leg,hs=Math.sqrt(cl(D.weight/200,.3,2)),pc=a.pace||1;let v=a.v||0;const v0=v;
  if(a.jump){const J=a.jump,u=t-J.t0;v=jumpV(J,u);a.gs=0;a.gb=0;a.dist=J.d0+(a.facing||1)*jumpWay(J,u);if(u>=J.t3){a.jump=null;a.mode='stand';a.pose=null;a.want=null;}}
  else{const need=a.turnWant?'stand':a.want||(a.go?'stand':null),busy=KATZE.moving(a);let vT=0;
   if(need&&a.mode!==need){if(v<1&&!busy&&!a.turn){v=0;setMode(a,need,t);}}
@@ -237,6 +239,8 @@ function step(a,dt,t){dt=cl(dt,0,.05);const D=a.cat,SH=a.SH||shapeOf(D),lf=SH.le
   else if(a.turn){}
   else if(a.leapWant){if(!busy&&v<1){v=0;a.leapWant=false;a.want=null;startJump(a,t,SH);}}
   else{if(a.want)a.want=null;if(a.go&&!busy)vT=GAITS[a.go].v*pc;}
+  // rückwärts (KA3b, wie BAER a.back): a.back = 1 lässt den Gang rückwärts laufen, die Pfoten stehen dabei fest; Richtungswechsel nur im Stand
+  if(v<1)a.bdir=a.back?-1:1;bd=a.bdir||1;if(bd!==(a.back?-1:1))vT=0;
   // Tempo: Katzen kommen schnell in Fahrt; die Gangart folgt dem Tempo (Schritt, Trab, Galopp), Schleichen nur auf Befehl
   const acc=(60+1.2*Math.max(vT,v))/hs*(vT<v?1.4:1);v+=cl(vT-v,-acc*dt,acc*dt);
   const slow=a.go==='stalk'||!a.go&&a.gk==='stalk';a.gk=v>210*pc?'gallop':v>80*pc?'trot':slow&&v<30*pc?'stalk':'walk';
@@ -245,8 +249,8 @@ function step(a,dt,t){dt=cl(dt,0,.05);const D=a.cat,SH=a.SH||shapeOf(D),lf=SH.le
   a.gs=smooth(cl(v/10,0,1));a.gb=cl((a.gb||0)+(v>1||vT>0?1:-1)*dt*2.4,0,1);
   // Wenden: ab der Mitte gilt die neue Richtung; die Pfoten treten dabei einmal auf der Stelle um
   if(a.turn){const u=(t-a.turn.t0)/a.turn.dur;a.tl=Math.sin(Math.PI*cl(u,0,1));if(u>=.5)a.facing=-a.turn.from;if(u>=1){a.turn=null;a.tl=0;}}
-  a.cyc=(a.cyc||0)+v*dt/(len*lf*Math.max(a.gs,.3))+(a.turn?dt*1.5*a.tl*(1-a.gs):0);}
- a.v=v;if(!a.jump)a.dist=(a.dist||0)+v*dt*(a.facing||1);
+  a.cyc=(a.cyc||0)+bd*v*dt/(len*lf*Math.max(a.gs,.3))+(a.turn?dt*1.5*a.tl*(1-a.gs):0);}
+ a.v=v;if(!a.jump)a.dist=(a.dist||0)+bd*v*dt*(a.facing||1);
  // Mähne und Schwanz: Feder, angeregt vom Auf und Ab des Gangs (q) und vom Anfahren und Bremsen (qx)
  const c=a.cyc||0,gal=a.gw?a.gw[3]:0,tq=a.gs*((1-gal)*.6*Math.sin(2*TAU*c)+gal*2*Math.sin(TAU*(c-.2)));
  const tx=cl(-(v-v0)/Math.max(dt,1e-3)*.01-v*.004,-3.5,3.5),om=13/hs,dm=.5*om;

@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1993,
+ "typMax": 2028,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -17796,6 +17796,321 @@
    "name": "Dead Bush with Helmet",
    "status": "uebernommen",
    "datei": "obj/busch-macchia-c.json"
+  },
+  {
+   "id": "bk-sandlehm-dach-flach",
+   "version": 1,
+   "typ": 1994,
+   "kat": "dach",
+   "name": "Adobe Roof",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-dach-flach.json"
+  },
+  {
+   "id": "bk-sandlehm-dach-flach-a",
+   "version": 1,
+   "typ": 1995,
+   "kat": "dach",
+   "name": "Adobe Roof A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-dach-flach-a.json"
+  },
+  {
+   "id": "bk-sandlehm-dach-flach-b",
+   "version": 1,
+   "typ": 1996,
+   "kat": "dach",
+   "name": "Adobe Roof B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-dach-flach-b.json"
+  },
+  {
+   "id": "bk-sandlehm-dach-flach-c",
+   "version": 1,
+   "typ": 1997,
+   "kat": "dach",
+   "name": "Adobe Roof C",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-dach-flach-c.json"
+  },
+  {
+   "id": "bk-sandlehm-dach-flach-d",
+   "version": 1,
+   "typ": 1998,
+   "kat": "dach",
+   "name": "Adobe Roof D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-dach-flach-d.json"
+  },
+  {
+   "id": "bk-sandlehm-dach-flach-e",
+   "version": 1,
+   "typ": 1999,
+   "kat": "dach",
+   "name": "Adobe Roof E",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-dach-flach-e.json"
+  },
+  {
+   "id": "bk-sandlehm-dach-flach-f",
+   "version": 1,
+   "typ": 2000,
+   "kat": "dach",
+   "name": "Adobe Roof F",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-dach-flach-f.json"
+  },
+  {
+   "id": "bk-sandlehm-fenster",
+   "version": 1,
+   "typ": 2001,
+   "kat": "wand",
+   "name": "Adobe Window",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-fenster.json"
+  },
+  {
+   "id": "bk-sandlehm-fenster-a",
+   "version": 1,
+   "typ": 2002,
+   "kat": "wand",
+   "name": "Adobe Window A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-fenster-a.json"
+  },
+  {
+   "id": "bk-sandlehm-fenster-b",
+   "version": 1,
+   "typ": 2003,
+   "kat": "wand",
+   "name": "Adobe Window B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-fenster-b.json"
+  },
+  {
+   "id": "bk-sandlehm-fenster-c",
+   "version": 1,
+   "typ": 2004,
+   "kat": "wand",
+   "name": "Adobe Window C",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-fenster-c.json"
+  },
+  {
+   "id": "bk-sandlehm-fenster-d",
+   "version": 1,
+   "typ": 2005,
+   "kat": "wand",
+   "name": "Adobe Window D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-fenster-d.json"
+  },
+  {
+   "id": "bk-sandlehm-fenster-e",
+   "version": 1,
+   "typ": 2006,
+   "kat": "wand",
+   "name": "Adobe Window E",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-fenster-e.json"
+  },
+  {
+   "id": "bk-sandlehm-fenster-f",
+   "version": 1,
+   "typ": 2007,
+   "kat": "wand",
+   "name": "Adobe Window F",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-fenster-f.json"
+  },
+  {
+   "id": "bk-sandlehm-tuer",
+   "version": 1,
+   "typ": 2008,
+   "kat": "wand",
+   "name": "Adobe Door",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-tuer.json"
+  },
+  {
+   "id": "bk-sandlehm-tuer-a",
+   "version": 1,
+   "typ": 2009,
+   "kat": "wand",
+   "name": "Adobe Door A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-tuer-a.json"
+  },
+  {
+   "id": "bk-sandlehm-tuer-b",
+   "version": 1,
+   "typ": 2010,
+   "kat": "wand",
+   "name": "Adobe Door B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-tuer-b.json"
+  },
+  {
+   "id": "bk-sandlehm-tuer-c",
+   "version": 1,
+   "typ": 2011,
+   "kat": "wand",
+   "name": "Adobe Door C",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-tuer-c.json"
+  },
+  {
+   "id": "bk-sandlehm-tuer-d",
+   "version": 1,
+   "typ": 2012,
+   "kat": "wand",
+   "name": "Adobe Door D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-tuer-d.json"
+  },
+  {
+   "id": "bk-sandlehm-tuer-e",
+   "version": 1,
+   "typ": 2013,
+   "kat": "wand",
+   "name": "Adobe Door E",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-tuer-e.json"
+  },
+  {
+   "id": "bk-sandlehm-tuer-f",
+   "version": 1,
+   "typ": 2014,
+   "kat": "wand",
+   "name": "Adobe Door F",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-tuer-f.json"
+  },
+  {
+   "id": "bk-sandlehm-wand",
+   "version": 1,
+   "typ": 2015,
+   "kat": "wand",
+   "name": "Adobe Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-a",
+   "version": 1,
+   "typ": 2016,
+   "kat": "wand",
+   "name": "Adobe Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-a.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-b",
+   "version": 1,
+   "typ": 2017,
+   "kat": "wand",
+   "name": "Adobe Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-b.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-c",
+   "version": 1,
+   "typ": 2018,
+   "kat": "wand",
+   "name": "Adobe Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-c.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-d",
+   "version": 1,
+   "typ": 2019,
+   "kat": "wand",
+   "name": "Adobe Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-d.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-e",
+   "version": 1,
+   "typ": 2020,
+   "kat": "wand",
+   "name": "Adobe Wall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-e.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-f",
+   "version": 1,
+   "typ": 2021,
+   "kat": "wand",
+   "name": "Adobe Wall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-f.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-oben",
+   "version": 1,
+   "typ": 2022,
+   "kat": "wand",
+   "name": "Adobe Upper Wall",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-oben.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-oben-a",
+   "version": 1,
+   "typ": 2023,
+   "kat": "wand",
+   "name": "Adobe Upper Wall A",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-oben-a.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-oben-b",
+   "version": 1,
+   "typ": 2024,
+   "kat": "wand",
+   "name": "Adobe Upper Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-oben-b.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-oben-c",
+   "version": 1,
+   "typ": 2025,
+   "kat": "wand",
+   "name": "Adobe Upper Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-oben-c.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-oben-d",
+   "version": 1,
+   "typ": 2026,
+   "kat": "wand",
+   "name": "Adobe Upper Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-oben-d.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-oben-e",
+   "version": 1,
+   "typ": 2027,
+   "kat": "wand",
+   "name": "Adobe Upper Wall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-oben-e.json"
+  },
+  {
+   "id": "bk-sandlehm-wand-oben-f",
+   "version": 1,
+   "typ": 2028,
+   "kat": "wand",
+   "name": "Adobe Upper Wall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-sandlehm-wand-oben-f.json"
   }
  ]
 }
