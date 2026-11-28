@@ -33,7 +33,7 @@
 // G6c Karren: karren(d) bekommt nach jedem Takt des Weltkerns die Karren (je 6 Zahlen: Nummer, Lage in 1/256 Feld, Richtung, Zustand, Grund). Gezeichnet wird
 // nur, wer im Bild ist, als vorgezeichnetes Bild des Startsets (karren-ochse, 4 Kartenrichtungen, Ersatzbild grau), gleitend zwischen zwei Nachrichten; solange
 // ein sichtbarer Karren fährt, zeichnet die Karte jedes Bild neu (sonst nur bei Änderung). Kein Bodenbild wird dafür neu gerechnet, beim Zoomen keine neue Arbeit.
-var V='c8c0a217', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
+var V='42daee1d', BASIS=(document.currentScript&&document.currentScript.src||'').replace(/[^/]*$/,'');
 var N7B2=!/[?&]n7b2=0/.test(location.search);
 // N7h1 Weltansicht schärfer (Thomas 24.11.2026): In den Fernstufen steht sofort das grobe Bild. Ruht der Blick VERWEILEN_MS, rechnet der Bildkern die scharfen
 // Fassungen der sichtbaren Fernbilder (Bildmitte zuerst, fernbild.js scharf) und die Karte blendet jede in EINBLENDEN_MS ein. Fertige scharfe Bilder bleiben

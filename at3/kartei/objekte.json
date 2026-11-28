@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 2028,
+ "typMax": 2100,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -18111,6 +18111,654 @@
    "name": "Adobe Upper Wall F",
    "status": "uebernommen",
    "datei": "obj/bk-sandlehm-wand-oben-f.json"
+  },
+  {
+   "id": "hof-taiga-cottage-1-sued",
+   "version": 1,
+   "typ": 2029,
+   "kat": "anlage",
+   "name": "Log Cabin 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-1-sued.json"
+  },
+  {
+   "id": "hof-taiga-cottage-1-ost",
+   "version": 1,
+   "typ": 2030,
+   "kat": "anlage",
+   "name": "Log Cabin 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-1-ost.json"
+  },
+  {
+   "id": "hof-taiga-cottage-1-nord",
+   "version": 1,
+   "typ": 2031,
+   "kat": "anlage",
+   "name": "Log Cabin 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-1-nord.json"
+  },
+  {
+   "id": "hof-taiga-cottage-1-west",
+   "version": 1,
+   "typ": 2032,
+   "kat": "anlage",
+   "name": "Log Cabin 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-1-west.json"
+  },
+  {
+   "id": "hof-taiga-cottage-2-sued",
+   "version": 1,
+   "typ": 2033,
+   "kat": "anlage",
+   "name": "Log Cabin 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-2-sued.json"
+  },
+  {
+   "id": "hof-taiga-cottage-2-ost",
+   "version": 1,
+   "typ": 2034,
+   "kat": "anlage",
+   "name": "Log Cabin 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-2-ost.json"
+  },
+  {
+   "id": "hof-taiga-cottage-2-nord",
+   "version": 1,
+   "typ": 2035,
+   "kat": "anlage",
+   "name": "Log Cabin 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-2-nord.json"
+  },
+  {
+   "id": "hof-taiga-cottage-2-west",
+   "version": 1,
+   "typ": 2036,
+   "kat": "anlage",
+   "name": "Log Cabin 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-2-west.json"
+  },
+  {
+   "id": "hof-taiga-cottage-3-sued",
+   "version": 1,
+   "typ": 2037,
+   "kat": "anlage",
+   "name": "Log Cabin 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-3-sued.json"
+  },
+  {
+   "id": "hof-taiga-cottage-3-ost",
+   "version": 1,
+   "typ": 2038,
+   "kat": "anlage",
+   "name": "Log Cabin 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-3-ost.json"
+  },
+  {
+   "id": "hof-taiga-cottage-3-nord",
+   "version": 1,
+   "typ": 2039,
+   "kat": "anlage",
+   "name": "Log Cabin 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-3-nord.json"
+  },
+  {
+   "id": "hof-taiga-cottage-3-west",
+   "version": 1,
+   "typ": 2040,
+   "kat": "anlage",
+   "name": "Log Cabin 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-cottage-3-west.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-1-sued",
+   "version": 1,
+   "typ": 2041,
+   "kat": "anlage",
+   "name": "Clearing Farm 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-1-sued.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-1-ost",
+   "version": 1,
+   "typ": 2042,
+   "kat": "anlage",
+   "name": "Clearing Farm 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-1-ost.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-1-nord",
+   "version": 1,
+   "typ": 2043,
+   "kat": "anlage",
+   "name": "Clearing Farm 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-1-nord.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-1-west",
+   "version": 1,
+   "typ": 2044,
+   "kat": "anlage",
+   "name": "Clearing Farm 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-1-west.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-2-sued",
+   "version": 1,
+   "typ": 2045,
+   "kat": "anlage",
+   "name": "Clearing Farm 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-2-sued.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-2-ost",
+   "version": 1,
+   "typ": 2046,
+   "kat": "anlage",
+   "name": "Clearing Farm 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-2-ost.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-2-nord",
+   "version": 1,
+   "typ": 2047,
+   "kat": "anlage",
+   "name": "Clearing Farm 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-2-nord.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-2-west",
+   "version": 1,
+   "typ": 2048,
+   "kat": "anlage",
+   "name": "Clearing Farm 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-2-west.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-3-sued",
+   "version": 1,
+   "typ": 2049,
+   "kat": "anlage",
+   "name": "Clearing Farm 3 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-3-sued.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-3-ost",
+   "version": 1,
+   "typ": 2050,
+   "kat": "anlage",
+   "name": "Clearing Farm 3 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-3-ost.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-3-nord",
+   "version": 1,
+   "typ": 2051,
+   "kat": "anlage",
+   "name": "Clearing Farm 3 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-3-nord.json"
+  },
+  {
+   "id": "hof-taiga-farmstead-3-west",
+   "version": 1,
+   "typ": 2052,
+   "kat": "anlage",
+   "name": "Clearing Farm 3 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-farmstead-3-west.json"
+  },
+  {
+   "id": "hof-taiga-villa-rustica-1-sued",
+   "version": 1,
+   "typ": 2053,
+   "kat": "anlage",
+   "name": "Fur Trader's Estate 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-villa-rustica-1-sued.json"
+  },
+  {
+   "id": "hof-taiga-villa-rustica-1-ost",
+   "version": 1,
+   "typ": 2054,
+   "kat": "anlage",
+   "name": "Fur Trader's Estate 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-villa-rustica-1-ost.json"
+  },
+  {
+   "id": "hof-taiga-villa-rustica-1-nord",
+   "version": 1,
+   "typ": 2055,
+   "kat": "anlage",
+   "name": "Fur Trader's Estate 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-villa-rustica-1-nord.json"
+  },
+  {
+   "id": "hof-taiga-villa-rustica-1-west",
+   "version": 1,
+   "typ": 2056,
+   "kat": "anlage",
+   "name": "Fur Trader's Estate 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-villa-rustica-1-west.json"
+  },
+  {
+   "id": "hof-taiga-villa-rustica-2-sued",
+   "version": 1,
+   "typ": 2057,
+   "kat": "anlage",
+   "name": "Fur Trader's Estate 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-villa-rustica-2-sued.json"
+  },
+  {
+   "id": "hof-taiga-villa-rustica-2-ost",
+   "version": 1,
+   "typ": 2058,
+   "kat": "anlage",
+   "name": "Fur Trader's Estate 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-villa-rustica-2-ost.json"
+  },
+  {
+   "id": "hof-taiga-villa-rustica-2-nord",
+   "version": 1,
+   "typ": 2059,
+   "kat": "anlage",
+   "name": "Fur Trader's Estate 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-villa-rustica-2-nord.json"
+  },
+  {
+   "id": "hof-taiga-villa-rustica-2-west",
+   "version": 1,
+   "typ": 2060,
+   "kat": "anlage",
+   "name": "Fur Trader's Estate 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-villa-rustica-2-west.json"
+  },
+  {
+   "id": "hof-taiga-herders-camp-1-sued",
+   "version": 1,
+   "typ": 2061,
+   "kat": "anlage",
+   "name": "Herders' Camp 1 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-herders-camp-1-sued.json"
+  },
+  {
+   "id": "hof-taiga-herders-camp-1-ost",
+   "version": 1,
+   "typ": 2062,
+   "kat": "anlage",
+   "name": "Herders' Camp 1 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-herders-camp-1-ost.json"
+  },
+  {
+   "id": "hof-taiga-herders-camp-1-nord",
+   "version": 1,
+   "typ": 2063,
+   "kat": "anlage",
+   "name": "Herders' Camp 1 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-herders-camp-1-nord.json"
+  },
+  {
+   "id": "hof-taiga-herders-camp-1-west",
+   "version": 1,
+   "typ": 2064,
+   "kat": "anlage",
+   "name": "Herders' Camp 1 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-herders-camp-1-west.json"
+  },
+  {
+   "id": "hof-taiga-herders-camp-2-sued",
+   "version": 1,
+   "typ": 2065,
+   "kat": "anlage",
+   "name": "Herders' Camp 2 S",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-herders-camp-2-sued.json"
+  },
+  {
+   "id": "hof-taiga-herders-camp-2-ost",
+   "version": 1,
+   "typ": 2066,
+   "kat": "anlage",
+   "name": "Herders' Camp 2 E",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-herders-camp-2-ost.json"
+  },
+  {
+   "id": "hof-taiga-herders-camp-2-nord",
+   "version": 1,
+   "typ": 2067,
+   "kat": "anlage",
+   "name": "Herders' Camp 2 N",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-herders-camp-2-nord.json"
+  },
+  {
+   "id": "hof-taiga-herders-camp-2-west",
+   "version": 1,
+   "typ": 2068,
+   "kat": "anlage",
+   "name": "Herders' Camp 2 W",
+   "status": "uebernommen",
+   "datei": "obj/hof-taiga-herders-camp-2-west.json"
+  },
+  {
+   "id": "elend-taiga-bude-1-sued",
+   "version": 1,
+   "typ": 2069,
+   "kat": "anlage",
+   "name": "Log-End Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-1-sued.json"
+  },
+  {
+   "id": "elend-taiga-bude-1-ost",
+   "version": 1,
+   "typ": 2070,
+   "kat": "anlage",
+   "name": "Log-End Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-1-ost.json"
+  },
+  {
+   "id": "elend-taiga-bude-1-nord",
+   "version": 1,
+   "typ": 2071,
+   "kat": "anlage",
+   "name": "Log-End Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-1-nord.json"
+  },
+  {
+   "id": "elend-taiga-bude-1-west",
+   "version": 1,
+   "typ": 2072,
+   "kat": "anlage",
+   "name": "Log-End Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-1-west.json"
+  },
+  {
+   "id": "elend-taiga-bude-2-sued",
+   "version": 1,
+   "typ": 2073,
+   "kat": "anlage",
+   "name": "Birch Bark Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-2-sued.json"
+  },
+  {
+   "id": "elend-taiga-bude-2-ost",
+   "version": 1,
+   "typ": 2074,
+   "kat": "anlage",
+   "name": "Birch Bark Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-2-ost.json"
+  },
+  {
+   "id": "elend-taiga-bude-2-nord",
+   "version": 1,
+   "typ": 2075,
+   "kat": "anlage",
+   "name": "Birch Bark Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-2-nord.json"
+  },
+  {
+   "id": "elend-taiga-bude-2-west",
+   "version": 1,
+   "typ": 2076,
+   "kat": "anlage",
+   "name": "Birch Bark Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-2-west.json"
+  },
+  {
+   "id": "elend-taiga-bude-3-sued",
+   "version": 1,
+   "typ": 2077,
+   "kat": "anlage",
+   "name": "Tarpaper Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-3-sued.json"
+  },
+  {
+   "id": "elend-taiga-bude-3-ost",
+   "version": 1,
+   "typ": 2078,
+   "kat": "anlage",
+   "name": "Tarpaper Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-3-ost.json"
+  },
+  {
+   "id": "elend-taiga-bude-3-nord",
+   "version": 1,
+   "typ": 2079,
+   "kat": "anlage",
+   "name": "Tarpaper Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-3-nord.json"
+  },
+  {
+   "id": "elend-taiga-bude-3-west",
+   "version": 1,
+   "typ": 2080,
+   "kat": "anlage",
+   "name": "Tarpaper Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-3-west.json"
+  },
+  {
+   "id": "elend-taiga-bude-4-sued",
+   "version": 1,
+   "typ": 2081,
+   "kat": "anlage",
+   "name": "Rag Stall Shack S",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-4-sued.json"
+  },
+  {
+   "id": "elend-taiga-bude-4-ost",
+   "version": 1,
+   "typ": 2082,
+   "kat": "anlage",
+   "name": "Rag Stall Shack E",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-4-ost.json"
+  },
+  {
+   "id": "elend-taiga-bude-4-nord",
+   "version": 1,
+   "typ": 2083,
+   "kat": "anlage",
+   "name": "Rag Stall Shack N",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-4-nord.json"
+  },
+  {
+   "id": "elend-taiga-bude-4-west",
+   "version": 1,
+   "typ": 2084,
+   "kat": "anlage",
+   "name": "Rag Stall Shack W",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-4-west.json"
+  },
+  {
+   "id": "elend-taiga-bude-5-sued",
+   "version": 1,
+   "typ": 2085,
+   "kat": "anlage",
+   "name": "Dugout S",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-5-sued.json"
+  },
+  {
+   "id": "elend-taiga-bude-5-ost",
+   "version": 1,
+   "typ": 2086,
+   "kat": "anlage",
+   "name": "Dugout E",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-5-ost.json"
+  },
+  {
+   "id": "elend-taiga-bude-5-nord",
+   "version": 1,
+   "typ": 2087,
+   "kat": "anlage",
+   "name": "Dugout N",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-5-nord.json"
+  },
+  {
+   "id": "elend-taiga-bude-5-west",
+   "version": 1,
+   "typ": 2088,
+   "kat": "anlage",
+   "name": "Dugout W",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-5-west.json"
+  },
+  {
+   "id": "elend-taiga-bude-6-sued",
+   "version": 1,
+   "typ": 2089,
+   "kat": "anlage",
+   "name": "Shack of the Fur Sign S",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-6-sued.json"
+  },
+  {
+   "id": "elend-taiga-bude-6-ost",
+   "version": 1,
+   "typ": 2090,
+   "kat": "anlage",
+   "name": "Shack of the Fur Sign E",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-6-ost.json"
+  },
+  {
+   "id": "elend-taiga-bude-6-nord",
+   "version": 1,
+   "typ": 2091,
+   "kat": "anlage",
+   "name": "Shack of the Fur Sign N",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-6-nord.json"
+  },
+  {
+   "id": "elend-taiga-bude-6-west",
+   "version": 1,
+   "typ": 2092,
+   "kat": "anlage",
+   "name": "Shack of the Fur Sign W",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-6-west.json"
+  },
+  {
+   "id": "elend-taiga-bude-7-sued",
+   "version": 1,
+   "typ": 2093,
+   "kat": "anlage",
+   "name": "Leaning Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-7-sued.json"
+  },
+  {
+   "id": "elend-taiga-bude-7-ost",
+   "version": 1,
+   "typ": 2094,
+   "kat": "anlage",
+   "name": "Leaning Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-7-ost.json"
+  },
+  {
+   "id": "elend-taiga-bude-7-nord",
+   "version": 1,
+   "typ": 2095,
+   "kat": "anlage",
+   "name": "Leaning Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-7-nord.json"
+  },
+  {
+   "id": "elend-taiga-bude-7-west",
+   "version": 1,
+   "typ": 2096,
+   "kat": "anlage",
+   "name": "Leaning Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-7-west.json"
+  },
+  {
+   "id": "elend-taiga-bude-8-sued",
+   "version": 1,
+   "typ": 2097,
+   "kat": "anlage",
+   "name": "Evicted Hut S",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-8-sued.json"
+  },
+  {
+   "id": "elend-taiga-bude-8-ost",
+   "version": 1,
+   "typ": 2098,
+   "kat": "anlage",
+   "name": "Evicted Hut E",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-8-ost.json"
+  },
+  {
+   "id": "elend-taiga-bude-8-nord",
+   "version": 1,
+   "typ": 2099,
+   "kat": "anlage",
+   "name": "Evicted Hut N",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-8-nord.json"
+  },
+  {
+   "id": "elend-taiga-bude-8-west",
+   "version": 1,
+   "typ": 2100,
+   "kat": "anlage",
+   "name": "Evicted Hut W",
+   "status": "uebernommen",
+   "datei": "obj/elend-taiga-bude-8-west.json"
   }
  ]
 }
