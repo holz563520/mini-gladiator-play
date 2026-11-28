@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1625,
+ "typMax": 1650,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -14484,6 +14484,231 @@
    "name": "Rival Ludus D",
    "status": "uebernommen",
    "datei": "obj/posten-rival-ludus-d.json"
+  },
+  {
+   "id": "ort-teil-watermill",
+   "version": 1,
+   "typ": 1626,
+   "kat": "anlage",
+   "name": "Watermill",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-watermill.json"
+  },
+  {
+   "id": "ort-teil-watermill-a",
+   "version": 1,
+   "typ": 1627,
+   "kat": "anlage",
+   "name": "Watermill A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-watermill-a.json"
+  },
+  {
+   "id": "ort-teil-watermill-b",
+   "version": 1,
+   "typ": 1628,
+   "kat": "anlage",
+   "name": "Watermill B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-watermill-b.json"
+  },
+  {
+   "id": "ort-teil-watermill-c",
+   "version": 1,
+   "typ": 1629,
+   "kat": "anlage",
+   "name": "Watermill C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-watermill-c.json"
+  },
+  {
+   "id": "ort-teil-shipyard",
+   "version": 2,
+   "typ": 1630,
+   "kat": "anlage",
+   "name": "Shipyard",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-shipyard.json"
+  },
+  {
+   "id": "ort-teil-shipyard-a",
+   "version": 2,
+   "typ": 1631,
+   "kat": "anlage",
+   "name": "Shipyard A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-shipyard-a.json"
+  },
+  {
+   "id": "ort-teil-shipyard-b",
+   "version": 2,
+   "typ": 1632,
+   "kat": "anlage",
+   "name": "Shipyard B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-shipyard-b.json"
+  },
+  {
+   "id": "ort-teil-shipyard-c",
+   "version": 2,
+   "typ": 1633,
+   "kat": "anlage",
+   "name": "Shipyard C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-shipyard-c.json"
+  },
+  {
+   "id": "ort-teil-theatre",
+   "version": 2,
+   "typ": 1634,
+   "kat": "anlage",
+   "name": "Theatre",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-theatre.json"
+  },
+  {
+   "id": "ort-teil-theatre-a",
+   "version": 2,
+   "typ": 1635,
+   "kat": "anlage",
+   "name": "Theatre A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-theatre-a.json"
+  },
+  {
+   "id": "ort-teil-theatre-b",
+   "version": 2,
+   "typ": 1636,
+   "kat": "anlage",
+   "name": "Theatre B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-theatre-b.json"
+  },
+  {
+   "id": "ort-teil-vineyards",
+   "version": 1,
+   "typ": 1637,
+   "kat": "anlage",
+   "name": "Vineyards",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards.json"
+  },
+  {
+   "id": "ort-teil-vineyards-a",
+   "version": 1,
+   "typ": 1638,
+   "kat": "anlage",
+   "name": "Vineyards A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards-a.json"
+  },
+  {
+   "id": "ort-teil-vineyards-b",
+   "version": 1,
+   "typ": 1639,
+   "kat": "anlage",
+   "name": "Vineyards B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards-b.json"
+  },
+  {
+   "id": "ort-teil-vineyards-c",
+   "version": 1,
+   "typ": 1640,
+   "kat": "anlage",
+   "name": "Vineyards C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards-c.json"
+  },
+  {
+   "id": "ort-teil-vineyards-d",
+   "version": 1,
+   "typ": 1641,
+   "kat": "anlage",
+   "name": "Vineyards D",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-vineyards-d.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter",
+   "version": 1,
+   "typ": 1642,
+   "kat": "anlage",
+   "name": "Slum Quarter",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter-a",
+   "version": 1,
+   "typ": 1643,
+   "kat": "anlage",
+   "name": "Slum Quarter A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter-a.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter-b",
+   "version": 1,
+   "typ": 1644,
+   "kat": "anlage",
+   "name": "Slum Quarter B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter-b.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter-c",
+   "version": 1,
+   "typ": 1645,
+   "kat": "anlage",
+   "name": "Slum Quarter C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter-c.json"
+  },
+  {
+   "id": "ort-teil-slum-quarter-d",
+   "version": 1,
+   "typ": 1646,
+   "kat": "anlage",
+   "name": "Slum Quarter D",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-slum-quarter-d.json"
+  },
+  {
+   "id": "ort-teil-suburbs",
+   "version": 1,
+   "typ": 1647,
+   "kat": "anlage",
+   "name": "Suburbs",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-suburbs.json"
+  },
+  {
+   "id": "ort-teil-suburbs-a",
+   "version": 1,
+   "typ": 1648,
+   "kat": "anlage",
+   "name": "Suburbs A",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-suburbs-a.json"
+  },
+  {
+   "id": "ort-teil-suburbs-b",
+   "version": 1,
+   "typ": 1649,
+   "kat": "anlage",
+   "name": "Suburbs B",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-suburbs-b.json"
+  },
+  {
+   "id": "ort-teil-suburbs-c",
+   "version": 1,
+   "typ": 1650,
+   "kat": "anlage",
+   "name": "Suburbs C",
+   "status": "uebernommen",
+   "datei": "obj/ort-teil-suburbs-c.json"
   }
  ]
 }
