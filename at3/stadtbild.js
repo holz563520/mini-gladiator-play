@@ -65,8 +65,16 @@ function daten(o){if(o&&o.daten)return o.daten.G?o.daten:SL().daten(o.daten);if(
  if(!DAT)throw new Error('Gebäudedaten fehlen (setzeDaten)');return DAT}
 // satzKlassen (Wüste, Thomas 27.11.2026): der Biom-Satz gilt auch für Häuser dieser Bauklassen (sonst nur für die Grundklasse); Notausschalter: Angabe entfernen.
 // Bauweise je Biom (5.3a) als Skizze aus den Baukasten-Teilen: Bauklasse, Dachform, Farbtausch (Wand, Dach), Boden, Gassenbelag, Bäume, Dichte im Umland, Felder.
+// Mittelmeer eigene Teile (Thomas 28.11.2026, Zweig grafik-mittelmeer-b): trockenes Buschland boden-macchia(-a…-f) statt der geteilten Skizze boden-gras,
+// Macchia-Büsche busch-macchia(-a…-c) statt busch-bluete, dazu die vorhandenen Oliven- und Zypressen-Varianten. Wahl bei 'g': nur die ersten 3/4 der Liste
+// zählen (Formel in bodenId), darum 48 Einträge, davon 36 gewählt: Grundbild 19/36, -a 10/36, -b und -c je 2/36, selten -d, -e, -f je 1/36.
+// Notausschalter: BODEN_MM=['boden-gras','boden-erde'], BAEUME_MM=['baum-olive','baum-zypresse','busch-bluete'].
+var BODEN_MM=(function(){var m='boden-macchia',l=[],z={'-a':[1,4,8,12,16,20,24,27,31,34],'-b':[6,22],'-c':[14,29],'-d':[10],'-e':[18],'-f':[33]},k,q;
+  for(k=0;k<48;k++)l.push(m);for(q in z)z[q].forEach(function(n){l[n]=m+q});return l})(),
+ BAEUME_MM=['baum-olive','baum-olive','baum-olive-a','baum-olive-b','baum-olive-c','baum-zypresse','baum-zypresse','baum-zypresse-a','baum-zypresse-b','baum-zypresse-c',
+  'busch-macchia','busch-macchia','busch-macchia-a','busch-macchia-a','busch-macchia-b','busch-macchia-c'];
 var BIOME={
- mediterranean:{klasse:'brick',dach:'sattel',wand:STEIN,satz:'putz',pflaster:true,felder:true,boden:['boden-gras','boden-erde'],weg:'boden-weg',baeume:['baum-olive','baum-zypresse','busch-bluete'],dichte:.16,feld:'bk-feld'},
+ mediterranean:{klasse:'brick',dach:'sattel',wand:STEIN,satz:'putz',pflaster:true,felder:true,boden:BODEN_MM,weg:'boden-weg',baeume:BAEUME_MM,dichte:.16,feld:'bk-feld'},
  grassland:{klasse:'clay-wood',dach:'sattel',satz:'steppe',boden:['boden-gras'],weg:'boden-weg',baeume:['baum-pappel','busch-hasel'],dichte:.06,feld:'bk-feld'},
  broadleaf:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,satz:'fachwerk',bilder:'laub',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-eiche-skizze','baum-buche','baum-apfel','busch-gruen'],dichte:.3,feld:'bk-feld'},
  desert:{klasse:'clay-wood',dach:'flach',wand:SAND,dachR:SAND,satz:'wueste',satzKlassen:['brick'],boden:['boden-sand'],weg:'boden-sand',baeume:['baum-dattelpalme','busch-tamariske'],dichte:.03,feld:'boden-erde'},
@@ -2803,6 +2811,7 @@ function feldBild(P,i,j){var id=flurArt(P,i,j),b=id&&(FELD_BILD[id]||(P.dauer&&D
  u=(u-s)/(1-s);var g=0;V.ruhig.forEach(function(r){g+=r[1]});u*=g;for(k=0;k<V.ruhig.length;k++){u-=V.ruhig[k][1];if(u<0)break}
  var r=V.ruhig[Math.min(k,V.ruhig.length-1)][0];return r?o+'-'+r:o}
 var SAUM_SCHMAL=.45,SAUM_WEG=/[hs]/,SAUM_RANG={'boden-gras':12,'bk-feld':8,'boden-erde':4,'boden-weg':3,'boden-sand':2,'boden-fels':0},SAUM_VAR=4,SAUM_NB=[[1,0],[-1,0],[0,1],[0,-1]];
+['','-a','-b','-c','-d','-e','-f'].forEach(function(v){SAUM_RANG['boden-macchia'+v]=12});   // Mittelmeer-Buschland wie Gras (28.11.2026)
 FELD_IDS.forEach(function(id){SAUM_RANG[id]=/^feld-weide/.test(id)?11:/^feld-pferch/.test(id)?5:8});
 DAUER_IDS.forEach(function(id){SAUM_RANG[id]=/^feld-bacchant/.test(id)?6:8});   // N6b4c2   // N6b4c1: Weide fast wie Gras, Pferch wie Erde
 var SAUM_MERK=typeof WeakMap!=='undefined'?new WeakMap():null;

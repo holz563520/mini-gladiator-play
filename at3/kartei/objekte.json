@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1982,
+ "typMax": 1993,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -17697,6 +17697,105 @@
    "name": "Fishhouse Gable Peak (up) F",
    "status": "uebernommen",
    "datei": "obj/bk-kueste-giebel-auf-f.json"
+  },
+  {
+   "id": "boden-macchia",
+   "version": 1,
+   "typ": 1983,
+   "kat": "boden",
+   "name": "Dry Scrub",
+   "status": "geprueft",
+   "datei": "obj/boden-macchia.json"
+  },
+  {
+   "id": "boden-macchia-a",
+   "version": 1,
+   "typ": 1984,
+   "kat": "boden",
+   "name": "Dry Scrub B",
+   "status": "geprueft",
+   "datei": "obj/boden-macchia-a.json"
+  },
+  {
+   "id": "boden-macchia-b",
+   "version": 1,
+   "typ": 1985,
+   "kat": "boden",
+   "name": "Dry Scrub Red Earth",
+   "status": "geprueft",
+   "datei": "obj/boden-macchia-b.json"
+  },
+  {
+   "id": "boden-macchia-c",
+   "version": 1,
+   "typ": 1986,
+   "kat": "boden",
+   "name": "Dry Scrub Limestone",
+   "status": "geprueft",
+   "datei": "obj/boden-macchia-c.json"
+  },
+  {
+   "id": "boden-macchia-d",
+   "version": 1,
+   "typ": 1987,
+   "kat": "boden",
+   "name": "Dry Scrub Old Bones",
+   "status": "geprueft",
+   "datei": "obj/boden-macchia-d.json"
+  },
+  {
+   "id": "boden-macchia-e",
+   "version": 1,
+   "typ": 1988,
+   "kat": "boden",
+   "name": "Dry Scrub Amphora",
+   "status": "geprueft",
+   "datei": "obj/boden-macchia-e.json"
+  },
+  {
+   "id": "boden-macchia-f",
+   "version": 1,
+   "typ": 1989,
+   "kat": "boden",
+   "name": "Dry Scrub Cairn",
+   "status": "geprueft",
+   "datei": "obj/boden-macchia-f.json"
+  },
+  {
+   "id": "busch-macchia",
+   "version": 1,
+   "typ": 1990,
+   "kat": "blume",
+   "name": "Mastic Bush",
+   "status": "uebernommen",
+   "datei": "obj/busch-macchia.json"
+  },
+  {
+   "id": "busch-macchia-a",
+   "version": 1,
+   "typ": 1991,
+   "kat": "blume",
+   "name": "Broom Bush",
+   "status": "uebernommen",
+   "datei": "obj/busch-macchia-a.json"
+  },
+  {
+   "id": "busch-macchia-b",
+   "version": 1,
+   "typ": 1992,
+   "kat": "blume",
+   "name": "Rosemary on Stones",
+   "status": "uebernommen",
+   "datei": "obj/busch-macchia-b.json"
+  },
+  {
+   "id": "busch-macchia-c",
+   "version": 1,
+   "typ": 1993,
+   "kat": "blume",
+   "name": "Dead Bush with Helmet",
+   "status": "uebernommen",
+   "datei": "obj/busch-macchia-c.json"
   }
  ]
 }
