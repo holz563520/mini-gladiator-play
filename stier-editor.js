@@ -1,6 +1,7 @@
 'use strict';
 // =====================================================================================================
 // ARENA THEORY · STIER-EDITOR (dist/stier-editor.html): Rassen ansehen (Stier und Ochse), Körper, Hörner, Haltungen und Werte prüfen, Zeichenzeit messen.
+// Reiter Bewegung (ST2): Gangarten, Antritt, Bremsen, Scharren, Kopf senken, Grasen, Hinlegen und Aufstehen, Mimik, die drei Arten zu wenden; Zeitlupe und Einzelbild.
 // Bedienung Deutsch, Inhalte der Tiere Englisch. Lädt nur die Stierdateien, nicht das Spiel. Wächst mit jedem Schritt in STIER_FAHRPLAN.md.
 // Aufbau wie der Katzen- und der Bären-Editor (dist/katze-editor.js, dist/baer-editor.js). Im Master-Editor verlinkt: Menü Kampf → Tiere.
 // =====================================================================================================
@@ -10,7 +11,7 @@ const now=()=>performance.now()/1000,skulls=n=>'<span class="kopf">'+'☠'.repea
 const HALTUNG={stand:'Stand',lie:'Liegen'},FORM={bull:'Stier',ox:'Ochse'};
 const BAUART_DE={A:'Kampfrind',B:'Zugrind',C:'Langhorn',D:'Zebu',E:'Bergrind',F:'Büffel',G:'Wildrind',H:'Urzeit'};
 const FARBE={base:'Fell',light:'Lichter',shade:'Schatten',dark:'dunkel',muzzle:'Flotzmaul',nose:'Nüstern',horn:'Horn',hornTip:'Hornspitze',eye:'Auge',tuft:'Quaste, Locken',hoof:'Klauen'};
-const ED={tab:'rassen',breed:S.FIRST,form:'bull',cat:null,actor:null,shape:null,face:1,T:0};window.STIER_ED=ED;
+const ED={tab:'rassen',breed:S.FIRST,form:'bull',cat:null,actor:null,shape:null,face:1,T:0,bw:null,bt:0,pause:false,plan:null,prints:[],skid:[],jump:0,slip:0,prev:null};window.STIER_ED=ED;
 
 // ---------------------------------------------------------------- Reiter
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{ED.tab=b.dataset.tab;document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
@@ -39,7 +40,7 @@ function detail(X){const D=$('detail');D.innerHTML='';const box=el('div',{classN
 $('massstab').onchange=rassen;$('ordnung').onchange=rassen;
 
 // ---------------------------------------------------------------- Reiter Körper
-function neu(id,seed){ED.breed=id;ED.cat=S.create(id,seed,ED.form);ED.actor=S.actor(ED.cat,ED.actor?.mode||'stand');ED.shape={...S.shapeOf(id,ED.form)};ED.actor.SH=ED.shape;
+function neu(id,seed){ED.breed=id;ED.cat=S.create(id,seed,ED.form);ED.actor=S.actor(ED.cat,ED.actor?.mode||'stand');ED.shape={...S.shapeOf(id,ED.form)};ED.actor.SH=ED.shape;bwNeu();
  document.querySelectorAll('#formen button').forEach(b=>b.classList.toggle('on',b.dataset.f===ED.form));gestalt();fell();werte();verteilung();ausgabe();}
 function steckbrief(){const D=ED.cat,X=S.breed(D.breed);$('steckbrief').innerHTML='<b>'+D.name+'</b> · '+X.name+' · '+D.formName+' ('+FORM[D.form]+'), '+D.ageYears+' years · Schulterhöhe '+D.height+' cm, '+D.weight+' kg · Horn '+S.hornLenCm(D,ED.shape)+' cm lang, '+S.hornSpan(D,ED.shape)+' cm Spannweite, führt mit dem '+(D.appearance.hornSide==='L'?'linken':'rechten')+' Horn · Fell: '+D.appearance.coatName+
  '<br>Kampf-Talent T'+S.talent(D)+' · Kampfwert '+S.kw(D)+' · Zug-Talent T'+S.talentZug(D)+' · Zugwert '+S.zw(D)+' (Kampfwert und Zugwert vorläufig, werden in ST19 eingemessen) · Kennzahl '+D.seed;}
@@ -56,7 +57,7 @@ function schaubild(cv,of,soll,text,was){const c=cv.getContext('2d'),N=1000,ist=n
  text.textContent=was+' · Gold: Istwert (Mittel '+(si/N).toFixed(1)+') · hell: Anlage (Mittel '+(sa/N).toFixed(1)+') · Strich: Rassenwert '+soll+' · mittleres Gewicht '+Math.round(gw/N)+' kg';}
 function verteilung(){const B=S.breed(ED.breed),ox=ED.form==='ox';schaubild($('verteilung'),S.kampfOf,ox?B.sollOx:B.soll,$('verteilungText'),FORM[ED.form]+', Kampf');schaubild($('verteilungZug'),S.zugOf,ox?B.zugSollOx:B.zugSoll,$('verteilungZugText'),FORM[ED.form]+', Zug');}
 function gestalt(){const G=$('gestalt');G.innerHTML='';for(const [k,de,lo,hi,st] of S.SHAPE_INFO){const l=el('label'),r=el('input',{type:'range',min:lo,max:hi,step:st,value:ED.shape[k]}),o=el('span',{},String(ED.shape[k]));
-  r.oninput=()=>{ED.shape[k]=+r.value;o.textContent=r.value;S.snap(ED.actor,ED.actor.mode);ausgabe();steckbrief();};l.append(el('span',{},de),r,o);G.append(l);}}
+  r.oninput=()=>{ED.shape[k]=+r.value;o.textContent=r.value;S.snap(ED.actor,ED.actor.mode);if(ED.bw)S.snap(ED.bw,'stand');ausgabe();steckbrief();};l.append(el('span',{},de),r,o);G.append(l);}}
 function fell(){const F=$('fell');F.innerHTML='';const col=ED.cat.appearance.colors;
  for(const k of S.COLKEYS){const l=el('label',{style:'font-size:13px'}),i=el('input',{type:'color',value:col[k]});i.oninput=()=>{col[k]=i.value;ausgabe();};l.append(i,' '+FARBE[k]);F.append(l);}
  const M=$('muster');M.innerHTML='';for(const co of (S.COATS[ED.breed]||S.COATS._)){const b=el('button',{className:co.id===ED.cat.appearance.coat?'on':''},co.name);
@@ -84,17 +85,56 @@ S.BREEDS.filter(x=>x.built).forEach(x=>$('sorte').append(el('option',{value:x.id
 $('sorte').onchange=()=>neu($('sorte').value);
 $('wuerfeln').onclick=()=>neu(ED.breed);
 $('wenden').onchange=()=>ED.face=$('wenden').checked?-1:1;
-$('zurueck').onclick=()=>{ED.shape={...S.shapeOf(ED.breed,ED.form)};ED.actor.SH=ED.shape;S.snap(ED.actor,ED.actor.mode);gestalt();ausgabe();steckbrief();};
+$('zurueck').onclick=()=>{ED.shape={...S.shapeOf(ED.breed,ED.form)};ED.actor.SH=ED.shape;bwNeu();S.snap(ED.actor,ED.actor.mode);gestalt();ausgabe();steckbrief();};
+
+// ---------------------------------------------------------------- Reiter Bewegung (ST2)
+// Eigene Bühnenfigur mit demselben Tier und derselben Gestalt wie im Reiter Körper, eigene Uhr (Tempo, Pause, Einzelbild).
+function bwNeu(){ED.bw=S.actor(ED.cat,'stand');ED.bw.SH=ED.shape;ED.bt=0;ED.plan=null;ED.prints.length=0;ED.skid.length=0;ED.prev=null;ED.jump=0;ED.slip=0;S.step(ED.bw,0,0);}
+const knopf=(wo,text,tun)=>{const b=el('button',{},text);b.onclick=()=>{ED.jump=0;ED.slip=0;tun(ED.bw);};$(wo).append(b);return b;};
+knopf('bwGang','Stehen (aus dem Galopp: Bremsen)',a=>{ED.plan=null;S.go(a,null);S.pose(a,'stand');});
+for(const g of S.GK)knopf('bwGang',S.GAITS[g].de,a=>{ED.plan=null;S.go(a,g);});
+knopf('bwWenden','Wenden (im Stand umtreten, im Lauf im Bogen)',a=>{ED.plan=null;S.turn(a,a.v>25?'run':'stand');});
+knopf('bwWenden','Ansturm, Bremsen, Herumwerfen',a=>{S.head(a,'up');S.go(a,'gallop');ED.plan='throw';});
+knopf('bwWenden','Ansturm mit gesenktem Kopf',a=>{ED.plan='charge';ED.planT=ED.bt;S.head(a,'up');S.go(a,'gallop');});
+knopf('bwTun','Hinlegen',a=>{ED.plan=null;S.pose(a,'lie');});knopf('bwTun','Aufstehen',a=>S.pose(a,'stand'));knopf('bwTun','Scharren',a=>{ED.plan=null;S.act(a,'paw');});
+knopf('bwTun','Kopf senken',a=>S.head(a,'low'));knopf('bwTun','Grasen',a=>S.head(a,'graze'));knopf('bwTun','Kopf normal',a=>S.head(a,'up'));
+for(const [k,X] of Object.entries(S.EXPR))knopf('bwMimik',X.de,a=>S.expr(a,k,ED.bt));
+$('bwTempo').oninput=()=>$('bwTempoT').textContent=(+$('bwTempo').value).toFixed(2).replace('.',',')+'×';
+$('bwPause').onclick=()=>{ED.pause=!ED.pause;$('bwPause').textContent=ED.pause?'Weiter':'Pause';$('bwPause').classList.toggle('on',ED.pause);};
+$('bwBild').onclick=()=>{if(!ED.pause)$('bwPause').click();bwSchritt(1/60);};
+$('bwNull').onclick=()=>{ED.jump=0;ED.slip=0;};
+// Ein Zeitschritt der Bewegung: rechnen, Abdrücke und Rutschspuren merken, größten Sprung je Bild und Rutschen stehender Hufe messen
+function bwSchritt(dt){const a=ED.bw;if(!a||dt<=0)return;ED.bt+=dt;const war=a.feet?a.feet.map(f=>f.st&&!f.sl):null;S.step(a,dt,ED.bt);const st=S.state(a);
+ if(ED.plan==='throw'&&st.v>.9*S.GAITS.gallop.v*(a.pace||1)){S.turn(a,'throw');ED.plan=null;}
+ if(ED.plan==='charge'){if(ED.bt-ED.planT>2.2)S.head(a,'low');if(ED.bt-ED.planT>3.6){S.go(a,null);S.head(a,'up');ED.plan=null;}}
+ const V=S.view(a,ED.bt),P=ED.prev;
+ if(a.feet)a.feet.forEach((f,i)=>{if(f.sl>0){ED.skid.push([f.x,f.z]);if(ED.skid.length>500)ED.skid.shift();}else if(f.st&&war&&!war[i]){ED.prints.push([f.x,f.z]);if(ED.prints.length>90)ED.prints.shift();}
+  if(P&&P.feet&&f.st&&!f.sl&&war&&war[i])ED.slip=Math.max(ED.slip,Math.hypot(f.x-P.feet[i][0],f.z-P.feet[i][1]));});
+ if(P&&dt<=1/50)ED.jump=Math.max(ED.jump,Math.hypot(V.headX-V.x-P.hx,V.headY-V.y-P.hy),Math.hypot(V.hipX-V.x-P.px,V.hipY-V.y-P.py));
+ ED.prev={hx:V.headX-V.x,hy:V.headY-V.y,px:V.hipX-V.x,py:V.hipY-V.y,feet:a.feet?a.feet.map(f=>[f.x,f.z]):null};}
+const WENDEN={stand:'Wenden im Stand (tritt um)',run:'Wenden im Lauf (Bogen)',throw:'Herumwerfen'};
+function bwBuehne(){const cv=$('bwBuehne'),c=cv.getContext('2d'),W=cv.width,H=cv.height,a=ED.bw,sz=S.szOf(ED.cat,ED.shape),k=$('bwNah').checked?3:1.55,u=sz*k,gy=H-($('bwNah').checked?40:120),st=S.state(a);c.imageSmoothingEnabled=false;
+ c.fillStyle='#d8cdb4';c.fillRect(0,0,W,H);c.fillStyle='#9a835c';c.fillRect(0,gy-64,W,58);c.fillStyle='#8a7350';c.fillRect(0,gy-6,W,H-gy+6);
+ // Boden: Steine an festen Orten, sie ziehen vorbei, wenn das Rind läuft
+ const X=x=>W/2+(x-st.x)*u,Y=z=>gy+S.DK*(z-st.z)*u,x0=Math.floor((st.x-W/2/u)/23)-1,x1=Math.ceil((st.x+W/2/u)/23)+1;
+ for(let i=x0;i<=x1;i++){const h=S.prim.hrand(i*1.7),h2=S.prim.hrand(i*3.1+5);c.fillStyle=h>.5?'#7b6645':'#9a8460';c.fillRect(Math.round(X(i*23+h*17)),Math.round(gy+4+h2*(H-gy-12)),h>.8?5:3,2);}
+ if($('bwSpur').checked){c.fillStyle='#e6d9b6';for(const [x,z] of ED.skid)c.fillRect(Math.round(X(x))-1,Math.round(Y(z))-1,3,2);c.fillStyle='#4f3f29';for(const [x,z] of ED.prints)c.fillRect(Math.round(X(x)-2*u),Math.round(Y(z))-1,Math.max(3,Math.round(5*u)),3);}
+ S.draw(c,a,W/2,gy,k,1,{time:ED.bt});
+ const grad=Math.round(st.th*180/Math.PI),HALT={stand:'Stand',lie:'Liegen',kneel:'Kniefall'};
+ $('bwText').innerHTML='<b>'+(st.turn?WENDEN[st.turn]:st.brake?'Bremsen':st.act?'Scharren':st.gait?S.GAITS[st.gait].de:(HALT[a.mode]||a.mode)+(S.moving(a)?' (Übergang)':''))+'</b> · '+st.kmh.toFixed(1).replace('.',',')+' km/h · Richtung '+grad+'° ('+(grad<5?'nach rechts':grad>175?'nach links':grad>80&&grad<100?'von vorn':'schräg')+') · Kopf: '+({up:'normal',low:'gesenkt',graze:'grast'})[st.head]+
+  '<br>Größter Sprung je Bild (Kopf und Kruppe): '+(ED.jump*sz*S.CM).toFixed(1).replace('.',',')+' cm · Rutschen stehender Hufe: '+(ED.slip*sz*S.CM).toFixed(2).replace('.',',')+' cm'+(st.slide>0?' · <b>Hufe rutschen gewollt</b> (Sand spritzt)':'');}
 
 // ---------------------------------------------------------------- Reiter Messung
 // Zeichenzeit je Tier: viele Bilder auf eine unsichtbare Fläche, Mittelwert. art: Haltung, 'front' (Kopf von vorn) oder 'brindle' (Stand mit Fellmuster)
 function messe(art,k,n=300,form='bull'){const cv=document.createElement('canvas');cv.width=420;cv.height=320;const c=cv.getContext('2d'),D=S.typical(ED.breed,form);
  if(art==='brindle')D.appearance.pattern='brindle';const a=S.actor(D,S.MODES.includes(art)?art:'stand');
+ if(S.GAITS[art]){S.step(a,0,0);S.go(a,art);for(let i=0;i<240;i++)S.step(a,1/60,i/60);}
+ if(art==='turn'||art==='vorn'){S.step(a,0,0);a.th=art==='turn'?1:Math.PI/2;a.thH=art==='turn'?1.3:Math.PI/2;a.thT=a.th;a.feet=null;}
  const eins=t=>art==='front'?S.drawFront(c,D,210,160,k):S.draw(c,a,200,300,k,1,{time:t});eins(0);
  const t0=performance.now();for(let i=0;i<n;i++)eins(i*.05);return (performance.now()-t0)/n;}
 S.messe=messe;
 $('messen').onclick=()=>{const T=$('messTabelle');T.innerHTML='<tr><th>Bild</th><th>Kampfgröße (Zoom 1)</th><th>Nahansicht (Zoom 4)</th></tr>';
- const Z=[['stand','Stand (Stier)','bull'],['stand','Stand (Ochse)','ox'],['lie','Liegen','bull'],['brindle','Stand mit Stromung','bull'],['front','Kopf von vorn','bull']];
+ const Z=[['stand','Stand (Stier)','bull'],['stand','Stand (Ochse)','ox'],['lie','Liegen','bull'],['brindle','Stand mit Stromung','bull'],['walk','Schritt','bull'],['gallop','Galopp','bull'],['turn','Wenden, schräg','bull'],['vorn','Wenden, von vorn','bull'],['front','Kopf von vorn (Brustbild)','bull']];
  for(const [m,name,f] of Z)T.append(el('tr',{},'<td style="text-align:left">'+name+'</td><td>'+messe(m,1,300,f).toFixed(3)+' ms</td><td>'+messe(m,4,300,f).toFixed(3)+' ms</td>'));
  const t0=performance.now();S.miniClear();S.mini(ED.breed,'side',128);const t1=performance.now();for(let i=0;i<1000;i++)S.mini(ED.breed,'side',128);const t2=performance.now();
  T.append(el('tr',{},'<td style="text-align:left">Miniatur</td><td>erstes Mal '+(t1-t0).toFixed(2)+' ms</td><td>danach '+((t2-t1)/1000).toFixed(4)+' ms</td>'));rassen();};
@@ -107,7 +147,8 @@ function herde(){if(ED.tab==='messung'&&$('herde').checked){const cv=$('herdeBil
 
 // Ein Takt: Uhr weiterdrehen, Tier rechnen, den sichtbaren Reiter zeichnen
 let last=performance.now();
-function bild(){const n=performance.now(),dt=Math.min(.05,(n-last)/1000);last=n;ED.T+=dt;S.step(ED.actor,dt,ED.T);if(ED.tab==='koerper')buehne();requestAnimationFrame(bild);}
+function bild(){const n=performance.now(),dt=Math.min(.05,(n-last)/1000);last=n;ED.T+=dt;S.step(ED.actor,dt,ED.T);if(ED.tab==='koerper')buehne();
+ if(ED.tab==='bewegung'){if(!ED.pause){let r=dt*(+$('bwTempo').value);while(r>1e-6){const d=Math.min(r,1/60);bwSchritt(d);r-=d;}}bwBuehne();}requestAnimationFrame(bild);}
 
 neu(S.FIRST,20261148);ED.pick=S.FIRST;rassen();detail(S.breed(S.FIRST));bild();herde();
 })();

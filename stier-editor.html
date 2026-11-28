@@ -46,8 +46,8 @@ table{border-collapse:collapse;font-size:14px}td,th{border:1px solid var(--line)
 </style>
 </head>
 <body>
-<header><h1>Stier-Editor</h1><small>Testversion · Stiere und Ochsen · Bedienung Deutsch, Inhalte der Tiere Englisch · Stand ST1: Körper, Stand und Liegen, Kopf von der Seite und von vorn, Werte (Bewegung und Drehung folgen in ST2)</small></header>
-<nav><button data-tab="rassen" class="on">Rassen</button><button data-tab="koerper">Körper</button><button data-tab="messung">Messung</button></nav>
+<header><h1>Stier-Editor</h1><small>Testversion · Stiere und Ochsen · Bedienung Deutsch, Inhalte der Tiere Englisch · Stand ST2: Körper, Werte, Gangarten, Antritt, Bremsen, Scharren, Grasen, Hinlegen und Aufstehen, Mimik, Wenden über die Vorderansicht (Kampf folgt in ST3)</small></header>
+<nav><button data-tab="rassen" class="on">Rassen</button><button data-tab="koerper">Körper</button><button data-tab="bewegung">Bewegung</button><button data-tab="messung">Messung</button></nav>
 <main>
 <section id="rassen" class="on">
  <div class="reihe"><label>Sortiert nach <select id="ordnung"><option value="bauart">Bauart</option><option value="kampf">Kampfklasse (Stier)</option><option value="zug">Zugklasse (Ochse)</option></select></label>
@@ -61,7 +61,7 @@ table{border-collapse:collapse;font-size:14px}td,th{border:1px solid var(--line)
  <canvas id="buehne" class="buehne" width="820" height="430"></canvas>
  <div class="reihe" id="haltungen"></div>
  <div class="reihe" style="align-items:flex-start"><canvas id="vorn" width="220" height="220" style="background:#cdbb96;border:1px solid var(--line);border-radius:6px;image-rendering:pixelated"></canvas>
-  <div style="flex:1;min-width:220px"><div id="steckbrief" class="hinweis"></div><p class="hinweis">Links: Kopf von vorn, mit denselben Hörnern wie in der Seitenansicht (eine räumliche Kurve). Über diese Ansicht dreht der Stier ab ST2.</p></div></div>
+  <div style="flex:1;min-width:220px"><div id="steckbrief" class="hinweis"></div><p class="hinweis">Links: Kopf von vorn, mit denselben Hörnern wie in der Seitenansicht (eine räumliche Kurve). Über diese Ansicht dreht der Stier (Reiter Bewegung).</p></div></div>
  <div class="spalten">
   <div><h2>Kampfwerte: Anlage (hell) und Istwert (gold), Strich = Rassenwert der Form</h2><div id="werte"></div>
    <h2>Zugwerte</h2><div id="zugwerte"></div>
@@ -73,6 +73,18 @@ table{border-collapse:collapse;font-size:14px}td,th{border:1px solid var(--line)
    <textarea id="ausgabe" readonly></textarea><div class="hinweis">Diese Zeile an Claude schicken, wenn die Gestalt so bleiben soll.</div></div>
  </div>
 </section>
+<section id="bewegung">
+ <p class="hinweis">Das Tier aus dem Reiter Körper in Bewegung. Die Kamera läuft mit, der Boden zieht vorbei. Dunkle Abdrücke: dort steht ein Huf; solange er steht, bleibt er auf seinem Abdruck. Helle Striche: Rutschspur (nur beim Bremsen, Herumwerfen und im schnellen Bogen gewollt).</p>
+ <canvas id="bwBuehne" class="buehne" width="820" height="400"></canvas>
+ <div class="reihe" id="bwGang"></div>
+ <div class="reihe" id="bwWenden"></div>
+ <div class="reihe" id="bwTun"></div>
+ <div class="reihe" id="bwMimik"></div>
+ <div class="reihe"><label>Tempo <input type="range" id="bwTempo" min="0.05" max="1" step="0.05" value="1"> <span id="bwTempoT">1×</span></label><button id="bwPause">Pause</button><button id="bwBild">Einzelbild ▶</button>
+  <label><input type="checkbox" id="bwNah"> Nahansicht</label><label><input type="checkbox" id="bwSpur" checked> Abdrücke</label><button id="bwNull">Messung zurücksetzen</button></div>
+ <div class="hinweis" id="bwText"></div>
+ <p class="hinweis">Wenden: Der Stier dreht immer über die Vorderansicht, nie gespiegelt. Im Stand tritt er um, im Trab läuft er einen weiten Bogen und legt sich in die Kurve, aus dem Galopp bremst er mit gestemmten Vorderbeinen und wirft die Hinterhand herum. Mit Tempo und Einzelbild lässt sich jede Stellung ansehen.</p>
+</section>
 <section id="messung">
  <p class="hinweis">Misst, wie lange das Zeichnen eines Rinds dauert (Mittel über viele Bilder). Auf dem Handy messen, das zählt.</p>
  <div class="reihe"><button id="messen">Messen</button><label><input type="checkbox" id="herde" checked> Herde: 40 Rinder laufend zeichnen</label></div>
@@ -81,9 +93,9 @@ table{border-collapse:collapse;font-size:14px}td,th{border:1px solid var(--line)
  <div class="hinweis" id="herdeText"></div>
 </section>
 </main>
-<script src="stier.js?v=96bdfd99"></script>
-<script src="stier-koepfe.js?v=96bdfd99"></script>
-<script src="stier-mini.js?v=96bdfd99"></script>
-<script src="stier-editor.js?v=96bdfd99"></script>
+<script src="stier.js?v=271645ee"></script>
+<script src="stier-koepfe.js?v=271645ee"></script>
+<script src="stier-mini.js?v=271645ee"></script>
+<script src="stier-editor.js?v=271645ee"></script>
 </body>
 </html>
