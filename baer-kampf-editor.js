@@ -1,5 +1,5 @@
 'use strict';
-/* BÄREN-KAMPF-EDITOR (baer-kampf.html, Schritte B3a und B3b1): baut mit BAER.K.build (baer-kampf.js) einen Kampf Bär gegen Mensch, Hund oder Bär,
+/* BÄREN-KAMPF-EDITOR (baer-kampf.html, Schritte B3a bis B3b2; Reiter Kampf, Attacken mit Übungsfigur, Wunden von Hand): baut mit BAER.K.build (baer-kampf.js) einen Kampf Bär gegen Mensch, Hund oder Bär,
    zeigt Zustand, Wunden, Kampfbericht, löst einzelne Angriffe aus und rechnet viele Kämpfe ohne Bild. Bedienung Deutsch, Bäreninhalte Englisch.
    Ändert keinen Spielstand: Der Speicher des Spiels wird hier gar nicht geladen, M.persist ist abgeschaltet. */
 (()=>{
@@ -32,11 +32,24 @@ function mensch(team,s,i){const q=+val('stufe'+s),rng=S.rng,g=M.makeGladiator(q,
 function baer(s,i){const id=val('sorte'+s);let D;if(val('werte')==='typisch'){D=B.typical(id);D.stats={...B.breed(id).werte};D.id='t'+s+i+Date.now().toString(36);D.name=B.create(id).name;}else D=B.create(id);return {kind:'bear',D,key:s+i};}
 function hund(s,i){const D=DOG.create(val('rasse'+s));D.name=D.name||'Dog';return {kind:'dog',D,key:s+i};}
 function seite(s,team){const n=+val('zahl'+s),art=val('art'+s),L=[];for(let i=0;i<n;i++)L.push(art==='bear'?baer(s,i):art==='dog'?hund(s,i):mensch(team,s,i));return L;}
-const spec=()=>({blue:seite('A',0),red:seite('B',1),title:'Bear pit'});
+let tab='kampf';
+// Reiter Attacken und Wunden (B3b2): erster Bär der Seite A gegen eine Übungsfigur mit der Ausrüstung der Seite B
+const spec=()=>tab==='kampf'?{blue:seite('A',0),red:seite('B',1),title:'Bear pit'}:{blue:[baer('A',0)],red:[mensch(1,'B',0)],title:'Bear pit'};
 let run=null;
-function build(){S.battle=null;M.shots?.forEach?.(p=>p.active=false);M.stains.length=0;if(M.limbs)M.limbs.length=0;
- const b=K.build(spec());b.time=b.startTime=0;S.battle=b;run={b,end:0};S.options.speed=+val('spd');$('pause').textContent='⏸ Pause';logLen=-1;}
+function build(){S.battle=null;M.shots?.forEach?.(p=>p.active=false);M.fx?.forEach?.(p=>p.active=false);/* kein Blut aus dem vorigen Kampf */M.stains.length=0;if(M.limbs)M.limbs.length=0;
+ const b=K.build(spec());b.time=b.startTime=0;S.battle=b;run={b,end:0};S.options.speed=+val('spd');
+ if(tab!=='kampf'){const pu=b.actors.find(a=>!a.bear&&!a.dog);if(pu)pu.puppe=!(tab==='attacken'&&$('wehrt').checked);for(const a of b.actors)if(a.bear)a.threatDone=true;}$('pause').textContent='⏸ Pause';logLen=-1;}
 $('go').onclick=build;
+function setTab(t){tab=t;for(const k of $('tabs').children)k.classList.toggle('primary',k.dataset.tab===t);for(const e of document.querySelectorAll('[data-tabs]'))e.hidden=!e.dataset.tabs.split(' ').includes(t);
+ K.OPT.ueben=t==='kampf'?0:1;K.OPT.zeigen=t==='attacken'&&$('zeigen').checked?1:0;K.force=null;build();}
+$('tabs').onclick=e=>{const t=e.target.closest('[data-tab]')?.dataset.tab;if(t)setTab(t);};
+$('zeigen').onchange=()=>{K.OPT.zeigen=tab==='attacken'&&$('zeigen').checked?1:0;};$('wehrt').onchange=build;$('puppeNeu').onclick=build;
+// ---------- Wunden von Hand ----------
+for(const p of K.PARTS)$('wStelle').insertAdjacentHTML('beforeend',`<option value="${p}"${p==='bauch'?' selected':''}>${K.PART_DE[p]}</option>`);
+const ersterBaer=()=>S.battle?.actors.find(a=>a.bear&&a.team===0);
+const wSync=()=>{$('wStarkText').textContent=nf(+val('wStark'),1);};$('wStark').addEventListener('input',wSync);
+$('wSetzen').onclick=()=>{const b=ersterBaer();if(!b||b.g.dead)return;K.wound(b,val('wStelle'),val('wArt'),+val('wStark'));};
+$('wHeilen').onclick=()=>{const b=ersterBaer();if(!b)return;if(b.g.dead)build();else K.heal(b);};
 $('pause').onclick=()=>{const b=S.battle;if(!b)return;b.paused=!b.paused;$('pause').textContent=b.paused?'▶ Weiter':'⏸ Pause';};
 $('einzel').onclick=()=>{const b=S.battle;if(!b)return;b.paused=false;K.fixed(1/60);b.paused=true;$('pause').textContent='▶ Weiter';};
 $('spd').onchange=()=>{S.options.speed=+val('spd');};
@@ -63,18 +76,22 @@ function tick(){const r=run;if(!r||S.battle!==r.b)return;const b=r.b;
  let h=`<div class="karte">Zeit <b>${nf(b.time-b.startTime)} s</b> · Zeichenzeit je Bär <b>${nf(K.drawMs||0,2)} ms</b><br>`+(b.ende?`<b>${b.ende.winner<0?(b.ende.timeout?'Zeit abgelaufen':'Niemand steht mehr'):'Seite '+(b.ende.winner?'B':'A')+' gewinnt'}</b>`:'Kampf läuft')+'</div>';
  for(const a of b.actors)h+=karte(a);$('hud').innerHTML=h;
  if(b.log.length!==logLen||b.log[0]!==r.top){logLen=b.log.length;r.top=b.log[0];$('log').innerHTML=b.log.slice(0,40).map(l=>`<div><span>${l.time} s</span> ${esc(l.text)}</div>`).join('');}
+ if(tab==='attacken'){const a=ersterBaer(),pu=b.actors.find(x=>!x.bear&&!x.dog);if(a){const m=a.mark,h=pu?K.helm(pu):null,HELM={open:'offen (Leder oder Schienen): halbiert den Kopfbiss',closed:'geschlossen (Metall): hält bei ☠3 stand, halbiert ab ☠4'};
+   $('messung').innerHTML=`Reichweite nach vorn <b>${nf(K.reach(a),0)}</b> Bildpunkte (${nf(K.reach(a)/(a.P.sz*K.SCALE)*2.2,0)} cm), seitlich ±22.`+(m?` Letzter Treffer (${esc(MODE_DE[m.kind]||m.kind)}): Abstand von ${m.kind==='swipe'||m.kind==='slam'?'Krallen':'Maul'} zur Trefferstelle <b>${nf(m.d,1)}</b> Einheiten (${nf(m.d*2.2,0)} cm).`:' Noch kein Treffer gemessen.')+
+    `<br>Helm der Übungsfigur: ${h?HELM[h.art]:'keiner'}. Kopfbiss von selbst bei diesem Bären: ${a.P.skulls<3||a.bear.stats.biss<70?'nie (erst ab ☠3 mit Bisskraft ab 70)':h&&h.art==='closed'&&a.P.skulls===3?'nie (der Helm hält)':nf((a.P.bauart==='H'?20:15)*(h?.5:1)*K.OPT.head,1)+' % je Biss in den Kopf des Wehrlosen'}. Der Knopf „Kopfbiss“ erzwingt ihn immer.`;}}
+ if(tab==='wunden'){const a=ersterBaer();if(a)$('wText').innerHTML=a.g.dead?`<b>Tot:</b> ${esc(a.g.cause)}. „Alle Wunden heilen“ stellt einen neuen Bären auf.`:`Wunden am Bären: <b>${a.wounds.length}</b> · Gesundheit ${nf(K.health(a),0)} % · Blut ${nf(a.blood,0)} % · Mut ${nf(a.morale,0)} % · lahmt ${nf(K.lame(a)*100,0)} %. Kopf, Hals oder Brust auf 0 % töten den Bären.`;}
  if(b.ende&&!r.end)r.end=performance.now();
  if(r.end&&performance.now()-r.end>3500&&$('loop').checked)build();}
 setInterval(tick,150);
 
 // Kamera: auf die Mitte aller Lebenden (folgt weich)
-const cam={x:520,y:390};M.battleCamera=b=>{if(!b?.baer||!run)return null;const z=+val('zoom');if(z<=1.01)return null;const L=b.actors.filter(a=>!a.g.dead&&!a.fled);const P=L.length?L:b.actors;
+const cam={x:520,y:390};M.battleCamera=b=>{if(!b?.baer||!run)return null;const z=tab==='wunden'?Math.max(2.6,+val('zoom')):+val('zoom');/* Reiter Wunden: nah am Bären */if(z<=1.01)return null;const L=tab==='wunden'?b.actors.filter(a=>a.bear):b.actors.filter(a=>!a.g.dead&&!a.fled);const P=L.length?L:b.actors;
  const tx=P.reduce((n,a)=>n+a.x,0)/P.length,ty=P.reduce((n,a)=>n+a.y,0)/P.length-30;cam.x+=(tx-cam.x)*.06;cam.y+=(ty-cam.y)*.06;return {zoom:z,x:cam.x,y:cam.y};};
 
 // ---------- Viele Kämpfe ----------
 $('serieGo').onclick=()=>{$('serie').textContent='Rechnet …';setTimeout(()=>{const alt=S.battle,p=alt?.paused;if(alt)alt.paused=true;let R;try{R=K.series(spec,30);}catch(e){$('serie').textContent='Fehler: '+e.message;return;}finally{S.battle=alt;if(alt)alt.paused=p;}
  $('serie').innerHTML=`Seite A gewinnt <b>${R.wins[0]}</b> · Seite B gewinnt <b>${R.wins[1]}</b> · ohne Sieger <b>${R.draw}</b> (von ${R.n})<br>mittlere Kampfdauer ${nf(R.time)} s · tote Bären ${R.deadBears} · geflohene Bären ${R.fled} · abgerissene Gliedmaßen ${R.torn} · Kopfbisse ${R.crushed} · gepackt ${R.grapples} · geschleudert ${R.flung} · weggezerrt ${R.dragged} · Rechenzeit ${nf(R.ms/R.n,0)} ms je Kampf`;},30);};
 for(const k of ['tear','head'])if(K.OPT[k]===0)$(k).value='0';// Notausschalter aus der Adresse
-sync();build();
-window.BAER_KAMPF_ED={build,spec};
+sync();wSync();setTab('kampf');
+window.BAER_KAMPF_ED={build,spec,setTab};
 })();

@@ -35,7 +35,10 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 .err{color:#f29b83;white-space:pre-wrap}
 </style></head><body><div class="wrap">
 <div class="tl">Arena Theory · Werkzeug · <a href="baer-editor.html">zurück zum Bären-Editor</a></div><h1>Bären · Kampf-Editor</h1>
-<p class="sub">Bären gegen Menschen, Hunde und andere Bären, mit der echten Kampflogik des Spiels. Testversion (Schritte B3a und B3b1): Die Werte sind vorläufig und noch nicht eingemessen, bisher hat nur der Europäische Braunbär eine eigene Gestalt, alle anderen Sorten kämpfen mit ihren eigenen Werten in seinem Körper. Dein Spielstand wird nicht verändert.</p>
+<p class="sub">Bären gegen Menschen, Hunde und andere Bären, mit der echten Kampflogik des Spiels. Testversion (Schritte B3a bis B3b2): Die Werte sind vorläufig und noch nicht eingemessen, bisher hat nur der Europäische Braunbär eine eigene Gestalt, alle anderen Sorten kämpfen mit ihren eigenen Werten in seinem Körper. Dein Spielstand wird nicht verändert.</p>
+<div class="bbar" id="tabs"><button class="btn primary" type="button" data-tab="kampf">Kampf</button><button class="btn" type="button" data-tab="attacken">Attacken</button><button class="btn" type="button" data-tab="wunden">Wunden</button></div>
+<p class="sub" data-tabs="attacken">Attacken einzeln ansehen: Der erste Bär der Seite A steht einer Übungsfigur gegenüber (ein Mensch mit Stufe, Waffe und Rüstung der Seite B). Der Bär greift nur an, wenn du unten einen Angriff antippst. Am besten mit Tempo ¼ und „Bild vor“ ansehen.</p>
+<p class="sub" data-tabs="wunden">Wunden von Hand auf den ersten Bären der Seite A setzen, um Aussehen und Folgen zu prüfen (Blut, Lahmen, Mut). Der Bär greift hier nicht von selbst an.</p>
 <div class="teams">
  <div class="team"><h3>Seite A (links)</h3><div class="bbar">
   <label>Art<select id="artA"><option value="bear" selected>Bär</option><option value="human">Mensch</option><option value="dog">Hund</option></select></label>
@@ -67,10 +70,26 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 </div>
 <div class="stage"><canvas id="arenaCanvas" width="1040" height="720"></canvas></div>
 <div class="hud" id="hud">Lädt …</div>
-<h2>Angriff auslösen</h2>
-<p class="sub">Der erste Bär der Seite A nimmt den gewählten Angriff als Nächstes. Neu (B3b1): Packen und Ringen (hält den Stehenden fest, beißt, ringt ihn zu Boden oder schleudert ihn weg), Wegschleudern, Wegzerren (zerrt den Liegenden von anderen Gegnern weg, darum am besten mit zwei oder mehr Gegnern ansehen). Bären mit schwer verletzter Vorderpranke oder verletztem Hinterlauf lahmen: langsamer, kein Galopp. Große Bären (ab ☠4) reißen ein schon schwer verletztes Glied auch am Stehenden ab. Abreißen und Kopfbiss gehen nur am Liegenden: Der Bär reißt den Gegner dafür erst zu Boden. Von selbst kommen beide nach den Startwerten aus dem Fahrplan: Abreißen nur an einem schon schwer verletzten Glied (kleine Bären nur Hand und Fuß, höchstens einmal je Opfer), Kopfbiss nur ab ☠3 mit Bisskraft ab 70 an einem fast wehrlosen Opfer. Mit den Reglern lässt sich beides häufiger stellen oder abschalten.</p>
-<div class="bbar" id="angriffe"></div>
+<div data-tabs="wunden"><h2>Wunde setzen</h2>
 <div class="bbar">
+ <label>Stelle<select id="wStelle"></select></label>
+ <label>Art<select id="wArt"><option value="claw">Krallen</option><option value="bite">Biss</option><option value="cut" selected>Schnitt</option><option value="stab">Stich</option><option value="blunt">stumpf</option></select></label>
+ <label>Schwere (Gewebepunkte): <span id="wStarkText"></span><input type="range" id="wStark" min="0.5" max="14" step="0.5" value="4"></label>
+ <button class="btn primary" id="wSetzen" type="button">Wunde setzen</button>
+ <button class="btn" id="wHeilen" type="button">Alle Wunden heilen</button>
+</div>
+<p class="sub" id="wText"></p></div>
+<h2 data-tabs="kampf attacken">Angriff auslösen</h2>
+<div data-tabs="attacken"><div class="bbar">
+ <label class="frei"><input type="checkbox" id="zeigen" checked> Reichweite und Treffpunkt zeigen</label>
+ <label class="frei"><input type="checkbox" id="wehrt"> Übungsfigur wehrt sich (für Ausweichen und Zurückgeworfen)</label>
+ <button class="btn" id="puppeNeu" type="button">Übungsfigur neu aufstellen</button>
+</div>
+<p class="sub">Gestrichelter Rahmen am Boden: In dieser Zone trifft der Bär einen Gegner. Gelbes Kreuz: die Stelle, auf die er zielt. Nach dem Treffer: weißes Kreuz = Trefferstelle, roter Punkt = wo Krallen oder Maul im Trefferbild wirklich waren.</p>
+<p class="sub" id="messung"></p></div>
+<p class="sub" data-tabs="kampf">Der erste Bär der Seite A nimmt den gewählten Angriff als Nächstes. Neu (B3b1): Packen und Ringen (hält den Stehenden fest, beißt, ringt ihn zu Boden oder schleudert ihn weg), Wegschleudern, Wegzerren (zerrt den Liegenden von anderen Gegnern weg, darum am besten mit zwei oder mehr Gegnern ansehen). Bären mit schwer verletzter Vorderpranke oder verletztem Hinterlauf lahmen: langsamer, kein Galopp. Große Bären (ab ☠4) reißen ein schon schwer verletztes Glied auch am Stehenden ab. Abreißen und Kopfbiss gehen nur am Liegenden: Der Bär reißt den Gegner dafür erst zu Boden. Von selbst kommen beide nach den Startwerten aus dem Fahrplan: Abreißen nur an einem schon schwer verletzten Glied (kleine Bären nur Hand und Fuß, höchstens einmal je Opfer), Kopfbiss nur ab ☠3 mit Bisskraft ab 70 an einem fast wehrlosen Opfer. Mit den Reglern lässt sich beides häufiger stellen oder abschalten.</p>
+<div class="bbar" id="angriffe" data-tabs="kampf attacken"></div>
+<div class="bbar" data-tabs="kampf attacken">
  <label>Abreißen, Häufigkeit (0 = aus): <span id="tearText"></span><input type="range" id="tear" min="0" max="10" step="0.5" value="1"></label>
  <label>Kopfbiss, Häufigkeit (0 = aus): <span id="headText"></span><input type="range" id="head" min="0" max="10" step="0.5" value="1"></label>
  <label>Schaden der Bären: <span id="schadenText"></span><input type="range" id="schaden" min="0.4" max="2" step="0.05" value="1"></label>
@@ -80,16 +99,16 @@ h2{color:var(--gold);letter-spacing:1px;text-transform:uppercase;font-size:15px;
 </div>
 <h2>Kampfbericht (Englisch wie im Spiel)</h2>
 <div id="log"></div>
-<h2>Viele Kämpfe rechnen</h2>
+<div data-tabs="kampf"><h2>Viele Kämpfe rechnen</h2>
 <p class="sub">Rechnet dieselbe Aufstellung ohne Bild mehrmals durch (jedes Mal frisch gewürfelt) und zeigt, wer wie oft gewinnt.</p>
 <div class="bbar"><button class="btn" id="serieGo" type="button">30 Kämpfe rechnen</button></div>
-<div id="serie"></div>
+<div id="serie"></div></div>
 <p class="sub err" id="err" hidden></p>
 </div>
 <script>window.BAER_KAMPF_EDITOR=true;window.onerror=(m,src,l)=>{const e=document.getElementById('err');if(e){e.hidden=false;e.textContent+='Fehler: '+m+' ('+String(src).split('/').pop()+':'+l+')\n';}};</script>
 <script>
 // Spielmodule in Reihenfolge laden (wie der Wurfnetz-Editor), danach die Bären. Die Bärendateien werden nur hier und im Bären-Editor geladen.
-(async()=>{const V='bef9b635',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
+(async()=>{const V='eaff0688',v=V.startsWith('__')?Date.now().toString(36).slice(-4):V;
  const L=['data','household','management','scout','sim','benchmark','school','world','weapon-art','arena','lion','hahn-engine','hahn-arena','arena-beasts','hund','arena-core','baer','baer-koepfe','baer-mini','baer-kampf','baer-kampf-editor'];
  for(const n of L)await new Promise((ok,no)=>{const s=document.createElement('script');s.src=n+'.js?v='+v;s.onload=()=>{if(n==='data'&&window.MG&&!window.MG.ui)window.MG.ui={getPage:()=>'arena',render(){},click(){},notify(){},modal(){},close(){},open(){}};ok();};s.onerror=()=>no(Error(n+'.js fehlt'));document.body.appendChild(s);}).catch(e=>{window.onerror(e.message,n,0);});})();
 </script>

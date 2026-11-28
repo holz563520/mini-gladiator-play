@@ -15,13 +15,16 @@
 //   Anrennen im gestreckten Galopp mit echtem Tempo (K.OPT.tempo × Galopp, BAER.sprint), Sand unter den Pranken, Umspringen: der letzte Sprung geht
 //   mit Brust und Vorderpranken in den Gegner, der fliegt nach Gewichtsverhältnis, der Bär landet bei ihm und drückt sofort nieder.
 //   Schalter K.OPT.sturm, Adresse ?baerSturm=0 (dann alles wie vor B3c2).
+// · B3b2: Übungsmodus für den Editor-Reiter Attacken (K.OPT.ueben: der Bär der Seite A greift nur auf Knopfdruck an; a.puppe: Übungsfigur steht still und
+//   schlägt nicht), Anzeige von Reichweite und Treffpunkt (K.OPT.zeigen), Wunden von Hand (K.wound, K.heal), Leichenansicht für den zerdrückten Kopf
+//   (K.OPT.brei, Adresse ?baerBrei=0: Kopf fehlt, am Boden Knochenbrei und der zerdrückte Helm), offener und geschlossener Helm beim Kopfbiss (K.helm).
 // Keine Spieldatei wird geändert; die Werte sind vorläufig (Einmessen in B28). Schalter: K.OPT.
 // =====================================================================================================
 (()=>{
 const M=window.MG,B=window.BAER,AN=window.AN;if(!M||!B||!AN)return;
 const S=M.s,H=window.HahnArena,DG=()=>window.DOG,cl=M.clamp,TAU=Math.PI*2;
 const rnd=(a,b)=>a+Math.random()*(b-a),sm=u=>{u=u<0?0:u>1?1:u;return u*u*(3-2*u);},dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const K={SCALE:1.08,TMAX:180,OPT:{tear:1,head:1,schaden:1,haerte:1,ringen:1,ziel:1,sturm:1,tempo:1.75,reakt:1,wucht:1.9},force:null};B.K=K;
+const K={SCALE:1.08,TMAX:180,OPT:{tear:1,head:1,schaden:1,haerte:1,ringen:1,ziel:1,sturm:1,tempo:1.75,reakt:1,wucht:1.9,ueben:0,zeigen:0,brei:1},force:null};B.K=K;
 
 // ---------------------------------------------------------------- Angriffe (Name im Spiel Englisch, Bedienung Deutsch)
 K.ATTACKS=[['threat','Threat display','Drohen','Richtet sich auf, brüllt, zeigt die Zähne.'],['bluff','Bluff charge','Scheinangriff','Stürmt heran und bricht kurz vorher ab.'],
@@ -91,8 +94,11 @@ function hurt(b,part,dmg,kind,att){if(b.g.dead||!(dmg>0))return 0;const P=b.P;
  if(b.tissue.hals<=0||b.tissue.kopf<=0||b.tissue.brust<=0)die(b,att,{hals:'Throat opened',kopf:'Skull broken',brust:'Chest caved in'}[b.tissue.hals<=0?'hals':b.tissue.kopf<=0?'kopf':'brust']);
  return wd;}
 K.hurt=hurt;
+// Wunden von Hand (B3b2, Editor-Reiter Wunden): wd = Gewebepunkte, die die Stelle verliert (unabhängig von Härte und Fell)
+K.wound=function(b,part,kind,wd){return hurt(b,part,wd*b.P.res*K.OPT.haerte/({cut:.85,blunt:.7,stab:1,bite:.9,claw:.95}[kind]??1),kind,null);};
+K.heal=function(b){if(b.g.dead)return;for(const p of PARTS){b.tissue[p]=b.max[p];b.bleed[p]=0;}b.blood=100;b.morale=100;b.energy=100;b.wounds.length=0;b.fig.mouthBlood=0;b.fl=null;};
 function die(b,a,cause){if(b.g.dead)return;releaseVictim(b);b.g.dead=true;b.down=true;b.death=true;b.g.cause=cause||'Bled out';b.g.killer=a?a.g.name:'';if(a)a.kills=(a.kills||0)+1;state(b,'dead',99);
- B.go(b.fig,null);b.fig.rate=1.2;B.pose(b.fig,'lie');log(a?a.g.name+' kills '+b.g.name+'. ('+b.g.cause+')':b.g.name+' bleeds out in the sand.');}
+ B.go(b.fig,null);b.fig.rate=1.2;B.pose(b.fig,'lie');B.sound?.('death',b);log(a?a.g.name+' kills '+b.g.name+'. ('+b.g.cause+')':b.g.name+' bleeds out in the sand.');}
 
 // ---------------------------------------------------------------- Treffer am Bären (Mensch, Hund, Löwe) über M.rexReceive
 const HPART={head:'kopf',neck:'hals',chest:'brust',belly:'bauch',ls:'brust',rs:'brust',lua:'vl',rua:'vl',lfa:'vl',rfa:'vl',lh:'vl',rh:'vl',lt:'hl',rt:'hl',lsh:'hl',rsh:'hl',lf:'hl',rf:'hl'};
@@ -142,11 +148,15 @@ const LIMB_EN={lh:'left hand',rh:'right hand',lfa:'left forearm',rfa:'right fore
 function limbFor(b,V,part){const L=CHAIN[part];if(!L)return null;for(const id of L)if(LIMB_MIN[id]<=b.P.skulls&&!V.g.body[id]?.missing)return id;return null;}
 function tearChance(b,V,part){if(V.tornOnce||!limbFor(b,V,part))return 0;const hp=V.g.body[part]?.hp??100;if(hp>50)return 0;// nur wenn das Glied schon schwer verletzt ist; höchstens ein Abriss je Opfer
  return TEAR_P[cl(b.P.skulls,1,5)]*cl(b.bear.stats.biss/70,0,1.3)*(DG()?.armorMat?.(V,part)?.5:1)*K.OPT.tear;}
+// Helm beim Kopfbiss (B3b2): 1.0 kennt nur einen Helm in drei Materialien. Leder und Schienen gelten als offener Helm (halbiert die Chance),
+// Metall als geschlossener Helm (hält bei ☠3 stand, halbiert ab ☠4 und wird dabei zerdrückt). Liefert null | {art:'open'|'closed',m}.
+function helmOf(V){const h=V&&!V.bear&&!V.dog?DG()?.armorMat?.(V,'head'):null;return h?{art:h.m==='metal'?'closed':'open',m:h.m}:null;}
+K.helm=helmOf;
 function headChance(b,V){if(b.P.skulls<3||b.bear.stats.biss<70||V.g.body.head?.missing)return 0;if((V.g.body.head?.hp??100)>40&&!V.down)return 0;
- const helm=DG()?.armorMat?.(V,'head');if(helm&&helm.m==='metal'&&b.P.skulls===3)return 0;// geschlossener Helm hält bei ☠3 stand
+ const helm=helmOf(V);if(helm&&helm.art==='closed'&&b.P.skulls===3)return 0;// geschlossener Helm hält bei ☠3 stand
  return (b.P.bauart==='H'?.2:.15)*(helm?.5:1)*K.OPT.head;}
 K.tearChance=tearChance;K.headChance=headChance;
-try{const q=new URLSearchParams(location.search);if(q.get('baerAbriss')==='0')K.OPT.tear=0;if(q.get('baerKopfbiss')==='0')K.OPT.head=0;if(q.get('baerRingen')==='0')K.OPT.ringen=0;if(q.get('baerZiel')==='0')K.OPT.ziel=0;if(q.get('baerSturm')==='0')K.OPT.sturm=0;if(q.get('baerReakt')==='0')K.OPT.reakt=0;}catch{}
+try{const q=new URLSearchParams(location.search);if(q.get('baerAbriss')==='0')K.OPT.tear=0;if(q.get('baerKopfbiss')==='0')K.OPT.head=0;if(q.get('baerRingen')==='0')K.OPT.ringen=0;if(q.get('baerZiel')==='0')K.OPT.ziel=0;if(q.get('baerSturm')==='0')K.OPT.sturm=0;if(q.get('baerReakt')==='0')K.OPT.reakt=0;if(q.get('baerBrei')==='0')K.OPT.brei=0;}catch{}
 const DOG_AT=[['kopf',.15],['hals',.15],['brust',.25],['bauch',.25],['vl',.1],['hl',.1]];
 function humanPart(b,t,kind){const A=b.P.bauart;let L=kind==='pin'?PIN_AT:kind==='bite'?BITE_AT:SWIPE_AT;
  if(kind==='swipe'&&A==='B')L=[['head',.6],...L.slice(1)];// Lippenbär: Sichelkrallen ins Gesicht
@@ -203,7 +213,27 @@ function backTo(b,tx,ty,pf=1){const fig=b.fig,dx=tx-b.x,dy=ty-b.y,d=Math.hypot(d
  fig.back=1;B.go(fig,'walk');fig.pace=1.5*b.P.pace*pf*(1-.5*K.lame(b));b.dirx=dx/d;b.diry=dy/d;return d;}
 function faceTo(b,t){const fig=b.fig,want=t.x>=b.x?1:-1;if(want!==B.facing(fig)&&!fig.turn&&!fig.turnWant){B.turn(fig);return false;}return !fig.turn&&!fig.turnWant;}
 // Platz vor dem Gegner: der Bär steht seitlich daneben, Kopf und Pranken reichen hin
-const reachOf=b=>40*b.P.sz*K.SCALE;
+const reachOf=b=>40*b.P.sz*K.SCALE;K.reach=b=>reachOf(b)+22;
+// Leichenansicht für den zerdrückten Kopf (B3b2): Der Kopf fehlt an der Figur (vorhandener Weg des Spiels für fehlende Körperteile), an seiner Stelle
+// liegt Knochenbrei im Sand, dazu der zerdrückte Helm. Einmal je Opfer, gemerkt am Kampf (battle.pulp), gezeichnet mit wenigen Kästchen.
+function pulp(b,V){const bt=S.battle;if(!K.OPT.brei||!bt||V.pulped||V.bear||V.dog)return;V.pulped=true;const w=groundPoint(V,'head'),helm=helmOf(V),h=V.g.body.head;if(h)h.missing=true;
+ const seed=Math.random()*1e4,bits=[];for(let i=0;i<18;i++){const an=hr(seed+i)*TAU,d=1+hr(seed+i*7.3)*9;bits.push({x:Math.cos(an)*d,y:Math.sin(an)*d*.45,k:i<8?0:i<12?1:i<15?2:3,s:hr(seed+i*3.1)<.35?2:1});}
+ (bt.pulp=bt.pulp||[]).push({x:w.x,y:w.y,helm,bits});for(let i=0;i<7;i++)stain(w.x+rnd(-9,9),w.y+rnd(-4,4),i?rnd(1.5,3.5):6);
+ if(helm)log(helm.art==='closed'?'The helmet comes out flat. So does what was in it.':'The '+(helm.m==='leather'?'leather cap':'helmet')+' was never going to help.');}
+const hr=n=>{const x=Math.sin(n*127.1)*43758.5453;return x-Math.floor(x);};
+const PULP_C=['#f1e6c8','#cbb48c','#b0443a','#e8dcc0'],HELM_C={leather:['#6b4a2c','#4a3220'],medium:['#8a8676','#5c5a50'],metal:['#9aa0a2','#5d6468']};
+function drawPulp(ctx,L){for(const q of L){const x=Math.round(q.x),y=Math.round(q.y);
+  ctx.fillStyle='#4c0f0b';ctx.fillRect(x-8,y-2,16,5);ctx.fillRect(x-5,y-3,10,7);ctx.fillStyle='#7d150e';ctx.fillRect(x-5,y-1,9,3);ctx.fillStyle='#a3261b';ctx.fillRect(x-2,y-1,4,2);
+  for(const p of q.bits){ctx.fillStyle=PULP_C[p.k];ctx.fillRect(x+Math.round(p.x),y+Math.round(p.y),p.k===3?1:p.s,p.k===1?1:p.s>1&&p.k===0?1:p.s);}
+  if(q.helm){const [c1,c2]=HELM_C[q.helm.m]||HELM_C.metal,hx=x+7,hy=y-1;/* flach gedrückt, eingedellt, aufgerissen */
+   ctx.fillStyle=c2;ctx.fillRect(hx-5,hy,11,3);ctx.fillStyle=c1;ctx.fillRect(hx-4,hy-1,9,2);ctx.fillRect(hx-5,hy+1,3,1);ctx.fillStyle=c2;ctx.fillRect(hx-1,hy-1,2,2);ctx.fillRect(hx+3,hy,1,1);ctx.fillStyle='#7d150e';ctx.fillRect(hx-2,hy+2,4,1);}}}
+// Reichweite und Treffpunkt (B3b2, Editor-Reiter Attacken): Zone am Boden, in der ein Gegner getroffen wird; Kreuz = Stelle, auf die gezielt wird;
+// nach dem Treffer: Punkt = wo Krallen oder Maul im Trefferbild waren, Kreuz = die Trefferstelle.
+function drawAim(ctx,a,t){const f=B.facing(a.fig),s=a.P.sz*K.SCALE,x0=Math.round(a.x+f*10),x1=Math.round(a.x+f*K.reach(a)),y=Math.round(a.y),lo=Math.min(x0,x1),w=Math.abs(x1-x0);
+ ctx.fillStyle='#f3d27a';for(let x=lo;x<lo+w;x+=6){ctx.fillRect(x,y-22,3,1);ctx.fillRect(x,y+22,3,1);}for(let v=-22;v<22;v+=6){ctx.fillRect(x0,y+v,1,3);ctx.fillRect(x1,y+v,1,3);}
+ const kreuz=(px,py,c)=>{ctx.fillStyle=c;ctx.fillRect(px-4,py,9,1);ctx.fillRect(px,py-4,1,9);};
+ const m=a.mark,frisch=m&&t-m.t<2.5;if(a.aimPt&&!frisch)kreuz(Math.round(a.x+f*a.aimPt.x*s),Math.round(a.y+a.aimPt.y*s),'#f3d27a');
+ if(frisch){kreuz(Math.round(a.x+m.f*m.tx*s),Math.round(a.y+m.ty*s),'#ffffff');ctx.fillStyle='#ff4a3a';ctx.fillRect(Math.round(a.x+m.f*m.x*s)-1,Math.round(a.y+m.y*s)-1,3,3);}}
 const inReach=(b,t)=>(t.x-b.x)*B.facing(b.fig)>10&&Math.abs(t.x-b.x)<reachOf(b)+(t.r||14)+8&&Math.abs(t.y-b.y)<22&&!b.fig.turn;
 function spot(b,t){const side=b.x<=t.x?-1:1;return {x:t.x+side*(reachOf(b)+(t.r||14)*.5),y:t.y+1};}
 
@@ -368,7 +398,7 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
   b.energy=Math.min(100,b.energy+dt*5*P.stam);if(b.blood<=16)die(b,bt.actors.find(a=>a.id===b.lastAttacker)||null,'Bled out');}
  if(b.g.dead){b.pool=b.pool||{r:0};b.pool.r=Math.min(26*P.sz,b.pool.r+dt*5);b.dirx=b.diry=0;animate(b,dt,t);return;}
  let T=bt.actors.find(a=>a.id===b.victim);if(T&&T.g.dead&&(HOLD.includes(b.mode)||b.mode==='fling')){
-  if(T.g.dead&&b.mode==='crush'&&!b.struck){T.headCrushed=true;T.g.cause='Head crushed in the jaws of '+b.g.name;b.crushed=(b.crushed||0)+1;const h=T.g.body.head;if(h){h.hp=0;h.grade=5;h.injury='Crushed';}log(b.g.name+' bites down until nothing in '+T.g.name+"'s head holds together.");}
+  if(T.g.dead&&b.mode==='crush'&&!b.struck){T.headCrushed=true;pulp(b,T);T.g.cause='Head crushed in the jaws of '+b.g.name;b.crushed=(b.crushed||0)+1;const h=T.g.body.head;if(h){h.hp=0;h.grade=5;h.injury='Crushed';}log(b.g.name+' bites down until nothing in '+T.g.name+"'s head holds together.");}
   if(T.g.dead)log(b.g.name+' lets go of what is left of '+T.g.name+'.');releaseVictim(b);state(b,'approach');b.cool=.8;T=null;}
  if(b.morale<=0&&b.mode!=='flee'&&!['tear','crush'].includes(b.mode)){releaseVictim(b);state(b,'flee',5);log(b.g.name+' has had enough and runs.');}
  if(K.OPT.reakt&&b.team===0&&(K.force==='dodge'||K.force==='recoil')){b[K.force+'Next']=true;K.force=null;}
@@ -484,7 +514,7 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
      const part=b.pinPart&&!V.g.body[b.pinPart]?.missing?b.pinPart:pinPick(b,V),forced=sp0==='tear'?(['lfa','rfa','lua','rua','lsh','rsh','lh','rh','lf','rf'].map(x=>limbFor(b,V,x)).find(Boolean)||null):null;
      const limb=sp0==='tear'?forced:!sp0&&Math.random()<tearChance(b,V,part)?limbFor(b,V,part):null;
      if(limb){b.limb=limb;V.tornOnce=true;state(b,'tear',1.9);log(b.g.name+' sinks its teeth into '+V.g.name+"'s "+LIMB_EN[b.limb]+'.');}
-     else if(sp0==='crush'||!sp0&&part==='head'&&Math.random()<headChance(b,V)){state(b,'crush',2.2);log(b.g.name+' closes its jaws around '+V.g.name+"'s head.");}
+     else if(sp0==='crush'||!sp0&&part==='head'&&Math.random()<headChance(b,V)){state(b,'crush',2.2);log(b.g.name+' closes its jaws around '+V.g.name+"'s head."+(helmOf(V)?' The helmet starts to fold.':''));}
      else{hurtHuman(b,V,'pin',part,P.bite*.6*rnd(.8,1.2));b.pinLast=part;b.pinPart=pinPick(b,V);b.chk={kind:'pin',V,part};
       // Ablassen: Braunbären (und Höhlenbären) verlieren das Interesse an einem reglosen Opfer, wenn es noch andere Gegner gibt
       if(!V.g.dead&&['G','I','C'].includes(P.bauart)&&M.health(V.g)<38&&b.ticks>=3&&foes(b).length>1&&Math.random()<.3){log(b.g.name+' loses interest in '+V.g.name+'. Playing dead works. Mostly.');state(b,'leave');releaseVictim(b);b.shun=V.id;state(b,'approach');b.cool=.6;}
@@ -493,10 +523,10 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
     if(b.ticks<1&&b.clock>=b.duration*.72){b.ticks=1;if(!V.g.body[b.limb]?.missing){M.sever?.(b,V,b.limb);}if(V.g.body[b.limb]?.missing&&!b.tornNow){b.tornNow=true;fig.mouthBlood=1;spray(b,V.x,V.y,14,26,b.a+Math.PI);b.torn=(b.torn||0)+1;log(b.g.name+' tears off '+V.g.name+"'s "+LIMB_EN[b.limb]+' and shakes it.');}}
     if(b.clock>=b.duration){b.tornNow=false;state(b,'pin');b.ticks=0;}}
    else if(m==='crush'){if(b.ticks<3&&b.clock>=b.duration*(.3+.2*b.ticks)){b.ticks++;hurtHuman(b,V,'bite','head',P.bite*.5);fig.mouthBlood=1;}
-    if(!b.struck&&b.clock>=b.duration*.88){b.struck=true;if(!V.g.dead){const h=V.g.body.head;if(h){h.hp=0;h.grade=5;h.injury='Crushed';}V.headCrushed=true;M.death(V,'Head crushed in the jaws of '+b.g.name,b);b.kills++;b.crushed=(b.crushed||0)+1;}spray(b,V.x,V.y,12,30,null);log(b.g.name+' bites down until nothing in '+V.g.name+"'s head holds together.");}
+    if(!b.struck&&b.clock>=b.duration*.88){b.struck=true;if(!V.g.dead){const h=V.g.body.head;if(h){h.hp=0;h.grade=5;h.injury='Crushed';}V.headCrushed=true;M.death(V,'Head crushed in the jaws of '+b.g.name,b);b.kills++;b.crushed=(b.crushed||0)+1;pulp(b,V);}spray(b,V.x,V.y,12,30,null);log(b.g.name+' bites down until nothing in '+V.g.name+"'s head holds together.");}
     if(b.clock>=b.duration){releaseVictim(b);state(b,'approach');b.cool=1;}}}}
  else{// approach: Ziel wählen, hingehen, angreifen
-  T=chooseTarget(b);
+  T=K.OPT.ueben&&b.team===0&&!K.force?null:chooseTarget(b);// Übungsmodus (B3b2): der Bär der Seite A greift nur auf Knopfdruck an
   // Zurückschnappen (B3c3): wer ihn eben getroffen hat oder wessen Schlag er ausgewichen ist und vorn in Reichweite steht, bekommt sofort Biss oder Hieb
   if(b.retort){const r=t<(b.retortUntil||0)&&foes(b).find(a=>a.id===b.retort);if(!r){b.retort=null;b.snap=false;}else if(inReach(b,r)&&!fallen(r)){T=r;b.cool=0;b.snap=true;}else b.snap=false;}else b.snap=false;
   // steht schon ein Gegner vorn in Reichweite, bekommt der den Hieb (der Bär dreht sich nicht erst zu einem anderen um)
@@ -513,7 +543,7 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
    if(!b.threatDone&&(f==='threat'||!f&&d>150)){b.threatDone=true;if(f==='threat'||Math.random()<.35+.4*P.wild){if(f)K.force=null;b.roared=false;state(b,'threat',2.3);b.thrForce=!!f;log(b.g.name+(K.OPT.sturm?' rises to its full height, claws the air and roars.':' rises on its hind legs and roars.'));animate(b,dt,t);return;}}
    if(b.cool<=0&&(f==='charge'||f==='bluff'||!f&&d>170&&b.energy>30&&!fallen(T)&&K.lame(b)<=.45)){const bl=f==='bluff'||!f&&b.bluffs<1&&Math.random()<.3*(1.1-P.wild);if(f)K.force=null;if(bl)b.bluffs++;b.aim=T.id;state(b,bl?'bluff':'charge');animate(b,dt,t);return;}
    if(fallen(T)&&d<70*P.sz+20){b.victim=T.id;b.interrupt=0;state(b,'pin');if(b.stoodOver!==T.id){b.stoodOver=T.id;log(b.g.name+' stands over '+T.g.name+'.');}}
-   else if(ds>12&&!(b.cool<=0&&inReach(b,T)))head(b,sp.x,sp.y,ds>70?'run':'walk');
+   else if(ds>12&&!(b.cool<=0&&inReach(b,T)&&!(K.OPT.ueben&&b.team===0)))head(b,sp.x,sp.y,ds>70?'run':'walk');// im Übungsmodus geht er immer erst an seinen Platz vor dem Gegner
    else{halt(b);if(faceTo(b,T)&&b.cool<=0&&(fig.v||0)<45&&!B.moving(fig)){const sn=b.snap;b.snap=false;if(sn){b.retort=null;b.retorts++;log(b.g.name+' snaps back at '+T.g.name+'.');}const k=sn?(Math.random()<(T.dog?.3:.5)?'swipe':'bite'):chooseAttack(b,T);b.aim=T.id;b.at=human(T)&&(k==='swipe'||k==='bite'||k==='slam')?humanPart(b,T,k):null;/* die Stelle steht vor dem Ausholen fest: Pranke und Maul zielen darauf */b.energy-=k==='slam'?10:6;
      if(k==='pin'){b.victim=T.id;b.interrupt=0;state(b,'pin');}else if(k==='slam'){state(b,'slam');b.phase=0;}
      else if(k==='grapple'){b.victim=T.id;b.interrupt=0;state(b,'grapple');b.phase=0;}else if(k==='fling'){b.victim=T.id;b.interrupt=0;b.held=false;state(b,'fling',1.2);}else if(k==='charge'||k==='bluff'||k==='threat'){state(b,k,k==='threat'?2.3:0);if(k==='threat')b.thrForce=true;}
@@ -529,16 +559,18 @@ function animate(b,dt,t){const fig=b.fig,P=b.P;over(b,t);B.step(fig,dt,t);fig._R
 K.contacts=[];
 function contactCheck(b){const q=b.chk,R=b.fig._R;b.chk=null;if(!R||!K.OPT.ziel)return;const T=q.V?(q.V.g.dead&&!fallen(q.V)?null:aimPoint(b,q.V,q.part)):b.aimPt;if(!T)return;const SH=b.fig.SH||B.shapeOf(b.bear),l=R.legs[3];
  const paw=q.kind==='swipe'||q.kind==='slam',x=paw?l.fx+5:R.hcx+11*SH.headS*Math.cos(R.he),y=paw?l.fy:R.hcy-11*SH.headS*Math.sin(R.he);
- K.contacts.push({kind:q.kind,d:Math.hypot(x-T.x,y-T.y),tx:T.x,ty:T.y});if(K.contacts.length>200)K.contacts.shift();}
+ K.contacts.push({kind:q.kind,d:Math.hypot(x-T.x,y-T.y),tx:T.x,ty:T.y});b.mark={kind:q.kind,x,y,tx:T.x,ty:T.y,d:Math.hypot(x-T.x,y-T.y),f:B.facing(b.fig),t:S.battle?.time||0};if(K.contacts.length>200)K.contacts.shift();}
 K.stepBear=stepBear;
 
 // ---------------------------------------------------------------- Zeichnen in der Arena (über M.drawRex)
 const baseDraw=M.drawRex;
 M.drawRex=function(ctx,a){if(!a?.bear)return baseDraw?.apply(this,arguments);const px=Math.round(a.x),py=Math.round(a.y),t=S.battle?.time||0;
+ const bt=S.battle;if(bt?.pulp&&bt.actors.find(x=>x.bear)===a)drawPulp(ctx,bt.pulp);
  if(a.pool&&a.pool.r>1){ctx.fillStyle='#4c0f0b';ctx.beginPath();ctx.ellipse(px,py+2,a.pool.r*1.3,a.pool.r*.32,0,0,TAU);ctx.fill();}
  const t0=performance.now();a.fig._R=B.draw(ctx,a.fig,px,py,K.SCALE,1,{time:t});K.drawMs=(K.drawMs||0)*.95+(performance.now()-t0)*.05;
  if(a.dust&&a.dust.length)for(const p of a.dust){ctx.fillStyle=p.s>1?'#b08a52':'#dcc08a';ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z),p.s,p.s);}
  if(a.spray.length)for(const p of a.spray){ctx.fillStyle='#8d1c13';ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z),p.s,p.s);}
+ if(K.OPT.zeigen&&a.team===0&&!a.g.dead&&!a.fled)drawAim(ctx,a,t);
  if(a.fled&&!a.g.dead){ctx.fillStyle='#e9d6a2';ctx.font='bold 9px monospace';ctx.textAlign='center';ctx.fillText('flees',a.x,a.y-62*a.P.sz);}};
 
 // ---------------------------------------------------------------- Kampf bauen und rechnen (Bausteine wie arena-core.js, dazu der Zweig für Bären)
@@ -557,6 +589,9 @@ function fixed(dt){const b=S.battle;if(!b||b.paused)return;if(b.ende&&b.time-b.e
    const x=a.x,y=a.y,p=a.phase||0,pin=a.pinnedBy&&b.actors.find(l=>l.id===a.pinnedBy&&!l.g.dead&&l.victim===a.id);
    if(pin&&!a.g.dead){// liegt unter dem Bären: fällt zu Ende, steht aber nicht auf und schlägt nicht
     a.wind=0;a.pendingStrike=null;M.updateActor(a,dt*1.12);if(!a.g.dead&&!a.down)a.fallTimer=Math.max(a.fallTimer||0,(a.riseDuration||1)+.45);a.wind=0;a.pendingStrike=null;}
+   else if(a.puppe&&!a.g.dead){// Übungsfigur (B3b2): steht still und schlägt nicht; fällt, fliegt und wird gepackt wie jeder andere
+    if(a.pinnedBy)delete a.pinnedBy;a.cool=Math.max(a.cool||0,1);M.updateActor(a,dt*1.12);a.wind=0;a.pendingStrike=null;
+    if(!(a.fallTimer>0)&&!a.down&&!a.grabbedBy&&a.state!=='fallen'&&Math.abs(a.kx||0)+Math.abs(a.ky||0)<.5&&!b.actors.some(l=>l.bear&&l.toss&&l.toss.id===a.id)){a.x=x;a.y=y;}}
    else{if(a.pinnedBy)delete a.pinnedBy;const held=b.hasDogs&&DG().humanPre(a);if(!held)M.resolveStrike(a,dt*1.12);M.updateActor(a,dt*1.12);if(held){a.wind=0;a.pendingStrike=null;}}
    M.updateLocomotion(a,x,y,p,dt*1.12);}
   if(b.hasDogs)for(const d of b.actors)if(d.dog&&d.mode==='grip'&&d.victim){const v=b.actors.find(a=>a.id===d.victim);if(v)DG().holdOn(d,v,dt);}
