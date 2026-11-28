@@ -102,7 +102,7 @@ function shatter(e,tt,S){const fw=M.faceShot.FW||FW,fh=M.faceShot.FH||FH,cv=docu
   for(let y=b0;y<=b1;y++)for(let x=a0;x<=a1;x++){const j=y*fw+x;if(own[j]!==k)continue;n++;const o4=((y-b0)*w+x-a0)*4,s4=j*4;let r=A[s4],gg=A[s4+1],bb=A[s4+2];
    // Bruchkante zu einem anderen Stück: Knochen (Schädel im Querschnitt), dahinter Blut; Außenrand bleibt wie er war
    let brk=0;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=fw||yy>=fh)continue;const o2=own[yy*fw+xx];if(o2>=0&&o2!==k){brk=dy<0||dx<0?1:2;break;}}
-   if(brk){const c=hc&&hc.mat==='metal'&&brk===2?'#3c3a38':brk===1?BONE[0]:BONE[2];r=parseInt(c.slice(1,3),16);gg=parseInt(c.slice(3,5),16);bb=parseInt(c.slice(5,7),16);}
+   if(brk){const c=hc&&hc.mat==='metal'&&brk===2?'#3c3a38':brk===1&&hsh(x*3.1+y*7.7)<.22?BONE[2]:brk===1?'#8d2219':'#5a0e0a';r=parseInt(c.slice(1,3),16);gg=parseInt(c.slice(3,5),16);bb=parseInt(c.slice(5,7),16);}
    else{let inner=0;for(const [dx,dy] of [[2,0],[-2,0],[0,2],[0,-2]]){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=fw||yy>=fh)continue;const o2=own[yy*fw+xx];if(o2>=0&&o2!==k){inner=1;break;}}
     if(inner){r=0x7a;gg=0x18;bb=0x10;}}// Blut und Mark hinter der Knochenkante
    d[o4]=r;d[o4+1]=gg;d[o4+2]=bb;d[o4+3]=255;}
@@ -112,6 +112,23 @@ function shatter(e,tt,S){const fw=M.faceShot.FW||FW,fh=M.faceShot.FH||FH,cv=docu
  return parts;}
 function stepShards(e,dt){for(const p of e.shards){p.vy+=140*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;p.vx*=1-.4*dt;
   if(p.y>FH+30)continue;p.trail=(p.trail||0)+dt;if(p.trail>.05){p.trail=0;e.parts.push({x:p.x,y:p.y,vx:p.vx*.2,vy:p.vy*.2,life:.4,s:1,c:'#a8372f'});}}}
+// Matsche dort, wo der Kopf war (Rückmeldung Thomas 28.11.2026): ein Haufen Kopfinneres auf dem Halsstumpf (Hirn, Fleisch, Schädelbasis) und Fäden aus Hirn,
+// Fleisch und Kopfhaut mit Haaren, die von den Zähnen des Bären herabhängen, pendeln, länger werden und nachtropfen. Einmal festgelegt, wenige Kästchen je Bild.
+function mushOf(e){const A=e.g?.appearance||{},hx=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:null,hair=hx(A.hair)||'#443025',skin=hx(A.skin)||'#c19169',sd=e.seed,m={heap:[],str:[]};
+ for(let i=0;i<110;i++){const u=hsh(sd+i*1.31)*2-1,v=Math.sqrt(hsh(sd+i*2.77)),x=80+u*(15-v*6)+Math.sin(v*5+sd)*2,y=84-v*(26-Math.abs(u)*10),k=hsh(sd+i*4.9);
+  m.heap.push({x,y,w:k<.5?2:3,h:2,c:i<24?'#4a0a08':k<.45?BRAIN[i%BRAIN.length]:k<.75?'#8d2219':k<.85?'#6e110b':k<.93?BONE[2]:skin});}
+ for(let i=0;i<9;i++){const k=hsh(sd+i*6.1);m.str.push({dx:-10+i*3.5+(hsh(sd+i*3.3)-.5)*3,dy:6+i*2.4+(hsh(sd+i*8.2)-.5)*3,L:14+hsh(sd+i*5.4)*22,ph:hsh(sd+i)*6,w:k<.6?2:1,
+  c:i===2?hair:k<.5?BRAIN[(i*2)%BRAIN.length]:'#8d2219',tip:i===2?skin:k<.5?BRAIN[0]:'#6e110b',hair:i===2});}
+ m.jaw={x:66+hsh(sd+.5)*3,y:72,skin};
+ return m;}
+function paintMush(o,e,B,P,a){const m=e.mush??=mushOf(e),k=a-CR.s3,jig=Math.sin(k*18)*Math.max(0,1-k*1.4);
+ for(const q of m.heap)B(q.x+jig*(q.y<78?1:0),q.y+Math.max(0,(80-q.y)*.08*Math.min(1,k)),q.w,q.h,q.c);// sackt langsam in sich zusammen
+ {const J=m.jaw,sw=Math.round(Math.sin(k*2.6)*1.5),jx=J.x+sw,jy=J.y+Math.round(Math.min(1,k)*3);B(jx+5,J.y-4,1,jy-J.y+4,'#8d2219');B(jx,jy,9,4,J.skin);B(jx,jy+3,9,1,'#6e110b');for(let t=0;t<3;t++)B(jx+1+t*3,jy+4,2,2,'#f2ead6');B(jx+7,jy,2,2,'#4a0a08');}// Rest vom Unterkiefer mit Zähnen
+ for(let i=0;i<m.heap.length;i+=6){const q=m.heap[i],L=Math.min(9,k*(4+i%5));if(i%12===0)B(q.x,q.y+2,1,L,'#8d2219');}// läuft über den Stumpfrand
+ for(const s of m.str){const L=s.L*ease(cl(k/.7))+Math.min(6,k*1.5),x0=P.x+s.dx,y0=P.y+s.dy;let x=x0,y=y0;
+  for(let j=0;j<L;j++){const sw=Math.sin(k*3.2+s.ph)*j*.12+Math.sin(k*7+s.ph+j*.3)*.4;x=x0+sw;y=y0+j;B(x,y,s.w,1,j%5===4&&!s.hair?'#6e110b':s.c);if(s.hair&&j%2)B(x+1,y,1,1,'#2a1a12');}
+  B(x-1,y,s.w+2,2,s.tip);if(s.hair)B(x-1,y-1,3,1,'#8d2219');
+  if(!s.hair&&((k*3+s.ph)%1.6)<.05&&e.parts.length<500)e.parts.push({x,y:y+2,vx:0,vy:20,life:1,s:Math.random()<.5?2:1,c:s.c});}}
 function paintCrush(cv,e){const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,tt=e.t,S=crushState(e),a=S.a,o=layers(W,H),bg=gBase.getContext('2d');bg.imageSmoothingEnabled=false;
  const TZ=Math.max(.6,(W/160)/(Math.max(W/160,H/104)*1.12)),mood=a<0?'terror':S.st<2?'pain':S.st<3?'shock':'out',burst=a>=CR.s3;
  if(burst&&!e.shards){try{e.shards=shatter(e,tt,S);}catch{e.shards=[];}}
@@ -125,6 +142,7 @@ function paintCrush(cv,e){const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,t
   for(const [dx,f] of [[-12,.8],[-6,1],[1,.6],[9,.9],[16,.7]]){const L=Math.min(30,Math.max(0,a-.25)*(6+S.st*4)*f);B(P.x+dx,P.y+7,1,L,'#8d2219');B(P.x+dx,P.y+7+L,1,1,'#6b2420');}}
  for(const st of e.stains)B(st.x,st.y,st.w,1,st.c||'#8a2a22');
  beast(o,e,{x:P.x+Math.round(34*S.lunge),y:P.y-Math.round(26*S.lunge)},{k:2.05*(e.beast.cm||2.2),he:-.3-.04*S.st,mouth:S.m,blood:cl(a*.1,0,.12),t:tt},true);
+ if(burst)paintMush(o,e,B,P,a);
  if(e.shards)for(const p of e.shards){if(p.y>FH+30)continue;o.save();o.translate(Math.round(p.x),Math.round(p.y));o.rotate(Math.round(p.r*4)/4);o.drawImage(p.cv,-p.w/2|0,-p.h/2|0);o.restore();}
  drops(o,e);
  const shx=Math.round(rnd(-1,1)*e.shake*s*.3),shy=Math.round(rnd(-1,1)*e.shake*s*.2);
