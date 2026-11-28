@@ -42,6 +42,7 @@ $('einzel').onclick=()=>{const b=S.battle;if(!b)return;b.paused=false;K.fixed(1/
 $('spd').onchange=()=>{S.options.speed=+val('spd');};
 for(const id of ['artA','artB','zahlA','zahlB','sorteA','sorteB','rasseA','rasseB','stufeA','stufeB','waffeA','waffeB','ruestA','ruestB','werte'])$(id).addEventListener('input',()=>{sync();build();});
 for(const id of ['tear','head','schaden','haerte','tempo'])$(id).addEventListener('input',sync);
+$('reakt').checked=!!K.OPT.reakt;$('reakt').addEventListener('change',()=>{K.OPT.reakt=$('reakt').checked?1:0;});
 for(const [id,en,de,text] of K.ATTACKS)if(!['leave','flee'].includes(id))$('angriffe').insertAdjacentHTML('beforeend',`<button class="btn" type="button" data-angriff="${id}" title="${esc(text)}">${esc(de)}<br><small>${esc(en)}</small></button>`);
 $('angriffe').onclick=e=>{const k=e.target.closest('[data-angriff]')?.dataset.angriff;if(!k)return;K.force=k;const b=S.battle?.actors.find(a=>a.bear&&a.team===0&&!a.g.dead);if(b){b.cool=0;if(k==='threat')b.threatDone=false;}};
 

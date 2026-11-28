@@ -10,6 +10,7 @@
 //   Wenden ist eine echte Drehung über die Vorderansicht: Kopf führt, Rumpf wird kürzer, Beine rücken nebeneinander, Kopf von vorn.
 //   Fell und Speck schwingen an einer Feder nach, schwere Bären beschleunigen und bremsen langsamer.
 //   a.sprint = 1 (B3c2, Angriff): gestreckter flacher Galopp, siehe sprintGait.
+//   a.back = 1 (B3c3): der Gang läuft rückwärts (a.bdir = -1), die Füße stehen dabei fest wie vorwärts. Gewechselt wird nur im Stand.
 // · Sortenliste und Werte: BAER_SORTEN.md. Fahrplan: BAER_FAHRPLAN.md. Editor: dist/baer-editor.html.
 // Maßstab wie im Spiel: 81 Einheiten = 180 cm → 2,22 cm je Einheit.
 // =====================================================================================================
@@ -220,12 +221,13 @@ function step(a,dt,t){dt=cl(dt,0,.05);const D=a.bear,SH=a.SH||shapeOf(D),lf=SH.l
  if(a.turnWant&&!a.turn){if(a.mode==='sit'||a.mode==='lie'){if(!busy&&!a.want)a.want='stand';}else if(!busy){a.turnWant=false;a.turn={t0:t,dur:(.9+.5*heavy)/(a.rate||1),from:a.facing||1};}}
  if(a.turn){const u=(t-a.turn.t0)/a.turn.dur;a.tl=Math.sin(Math.PI*cl(u,0,1));if(u>=.5)a.facing=-a.turn.from;if(u>=1){a.turn=null;a.tl=0;}}
  // Tempo: schwere Bären kommen langsam in Fahrt und bremsen langsam
+ if(v<1)a.bdir=a.back?-1:1;const bd=a.bdir||1;if(bd!==(a.back?-1:1))vT=0;// rückwärts (B3c3): Richtungswechsel erst im Stand
  const v0=v,acc=(30+.6*Math.max(vT,v))/hs*(vT<v?1.3:1);v+=cl(vT-v,-acc*dt,acc*dt);a.v=v;
  if(v<.5&&!a.turn)a.gk=a.mode==='rear'?'up':'quad';const up=a.gk==='up';
  a.gs=smooth(cl(v/(up?8:27),0,1));const mt=!up&&v>85?1:0;a.mix=cl((a.mix||0)+cl(mt-(a.mix||0),-dt*2.2,dt*2.2),0,1);
  const st=a.sprint&&!up&&a.mix>.6?1:0,sp=a.spr=cl((a.spr||0)+cl(st-(a.spr||0),-dt*2.5,dt*2.5),0,1),RG=sprintGait(sp);
  const len=(up?GAITS.up.stride/GAITS.up.duty:lerp(GAITS.walk.stride/GAITS.walk.duty,RG.stride/RG.duty,smooth(a.mix)))*lf*Math.max(a.gs,.3);
- a.cyc=(a.cyc||0)+v*dt/len+(a.turn?dt*1.3*a.tl*(1-a.gs):0);a.dist=(a.dist||0)+v*dt*(a.facing||1);
+ a.cyc=(a.cyc||0)+bd*v*dt/len+(a.turn?dt*1.3*a.tl*(1-a.gs):0);a.dist=(a.dist||0)+bd*v*dt*(a.facing||1);
  // Fell und Speck: Feder, angeregt vom Auf und Ab des Gangs (q) und vom Anfahren und Bremsen (qx)
  const c=a.cyc,m=smooth(a.mix),w=a.gs*(1-m),r=a.gs*m,tq=up?.5*a.gs*Math.sin(2*TAU*c):w*.7*Math.sin(2*TAU*c)+r*2.2*(1+1.4*sp)*lerp(1,cl(hs*hs/.36,1,3.5),sp)*Math.sin(TAU*(c-.2));// im Sturm wackeln Fell, Speck und Buckel deutlich stärker
  const tx=cl(-(v-v0)/Math.max(dt,1e-3)*.012-v*.005,-3.5,3.5),om=10/hs,dm=2*.25*om;

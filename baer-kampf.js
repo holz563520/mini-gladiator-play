@@ -21,7 +21,7 @@
 const M=window.MG,B=window.BAER,AN=window.AN;if(!M||!B||!AN)return;
 const S=M.s,H=window.HahnArena,DG=()=>window.DOG,cl=M.clamp,TAU=Math.PI*2;
 const rnd=(a,b)=>a+Math.random()*(b-a),sm=u=>{u=u<0?0:u>1?1:u;return u*u*(3-2*u);},dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const K={SCALE:1.08,TMAX:180,OPT:{tear:1,head:1,schaden:1,haerte:1,ringen:1,ziel:1,sturm:1,tempo:1.75},force:null};B.K=K;
+const K={SCALE:1.08,TMAX:180,OPT:{tear:1,head:1,schaden:1,haerte:1,ringen:1,ziel:1,sturm:1,tempo:1.75,reakt:1,wucht:1.9},force:null};B.K=K;
 
 // ---------------------------------------------------------------- Angriffe (Name im Spiel Englisch, Bedienung Deutsch)
 K.ATTACKS=[['threat','Threat display','Drohen','Richtet sich auf, brüllt, zeigt die Zähne.'],['bluff','Bluff charge','Scheinangriff','Stürmt heran und bricht kurz vorher ab.'],
@@ -30,7 +30,9 @@ K.ATTACKS=[['threat','Threat display','Drohen','Richtet sich auf, brüllt, zeigt
  ['grapple','Grab and wrestle','Packen und Ringen','Richtet sich auf, klammert den Stehenden mit beiden Vorderpranken fest, beißt und ringt ihn zu Boden.'],
  ['fling','Throw aside','Wegschleudern','Packt den Gegner mit dem Maul und schleudert ihn mit einem Ruck von Kopf und Nacken weg.'],
  ['pin','Pin down','Niederdrücken','Steht über dem Liegenden, beißt und reißt.'],['drag','Drag away','Wegzerren','Zerrt den Liegenden im Maul von den anderen Gegnern weg.'],['tear','Tear off limb','Gliedmaße abreißen','Verbeißt sich in Arm oder Bein und reißt es ab (am Liegenden, wenn das Glied schon schwer verletzt ist).'],
- ['crush','Head bite','Kopfbiss','Zerdrückt den Kopf des Liegenden zwischen den Zähnen. Tödlich.'],['leave','Lose interest','Ablassen','Braunbären lassen von einem reglosen Opfer ab.'],['flee','Flee','Flucht','Hat genug.']];
+ ['crush','Head bite','Kopfbiss','Zerdrückt den Kopf des Liegenden zwischen den Zähnen. Tödlich.'],
+ ['back','Back away','Zurückweichen','Geht rückwärts, Kopf tief zum Gegner, Ohren angelegt.'],['dodge','Jerk back','Ausweichen','Rumpf und Kopf zucken zurück, der Schlag geht vorbei, dann Gegenangriff. Knopf: dem nächsten Schlag weicht er sicher aus.'],
+ ['recoil','Knocked back','Zurückgeworfen','Ein schwerer Treffer wirft ihn einen Schritt zurück. Knopf: der nächste Treffer wirft ihn zurück.'],['leave','Lose interest','Ablassen','Braunbären lassen von einem reglosen Opfer ab.'],['flee','Flee','Flucht','Hat genug.']];
 const NAME=Object.fromEntries(K.ATTACKS.map(a=>[a[0],a[1]]));
 const HOLD=['pin','tear','crush','grapple','drag'];// der Bär hat ein Opfer fest
 
@@ -42,6 +44,7 @@ function params(D){const s=D.stats,f=v=>v/50,wf=Math.pow(D.weight/250,.6),Br=B.b
  const swipe=100*(.5+.5*f(s.pranke))*(.7+.3*f(s.kraft))*wf,bite=85*(.5+.5*f(s.biss))*(.8+.2*f(s.kraft))*wf;
  return {swipe,slam:swipe*1.5,bite,shake:bite*.4,ram:30*(.5+.5*f(s.kraft))*wf*wf,res:32*(.6+.4*f(s.zaeh))*wf,mass:D.weight*(.6+.4*f(s.kraft)),
   pace:cl(.7+.3*f(s.tempo),.6,1.25),stam:.7+.3*f(s.ausdauer),wild:cl(s.wild/100,0,1),mut:cl(s.mut/100,0,1),interrupt:26*(.7+.3*f(s.zaeh))*wf,
+  evade:cl(.3*(.4+.6*f(s.tempo))/Math.sqrt(Math.max(.3,D.weight/250)),.04,.45),// Ausweichen (B3c3, vorläufig): aus Schnelligkeit, schwere Bären weichen seltener aus; der Zustand zählt beim Schlag dazu
   sz:B.params(D).sz,bauart:Br.bauart||Br.type||'G',skulls:B.skullsOf(Br)};}
 K.params=params;
 
@@ -53,7 +56,7 @@ K.makeFighter=function(D,team,x,y){
  const P=params(D),a=M.createCombatActor(g,team,0),fig=B.actor(D,'stand'),tissue={},max={};for(const p of PARTS){max[p]=PART_MAX[p];tissue[p]=max[p];}
  fig.rate=2.6;fig.facing=team?-1:1;fig.wounds=[];
  Object.assign(a,{rex:true,bear:D,fig,P,x,y,r:20*P.sz,tissue,max,wounds:fig.wounds,blood:100,bleed:{},morale:100,energy:100,spray:[],pool:null,velocity:0,a:team?Math.PI:0,
-  mode:'approach',clock:0,duration:0,cool:rnd(.3,1),z:0,hit:0,dirx:0,diry:0,victim:null,kills:0,hits:0,attacks:{},taken:0,threatDone:false,bluffs:0,grapples:0,flung:0,dragged:0});
+  mode:'approach',clock:0,duration:0,cool:rnd(.3,1),z:0,hit:0,dirx:0,diry:0,victim:null,kills:0,hits:0,attacks:{},taken:0,threatDone:false,bluffs:0,grapples:0,flung:0,dragged:0,dodges:0,recoils:0,backs:0,retorts:0});
  return a;};
 const out=a=>a.bear?a.g.dead||a.fled:a.dog?DG().out(a):a.down||a.surrendered||a.g.dead;K.out=out;
 K.health=b=>cl(Math.min(...['kopf','hals','brust'].map(p=>b.tissue[p]/b.max[p]),(b.tissue.bauch+b.tissue.vl+b.tissue.hl)/(b.max.bauch+b.max.vl+b.max.hl))*100*Math.min(1,b.blood/70),0,100);
@@ -77,7 +80,7 @@ const WOUND_AT={kopf:[[-3,4],[-3,3]],hals:[[-4,4],[-4,4]],brust:[[-5,5],[-6,5]],
 function hurt(b,part,dmg,kind,att){if(b.g.dead||!(dmg>0))return 0;const P=b.P;
  // dickes Fell und Speck: Schnitte und stumpfe Schläge kommen schlechter durch als Stiche
  const wd=dmg*({cut:.85,blunt:.7,stab:1,bite:.9,claw:.95}[kind]??1)/(P.res*K.OPT.haerte);
- b.tissue[part]=Math.max(0,b.tissue[part]-wd);b.taken+=wd;b.hit=.3;
+ b.tissue[part]=Math.max(0,b.tissue[part]-wd);b.taken+=wd;b.hit=.3;if(K.OPT.reakt)b.fl={part,t:S.battle?.time||0,w:cl(wd/1.8,.4,1),front:!att||(att.x-b.x)*B.facing(b.fig)>=0,roar:wd>1.2};
  const bk={bite:.03,claw:.045,cut:.04,stab:.04,blunt:.006}[kind]??.02,pk={hals:1.7,kopf:1,brust:1,bauch:1.2,vl:.8,hl:.8}[part];
  b.bleed[part]=(b.bleed[part]||0)+wd*bk*pk;b.blood=Math.max(0,b.blood-wd*({bite:.07,claw:.1,cut:.1,stab:.09,blunt:.02}[kind]??.05)*pk);
  b.morale-=wd*1.3*(1-P.mut)*(part==='kopf'?1.2:1)*(1.1-P.wild*.5);
@@ -98,6 +101,7 @@ function receive(a,d,projectile,snapshot){if(d.g.dead)return;const ef=snapshot||
   const part=HPART[ef.partId]||(Math.random()<.4?'hl':Math.random()<.5?'bauch':'hals'),wd=hurt(d,part,(ef.damage||w.damage||10)*rnd(.85,1.15),'bite',a);d.taken+=0;afterHit(d,a,wd);return;}
  if(!projectile&&dist(a,d)>ef.range+d.r+18)return;
  if(projectile&&w.id==='net'){M.floater?.(d.x,d.y-60,'TEARS THE NET','#e9d1a2');log(d.g.name+' tears through the net.');return;}
+ if(K.OPT.reakt&&!projectile&&dodge(d,a))return;// Ausweichen (B3c3): der Schlag geht vorbei
  const ag=a.g.stats,fast=d.mode==='charge'||d.mode==='bluff'?.25:0,acc=cl(.2+(projectile?ag.precision:ag.dexterity||48)*.014+(ag.experience||0)*.01-fast+(HOLD.includes(d.mode)?.2:0),.25,.97);
  if(Math.random()>acc)return;
  let dmg=ef.damage*rnd(.8,1.2)*(projectile?1:M.spacingFactor?M.spacingFactor(w,dist(a,d)-d.r*.5,ef.range):1)*(a.energy<15?.6:1);if(w.id==='fist')dmg*=.3;else if(w.bladed)dmg*=1.1;
@@ -106,7 +110,19 @@ function receive(a,d,projectile,snapshot){if(d.g.dead)return;const ef=snapshot||
  const kind=w.bladed?(w.attack==='thrust'||/spear|trident|dagger|javelin/.test(w.id||'')?'stab':'cut'):projectile?'stab':'blunt';
  const wd=hurt(d,part,dmg,kind,a);M.recordDamage?.(a,ef.attackKey||a.lastAttackKey||'slash',dmg);a.contactPoint={x:d.x,y:d.y-30*d.P.sz};if(w.item)w.item.blood=Math.min(1,(w.item.blood||0)+dmg/55);
  if(wd>5)log(a.g.name+' hits '+d.g.name+' in the '+PART_EN[part]+'.');afterHit(d,a,wd);}
+// Ausweichen (B3c3): Nur wenn der Bär den Schlag kommen sieht (Gegner vorn) und nicht selbst mitten im Angriff oder im Drohen ist. Rumpf und Kopf zucken zurück,
+// die Pranken bleiben stehen; danach schlägt er sofort zurück (b.retort). Chance: P.evade mal Zustand (Gesundheit, Lahmen, Erschöpfung), kurz nacheinander seltener.
+function dodge(d,a){if(d.mode==='dodge'&&(a.x-d.x)*B.facing(d.fig)>0)return true;// mitten im Zurückzucken geht auch der Nachschlag vorbei
+ if(d.g.dead||!['approach','back'].includes(d.mode)||(d.fig.v||0)>25&&(d.fig.bdir||1)>0||d.fig.turn||d.fig.turnWant||(a.x-d.x)*B.facing(d.fig)<=0)return false;const t=S.battle?.time||0;
+ const p=d.dodgeNext?1:d.P.evade*(.4+.6*K.health(d)/100)*(1-.6*K.lame(d))*(d.energy<20?.5:1)*(t-(d.dodgeAt||-9)<1.5?.4:1)*(d.mode==='back'?2:1);/* im Zurückweichen ist er schon auf dem Weg nach hinten */if(Math.random()>=p)return false;
+ d.dodgeNext=false;d.dodgeAt=t;d.dodges++;d.energy-=3;d.from=a.id;state(d,'dodge',.5);d.retort=a.id;d.retortUntil=t+1.6;log(d.g.name+' jerks back. '+a.g.name+"'s blow parts the air and a few hairs.");return true;}
 function afterHit(d,a,wd){if(d.g.dead)return;
+ if(K.OPT.reakt&&!HOLD.includes(d.mode)&&!d.leap){const t=S.battle?.time||0;
+  // schwerer Treffer: wirft ihn einen Schritt zurück (nicht mitten im eigenen Angriff, nicht im Lauf), danach Gegenangriff
+  if((d.recoilNext||wd>=K.OPT.wucht)&&t-(d.recoilAt||-9)>2&&(d.fig.v||0)<60&&['approach','back','dodge'].includes(d.mode)){d.recoilNext=false;d.recoilAt=t;d.recoils++;d.from=a.id;state(d,'recoil',.6);d.retort=a.id;d.retortUntil=t+1.8;
+   log('The blow knocks '+d.g.name+' back a step. It roars and comes right back.');}
+  // sonst: Kopf schnellt zum Angreifer, er schnappt oder schlägt zurück, sobald er kann
+  else if(wd>.6&&(d.mode==='approach'||d.mode==='back')&&Math.random()<.45+.4*d.P.wild){d.retort=a.id;d.retortUntil=t+1.2;}}
  if(HOLD.includes(d.mode)){d.interrupt=(d.interrupt||0)+wd;if(d.interrupt>=d.P.interrupt*.3){releaseVictim(d);d.grudge=a.id;state(d,'approach');d.cool=.3;log(a.g.name+' drives '+d.g.name+' off its victim.');}}}
 const baseReceive=M.rexReceive;M.rexReceive=function(a,d){if(d?.bear)return receive.apply(this,arguments);return baseReceive?.apply(this,arguments);};
 
@@ -130,7 +146,7 @@ function headChance(b,V){if(b.P.skulls<3||b.bear.stats.biss<70||V.g.body.head?.m
  const helm=DG()?.armorMat?.(V,'head');if(helm&&helm.m==='metal'&&b.P.skulls===3)return 0;// geschlossener Helm hält bei ☠3 stand
  return (b.P.bauart==='H'?.2:.15)*(helm?.5:1)*K.OPT.head;}
 K.tearChance=tearChance;K.headChance=headChance;
-try{const q=new URLSearchParams(location.search);if(q.get('baerAbriss')==='0')K.OPT.tear=0;if(q.get('baerKopfbiss')==='0')K.OPT.head=0;if(q.get('baerRingen')==='0')K.OPT.ringen=0;if(q.get('baerZiel')==='0')K.OPT.ziel=0;if(q.get('baerSturm')==='0')K.OPT.sturm=0;}catch{}
+try{const q=new URLSearchParams(location.search);if(q.get('baerAbriss')==='0')K.OPT.tear=0;if(q.get('baerKopfbiss')==='0')K.OPT.head=0;if(q.get('baerRingen')==='0')K.OPT.ringen=0;if(q.get('baerZiel')==='0')K.OPT.ziel=0;if(q.get('baerSturm')==='0')K.OPT.sturm=0;if(q.get('baerReakt')==='0')K.OPT.reakt=0;}catch{}
 const DOG_AT=[['kopf',.15],['hals',.15],['brust',.25],['bauch',.25],['vl',.1],['hl',.1]];
 function humanPart(b,t,kind){const A=b.P.bauart;let L=kind==='pin'?PIN_AT:kind==='bite'?BITE_AT:SWIPE_AT;
  if(kind==='swipe'&&A==='B')L=[['head',.6],...L.slice(1)];// Lippenbär: Sichelkrallen ins Gesicht
@@ -172,6 +188,7 @@ K.lame=b=>Math.max(lameOf(b,'vl'),lameOf(b,'hl'));
 const BX=[110,930],BY=[190,605];
 function brake(fig){const v=fig.v||0,hs=Math.sqrt(cl(fig.bear.weight/400,.3,2));return v*v/(2*(30+.6*v)/hs*1.3);}
 function head(b,tx,ty,gait,durch){const fig=b.fig,dx=tx-b.x,dy=ty-b.y,d=Math.hypot(dx,dy)||1,want=dx>=0?1:-1;
+ fig.back=0;if((fig.bdir||1)<0&&(fig.v||0)>1){B.go(fig,null);return d;}// kommt er aus dem Rückwärtsgang, hält er erst an
  if(K.OPT.sturm&&(fig.v||0)>70&&b.dirx*dx+b.diry*dy<0){B.go(fig,null);return d;}// Schwung: liegt das Ziel hinter ihm, läuft er erst aus, statt im vollen Lauf rückwärts zu gleiten
  if(Math.abs(dx)>12&&want!==B.facing(fig)&&!fig.turn&&!fig.turnWant)B.turn(fig);
  if(fig.turn||fig.turnWant||fig.mode!=='stand'&&!fig.go){B.go(fig,null);if(fig.mode!=='stand'&&!fig.want)B.pose(fig,'stand');}
@@ -179,6 +196,11 @@ function head(b,tx,ty,gait,durch){const fig=b.fig,dx=tx-b.x,dy=ty-b.y,d=Math.hyp
  else{const lame=K.lame(b);if(lame>.45&&gait==='run')gait='walk';B.go(fig,gait);fig.pace=(gait==='run'?b.P.pace*(fig.sprint?K.OPT.tempo:1):1.9*b.P.pace)*(1-.5*lame)*(b.mode==='drag'?.55:1);}
  b.dirx=dx/d;b.diry=dy/d;return d;}
 function halt(b){B.go(b.fig,null);}
+// Rückwärts gehen (B3c3): Blick bleibt, wo er ist; der Körper geht nach hinten (BAER a.back). Läuft er noch vorwärts, hält er erst an.
+function backTo(b,tx,ty,pf=1){const fig=b.fig,dx=tx-b.x,dy=ty-b.y,d=Math.hypot(dx,dy)||1;
+ if(fig.turn||fig.turnWant||fig.mode!=='stand'){B.go(fig,null);if(fig.mode!=='stand'&&!fig.want&&!fig.turn)B.pose(fig,'stand');return d;}
+ if((fig.bdir||1)>0&&(fig.v||0)>1){B.go(fig,null);return d;}
+ fig.back=1;B.go(fig,'walk');fig.pace=1.5*b.P.pace*pf*(1-.5*K.lame(b));b.dirx=dx/d;b.diry=dy/d;return d;}
 function faceTo(b,t){const fig=b.fig,want=t.x>=b.x?1:-1;if(want!==B.facing(fig)&&!fig.turn&&!fig.turnWant){B.turn(fig);return false;}return !fig.turn&&!fig.turnWant;}
 // Platz vor dem Gegner: der Bär steht seitlich daneben, Kopf und Pranken reichen hin
 const reachOf=b=>40*b.P.sz*K.SCALE;
@@ -287,8 +309,20 @@ function over(b,t){const m=b.mode,u=b.duration?cl(b.clock/b.duration,0,1):0,O={}
  else if(m==='bluff'||m==='charge'){O.lip=.7;O.mouth=.25;O.ear=-.8;
   if(b.leap){// der letzte Galoppsprung: Brust und Vorderpranken voraus, Hinterläufe strecken sich nach hinten, Maul auf
    const u=cl(b.leap.t/.26,0,1),sn=Math.sin(Math.PI*u*.9),e=sm(u/.5);O.hy=-6*sn;O.p=.2*sn;O.nx=11*e;O.fx=11*e;O.ny=-8*sn-2*e;O.fy=-8*sn-2*e;O.ax=-5*e;O.ay=-5*sn;O.mouth=.3+.6*e;O.lip=1;O.ne=.15*e;}}
+ else if(m==='dodge'){const e=sm(u/.22)*(1-sm((u-.5)/.5));O.hx=-8*e;O.p=.1*e;O.ne=.3*e;O.he=.24*e;O.ear=-1;O.lip=e;O.mouth=.3*e;}// Rumpf und Kopf zucken zurück, die Pranken bleiben stehen
+ else if(m==='recoil'){const e=sm(u/.2)*(1-sm((u-.45)/.55));O.hx=-4*e;O.p=.06*e;O.ne=.16*e;O.ear=-1;O.lip=e;O.mouth=.75*e;}// zurückgeworfen, Schmerzbrüllen
+ else if(m==='back'){const e=sm(b.clock/.3);O.ne=-.16*e;O.he=.12*e;O.ear=-e;O.lip=.6*e;O.mouth=.12*e;O.hy=e;}// Kopf tief zum Gegner, Ohren angelegt
  else if(m==='dead'){const e=sm(b.clock/1.2);O.he=-.3*e;O.ne=-.15*e;O.mouth=.25*e;}
- if(hr>0){O.he=(O.he||0)+.14*hr;O.hx=(O.hx||0)-1.5*hr;O.ear=(O.ear||0)-.5*hr;}
+ // Treffer (B3c3): Der Bär zuckt an der getroffenen Stelle zusammen (e), dann schnellt der Kopf zum Angreifer (s), bei spürbaren Treffern brüllt er.
+ const fl=K.OPT.reakt&&b.fl&&!b.g.dead?b.fl:null;
+ if(fl){const q=(t-fl.t)/.55;if(q>=1||q<0)b.fl=null;else{const kl=m==='approach'||m==='back'||m==='recoil'||m==='dodge'||m==='flee'?1:HOLD.includes(m)?.15:.35;/* mitten im eigenen Angriff nur ein kleines Zucken: Pranke und Maul bleiben am Ziel (B3c1) */
+   const e=Math.sin(Math.PI*.5*Math.min(1,q/.3))*(1-sm((q-.3)/.7))*fl.w*kl,s=fl.front&&(m==='approach'||m==='back'||m==='recoil')?sm((q-.2)/.25)*(1-sm((q-.65)/.35))*fl.w:0,g=Math.max(e,s),ad=(k,v)=>{O[k]=(O[k]||0)+v;},p=fl.part;
+   if(p==='kopf'){ad('he',.3*e);ad('ne',.12*e);ad('hx',-2.5*e);}else if(p==='hals'){ad('ne',-.22*e);ad('he',.18*e);ad('hx',-2*e);}
+   else if(p==='brust'){ad('hx',-3*e);ad('p',.07*e);ad('bend',1.2*e);}else if(p==='vl'){ad('hx',-1.5*e);ad('p',.04*e);if(!(fig.v>2)){ad('ny',-5*e);ad('nx',-3*e);}}
+   else if(p==='bauch'){ad('bend',2.4*e);ad('hy',-1.2*e);}else{ad('hy',2.6*e);ad('p',.07*e);}
+   O.ear=Math.max(-1,(O.ear||0)-.9*g);if(fl.roar){O.mouth=Math.max(O.mouth||0,.75*g);O.lip=Math.max(O.lip||0,g);}
+   if(s>0){ad('ne',.1*s);ad('he',-.12*s);ad('hx',2*s);}}}
+ else if(hr>0&&!K.OPT.reakt){O.he=(O.he||0)+.14*hr;O.hx=(O.hx||0)-1.5*hr;O.ear=(O.ear||0)-.5*hr;}
  // Lahmen: Tritt die kranke Pranke auf, geht der Kopf hoch (der Bär nimmt Last von ihr); lahmt er hinten, sackt die Kruppe weg.
  // Im Stand hält er die kranke Vorderpranke angehoben. Die Füße bleiben dabei stehen (nur Rumpf, Hals und Kopf bewegen sich).
  const lv=lameOf(b,'vl'),lh=lameOf(b,'hl'),fg=b.fig;if((lv>0||lh>0)&&!b.g.dead&&fg.mode==='stand'&&!fg.turn){const gs=fg.gs||0,c=fg.cyc||0,sv=Math.max(0,Math.sin(TAU*(c-.5))),sh=Math.max(0,Math.sin(TAU*(c-.6)));
@@ -337,9 +371,19 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
   if(T.g.dead&&b.mode==='crush'&&!b.struck){T.headCrushed=true;T.g.cause='Head crushed in the jaws of '+b.g.name;b.crushed=(b.crushed||0)+1;const h=T.g.body.head;if(h){h.hp=0;h.grade=5;h.injury='Crushed';}log(b.g.name+' bites down until nothing in '+T.g.name+"'s head holds together.");}
   if(T.g.dead)log(b.g.name+' lets go of what is left of '+T.g.name+'.');releaseVictim(b);state(b,'approach');b.cool=.8;T=null;}
  if(b.morale<=0&&b.mode!=='flee'&&!['tear','crush'].includes(b.mode)){releaseVictim(b);state(b,'flee',5);log(b.g.name+' has had enough and runs.');}
+ if(K.OPT.reakt&&b.team===0&&(K.force==='dodge'||K.force==='recoil')){b[K.force+'Next']=true;K.force=null;}
  const m=b.mode;
  if(m==='flee'){const L=foes(b),n=L.sort((p,q)=>dist(p,b)-dist(q,b))[0];const ax=n?b.x-n.x:(b.team?1:-1),ay=n?b.y-n.y:0,l=Math.hypot(ax,ay)||1;head(b,cl(b.x+ax/l*200,BX[0],BX[1]),cl(b.y+ay/l*200,BY[0],BY[1]),'run');
   if(b.clock>b.duration||!n){b.fled=true;b.surrendered=true;halt(b);}}
+ else if(m==='dodge'||m==='recoil'){const A=bt.actors.find(a=>a.id===b.from);if(fig.mode!=='stand'&&!fig.want)B.pose(fig,'stand');
+  // zurückgeworfen: ein Schritt vom Angreifer weg (rückwärts, wenn der vorn steht), Ausweichen bleibt auf der Stelle
+  if(m==='recoil'&&A&&b.clock<b.duration*.65){const away=A.x>=b.x?-1:1,tx=cl(b.x+away*40,BX[0],BX[1]);if(away===-B.facing(fig))backTo(b,tx,b.y,1.6);else head(b,tx,b.y,'walk');}else halt(b);
+  if(b.clock>=b.duration){state(b,'approach');b.cool=m==='dodge'?0:.2;}}
+ else if(m==='back'){const A=bt.actors.find(a=>a.id===b.from),F=B.facing(fig);
+  // rückwärts vom Gegner weg, Kopf zu ihm; kommt er in Reichweite und der Bär ist bereit, greift er an
+  if(!A||A.g.dead||b.clock>=b.duration||dist(A,b)>175||b.cool<=0&&inReach(b,A)||F>0&&b.x<=BX[0]+6||F<0&&b.x>=BX[1]-6){b.backUntil=t+4;halt(b);state(b,'approach');}
+  else if((A.x>=b.x?1:-1)!==F){if(!fig.turn&&!fig.turnWant){halt(b);if((fig.v||0)<8)B.turn(fig);}else halt(b);}
+  else{const l=dist(A,b)||1;backTo(b,cl(b.x-(A.x-b.x)/l*60,BX[0],BX[1]),cl(b.y-(A.y-b.y)/l*25,BY[0],BY[1]));}}
  else if(m==='swipe'||m==='bite'){halt(b);const tg=bt.actors.find(a=>a.id===b.aim),hitAt=m==='swipe'?.46:.34;
   if(!b.struck&&b.clock>=b.duration*hitAt){b.struck=true;const ok=tg&&!tg.g.dead&&(b.swat&&tg.mode==='grip'&&tg.victim===b.id||Math.abs(tg.x-b.x)<reachOf(b)+(tg.r||14)+16&&Math.abs(tg.y-b.y)<26);
    // Abreißen am Stehenden (Startwerte: erst ab ☠4): entschieden vor dem Biss, am schon schwer verletzten Glied
@@ -392,13 +436,21 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
  else if(m==='drag'){const V=bt.actors.find(a=>a.id===b.victim);if(!V){state(b,'approach');}
   else{V.pinnedBy=b.id;if(!(V.fallTimer>0)&&!V.down)M.knockdown(V,'Dragged by '+b.g.name,2.6);
    if(!fig.turn)b.dragOff=Math.max(reachOf(b)-8*P.sz,mouthAt(b)-8);// das gepackte Bein am Maul, der Körper schleift neben dem Bären nach
-   const d=head(b,b.dragTo.x,b.dragTo.y,'walk'),Y=B.yaw(fig,t),off=b.dragOff||reachOf(b)-8*P.sz,ox=V.x,oy=V.y;
+   // Wegziehen wie Rex Vetus (B3c3): Der Bär geht rückwärts, das Opfer im Maul vor sich, Kopf zu den Helfern. Steht er falsch herum, dreht er erst (das Opfer schwenkt mit).
+   let d;if(K.OPT.reakt){const Fw=Math.abs(b.dragTo.x-b.x)>25?(b.dragTo.x<b.x?1:-1):B.facing(fig);
+    if(fig.turn||fig.turnWant){halt(b);d=99;}else if(B.facing(fig)!==Fw){halt(b);if((fig.v||0)<8)B.turn(fig);d=99;}else d=backTo(b,b.dragTo.x,b.dragTo.y,.8);}
+   else d=head(b,b.dragTo.x,b.dragTo.y,'walk');
+   const Y=B.yaw(fig,t),off=b.dragOff||reachOf(b)-8*P.sz,ox=V.x,oy=V.y;
    // das Opfer hängt im Maul: liegt vor den Vorderpranken unter dem Kopf und schwenkt beim Wenden mit dem Kopf herum
    V.x=cl(b.x+(Y?Y.F*Math.cos(Y.h):B.facing(fig))*off,BX[0],BX[1]);V.y=cl(b.y+2+(Y?4*Math.sin(Y.h):0),BY[0],BY[1]);V.kx=V.ky=0;b.dragLen=(b.dragLen||0)+Math.hypot(V.x-ox,V.y-oy);
    V.fallSide=-(Y?(Math.cos(Y.h)>=0?Y.F:-Y.F):B.facing(fig))*(Math.cos(V.a)>=0?1:-1);// der Liegende zeigt mit dem Kopf nach hinten (Lage der Figur wie in arena.js)
+   if(K.OPT.reakt){// die gepackte Schulter liegt am Maul, Kopf beim Bären, die Beine schleifen nach; das Opfer rutscht weich in den Griff
+    const F=Y?(Math.cos(Y.h)>=0?Y.F:-Y.F):B.facing(fig);let best=1,bx=-1e9;for(const fs of [-1,1]){V.fallSide=fs;const x=-(groundPoint(V,'head').x-V.x)*F;if(x>bx){bx=x;best=fs;}}V.fallSide=best;
+    if(!Y){const gp=groundPoint(V,'chest');V.x=cl(b.x+F*31*P.sz*K.SCALE-(gp.x-V.x),BX[0],BX[1]);b.dragOff=Math.abs(V.x-b.x);}// Abstand wie beim Niederdrücken (pinSpot): nach dem Zerren steht der Bär schon richtig am Liegenden
+    const lim=(220+(fig.v||0)*P.sz*K.SCALE)*dt;V.x=ox+cl(V.x-ox,-lim,lim);V.y=oy+cl(V.y-oy,-lim,lim);}// der Körper schleift nach, er springt nie
    if(Math.random()<dt*9&&(fig.v||0)>4)stain(V.x,V.y,1.2+Math.random()*1.6);
-   const n=Math.floor(b.clock/.8);if(n>b.ticks){b.ticks=n;hurtHuman(b,V,'pin',b.dragPart,P.bite*.22*rnd(.8,1.2));}
-   if(d<14&&!fig.turn||b.clock>=b.duration){b.dragUntil=bt.time+7;state(b,'pin');b.ticks=0;}}}
+   const n=Math.floor(b.clock/.8);if(n>b.ticks){b.ticks=n;hurtHuman(b,V,'pin',b.dragPart,P.bite*(K.OPT.reakt?.5:.22)*rnd(.8,1.2));/* B3c3: er zieht öfter weg, dafür reißt das Zerren mehr auf (Siegquote wie vorher, gemessen) */}
+   if(d<14&&!fig.turn||b.clock>=b.duration){b.dragUntil=bt.time+(K.OPT.reakt?4.5:7);state(b,'pin');b.ticks=0;if(K.OPT.reakt)b.pinPart=null;/* neue Stelle suchen: das Opfer liegt jetzt anders */}}}
  else if(m==='threat'&&K.OPT.sturm){halt(b);const nah=!b.thrForce&&foes(b).some(a=>!fallen(a)&&dist(a,b)<115);// kommt ihm einer zu nah, bricht er das Drohen ab
   if(b.phase===0){if(nah){b.phase=2;b.clock=0;B.pose(fig,'stand');}else{if(fig.mode!=='rear'&&!fig.want)B.pose(fig,'rear');if(fig.mode==='rear'&&!B.moving(fig)&&b.clock>.4||b.clock>3.2){b.phase=1;b.clock=0;B.sound?.('roar',b);}}}
   else if(b.phase===1){if(b.clock>=1.9||nah){b.phase=2;b.clock=0;B.pose(fig,'stand');}}
@@ -424,10 +476,10 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
    V.pinnedBy=b.id;if(!(V.fallTimer>0)&&!V.down)M.knockdown(V,'Held down by '+b.g.name,2.6);
    if(m==='pin'&&d<=14&&!(K.OPT.ziel&&human(V)&&(fig.turn||fig.turnWant))){const n=Math.floor(b.clock/.75);if(n>b.ticks){b.ticks=n;let sp0=b.wantSpecial;b.wantSpecial=null;if(!sp0&&b.team===0&&(K.force==='tear'||K.force==='crush'||K.force==='drag')){sp0=K.force;K.force=null;}
      // Wegzerren: Stören andere Gegner in der Nähe, zerrt der Bär seine Beute von ihnen weg (höchstens alle 7 s)
-     const stoer=foes(b).filter(a=>a!==V&&!fallen(a)&&dist(a,b)<150).sort((p,q)=>dist(p,b)-dist(q,b))[0];
-     if(sp0==='drag'||!sp0&&K.OPT.ringen&&stoer&&heavier(b,V,1.2)&&t>(b.dragUntil||0)&&Math.random()<.22){const ax=stoer?b.x-stoer.x:B.facing(fig),ay=stoer?b.y-stoer.y:0,l=Math.hypot(ax,ay)||1;
-      b.dragTo={x:cl(b.x+ax/l*130,BX[0]+30,BX[1]-30),y:cl(b.y+ay/l*90,BY[0]+10,BY[1]-10)};b.dragPart=(Math.random()<.5?['lt','rt']:['rt','lt']).find(id=>!V.g.body[id]?.missing)||'belly';
-      b.dragged++;state(b,'drag',3.4);log(b.g.name+' drags '+V.g.name+' away by the '+(b.dragPart==='belly'?'belt':'leg')+'.');animate(b,dt,t);return;}
+     const stoer=foes(b).filter(a=>a!==V&&!fallen(a)&&dist(a,b)<(K.OPT.reakt?210:150)).sort((p,q)=>dist(p,b)-dist(q,b))[0];
+     if(sp0==='drag'||!sp0&&K.OPT.ringen&&stoer&&heavier(b,V,1.2)&&t>(b.dragUntil||0)&&Math.random()<(K.OPT.reakt?(b.dragged?.45:.85):.22)){const ax=stoer?b.x-stoer.x:B.facing(fig),ay=stoer?b.y-stoer.y:0,l=Math.hypot(ax,ay)||1;
+      b.dragTo={x:cl(b.x+ax/l*130,BX[0]+30,BX[1]-30),y:cl(b.y+ay/l*90,BY[0]+10,BY[1]-10)};b.dragPart=K.OPT.reakt?(Math.random()<.5?'ls':'rs'):(Math.random()<.5?['lt','rt']:['rt','lt']).find(id=>!V.g.body[id]?.missing)||'belly';/* B3c3: an der Schulter gepackt wie Rex Vetus, die Beine schleifen nach */
+      b.dragged++;state(b,'drag',K.OPT.reakt?4.4:3.4);log(b.g.name+' drags '+V.g.name+' away by the '+(b.dragPart==='belly'?'belt':b.dragPart[1]==='s'?'shoulder':'leg')+'.');animate(b,dt,t);return;}
      // Biss am Liegenden: erst die Stelle wählen, dann entscheidet sich, ob daraus ein Abriss oder ein Kopfbiss wird (Schlussangriffe)
      const part=b.pinPart&&!V.g.body[b.pinPart]?.missing?b.pinPart:pinPick(b,V),forced=sp0==='tear'?(['lfa','rfa','lua','rua','lsh','rsh','lh','rh','lf','rf'].map(x=>limbFor(b,V,x)).find(Boolean)||null):null;
      const limb=sp0==='tear'?forced:!sp0&&Math.random()<tearChance(b,V,part)?limbFor(b,V,part):null;
@@ -445,6 +497,8 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
     if(b.clock>=b.duration){releaseVictim(b);state(b,'approach');b.cool=1;}}}}
  else{// approach: Ziel wählen, hingehen, angreifen
   T=chooseTarget(b);
+  // Zurückschnappen (B3c3): wer ihn eben getroffen hat oder wessen Schlag er ausgewichen ist und vorn in Reichweite steht, bekommt sofort Biss oder Hieb
+  if(b.retort){const r=t<(b.retortUntil||0)&&foes(b).find(a=>a.id===b.retort);if(!r){b.retort=null;b.snap=false;}else if(inReach(b,r)&&!fallen(r)){T=r;b.cool=0;b.snap=true;}else b.snap=false;}else b.snap=false;
   // steht schon ein Gegner vorn in Reichweite, bekommt der den Hieb (der Bär dreht sich nicht erst zu einem anderen um)
   if(T&&b.cool<=0&&!inReach(b,T)){const nah=foes(b).filter(a=>inReach(b,a)&&a.id!==b.shun).sort((p,q)=>dist(p,b)-dist(q,b))[0];if(nah)T=nah;}
   if(T&&T.id===b.shun&&foes(b).length>1)T=foes(b).filter(a=>a.id!==b.shun).sort((p,q)=>dist(p,b)-dist(q,b))[0]||T;
@@ -453,14 +507,17 @@ function stepBear(b,dt){const bt=S.battle,fig=b.fig,P=b.P,t=bt.time;b.clock+=dt;
    // Hängt ein Hund am Bären, schlägt er ihn sofort weg (dafür muss er sich nicht erst hindrehen)
    const hang=b.cool<=0&&bt.actors.find(a=>a.dog&&!a.g.dead&&a.mode==='grip'&&a.victim===b.id);
    if(hang){b.aim=hang.id;b.at=null;state(b,'swipe',.7);b.swat=true;b.energy-=4;animate(b,dt,t);return;}
+   // Zurückweichen (B3c3): zwischen den eigenen Angriffen geht er rückwärts, eher wenn er verletzt ist, der Mut sinkt oder mehrere Gegner vor ihm stehen
+   if(K.OPT.reakt&&!b.snap&&(fig.v||0)<30&&(f==='back'||!f&&b.cool>.25&&t>(b.backUntil||0)&&!fallen(T)&&d<120&&(T.x-b.x)*B.facing(fig)>0&&!fig.turn&&!fig.turnWant&&fig.mode==='stand'&&Math.random()<dt*(.1+.9*(1-K.health(b)/100)+(b.morale<50?.4:0)+.3*foes(b).filter(a=>a!==T&&!fallen(a)&&dist(a,b)<120).length))){
+    if(f)K.force=null;b.from=T.id;b.backs++;state(b,'back',f?1.6:rnd(.8,1.5));if(t-(b.backLog||-99)>12){b.backLog=t;log(b.g.name+' backs off, head low, ears flat. Nobody mistakes it for an apology.');}animate(b,dt,t);return;}
    if(!b.threatDone&&(f==='threat'||!f&&d>150)){b.threatDone=true;if(f==='threat'||Math.random()<.35+.4*P.wild){if(f)K.force=null;b.roared=false;state(b,'threat',2.3);b.thrForce=!!f;log(b.g.name+(K.OPT.sturm?' rises to its full height, claws the air and roars.':' rises on its hind legs and roars.'));animate(b,dt,t);return;}}
    if(b.cool<=0&&(f==='charge'||f==='bluff'||!f&&d>170&&b.energy>30&&!fallen(T)&&K.lame(b)<=.45)){const bl=f==='bluff'||!f&&b.bluffs<1&&Math.random()<.3*(1.1-P.wild);if(f)K.force=null;if(bl)b.bluffs++;b.aim=T.id;state(b,bl?'bluff':'charge');animate(b,dt,t);return;}
    if(fallen(T)&&d<70*P.sz+20){b.victim=T.id;b.interrupt=0;state(b,'pin');if(b.stoodOver!==T.id){b.stoodOver=T.id;log(b.g.name+' stands over '+T.g.name+'.');}}
    else if(ds>12&&!(b.cool<=0&&inReach(b,T)))head(b,sp.x,sp.y,ds>70?'run':'walk');
-   else{halt(b);if(faceTo(b,T)&&b.cool<=0&&(fig.v||0)<45&&!B.moving(fig)){const k=chooseAttack(b,T);b.aim=T.id;b.at=human(T)&&(k==='swipe'||k==='bite'||k==='slam')?humanPart(b,T,k):null;/* die Stelle steht vor dem Ausholen fest: Pranke und Maul zielen darauf */b.energy-=k==='slam'?10:6;
+   else{halt(b);if(faceTo(b,T)&&b.cool<=0&&(fig.v||0)<45&&!B.moving(fig)){const sn=b.snap;b.snap=false;if(sn){b.retort=null;b.retorts++;log(b.g.name+' snaps back at '+T.g.name+'.');}const k=sn?(Math.random()<(T.dog?.3:.5)?'swipe':'bite'):chooseAttack(b,T);b.aim=T.id;b.at=human(T)&&(k==='swipe'||k==='bite'||k==='slam')?humanPart(b,T,k):null;/* die Stelle steht vor dem Ausholen fest: Pranke und Maul zielen darauf */b.energy-=k==='slam'?10:6;
      if(k==='pin'){b.victim=T.id;b.interrupt=0;state(b,'pin');}else if(k==='slam'){state(b,'slam');b.phase=0;}
      else if(k==='grapple'){b.victim=T.id;b.interrupt=0;state(b,'grapple');b.phase=0;}else if(k==='fling'){b.victim=T.id;b.interrupt=0;b.held=false;state(b,'fling',1.2);}else if(k==='charge'||k==='bluff'||k==='threat'){state(b,k,k==='threat'?2.3:0);if(k==='threat')b.thrForce=true;}
-     else state(b,k,k==='swipe'?.95+.25*cl(b.bear.weight/400,.3,2):1.25);}}}}
+     else state(b,k,(k==='swipe'?.95+.25*cl(b.bear.weight/400,.3,2):1.25)*(sn?.8:1));}}}}
  animate(b,dt,t);}
 function animate(b,dt,t){const fig=b.fig,P=b.P;over(b,t);B.step(fig,dt,t);fig._R=B.rig(fig,t);if(b.chk)contactCheck(b);// rechnet auch ohne Bild die Haltung weiter (Reihenrechnung)
  // Sand spritzt, wo im Sturm eine Pranke aufsetzt oder abdrückt (B3c2)
@@ -518,8 +575,8 @@ K.fixed=fixed;
 const inner=M.fixedStep;M.fixedStep=function(dt){const b=S.battle;if(!b?.baer)return inner.apply(this,arguments);return fixed(dt);};
 
 // Viele Kämpfe derselben Aufstellung ohne Bild rechnen (make: liefert je Kampf eine frische Aufstellung)
-K.series=function(make,n=20,maxSeconds=K.TMAX+5){const old=S.battle,R={n,wins:[0,0],draw:0,time:0,torn:0,crushed:0,grapples:0,flung:0,dragged:0,deadBears:0,fled:0,ms:0},t0=performance.now();
+K.series=function(make,n=20,maxSeconds=K.TMAX+5){const old=S.battle,R={n,wins:[0,0],draw:0,time:0,torn:0,crushed:0,grapples:0,flung:0,dragged:0,dodges:0,recoils:0,backs:0,retorts:0,deadBears:0,fled:0,ms:0},t0=performance.now();
  for(let i=0;i<n;i++){const b=K.build(make());b.time=b.startTime=0;S.battle=b;M.stains.length=0;let k=0;while(!b.ende&&k++<maxSeconds*60)fixed(1/60);
-  const w=b.ende?b.ende.winner:-1;if(w<0)R.draw++;else R.wins[w]++;R.time+=b.time;for(const a of b.actors)if(a.bear){R.torn+=a.torn||0;R.crushed+=a.crushed||0;R.grapples+=a.grapples||0;R.flung+=a.flung||0;R.dragged+=a.dragged||0;if(a.g.dead)R.deadBears++;if(a.fled)R.fled++;}}
+  const w=b.ende?b.ende.winner:-1;if(w<0)R.draw++;else R.wins[w]++;R.time+=b.time;for(const a of b.actors)if(a.bear){R.torn+=a.torn||0;R.crushed+=a.crushed||0;R.grapples+=a.grapples||0;R.flung+=a.flung||0;R.dragged+=a.dragged||0;R.dodges+=a.dodges||0;R.recoils+=a.recoils||0;R.backs+=a.backs||0;R.retorts+=a.retorts||0;if(a.g.dead)R.deadBears++;if(a.fled)R.fled++;}}
  R.time/=n;R.ms=performance.now()-t0;S.battle=old;return R;};
 })();
