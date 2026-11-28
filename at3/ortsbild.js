@@ -19,7 +19,13 @@ function biomVon(zonen,ZON,posten){for(var i=0;i<zonen.length;i++){var id=ZON[zo
 function planSeed(seed,zelle){return zz(seed,zelle,7001)}
 // Religion des Orts: erste der bis zu 3 Religionen (A.vk.rel, Nummer in religionen.json ab 1) → Kennung; ohne Völker null (stadtbild.js nimmt die des Bioms)
 function religion(A,k,REL){if(!A.vk||!A.vk.rel||!REL)return null;var n=A.vk.rel[k*6];return n&&REL[n-1]?REL[n-1].id:null}
-// D = {O: orte.js, DD: orte.daten(), SL: stadtliste.js, SLD: stadtliste.daten(), REL: religionen.json religionen, KK: kulturen.json kulturkreise}
+// D = {O: orte.js, DD: orte.daten(), SL: stadtliste.js, SLD: stadtliste.daten(), REL: religionen.json religionen, KK: kulturen.json kulturkreise, WG: Ware → Warengruppe (N7f1, wahlweise)}
+// N7f1 (Thomas 28.11.2026): Warengruppen des Markts aus der Ortsbilanz: je Leitgebäude seine Waren (orte.daten aus, aus den Rezepten), Gewicht = Arbeiter / Zahl der Waren,
+// Gruppe aus D.WG (Ware → Warengruppe, waren.json); nach Gewicht sortiert. Ohne D.WG null (dann wählt der Plan die Gruppen aus dem Seed).
+function marktGruppen(b,D){if(!D.WG||!D.DD||!D.DD.kand||!b||!b.leit)return null;var AUS=D.AUS||(D.AUS={}),m={};
+ if(!D.AUSF){D.DD.kand.forEach(function(c){AUS[c.id]=Object.keys(c.aus||{})});D.AUSF=1}
+ b.leit.forEach(function(l){var L=AUS[l.id];if(!L||!L.length)return;var n=l.n/L.length;L.forEach(function(w){var g=D.WG[w];if(g)m[g]=(m[g]||0)+n})});
+ var L=Object.keys(m).sort(function(x,y){return m[y]-m[x]||(x<y?-1:1)});return L.length?L:null}
 // Ergebnis {opt (für stadtbild.plan), roh, bilanz, name, stilKultur}
 function wahl(seed,A,k,D,ON){var O=D.O,r=O.roh(seed,A,k,ON),b=O.bilanz(seed,r,D.DD),biom=biomVon(r.zonen,D.DD.zon,false);
  var opt={liste:D.SL.ausBilanz(b,biom,seed,D.SLD),biom:biom,seed:planSeed(seed,r.zelle)};
@@ -27,6 +33,7 @@ function wahl(seed,A,k,D,ON){var O=D.O,r=O.roh(seed,A,k,ON),b=O.bilanz(seed,r,D.
  if(r.kueste){var ks=O.kuesteSeite(seed,A,k);if(ks)opt.kueste=ks}
  if(O.huegel(seed,A,k))opt.huegel=true;
  var rel=religion(A,k,D.REL);if(rel)opt.religion=rel;
+ var mk=marktGruppen(b,D);if(mk)opt.markt=mk;   // N7f1: Warengruppen der Marktstände nach dem, was die Leitgebäude herstellen
  var kk=D.KK&&r.kultur?D.KK.filter(function(c){return c.nr===r.kultur})[0]:null;
  return{opt:opt,roh:r,bilanz:b,name:r.name,stilKultur:kk?kk.baustil:null}}
 // Plan sicher bauen: SB = stadtbild.js. Echte Orte treffen Lagen, die im Editor selten vorkommen; scheitert der Plan (z. B. „Außenring passt nicht“) auch mit
@@ -109,5 +116,5 @@ function mini(P,BK,S64,WB){var W=P.W,m=new Uint8Array(W*W),ww=!!P.weltwasser,i,j
   for(j=Math.max(0,b.j);j<Math.min(W,b.j+b.h);j++)for(i=Math.max(0,b.i);i<Math.min(W,b.i+b.w);i++)m[j*W+i]=f});
  return m}
 function maskeBei(M,W,i,j){var o=(M.N>>1)-(W>>1),u=i+o,v=j+o;return u<0||v<0||u>=M.N||v>=M.N?-1:M.m[v*M.N+u]}
-var M={mini:mini,MINI_CODES:MINI_CODES,AUSWEICH:AUSWEICH,ZONE_BIOM:ZONE_BIOM,biomVon:biomVon,planSeed:planSeed,religion:religion,wahl:wahl,planen:planen,punkt:punkt,lage:lage,toreAus:toreAus,ausgaenge:ausgaenge,posten:posten,postenLage:postenLage,MASKE_S:MASKE_S,MASKE_R:MASKE_R,M_MEER:M_MEER,M_FLUSS:M_FLUSS,M_SEE:M_SEE,M_STRAND:M_STRAND,maskeSeite:maskeSeite,wasserMaske:wasserMaske,wasserMaskeAm:wasserMaskeAm,maskeWasserSeite:maskeWasserSeite,wasserSuche:wasserSuche,seiteZu:seiteZu,maskeBei:maskeBei};
+var M={marktGruppen:marktGruppen,mini:mini,MINI_CODES:MINI_CODES,AUSWEICH:AUSWEICH,ZONE_BIOM:ZONE_BIOM,biomVon:biomVon,planSeed:planSeed,religion:religion,wahl:wahl,planen:planen,punkt:punkt,lage:lage,toreAus:toreAus,ausgaenge:ausgaenge,posten:posten,postenLage:postenLage,MASKE_S:MASKE_S,MASKE_R:MASKE_R,M_MEER:M_MEER,M_FLUSS:M_FLUSS,M_SEE:M_SEE,M_STRAND:M_STRAND,maskeSeite:maskeSeite,wasserMaske:wasserMaske,wasserMaskeAm:wasserMaskeAm,maskeWasserSeite:maskeWasserSeite,wasserSuche:wasserSuche,seiteZu:seiteZu,maskeBei:maskeBei};
 if(typeof module!=='undefined'&&module.exports)module.exports=M;else G.AT3ORTSBILD=M})(typeof self!=='undefined'?self:this);

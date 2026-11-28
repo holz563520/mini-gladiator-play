@@ -24,7 +24,8 @@ function json(f){return fetch('daten/'+f+'.json'+Q).then(function(r){if(!r.ok)th
 function daten(){if(laden)return laden;
  laden=Promise.all(['gebaeude','rezepte','kulturen','religionen','landwirtschaft','waren'].map(json)).then(function(r){
   SB.setzeDaten(r[0]);SB.setzeLandw(LW.daten(r[4],r[0],r[5],r[1]));
-  D={O:O,DD:O.daten(r[0],r[1],r[2]),SL:SL,SLD:SL.daten(r[0]),REL:r[3].religionen,KK:r[2].kulturkreise};return D});return laden}
+  D={O:O,DD:O.daten(r[0],r[1],r[2]),SL:SL,SLD:SL.daten(r[0]),REL:r[3].religionen,KK:r[2].kulturkreise,WG:wg(r[5])};return D});return laden}
+function wg(w){var m={};((w&&w.waren)||[]).forEach(function(x){if(x.gruppe)m[x.id]=x.gruppe});return m}   // N7f1: Ware → Warengruppe für die Marktstände
 // N7a4a2: Kollisionstabelle der Kartei (hohe Dinge sperren) erst mit der ersten Sperrkarte
 var kolL=null;function kol(){return kolL||(kolL=fetch('kartei/kollision.json'+Q).then(function(r){if(!r.ok)throw new Error('kollision '+r.status);return r.json()}))}
 // Rohe Höhe am Ortspunkt (Weltfeld x, y): das Kartenstück dort einmal rechnen

@@ -1013,6 +1013,7 @@ function plan0(opt){
  if(g>=MAUER_AB&&opt.wehr!==false)mauerwerk(P,opt);   // N6b2d begehbare Mauer (opt.wehr:false = Platzhalter wie vorher)
  if(MS&&P.weltwasser)stadtFlussEnde(P,MS);   // N7a5a3a: Fluss wird Weltwasser, Gebautes auf Wasser gezählt
  if(!elend&&opt.ehrensaeulen!==false)ehrensaeulen(P);
+ if(!elend&&opt.marktstaende!==false)marktStaende(P,opt);   // N7f1 Marktstände nach Warengruppen, groß nach Handelsmenge (opt.marktstaende:false = Einheitsstand wie vorher)
  if(!elend){flurPlan(P,opt);dauerDinge(P,opt);pferchZaun(P,opt)}
  if(MW||MS)P.dinge=P.dinge.filter(function(d){return d.rolle==='steg'||d.rolle==='bruecke'||!WELT_Z[P.zellen.charAt(d.j*P.W+d.i)]});   // N7a5a2: nichts Gebautes auf Weltwasser und Weltufer   // N6b4b2 Flurgürtel mit Höfen, Feldern und Feldwegen in Bildfeldern, ganz zum Schluss (Hofhäuser vorn in P.bauten; opt.flur:false = wie vorher)   // N6b3b4 Ehrensäulen am Marktplatz (opt.ehrensaeulen:false = wie vorher)
  if(elendAn(B)&&opt.budenbild!==false&&opt.elendDinge!==false&&(elend||(g>=MAUER_AB&&P.aussen&&P.aussen.buden)))elendDinge(P,seed);   // N6b5b1 Dinge im Elendsviertel (opt.elendDinge:false = wie vorher)
@@ -1257,6 +1258,61 @@ function ehrensaeulen(P){var B=BIOME[P.biom],st={soll:0,gesetzt:0};P.ehrensaeule
   var achseI=li&&!lj?true:lj&&!li?false:rausch(x,y,seed+153)<.5;
   P.dinge.push({id:'ehrensaeule-'+art+(achseI?'-i':''),i:x,j:y,rolle:'ehrensaeule',hz:HZ?HZ.charCodeAt(k)-48:0})}
  st.gesetzt=gesetzt.length}
+// N7f1 Marktstände (Thomas 28.11.2026): Die Einheitsstände (markt-stand) eines Marktplatzes werden zu Ständen der Warengruppen (Kartei marktstand-<gruppe>
+// mit Varianten -a, -b, -c). Reihenfolge der Gruppen: opt.markt (aus der Ortsbilanz, ortsbild.js wahl: was die Leitgebäude herstellen, nach Menge), danach die übrigen
+// aus dem Seed (Einfuhr). Die Fläche der alten Stände ist das Budget; die vorderen Gruppen bekommen ab Ortsgröße 3 einen Doppelstand (2 × 1) und ab 4 ein Marktzelt
+// (2 × 2), wenn es für ihre Gruppe ein großes Bild gibt (MARKT_GROSS). Einzelstände sind Dinge
+// mit Front nach Süden; große Stände sind Dinge auf ihrem vordersten Feld mit w × h (Kartei Art anlage, Lage = Front). Regeln wie bei den Ehrensäulen: äußere Reihe des Platzes frei, nicht vor Eingängen, Feld vor der Theke bleibt frei, freie Platzfelder
+// bleiben zusammenhängend. Kosten: einmal je Ort, nur über die Marktfläche.
+var MARKT_GRUPPEN=['food','drink','crops','animals','clothing','household','raw','intermediate','arms','arena-supplies','luxury','exotic','souvenirs','vice'],
+ MARKT_GROSS={animals:1,'arena-supplies':1,arms:1,clothing:1,crops:1,drink:1,exotic:1},MARKT_VAR=['','','','','-a','-a','-a','-b','-b','-c'],
+ MARKT_RICHT=[[0,1],[1,0],[-1,0],[0,-1]],MARKT_LAGE=['sued','ost','west','nord'];   // Front Süd, Ost, West, Nord (Süd und Ost zeigen die Theke zum Betrachter)
+function marktStaende(P,opt){var W=P.W,WW=W*W,Z=P.zellen,seed=P.seed>>>0,st={staende:0,doppel:0,zelte:0};P.markt=st;
+ var ding=new Uint8Array(WW),sae=new Uint8Array(WW),start=[],k,d,e;
+ P.dinge.forEach(function(o){if(o.i<0||o.j<0||o.i>=W||o.j>=W)return;k=o.j*W+o.i;if(o.id==='markt-stand'&&o.rolle==='market'&&Z[k]==='o')start.push(k);else ding[k]=1;if(o.rolle==='ehrensaeule')sae[k]=1});
+ if(!start.length)return;
+ P.bauten.forEach(function(b){for(var y=Math.max(0,b.j);y<Math.min(W,b.j+b.h);y++)for(var x=Math.max(0,b.i);x<Math.min(W,b.i+b.w);x++)ding[y*W+x]=1});
+ var vor=new Uint8Array(WW);P.bauten.forEach(function(b){if(!b.tuer)return;var fx=b.tuer[0]+b.tuer[2],fy=b.tuer[1]+b.tuer[3];if(fx>=0&&fy>=0&&fx<W&&fy<W)vor[fy*W+fx]=1});
+ var nb=function(q,r){var x=q%W,y=(q/W)|0;return r===0?(x<W-1?q+1:-1):r===1?(y<W-1?q+W:-1):r===2?(x>0?q-1:-1):(y>0?q-W:-1)};
+ // Gruppen: zuerst, was der Ort herstellt, dann die übrigen in Seed-Reihenfolge
+ var bek={},G=[];(opt.markt||[]).forEach(function(g){if(MARKT_GRUPPEN.indexOf(g)>=0&&!bek[g]){bek[g]=1;G.push(g)}});
+ MARKT_GRUPPEN.filter(function(g){return !bek[g]}).sort(function(x,y){return rausch(MARKT_GRUPPEN.indexOf(x),0,seed+162)-rausch(MARKT_GRUPPEN.indexOf(y),0,seed+162)}).forEach(function(g){G.push(g)});
+ var weg={};P.dinge.forEach(function(o,n){if(o.id==='markt-stand'&&o.rolle==='market')weg[n]=1});P.dinge=P.dinge.filter(function(o,n){return !weg[n]});
+ var comp=new Int32Array(WW).fill(-1),nr=0,resv=new Uint8Array(WW),gi=0,zelte=0,doppel=0,TMAX=(P.g|0)>=5?2:1;
+ start.forEach(function(s0){if(comp[s0]>=0)return;var M=[s0],h=0,alt=0;comp[s0]=nr;
+  while(h<M.length){var a=M[h++];for(d=0;d<4;d++){var b=nb(a,d);if(b>=0&&comp[b]<0&&Z[b]==='o'){comp[b]=nr;M.push(b)}}}
+  start.forEach(function(q){if(comp[q]===nr)alt++});
+  var dist=new Int32Array(WW).fill(-1),Q=[],hq=0;M.forEach(function(q){for(var r=0;r<4;r++){var b=nb(q,r);if(b<0||comp[b]!==nr){dist[q]=0;Q.push(q);break}}});
+  while(hq<Q.length){var a2=Q[hq++];for(d=0;d<4;d++){var b2=nb(a2,d);if(b2>=0&&comp[b2]===nr&&dist[b2]<0){dist[b2]=dist[a2]+1;Q.push(b2)}}}
+  var mein=nr,frei=function(q){return comp[q]===mein&&!ding[q]};
+  var stuecke=function(){var v=new Uint8Array(WW),n=0;M.forEach(function(s1){if(v[s1]||!frei(s1))return;n++;var qq=[s1],hh=0;v[s1]=1;while(hh<qq.length){var a=qq[hh++];for(var r=0;r<4;r++){var b=nb(a,r);if(b>=0&&!v[b]&&frei(b)){v[b]=1;qq.push(b)}}}});return n};
+  var bau=function(q){return q>=0&&comp[q]===mein&&dist[q]>=1&&!ding[q]&&!vor[q]&&!resv[q]};
+  var C=M.slice().sort(function(x,y){return (dist[x]>=2?0:1)-(dist[y]>=2?0:1)||rausch(x%W,(x/W)|0,seed+161)-rausch(y%W,(y/W)|0,seed+161)}),n0=stuecke(),budget=Math.max(1,Math.round(alt*1.6));   // innen zuerst; etwas dichter als die Einheitsstände
+  // ein Stand fw × fh (je Richtung gedreht) mit Front r; gibt true, wenn gesetzt
+  var setze=function(g,gross){var L=gross==='2x2'?[2,2]:gross==='2x1'?[2,1]:[1,1],RR=!gross?[0]:rausch(st.staende,nr,seed+164)<.5?[0,1,2,3]:[1,0,2,3];   // Süd oder Ost zuerst (Theke zum Betrachter), dann West, Nord
+   for(var c=0;c<C.length;c++){var x0=C[c]%W,y0=(C[c]/W)|0;
+    for(var ri=0;ri<RR.length;ri++){var R=MARKT_RICHT[RR[ri]],fw=R[0]?L[1]:L[0],fh=R[0]?L[0]:L[1],ok=true,F=[],cells=[],x,y;
+     if(x0+fw>W||y0+fh>W)continue;
+     for(y=y0;y<y0+fh&&ok;y++)for(x=x0;x<x0+fw&&ok;x++){var q=y*W+x;if(!bau(q)||vor[q])ok=false;else cells.push(q);for(e=0;e<4&&ok;e++){var nq=nb(q,e);if(nq>=0&&vor[nq])ok=false}}
+     if(!ok)continue;
+     if(R[1]>0)for(x=x0;x<x0+fw;x++)F.push((y0+fh)*W+x);else if(R[1]<0)for(x=x0;x<x0+fw;x++)F.push((y0-1)*W+x);
+     else if(R[0]>0)for(y=y0;y<y0+fh;y++)F.push(y*W+x0+fw);else for(y=y0;y<y0+fh;y++)F.push(y*W+x0-1);
+     if(F.some(function(q2){return q2<0||q2>=WW||!frei(q2)||(R[0]>0&&q2%W===0)||(R[0]<0&&q2%W===W-1)||sae[q2]||[0,1,2,3].some(function(r2){var b2=nb(q2,r2);return b2>=0&&sae[b2]})}))continue;   // Theke nie an einer Ehrensäule (sie steht nicht vor Türen)
+     cells.forEach(function(q2){ding[q2]=1});if(stuecke()>n0){cells.forEach(function(q2){ding[q2]=0});continue}
+     F.forEach(function(q2){resv[q2]=1});
+     if(!gross){P.dinge.push({id:'marktstand-'+g+MARKT_VAR[Math.floor(rausch(x0,y0,seed+163)*MARKT_VAR.length)],i:x0,j:y0,rolle:'market',hz:P.hoehe?P.hoehe.charCodeAt(y0*W+x0)-48:0});return true}
+     var fx=x0+fw-1,fy=y0+fh-1;   // großer Stand: Ding auf dem vordersten Feld mit Fläche w × h (wie ortssperre.js und die Kollisionstabelle)
+     P.dinge.push({id:'marktstand-'+g+'-'+gross+'-'+MARKT_LAGE[RR[ri]],i:fx,j:fy,w:fw,h:fh,rolle:'market',hz:P.hoehe?P.hoehe.charCodeAt(fy*W+fx)-48:0});return true}}
+   return false};
+  while(budget>0){var g=G[gi%G.length],gr=null;gi++;
+   if(MARKT_GROSS[g]){if(budget>=4&&(P.g|0)>=4&&zelte<TMAX)gr='2x2';else if(budget>=2&&(P.g|0)>=3&&doppel<3)gr='2x1'}
+   if(gr&&setze(g,gr)){if(gr==='2x2'){zelte++;st.zelte++;budget-=4}else{doppel++;st.doppel++;budget-=2}st.staende++;continue}
+   if(setze(g,null)){st.staende++;budget--;continue}
+   break}
+  nr++})}
+// N7f1: großer Marktstand dreht und spiegelt seine Lage mit (Richtung (di, dj) → Drehen (−dj, di), Spiegeln (dj, di)); Fläche w × h tauscht
+var MARKT_DREH={sued:'west',ost:'sued',nord:'ost',west:'nord'},MARKT_SPIEGEL={sued:'ost',ost:'sued',nord:'west',west:'nord'};
+function marktLage(o,T){var m=/^(marktstand-.+-2x[12]-)(sued|ost|nord|west)$/.exec(o.id);if(!m)return;o.id=m[1]+T[m[2]];var w=o.w;o.w=o.h;o.h=w}
 // Ganzbild eines Tempels: Zeichnungen für Längsachse j (Eingang vorn = Süd, zum Betrachter; hinten = Nord); Längsachse i = gespiegelt (Eingang Ost bzw. West).
 // null, wenn der Tempel nicht genau passt (dann Baukasten-Bild).
 function tempelGanz(b){if(b.id!=='temple'||!b.tuer)return null;var T=b.gross?TEMPEL.gross:TEMPEL.klein,sp=b.w>b.h;
@@ -2651,7 +2707,7 @@ function skalieren(P,F){var r=function(v){return Math.floor(v*F+.5)},W=P.W,N=r(W
 function spiegeln(P){var W=P.W,z='',zh='',zt='',i,j;for(j=0;j<W;j++)for(i=0;i<W;i++){z+=P.zellen[i*W+j];if(P.hoehe)zh+=P.hoehe[i*W+j];if(P.mauertor)zt+=P.mauertor[i*W+j]}
  var N=JSON.parse(JSON.stringify(P));N.zellen=z;if(P.hoehe)N.hoehe=zh;if(P.mauertor)N.mauertor=zt;N.gespiegelt=!P.gespiegelt;
  N.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b));o.i=b.j;o.j=b.i;o.w=b.h;o.h=b.w;o.achse=b.achse==='i'?'j':'i';if(b.tuer)o.tuer=[b.tuer[1],b.tuer[0],b.tuer[3],b.tuer[2]];return o});
- N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=d.j;o.j=d.i;return o});N.tor={i:P.tor.j,j:P.tor.i};
+ N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=d.j;o.j=d.i;if(d.w)marktLage(o,MARKT_SPIEGEL);return o});N.tor={i:P.tor.j,j:P.tor.i};   // N7f1
  if(N.aussen){N.aussen.stinktor=SPIEGEL[N.aussen.stinktor];N.aussen.graebertor=SPIEGEL[N.aussen.graebertor];if(N.aussen.tore)N.aussen.tore=N.aussen.tore.map(function(x){return SPIEGEL[x]})}
  if(N.umriss)N.umriss.tore=N.umriss.tore.map(function(x){return SPIEGEL[x]});if(N.fluss&&!N.fluss.welt)N.fluss.achse=N.fluss.achse==='ns'?'ow':'ns';if(N.kueste)N.kueste.seite=SPIEGEL[N.kueste.seite];return N}
 // Drehen um 90° (Blick von der nächsten Seite, für First Person): Zelle (i, j) → (W−1−j, i), Richtung (di, dj) → (−dj, di)
@@ -2659,7 +2715,7 @@ function drehen(P){var W=P.W,z=new Array(W*W),zh=P.hoehe?new Array(W*W):null,zt=
  var N=JSON.parse(JSON.stringify(P));N.zellen=z.join('');if(zh)N.hoehe=zh.join('');if(zt)N.mauertor=zt.join('');
  N.bauten=P.bauten.map(function(b){var o=JSON.parse(JSON.stringify(b));o.i=W-b.j-b.h;o.j=b.i;o.w=b.h;o.h=b.w;o.achse=b.achse==='i'?'j':'i';
   if(b.tuer)o.tuer=[W-1-b.tuer[1],b.tuer[0],-b.tuer[3],b.tuer[2]];return o});
- N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=W-1-d.j;o.j=d.i;if(/^ehrensaeule-/.test(o.id))o.id=/-i$/.test(o.id)?o.id.slice(0,-2):o.id+'-i';return o});N.tor={i:W-1-P.tor.j,j:P.tor.i};   // N6b3b4: Ehrensäulen drehen ihre Achse mit
+ N.dinge=P.dinge.map(function(d){var o=JSON.parse(JSON.stringify(d));o.i=W-1-d.j+((d.h|0)>1?d.h-1:0);o.j=d.i;if(d.w)marktLage(o,MARKT_DREH);if(/^ehrensaeule-/.test(o.id))o.id=/-i$/.test(o.id)?o.id.slice(0,-2):o.id+'-i';return o});N.tor={i:W-1-P.tor.j,j:P.tor.i};   // N6b3b4: Ehrensäulen drehen ihre Achse mit
  if(P.forum){var R=function(r){return[W-r[1]-r[3],r[0],r[3],r[2]]},F=P.forum,G=N.forum,g0=R([F.i,F.j,F.w,F.h]);G.i=g0[0];G.j=g0[1];G.w=g0[2];G.h=g0[3];   // N6b3c1 Forum dreht mit
   G.offen=[-F.offen[1],F.offen[0]];G.laeden=F.laeden.map(R);G.gang=F.gang.map(R);G.rostra=R(F.rostra);G.statue=R(F.statue)}
  if(P.flur){var fz=new Array(W*W);for(j=0;j<W;j++)for(i=0;i<W;i++)fz[i*W+(W-1-j)]=P.flur.z.charAt(j*W+i);N.flur.z=fz.join('');   // N6b4b2 Flur dreht mit
@@ -2999,7 +3055,7 @@ function ordner(el){var n=el.length,RI=new Int32Array(n),RJ=new Int32Array(n),RW
  var fach=function(fx,fy){return(fx+32768)*65536+fy+32768},gr=function(q){return RW[q]>1||RH[q]>1};
  // weiter(aus): arbeitet, bis aus() einen vollen Zeitanteil meldet (→ false) oder alles fertig ist (→ true, Ergebnis in .liste)
  var O={liste:null,weiter:function(aus){for(;;){
-  if(phase===0){for(;k<n;k++){var e=el[k],b=e.b,i,j,w,h;if(!b){i=e.d.i;j=e.d.j;w=1;h=1}else if(b.rund){i=b.i-1;j=b.j-1;w=b.w+2;h=b.w+2}else{i=b.i;j=b.j;w=b.w;h=b.h}
+  if(phase===0){for(;k<n;k++){var e=el[k],b=e.b,i,j,w,h;if(!b){w=e.d.w||1;h=e.d.h||1;i=e.d.i-w+1;j=e.d.j-h+1}else if(b.rund){i=b.i-1;j=b.j-1;w=b.w+2;h=b.w+2}else{i=b.i;j=b.j;w=b.w;h=b.h}
      RI[k]=i;RJ[k]=j;RW[k]=w;RH[k]=h;X0[k]=(i-j-h)*32;X1[k]=(i+w-j)*32;Y0[k]=(i+j)*16-hoch(b)-((b||e.d).hz|0)*HSTUFE;Y1[k]=(i+w+j+h)*16;
      if(w>1||h>1){for(var fy=Math.floor(Y0[k]/FS);fy<=Math.floor((Y1[k]-1)/FS);fy++)for(var fx=Math.floor(X0[k]/FS);fx<=Math.floor((X1[k]-1)/FS);fx++){var L=F.get(fach(fx,fy));if(!L)F.set(fach(fx,fy),L=[]);L.push(k)}}
      if((++c&31)===0&&aus&&aus()){k++;return false}}phase=1;k=0}
@@ -3090,7 +3146,7 @@ function elemente(P,hole,opt){opt=opt||{};var bk=BK(),B=BIOME[P.biom],W=P.W,U=Ma
    else if(stufe===2){for(;uj<W+U;uj++,ui=-U){for(;ui<W+U;ui++){if(ui>=0&&uj>=0&&ui<W&&uj<W)continue;
       if(rausch(ui,uj,P.seed+21)<B.dichte*(1+.15*Math.max(ui<0?-ui:ui-W+1,uj<0?-uj:uj-W+1)))el.push({t:ui+uj+1.02,n:n++,d:{id:B.baeume[Math.floor(rausch(ui,uj,P.seed+22)*B.baeume.length)],i:ui,j:uj}})}}stufe=3}
    else if(stufe===3){if(!O3)O3=ordner(el);if(!O3.weiter(aus))return false;el=O3.liste;O3=null;stufe=4;if(aus&&aus())return false}
-   else{for(;qk<el.length;qk++){var e=el[qk];if(e.d)L.push({k:1,id:e.d.id,X:bx(e.d.i,e.d.j),Y:by(e.d.i,e.d.j)+16-(e.d.hz|0)*HSTUFE,fi:e.d.i,fj:e.d.j});   // N7a2b2: fi/fj = vorderstes Feld (Bodenbilder der Karte)
+   else{for(;qk<el.length;qk++){var e=el[qk];if(e.d){var dw=e.d.w||1,dh=e.d.h||1;L.push({k:1,id:e.d.id,X:bx(e.d.i,e.d.j)-(dw-dh)*16,Y:by(e.d.i,e.d.j)+16-(dw+dh-2)*8-(e.d.hz|0)*HSTUFE,fi:e.d.i,fj:e.d.j})}   // N7f1: Ding mit Fläche w × h (Anker der Kartei = Mitte der Grundfläche)   // N7a2b2: fi/fj = vorderstes Feld (Bodenbilder der Karte)
       else{var b=e.b,ox=b.rund?b.i-1:b.i,oy=b.rund?b.j-1:b.j,fw=b.w,fh=b.h;if(b.rund){var R=bk.bilde('rund',b.w,b.w,b.klasse);fw=R.w;fh=R.h}L.push({k:2,b:b,X:bx(ox,oy),Y:by(ox,oy)-(b.hz|0)*HSTUFE,fw:fw,fh:fh,fi:ox+fw-1,fj:oy+fh-1})}
       if((++c&63)===0&&aus&&aus()){qk++;return false}}el=null;stufe=5}}return true};
  if(!opt.inSchritten)fuellen(null);
@@ -3208,7 +3264,7 @@ function zaehle(P){var n={haeuser:0,mauer:0,besondere:0,dinge:P.dinge.length};P.
 function kennungen(P){var bk=BK(),s={},B=BIOME[P.biom];B.boden.concat([B.weg,P.feld||'bk-feld','boden-wasser','boden-erde','boden-gras','boden-fels','bk-marmor-boden','boden-sand','steg-deck-i','steg-deck-j'].concat(B.pflaster&&P.pflaster!==false&&(P.g|0)>=MAUER_AB?PFL_IDS:[]).concat(B.felder&&P.flur?FELD_IDS:[],P.dauer?DAUER_IDS:[],P.wehr?WEHR_IDS:[],P.forum?FORUM_IDS().concat(FORUM_GANZ_IDS(P.forum)):[],P.hoehe?['fels-kante-i','fels-kante-j','fels-treppe-s','fels-treppe-n','fels-treppe-o','fels-treppe-w']:[],FLUSS_VAR,Object.keys(RAMPE).map(function(k){return RAMPE[k]}))).forEach(function(i){s[i]=1});
  bk.KLASSEN.forEach(function(k){s['bk-'+k.kurz+'-boden']=1});B.baeume.forEach(function(i){s[i]=1});for(var h in HAIN)s[HAIN[h]]=1;P.dinge.forEach(function(d){s[d.id]=1});if(P.grube)GRUBE_IDS.forEach(function(i){s[i]=1});return Object.keys(s)}
 
-var SB={POSTEN_ART:POSTEN_ART,BUENDEL_MAX:BUENDEL_MAX,HAFEN_MAX:HAFEN_MAX,buendeln:buendeln,GRUBE_IDS:GRUBE_IDS,grubeId:grubeId,SCHLAMM:SCHLAMM,schlammWahl:schlammWahl,BUDE_VAR:BUDE_VAR,budeGanz:budeGanz,budeBild:budeBild,budeVariante:budeVariante,FISCHER_LAGER:FISCHER_LAGER,UFER_LAGER:UFER_LAGER,WASCH_LAGER:WASCH_LAGER,SALZ_LAGER:SALZ_LAGER,SALZ_BECKEN:SALZ_BECKEN,JAGD_LAGER:JAGD_LAGER,postenGanz:postenGanz,postenBildAn:postenBildAn,MINE_LAGER:MINE_LAGER,BRUCH_LAGER:BRUCH_LAGER,BRUCH_PLATZ:BRUCH_PLATZ,HOLZ_LAGER:HOLZ_LAGER,KOEHLER_LAGER:KOEHLER_LAGER,KOEHLER_PLATZ:KOEHLER_PLATZ,POSTEN_SELTEN:POSTEN_SELTEN,presseGanz:presseGanz,hofPresse:hofPresse,PRESSE:PRESSE,PRESSE_ID:PRESSE_ID,pferchZaun:pferchZaun,flurKante:flurKante,hofGanz:hofGanz,hofTuerOff:hofTuerOff,HOF_BILD_VAR:HOF_BILD_VAR,PFERCH_FUSS:PFERCH_FUSS,dauerDinge:dauerDinge,dauerDing:dauerDing,DAUER_BILD:DAUER_BILD,DAUER_IDS:DAUER_IDS,DAUER_DINGE:DAUER_DINGE,DAUER_STUMPF:DAUER_STUMPF,postenPlan:postenPlan,postenBegeh:postenBegeh,postenSeite:postenSeite,POSTEN_ANLAGE:POSTEN_ANLAGE,POSTEN_HOF:POSTEN_HOF,POSTEN_W:POSTEN_W,POSTEN_GROSS:POSTEN_GROSS,POSTEN_SEITEN:POSTEN_SEITEN,malbild:malbild,saumObj:saumObj,SAUM_RANG:SAUM_RANG,FELD_IDS:FELD_IDS,FELD_BILD:FELD_BILD,feldBild:feldBild,feldAchse:feldAchse,SAUM_SCHMAL:SAUM_SCHMAL,setzeLandw:setzeLandw,landwDaten:landwDaten,flurArt:flurArt,flurTempo:flurTempo,FLUR_RASTER:FLUR_RASTER,FLUR_WEIT:FLUR_WEIT,FLUR_HOFRAND:FLUR_HOFRAND,HOF_HAUS:HOF_HAUS,KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
+var SB={MARKT_GRUPPEN:MARKT_GRUPPEN,MARKT_GROSS:MARKT_GROSS,marktStaende:marktStaende,marktLage:marktLage,POSTEN_ART:POSTEN_ART,BUENDEL_MAX:BUENDEL_MAX,HAFEN_MAX:HAFEN_MAX,buendeln:buendeln,GRUBE_IDS:GRUBE_IDS,grubeId:grubeId,SCHLAMM:SCHLAMM,schlammWahl:schlammWahl,BUDE_VAR:BUDE_VAR,budeGanz:budeGanz,budeBild:budeBild,budeVariante:budeVariante,FISCHER_LAGER:FISCHER_LAGER,UFER_LAGER:UFER_LAGER,WASCH_LAGER:WASCH_LAGER,SALZ_LAGER:SALZ_LAGER,SALZ_BECKEN:SALZ_BECKEN,JAGD_LAGER:JAGD_LAGER,postenGanz:postenGanz,postenBildAn:postenBildAn,MINE_LAGER:MINE_LAGER,BRUCH_LAGER:BRUCH_LAGER,BRUCH_PLATZ:BRUCH_PLATZ,HOLZ_LAGER:HOLZ_LAGER,KOEHLER_LAGER:KOEHLER_LAGER,KOEHLER_PLATZ:KOEHLER_PLATZ,POSTEN_SELTEN:POSTEN_SELTEN,presseGanz:presseGanz,hofPresse:hofPresse,PRESSE:PRESSE,PRESSE_ID:PRESSE_ID,pferchZaun:pferchZaun,flurKante:flurKante,hofGanz:hofGanz,hofTuerOff:hofTuerOff,HOF_BILD_VAR:HOF_BILD_VAR,PFERCH_FUSS:PFERCH_FUSS,dauerDinge:dauerDinge,dauerDing:dauerDing,DAUER_BILD:DAUER_BILD,DAUER_IDS:DAUER_IDS,DAUER_DINGE:DAUER_DINGE,DAUER_STUMPF:DAUER_STUMPF,postenPlan:postenPlan,postenBegeh:postenBegeh,postenSeite:postenSeite,POSTEN_ANLAGE:POSTEN_ANLAGE,POSTEN_HOF:POSTEN_HOF,POSTEN_W:POSTEN_W,POSTEN_GROSS:POSTEN_GROSS,POSTEN_SEITEN:POSTEN_SEITEN,malbild:malbild,saumObj:saumObj,SAUM_RANG:SAUM_RANG,FELD_IDS:FELD_IDS,FELD_BILD:FELD_BILD,feldBild:feldBild,feldAchse:feldAchse,SAUM_SCHMAL:SAUM_SCHMAL,setzeLandw:setzeLandw,landwDaten:landwDaten,flurArt:flurArt,flurTempo:flurTempo,FLUR_RASTER:FLUR_RASTER,FLUR_WEIT:FLUR_WEIT,FLUR_HOFRAND:FLUR_HOFRAND,HOF_HAUS:HOF_HAUS,KOENIGSPALAST:KOENIGSPALAST,koenigspalastFest:koenigspalastFest,koenigspalastGanz:koenigspalastGanz,SENAT:SENAT,senatFest:senatFest,senatGanz:senatGanz,STATTHALTER:STATTHALTER,statthalterFest:statthalterFest,statthalterGanz:statthalterGanz,THEATER:THEATER,theaterFest:theaterFest,theaterGanz:theaterGanz,festLage:festLage,FORUM:FORUM,FORUM_GANZ:FORUM_GANZ,forumGanzEls:forumGanzEls,forumGanzBild:forumGanzBild,FORUM_GANZ_IDS:FORUM_GANZ_IDS,forumFest:forumFest,forumArt:forumArt,forumTeile:forumTeile,forumId:forumId,FORUM_IDS:FORUM_IDS,TEMPEL:TEMPEL,ehrensaeulen:ehrensaeulen,EHREN_ART:EHREN_ART,REL_BIOM:REL_BIOM,tempelGanz:tempelGanz,tempelUmwidmen:tempelUmwidmen,ganzBild:ganzBild,relKurz:relKurz,PFL_IDS:PFL_IDS,pflasterKarte:pflasterKarte,pflasterWahl:pflasterWahl,TOR_B:TOR_B,TOR_GERADE:TOR_GERADE,MAUER_BILD:MAUER_BILD,toreGeradeOk:torGeradeOk,wehrLese:wehrLese,WEHR_IDS:WEHR_IDS,WEHR_H:WEHR_H,TURM_H:TURM_H,TURM_AB:TURM_AB,mauerwerk:mauerwerk,wehrNachbarn:wehrNachbarn,wehrDrehen:wehrDrehen,HSTUFE:HSTUFE,GIPFEL1:GIPFEL1,GIPFEL2:GIPFEL2,huegelPlan:huegelPlan,innenMaske:innenMaske,TOTE:TOTE,HOF_JE:HOF_JE,GRAB_JE:GRAB_JE,GRAB_MAX:GRAB_MAX,elemente:elemente,kachelBauer:kachelBauer,HOCH:HOCH,hoch:hoch,skalieren:skalieren,ARTEN:ARTEN,BIOME:BIOME,STILE:STILE,plan:plan,blockMass:blockMass,setzeDaten:setzeDaten,PROBE_EINW:PROBE_EINW,ART_G:ART_G,spiegeln:spiegeln,drehen:drehen,bauer:bauer,malen:malen,kacheln:kacheln,zaehle:zaehle,kennungen:kennungen,hashT:hashT};
 SB.maskeMeer=maskeMeer;SB.stadtFluss=stadtFluss;SB.weltMeer=weltMeer;SB.meerAnteil=meerAnteil;SB.meerSeite=meerSeite;SB.meerEcht=meerEcht;   // N7a5a3a, N7a5a3b2 (Tests)
 if(typeof module!=='undefined'&&module.exports)module.exports=SB;else G.AT3_STADTBILD=SB;
 })(typeof window!=='undefined'?window:globalThis);
