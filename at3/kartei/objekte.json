@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 2172,
+ "typMax": 2283,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -6855,7 +6855,7 @@
   },
   {
    "id": "bk-steppe-wand-d",
-   "version": 1,
+   "version": 2,
    "typ": 1065,
    "kat": "wand",
    "name": "Steppe Wattle Wall D",
@@ -19407,6 +19407,1005 @@
    "name": "Evicted Stilt Shack W",
    "status": "uebernommen",
    "datei": "obj/elend-mang-bude-8-west.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-a",
+   "version": 1,
+   "typ": 2173,
+   "kat": "dach",
+   "name": "Steppe Thatch Right A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-b",
+   "version": 1,
+   "typ": 2174,
+   "kat": "dach",
+   "name": "Steppe Thatch Right B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-c",
+   "version": 1,
+   "typ": 2175,
+   "kat": "dach",
+   "name": "Steppe Thatch Right C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-c.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-d",
+   "version": 1,
+   "typ": 2176,
+   "kat": "dach",
+   "name": "Steppe Thatch Right D",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-d.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-e",
+   "version": 1,
+   "typ": 2177,
+   "kat": "dach",
+   "name": "Steppe Thatch Right E",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-e.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-f",
+   "version": 1,
+   "typ": 2178,
+   "kat": "dach",
+   "name": "Steppe Thatch Right F",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-f.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-k-a",
+   "version": 1,
+   "typ": 2179,
+   "kat": "dach",
+   "name": "Steppe Right Ridge A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-k-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-k-b",
+   "version": 1,
+   "typ": 2180,
+   "kat": "dach",
+   "name": "Steppe Right Ridge B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-k-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-k",
+   "version": 1,
+   "typ": 2181,
+   "kat": "dach",
+   "name": "Steppe Right Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-k.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-kn-a",
+   "version": 1,
+   "typ": 2182,
+   "kat": "dach",
+   "name": "Steppe Right Ridge+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-kn-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-kn-b",
+   "version": 1,
+   "typ": 2183,
+   "kat": "dach",
+   "name": "Steppe Right Ridge+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-kn-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-kn",
+   "version": 1,
+   "typ": 2184,
+   "kat": "dach",
+   "name": "Steppe Right Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-kn.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-ks-a",
+   "version": 1,
+   "typ": 2185,
+   "kat": "dach",
+   "name": "Steppe Right Ridge+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-ks-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-ks-b",
+   "version": 1,
+   "typ": 2186,
+   "kat": "dach",
+   "name": "Steppe Right Ridge+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-ks-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-ks",
+   "version": 1,
+   "typ": 2187,
+   "kat": "dach",
+   "name": "Steppe Right Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-ks.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-n-a",
+   "version": 1,
+   "typ": 2188,
+   "kat": "dach",
+   "name": "Steppe Right Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-n-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-n-b",
+   "version": 1,
+   "typ": 2189,
+   "kat": "dach",
+   "name": "Steppe Right Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-n-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-n",
+   "version": 1,
+   "typ": 2190,
+   "kat": "dach",
+   "name": "Steppe Right Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-n.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-r-a",
+   "version": 1,
+   "typ": 2191,
+   "kat": "dach",
+   "name": "Steppe Right Eave A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-r-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-r-b",
+   "version": 1,
+   "typ": 2192,
+   "kat": "dach",
+   "name": "Steppe Right Eave B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-r-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-r",
+   "version": 1,
+   "typ": 2193,
+   "kat": "dach",
+   "name": "Steppe Right Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-r.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-rn-a",
+   "version": 1,
+   "typ": 2194,
+   "kat": "dach",
+   "name": "Steppe Right Eave+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-rn-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-rn-b",
+   "version": 1,
+   "typ": 2195,
+   "kat": "dach",
+   "name": "Steppe Right Eave+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-rn-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-rn",
+   "version": 1,
+   "typ": 2196,
+   "kat": "dach",
+   "name": "Steppe Right Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-rn.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-rs-a",
+   "version": 1,
+   "typ": 2197,
+   "kat": "dach",
+   "name": "Steppe Right Eave+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-rs-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-rs-b",
+   "version": 1,
+   "typ": 2198,
+   "kat": "dach",
+   "name": "Steppe Right Eave+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-rs-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-rs",
+   "version": 1,
+   "typ": 2199,
+   "kat": "dach",
+   "name": "Steppe Right Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-rs.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-s-a",
+   "version": 1,
+   "typ": 2200,
+   "kat": "dach",
+   "name": "Steppe Right Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-s-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-s-b",
+   "version": 1,
+   "typ": 2201,
+   "kat": "dach",
+   "name": "Steppe Right Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-s-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i-s",
+   "version": 1,
+   "typ": 2202,
+   "kat": "dach",
+   "name": "Steppe Right Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i-s.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-i",
+   "version": 1,
+   "typ": 2203,
+   "kat": "dach",
+   "name": "Steppe Thatch Right",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-i.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-a",
+   "version": 1,
+   "typ": 2204,
+   "kat": "dach",
+   "name": "Steppe Thatch Front A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-b",
+   "version": 1,
+   "typ": 2205,
+   "kat": "dach",
+   "name": "Steppe Thatch Front B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-c",
+   "version": 1,
+   "typ": 2206,
+   "kat": "dach",
+   "name": "Steppe Thatch Front C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-c.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-d",
+   "version": 1,
+   "typ": 2207,
+   "kat": "dach",
+   "name": "Steppe Thatch Front D",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-d.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-e",
+   "version": 1,
+   "typ": 2208,
+   "kat": "dach",
+   "name": "Steppe Thatch Front E",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-e.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-f",
+   "version": 1,
+   "typ": 2209,
+   "kat": "dach",
+   "name": "Steppe Thatch Front F",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-f.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-k-a",
+   "version": 1,
+   "typ": 2210,
+   "kat": "dach",
+   "name": "Steppe Front Ridge A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-k-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-k-b",
+   "version": 1,
+   "typ": 2211,
+   "kat": "dach",
+   "name": "Steppe Front Ridge B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-k-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-k",
+   "version": 1,
+   "typ": 2212,
+   "kat": "dach",
+   "name": "Steppe Front Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-k.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-kn-a",
+   "version": 1,
+   "typ": 2213,
+   "kat": "dach",
+   "name": "Steppe Front Ridge+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-kn-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-kn-b",
+   "version": 1,
+   "typ": 2214,
+   "kat": "dach",
+   "name": "Steppe Front Ridge+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-kn-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-kn",
+   "version": 1,
+   "typ": 2215,
+   "kat": "dach",
+   "name": "Steppe Front Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-kn.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-ks-a",
+   "version": 1,
+   "typ": 2216,
+   "kat": "dach",
+   "name": "Steppe Front Ridge+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-ks-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-ks-b",
+   "version": 1,
+   "typ": 2217,
+   "kat": "dach",
+   "name": "Steppe Front Ridge+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-ks-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-ks",
+   "version": 1,
+   "typ": 2218,
+   "kat": "dach",
+   "name": "Steppe Front Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-ks.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-n-a",
+   "version": 1,
+   "typ": 2219,
+   "kat": "dach",
+   "name": "Steppe Front Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-n-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-n-b",
+   "version": 1,
+   "typ": 2220,
+   "kat": "dach",
+   "name": "Steppe Front Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-n-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-n",
+   "version": 1,
+   "typ": 2221,
+   "kat": "dach",
+   "name": "Steppe Front Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-n.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-r-a",
+   "version": 1,
+   "typ": 2222,
+   "kat": "dach",
+   "name": "Steppe Front Eave A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-r-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-r-b",
+   "version": 1,
+   "typ": 2223,
+   "kat": "dach",
+   "name": "Steppe Front Eave B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-r-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-r",
+   "version": 1,
+   "typ": 2224,
+   "kat": "dach",
+   "name": "Steppe Front Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-r.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-rn-a",
+   "version": 1,
+   "typ": 2225,
+   "kat": "dach",
+   "name": "Steppe Front Eave+Gable L A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-rn-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-rn-b",
+   "version": 1,
+   "typ": 2226,
+   "kat": "dach",
+   "name": "Steppe Front Eave+Gable L B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-rn-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-rn",
+   "version": 1,
+   "typ": 2227,
+   "kat": "dach",
+   "name": "Steppe Front Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-rn.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-rs-a",
+   "version": 1,
+   "typ": 2228,
+   "kat": "dach",
+   "name": "Steppe Front Eave+Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-rs-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-rs-b",
+   "version": 1,
+   "typ": 2229,
+   "kat": "dach",
+   "name": "Steppe Front Eave+Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-rs-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-rs",
+   "version": 1,
+   "typ": 2230,
+   "kat": "dach",
+   "name": "Steppe Front Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-rs.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-s-a",
+   "version": 1,
+   "typ": 2231,
+   "kat": "dach",
+   "name": "Steppe Front Gable R A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-s-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-s-b",
+   "version": 1,
+   "typ": 2232,
+   "kat": "dach",
+   "name": "Steppe Front Gable R B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-s-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j-s",
+   "version": 1,
+   "typ": 2233,
+   "kat": "dach",
+   "name": "Steppe Front Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j-s.json"
+  },
+  {
+   "id": "bk-steppe-dach-ab-j",
+   "version": 1,
+   "typ": 2234,
+   "kat": "dach",
+   "name": "Steppe Thatch Front",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-ab-j.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-a",
+   "version": 1,
+   "typ": 2235,
+   "kat": "dach",
+   "name": "Steppe Thatch Left A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-b",
+   "version": 1,
+   "typ": 2236,
+   "kat": "dach",
+   "name": "Steppe Thatch Left B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-c",
+   "version": 1,
+   "typ": 2237,
+   "kat": "dach",
+   "name": "Steppe Thatch Left C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-c.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-d",
+   "version": 1,
+   "typ": 2238,
+   "kat": "dach",
+   "name": "Steppe Thatch Left D",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-d.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-e",
+   "version": 1,
+   "typ": 2239,
+   "kat": "dach",
+   "name": "Steppe Thatch Left E",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-e.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-f",
+   "version": 1,
+   "typ": 2240,
+   "kat": "dach",
+   "name": "Steppe Thatch Left F",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-f.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-k",
+   "version": 1,
+   "typ": 2241,
+   "kat": "dach",
+   "name": "Steppe Left Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-k.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-kn",
+   "version": 1,
+   "typ": 2242,
+   "kat": "dach",
+   "name": "Steppe Left Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-kn.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-ks",
+   "version": 1,
+   "typ": 2243,
+   "kat": "dach",
+   "name": "Steppe Left Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-ks.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-n",
+   "version": 1,
+   "typ": 2244,
+   "kat": "dach",
+   "name": "Steppe Left Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-n.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-r",
+   "version": 1,
+   "typ": 2245,
+   "kat": "dach",
+   "name": "Steppe Left Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-r.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-rn",
+   "version": 1,
+   "typ": 2246,
+   "kat": "dach",
+   "name": "Steppe Left Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-rn.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-rs",
+   "version": 1,
+   "typ": 2247,
+   "kat": "dach",
+   "name": "Steppe Left Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-rs.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i-s",
+   "version": 1,
+   "typ": 2248,
+   "kat": "dach",
+   "name": "Steppe Left Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i-s.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-i",
+   "version": 1,
+   "typ": 2249,
+   "kat": "dach",
+   "name": "Steppe Thatch Left",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-i.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-a",
+   "version": 1,
+   "typ": 2250,
+   "kat": "dach",
+   "name": "Steppe Thatch Rear A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-b",
+   "version": 1,
+   "typ": 2251,
+   "kat": "dach",
+   "name": "Steppe Thatch Rear B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-c",
+   "version": 1,
+   "typ": 2252,
+   "kat": "dach",
+   "name": "Steppe Thatch Rear C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-c.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-d",
+   "version": 1,
+   "typ": 2253,
+   "kat": "dach",
+   "name": "Steppe Thatch Rear D",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-d.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-e",
+   "version": 1,
+   "typ": 2254,
+   "kat": "dach",
+   "name": "Steppe Thatch Rear E",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-e.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-f",
+   "version": 1,
+   "typ": 2255,
+   "kat": "dach",
+   "name": "Steppe Thatch Rear F",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-f.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-k",
+   "version": 1,
+   "typ": 2256,
+   "kat": "dach",
+   "name": "Steppe Rear Ridge",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-k.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-kn",
+   "version": 1,
+   "typ": 2257,
+   "kat": "dach",
+   "name": "Steppe Rear Ridge+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-kn.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-ks",
+   "version": 1,
+   "typ": 2258,
+   "kat": "dach",
+   "name": "Steppe Rear Ridge+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-ks.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-n",
+   "version": 1,
+   "typ": 2259,
+   "kat": "dach",
+   "name": "Steppe Rear Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-n.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-r",
+   "version": 1,
+   "typ": 2260,
+   "kat": "dach",
+   "name": "Steppe Rear Eave",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-r.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-rn",
+   "version": 1,
+   "typ": 2261,
+   "kat": "dach",
+   "name": "Steppe Rear Eave+Gable L",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-rn.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-rs",
+   "version": 1,
+   "typ": 2262,
+   "kat": "dach",
+   "name": "Steppe Rear Eave+Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-rs.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j-s",
+   "version": 1,
+   "typ": 2263,
+   "kat": "dach",
+   "name": "Steppe Rear Gable R",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j-s.json"
+  },
+  {
+   "id": "bk-steppe-dach-auf-j",
+   "version": 1,
+   "typ": 2264,
+   "kat": "dach",
+   "name": "Steppe Thatch Rear",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-auf-j.json"
+  },
+  {
+   "id": "bk-steppe-dach-flach-a",
+   "version": 1,
+   "typ": 2265,
+   "kat": "dach",
+   "name": "Steppe Thatch Flat A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-flach-a.json"
+  },
+  {
+   "id": "bk-steppe-dach-flach-b",
+   "version": 1,
+   "typ": 2266,
+   "kat": "dach",
+   "name": "Steppe Thatch Flat B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-flach-b.json"
+  },
+  {
+   "id": "bk-steppe-dach-flach-c",
+   "version": 1,
+   "typ": 2267,
+   "kat": "dach",
+   "name": "Steppe Thatch Flat C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-flach-c.json"
+  },
+  {
+   "id": "bk-steppe-dach-flach-d",
+   "version": 1,
+   "typ": 2268,
+   "kat": "dach",
+   "name": "Steppe Thatch Flat D",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-flach-d.json"
+  },
+  {
+   "id": "bk-steppe-dach-flach-e",
+   "version": 1,
+   "typ": 2269,
+   "kat": "dach",
+   "name": "Steppe Thatch Flat E",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-flach-e.json"
+  },
+  {
+   "id": "bk-steppe-dach-flach-f",
+   "version": 1,
+   "typ": 2270,
+   "kat": "dach",
+   "name": "Steppe Thatch Flat F",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-flach-f.json"
+  },
+  {
+   "id": "bk-steppe-dach-flach",
+   "version": 1,
+   "typ": 2271,
+   "kat": "dach",
+   "name": "Steppe Thatch Flat",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-dach-flach.json"
+  },
+  {
+   "id": "bk-steppe-fenster-c",
+   "version": 1,
+   "typ": 2272,
+   "kat": "wand",
+   "name": "Steppe Wattle Window C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-fenster-c.json"
+  },
+  {
+   "id": "bk-steppe-giebel-d",
+   "version": 1,
+   "typ": 2273,
+   "kat": "wand",
+   "name": "Steppe Gable D",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-giebel-d.json"
+  },
+  {
+   "id": "bk-steppe-giebel-e",
+   "version": 1,
+   "typ": 2274,
+   "kat": "wand",
+   "name": "Steppe Gable E",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-giebel-e.json"
+  },
+  {
+   "id": "bk-steppe-giebel-f",
+   "version": 1,
+   "typ": 2275,
+   "kat": "wand",
+   "name": "Steppe Gable F",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-giebel-f.json"
+  },
+  {
+   "id": "bk-steppe-tuer-a",
+   "version": 1,
+   "typ": 2276,
+   "kat": "wand",
+   "name": "Steppe Wattle Door A",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-tuer-a.json"
+  },
+  {
+   "id": "bk-steppe-tuer-b",
+   "version": 1,
+   "typ": 2277,
+   "kat": "wand",
+   "name": "Steppe Wattle Door B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-tuer-b.json"
+  },
+  {
+   "id": "bk-steppe-tuer-c",
+   "version": 1,
+   "typ": 2278,
+   "kat": "wand",
+   "name": "Steppe Wattle Door C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-tuer-c.json"
+  },
+  {
+   "id": "bk-steppe-wand-c",
+   "version": 1,
+   "typ": 2279,
+   "kat": "wand",
+   "name": "Steppe Wattle Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-c.json"
+  },
+  {
+   "id": "bk-steppe-wand-e",
+   "version": 1,
+   "typ": 2280,
+   "kat": "wand",
+   "name": "Steppe Wattle Wall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-e.json"
+  },
+  {
+   "id": "bk-steppe-wand-f",
+   "version": 1,
+   "typ": 2281,
+   "kat": "wand",
+   "name": "Steppe Wattle Wall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-f.json"
+  },
+  {
+   "id": "bk-steppe-wand-oben-b",
+   "version": 1,
+   "typ": 2282,
+   "kat": "wand",
+   "name": "Steppe Wattle Upper Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-oben-b.json"
+  },
+  {
+   "id": "bk-steppe-wand-oben-c",
+   "version": 1,
+   "typ": 2283,
+   "kat": "wand",
+   "name": "Steppe Wattle Upper Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-steppe-wand-oben-c.json"
   }
  ]
 }
