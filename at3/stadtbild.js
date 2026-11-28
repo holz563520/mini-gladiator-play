@@ -63,7 +63,7 @@ function SL(){return G.AT3_STADTLISTE||(typeof require!=='undefined'?require('./
 var DAT=null;function setzeDaten(geb){DAT=geb&&geb.G?geb:SL().daten(geb);return DAT}
 function daten(o){if(o&&o.daten)return o.daten.G?o.daten:SL().daten(o.daten);if(!DAT&&typeof require!=='undefined')DAT=SL().daten(require('./daten/gebaeude.json'));
  if(!DAT)throw new Error('Gebäudedaten fehlen (setzeDaten)');return DAT}
-// satzKlassen (Wüste, Thomas 27.11.2026): der Biom-Satz gilt auch für Häuser dieser Bauklassen (sonst nur für die Grundklasse); Notausschalter: Angabe entfernen.
+// satzKlassen (Wüste, Thomas 27.11.2026; Savanne 28.11.2026, Zweig grafik-savanne-b): der Biom-Satz gilt auch für Häuser dieser Bauklassen (sonst nur für die Grundklasse); Notausschalter: Angabe entfernen.
 // Wüste (Thomas 28.11.2026, Zweig grafik-wueste-b): Satz 'sandlehm' (bk-sandlehm-*, ausgefranste Flachdach-Traufe, je 6 Varianten) statt 'wueste'; Notausschalter: wieder 'wueste' eintragen.
 // Bauweise je Biom (5.3a) als Skizze aus den Baukasten-Teilen: Bauklasse, Dachform, Farbtausch (Wand, Dach), Boden, Gassenbelag, Bäume, Dichte im Umland, Felder.
 // Mittelmeer eigene Teile (Thomas 28.11.2026, Zweig grafik-mittelmeer-b): trockenes Buschland boden-macchia(-a…-f) statt der geteilten Skizze boden-gras,
@@ -80,16 +80,11 @@ var BIOME={
  broadleaf:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,satz:'fachwerk',bilder:'laub',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-eiche-skizze','baum-buche','baum-apfel','busch-gruen'],dichte:.3,feld:'bk-feld'},
  desert:{klasse:'clay-wood',dach:'flach',wand:SAND,dachR:SAND,satz:'sandlehm',satzKlassen:['brick'],boden:['boden-sand'],weg:'boden-sand',baeume:['baum-dattelpalme','busch-tamariske'],dichte:.03,feld:'boden-erde'},
  mountain:{klasse:'marble',dach:'sattel',dachR:HOLZ,satz:'bruch',boden:['boden-fels','boden-gras'],weg:'boden-weg',baeume:['baum-tanne','fels-block'],dichte:.14,feld:'bk-feld'},
- savanna:{klasse:'clay-wood',dach:'walm',dachR:OCKER,satz:'rotlehm',boden:['boden-gras','boden-sand'],weg:'boden-sand',baeume:['baum-akazie','baum-baobab','blume-hohes-gras'],dichte:.07,feld:'boden-erde'},
+ savanna:{klasse:'clay-wood',dach:'walm',dachR:OCKER,satz:'rotlehm',satzKlassen:['brick'],boden:['boden-gras','boden-sand'],weg:'boden-sand',baeume:['baum-akazie','baum-baobab','blume-hohes-gras'],dichte:.07,feld:'boden-erde'},
  conifer:{klasse:'clay-wood',dach:'sattel',wand:HOLZ,dachR:HOLZ,satz:'block',satzKlassen:['brick'],bilder:'taiga',boden:['boden-gras','boden-erde'],weg:'boden-erde',baeume:['baum-tanne','baum-birke'],dichte:.32,feld:'bk-feld'},
  coast:{klasse:'brick',dach:'sattel',satz:'kueste',platz:'bk-kueste-boden',boden:['boden-gras','boden-sand'],weg:'boden-weg',baeume:['baum-pappel','busch-gruen'],dichte:.05,feld:'bk-feld',wasser:true},
-<<<<<<< HEAD
- swamp:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:OCKER,satz:'sumpf',boden:['boden-erde','boden-gras'],weg:'boden-erde',baeume:['blume-schilf','busch-gruen','baum-lianen'],dichte:.2,feld:'boden-erde',wasser:true},
- rainforest:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:GRUEN,satz:'palm',satzKlassen:['brick'],bilder:'regen',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-lianen','baum-kokospalme','busch-banane','baum-farn'],dichte:.42,feld:'boden-erde'},
-=======
  swamp:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:OCKER,satz:'sumpf',bilder:'sumpf',boden:['boden-erde','boden-gras'],weg:'boden-erde',baeume:['blume-schilf','busch-gruen','baum-lianen'],dichte:.2,feld:'boden-erde',wasser:true},
- rainforest:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:GRUEN,satz:'palm',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-lianen','baum-kokospalme','busch-banane','baum-farn'],dichte:.42,feld:'boden-erde'},
->>>>>>> 42a0f81 (AT3 Grafik Sumpf: Hof- und Budenbilder (72), ort-homestead/hamlet/market-town/slum/great-city-swamp überarbeitet)
+ rainforest:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:GRUEN,satz:'palm',satzKlassen:['brick'],bilder:'regen',boden:['boden-gras'],weg:'boden-erde',baeume:['baum-lianen','baum-kokospalme','busch-banane','baum-farn'],dichte:.42,feld:'boden-erde'},
  mangrove:{klasse:'clay-wood',dach:'walm',wand:HOLZ,dachR:OCKER,satz:'pfahl',bilder:'mang',boden:['boden-erde','boden-sand'],weg:'boden-sand',baeume:['baum-mangrove','blume-schilf'],dichte:.22,feld:'boden-erde',wasser:true},
  tundra:{klasse:'clay-wood',dach:'flach',wand:ERDE,dachR:GRUEN,satz:'sode',boden:['boden-erde','boden-gras'],weg:'boden-erde',baeume:['busch-gruen','fels-block'],dichte:.04,feld:'boden-erde'},
  snow:{klasse:'marble',dach:'flach',boden:['boden-fels'],weg:'boden-fels',baeume:['fels-block'],dichte:.03,feld:'boden-fels',nurAussenposten:true}};

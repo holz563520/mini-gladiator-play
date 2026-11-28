@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 2433,
+ "typMax": 2455,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -21756,6 +21756,204 @@
    "name": "Evicted Shack W",
    "status": "uebernommen",
    "datei": "obj/elend-sumpf-bude-8-west.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-c",
+   "version": 1,
+   "typ": 2434,
+   "kat": "wand",
+   "name": "Red Daub Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-c.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-e",
+   "version": 1,
+   "typ": 2435,
+   "kat": "wand",
+   "name": "Red Daub Wall E",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-e.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-f",
+   "version": 1,
+   "typ": 2436,
+   "kat": "wand",
+   "name": "Red Daub Wall F",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-f.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-oben-b",
+   "version": 1,
+   "typ": 2437,
+   "kat": "wand",
+   "name": "Red Daub Upper Wall B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-oben-b.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-oben-c",
+   "version": 1,
+   "typ": 2438,
+   "kat": "wand",
+   "name": "Red Daub Upper Wall C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-oben-c.json"
+  },
+  {
+   "id": "bk-rotlehm-wand-oben-d",
+   "version": 1,
+   "typ": 2439,
+   "kat": "wand",
+   "name": "Red Daub Upper Wall D",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-wand-oben-d.json"
+  },
+  {
+   "id": "bk-rotlehm-fenster-c",
+   "version": 1,
+   "typ": 2440,
+   "kat": "wand",
+   "name": "Red Daub Window C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-fenster-c.json"
+  },
+  {
+   "id": "bk-rotlehm-fenster-e",
+   "version": 1,
+   "typ": 2441,
+   "kat": "wand",
+   "name": "Red Daub Window E",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-fenster-e.json"
+  },
+  {
+   "id": "bk-rotlehm-fenster-f",
+   "version": 1,
+   "typ": 2442,
+   "kat": "wand",
+   "name": "Red Daub Window F",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-fenster-f.json"
+  },
+  {
+   "id": "bk-rotlehm-tuer-a",
+   "version": 1,
+   "typ": 2443,
+   "kat": "wand",
+   "name": "Red Daub Door A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-tuer-a.json"
+  },
+  {
+   "id": "bk-rotlehm-tuer-b",
+   "version": 1,
+   "typ": 2444,
+   "kat": "wand",
+   "name": "Red Daub Door B",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-tuer-b.json"
+  },
+  {
+   "id": "bk-rotlehm-tuer-c",
+   "version": 1,
+   "typ": 2445,
+   "kat": "wand",
+   "name": "Red Daub Door C",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-tuer-c.json"
+  },
+  {
+   "id": "bk-rotlehm-tuer-d",
+   "version": 1,
+   "typ": 2446,
+   "kat": "wand",
+   "name": "Red Daub Door D",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-tuer-d.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-e",
+   "version": 1,
+   "typ": 2447,
+   "kat": "dach",
+   "name": "Red Daub Thatch Up E",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-e.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-j-f",
+   "version": 1,
+   "typ": 2448,
+   "kat": "dach",
+   "name": "Red Daub Thatch Up F",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-j-f.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-i-a",
+   "version": 1,
+   "typ": 2449,
+   "kat": "dach",
+   "name": "Red Daub Thatch Down I A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-i-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-ab-i-d",
+   "version": 1,
+   "typ": 2450,
+   "kat": "dach",
+   "name": "Red Daub Thatch Down I D",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-ab-i-d.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-i-a",
+   "version": 1,
+   "typ": 2451,
+   "kat": "dach",
+   "name": "Red Daub Thatch Up I A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-i-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-auf-i-d",
+   "version": 1,
+   "typ": 2452,
+   "kat": "dach",
+   "name": "Red Daub Thatch Up I D",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-auf-i-d.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-flach-a",
+   "version": 1,
+   "typ": 2453,
+   "kat": "dach",
+   "name": "Red Daub Flat Thatch A",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-flach-a.json"
+  },
+  {
+   "id": "bk-rotlehm-dach-flach-d",
+   "version": 1,
+   "typ": 2454,
+   "kat": "dach",
+   "name": "Red Daub Flat Thatch D",
+   "status": "uebernommen",
+   "datei": "obj/bk-rotlehm-dach-flach-d.json"
+  },
+  {
+   "id": "bk-rotlehm-boden",
+   "version": 1,
+   "typ": 2455,
+   "kat": "boden",
+   "name": "Red Daub Floor",
+   "status": "geprueft",
+   "datei": "obj/bk-rotlehm-boden.json"
   }
  ]
 }
