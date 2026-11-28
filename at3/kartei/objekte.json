@@ -2,7 +2,7 @@
  "format": "at3-kartei",
  "version": 1,
  "palette": "A",
- "typMax": 1930,
+ "typMax": 1951,
  "objekte": [
   {
    "id": "arena-amphitheater",
@@ -393,7 +393,7 @@
   },
   {
    "id": "baum-kokospalme",
-   "version": 1,
+   "version": 2,
    "typ": 132,
    "kat": "baum",
    "name": "Coconut Palm",
@@ -402,7 +402,7 @@
   },
   {
    "id": "baum-lianen",
-   "version": 1,
+   "version": 2,
    "typ": 135,
    "kat": "baum",
    "name": "Liana Tree",
@@ -411,7 +411,7 @@
   },
   {
    "id": "baum-mangrove",
-   "version": 1,
+   "version": 2,
    "typ": 136,
    "kat": "baum",
    "name": "Mangrove",
@@ -420,7 +420,7 @@
   },
   {
    "id": "baum-olive",
-   "version": 1,
+   "version": 2,
    "typ": 140,
    "kat": "baum",
    "name": "Olive Tree",
@@ -429,7 +429,7 @@
   },
   {
    "id": "baum-pappel",
-   "version": 1,
+   "version": 2,
    "typ": 12,
    "kat": "baum",
    "name": "Poplar",
@@ -438,7 +438,7 @@
   },
   {
    "id": "baum-tanne",
-   "version": 1,
+   "version": 2,
    "typ": 8,
    "kat": "baum",
    "name": "Fir",
@@ -17229,6 +17229,195 @@
    "name": "Exotic Food Market Tent W",
    "status": "uebernommen",
    "datei": "obj/marktstand-exotic-2x2-west.json"
+  },
+  {
+   "id": "baum-tanne-a",
+   "version": 1,
+   "typ": 1931,
+   "kat": "baum",
+   "name": "Fir B",
+   "status": "uebernommen",
+   "datei": "obj/baum-tanne-a.json"
+  },
+  {
+   "id": "baum-tanne-b",
+   "version": 1,
+   "typ": 1932,
+   "kat": "baum",
+   "name": "Fir C (axe)",
+   "status": "uebernommen",
+   "datei": "obj/baum-tanne-b.json"
+  },
+  {
+   "id": "baum-tanne-c",
+   "version": 1,
+   "typ": 1933,
+   "kat": "baum",
+   "name": "Fir D (red rag)",
+   "status": "uebernommen",
+   "datei": "obj/baum-tanne-c.json"
+  },
+  {
+   "id": "baum-pappel-a",
+   "version": 1,
+   "typ": 1934,
+   "kat": "baum",
+   "name": "Poplar B",
+   "status": "uebernommen",
+   "datei": "obj/baum-pappel-a.json"
+  },
+  {
+   "id": "baum-pappel-b",
+   "version": 1,
+   "typ": 1935,
+   "kat": "baum",
+   "name": "Poplar C (dead top)",
+   "status": "uebernommen",
+   "datei": "obj/baum-pappel-b.json"
+  },
+  {
+   "id": "baum-pappel-c",
+   "version": 1,
+   "typ": 1936,
+   "kat": "baum",
+   "name": "Poplar D (notice)",
+   "status": "uebernommen",
+   "datei": "obj/baum-pappel-c.json"
+  },
+  {
+   "id": "baum-zypresse-a",
+   "version": 1,
+   "typ": 1937,
+   "kat": "baum",
+   "name": "Cypress B (bent)",
+   "status": "uebernommen",
+   "datei": "obj/baum-zypresse-a.json"
+  },
+  {
+   "id": "baum-zypresse-b",
+   "version": 1,
+   "typ": 1938,
+   "kat": "baum",
+   "name": "Cypress C (split)",
+   "status": "uebernommen",
+   "datei": "obj/baum-zypresse-b.json"
+  },
+  {
+   "id": "baum-zypresse-c",
+   "version": 1,
+   "typ": 1939,
+   "kat": "baum",
+   "name": "Cypress D (grave)",
+   "status": "uebernommen",
+   "datei": "obj/baum-zypresse-c.json"
+  },
+  {
+   "id": "baum-lianen-a",
+   "version": 1,
+   "typ": 1940,
+   "kat": "baum",
+   "name": "Liana Tree B (chain)",
+   "status": "uebernommen",
+   "datei": "obj/baum-lianen-a.json"
+  },
+  {
+   "id": "baum-lianen-b",
+   "version": 1,
+   "typ": 1941,
+   "kat": "baum",
+   "name": "Liana Tree C (strangler)",
+   "status": "uebernommen",
+   "datei": "obj/baum-lianen-b.json"
+  },
+  {
+   "id": "baum-lianen-c",
+   "version": 1,
+   "typ": 1942,
+   "kat": "baum",
+   "name": "Liana Tree D (spear)",
+   "status": "uebernommen",
+   "datei": "obj/baum-lianen-c.json"
+  },
+  {
+   "id": "baum-mangrove-a",
+   "version": 1,
+   "typ": 1943,
+   "kat": "baum",
+   "name": "Mangrove B",
+   "status": "uebernommen",
+   "datei": "obj/baum-mangrove-a.json"
+  },
+  {
+   "id": "baum-mangrove-b",
+   "version": 1,
+   "typ": 1944,
+   "kat": "baum",
+   "name": "Mangrove C (net)",
+   "status": "uebernommen",
+   "datei": "obj/baum-mangrove-b.json"
+  },
+  {
+   "id": "baum-mangrove-c",
+   "version": 1,
+   "typ": 1945,
+   "kat": "baum",
+   "name": "Mangrove D (oar)",
+   "status": "uebernommen",
+   "datei": "obj/baum-mangrove-c.json"
+  },
+  {
+   "id": "baum-olive-a",
+   "version": 1,
+   "typ": 1946,
+   "kat": "baum",
+   "name": "Olive Tree B (hollow)",
+   "status": "uebernommen",
+   "datei": "obj/baum-olive-a.json"
+  },
+  {
+   "id": "baum-olive-b",
+   "version": 1,
+   "typ": 1947,
+   "kat": "baum",
+   "name": "Olive Tree C (curses)",
+   "status": "uebernommen",
+   "datei": "obj/baum-olive-b.json"
+  },
+  {
+   "id": "baum-olive-c",
+   "version": 1,
+   "typ": 1948,
+   "kat": "baum",
+   "name": "Olive Tree D (half dead)",
+   "status": "uebernommen",
+   "datei": "obj/baum-olive-c.json"
+  },
+  {
+   "id": "baum-kokospalme-a",
+   "version": 1,
+   "typ": 1949,
+   "kat": "baum",
+   "name": "Coconut Palm B",
+   "status": "uebernommen",
+   "datei": "obj/baum-kokospalme-a.json"
+  },
+  {
+   "id": "baum-kokospalme-b",
+   "version": 1,
+   "typ": 1950,
+   "kat": "baum",
+   "name": "Coconut Palm C (helmet)",
+   "status": "uebernommen",
+   "datei": "obj/baum-kokospalme-b.json"
+  },
+  {
+   "id": "baum-kokospalme-c",
+   "version": 1,
+   "typ": 1951,
+   "kat": "baum",
+   "name": "Coconut Palm D (tally)",
+   "status": "uebernommen",
+   "datei": "obj/baum-kokospalme-c.json"
   }
  ]
 }
